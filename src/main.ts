@@ -24,6 +24,7 @@ import {
   pushRuntimeIssueToast,
   tickNotificationState,
 } from './ui/feedback.js';
+import { resolveDrawerLayout } from './ui/drawer-layout.js';
 import { activeWorkspaceTitle, centerLine, renderWorkspaceFooter } from './ui/workspace-chrome.js';
 
 const ctx = initDefaultContext();
@@ -133,8 +134,6 @@ const MIN_ROWS = 12;
 const MAX_FILE_BYTES = 24_000;
 const INITIAL_COLUMNS = process.stdout.columns ?? 100;
 const INITIAL_ROWS = process.stdout.rows ?? 32;
-const DRAWER_MIN_WIDTH = 22;
-const DRAWER_MAX_WIDTH = 34;
 const DRAWER_DURATION_MS = 160;
 const DRAWER_INNER_PAD = 1;
 const GRAFT_META_ROWS = 5;
@@ -2064,9 +2063,9 @@ function renderWorkspace(model: Model) {
   screen.blit(stringToSurface(title, model.columns, 1), 0, 0);
   screen.blit(renderViewer(model, model.columns, bodyHeight), 0, bodyTop);
 
-  const drawerWidth = resolveDrawerWidth(model.columns, model.drawerProgress);
-  if (drawerWidth > 0) {
-    screen.blit(renderDrawer(model, drawerWidth, bodyHeight), 0, bodyTop);
+  const drawerLayout = resolveDrawerLayout(model.drawerKind, model.columns, model.drawerProgress);
+  if (drawerLayout.width > 0) {
+    screen.blit(renderDrawer(model, drawerLayout.width, bodyHeight), drawerLayout.x, bodyTop);
   }
 
   if (model.footerVisible) {
@@ -2366,11 +2365,6 @@ function clamp01(value: number): number {
     return 0;
   }
   return Math.max(0, Math.min(1, value));
-}
-
-function resolveDrawerWidth(columns: number, progress: number): number {
-  const maxWidth = Math.max(DRAWER_MIN_WIDTH, Math.min(DRAWER_MAX_WIDTH, Math.floor(columns * 0.26)));
-  return Math.round(maxWidth * clamp01(progress));
 }
 
 function isMarkdownFile(path: string): boolean {
