@@ -17,8 +17,6 @@ export interface WorkspaceLayout {
 const FILE_DRAWER_MIN_WIDTH = 22;
 const FILE_DRAWER_MAX_WIDTH = 34;
 const FILE_DRAWER_WIDTH_RATIO = 0.26;
-const GRAFT_DRAWER_MAX_WIDTH = 80;
-const GRAFT_DRAWER_WIDTH_RATIO = 0.5;
 
 export function resolveDrawerLayout(kind: DrawerKind, columns: number, progress: number): DrawerLayout {
   const width = Math.round(resolveDrawerMaxWidth(kind, columns) * clamp01(progress));
@@ -43,9 +41,13 @@ export function resolveWorkspaceLayout(columns: number, fileDrawerProgress: numb
 
 function resolveDrawerMaxWidth(kind: DrawerKind, columns: number): number {
   if (kind === 'graft') {
-    return Math.max(0, Math.min(GRAFT_DRAWER_MAX_WIDTH, Math.floor(columns * GRAFT_DRAWER_WIDTH_RATIO)));
+    return resolveFileDrawerMaxWidth(columns);
   }
 
+  return resolveFileDrawerMaxWidth(columns);
+}
+
+function resolveFileDrawerMaxWidth(columns: number): number {
   return Math.max(FILE_DRAWER_MIN_WIDTH, Math.min(FILE_DRAWER_MAX_WIDTH, Math.floor(columns * FILE_DRAWER_WIDTH_RATIO)));
 }
 

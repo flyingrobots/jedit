@@ -18,21 +18,21 @@ async function loadDrawerLayoutModule() {
   return import(pathToFileURL(MODULE_PATH).href);
 }
 
-test('graft drawer opens on the right and fills half the terminal when under the cap', async () => {
+test('graft drawer opens on the right using the same width as the file drawer', async () => {
   const layout = await loadDrawerLayoutModule();
 
   assert.deepEqual(
     layout.resolveDrawerLayout('graft', 120, 1),
-    { width: 60, x: 60 },
+    { width: 31, x: 89 },
   );
 });
 
-test('graft drawer width is capped at eighty columns', async () => {
+test('graft drawer follows the same width policy at larger terminal sizes', async () => {
   const layout = await loadDrawerLayoutModule();
 
   assert.deepEqual(
     layout.resolveDrawerLayout('graft', 220, 1),
-    { width: 80, x: 140 },
+    { width: 34, x: 186 },
   );
 });
 
@@ -52,8 +52,8 @@ test('workspace layout leaves a center viewer between both drawers', async () =>
     layout.resolveWorkspaceLayout(120, 1, 1),
     {
       fileDrawer: { width: 31, x: 0 },
-      graftDrawer: { width: 60, x: 60 },
-      viewer: { width: 29, x: 31 },
+      graftDrawer: { width: 31, x: 89 },
+      viewer: { width: 58, x: 31 },
     },
   );
 });
