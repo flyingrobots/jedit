@@ -3,8 +3,9 @@ import { clipToWidth } from '@flyingrobots/bijou-tui';
 import { basename } from 'node:path';
 
 import type { FileEntry } from '../adapters/filesystem.js';
+import type { DrawerKind } from './drawer-layout.js';
+import type { FocusPane } from './panel-focus.js';
 
-type DrawerKind = 'files' | 'graft';
 type ViewMode = 'source' | 'preview';
 type EditorMode = 'normal' | 'insert';
 type PendingNormal = 'c' | 'd' | 'g' | 'y';
@@ -17,12 +18,22 @@ export interface WorkspaceTitleState {
 }
 
 export interface WorkspaceFooterState {
-  readonly drawerOpen: boolean;
-  readonly drawerKind: DrawerKind;
+  readonly focusPane: FocusPane;
+  readonly fileDrawerOpen: boolean;
+  readonly graftDrawerOpen: boolean;
   readonly viewMode: ViewMode;
   readonly markdownPreviewActive: boolean;
   readonly editorMode?: EditorMode;
   readonly pendingNormal?: PendingNormal;
+  readonly cwd: string;
+  readonly selectedEntry?: FileEntry;
+  readonly editorPath?: string;
+  readonly graftPath?: string;
+  readonly graftSelection?: {
+    readonly kind: string;
+    readonly name: string;
+    readonly startLine: number;
+  };
 }
 
 export function activeWorkspaceTitle(state: WorkspaceTitleState): string {
@@ -51,24 +62,39 @@ export function centerLine(text: string, width: number): string {
 }
 
 export function renderWorkspaceFooter(state: WorkspaceFooterState, width: number, background: TokenValue): Surface {
-  const surface = createSurface(width, 1);
+  const surface = createSurface(width, 2);
   fillSurface(surface, background);
 
-  const content = stringToSurface(fitLine(workspaceFooterLine(state), width), width, 1);
-  applyBackground(content, background);
-  surface.blit(content, 0, 0);
+  const [primary, secondary] = workspaceFooterLines(state);
+  const primarySurface = stringToSurface(fitLine(primary, width), width, 1);
+  const secondarySurface = stringToSurface(fitLine(secondary, width), width, 1);
+  applyBackground(primarySurface, background);
+  applyBackground(secondarySurface, background);
+  surface.blit(primarySurface, 0, 0);
+  surface.blit(secondarySurface, 0, 1);
   return surface;
 }
 
 export function workspaceFooterLine(state: WorkspaceFooterState): string {
+  return workspaceFooterLines(state)[0];
+}
+
+export function workspaceFooterLines(state: WorkspaceFooterState): readonly [string, string] {
   const mode = interactionModeLabel(state).toUpperCase();
   const detail = footerDetail(state);
-  return detail.length > 0 ? `${mode} ${detail}` : mode;
+  return [
+    detail.length > 0 ? `${mode} ${detail}` : mode,
+    footerContextLine(state),
+  ];
 }
 
 function interactionModeLabel(state: WorkspaceFooterState): string {
-  if (state.drawerOpen) {
-    return state.drawerKind;
+  if (state.focusPane === 'files' && state.fileDrawerOpen) {
+    return 'files';
+  }
+
+  if (state.focusPane === 'graft' && state.graftDrawerOpen) {
+    return 'graft';
   }
 
   if (state.viewMode === 'preview' && state.markdownPreviewActive) {
@@ -83,31 +109,35 @@ function interactionModeLabel(state: WorkspaceFooterState): string {
 }
 
 function footerDetail(state: WorkspaceFooterState): string {
-  if (state.drawerOpen) {
-    return drawerFooterDetail(state.drawerKind);
+  if (state.focusPane === 'files' && state.fileDrawerOpen) {
+    return drawerFooterDetail('files');
+  }
+
+  if (state.focusPane === 'graft' && state.graftDrawerOpen) {
+    return drawerFooterDetail('graft');
   }
 
   if (state.viewMode === 'preview' && state.markdownPreviewActive) {
-    return '[j/k scroll · f2 source · ? hide]';
+    return '[j/k scroll · f2 source · tab focus · ctrl+b files · ctrl+g graft]';
   }
 
   if (state.editorMode === 'insert') {
-    return '[text input · esc normal · ctrl+s save · ? hide]';
+    return '[text input · esc normal · ctrl+s save · tab focus]';
   }
 
   if (state.editorMode === 'normal') {
     return normalFooterDetail(state);
   }
 
-  return '[tab files · ctrl+g graft · ? hide]';
+  return '[tab focus · ctrl+b files · ctrl+g graft]';
 }
 
 function drawerFooterDetail(kind: DrawerKind): string {
   if (kind === 'files') {
-    return '[j/k move · enter open · backspace up · tab close · ? hide]';
+    return '[j/k move · enter open · backspace up · ctrl+b close · tab focus]';
   }
 
-  return '[j/k move · enter jump · r refresh · ctrl+g close · ? hide]';
+  return '[j/k move · enter jump · r refresh · ctrl+g close · tab focus]';
 }
 
 function normalFooterDetail(state: WorkspaceFooterState): string {
@@ -117,23 +147,47 @@ function normalFooterDetail(state: WorkspaceFooterState): string {
   }
 
   const previewHint = state.markdownPreviewActive ? 'f2 preview' : 'ctrl+s save';
-  return `[i insert · o open line · ${previewHint} · tab files · ? hide]`;
+  return `[i insert · o open line · ${previewHint} · tab focus]`;
 }
 
 function pendingNormalFooterDetail(pending: PendingNormal): string {
   if (pending === 'c') {
-    return 'c [cc line · cw word · ce word-end · c0 start · c$ end]';
+    return 'c [cc line · cw word · ce word-end · c0 start · c$ end · tab focus]';
   }
 
   if (pending === 'd') {
-    return 'd [dd line · dw word · de word-end · d0 start · d$ end]';
+    return 'd [dd line · dw word · de word-end · d0 start · d$ end · tab focus]';
   }
 
   if (pending === 'y') {
-    return 'y [yy line · yw word · ye word-end · y0 start · y$ end]';
+    return 'y [yy line · yw word · ye word-end · y0 start · y$ end · tab focus]';
   }
 
-  return 'g [gg top · esc cancel]';
+  return 'g [gg top · esc cancel · tab focus]';
+}
+
+function footerContextLine(state: WorkspaceFooterState): string {
+  if (state.focusPane === 'files' && state.fileDrawerOpen) {
+    return state.selectedEntry?.path ?? state.cwd;
+  }
+
+  if (state.focusPane === 'graft' && state.graftDrawerOpen) {
+    if (state.graftSelection != null && state.graftPath != null) {
+      return `${state.graftPath}:${state.graftSelection.startLine} ${state.graftSelection.kind} ${state.graftSelection.name}`;
+    }
+
+    if (state.graftPath != null) {
+      return state.graftPath;
+    }
+
+    return 'open a file to inspect it';
+  }
+
+  if (state.editorPath != null) {
+    return state.editorPath;
+  }
+
+  return state.cwd;
 }
 
 function displayName(path: string): string {

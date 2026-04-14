@@ -44,3 +44,16 @@ test('file drawer remains left-aligned', async () => {
     { width: 31, x: 0 },
   );
 });
+
+test('workspace layout leaves a center viewer between both drawers', async () => {
+  const layout = await loadDrawerLayoutModule();
+
+  assert.deepEqual(
+    layout.resolveWorkspaceLayout(120, 1, 1),
+    {
+      fileDrawer: { width: 31, x: 0 },
+      graftDrawer: { width: 60, x: 60 },
+      viewer: { width: 29, x: 31 },
+    },
+  );
+});

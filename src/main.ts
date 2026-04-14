@@ -1,6 +1,6 @@
 import { createSurface, stringToSurface, type Surface, type TokenValue } from '@flyingrobots/bijou';
 import { initDefaultContext } from '@flyingrobots/bijou-node';
-import { animate, clipToWidth, quit, run, type App, type Cmd, type KeyMsg, type NotificationState, type RuntimeIssue } from '@flyingrobots/bijou-tui';
+import { animate, quit, run, type App, type Cmd, type KeyMsg, type NotificationState, type RuntimeIssue } from '@flyingrobots/bijou-tui';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { execFileSync } from 'node:child_process';
@@ -24,7 +24,9 @@ import {
   pushRuntimeIssueToast,
   tickNotificationState,
 } from './ui/feedback.js';
-import { resolveDrawerLayout } from './ui/drawer-layout.js';
+import { resolveWorkspaceLayout, type DrawerKind } from './ui/drawer-layout.js';
+import { cycleFocusPane, defaultFocusPane, hasFocusablePeers, type FocusPane } from './ui/panel-focus.js';
+import { fitBlock, fitLine, formatGraftOutlineLine, formatTreeLine, graftOutlineScroll, graftVisibleOutlineRows, renderMarkdownPreview } from './ui/workspace-render.js';
 import { activeWorkspaceTitle, centerLine, renderWorkspaceFooter } from './ui/workspace-chrome.js';
 
 const ctx = initDefaultContext();
@@ -33,7 +35,6 @@ type ViewMode = 'source' | 'preview';
 type EditorMode = 'normal' | 'insert';
 type PendingNormal = 'c' | 'd' | 'g' | 'y';
 type RegisterKind = 'char' | 'line';
-type DrawerKind = 'files' | 'graft';
 
 interface RegisterState {
   readonly kind: RegisterKind;
@@ -109,9 +110,11 @@ interface Model {
   readonly selectedIndex: number;
   readonly editor?: EditorState;
   readonly viewMode: ViewMode;
-  readonly drawerOpen: boolean;
-  readonly drawerKind: DrawerKind;
-  readonly drawerProgress: number;
+  readonly focusPane: FocusPane;
+  readonly fileDrawerOpen: boolean;
+  readonly fileDrawerProgress: number;
+  readonly graftDrawerOpen: boolean;
+  readonly graftDrawerProgress: number;
   readonly notifications: NotificationState<Msg>;
   readonly notificationLoopActive: boolean;
   readonly footerVisible: boolean;
@@ -124,7 +127,7 @@ interface Model {
 }
 
 type Msg =
-  | { type: 'drawer-progress'; value: number }
+  | { type: 'drawer-progress'; kind: DrawerKind; value: number }
   | { type: 'graft-info'; requestId: number; info: GraftInfo }
   | { type: 'notification-tick'; atMs: number }
   | { type: 'runtime-issue'; issue: RuntimeIssue };
@@ -159,7 +162,11 @@ const app: App<Model, Msg> = {
   routeRuntimeIssue: (issue) => ({ type: 'runtime-issue', issue }),
   update: (msg, model): [Model, Cmd<Msg>[]] => {
     if (msg.type === 'resize') {
-      const viewport = viewerViewport(msg.columns, msg.rows);
+      const viewport = editorViewport({
+        ...model,
+        columns: msg.columns,
+        rows: msg.rows,
+      });
       const resized = {
         ...model,
         columns: msg.columns,
@@ -173,7 +180,9 @@ const app: App<Model, Msg> = {
       return [
         {
           ...model,
-          drawerProgress: clamp01(msg.value),
+          ...(msg.kind === 'files'
+            ? { fileDrawerProgress: clamp01(msg.value) }
+            : { graftDrawerProgress: clamp01(msg.value) }),
         },
         [],
       ];
@@ -219,12 +228,14 @@ function updateFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
     return [model, [quit<Msg>()]];
   }
 
-  const insertModeActive = model.viewMode === 'source' && model.editor?.mode === 'insert';
+  const insertModeActive = model.focusPane === 'editor'
+    && model.viewMode === 'source'
+    && model.editor?.mode === 'insert';
   if (!insertModeActive && isFooterToggleKey(msg)) {
     return [{ ...model, footerVisible: !model.footerVisible }, []];
   }
 
-  if (msg.key === 'q') {
+  if (!insertModeActive && msg.key === 'q') {
     return [model, [quit<Msg>()]];
   }
 
@@ -233,19 +244,44 @@ function updateFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
     return beginGraftRefresh({
       ...model,
       editor,
-    }, model.drawerKind === 'graft' || model.graftInfo?.path === editor.path);
+    }, model.graftDrawerOpen || model.graftInfo?.path === editor.path);
   }
 
-  if (!insertModeActive && msg.key === 'tab') {
+  if (msg.key === 'tab' && hasFocusablePeers({
+    fileDrawerOpen: model.fileDrawerOpen,
+    graftDrawerOpen: model.graftDrawerOpen,
+    hasEditor: model.editor != null,
+    focusPane: model.focusPane,
+  })) {
+    return [
+      {
+        ...model,
+        focusPane: cycleFocusPane({
+          fileDrawerOpen: model.fileDrawerOpen,
+          graftDrawerOpen: model.graftDrawerOpen,
+          hasEditor: model.editor != null,
+          focusPane: model.focusPane,
+        }),
+      },
+      [],
+    ];
+  }
+
+  if (msg.ctrl && !msg.alt && msg.key === 'b') {
     return toggleDrawer(model, 'files');
   }
 
-  if (!insertModeActive && msg.ctrl && !msg.alt && msg.key === 'g') {
+  if (msg.ctrl && !msg.alt && msg.key === 'g') {
     return toggleDrawer(model, 'graft');
   }
 
-  if (msg.key === 'escape' && model.drawerOpen) {
-    return closeDrawer(model);
+  if (msg.key === 'escape') {
+    if (model.focusPane === 'files' && model.fileDrawerOpen) {
+      return closeDrawer(model, 'files');
+    }
+    if (model.focusPane === 'graft' && model.graftDrawerOpen) {
+      return closeDrawer(model, 'graft');
+    }
   }
 
   if (msg.key === 'f2' && model.editor != null && isMarkdownFile(model.editor.path)) {
@@ -258,8 +294,12 @@ function updateFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
     ];
   }
 
-  if (model.drawerOpen) {
-    return updateDrawerFromKey(msg, model);
+  if (model.focusPane === 'files' && model.fileDrawerOpen) {
+    return updateTreeFromKey(msg, model);
+  }
+
+  if (model.focusPane === 'graft' && model.graftDrawerOpen) {
+    return updateGraftDrawerFromKey(msg, model);
   }
 
   return updateViewerFromKey(msg, model);
@@ -269,14 +309,6 @@ function manageGraftLifecycle(): Cmd<Msg> {
   return () => () => {
     void closeGraftConnection();
   };
-}
-
-function updateDrawerFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
-  if (model.drawerKind === 'graft') {
-    return updateGraftDrawerFromKey(msg, model);
-  }
-
-  return updateTreeFromKey(msg, model);
 }
 
 function updateTreeFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
@@ -323,23 +355,17 @@ function updateTreeFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
       return changeDirectory(model, entry.path, DIRECTORY_ACTION_OPEN);
     }
 
-    const viewport = viewerViewport(model.columns, model.rows);
+    const viewport = editorViewport(model);
     const editor = ensureEditorVisible(loadEditor(entry.path), viewport.width, viewport.height);
-
-    return [
-      {
-        ...model,
-        editor,
-        viewMode: 'source',
-        drawerOpen: false,
-        drawerKind: 'files',
-        graftInfo: undefined,
-        graftLoading: false,
-        graftRequestId: model.graftRequestId + 1,
-        graftSelectedIndex: 0,
-      },
-      drawerAnimation(model.drawerProgress, 0),
-    ];
+    return beginGraftRefresh({
+      ...model,
+      editor,
+      viewMode: 'source',
+      focusPane: 'editor' as FocusPane,
+      graftInfo: undefined,
+      graftLoading: false,
+      graftSelectedIndex: 0,
+    }, model.graftDrawerOpen);
   }
 
   return [model, []];
@@ -375,7 +401,12 @@ function updateGraftDrawerFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]
     ];
   }
 
-  const visible = graftVisibleOutlineRows(model.rows);
+  const visible = graftVisibleOutlineRows(
+    workspaceBodyHeight(model.rows, model.footerVisible),
+    DRAWER_INNER_PAD,
+    GRAFT_META_ROWS,
+    GRAFT_CHANGE_ROWS,
+  );
   if (msg.key === 'pageup') {
     return [
       {
@@ -422,7 +453,7 @@ function updateGraftDrawerFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]
       return [model, []];
     }
 
-    const viewport = viewerViewport(model.columns, model.rows);
+    const viewport = editorViewport(model);
     const editor = ensureEditorVisible({
       ...model.editor,
       cursorRow: Math.max(0, selected.startLine - 1),
@@ -433,9 +464,9 @@ function updateGraftDrawerFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]
       {
         ...model,
         editor,
-        drawerOpen: false,
+        focusPane: 'editor' as FocusPane,
       },
-      drawerAnimation(model.drawerProgress, 0),
+      [],
     ];
   }
 
@@ -447,11 +478,13 @@ function updateViewerFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
     return [model, []];
   }
 
+  const viewport = editorViewport(model);
+
   if (model.viewMode === 'preview') {
     return [
       {
         ...model,
-        editor: scrollPreview(model.editor, msg, viewerViewport(model.columns, model.rows).height),
+        editor: scrollPreview(model.editor, msg, viewport.height),
       },
       [],
     ];
@@ -461,8 +494,8 @@ function updateViewerFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
     {
       ...model,
       editor: model.editor.mode === 'insert'
-        ? updateInsertMode(model.editor, msg, model.columns, model.rows)
-        : updateNormalMode(model.editor, msg, model.columns, model.rows),
+        ? updateInsertMode(model.editor, msg, viewport.width, viewport.height)
+        : updateNormalMode(model.editor, msg, viewport.width, viewport.height),
     },
     [],
   ];
@@ -472,62 +505,77 @@ function openDrawer(model: Model, kind: DrawerKind): [Model, Cmd<Msg>[]] {
   if (kind === 'graft') {
     const [next, cmds] = beginGraftRefresh({
       ...model,
-      drawerOpen: true,
-      drawerKind: kind,
+      graftDrawerOpen: true,
+      focusPane: 'graft' as FocusPane,
     }, false);
 
-    if (model.drawerOpen) {
+    if (model.graftDrawerOpen) {
       return [next, cmds];
     }
 
     return [
       next,
-      [...drawerAnimation(model.drawerProgress, 1), ...cmds],
+      [...drawerAnimation('graft', model.graftDrawerProgress, 1), ...cmds],
     ];
   }
 
   const next = {
     ...model,
-    drawerOpen: true,
-    drawerKind: kind,
+    fileDrawerOpen: true,
+    focusPane: 'files' as FocusPane,
   };
 
-  if (model.drawerOpen) {
+  if (model.fileDrawerOpen) {
     return [next, []];
   }
 
   return [
     next,
-    drawerAnimation(model.drawerProgress, 1),
+    drawerAnimation('files', model.fileDrawerProgress, 1),
   ];
 }
 
 function toggleDrawer(model: Model, kind: DrawerKind): [Model, Cmd<Msg>[]] {
-  if (model.drawerOpen && model.drawerKind === kind) {
-    return closeDrawer(model);
+  if ((kind === 'files' && model.fileDrawerOpen) || (kind === 'graft' && model.graftDrawerOpen)) {
+    return closeDrawer(model, kind);
   }
 
   return openDrawer(model, kind);
 }
 
-function closeDrawer(model: Model): [Model, Cmd<Msg>[]] {
+function closeDrawer(model: Model, kind: DrawerKind): [Model, Cmd<Msg>[]] {
+  const next = kind === 'files'
+    ? {
+        ...model,
+        fileDrawerOpen: false,
+      }
+    : {
+        ...model,
+        graftDrawerOpen: false,
+      };
+  const focusPane = defaultFocusPane({
+    fileDrawerOpen: kind === 'files' ? false : next.fileDrawerOpen,
+    graftDrawerOpen: kind === 'graft' ? false : next.graftDrawerOpen,
+    hasEditor: next.editor != null,
+  });
+
   return [
     {
-      ...model,
-      drawerOpen: false,
+      ...next,
+      focusPane,
     },
-    drawerAnimation(model.drawerProgress, 0),
+    drawerAnimation(kind, kind === 'files' ? model.fileDrawerProgress : model.graftDrawerProgress, 0),
   ];
 }
 
-function drawerAnimation(from: number, to: number): Cmd<Msg>[] {
+function drawerAnimation(kind: DrawerKind, from: number, to: number): Cmd<Msg>[] {
   return [
     animate<Msg>({
       type: 'tween',
       from,
       to,
       duration: DRAWER_DURATION_MS,
-      onFrame: (value) => ({ type: 'drawer-progress', value }),
+      onFrame: (value) => ({ type: 'drawer-progress', kind, value }),
     }),
   ];
 }
@@ -540,9 +588,11 @@ function createInitialModel(cwd: string, columns: number, rows: number): Model {
     selectedIndex: 0,
     editor: undefined,
     viewMode: 'source',
-    drawerOpen: true,
-    drawerKind: 'files',
-    drawerProgress: 1,
+    focusPane: 'files' as FocusPane,
+    fileDrawerOpen: true,
+    fileDrawerProgress: 1,
+    graftDrawerOpen: false,
+    graftDrawerProgress: 0,
     ...createFeedbackState<Msg>(),
     graftInfo: undefined,
     graftLoading: false,
@@ -2027,10 +2077,21 @@ function clampNormalCol(cursorCol: number, line: string): number {
   return Math.max(0, Math.min(cursorCol, line.length - 1));
 }
 
-function viewerViewport(columns: number, rows: number) {
+function editorViewport(model: Pick<Model, 'columns' | 'rows' | 'fileDrawerProgress' | 'graftDrawerProgress' | 'footerVisible'>) {
+  const bodyHeight = workspaceBodyHeight(model.rows, model.footerVisible);
+  const layout = resolveWorkspaceLayout(model.columns, model.fileDrawerProgress, model.graftDrawerProgress);
+  return viewerViewport(layout.viewer.width, bodyHeight);
+}
+
+function workspaceBodyHeight(rows: number, footerVisible: boolean): number {
+  const footerRows = footerVisible ? 2 : 0;
+  return Math.max(1, rows - 2 - footerRows);
+}
+
+function viewerViewport(width: number, height: number) {
   return {
-    width: Math.max(1, columns - (VIEWER_LEFT_PAD * 2)),
-    height: Math.max(1, rows - 2 - VIEWER_TOP_PAD - 1),
+    width: Math.max(1, width - (VIEWER_LEFT_PAD * 2)),
+    height: Math.max(1, height - (VIEWER_TOP_PAD * 2)),
   };
 }
 
@@ -2057,26 +2118,35 @@ function renderWorkspace(model: Model) {
     selectedEntry: model.entries[model.selectedIndex],
   }), model.columns);
   const bodyTop = 2;
-  const footerRows = model.footerVisible ? 1 : 0;
-  const bodyHeight = Math.max(1, model.rows - bodyTop - footerRows);
+  const bodyHeight = workspaceBodyHeight(model.rows, model.footerVisible);
+  const layout = resolveWorkspaceLayout(model.columns, model.fileDrawerProgress, model.graftDrawerProgress);
 
   screen.blit(stringToSurface(title, model.columns, 1), 0, 0);
-  screen.blit(renderViewer(model, model.columns, bodyHeight), 0, bodyTop);
+  screen.blit(renderViewer(model, layout.viewer.width, bodyHeight), layout.viewer.x, bodyTop);
 
-  const drawerLayout = resolveDrawerLayout(model.drawerKind, model.columns, model.drawerProgress);
-  if (drawerLayout.width > 0) {
-    screen.blit(renderDrawer(model, drawerLayout.width, bodyHeight), drawerLayout.x, bodyTop);
+  if (layout.fileDrawer.width > 0) {
+    screen.blit(renderDrawer('files', model, layout.fileDrawer.width, bodyHeight), layout.fileDrawer.x, bodyTop);
+  }
+
+  if (layout.graftDrawer.width > 0) {
+    screen.blit(renderDrawer('graft', model, layout.graftDrawer.width, bodyHeight), layout.graftDrawer.x, bodyTop);
   }
 
   if (model.footerVisible) {
     screen.blit(renderWorkspaceFooter({
-      drawerOpen: model.drawerOpen,
-      drawerKind: model.drawerKind,
+      focusPane: model.focusPane,
+      fileDrawerOpen: model.fileDrawerOpen,
+      graftDrawerOpen: model.graftDrawerOpen,
       viewMode: model.viewMode,
       markdownPreviewActive: model.editor != null && isMarkdownFile(model.editor.path),
       editorMode: model.editor?.mode,
       pendingNormal: model.editor?.pendingNormal,
-    }, model.columns, ctx.theme.theme.surface.muted), 0, model.rows - 1);
+      cwd: model.cwd,
+      selectedEntry: model.entries[model.selectedIndex],
+      editorPath: model.editor?.path,
+      graftPath: model.graftInfo?.path,
+      graftSelection: selectedGraftSelection(model),
+    }, model.columns, ctx.theme.theme.surface.muted), 0, model.rows - 2);
   }
 
   return compositeFeedback(screen, model.notifications, model.columns, model.rows);
@@ -2100,7 +2170,7 @@ function renderViewer(model: Model, width: number, height: number) {
 }
 
 function renderSource(surface: Surface, editor: EditorState, width: number, height: number) {
-  const viewport = viewerViewport(width, height + 2);
+  const viewport = viewerViewport(width, height);
   for (let row = 0; row < viewport.height; row += 1) {
     const sourceLine = editor.lines[editor.scrollRow + row] ?? '';
     const visible = fitLine(sourceLine.slice(editor.scrollCol), viewport.width);
@@ -2153,7 +2223,7 @@ function cursorDisplayPosition(editor: EditorState) {
 }
 
 function renderPreview(surface: Surface, editor: EditorState, width: number, height: number) {
-  const viewport = viewerViewport(width, height + 2);
+  const viewport = viewerViewport(width, height);
   const lines = renderMarkdownPreview(editor.lines.join('\n')).split('\n');
 
   for (let row = 0; row < viewport.height; row += 1) {
@@ -2165,8 +2235,8 @@ function renderPreview(surface: Surface, editor: EditorState, width: number, hei
   return surface;
 }
 
-function renderDrawer(model: Model, width: number, height: number) {
-  if (model.drawerKind === 'graft') {
+function renderDrawer(kind: DrawerKind, model: Model, width: number, height: number) {
+  if (kind === 'graft') {
     return renderGraftDrawer(model, width, height);
   }
 
@@ -2252,23 +2322,17 @@ function renderGraftDrawerLines(model: Model, width: number, height: number): re
   ];
 }
 
-function renderMarkdownPreview(text: string): string {
-  const lines = text.split('\n');
-  return lines.map((line) => {
-    if (/^\s*```/.test(line)) {
-      return '';
-    }
-    if (/^\s*#{1,6}\s+/.test(line)) {
-      return line.replace(/^\s*#{1,6}\s+/, '').toUpperCase();
-    }
-    if (/^\s*[-*]\s+/.test(line)) {
-      return line.replace(/^\s*[-*]\s+/, '• ');
-    }
-    if (/^\s*>\s+/.test(line)) {
-      return line.replace(/^\s*>\s+/, '│ ');
-    }
-    return line;
-  }).join('\n');
+function selectedGraftSelection(model: Model): { kind: string; name: string; startLine: number } | undefined {
+  const selected = model.graftInfo?.outlineItems[model.graftSelectedIndex];
+  if (selected == null) {
+    return undefined;
+  }
+
+  return {
+    kind: selected.kind,
+    name: selected.name,
+    startLine: selected.startLine,
+  };
 }
 
 function fillSurface(surface: Surface, token: TokenValue) {
@@ -2293,59 +2357,6 @@ function applyBackground(surface: Surface, token: TokenValue) {
       });
     }
   }
-}
-
-function formatTreeLine(entry: FileEntry, selected: boolean): string {
-  const prefix = selected ? '› ' : '  ';
-  if (entry.kind === 'parent') {
-    return `${prefix}../`;
-  }
-  if (entry.kind === 'dir') {
-    return `${prefix}${entry.name}/`;
-  }
-  return `${prefix}${entry.name}`;
-}
-
-function formatGraftOutlineLine(item: GraftOutlineItem, selected: boolean): string {
-  const prefix = selected ? '› ' : '  ';
-  return `${prefix}${item.kind} ${item.name} · ${String(item.startLine)}`;
-}
-
-function graftVisibleOutlineRows(rows: number): number {
-  const bodyTop = 2;
-  const bodyHeight = Math.max(1, rows - bodyTop);
-  const innerHeight = Math.max(1, bodyHeight - (DRAWER_INNER_PAD * 2));
-  return Math.max(1, innerHeight - GRAFT_META_ROWS - GRAFT_CHANGE_ROWS);
-}
-
-function graftOutlineScroll(selectedIndex: number, total: number, visible: number): number {
-  if (total <= visible) {
-    return 0;
-  }
-  const half = Math.floor(visible / 2);
-  const candidate = Math.max(0, selectedIndex - half);
-  return Math.min(candidate, total - visible);
-}
-
-function fitBlock(text: string, width: number, height: number): string {
-  const rawLines = text.split('\n');
-  const lines: string[] = [];
-
-  for (let i = 0; i < height; i += 1) {
-    const line = rawLines[i] ?? '';
-    lines.push(fitLine(line, width));
-  }
-
-  return lines.join('\n');
-}
-
-function fitLine(text: string, width: number): string {
-  const clipped = clipToWidth(text, width);
-  const visible = [...clipped].length;
-  if (visible >= width) {
-    return clipped;
-  }
-  return clipped.padEnd(width, ' ');
 }
 
 function normalizeLines(text: string): readonly string[] {

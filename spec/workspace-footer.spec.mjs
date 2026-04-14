@@ -20,48 +20,73 @@ async function loadFooterModule() {
 
 function idleNormalState() {
   return {
-    drawerOpen: false,
-    drawerKind: 'files',
+    focusPane: 'editor',
+    fileDrawerOpen: false,
+    graftDrawerOpen: false,
     viewMode: 'source',
     markdownPreviewActive: true,
     editorMode: 'normal',
     pendingNormal: undefined,
+    cwd: '/repo',
+    selectedEntry: undefined,
+    editorPath: '/repo/notes/todo.md',
+    graftPath: undefined,
+    graftSelection: undefined,
   };
 }
 
 test('workspace footer shows compact uppercase normal-mode guidance', async () => {
   const footer = await loadFooterModule();
 
-  assert.equal(
-    footer.workspaceFooterLine(idleNormalState()),
-    'NORMAL [i insert · o open line · f2 preview · tab files · ? hide]',
+  assert.deepEqual(
+    footer.workspaceFooterLines(idleNormalState()),
+    [
+      'NORMAL [i insert · o open line · f2 preview · tab focus]',
+      '/repo/notes/todo.md',
+    ],
   );
 });
 
 test('workspace footer shows pending change-operator continuations', async () => {
   const footer = await loadFooterModule();
 
-  assert.equal(
-    footer.workspaceFooterLine({
+  assert.deepEqual(
+    footer.workspaceFooterLines({
       ...idleNormalState(),
       pendingNormal: 'c',
     }),
-    'NORMAL c [cc line · cw word · ce word-end · c0 start · c$ end]',
+    [
+      'NORMAL c [cc line · cw word · ce word-end · c0 start · c$ end · tab focus]',
+      '/repo/notes/todo.md',
+    ],
   );
 });
 
-test('workspace footer shows file drawer controls with the toggle chord', async () => {
+test('workspace footer shows file drawer controls and the selected file path', async () => {
   const footer = await loadFooterModule();
 
-  assert.equal(
-    footer.workspaceFooterLine({
-      drawerOpen: true,
-      drawerKind: 'files',
+  assert.deepEqual(
+    footer.workspaceFooterLines({
+      focusPane: 'files',
+      fileDrawerOpen: true,
+      graftDrawerOpen: false,
       viewMode: 'source',
       markdownPreviewActive: false,
       editorMode: 'normal',
       pendingNormal: undefined,
+      cwd: '/repo',
+      selectedEntry: {
+        kind: 'file',
+        name: 'very-long-file-name.md',
+        path: '/repo/notes/very-long-file-name.md',
+      },
+      editorPath: '/repo/notes/todo.md',
+      graftPath: undefined,
+      graftSelection: undefined,
     }),
-    'FILES [j/k move · enter open · backspace up · tab close · ? hide]',
+    [
+      'FILES [j/k move · enter open · backspace up · ctrl+b close · tab focus]',
+      '/repo/notes/very-long-file-name.md',
+    ],
   );
 });
