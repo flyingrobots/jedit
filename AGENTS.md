@@ -1,4 +1,4 @@
-# eddit Agent Contract
+# jedit Agent Contract
 
 ## Git Safety
 

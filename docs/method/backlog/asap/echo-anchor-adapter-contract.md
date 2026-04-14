@@ -1,7 +1,7 @@
 ---
 title: echo-anchor-adapter-contract
 lane: asap
-owner: eddit runtime
+owner: jedit runtime
 priority: medium
 keywords:
   - anchors

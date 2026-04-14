@@ -2,7 +2,7 @@
 
 Status: design sketch
 
-Purpose: define which `eddit` interactions become causal truth, which are
+Purpose: define which `jedit` interactions become causal truth, which are
 maintenance-only, which belong in session traces, and which should not be
 persisted at all.
 
@@ -12,7 +12,7 @@ counts as a meaningful event in its history.
 
 ## One Sentence
 
-`eddit` should capture every meaningful text mutation as a causal event, while
+`jedit` should capture every meaningful text mutation as a causal event, while
 keeping maintenance work and ephemeral UI motion in separate ledgers so the
 buffer worldline stays explainable instead of becoming surveillance sludge.
 
@@ -36,7 +36,7 @@ The event model is therefore a product boundary, not just a storage choice.
 
 ## Event Ledgers
 
-`eddit` should not have one giant undifferentiated event stream.
+`jedit` should not have one giant undifferentiated event stream.
 
 It should maintain separate ledgers for separate truths:
 

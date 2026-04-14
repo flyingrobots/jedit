@@ -2,7 +2,7 @@ import type { Overlay } from '@flyingrobots/bijou-tui';
 
 import { renderHelpOverlay } from './feedback.js';
 
-const HELP_DIALOG_TITLE = 'eddit';
+const HELP_DIALOG_TITLE = 'jedit';
 const HELP_DIALOG_HINT = 'esc or ? to close';
 const HELP_DIALOG_BODY = [
   'files',

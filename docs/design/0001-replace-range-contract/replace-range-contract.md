@@ -23,7 +23,7 @@ specific agent instance.
 
 Turn `ReplaceRange` into the first explicit, executable seam of the future
 Echo-backed text kernel by locking the contract between prose, tests, and
-runtime stub. At the end of this cycle, `eddit` should have a design packet,
+runtime stub. At the end of this cycle, `jedit` should have a design packet,
 executable spec, and minimal green implementation that make three claims
 concrete:
 

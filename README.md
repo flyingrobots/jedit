@@ -1,4 +1,4 @@
-# eddit
+# jedit
 
 Terminal-first Markdown and text editing, built on Bijou.
 
@@ -7,7 +7,7 @@ chrome, no decorative theme layer. Just a small custom TUI so the editor shape
 can emerge from the actual product instead of scaffold baggage.
 
 Near-term product direction:
-- `eddit .` opens the current directory
+- `jedit .` opens the current directory
 - file tree plus text buffer editing
 - Markdown source mode with richer preview options
 - keyboard-first pane layout instead of heavyweight IDE chrome

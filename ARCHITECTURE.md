@@ -1,6 +1,6 @@
 # Architecture
 
-`eddit` is a terminal-first editor with strict hexagonal boundaries.
+`jedit` is a terminal-first editor with strict hexagonal boundaries.
 
 ## Layer Rules
 

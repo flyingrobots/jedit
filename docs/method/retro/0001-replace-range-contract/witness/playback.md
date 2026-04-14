@@ -25,9 +25,9 @@ Sandbox verification in an isolated copy when you do not want to use the live
 working tree:
 
 ```sh
-export EDDIT_SANDBOX="$(mktemp -d /tmp/eddit-replace-range-playback.XXXXXX)"
-rsync -a --delete --exclude node_modules --exclude dist ./ "$EDDIT_SANDBOX"/
-cd "$EDDIT_SANDBOX"
+export JEDIT_SANDBOX="$(mktemp -d /tmp/jedit-replace-range-playback.XXXXXX)"
+rsync -a --delete --exclude node_modules --exclude dist ./ "$JEDIT_SANDBOX"/
+cd "$JEDIT_SANDBOX"
 npm ci
 npm run build
 node --test spec/replace-range.contract.spec.mjs tests/replace-range-cycle.spec.mjs

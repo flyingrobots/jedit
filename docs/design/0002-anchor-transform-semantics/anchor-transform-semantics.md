@@ -23,7 +23,7 @@ specific agent instance.
 
 Turn point-anchor transform semantics into the next explicit seam after
 `ReplaceRange` by locking the contract between prose, tests, and a runtime
-contract. At the end of this cycle, `eddit` should have a design packet,
+contract. At the end of this cycle, `jedit` should have a design packet,
 executable spec, and minimal green implementation that make four claims
 concrete:
 

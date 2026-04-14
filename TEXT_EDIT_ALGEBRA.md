@@ -2,14 +2,14 @@
 
 Status: design sketch
 
-Purpose: define the causal text runtime that sits under `eddit` before more UI
+Purpose: define the causal text runtime that sits under `jedit` before more UI
 work hardens the wrong abstractions.
 
 Event-class boundaries live in [CAUSAL_EVENT_MODEL.md](CAUSAL_EVENT_MODEL.md).
 
 ## One Sentence
 
-`eddit` should treat a buffer as a persistent piece-rope worldline in Echo's
+`jedit` should treat a buffer as a persistent piece-rope worldline in Echo's
 native WARP graph, with files, Markdown ASTs, previews, and viewport state as
 projections rather than truth.
 
@@ -20,14 +20,14 @@ The stack should be read like this:
 - WARP is the model.
 - Echo is the native, Git-free implementation of that model.
 - `git-warp` is an optional interop adapter for Git-shaped environments.
-- `eddit` is the editor built on top of Echo-backed text runtime truths.
+- `jedit` is the editor built on top of Echo-backed text runtime truths.
 
-For `eddit`, that implies:
+For `jedit`, that implies:
 
 - Echo owns causal truth, refs, receipts, strands, admission, and replay.
 - `echo-text` owns rope structure, anchors, range transforms, and text edit
   algebra.
-- `eddit` owns UI, buffers, viewport, file tree, save/open flows, and preview.
+- `jedit` owns UI, buffers, viewport, file tree, save/open flows, and preview.
 - `git-warp` stays outside the engine as an import/export or mirroring adapter.
 - files on disk are projections, not the canonical truth.
 
@@ -382,7 +382,7 @@ The likely persistent shape is:
 
 - Echo-backed causal truth
 - `echo-text` schema for rope roots, blobs, anchors, and receipts
-- `.eddit/` for local persistence, refs, checkpoints, caches, and workspace
+- `.jedit/` for local persistence, refs, checkpoints, caches, and workspace
   state
 - ordinary files as projections for interoperability
 
@@ -397,7 +397,7 @@ Git is optional interop, not architecture.
 5. undo groups
 6. strands
 7. strand-slice admission
-8. persistence to `.eddit/`
+8. persistence to `.jedit/`
 9. Markdown and block-aware projections
 
 ## Immediate Design Test

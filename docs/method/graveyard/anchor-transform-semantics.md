@@ -1,7 +1,7 @@
 ---
 title: Anchor Transform Semantics
 lane: graveyard
-owner: eddit runtime
+owner: jedit runtime
 priority: high
 acceptance_criteria:
   - The cycle packet defines anchor transforms in terms of logical ReplaceRange receipts rather than rope maintenance.

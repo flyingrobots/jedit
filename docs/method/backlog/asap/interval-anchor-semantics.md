@@ -1,7 +1,7 @@
 ---
 title: interval-anchor-semantics
 lane: asap
-owner: eddit runtime
+owner: jedit runtime
 priority: high
 keywords:
   - anchors

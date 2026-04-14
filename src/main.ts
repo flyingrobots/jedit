@@ -751,7 +751,7 @@ async function ensureGraftConnection(workspaceRoot: string): Promise<GraftMcpCon
     stderr: 'pipe',
   });
   const client = new Client({
-    name: 'eddit',
+    name: 'jedit',
     version: '0.0.0',
   });
 
@@ -2042,7 +2042,7 @@ function renderWorkspace(model: Model) {
   if (model.columns < MIN_COLUMNS || model.rows < MIN_ROWS) {
     const message = [
       '',
-      'eddit',
+      'jedit',
       '',
       `need at least ${MIN_COLUMNS} columns x ${MIN_ROWS} rows`,
       `current terminal: ${model.columns} x ${model.rows}`,

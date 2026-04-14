@@ -1,7 +1,7 @@
 ---
 title: anchor-editor-integration
 lane: asap
-owner: eddit editor
+owner: jedit editor
 priority: medium
 keywords:
   - anchors
