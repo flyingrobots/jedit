@@ -54,22 +54,16 @@ export function renderWorkspaceFooter(state: WorkspaceFooterState, width: number
   const surface = createSurface(width, 1);
   fillSurface(surface, background);
 
-  const content = stringToSurface(fitLine(footerLine(state), width), width, 1);
+  const content = stringToSurface(fitLine(workspaceFooterLine(state), width), width, 1);
   applyBackground(content, background);
   surface.blit(content, 0, 0);
   return surface;
 }
 
-function footerLine(state: WorkspaceFooterState): string {
-  const segments = [
-    `mode ${interactionModeLabel(state)}`,
-    `chord ${chordLabel(state)}`,
-    primaryFooterHint(state),
-    secondaryFooterHint(state),
-    '? footer',
-  ];
-
-  return segments.filter((segment) => segment.length > 0).join(' · ');
+export function workspaceFooterLine(state: WorkspaceFooterState): string {
+  const mode = interactionModeLabel(state).toUpperCase();
+  const detail = footerDetail(state);
+  return detail.length > 0 ? `${mode} ${detail}` : mode;
 }
 
 function interactionModeLabel(state: WorkspaceFooterState): string {
@@ -88,44 +82,58 @@ function interactionModeLabel(state: WorkspaceFooterState): string {
   return 'browse';
 }
 
-function chordLabel(state: WorkspaceFooterState): string {
+function footerDetail(state: WorkspaceFooterState): string {
   if (state.drawerOpen) {
-    return state.drawerKind === 'files' ? 'tab' : 'ctrl+g';
+    return drawerFooterDetail(state.drawerKind);
   }
 
-  if (state.editorMode == null || state.viewMode === 'preview') {
-    return 'none';
+  if (state.viewMode === 'preview' && state.markdownPreviewActive) {
+    return '[j/k scroll · f2 source · ? hide]';
   }
 
   if (state.editorMode === 'insert') {
-    return 'literal';
+    return '[text input · esc normal · ctrl+s save · ? hide]';
   }
 
-  return state.pendingNormal ?? 'none';
+  if (state.editorMode === 'normal') {
+    return normalFooterDetail(state);
+  }
+
+  return '[tab files · ctrl+g graft · ? hide]';
 }
 
-function primaryFooterHint(state: WorkspaceFooterState): string {
-  if (state.drawerOpen) {
-    return state.drawerKind === 'files' ? 'tab close' : 'ctrl+g close';
+function drawerFooterDetail(kind: DrawerKind): string {
+  if (kind === 'files') {
+    return '[j/k move · enter open · backspace up · tab close · ? hide]';
   }
 
-  return 'tab files';
+  return '[j/k move · enter jump · r refresh · ctrl+g close · ? hide]';
 }
 
-function secondaryFooterHint(state: WorkspaceFooterState): string {
-  if (state.drawerOpen) {
-    return state.drawerKind === 'files' ? 'ctrl+g graft' : 'tab files';
+function normalFooterDetail(state: WorkspaceFooterState): string {
+  const pending = state.pendingNormal;
+  if (pending != null) {
+    return pendingNormalFooterDetail(pending);
   }
 
-  if (state.editorMode === 'insert' && state.viewMode === 'source') {
-    return 'esc normal';
+  const previewHint = state.markdownPreviewActive ? 'f2 preview' : 'ctrl+s save';
+  return `[i insert · o open line · ${previewHint} · tab files · ? hide]`;
+}
+
+function pendingNormalFooterDetail(pending: PendingNormal): string {
+  if (pending === 'c') {
+    return 'c [cc line · cw word · ce word-end · c0 start · c$ end]';
   }
 
-  if (state.markdownPreviewActive) {
-    return 'f2 source/preview';
+  if (pending === 'd') {
+    return 'd [dd line · dw word · de word-end · d0 start · d$ end]';
   }
 
-  return 'ctrl+g graft';
+  if (pending === 'y') {
+    return 'y [yy line · yw word · ye word-end · y0 start · y$ end]';
+  }
+
+  return 'g [gg top · esc cancel]';
 }
 
 function displayName(path: string): string {
