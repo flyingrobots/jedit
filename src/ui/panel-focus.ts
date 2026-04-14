@@ -41,6 +41,10 @@ export function hasFocusablePeers(state: FocusCycleState): boolean {
   return visibleFocusPanes(state).length > 1;
 }
 
+export function shouldClearPendingNormalOnPaneChange(from: FocusPane, to: FocusPane): boolean {
+  return from === 'editor' && to !== 'editor';
+}
+
 export function visibleFocusPanes(state: FocusCycleState): readonly FocusPane[] {
   const panes: FocusPane[] = [];
 

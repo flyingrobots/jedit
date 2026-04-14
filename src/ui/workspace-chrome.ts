@@ -4,7 +4,7 @@ import { basename } from 'node:path';
 
 import type { FileEntry } from '../adapters/filesystem.js';
 import type { DrawerKind } from './drawer-layout.js';
-import type { FocusPane } from './panel-focus.js';
+import { hasFocusablePeers, type FocusPane } from './panel-focus.js';
 
 type ViewMode = 'source' | 'preview';
 type EditorMode = 'normal' | 'insert';
@@ -110,34 +110,34 @@ function interactionModeLabel(state: WorkspaceFooterState): string {
 
 function footerDetail(state: WorkspaceFooterState): string {
   if (state.focusPane === 'files' && state.fileDrawerOpen) {
-    return drawerFooterDetail('files');
+    return drawerFooterDetail(state, 'files');
   }
 
   if (state.focusPane === 'graft' && state.graftDrawerOpen) {
-    return drawerFooterDetail('graft');
+    return drawerFooterDetail(state, 'graft');
   }
 
   if (state.viewMode === 'preview' && state.markdownPreviewActive) {
-    return '[j/k scroll · f2 source · tab focus · ctrl+b files · ctrl+g graft]';
+    return footerHints(['j/k scroll', 'f2 source', focusHint(state), 'ctrl+b files', 'ctrl+g graft']);
   }
 
   if (state.editorMode === 'insert') {
-    return '[text input · esc normal · ctrl+s save · tab focus]';
+    return footerHints(['text input', 'esc normal', 'ctrl+s save', insertTabHint(state)]);
   }
 
   if (state.editorMode === 'normal') {
     return normalFooterDetail(state);
   }
 
-  return '[tab focus · ctrl+b files · ctrl+g graft]';
+  return footerHints([focusHint(state), 'ctrl+b files', 'ctrl+g graft']);
 }
 
-function drawerFooterDetail(kind: DrawerKind): string {
+function drawerFooterDetail(state: WorkspaceFooterState, kind: DrawerKind): string {
   if (kind === 'files') {
-    return '[j/k move · enter open · backspace up · ctrl+b close · tab focus]';
+    return footerHints(['j/k move', 'enter open', 'backspace up', 'ctrl+b close', focusHint(state)]);
   }
 
-  return '[j/k move · enter jump · r refresh · ctrl+g close · tab focus]';
+  return footerHints(['j/k move', 'enter jump', 'r refresh', 'ctrl+g close', focusHint(state)]);
 }
 
 function normalFooterDetail(state: WorkspaceFooterState): string {
@@ -147,23 +147,23 @@ function normalFooterDetail(state: WorkspaceFooterState): string {
   }
 
   const previewHint = state.markdownPreviewActive ? 'f2 preview' : 'ctrl+s save';
-  return `[i insert · o open line · ${previewHint} · tab focus]`;
+  return footerHints(['i insert', 'o open line', previewHint, focusHint(state)]);
 }
 
 function pendingNormalFooterDetail(pending: PendingNormal): string {
   if (pending === 'c') {
-    return 'c [cc line · cw word · ce word-end · c0 start · c$ end · tab focus]';
+    return chordFooterHints('c', ['cc line', 'cw word', 'ce word-end', 'c0 start', 'c$ end']);
   }
 
   if (pending === 'd') {
-    return 'd [dd line · dw word · de word-end · d0 start · d$ end · tab focus]';
+    return chordFooterHints('d', ['dd line', 'dw word', 'de word-end', 'd0 start', 'd$ end']);
   }
 
   if (pending === 'y') {
-    return 'y [yy line · yw word · ye word-end · y0 start · y$ end · tab focus]';
+    return chordFooterHints('y', ['yy line', 'yw word', 'ye word-end', 'y0 start', 'y$ end']);
   }
 
-  return 'g [gg top · esc cancel · tab focus]';
+  return chordFooterHints('g', ['gg top', 'esc cancel']);
 }
 
 function footerContextLine(state: WorkspaceFooterState): string {
@@ -227,4 +227,29 @@ function fitLine(text: string, width: number): string {
   }
 
   return clipped.padEnd(width, ' ');
+}
+
+function footerHasFocusablePeers(state: WorkspaceFooterState): boolean {
+  return hasFocusablePeers({
+    fileDrawerOpen: state.fileDrawerOpen,
+    graftDrawerOpen: state.graftDrawerOpen,
+    hasEditor: state.editorPath != null,
+    focusPane: state.focusPane,
+  });
+}
+
+function focusHint(state: WorkspaceFooterState): string | undefined {
+  return footerHasFocusablePeers(state) ? 'tab focus' : undefined;
+}
+
+function insertTabHint(state: WorkspaceFooterState): string {
+  return footerHasFocusablePeers(state) ? 'tab focus' : 'tab indent';
+}
+
+function footerHints(parts: ReadonlyArray<string | undefined>): string {
+  return `[${parts.filter((part): part is string => part != null).join(' · ')}]`;
+}
+
+function chordFooterHints(chord: string, suggestions: readonly string[]): string {
+  return `${chord} [${suggestions.join(' · ')}]`;
 }

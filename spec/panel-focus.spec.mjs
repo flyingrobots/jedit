@@ -50,3 +50,29 @@ test('default focus prefers the editor after a pane closes', async () => {
     hasEditor: true,
   }), 'editor');
 });
+
+test('focus peers exist only when more than one pane is visible', async () => {
+  const focus = await loadPanelFocusModule();
+
+  assert.equal(focus.hasFocusablePeers({
+    fileDrawerOpen: false,
+    graftDrawerOpen: false,
+    hasEditor: true,
+    focusPane: 'editor',
+  }), false);
+  assert.equal(focus.hasFocusablePeers({
+    fileDrawerOpen: true,
+    graftDrawerOpen: false,
+    hasEditor: true,
+    focusPane: 'editor',
+  }), true);
+});
+
+test('pending normal state clears only when focus leaves the editor', async () => {
+  const focus = await loadPanelFocusModule();
+
+  assert.equal(focus.shouldClearPendingNormalOnPaneChange('editor', 'files'), true);
+  assert.equal(focus.shouldClearPendingNormalOnPaneChange('editor', 'graft'), true);
+  assert.equal(focus.shouldClearPendingNormalOnPaneChange('editor', 'editor'), false);
+  assert.equal(focus.shouldClearPendingNormalOnPaneChange('files', 'editor'), false);
+});

@@ -25,7 +25,7 @@ import {
   tickNotificationState,
 } from './ui/feedback.js';
 import { resolveWorkspaceLayout, type DrawerKind } from './ui/drawer-layout.js';
-import { cycleFocusPane, defaultFocusPane, hasFocusablePeers, type FocusPane } from './ui/panel-focus.js';
+import { cycleFocusPane, defaultFocusPane, hasFocusablePeers, shouldClearPendingNormalOnPaneChange, type FocusPane, type FocusCycleState } from './ui/panel-focus.js';
 import { fitBlock, fitLine, formatGraftOutlineLine, formatTreeLine, graftOutlineScroll, graftVisibleOutlineRows, renderMarkdownPreview } from './ui/workspace-render.js';
 import { activeWorkspaceTitle, centerLine, renderWorkspaceFooter } from './ui/workspace-chrome.js';
 
@@ -247,22 +247,10 @@ function updateFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
     }, model.graftDrawerOpen || model.graftInfo?.path === editor.path);
   }
 
-  if (msg.key === 'tab' && hasFocusablePeers({
-    fileDrawerOpen: model.fileDrawerOpen,
-    graftDrawerOpen: model.graftDrawerOpen,
-    hasEditor: model.editor != null,
-    focusPane: model.focusPane,
-  })) {
+  const focusState = focusCycleState(model);
+  if (msg.key === 'tab' && hasFocusablePeers(focusState)) {
     return [
-      {
-        ...model,
-        focusPane: cycleFocusPane({
-          fileDrawerOpen: model.fileDrawerOpen,
-          graftDrawerOpen: model.graftDrawerOpen,
-          hasEditor: model.editor != null,
-          focusPane: model.focusPane,
-        }),
-      },
+      withFocusPane(model, cycleFocusPane(focusState)),
       [],
     ];
   }
@@ -288,6 +276,7 @@ function updateFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
     return [
       {
         ...model,
+        editor: clearPendingNormal(model.editor),
         viewMode: model.viewMode === 'source' ? 'preview' : 'source',
       },
       [],
@@ -357,15 +346,14 @@ function updateTreeFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
 
     const viewport = editorViewport(model);
     const editor = ensureEditorVisible(loadEditor(entry.path), viewport.width, viewport.height);
-    return beginGraftRefresh({
+    return beginGraftRefresh(withFocusPane({
       ...model,
       editor,
       viewMode: 'source',
-      focusPane: 'editor' as FocusPane,
       graftInfo: undefined,
       graftLoading: false,
       graftSelectedIndex: 0,
-    }, model.graftDrawerOpen);
+    }, 'editor'), model.graftDrawerOpen);
   }
 
   return [model, []];
@@ -461,11 +449,10 @@ function updateGraftDrawerFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]
     }, viewport.width, viewport.height);
 
     return [
-      {
+      withFocusPane({
         ...model,
         editor,
-        focusPane: 'editor' as FocusPane,
-      },
+      }, 'editor'),
       [],
     ];
   }
@@ -494,7 +481,7 @@ function updateViewerFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
     {
       ...model,
       editor: model.editor.mode === 'insert'
-        ? updateInsertMode(model.editor, msg, viewport.width, viewport.height)
+        ? updateInsertMode(model.editor, msg, viewport.width, viewport.height, !hasFocusablePeers(focusCycleState(model)))
         : updateNormalMode(model.editor, msg, viewport.width, viewport.height),
     },
     [],
@@ -503,11 +490,10 @@ function updateViewerFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
 
 function openDrawer(model: Model, kind: DrawerKind): [Model, Cmd<Msg>[]] {
   if (kind === 'graft') {
-    const [next, cmds] = beginGraftRefresh({
+    const [next, cmds] = beginGraftRefresh(withFocusPane({
       ...model,
       graftDrawerOpen: true,
-      focusPane: 'graft' as FocusPane,
-    }, false);
+    }, 'graft'), false);
 
     if (model.graftDrawerOpen) {
       return [next, cmds];
@@ -519,11 +505,10 @@ function openDrawer(model: Model, kind: DrawerKind): [Model, Cmd<Msg>[]] {
     ];
   }
 
-  const next = {
+  const next = withFocusPane({
     ...model,
     fileDrawerOpen: true,
-    focusPane: 'files' as FocusPane,
-  };
+  }, 'files');
 
   if (model.fileDrawerOpen) {
     return [next, []];
@@ -560,12 +545,30 @@ function closeDrawer(model: Model, kind: DrawerKind): [Model, Cmd<Msg>[]] {
   });
 
   return [
-    {
-      ...next,
-      focusPane,
-    },
+    withFocusPane(next, focusPane),
     drawerAnimation(kind, kind === 'files' ? model.fileDrawerProgress : model.graftDrawerProgress, 0),
   ];
+}
+
+function focusCycleState(model: Pick<Model, 'fileDrawerOpen' | 'graftDrawerOpen' | 'editor' | 'focusPane'>): FocusCycleState {
+  return { fileDrawerOpen: model.fileDrawerOpen, graftDrawerOpen: model.graftDrawerOpen, hasEditor: model.editor != null, focusPane: model.focusPane };
+}
+
+function withFocusPane(model: Model, focusPane: FocusPane): Model {
+  if (model.focusPane === focusPane) {
+    return model;
+  }
+  if (model.editor == null || !shouldClearPendingNormalOnPaneChange(model.focusPane, focusPane)) {
+    return { ...model, focusPane };
+  }
+  return { ...model, focusPane, editor: clearPendingNormal(model.editor) };
+}
+
+function clearPendingNormal(editor: EditorState): EditorState {
+  if (editor.pendingNormal == null) {
+    return editor;
+  }
+  return { ...editor, pendingNormal: undefined };
 }
 
 function drawerAnimation(kind: DrawerKind, from: number, to: number): Cmd<Msg>[] {
@@ -1014,12 +1017,11 @@ function redo(editor: EditorState): EditorState {
   };
 }
 
-function updateInsertMode(editor: EditorState, msg: KeyMsg, columns: number, rows: number): EditorState {
+function updateInsertMode(editor: EditorState, msg: KeyMsg, viewportWidth: number, viewportHeight: number, allowTabIndent: boolean): EditorState {
   if (editor.readOnly) {
     return editor;
   }
-
-  const viewport = viewerViewport(columns, rows);
+  const viewport = { width: Math.max(1, viewportWidth), height: Math.max(1, viewportHeight) };
 
   if (msg.key === 'escape') {
     return ensureEditorVisible(enterNormalMode(editor), viewport.width, viewport.height);
@@ -1057,7 +1059,7 @@ function updateInsertMode(editor: EditorState, msg: KeyMsg, columns: number, row
   if (msg.key === 'enter') {
     return ensureEditorVisible(insertNewline(editor), viewport.width, viewport.height);
   }
-  if (msg.key === 'tab') {
+  if (allowTabIndent && msg.key === 'tab') {
     return ensureEditorVisible(insertText(editor, '  '), viewport.width, viewport.height);
   }
 
@@ -1069,8 +1071,8 @@ function updateInsertMode(editor: EditorState, msg: KeyMsg, columns: number, row
   return ensureEditorVisible(editor, viewport.width, viewport.height);
 }
 
-function updateNormalMode(editor: EditorState, msg: KeyMsg, columns: number, rows: number): EditorState {
-  const viewport = viewerViewport(columns, rows);
+function updateNormalMode(editor: EditorState, msg: KeyMsg, viewportWidth: number, viewportHeight: number): EditorState {
+  const viewport = { width: Math.max(1, viewportWidth), height: Math.max(1, viewportHeight) };
 
   if (msg.key === 'escape') {
     return ensureEditorVisible({ ...editor, pendingNormal: undefined }, viewport.width, viewport.height);
@@ -1082,7 +1084,7 @@ function updateNormalMode(editor: EditorState, msg: KeyMsg, columns: number, row
     if (operated != null) {
       return ensureEditorVisible(operated, viewport.width, viewport.height);
     }
-    return updateNormalMode(cleared, msg, columns, rows);
+    return updateNormalMode(cleared, msg, viewport.width, viewport.height);
   }
 
   if (editor.pendingNormal === 'c') {
@@ -1091,7 +1093,7 @@ function updateNormalMode(editor: EditorState, msg: KeyMsg, columns: number, row
     if (operated != null) {
       return ensureEditorVisible(operated, viewport.width, viewport.height);
     }
-    return updateNormalMode(cleared, msg, columns, rows);
+    return updateNormalMode(cleared, msg, viewport.width, viewport.height);
   }
 
   if (editor.pendingNormal === 'y') {
@@ -1100,7 +1102,7 @@ function updateNormalMode(editor: EditorState, msg: KeyMsg, columns: number, row
     if (operated != null) {
       return ensureEditorVisible(operated, viewport.width, viewport.height);
     }
-    return updateNormalMode(cleared, msg, columns, rows);
+    return updateNormalMode(cleared, msg, viewport.width, viewport.height);
   }
 
   if (editor.pendingNormal === 'g') {
@@ -1108,7 +1110,7 @@ function updateNormalMode(editor: EditorState, msg: KeyMsg, columns: number, row
     if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'g') {
       return ensureEditorVisible(moveCursorToTop(cleared), viewport.width, viewport.height);
     }
-    return updateNormalMode(cleared, msg, columns, rows);
+    return updateNormalMode(cleared, msg, viewport.width, viewport.height);
   }
 
   if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'i') {

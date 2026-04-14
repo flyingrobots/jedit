@@ -41,7 +41,7 @@ test('workspace footer shows compact uppercase normal-mode guidance', async () =
   assert.deepEqual(
     footer.workspaceFooterLines(idleNormalState()),
     [
-      'NORMAL [i insert · o open line · f2 preview · tab focus]',
+      'NORMAL [i insert · o open line · f2 preview]',
       '/repo/notes/todo.md',
     ],
   );
@@ -56,7 +56,22 @@ test('workspace footer shows pending change-operator continuations', async () =>
       pendingNormal: 'c',
     }),
     [
-      'NORMAL c [cc line · cw word · ce word-end · c0 start · c$ end · tab focus]',
+      'NORMAL c [cc line · cw word · ce word-end · c0 start · c$ end]',
+      '/repo/notes/todo.md',
+    ],
+  );
+});
+
+test('workspace footer explains that tab indents when no peer panes are visible in insert mode', async () => {
+  const footer = await loadFooterModule();
+
+  assert.deepEqual(
+    footer.workspaceFooterLines({
+      ...idleNormalState(),
+      editorMode: 'insert',
+    }),
+    [
+      'INSERT [text input · esc normal · ctrl+s save · tab indent]',
       '/repo/notes/todo.md',
     ],
   );

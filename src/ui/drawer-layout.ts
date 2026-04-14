@@ -39,11 +39,7 @@ export function resolveWorkspaceLayout(columns: number, fileDrawerProgress: numb
   };
 }
 
-function resolveDrawerMaxWidth(kind: DrawerKind, columns: number): number {
-  if (kind === 'graft') {
-    return resolveFileDrawerMaxWidth(columns);
-  }
-
+function resolveDrawerMaxWidth(_kind: DrawerKind, columns: number): number {
   return resolveFileDrawerMaxWidth(columns);
 }
 
