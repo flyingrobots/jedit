@@ -1,0 +1,11 @@
+{
+  "maxLines": {
+    "src/main.ts": 2394
+  },
+  "forbiddenTypeKeywords": {
+    "src/main.ts": {
+      "any": 0,
+      "unknown": 4
+    }
+  }
+}

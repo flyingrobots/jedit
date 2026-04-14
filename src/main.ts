@@ -1,0 +1,2378 @@
+import { createSurface, stringToSurface, type Surface, type TokenValue } from '@flyingrobots/bijou';
+import { initDefaultContext } from '@flyingrobots/bijou-node';
+import { animate, clipToWidth, quit, run, type App, type Cmd, type KeyMsg, type NotificationState, type RuntimeIssue } from '@flyingrobots/bijou-tui';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { execFileSync } from 'node:child_process';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { dirname, isAbsolute, join, relative } from 'node:path';
+import {
+  DIRECTORY_ACTION_OPEN,
+  DIRECTORY_ACTION_REFRESH,
+  describeDirectoryIssue,
+  loadEntries,
+  type FileEntry,
+} from './adapters/filesystem.js';
+import {
+  applyNotificationState,
+  compositeFeedback,
+  createFeedbackState,
+  createNotificationTickCmd,
+  isFooterToggleKey,
+  pushErrorToast,
+  pushRuntimeIssueToast,
+  tickNotificationState,
+} from './ui/feedback.js';
+import { activeWorkspaceTitle, centerLine, renderWorkspaceFooter } from './ui/workspace-chrome.js';
+
+const ctx = initDefaultContext();
+
+type ViewMode = 'source' | 'preview';
+type EditorMode = 'normal' | 'insert';
+type PendingNormal = 'c' | 'd' | 'g' | 'y';
+type RegisterKind = 'char' | 'line';
+type DrawerKind = 'files' | 'graft';
+
+interface RegisterState {
+  readonly kind: RegisterKind;
+  readonly text: string;
+}
+interface HistoryEntry {
+  readonly lines: readonly string[];
+  readonly cursorRow: number;
+  readonly cursorCol: number;
+  readonly scrollRow: number;
+  readonly scrollCol: number;
+  readonly dirty: boolean;
+}
+interface GraftOutlineItem {
+  readonly kind: string;
+  readonly name: string;
+  readonly signature?: string;
+  readonly startLine: number;
+  readonly endLine: number;
+}
+interface GraftJumpEntry {
+  readonly symbol: string;
+  readonly kind: string;
+  readonly start: number;
+  readonly end: number;
+}
+interface GraftDiffEntry {
+  readonly name: string;
+  readonly kind: string;
+}
+interface GraftStructDiffResult {
+  readonly files: ReadonlyArray<{
+    readonly path: string;
+    readonly status: 'added' | 'deleted' | 'modified';
+    readonly summary: string;
+    readonly diff: {
+      readonly added: readonly GraftDiffEntry[];
+      readonly changed: readonly GraftDiffEntry[];
+      readonly removed: readonly GraftDiffEntry[];
+      readonly unchangedCount: number;
+    };
+  }>;
+}
+interface GraftInfo {
+  readonly path: string;
+  readonly relativePath: string;
+  readonly dirty: boolean;
+  readonly outlineItems: readonly GraftOutlineItem[];
+  readonly changeLines: readonly string[];
+  readonly notice?: string;
+  readonly error?: string;
+}
+interface EditorState {
+  readonly path: string;
+  readonly lines: readonly string[];
+  readonly cursorRow: number;
+  readonly cursorCol: number;
+  readonly scrollRow: number;
+  readonly scrollCol: number;
+  readonly dirty: boolean;
+  readonly readOnly: boolean;
+  readonly mode: EditorMode;
+  readonly pendingNormal?: PendingNormal;
+  readonly register?: RegisterState;
+  readonly undoStack: readonly HistoryEntry[];
+  readonly redoStack: readonly HistoryEntry[];
+}
+
+interface Model {
+  readonly workspaceRoot: string;
+  readonly cwd: string;
+  readonly entries: readonly FileEntry[];
+  readonly selectedIndex: number;
+  readonly editor?: EditorState;
+  readonly viewMode: ViewMode;
+  readonly drawerOpen: boolean;
+  readonly drawerKind: DrawerKind;
+  readonly drawerProgress: number;
+  readonly notifications: NotificationState<Msg>;
+  readonly notificationLoopActive: boolean;
+  readonly footerVisible: boolean;
+  readonly graftInfo?: GraftInfo;
+  readonly graftLoading: boolean;
+  readonly graftRequestId: number;
+  readonly graftSelectedIndex: number;
+  readonly columns: number;
+  readonly rows: number;
+}
+
+type Msg =
+  | { type: 'drawer-progress'; value: number }
+  | { type: 'graft-info'; requestId: number; info: GraftInfo }
+  | { type: 'notification-tick'; atMs: number }
+  | { type: 'runtime-issue'; issue: RuntimeIssue };
+
+const MIN_COLUMNS = 60;
+const MIN_ROWS = 12;
+const MAX_FILE_BYTES = 24_000;
+const INITIAL_COLUMNS = process.stdout.columns ?? 100;
+const INITIAL_ROWS = process.stdout.rows ?? 32;
+const DRAWER_MIN_WIDTH = 22;
+const DRAWER_MAX_WIDTH = 34;
+const DRAWER_DURATION_MS = 160;
+const DRAWER_INNER_PAD = 1;
+const GRAFT_META_ROWS = 5;
+const GRAFT_CHANGE_ROWS = 5;
+const VIEWER_LEFT_PAD = 4;
+const VIEWER_TOP_PAD = 1;
+const GRAFT_CLI_PATH = process.env['EDITT_GRAFT_BIN'] ?? join(homedir(), 'git', 'graft', 'bin', 'graft.js');
+
+interface GraftMcpConnection {
+  readonly workspaceRoot: string;
+  readonly client: Client;
+  readonly transport: StdioClientTransport;
+}
+
+let graftConnection: GraftMcpConnection | undefined;
+let graftConnectionPromise: Promise<GraftMcpConnection> | undefined;
+
+const app: App<Model, Msg> = {
+  init: () => [
+    createInitialModel(process.cwd(), INITIAL_COLUMNS, INITIAL_ROWS),
+    [manageGraftLifecycle()],
+  ],
+  routeRuntimeIssue: (issue) => ({ type: 'runtime-issue', issue }),
+  update: (msg, model): [Model, Cmd<Msg>[]] => {
+    if (msg.type === 'resize') {
+      const viewport = viewerViewport(msg.columns, msg.rows);
+      const resized = {
+        ...model,
+        columns: msg.columns,
+        rows: msg.rows,
+        editor: model.editor == null ? undefined : ensureEditorVisible(model.editor, viewport.width, viewport.height),
+      };
+      return applyNotificationState(resized, resized.notifications, Date.now(), notificationTickCmd);
+    }
+
+    if (msg.type === 'drawer-progress') {
+      return [
+        {
+          ...model,
+          drawerProgress: clamp01(msg.value),
+        },
+        [],
+      ];
+    }
+
+    if (msg.type === 'graft-info') {
+      if (msg.requestId !== model.graftRequestId) {
+        return [model, []];
+      }
+
+      return [
+        {
+          ...model,
+          graftInfo: msg.info,
+          graftLoading: false,
+          graftSelectedIndex: clampIndex(model.graftSelectedIndex, msg.info.outlineItems.length),
+        },
+        [],
+      ];
+    }
+
+    if (msg.type === 'notification-tick') {
+      return tickNotificationState(model, msg.atMs, notificationTickCmd);
+    }
+
+    if (msg.type === 'runtime-issue') {
+      return pushRuntimeIssueToast(model, msg.issue, notificationTickCmd);
+    }
+
+    if (msg.type !== 'key') {
+      return [model, []];
+    }
+
+    return updateFromKey(msg, model);
+  },
+  view: (model) => renderWorkspace(model),
+};
+
+await run(app);
+
+function updateFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
+  if (msg.ctrl && msg.key === 'c') {
+    return [model, [quit<Msg>()]];
+  }
+
+  const insertModeActive = model.viewMode === 'source' && model.editor?.mode === 'insert';
+  if (!insertModeActive && isFooterToggleKey(msg)) {
+    return [{ ...model, footerVisible: !model.footerVisible }, []];
+  }
+
+  if (msg.key === 'q') {
+    return [model, [quit<Msg>()]];
+  }
+
+  if (msg.ctrl && msg.key === 's' && model.editor != null) {
+    const editor = saveEditor(model.editor);
+    return beginGraftRefresh({
+      ...model,
+      editor,
+    }, model.drawerKind === 'graft' || model.graftInfo?.path === editor.path);
+  }
+
+  if (!insertModeActive && msg.key === 'tab') {
+    return toggleDrawer(model, 'files');
+  }
+
+  if (!insertModeActive && msg.ctrl && !msg.alt && msg.key === 'g') {
+    return toggleDrawer(model, 'graft');
+  }
+
+  if (msg.key === 'escape' && model.drawerOpen) {
+    return closeDrawer(model);
+  }
+
+  if (msg.key === 'f2' && model.editor != null && isMarkdownFile(model.editor.path)) {
+    return [
+      {
+        ...model,
+        viewMode: model.viewMode === 'source' ? 'preview' : 'source',
+      },
+      [],
+    ];
+  }
+
+  if (model.drawerOpen) {
+    return updateDrawerFromKey(msg, model);
+  }
+
+  return updateViewerFromKey(msg, model);
+}
+
+function manageGraftLifecycle(): Cmd<Msg> {
+  return () => () => {
+    void closeGraftConnection();
+  };
+}
+
+function updateDrawerFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
+  if (model.drawerKind === 'graft') {
+    return updateGraftDrawerFromKey(msg, model);
+  }
+
+  return updateTreeFromKey(msg, model);
+}
+
+function updateTreeFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
+  if (msg.key === 'r') {
+    return changeDirectory(model, model.cwd, DIRECTORY_ACTION_REFRESH);
+  }
+
+  if (msg.key === 'backspace' || msg.key === 'left' || msg.key === 'h') {
+    const parent = dirname(model.cwd);
+    if (parent === model.cwd) {
+      return [model, []];
+    }
+
+    return changeDirectory(model, parent, DIRECTORY_ACTION_OPEN);
+  }
+
+  if (msg.key === 'down' || msg.key === 'j') {
+    return [
+      {
+        ...model,
+        selectedIndex: clampIndex(model.selectedIndex + 1, model.entries.length),
+      },
+      [],
+    ];
+  }
+
+  if (msg.key === 'up' || msg.key === 'k') {
+    return [
+      {
+        ...model,
+        selectedIndex: clampIndex(model.selectedIndex - 1, model.entries.length),
+      },
+      [],
+    ];
+  }
+
+  if (msg.key === 'enter' || msg.key === 'right' || msg.key === 'l') {
+    const entry = model.entries[model.selectedIndex];
+    if (entry == null) {
+      return [model, []];
+    }
+
+    if (entry.kind === 'dir' || entry.kind === 'parent') {
+      return changeDirectory(model, entry.path, DIRECTORY_ACTION_OPEN);
+    }
+
+    const viewport = viewerViewport(model.columns, model.rows);
+    const editor = ensureEditorVisible(loadEditor(entry.path), viewport.width, viewport.height);
+
+    return [
+      {
+        ...model,
+        editor,
+        viewMode: 'source',
+        drawerOpen: false,
+        drawerKind: 'files',
+        graftInfo: undefined,
+        graftLoading: false,
+        graftRequestId: model.graftRequestId + 1,
+        graftSelectedIndex: 0,
+      },
+      drawerAnimation(model.drawerProgress, 0),
+    ];
+  }
+
+  return [model, []];
+}
+
+function updateGraftDrawerFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
+  if (msg.key === 'r') {
+    return beginGraftRefresh(model, true);
+  }
+
+  const graftInfo = model.graftInfo;
+  if (graftInfo == null || graftInfo.outlineItems.length === 0) {
+    return [model, []];
+  }
+
+  if (msg.key === 'down' || msg.key === 'j') {
+    return [
+      {
+        ...model,
+        graftSelectedIndex: clampIndex(model.graftSelectedIndex + 1, graftInfo.outlineItems.length),
+      },
+      [],
+    ];
+  }
+
+  if (msg.key === 'up' || msg.key === 'k') {
+    return [
+      {
+        ...model,
+        graftSelectedIndex: clampIndex(model.graftSelectedIndex - 1, graftInfo.outlineItems.length),
+      },
+      [],
+    ];
+  }
+
+  const visible = graftVisibleOutlineRows(model.rows);
+  if (msg.key === 'pageup') {
+    return [
+      {
+        ...model,
+        graftSelectedIndex: clampIndex(model.graftSelectedIndex - visible, graftInfo.outlineItems.length),
+      },
+      [],
+    ];
+  }
+
+  if (msg.key === 'pagedown') {
+    return [
+      {
+        ...model,
+        graftSelectedIndex: clampIndex(model.graftSelectedIndex + visible, graftInfo.outlineItems.length),
+      },
+      [],
+    ];
+  }
+
+  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'g') {
+    return [
+      {
+        ...model,
+        graftSelectedIndex: 0,
+      },
+      [],
+    ];
+  }
+
+  if (!msg.ctrl && !msg.alt && msg.shift && msg.key === 'g') {
+    return [
+      {
+        ...model,
+        graftSelectedIndex: graftInfo.outlineItems.length - 1,
+      },
+      [],
+    ];
+  }
+
+  if (msg.key === 'enter' && model.editor != null) {
+    const selected = graftInfo.outlineItems[model.graftSelectedIndex];
+    if (selected == null) {
+      return [model, []];
+    }
+
+    const viewport = viewerViewport(model.columns, model.rows);
+    const editor = ensureEditorVisible({
+      ...model.editor,
+      cursorRow: Math.max(0, selected.startLine - 1),
+      cursorCol: 0,
+    }, viewport.width, viewport.height);
+
+    return [
+      {
+        ...model,
+        editor,
+        drawerOpen: false,
+      },
+      drawerAnimation(model.drawerProgress, 0),
+    ];
+  }
+
+  return [model, []];
+}
+
+function updateViewerFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
+  if (model.editor == null) {
+    return [model, []];
+  }
+
+  if (model.viewMode === 'preview') {
+    return [
+      {
+        ...model,
+        editor: scrollPreview(model.editor, msg, viewerViewport(model.columns, model.rows).height),
+      },
+      [],
+    ];
+  }
+
+  return [
+    {
+      ...model,
+      editor: model.editor.mode === 'insert'
+        ? updateInsertMode(model.editor, msg, model.columns, model.rows)
+        : updateNormalMode(model.editor, msg, model.columns, model.rows),
+    },
+    [],
+  ];
+}
+
+function openDrawer(model: Model, kind: DrawerKind): [Model, Cmd<Msg>[]] {
+  if (kind === 'graft') {
+    const [next, cmds] = beginGraftRefresh({
+      ...model,
+      drawerOpen: true,
+      drawerKind: kind,
+    }, false);
+
+    if (model.drawerOpen) {
+      return [next, cmds];
+    }
+
+    return [
+      next,
+      [...drawerAnimation(model.drawerProgress, 1), ...cmds],
+    ];
+  }
+
+  const next = {
+    ...model,
+    drawerOpen: true,
+    drawerKind: kind,
+  };
+
+  if (model.drawerOpen) {
+    return [next, []];
+  }
+
+  return [
+    next,
+    drawerAnimation(model.drawerProgress, 1),
+  ];
+}
+
+function toggleDrawer(model: Model, kind: DrawerKind): [Model, Cmd<Msg>[]] {
+  if (model.drawerOpen && model.drawerKind === kind) {
+    return closeDrawer(model);
+  }
+
+  return openDrawer(model, kind);
+}
+
+function closeDrawer(model: Model): [Model, Cmd<Msg>[]] {
+  return [
+    {
+      ...model,
+      drawerOpen: false,
+    },
+    drawerAnimation(model.drawerProgress, 0),
+  ];
+}
+
+function drawerAnimation(from: number, to: number): Cmd<Msg>[] {
+  return [
+    animate<Msg>({
+      type: 'tween',
+      from,
+      to,
+      duration: DRAWER_DURATION_MS,
+      onFrame: (value) => ({ type: 'drawer-progress', value }),
+    }),
+  ];
+}
+
+function createInitialModel(cwd: string, columns: number, rows: number): Model {
+  return {
+    workspaceRoot: cwd,
+    cwd,
+    entries: loadEntries(cwd),
+    selectedIndex: 0,
+    editor: undefined,
+    viewMode: 'source',
+    drawerOpen: true,
+    drawerKind: 'files',
+    drawerProgress: 1,
+    ...createFeedbackState<Msg>(),
+    graftInfo: undefined,
+    graftLoading: false,
+    graftRequestId: 0,
+    graftSelectedIndex: 0,
+    columns,
+    rows,
+  };
+}
+
+function openDirectory(model: Model, cwd: string): Model {
+  return {
+    ...model,
+    cwd,
+    entries: loadEntries(cwd),
+    selectedIndex: 0,
+  };
+}
+
+function changeDirectory(model: Model, cwd: string, action: typeof DIRECTORY_ACTION_OPEN | typeof DIRECTORY_ACTION_REFRESH): [Model, Cmd<Msg>[]] {
+  try {
+    return [openDirectory(model, cwd), []];
+  } catch (cause) {
+    const issue = describeDirectoryIssue(action, cwd, cause instanceof Error ? cause : String(cause));
+    return pushErrorToast(model, issue.title, issue.message, Date.now(), notificationTickCmd);
+  }
+}
+
+function beginGraftRefresh(model: Model, force: boolean): [Model, Cmd<Msg>[]] {
+  if (model.editor == null) {
+    return [
+      {
+        ...model,
+        graftInfo: undefined,
+        graftLoading: false,
+        graftSelectedIndex: 0,
+      },
+      [],
+    ];
+  }
+
+  if (!force && model.graftInfo?.path === model.editor.path && model.graftInfo.dirty === model.editor.dirty) {
+    return [model, []];
+  }
+
+  const requestId = model.graftRequestId + 1;
+  const sameFile = model.graftInfo?.path === model.editor.path;
+
+  return [
+    {
+      ...model,
+      graftLoading: true,
+      graftRequestId: requestId,
+      graftInfo: sameFile ? model.graftInfo : undefined,
+      graftSelectedIndex: sameFile ? model.graftSelectedIndex : 0,
+    },
+    [requestGraftInfoCmd(requestId, model.workspaceRoot, model.editor.path, model.editor.dirty)],
+  ];
+}
+
+function requestGraftInfoCmd(requestId: number, workspaceRoot: string, filePath: string, dirty: boolean): Cmd<Msg> {
+  return async () => {
+    try {
+      return {
+        type: 'graft-info',
+        requestId,
+        info: await loadGraftInfo(workspaceRoot, filePath, dirty),
+      };
+    } catch (cause) {
+      return {
+        type: 'graft-info',
+        requestId,
+        info: {
+          path: filePath,
+          relativePath: relative(workspaceRoot, filePath).replace(/\\/g, '/'),
+          dirty,
+          outlineItems: [],
+          changeLines: [],
+          error: `graft request failed: ${errorMessage(cause)}`,
+          ...(dirty ? { notice: 'saved file only; unsaved edits are not reflected' } : {}),
+        },
+      };
+    }
+  };
+}
+
+async function loadGraftInfo(workspaceRoot: string, filePath: string, dirty: boolean): Promise<GraftInfo> {
+  const relativePath = relative(workspaceRoot, filePath).replace(/\\/g, '/');
+  if (relativePath.startsWith('..') || isAbsolute(relativePath)) {
+    return {
+      path: filePath,
+      relativePath: filePath,
+      dirty,
+      outlineItems: [],
+      changeLines: ['outside workspace root'],
+      error: 'Graft only runs against files inside the launch workspace.',
+    };
+  }
+
+  let outlineItems: readonly GraftOutlineItem[] = [];
+  let error: string | undefined;
+
+  try {
+    const outline = await callGraftTool<{
+      readonly jumpTable?: readonly GraftJumpEntry[];
+      readonly projection?: string;
+      readonly reason?: string;
+    }>(
+      workspaceRoot,
+      'file_outline',
+      { path: relativePath },
+    );
+    if (outline.projection === 'refused') {
+      error = outline.reason ?? 'outline refused';
+    } else {
+      outlineItems = (outline.jumpTable ?? []).map((entry) => ({
+        kind: entry.kind,
+        name: entry.symbol,
+        startLine: entry.start,
+        endLine: entry.end,
+      }));
+    }
+  } catch (cause) {
+    error = `graft outline failed: ${errorMessage(cause)}`;
+  }
+
+  return {
+    path: filePath,
+    relativePath,
+    dirty,
+    outlineItems,
+    changeLines: await loadGraftChanges(workspaceRoot, relativePath),
+    ...(dirty ? { notice: 'saved file only; unsaved edits are not reflected' } : {}),
+    ...(error != null ? { error } : {}),
+  };
+}
+
+async function loadGraftChanges(workspaceRoot: string, relativePath: string): Promise<readonly string[]> {
+  if (!workspaceHasHead(workspaceRoot)) {
+    return ['no git baseline yet'];
+  }
+
+  try {
+    const diff = await callGraftTool<GraftStructDiffResult>(
+      workspaceRoot,
+      'graft_diff',
+      { path: relativePath },
+    );
+    const file = diff.files.find((entry) => entry.path === relativePath);
+    if (file == null) {
+      return ['no structural changes vs HEAD'];
+    }
+
+    const lines = [
+      file.summary.replace(`${file.path} | `, ''),
+      ...file.diff.added.slice(0, 2).map((entry) => `+ ${entry.kind} ${entry.name}`),
+      ...file.diff.changed.slice(0, 2).map((entry) => `~ ${entry.kind} ${entry.name}`),
+      ...file.diff.removed.slice(0, 2).map((entry) => `- ${entry.kind} ${entry.name}`),
+    ];
+
+    return lines.length > 0 ? lines : ['no structural changes vs HEAD'];
+  } catch (cause) {
+    return [`graft diff failed: ${errorMessage(cause)}`];
+  }
+}
+
+function workspaceHasHead(workspaceRoot: string): boolean {
+  try {
+    execFileSync('git', ['rev-parse', '--verify', 'HEAD'], {
+      cwd: workspaceRoot,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function ensureGraftConnection(workspaceRoot: string): Promise<GraftMcpConnection> {
+  if (!existsSync(GRAFT_CLI_PATH)) {
+    throw new Error(`Graft CLI not found at ${GRAFT_CLI_PATH}`);
+  }
+
+  if (graftConnection?.workspaceRoot === workspaceRoot) {
+    return graftConnection;
+  }
+
+  if (graftConnectionPromise != null) {
+    const pending = await graftConnectionPromise;
+    if (pending.workspaceRoot === workspaceRoot) {
+      return pending;
+    }
+  }
+
+  if (graftConnection != null) {
+    await closeGraftConnection();
+  }
+
+  const transport = new StdioClientTransport({
+    command: process.execPath,
+    args: [GRAFT_CLI_PATH, 'serve'],
+    cwd: workspaceRoot,
+    env: processEnvRecord(),
+    stderr: 'pipe',
+  });
+  const client = new Client({
+    name: 'eddit',
+    version: '0.0.0',
+  });
+
+  const connectionPromise = (async () => {
+    try {
+      await client.connect(transport);
+      const connection = {
+        workspaceRoot,
+        client,
+        transport,
+      };
+      graftConnection = connection;
+      return connection;
+    } catch (cause) {
+      await transport.close().catch(() => undefined);
+      throw cause;
+    } finally {
+      graftConnectionPromise = undefined;
+    }
+  })();
+
+  graftConnectionPromise = connectionPromise;
+  return connectionPromise;
+}
+
+async function closeGraftConnection(): Promise<void> {
+  const connection = graftConnection;
+  graftConnection = undefined;
+  if (connection == null) {
+    return;
+  }
+
+  await connection.client.close().catch(() => undefined);
+  await connection.transport.close().catch(() => undefined);
+}
+
+async function callGraftTool<T>(
+  workspaceRoot: string,
+  name: string,
+  args: Record<string, unknown>,
+): Promise<T> {
+  const connection = await ensureGraftConnection(workspaceRoot);
+  const result = await connection.client.callTool({
+    name,
+    arguments: args,
+  });
+
+  if ((result as { isError?: boolean }).isError === true) {
+    throw new Error(errorMessage(parseGraftToolResult(result)));
+  }
+
+  return parseGraftToolResult<T>(result);
+}
+
+function parseGraftToolResult<T>(result: unknown): T {
+  const structured = (result as { structuredContent?: unknown }).structuredContent;
+  if (structured !== undefined) {
+    return structured as T;
+  }
+
+  const text = (result as { content?: Array<{ type: string; text?: string }> }).content
+    ?.find((block) => block.type === 'text')
+    ?.text;
+
+  if (text == null) {
+    throw new Error('No text content in MCP result');
+  }
+
+  return JSON.parse(text) as T;
+}
+
+function processEnvRecord(): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined),
+  );
+}
+
+function errorMessage(cause: unknown): string {
+  if (cause instanceof Error) {
+    return cause.message;
+  }
+  return String(cause);
+}
+
+function loadEditor(filePath: string): EditorState {
+  try {
+    const bytes = readFileSync(filePath);
+    if (bytes.includes(0)) {
+      return {
+        path: filePath,
+        lines: ['[binary file]'],
+        cursorRow: 0,
+        cursorCol: 0,
+        scrollRow: 0,
+        scrollCol: 0,
+        dirty: false,
+        readOnly: true,
+        mode: 'normal',
+        undoStack: [],
+        redoStack: [],
+      };
+    }
+
+    const truncated = bytes.length > MAX_FILE_BYTES;
+    const text = bytes.subarray(0, MAX_FILE_BYTES).toString('utf8');
+    const lines = normalizeLines(truncated ? `${text}\n\n[truncated]` : text);
+
+    return ensureEditorVisible({
+      path: filePath,
+      lines,
+      cursorRow: 0,
+      cursorCol: 0,
+      scrollRow: 0,
+      scrollCol: 0,
+      dirty: false,
+      readOnly: truncated,
+      mode: 'normal',
+      undoStack: [],
+      redoStack: [],
+    }, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
+  } catch (error) {
+    return {
+      path: filePath,
+      lines: [String(error)],
+      cursorRow: 0,
+      cursorCol: 0,
+      scrollRow: 0,
+      scrollCol: 0,
+      dirty: false,
+      readOnly: true,
+      mode: 'normal',
+      undoStack: [],
+      redoStack: [],
+    };
+  }
+}
+
+function saveEditor(editor: EditorState): EditorState {
+  if (editor.readOnly) {
+    return editor;
+  }
+
+  writeFileSync(editor.path, editor.lines.join('\n'), 'utf8');
+  return {
+    ...editor,
+    dirty: false,
+  };
+}
+
+function snapshotEditor(editor: EditorState): HistoryEntry {
+  return {
+    lines: [...editor.lines],
+    cursorRow: editor.cursorRow,
+    cursorCol: editor.cursorCol,
+    scrollRow: editor.scrollRow,
+    scrollCol: editor.scrollCol,
+    dirty: editor.dirty,
+  };
+}
+
+function commitMutation(editor: EditorState, patch: Partial<EditorState>): EditorState {
+  return {
+    ...editor,
+    undoStack: [...editor.undoStack, snapshotEditor(editor)],
+    redoStack: [],
+    ...patch,
+    dirty: patch.dirty ?? true,
+    pendingNormal: undefined,
+  };
+}
+
+function undo(editor: EditorState): EditorState {
+  const snapshot = editor.undoStack.at(-1);
+  if (snapshot == null) {
+    return editor;
+  }
+
+  return {
+    ...editor,
+    lines: snapshot.lines,
+    cursorRow: snapshot.cursorRow,
+    cursorCol: snapshot.cursorCol,
+    scrollRow: snapshot.scrollRow,
+    scrollCol: snapshot.scrollCol,
+    dirty: snapshot.dirty,
+    mode: 'normal',
+    pendingNormal: undefined,
+    undoStack: editor.undoStack.slice(0, -1),
+    redoStack: [...editor.redoStack, snapshotEditor(editor)],
+  };
+}
+
+function redo(editor: EditorState): EditorState {
+  const snapshot = editor.redoStack.at(-1);
+  if (snapshot == null) {
+    return editor;
+  }
+
+  return {
+    ...editor,
+    lines: snapshot.lines,
+    cursorRow: snapshot.cursorRow,
+    cursorCol: snapshot.cursorCol,
+    scrollRow: snapshot.scrollRow,
+    scrollCol: snapshot.scrollCol,
+    dirty: snapshot.dirty,
+    mode: 'normal',
+    pendingNormal: undefined,
+    undoStack: [...editor.undoStack, snapshotEditor(editor)],
+    redoStack: editor.redoStack.slice(0, -1),
+  };
+}
+
+function updateInsertMode(editor: EditorState, msg: KeyMsg, columns: number, rows: number): EditorState {
+  if (editor.readOnly) {
+    return editor;
+  }
+
+  const viewport = viewerViewport(columns, rows);
+
+  if (msg.key === 'escape') {
+    return ensureEditorVisible(enterNormalMode(editor), viewport.width, viewport.height);
+  }
+  if (msg.key === 'left') {
+    return ensureEditorVisible(moveCursorLeftInsert(editor), viewport.width, viewport.height);
+  }
+  if (msg.key === 'right') {
+    return ensureEditorVisible(moveCursorRightInsert(editor), viewport.width, viewport.height);
+  }
+  if (msg.key === 'up') {
+    return ensureEditorVisible(moveCursorVerticalInsert(editor, -1), viewport.width, viewport.height);
+  }
+  if (msg.key === 'down') {
+    return ensureEditorVisible(moveCursorVerticalInsert(editor, 1), viewport.width, viewport.height);
+  }
+  if (msg.key === 'home') {
+    return ensureEditorVisible({ ...editor, cursorCol: 0 }, viewport.width, viewport.height);
+  }
+  if (msg.key === 'end') {
+    return ensureEditorVisible({ ...editor, cursorCol: currentLine(editor).length }, viewport.width, viewport.height);
+  }
+  if (msg.key === 'pageup') {
+    return ensureEditorVisible(moveCursorVerticalInsert(editor, -viewport.height), viewport.width, viewport.height);
+  }
+  if (msg.key === 'pagedown') {
+    return ensureEditorVisible(moveCursorVerticalInsert(editor, viewport.height), viewport.width, viewport.height);
+  }
+  if (msg.key === 'backspace') {
+    return ensureEditorVisible(backspace(editor), viewport.width, viewport.height);
+  }
+  if (msg.key === 'delete') {
+    return ensureEditorVisible(deleteForward(editor), viewport.width, viewport.height);
+  }
+  if (msg.key === 'enter') {
+    return ensureEditorVisible(insertNewline(editor), viewport.width, viewport.height);
+  }
+  if (msg.key === 'tab') {
+    return ensureEditorVisible(insertText(editor, '  '), viewport.width, viewport.height);
+  }
+
+  const inserted = keyToText(msg);
+  if (inserted != null) {
+    return ensureEditorVisible(insertText(editor, inserted), viewport.width, viewport.height);
+  }
+
+  return ensureEditorVisible(editor, viewport.width, viewport.height);
+}
+
+function updateNormalMode(editor: EditorState, msg: KeyMsg, columns: number, rows: number): EditorState {
+  const viewport = viewerViewport(columns, rows);
+
+  if (msg.key === 'escape') {
+    return ensureEditorVisible({ ...editor, pendingNormal: undefined }, viewport.width, viewport.height);
+  }
+
+  if (editor.pendingNormal === 'd') {
+    const cleared = { ...editor, pendingNormal: undefined };
+    const operated = applyPendingOperator(cleared, 'delete', msg);
+    if (operated != null) {
+      return ensureEditorVisible(operated, viewport.width, viewport.height);
+    }
+    return updateNormalMode(cleared, msg, columns, rows);
+  }
+
+  if (editor.pendingNormal === 'c') {
+    const cleared = { ...editor, pendingNormal: undefined };
+    const operated = applyPendingOperator(cleared, 'change', msg);
+    if (operated != null) {
+      return ensureEditorVisible(operated, viewport.width, viewport.height);
+    }
+    return updateNormalMode(cleared, msg, columns, rows);
+  }
+
+  if (editor.pendingNormal === 'y') {
+    const cleared = { ...editor, pendingNormal: undefined };
+    const operated = applyPendingOperator(cleared, 'yank', msg);
+    if (operated != null) {
+      return ensureEditorVisible(operated, viewport.width, viewport.height);
+    }
+    return updateNormalMode(cleared, msg, columns, rows);
+  }
+
+  if (editor.pendingNormal === 'g') {
+    const cleared = { ...editor, pendingNormal: undefined };
+    if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'g') {
+      return ensureEditorVisible(moveCursorToTop(cleared), viewport.width, viewport.height);
+    }
+    return updateNormalMode(cleared, msg, columns, rows);
+  }
+
+  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'i') {
+    return ensureEditorVisible({ ...editor, mode: 'insert' }, viewport.width, viewport.height);
+  }
+  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'a') {
+    return ensureEditorVisible(enterInsertAfterCursor(editor), viewport.width, viewport.height);
+  }
+  if (!msg.ctrl && !msg.alt && msg.shift && msg.key === 'a') {
+    return ensureEditorVisible(enterInsertAtLineEnd(editor), viewport.width, viewport.height);
+  }
+  if (!msg.ctrl && !msg.alt && msg.shift && msg.key === 'i') {
+    return ensureEditorVisible(enterInsertAtFirstNonWhitespace(editor), viewport.width, viewport.height);
+  }
+  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'o') {
+    return ensureEditorVisible(openLineBelow(editor), viewport.width, viewport.height);
+  }
+  if (!msg.ctrl && !msg.alt && msg.shift && msg.key === 'o') {
+    return ensureEditorVisible(openLineAbove(editor), viewport.width, viewport.height);
+  }
+  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'u') {
+    return ensureEditorVisible(undo(editor), viewport.width, viewport.height);
+  }
+  if (msg.ctrl && !msg.alt && !msg.shift && msg.key === 'r') {
+    return ensureEditorVisible(redo(editor), viewport.width, viewport.height);
+  }
+  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'p') {
+    return ensureEditorVisible(pasteRegister(editor, 'after'), viewport.width, viewport.height);
+  }
+  if (!msg.ctrl && !msg.alt && msg.shift && msg.key === 'p') {
+    return ensureEditorVisible(pasteRegister(editor, 'before'), viewport.width, viewport.height);
+  }
+  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'x') {
+    return ensureEditorVisible(deleteCharUnderCursor(editor), viewport.width, viewport.height);
+  }
+  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'w') {
+    return ensureEditorVisible(moveCursorToNextWordStart(editor), viewport.width, viewport.height);
+  }
+  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'b') {
+    return ensureEditorVisible(moveCursorToPreviousWordStart(editor), viewport.width, viewport.height);
+  }
+  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'e') {
+    return ensureEditorVisible(moveCursorToWordEnd(editor), viewport.width, viewport.height);
+  }
+  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === '^') {
+    return ensureEditorVisible(moveCursorToFirstNonWhitespace(editor), viewport.width, viewport.height);
+  }
+  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'd') {
+    return ensureEditorVisible({ ...editor, pendingNormal: 'd' }, viewport.width, viewport.height);
+  }
+  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'c') {
+    return ensureEditorVisible({ ...editor, pendingNormal: 'c' }, viewport.width, viewport.height);
+  }
+  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'y') {
+    return ensureEditorVisible({ ...editor, pendingNormal: 'y' }, viewport.width, viewport.height);
+  }
+  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'g') {
+    return ensureEditorVisible({ ...editor, pendingNormal: 'g' }, viewport.width, viewport.height);
+  }
+  if (!msg.ctrl && !msg.alt && msg.shift && msg.key === 'g') {
+    return ensureEditorVisible(moveCursorToBottom(editor), viewport.width, viewport.height);
+  }
+  if (!msg.ctrl && !msg.alt && msg.shift && msg.key === 'd') {
+    return ensureEditorVisible(deleteToLineEnd(editor), viewport.width, viewport.height);
+  }
+  if (!msg.ctrl && !msg.alt && msg.shift && msg.key === 'c') {
+    return ensureEditorVisible(changeToLineEnd(editor), viewport.width, viewport.height);
+  }
+  if (!msg.ctrl && !msg.alt && msg.shift && msg.key === 'y') {
+    return ensureEditorVisible(yankCurrentLine(editor), viewport.width, viewport.height);
+  }
+  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === '0') {
+    return ensureEditorVisible(moveCursorToLineStart(editor), viewport.width, viewport.height);
+  }
+  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === '$') {
+    return ensureEditorVisible(moveCursorToLineEnd(editor), viewport.width, viewport.height);
+  }
+  if (!msg.ctrl && !msg.alt && (msg.key === 'h' || msg.key === 'left')) {
+    return ensureEditorVisible(moveCursorLeftNormal(editor), viewport.width, viewport.height);
+  }
+  if (!msg.ctrl && !msg.alt && (msg.key === 'l' || msg.key === 'right')) {
+    return ensureEditorVisible(moveCursorRightNormal(editor), viewport.width, viewport.height);
+  }
+  if (!msg.ctrl && !msg.alt && (msg.key === 'j' || msg.key === 'down')) {
+    return ensureEditorVisible(moveCursorVerticalNormal(editor, 1), viewport.width, viewport.height);
+  }
+  if (!msg.ctrl && !msg.alt && (msg.key === 'k' || msg.key === 'up')) {
+    return ensureEditorVisible(moveCursorVerticalNormal(editor, -1), viewport.width, viewport.height);
+  }
+  if (!msg.ctrl && !msg.alt && msg.key === 'pageup') {
+    return ensureEditorVisible(moveCursorVerticalNormal(editor, -viewport.height), viewport.width, viewport.height);
+  }
+  if (!msg.ctrl && !msg.alt && msg.key === 'pagedown') {
+    return ensureEditorVisible(moveCursorVerticalNormal(editor, viewport.height), viewport.width, viewport.height);
+  }
+  if (!msg.ctrl && !msg.alt && msg.key === 'home') {
+    return ensureEditorVisible(moveCursorToLineStart(editor), viewport.width, viewport.height);
+  }
+  if (!msg.ctrl && !msg.alt && msg.key === 'end') {
+    return ensureEditorVisible(moveCursorToLineEnd(editor), viewport.width, viewport.height);
+  }
+
+  return ensureEditorVisible(editor, viewport.width, viewport.height);
+}
+
+function applyPendingOperator(
+  editor: EditorState,
+  operator: 'change' | 'delete' | 'yank',
+  msg: KeyMsg,
+): EditorState | undefined {
+  if (msg.ctrl || msg.alt) {
+    return undefined;
+  }
+
+  if (!msg.shift) {
+    if (operator === 'delete' && msg.key === 'd') {
+      return deleteCurrentLine(editor);
+    }
+    if (operator === 'change' && msg.key === 'c') {
+      return changeCurrentLine(editor);
+    }
+    if (operator === 'yank' && msg.key === 'y') {
+      return yankCurrentLine(editor);
+    }
+    if (msg.key === 'w') {
+      return applyWordMotionOperator(editor, operator, 'w');
+    }
+    if (msg.key === 'e') {
+      return applyWordMotionOperator(editor, operator, 'e');
+    }
+    if (msg.key === '0') {
+      return applyLineBoundaryOperator(editor, operator, 'start');
+    }
+  }
+
+  if (msg.key === '$') {
+    return applyLineBoundaryOperator(editor, operator, 'end');
+  }
+
+  return undefined;
+}
+
+function applyWordMotionOperator(
+  editor: EditorState,
+  operator: 'change' | 'delete' | 'yank',
+  motion: 'e' | 'w',
+): EditorState {
+  const text = editorText(editor);
+  if (text.length === 0) {
+    return operator === 'change'
+      ? { ...editor, mode: 'insert', pendingNormal: undefined }
+      : editor;
+  }
+
+  const start = normalTextIndex(editor);
+  const end = motion === 'w'
+    ? nextWordStartIndex(text, start, true)
+    : Math.min(text.length, wordEndIndex(text, start) + 1);
+
+  const safeEnd = Math.max(start + 1, end);
+  return applyCharwiseOperator(editor, operator, start, Math.min(text.length, safeEnd));
+}
+
+function applyLineBoundaryOperator(
+  editor: EditorState,
+  operator: 'change' | 'delete' | 'yank',
+  boundary: 'end' | 'start',
+): EditorState {
+  const line = currentLine(editor);
+  const lineStart = lineStartTextIndex(editor.lines, editor.cursorRow);
+  const cursor = normalTextIndex(editor);
+  const from = boundary === 'start' ? lineStart : cursor;
+  const to = boundary === 'start' ? cursor + 1 : lineStart + line.length;
+
+  if (from >= to) {
+    return operator === 'change'
+      ? { ...editor, mode: 'insert', pendingNormal: undefined }
+      : editor;
+  }
+
+  return applyCharwiseOperator(editor, operator, from, to);
+}
+
+function applyCharwiseOperator(
+  editor: EditorState,
+  operator: 'change' | 'delete' | 'yank',
+  start: number,
+  end: number,
+): EditorState {
+  if (operator === 'yank') {
+    return yankTextRange(editor, start, end, 'char');
+  }
+
+  return deleteTextRange(editor, start, end, {
+    mode: operator === 'change' ? 'insert' : 'normal',
+    register: 'char',
+  });
+}
+
+function scrollPreview(editor: EditorState, msg: KeyMsg, height: number): EditorState {
+  if (msg.key === 'up' || msg.key === 'k') {
+    return {
+      ...editor,
+      scrollRow: Math.max(0, editor.scrollRow - 1),
+    };
+  }
+  if (msg.key === 'down' || msg.key === 'j') {
+    return {
+      ...editor,
+      scrollRow: editor.scrollRow + 1,
+    };
+  }
+  if (msg.key === 'pageup') {
+    return {
+      ...editor,
+      scrollRow: Math.max(0, editor.scrollRow - height),
+    };
+  }
+  if (msg.key === 'pagedown') {
+    return {
+      ...editor,
+      scrollRow: editor.scrollRow + height,
+    };
+  }
+  return editor;
+}
+
+function enterNormalMode(editor: EditorState): EditorState {
+  const line = currentLine(editor);
+  if (line.length === 0) {
+    return {
+      ...editor,
+      mode: 'normal',
+      cursorCol: 0,
+      pendingNormal: undefined,
+    };
+  }
+
+  const nextCol = Math.max(0, Math.min(editor.cursorCol - 1, line.length - 1));
+  return {
+    ...editor,
+    mode: 'normal',
+    cursorCol: nextCol,
+    pendingNormal: undefined,
+  };
+}
+
+function enterInsertAfterCursor(editor: EditorState): EditorState {
+  const line = currentLine(editor);
+  const nextCol = line.length === 0 ? 0 : Math.min(editor.cursorCol + 1, line.length);
+  return {
+    ...editor,
+    mode: 'insert',
+    cursorCol: nextCol,
+    pendingNormal: undefined,
+  };
+}
+
+function enterInsertAtLineEnd(editor: EditorState): EditorState {
+  return {
+    ...editor,
+    mode: 'insert',
+    cursorCol: currentLine(editor).length,
+    pendingNormal: undefined,
+  };
+}
+
+function enterInsertAtFirstNonWhitespace(editor: EditorState): EditorState {
+  const line = currentLine(editor);
+  const match = line.match(/\S/);
+  return {
+    ...editor,
+    mode: 'insert',
+    cursorCol: match == null ? 0 : match.index ?? 0,
+    pendingNormal: undefined,
+  };
+}
+
+function moveCursorLeftInsert(editor: EditorState): EditorState {
+  if (editor.cursorCol > 0) {
+    return {
+      ...editor,
+      cursorCol: editor.cursorCol - 1,
+      pendingNormal: undefined,
+    };
+  }
+
+  if (editor.cursorRow === 0) {
+    return editor;
+  }
+
+  const prevLine = editor.lines[editor.cursorRow - 1] ?? '';
+  return {
+    ...editor,
+    cursorRow: editor.cursorRow - 1,
+    cursorCol: prevLine.length,
+    pendingNormal: undefined,
+  };
+}
+
+function moveCursorRightInsert(editor: EditorState): EditorState {
+  const line = currentLine(editor);
+  if (editor.cursorCol < line.length) {
+    return {
+      ...editor,
+      cursorCol: editor.cursorCol + 1,
+      pendingNormal: undefined,
+    };
+  }
+
+  if (editor.cursorRow >= editor.lines.length - 1) {
+    return editor;
+  }
+
+  return {
+    ...editor,
+    cursorRow: editor.cursorRow + 1,
+    cursorCol: 0,
+    pendingNormal: undefined,
+  };
+}
+
+function moveCursorVerticalInsert(editor: EditorState, delta: number): EditorState {
+  const nextRow = clampIndex(editor.cursorRow + delta, editor.lines.length);
+  const nextLine = editor.lines[nextRow] ?? '';
+  return {
+    ...editor,
+    cursorRow: nextRow,
+    cursorCol: Math.min(editor.cursorCol, nextLine.length),
+    pendingNormal: undefined,
+  };
+}
+
+function moveCursorLeftNormal(editor: EditorState): EditorState {
+  return {
+    ...editor,
+    cursorCol: Math.max(0, editor.cursorCol - 1),
+    pendingNormal: undefined,
+  };
+}
+
+function moveCursorRightNormal(editor: EditorState): EditorState {
+  const line = currentLine(editor);
+  const maxCol = line.length === 0 ? 0 : line.length - 1;
+  return {
+    ...editor,
+    cursorCol: Math.min(maxCol, editor.cursorCol + 1),
+    pendingNormal: undefined,
+  };
+}
+
+function moveCursorVerticalNormal(editor: EditorState, delta: number): EditorState {
+  const nextRow = clampIndex(editor.cursorRow + delta, editor.lines.length);
+  const nextLine = editor.lines[nextRow] ?? '';
+  return {
+    ...editor,
+    cursorRow: nextRow,
+    cursorCol: clampNormalCol(editor.cursorCol, nextLine),
+    pendingNormal: undefined,
+  };
+}
+
+function moveCursorToLineStart(editor: EditorState): EditorState {
+  return {
+    ...editor,
+    cursorCol: 0,
+    pendingNormal: undefined,
+  };
+}
+
+function moveCursorToLineEnd(editor: EditorState): EditorState {
+  const line = currentLine(editor);
+  return {
+    ...editor,
+    cursorCol: line.length === 0 ? 0 : line.length - 1,
+    pendingNormal: undefined,
+  };
+}
+
+function moveCursorToFirstNonWhitespace(editor: EditorState): EditorState {
+  return {
+    ...editor,
+    cursorCol: leadingWhitespace(currentLine(editor)).length,
+    pendingNormal: undefined,
+  };
+}
+
+function moveCursorToTop(editor: EditorState): EditorState {
+  const line = editor.lines[0] ?? '';
+  return {
+    ...editor,
+    cursorRow: 0,
+    cursorCol: clampNormalCol(editor.cursorCol, line),
+    pendingNormal: undefined,
+  };
+}
+
+function moveCursorToBottom(editor: EditorState): EditorState {
+  const row = Math.max(0, editor.lines.length - 1);
+  const line = editor.lines[row] ?? '';
+  return {
+    ...editor,
+    cursorRow: row,
+    cursorCol: clampNormalCol(editor.cursorCol, line),
+    pendingNormal: undefined,
+  };
+}
+
+function moveCursorToNextWordStart(editor: EditorState): EditorState {
+  const text = editorText(editor);
+  if (text.length === 0) {
+    return editor;
+  }
+
+  const target = nextWordStartIndex(text, normalTextIndex(editor));
+  const position = normalPositionAtOrBeforeIndex(editor.lines, target);
+  return {
+    ...editor,
+    cursorRow: position.row,
+    cursorCol: position.col,
+    pendingNormal: undefined,
+  };
+}
+
+function moveCursorToPreviousWordStart(editor: EditorState): EditorState {
+  const text = editorText(editor);
+  if (text.length === 0) {
+    return editor;
+  }
+
+  const target = previousWordStartIndex(text, normalTextIndex(editor));
+  const position = normalPositionAtOrBeforeIndex(editor.lines, target);
+  return {
+    ...editor,
+    cursorRow: position.row,
+    cursorCol: position.col,
+    pendingNormal: undefined,
+  };
+}
+
+function moveCursorToWordEnd(editor: EditorState): EditorState {
+  const text = editorText(editor);
+  if (text.length === 0) {
+    return editor;
+  }
+
+  const target = wordEndIndex(text, normalTextIndex(editor));
+  const position = normalPositionAtOrBeforeIndex(editor.lines, target);
+  return {
+    ...editor,
+    cursorRow: position.row,
+    cursorCol: position.col,
+    pendingNormal: undefined,
+  };
+}
+
+function openLineBelow(editor: EditorState): EditorState {
+  const index = editor.cursorRow + 1;
+  const indent = leadingWhitespace(currentLine(editor));
+  return commitMutation(editor, {
+    lines: [
+      ...editor.lines.slice(0, index),
+      indent,
+      ...editor.lines.slice(index),
+    ],
+    cursorRow: index,
+    cursorCol: indent.length,
+    mode: 'insert',
+  });
+}
+
+function openLineAbove(editor: EditorState): EditorState {
+  const index = editor.cursorRow;
+  const indent = leadingWhitespace(currentLine(editor));
+  return commitMutation(editor, {
+    lines: [
+      ...editor.lines.slice(0, index),
+      indent,
+      ...editor.lines.slice(index),
+    ],
+    cursorRow: index,
+    cursorCol: indent.length,
+    mode: 'insert',
+  });
+}
+
+function deleteCurrentLine(editor: EditorState): EditorState {
+  const register: RegisterState = {
+    kind: 'line',
+    text: currentLine(editor),
+  };
+
+  if (editor.lines.length <= 1) {
+    return commitMutation(editor, {
+      lines: [''],
+      cursorRow: 0,
+      cursorCol: 0,
+      register,
+    });
+  }
+
+  const nextLines = [
+    ...editor.lines.slice(0, editor.cursorRow),
+    ...editor.lines.slice(editor.cursorRow + 1),
+  ];
+  const nextRow = Math.min(editor.cursorRow, nextLines.length - 1);
+  const nextLine = nextLines[nextRow] ?? '';
+
+  return commitMutation(editor, {
+    lines: nextLines,
+    cursorRow: nextRow,
+    cursorCol: clampNormalCol(0, nextLine),
+    register,
+  });
+}
+
+function changeCurrentLine(editor: EditorState): EditorState {
+  const indent = leadingWhitespace(currentLine(editor));
+  return commitMutation(editor, {
+    lines: editor.lines.map((line, index) => (index === editor.cursorRow ? indent : line)),
+    cursorCol: indent.length,
+    mode: 'insert',
+    register: {
+      kind: 'line',
+      text: currentLine(editor),
+    },
+  });
+}
+
+function yankCurrentLine(editor: EditorState): EditorState {
+  return {
+    ...editor,
+    register: {
+      kind: 'line',
+      text: currentLine(editor),
+    },
+    pendingNormal: undefined,
+  };
+}
+
+function deleteToLineEnd(editor: EditorState): EditorState {
+  const line = currentLine(editor);
+  if (line.length === 0) {
+    return editor;
+  }
+
+  const lineStart = lineStartTextIndex(editor.lines, editor.cursorRow);
+  return deleteTextRange(editor, normalTextIndex(editor), lineStart + line.length, {
+    mode: 'normal',
+    register: 'char',
+  });
+}
+
+function changeToLineEnd(editor: EditorState): EditorState {
+  const line = currentLine(editor);
+  if (line.length === 0) {
+    return {
+      ...editor,
+      mode: 'insert',
+      pendingNormal: undefined,
+    };
+  }
+
+  const lineStart = lineStartTextIndex(editor.lines, editor.cursorRow);
+  return deleteTextRange(editor, normalTextIndex(editor), lineStart + line.length, {
+    mode: 'insert',
+    register: 'char',
+  });
+}
+
+function deleteCharUnderCursor(editor: EditorState): EditorState {
+  const text = editorText(editor);
+  if (text.length === 0) {
+    return editor;
+  }
+
+  const start = normalTextIndex(editor);
+  if (start >= text.length) {
+    return editor;
+  }
+
+  return deleteTextRange(editor, start, start + 1, {
+    mode: 'normal',
+    register: 'char',
+  });
+}
+
+function pasteRegister(editor: EditorState, placement: 'after' | 'before'): EditorState {
+  const register = editor.register;
+  if (register == null || register.text.length === 0) {
+    return editor;
+  }
+
+  if (register.kind === 'line') {
+    const index = placement === 'before' ? editor.cursorRow : editor.cursorRow + 1;
+    const inserted = register.text.split('\n');
+    return commitMutation(editor, {
+      lines: [
+        ...editor.lines.slice(0, index),
+        ...inserted,
+        ...editor.lines.slice(index),
+      ],
+      cursorRow: index,
+      cursorCol: 0,
+      mode: 'normal',
+    });
+  }
+
+  const insertionIndex = placement === 'before'
+    ? normalTextIndex(editor)
+    : normalTextIndex(editor) + (currentLine(editor).length === 0 ? 0 : 1);
+  const text = editorText(editor);
+  const nextText = `${text.slice(0, insertionIndex)}${register.text}${text.slice(insertionIndex)}`;
+  const nextLines = normalizeLines(nextText);
+  const position = normalPositionAtOrBeforeIndex(nextLines, insertionIndex + register.text.length - 1);
+
+  return commitMutation(editor, {
+    lines: nextLines,
+    cursorRow: position.row,
+    cursorCol: position.col,
+    mode: 'normal',
+  });
+}
+
+function yankTextRange(editor: EditorState, start: number, end: number, kind: RegisterKind): EditorState {
+  const text = editorText(editor);
+  const from = Math.max(0, Math.min(start, end));
+  const to = Math.max(from, Math.min(text.length, Math.max(start, end)));
+
+  return {
+    ...editor,
+    register: {
+      kind,
+      text: text.slice(from, to),
+    },
+    pendingNormal: undefined,
+  };
+}
+
+function deleteTextRange(
+  editor: EditorState,
+  start: number,
+  end: number,
+  options: {
+    readonly mode: EditorMode;
+    readonly register: RegisterKind;
+  },
+): EditorState {
+  const text = editorText(editor);
+  const from = Math.max(0, Math.min(start, end));
+  const to = Math.max(from, Math.min(text.length, Math.max(start, end)));
+  if (from === to) {
+    return options.mode === 'insert'
+      ? { ...editor, mode: 'insert', pendingNormal: undefined }
+      : editor;
+  }
+
+  const nextText = `${text.slice(0, from)}${text.slice(to)}`;
+  const nextLines = normalizeLines(nextText);
+  const position = options.mode === 'insert'
+    ? insertPositionAtIndex(nextLines, from)
+    : normalPositionAtOrBeforeIndex(nextLines, from);
+
+  return commitMutation(editor, {
+    lines: nextLines,
+    cursorRow: position.row,
+    cursorCol: position.col,
+    mode: options.mode,
+    register: {
+      kind: options.register,
+      text: text.slice(from, to),
+    },
+  });
+}
+
+function backspace(editor: EditorState): EditorState {
+  if (editor.cursorCol > 0) {
+    const line = currentLine(editor);
+    const nextLine = `${line.slice(0, editor.cursorCol - 1)}${line.slice(editor.cursorCol)}`;
+    return replaceCurrentLine(editor, nextLine, editor.cursorCol - 1, true);
+  }
+
+  if (editor.cursorRow === 0) {
+    return editor;
+  }
+
+  const prevLine = editor.lines[editor.cursorRow - 1] ?? '';
+  const line = currentLine(editor);
+  const nextLines = [
+    ...editor.lines.slice(0, editor.cursorRow - 1),
+    `${prevLine}${line}`,
+    ...editor.lines.slice(editor.cursorRow + 1),
+  ];
+
+  return commitMutation(editor, {
+    lines: nextLines,
+    cursorRow: editor.cursorRow - 1,
+    cursorCol: prevLine.length,
+  });
+}
+
+function deleteForward(editor: EditorState): EditorState {
+  const line = currentLine(editor);
+  if (editor.cursorCol < line.length) {
+    const nextLine = `${line.slice(0, editor.cursorCol)}${line.slice(editor.cursorCol + 1)}`;
+    return replaceCurrentLine(editor, nextLine, editor.cursorCol, true);
+  }
+
+  if (editor.cursorRow >= editor.lines.length - 1) {
+    return editor;
+  }
+
+  const nextLine = editor.lines[editor.cursorRow + 1] ?? '';
+  const merged = `${line}${nextLine}`;
+  const nextLines = [
+    ...editor.lines.slice(0, editor.cursorRow),
+    merged,
+    ...editor.lines.slice(editor.cursorRow + 2),
+  ];
+
+  return commitMutation(editor, {
+    lines: nextLines,
+  });
+}
+
+function insertNewline(editor: EditorState): EditorState {
+  const line = currentLine(editor);
+  const before = line.slice(0, editor.cursorCol);
+  const after = line.slice(editor.cursorCol);
+  const nextLines = [
+    ...editor.lines.slice(0, editor.cursorRow),
+    before,
+    after,
+    ...editor.lines.slice(editor.cursorRow + 1),
+  ];
+
+  return commitMutation(editor, {
+    lines: nextLines,
+    cursorRow: editor.cursorRow + 1,
+    cursorCol: 0,
+  });
+}
+
+function insertText(editor: EditorState, text: string): EditorState {
+  const line = currentLine(editor);
+  const nextLine = `${line.slice(0, editor.cursorCol)}${text}${line.slice(editor.cursorCol)}`;
+  return replaceCurrentLine(editor, nextLine, editor.cursorCol + text.length, true);
+}
+
+function replaceCurrentLine(editor: EditorState, line: string, cursorCol: number, dirty: boolean): EditorState {
+  const nextLines = editor.lines.map((value, index) => (index === editor.cursorRow ? line : value));
+  return commitMutation(editor, {
+    lines: nextLines,
+    cursorCol,
+    dirty: dirty || editor.dirty,
+  });
+}
+
+function currentLine(editor: EditorState): string {
+  return editor.lines[editor.cursorRow] ?? '';
+}
+
+function leadingWhitespace(line: string): string {
+  return line.match(/^\s*/)?.[0] ?? '';
+}
+
+function editorText(editor: EditorState): string {
+  return editor.lines.join('\n');
+}
+
+function lineStartTextIndex(lines: readonly string[], row: number): number {
+  let index = 0;
+  for (let currentRow = 0; currentRow < row; currentRow += 1) {
+    index += (lines[currentRow] ?? '').length;
+    if (currentRow < lines.length - 1) {
+      index += 1;
+    }
+  }
+  return index;
+}
+
+function normalTextIndex(editor: EditorState): number {
+  return lineStartTextIndex(editor.lines, editor.cursorRow) + clampNormalCol(editor.cursorCol, currentLine(editor));
+}
+
+function insertPositionAtIndex(lines: readonly string[], index: number): { row: number; col: number } {
+  let remaining = Math.max(0, index);
+
+  for (let row = 0; row < lines.length; row += 1) {
+    const line = lines[row] ?? '';
+    if (remaining <= line.length) {
+      return { row, col: remaining };
+    }
+
+    remaining -= line.length;
+    if (row < lines.length - 1) {
+      remaining -= 1;
+    }
+  }
+
+  const lastRow = Math.max(0, lines.length - 1);
+  return {
+    row: lastRow,
+    col: (lines[lastRow] ?? '').length,
+  };
+}
+
+function normalPositionAtOrBeforeIndex(lines: readonly string[], index: number): { row: number; col: number } {
+  const position = insertPositionAtIndex(lines, index);
+  const line = lines[position.row] ?? '';
+  return {
+    row: position.row,
+    col: line.length === 0 ? 0 : Math.min(position.col, line.length - 1),
+  };
+}
+
+function nextWordStartIndex(text: string, index: number, allowEnd = false): number {
+  if (text.length === 0) {
+    return 0;
+  }
+
+  let cursor = Math.max(0, Math.min(index, text.length - 1));
+  if (classifyWordChar(text[cursor]) === 'space') {
+    while (cursor < text.length && classifyWordChar(text[cursor]) === 'space') {
+      cursor += 1;
+    }
+  } else {
+    const currentClass = classifyWordChar(text[cursor]);
+    while (cursor < text.length && classifyWordChar(text[cursor]) === currentClass) {
+      cursor += 1;
+    }
+    while (cursor < text.length && classifyWordChar(text[cursor]) === 'space') {
+      cursor += 1;
+    }
+  }
+
+  if (allowEnd) {
+    return Math.max(0, Math.min(text.length, cursor));
+  }
+
+  return Math.max(0, Math.min(text.length - 1, cursor));
+}
+
+function previousWordStartIndex(text: string, index: number): number {
+  if (text.length === 0) {
+    return 0;
+  }
+
+  let cursor = Math.max(0, Math.min(index, text.length - 1));
+  if (cursor === 0) {
+    return 0;
+  }
+
+  cursor -= 1;
+  while (cursor > 0 && classifyWordChar(text[cursor]) === 'space') {
+    cursor -= 1;
+  }
+
+  const currentClass = classifyWordChar(text[cursor]);
+  while (cursor > 0 && classifyWordChar(text[cursor - 1]) === currentClass) {
+    cursor -= 1;
+  }
+
+  return cursor;
+}
+
+function wordEndIndex(text: string, index: number): number {
+  if (text.length === 0) {
+    return 0;
+  }
+
+  let cursor = Math.max(0, Math.min(index, text.length - 1));
+  while (cursor < text.length && classifyWordChar(text[cursor]) === 'space') {
+    cursor += 1;
+  }
+  if (cursor >= text.length) {
+    return text.length - 1;
+  }
+
+  const currentClass = classifyWordChar(text[cursor]);
+  while (cursor < text.length - 1 && classifyWordChar(text[cursor + 1]) === currentClass) {
+    cursor += 1;
+  }
+
+  return cursor;
+}
+
+function classifyWordChar(char: string | undefined): 'punct' | 'space' | 'word' {
+  if (char == null || /\s/.test(char)) {
+    return 'space';
+  }
+  if (/[A-Za-z0-9_]/.test(char)) {
+    return 'word';
+  }
+  return 'punct';
+}
+
+function keyToText(msg: KeyMsg): string | undefined {
+  if (msg.ctrl || msg.alt) {
+    return undefined;
+  }
+
+  if (msg.key === 'space') {
+    return ' ';
+  }
+
+  if (msg.key.length !== 1) {
+    return undefined;
+  }
+
+  if (msg.shift && msg.key >= 'a' && msg.key <= 'z') {
+    return msg.key.toUpperCase();
+  }
+
+  return msg.key;
+}
+
+function ensureEditorVisible(editor: EditorState, width: number, height: number): EditorState {
+  const normalized = normalizeEditor(editor);
+  const line = currentLine(normalized);
+  const safeWidth = Math.max(1, width);
+  const safeHeight = Math.max(1, height);
+
+  let scrollRow = normalized.scrollRow;
+  let scrollCol = normalized.scrollCol;
+
+  if (normalized.cursorRow < scrollRow) {
+    scrollRow = normalized.cursorRow;
+  } else if (normalized.cursorRow >= scrollRow + safeHeight) {
+    scrollRow = normalized.cursorRow - safeHeight + 1;
+  }
+
+  if (normalized.cursorCol < scrollCol) {
+    scrollCol = normalized.cursorCol;
+  } else if (normalized.cursorCol >= scrollCol + safeWidth) {
+    scrollCol = normalized.cursorCol - safeWidth + 1;
+  }
+
+  const maxScrollCol = Math.max(0, line.length - safeWidth + 1);
+
+  return {
+    ...normalized,
+    scrollRow: Math.max(0, scrollRow),
+    scrollCol: Math.max(0, Math.min(scrollCol, maxScrollCol)),
+  };
+}
+
+function normalizeEditor(editor: EditorState): EditorState {
+  const row = clampIndex(editor.cursorRow, editor.lines.length);
+  const line = editor.lines[row] ?? '';
+  const maxCol = editor.mode === 'insert'
+    ? line.length
+    : clampNormalCol(Number.MAX_SAFE_INTEGER, line);
+
+  return {
+    ...editor,
+    cursorRow: row,
+    cursorCol: Math.max(0, Math.min(editor.cursorCol, maxCol)),
+  };
+}
+
+function clampNormalCol(cursorCol: number, line: string): number {
+  if (line.length === 0) {
+    return 0;
+  }
+  return Math.max(0, Math.min(cursorCol, line.length - 1));
+}
+
+function viewerViewport(columns: number, rows: number) {
+  return {
+    width: Math.max(1, columns - (VIEWER_LEFT_PAD * 2)),
+    height: Math.max(1, rows - 2 - VIEWER_TOP_PAD - 1),
+  };
+}
+
+function renderWorkspace(model: Model) {
+  const screen = createSurface(model.columns, model.rows);
+  screen.fill({ char: ' ', empty: false });
+
+  if (model.columns < MIN_COLUMNS || model.rows < MIN_ROWS) {
+    const message = [
+      '',
+      'eddit',
+      '',
+      `need at least ${MIN_COLUMNS} columns x ${MIN_ROWS} rows`,
+      `current terminal: ${model.columns} x ${model.rows}`,
+    ].join('\n');
+    screen.blit(stringToSurface(fitBlock(message, model.columns, model.rows), model.columns, model.rows), 0, 0);
+    return compositeFeedback(screen, model.notifications, model.columns, model.rows);
+  }
+
+  const title = centerLine(activeWorkspaceTitle({
+    cwd: model.cwd,
+    editorPath: model.editor?.path,
+    editorDirty: model.editor?.dirty ?? false,
+    selectedEntry: model.entries[model.selectedIndex],
+  }), model.columns);
+  const bodyTop = 2;
+  const footerRows = model.footerVisible ? 1 : 0;
+  const bodyHeight = Math.max(1, model.rows - bodyTop - footerRows);
+
+  screen.blit(stringToSurface(title, model.columns, 1), 0, 0);
+  screen.blit(renderViewer(model, model.columns, bodyHeight), 0, bodyTop);
+
+  const drawerWidth = resolveDrawerWidth(model.columns, model.drawerProgress);
+  if (drawerWidth > 0) {
+    screen.blit(renderDrawer(model, drawerWidth, bodyHeight), 0, bodyTop);
+  }
+
+  if (model.footerVisible) {
+    screen.blit(renderWorkspaceFooter({
+      drawerOpen: model.drawerOpen,
+      drawerKind: model.drawerKind,
+      viewMode: model.viewMode,
+      markdownPreviewActive: model.editor != null && isMarkdownFile(model.editor.path),
+      editorMode: model.editor?.mode,
+      pendingNormal: model.editor?.pendingNormal,
+    }, model.columns, ctx.theme.theme.surface.muted), 0, model.rows - 1);
+  }
+
+  return compositeFeedback(screen, model.notifications, model.columns, model.rows);
+}
+
+function notificationTickCmd(): Cmd<Msg> { return createNotificationTickCmd((atMs) => ({ type: 'notification-tick', atMs })); }
+
+function renderViewer(model: Model, width: number, height: number) {
+  const surface = createSurface(width, height);
+  surface.fill({ char: ' ', empty: false });
+
+  if (model.editor == null) {
+    return surface;
+  }
+
+  if (model.viewMode === 'preview' && isMarkdownFile(model.editor.path)) {
+    return renderPreview(surface, model.editor, width, height);
+  }
+
+  return renderSource(surface, model.editor, width, height);
+}
+
+function renderSource(surface: Surface, editor: EditorState, width: number, height: number) {
+  const viewport = viewerViewport(width, height + 2);
+  for (let row = 0; row < viewport.height; row += 1) {
+    const sourceLine = editor.lines[editor.scrollRow + row] ?? '';
+    const visible = fitLine(sourceLine.slice(editor.scrollCol), viewport.width);
+    surface.blit(stringToSurface(visible, viewport.width, 1), VIEWER_LEFT_PAD, VIEWER_TOP_PAD + row);
+  }
+
+  const cursor = cursorDisplayPosition(editor);
+  const cursorY = VIEWER_TOP_PAD + (cursor.row - editor.scrollRow);
+  const cursorX = VIEWER_LEFT_PAD + (cursor.col - editor.scrollCol);
+  if (
+    cursorY >= VIEWER_TOP_PAD
+    && cursorY < VIEWER_TOP_PAD + viewport.height
+    && cursorX >= VIEWER_LEFT_PAD
+    && cursorX < VIEWER_LEFT_PAD + viewport.width
+  ) {
+    const cell = surface.get(cursorX, cursorY);
+    if (editor.mode === 'normal') {
+      surface.set(cursorX, cursorY, {
+        ...cell,
+        char: cell.char.length > 0 ? cell.char : ' ',
+        modifiers: ['inverse'],
+        empty: false,
+      });
+    } else {
+      surface.set(cursorX, cursorY, {
+        ...cell,
+        char: cell.char.length > 0 ? cell.char : '│',
+        modifiers: ['underline'],
+        empty: false,
+      });
+    }
+  }
+
+  return surface;
+}
+
+function cursorDisplayPosition(editor: EditorState) {
+  if (editor.mode === 'insert') {
+    return {
+      row: editor.cursorRow,
+      col: editor.cursorCol,
+    };
+  }
+
+  const line = currentLine(editor);
+  return {
+    row: editor.cursorRow,
+    col: line.length === 0 ? 0 : Math.min(editor.cursorCol, line.length - 1),
+  };
+}
+
+function renderPreview(surface: Surface, editor: EditorState, width: number, height: number) {
+  const viewport = viewerViewport(width, height + 2);
+  const lines = renderMarkdownPreview(editor.lines.join('\n')).split('\n');
+
+  for (let row = 0; row < viewport.height; row += 1) {
+    const line = lines[editor.scrollRow + row] ?? '';
+    const visible = fitLine(line, viewport.width);
+    surface.blit(stringToSurface(visible, viewport.width, 1), VIEWER_LEFT_PAD, VIEWER_TOP_PAD + row);
+  }
+
+  return surface;
+}
+
+function renderDrawer(model: Model, width: number, height: number) {
+  if (model.drawerKind === 'graft') {
+    return renderGraftDrawer(model, width, height);
+  }
+
+  const surface = createSurface(width, height);
+  const background = ctx.theme.theme.surface.muted;
+  fillSurface(surface, background);
+
+  const listWidth = Math.max(1, width - (DRAWER_INNER_PAD * 2));
+  const listHeight = Math.max(1, height - (DRAWER_INNER_PAD * 2));
+  const lines = model.entries.map((entry, index) => formatTreeLine(entry, index === model.selectedIndex));
+  const content = stringToSurface(fitBlock(lines.join('\n'), listWidth, listHeight), listWidth, listHeight);
+
+  applyBackground(content, background);
+  surface.blit(content, DRAWER_INNER_PAD, DRAWER_INNER_PAD);
+  return surface;
+}
+
+function renderGraftDrawer(model: Model, width: number, height: number) {
+  const surface = createSurface(width, height);
+  const background = ctx.theme.theme.surface.muted;
+  fillSurface(surface, background);
+
+  const innerWidth = Math.max(1, width - (DRAWER_INNER_PAD * 2));
+  const innerHeight = Math.max(1, height - (DRAWER_INNER_PAD * 2));
+  const lines = renderGraftDrawerLines(model, innerWidth, innerHeight);
+  const content = stringToSurface(fitBlock(lines.join('\n'), innerWidth, innerHeight), innerWidth, innerHeight);
+
+  applyBackground(content, background);
+  surface.blit(content, DRAWER_INNER_PAD, DRAWER_INNER_PAD);
+  return surface;
+}
+
+function renderGraftDrawerLines(model: Model, width: number, height: number): readonly string[] {
+  const info = model.graftInfo;
+  if (model.editor == null) {
+    return [
+      fitLine('graft', width),
+      fitLine('', width),
+      fitLine('open a file to inspect it', width),
+    ];
+  }
+
+  if (info == null) {
+    return [
+      fitLine('graft', width),
+      fitLine('', width),
+      fitLine(model.graftLoading ? 'loading...' : 'no graft data loaded', width),
+    ];
+  }
+
+  const metaLines = [
+    'graft',
+    info.relativePath,
+    model.graftLoading ? 'loading...' : (info.notice ?? ''),
+    info.error ?? '',
+    'outline',
+  ];
+
+  const changeLines = [
+    '',
+    'changes',
+    ...info.changeLines,
+  ];
+
+  const outlineHeight = Math.max(
+    1,
+    height - metaLines.length - Math.min(GRAFT_CHANGE_ROWS, changeLines.length),
+  );
+  const outlineStart = graftOutlineScroll(model.graftSelectedIndex, info.outlineItems.length, outlineHeight);
+  const outlineLines = info.outlineItems.length === 0
+    ? ['no structural outline']
+    : info.outlineItems
+      .slice(outlineStart, outlineStart + outlineHeight)
+      .map((item, index) => formatGraftOutlineLine(
+        item,
+        outlineStart + index === model.graftSelectedIndex,
+      ));
+
+  return [
+    ...metaLines.map((line) => fitLine(line, width)),
+    ...outlineLines.map((line) => fitLine(line, width)),
+    ...changeLines.slice(0, Math.max(0, height - metaLines.length - outlineLines.length)).map((line) => fitLine(line, width)),
+  ];
+}
+
+function renderMarkdownPreview(text: string): string {
+  const lines = text.split('\n');
+  return lines.map((line) => {
+    if (/^\s*```/.test(line)) {
+      return '';
+    }
+    if (/^\s*#{1,6}\s+/.test(line)) {
+      return line.replace(/^\s*#{1,6}\s+/, '').toUpperCase();
+    }
+    if (/^\s*[-*]\s+/.test(line)) {
+      return line.replace(/^\s*[-*]\s+/, '• ');
+    }
+    if (/^\s*>\s+/.test(line)) {
+      return line.replace(/^\s*>\s+/, '│ ');
+    }
+    return line;
+  }).join('\n');
+}
+
+function fillSurface(surface: Surface, token: TokenValue) {
+  surface.fill({
+    char: ' ',
+    bg: token.bg,
+    bgRGB: token.bgRGB,
+    empty: false,
+  });
+}
+
+function applyBackground(surface: Surface, token: TokenValue) {
+  for (let y = 0; y < surface.height; y += 1) {
+    for (let x = 0; x < surface.width; x += 1) {
+      const cell = surface.get(x, y);
+      surface.set(x, y, {
+        ...cell,
+        char: cell.char.length > 0 ? cell.char : ' ',
+        bg: token.bg,
+        bgRGB: token.bgRGB,
+        empty: false,
+      });
+    }
+  }
+}
+
+function formatTreeLine(entry: FileEntry, selected: boolean): string {
+  const prefix = selected ? '› ' : '  ';
+  if (entry.kind === 'parent') {
+    return `${prefix}../`;
+  }
+  if (entry.kind === 'dir') {
+    return `${prefix}${entry.name}/`;
+  }
+  return `${prefix}${entry.name}`;
+}
+
+function formatGraftOutlineLine(item: GraftOutlineItem, selected: boolean): string {
+  const prefix = selected ? '› ' : '  ';
+  return `${prefix}${item.kind} ${item.name} · ${String(item.startLine)}`;
+}
+
+function graftVisibleOutlineRows(rows: number): number {
+  const bodyTop = 2;
+  const bodyHeight = Math.max(1, rows - bodyTop);
+  const innerHeight = Math.max(1, bodyHeight - (DRAWER_INNER_PAD * 2));
+  return Math.max(1, innerHeight - GRAFT_META_ROWS - GRAFT_CHANGE_ROWS);
+}
+
+function graftOutlineScroll(selectedIndex: number, total: number, visible: number): number {
+  if (total <= visible) {
+    return 0;
+  }
+  const half = Math.floor(visible / 2);
+  const candidate = Math.max(0, selectedIndex - half);
+  return Math.min(candidate, total - visible);
+}
+
+function fitBlock(text: string, width: number, height: number): string {
+  const rawLines = text.split('\n');
+  const lines: string[] = [];
+
+  for (let i = 0; i < height; i += 1) {
+    const line = rawLines[i] ?? '';
+    lines.push(fitLine(line, width));
+  }
+
+  return lines.join('\n');
+}
+
+function fitLine(text: string, width: number): string {
+  const clipped = clipToWidth(text, width);
+  const visible = [...clipped].length;
+  if (visible >= width) {
+    return clipped;
+  }
+  return clipped.padEnd(width, ' ');
+}
+
+function normalizeLines(text: string): readonly string[] {
+  const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  return lines.length === 0 ? [''] : lines;
+}
+
+function clampIndex(index: number, size: number): number {
+  if (size <= 0) {
+    return 0;
+  }
+  return Math.max(0, Math.min(size - 1, index));
+}
+
+function clamp01(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+  return Math.max(0, Math.min(1, value));
+}
+
+function resolveDrawerWidth(columns: number, progress: number): number {
+  const maxWidth = Math.max(DRAWER_MIN_WIDTH, Math.min(DRAWER_MAX_WIDTH, Math.floor(columns * 0.26)));
+  return Math.round(maxWidth * clamp01(progress));
+}
+
+function isMarkdownFile(path: string): boolean {
+  return path.endsWith('.md') || path.endsWith('.markdown');
+}
