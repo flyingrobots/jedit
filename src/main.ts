@@ -14,6 +14,7 @@ import {
   loadEntries,
   type FileEntry,
 } from './adapters/filesystem.js';
+import { paintMarkdownPreview } from './ui/markdown-preview.js';
 import {
   applyNotificationState,
   compositeFeedback,
@@ -26,7 +27,7 @@ import {
 } from './ui/feedback.js';
 import { resolveWorkspaceLayout, type DrawerKind } from './ui/drawer-layout.js';
 import { cycleFocusPane, defaultFocusPane, hasFocusablePeers, shouldClearPendingNormalOnPaneChange, type FocusPane, type FocusCycleState } from './ui/panel-focus.js';
-import { fitBlock, fitLine, formatGraftOutlineLine, formatTreeLine, graftOutlineScroll, graftVisibleOutlineRows, renderMarkdownPreview } from './ui/workspace-render.js';
+import { fitBlock, fitLine, formatGraftOutlineLine, formatTreeLine, graftOutlineScroll, graftVisibleOutlineRows } from './ui/workspace-render.js';
 import { activeWorkspaceTitle, centerLine, renderWorkspaceFooter } from './ui/workspace-chrome.js';
 
 const ctx = initDefaultContext();
@@ -2226,14 +2227,7 @@ function cursorDisplayPosition(editor: EditorState) {
 
 function renderPreview(surface: Surface, editor: EditorState, width: number, height: number) {
   const viewport = viewerViewport(width, height);
-  const lines = renderMarkdownPreview(editor.lines.join('\n')).split('\n');
-
-  for (let row = 0; row < viewport.height; row += 1) {
-    const line = lines[editor.scrollRow + row] ?? '';
-    const visible = fitLine(line, viewport.width);
-    surface.blit(stringToSurface(visible, viewport.width, 1), VIEWER_LEFT_PAD, VIEWER_TOP_PAD + row);
-  }
-
+  paintMarkdownPreview(surface, editor.lines.join('\n'), editor.scrollRow, VIEWER_LEFT_PAD, VIEWER_TOP_PAD, viewport.width, viewport.height, ctx.theme.theme);
   return surface;
 }
 
