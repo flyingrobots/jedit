@@ -54,6 +54,42 @@ Dependencies point inward:
 
 Concrete adapters are injected into app services. No hidden singleton reach-through for new code.
 
+## Editor Vocabulary
+
+These words are not interchangeable:
+
+- Buffer
+  An open document and its editing state. Buffers are the editable truth.
+
+- Pane
+  A visible interactive region in the terminal layout. The main editor is a
+  pane. Side surfaces may also be panes when visible.
+
+- Panel
+  An auxiliary pane that is hidden by default and opened intentionally, such as
+  file browsing or Graft.
+
+- Lens
+  An alternate view over the active buffer. A lens does not create a second
+  buffer. Preview, diff, and similar read models belong here.
+
+## UX Invariants
+
+- The default layout is one main editor pane with minimal chrome.
+- The header has one job: identify what the main pane is showing.
+- The footer’s line 1 is owned by the focused surface and may show mode, chord
+  state, prompt state, or local interaction hints.
+- The footer’s line 2 is reserved for slower workspace and buffer truth.
+- Hidden panels do not consume space, focus, or attention.
+- `tab` cycles focus only across visible interactive panes.
+- Panel visibility is explicit. A panel-opening chord should also close that
+  same panel.
+- The main editing experience must remain readable and calm even when richer
+  surfaces exist around it.
+- Preview and structural inspection surfaces are projections over buffer truth,
+  not competing sources of truth.
+- If a surface is stale relative to the buffer, the staleness must be visible.
+
 ## Testing Rule
 
 Tests are executable spec.

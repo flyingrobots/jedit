@@ -6,6 +6,33 @@ The current build is intentionally stripped down. No starter tabs, no extra
 chrome, no decorative theme layer. Just a small custom TUI so the editor shape
 can emerge from the actual product instead of scaffold baggage.
 
+## Product invariants
+
+`jedit` is aiming for a quiet editing surface with smart edges, not a terminal
+IDE clone.
+
+- Zen core, instrumented edges. The main editor area stays visually quiet;
+  richer context appears at the edges and only when it earns the space.
+- Minimal by default. Panels are hidden until explicitly opened.
+- One-line header. The header identifies what the main pane is showing and
+  does not turn into a dashboard.
+- Two-line footer. The top line belongs to the focused surface and may change
+  rapidly. The bottom line carries slower workspace and buffer truth.
+- Buffers are not panes. Panes are not panels. Lenses are not extra buffers.
+- Panels are tools, not furniture. File browsing, Graft, diagnostics, and
+  similar surfaces should open intentionally, close cleanly, and stay out of
+  the way when not needed.
+- The same chord should open and close the same panel.
+- `tab` cycles only across visible interactive panes. Hidden panels do not
+  participate in focus order.
+- The editor should remain strongly Vim-shaped without trying to become "vim
+  2". Familiarity matters; reenactment is not the goal.
+- Alternate views of a file are lenses over the active buffer, not separate
+  truths. Markdown preview is the first lens; others must justify themselves.
+- Truth beats convenience. If a panel is showing saved-on-disk structure while
+  the buffer is dirty, the UI should say so explicitly.
+- Anything noisy must earn its existence.
+
 Near-term product direction:
 - `jedit .` opens the current directory
 - file tree plus text buffer editing
