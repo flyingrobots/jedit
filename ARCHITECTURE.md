@@ -90,6 +90,47 @@ These words are not interchangeable:
   not competing sources of truth.
 - If a surface is stale relative to the buffer, the staleness must be visible.
 
+## Graft Integration Posture
+
+Graft is a major adapter for `jedit`, but it is not the editor kernel.
+
+What Graft should own:
+
+- structural projections over dirty in-memory buffers
+- syntax spans for source highlighting
+- fold regions
+- parser-backed diagnostics
+- cursor-node lookup and parent context
+- structural selection growth and shrink
+- symbol occurrences and rename preview
+- structural diff, semantic summary, and anchor-affinity style snapshot mapping
+
+What `jedit` should own:
+
+- the canonical editable buffer model
+- cursoring, selection state, and undo/redo transactions
+- Vim-shaped mode semantics and input interpretation
+- panes, panels, focus, and lens lifecycle
+- save/open flows and workspace interaction policy
+- paint decisions and terminal-specific rendering
+
+Why the boundary exists:
+
+- Graft's `StructuredBuffer` surface is an immutable parsed snapshot over
+  `path + content`, which is excellent for language intelligence but not a
+  substitute for an editor runtime.
+- `jedit` still needs a lawful text-edit kernel with explicit transactions,
+  stable anchors, and eventually a persistent piece-rope worldline.
+- Structural projections and causal text truth are related, but they are not
+  the same layer.
+
+The intended stack is:
+
+- `jedit` core owns editing truth and interaction
+- Graft provides structural intelligence and parser-backed projections
+- future Echo / `echo-text` work owns the native causal text substrate
+- filesystem and Git remain projections and persistence boundaries
+
 ## Testing Rule
 
 Tests are executable spec.

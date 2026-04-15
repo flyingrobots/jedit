@@ -33,6 +33,22 @@ IDE clone.
   the buffer is dirty, the UI should say so explicitly.
 - Anything noisy must earn its existence.
 
+## Graft posture
+
+`jedit` should use Graft as its structural intelligence engine, not as its
+editing truth.
+
+- Graft is the right place for syntax spans, fold regions, node lookup,
+  structural selections, diagnostics, rename preview, structural diff, and
+  semantic summary over dirty in-memory buffers.
+- `jedit` still owns the editable buffer model, mode semantics, transactions,
+  pane focus, panel lifecycle, save/open flows, and rendering policy.
+- Files on disk, preview surfaces, Graft views, and future AST lenses are
+  projections over buffer truth.
+- Future causal text work remains a separate editor-runtime concern. Graft may
+  help interpret or compare buffer snapshots, but it does not replace the
+  editor’s piece-rope worldline design.
+
 Near-term product direction:
 - `jedit .` opens the current directory
 - file tree plus text buffer editing
