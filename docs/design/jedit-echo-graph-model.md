@@ -522,24 +522,22 @@ It should not:
 
 Purpose:
 
-- retain a meaningful marker over the current hot head
+- retain a meaningful marker over the current canonical hot head in v1
 
 Typical uses:
 
 - save
-- explicit bookmark
-- later admission marker
+- later admission marker once checkpoint scope widens explicitly
 
 Inputs:
 
 - `worldlineId`
-- `headId`
 - `kind`
 - optional `label`
 
 Reads:
 
-- current worldline and target head
+- current worldline and its canonical head
 
 Creates:
 
@@ -556,7 +554,6 @@ Conceptual example:
 ```ts
 createCheckpoint({
   worldlineId: "buf-1",
-  headId: "head-11",
   kind: "save",
   label: "manual save"
 })
@@ -601,6 +598,10 @@ My preference:
 
 - make anchor transform derivable from the tick receipt
 - only persist anchor updates when the product truly needs persistence
+
+That means `ReplaceRangeAsTick` may read the affected anchor set to establish
+the lawful transform window, while still leaving persisted anchor movement out
+of the v1 rewrite itself.
 
 What I need semantically:
 

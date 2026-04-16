@@ -186,6 +186,10 @@ type Mutation {
       forbids: ["AstState", "Diagnostics", "GitWitness", "UiState"]
     )
 
+  """
+  v1 reads affected anchors only so anchor transform can be derived from the
+  resulting receipt. This rewrite does not persist anchor updates in-place.
+  """
   replaceRangeAsTick(input: ReplaceRangeAsTickInput!): ReplaceRangeAsTickResult!
     @wes_op(name: "replaceRangeAsTick")
     @wes_footprint(
@@ -250,6 +254,12 @@ type Mutation {
       forbids: ["AstState", "Diagnostics", "GitWitness", "UiState"]
     )
 
+  """
+  v1 deliberately records a checkpoint only at the current canonical head.
+  Wider retained-marker flows, such as checkpointing an arbitrary non-canonical
+  head, should arrive later as an explicit new rewrite rather than silently
+  widening this one.
+  """
   createCheckpoint(input: CreateCheckpointInput!): CreateCheckpointResult!
     @wes_op(name: "createCheckpoint")
     @wes_footprint(

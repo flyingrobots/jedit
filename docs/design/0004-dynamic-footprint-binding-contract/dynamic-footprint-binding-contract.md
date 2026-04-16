@@ -425,12 +425,20 @@ Echo still needs to:
 
 That is correct. The runtime is supposed to own those instance-level truths.
 
+One important v1 note: reading `affectedAnchors` here does not mean the rewrite
+is authorized to persist anchor updates in-place. In the current `jedit`
+contract, that closure exists so anchor transform can remain a derived function
+of the emitted receipt until persistence is explicitly widened.
+
 ## `CreateCheckpoint`
 
 This second example matters because it proves the model is not just a range
 editing trick.
 
-The rewrite can stay much narrower:
+The rewrite can stay much narrower. In the current authored GraphQL contract it
+is also intentionally canonical-only: it binds the checkpoint target from the
+worldline's current `CANONICAL_HEAD` relation instead of letting the caller
+name an arbitrary `headId`.
 
 ```graphql
 type Mutation {
@@ -474,6 +482,10 @@ This means the generated Rust surface for checkpoint creation should not expose:
 
 If the implementation tries to do any of those things, it should fail
 statically.
+
+If later product needs bookmark-like or admission-like retained markers on
+non-canonical heads, that should arrive as an explicit widening such as
+`CreateCheckpointAtHead`, not as a silent broadening of this rewrite.
 
 ## What This Means For `jedit`
 
