@@ -122,6 +122,9 @@ If the footprint model cannot express that honestly, it will either:
 
 This packet defines the middle path.
 
+The first authored GraphQL home for that contract now lives in
+[../../../contracts/jedit/hot-text-runtime.graphql](../../../contracts/jedit/hot-text-runtime.graphql).
+
 ## Core Law
 
 The core split is:

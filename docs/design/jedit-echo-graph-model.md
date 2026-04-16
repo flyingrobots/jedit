@@ -7,6 +7,7 @@ wants Echo to support, without assuming handwritten Echo runtime edits.
 
 This note is the detailed companion to:
 
+- [../../contracts/jedit/hot-text-runtime.graphql](../../contracts/jedit/hot-text-runtime.graphql)
 - [text-edit-algebra.md](text-edit-algebra.md)
 - [0004 - dynamic-footprint-binding-contract](0004-dynamic-footprint-binding-contract/dynamic-footprint-binding-contract.md)
 - [runtime-temperatures.md](runtime-temperatures.md)
@@ -39,6 +40,8 @@ request for a precise graph model.
 
 The dynamic/static footprint split for these rewrites is defined in
 [0004 - dynamic-footprint-binding-contract](0004-dynamic-footprint-binding-contract/dynamic-footprint-binding-contract.md).
+The first authored GraphQL home for that boundary now lives in
+[../../contracts/jedit/hot-text-runtime.graphql](../../contracts/jedit/hot-text-runtime.graphql).
 
 ## What I Need Echo To Own
 
