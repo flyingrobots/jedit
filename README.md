@@ -64,6 +64,11 @@ The authored home for the first hot-text contract now lives at
 The app-owned contract adapter that maps those rewrite names onto the current
 runtime lives at
 [src/app/jedit-contract-runtime.ts](src/app/jedit-contract-runtime.ts).
+Refresh the generated TypeScript and Zod contract surfaces with:
+
+```sh
+npm run gen:contract
+```
 
 Near-term product direction:
 - `jedit .` opens the current directory

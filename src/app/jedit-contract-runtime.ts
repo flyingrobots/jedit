@@ -3,6 +3,28 @@ import { createHash } from 'node:crypto';
 import { createTextRange, materializeRoot } from '../domain/text-edit-contract.js';
 import type { SaveCheckpointReceipt } from '../domain/save-checkpoint-contract.js';
 import type { TickAdmissionReceipt } from '../domain/tick-admission-contract.js';
+import type {
+  BufferWorldline,
+  Checkpoint,
+  CreateBufferWorldlineInput,
+  CreateBufferWorldlineResult,
+  CreateCheckpointInput,
+  CreateCheckpointResult,
+  ReplaceRangeAsTickInput,
+  ReplaceRangeAsTickResult,
+  RopeHead,
+  Tick,
+  TickKind,
+  TickReceipt,
+} from '../generated/jedit/hot-text-runtime.types.generated.js';
+import {
+  CreateBufferWorldlineInputSchema,
+  CreateBufferWorldlineResultSchema,
+  CreateCheckpointInputSchema,
+  CreateCheckpointResultSchema,
+  ReplaceRangeAsTickInputSchema,
+  ReplaceRangeAsTickResultSchema,
+} from '../generated/jedit/hot-text-runtime.zod.generated.js';
 import type { HotTextBufferState, HotTextRuntimePort } from '../ports/hot-text-runtime.js';
 
 const JEDIT_CONTRACT_RUNTIME_ERROR_WORLDLINE_MISMATCH = 1;
@@ -20,73 +42,11 @@ const EMPTY_LINE_COUNT = 1;
 
 const UTF8_ENCODER = new TextEncoder();
 
-export interface BufferWorldlineRecord {
-  readonly worldlineId: string;
-  readonly bufferKey: string;
-  readonly canonicalHeadId: string;
-  readonly createdAtTickId?: string;
-  readonly projectionPath?: string;
-}
-
-export interface RopeHeadRecord {
-  readonly headId: string;
-  readonly worldlineId: string;
-  readonly rootNodeId: string;
-  readonly byteLength: number;
-  readonly lineCount: number;
-  readonly utf16Length: number;
-  readonly equivalenceDigest: string;
-}
-
-export interface TickRecord {
-  readonly tickId: string;
-  readonly worldlineId: string;
-  readonly kind: string;
-  readonly sequenceNumber: number;
-  readonly author?: string;
-}
-
-export interface TickReceiptRecord {
-  readonly receiptId: string;
-  readonly tickId: string;
-  readonly baseHeadId: string;
-  readonly nextHeadId: string;
-  readonly rewriteKind: string;
-  readonly startByte?: number;
-  readonly endByte?: number;
-  readonly insertedByteLength: number;
-  readonly deletedByteLength: number;
-  readonly inverseFragmentDigest?: string;
-  readonly summary?: string;
-}
-
-export interface CheckpointRecord {
-  readonly checkpointId: string;
-  readonly worldlineId: string;
-  readonly headId: string;
-  readonly kind: string;
-  readonly label?: string;
-  readonly createdByTickId?: string;
-}
-
 export interface JeditWorldlineSession {
-  readonly worldline: BufferWorldlineRecord;
+  readonly worldline: BufferWorldline;
   readonly state: HotTextBufferState;
   readonly tickMetadata: readonly TickMetadata[];
   readonly checkpointMetadata: readonly CheckpointMetadata[];
-}
-
-export interface CreateBufferWorldlineInput {
-  readonly bufferKey: string;
-  readonly initialText: string;
-  readonly projectionPath?: string;
-  readonly createInitialCheckpoint: boolean;
-}
-
-export interface CreateBufferWorldlineResult {
-  readonly worldline: BufferWorldlineRecord;
-  readonly head: RopeHeadRecord;
-  readonly checkpoint?: CheckpointRecord;
 }
 
 export interface CreateBufferWorldlineExecution {
@@ -94,37 +54,9 @@ export interface CreateBufferWorldlineExecution {
   readonly result: CreateBufferWorldlineResult;
 }
 
-export interface ReplaceRangeAsTickInput {
-  readonly worldlineId: string;
-  readonly baseHeadId: string;
-  readonly startByte: number;
-  readonly endByte: number;
-  readonly insertText: string;
-  readonly author?: string;
-}
-
-export interface ReplaceRangeAsTickResult {
-  readonly worldline: BufferWorldlineRecord;
-  readonly nextHead: RopeHeadRecord;
-  readonly tick: TickRecord;
-  readonly receipt: TickReceiptRecord;
-}
-
 export interface ReplaceRangeAsTickExecution {
   readonly nextSession: JeditWorldlineSession;
   readonly result?: ReplaceRangeAsTickResult;
-}
-
-export interface CreateCheckpointInput {
-  readonly worldlineId: string;
-  readonly kind: string;
-  readonly label?: string;
-}
-
-export interface CreateCheckpointResult {
-  readonly worldline: BufferWorldlineRecord;
-  readonly head: RopeHeadRecord;
-  readonly checkpoint: CheckpointRecord;
 }
 
 export interface CreateCheckpointExecution {
@@ -134,7 +66,7 @@ export interface CreateCheckpointExecution {
 
 interface TickMetadata {
   readonly tickId: number;
-  readonly kind: string;
+  readonly kind: TickKind;
   readonly author?: string;
 }
 
@@ -159,17 +91,20 @@ export function createBufferWorldline(
   runtime: HotTextRuntimePort,
   input: CreateBufferWorldlineInput,
 ): CreateBufferWorldlineExecution {
-  const projectionPath = input.projectionPath ?? input.bufferKey;
-  const initialState = runtime.createBuffer(projectionPath, input.initialText);
-  const initialSession = createSession(input.bufferKey, projectionPath, initialState, [], []);
+  const parsedInput = CreateBufferWorldlineInputSchema.parse(input);
+  const initialText = parsedInput.initialText ?? '';
+  const projectionPath = parsedInput.projectionPath ?? parsedInput.bufferKey;
+  const initialState = runtime.createBuffer(projectionPath, initialText);
+  const initialSession = createSession(parsedInput.bufferKey, projectionPath, initialState, [], []);
 
-  if (!input.createInitialCheckpoint) {
+  if (!(parsedInput.createInitialCheckpoint ?? false)) {
+    const result = CreateBufferWorldlineResultSchema.parse({
+      worldline: initialSession.worldline,
+      head: toHeadRecord(initialSession),
+    });
     return {
       nextSession: initialSession,
-      result: {
-        worldline: initialSession.worldline,
-        head: toHeadRecord(initialSession),
-      },
+      result,
     };
   }
 
@@ -177,16 +112,17 @@ export function createBufferWorldline(
   const metadata = saved.receipt == null
     ? []
     : [createCheckpointMetadata(saved.receipt, INITIAL_CHECKPOINT_KIND, undefined)];
-  const nextSession = createSession(input.bufferKey, projectionPath, saved.nextState, [], metadata);
+  const nextSession = createSession(parsedInput.bufferKey, projectionPath, saved.nextState, [], metadata);
   const checkpoint = metadata[0] == null ? undefined : toCheckpointRecord(nextSession, metadata[0]);
+  const result = CreateBufferWorldlineResultSchema.parse({
+    worldline: nextSession.worldline,
+    head: toHeadRecord(nextSession),
+    checkpoint,
+  });
 
   return {
     nextSession,
-    result: {
-      worldline: nextSession.worldline,
-      head: toHeadRecord(nextSession),
-      checkpoint,
-    },
+    result,
   };
 }
 
@@ -202,14 +138,15 @@ export function replaceRangeAsTick(
   session: JeditWorldlineSession,
   input: ReplaceRangeAsTickInput,
 ): ReplaceRangeAsTickExecution {
-  ensureMatchingWorldline(session, input.worldlineId);
-  ensureMatchingBaseHead(session, input.baseHeadId);
+  const parsedInput = ReplaceRangeAsTickInputSchema.parse(input);
+  ensureMatchingWorldline(session, parsedInput.worldlineId);
+  ensureMatchingBaseHead(session, parsedInput.baseHeadId);
 
-  const baseHeadId = input.baseHeadId;
+  const baseHeadId = parsedInput.baseHeadId;
   const admission = runtime.admitReplaceRangeTick(
     session.state,
-    createTextRange(input.startByte, input.endByte),
-    input.insertText,
+    createTextRange(parsedInput.startByte, parsedInput.endByte),
+    parsedInput.insertText,
   );
 
   if (admission.receipt == null) {
@@ -218,7 +155,7 @@ export function replaceRangeAsTick(
     };
   }
 
-  const tickMetadata = createTickMetadata(admission.receipt, input.author);
+  const tickMetadata = createTickMetadata(admission.receipt, parsedInput.author ?? undefined);
   const nextTickMetadata = [
     ...session.tickMetadata,
     tickMetadata,
@@ -230,15 +167,21 @@ export function replaceRangeAsTick(
     session.checkpointMetadata,
   );
   const tick = toTickRecord(nextSession, tickMetadata);
+  const result = ReplaceRangeAsTickResultSchema.parse({
+    worldline: nextSession.worldline,
+    nextHead: toHeadRecord(nextSession),
+    tick,
+    receipt: toTickReceiptRecord(
+      admission.receipt,
+      baseHeadId,
+      nextSession.worldline.canonicalHeadId,
+      parsedInput.insertText,
+    ),
+  });
 
   return {
     nextSession,
-    result: {
-      worldline: nextSession.worldline,
-      nextHead: toHeadRecord(nextSession),
-      tick,
-      receipt: toTickReceiptRecord(admission.receipt, baseHeadId, nextSession.worldline.canonicalHeadId, input.insertText),
-    },
+    result,
   };
 }
 
@@ -247,7 +190,8 @@ export function createCheckpoint(
   session: JeditWorldlineSession,
   input: CreateCheckpointInput,
 ): CreateCheckpointExecution {
-  ensureMatchingWorldline(session, input.worldlineId);
+  const parsedInput = CreateCheckpointInputSchema.parse(input);
+  ensureMatchingWorldline(session, parsedInput.worldlineId);
 
   const saved = runtime.saveCheckpoint(session.state);
   if (saved.receipt == null) {
@@ -256,7 +200,11 @@ export function createCheckpoint(
     };
   }
 
-  const checkpointMetadata = createCheckpointMetadata(saved.receipt, input.kind, input.label);
+  const checkpointMetadata = createCheckpointMetadata(
+    saved.receipt,
+    parsedInput.kind,
+    parsedInput.label ?? undefined,
+  );
   const nextCheckpointMetadata = [
     ...session.checkpointMetadata,
     checkpointMetadata,
@@ -268,14 +216,15 @@ export function createCheckpoint(
     nextCheckpointMetadata,
   );
   const checkpoint = toCheckpointRecord(nextSession, checkpointMetadata);
+  const result = CreateCheckpointResultSchema.parse({
+    worldline: nextSession.worldline,
+    head: toHeadRecord(nextSession),
+    checkpoint,
+  });
 
   return {
     nextSession,
-    result: {
-      worldline: nextSession.worldline,
-      head: toHeadRecord(nextSession),
-      checkpoint,
-    },
+    result,
   };
 }
 
@@ -287,7 +236,7 @@ function createSession(
   checkpointMetadata: readonly CheckpointMetadata[],
 ): JeditWorldlineSession {
   const worldlineId = toWorldlineId(projectionPath);
-  const worldline: BufferWorldlineRecord = {
+  const worldline: BufferWorldline = {
     worldlineId,
     bufferKey,
     canonicalHeadId: toHeadId(state.currentRoot.id),
@@ -337,7 +286,7 @@ function createCheckpointMetadata(
   };
 }
 
-function toHeadRecord(session: JeditWorldlineSession): RopeHeadRecord {
+function toHeadRecord(session: JeditWorldlineSession): RopeHead {
   const text = materializeRoot(session.state.currentRoot);
 
   return {
@@ -351,7 +300,7 @@ function toHeadRecord(session: JeditWorldlineSession): RopeHeadRecord {
   };
 }
 
-function toTickRecord(session: JeditWorldlineSession, metadata: TickMetadata): TickRecord {
+function toTickRecord(session: JeditWorldlineSession, metadata: TickMetadata): Tick {
   return {
     tickId: toTickId(metadata.tickId),
     worldlineId: session.worldline.worldlineId,
@@ -366,7 +315,7 @@ function toTickReceiptRecord(
   baseHeadId: string,
   nextHeadId: string,
   insertText: string,
-): TickReceiptRecord {
+): TickReceipt {
   const deletedByteLength = receipt.replaceReceipt.replaced.end.byte - receipt.replaceReceipt.replaced.start.byte;
 
   return {
@@ -386,7 +335,7 @@ function toTickReceiptRecord(
 function toCheckpointRecord(
   session: JeditWorldlineSession,
   metadata: CheckpointMetadata,
-): CheckpointRecord {
+): Checkpoint {
   const checkpoint = session.state.checkpoints.find((entry) => entry.id === metadata.checkpointId);
   const headId = checkpoint == null
     ? session.worldline.canonicalHeadId
