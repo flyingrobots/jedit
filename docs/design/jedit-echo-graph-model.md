@@ -9,6 +9,7 @@ This note is the detailed companion to:
 
 - [../../contracts/jedit/hot-text-runtime.graphql](../../contracts/jedit/hot-text-runtime.graphql)
 - [../../src/app/jedit-contract-runtime.ts](../../src/app/jedit-contract-runtime.ts)
+- [0005 - jedit-observer-spec](0005-jedit-observer-spec/jedit-observer-spec.md)
 - [text-edit-algebra.md](text-edit-algebra.md)
 - [0004 - dynamic-footprint-binding-contract](0004-dynamic-footprint-binding-contract/dynamic-footprint-binding-contract.md)
 - [runtime-temperatures.md](runtime-temperatures.md)
@@ -59,6 +60,10 @@ That authored contract now also carries the first read-side surface:
 `worldlineSnapshot`, which is intentionally limited to canonical-head truth in
 v1 rather than pretending the runtime already supports arbitrary retained-head
 materialization.
+The first app-owned observer shape for that read-side boundary now lives in
+[0005 - jedit-observer-spec](0005-jedit-observer-spec/jedit-observer-spec.md),
+which intentionally starts with a memoryless canonical-head observer rather
+than pretending every read is already a full observer lifecycle.
 
 ## What I Need Echo To Own
 
