@@ -15,8 +15,10 @@ const DESIGN_DOC_PATH = path.join(
 );
 const MODULE_PATH = path.join(REPO_ROOT, 'dist', 'domain', 'save-checkpoint-contract.js');
 const TICK_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'domain', 'tick-admission-contract.js');
+const EDIT_GROUP_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'domain', 'edit-group-contract.js');
 const CONTRACT_SPEC_PATH = path.join('spec', 'save-checkpoint.contract.spec.mjs');
 const TICK_CONTRACT_SPEC_PATH = path.join('spec', 'tick-admission.contract.spec.mjs');
+const EDIT_GROUP_CONTRACT_SPEC_PATH = path.join('spec', 'edit-group.contract.spec.mjs');
 const QUALITY_GATE_PATH = path.join('scripts', 'quality-gate.mjs');
 const TYPESCRIPT_CLI_PATH = path.join('node_modules', 'typescript', 'bin', 'tsc');
 const EXPECTED_RUNTIME_EXPORTS = [
@@ -29,9 +31,18 @@ const EXPECTED_TICK_RUNTIME_EXPORTS = [
   'admitReplaceRangeTick',
   'createTickAdmissionState',
 ];
+const EXPECTED_EDIT_GROUP_RUNTIME_EXPORTS = [
+  'EditGroupContractError',
+  'closeEditGroup',
+  'createEditGroupState',
+  'includeTickInOpenGroup',
+  'openEditGroup',
+  'registerTick',
+];
 
 let cachedContractPromise;
 let cachedTickContractPromise;
+let cachedEditGroupContractPromise;
 
 function readDesignDoc() {
   return fs.readFileSync(DESIGN_DOC_PATH, 'utf8');
@@ -62,6 +73,15 @@ async function loadTickContract() {
   }
 
   return cachedTickContractPromise;
+}
+
+async function loadEditGroupContract() {
+  if (cachedEditGroupContractPromise === undefined) {
+    runCommand([TYPESCRIPT_CLI_PATH, '-p', 'tsconfig.json']);
+    cachedEditGroupContractPromise = import(pathToFileURL(EDIT_GROUP_MODULE_PATH).href);
+  }
+
+  return cachedEditGroupContractPromise;
 }
 
 test('The cycle clearly says the rope-worldline is canonical, the AST worldline is derived, and Git commits are durable witnesses rather than the cadence of editor truth.', () => {
@@ -202,6 +222,58 @@ test('A logical no-op does not mint a tick.', async () => {
   assert.equal(result.receipt, undefined);
 });
 
+test('An edit group can close over multiple known ticks.', async () => {
+  const contract = await loadEditGroupContract();
+  const withTicks = contract.registerTick(
+    contract.registerTick(
+      contract.registerTick(contract.createEditGroupState(), 1),
+      2,
+    ),
+    3,
+  );
+
+  const grouped = contract.includeTickInOpenGroup(
+    contract.includeTickInOpenGroup(
+      contract.openEditGroup(withTicks),
+      2,
+    ),
+    3,
+  );
+  const result = contract.closeEditGroup(grouped);
+
+  assert.deepEqual(result.nextState.groups, [
+    {
+      id: 1,
+      tickIds: [2, 3],
+    },
+  ]);
+  assert.deepEqual(result.receipt, {
+    groupId: 1,
+    tickIds: [2, 3],
+  });
+});
+
+test('Only known ticks can enter an edit group.', async () => {
+  const contract = await loadEditGroupContract();
+  const state = contract.openEditGroup(contract.createEditGroupState([1, 2]));
+
+  assert.throws(
+    () => contract.includeTickInOpenGroup(state, 3),
+    (error) => error instanceof contract.EditGroupContractError && error.code === 2,
+  );
+});
+
+test('Closing an empty open group is a logical no-op.', async () => {
+  const contract = await loadEditGroupContract();
+  const state = contract.openEditGroup(contract.createEditGroupState([1, 2]));
+
+  const result = contract.closeEditGroup(state);
+
+  assert.deepEqual(result.nextState.groups, []);
+  assert.equal(result.nextState.openGroup, undefined);
+  assert.equal(result.receipt, undefined);
+});
+
 test('The runtime contract stays a minimal save-checkpoint seam rather than a full rope runtime.', async () => {
   const contract = await loadContract();
 
@@ -214,9 +286,16 @@ test('The runtime contract stays a minimal tick-admission seam rather than a ful
   assert.deepEqual(Object.keys(contract).sort(), EXPECTED_TICK_RUNTIME_EXPORTS);
 });
 
-test('The workspace satisfies build, quality, and the save/tick contract suites.', () => {
+test('The runtime contract stays a minimal edit-group seam rather than a full rope runtime.', async () => {
+  const contract = await loadEditGroupContract();
+
+  assert.deepEqual(Object.keys(contract).sort(), EXPECTED_EDIT_GROUP_RUNTIME_EXPORTS);
+});
+
+test('The workspace satisfies build, quality, and the save/tick/edit-group contract suites.', () => {
   runCommand([TYPESCRIPT_CLI_PATH, '-p', 'tsconfig.json']);
   runCommand(['--test', CONTRACT_SPEC_PATH]);
   runCommand(['--test', TICK_CONTRACT_SPEC_PATH]);
+  runCommand(['--test', EDIT_GROUP_CONTRACT_SPEC_PATH]);
   runCommand([QUALITY_GATE_PATH, '--json']);
 });

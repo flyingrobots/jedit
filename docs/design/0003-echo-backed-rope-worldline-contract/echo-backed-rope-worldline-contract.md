@@ -296,6 +296,10 @@ The next executable seam after save-checkpoint semantics is tick-admission
 semantics: a lawful `ReplaceRange` should be admissible as a tick with a tick
 receipt, while a logical no-op should not mint a new tick.
 
+The executable seam after tick-admission semantics is edit-group semantics:
+`jedit` should be able to group one or more known ticks into a human-meaningful
+edit group without redefining the canonical tick boundary.
+
 ## Backlog Context
 
 Define the hot text-truth substrate for `jedit`.
