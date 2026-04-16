@@ -103,6 +103,8 @@ not implement Echo bindings, a rope runtime, or new editor UI.
 
 Detailed node, edge, and rewrite expectations for the future Echo-backed hot
 graph now live in [../jedit-echo-graph-model.md](../jedit-echo-graph-model.md).
+The dynamic footprint law for those rewrites now lives in
+[../0004-dynamic-footprint-binding-contract/dynamic-footprint-binding-contract.md](../0004-dynamic-footprint-binding-contract/dynamic-footprint-binding-contract.md).
 
 ### Core law
 

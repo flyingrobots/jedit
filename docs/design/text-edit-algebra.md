@@ -9,6 +9,8 @@ Event-class boundaries live in [causal-event-model.md](causal-event-model.md).
 The substrate choice is explained in [why-echo.md](why-echo.md).
 The detailed Echo graph shape is described in
 [jedit-echo-graph-model.md](jedit-echo-graph-model.md).
+The static/dynamic rewrite-footprint split is described in
+[0004 - dynamic-footprint-binding-contract](0004-dynamic-footprint-binding-contract/dynamic-footprint-binding-contract.md).
 
 ## One Sentence
 
@@ -182,6 +184,16 @@ That means:
 
 This keeps the canonical boundary aligned with Echo while still letting the
 editor present larger human-meaningful actions than a single tick.
+
+The footprint for that tick-admitted rewrite should be read as:
+
+- static at the level of slots, closure operators, create surfaces, and
+  forbidden surfaces
+- dynamic at the level of concrete worldline/head/range bindings and touched
+  rope instances
+
+That split is what lets `ReplaceRangeAsTick` stay honest without pretending
+the compiler already knows which rope nodes a future edit will touch.
 
 ## ReplaceRange
 

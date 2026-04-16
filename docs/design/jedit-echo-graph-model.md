@@ -8,6 +8,7 @@ wants Echo to support, without assuming handwritten Echo runtime edits.
 This note is the detailed companion to:
 
 - [text-edit-algebra.md](text-edit-algebra.md)
+- [0004 - dynamic-footprint-binding-contract](0004-dynamic-footprint-binding-contract/dynamic-footprint-binding-contract.md)
 - [runtime-temperatures.md](runtime-temperatures.md)
 - [why-echo.md](why-echo.md)
 - [0003 - echo-backed-rope-worldline-contract](0003-echo-backed-rope-worldline-contract/echo-backed-rope-worldline-contract.md)
@@ -35,6 +36,9 @@ cleaner:
 
 This document is therefore not a request for ad hoc runtime hacking. It is a
 request for a precise graph model.
+
+The dynamic/static footprint split for these rewrites is defined in
+[0004 - dynamic-footprint-binding-contract](0004-dynamic-footprint-binding-contract/dynamic-footprint-binding-contract.md).
 
 ## What I Need Echo To Own
 
@@ -465,6 +469,13 @@ Required laws:
 - unchanged subtrees are reused
 - tick receipt names base and next heads
 - anchor transform can be derived from the receipt
+
+Dynamic binding note:
+
+- the exact touched rope path and affected anchor set are runtime bindings
+- the lawful kinds of slots, closures, creates, and updates must still be
+  declared statically
+- see [0004 - dynamic-footprint-binding-contract](0004-dynamic-footprint-binding-contract/dynamic-footprint-binding-contract.md)
 
 Conceptual example:
 

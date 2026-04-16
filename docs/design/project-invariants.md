@@ -146,7 +146,19 @@ Echo's tick should be treated as the canonical hot-worldline boundary.
 
 Edit groups are important, but they are not the canonical substrate boundary.
 
-### 14. History is tiered
+### 14. Footprint schema is static, binding is dynamic
+
+Hot rewrites should be statically honest without pretending their concrete
+runtime focus is known ahead of time.
+
+- Wesley-facing rewrite contracts should declare slots, closure operators,
+  create surfaces, update surfaces, and forbidden surfaces explicitly
+- runtime ids, current-head relations, rope-path closure, and anchor-closure
+  membership remain dynamic bindings
+- compile-time failure should cover undeclared capability use
+- runtime failure should cover invalid or stale bindings
+
+### 15. History is tiered
 
 Not every causal artifact should live forever.
 
@@ -155,24 +167,24 @@ Not every causal artifact should live forever.
 - edit groups are the main human-facing history surface
 - checkpoints and admissions are the durable long-horizon layer
 
-### 15. Files and previews are projections
+### 16. Files and previews are projections
 
 Files on disk, Markdown preview, AST views, diagnostics, fold maps, and search
 indexes are all projections over buffer truth, not separate authorities.
 
 ## Delivery Invariants
 
-### 16. Tests are executable spec
+### 17. Tests are executable spec
 
 Important behavior should become red tests before it becomes implementation
 truth.
 
-### 17. Design should become repo truth
+### 18. Design should become repo truth
 
 Important decisions should land in inspectable docs, tests, and code, not live
 only in chat.
 
-### 18. Graceful degradation is mandatory
+### 19. Graceful degradation is mandatory
 
 If warm structure is partial, unsupported, or stale, or if cold witness layers
 are absent because the workspace is outside a Git repo, the editor should
