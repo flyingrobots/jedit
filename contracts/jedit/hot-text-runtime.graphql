@@ -36,11 +36,30 @@ enum AnchorBias {
   RIGHT
 }
 
+enum AnchorStickiness {
+  LEADING
+  TRAILING
+  EXPAND
+}
+
 enum TickKind {
   BUFFER_CREATE
   TEXT_REWRITE
   CHECKPOINT_CREATE
   ANCHOR_REGISTER
+}
+
+enum TickReceiptRewriteKind {
+  CREATE_BUFFER_WORLDLINE
+  REPLACE_RANGE_AS_TICK
+  CREATE_CHECKPOINT
+  REGISTER_ANCHOR
+}
+
+enum CheckpointKind {
+  INITIAL
+  MANUAL_SAVE
+  AUTO_SAVE
 }
 
 type BufferWorldline {
@@ -94,7 +113,7 @@ type Anchor {
   endByte: Int
   startBias: AnchorBias!
   endBias: AnchorBias
-  stickiness: String
+  stickiness: AnchorStickiness
 }
 
 type Tick {
@@ -110,7 +129,7 @@ type TickReceipt {
   tickId: ID!
   baseHeadId: ID!
   nextHeadId: ID!
-  rewriteKind: String!
+  rewriteKind: TickReceiptRewriteKind!
   startByte: Int
   endByte: Int
   insertedByteLength: Int!
@@ -123,9 +142,16 @@ type Checkpoint {
   checkpointId: ID!
   worldlineId: ID!
   headId: ID!
-  kind: String!
+  kind: CheckpointKind!
   label: String
   createdByTickId: ID
+}
+
+type WorldlineSnapshot {
+  worldline: BufferWorldline!
+  head: RopeHead!
+  checkpoints: [Checkpoint!]!
+  text: String!
 }
 
 type CreateBufferWorldlineResult {
@@ -165,8 +191,12 @@ input ReplaceRangeAsTickInput {
 
 input CreateCheckpointInput {
   worldlineId: ID!
-  kind: String!
+  kind: CheckpointKind!
   label: String
+}
+
+input WorldlineSnapshotInput {
+  worldlineId: ID!
 }
 
 type Mutation {
@@ -294,4 +324,14 @@ type Mutation {
         "UiState"
       ]
     )
+}
+
+type Query {
+  """
+  Returns the current canonical worldline/head pair plus retained checkpoints
+  and materialized text. v1 intentionally reads the canonical head only rather
+  than arbitrary retained non-canonical heads.
+  """
+  worldlineSnapshot(input: WorldlineSnapshotInput!): WorldlineSnapshot!
+    @wes_op(name: "worldlineSnapshot")
 }

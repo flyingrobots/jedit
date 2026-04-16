@@ -4,15 +4,21 @@ import { createTextRange, materializeRoot } from '../domain/text-edit-contract.j
 import type { SaveCheckpointReceipt } from '../domain/save-checkpoint-contract.js';
 import type { TickAdmissionReceipt } from '../domain/tick-admission-contract.js';
 import type {
+  CheckpointKind,
   BufferWorldline,
   Checkpoint,
   MutationOperationMap,
+  QueryOperationMap,
   RopeHead,
   Tick,
   TickKind,
+  TickReceiptRewriteKind,
   TickReceipt,
 } from '../generated/jedit/hot-text-runtime.types.generated.js';
-import { MutationOperationSchemas } from '../generated/jedit/hot-text-runtime.zod.generated.js';
+import {
+  MutationOperationSchemas,
+  QueryOperationSchemas,
+} from '../generated/jedit/hot-text-runtime.zod.generated.js';
 import type { HotTextBufferState, HotTextRuntimePort } from '../ports/hot-text-runtime.js';
 
 const JEDIT_CONTRACT_RUNTIME_ERROR_WORLDLINE_MISMATCH = 1;
@@ -24,8 +30,9 @@ const ROOT_NODE_ID_PREFIX = 'root:';
 const CHECKPOINT_ID_PREFIX = 'checkpoint:';
 const TICK_ID_PREFIX = 'tick:';
 const RECEIPT_ID_PREFIX = 'receipt:';
-const TICK_KIND_TEXT_REWRITE = 'TEXT_REWRITE';
-const INITIAL_CHECKPOINT_KIND = 'INITIAL';
+const TICK_KIND_TEXT_REWRITE: TickKind = 'TEXT_REWRITE';
+const TICK_RECEIPT_REWRITE_KIND_REPLACE_RANGE_AS_TICK: TickReceiptRewriteKind = 'REPLACE_RANGE_AS_TICK';
+const INITIAL_CHECKPOINT_KIND: CheckpointKind = 'INITIAL';
 const EMPTY_LINE_COUNT = 1;
 
 const UTF8_ENCODER = new TextEncoder();
@@ -36,6 +43,8 @@ type ReplaceRangeAsTickInput = MutationOperationMap['replaceRangeAsTick']['input
 type ReplaceRangeAsTickResult = MutationOperationMap['replaceRangeAsTick']['result'];
 type CreateCheckpointInput = MutationOperationMap['createCheckpoint']['input'];
 type CreateCheckpointResult = MutationOperationMap['createCheckpoint']['result'];
+type WorldlineSnapshotInput = QueryOperationMap['worldlineSnapshot']['input'];
+type WorldlineSnapshotResult = QueryOperationMap['worldlineSnapshot']['result'];
 
 export interface JeditWorldlineSession {
   readonly worldline: BufferWorldline;
@@ -67,7 +76,7 @@ interface TickMetadata {
 
 interface CheckpointMetadata {
   readonly checkpointId: number;
-  readonly kind: string;
+  readonly kind: CreateCheckpointInput['kind'];
   readonly label?: string;
   readonly createdByTickId?: number;
 }
@@ -126,6 +135,22 @@ export function materializeWorldline(
   session: JeditWorldlineSession,
 ): string {
   return runtime.materialize(session.state);
+}
+
+export function readWorldlineSnapshot(
+  runtime: HotTextRuntimePort,
+  session: JeditWorldlineSession,
+  input: WorldlineSnapshotInput,
+): WorldlineSnapshotResult {
+  const parsedInput = QueryOperationSchemas.worldlineSnapshot.input.parse(input);
+  ensureMatchingWorldline(session, parsedInput.worldlineId);
+
+  return QueryOperationSchemas.worldlineSnapshot.result.parse({
+    worldline: session.worldline,
+    head: toHeadRecord(session),
+    checkpoints: toCheckpointRecords(session),
+    text: materializeWorldline(runtime, session),
+  });
 }
 
 export function replaceRangeAsTick(
@@ -271,7 +296,7 @@ function createTickMetadata(receipt: TickAdmissionReceipt, author: string | unde
 
 function createCheckpointMetadata(
   receipt: SaveCheckpointReceipt,
-  kind: string,
+  kind: CreateCheckpointInput['kind'],
   label: string | undefined,
 ): CheckpointMetadata {
   return {
@@ -279,6 +304,10 @@ function createCheckpointMetadata(
     kind,
     label,
   };
+}
+
+function toCheckpointRecords(session: JeditWorldlineSession): Checkpoint[] {
+  return session.checkpointMetadata.map((metadata) => toCheckpointRecord(session, metadata));
 }
 
 function toHeadRecord(session: JeditWorldlineSession): RopeHead {
@@ -318,7 +347,7 @@ function toTickReceiptRecord(
     tickId: toTickId(receipt.tickId),
     baseHeadId,
     nextHeadId,
-    rewriteKind: 'replaceRangeAsTick',
+    rewriteKind: TICK_RECEIPT_REWRITE_KIND_REPLACE_RANGE_AS_TICK,
     startByte: receipt.replaceReceipt.replaced.start.byte,
     endByte: receipt.replaceReceipt.replaced.end.byte,
     insertedByteLength: byteLength(insertText),

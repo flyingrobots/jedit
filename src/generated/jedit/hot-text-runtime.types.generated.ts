@@ -2,7 +2,10 @@
 export type TextEncoding = "UTF8";
 export type AnchorKind = "CURSOR" | "SELECTION" | "BOOKMARK" | "COMMENT" | "DIAGNOSTIC_TARGET" | "AI_TARGET";
 export type AnchorBias = "LEFT" | "RIGHT";
+export type AnchorStickiness = "LEADING" | "TRAILING" | "EXPAND";
 export type TickKind = "BUFFER_CREATE" | "TEXT_REWRITE" | "CHECKPOINT_CREATE" | "ANCHOR_REGISTER";
+export type TickReceiptRewriteKind = "CREATE_BUFFER_WORLDLINE" | "REPLACE_RANGE_AS_TICK" | "CREATE_CHECKPOINT" | "REGISTER_ANCHOR";
+export type CheckpointKind = "INITIAL" | "MANUAL_SAVE" | "AUTO_SAVE";
 // Object Types
 export interface BufferWorldline {
   worldlineId: string;
@@ -50,7 +53,7 @@ export interface Anchor {
   endByte?: number | null;
   startBias: AnchorBias;
   endBias?: AnchorBias | null;
-  stickiness?: string | null;
+  stickiness?: AnchorStickiness | null;
 }
 export interface Tick {
   tickId: string;
@@ -64,7 +67,7 @@ export interface TickReceipt {
   tickId: string;
   baseHeadId: string;
   nextHeadId: string;
-  rewriteKind: string;
+  rewriteKind: TickReceiptRewriteKind;
   startByte?: number | null;
   endByte?: number | null;
   insertedByteLength: number;
@@ -76,9 +79,15 @@ export interface Checkpoint {
   checkpointId: string;
   worldlineId: string;
   headId: string;
-  kind: string;
+  kind: CheckpointKind;
   label?: string | null;
   createdByTickId?: string | null;
+}
+export interface WorldlineSnapshot {
+  worldline: BufferWorldline;
+  head: RopeHead;
+  checkpoints: Array<Checkpoint>;
+  text: string;
 }
 export interface CreateBufferWorldlineResult {
   worldline: BufferWorldline;
@@ -113,10 +122,27 @@ export interface ReplaceRangeAsTickInput {
 }
 export interface CreateCheckpointInput {
   worldlineId: string;
-  kind: string;
+  kind: CheckpointKind;
   label?: string | null;
 }
+export interface WorldlineSnapshotInput {
+  worldlineId: string;
+}
 // Operations
+export interface WorldlineSnapshotQueryArgs {
+  input: WorldlineSnapshotInput;
+}
+export interface WorldlineSnapshotQueryOperation {
+  operationName: "worldlineSnapshot";
+  args: WorldlineSnapshotQueryArgs;
+  input: WorldlineSnapshotInput;
+  result: WorldlineSnapshot;
+}
+export interface QueryOperationMap {
+  worldlineSnapshot: WorldlineSnapshotQueryOperation;
+}
+export type QueryOperationName = keyof QueryOperationMap;
+export type QueryOperation = QueryOperationMap[QueryOperationName];
 export interface CreateBufferWorldlineMutationArgs {
   input: CreateBufferWorldlineInput;
 }

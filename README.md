@@ -64,7 +64,13 @@ The authored home for the first hot-text contract now lives at
 The app-owned contract adapter that maps those rewrite names onto the current
 runtime lives at
 [src/app/jedit-contract-runtime.ts](src/app/jedit-contract-runtime.ts).
-Refresh the generated TypeScript and Zod contract surfaces with:
+The first read surface is the canonical
+`worldlineSnapshot(input: WorldlineSnapshotInput!)` query, which returns the
+current worldline, canonical head, retained checkpoints, and materialized text
+without pretending the runtime already supports arbitrary historical head
+materialization.
+Refresh the generated TypeScript and Zod contract surfaces, including the
+query and mutation operation registries, with:
 
 ```sh
 npm run gen:contract

@@ -71,7 +71,7 @@ test('replaceRangeAsTick returns contract-shaped tick and receipt data', async (
   assert.equal(edited.result.tick.author, 'tester');
   assert.equal(edited.result.receipt.baseHeadId, created.result.head.headId);
   assert.equal(edited.result.receipt.nextHeadId, edited.result.nextHead.headId);
-  assert.equal(edited.result.receipt.rewriteKind, 'replaceRangeAsTick');
+  assert.equal(edited.result.receipt.rewriteKind, 'REPLACE_RANGE_AS_TICK');
   assert.equal(edited.result.receipt.startByte, 5);
   assert.equal(edited.result.receipt.endByte, 5);
   assert.equal(edited.result.receipt.insertedByteLength, 10);
@@ -107,6 +107,42 @@ test('createCheckpoint keeps checkpoint metadata in the app-owned adapter layer'
   assert.equal(saved.result.head.headId, edited.nextSession.worldline.canonicalHeadId);
   assert.equal(saved.result.checkpoint.kind, 'MANUAL_SAVE');
   assert.equal(saved.result.checkpoint.label, 'after greeting');
+});
+
+test('worldlineSnapshot returns canonical worldline, head, checkpoints, and text', async () => {
+  const { contractApp, adapter } = await loadModules();
+  const runtime = adapter.createInMemoryHotTextRuntime();
+  const created = contractApp.createBufferWorldline(runtime, {
+    bufferKey: 'notes/today.md',
+    initialText: 'hello world',
+    projectionPath: '/tmp/notes/today.md',
+    createInitialCheckpoint: true,
+  });
+  const edited = contractApp.replaceRangeAsTick(runtime, created.nextSession, {
+    worldlineId: created.result.worldline.worldlineId,
+    baseHeadId: created.result.head.headId,
+    startByte: 11,
+    endByte: 11,
+    insertText: '!',
+    author: 'tester',
+  });
+  const saved = contractApp.createCheckpoint(runtime, edited.nextSession, {
+    worldlineId: edited.nextSession.worldline.worldlineId,
+    kind: 'MANUAL_SAVE',
+    label: 'after greeting',
+  });
+
+  const snapshot = contractApp.readWorldlineSnapshot(runtime, saved.nextSession, {
+    worldlineId: saved.nextSession.worldline.worldlineId,
+  });
+
+  assert.equal(snapshot.worldline.worldlineId, saved.nextSession.worldline.worldlineId);
+  assert.equal(snapshot.head.headId, saved.nextSession.worldline.canonicalHeadId);
+  assert.equal(snapshot.text, 'hello world!');
+  assert.equal(snapshot.checkpoints.length, 2);
+  assert.equal(snapshot.checkpoints[0]?.kind, 'INITIAL');
+  assert.equal(snapshot.checkpoints[1]?.kind, 'MANUAL_SAVE');
+  assert.equal(snapshot.checkpoints[1]?.label, 'after greeting');
 });
 
 test('replaceRangeAsTick rejects a stale or foreign basis head at the app-owned contract layer', async () => {

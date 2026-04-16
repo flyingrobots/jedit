@@ -10,8 +10,17 @@ export type AnchorKind = z.infer<typeof AnchorKindSchema>;
 export const AnchorBiasSchema = z.enum(["LEFT", "RIGHT"]);
 export type AnchorBias = z.infer<typeof AnchorBiasSchema>;
 
+export const AnchorStickinessSchema = z.enum(["LEADING", "TRAILING", "EXPAND"]);
+export type AnchorStickiness = z.infer<typeof AnchorStickinessSchema>;
+
 export const TickKindSchema = z.enum(["BUFFER_CREATE", "TEXT_REWRITE", "CHECKPOINT_CREATE", "ANCHOR_REGISTER"]);
 export type TickKind = z.infer<typeof TickKindSchema>;
+
+export const TickReceiptRewriteKindSchema = z.enum(["CREATE_BUFFER_WORLDLINE", "REPLACE_RANGE_AS_TICK", "CREATE_CHECKPOINT", "REGISTER_ANCHOR"]);
+export type TickReceiptRewriteKind = z.infer<typeof TickReceiptRewriteKindSchema>;
+
+export const CheckpointKindSchema = z.enum(["INITIAL", "MANUAL_SAVE", "AUTO_SAVE"]);
+export type CheckpointKind = z.infer<typeof CheckpointKindSchema>;
 
 // Object Types
 export const BufferWorldlineSchema = z.object({
@@ -70,7 +79,7 @@ export const AnchorSchema = z.object({
   endByte: z.number().int().nullable().optional(),
   startBias: AnchorBiasSchema,
   endBias: AnchorBiasSchema.nullable().optional(),
-  stickiness: z.string().nullable().optional()
+  stickiness: AnchorStickinessSchema.nullable().optional()
 });
 export type Anchor = z.infer<typeof AnchorSchema>;
 
@@ -88,7 +97,7 @@ export const TickReceiptSchema = z.object({
   tickId: z.string(),
   baseHeadId: z.string(),
   nextHeadId: z.string(),
-  rewriteKind: z.string(),
+  rewriteKind: TickReceiptRewriteKindSchema,
   startByte: z.number().int().nullable().optional(),
   endByte: z.number().int().nullable().optional(),
   insertedByteLength: z.number().int(),
@@ -102,11 +111,19 @@ export const CheckpointSchema = z.object({
   checkpointId: z.string(),
   worldlineId: z.string(),
   headId: z.string(),
-  kind: z.string(),
+  kind: CheckpointKindSchema,
   label: z.string().nullable().optional(),
   createdByTickId: z.string().nullable().optional()
 });
 export type Checkpoint = z.infer<typeof CheckpointSchema>;
+
+export const WorldlineSnapshotSchema = z.object({
+  worldline: z.lazy(() => BufferWorldlineSchema),
+  head: z.lazy(() => RopeHeadSchema),
+  checkpoints: z.array(z.lazy(() => CheckpointSchema)),
+  text: z.string()
+});
+export type WorldlineSnapshot = z.infer<typeof WorldlineSnapshotSchema>;
 
 export const CreateBufferWorldlineResultSchema = z.object({
   worldline: z.lazy(() => BufferWorldlineSchema),
@@ -151,12 +168,36 @@ export type ReplaceRangeAsTickInput = z.infer<typeof ReplaceRangeAsTickInputSche
 
 export const CreateCheckpointInputSchema = z.object({
   worldlineId: z.string(),
-  kind: z.string(),
+  kind: CheckpointKindSchema,
   label: z.string().nullable().optional()
 });
 export type CreateCheckpointInput = z.infer<typeof CreateCheckpointInputSchema>;
 
+export const WorldlineSnapshotInputSchema = z.object({
+  worldlineId: z.string()
+});
+export type WorldlineSnapshotInput = z.infer<typeof WorldlineSnapshotInputSchema>;
+
 // Operations
+export const WorldlineSnapshotQueryArgsSchema = z.object({
+  input: z.lazy(() => WorldlineSnapshotInputSchema)
+});
+export type WorldlineSnapshotQueryArgs = z.infer<typeof WorldlineSnapshotQueryArgsSchema>;
+export const WorldlineSnapshotQueryOperationSchema = z.object({
+  operationName: z.literal("worldlineSnapshot"),
+  args: z.lazy(() => WorldlineSnapshotQueryArgsSchema),
+  result: z.lazy(() => WorldlineSnapshotSchema)
+});
+export type WorldlineSnapshotQueryOperation = z.infer<typeof WorldlineSnapshotQueryOperationSchema>;
+
+export const QueryOperationSchemas = {
+  worldlineSnapshot: {
+    args: WorldlineSnapshotQueryArgsSchema,
+    input: z.lazy(() => WorldlineSnapshotInputSchema),
+    result: z.lazy(() => WorldlineSnapshotSchema),
+    operation: WorldlineSnapshotQueryOperationSchema
+  },
+} as const;
 export const CreateBufferWorldlineMutationArgsSchema = z.object({
   input: z.lazy(() => CreateBufferWorldlineInputSchema)
 });

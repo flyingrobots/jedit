@@ -43,6 +43,10 @@ The dynamic/static footprint split for these rewrites is defined in
 [0004 - dynamic-footprint-binding-contract](0004-dynamic-footprint-binding-contract/dynamic-footprint-binding-contract.md).
 The first authored GraphQL home for that boundary now lives in
 [../../contracts/jedit/hot-text-runtime.graphql](../../contracts/jedit/hot-text-runtime.graphql).
+That authored contract now also carries the first read-side surface:
+`worldlineSnapshot`, which is intentionally limited to canonical-head truth in
+v1 rather than pretending the runtime already supports arbitrary retained-head
+materialization.
 
 ## What I Need Echo To Own
 
