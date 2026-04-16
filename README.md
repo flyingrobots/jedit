@@ -41,8 +41,11 @@ editing truth.
 - Graft is the right place for syntax spans, fold regions, node lookup,
   structural selections, diagnostics, rename preview, structural diff, and
   semantic summary over dirty in-memory buffers.
-- `jedit` still owns the editable buffer model, mode semantics, transactions,
-  pane focus, panel lifecycle, save/open flows, and rendering policy.
+- Echo should own the hot rope-worldline, ticks, tick receipts, and anchors
+  that make up canonical text truth.
+- `jedit` still owns buffer lifecycle, mode semantics, edit-group and undo
+  policy over ticks, pane focus, panel lifecycle, save/open flows, and
+  rendering policy.
 - Files on disk, preview surfaces, Graft views, and future AST lenses are
   projections over buffer truth.
 - Future causal text work remains a separate editor-runtime concern. Graft may
@@ -79,7 +82,7 @@ Right now the app gives you:
 ## Next steps
 
 - lock the Echo-backed text runtime design around persistent piece-rope
-  worldlines in [docs/design/text-edit-algebra.md](docs/design/text-edit-algebra.md)
+  worldlines and ticks in [docs/design/text-edit-algebra.md](docs/design/text-edit-algebra.md)
 - lock the event taxonomy in [docs/design/causal-event-model.md](docs/design/causal-event-model.md) so
   logical history, maintenance, and session traces do not collapse into one
   ledger

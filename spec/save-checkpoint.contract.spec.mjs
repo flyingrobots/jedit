@@ -35,13 +35,13 @@ test('Save creates a checkpoint without changing the current root.', async () =>
   assert.equal(result.receipt?.checkpointId, 1);
 });
 
-test('Save preserves transaction history rather than clearing it.', async () => {
+test('Save preserves tick history rather than clearing it.', async () => {
   const contract = await loadContract();
   const state = contract.createSaveCheckpointState(7, 'notes/today.md', [11, 12, 13]);
 
   const result = contract.saveCheckpoint(state);
 
-  assert.deepEqual(result.nextState.transactionIds, [11, 12, 13]);
+  assert.deepEqual(result.nextState.tickIds, [11, 12, 13]);
 });
 
 test('Saving the same head twice is a logical no-op.', async () => {

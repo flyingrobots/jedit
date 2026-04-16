@@ -6,6 +6,7 @@ engine pretending to solve every problem equally well.
 ## Core law
 
 - The rope-worldline is canonical.
+- The rope-worldline advances by ticks in the hot layer.
 - The AST worldline is derived.
 - Git commits are durable witnesses, not the cadence of editor truth.
 
@@ -21,14 +22,17 @@ Hot is the live editor layer.
 This layer owns:
 
 - the canonical editable rope-worldline
-- logical text receipts
+- ticks as the canonical hot-worldline boundary
+- tick receipts as the fine-grained hot witness surface
 - anchors
-- transactions and undo groups
 - strands later
+
+`jedit` may layer edit groups and undo groups over ticks, but those groupings
+must not be confused with the canonical worldline boundary.
 
 Properties:
 
-- updates on every logical text mutation
+- updates at tick cadence on every admitted logical text mutation
 - parser-independent
 - valid while dirty, malformed, or unsupported
 - optimized for low-latency editing
@@ -53,8 +57,8 @@ This layer owns:
 
 Properties:
 
-- follows the current rope head or transaction head
-- updates at edit / transaction / idle cadence rather than commit cadence
+- follows the current rope head or tick head
+- updates at edit / tick / idle cadence rather than commit cadence
 - remains truthful about partial parses and unsupported languages
 
 Graft is the right engine for this layer. It should interpret current buffer
@@ -84,9 +88,9 @@ Properties:
 
 - `jedit`
   Owns product behavior, modes, buffers, panes, panels, lenses, save/open
-  flows, and rendering policy.
+  flows, edit-group and undo policy over ticks, and rendering policy.
 - Echo / `echo-text`
-  Owns hot rope-worldline truth.
+  Owns hot rope-worldline truth, ticks, tick receipts, and anchors.
 - Graft
   Owns warm structural intelligence over rope heads.
 - `git-warp`
@@ -96,22 +100,31 @@ Properties:
 
 Not every causal layer should live forever.
 
-### Raw edit receipts
+### Tick receipts
 
-- finest-grained logical text mutations
+- finest-grained hot witness emitted from materialized ticks
 - useful for the active session and short-horizon replay
 - compactable
 - not durable forever by default
 
-### Transactions
+### Ticks
+
+- canonical hot-worldline history
+- should survive saves
+- may survive editor restart for recent work
+
+### Edit groups
 
 - typing bursts
 - paste and delete actions
 - accepted suggestions
 - explicit structural transforms
 
-These are the main human-meaningful edit history surface. They should outlive
-individual saves and likely survive editor restart for recent work.
+These are editor-facing groupings over one or more ticks. They are the main
+human-meaningful edit history surface.
+
+They should outlive individual saves and likely survive editor restart for
+recent work.
 
 ### Checkpoints and admissions
 
@@ -129,8 +142,8 @@ than raw receipts and form the bridge into colder witness layers.
 - The AST follows the rope; the rope does not wait for the AST.
 - Git commits anchor or witness editor truth; they do not define when truth
   exists.
-- Raw keystroke-level history can be compacted without losing higher-level
-  edit history.
+- Tick-receipt history can be compacted without losing higher-level edit-group
+  or checkpoint history.
 - Unsupported or malformed buffers still have lawful hot truth even when warm
   structure is partial or absent.
 
@@ -138,4 +151,5 @@ than raw receipts and form the bridge into colder witness layers.
 
 - Treating Graft's current parsed snapshots as the canonical editor runtime.
 - Forcing Git commit cadence to act as live editor update cadence.
+- Treating edit groups as the canonical hot-worldline boundary.
 - Keeping every primitive keystroke forever by default.

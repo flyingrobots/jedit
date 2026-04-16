@@ -24,10 +24,12 @@ The stack should be read like this:
 
 For `jedit`, that implies:
 
-- Echo owns causal truth, refs, receipts, strands, admission, and replay.
+- Echo owns causal truth, ticks, tick receipts, strands, admission, and
+  replay.
 - `echo-text` owns rope structure, anchors, range transforms, and text edit
   algebra.
-- `jedit` owns UI, buffers, viewport, file tree, save/open flows, and preview.
+- `jedit` owns UI, buffer lifecycle, viewport, file tree, save/open flows,
+  preview, and edit-group policy over ticks.
 - `git-warp` stays outside the engine as an import/export or mirroring adapter.
 - files on disk are projections, not the canonical truth.
 
@@ -79,7 +81,9 @@ whole-file snapshots forward forever.
 - `Blob`: immutable text storage unit.
 - `Fragment`: persistent rope fragment used as inserted material.
 - `Anchor`: logical point or interval with bias and stickiness policy.
-- `Receipt`: logical edit record from one root to another.
+- `Tick`: canonical hot-worldline append boundary in Echo.
+- `TickReceipt`: minimal hot witness emitted from a materialized tick.
+- `EditGroup`: editor-facing grouping over one or more ticks for undo/history.
 - `Strand`: alternate head over shared ancestry.
 - `Projection`: file path, Markdown AST, preview, viewport cache, diagnostics,
   search index, and other derived surfaces.
@@ -160,6 +164,21 @@ Sugar should compile down to the primitive:
 
 `MoveBlock` does not need to be a substrate primitive in v1. It can be built
 from fragment extraction plus one or more `ReplaceRange` calls.
+
+## Echo Tick Alignment
+
+`ReplaceRange` is the primitive logical text law, but Echo's canonical
+worldline boundary is the tick.
+
+That means:
+
+- `ReplaceRange` describes what text rewrite is lawful.
+- Echo admits that rewrite into the hot worldline as a tick.
+- a tick emits a tick receipt as the hot witness of the transition.
+- `jedit` may group one or more ticks into an edit group for undo/history.
+
+This keeps the canonical boundary aligned with Echo while still letting the
+editor present larger human-meaningful actions than a single tick.
 
 ## ReplaceRange
 

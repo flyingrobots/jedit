@@ -59,7 +59,9 @@ Concrete adapters are injected into app services. No hidden singleton reach-thro
 These words are not interchangeable:
 
 - Buffer
-  An open document and its editing state. Buffers are the editable truth.
+  An open document and its editing state. In the long-term design, a buffer
+  points at an Echo-backed rope-worldline head and uses that as editable
+  truth.
 
 - Pane
   A visible interactive region in the terminal layout. The main editor is a
@@ -107,8 +109,9 @@ What Graft should own:
 
 What `jedit` should own:
 
-- the canonical editable buffer model
-- cursoring, selection state, and undo/redo transactions
+- buffer lifecycle over Echo-backed rope heads
+- cursoring, selection state, and undo/redo over edit groups grounded in ticks
+- edit-group and undo policy over ticks
 - Vim-shaped mode semantics and input interpretation
 - panes, panels, focus, and lens lifecycle
 - save/open flows and workspace interaction policy
@@ -119,16 +122,17 @@ Why the boundary exists:
 - Graft's `StructuredBuffer` surface is an immutable parsed snapshot over
   `path + content`, which is excellent for language intelligence but not a
   substitute for an editor runtime.
-- `jedit` still needs a lawful text-edit kernel with explicit transactions,
-  stable anchors, and eventually a persistent piece-rope worldline.
+- `jedit` still needs a lawful text-edit kernel with explicit tick-grounded
+  history, stable anchors, and eventually a persistent piece-rope worldline.
 - Structural projections and causal text truth are related, but they are not
   the same layer.
 
 The intended stack is:
 
-- `jedit` core owns editing truth and interaction
+- `jedit` core owns editing interaction and buffer lifecycle over hot rope
+  heads
 - Graft provides structural intelligence and parser-backed projections
-- future Echo / `echo-text` work owns the native causal text substrate
+- Echo / `echo-text` owns the native hot causal text substrate
 - filesystem and Git remain projections and persistence boundaries
 
 ## Testing Rule

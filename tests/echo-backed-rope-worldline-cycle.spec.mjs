@@ -83,15 +83,16 @@ test('The cycle explains save as a checkpoint rather than a reset.', () => {
   assert.match(designDoc, /Saving must not:\s+- destroy the hot rope-worldline/s);
 });
 
-test('The cycle names a tiered retention model for raw receipts, transactions, and checkpoints/admissions.', () => {
+test('The cycle names a tiered retention model for tick receipts, ticks, edit groups, and checkpoints/admissions.', () => {
   const designDoc = readDesignDoc();
 
   assert.match(
     designDoc,
-    /The cycle names a tiered retention model for raw receipts, transactions,\s+and checkpoints\/admissions\./,
+    /The cycle names a tiered retention model for tick receipts, ticks, edit\s+groups, and checkpoints\/admissions\./,
   );
-  assert.match(designDoc, /- raw receipts/);
-  assert.match(designDoc, /- transactions/);
+  assert.match(designDoc, /- tick receipts/);
+  assert.match(designDoc, /- ticks/);
+  assert.match(designDoc, /- edit groups/);
   assert.match(designDoc, /- checkpoints and admissions/);
 });
 
@@ -111,13 +112,13 @@ test('Save creates a checkpoint without changing the current root.', async () =>
   ]);
 });
 
-test('Save preserves transaction history rather than clearing it.', async () => {
+test('Save preserves tick history rather than clearing it.', async () => {
   const contract = await loadContract();
   const state = contract.createSaveCheckpointState(7, 'notes/today.md', [11, 12, 13]);
 
   const result = contract.saveCheckpoint(state);
 
-  assert.deepEqual(result.nextState.transactionIds, [11, 12, 13]);
+  assert.deepEqual(result.nextState.tickIds, [11, 12, 13]);
 });
 
 test('Saving the same head twice is a logical no-op.', async () => {

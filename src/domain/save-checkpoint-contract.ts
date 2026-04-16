@@ -12,7 +12,7 @@ export interface SaveCheckpoint {
 export interface SaveCheckpointState {
   readonly currentRootId: number;
   readonly path: string;
-  readonly transactionIds: readonly number[];
+  readonly tickIds: readonly number[];
   readonly checkpoints: readonly SaveCheckpoint[];
 }
 
@@ -40,16 +40,16 @@ export class SaveCheckpointContractError extends Error {
 export function createSaveCheckpointState(
   currentRootId: number,
   path: string,
-  transactionIds: readonly number[] = [],
+  tickIds: readonly number[] = [],
 ): SaveCheckpointState {
   validateRootId(currentRootId);
   validatePath(path);
-  validateTransactionIds(transactionIds);
+  validateTickIds(tickIds);
 
   return {
     currentRootId,
     path,
-    transactionIds: [...transactionIds],
+    tickIds: [...tickIds],
     checkpoints: [],
   };
 }
@@ -76,7 +76,7 @@ export function saveCheckpoint(state: SaveCheckpointState): SaveCheckpointResult
     nextState: {
       currentRootId: state.currentRootId,
       path: state.path,
-      transactionIds: [...state.transactionIds],
+      tickIds: [...state.tickIds],
       checkpoints: [...state.checkpoints, nextCheckpoint],
     },
     receipt: {
@@ -90,7 +90,7 @@ export function saveCheckpoint(state: SaveCheckpointState): SaveCheckpointResult
 function validateState(state: SaveCheckpointState): void {
   validateRootId(state.currentRootId);
   validatePath(state.path);
-  validateTransactionIds(state.transactionIds);
+  validateTickIds(state.tickIds);
 
   for (const checkpoint of state.checkpoints) {
     validateRootId(checkpoint.rootId);
@@ -122,12 +122,12 @@ function validatePath(path: string): void {
   }
 }
 
-function validateTransactionIds(transactionIds: readonly number[]): void {
-  for (const transactionId of transactionIds) {
-    if (!Number.isInteger(transactionId) || transactionId < ROOT_ID_MIN) {
+function validateTickIds(tickIds: readonly number[]): void {
+  for (const tickId of tickIds) {
+    if (!Number.isInteger(tickId) || tickId < ROOT_ID_MIN) {
       throw new SaveCheckpointContractError(
         SAVE_CHECKPOINT_ERROR_INVALID_STATE,
-        'Save checkpoint state requires positive integer transaction ids.',
+        'Save checkpoint state requires positive integer tick ids.',
       );
     }
   }

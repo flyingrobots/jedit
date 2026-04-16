@@ -31,9 +31,9 @@ have a design packet that makes five claims concrete:
 3. Graft owns warm structural projections over rope heads rather than the
    editor kernel itself
 4. save acts as a checkpoint rather than a reset of editor truth
-5. causal history retention is tiered across raw receipts, transactions, and
-   checkpoints/admissions rather than "keep everything forever" or "discard
-   everything on save"
+5. causal history retention is tiered across tick receipts, ticks, edit
+   groups, and checkpoints/admissions rather than "keep everything forever" or
+   "discard everything on save"
 
 This cycle is complete when those claims are named in this design, aligned with
 the runtime-temperature note, and turned into explicit playback questions for
@@ -50,16 +50,15 @@ not implement Echo bindings, a rope runtime, or new editor UI.
 - [ ] The cycle makes the hot / warm / cold ownership split explicit across
   `jedit`, Echo, Graft, and `git-warp`.
 - [ ] The cycle explains save as a checkpoint rather than a reset.
-- [ ] The cycle names a tiered retention model for raw receipts, transactions,
-  and checkpoints/admissions.
+- [ ] The cycle names a tiered retention model for tick receipts, ticks, edit
+  groups, and checkpoints/admissions.
 - [ ] The cycle limits scope to the runtime contract rather than pretending to
   implement the substrate.
 
 ### Agent
 
 - [ ] The packet names the hot runtime truths the future rope-worldline must
-  own: text receipts, anchors, transactions, and parser-independent editing
-  truth.
+  own: ticks, tick receipts, anchors, and parser-independent editing truth.
 - [ ] The packet names the warm Graft projection responsibilities: syntax
   spans, folds, diagnostics, node lookup, structural selection, rename
   preview, diff, and semantic summary.
@@ -83,8 +82,9 @@ not implement Echo bindings, a rope runtime, or new editor UI.
 ## Localization and Directionality
 
 - Locale / wording / formatting assumptions: the packet should use stable
-  engineering nouns such as `rope-worldline`, `transaction`, `checkpoint`, and
-  `witness`, and should avoid idioms that make later localization harder.
+  engineering nouns such as `rope-worldline`, `tick`, `edit-group`,
+  `checkpoint`, and `witness`, and should avoid idioms that make later
+  localization harder.
 - Logical direction / layout assumptions: hot / warm / cold refer to runtime
   temperature, not visual layout. The packet should avoid left/right or
   top/bottom metaphors when describing causal ownership.
@@ -131,9 +131,9 @@ It must own:
 
 - `BufferWorldline`
 - `RopeRoot`
-- logical text receipts
+- ticks as the canonical hot-worldline boundary
+- tick receipts as the fine-grained hot witness surface
 - anchors
-- transactions and undo groups
 - future strands and admissions
 
 It must remain lawful when:
@@ -144,8 +144,11 @@ It must remain lawful when:
 - the editor has not saved yet
 - the repo is not a Git repo
 
-The hot layer is where `ReplaceRange`, anchor transforms, and grouped edit
-transactions ultimately live.
+The hot layer is where `ReplaceRange`, anchor transforms, and tick admission
+ultimately live.
+
+`jedit` may layer edit groups and undo groups over ticks, but those groupings
+must not be mistaken for the canonical worldline boundary.
 
 ### Warm projection truths
 
@@ -162,7 +165,7 @@ It must own:
 - structural diff and semantic summary
 - anchor-affinity style snapshot mapping
 
-The warm layer follows current rope heads or transaction heads. It is allowed
+The warm layer follows current rope heads or tick heads. It is allowed
 to be partial when parsing fails and must degrade honestly for unsupported
 languages.
 
@@ -204,13 +207,15 @@ Echo is the intended owner of hot rope-worldline truth.
 That means:
 
 - persistent piece-rope storage
-- logical edit receipts
+- ticks and tick receipts
 - anchors and transformable positions
-- transactions
 - future strands and admissions
 
 Echo is not the owner of UI behavior, panel lifecycle, or structural parser
 projection semantics.
+
+`jedit` is the right place for edit-group and undo policy layered over Echo
+ticks.
 
 ### Graft
 
@@ -255,15 +260,17 @@ Saving must not:
 
 Retention should be tiered:
 
-- raw receipts
+- tick receipts
   short-horizon, compactable, not forever by default
-- transactions
-  medium-lived, human-meaningful edit history
+- ticks
+  canonical hot-worldline history that survives saves
+- edit groups
+  medium-lived, human-meaningful history layered over one or more ticks
 - checkpoints and admissions
   durable long-horizon history
 
-The contract should permit compaction of raw fine-grained history without
-destroying higher-level transaction truth.
+The contract should permit compaction of fine-grained tick-receipt history
+without destroying higher-level tick, edit-group, or checkpoint truth.
 
 ## Immediate executable seams
 
@@ -299,8 +306,8 @@ Context:
   the need for a separate hot text-runtime contract.
 
 This note should answer: what exactly is the rope-worldline, what is its
-primitive edit law, what are its receipts, and how do anchors and transactions
-fit without collapsing into parser or Git concerns.
+primitive edit law, how do ticks and tick receipts fit, and how do anchors and
+edit groups fit without collapsing into parser or Git concerns.
 
 ## Non-goals
 
