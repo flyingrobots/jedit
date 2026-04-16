@@ -106,6 +106,10 @@ repo.
 - `git-warp`
   Owns cold durable witness and Git-native causal history.
 
+`jedit` should therefore compose Echo and Graft directly. Graft may become
+Echo-aware internally, but it should not become the sole gateway through which
+`jedit` reaches canonical hot truth.
+
 ## Retention horizons
 
 Not every causal layer should live forever.

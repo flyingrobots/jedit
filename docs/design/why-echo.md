@@ -98,6 +98,33 @@ For `jedit`, the clean stack is:
 - Git mirrors, witnesses, exports, or interoperates with that truth when
   needed
 
+## Composition Posture
+
+`jedit` should compose Echo and Graft directly.
+
+That means:
+
+- `jedit -> Echo` for canonical hot text truth
+- `jedit -> Graft` for warm structural projections over that truth
+- potentially `Graft -> Echo` internally when Graft benefits from Echo-native
+  basis, head, or worldline concepts
+
+But not:
+
+- `jedit -> Graft -> Echo` as the only path to canonical editor truth
+
+Why this matters:
+
+- hot truth must not be subordinated to parser structure
+- warm projections must not masquerade as the source of truth
+- `jedit` should own the composition of substrate and interpreter directly
+
+So the correct stance is:
+
+- Echo is the substrate
+- Graft is the interpreter
+- `jedit` is the product that composes both
+
 That means:
 
 - Echo should remain the hot canonical layer

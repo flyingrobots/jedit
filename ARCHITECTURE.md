@@ -138,6 +138,10 @@ The intended stack is:
 - Echo / `echo-text` owns the native hot causal text substrate
 - filesystem and Git remain projections and persistence boundaries
 
+`jedit` should therefore compose Echo and Graft directly. A future Graft
+implementation may use Echo internally, but `jedit` should not have to route
+canonical editor truth through Graft to reach its own hot substrate.
+
 The transport used to reach Graft is not architectural truth. The current MCP
 path is an implementation detail, not a long-term ownership claim.
 
