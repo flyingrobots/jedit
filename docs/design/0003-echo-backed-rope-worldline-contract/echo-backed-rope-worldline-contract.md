@@ -292,6 +292,10 @@ The first executable seam in this cycle is save-checkpoint semantics, because
 it pins down one of the most user-visible consequences of the hot rope model
 without requiring the full runtime to exist yet.
 
+The next executable seam after save-checkpoint semantics is tick-admission
+semantics: a lawful `ReplaceRange` should be admissible as a tick with a tick
+receipt, while a logical no-op should not mint a new tick.
+
 ## Backlog Context
 
 Define the hot text-truth substrate for `jedit`.

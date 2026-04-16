@@ -14,7 +14,9 @@ const DESIGN_DOC_PATH = path.join(
   'echo-backed-rope-worldline-contract.md',
 );
 const MODULE_PATH = path.join(REPO_ROOT, 'dist', 'domain', 'save-checkpoint-contract.js');
+const TICK_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'domain', 'tick-admission-contract.js');
 const CONTRACT_SPEC_PATH = path.join('spec', 'save-checkpoint.contract.spec.mjs');
+const TICK_CONTRACT_SPEC_PATH = path.join('spec', 'tick-admission.contract.spec.mjs');
 const QUALITY_GATE_PATH = path.join('scripts', 'quality-gate.mjs');
 const TYPESCRIPT_CLI_PATH = path.join('node_modules', 'typescript', 'bin', 'tsc');
 const EXPECTED_RUNTIME_EXPORTS = [
@@ -22,8 +24,14 @@ const EXPECTED_RUNTIME_EXPORTS = [
   'createSaveCheckpointState',
   'saveCheckpoint',
 ];
+const EXPECTED_TICK_RUNTIME_EXPORTS = [
+  'TickAdmissionContractError',
+  'admitReplaceRangeTick',
+  'createTickAdmissionState',
+];
 
 let cachedContractPromise;
+let cachedTickContractPromise;
 
 function readDesignDoc() {
   return fs.readFileSync(DESIGN_DOC_PATH, 'utf8');
@@ -45,6 +53,15 @@ async function loadContract() {
   }
 
   return cachedContractPromise;
+}
+
+async function loadTickContract() {
+  if (cachedTickContractPromise === undefined) {
+    runCommand([TYPESCRIPT_CLI_PATH, '-p', 'tsconfig.json']);
+    cachedTickContractPromise = import(pathToFileURL(TICK_MODULE_PATH).href);
+  }
+
+  return cachedTickContractPromise;
 }
 
 test('The cycle clearly says the rope-worldline is canonical, the AST worldline is derived, and Git commits are durable witnesses rather than the cadence of editor truth.', () => {
@@ -131,14 +148,75 @@ test('Saving the same head twice is a logical no-op.', async () => {
   assert.equal(secondSave.receipt, undefined);
 });
 
+test('Admitting a ReplaceRange mints a tick and advances the current root.', async () => {
+  const contract = await loadTickContract();
+  const text = await import(pathToFileURL(path.join(REPO_ROOT, 'dist', 'domain', 'text-edit-contract.js')).href);
+  const state = contract.createTickAdmissionState(text.createBufferRoot('hello world'));
+
+  const result = contract.admitReplaceRangeTick(
+    state,
+    text.createTextRange(5, 5),
+    text.createTextFragment(' brave new'),
+  );
+
+  assert.equal(text.materializeRoot(result.nextState.currentRoot), 'hello brave new world');
+  assert.equal(result.receipt?.tickId, 1);
+  assert.deepEqual(result.nextState.ticks, [
+    {
+      id: 1,
+      rootId: result.nextState.currentRoot.id,
+    },
+  ]);
+});
+
+test('Tick admission carries the ReplaceRange receipt as its causal witness.', async () => {
+  const contract = await loadTickContract();
+  const text = await import(pathToFileURL(path.join(REPO_ROOT, 'dist', 'domain', 'text-edit-contract.js')).href);
+  const initialRoot = text.createBufferRoot('hello world');
+  const fragment = text.createTextFragment(' brave new');
+  const state = contract.createTickAdmissionState(initialRoot);
+
+  const result = contract.admitReplaceRangeTick(
+    state,
+    text.createTextRange(5, 5),
+    fragment,
+  );
+
+  assert.equal(result.receipt?.replaceReceipt.baseRootId, initialRoot.id);
+  assert.equal(result.receipt?.replaceReceipt.nextRootId, result.nextState.currentRoot.id);
+  assert.equal(result.receipt?.replaceReceipt.insertedRootId, fragment.root.id);
+});
+
+test('A logical no-op does not mint a tick.', async () => {
+  const contract = await loadTickContract();
+  const text = await import(pathToFileURL(path.join(REPO_ROOT, 'dist', 'domain', 'text-edit-contract.js')).href);
+  const state = contract.createTickAdmissionState(text.createBufferRoot('hello'));
+
+  const result = contract.admitReplaceRangeTick(
+    state,
+    text.createTextRange(0, 5),
+    text.createTextFragment('hello'),
+  );
+
+  assert.equal(result.nextState, state);
+  assert.equal(result.receipt, undefined);
+});
+
 test('The runtime contract stays a minimal save-checkpoint seam rather than a full rope runtime.', async () => {
   const contract = await loadContract();
 
   assert.deepEqual(Object.keys(contract).sort(), EXPECTED_RUNTIME_EXPORTS);
 });
 
-test('The workspace satisfies build, quality, and the save checkpoint contract suite.', () => {
+test('The runtime contract stays a minimal tick-admission seam rather than a full rope runtime.', async () => {
+  const contract = await loadTickContract();
+
+  assert.deepEqual(Object.keys(contract).sort(), EXPECTED_TICK_RUNTIME_EXPORTS);
+});
+
+test('The workspace satisfies build, quality, and the save/tick contract suites.', () => {
   runCommand([TYPESCRIPT_CLI_PATH, '-p', 'tsconfig.json']);
   runCommand(['--test', CONTRACT_SPEC_PATH]);
+  runCommand(['--test', TICK_CONTRACT_SPEC_PATH]);
   runCommand([QUALITY_GATE_PATH, '--json']);
 });
