@@ -6,8 +6,10 @@ import { pathToFileURL } from 'node:url';
 
 const REPO_ROOT = process.cwd();
 const OBSERVER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-observer-spec.js');
+const OBSERVER_RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-observer-runtime.js');
 const CONTRACT_RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-runtime.js');
 const ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'in-memory-hot-text-runtime.js');
+const GENERATED_PLAN_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'generated', 'jedit', 'worldlineSnapshot.observer-plan.generated.js');
 
 async function loadModules() {
   const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
@@ -17,13 +19,15 @@ async function loadModules() {
 
   assert.equal(build.status, 0, build.stderr || build.stdout);
 
-  const [observer, contractRuntime, adapter] = await Promise.all([
+  const [observer, observerRuntime, contractRuntime, adapter, generatedPlan] = await Promise.all([
     import(pathToFileURL(OBSERVER_MODULE_PATH).href),
+    import(pathToFileURL(OBSERVER_RUNTIME_MODULE_PATH).href),
     import(pathToFileURL(CONTRACT_RUNTIME_MODULE_PATH).href),
     import(pathToFileURL(ADAPTER_MODULE_PATH).href),
+    import(pathToFileURL(GENERATED_PLAN_MODULE_PATH).href),
   ]);
 
-  return { observer, contractRuntime, adapter };
+  return { observer, observerRuntime, contractRuntime, adapter, generatedPlan };
 }
 
 test('worldlineSnapshot observer spec is memoryless, canonical-head only, and author-visible', async () => {
@@ -47,8 +51,8 @@ test('worldlineSnapshot observer spec is memoryless, canonical-head only, and au
   assert.equal(state.mode, 'MEMORYLESS');
 });
 
-test('worldlineSnapshot observer input and reading are validated through generated schemas', async () => {
-  const { observer, contractRuntime, adapter } = await loadModules();
+test('worldlineSnapshot observer plan is compiled by Wesley and consumed at runtime', async () => {
+  const { observer, observerRuntime, contractRuntime, adapter, generatedPlan } = await loadModules();
   const runtime = adapter.createInMemoryHotTextRuntime();
   const created = contractRuntime.createBufferWorldline(runtime, {
     bufferKey: 'notes/today.md',
@@ -56,16 +60,33 @@ test('worldlineSnapshot observer input and reading are validated through generat
     projectionPath: '/tmp/notes/today.md',
     createInitialCheckpoint: true,
   });
-  const snapshotInput = observer.parseWorldlineSnapshotObserverInput({
-    worldlineId: created.nextSession.worldline.worldlineId,
-  });
-  const snapshot = contractRuntime.readWorldlineSnapshot(runtime, created.nextSession, snapshotInput);
-  const envelope = observer.emitWorldlineSnapshotReading(
-    'frontier:wl:notes-today-md:1',
-    snapshot,
+  const authoredSpec = observer.createWorldlineSnapshotObserverSpec();
+
+  assert.equal(generatedPlan.worldlineSnapshotObserverPlan.observerName, authoredSpec.observerName);
+  assert.equal(generatedPlan.worldlineSnapshotObserverPlan.kind, authoredSpec.kind);
+  assert.equal(generatedPlan.worldlineSnapshotObserverPlan.operationName, authoredSpec.operationName);
+  assert.equal(
+    generatedPlan.worldlineSnapshotObserverPlan.state.schemaId,
+    authoredSpec.state.schemaId,
+  );
+  assert.equal(
+    generatedPlan.worldlineSnapshotObserverPlan.rights.revelationTier,
+    authoredSpec.rights.revelationTier,
   );
 
-  assert.equal(envelope.observerName, 'worldlineSnapshot');
+  const snapshotInput = {
+    worldlineId: created.nextSession.worldline.worldlineId,
+  };
+  const envelope = observerRuntime.readWorldlineSnapshotWithObserverPlan(
+    runtime,
+    created.nextSession,
+    'frontier:wl:notes-today-md:1',
+    snapshotInput,
+  );
+
+  assert.equal(envelope.planId, generatedPlan.worldlineSnapshotObserverPlan.planId);
+  assert.equal(envelope.observerName, generatedPlan.worldlineSnapshotObserverPlan.observerName);
+  assert.equal(envelope.operationName, generatedPlan.worldlineSnapshotObserverPlan.operationName);
   assert.equal(envelope.frontierRef, 'frontier:wl:notes-today-md:1');
   assert.equal(envelope.reading.worldline.worldlineId, created.nextSession.worldline.worldlineId);
   assert.equal(envelope.reading.head.headId, created.nextSession.worldline.canonicalHeadId);
@@ -74,27 +95,22 @@ test('worldlineSnapshot observer input and reading are validated through generat
 });
 
 test('worldlineSnapshot observer rejects malformed reading payloads', async () => {
-  const { observer } = await loadModules();
+  const { observerRuntime, adapter, contractRuntime } = await loadModules();
+  const runtime = adapter.createInMemoryHotTextRuntime();
+  const created = contractRuntime.createBufferWorldline(runtime, {
+    bufferKey: 'notes/today.md',
+    initialText: 'hello world',
+    projectionPath: '/tmp/notes/today.md',
+    createInitialCheckpoint: false,
+  });
 
   assert.throws(
-    () => observer.emitWorldlineSnapshotReading('frontier:bad', {
-      worldline: {
-        worldlineId: 'wl:one',
-        bufferKey: 'notes/today.md',
-        projectionPath: '/tmp/notes/today.md',
-        canonicalHeadId: 'head:one',
-      },
-      head: {
-        headId: 'head:one',
-        worldlineId: 'wl:one',
-        rootNodeId: 'root:one',
-        byteLength: 11,
-        lineCount: 1,
-        utf16Length: 11,
-        equivalenceDigest: 'digest:one',
-      },
-      checkpoints: [],
-    }),
-    /text/i,
+    () => observerRuntime.readWorldlineSnapshotWithObserverPlan(
+      runtime,
+      created.nextSession,
+      'frontier:bad',
+      {},
+    ),
+    /worldlineId/i,
   );
 });

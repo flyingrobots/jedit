@@ -1,6 +1,3 @@
-import type { QueryOperationMap } from '../generated/jedit/hot-text-runtime.types.generated.js';
-import { QueryOperationSchemas } from '../generated/jedit/hot-text-runtime.zod.generated.js';
-
 const WORLDLINE_SNAPSHOT_OBSERVER_NAME = 'worldlineSnapshot' as const;
 const WORLDLINE_SNAPSHOT_OBSERVER_KIND = 'WORLDLINE_SNAPSHOT' as const;
 const WORLDLINE_SNAPSHOT_APERTURE_KIND = 'CANONICAL_WORLDLINE_SLICE' as const;
@@ -28,9 +25,6 @@ const WORLDLINE_SNAPSHOT_NODE_KINDS = [
 const WORLDLINE_SNAPSHOT_DERIVED_SURFACES = [
   'text',
 ] as const;
-
-type WorldlineSnapshotInput = QueryOperationMap['worldlineSnapshot']['input'];
-type WorldlineSnapshotReading = QueryOperationMap['worldlineSnapshot']['result'];
 
 export interface WorldlineSnapshotObserverAperture {
   readonly kind: typeof WORLDLINE_SNAPSHOT_APERTURE_KIND;
@@ -90,12 +84,6 @@ export interface WorldlineSnapshotObserverState {
   readonly mode: typeof WORLDLINE_SNAPSHOT_STATE_MODE;
 }
 
-export interface WorldlineSnapshotReadingEnvelope {
-  readonly observerName: typeof WORLDLINE_SNAPSHOT_OBSERVER_NAME;
-  readonly frontierRef: string;
-  readonly reading: WorldlineSnapshotReading;
-}
-
 export function createWorldlineSnapshotObserverSpec(): WorldlineSnapshotObserverSpec {
   return {
     observerName: WORLDLINE_SNAPSHOT_OBSERVER_NAME,
@@ -141,22 +129,5 @@ export function createWorldlineSnapshotObserverSpec(): WorldlineSnapshotObserver
 export function createWorldlineSnapshotObserverState(): WorldlineSnapshotObserverState {
   return {
     mode: WORLDLINE_SNAPSHOT_STATE_MODE,
-  };
-}
-
-export function parseWorldlineSnapshotObserverInput(
-  input: WorldlineSnapshotInput,
-): WorldlineSnapshotInput {
-  return QueryOperationSchemas.worldlineSnapshot.input.parse(input);
-}
-
-export function emitWorldlineSnapshotReading(
-  frontierRef: string,
-  reading: WorldlineSnapshotReading,
-): WorldlineSnapshotReadingEnvelope {
-  return {
-    observerName: WORLDLINE_SNAPSHOT_OBSERVER_NAME,
-    frontierRef,
-    reading: QueryOperationSchemas.worldlineSnapshot.result.parse(reading),
   };
 }

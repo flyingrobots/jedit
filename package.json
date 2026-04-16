@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx src/main.ts",
-    "gen:contract": "node ../wesley/packages/wesley-host-node/bin/wesley.mjs typescript --schema contracts/jedit/hot-text-runtime.graphql --out-file src/generated/jedit/hot-text-runtime.types.generated.ts && node ../wesley/packages/wesley-host-node/bin/wesley.mjs zod --schema contracts/jedit/hot-text-runtime.graphql --out-file src/generated/jedit/hot-text-runtime.zod.generated.ts",
+    "gen:observer": "tsx ../wesley/packages/wesley-host-node/bin/wesley.mjs observer-plan --spec src/app/jedit-observer-spec.ts --export createWorldlineSnapshotObserverSpec --out-file src/generated/jedit/worldlineSnapshot.observer-plan.generated.ts",
+    "gen:contract": "node ../wesley/packages/wesley-host-node/bin/wesley.mjs typescript --schema contracts/jedit/hot-text-runtime.graphql --out-file src/generated/jedit/hot-text-runtime.types.generated.ts && node ../wesley/packages/wesley-host-node/bin/wesley.mjs zod --schema contracts/jedit/hot-text-runtime.graphql --out-file src/generated/jedit/hot-text-runtime.zod.generated.ts && npm run gen:observer",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",
     "quality": "node scripts/quality-gate.mjs",
