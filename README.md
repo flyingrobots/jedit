@@ -64,6 +64,16 @@ The authored home for the first hot-text contract now lives at
 The app-owned contract adapter that maps those rewrite names onto the current
 runtime lives at
 [src/app/jedit-contract-runtime.ts](src/app/jedit-contract-runtime.ts).
+The intended long-term posture is optic-shaped:
+
+- `jedit` submits intent to Echo
+- Echo admits or rejects that intent and returns the deterministic result /
+  receipt envelope
+- `jedit` then observes the resulting worldline state and projects generic
+  graph truth into app-specific contract results
+
+So Echo remains substrate truth, while `jedit` owns the app-facing projection
+layer.
 The first read surface is the canonical
 `worldlineSnapshot(input: WorldlineSnapshotInput!)` query, which returns the
 current worldline, canonical head, retained checkpoints, and materialized text

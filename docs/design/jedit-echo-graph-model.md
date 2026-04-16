@@ -39,6 +39,18 @@ cleaner:
 This document is therefore not a request for ad hoc runtime hacking. It is a
 request for a precise graph model.
 
+The intended integration posture is optic-shaped:
+
+- `jedit` submits intent to Echo
+- Echo rewrites generic substrate truth and returns the deterministic result /
+  receipt envelope
+- `jedit` then observes the resulting worldline state
+- app code projects the observed worldline into `jedit` nouns such as
+  `BufferWorldline`, `RopeHead`, `TickReceipt`, and `WorldlineSnapshot`
+
+So Echo stays generic substrate truth. `jedit` owns the app-facing projection
+and interpretation layer.
+
 The dynamic/static footprint split for these rewrites is defined in
 [0004 - dynamic-footprint-binding-contract](0004-dynamic-footprint-binding-contract/dynamic-footprint-binding-contract.md).
 The first authored GraphQL home for that boundary now lives in
