@@ -54,6 +54,8 @@ editing truth.
 - Future causal text work remains a separate editor-runtime concern. Graft may
   help interpret or compare buffer snapshots, but it does not replace the
   editor’s piece-rope worldline design.
+- The current MCP transport is transitional. The long-term product posture is
+  Echo and Graft as built-in engines with direct API surfaces.
 
 The current runtime-temperature model is written down in
 [docs/design/runtime-temperatures.md](docs/design/runtime-temperatures.md).

@@ -52,7 +52,7 @@ The editable buffer must remain lawful even when:
 - the file does not parse
 - the language is unsupported
 - the buffer is dirty or malformed
-- Graft is unavailable
+- warm structure is partial or stale
 - Git is unavailable
 
 The AST is derived. The rope-worldline is canonical.
@@ -61,6 +61,7 @@ The AST is derived. The rope-worldline is canonical.
 
 The repo should preserve a clear hot / warm / cold split.
 
+- hot and warm are product-integrated engines, not optional remote services
 - hot = rope-worldline, ticks, tick receipts, anchors
 - warm = structural projections like syntax spans, folds, diagnostics, and
   semantic summaries
@@ -172,5 +173,6 @@ only in chat.
 
 ### 18. Graceful degradation is mandatory
 
-If Echo, Graft, Git, or any future subsystem is missing, the editor should
-degrade to a smaller truthful product instead of collapsing into confusion.
+If warm structure is partial, unsupported, or stale, or if cold witness layers
+are absent, the editor should degrade to a smaller truthful product instead of
+collapsing into confusion or pretending its projections are complete.

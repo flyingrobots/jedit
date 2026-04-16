@@ -138,6 +138,9 @@ The intended stack is:
 - Echo / `echo-text` owns the native hot causal text substrate
 - filesystem and Git remain projections and persistence boundaries
 
+The transport used to reach Graft is not architectural truth. The current MCP
+path is an implementation detail, not a long-term ownership claim.
+
 ## Testing Rule
 
 Tests are executable spec.

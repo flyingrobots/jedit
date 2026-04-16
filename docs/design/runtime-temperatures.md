@@ -13,6 +13,9 @@ engine pretending to solve every problem equally well.
 That means the editor must never wait for `git commit` before its live truth,
 syntax surfaces, or structural context catch up.
 
+Echo and Graft are product-integrated engines in this model. The hot / warm
+split is not an argument for shipping them as optional remote services.
+
 ## The stack
 
 ### Hot
@@ -37,8 +40,8 @@ Properties:
 - valid while dirty, malformed, or unsupported
 - optimized for low-latency editing
 
-The intended long-term owner of this layer is Echo or an `echo-text` style text
-runtime. `jedit` consumes it as editor truth.
+Echo or an `echo-text` style text runtime is the owner of this layer. `jedit`
+consumes it as editor truth.
 
 ### Warm
 
@@ -61,8 +64,8 @@ Properties:
 - updates at edit / tick / idle cadence rather than commit cadence
 - remains truthful about partial parses and unsupported languages
 
-Graft is the right engine for this layer. It should interpret current buffer
-truth, not replace it.
+Graft is the engine for this layer. It should interpret current buffer truth,
+not replace it.
 
 ### Cold
 
@@ -146,6 +149,8 @@ than raw receipts and form the bridge into colder witness layers.
   or checkpoint history.
 - Unsupported or malformed buffers still have lawful hot truth even when warm
   structure is partial or absent.
+- A transport change, such as moving from MCP to a direct API surface, should
+  not change the ownership model.
 
 ## Non-goals
 
