@@ -116,3 +116,38 @@ export interface CreateCheckpointInput {
   kind: string;
   label?: string | null;
 }
+// Operations
+export interface CreateBufferWorldlineMutationArgs {
+  input: CreateBufferWorldlineInput;
+}
+export interface CreateBufferWorldlineMutationOperation {
+  operationName: "createBufferWorldline";
+  args: CreateBufferWorldlineMutationArgs;
+  input: CreateBufferWorldlineInput;
+  result: CreateBufferWorldlineResult;
+}
+export interface ReplaceRangeAsTickMutationArgs {
+  input: ReplaceRangeAsTickInput;
+}
+export interface ReplaceRangeAsTickMutationOperation {
+  operationName: "replaceRangeAsTick";
+  args: ReplaceRangeAsTickMutationArgs;
+  input: ReplaceRangeAsTickInput;
+  result: ReplaceRangeAsTickResult;
+}
+export interface CreateCheckpointMutationArgs {
+  input: CreateCheckpointInput;
+}
+export interface CreateCheckpointMutationOperation {
+  operationName: "createCheckpoint";
+  args: CreateCheckpointMutationArgs;
+  input: CreateCheckpointInput;
+  result: CreateCheckpointResult;
+}
+export interface MutationOperationMap {
+  createBufferWorldline: CreateBufferWorldlineMutationOperation;
+  replaceRangeAsTick: ReplaceRangeAsTickMutationOperation;
+  createCheckpoint: CreateCheckpointMutationOperation;
+}
+export type MutationOperationName = keyof MutationOperationMap;
+export type MutationOperation = MutationOperationMap[MutationOperationName];

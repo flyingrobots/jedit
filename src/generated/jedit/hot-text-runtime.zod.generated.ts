@@ -155,3 +155,58 @@ export const CreateCheckpointInputSchema = z.object({
   label: z.string().nullable().optional()
 });
 export type CreateCheckpointInput = z.infer<typeof CreateCheckpointInputSchema>;
+
+// Operations
+export const CreateBufferWorldlineMutationArgsSchema = z.object({
+  input: z.lazy(() => CreateBufferWorldlineInputSchema)
+});
+export type CreateBufferWorldlineMutationArgs = z.infer<typeof CreateBufferWorldlineMutationArgsSchema>;
+export const CreateBufferWorldlineMutationOperationSchema = z.object({
+  operationName: z.literal("createBufferWorldline"),
+  args: z.lazy(() => CreateBufferWorldlineMutationArgsSchema),
+  result: z.lazy(() => CreateBufferWorldlineResultSchema)
+});
+export type CreateBufferWorldlineMutationOperation = z.infer<typeof CreateBufferWorldlineMutationOperationSchema>;
+
+export const ReplaceRangeAsTickMutationArgsSchema = z.object({
+  input: z.lazy(() => ReplaceRangeAsTickInputSchema)
+});
+export type ReplaceRangeAsTickMutationArgs = z.infer<typeof ReplaceRangeAsTickMutationArgsSchema>;
+export const ReplaceRangeAsTickMutationOperationSchema = z.object({
+  operationName: z.literal("replaceRangeAsTick"),
+  args: z.lazy(() => ReplaceRangeAsTickMutationArgsSchema),
+  result: z.lazy(() => ReplaceRangeAsTickResultSchema)
+});
+export type ReplaceRangeAsTickMutationOperation = z.infer<typeof ReplaceRangeAsTickMutationOperationSchema>;
+
+export const CreateCheckpointMutationArgsSchema = z.object({
+  input: z.lazy(() => CreateCheckpointInputSchema)
+});
+export type CreateCheckpointMutationArgs = z.infer<typeof CreateCheckpointMutationArgsSchema>;
+export const CreateCheckpointMutationOperationSchema = z.object({
+  operationName: z.literal("createCheckpoint"),
+  args: z.lazy(() => CreateCheckpointMutationArgsSchema),
+  result: z.lazy(() => CreateCheckpointResultSchema)
+});
+export type CreateCheckpointMutationOperation = z.infer<typeof CreateCheckpointMutationOperationSchema>;
+
+export const MutationOperationSchemas = {
+  createBufferWorldline: {
+    args: CreateBufferWorldlineMutationArgsSchema,
+    input: z.lazy(() => CreateBufferWorldlineInputSchema),
+    result: z.lazy(() => CreateBufferWorldlineResultSchema),
+    operation: CreateBufferWorldlineMutationOperationSchema
+  },
+  replaceRangeAsTick: {
+    args: ReplaceRangeAsTickMutationArgsSchema,
+    input: z.lazy(() => ReplaceRangeAsTickInputSchema),
+    result: z.lazy(() => ReplaceRangeAsTickResultSchema),
+    operation: ReplaceRangeAsTickMutationOperationSchema
+  },
+  createCheckpoint: {
+    args: CreateCheckpointMutationArgsSchema,
+    input: z.lazy(() => CreateCheckpointInputSchema),
+    result: z.lazy(() => CreateCheckpointResultSchema),
+    operation: CreateCheckpointMutationOperationSchema
+  },
+} as const;

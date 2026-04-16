@@ -6,25 +6,13 @@ import type { TickAdmissionReceipt } from '../domain/tick-admission-contract.js'
 import type {
   BufferWorldline,
   Checkpoint,
-  CreateBufferWorldlineInput,
-  CreateBufferWorldlineResult,
-  CreateCheckpointInput,
-  CreateCheckpointResult,
-  ReplaceRangeAsTickInput,
-  ReplaceRangeAsTickResult,
+  MutationOperationMap,
   RopeHead,
   Tick,
   TickKind,
   TickReceipt,
 } from '../generated/jedit/hot-text-runtime.types.generated.js';
-import {
-  CreateBufferWorldlineInputSchema,
-  CreateBufferWorldlineResultSchema,
-  CreateCheckpointInputSchema,
-  CreateCheckpointResultSchema,
-  ReplaceRangeAsTickInputSchema,
-  ReplaceRangeAsTickResultSchema,
-} from '../generated/jedit/hot-text-runtime.zod.generated.js';
+import { MutationOperationSchemas } from '../generated/jedit/hot-text-runtime.zod.generated.js';
 import type { HotTextBufferState, HotTextRuntimePort } from '../ports/hot-text-runtime.js';
 
 const JEDIT_CONTRACT_RUNTIME_ERROR_WORLDLINE_MISMATCH = 1;
@@ -41,6 +29,13 @@ const INITIAL_CHECKPOINT_KIND = 'INITIAL';
 const EMPTY_LINE_COUNT = 1;
 
 const UTF8_ENCODER = new TextEncoder();
+
+type CreateBufferWorldlineInput = MutationOperationMap['createBufferWorldline']['input'];
+type CreateBufferWorldlineResult = MutationOperationMap['createBufferWorldline']['result'];
+type ReplaceRangeAsTickInput = MutationOperationMap['replaceRangeAsTick']['input'];
+type ReplaceRangeAsTickResult = MutationOperationMap['replaceRangeAsTick']['result'];
+type CreateCheckpointInput = MutationOperationMap['createCheckpoint']['input'];
+type CreateCheckpointResult = MutationOperationMap['createCheckpoint']['result'];
 
 export interface JeditWorldlineSession {
   readonly worldline: BufferWorldline;
@@ -91,14 +86,14 @@ export function createBufferWorldline(
   runtime: HotTextRuntimePort,
   input: CreateBufferWorldlineInput,
 ): CreateBufferWorldlineExecution {
-  const parsedInput = CreateBufferWorldlineInputSchema.parse(input);
+  const parsedInput = MutationOperationSchemas.createBufferWorldline.input.parse(input);
   const initialText = parsedInput.initialText ?? '';
   const projectionPath = parsedInput.projectionPath ?? parsedInput.bufferKey;
   const initialState = runtime.createBuffer(projectionPath, initialText);
   const initialSession = createSession(parsedInput.bufferKey, projectionPath, initialState, [], []);
 
   if (!(parsedInput.createInitialCheckpoint ?? false)) {
-    const result = CreateBufferWorldlineResultSchema.parse({
+    const result = MutationOperationSchemas.createBufferWorldline.result.parse({
       worldline: initialSession.worldline,
       head: toHeadRecord(initialSession),
     });
@@ -114,7 +109,7 @@ export function createBufferWorldline(
     : [createCheckpointMetadata(saved.receipt, INITIAL_CHECKPOINT_KIND, undefined)];
   const nextSession = createSession(parsedInput.bufferKey, projectionPath, saved.nextState, [], metadata);
   const checkpoint = metadata[0] == null ? undefined : toCheckpointRecord(nextSession, metadata[0]);
-  const result = CreateBufferWorldlineResultSchema.parse({
+  const result = MutationOperationSchemas.createBufferWorldline.result.parse({
     worldline: nextSession.worldline,
     head: toHeadRecord(nextSession),
     checkpoint,
@@ -138,7 +133,7 @@ export function replaceRangeAsTick(
   session: JeditWorldlineSession,
   input: ReplaceRangeAsTickInput,
 ): ReplaceRangeAsTickExecution {
-  const parsedInput = ReplaceRangeAsTickInputSchema.parse(input);
+  const parsedInput = MutationOperationSchemas.replaceRangeAsTick.input.parse(input);
   ensureMatchingWorldline(session, parsedInput.worldlineId);
   ensureMatchingBaseHead(session, parsedInput.baseHeadId);
 
@@ -167,7 +162,7 @@ export function replaceRangeAsTick(
     session.checkpointMetadata,
   );
   const tick = toTickRecord(nextSession, tickMetadata);
-  const result = ReplaceRangeAsTickResultSchema.parse({
+  const result = MutationOperationSchemas.replaceRangeAsTick.result.parse({
     worldline: nextSession.worldline,
     nextHead: toHeadRecord(nextSession),
     tick,
@@ -190,7 +185,7 @@ export function createCheckpoint(
   session: JeditWorldlineSession,
   input: CreateCheckpointInput,
 ): CreateCheckpointExecution {
-  const parsedInput = CreateCheckpointInputSchema.parse(input);
+  const parsedInput = MutationOperationSchemas.createCheckpoint.input.parse(input);
   ensureMatchingWorldline(session, parsedInput.worldlineId);
 
   const saved = runtime.saveCheckpoint(session.state);
@@ -216,7 +211,7 @@ export function createCheckpoint(
     nextCheckpointMetadata,
   );
   const checkpoint = toCheckpointRecord(nextSession, checkpointMetadata);
-  const result = CreateCheckpointResultSchema.parse({
+  const result = MutationOperationSchemas.createCheckpoint.result.parse({
     worldline: nextSession.worldline,
     head: toHeadRecord(nextSession),
     checkpoint,
