@@ -2,6 +2,9 @@
 
 `jedit` is a terminal-first editor with strict hexagonal boundaries.
 
+The broader project doctrine is written down in
+[docs/design/project-invariants.md](docs/design/project-invariants.md).
+
 ## Layer Rules
 
 - `src/domain`

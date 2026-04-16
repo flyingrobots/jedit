@@ -11,6 +11,9 @@ can emerge from the actual product instead of scaffold baggage.
 `jedit` is aiming for a quiet editing surface with smart edges, not a terminal
 IDE clone.
 
+The full invariant set is written down in
+[docs/design/project-invariants.md](docs/design/project-invariants.md).
+
 - Zen core, instrumented edges. The main editor area stays visually quiet;
   richer context appears at the edges and only when it earns the space.
 - Minimal by default. Panels are hidden until explicitly opened.
