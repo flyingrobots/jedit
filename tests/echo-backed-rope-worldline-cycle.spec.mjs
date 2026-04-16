@@ -16,9 +16,11 @@ const DESIGN_DOC_PATH = path.join(
 const MODULE_PATH = path.join(REPO_ROOT, 'dist', 'domain', 'save-checkpoint-contract.js');
 const TICK_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'domain', 'tick-admission-contract.js');
 const EDIT_GROUP_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'domain', 'edit-group-contract.js');
+const HOT_SESSION_APP_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'hot-buffer-session.js');
 const CONTRACT_SPEC_PATH = path.join('spec', 'save-checkpoint.contract.spec.mjs');
 const TICK_CONTRACT_SPEC_PATH = path.join('spec', 'tick-admission.contract.spec.mjs');
 const EDIT_GROUP_CONTRACT_SPEC_PATH = path.join('spec', 'edit-group.contract.spec.mjs');
+const HOT_SESSION_CONTRACT_SPEC_PATH = path.join('spec', 'hot-buffer-session.spec.mjs');
 const QUALITY_GATE_PATH = path.join('scripts', 'quality-gate.mjs');
 const TYPESCRIPT_CLI_PATH = path.join('node_modules', 'typescript', 'bin', 'tsc');
 const EXPECTED_RUNTIME_EXPORTS = [
@@ -39,10 +41,19 @@ const EXPECTED_EDIT_GROUP_RUNTIME_EXPORTS = [
   'openEditGroup',
   'registerTick',
 ];
+const EXPECTED_HOT_SESSION_APP_EXPORTS = [
+  'applyBufferEdit',
+  'beginEditGroup',
+  'endEditGroup',
+  'materializeHotBuffer',
+  'saveHotBuffer',
+  'startHotBufferSession',
+];
 
 let cachedContractPromise;
 let cachedTickContractPromise;
 let cachedEditGroupContractPromise;
+let cachedHotSessionAppPromise;
 
 function readDesignDoc() {
   return fs.readFileSync(DESIGN_DOC_PATH, 'utf8');
@@ -82,6 +93,15 @@ async function loadEditGroupContract() {
   }
 
   return cachedEditGroupContractPromise;
+}
+
+async function loadHotSessionApp() {
+  if (cachedHotSessionAppPromise === undefined) {
+    runCommand([TYPESCRIPT_CLI_PATH, '-p', 'tsconfig.json']);
+    cachedHotSessionAppPromise = import(pathToFileURL(HOT_SESSION_APP_MODULE_PATH).href);
+  }
+
+  return cachedHotSessionAppPromise;
 }
 
 test('The cycle clearly says the rope-worldline is canonical, the AST worldline is derived, and Git commits are durable witnesses rather than the cadence of editor truth.', () => {
@@ -274,6 +294,41 @@ test('Closing an empty open group is a logical no-op.', async () => {
   assert.equal(result.receipt, undefined);
 });
 
+test('The app-facing hot session composes tick admission, edit grouping, and checkpointing without redefining ticks.', async () => {
+  const app = await loadHotSessionApp();
+  const adapter = await import(pathToFileURL(path.join(REPO_ROOT, 'dist', 'adapters', 'in-memory-hot-text-runtime.js')).href);
+  const text = await import(pathToFileURL(path.join(REPO_ROOT, 'dist', 'domain', 'text-edit-contract.js')).href);
+  const runtime = adapter.createInMemoryHotTextRuntime();
+
+  const opened = app.beginEditGroup(
+    runtime,
+    app.startHotBufferSession(runtime, 'notes/today.md', 'hello world'),
+  );
+  const edited = app.applyBufferEdit(
+    runtime,
+    opened,
+    text.createTextRange(5, 5),
+    ' brave new',
+  );
+  const closed = app.endEditGroup(runtime, edited.nextState);
+  const saved = app.saveHotBuffer(runtime, closed.nextState);
+
+  assert.equal(app.materializeHotBuffer(runtime, edited.nextState), 'hello brave new world');
+  assert.deepEqual(closed.nextState.editGroups, [
+    {
+      id: 1,
+      tickIds: [1],
+    },
+  ]);
+  assert.deepEqual(saved.nextState.checkpoints, [
+    {
+      id: 1,
+      rootId: edited.nextState.currentRoot.id,
+      path: 'notes/today.md',
+    },
+  ]);
+});
+
 test('The runtime contract stays a minimal save-checkpoint seam rather than a full rope runtime.', async () => {
   const contract = await loadContract();
 
@@ -292,10 +347,17 @@ test('The runtime contract stays a minimal edit-group seam rather than a full ro
   assert.deepEqual(Object.keys(contract).sort(), EXPECTED_EDIT_GROUP_RUNTIME_EXPORTS);
 });
 
-test('The workspace satisfies build, quality, and the save/tick/edit-group contract suites.', () => {
+test('The app-facing hot session seam stays minimal.', async () => {
+  const app = await loadHotSessionApp();
+
+  assert.deepEqual(Object.keys(app).sort(), EXPECTED_HOT_SESSION_APP_EXPORTS);
+});
+
+test('The workspace satisfies build, quality, and the save/tick/edit-group/app contract suites.', () => {
   runCommand([TYPESCRIPT_CLI_PATH, '-p', 'tsconfig.json']);
   runCommand(['--test', CONTRACT_SPEC_PATH]);
   runCommand(['--test', TICK_CONTRACT_SPEC_PATH]);
   runCommand(['--test', EDIT_GROUP_CONTRACT_SPEC_PATH]);
+  runCommand(['--test', HOT_SESSION_CONTRACT_SPEC_PATH]);
   runCommand([QUALITY_GATE_PATH, '--json']);
 });

@@ -300,6 +300,11 @@ The executable seam after tick-admission semantics is edit-group semantics:
 `jedit` should be able to group one or more known ticks into a human-meaningful
 edit group without redefining the canonical tick boundary.
 
+The executable seam after edit-group semantics is an app-facing hot-runtime
+port and a truthful in-memory adapter: `jedit` should be able to compose
+ReplaceRange, tick admission, edit-group policy, and checkpointing without
+pretending that Echo is already embedded in-process.
+
 ## Backlog Context
 
 Define the hot text-truth substrate for `jedit`.
