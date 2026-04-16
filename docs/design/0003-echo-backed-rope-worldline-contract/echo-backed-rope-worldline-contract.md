@@ -101,6 +101,9 @@ not implement Echo bindings, a rope runtime, or new editor UI.
 
 ## Contract
 
+Detailed node, edge, and rewrite expectations for the future Echo-backed hot
+graph now live in [../jedit-echo-graph-model.md](../jedit-echo-graph-model.md).
+
 ### Core law
 
 - The rope-worldline is canonical.
