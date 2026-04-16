@@ -1,6 +1,6 @@
 ---
 title: local-source-highlighting-before-graft-spans
-lane: asap
+lane: graveyard
 owner: jedit editor
 priority: medium
 keywords:
@@ -17,6 +17,14 @@ acceptance_criteria:
 ---
 
 # local-source-highlighting-before-graft-spans
+
+## Disposition
+
+This note assumed jedit needed a local-highlighting stopgap before Graft had a usable dirty-buffer syntax surface. Repo truth changed: Graft now exposes a real StructuredBuffer API with syntax spans and related structural projections over in-memory content. The queue should prefer the renderer seam plus Graft-backed warm projections rather than a local fallback-first plan.
+
+Replacement: `docs/method/backlog/asap/source-render-pipeline-that-can-swap-local-and-graft-highlighting.md`
+
+## Original Proposal
 
 Ship useful local source paint before Graft buffer-aware syntax spans exist.
 
