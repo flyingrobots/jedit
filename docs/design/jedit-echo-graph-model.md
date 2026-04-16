@@ -8,6 +8,7 @@ wants Echo to support, without assuming handwritten Echo runtime edits.
 This note is the detailed companion to:
 
 - [../../contracts/jedit/hot-text-runtime.graphql](../../contracts/jedit/hot-text-runtime.graphql)
+- [../../src/app/jedit-contract-runtime.ts](../../src/app/jedit-contract-runtime.ts)
 - [text-edit-algebra.md](text-edit-algebra.md)
 - [0004 - dynamic-footprint-binding-contract](0004-dynamic-footprint-binding-contract/dynamic-footprint-binding-contract.md)
 - [runtime-temperatures.md](runtime-temperatures.md)

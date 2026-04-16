@@ -61,6 +61,9 @@ The current runtime-temperature model is written down in
 [docs/design/runtime-temperatures.md](docs/design/runtime-temperatures.md).
 The authored home for the first hot-text contract now lives at
 [contracts/jedit/hot-text-runtime.graphql](contracts/jedit/hot-text-runtime.graphql).
+The app-owned contract adapter that maps those rewrite names onto the current
+runtime lives at
+[src/app/jedit-contract-runtime.ts](src/app/jedit-contract-runtime.ts).
 
 Near-term product direction:
 - `jedit .` opens the current directory
