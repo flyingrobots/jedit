@@ -49,6 +49,9 @@ editing truth.
   help interpret or compare buffer snapshots, but it does not replace the
   editor’s piece-rope worldline design.
 
+The current runtime-temperature model is written down in
+[docs/runtime-temperatures.md](docs/runtime-temperatures.md).
+
 Near-term product direction:
 - `jedit .` opens the current directory
 - file tree plus text buffer editing
