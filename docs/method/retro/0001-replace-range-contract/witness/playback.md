@@ -48,14 +48,14 @@ Yes.
 Suggested inspection:
 
 - [replace-range-contract.md](../../../design/0001-replace-range-contract/replace-range-contract.md)
-- [TEXT_EDIT_ALGEBRA.md](../../../../TEXT_EDIT_ALGEBRA.md)
+- [text-edit-algebra.md](../../../../design/text-edit-algebra.md)
 - [verification.md](./verification.md)
 
 Suggested commands:
 
 ```sh
 sed -n '1,80p' docs/design/0001-replace-range-contract/replace-range-contract.md
-sed -n '1,120p' TEXT_EDIT_ALGEBRA.md
+sed -n '1,120p' docs/design/text-edit-algebra.md
 ```
 
 What to confirm:

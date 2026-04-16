@@ -50,7 +50,7 @@ editing truth.
   editor’s piece-rope worldline design.
 
 The current runtime-temperature model is written down in
-[docs/runtime-temperatures.md](docs/runtime-temperatures.md).
+[docs/design/runtime-temperatures.md](docs/design/runtime-temperatures.md).
 
 Near-term product direction:
 - `jedit .` opens the current directory
@@ -79,8 +79,8 @@ Right now the app gives you:
 ## Next steps
 
 - lock the Echo-backed text runtime design around persistent piece-rope
-  worldlines in [TEXT_EDIT_ALGEBRA.md](TEXT_EDIT_ALGEBRA.md)
-- lock the event taxonomy in [CAUSAL_EVENT_MODEL.md](CAUSAL_EVENT_MODEL.md) so
+  worldlines in [docs/design/text-edit-algebra.md](docs/design/text-edit-algebra.md)
+- lock the event taxonomy in [docs/design/causal-event-model.md](docs/design/causal-event-model.md) so
   logical history, maintenance, and session traces do not collapse into one
   ledger
 - strengthen the Vim layer

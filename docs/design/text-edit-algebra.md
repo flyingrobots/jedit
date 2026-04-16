@@ -5,7 +5,7 @@ Status: design sketch
 Purpose: define the causal text runtime that sits under `jedit` before more UI
 work hardens the wrong abstractions.
 
-Event-class boundaries live in [CAUSAL_EVENT_MODEL.md](CAUSAL_EVENT_MODEL.md).
+Event-class boundaries live in [causal-event-model.md](causal-event-model.md).
 
 ## One Sentence
 

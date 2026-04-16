@@ -6,7 +6,7 @@ Purpose: define which `jedit` interactions become causal truth, which are
 maintenance-only, which belong in session traces, and which should not be
 persisted at all.
 
-This document complements [TEXT_EDIT_ALGEBRA.md](TEXT_EDIT_ALGEBRA.md). The
+This document complements [text-edit-algebra.md](text-edit-algebra.md). The
 rope model defines what the editable object is. This document defines what
 counts as a meaningful event in its history.
 
