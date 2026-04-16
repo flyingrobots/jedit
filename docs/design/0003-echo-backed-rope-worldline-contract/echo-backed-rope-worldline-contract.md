@@ -99,15 +99,187 @@ not implement Echo bindings, a rope runtime, or new editor UI.
   `docs/design/runtime-temperatures.md`, and the existing text-runtime design
   notes rather than free-floating discussion.
 
-## Non-goals
+## Contract
 
-- [ ] Implementing an Echo crate, WASM guest, or TypeScript bindings in this
-  cycle.
-- [ ] Implementing the rope runtime itself.
-- [ ] Replacing Graft with Echo or collapsing the two into one undifferentiated
-  engine.
-- [ ] Designing every long-term persistence detail for cold storage.
-- [ ] Treating Git commit cadence as the live update cadence of the editor.
+### Core law
+
+- The rope-worldline is canonical.
+- The AST worldline is derived.
+- Git commits are durable witnesses, not the cadence of editor truth.
+
+`jedit` therefore must not wait for `git commit` before live editor truth,
+syntax surfaces, or structural context catch up.
+
+### Runtime temperatures
+
+`jedit` should treat its causal runtime as a temperature stack:
+
+- `hot`
+  the live editable text truth
+- `warm`
+  live structural projections over current text heads
+- `cold`
+  durable witness, history, and interop layers
+
+The same noun must not silently slide between these temperature classes.
+
+### Hot runtime truths
+
+The hot layer is the editor-native truth.
+
+It must own:
+
+- `BufferWorldline`
+- `RopeRoot`
+- logical text receipts
+- anchors
+- transactions and undo groups
+- future strands and admissions
+
+It must remain lawful when:
+
+- the buffer is dirty
+- the buffer does not parse
+- the language is unsupported
+- the editor has not saved yet
+- the repo is not a Git repo
+
+The hot layer is where `ReplaceRange`, anchor transforms, and grouped edit
+transactions ultimately live.
+
+### Warm projection truths
+
+The warm layer is a structural interpretation of hot truth.
+
+It must own:
+
+- syntax spans
+- fold regions
+- parser-backed diagnostics
+- node lookup
+- structural selections
+- rename preview
+- structural diff and semantic summary
+- anchor-affinity style snapshot mapping
+
+The warm layer follows current rope heads or transaction heads. It is allowed
+to be partial when parsing fails and must degrade honestly for unsupported
+languages.
+
+Warm projections are not allowed to masquerade as canonical text truth.
+
+### Cold witness truths
+
+The cold layer is durable witness and long-horizon history.
+
+It must own:
+
+- Git-grounded repo artifact history
+- commit-anchored AST worldlines
+- durable provenance witnesses
+- long-horizon replay and interop artifacts
+
+Cold layers may lag behind live editing truth. They are not allowed to define
+when truth exists inside the editor.
+
+## Ownership
+
+### `jedit`
+
+`jedit` owns:
+
+- product behavior
+- modes
+- panes, panels, and lenses
+- save and open flows
+- focus and interaction policy
+- rendering policy
+
+`jedit` does not own parser semantics or durable Git witness history.
+
+### Echo / `echo-text`
+
+Echo is the intended owner of hot rope-worldline truth.
+
+That means:
+
+- persistent piece-rope storage
+- logical edit receipts
+- anchors and transformable positions
+- transactions
+- future strands and admissions
+
+Echo is not the owner of UI behavior, panel lifecycle, or structural parser
+projection semantics.
+
+### Graft
+
+Graft owns warm structural intelligence over rope heads.
+
+That means:
+
+- interpreting current in-memory content
+- producing parser-backed projections
+- remaining truthful about partial parses and unsupported languages
+
+Graft's current `StructuredBuffer` shape is already a strong warm projection
+surface, but it is still projection-oriented. It is not the canonical editable
+buffer runtime.
+
+### `git-warp`
+
+`git-warp` owns cold durable witness and Git-native causal history.
+
+It should witness or anchor editor truth later. It should not decide the live
+update cadence of the editor.
+
+## Save and retention
+
+### Save
+
+Save is a checkpoint, not a reset.
+
+Saving may:
+
+- create a checkpoint
+- materialize the current head to disk
+- emit or prepare colder witness artifacts
+
+Saving must not:
+
+- destroy the hot rope-worldline
+- discard undoable editor truth by default
+- redefine when the editor's truth started to exist
+
+### Retention tiers
+
+Retention should be tiered:
+
+- raw receipts
+  short-horizon, compactable, not forever by default
+- transactions
+  medium-lived, human-meaningful edit history
+- checkpoints and admissions
+  durable long-horizon history
+
+The contract should permit compaction of raw fine-grained history without
+destroying higher-level transaction truth.
+
+## Immediate executable seams
+
+This cycle should leave the next implementation seams obvious:
+
+1. `echo-backed-rope-worldline-contract`
+   the hot text-runtime contract itself
+2. `graft-hot-structural-projections-over-rope-heads`
+   the warm adapter contract
+3. `causal-history-retention-and-compaction-policy`
+   the retention law
+4. `save-checkpoints-and-cold-witness-bridge`
+   the hot-to-cold bridge
+
+This packet is successful if those seams become more precise rather than more
+poetic.
 
 ## Backlog Context
 
@@ -126,8 +298,11 @@ This note should answer: what exactly is the rope-worldline, what is its
 primitive edit law, what are its receipts, and how do anchors and transactions
 fit without collapsing into parser or Git concerns.
 
-## Non-Goals
+## Non-goals
 
-- Implementing the full runtime.
-- Deciding every persistence detail for cold storage.
-- Replacing Graft structural projections with the hot text substrate.
+- Implementing an Echo crate, WASM guest, or TypeScript bindings in this cycle.
+- Implementing the rope runtime itself.
+- Replacing Graft with Echo or collapsing the two into one undifferentiated
+  engine.
+- Designing every long-term persistence detail for cold storage.
+- Treating Git commit cadence as the live update cadence of the editor.
