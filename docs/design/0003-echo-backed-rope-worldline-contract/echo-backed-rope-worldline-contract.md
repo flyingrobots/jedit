@@ -281,6 +281,10 @@ This cycle should leave the next implementation seams obvious:
 This packet is successful if those seams become more precise rather than more
 poetic.
 
+The first executable seam in this cycle is save-checkpoint semantics, because
+it pins down one of the most user-visible consequences of the hot rope model
+without requiring the full runtime to exist yet.
+
 ## Backlog Context
 
 Define the hot text-truth substrate for `jedit`.
