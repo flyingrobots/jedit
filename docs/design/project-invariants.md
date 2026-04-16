@@ -53,7 +53,7 @@ The editable buffer must remain lawful even when:
 - the language is unsupported
 - the buffer is dirty or malformed
 - warm structure is partial or stale
-- Git is unavailable
+- the workspace is outside a Git repo
 
 The AST is derived. The rope-worldline is canonical.
 
@@ -65,7 +65,8 @@ The repo should preserve a clear hot / warm / cold split.
 - hot = rope-worldline, ticks, tick receipts, anchors
 - warm = structural projections like syntax spans, folds, diagnostics, and
   semantic summaries
-- cold = durable witness, Git-grounded history, and interop
+- cold = durable witness, Git-grounded history, and interop when the workspace
+  is inside a Git repo
 
 No layer should quietly impersonate another.
 
@@ -174,5 +175,6 @@ only in chat.
 ### 18. Graceful degradation is mandatory
 
 If warm structure is partial, unsupported, or stale, or if cold witness layers
-are absent, the editor should degrade to a smaller truthful product instead of
-collapsing into confusion or pretending its projections are complete.
+are absent because the workspace is outside a Git repo, the editor should
+degrade to a smaller truthful product instead of collapsing into confusion or
+pretending its projections are complete.

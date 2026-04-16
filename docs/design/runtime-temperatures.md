@@ -87,6 +87,10 @@ Properties:
 
 `git-warp` is the right substrate for this layer.
 
+Git is offline-first in this model. The meaningful absence case for the cold
+layer is not network loss; it is working in a workspace that is outside a Git
+repo.
+
 ## Ownership split
 
 - `jedit`
