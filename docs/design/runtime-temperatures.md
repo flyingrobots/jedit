@@ -3,6 +3,9 @@
 `jedit` should treat its causal runtime as a temperature stack rather than one
 engine pretending to solve every problem equally well.
 
+The rationale for choosing Echo as native truth is written down in
+[why-echo.md](why-echo.md).
+
 ## Core law
 
 - The rope-worldline is canonical.

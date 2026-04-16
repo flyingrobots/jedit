@@ -6,6 +6,7 @@ Purpose: define the causal text runtime that sits under `jedit` before more UI
 work hardens the wrong abstractions.
 
 Event-class boundaries live in [causal-event-model.md](causal-event-model.md).
+The substrate choice is explained in [why-echo.md](why-echo.md).
 
 ## One Sentence
 
