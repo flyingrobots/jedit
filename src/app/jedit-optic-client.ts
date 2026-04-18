@@ -1,0 +1,53 @@
+import type { HotTextRuntimePort } from '../ports/hot-text-runtime.js';
+import type { JeditOpticClient } from '../ports/jedit-optic-client.js';
+import {
+  createBufferWorldline,
+  createCheckpoint,
+  replaceRangeAsTick,
+  type CreateBufferWorldlineExecution,
+  type CreateCheckpointExecution,
+  type JeditWorldlineSession,
+  type ReplaceRangeAsTickExecution,
+} from './jedit-contract-runtime.js';
+import {
+  readWorldlineSnapshotWithObserverPlan,
+  type WorldlineSnapshotReadingEnvelope,
+} from './jedit-observer-runtime.js';
+import type {
+  MutationOperationMap,
+  QueryOperationMap,
+} from '../generated/jedit/hot-text-runtime.types.generated.js';
+
+type CreateBufferWorldlineInput = MutationOperationMap['createBufferWorldline']['input'];
+type ReplaceRangeAsTickInput = MutationOperationMap['replaceRangeAsTick']['input'];
+type CreateCheckpointInput = MutationOperationMap['createCheckpoint']['input'];
+type WorldlineSnapshotInput = QueryOperationMap['worldlineSnapshot']['input'];
+
+// Until Wesley emits direct intent/observer clients, keep one narrow seam where
+// generated GraphQL operation names are transmuted into app-owned runtime calls.
+export function createInMemoryJeditOpticClient(runtime: HotTextRuntimePort): JeditOpticClient {
+  return {
+    createBufferWorldline(input: CreateBufferWorldlineInput): CreateBufferWorldlineExecution {
+      return createBufferWorldline(runtime, input);
+    },
+    replaceRangeAsTick(
+      session: JeditWorldlineSession,
+      input: ReplaceRangeAsTickInput,
+    ): ReplaceRangeAsTickExecution {
+      return replaceRangeAsTick(runtime, session, input);
+    },
+    createCheckpoint(
+      session: JeditWorldlineSession,
+      input: CreateCheckpointInput,
+    ): CreateCheckpointExecution {
+      return createCheckpoint(runtime, session, input);
+    },
+    worldlineSnapshot(
+      session: JeditWorldlineSession,
+      frontierRef: string,
+      input: WorldlineSnapshotInput,
+    ): WorldlineSnapshotReadingEnvelope {
+      return readWorldlineSnapshotWithObserverPlan(runtime, session, frontierRef, input);
+    },
+  };
+}
