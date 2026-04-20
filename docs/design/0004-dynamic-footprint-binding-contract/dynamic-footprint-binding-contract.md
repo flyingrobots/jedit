@@ -28,7 +28,7 @@ design packet that makes five claims concrete:
 1. rewrite footprints are static at the level of slots, bindings, derivation
    grammar, and capability surface
 2. rewrite bindings are dynamic at the level of concrete worldline/head/range
-   values and runtime graph state
+   values and runtime materialized readings
 3. `ReplaceRangeAsTick` can bind a dynamic rope/anchor focus without gaining
    arbitrary graph reach
 4. `CreateCheckpoint` can stay narrow without borrowing the `ReplaceRange`
