@@ -1,0 +1,391 @@
+import { z } from 'zod';
+
+import type {
+  CreateBufferWorldlineExecution,
+  CreateCheckpointExecution,
+  JeditWorldlineSession,
+  ReplaceRangeAsTickExecution,
+} from '../app/jedit-contract-runtime.js';
+import type { WorldlineSnapshotReadingEnvelope } from '../app/jedit-observer-runtime.js';
+import type {
+  MutationOperationName,
+  MutationOperationMap,
+  QueryOperationName,
+  QueryOperationMap,
+} from '../generated/jedit/hot-text-runtime.types.generated.js';
+import {
+  BufferWorldlineSchema,
+  CheckpointKindSchema,
+  MutationOperationSchemas,
+  QueryOperationSchemas,
+  TickKindSchema,
+} from '../generated/jedit/hot-text-runtime.zod.generated.js';
+
+export const JEDIT_INTENT_REQUEST_KIND = 'jedit.intent-request';
+export const JEDIT_OBSERVE_REQUEST_KIND = 'jedit.observe-request';
+export const JEDIT_SCHEDULER_STATUS_KIND = 'jedit.scheduler-status';
+export const JEDIT_TRANSPORT_STATUS_OK = 'OK';
+export const JEDIT_TRANSPORT_STATUS_OBSTRUCTED = 'OBSTRUCTED';
+
+export const CREATE_BUFFER_WORLDLINE_OPERATION = 'createBufferWorldline';
+export const REPLACE_RANGE_AS_TICK_OPERATION = 'replaceRangeAsTick';
+export const CREATE_CHECKPOINT_OPERATION = 'createCheckpoint';
+export const WORLDLINE_SNAPSHOT_OPERATION = 'worldlineSnapshot';
+
+const SCHEDULER_STATE_IDLE = 'IDLE';
+
+const TEXT_ENCODER = new TextEncoder();
+const TEXT_DECODER = new TextDecoder();
+
+const MutationOperationNameSchema = z.union([
+  z.literal(CREATE_BUFFER_WORLDLINE_OPERATION),
+  z.literal(REPLACE_RANGE_AS_TICK_OPERATION),
+  z.literal(CREATE_CHECKPOINT_OPERATION),
+]);
+
+const QueryOperationNameSchema = z.literal(WORLDLINE_SNAPSHOT_OPERATION);
+
+const BufferRootSchema = z.object({
+  id: z.number().int(),
+  text: z.string(),
+});
+
+const AdmittedTickSchema = z.object({
+  id: z.number().int(),
+  rootId: z.number().int(),
+});
+
+const EditGroupSchema = z.object({
+  id: z.number().int(),
+  tickIds: z.array(z.number().int()),
+});
+
+const OpenEditGroupSchema = z.object({
+  id: z.number().int(),
+  tickIds: z.array(z.number().int()),
+});
+
+const SaveCheckpointSchema = z.object({
+  id: z.number().int(),
+  rootId: z.number().int(),
+  path: z.string(),
+});
+
+const HotTextBufferStateSchema = z.object({
+  path: z.string(),
+  currentRoot: BufferRootSchema,
+  ticks: z.array(AdmittedTickSchema),
+  editGroups: z.array(EditGroupSchema),
+  openEditGroup: OpenEditGroupSchema.optional(),
+  checkpoints: z.array(SaveCheckpointSchema),
+});
+
+const TickMetadataSchema = z.object({
+  tickId: z.number().int(),
+  kind: TickKindSchema,
+  author: z.string().optional(),
+});
+
+const CheckpointMetadataSchema = z.object({
+  checkpointId: z.number().int(),
+  kind: CheckpointKindSchema,
+  label: z.string().optional(),
+  createdByTickId: z.number().int().optional(),
+});
+
+const JeditWorldlineSessionSchema = z.object({
+  worldline: BufferWorldlineSchema,
+  state: HotTextBufferStateSchema,
+  tickMetadata: z.array(TickMetadataSchema),
+  checkpointMetadata: z.array(CheckpointMetadataSchema),
+});
+
+const CreateBufferWorldlineExecutionSchema = z.object({
+  nextSession: JeditWorldlineSessionSchema,
+  result: MutationOperationSchemas.createBufferWorldline.result,
+});
+
+const ReplaceRangeAsTickExecutionSchema = z.object({
+  nextSession: JeditWorldlineSessionSchema,
+  result: MutationOperationSchemas.replaceRangeAsTick.result.optional(),
+});
+
+const CreateCheckpointExecutionSchema = z.object({
+  nextSession: JeditWorldlineSessionSchema,
+  result: MutationOperationSchemas.createCheckpoint.result.optional(),
+});
+
+const WorldlineSnapshotReadingEnvelopeSchema = z.object({
+  planId: z.string(),
+  observerName: z.string(),
+  operationName: z.literal(WORLDLINE_SNAPSHOT_OPERATION),
+  frontierRef: z.string(),
+  reading: QueryOperationSchemas.worldlineSnapshot.result,
+});
+
+const CreateBufferWorldlineIntentRequestSchema = z.object({
+  kind: z.literal(JEDIT_INTENT_REQUEST_KIND),
+  operationName: z.literal(CREATE_BUFFER_WORLDLINE_OPERATION),
+  input: MutationOperationSchemas.createBufferWorldline.input,
+});
+
+const ReplaceRangeAsTickIntentRequestSchema = z.object({
+  kind: z.literal(JEDIT_INTENT_REQUEST_KIND),
+  operationName: z.literal(REPLACE_RANGE_AS_TICK_OPERATION),
+  session: JeditWorldlineSessionSchema,
+  input: MutationOperationSchemas.replaceRangeAsTick.input,
+});
+
+const CreateCheckpointIntentRequestSchema = z.object({
+  kind: z.literal(JEDIT_INTENT_REQUEST_KIND),
+  operationName: z.literal(CREATE_CHECKPOINT_OPERATION),
+  session: JeditWorldlineSessionSchema,
+  input: MutationOperationSchemas.createCheckpoint.input,
+});
+
+const WorldlineSnapshotObserveRequestSchema = z.object({
+  kind: z.literal(JEDIT_OBSERVE_REQUEST_KIND),
+  operationName: QueryOperationNameSchema,
+  session: JeditWorldlineSessionSchema,
+  frontierRef: z.string(),
+  input: QueryOperationSchemas.worldlineSnapshot.input,
+});
+
+const JeditTransportObstructionSchema = z.object({
+  code: z.string(),
+  message: z.string(),
+  worldlineId: z.string().optional(),
+  requestedBaseHeadId: z.string().optional(),
+  currentHeadId: z.string().optional(),
+  recovery: z.string().optional(),
+});
+
+const CreateBufferWorldlineIntentOkResponseSchema = z.object({
+  status: z.literal(JEDIT_TRANSPORT_STATUS_OK),
+  operationName: z.literal(CREATE_BUFFER_WORLDLINE_OPERATION),
+  execution: CreateBufferWorldlineExecutionSchema,
+});
+
+const ReplaceRangeAsTickIntentOkResponseSchema = z.object({
+  status: z.literal(JEDIT_TRANSPORT_STATUS_OK),
+  operationName: z.literal(REPLACE_RANGE_AS_TICK_OPERATION),
+  execution: ReplaceRangeAsTickExecutionSchema,
+});
+
+const CreateCheckpointIntentOkResponseSchema = z.object({
+  status: z.literal(JEDIT_TRANSPORT_STATUS_OK),
+  operationName: z.literal(CREATE_CHECKPOINT_OPERATION),
+  execution: CreateCheckpointExecutionSchema,
+});
+
+const IntentObstructedResponseSchema = z.object({
+  status: z.literal(JEDIT_TRANSPORT_STATUS_OBSTRUCTED),
+  operationName: MutationOperationNameSchema,
+  obstruction: JeditTransportObstructionSchema,
+});
+
+const WorldlineSnapshotObserveOkResponseSchema = z.object({
+  status: z.literal(JEDIT_TRANSPORT_STATUS_OK),
+  operationName: QueryOperationNameSchema,
+  envelope: WorldlineSnapshotReadingEnvelopeSchema,
+});
+
+const ObserveObstructedResponseSchema = z.object({
+  status: z.literal(JEDIT_TRANSPORT_STATUS_OBSTRUCTED),
+  operationName: QueryOperationNameSchema,
+  obstruction: JeditTransportObstructionSchema,
+});
+
+const SchedulerStatusSchema = z.object({
+  kind: z.literal(JEDIT_SCHEDULER_STATUS_KIND),
+  state: z.literal(SCHEDULER_STATE_IDLE),
+  host: z.string(),
+});
+
+const JeditIntentRequestSchema = z.union([
+  CreateBufferWorldlineIntentRequestSchema,
+  ReplaceRangeAsTickIntentRequestSchema,
+  CreateCheckpointIntentRequestSchema,
+]);
+
+const JeditObserveRequestSchema = WorldlineSnapshotObserveRequestSchema;
+
+const JeditIntentResponseSchema = z.union([
+  CreateBufferWorldlineIntentOkResponseSchema,
+  ReplaceRangeAsTickIntentOkResponseSchema,
+  CreateCheckpointIntentOkResponseSchema,
+  IntentObstructedResponseSchema,
+]);
+
+const JeditObserveResponseSchema = z.union([
+  WorldlineSnapshotObserveOkResponseSchema,
+  ObserveObstructedResponseSchema,
+]);
+
+export type JeditMutationOperationName = MutationOperationName;
+export type JeditQueryOperationName = QueryOperationName;
+
+export interface CreateBufferWorldlineIntentRequest {
+  readonly kind: typeof JEDIT_INTENT_REQUEST_KIND;
+  readonly operationName: typeof CREATE_BUFFER_WORLDLINE_OPERATION;
+  readonly input: MutationOperationMap['createBufferWorldline']['input'];
+}
+
+export interface ReplaceRangeAsTickIntentRequest {
+  readonly kind: typeof JEDIT_INTENT_REQUEST_KIND;
+  readonly operationName: typeof REPLACE_RANGE_AS_TICK_OPERATION;
+  readonly session: JeditWorldlineSession;
+  readonly input: MutationOperationMap['replaceRangeAsTick']['input'];
+}
+
+export interface CreateCheckpointIntentRequest {
+  readonly kind: typeof JEDIT_INTENT_REQUEST_KIND;
+  readonly operationName: typeof CREATE_CHECKPOINT_OPERATION;
+  readonly session: JeditWorldlineSession;
+  readonly input: MutationOperationMap['createCheckpoint']['input'];
+}
+
+export interface WorldlineSnapshotObserveRequest {
+  readonly kind: typeof JEDIT_OBSERVE_REQUEST_KIND;
+  readonly operationName: typeof WORLDLINE_SNAPSHOT_OPERATION;
+  readonly session: JeditWorldlineSession;
+  readonly frontierRef: string;
+  readonly input: QueryOperationMap['worldlineSnapshot']['input'];
+}
+
+export interface JeditTransportObstruction {
+  readonly code: string;
+  readonly message: string;
+  readonly worldlineId?: string;
+  readonly requestedBaseHeadId?: string;
+  readonly currentHeadId?: string;
+  readonly recovery?: string;
+}
+
+export interface CreateBufferWorldlineIntentOkResponse {
+  readonly status: typeof JEDIT_TRANSPORT_STATUS_OK;
+  readonly operationName: typeof CREATE_BUFFER_WORLDLINE_OPERATION;
+  readonly execution: CreateBufferWorldlineExecution;
+}
+
+export interface ReplaceRangeAsTickIntentOkResponse {
+  readonly status: typeof JEDIT_TRANSPORT_STATUS_OK;
+  readonly operationName: typeof REPLACE_RANGE_AS_TICK_OPERATION;
+  readonly execution: ReplaceRangeAsTickExecution;
+}
+
+export interface CreateCheckpointIntentOkResponse {
+  readonly status: typeof JEDIT_TRANSPORT_STATUS_OK;
+  readonly operationName: typeof CREATE_CHECKPOINT_OPERATION;
+  readonly execution: CreateCheckpointExecution;
+}
+
+export interface JeditIntentObstructedResponse {
+  readonly status: typeof JEDIT_TRANSPORT_STATUS_OBSTRUCTED;
+  readonly operationName: JeditMutationOperationName;
+  readonly obstruction: JeditTransportObstruction;
+}
+
+export interface WorldlineSnapshotObserveOkResponse {
+  readonly status: typeof JEDIT_TRANSPORT_STATUS_OK;
+  readonly operationName: typeof WORLDLINE_SNAPSHOT_OPERATION;
+  readonly envelope: WorldlineSnapshotReadingEnvelope;
+}
+
+export interface JeditObserveObstructedResponse {
+  readonly status: typeof JEDIT_TRANSPORT_STATUS_OBSTRUCTED;
+  readonly operationName: JeditQueryOperationName;
+  readonly obstruction: JeditTransportObstruction;
+}
+
+export interface JeditSchedulerStatus {
+  readonly kind: typeof JEDIT_SCHEDULER_STATUS_KIND;
+  readonly state: typeof SCHEDULER_STATE_IDLE;
+  readonly host: string;
+}
+
+export type JeditIntentRequest =
+  | CreateBufferWorldlineIntentRequest
+  | ReplaceRangeAsTickIntentRequest
+  | CreateCheckpointIntentRequest;
+export type JeditObserveRequest = WorldlineSnapshotObserveRequest;
+export type JeditIntentResponse =
+  | CreateBufferWorldlineIntentOkResponse
+  | ReplaceRangeAsTickIntentOkResponse
+  | CreateCheckpointIntentOkResponse
+  | JeditIntentObstructedResponse;
+export type JeditObserveResponse =
+  | WorldlineSnapshotObserveOkResponse
+  | JeditObserveObstructedResponse;
+
+type JsonPrimitive = string | number | boolean | null;
+type JsonObject = { readonly [key: string]: JsonValue };
+type JsonValue = JsonPrimitive | JsonObject | readonly JsonValue[];
+
+export function encodeJeditIntentRequest(request: JeditIntentRequest): Uint8Array {
+  return encodeJson(JeditIntentRequestSchema.parse(request));
+}
+
+export function decodeJeditIntentRequest(bytes: Uint8Array): JeditIntentRequest {
+  return JeditIntentRequestSchema.parse(parseJsonBytes(bytes)) as JeditIntentRequest;
+}
+
+export function encodeJeditObserveRequest(request: JeditObserveRequest): Uint8Array {
+  return encodeJson(JeditObserveRequestSchema.parse(request));
+}
+
+export function decodeJeditObserveRequest(bytes: Uint8Array): JeditObserveRequest {
+  return JeditObserveRequestSchema.parse(parseJsonBytes(bytes)) as JeditObserveRequest;
+}
+
+export function encodeJeditIntentResponse(response: JeditIntentResponse): Uint8Array {
+  return encodeJson(JeditIntentResponseSchema.parse(response));
+}
+
+export function decodeJeditIntentResponse(bytes: Uint8Array): JeditIntentResponse {
+  return JeditIntentResponseSchema.parse(parseJsonBytes(bytes)) as JeditIntentResponse;
+}
+
+export function encodeJeditObserveResponse(response: JeditObserveResponse): Uint8Array {
+  return encodeJson(JeditObserveResponseSchema.parse(response));
+}
+
+export function decodeJeditObserveResponse(bytes: Uint8Array): JeditObserveResponse {
+  return JeditObserveResponseSchema.parse(parseJsonBytes(bytes)) as JeditObserveResponse;
+}
+
+export function encodeJeditSchedulerStatus(status: JeditSchedulerStatus): Uint8Array {
+  return encodeJson(SchedulerStatusSchema.parse(status));
+}
+
+export function toCreateBufferWorldlineExecution(
+  execution: CreateBufferWorldlineExecution,
+): CreateBufferWorldlineExecution {
+  return execution;
+}
+
+export function toReplaceRangeAsTickExecution(
+  execution: ReplaceRangeAsTickExecution,
+): ReplaceRangeAsTickExecution {
+  return execution;
+}
+
+export function toCreateCheckpointExecution(
+  execution: CreateCheckpointExecution,
+): CreateCheckpointExecution {
+  return execution;
+}
+
+export function toWorldlineSnapshotReadingEnvelope(
+  envelope: WorldlineSnapshotReadingEnvelope,
+): WorldlineSnapshotReadingEnvelope {
+  return envelope;
+}
+
+function encodeJson(value: object): Uint8Array {
+  return TEXT_ENCODER.encode(JSON.stringify(value));
+}
+
+function parseJsonBytes(bytes: Uint8Array): JsonValue {
+  return JSON.parse(TEXT_DECODER.decode(bytes)) as JsonValue;
+}
