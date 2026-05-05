@@ -11,6 +11,8 @@ import {
 } from './jedit-contract-runtime.js';
 import {
   readWorldlineSnapshotWithObserverPlan,
+  readTextWindowWithObserverPlan,
+  type TextWindowReadingEnvelope,
   type WorldlineSnapshotReadingEnvelope,
 } from './jedit-observer-runtime.js';
 import type {
@@ -22,6 +24,7 @@ type CreateBufferWorldlineInput = MutationOperationMap['createBufferWorldline'][
 type ReplaceRangeAsTickInput = MutationOperationMap['replaceRangeAsTick']['input'];
 type CreateCheckpointInput = MutationOperationMap['createCheckpoint']['input'];
 type WorldlineSnapshotInput = QueryOperationMap['worldlineSnapshot']['input'];
+type TextWindowInput = QueryOperationMap['textWindow']['input'];
 
 // Until Wesley emits direct intent/observer clients, keep one narrow seam where
 // generated GraphQL operation names are transmuted into app-owned runtime calls.
@@ -48,6 +51,13 @@ export function createInMemoryJeditOpticClient(runtime: HotTextRuntimePort): Jed
       input: WorldlineSnapshotInput,
     ): WorldlineSnapshotReadingEnvelope {
       return readWorldlineSnapshotWithObserverPlan(runtime, session, frontierRef, input);
+    },
+    textWindow(
+      session: JeditWorldlineSession,
+      frontierRef: string,
+      input: TextWindowInput,
+    ): TextWindowReadingEnvelope {
+      return readTextWindowWithObserverPlan(runtime, session, frontierRef, input);
     },
   };
 }

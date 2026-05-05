@@ -10,6 +10,8 @@ const ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'in-memory-
 const TRANSPORT_CLIENT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-optic-client.js');
 const FAKE_TRANSPORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'fake-echo-jedit-optic-transport.js');
 const CODEC_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-optic-codec.js');
+const LEGACY_EAGER_LOAD_CAP_BYTES = 24 * 1024;
+const UTF8_ENCODER = new TextEncoder();
 
 async function loadModules() {
   const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
@@ -163,3 +165,82 @@ test('transport-backed optic client exercises the fake Echo host through encoded
   assert.equal(stale.obstruction.code, 'JEDIT_CONTRACT_RUNTIME_ERROR');
   assert.match(stale.obstruction.message, /Base head mismatch/);
 });
+
+test('transport-backed textWindow returns a bounded large-file reading', async () => {
+  const { transportClientModule, fakeTransportModule, codecModule } = await loadModules();
+  const fakeTransport = fakeTransportModule.createFakeEchoJeditOpticTransport();
+  const observedRequests = [];
+  const transport = {
+    kernelInfo() {
+      return fakeTransport.kernelInfo();
+    },
+    submitIntentBytes(bytes) {
+      return fakeTransport.submitIntentBytes(bytes);
+    },
+    observeBytes(bytes) {
+      observedRequests.push(codecModule.decodeJeditObserveRequest(bytes));
+      return fakeTransport.observeBytes(bytes);
+    },
+    schedulerStatusBytes() {
+      return fakeTransport.schedulerStatusBytes();
+    },
+  };
+  const client = transportClientModule.createEchoTransportJeditOpticClient(transport);
+  const largeLines = Array.from(
+    { length: 1200 },
+    (_, index) => `line-${String(index).padStart(4, '0')} ${'x'.repeat(40)}`,
+  );
+  const largeText = largeLines.join('\n');
+
+  assert.ok(byteLength(largeText) > LEGACY_EAGER_LOAD_CAP_BYTES);
+
+  const created = client.createBufferWorldline({
+    bufferKey: 'src/large-main.ts',
+    initialText: largeText,
+    projectionPath: '/tmp/src/large-main.ts',
+    createInitialCheckpoint: false,
+  });
+
+  const envelope = client.textWindow(
+    created.nextSession,
+    'frontier:text-window:1',
+    {
+      worldlineId: created.nextSession.worldline.worldlineId,
+      cursorLine: 500,
+      viewportLineCount: 4,
+      beforeLines: 1,
+      afterLines: 2,
+      maxBytes: 4096,
+    },
+  );
+
+  assert.equal(observedRequests.length, 1);
+  assert.equal(observedRequests[0].operationName, codecModule.TEXT_WINDOW_OPERATION);
+  assert.equal(envelope.operationName, codecModule.TEXT_WINDOW_OPERATION);
+  assert.equal(envelope.frontierRef, 'frontier:text-window:1');
+  assert.equal(envelope.reading.text, undefined);
+  assert.equal(envelope.reading.startLine, 499);
+  assert.equal(envelope.reading.lineCount, 7);
+  assert.equal(envelope.reading.totalLineCount, largeLines.length);
+  assert.equal(envelope.reading.hasMoreBefore, true);
+  assert.equal(envelope.reading.hasMoreAfter, true);
+  assert.deepEqual(
+    envelope.reading.lines.map((line) => line.lineNumber),
+    [499, 500, 501, 502, 503, 504, 505],
+  );
+  assert.equal(envelope.reading.lines[0].text, largeLines[499]);
+  assert.equal(envelope.reading.lines[0].startByte, lineStartByte(largeLines, 499));
+  assert.equal(envelope.reading.lines[0].endByte, lineStartByte(largeLines, 500) - 1);
+  assert.ok(JSON.stringify(envelope.reading).length < byteLength(largeText));
+});
+
+function byteLength(text) {
+  return UTF8_ENCODER.encode(text).length;
+}
+
+function lineStartByte(lines, lineNumber) {
+  if (lineNumber === 0) {
+    return 0;
+  }
+  return byteLength(lines.slice(0, lineNumber).join('\n')) + 1;
+}

@@ -89,6 +89,23 @@ export interface WorldlineSnapshot {
   checkpoints: Array<Checkpoint>;
   text: string;
 }
+export interface TextLineReading {
+  lineNumber: number;
+  text: string;
+  startByte: number;
+  endByte: number;
+}
+export interface TextWindowReading {
+  worldline: BufferWorldline;
+  head: RopeHead;
+  readingId: string;
+  startLine: number;
+  lineCount: number;
+  totalLineCount: number;
+  hasMoreBefore: boolean;
+  hasMoreAfter: boolean;
+  lines: Array<TextLineReading>;
+}
 export interface CreateBufferWorldlineResult {
   worldline: BufferWorldline;
   head: RopeHead;
@@ -128,6 +145,14 @@ export interface CreateCheckpointInput {
 export interface WorldlineSnapshotInput {
   worldlineId: string;
 }
+export interface TextWindowInput {
+  worldlineId: string;
+  cursorLine: number;
+  viewportLineCount: number;
+  beforeLines: number;
+  afterLines: number;
+  maxBytes: number;
+}
 // Operations
 export interface WorldlineSnapshotQueryArgs {
   input: WorldlineSnapshotInput;
@@ -138,8 +163,18 @@ export interface WorldlineSnapshotQueryOperation {
   input: WorldlineSnapshotInput;
   result: WorldlineSnapshot;
 }
+export interface TextWindowQueryArgs {
+  input: TextWindowInput;
+}
+export interface TextWindowQueryOperation {
+  operationName: "textWindow";
+  args: TextWindowQueryArgs;
+  input: TextWindowInput;
+  result: TextWindowReading;
+}
 export interface QueryOperationMap {
   worldlineSnapshot: WorldlineSnapshotQueryOperation;
+  textWindow: TextWindowQueryOperation;
 }
 export type QueryOperationName = keyof QueryOperationMap;
 export type QueryOperation = QueryOperationMap[QueryOperationName];

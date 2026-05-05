@@ -125,6 +125,27 @@ export const WorldlineSnapshotSchema = z.object({
 });
 export type WorldlineSnapshot = z.infer<typeof WorldlineSnapshotSchema>;
 
+export const TextLineReadingSchema = z.object({
+  lineNumber: z.number().int(),
+  text: z.string(),
+  startByte: z.number().int(),
+  endByte: z.number().int()
+});
+export type TextLineReading = z.infer<typeof TextLineReadingSchema>;
+
+export const TextWindowReadingSchema = z.object({
+  worldline: z.lazy(() => BufferWorldlineSchema),
+  head: z.lazy(() => RopeHeadSchema),
+  readingId: z.string(),
+  startLine: z.number().int(),
+  lineCount: z.number().int(),
+  totalLineCount: z.number().int(),
+  hasMoreBefore: z.boolean(),
+  hasMoreAfter: z.boolean(),
+  lines: z.array(z.lazy(() => TextLineReadingSchema))
+});
+export type TextWindowReading = z.infer<typeof TextWindowReadingSchema>;
+
 export const CreateBufferWorldlineResultSchema = z.object({
   worldline: z.lazy(() => BufferWorldlineSchema),
   head: z.lazy(() => RopeHeadSchema),
@@ -178,6 +199,16 @@ export const WorldlineSnapshotInputSchema = z.object({
 });
 export type WorldlineSnapshotInput = z.infer<typeof WorldlineSnapshotInputSchema>;
 
+export const TextWindowInputSchema = z.object({
+  worldlineId: z.string(),
+  cursorLine: z.number().int(),
+  viewportLineCount: z.number().int(),
+  beforeLines: z.number().int(),
+  afterLines: z.number().int(),
+  maxBytes: z.number().int()
+});
+export type TextWindowInput = z.infer<typeof TextWindowInputSchema>;
+
 // Operations
 export const WorldlineSnapshotQueryArgsSchema = z.object({
   input: z.lazy(() => WorldlineSnapshotInputSchema)
@@ -190,12 +221,29 @@ export const WorldlineSnapshotQueryOperationSchema = z.object({
 });
 export type WorldlineSnapshotQueryOperation = z.infer<typeof WorldlineSnapshotQueryOperationSchema>;
 
+export const TextWindowQueryArgsSchema = z.object({
+  input: z.lazy(() => TextWindowInputSchema)
+});
+export type TextWindowQueryArgs = z.infer<typeof TextWindowQueryArgsSchema>;
+export const TextWindowQueryOperationSchema = z.object({
+  operationName: z.literal("textWindow"),
+  args: z.lazy(() => TextWindowQueryArgsSchema),
+  result: z.lazy(() => TextWindowReadingSchema)
+});
+export type TextWindowQueryOperation = z.infer<typeof TextWindowQueryOperationSchema>;
+
 export const QueryOperationSchemas = {
   worldlineSnapshot: {
     args: WorldlineSnapshotQueryArgsSchema,
     input: z.lazy(() => WorldlineSnapshotInputSchema),
     result: z.lazy(() => WorldlineSnapshotSchema),
     operation: WorldlineSnapshotQueryOperationSchema
+  },
+  textWindow: {
+    args: TextWindowQueryArgsSchema,
+    input: z.lazy(() => TextWindowInputSchema),
+    result: z.lazy(() => TextWindowReadingSchema),
+    operation: TextWindowQueryOperationSchema
   },
 } as const;
 export const CreateBufferWorldlineMutationArgsSchema = z.object({

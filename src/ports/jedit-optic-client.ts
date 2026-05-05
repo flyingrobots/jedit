@@ -9,6 +9,7 @@ import type {
   ReplaceRangeAsTickExecution,
 } from '../app/jedit-contract-runtime.js';
 import type { WorldlineSnapshotReadingEnvelope } from '../app/jedit-observer-runtime.js';
+import type { TextWindowReadingEnvelope } from '../app/jedit-observer-runtime.js';
 
 export interface JeditMutationOpticClient {
   createBufferWorldline(
@@ -32,6 +33,12 @@ export interface JeditObserverOpticClient {
     frontierRef: string,
     input: QueryOperationMap['worldlineSnapshot']['input'],
   ): WorldlineSnapshotReadingEnvelope;
+
+  textWindow(
+    session: JeditWorldlineSession,
+    frontierRef: string,
+    input: QueryOperationMap['textWindow']['input'],
+  ): TextWindowReadingEnvelope;
 }
 
 export interface JeditOpticClient extends JeditMutationOpticClient, JeditObserverOpticClient {}

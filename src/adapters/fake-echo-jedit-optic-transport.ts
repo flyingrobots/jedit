@@ -4,7 +4,10 @@ import {
   JeditContractRuntimeError,
   replaceRangeAsTick,
 } from '../app/jedit-contract-runtime.js';
-import { readWorldlineSnapshotWithObserverPlan } from '../app/jedit-observer-runtime.js';
+import {
+  readTextWindowWithObserverPlan,
+  readWorldlineSnapshotWithObserverPlan,
+} from '../app/jedit-observer-runtime.js';
 import { createInMemoryHotTextRuntime } from './in-memory-hot-text-runtime.js';
 import type { EchoKernelInfo, EchoWasmKernelTransport } from '../ports/echo-kernel-transport.js';
 import type { HotTextRuntimePort } from '../ports/hot-text-runtime.js';
@@ -20,6 +23,7 @@ import {
   JEDIT_TRANSPORT_STATUS_OBSTRUCTED,
   JEDIT_TRANSPORT_STATUS_OK,
   REPLACE_RANGE_AS_TICK_OPERATION,
+  TEXT_WINDOW_OPERATION,
   WORLDLINE_SNAPSHOT_OPERATION,
   type JeditIntentRequest,
   type JeditIntentResponse,
@@ -107,16 +111,30 @@ function executeIntent(runtime: HotTextRuntimePort, request: JeditIntentRequest)
 
 function executeObserve(runtime: HotTextRuntimePort, request: JeditObserveRequest): JeditObserveResponse {
   try {
-    return {
-      status: JEDIT_TRANSPORT_STATUS_OK,
-      operationName: WORLDLINE_SNAPSHOT_OPERATION,
-      envelope: readWorldlineSnapshotWithObserverPlan(
-        runtime,
-        request.session,
-        request.frontierRef,
-        request.input,
-      ),
-    };
+    switch (request.operationName) {
+      case WORLDLINE_SNAPSHOT_OPERATION:
+        return {
+          status: JEDIT_TRANSPORT_STATUS_OK,
+          operationName: WORLDLINE_SNAPSHOT_OPERATION,
+          envelope: readWorldlineSnapshotWithObserverPlan(
+            runtime,
+            request.session,
+            request.frontierRef,
+            request.input,
+          ),
+        };
+      case TEXT_WINDOW_OPERATION:
+        return {
+          status: JEDIT_TRANSPORT_STATUS_OK,
+          operationName: TEXT_WINDOW_OPERATION,
+          envelope: readTextWindowWithObserverPlan(
+            runtime,
+            request.session,
+            request.frontierRef,
+            request.input,
+          ),
+        };
+    }
   } catch (error) {
     return {
       status: JEDIT_TRANSPORT_STATUS_OBSTRUCTED,

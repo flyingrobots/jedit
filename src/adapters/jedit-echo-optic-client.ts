@@ -5,6 +5,7 @@ import type {
   ReplaceRangeAsTickExecution,
 } from '../app/jedit-contract-runtime.js';
 import type { WorldlineSnapshotReadingEnvelope } from '../app/jedit-observer-runtime.js';
+import type { TextWindowReadingEnvelope } from '../app/jedit-observer-runtime.js';
 import type {
   MutationOperationMap,
   QueryOperationMap,
@@ -22,9 +23,11 @@ import {
   JEDIT_OBSERVE_REQUEST_KIND,
   JEDIT_TRANSPORT_STATUS_OBSTRUCTED,
   REPLACE_RANGE_AS_TICK_OPERATION,
+  TEXT_WINDOW_OPERATION,
   toCreateBufferWorldlineExecution,
   toCreateCheckpointExecution,
   toReplaceRangeAsTickExecution,
+  toTextWindowReadingEnvelope,
   toWorldlineSnapshotReadingEnvelope,
   WORLDLINE_SNAPSHOT_OPERATION,
   type JeditIntentRequest,
@@ -38,6 +41,7 @@ type CreateBufferWorldlineInput = MutationOperationMap['createBufferWorldline'][
 type ReplaceRangeAsTickInput = MutationOperationMap['replaceRangeAsTick']['input'];
 type CreateCheckpointInput = MutationOperationMap['createCheckpoint']['input'];
 type WorldlineSnapshotInput = QueryOperationMap['worldlineSnapshot']['input'];
+type TextWindowInput = QueryOperationMap['textWindow']['input'];
 
 export class JeditOpticTransportObstructionError extends Error {
   public readonly operationName: string;
@@ -131,6 +135,26 @@ export function createEchoTransportJeditOpticClient(
         throwUnexpectedOperation(WORLDLINE_SNAPSHOT_OPERATION, response.operationName);
       }
       return toWorldlineSnapshotReadingEnvelope(response.envelope);
+    },
+    textWindow(
+      session: JeditWorldlineSession,
+      frontierRef: string,
+      input: TextWindowInput,
+    ): TextWindowReadingEnvelope {
+      const response = observe(transport, {
+        kind: JEDIT_OBSERVE_REQUEST_KIND,
+        operationName: TEXT_WINDOW_OPERATION,
+        session,
+        frontierRef,
+        input,
+      });
+      if (response.status === JEDIT_TRANSPORT_STATUS_OBSTRUCTED) {
+        throw new JeditOpticTransportObstructionError(response.operationName, response.obstruction);
+      }
+      if (response.operationName !== TEXT_WINDOW_OPERATION) {
+        throwUnexpectedOperation(TEXT_WINDOW_OPERATION, response.operationName);
+      }
+      return toTextWindowReadingEnvelope(response.envelope);
     },
   };
 }

@@ -157,6 +157,25 @@ type WorldlineSnapshot {
     text: String!
 }
 
+type TextLineReading {
+    lineNumber: Int!
+    text: String!
+    startByte: Int!
+    endByte: Int!
+}
+
+type TextWindowReading {
+    worldline: BufferWorldline!
+    head: RopeHead!
+    readingId: ID!
+    startLine: Int!
+    lineCount: Int!
+    totalLineCount: Int!
+    hasMoreBefore: Boolean!
+    hasMoreAfter: Boolean!
+    lines: [TextLineReading!]!
+}
+
 type CreateBufferWorldlineResult {
     worldline: BufferWorldline!
     head: RopeHead!
@@ -200,6 +219,15 @@ input CreateCheckpointInput {
 
 input WorldlineSnapshotInput {
     worldlineId: ID!
+}
+
+input TextWindowInput {
+    worldlineId: ID!
+    cursorLine: Int!
+    viewportLineCount: Int!
+    beforeLines: Int!
+    afterLines: Int!
+    maxBytes: Int!
 }
 
 type Mutation {
@@ -355,4 +383,12 @@ type Query {
     """
     worldlineSnapshot(input: WorldlineSnapshotInput!): WorldlineSnapshot!
         @wes_op(name: "worldlineSnapshot")
+
+    """
+    Returns a bounded canonical text window around the active viewport. This is
+    the normal editor painting read. Full text snapshots remain explicit
+    snapshot reads, not the default source-rendering contract.
+    """
+    textWindow(input: TextWindowInput!): TextWindowReading!
+        @wes_op(name: "textWindow")
 }

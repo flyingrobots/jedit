@@ -7,6 +7,7 @@ import type {
   ReplaceRangeAsTickExecution,
 } from '../app/jedit-contract-runtime.js';
 import type { WorldlineSnapshotReadingEnvelope } from '../app/jedit-observer-runtime.js';
+import type { TextWindowReadingEnvelope } from '../app/jedit-observer-runtime.js';
 import type {
   MutationOperationName,
   MutationOperationMap,
@@ -31,6 +32,7 @@ export const CREATE_BUFFER_WORLDLINE_OPERATION = 'createBufferWorldline';
 export const REPLACE_RANGE_AS_TICK_OPERATION = 'replaceRangeAsTick';
 export const CREATE_CHECKPOINT_OPERATION = 'createCheckpoint';
 export const WORLDLINE_SNAPSHOT_OPERATION = 'worldlineSnapshot';
+export const TEXT_WINDOW_OPERATION = 'textWindow';
 
 const SCHEDULER_STATE_IDLE = 'IDLE';
 
@@ -43,7 +45,10 @@ const MutationOperationNameSchema = z.union([
   z.literal(CREATE_CHECKPOINT_OPERATION),
 ]);
 
-const QueryOperationNameSchema = z.literal(WORLDLINE_SNAPSHOT_OPERATION);
+const QueryOperationNameSchema = z.union([
+  z.literal(WORLDLINE_SNAPSHOT_OPERATION),
+  z.literal(TEXT_WINDOW_OPERATION),
+]);
 
 const BufferRootSchema = z.object({
   id: z.number().int(),
@@ -123,6 +128,14 @@ const WorldlineSnapshotReadingEnvelopeSchema = z.object({
   reading: QueryOperationSchemas.worldlineSnapshot.result,
 });
 
+const TextWindowReadingEnvelopeSchema = z.object({
+  planId: z.string(),
+  observerName: z.string(),
+  operationName: z.literal(TEXT_WINDOW_OPERATION),
+  frontierRef: z.string(),
+  reading: QueryOperationSchemas.textWindow.result,
+});
+
 const CreateBufferWorldlineIntentRequestSchema = z.object({
   kind: z.literal(JEDIT_INTENT_REQUEST_KIND),
   operationName: z.literal(CREATE_BUFFER_WORLDLINE_OPERATION),
@@ -145,10 +158,18 @@ const CreateCheckpointIntentRequestSchema = z.object({
 
 const WorldlineSnapshotObserveRequestSchema = z.object({
   kind: z.literal(JEDIT_OBSERVE_REQUEST_KIND),
-  operationName: QueryOperationNameSchema,
+  operationName: z.literal(WORLDLINE_SNAPSHOT_OPERATION),
   session: JeditWorldlineSessionSchema,
   frontierRef: z.string(),
   input: QueryOperationSchemas.worldlineSnapshot.input,
+});
+
+const TextWindowObserveRequestSchema = z.object({
+  kind: z.literal(JEDIT_OBSERVE_REQUEST_KIND),
+  operationName: z.literal(TEXT_WINDOW_OPERATION),
+  session: JeditWorldlineSessionSchema,
+  frontierRef: z.string(),
+  input: QueryOperationSchemas.textWindow.input,
 });
 
 const JeditTransportObstructionSchema = z.object({
@@ -186,8 +207,14 @@ const IntentObstructedResponseSchema = z.object({
 
 const WorldlineSnapshotObserveOkResponseSchema = z.object({
   status: z.literal(JEDIT_TRANSPORT_STATUS_OK),
-  operationName: QueryOperationNameSchema,
+  operationName: z.literal(WORLDLINE_SNAPSHOT_OPERATION),
   envelope: WorldlineSnapshotReadingEnvelopeSchema,
+});
+
+const TextWindowObserveOkResponseSchema = z.object({
+  status: z.literal(JEDIT_TRANSPORT_STATUS_OK),
+  operationName: z.literal(TEXT_WINDOW_OPERATION),
+  envelope: TextWindowReadingEnvelopeSchema,
 });
 
 const ObserveObstructedResponseSchema = z.object({
@@ -208,7 +235,10 @@ const JeditIntentRequestSchema = z.union([
   CreateCheckpointIntentRequestSchema,
 ]);
 
-const JeditObserveRequestSchema = WorldlineSnapshotObserveRequestSchema;
+const JeditObserveRequestSchema = z.union([
+  WorldlineSnapshotObserveRequestSchema,
+  TextWindowObserveRequestSchema,
+]);
 
 const JeditIntentResponseSchema = z.union([
   CreateBufferWorldlineIntentOkResponseSchema,
@@ -219,6 +249,7 @@ const JeditIntentResponseSchema = z.union([
 
 const JeditObserveResponseSchema = z.union([
   WorldlineSnapshotObserveOkResponseSchema,
+  TextWindowObserveOkResponseSchema,
   ObserveObstructedResponseSchema,
 ]);
 
@@ -251,6 +282,14 @@ export interface WorldlineSnapshotObserveRequest {
   readonly session: JeditWorldlineSession;
   readonly frontierRef: string;
   readonly input: QueryOperationMap['worldlineSnapshot']['input'];
+}
+
+export interface TextWindowObserveRequest {
+  readonly kind: typeof JEDIT_OBSERVE_REQUEST_KIND;
+  readonly operationName: typeof TEXT_WINDOW_OPERATION;
+  readonly session: JeditWorldlineSession;
+  readonly frontierRef: string;
+  readonly input: QueryOperationMap['textWindow']['input'];
 }
 
 export interface JeditTransportObstruction {
@@ -292,6 +331,12 @@ export interface WorldlineSnapshotObserveOkResponse {
   readonly envelope: WorldlineSnapshotReadingEnvelope;
 }
 
+export interface TextWindowObserveOkResponse {
+  readonly status: typeof JEDIT_TRANSPORT_STATUS_OK;
+  readonly operationName: typeof TEXT_WINDOW_OPERATION;
+  readonly envelope: TextWindowReadingEnvelope;
+}
+
 export interface JeditObserveObstructedResponse {
   readonly status: typeof JEDIT_TRANSPORT_STATUS_OBSTRUCTED;
   readonly operationName: JeditQueryOperationName;
@@ -308,7 +353,9 @@ export type JeditIntentRequest =
   | CreateBufferWorldlineIntentRequest
   | ReplaceRangeAsTickIntentRequest
   | CreateCheckpointIntentRequest;
-export type JeditObserveRequest = WorldlineSnapshotObserveRequest;
+export type JeditObserveRequest =
+  | WorldlineSnapshotObserveRequest
+  | TextWindowObserveRequest;
 export type JeditIntentResponse =
   | CreateBufferWorldlineIntentOkResponse
   | ReplaceRangeAsTickIntentOkResponse
@@ -316,6 +363,7 @@ export type JeditIntentResponse =
   | JeditIntentObstructedResponse;
 export type JeditObserveResponse =
   | WorldlineSnapshotObserveOkResponse
+  | TextWindowObserveOkResponse
   | JeditObserveObstructedResponse;
 
 type JsonPrimitive = string | number | boolean | null;
@@ -379,6 +427,12 @@ export function toCreateCheckpointExecution(
 export function toWorldlineSnapshotReadingEnvelope(
   envelope: WorldlineSnapshotReadingEnvelope,
 ): WorldlineSnapshotReadingEnvelope {
+  return envelope;
+}
+
+export function toTextWindowReadingEnvelope(
+  envelope: TextWindowReadingEnvelope,
+): TextWindowReadingEnvelope {
   return envelope;
 }
 
