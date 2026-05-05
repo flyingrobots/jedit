@@ -31,6 +31,7 @@ import { resolveWorkspaceLayout, type DrawerKind } from './ui/drawer-layout.js';
 import { cycleFocusPane, defaultFocusPane, hasFocusablePeers, shouldClearPendingNormalOnPaneChange, type FocusPane, type FocusCycleState } from './ui/panel-focus.js';
 import { fitBlock, fitLine, formatGraftOutlineLine, formatTreeLine, graftOutlineScroll, graftVisibleOutlineRows } from './ui/workspace-render.js';
 import { activeWorkspaceTitle, centerLine, renderWorkspaceFooter } from './ui/workspace-chrome.js';
+import { createSourceWindowReadingFromLines, sourceWindowRows } from './ui/source-window.js';
 
 const ctx = initDefaultContext();
 
@@ -2156,9 +2157,15 @@ function renderViewer(model: Model, width: number, height: number) {
 
 function renderSource(surface: Surface, editor: EditorState, width: number, height: number) {
   const viewport = viewerViewport(width, height);
+  const sourceWindow = createSourceWindowReadingFromLines({
+    lines: editor.lines,
+    startLine: editor.scrollRow,
+    lineCount: viewport.height,
+  });
+  const visibleRows = sourceWindowRows(sourceWindow, editor.scrollCol, viewport.width, viewport.height);
+
   for (let row = 0; row < viewport.height; row += 1) {
-    const sourceLine = editor.lines[editor.scrollRow + row] ?? '';
-    const visible = fitLine(sourceLine.slice(editor.scrollCol), viewport.width);
+    const visible = visibleRows[row] ?? '';
     surface.blit(stringToSurface(visible, viewport.width, 1), VIEWER_LEFT_PAD, VIEWER_TOP_PAD + row);
   }
 
