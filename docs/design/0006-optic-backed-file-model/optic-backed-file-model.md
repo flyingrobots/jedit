@@ -99,9 +99,9 @@ into backlog items that can be executed independently.
 TextFileOptic = focus + coordinate + bounded read family + write Intent family
 ```
 
-The Optic is not the file itself. The file remains Echo graph truth plus its
-admitted history. The Optic is the capability-scoped way the editor focuses on
-that truth.
+The Optic is not the file itself. The file is a causal projection over
+witnessed history. The Optic is the capability-scoped way the editor focuses on
+that history and emits bounded readings from it.
 
 This means:
 
@@ -185,8 +185,8 @@ type OpenTextFile = {
 ```
 
 The editor owns cursor, viewport, panels, selection presentation, and keyboard
-mode. Echo owns graph truth, causal coordinates, admission, and receipt
-identity. The `jedit` contract owns text semantics such as ranges, line
+mode. Echo owns causal history, coordinates, admission, and receipt identity.
+The `jedit` contract owns text semantics such as ranges, line
 windows, anchors, inverse text operations, and braid projection rules.
 
 ## Ideal GraphQL Shape
@@ -408,7 +408,7 @@ The backlog cards for this packet are:
 
 ## Open Questions
 
-- Is an Optic a persistent Echo graph node, a session-scoped capability handle,
+- Is an Optic persistent causal metadata, a session-scoped capability handle,
   or both?
 - Which coordinate fields are Echo substrate fields versus contract projection
   fields?
@@ -418,4 +418,3 @@ The backlog cards for this packet are:
   contract-authored inverse logic?
 - How much braid projection admission belongs in Echo generic substrate versus
   the `jedit` text contract?
-

@@ -1,9 +1,15 @@
-# Jedit Echo Graph Model
+# Jedit Echo Reading Model
 
 Status: design sketch
 
-Purpose: describe the exact hot-graph shape and rewrite semantics `jedit`
-wants Echo to support, without assuming handwritten Echo runtime edits.
+Purpose: describe the exact text reading shape and rewrite semantics `jedit`
+wants Echo-hosted contracts to support, without assuming handwritten Echo
+runtime edits.
+
+Terminology note: this file predates the stricter "there is no graph" doctrine.
+When it says "graph model," it means the graph-like reading vocabulary that the
+`jedit` contract can emit or rewrite lawfully over witnessed causal history.
+It does not mean Echo owns one canonical precomputed state object.
 
 This note is the detailed companion to:
 
@@ -19,39 +25,40 @@ This note is the detailed companion to:
 
 ## One Sentence
 
-`jedit` wants Echo to host a canonical hot text graph whose center is:
+`jedit` wants Echo to host canonical causal text history whose first useful
+reading shape centers on:
 
 `BufferWorldline -> RopeHead -> Rope DAG`
 
 with ticks as the canonical causal boundary, checkpoints as retained markers,
 anchors as first-class position carriers, and structural surfaces such as ASTs
-and diagnostics staying derived rather than canonical.
+and diagnostics staying observer-relative rather than canonical.
 
 ## Why This Exists
 
 I previously talked about "changing Echo," but the real ask is narrower and
 cleaner:
 
-- define the graph nouns that the editor kernel needs
+- define the graph-like reading nouns that the editor kernel needs
 - define the lawful rewrites that may touch those nouns
 - make dishonest rewrites impossible or at least statically rejected
-- keep parser structure, UI state, and Git witness layers out of canonical hot
+- keep parser structure, UI state, and Git export layers out of canonical
   text truth
 
 This document is therefore not a request for ad hoc runtime hacking. It is a
-request for a precise graph model.
+request for a precise contract reading and rewrite model.
 
 The intended integration posture is optic-shaped:
 
 - `jedit` submits intent to Echo
-- Echo rewrites generic substrate truth and returns the deterministic result /
+- Echo admits generic substrate history and returns the deterministic result /
   receipt envelope
 - `jedit` then observes the resulting worldline state
 - app code projects the observed worldline into `jedit` nouns such as
   `BufferWorldline`, `RopeHead`, `TickReceipt`, and `WorldlineSnapshot`
 
-So Echo stays generic substrate truth. `jedit` owns the app-facing projection
-and interpretation layer.
+So Echo stays generic causal substrate truth. `jedit` owns the app-facing
+contract reading and interpretation layer.
 
 The dynamic/static footprint split for these rewrites is defined in
 [0004 - dynamic-footprint-binding-contract](0004-dynamic-footprint-binding-contract/dynamic-footprint-binding-contract.md).
@@ -68,7 +75,7 @@ than pretending every read is already a full observer lifecycle.
 
 ## What I Need Echo To Own
 
-Echo should own the hot layer:
+Echo should own causal text history:
 
 - canonical editable text truth
 - head identity
@@ -89,7 +96,7 @@ Echo should not be required to own:
 
 ## What I Do Not Need As First-Class Hot Nodes
 
-These are explicitly not required as hot graph truth in v1:
+These are explicitly not required as causal text truth in v1:
 
 - one node per character
 - AST nodes as canonical text truth
@@ -99,7 +106,7 @@ These are explicitly not required as hot graph truth in v1:
 - Git commits as the cadence of editor truth
 - file-on-disk as the canonical editable object
 
-The hot graph should stay text-native.
+The first text readings should stay text-native.
 
 ## Minimal First-Class Node Kinds
 
@@ -140,7 +147,7 @@ Responsibilities:
 - names one specific rope state
 - points to the rope root node
 - carries aggregate text metrics for the whole head
-- serves as the basis for warm projections
+- serves as the basis for structural readings
 
 Suggested fields:
 
@@ -757,7 +764,7 @@ It should not be allowed to mutate:
 
 - checkpoints
 - other worldlines
-- warm projection state
+- structural reading state
 
 ## Concrete Example: Typing Into An Empty Buffer
 
@@ -919,12 +926,12 @@ otherwise:
 - Git branch metadata
 - workspace-level build output
 
-Those belong in warm projections, product state, or cold witness layers.
+Those belong in observer readings, product state, or ecosystem projections.
 
 ## Summary Of The Smallest Useful First Cut
 
-If I had to compress this to the smallest graph model that still feels honest,
-it would be:
+If I had to compress this to the smallest text reading and rewrite model that
+still feels honest, it would be:
 
 - `BufferWorldline`
 - `RopeHead`
@@ -947,11 +954,11 @@ with these rewrites:
 
 That is enough for:
 
-- canonical hot text truth
+- canonical causal text truth
 - lawful local editing
 - save as checkpoint
 - anchor stability
-- warm structural projection basis for Graft
+- structural reading basis for Graft
 
-without forcing ASTs, Git commits, or UI behavior into the canonical text
-runtime.
+without forcing ASTs, Git commits, or UI behavior into canonical causal text
+history.

@@ -44,8 +44,8 @@ editing truth.
 - Graft is the right place for syntax spans, fold regions, node lookup,
   structural selections, diagnostics, rename preview, structural diff, and
   semantic summary over dirty in-memory buffers.
-- Echo should own the hot rope-worldline, ticks, tick receipts, and anchors
-  that make up canonical text truth.
+- Echo should own the causal text history: ticks, tick receipts, checkpoints,
+  anchors, frontiers, and later strands and braids.
 - `jedit` still owns buffer lifecycle, mode semantics, edit-group and undo
   policy over ticks, pane focus, panel lifecycle, save/open flows, and
   rendering policy.
@@ -57,7 +57,7 @@ editing truth.
 - The current MCP transport is transitional. The long-term product posture is
   Echo and Graft as built-in engines with direct API surfaces.
 
-The current runtime-temperature model is written down in
+The current causal runtime strata model is written down in
 [docs/design/runtime-temperatures.md](docs/design/runtime-temperatures.md).
 The authored home for the first hot-text contract now lives at
 [contracts/jedit/hot-text-runtime.graphql](contracts/jedit/hot-text-runtime.graphql).
@@ -72,10 +72,10 @@ The intended long-term posture is optic-shaped:
 - Echo admits or rejects that intent and returns the deterministic result /
   receipt envelope
 - `jedit` then observes the resulting worldline state and projects generic
-  graph truth into app-specific contract results
+  causal history into app-specific contract readings
 
-So Echo remains substrate truth, while `jedit` owns the app-facing projection
-layer.
+So Echo remains substrate truth, while `jedit` owns the app-facing contract
+reading layer.
 The first read surface is the canonical
 `worldlineSnapshot(input: WorldlineSnapshotInput!)` query, which returns the
 current worldline, canonical head, retained checkpoints, and materialized text

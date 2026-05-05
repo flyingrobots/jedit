@@ -169,7 +169,7 @@ reviewable proposals with basis, scope, and accept or reject paths.
 
 Save should record a checkpoint. It should not erase editor causality. Dirty
 state means the current projection differs from the last save checkpoint or
-durable witness.
+durable Echo frontier.
 
 ### 9. Large Files Are Normal
 
@@ -261,8 +261,8 @@ The shell should be sparse, but not vague.
   paste, format, AI proposals, and refactors into understandable events.
 
 - **Git and diff**
-  Git is a durable witness, not hot editor truth. Diffs compare coordinates:
-  current vs save checkpoint, Git HEAD, proposal, or earlier tick.
+  Git is an ecosystem projection, not editor truth. Diffs compare coordinates:
+  current vs save checkpoint, exported Git HEAD, proposal, or earlier tick.
 
 - **Tests and tasks**
   Test results carry a basis. If the user edits after a run, `jedit` knows the
@@ -313,7 +313,7 @@ Design doc to write: `suggestion-as-proposal-strand`.
 ### 3. Save Checkpoints And Dirty Truth
 
 Dirty state is often vague. `jedit` should say exactly what changed relative to
-the last save checkpoint or durable witness.
+the last save checkpoint or durable Echo frontier.
 
 The user should be able to save as checkpoint, compare current to last save,
 inspect unsaved causal events, and understand whether save wrote to disk,
@@ -460,4 +460,3 @@ This direction is working when:
 - Specifying exact keybindings for every feature.
 - Turning the v1 story into a marketing page.
 - Making every advanced causal feature mandatory for v1.
-

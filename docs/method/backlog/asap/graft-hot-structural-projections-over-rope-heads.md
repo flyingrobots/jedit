@@ -13,7 +13,7 @@ keywords:
 acceptance_criteria:
   - `jedit` has a clear adapter contract for asking Graft for structural projections over current rope heads or equivalent live buffer snapshots.
   - The design covers syntax spans, folds, diagnostics, node lookup, structural selection, rename preview, and semantic summary.
-  - The contract is explicit that these surfaces are warm projections over hot text truth, not a replacement for the rope-worldline.
+  - The contract is explicit that these surfaces are structural readings over causal text truth, not a replacement for the rope-worldline.
   - The design is honest about unsupported languages, partial parses, and stale-versus-current posture.
 ---
 

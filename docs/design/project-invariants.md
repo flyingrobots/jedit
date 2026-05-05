@@ -57,16 +57,17 @@ The editable buffer must remain lawful even when:
 
 The AST is derived. The rope-worldline is canonical.
 
-### 5. Honest layering by runtime temperature
+### 5. Honest causal strata
 
-The repo should preserve a clear hot / warm / cold split.
+The repo should preserve a clear split between causal history, lawful readings,
+and materialized projections.
 
-- hot and warm are product-integrated engines, not optional remote services
-- hot = rope-worldline, ticks, tick receipts, anchors
-- warm = structural projections like syntax spans, folds, diagnostics, and
-  semantic summaries
-- cold = durable witness, Git-grounded history, and interop when the workspace
-  is inside a Git repo
+- causal history = ticks, receipts, checkpoints, frontiers, strands, braids,
+  admissions, and retained witness
+- lawful readings = text windows, snapshots, syntax spans, diagnostics,
+  semantic summaries, search results, and diffs
+- materialized projections = filesystem working trees, Graft caches, rendered
+  previews, exported Git commits, and CI artifacts
 
 No layer should quietly impersonate another.
 
@@ -186,7 +187,7 @@ only in chat.
 
 ### 19. Graceful degradation is mandatory
 
-If warm structure is partial, unsupported, or stale, or if cold witness layers
-are absent because the workspace is outside a Git repo, the editor should
-degrade to a smaller truthful product instead of collapsing into confusion or
-pretending its projections are complete.
+If structural readings are partial, unsupported, or stale, or if ecosystem
+exports such as Git are unavailable, the editor should degrade to a smaller
+truthful product instead of collapsing into confusion or pretending its
+projections are complete.

@@ -21,14 +21,15 @@ specific agent instance.
 
 ## Hill
 
-Turn the hot text-runtime direction into the first explicit contract packet for
-the future Echo-backed editor kernel. At the end of this cycle, `jedit` should
+Turn the causal text-runtime direction into the first explicit contract packet
+for the future Echo-backed editor kernel. At the end of this cycle, `jedit` should
 have a design packet that makes five claims concrete:
 
-1. the canonical editable truth is a hot rope-worldline rather than an AST
-   snapshot or Git-grounded artifact
-2. hot, warm, and cold runtime temperatures have explicit ownership boundaries
-3. Graft owns warm structural projections over rope heads rather than the
+1. the canonical editable truth is witnessed causal history rather than an AST
+   snapshot, filesystem artifact, or Git export
+2. causal history, lawful readings, and materialized projections have explicit
+   ownership boundaries
+3. Graft owns structural readings over rope heads rather than the
    editor kernel itself
 4. save acts as a checkpoint rather than a reset of editor truth
 5. causal history retention is tiered across tick receipts, ticks, edit
@@ -36,7 +37,7 @@ have a design packet that makes five claims concrete:
    "discard everything on save"
 
 This cycle is complete when those claims are named in this design, aligned with
-the runtime-temperature note, and turned into explicit playback questions for
+the causal runtime strata note, and turned into explicit playback questions for
 the next executable seams. This cycle is intentionally design-first: it does
 not implement Echo bindings, a rope runtime, or new editor UI.
 
@@ -44,11 +45,11 @@ not implement Echo bindings, a rope runtime, or new editor UI.
 
 ### Human
 
-- [ ] The cycle clearly says the rope-worldline is canonical, the AST
-  worldline is derived, and Git commits are durable witnesses rather than the
+- [ ] The cycle clearly says witnessed causal history is canonical, AST
+  structure is derived, and Git commits are ecosystem exports rather than the
   cadence of editor truth.
-- [ ] The cycle makes the hot / warm / cold ownership split explicit across
-  `jedit`, Echo, Graft, and `git-warp`.
+- [ ] The cycle makes the causal-history / reading / projection ownership split
+  explicit across `jedit`, Echo, Graft, filesystem, and Git adapters.
 - [ ] The cycle explains save as a checkpoint rather than a reset.
 - [ ] The cycle names a tiered retention model for tick receipts, ticks, edit
   groups, and checkpoints/admissions.
@@ -57,13 +58,12 @@ not implement Echo bindings, a rope runtime, or new editor UI.
 
 ### Agent
 
-- [ ] The packet names the hot runtime truths the future rope-worldline must
-  own: ticks, tick receipts, anchors, and parser-independent editing truth.
-- [ ] The packet names the warm Graft projection responsibilities: syntax
+- [ ] The packet names the causal runtime truths the future rope-worldline must
+  expose: ticks, tick receipts, anchors, and parser-independent editing truth.
+- [ ] The packet names the Graft reading responsibilities: syntax
   spans, folds, diagnostics, node lookup, structural selection, rename
   preview, diff, and semantic summary.
-- [ ] The packet names the cold witness responsibilities for Git and
-  `git-warp`.
+- [ ] The packet names filesystem and Git projection/export responsibilities.
 - [ ] The packet makes explicit that Graft's current `StructuredBuffer` shape
   is projection-oriented rather than the canonical editor kernel.
 - [ ] The packet leaves the next executable seams obvious: rope contract,
@@ -85,9 +85,9 @@ not implement Echo bindings, a rope runtime, or new editor UI.
   engineering nouns such as `rope-worldline`, `tick`, `edit-group`,
   `checkpoint`, and `witness`, and should avoid idioms that make later
   localization harder.
-- Logical direction / layout assumptions: hot / warm / cold refer to runtime
-  temperature, not visual layout. The packet should avoid left/right or
-  top/bottom metaphors when describing causal ownership.
+- Logical direction / layout assumptions: causal history, readings, and
+  projections are ownership terms, not visual layout. The packet should avoid
+  left/right or top/bottom metaphors when describing causal ownership.
 
 ## Agent Inspectability and Explainability
 
@@ -108,29 +108,34 @@ The dynamic footprint law for those rewrites now lives in
 
 ### Core law
 
-- The rope-worldline is canonical.
-- The AST worldline is derived.
-- Git commits are durable witnesses, not the cadence of editor truth.
+- Witnessed causal history is canonical.
+- Rope-worldline, AST, file, pane, and diff shapes are readings or
+  materialized projections over that history.
+- Git commits are ecosystem exports, not the cadence or authority of editor
+  truth.
 
 `jedit` therefore must not wait for `git commit` before live editor truth,
 syntax surfaces, or structural context catch up.
 
-### Runtime temperatures
+### Runtime strata
 
-`jedit` should treat its causal runtime as a temperature stack:
+`jedit` should treat its causal runtime as strata:
 
-- `hot`
-  the live editable text truth
-- `warm`
-  live structural projections over current text heads
-- `cold`
-  durable witness, history, and interop layers
+- causal history
+  admitted transitions, frontiers, receipts, checkpoints, strands, braids, and
+  retained witness
+- lawful readings
+  text windows, snapshots, syntax spans, diagnostics, searches, diffs, and
+  proposal previews
+- materialized projections
+  viewport caches, filesystem working trees, Graft parse caches, exported Git
+  commits, and CI snapshots
 
-The same noun must not silently slide between these temperature classes.
+The same noun must not silently slide between these strata.
 
-### Hot runtime truths
+### Causal history truths
 
-The hot layer is the editor-native truth.
+The causal history layer is the editor-native truth.
 
 It must own:
 
@@ -149,15 +154,15 @@ It must remain lawful when:
 - the editor has not saved yet
 - the repo is not a Git repo
 
-The hot layer is where `ReplaceRange`, anchor transforms, and tick admission
-ultimately live.
+This layer is where `ReplaceRange`, anchor transforms, and tick admission
+ultimately become witnessed history.
 
 `jedit` may layer edit groups and undo groups over ticks, but those groupings
 must not be mistaken for the canonical worldline boundary.
 
-### Warm projection truths
+### Reading truths
 
-The warm layer is a structural interpretation of hot truth.
+The reading layer is an interpretation of causal history.
 
 It must own:
 
@@ -170,25 +175,26 @@ It must own:
 - structural diff and semantic summary
 - anchor-affinity style snapshot mapping
 
-The warm layer follows current rope heads or tick heads. It is allowed
-to be partial when parsing fails and must degrade honestly for unsupported
-languages.
+These readings follow available frontiers, rope heads, or tick heads. They are
+allowed to be partial when parsing fails and must degrade honestly for
+unsupported languages.
 
-Warm projections are not allowed to masquerade as canonical text truth.
+Readings are not allowed to masquerade as canonical text truth.
 
-### Cold witness truths
+### Projection and export truths
 
-The cold layer is durable witness and long-horizon history.
+Materialized projections are useful, portable surfaces over causal history.
 
-It must own:
+They include:
 
-- Git-grounded repo artifact history
-- commit-anchored AST worldlines
-- durable provenance witnesses
-- long-horizon replay and interop artifacts
+- filesystem working trees
+- exported Git commits
+- CI snapshots
+- public archive formats
+- compatibility mirrors
 
-Cold layers may lag behind live editing truth. They are not allowed to define
-when truth exists inside the editor.
+These projections may lag behind live editing truth. They are not allowed to
+define when truth exists inside the editor.
 
 ## Ownership
 
@@ -203,11 +209,11 @@ when truth exists inside the editor.
 - focus and interaction policy
 - rendering policy
 
-`jedit` does not own parser semantics or durable Git witness history.
+`jedit` does not own parser semantics or durable causal history storage.
 
 ### Echo / `echo-text`
 
-Echo is the intended owner of hot rope-worldline truth.
+Echo is the intended owner of causal rope-worldline truth.
 
 That means:
 
@@ -224,7 +230,7 @@ ticks.
 
 ### Graft
 
-Graft owns warm structural intelligence over rope heads.
+Graft owns structural intelligence over causal text history.
 
 That means:
 
@@ -232,16 +238,18 @@ That means:
 - producing parser-backed projections
 - remaining truthful about partial parses and unsupported languages
 
-Graft's current `StructuredBuffer` shape is already a strong warm projection
-surface, but it is still projection-oriented. It is not the canonical editable
-buffer runtime.
+Graft's current `StructuredBuffer` shape is already a strong structural
+reading surface, but it is still projection-oriented. It is not the canonical
+editable buffer runtime.
 
-### `git-warp`
+### Filesystem and Git adapters
 
-`git-warp` owns cold durable witness and Git-native causal history.
+The filesystem owns working projections. Git and `git-warp` own optional
+ecosystem export, import, mirroring, public hosting, CI, and compatibility
+surfaces.
 
-It should witness or anchor editor truth later. It should not decide the live
-update cadence of the editor.
+They should export or mirror editor projections later. They should not decide
+the live update cadence or reality history of the editor.
 
 ## Save and retention
 
@@ -253,11 +261,11 @@ Saving may:
 
 - create a checkpoint
 - materialize the current head to disk
-- emit or prepare colder witness artifacts
+- emit or prepare ecosystem export artifacts
 
 Saving must not:
 
-- destroy the hot rope-worldline
+- destroy causal history
 - discard undoable editor truth by default
 - redefine when the editor's truth started to exist
 
@@ -268,7 +276,7 @@ Retention should be tiered:
 - tick receipts
   short-horizon, compactable, not forever by default
 - ticks
-  canonical hot-worldline history that survives saves
+  canonical causal history that survives saves
 - edit groups
   medium-lived, human-meaningful history layered over one or more ticks
 - checkpoints and admissions
@@ -282,19 +290,19 @@ without destroying higher-level tick, edit-group, or checkpoint truth.
 This cycle should leave the next implementation seams obvious:
 
 1. `echo-backed-rope-worldline-contract`
-   the hot text-runtime contract itself
+   the causal text-runtime contract itself
 2. `graft-hot-structural-projections-over-rope-heads`
-   the warm adapter contract
+   the structural reading adapter contract
 3. `causal-history-retention-and-compaction-policy`
    the retention law
 4. `save-checkpoints-and-cold-witness-bridge`
-   the hot-to-cold bridge
+   the checkpoint-to-export bridge
 
 This packet is successful if those seams become more precise rather than more
 poetic.
 
 The first executable seam in this cycle is save-checkpoint semantics, because
-it pins down one of the most user-visible consequences of the hot rope model
+it pins down one of the most user-visible consequences of the causal rope model
 without requiring the full runtime to exist yet.
 
 The next executable seam after save-checkpoint semantics is tick-admission
@@ -305,23 +313,23 @@ The executable seam after tick-admission semantics is edit-group semantics:
 `jedit` should be able to group one or more known ticks into a human-meaningful
 edit group without redefining the canonical tick boundary.
 
-The executable seam after edit-group semantics is an app-facing hot-runtime
+The executable seam after edit-group semantics is an app-facing causal-runtime
 port and a truthful in-memory adapter: `jedit` should be able to compose
 ReplaceRange, tick admission, edit-group policy, and checkpointing without
 pretending that Echo is already embedded in-process.
 
 ## Backlog Context
 
-Define the hot text-truth substrate for `jedit`.
+Define the causal text-truth substrate for `jedit`.
 
 Context:
 
 - `jedit` needs a canonical editable truth that updates with live editing,
   not Git commit cadence.
-- Echo is already the hot runtime in the broader Continuum model and already
+- Echo is already the causal runtime in the broader Continuum model and already
   has WASM-facing posture that makes it plausible as the native substrate.
-- Graft is now strong enough to own warm structural projections, which sharpens
-  the need for a separate hot text-runtime contract.
+- Graft is now strong enough to own structural readings, which sharpens the
+  need for a separate causal text-runtime contract.
 
 This note should answer: what exactly is the rope-worldline, what is its
 primitive edit law, how do ticks and tick receipts fit, and how do anchors and
@@ -333,5 +341,5 @@ edit groups fit without collapsing into parser or Git concerns.
 - Implementing the rope runtime itself.
 - Replacing Graft with Echo or collapsing the two into one undifferentiated
   engine.
-- Designing every long-term persistence detail for cold storage.
+- Designing every long-term Echo retention or ecosystem export detail.
 - Treating Git commit cadence as the live update cadence of the editor.

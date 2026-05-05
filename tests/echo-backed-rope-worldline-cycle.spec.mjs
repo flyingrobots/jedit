@@ -104,32 +104,32 @@ async function loadHotSessionApp() {
   return cachedHotSessionAppPromise;
 }
 
-test('The cycle clearly says the rope-worldline is canonical, the AST worldline is derived, and Git commits are durable witnesses rather than the cadence of editor truth.', () => {
+test('The cycle clearly says witnessed causal history is canonical and Git commits are ecosystem exports.', () => {
   const designDoc = readDesignDoc();
 
   assert.match(
     designDoc,
-    /The cycle clearly says the rope-worldline is canonical, the AST\s+worldline is derived, and Git commits are durable witnesses rather than the\s+cadence of editor truth\./,
+    /The cycle clearly says witnessed causal history is canonical, AST\s+structure is derived, and Git commits are ecosystem exports rather than the\s+cadence of editor truth\./,
   );
-  assert.match(designDoc, /The rope-worldline is canonical\./);
-  assert.match(designDoc, /The AST worldline is derived\./);
-  assert.match(designDoc, /Git commits are durable witnesses, not the cadence of editor truth\./);
+  assert.match(designDoc, /Witnessed causal history is canonical\./);
+  assert.match(designDoc, /AST, file, pane, and diff shapes are readings or\s+materialized projections/);
+  assert.match(designDoc, /Git commits are ecosystem exports, not the cadence or authority of editor\s+truth\./);
 });
 
-test('The cycle makes the hot / warm / cold ownership split explicit across jedit, Echo, Graft, and git-warp.', () => {
+test('The cycle makes the causal history, reading, and projection split explicit.', () => {
   const designDoc = readDesignDoc();
 
   assert.match(
     designDoc,
-    /The cycle makes the hot \/ warm \/ cold ownership split explicit across\s+`jedit`, Echo, Graft, and `git-warp`\./,
+    /The cycle makes the causal-history \/ reading \/ projection ownership split\s+explicit across `jedit`, Echo, Graft, filesystem, and Git adapters\./,
   );
-  assert.match(designDoc, /### Hot runtime truths/);
-  assert.match(designDoc, /### Warm projection truths/);
-  assert.match(designDoc, /### Cold witness truths/);
+  assert.match(designDoc, /### Causal history truths/);
+  assert.match(designDoc, /### Reading truths/);
+  assert.match(designDoc, /### Projection and export truths/);
   assert.match(designDoc, /### `jedit`/);
   assert.match(designDoc, /### Echo \/ `echo-text`/);
   assert.match(designDoc, /### Graft/);
-  assert.match(designDoc, /### `git-warp`/);
+  assert.match(designDoc, /### Filesystem and Git adapters/);
 });
 
 test('The cycle explains save as a checkpoint rather than a reset.', () => {
@@ -137,7 +137,7 @@ test('The cycle explains save as a checkpoint rather than a reset.', () => {
 
   assert.match(designDoc, /The cycle explains save as a checkpoint rather than a reset\./);
   assert.match(designDoc, /Save is a checkpoint, not a reset\./);
-  assert.match(designDoc, /Saving must not:\s+- destroy the hot rope-worldline/s);
+  assert.match(designDoc, /Saving must not:\s+- destroy causal history/s);
 });
 
 test('The cycle names a tiered retention model for tick receipts, ticks, edit groups, and checkpoints/admissions.', () => {

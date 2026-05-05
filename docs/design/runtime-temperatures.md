@@ -1,171 +1,186 @@
-# Runtime Temperatures
+# Causal Runtime Strata
 
-`jedit` should treat its causal runtime as a temperature stack rather than one
-engine pretending to solve every problem equally well.
+`runtime-temperatures.md` is kept as the stable link target, but the old
+hot / warm / cold model is no longer the active doctrine.
+
+The current doctrine is:
+
+> There is no privileged materialized graph. There is witnessed causal history,
+> and graph-like structure is an observer-relative reading over that history.
 
 The rationale for choosing Echo as native truth is written down in
-[why-echo.md](why-echo.md).
+[why-echo.md](why-echo.md). The Optic-shaped file model is written down in
+[0006-optic-backed-file-model](0006-optic-backed-file-model/optic-backed-file-model.md).
 
-## Core law
+## Core Law
 
-- The rope-worldline is canonical.
-- The rope-worldline advances by ticks in the hot layer.
-- The AST worldline is derived.
-- Git commits are durable witnesses, not the cadence of editor truth.
+- Witnessed causal history is primary.
+- Ticks, receipts, checkpoints, strands, braids, admissions, frontiers, payload
+  hashes, and boundary artifacts are the durable reality model.
+- A "graph" is a lawful reading emitted by an observer or Optic.
+- There is no substrate-owned god's-eye graph object.
+- Files, ASTs, diagnostics, Git commits, and editor panes are projections over
+  causal history, not authorities.
 
-That means the editor must never wait for `git commit` before its live truth,
-syntax surfaces, or structural context catch up.
+The old temperature language was useful while separating latency and ownership
+concerns. It became misleading once it made Git sound like a peer truth layer
+or made Echo sound like it stores one canonical materialized graph.
 
-Echo and Graft are product-integrated engines in this model. The hot / warm
-split is not an argument for shipping them as optional remote services.
+## The Strata
 
-## The stack
+### 1. Causal History
 
-### Hot
+This is the canonical layer.
 
-Hot is the live editor layer.
+It owns:
 
-This layer owns:
+- admitted transitions
+- lane and worldline identities
+- frontiers
+- payload hashes
+- receipts
+- checkpoints
+- strand and braid admissions
+- witness for obstruction, rejection, preservation, or loss
 
-- the canonical editable rope-worldline
-- ticks as the canonical hot-worldline boundary
-- tick receipts as the fine-grained hot witness surface
-- anchors
-- strands later
+Echo is the intended durable substrate for this stratum.
 
-`jedit` may layer edit groups and undo groups over ticks, but those groupings
-must not be confused with the canonical worldline boundary.
+### 2. Boundary Artifacts And Suffixes
 
-Properties:
+Runtimes exchange witnessed suffixes, not state snapshots.
 
-- updates at tick cadence on every admitted logical text mutation
-- parser-independent
-- valid while dirty, malformed, or unsupported
-- optimized for low-latency editing
+This stratum includes:
 
-Echo or an `echo-text` style text runtime is the owner of this layer. `jedit`
-consumes it as editor truth.
+- encoded Intents
+- receipts and reading envelopes
+- content-addressed payloads
+- checkpoint artifacts
+- replay and retention records
+- import/export envelopes
 
-### Warm
+The important rule is that these artifacts witness claims about history. They
+do not become a second source of document truth.
 
-Warm is the live structural projection layer.
+### 3. Observers And Optics
 
-This layer owns:
+An observer is not just a query.
 
+It has:
+
+- aperture
+- basis
+- state
+- update law
+- emission law
+
+An Optic is the focused read/write version of that idea. It observes a bounded
+projection and writes only by submitting Intents.
+
+### 4. Holographic Readings
+
+Graph-like shape appears here.
+
+Examples:
+
+- text windows
+- worldline snapshots
 - syntax spans
-- fold regions
 - diagnostics
-- node lookup
-- structural selections
-- rename preview
-- structural diff and semantic summary
-- structural anchor-affinity style mapping between snapshots
+- search results
+- diff views
+- proposal previews
+- pane contents
 
-Properties:
+These are real as readings. They are not primary as ontology.
 
-- follows the current rope head or tick head
-- updates at edit / tick / idle cadence rather than commit cadence
-- remains truthful about partial parses and unsupported languages
+### 5. Materialized Projections
 
-Graft is the engine for this layer. It should interpret current buffer truth,
-not replace it.
+Materialization is allowed when it is useful.
 
-### Cold
+Examples:
 
-Cold is the durable witness layer.
+- editor viewport cache
+- filesystem working tree
+- Graft parse cache
+- rendered Markdown
+- exported Git commit
+- CI snapshot
 
-This layer owns:
+Materialized projections must carry enough basis to avoid pretending they are
+canonical truth.
 
-- Git-grounded repo artifact history
-- commit-anchored AST worldlines
-- long-horizon provenance
-- durable interop and replay witnesses
+## Product Stack
 
-Properties:
+The clean stack for `jedit` is:
 
-- durable
-- asynchronous
-- allowed to lag behind hot editing truth
-- optimized for witness, history, and transport rather than keystroke latency
+- Echo owns canonical durable causal history.
+- Graft emits structural readings over that history.
+- The filesystem is a working projection.
+- Git is an ecosystem projection and compatibility export.
+- `jedit` composes these surfaces into a calm editor product.
 
-`git-warp` is the right substrate for this layer.
+This is stronger than saying Git is a cold witness. Git is useful, portable,
+and socially legible, but it is not the long-horizon truth once Echo is real.
 
-Git is offline-first in this model. The meaningful absence case for the cold
-layer is not network loss; it is working in a workspace that is outside a Git
-repo.
-
-## Ownership split
+## Ownership Split
 
 - `jedit`
   Owns product behavior, modes, buffers, panes, panels, lenses, save/open
-  flows, edit-group and undo policy over ticks, and rendering policy.
-- Echo / `echo-text`
-  Owns hot rope-worldline truth, ticks, tick receipts, and anchors.
+  flows, edit-group and undo policy over causal events, and rendering policy.
+- Echo
+  Owns durable causal history, admission, frontiers, receipts, checkpoints,
+  strand/braid semantics, retention, and replay.
 - Graft
-  Owns warm structural intelligence over rope heads.
-- `git-warp`
-  Owns cold durable witness and Git-native causal history.
+  Owns structural interpretation as lawful readings over causal text history.
+- Filesystem
+  Owns ordinary working projections and host interoperability.
+- Git / `git-warp`
+  Owns optional import, export, mirroring, public hosting, CI, and ecosystem
+  compatibility.
 
-`jedit` should therefore compose Echo and Graft directly. Graft may become
-Echo-aware internally, but it should not become the sole gateway through which
-`jedit` reaches canonical hot truth.
+`jedit` should compose Echo and Graft directly. Graft may become Echo-aware
+internally, but it should not become the only path from `jedit` to canonical
+causal truth.
 
-## Retention horizons
+## Retention Horizons
 
-Not every causal layer should live forever.
+Not every causal artifact should stay hot forever.
 
-### Tick receipts
+- tick receipts
+  finest-grained witnesses, useful for active-session replay and short-horizon
+  explanation, compactable
+- ticks and admitted transitions
+  canonical causal history
+- edit groups
+  human-meaningful groupings over admitted transitions
+- checkpoints and admissions
+  durable continuity points
+- retained suffixes and wormholes
+  acceleration or compression artifacts that preserve witness rather than
+  deleting history
+- ecosystem exports
+  Git commits, filesystem snapshots, CI artifacts, or public archive formats
 
-- finest-grained hot witness emitted from materialized ticks
-- useful for the active session and short-horizon replay
-- compactable
-- not durable forever by default
+The cold long-horizon layer is Echo persistence and retained causal witness.
+Git is one possible export of that layer.
 
-### Ticks
+## Design Consequences
 
-- canonical hot-worldline history
-- should survive saves
-- may survive editor restart for recent work
+- Save is a checkpoint and projection event, not a reset.
+- The AST is a reading over causal text history.
+- The filesystem is a working projection.
+- Git commits export or mirror a projection; they do not define what happened.
+- Synchronization means exchanging witnessed suffixes, not copying a universal
+  graph state.
+- Unsupported or malformed buffers still have lawful causal history even when
+  structural readings are partial or absent.
+- Observer and Optic readings must carry basis, frontier, budget, and rights
+  posture.
 
-### Edit groups
+## Non-Goals
 
-- typing bursts
-- paste and delete actions
-- accepted suggestions
-- explicit structural transforms
-
-These are editor-facing groupings over one or more ticks. They are the main
-human-meaningful edit history surface.
-
-They should outlive individual saves and likely survive editor restart for
-recent work.
-
-### Checkpoints and admissions
-
-- save checkpoints
-- explicit bookmarks
-- explicit admissions
-- session-close continuity points
-
-These are the durable long-horizon history layer. They may persist much longer
-than raw receipts and form the bridge into colder witness layers.
-
-## Design consequences
-
-- Save is a checkpoint, not a reset.
-- The AST follows the rope; the rope does not wait for the AST.
-- Git commits anchor or witness editor truth; they do not define when truth
-  exists.
-- Tick-receipt history can be compacted without losing higher-level edit-group
-  or checkpoint history.
-- Unsupported or malformed buffers still have lawful hot truth even when warm
-  structure is partial or absent.
-- A transport change, such as moving from MCP to a direct API surface, should
-  not change the ownership model.
-
-## Non-goals
-
-- Treating Graft's current parsed snapshots as the canonical editor runtime.
-- Forcing Git commit cadence to act as live editor update cadence.
-- Treating edit groups as the canonical hot-worldline boundary.
-- Keeping every primitive keystroke forever by default.
+- Treating Graft's parsed snapshots as canonical editor truth.
+- Treating Git commit cadence as live editor cadence.
+- Treating filesystem writes as the document's reality history.
+- Pretending there is one universal graph object inside Echo.
+- Keeping every primitive receipt hot forever by default.

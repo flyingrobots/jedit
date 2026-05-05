@@ -21,8 +21,8 @@ agent instance.
 
 ## Hill
 
-Turn the `jedit` hot-graph model into the first explicit contract for dynamic,
-honest rewrite footprints. At the end of this cycle, `jedit` should have a
+Turn the `jedit` causal text reading model into the first explicit contract for
+dynamic, honest rewrite footprints. At the end of this cycle, `jedit` should have a
 design packet that makes five claims concrete:
 
 1. rewrite footprints are static at the level of slots, bindings, derivation
@@ -90,8 +90,8 @@ examples rather than generic placeholder entities.
   boundary must be visible in repo docs so future generator/runtime work does
   not infer honesty rules from chat alone.
 - What must be attributable, evidenced, or governed: the proposed footprint
-  shape must be attributable to the existing hot-text graph model and text edit
-  algebra rather than free-floating compiler folklore.
+  shape must be attributable to the existing causal text reading model and text
+  edit algebra rather than free-floating compiler folklore.
 
 ## One Sentence
 
@@ -155,7 +155,7 @@ The minimum honest vocabulary is:
 
 ### 1. Slots
 
-Named logical bindings for specific graph nouns.
+Named logical bindings for specific contract nouns.
 
 Examples:
 
@@ -176,7 +176,8 @@ Minimum binding modes:
 
 ### 3. Closures
 
-A declared derived focus over graph truth rather than a single fixed node.
+A declared derived focus over causal text readings rather than a single fixed
+node.
 
 For `jedit`, the important closures are things like:
 
@@ -500,7 +501,7 @@ The hot rewrite boundary can now be stated precisely:
 
 This is exactly the missing bridge between:
 
-- `jedit`'s hot graph model
+- `jedit`'s causal text reading model
 - Wesley's compile-time honesty goal
 - Echo's runtime binding and admission law
 
@@ -517,7 +518,7 @@ The next useful seams are now clearer:
 
 ## Backlog Context
 
-`jedit` already knows the hot graph nouns it needs. What it lacked was the
+`jedit` already knows the text-history nouns it needs. What it lacked was the
 honest bridge between static footprint law and dynamic runtime binding.
 
 This packet defines that bridge. It should now guide both:

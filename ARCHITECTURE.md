@@ -132,15 +132,17 @@ Why the boundary exists:
 
 The intended stack is:
 
-- `jedit` core owns editing interaction and buffer lifecycle over hot rope
-  heads
+- `jedit` core owns editing interaction and buffer lifecycle over causal text
+  frontiers
 - Graft provides structural intelligence and parser-backed projections
-- Echo / `echo-text` owns the native hot causal text substrate
-- filesystem and Git remain projections and persistence boundaries
+- Echo / `echo-text` owns the native causal text substrate
+- Echo persistence owns durable causal history
+- filesystem remains a working projection boundary
+- Git remains an ecosystem projection and compatibility export
 
 `jedit` should therefore compose Echo and Graft directly. A future Graft
 implementation may use Echo internally, but `jedit` should not have to route
-canonical editor truth through Graft to reach its own hot substrate.
+canonical editor truth through Graft to reach its own causal substrate.
 
 The transport used to reach Graft is not architectural truth. The current MCP
 path is an implementation detail, not a long-term ownership claim.

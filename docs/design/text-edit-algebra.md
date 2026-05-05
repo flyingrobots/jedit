@@ -7,7 +7,7 @@ work hardens the wrong abstractions.
 
 Event-class boundaries live in [causal-event-model.md](causal-event-model.md).
 The substrate choice is explained in [why-echo.md](why-echo.md).
-The detailed Echo graph shape is described in
+The detailed Echo-hosted text reading shape is described in
 [jedit-echo-graph-model.md](jedit-echo-graph-model.md).
 The static/dynamic rewrite-footprint split is described in
 [0004 - dynamic-footprint-binding-contract](0004-dynamic-footprint-binding-contract/dynamic-footprint-binding-contract.md).
@@ -15,7 +15,7 @@ The static/dynamic rewrite-footprint split is described in
 ## One Sentence
 
 `jedit` should treat a buffer as a persistent piece-rope worldline in Echo's
-native WARP graph, with files, Markdown ASTs, previews, and viewport state as
+causal history, with files, Markdown ASTs, previews, and viewport state as
 projections rather than truth.
 
 ## Stack
@@ -376,7 +376,7 @@ Build fast projections from the current head:
 - Markdown preview projection
 
 These are all derived from the current rope head and updated incrementally.
-The WARP graph is truth. The editor loop needs speed.
+Witnessed causal history is truth. The editor loop needs speed.
 
 ## Undo, Grouping, and History
 

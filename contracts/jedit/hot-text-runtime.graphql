@@ -1,9 +1,9 @@
 """
 Authored home for `jedit`'s hot text runtime boundary.
 
-This SDL defines the graph nouns and rewrite surfaces that `jedit` expects
-Wesley to compile for Echo-backed hot text truth. It intentionally models only
-the hot layer:
+This SDL defines the graph-like reading nouns and rewrite surfaces that
+`jedit` expects Wesley to compile for Echo-backed causal text truth. It
+intentionally models only the text contract layer:
 
 - canonical text worldlines
 - rope heads and rope DAG nodes
@@ -11,8 +11,8 @@ the hot layer:
 - anchors
 - checkpoints
 
-It intentionally does not model AST truth, diagnostics, Git witness history,
-or UI state as canonical hot graph nouns.
+It intentionally does not model AST truth, diagnostics, Git export history, or
+UI state as canonical text-history nouns.
 
 Directive definitions are expected to come from Wesley's shared directive pack
 when this schema is compiled.

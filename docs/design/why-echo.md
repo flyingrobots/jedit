@@ -95,8 +95,8 @@ For `jedit`, the clean stack is:
 
 - Echo owns canonical text truth
 - Graft interprets and projects that truth structurally
-- Git mirrors, witnesses, exports, or interoperates with that truth when
-  needed
+- the filesystem materializes a working projection
+- Git exports or mirrors an ecosystem-compatible projection when needed
 
 ## Composition Posture
 
@@ -116,7 +116,7 @@ But not:
 Why this matters:
 
 - hot truth must not be subordinated to parser structure
-- warm projections must not masquerade as the source of truth
+- structural readings must not masquerade as the source of truth
 - `jedit` should own the composition of substrate and interpreter directly
 
 So the correct stance is:
@@ -129,7 +129,8 @@ That means:
 
 - Echo should remain the hot canonical layer
 - Graft should remain the warm structural layer
-- Git and `git-warp` should move to an optional cold witness / interop layer
+- Git and `git-warp` should move to optional ecosystem projection and interop
+  adapters
 
 ## Do we still need Git?
 
@@ -149,7 +150,7 @@ Git is still valuable for:
 - interoperability with existing repos
 - GitHub/GitLab/PR-based collaboration
 - CI and deployment pipelines
-- mirroring `jedit` history into the wider ecosystem
+- exporting or mirroring `jedit` projections into the wider ecosystem
 
 But those are ecosystem advantages, not substrate requirements.
 
@@ -159,7 +160,8 @@ The right product stance is:
 
 - Echo is native truth
 - Graft is native structural intelligence
-- Git is optional interop and public witness
+- the filesystem is a working projection
+- Git is optional ecosystem projection and public compatibility export
 
 Or in the shortest form:
 
