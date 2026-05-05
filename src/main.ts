@@ -4,9 +4,10 @@ import { animate, quit, run, type App, type Cmd, type KeyMsg, type NotificationS
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, isAbsolute, join, relative } from 'node:path';
+import { joinLines, normalizeLines } from './app/editor-lines.js';
 import {
   DIRECTORY_ACTION_OPEN,
   DIRECTORY_ACTION_REFRESH,
@@ -14,6 +15,7 @@ import {
   loadEntries,
   type FileEntry,
 } from './adapters/filesystem.js';
+import { loadEditorFile, saveEditorFile } from './adapters/editor-file.js';
 import { paintMarkdownPreview } from './ui/markdown-preview.js';
 import {
   applyNotificationState,
@@ -135,7 +137,6 @@ type Msg =
 
 const MIN_COLUMNS = 60;
 const MIN_ROWS = 12;
-const MAX_FILE_BYTES = 24_000;
 const INITIAL_COLUMNS = process.stdout.columns ?? 100;
 const INITIAL_ROWS = process.stdout.rows ?? 32;
 const DRAWER_DURATION_MS = 160;
@@ -891,36 +892,17 @@ function errorMessage(cause: unknown): string {
 
 function loadEditor(filePath: string): EditorState {
   try {
-    const bytes = readFileSync(filePath);
-    if (bytes.includes(0)) {
-      return {
-        path: filePath,
-        lines: ['[binary file]'],
-        cursorRow: 0,
-        cursorCol: 0,
-        scrollRow: 0,
-        scrollCol: 0,
-        dirty: false,
-        readOnly: true,
-        mode: 'normal',
-        undoStack: [],
-        redoStack: [],
-      };
-    }
-
-    const truncated = bytes.length > MAX_FILE_BYTES;
-    const text = bytes.subarray(0, MAX_FILE_BYTES).toString('utf8');
-    const lines = normalizeLines(truncated ? `${text}\n\n[truncated]` : text);
+    const file = loadEditorFile(filePath);
 
     return ensureEditorVisible({
       path: filePath,
-      lines,
+      lines: file.lines,
       cursorRow: 0,
       cursorCol: 0,
       scrollRow: 0,
       scrollCol: 0,
       dirty: false,
-      readOnly: truncated,
+      readOnly: file.readOnly,
       mode: 'normal',
       undoStack: [],
       redoStack: [],
@@ -947,7 +929,7 @@ function saveEditor(editor: EditorState): EditorState {
     return editor;
   }
 
-  writeFileSync(editor.path, editor.lines.join('\n'), 'utf8');
+  saveEditorFile(editor.path, editor.lines);
   return {
     ...editor,
     dirty: false,
@@ -1879,7 +1861,7 @@ function leadingWhitespace(line: string): string {
 }
 
 function editorText(editor: EditorState): string {
-  return editor.lines.join('\n');
+  return joinLines(editor.lines);
 }
 
 function lineStartTextIndex(lines: readonly string[], row: number): number {
@@ -2353,11 +2335,6 @@ function applyBackground(surface: Surface, token: TokenValue) {
       });
     }
   }
-}
-
-function normalizeLines(text: string): readonly string[] {
-  const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
-  return lines.length === 0 ? [''] : lines;
 }
 
 function clampIndex(index: number, size: number): number {
