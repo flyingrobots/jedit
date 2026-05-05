@@ -67,8 +67,8 @@ not implement Echo bindings, a rope runtime, or new editor UI.
 - [ ] The packet makes explicit that Graft's current `StructuredBuffer` shape
   is projection-oriented rather than the canonical editor kernel.
 - [ ] The packet leaves the next executable seams obvious: rope contract,
-  warm-projection adapter contract, retention policy, and save-to-cold
-  witness bridge.
+  structural-reading adapter contract, retention policy, and
+  checkpoint-to-export bridge.
 
 ## Accessibility and Assistive Reading
 
@@ -101,8 +101,9 @@ not implement Echo bindings, a rope runtime, or new editor UI.
 
 ## Contract
 
-Detailed node, edge, and rewrite expectations for the future Echo-backed hot
-graph now live in [../jedit-echo-graph-model.md](../jedit-echo-graph-model.md).
+Detailed node, edge, and rewrite expectations for the future Echo-backed causal
+text reading model now live in
+[../jedit-echo-graph-model.md](../jedit-echo-graph-model.md).
 The dynamic footprint law for those rewrites now lives in
 [../0004-dynamic-footprint-binding-contract/dynamic-footprint-binding-contract.md](../0004-dynamic-footprint-binding-contract/dynamic-footprint-binding-contract.md).
 
@@ -141,8 +142,8 @@ It must own:
 
 - `BufferWorldline`
 - `RopeRoot`
-- ticks as the canonical hot-worldline boundary
-- tick receipts as the fine-grained hot witness surface
+- ticks as the canonical causal-history boundary
+- tick receipts as the fine-grained transition witness surface
 - anchors
 - future strands and admissions
 
@@ -292,10 +293,12 @@ This cycle should leave the next implementation seams obvious:
 1. `echo-backed-rope-worldline-contract`
    the causal text-runtime contract itself
 2. `graft-hot-structural-projections-over-rope-heads`
+   legacy-named backlog slug
    the structural reading adapter contract
 3. `causal-history-retention-and-compaction-policy`
    the retention law
 4. `save-checkpoints-and-cold-witness-bridge`
+   legacy-named backlog slug
    the checkpoint-to-export bridge
 
 This packet is successful if those seams become more precise rather than more

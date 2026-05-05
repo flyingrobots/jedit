@@ -30,14 +30,14 @@ design packet that makes five claims concrete:
 2. rewrite bindings are dynamic at the level of concrete worldline/head/range
    values and runtime materialized readings
 3. `ReplaceRangeAsTick` can bind a dynamic rope/anchor focus without gaining
-   arbitrary graph reach
+   arbitrary causal-history or reading reach
 4. `CreateCheckpoint` can stay narrow without borrowing the `ReplaceRange`
    shape by accident
 5. compile-time honesty failures and runtime binding failures are distinct and
    both necessary
 
 This cycle is complete when those claims are explicit in repo truth, grounded
-in `jedit`'s real hot-text nouns, and illustrated with concrete rewrite
+in `jedit`'s real causal-text nouns, and illustrated with concrete rewrite
 examples rather than generic placeholder entities.
 
 ## Playback Questions
@@ -106,8 +106,8 @@ The current simplified proof slice is enough to prove one thing:
 - Wesley can generate a bounded Rust capability surface from a declared
   footprint.
 
-It is not enough for `jedit`, because `jedit`'s real hot-text rewrites are not
-static object updates over pre-known nodes. `ReplaceRangeAsTick` needs:
+It is not enough for `jedit`, because `jedit`'s real causal-text rewrites are
+not static object updates over pre-known nodes. `ReplaceRangeAsTick` needs:
 
 - a runtime `worldlineId`
 - a runtime `baseHeadId`
@@ -139,7 +139,7 @@ This means the compiler must prove:
 
 - the implementation can only act through declared slots and declared closure
   operators
-- the implementation cannot reach undeclared graph surfaces
+- the implementation cannot reach undeclared causal-history or reading surfaces
 
 And the runtime must prove:
 
@@ -217,11 +217,11 @@ For example:
 Which noun families are explicitly out of bounds even if they are available
 elsewhere in the wider product stack.
 
-For `jedit` hot rewrites, the important forbidden surfaces are:
+For `jedit` causal-text rewrites, the important forbidden surfaces are:
 
 - AST state
 - diagnostics
-- Git witness history
+- Git export history
 - UI state
 
 ## Compile-Time vs Runtime
@@ -234,7 +234,7 @@ These should be static failures or unavailable methods:
 
 - a `ReplaceRangeAsTick` implementation tries to read AST state
 - a checkpoint rewrite tries to create a `Tick`
-- a hot text rewrite tries to inspect Git witness history
+- a causal text rewrite tries to inspect Git export history
 - a rewrite tries to use a closure operator that was not declared
 
 ### Runtime binding failures
@@ -401,15 +401,15 @@ implementation may only:
 - inspect the bound `baseHead`
 - inspect the declared `touchedRope` closure
 - inspect the declared `affectedAnchors` closure
-- create the listed hot-text nouns
+- create the listed causal-text nouns
 - update the allowed worldline relation
 
 It cannot:
 
-- ask for arbitrary graph traversal
+- ask for arbitrary causal-history or reading traversal
 - inspect AST state
 - mutate diagnostics
-- perform Git witness operations
+- perform Git export operations
 - touch UI state
 
 ### What runtime still must do
@@ -490,10 +490,10 @@ non-canonical heads, that should arrive as an explicit widening such as
 
 ## What This Means For `jedit`
 
-The hot rewrite boundary can now be stated precisely:
+The causal text rewrite boundary can now be stated precisely:
 
 - `ReplaceRangeAsTick` is allowed a dynamic rope-local and anchor-local focus
-  over a statically declared hot-text closure
+  over a statically declared causal-text closure
 - `CreateCheckpoint` is not
 - later rewrites such as `RegisterAnchor` and strand/braid admission can be
   added with the same slot/binding/closure model instead of inventing a new

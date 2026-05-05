@@ -12,7 +12,7 @@ keywords:
 acceptance_criteria:
   - Tests exercise a fake Echo-backed Text File Optic only through `EchoWasmKernelTransport`.
   - The fake accepts encoded query and mutation bytes and returns encoded readings, receipts, or obstructions.
-  - App tests cannot call the in-memory hot text runtime directly for file mutations.
+  - App tests cannot call the legacy in-memory `HotTextRuntimePort` directly for file mutations.
   - Boundary encoding and decoding stay inside an adapter or codec module.
   - The fake proves stale-base rejection or obstruction for at least one edit.
 ---
@@ -39,4 +39,3 @@ lets later slices prove architecture with tests instead of chat.
 - Cloning Echo inside `jedit`.
 - Guessing final EINT wire bytes.
 - Implementing the real Wesley-generated client.
-

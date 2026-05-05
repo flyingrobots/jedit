@@ -59,7 +59,8 @@ editing truth.
 
 The current causal runtime strata model is written down in
 [docs/design/runtime-temperatures.md](docs/design/runtime-temperatures.md).
-The authored home for the first hot-text contract now lives at
+The authored home for the first causal text contract still uses the legacy
+`hot-text-runtime` filename:
 [contracts/jedit/hot-text-runtime.graphql](contracts/jedit/hot-text-runtime.graphql).
 The app-owned contract adapter that maps those rewrite names onto the current
 runtime lives at

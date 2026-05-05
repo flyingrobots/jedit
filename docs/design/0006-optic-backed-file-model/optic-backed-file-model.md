@@ -45,7 +45,7 @@ into backlog items that can be executed independently.
 - [ ] The packet clearly states that all file mutations happen by submitting
   Intents through Echo.
 - [ ] The packet makes `read` and `write` optic behavior concrete without
-  implying direct graph mutation.
+  implying direct substrate mutation.
 - [ ] The packet explains how bounded viewport reads replace full-file editor
   loading.
 - [ ] The packet keeps `jedit` text semantics app-owned and Echo substrate
@@ -128,9 +128,9 @@ The repo already has a useful first seam:
 - [spec/jedit-optic-client.spec.mjs](../../../spec/jedit-optic-client.spec.mjs)
 
 That seam is GraphQL-shaped, but it is not Echo-shaped yet. The current
-implementation directly maps generated operation names to the in-memory hot
-text runtime. That is acceptable as a proving slice, but the next step should
-make the seam transport-shaped:
+implementation directly maps generated operation names to the legacy in-memory
+`HotTextRuntimePort`. That is acceptable as a proving slice, but the next step
+should make the seam transport-shaped:
 
 ```text
 jedit UI

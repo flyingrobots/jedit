@@ -28,8 +28,8 @@ those surfaces, the rest of the stack will likely follow.
 
 Context:
 
-- the hot-text contract already defines mutation families and a first read-side
-  shape
+- the legacy-named hot-text contract already defines mutation families and a
+  first read-side shape
 - the runtime glue already wraps a `WorldlineSnapshotReadingEnvelope`
 - that does not yet prove the full boundary is being respected everywhere
 
@@ -38,4 +38,3 @@ Context:
 - Designing the final debugger protocol here.
 - Inventing a new runtime family from scratch.
 - Changing Echo semantics inside the `jedit` repo.
-

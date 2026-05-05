@@ -30,11 +30,11 @@ Context:
 - That only works if Graft follows current rope heads or transaction heads
   rather than waiting for Git commits.
 
-This note should lock the adapter seam between hot text truth and warm
-structural intelligence.
+This note should lock the adapter seam between causal text truth and structural
+readings.
 
 ## Non-Goals
 
 - Making Graft the canonical editable buffer runtime.
 - Solving every language or parser coverage problem up front.
-- Designing cold Git witness storage.
+- Designing Git export storage.

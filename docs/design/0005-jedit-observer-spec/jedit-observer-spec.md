@@ -46,7 +46,7 @@ App-authored, mostly static, and lawful.
 For `jedit`, the first observer spec declares:
 
 - canonical-worldline aperture
-- `jedit` hot-text basis
+- `jedit` causal-text basis
 - memoryless state shape
 - replace-with-latest-slice update law
 - snapshot-reading emission law

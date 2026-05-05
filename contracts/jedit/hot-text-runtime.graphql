@@ -1,5 +1,9 @@
 """
-Authored home for `jedit`'s hot text runtime boundary.
+Authored home for `jedit`'s causal text runtime boundary.
+
+The file keeps the legacy `hot-text-runtime` name for continuity. In current
+doctrine, `hot` here means the first low-latency text contract surface over
+witnessed causal history, not a separate ontology layer.
 
 This SDL defines the graph-like reading nouns and rewrite surfaces that
 `jedit` expects Wesley to compile for Echo-backed causal text truth. It

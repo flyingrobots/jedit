@@ -92,9 +92,9 @@ Echo should not be required to own:
 - preview rendering
 - file paths as canonical truth
 - editor panes, panels, or mode semantics
-- Git commit history as the source of hot truth
+- Git commit history as the source of causal text truth
 
-## What I Do Not Need As First-Class Hot Nodes
+## What I Do Not Need As First-Class Text-History Nodes
 
 These are explicitly not required as causal text truth in v1:
 
@@ -140,7 +140,7 @@ Important note:
 
 ### 2. `RopeHead`
 
-The materialized hot head for one worldline state.
+The materialized causal head for one worldline state.
 
 Responsibilities:
 
@@ -219,7 +219,7 @@ Suggested fields:
 Design note:
 
 - the payload may be externalized or stored in a content-addressed side store
-- I do not need the graph itself to inline arbitrarily large strings if Echo
+- I do not need the reading shape itself to inline arbitrarily large strings if Echo
   prefers a blob store
 
 ### 6. `Anchor`
@@ -250,14 +250,14 @@ Design note:
 
 ### 7. `Tick`
 
-Canonical hot causal append boundary.
+Canonical causal append boundary.
 
 Responsibilities:
 
-- record one admitted hot rewrite boundary
+- record one admitted causal rewrite boundary
 - connect base head to next head
 - connect to its receipt
-- participate in the hot worldline chain
+- participate in the causal worldline chain
 
 Suggested fields:
 
@@ -273,7 +273,7 @@ Minimal witness for one tick.
 
 Responsibilities:
 
-- capture the lawful rewrite at a hot boundary
+- capture the lawful rewrite at a causal boundary
 - retain enough information to explain and replay the transition
 - drive anchor transforms
 
@@ -293,12 +293,12 @@ Suggested fields:
 
 Important note:
 
-- this is the hot witness
+- this is the transition witness
 - it should not be polluted by rope housekeeping details like split/merge/rotate
 
 ### 9. `Checkpoint`
 
-Retained marker over the hot worldline.
+Retained marker over the causal worldline.
 
 Responsibilities:
 
@@ -350,7 +350,7 @@ Used for:
 - causal editorial history
 
 I do not need these in the first schema cut if they complicate initial progress,
-but the v1 graph should not block them.
+but the v1 reading model should not block them.
 
 ## Edge Kinds I Actually Care About
 
@@ -376,7 +376,7 @@ Later:
 
 This gives us:
 
-- hot history chain
+- causal history chain
 - explicit transition basis
 - explicit witness
 
@@ -454,7 +454,7 @@ This is the most important rewrite.
 
 Purpose:
 
-- admit one lawful text rewrite into the hot worldline
+- admit one lawful text rewrite into causal history
 
 Conceptually it combines:
 
@@ -552,7 +552,7 @@ It should not:
 
 Purpose:
 
-- retain a meaningful marker over the current canonical hot head in v1
+- retain a meaningful marker over the current canonical causal head in v1
 
 Typical uses:
 
@@ -714,8 +714,8 @@ Purpose:
 
 This is where the model gets especially important.
 
-I want the rewrite focus to be explicit enough that dishonest graph mutation
-becomes a compile-time error.
+I want the rewrite focus to be explicit enough that dishonest causal-history or
+reading mutation becomes a compile-time error.
 
 ### `ReplaceRangeAsTick` should be allowed to touch
 
@@ -732,8 +732,8 @@ It should not be allowed to silently mutate:
 
 - unrelated worldlines
 - checkpoints
-- warm AST or diagnostics nodes
-- Git witness history
+- AST or diagnostics readings
+- Git export history
 - UI state
 
 ### `CreateCheckpoint` should be allowed to touch
@@ -848,7 +848,7 @@ The important part is local reuse. The rewrite should not clone `leaf-a` and
 
 ## Concrete Example: Save
 
-Current hot state:
+Current causal state:
 
 - worldline at `head-11`
 - ticks `tick-1 .. tick-9`
@@ -911,9 +911,9 @@ Expected logical result:
 - old anchor at `5`
 - new right-biased anchor at `11`
 
-## Things I Expect To Stay Outside This Graph
+## Things I Expect To Stay Outside This Reading Model
 
-These should stay outside the hot Echo text graph unless a later proof shows
+These should stay outside the Echo text reading model unless a later proof shows
 otherwise:
 
 - AST nodes

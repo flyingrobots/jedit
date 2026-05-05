@@ -8,6 +8,23 @@ The current doctrine is:
 > There is no privileged materialized graph. There is witnessed causal history,
 > and graph-like structure is an observer-relative reading over that history.
 
+## Legacy Naming Note
+
+Some files, generated artifacts, ports, and backlog slugs still use legacy
+terms such as `hot`, `warm`, `cold`, `witness`, or `graph` for continuity.
+
+Interpret them through the current doctrine:
+
+- keep as legacy filename or API names:
+  `hot-text-runtime.graphql`, `HotTextRuntimePort`, `hot-buffer-session`, and
+  existing backlog slugs
+- rewrite active prose when it means ontology:
+  use causal history, boundary artifacts, observers, readings, and projections
+- allow latency shorthand only when it is explicitly local:
+  "hot path" may describe performance, but not document truth
+
+The old terms are compatibility labels. They are not ontology claims.
+
 The rationale for choosing Echo as native truth is written down in
 [why-echo.md](why-echo.md). The Optic-shaped file model is written down in
 [0006-optic-backed-file-model](0006-optic-backed-file-model/optic-backed-file-model.md).
@@ -144,7 +161,7 @@ causal truth.
 
 ## Retention Horizons
 
-Not every causal artifact should stay hot forever.
+Not every causal artifact should remain in the active working set forever.
 
 - tick receipts
   finest-grained witnesses, useful for active-session replay and short-horizon
@@ -161,7 +178,7 @@ Not every causal artifact should stay hot forever.
 - ecosystem exports
   Git commits, filesystem snapshots, CI artifacts, or public archive formats
 
-The cold long-horizon layer is Echo persistence and retained causal witness.
+The long-horizon layer is Echo persistence and retained causal witness.
 Git is one possible export of that layer.
 
 ## Design Consequences
@@ -183,4 +200,4 @@ Git is one possible export of that layer.
 - Treating Git commit cadence as live editor cadence.
 - Treating filesystem writes as the document's reality history.
 - Pretending there is one universal graph object inside Echo.
-- Keeping every primitive receipt hot forever by default.
+- Keeping every primitive receipt in the active working set forever by default.

@@ -294,7 +294,7 @@ test('Closing an empty open group is a logical no-op.', async () => {
   assert.equal(result.receipt, undefined);
 });
 
-test('The app-facing hot session composes tick admission, edit grouping, and checkpointing without redefining ticks.', async () => {
+test('The app-facing causal session composes tick admission, edit grouping, and checkpointing without redefining ticks.', async () => {
   const app = await loadHotSessionApp();
   const adapter = await import(pathToFileURL(path.join(REPO_ROOT, 'dist', 'adapters', 'in-memory-hot-text-runtime.js')).href);
   const text = await import(pathToFileURL(path.join(REPO_ROOT, 'dist', 'domain', 'text-edit-contract.js')).href);
@@ -347,7 +347,7 @@ test('The runtime contract stays a minimal edit-group seam rather than a full ro
   assert.deepEqual(Object.keys(contract).sort(), EXPECTED_EDIT_GROUP_RUNTIME_EXPORTS);
 });
 
-test('The app-facing hot session seam stays minimal.', async () => {
+test('The app-facing causal session seam stays minimal.', async () => {
   const app = await loadHotSessionApp();
 
   assert.deepEqual(Object.keys(app).sort(), EXPECTED_HOT_SESSION_APP_EXPORTS);

@@ -50,7 +50,7 @@ Not:
 - file-plus-undo-stack
 - snapshots as the primary truth
 
-A buffer head points to a persistent rope root inside Echo's graph.
+A buffer head points to a persistent rope root carried by Echo causal history.
 
 ## Piece-Rope Model
 
@@ -80,14 +80,14 @@ whole-file snapshots forward forever.
 
 - `BufferWorldline`: canonical editable object. Holds canonical head, strand
   refs, and admission lineage.
-- `RopeRoot`: persistent piece-rope root inside Echo's graph.
+- `RopeRoot`: persistent piece-rope root carried by Echo causal history.
 - `RopeBranch`: interior node with child refs and aggregate metrics.
 - `RopeLeaf`: leaf node pointing at an immutable blob slice.
 - `Blob`: immutable text storage unit.
 - `Fragment`: persistent rope fragment used as inserted material.
 - `Anchor`: logical point or interval with bias and stickiness policy.
-- `Tick`: canonical hot-worldline append boundary in Echo.
-- `TickReceipt`: minimal hot witness emitted from a materialized tick.
+- `Tick`: canonical causal-history append boundary in Echo.
+- `TickReceipt`: minimal transition receipt emitted from a materialized tick.
 - `EditGroup`: editor-facing grouping over one or more ticks for undo/history.
 - `Strand`: alternate head over shared ancestry.
 - `Projection`: file path, Markdown AST, preview, viewport cache, diagnostics,
@@ -178,8 +178,8 @@ worldline boundary is the tick.
 That means:
 
 - `ReplaceRange` describes what text rewrite is lawful.
-- Echo admits that rewrite into the hot worldline as a tick.
-- a tick emits a tick receipt as the hot witness of the transition.
+- Echo admits that rewrite into causal history as a tick.
+- a tick emits a tick receipt as the witness of the transition.
 - `jedit` may group one or more ticks into an edit group for undo/history.
 
 This keeps the canonical boundary aligned with Echo while still letting the
@@ -364,7 +364,7 @@ RopeLeaf
 
 The ontology can be rich. The render loop must stay boring.
 
-Do not walk the generic graph on every frame.
+Do not walk graph-like readings or generic causal storage on every frame.
 
 Build fast projections from the current head:
 

@@ -24,7 +24,7 @@ An editor wants:
 - partial acceptance of suggestions and edits
 - speculative alternatives without duplicate files
 - replay over real editing history
-- checkpoints that do not destroy hot history
+- checkpoints that do not destroy causal history
 - structural interpretation over unsaved in-memory truth
 
 Git does not fail at these things because it is bad. Git simply was not shaped
@@ -43,12 +43,12 @@ That is an excellent model for:
 
 - durable history
 - distributed collaboration
-- public witness
+- public compatibility record
 - ecosystem interoperability
 
 It is a weaker model for:
 
-- per-edit hot truth
+- per-edit causal truth
 - editor-native replay
 - partial admission of alternate futures
 - causal editing below commit boundaries
@@ -80,7 +80,7 @@ is a better native causal model for editing.
 `jedit` makes the mismatch hard to ignore because it wants all of these at
 once:
 
-- hot editing truth
+- live causal editing truth
 - dirty-buffer structure
 - source and preview as projections
 - eventual AI suggestions and partial acceptance
@@ -104,8 +104,8 @@ For `jedit`, the clean stack is:
 
 That means:
 
-- `jedit -> Echo` for canonical hot text truth
-- `jedit -> Graft` for warm structural projections over that truth
+- `jedit -> Echo` for canonical causal text truth
+- `jedit -> Graft` for structural readings over that truth
 - potentially `Graft -> Echo` internally when Graft benefits from Echo-native
   basis, head, or worldline concepts
 
@@ -115,7 +115,7 @@ But not:
 
 Why this matters:
 
-- hot truth must not be subordinated to parser structure
+- causal truth must not be subordinated to parser structure
 - structural readings must not masquerade as the source of truth
 - `jedit` should own the composition of substrate and interpreter directly
 
@@ -127,8 +127,8 @@ So the correct stance is:
 
 That means:
 
-- Echo should remain the hot canonical layer
-- Graft should remain the warm structural layer
+- Echo should remain the canonical causal-history layer
+- Graft should remain the structural-reading layer
 - Git and `git-warp` should move to optional ecosystem projection and interop
   adapters
 

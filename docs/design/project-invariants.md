@@ -8,7 +8,8 @@ Purpose: define the non-negotiable product and architecture constraints that
 ## One Sentence
 
 `jedit` should be a portable, terminal-first editor with strict hexagonal
-boundaries, hot parser-independent text truth, and a fast, minimal, honest UX.
+boundaries, parser-independent causal text truth, and a fast, minimal, honest
+UX.
 
 ## Architecture Invariants
 
@@ -42,7 +43,7 @@ The editor kernel should not be trapped inside one host.
 - core text/runtime law should not depend on Node APIs
 - host-specific integration belongs in adapters
 - UI policy should not leak into the text substrate
-- the long-term hot runtime should be plausible across Rust, WASM, and
+- the long-term causal runtime should be plausible across Rust, WASM, and
   TypeScript-facing environments
 
 ### 4. Parser-independent editing truth
@@ -52,7 +53,7 @@ The editable buffer must remain lawful even when:
 - the file does not parse
 - the language is unsupported
 - the buffer is dirty or malformed
-- warm structure is partial or stale
+- structural readings are partial or stale
 - the workspace is outside a Git repo
 
 The AST is derived. The rope-worldline is canonical.
@@ -135,11 +136,11 @@ Feature design should preserve these distinctions.
 ### 12. Save is a checkpoint, not a reset
 
 Saving should materialize current truth and mark a checkpoint. It should not
-destroy hot history by default.
+destroy causal history by default.
 
-### 13. Tick is the hot causal boundary
+### 13. Tick is the causal boundary
 
-Echo's tick should be treated as the canonical hot-worldline boundary.
+Echo's tick should be treated as the canonical causal-history boundary.
 
 - `ReplaceRange` and related edit law describe what is lawful
 - a tick admits lawful change into the worldline
@@ -164,7 +165,7 @@ runtime focus is known ahead of time.
 Not every causal artifact should live forever.
 
 - tick receipts are short-horizon and compactable
-- ticks are the canonical hot history
+- ticks are the canonical causal history
 - edit groups are the main human-facing history surface
 - checkpoints and admissions are the durable long-horizon layer
 
