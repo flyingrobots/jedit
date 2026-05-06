@@ -104,6 +104,7 @@ export interface JeditSpring {
 }
 
 export interface JeditStyleToken extends Pick<Cell, 'fg' | 'bg' | 'fgRGB' | 'bgRGB'> {
+  readonly char?: string;
   readonly hex?: string;
   readonly modifiers?: readonly JeditTextModifier[];
   readonly foregroundEffect?: JeditColorEffect;
@@ -125,6 +126,10 @@ export interface JeditThemeCursorTokens {
   readonly insert: JeditStyleToken;
 }
 
+export interface JeditThemeChromeTokens {
+  readonly activeEdge: JeditStyleToken;
+}
+
 export interface JeditTheme {
   readonly name: string;
   readonly variables: ReadonlyMap<string, JeditColorStop>;
@@ -133,4 +138,5 @@ export interface JeditTheme {
   readonly markdown: ReadonlyMap<JeditMarkdownToken, JeditStyleToken>;
   readonly surface: JeditThemeSurfaceTokens;
   readonly cursor: JeditThemeCursorTokens;
+  readonly chrome: JeditThemeChromeTokens;
 }

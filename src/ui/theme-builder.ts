@@ -123,6 +123,7 @@ export class ThemeColorTransitionDraft {
 }
 
 export interface JeditStyleDraft {
+  char?: string;
   foregroundColor?: ThemeColorPaint;
   backgroundColor?: ThemeColorPaint;
   modifiers?: readonly JeditTextModifier[];
@@ -167,12 +168,17 @@ export interface JeditCursorStyleDrafts {
   readonly insert: JeditStyleDraft;
 }
 
+export interface JeditChromeStyleDrafts {
+  readonly activeEdge: JeditStyleDraft;
+}
+
 export interface JeditThemeDraft {
   readonly style: typeof JEDIT_TEXT_MODIFIER;
   readonly source: JeditSourceStyleDrafts;
   readonly markdown: JeditMarkdownStyleDrafts;
   readonly surface: JeditSurfaceStyleDrafts;
   readonly cursor: JeditCursorStyleDrafts;
+  readonly chrome: JeditChromeStyleDrafts;
   rgb(red: number, green: number, blue: number): RgbColor;
   variable(name: string, color: RgbColor): ThemeColorVariable;
   gradient(first: RgbColor | ThemeColorVariable, second: RgbColor | ThemeColorVariable): JeditGradient;
@@ -214,6 +220,9 @@ export function defineJeditTheme(name: string, build: (draft: JeditThemeDraft) =
       normal: styleTokenFromDraft(draft.cursor.normal),
       insert: styleTokenFromDraft(draft.cursor.insert),
     },
+    chrome: {
+      activeEdge: styleTokenFromDraft(draft.chrome.activeEdge),
+    },
   };
 }
 
@@ -224,6 +233,7 @@ function createThemeDraft(variables: Map<string, JeditColorStop>): JeditThemeDra
     markdown: createMarkdownDrafts(),
     surface: { workspace: {}, drawer: {}, footer: {} },
     cursor: { normal: {}, insert: {} },
+    chrome: { activeEdge: {} },
     rgb,
     variable(name: string, color: RgbColor): ThemeColorVariable {
       const variable = new ThemeColorVariable(name, color);
@@ -308,6 +318,7 @@ function styleTokenFromDraft(draft: JeditStyleDraft): JeditStyleToken {
   const foreground = draft.foregroundColor == null ? undefined : colorEffectFromPaint(draft.foregroundColor);
   const background = draft.backgroundColor == null ? undefined : colorEffectFromPaint(draft.backgroundColor);
   return {
+    char: draft.char,
     hex: foreground?.from.hex,
     fg: foreground?.from.hex,
     fgRGB: foreground?.from.rgb,

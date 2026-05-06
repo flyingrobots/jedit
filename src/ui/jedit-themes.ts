@@ -16,6 +16,7 @@ const VARIABLE_SUCCESS = 'success';
 const VARIABLE_SURFACE = 'surface';
 const VARIABLE_SURFACE_RAISED = 'surface.raised';
 const VARIABLE_SURFACE_MUTED = 'surface.muted';
+const ACTIVE_EDGE_CHAR = '░';
 
 interface ThemeVariables {
   readonly ink: ThemeColorVariable;
@@ -94,6 +95,9 @@ function applyThemeTokens(draft: JeditThemeDraft, variables: ThemeVariables): vo
   draft.cursor.normal.spring = draft.spring({ mass: 1, stiffness: 180, damping: 24 });
   draft.cursor.insert.foregroundColor = variables.info;
   draft.cursor.insert.modifiers = [JEDIT_TEXT_MODIFIER.Underline];
+
+  draft.chrome.activeEdge.char = ACTIVE_EDGE_CHAR;
+  draft.chrome.activeEdge.foregroundColor = variables.accent;
 
   draft.source.comment.foregroundColor = variables.muted;
   draft.source.comment.modifiers = [JEDIT_TEXT_MODIFIER.Dim, JEDIT_TEXT_MODIFIER.Italic];

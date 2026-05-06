@@ -38,6 +38,7 @@ import { mouseScrollDeltaRows, scrollIndexByRows, scrollTextViewport } from './u
 import { JEDIT_TERMINAL_MOUSE_OPTIONS } from './ui/terminal-mouse.js';
 import { JEDIT_THEME_ENV, nextJeditTheme, resolveInitialJeditTheme } from './ui/jedit-themes.js';
 import type { JeditStyleToken, JeditTheme } from './ui/jedit-theme.js';
+import { paintActivePaneEdge } from './ui/workspace-focus-edge.js';
 
 initDefaultContext();
 
@@ -2173,6 +2174,16 @@ function renderWorkspace(model: Model) {
   if (layout.graftDrawer.width > 0) {
     screen.blit(renderDrawer('graft', model, layout.graftDrawer.width, bodyHeight), layout.graftDrawer.x, bodyTop);
   }
+
+  paintActivePaneEdge(screen, layout, {
+    focusPane: model.focusPane,
+    fileDrawerOpen: model.fileDrawerOpen,
+    graftDrawerOpen: model.graftDrawerOpen,
+    hasEditor: model.editor != null,
+  }, model.jeditTheme.chrome.activeEdge, {
+    top: bodyTop,
+    height: bodyHeight,
+  });
 
   if (model.footerVisible) {
     screen.blit(renderWorkspaceFooter({

@@ -88,8 +88,9 @@ composes the frame:
 2. Main viewer.
 3. File drawer if open.
 4. Graft drawer if open.
-5. Two-line footer if enabled.
-6. Notification overlay.
+5. Active pane edge marker.
+6. Two-line footer if enabled.
+7. Notification overlay.
 
 Each child renderer returns its own `Surface`. The root workspace blits those
 child surfaces into the correct positions.
@@ -376,6 +377,12 @@ animation and gradient behavior can use the same metadata later.
 | `surface.drawer` | `ink` / `#e2e7ec` | `surface.muted` / `#161a21` | none | none |
 | `surface.footer` | `ink` / `#e2e7ec` | `surface.muted` / `#161a21` | none | none |
 
+### Chrome Tokens
+
+| Token | Glyph | Foreground | Background | Modifiers | Effects |
+| --- | --- | --- | --- | --- | --- |
+| `chrome.activeEdge` | `░` | `accent` / `#d897ff` | preserve existing cell background | none | none |
+
 ### Cursor Tokens
 
 | Token | Foreground | Background | Modifiers | Effects |
@@ -442,14 +449,14 @@ Theme files can declare solid colors, color transitions, gradients, and springs.
 The token stores these as data even when the current renderer only paints the
 starting foreground or background color.
 
-| Effect type | Theme API | Default usage |
-| --- | --- | --- |
-| Solid color | `draft.rgb(r, g, b)` or a variable from `draft.variable(...)` | Most foreground and background tokens. |
-| Color transition | `from.to(to).linear(seconds)` | Available; not used by `graphite`. |
-| Color transition | `from.to(to).easeIn(seconds)` | `source.keyword.foregroundColor`. |
-| Color transition | `from.to(to).easeOut(seconds)` | Available; not used by `graphite`. |
-| Color transition | `from.to(to).easeInOut(seconds)` | Available; not used by `graphite`. |
-| Gradient | `draft.gradient(first, second)` | `source.keyword`, `markdown.headingStrong`. |
-| Spring | `draft.spring({ mass, stiffness, damping })` | `cursor.normal`, `source.keyword`. |
+| Effect type      | Theme API                                                     | Default usage                               |
+| ---------------- | ------------------------------------------------------------- | ------------------------------------------- |
+| Solid color      | `draft.rgb(r, g, b)` or a variable from `draft.variable(...)` | Most foreground and background tokens.      |
+| Color transition | `from.to(to).linear(seconds)`                                 | Available; not used by `graphite`.          |
+| Color transition | `from.to(to).easeIn(seconds)`                                 | `source.keyword.foregroundColor`.           |
+| Color transition | `from.to(to).easeOut(seconds)`                                | Available; not used by `graphite`.          |
+| Color transition | `from.to(to).easeInOut(seconds)`                              | Available; not used by `graphite`.          |
+| Gradient         | `draft.gradient(first, second)`                               | `source.keyword`, `markdown.headingStrong`. |
+| Spring           | `draft.spring({ mass, stiffness, damping })`                  | `cursor.normal`, `source.keyword`.          |
 
 <!-- markdownlint-enable MD013 -->

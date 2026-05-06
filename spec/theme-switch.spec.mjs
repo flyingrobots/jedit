@@ -40,6 +40,8 @@ test('built-in jedit theme tokens map back to named variables and effect metadat
     assert.ok([...theme.source.values()].every((token) => token.foregroundVariables.length > 0));
     assert.ok([...theme.markdown.values()].every((token) => token.foregroundVariables.length > 0));
     assert.ok(Object.values(theme.surface).every((token) => token.backgroundVariables.length > 0));
+    assert.equal(theme.chrome.activeEdge.char, '░');
+    assert.deepEqual(theme.chrome.activeEdge.foregroundVariables, ['accent']);
 
     const keyword = theme.source.get(style.JEDIT_SOURCE_TOKEN.Keyword);
     assert.equal(keyword.foregroundEffect.kind, style.JEDIT_COLOR_EFFECT.Transition);

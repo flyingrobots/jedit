@@ -28,11 +28,17 @@ test('theme builder supports GSAP-like color transitions, style modifiers, gradi
   const end = builder.rgb(0, 255, 0);
 
   const theme = builder.defineJeditTheme('spec-theme', (draft) => {
+    draft.chrome.activeEdge.char = '▓';
+    draft.chrome.activeEdge.foregroundColor = start;
     draft.source.keyword.foregroundColor = start.to(end).easeIn(0.2);
     draft.source.keyword.modifiers = [style.JEDIT_TEXT_MODIFIER.Bold];
     draft.source.keyword.gradient = draft.gradient(start, end);
     draft.source.keyword.spring = draft.spring({ mass: 1, stiffness: 120, damping: 18 });
   });
+
+  const activeEdge = theme.chrome.activeEdge;
+  assert.equal(activeEdge.char, '▓');
+  assert.equal(activeEdge.hex, start.hex);
 
   const keyword = theme.source.get(style.JEDIT_SOURCE_TOKEN.Keyword);
   assert.equal(keyword.hex, start.toTokenValue().hex);
