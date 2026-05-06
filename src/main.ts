@@ -1,4 +1,4 @@
-import { createSurface, stringToSurface, type Surface } from '@flyingrobots/bijou';
+import { createSurface, stringToSurface, perfOverlaySurface, type Surface } from '@flyingrobots/bijou';
 import { initDefaultContext } from '@flyingrobots/bijou-node';
 import { animate, quit, run, type App, type Cmd, type KeyMsg, type MouseMsg, type NotificationState, type RuntimeIssue } from '@flyingrobots/bijou-tui';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -146,6 +146,10 @@ interface Model {
   readonly columns: number;
   readonly rows: number;
   readonly time: number;
+  readonly perfVisible: boolean;
+  readonly lastFrameMs: number;
+  readonly frameTimeMs: number;
+  readonly frameTimeHistory: readonly number[];
 }
 
 type Msg =
@@ -154,6 +158,7 @@ type Msg =
   | SourceHighlightMsg
   | { type: 'notification-tick'; atMs: number }
   | { type: 'time-tick'; time: number }
+  | { type: 'toggle-perf' }
   | { type: 'runtime-issue'; issue: RuntimeIssue };
 
 const MIN_COLUMNS = 60;
@@ -249,7 +254,20 @@ const app: App<Model, Msg> = {
     }
 
     if (msg.type === 'time-tick') {
-      return [{ ...model, time: msg.time }, []];
+      const now = Date.now();
+      const frameTime = now - model.lastFrameMs;
+      const history = [...model.frameTimeHistory, frameTime].slice(-50);
+      return [{
+        ...model,
+        time: msg.time,
+        lastFrameMs: now,
+        frameTimeMs: frameTime,
+        frameTimeHistory: history,
+      }, []];
+    }
+
+    if (msg.type === 'toggle-perf') {
+      return [{ ...model, perfVisible: !model.perfVisible }, []];
     }
 
     if (msg.type === 'runtime-issue') {
@@ -272,6 +290,10 @@ const app: App<Model, Msg> = {
 await run(app, JEDIT_TERMINAL_MOUSE_OPTIONS);
 
 function updateFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
+  if (msg.key === '`') {
+    return [{ ...model, perfVisible: !model.perfVisible }, []];
+  }
+
   if (msg.ctrl && msg.key === 'c') {
     return [model, [quit<Msg>()]];
   }
@@ -711,6 +733,10 @@ function createInitialModel(cwd: string, columns: number, rows: number): Model {
     columns,
     rows,
     time: 0,
+    perfVisible: false,
+    lastFrameMs: Date.now(),
+    frameTimeMs: 0,
+    frameTimeHistory: [],
   };
 }
 
@@ -2267,6 +2293,17 @@ function renderWorkspace(model: Model) {
     }), 0, bodyTop);
   }
 
+  if (model.perfVisible) {
+    const perf = perfOverlaySurface({
+      fps: 1000 / (model.frameTimeMs || 16.67),
+      frameTimeMs: model.frameTimeMs,
+      frameTimeHistory: model.frameTimeHistory,
+      width: model.columns,
+      height: model.rows,
+    }, { width: 30 });
+    screen.blit(perf, model.columns - perf.width - 2, 2);
+  }
+
   return compositeFeedback(screen, model.notifications, model.columns, model.rows);
 }
 
@@ -2274,7 +2311,7 @@ function notificationTickCmd(): Cmd<Msg> { return createNotificationTickCmd((atM
 
 function renderViewer(model: Model, width: number, height: number) {
   if (model.editor == null) {
-    return renderTitleScreen(width, height, model.time);
+    return renderTitleScreen(width, height, model.time, model.jeditTheme);
   }
 
   const surface = createSurface(width, height);

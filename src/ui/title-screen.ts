@@ -4,21 +4,17 @@ import type { JeditTheme } from './jedit-theme.js';
 import { JEDIT_LOGO_WIDTH, JEDIT_LOGO_HEIGHT, JEDIT_LOGO_MASK } from './logo-data.js';
 
 type Vector3 = readonly [number, number, number];
+type Color3 = readonly [number, number, number];
 
 interface Sphere {
   pos: Vector3;
   rad: number;
   reflective: boolean;
+  color: Color3;
 }
 
 /**
- * Zen Title Screen - v2 "Living Scene"
- * 
- * Features:
- * - Multiple spheres with varied material properties.
- * - Slow breathing camera orbit.
- * - Horizon-stabilized ground plane (no moiré).
- * - High-contrast ASCII-over-Braille logo.
+ * Zen Title Screen - v3 "Themed & Animated"
  */
 export function renderTitleScreen(
   cols: number,
@@ -34,10 +30,15 @@ export function renderTitleScreen(
     return bytes;
   });
 
+  // Extract theme colors
+  const accentColor = theme.chrome.activeEdge.bgRGB ?? [0, 255, 0];
+  const surfaceColor = theme.surface.workspace.bgRGB ?? [20, 20, 20];
+  const fgColor = theme.surface.workspace.fgRGB ?? [200, 200, 200];
+
   const spheres: Sphere[] = [
-    { pos: [0, 1.2, 0], rad: 1.2, reflective: true },
-    { pos: [2.5, 0.6, 1.5], rad: 0.6, reflective: false },
-    { pos: [-2.0, 0.8, -1.0], rad: 0.8, reflective: true },
+    { pos: [0, 1.2, 0], rad: 1.2, reflective: true, color: accentColor },
+    { pos: [2.5, 0.6, 1.5], rad: 0.6, reflective: false, color: fgColor },
+    { pos: [-2.0, 0.8, -1.0], rad: 0.8, reflective: true, color: accentColor },
   ];
 
   const shader: ShaderFn = ({ u, v, time: t }) => {
@@ -59,10 +60,15 @@ export function renderTitleScreen(
     }
 
     if (inLogo) {
-      // Return high-contrast block for logo
+      // Animated gradient for logo
+      const gradT = (u + t * 0.5) % 1.0;
+      const r = Math.floor(Math.sin(gradT * Math.PI * 2) * 127 + 128);
+      const g = Math.floor(Math.sin((gradT + 0.33) * Math.PI * 2) * 127 + 128);
+      const b = Math.floor(Math.sin((gradT + 0.66) * Math.PI * 2) * 127 + 128);
+      
       return {
         char: '█',
-        fgRGB: theme.surface.workspace.fgRGB,
+        fgRGB: [r, g, b],
       };
     }
 
@@ -99,37 +105,45 @@ export function renderTitleScreen(
       const p = add(ro, scale(rd, closestT));
       const n = normalize(sub(p, hitSphere.pos));
       
+      let finalColor = hitSphere.color;
+      let char = '·';
+
       if (hitSphere.reflective) {
         const refRd = reflect(rd, n);
         const refPlaneDist = -p[1] / refRd[1];
         if (refPlaneDist > 0) {
           const refP = add(p, scale(refRd, refPlaneDist));
           const check = (Math.floor(refP[0]) + Math.floor(refP[2])) % 2 === 0;
-          return check ? '·' : ' ';
+          if (!check) char = ' ';
+        } else {
+          const fresnel = Math.pow(1.0 - Math.max(0, -dot(rd, n)), 3);
+          if (fresnel < 0.5) char = ' ';
         }
-        // Fresnel/Sky
-        const fresnel = Math.pow(1.0 - Math.max(0, -dot(rd, n)), 3);
-        return fresnel > 0.5 ? '·' : ' ';
       } else {
-        // Matte shading
         const diff = Math.max(0, dot(n, lightDir));
-        if (diff > 0.8) return '·';
-        return ' ';
+        if (diff < 0.6) char = ' ';
       }
+
+      const shadow = dot(n, lightDir);
+      finalColor = scaleColor(finalColor, Math.max(0.3, shadow));
+
+      return {
+        char,
+        fgRGB: finalColor,
+        bgRGB: surfaceColor,
+      };
     }
 
     if (hitPlane) {
       const p = add(ro, scale(rd, planeDist));
       const distToCam = planeDist;
       
-      // Horizon fade to prevent moire
       const fade = Math.max(0, 1.0 - distToCam / 15.0);
       if (fade <= 0) return ' ';
 
       const check = (Math.floor(p[0]) + Math.floor(p[2])) % 2 === 0;
       if (!check) return ' ';
 
-      // Shadow check
       let inShadow = false;
       for (const s of spheres) {
         const toSphere = sub(s.pos, p);
@@ -142,16 +156,37 @@ export function renderTitleScreen(
       }
 
       if (inShadow) return ' ';
-      return fade > 0.6 ? '·' : ' ';
+      
+      return {
+        char: '·',
+        fgRGB: scaleColor(fgColor, fade * 0.5),
+        bgRGB: surfaceColor,
+      };
     }
 
-    return ' ';
+    // Sky stars
+    if (hash3(rd) > 0.995) {
+      return {
+        char: '·',
+        fgRGB: scaleColor(fgColor, 0.4),
+        bgRGB: surfaceColor,
+      };
+    }
+
+    return {
+      char: ' ',
+      bgRGB: surfaceColor,
+    };
   };
 
   return canvas(cols, rows, shader, { resolution: 'braille', time });
 }
 
-// Helpers for Camera
+// Helpers
+function scaleColor(c: Color3, s: number): Color3 {
+  return [Math.floor(c[0] * s), Math.floor(c[1] * s), Math.floor(c[2] * s)];
+}
+
 function getRayDir(ro: Vector3, target: Vector3, screenCoords: Vector3): Vector3 {
   const forward = normalize(sub(target, ro));
   const right = normalize(cross(forward, [0, 1, 0]));
@@ -167,7 +202,6 @@ function cross(a: Vector3, b: Vector3): Vector3 {
   ];
 }
 
-// Vector math helpers
 function normalize(v: Vector3): Vector3 {
   const l = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
   if (l === 0) return [0, 0, 0];
@@ -201,4 +235,9 @@ function intersectSphere(ro: Vector3, rd: Vector3, pos: Vector3, rad: number): n
   const h = b * b - c;
   if (h < 0) return -1;
   return -b - Math.sqrt(h);
+}
+
+function hash3(v: Vector3): number {
+  const x = Math.sin(v[0] * 12.9898 + v[1] * 78.233 + v[2] * 37.719) * 43758.5453123;
+  return x - Math.floor(x);
 }
