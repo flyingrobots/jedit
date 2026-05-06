@@ -1,6 +1,6 @@
 import { createSurface, stringToSurface, type Surface, type TokenValue } from '@flyingrobots/bijou';
 import { initDefaultContext } from '@flyingrobots/bijou-node';
-import { animate, quit, run, type App, type Cmd, type KeyMsg, type NotificationState, type RuntimeIssue } from '@flyingrobots/bijou-tui';
+import { animate, quit, run, type App, type Cmd, type KeyMsg, type MouseMsg, type NotificationState, type RuntimeIssue } from '@flyingrobots/bijou-tui';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { execFileSync } from 'node:child_process';
@@ -31,7 +31,11 @@ import { resolveWorkspaceLayout, type DrawerKind } from './ui/drawer-layout.js';
 import { cycleFocusPane, defaultFocusPane, hasFocusablePeers, shouldClearPendingNormalOnPaneChange, type FocusPane, type FocusCycleState } from './ui/panel-focus.js';
 import { fitBlock, fitLine, formatGraftOutlineLine, formatTreeLine, graftOutlineScroll, graftVisibleOutlineRows } from './ui/workspace-render.js';
 import { activeWorkspaceTitle, centerLine, renderWorkspaceFooter } from './ui/workspace-chrome.js';
-import { createSourceWindowReadingFromLines, sourceWindowRows } from './ui/source-window.js';
+import { createGraftSourceHighlighter } from './adapters/graft-source-highlighter.js';
+import { beginSourceHighlightRefresh, reduceSourceHighlightMsg, shouldRefreshSourceHighlight, SOURCE_HIGHLIGHT_MESSAGE, type SourceHighlightMsg } from './app/source-highlight-session.js';
+import { renderSourceViewer } from './ui/source-viewer.js';
+import { mouseScrollDeltaRows, scrollIndexByRows, scrollTextViewport } from './ui/mouse-scroll.js';
+import { JEDIT_TERMINAL_MOUSE_OPTIONS } from './ui/terminal-mouse.js';
 
 const ctx = initDefaultContext();
 
@@ -126,6 +130,9 @@ interface Model {
   readonly graftLoading: boolean;
   readonly graftRequestId: number;
   readonly graftSelectedIndex: number;
+  readonly sourceHighlight?: import('./ports/source-highlighter.js').SourceHighlightReading;
+  readonly sourceHighlightLoading: boolean;
+  readonly sourceHighlightRequestId: number;
   readonly columns: number;
   readonly rows: number;
 }
@@ -133,6 +140,7 @@ interface Model {
 type Msg =
   | { type: 'drawer-progress'; kind: DrawerKind; value: number }
   | { type: 'graft-info'; requestId: number; info: GraftInfo }
+  | SourceHighlightMsg
   | { type: 'notification-tick'; atMs: number }
   | { type: 'runtime-issue'; issue: RuntimeIssue };
 
@@ -147,6 +155,7 @@ const GRAFT_CHANGE_ROWS = 5;
 const VIEWER_LEFT_PAD = 4;
 const VIEWER_TOP_PAD = 1;
 const GRAFT_CLI_PATH = process.env['EDITT_GRAFT_BIN'] ?? join(homedir(), 'git', 'graft', 'bin', 'graft.js');
+const sourceHighlighter = createGraftSourceHighlighter({ graftRoot: dirname(dirname(GRAFT_CLI_PATH)) });
 
 interface GraftMcpConnection {
   readonly workspaceRoot: string;
@@ -207,12 +216,20 @@ const app: App<Model, Msg> = {
       ];
     }
 
+    if (msg.type === SOURCE_HIGHLIGHT_MESSAGE) {
+      return [reduceSourceHighlightMsg(model, msg), []];
+    }
+
     if (msg.type === 'notification-tick') {
       return tickNotificationState(model, msg.atMs, notificationTickCmd);
     }
 
     if (msg.type === 'runtime-issue') {
       return pushRuntimeIssueToast(model, msg.issue, notificationTickCmd);
+    }
+
+    if (msg.type === 'mouse') {
+      return updateFromMouse(msg, model);
     }
 
     if (msg.type !== 'key') {
@@ -224,7 +241,7 @@ const app: App<Model, Msg> = {
   view: (model) => renderWorkspace(model),
 };
 
-await run(app);
+await run(app, JEDIT_TERMINAL_MOUSE_OPTIONS);
 
 function updateFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
   if (msg.ctrl && msg.key === 'c') {
@@ -244,7 +261,7 @@ function updateFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
 
   if (msg.ctrl && msg.key === 's' && model.editor != null) {
     const editor = saveEditor(model.editor);
-    return beginGraftRefresh({
+    return beginEditorProjectionRefresh({
       ...model,
       editor,
     }, model.graftDrawerOpen || model.graftInfo?.path === editor.path);
@@ -276,14 +293,15 @@ function updateFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
   }
 
   if (msg.key === 'f2' && model.editor != null && isMarkdownFile(model.editor.path)) {
-    return [
-      {
-        ...model,
-        editor: clearPendingNormal(model.editor),
-        viewMode: model.viewMode === 'source' ? 'preview' : 'source',
-      },
-      [],
-    ];
+    const viewMode: ViewMode = model.viewMode === 'source' ? 'preview' : 'source';
+    const next: Model = {
+      ...model,
+      editor: clearPendingNormal(model.editor),
+      viewMode,
+    };
+    return next.viewMode === 'source'
+      ? beginSourceHighlightRefresh<Model, Msg>(next, next.editor, editorViewport(next), sourceHighlighter)
+      : [next, []];
   }
 
   if (model.focusPane === 'files' && model.fileDrawerOpen) {
@@ -295,6 +313,28 @@ function updateFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
   }
 
   return updateViewerFromKey(msg, model);
+}
+
+function updateFromMouse(msg: MouseMsg, model: Model): [Model, Cmd<Msg>[]] {
+  const deltaRows = mouseScrollDeltaRows(msg);
+  if (deltaRows === 0) {
+    return [model, []];
+  }
+  if (model.focusPane === 'files' && model.fileDrawerOpen) {
+    return [{ ...model, selectedIndex: scrollIndexByRows(model.selectedIndex, model.entries.length, deltaRows) }, []];
+  }
+  if (model.focusPane === 'graft' && model.graftDrawerOpen) {
+    return [{ ...model, graftSelectedIndex: scrollIndexByRows(model.graftSelectedIndex, model.graftInfo?.outlineItems.length ?? 0, deltaRows) }, []];
+  }
+  if (model.editor == null) {
+    return [model, []];
+  }
+  const viewport = editorViewport(model);
+  const editor = scrollTextViewport(model.editor, deltaRows, viewport.height);
+  const next = { ...model, editor };
+  return model.viewMode === 'source'
+    ? beginSourceHighlightRefresh<Model, Msg>(next, editor, viewport, sourceHighlighter)
+    : [next, []];
 }
 
 function manageGraftLifecycle(): Cmd<Msg> {
@@ -349,7 +389,7 @@ function updateTreeFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
 
     const viewport = editorViewport(model);
     const editor = ensureEditorVisible(loadEditor(entry.path), viewport.width, viewport.height);
-    return beginGraftRefresh(withFocusPane({
+    return beginEditorProjectionRefresh(withFocusPane({
       ...model,
       editor,
       viewMode: 'source',
@@ -480,15 +520,13 @@ function updateViewerFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
     ];
   }
 
-  return [
-    {
-      ...model,
-      editor: model.editor.mode === 'insert'
-        ? updateInsertMode(model.editor, msg, viewport.width, viewport.height, !hasFocusablePeers(focusCycleState(model)))
-        : updateNormalMode(model.editor, msg, viewport.width, viewport.height),
-    },
-    [],
-  ];
+  const editor = model.editor.mode === 'insert'
+    ? updateInsertMode(model.editor, msg, viewport.width, viewport.height, !hasFocusablePeers(focusCycleState(model)))
+    : updateNormalMode(model.editor, msg, viewport.width, viewport.height);
+  const next = { ...model, editor };
+  return shouldRefreshSourceHighlight(model.editor, editor)
+    ? beginSourceHighlightRefresh<Model, Msg>(next, editor, viewport, sourceHighlighter)
+    : [next, []];
 }
 
 function openDrawer(model: Model, kind: DrawerKind): [Model, Cmd<Msg>[]] {
@@ -604,6 +642,9 @@ function createInitialModel(cwd: string, columns: number, rows: number): Model {
     graftLoading: false,
     graftRequestId: 0,
     graftSelectedIndex: 0,
+    sourceHighlight: undefined,
+    sourceHighlightLoading: false,
+    sourceHighlightRequestId: 0,
     columns,
     rows,
   };
@@ -625,6 +666,12 @@ function changeDirectory(model: Model, cwd: string, action: typeof DIRECTORY_ACT
     const issue = describeDirectoryIssue(action, cwd, cause instanceof Error ? cause : String(cause));
     return pushErrorToast(model, issue.title, issue.message, Date.now(), notificationTickCmd);
   }
+}
+
+function beginEditorProjectionRefresh(model: Model, refreshGraft: boolean): [Model, Cmd<Msg>[]] {
+  const [withGraft, graftCmds] = beginGraftRefresh(model, refreshGraft);
+  const [withHighlight, highlightCmds] = beginSourceHighlightRefresh<Model, Msg>(withGraft, withGraft.editor, editorViewport(withGraft), sourceHighlighter);
+  return [withHighlight, [...graftCmds, ...highlightCmds]];
 }
 
 function beginGraftRefresh(model: Model, force: boolean): [Model, Cmd<Msg>[]] {
@@ -2152,66 +2199,12 @@ function renderViewer(model: Model, width: number, height: number) {
     return renderPreview(surface, model.editor, width, height);
   }
 
-  return renderSource(surface, model.editor, width, height);
-}
-
-function renderSource(surface: Surface, editor: EditorState, width: number, height: number) {
-  const viewport = viewerViewport(width, height);
-  const sourceWindow = createSourceWindowReadingFromLines({
-    lines: editor.lines,
-    startLine: editor.scrollRow,
-    lineCount: viewport.height,
+  return renderSourceViewer(surface, model.editor, model.sourceHighlight?.path === model.editor.path ? model.sourceHighlight : undefined, {
+    viewport: viewerViewport(width, height),
+    leftPad: VIEWER_LEFT_PAD,
+    topPad: VIEWER_TOP_PAD,
+    theme: ctx.theme.theme,
   });
-  const visibleRows = sourceWindowRows(sourceWindow, editor.scrollCol, viewport.width, viewport.height);
-
-  for (let row = 0; row < viewport.height; row += 1) {
-    const visible = visibleRows[row] ?? '';
-    surface.blit(stringToSurface(visible, viewport.width, 1), VIEWER_LEFT_PAD, VIEWER_TOP_PAD + row);
-  }
-
-  const cursor = cursorDisplayPosition(editor);
-  const cursorY = VIEWER_TOP_PAD + (cursor.row - editor.scrollRow);
-  const cursorX = VIEWER_LEFT_PAD + (cursor.col - editor.scrollCol);
-  if (
-    cursorY >= VIEWER_TOP_PAD
-    && cursorY < VIEWER_TOP_PAD + viewport.height
-    && cursorX >= VIEWER_LEFT_PAD
-    && cursorX < VIEWER_LEFT_PAD + viewport.width
-  ) {
-    const cell = surface.get(cursorX, cursorY);
-    if (editor.mode === 'normal') {
-      surface.set(cursorX, cursorY, {
-        ...cell,
-        char: cell.char.length > 0 ? cell.char : ' ',
-        modifiers: ['inverse'],
-        empty: false,
-      });
-    } else {
-      surface.set(cursorX, cursorY, {
-        ...cell,
-        char: cell.char.length > 0 ? cell.char : '│',
-        modifiers: ['underline'],
-        empty: false,
-      });
-    }
-  }
-
-  return surface;
-}
-
-function cursorDisplayPosition(editor: EditorState) {
-  if (editor.mode === 'insert') {
-    return {
-      row: editor.cursorRow,
-      col: editor.cursorCol,
-    };
-  }
-
-  const line = currentLine(editor);
-  return {
-    row: editor.cursorRow,
-    col: line.length === 0 ? 0 : Math.min(editor.cursorCol, line.length - 1),
-  };
 }
 
 function renderPreview(surface: Surface, editor: EditorState, width: number, height: number) {
