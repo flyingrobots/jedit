@@ -1,14 +1,17 @@
-import { createSurface, stringToSurface, type Surface, type TokenValue } from '@flyingrobots/bijou';
+import { createSurface, stringToSurface, type Surface } from '@flyingrobots/bijou';
 import { clipToWidth } from '@flyingrobots/bijou-tui';
 import { basename } from 'node:path';
 
 import type { FileEntry } from '../adapters/filesystem.js';
+import type { JeditStyleToken } from './jedit-theme.js';
 import type { DrawerKind } from './drawer-layout.js';
 import { hasFocusablePeers, type FocusPane } from './panel-focus.js';
 
 type ViewMode = 'source' | 'preview';
 type EditorMode = 'normal' | 'insert';
 type PendingNormal = 'c' | 'd' | 'g' | 'y';
+
+const THEME_HINT = 'ctrl+t theme';
 
 export interface WorkspaceTitleState {
   readonly cwd: string;
@@ -61,7 +64,7 @@ export function centerLine(text: string, width: number): string {
   return `${' '.repeat(left)}${clipped}${' '.repeat(right)}`;
 }
 
-export function renderWorkspaceFooter(state: WorkspaceFooterState, width: number, background: TokenValue): Surface {
+export function renderWorkspaceFooter(state: WorkspaceFooterState, width: number, background: JeditStyleToken): Surface {
   const surface = createSurface(width, 2);
   fillSurface(surface, background);
 
@@ -118,26 +121,26 @@ function footerDetail(state: WorkspaceFooterState): string {
   }
 
   if (state.viewMode === 'preview' && state.markdownPreviewActive) {
-    return footerHints(['j/k scroll', 'f2 source', focusHint(state), 'ctrl+b files', 'ctrl+g graft']);
+    return footerHints(['j/k scroll', 'f2 source', THEME_HINT, focusHint(state), 'ctrl+b files', 'ctrl+g graft']);
   }
 
   if (state.editorMode === 'insert') {
-    return footerHints(['text input', 'esc normal', 'ctrl+s save', insertTabHint(state)]);
+    return footerHints(['text input', 'esc normal', 'ctrl+s save', THEME_HINT, insertTabHint(state)]);
   }
 
   if (state.editorMode === 'normal') {
     return normalFooterDetail(state);
   }
 
-  return footerHints([focusHint(state), 'ctrl+b files', 'ctrl+g graft']);
+  return footerHints([focusHint(state), THEME_HINT, 'ctrl+b files', 'ctrl+g graft']);
 }
 
 function drawerFooterDetail(state: WorkspaceFooterState, kind: DrawerKind): string {
   if (kind === 'files') {
-    return footerHints(['j/k move', 'enter open', 'backspace up', 'ctrl+b close', focusHint(state)]);
+    return footerHints(['j/k move', 'enter open', 'backspace up', 'ctrl+b close', THEME_HINT, focusHint(state)]);
   }
 
-  return footerHints(['j/k move', 'enter jump', 'r refresh', 'ctrl+g close', focusHint(state)]);
+  return footerHints(['j/k move', 'enter jump', 'r refresh', 'ctrl+g close', THEME_HINT, focusHint(state)]);
 }
 
 function normalFooterDetail(state: WorkspaceFooterState): string {
@@ -147,7 +150,7 @@ function normalFooterDetail(state: WorkspaceFooterState): string {
   }
 
   const previewHint = state.markdownPreviewActive ? 'f2 preview' : 'ctrl+s save';
-  return footerHints(['i insert', 'o open line', previewHint, focusHint(state)]);
+  return footerHints(['i insert', 'o open line', previewHint, THEME_HINT, focusHint(state)]);
 }
 
 function pendingNormalFooterDetail(pending: PendingNormal): string {
@@ -195,7 +198,7 @@ function displayName(path: string): string {
   return name.length > 0 ? name : path;
 }
 
-function fillSurface(surface: Surface, token: TokenValue) {
+function fillSurface(surface: Surface, token: JeditStyleToken) {
   surface.fill({
     char: ' ',
     bg: token.bg,
@@ -204,7 +207,7 @@ function fillSurface(surface: Surface, token: TokenValue) {
   });
 }
 
-function applyBackground(surface: Surface, token: TokenValue) {
+function applyBackground(surface: Surface, token: JeditStyleToken) {
   for (let y = 0; y < surface.height; y += 1) {
     for (let x = 0; x < surface.width; x += 1) {
       const cell = surface.get(x, y);

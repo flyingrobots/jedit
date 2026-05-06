@@ -1,15 +1,12 @@
-import type { Cell, Surface, Theme, TokenValue } from '@flyingrobots/bijou';
-import { SOURCE_HIGHLIGHT_ROLE, type SourceHighlightReading, type SourceHighlightRole, type SourceHighlightSpan } from '../ports/source-highlighter.js';
+import type { Cell, Surface } from '@flyingrobots/bijou';
+import type { SourceHighlightReading, SourceHighlightRole, SourceHighlightSpan } from '../ports/source-highlighter.js';
+import type { JeditStyleToken, JeditTheme } from './jedit-theme.js';
 import type { SourceWindowReading } from './source-window.js';
 
 const ZERO_INDEX = 0;
 const MIN_RENDER_SIZE = 1;
-const BOLD_MODIFIERS = ['bold'];
-const DIM_MODIFIERS = ['dim'];
 
 type CellStyle = Pick<Cell, 'fg' | 'bg' | 'fgRGB' | 'bgRGB' | 'modifiers'>;
-
-type SourceHighlightTheme = Pick<Theme, 'semantic' | 'surface'>;
 
 export interface PaintHighlightedSourceWindowOptions {
   readonly x: number;
@@ -17,7 +14,7 @@ export interface PaintHighlightedSourceWindowOptions {
   readonly scrollCol: number;
   readonly width: number;
   readonly height: number;
-  readonly theme: SourceHighlightTheme;
+  readonly theme: JeditTheme;
 }
 
 export function paintHighlightedSourceWindow(
@@ -52,7 +49,7 @@ function styleAt(
   spans: readonly SourceHighlightSpan[],
   row: number,
   column: number,
-  theme: SourceHighlightTheme,
+  theme: JeditTheme,
 ): CellStyle {
   for (const span of spans) {
     if (spanContainsCell(span, row, column)) {
@@ -75,34 +72,21 @@ function spanContainsCell(span: SourceHighlightSpan, row: number, column: number
   return true;
 }
 
-function styleForRole(role: SourceHighlightRole, theme: SourceHighlightTheme): CellStyle {
-  if (role === SOURCE_HIGHLIGHT_ROLE.Comment) {
-    return tokenStyle(theme.semantic.muted, DIM_MODIFIERS);
+function styleForRole(role: SourceHighlightRole, theme: JeditTheme): CellStyle {
+  const sourceToken = theme.sourceRoleMap.get(role);
+  if (sourceToken == null) {
+    return {};
   }
-  if (role === SOURCE_HIGHLIGHT_ROLE.Keyword) {
-    return tokenStyle(theme.semantic.accent, BOLD_MODIFIERS);
-  }
-  if (role === SOURCE_HIGHLIGHT_ROLE.String || role === SOURCE_HIGHLIGHT_ROLE.Number) {
-    return tokenStyle(theme.semantic.info);
-  }
-  if (role === SOURCE_HIGHLIGHT_ROLE.Function || role === SOURCE_HIGHLIGHT_ROLE.Type) {
-    return tokenStyle(theme.semantic.accent);
-  }
-  if (role === SOURCE_HIGHLIGHT_ROLE.Property || role === SOURCE_HIGHLIGHT_ROLE.Variable) {
-    return tokenStyle(theme.semantic.primary);
-  }
-  if (role === SOURCE_HIGHLIGHT_ROLE.Operator || role === SOURCE_HIGHLIGHT_ROLE.Punctuation) {
-    return tokenStyle(theme.semantic.warning);
-  }
-  return {};
+  const token = theme.source.get(sourceToken);
+  return token == null ? {} : tokenStyle(token);
 }
 
-function tokenStyle(token: TokenValue, modifiers?: readonly string[]): CellStyle {
+function tokenStyle(token: JeditStyleToken): CellStyle {
   return {
-    fg: token.hex,
+    fg: token.fg,
     bg: token.bg,
     fgRGB: token.fgRGB,
     bgRGB: token.bgRGB,
-    modifiers: modifiers == null ? token.modifiers : [...modifiers],
+    modifiers: token.modifiers == null ? undefined : [...token.modifiers],
   };
 }

@@ -8,6 +8,8 @@ const REPO_ROOT = process.cwd();
 const PORT_PATH = path.join(REPO_ROOT, 'dist', 'ports', 'source-highlighter.js');
 const WINDOW_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'source-window.js');
 const HIGHLIGHT_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'source-highlight.js');
+const THEME_BUILDER_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'theme-builder.js');
+const JEDIT_THEME_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'jedit-theme.js');
 
 async function loadSourceHighlightModules() {
   const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
@@ -21,29 +23,24 @@ async function loadSourceHighlightModules() {
     port: await import(pathToFileURL(PORT_PATH).href),
     sourceWindow: await import(pathToFileURL(WINDOW_PATH).href),
     sourceHighlight: await import(pathToFileURL(HIGHLIGHT_PATH).href),
+    themeBuilder: await import(pathToFileURL(THEME_BUILDER_PATH).href),
+    jeditTheme: await import(pathToFileURL(JEDIT_THEME_PATH).href),
   };
 }
 
-function fakeTheme() {
-  return {
-    semantic: {
-      success: { hex: '#00ff00', fgRGB: [0, 255, 0] },
-      error: { hex: '#ff0000', fgRGB: [255, 0, 0] },
-      warning: { hex: '#ffaa00', fgRGB: [255, 170, 0] },
-      info: { hex: '#00aaff', fgRGB: [0, 170, 255] },
-      accent: { hex: '#ff00aa', fgRGB: [255, 0, 170] },
-      muted: { hex: '#888888', fgRGB: [136, 136, 136] },
-      primary: { hex: '#ffffff', fgRGB: [255, 255, 255] },
-    },
-    surface: {
-      elevated: { hex: '#ffffff', bg: '#333333', fgRGB: [255, 255, 255], bgRGB: [51, 51, 51] },
-    },
-  };
-}
-
-test('source highlight painter applies Bijou token styles to Graft-derived spans', async () => {
+test('source highlight painter applies jedit theme token styles to Graft-derived spans', async () => {
   const { createSurface } = await import('@flyingrobots/bijou');
-  const { port, sourceWindow, sourceHighlight } = await loadSourceHighlightModules();
+  const { port, sourceWindow, sourceHighlight, themeBuilder, jeditTheme } = await loadSourceHighlightModules();
+  const keywordColor = themeBuilder.rgb(18, 42, 201);
+  const stringColor = themeBuilder.rgb(20, 155, 90);
+  const commentColor = themeBuilder.rgb(130, 130, 140);
+  const theme = themeBuilder.defineJeditTheme('source-highlight-spec', (draft) => {
+    draft.source.keyword.foregroundColor = keywordColor;
+    draft.source.keyword.modifiers = [jeditTheme.JEDIT_TEXT_MODIFIER.Underline];
+    draft.source.string.foregroundColor = stringColor;
+    draft.source.comment.foregroundColor = commentColor;
+    draft.source.comment.modifiers = [jeditTheme.JEDIT_TEXT_MODIFIER.Strikethrough];
+  });
   const surface = createSurface(24, 2, { char: ' ', empty: false });
   const reading = sourceWindow.createSourceWindowReadingFromLines({
     lines: [
@@ -81,21 +78,21 @@ test('source highlight painter applies Bijou token styles to Graft-derived spans
       scrollCol: 0,
       width: 24,
       height: 2,
-      theme: fakeTheme(),
+      theme,
     },
   );
 
   const keywordCell = surface.get(0, 0);
   assert.equal(keywordCell.char, 'c');
-  assert.equal(keywordCell.fg, '#ff00aa');
-  assert.deepEqual(keywordCell.modifiers, ['bold']);
+  assert.equal(keywordCell.fg, keywordColor.hex);
+  assert.deepEqual(keywordCell.modifiers, [jeditTheme.JEDIT_TEXT_MODIFIER.Underline]);
 
   const stringCell = surface.get(15, 0);
   assert.equal(stringCell.char, '"');
-  assert.equal(stringCell.fg, '#00aaff');
+  assert.equal(stringCell.fg, stringColor.hex);
 
   const commentCell = surface.get(0, 1);
   assert.equal(commentCell.char, '/');
-  assert.equal(commentCell.fg, '#888888');
-  assert.deepEqual(commentCell.modifiers, ['dim']);
+  assert.equal(commentCell.fg, commentColor.hex);
+  assert.deepEqual(commentCell.modifiers, [jeditTheme.JEDIT_TEXT_MODIFIER.Strikethrough]);
 });

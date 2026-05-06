@@ -41,7 +41,7 @@ test('workspace footer shows compact uppercase normal-mode guidance', async () =
   assert.deepEqual(
     footer.workspaceFooterLines(idleNormalState()),
     [
-      'NORMAL [i insert · o open line · f2 preview]',
+      'NORMAL [i insert · o open line · f2 preview · ctrl+t theme]',
       '/repo/notes/todo.md',
     ],
   );
@@ -71,7 +71,7 @@ test('workspace footer explains that tab indents when no peer panes are visible 
       editorMode: 'insert',
     }),
     [
-      'INSERT [text input · esc normal · ctrl+s save · tab indent]',
+      'INSERT [text input · esc normal · ctrl+s save · ctrl+t theme · tab indent]',
       '/repo/notes/todo.md',
     ],
   );
@@ -100,7 +100,7 @@ test('workspace footer shows file drawer controls and the selected file path', a
       graftSelection: undefined,
     }),
     [
-      'FILES [j/k move · enter open · backspace up · ctrl+b close · tab focus]',
+      'FILES [j/k move · enter open · backspace up · ctrl+b close · ctrl+t theme · tab focus]',
       '/repo/notes/very-long-file-name.md',
     ],
   );

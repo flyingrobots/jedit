@@ -1,5 +1,6 @@
-import type { Surface, Theme } from '@flyingrobots/bijou';
+import type { Cell, Surface } from '@flyingrobots/bijou';
 import type { SourceHighlightReading } from '../ports/source-highlighter.js';
+import type { JeditStyleToken, JeditTheme } from './jedit-theme.js';
 import { createSourceWindowReadingFromLines } from './source-window.js';
 import { paintHighlightedSourceWindow } from './source-highlight.js';
 
@@ -26,7 +27,7 @@ export interface SourceViewerOptions {
   readonly viewport: SourceViewerViewport;
   readonly leftPad: number;
   readonly topPad: number;
-  readonly theme: Theme;
+  readonly theme: JeditTheme;
 }
 
 export function renderSourceViewer(
@@ -59,10 +60,11 @@ export function renderSourceViewer(
     && cursorX < options.leftPad + options.viewport.width
   ) {
     const cell = surface.get(cursorX, cursorY);
+    const token = editor.mode === NORMAL_MODE ? options.theme.cursor.normal : options.theme.cursor.insert;
     surface.set(cursorX, cursorY, {
       ...cell,
       char: cell.char.length > 0 ? cell.char : cursorFallbackChar(editor.mode),
-      modifiers: editor.mode === NORMAL_MODE ? ['inverse'] : ['underline'],
+      ...cellStyle(token),
       empty: false,
     });
   }
@@ -87,4 +89,14 @@ function cursorDisplayPosition(editor: SourceViewerEditor): { readonly row: numb
 
 function cursorFallbackChar(mode: SourceViewerMode): string {
   return mode === NORMAL_MODE ? ' ' : '│';
+}
+
+function cellStyle(token: JeditStyleToken): Pick<Cell, 'fg' | 'bg' | 'fgRGB' | 'bgRGB' | 'modifiers'> {
+  return {
+    fg: token.fg,
+    bg: token.bg,
+    fgRGB: token.fgRGB,
+    bgRGB: token.bgRGB,
+    modifiers: token.modifiers == null ? undefined : [...token.modifiers],
+  };
 }

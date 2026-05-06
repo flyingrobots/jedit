@@ -1,4 +1,4 @@
-import { createSurface, stringToSurface, type Surface, type TokenValue } from '@flyingrobots/bijou';
+import { createSurface, stringToSurface, type Surface } from '@flyingrobots/bijou';
 import { initDefaultContext } from '@flyingrobots/bijou-node';
 import { animate, quit, run, type App, type Cmd, type KeyMsg, type MouseMsg, type NotificationState, type RuntimeIssue } from '@flyingrobots/bijou-tui';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -36,8 +36,10 @@ import { beginSourceHighlightRefresh, reduceSourceHighlightMsg, shouldRefreshSou
 import { renderSourceViewer } from './ui/source-viewer.js';
 import { mouseScrollDeltaRows, scrollIndexByRows, scrollTextViewport } from './ui/mouse-scroll.js';
 import { JEDIT_TERMINAL_MOUSE_OPTIONS } from './ui/terminal-mouse.js';
+import { JEDIT_THEME_ENV, nextJeditTheme, resolveInitialJeditTheme } from './ui/jedit-themes.js';
+import type { JeditStyleToken, JeditTheme } from './ui/jedit-theme.js';
 
-const ctx = initDefaultContext();
+initDefaultContext();
 
 type ViewMode = 'source' | 'preview';
 type EditorMode = 'normal' | 'insert';
@@ -126,6 +128,7 @@ interface Model {
   readonly notifications: NotificationState<Msg>;
   readonly notificationLoopActive: boolean;
   readonly footerVisible: boolean;
+  readonly jeditTheme: JeditTheme;
   readonly graftInfo?: GraftInfo;
   readonly graftLoading: boolean;
   readonly graftRequestId: number;
@@ -154,6 +157,7 @@ const GRAFT_META_ROWS = 5;
 const GRAFT_CHANGE_ROWS = 5;
 const VIEWER_LEFT_PAD = 4;
 const VIEWER_TOP_PAD = 1;
+const THEME_TOGGLE_KEY = 't';
 const GRAFT_CLI_PATH = process.env['EDITT_GRAFT_BIN'] ?? join(homedir(), 'git', 'graft', 'bin', 'graft.js');
 const sourceHighlighter = createGraftSourceHighlighter({ graftRoot: dirname(dirname(GRAFT_CLI_PATH)) });
 
@@ -265,6 +269,10 @@ function updateFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
       ...model,
       editor,
     }, model.graftDrawerOpen || model.graftInfo?.path === editor.path);
+  }
+
+  if (msg.ctrl && !msg.alt && msg.key === THEME_TOGGLE_KEY) {
+    return [{ ...model, jeditTheme: nextJeditTheme(model.jeditTheme) }, []];
   }
 
   const focusState = focusCycleState(model);
@@ -638,6 +646,7 @@ function createInitialModel(cwd: string, columns: number, rows: number): Model {
     graftDrawerOpen: false,
     graftDrawerProgress: 0,
     ...createFeedbackState<Msg>(),
+    jeditTheme: resolveInitialJeditTheme(process.env[JEDIT_THEME_ENV]),
     graftInfo: undefined,
     graftLoading: false,
     graftRequestId: 0,
@@ -2130,7 +2139,7 @@ function viewerViewport(width: number, height: number) {
 
 function renderWorkspace(model: Model) {
   const screen = createSurface(model.columns, model.rows);
-  screen.fill({ char: ' ', empty: false });
+  fillSurface(screen, model.jeditTheme.surface.workspace);
 
   if (model.columns < MIN_COLUMNS || model.rows < MIN_ROWS) {
     const message = [
@@ -2179,7 +2188,7 @@ function renderWorkspace(model: Model) {
       editorPath: model.editor?.path,
       graftPath: model.graftInfo?.path,
       graftSelection: selectedGraftSelection(model),
-    }, model.columns, ctx.theme.theme.surface.muted), 0, model.rows - 2);
+    }, model.columns, model.jeditTheme.surface.footer), 0, model.rows - 2);
   }
 
   return compositeFeedback(screen, model.notifications, model.columns, model.rows);
@@ -2189,27 +2198,27 @@ function notificationTickCmd(): Cmd<Msg> { return createNotificationTickCmd((atM
 
 function renderViewer(model: Model, width: number, height: number) {
   const surface = createSurface(width, height);
-  surface.fill({ char: ' ', empty: false });
+  fillSurface(surface, model.jeditTheme.surface.workspace);
 
   if (model.editor == null) {
     return surface;
   }
 
   if (model.viewMode === 'preview' && isMarkdownFile(model.editor.path)) {
-    return renderPreview(surface, model.editor, width, height);
+    return renderPreview(surface, model.editor, model.jeditTheme, width, height);
   }
 
   return renderSourceViewer(surface, model.editor, model.sourceHighlight?.path === model.editor.path ? model.sourceHighlight : undefined, {
     viewport: viewerViewport(width, height),
     leftPad: VIEWER_LEFT_PAD,
     topPad: VIEWER_TOP_PAD,
-    theme: ctx.theme.theme,
+    theme: model.jeditTheme,
   });
 }
 
-function renderPreview(surface: Surface, editor: EditorState, width: number, height: number) {
+function renderPreview(surface: Surface, editor: EditorState, theme: JeditTheme, width: number, height: number) {
   const viewport = viewerViewport(width, height);
-  paintMarkdownPreview(surface, editor.lines.join('\n'), editor.scrollRow, VIEWER_LEFT_PAD, VIEWER_TOP_PAD, viewport.width, viewport.height, ctx.theme.theme);
+  paintMarkdownPreview(surface, editor.lines.join('\n'), editor.scrollRow, VIEWER_LEFT_PAD, VIEWER_TOP_PAD, viewport.width, viewport.height, theme);
   return surface;
 }
 
@@ -2219,7 +2228,7 @@ function renderDrawer(kind: DrawerKind, model: Model, width: number, height: num
   }
 
   const surface = createSurface(width, height);
-  const background = ctx.theme.theme.surface.muted;
+  const background = model.jeditTheme.surface.drawer;
   fillSurface(surface, background);
 
   const listWidth = Math.max(1, width - (DRAWER_INNER_PAD * 2));
@@ -2234,7 +2243,7 @@ function renderDrawer(kind: DrawerKind, model: Model, width: number, height: num
 
 function renderGraftDrawer(model: Model, width: number, height: number) {
   const surface = createSurface(width, height);
-  const background = ctx.theme.theme.surface.muted;
+  const background = model.jeditTheme.surface.drawer;
   fillSurface(surface, background);
 
   const innerWidth = Math.max(1, width - (DRAWER_INNER_PAD * 2));
@@ -2313,22 +2322,26 @@ function selectedGraftSelection(model: Model): { kind: string; name: string; sta
   };
 }
 
-function fillSurface(surface: Surface, token: TokenValue) {
+function fillSurface(surface: Surface, token: JeditStyleToken) {
   surface.fill({
     char: ' ',
+    fg: token.fg,
+    fgRGB: token.fgRGB,
     bg: token.bg,
     bgRGB: token.bgRGB,
     empty: false,
   });
 }
 
-function applyBackground(surface: Surface, token: TokenValue) {
+function applyBackground(surface: Surface, token: JeditStyleToken) {
   for (let y = 0; y < surface.height; y += 1) {
     for (let x = 0; x < surface.width; x += 1) {
       const cell = surface.get(x, y);
       surface.set(x, y, {
         ...cell,
         char: cell.char.length > 0 ? cell.char : ' ',
+        fg: token.fg,
+        fgRGB: token.fgRGB,
         bg: token.bg,
         bgRGB: token.bgRGB,
         empty: false,
