@@ -13,6 +13,8 @@ IDE clone.
 
 The full invariant set is written down in
 [docs/design/project-invariants.md](docs/design/project-invariants.md).
+The end-to-end buffer rendering path is explained in
+[ADVANCED_GUIDE.md](ADVANCED_GUIDE.md).
 
 - Zen core, instrumented edges. The main editor area stays visually quiet;
   richer context appears at the edges and only when it earns the space.
@@ -91,6 +93,7 @@ npm run gen:contract
 ```
 
 Near-term product direction:
+
 - `jedit .` opens the current directory
 - file tree plus text buffer editing
 - Markdown source mode with richer preview options
@@ -105,8 +108,10 @@ npm run dev
 ## Current state
 
 Right now the app gives you:
+
 - current-directory file drawer
-- a Graft drawer backed by a repo-local MCP session for current-file outline and structural change context
+- a Graft drawer backed by a repo-local MCP session for current-file outline
+  and structural change context
 - simple directory navigation
 - a real editable text buffer
 - modal source editing with a growing Vim normal/insert split
@@ -118,9 +123,9 @@ Right now the app gives you:
 
 - lock the Echo-backed text runtime design around persistent piece-rope
   worldlines and ticks in [docs/design/text-edit-algebra.md](docs/design/text-edit-algebra.md)
-- lock the event taxonomy in [docs/design/causal-event-model.md](docs/design/causal-event-model.md) so
-  logical history, maintenance, and session traces do not collapse into one
-  ledger
+- lock the event taxonomy in
+  [docs/design/causal-event-model.md](docs/design/causal-event-model.md) so
+  logical history, maintenance, and session traces do not collapse into one ledger
 - strengthen the Vim layer
 - add more motions/operators/text objects and counts
 - deepen the Graft drawer beyond outline plus diff summary
