@@ -14,7 +14,13 @@ interface Sphere {
 }
 
 /**
- * Zen Title Screen - v3 "Themed & Animated"
+ * Zen Title Screen - v4 "Stable Zen"
+ * 
+ * Improvements:
+ * - Much slower, calmer logo animation.
+ * - Clean sky (removed noise).
+ * - Reactive theme coloring (handles theme toggles gracefully).
+ * - Smoother color fallback.
  */
 export function renderTitleScreen(
   cols: number,
@@ -30,10 +36,10 @@ export function renderTitleScreen(
     return bytes;
   });
 
-  // Extract theme colors
-  const accentColor = theme.chrome.activeEdge.bgRGB ?? [0, 255, 0];
-  const surfaceColor = theme.surface.workspace.bgRGB ?? [20, 20, 20];
-  const fgColor = theme.surface.workspace.fgRGB ?? [200, 200, 200];
+  // Sample theme colors dynamically
+  const accentColor = theme.chrome.activeEdge.bgRGB ?? [100, 100, 255];
+  const surfaceColor = theme.surface.workspace.bgRGB ?? [0, 0, 0];
+  const fgColor = theme.surface.workspace.fgRGB ?? [150, 150, 150];
 
   const spheres: Sphere[] = [
     { pos: [0, 1.2, 0], rad: 1.2, reflective: true, color: accentColor },
@@ -42,7 +48,7 @@ export function renderTitleScreen(
   ];
 
   const shader: ShaderFn = ({ u, v, time: t }) => {
-    // 1. Logo Pass (Highest Priority / Overlay)
+    // 1. Logo Pass
     const logoScale = Math.min(cols * 2 / JEDIT_LOGO_WIDTH, rows * 4 / JEDIT_LOGO_HEIGHT) * 0.6;
     const lw = JEDIT_LOGO_WIDTH * logoScale;
     const lh = JEDIT_LOGO_HEIGHT * logoScale;
@@ -60,11 +66,12 @@ export function renderTitleScreen(
     }
 
     if (inLogo) {
-      // Animated gradient for logo
-      const gradT = (u + t * 0.5) % 1.0;
-      const r = Math.floor(Math.sin(gradT * Math.PI * 2) * 127 + 128);
-      const g = Math.floor(Math.sin((gradT + 0.33) * Math.PI * 2) * 127 + 128);
-      const b = Math.floor(Math.sin((gradT + 0.66) * Math.PI * 2) * 127 + 128);
+      // Very slow, subtle gradient shift
+      const slowT = t * 0.1; // 10x slower than before
+      const gradT = (u * 0.5 + slowT) % 1.0;
+      const r = Math.floor(Math.sin(gradT * Math.PI * 2) * 40 + 200);
+      const g = Math.floor(Math.sin((gradT + 0.33) * Math.PI * 2) * 40 + 200);
+      const b = Math.floor(Math.sin((gradT + 0.66) * Math.PI * 2) * 40 + 200);
       
       return {
         char: '█',
@@ -77,12 +84,11 @@ export function renderTitleScreen(
     const rx = (u * 2 - 1) * aspect;
     const ry = (v * 2 - 1);
     
-    // Slow camera orbit
-    const camAngle = t * 0.05;
-    const camDist = 6.0;
-    const ro: Vector3 = [Math.sin(camAngle) * camDist, 2.5, Math.cos(camAngle) * camDist];
-    const target: Vector3 = [0, 0.8, 0];
-    const rd = getRayDir(ro, target, [rx, -ry - 0.2, 2.0]);
+    const camAngle = t * 0.03; // Even slower orbit
+    const camDist = 7.0;
+    const ro: Vector3 = [Math.sin(camAngle) * camDist, 2.8, Math.cos(camAngle) * camDist];
+    const target: Vector3 = [0, 0.6, 0];
+    const rd = getRayDir(ro, target, [rx, -ry - 0.2, 2.5]);
 
     // Trace Scene
     let closestT = Infinity;
@@ -125,7 +131,7 @@ export function renderTitleScreen(
       }
 
       const shadow = dot(n, lightDir);
-      finalColor = scaleColor(finalColor, Math.max(0.3, shadow));
+      finalColor = scaleColor(finalColor, Math.max(0.4, shadow));
 
       return {
         char,
@@ -138,11 +144,11 @@ export function renderTitleScreen(
       const p = add(ro, scale(rd, planeDist));
       const distToCam = planeDist;
       
-      const fade = Math.max(0, 1.0 - distToCam / 15.0);
-      if (fade <= 0) return ' ';
+      const fade = Math.max(0, 1.0 - distToCam / 18.0);
+      if (fade <= 0) return { char: ' ', bgRGB: surfaceColor };
 
       const check = (Math.floor(p[0]) + Math.floor(p[2])) % 2 === 0;
-      if (!check) return ' ';
+      if (!check) return { char: ' ', bgRGB: surfaceColor };
 
       let inShadow = false;
       for (const s of spheres) {
@@ -155,24 +161,16 @@ export function renderTitleScreen(
         }
       }
 
-      if (inShadow) return ' ';
+      if (inShadow) return { char: ' ', bgRGB: surfaceColor };
       
       return {
         char: '·',
-        fgRGB: scaleColor(fgColor, fade * 0.5),
+        fgRGB: scaleColor(fgColor, fade * 0.4),
         bgRGB: surfaceColor,
       };
     }
 
-    // Sky stars
-    if (hash3(rd) > 0.995) {
-      return {
-        char: '·',
-        fgRGB: scaleColor(fgColor, 0.4),
-        bgRGB: surfaceColor,
-      };
-    }
-
+    // Sky - clean black space
     return {
       char: ' ',
       bgRGB: surfaceColor,
@@ -184,7 +182,11 @@ export function renderTitleScreen(
 
 // Helpers
 function scaleColor(c: Color3, s: number): Color3 {
-  return [Math.floor(c[0] * s), Math.floor(c[1] * s), Math.floor(c[2] * s)];
+  return [
+    Math.max(0, Math.min(255, Math.floor(c[0] * s))),
+    Math.max(0, Math.min(255, Math.floor(c[1] * s))),
+    Math.max(0, Math.min(255, Math.floor(c[2] * s)))
+  ];
 }
 
 function getRayDir(ro: Vector3, target: Vector3, screenCoords: Vector3): Vector3 {
@@ -235,9 +237,4 @@ function intersectSphere(ro: Vector3, rd: Vector3, pos: Vector3, rad: number): n
   const h = b * b - c;
   if (h < 0) return -1;
   return -b - Math.sqrt(h);
-}
-
-function hash3(v: Vector3): number {
-  const x = Math.sin(v[0] * 12.9898 + v[1] * 78.233 + v[2] * 37.719) * 43758.5453123;
-  return x - Math.floor(x);
 }
