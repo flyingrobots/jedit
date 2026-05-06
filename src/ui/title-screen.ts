@@ -5,11 +5,20 @@ import { JEDIT_LOGO_WIDTH, JEDIT_LOGO_HEIGHT, JEDIT_LOGO_MASK } from './logo-dat
 
 type Vector3 = readonly [number, number, number];
 
+interface Sphere {
+  pos: Vector3;
+  rad: number;
+  reflective: boolean;
+}
+
 /**
- * Zen Title Screen shader using Braille ray tracing.
+ * Zen Title Screen - v2 "Living Scene"
  * 
- * Features a reflective sphere over a checkerboard ground plane,
- * with the "jedit" logo carved into the scene.
+ * Features:
+ * - Multiple spheres with varied material properties.
+ * - Slow breathing camera orbit.
+ * - Horizon-stabilized ground plane (no moiré).
+ * - High-contrast ASCII-over-Braille logo.
  */
 export function renderTitleScreen(
   cols: number,
@@ -17,7 +26,6 @@ export function renderTitleScreen(
   time: number,
   theme: JeditTheme
 ): Surface {
-  // Pre-decode the logo mask for faster access
   const mask = JEDIT_LOGO_MASK.map((row: string) => {
     const bytes = [];
     for (let i = 0; i < row.length; i += 4) {
@@ -26,118 +34,137 @@ export function renderTitleScreen(
     return bytes;
   });
 
-  const shader: ShaderFn = ({ u, v, time: t }) => {
-    // Sub-pixel coordinates in Braille resolution (2x4)
-    const px = u * cols * 2;
-    const py = v * rows * 4;
+  const spheres: Sphere[] = [
+    { pos: [0, 1.2, 0], rad: 1.2, reflective: true },
+    { pos: [2.5, 0.6, 1.5], rad: 0.6, reflective: false },
+    { pos: [-2.0, 0.8, -1.0], rad: 0.8, reflective: true },
+  ];
 
-    // Logo check - centered and scaled
-    const logoScale = Math.min(cols * 2 / JEDIT_LOGO_WIDTH, rows * 4 / JEDIT_LOGO_HEIGHT) * 0.7;
+  const shader: ShaderFn = ({ u, v, time: t }) => {
+    // 1. Logo Pass (Highest Priority / Overlay)
+    const logoScale = Math.min(cols * 2 / JEDIT_LOGO_WIDTH, rows * 4 / JEDIT_LOGO_HEIGHT) * 0.6;
     const lw = JEDIT_LOGO_WIDTH * logoScale;
     const lh = JEDIT_LOGO_HEIGHT * logoScale;
-    
+    const px = u * cols * 2;
+    const py = v * rows * 4;
     const lx = Math.floor((px - (cols * 2 - lw) / 2) / logoScale);
     const ly = Math.floor((py - (rows * 4 - lh) / 2) / logoScale);
     
     let inLogo = false;
     if (lx >= 0 && lx < JEDIT_LOGO_WIDTH && ly >= 0 && ly < JEDIT_LOGO_HEIGHT) {
-      const byteIdx = Math.floor(lx / 8);
-      const bitIdx = 7 - (lx % 8);
       const rowMask = mask[ly];
-      if (rowMask && rowMask[byteIdx]! & (1 << bitIdx)) {
+      if (rowMask && rowMask[Math.floor(lx / 8)]! & (1 << (7 - (lx % 8)))) {
         inLogo = true;
       }
     }
 
-    // Ray generation (normalized coordinates -1 to 1)
-    const aspect = (cols * 2) / (rows * 4); // Use sub-pixel aspect ratio
-    const rx = (u * 2 - 1) * aspect;
-    const ry = (v * 2 - 1);
-    
-    const ro: Vector3 = [0, 1.2, -4]; // Ray origin
-    const rd: Vector3 = normalize([rx, -ry - 0.1, 2.0]); // Ray direction
-
-    // Sphere (oscillating)
-    const spherePos: Vector3 = [
-      Math.sin(t * 0.4) * 1.8, 
-      1.2 + Math.sin(t * 0.7) * 0.4, 
-      2.5
-    ];
-    const sphereRad = 1.2;
-    
-    const sphereDist = intersectSphere(ro, rd, spherePos, sphereRad);
-    
-    // Plane
-    const planeDist = -ro[1] / rd[1];
-    
-    let char = ' ';
-    const lightDir = normalize([1, 2, -1]);
-
-    if (sphereDist > 0 && (planeDist < 0 || sphereDist < planeDist)) {
-      // Shading sphere
-      const p = add(ro, scale(rd, sphereDist));
-      const n = normalize(sub(p, spherePos));
-      
-      // Reflection
-      const refRd = reflect(rd, n);
-      const refPlaneDist = -p[1] / refRd[1];
-      
-      if (refPlaneDist > 0) {
-        const refP = add(p, scale(refRd, refPlaneDist));
-        const check = (Math.floor(refP[0] * 0.8) + Math.floor(refP[2] * 0.8)) % 2 === 0;
-        char = check ? 'X' : ' ';
-      } else {
-        // Sky reflection (with stars)
-        const star = hash3(refRd) > 0.97;
-        const fresnel = Math.pow(1.0 - Math.max(0, -dot(rd, n)), 3);
-        char = (star || fresnel > 0.4) ? 'X' : ' ';
-      }
-
-      // Specular highlight
-      if (dot(n, lightDir) > 0.92) char = 'X';
-    } else if (planeDist > 0) {
-      // Shading plane
-      const p = add(ro, scale(rd, planeDist));
-      const check = (Math.floor(p[0] * 0.8) + Math.floor(p[2] * 0.8)) % 2 === 0;
-      
-      // Shadow from sphere
-      const toSphere = sub(spherePos, p);
-      const proj = dot(toSphere, lightDir);
-      const d2 = dot(toSphere, toSphere) - proj * proj;
-      const inShadow = proj > 0 && d2 < (sphereRad * sphereRad * 0.8);
-      
-      if (inShadow) char = ' ';
-      else char = check ? 'X' : ' ';
-    } else {
-      // Sky (with stars)
-      const star = hash3(rd) > 0.995;
-      char = star ? 'X' : ' ';
-    }
-
-    // Composite logo (XOR-ish effect)
     if (inLogo) {
-      const logoChar = char === ' ' ? 'X' : ' ';
+      // Return high-contrast block for logo
       return {
-        char: logoChar,
+        char: '█',
         fgRGB: theme.surface.workspace.fgRGB,
-        bgRGB: theme.surface.workspace.bgRGB,
       };
     }
 
-    return {
-      char,
-      fgRGB: theme.surface.workspace.fgRGB,
-      bgRGB: theme.surface.workspace.bgRGB,
-    };
+    // 2. Ray Trace Pass
+    const aspect = (cols * 2) / (rows * 4);
+    const rx = (u * 2 - 1) * aspect;
+    const ry = (v * 2 - 1);
+    
+    // Slow camera orbit
+    const camAngle = t * 0.05;
+    const camDist = 6.0;
+    const ro: Vector3 = [Math.sin(camAngle) * camDist, 2.5, Math.cos(camAngle) * camDist];
+    const target: Vector3 = [0, 0.8, 0];
+    const rd = getRayDir(ro, target, [rx, -ry - 0.2, 2.0]);
+
+    // Trace Scene
+    let closestT = Infinity;
+    let hitSphere: Sphere | null = null;
+    
+    for (const s of spheres) {
+      const dist = intersectSphere(ro, rd, s.pos, s.rad);
+      if (dist > 0 && dist < closestT) {
+        closestT = dist;
+        hitSphere = s;
+      }
+    }
+
+    const planeDist = -ro[1] / rd[1];
+    const hitPlane = planeDist > 0 && planeDist < closestT;
+
+    const lightDir = normalize([1, 2, -1]);
+
+    if (hitSphere) {
+      const p = add(ro, scale(rd, closestT));
+      const n = normalize(sub(p, hitSphere.pos));
+      
+      if (hitSphere.reflective) {
+        const refRd = reflect(rd, n);
+        const refPlaneDist = -p[1] / refRd[1];
+        if (refPlaneDist > 0) {
+          const refP = add(p, scale(refRd, refPlaneDist));
+          const check = (Math.floor(refP[0]) + Math.floor(refP[2])) % 2 === 0;
+          return check ? '·' : ' ';
+        }
+        // Fresnel/Sky
+        const fresnel = Math.pow(1.0 - Math.max(0, -dot(rd, n)), 3);
+        return fresnel > 0.5 ? '·' : ' ';
+      } else {
+        // Matte shading
+        const diff = Math.max(0, dot(n, lightDir));
+        if (diff > 0.8) return '·';
+        return ' ';
+      }
+    }
+
+    if (hitPlane) {
+      const p = add(ro, scale(rd, planeDist));
+      const distToCam = planeDist;
+      
+      // Horizon fade to prevent moire
+      const fade = Math.max(0, 1.0 - distToCam / 15.0);
+      if (fade <= 0) return ' ';
+
+      const check = (Math.floor(p[0]) + Math.floor(p[2])) % 2 === 0;
+      if (!check) return ' ';
+
+      // Shadow check
+      let inShadow = false;
+      for (const s of spheres) {
+        const toSphere = sub(s.pos, p);
+        const proj = dot(toSphere, lightDir);
+        const d2 = dot(toSphere, toSphere) - proj * proj;
+        if (proj > 0 && d2 < (s.rad * s.rad)) {
+          inShadow = true;
+          break;
+        }
+      }
+
+      if (inShadow) return ' ';
+      return fade > 0.6 ? '·' : ' ';
+    }
+
+    return ' ';
   };
 
   return canvas(cols, rows, shader, { resolution: 'braille', time });
 }
 
-// Simple deterministic hash for stars
-function hash3(v: Vector3): number {
-  const x = Math.sin(v[0] * 12.9898 + v[1] * 78.233 + v[2] * 37.719) * 43758.5453123;
-  return x - Math.floor(x);
+// Helpers for Camera
+function getRayDir(ro: Vector3, target: Vector3, screenCoords: Vector3): Vector3 {
+  const forward = normalize(sub(target, ro));
+  const right = normalize(cross(forward, [0, 1, 0]));
+  const up = cross(right, forward);
+  return normalize(add(add(scale(right, screenCoords[0]), scale(up, screenCoords[1])), scale(forward, screenCoords[2])));
+}
+
+function cross(a: Vector3, b: Vector3): Vector3 {
+  return [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0]
+  ];
 }
 
 // Vector math helpers
