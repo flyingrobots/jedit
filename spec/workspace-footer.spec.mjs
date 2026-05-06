@@ -25,6 +25,7 @@ function idleNormalState() {
     graftDrawerOpen: false,
     viewMode: 'source',
     markdownPreviewActive: true,
+    settingsOpen: false,
     editorMode: 'normal',
     pendingNormal: undefined,
     cwd: '/repo',
@@ -41,7 +42,7 @@ test('workspace footer shows compact uppercase normal-mode guidance', async () =
   assert.deepEqual(
     footer.workspaceFooterLines(idleNormalState()),
     [
-      'NORMAL [i insert · o open line · f2 preview · ctrl+t theme]',
+      'NORMAL [i insert · o open line · f3 preview · ctrl+t theme]',
       '/repo/notes/todo.md',
     ],
   );
@@ -87,6 +88,7 @@ test('workspace footer shows file drawer controls and the selected file path', a
       graftDrawerOpen: false,
       viewMode: 'source',
       markdownPreviewActive: false,
+      settingsOpen: false,
       editorMode: 'normal',
       pendingNormal: undefined,
       cwd: '/repo',
@@ -102,6 +104,21 @@ test('workspace footer shows file drawer controls and the selected file path', a
     [
       'FILES [j/k move · enter open · backspace up · ctrl+b close · ctrl+t theme · tab focus]',
       '/repo/notes/very-long-file-name.md',
+    ],
+  );
+});
+
+test('workspace footer shows settings drawer controls while settings are open', async () => {
+  const footer = await loadFooterModule();
+
+  assert.deepEqual(
+    footer.workspaceFooterLines({
+      ...idleNormalState(),
+      settingsOpen: true,
+    }),
+    [
+      'SETTINGS [j/k move · enter change · f2 close · esc close]',
+      'settings',
     ],
   );
 });

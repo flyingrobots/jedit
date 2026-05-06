@@ -26,6 +26,7 @@ export interface WorkspaceFooterState {
   readonly graftDrawerOpen: boolean;
   readonly viewMode: ViewMode;
   readonly markdownPreviewActive: boolean;
+  readonly settingsOpen: boolean;
   readonly editorMode?: EditorMode;
   readonly pendingNormal?: PendingNormal;
   readonly cwd: string;
@@ -92,6 +93,10 @@ export function workspaceFooterLines(state: WorkspaceFooterState): readonly [str
 }
 
 function interactionModeLabel(state: WorkspaceFooterState): string {
+  if (state.settingsOpen) {
+    return 'settings';
+  }
+
   if (state.focusPane === 'files' && state.fileDrawerOpen) {
     return 'files';
   }
@@ -112,6 +117,10 @@ function interactionModeLabel(state: WorkspaceFooterState): string {
 }
 
 function footerDetail(state: WorkspaceFooterState): string {
+  if (state.settingsOpen) {
+    return footerHints(['j/k move', 'enter change', 'f2 close', 'esc close']);
+  }
+
   if (state.focusPane === 'files' && state.fileDrawerOpen) {
     return drawerFooterDetail(state, 'files');
   }
@@ -149,7 +158,7 @@ function normalFooterDetail(state: WorkspaceFooterState): string {
     return pendingNormalFooterDetail(pending);
   }
 
-  const previewHint = state.markdownPreviewActive ? 'f2 preview' : 'ctrl+s save';
+  const previewHint = state.markdownPreviewActive ? 'f3 preview' : 'ctrl+s save';
   return footerHints(['i insert', 'o open line', previewHint, THEME_HINT, focusHint(state)]);
 }
 
@@ -170,6 +179,10 @@ function pendingNormalFooterDetail(pending: PendingNormal): string {
 }
 
 function footerContextLine(state: WorkspaceFooterState): string {
+  if (state.settingsOpen) {
+    return 'settings';
+  }
+
   if (state.focusPane === 'files' && state.fileDrawerOpen) {
     return state.selectedEntry?.path ?? state.cwd;
   }

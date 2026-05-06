@@ -29,8 +29,9 @@ import {
 } from './ui/feedback.js';
 import { resolveWorkspaceLayout, type DrawerKind } from './ui/drawer-layout.js';
 import { cycleFocusPane, defaultFocusPane, hasFocusablePeers, shouldClearPendingNormalOnPaneChange, type FocusPane, type FocusCycleState } from './ui/panel-focus.js';
-import { fitBlock, fitLine, formatGraftOutlineLine, formatTreeLine, graftOutlineScroll, graftVisibleOutlineRows } from './ui/workspace-render.js';
+import { fitBlock, formatTreeLine, graftVisibleOutlineRows } from './ui/workspace-render.js';
 import { activeWorkspaceTitle, centerLine, renderWorkspaceFooter } from './ui/workspace-chrome.js';
+import { renderGraftDrawerLines } from './ui/graft-drawer.js';
 import { createGraftSourceHighlighter } from './adapters/graft-source-highlighter.js';
 import { beginSourceHighlightRefresh, reduceSourceHighlightMsg, shouldRefreshSourceHighlight, SOURCE_HIGHLIGHT_MESSAGE, type SourceHighlightMsg } from './app/source-highlight-session.js';
 import { renderSourceViewer } from './ui/source-viewer.js';
@@ -39,6 +40,9 @@ import { JEDIT_TERMINAL_MOUSE_OPTIONS } from './ui/terminal-mouse.js';
 import { JEDIT_THEME_ENV, nextJeditTheme, resolveInitialJeditTheme } from './ui/jedit-themes.js';
 import type { JeditStyleToken, JeditTheme } from './ui/jedit-theme.js';
 import { paintActivePaneEdge } from './ui/workspace-focus-edge.js';
+import { jeditSettingsRows, moveSettingsFocusIndex, toggleSettingsOpen, updateJeditSettingsFromKey } from './app/settings-session.js';
+import { renderSettingsDrawer, resolveSettingsDrawerWidth } from './ui/settings-drawer.js';
+import { renderTitleScreen } from './ui/title-screen.js';
 
 initDefaultContext();
 
@@ -129,6 +133,8 @@ interface Model {
   readonly notifications: NotificationState<Msg>;
   readonly notificationLoopActive: boolean;
   readonly footerVisible: boolean;
+  readonly settingsOpen: boolean;
+  readonly settingsFocusIndex: number;
   readonly jeditTheme: JeditTheme;
   readonly graftInfo?: GraftInfo;
   readonly graftLoading: boolean;
@@ -139,6 +145,7 @@ interface Model {
   readonly sourceHighlightRequestId: number;
   readonly columns: number;
   readonly rows: number;
+  readonly time: number;
 }
 
 type Msg =
@@ -146,6 +153,7 @@ type Msg =
   | { type: 'graft-info'; requestId: number; info: GraftInfo }
   | SourceHighlightMsg
   | { type: 'notification-tick'; atMs: number }
+  | { type: 'time-tick'; time: number }
   | { type: 'runtime-issue'; issue: RuntimeIssue };
 
 const MIN_COLUMNS = 60;
@@ -159,6 +167,8 @@ const GRAFT_CHANGE_ROWS = 5;
 const VIEWER_LEFT_PAD = 4;
 const VIEWER_TOP_PAD = 1;
 const THEME_TOGGLE_KEY = 't';
+const SETTINGS_TOGGLE_KEY = 'f2';
+const MARKDOWN_PREVIEW_TOGGLE_KEY = 'f3';
 const GRAFT_CLI_PATH = process.env['EDITT_GRAFT_BIN'] ?? join(homedir(), 'git', 'graft', 'bin', 'graft.js');
 const sourceHighlighter = createGraftSourceHighlighter({ graftRoot: dirname(dirname(GRAFT_CLI_PATH)) });
 
@@ -174,7 +184,16 @@ let graftConnectionPromise: Promise<GraftMcpConnection> | undefined;
 const app: App<Model, Msg> = {
   init: () => [
     createInitialModel(process.cwd(), INITIAL_COLUMNS, INITIAL_ROWS),
-    [manageGraftLifecycle()],
+    [
+      manageGraftLifecycle(),
+      animate<Msg>({
+        type: 'tween',
+        from: 0,
+        to: Number.MAX_SAFE_INTEGER,
+        duration: Number.MAX_SAFE_INTEGER,
+        onFrame: (v) => ({ type: 'time-tick', time: v / 1000 }),
+      }),
+    ],
   ],
   routeRuntimeIssue: (issue) => ({ type: 'runtime-issue', issue }),
   update: (msg, model): [Model, Cmd<Msg>[]] => {
@@ -229,6 +248,10 @@ const app: App<Model, Msg> = {
       return tickNotificationState(model, msg.atMs, notificationTickCmd);
     }
 
+    if (msg.type === 'time-tick') {
+      return [{ ...model, time: msg.time }, []];
+    }
+
     if (msg.type === 'runtime-issue') {
       return pushRuntimeIssueToast(model, msg.issue, notificationTickCmd);
     }
@@ -251,6 +274,13 @@ await run(app, JEDIT_TERMINAL_MOUSE_OPTIONS);
 function updateFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
   if (msg.ctrl && msg.key === 'c') {
     return [model, [quit<Msg>()]];
+  }
+
+  if (msg.key === SETTINGS_TOGGLE_KEY) {
+    return [toggleSettingsOpen(model), []];
+  }
+  if (model.settingsOpen) {
+    return updateJeditSettingsFromKey(msg, model, settingsRows(model), settingsHandlers);
   }
 
   const insertModeActive = model.focusPane === 'editor'
@@ -301,16 +331,8 @@ function updateFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
     }
   }
 
-  if (msg.key === 'f2' && model.editor != null && isMarkdownFile(model.editor.path)) {
-    const viewMode: ViewMode = model.viewMode === 'source' ? 'preview' : 'source';
-    const next: Model = {
-      ...model,
-      editor: clearPendingNormal(model.editor),
-      viewMode,
-    };
-    return next.viewMode === 'source'
-      ? beginSourceHighlightRefresh<Model, Msg>(next, next.editor, editorViewport(next), sourceHighlighter)
-      : [next, []];
+  if (msg.key === MARKDOWN_PREVIEW_TOGGLE_KEY) {
+    return toggleMarkdownPreview(model);
   }
 
   if (model.focusPane === 'files' && model.fileDrawerOpen) {
@@ -329,6 +351,9 @@ function updateFromMouse(msg: MouseMsg, model: Model): [Model, Cmd<Msg>[]] {
   if (deltaRows === 0) {
     return [model, []];
   }
+  if (model.settingsOpen) {
+    return [{ ...model, settingsFocusIndex: moveSettingsFocusIndex(model.settingsFocusIndex, deltaRows, settingsRows(model).length) }, []];
+  }
   if (model.focusPane === 'files' && model.fileDrawerOpen) {
     return [{ ...model, selectedIndex: scrollIndexByRows(model.selectedIndex, model.entries.length, deltaRows) }, []];
   }
@@ -343,6 +368,32 @@ function updateFromMouse(msg: MouseMsg, model: Model): [Model, Cmd<Msg>[]] {
   const next = { ...model, editor };
   return model.viewMode === 'source'
     ? beginSourceHighlightRefresh<Model, Msg>(next, editor, viewport, sourceHighlighter)
+    : [next, []];
+}
+
+function settingsRows(model: Model) {
+  return jeditSettingsRows({
+    jeditTheme: model.jeditTheme,
+    footerVisible: model.footerVisible,
+    markdownPreviewActive: model.editor != null && isMarkdownFile(model.editor.path),
+    viewMode: model.viewMode,
+  });
+}
+
+const settingsHandlers = {
+  cycleTheme: (model: Model): [Model, Cmd<Msg>[]] => [{ ...model, jeditTheme: nextJeditTheme(model.jeditTheme) }, []],
+  toggleFooter: (model: Model): [Model, Cmd<Msg>[]] => [{ ...model, footerVisible: !model.footerVisible }, []],
+  toggleMarkdownPreview: (model: Model): [Model, Cmd<Msg>[]] => toggleMarkdownPreview(model),
+};
+
+function toggleMarkdownPreview(model: Model): [Model, Cmd<Msg>[]] {
+  if (model.editor == null || !isMarkdownFile(model.editor.path)) {
+    return [model, []];
+  }
+  const viewMode: ViewMode = model.viewMode === 'source' ? 'preview' : 'source';
+  const next: Model = { ...model, editor: clearPendingNormal(model.editor), viewMode };
+  return next.viewMode === 'source'
+    ? beginSourceHighlightRefresh<Model, Msg>(next, next.editor, editorViewport(next), sourceHighlighter)
     : [next, []];
 }
 
@@ -647,6 +698,8 @@ function createInitialModel(cwd: string, columns: number, rows: number): Model {
     graftDrawerOpen: false,
     graftDrawerProgress: 0,
     ...createFeedbackState<Msg>(),
+    settingsOpen: false,
+    settingsFocusIndex: 0,
     jeditTheme: resolveInitialJeditTheme(process.env[JEDIT_THEME_ENV]),
     graftInfo: undefined,
     graftLoading: false,
@@ -657,6 +710,7 @@ function createInitialModel(cwd: string, columns: number, rows: number): Model {
     sourceHighlightRequestId: 0,
     columns,
     rows,
+    time: 0,
   };
 }
 
@@ -2194,6 +2248,7 @@ function renderWorkspace(model: Model) {
       markdownPreviewActive: model.editor != null && isMarkdownFile(model.editor.path),
       editorMode: model.editor?.mode,
       pendingNormal: model.editor?.pendingNormal,
+      settingsOpen: model.settingsOpen,
       cwd: model.cwd,
       selectedEntry: model.entries[model.selectedIndex],
       editorPath: model.editor?.path,
@@ -2202,18 +2257,28 @@ function renderWorkspace(model: Model) {
     }, model.columns, model.jeditTheme.surface.footer), 0, model.rows - 2);
   }
 
+  if (model.settingsOpen) {
+    screen.blit(renderSettingsDrawer({
+      rows: settingsRows(model),
+      selectedIndex: model.settingsFocusIndex,
+      theme: model.jeditTheme,
+      width: resolveSettingsDrawerWidth(model.columns),
+      height: bodyHeight,
+    }), 0, bodyTop);
+  }
+
   return compositeFeedback(screen, model.notifications, model.columns, model.rows);
 }
 
 function notificationTickCmd(): Cmd<Msg> { return createNotificationTickCmd((atMs) => ({ type: 'notification-tick', atMs })); }
 
 function renderViewer(model: Model, width: number, height: number) {
+  if (model.editor == null) {
+    return renderTitleScreen(width, height, model.time);
+  }
+
   const surface = createSurface(width, height);
   fillSurface(surface, model.jeditTheme.surface.workspace);
-
-  if (model.editor == null) {
-    return surface;
-  }
 
   if (model.viewMode === 'preview' && isMarkdownFile(model.editor.path)) {
     return renderPreview(surface, model.editor, model.jeditTheme, width, height);
@@ -2265,59 +2330,6 @@ function renderGraftDrawer(model: Model, width: number, height: number) {
   applyBackground(content, background);
   surface.blit(content, DRAWER_INNER_PAD, DRAWER_INNER_PAD);
   return surface;
-}
-
-function renderGraftDrawerLines(model: Model, width: number, height: number): readonly string[] {
-  const info = model.graftInfo;
-  if (model.editor == null) {
-    return [
-      fitLine('graft', width),
-      fitLine('', width),
-      fitLine('open a file to inspect it', width),
-    ];
-  }
-
-  if (info == null) {
-    return [
-      fitLine('graft', width),
-      fitLine('', width),
-      fitLine(model.graftLoading ? 'loading...' : 'no graft data loaded', width),
-    ];
-  }
-
-  const metaLines = [
-    'graft',
-    info.relativePath,
-    model.graftLoading ? 'loading...' : (info.notice ?? ''),
-    info.error ?? '',
-    'outline',
-  ];
-
-  const changeLines = [
-    '',
-    'changes',
-    ...info.changeLines,
-  ];
-
-  const outlineHeight = Math.max(
-    1,
-    height - metaLines.length - Math.min(GRAFT_CHANGE_ROWS, changeLines.length),
-  );
-  const outlineStart = graftOutlineScroll(model.graftSelectedIndex, info.outlineItems.length, outlineHeight);
-  const outlineLines = info.outlineItems.length === 0
-    ? ['no structural outline']
-    : info.outlineItems
-      .slice(outlineStart, outlineStart + outlineHeight)
-      .map((item, index) => formatGraftOutlineLine(
-        item,
-        outlineStart + index === model.graftSelectedIndex,
-      ));
-
-  return [
-    ...metaLines.map((line) => fitLine(line, width)),
-    ...outlineLines.map((line) => fitLine(line, width)),
-    ...changeLines.slice(0, Math.max(0, height - metaLines.length - outlineLines.length)).map((line) => fitLine(line, width)),
-  ];
 }
 
 function selectedGraftSelection(model: Model): { kind: string; name: string; startLine: number } | undefined {
