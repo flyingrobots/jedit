@@ -1,26 +1,59 @@
 import { canvas, type ShaderFn } from '@flyingrobots/bijou-tui';
 import type { Surface } from '@flyingrobots/bijou';
+import { JEDIT_LOGO_WIDTH, JEDIT_LOGO_HEIGHT, JEDIT_LOGO_MASK } from './logo-data.js';
 
 type Vector3 = readonly [number, number, number];
 
 /**
  * Zen Title Screen shader using Braille ray tracing.
  * 
- * Features a reflective sphere over a checkerboard ground plane.
+ * Features a reflective sphere over a checkerboard ground plane,
+ * with the "jedit" logo carved into the scene.
  */
 export function renderTitleScreen(
   cols: number,
   rows: number,
   time: number
 ): Surface {
+  // Pre-decode the logo mask for faster access
+  const mask = JEDIT_LOGO_MASK.map(row => {
+    const bytes = [];
+    for (let i = 0; i < row.length; i += 4) {
+      bytes.push(parseInt(row.substr(i + 2, 2), 16));
+    }
+    return bytes;
+  });
+
   const shader: ShaderFn = ({ u, v, time: t }) => {
+    // Logo check
+    // We want the logo to be centered and reasonably sized
+    const logoScale = Math.min(cols * 2 / JEDIT_LOGO_WIDTH, rows * 4 / JEDIT_LOGO_HEIGHT) * 0.6;
+    const lw = JEDIT_LOGO_WIDTH * logoScale;
+    const lh = JEDIT_LOGO_HEIGHT * logoScale;
+    
+    // Sub-pixel coordinates in Braille resolution (2x4)
+    const px = u * cols * 2;
+    const py = v * rows * 4;
+    
+    const lx = Math.floor((px - (cols * 2 - lw) / 2) / logoScale);
+    const ly = Math.floor((py - (rows * 4 - lh) / 2) / logoScale);
+    
+    let inLogo = false;
+    if (lx >= 0 && lx < JEDIT_LOGO_WIDTH && ly >= 0 && ly < JEDIT_LOGO_HEIGHT) {
+      const byteIdx = Math.floor(lx / 8);
+      const bitIdx = 7 - (lx % 8);
+      if (mask[ly]![byteIdx]! & (1 << bitIdx)) {
+        inLogo = true;
+      }
+    }
+
     // Ray generation (normalized coordinates -1 to 1)
     const aspect = cols / rows;
-    const x = (u * 2 - 1) * aspect;
-    const y = (v * 2 - 1);
+    const rx = (u * 2 - 1) * aspect;
+    const ry = (v * 2 - 1);
     
     const ro: Vector3 = [0, 1.5, -4]; // Ray origin
-    const rd: Vector3 = normalize([x, -y - 0.2, 1.5]); // Ray direction
+    const rd: Vector3 = normalize([rx, -ry - 0.2, 1.5]); // Ray direction
 
     // Sphere
     const spherePos: Vector3 = [Math.sin(t * 0.5) * 1.5, 1.0 + Math.sin(t * 0.8) * 0.5, 2];
@@ -31,6 +64,8 @@ export function renderTitleScreen(
     // Plane
     const planeDist = -ro[1] / rd[1];
     
+    let char = ' ';
+
     if (sphereDist > 0 && (planeDist < 0 || sphereDist < planeDist)) {
       // Shading sphere
       const p = add(ro, scale(rd, sphereDist));
@@ -43,15 +78,13 @@ export function renderTitleScreen(
       if (refPlaneDist > 0) {
         const refP = add(p, scale(refRd, refPlaneDist));
         const check = (Math.floor(refP[0]) + Math.floor(refP[2])) % 2 === 0;
-        return check ? 'X' : ' ';
+        char = check ? 'X' : ' ';
+      } else {
+        // Sky reflection / fresnel
+        const fresnel = Math.pow(1.0 - Math.max(0, -dot(rd, n)), 5);
+        char = fresnel > 0.3 ? 'X' : ' ';
       }
-      
-      // Sky reflection / fresnel
-      const fresnel = Math.pow(1.0 - Math.max(0, -dot(rd, n)), 5);
-      return fresnel > 0.3 ? 'X' : ' ';
-    }
-    
-    if (planeDist > 0) {
+    } else if (planeDist > 0) {
       // Shading plane
       const p = add(ro, scale(rd, planeDist));
       const check = (Math.floor(p[0]) + Math.floor(p[2])) % 2 === 0;
@@ -63,11 +96,18 @@ export function renderTitleScreen(
       const d2 = dot(toSphere, toSphere) - proj * proj;
       const inShadow = proj > 0 && d2 < sphereRad * sphereRad;
       
-      if (inShadow) return ' ';
-      return check ? 'X' : ' ';
+      if (inShadow) char = ' ';
+      else char = check ? 'X' : ' ';
     }
 
-    return ' ';
+    // Composite logo
+    if (inLogo) {
+      // If we are in the logo, invert the character or force it to 'X'
+      // to make it stand out.
+      return char === ' ' ? 'X' : ' ';
+    }
+
+    return char;
   };
 
   return canvas(cols, rows, shader, { resolution: 'braille', time });
@@ -76,6 +116,7 @@ export function renderTitleScreen(
 // Vector math helpers
 function normalize(v: Vector3): Vector3 {
   const l = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+  if (l === 0) return [0, 0, 0];
   return [v[0] / l, v[1] / l, v[2] / l];
 }
 
