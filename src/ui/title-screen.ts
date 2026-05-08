@@ -14,12 +14,13 @@ interface Sphere {
 }
 
 /**
- * Zen Title Screen - v9 "Interactive Vivid Zen"
+ * Zen Title Screen - v10 "Vivid Interactive"
  * 
  * Features:
- * - Full arrow-key camera control (passed from main.ts).
- * - Standard ASCII logo overlay (High Contrast).
- * - Hardened color propagation for light/dark themes.
+ * - Multi-colored spheres (Accent, Info, Success).
+ * - Dual-light setup (Key light + Fill light) for balanced shading.
+ * - Density-ramped ASCII logo (using █▓▒░).
+ * - Atmospheric sky gradient.
  */
 export function renderTitleScreen(
   cols: number,
@@ -37,22 +38,25 @@ export function renderTitleScreen(
     return bytes;
   });
 
+  // Dynamically sample theme colors
   const accentColor = theme.chrome.activeEdge.fgRGB ?? [216, 151, 255];
+  const infoColor = theme.source.get(Symbol.for('jedit.theme.source.number'))?.fgRGB ?? [101, 194, 255];
+  const successColor = theme.source.get(Symbol.for('jedit.theme.source.string'))?.fgRGB ?? [124, 213, 156];
   const surfaceColor = theme.surface.workspace.bgRGB ?? [10, 10, 15];
   const inkColor = theme.surface.workspace.fgRGB ?? [200, 200, 200];
 
   const spheres: Sphere[] = [
     { pos: [0, 1.0, 0], rad: 1.0, reflective: true, color: accentColor },
-    { pos: [2.5, 0.5, 1.5], rad: 0.5, reflective: false, color: inkColor },
-    { pos: [-2.2, 0.7, -1.0], rad: 0.7, reflective: true, color: accentColor },
+    { pos: [2.5, 0.5, 1.5], rad: 0.5, reflective: false, color: successColor },
+    { pos: [-2.2, 0.7, -1.0], rad: 0.7, reflective: true, color: infoColor },
   ];
 
+  // 1. Ray Trace Pass
   const shader: ShaderFn = ({ u, v, time: t }) => {
     const aspect = (cols * 2) / (rows * 4);
     const rx = (u * 2 - 1) * aspect;
     const ry = (v * 2 - 1);
     
-    // Combine interactive angle with a tiny drift for life
     const finalAngle = camAngle + (t * 0.005);
     const ro: Vector3 = [Math.sin(finalAngle) * camRadius, 3.5, Math.cos(finalAngle) * camRadius];
     const target: Vector3 = [0, 0.4, 0];
@@ -70,14 +74,21 @@ export function renderTitleScreen(
 
     const planeDist = -ro[1] / rd[1];
     const hitPlane = planeDist > 0 && planeDist < closestT;
+    
     const lightDir = normalize([1.5, 2.5, -1]);
+    const fillDir = normalize([-2, 1, 1]);
 
     if (hitSphere) {
       const p = add(ro, scale(rd, closestT));
       const n = normalize(sub(p, hitSphere.pos));
-      const shadow = Math.max(0, dot(n, lightDir));
-      let color = scaleColor(hitSphere.color, 0.4 + shadow * 0.6);
-      let char = shadow > 0.4 ? '·' : ' ';
+      
+      const key = Math.max(0, dot(n, lightDir));
+      const fill = Math.max(0, dot(n, fillDir)) * 0.3;
+      const ambient = 0.15;
+      const lighting = key + fill + ambient;
+      
+      let color = scaleColor(hitSphere.color, lighting);
+      let char = lighting > 0.4 ? '·' : ' ';
 
       if (hitSphere.reflective) {
         const refRd = reflect(rd, n);
@@ -92,10 +103,12 @@ export function renderTitleScreen(
 
     if (hitPlane) {
       const p = add(ro, scale(rd, planeDist));
-      const fade = Math.max(0, 1.0 - planeDist / 30.0);
-      if (fade <= 0) return { char: ' ', fgRGB: inkColor, bgRGB: surfaceColor };
-      if ((Math.floor(p[0] * 0.8) + Math.floor(p[2] * 0.8)) % 2 !== 0) return { char: ' ', fgRGB: inkColor, bgRGB: surfaceColor };
-      
+      const fade = Math.max(0, 1.0 - planeDist / 35.0);
+      if (fade <= 0) return ' ';
+
+      const check = (Math.floor(p[0] * 0.8) + Math.floor(p[2] * 0.8)) % 2 === 0;
+      if (!check) return ' ';
+
       let inShadow = false;
       for (const s of spheres) {
         const toSphere = sub(s.pos, p);
@@ -104,58 +117,63 @@ export function renderTitleScreen(
           break;
         }
       }
-      if (inShadow) return { char: ' ', fgRGB: inkColor, bgRGB: surfaceColor };
+      if (inShadow) return ' ';
       return { char: '·', fgRGB: scaleColor(inkColor, fade * 0.3), bgRGB: surfaceColor };
     }
 
-    return { char: ' ', fgRGB: inkColor, bgRGB: surfaceColor };
+    // Sky gradient
+    const skyFade = Math.max(0, rd[1] + 0.2);
+    return { char: ' ', bgRGB: scaleColor(surfaceColor, 1.0 + skyFade * 0.2) };
   };
 
   const surface = canvas(cols, rows, shader, { resolution: 'braille', time });
-  
   const [sR, sG, sB] = surfaceColor;
   const [iR, iG, iB] = inkColor;
   const [aR, aG, aB] = accentColor;
   const anySurface = surface as any;
 
+  // 2. High-Contrast Shaded Logo Pass (Cell level)
   const logoScale = 0.5;
-  const lw = JEDIT_LOGO_WIDTH * logoScale;
-  const lh = JEDIT_LOGO_HEIGHT * logoScale;
+  const lw = Math.floor(JEDIT_LOGO_WIDTH * logoScale);
+  const lh = Math.floor(JEDIT_LOGO_HEIGHT * logoScale);
   const startX = Math.floor((cols - lw / 2) / 2);
   const startY = Math.floor((rows - lh / 4) / 2);
+
+  const DENSITY_RAMP = [' ', '·', '░', '▒', '▓', '█'];
 
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
       const cell = surface.get(x, y);
       
-      const lx = Math.floor((x - startX) * (JEDIT_LOGO_WIDTH / (lw/2)));
-      const ly = Math.floor((y - startY) * (JEDIT_LOGO_HEIGHT / (lh/4)));
+      // Calculate density of logo sub-pixels in this cell
+      let density = 0;
+      const lx_base = Math.floor((x - startX) * (JEDIT_LOGO_WIDTH / (lw/2)));
+      const ly_base = Math.floor((y - startY) * (JEDIT_LOGO_HEIGHT / (lh/4)));
 
-      let logoCell = false;
-      if (lx >= 0 && lx < JEDIT_LOGO_WIDTH && ly >= 0 && ly < JEDIT_LOGO_HEIGHT) {
-        const rowMask = mask[ly];
-        if (rowMask && rowMask[Math.floor(lx / 8)]! & (1 << (7 - (lx % 8)))) {
-          logoCell = true;
+      if (lx_base >= 0 && lx_base < JEDIT_LOGO_WIDTH && ly_base >= 0 && ly_base < JEDIT_LOGO_HEIGHT) {
+        // Check 2x4 sub-pixel block
+        for (let sy = 0; sy < 4; sy++) {
+          for (let sx = 0; sx < 2; sx++) {
+            const lx = lx_base + sx;
+            const ly = ly_base + sy;
+            const rowMask = mask[ly];
+            if (rowMask && rowMask[Math.floor(lx / 8)]! & (1 << (7 - (lx % 8)))) {
+              density++;
+            }
+          }
         }
       }
 
-      if (logoCell) {
-        anySurface.setRGB(x, y, '█', aR, aG, aB, sR, sG, sB, 0);
-      } else if (!cell.bgRGB || cell.bgRGB[0] === -1 || !cell.fgRGB || cell.fgRGB[0] === -1) {
-        if (typeof anySurface.setRGB === 'function') {
-          anySurface.setRGB(
-            x, y, cell.char, 
-            cell.fgRGB ? cell.fgRGB[0] : iR, cell.fgRGB ? cell.fgRGB[1] : iG, cell.fgRGB ? cell.fgRGB[2] : iB, 
-            cell.bgRGB ? cell.bgRGB[0] : sR, cell.bgRGB ? cell.bgRGB[1] : sG, cell.bgRGB ? cell.bgRGB[2] : sB, 
-            0
-          );
-        } else {
-          surface.set(x, y, {
-            char: cell.char,
-            fgRGB: cell.fgRGB ?? [iR, iG, iB],
-            bgRGB: cell.bgRGB ?? [sR, sG, sB],
-          });
-        }
+      if (density > 0) {
+        // Map density (0-8) to ramp index (0-5)
+        const rampIdx = Math.min(5, Math.ceil(density / 1.5));
+        const char = DENSITY_RAMP[rampIdx]!;
+        anySurface.setRGB(x, y, char, aR, aG, aB, sR, sG, sB, 0);
+      } else {
+        // Final color stabilization pass for the whole surface
+        const fg = cell.fgRGB ?? [iR, iG, iB];
+        const bg = cell.bgRGB ?? [sR, sG, sB];
+        anySurface.setRGB(x, y, cell.char, fg[0], fg[1], fg[2], bg[0], bg[1], bg[2], 0);
       }
     }
   }
