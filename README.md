@@ -85,12 +85,16 @@ current worldline, canonical head, retained checkpoints, and materialized text
 without pretending the runtime already supports arbitrary historical head
 materialization. That query is now paired with the first explicit app-owned
 observer spec so the get side is no longer treated as "just a query."
-Refresh the generated TypeScript and Zod contract surfaces, including the
-query and mutation operation registries, with:
+Refresh the generated contract surfaces with:
 
 ```sh
 npm run gen:contract
 ```
+
+That command now writes the Rust-Wesley operation binding artifact beside the
+legacy TypeScript/Zod files. The app still keeps the legacy Zod validators until
+Wesley has a Rust-native validator emitter, but operation-name and request-input
+type seams should prefer the Rust-Wesley generated artifact.
 
 Near-term product direction:
 
