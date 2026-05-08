@@ -15,6 +15,13 @@ interface Sphere {
 
 /**
  * Zen Title Screen - v11 "Vivid Interactive Polish"
+ * 
+ * Features:
+ * - Multi-colored spheres (Accent, Info, Success).
+ * - Dual-light setup (Key + Fill) for balanced shading.
+ * - Caustics: Dynamic ground-plane highlights.
+ * - Large density-ramped logo.
+ * - Hardened color pipeline for light/dark themes.
  */
 export function renderTitleScreen(
   cols: number,
@@ -32,10 +39,10 @@ export function renderTitleScreen(
     return bytes;
   });
 
+  // Sampling theme colors (Correct Symbols)
   const accentColor = theme.chrome.activeEdge.fgRGB ?? [216, 151, 255];
   const infoColor = theme.source.get(JEDIT_SOURCE_TOKEN.Number)?.fgRGB ?? [101, 194, 255];
   const successColor = theme.source.get(JEDIT_SOURCE_TOKEN.String)?.fgRGB ?? [124, 213, 156];
-  
   const surfaceColor = theme.surface.workspace.bgRGB ?? [10, 10, 15];
   const inkColor = theme.surface.workspace.fgRGB ?? [200, 200, 200];
   const isLight = (surfaceColor[0] + surfaceColor[1] + surfaceColor[2]) > 400;
@@ -46,6 +53,7 @@ export function renderTitleScreen(
     { pos: [-2.2, 0.7, -1.0], rad: 0.7, reflective: true, color: infoColor },
   ];
 
+  // 1. Ray Trace Pass (Braille resolution)
   const shader: ShaderFn = ({ u, v, time: t }) => {
     const aspect = (cols * 2) / (rows * 4);
     const rx = (u * 2 - 1) * aspect;
@@ -77,6 +85,7 @@ export function renderTitleScreen(
       const key = Math.max(0, dot(n, lightDir));
       const fill = Math.max(0, dot(n, fillDir)) * 0.4;
       const lighting = key + fill + 0.2;
+      
       let color = scaleColor(hitSphere.color, lighting);
       let char = lighting > 0.45 ? '·' : ' ';
 
@@ -94,18 +103,37 @@ export function renderTitleScreen(
     if (hitPlane) {
       const p = add(ro, scale(rd, planeDist));
       const check = (Math.floor(p[0] * 0.8) + Math.floor(p[2] * 0.8)) % 2 === 0;
+      
       let inShadow = false;
+      let caustic = 0;
       for (const s of spheres) {
         const toSphere = sub(s.pos, p);
-        if (dot(toSphere, lightDir) > 0 && dot(toSphere, toSphere) - Math.pow(dot(toSphere, lightDir), 2) < (s.rad * s.rad)) {
+        const proj = dot(toSphere, lightDir);
+        
+        // Shadow
+        if (proj > 0 && dot(toSphere, toSphere) - proj * proj < (s.rad * s.rad)) {
           inShadow = true;
-          break;
+        }
+        
+        // Caustics
+        if (s.reflective) {
+          const cDist = length([p[0] - s.pos[0], p[2] - s.pos[2]]);
+          if (cDist < s.rad * 1.5) {
+            caustic += Math.pow(1.0 - cDist / (s.rad * 1.5), 3.0) * 0.6;
+          }
         }
       }
-      const shadowMult = inShadow ? 0.4 : 1.0;
+
+      const shadowMult = inShadow ? 0.35 : 1.0;
       const fade = Math.max(0, 1.0 - planeDist / 35.0);
-      if (!check) return { char: ' ', bgRGB: surfaceColor };
-      return { char: '·', fgRGB: scaleColor(inkColor, fade * 0.5 * shadowMult), bgRGB: surfaceColor };
+      
+      if (!check) {
+        if (caustic > 0.3) return { char: '·', fgRGB: scaleColor(accentColor, caustic * fade), bgRGB: surfaceColor };
+        return { char: ' ', bgRGB: surfaceColor };
+      }
+      
+      const c = scaleColor(inkColor, (fade * 0.4 + caustic) * shadowMult);
+      return { char: '·', fgRGB: c, bgRGB: surfaceColor };
     }
 
     return { char: ' ', bgRGB: surfaceColor };
@@ -116,11 +144,13 @@ export function renderTitleScreen(
   const [iR, iG, iB] = inkColor;
   const anySurface = surface as any;
 
-  const logoScale = 0.6;
+  // 2. High-Contrast Shaded Logo Pass (Bigger: 0.8 scale)
+  const logoScale = 0.8;
   const lw = Math.floor(JEDIT_LOGO_WIDTH * logoScale);
   const lh = Math.floor(JEDIT_LOGO_HEIGHT * logoScale);
   const startX = Math.floor((cols - lw / 2) / 2);
   const startY = Math.floor((rows - lh / 4) / 2);
+
   const DENSITY_RAMP = [' ', '·', '░', '▒', '▓', '█'];
 
   for (let y = 0; y < rows; y++) {
@@ -129,6 +159,7 @@ export function renderTitleScreen(
       let density = 0;
       const lx_base = Math.floor((x - startX) * (JEDIT_LOGO_WIDTH / (lw/2)));
       const ly_base = Math.floor((y - startY) * (JEDIT_LOGO_HEIGHT / (lh/4)));
+
       if (lx_base >= 0 && lx_base < JEDIT_LOGO_WIDTH && ly_base >= 0 && ly_base < JEDIT_LOGO_HEIGHT) {
         for (let sy = 0; sy < 4; sy++) {
           for (let sx = 0; sx < 2; sx++) {
@@ -142,7 +173,7 @@ export function renderTitleScreen(
 
       if (density > 0) {
         const rampIdx = Math.min(5, Math.ceil(density / 1.5));
-        const logoFg = isLight ? scaleColor(accentColor, 0.8) : accentColor;
+        const logoFg = isLight ? scaleColor(accentColor, 0.7) : accentColor;
         anySurface.setRGB(x, y, DENSITY_RAMP[rampIdx]!, logoFg[0], logoFg[1], logoFg[2], sR, sG, sB, 0);
       } else {
         const fg = cell.fgRGB ?? [iR, iG, iB];
@@ -150,6 +181,7 @@ export function renderTitleScreen(
         anySurface.setRGB(x, y, cell.char, fg[0], fg[1], fg[2], bg[0], bg[1], bg[2], 0);
       }
 
+      // 3. DEBUG Color Strip
       if (y === rows - 1 && x < 15) {
         const debugColors: Color3[] = [accentColor, infoColor, successColor, inkColor, surfaceColor];
         const color = debugColors[Math.floor(x / 3)];
@@ -160,6 +192,9 @@ export function renderTitleScreen(
 
   return surface;
 }
+
+// Helpers
+function length(v: number[]): number { return Math.sqrt(v[0]!*v[0]! + v[1]!*v[1]! + (v[2] ?? 0)*(v[2] ?? 0)); }
 
 function scaleColor(c: Color3, s: number): Color3 {
   return [Math.max(0, Math.min(255, Math.floor(c[0] * s))), Math.max(0, Math.min(255, Math.floor(c[1] * s))), Math.max(0, Math.min(255, Math.floor(c[2] * s)))];
