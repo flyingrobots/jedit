@@ -14,13 +14,20 @@ interface Sphere {
 }
 
 /**
- * Zen Title Screen - v8 "Vivid Zen"
+ * Zen Title Screen - v9 "Interactive Vivid Zen"
+ * 
+ * Features:
+ * - Full arrow-key camera control (passed from main.ts).
+ * - Standard ASCII logo overlay (High Contrast).
+ * - Hardened color propagation for light/dark themes.
  */
 export function renderTitleScreen(
   cols: number,
   rows: number,
   time: number,
-  theme: JeditTheme
+  theme: JeditTheme,
+  camAngle: number,
+  camRadius: number
 ): Surface {
   const mask = JEDIT_LOGO_MASK.map((row: string) => {
     const bytes = [];
@@ -36,41 +43,18 @@ export function renderTitleScreen(
 
   const spheres: Sphere[] = [
     { pos: [0, 1.0, 0], rad: 1.0, reflective: true, color: accentColor },
-    { pos: [2.2, 0.5, 1.0], rad: 0.5, reflective: false, color: inkColor },
-    { pos: [-2.0, 0.7, -0.5], rad: 0.7, reflective: true, color: accentColor },
+    { pos: [2.5, 0.5, 1.5], rad: 0.5, reflective: false, color: inkColor },
+    { pos: [-2.2, 0.7, -1.0], rad: 0.7, reflective: true, color: accentColor },
   ];
 
   const shader: ShaderFn = ({ u, v, time: t }) => {
-    const px = u * cols * 2;
-    const py = v * rows * 4;
-
-    const logoScale = Math.min(cols * 2 / JEDIT_LOGO_WIDTH, rows * 4 / JEDIT_LOGO_HEIGHT) * 0.48;
-    const lw = JEDIT_LOGO_WIDTH * logoScale;
-    const lh = JEDIT_LOGO_HEIGHT * logoScale;
-    const lx = Math.floor((px - (cols * 2 - lw) / 2) / logoScale);
-    const ly = Math.floor((py - (rows * 4 - lh) / 2) / logoScale);
-    
-    const checkMask = (x: number, y: number) => {
-      if (x < 0 || x >= JEDIT_LOGO_WIDTH || y < 0 || y >= JEDIT_LOGO_HEIGHT) return false;
-      const r = mask[y];
-      return r && (r[Math.floor(x / 8)]! & (1 << (7 - (x % 8))));
-    };
-
-    if (lx >= 0 && lx < JEDIT_LOGO_WIDTH && ly >= 0 && ly < JEDIT_LOGO_HEIGHT) {
-      if (checkMask(lx, ly)) {
-        return { char: '█', fgRGB: accentColor, bgRGB: surfaceColor };
-      }
-      if (checkMask(lx-1, ly) || checkMask(lx+1, ly) || checkMask(lx, ly-1) || checkMask(lx, ly+1)) {
-        return { char: ' ', fgRGB: inkColor, bgRGB: surfaceColor };
-      }
-    }
-
     const aspect = (cols * 2) / (rows * 4);
     const rx = (u * 2 - 1) * aspect;
     const ry = (v * 2 - 1);
     
-    const camAngle = t * 0.008; 
-    const ro: Vector3 = [Math.sin(camAngle) * 8.5, 3.8, Math.cos(camAngle) * 8.5];
+    // Combine interactive angle with a tiny drift for life
+    const finalAngle = camAngle + (t * 0.005);
+    const ro: Vector3 = [Math.sin(finalAngle) * camRadius, 3.5, Math.cos(finalAngle) * camRadius];
     const target: Vector3 = [0, 0.4, 0];
     const rd = getRayDir(ro, target, [rx, -ry - 0.2, 3.2]);
 
@@ -86,14 +70,15 @@ export function renderTitleScreen(
 
     const planeDist = -ro[1] / rd[1];
     const hitPlane = planeDist > 0 && planeDist < closestT;
-    const lightDir = normalize([1.2, 2, -1]);
+    const lightDir = normalize([1.5, 2.5, -1]);
 
     if (hitSphere) {
       const p = add(ro, scale(rd, closestT));
       const n = normalize(sub(p, hitSphere.pos));
       const shadow = Math.max(0, dot(n, lightDir));
-      let color = scaleColor(hitSphere.color, 0.45 + shadow * 0.55);
+      let color = scaleColor(hitSphere.color, 0.4 + shadow * 0.6);
       let char = shadow > 0.4 ? '·' : ' ';
+
       if (hitSphere.reflective) {
         const refRd = reflect(rd, n);
         const refPlaneDist = -p[1] / refRd[1];
@@ -107,15 +92,14 @@ export function renderTitleScreen(
 
     if (hitPlane) {
       const p = add(ro, scale(rd, planeDist));
-      const fade = Math.max(0, 1.0 - planeDist / 28.0);
+      const fade = Math.max(0, 1.0 - planeDist / 30.0);
       if (fade <= 0) return { char: ' ', fgRGB: inkColor, bgRGB: surfaceColor };
       if ((Math.floor(p[0] * 0.8) + Math.floor(p[2] * 0.8)) % 2 !== 0) return { char: ' ', fgRGB: inkColor, bgRGB: surfaceColor };
       
       let inShadow = false;
       for (const s of spheres) {
         const toSphere = sub(s.pos, p);
-        const proj = dot(toSphere, lightDir);
-        if (proj > 0 && dot(toSphere, toSphere) - proj * proj < (s.rad * s.rad * 0.9)) {
+        if (dot(toSphere, lightDir) > 0 && dot(toSphere, toSphere) - Math.pow(dot(toSphere, lightDir), 2) < (s.rad * s.rad)) {
           inShadow = true;
           break;
         }
@@ -128,14 +112,36 @@ export function renderTitleScreen(
   };
 
   const surface = canvas(cols, rows, shader, { resolution: 'braille', time });
+  
   const [sR, sG, sB] = surfaceColor;
   const [iR, iG, iB] = inkColor;
+  const [aR, aG, aB] = accentColor;
   const anySurface = surface as any;
-  
+
+  const logoScale = 0.5;
+  const lw = JEDIT_LOGO_WIDTH * logoScale;
+  const lh = JEDIT_LOGO_HEIGHT * logoScale;
+  const startX = Math.floor((cols - lw / 2) / 2);
+  const startY = Math.floor((rows - lh / 4) / 2);
+
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
       const cell = surface.get(x, y);
-      if (!cell.bgRGB || cell.bgRGB[0] === -1 || !cell.fgRGB || cell.fgRGB[0] === -1) {
+      
+      const lx = Math.floor((x - startX) * (JEDIT_LOGO_WIDTH / (lw/2)));
+      const ly = Math.floor((y - startY) * (JEDIT_LOGO_HEIGHT / (lh/4)));
+
+      let logoCell = false;
+      if (lx >= 0 && lx < JEDIT_LOGO_WIDTH && ly >= 0 && ly < JEDIT_LOGO_HEIGHT) {
+        const rowMask = mask[ly];
+        if (rowMask && rowMask[Math.floor(lx / 8)]! & (1 << (7 - (lx % 8)))) {
+          logoCell = true;
+        }
+      }
+
+      if (logoCell) {
+        anySurface.setRGB(x, y, '█', aR, aG, aB, sR, sG, sB, 0);
+      } else if (!cell.bgRGB || cell.bgRGB[0] === -1 || !cell.fgRGB || cell.fgRGB[0] === -1) {
         if (typeof anySurface.setRGB === 'function') {
           anySurface.setRGB(
             x, y, cell.char, 
@@ -158,11 +164,7 @@ export function renderTitleScreen(
 }
 
 function scaleColor(c: Color3, s: number): Color3 {
-  return [
-    Math.max(0, Math.min(255, Math.floor(c[0] * s))),
-    Math.max(0, Math.min(255, Math.floor(c[1] * s))),
-    Math.max(0, Math.min(255, Math.floor(c[2] * s)))
-  ];
+  return [Math.max(0, Math.min(255, Math.floor(c[0] * s))), Math.max(0, Math.min(255, Math.floor(c[1] * s))), Math.max(0, Math.min(255, Math.floor(c[2] * s)))];
 }
 
 function getRayDir(ro: Vector3, target: Vector3, screenCoords: Vector3): Vector3 {

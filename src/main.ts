@@ -150,6 +150,8 @@ interface Model {
   readonly lastFrameMs: number;
   readonly frameTimeMs: number;
   readonly frameTimeHistory: readonly number[];
+  readonly camAngle: number;
+  readonly camRadius: number;
 }
 
 type Msg =
@@ -292,6 +294,21 @@ await run(app, JEDIT_TERMINAL_MOUSE_OPTIONS);
 function updateFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
   if (msg.key === '`') {
     return [{ ...model, perfVisible: !model.perfVisible }, []];
+  }
+
+  if (model.editor == null) {
+    if (msg.key === 'left') {
+      return [{ ...model, camAngle: model.camAngle - 0.1 }, []];
+    }
+    if (msg.key === 'right') {
+      return [{ ...model, camAngle: model.camAngle + 0.1 }, []];
+    }
+    if (msg.key === 'up') {
+      return [{ ...model, camRadius: Math.max(2, model.camRadius - 0.5) }, []];
+    }
+    if (msg.key === 'down') {
+      return [{ ...model, camRadius: model.camRadius + 0.5 }, []];
+    }
   }
 
   if (msg.ctrl && msg.key === 'c') {
@@ -737,6 +754,8 @@ function createInitialModel(cwd: string, columns: number, rows: number): Model {
     lastFrameMs: Date.now(),
     frameTimeMs: 0,
     frameTimeHistory: [],
+    camAngle: 0,
+    camRadius: 8.5,
   };
 }
 
@@ -2311,7 +2330,7 @@ function notificationTickCmd(): Cmd<Msg> { return createNotificationTickCmd((atM
 
 function renderViewer(model: Model, width: number, height: number) {
   if (model.editor == null) {
-    return renderTitleScreen(width, height, model.time, model.jeditTheme);
+    return renderTitleScreen(width, height, model.time, model.jeditTheme, model.camAngle, model.camRadius);
   }
 
   const surface = createSurface(width, height);
