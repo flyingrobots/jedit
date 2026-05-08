@@ -14,12 +14,7 @@ interface Sphere {
 }
 
 /**
- * Zen Title Screen - v7 "Unified Zen"
- * 
- * Final stability fix:
- * - Solid background pass to fix light themes.
- * - Robust color interpolation and scaling.
- * - Smooth logo with contrast halo.
+ * Zen Title Screen - v8 "Vivid Zen"
  */
 export function renderTitleScreen(
   cols: number,
@@ -35,7 +30,7 @@ export function renderTitleScreen(
     return bytes;
   });
 
-  const accentColor = theme.chrome.activeEdge.bgRGB ?? [100, 100, 255];
+  const accentColor = theme.chrome.activeEdge.fgRGB ?? [216, 151, 255];
   const surfaceColor = theme.surface.workspace.bgRGB ?? [10, 10, 15];
   const inkColor = theme.surface.workspace.fgRGB ?? [200, 200, 200];
 
@@ -66,7 +61,7 @@ export function renderTitleScreen(
         return { char: '█', fgRGB: accentColor, bgRGB: surfaceColor };
       }
       if (checkMask(lx-1, ly) || checkMask(lx+1, ly) || checkMask(lx, ly-1) || checkMask(lx, ly+1)) {
-        return { char: ' ', bgRGB: surfaceColor };
+        return { char: ' ', fgRGB: inkColor, bgRGB: surfaceColor };
       }
     }
 
@@ -97,8 +92,8 @@ export function renderTitleScreen(
       const p = add(ro, scale(rd, closestT));
       const n = normalize(sub(p, hitSphere.pos));
       const shadow = Math.max(0, dot(n, lightDir));
-      let color = scaleColor(hitSphere.color, 0.4 + shadow * 0.6);
-      let char = shadow > 0.45 ? '·' : ' ';
+      let color = scaleColor(hitSphere.color, 0.45 + shadow * 0.55);
+      let char = shadow > 0.4 ? '·' : ' ';
       if (hitSphere.reflective) {
         const refRd = reflect(rd, n);
         const refPlaneDist = -p[1] / refRd[1];
@@ -113,8 +108,8 @@ export function renderTitleScreen(
     if (hitPlane) {
       const p = add(ro, scale(rd, planeDist));
       const fade = Math.max(0, 1.0 - planeDist / 28.0);
-      if (fade <= 0) return { char: ' ', bgRGB: surfaceColor };
-      if ((Math.floor(p[0] * 0.8) + Math.floor(p[2] * 0.8)) % 2 !== 0) return { char: ' ', bgRGB: surfaceColor };
+      if (fade <= 0) return { char: ' ', fgRGB: inkColor, bgRGB: surfaceColor };
+      if ((Math.floor(p[0] * 0.8) + Math.floor(p[2] * 0.8)) % 2 !== 0) return { char: ' ', fgRGB: inkColor, bgRGB: surfaceColor };
       
       let inShadow = false;
       for (const s of spheres) {
@@ -125,32 +120,36 @@ export function renderTitleScreen(
           break;
         }
       }
-      if (inShadow) return { char: ' ', bgRGB: surfaceColor };
+      if (inShadow) return { char: ' ', fgRGB: inkColor, bgRGB: surfaceColor };
       return { char: '·', fgRGB: scaleColor(inkColor, fade * 0.3), bgRGB: surfaceColor };
     }
 
-    return { char: ' ', bgRGB: surfaceColor };
+    return { char: ' ', fgRGB: inkColor, bgRGB: surfaceColor };
   };
 
   const surface = canvas(cols, rows, shader, { resolution: 'braille', time });
-  
-  // Post-process to fix light themes: ensure ALL cells have the surface background.
   const [sR, sG, sB] = surfaceColor;
   const [iR, iG, iB] = inkColor;
+  const anySurface = surface as any;
   
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
       const cell = surface.get(x, y);
-      const bg = cell.bgRGB;
-      const fg = cell.fgRGB;
-      
-      // If cell style is missing (happens for empty Braille blocks), fill it.
-      if (!bg || !fg) {
-        surface.set(x, y, {
-          char: cell.char,
-          fgRGB: fg ?? [iR, iG, iB],
-          bgRGB: bg ?? [sR, sG, sB],
-        });
+      if (!cell.bgRGB || cell.bgRGB[0] === -1 || !cell.fgRGB || cell.fgRGB[0] === -1) {
+        if (typeof anySurface.setRGB === 'function') {
+          anySurface.setRGB(
+            x, y, cell.char, 
+            cell.fgRGB ? cell.fgRGB[0] : iR, cell.fgRGB ? cell.fgRGB[1] : iG, cell.fgRGB ? cell.fgRGB[2] : iB, 
+            cell.bgRGB ? cell.bgRGB[0] : sR, cell.bgRGB ? cell.bgRGB[1] : sG, cell.bgRGB ? cell.bgRGB[2] : sB, 
+            0
+          );
+        } else {
+          surface.set(x, y, {
+            char: cell.char,
+            fgRGB: cell.fgRGB ?? [iR, iG, iB],
+            bgRGB: cell.bgRGB ?? [sR, sG, sB],
+          });
+        }
       }
     }
   }
