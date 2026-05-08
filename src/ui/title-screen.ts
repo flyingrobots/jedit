@@ -1,6 +1,6 @@
 import { canvas, type ShaderFn } from '@flyingrobots/bijou-tui';
 import { type Surface } from '@flyingrobots/bijou';
-import type { JeditTheme } from './jedit-theme.js';
+import { type JeditTheme, JEDIT_SOURCE_TOKEN } from './jedit-theme.js';
 import { JEDIT_LOGO_WIDTH, JEDIT_LOGO_HEIGHT, JEDIT_LOGO_MASK } from './logo-data.js';
 
 type Vector3 = readonly [number, number, number];
@@ -14,13 +14,7 @@ interface Sphere {
 }
 
 /**
- * Zen Title Screen - v10 "Vivid Interactive"
- * 
- * Features:
- * - Multi-colored spheres (Accent, Info, Success).
- * - Dual-light setup (Key light + Fill light) for balanced shading.
- * - Density-ramped ASCII logo (using █▓▒░).
- * - Atmospheric sky gradient.
+ * Zen Title Screen - v11 "Vivid Interactive Polish"
  */
 export function renderTitleScreen(
   cols: number,
@@ -38,12 +32,13 @@ export function renderTitleScreen(
     return bytes;
   });
 
-  // Dynamically sample theme colors
   const accentColor = theme.chrome.activeEdge.fgRGB ?? [216, 151, 255];
-  const infoColor = theme.source.get(Symbol.for('jedit.theme.source.number'))?.fgRGB ?? [101, 194, 255];
-  const successColor = theme.source.get(Symbol.for('jedit.theme.source.string'))?.fgRGB ?? [124, 213, 156];
+  const infoColor = theme.source.get(JEDIT_SOURCE_TOKEN.Number)?.fgRGB ?? [101, 194, 255];
+  const successColor = theme.source.get(JEDIT_SOURCE_TOKEN.String)?.fgRGB ?? [124, 213, 156];
+  
   const surfaceColor = theme.surface.workspace.bgRGB ?? [10, 10, 15];
   const inkColor = theme.surface.workspace.fgRGB ?? [200, 200, 200];
+  const isLight = (surfaceColor[0] + surfaceColor[1] + surfaceColor[2]) > 400;
 
   const spheres: Sphere[] = [
     { pos: [0, 1.0, 0], rad: 1.0, reflective: true, color: accentColor },
@@ -51,7 +46,6 @@ export function renderTitleScreen(
     { pos: [-2.2, 0.7, -1.0], rad: 0.7, reflective: true, color: infoColor },
   ];
 
-  // 1. Ray Trace Pass
   const shader: ShaderFn = ({ u, v, time: t }) => {
     const aspect = (cols * 2) / (rows * 4);
     const rx = (u * 2 - 1) * aspect;
@@ -74,21 +68,17 @@ export function renderTitleScreen(
 
     const planeDist = -ro[1] / rd[1];
     const hitPlane = planeDist > 0 && planeDist < closestT;
-    
     const lightDir = normalize([1.5, 2.5, -1]);
     const fillDir = normalize([-2, 1, 1]);
 
     if (hitSphere) {
       const p = add(ro, scale(rd, closestT));
       const n = normalize(sub(p, hitSphere.pos));
-      
       const key = Math.max(0, dot(n, lightDir));
-      const fill = Math.max(0, dot(n, fillDir)) * 0.3;
-      const ambient = 0.15;
-      const lighting = key + fill + ambient;
-      
+      const fill = Math.max(0, dot(n, fillDir)) * 0.4;
+      const lighting = key + fill + 0.2;
       let color = scaleColor(hitSphere.color, lighting);
-      let char = lighting > 0.4 ? '·' : ' ';
+      let char = lighting > 0.45 ? '·' : ' ';
 
       if (hitSphere.reflective) {
         const refRd = reflect(rd, n);
@@ -103,12 +93,7 @@ export function renderTitleScreen(
 
     if (hitPlane) {
       const p = add(ro, scale(rd, planeDist));
-      const fade = Math.max(0, 1.0 - planeDist / 35.0);
-      if (fade <= 0) return ' ';
-
       const check = (Math.floor(p[0] * 0.8) + Math.floor(p[2] * 0.8)) % 2 === 0;
-      if (!check) return ' ';
-
       let inShadow = false;
       for (const s of spheres) {
         const toSphere = sub(s.pos, p);
@@ -117,63 +102,58 @@ export function renderTitleScreen(
           break;
         }
       }
-      if (inShadow) return ' ';
-      return { char: '·', fgRGB: scaleColor(inkColor, fade * 0.3), bgRGB: surfaceColor };
+      const shadowMult = inShadow ? 0.4 : 1.0;
+      const fade = Math.max(0, 1.0 - planeDist / 35.0);
+      if (!check) return { char: ' ', bgRGB: surfaceColor };
+      return { char: '·', fgRGB: scaleColor(inkColor, fade * 0.5 * shadowMult), bgRGB: surfaceColor };
     }
 
-    // Sky gradient
-    const skyFade = Math.max(0, rd[1] + 0.2);
-    return { char: ' ', bgRGB: scaleColor(surfaceColor, 1.0 + skyFade * 0.2) };
+    return { char: ' ', bgRGB: surfaceColor };
   };
 
   const surface = canvas(cols, rows, shader, { resolution: 'braille', time });
   const [sR, sG, sB] = surfaceColor;
   const [iR, iG, iB] = inkColor;
-  const [aR, aG, aB] = accentColor;
   const anySurface = surface as any;
 
-  // 2. High-Contrast Shaded Logo Pass (Cell level)
-  const logoScale = 0.5;
+  const logoScale = 0.6;
   const lw = Math.floor(JEDIT_LOGO_WIDTH * logoScale);
   const lh = Math.floor(JEDIT_LOGO_HEIGHT * logoScale);
   const startX = Math.floor((cols - lw / 2) / 2);
   const startY = Math.floor((rows - lh / 4) / 2);
-
   const DENSITY_RAMP = [' ', '·', '░', '▒', '▓', '█'];
 
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
       const cell = surface.get(x, y);
-      
-      // Calculate density of logo sub-pixels in this cell
       let density = 0;
       const lx_base = Math.floor((x - startX) * (JEDIT_LOGO_WIDTH / (lw/2)));
       const ly_base = Math.floor((y - startY) * (JEDIT_LOGO_HEIGHT / (lh/4)));
-
       if (lx_base >= 0 && lx_base < JEDIT_LOGO_WIDTH && ly_base >= 0 && ly_base < JEDIT_LOGO_HEIGHT) {
-        // Check 2x4 sub-pixel block
         for (let sy = 0; sy < 4; sy++) {
           for (let sx = 0; sx < 2; sx++) {
             const lx = lx_base + sx;
             const ly = ly_base + sy;
             const rowMask = mask[ly];
-            if (rowMask && rowMask[Math.floor(lx / 8)]! & (1 << (7 - (lx % 8)))) {
-              density++;
-            }
+            if (rowMask && rowMask[Math.floor(lx / 8)]! & (1 << (7 - (lx % 8)))) density++;
           }
         }
       }
 
       if (density > 0) {
-        // Map density (0-8) to ramp index (0-5)
         const rampIdx = Math.min(5, Math.ceil(density / 1.5));
-        const char = DENSITY_RAMP[rampIdx]!;
-        anySurface.setRGB(x, y, char, aR, aG, aB, sR, sG, sB, 0);
+        const logoFg = isLight ? scaleColor(accentColor, 0.8) : accentColor;
+        anySurface.setRGB(x, y, DENSITY_RAMP[rampIdx]!, logoFg[0], logoFg[1], logoFg[2], sR, sG, sB, 0);
       } else {
-        // Final color stabilization pass for the whole surface
         const fg = cell.fgRGB ?? [iR, iG, iB];
         const bg = cell.bgRGB ?? [sR, sG, sB];
         anySurface.setRGB(x, y, cell.char, fg[0], fg[1], fg[2], bg[0], bg[1], bg[2], 0);
+      }
+
+      if (y === rows - 1 && x < 15) {
+        const debugColors: Color3[] = [accentColor, infoColor, successColor, inkColor, surfaceColor];
+        const color = debugColors[Math.floor(x / 3)];
+        if (color) anySurface.setRGB(x, y, '█', color[0], color[1], color[2], sR, sG, sB, 0);
       }
     }
   }
