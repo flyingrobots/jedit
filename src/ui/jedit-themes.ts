@@ -98,6 +98,17 @@ function applyThemeTokens(draft: JeditThemeDraft, variables: ThemeVariables): vo
 
   draft.chrome.activeEdge.char = ACTIVE_EDGE_CHAR;
   draft.chrome.activeEdge.foregroundColor = variables.accent;
+  draft.chrome.titleLogo.foregroundColor = variables.accent.to(variables.info).easeInOut(6);
+  draft.chrome.titleLogo.backgroundColor = variables.surface;
+  draft.chrome.titleLogo.modifiers = [JEDIT_TEXT_MODIFIER.Bold];
+  draft.chrome.titleLogo.gradient = draft.gradient(variables.accent, variables.info);
+  draft.chrome.titleLogoShadow.foregroundColor = variables.muted;
+  draft.chrome.titleLogoShadow.backgroundColor = variables.surface;
+  draft.chrome.titleLogoShadow.modifiers = [JEDIT_TEXT_MODIFIER.Dim];
+  draft.chrome.titleSceneNear.foregroundColor = variables.ink;
+  draft.chrome.titleSceneNear.backgroundColor = variables.surface;
+  draft.chrome.titleSceneFar.foregroundColor = variables.muted;
+  draft.chrome.titleSceneFar.backgroundColor = variables.surface;
 
   draft.source.comment.foregroundColor = variables.muted;
   draft.source.comment.modifiers = [JEDIT_TEXT_MODIFIER.Dim, JEDIT_TEXT_MODIFIER.Italic];

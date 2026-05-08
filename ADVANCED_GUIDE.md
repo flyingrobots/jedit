@@ -273,6 +273,12 @@ They are independent projections over workspace state:
 They render to their own surfaces and are blitted into the root workspace
 surface. Their backgrounds also come from the active jedit theme.
 
+When no editor is open, the viewer renders a themed title scene instead of a
+buffer. That title scene is still just a projection: a deterministic procedural
+surface for the current frame, plus a foreground ASCII logo layer. The scene
+uses chrome title tokens for its tonal range and logo styling rather than
+embedding renderer-owned colors.
+
 ## Mouse Scroll
 
 The terminal is started with jedit mouse options from
@@ -382,6 +388,10 @@ animation and gradient behavior can use the same metadata later.
 | Token | Glyph | Foreground | Background | Modifiers | Effects |
 | --- | --- | --- | --- | --- | --- |
 | `chrome.activeEdge` | `░` | `accent` / `#d897ff` | preserve existing cell background | none | none |
+| `chrome.titleLogo` | ASCII `jedit` logo | `accent` / `#d897ff` to `info` / `#65c2ff` | `surface` / `#0e1116` | `bold` | Foreground transition `easeInOut(6)`; gradient `accent -> info`. |
+| `chrome.titleLogoShadow` | ASCII logo shadow | `muted` / `#7e8994` | `surface` / `#0e1116` | `dim` | none |
+| `chrome.titleSceneNear` | Tonal ASCII scene cells | `ink` / `#e2e7ec` | `surface` / `#0e1116` | none | none |
+| `chrome.titleSceneFar` | Tonal ASCII scene cells | `muted` / `#7e8994` | `surface` / `#0e1116` | none | none |
 
 ### Cursor Tokens
 

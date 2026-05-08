@@ -42,6 +42,14 @@ test('built-in jedit theme tokens map back to named variables and effect metadat
     assert.ok(Object.values(theme.surface).every((token) => token.backgroundVariables.length > 0));
     assert.equal(theme.chrome.activeEdge.char, '░');
     assert.deepEqual(theme.chrome.activeEdge.foregroundVariables, ['accent']);
+    assert.deepEqual(theme.chrome.titleLogo.foregroundVariables, ['accent', 'info']);
+    assert.deepEqual(theme.chrome.titleLogo.backgroundVariables, ['surface']);
+    assert.deepEqual(theme.chrome.titleLogoShadow.foregroundVariables, ['muted']);
+    assert.deepEqual(theme.chrome.titleLogoShadow.backgroundVariables, ['surface']);
+    assert.deepEqual(theme.chrome.titleSceneNear.foregroundVariables, ['ink']);
+    assert.deepEqual(theme.chrome.titleSceneNear.backgroundVariables, ['surface']);
+    assert.deepEqual(theme.chrome.titleSceneFar.foregroundVariables, ['muted']);
+    assert.deepEqual(theme.chrome.titleSceneFar.backgroundVariables, ['surface']);
 
     const keyword = theme.source.get(style.JEDIT_SOURCE_TOKEN.Keyword);
     assert.equal(keyword.foregroundEffect.kind, style.JEDIT_COLOR_EFFECT.Transition);

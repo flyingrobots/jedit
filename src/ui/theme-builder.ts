@@ -170,6 +170,10 @@ export interface JeditCursorStyleDrafts {
 
 export interface JeditChromeStyleDrafts {
   readonly activeEdge: JeditStyleDraft;
+  readonly titleLogo: JeditStyleDraft;
+  readonly titleLogoShadow: JeditStyleDraft;
+  readonly titleSceneNear: JeditStyleDraft;
+  readonly titleSceneFar: JeditStyleDraft;
 }
 
 export interface JeditThemeDraft {
@@ -222,6 +226,10 @@ export function defineJeditTheme(name: string, build: (draft: JeditThemeDraft) =
     },
     chrome: {
       activeEdge: styleTokenFromDraft(draft.chrome.activeEdge),
+      titleLogo: styleTokenFromDraft(draft.chrome.titleLogo),
+      titleLogoShadow: styleTokenFromDraft(draft.chrome.titleLogoShadow),
+      titleSceneNear: styleTokenFromDraft(draft.chrome.titleSceneNear),
+      titleSceneFar: styleTokenFromDraft(draft.chrome.titleSceneFar),
     },
   };
 }
@@ -233,7 +241,13 @@ function createThemeDraft(variables: Map<string, JeditColorStop>): JeditThemeDra
     markdown: createMarkdownDrafts(),
     surface: { workspace: {}, drawer: {}, footer: {} },
     cursor: { normal: {}, insert: {} },
-    chrome: { activeEdge: {} },
+    chrome: {
+      activeEdge: {},
+      titleLogo: {},
+      titleLogoShadow: {},
+      titleSceneNear: {},
+      titleSceneFar: {},
+    },
     rgb,
     variable(name: string, color: RgbColor): ThemeColorVariable {
       const variable = new ThemeColorVariable(name, color);

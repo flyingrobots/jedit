@@ -128,6 +128,10 @@ export interface JeditThemeCursorTokens {
 
 export interface JeditThemeChromeTokens {
   readonly activeEdge: JeditStyleToken;
+  readonly titleLogo: JeditStyleToken;
+  readonly titleLogoShadow: JeditStyleToken;
+  readonly titleSceneNear: JeditStyleToken;
+  readonly titleSceneFar: JeditStyleToken;
 }
 
 export interface JeditTheme {
