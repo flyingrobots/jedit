@@ -1,5 +1,5 @@
 import { canvas, type ShaderFn } from '@flyingrobots/bijou-tui';
-import type { Surface } from '@flyingrobots/bijou';
+import { type Surface } from '@flyingrobots/bijou';
 import type { JeditTheme } from './jedit-theme.js';
 import { JEDIT_LOGO_WIDTH, JEDIT_LOGO_HEIGHT, JEDIT_LOGO_MASK } from './logo-data.js';
 
@@ -14,13 +14,12 @@ interface Sphere {
 }
 
 /**
- * Zen Title Screen - v6 "Stable Zen"
+ * Zen Title Screen - v7 "Unified Zen"
  * 
- * Final stability polish:
- * - Solid logo with guaranteed contrast.
- * - Uniform background coloring to fix light-theme "wackiness".
- * - Ultra-slow camera movement.
- * - Simple character mapping (dots only) for visual consistency.
+ * Final stability fix:
+ * - Solid background pass to fix light themes.
+ * - Robust color interpolation and scaling.
+ * - Smooth logo with contrast halo.
  */
 export function renderTitleScreen(
   cols: number,
@@ -36,24 +35,21 @@ export function renderTitleScreen(
     return bytes;
   });
 
-  // Dynamics: use current theme colors strictly
   const accentColor = theme.chrome.activeEdge.bgRGB ?? [100, 100, 255];
   const surfaceColor = theme.surface.workspace.bgRGB ?? [10, 10, 15];
   const inkColor = theme.surface.workspace.fgRGB ?? [200, 200, 200];
-  const mutedColor = theme.chrome.titleLogoShadow.fgRGB ?? [100, 100, 100];
 
   const spheres: Sphere[] = [
     { pos: [0, 1.0, 0], rad: 1.0, reflective: true, color: accentColor },
-    { pos: [2.0, 0.5, 1.2], rad: 0.5, reflective: false, color: inkColor },
-    { pos: [-1.8, 0.7, -0.8], rad: 0.7, reflective: true, color: accentColor },
+    { pos: [2.2, 0.5, 1.0], rad: 0.5, reflective: false, color: inkColor },
+    { pos: [-2.0, 0.7, -0.5], rad: 0.7, reflective: true, color: accentColor },
   ];
 
   const shader: ShaderFn = ({ u, v, time: t }) => {
     const px = u * cols * 2;
     const py = v * rows * 4;
 
-    // 1. Logo Pass (Solid & Stable)
-    const logoScale = Math.min(cols * 2 / JEDIT_LOGO_WIDTH, rows * 4 / JEDIT_LOGO_HEIGHT) * 0.5;
+    const logoScale = Math.min(cols * 2 / JEDIT_LOGO_WIDTH, rows * 4 / JEDIT_LOGO_HEIGHT) * 0.48;
     const lw = JEDIT_LOGO_WIDTH * logoScale;
     const lh = JEDIT_LOGO_HEIGHT * logoScale;
     const lx = Math.floor((px - (cols * 2 - lw) / 2) / logoScale);
@@ -67,28 +63,21 @@ export function renderTitleScreen(
 
     if (lx >= 0 && lx < JEDIT_LOGO_WIDTH && ly >= 0 && ly < JEDIT_LOGO_HEIGHT) {
       if (checkMask(lx, ly)) {
-        return {
-          char: '█',
-          fgRGB: accentColor,
-          bgRGB: surfaceColor,
-        };
+        return { char: '█', fgRGB: accentColor, bgRGB: surfaceColor };
       }
-      
-      // Clear zone around logo (1 pixel halo)
       if (checkMask(lx-1, ly) || checkMask(lx+1, ly) || checkMask(lx, ly-1) || checkMask(lx, ly+1)) {
         return { char: ' ', bgRGB: surfaceColor };
       }
     }
 
-    // 2. Ray Trace Scene
     const aspect = (cols * 2) / (rows * 4);
     const rx = (u * 2 - 1) * aspect;
     const ry = (v * 2 - 1);
     
-    const camAngle = t * 0.01; // Glacial orbit
-    const ro: Vector3 = [Math.sin(camAngle) * 8.0, 3.5, Math.cos(camAngle) * 8.0];
+    const camAngle = t * 0.008; 
+    const ro: Vector3 = [Math.sin(camAngle) * 8.5, 3.8, Math.cos(camAngle) * 8.5];
     const target: Vector3 = [0, 0.4, 0];
-    const rd = getRayDir(ro, target, [rx, -ry - 0.2, 3.0]);
+    const rd = getRayDir(ro, target, [rx, -ry - 0.2, 3.2]);
 
     let closestT = Infinity;
     let hitSphere: Sphere | null = null;
@@ -102,61 +91,71 @@ export function renderTitleScreen(
 
     const planeDist = -ro[1] / rd[1];
     const hitPlane = planeDist > 0 && planeDist < closestT;
-    const lightDir = normalize([1, 2, -1]);
+    const lightDir = normalize([1.2, 2, -1]);
 
     if (hitSphere) {
       const p = add(ro, scale(rd, closestT));
       const n = normalize(sub(p, hitSphere.pos));
       const shadow = Math.max(0, dot(n, lightDir));
-      
       let color = scaleColor(hitSphere.color, 0.4 + shadow * 0.6);
-      let char = shadow > 0.4 ? '·' : ' ';
-
+      let char = shadow > 0.45 ? '·' : ' ';
       if (hitSphere.reflective) {
         const refRd = reflect(rd, n);
         const refPlaneDist = -p[1] / refRd[1];
         if (refPlaneDist > 0) {
           const refP = add(p, scale(refRd, refPlaneDist));
-          const check = (Math.floor(refP[0] * 0.6) + Math.floor(refP[2] * 0.6)) % 2 === 0;
-          if (check) char = '·';
+          if ((Math.floor(refP[0] * 0.8) + Math.floor(refP[2] * 0.8)) % 2 === 0) char = '·';
         }
       }
-
       return { char, fgRGB: color, bgRGB: surfaceColor };
     }
 
     if (hitPlane) {
       const p = add(ro, scale(rd, planeDist));
-      const distToCam = planeDist;
-      const fade = Math.max(0, 1.0 - distToCam / 25.0);
+      const fade = Math.max(0, 1.0 - planeDist / 28.0);
       if (fade <= 0) return { char: ' ', bgRGB: surfaceColor };
-
-      const check = (Math.floor(p[0] * 0.6) + Math.floor(p[2] * 0.6)) % 2 === 0;
-      if (!check) return { char: ' ', bgRGB: surfaceColor };
-
+      if ((Math.floor(p[0] * 0.8) + Math.floor(p[2] * 0.8)) % 2 !== 0) return { char: ' ', bgRGB: surfaceColor };
+      
       let inShadow = false;
       for (const s of spheres) {
         const toSphere = sub(s.pos, p);
         const proj = dot(toSphere, lightDir);
-        const d2 = dot(toSphere, toSphere) - proj * proj;
-        if (proj > 0 && d2 < (s.rad * s.rad)) {
+        if (proj > 0 && dot(toSphere, toSphere) - proj * proj < (s.rad * s.rad * 0.9)) {
           inShadow = true;
           break;
         }
       }
-
       if (inShadow) return { char: ' ', bgRGB: surfaceColor };
-      return { 
-        char: '·', 
-        fgRGB: scaleColor(mutedColor, fade * 0.5), 
-        bgRGB: surfaceColor 
-      };
+      return { char: '·', fgRGB: scaleColor(inkColor, fade * 0.3), bgRGB: surfaceColor };
     }
 
     return { char: ' ', bgRGB: surfaceColor };
   };
 
-  return canvas(cols, rows, shader, { resolution: 'braille', time });
+  const surface = canvas(cols, rows, shader, { resolution: 'braille', time });
+  
+  // Post-process to fix light themes: ensure ALL cells have the surface background.
+  const [sR, sG, sB] = surfaceColor;
+  const [iR, iG, iB] = inkColor;
+  
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      const cell = surface.get(x, y);
+      const bg = cell.bgRGB;
+      const fg = cell.fgRGB;
+      
+      // If cell style is missing (happens for empty Braille blocks), fill it.
+      if (!bg || !fg) {
+        surface.set(x, y, {
+          char: cell.char,
+          fgRGB: fg ?? [iR, iG, iB],
+          bgRGB: bg ?? [sR, sG, sB],
+        });
+      }
+    }
+  }
+
+  return surface;
 }
 
 function scaleColor(c: Color3, s: number): Color3 {
