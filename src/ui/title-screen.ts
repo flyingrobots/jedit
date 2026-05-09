@@ -14,6 +14,17 @@ interface Sphere {
   readonly reflectivity: number;
 }
 
+export interface TitleSceneMaterialColors {
+  readonly accent: Color3;
+  readonly info: Color3;
+  readonly success: Color3;
+  readonly ink: Color3;
+  readonly muted: Color3;
+  readonly surface: Color3;
+  readonly floorDark: Color3;
+  readonly floorLight: Color3;
+}
+
 interface LogoBounds {
   readonly x: number;
   readonly y: number;
@@ -36,9 +47,13 @@ const SPECULAR_STRENGTH = 0.52;
 const REFLECTION_EDGE_BIAS = 0.28;
 const REFLECTION_FRESNEL_POWER = 3;
 const PLANE_FADE_DISTANCE = 36;
+const PLANE_MIN_FADE = 0.05;
 const PLANE_GRID_SCALE = 0.7;
 const SKY_TINT = 1.08;
 const SURFACE_REFLECTION_TINT = 0.72;
+const LUMINANCE_RED_WEIGHT = 0.2126;
+const LUMINANCE_GREEN_WEIGHT = 0.7152;
+const LUMINANCE_BLUE_WEIGHT = 0.0722;
 
 export function renderTitleScreen(
   cols: number,
@@ -49,7 +64,7 @@ export function renderTitleScreen(
   camRadius = DEFAULT_CAMERA_RADIUS,
 ): Surface {
   const logoMask = decodeLogoMask();
-  const colors = themeTitleColors(theme);
+  const colors = titleSceneMaterialColors(theme);
   const subpixelCols = cols * BRAILLE_COLUMNS_PER_CELL;
   const subpixelRows = rows * BRAILLE_ROWS_PER_CELL;
   const logoBounds = titleLogoBounds(subpixelCols, subpixelRows);
@@ -73,15 +88,22 @@ export function renderTitleScreen(
   return averagingBrailleCanvas(cols, rows, shader, time);
 }
 
-function themeTitleColors(theme: JeditTheme) {
-  return {
+export function titleSceneMaterialColors(theme: JeditTheme): TitleSceneMaterialColors {
+  const baseColors = {
     accent: theme.chrome.titleLogo.fgRGB ?? theme.chrome.activeEdge.fgRGB ?? [216, 151, 255],
     info: theme.source.get(JEDIT_SOURCE_TOKEN.Number)?.fgRGB ?? [101, 194, 255],
     success: theme.source.get(JEDIT_SOURCE_TOKEN.String)?.fgRGB ?? [124, 213, 156],
-    ink: theme.surface.workspace.fgRGB ?? [226, 231, 236],
+    ink: theme.chrome.titleSceneNear.fgRGB ?? theme.surface.workspace.fgRGB ?? [226, 231, 236],
     muted: theme.chrome.titleSceneFar.fgRGB ?? [126, 137, 148],
     surface: theme.surface.workspace.bgRGB ?? [14, 17, 22],
   } as const;
+  const floorColors = orderedFloorMaterialColors(baseColors.ink, baseColors.muted);
+
+  return {
+    ...baseColors,
+    floorDark: floorColors.dark,
+    floorLight: floorColors.light,
+  };
 }
 
 function sceneSampleAt(
@@ -93,7 +115,7 @@ function sceneSampleAt(
   camAngle: number,
   camRadius: number,
   spheres: readonly Sphere[],
-  colors: ReturnType<typeof themeTitleColors>,
+  colors: TitleSceneMaterialColors,
 ): BrailleShaderSample {
   const aspect = cols / Math.max(1, rows);
   const rx = (u * 2 - 1) * aspect;
@@ -134,10 +156,11 @@ function sceneSampleAt(
     const point = add(origin, scale(ray, planeDistance));
     const fade = Math.max(0, 1 - (planeDistance / PLANE_FADE_DISTANCE));
     const grid = (Math.floor(point[0] * PLANE_GRID_SCALE) + Math.floor(point[2] * PLANE_GRID_SCALE)) % 2 === 0;
-    if (grid && fade > 0.05) {
+    if (fade > PLANE_MIN_FADE) {
+      const floorColor = grid ? colors.floorLight : colors.floorDark;
       return {
         on: true,
-        fgRGB: mixColor(colors.muted, colors.ink, fade),
+        fgRGB: mixColor(colors.surface, floorColor, fade),
         bgRGB: colors.surface,
       };
     }
@@ -154,17 +177,15 @@ function sceneSampleAt(
 function reflectedEnvironmentColor(
   point: Vector3,
   ray: Vector3,
-  colors: ReturnType<typeof themeTitleColors>,
+  colors: TitleSceneMaterialColors,
 ): Color3 {
   const planeDistance = -point[1] / ray[1];
   if (planeDistance > 0) {
     const reflectedPoint = add(point, scale(ray, planeDistance));
     const fade = Math.max(0, 1 - (planeDistance / PLANE_FADE_DISTANCE));
     const grid = (Math.floor(reflectedPoint[0] * PLANE_GRID_SCALE) + Math.floor(reflectedPoint[2] * PLANE_GRID_SCALE)) % 2 === 0;
-    if (grid) {
-      return scaleColor(mixColor(colors.muted, colors.ink, fade), SURFACE_REFLECTION_TINT);
-    }
-    return scaleColor(colors.surface, SKY_TINT);
+    const floorColor = grid ? colors.floorLight : colors.floorDark;
+    return scaleColor(mixColor(colors.surface, floorColor, fade), SURFACE_REFLECTION_TINT);
   }
 
   return mixColor(scaleColor(colors.surface, SKY_TINT), colors.muted, Math.max(0, ray[1]));
@@ -175,7 +196,7 @@ function logoSampleAt(
   y: number,
   bounds: LogoBounds,
   mask: readonly (readonly number[])[],
-  colors: ReturnType<typeof themeTitleColors>,
+  colors: TitleSceneMaterialColors,
 ): BrailleShaderSample | undefined {
   if (bounds.width <= 0 || bounds.height <= 0 || x < bounds.x || y < bounds.y) {
     return undefined;
@@ -197,6 +218,21 @@ function logoSampleAt(
     bgRGB: colors.surface,
     modifiers: [JEDIT_TEXT_MODIFIER.Bold],
   };
+}
+
+function orderedFloorMaterialColors(
+  first: Color3,
+  second: Color3,
+): { readonly dark: Color3; readonly light: Color3 } {
+  return colorLuminance(first) <= colorLuminance(second)
+    ? { dark: first, light: second }
+    : { dark: second, light: first };
+}
+
+function colorLuminance(color: Color3): number {
+  return (color[0] * LUMINANCE_RED_WEIGHT)
+    + (color[1] * LUMINANCE_GREEN_WEIGHT)
+    + (color[2] * LUMINANCE_BLUE_WEIGHT);
 }
 
 function titleLogoBounds(screenWidth: number, screenHeight: number): LogoBounds {

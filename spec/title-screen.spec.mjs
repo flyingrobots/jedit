@@ -108,6 +108,19 @@ test('title scene keeps reflective highlights on sphere materials', async () => 
   assert.ok(highlightCells.length > 0);
 });
 
+test('title scene keeps checker floor material contrast stable across built-in themes', async () => {
+  const { title, themes } = await loadTitleModules();
+
+  for (const theme of themes.availableJeditThemes()) {
+    const colors = title.titleSceneMaterialColors(theme);
+
+    assert.ok(
+      luminance(colors.floorLight) > luminance(colors.floorDark),
+      `${theme.name} floorLight should be lighter than floorDark`,
+    );
+  }
+});
+
 test('title screen is deterministic for a fixed scene seed and frame time', async () => {
   const { title, themes } = await loadTitleModules();
   const theme = themes.availableJeditThemes()[0];
