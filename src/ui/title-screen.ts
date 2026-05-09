@@ -64,6 +64,8 @@ const LIGHT_DIFFUSE = 0.76;
 const KEY_LIGHT_DIRECTION: Vector3 = normalize([-1.3, 2.8, -1.7]);
 const SPECULAR_POWER = 28;
 const SPECULAR_STRENGTH = 0.52;
+const RIM_LIGHT_POWER = 2.2;
+const RIM_LIGHT_STRENGTH = 0.74;
 const REFLECTION_EDGE_BIAS = 0.28;
 const REFLECTION_FRESNEL_POWER = 3;
 const MIRROR_REFLECTIVITY_THRESHOLD = 0.95;
@@ -158,20 +160,15 @@ function sceneSampleAt(
   if (objectHit != null && (planeDistance <= 0 || objectHit.distance < planeDistance)) {
     const point = add(origin, scale(ray, objectHit.distance));
     const normal = objectHit.normal;
-    const light = Math.max(0, dot(normal, KEY_LIGHT_DIRECTION));
-    const intensity = LIGHT_AMBIENT + (light * LIGHT_DIFFUSE);
     const reflectionRay = reflect(ray, normal);
     const reflectionColor = reflectedEnvironmentColor(add(point, scale(normal, SHADOW_RAY_BIAS)), reflectionRay, colors, objects, time, objectHit.object);
     const fresnel = Math.pow(1 - Math.max(0, dot(scale(ray, -1), normal)), REFLECTION_FRESNEL_POWER);
     const reflectionAmount = titleObjectReflectionAmount(objectHit.object.reflectivity, fresnel);
-    const viewDirection = scale(ray, -1);
-    const halfVector = normalize(add(KEY_LIGHT_DIRECTION, viewDirection));
-    const specular = Math.pow(Math.max(0, dot(normal, halfVector)), SPECULAR_POWER) * SPECULAR_STRENGTH;
     return {
       on: true,
       fgRGB: addColor(
-        mixColor(scaleColor(objectHit.object.color, intensity), reflectionColor, reflectionAmount),
-        scaleColor(colors.ink, specular),
+        mixColor(shadedObjectColor(objectHit, ray, colors), reflectionColor, reflectionAmount),
+        objectRimLightColor(objectHit, ray, colors),
       ),
       bgRGB: colors.surface,
     };
@@ -251,6 +248,17 @@ function shadedObjectColor(
   const halfVector = normalize(add(KEY_LIGHT_DIRECTION, viewDirection));
   const specular = Math.pow(Math.max(0, dot(objectHit.normal, halfVector)), SPECULAR_POWER) * SPECULAR_STRENGTH;
   return addColor(scaleColor(objectHit.object.color, intensity), scaleColor(colors.ink, specular));
+}
+
+function objectRimLightColor(
+  objectHit: { readonly object: TitleSceneObject; readonly normal: Vector3 },
+  ray: Vector3,
+  colors: TitleSceneMaterialColors,
+): Color3 {
+  const viewAlignment = Math.max(0, dot(objectHit.normal, scale(ray, -1)));
+  const strength = Math.pow(1 - viewAlignment, RIM_LIGHT_POWER) * RIM_LIGHT_STRENGTH;
+  const color = objectHit.object.reflectivity >= MIRROR_REFLECTIVITY_THRESHOLD ? colors.ink : colors.info;
+  return scaleColor(color, strength);
 }
 
 export function titleFloorLightEffectsAt(
