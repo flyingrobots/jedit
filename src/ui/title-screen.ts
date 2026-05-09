@@ -1,8 +1,7 @@
 import { type Surface } from '@flyingrobots/bijou';
 
 import { averagingBrailleCanvas, type BrailleShaderFn, type BrailleShaderSample, type RGB } from './averaging-braille-canvas.js';
-import { type JeditTheme, JEDIT_TEXT_MODIFIER } from './jedit-theme.js';
-import { JEDIT_LOGO_HEIGHT, JEDIT_LOGO_MASK, JEDIT_LOGO_WIDTH } from './logo-data.js';
+import { type JeditTheme } from './jedit-theme.js';
 import {
   generateTitleScene,
   intersectsTitleSceneObjectAlongRay,
@@ -10,11 +9,13 @@ import {
   type TitleSceneObject,
   type TitleSceneVector3,
 } from './title-scene.js';
+import { paintTitleLogo, titleLogoCellBounds } from './title-logo.js';
 import type { TitleMesh } from './title-mesh.js';
 
 type Vector3 = TitleSceneVector3;
 type Color3 = RGB;
 export type TitleSceneSphere = TitleSceneObject;
+export { titleLogoCellBounds } from './title-logo.js';
 export interface TitleFloorLightEffects {
   readonly shadowMultiplier: number;
   readonly contactShadowMultiplier: number;
@@ -32,33 +33,11 @@ export interface TitleSceneMaterialColors {
   readonly floorLight: Color3;
 }
 
-interface LogoBounds {
-  readonly x: number;
-  readonly y: number;
-  readonly width: number;
-  readonly height: number;
-}
-
 const DEFAULT_CAMERA_RADIUS = 8.5;
 const DEFAULT_TITLE_SCENE_SEED = 0.5;
 const CAMERA_DRIFT_RATE = 0.005;
 const CAMERA_HEIGHT = 2.65;
 const CAMERA_TARGET_Y = 0.78;
-const LOGO_WIDTH_RATIO = 0.8;
-const LOGO_REQUESTED_SCALE_RATIO = 0.32;
-const LOGO_TARGET_WIDTH_RATIO = LOGO_WIDTH_RATIO * LOGO_REQUESTED_SCALE_RATIO;
-const LOGO_VERTICAL_CENTER_NUMERATOR = 4;
-const LOGO_VERTICAL_CENTER_DENOMINATOR = 5;
-const LOGO_COVERAGE_SAMPLE_COLUMNS = 4;
-const LOGO_COVERAGE_SAMPLE_ROWS = 4;
-const LOGO_SOLID_THRESHOLD = 0.72;
-const LOGO_DENSE_THRESHOLD = 0.45;
-const LOGO_MID_THRESHOLD = 0.18;
-const LOGO_FAINT_THRESHOLD = 0.05;
-const LOGO_SOLID_GLYPH = '█';
-const LOGO_DENSE_GLYPH = '▓';
-const LOGO_MID_GLYPH = '▒';
-const LOGO_FAINT_GLYPH = '░';
 const LIGHT_AMBIENT = 0.24;
 const LIGHT_DIFFUSE = 0.76;
 const KEY_LIGHT_DIRECTION: Vector3 = normalize([-1.3, 2.8, -1.7]);
@@ -102,7 +81,6 @@ export function renderTitleScreen(
   sceneSeed = DEFAULT_TITLE_SCENE_SEED,
   mesh?: TitleMesh,
 ): Surface {
-  const logoMask = decodeLogoMask();
   const colors = titleSceneMaterialColors(theme);
   const scene = generateTitleScene(sceneSeed, colors, mesh);
 
@@ -111,7 +89,7 @@ export function renderTitleScreen(
   };
 
   const surface = averagingBrailleCanvas(cols, rows, shader, time);
-  paintTitleLogo(surface, titleLogoCellBounds(cols, rows), logoMask, colors);
+  paintTitleLogo(surface, titleLogoCellBounds(cols, rows), colors, time);
   return surface;
 }
 
@@ -321,70 +299,6 @@ function titleFloorContactShadowMultiplierAt(point: Vector3, objects: readonly T
   return Math.max(CONTACT_SHADOW_MIN_MULTIPLIER, 1 - strength);
 }
 
-function paintTitleLogo(
-  surface: Surface,
-  bounds: LogoBounds,
-  mask: readonly (readonly number[])[],
-  colors: TitleSceneMaterialColors,
-): void {
-  for (let row = 0; row < bounds.height; row++) {
-    for (let col = 0; col < bounds.width; col++) {
-      const coverage = logoCoverageAt(col, row, bounds, mask);
-      const char = titleLogoGlyphForCoverage(coverage);
-      if (char == null) {
-        continue;
-      }
-      const ratio = col / Math.max(1, bounds.width - 1);
-      surface.set(bounds.x + col, bounds.y + row, {
-        char,
-        fgRGB: mixColor(colors.accent, colors.info, ratio),
-        bgRGB: colors.surface,
-        modifiers: [JEDIT_TEXT_MODIFIER.Bold],
-      });
-    }
-  }
-}
-
-function logoCoverageAt(
-  col: number,
-  row: number,
-  bounds: LogoBounds,
-  mask: readonly (readonly number[])[],
-): number {
-  let covered = 0;
-  const sampleCount = LOGO_COVERAGE_SAMPLE_COLUMNS * LOGO_COVERAGE_SAMPLE_ROWS;
-  for (let sampleY = 0; sampleY < LOGO_COVERAGE_SAMPLE_ROWS; sampleY++) {
-    for (let sampleX = 0; sampleX < LOGO_COVERAGE_SAMPLE_COLUMNS; sampleX++) {
-      const logoX = Math.floor(
-        ((col + ((sampleX + 0.5) / LOGO_COVERAGE_SAMPLE_COLUMNS)) / bounds.width) * JEDIT_LOGO_WIDTH,
-      );
-      const logoY = Math.floor(
-        ((row + ((sampleY + 0.5) / LOGO_COVERAGE_SAMPLE_ROWS)) / bounds.height) * JEDIT_LOGO_HEIGHT,
-      );
-      if (logoMaskBit(mask, logoX, logoY)) {
-        covered += 1;
-      }
-    }
-  }
-  return covered / sampleCount;
-}
-
-function titleLogoGlyphForCoverage(coverage: number): string | undefined {
-  if (coverage >= LOGO_SOLID_THRESHOLD) {
-    return LOGO_SOLID_GLYPH;
-  }
-  if (coverage >= LOGO_DENSE_THRESHOLD) {
-    return LOGO_DENSE_GLYPH;
-  }
-  if (coverage >= LOGO_MID_THRESHOLD) {
-    return LOGO_MID_GLYPH;
-  }
-  if (coverage >= LOGO_FAINT_THRESHOLD) {
-    return LOGO_FAINT_GLYPH;
-  }
-  return undefined;
-}
-
 function orderedFloorMaterialColors(
   first: Color3,
   second: Color3,
@@ -398,39 +312,6 @@ function colorLuminance(color: Color3): number {
   return (color[0] * LUMINANCE_RED_WEIGHT)
     + (color[1] * LUMINANCE_GREEN_WEIGHT)
     + (color[2] * LUMINANCE_BLUE_WEIGHT);
-}
-
-export function titleLogoCellBounds(screenWidth: number, screenHeight: number): LogoBounds {
-  const maxWidth = Math.max(1, Math.floor(screenWidth * LOGO_TARGET_WIDTH_RATIO));
-  const naturalHeight = Math.max(1, Math.floor(maxWidth * (JEDIT_LOGO_HEIGHT / JEDIT_LOGO_WIDTH)));
-  const height = Math.min(screenHeight, naturalHeight);
-  const width = Math.min(maxWidth, Math.max(1, Math.floor(height * (JEDIT_LOGO_WIDTH / JEDIT_LOGO_HEIGHT))));
-  const centerY = Math.floor((screenHeight * LOGO_VERTICAL_CENTER_NUMERATOR) / LOGO_VERTICAL_CENTER_DENOMINATOR);
-  const maxY = Math.max(0, screenHeight - height);
-  return {
-    x: Math.floor((screenWidth - width) / 2),
-    y: Math.min(maxY, Math.max(0, Math.floor(centerY - (height / 2)))),
-    width,
-    height,
-  };
-}
-
-function logoMaskBit(mask: readonly (readonly number[])[], x: number, y: number): boolean {
-  if (x < 0 || x >= JEDIT_LOGO_WIDTH || y < 0 || y >= JEDIT_LOGO_HEIGHT) {
-    return false;
-  }
-  const row = mask[y];
-  return row != null && (row[Math.floor(x / 8)]! & (1 << (7 - (x % 8)))) !== 0;
-}
-
-function decodeLogoMask(): readonly (readonly number[])[] {
-  return JEDIT_LOGO_MASK.map((row) => {
-    const bytes: number[] = [];
-    for (let index = 0; index < row.length; index += 4) {
-      bytes.push(parseInt(row.slice(index + 2, index + 4), 16));
-    }
-    return bytes;
-  });
 }
 
 function mixColor(from: Color3, to: Color3, ratio: number): Color3 {

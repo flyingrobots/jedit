@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 
 const REPO_ROOT = process.cwd();
 const TITLE_SCREEN_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-screen.js');
+const TITLE_LOGO_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-logo.js');
 const TITLE_SCENE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-scene.js');
 const BRAILLE_CANVAS_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'averaging-braille-canvas.js');
 const THEMES_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'jedit-themes.js');
@@ -13,6 +14,8 @@ const STYLE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'jedit-theme.js');
 const FIXED_TITLE_SEED = 0.417;
 const TITLE_WIDTH = 96;
 const TITLE_HEIGHT = 28;
+const TITLE_LOGO_LETTER_COUNT = 5;
+const TITLE_LOGO_MOTION_TIME = 0.7;
 const REFLECTIVE_HIGHLIGHT_LUMINANCE = 190;
 
 async function loadTitleModules() {
@@ -25,6 +28,7 @@ async function loadTitleModules() {
 
   return {
     title: await import(pathToFileURL(TITLE_SCREEN_PATH).href),
+    titleLogo: await import(pathToFileURL(TITLE_LOGO_PATH).href),
     titleScene: await import(pathToFileURL(TITLE_SCENE_PATH).href),
     brailleCanvas: await import(pathToFileURL(BRAILLE_CANVAS_PATH).href),
     themes: await import(pathToFileURL(THEMES_PATH).href),
@@ -35,6 +39,12 @@ async function loadTitleModules() {
 function cells(surface) {
   return Array.from({ length: surface.height }, (_, y) => (
     Array.from({ length: surface.width }, (_, x) => surface.get(x, y))
+  )).flat();
+}
+
+function positionedCells(surface) {
+  return Array.from({ length: surface.height }, (_, y) => (
+    Array.from({ length: surface.width }, (_, x) => ({ x, y, cell: surface.get(x, y) }))
   )).flat();
 }
 
@@ -82,6 +92,19 @@ test('title logo bounds keep the smaller logo in the lower title band', async ()
   assert.ok(Math.abs((bounds.y + (bounds.height / 2)) - (TITLE_HEIGHT * 0.8)) <= 1);
 });
 
+test('title logo source mask splits into independently animated letters', async () => {
+  const { title, titleLogo } = await loadTitleModules();
+  const bounds = title.titleLogoCellBounds(TITLE_WIDTH, TITLE_HEIGHT);
+  const idleLetters = titleLogo.titleLogoAnimatedLetters(bounds, 0);
+  const motionLetters = titleLogo.titleLogoAnimatedLetters(bounds, TITLE_LOGO_MOTION_TIME);
+
+  assert.equal(idleLetters.length, TITLE_LOGO_LETTER_COUNT);
+  assert.ok(idleLetters.every((letter) => letter.width > 0 && letter.height === bounds.height));
+  assert.ok(idleLetters.every((letter, index) => index === 0 || letter.x > idleLetters[index - 1].x));
+  assert.ok(motionLetters.some((letter, index) => letter.y !== idleLetters[index].y));
+  assert.ok(motionLetters.some((letter, index) => letter.colorShift !== idleLetters[index].colorShift));
+});
+
 test('title screen renders the logo as a non-Braille themed glyph layer', async () => {
   const { title, themes, style } = await loadTitleModules();
   const theme = themes.availableJeditThemes()[0];
@@ -93,6 +116,19 @@ test('title screen renders the logo as a non-Braille themed glyph layer', async 
   assert.ok(new Set(logoCells.map((cell) => cell.char)).size > 1);
   assert.ok(new Set(logoCells.map(cellColorKey)).size > 1);
   assert.ok(logoCells.every((cell) => cell.bgRGB != null));
+});
+
+test('title screen animates logo glyph positions and color over time', async () => {
+  const { title, themes, style } = await loadTitleModules();
+  const theme = themes.availableJeditThemes()[0];
+  const first = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, FIXED_TITLE_SEED);
+  const later = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, TITLE_LOGO_MOTION_TIME, theme, FIXED_TITLE_SEED);
+  const firstLogo = logoCellKeys(first, style);
+  const laterLogo = logoCellKeys(later, style);
+
+  assert.ok(firstLogo.length > 12);
+  assert.ok(laterLogo.length > 12);
+  assert.notDeepEqual(laterLogo, firstLogo);
 });
 
 test('title scene uses Braille subpixels with averaged material colors', async () => {
@@ -170,6 +206,12 @@ test('title screen is deterministic for a fixed scene seed and frame time', asyn
 
 function cellColorKey(cell) {
   return cell.fg ?? cell.fgRGB?.join(',') ?? '';
+}
+
+function logoCellKeys(surface, style) {
+  return positionedCells(surface)
+    .filter(({ cell }) => cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold))
+    .map(({ x, y, cell }) => `${x}:${y}:${cell.char}:${cellColorKey(cell)}`);
 }
 
 function luminance(rgb) {
