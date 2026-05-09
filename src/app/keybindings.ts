@@ -1,3 +1,5 @@
+import { DuplicateKeyBindingError } from '../domain/errors.js';
+
 export const JEDIT_KEY_ACTION = {
   OpenSettings: Symbol('jedit.key.action.open-settings'),
   ToggleMarkdownPreview: Symbol('jedit.key.action.toggle-markdown-preview'),
@@ -58,7 +60,7 @@ export function ensureUniqueJeditKeyBindings<const Bindings extends readonly Jed
     const signature = keyBindingSignature(binding);
     const previous = seen.get(signature);
     if (previous != null && previous.action !== binding.action) {
-      throw new Error(`${DUPLICATE_BINDING_PREFIX}: ${signature} is used by "${previous.label}" and "${binding.label}"`);
+      throw new DuplicateKeyBindingError(`${DUPLICATE_BINDING_PREFIX}: ${signature} is used by "${previous.label}" and "${binding.label}"`);
     }
     seen.set(signature, binding);
   }

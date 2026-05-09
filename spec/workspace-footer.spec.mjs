@@ -44,7 +44,7 @@ test('workspace footer shows compact uppercase normal-mode guidance', async () =
   assert.deepEqual(
     footer.workspaceFooterLines(idleNormalState()),
     [
-      'NORMAL [i insert · o open line · f3 preview · ctrl+t theme · tab focus]',
+      'NORMAL [i insert · o open line · f3 preview · ctrl+t theme]',
       '/repo/notes/todo.md',
     ],
   );

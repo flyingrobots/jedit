@@ -188,7 +188,7 @@ const DEFAULT_THEME = GRAPHITE_THEME;
 const GENERATED_COMPANION_CACHE = new Map<string, JeditTheme>();
 
 export function availableJeditThemes(): readonly JeditTheme[] {
-  return BUILT_IN_THEMES;
+  return [...BUILT_IN_THEMES];
 }
 
 export function resolveInitialJeditTheme(themeName: string | undefined): JeditTheme {

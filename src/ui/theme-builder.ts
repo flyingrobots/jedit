@@ -21,6 +21,7 @@ import {
   type JeditThemeVariantSource,
 } from './jedit-theme.js';
 import { SOURCE_HIGHLIGHT_ROLE } from '../ports/source-highlighter.js';
+import { DuplicateThemeVariableError } from '../domain/errors.js';
 
 const COLOR_CHANNEL_MIN = 0;
 const COLOR_CHANNEL_MAX = 255;
@@ -274,6 +275,9 @@ function createThemeDraft(variables: Map<string, JeditColorStop>): JeditThemeDra
     },
     rgb,
     variable(name: string, color: RgbColor): ThemeColorVariable {
+      if (variables.has(name)) {
+        throw new DuplicateThemeVariableError(`Duplicate theme variable name: ${name}`);
+      }
       const variable = new ThemeColorVariable(name, color);
       variables.set(name, variable);
       return variable;

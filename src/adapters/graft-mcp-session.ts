@@ -4,6 +4,13 @@ import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { dirname, isAbsolute, join, relative } from 'node:path';
 
+import {
+  GraftInvalidPayloadError,
+  GraftNoTextContentError,
+  GraftPackageNotFoundError,
+  GraftToolExecutionError,
+} from '../domain/errors.js';
+
 const require = createRequire(import.meta.url);
 
 const GRAFT_PACKAGE_SPECIFIER = '@flyingrobots/graft';
@@ -266,7 +273,7 @@ function resolveGraftCliPath(): string {
     graftCliPath = join(dirname(require.resolve(GRAFT_PACKAGE_JSON_SPECIFIER)), GRAFT_BIN_PATH);
     return graftCliPath;
   } catch (cause) {
-    throw new Error(`${GRAFT_PACKAGE_SPECIFIER} is not installed: ${cause instanceof Error ? cause.message : String(cause)}`);
+    throw new GraftPackageNotFoundError(`${GRAFT_PACKAGE_SPECIFIER} is not installed: ${cause instanceof Error ? cause.message : String(cause)}`);
   }
 }
 
@@ -282,7 +289,7 @@ async function callGraftTool(
   }) as GraftToolResult;
 
   if (result.isError === true) {
-    throw new Error(parseGraftErrorResult(result));
+    throw new GraftToolExecutionError(parseGraftErrorResult(result));
   }
 
   return parseGraftToolResult(result);
@@ -308,7 +315,7 @@ function parseGraftToolResult(result: GraftToolResult): JsonValue {
     ?.text;
 
   if (text == null) {
-    throw new Error('No text content in MCP result');
+    throw new GraftNoTextContentError('No text content in MCP result');
   }
 
   const parsed: JsonValue = JSON.parse(text);
@@ -373,7 +380,7 @@ function decodeGraftDiffEntry(value: JsonValue, path: string): GraftDiffEntry {
 
 function asJsonObject(value: JsonValue | undefined, path: string): JsonObject {
   if (!isJsonObject(value)) {
-    throw new Error(`${path} must be an object`);
+    throw new GraftInvalidPayloadError(`${path} must be an object`);
   }
   return value;
 }
@@ -384,21 +391,21 @@ function isJsonObject(value: JsonValue | undefined): value is JsonObject {
 
 function asArray(value: JsonValue | undefined, path: string): readonly JsonValue[] {
   if (!Array.isArray(value)) {
-    throw new Error(`${path} must be an array`);
+    throw new GraftInvalidPayloadError(`${path} must be an array`);
   }
   return value;
 }
 
 function asString(value: JsonValue | undefined, path: string): string {
   if (typeof value !== 'string') {
-    throw new Error(`${path} must be a string`);
+    throw new GraftInvalidPayloadError(`${path} must be a string`);
   }
   return value;
 }
 
 function asNumber(value: JsonValue | undefined, path: string): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
-    throw new Error(`${path} must be a finite number`);
+    throw new GraftInvalidPayloadError(`${path} must be a finite number`);
   }
   return value;
 }

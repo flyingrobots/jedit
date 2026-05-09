@@ -16,6 +16,7 @@ import {
 } from '@flyingrobots/bijou-tui';
 
 import type { Surface } from '@flyingrobots/bijou';
+import { MissingCapabilityError } from '../domain/errors.js';
 
 const HELP_MODAL_WIDTH = 56;
 const NOTIFICATION_TICK_MS = 40;
@@ -43,7 +44,7 @@ export function isFooterToggleKey(msg: KeyMsg): boolean {
 export function createNotificationTickCmd<Msg>(createMsg: (atMs: number) => Msg): Cmd<Msg> {
   return async (_emit, caps) => {
     if (!caps.sleep) {
-      throw new Error('Notification ticking requires sleep capability.');
+      throw new MissingCapabilityError('Notification ticking requires sleep capability.');
     }
 
     await caps.sleep(NOTIFICATION_TICK_MS);

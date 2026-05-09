@@ -1,4 +1,10 @@
 import type { TitleMeshSource, TitleMeshTriangle, TitleMeshVector3 } from '../ports/title-mesh.js';
+import {
+  EmptyMeshError,
+  InvalidMeshHeightError,
+  MeshTriangleIndexOutOfRangeError,
+  MeshVertexIndexOutOfRangeError,
+} from '../domain/errors.js';
 
 export type { TitleMeshSource, TitleMeshTriangle, TitleMeshVector3 };
 
@@ -104,7 +110,7 @@ function createTitleMesh(source: TitleMeshSource, placement: TitleMeshPlacement)
   const vertices = source.vertices.map((vertex) => transformVertex(vertex, sourceBounds, placement));
   const triangles = source.triangles.map((indices) => triangleData(vertices, indices));
   if (triangles.length === 0) {
-    throw new Error('Title mesh must contain at least one triangle.');
+    throw new EmptyMeshError('Title mesh must contain at least one triangle.');
   }
 
   const triangleIndices = triangles.map((_, index) => index);
@@ -122,7 +128,7 @@ function createTitleMesh(source: TitleMeshSource, placement: TitleMeshPlacement)
 function transformVertex(vertex: TitleMeshVector3, bounds: TitleMeshBounds, placement: TitleMeshPlacement): TitleMeshVector3 {
   const sourceHeight = bounds.max[AXIS_Y] - bounds.min[AXIS_Y];
   if (sourceHeight <= 0) {
-    throw new Error('Title mesh source height must be greater than zero.');
+    throw new InvalidMeshHeightError('Title mesh source height must be greater than zero.');
   }
 
   const sourceCenterX = (bounds.min[AXIS_X] + bounds.max[AXIS_X]) / 2;
@@ -274,7 +280,7 @@ function boundsForTriangles(triangles: readonly TitleMeshTriangleData[], indices
 function boundsForVertices(vertices: readonly TitleMeshVector3[]): TitleMeshBounds {
   const first = vertices[0];
   if (first == null) {
-    throw new Error('Title mesh must contain at least one vertex.');
+    throw new EmptyMeshError('Title mesh must contain at least one vertex.');
   }
 
   let min = first;
@@ -309,7 +315,7 @@ function widestAxis(bounds: TitleMeshBounds): Axis {
 function triangleAt(triangles: readonly TitleMeshTriangleData[], index: number): TitleMeshTriangleData {
   const triangle = triangles[index];
   if (triangle == null) {
-    throw new Error('Title mesh triangle index is out of range.');
+    throw new MeshTriangleIndexOutOfRangeError('Title mesh triangle index is out of range.');
   }
   return triangle;
 }
@@ -317,7 +323,7 @@ function triangleAt(triangles: readonly TitleMeshTriangleData[], index: number):
 function vertexAt(vertices: readonly TitleMeshVector3[], index: number): TitleMeshVector3 {
   const vertex = vertices[index];
   if (vertex == null) {
-    throw new Error('Title mesh vertex index is out of range.');
+    throw new MeshVertexIndexOutOfRangeError('Title mesh vertex index is out of range.');
   }
   return vertex;
 }

@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
+import { TitleMeshLoadError } from '../src/domain/errors.ts';
 
 const REPO_ROOT = process.cwd();
 const TITLE_MESH_LOADER_PATH = path.join(REPO_ROOT, 'dist', 'app', 'title-mesh-loader.js');
@@ -33,7 +34,7 @@ test('initial title mesh loader returns a failure result instead of swallowing e
   const loader = await loadTitleMeshLoader();
   const result = loader.loadInitialTitleMesh({
     loadSource: () => {
-      throw new Error('missing bunny asset');
+      throw new TitleMeshLoadError('missing bunny asset');
     },
     createMesh: () => ({ triangles: [] }),
   });

@@ -1,6 +1,12 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { TitleMeshSource, TitleMeshTriangle, TitleMeshVector3 } from '../ports/title-mesh.js';
+import {
+  ObjFaceIndexOutOfRangeError,
+  ObjFaceNotTriangleError,
+  ObjInvalidFaceIndexError,
+  ObjInvalidVertexCoordinateError,
+} from '../domain/errors.js';
 
 const UTF8_ENCODING = 'utf8';
 const OBJ_VERTEX_PREFIX = 'v ';
@@ -68,7 +74,7 @@ function decodeVertexLine(line: string, lineNumber: number): TitleMeshVector3 {
 function decodeFaceLine(line: string, vertexCount: number, lineNumber: number): TitleMeshTriangle {
   const tokens = line.split(TOKEN_SEPARATOR_PATTERN);
   if (tokens.length !== FACE_TOKEN_COUNT) {
-    throw new Error(`OBJ face at line ${lineNumber} is not a triangle.`);
+    throw new ObjFaceNotTriangleError(`OBJ face at line ${lineNumber} is not a triangle.`);
   }
   return [
     decodeFaceIndex(tokens[FACE_FIRST_TOKEN], vertexCount, lineNumber),
@@ -81,12 +87,12 @@ function decodeFaceIndex(token: string | undefined, vertexCount: number, lineNum
   const rawIndex = token?.split(OBJ_FACE_VERTEX_SEPARATOR)[0] ?? '';
   const parsed = Number(rawIndex);
   if (!Number.isInteger(parsed)) {
-    throw new Error(`OBJ face index at line ${lineNumber} is invalid.`);
+    throw new ObjInvalidFaceIndexError(`OBJ face index at line ${lineNumber} is invalid.`);
   }
 
   const index = parsed > 0 ? parsed - OBJ_INDEX_BASE : vertexCount + parsed;
   if (index < 0 || index >= vertexCount) {
-    throw new Error(`OBJ face index at line ${lineNumber} is out of range.`);
+    throw new ObjFaceIndexOutOfRangeError(`OBJ face index at line ${lineNumber} is out of range.`);
   }
   return index;
 }
@@ -94,7 +100,7 @@ function decodeFaceIndex(token: string | undefined, vertexCount: number, lineNum
 function decodeNumber(token: string | undefined, lineNumber: number): number {
   const value = Number(token);
   if (!Number.isFinite(value)) {
-    throw new Error(`OBJ vertex coordinate at line ${lineNumber} is invalid.`);
+    throw new ObjInvalidVertexCoordinateError(`OBJ vertex coordinate at line ${lineNumber} is invalid.`);
   }
   return value;
 }
