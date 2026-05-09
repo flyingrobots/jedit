@@ -2,7 +2,7 @@ import { createSurface, stringToSurface, perfOverlaySurface, type Surface } from
 import { initDefaultContext } from '@flyingrobots/bijou-node';
 import { animate, quit, run, type App, type Cmd, type KeyMsg, type MouseMsg, type NotificationState, type RuntimeIssue } from '@flyingrobots/bijou-tui';
 import { dirname } from 'node:path';
-import { joinLines, normalizeLines } from './app/editor-lines.js';
+import { normalizeLines } from './app/editor-lines.js';
 import {
   DIRECTORY_ACTION_OPEN,
   DIRECTORY_ACTION_REFRESH,
@@ -70,40 +70,25 @@ import {
   type ProfilerState,
 } from './app/raytracer-profiler.js';
 
+import {
+  clampNormalCol,
+  currentLine,
+  editorText,
+  ensureEditorVisible,
+  insertPositionAtIndex,
+  leadingWhitespace,
+  lineStartTextIndex,
+  normalPositionAtOrBeforeIndex,
+  normalTextIndex,
+  snapshotEditor,
+  type EditorMode,
+  type EditorState,
+  type RegisterKind,
+  type RegisterState,
+  type ViewMode,
+} from './domain/editor-state.js';
+
 initDefaultContext();
-type ViewMode = 'source' | 'preview';
-type EditorMode = 'normal' | 'insert';
-type PendingNormal = 'c' | 'd' | 'g' | 'y';
-type RegisterKind = 'char' | 'line';
-
-interface RegisterState {
-  readonly kind: RegisterKind;
-  readonly text: string;
-}
-interface HistoryEntry {
-  readonly lines: readonly string[];
-  readonly cursorRow: number;
-  readonly cursorCol: number;
-  readonly scrollRow: number;
-  readonly scrollCol: number;
-  readonly dirty: boolean;
-}
-interface EditorState {
-  readonly path: string;
-  readonly lines: readonly string[];
-  readonly cursorRow: number;
-  readonly cursorCol: number;
-  readonly scrollRow: number;
-  readonly scrollCol: number;
-  readonly dirty: boolean;
-  readonly readOnly: boolean;
-  readonly mode: EditorMode;
-  readonly pendingNormal?: PendingNormal;
-  readonly register?: RegisterState;
-  readonly undoStack: readonly HistoryEntry[];
-  readonly redoStack: readonly HistoryEntry[];
-}
-
 interface Model {
   readonly i18n: I18nPort;
   readonly workspaceRoot: string;
@@ -951,17 +936,6 @@ function saveEditor(editor: EditorState): EditorState {
   return {
     ...editor,
     dirty: false,
-  };
-}
-
-function snapshotEditor(editor: EditorState): HistoryEntry {
-  return {
-    lines: [...editor.lines],
-    cursorRow: editor.cursorRow,
-    cursorCol: editor.cursorCol,
-    scrollRow: editor.scrollRow,
-    scrollCol: editor.scrollCol,
-    dirty: editor.dirty,
   };
 }
 
@@ -1870,64 +1844,6 @@ function replaceCurrentLine(editor: EditorState, line: string, cursorCol: number
   });
 }
 
-function currentLine(editor: EditorState): string {
-  return editor.lines[editor.cursorRow] ?? '';
-}
-
-function leadingWhitespace(line: string): string {
-  return line.match(/^\s*/)?.[0] ?? '';
-}
-
-function editorText(editor: EditorState): string {
-  return joinLines(editor.lines);
-}
-
-function lineStartTextIndex(lines: readonly string[], row: number): number {
-  let index = 0;
-  for (let currentRow = 0; currentRow < row; currentRow += 1) {
-    index += (lines[currentRow] ?? '').length;
-    if (currentRow < lines.length - 1) {
-      index += 1;
-    }
-  }
-  return index;
-}
-
-function normalTextIndex(editor: EditorState): number {
-  return lineStartTextIndex(editor.lines, editor.cursorRow) + clampNormalCol(editor.cursorCol, currentLine(editor));
-}
-
-function insertPositionAtIndex(lines: readonly string[], index: number): { row: number; col: number } {
-  let remaining = Math.max(0, index);
-
-  for (let row = 0; row < lines.length; row += 1) {
-    const line = lines[row] ?? '';
-    if (remaining <= line.length) {
-      return { row, col: remaining };
-    }
-
-    remaining -= line.length;
-    if (row < lines.length - 1) {
-      remaining -= 1;
-    }
-  }
-
-  const lastRow = Math.max(0, lines.length - 1);
-  return {
-    row: lastRow,
-    col: (lines[lastRow] ?? '').length,
-  };
-}
-
-function normalPositionAtOrBeforeIndex(lines: readonly string[], index: number): { row: number; col: number } {
-  const position = insertPositionAtIndex(lines, index);
-  const line = lines[position.row] ?? '';
-  return {
-    row: position.row,
-    col: line.length === 0 ? 0 : Math.min(position.col, line.length - 1),
-  };
-}
-
 function nextWordStartIndex(text: string, index: number, allowEnd = false): number {
   if (text.length === 0) {
     return 0;
@@ -2027,57 +1943,6 @@ function keyToText(msg: KeyMsg): string | undefined {
   }
 
   return msg.key;
-}
-
-function ensureEditorVisible(editor: EditorState, width: number, height: number): EditorState {
-  const normalized = normalizeEditor(editor);
-  const line = currentLine(normalized);
-  const safeWidth = Math.max(1, width);
-  const safeHeight = Math.max(1, height);
-
-  let scrollRow = normalized.scrollRow;
-  let scrollCol = normalized.scrollCol;
-
-  if (normalized.cursorRow < scrollRow) {
-    scrollRow = normalized.cursorRow;
-  } else if (normalized.cursorRow >= scrollRow + safeHeight) {
-    scrollRow = normalized.cursorRow - safeHeight + 1;
-  }
-
-  if (normalized.cursorCol < scrollCol) {
-    scrollCol = normalized.cursorCol;
-  } else if (normalized.cursorCol >= scrollCol + safeWidth) {
-    scrollCol = normalized.cursorCol - safeWidth + 1;
-  }
-
-  const maxScrollCol = Math.max(0, line.length - safeWidth + 1);
-
-  return {
-    ...normalized,
-    scrollRow: Math.max(0, scrollRow),
-    scrollCol: Math.max(0, Math.min(scrollCol, maxScrollCol)),
-  };
-}
-
-function normalizeEditor(editor: EditorState): EditorState {
-  const row = clampIndex(editor.cursorRow, editor.lines.length);
-  const line = editor.lines[row] ?? '';
-  const maxCol = editor.mode === 'insert'
-    ? line.length
-    : clampNormalCol(Number.MAX_SAFE_INTEGER, line);
-
-  return {
-    ...editor,
-    cursorRow: row,
-    cursorCol: Math.max(0, Math.min(editor.cursorCol, maxCol)),
-  };
-}
-
-function clampNormalCol(cursorCol: number, line: string): number {
-  if (line.length === 0) {
-    return 0;
-  }
-  return Math.max(0, Math.min(cursorCol, line.length - 1));
 }
 
 function editorViewport(model: Pick<Model, 'columns' | 'rows' | 'fileDrawerProgress' | 'graftDrawerProgress' | 'footerVisible'>) {
