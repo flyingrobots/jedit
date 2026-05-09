@@ -1,7 +1,7 @@
 import { createSurface, stringToSurface, perfOverlaySurface, type Surface } from '@flyingrobots/bijou';
 import { initDefaultContext } from '@flyingrobots/bijou-node';
 import { animate, quit, run, type App, type Cmd, type KeyMsg, type MouseMsg, type NotificationState, type RuntimeIssue } from '@flyingrobots/bijou-tui';
-import { dirname } from 'node:path';
+import { dirname, basename } from 'node:path';
 import { joinLines, normalizeLines } from './app/editor-lines.js';
 import {
   DIRECTORY_ACTION_OPEN,
@@ -140,12 +140,8 @@ interface Model {
   readonly titleCamera: TitleCameraState;
   readonly profiler: {
     readonly active: boolean;
-    readonly frames: ReadonlyArray<{
-      readonly time: number;
-      readonly frameTimeMs: number;
-      readonly columns: number;
-      readonly rows: number;
-    }>;
+    readonly filePath?: string;
+    readonly fileHandle?: any; // node:fs/promises FileHandle
   };
 }
 
@@ -153,6 +149,8 @@ type Msg =
   | { type: 'drawer-progress'; kind: DrawerKind; value: number }
   | { type: 'graft-info'; requestId: number; info: GraftInfo }
   | { type: 'load-scene-result'; scene: TitleScene | undefined }
+  | { type: 'profiler-started'; filePath: string; fileHandle: any }
+  | { type: 'profiler-stopped' }
   | { type: 'toggle-profiler' }
   | SourceHighlightMsg
   | TitleCameraMotionMsg
@@ -236,6 +234,14 @@ const app: App<Model, Msg> = {
       return [{ ...model, sceneOverride: msg.scene }, []];
     }
 
+    if (msg.type === 'profiler-started') {
+      return [{ ...model, profiler: { active: true, filePath: msg.filePath, fileHandle: msg.fileHandle } }, []];
+    }
+
+    if (msg.type === 'profiler-stopped') {
+      return [{ ...model, profiler: { active: false } }, []];
+    }
+
     if (msg.type === SOURCE_HIGHLIGHT_MESSAGE) {
       return [reduceSourceHighlightMsg(model, msg), []];
     }
@@ -248,20 +254,34 @@ const app: App<Model, Msg> = {
       const now = Date.now();
       const frameTime = now - model.lastFrameMs;
       const history = [...model.frameTimeHistory, frameTime].slice(-50);
-      const profiler = model.profiler.active
-        ? {
-            ...model.profiler,
-            frames: [
-              ...model.profiler.frames,
-              {
-                time: msg.time,
-                frameTimeMs: frameTime,
-                columns: model.columns,
-                rows: model.rows,
+      const cmds: Cmd<Msg>[] = [];
+
+      if (model.profiler.active && model.profiler.fileHandle != null) {
+        const frame = {
+          time: msg.time,
+          frameTimeMs: frameTime,
+          columns: model.columns,
+          rows: model.rows,
+        };
+        cmds.push(async () => {
+          try {
+            await model.profiler.fileHandle.appendFile(`${JSON.stringify(frame)}\n`, 'utf8');
+            return undefined;
+          } catch (err) {
+            return {
+              type: 'runtime-issue',
+              issue: {
+                type: 'system',
+                name: 'ProfileStreamError',
+                message: `Failed to stream profile: ${String(err)}`,
+                level: 'error',
+                source: 'command',
+                atMs: Date.now(),
               },
-            ],
+            };
           }
-        : model.profiler;
+        });
+      }
 
       return [{
         ...model,
@@ -269,8 +289,7 @@ const app: App<Model, Msg> = {
         lastFrameMs: now,
         frameTimeMs: frameTime,
         frameTimeHistory: history,
-        profiler,
-      }, []];
+      }, cmds];
     }
 
     if (msg.type === 'toggle-perf') {
@@ -304,44 +323,64 @@ function updateFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
   }
 
   if (msg.key === 'f10' && model.editor == null) {
-    if (model.profiler.active) {
-      const frames = model.profiler.frames;
-      return [{ ...model, profiler: { active: false, frames: [] } }, [
+    if (model.profiler.active && model.profiler.fileHandle != null) {
+      const fileName = model.profiler.filePath ? basename(model.profiler.filePath) : 'profile.jsonl';
+      return [model, [
         async () => {
           try {
-            const { writeFile } = await import('node:fs/promises');
-            const { join } = await import('node:path');
-            const fileName = `raytracer-profile-${Date.now()}.json`;
-            const filePath = join(model.workspaceRoot, fileName);
-            await writeFile(filePath, JSON.stringify(frames, null, 2), 'utf8');
-            return {
-              type: 'runtime-issue',
-              issue: {
-                type: 'system',
-                name: 'ProfileSaved',
-                message: `Profile trace saved to ${fileName}`,
-                level: 'warning',
-                source: 'command',
-                atMs: Date.now(),
-              },
-            };
+            await model.profiler.fileHandle.close();
+            return { type: 'profiler-stopped' };
           } catch (err) {
             return {
               type: 'runtime-issue',
               issue: {
                 type: 'system',
-                name: 'ProfileSaveError',
-                message: `Failed to save profile: ${String(err)}`,
+                name: 'ProfileCloseError',
+                message: `Failed to close profile: ${String(err)}`,
                 level: 'error',
                 source: 'command',
                 atMs: Date.now(),
               },
             };
           }
-        }
+        },
+        () => ({
+          type: 'runtime-issue',
+          issue: {
+            type: 'system',
+            name: 'ProfileSaved',
+            message: `Profile trace saved to ${fileName}`,
+            level: 'warning',
+            source: 'command',
+            atMs: Date.now(),
+          },
+        }),
       ]];
     }
-    return [{ ...model, profiler: { active: true, frames: [] } }, []];
+    return [model, [
+      async () => {
+        try {
+          const { open } = await import('node:fs/promises');
+          const { join } = await import('node:path');
+          const fileName = `raytracer-profile-${Date.now()}.jsonl`;
+          const filePath = join(model.workspaceRoot, fileName);
+          const fileHandle = await open(filePath, 'a');
+          return { type: 'profiler-started', filePath, fileHandle };
+        } catch (err) {
+          return {
+            type: 'runtime-issue',
+            issue: {
+              type: 'system',
+              name: 'ProfileStartError',
+              message: `Failed to start profile: ${String(err)}`,
+              level: 'error',
+              source: 'command',
+              atMs: Date.now(),
+            },
+          };
+        }
+      }
+    ]];
   }
 
   if (msg.key === JEDIT_SETTINGS_TOGGLE_KEY) {
@@ -858,7 +897,6 @@ function createInitialModel(cwd: string, columns: number, rows: number): Model {
     titleCamera: createTitleCameraState(titleMesh == null ? titleSceneCameraPlacement(titleSceneSeed) : titleBunnySceneCameraPlacement()),
     profiler: {
       active: false,
-      frames: [],
     },
   };
 }
