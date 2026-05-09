@@ -97,14 +97,7 @@ export function workspaceFooterLines(state: WorkspaceFooterState): readonly [str
   const primary = detail.length > 0 ? `${modeLabel} ${detail}` : modeLabel;
   const secondary = footerContextLine(state);
 
-  return [
-    state.i18n.direction === 'rtl' ? reverseLine(primary) : primary,
-    state.i18n.direction === 'rtl' ? reverseLine(secondary) : secondary,
-  ];
-}
-
-function reverseLine(text: string): string {
-  return [...text].reverse().join('');
+  return [primary, secondary];
 }
 
 function interactionModeKey(state: WorkspaceFooterState): string {

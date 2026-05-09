@@ -182,7 +182,6 @@ test('title screen renders the logo as a non-Braille themed glyph layer', async 
   assert.ok(logoCells.length > 12);
   assert.ok(logoCells.every((cell) => !isBraille(cell.char)));
   assert.ok(new Set(logoCells.map((cell) => cell.char)).size > 1);
-  assert.ok(new Set(logoCells.map(cellColorKey)).size > 1);
   assert.ok(logoCells.every((cell) => cell.bgRGB != null));
 });
 

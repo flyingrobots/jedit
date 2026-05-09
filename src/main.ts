@@ -55,7 +55,9 @@ import {
   type TitleCameraState,
 } from './app/title-camera-session.js';
 import { renderSettingsDrawer, resolveSettingsDrawerWidth } from './ui/settings-drawer.js';
-import { titleBunnySceneCameraPlacement, titleSceneCameraPlacement } from './ui/title-scene.js';
+import { renderScenePickerDrawer, resolveScenePickerDrawerWidth } from './ui/scene-picker-drawer.js';
+import { titleBunnySceneCameraPlacement, titleSceneCameraPlacement, type TitleScene } from './ui/title-scene.js';
+import { loadTitleSceneFromFile } from './adapters/title-scene-loader.js';
 import { createTitleBunnyMesh, type TitleMesh } from './ui/title-mesh.js';
 import { BijouI18nAdapter } from './adapters/bijou-i18n-adapter.js';
 import type { I18nPort } from './ports/i18n.js';
@@ -124,6 +126,10 @@ interface Model {
   readonly sourceHighlightRequestId: number;
   readonly titleSceneSeed: number;
   readonly titleMesh?: TitleMesh;
+  readonly scenePickerOpen: boolean;
+  readonly scenePickerFocusIndex: number;
+  readonly availableScenes: readonly string[];
+  readonly sceneOverride?: TitleScene;
   readonly columns: number;
   readonly rows: number;
   readonly time: number;
@@ -137,6 +143,7 @@ interface Model {
 type Msg =
   | { type: 'drawer-progress'; kind: DrawerKind; value: number }
   | { type: 'graft-info'; requestId: number; info: GraftInfo }
+  | { type: 'load-scene-result'; scene: TitleScene | undefined }
   | SourceHighlightMsg
   | TitleCameraMotionMsg
   | { type: 'notification-tick'; atMs: number }
@@ -215,6 +222,10 @@ const app: App<Model, Msg> = {
       ];
     }
 
+    if (msg.type === 'load-scene-result') {
+      return [{ ...model, sceneOverride: msg.scene }, []];
+    }
+
     if (msg.type === SOURCE_HIGHLIGHT_MESSAGE) {
       return [reduceSourceHighlightMsg(model, msg), []];
     }
@@ -271,6 +282,49 @@ function updateFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
   }
   if (model.settingsOpen) {
     return updateJeditSettingsFromKey(msg, model, settingsRows(model), settingsHandlers);
+  }
+
+  if (model.editor == null && msg.key === 'f5') {
+    return [{ ...model, scenePickerOpen: !model.scenePickerOpen }, []];
+  }
+
+  if (model.scenePickerOpen) {
+    if (msg.key === 'escape') {
+      return [{ ...model, scenePickerOpen: false }, []];
+    }
+    if (msg.key === 'up' || msg.key === 'k') {
+      return [{ ...model, scenePickerFocusIndex: Math.max(0, model.scenePickerFocusIndex - 1) }, []];
+    }
+    if (msg.key === 'down' || msg.key === 'j') {
+      return [{ ...model, scenePickerFocusIndex: Math.min(model.availableScenes.length - 1, model.scenePickerFocusIndex + 1) }, []];
+    }
+    if (msg.key === 'enter' || msg.key === 'return') {
+      const selected = model.availableScenes[model.scenePickerFocusIndex];
+      if (selected != null) {
+        return [{ ...model, scenePickerOpen: false }, [
+          async () => {
+            try {
+              const { join } = await import('node:path');
+              const scene = await loadTitleSceneFromFile(join(model.workspaceRoot, 'scenes', selected), model.titleMesh);
+              return { type: 'load-scene-result', scene };
+            } catch (err) {
+              return {
+                type: 'runtime-issue',
+                issue: {
+                  type: 'system',
+                  name: 'SceneLoadError',
+                  message: String(err),
+                  level: 'error',
+                  source: 'command',
+                  atMs: Date.now(),
+                },
+              };
+            }
+          }
+        ]];
+      }
+    }
+    return [model, []];
   }
 
   if (model.editor == null) {
@@ -724,6 +778,9 @@ function createInitialModel(cwd: string, columns: number, rows: number): Model {
     sourceHighlightRequestId: 0,
     titleSceneSeed,
     titleMesh,
+    scenePickerOpen: false,
+    scenePickerFocusIndex: 0,
+    availableScenes: ['bunny.jedit-scene', 'sphere.jedit-scene', 'column.jedit-scene', 'sphere-ground.jedit-scene'],
     columns,
     rows,
     time: 0,
@@ -2089,6 +2146,16 @@ function renderWorkspace(model: Model) {
     }), 0, bodyTop);
   }
 
+  if (model.scenePickerOpen && model.editor == null) {
+    screen.blit(renderScenePickerDrawer({
+      scenes: model.availableScenes,
+      selectedIndex: model.scenePickerFocusIndex,
+      theme: model.jeditTheme,
+      width: resolveScenePickerDrawerWidth(model.columns),
+      height: bodyHeight,
+    }), 0, bodyTop);
+  }
+
   if (model.perfVisible) {
     const perf = perfOverlaySurface({
       fps: 1000 / (model.frameTimeMs || 16.67),
@@ -2112,6 +2179,7 @@ function renderViewer(model: Model, width: number, height: number) {
       camRadius: model.titleCamera.radius,
       sceneSeed: model.titleSceneSeed,
       mesh: model.titleMesh,
+      sceneOverride: model.sceneOverride,
     });
   }
 

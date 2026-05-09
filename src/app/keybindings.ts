@@ -4,6 +4,7 @@ export const JEDIT_KEY_ACTION = {
   OpenSettings: Symbol('jedit.key.action.open-settings'),
   ToggleMarkdownPreview: Symbol('jedit.key.action.toggle-markdown-preview'),
   ToggleTheme: Symbol('jedit.key.action.toggle-theme'),
+  OpenScenePicker: Symbol('jedit.key.action.open-scene-picker'),
 } as const;
 
 export type JeditKeyAction = typeof JEDIT_KEY_ACTION[keyof typeof JEDIT_KEY_ACTION];
@@ -19,6 +20,7 @@ export interface JeditKeyBinding {
 
 const KEY_F2 = 'f2';
 const KEY_F3 = 'f3';
+const KEY_F5 = 'f5';
 const KEY_T = 't';
 const MODIFIER_CTRL = 'ctrl';
 const MODIFIER_ALT = 'alt';
@@ -30,6 +32,8 @@ export const JEDIT_SETTINGS_TOGGLE_KEY = KEY_F2;
 export const JEDIT_SETTINGS_TOGGLE_LABEL = KEY_F2;
 export const JEDIT_MARKDOWN_PREVIEW_TOGGLE_KEY = KEY_F3;
 export const JEDIT_MARKDOWN_PREVIEW_TOGGLE_LABEL = KEY_F3;
+export const JEDIT_SCENE_PICKER_TOGGLE_KEY = KEY_F5;
+export const JEDIT_SCENE_PICKER_TOGGLE_LABEL = KEY_F5;
 export const JEDIT_THEME_TOGGLE_KEY = KEY_T;
 export const JEDIT_THEME_TOGGLE_LABEL = 'ctrl+t';
 
@@ -49,6 +53,11 @@ export const JEDIT_KEY_BINDINGS = ensureUniqueJeditKeyBindings([
     key: JEDIT_THEME_TOGGLE_KEY,
     label: JEDIT_THEME_TOGGLE_LABEL,
     ctrl: true,
+  },
+  {
+    action: JEDIT_KEY_ACTION.OpenScenePicker,
+    key: JEDIT_SCENE_PICKER_TOGGLE_KEY,
+    label: JEDIT_SCENE_PICKER_TOGGLE_LABEL,
   },
 ] as const);
 

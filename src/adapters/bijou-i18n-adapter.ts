@@ -22,13 +22,17 @@ export class BijouI18nAdapter implements I18nPort {
 
   t(path: string, values?: Record<string, string | number>): string {
     const keys = path.split('.');
-    let current: any = this._catalog;
+    let current: object | string = this._catalog;
     
     for (const key of keys) {
-      if (current[key] === undefined) {
+      if (current == null || typeof current !== 'object') {
         return path;
       }
-      current = current[key];
+      if (Object.prototype.hasOwnProperty.call(current, key)) {
+        current = (current as Record<string, object | string>)[key] as object | string;
+      } else {
+        return path;
+      }
     }
 
     if (typeof current !== 'string') {

@@ -6,6 +6,7 @@ import {
   generateTitleScene,
   intersectsTitleSceneObjectAlongRay,
   nearestTitleSceneObjectHit,
+  type TitleScene,
   type TitleSceneObject,
   type TitleSceneVector3,
 } from './title-scene.js';
@@ -38,6 +39,7 @@ export interface TitleScreenRenderOptions {
   readonly camRadius?: number;
   readonly sceneSeed?: number;
   readonly mesh?: TitleMesh;
+  readonly sceneOverride?: TitleScene;
 }
 
 const DEFAULT_CAMERA_RADIUS = 8.5;
@@ -90,9 +92,10 @@ export function renderTitleScreen(
     camRadius = DEFAULT_CAMERA_RADIUS,
     sceneSeed = DEFAULT_TITLE_SCENE_SEED,
     mesh,
+    sceneOverride,
   } = options;
   const colors = titleSceneMaterialColors(theme);
-  const scene = generateTitleScene(sceneSeed, colors, mesh);
+  const scene = sceneOverride ?? generateTitleScene(sceneSeed, colors, mesh);
 
   const shader: BrailleShaderFn = ({ u, v, time: frameTime }) => {
     return sceneSampleAt(u, v, cols, rows, frameTime, camAngle, camRadius, scene.objects, colors);
@@ -102,6 +105,8 @@ export function renderTitleScreen(
   paintTitleLogo(surface, titleLogoCellBounds(cols, rows), colors, time);
   return surface;
 }
+
+import { JEDIT_SOURCE_TOKEN } from './jedit-theme.js';
 
 export function titleSceneMaterialColors(theme: JeditTheme): TitleSceneMaterialColors {
   const baseColors = fixedTitleSceneBaseColors(theme);
@@ -114,14 +119,14 @@ export function titleSceneMaterialColors(theme: JeditTheme): TitleSceneMaterialC
   };
 }
 
-function fixedTitleSceneBaseColors(_theme: JeditTheme): Omit<TitleSceneMaterialColors, 'floorDark' | 'floorLight'> {
+function fixedTitleSceneBaseColors(theme: JeditTheme): Omit<TitleSceneMaterialColors, 'floorDark' | 'floorLight'> {
   return {
-    accent: [224, 113, 63],
-    info: [78, 195, 224],
-    success: [112, 216, 167],
-    ink: [222, 232, 232],
-    muted: [55, 75, 88],
-    surface: [5, 7, 12],
+    accent: theme.source.get(JEDIT_SOURCE_TOKEN.Keyword)?.fgRGB ?? [224, 113, 63],
+    info: theme.source.get(JEDIT_SOURCE_TOKEN.Type)?.fgRGB ?? [78, 195, 224],
+    success: theme.source.get(JEDIT_SOURCE_TOKEN.String)?.fgRGB ?? [112, 216, 167],
+    ink: theme.source.get(JEDIT_SOURCE_TOKEN.Number)?.fgRGB ?? [222, 232, 232],
+    muted: theme.source.get(JEDIT_SOURCE_TOKEN.Comment)?.fgRGB ?? [55, 75, 88],
+    surface: theme.surface.workspace.bgRGB ?? [5, 7, 12],
   };
 }
 

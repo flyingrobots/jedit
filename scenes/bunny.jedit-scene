@@ -1,0 +1,19 @@
+{
+  "camera": { "angle": -0.58, "radius": 5.4 },
+  "objects": [
+    {
+      "kind": "mesh",
+      "position": [0, 0.75, 0],
+      "radius": 1.0,
+      "color": [224, 113, 63],
+      "reflectivity": 0.18
+    },
+    {
+      "kind": "sphere",
+      "position": [1.34, 2.5, 0.55],
+      "radius": 1.25,
+      "color": [222, 232, 232],
+      "reflectivity": 1.0
+    }
+  ]
+}
