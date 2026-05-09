@@ -1,4 +1,4 @@
-import { animate, type Cmd, type SpringConfig } from '@flyingrobots/bijou-tui';
+import { createSpringState, springStep, type Cmd, type SpringConfig } from '@flyingrobots/bijou-tui';
 
 export const TITLE_CAMERA_AXIS = {
   Angle: 'angle',
@@ -24,6 +24,8 @@ export const TITLE_CAMERA_RADIUS_STEP = 0.5;
 const TITLE_CAMERA_SPRING_MASS = 1;
 const TITLE_CAMERA_SPRING_STIFFNESS = 144;
 const TITLE_CAMERA_SPRING_PRECISION = 0.001;
+const TITLE_CAMERA_FIXED_STEP_SECONDS = 1 / 120;
+const TITLE_CAMERA_MAX_PULSE_SECONDS = 1 / 20;
 
 export const TITLE_CAMERA_SPRING = {
   mass: TITLE_CAMERA_SPRING_MASS,
@@ -133,16 +135,34 @@ function titleCameraSpringCommand(
   to: number,
   motionId: number,
 ): Cmd<TitleCameraMotionMsg> {
-  return animate<TitleCameraMotionMsg>({
-    type: 'spring',
-    from,
-    to,
-    spring: TITLE_CAMERA_SPRING,
-    onFrame: (value) => ({
-      type: TITLE_CAMERA_MESSAGE.Frame,
-      axis,
-      motionId,
-      value,
-    }),
+  return (emit, caps) => new Promise((resolve) => {
+    let state = createSpringState(from);
+    let accumulatedSeconds = 0;
+    const pulse = caps.onPulse((dt) => {
+      accumulatedSeconds = Math.min(TITLE_CAMERA_MAX_PULSE_SECONDS, accumulatedSeconds + Math.min(dt, TITLE_CAMERA_MAX_PULSE_SECONDS));
+      let stepped = false;
+      while (accumulatedSeconds >= TITLE_CAMERA_FIXED_STEP_SECONDS && !state.done) {
+        state = springStep(state, to, TITLE_CAMERA_SPRING, TITLE_CAMERA_FIXED_STEP_SECONDS);
+        accumulatedSeconds -= TITLE_CAMERA_FIXED_STEP_SECONDS;
+        stepped = true;
+      }
+      if (!stepped) {
+        return;
+      }
+      emit(titleCameraFrame(axis, motionId, state.value));
+      if (state.done) {
+        pulse.dispose();
+        resolve();
+      }
+    });
   });
+}
+
+function titleCameraFrame(axis: TitleCameraAxis, motionId: number, value: number): TitleCameraMotionMsg {
+  return {
+    type: TITLE_CAMERA_MESSAGE.Frame,
+    axis,
+    motionId,
+    value,
+  };
 }

@@ -34,6 +34,7 @@ import { renderSourceViewer } from './ui/source-viewer.js';
 import { mouseScrollDeltaRows, scrollIndexByRows, scrollTextViewport } from './ui/mouse-scroll.js';
 import { JEDIT_TERMINAL_MOUSE_OPTIONS } from './ui/terminal-mouse.js';
 import { JEDIT_THEME_ENV, nextJeditTheme, oppositeJeditTheme, resolveInitialJeditTheme } from './ui/jedit-themes.js';
+import { JEDIT_MARKDOWN_PREVIEW_TOGGLE_KEY, JEDIT_SETTINGS_TOGGLE_KEY, JEDIT_THEME_TOGGLE_KEY } from './app/keybindings.js';
 import type { JeditStyleToken, JeditTheme } from './ui/jedit-theme.js';
 import { paintActivePaneEdge } from './ui/workspace-focus-edge.js';
 import { jeditSettingsRows, moveSettingsFocusIndex, toggleSettingsOpen, updateJeditSettingsFromKey } from './app/settings-session.js';
@@ -140,9 +141,6 @@ const GRAFT_META_ROWS = 5;
 const GRAFT_CHANGE_ROWS = 5;
 const VIEWER_LEFT_PAD = 4;
 const VIEWER_TOP_PAD = 1;
-const THEME_TOGGLE_KEY = 't';
-const SETTINGS_TOGGLE_KEY = 'f2';
-const MARKDOWN_PREVIEW_TOGGLE_KEY = 'f3';
 const sourceHighlighter = createGraftSourceHighlighter();
 
 const app: App<Model, Msg> = {
@@ -250,8 +248,6 @@ const app: App<Model, Msg> = {
   view: (model) => renderWorkspace(model),
 };
 
-await run(app, JEDIT_TERMINAL_MOUSE_OPTIONS);
-
 function updateFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
   if (msg.key === '`') {
     return [{ ...model, perfVisible: !model.perfVisible }, []];
@@ -268,7 +264,7 @@ function updateFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
     return [model, [quit<Msg>()]];
   }
 
-  if (msg.key === SETTINGS_TOGGLE_KEY) {
+  if (msg.key === JEDIT_SETTINGS_TOGGLE_KEY) {
     return [toggleSettingsOpen(model), []];
   }
   if (model.settingsOpen) {
@@ -294,7 +290,7 @@ function updateFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
     }, model.graftDrawerOpen || model.graftInfo?.path === editor.path);
   }
 
-  if (msg.ctrl && !msg.alt && msg.key === THEME_TOGGLE_KEY) {
+  if (msg.ctrl && !msg.alt && msg.key === JEDIT_THEME_TOGGLE_KEY) {
     return [{ ...model, jeditTheme: nextJeditTheme(model.jeditTheme) }, []];
   }
 
@@ -323,7 +319,7 @@ function updateFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
     }
   }
 
-  if (msg.key === MARKDOWN_PREVIEW_TOGGLE_KEY) {
+  if (msg.key === JEDIT_MARKDOWN_PREVIEW_TOGGLE_KEY) {
     return toggleMarkdownPreview(model);
   }
 
@@ -378,6 +374,8 @@ const settingsHandlers = {
   toggleFooter: (model: Model): [Model, Cmd<Msg>[]] => [{ ...model, footerVisible: !model.footerVisible }, []],
   toggleMarkdownPreview: (model: Model): [Model, Cmd<Msg>[]] => toggleMarkdownPreview(model),
 };
+
+await run(app, JEDIT_TERMINAL_MOUSE_OPTIONS);
 
 function toggleMarkdownPreview(model: Model): [Model, Cmd<Msg>[]] {
   if (model.editor == null || !isMarkdownFile(model.editor.path)) {

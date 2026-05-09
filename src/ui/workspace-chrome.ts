@@ -3,6 +3,7 @@ import { clipToWidth } from '@flyingrobots/bijou-tui';
 import { basename } from 'node:path';
 
 import type { FileEntry } from '../adapters/filesystem.js';
+import { JEDIT_MARKDOWN_PREVIEW_TOGGLE_LABEL, JEDIT_SETTINGS_TOGGLE_LABEL, JEDIT_THEME_TOGGLE_LABEL } from '../app/keybindings.js';
 import type { JeditStyleToken } from './jedit-theme.js';
 import type { DrawerKind } from './drawer-layout.js';
 import { hasFocusablePeers, type FocusPane } from './panel-focus.js';
@@ -11,7 +12,7 @@ type ViewMode = 'source' | 'preview';
 type EditorMode = 'normal' | 'insert';
 type PendingNormal = 'c' | 'd' | 'g' | 'y';
 
-const THEME_HINT = 'ctrl+t theme';
+const THEME_HINT = `${JEDIT_THEME_TOGGLE_LABEL} theme`;
 
 export interface WorkspaceTitleState {
   readonly cwd: string;
@@ -118,7 +119,7 @@ function interactionModeLabel(state: WorkspaceFooterState): string {
 
 function footerDetail(state: WorkspaceFooterState): string {
   if (state.settingsOpen) {
-    return footerHints(['j/k move', 'enter change', 'f2 close', 'esc close']);
+    return footerHints(['j/k move', 'enter change', `${JEDIT_SETTINGS_TOGGLE_LABEL} close`, 'esc close']);
   }
 
   if (state.focusPane === 'files' && state.fileDrawerOpen) {
@@ -130,7 +131,7 @@ function footerDetail(state: WorkspaceFooterState): string {
   }
 
   if (state.viewMode === 'preview' && state.markdownPreviewActive) {
-    return footerHints(['j/k scroll', 'f2 source', THEME_HINT, focusHint(state), 'ctrl+b files', 'ctrl+g graft']);
+    return footerHints(['j/k scroll', `${JEDIT_MARKDOWN_PREVIEW_TOGGLE_LABEL} source`, THEME_HINT, focusHint(state), 'ctrl+b files', 'ctrl+g graft']);
   }
 
   if (state.editorMode === 'insert') {
@@ -158,7 +159,7 @@ function normalFooterDetail(state: WorkspaceFooterState): string {
     return pendingNormalFooterDetail(pending);
   }
 
-  const previewHint = state.markdownPreviewActive ? 'f3 preview' : 'ctrl+s save';
+  const previewHint = state.markdownPreviewActive ? `${JEDIT_MARKDOWN_PREVIEW_TOGGLE_LABEL} preview` : 'ctrl+s save';
   return footerHints(['i insert', 'o open line', previewHint, THEME_HINT, focusHint(state)]);
 }
 

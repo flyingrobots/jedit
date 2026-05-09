@@ -7,6 +7,7 @@ import { pathToFileURL } from 'node:url';
 const REPO_ROOT = process.cwd();
 const TITLE_CAMERA_PATH = path.join(REPO_ROOT, 'dist', 'app', 'title-camera-session.js');
 const SPRING_FRAME_DT = 1 / 60;
+const SLOW_FRAME_DT = 1;
 const SPRING_FRAME_LIMIT = 160;
 
 async function loadTitleCameraSession() {
@@ -77,7 +78,22 @@ test('title camera spring command emits interpolated frames before target', asyn
   assert.equal(finalFrame.value, update.state.angleTarget);
 });
 
-async function runSpringCommand(command) {
+test('title camera spring command remains bounded under slow pulse frames', async () => {
+  const camera = await loadTitleCameraSession();
+  const update = camera.updateTitleCameraFromKey('right', camera.createTitleCameraState());
+  const frames = await runSpringCommand(update.commands[0], SLOW_FRAME_DT);
+  const values = frames
+    .filter((frame) => frame.type === camera.TITLE_CAMERA_MESSAGE.Frame)
+    .map((frame) => frame.value);
+
+  assert.ok(values.length > 0);
+  assert.ok(values.every((value) => value >= 0));
+  assert.ok(values.every((value) => value <= update.state.angleTarget));
+  assert.ok(values[0] < update.state.angleTarget);
+  assert.equal(values.at(-1), update.state.angleTarget);
+});
+
+async function runSpringCommand(command, dt = SPRING_FRAME_DT) {
   const frames = [];
   let pulseHandler;
   let disposed = false;
@@ -95,7 +111,7 @@ async function runSpringCommand(command) {
   assert.equal(typeof pulseHandler, 'function');
 
   for (let frame = 0; frame < SPRING_FRAME_LIMIT && !disposed; frame += 1) {
-    pulseHandler(SPRING_FRAME_DT);
+    pulseHandler(dt);
   }
 
   assert.equal(disposed, true);

@@ -78,6 +78,21 @@ test('workspace footer explains that tab indents when no peer panes are visible 
   );
 });
 
+test('workspace footer shows f3 as the Markdown preview source toggle', async () => {
+  const footer = await loadFooterModule();
+
+  assert.deepEqual(
+    footer.workspaceFooterLines({
+      ...idleNormalState(),
+      viewMode: 'preview',
+    }),
+    [
+      'PREVIEW [j/k scroll · f3 source · ctrl+t theme · ctrl+b files · ctrl+g graft]',
+      '/repo/notes/todo.md',
+    ],
+  );
+});
+
 test('workspace footer shows file drawer controls and the selected file path', async () => {
   const footer = await loadFooterModule();
 

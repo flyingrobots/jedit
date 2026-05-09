@@ -19,3 +19,8 @@
 - Added deterministic seeded title-scene generation with randomized initial
   camera placement, mixed sphere/column geometry, varied materials, and
   non-overlapping object footprints.
+- Fixed a settings-screen crash caused by starting the Bijou runtime before
+  settings handlers were initialized, corrected the Markdown preview footer to
+  use `f3` as a source/preview toggle, and added duplicate keybinding checks.
+- Bounded title-camera spring updates with a fixed timestep so slow terminal
+  frames cannot make arrow-key camera motion explode.
