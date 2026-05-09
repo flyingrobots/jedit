@@ -37,6 +37,14 @@ import { JEDIT_THEME_ENV, nextJeditTheme, resolveInitialJeditTheme } from './ui/
 import type { JeditStyleToken, JeditTheme } from './ui/jedit-theme.js';
 import { paintActivePaneEdge } from './ui/workspace-focus-edge.js';
 import { jeditSettingsRows, moveSettingsFocusIndex, toggleSettingsOpen, updateJeditSettingsFromKey } from './app/settings-session.js';
+import {
+  createTitleCameraState,
+  reduceTitleCameraMotion,
+  TITLE_CAMERA_MESSAGE,
+  updateTitleCameraFromKey,
+  type TitleCameraMotionMsg,
+  type TitleCameraState,
+} from './app/title-camera-session.js';
 import { renderSettingsDrawer, resolveSettingsDrawerWidth } from './ui/settings-drawer.js';
 import { renderTitleScreen } from './ui/title-screen.js';
 
@@ -107,14 +115,14 @@ interface Model {
   readonly lastFrameMs: number;
   readonly frameTimeMs: number;
   readonly frameTimeHistory: readonly number[];
-  readonly camAngle: number;
-  readonly camRadius: number;
+  readonly titleCamera: TitleCameraState;
 }
 
 type Msg =
   | { type: 'drawer-progress'; kind: DrawerKind; value: number }
   | { type: 'graft-info'; requestId: number; info: GraftInfo }
   | SourceHighlightMsg
+  | TitleCameraMotionMsg
   | { type: 'notification-tick'; atMs: number }
   | { type: 'time-tick'; time: number }
   | { type: 'toggle-perf' }
@@ -223,6 +231,10 @@ const app: App<Model, Msg> = {
       return pushRuntimeIssueToast(model, msg.issue, notificationTickCmd);
     }
 
+    if (msg.type === TITLE_CAMERA_MESSAGE.Frame) {
+      return [{ ...model, titleCamera: reduceTitleCameraMotion(model.titleCamera, msg) }, []];
+    }
+
     if (msg.type === 'mouse') {
       return updateFromMouse(msg, model);
     }
@@ -244,17 +256,9 @@ function updateFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
   }
 
   if (model.editor == null) {
-    if (msg.key === 'left') {
-      return [{ ...model, camAngle: model.camAngle - 0.1 }, []];
-    }
-    if (msg.key === 'right') {
-      return [{ ...model, camAngle: model.camAngle + 0.1 }, []];
-    }
-    if (msg.key === 'up') {
-      return [{ ...model, camRadius: Math.max(2, model.camRadius - 0.5) }, []];
-    }
-    if (msg.key === 'down') {
-      return [{ ...model, camRadius: model.camRadius + 0.5 }, []];
+    const cameraUpdate = updateTitleCameraFromKey(msg.key, model.titleCamera);
+    if (cameraUpdate != null) {
+      return [{ ...model, titleCamera: cameraUpdate.state }, cameraUpdate.commands];
     }
   }
 
@@ -701,8 +705,7 @@ function createInitialModel(cwd: string, columns: number, rows: number): Model {
     lastFrameMs: Date.now(),
     frameTimeMs: 0,
     frameTimeHistory: [],
-    camAngle: 0,
-    camRadius: 8.5,
+    titleCamera: createTitleCameraState(),
   };
 }
 
@@ -2063,7 +2066,7 @@ function notificationTickCmd(): Cmd<Msg> { return createNotificationTickCmd((atM
 
 function renderViewer(model: Model, width: number, height: number) {
   if (model.editor == null) {
-    return renderTitleScreen(width, height, model.time, model.jeditTheme, model.camAngle, model.camRadius);
+    return renderTitleScreen(width, height, model.time, model.jeditTheme, model.titleCamera.angle, model.titleCamera.radius);
   }
 
   const surface = createSurface(width, height);

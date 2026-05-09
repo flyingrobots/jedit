@@ -9,3 +9,5 @@
   highlights inside the shader material path.
 - Rendered the title logo as a smaller lower-screen solid/hatch glyph overlay
   instead of mixing it into the Braille raytrace shader.
+- Added Bijou spring-driven title-screen camera controls so arrow-key orbit and
+  zoom changes ease smoothly instead of stepping instantly.
