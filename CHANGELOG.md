@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added explicit runtime decoders for Graft MCP outline and structural diff
+  payloads so malformed tool results fail at the adapter boundary.
 - Copied the title bunny OBJ asset during `npm run build` and made startup mesh
   loading return structured failures instead of silently swallowing asset errors.
 - Bounded title-logo spring evaluation to a short settling window so repeated

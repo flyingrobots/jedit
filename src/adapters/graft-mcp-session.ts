@@ -10,6 +10,16 @@ const GRAFT_PACKAGE_SPECIFIER = '@flyingrobots/graft';
 const GRAFT_PACKAGE_JSON_SPECIFIER = '@flyingrobots/graft/package.json';
 const GRAFT_BIN_PATH = 'bin/graft.js';
 const GRAFT_SERVE_COMMAND = 'serve';
+const GRAFT_FILE_OUTLINE_TOOL = 'file_outline';
+const GRAFT_DIFF_TOOL = 'graft_diff';
+const GRAFT_PROJECTION_REFUSED = 'refused';
+
+type JsonPrimitive = string | number | boolean | null;
+type JsonValue = JsonPrimitive | readonly JsonValue[] | JsonObject;
+
+interface JsonObject {
+  readonly [key: string]: JsonValue | undefined;
+}
 
 export interface GraftOutlineItem {
   readonly kind: string;
@@ -29,7 +39,7 @@ export interface GraftInfo {
   readonly error?: string;
 }
 
-interface GraftJumpEntry {
+export interface GraftJumpEntry {
   readonly symbol: string;
   readonly kind: string;
   readonly start: number;
@@ -41,7 +51,13 @@ interface GraftDiffEntry {
   readonly kind: string;
 }
 
-interface GraftStructDiffResult {
+export interface GraftFileOutlineResult {
+  readonly jumpTable?: readonly GraftJumpEntry[];
+  readonly projection?: string;
+  readonly reason?: string;
+}
+
+export interface GraftStructDiffResult {
   readonly files: ReadonlyArray<{
     readonly path: string;
     readonly summary: string;
@@ -64,9 +80,9 @@ interface GraftTextBlock {
   readonly text?: string;
 }
 
-interface GraftToolResult<T> {
+interface GraftToolResult {
   readonly isError?: boolean;
-  readonly structuredContent?: T;
+  readonly structuredContent?: JsonValue;
   readonly content?: readonly GraftTextBlock[];
 }
 
@@ -91,16 +107,12 @@ export async function loadGraftInfo(workspaceRoot: string, filePath: string, dir
   let error: string | undefined;
 
   try {
-    const outline = await callGraftTool<{
-      readonly jumpTable?: readonly GraftJumpEntry[];
-      readonly projection?: string;
-      readonly reason?: string;
-    }>(
+    const outline = decodeGraftFileOutlineResult(await callGraftTool(
       workspaceRoot,
-      'file_outline',
+      GRAFT_FILE_OUTLINE_TOOL,
       { path: relativePath },
-    );
-    if (outline.projection === 'refused') {
+    ));
+    if (outline.projection === GRAFT_PROJECTION_REFUSED) {
       error = outline.reason ?? 'outline refused';
     } else {
       outlineItems = (outline.jumpTable ?? []).map((entry) => ({
@@ -159,11 +171,11 @@ async function loadGraftChanges(workspaceRoot: string, relativePath: string): Pr
   }
 
   try {
-    const diff = await callGraftTool<GraftStructDiffResult>(
+    const diff = decodeGraftStructDiffResult(await callGraftTool(
       workspaceRoot,
-      'graft_diff',
+      GRAFT_DIFF_TOOL,
       { path: relativePath },
-    );
+    ));
     const file = diff.files.find((entry) => entry.path === relativePath);
     if (file == null) {
       return ['no structural changes vs HEAD'];
@@ -258,16 +270,16 @@ function resolveGraftCliPath(): string {
   }
 }
 
-async function callGraftTool<T>(
+async function callGraftTool(
   workspaceRoot: string,
   name: string,
   args: Record<string, string | number | boolean | null>,
-): Promise<T> {
+): Promise<JsonValue> {
   const connection = await ensureGraftConnection(workspaceRoot);
   const result = await connection.client.callTool({
     name,
     arguments: args,
-  }) as GraftToolResult<T>;
+  }) as GraftToolResult;
 
   if (result.isError === true) {
     throw new Error(parseGraftErrorResult(result));
@@ -276,7 +288,7 @@ async function callGraftTool<T>(
   return parseGraftToolResult(result);
 }
 
-function parseGraftErrorResult<T>(result: GraftToolResult<T>): string {
+function parseGraftErrorResult(result: GraftToolResult): string {
   if (result.structuredContent !== undefined) {
     return String(result.structuredContent);
   }
@@ -286,7 +298,7 @@ function parseGraftErrorResult<T>(result: GraftToolResult<T>): string {
     ?.text ?? 'Graft tool returned an error';
 }
 
-function parseGraftToolResult<T>(result: GraftToolResult<T>): T {
+function parseGraftToolResult(result: GraftToolResult): JsonValue {
   if (result.structuredContent !== undefined) {
     return result.structuredContent;
   }
@@ -299,7 +311,96 @@ function parseGraftToolResult<T>(result: GraftToolResult<T>): T {
     throw new Error('No text content in MCP result');
   }
 
-  return JSON.parse(text) as T;
+  const parsed: JsonValue = JSON.parse(text);
+  return parsed;
+}
+
+export function decodeGraftFileOutlineResult(value: JsonValue): GraftFileOutlineResult {
+  const result = asJsonObject(value, 'file_outline');
+  return {
+    ...(result['jumpTable'] !== undefined ? { jumpTable: decodeGraftJumpTable(result['jumpTable'], 'jumpTable') } : {}),
+    ...(result['projection'] !== undefined ? { projection: asString(result['projection'], 'projection') } : {}),
+    ...(result['reason'] !== undefined ? { reason: asString(result['reason'], 'reason') } : {}),
+  };
+}
+
+export function decodeGraftStructDiffResult(value: JsonValue): GraftStructDiffResult {
+  const result = asJsonObject(value, 'graft_diff');
+  return {
+    files: asArray(result['files'], 'files').map((file, index) => decodeGraftDiffFile(file, `files[${String(index)}]`)),
+  };
+}
+
+function decodeGraftJumpTable(value: JsonValue, path: string): readonly GraftJumpEntry[] {
+  return asArray(value, path).map((entry, index) => decodeGraftJumpEntry(entry, `${path}[${String(index)}]`));
+}
+
+function decodeGraftJumpEntry(value: JsonValue, path: string): GraftJumpEntry {
+  const entry = asJsonObject(value, path);
+  return {
+    symbol: asString(entry['symbol'], `${path}.symbol`),
+    kind: asString(entry['kind'], `${path}.kind`),
+    start: asNumber(entry['start'], `${path}.start`),
+    end: asNumber(entry['end'], `${path}.end`),
+  };
+}
+
+function decodeGraftDiffFile(value: JsonValue, path: string): GraftStructDiffResult['files'][number] {
+  const file = asJsonObject(value, path);
+  const diff = asJsonObject(file['diff'], `${path}.diff`);
+  return {
+    path: asString(file['path'], `${path}.path`),
+    summary: asString(file['summary'], `${path}.summary`),
+    diff: {
+      added: decodeGraftDiffEntries(diff['added'], `${path}.diff.added`),
+      changed: decodeGraftDiffEntries(diff['changed'], `${path}.diff.changed`),
+      removed: decodeGraftDiffEntries(diff['removed'], `${path}.diff.removed`),
+    },
+  };
+}
+
+function decodeGraftDiffEntries(value: JsonValue | undefined, path: string): readonly GraftDiffEntry[] {
+  return asArray(value, path).map((entry, index) => decodeGraftDiffEntry(entry, `${path}[${String(index)}]`));
+}
+
+function decodeGraftDiffEntry(value: JsonValue, path: string): GraftDiffEntry {
+  const entry = asJsonObject(value, path);
+  return {
+    kind: asString(entry['kind'], `${path}.kind`),
+    name: asString(entry['name'], `${path}.name`),
+  };
+}
+
+function asJsonObject(value: JsonValue | undefined, path: string): JsonObject {
+  if (!isJsonObject(value)) {
+    throw new Error(`${path} must be an object`);
+  }
+  return value;
+}
+
+function isJsonObject(value: JsonValue | undefined): value is JsonObject {
+  return typeof value === 'object' && value != null && !Array.isArray(value);
+}
+
+function asArray(value: JsonValue | undefined, path: string): readonly JsonValue[] {
+  if (!Array.isArray(value)) {
+    throw new Error(`${path} must be an array`);
+  }
+  return value;
+}
+
+function asString(value: JsonValue | undefined, path: string): string {
+  if (typeof value !== 'string') {
+    throw new Error(`${path} must be a string`);
+  }
+  return value;
+}
+
+function asNumber(value: JsonValue | undefined, path: string): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new Error(`${path} must be a finite number`);
+  }
+  return value;
 }
 
 function processEnvRecord(): Record<string, string> {
