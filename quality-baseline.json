@@ -1,15 +1,29 @@
 {
-  "maxLines": {
-    "src/main.ts": 2394
+  "totalErrors": 75,
+  "fileErrors": {
+    "src/adapters/graft-mcp-session.ts": 5,
+    "src/adapters/jedit-echo-optic-client.ts": 1,
+    "src/adapters/title-scene-loader.ts": 2,
+    "src/app/jedit-contract-runtime.ts": 2,
+    "src/app/jedit-observer-spec.ts": 1,
+    "src/app/raytracer-profiler.ts": 1,
+    "src/app/settings-session.ts": 2,
+    "src/domain/tick-admission-contract.ts": 1,
+    "src/main.ts": 26,
+    "src/ui/averaging-braille-canvas.ts": 3,
+    "src/ui/graft-drawer.ts": 1,
+    "src/ui/jedit-themes.ts": 2,
+    "src/ui/markdown-preview.ts": 7,
+    "src/ui/settings-drawer.ts": 1,
+    "src/ui/source-highlight.ts": 1,
+    "src/ui/source-viewer.ts": 1,
+    "src/ui/theme-builder.ts": 3,
+    "src/ui/title-logo.ts": 1,
+    "src/ui/title-mesh.ts": 4,
+    "src/ui/title-scene.ts": 1,
+    "src/ui/title-screen.ts": 5,
+    "src/ui/workspace-chrome.ts": 3,
+    "src/ui/workspace-focus-edge.ts": 1
   },
-  "forbiddenTypeKeywords": {
-    "src/main.ts": {
-      "any": 0,
-      "unknown": 4
-    },
-    "src/adapters/bijou-i18n-adapter.ts": {
-      "any": 1,
-      "unknown": 0
-    }
-  }
+  "updatedAt": "2026-05-09T23:39:13.694Z"
 }
