@@ -2082,7 +2082,12 @@ function notificationTickCmd(): Cmd<Msg> { return createNotificationTickCmd((atM
 
 function renderViewer(model: Model, width: number, height: number) {
   if (model.editor == null) {
-    return renderTitleScreen(width, height, model.time, model.jeditTheme, model.titleCamera.angle, model.titleCamera.radius, model.titleSceneSeed, model.titleMesh);
+    return renderTitleScreen(width, height, model.time, model.jeditTheme, {
+      camAngle: model.titleCamera.angle,
+      camRadius: model.titleCamera.radius,
+      sceneSeed: model.titleSceneSeed,
+      mesh: model.titleMesh,
+    });
   }
 
   const surface = createSurface(width, height);

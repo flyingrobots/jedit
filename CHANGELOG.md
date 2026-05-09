@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Replaced title-screen camera/seed positional arguments with explicit render
+  options so regression tests pin deterministic scene seeds independently of
+  camera angle.
 - Stabilized title-screen checkerboard floor contrast across built-in dark and
   light themes by deriving explicit floor dark/light material roles before
   lighting and reflections.

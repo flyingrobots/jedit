@@ -26,6 +26,15 @@ const TITLE_LOGO_SMOOTH_FRAME_TIME = 0.74;
 const TITLE_LOGO_NEXT_FRAME_TIME = TITLE_LOGO_SMOOTH_FRAME_TIME + (1 / 60);
 const TITLE_LOGO_MAX_FRAME_OFFSET_DELTA = 0.02;
 const REFLECTIVE_HIGHLIGHT_LUMINANCE = 190;
+const FIXED_TITLE_CAMERA_ANGLE = 0.25;
+
+function fixedTitleRenderOptions(extra = {}) {
+  return {
+    camAngle: FIXED_TITLE_CAMERA_ANGLE,
+    sceneSeed: FIXED_TITLE_SEED,
+    ...extra,
+  };
+}
 
 async function loadTitleModules() {
   const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
@@ -138,7 +147,7 @@ test('title logo falls back to compact text when bitmap compression would become
   const { title, titleLogo, themes, style } = await loadTitleModules();
   const bounds = title.titleLogoCellBounds(COMPACT_TITLE_WIDTH, COMPACT_TITLE_HEIGHT);
   const theme = themes.availableJeditThemes()[0];
-  const surface = title.renderTitleScreen(COMPACT_TITLE_WIDTH, COMPACT_TITLE_HEIGHT, 0, theme, FIXED_TITLE_SEED);
+  const surface = title.renderTitleScreen(COMPACT_TITLE_WIDTH, COMPACT_TITLE_HEIGHT, 0, theme, fixedTitleRenderOptions());
   const logoCells = cells(surface).filter((cell) => cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold));
 
   assert.equal(bounds.renderMode, titleLogo.TITLE_LOGO_RENDER_MODE.CompactText);
@@ -150,7 +159,7 @@ test('title logo falls back to compact text when bitmap compression would become
 test('title screen renders the logo as a non-Braille themed glyph layer', async () => {
   const { title, themes, style } = await loadTitleModules();
   const theme = themes.availableJeditThemes()[0];
-  const surface = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, FIXED_TITLE_SEED);
+  const surface = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, fixedTitleRenderOptions());
   const logoCells = cells(surface).filter((cell) => cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold));
 
   assert.ok(logoCells.length > 12);
@@ -163,8 +172,8 @@ test('title screen renders the logo as a non-Braille themed glyph layer', async 
 test('title screen animates logo glyph positions and color over time', async () => {
   const { title, themes, style } = await loadTitleModules();
   const theme = themes.availableJeditThemes()[0];
-  const first = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, FIXED_TITLE_SEED);
-  const later = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, TITLE_LOGO_MOTION_TIME, theme, FIXED_TITLE_SEED);
+  const first = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, fixedTitleRenderOptions());
+  const later = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, TITLE_LOGO_MOTION_TIME, theme, fixedTitleRenderOptions());
   const firstLogo = logoCellKeys(first, style);
   const laterLogo = logoCellKeys(later, style);
 
@@ -176,7 +185,7 @@ test('title screen animates logo glyph positions and color over time', async () 
 test('title scene uses Braille subpixels with averaged material colors', async () => {
   const { title, themes, style } = await loadTitleModules();
   const theme = themes.availableJeditThemes()[0];
-  const surface = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, FIXED_TITLE_SEED);
+  const surface = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, fixedTitleRenderOptions());
   const sceneCells = cells(surface).filter((cell) => !cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold));
   const visibleSceneChars = new Set(sceneCells.map((cell) => cell.char).filter((char) => char !== ' '));
 
@@ -188,7 +197,7 @@ test('title scene uses Braille subpixels with averaged material colors', async (
 test('title scene keeps reflective highlights on sphere materials', async () => {
   const { title, themes, style } = await loadTitleModules();
   const theme = themes.availableJeditThemes()[0];
-  const surface = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, FIXED_TITLE_SEED);
+  const surface = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, fixedTitleRenderOptions());
   const sceneCells = cells(surface).filter((cell) => (
     !cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold)
     && isBraille(cell.char)
@@ -240,10 +249,22 @@ test('title floor light effects expose sphere shadows and caustics', async () =>
 test('title screen is deterministic for a fixed scene seed and frame time', async () => {
   const { title, themes } = await loadTitleModules();
   const theme = themes.availableJeditThemes()[0];
-  const first = title.renderTitleScreen(72, 22, 3, theme, FIXED_TITLE_SEED);
-  const second = title.renderTitleScreen(72, 22, 3, theme, FIXED_TITLE_SEED);
+  const first = title.renderTitleScreen(72, 22, 3, theme, fixedTitleRenderOptions());
+  const second = title.renderTitleScreen(72, 22, 3, theme, fixedTitleRenderOptions());
 
   assert.deepEqual(cells(first), cells(second));
+});
+
+test('title screen render options keep scene seed separate from camera angle', async () => {
+  const { title, themes } = await loadTitleModules();
+  const theme = themes.availableJeditThemes()[0];
+  const fixedCamera = { camAngle: 0.25, sceneSeed: 0.125 };
+  const sameSeed = title.renderTitleScreen(72, 22, 3, theme, fixedCamera);
+  const sameSeedAgain = title.renderTitleScreen(72, 22, 3, theme, fixedCamera);
+  const otherSeed = title.renderTitleScreen(72, 22, 3, theme, { ...fixedCamera, sceneSeed: 0.875 });
+
+  assert.deepEqual(cells(sameSeed), cells(sameSeedAgain));
+  assert.notDeepEqual(cells(otherSeed), cells(sameSeed));
 });
 
 function cellColorKey(cell) {

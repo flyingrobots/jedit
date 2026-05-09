@@ -33,6 +33,13 @@ export interface TitleSceneMaterialColors {
   readonly floorLight: Color3;
 }
 
+export interface TitleScreenRenderOptions {
+  readonly camAngle: number;
+  readonly camRadius?: number;
+  readonly sceneSeed?: number;
+  readonly mesh?: TitleMesh;
+}
+
 const DEFAULT_CAMERA_RADIUS = 8.5;
 const DEFAULT_TITLE_SCENE_SEED = 0.5;
 const CAMERA_DRIFT_RATE = 0.005;
@@ -76,11 +83,14 @@ export function renderTitleScreen(
   rows: number,
   time: number,
   theme: JeditTheme,
-  camAngle: number,
-  camRadius = DEFAULT_CAMERA_RADIUS,
-  sceneSeed = DEFAULT_TITLE_SCENE_SEED,
-  mesh?: TitleMesh,
+  options: TitleScreenRenderOptions,
 ): Surface {
+  const {
+    camAngle,
+    camRadius = DEFAULT_CAMERA_RADIUS,
+    sceneSeed = DEFAULT_TITLE_SCENE_SEED,
+    mesh,
+  } = options;
   const colors = titleSceneMaterialColors(theme);
   const scene = generateTitleScene(sceneSeed, colors, mesh);
 
