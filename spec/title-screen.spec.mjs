@@ -121,6 +121,21 @@ test('title scene keeps checker floor material contrast stable across built-in t
   }
 });
 
+test('title floor light effects expose sphere shadows and caustics', async () => {
+  const { title } = await loadTitleModules();
+  const spheres = [
+    { position: [0, 1, 0], radius: 1.25, color: [255, 255, 255], reflectivity: 0.5 },
+  ];
+
+  const underSphere = title.titleFloorLightEffectsAt([0, 0, 0], spheres, 0);
+  const farAway = title.titleFloorLightEffectsAt([20, 0, 20], spheres, 0);
+
+  assert.ok(underSphere.shadowMultiplier < 1);
+  assert.ok(underSphere.causticStrength > 0);
+  assert.equal(farAway.shadowMultiplier, 1);
+  assert.equal(farAway.causticStrength, 0);
+});
+
 test('title screen is deterministic for a fixed scene seed and frame time', async () => {
   const { title, themes } = await loadTitleModules();
   const theme = themes.availableJeditThemes()[0];
