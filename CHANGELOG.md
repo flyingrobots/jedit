@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Documented the `JEDIT_WESLEY_ROOT` checkout requirement for contract codegen
+  and added a regression test that keeps the README example executable.
 - Added explicit runtime decoders for Graft MCP outline and structural diff
   payloads so malformed tool results fail at the adapter boundary.
 - Copied the title bunny OBJ asset during `npm run build` and made startup mesh
