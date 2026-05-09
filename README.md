@@ -96,6 +96,13 @@ legacy TypeScript/Zod files. The app still keeps the legacy Zod validators until
 Wesley has a Rust-native validator emitter, but operation-name and request-input
 type seams should prefer the Rust-Wesley generated artifact.
 
+The Echo Rust binding pass is intentionally deferred while Echo's generator
+surface is moving. The current readiness gate is
+`spec/hot-text-contract-readiness.spec.mjs`: it proves the authored SDL and
+generated Wesley TypeScript operation metadata agree on mutation footprints,
+bounded reads, and the contract surface that `echo-wesley-gen` will consume
+once the warpspace-pinned Echo checkout is available again.
+
 Near-term product direction:
 
 - `jedit .` opens the current directory
