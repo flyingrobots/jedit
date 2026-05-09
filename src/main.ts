@@ -138,12 +138,22 @@ interface Model {
   readonly frameTimeMs: number;
   readonly frameTimeHistory: readonly number[];
   readonly titleCamera: TitleCameraState;
+  readonly profiler: {
+    readonly active: boolean;
+    readonly frames: ReadonlyArray<{
+      readonly time: number;
+      readonly frameTimeMs: number;
+      readonly columns: number;
+      readonly rows: number;
+    }>;
+  };
 }
 
 type Msg =
   | { type: 'drawer-progress'; kind: DrawerKind; value: number }
   | { type: 'graft-info'; requestId: number; info: GraftInfo }
   | { type: 'load-scene-result'; scene: TitleScene | undefined }
+  | { type: 'toggle-profiler' }
   | SourceHighlightMsg
   | TitleCameraMotionMsg
   | { type: 'notification-tick'; atMs: number }
@@ -238,12 +248,28 @@ const app: App<Model, Msg> = {
       const now = Date.now();
       const frameTime = now - model.lastFrameMs;
       const history = [...model.frameTimeHistory, frameTime].slice(-50);
+      const profiler = model.profiler.active
+        ? {
+            ...model.profiler,
+            frames: [
+              ...model.profiler.frames,
+              {
+                time: msg.time,
+                frameTimeMs: frameTime,
+                columns: model.columns,
+                rows: model.rows,
+              },
+            ],
+          }
+        : model.profiler;
+
       return [{
         ...model,
         time: msg.time,
         lastFrameMs: now,
         frameTimeMs: frameTime,
         frameTimeHistory: history,
+        profiler,
       }, []];
     }
 
@@ -275,6 +301,47 @@ const app: App<Model, Msg> = {
 function updateFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
   if (msg.key === '`') {
     return [{ ...model, perfVisible: !model.perfVisible }, []];
+  }
+
+  if (msg.key === 'f10' && model.editor == null) {
+    if (model.profiler.active) {
+      const frames = model.profiler.frames;
+      return [{ ...model, profiler: { active: false, frames: [] } }, [
+        async () => {
+          try {
+            const { writeFile } = await import('node:fs/promises');
+            const { join } = await import('node:path');
+            const fileName = `raytracer-profile-${Date.now()}.json`;
+            const filePath = join(model.workspaceRoot, fileName);
+            await writeFile(filePath, JSON.stringify(frames, null, 2), 'utf8');
+            return {
+              type: 'runtime-issue',
+              issue: {
+                type: 'system',
+                name: 'ProfileSaved',
+                message: `Profile trace saved to ${fileName}`,
+                level: 'warning',
+                source: 'command',
+                atMs: Date.now(),
+              },
+            };
+          } catch (err) {
+            return {
+              type: 'runtime-issue',
+              issue: {
+                type: 'system',
+                name: 'ProfileSaveError',
+                message: `Failed to save profile: ${String(err)}`,
+                level: 'error',
+                source: 'command',
+                atMs: Date.now(),
+              },
+            };
+          }
+        }
+      ]];
+    }
+    return [{ ...model, profiler: { active: true, frames: [] } }, []];
   }
 
   if (msg.key === JEDIT_SETTINGS_TOGGLE_KEY) {
@@ -789,6 +856,10 @@ function createInitialModel(cwd: string, columns: number, rows: number): Model {
     frameTimeMs: 0,
     frameTimeHistory: [],
     titleCamera: createTitleCameraState(titleMesh == null ? titleSceneCameraPlacement(titleSceneSeed) : titleBunnySceneCameraPlacement()),
+    profiler: {
+      active: false,
+      frames: [],
+    },
   };
 }
 
