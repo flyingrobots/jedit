@@ -321,16 +321,58 @@ function sphereHit(origin: TitleSceneVector3, ray: TitleSceneVector3, object: Ti
 }
 
 function columnHit(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleSceneObject): TitleSceneObjectHit | undefined {
-  const distance = intersectColumnSide(origin, ray, object);
-  if (distance <= 0) {
+  let nearestDistance = -1;
+  let nearestNormal: TitleSceneVector3 | undefined;
+
+  // Check side
+  const sideDistance = intersectColumnSide(origin, ray, object);
+  if (sideDistance > 0) {
+    nearestDistance = sideDistance;
+    const point = add(origin, scale(ray, sideDistance));
+    nearestNormal = normalize([point[0] - object.position[0], 0, point[2] - object.position[2]]);
+  }
+
+  // Check top cap (y = object.height)
+  const topDistance = intersectColumnCap(origin, ray, object, object.height);
+  if (topDistance > 0 && (nearestDistance < 0 || topDistance < nearestDistance)) {
+    nearestDistance = topDistance;
+    nearestNormal = [0, 1, 0];
+  }
+
+  // Check bottom cap (y = COLUMN_FLOOR_Y)
+  const bottomDistance = intersectColumnCap(origin, ray, object, COLUMN_FLOOR_Y);
+  if (bottomDistance > 0 && (nearestDistance < 0 || bottomDistance < nearestDistance)) {
+    nearestDistance = bottomDistance;
+    nearestNormal = [0, -1, 0];
+  }
+
+  if (nearestDistance <= 0 || nearestNormal == null) {
     return undefined;
   }
-  const point = add(origin, scale(ray, distance));
+
   return {
     object,
-    distance,
-    normal: normalize([point[0] - object.position[0], 0, point[2] - object.position[2]]),
+    distance: nearestDistance,
+    normal: nearestNormal,
   };
+}
+
+function intersectColumnCap(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleSceneObject, capY: number): number {
+  if (Math.abs(ray[1]) < 0.000001) {
+    return -1;
+  }
+  const t = (capY - origin[1]) / ray[1];
+  if (t <= 0) {
+    return -1;
+  }
+  const x = origin[0] + (ray[0] * t);
+  const z = origin[2] + (ray[2] * t);
+  const dx = x - object.position[0];
+  const dz = z - object.position[2];
+  if ((dx * dx) + (dz * dz) <= object.radius * object.radius) {
+    return t;
+  }
+  return -1;
 }
 
 function meshHit(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleSceneMeshObject): TitleSceneObjectHit | undefined {
