@@ -1,7 +1,8 @@
-import type { JeditTheme } from '../ui/jedit-theme.js';
+import { JEDIT_THEME_MODE, type JeditTheme } from '../ui/jedit-theme.js';
 
 export const JEDIT_SETTING_ACTION = {
   CycleTheme: Symbol('jedit.settings.action.cycle-theme'),
+  ToggleThemeMode: Symbol('jedit.settings.action.toggle-theme-mode'),
   ToggleFooter: Symbol('jedit.settings.action.toggle-footer'),
   ToggleMarkdownPreview: Symbol('jedit.settings.action.toggle-markdown-preview'),
 } as const;
@@ -33,6 +34,7 @@ export interface JeditSettingsKeyMsg {
 
 export interface JeditSettingsHandlers<Model, Command> {
   cycleTheme(model: Model): [Model, Command[]];
+  toggleThemeMode(model: Model): [Model, Command[]];
   toggleFooter(model: Model): [Model, Command[]];
   toggleMarkdownPreview(model: Model): [Model, Command[]];
 }
@@ -51,10 +53,13 @@ export interface JeditSettingsRow {
 const SETTINGS_SECTION_APPEARANCE = 'Appearance';
 const SETTINGS_SECTION_EDITOR = 'Editor';
 const ROW_ID_THEME = 'theme';
+const ROW_ID_THEME_MODE = 'theme-mode';
 const ROW_ID_FOOTER = 'footer';
 const ROW_ID_MARKDOWN_PREVIEW = 'markdown-preview';
 const VALUE_ON = 'On';
 const VALUE_OFF = 'Off';
+const VALUE_THEME_MODE_DARK = 'Dark';
+const VALUE_THEME_MODE_LIGHT = 'Light';
 const VALUE_SOURCE = 'Source';
 const VALUE_PREVIEW = 'Preview';
 const KEY_ESCAPE = 'escape';
@@ -77,6 +82,15 @@ export function jeditSettingsRows(state: JeditSettingsState): readonly JeditSett
       valueLabel: state.jeditTheme.name,
       kind: JEDIT_SETTING_ROW_KIND.Choice,
       action: JEDIT_SETTING_ACTION.CycleTheme,
+    },
+    {
+      id: ROW_ID_THEME_MODE,
+      section: SETTINGS_SECTION_APPEARANCE,
+      label: 'Light/dark',
+      description: 'Switch the current theme to its light or dark companion.',
+      valueLabel: settingsThemeModeLabel(state.jeditTheme),
+      kind: JEDIT_SETTING_ROW_KIND.Choice,
+      action: JEDIT_SETTING_ACTION.ToggleThemeMode,
     },
     {
       id: ROW_ID_FOOTER,
@@ -103,6 +117,10 @@ export function jeditSettingsRows(state: JeditSettingsState): readonly JeditSett
   }
 
   return rows;
+}
+
+function settingsThemeModeLabel(theme: JeditTheme): string {
+  return theme.mode === JEDIT_THEME_MODE.Light ? VALUE_THEME_MODE_LIGHT : VALUE_THEME_MODE_DARK;
 }
 
 export function moveSettingsFocusIndex(index: number, delta: number, rowCount: number): number {
@@ -159,6 +177,9 @@ function activateSettingsRow<Model, Command>(
 ): [Model, Command[]] {
   if (action === JEDIT_SETTING_ACTION.CycleTheme) {
     return handlers.cycleTheme(model);
+  }
+  if (action === JEDIT_SETTING_ACTION.ToggleThemeMode) {
+    return handlers.toggleThemeMode(model);
   }
   if (action === JEDIT_SETTING_ACTION.ToggleFooter) {
     return handlers.toggleFooter(model);

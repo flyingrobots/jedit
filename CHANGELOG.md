@@ -13,3 +13,6 @@
   zoom changes ease smoothly instead of stepping instantly.
 - Added Monokai-, Solarized-, Dracula-, Nord-, and Catppuccin-inspired built-in
   jedit themes through the shared theme builder pipeline.
+- Added light/dark theme companion metadata, generated opposite-mode fallback
+  themes, authored Solarized companion overrides, and a settings row for
+  toggling the current theme mode.

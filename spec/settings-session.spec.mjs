@@ -37,6 +37,7 @@ test('jedit settings rows expose theme, footer, and markdown preview preferences
     rows.map((row) => [row.label, row.valueLabel, row.kind]),
     [
       ['Theme', theme.name, settings.JEDIT_SETTING_ROW_KIND.Choice],
+      ['Light/dark', 'Dark', settings.JEDIT_SETTING_ROW_KIND.Choice],
       ['Footer', 'On', settings.JEDIT_SETTING_ROW_KIND.Toggle],
       ['Markdown preview', 'Source', settings.JEDIT_SETTING_ROW_KIND.Choice],
     ],
@@ -68,6 +69,9 @@ test('settings key reducer closes, moves, and activates focused settings rows', 
     cycleTheme(model) {
       return [{ ...model, cycled: true }, []];
     },
+    toggleThemeMode(model) {
+      return [{ ...model, toggledThemeMode: true }, []];
+    },
     toggleFooter(model) {
       return [{ ...model, footerVisible: !model.footerVisible }, []];
     },
@@ -84,6 +88,9 @@ test('settings key reducer closes, moves, and activates focused settings rows', 
   const [moved] = settings.updateJeditSettingsFromKey({ key: 'down' }, baseModel, rows, handlers);
   assert.equal(moved.settingsFocusIndex, 1);
 
-  const [activated] = settings.updateJeditSettingsFromKey({ key: 'enter' }, { ...baseModel, settingsFocusIndex: 2 }, rows, handlers);
+  const [activatedMode] = settings.updateJeditSettingsFromKey({ key: 'enter' }, { ...baseModel, settingsFocusIndex: 1 }, rows, handlers);
+  assert.equal(activatedMode.toggledThemeMode, true);
+
+  const [activated] = settings.updateJeditSettingsFromKey({ key: 'enter' }, { ...baseModel, settingsFocusIndex: 3 }, rows, handlers);
   assert.equal(activated.viewMode, 'preview');
 });

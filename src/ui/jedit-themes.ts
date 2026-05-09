@@ -1,5 +1,5 @@
-import type { JeditTheme } from './jedit-theme.js';
-import { JEDIT_TEXT_MODIFIER } from './jedit-theme.js';
+import type { JeditTheme, JeditThemeMode, JeditThemeVariantSource } from './jedit-theme.js';
+import { JEDIT_THEME_MODE, JEDIT_THEME_VARIANT_SOURCE, JEDIT_TEXT_MODIFIER } from './jedit-theme.js';
 import { defineJeditTheme, type JeditThemeDraft, type ThemeColorVariable } from './theme-builder.js';
 
 export const JEDIT_THEME_ENV = 'JEDIT_THEME';
@@ -12,6 +12,7 @@ const SOLARIZED_LIGHT_THEME_NAME = 'solarized-light';
 const DRACULA_THEME_NAME = 'dracula';
 const NORD_THEME_NAME = 'nord';
 const CATPPUCCIN_THEME_NAME = 'catppuccin';
+const SOLARIZED_FAMILY_NAME = 'solarized';
 
 const VARIABLE_INK = 'ink';
 const VARIABLE_MUTED = 'muted';
@@ -23,6 +24,9 @@ const VARIABLE_SURFACE = 'surface';
 const VARIABLE_SURFACE_RAISED = 'surface.raised';
 const VARIABLE_SURFACE_MUTED = 'surface.muted';
 const ACTIVE_EDGE_CHAR = '░';
+const THEME_MODE_LABEL_DARK = 'Dark';
+const THEME_MODE_LABEL_LIGHT = 'Light';
+const COLOR_CHANNEL_MAX = 255;
 
 type RgbTuple = readonly [number, number, number];
 
@@ -48,6 +52,13 @@ interface ThemeVariables {
   readonly surface: ThemeColorVariable;
   readonly surfaceRaised: ThemeColorVariable;
   readonly surfaceMuted: ThemeColorVariable;
+}
+
+interface PaletteThemeOptions {
+  readonly mode: JeditThemeMode;
+  readonly familyName?: string;
+  readonly variantSource?: JeditThemeVariantSource;
+  readonly companionThemeName?: string;
 }
 
 const GRAPHITE_PALETTE = {
@@ -146,14 +157,22 @@ const CATPPUCCIN_PALETTE = {
   surfaceMuted: [69, 71, 90],
 } satisfies ThemePalette;
 
-const GRAPHITE_THEME = definePaletteTheme(GRAPHITE_THEME_NAME, GRAPHITE_PALETTE);
-const MORNING_THEME = definePaletteTheme(MORNING_THEME_NAME, MORNING_PALETTE);
-const MONOKAI_THEME = definePaletteTheme(MONOKAI_THEME_NAME, MONOKAI_PALETTE);
-const SOLARIZED_DARK_THEME = definePaletteTheme(SOLARIZED_DARK_THEME_NAME, SOLARIZED_DARK_PALETTE);
-const SOLARIZED_LIGHT_THEME = definePaletteTheme(SOLARIZED_LIGHT_THEME_NAME, SOLARIZED_LIGHT_PALETTE);
-const DRACULA_THEME = definePaletteTheme(DRACULA_THEME_NAME, DRACULA_PALETTE);
-const NORD_THEME = definePaletteTheme(NORD_THEME_NAME, NORD_PALETTE);
-const CATPPUCCIN_THEME = definePaletteTheme(CATPPUCCIN_THEME_NAME, CATPPUCCIN_PALETTE);
+const GRAPHITE_THEME = definePaletteTheme(GRAPHITE_THEME_NAME, GRAPHITE_PALETTE, { mode: JEDIT_THEME_MODE.Dark });
+const MORNING_THEME = definePaletteTheme(MORNING_THEME_NAME, MORNING_PALETTE, { mode: JEDIT_THEME_MODE.Light });
+const MONOKAI_THEME = definePaletteTheme(MONOKAI_THEME_NAME, MONOKAI_PALETTE, { mode: JEDIT_THEME_MODE.Dark });
+const SOLARIZED_DARK_THEME = definePaletteTheme(SOLARIZED_DARK_THEME_NAME, SOLARIZED_DARK_PALETTE, {
+  mode: JEDIT_THEME_MODE.Dark,
+  familyName: SOLARIZED_FAMILY_NAME,
+  companionThemeName: SOLARIZED_LIGHT_THEME_NAME,
+});
+const SOLARIZED_LIGHT_THEME = definePaletteTheme(SOLARIZED_LIGHT_THEME_NAME, SOLARIZED_LIGHT_PALETTE, {
+  mode: JEDIT_THEME_MODE.Light,
+  familyName: SOLARIZED_FAMILY_NAME,
+  companionThemeName: SOLARIZED_DARK_THEME_NAME,
+});
+const DRACULA_THEME = definePaletteTheme(DRACULA_THEME_NAME, DRACULA_PALETTE, { mode: JEDIT_THEME_MODE.Dark });
+const NORD_THEME = definePaletteTheme(NORD_THEME_NAME, NORD_PALETTE, { mode: JEDIT_THEME_MODE.Dark });
+const CATPPUCCIN_THEME = definePaletteTheme(CATPPUCCIN_THEME_NAME, CATPPUCCIN_PALETTE, { mode: JEDIT_THEME_MODE.Dark });
 
 const BUILT_IN_THEMES: readonly JeditTheme[] = [
   GRAPHITE_THEME,
@@ -166,6 +185,7 @@ const BUILT_IN_THEMES: readonly JeditTheme[] = [
   CATPPUCCIN_THEME,
 ];
 const DEFAULT_THEME = GRAPHITE_THEME;
+const GENERATED_COMPANION_CACHE = new Map<string, JeditTheme>();
 
 export function availableJeditThemes(): readonly JeditTheme[] {
   return BUILT_IN_THEMES;
@@ -177,14 +197,53 @@ export function resolveInitialJeditTheme(themeName: string | undefined): JeditTh
 }
 
 export function nextJeditTheme(current: JeditTheme): JeditTheme {
-  const currentIndex = BUILT_IN_THEMES.findIndex((theme) => theme.name === current.name);
+  const currentName = current.variantSource === JEDIT_THEME_VARIANT_SOURCE.Generated
+    ? current.companionThemeName
+    : current.name;
+  const currentIndex = BUILT_IN_THEMES.findIndex((theme) => theme.name === currentName);
   const nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % BUILT_IN_THEMES.length;
   return BUILT_IN_THEMES[nextIndex] ?? DEFAULT_THEME;
 }
 
-function definePaletteTheme(name: string, palette: ThemePalette): JeditTheme {
+export function oppositeJeditTheme(theme: JeditTheme): JeditTheme {
+  const authoredCompanion = theme.companionThemeName == null ? undefined : themeByName(theme.companionThemeName);
+  if (authoredCompanion != null) {
+    return authoredCompanion;
+  }
+
+  const targetMode = oppositeThemeMode(theme.mode);
+  const cacheKey = `${theme.name}:${targetMode}`;
+  const cached = GENERATED_COMPANION_CACHE.get(cacheKey);
+  if (cached != null) {
+    return cached;
+  }
+
+  const generated = definePaletteTheme(
+    `${theme.familyName}-${targetMode}`,
+    oppositePalette(paletteFromTheme(theme)),
+    {
+      mode: targetMode,
+      familyName: theme.familyName,
+      variantSource: JEDIT_THEME_VARIANT_SOURCE.Generated,
+      companionThemeName: theme.name,
+    },
+  );
+  GENERATED_COMPANION_CACHE.set(cacheKey, generated);
+  return generated;
+}
+
+export function jeditThemeModeLabel(theme: JeditTheme): string {
+  return theme.mode === JEDIT_THEME_MODE.Light ? THEME_MODE_LABEL_LIGHT : THEME_MODE_LABEL_DARK;
+}
+
+function definePaletteTheme(name: string, palette: ThemePalette, options: PaletteThemeOptions): JeditTheme {
   return defineJeditTheme(name, (draft) => {
     applyThemeTokens(draft, paletteVariables(draft, palette));
+  }, {
+    mode: options.mode,
+    familyName: options.familyName,
+    variantSource: options.variantSource,
+    companionThemeName: options.companionThemeName,
   });
 }
 
@@ -204,6 +263,54 @@ function paletteVariables(draft: JeditThemeDraft, palette: ThemePalette): ThemeV
 
 function variableFromRgb(draft: JeditThemeDraft, name: string, color: RgbTuple): ThemeColorVariable {
   return draft.variable(name, draft.rgb(color[0], color[1], color[2]));
+}
+
+function themeByName(themeName: string): JeditTheme | undefined {
+  return BUILT_IN_THEMES.find((theme) => theme.name === themeName);
+}
+
+function oppositeThemeMode(mode: JeditThemeMode): JeditThemeMode {
+  return mode === JEDIT_THEME_MODE.Dark ? JEDIT_THEME_MODE.Light : JEDIT_THEME_MODE.Dark;
+}
+
+function oppositePalette(palette: ThemePalette): ThemePalette {
+  return {
+    ink: invertColor(palette.ink),
+    muted: invertColor(palette.muted),
+    accent: invertColor(palette.accent),
+    info: invertColor(palette.info),
+    warning: invertColor(palette.warning),
+    success: invertColor(palette.success),
+    surface: invertColor(palette.surface),
+    surfaceRaised: invertColor(palette.surfaceRaised),
+    surfaceMuted: invertColor(palette.surfaceMuted),
+  };
+}
+
+function paletteFromTheme(theme: JeditTheme): ThemePalette {
+  return {
+    ink: variableRgb(theme, VARIABLE_INK, [226, 231, 236]),
+    muted: variableRgb(theme, VARIABLE_MUTED, [126, 137, 148]),
+    accent: variableRgb(theme, VARIABLE_ACCENT, [216, 151, 255]),
+    info: variableRgb(theme, VARIABLE_INFO, [101, 194, 255]),
+    warning: variableRgb(theme, VARIABLE_WARNING, [245, 184, 92]),
+    success: variableRgb(theme, VARIABLE_SUCCESS, [124, 213, 156]),
+    surface: variableRgb(theme, VARIABLE_SURFACE, [14, 17, 22]),
+    surfaceRaised: variableRgb(theme, VARIABLE_SURFACE_RAISED, [28, 32, 40]),
+    surfaceMuted: variableRgb(theme, VARIABLE_SURFACE_MUTED, [22, 26, 33]),
+  };
+}
+
+function variableRgb(theme: JeditTheme, name: string, fallback: RgbTuple): RgbTuple {
+  return theme.variables.get(name)?.rgb ?? fallback;
+}
+
+function invertColor(color: RgbTuple): RgbTuple {
+  return [
+    COLOR_CHANNEL_MAX - color[0],
+    COLOR_CHANNEL_MAX - color[1],
+    COLOR_CHANNEL_MAX - color[2],
+  ];
 }
 
 function applyThemeTokens(draft: JeditThemeDraft, variables: ThemeVariables): void {

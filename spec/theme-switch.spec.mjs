@@ -26,6 +26,9 @@ const CANONICAL_VARIABLE_NAMES = [
   'surface.raised',
   'warning',
 ];
+const LUMINANCE_RED_WEIGHT = 0.2126;
+const LUMINANCE_GREEN_WEIGHT = 0.7152;
+const LUMINANCE_BLUE_WEIGHT = 0.0722;
 
 async function loadThemesModule() {
   const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
@@ -74,6 +77,33 @@ test('built-in jedit themes keep unique complete palettes', async () => {
   }
 });
 
+test('jedit generates opposite light and dark companion themes', async () => {
+  const { themes, style } = await loadThemesModule();
+  const graphite = themes.resolveInitialJeditTheme('graphite');
+  const graphiteCompanion = themes.oppositeJeditTheme(graphite);
+  const graphiteRoundTrip = themes.oppositeJeditTheme(graphiteCompanion);
+
+  assert.equal(graphite.mode, style.JEDIT_THEME_MODE.Dark);
+  assert.equal(graphiteCompanion.mode, style.JEDIT_THEME_MODE.Light);
+  assert.equal(graphiteCompanion.variantSource, style.JEDIT_THEME_VARIANT_SOURCE.Generated);
+  assert.equal(graphiteCompanion.companionThemeName, graphite.name);
+  assert.ok(colorLuminance(graphiteCompanion.surface.workspace.bgRGB) > colorLuminance(graphite.surface.workspace.bgRGB));
+  assert.equal(graphiteRoundTrip.name, graphite.name);
+});
+
+test('authored light and dark variants override generated companions', async () => {
+  const { themes, style } = await loadThemesModule();
+  const solarizedDark = themes.resolveInitialJeditTheme('solarized-dark');
+  const solarizedLight = themes.oppositeJeditTheme(solarizedDark);
+  const solarizedRoundTrip = themes.oppositeJeditTheme(solarizedLight);
+
+  assert.equal(solarizedDark.mode, style.JEDIT_THEME_MODE.Dark);
+  assert.equal(solarizedLight.name, 'solarized-light');
+  assert.equal(solarizedLight.mode, style.JEDIT_THEME_MODE.Light);
+  assert.equal(solarizedLight.variantSource, style.JEDIT_THEME_VARIANT_SOURCE.Authored);
+  assert.equal(solarizedRoundTrip.name, 'solarized-dark');
+});
+
 test('built-in jedit theme tokens map back to named variables and effect metadata', async () => {
   const { themes, style } = await loadThemesModule();
 
@@ -100,3 +130,9 @@ test('built-in jedit theme tokens map back to named variables and effect metadat
     assert.ok(keyword.spring.stiffness > 0);
   }
 });
+
+function colorLuminance(color) {
+  return (color[0] * LUMINANCE_RED_WEIGHT)
+    + (color[1] * LUMINANCE_GREEN_WEIGHT)
+    + (color[2] * LUMINANCE_BLUE_WEIGHT);
+}

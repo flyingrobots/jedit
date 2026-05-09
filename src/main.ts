@@ -33,7 +33,7 @@ import { beginSourceHighlightRefresh, reduceSourceHighlightMsg, shouldRefreshSou
 import { renderSourceViewer } from './ui/source-viewer.js';
 import { mouseScrollDeltaRows, scrollIndexByRows, scrollTextViewport } from './ui/mouse-scroll.js';
 import { JEDIT_TERMINAL_MOUSE_OPTIONS } from './ui/terminal-mouse.js';
-import { JEDIT_THEME_ENV, nextJeditTheme, resolveInitialJeditTheme } from './ui/jedit-themes.js';
+import { JEDIT_THEME_ENV, nextJeditTheme, oppositeJeditTheme, resolveInitialJeditTheme } from './ui/jedit-themes.js';
 import type { JeditStyleToken, JeditTheme } from './ui/jedit-theme.js';
 import { paintActivePaneEdge } from './ui/workspace-focus-edge.js';
 import { jeditSettingsRows, moveSettingsFocusIndex, toggleSettingsOpen, updateJeditSettingsFromKey } from './app/settings-session.js';
@@ -372,6 +372,7 @@ function settingsRows(model: Model) {
 
 const settingsHandlers = {
   cycleTheme: (model: Model): [Model, Cmd<Msg>[]] => [{ ...model, jeditTheme: nextJeditTheme(model.jeditTheme) }, []],
+  toggleThemeMode: (model: Model): [Model, Cmd<Msg>[]] => [{ ...model, jeditTheme: oppositeJeditTheme(model.jeditTheme) }, []],
   toggleFooter: (model: Model): [Model, Cmd<Msg>[]] => [{ ...model, footerVisible: !model.footerVisible }, []],
   toggleMarkdownPreview: (model: Model): [Model, Cmd<Msg>[]] => toggleMarkdownPreview(model),
 };
