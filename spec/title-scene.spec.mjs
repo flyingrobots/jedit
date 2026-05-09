@@ -18,6 +18,9 @@ const MIN_BUNNY_VERTICES = 2500;
 const MIN_BUNNY_TRIANGLES = 4900;
 const BUNNY_SCENE_OBJECT_COUNT = 2;
 const MIRROR_REFLECTIVITY_MINIMUM = 0.9;
+const BUNNY_TITLE_CAMERA_HEIGHT = 2.65;
+const MIRROR_REFLECTION_RAY_BIAS = 0.03;
+const MIRROR_REFLECTION_TARGET = [0.44, 0.95, 0.35];
 const SCENE_COLORS = {
   accent: [216, 151, 255],
   info: [101, 194, 255],
@@ -104,6 +107,31 @@ test('title scene can ray cast the loaded bunny mesh', async () => {
   assert.ok(hit.normal.some((component) => Math.abs(component) > 0));
 });
 
+test('title mirror sphere reflects the loaded bunny mesh from the title camera', async () => {
+  const { titleScene, titleMesh, titleBunnyMesh } = await loadTitleSceneModules();
+  const mesh = titleMesh.createTitleBunnyMesh(titleBunnyMesh.loadTitleBunnyMeshSource());
+  const scene = titleScene.generateTitleScene(FIXED_SCENE_SEED, SCENE_COLORS, mesh);
+  const placement = titleScene.titleBunnySceneCameraPlacement();
+  const origin = [
+    Math.sin(placement.angle) * placement.radius,
+    BUNNY_TITLE_CAMERA_HEIGHT,
+    Math.cos(placement.angle) * placement.radius,
+  ];
+  const viewRay = normalize(sub(MIRROR_REFLECTION_TARGET, origin));
+  const mirrorHit = titleScene.nearestTitleSceneObjectHit(origin, viewRay, scene.objects);
+
+  assert.ok(mirrorHit != null);
+  assert.equal(mirrorHit.object.kind, titleScene.TITLE_SCENE_SHAPE_KIND.Sphere);
+  assert.ok(mirrorHit.object.reflectivity >= MIRROR_REFLECTIVITY_MINIMUM);
+
+  const reflectionOrigin = add(origin, scale(viewRay, mirrorHit.distance + MIRROR_REFLECTION_RAY_BIAS));
+  const reflectionRay = reflect(viewRay, mirrorHit.normal);
+  const reflectedHit = titleScene.nearestTitleSceneObjectHit(reflectionOrigin, reflectionRay, scene.objects, mirrorHit.object);
+
+  assert.ok(reflectedHit != null);
+  assert.equal(reflectedHit.object.kind, titleScene.TITLE_SCENE_SHAPE_KIND.Mesh);
+});
+
 function assertNonOverlapping(objects, margin) {
   for (let firstIndex = 0; firstIndex < objects.length; firstIndex += 1) {
     for (let secondIndex = firstIndex + 1; secondIndex < objects.length; secondIndex += 1) {
@@ -123,4 +151,24 @@ function assertNonOverlapping(objects, margin) {
 function normalize(vector) {
   const length = Math.sqrt(vector.reduce((sum, component) => sum + (component * component), 0));
   return vector.map((component) => component / length);
+}
+
+function reflect(ray, normal) {
+  return sub(ray, scale(normal, 2 * dot(ray, normal)));
+}
+
+function dot(a, b) {
+  return (a[0] * b[0]) + (a[1] * b[1]) + (a[2] * b[2]);
+}
+
+function add(a, b) {
+  return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+}
+
+function sub(a, b) {
+  return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+}
+
+function scale(vector, scalar) {
+  return [vector[0] * scalar, vector[1] * scalar, vector[2] * scalar];
 }

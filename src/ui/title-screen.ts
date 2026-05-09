@@ -66,7 +66,9 @@ const SPECULAR_POWER = 28;
 const SPECULAR_STRENGTH = 0.52;
 const REFLECTION_EDGE_BIAS = 0.28;
 const REFLECTION_FRESNEL_POWER = 3;
-const REFLECTION_OBJECT_TINT = 0.92;
+const MIRROR_REFLECTIVITY_THRESHOLD = 0.95;
+const MIRROR_REFLECTION_AMOUNT = 1;
+const REFLECTION_OBJECT_TINT = 1.18;
 const PLANE_FADE_DISTANCE = 36;
 const PLANE_MIN_FADE = 0.05;
 const PLANE_GRID_SCALE = 0.7;
@@ -161,7 +163,7 @@ function sceneSampleAt(
     const reflectionRay = reflect(ray, normal);
     const reflectionColor = reflectedEnvironmentColor(add(point, scale(normal, SHADOW_RAY_BIAS)), reflectionRay, colors, objects, time, objectHit.object);
     const fresnel = Math.pow(1 - Math.max(0, dot(scale(ray, -1), normal)), REFLECTION_FRESNEL_POWER);
-    const reflectionAmount = objectHit.object.reflectivity * (REFLECTION_EDGE_BIAS + ((1 - REFLECTION_EDGE_BIAS) * fresnel));
+    const reflectionAmount = titleObjectReflectionAmount(objectHit.object.reflectivity, fresnel);
     const viewDirection = scale(ray, -1);
     const halfVector = normalize(add(KEY_LIGHT_DIRECTION, viewDirection));
     const specular = Math.pow(Math.max(0, dot(normal, halfVector)), SPECULAR_POWER) * SPECULAR_STRENGTH;
@@ -198,6 +200,13 @@ function sceneSampleAt(
     fgRGB: background,
     bgRGB: background,
   };
+}
+
+function titleObjectReflectionAmount(reflectivity: number, fresnel: number): number {
+  if (reflectivity >= MIRROR_REFLECTIVITY_THRESHOLD) {
+    return MIRROR_REFLECTION_AMOUNT;
+  }
+  return reflectivity * (REFLECTION_EDGE_BIAS + ((1 - REFLECTION_EDGE_BIAS) * fresnel));
 }
 
 function reflectedEnvironmentColor(

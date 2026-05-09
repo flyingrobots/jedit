@@ -65,10 +65,10 @@ const BUNNY_SCENE_CAMERA_ANGLE = -0.58;
 const BUNNY_SCENE_CAMERA_RADIUS = 5.4;
 const FULL_TURN_RADIANS = Math.PI * 2;
 const SCENE_OBJECT_COUNT = 6;
-const BUNNY_SCENE_MIRROR_SPHERE_RADIUS = 0.78;
+const BUNNY_SCENE_MIRROR_SPHERE_RADIUS = 1.25;
 const BUNNY_SCENE_MIRROR_SPHERE_HEIGHT = BUNNY_SCENE_MIRROR_SPHERE_RADIUS * 2;
 const BUNNY_SCENE_MIRROR_SPHERE_FOOTPRINT_RADIUS = BUNNY_SCENE_MIRROR_SPHERE_RADIUS;
-const BUNNY_SCENE_MIRROR_SPHERE_REFLECTIVITY = 0.96;
+const BUNNY_SCENE_MIRROR_SPHERE_REFLECTIVITY = 1;
 const BUNNY_SCENE_MESH_REFLECTIVITY = 0.18;
 const PRIMARY_SPHERE_MIN_RADIUS = 1.05;
 const PRIMARY_SPHERE_RADIUS_SPAN = 0.22;
@@ -181,7 +181,7 @@ function createSceneObject(
   mesh: TitleMesh | undefined,
 ): TitleSceneObject {
   if (index === 0 && mesh != null) {
-    return createMeshSceneObject(random, colors, mesh);
+    return createMeshSceneObject(colors, mesh);
   }
 
   const kind = sceneShapeKind(index, random);
@@ -207,7 +207,7 @@ function createSceneObject(
 
 function createFallbackSceneObject(index: number, colors: TitleSceneColorSet, mesh: TitleMesh | undefined): TitleSceneObject {
   if (index === 0 && mesh != null) {
-    return createMeshSceneObject(seededRandom(index), colors, mesh);
+    return createMeshSceneObject(colors, mesh);
   }
 
   const kind = index === 1 ? TITLE_SCENE_SHAPE_KIND.Column : TITLE_SCENE_SHAPE_KIND.Sphere;
@@ -227,12 +227,12 @@ function createFallbackSceneObject(index: number, colors: TitleSceneColorSet, me
 
 function createBunnySceneObjects(colors: TitleSceneColorSet, mesh: TitleMesh): readonly TitleSceneObject[] {
   return [
-    createMeshSceneObject(seededRandom(0), colors, mesh),
+    createMeshSceneObject(colors, mesh),
     createMirrorSphere(colors),
   ];
 }
 
-function createMeshSceneObject(random: () => number, colors: TitleSceneColorSet, mesh: TitleMesh): TitleSceneMeshObject {
+function createMeshSceneObject(colors: TitleSceneColorSet, mesh: TitleMesh): TitleSceneMeshObject {
   const bounds = mesh.bounds;
   return {
     kind: TITLE_SCENE_SHAPE_KIND.Mesh,
@@ -245,7 +245,7 @@ function createMeshSceneObject(random: () => number, colors: TitleSceneColorSet,
     radius: mesh.footprintRadius,
     footprintRadius: mesh.footprintRadius,
     height: mesh.height,
-    color: materialColor(0, random, colors),
+    color: colors.accent,
     reflectivity: BUNNY_SCENE_MESH_REFLECTIVITY,
   };
 }
@@ -253,7 +253,7 @@ function createMeshSceneObject(random: () => number, colors: TitleSceneColorSet,
 function createMirrorSphere(colors: TitleSceneColorSet): TitleScenePrimitiveObject {
   return {
     kind: TITLE_SCENE_SHAPE_KIND.Sphere,
-    position: [1.05, BUNNY_SCENE_MIRROR_SPHERE_RADIUS, 0.08],
+    position: [1.34, BUNNY_SCENE_MIRROR_SPHERE_RADIUS, 0.55],
     radius: BUNNY_SCENE_MIRROR_SPHERE_RADIUS,
     footprintRadius: BUNNY_SCENE_MIRROR_SPHERE_FOOTPRINT_RADIUS,
     height: BUNNY_SCENE_MIRROR_SPHERE_HEIGHT,
