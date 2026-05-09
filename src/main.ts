@@ -1,7 +1,7 @@
 import { createSurface, stringToSurface, perfOverlaySurface, type Surface } from '@flyingrobots/bijou';
 import { initDefaultContext } from '@flyingrobots/bijou-node';
 import { animate, quit, run, type App, type Cmd, type KeyMsg, type MouseMsg, type NotificationState, type RuntimeIssue } from '@flyingrobots/bijou-tui';
-import { dirname, basename } from 'node:path';
+import { dirname } from 'node:path';
 import { joinLines, normalizeLines } from './app/editor-lines.js';
 import {
   DIRECTORY_ACTION_OPEN,
@@ -62,9 +62,15 @@ import { createTitleBunnyMesh, type TitleMesh } from './ui/title-mesh.js';
 import { BijouI18nAdapter } from './adapters/bijou-i18n-adapter.js';
 import type { I18nPort } from './ports/i18n.js';
 import { renderTitleScreen } from './ui/title-screen.js';
+import {
+  reduceProfilerMsg,
+  streamProfilerFrame,
+  toggleProfiler,
+  type ProfilerMsg,
+  type ProfilerState,
+} from './app/raytracer-profiler.js';
 
 initDefaultContext();
-
 type ViewMode = 'source' | 'preview';
 type EditorMode = 'normal' | 'insert';
 type PendingNormal = 'c' | 'd' | 'g' | 'y';
@@ -138,19 +144,14 @@ interface Model {
   readonly frameTimeMs: number;
   readonly frameTimeHistory: readonly number[];
   readonly titleCamera: TitleCameraState;
-  readonly profiler: {
-    readonly active: boolean;
-    readonly filePath?: string;
-    readonly fileHandle?: any; // node:fs/promises FileHandle
-  };
+  readonly profiler: ProfilerState;
 }
 
 type Msg =
   | { type: 'drawer-progress'; kind: DrawerKind; value: number }
   | { type: 'graft-info'; requestId: number; info: GraftInfo }
   | { type: 'load-scene-result'; scene: TitleScene | undefined }
-  | { type: 'profiler-started'; filePath: string; fileHandle: any }
-  | { type: 'profiler-stopped' }
+  | ProfilerMsg
   | { type: 'toggle-profiler' }
   | SourceHighlightMsg
   | TitleCameraMotionMsg
@@ -234,12 +235,8 @@ const app: App<Model, Msg> = {
       return [{ ...model, sceneOverride: msg.scene }, []];
     }
 
-    if (msg.type === 'profiler-started') {
-      return [{ ...model, profiler: { active: true, filePath: msg.filePath, fileHandle: msg.fileHandle } }, []];
-    }
-
-    if (msg.type === 'profiler-stopped') {
-      return [{ ...model, profiler: { active: false } }, []];
+    if (msg.type === 'profiler-started' || msg.type === 'profiler-stopped') {
+      return [{ ...model, profiler: reduceProfilerMsg(model.profiler, msg) }, []];
     }
 
     if (msg.type === SOURCE_HIGHLIGHT_MESSAGE) {
@@ -254,34 +251,12 @@ const app: App<Model, Msg> = {
       const now = Date.now();
       const frameTime = now - model.lastFrameMs;
       const history = [...model.frameTimeHistory, frameTime].slice(-50);
-      const cmds: Cmd<Msg>[] = [];
-
-      if (model.profiler.active && model.profiler.fileHandle != null) {
-        const frame = {
-          time: msg.time,
-          frameTimeMs: frameTime,
-          columns: model.columns,
-          rows: model.rows,
-        };
-        cmds.push(async () => {
-          try {
-            await model.profiler.fileHandle.appendFile(`${JSON.stringify(frame)}\n`, 'utf8');
-            return undefined;
-          } catch (err) {
-            return {
-              type: 'runtime-issue',
-              issue: {
-                type: 'system',
-                name: 'ProfileStreamError',
-                message: `Failed to stream profile: ${String(err)}`,
-                level: 'error',
-                source: 'command',
-                atMs: Date.now(),
-              },
-            };
-          }
-        });
-      }
+      const streamCmd = streamProfilerFrame(model.profiler, {
+        time: msg.time,
+        frameTimeMs: frameTime,
+        columns: model.columns,
+        rows: model.rows,
+      });
 
       return [{
         ...model,
@@ -289,7 +264,7 @@ const app: App<Model, Msg> = {
         lastFrameMs: now,
         frameTimeMs: frameTime,
         frameTimeHistory: history,
-      }, cmds];
+      }, streamCmd ? [streamCmd as unknown as Cmd<Msg>] : []];
     }
 
     if (msg.type === 'toggle-perf') {
@@ -323,64 +298,8 @@ function updateFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
   }
 
   if (msg.key === 'f10' && model.editor == null) {
-    if (model.profiler.active && model.profiler.fileHandle != null) {
-      const fileName = model.profiler.filePath ? basename(model.profiler.filePath) : 'profile.jsonl';
-      return [model, [
-        async () => {
-          try {
-            await model.profiler.fileHandle.close();
-            return { type: 'profiler-stopped' };
-          } catch (err) {
-            return {
-              type: 'runtime-issue',
-              issue: {
-                type: 'system',
-                name: 'ProfileCloseError',
-                message: `Failed to close profile: ${String(err)}`,
-                level: 'error',
-                source: 'command',
-                atMs: Date.now(),
-              },
-            };
-          }
-        },
-        () => ({
-          type: 'runtime-issue',
-          issue: {
-            type: 'system',
-            name: 'ProfileSaved',
-            message: `Profile trace saved to ${fileName}`,
-            level: 'warning',
-            source: 'command',
-            atMs: Date.now(),
-          },
-        }),
-      ]];
-    }
-    return [model, [
-      async () => {
-        try {
-          const { open } = await import('node:fs/promises');
-          const { join } = await import('node:path');
-          const fileName = `raytracer-profile-${Date.now()}.jsonl`;
-          const filePath = join(model.workspaceRoot, fileName);
-          const fileHandle = await open(filePath, 'a');
-          return { type: 'profiler-started', filePath, fileHandle };
-        } catch (err) {
-          return {
-            type: 'runtime-issue',
-            issue: {
-              type: 'system',
-              name: 'ProfileStartError',
-              message: `Failed to start profile: ${String(err)}`,
-              level: 'error',
-              source: 'command',
-              atMs: Date.now(),
-            },
-          };
-        }
-      }
-    ]];
+    const [profiler, cmds] = toggleProfiler(model.profiler, model.workspaceRoot);
+    return [{ ...model, profiler }, cmds as unknown as Cmd<Msg>[]];
   }
 
   if (msg.key === JEDIT_SETTINGS_TOGGLE_KEY) {
