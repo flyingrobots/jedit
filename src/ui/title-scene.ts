@@ -1,11 +1,16 @@
 import type { RGB } from './averaging-braille-canvas.js';
+import { nearestTitleMeshHit, type TitleMesh } from './title-mesh.js';
 
 export const TITLE_SCENE_SHAPE_KIND = {
   Sphere: 'sphere',
   Column: 'column',
+  Mesh: 'mesh',
 } as const;
 
 export type TitleSceneShapeKind = typeof TITLE_SCENE_SHAPE_KIND[keyof typeof TITLE_SCENE_SHAPE_KIND];
+export type TitleScenePrimitiveShapeKind =
+  | typeof TITLE_SCENE_SHAPE_KIND.Sphere
+  | typeof TITLE_SCENE_SHAPE_KIND.Column;
 export type TitleSceneVector3 = readonly [number, number, number];
 export type TitleSceneColor = RGB;
 
@@ -18,8 +23,7 @@ export interface TitleSceneColorSet {
   readonly surface: TitleSceneColor;
 }
 
-export interface TitleSceneObject {
-  readonly kind: TitleSceneShapeKind;
+interface TitleSceneBaseObject {
   readonly position: TitleSceneVector3;
   readonly radius: number;
   readonly footprintRadius: number;
@@ -27,6 +31,17 @@ export interface TitleSceneObject {
   readonly color: TitleSceneColor;
   readonly reflectivity: number;
 }
+
+export interface TitleScenePrimitiveObject extends TitleSceneBaseObject {
+  readonly kind: TitleScenePrimitiveShapeKind;
+}
+
+export interface TitleSceneMeshObject extends TitleSceneBaseObject {
+  readonly kind: typeof TITLE_SCENE_SHAPE_KIND.Mesh;
+  readonly mesh: TitleMesh;
+}
+
+export type TitleSceneObject = TitleScenePrimitiveObject | TitleSceneMeshObject;
 
 export interface TitleSceneCameraPlacement {
   readonly angle: number;
@@ -46,8 +61,15 @@ export interface TitleSceneObjectHit {
 
 const CAMERA_MIN_RADIUS = 7.2;
 const CAMERA_RADIUS_SPAN = 3;
+const BUNNY_SCENE_CAMERA_ANGLE = -0.58;
+const BUNNY_SCENE_CAMERA_RADIUS = 5.4;
 const FULL_TURN_RADIANS = Math.PI * 2;
 const SCENE_OBJECT_COUNT = 6;
+const BUNNY_SCENE_MIRROR_SPHERE_RADIUS = 0.78;
+const BUNNY_SCENE_MIRROR_SPHERE_HEIGHT = BUNNY_SCENE_MIRROR_SPHERE_RADIUS * 2;
+const BUNNY_SCENE_MIRROR_SPHERE_FOOTPRINT_RADIUS = BUNNY_SCENE_MIRROR_SPHERE_RADIUS;
+const BUNNY_SCENE_MIRROR_SPHERE_REFLECTIVITY = 0.96;
+const BUNNY_SCENE_MESH_REFLECTIVITY = 0.18;
 const PRIMARY_SPHERE_MIN_RADIUS = 1.05;
 const PRIMARY_SPHERE_RADIUS_SPAN = 0.22;
 const SECONDARY_MIN_RADIUS = 0.45;
@@ -73,11 +95,18 @@ const POSITION_TEMPLATES: readonly (readonly [number, number])[] = [
   [0.8, -3.3],
 ];
 
-export function generateTitleScene(seed: number, colors: TitleSceneColorSet): TitleScene {
+export function generateTitleScene(seed: number, colors: TitleSceneColorSet, mesh?: TitleMesh): TitleScene {
+  if (mesh != null) {
+    return {
+      camera: titleBunnySceneCameraPlacement(),
+      objects: createBunnySceneObjects(colors, mesh),
+    };
+  }
+
   const random = seededRandom(seed);
   const objects: TitleSceneObject[] = [];
   for (let index = 0; index < SCENE_OBJECT_COUNT; index += 1) {
-    const object = placeSceneObject(index, random, colors, objects);
+    const object = placeSceneObject(index, random, colors, objects, mesh);
     objects.push(object);
   }
   return {
@@ -94,13 +123,24 @@ export function titleSceneCameraPlacement(seed: number): TitleSceneCameraPlaceme
   };
 }
 
+export function titleBunnySceneCameraPlacement(): TitleSceneCameraPlacement {
+  return {
+    angle: BUNNY_SCENE_CAMERA_ANGLE,
+    radius: BUNNY_SCENE_CAMERA_RADIUS,
+  };
+}
+
 export function nearestTitleSceneObjectHit(
   origin: TitleSceneVector3,
   ray: TitleSceneVector3,
   objects: readonly TitleSceneObject[],
+  ignoredObject?: TitleSceneObject,
 ): TitleSceneObjectHit | undefined {
   let nearest: TitleSceneObjectHit | undefined;
   for (const object of objects) {
+    if (object === ignoredObject) {
+      continue;
+    }
     const hit = titleSceneObjectHit(origin, ray, object);
     if (hit != null && hit.distance > 0 && (nearest == null || hit.distance < nearest.distance)) {
       nearest = hit;
@@ -123,17 +163,27 @@ function placeSceneObject(
   random: () => number,
   colors: TitleSceneColorSet,
   existing: readonly TitleSceneObject[],
+  mesh: TitleMesh | undefined,
 ): TitleSceneObject {
   for (let attempt = 0; attempt < PLACEMENT_ATTEMPTS; attempt += 1) {
-    const candidate = createSceneObject(index, random, colors);
+    const candidate = createSceneObject(index, random, colors, mesh);
     if (!overlapsSceneObjects(candidate, existing)) {
       return candidate;
     }
   }
-  return createFallbackSceneObject(index, colors);
+  return createFallbackSceneObject(index, colors, mesh);
 }
 
-function createSceneObject(index: number, random: () => number, colors: TitleSceneColorSet): TitleSceneObject {
+function createSceneObject(
+  index: number,
+  random: () => number,
+  colors: TitleSceneColorSet,
+  mesh: TitleMesh | undefined,
+): TitleSceneObject {
+  if (index === 0 && mesh != null) {
+    return createMeshSceneObject(random, colors, mesh);
+  }
+
   const kind = sceneShapeKind(index, random);
   const template = POSITION_TEMPLATES[index % POSITION_TEMPLATES.length] ?? [0, 0];
   const radius = index === 0
@@ -155,7 +205,11 @@ function createSceneObject(index: number, random: () => number, colors: TitleSce
   };
 }
 
-function createFallbackSceneObject(index: number, colors: TitleSceneColorSet): TitleSceneObject {
+function createFallbackSceneObject(index: number, colors: TitleSceneColorSet, mesh: TitleMesh | undefined): TitleSceneObject {
+  if (index === 0 && mesh != null) {
+    return createMeshSceneObject(seededRandom(index), colors, mesh);
+  }
+
   const kind = index === 1 ? TITLE_SCENE_SHAPE_KIND.Column : TITLE_SCENE_SHAPE_KIND.Sphere;
   const template = POSITION_TEMPLATES[index % POSITION_TEMPLATES.length] ?? [0, 0];
   const radius = index === 0 ? PRIMARY_SPHERE_MIN_RADIUS : FALLBACK_SECONDARY_RADIUS;
@@ -171,7 +225,44 @@ function createFallbackSceneObject(index: number, colors: TitleSceneColorSet): T
   };
 }
 
-function sceneShapeKind(index: number, random: () => number): TitleSceneShapeKind {
+function createBunnySceneObjects(colors: TitleSceneColorSet, mesh: TitleMesh): readonly TitleSceneObject[] {
+  return [
+    createMeshSceneObject(seededRandom(0), colors, mesh),
+    createMirrorSphere(colors),
+  ];
+}
+
+function createMeshSceneObject(random: () => number, colors: TitleSceneColorSet, mesh: TitleMesh): TitleSceneMeshObject {
+  const bounds = mesh.bounds;
+  return {
+    kind: TITLE_SCENE_SHAPE_KIND.Mesh,
+    mesh,
+    position: [
+      (bounds.min[0] + bounds.max[0]) / 2,
+      mesh.height / 2,
+      (bounds.min[2] + bounds.max[2]) / 2,
+    ],
+    radius: mesh.footprintRadius,
+    footprintRadius: mesh.footprintRadius,
+    height: mesh.height,
+    color: materialColor(0, random, colors),
+    reflectivity: BUNNY_SCENE_MESH_REFLECTIVITY,
+  };
+}
+
+function createMirrorSphere(colors: TitleSceneColorSet): TitleScenePrimitiveObject {
+  return {
+    kind: TITLE_SCENE_SHAPE_KIND.Sphere,
+    position: [1.05, BUNNY_SCENE_MIRROR_SPHERE_RADIUS, 0.08],
+    radius: BUNNY_SCENE_MIRROR_SPHERE_RADIUS,
+    footprintRadius: BUNNY_SCENE_MIRROR_SPHERE_FOOTPRINT_RADIUS,
+    height: BUNNY_SCENE_MIRROR_SPHERE_HEIGHT,
+    color: colors.ink,
+    reflectivity: BUNNY_SCENE_MIRROR_SPHERE_REFLECTIVITY,
+  };
+}
+
+function sceneShapeKind(index: number, random: () => number): TitleScenePrimitiveShapeKind {
   if (index === 0) {
     return TITLE_SCENE_SHAPE_KIND.Sphere;
   }
@@ -206,9 +297,14 @@ function titleSceneObjectHit(
   ray: TitleSceneVector3,
   object: TitleSceneObject,
 ): TitleSceneObjectHit | undefined {
-  return object.kind === TITLE_SCENE_SHAPE_KIND.Column
-    ? columnHit(origin, ray, object)
-    : sphereHit(origin, ray, object);
+  switch (object.kind) {
+    case TITLE_SCENE_SHAPE_KIND.Column:
+      return columnHit(origin, ray, object);
+    case TITLE_SCENE_SHAPE_KIND.Mesh:
+      return meshHit(origin, ray, object);
+    case TITLE_SCENE_SHAPE_KIND.Sphere:
+      return sphereHit(origin, ray, object);
+  }
 }
 
 function sphereHit(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleSceneObject): TitleSceneObjectHit | undefined {
@@ -235,6 +331,17 @@ function columnHit(origin: TitleSceneVector3, ray: TitleSceneVector3, object: Ti
     distance,
     normal: normalize([point[0] - object.position[0], 0, point[2] - object.position[2]]),
   };
+}
+
+function meshHit(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleSceneMeshObject): TitleSceneObjectHit | undefined {
+  const hit = nearestTitleMeshHit(origin, ray, object.mesh);
+  return hit == null
+    ? undefined
+    : {
+        object,
+        distance: hit.distance,
+        normal: hit.normal,
+      };
 }
 
 function intersectSphere(

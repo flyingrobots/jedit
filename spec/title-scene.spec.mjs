@@ -6,12 +6,18 @@ import { pathToFileURL } from 'node:url';
 
 const REPO_ROOT = process.cwd();
 const TITLE_SCENE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-scene.js');
+const TITLE_MESH_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-mesh.js');
+const TITLE_BUNNY_MESH_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'title-bunny-mesh.js');
 const TITLE_CAMERA_PATH = path.join(REPO_ROOT, 'dist', 'app', 'title-camera-session.js');
 const FIXED_SCENE_SEED = 0.314159;
 const OTHER_SCENE_SEED = 0.271828;
 const MIN_OBJECT_COUNT = 6;
 const MIN_UNIQUE_MATERIALS = 3;
 const MIN_UNIQUE_RADII = 3;
+const MIN_BUNNY_VERTICES = 2500;
+const MIN_BUNNY_TRIANGLES = 4900;
+const BUNNY_SCENE_OBJECT_COUNT = 2;
+const MIRROR_REFLECTIVITY_MINIMUM = 0.9;
 const SCENE_COLORS = {
   accent: [216, 151, 255],
   info: [101, 194, 255],
@@ -31,6 +37,8 @@ async function loadTitleSceneModules() {
 
   return {
     titleScene: await import(pathToFileURL(TITLE_SCENE_PATH).href),
+    titleMesh: await import(pathToFileURL(TITLE_MESH_PATH).href),
+    titleBunnyMesh: await import(pathToFileURL(TITLE_BUNNY_MESH_PATH).href),
     titleCamera: await import(pathToFileURL(TITLE_CAMERA_PATH).href),
   };
 }
@@ -70,6 +78,32 @@ test('initial title camera state can use a seeded scene placement', async () => 
   assert.equal(camera.radiusTarget, placement.radius);
 });
 
+test('title scene can ray cast the loaded bunny mesh', async () => {
+  const { titleScene, titleMesh, titleBunnyMesh } = await loadTitleSceneModules();
+  const meshSource = titleBunnyMesh.loadTitleBunnyMeshSource();
+  const mesh = titleMesh.createTitleBunnyMesh(meshSource);
+  const scene = titleScene.generateTitleScene(FIXED_SCENE_SEED, SCENE_COLORS, mesh);
+  const primary = scene.objects[0];
+  const mirror = scene.objects[1];
+
+  assert.ok(meshSource.vertices.length >= MIN_BUNNY_VERTICES);
+  assert.ok(meshSource.triangles.length >= MIN_BUNNY_TRIANGLES);
+  assert.equal(scene.objects.length, BUNNY_SCENE_OBJECT_COUNT);
+  assert.equal(primary.kind, titleScene.TITLE_SCENE_SHAPE_KIND.Mesh);
+  assert.equal(primary.mesh, mesh);
+  assert.equal(mirror.kind, titleScene.TITLE_SCENE_SHAPE_KIND.Sphere);
+  assert.ok(mirror.reflectivity >= MIRROR_REFLECTIVITY_MINIMUM);
+
+  const origin = [-1, 1.1, 4.5];
+  const ray = normalize([-0.05, -0.04, -1]);
+  const hit = titleScene.nearestTitleSceneObjectHit(origin, ray, scene.objects);
+
+  assert.ok(hit != null);
+  assert.equal(hit.object.kind, titleScene.TITLE_SCENE_SHAPE_KIND.Mesh);
+  assert.ok(hit.distance > 0);
+  assert.ok(hit.normal.some((component) => Math.abs(component) > 0));
+});
+
 function assertNonOverlapping(objects, margin) {
   for (let firstIndex = 0; firstIndex < objects.length; firstIndex += 1) {
     for (let secondIndex = firstIndex + 1; secondIndex < objects.length; secondIndex += 1) {
@@ -84,4 +118,9 @@ function assertNonOverlapping(objects, margin) {
       );
     }
   }
+}
+
+function normalize(vector) {
+  const length = Math.sqrt(vector.reduce((sum, component) => sum + (component * component), 0));
+  return vector.map((component) => component / length);
 }

@@ -11,6 +11,7 @@ import {
   type FileEntry,
 } from './adapters/filesystem.js';
 import { loadEditorFile, saveEditorFile } from './adapters/editor-file.js';
+import { loadTitleBunnyMeshSource } from './adapters/title-bunny-mesh.js';
 import { closeGraftConnection, failedGraftInfo, loadGraftInfo, type GraftInfo } from './adapters/graft-mcp-session.js';
 import { paintMarkdownPreview } from './ui/markdown-preview.js';
 import {
@@ -47,7 +48,8 @@ import {
   type TitleCameraState,
 } from './app/title-camera-session.js';
 import { renderSettingsDrawer, resolveSettingsDrawerWidth } from './ui/settings-drawer.js';
-import { titleSceneCameraPlacement } from './ui/title-scene.js';
+import { titleBunnySceneCameraPlacement, titleSceneCameraPlacement } from './ui/title-scene.js';
+import { createTitleBunnyMesh, type TitleMesh } from './ui/title-mesh.js';
 import { renderTitleScreen } from './ui/title-screen.js';
 
 initDefaultContext();
@@ -111,6 +113,7 @@ interface Model {
   readonly sourceHighlightLoading: boolean;
   readonly sourceHighlightRequestId: number;
   readonly titleSceneSeed: number;
+  readonly titleMesh?: TitleMesh;
   readonly columns: number;
   readonly rows: number;
   readonly time: number;
@@ -677,6 +680,7 @@ function drawerAnimation(kind: DrawerKind, from: number, to: number): Cmd<Msg>[]
 
 function createInitialModel(cwd: string, columns: number, rows: number): Model {
   const titleSceneSeed = Math.random();
+  const titleMesh = loadInitialTitleMesh();
   return {
     workspaceRoot: cwd,
     cwd,
@@ -701,6 +705,7 @@ function createInitialModel(cwd: string, columns: number, rows: number): Model {
     sourceHighlightLoading: false,
     sourceHighlightRequestId: 0,
     titleSceneSeed,
+    titleMesh,
     columns,
     rows,
     time: 0,
@@ -708,8 +713,16 @@ function createInitialModel(cwd: string, columns: number, rows: number): Model {
     lastFrameMs: Date.now(),
     frameTimeMs: 0,
     frameTimeHistory: [],
-    titleCamera: createTitleCameraState(titleSceneCameraPlacement(titleSceneSeed)),
+    titleCamera: createTitleCameraState(titleMesh == null ? titleSceneCameraPlacement(titleSceneSeed) : titleBunnySceneCameraPlacement()),
   };
+}
+
+function loadInitialTitleMesh(): TitleMesh | undefined {
+  try {
+    return createTitleBunnyMesh(loadTitleBunnyMeshSource());
+  } catch {
+    return undefined;
+  }
 }
 
 function openDirectory(model: Model, cwd: string): Model {
@@ -2069,7 +2082,7 @@ function notificationTickCmd(): Cmd<Msg> { return createNotificationTickCmd((atM
 
 function renderViewer(model: Model, width: number, height: number) {
   if (model.editor == null) {
-    return renderTitleScreen(width, height, model.time, model.jeditTheme, model.titleCamera.angle, model.titleCamera.radius, model.titleSceneSeed);
+    return renderTitleScreen(width, height, model.time, model.jeditTheme, model.titleCamera.angle, model.titleCamera.radius, model.titleSceneSeed, model.titleMesh);
   }
 
   const surface = createSurface(width, height);

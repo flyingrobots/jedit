@@ -1,7 +1,7 @@
 import { type Surface } from '@flyingrobots/bijou';
 
 import { averagingBrailleCanvas, type BrailleShaderFn, type BrailleShaderSample, type RGB } from './averaging-braille-canvas.js';
-import { type JeditTheme, JEDIT_SOURCE_TOKEN, JEDIT_TEXT_MODIFIER } from './jedit-theme.js';
+import { type JeditTheme, JEDIT_TEXT_MODIFIER } from './jedit-theme.js';
 import { JEDIT_LOGO_HEIGHT, JEDIT_LOGO_MASK, JEDIT_LOGO_WIDTH } from './logo-data.js';
 import {
   generateTitleScene,
@@ -10,6 +10,7 @@ import {
   type TitleSceneObject,
   type TitleSceneVector3,
 } from './title-scene.js';
+import type { TitleMesh } from './title-mesh.js';
 
 type Vector3 = TitleSceneVector3;
 type Color3 = RGB;
@@ -41,12 +42,13 @@ interface LogoBounds {
 const DEFAULT_CAMERA_RADIUS = 8.5;
 const DEFAULT_TITLE_SCENE_SEED = 0.5;
 const CAMERA_DRIFT_RATE = 0.005;
-const CAMERA_HEIGHT = 3.5;
+const CAMERA_HEIGHT = 2.65;
+const CAMERA_TARGET_Y = 0.78;
 const LOGO_WIDTH_RATIO = 0.8;
-const LOGO_REQUESTED_SCALE_RATIO = 0.4;
+const LOGO_REQUESTED_SCALE_RATIO = 0.32;
 const LOGO_TARGET_WIDTH_RATIO = LOGO_WIDTH_RATIO * LOGO_REQUESTED_SCALE_RATIO;
-const LOGO_VERTICAL_CENTER_NUMERATOR = 2;
-const LOGO_VERTICAL_CENTER_DENOMINATOR = 3;
+const LOGO_VERTICAL_CENTER_NUMERATOR = 4;
+const LOGO_VERTICAL_CENTER_DENOMINATOR = 5;
 const LOGO_COVERAGE_SAMPLE_COLUMNS = 4;
 const LOGO_COVERAGE_SAMPLE_ROWS = 4;
 const LOGO_SOLID_THRESHOLD = 0.72;
@@ -59,18 +61,19 @@ const LOGO_MID_GLYPH = '▒';
 const LOGO_FAINT_GLYPH = '░';
 const LIGHT_AMBIENT = 0.24;
 const LIGHT_DIFFUSE = 0.76;
-const KEY_LIGHT_DIRECTION: Vector3 = normalize([1.4, 2.2, -1.1]);
+const KEY_LIGHT_DIRECTION: Vector3 = normalize([-1.3, 2.8, -1.7]);
 const SPECULAR_POWER = 28;
 const SPECULAR_STRENGTH = 0.52;
 const REFLECTION_EDGE_BIAS = 0.28;
 const REFLECTION_FRESNEL_POWER = 3;
+const REFLECTION_OBJECT_TINT = 0.92;
 const PLANE_FADE_DISTANCE = 36;
 const PLANE_MIN_FADE = 0.05;
 const PLANE_GRID_SCALE = 0.7;
 const SKY_TINT = 1.08;
 const SURFACE_REFLECTION_TINT = 0.72;
 const SHADOW_RAY_BIAS = 0.03;
-const FLOOR_SHADOW_MULTIPLIER = 0.58;
+const FLOOR_SHADOW_MULTIPLIER = 0.34;
 const CAUSTIC_RADIUS_SCALE = 2.4;
 const CAUSTIC_WAVE_FREQUENCY = 3.1;
 const CAUSTIC_WAVE_SECONDARY_FREQUENCY = 1.7;
@@ -89,10 +92,11 @@ export function renderTitleScreen(
   camAngle: number,
   camRadius = DEFAULT_CAMERA_RADIUS,
   sceneSeed = DEFAULT_TITLE_SCENE_SEED,
+  mesh?: TitleMesh,
 ): Surface {
   const logoMask = decodeLogoMask();
   const colors = titleSceneMaterialColors(theme);
-  const scene = generateTitleScene(sceneSeed, colors);
+  const scene = generateTitleScene(sceneSeed, colors, mesh);
 
   const shader: BrailleShaderFn = ({ u, v, time: frameTime }) => {
     return sceneSampleAt(u, v, cols, rows, frameTime, camAngle, camRadius, scene.objects, colors);
@@ -104,20 +108,24 @@ export function renderTitleScreen(
 }
 
 export function titleSceneMaterialColors(theme: JeditTheme): TitleSceneMaterialColors {
-  const baseColors = {
-    accent: theme.chrome.titleLogo.fgRGB ?? theme.chrome.activeEdge.fgRGB ?? [216, 151, 255],
-    info: theme.source.get(JEDIT_SOURCE_TOKEN.Number)?.fgRGB ?? [101, 194, 255],
-    success: theme.source.get(JEDIT_SOURCE_TOKEN.String)?.fgRGB ?? [124, 213, 156],
-    ink: theme.chrome.titleSceneNear.fgRGB ?? theme.surface.workspace.fgRGB ?? [226, 231, 236],
-    muted: theme.chrome.titleSceneFar.fgRGB ?? [126, 137, 148],
-    surface: theme.surface.workspace.bgRGB ?? [14, 17, 22],
-  } as const;
+  const baseColors = fixedTitleSceneBaseColors(theme);
   const floorColors = orderedFloorMaterialColors(baseColors.ink, baseColors.muted);
 
   return {
     ...baseColors,
     floorDark: floorColors.dark,
     floorLight: floorColors.light,
+  };
+}
+
+function fixedTitleSceneBaseColors(_theme: JeditTheme): Omit<TitleSceneMaterialColors, 'floorDark' | 'floorLight'> {
+  return {
+    accent: [224, 113, 63],
+    info: [78, 195, 224],
+    success: [112, 216, 167],
+    ink: [222, 232, 232],
+    muted: [55, 75, 88],
+    surface: [5, 7, 12],
   };
 }
 
@@ -141,7 +149,7 @@ function sceneSampleAt(
     CAMERA_HEIGHT,
     Math.cos(finalAngle) * camRadius,
   ];
-  const ray = getRayDir(origin, [0, 0.4, 0], [rx, -ry - 0.2, 2.7]);
+  const ray = getRayDir(origin, [0, CAMERA_TARGET_Y, 0], [rx, -ry - 0.2, 2.7]);
   const objectHit = nearestTitleSceneObjectHit(origin, ray, objects);
   const planeDistance = -origin[1] / ray[1];
 
@@ -151,7 +159,7 @@ function sceneSampleAt(
     const light = Math.max(0, dot(normal, KEY_LIGHT_DIRECTION));
     const intensity = LIGHT_AMBIENT + (light * LIGHT_DIFFUSE);
     const reflectionRay = reflect(ray, normal);
-    const reflectionColor = reflectedEnvironmentColor(point, reflectionRay, colors, objects, time);
+    const reflectionColor = reflectedEnvironmentColor(add(point, scale(normal, SHADOW_RAY_BIAS)), reflectionRay, colors, objects, time, objectHit.object);
     const fresnel = Math.pow(1 - Math.max(0, dot(scale(ray, -1), normal)), REFLECTION_FRESNEL_POWER);
     const reflectionAmount = objectHit.object.reflectivity * (REFLECTION_EDGE_BIAS + ((1 - REFLECTION_EDGE_BIAS) * fresnel));
     const viewDirection = scale(ray, -1);
@@ -198,7 +206,13 @@ function reflectedEnvironmentColor(
   colors: TitleSceneMaterialColors,
   objects: readonly TitleSceneObject[],
   time: number,
+  ignoredObject: TitleSceneObject,
 ): Color3 {
+  const objectHit = nearestTitleSceneObjectHit(point, ray, objects, ignoredObject);
+  if (objectHit != null) {
+    return scaleColor(shadedObjectColor(objectHit, ray, colors), REFLECTION_OBJECT_TINT);
+  }
+
   const planeDistance = -point[1] / ray[1];
   if (planeDistance > 0) {
     const reflectedPoint = add(point, scale(ray, planeDistance));
@@ -215,6 +229,19 @@ function reflectedEnvironmentColor(
   }
 
   return mixColor(scaleColor(colors.surface, SKY_TINT), colors.muted, Math.max(0, ray[1]));
+}
+
+function shadedObjectColor(
+  objectHit: { readonly object: TitleSceneObject; readonly normal: Vector3 },
+  ray: Vector3,
+  colors: TitleSceneMaterialColors,
+): Color3 {
+  const light = Math.max(0, dot(objectHit.normal, KEY_LIGHT_DIRECTION));
+  const intensity = LIGHT_AMBIENT + (light * LIGHT_DIFFUSE);
+  const viewDirection = scale(ray, -1);
+  const halfVector = normalize(add(KEY_LIGHT_DIRECTION, viewDirection));
+  const specular = Math.pow(Math.max(0, dot(objectHit.normal, halfVector)), SPECULAR_POWER) * SPECULAR_STRENGTH;
+  return addColor(scaleColor(objectHit.object.color, intensity), scaleColor(colors.ink, specular));
 }
 
 export function titleFloorLightEffectsAt(

@@ -6,12 +6,14 @@ import { pathToFileURL } from 'node:url';
 
 const REPO_ROOT = process.cwd();
 const TITLE_SCREEN_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-screen.js');
+const TITLE_SCENE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-scene.js');
 const BRAILLE_CANVAS_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'averaging-braille-canvas.js');
 const THEMES_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'jedit-themes.js');
 const STYLE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'jedit-theme.js');
 const FIXED_TITLE_SEED = 0.417;
 const TITLE_WIDTH = 96;
 const TITLE_HEIGHT = 28;
+const REFLECTIVE_HIGHLIGHT_LUMINANCE = 190;
 
 async function loadTitleModules() {
   const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
@@ -23,6 +25,7 @@ async function loadTitleModules() {
 
   return {
     title: await import(pathToFileURL(TITLE_SCREEN_PATH).href),
+    titleScene: await import(pathToFileURL(TITLE_SCENE_PATH).href),
     brailleCanvas: await import(pathToFileURL(BRAILLE_CANVAS_PATH).href),
     themes: await import(pathToFileURL(THEMES_PATH).href),
     style: await import(pathToFileURL(STYLE_PATH).href),
@@ -70,13 +73,13 @@ test('averaging Braille canvas resamples all eight subpixel colors into the cell
   assert.deepEqual(cell.bgRGB, [10, 20, 30]);
 });
 
-test('title logo bounds center the smaller logo in the lower two thirds', async () => {
+test('title logo bounds keep the smaller logo in the lower title band', async () => {
   const { title } = await loadTitleModules();
   const bounds = title.titleLogoCellBounds(TITLE_WIDTH, TITLE_HEIGHT);
 
   assert.ok(bounds.width <= Math.ceil(TITLE_WIDTH * 0.32));
   assert.ok(Math.abs((bounds.x + (bounds.width / 2)) - (TITLE_WIDTH / 2)) <= 1);
-  assert.ok(Math.abs((bounds.y + (bounds.height / 2)) - (TITLE_HEIGHT * (2 / 3))) <= 1);
+  assert.ok(Math.abs((bounds.y + (bounds.height / 2)) - (TITLE_HEIGHT * 0.8)) <= 1);
 });
 
 test('title screen renders the logo as a non-Braille themed glyph layer', async () => {
@@ -113,7 +116,7 @@ test('title scene keeps reflective highlights on sphere materials', async () => 
     && isBraille(cell.char)
     && cell.char !== String.fromCodePoint(0x2800)
   ));
-  const highlightCells = sceneCells.filter((cell) => luminance(cell.fgRGB) > 220);
+  const highlightCells = sceneCells.filter((cell) => luminance(cell.fgRGB) > REFLECTIVE_HIGHLIGHT_LUMINANCE);
 
   assert.ok(highlightCells.length > 0);
 });
@@ -132,9 +135,17 @@ test('title scene keeps checker floor material contrast stable across built-in t
 });
 
 test('title floor light effects expose sphere shadows and caustics', async () => {
-  const { title } = await loadTitleModules();
+  const { title, titleScene } = await loadTitleModules();
   const spheres = [
-    { position: [0, 1, 0], radius: 1.25, color: [255, 255, 255], reflectivity: 0.5 },
+    {
+      kind: titleScene.TITLE_SCENE_SHAPE_KIND.Sphere,
+      position: [0, 1, 0],
+      radius: 1.25,
+      footprintRadius: 1.25,
+      height: 2.5,
+      color: [255, 255, 255],
+      reflectivity: 0.5,
+    },
   ];
 
   const underSphere = title.titleFloorLightEffectsAt([0, 0, 0], spheres, 0);
