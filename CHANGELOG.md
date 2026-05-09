@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Established a GitHub Actions CI workflow to automatically run build, tests, and quality checks on every push and pull request.
 - Fixed settings navigation on the title screen by routing settings keys before
   title camera controls.
 - Improved settings interaction by accepting both the literal space character
