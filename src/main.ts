@@ -1,12 +1,7 @@
 import { createSurface, stringToSurface, perfOverlaySurface, type Surface } from '@flyingrobots/bijou';
 import { initDefaultContext } from '@flyingrobots/bijou-node';
 import { animate, quit, run, type App, type Cmd, type KeyMsg, type MouseMsg, type NotificationState, type RuntimeIssue } from '@flyingrobots/bijou-tui';
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { execFileSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { dirname, isAbsolute, join, relative } from 'node:path';
+import { dirname } from 'node:path';
 import { joinLines, normalizeLines } from './app/editor-lines.js';
 import {
   DIRECTORY_ACTION_OPEN,
@@ -16,6 +11,7 @@ import {
   type FileEntry,
 } from './adapters/filesystem.js';
 import { loadEditorFile, saveEditorFile } from './adapters/editor-file.js';
+import { closeGraftConnection, failedGraftInfo, loadGraftInfo, type GraftInfo } from './adapters/graft-mcp-session.js';
 import { paintMarkdownPreview } from './ui/markdown-preview.js';
 import {
   applyNotificationState,
@@ -62,45 +58,6 @@ interface HistoryEntry {
   readonly scrollRow: number;
   readonly scrollCol: number;
   readonly dirty: boolean;
-}
-interface GraftOutlineItem {
-  readonly kind: string;
-  readonly name: string;
-  readonly signature?: string;
-  readonly startLine: number;
-  readonly endLine: number;
-}
-interface GraftJumpEntry {
-  readonly symbol: string;
-  readonly kind: string;
-  readonly start: number;
-  readonly end: number;
-}
-interface GraftDiffEntry {
-  readonly name: string;
-  readonly kind: string;
-}
-interface GraftStructDiffResult {
-  readonly files: ReadonlyArray<{
-    readonly path: string;
-    readonly status: 'added' | 'deleted' | 'modified';
-    readonly summary: string;
-    readonly diff: {
-      readonly added: readonly GraftDiffEntry[];
-      readonly changed: readonly GraftDiffEntry[];
-      readonly removed: readonly GraftDiffEntry[];
-      readonly unchangedCount: number;
-    };
-  }>;
-}
-interface GraftInfo {
-  readonly path: string;
-  readonly relativePath: string;
-  readonly dirty: boolean;
-  readonly outlineItems: readonly GraftOutlineItem[];
-  readonly changeLines: readonly string[];
-  readonly notice?: string;
-  readonly error?: string;
 }
 interface EditorState {
   readonly path: string;
@@ -176,17 +133,7 @@ const VIEWER_TOP_PAD = 1;
 const THEME_TOGGLE_KEY = 't';
 const SETTINGS_TOGGLE_KEY = 'f2';
 const MARKDOWN_PREVIEW_TOGGLE_KEY = 'f3';
-const GRAFT_CLI_PATH = process.env['EDITT_GRAFT_BIN'] ?? join(homedir(), 'git', 'graft', 'bin', 'graft.js');
-const sourceHighlighter = createGraftSourceHighlighter({ graftRoot: dirname(dirname(GRAFT_CLI_PATH)) });
-
-interface GraftMcpConnection {
-  readonly workspaceRoot: string;
-  readonly client: Client;
-  readonly transport: StdioClientTransport;
-}
-
-let graftConnection: GraftMcpConnection | undefined;
-let graftConnectionPromise: Promise<GraftMcpConnection> | undefined;
+const sourceHighlighter = createGraftSourceHighlighter();
 
 const app: App<Model, Msg> = {
   init: () => [
@@ -827,224 +774,10 @@ function requestGraftInfoCmd(requestId: number, workspaceRoot: string, filePath:
       return {
         type: 'graft-info',
         requestId,
-        info: {
-          path: filePath,
-          relativePath: relative(workspaceRoot, filePath).replace(/\\/g, '/'),
-          dirty,
-          outlineItems: [],
-          changeLines: [],
-          error: `graft request failed: ${errorMessage(cause)}`,
-          ...(dirty ? { notice: 'saved file only; unsaved edits are not reflected' } : {}),
-        },
+        info: failedGraftInfo(workspaceRoot, filePath, dirty, cause instanceof Error ? cause.message : String(cause)),
       };
     }
   };
-}
-
-async function loadGraftInfo(workspaceRoot: string, filePath: string, dirty: boolean): Promise<GraftInfo> {
-  const relativePath = relative(workspaceRoot, filePath).replace(/\\/g, '/');
-  if (relativePath.startsWith('..') || isAbsolute(relativePath)) {
-    return {
-      path: filePath,
-      relativePath: filePath,
-      dirty,
-      outlineItems: [],
-      changeLines: ['outside workspace root'],
-      error: 'Graft only runs against files inside the launch workspace.',
-    };
-  }
-
-  let outlineItems: readonly GraftOutlineItem[] = [];
-  let error: string | undefined;
-
-  try {
-    const outline = await callGraftTool<{
-      readonly jumpTable?: readonly GraftJumpEntry[];
-      readonly projection?: string;
-      readonly reason?: string;
-    }>(
-      workspaceRoot,
-      'file_outline',
-      { path: relativePath },
-    );
-    if (outline.projection === 'refused') {
-      error = outline.reason ?? 'outline refused';
-    } else {
-      outlineItems = (outline.jumpTable ?? []).map((entry) => ({
-        kind: entry.kind,
-        name: entry.symbol,
-        startLine: entry.start,
-        endLine: entry.end,
-      }));
-    }
-  } catch (cause) {
-    error = `graft outline failed: ${errorMessage(cause)}`;
-  }
-
-  return {
-    path: filePath,
-    relativePath,
-    dirty,
-    outlineItems,
-    changeLines: await loadGraftChanges(workspaceRoot, relativePath),
-    ...(dirty ? { notice: 'saved file only; unsaved edits are not reflected' } : {}),
-    ...(error != null ? { error } : {}),
-  };
-}
-
-async function loadGraftChanges(workspaceRoot: string, relativePath: string): Promise<readonly string[]> {
-  if (!workspaceHasHead(workspaceRoot)) {
-    return ['no git baseline yet'];
-  }
-
-  try {
-    const diff = await callGraftTool<GraftStructDiffResult>(
-      workspaceRoot,
-      'graft_diff',
-      { path: relativePath },
-    );
-    const file = diff.files.find((entry) => entry.path === relativePath);
-    if (file == null) {
-      return ['no structural changes vs HEAD'];
-    }
-
-    const lines = [
-      file.summary.replace(`${file.path} | `, ''),
-      ...file.diff.added.slice(0, 2).map((entry) => `+ ${entry.kind} ${entry.name}`),
-      ...file.diff.changed.slice(0, 2).map((entry) => `~ ${entry.kind} ${entry.name}`),
-      ...file.diff.removed.slice(0, 2).map((entry) => `- ${entry.kind} ${entry.name}`),
-    ];
-
-    return lines.length > 0 ? lines : ['no structural changes vs HEAD'];
-  } catch (cause) {
-    return [`graft diff failed: ${errorMessage(cause)}`];
-  }
-}
-
-function workspaceHasHead(workspaceRoot: string): boolean {
-  try {
-    execFileSync('git', ['rev-parse', '--verify', 'HEAD'], {
-      cwd: workspaceRoot,
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function ensureGraftConnection(workspaceRoot: string): Promise<GraftMcpConnection> {
-  if (!existsSync(GRAFT_CLI_PATH)) {
-    throw new Error(`Graft CLI not found at ${GRAFT_CLI_PATH}`);
-  }
-
-  if (graftConnection?.workspaceRoot === workspaceRoot) {
-    return graftConnection;
-  }
-
-  if (graftConnectionPromise != null) {
-    const pending = await graftConnectionPromise;
-    if (pending.workspaceRoot === workspaceRoot) {
-      return pending;
-    }
-  }
-
-  if (graftConnection != null) {
-    await closeGraftConnection();
-  }
-
-  const transport = new StdioClientTransport({
-    command: process.execPath,
-    args: [GRAFT_CLI_PATH, 'serve'],
-    cwd: workspaceRoot,
-    env: processEnvRecord(),
-    stderr: 'pipe',
-  });
-  const client = new Client({
-    name: 'jedit',
-    version: '0.0.0',
-  });
-
-  const connectionPromise = (async () => {
-    try {
-      await client.connect(transport);
-      const connection = {
-        workspaceRoot,
-        client,
-        transport,
-      };
-      graftConnection = connection;
-      return connection;
-    } catch (cause) {
-      await transport.close().catch(() => undefined);
-      throw cause;
-    } finally {
-      graftConnectionPromise = undefined;
-    }
-  })();
-
-  graftConnectionPromise = connectionPromise;
-  return connectionPromise;
-}
-
-async function closeGraftConnection(): Promise<void> {
-  const connection = graftConnection;
-  graftConnection = undefined;
-  if (connection == null) {
-    return;
-  }
-
-  await connection.client.close().catch(() => undefined);
-  await connection.transport.close().catch(() => undefined);
-}
-
-async function callGraftTool<T>(
-  workspaceRoot: string,
-  name: string,
-  args: Record<string, unknown>,
-): Promise<T> {
-  const connection = await ensureGraftConnection(workspaceRoot);
-  const result = await connection.client.callTool({
-    name,
-    arguments: args,
-  });
-
-  if ((result as { isError?: boolean }).isError === true) {
-    throw new Error(errorMessage(parseGraftToolResult(result)));
-  }
-
-  return parseGraftToolResult<T>(result);
-}
-
-function parseGraftToolResult<T>(result: unknown): T {
-  const structured = (result as { structuredContent?: unknown }).structuredContent;
-  if (structured !== undefined) {
-    return structured as T;
-  }
-
-  const text = (result as { content?: Array<{ type: string; text?: string }> }).content
-    ?.find((block) => block.type === 'text')
-    ?.text;
-
-  if (text == null) {
-    throw new Error('No text content in MCP result');
-  }
-
-  return JSON.parse(text) as T;
-}
-
-function processEnvRecord(): Record<string, string> {
-  return Object.fromEntries(
-    Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined),
-  );
-}
-
-function errorMessage(cause: unknown): string {
-  if (cause instanceof Error) {
-    return cause.message;
-  }
-  return String(cause);
 }
 
 function loadEditor(filePath: string): EditorState {

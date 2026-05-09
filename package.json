@@ -4,9 +4,9 @@
   "type": "module",
   "scripts": {
     "dev": "tsx src/main.ts",
-    "gen:observer": "tsx ../wesley/packages/wesley-host-node/bin/wesley.mjs observer-plan --spec src/app/jedit-observer-spec.ts --export createWorldlineSnapshotObserverSpec --out-file src/generated/jedit/worldlineSnapshot.observer-plan.generated.ts",
-    "gen:contract:wesley": "cargo run --quiet --manifest-path ../wesley/crates/wesley-cli/Cargo.toml -- emit typescript --schema contracts/jedit/hot-text-runtime.graphql --out src/generated/jedit/hot-text-runtime.wesley.generated.ts",
-    "gen:contract:legacy": "node ../wesley/packages/wesley-host-node/bin/wesley.mjs typescript --schema contracts/jedit/hot-text-runtime.graphql --out-file src/generated/jedit/hot-text-runtime.types.generated.ts && node ../wesley/packages/wesley-host-node/bin/wesley.mjs zod --schema contracts/jedit/hot-text-runtime.graphql --out-file src/generated/jedit/hot-text-runtime.zod.generated.ts",
+    "gen:observer": "node scripts/run-wesley-tool.mjs host-node observer-plan --spec src/app/jedit-observer-spec.ts --export createWorldlineSnapshotObserverSpec --out-file src/generated/jedit/worldlineSnapshot.observer-plan.generated.ts",
+    "gen:contract:wesley": "node scripts/run-wesley-tool.mjs cli emit typescript --schema contracts/jedit/hot-text-runtime.graphql --out src/generated/jedit/hot-text-runtime.wesley.generated.ts",
+    "gen:contract:legacy": "node scripts/run-wesley-tool.mjs host-node typescript --schema contracts/jedit/hot-text-runtime.graphql --out-file src/generated/jedit/hot-text-runtime.types.generated.ts && node scripts/run-wesley-tool.mjs host-node zod --schema contracts/jedit/hot-text-runtime.graphql --out-file src/generated/jedit/hot-text-runtime.zod.generated.ts",
     "gen:contract": "npm run gen:contract:wesley && npm run gen:contract:legacy && npm run gen:observer",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",
@@ -15,10 +15,11 @@
     "check": "npm run build && npm run test && npm run quality"
   },
   "dependencies": {
-    "@flyingrobots/bijou": "latest",
-    "@flyingrobots/bijou-node": "latest",
-    "@flyingrobots/bijou-tui": "latest",
-    "@flyingrobots/bijou-tui-app": "latest",
+    "@flyingrobots/bijou": "5.0.0",
+    "@flyingrobots/bijou-node": "5.0.0",
+    "@flyingrobots/bijou-tui": "5.0.0",
+    "@flyingrobots/bijou-tui-app": "5.0.0",
+    "@flyingrobots/graft": "0.7.1",
     "@modelcontextprotocol/sdk": "^1.29.0"
   },
   "devDependencies": {

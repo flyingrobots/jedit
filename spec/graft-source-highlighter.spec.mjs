@@ -87,3 +87,25 @@ test('Graft source highlighter projects editor-buffer syntax spans through the s
   });
   assert.equal(result.spans[1].role, port.SOURCE_HIGHLIGHT_ROLE.Variable);
 });
+
+test('Graft source highlighter loads the published Graft package by default', async () => {
+  const { port, adapter } = await loadGraftSourceHighlighterModules();
+  const highlighter = adapter.createGraftSourceHighlighter();
+
+  const result = await highlighter.highlight({
+    path: 'src/app.ts',
+    text: 'const ready = true;\n',
+    startLine: 0,
+    lineCount: 1,
+    headId: 'head-1',
+    tick: 8,
+  });
+
+  assert.equal(result.path, 'src/app.ts');
+  assert.equal(result.partial, false);
+  assert.equal(result.spans[0].role, port.SOURCE_HIGHLIGHT_ROLE.Keyword);
+  assert.deepEqual(result.spans[0].range, {
+    start: { row: 0, column: 0 },
+    end: { row: 0, column: 5 },
+  });
+});
