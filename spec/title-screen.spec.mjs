@@ -152,8 +152,10 @@ test('title floor light effects expose sphere shadows and caustics', async () =>
   const farAway = title.titleFloorLightEffectsAt([20, 0, 20], spheres, 0);
 
   assert.ok(underSphere.shadowMultiplier < 1);
+  assert.ok(underSphere.contactShadowMultiplier < 1);
   assert.ok(underSphere.causticStrength > 0);
   assert.equal(farAway.shadowMultiplier, 1);
+  assert.equal(farAway.contactShadowMultiplier, 1);
   assert.equal(farAway.causticStrength, 0);
 });
 

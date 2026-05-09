@@ -15,9 +15,9 @@ import type { TitleMesh } from './title-mesh.js';
 type Vector3 = TitleSceneVector3;
 type Color3 = RGB;
 export type TitleSceneSphere = TitleSceneObject;
-
 export interface TitleFloorLightEffects {
   readonly shadowMultiplier: number;
+  readonly contactShadowMultiplier: number;
   readonly causticStrength: number;
 }
 
@@ -78,6 +78,10 @@ const SKY_TINT = 1.08;
 const SURFACE_REFLECTION_TINT = 0.72;
 const SHADOW_RAY_BIAS = 0.03;
 const FLOOR_SHADOW_MULTIPLIER = 0.34;
+const CONTACT_SHADOW_RADIUS_SCALE = 1.32;
+const CONTACT_SHADOW_STRENGTH = 0.72;
+const CONTACT_SHADOW_POWER = 1.75;
+const CONTACT_SHADOW_MIN_MULTIPLIER = 0.18;
 const CAUSTIC_RADIUS_SCALE = 2.4;
 const CAUSTIC_WAVE_FREQUENCY = 3.1;
 const CAUSTIC_WAVE_SECONDARY_FREQUENCY = 1.7;
@@ -185,7 +189,7 @@ function sceneSampleAt(
       const causticColor = scaleColor(colors.info, effects.causticStrength * fade);
       return {
         on: true,
-        fgRGB: addColor(scaleColor(materialColor, effects.shadowMultiplier), causticColor),
+        fgRGB: addColor(scaleColor(materialColor, effects.shadowMultiplier * effects.contactShadowMultiplier), causticColor),
         bgRGB: colors.surface,
       };
     }
@@ -229,7 +233,7 @@ function reflectedEnvironmentColor(
     const materialColor = mixColor(colors.surface, floorColor, fade);
     const causticColor = scaleColor(colors.info, effects.causticStrength * fade);
     return scaleColor(
-      addColor(scaleColor(materialColor, effects.shadowMultiplier), causticColor),
+      addColor(scaleColor(materialColor, effects.shadowMultiplier * effects.contactShadowMultiplier), causticColor),
       SURFACE_REFLECTION_TINT,
     );
   }
@@ -268,6 +272,7 @@ export function titleFloorLightEffectsAt(
 ): TitleFloorLightEffects {
   return {
     shadowMultiplier: titleFloorPointInShadow(point, objects) ? FLOOR_SHADOW_MULTIPLIER : 1,
+    contactShadowMultiplier: titleFloorContactShadowMultiplierAt(point, objects),
     causticStrength: titleFloorCausticStrengthAt(point, objects, time),
   };
 }
@@ -303,6 +308,17 @@ function titleFloorCausticStrengthAt(
     strength += falloff * wave * object.reflectivity * CAUSTIC_STRENGTH;
   }
   return Math.min(MAX_CAUSTIC_STRENGTH, strength);
+}
+
+function titleFloorContactShadowMultiplierAt(point: Vector3, objects: readonly TitleSceneObject[]): number {
+  let strength = 0;
+  for (const object of objects) {
+    const dx = point[0] - object.position[0];
+    const dz = point[2] - object.position[2];
+    const falloff = Math.max(0, 1 - (Math.sqrt((dx * dx) + (dz * dz)) / (object.footprintRadius * CONTACT_SHADOW_RADIUS_SCALE)));
+    strength = Math.max(strength, Math.pow(falloff, CONTACT_SHADOW_POWER) * CONTACT_SHADOW_STRENGTH);
+  }
+  return Math.max(CONTACT_SHADOW_MIN_MULTIPLIER, 1 - strength);
 }
 
 function paintTitleLogo(
