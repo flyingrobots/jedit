@@ -14,8 +14,15 @@ const STYLE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'jedit-theme.js');
 const FIXED_TITLE_SEED = 0.417;
 const TITLE_WIDTH = 96;
 const TITLE_HEIGHT = 28;
+const TITLE_WITH_SIDE_PANELS_WIDTH = 56;
+const COMPACT_TITLE_WIDTH = 20;
+const COMPACT_TITLE_HEIGHT = 12;
+const COMPACT_TITLE_TEXT = 'jedit';
 const TITLE_LOGO_LETTER_COUNT = 5;
 const TITLE_LOGO_MOTION_TIME = 0.7;
+const TITLE_LOGO_SMOOTH_FRAME_TIME = 0.74;
+const TITLE_LOGO_NEXT_FRAME_TIME = TITLE_LOGO_SMOOTH_FRAME_TIME + (1 / 60);
+const TITLE_LOGO_MAX_FRAME_OFFSET_DELTA = 0.25;
 const REFLECTIVE_HIGHLIGHT_LUMINANCE = 190;
 
 async function loadTitleModules() {
@@ -83,13 +90,18 @@ test('averaging Braille canvas resamples all eight subpixel colors into the cell
   assert.deepEqual(cell.bgRGB, [10, 20, 30]);
 });
 
-test('title logo bounds keep the smaller logo in the lower title band', async () => {
-  const { title } = await loadTitleModules();
+test('title logo bounds prefer a readable logo before compressing for side panels', async () => {
+  const { title, titleLogo } = await loadTitleModules();
   const bounds = title.titleLogoCellBounds(TITLE_WIDTH, TITLE_HEIGHT);
+  const sidePanelBounds = title.titleLogoCellBounds(TITLE_WITH_SIDE_PANELS_WIDTH, TITLE_HEIGHT);
 
-  assert.ok(bounds.width <= Math.ceil(TITLE_WIDTH * 0.32));
+  assert.ok(bounds.width > Math.ceil(TITLE_WIDTH * 0.32));
+  assert.equal(sidePanelBounds.width, bounds.width);
+  assert.equal(bounds.renderMode, titleLogo.TITLE_LOGO_RENDER_MODE.Bitmap);
+  assert.equal(sidePanelBounds.renderMode, titleLogo.TITLE_LOGO_RENDER_MODE.Bitmap);
   assert.ok(Math.abs((bounds.x + (bounds.width / 2)) - (TITLE_WIDTH / 2)) <= 1);
-  assert.ok(Math.abs((bounds.y + (bounds.height / 2)) - (TITLE_HEIGHT * 0.8)) <= 1);
+  assert.ok(bounds.y >= Math.floor(TITLE_HEIGHT / 2));
+  assert.ok(bounds.y + bounds.height <= TITLE_HEIGHT);
 });
 
 test('title logo source mask splits into independently animated letters', async () => {
@@ -103,6 +115,33 @@ test('title logo source mask splits into independently animated letters', async 
   assert.ok(idleLetters.every((letter, index) => index === 0 || letter.x > idleLetters[index - 1].x));
   assert.ok(motionLetters.some((letter, index) => letter.y !== idleLetters[index].y));
   assert.ok(motionLetters.some((letter, index) => letter.colorShift !== idleLetters[index].colorShift));
+});
+
+test('title logo letter motion uses smooth fractional spring offsets', async () => {
+  const { title, titleLogo } = await loadTitleModules();
+  const bounds = title.titleLogoCellBounds(TITLE_WIDTH, TITLE_HEIGHT);
+  const frame = titleLogo.titleLogoAnimatedLetters(bounds, TITLE_LOGO_SMOOTH_FRAME_TIME);
+  const nextFrame = titleLogo.titleLogoAnimatedLetters(bounds, TITLE_LOGO_NEXT_FRAME_TIME);
+  const largestOffsetDelta = Math.max(
+    ...frame.map((letter, index) => Math.abs(letter.bounceOffset - nextFrame[index].bounceOffset)),
+  );
+
+  assert.ok(frame.some((letter) => Math.abs(letter.bounceOffset - Math.round(letter.bounceOffset)) > 0.01));
+  assert.ok(frame.some((letter) => letter.targetBounceOffset !== letter.bounceOffset));
+  assert.ok(largestOffsetDelta < TITLE_LOGO_MAX_FRAME_OFFSET_DELTA);
+});
+
+test('title logo falls back to compact text when bitmap compression would become illegible', async () => {
+  const { title, titleLogo, themes, style } = await loadTitleModules();
+  const bounds = title.titleLogoCellBounds(COMPACT_TITLE_WIDTH, COMPACT_TITLE_HEIGHT);
+  const theme = themes.availableJeditThemes()[0];
+  const surface = title.renderTitleScreen(COMPACT_TITLE_WIDTH, COMPACT_TITLE_HEIGHT, 0, theme, FIXED_TITLE_SEED);
+  const logoCells = cells(surface).filter((cell) => cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold));
+
+  assert.equal(bounds.renderMode, titleLogo.TITLE_LOGO_RENDER_MODE.CompactText);
+  assert.equal(bounds.width, COMPACT_TITLE_TEXT.length);
+  assert.equal(logoCells.length, bounds.width);
+  assert.ok(logoCells.every((cell) => !isBraille(cell.char)));
 });
 
 test('title screen renders the logo as a non-Braille themed glyph layer', async () => {
