@@ -15,6 +15,8 @@ const FIXED_TITLE_SEED = 0.417;
 const TITLE_WIDTH = 96;
 const TITLE_HEIGHT = 28;
 const TITLE_WITH_SIDE_PANELS_WIDTH = 56;
+const TITLE_LOGO_MIN_DEFAULT_WIDTH = 42;
+const TITLE_LOGO_MIN_VERTICAL_CENTER_RATIO = 0.65;
 const COMPACT_TITLE_WIDTH = 20;
 const COMPACT_TITLE_HEIGHT = 12;
 const COMPACT_TITLE_TEXT = 'jedit';
@@ -22,7 +24,7 @@ const TITLE_LOGO_LETTER_COUNT = 5;
 const TITLE_LOGO_MOTION_TIME = 0.7;
 const TITLE_LOGO_SMOOTH_FRAME_TIME = 0.74;
 const TITLE_LOGO_NEXT_FRAME_TIME = TITLE_LOGO_SMOOTH_FRAME_TIME + (1 / 60);
-const TITLE_LOGO_MAX_FRAME_OFFSET_DELTA = 0.035;
+const TITLE_LOGO_MAX_FRAME_OFFSET_DELTA = 0.02;
 const REFLECTIVE_HIGHLIGHT_LUMINANCE = 190;
 
 async function loadTitleModules() {
@@ -96,11 +98,12 @@ test('title logo bounds prefer a readable logo before compressing for side panel
   const sidePanelBounds = title.titleLogoCellBounds(TITLE_WITH_SIDE_PANELS_WIDTH, TITLE_HEIGHT);
 
   assert.ok(bounds.width > Math.ceil(TITLE_WIDTH * 0.32));
+  assert.ok(bounds.width >= TITLE_LOGO_MIN_DEFAULT_WIDTH);
   assert.equal(sidePanelBounds.width, bounds.width);
   assert.equal(bounds.renderMode, titleLogo.TITLE_LOGO_RENDER_MODE.Bitmap);
   assert.equal(sidePanelBounds.renderMode, titleLogo.TITLE_LOGO_RENDER_MODE.Bitmap);
   assert.ok(Math.abs((bounds.x + (bounds.width / 2)) - (TITLE_WIDTH / 2)) <= 1);
-  assert.ok(bounds.y >= Math.floor(TITLE_HEIGHT / 2));
+  assert.ok(bounds.y + (bounds.height / 2) >= TITLE_HEIGHT * TITLE_LOGO_MIN_VERTICAL_CENTER_RATIO);
   assert.ok(bounds.y + bounds.height <= TITLE_HEIGHT);
 });
 
