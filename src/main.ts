@@ -12,6 +12,7 @@ import {
 } from './adapters/filesystem.js';
 import { loadEditorFile, saveEditorFile } from './adapters/editor-file.js';
 import { loadTitleBunnyMeshSource } from './adapters/title-bunny-mesh.js';
+import { loadInitialTitleMesh, TITLE_MESH_LOAD_RESULT } from './app/title-mesh-loader.js';
 import { closeGraftConnection, failedGraftInfo, loadGraftInfo, type GraftInfo } from './adapters/graft-mcp-session.js';
 import { paintMarkdownPreview } from './ui/markdown-preview.js';
 import {
@@ -680,7 +681,7 @@ function drawerAnimation(kind: DrawerKind, from: number, to: number): Cmd<Msg>[]
 
 function createInitialModel(cwd: string, columns: number, rows: number): Model {
   const titleSceneSeed = Math.random();
-  const titleMesh = loadInitialTitleMesh();
+  const titleMesh = loadStartupTitleMesh();
   return {
     workspaceRoot: cwd,
     cwd,
@@ -717,12 +718,18 @@ function createInitialModel(cwd: string, columns: number, rows: number): Model {
   };
 }
 
-function loadInitialTitleMesh(): TitleMesh | undefined {
-  try {
-    return createTitleBunnyMesh(loadTitleBunnyMeshSource());
-  } catch {
+function loadStartupTitleMesh(): TitleMesh | undefined {
+  const result = loadInitialTitleMesh({
+    loadSource: loadTitleBunnyMeshSource,
+    createMesh: createTitleBunnyMesh,
+  });
+
+  if (result.kind === TITLE_MESH_LOAD_RESULT.Failed) {
+    process.stderr.write(`jedit title mesh unavailable: ${result.error}\n`);
     return undefined;
   }
+
+  return result.mesh;
 }
 
 function openDirectory(model: Model, cwd: string): Model {

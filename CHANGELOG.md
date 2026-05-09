@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Copied the title bunny OBJ asset during `npm run build` and made startup mesh
+  loading return structured failures instead of silently swallowing asset errors.
 - Bounded title-logo spring evaluation to a short settling window so repeated
   frame renders no longer replay full animation cycles per letter.
 - Replaced title-screen camera/seed positional arguments with explicit render

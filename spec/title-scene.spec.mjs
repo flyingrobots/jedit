@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
@@ -8,6 +9,7 @@ const REPO_ROOT = process.cwd();
 const TITLE_SCENE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-scene.js');
 const TITLE_MESH_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-mesh.js');
 const TITLE_BUNNY_MESH_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'title-bunny-mesh.js');
+const TITLE_BUNNY_DIST_ASSET_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'bunny.obj');
 const TITLE_CAMERA_PATH = path.join(REPO_ROOT, 'dist', 'app', 'title-camera-session.js');
 const FIXED_SCENE_SEED = 0.314159;
 const OTHER_SCENE_SEED = 0.271828;
@@ -45,6 +47,16 @@ async function loadTitleSceneModules() {
     titleCamera: await import(pathToFileURL(TITLE_CAMERA_PATH).href),
   };
 }
+
+test('build copies the title bunny mesh asset into dist', async () => {
+  const build = spawnSync('npm', ['run', 'build'], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+  });
+
+  assert.equal(build.status, 0, build.stderr || build.stdout);
+  assert.ok(existsSync(TITLE_BUNNY_DIST_ASSET_PATH), 'dist/ui/bunny.obj should exist after build');
+});
 
 test('title scene generation is deterministic and seed-sensitive', async () => {
   const { titleScene } = await loadTitleSceneModules();

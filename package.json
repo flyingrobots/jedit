@@ -8,7 +8,7 @@
     "gen:contract:wesley": "node scripts/run-wesley-tool.mjs cli emit typescript --schema contracts/jedit/hot-text-runtime.graphql --out src/generated/jedit/hot-text-runtime.wesley.generated.ts",
     "gen:contract:legacy": "node scripts/run-wesley-tool.mjs host-node typescript --schema contracts/jedit/hot-text-runtime.graphql --out-file src/generated/jedit/hot-text-runtime.types.generated.ts && node scripts/run-wesley-tool.mjs host-node zod --schema contracts/jedit/hot-text-runtime.graphql --out-file src/generated/jedit/hot-text-runtime.zod.generated.ts",
     "gen:contract": "npm run gen:contract:wesley && npm run gen:contract:legacy && npm run gen:observer",
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && node scripts/copy-assets.mjs",
     "start": "node dist/main.js",
     "quality": "node scripts/quality-gate.mjs",
     "test": "node --test spec/**/*.spec.mjs tests/**/*.spec.mjs",
