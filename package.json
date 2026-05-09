@@ -12,7 +12,9 @@
     "start": "node dist/main.js",
     "quality": "node scripts/quality-gate.mjs",
     "test": "node --test spec/**/*.spec.mjs tests/**/*.spec.mjs",
-    "check": "npm run build && npm run test && npm run quality"
+    "lint": "eslint src/**",
+    "check": "npm run build && npm run test && npm run quality && npm run lint",
+    "prepare": "husky"
   },
   "dependencies": {
     "@flyingrobots/bijou": "5.0.0",
@@ -24,10 +26,16 @@
     "@modelcontextprotocol/sdk": "^1.29.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@flyingrobots/bijou-i18n-tools-node": "^5.0.0",
     "@flyingrobots/bijou-i18n-tools-xlsx": "^5.0.0",
     "@types/node": "^22.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.59.2",
+    "@typescript-eslint/parser": "^8.59.2",
+    "eslint": "^10.3.0",
+    "husky": "^9.1.7",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.59.2"
   }
 }

@@ -10,22 +10,24 @@
 
 These are hard repo rules, not suggestions:
 
-1. No `any`.
-2. No `unknown`.
-3. Hexagonal architecture, strict.
-4. Encoding and decoding happen only at the boundary, inside a port/adapter.
-5. One file equals one runtime truth.
-6. Runtime truth beats compile-time theater.
-7. No ad hoc string comparison in core logic. Prefer `instanceof`, numeric tags, symbols, or explicit runtime objects.
-8. No magic strings.
-9. No magic numbers.
-10. SOLID.
-11. DRY.
-12. DI.
-13. Red to green.
-14. Tests are spec.
-15. Agent-first.
-16. No file over 500 lines of code.
+1. **Adopt the [Systems-Style TypeScript Coding Standard](CODING_STANDARD.md) project-wide.**
+2. No `any`.
+3. No `unknown`.
+4. Hexagonal architecture, strict.
+5. Encoding and decoding happen only at the boundary, inside a port/adapter.
+6. One file equals one runtime truth.
+7. Runtime truth beats compile-time theater.
+8. No ad hoc string comparison in core logic. Prefer `instanceof`, numeric tags, symbols, or explicit runtime objects.
+9. No magic strings.
+10. No magic numbers.
+11. SOLID.
+12. DRY.
+13. DI.
+14. Red to green.
+15. Tests are spec.
+16. Agent-first.
+17. No file over 1000 lines (aim for < 600).
+18. Strict limits on function size (35 lines), depth (4), and complexity (8).
 
 ## Structure
 
