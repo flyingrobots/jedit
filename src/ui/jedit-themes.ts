@@ -6,6 +6,12 @@ export const JEDIT_THEME_ENV = 'JEDIT_THEME';
 
 const GRAPHITE_THEME_NAME = 'graphite';
 const MORNING_THEME_NAME = 'morning';
+const MONOKAI_THEME_NAME = 'monokai';
+const SOLARIZED_DARK_THEME_NAME = 'solarized-dark';
+const SOLARIZED_LIGHT_THEME_NAME = 'solarized-light';
+const DRACULA_THEME_NAME = 'dracula';
+const NORD_THEME_NAME = 'nord';
+const CATPPUCCIN_THEME_NAME = 'catppuccin';
 
 const VARIABLE_INK = 'ink';
 const VARIABLE_MUTED = 'muted';
@@ -17,6 +23,20 @@ const VARIABLE_SURFACE = 'surface';
 const VARIABLE_SURFACE_RAISED = 'surface.raised';
 const VARIABLE_SURFACE_MUTED = 'surface.muted';
 const ACTIVE_EDGE_CHAR = '░';
+
+type RgbTuple = readonly [number, number, number];
+
+interface ThemePalette {
+  readonly ink: RgbTuple;
+  readonly muted: RgbTuple;
+  readonly accent: RgbTuple;
+  readonly info: RgbTuple;
+  readonly warning: RgbTuple;
+  readonly success: RgbTuple;
+  readonly surface: RgbTuple;
+  readonly surfaceRaised: RgbTuple;
+  readonly surfaceMuted: RgbTuple;
+}
 
 interface ThemeVariables {
   readonly ink: ThemeColorVariable;
@@ -30,39 +50,120 @@ interface ThemeVariables {
   readonly surfaceMuted: ThemeColorVariable;
 }
 
-const GRAPHITE_THEME = defineJeditTheme(GRAPHITE_THEME_NAME, (draft) => {
-  const variables: ThemeVariables = {
-    ink: draft.variable(VARIABLE_INK, draft.rgb(226, 231, 236)),
-    muted: draft.variable(VARIABLE_MUTED, draft.rgb(126, 137, 148)),
-    accent: draft.variable(VARIABLE_ACCENT, draft.rgb(216, 151, 255)),
-    info: draft.variable(VARIABLE_INFO, draft.rgb(101, 194, 255)),
-    warning: draft.variable(VARIABLE_WARNING, draft.rgb(245, 184, 92)),
-    success: draft.variable(VARIABLE_SUCCESS, draft.rgb(124, 213, 156)),
-    surface: draft.variable(VARIABLE_SURFACE, draft.rgb(14, 17, 22)),
-    surfaceRaised: draft.variable(VARIABLE_SURFACE_RAISED, draft.rgb(28, 32, 40)),
-    surfaceMuted: draft.variable(VARIABLE_SURFACE_MUTED, draft.rgb(22, 26, 33)),
-  };
-  applyThemeTokens(draft, variables);
-});
+const GRAPHITE_PALETTE = {
+  ink: [226, 231, 236],
+  muted: [126, 137, 148],
+  accent: [216, 151, 255],
+  info: [101, 194, 255],
+  warning: [245, 184, 92],
+  success: [124, 213, 156],
+  surface: [14, 17, 22],
+  surfaceRaised: [28, 32, 40],
+  surfaceMuted: [22, 26, 33],
+} satisfies ThemePalette;
 
-const MORNING_THEME = defineJeditTheme(MORNING_THEME_NAME, (draft) => {
-  const variables: ThemeVariables = {
-    ink: draft.variable(VARIABLE_INK, draft.rgb(34, 39, 46)),
-    muted: draft.variable(VARIABLE_MUTED, draft.rgb(112, 118, 126)),
-    accent: draft.variable(VARIABLE_ACCENT, draft.rgb(170, 79, 31)),
-    info: draft.variable(VARIABLE_INFO, draft.rgb(37, 118, 145)),
-    warning: draft.variable(VARIABLE_WARNING, draft.rgb(146, 95, 23)),
-    success: draft.variable(VARIABLE_SUCCESS, draft.rgb(53, 124, 84)),
-    surface: draft.variable(VARIABLE_SURFACE, draft.rgb(244, 241, 232)),
-    surfaceRaised: draft.variable(VARIABLE_SURFACE_RAISED, draft.rgb(232, 228, 217)),
-    surfaceMuted: draft.variable(VARIABLE_SURFACE_MUTED, draft.rgb(222, 218, 208)),
-  };
-  applyThemeTokens(draft, variables);
-});
+const MORNING_PALETTE = {
+  ink: [34, 39, 46],
+  muted: [112, 118, 126],
+  accent: [170, 79, 31],
+  info: [37, 118, 145],
+  warning: [146, 95, 23],
+  success: [53, 124, 84],
+  surface: [244, 241, 232],
+  surfaceRaised: [232, 228, 217],
+  surfaceMuted: [222, 218, 208],
+} satisfies ThemePalette;
+
+const MONOKAI_PALETTE = {
+  ink: [248, 248, 242],
+  muted: [117, 113, 94],
+  accent: [249, 38, 114],
+  info: [102, 217, 239],
+  warning: [253, 151, 31],
+  success: [166, 226, 46],
+  surface: [39, 40, 34],
+  surfaceRaised: [49, 50, 43],
+  surfaceMuted: [58, 59, 50],
+} satisfies ThemePalette;
+
+const SOLARIZED_DARK_PALETTE = {
+  ink: [238, 232, 213],
+  muted: [131, 148, 150],
+  accent: [211, 54, 130],
+  info: [38, 139, 210],
+  warning: [181, 137, 0],
+  success: [133, 153, 0],
+  surface: [0, 43, 54],
+  surfaceRaised: [7, 54, 66],
+  surfaceMuted: [1, 36, 45],
+} satisfies ThemePalette;
+
+const SOLARIZED_LIGHT_PALETTE = {
+  ink: [101, 123, 131],
+  muted: [147, 161, 161],
+  accent: [211, 54, 130],
+  info: [38, 139, 210],
+  warning: [181, 137, 0],
+  success: [133, 153, 0],
+  surface: [253, 246, 227],
+  surfaceRaised: [238, 232, 213],
+  surfaceMuted: [238, 232, 213],
+} satisfies ThemePalette;
+
+const DRACULA_PALETTE = {
+  ink: [248, 248, 242],
+  muted: [98, 114, 164],
+  accent: [189, 147, 249],
+  info: [139, 233, 253],
+  warning: [255, 184, 108],
+  success: [80, 250, 123],
+  surface: [40, 42, 54],
+  surfaceRaised: [68, 71, 90],
+  surfaceMuted: [50, 52, 67],
+} satisfies ThemePalette;
+
+const NORD_PALETTE = {
+  ink: [216, 222, 233],
+  muted: [136, 151, 168],
+  accent: [180, 142, 173],
+  info: [136, 192, 208],
+  warning: [235, 203, 139],
+  success: [163, 190, 140],
+  surface: [46, 52, 64],
+  surfaceRaised: [59, 66, 82],
+  surfaceMuted: [67, 76, 94],
+} satisfies ThemePalette;
+
+const CATPPUCCIN_PALETTE = {
+  ink: [205, 214, 244],
+  muted: [147, 153, 178],
+  accent: [203, 166, 247],
+  info: [137, 180, 250],
+  warning: [249, 226, 175],
+  success: [166, 227, 161],
+  surface: [30, 30, 46],
+  surfaceRaised: [49, 50, 68],
+  surfaceMuted: [69, 71, 90],
+} satisfies ThemePalette;
+
+const GRAPHITE_THEME = definePaletteTheme(GRAPHITE_THEME_NAME, GRAPHITE_PALETTE);
+const MORNING_THEME = definePaletteTheme(MORNING_THEME_NAME, MORNING_PALETTE);
+const MONOKAI_THEME = definePaletteTheme(MONOKAI_THEME_NAME, MONOKAI_PALETTE);
+const SOLARIZED_DARK_THEME = definePaletteTheme(SOLARIZED_DARK_THEME_NAME, SOLARIZED_DARK_PALETTE);
+const SOLARIZED_LIGHT_THEME = definePaletteTheme(SOLARIZED_LIGHT_THEME_NAME, SOLARIZED_LIGHT_PALETTE);
+const DRACULA_THEME = definePaletteTheme(DRACULA_THEME_NAME, DRACULA_PALETTE);
+const NORD_THEME = definePaletteTheme(NORD_THEME_NAME, NORD_PALETTE);
+const CATPPUCCIN_THEME = definePaletteTheme(CATPPUCCIN_THEME_NAME, CATPPUCCIN_PALETTE);
 
 const BUILT_IN_THEMES: readonly JeditTheme[] = [
   GRAPHITE_THEME,
   MORNING_THEME,
+  MONOKAI_THEME,
+  SOLARIZED_DARK_THEME,
+  SOLARIZED_LIGHT_THEME,
+  DRACULA_THEME,
+  NORD_THEME,
+  CATPPUCCIN_THEME,
 ];
 const DEFAULT_THEME = GRAPHITE_THEME;
 
@@ -79,6 +180,30 @@ export function nextJeditTheme(current: JeditTheme): JeditTheme {
   const currentIndex = BUILT_IN_THEMES.findIndex((theme) => theme.name === current.name);
   const nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % BUILT_IN_THEMES.length;
   return BUILT_IN_THEMES[nextIndex] ?? DEFAULT_THEME;
+}
+
+function definePaletteTheme(name: string, palette: ThemePalette): JeditTheme {
+  return defineJeditTheme(name, (draft) => {
+    applyThemeTokens(draft, paletteVariables(draft, palette));
+  });
+}
+
+function paletteVariables(draft: JeditThemeDraft, palette: ThemePalette): ThemeVariables {
+  return {
+    ink: variableFromRgb(draft, VARIABLE_INK, palette.ink),
+    muted: variableFromRgb(draft, VARIABLE_MUTED, palette.muted),
+    accent: variableFromRgb(draft, VARIABLE_ACCENT, palette.accent),
+    info: variableFromRgb(draft, VARIABLE_INFO, palette.info),
+    warning: variableFromRgb(draft, VARIABLE_WARNING, palette.warning),
+    success: variableFromRgb(draft, VARIABLE_SUCCESS, palette.success),
+    surface: variableFromRgb(draft, VARIABLE_SURFACE, palette.surface),
+    surfaceRaised: variableFromRgb(draft, VARIABLE_SURFACE_RAISED, palette.surfaceRaised),
+    surfaceMuted: variableFromRgb(draft, VARIABLE_SURFACE_MUTED, palette.surfaceMuted),
+  };
+}
+
+function variableFromRgb(draft: JeditThemeDraft, name: string, color: RgbTuple): ThemeColorVariable {
+  return draft.variable(name, draft.rgb(color[0], color[1], color[2]));
 }
 
 function applyThemeTokens(draft: JeditThemeDraft, variables: ThemeVariables): void {

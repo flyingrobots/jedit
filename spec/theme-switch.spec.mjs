@@ -7,6 +7,25 @@ import { pathToFileURL } from 'node:url';
 const REPO_ROOT = process.cwd();
 const THEMES_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'jedit-themes.js');
 const STYLE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'jedit-theme.js');
+const EDITOR_INSPIRED_THEME_NAMES = [
+  'monokai',
+  'solarized-dark',
+  'solarized-light',
+  'dracula',
+  'nord',
+  'catppuccin',
+];
+const CANONICAL_VARIABLE_NAMES = [
+  'accent',
+  'info',
+  'ink',
+  'muted',
+  'success',
+  'surface',
+  'surface.muted',
+  'surface.raised',
+  'warning',
+];
 
 async function loadThemesModule() {
   const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
@@ -30,6 +49,29 @@ test('built-in jedit themes are data-driven and switchable by name', async () =>
   assert.equal(themes.resolveInitialJeditTheme('missing-theme'), available[0]);
   assert.equal(themes.resolveInitialJeditTheme(available[1].name), available[1]);
   assert.equal(themes.nextJeditTheme(available[0]).name, available[1].name);
+});
+
+test('built-in jedit themes include editor-inspired palettes', async () => {
+  const { themes } = await loadThemesModule();
+  const availableNames = themes.availableJeditThemes().map((theme) => theme.name);
+
+  assert.deepEqual(availableNames.slice(0, 2), ['graphite', 'morning']);
+  for (const themeName of EDITOR_INSPIRED_THEME_NAMES) {
+    assert.ok(availableNames.includes(themeName), `${themeName} should be built in`);
+  }
+});
+
+test('built-in jedit themes keep unique complete palettes', async () => {
+  const { themes } = await loadThemesModule();
+  const available = themes.availableJeditThemes();
+  const names = available.map((theme) => theme.name);
+  const surfaceKeys = available.map((theme) => theme.surface.workspace.bgRGB.join(','));
+
+  assert.equal(new Set(names).size, names.length);
+  assert.equal(new Set(surfaceKeys).size, surfaceKeys.length);
+  for (const theme of available) {
+    assert.deepEqual([...theme.variables.keys()].sort(), CANONICAL_VARIABLE_NAMES);
+  }
 });
 
 test('built-in jedit theme tokens map back to named variables and effect metadata', async () => {

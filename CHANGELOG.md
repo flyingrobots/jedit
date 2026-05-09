@@ -11,3 +11,5 @@
   instead of mixing it into the Braille raytrace shader.
 - Added Bijou spring-driven title-screen camera controls so arrow-key orbit and
   zoom changes ease smoothly instead of stepping instantly.
+- Added Monokai-, Solarized-, Dracula-, Nord-, and Catppuccin-inspired built-in
+  jedit themes through the shared theme builder pipeline.
