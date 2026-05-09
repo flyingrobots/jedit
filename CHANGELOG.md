@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Bounded title-logo spring evaluation to a short settling window so repeated
+  frame renders no longer replay full animation cycles per letter.
 - Replaced title-screen camera/seed positional arguments with explicit render
   options so regression tests pin deterministic scene seeds independently of
   camera angle.

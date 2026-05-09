@@ -80,13 +80,12 @@ const LOGO_LETTER_BOUNCE_PERIOD_SECONDS = 10.4;
 const LOGO_LETTER_BOUNCE_AMPLITUDE_ROWS = 0.34;
 const LOGO_LETTER_BOUNCE_SECONDARY_AMPLITUDE_ROWS = 0.07;
 const LOGO_LETTER_BOUNCE_SECONDARY_RATE = 2;
-const LOGO_LETTER_SPRING_PREROLL_CYCLES = 2;
+const LOGO_LETTER_SPRING_SETTLE_SECONDS = 1.2;
 const LOGO_LETTER_FIXED_STEP_SECONDS = 1 / 120;
 const LOGO_LETTER_SPRING_MASS = 1;
 const LOGO_LETTER_SPRING_STIFFNESS = 18;
 const LOGO_LETTER_SPRING_DAMPING = 8.6;
 const LOGO_LETTER_SPRING_PRECISION = 0.0005;
-const LOGO_LETTER_SPRING_PREROLL_SECONDS = LOGO_LETTER_BOUNCE_PERIOD_SECONDS * LOGO_LETTER_SPRING_PREROLL_CYCLES;
 const LOGO_LETTER_SPRING = {
   mass: LOGO_LETTER_SPRING_MASS,
   stiffness: LOGO_LETTER_SPRING_STIFFNESS,
@@ -293,10 +292,10 @@ function titleLogoSpringBounceAt(
   time: number,
   phaseSeconds: number,
 ): { readonly offset: number; readonly target: number } {
-  const cycleTime = positiveModulo(time + phaseSeconds, LOGO_LETTER_BOUNCE_PERIOD_SECONDS);
-  const simulationEnd = LOGO_LETTER_SPRING_PREROLL_SECONDS + cycleTime;
-  let state = createSpringState(titleLogoBounceTargetAt(0));
-  let simulated = 0;
+  const simulationEnd = time + phaseSeconds;
+  const simulationStart = simulationEnd - LOGO_LETTER_SPRING_SETTLE_SECONDS;
+  let state = createSpringState(titleLogoBounceTargetAt(simulationStart));
+  let simulated = simulationStart;
 
   while (simulated < simulationEnd) {
     const stepSeconds = Math.min(LOGO_LETTER_FIXED_STEP_SECONDS, simulationEnd - simulated);

@@ -25,6 +25,8 @@ const TITLE_LOGO_MOTION_TIME = 0.7;
 const TITLE_LOGO_SMOOTH_FRAME_TIME = 0.74;
 const TITLE_LOGO_NEXT_FRAME_TIME = TITLE_LOGO_SMOOTH_FRAME_TIME + (1 / 60);
 const TITLE_LOGO_MAX_FRAME_OFFSET_DELTA = 0.02;
+const TITLE_LOGO_ANIMATION_PERF_FRAMES = 1200;
+const TITLE_LOGO_ANIMATION_PERF_BUDGET_MS = 240;
 const REFLECTIVE_HIGHLIGHT_LUMINANCE = 190;
 const FIXED_TITLE_CAMERA_ANGLE = 0.25;
 
@@ -141,6 +143,21 @@ test('title logo letter motion uses smooth fractional spring offsets', async () 
   assert.ok(frame.some((letter) => Math.abs(letter.bounceOffset - Math.round(letter.bounceOffset)) > 0.01));
   assert.ok(frame.some((letter) => letter.targetBounceOffset !== letter.bounceOffset));
   assert.ok(largestOffsetDelta < TITLE_LOGO_MAX_FRAME_OFFSET_DELTA);
+});
+
+test('title logo animation evaluates a long frame sequence within a bounded budget', async () => {
+  const { title, titleLogo } = await loadTitleModules();
+  const bounds = title.titleLogoCellBounds(TITLE_WIDTH, TITLE_HEIGHT);
+  const start = performance.now();
+  let offsetSum = 0;
+
+  for (let frame = 0; frame < TITLE_LOGO_ANIMATION_PERF_FRAMES; frame += 1) {
+    offsetSum += titleLogo.titleLogoAnimatedLetters(bounds, frame / 60)[0].bounceOffset;
+  }
+
+  const elapsedMs = performance.now() - start;
+  assert.ok(Number.isFinite(offsetSum));
+  assert.ok(elapsedMs < TITLE_LOGO_ANIMATION_PERF_BUDGET_MS, `logo animation took ${elapsedMs.toFixed(2)}ms`);
 });
 
 test('title logo falls back to compact text when bitmap compression would become illegible', async () => {
