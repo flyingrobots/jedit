@@ -106,8 +106,6 @@ export function renderTitleScreen(
   return surface;
 }
 
-import { JEDIT_SOURCE_TOKEN } from './jedit-theme.js';
-
 export function titleSceneMaterialColors(theme: JeditTheme): TitleSceneMaterialColors {
   const baseColors = fixedTitleSceneBaseColors(theme);
   const floorColors = orderedFloorMaterialColors(baseColors.ink, baseColors.muted);
@@ -119,14 +117,14 @@ export function titleSceneMaterialColors(theme: JeditTheme): TitleSceneMaterialC
   };
 }
 
-function fixedTitleSceneBaseColors(theme: JeditTheme): Omit<TitleSceneMaterialColors, 'floorDark' | 'floorLight'> {
+function fixedTitleSceneBaseColors(_theme: JeditTheme): Omit<TitleSceneMaterialColors, 'floorDark' | 'floorLight'> {
   return {
-    accent: theme.source.get(JEDIT_SOURCE_TOKEN.Keyword)?.fgRGB ?? [224, 113, 63],
-    info: theme.source.get(JEDIT_SOURCE_TOKEN.Type)?.fgRGB ?? [78, 195, 224],
-    success: theme.source.get(JEDIT_SOURCE_TOKEN.String)?.fgRGB ?? [112, 216, 167],
-    ink: theme.source.get(JEDIT_SOURCE_TOKEN.Number)?.fgRGB ?? [222, 232, 232],
-    muted: theme.source.get(JEDIT_SOURCE_TOKEN.Comment)?.fgRGB ?? [55, 75, 88],
-    surface: theme.surface.workspace.bgRGB ?? [5, 7, 12],
+    accent: [224, 113, 63],
+    info: [78, 195, 224],
+    success: [112, 216, 167],
+    ink: [222, 232, 232],
+    muted: [55, 75, 88],
+    surface: [5, 7, 12],
   };
 }
 

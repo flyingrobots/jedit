@@ -5,7 +5,6 @@
 - Fixed raytracer column math intersection which caused caps to be hollow when viewed from above or below.
 - Added a new `.jedit-scene` file format for defining scenes and created a scene loader adapter.
 - Added an interactive Scene Picker overlay to the title screen (toggleable via `F5`) for loading `.jedit-scene` debug scenes.
-- Fixed an architectural bypass in the title scene renderer so that it correctly inherits colors from the active `JeditTheme`.
 - Fixed naive RTL string reversal in footer that corrupted UI labels; now correctly utilizes Bijou surface blitting.
 - Fortified the Bijou i18n adapter object traversal logic to enforce safe property access.
 - Established a GitHub Actions CI workflow to automatically run build, tests, and quality checks on every push and pull request.
