@@ -3,16 +3,17 @@ import { type Surface } from '@flyingrobots/bijou';
 import { averagingBrailleCanvas, type BrailleShaderFn, type BrailleShaderSample, type RGB } from './averaging-braille-canvas.js';
 import { type JeditTheme, JEDIT_SOURCE_TOKEN, JEDIT_TEXT_MODIFIER } from './jedit-theme.js';
 import { JEDIT_LOGO_HEIGHT, JEDIT_LOGO_MASK, JEDIT_LOGO_WIDTH } from './logo-data.js';
+import {
+  generateTitleScene,
+  intersectsTitleSceneObjectAlongRay,
+  nearestTitleSceneObjectHit,
+  type TitleSceneObject,
+  type TitleSceneVector3,
+} from './title-scene.js';
 
-type Vector3 = readonly [number, number, number];
+type Vector3 = TitleSceneVector3;
 type Color3 = RGB;
-
-export interface TitleSceneSphere {
-  readonly position: Vector3;
-  readonly radius: number;
-  readonly color: Color3;
-  readonly reflectivity: number;
-}
+export type TitleSceneSphere = TitleSceneObject;
 
 export interface TitleFloorLightEffects {
   readonly shadowMultiplier: number;
@@ -38,6 +39,7 @@ interface LogoBounds {
 }
 
 const DEFAULT_CAMERA_RADIUS = 8.5;
+const DEFAULT_TITLE_SCENE_SEED = 0.5;
 const CAMERA_DRIFT_RATE = 0.005;
 const CAMERA_HEIGHT = 3.5;
 const LOGO_WIDTH_RATIO = 0.8;
@@ -86,17 +88,14 @@ export function renderTitleScreen(
   theme: JeditTheme,
   camAngle: number,
   camRadius = DEFAULT_CAMERA_RADIUS,
+  sceneSeed = DEFAULT_TITLE_SCENE_SEED,
 ): Surface {
   const logoMask = decodeLogoMask();
   const colors = titleSceneMaterialColors(theme);
-  const spheres: readonly TitleSceneSphere[] = [
-    { position: [0, 1.0, 0], radius: 1.25, color: colors.accent, reflectivity: 0.48 },
-    { position: [2.7, 0.55, 1.6], radius: 0.65, color: colors.success, reflectivity: 0.26 },
-    { position: [-2.3, 0.75, -1.1], radius: 0.85, color: colors.info, reflectivity: 0.42 },
-  ];
+  const scene = generateTitleScene(sceneSeed, colors);
 
   const shader: BrailleShaderFn = ({ u, v, time: frameTime }) => {
-    return sceneSampleAt(u, v, cols, rows, frameTime, camAngle, camRadius, spheres, colors);
+    return sceneSampleAt(u, v, cols, rows, frameTime, camAngle, camRadius, scene.objects, colors);
   };
 
   const surface = averagingBrailleCanvas(cols, rows, shader, time);
@@ -130,7 +129,7 @@ function sceneSampleAt(
   time: number,
   camAngle: number,
   camRadius: number,
-  spheres: readonly TitleSceneSphere[],
+  objects: readonly TitleSceneObject[],
   colors: TitleSceneMaterialColors,
 ): BrailleShaderSample {
   const aspect = cols / Math.max(1, rows);
@@ -143,25 +142,25 @@ function sceneSampleAt(
     Math.cos(finalAngle) * camRadius,
   ];
   const ray = getRayDir(origin, [0, 0.4, 0], [rx, -ry - 0.2, 2.7]);
-  const sphereHit = nearestSphereHit(origin, ray, spheres);
+  const objectHit = nearestTitleSceneObjectHit(origin, ray, objects);
   const planeDistance = -origin[1] / ray[1];
 
-  if (sphereHit != null && (planeDistance <= 0 || sphereHit.distance < planeDistance)) {
-    const point = add(origin, scale(ray, sphereHit.distance));
-    const normal = normalize(sub(point, sphereHit.sphere.position));
+  if (objectHit != null && (planeDistance <= 0 || objectHit.distance < planeDistance)) {
+    const point = add(origin, scale(ray, objectHit.distance));
+    const normal = objectHit.normal;
     const light = Math.max(0, dot(normal, KEY_LIGHT_DIRECTION));
     const intensity = LIGHT_AMBIENT + (light * LIGHT_DIFFUSE);
     const reflectionRay = reflect(ray, normal);
-    const reflectionColor = reflectedEnvironmentColor(point, reflectionRay, colors, spheres, time);
+    const reflectionColor = reflectedEnvironmentColor(point, reflectionRay, colors, objects, time);
     const fresnel = Math.pow(1 - Math.max(0, dot(scale(ray, -1), normal)), REFLECTION_FRESNEL_POWER);
-    const reflectionAmount = sphereHit.sphere.reflectivity * (REFLECTION_EDGE_BIAS + ((1 - REFLECTION_EDGE_BIAS) * fresnel));
+    const reflectionAmount = objectHit.object.reflectivity * (REFLECTION_EDGE_BIAS + ((1 - REFLECTION_EDGE_BIAS) * fresnel));
     const viewDirection = scale(ray, -1);
     const halfVector = normalize(add(KEY_LIGHT_DIRECTION, viewDirection));
     const specular = Math.pow(Math.max(0, dot(normal, halfVector)), SPECULAR_POWER) * SPECULAR_STRENGTH;
     return {
       on: true,
       fgRGB: addColor(
-        mixColor(scaleColor(sphereHit.sphere.color, intensity), reflectionColor, reflectionAmount),
+        mixColor(scaleColor(objectHit.object.color, intensity), reflectionColor, reflectionAmount),
         scaleColor(colors.ink, specular),
       ),
       bgRGB: colors.surface,
@@ -174,7 +173,7 @@ function sceneSampleAt(
     const grid = (Math.floor(point[0] * PLANE_GRID_SCALE) + Math.floor(point[2] * PLANE_GRID_SCALE)) % 2 === 0;
     if (fade > PLANE_MIN_FADE) {
       const floorColor = grid ? colors.floorLight : colors.floorDark;
-      const effects = titleFloorLightEffectsAt(point, spheres, time);
+      const effects = titleFloorLightEffectsAt(point, objects, time);
       const materialColor = mixColor(colors.surface, floorColor, fade);
       const causticColor = scaleColor(colors.info, effects.causticStrength * fade);
       return {
@@ -197,7 +196,7 @@ function reflectedEnvironmentColor(
   point: Vector3,
   ray: Vector3,
   colors: TitleSceneMaterialColors,
-  spheres: readonly TitleSceneSphere[],
+  objects: readonly TitleSceneObject[],
   time: number,
 ): Color3 {
   const planeDistance = -point[1] / ray[1];
@@ -206,7 +205,7 @@ function reflectedEnvironmentColor(
     const fade = Math.max(0, 1 - (planeDistance / PLANE_FADE_DISTANCE));
     const grid = (Math.floor(reflectedPoint[0] * PLANE_GRID_SCALE) + Math.floor(reflectedPoint[2] * PLANE_GRID_SCALE)) % 2 === 0;
     const floorColor = grid ? colors.floorLight : colors.floorDark;
-    const effects = titleFloorLightEffectsAt(reflectedPoint, spheres, time);
+    const effects = titleFloorLightEffectsAt(reflectedPoint, objects, time);
     const materialColor = mixColor(colors.surface, floorColor, fade);
     const causticColor = scaleColor(colors.info, effects.causticStrength * fade);
     return scaleColor(
@@ -220,34 +219,34 @@ function reflectedEnvironmentColor(
 
 export function titleFloorLightEffectsAt(
   point: Vector3,
-  spheres: readonly TitleSceneSphere[],
+  objects: readonly TitleSceneObject[],
   time: number,
 ): TitleFloorLightEffects {
   return {
-    shadowMultiplier: titleFloorPointInShadow(point, spheres) ? FLOOR_SHADOW_MULTIPLIER : 1,
-    causticStrength: titleFloorCausticStrengthAt(point, spheres, time),
+    shadowMultiplier: titleFloorPointInShadow(point, objects) ? FLOOR_SHADOW_MULTIPLIER : 1,
+    causticStrength: titleFloorCausticStrengthAt(point, objects, time),
   };
 }
 
-function titleFloorPointInShadow(point: Vector3, spheres: readonly TitleSceneSphere[]): boolean {
+function titleFloorPointInShadow(point: Vector3, objects: readonly TitleSceneObject[]): boolean {
   const shadowOrigin = add(point, [0, SHADOW_RAY_BIAS, 0]);
-  return spheres.some((sphere) => intersectsSphereAlongRay(shadowOrigin, KEY_LIGHT_DIRECTION, sphere));
+  return objects.some((object) => intersectsTitleSceneObjectAlongRay(shadowOrigin, KEY_LIGHT_DIRECTION, object));
 }
 
 function titleFloorCausticStrengthAt(
   point: Vector3,
-  spheres: readonly TitleSceneSphere[],
+  objects: readonly TitleSceneObject[],
   time: number,
 ): number {
   let strength = 0;
-  for (const sphere of spheres) {
-    if (sphere.reflectivity <= 0) {
+  for (const object of objects) {
+    if (object.reflectivity <= 0) {
       continue;
     }
-    const dx = point[0] - sphere.position[0];
-    const dz = point[2] - sphere.position[2];
+    const dx = point[0] - object.position[0];
+    const dz = point[2] - object.position[2];
     const distance = Math.sqrt((dx * dx) + (dz * dz));
-    const radius = sphere.radius * CAUSTIC_RADIUS_SCALE;
+    const radius = (object.footprintRadius ?? object.radius) * CAUSTIC_RADIUS_SCALE;
     const falloff = Math.max(0, 1 - (distance / radius));
     if (falloff <= 0) {
       continue;
@@ -257,7 +256,7 @@ function titleFloorCausticStrengthAt(
         + (dz * CAUSTIC_WAVE_SECONDARY_FREQUENCY)
         + (time * CAUSTIC_TIME_RATE),
     ) + 1) / 2;
-    strength += falloff * wave * sphere.reflectivity * CAUSTIC_STRENGTH;
+    strength += falloff * wave * object.reflectivity * CAUSTIC_STRENGTH;
   }
   return Math.min(MAX_CAUSTIC_STRENGTH, strength);
 }
@@ -374,17 +373,6 @@ function decodeLogoMask(): readonly (readonly number[])[] {
   });
 }
 
-function nearestSphereHit(origin: Vector3, ray: Vector3, spheres: readonly TitleSceneSphere[]) {
-  let nearest: { readonly sphere: TitleSceneSphere; readonly distance: number } | undefined;
-  for (const sphere of spheres) {
-    const distance = intersectSphere(origin, ray, sphere.position, sphere.radius);
-    if (distance > 0 && (nearest == null || distance < nearest.distance)) {
-      nearest = { sphere, distance };
-    }
-  }
-  return nearest;
-}
-
 function mixColor(from: Color3, to: Color3, ratio: number): Color3 {
   const clamped = Math.max(0, Math.min(1, ratio));
   return [
@@ -448,24 +436,4 @@ function scale(vector: Vector3, scalar: number): Vector3 {
 
 function reflect(ray: Vector3, normal: Vector3): Vector3 {
   return sub(ray, scale(normal, 2 * dot(ray, normal)));
-}
-
-function intersectSphere(origin: Vector3, ray: Vector3, position: Vector3, radius: number): number {
-  const oc = sub(origin, position);
-  const b = dot(oc, ray);
-  const c = dot(oc, oc) - (radius * radius);
-  const discriminant = (b * b) - c;
-  return discriminant < 0 ? -1 : -b - Math.sqrt(discriminant);
-}
-
-function intersectsSphereAlongRay(origin: Vector3, ray: Vector3, sphere: TitleSceneSphere): boolean {
-  const oc = sub(origin, sphere.position);
-  const b = dot(oc, ray);
-  const c = dot(oc, oc) - (sphere.radius * sphere.radius);
-  const discriminant = (b * b) - c;
-  if (discriminant < 0) {
-    return false;
-  }
-  const root = Math.sqrt(discriminant);
-  return (-b - root) > 0 || (-b + root) > 0;
 }

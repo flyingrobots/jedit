@@ -16,3 +16,6 @@
 - Added light/dark theme companion metadata, generated opposite-mode fallback
   themes, authored Solarized companion overrides, and a settings row for
   toggling the current theme mode.
+- Added deterministic seeded title-scene generation with randomized initial
+  camera placement, mixed sphere/column geometry, varied materials, and
+  non-overlapping object footprints.

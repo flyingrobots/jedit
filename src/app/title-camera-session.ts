@@ -43,6 +43,11 @@ export interface TitleCameraState {
   readonly radiusMotionId: number;
 }
 
+export interface TitleCameraInitialPlacement {
+  readonly angle: number;
+  readonly radius: number;
+}
+
 export interface TitleCameraMotionMsg {
   readonly type: typeof TITLE_CAMERA_MESSAGE.Frame;
   readonly axis: TitleCameraAxis;
@@ -55,13 +60,16 @@ export interface TitleCameraUpdate {
   readonly commands: Cmd<TitleCameraMotionMsg>[];
 }
 
-export function createTitleCameraState(): TitleCameraState {
+export function createTitleCameraState(placement: TitleCameraInitialPlacement = {
+  angle: DEFAULT_TITLE_CAMERA_ANGLE,
+  radius: DEFAULT_TITLE_CAMERA_RADIUS,
+}): TitleCameraState {
   return {
-    angle: DEFAULT_TITLE_CAMERA_ANGLE,
-    angleTarget: DEFAULT_TITLE_CAMERA_ANGLE,
+    angle: placement.angle,
+    angleTarget: placement.angle,
     angleMotionId: 0,
-    radius: DEFAULT_TITLE_CAMERA_RADIUS,
-    radiusTarget: DEFAULT_TITLE_CAMERA_RADIUS,
+    radius: placement.radius,
+    radiusTarget: placement.radius,
     radiusMotionId: 0,
   };
 }

@@ -46,6 +46,7 @@ import {
   type TitleCameraState,
 } from './app/title-camera-session.js';
 import { renderSettingsDrawer, resolveSettingsDrawerWidth } from './ui/settings-drawer.js';
+import { titleSceneCameraPlacement } from './ui/title-scene.js';
 import { renderTitleScreen } from './ui/title-screen.js';
 
 initDefaultContext();
@@ -108,6 +109,7 @@ interface Model {
   readonly sourceHighlight?: import('./ports/source-highlighter.js').SourceHighlightReading;
   readonly sourceHighlightLoading: boolean;
   readonly sourceHighlightRequestId: number;
+  readonly titleSceneSeed: number;
   readonly columns: number;
   readonly rows: number;
   readonly time: number;
@@ -676,6 +678,7 @@ function drawerAnimation(kind: DrawerKind, from: number, to: number): Cmd<Msg>[]
 }
 
 function createInitialModel(cwd: string, columns: number, rows: number): Model {
+  const titleSceneSeed = Math.random();
   return {
     workspaceRoot: cwd,
     cwd,
@@ -699,6 +702,7 @@ function createInitialModel(cwd: string, columns: number, rows: number): Model {
     sourceHighlight: undefined,
     sourceHighlightLoading: false,
     sourceHighlightRequestId: 0,
+    titleSceneSeed,
     columns,
     rows,
     time: 0,
@@ -706,7 +710,7 @@ function createInitialModel(cwd: string, columns: number, rows: number): Model {
     lastFrameMs: Date.now(),
     frameTimeMs: 0,
     frameTimeHistory: [],
-    titleCamera: createTitleCameraState(),
+    titleCamera: createTitleCameraState(titleSceneCameraPlacement(titleSceneSeed)),
   };
 }
 
@@ -2067,7 +2071,7 @@ function notificationTickCmd(): Cmd<Msg> { return createNotificationTickCmd((atM
 
 function renderViewer(model: Model, width: number, height: number) {
   if (model.editor == null) {
-    return renderTitleScreen(width, height, model.time, model.jeditTheme, model.titleCamera.angle, model.titleCamera.radius);
+    return renderTitleScreen(width, height, model.time, model.jeditTheme, model.titleCamera.angle, model.titleCamera.radius, model.titleSceneSeed);
   }
 
   const surface = createSurface(width, height);
