@@ -39,7 +39,13 @@ import { JEDIT_THEME_ENV, nextJeditTheme, oppositeJeditTheme, resolveInitialJedi
 import { JEDIT_MARKDOWN_PREVIEW_TOGGLE_KEY, JEDIT_SETTINGS_TOGGLE_KEY, JEDIT_THEME_TOGGLE_KEY } from './app/keybindings.js';
 import type { JeditStyleToken, JeditTheme } from './ui/jedit-theme.js';
 import { paintActivePaneEdge } from './ui/workspace-focus-edge.js';
-import { jeditSettingsRows, moveSettingsFocusIndex, toggleSettingsOpen, updateJeditSettingsFromKey } from './app/settings-session.js';
+import {
+  jeditSettingsRows,
+  moveSettingsFocusIndex,
+  toggleSettingsOpen,
+  updateJeditSettingsFromKey,
+  type JeditSettingsHandlers,
+} from './app/settings-session.js';
 import {
   createTitleCameraState,
   reduceTitleCameraMotion,
@@ -51,6 +57,8 @@ import {
 import { renderSettingsDrawer, resolveSettingsDrawerWidth } from './ui/settings-drawer.js';
 import { titleBunnySceneCameraPlacement, titleSceneCameraPlacement } from './ui/title-scene.js';
 import { createTitleBunnyMesh, type TitleMesh } from './ui/title-mesh.js';
+import { BijouI18nAdapter } from './adapters/bijou-i18n-adapter.js';
+import type { I18nPort } from './ports/i18n.js';
 import { renderTitleScreen } from './ui/title-screen.js';
 
 initDefaultContext();
@@ -89,6 +97,7 @@ interface EditorState {
 }
 
 interface Model {
+  readonly i18n: I18nPort;
   readonly workspaceRoot: string;
   readonly cwd: string;
   readonly entries: readonly FileEntry[];
@@ -365,6 +374,7 @@ function updateFromMouse(msg: MouseMsg, model: Model): [Model, Cmd<Msg>[]] {
 
 function settingsRows(model: Model) {
   return jeditSettingsRows({
+    i18n: model.i18n,
     jeditTheme: model.jeditTheme,
     footerVisible: model.footerVisible,
     markdownPreviewActive: model.editor != null && isMarkdownFile(model.editor.path),
@@ -372,11 +382,17 @@ function settingsRows(model: Model) {
   });
 }
 
-const settingsHandlers = {
+const settingsHandlers: JeditSettingsHandlers<Model, Msg> = {
   cycleTheme: (model: Model): [Model, Cmd<Msg>[]] => [{ ...model, jeditTheme: nextJeditTheme(model.jeditTheme) }, []],
   toggleThemeMode: (model: Model): [Model, Cmd<Msg>[]] => [{ ...model, jeditTheme: oppositeJeditTheme(model.jeditTheme) }, []],
   toggleFooter: (model: Model): [Model, Cmd<Msg>[]] => [{ ...model, footerVisible: !model.footerVisible }, []],
   toggleMarkdownPreview: (model: Model): [Model, Cmd<Msg>[]] => toggleMarkdownPreview(model),
+  toggleLocale: (model: Model): [Model, Cmd<Msg>[]] => {
+    const nextLocale = model.i18n.locale === 'en' ? 'me' : 'en';
+    const nextDirection = nextLocale === 'me' ? 'rtl' : 'ltr';
+    model.i18n.setLocale(nextLocale, nextDirection);
+    return [model, []];
+  },
 };
 
 await run(app, JEDIT_TERMINAL_MOUSE_OPTIONS);
@@ -683,6 +699,7 @@ function createInitialModel(cwd: string, columns: number, rows: number): Model {
   const titleSceneSeed = Math.random();
   const titleMesh = loadStartupTitleMesh();
   return {
+    i18n: new BijouI18nAdapter('en', 'ltr'),
     workspaceRoot: cwd,
     cwd,
     entries: loadEntries(cwd),
@@ -2045,6 +2062,7 @@ function renderWorkspace(model: Model) {
 
   if (model.footerVisible) {
     screen.blit(renderWorkspaceFooter({
+      i18n: model.i18n,
       focusPane: model.focusPane,
       fileDrawerOpen: model.fileDrawerOpen,
       graftDrawerOpen: model.graftDrawerOpen,

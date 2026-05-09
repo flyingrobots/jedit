@@ -6,6 +6,10 @@
     "src/main.ts": {
       "any": 0,
       "unknown": 4
+    },
+    "src/adapters/bijou-i18n-adapter.ts": {
+      "any": 1,
+      "unknown": 0
     }
   }
 }

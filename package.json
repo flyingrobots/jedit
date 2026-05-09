@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@flyingrobots/bijou": "5.0.0",
+    "@flyingrobots/bijou-i18n": "^5.0.0",
     "@flyingrobots/bijou-node": "5.0.0",
     "@flyingrobots/bijou-tui": "5.0.0",
     "@flyingrobots/bijou-tui-app": "5.0.0",
@@ -23,6 +24,8 @@
     "@modelcontextprotocol/sdk": "^1.29.0"
   },
   "devDependencies": {
+    "@flyingrobots/bijou-i18n-tools-node": "^5.0.0",
+    "@flyingrobots/bijou-i18n-tools-xlsx": "^5.0.0",
     "@types/node": "^22.0.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"

@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
+import { createI18nMock } from './i18n-mock.mjs';
 
 const REPO_ROOT = process.cwd();
 const DRAWER_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'settings-drawer.js');
@@ -34,6 +35,7 @@ test('settings drawer renders structured rows and highlights the selected row', 
   const { drawer, settings, themes } = await loadDrawerModules();
   const theme = themes.availableJeditThemes()[0];
   const rows = settings.jeditSettingsRows({
+    i18n: createI18nMock(),
     jeditTheme: theme,
     footerVisible: true,
     markdownPreviewActive: true,
@@ -45,7 +47,7 @@ test('settings drawer renders structured rows and highlights the selected row', 
     selectedIndex: 1,
     theme,
     width: 42,
-    height: 14,
+    height: 20,
   });
   const text = surfaceText(surface);
 

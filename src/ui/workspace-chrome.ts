@@ -4,6 +4,7 @@ import { basename } from 'node:path';
 
 import type { FileEntry } from '../adapters/filesystem.js';
 import { JEDIT_MARKDOWN_PREVIEW_TOGGLE_LABEL, JEDIT_SETTINGS_TOGGLE_LABEL, JEDIT_THEME_TOGGLE_LABEL } from '../app/keybindings.js';
+import type { I18nPort } from '../ports/i18n.js';
 import type { JeditStyleToken } from './jedit-theme.js';
 import type { DrawerKind } from './drawer-layout.js';
 import { hasFocusablePeers, type FocusPane } from './panel-focus.js';
@@ -22,6 +23,7 @@ export interface WorkspaceTitleState {
 }
 
 export interface WorkspaceFooterState {
+  readonly i18n: I18nPort;
   readonly focusPane: FocusPane;
   readonly fileDrawerOpen: boolean;
   readonly graftDrawerOpen: boolean;
@@ -75,8 +77,11 @@ export function renderWorkspaceFooter(state: WorkspaceFooterState, width: number
   const secondarySurface = stringToSurface(fitLine(secondary, width), width, 1);
   applyBackground(primarySurface, background);
   applyBackground(secondarySurface, background);
-  surface.blit(primarySurface, 0, 0);
-  surface.blit(secondarySurface, 0, 1);
+
+  // Logical positioning for RTL/LTR
+  const isRtl = state.i18n.direction === 'rtl';
+  surface.blit(primarySurface, isRtl ? width - primarySurface.width : 0, 0);
+  surface.blit(secondarySurface, isRtl ? width - secondarySurface.width : 0, 1);
   return surface;
 }
 
@@ -85,15 +90,24 @@ export function workspaceFooterLine(state: WorkspaceFooterState): string {
 }
 
 export function workspaceFooterLines(state: WorkspaceFooterState): readonly [string, string] {
-  const mode = interactionModeLabel(state).toUpperCase();
+  const modeKey = interactionModeKey(state);
+  const modeLabel = state.i18n.t(`footer.mode.${modeKey}`).toUpperCase();
   const detail = footerDetail(state);
+  
+  const primary = detail.length > 0 ? `${modeLabel} ${detail}` : modeLabel;
+  const secondary = footerContextLine(state);
+
   return [
-    detail.length > 0 ? `${mode} ${detail}` : mode,
-    footerContextLine(state),
+    state.i18n.direction === 'rtl' ? reverseLine(primary) : primary,
+    state.i18n.direction === 'rtl' ? reverseLine(secondary) : secondary,
   ];
 }
 
-function interactionModeLabel(state: WorkspaceFooterState): string {
+function reverseLine(text: string): string {
+  return [...text].reverse().join('');
+}
+
+function interactionModeKey(state: WorkspaceFooterState): string {
   if (state.settingsOpen) {
     return 'settings';
   }
@@ -118,8 +132,10 @@ function interactionModeLabel(state: WorkspaceFooterState): string {
 }
 
 function footerDetail(state: WorkspaceFooterState): string {
+  const t = (key: string) => state.i18n.t(`footer.hints.${key}`);
+
   if (state.settingsOpen) {
-    return footerHints(['j/k move', 'enter change', `${JEDIT_SETTINGS_TOGGLE_LABEL} close`, 'esc close']);
+    return footerHints([t('j_k_move'), t('enter_change'), `${JEDIT_SETTINGS_TOGGLE_LABEL} close`, 'esc close']);
   }
 
   if (state.focusPane === 'files' && state.fileDrawerOpen) {
@@ -131,11 +147,11 @@ function footerDetail(state: WorkspaceFooterState): string {
   }
 
   if (state.viewMode === 'preview' && state.markdownPreviewActive) {
-    return footerHints(['j/k scroll', `${JEDIT_MARKDOWN_PREVIEW_TOGGLE_LABEL} source`, THEME_HINT, focusHint(state), 'ctrl+b files', 'ctrl+g graft']);
+    return footerHints([t('j_k_scroll'), `${JEDIT_MARKDOWN_PREVIEW_TOGGLE_LABEL} source`, THEME_HINT, focusHint(state), 'ctrl+b files', 'ctrl+g graft']);
   }
 
   if (state.editorMode === 'insert') {
-    return footerHints(['text input', 'esc normal', 'ctrl+s save', THEME_HINT, insertTabHint(state)]);
+    return footerHints([t('text_input'), t('esc_normal'), t('ctrl_s_save'), THEME_HINT, insertTabHint(state)]);
   }
 
   if (state.editorMode === 'normal') {
@@ -146,11 +162,13 @@ function footerDetail(state: WorkspaceFooterState): string {
 }
 
 function drawerFooterDetail(state: WorkspaceFooterState, kind: DrawerKind): string {
+  const t = (key: string) => state.i18n.t(`footer.hints.${key}`);
+
   if (kind === 'files') {
-    return footerHints(['j/k move', 'enter open', 'backspace up', 'ctrl+b close', THEME_HINT, focusHint(state)]);
+    return footerHints([t('j_k_move'), 'enter open', 'backspace up', 'ctrl+b close', THEME_HINT, focusHint(state)]);
   }
 
-  return footerHints(['j/k move', 'enter jump', 'r refresh', 'ctrl+g close', THEME_HINT, focusHint(state)]);
+  return footerHints([t('j_k_move'), 'enter jump', 'r refresh', 'ctrl+g close', THEME_HINT, focusHint(state)]);
 }
 
 function normalFooterDetail(state: WorkspaceFooterState): string {
@@ -264,7 +282,8 @@ function insertTabHint(state: WorkspaceFooterState): string {
 }
 
 function footerHints(parts: ReadonlyArray<string | undefined>): string {
-  return `[${parts.filter((part): part is string => part != null).join(' · ')}]`;
+  const filtered = parts.filter((part): part is string => part != null && part.trim().length > 0);
+  return `[${filtered.join(' · ')}]`;
 }
 
 function chordFooterHints(chord: string, suggestions: readonly string[]): string {

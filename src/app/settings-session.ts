@@ -1,3 +1,4 @@
+import type { Cmd } from '@flyingrobots/bijou-tui';
 import { JEDIT_THEME_MODE, type JeditTheme } from '../ui/jedit-theme.js';
 
 export const JEDIT_SETTING_ACTION = {
@@ -5,6 +6,7 @@ export const JEDIT_SETTING_ACTION = {
   ToggleThemeMode: Symbol('jedit.settings.action.toggle-theme-mode'),
   ToggleFooter: Symbol('jedit.settings.action.toggle-footer'),
   ToggleMarkdownPreview: Symbol('jedit.settings.action.toggle-markdown-preview'),
+  ToggleLocale: Symbol('jedit.settings.action.toggle-locale'),
 } as const;
 
 export type JeditSettingAction = typeof JEDIT_SETTING_ACTION[keyof typeof JEDIT_SETTING_ACTION];
@@ -33,10 +35,11 @@ export interface JeditSettingsKeyMsg {
 }
 
 export interface JeditSettingsHandlers<Model, Command> {
-  cycleTheme(model: Model): [Model, Command[]];
-  toggleThemeMode(model: Model): [Model, Command[]];
-  toggleFooter(model: Model): [Model, Command[]];
-  toggleMarkdownPreview(model: Model): [Model, Command[]];
+  cycleTheme(model: Model): [Model, Cmd<Command>[]];
+  toggleThemeMode(model: Model): [Model, Cmd<Command>[]];
+  toggleFooter(model: Model): [Model, Cmd<Command>[]];
+  toggleMarkdownPreview(model: Model): [Model, Cmd<Command>[]];
+  toggleLocale(model: Model): [Model, Cmd<Command>[]];
 }
 
 export interface JeditSettingsRow {
@@ -56,6 +59,7 @@ const ROW_ID_THEME = 'theme';
 const ROW_ID_THEME_MODE = 'theme-mode';
 const ROW_ID_FOOTER = 'footer';
 const ROW_ID_MARKDOWN_PREVIEW = 'markdown-preview';
+const ROW_ID_LOCALE = 'locale';
 const VALUE_ON = 'On';
 const VALUE_OFF = 'Off';
 const VALUE_THEME_MODE_DARK = 'Dark';
@@ -73,8 +77,17 @@ const KEY_SPACE_CANONICAL = 'space';
 const FOCUS_STEP_FORWARD = 1;
 const FOCUS_STEP_BACKWARD = -1;
 
-export function jeditSettingsRows(state: JeditSettingsState): readonly JeditSettingsRow[] {
+export function jeditSettingsRows(state: JeditSettingsState & { readonly i18n: { readonly locale: string } }): readonly JeditSettingsRow[] {
   const rows: JeditSettingsRow[] = [
+    {
+      id: ROW_ID_LOCALE,
+      section: SETTINGS_SECTION_APPEARANCE,
+      label: 'Locale',
+      description: 'Switch between English (en) and Mirror English (me) for RTL testing.',
+      valueLabel: state.i18n.locale === 'en' ? 'English' : 'Mirror',
+      kind: JEDIT_SETTING_ROW_KIND.Choice,
+      action: JEDIT_SETTING_ACTION.ToggleLocale,
+    },
     {
       id: ROW_ID_THEME,
       section: SETTINGS_SECTION_APPEARANCE,
@@ -148,7 +161,7 @@ export function updateJeditSettingsFromKey<Model extends JeditSettingsHostState,
   model: Model,
   rows: readonly JeditSettingsRow[],
   handlers: JeditSettingsHandlers<Model, Command>,
-): [Model, Command[]] {
+): [Model, Cmd<Command>[]] {
   if (msg.key === KEY_ESCAPE) {
     return [{ ...model, settingsOpen: false }, []];
   }
@@ -175,7 +188,7 @@ function activateSettingsRow<Model, Command>(
   model: Model,
   action: JeditSettingAction | undefined,
   handlers: JeditSettingsHandlers<Model, Command>,
-): [Model, Command[]] {
+): [Model, Cmd<Command>[]] {
   if (action === JEDIT_SETTING_ACTION.CycleTheme) {
     return handlers.cycleTheme(model);
   }
@@ -187,6 +200,9 @@ function activateSettingsRow<Model, Command>(
   }
   if (action === JEDIT_SETTING_ACTION.ToggleMarkdownPreview) {
     return handlers.toggleMarkdownPreview(model);
+  }
+  if (action === JEDIT_SETTING_ACTION.ToggleLocale) {
+    return handlers.toggleLocale(model);
   }
   return [model, []];
 }
