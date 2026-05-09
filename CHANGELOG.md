@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Fixed settings navigation on the title screen by routing settings keys before
+  title camera controls.
+- Improved settings interaction by accepting both the literal space character
+  and the canonical 'space' key string for activating rows.
 - Documented the `JEDIT_WESLEY_ROOT` checkout requirement for contract codegen
   and added a regression test that keeps the README example executable.
 - Added explicit runtime decoders for Graft MCP outline and structural diff

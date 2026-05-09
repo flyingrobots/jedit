@@ -69,6 +69,7 @@ const KEY_J = 'j';
 const KEY_K = 'k';
 const KEY_ENTER = 'enter';
 const KEY_SPACE = ' ';
+const KEY_SPACE_CANONICAL = 'space';
 const FOCUS_STEP_FORWARD = 1;
 const FOCUS_STEP_BACKWARD = -1;
 
@@ -157,7 +158,7 @@ export function updateJeditSettingsFromKey<Model extends JeditSettingsHostState,
   if (msg.key === KEY_UP || msg.key === KEY_K) {
     return [moveHostFocus(model, FOCUS_STEP_BACKWARD, rows.length), []];
   }
-  if (msg.key === KEY_ENTER || msg.key === KEY_SPACE) {
+  if (msg.key === KEY_ENTER || msg.key === KEY_SPACE || msg.key === KEY_SPACE_CANONICAL) {
     return activateSettingsRow(model, rows[clampSettingsFocusIndex(model.settingsFocusIndex, rows.length)]?.action, handlers);
   }
   return [model, []];

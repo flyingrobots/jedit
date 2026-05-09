@@ -257,6 +257,13 @@ function updateFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
     return [{ ...model, perfVisible: !model.perfVisible }, []];
   }
 
+  if (msg.key === JEDIT_SETTINGS_TOGGLE_KEY) {
+    return [toggleSettingsOpen(model), []];
+  }
+  if (model.settingsOpen) {
+    return updateJeditSettingsFromKey(msg, model, settingsRows(model), settingsHandlers);
+  }
+
   if (model.editor == null) {
     const cameraUpdate = updateTitleCameraFromKey(msg.key, model.titleCamera);
     if (cameraUpdate != null) {
@@ -266,13 +273,6 @@ function updateFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
 
   if (msg.ctrl && msg.key === 'c') {
     return [model, [quit<Msg>()]];
-  }
-
-  if (msg.key === JEDIT_SETTINGS_TOGGLE_KEY) {
-    return [toggleSettingsOpen(model), []];
-  }
-  if (model.settingsOpen) {
-    return updateJeditSettingsFromKey(msg, model, settingsRows(model), settingsHandlers);
   }
 
   const insertModeActive = model.focusPane === 'editor'
