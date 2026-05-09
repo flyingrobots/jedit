@@ -7,3 +7,5 @@
   lighting and reflections.
 - Added geometry-based title-screen floor shadows and subtle caustic-style
   highlights inside the shader material path.
+- Rendered the title logo as a smaller lower-screen solid/hatch glyph overlay
+  instead of mixing it into the Braille raytrace shader.

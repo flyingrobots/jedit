@@ -41,9 +41,20 @@ const DEFAULT_CAMERA_RADIUS = 8.5;
 const CAMERA_DRIFT_RATE = 0.005;
 const CAMERA_HEIGHT = 3.5;
 const LOGO_WIDTH_RATIO = 0.8;
-const LOGO_MAX_HEIGHT_RATIO = 0.62;
-const BRAILLE_COLUMNS_PER_CELL = 2;
-const BRAILLE_ROWS_PER_CELL = 4;
+const LOGO_REQUESTED_SCALE_RATIO = 0.4;
+const LOGO_TARGET_WIDTH_RATIO = LOGO_WIDTH_RATIO * LOGO_REQUESTED_SCALE_RATIO;
+const LOGO_VERTICAL_CENTER_NUMERATOR = 2;
+const LOGO_VERTICAL_CENTER_DENOMINATOR = 3;
+const LOGO_COVERAGE_SAMPLE_COLUMNS = 4;
+const LOGO_COVERAGE_SAMPLE_ROWS = 4;
+const LOGO_SOLID_THRESHOLD = 0.72;
+const LOGO_DENSE_THRESHOLD = 0.45;
+const LOGO_MID_THRESHOLD = 0.18;
+const LOGO_FAINT_THRESHOLD = 0.05;
+const LOGO_SOLID_GLYPH = '█';
+const LOGO_DENSE_GLYPH = '▓';
+const LOGO_MID_GLYPH = '▒';
+const LOGO_FAINT_GLYPH = '░';
 const LIGHT_AMBIENT = 0.24;
 const LIGHT_DIFFUSE = 0.76;
 const KEY_LIGHT_DIRECTION: Vector3 = normalize([1.4, 2.2, -1.1]);
@@ -78,9 +89,6 @@ export function renderTitleScreen(
 ): Surface {
   const logoMask = decodeLogoMask();
   const colors = titleSceneMaterialColors(theme);
-  const subpixelCols = cols * BRAILLE_COLUMNS_PER_CELL;
-  const subpixelRows = rows * BRAILLE_ROWS_PER_CELL;
-  const logoBounds = titleLogoBounds(subpixelCols, subpixelRows);
   const spheres: readonly TitleSceneSphere[] = [
     { position: [0, 1.0, 0], radius: 1.25, color: colors.accent, reflectivity: 0.48 },
     { position: [2.7, 0.55, 1.6], radius: 0.65, color: colors.success, reflectivity: 0.26 },
@@ -88,17 +96,12 @@ export function renderTitleScreen(
   ];
 
   const shader: BrailleShaderFn = ({ u, v, time: frameTime }) => {
-    const x = Math.round(u * (subpixelCols - 1 || 1));
-    const y = Math.round(v * (subpixelRows - 1 || 1));
-    const logoSample = logoSampleAt(x, y, logoBounds, logoMask, colors);
-    if (logoSample != null) {
-      return logoSample;
-    }
-
     return sceneSampleAt(u, v, cols, rows, frameTime, camAngle, camRadius, spheres, colors);
   };
 
-  return averagingBrailleCanvas(cols, rows, shader, time);
+  const surface = averagingBrailleCanvas(cols, rows, shader, time);
+  paintTitleLogo(surface, titleLogoCellBounds(cols, rows), logoMask, colors);
+  return surface;
 }
 
 export function titleSceneMaterialColors(theme: JeditTheme): TitleSceneMaterialColors {
@@ -259,33 +262,68 @@ function titleFloorCausticStrengthAt(
   return Math.min(MAX_CAUSTIC_STRENGTH, strength);
 }
 
-function logoSampleAt(
-  x: number,
-  y: number,
+function paintTitleLogo(
+  surface: Surface,
   bounds: LogoBounds,
   mask: readonly (readonly number[])[],
   colors: TitleSceneMaterialColors,
-): BrailleShaderSample | undefined {
-  if (bounds.width <= 0 || bounds.height <= 0 || x < bounds.x || y < bounds.y) {
-    return undefined;
+): void {
+  for (let row = 0; row < bounds.height; row++) {
+    for (let col = 0; col < bounds.width; col++) {
+      const coverage = logoCoverageAt(col, row, bounds, mask);
+      const char = titleLogoGlyphForCoverage(coverage);
+      if (char == null) {
+        continue;
+      }
+      const ratio = col / Math.max(1, bounds.width - 1);
+      surface.set(bounds.x + col, bounds.y + row, {
+        char,
+        fgRGB: mixColor(colors.accent, colors.info, ratio),
+        bgRGB: colors.surface,
+        modifiers: [JEDIT_TEXT_MODIFIER.Bold],
+      });
+    }
   }
-  if (x >= bounds.x + bounds.width || y >= bounds.y + bounds.height) {
-    return undefined;
-  }
+}
 
-  const logoX = Math.floor((x - bounds.x) * (JEDIT_LOGO_WIDTH / bounds.width));
-  const logoY = Math.floor((y - bounds.y) * (JEDIT_LOGO_HEIGHT / bounds.height));
-  if (!logoMaskBit(mask, logoX, logoY)) {
-    return undefined;
+function logoCoverageAt(
+  col: number,
+  row: number,
+  bounds: LogoBounds,
+  mask: readonly (readonly number[])[],
+): number {
+  let covered = 0;
+  const sampleCount = LOGO_COVERAGE_SAMPLE_COLUMNS * LOGO_COVERAGE_SAMPLE_ROWS;
+  for (let sampleY = 0; sampleY < LOGO_COVERAGE_SAMPLE_ROWS; sampleY++) {
+    for (let sampleX = 0; sampleX < LOGO_COVERAGE_SAMPLE_COLUMNS; sampleX++) {
+      const logoX = Math.floor(
+        ((col + ((sampleX + 0.5) / LOGO_COVERAGE_SAMPLE_COLUMNS)) / bounds.width) * JEDIT_LOGO_WIDTH,
+      );
+      const logoY = Math.floor(
+        ((row + ((sampleY + 0.5) / LOGO_COVERAGE_SAMPLE_ROWS)) / bounds.height) * JEDIT_LOGO_HEIGHT,
+      );
+      if (logoMaskBit(mask, logoX, logoY)) {
+        covered += 1;
+      }
+    }
   }
+  return covered / sampleCount;
+}
 
-  const ratio = (x - bounds.x) / Math.max(1, bounds.width - 1);
-  return {
-    on: true,
-    fgRGB: mixColor(colors.accent, colors.info, ratio),
-    bgRGB: colors.surface,
-    modifiers: [JEDIT_TEXT_MODIFIER.Bold],
-  };
+function titleLogoGlyphForCoverage(coverage: number): string | undefined {
+  if (coverage >= LOGO_SOLID_THRESHOLD) {
+    return LOGO_SOLID_GLYPH;
+  }
+  if (coverage >= LOGO_DENSE_THRESHOLD) {
+    return LOGO_DENSE_GLYPH;
+  }
+  if (coverage >= LOGO_MID_THRESHOLD) {
+    return LOGO_MID_GLYPH;
+  }
+  if (coverage >= LOGO_FAINT_THRESHOLD) {
+    return LOGO_FAINT_GLYPH;
+  }
+  return undefined;
 }
 
 function orderedFloorMaterialColors(
@@ -303,15 +341,16 @@ function colorLuminance(color: Color3): number {
     + (color[2] * LUMINANCE_BLUE_WEIGHT);
 }
 
-function titleLogoBounds(screenWidth: number, screenHeight: number): LogoBounds {
-  const maxWidth = Math.max(1, Math.floor(screenWidth * LOGO_WIDTH_RATIO));
-  const maxHeight = Math.max(1, Math.floor(screenHeight * LOGO_MAX_HEIGHT_RATIO));
+export function titleLogoCellBounds(screenWidth: number, screenHeight: number): LogoBounds {
+  const maxWidth = Math.max(1, Math.floor(screenWidth * LOGO_TARGET_WIDTH_RATIO));
   const naturalHeight = Math.max(1, Math.floor(maxWidth * (JEDIT_LOGO_HEIGHT / JEDIT_LOGO_WIDTH)));
-  const height = Math.min(maxHeight, naturalHeight);
+  const height = Math.min(screenHeight, naturalHeight);
   const width = Math.min(maxWidth, Math.max(1, Math.floor(height * (JEDIT_LOGO_WIDTH / JEDIT_LOGO_HEIGHT))));
+  const centerY = Math.floor((screenHeight * LOGO_VERTICAL_CENTER_NUMERATOR) / LOGO_VERTICAL_CENTER_DENOMINATOR);
+  const maxY = Math.max(0, screenHeight - height);
   return {
     x: Math.floor((screenWidth - width) / 2),
-    y: Math.floor((screenHeight - height) / 2),
+    y: Math.min(maxY, Math.max(0, Math.floor(centerY - (height / 2)))),
     width,
     height,
   };

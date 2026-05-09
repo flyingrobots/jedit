@@ -70,14 +70,24 @@ test('averaging Braille canvas resamples all eight subpixel colors into the cell
   assert.deepEqual(cell.bgRGB, [10, 20, 30]);
 });
 
-test('title screen renders the logo as a themed Braille foreground layer', async () => {
+test('title logo bounds center the smaller logo in the lower two thirds', async () => {
+  const { title } = await loadTitleModules();
+  const bounds = title.titleLogoCellBounds(TITLE_WIDTH, TITLE_HEIGHT);
+
+  assert.ok(bounds.width <= Math.ceil(TITLE_WIDTH * 0.32));
+  assert.ok(Math.abs((bounds.x + (bounds.width / 2)) - (TITLE_WIDTH / 2)) <= 1);
+  assert.ok(Math.abs((bounds.y + (bounds.height / 2)) - (TITLE_HEIGHT * (2 / 3))) <= 1);
+});
+
+test('title screen renders the logo as a non-Braille themed glyph layer', async () => {
   const { title, themes, style } = await loadTitleModules();
   const theme = themes.availableJeditThemes()[0];
   const surface = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, FIXED_TITLE_SEED);
   const logoCells = cells(surface).filter((cell) => cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold));
 
-  assert.ok(logoCells.length > 40);
-  assert.ok(logoCells.every((cell) => isBraille(cell.char)));
+  assert.ok(logoCells.length > 12);
+  assert.ok(logoCells.every((cell) => !isBraille(cell.char)));
+  assert.ok(new Set(logoCells.map((cell) => cell.char)).size > 1);
   assert.ok(new Set(logoCells.map(cellColorKey)).size > 1);
   assert.ok(logoCells.every((cell) => cell.bgRGB != null));
 });
