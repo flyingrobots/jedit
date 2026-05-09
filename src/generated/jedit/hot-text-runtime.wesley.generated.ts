@@ -179,92 +179,92 @@ export interface WorldlineSnapshotInput {
   worldlineId: string;
 }
 
-export interface CreateBufferWorldlineRequest {
+export interface MutationCreateBufferWorldlineRequest {
   input: CreateBufferWorldlineInput;
 }
 
-export type CreateBufferWorldlineResponse = CreateBufferWorldlineResult;
+export type MutationCreateBufferWorldlineResponse = CreateBufferWorldlineResult;
 
-export const createBufferWorldlineOperation = {
+export const mutationCreateBufferWorldlineOperation = {
   operationType: "MUTATION",
   fieldName: "createBufferWorldline",
   directives: {"wes_op":{"name":"createBufferWorldline"},"wes_footprint":{"creates":["BufferWorldline","RopeHead","Checkpoint","TextBlob","RopeLeaf"],"slots":[],"createSlots":[{"slot":"worldline","kind":"BufferWorldline"},{"slot":"head","kind":"RopeHead"},{"slot":"checkpoint","kind":"Checkpoint","cardinality":"OPTIONAL"},{"slot":"initialBlob","kind":"TextBlob","cardinality":"OPTIONAL"},{"slot":"initialLeaf","kind":"RopeLeaf","cardinality":"OPTIONAL"}],"updates":[],"forbids":["AstState","Diagnostics","GitWitness","UiState"]}},
 } as const;
 
-export type CreateBufferWorldlineOperation = {
-  request: CreateBufferWorldlineRequest;
-  response: CreateBufferWorldlineResponse;
-  metadata: typeof createBufferWorldlineOperation;
+export type MutationCreateBufferWorldlineOperation = {
+  request: MutationCreateBufferWorldlineRequest;
+  response: MutationCreateBufferWorldlineResponse;
+  metadata: typeof mutationCreateBufferWorldlineOperation;
 };
 
-export interface ReplaceRangeAsTickRequest {
+export interface MutationReplaceRangeAsTickRequest {
   input: ReplaceRangeAsTickInput;
 }
 
-export type ReplaceRangeAsTickResponse = ReplaceRangeAsTickResult;
+export type MutationReplaceRangeAsTickResponse = ReplaceRangeAsTickResult;
 
-export const replaceRangeAsTickOperation = {
+export const mutationReplaceRangeAsTickOperation = {
   operationType: "MUTATION",
   fieldName: "replaceRangeAsTick",
   directives: {"wes_op":{"name":"replaceRangeAsTick"},"wes_footprint":{"reads":["BufferWorldline","RopeHead","RopeBranch","RopeLeaf","TextBlob","Anchor"],"writes":["BufferWorldline"],"creates":["TextBlob","RopeLeaf","RopeBranch","RopeHead","Tick","TickReceipt"],"slots":[{"slot":"worldline","kind":"BufferWorldline","bindFromArg":"input.worldlineId","access":["READ","WRITE"]},{"slot":"baseHead","kind":"RopeHead","bindFromArg":"input.baseHeadId","access":["READ"]}],"closures":[{"slot":"touchedRope","fromSlot":"baseHead","operator":"ropeRangeClosure","argBindings":["input.startByte","input.endByte"],"reads":["RopeBranch","RopeLeaf","TextBlob"],"cardinality":"MANY"},{"slot":"affectedAnchors","fromSlot":"worldline","operator":"anchorsIntersectingEditWindow","argBindings":["baseHead","input.startByte","input.endByte"],"reads":["Anchor"],"cardinality":"MANY"}],"createSlots":[{"slot":"newBlob","kind":"TextBlob","cardinality":"OPTIONAL"},{"slot":"newLeaves","kind":"RopeLeaf","cardinality":"MANY"},{"slot":"newBranches","kind":"RopeBranch","cardinality":"MANY"},{"slot":"nextHead","kind":"RopeHead"},{"slot":"tick","kind":"Tick"},{"slot":"receipt","kind":"TickReceipt"}],"updates":[{"slot":"worldline","fields":["canonicalHead"]}],"forbids":["AstState","Diagnostics","GitWitness","UiState"]}},
 } as const;
 
-export type ReplaceRangeAsTickOperation = {
-  request: ReplaceRangeAsTickRequest;
-  response: ReplaceRangeAsTickResponse;
-  metadata: typeof replaceRangeAsTickOperation;
+export type MutationReplaceRangeAsTickOperation = {
+  request: MutationReplaceRangeAsTickRequest;
+  response: MutationReplaceRangeAsTickResponse;
+  metadata: typeof mutationReplaceRangeAsTickOperation;
 };
 
-export interface CreateCheckpointRequest {
+export interface MutationCreateCheckpointRequest {
   input: CreateCheckpointInput;
 }
 
-export type CreateCheckpointResponse = CreateCheckpointResult;
+export type MutationCreateCheckpointResponse = CreateCheckpointResult;
 
-export const createCheckpointOperation = {
+export const mutationCreateCheckpointOperation = {
   operationType: "MUTATION",
   fieldName: "createCheckpoint",
   directives: {"wes_op":{"name":"createCheckpoint"},"wes_footprint":{"reads":["BufferWorldline","RopeHead"],"creates":["Checkpoint"],"slots":[{"slot":"worldline","kind":"BufferWorldline","bindFromArg":"input.worldlineId","access":["READ"]},{"slot":"currentHead","kind":"RopeHead","bindFromSlot":"worldline","bindRelation":"CANONICAL_HEAD","access":["READ"]}],"createSlots":[{"slot":"checkpoint","kind":"Checkpoint"}],"updates":[],"forbids":["RopeBranch","RopeLeaf","TextBlob","Tick","TickReceipt","AstState","Diagnostics","GitWitness","UiState"]}},
 } as const;
 
-export type CreateCheckpointOperation = {
-  request: CreateCheckpointRequest;
-  response: CreateCheckpointResponse;
-  metadata: typeof createCheckpointOperation;
+export type MutationCreateCheckpointOperation = {
+  request: MutationCreateCheckpointRequest;
+  response: MutationCreateCheckpointResponse;
+  metadata: typeof mutationCreateCheckpointOperation;
 };
 
-export interface WorldlineSnapshotRequest {
+export interface QueryWorldlineSnapshotRequest {
   input: WorldlineSnapshotInput;
 }
 
-export type WorldlineSnapshotResponse = WorldlineSnapshot;
+export type QueryWorldlineSnapshotResponse = WorldlineSnapshot;
 
-export const worldlineSnapshotOperation = {
+export const queryWorldlineSnapshotOperation = {
   operationType: "QUERY",
   fieldName: "worldlineSnapshot",
   directives: {"wes_op":{"name":"worldlineSnapshot"}},
 } as const;
 
-export type WorldlineSnapshotOperation = {
-  request: WorldlineSnapshotRequest;
-  response: WorldlineSnapshotResponse;
-  metadata: typeof worldlineSnapshotOperation;
+export type QueryWorldlineSnapshotOperation = {
+  request: QueryWorldlineSnapshotRequest;
+  response: QueryWorldlineSnapshotResponse;
+  metadata: typeof queryWorldlineSnapshotOperation;
 };
 
-export interface TextWindowRequest {
+export interface QueryTextWindowRequest {
   input: TextWindowInput;
 }
 
-export type TextWindowResponse = TextWindowReading;
+export type QueryTextWindowResponse = TextWindowReading;
 
-export const textWindowOperation = {
+export const queryTextWindowOperation = {
   operationType: "QUERY",
   fieldName: "textWindow",
   directives: {"wes_op":{"name":"textWindow"}},
 } as const;
 
-export type TextWindowOperation = {
-  request: TextWindowRequest;
-  response: TextWindowResponse;
-  metadata: typeof textWindowOperation;
+export type QueryTextWindowOperation = {
+  request: QueryTextWindowRequest;
+  response: QueryTextWindowResponse;
+  metadata: typeof queryTextWindowOperation;
 };
