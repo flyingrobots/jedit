@@ -84,7 +84,6 @@ export function renderTitleScreen(
   cols: number,
   rows: number,
   time: number,
-  theme: JeditTheme,
   options: TitleScreenRenderOptions,
 ): Surface {
   const {
@@ -94,7 +93,7 @@ export function renderTitleScreen(
     mesh,
     sceneOverride,
   } = options;
-  const colors = titleSceneMaterialColors(theme);
+  const colors = titleSceneMaterialColors();
   const scene = sceneOverride ?? generateTitleScene(sceneSeed, colors, mesh);
 
   const shader: BrailleShaderFn = ({ u, v, time: frameTime }) => {
@@ -106,8 +105,8 @@ export function renderTitleScreen(
   return surface;
 }
 
-export function titleSceneMaterialColors(theme: JeditTheme): TitleSceneMaterialColors {
-  const baseColors = fixedTitleSceneBaseColors(theme);
+export function titleSceneMaterialColors(): TitleSceneMaterialColors {
+  const baseColors = fixedTitleSceneBaseColors();
   const floorColors = orderedFloorMaterialColors(baseColors.ink, baseColors.muted);
 
   return {
@@ -117,7 +116,7 @@ export function titleSceneMaterialColors(theme: JeditTheme): TitleSceneMaterialC
   };
 }
 
-function fixedTitleSceneBaseColors(_theme: JeditTheme): Omit<TitleSceneMaterialColors, 'floorDark' | 'floorLight'> {
+function fixedTitleSceneBaseColors(): Omit<TitleSceneMaterialColors, 'floorDark' | 'floorLight'> {
   return {
     accent: [224, 113, 63],
     info: [78, 195, 224],
