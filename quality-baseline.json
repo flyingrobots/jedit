@@ -1,10 +1,10 @@
 {
-  "totalErrors": 77,
+  "totalErrors": 74,
   "fileErrors": {
     "src/adapters/graft-mcp-session.ts": 5,
     "src/adapters/jedit-echo-optic-client.ts": 1,
     "src/adapters/title-scene-loader.ts": 2,
-    "src/app/editor-engine.ts": 7,
+    "src/app/editor-engine.ts": 4,
     "src/app/jedit-contract-runtime.ts": 2,
     "src/app/jedit-observer-spec.ts": 1,
     "src/app/raytracer-profiler.ts": 1,
@@ -29,5 +29,5 @@
     "src/ui/workspace-chrome.ts": 3,
     "src/ui/workspace-focus-edge.ts": 1
   },
-  "updatedAt": "2026-05-10T00:00:38.157Z"
+  "updatedAt": "2026-05-10T00:26:43.049Z"
 }
