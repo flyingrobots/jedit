@@ -1,0 +1,24 @@
+{
+  "footer": {
+    "mode": {
+      "browse": "browse",
+      "insert": "insert",
+      "normal": "normal",
+      "preview": "preview",
+      "settings": "settings",
+      "files": "files",
+      "graft": "graft"
+    },
+    "hints": {
+      "j_k_move": "j/k move",
+      "enter_change": "enter change",
+      "esc_close": "esc close",
+      "j_k_scroll": "j/k scroll",
+      "text_input": "text input",
+      "esc_normal": "esc normal",
+      "ctrl_s_save": "ctrl+s save",
+      "tab_focus": "tab focus",
+      "tab_indent": "tab indent"
+    }
+  }
+}

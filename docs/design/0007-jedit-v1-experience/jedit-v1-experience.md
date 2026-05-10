@@ -20,8 +20,8 @@ Wesley contract work a user-facing reason to exist.
 
 ## Design Lineage
 
-This document takes inspiration from the Bijou documentation under
-`~/git/bijou/docs`, especially:
+This document takes inspiration from the Bijou project documentation,
+especially:
 
 - `docs/strategy/bijou-vision.md`
 - `docs/strategy/bijou-ux-doctrine.md`

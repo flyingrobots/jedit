@@ -13,6 +13,8 @@ IDE clone.
 
 The full invariant set is written down in
 [docs/design/project-invariants.md](docs/design/project-invariants.md).
+The end-to-end buffer rendering path is explained in
+[ADVANCED_GUIDE.md](ADVANCED_GUIDE.md).
 
 - Zen core, instrumented edges. The main editor area stays visually quiet;
   richer context appears at the edges and only when it earns the space.
@@ -83,14 +85,22 @@ current worldline, canonical head, retained checkpoints, and materialized text
 without pretending the runtime already supports arbitrary historical head
 materialization. That query is now paired with the first explicit app-owned
 observer spec so the get side is no longer treated as "just a query."
-Refresh the generated TypeScript and Zod contract surfaces, including the
-query and mutation operation registries, with:
+Refresh the generated contract surfaces with:
 
 ```sh
-npm run gen:contract
+JEDIT_WESLEY_ROOT=/path/to/wesley npm run gen:contract
 ```
 
+`JEDIT_WESLEY_ROOT` must point at a Wesley checkout that contains both
+`packages/wesley-host-node/bin/wesley.mjs` and
+`crates/wesley-cli/Cargo.toml`. The command writes the Rust-Wesley operation
+binding artifact beside the legacy TypeScript/Zod files. The app still keeps the
+legacy Zod validators until Wesley has a Rust-native validator emitter, but
+operation-name and request-input type seams should prefer the Rust-Wesley
+generated artifact.
+
 Near-term product direction:
+
 - `jedit .` opens the current directory
 - file tree plus text buffer editing
 - Markdown source mode with richer preview options
@@ -105,8 +115,10 @@ npm run dev
 ## Current state
 
 Right now the app gives you:
+
 - current-directory file drawer
-- a Graft drawer backed by a repo-local MCP session for current-file outline and structural change context
+- a Graft drawer backed by a repo-local MCP session for current-file outline
+  and structural change context
 - simple directory navigation
 - a real editable text buffer
 - modal source editing with a growing Vim normal/insert split
@@ -118,9 +130,9 @@ Right now the app gives you:
 
 - lock the Echo-backed text runtime design around persistent piece-rope
   worldlines and ticks in [docs/design/text-edit-algebra.md](docs/design/text-edit-algebra.md)
-- lock the event taxonomy in [docs/design/causal-event-model.md](docs/design/causal-event-model.md) so
-  logical history, maintenance, and session traces do not collapse into one
-  ledger
+- lock the event taxonomy in
+  [docs/design/causal-event-model.md](docs/design/causal-event-model.md) so
+  logical history, maintenance, and session traces do not collapse into one ledger
 - strengthen the Vim layer
 - add more motions/operators/text objects and counts
 - deepen the Graft drawer beyond outline plus diff summary

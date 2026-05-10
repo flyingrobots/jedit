@@ -1,4 +1,5 @@
-import { clipToWidth, stringToSurface, type Surface, type Theme, type TokenValue } from '@flyingrobots/bijou';
+import { clipToWidth, stringToSurface, type Surface } from '@flyingrobots/bijou';
+import { JEDIT_MARKDOWN_TOKEN, type JeditStyleToken, type JeditTheme } from './jedit-theme.js';
 
 const FENCE_RE = /^\s*```/;
 const HEADING_RE = /^\s*(#{1,6})\s+(.*)$/;
@@ -24,11 +25,7 @@ export interface MarkdownPreviewLine {
   readonly segments: readonly MarkdownPreviewSegment[];
 }
 
-export interface MarkdownPreviewTheme {
-  readonly semantic: Theme['semantic'];
-  readonly surface: Theme['surface'];
-  readonly border: Theme['border'];
-}
+export type MarkdownPreviewTheme = JeditTheme;
 
 export function previewMarkdownLines(text: string): readonly MarkdownPreviewLine[] {
   const lines: MarkdownPreviewLine[] = [];
@@ -196,7 +193,7 @@ function paintPreviewSegments(
   }
 }
 
-function applyToken(surface: Surface, token: TokenValue) {
+function applyToken(surface: Surface, token: JeditStyleToken) {
   for (let row = 0; row < surface.height; row += 1) {
     for (let column = 0; column < surface.width; column += 1) {
       const cell = surface.get(column, row);
@@ -205,71 +202,54 @@ function applyToken(surface: Surface, token: TokenValue) {
       }
       surface.set(column, row, {
         ...cell,
-        fg: token.hex,
+        fg: token.fg,
         fgRGB: token.fgRGB,
         bg: token.bg,
         bgRGB: token.bgRGB,
-        modifiers: token.modifiers,
+        modifiers: token.modifiers == null ? undefined : [...token.modifiers],
         empty: false,
       });
     }
   }
 }
 
-function tokenForTone(theme: MarkdownPreviewTheme, tone: PreviewSegmentTone): TokenValue {
+function tokenForTone(theme: MarkdownPreviewTheme, tone: PreviewSegmentTone): JeditStyleToken {
   if (tone === 'heading-strong') {
-    return emphasize(theme.semantic.accent);
+    return markdownToken(theme, JEDIT_MARKDOWN_TOKEN.HeadingStrong);
   }
   if (tone === 'heading') {
-    return emphasize(theme.semantic.info);
+    return markdownToken(theme, JEDIT_MARKDOWN_TOKEN.Heading);
   }
   if (tone === 'heading-soft') {
-    return emphasize(theme.semantic.warning);
+    return markdownToken(theme, JEDIT_MARKDOWN_TOKEN.HeadingSoft);
   }
   if (tone === 'list-marker') {
-    return theme.semantic.accent;
+    return markdownToken(theme, JEDIT_MARKDOWN_TOKEN.ListMarker);
   }
   if (tone === 'quote-marker') {
-    return theme.border.muted;
+    return markdownToken(theme, JEDIT_MARKDOWN_TOKEN.QuoteMarker);
   }
   if (tone === 'quote-text') {
-    return theme.semantic.info;
+    return markdownToken(theme, JEDIT_MARKDOWN_TOKEN.QuoteText);
   }
   if (tone === 'code') {
-    return codeLineToken(theme);
+    return markdownToken(theme, JEDIT_MARKDOWN_TOKEN.Code);
   }
   if (tone === 'inline-code') {
-    return inlineCodeToken(theme);
+    return markdownToken(theme, JEDIT_MARKDOWN_TOKEN.InlineCode);
   }
   if (tone === 'rule') {
-    return theme.border.muted;
+    return markdownToken(theme, JEDIT_MARKDOWN_TOKEN.Rule);
   }
-  return theme.semantic.primary;
+  return markdownToken(theme, JEDIT_MARKDOWN_TOKEN.Body);
 }
 
-function codeLineToken(theme: MarkdownPreviewTheme): TokenValue {
-  return textOnSurface(theme.semantic.primary, theme.surface.elevated);
+function codeLineToken(theme: MarkdownPreviewTheme): JeditStyleToken {
+  return markdownToken(theme, JEDIT_MARKDOWN_TOKEN.Code);
 }
 
-function inlineCodeToken(theme: MarkdownPreviewTheme): TokenValue {
-  return textOnSurface(emphasize(theme.semantic.warning), theme.surface.elevated);
-}
-
-function textOnSurface(text: TokenValue, surface: TokenValue): TokenValue {
-  return {
-    hex: text.hex,
-    fgRGB: text.fgRGB,
-    bg: surface.bg ?? surface.hex,
-    bgRGB: surface.bgRGB ?? surface.fgRGB,
-    modifiers: text.modifiers,
-  };
-}
-
-function emphasize(token: TokenValue): TokenValue {
-  return {
-    ...token,
-    modifiers: [...(token.modifiers ?? []), 'bold'],
-  };
+function markdownToken(theme: MarkdownPreviewTheme, token: typeof JEDIT_MARKDOWN_TOKEN[keyof typeof JEDIT_MARKDOWN_TOKEN]): JeditStyleToken {
+  return theme.markdown.get(token) ?? theme.surface.workspace;
 }
 
 function headingKind(depth: number): PreviewLineKind {

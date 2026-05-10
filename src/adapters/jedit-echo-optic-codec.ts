@@ -10,10 +10,20 @@ import type { WorldlineSnapshotReadingEnvelope } from '../app/jedit-observer-run
 import type { TextWindowReadingEnvelope } from '../app/jedit-observer-runtime.js';
 import type {
   MutationOperationName,
-  MutationOperationMap,
   QueryOperationName,
-  QueryOperationMap,
 } from '../generated/jedit/hot-text-runtime.types.generated.js';
+import {
+  createBufferWorldlineOperation,
+  createCheckpointOperation,
+  replaceRangeAsTickOperation,
+  textWindowOperation,
+  worldlineSnapshotOperation,
+  type CreateBufferWorldlineRequest,
+  type CreateCheckpointRequest,
+  type ReplaceRangeAsTickRequest,
+  type TextWindowRequest,
+  type WorldlineSnapshotRequest,
+} from '../generated/jedit/hot-text-runtime.wesley.generated.js';
 import {
   BufferWorldlineSchema,
   CheckpointKindSchema,
@@ -28,11 +38,11 @@ export const JEDIT_SCHEDULER_STATUS_KIND = 'jedit.scheduler-status';
 export const JEDIT_TRANSPORT_STATUS_OK = 'OK';
 export const JEDIT_TRANSPORT_STATUS_OBSTRUCTED = 'OBSTRUCTED';
 
-export const CREATE_BUFFER_WORLDLINE_OPERATION = 'createBufferWorldline';
-export const REPLACE_RANGE_AS_TICK_OPERATION = 'replaceRangeAsTick';
-export const CREATE_CHECKPOINT_OPERATION = 'createCheckpoint';
-export const WORLDLINE_SNAPSHOT_OPERATION = 'worldlineSnapshot';
-export const TEXT_WINDOW_OPERATION = 'textWindow';
+export const CREATE_BUFFER_WORLDLINE_OPERATION = createBufferWorldlineOperation.fieldName;
+export const REPLACE_RANGE_AS_TICK_OPERATION = replaceRangeAsTickOperation.fieldName;
+export const CREATE_CHECKPOINT_OPERATION = createCheckpointOperation.fieldName;
+export const WORLDLINE_SNAPSHOT_OPERATION = worldlineSnapshotOperation.fieldName;
+export const TEXT_WINDOW_OPERATION = textWindowOperation.fieldName;
 
 const SCHEDULER_STATE_IDLE = 'IDLE';
 
@@ -259,21 +269,21 @@ export type JeditQueryOperationName = QueryOperationName;
 export interface CreateBufferWorldlineIntentRequest {
   readonly kind: typeof JEDIT_INTENT_REQUEST_KIND;
   readonly operationName: typeof CREATE_BUFFER_WORLDLINE_OPERATION;
-  readonly input: MutationOperationMap['createBufferWorldline']['input'];
+  readonly input: CreateBufferWorldlineRequest['input'];
 }
 
 export interface ReplaceRangeAsTickIntentRequest {
   readonly kind: typeof JEDIT_INTENT_REQUEST_KIND;
   readonly operationName: typeof REPLACE_RANGE_AS_TICK_OPERATION;
   readonly session: JeditWorldlineSession;
-  readonly input: MutationOperationMap['replaceRangeAsTick']['input'];
+  readonly input: ReplaceRangeAsTickRequest['input'];
 }
 
 export interface CreateCheckpointIntentRequest {
   readonly kind: typeof JEDIT_INTENT_REQUEST_KIND;
   readonly operationName: typeof CREATE_CHECKPOINT_OPERATION;
   readonly session: JeditWorldlineSession;
-  readonly input: MutationOperationMap['createCheckpoint']['input'];
+  readonly input: CreateCheckpointRequest['input'];
 }
 
 export interface WorldlineSnapshotObserveRequest {
@@ -281,7 +291,7 @@ export interface WorldlineSnapshotObserveRequest {
   readonly operationName: typeof WORLDLINE_SNAPSHOT_OPERATION;
   readonly session: JeditWorldlineSession;
   readonly frontierRef: string;
-  readonly input: QueryOperationMap['worldlineSnapshot']['input'];
+  readonly input: WorldlineSnapshotRequest['input'];
 }
 
 export interface TextWindowObserveRequest {
@@ -289,7 +299,7 @@ export interface TextWindowObserveRequest {
   readonly operationName: typeof TEXT_WINDOW_OPERATION;
   readonly session: JeditWorldlineSession;
   readonly frontierRef: string;
-  readonly input: QueryOperationMap['textWindow']['input'];
+  readonly input: TextWindowRequest['input'];
 }
 
 export interface JeditTransportObstruction {
