@@ -1,4 +1,4 @@
-import type { TokenValue } from '@flyingrobots/bijou';
+import { colorHex, type TokenValue } from '@flyingrobots/bijou';
 import { quit, type KeyMsg } from '@flyingrobots/bijou-tui';
 import type { Cmd } from '@flyingrobots/bijou-tui';
 import { isFooterToggleKey, pushNotificationToast } from '../../ui/feedback.js';
@@ -276,15 +276,15 @@ function pushTitleScreenToast(
 
 function titleToastBackgroundToken(model: WorkspaceModel): TokenValue {
   return {
-    hex: model.jeditTheme.surface.workspace.fg ?? model.jeditTheme.surface.workspace.hex ?? FALLBACK_TOAST_FOREGROUND,
-    bg: model.jeditTheme.surface.workspace.bg ?? FALLBACK_TOAST_BACKGROUND,
+    hex: colorHex(model.jeditTheme.surface.workspace.fg) ?? model.jeditTheme.surface.workspace.hex ?? FALLBACK_TOAST_FOREGROUND,
+    bg: colorHex(model.jeditTheme.surface.workspace.bg) ?? FALLBACK_TOAST_BACKGROUND,
   };
 }
 
 function titleToastAccentToken(model: WorkspaceModel): TokenValue {
   return {
-    hex: model.jeditTheme.cursor.normal.bg ?? model.jeditTheme.cursor.normal.hex ?? FALLBACK_TOAST_ACCENT,
-    bg: model.jeditTheme.surface.workspace.bg ?? FALLBACK_TOAST_BACKGROUND,
+    hex: colorHex(model.jeditTheme.cursor.normal.bg) ?? model.jeditTheme.cursor.normal.hex ?? FALLBACK_TOAST_ACCENT,
+    bg: colorHex(model.jeditTheme.surface.workspace.bg) ?? FALLBACK_TOAST_BACKGROUND,
   };
 }
 

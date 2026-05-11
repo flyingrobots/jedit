@@ -103,6 +103,14 @@ const MAX_CAUSTIC_STRENGTH = 0.42;
 const LUMINANCE_RED_WEIGHT = 0.2126;
 const LUMINANCE_GREEN_WEIGHT = 0.7152;
 const LUMINANCE_BLUE_WEIGHT = 0.0722;
+const BRAILLE_DITHER_MATRIX_SIZE = 4;
+const BRAILLE_DITHER_DENOMINATOR = BRAILLE_DITHER_MATRIX_SIZE * BRAILLE_DITHER_MATRIX_SIZE;
+const BRAILLE_DITHER_MATRIX: readonly (readonly number[])[] = [
+  [0, 8, 2, 10],
+  [12, 4, 14, 6],
+  [3, 11, 1, 9],
+  [15, 7, 13, 5],
+];
 
 export function renderTitleScreen(
   cols: number,
@@ -204,9 +212,10 @@ function sceneSampleAt(
       ? titleFloorLightEffectsAtWithLight(environmentHit.point, objects, time, lightDirection)
       : { shadowMultiplier: 1, contactShadowMultiplier: 1, causticStrength: 0 };
     const causticColor = scaleColor(colors.info, effects.causticStrength);
+    const fgRGB = addColor(scaleColor(environmentHit.color, effects.shadowMultiplier * effects.contactShadowMultiplier), causticColor);
     return {
-      on: true,
-      fgRGB: addColor(scaleColor(environmentHit.color, effects.shadowMultiplier * effects.contactShadowMultiplier), causticColor),
+      on: brailleSubpixelVisible(u, v, cols, rows, fgRGB),
+      fgRGB,
       bgRGB: colors.surface,
     };
   }
@@ -217,6 +226,13 @@ function sceneSampleAt(
     fgRGB: background,
     bgRGB: background,
   };
+}
+
+function brailleSubpixelVisible(u: number, v: number, cols: number, rows: number, color: Color3): boolean {
+  const x = Math.floor(u * cols * 2) % BRAILLE_DITHER_MATRIX_SIZE;
+  const y = Math.floor(v * rows * 4) % BRAILLE_DITHER_MATRIX_SIZE;
+  const threshold = (BRAILLE_DITHER_MATRIX[y]![x]! + 0.5) / BRAILLE_DITHER_DENOMINATOR;
+  return (colorLuminance(color) / 255) >= threshold;
 }
 
 function titleObjectReflectionAmount(reflectivity: number, fresnel: number): number {
