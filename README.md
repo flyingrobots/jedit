@@ -1,10 +1,17 @@
 # jedit
 
-Terminal-first Markdown and text editing, built on Bijou.
+Terminal-first text and Markdown editing, built on Bijou and shaped around
+causal history through Echo.
 
-The current build is intentionally stripped down. No starter tabs, no extra
-chrome, no decorative theme layer. Just a small custom TUI so the editor shape
-can emerge from the actual product instead of scaffold baggage.
+`jedit` is the product pressure for the Echo stack. It is not a protocol lab
+and it should not invent substrate doctrine. Its job is to behave like a real
+editor while forcing the lower layers to prove the seams that matter:
+contract-shaped edits, bounded reads, provenance, replayable observations, and
+eventual undo-as-counter-history.
+
+The current build is intentionally stripped down. No starter tabs, no decorative
+theme layer, no heavyweight IDE chrome. The editor shape should emerge from
+small witnessed product slices rather than scaffold baggage.
 
 ## Product invariants
 
@@ -38,6 +45,100 @@ The end-to-end buffer rendering path is explained in
   the buffer is dirty, the UI should say so explicitly.
 - Anything noisy must earn its existence.
 
+## Stack posture
+
+`jedit` is currently the driving consumer for a narrow Echo/Wesley seam:
+
+```text
+Wesley fixture artifact shape
+-> Echo runtime and WASM package boundary
+-> jedit transport witness
+-> opaque ReadBasisHandle anti-leak contract
+```
+
+The stack checkpoint is deliberately small:
+
+```text
+createBuffer
+-> replaceRange("hello")
+-> textWindow(0..5)
+-> Echo ReadingEnvelope + QueryBytes("hello")
+-> jedit TextWindowReading
+```
+
+That story now exists in two transport postures:
+
+- A fake Echo-shaped transport for default local jedit tests.
+- An opt-in real Echo WASM transport that loads Echo's packaged WASM module and
+  proves the same consumer-level assertions.
+
+The important invariant is that app-facing jedit assertions do not care whether
+the transport is fake or real. The consumer contract is stable; the transport
+is replaceable.
+
+Product pressure determines architecture truth. The stack should advance when a
+real editor constraint forces a seam to become honest, not when an abstract
+protocol theory wants a place to land.
+
+The real Echo WASM witness is opt-in because jedit's default tests must not
+depend on sibling repository build state:
+
+```sh
+ECHO_WARP_WASM_DIR=/path/to/echo/crates/warp-wasm \
+  scripts/run-real-echo-wasm-stack-witness.sh
+```
+
+The runner asks Echo to build its own WASM package boundary, then runs the
+jedit witness against the resulting module. This is still a witness ritual, not
+a published package contract.
+
+## Echo posture
+
+Echo owns substrate truth: admission, receipts, scheduler materialization,
+runtime evidence, worldline state, and observed readings.
+
+`jedit` should interact with Echo through intent and observation boundaries:
+
+- `dispatch_intent` for mutations.
+- `observe` for bounded readings.
+- Echo `ReadingEnvelope` plus `QueryBytes` for evidence-bearing read results.
+
+`jedit` must not grow direct dependencies on Echo internals, raw worldline
+coordinates, scheduler implementation details, or current fixture derivation
+lore.
+
+The current `ReadBasisHandle` contract is the first anti-leak boundary:
+
+- App-facing code receives an opaque handle.
+- The handle has shape `{ kind, id }`.
+- The `id` is diagnostic, not authority.
+- The session/adapter layer resolves the handle into runtime coordinates below
+  the app boundary.
+- Forged or cloned handles are rejected.
+
+This is not the final optic/session protocol. It is the first durable product
+constraint: jedit core should ask for readings through opaque capabilities, not
+by manufacturing Echo substrate coordinates.
+
+## Wesley posture
+
+Wesley is the contract compiler and artifact-shape authority.
+
+For Stack Witness 0001, Wesley publishes the fixture artifact shape that Echo
+and jedit can lock against:
+
+- operation ids for `createBuffer`, `replaceRange`, and `textWindow`
+- fixture vars bytes and fixture encoding metadata
+- declared footprints
+- EINT helper shape
+- QueryView helper shape
+- artifact/schema identity
+
+The current semicolon key-value bytes are fixture bytes only. They are
+human-readable scaffolding, not the durable Wesley runtime codec. The durable
+target remains Wesley-generated binary codecs shared across Rust and
+TypeScript.
+
 ## Graft posture
 
 `jedit` should use Graft as its structural intelligence engine, not as its
@@ -59,32 +160,43 @@ editing truth.
 - The current MCP transport is transitional. The long-term product posture is
   Echo and Graft as built-in engines with direct API surfaces.
 
+## Contract and observer posture
+
 The current causal runtime strata model is written down in
 [docs/design/runtime-temperatures.md](docs/design/runtime-temperatures.md).
+
 The authored home for the first causal text contract still uses the legacy
 `hot-text-runtime` filename:
 [contracts/jedit/hot-text-runtime.graphql](contracts/jedit/hot-text-runtime.graphql).
+
 The app-owned contract adapter that maps those rewrite names onto the current
 runtime lives at
 [src/app/jedit-contract-runtime.ts](src/app/jedit-contract-runtime.ts).
-The first app-owned observer authoring surface now lives at
-[src/app/jedit-observer-spec.ts](src/app/jedit-observer-spec.ts).
-The intended long-term posture is optic-shaped:
 
-- `jedit` submits intent to Echo
-- Echo admits or rejects that intent and returns the deterministic result /
-  receipt envelope
-- `jedit` then observes the resulting worldline state and projects generic
-  causal history into app-specific contract readings
+The first app-owned observer authoring surface lives at
+[src/app/jedit-observer-spec.ts](src/app/jedit-observer-spec.ts).
+
+The intended long-term posture remains optic-shaped:
+
+- `jedit` submits contract intent to Echo.
+- Echo admits or rejects that intent and returns deterministic runtime evidence.
+- `jedit` observes through a capability-backed read aperture.
+- The app receives product-shaped readings, not substrate coordinates.
+
+In product terms: the runtime should be able to explain why a visible reading is
+true and which admitted edits produced it. That is the human meaning of an
+evidence-bearing reading.
 
 So Echo remains substrate truth, while `jedit` owns the app-facing contract
 reading layer.
+
 The first read surface is the canonical
 `worldlineSnapshot(input: WorldlineSnapshotInput!)` query, which returns the
 current worldline, canonical head, retained checkpoints, and materialized text
 without pretending the runtime already supports arbitrary historical head
-materialization. That query is now paired with the first explicit app-owned
-observer spec so the get side is no longer treated as "just a query."
+materialization. That query is paired with the first explicit app-owned observer
+spec so the get side is no longer treated as "just a query."
+
 Refresh the generated contract surfaces with:
 
 ```sh
@@ -99,12 +211,10 @@ legacy Zod validators until Wesley has a Rust-native validator emitter, but
 operation-name and request-input type seams should prefer the Rust-Wesley
 generated artifact.
 
-The Echo Rust binding pass is intentionally deferred while Echo's generator
-surface is moving. The current readiness gate is
-`spec/hot-text-contract-readiness.spec.mjs`: it proves the authored SDL and
-generated Wesley TypeScript operation metadata agree on mutation footprints,
-bounded reads, and the contract surface that `echo-wesley-gen` will consume
-once the warpspace-pinned Echo checkout is available again.
+The current readiness gate is `spec/hot-text-contract-readiness.spec.mjs`: it
+proves the authored SDL and generated Wesley TypeScript operation metadata agree
+on mutation footprints, bounded reads, and the contract surface that Echo-side
+generation will consume when that seam graduates beyond fixture witnesses.
 
 Near-term product direction:
 
@@ -132,14 +242,28 @@ Right now the app gives you:
 - core Vim motions and operators like `w`, `b`, `e`, `dd`, `yy`, `p`, `u`, and `ctrl+r`
 - source editing with dirty tracking and save
 - Markdown preview rendered from the in-memory buffer
+- Stack Witness 0001 consumer coverage through a fake Echo-shaped transport
+- an opt-in real Echo WASM Stack Witness runner
+- an opaque `ReadBasisHandle` boundary that keeps raw Echo coordinates below the
+  app-facing optic client
 
 ## Next steps
 
+- graduate `ReadBasisHandle` from witness/session scaffolding into a real
+  optic/session bootstrap contract
+- make jedit consume an Echo-owned, versioned WASM package artifact rather than
+  relying on sibling-repo witness setup
+- remove the remaining fixture-only raw worldline derivation once Echo can
+  provide session-owned basis resolution through the proper boundary
+- preserve ordinary user-facing undo semantics while implementing undo as
+  authored inverse history below the product boundary
 - lock the Echo-backed text runtime design around persistent piece-rope
-  worldlines and ticks in [docs/design/text-edit-algebra.md](docs/design/text-edit-algebra.md)
+  worldlines and ticks in
+  [docs/design/text-edit-algebra.md](docs/design/text-edit-algebra.md)
 - lock the event taxonomy in
   [docs/design/causal-event-model.md](docs/design/causal-event-model.md) so
-  logical history, maintenance, and session traces do not collapse into one ledger
+  logical history, maintenance, and session traces do not collapse into one
+  ledger
 - strengthen the Vim layer
 - add more motions/operators/text objects and counts
 - deepen the Graft drawer beyond outline plus diff summary
