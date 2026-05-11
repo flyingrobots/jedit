@@ -23,9 +23,16 @@ type Throwable =
     readonly message?: string;
   };
 
-type FilesystemError = Error & {
+class FilesystemError extends Error {
   readonly code?: string;
-};
+
+  constructor(message: string, code?: string) {
+    super(message);
+    this.name = 'FilesystemError';
+    this.code = code;
+    Object.setPrototypeOf(this, FilesystemError.prototype);
+  }
+}
 
 export { DIRECTORY_ACTION_OPEN, DIRECTORY_ACTION_REFRESH };
 
@@ -89,31 +96,7 @@ function compareEntries(a: FileEntry, b: FileEntry): number {
 }
 
 function toFilesystemError(cause: Throwable): FilesystemError {
-  if (cause instanceof Error) {
-    return cause as FilesystemError;
-  }
-
-  const message = typeof cause === 'object'
-    && cause != null
-    && typeof cause.message === 'string'
-    ? cause.message
-    : String(cause);
-  const error = new Error(message) as FilesystemError;
-
-  if (
-    typeof cause === 'object'
-    && cause != null
-    && typeof cause.code === 'string'
-  ) {
-    Object.defineProperty(error, 'code', {
-      value: cause.code,
-      enumerable: true,
-      writable: false,
-      configurable: true,
-    });
-  }
-
-  return error;
+  return new FilesystemError(formatUnknownFilesystemError(cause), extractFilesystemCode(cause));
 }
 
 function formatDirectoryErrorMessage(cwd: string, error: FilesystemError): string {
@@ -127,4 +110,21 @@ function formatDirectoryErrorMessage(cwd: string, error: FilesystemError): strin
     return `not a directory: ${cwd}`;
   }
   return error.message.length > 0 ? error.message : `could not access: ${cwd}`;
+}
+
+function extractFilesystemCode(cause: Throwable): string | undefined {
+  return typeof cause === 'object'
+    && cause != null
+    && 'code' in cause
+    && typeof cause.code === 'string'
+    ? cause.code
+    : undefined;
+}
+
+function formatUnknownFilesystemError(cause: Throwable): string {
+  return typeof cause === 'object'
+    && cause != null
+    && typeof cause.message === 'string'
+    ? cause.message
+    : String(cause);
 }

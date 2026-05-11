@@ -1,6 +1,8 @@
 import { catalogs, type Locale, type TranslationSchema } from '../generated/i18n.js';
 import type { I18nDirection, I18nPort } from '../ports/i18n.js';
 
+type TranslationNode = string | { [key: string]: TranslationNode };
+
 export class BijouI18nAdapter implements I18nPort {
   private _locale: Locale;
   private _direction: I18nDirection;
@@ -23,13 +25,17 @@ export class BijouI18nAdapter implements I18nPort {
   t(path: string, values?: Record<string, string | number>): string {
     const keys = path.split('.');
     let current: object | string = this._catalog;
-    
+
     for (const key of keys) {
       if (current == null || typeof current !== 'object') {
         return path;
       }
       if (Object.prototype.hasOwnProperty.call(current, key)) {
-        current = (current as Record<string, object | string>)[key] as object | string;
+        const next = Object.getOwnPropertyDescriptor(current, key)?.value;
+        if (!isTranslationNode(next)) {
+          return path;
+        }
+        current = next;
       } else {
         return path;
       }
@@ -50,8 +56,32 @@ export class BijouI18nAdapter implements I18nPort {
   }
 
   setLocale(locale: string, direction: I18nDirection): void {
-    this._locale = locale as Locale;
+    this._locale = resolveLocale(locale);
     this._direction = direction;
-    this._catalog = catalogs[this._locale] || catalogs['en'];
+    this._catalog = catalogs[this._locale];
   }
+}
+
+function isTranslationNode(value: unknown): value is TranslationNode {
+  if (typeof value === 'string') {
+    return true;
+  }
+  if (value == null || typeof value !== 'object' || Array.isArray(value)) {
+    return false;
+  }
+  for (const key of Object.keys(value)) {
+    const child = Object.getOwnPropertyDescriptor(value, key)?.value;
+    if (!isTranslationNode(child)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function resolveLocale(value: string): Locale {
+  return isLocale(value) ? value : 'en';
+}
+
+function isLocale(value: string): value is Locale {
+  return value === 'en' || value === 'me';
 }

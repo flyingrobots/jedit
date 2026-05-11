@@ -385,7 +385,7 @@ export function encodeJeditIntentRequest(request: JeditIntentRequest): Uint8Arra
 }
 
 export function decodeJeditIntentRequest(bytes: Uint8Array): JeditIntentRequest {
-  return JeditIntentRequestSchema.parse(parseJsonBytes(bytes)) as JeditIntentRequest;
+  return JeditIntentRequestSchema.parse(parseJsonBytes(bytes));
 }
 
 export function encodeJeditObserveRequest(request: JeditObserveRequest): Uint8Array {
@@ -393,7 +393,7 @@ export function encodeJeditObserveRequest(request: JeditObserveRequest): Uint8Ar
 }
 
 export function decodeJeditObserveRequest(bytes: Uint8Array): JeditObserveRequest {
-  return JeditObserveRequestSchema.parse(parseJsonBytes(bytes)) as JeditObserveRequest;
+  return JeditObserveRequestSchema.parse(parseJsonBytes(bytes));
 }
 
 export function encodeJeditIntentResponse(response: JeditIntentResponse): Uint8Array {
@@ -401,7 +401,7 @@ export function encodeJeditIntentResponse(response: JeditIntentResponse): Uint8A
 }
 
 export function decodeJeditIntentResponse(bytes: Uint8Array): JeditIntentResponse {
-  return JeditIntentResponseSchema.parse(parseJsonBytes(bytes)) as JeditIntentResponse;
+  return JeditIntentResponseSchema.parse(parseJsonBytes(bytes));
 }
 
 export function encodeJeditObserveResponse(response: JeditObserveResponse): Uint8Array {
@@ -409,7 +409,7 @@ export function encodeJeditObserveResponse(response: JeditObserveResponse): Uint
 }
 
 export function decodeJeditObserveResponse(bytes: Uint8Array): JeditObserveResponse {
-  return JeditObserveResponseSchema.parse(parseJsonBytes(bytes)) as JeditObserveResponse;
+  return JeditObserveResponseSchema.parse(parseJsonBytes(bytes));
 }
 
 export function encodeJeditSchedulerStatus(status: JeditSchedulerStatus): Uint8Array {
@@ -451,5 +451,32 @@ function encodeJson(value: object): Uint8Array {
 }
 
 function parseJsonBytes(bytes: Uint8Array): JsonValue {
-  return JSON.parse(TEXT_DECODER.decode(bytes)) as JsonValue;
+  const value = JSON.parse(TEXT_DECODER.decode(bytes));
+  if (!isJsonValue(value)) {
+    throw new Error('invalid json payload');
+  }
+  return value;
+}
+
+function isJsonValue(value: unknown): value is JsonValue {
+  if (value === null) {
+    return true;
+  }
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return true;
+  }
+  if (Array.isArray(value)) {
+    return value.every(isJsonValue);
+  }
+  return typeof value === 'object' && objectValuesAreJson(value);
+}
+
+function objectValuesAreJson(value: Record<string, unknown>): boolean {
+  for (const key of Object.keys(value)) {
+    const member = value[key];
+    if (!isJsonValue(member)) {
+      return false;
+    }
+  }
+  return true;
 }
