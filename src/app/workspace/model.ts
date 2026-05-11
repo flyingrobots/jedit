@@ -5,9 +5,9 @@ import type { I18nPort } from '../../ports/i18n.js';
 import type { SourceHighlightReading } from '../../ports/source-highlighter.js';
 import type { JeditTheme } from '../../ui/jedit-theme.js';
 import type { FocusPane } from '../../ui/panel-focus.js';
-import type { TitleMesh } from '../../ui/title-mesh.js';
+import type { TitleMeshLibrary } from '../../ui/title-mesh.js';
 import type { TitleScene } from '../../ui/title-scene.js';
-import type { TitleRenderMode } from '../../ui/title-screen.js';
+import type { TitleAsciiPalette, TitleRenderMode } from '../../ui/title-screen.js';
 import type { ProfilerState } from '../raytracer-profiler.js';
 import type { TitleCameraState } from '../title-camera-session.js';
 import type { EditorState } from './editor/model.js';
@@ -41,7 +41,7 @@ export interface WorkspaceModel {
   readonly sourceHighlightLoading: boolean;
   readonly sourceHighlightRequestId: number;
   readonly titleSceneSeed: number;
-  readonly titleMesh?: TitleMesh;
+  readonly titleMeshes: TitleMeshLibrary;
   readonly scenePickerOpen: boolean;
   readonly scenePickerFocusIndex: number;
   readonly availableScenes: readonly string[];
@@ -55,5 +55,6 @@ export interface WorkspaceModel {
   readonly frameTimeHistory: readonly number[];
   readonly titleCamera: TitleCameraState;
   readonly titleRenderMode: TitleRenderMode;
+  readonly titleAsciiPalette: TitleAsciiPalette;
   readonly profiler: ProfilerState;
 }

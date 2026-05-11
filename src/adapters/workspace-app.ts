@@ -16,9 +16,10 @@ import type { WorkspaceModel } from '../app/workspace/model.js';
 import type { WorkspaceMsg } from '../app/workspace/msg.js';
 import type { CreateDrawerAnimationCmd } from '../app/workspace/drawer.js';
 import type { DrawerKind } from '../ui/drawer-layout.js';
-import { createTitleBunnyMesh, type TitleMesh } from '../ui/title-mesh.js';
+import { createTitleBunnyMesh, createTitleTeapotMesh, type TitleMesh, type TitleMeshLibrary } from '../ui/title-mesh.js';
+import type { TitleMeshSource } from '../ports/title-mesh.js';
 import { loadInitialTitleMesh, TITLE_MESH_LOAD_RESULT } from '../app/title-mesh-loader.js';
-import { loadTitleBunnyMeshSource } from './title-bunny-mesh.js';
+import { loadTitleBunnyMeshSource, loadTitleTeapotMeshSource } from './title-bunny-mesh.js';
 import { FileSystemPortAdapter } from './filesystem.js';
 import { createRaytracerProfilerPort } from './raytracer-profiler.js';
 import { editorFilePort } from './editor-file.js';
@@ -80,7 +81,7 @@ function createInitialModelSnapshot(
 ): WorkspaceInitialModelSnapshot {
   return {
     entries: loadEntries(cwd),
-    titleMesh: loadStartupTitleMesh(),
+    titleMeshes: loadStartupTitleMeshes(),
     titleSceneSeed: random(),
     jeditTheme: resolveInitialJeditTheme(process.env[JEDIT_THEME_ENV]),
     i18n: new BijouI18nAdapter('en', 'ltr'),
@@ -88,15 +89,26 @@ function createInitialModelSnapshot(
   };
 }
 
-function loadStartupTitleMesh(): TitleMesh | undefined {
+function loadStartupTitleMeshes(): TitleMeshLibrary {
+  return {
+    bunny: loadStartupTitleMesh('bunny', loadTitleBunnyMeshSource, createTitleBunnyMesh),
+    teapot: loadStartupTitleMesh('teapot', loadTitleTeapotMeshSource, createTitleTeapotMesh),
+  };
+}
+
+function loadStartupTitleMesh(
+  label: string,
+  loadSource: () => TitleMeshSource,
+  createMesh: (source: TitleMeshSource) => TitleMesh,
+): TitleMesh | undefined {
   const result = loadInitialTitleMesh({
-    loadSource: loadTitleBunnyMeshSource,
-    createMesh: createTitleBunnyMesh,
+    loadSource,
+    createMesh,
   });
   if (result.kind === TITLE_MESH_LOAD_RESULT.Loaded) {
     return result.mesh;
   }
-  process.stderr.write(`jedit title mesh unavailable: ${result.error}\n`);
+  process.stderr.write(`jedit ${label} title mesh unavailable: ${result.error}\n`);
   return undefined;
 }
 

@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
+import { createNotificationState } from '@flyingrobots/bijou-tui';
 
 const REPO_ROOT = process.cwd();
 
@@ -24,6 +26,16 @@ async function loadWorkspaceRuntimeModule() {
   assert.equal(build.status, 0, build.stderr || build.stdout);
 
   return import(pathToFileURL(path.join(REPO_ROOT, 'dist', 'app', 'workspace', 'runtime.js')).href);
+}
+
+async function loadWorkspaceInitModule() {
+  const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+  });
+  assert.equal(build.status, 0, build.stderr || build.stdout);
+
+  return import(pathToFileURL(path.join(REPO_ROOT, 'dist', 'app', 'workspace', 'init.js')).href);
 }
 
 async function loadWorkspaceAppModules() {
@@ -118,6 +130,48 @@ function mockRuntime() {
   };
 }
 
+function noopNotificationTickCmd() {
+  return () => undefined;
+}
+
+function mockJeditTheme() {
+  return {
+    surface: {
+      workspace: {
+        fg: '#f0f6fc',
+        bg: '#0d1117',
+      },
+    },
+    cursor: {
+      normal: {
+        bg: '#58a6ff',
+      },
+    },
+  };
+}
+
+function mockTitleScreenModel(overrides) {
+  return {
+    editor: undefined,
+    columns: 120,
+    rows: 24,
+    notifications: createNotificationState(),
+    notificationLoopActive: false,
+    jeditTheme: mockJeditTheme(),
+    titleRenderMode: 'braille',
+    titleAsciiPalette: 'dense',
+    ...overrides,
+  };
+}
+
+function hasNotification(model, title, message) {
+  return model.notifications.items.some((item) => item.title === title && item.message === message);
+}
+
+function notification(model, title, message) {
+  return model.notifications.items.find((item) => item.title === title && item.message === message);
+}
+
 test('backtick key dispatches a toggle-perf workspace message', async () => {
   const keyBindings = await loadWorkspaceKeyBindingsModule();
   const [nextModel, commands] = keyBindings.updateFromKey(
@@ -125,6 +179,7 @@ test('backtick key dispatches a toggle-perf workspace message', async () => {
     { perfVisible: false },
     () => 0,
     () => [],
+    noopNotificationTickCmd,
     mockDeps(),
   );
 
@@ -150,21 +205,73 @@ test('title screen number keys switch render modes without an editor', async () 
   const keyBindings = await loadWorkspaceKeyBindingsModule();
   const [asciiModel] = keyBindings.updateFromKey(
     { key: '2' },
-    { editor: undefined, titleRenderMode: 'braille' },
+    mockTitleScreenModel({ titleRenderMode: 'braille' }),
     () => 0,
     () => [],
+    noopNotificationTickCmd,
     mockDeps(),
   );
   const [brailleModel] = keyBindings.updateFromKey(
     { key: '1' },
-    { editor: undefined, titleRenderMode: 'ascii' },
+    mockTitleScreenModel({ titleRenderMode: 'ascii' }),
     () => 0,
     () => [],
+    noopNotificationTickCmd,
     mockDeps(),
   );
 
   assert.equal(asciiModel.titleRenderMode, 'ascii');
   assert.equal(brailleModel.titleRenderMode, 'braille');
+  assert.equal(hasNotification(asciiModel, 'Title shader', 'ASCII · Dense'), true);
+  assert.equal(hasNotification(brailleModel, 'Title shader', 'Braille'), true);
+  assert.equal(notification(asciiModel, 'Title shader', 'ASCII · Dense').placement, 'LOWER_RIGHT');
+  assert.deepEqual(notification(asciiModel, 'Title shader', 'ASCII · Dense').bgToken, {
+    hex: '#f0f6fc',
+    bg: '#0d1117',
+  });
+  assert.deepEqual(notification(asciiModel, 'Title shader', 'ASCII · Dense').accentToken, {
+    hex: '#58a6ff',
+    bg: '#0d1117',
+  });
+});
+
+test('period cycles title screen ASCII palettes only when ASCII mode is active without an editor', async () => {
+  const keyBindings = await loadWorkspaceKeyBindingsModule();
+  const [ignoredModel, ignoredCommands] = keyBindings.updateFromKey(
+    { key: '.' },
+    mockTitleScreenModel({ titleRenderMode: 'braille', titleAsciiPalette: 'dense' }),
+    () => 0,
+    () => [],
+    noopNotificationTickCmd,
+    mockDeps(),
+  );
+  const [firstModel] = keyBindings.updateFromKey(
+    { key: '.' },
+    mockTitleScreenModel({ titleRenderMode: 'ascii', titleAsciiPalette: 'dense' }),
+    () => 0,
+    () => [],
+    noopNotificationTickCmd,
+    mockDeps(),
+  );
+  const [secondModel] = keyBindings.updateFromKey(
+    { key: '.' },
+    firstModel,
+    () => 0,
+    () => [],
+    noopNotificationTickCmd,
+    mockDeps(),
+  );
+
+  assert.equal(ignoredModel.titleRenderMode, 'braille');
+  assert.equal(ignoredModel.titleAsciiPalette, 'dense');
+  assert.equal(ignoredModel.notifications.items.length, 0);
+  assert.equal(ignoredCommands.length, 0);
+  assert.equal(firstModel.titleRenderMode, 'ascii');
+  assert.equal(firstModel.titleAsciiPalette, 'minimal');
+  assert.equal(secondModel.titleAsciiPalette, 'technical');
+  assert.equal(hasNotification(firstModel, 'ASCII palette', 'Minimal'), true);
+  assert.equal(hasNotification(secondModel, 'ASCII palette', 'Technical'), true);
+  assert.equal(notification(firstModel, 'ASCII palette', 'Minimal').placement, 'LOWER_RIGHT');
 });
 
 test('workspace app renders perf overlay after toggle when perf starts disabled', async () => {
@@ -200,6 +307,50 @@ test('workspace app renders perf overlay after toggle when perf starts disabled'
   assert.match(text, /frame\s+20\.00 ms/);
   assert.match(text, /heap\s+\d+\.\d MB/);
   assert.match(text, /rss\s+\d+\.\d MB/);
+});
+
+test('initial workspace scene picker lists authored scene assets that exist on disk', async () => {
+  const initModule = await loadWorkspaceInitModule();
+  const model = initModule.createInitialModel('/repo', 120, 24, {
+    titleSceneSeed: 0.5,
+    jeditTheme: mockJeditTheme(),
+    i18n: mockI18n(),
+    entries: [],
+    nowMs: 0,
+  });
+
+  assert.deepEqual(model.availableScenes, [
+    'teapot-cornell.jedit-scene',
+    'teapot-gallery.jedit-scene',
+    'bunny.jedit-scene',
+    'neon-orbit.jedit-scene',
+    'mirror-hall.jedit-scene',
+    'eclipse-gate.jedit-scene',
+    'prism-garden.jedit-scene',
+    'aurora-vault.jedit-scene',
+    'ember-court.jedit-scene',
+    'sphere.jedit-scene',
+    'column.jedit-scene',
+    'sphere-ground.jedit-scene',
+  ]);
+  assert.equal(
+    model.availableScenes.every((scene) => existsSync(path.join(REPO_ROOT, 'scenes', scene))),
+    true,
+  );
+});
+
+test('ctrl-l opens the title scene picker when no editor is active', async () => {
+  const keyBindings = await loadWorkspaceKeyBindingsModule();
+  const [nextModel] = keyBindings.updateFromKey(
+    { type: 'key', key: 'l', ctrl: true, alt: false, shift: false },
+    mockTitleScreenModel({ scenePickerOpen: false }),
+    () => 0,
+    () => [],
+    noopNotificationTickCmd,
+    mockDeps(),
+  );
+
+  assert.equal(nextModel.scenePickerOpen, true);
 });
 
 function surfaceText(surface) {

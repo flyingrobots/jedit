@@ -1,9 +1,9 @@
 import { createTitleCameraState } from '../title-camera-session.js';
 import { createFeedbackState } from '../../ui/feedback.js';
 import { titleBunnySceneCameraPlacement, titleSceneCameraPlacement } from '../../ui/title-scene.js';
-import { TITLE_RENDER_MODE } from '../../ui/title-screen.js';
+import { TITLE_ASCII_PALETTE, TITLE_RENDER_MODE } from '../../ui/title-screen.js';
 import type { FocusPane } from '../../ui/panel-focus.js';
-import type { TitleMesh } from '../../ui/title-mesh.js';
+import type { TitleMeshLibrary } from '../../ui/title-mesh.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 import type { I18nPort } from '../../ports/i18n.js';
@@ -15,7 +15,7 @@ export interface WorkspaceInitialModelSnapshot {
   readonly jeditTheme: JeditTheme;
   readonly i18n: I18nPort;
   readonly entries: readonly FileEntry[];
-  readonly titleMesh?: TitleMesh;
+  readonly titleMeshes?: TitleMeshLibrary;
   readonly nowMs: number;
 }
 
@@ -25,7 +25,8 @@ export function createInitialModel(
   rows: number,
   snapshot: WorkspaceInitialModelSnapshot,
 ): WorkspaceModel {
-  const { titleSceneSeed, jeditTheme, i18n, entries, titleMesh, nowMs } = snapshot;
+  const { titleSceneSeed, jeditTheme, i18n, entries, nowMs } = snapshot;
+  const titleMeshes = snapshot.titleMeshes ?? {};
   const focusPane: FocusPane = 'editor';
   return {
     i18n,
@@ -52,10 +53,23 @@ export function createInitialModel(
     sourceHighlightLoading: false,
     sourceHighlightRequestId: 0,
     titleSceneSeed,
-    titleMesh,
+    titleMeshes,
     scenePickerOpen: false,
     scenePickerFocusIndex: 0,
-    availableScenes: ['bunny.jedit-scene', 'sphere.jedit-scene', 'column.jedit-scene', 'sphere-ground.jedit-scene'],
+    availableScenes: [
+      'teapot-cornell.jedit-scene',
+      'teapot-gallery.jedit-scene',
+      'bunny.jedit-scene',
+      'neon-orbit.jedit-scene',
+      'mirror-hall.jedit-scene',
+      'eclipse-gate.jedit-scene',
+      'prism-garden.jedit-scene',
+      'aurora-vault.jedit-scene',
+      'ember-court.jedit-scene',
+      'sphere.jedit-scene',
+      'column.jedit-scene',
+      'sphere-ground.jedit-scene',
+    ],
     columns,
     rows,
     time: 0,
@@ -64,9 +78,10 @@ export function createInitialModel(
     frameTimeMs: 0,
     frameTimeHistory: [],
     titleCamera: createTitleCameraState(
-      titleMesh == null ? titleSceneCameraPlacement(titleSceneSeed) : titleBunnySceneCameraPlacement(),
+      titleMeshes.bunny == null ? titleSceneCameraPlacement(titleSceneSeed) : titleBunnySceneCameraPlacement(),
     ),
     titleRenderMode: TITLE_RENDER_MODE.Braille,
+    titleAsciiPalette: TITLE_ASCII_PALETTE.Dense,
     profiler: {
       active: false,
     },

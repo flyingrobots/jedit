@@ -182,6 +182,7 @@ export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): Work
       model,
       deps.nowMs,
       deps.createDrawerAnimationCmd,
+      deps.createNotificationTickCmd,
       {
         fileSystem: deps.fileSystem,
         editorFile: deps.editorFile,

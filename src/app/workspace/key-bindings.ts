@@ -1,6 +1,7 @@
+import type { TokenValue } from '@flyingrobots/bijou';
 import { quit, type KeyMsg } from '@flyingrobots/bijou-tui';
 import type { Cmd } from '@flyingrobots/bijou-tui';
-import { isFooterToggleKey } from '../../ui/feedback.js';
+import { isFooterToggleKey, pushNotificationToast } from '../../ui/feedback.js';
 import {
   JEDIT_MARKDOWN_PREVIEW_TOGGLE_KEY,
   JEDIT_SCENE_PICKER_TOGGLE_KEY,
@@ -22,7 +23,12 @@ import { updateGraftDrawerFromKey } from './graft-drawer.js';
 import { updateTreeFromKey } from './file-tree.js';
 import { updateViewerFromKey } from './viewer.js';
 import { nextJeditTheme } from '../../ui/jedit-themes.js';
-import { TITLE_RENDER_MODE } from '../../ui/title-screen.js';
+import {
+  nextTitleAsciiPalette,
+  TITLE_ASCII_PALETTE,
+  TITLE_RENDER_MODE,
+  type TitleAsciiPalette,
+} from '../../ui/title-screen.js';
 import { updateTitleCameraFromKey } from '../title-camera-session.js';
 import type { FileSystemPort } from '../../ports/file-system.js';
 import type { EditorFilePort } from '../../ports/editor-file.js';
@@ -40,11 +46,30 @@ export interface UpdateFromKeyDeps {
   readonly titleSceneLoader: TitleSceneLoaderPort;
 }
 
+const TITLE_SHADER_TOAST_TITLE = 'Title shader';
+const TITLE_ASCII_PALETTE_TOAST_TITLE = 'ASCII palette';
+const TITLE_SHADER_BRAILLE_LABEL = 'Braille';
+const TITLE_SHADER_ASCII_LABEL = 'ASCII';
+const TITLE_ASCII_PALETTE_DENSE_LABEL = 'Dense';
+const TITLE_ASCII_PALETTE_MINIMAL_LABEL = 'Minimal';
+const TITLE_ASCII_PALETTE_TECHNICAL_LABEL = 'Technical';
+const TITLE_ASCII_PALETTE_HATCHING_LABEL = 'Hatching';
+const TITLE_ASCII_PALETTE_MATRIX_LABEL = 'Matrix';
+const TITLE_ASCII_PALETTE_BLOCKS_LABEL = 'Blocks';
+const TITLE_ASCII_PALETTE_DITHER_LABEL = 'Dither';
+const NOTIFICATION_TOAST_VARIANT = 'TOAST';
+const NOTIFICATION_INFO_TONE = 'INFO';
+const NOTIFICATION_LOWER_RIGHT_PLACEMENT = 'LOWER_RIGHT';
+const FALLBACK_TOAST_FOREGROUND = '#e2e7ec';
+const FALLBACK_TOAST_BACKGROUND = '#0e1116';
+const FALLBACK_TOAST_ACCENT = '#d897ff';
+
 export function updateFromKey(
   msg: KeyMsg,
   model: WorkspaceModel,
   nowMs: () => number,
   createDrawerAnimationCmd: CreateDrawerAnimationCmd,
+  createNotificationTickCmd: () => Cmd<WorkspaceMsg>,
   deps: UpdateFromKeyDeps,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (msg.key === '`') {
@@ -64,7 +89,7 @@ export function updateFromKey(
     return updateJeditSettingsFromKey(msg, model, settingsRows(model), workspaceSettingsHandlers);
   }
 
-  if (model.editor == null && msg.key === JEDIT_SCENE_PICKER_TOGGLE_KEY) {
+  if (model.editor == null && msg.ctrl && !msg.alt && msg.key === JEDIT_SCENE_PICKER_TOGGLE_KEY) {
     return [{ ...model, scenePickerOpen: !model.scenePickerOpen }, []];
   }
 
@@ -89,7 +114,7 @@ export function updateFromKey(
             try {
               const scene = await deps.titleSceneLoader.loadTitleSceneFromFile(
                 deps.fileSystem.join(model.workspaceRoot, 'scenes', selected),
-                model.titleMesh,
+                model.titleMeshes,
               );
               return { type: 'load-scene-result', scene };
             } catch (error) {
@@ -114,10 +139,33 @@ export function updateFromKey(
 
   if (model.editor == null) {
     if (msg.key === '1') {
-      return [{ ...model, titleRenderMode: TITLE_RENDER_MODE.Braille }, []];
+      return pushTitleScreenToast(
+        { ...model, titleRenderMode: TITLE_RENDER_MODE.Braille },
+        TITLE_SHADER_TOAST_TITLE,
+        TITLE_SHADER_BRAILLE_LABEL,
+        nowMs,
+        createNotificationTickCmd,
+      );
     }
     if (msg.key === '2') {
-      return [{ ...model, titleRenderMode: TITLE_RENDER_MODE.Ascii }, []];
+      return pushTitleScreenToast(
+        { ...model, titleRenderMode: TITLE_RENDER_MODE.Ascii },
+        TITLE_SHADER_TOAST_TITLE,
+        `${TITLE_SHADER_ASCII_LABEL} · ${titleAsciiPaletteLabel(model.titleAsciiPalette)}`,
+        nowMs,
+        createNotificationTickCmd,
+      );
+    }
+    if (msg.key === '.') {
+      if (model.titleRenderMode !== TITLE_RENDER_MODE.Ascii) {
+        return [model, []];
+      }
+
+      const titleAsciiPalette = nextTitleAsciiPalette(model.titleAsciiPalette);
+      return pushTitleScreenToast({
+        ...model,
+        titleAsciiPalette,
+      }, TITLE_ASCII_PALETTE_TOAST_TITLE, titleAsciiPaletteLabel(titleAsciiPalette), nowMs, createNotificationTickCmd);
     }
 
     const update = updateTitleCameraFromKey(msg.key, model.titleCamera);
@@ -206,4 +254,55 @@ export function updateFromKey(
   }
 
   return updateViewerFromKey(msg, model, deps.sourceHighlighter);
+}
+
+function pushTitleScreenToast(
+  model: WorkspaceModel,
+  title: string,
+  message: string,
+  nowMs: () => number,
+  createNotificationTickCmd: () => Cmd<WorkspaceMsg>,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
+  return pushNotificationToast(model, {
+    title,
+    message,
+    variant: NOTIFICATION_TOAST_VARIANT,
+    tone: NOTIFICATION_INFO_TONE,
+    placement: NOTIFICATION_LOWER_RIGHT_PLACEMENT,
+    bgToken: titleToastBackgroundToken(model),
+    accentToken: titleToastAccentToken(model),
+  }, nowMs(), createNotificationTickCmd);
+}
+
+function titleToastBackgroundToken(model: WorkspaceModel): TokenValue {
+  return {
+    hex: model.jeditTheme.surface.workspace.fg ?? model.jeditTheme.surface.workspace.hex ?? FALLBACK_TOAST_FOREGROUND,
+    bg: model.jeditTheme.surface.workspace.bg ?? FALLBACK_TOAST_BACKGROUND,
+  };
+}
+
+function titleToastAccentToken(model: WorkspaceModel): TokenValue {
+  return {
+    hex: model.jeditTheme.cursor.normal.bg ?? model.jeditTheme.cursor.normal.hex ?? FALLBACK_TOAST_ACCENT,
+    bg: model.jeditTheme.surface.workspace.bg ?? FALLBACK_TOAST_BACKGROUND,
+  };
+}
+
+function titleAsciiPaletteLabel(palette: TitleAsciiPalette): string {
+  switch (palette) {
+    case TITLE_ASCII_PALETTE.Dense:
+      return TITLE_ASCII_PALETTE_DENSE_LABEL;
+    case TITLE_ASCII_PALETTE.Minimal:
+      return TITLE_ASCII_PALETTE_MINIMAL_LABEL;
+    case TITLE_ASCII_PALETTE.Technical:
+      return TITLE_ASCII_PALETTE_TECHNICAL_LABEL;
+    case TITLE_ASCII_PALETTE.Hatching:
+      return TITLE_ASCII_PALETTE_HATCHING_LABEL;
+    case TITLE_ASCII_PALETTE.Matrix:
+      return TITLE_ASCII_PALETTE_MATRIX_LABEL;
+    case TITLE_ASCII_PALETTE.Blocks:
+      return TITLE_ASCII_PALETTE_BLOCKS_LABEL;
+    case TITLE_ASCII_PALETTE.Dither:
+      return TITLE_ASCII_PALETTE_DITHER_LABEL;
+  }
 }

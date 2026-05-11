@@ -1,4 +1,5 @@
 import type { RGB } from './averaging-braille-canvas.js';
+import type { TitleSceneEnvironment } from './title-scene-environment.js';
 import { nearestTitleMeshHit, type TitleMesh } from './title-mesh.js';
 
 export const TITLE_SCENE_SHAPE_KIND = {
@@ -51,6 +52,7 @@ export interface TitleSceneCameraPlacement {
 export interface TitleScene {
   readonly camera: TitleSceneCameraPlacement;
   readonly objects: readonly TitleSceneObject[];
+  readonly environment?: TitleSceneEnvironment;
 }
 
 export interface TitleSceneObjectHit {

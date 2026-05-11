@@ -1,0 +1,51 @@
+{
+  "camera": { "angle": 1.16, "radius": 7.1 },
+  "objects": [
+    {
+      "kind": "sphere",
+      "position": [0, 1.38, 0],
+      "radius": 1.38,
+      "color": [224, 113, 63],
+      "reflectivity": 0.74
+    },
+    {
+      "kind": "column",
+      "position": [-2.65, 0.85, -1.95],
+      "radius": 0.34,
+      "height": 1.7,
+      "color": [55, 75, 88],
+      "reflectivity": 0.22
+    },
+    {
+      "kind": "column",
+      "position": [2.65, 0.85, -1.95],
+      "radius": 0.34,
+      "height": 1.7,
+      "color": [55, 75, 88],
+      "reflectivity": 0.22
+    },
+    {
+      "kind": "column",
+      "position": [-2.2, 1.25, 1.72],
+      "radius": 0.42,
+      "height": 2.5,
+      "color": [224, 113, 63],
+      "reflectivity": 0.4
+    },
+    {
+      "kind": "column",
+      "position": [2.2, 1.25, 1.72],
+      "radius": 0.42,
+      "height": 2.5,
+      "color": [78, 195, 224],
+      "reflectivity": 0.4
+    },
+    {
+      "kind": "sphere",
+      "position": [0, 0.62, 2.68],
+      "radius": 0.5,
+      "color": [222, 232, 232],
+      "reflectivity": 1.0
+    }
+  ]
+}

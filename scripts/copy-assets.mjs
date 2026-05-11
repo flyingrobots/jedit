@@ -8,6 +8,10 @@ const ASSETS = [
     source: join('src', 'ui', 'bunny.obj'),
     destination: join('dist', 'ui', 'bunny.obj'),
   },
+  {
+    source: join('src', 'ui', 'utah_teapot.obj'),
+    destination: join('dist', 'ui', 'utah_teapot.obj'),
+  },
 ];
 
 for (const asset of ASSETS) {

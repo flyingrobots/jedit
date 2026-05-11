@@ -190,9 +190,10 @@ function renderViewer(model: WorkspaceModel, width: number, height: number): Sur
       camAngle: model.titleCamera.angle,
       camRadius: model.titleCamera.radius,
       sceneSeed: model.titleSceneSeed,
-      mesh: model.titleMesh,
+      mesh: model.titleMeshes.bunny,
       sceneOverride: model.sceneOverride,
       renderMode: model.titleRenderMode,
+      asciiPalette: model.titleAsciiPalette,
     });
   }
 

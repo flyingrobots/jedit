@@ -3,7 +3,12 @@ import { clipToWidth } from '@flyingrobots/bijou-tui';
 import { basename } from 'node:path';
 
 import type { FileEntry } from '../ports/file-system.js';
-import { JEDIT_MARKDOWN_PREVIEW_TOGGLE_LABEL, JEDIT_SETTINGS_TOGGLE_LABEL, JEDIT_THEME_TOGGLE_LABEL } from '../app/keybindings.js';
+import {
+  JEDIT_MARKDOWN_PREVIEW_TOGGLE_LABEL,
+  JEDIT_SCENE_PICKER_TOGGLE_LABEL,
+  JEDIT_SETTINGS_TOGGLE_LABEL,
+  JEDIT_THEME_TOGGLE_LABEL,
+} from '../app/keybindings.js';
 import type { I18nPort } from '../ports/i18n.js';
 import type { JeditStyleToken } from './jedit-theme.js';
 import type { DrawerKind } from './drawer-layout.js';
@@ -14,6 +19,7 @@ type EditorMode = 'normal' | 'insert';
 type PendingNormal = 'c' | 'd' | 'g' | 'y';
 
 const THEME_HINT = `${JEDIT_THEME_TOGGLE_LABEL} theme`;
+const SCENE_PICKER_HINT = `${JEDIT_SCENE_PICKER_TOGGLE_LABEL} scenes`;
 
 export interface WorkspaceTitleState {
   readonly cwd: string;
@@ -151,7 +157,7 @@ function footerDetail(state: WorkspaceFooterState): string {
     return normalFooterDetail(state);
   }
 
-  return footerHints([focusHint(state), THEME_HINT, 'ctrl+b files', 'ctrl+g graft']);
+  return footerHints([SCENE_PICKER_HINT, focusHint(state), THEME_HINT, 'ctrl+b files', 'ctrl+g graft']);
 }
 
 function drawerFooterDetail(state: WorkspaceFooterState, kind: DrawerKind): string {

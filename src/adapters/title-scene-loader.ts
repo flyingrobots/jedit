@@ -1,6 +1,7 @@
 import * as fs from 'node:fs/promises';
 import { TITLE_SCENE_SHAPE_KIND, type TitleScene, type TitleSceneCameraPlacement, type TitleSceneObject } from '../ui/title-scene.js';
-import type { TitleMesh } from '../ui/title-mesh.js';
+import type { TitleSceneEnvironment } from '../ui/title-scene-environment.js';
+import { TITLE_MESH_ID, type TitleMesh, type TitleMeshLibrary } from '../ui/title-mesh.js';
 import type { TitleSceneLoaderPort } from '../ports/title-scene-loader.js';
 
 export interface TitleSceneJson {
@@ -8,8 +9,10 @@ export interface TitleSceneJson {
     readonly angle?: number;
     readonly radius?: number;
   };
+  readonly environment?: TitleSceneEnvironment;
   readonly objects?: ReadonlyArray<{
     readonly kind: string;
+    readonly mesh?: string;
     readonly position: readonly [number, number, number];
     readonly radius: number;
     readonly footprintRadius?: number;
@@ -19,13 +22,13 @@ export interface TitleSceneJson {
   }>;
 }
 
-export async function loadTitleSceneFromFile(path: string, mesh: TitleMesh | undefined): Promise<TitleScene> {
+export async function loadTitleSceneFromFile(path: string, meshes: TitleMeshLibrary): Promise<TitleScene> {
   const content = await fs.readFile(path, 'utf8');
   const json = JSON.parse(content);
-  return parseTitleSceneJson(json, mesh);
+  return parseTitleSceneJson(json, meshes);
 }
 
-export function parseTitleSceneJson(json: TitleSceneJson, mesh: TitleMesh | undefined): TitleScene {
+export function parseTitleSceneJson(json: TitleSceneJson, meshes: TitleMeshLibrary): TitleScene {
   const camera: TitleSceneCameraPlacement = {
     angle: json.camera?.angle ?? 0,
     radius: json.camera?.radius ?? 8.5,
@@ -54,7 +57,11 @@ export function parseTitleSceneJson(json: TitleSceneJson, mesh: TitleMesh | unde
         color: obj.color,
         reflectivity: obj.reflectivity,
       });
-    } else if (obj.kind === TITLE_SCENE_SHAPE_KIND.Mesh && mesh != null) {
+    } else if (obj.kind === TITLE_SCENE_SHAPE_KIND.Mesh) {
+      const mesh = titleSceneObjectMesh(obj.mesh, meshes);
+      if (mesh == null) {
+        continue;
+      }
       objects.push({
         kind: TITLE_SCENE_SHAPE_KIND.Mesh,
         mesh,
@@ -68,11 +75,18 @@ export function parseTitleSceneJson(json: TitleSceneJson, mesh: TitleMesh | unde
     }
   }
 
-  return { camera, objects };
+  return { camera, objects, environment: json.environment };
 }
 
 export function createTitleSceneLoaderPort(): TitleSceneLoaderPort {
   return {
     loadTitleSceneFromFile,
   };
+}
+
+function titleSceneObjectMesh(meshId: string | undefined, meshes: TitleMeshLibrary): TitleMesh | undefined {
+  if (meshId === TITLE_MESH_ID.Teapot) {
+    return meshes.teapot;
+  }
+  return meshes.bunny;
 }

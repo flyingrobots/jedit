@@ -215,14 +215,37 @@ test('title scene can render as density-mapped ASCII instead of Braille', async 
   const theme = themes.availableJeditThemes()[0];
   const surface = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, fixedTitleRenderOptions({
     renderMode: title.TITLE_RENDER_MODE.Ascii,
+    asciiPalette: title.TITLE_ASCII_PALETTE.Dense,
   }));
   const sceneCells = cells(surface).filter((cell) => !cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold));
   const visibleSceneChars = new Set(sceneCells.map((cell) => cell.char).filter((char) => char !== ' '));
 
   assert.ok(visibleSceneChars.size >= 3);
   assert.ok([...visibleSceneChars].every((char) => !isBraille(char)));
-  assert.ok([...visibleSceneChars].every((char) => ' .:-=+*#%@'.includes(char)));
+  assert.ok([...visibleSceneChars].every((char) => ' .,:;irsXA253hMHGS#9B&@'.includes(char)));
   assert.ok(new Set(sceneCells.map(cellColorKey)).size > 3);
+});
+
+test('title scene ASCII palettes produce distinct glyph vocabularies', async () => {
+  const { title, themes, style } = await loadTitleModules();
+  const theme = themes.availableJeditThemes()[0];
+  const dense = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, fixedTitleRenderOptions({
+    renderMode: title.TITLE_RENDER_MODE.Ascii,
+    asciiPalette: title.TITLE_ASCII_PALETTE.Dense,
+  }));
+  const blocks = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, fixedTitleRenderOptions({
+    renderMode: title.TITLE_RENDER_MODE.Ascii,
+    asciiPalette: title.TITLE_ASCII_PALETTE.Blocks,
+  }));
+  const dither = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, fixedTitleRenderOptions({
+    renderMode: title.TITLE_RENDER_MODE.Ascii,
+    asciiPalette: title.TITLE_ASCII_PALETTE.Dither,
+  }));
+
+  assert.notDeepEqual(sceneGlyphs(dense, style), sceneGlyphs(blocks, style));
+  assert.ok(sceneGlyphs(blocks, style).some((char) => '▁▂▃▄▅▆▇█'.includes(char)));
+  assert.notDeepEqual(sceneCellKeys(dense, style), sceneCellKeys(dither, style));
+  assert.ok(sceneGlyphs(dither, style).every((char) => ' .:-=+*#%@'.includes(char)));
 });
 
 test('title scene keeps reflective highlights on sphere materials', async () => {
@@ -306,6 +329,19 @@ function logoCellKeys(surface, style) {
   return positionedCells(surface)
     .filter(({ cell }) => cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold))
     .map(({ x, y, cell }) => `${x}:${y}:${cell.char}:${cellColorKey(cell)}`);
+}
+
+function sceneGlyphs(surface, style) {
+  return [...new Set(cells(surface)
+    .filter((cell) => !cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold))
+    .map((cell) => cell.char)
+    .filter((char) => char !== ' '))];
+}
+
+function sceneCellKeys(surface, style) {
+  return cells(surface)
+    .filter((cell) => !cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold))
+    .map((cell) => `${cell.char}:${cellColorKey(cell)}`);
 }
 
 function luminance(rgb) {
