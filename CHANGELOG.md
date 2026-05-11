@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Updated the real Echo WASM Stack Witness runner to delegate package
+  construction to Echo's `scripts/build-warp-wasm-package.sh` instead of
+  duplicating Echo's `wasm-pack` invocation in jedit.
 - Added an opt-in real Echo WASM Stack Witness 0001 transport witness that
   proves `ReadingEnvelope + QueryBytes("hello")` can be consumed through the
   existing jedit transport boundary when `JEDIT_ECHO_WASM_MODULE` is set.
