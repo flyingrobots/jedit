@@ -45,11 +45,64 @@ type CreateCheckpointResult = MutationOperationMap['createCheckpoint']['result']
 type WorldlineSnapshotInput = QueryOperationMap['worldlineSnapshot']['input'];
 type WorldlineSnapshotResult = QueryOperationMap['worldlineSnapshot']['result'];
 
-export interface JeditWorldlineSession {
+type JeditWorldlineSessionRecord = {
   readonly worldline: BufferWorldline;
   readonly state: HotTextBufferState;
-  readonly tickMetadata: readonly TickMetadata[];
-  readonly checkpointMetadata: readonly CheckpointMetadata[];
+  readonly tickMetadata: readonly TickMetadataRecord[];
+  readonly checkpointMetadata: readonly CheckpointMetadataRecord[];
+};
+
+type TickMetadataRecord = {
+  readonly tickId: number;
+  readonly kind: TickKind;
+  readonly author?: string;
+};
+
+type CheckpointMetadataRecord = {
+  readonly checkpointId: number;
+  readonly kind: CreateCheckpointInput['kind'];
+  readonly label?: string;
+  readonly createdByTickId?: number;
+};
+
+export class JeditWorldlineSession {
+  public readonly worldline: BufferWorldline;
+  public readonly state: HotTextBufferState;
+  public readonly tickMetadata: readonly TickMetadata[];
+  public readonly checkpointMetadata: readonly CheckpointMetadata[];
+
+  public constructor(
+    worldline: BufferWorldline,
+    state: HotTextBufferState,
+    tickMetadata: readonly TickMetadata[],
+    checkpointMetadata: readonly CheckpointMetadata[],
+  ) {
+    ensureWorldlineId(worldline.worldlineId);
+    ensureHeadId(worldline.canonicalHeadId);
+    ensureStateRootId(worldline.canonicalHeadId, state.currentRoot.id);
+    this.worldline = worldline;
+    this.state = state;
+    this.tickMetadata = [...tickMetadata];
+    this.checkpointMetadata = [...checkpointMetadata];
+  }
+
+  public static from(record: JeditWorldlineSessionRecord): JeditWorldlineSession {
+    return new JeditWorldlineSession(
+      record.worldline,
+      record.state,
+      record.tickMetadata.map((metadata) => ({
+        tickId: metadata.tickId,
+        kind: metadata.kind,
+        author: metadata.author,
+      })),
+      record.checkpointMetadata.map((metadata) => ({
+        checkpointId: metadata.checkpointId,
+        kind: metadata.kind,
+        label: metadata.label,
+        createdByTickId: metadata.createdByTickId,
+      })),
+    );
+  }
 }
 
 export interface CreateBufferWorldlineExecution {
@@ -125,7 +178,7 @@ export function createBufferWorldline(
   });
 
   return {
-    nextSession,
+    nextSession: nextSession,
     result,
   };
 }
@@ -174,6 +227,7 @@ export function replaceRangeAsTick(
   if (admission.receipt == null) {
     return {
       nextSession: createSessionFromExisting(session, admission.nextState, session.tickMetadata, session.checkpointMetadata),
+      result: undefined,
     };
   }
 
@@ -202,7 +256,7 @@ export function replaceRangeAsTick(
   });
 
   return {
-    nextSession,
+    nextSession: nextSession,
     result,
   };
 }
@@ -220,6 +274,7 @@ export function createCheckpoint(
   if (saved.receipt == null) {
     return {
       nextSession: createSessionFromExisting(session, saved.nextState, session.tickMetadata, session.checkpointMetadata),
+      result: undefined,
     };
   }
 
@@ -246,7 +301,7 @@ export function createCheckpoint(
   });
 
   return {
-    nextSession,
+    nextSession: nextSession,
     result,
   };
 }
@@ -266,12 +321,12 @@ function createSession(
     projectionPath,
   };
 
-  return {
+  return new JeditWorldlineSession(
     worldline,
     state,
-    tickMetadata: [...tickMetadata],
-    checkpointMetadata: [...checkpointMetadata],
-  };
+    tickMetadata,
+    checkpointMetadata,
+  );
 }
 
 function createSessionFromExisting(
@@ -398,6 +453,40 @@ function ensureMatchingBaseHead(session: JeditWorldlineSession, baseHeadId: stri
 
 function toWorldlineId(path: string): string {
   return `${WORLDLINE_ID_PREFIX}${path}`;
+}
+
+function ensureStateRootId(headId: string, rootId: number): void {
+  if (!Number.isFinite(rootId) || !Number.isInteger(rootId)) {
+    throw new JeditContractRuntimeError(
+      JEDIT_CONTRACT_RUNTIME_ERROR_WORLDLINE_MISMATCH,
+      `Invalid root identifier: ${rootId}.`,
+    );
+  }
+
+  if (toHeadId(rootId) !== headId) {
+    throw new JeditContractRuntimeError(
+      JEDIT_CONTRACT_RUNTIME_ERROR_BASE_HEAD_MISMATCH,
+      `Canonical head mismatch: expected ${toHeadId(rootId)}, received ${headId}.`,
+    );
+  }
+}
+
+function ensureWorldlineId(worldlineId: string): void {
+  if (!worldlineId.startsWith(WORLDLINE_ID_PREFIX)) {
+    throw new JeditContractRuntimeError(
+      JEDIT_CONTRACT_RUNTIME_ERROR_WORLDLINE_MISMATCH,
+      `Invalid worldline identifier: ${worldlineId}.`,
+    );
+  }
+}
+
+function ensureHeadId(headId: string): void {
+  if (!headId.startsWith(HEAD_ID_PREFIX)) {
+    throw new JeditContractRuntimeError(
+      JEDIT_CONTRACT_RUNTIME_ERROR_BASE_HEAD_MISMATCH,
+      `Invalid head identifier: ${headId}.`,
+    );
+  }
 }
 
 function toHeadId(rootId: number): string {

@@ -193,7 +193,7 @@ export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): Work
   },
   view: (model) => renderWorkspace(model),
   routeRuntimeIssue: (issue) => ({ type: 'runtime-issue', issue }),
-};
+});
 
 
 function isProfilerMsg(msg: WorkspaceMsg): msg is ProfilerMsg {
