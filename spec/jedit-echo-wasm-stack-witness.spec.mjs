@@ -52,8 +52,27 @@ const RUN_UNTIL_IDLE_CYCLE_LIMIT = 4;
 // optic or session capability rather than asking Echo for a default worldline.
 const ECHO_DERIVED_FIXTURE_DEFAULT_WORLDLINE_ID_HEX =
   '3e888b35fc1d18b5487da6704fa71c3374e95dd52bc83963239b127f9293f228';
+const STACK_WITNESS_ALTERNATE_WORLDLINE_ID_HEX =
+  '0000000000000000000000000000000000000000000000000000000000000001';
 
 const UTF8_DECODER = new TextDecoder();
+
+test('real Echo WASM witness request construction gets basis through an optic session resolver', () => {
+  const opticSessionBasis = createWitnessOnlyEchoFixtureBasisResolver();
+  const textWindowBasis = opticSessionBasis.resolveTextWindowBasis();
+  const request = decodeCbor(encodeStackWitnessTextWindowRequest(textWindowBasis));
+  assertCoordinateUsesTextWindowBasis(request, textWindowBasis);
+
+  const alternateBasis = createWitnessOnlyTextWindowBasis(
+    STACK_WITNESS_ALTERNATE_WORLDLINE_ID_HEX,
+  );
+  const alternateRequest = decodeCbor(encodeStackWitnessTextWindowRequest(alternateBasis));
+  assertCoordinateUsesTextWindowBasis(alternateRequest, alternateBasis);
+  assert.notDeepEqual(
+    toByteArray(alternateRequest.coordinate.worldline_id),
+    toByteArray(textWindowBasis.worldlineIdBytes),
+  );
+});
 
 test('real Echo WASM Stack Witness 0001 transport emits ReadingEnvelope + QueryBytes', {
   skip: REAL_ECHO_WASM_MODULE === undefined
@@ -80,10 +99,14 @@ test('real Echo WASM Stack Witness 0001 transport emits ReadingEnvelope + QueryB
   );
   runEchoSchedulerUntilIdle(transport);
 
-  const artifact = decodeOkEnvelope(transport.observeBytes(encodeStackWitnessTextWindowRequest()));
+  const opticSessionBasis = createWitnessOnlyEchoFixtureBasisResolver();
+  const textWindowBasis = opticSessionBasis.resolveTextWindowBasis();
+  const artifact = decodeOkEnvelope(transport.observeBytes(
+    encodeStackWitnessTextWindowRequest(textWindowBasis),
+  ));
 
   assertReadingEnvelopePresent(artifact);
-  assertStackWitnessArtifactIdentity(artifact);
+  assertStackWitnessArtifactIdentity(artifact, textWindowBasis);
 
   const queryBytes = extractQueryBytes(artifact);
   const appReading = toWitnessOnlyTextWindowReading(artifact, queryBytes);
@@ -147,13 +170,29 @@ function packControlStartIntent() {
   }));
 }
 
-function encodeStackWitnessTextWindowRequest() {
+function createWitnessOnlyEchoFixtureBasisResolver() {
+  return Object.freeze({
+    resolveTextWindowBasis() {
+      return createWitnessOnlyTextWindowBasis(ECHO_DERIVED_FIXTURE_DEFAULT_WORLDLINE_ID_HEX);
+    },
+  });
+}
+
+function createWitnessOnlyTextWindowBasis(worldlineIdHex) {
+  return Object.freeze({
+    worldlineIdHex,
+    worldlineIdBytes: hexToBytes(worldlineIdHex),
+    at: Object.freeze({
+      kind: 'frontier',
+    }),
+  });
+}
+
+function encodeStackWitnessTextWindowRequest(textWindowBasis) {
   return encodeCbor({
     coordinate: {
-      worldline_id: hexToBytes(ECHO_DERIVED_FIXTURE_DEFAULT_WORLDLINE_ID_HEX),
-      at: {
-        kind: 'frontier',
-      },
+      worldline_id: textWindowBasis.worldlineIdBytes,
+      at: textWindowBasis.at,
     },
     frame: 'query_view',
     projection: {
@@ -175,6 +214,14 @@ function encodeStackWitnessTextWindowRequest() {
   });
 }
 
+function assertCoordinateUsesTextWindowBasis(request, textWindowBasis) {
+  assert.deepEqual(
+    toByteArray(request.coordinate.worldline_id),
+    toByteArray(textWindowBasis.worldlineIdBytes),
+  );
+  assert.equal(request.coordinate.at.kind, textWindowBasis.at.kind);
+}
+
 function assertReadingEnvelopePresent(artifact) {
   assert.equal(typeof artifact.reading, 'object');
   assert.notEqual(artifact.reading, null);
@@ -184,8 +231,8 @@ function assertReadingEnvelopePresent(artifact) {
   assert.equal(artifact.reading.residual_posture, 'complete');
 }
 
-function assertStackWitnessArtifactIdentity(artifact) {
-  assert.equal(bytesToHex(artifact.resolved.worldline_id), ECHO_DERIVED_FIXTURE_DEFAULT_WORLDLINE_ID_HEX);
+function assertStackWitnessArtifactIdentity(artifact, basis) {
+  assert.equal(bytesToHex(artifact.resolved.worldline_id), basis.worldlineIdHex);
   assert.equal(artifact.frame, 'query_view');
   assert.equal(artifact.projection.kind, 'query');
   assert.equal(artifact.projection.query_id, STACK_WITNESS_OP_IDS.TEXT_WINDOW_QUERY);
