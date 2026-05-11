@@ -1,11 +1,10 @@
-import { animate, type App, type Cmd } from '@flyingrobots/bijou-tui';
+import type { Cmd, RuntimeIssue } from '@flyingrobots/bijou-tui';
 import { createInitialModel } from './init.js';
 import { manageGraftLifecycle } from './graft.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 import {
   applyNotificationState,
-  createNotificationTickCmd,
   pushRuntimeIssueToast,
   tickNotificationState,
 } from '../../ui/feedback.js';
@@ -19,24 +18,30 @@ import { renderWorkspace } from './viewer.js';
 import { reduceProfilerMsg, type ProfilerMsg } from '../raytracer-profiler.js';
 import { createInitialProfilerState } from '../raytracer-profiler.js';
 
-export const INITIAL_COLUMNS = process.stdout.columns ?? 100;
-export const INITIAL_ROWS = process.stdout.rows ?? 32;
+export interface WorkspaceRuntimeDependencies {
+  initialColumns: number;
+  initialRows: number;
+  initialWorkingDirectory: string;
+  createTimeTickCmd: () => Cmd<WorkspaceMsg>;
+  createNotificationTickCmd: () => Cmd<WorkspaceMsg>;
+}
 
-export const createWorkspaceRuntime = (): App<WorkspaceModel, WorkspaceMsg> => ({
+export interface WorkspaceRuntime {
+  init: () => [WorkspaceModel, Cmd<WorkspaceMsg>[]];
+  update: (msg: WorkspaceMsg, model: WorkspaceModel) => [WorkspaceModel, Cmd<WorkspaceMsg>[]];
+  view: (model: WorkspaceModel) => ReturnType<typeof renderWorkspace>;
+  routeRuntimeIssue: (issue: RuntimeIssue) => WorkspaceMsg;
+}
+
+export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): WorkspaceRuntime => ({
   init: () => [
     {
-      ...createInitialModel(process.cwd(), INITIAL_COLUMNS, INITIAL_ROWS),
+      ...createInitialModel(deps.initialWorkingDirectory, deps.initialColumns, deps.initialRows),
       profiler: createInitialProfilerState(),
     },
     [
       manageGraftLifecycle(),
-      animate<WorkspaceMsg>({
-        type: 'tween',
-        from: 0,
-        to: Number.MAX_SAFE_INTEGER,
-        duration: Number.MAX_SAFE_INTEGER,
-        onFrame: (value) => ({ type: 'time-tick', time: value / 1000 }),
-      }),
+      deps.createTimeTickCmd(),
     ],
   ],
   update: (msg, model): [WorkspaceModel, Cmd<WorkspaceMsg>[]] => {
@@ -54,7 +59,12 @@ export const createWorkspaceRuntime = (): App<WorkspaceModel, WorkspaceMsg> => (
           ? undefined
           : ensureEditorVisible(model.editor, viewport.width, viewport.height),
       };
-      return applyNotificationState(resized, resized.notifications, Date.now(), notificationTickCmd);
+      return applyNotificationState(
+        resized,
+        resized.notifications,
+        Date.now(),
+        deps.createNotificationTickCmd,
+      );
     }
 
     if (msg.type === 'drawer-progress') {
@@ -90,7 +100,7 @@ export const createWorkspaceRuntime = (): App<WorkspaceModel, WorkspaceMsg> => (
     }
 
     if (msg.type === 'notification-tick') {
-      return tickNotificationState(model, msg.atMs, notificationTickCmd);
+      return tickNotificationState(model, msg.atMs, deps.createNotificationTickCmd);
     }
 
     if (msg.type === 'time-tick') {
@@ -110,7 +120,7 @@ export const createWorkspaceRuntime = (): App<WorkspaceModel, WorkspaceMsg> => (
     }
 
     if (msg.type === 'runtime-issue') {
-      return pushRuntimeIssueToast(model, msg.issue, notificationTickCmd);
+      return pushRuntimeIssueToast(model, msg.issue, deps.createNotificationTickCmd);
     }
 
     if (isProfilerMsg(msg)) {
@@ -129,12 +139,9 @@ export const createWorkspaceRuntime = (): App<WorkspaceModel, WorkspaceMsg> => (
   },
   view: (model) => renderWorkspace(model),
   routeRuntimeIssue: (issue) => ({ type: 'runtime-issue', issue }),
-});
+};
+
 
 function isProfilerMsg(msg: WorkspaceMsg): msg is ProfilerMsg {
   return msg.type === 'profiler-started' || msg.type === 'profiler-stopped';
-}
-
-function notificationTickCmd(): Cmd<WorkspaceMsg> {
-  return createNotificationTickCmd((atMs) => ({ type: 'notification-tick', atMs }));
 }
