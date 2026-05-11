@@ -1,37 +1,29 @@
 import {
   compositeSurface,
-  createNotificationState,
   modal,
-  notificationsNeedTick,
-  pushNotification,
-  renderNotificationStack,
-  tickNotifications,
-  trimNotificationsToViewport,
+  toast,
   type Cmd,
   type KeyMsg,
-  type NotificationSpec,
-  type NotificationState,
   type Overlay,
   type RuntimeIssue,
 } from '@flyingrobots/bijou-tui';
 
 import type { Surface } from '@flyingrobots/bijou';
-import { MissingCapabilityError } from '../domain/errors.js';
 
 const HELP_MODAL_WIDTH = 56;
-const NOTIFICATION_TICK_MS = 40;
+const NOTICE_TITLE_SEPARATOR = ': ';
+const RUNTIME_WARNING_TITLE = 'Runtime warning';
+const RUNTIME_ERROR_TITLE = 'Runtime error';
 
-export interface NotificationHost<Msg> {
+export interface NoticeHost {
   readonly columns: number;
   readonly rows: number;
-  readonly notifications: NotificationState<Msg>;
-  readonly notificationLoopActive: boolean;
+  readonly notice: string | null;
 }
 
-export function createFeedbackState<Msg>() {
+export function createFeedbackState() {
   return {
-    notifications: createNotificationState<Msg>(),
-    notificationLoopActive: false,
+    notice: null,
     footerVisible: true,
   };
 }
@@ -41,112 +33,58 @@ export function isFooterToggleKey(msg: KeyMsg): boolean {
     || (!msg.ctrl && !msg.alt && msg.shift && msg.key === '/');
 }
 
-export function createNotificationTickCmd<Msg>(createMsg: (atMs: number) => Msg): Cmd<Msg> {
-  return async (_emit, caps) => {
-    if (!caps.sleep) {
-      throw new MissingCapabilityError('Notification ticking requires sleep capability.');
-    }
-
-    await caps.sleep(NOTIFICATION_TICK_MS);
-    return createMsg(caps.now?.() ?? Date.now());
-  };
-}
-
-export function applyNotificationState<Msg, T extends NotificationHost<Msg>>(
-  model: T,
-  notifications: NotificationState<Msg>,
-  nowMs: number,
-  createTickCmd: () => Cmd<Msg>,
-  forceTick = false,
-): [T, Cmd<Msg>[]] {
-  const trimmed = trimNotificationsToViewport(notifications, {
-    screenWidth: model.columns,
-    screenHeight: model.rows,
-  }, nowMs);
-  const needsTick = notificationsNeedTick(trimmed);
-  const next = {
-    ...model,
-    notifications: trimmed,
-    notificationLoopActive: needsTick,
-  };
-
-  if (needsTick && (forceTick || !model.notificationLoopActive)) {
-    return [next, [createTickCmd()]];
+export function clearNoticeOnKey<T extends NoticeHost>(model: T): T {
+  if (model.notice === null) {
+    return model;
   }
 
-  return [next, []];
+  return {
+    ...model,
+    notice: null,
+  };
 }
 
-export function pushNotificationToast<Msg, T extends NotificationHost<Msg>>(
+export function pushNoticeToast<Msg, T extends NoticeHost>(
   model: T,
-  spec: NotificationSpec<Msg>,
-  nowMs: number,
-  createTickCmd: () => Cmd<Msg>,
+  message: string,
 ): [T, Cmd<Msg>[]] {
-  return applyNotificationState(
-    model,
-    pushNotification(model.notifications, spec, nowMs),
-    nowMs,
-    createTickCmd,
-  );
+  return [{
+    ...model,
+    notice: message,
+  }, []];
 }
 
-export function pushErrorToast<Msg, T extends NotificationHost<Msg>>(
+export function pushErrorToast<Msg, T extends NoticeHost>(
   model: T,
   title: string,
   message: string,
-  nowMs: number,
-  createTickCmd: () => Cmd<Msg>,
 ): [T, Cmd<Msg>[]] {
-  return pushNotificationToast(model, {
-    title,
-    message,
-    variant: 'TOAST',
-    tone: 'ERROR',
-    placement: 'BOTTOM_CENTER',
-  }, nowMs, createTickCmd);
+  return pushNoticeToast(model, `${title}${NOTICE_TITLE_SEPARATOR}${message}`);
 }
 
-export function pushRuntimeIssueToast<Msg, T extends NotificationHost<Msg>>(
+export function pushRuntimeIssueToast<Msg, T extends NoticeHost>(
   model: T,
   issue: RuntimeIssue,
-  createTickCmd: () => Cmd<Msg>,
 ): [T, Cmd<Msg>[]] {
-  return pushNotificationToast(model, {
-    title: issue.level === 'warning' ? 'Runtime warning' : 'Runtime error',
-    message: `${issue.source}: ${issue.message}`,
-    variant: 'TOAST',
-    tone: issue.level === 'warning' ? 'WARNING' : 'ERROR',
-    placement: 'BOTTOM_CENTER',
-  }, issue.atMs, createTickCmd);
+  const title = issue.level === 'warning' ? RUNTIME_WARNING_TITLE : RUNTIME_ERROR_TITLE;
+  return pushErrorToast(model, title, `${issue.source}${NOTICE_TITLE_SEPARATOR}${issue.message}`);
 }
 
-export function tickNotificationState<Msg, T extends NotificationHost<Msg>>(
-  model: T,
-  nowMs: number,
-  createTickCmd: () => Cmd<Msg>,
-): [T, Cmd<Msg>[]] {
-  return applyNotificationState(
-    model,
-    tickNotifications(model.notifications, nowMs),
-    nowMs,
-    createTickCmd,
-    true,
-  );
-}
-
-export function compositeFeedback<Msg>(
+export function compositeFeedback(
   surface: Surface,
-  notifications: NotificationState<Msg>,
+  notice: string | null,
   columns: number,
   rows: number,
   helpOverlay?: Overlay,
 ): Surface {
   const overlays = [
-    ...renderNotificationStack(notifications, {
+    ...(notice === null || notice.length === 0 ? [] : [toast({
+      message: notice,
+      variant: 'info',
+      anchor: 'bottom-right',
       screenWidth: columns,
       screenHeight: rows,
-    }),
+    })]),
     ...(helpOverlay == null ? [] : [helpOverlay]),
   ];
 

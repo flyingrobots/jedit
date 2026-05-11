@@ -1,6 +1,6 @@
 import { createSurface, stringToSurface, perfOverlaySurface, type Surface } from '@flyingrobots/bijou';
 import { initDefaultContext } from '@flyingrobots/bijou-node';
-import { animate, quit, run, type App, type Cmd, type KeyMsg, type MouseMsg, type NotificationState, type RuntimeIssue } from '@flyingrobots/bijou-tui';
+import { animate, quit, run, type App, type Cmd, type KeyMsg, type MouseMsg, type RuntimeIssue } from '@flyingrobots/bijou-tui';
 import { dirname } from 'node:path';
 import { joinLines, normalizeLines } from './app/editor-lines.js';
 import {
@@ -16,14 +16,12 @@ import { loadInitialTitleMesh, TITLE_MESH_LOAD_RESULT } from './app/title-mesh-l
 import { closeGraftConnection, failedGraftInfo, loadGraftInfo, type GraftInfo } from './adapters/graft-mcp-session.js';
 import { paintMarkdownPreview } from './ui/markdown-preview.js';
 import {
-  applyNotificationState,
+  clearNoticeOnKey,
   compositeFeedback,
   createFeedbackState,
-  createNotificationTickCmd,
   isFooterToggleKey,
   pushErrorToast,
   pushRuntimeIssueToast,
-  tickNotificationState,
 } from './ui/feedback.js';
 import { resolveWorkspaceLayout, type DrawerKind } from './ui/drawer-layout.js';
 import { cycleFocusPane, defaultFocusPane, hasFocusablePeers, shouldClearPendingNormalOnPaneChange, type FocusPane, type FocusCycleState } from './ui/panel-focus.js';
@@ -109,8 +107,7 @@ interface Model {
   readonly fileDrawerProgress: number;
   readonly graftDrawerOpen: boolean;
   readonly graftDrawerProgress: number;
-  readonly notifications: NotificationState<Msg>;
-  readonly notificationLoopActive: boolean;
+  readonly notice: string | null;
   readonly footerVisible: boolean;
   readonly settingsOpen: boolean;
   readonly settingsFocusIndex: number;
@@ -139,7 +136,6 @@ type Msg =
   | { type: 'graft-info'; requestId: number; info: GraftInfo }
   | SourceHighlightMsg
   | TitleCameraMotionMsg
-  | { type: 'notification-tick'; atMs: number }
   | { type: 'time-tick'; time: number }
   | { type: 'toggle-perf' }
   | { type: 'runtime-issue'; issue: RuntimeIssue };
@@ -154,6 +150,11 @@ const GRAFT_META_ROWS = 5;
 const GRAFT_CHANGE_ROWS = 5;
 const VIEWER_LEFT_PAD = 4;
 const VIEWER_TOP_PAD = 1;
+const NOTICE_PERF_STREAM_STARTED = 'Perf stream started';
+const NOTICE_PERF_STREAM_ENDED = 'Perf stream ended';
+const NOTICE_FOOTER_SHOWN = 'Footer shown';
+const NOTICE_FOOTER_HIDDEN = 'Footer hidden';
+const NOTICE_THEME_SET_PREFIX = 'Theme set to';
 const sourceHighlighter = createGraftSourceHighlighter();
 
 const app: App<Model, Msg> = {
@@ -184,7 +185,7 @@ const app: App<Model, Msg> = {
         rows: msg.rows,
         editor: model.editor == null ? undefined : ensureEditorVisible(model.editor, viewport.width, viewport.height),
       };
-      return applyNotificationState(resized, resized.notifications, Date.now(), notificationTickCmd);
+      return [resized, []];
     }
 
     if (msg.type === 'drawer-progress') {
@@ -219,10 +220,6 @@ const app: App<Model, Msg> = {
       return [reduceSourceHighlightMsg(model, msg), []];
     }
 
-    if (msg.type === 'notification-tick') {
-      return tickNotificationState(model, msg.atMs, notificationTickCmd);
-    }
-
     if (msg.type === 'time-tick') {
       const now = Date.now();
       const frameTime = now - model.lastFrameMs;
@@ -237,11 +234,16 @@ const app: App<Model, Msg> = {
     }
 
     if (msg.type === 'toggle-perf') {
-      return [{ ...model, perfVisible: !model.perfVisible }, []];
+      const perfVisible = !model.perfVisible;
+      return [{
+        ...model,
+        perfVisible,
+        notice: perfVisible ? NOTICE_PERF_STREAM_STARTED : NOTICE_PERF_STREAM_ENDED,
+      }, []];
     }
 
     if (msg.type === 'runtime-issue') {
-      return pushRuntimeIssueToast(model, msg.issue, notificationTickCmd);
+      return pushRuntimeIssueToast(model, msg.issue);
     }
 
     if (msg.type === TITLE_CAMERA_MESSAGE.Frame) {
@@ -262,8 +264,15 @@ const app: App<Model, Msg> = {
 };
 
 function updateFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
+  model = clearNoticeOnKey(model);
+
   if (msg.key === '`') {
-    return [{ ...model, perfVisible: !model.perfVisible }, []];
+    const perfVisible = !model.perfVisible;
+    return [{
+      ...model,
+      perfVisible,
+      notice: perfVisible ? NOTICE_PERF_STREAM_STARTED : NOTICE_PERF_STREAM_ENDED,
+    }, []];
   }
 
   if (msg.key === JEDIT_SETTINGS_TOGGLE_KEY) {
@@ -288,7 +297,12 @@ function updateFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
     && model.viewMode === 'source'
     && model.editor?.mode === 'insert';
   if (!insertModeActive && isFooterToggleKey(msg)) {
-    return [{ ...model, footerVisible: !model.footerVisible }, []];
+    const footerVisible = !model.footerVisible;
+    return [{
+      ...model,
+      footerVisible,
+      notice: footerVisible ? NOTICE_FOOTER_SHOWN : NOTICE_FOOTER_HIDDEN,
+    }, []];
   }
 
   if (!insertModeActive && msg.key === 'q') {
@@ -304,7 +318,12 @@ function updateFromKey(msg: KeyMsg, model: Model): [Model, Cmd<Msg>[]] {
   }
 
   if (msg.ctrl && !msg.alt && msg.key === JEDIT_THEME_TOGGLE_KEY) {
-    return [{ ...model, jeditTheme: nextJeditTheme(model.jeditTheme) }, []];
+    const jeditTheme = nextJeditTheme(model.jeditTheme);
+    return [{
+      ...model,
+      jeditTheme,
+      notice: formatThemeSetNotice(jeditTheme),
+    }, []];
   }
 
   const focusState = focusCycleState(model);
@@ -383,9 +402,18 @@ function settingsRows(model: Model) {
 }
 
 const settingsHandlers: JeditSettingsHandlers<Model, Msg> = {
-  cycleTheme: (model: Model): [Model, Cmd<Msg>[]] => [{ ...model, jeditTheme: nextJeditTheme(model.jeditTheme) }, []],
-  toggleThemeMode: (model: Model): [Model, Cmd<Msg>[]] => [{ ...model, jeditTheme: oppositeJeditTheme(model.jeditTheme) }, []],
-  toggleFooter: (model: Model): [Model, Cmd<Msg>[]] => [{ ...model, footerVisible: !model.footerVisible }, []],
+  cycleTheme: (model: Model): [Model, Cmd<Msg>[]] => {
+    const jeditTheme = nextJeditTheme(model.jeditTheme);
+    return [{ ...model, jeditTheme, notice: formatThemeSetNotice(jeditTheme) }, []];
+  },
+  toggleThemeMode: (model: Model): [Model, Cmd<Msg>[]] => {
+    const jeditTheme = oppositeJeditTheme(model.jeditTheme);
+    return [{ ...model, jeditTheme, notice: formatThemeSetNotice(jeditTheme) }, []];
+  },
+  toggleFooter: (model: Model): [Model, Cmd<Msg>[]] => {
+    const footerVisible = !model.footerVisible;
+    return [{ ...model, footerVisible, notice: footerVisible ? NOTICE_FOOTER_SHOWN : NOTICE_FOOTER_HIDDEN }, []];
+  },
   toggleMarkdownPreview: (model: Model): [Model, Cmd<Msg>[]] => toggleMarkdownPreview(model),
   toggleLocale: (model: Model): [Model, Cmd<Msg>[]] => {
     const nextLocale = model.i18n.locale === 'en' ? 'me' : 'en';
@@ -396,6 +424,10 @@ const settingsHandlers: JeditSettingsHandlers<Model, Msg> = {
 };
 
 await run(app, JEDIT_TERMINAL_MOUSE_OPTIONS);
+
+function formatThemeSetNotice(theme: JeditTheme): string {
+  return `${NOTICE_THEME_SET_PREFIX} ${theme.name}`;
+}
 
 function toggleMarkdownPreview(model: Model): [Model, Cmd<Msg>[]] {
   if (model.editor == null || !isMarkdownFile(model.editor.path)) {
@@ -711,7 +743,7 @@ function createInitialModel(cwd: string, columns: number, rows: number): Model {
     fileDrawerProgress: 0,
     graftDrawerOpen: false,
     graftDrawerProgress: 0,
-    ...createFeedbackState<Msg>(),
+    ...createFeedbackState(),
     settingsOpen: false,
     settingsFocusIndex: 0,
     jeditTheme: resolveInitialJeditTheme(process.env[JEDIT_THEME_ENV]),
@@ -763,7 +795,7 @@ function changeDirectory(model: Model, cwd: string, action: typeof DIRECTORY_ACT
     return [openDirectory(model, cwd), []];
   } catch (cause) {
     const issue = describeDirectoryIssue(action, cwd, cause instanceof Error ? cause : String(cause));
-    return pushErrorToast(model, issue.title, issue.message, Date.now(), notificationTickCmd);
+    return pushErrorToast(model, issue.title, issue.message);
   }
 }
 
@@ -2026,7 +2058,7 @@ function renderWorkspace(model: Model) {
       `current terminal: ${model.columns} x ${model.rows}`,
     ].join('\n');
     screen.blit(stringToSurface(fitBlock(message, model.columns, model.rows), model.columns, model.rows), 0, 0);
-    return compositeFeedback(screen, model.notifications, model.columns, model.rows);
+    return compositeFeedback(screen, model.notice, model.columns, model.rows);
   }
 
   const title = centerLine(activeWorkspaceTitle({
@@ -2100,10 +2132,8 @@ function renderWorkspace(model: Model) {
     screen.blit(perf, model.columns - perf.width - 2, 2);
   }
 
-  return compositeFeedback(screen, model.notifications, model.columns, model.rows);
+  return compositeFeedback(screen, model.notice, model.columns, model.rows);
 }
-
-function notificationTickCmd(): Cmd<Msg> { return createNotificationTickCmd((atMs) => ({ type: 'notification-tick', atMs })); }
 
 function renderViewer(model: Model, width: number, height: number) {
   if (model.editor == null) {
