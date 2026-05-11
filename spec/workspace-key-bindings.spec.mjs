@@ -201,6 +201,36 @@ test('runtime toggle-perf message flips perf visibility state', async () => {
   assert.equal(toggledOff.perfVisible, false);
 });
 
+test('runtime load-scene-result applies the loaded scene camera to title camera state', async () => {
+  const runtimeModule = await loadWorkspaceRuntimeModule();
+  const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime());
+  const scene = {
+    camera: {
+      angle: 1.25,
+      radius: 6.75,
+    },
+    objects: [],
+  };
+
+  const [nextModel] = runtime.update({ type: 'load-scene-result', scene }, {
+    sceneOverride: undefined,
+    titleCamera: {
+      angle: 9,
+      angleTarget: 9,
+      angleMotionId: 3,
+      radius: 9,
+      radiusTarget: 9,
+      radiusMotionId: 4,
+    },
+  });
+
+  assert.equal(nextModel.sceneOverride, scene);
+  assert.equal(nextModel.titleCamera.angle, scene.camera.angle);
+  assert.equal(nextModel.titleCamera.angleTarget, scene.camera.angle);
+  assert.equal(nextModel.titleCamera.radius, scene.camera.radius);
+  assert.equal(nextModel.titleCamera.radiusTarget, scene.camera.radius);
+});
+
 test('title screen number keys switch render modes without an editor', async () => {
   const keyBindings = await loadWorkspaceKeyBindingsModule();
   const [asciiModel] = keyBindings.updateFromKey(

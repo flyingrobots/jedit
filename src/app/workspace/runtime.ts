@@ -10,7 +10,7 @@ import {
   tickNotificationState,
 } from '../../ui/feedback.js';
 import { reduceSourceHighlightMsg, SOURCE_HIGHLIGHT_MESSAGE } from '../source-highlight-session.js';
-import { reduceTitleCameraMotion, TITLE_CAMERA_MESSAGE } from '../title-camera-session.js';
+import { createTitleCameraState, reduceTitleCameraMotion, TITLE_CAMERA_MESSAGE } from '../title-camera-session.js';
 import { ensureEditorVisible, editorViewport } from './editor-session.js';
 import { updateFromKey } from './key-bindings.js';
 import { updateFromMouse } from './mouse.js';
@@ -119,7 +119,11 @@ export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): Work
     }
 
     if (msg.type === 'load-scene-result') {
-      return [{ ...model, sceneOverride: msg.scene }, []];
+      return [{
+        ...model,
+        sceneOverride: msg.scene,
+        titleCamera: msg.scene == null ? model.titleCamera : createTitleCameraState(msg.scene.camera),
+      }, []];
     }
 
     if (msg.type === SOURCE_HIGHLIGHT_MESSAGE) {
