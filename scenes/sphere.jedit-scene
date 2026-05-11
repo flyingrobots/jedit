@@ -1,0 +1,12 @@
+{
+  "camera": { "angle": 0, "radius": 7.0 },
+  "objects": [
+    {
+      "kind": "sphere",
+      "position": [0, 1.5, 0],
+      "radius": 1.5,
+      "color": [101, 194, 255],
+      "reflectivity": 0.8
+    }
+  ]
+}

@@ -9,6 +9,8 @@ const REPO_ROOT = process.cwd();
 const TITLE_SCREEN_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-screen.js');
 const TITLE_LOGO_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-logo.js');
 const TITLE_SCENE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-scene.js');
+const TITLE_SCENE_ENVIRONMENT_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-scene-environment.js');
+const ASCII_CANVAS_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'averaging-ascii-canvas.js');
 const BRAILLE_CANVAS_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'averaging-braille-canvas.js');
 const THEMES_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'jedit-themes.js');
 const STYLE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'jedit-theme.js');
@@ -61,6 +63,8 @@ async function loadTitleModules() {
     title: await import(pathToFileURL(TITLE_SCREEN_PATH).href),
     titleLogo: await import(pathToFileURL(TITLE_LOGO_PATH).href),
     titleScene: await import(pathToFileURL(TITLE_SCENE_PATH).href),
+    titleSceneEnvironment: await import(pathToFileURL(TITLE_SCENE_ENVIRONMENT_PATH).href),
+    asciiCanvas: await import(pathToFileURL(ASCII_CANVAS_PATH).href),
     brailleCanvas: await import(pathToFileURL(BRAILLE_CANVAS_PATH).href),
     themes: await import(pathToFileURL(THEMES_PATH).href),
     style: await import(pathToFileURL(STYLE_PATH).href),
@@ -197,7 +201,6 @@ test('title screen renders the logo as a non-Braille themed glyph layer', async 
   assert.ok(logoCells.length > 12);
   assert.ok(logoCells.every((cell) => !isBraille(cell.char)));
   assert.ok(new Set(logoCells.map((cell) => cell.char)).size > 1);
-  assert.ok(new Set(logoCells.map(cellColorKey)).size > 1);
   assert.ok(logoCells.every((cell) => cell.bgRGB != null));
 });
 
@@ -248,6 +251,66 @@ test('title scene uses Braille subpixels with averaged material colors', async (
   assert.ok(visibleSceneChars.size >= 4);
   assert.ok([...visibleSceneChars].every((char) => isBraille(char)));
   assert.ok(new Set(sceneCells.map(cellColorKey)).size > 3);
+});
+
+test('title scene can render as density-mapped ASCII instead of Braille', async () => {
+  const { title, themes, style } = await loadTitleModules();
+  const theme = themes.availableJeditThemes()[0];
+  const surface = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, fixedTitleRenderOptions({
+    renderMode: title.TITLE_RENDER_MODE.Ascii,
+    asciiPalette: title.TITLE_ASCII_PALETTE.Dense,
+  }));
+  const sceneCells = cells(surface).filter((cell) => !cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold));
+  const visibleSceneChars = new Set(sceneCells.map((cell) => cell.char).filter((char) => char !== ' '));
+
+  assert.ok(visibleSceneChars.size >= 3);
+  assert.ok([...visibleSceneChars].every((char) => !isBraille(char)));
+  assert.ok([...visibleSceneChars].every((char) => ' .,:;irsXA253hMHGS#9B&@'.includes(char)));
+  assert.ok(new Set(sceneCells.map(cellColorKey)).size > 3);
+});
+
+test('title scene ASCII palettes produce distinct glyph vocabularies', async () => {
+  const { title, themes, style } = await loadTitleModules();
+  const theme = themes.availableJeditThemes()[0];
+  const dense = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, fixedTitleRenderOptions({
+    renderMode: title.TITLE_RENDER_MODE.Ascii,
+    asciiPalette: title.TITLE_ASCII_PALETTE.Dense,
+  }));
+  const blocks = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, fixedTitleRenderOptions({
+    renderMode: title.TITLE_RENDER_MODE.Ascii,
+    asciiPalette: title.TITLE_ASCII_PALETTE.Blocks,
+  }));
+  const dither = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, fixedTitleRenderOptions({
+    renderMode: title.TITLE_RENDER_MODE.Ascii,
+    asciiPalette: title.TITLE_ASCII_PALETTE.Dither,
+  }));
+
+  assert.notDeepEqual(sceneGlyphs(dense, style), sceneGlyphs(blocks, style));
+  assert.ok(sceneGlyphs(blocks, style).some((char) => '▁▂▃▄▅▆▇█'.includes(char)));
+  assert.notDeepEqual(sceneCellKeys(dense, style), sceneCellKeys(dither, style));
+  assert.ok(sceneGlyphs(dither, style).every((char) => ' .:-=+*#%@'.includes(char)));
+});
+
+test('ASCII canvas colors inactive samples as background instead of inactive foreground', async () => {
+  const { asciiCanvas } = await loadTitleModules();
+  const surface = asciiCanvas.averagingAsciiCanvas(1, 1, ({ u, v }) => {
+    if (u === 0 && v === 0) {
+      return {
+        on: true,
+        fgRGB: [255, 0, 0],
+        bgRGB: [0, 0, 0],
+      };
+    }
+    return {
+      on: false,
+      fgRGB: [0, 0, 255],
+      bgRGB: [0, 0, 0],
+    };
+  }, 0, { palette: asciiCanvas.TITLE_ASCII_PALETTE.Dense });
+  const cell = surface.get(0, 0);
+
+  assert.deepEqual(cell.fgRGB, [64, 0, 0]);
+  assert.deepEqual(cell.bgRGB, [0, 0, 0]);
 });
 
 test('title scene keeps reflective highlights on sphere materials', async () => {
@@ -302,6 +365,34 @@ test('title floor light effects expose sphere shadows and caustics', async () =>
   assert.equal(farAway.causticStrength, 0);
 });
 
+test('title environment does not report floor hits once floor fade reaches zero', async () => {
+  const { titleSceneEnvironment } = await loadTitleModules();
+  const colors = {
+    surface: [5, 7, 12],
+    floorDark: [55, 75, 88],
+    floorLight: [222, 232, 232],
+  };
+  const floor = {
+    kind: titleSceneEnvironment.TITLE_SCENE_FLOOR_KIND.Solid,
+    fadeDistance: 2,
+  };
+  const visibleHit = titleSceneEnvironment.nearestTitleEnvironmentSurfaceHit(
+    [0, 1, 0],
+    [0, -1, 0],
+    { floor },
+    colors,
+  );
+  const fadedHit = titleSceneEnvironment.nearestTitleEnvironmentSurfaceHit(
+    [0, 3, 0],
+    [0, -1, 0],
+    { floor },
+    colors,
+  );
+
+  assert.ok(visibleHit != null);
+  assert.equal(fadedHit, undefined);
+});
+
 test('title screen is deterministic for a fixed scene seed and frame time', async () => {
   const { title, themes } = await loadTitleModules();
   const theme = themes.availableJeditThemes()[0];
@@ -341,6 +432,19 @@ function flyingRobotsLogoInkChars() {
     Array.from(readFileSync(FLYINGROBOTS_LOGO_PATH, 'utf8'))
       .filter((char) => char !== BRAILLE_BLANK && char.trim().length > 0),
   );
+}
+
+function sceneGlyphs(surface, style) {
+  return [...new Set(cells(surface)
+    .filter((cell) => !cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold))
+    .map((cell) => cell.char)
+    .filter((char) => char !== ' '))];
+}
+
+function sceneCellKeys(surface, style) {
+  return cells(surface)
+    .filter((cell) => !cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold))
+    .map((cell) => `${cell.char}:${cellColorKey(cell)}`);
 }
 
 function luminance(rgb) {

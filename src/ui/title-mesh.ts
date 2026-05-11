@@ -58,9 +58,26 @@ const TITLE_BUNNY_YAW_RADIANS = Math.PI * 0.18;
 const TITLE_BUNNY_CENTER_X = -0.85;
 const TITLE_BUNNY_FLOOR_Y = 0;
 const TITLE_BUNNY_CENTER_Z = -0.15;
+const TITLE_TEAPOT_HEIGHT = 2.2;
+const TITLE_TEAPOT_YAW_RADIANS = -Math.PI * 0.1;
+const TITLE_TEAPOT_CENTER_X = 0;
+const TITLE_TEAPOT_FLOOR_Y = 0;
+const TITLE_TEAPOT_CENTER_Z = 0;
 const BVH_LEAF_TRIANGLE_COUNT = 8;
 const INTERSECTION_EPSILON = 0.000001;
 const EMPTY_TRIANGLE_INDICES: readonly number[] = [];
+
+export const TITLE_MESH_ID = {
+  Bunny: 'bunny',
+  Teapot: 'teapot',
+} as const;
+
+export type TitleMeshId = typeof TITLE_MESH_ID[keyof typeof TITLE_MESH_ID];
+
+export interface TitleMeshLibrary {
+  readonly bunny?: TitleMesh;
+  readonly teapot?: TitleMesh;
+}
 
 export function createTitleBunnyMesh(source: TitleMeshSource): TitleMesh {
   return createTitleMesh(source, {
@@ -69,6 +86,16 @@ export function createTitleBunnyMesh(source: TitleMeshSource): TitleMesh {
     centerX: TITLE_BUNNY_CENTER_X,
     floorY: TITLE_BUNNY_FLOOR_Y,
     centerZ: TITLE_BUNNY_CENTER_Z,
+  });
+}
+
+export function createTitleTeapotMesh(source: TitleMeshSource): TitleMesh {
+  return createTitleMesh(source, {
+    height: TITLE_TEAPOT_HEIGHT,
+    yawRadians: TITLE_TEAPOT_YAW_RADIANS,
+    centerX: TITLE_TEAPOT_CENTER_X,
+    floorY: TITLE_TEAPOT_FLOOR_Y,
+    centerZ: TITLE_TEAPOT_CENTER_Z,
   });
 }
 

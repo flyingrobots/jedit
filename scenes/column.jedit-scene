@@ -1,0 +1,13 @@
+{
+  "camera": { "angle": 0, "radius": 7.0 },
+  "objects": [
+    {
+      "kind": "column",
+      "position": [0, 1.5, 0],
+      "radius": 1.0,
+      "height": 3.0,
+      "color": [124, 213, 156],
+      "reflectivity": 0.5
+    }
+  ]
+}

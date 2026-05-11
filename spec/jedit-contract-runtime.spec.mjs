@@ -7,6 +7,7 @@ import { pathToFileURL } from 'node:url';
 const REPO_ROOT = process.cwd();
 const CONTRACT_APP_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-runtime.js');
 const ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'in-memory-hot-text-runtime.js');
+const HASH_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'hash.js');
 
 async function loadModules() {
   const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
@@ -16,16 +17,17 @@ async function loadModules() {
 
   assert.equal(build.status, 0, build.stderr || build.stdout);
 
-  const [contractApp, adapter] = await Promise.all([
+  const [contractApp, adapter, hashAdapter] = await Promise.all([
     import(pathToFileURL(CONTRACT_APP_MODULE_PATH).href),
     import(pathToFileURL(ADAPTER_MODULE_PATH).href),
+    import(pathToFileURL(HASH_MODULE_PATH).href),
   ]);
 
-  return { contractApp, adapter };
+  return { contractApp, adapter, hash: hashAdapter.createHashPort() };
 }
 
 test('createBufferWorldline returns contract-shaped worldline and head data', async () => {
-  const { contractApp, adapter } = await loadModules();
+  const { contractApp, adapter, hash } = await loadModules();
   const runtime = adapter.createInMemoryHotTextRuntime();
 
   const created = contractApp.createBufferWorldline(runtime, {
@@ -33,7 +35,7 @@ test('createBufferWorldline returns contract-shaped worldline and head data', as
     initialText: 'hello world',
     projectionPath: '/tmp/notes/today.md',
     createInitialCheckpoint: false,
-  });
+  }, hash);
 
   assert.equal(created.result.worldline.bufferKey, 'notes/today.md');
   assert.equal(created.result.worldline.projectionPath, '/tmp/notes/today.md');
@@ -45,14 +47,14 @@ test('createBufferWorldline returns contract-shaped worldline and head data', as
 });
 
 test('replaceRangeAsTick returns contract-shaped tick and receipt data', async () => {
-  const { contractApp, adapter } = await loadModules();
+  const { contractApp, adapter, hash } = await loadModules();
   const runtime = adapter.createInMemoryHotTextRuntime();
   const created = contractApp.createBufferWorldline(runtime, {
     bufferKey: 'notes/today.md',
     initialText: 'hello world',
     projectionPath: '/tmp/notes/today.md',
     createInitialCheckpoint: false,
-  });
+  }, hash);
 
   const edited = contractApp.replaceRangeAsTick(runtime, created.nextSession, {
     worldlineId: created.result.worldline.worldlineId,
@@ -61,7 +63,7 @@ test('replaceRangeAsTick returns contract-shaped tick and receipt data', async (
     endByte: 5,
     insertText: ' brave new',
     author: 'tester',
-  });
+  }, hash);
 
   assert.ok(edited.result);
   assert.equal(contractApp.materializeWorldline(runtime, edited.nextSession), 'hello brave new world');
@@ -79,14 +81,14 @@ test('replaceRangeAsTick returns contract-shaped tick and receipt data', async (
 });
 
 test('createCheckpoint keeps checkpoint metadata in the app-owned adapter layer', async () => {
-  const { contractApp, adapter } = await loadModules();
+  const { contractApp, adapter, hash } = await loadModules();
   const runtime = adapter.createInMemoryHotTextRuntime();
   const created = contractApp.createBufferWorldline(runtime, {
     bufferKey: 'notes/today.md',
     initialText: 'hello world',
     projectionPath: '/tmp/notes/today.md',
     createInitialCheckpoint: false,
-  });
+  }, hash);
   const edited = contractApp.replaceRangeAsTick(runtime, created.nextSession, {
     worldlineId: created.result.worldline.worldlineId,
     baseHeadId: created.result.head.headId,
@@ -94,13 +96,13 @@ test('createCheckpoint keeps checkpoint metadata in the app-owned adapter layer'
     endByte: 11,
     insertText: '!',
     author: 'tester',
-  });
+  }, hash);
 
   const saved = contractApp.createCheckpoint(runtime, edited.nextSession, {
     worldlineId: edited.nextSession.worldline.worldlineId,
     kind: 'MANUAL_SAVE',
     label: 'after greeting',
-  });
+  }, hash);
 
   assert.ok(saved.result);
   assert.equal(saved.result.worldline.worldlineId, edited.nextSession.worldline.worldlineId);
@@ -110,14 +112,14 @@ test('createCheckpoint keeps checkpoint metadata in the app-owned adapter layer'
 });
 
 test('worldlineSnapshot returns canonical worldline, head, checkpoints, and text', async () => {
-  const { contractApp, adapter } = await loadModules();
+  const { contractApp, adapter, hash } = await loadModules();
   const runtime = adapter.createInMemoryHotTextRuntime();
   const created = contractApp.createBufferWorldline(runtime, {
     bufferKey: 'notes/today.md',
     initialText: 'hello world',
     projectionPath: '/tmp/notes/today.md',
     createInitialCheckpoint: true,
-  });
+  }, hash);
   const edited = contractApp.replaceRangeAsTick(runtime, created.nextSession, {
     worldlineId: created.result.worldline.worldlineId,
     baseHeadId: created.result.head.headId,
@@ -125,16 +127,16 @@ test('worldlineSnapshot returns canonical worldline, head, checkpoints, and text
     endByte: 11,
     insertText: '!',
     author: 'tester',
-  });
+  }, hash);
   const saved = contractApp.createCheckpoint(runtime, edited.nextSession, {
     worldlineId: edited.nextSession.worldline.worldlineId,
     kind: 'MANUAL_SAVE',
     label: 'after greeting',
-  });
+  }, hash);
 
   const snapshot = contractApp.readWorldlineSnapshot(runtime, saved.nextSession, {
     worldlineId: saved.nextSession.worldline.worldlineId,
-  });
+  }, hash);
 
   assert.equal(snapshot.worldline.worldlineId, saved.nextSession.worldline.worldlineId);
   assert.equal(snapshot.head.headId, saved.nextSession.worldline.canonicalHeadId);
@@ -146,14 +148,14 @@ test('worldlineSnapshot returns canonical worldline, head, checkpoints, and text
 });
 
 test('replaceRangeAsTick rejects a stale or foreign basis head at the app-owned contract layer', async () => {
-  const { contractApp, adapter } = await loadModules();
+  const { contractApp, adapter, hash } = await loadModules();
   const runtime = adapter.createInMemoryHotTextRuntime();
   const created = contractApp.createBufferWorldline(runtime, {
     bufferKey: 'notes/today.md',
     initialText: 'hello world',
     projectionPath: '/tmp/notes/today.md',
     createInitialCheckpoint: false,
-  });
+  }, hash);
 
   assert.throws(
     () => contractApp.replaceRangeAsTick(runtime, created.nextSession, {
@@ -162,7 +164,7 @@ test('replaceRangeAsTick rejects a stale or foreign basis head at the app-owned 
       startByte: 0,
       endByte: 0,
       insertText: 'x',
-    }),
+    }, hash),
     /base head/i,
   );
 });

@@ -28,8 +28,17 @@ const TITLE_BUNNY_MESH_ASSET_URLS = [
   new URL('../../src/ui/bunny.obj', import.meta.url),
 ] as const;
 
+const TITLE_TEAPOT_MESH_ASSET_URLS = [
+  new URL('../ui/utah_teapot.obj', import.meta.url),
+  new URL('../../src/ui/utah_teapot.obj', import.meta.url),
+] as const;
+
 export function loadTitleBunnyMeshSource(): TitleMeshSource {
-  return decodeObjMeshSource(readFileSync(titleBunnyMeshAssetPath(), UTF8_ENCODING));
+  return decodeObjMeshSource(readFileSync(meshAssetPath(TITLE_BUNNY_MESH_ASSET_URLS), UTF8_ENCODING));
+}
+
+export function loadTitleTeapotMeshSource(): TitleMeshSource {
+  return decodeObjMeshSource(readFileSync(meshAssetPath(TITLE_TEAPOT_MESH_ASSET_URLS), UTF8_ENCODING));
 }
 
 export function decodeObjMeshSource(source: string): TitleMeshSource {
@@ -52,14 +61,18 @@ export function decodeObjMeshSource(source: string): TitleMeshSource {
   return { vertices, triangles };
 }
 
-function titleBunnyMeshAssetPath(): string {
-  for (const assetUrl of TITLE_BUNNY_MESH_ASSET_URLS) {
+function meshAssetPath(assetUrls: readonly URL[]): string {
+  for (const assetUrl of assetUrls) {
     const filePath = fileURLToPath(assetUrl);
     if (existsSync(filePath)) {
       return filePath;
     }
   }
-  return fileURLToPath(TITLE_BUNNY_MESH_ASSET_URLS[0]);
+  const fallback = assetUrls[0];
+  if (fallback == null) {
+    throw new Error('Title mesh asset URL list cannot be empty.');
+  }
+  return fileURLToPath(fallback);
 }
 
 function decodeVertexLine(line: string, lineNumber: number): TitleMeshVector3 {

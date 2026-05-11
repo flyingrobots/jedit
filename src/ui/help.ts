@@ -1,6 +1,10 @@
 import type { Overlay } from '@flyingrobots/bijou-tui';
 
-import { JEDIT_MARKDOWN_PREVIEW_TOGGLE_LABEL, JEDIT_SETTINGS_TOGGLE_LABEL } from '../app/keybindings.js';
+import {
+  JEDIT_MARKDOWN_PREVIEW_TOGGLE_LABEL,
+  JEDIT_SCENE_PICKER_TOGGLE_LABEL,
+  JEDIT_SETTINGS_TOGGLE_LABEL,
+} from '../app/keybindings.js';
 import { renderHelpOverlay } from './feedback.js';
 
 const HELP_DIALOG_TITLE = 'jedit';
@@ -32,6 +36,7 @@ const HELP_DIALOG_BODY = [
   '  enter        jump to symbol',
   '',
   'general',
+  `  ${JEDIT_SCENE_PICKER_TOGGLE_LABEL}       open scene picker (title screen only)`,
   '  ?            helper',
   '  q            quit',
 ].join('\n');

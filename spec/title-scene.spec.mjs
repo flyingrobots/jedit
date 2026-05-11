@@ -10,6 +10,7 @@ const TITLE_SCENE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-scene.js');
 const TITLE_MESH_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-mesh.js');
 const TITLE_BUNNY_MESH_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'title-bunny-mesh.js');
 const TITLE_BUNNY_DIST_ASSET_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'bunny.obj');
+const TITLE_TEAPOT_DIST_ASSET_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'utah_teapot.obj');
 const TITLE_CAMERA_PATH = path.join(REPO_ROOT, 'dist', 'app', 'title-camera-session.js');
 const FIXED_SCENE_SEED = 0.314159;
 const OTHER_SCENE_SEED = 0.271828;
@@ -18,6 +19,8 @@ const MIN_UNIQUE_MATERIALS = 3;
 const MIN_UNIQUE_RADII = 3;
 const MIN_BUNNY_VERTICES = 2500;
 const MIN_BUNNY_TRIANGLES = 4900;
+const MIN_TEAPOT_VERTICES = 7000;
+const MIN_TEAPOT_TRIANGLES = 14000;
 const BUNNY_SCENE_OBJECT_COUNT = 2;
 const MIRROR_REFLECTIVITY_MINIMUM = 0.9;
 const BUNNY_TITLE_CAMERA_HEIGHT = 2.65;
@@ -56,6 +59,7 @@ test('build copies the title bunny mesh asset into dist', async () => {
 
   assert.equal(build.status, 0, build.stderr || build.stdout);
   assert.ok(existsSync(TITLE_BUNNY_DIST_ASSET_PATH), 'dist/ui/bunny.obj should exist after build');
+  assert.ok(existsSync(TITLE_TEAPOT_DIST_ASSET_PATH), 'dist/ui/utah_teapot.obj should exist after build');
 });
 
 test('title scene generation is deterministic and seed-sensitive', async () => {
@@ -117,6 +121,17 @@ test('title scene can ray cast the loaded bunny mesh', async () => {
   assert.equal(hit.object.kind, titleScene.TITLE_SCENE_SHAPE_KIND.Mesh);
   assert.ok(hit.distance > 0);
   assert.ok(hit.normal.some((component) => Math.abs(component) > 0));
+});
+
+test('title scene can construct the Utah teapot mesh from the source asset', async () => {
+  const { titleMesh, titleBunnyMesh } = await loadTitleSceneModules();
+  const meshSource = titleBunnyMesh.loadTitleTeapotMeshSource();
+  const mesh = titleMesh.createTitleTeapotMesh(meshSource);
+
+  assert.ok(meshSource.vertices.length >= MIN_TEAPOT_VERTICES);
+  assert.ok(meshSource.triangles.length >= MIN_TEAPOT_TRIANGLES);
+  assert.ok(mesh.height > 0);
+  assert.ok(mesh.footprintRadius > 0);
 });
 
 test('title mirror sphere reflects the loaded bunny mesh from the title camera', async () => {

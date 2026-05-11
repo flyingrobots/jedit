@@ -3,6 +3,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { dirname, isAbsolute, join, relative } from 'node:path';
+import type { GraftInfo, GraftSessionPort } from '../ports/graft-session.js';
 
 import {
   GraftInvalidPayloadError,
@@ -25,8 +26,13 @@ type JsonPrimitive = string | number | boolean | null;
 type JsonValue = JsonPrimitive | readonly JsonValue[] | JsonObject;
 
 interface JsonObject {
-  readonly [key: string]: JsonValue | undefined;
+  readonly [key: string]: JsonValue;
 }
+type JsonValueCandidate = JsonPrimitive | JsonRecordCandidate | readonly JsonValueCandidate[];
+type JsonRecordCandidate = { readonly [key: string]: JsonValueCandidate };
+type CallToolResult = Awaited<ReturnType<Client['callTool']>>;
+type CallToolStructuredContent = CallToolResult['structuredContent'];
+type CallToolStructuredChild = CallToolStructuredContent extends Record<string, infer V> ? V : never;
 
 export interface GraftOutlineItem {
   readonly kind: string;
@@ -34,16 +40,6 @@ export interface GraftOutlineItem {
   readonly signature?: string;
   readonly startLine: number;
   readonly endLine: number;
-}
-
-export interface GraftInfo {
-  readonly path: string;
-  readonly relativePath: string;
-  readonly dirty: boolean;
-  readonly outlineItems: readonly GraftOutlineItem[];
-  readonly changeLines: readonly string[];
-  readonly notice?: string;
-  readonly error?: string;
 }
 
 export interface GraftJumpEntry {
@@ -87,7 +83,7 @@ interface GraftTextBlock {
   readonly text?: string;
 }
 
-interface GraftToolResult {
+interface GraftCallToolResult {
   readonly isError?: boolean;
   readonly structuredContent?: JsonValue;
   readonly content?: readonly GraftTextBlock[];
@@ -170,6 +166,14 @@ export async function closeGraftConnection(): Promise<void> {
 
   await connection.client.close().catch(() => undefined);
   await connection.transport.close().catch(() => undefined);
+}
+
+export function createGraftSessionPort(): GraftSessionPort {
+  return {
+    loadGraftInfo,
+    failedGraftInfo,
+    closeConnection: closeGraftConnection,
+  };
 }
 
 async function loadGraftChanges(workspaceRoot: string, relativePath: string): Promise<readonly string[]> {
@@ -283,19 +287,63 @@ async function callGraftTool(
   args: Record<string, string | number | boolean | null>,
 ): Promise<JsonValue> {
   const connection = await ensureGraftConnection(workspaceRoot);
-  const result = await connection.client.callTool({
+  const rawResult = await connection.client.callTool({
     name,
     arguments: args,
-  }) as GraftToolResult;
+  });
+  const result = {
+    ...rawResult,
+    structuredContent: normalizeStructuredContent(rawResult.structuredContent),
+  };
 
-  if (result.isError === true) {
+  const isError = 'isError' in rawResult && rawResult.isError === true;
+  if (isError) {
     throw new GraftToolExecutionError(parseGraftErrorResult(result));
   }
 
   return parseGraftToolResult(result);
 }
 
-function parseGraftErrorResult(result: GraftToolResult): string {
+function normalizeStructuredContent(value: CallToolStructuredContent): JsonValue | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (isJsonValue(value)) {
+    return value;
+  }
+
+  throw new GraftToolExecutionError('Invalid structuredContent returned by graft tool.');
+}
+
+function isJsonValue(
+  value: JsonValue | CallToolStructuredContent | readonly (JsonValue | CallToolStructuredChild)[],
+): value is JsonValue {
+  if (value === null) {
+    return true;
+  }
+
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return true;
+  }
+
+  if (Array.isArray(value)) {
+    return value.every(isJsonValue);
+  }
+
+  if (value == null || typeof value !== 'object') {
+    return false;
+  }
+
+  for (const [, member] of Object.entries(value)) {
+    if (!isJsonValue(member)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function parseGraftErrorResult(result: GraftCallToolResult): string {
   if (result.structuredContent !== undefined) {
     return String(result.structuredContent);
   }
@@ -305,7 +353,7 @@ function parseGraftErrorResult(result: GraftToolResult): string {
     ?.text ?? 'Graft tool returned an error';
 }
 
-function parseGraftToolResult(result: GraftToolResult): JsonValue {
+function parseGraftToolResult(result: GraftCallToolResult): JsonValue {
   if (result.structuredContent !== undefined) {
     return result.structuredContent;
   }

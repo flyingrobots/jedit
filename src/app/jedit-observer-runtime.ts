@@ -6,6 +6,7 @@ import { worldlineSnapshotObserverPlan } from '../generated/jedit/worldlineSnaps
 import type { HotTextRuntimePort } from '../ports/hot-text-runtime.js';
 import type { JeditWorldlineSession } from './jedit-contract-runtime.js';
 import { readWorldlineSnapshot } from './jedit-contract-runtime.js';
+import type { HashPort } from '../ports/hash.js';
 
 const TEXT_WINDOW_PLAN_ID = 'observer-plan:textWindow:fake-v1';
 const TEXT_WINDOW_OBSERVER_NAME = 'textWindow';
@@ -42,10 +43,11 @@ export function readWorldlineSnapshotWithObserverPlan(
   session: JeditWorldlineSession,
   frontierRef: string,
   input: WorldlineSnapshotInput,
+  hash: HashPort,
 ): WorldlineSnapshotReadingEnvelope {
   const schemas = QueryOperationSchemas.worldlineSnapshot;
   const parsedInput = schemas.input.parse(input);
-  const reading = readWorldlineSnapshot(runtime, session, parsedInput);
+  const reading = readWorldlineSnapshot(runtime, session, parsedInput, hash);
 
   return {
     planId: worldlineSnapshotObserverPlan.planId,
@@ -61,10 +63,11 @@ export function readTextWindowWithObserverPlan(
   session: JeditWorldlineSession,
   frontierRef: string,
   input: TextWindowInput,
+  hash: HashPort,
 ): TextWindowReadingEnvelope {
   const schemas = QueryOperationSchemas.textWindow;
   const parsedInput = schemas.input.parse(input);
-  const reading = readTextWindow(runtime, session, parsedInput);
+  const reading = readTextWindow(runtime, session, parsedInput, hash);
 
   return {
     planId: TEXT_WINDOW_PLAN_ID,
@@ -79,6 +82,7 @@ function readTextWindow(
   runtime: HotTextRuntimePort,
   session: JeditWorldlineSession,
   input: TextWindowInput,
+  hash: HashPort,
 ): TextWindowReading {
   assertPositiveCount(input.viewportLineCount, 'viewportLineCount');
   assertNonNegativeCount(input.beforeLines, 'beforeLines');
@@ -89,7 +93,7 @@ function readTextWindow(
   // current snapshot until Echo can stream line windows directly.
   const snapshot = readWorldlineSnapshot(runtime, session, {
     worldlineId: input.worldlineId,
-  });
+  }, hash);
   const allLines = toTextLineReadings(snapshot.text);
   const cursorLine = clampLine(input.cursorLine, allLines.length);
   const startLine = Math.max(TEXT_WINDOW_MIN_LINE, cursorLine - input.beforeLines);

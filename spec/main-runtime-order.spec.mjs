@@ -6,12 +6,16 @@ import test from 'node:test';
 const REPO_ROOT = process.cwd();
 const MAIN_PATH = path.join(REPO_ROOT, 'src', 'main.ts');
 
-test('main initializes settings handlers before starting the Bijou runtime', () => {
+test('main constructs a workspace app and runs it through bijou run()', () => {
   const source = readFileSync(MAIN_PATH, 'utf8');
-  const handlersIndex = source.indexOf('const settingsHandlers');
-  const runIndex = source.indexOf('await run(app');
 
-  assert.ok(handlersIndex > 0);
-  assert.ok(runIndex > 0);
-  assert.ok(handlersIndex < runIndex);
+  const createsAppImport = /createWorkspaceApp/.test(source);
+  const createsWorkspaceApp = /const app\s*=\s*createWorkspaceApp\(/.test(source);
+  const runsApp = /run\(app,/.test(source);
+  const hasLocalSettingsHandlers = /settingsHandlers/.test(source);
+
+  assert.ok(createsAppImport);
+  assert.ok(createsWorkspaceApp);
+  assert.ok(runsApp);
+  assert.equal(hasLocalSettingsHandlers, false);
 });

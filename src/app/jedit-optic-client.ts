@@ -1,5 +1,6 @@
 import type { HotTextRuntimePort } from '../ports/hot-text-runtime.js';
 import type { JeditOpticClient } from '../ports/jedit-optic-client.js';
+import type { HashPort } from '../ports/hash.js';
 import {
   createBufferWorldline,
   createCheckpoint,
@@ -31,36 +32,36 @@ type TextWindowInput = QueryTextWindowRequest['input'];
 
 // Until Wesley emits direct intent/observer clients, keep one narrow seam where
 // generated GraphQL operation names are transmuted into app-owned runtime calls.
-export function createInMemoryJeditOpticClient(runtime: HotTextRuntimePort): JeditOpticClient {
+export function createInMemoryJeditOpticClient(runtime: HotTextRuntimePort, hash: HashPort): JeditOpticClient {
   return {
     createBufferWorldline(input: CreateBufferWorldlineInput): CreateBufferWorldlineExecution {
-      return createBufferWorldline(runtime, input);
+      return createBufferWorldline(runtime, input, hash);
     },
     replaceRangeAsTick(
       session: JeditWorldlineSession,
       input: ReplaceRangeAsTickInput,
     ): ReplaceRangeAsTickExecution {
-      return replaceRangeAsTick(runtime, session, input);
+      return replaceRangeAsTick(runtime, session, input, hash);
     },
     createCheckpoint(
       session: JeditWorldlineSession,
       input: CreateCheckpointInput,
     ): CreateCheckpointExecution {
-      return createCheckpoint(runtime, session, input);
+      return createCheckpoint(runtime, session, input, hash);
     },
     worldlineSnapshot(
       session: JeditWorldlineSession,
       frontierRef: string,
       input: WorldlineSnapshotInput,
     ): WorldlineSnapshotReadingEnvelope {
-      return readWorldlineSnapshotWithObserverPlan(runtime, session, frontierRef, input);
+      return readWorldlineSnapshotWithObserverPlan(runtime, session, frontierRef, input, hash);
     },
     textWindow(
       session: JeditWorldlineSession,
       frontierRef: string,
       input: TextWindowInput,
     ): TextWindowReadingEnvelope {
-      return readTextWindowWithObserverPlan(runtime, session, frontierRef, input);
+      return readTextWindowWithObserverPlan(runtime, session, frontierRef, input, hash);
     },
   };
 }
