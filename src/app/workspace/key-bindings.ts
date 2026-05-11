@@ -22,6 +22,7 @@ import { updateGraftDrawerFromKey } from './graft-drawer.js';
 import { updateTreeFromKey } from './file-tree.js';
 import { updateViewerFromKey } from './viewer.js';
 import { nextJeditTheme } from '../../ui/jedit-themes.js';
+import { updateTitleCameraFromKey } from '../title-camera-session.js';
 import type { FileSystemPort } from '../../ports/file-system.js';
 import type { EditorFilePort } from '../../ports/editor-file.js';
 import type { GraftSessionPort } from '../../ports/graft-session.js';
@@ -46,7 +47,12 @@ export function updateFromKey(
   deps: UpdateFromKeyDeps,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (msg.key === '`') {
-    return [{ ...model, perfVisible: !model.perfVisible }, []];
+    return [
+      model,
+      [() => ({
+        type: 'toggle-perf',
+      })],
+    ];
   }
 
   if (msg.key === JEDIT_SETTINGS_TOGGLE_KEY) {
@@ -106,9 +112,9 @@ export function updateFromKey(
   }
 
   if (model.editor == null) {
-    const next = updateTitleCameraFromKey(msg, model);
-    if (next != null) {
-      return [{ ...model, titleCamera: next.state }, next.commands];
+    const update = updateTitleCameraFromKey(msg.key, model.titleCamera);
+    if (update != null) {
+      return [{ ...model, titleCamera: update.state }, update.commands];
     }
   }
 
@@ -192,34 +198,4 @@ export function updateFromKey(
   }
 
   return updateViewerFromKey(msg, model, deps.sourceHighlighter);
-}
-
-function updateTitleCameraFromKey(msg: KeyMsg, model: WorkspaceModel): { state: WorkspaceModel['titleCamera']; commands: Cmd<WorkspaceMsg>[] } | undefined {
-  const camera = model.titleCamera;
-  if (msg.key === 'left') {
-    return {
-      state: { ...camera, angleTarget: camera.angleTarget - 0.1 },
-      commands: [],
-    };
-  }
-  if (msg.key === 'right') {
-    return {
-      state: { ...camera, angleTarget: camera.angleTarget + 0.1 },
-      commands: [],
-    };
-  }
-  if (msg.key === 'up') {
-    return {
-      state: { ...camera, radiusTarget: Math.max(2, camera.radiusTarget - 0.5) },
-      commands: [],
-    };
-  }
-  if (msg.key === 'down') {
-    return {
-      state: { ...camera, radiusTarget: camera.radiusTarget + 0.5 },
-      commands: [],
-    };
-  }
-
-  return undefined;
 }

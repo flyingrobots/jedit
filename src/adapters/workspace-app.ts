@@ -1,4 +1,11 @@
-import { animate, type App, type Cmd } from '@flyingrobots/bijou-tui';
+import { perfOverlaySurface, type Surface } from '@flyingrobots/bijou';
+import {
+  animate,
+  compositeSurface,
+  type App,
+  type Cmd,
+  type ViewOutput,
+} from '@flyingrobots/bijou-tui';
 import { BijouI18nAdapter } from './bijou-i18n-adapter.js';
 import { createNotificationTickCmd } from '../ui/feedback.js';
 import { JEDIT_THEME_ENV, resolveInitialJeditTheme } from '../ui/jedit-themes.js';
@@ -113,11 +120,50 @@ function createPerfApp(
       }, cmds];
     },
     view: (model) => {
-      const screen = realApp.view(model);
-      return screen;
+      const viewOutput = realApp.view(model);
+      const surface = toSurfaceView(viewOutput);
+      if (model.perfVisible) {
+        const perfSurface = perfOverlaySurface({
+          width: model.columns,
+          height: model.rows,
+          fps: model.lastFrameMs === 0 ? 0 : Math.round(1000 / model.lastFrameMs),
+          frameTimeMs: model.frameTimeMs,
+          frameTimeHistory: model.frameTimeHistory,
+        }, {
+          title: 'jedit perf',
+        });
+        return compositeSurface(surface, [{ content: '', surface: perfSurface, row: 0, col: 0 }]);
+      }
+      return surface;
     },
     routeRuntimeIssue: realApp.routeRuntimeIssue,
   };
+}
+
+function toSurfaceView(viewOutput: ViewOutput): Surface {
+  if (isSurface(viewOutput)) {
+    return viewOutput;
+  }
+  throw new WorkspacePerfOverlayError('perf overlay requires surface view output');
+}
+
+function isSurface(value: ViewOutput): value is Surface {
+  return value != null
+    && typeof value === 'object'
+    && 'width' in value
+    && 'height' in value
+    && 'set' in value
+    && 'get' in value;
+}
+
+class WorkspacePerfOverlayError extends Error {
+  public constructor(message: string) {
+    super(message);
+    this.name = 'WorkspacePerfOverlayError';
+    if (Error.captureStackTrace != null) {
+      Error.captureStackTrace(this, WorkspacePerfOverlayError);
+    }
+  }
 }
 
 function createTimeTickCmd(): Cmd<WorkspaceMsg> {
