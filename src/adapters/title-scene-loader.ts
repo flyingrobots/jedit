@@ -1,6 +1,7 @@
 import * as fs from 'node:fs/promises';
 import { TITLE_SCENE_SHAPE_KIND, type TitleScene, type TitleSceneCameraPlacement, type TitleSceneObject } from '../ui/title-scene.js';
 import type { TitleMesh } from '../ui/title-mesh.js';
+import type { TitleSceneLoaderPort } from '../ports/title-scene-loader.js';
 
 export interface TitleSceneJson {
   readonly camera?: {
@@ -68,4 +69,10 @@ export function parseTitleSceneJson(json: TitleSceneJson, mesh: TitleMesh | unde
   }
 
   return { camera, objects };
+}
+
+export function createTitleSceneLoaderPort(): TitleSceneLoaderPort {
+  return {
+    loadTitleSceneFromFile,
+  };
 }

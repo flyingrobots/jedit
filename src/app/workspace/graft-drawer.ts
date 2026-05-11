@@ -3,7 +3,7 @@ import { graftVisibleOutlineRows } from '../../ui/workspace-render.js';
 import { DRAWER_INNER_PAD } from './viewport.js';
 import { clampIndex } from './viewport.js';
 import { workspaceBodyHeight } from './viewport.js';
-import { beginGraftRefresh, editorViewport, ensureEditorVisible } from './editor-session.js';
+import { editorViewport, ensureEditorVisible } from './editor-session.js';
 import { withFocusPane } from './focus.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
@@ -12,7 +12,11 @@ import type { Cmd } from '@flyingrobots/bijou-tui';
 const GRAFT_META_ROWS = 5;
 const GRAFT_CHANGE_ROWS = 5;
 
-export function updateGraftDrawerFromKey(msg: KeyMsg, model: WorkspaceModel): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
+export function updateGraftDrawerFromKey(
+  msg: KeyMsg,
+  model: WorkspaceModel,
+  beginGraftRefresh: (model: WorkspaceModel, force: boolean) => [WorkspaceModel, Cmd<WorkspaceMsg>[]],
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (msg.key === 'r') {
     return beginGraftRefresh(model, true);
   }

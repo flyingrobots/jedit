@@ -1,6 +1,9 @@
 import type { KeyMsg } from '@flyingrobots/bijou-tui';
 import type { FileSystemPort, DirectoryAction } from '../../ports/file-system.js';
 import { DIRECTORY_ACTION_OPEN, DIRECTORY_ACTION_REFRESH } from '../../ports/file-system.js';
+import type { EditorFilePort } from '../../ports/editor-file.js';
+import type { GraftSessionPort } from '../../ports/graft-session.js';
+import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import { pushErrorToast } from '../../ui/feedback.js';
 import { clampIndex } from './viewport.js';
 import { withFocusPane } from './focus.js';
@@ -11,23 +14,30 @@ import { type Cmd } from '@flyingrobots/bijou-tui';
 
 export const FILE_TREE_META_MIN = 0;
 
+interface UpdateTreeFromKeyDeps {
+  readonly fileSystem: FileSystemPort;
+  readonly editorFile: EditorFilePort;
+  readonly sourceHighlighter: SourceHighlighter;
+  readonly graftSession: GraftSessionPort;
+}
+
 export function updateTreeFromKey(
   msg: KeyMsg,
   model: WorkspaceModel,
   nowMs: () => number,
-  fileSystem: FileSystemPort,
+  deps: UpdateTreeFromKeyDeps,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (msg.key === 'r') {
-    return changeDirectory(model, model.cwd, DIRECTORY_ACTION_REFRESH, nowMs, fileSystem);
+    return changeDirectory(model, model.cwd, DIRECTORY_ACTION_REFRESH, nowMs, deps.fileSystem);
   }
 
   if (msg.key === 'backspace' || msg.key === 'left' || msg.key === 'h') {
-    const parent = fileSystem.dirname(model.cwd);
+    const parent = deps.fileSystem.dirname(model.cwd);
     if (parent === model.cwd) {
       return [model, []];
     }
 
-    return changeDirectory(model, parent, DIRECTORY_ACTION_OPEN, nowMs, fileSystem);
+    return changeDirectory(model, parent, DIRECTORY_ACTION_OPEN, nowMs, deps.fileSystem);
   }
 
   if (msg.key === 'down' || msg.key === 'j') {
@@ -57,10 +67,10 @@ export function updateTreeFromKey(
     }
 
     if (entry.kind === 'dir' || entry.kind === 'parent') {
-      return changeDirectory(model, entry.path, DIRECTORY_ACTION_OPEN, nowMs, fileSystem);
+      return changeDirectory(model, entry.path, DIRECTORY_ACTION_OPEN, nowMs, deps.fileSystem);
     }
 
-    const editor = loadEditor(entry.path);
+    const editor = loadEditor(entry.path, deps.editorFile);
     return beginEditorProjectionRefresh(withFocusPane({
       ...model,
       editor,
@@ -68,7 +78,11 @@ export function updateTreeFromKey(
       graftInfo: undefined,
       graftLoading: false,
       graftSelectedIndex: 0,
-    }, 'editor'), model.graftDrawerOpen);
+    }, 'editor'), model.graftDrawerOpen, {
+      editorFile: deps.editorFile,
+      sourceHighlighter: deps.sourceHighlighter,
+      graftSession: deps.graftSession,
+    });
   }
 
   return [model, []];

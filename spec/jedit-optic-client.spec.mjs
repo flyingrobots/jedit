@@ -9,6 +9,7 @@ const OPTIC_CLIENT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-opti
 const ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'in-memory-hot-text-runtime.js');
 const TRANSPORT_CLIENT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-optic-client.js');
 const FAKE_TRANSPORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'fake-echo-jedit-optic-transport.js');
+const HASH_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'hash.js');
 const CODEC_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-optic-codec.js');
 const LEGACY_EAGER_LOAD_CAP_BYTES = 24 * 1024;
 const UTF8_ENCODER = new TextEncoder();
@@ -21,21 +22,22 @@ async function loadModules() {
 
   assert.equal(build.status, 0, build.stderr || build.stdout);
 
-  const [opticClientModule, adapter, transportClientModule, fakeTransportModule, codecModule] = await Promise.all([
+  const [opticClientModule, adapter, transportClientModule, fakeTransportModule, hashModule, codecModule] = await Promise.all([
     import(pathToFileURL(OPTIC_CLIENT_MODULE_PATH).href),
     import(pathToFileURL(ADAPTER_MODULE_PATH).href),
     import(pathToFileURL(TRANSPORT_CLIENT_MODULE_PATH).href),
     import(pathToFileURL(FAKE_TRANSPORT_MODULE_PATH).href),
+    import(pathToFileURL(HASH_MODULE_PATH).href),
     import(pathToFileURL(CODEC_MODULE_PATH).href),
   ]);
 
-  return { opticClientModule, adapter, transportClientModule, fakeTransportModule, codecModule };
+  return { opticClientModule, adapter, transportClientModule, fakeTransportModule, hashModule, codecModule };
 }
 
 test('in-memory optic client exposes GraphQL-shaped mutation and observer operations', async () => {
-  const { opticClientModule, adapter } = await loadModules();
+  const { opticClientModule, adapter, hashModule } = await loadModules();
   const runtime = adapter.createInMemoryHotTextRuntime();
-  const client = opticClientModule.createInMemoryJeditOpticClient(runtime);
+  const client = opticClientModule.createInMemoryJeditOpticClient(runtime, hashModule.createHashPort());
 
   const created = client.createBufferWorldline({
     bufferKey: 'notes/today.md',

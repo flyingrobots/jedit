@@ -1,5 +1,3 @@
-import { createHash } from 'node:crypto';
-
 import { createTextRange, materializeRoot } from '../domain/text-edit-contract.js';
 import type { SaveCheckpointReceipt } from '../domain/save-checkpoint-contract.js';
 import type { TickAdmissionReceipt } from '../domain/tick-admission-contract.js';
@@ -20,6 +18,7 @@ import {
   QueryOperationSchemas,
 } from '../generated/jedit/hot-text-runtime.zod.generated.js';
 import type { HotTextBufferState, HotTextRuntimePort } from '../ports/hot-text-runtime.js';
+import type { HashPort } from '../ports/hash.js';
 
 const JEDIT_CONTRACT_RUNTIME_ERROR_WORLDLINE_MISMATCH = 1;
 const JEDIT_CONTRACT_RUNTIME_ERROR_BASE_HEAD_MISMATCH = 2;
@@ -94,6 +93,7 @@ export class JeditContractRuntimeError extends Error {
 export function createBufferWorldline(
   runtime: HotTextRuntimePort,
   input: CreateBufferWorldlineInput,
+  hash: HashPort,
 ): CreateBufferWorldlineExecution {
   const parsedInput = MutationOperationSchemas.createBufferWorldline.input.parse(input);
   const initialText = parsedInput.initialText ?? '';
@@ -104,7 +104,7 @@ export function createBufferWorldline(
   if (!(parsedInput.createInitialCheckpoint ?? false)) {
     const result = MutationOperationSchemas.createBufferWorldline.result.parse({
       worldline: initialSession.worldline,
-      head: toHeadRecord(initialSession),
+      head: toHeadRecord(initialSession, hash),
     });
     return {
       nextSession: initialSession,
@@ -120,7 +120,7 @@ export function createBufferWorldline(
   const checkpoint = metadata[0] == null ? undefined : toCheckpointRecord(nextSession, metadata[0]);
   const result = MutationOperationSchemas.createBufferWorldline.result.parse({
     worldline: nextSession.worldline,
-    head: toHeadRecord(nextSession),
+    head: toHeadRecord(nextSession, hash),
     checkpoint,
   });
 
@@ -141,13 +141,14 @@ export function readWorldlineSnapshot(
   runtime: HotTextRuntimePort,
   session: JeditWorldlineSession,
   input: WorldlineSnapshotInput,
+  hash: HashPort,
 ): WorldlineSnapshotResult {
   const parsedInput = QueryOperationSchemas.worldlineSnapshot.input.parse(input);
   ensureMatchingWorldline(session, parsedInput.worldlineId);
 
   return QueryOperationSchemas.worldlineSnapshot.result.parse({
     worldline: session.worldline,
-    head: toHeadRecord(session),
+    head: toHeadRecord(session, hash),
     checkpoints: toCheckpointRecords(session),
     text: materializeWorldline(runtime, session),
   });
@@ -157,6 +158,7 @@ export function replaceRangeAsTick(
   runtime: HotTextRuntimePort,
   session: JeditWorldlineSession,
   input: ReplaceRangeAsTickInput,
+  hash: HashPort,
 ): ReplaceRangeAsTickExecution {
   const parsedInput = MutationOperationSchemas.replaceRangeAsTick.input.parse(input);
   ensureMatchingWorldline(session, parsedInput.worldlineId);
@@ -189,7 +191,7 @@ export function replaceRangeAsTick(
   const tick = toTickRecord(nextSession, tickMetadata);
   const result = MutationOperationSchemas.replaceRangeAsTick.result.parse({
     worldline: nextSession.worldline,
-    nextHead: toHeadRecord(nextSession),
+    nextHead: toHeadRecord(nextSession, hash),
     tick,
     receipt: toTickReceiptRecord(
       admission.receipt,
@@ -209,6 +211,7 @@ export function createCheckpoint(
   runtime: HotTextRuntimePort,
   session: JeditWorldlineSession,
   input: CreateCheckpointInput,
+  hash: HashPort,
 ): CreateCheckpointExecution {
   const parsedInput = MutationOperationSchemas.createCheckpoint.input.parse(input);
   ensureMatchingWorldline(session, parsedInput.worldlineId);
@@ -238,7 +241,7 @@ export function createCheckpoint(
   const checkpoint = toCheckpointRecord(nextSession, checkpointMetadata);
   const result = MutationOperationSchemas.createCheckpoint.result.parse({
     worldline: nextSession.worldline,
-    head: toHeadRecord(nextSession),
+    head: toHeadRecord(nextSession, hash),
     checkpoint,
   });
 
@@ -310,7 +313,7 @@ function toCheckpointRecords(session: JeditWorldlineSession): Checkpoint[] {
   return session.checkpointMetadata.map((metadata) => toCheckpointRecord(session, metadata));
 }
 
-function toHeadRecord(session: JeditWorldlineSession): RopeHead {
+function toHeadRecord(session: JeditWorldlineSession, hash: HashPort): RopeHead {
   const text = materializeRoot(session.state.currentRoot);
 
   return {
@@ -320,7 +323,7 @@ function toHeadRecord(session: JeditWorldlineSession): RopeHead {
     byteLength: byteLength(text),
     lineCount: lineCount(text),
     utf16Length: text.length,
-    equivalenceDigest: digest(text),
+    equivalenceDigest: digest(text, hash),
   };
 }
 
@@ -429,6 +432,6 @@ function lineCount(text: string): number {
   return text.split('\n').length;
 }
 
-function digest(text: string): string {
-  return createHash('sha256').update(text, 'utf8').digest('hex');
+function digest(text: string, hash: HashPort): string {
+  return hash.sha256Hex(text);
 }

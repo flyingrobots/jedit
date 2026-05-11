@@ -1,6 +1,6 @@
 import type { NotificationState } from '@flyingrobots/bijou-tui';
 import type { FileEntry } from '../../ports/file-system.js';
-import type { GraftInfo } from '../../adapters/graft-mcp-session.js';
+import type { GraftInfo } from '../../ports/graft-session.js';
 import type { I18nPort } from '../../ports/i18n.js';
 import type { SourceHighlightReading } from '../../ports/source-highlighter.js';
 import type { JeditTheme } from '../../ui/jedit-theme.js';

@@ -26,12 +26,20 @@ import {
 import { createInitialProfilerState } from '../raytracer-profiler.js';
 import type { DrawerKind } from '../../ui/drawer-layout.js';
 import type { FileSystemPort } from '../../ports/file-system.js';
+import type { EditorFilePort } from '../../ports/editor-file.js';
+import type { GraftSessionPort } from '../../ports/graft-session.js';
+import type { SourceHighlighter } from '../../ports/source-highlighter.js';
+import type { TitleSceneLoaderPort } from '../../ports/title-scene-loader.js';
 
 export interface WorkspaceRuntimeDependencies {
   initialColumns: number;
   initialRows: number;
   initialWorkingDirectory: string;
   fileSystem: FileSystemPort;
+  editorFile: EditorFilePort;
+  graftSession: GraftSessionPort;
+  sourceHighlighter: SourceHighlighter;
+  titleSceneLoader: TitleSceneLoaderPort;
   profiler: ProfilerTracePort;
   createTimeTickCmd: () => Cmd<WorkspaceMsg>;
   createNotificationTickCmd: () => Cmd<WorkspaceMsg>;
@@ -62,7 +70,7 @@ export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): Work
       profiler: createInitialProfilerState(),
     },
     [
-      manageGraftLifecycle(),
+      manageGraftLifecycle(deps.graftSession.closeConnection),
       deps.createTimeTickCmd(),
     ],
   ],
@@ -162,7 +170,7 @@ export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): Work
     }
 
     if (msg.type === 'mouse') {
-      return updateFromMouse(msg, model);
+      return updateFromMouse(msg, model, deps.sourceHighlighter);
     }
 
     if (msg.type !== 'key') {
@@ -174,7 +182,13 @@ export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): Work
       model,
       deps.nowMs,
       deps.createDrawerAnimationCmd,
-      deps.fileSystem,
+      {
+        fileSystem: deps.fileSystem,
+        editorFile: deps.editorFile,
+        sourceHighlighter: deps.sourceHighlighter,
+        graftSession: deps.graftSession,
+        titleSceneLoader: deps.titleSceneLoader,
+      },
     );
   },
   view: (model) => renderWorkspace(model),

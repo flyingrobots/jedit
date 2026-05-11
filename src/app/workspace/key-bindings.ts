@@ -10,11 +10,9 @@ import {
 import {
   beginEditorProjectionRefresh,
   beginGraftRefresh,
-  loadEditor,
   saveEditor,
   toggleMarkdownPreview,
 } from './editor-session.js';
-import { loadTitleSceneFromFile } from '../../adapters/title-scene-loader.js';
 import { closeDrawer, type CreateDrawerAnimationCmd, toggleDrawer } from './drawer.js';
 import { focusCycleState } from './focus.js';
 import { cycleFocusPane, hasFocusablePeers } from '../../ui/panel-focus.js';
@@ -25,15 +23,27 @@ import { updateTreeFromKey } from './file-tree.js';
 import { updateViewerFromKey } from './viewer.js';
 import { nextJeditTheme } from '../../ui/jedit-themes.js';
 import type { FileSystemPort } from '../../ports/file-system.js';
+import type { EditorFilePort } from '../../ports/editor-file.js';
+import type { GraftSessionPort } from '../../ports/graft-session.js';
+import type { SourceHighlighter } from '../../ports/source-highlighter.js';
+import type { TitleSceneLoaderPort } from '../../ports/title-scene-loader.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
+
+export interface UpdateFromKeyDeps {
+  readonly fileSystem: FileSystemPort;
+  readonly editorFile: EditorFilePort;
+  readonly sourceHighlighter: SourceHighlighter;
+  readonly graftSession: GraftSessionPort;
+  readonly titleSceneLoader: TitleSceneLoaderPort;
+}
 
 export function updateFromKey(
   msg: KeyMsg,
   model: WorkspaceModel,
   nowMs: () => number,
   createDrawerAnimationCmd: CreateDrawerAnimationCmd,
-  fileSystem: FileSystemPort,
+  deps: UpdateFromKeyDeps,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (msg.key === '`') {
     return [{ ...model, perfVisible: !model.perfVisible }, []];
@@ -70,7 +80,10 @@ export function updateFromKey(
         return [{ ...model, scenePickerOpen: false }, [
           async () => {
             try {
-              const scene = await loadTitleSceneFromFile(fileSystem.join(model.workspaceRoot, 'scenes', selected), model.titleMesh);
+              const scene = await deps.titleSceneLoader.loadTitleSceneFromFile(
+                deps.fileSystem.join(model.workspaceRoot, 'scenes', selected),
+                model.titleMesh,
+              );
               return { type: 'load-scene-result', scene };
             } catch (error) {
               return {
@@ -113,11 +126,15 @@ export function updateFromKey(
   }
 
   if (msg.ctrl && !msg.alt && msg.key === 's' && model.editor != null) {
-    const editor = saveEditor(model.editor);
+    const editor = saveEditor(model.editor, deps.editorFile);
     return beginEditorProjectionRefresh({
       ...model,
       editor,
-    }, model.graftDrawerOpen || model.graftInfo?.path === editor.path);
+    }, model.graftDrawerOpen || model.graftInfo?.path === editor.path, {
+      editorFile: deps.editorFile,
+      sourceHighlighter: deps.sourceHighlighter,
+      graftSession: deps.graftSession,
+    });
   }
 
   if (msg.ctrl && !msg.alt && msg.key === JEDIT_THEME_TOGGLE_KEY) {
@@ -130,11 +147,15 @@ export function updateFromKey(
   }
 
   if (msg.ctrl && !msg.alt && msg.key === 'b') {
-    return toggleDrawer(model, 'files', beginGraftRefresh, createDrawerAnimationCmd);
+    return toggleDrawer(model, 'files', (nextModel, force) => (
+      beginGraftRefresh(nextModel, force, deps.graftSession)
+    ), createDrawerAnimationCmd);
   }
 
   if (msg.ctrl && !msg.alt && msg.key === 'g') {
-    return toggleDrawer(model, 'graft', beginGraftRefresh, createDrawerAnimationCmd);
+    return toggleDrawer(model, 'graft', (nextModel, force) => (
+      beginGraftRefresh(nextModel, force, deps.graftSession)
+    ), createDrawerAnimationCmd);
   }
 
   if (msg.key === 'escape') {
@@ -147,18 +168,30 @@ export function updateFromKey(
   }
 
   if (msg.key === JEDIT_MARKDOWN_PREVIEW_TOGGLE_KEY) {
-    return toggleMarkdownPreview(model);
+    return toggleMarkdownPreview(model, deps.sourceHighlighter);
   }
 
   if (model.focusPane === 'files' && model.fileDrawerOpen) {
-    return updateTreeFromKey(msg, model, nowMs, fileSystem);
+    return updateTreeFromKey(
+      msg,
+      model,
+      nowMs,
+      {
+        fileSystem: deps.fileSystem,
+        editorFile: deps.editorFile,
+        sourceHighlighter: deps.sourceHighlighter,
+        graftSession: deps.graftSession,
+      },
+    );
   }
 
   if (model.focusPane === 'graft' && model.graftDrawerOpen) {
-    return updateGraftDrawerFromKey(msg, model);
+    return updateGraftDrawerFromKey(msg, model, (nextModel, force) => (
+      beginGraftRefresh(nextModel, force, deps.graftSession)
+    ));
   }
 
-  return updateViewerFromKey(msg, model);
+  return updateViewerFromKey(msg, model, deps.sourceHighlighter);
 }
 
 function updateTitleCameraFromKey(msg: KeyMsg, model: WorkspaceModel): { state: WorkspaceModel['titleCamera']; commands: Cmd<WorkspaceMsg>[] } | undefined {

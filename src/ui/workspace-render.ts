@@ -1,6 +1,6 @@
 import { clipToWidth } from '@flyingrobots/bijou-tui';
 
-import type { FileEntry } from '../adapters/filesystem.js';
+import type { FileEntry } from '../ports/file-system.js';
 
 export interface GraftOutlineDisplayItem {
   readonly kind: string;

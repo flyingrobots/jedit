@@ -14,6 +14,10 @@ import { loadInitialTitleMesh, TITLE_MESH_LOAD_RESULT } from '../app/title-mesh-
 import { loadTitleBunnyMeshSource } from './title-bunny-mesh.js';
 import { FileSystemPortAdapter } from './filesystem.js';
 import { createRaytracerProfilerPort } from './raytracer-profiler.js';
+import { editorFilePort } from './editor-file.js';
+import { createGraftSessionPort } from './graft-mcp-session.js';
+import { createGraftSourceHighlighter } from './graft-source-highlighter.js';
+import { createTitleSceneLoaderPort } from './title-scene-loader.js';
 
 const TIME_TICK_DURATION_MS = Number.MAX_SAFE_INTEGER;
 const DRAWER_DURATION_MS = 160;
@@ -29,11 +33,19 @@ export interface WorkspaceAppOptions {
 
 export function createWorkspaceApp(options: WorkspaceAppOptions): App<WorkspaceModel, WorkspaceMsg> {
   const nowMs = options.nowMs ?? (() => Date.now());
+  const editorFile = editorFilePort;
+  const graftSession = createGraftSessionPort();
+  const sourceHighlighter = createGraftSourceHighlighter();
+  const titleSceneLoader = createTitleSceneLoaderPort();
   const runtime = createWorkspaceRuntime({
     initialColumns: options.initialColumns,
     initialRows: options.initialRows,
     initialWorkingDirectory: options.initialWorkingDirectory,
     fileSystem: FileSystemPortAdapter,
+    editorFile,
+    graftSession,
+    sourceHighlighter,
+    titleSceneLoader,
     profiler: createRaytracerProfilerPort(nowMs),
     initialModel: options.seed ?? createInitialModelSnapshot(nowMs(), options.initialWorkingDirectory),
     nowMs,

@@ -3,6 +3,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { dirname, isAbsolute, join, relative } from 'node:path';
+import type { GraftInfo, GraftSessionPort } from '../ports/graft-session.js';
 
 import {
   GraftInvalidPayloadError,
@@ -34,16 +35,6 @@ export interface GraftOutlineItem {
   readonly signature?: string;
   readonly startLine: number;
   readonly endLine: number;
-}
-
-export interface GraftInfo {
-  readonly path: string;
-  readonly relativePath: string;
-  readonly dirty: boolean;
-  readonly outlineItems: readonly GraftOutlineItem[];
-  readonly changeLines: readonly string[];
-  readonly notice?: string;
-  readonly error?: string;
 }
 
 export interface GraftJumpEntry {
@@ -170,6 +161,14 @@ export async function closeGraftConnection(): Promise<void> {
 
   await connection.client.close().catch(() => undefined);
   await connection.transport.close().catch(() => undefined);
+}
+
+export function createGraftSessionPort(): GraftSessionPort {
+  return {
+    loadGraftInfo,
+    failedGraftInfo,
+    closeConnection: closeGraftConnection,
+  };
 }
 
 async function loadGraftChanges(workspaceRoot: string, relativePath: string): Promise<readonly string[]> {

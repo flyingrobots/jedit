@@ -8,10 +8,15 @@ import { beginSourceHighlightRefresh } from '../source-highlight-session.js';
 import { moveSettingsFocusIndex } from '../settings-session.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
-import { editorViewport, sourceHighlighter } from './editor-session.js';
+import { editorViewport } from './editor-session.js';
 import { settingsRows } from './settings.js';
+import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 
-export function updateFromMouse(msg: MouseMsg, model: WorkspaceModel): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
+export function updateFromMouse(
+  msg: MouseMsg,
+  model: WorkspaceModel,
+  sourceHighlighter: SourceHighlighter,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   const deltaRows = mouseScrollDeltaRows(msg);
   if (deltaRows === 0) {
     return [model, []];

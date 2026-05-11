@@ -31,10 +31,10 @@ import {
 import {
   isWorkspaceMarkdownFile,
   scrollPreview,
-  sourceHighlighter,
   updateInsertMode,
   updateNormalMode,
 } from './editor-session.js';
+import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import {
   beginSourceHighlightRefresh,
   shouldRefreshSourceHighlight,
@@ -48,6 +48,7 @@ import type { JeditStyleToken, JeditTheme } from '../../ui/jedit-theme.js';
 export function updateViewerFromKey(
   msg: KeyMsg,
   model: WorkspaceModel,
+  sourceHighlighter: SourceHighlighter,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (model.editor == null) {
     return [model, []];

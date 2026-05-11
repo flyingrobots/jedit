@@ -2,7 +2,7 @@ import { createSurface, stringToSurface, type Surface } from '@flyingrobots/bijo
 import { clipToWidth } from '@flyingrobots/bijou-tui';
 import { basename } from 'node:path';
 
-import type { FileEntry } from '../adapters/filesystem.js';
+import type { FileEntry } from '../ports/file-system.js';
 import { JEDIT_MARKDOWN_PREVIEW_TOGGLE_LABEL, JEDIT_SETTINGS_TOGGLE_LABEL, JEDIT_THEME_TOGGLE_LABEL } from '../app/keybindings.js';
 import type { I18nPort } from '../ports/i18n.js';
 import type { JeditStyleToken } from './jedit-theme.js';

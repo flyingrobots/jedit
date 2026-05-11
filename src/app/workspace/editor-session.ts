@@ -1,12 +1,12 @@
-import { createGraftSourceHighlighter } from '../../adapters/graft-source-highlighter.js';
 import { beginSourceHighlightRefresh } from '../source-highlight-session.js';
-import { loadEditorFile, saveEditorFile } from '../../adapters/editor-file.js';
-import { failedGraftInfo, loadGraftInfo } from '../../adapters/graft-mcp-session.js';
 import { editorViewport, type WorkspaceViewport } from './viewport.js';
 import type { Cmd } from '@flyingrobots/bijou-tui';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 import type { EditorState } from './editor/model.js';
+import type { EditorFilePort } from '../../ports/editor-file.js';
+import type { GraftSessionPort } from '../../ports/graft-session.js';
+import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import { isMarkdownFile } from './file-types.js';
 import {
   ensureEditorVisible,
@@ -16,15 +16,19 @@ import {
   updateNormalMode,
 } from './editor-editing.js';
 
-export const sourceHighlighter = createGraftSourceHighlighter();
+export interface EditorSessionPorts {
+  readonly editorFile: EditorFilePort;
+  readonly sourceHighlighter: SourceHighlighter;
+  readonly graftSession: GraftSessionPort;
+}
 
 export function isWorkspaceMarkdownFile(path: string): boolean {
   return isMarkdownFile(path);
 }
 
-export function loadEditor(filePath: string): EditorState {
+export function loadEditor(filePath: string, editorFile: EditorFilePort): EditorState {
   try {
-    const file = loadEditorFile(filePath);
+    const file = editorFile.loadEditorFile(filePath);
 
     return ensureEditorVisible({
       path: filePath,
@@ -56,19 +60,22 @@ export function loadEditor(filePath: string): EditorState {
   }
 }
 
-export function saveEditor(editor: EditorState): EditorState {
+export function saveEditor(editor: EditorState, editorFile: EditorFilePort): EditorState {
   if (editor.readOnly) {
     return editor;
   }
 
-  saveEditorFile(editor.path, editor.lines);
+  editorFile.saveEditorFile(editor.path, editor.lines);
   return {
     ...editor,
     dirty: false,
   };
 }
 
-export function toggleMarkdownPreview(model: WorkspaceModel): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
+export function toggleMarkdownPreview(
+  model: WorkspaceModel,
+  sourceHighlighter: SourceHighlighter,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (model.editor == null || !isWorkspaceMarkdownFile(model.editor.path)) {
     return [model, []];
   }
@@ -94,18 +101,23 @@ export function toggleMarkdownPreview(model: WorkspaceModel): [WorkspaceModel, C
 export function beginEditorProjectionRefresh(
   model: WorkspaceModel,
   refreshGraft: boolean,
+  ports: EditorSessionPorts,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
-  const [withGraft, graftCmds] = beginGraftRefresh(model, refreshGraft);
+  const [withGraft, graftCmds] = beginGraftRefresh(model, refreshGraft, ports.graftSession);
   const [withHighlight, highlightCmds] = beginSourceHighlightRefresh(
     withGraft,
     withGraft.editor,
     editorViewport(withGraft),
-    sourceHighlighter,
+    ports.sourceHighlighter,
   );
   return [withHighlight, [...graftCmds, ...highlightCmds]];
 }
 
-export function beginGraftRefresh(model: WorkspaceModel, force: boolean): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
+export function beginGraftRefresh(
+  model: WorkspaceModel,
+  force: boolean,
+  graftSession: GraftSessionPort,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (model.editor == null) {
     return [{
       ...model,
@@ -130,7 +142,13 @@ export function beginGraftRefresh(model: WorkspaceModel, force: boolean): [Works
       graftInfo: sameFile ? model.graftInfo : undefined,
       graftSelectedIndex: sameFile ? model.graftSelectedIndex : 0,
     },
-    [requestGraftInfoCmd(requestId, model.workspaceRoot, model.editor.path, model.editor.dirty)],
+    [requestGraftInfoCmd(
+      requestId,
+      model.workspaceRoot,
+      model.editor.path,
+      model.editor.dirty,
+      graftSession,
+    )],
   ];
 }
 
@@ -139,19 +157,20 @@ function requestGraftInfoCmd(
   workspaceRoot: string,
   filePath: string,
   dirty: boolean,
+  graftSession: GraftSessionPort,
 ): Cmd<WorkspaceMsg> {
   return async () => {
     try {
       return {
         type: 'graft-info',
         requestId,
-        info: await loadGraftInfo(workspaceRoot, filePath, dirty),
+        info: await graftSession.loadGraftInfo(workspaceRoot, filePath, dirty),
       };
     } catch (cause) {
       return {
         type: 'graft-info',
         requestId,
-        info: failedGraftInfo(workspaceRoot, filePath, dirty, cause instanceof Error ? cause.message : String(cause)),
+        info: graftSession.failedGraftInfo(workspaceRoot, filePath, dirty, cause instanceof Error ? cause.message : String(cause)),
       };
     }
   };
