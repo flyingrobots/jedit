@@ -14,7 +14,24 @@ import type {
 import type { WorldlineSnapshotReadingEnvelope } from '../app/jedit-observer-runtime.js';
 import type { TextWindowReadingEnvelope } from '../app/jedit-observer-runtime.js';
 
+export const READ_BASIS_HANDLE_KIND = 'read-basis-handle';
+
+export interface ReadBasisHandle {
+  readonly kind: typeof READ_BASIS_HANDLE_KIND;
+  readonly id: string;
+}
+
+export interface OpenTextBufferExecution extends CreateBufferWorldlineExecution {
+  readonly readBasisHandle: ReadBasisHandle;
+}
+
+export type TextWindowRangeInput = Omit<QueryTextWindowRequest['input'], 'worldlineId'>;
+
 export interface JeditMutationOpticClient {
+  openTextBuffer(
+    input: MutationCreateBufferWorldlineRequest['input'],
+  ): OpenTextBufferExecution;
+
   createBufferWorldline(
     input: MutationCreateBufferWorldlineRequest['input'],
   ): CreateBufferWorldlineExecution;
@@ -40,7 +57,8 @@ export interface JeditObserverOpticClient {
   textWindow(
     session: JeditWorldlineSession,
     frontierRef: string,
-    input: QueryTextWindowRequest['input'],
+    readBasisHandle: ReadBasisHandle,
+    input: TextWindowRangeInput,
   ): TextWindowReadingEnvelope;
 }
 

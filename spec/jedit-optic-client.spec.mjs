@@ -19,6 +19,14 @@ const EMPTY_TEXT = '';
 const FIRST_BYTE_OFFSET = 0;
 const FIRST_LINE = 0;
 const SINGLE_LINE_WINDOW = 1;
+const RAW_BASIS_FIELD_NAMES = Object.freeze([
+  'worldlineId',
+  'basisRef',
+  'headId',
+  'tick',
+  'root',
+  'strand',
+]);
 const UTF8_ENCODER = new TextEncoder();
 
 async function loadModules() {
@@ -174,7 +182,7 @@ test('transport-backed optic client exercises the fake Echo host through encoded
   assert.match(stale.obstruction.message, /Base head mismatch/);
 });
 
-test('transport-backed textWindow returns a bounded large-file reading', async () => {
+test('transport-backed textWindow uses an opaque read basis handle', async () => {
   const { transportClientModule, fakeTransportModule, codecModule } = await loadModules();
   const fakeTransport = fakeTransportModule.createFakeEchoJeditOpticTransport();
   const observedRequests = [];
@@ -202,18 +210,31 @@ test('transport-backed textWindow returns a bounded large-file reading', async (
 
   assert.ok(byteLength(largeText) > LEGACY_EAGER_LOAD_CAP_BYTES);
 
-  const created = client.createBufferWorldline({
+  const opened = client.openTextBuffer({
     bufferKey: 'src/large-main.ts',
     initialText: largeText,
     projectionPath: '/tmp/src/large-main.ts',
     createInitialCheckpoint: false,
   });
 
+  assert.equal(opened.readBasisHandle.kind, 'read-basis-handle');
+  assert.equal(typeof opened.readBasisHandle.id, 'string');
+  assert.equal(opened.readBasisHandle.id.includes(opened.nextSession.worldline.worldlineId), false);
+  assert.equal(opened.readBasisHandle.id.includes(opened.nextSession.worldline.canonicalHeadId), false);
+  assert.deepEqual(Object.keys(opened.readBasisHandle).sort(), ['id', 'kind']);
+  for (const rawFieldName of RAW_BASIS_FIELD_NAMES) {
+    assert.equal(
+      Object.hasOwn(opened.readBasisHandle, rawFieldName),
+      false,
+      `ReadBasisHandle must not expose ${rawFieldName}`,
+    );
+  }
+
   const envelope = client.textWindow(
-    created.nextSession,
+    opened.nextSession,
     'frontier:text-window:1',
+    opened.readBasisHandle,
     {
-      worldlineId: created.nextSession.worldline.worldlineId,
       cursorLine: 500,
       viewportLineCount: 4,
       beforeLines: 1,
@@ -224,6 +245,7 @@ test('transport-backed textWindow returns a bounded large-file reading', async (
 
   assert.equal(observedRequests.length, 1);
   assert.equal(observedRequests[0].operationName, codecModule.TEXT_WINDOW_OPERATION);
+  assert.equal(observedRequests[0].input.worldlineId, opened.nextSession.worldline.worldlineId);
   assert.equal(envelope.operationName, codecModule.TEXT_WINDOW_OPERATION);
   assert.equal(envelope.frontierRef, 'frontier:text-window:1');
   assert.equal(envelope.reading.text, undefined);
@@ -265,16 +287,16 @@ test('Stack Witness 0001 walks createBuffer -> replaceRange -> textWindow throug
   };
   const client = transportClientModule.createEchoTransportJeditOpticClient(transport);
 
-  const created = client.createBufferWorldline({
+  const opened = client.openTextBuffer({
     bufferKey: STACK_WITNESS_BUFFER_KEY,
     initialText: EMPTY_TEXT,
     projectionPath: STACK_WITNESS_BUFFER_KEY,
     createInitialCheckpoint: false,
   });
 
-  const edited = client.replaceRangeAsTick(created.nextSession, {
-    worldlineId: created.nextSession.worldline.worldlineId,
-    baseHeadId: created.nextSession.worldline.canonicalHeadId,
+  const edited = client.replaceRangeAsTick(opened.nextSession, {
+    worldlineId: opened.nextSession.worldline.worldlineId,
+    baseHeadId: opened.nextSession.worldline.canonicalHeadId,
     startByte: FIRST_BYTE_OFFSET,
     endByte: FIRST_BYTE_OFFSET,
     insertText: STACK_WITNESS_TEXT,
@@ -284,8 +306,8 @@ test('Stack Witness 0001 walks createBuffer -> replaceRange -> textWindow throug
   const envelope = client.textWindow(
     edited.nextSession,
     STACK_WITNESS_FRONTIER_REF,
+    opened.readBasisHandle,
     {
-      worldlineId: edited.nextSession.worldline.worldlineId,
       cursorLine: FIRST_LINE,
       viewportLineCount: SINGLE_LINE_WINDOW,
       beforeLines: FIRST_LINE,

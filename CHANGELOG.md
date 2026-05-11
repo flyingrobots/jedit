@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Defined the first `ReadBasisHandle` boundary for optic/session bootstrap:
+  transport-backed `textWindow` calls now accept an opaque read-basis handle
+  while the adapter resolves the handle into existing runtime coordinates.
 - Hardened the real Echo WASM Stack Witness basis regression so it asserts the
   encoded request coordinate comes from the resolved read basis instead of
   inspecting request-construction source text.

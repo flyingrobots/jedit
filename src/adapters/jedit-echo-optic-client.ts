@@ -11,7 +11,13 @@ import type {
   QueryOperationMap,
 } from '../generated/jedit/hot-text-runtime.types.generated.js';
 import type { EchoWasmKernelTransport } from '../ports/echo-kernel-transport.js';
-import type { JeditOpticClient } from '../ports/jedit-optic-client.js';
+import {
+  READ_BASIS_HANDLE_KIND,
+  type JeditOpticClient,
+  type OpenTextBufferExecution,
+  type ReadBasisHandle,
+  type TextWindowRangeInput,
+} from '../ports/jedit-optic-client.js';
 import {
   CREATE_BUFFER_WORLDLINE_OPERATION,
   CREATE_CHECKPOINT_OPERATION,
@@ -42,6 +48,7 @@ type ReplaceRangeAsTickInput = MutationOperationMap['replaceRangeAsTick']['input
 type CreateCheckpointInput = MutationOperationMap['createCheckpoint']['input'];
 type WorldlineSnapshotInput = QueryOperationMap['worldlineSnapshot']['input'];
 type TextWindowInput = QueryOperationMap['textWindow']['input'];
+const READ_BASIS_HANDLE_ID_PREFIX = 'text-buffer:';
 
 export class JeditOpticTransportObstructionError extends Error {
   public readonly operationName: string;
@@ -66,19 +73,15 @@ export function createEchoTransportJeditOpticClient(
   transport: EchoWasmKernelTransport,
 ): JeditOpticClient {
   return {
+    openTextBuffer(input: CreateBufferWorldlineInput): OpenTextBufferExecution {
+      const execution = createBufferWorldlineViaTransport(transport, input);
+      return {
+        ...execution,
+        readBasisHandle: createReadBasisHandle(execution.nextSession),
+      };
+    },
     createBufferWorldline(input: CreateBufferWorldlineInput): CreateBufferWorldlineExecution {
-      const response = submitIntent(transport, {
-        kind: JEDIT_INTENT_REQUEST_KIND,
-        operationName: CREATE_BUFFER_WORLDLINE_OPERATION,
-        input,
-      });
-      if (response.status === JEDIT_TRANSPORT_STATUS_OBSTRUCTED) {
-        throw new JeditOpticTransportObstructionError(response.operationName, response.obstruction);
-      }
-      if (response.operationName !== CREATE_BUFFER_WORLDLINE_OPERATION) {
-        throwUnexpectedOperation(CREATE_BUFFER_WORLDLINE_OPERATION, response.operationName);
-      }
-      return toCreateBufferWorldlineExecution(response.execution);
+      return createBufferWorldlineViaTransport(transport, input);
     },
     replaceRangeAsTick(
       session: JeditWorldlineSession,
@@ -139,14 +142,15 @@ export function createEchoTransportJeditOpticClient(
     textWindow(
       session: JeditWorldlineSession,
       frontierRef: string,
-      input: TextWindowInput,
+      readBasisHandle: ReadBasisHandle,
+      input: TextWindowRangeInput,
     ): TextWindowReadingEnvelope {
       const response = observe(transport, {
         kind: JEDIT_OBSERVE_REQUEST_KIND,
         operationName: TEXT_WINDOW_OPERATION,
         session,
         frontierRef,
-        input,
+        input: toTextWindowInput(session, readBasisHandle, input),
       });
       if (response.status === JEDIT_TRANSPORT_STATUS_OBSTRUCTED) {
         throw new JeditOpticTransportObstructionError(response.operationName, response.obstruction);
@@ -157,6 +161,55 @@ export function createEchoTransportJeditOpticClient(
       return toTextWindowReadingEnvelope(response.envelope);
     },
   };
+}
+
+function createBufferWorldlineViaTransport(
+  transport: EchoWasmKernelTransport,
+  input: CreateBufferWorldlineInput,
+): CreateBufferWorldlineExecution {
+  const response = submitIntent(transport, {
+    kind: JEDIT_INTENT_REQUEST_KIND,
+    operationName: CREATE_BUFFER_WORLDLINE_OPERATION,
+    input,
+  });
+  if (response.status === JEDIT_TRANSPORT_STATUS_OBSTRUCTED) {
+    throw new JeditOpticTransportObstructionError(response.operationName, response.obstruction);
+  }
+  if (response.operationName !== CREATE_BUFFER_WORLDLINE_OPERATION) {
+    throwUnexpectedOperation(CREATE_BUFFER_WORLDLINE_OPERATION, response.operationName);
+  }
+  return toCreateBufferWorldlineExecution(response.execution);
+}
+
+function createReadBasisHandle(session: JeditWorldlineSession): ReadBasisHandle {
+  return Object.freeze({
+    kind: READ_BASIS_HANDLE_KIND,
+    id: `${READ_BASIS_HANDLE_ID_PREFIX}${session.worldline.bufferKey}`,
+  });
+}
+
+function toTextWindowInput(
+  session: JeditWorldlineSession,
+  readBasisHandle: ReadBasisHandle,
+  input: TextWindowRangeInput,
+): TextWindowInput {
+  return {
+    ...input,
+    worldlineId: resolveReadBasisWorldlineId(session, readBasisHandle),
+  };
+}
+
+function resolveReadBasisWorldlineId(
+  session: JeditWorldlineSession,
+  readBasisHandle: ReadBasisHandle,
+): string {
+  const expected = createReadBasisHandle(session);
+  if (readBasisHandle.kind !== READ_BASIS_HANDLE_KIND || readBasisHandle.id !== expected.id) {
+    throw new JeditOpticTransportProtocolError(
+      'ReadBasisHandle does not belong to the supplied jedit session.',
+    );
+  }
+  return session.worldline.worldlineId;
 }
 
 function submitIntent(
