@@ -1,11 +1,10 @@
 import type { Cmd } from '@flyingrobots/bijou-tui';
-import { defaultFocusPane, type DrawerKind } from '../../ui/panel-focus.js';
+import { defaultFocusPane } from '../../ui/panel-focus.js';
+import type { DrawerKind } from '../../ui/drawer-layout.js';
 import type { FocusCycleState } from '../../ui/panel-focus.js';
 import { withFocusPane } from './focus.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
-
-const DRAWER_DURATION_MS = 160;
 
 export type CreateDrawerAnimationCmd = (kind: DrawerKind, from: number, to: number) => Cmd<WorkspaceMsg>[];
 
@@ -53,7 +52,7 @@ export function toggleDrawer(
   kind: DrawerKind,
   beginGraftRefresh: (model: WorkspaceModel, force: boolean) => [WorkspaceModel, Cmd<WorkspaceMsg>[]],
   createDrawerAnimationCmd: CreateDrawerAnimationCmd,
-): [WorkspaceModel, Cmd<WorkspaceModel>[]] {
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if ((kind === 'files' && model.fileDrawerOpen) || (kind === 'graft' && model.graftDrawerOpen)) {
     return closeDrawer(model, kind, createDrawerAnimationCmd);
   }
