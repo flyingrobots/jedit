@@ -25,6 +25,7 @@ export function createInitialModel(
   snapshot: WorkspaceInitialModelSnapshot,
 ): WorkspaceModel {
   const { titleSceneSeed, jeditTheme, i18n, entries, titleMesh, nowMs } = snapshot;
+  const focusPane: FocusPane = 'editor';
   return {
     i18n,
     workspaceRoot: cwd,
@@ -33,7 +34,7 @@ export function createInitialModel(
     selectedIndex: 0,
     editor: undefined,
     viewMode: 'source',
-    focusPane: 'editor' as FocusPane,
+    focusPane,
     fileDrawerOpen: false,
     fileDrawerProgress: 0,
     graftDrawerOpen: false,
