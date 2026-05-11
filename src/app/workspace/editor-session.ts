@@ -87,7 +87,7 @@ export function toggleMarkdownPreview(
   };
 
   if (next.viewMode === 'source') {
-    return beginSourceHighlightRefresh(
+    return beginSourceHighlightRefresh<WorkspaceModel, WorkspaceMsg>(
       next,
       next.editor,
       editorViewport(next),
@@ -104,7 +104,7 @@ export function beginEditorProjectionRefresh(
   ports: EditorSessionPorts,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   const [withGraft, graftCmds] = beginGraftRefresh(model, refreshGraft, ports.graftSession);
-  const [withHighlight, highlightCmds] = beginSourceHighlightRefresh(
+  const [withHighlight, highlightCmds] = beginSourceHighlightRefresh<WorkspaceModel, WorkspaceMsg>(
     withGraft,
     withGraft.editor,
     editorViewport(withGraft),
