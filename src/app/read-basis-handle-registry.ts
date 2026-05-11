@@ -21,25 +21,26 @@ export class ReadBasisHandleResolutionError extends Error {
 
 export class ReadBasisHandleRegistry {
   private nextHandleId = FIRST_READ_BASIS_HANDLE_SEQUENCE;
-  private readonly bindings = new Map<string, ReadBasisBinding>();
+  private readonly bindings = new WeakMap<ReadBasisHandle, ReadBasisBinding>();
 
   public createForSession(session: JeditWorldlineSession): ReadBasisHandle {
     const id = `${READ_BASIS_HANDLE_ID_PREFIX}${this.nextHandleId}`;
     this.nextHandleId += NEXT_READ_BASIS_HANDLE_STEP;
-    this.bindings.set(id, {
-      worldlineId: session.worldline.worldlineId,
-    });
-    return Object.freeze({
+    const handle = Object.freeze({
       kind: READ_BASIS_HANDLE_KIND,
       id,
     });
+    this.bindings.set(handle, {
+      worldlineId: session.worldline.worldlineId,
+    });
+    return handle;
   }
 
   public resolveWorldlineId(
     session: JeditWorldlineSession,
     readBasisHandle: ReadBasisHandle,
   ): string {
-    const binding = this.bindings.get(readBasisHandle.id);
+    const binding = this.bindings.get(readBasisHandle);
     if (readBasisHandle.kind !== READ_BASIS_HANDLE_KIND || binding === undefined) {
       throw new ReadBasisHandleResolutionError();
     }

@@ -5,8 +5,9 @@
 - Defined the first `ReadBasisHandle` boundary for optic/session bootstrap:
   transport-backed `textWindow` calls now accept an opaque read-basis handle
   while the adapter resolves the handle into existing runtime coordinates, and
-  handle IDs are deterministic session-local tokens rather than buffer keys or
-  substrate coordinates.
+  handle IDs are deterministic diagnostic tokens rather than buffer keys or
+  substrate coordinates. The registry now rejects cloned/forged handles by
+  object identity instead of trusting `id` replay.
 - Hardened the real Echo WASM Stack Witness basis regression so it asserts the
   encoded request coordinate comes from the resolved read basis instead of
   inspecting request-construction source text.

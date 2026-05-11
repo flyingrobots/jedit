@@ -120,7 +120,6 @@ test('transport-backed optic client exercises the fake Echo host through encoded
     transportClientModule,
     fakeTransportModule,
     codecModule,
-    readBasisHandleModule,
   } = await loadModules();
   const fakeTransport = fakeTransportModule.createFakeEchoJeditOpticTransport();
   const calls = [];
@@ -276,6 +275,25 @@ test('transport-backed textWindow uses an opaque read basis handle', async () =>
     ),
     readBasisHandleModule.ReadBasisHandleResolutionError,
   );
+  const clonedReadBasisHandle = Object.freeze({
+    kind: opened.readBasisHandle.kind,
+    id: opened.readBasisHandle.id,
+  });
+  assert.throws(
+    () => client.textWindow(
+      opened.nextSession,
+      'frontier:text-window:cloned-handle',
+      clonedReadBasisHandle,
+      {
+        cursorLine: 0,
+        viewportLineCount: 1,
+        beforeLines: 0,
+        afterLines: 0,
+        maxBytes: 128,
+      },
+    ),
+    readBasisHandleModule.ReadBasisHandleResolutionError,
+  );
 
   const envelope = client.textWindow(
     opened.nextSession,
@@ -309,6 +327,44 @@ test('transport-backed textWindow uses an opaque read basis handle', async () =>
   assert.equal(envelope.reading.lines[0].startByte, lineStartByte(largeLines, 499));
   assert.equal(envelope.reading.lines[0].endByte, lineStartByte(largeLines, 500) - 1);
   assert.ok(JSON.stringify(envelope.reading).length < byteLength(largeText));
+
+  const otherOpened = client.openTextBuffer({
+    bufferKey: 'src/other-main.ts',
+    initialText: 'other',
+    projectionPath: '/tmp/src/other-main.ts',
+    createInitialCheckpoint: false,
+  });
+  assert.throws(
+    () => client.textWindow(
+      otherOpened.nextSession,
+      'frontier:text-window:cross-session',
+      opened.readBasisHandle,
+      {
+        cursorLine: FIRST_LINE,
+        viewportLineCount: SINGLE_LINE_WINDOW,
+        beforeLines: FIRST_LINE,
+        afterLines: FIRST_LINE,
+        maxBytes: 128,
+      },
+    ),
+    readBasisHandleModule.ReadBasisHandleResolutionError,
+  );
+  const otherEnvelope = client.textWindow(
+    otherOpened.nextSession,
+    'frontier:text-window:other',
+    otherOpened.readBasisHandle,
+    {
+      cursorLine: FIRST_LINE,
+      viewportLineCount: SINGLE_LINE_WINDOW,
+      beforeLines: FIRST_LINE,
+      afterLines: FIRST_LINE,
+      maxBytes: 128,
+    },
+  );
+  assert.deepEqual(
+    otherEnvelope.reading.lines.map((line) => line.text),
+    ['other'],
+  );
 });
 
 test('Stack Witness 0001 walks createBuffer -> replaceRange -> textWindow through Echo transport', async () => {
@@ -349,6 +405,10 @@ test('Stack Witness 0001 walks createBuffer -> replaceRange -> textWindow throug
     insertText: STACK_WITNESS_TEXT,
     author: STACK_WITNESS_AUTHOR,
   });
+  assert.notEqual(
+    edited.nextSession.worldline.canonicalHeadId,
+    opened.nextSession.worldline.canonicalHeadId,
+  );
 
   const envelope = client.textWindow(
     edited.nextSession,

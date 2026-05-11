@@ -21,9 +21,13 @@ type ReadBasisHandle = {
 };
 ```
 
-The handle is opaque to jedit app-facing code. Its `id` is a deterministic
-session-local capability token, not a substrate coordinate, buffer key, file
-path, head id, or application semantic identifier.
+The handle is opaque to jedit app-facing code. Its `id` is deterministic,
+diagnostic, and session-local, but it is not authority by itself. Authority is
+the registered handle object held below the adapter boundary; cloned objects
+with the same `id` must not resolve.
+
+The `id` is not a substrate coordinate, buffer key, file path, head id, or
+application semantic identifier.
 
 ## App-facing flow
 
@@ -70,12 +74,19 @@ ReadBasisHandle -> runtime read coordinates
 ```
 
 For the current jedit-only slice, the fake/session-local resolver maps the
-opaque handle back to the session worldline before encoding the existing fake
-Echo transport request. Handle IDs are deterministic process-local tokens such
-as `read-basis:0`; they must not encode buffer keys, paths, worldlines, heads,
-ticks, roots, strands, or other meaningful coordinates. That preserves current
-behavior while proving the app-facing contract no longer needs raw substrate
-coordinates for `textWindow`.
+registered handle object back to the session worldline before encoding the
+existing fake Echo transport request. Handle IDs are deterministic process-local
+diagnostic tokens such as `read-basis:0`; they must not encode buffer keys,
+paths, worldlines, heads, ticks, roots, strands, or other meaningful
+coordinates.
+
+The current handle is a same-worldline read-target capability, not a
+head-pinned historical-basis proof. It may be reused after a local edit advances
+the same session worldline. Exact stale-basis obstruction belongs in a later
+head-pinned basis capability, not this first anti-leak contract slice.
+
+That preserves current behavior while proving the app-facing contract no longer
+needs raw substrate coordinates for `textWindow`.
 
 ## Non-goals
 
