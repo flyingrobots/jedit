@@ -1,4 +1,4 @@
-import type { Cmd, RuntimeIssue } from '@flyingrobots/bijou-tui';
+import type { Cmd, KeyMsg, MouseMsg, ResizeMsg, RuntimeIssue } from '@flyingrobots/bijou-tui';
 import { createInitialModel } from './init.js';
 import type { WorkspaceInitialModelSnapshot } from './init.js';
 import { manageGraftLifecycle } from './graft.js';
@@ -10,7 +10,7 @@ import {
   tickNotificationState,
 } from '../../ui/feedback.js';
 import { reduceSourceHighlightMsg, SOURCE_HIGHLIGHT_MESSAGE } from '../source-highlight-session.js';
-import { reduceTitleCameraMotion, TITLE_CAMERA_MESSAGE, type TitleCameraMotionMsg } from '../title-camera-session.js';
+import { reduceTitleCameraMotion, TITLE_CAMERA_MESSAGE } from '../title-camera-session.js';
 import { ensureEditorVisible, editorViewport } from './editor-session.js';
 import { updateFromKey } from './key-bindings.js';
 import { updateFromMouse } from './mouse.js';
@@ -50,7 +50,7 @@ export interface WorkspaceRuntimeDependencies {
 
 export interface WorkspaceRuntime {
   init: () => [WorkspaceModel, Cmd<WorkspaceMsg>[]];
-  update: (msg: WorkspaceMsg, model: WorkspaceModel) => [WorkspaceModel, Cmd<WorkspaceMsg>[]];
+  update: (msg: WorkspaceRuntimeMsg, model: WorkspaceModel) => [WorkspaceModel, Cmd<WorkspaceMsg>[]];
   view: (model: WorkspaceModel) => ReturnType<typeof renderWorkspace>;
   routeRuntimeIssue: (issue: RuntimeIssue) => WorkspaceMsg;
 }
@@ -196,6 +196,8 @@ export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): Work
 });
 
 
-function isProfilerMsg(msg: WorkspaceMsg): msg is ProfilerMsg {
+type WorkspaceRuntimeMsg = WorkspaceMsg | ResizeMsg | KeyMsg | MouseMsg;
+
+function isProfilerMsg(msg: WorkspaceRuntimeMsg): msg is ProfilerMsg {
   return msg.type === 'profiler-started' || msg.type === 'profiler-stopped';
 }
