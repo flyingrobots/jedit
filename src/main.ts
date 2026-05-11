@@ -9,7 +9,7 @@ const app = createWorkspaceApp({
   initialColumns: process.stdout.columns ?? 100,
   initialRows: process.stdout.rows ?? 32,
   initialWorkingDirectory: process.cwd(),
-  perfEnabled: process.env.JEDIT_PERF === '1',
+  perfEnabled: process.env['JEDIT_PERF'] === '1',
 });
 
-run(app, { mouse: JEDIT_TERMINAL_MOUSE_OPTIONS });
+run(app, { mouse: JEDIT_TERMINAL_MOUSE_OPTIONS.mouse });
