@@ -1,13 +1,11 @@
 import type { KeyMsg } from '@flyingrobots/bijou-tui';
 import { joinLines, normalizeLines } from '../editor-lines.js';
 import { clampIndex } from './viewport.js';
-import type { EditorMode, PendingNormal } from './editor/mode.js';
+import type { EditorMode } from './editor/mode.js';
 import type { EditorState, HistoryEntry, RegisterKind } from './editor/model.js';
 
 const NORMAL_MODE = 'normal';
 const INSERT_MODE = 'insert';
-const UNDO_MAX_WORD_INDEX = 1;
-const MINIMUM_WORD_INDEX = 0;
 
 export function ensureEditorVisible(editor: EditorState, width: number, height: number): EditorState {
   const normalized = normalizeEditor(editor);
@@ -431,7 +429,6 @@ function enterInsertAtFirstNonWhitespace(editor: EditorState): EditorState {
 }
 
 function openLineBelow(editor: EditorState): EditorState {
-  const line = currentLine(editor);
   const nextLines = [
     ...editor.lines.slice(0, editor.cursorRow + 1),
     '',
