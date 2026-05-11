@@ -166,9 +166,19 @@ test('workspace app renders perf overlay after toggle when perf starts disabled'
 
   const [initialModel] = app.init();
   const [visibleModel] = app.update({ type: 'toggle-perf' }, initialModel);
-  const surface = app.view(visibleModel);
+  const surface = app.view({
+    ...visibleModel,
+    lastFrameMs: 123456789,
+    frameTimeMs: 20,
+    frameTimeHistory: [16, 20],
+  });
+  const text = surfaceText(surface);
 
-  assert.match(surfaceText(surface), /jedit perf/);
+  assert.match(text, /jedit perf/);
+  assert.match(text, /FPS\s+50/);
+  assert.match(text, /frame\s+20\.00 ms/);
+  assert.match(text, /heap\s+\d+\.\d MB/);
+  assert.match(text, /rss\s+\d+\.\d MB/);
 });
 
 function surfaceText(surface) {

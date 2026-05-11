@@ -70,7 +70,7 @@ export function createWorkspaceApp(options: WorkspaceAppOptions): App<WorkspaceM
     routeRuntimeIssue: runtime.routeRuntimeIssue,
   };
 
-  return createPerfApp(app, nowMs, options.perfEnabled);
+  return createPerfApp(app, options.perfEnabled);
 }
 
 function createInitialModelSnapshot(
@@ -102,7 +102,6 @@ function loadStartupTitleMesh(): TitleMesh | undefined {
 
 function createPerfApp(
   realApp: App<WorkspaceModel, WorkspaceMsg>,
-  nowMs: () => number,
   initialPerfVisible: boolean,
 ): App<WorkspaceModel, WorkspaceMsg> {
   return {
@@ -113,27 +112,20 @@ function createPerfApp(
         perfVisible: initialPerfVisible || model.perfVisible,
       }, cmds];
     },
-    update: (msg, model) => {
-      const start = nowMs();
-      const [nextModel, cmds] = realApp.update(msg, model);
-      const end = nowMs();
-      return [{
-        ...nextModel,
-        lastFrameMs: start,
-        frameTimeMs: end - start,
-        frameTimeHistory: [end - start, ...nextModel.frameTimeHistory.slice(0, 99)],
-      }, cmds];
-    },
+    update: realApp.update,
     view: (model) => {
       const viewOutput = realApp.view(model);
       const surface = toSurfaceView(viewOutput);
       if (model.perfVisible) {
+        const memory = process.memoryUsage();
         const perfSurface = perfOverlaySurface({
           width: model.columns,
           height: model.rows,
-          fps: model.lastFrameMs === 0 ? 0 : Math.round(1000 / model.lastFrameMs),
+          fps: model.frameTimeMs <= 0 ? 0 : Math.round(1000 / model.frameTimeMs),
           frameTimeMs: model.frameTimeMs,
           frameTimeHistory: model.frameTimeHistory,
+          heapUsedMB: bytesToMegabytes(memory.heapUsed),
+          rssMB: bytesToMegabytes(memory.rss),
         }, {
           title: 'jedit perf',
         });
@@ -143,6 +135,10 @@ function createPerfApp(
     },
     routeRuntimeIssue: realApp.routeRuntimeIssue,
   };
+}
+
+function bytesToMegabytes(bytes: number): number {
+  return bytes / 1024 / 1024;
 }
 
 function toSurfaceView(viewOutput: ViewOutput): Surface {
