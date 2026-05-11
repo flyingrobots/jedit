@@ -1,8 +1,7 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import test from 'node:test';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   bytesAsSequence,
   bytesToHex,
@@ -14,14 +13,22 @@ import {
   toByteArray,
 } from './support/echo-wasm-cbor.mjs';
 
-const REPO_ROOT = process.cwd();
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const TRANSPORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'echo-wasm-kernel.js');
-const REAL_ECHO_WASM_MODULE = process.env.JEDIT_ECHO_WASM_MODULE;
+const REAL_ECHO_WASM_MODULE_RAW = process.env.JEDIT_ECHO_WASM_MODULE;
+const REAL_ECHO_WASM_MODULE =
+  typeof REAL_ECHO_WASM_MODULE_RAW === 'string' && REAL_ECHO_WASM_MODULE_RAW.trim().length > 0
+    ? REAL_ECHO_WASM_MODULE_RAW
+    : undefined;
 
-const STACK_WITNESS_CREATE_BUFFER_OP_ID = 0x5357_0001;
-const STACK_WITNESS_REPLACE_RANGE_OP_ID = 0x5357_0002;
-const STACK_WITNESS_TEXT_WINDOW_QUERY_ID = 0x5357_1001;
-const ECHO_CONTROL_INTENT_V1_OP_ID = 0xffff_ffff;
+const STACK_WITNESS_OP_IDS = Object.freeze({
+  CREATE_BUFFER: 0x5357_0001,
+  REPLACE_RANGE: 0x5357_0002,
+  TEXT_WINDOW_QUERY: 0x5357_1001,
+});
+const ECHO_CONTROL_OP_IDS = Object.freeze({
+  INTENT_V1: 0xffff_ffff,
+});
 const STACK_WITNESS_CREATE_BUFFER_VARS =
   'stack-witness-0001/createBuffer;name=demo.txt;artifact=fixture-file-history-v0';
 const STACK_WITNESS_REPLACE_RANGE_VARS =
@@ -48,7 +55,7 @@ const ECHO_DERIVED_FIXTURE_DEFAULT_WORLDLINE_ID_HEX =
 const UTF8_DECODER = new TextDecoder();
 
 test('real Echo WASM Stack Witness 0001 transport emits ReadingEnvelope + QueryBytes', {
-  skip: REAL_ECHO_WASM_MODULE == null
+  skip: REAL_ECHO_WASM_MODULE === undefined
     ? 'set JEDIT_ECHO_WASM_MODULE to an Echo warp-wasm JS module to run this opt-in witness'
     : false,
 }, async () => {
@@ -61,13 +68,13 @@ test('real Echo WASM Stack Witness 0001 transport emits ReadingEnvelope + QueryB
 
   dispatchFixtureIntent(
     transport,
-    STACK_WITNESS_CREATE_BUFFER_OP_ID,
+    STACK_WITNESS_OP_IDS.CREATE_BUFFER,
     STACK_WITNESS_CREATE_BUFFER_VARS,
   );
   runEchoSchedulerUntilIdle(transport);
   dispatchFixtureIntent(
     transport,
-    STACK_WITNESS_REPLACE_RANGE_OP_ID,
+    STACK_WITNESS_OP_IDS.REPLACE_RANGE,
     STACK_WITNESS_REPLACE_RANGE_VARS,
   );
   runEchoSchedulerUntilIdle(transport);
@@ -95,13 +102,15 @@ test('real Echo WASM Stack Witness 0001 transport emits ReadingEnvelope + QueryB
 });
 
 async function loadTransportModule() {
-  const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
-    cwd: REPO_ROOT,
-    encoding: 'utf8',
-  });
-
-  assert.equal(build.status, 0, build.stderr || build.stdout);
-  return import(pathToFileURL(TRANSPORT_MODULE_PATH).href);
+  try {
+    return await import(pathToFileURL(TRANSPORT_MODULE_PATH).href);
+  } catch (cause) {
+    throw new Error(
+      `${TRANSPORT_MODULE_PATH} not found; run scripts/run-real-echo-wasm-stack-witness.sh `
+        + 'or npm run build before invoking this witness.',
+      { cause },
+    );
+  }
 }
 
 function toModuleSpecifier(modulePath) {
@@ -128,7 +137,7 @@ function runEchoSchedulerUntilIdle(transport) {
 }
 
 function packControlStartIntent() {
-  return packEintEnvelope(ECHO_CONTROL_INTENT_V1_OP_ID, encodeCbor({
+  return packEintEnvelope(ECHO_CONTROL_OP_IDS.INTENT_V1, encodeCbor({
     kind: 'start',
     mode: {
       kind: 'until_idle',
@@ -148,7 +157,7 @@ function encodeStackWitnessTextWindowRequest() {
     frame: 'query_view',
     projection: {
       kind: 'query',
-      query_id: STACK_WITNESS_TEXT_WINDOW_QUERY_ID,
+      query_id: STACK_WITNESS_OP_IDS.TEXT_WINDOW_QUERY,
       vars_bytes: bytesAsSequence(encodeUtf8(STACK_WITNESS_TEXT_WINDOW_VARS)),
     },
     observer_plan: {
@@ -178,7 +187,7 @@ function assertStackWitnessArtifactIdentity(artifact) {
   assert.equal(bytesToHex(artifact.resolved.worldline_id), ECHO_DERIVED_FIXTURE_DEFAULT_WORLDLINE_ID_HEX);
   assert.equal(artifact.frame, 'query_view');
   assert.equal(artifact.projection.kind, 'query');
-  assert.equal(artifact.projection.query_id, STACK_WITNESS_TEXT_WINDOW_QUERY_ID);
+  assert.equal(artifact.projection.query_id, STACK_WITNESS_OP_IDS.TEXT_WINDOW_QUERY);
   assert.deepEqual(
     toByteArray(artifact.projection.vars_bytes),
     bytesAsSequence(encodeUtf8(STACK_WITNESS_TEXT_WINDOW_VARS)),
@@ -235,6 +244,6 @@ function toWitnessOnlyTextWindowReading(artifact, queryBytes) {
 
 function decodeOkEnvelope(bytes) {
   const decoded = decodeCbor(bytes);
-  assert.equal(decoded.ok, true, decoded.message ?? "Echo WASM returned an error envelope");
+  assert.equal(decoded.ok, true, decoded.message ?? 'Echo WASM returned an error envelope');
   return decoded;
 }

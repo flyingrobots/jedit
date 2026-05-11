@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
+import { createI18nMock } from './i18n-mock.mjs';
 
 const REPO_ROOT = process.cwd();
 const SESSION_PATH = path.join(REPO_ROOT, 'dist', 'app', 'settings-session.js');
@@ -27,6 +28,7 @@ test('jedit settings rows expose theme, footer, and markdown preview preferences
   const theme = themes.availableJeditThemes()[0];
 
   const rows = settings.jeditSettingsRows({
+    i18n: createI18nMock(),
     jeditTheme: theme,
     footerVisible: true,
     markdownPreviewActive: true,
@@ -36,7 +38,9 @@ test('jedit settings rows expose theme, footer, and markdown preview preferences
   assert.deepEqual(
     rows.map((row) => [row.label, row.valueLabel, row.kind]),
     [
+      ['Locale', 'English', settings.JEDIT_SETTING_ROW_KIND.Choice],
       ['Theme', theme.name, settings.JEDIT_SETTING_ROW_KIND.Choice],
+      ['Light/dark', 'Dark', settings.JEDIT_SETTING_ROW_KIND.Choice],
       ['Footer', 'On', settings.JEDIT_SETTING_ROW_KIND.Toggle],
       ['Markdown preview', 'Source', settings.JEDIT_SETTING_ROW_KIND.Choice],
     ],
@@ -56,6 +60,7 @@ test('settings key reducer closes, moves, and activates focused settings rows', 
   const { settings, themes } = await loadSettingsModules();
   const theme = themes.availableJeditThemes()[0];
   const baseModel = {
+    i18n: createI18nMock(),
     jeditTheme: theme,
     footerVisible: true,
     markdownPreviewActive: true,
@@ -68,11 +73,17 @@ test('settings key reducer closes, moves, and activates focused settings rows', 
     cycleTheme(model) {
       return [{ ...model, cycled: true }, []];
     },
+    toggleThemeMode(model) {
+      return [{ ...model, toggledThemeMode: true }, []];
+    },
     toggleFooter(model) {
       return [{ ...model, footerVisible: !model.footerVisible }, []];
     },
     toggleMarkdownPreview(model) {
       return [{ ...model, viewMode: 'preview' }, []];
+    },
+    toggleLocale(model) {
+      return [{ ...model, toggledLocale: true }, []];
     },
   };
 
@@ -84,6 +95,9 @@ test('settings key reducer closes, moves, and activates focused settings rows', 
   const [moved] = settings.updateJeditSettingsFromKey({ key: 'down' }, baseModel, rows, handlers);
   assert.equal(moved.settingsFocusIndex, 1);
 
-  const [activated] = settings.updateJeditSettingsFromKey({ key: 'enter' }, { ...baseModel, settingsFocusIndex: 2 }, rows, handlers);
+  const [activatedMode] = settings.updateJeditSettingsFromKey({ key: 'enter' }, { ...baseModel, settingsFocusIndex: 2 }, rows, handlers);
+  assert.equal(activatedMode.toggledThemeMode, true);
+
+  const [activated] = settings.updateJeditSettingsFromKey({ key: 'enter' }, { ...baseModel, settingsFocusIndex: 4 }, rows, handlers);
   assert.equal(activated.viewMode, 'preview');
 });

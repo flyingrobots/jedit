@@ -188,7 +188,7 @@ function readArray(bytes, cursor, additional) {
 
 function readMap(bytes, cursor, additional) {
   const length = readLength(bytes, cursor, additional);
-  const value = {};
+  const value = Object.create(null);
   for (let index = 0; index < length; index += 1) {
     const key = readCbor(bytes, cursor);
     if (typeof key !== 'string') {

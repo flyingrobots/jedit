@@ -266,24 +266,26 @@ const JeditObserveResponseSchema = z.union([
 export type JeditMutationOperationName = MutationOperationName;
 export type JeditQueryOperationName = QueryOperationName;
 
+type InputOf<Request extends { readonly input: object }> = Request['input'];
+
 export interface CreateBufferWorldlineIntentRequest {
   readonly kind: typeof JEDIT_INTENT_REQUEST_KIND;
   readonly operationName: typeof CREATE_BUFFER_WORLDLINE_OPERATION;
-  readonly input: MutationCreateBufferWorldlineRequest['input'];
+  readonly input: InputOf<MutationCreateBufferWorldlineRequest>;
 }
 
 export interface ReplaceRangeAsTickIntentRequest {
   readonly kind: typeof JEDIT_INTENT_REQUEST_KIND;
   readonly operationName: typeof REPLACE_RANGE_AS_TICK_OPERATION;
   readonly session: JeditWorldlineSession;
-  readonly input: MutationReplaceRangeAsTickRequest['input'];
+  readonly input: InputOf<MutationReplaceRangeAsTickRequest>;
 }
 
 export interface CreateCheckpointIntentRequest {
   readonly kind: typeof JEDIT_INTENT_REQUEST_KIND;
   readonly operationName: typeof CREATE_CHECKPOINT_OPERATION;
   readonly session: JeditWorldlineSession;
-  readonly input: MutationCreateCheckpointRequest['input'];
+  readonly input: InputOf<MutationCreateCheckpointRequest>;
 }
 
 export interface WorldlineSnapshotObserveRequest {
@@ -291,7 +293,7 @@ export interface WorldlineSnapshotObserveRequest {
   readonly operationName: typeof WORLDLINE_SNAPSHOT_OPERATION;
   readonly session: JeditWorldlineSession;
   readonly frontierRef: string;
-  readonly input: QueryWorldlineSnapshotRequest['input'];
+  readonly input: InputOf<QueryWorldlineSnapshotRequest>;
 }
 
 export interface TextWindowObserveRequest {
@@ -299,7 +301,7 @@ export interface TextWindowObserveRequest {
   readonly operationName: typeof TEXT_WINDOW_OPERATION;
   readonly session: JeditWorldlineSession;
   readonly frontierRef: string;
-  readonly input: QueryTextWindowRequest['input'];
+  readonly input: InputOf<QueryTextWindowRequest>;
 }
 
 export interface JeditTransportObstruction {

@@ -5,6 +5,7 @@ import type { SourceWindowReading } from './source-window.js';
 
 const ZERO_INDEX = 0;
 const MIN_RENDER_SIZE = 1;
+const SPACE_CHAR = ' ';
 
 type CellStyle = Pick<Cell, 'fg' | 'bg' | 'fgRGB' | 'bgRGB' | 'modifiers'>;
 
@@ -34,7 +35,7 @@ export function paintHighlightedSourceWindow(
 
     for (let col = ZERO_INDEX; col < safeWidth; col += 1) {
       const sourceCol = safeScrollCol + col;
-      const char = sourceText[sourceCol] ?? ' ';
+      const char = sourceText[sourceCol] ?? SPACE_CHAR;
       const style = styleAt(highlight?.spans ?? [], sourceRow, sourceCol, options.theme);
       surface.set(options.x + col, options.y + row, {
         char,

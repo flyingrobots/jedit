@@ -26,15 +26,25 @@ const EXPECTED_QUERY_NAMES = [
   'textWindow',
 ];
 
+let generatedContractPromise;
+
 async function loadGeneratedContract() {
-  const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
-    cwd: REPO_ROOT,
-    encoding: 'utf8',
-  });
+  if (generatedContractPromise) {
+    return generatedContractPromise;
+  }
 
-  assert.equal(build.status, 0, build.stderr || build.stdout);
+  generatedContractPromise = (async () => {
+    const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
+      cwd: REPO_ROOT,
+      encoding: 'utf8',
+    });
 
-  return import(pathToFileURL(GENERATED_MODULE_PATH).href);
+    assert.equal(build.status, 0, build.stderr || build.stdout);
+
+    return import(pathToFileURL(GENERATED_MODULE_PATH).href);
+  })();
+
+  return generatedContractPromise;
 }
 
 test('hot text SDL is the canonical jedit contract surface for later Echo binding generation', async () => {

@@ -88,13 +88,16 @@ observer spec so the get side is no longer treated as "just a query."
 Refresh the generated contract surfaces with:
 
 ```sh
-npm run gen:contract
+JEDIT_WESLEY_ROOT=/path/to/wesley npm run gen:contract
 ```
 
-That command now writes the Rust-Wesley operation binding artifact beside the
-legacy TypeScript/Zod files. The app still keeps the legacy Zod validators until
-Wesley has a Rust-native validator emitter, but operation-name and request-input
-type seams should prefer the Rust-Wesley generated artifact.
+`JEDIT_WESLEY_ROOT` must point at a Wesley checkout that contains both
+`packages/wesley-host-node/bin/wesley.mjs` and
+`crates/wesley-cli/Cargo.toml`. The command writes the Rust-Wesley operation
+binding artifact beside the legacy TypeScript/Zod files. The app still keeps the
+legacy Zod validators until Wesley has a Rust-native validator emitter, but
+operation-name and request-input type seams should prefer the Rust-Wesley
+generated artifact.
 
 The Echo Rust binding pass is intentionally deferred while Echo's generator
 surface is moving. The current readiness gate is

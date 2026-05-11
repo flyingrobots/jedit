@@ -31,6 +31,20 @@ export const JEDIT_EASING = {
 
 export type JeditEasing = typeof JEDIT_EASING[keyof typeof JEDIT_EASING];
 
+export const JEDIT_THEME_MODE = {
+  Dark: 'dark',
+  Light: 'light',
+} as const;
+
+export type JeditThemeMode = typeof JEDIT_THEME_MODE[keyof typeof JEDIT_THEME_MODE];
+
+export const JEDIT_THEME_VARIANT_SOURCE = {
+  Authored: 'authored',
+  Generated: 'generated',
+} as const;
+
+export type JeditThemeVariantSource = typeof JEDIT_THEME_VARIANT_SOURCE[keyof typeof JEDIT_THEME_VARIANT_SOURCE];
+
 export const JEDIT_SOURCE_TOKEN = {
   Comment: Symbol('jedit.theme.source.comment'),
   Function: Symbol('jedit.theme.source.function'),
@@ -136,6 +150,10 @@ export interface JeditThemeChromeTokens {
 
 export interface JeditTheme {
   readonly name: string;
+  readonly mode: JeditThemeMode;
+  readonly familyName: string;
+  readonly variantSource: JeditThemeVariantSource;
+  readonly companionThemeName?: string;
   readonly variables: ReadonlyMap<string, JeditColorStop>;
   readonly source: ReadonlyMap<JeditSourceToken, JeditStyleToken>;
   readonly sourceRoleMap: ReadonlyMap<SourceHighlightRole, JeditSourceToken>;

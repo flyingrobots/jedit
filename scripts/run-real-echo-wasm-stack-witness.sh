@@ -23,5 +23,7 @@ cd "${ECHO_WARP_WASM_DIR}"
 wasm-pack build --target bundler --out-dir pkg --out-name rmg_wasm -- --features engine
 
 cd "${JEDIT_DIR}"
+npm run build
+
 JEDIT_ECHO_WASM_MODULE="${ECHO_WASM_MODULE}" \
   node --test spec/jedit-echo-wasm-stack-witness.spec.mjs

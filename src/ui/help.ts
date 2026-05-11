@@ -1,5 +1,6 @@
 import type { Overlay } from '@flyingrobots/bijou-tui';
 
+import { JEDIT_MARKDOWN_PREVIEW_TOGGLE_LABEL, JEDIT_SETTINGS_TOGGLE_LABEL } from '../app/keybindings.js';
 import { renderHelpOverlay } from './feedback.js';
 
 const HELP_DIALOG_TITLE = 'jedit';
@@ -19,10 +20,10 @@ const HELP_DIALOG_BODY = [
   '  dd yy p      delete, yank, paste',
   '  u ctrl+r     undo, redo',
   '  ctrl+s       save',
-  '  f3           markdown preview',
+  `  ${JEDIT_MARKDOWN_PREVIEW_TOGGLE_LABEL}           markdown preview/source toggle`,
   '',
   'settings',
-  '  f2           open or close settings',
+  `  ${JEDIT_SETTINGS_TOGGLE_LABEL}           open or close settings`,
   '  j / k        move',
   '  enter        change selected setting',
   '',

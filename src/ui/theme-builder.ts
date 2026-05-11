@@ -3,6 +3,8 @@ import {
   JEDIT_EASING,
   JEDIT_MARKDOWN_TOKEN,
   JEDIT_SOURCE_TOKEN,
+  JEDIT_THEME_MODE,
+  JEDIT_THEME_VARIANT_SOURCE,
   JEDIT_TEXT_MODIFIER,
   type JeditColorEffect,
   type JeditColorStop,
@@ -15,8 +17,11 @@ import {
   type JeditStyleToken,
   type JeditTextModifier,
   type JeditTheme,
+  type JeditThemeMode,
+  type JeditThemeVariantSource,
 } from './jedit-theme.js';
 import { SOURCE_HIGHLIGHT_ROLE } from '../ports/source-highlighter.js';
+import { DuplicateThemeVariableError } from '../domain/errors.js';
 
 const COLOR_CHANNEL_MIN = 0;
 const COLOR_CHANNEL_MAX = 255;
@@ -24,6 +29,10 @@ const HEX_RADIX = 16;
 const HEX_PAIR_WIDTH = 2;
 const PERCENT_START = 0;
 const PERCENT_END = 1;
+const MODE_LUMINANCE_THRESHOLD = 128;
+const LUMINANCE_RED_WEIGHT = 0.2126;
+const LUMINANCE_GREEN_WEIGHT = 0.7152;
+const LUMINANCE_BLUE_WEIGHT = 0.0722;
 
 type ThemeColorPaint = RgbColor | ThemeColorVariable | ThemeColorTransition;
 
@@ -189,17 +198,37 @@ export interface JeditThemeDraft {
   spring(input: JeditSpring): JeditSpring;
 }
 
+export interface JeditThemeDefinitionOptions {
+  readonly mode?: JeditThemeMode;
+  readonly familyName?: string;
+  readonly variantSource?: JeditThemeVariantSource;
+  readonly companionThemeName?: string;
+}
+
 export function rgb(red: number, green: number, blue: number): RgbColor {
   return new RgbColor(red, green, blue);
 }
 
-export function defineJeditTheme(name: string, build: (draft: JeditThemeDraft) => void): JeditTheme {
+export function defineJeditTheme(
+  name: string,
+  build: (draft: JeditThemeDraft) => void,
+  options: JeditThemeDefinitionOptions = {},
+): JeditTheme {
   const variables = new Map<string, JeditColorStop>();
   const draft = createThemeDraft(variables);
   build(draft);
+  const surface = {
+    workspace: styleTokenFromDraft(draft.surface.workspace),
+    drawer: styleTokenFromDraft(draft.surface.drawer),
+    footer: styleTokenFromDraft(draft.surface.footer),
+  };
 
   return {
     name,
+    mode: options.mode ?? inferThemeMode(surface.workspace),
+    familyName: options.familyName ?? name,
+    variantSource: options.variantSource ?? JEDIT_THEME_VARIANT_SOURCE.Authored,
+    companionThemeName: options.companionThemeName,
     variables,
     source: buildSourceTokens(draft.source),
     sourceRoleMap: new Map([
@@ -215,11 +244,7 @@ export function defineJeditTheme(name: string, build: (draft: JeditThemeDraft) =
       [SOURCE_HIGHLIGHT_ROLE.Variable, JEDIT_SOURCE_TOKEN.Variable],
     ]),
     markdown: buildMarkdownTokens(draft.markdown),
-    surface: {
-      workspace: styleTokenFromDraft(draft.surface.workspace),
-      drawer: styleTokenFromDraft(draft.surface.drawer),
-      footer: styleTokenFromDraft(draft.surface.footer),
-    },
+    surface,
     cursor: {
       normal: styleTokenFromDraft(draft.cursor.normal),
       insert: styleTokenFromDraft(draft.cursor.insert),
@@ -250,6 +275,9 @@ function createThemeDraft(variables: Map<string, JeditColorStop>): JeditThemeDra
     },
     rgb,
     variable(name: string, color: RgbColor): ThemeColorVariable {
+      if (variables.has(name)) {
+        throw new DuplicateThemeVariableError(`Duplicate theme variable name: ${name}`);
+      }
       const variable = new ThemeColorVariable(name, color);
       variables.set(name, variable);
       return variable;
@@ -368,6 +396,22 @@ function variablesForEffect(effect: JeditColorEffect): readonly string[] {
 
 function gradientStop(color: RgbColor | ThemeColorVariable, position: number): JeditGradientStop {
   return { color, position };
+}
+
+function inferThemeMode(token: JeditStyleToken): JeditThemeMode {
+  const color = token.bgRGB ?? token.fgRGB;
+  if (color == null) {
+    return JEDIT_THEME_MODE.Dark;
+  }
+  return colorLuminance(color) >= MODE_LUMINANCE_THRESHOLD
+    ? JEDIT_THEME_MODE.Light
+    : JEDIT_THEME_MODE.Dark;
+}
+
+function colorLuminance(color: readonly [number, number, number]): number {
+  return (color[0] * LUMINANCE_RED_WEIGHT)
+    + (color[1] * LUMINANCE_GREEN_WEIGHT)
+    + (color[2] * LUMINANCE_BLUE_WEIGHT);
 }
 
 function clampChannel(value: number): number {

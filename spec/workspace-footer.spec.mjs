@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
+import { createI18nMock } from './i18n-mock.mjs';
 
 const REPO_ROOT = process.cwd();
 const MODULE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'workspace-chrome.js');
@@ -20,6 +21,7 @@ async function loadFooterModule() {
 
 function idleNormalState() {
   return {
+    i18n: createI18nMock(),
     focusPane: 'editor',
     fileDrawerOpen: false,
     graftDrawerOpen: false,
@@ -47,6 +49,8 @@ test('workspace footer shows compact uppercase normal-mode guidance', async () =
     ],
   );
 });
+
+
 
 test('workspace footer shows pending change-operator continuations', async () => {
   const footer = await loadFooterModule();
@@ -78,11 +82,27 @@ test('workspace footer explains that tab indents when no peer panes are visible 
   );
 });
 
+test('workspace footer shows f3 as the Markdown preview source toggle', async () => {
+  const footer = await loadFooterModule();
+
+  assert.deepEqual(
+    footer.workspaceFooterLines({
+      ...idleNormalState(),
+      viewMode: 'preview',
+    }),
+    [
+      'PREVIEW [j/k scroll · f3 source · ctrl+t theme · ctrl+b files · ctrl+g graft]',
+      '/repo/notes/todo.md',
+    ],
+  );
+});
+
 test('workspace footer shows file drawer controls and the selected file path', async () => {
   const footer = await loadFooterModule();
 
   assert.deepEqual(
     footer.workspaceFooterLines({
+      i18n: createI18nMock(),
       focusPane: 'files',
       fileDrawerOpen: true,
       graftDrawerOpen: false,

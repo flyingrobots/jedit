@@ -1,7 +1,3 @@
-import { existsSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
 import {
   SOURCE_HIGHLIGHT_ROLE,
   type SourceHighlightReading,
@@ -12,11 +8,6 @@ import {
   type SourceRange,
 } from '../ports/source-highlighter.js';
 
-const GRAFT_ROOT_ENV = 'JEDIT_GRAFT_ROOT';
-const DIST_DIRECTORY_NAME = 'dist';
-const INDEX_MODULE_NAME = 'index.js';
-const DEFAULT_GRAFT_REPO_DIRECTORY = 'graft';
-const DEFAULT_GIT_DIRECTORY = 'git';
 const EDITOR_HEAD_BASIS_KIND = 'editor_head';
 const VIEWPORT_START_COLUMN = 0;
 const VIEWPORT_END_COLUMN = 0;
@@ -87,7 +78,6 @@ export interface GraftSourceHighlighterRuntime {
 export type LoadGraftSourceHighlighterRuntime = () => Promise<GraftSourceHighlighterRuntime>;
 
 export interface GraftSourceHighlighterOptions {
-  readonly graftRoot?: string;
   readonly loadRuntime?: LoadGraftSourceHighlighterRuntime;
 }
 
@@ -109,11 +99,10 @@ const GRAFT_ROLE_ENTRIES: readonly GraftRoleEntry[] = [
   { className: GRAFT_CLASS_VARIABLE, role: SOURCE_HIGHLIGHT_ROLE.Variable },
 ];
 
-let cachedRuntimePath: string | undefined;
 let cachedRuntime: GraftSourceHighlighterRuntime | undefined;
 
 export function createGraftSourceHighlighter(options: GraftSourceHighlighterOptions = {}): SourceHighlighter {
-  const loadRuntime = options.loadRuntime ?? defaultRuntimeLoader(options.graftRoot ?? defaultGraftRoot());
+  const loadRuntime = options.loadRuntime ?? defaultRuntimeLoader();
 
   return {
     async highlight(input: SourceHighlightInput): Promise<SourceHighlightReading> {
@@ -170,21 +159,17 @@ function sourceRangeFromGraftRange(range: GraftRange): SourceRange {
   };
 }
 
-function defaultRuntimeLoader(graftRoot: string): LoadGraftSourceHighlighterRuntime {
+function defaultRuntimeLoader(): LoadGraftSourceHighlighterRuntime {
   return async () => {
-    const runtimePath = join(graftRoot, DIST_DIRECTORY_NAME, INDEX_MODULE_NAME);
-    if (cachedRuntime != null && cachedRuntimePath === runtimePath) {
+    if (cachedRuntime != null) {
       return cachedRuntime;
     }
-    if (!existsSync(runtimePath)) {
-      throw new Error(`Graft runtime not found at ${runtimePath}`);
-    }
-    cachedRuntime = await import(pathToFileURL(runtimePath).href) as GraftSourceHighlighterRuntime;
-    cachedRuntimePath = runtimePath;
+
+    const runtime = await import('@flyingrobots/graft');
+    cachedRuntime = {
+      ensureParserReady: async () => undefined,
+      createProjectionBundle: runtime.createProjectionBundle,
+    };
     return cachedRuntime;
   };
-}
-
-function defaultGraftRoot(): string {
-  return process.env[GRAFT_ROOT_ENV] ?? join(homedir(), DEFAULT_GIT_DIRECTORY, DEFAULT_GRAFT_REPO_DIRECTORY);
 }
