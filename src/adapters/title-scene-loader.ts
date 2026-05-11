@@ -35,6 +35,9 @@ export async function loadBuiltInTitleScene(name: BuiltInTitleSceneName, meshes:
   if (!BUILT_IN_TITLE_SCENE_SET.has(name)) {
     throw new SceneDecodeError(`Unknown built-in scene '${name}'.`);
   }
+  // Built-in scenes resolve from the compiled adapter at `dist/adapters/`.
+  // `scripts/copy-assets.mjs` copies `scenes/` to `dist/scenes/` during build;
+  // update this path if the dist layout changes.
   return loadTitleSceneFromFile(fileURLToPath(new URL(`../scenes/${name}`, import.meta.url)), meshes);
 }
 
