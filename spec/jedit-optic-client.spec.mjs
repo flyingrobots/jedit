@@ -11,6 +11,14 @@ const TRANSPORT_CLIENT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'j
 const FAKE_TRANSPORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'fake-echo-jedit-optic-transport.js');
 const CODEC_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-optic-codec.js');
 const LEGACY_EAGER_LOAD_CAP_BYTES = 24 * 1024;
+const STACK_WITNESS_AUTHOR = 'stack-witness-0001';
+const STACK_WITNESS_BUFFER_KEY = 'demo.txt';
+const STACK_WITNESS_FRONTIER_REF = 'frontier:stack-witness-0001:B1';
+const STACK_WITNESS_TEXT = 'hello';
+const EMPTY_TEXT = '';
+const FIRST_BYTE_OFFSET = 0;
+const FIRST_LINE = 0;
+const SINGLE_LINE_WINDOW = 1;
 const UTF8_ENCODER = new TextEncoder();
 
 async function loadModules() {
@@ -232,6 +240,84 @@ test('transport-backed textWindow returns a bounded large-file reading', async (
   assert.equal(envelope.reading.lines[0].startByte, lineStartByte(largeLines, 499));
   assert.equal(envelope.reading.lines[0].endByte, lineStartByte(largeLines, 500) - 1);
   assert.ok(JSON.stringify(envelope.reading).length < byteLength(largeText));
+});
+
+test('Stack Witness 0001 walks createBuffer -> replaceRange -> textWindow through Echo transport', async () => {
+  const { transportClientModule, fakeTransportModule, codecModule } = await loadModules();
+  const fakeTransport = fakeTransportModule.createFakeEchoJeditOpticTransport();
+  const intentRequests = [];
+  const observeRequests = [];
+  const transport = {
+    kernelInfo() {
+      return fakeTransport.kernelInfo();
+    },
+    submitIntentBytes(bytes) {
+      intentRequests.push(codecModule.decodeJeditIntentRequest(bytes));
+      return fakeTransport.submitIntentBytes(bytes);
+    },
+    observeBytes(bytes) {
+      observeRequests.push(codecModule.decodeJeditObserveRequest(bytes));
+      return fakeTransport.observeBytes(bytes);
+    },
+    schedulerStatusBytes() {
+      return fakeTransport.schedulerStatusBytes();
+    },
+  };
+  const client = transportClientModule.createEchoTransportJeditOpticClient(transport);
+
+  const created = client.createBufferWorldline({
+    bufferKey: STACK_WITNESS_BUFFER_KEY,
+    initialText: EMPTY_TEXT,
+    projectionPath: STACK_WITNESS_BUFFER_KEY,
+    createInitialCheckpoint: false,
+  });
+
+  const edited = client.replaceRangeAsTick(created.nextSession, {
+    worldlineId: created.nextSession.worldline.worldlineId,
+    baseHeadId: created.nextSession.worldline.canonicalHeadId,
+    startByte: FIRST_BYTE_OFFSET,
+    endByte: FIRST_BYTE_OFFSET,
+    insertText: STACK_WITNESS_TEXT,
+    author: STACK_WITNESS_AUTHOR,
+  });
+
+  const envelope = client.textWindow(
+    edited.nextSession,
+    STACK_WITNESS_FRONTIER_REF,
+    {
+      worldlineId: edited.nextSession.worldline.worldlineId,
+      cursorLine: FIRST_LINE,
+      viewportLineCount: SINGLE_LINE_WINDOW,
+      beforeLines: FIRST_LINE,
+      afterLines: FIRST_LINE,
+      maxBytes: byteLength(STACK_WITNESS_TEXT),
+    },
+  );
+
+  assert.deepEqual(
+    intentRequests.map((request) => request.operationName),
+    [
+      codecModule.CREATE_BUFFER_WORLDLINE_OPERATION,
+      codecModule.REPLACE_RANGE_AS_TICK_OPERATION,
+    ],
+  );
+  assert.equal(observeRequests.length, 1);
+  assert.equal(observeRequests[0].operationName, codecModule.TEXT_WINDOW_OPERATION);
+  assert.equal(envelope.operationName, codecModule.TEXT_WINDOW_OPERATION);
+  assert.equal(envelope.frontierRef, STACK_WITNESS_FRONTIER_REF);
+  assert.equal(envelope.reading.worldline.worldlineId, edited.nextSession.worldline.worldlineId);
+  assert.equal(envelope.reading.head.headId, edited.nextSession.worldline.canonicalHeadId);
+  assert.equal(envelope.reading.startLine, FIRST_LINE);
+  assert.equal(envelope.reading.lineCount, SINGLE_LINE_WINDOW);
+  assert.equal(envelope.reading.totalLineCount, SINGLE_LINE_WINDOW);
+  assert.equal(envelope.reading.hasMoreBefore, false);
+  assert.equal(envelope.reading.hasMoreAfter, false);
+  assert.deepEqual(
+    envelope.reading.lines.map((line) => line.text),
+    [STACK_WITNESS_TEXT],
+  );
+  assert.equal(envelope.reading.lines[0].startByte, FIRST_BYTE_OFFSET);
+  assert.equal(envelope.reading.lines[0].endByte, byteLength(STACK_WITNESS_TEXT));
 });
 
 function byteLength(text) {
