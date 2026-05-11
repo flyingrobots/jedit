@@ -19,22 +19,26 @@ import {
 } from '../generated/jedit/hot-text-runtime.zod.generated.js';
 import type { HotTextBufferState, HotTextRuntimePort } from '../ports/hot-text-runtime.js';
 import type { HashPort } from '../ports/hash.js';
+import {
+  byteLength,
+  digest,
+  lineCount,
+  toCheckpointId,
+  toHeadId,
+  toReceiptId,
+  toRootNodeId,
+  toTickId,
+  toWorldlineId,
+} from './jedit-contract-runtime-id.js';
 
 const JEDIT_CONTRACT_RUNTIME_ERROR_WORLDLINE_MISMATCH = 1;
 const JEDIT_CONTRACT_RUNTIME_ERROR_BASE_HEAD_MISMATCH = 2;
-
 const WORLDLINE_ID_PREFIX = 'wl:';
 const HEAD_ID_PREFIX = 'head:';
-const ROOT_NODE_ID_PREFIX = 'root:';
-const CHECKPOINT_ID_PREFIX = 'checkpoint:';
-const TICK_ID_PREFIX = 'tick:';
-const RECEIPT_ID_PREFIX = 'receipt:';
+
 const TICK_KIND_TEXT_REWRITE: TickKind = 'TEXT_REWRITE';
 const TICK_RECEIPT_REWRITE_KIND_REPLACE_RANGE_AS_TICK: TickReceiptRewriteKind = 'REPLACE_RANGE_AS_TICK';
 const INITIAL_CHECKPOINT_KIND: CheckpointKind = 'INITIAL';
-const EMPTY_LINE_COUNT = 1;
-
-const UTF8_ENCODER = new TextEncoder();
 
 type CreateBufferWorldlineInput = MutationOperationMap['createBufferWorldline']['input'];
 type CreateBufferWorldlineResult = ReturnType<typeof MutationOperationSchemas.createBufferWorldline.result.parse>;
@@ -451,10 +455,6 @@ function ensureMatchingBaseHead(session: JeditWorldlineSession, baseHeadId: stri
   }
 }
 
-function toWorldlineId(path: string): string {
-  return `${WORLDLINE_ID_PREFIX}${path}`;
-}
-
 function ensureStateRootId(headId: string, rootId: number): void {
   if (!Number.isFinite(rootId) || !Number.isInteger(rootId)) {
     throw new JeditContractRuntimeError(
@@ -487,40 +487,4 @@ function ensureHeadId(headId: string): void {
       `Invalid head identifier: ${headId}.`,
     );
   }
-}
-
-function toHeadId(rootId: number): string {
-  return `${HEAD_ID_PREFIX}${rootId}`;
-}
-
-function toRootNodeId(rootId: number): string {
-  return `${ROOT_NODE_ID_PREFIX}${rootId}`;
-}
-
-function toCheckpointId(checkpointId: number): string {
-  return `${CHECKPOINT_ID_PREFIX}${checkpointId}`;
-}
-
-function toTickId(tickId: number): string {
-  return `${TICK_ID_PREFIX}${tickId}`;
-}
-
-function toReceiptId(tickId: number): string {
-  return `${RECEIPT_ID_PREFIX}${toTickId(tickId)}`;
-}
-
-function byteLength(text: string): number {
-  return UTF8_ENCODER.encode(text).length;
-}
-
-function lineCount(text: string): number {
-  if (text.length === 0) {
-    return EMPTY_LINE_COUNT;
-  }
-
-  return text.split('\n').length;
-}
-
-function digest(text: string, hash: HashPort): string {
-  return hash.sha256Hex(text);
 }

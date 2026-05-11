@@ -62,23 +62,23 @@ export class BijouI18nAdapter implements I18nPort {
   }
 }
 
-function isTranslationNode(value: unknown): value is TranslationNode {
+function isTranslationNode(value: string | Record<string, TranslationNode>): value is TranslationNode {
   if (typeof value === 'string') {
     return true;
   }
-  if (value == null || typeof value !== 'object' || Array.isArray(value)) {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     return false;
   }
   for (const key of Object.keys(value)) {
     const child = Object.getOwnPropertyDescriptor(value, key)?.value;
-    if (!isTranslationNode(child)) {
+    if (child === undefined || child === null || !isTranslationNode(child)) {
       return false;
     }
   }
   return true;
 }
 
-function isTranslationRecord(value: unknown): value is Record<string, TranslationNode> {
+function isTranslationRecord(value: string | Record<string, TranslationNode>): value is Record<string, TranslationNode> {
   return value != null && typeof value === 'object';
 }
 

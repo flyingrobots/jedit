@@ -26,8 +26,13 @@ type JsonPrimitive = string | number | boolean | null;
 type JsonValue = JsonPrimitive | readonly JsonValue[] | JsonObject;
 
 interface JsonObject {
-  readonly [key: string]: JsonValue | undefined;
+  readonly [key: string]: JsonValue;
 }
+type JsonValueCandidate = JsonPrimitive | JsonRecordCandidate | readonly JsonValueCandidate[];
+type JsonRecordCandidate = { readonly [key: string]: JsonValueCandidate };
+type CallToolResult = Awaited<ReturnType<Client['callTool']>>;
+type CallToolStructuredContent = CallToolResult['structuredContent'];
+type CallToolStructuredChild = CallToolStructuredContent extends Record<string, infer V> ? V : never;
 
 export interface GraftOutlineItem {
   readonly kind: string;
@@ -299,7 +304,7 @@ async function callGraftTool(
   return parseGraftToolResult(result);
 }
 
-function normalizeStructuredContent(value: unknown): JsonValue | undefined {
+function normalizeStructuredContent(value: CallToolStructuredContent): JsonValue | undefined {
   if (value === undefined) {
     return undefined;
   }
@@ -311,7 +316,9 @@ function normalizeStructuredContent(value: unknown): JsonValue | undefined {
   throw new GraftToolExecutionError('Invalid structuredContent returned by graft tool.');
 }
 
-function isJsonValue(value: unknown): value is JsonValue {
+function isJsonValue(
+  value: JsonValue | CallToolStructuredContent | readonly (JsonValue | CallToolStructuredChild)[],
+): value is JsonValue {
   if (value === null) {
     return true;
   }
@@ -328,7 +335,12 @@ function isJsonValue(value: unknown): value is JsonValue {
     return false;
   }
 
-  return Object.values(value).every(isJsonValue);
+  for (const [, member] of Object.entries(value)) {
+    if (!isJsonValue(member)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 function parseGraftErrorResult(result: GraftCallToolResult): string {

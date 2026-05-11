@@ -377,8 +377,10 @@ export type JeditObserveResponse =
   | JeditObserveObstructedResponse;
 
 type JsonPrimitive = string | number | boolean | null;
-type JsonObject = { readonly [key: string]: JsonValue };
+type JsonRecord = { readonly [key: string]: JsonValueCandidate };
 type JsonValue = JsonPrimitive | JsonObject | readonly JsonValue[];
+type JsonValueCandidate = JsonPrimitive | JsonRecord | readonly JsonValueCandidate[];
+type JsonObject = JsonRecord;
 
 export function encodeJeditIntentRequest(request: JeditIntentRequest): Uint8Array {
   return encodeJson(JeditIntentRequestSchema.parse(request));
@@ -451,14 +453,14 @@ function encodeJson(value: object): Uint8Array {
 }
 
 function parseJsonBytes(bytes: Uint8Array): JsonValue {
-  const value = JSON.parse(TEXT_DECODER.decode(bytes));
+  const value: JsonValueCandidate = JSON.parse(TEXT_DECODER.decode(bytes));
   if (!isJsonValue(value)) {
     throw new Error('invalid json payload');
   }
   return value;
 }
 
-function isJsonValue(value: unknown): value is JsonValue {
+function isJsonValue(value: JsonValueCandidate): value is JsonValue {
   if (value === null) {
     return true;
   }
@@ -466,19 +468,24 @@ function isJsonValue(value: unknown): value is JsonValue {
     return true;
   }
   if (Array.isArray(value)) {
-    return value.every(isJsonValue);
+    for (const member of value) {
+      if (!isJsonValue(member)) {
+        return false;
+      }
+    }
+    return true;
   }
   return isJsonRecord(value) && objectValuesAreJson(value);
 }
 
-function isJsonRecord(value: unknown): value is Record<string, unknown> {
-  return value != null && typeof value === 'object' && !Array.isArray(value);
+function isJsonRecord(value: JsonValueCandidate): value is JsonRecord {
+  return !Array.isArray(value) && value !== null && typeof value === 'object';
 }
 
-function objectValuesAreJson(value: Record<string, unknown>): boolean {
+function objectValuesAreJson(value: JsonRecord): boolean {
   for (const key of Object.keys(value)) {
     const member = value[key];
-    if (!isJsonValue(member)) {
+    if (member === undefined || !isJsonValue(member)) {
       return false;
     }
   }
