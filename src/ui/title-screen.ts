@@ -2,6 +2,7 @@ import { type Surface } from '@flyingrobots/bijou';
 
 import { averagingBrailleCanvas, type BrailleShaderFn, type BrailleShaderSample, type RGB } from './averaging-braille-canvas.js';
 import { type JeditTheme } from './jedit-theme.js';
+import { flyingRobotsLogoCellBounds, paintFlyingRobotsLogo } from './flyingrobots-logo.js';
 import {
   generateTitleScene,
   intersectsTitleSceneObjectAlongRay,
@@ -15,6 +16,7 @@ import type { TitleMesh } from './title-mesh.js';
 type Vector3 = TitleSceneVector3;
 type Color3 = RGB;
 export type TitleSceneSphere = TitleSceneObject;
+export { flyingRobotsLogoCellBounds } from './flyingrobots-logo.js';
 export { titleLogoCellBounds } from './title-logo.js';
 export interface TitleFloorLightEffects {
   readonly shadowMultiplier: number;
@@ -99,6 +101,7 @@ export function renderTitleScreen(
   };
 
   const surface = averagingBrailleCanvas(cols, rows, shader, time);
+  paintFlyingRobotsLogo(surface, flyingRobotsLogoCellBounds(cols, rows), colors, time);
   paintTitleLogo(surface, titleLogoCellBounds(cols, rows), colors, time);
   return surface;
 }
