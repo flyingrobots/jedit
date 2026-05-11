@@ -78,7 +78,7 @@ interface GraftTextBlock {
   readonly text?: string;
 }
 
-interface GraftToolResult {
+interface GraftCallToolResult {
   readonly isError?: boolean;
   readonly structuredContent?: JsonValue;
   readonly content?: readonly GraftTextBlock[];
@@ -285,7 +285,7 @@ async function callGraftTool(
   const result = await connection.client.callTool({
     name,
     arguments: args,
-  }) as GraftToolResult;
+  });
 
   if (result.isError === true) {
     throw new GraftToolExecutionError(parseGraftErrorResult(result));
@@ -294,7 +294,7 @@ async function callGraftTool(
   return parseGraftToolResult(result);
 }
 
-function parseGraftErrorResult(result: GraftToolResult): string {
+function parseGraftErrorResult(result: GraftCallToolResult): string {
   if (result.structuredContent !== undefined) {
     return String(result.structuredContent);
   }
@@ -304,7 +304,7 @@ function parseGraftErrorResult(result: GraftToolResult): string {
     ?.text ?? 'Graft tool returned an error';
 }
 
-function parseGraftToolResult(result: GraftToolResult): JsonValue {
+function parseGraftToolResult(result: GraftCallToolResult): JsonValue {
   if (result.structuredContent !== undefined) {
     return result.structuredContent;
   }

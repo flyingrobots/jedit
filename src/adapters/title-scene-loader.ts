@@ -21,7 +21,7 @@ export interface TitleSceneJson {
 
 export async function loadTitleSceneFromFile(path: string, mesh: TitleMesh | undefined): Promise<TitleScene> {
   const content = await fs.readFile(path, 'utf8');
-  const json = JSON.parse(content) as TitleSceneJson;
+  const json = JSON.parse(content);
   return parseTitleSceneJson(json, mesh);
 }
 
