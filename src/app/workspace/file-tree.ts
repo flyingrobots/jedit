@@ -4,7 +4,7 @@ import { DIRECTORY_ACTION_OPEN, DIRECTORY_ACTION_REFRESH } from '../../ports/fil
 import type { EditorFilePort } from '../../ports/editor-file.js';
 import type { GraftSessionPort } from '../../ports/graft-session.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
-import { pushErrorToast } from '../../ui/feedback.js';
+import { createNotificationTickCmd, pushErrorToast } from '../../ui/feedback.js';
 import { clampIndex } from './viewport.js';
 import { withFocusPane } from './focus.js';
 import { beginEditorProjectionRefresh, isWorkspaceMarkdownFile, loadEditor } from './editor-session.js';
@@ -112,11 +112,16 @@ function changeDirectory(
     return [openDirectory(model, cwd, fileSystem), []];
   } catch (cause) {
     const issue = fileSystem.describeDirectoryIssue(action, cwd, cause instanceof Error ? cause : String(cause));
-    const command = pushErrorToast(model, issue.title, issue.message, nowMs(), (atMs) => ({
-      type: 'notification-tick',
-      atMs,
-    }));
-    return [model, command];
+    return pushErrorToast(
+      model,
+      issue.title,
+      issue.message,
+      nowMs(),
+      () => createNotificationTickCmd((atMs: number): WorkspaceMsg => ({
+        type: 'notification-tick',
+        atMs,
+      })),
+    );
   }
 }
 
