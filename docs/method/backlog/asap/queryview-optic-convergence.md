@@ -10,11 +10,22 @@ keywords:
   - text-window
   - stack-witness
 acceptance_criteria:
-  - QueryView reads are modeled as optic-shaped observations at the jedit boundary instead of a permanent direct-query side door.
-  - The Stack Witness 0001 consumer path can run against a real Echo-hosted ReadingEnvelope plus QueryBytes result when the Echo WASM package is consumable from jedit.
-  - Text-window payload decoding happens only in the boundary adapter, and the editor core continues to consume app-owned TextWindowReading objects.
-  - The cutover keeps create/edit/read tests intact for createBuffer, replaceRange, and textWindow.
-  - The implementation does not add Continuum dependencies or redesign the jedit contract surface.
+  - >
+    QueryView reads are modeled as optic-shaped observations at the jedit
+    boundary instead of a permanent direct-query side door.
+  - >
+    The Stack Witness 0001 consumer path can run against a real Echo-hosted
+    ReadingEnvelope plus QueryBytes result when the Echo WASM package is
+    consumable from jedit.
+  - >
+    Text-window payload decoding happens only in the boundary adapter, and the
+    editor core continues to consume app-owned TextWindowReading objects.
+  - >
+    The cutover keeps create/edit/read tests intact for createBuffer,
+    replaceRange, and textWindow.
+  - >
+    The implementation does not add Continuum dependencies or redesign the
+    jedit contract surface.
 ---
 
 # queryview-optic-convergence
