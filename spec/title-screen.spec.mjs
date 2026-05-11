@@ -9,6 +9,7 @@ const TITLE_SCREEN_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-screen.js');
 const TITLE_LOGO_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-logo.js');
 const TITLE_SCENE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-scene.js');
 const TITLE_SCENE_ENVIRONMENT_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-scene-environment.js');
+const ASCII_CANVAS_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'averaging-ascii-canvas.js');
 const BRAILLE_CANVAS_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'averaging-braille-canvas.js');
 const THEMES_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'jedit-themes.js');
 const STYLE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'jedit-theme.js');
@@ -52,6 +53,7 @@ async function loadTitleModules() {
     titleLogo: await import(pathToFileURL(TITLE_LOGO_PATH).href),
     titleScene: await import(pathToFileURL(TITLE_SCENE_PATH).href),
     titleSceneEnvironment: await import(pathToFileURL(TITLE_SCENE_ENVIRONMENT_PATH).href),
+    asciiCanvas: await import(pathToFileURL(ASCII_CANVAS_PATH).href),
     brailleCanvas: await import(pathToFileURL(BRAILLE_CANVAS_PATH).href),
     themes: await import(pathToFileURL(THEMES_PATH).href),
     style: await import(pathToFileURL(STYLE_PATH).href),
@@ -248,6 +250,28 @@ test('title scene ASCII palettes produce distinct glyph vocabularies', async () 
   assert.ok(sceneGlyphs(blocks, style).some((char) => '▁▂▃▄▅▆▇█'.includes(char)));
   assert.notDeepEqual(sceneCellKeys(dense, style), sceneCellKeys(dither, style));
   assert.ok(sceneGlyphs(dither, style).every((char) => ' .:-=+*#%@'.includes(char)));
+});
+
+test('ASCII canvas colors inactive samples as background instead of inactive foreground', async () => {
+  const { asciiCanvas } = await loadTitleModules();
+  const surface = asciiCanvas.averagingAsciiCanvas(1, 1, ({ u, v }) => {
+    if (u === 0 && v === 0) {
+      return {
+        on: true,
+        fgRGB: [255, 0, 0],
+        bgRGB: [0, 0, 0],
+      };
+    }
+    return {
+      on: false,
+      fgRGB: [0, 0, 255],
+      bgRGB: [0, 0, 0],
+    };
+  }, 0, { palette: asciiCanvas.TITLE_ASCII_PALETTE.Dense });
+  const cell = surface.get(0, 0);
+
+  assert.deepEqual(cell.fgRGB, [64, 0, 0]);
+  assert.deepEqual(cell.bgRGB, [0, 0, 0]);
 });
 
 test('title scene keeps reflective highlights on sphere materials', async () => {

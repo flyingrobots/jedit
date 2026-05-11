@@ -114,9 +114,10 @@ function collapseAsciiCell(
         time,
       });
 
-      fgRed += sample.fgRGB[RED_INDEX];
-      fgGreen += sample.fgRGB[GREEN_INDEX];
-      fgBlue += sample.fgRGB[BLUE_INDEX];
+      const visibleFgRGB = sample.on ? sample.fgRGB : sample.bgRGB;
+      fgRed += visibleFgRGB[RED_INDEX];
+      fgGreen += visibleFgRGB[GREEN_INDEX];
+      fgBlue += visibleFgRGB[BLUE_INDEX];
       bgRed += sample.bgRGB[RED_INDEX];
       bgGreen += sample.bgRGB[GREEN_INDEX];
       bgBlue += sample.bgRGB[BLUE_INDEX];
