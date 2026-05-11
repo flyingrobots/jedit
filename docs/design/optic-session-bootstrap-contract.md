@@ -21,18 +21,22 @@ type ReadBasisHandle = {
 };
 ```
 
-The handle is opaque to jedit app-facing code. Its `id` is a local capability
-token, not a substrate coordinate.
+The handle is opaque to jedit app-facing code. Its `id` is a deterministic
+session-local capability token, not a substrate coordinate, buffer key, file
+path, head id, or application semantic identifier.
 
 ## App-facing flow
 
 ```text
-session.openTextBuffer(...)
-  -> session + ReadBasisHandle
+client.openTextBuffer(...)
+  -> nextSession + ReadBasisHandle
 
-textWindow(session, readBasisHandle, range)
+client.textWindow(nextSession, frontierRef, readBasisHandle, range)
   -> TextWindowReading
 ```
+
+`frontierRef` remains app-visible read identity and correlation material. It is
+not a license for app code to construct substrate coordinates.
 
 App-facing text-window input names editor range information only:
 
@@ -67,8 +71,11 @@ ReadBasisHandle -> runtime read coordinates
 
 For the current jedit-only slice, the fake/session-local resolver maps the
 opaque handle back to the session worldline before encoding the existing fake
-Echo transport request. That preserves current behavior while proving the
-app-facing contract no longer needs raw substrate coordinates for `textWindow`.
+Echo transport request. Handle IDs are deterministic process-local tokens such
+as `read-basis:0`; they must not encode buffer keys, paths, worldlines, heads,
+ticks, roots, strands, or other meaningful coordinates. That preserves current
+behavior while proving the app-facing contract no longer needs raw substrate
+coordinates for `textWindow`.
 
 ## Non-goals
 

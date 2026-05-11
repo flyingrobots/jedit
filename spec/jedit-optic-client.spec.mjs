@@ -10,6 +10,7 @@ const ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'in-memory-
 const TRANSPORT_CLIENT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-optic-client.js');
 const FAKE_TRANSPORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'fake-echo-jedit-optic-transport.js');
 const CODEC_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-optic-codec.js');
+const READ_BASIS_HANDLE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'read-basis-handle-registry.js');
 const LEGACY_EAGER_LOAD_CAP_BYTES = 24 * 1024;
 const STACK_WITNESS_AUTHOR = 'stack-witness-0001';
 const STACK_WITNESS_BUFFER_KEY = 'demo.txt';
@@ -19,6 +20,7 @@ const EMPTY_TEXT = '';
 const FIRST_BYTE_OFFSET = 0;
 const FIRST_LINE = 0;
 const SINGLE_LINE_WINDOW = 1;
+const SEMANTIC_READ_BASIS_HANDLE_PREFIX = 'text-buffer:';
 const RAW_BASIS_FIELD_NAMES = Object.freeze([
   'worldlineId',
   'basisRef',
@@ -37,15 +39,30 @@ async function loadModules() {
 
   assert.equal(build.status, 0, build.stderr || build.stdout);
 
-  const [opticClientModule, adapter, transportClientModule, fakeTransportModule, codecModule] = await Promise.all([
+  const [
+    opticClientModule,
+    adapter,
+    transportClientModule,
+    fakeTransportModule,
+    codecModule,
+    readBasisHandleModule,
+  ] = await Promise.all([
     import(pathToFileURL(OPTIC_CLIENT_MODULE_PATH).href),
     import(pathToFileURL(ADAPTER_MODULE_PATH).href),
     import(pathToFileURL(TRANSPORT_CLIENT_MODULE_PATH).href),
     import(pathToFileURL(FAKE_TRANSPORT_MODULE_PATH).href),
     import(pathToFileURL(CODEC_MODULE_PATH).href),
+    import(pathToFileURL(READ_BASIS_HANDLE_MODULE_PATH).href),
   ]);
 
-  return { opticClientModule, adapter, transportClientModule, fakeTransportModule, codecModule };
+  return {
+    opticClientModule,
+    adapter,
+    transportClientModule,
+    fakeTransportModule,
+    codecModule,
+    readBasisHandleModule,
+  };
 }
 
 test('in-memory optic client exposes GraphQL-shaped mutation and observer operations', async () => {
@@ -99,7 +116,12 @@ test('in-memory optic client exposes GraphQL-shaped mutation and observer operat
 });
 
 test('transport-backed optic client exercises the fake Echo host through encoded bytes', async () => {
-  const { transportClientModule, fakeTransportModule, codecModule } = await loadModules();
+  const {
+    transportClientModule,
+    fakeTransportModule,
+    codecModule,
+    readBasisHandleModule,
+  } = await loadModules();
   const fakeTransport = fakeTransportModule.createFakeEchoJeditOpticTransport();
   const calls = [];
   const transport = {
@@ -183,7 +205,12 @@ test('transport-backed optic client exercises the fake Echo host through encoded
 });
 
 test('transport-backed textWindow uses an opaque read basis handle', async () => {
-  const { transportClientModule, fakeTransportModule, codecModule } = await loadModules();
+  const {
+    transportClientModule,
+    fakeTransportModule,
+    codecModule,
+    readBasisHandleModule,
+  } = await loadModules();
   const fakeTransport = fakeTransportModule.createFakeEchoJeditOpticTransport();
   const observedRequests = [];
   const transport = {
@@ -221,6 +248,7 @@ test('transport-backed textWindow uses an opaque read basis handle', async () =>
   assert.equal(typeof opened.readBasisHandle.id, 'string');
   assert.equal(opened.readBasisHandle.id.includes(opened.nextSession.worldline.worldlineId), false);
   assert.equal(opened.readBasisHandle.id.includes(opened.nextSession.worldline.canonicalHeadId), false);
+  assert.equal(opened.readBasisHandle.id.includes(opened.nextSession.worldline.bufferKey), false);
   assert.deepEqual(Object.keys(opened.readBasisHandle).sort(), ['id', 'kind']);
   for (const rawFieldName of RAW_BASIS_FIELD_NAMES) {
     assert.equal(
@@ -229,6 +257,25 @@ test('transport-backed textWindow uses an opaque read basis handle', async () =>
       `ReadBasisHandle must not expose ${rawFieldName}`,
     );
   }
+  const semanticReadBasisHandle = Object.freeze({
+    kind: opened.readBasisHandle.kind,
+    id: `${SEMANTIC_READ_BASIS_HANDLE_PREFIX}${opened.nextSession.worldline.bufferKey}`,
+  });
+  assert.throws(
+    () => client.textWindow(
+      opened.nextSession,
+      'frontier:text-window:semantic-forgery',
+      semanticReadBasisHandle,
+      {
+        cursorLine: 0,
+        viewportLineCount: 1,
+        beforeLines: 0,
+        afterLines: 0,
+        maxBytes: 128,
+      },
+    ),
+    readBasisHandleModule.ReadBasisHandleResolutionError,
+  );
 
   const envelope = client.textWindow(
     opened.nextSession,

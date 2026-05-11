@@ -1,11 +1,11 @@
 import type { HotTextRuntimePort } from '../ports/hot-text-runtime.js';
 import {
-  READ_BASIS_HANDLE_KIND,
   type JeditOpticClient,
   type OpenTextBufferExecution,
   type ReadBasisHandle,
   type TextWindowRangeInput,
 } from '../ports/jedit-optic-client.js';
+import { ReadBasisHandleRegistry } from './read-basis-handle-registry.js';
 import {
   createBufferWorldline,
   createCheckpoint,
@@ -34,17 +34,17 @@ type ReplaceRangeAsTickInput = MutationReplaceRangeAsTickRequest['input'];
 type CreateCheckpointInput = MutationCreateCheckpointRequest['input'];
 type WorldlineSnapshotInput = QueryWorldlineSnapshotRequest['input'];
 type TextWindowInput = QueryTextWindowRequest['input'];
-const READ_BASIS_HANDLE_ID_PREFIX = 'text-buffer:';
 
 // Until Wesley emits direct intent/observer clients, keep one narrow seam where
 // generated GraphQL operation names are transmuted into app-owned runtime calls.
 export function createInMemoryJeditOpticClient(runtime: HotTextRuntimePort): JeditOpticClient {
+  const readBasisHandles = new ReadBasisHandleRegistry();
   return {
     openTextBuffer(input: CreateBufferWorldlineInput): OpenTextBufferExecution {
       const execution = createBufferWorldline(runtime, input);
       return {
         ...execution,
-        readBasisHandle: createReadBasisHandle(execution.nextSession),
+        readBasisHandle: readBasisHandles.createForSession(execution.nextSession),
       };
     },
     createBufferWorldline(input: CreateBufferWorldlineInput): CreateBufferWorldlineExecution {
@@ -79,37 +79,20 @@ export function createInMemoryJeditOpticClient(runtime: HotTextRuntimePort): Jed
         runtime,
         session,
         frontierRef,
-        toTextWindowInput(session, readBasisHandle, input),
+        toTextWindowInput(readBasisHandles, session, readBasisHandle, input),
       );
     },
   };
 }
 
-function createReadBasisHandle(session: JeditWorldlineSession): ReadBasisHandle {
-  return Object.freeze({
-    kind: READ_BASIS_HANDLE_KIND,
-    id: `${READ_BASIS_HANDLE_ID_PREFIX}${session.worldline.bufferKey}`,
-  });
-}
-
 function toTextWindowInput(
+  readBasisHandles: ReadBasisHandleRegistry,
   session: JeditWorldlineSession,
   readBasisHandle: ReadBasisHandle,
   input: TextWindowRangeInput,
 ): TextWindowInput {
   return {
     ...input,
-    worldlineId: resolveReadBasisWorldlineId(session, readBasisHandle),
+    worldlineId: readBasisHandles.resolveWorldlineId(session, readBasisHandle),
   };
-}
-
-function resolveReadBasisWorldlineId(
-  session: JeditWorldlineSession,
-  readBasisHandle: ReadBasisHandle,
-): string {
-  const expected = createReadBasisHandle(session);
-  if (readBasisHandle.kind !== READ_BASIS_HANDLE_KIND || readBasisHandle.id !== expected.id) {
-    throw new Error('ReadBasisHandle does not belong to the supplied jedit session.');
-  }
-  return session.worldline.worldlineId;
 }
