@@ -18,18 +18,18 @@ export function settingsRows(model: WorkspaceModel): ReturnType<typeof jeditSett
 }
 
 export const workspaceSettingsHandlers: JeditSettingsHandlers<WorkspaceModel, WorkspaceMsg> = {
-  cycleTheme: (model) => ({
+  cycleTheme: (model) => ([{
     ...model,
     jeditTheme: nextJeditTheme(model.jeditTheme),
-  }, []),
-  toggleThemeMode: (model) => ({
+  }, []]),
+  toggleThemeMode: (model) => ([{
     ...model,
     jeditTheme: oppositeJeditTheme(model.jeditTheme),
-  }, []),
-  toggleFooter: (model) => ({
+  }, []]),
+  toggleFooter: (model) => ([{
     ...model,
     footerVisible: !model.footerVisible,
-  }, []),
+  }, []]),
   toggleMarkdownPreview: (model) => {
     let preview = model;
     if (model.editor == null || !isWorkspaceMarkdownFile(model.editor.path)) {
