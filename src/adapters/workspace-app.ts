@@ -28,11 +28,13 @@ export interface WorkspaceAppOptions {
   initialWorkingDirectory: string;
   perfEnabled: boolean;
   nowMs?: () => number;
+  random?: () => number;
   seed?: WorkspaceInitialModelSnapshot;
 }
 
 export function createWorkspaceApp(options: WorkspaceAppOptions): App<WorkspaceModel, WorkspaceMsg> {
   const nowMs = options.nowMs ?? (() => Date.now());
+  const random = options.random ?? Math.random;
   const editorFile = editorFilePort;
   const graftSession = createGraftSessionPort();
   const sourceHighlighter = createGraftSourceHighlighter();
@@ -47,7 +49,7 @@ export function createWorkspaceApp(options: WorkspaceAppOptions): App<WorkspaceM
     sourceHighlighter,
     titleSceneLoader,
     profiler: createRaytracerProfilerPort(nowMs),
-    initialModel: options.seed ?? createInitialModelSnapshot(nowMs(), options.initialWorkingDirectory),
+    initialModel: options.seed ?? createInitialModelSnapshot(nowMs(), options.initialWorkingDirectory, random),
     nowMs,
     createTimeTickCmd: () => createTimeTickCmd(),
     createNotificationTickCmd: () => createNotificationTickCmd((atMs) => ({ type: 'notification-tick', atMs })),
@@ -66,11 +68,15 @@ export function createWorkspaceApp(options: WorkspaceAppOptions): App<WorkspaceM
     : app;
 }
 
-function createInitialModelSnapshot(nowMs: number, cwd: string): WorkspaceInitialModelSnapshot {
+function createInitialModelSnapshot(
+  nowMs: number,
+  cwd: string,
+  random: () => number,
+): WorkspaceInitialModelSnapshot {
   return {
     entries: loadEntries(cwd),
     titleMesh: loadStartupTitleMesh(),
-    titleSceneSeed: Math.random(),
+    titleSceneSeed: random(),
     jeditTheme: resolveInitialJeditTheme(process.env[JEDIT_THEME_ENV]),
     i18n: new BijouI18nAdapter('en', 'ltr'),
     nowMs,
