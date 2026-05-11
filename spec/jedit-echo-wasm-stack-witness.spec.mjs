@@ -55,6 +55,15 @@ const ECHO_DERIVED_FIXTURE_DEFAULT_WORLDLINE_ID_HEX =
 
 const UTF8_DECODER = new TextDecoder();
 
+test('real Echo WASM witness request construction gets basis through an optic session resolver', () => {
+  assert.equal(
+    encodeStackWitnessTextWindowRequest.toString()
+      .includes('ECHO_DERIVED_FIXTURE_DEFAULT_WORLDLINE_ID_HEX'),
+    false,
+    'encodeStackWitnessTextWindowRequest must not directly reference Echo fixture worldline id',
+  );
+});
+
 test('real Echo WASM Stack Witness 0001 transport emits ReadingEnvelope + QueryBytes', {
   skip: REAL_ECHO_WASM_MODULE === undefined
     ? 'set JEDIT_ECHO_WASM_MODULE to an Echo warp-wasm JS module to run this opt-in witness'
@@ -80,10 +89,13 @@ test('real Echo WASM Stack Witness 0001 transport emits ReadingEnvelope + QueryB
   );
   runEchoSchedulerUntilIdle(transport);
 
-  const artifact = decodeOkEnvelope(transport.observeBytes(encodeStackWitnessTextWindowRequest()));
+  const opticSessionBasis = createWitnessOnlyEchoFixtureBasisResolver();
+  const artifact = decodeOkEnvelope(transport.observeBytes(
+    encodeStackWitnessTextWindowRequest(opticSessionBasis),
+  ));
 
   assertReadingEnvelopePresent(artifact);
-  assertStackWitnessArtifactIdentity(artifact);
+  assertStackWitnessArtifactIdentity(artifact, opticSessionBasis.resolveTextWindowBasis());
 
   const queryBytes = extractQueryBytes(artifact);
   const appReading = toWitnessOnlyTextWindowReading(artifact, queryBytes);
@@ -147,13 +159,26 @@ function packControlStartIntent() {
   }));
 }
 
-function encodeStackWitnessTextWindowRequest() {
+function createWitnessOnlyEchoFixtureBasisResolver() {
+  return Object.freeze({
+    resolveTextWindowBasis() {
+      return Object.freeze({
+        worldlineIdHex: ECHO_DERIVED_FIXTURE_DEFAULT_WORLDLINE_ID_HEX,
+        worldlineIdBytes: hexToBytes(ECHO_DERIVED_FIXTURE_DEFAULT_WORLDLINE_ID_HEX),
+        at: Object.freeze({
+          kind: 'frontier',
+        }),
+      });
+    },
+  });
+}
+
+function encodeStackWitnessTextWindowRequest(opticSessionBasis) {
+  const basis = opticSessionBasis.resolveTextWindowBasis();
   return encodeCbor({
     coordinate: {
-      worldline_id: hexToBytes(ECHO_DERIVED_FIXTURE_DEFAULT_WORLDLINE_ID_HEX),
-      at: {
-        kind: 'frontier',
-      },
+      worldline_id: basis.worldlineIdBytes,
+      at: basis.at,
     },
     frame: 'query_view',
     projection: {
@@ -184,8 +209,8 @@ function assertReadingEnvelopePresent(artifact) {
   assert.equal(artifact.reading.residual_posture, 'complete');
 }
 
-function assertStackWitnessArtifactIdentity(artifact) {
-  assert.equal(bytesToHex(artifact.resolved.worldline_id), ECHO_DERIVED_FIXTURE_DEFAULT_WORLDLINE_ID_HEX);
+function assertStackWitnessArtifactIdentity(artifact, basis) {
+  assert.equal(bytesToHex(artifact.resolved.worldline_id), basis.worldlineIdHex);
   assert.equal(artifact.frame, 'query_view');
   assert.equal(artifact.projection.kind, 'query');
   assert.equal(artifact.projection.query_id, STACK_WITNESS_OP_IDS.TEXT_WINDOW_QUERY);
