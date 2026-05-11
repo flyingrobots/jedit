@@ -186,4 +186,5 @@ export {
   updateInsertMode,
   updateNormalMode,
   scrollPreview,
+  editorViewport,
 };
