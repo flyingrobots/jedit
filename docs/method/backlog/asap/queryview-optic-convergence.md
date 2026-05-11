@@ -14,6 +14,9 @@ acceptance_criteria:
     QueryView reads are modeled as optic-shaped observations at the jedit
     boundary instead of a permanent direct-query side door.
   - >
+    jedit no longer needs raw default-worldline fixture evidence once an optic
+    or session capability owns basis/worldline resolution.
+  - >
     The Stack Witness 0001 consumer path can run against a real Echo-hosted
     ReadingEnvelope plus QueryBytes result when the Echo WASM package is
     consumable from jedit.
@@ -43,9 +46,17 @@ The next convergence step is not to redesign jedit's contract. The next step is
 to let the boundary adapter consume the real Echo Stack Witness result and map
 that byte payload into the app-owned `TextWindowReading` shape.
 
+The current real-WASM witness still carries a derived Echo default-worldline id
+as explicit fixture evidence. That is temporary scaffolding for the raw
+`ObservationRequest` path. It must not become a product contract or a request
+for Echo to expose a default-worldline API. Durable jedit integration should
+receive basis/worldline resolution through an optic or session capability.
+
 ## Desired Shape
 
 - jedit submits create/edit intent through an Echo transport.
+- jedit receives or opens an optic/session capability that owns the basis
+  coordinate for reads.
 - Echo admits or obstructs the intent and owns causal-history truth.
 - jedit observes an optic-shaped `textWindow` read.
 - Echo returns `ReadingEnvelope + QueryBytes`.

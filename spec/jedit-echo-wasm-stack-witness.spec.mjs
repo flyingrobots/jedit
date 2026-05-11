@@ -47,8 +47,9 @@ const RUN_UNTIL_IDLE_CYCLE_LIMIT = 4;
 // Echo `WarpKernel::new` derives `default_worldline` from
 // `engine.root_key().warp_id`; the fresh Engine builder seeds that root warp
 // with `make_warp_id("root")`, i.e. BLAKE3("warp:" || "root").
-// This must become an Echo-exported value before this graduates from fixture
-// witness to production adapter behavior.
+// This is witness scaffolding, not an app-facing API requirement. Durable
+// production adapter behavior should get basis/worldline resolution from an
+// optic or session capability rather than asking Echo for a default worldline.
 const ECHO_DERIVED_FIXTURE_DEFAULT_WORLDLINE_ID_HEX =
   '3e888b35fc1d18b5487da6704fa71c3374e95dd52bc83963239b127f9293f228';
 
