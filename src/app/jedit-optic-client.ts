@@ -16,18 +16,18 @@ import {
   type WorldlineSnapshotReadingEnvelope,
 } from './jedit-observer-runtime.js';
 import type {
-  CreateBufferWorldlineRequest,
-  CreateCheckpointRequest,
-  ReplaceRangeAsTickRequest,
-  TextWindowRequest,
-  WorldlineSnapshotRequest,
+  MutationCreateBufferWorldlineRequest,
+  MutationCreateCheckpointRequest,
+  MutationReplaceRangeAsTickRequest,
+  QueryTextWindowRequest,
+  QueryWorldlineSnapshotRequest,
 } from '../generated/jedit/hot-text-runtime.wesley.generated.js';
 
-type CreateBufferWorldlineInput = CreateBufferWorldlineRequest['input'];
-type ReplaceRangeAsTickInput = ReplaceRangeAsTickRequest['input'];
-type CreateCheckpointInput = CreateCheckpointRequest['input'];
-type WorldlineSnapshotInput = WorldlineSnapshotRequest['input'];
-type TextWindowInput = TextWindowRequest['input'];
+type CreateBufferWorldlineInput = MutationCreateBufferWorldlineRequest['input'];
+type ReplaceRangeAsTickInput = MutationReplaceRangeAsTickRequest['input'];
+type CreateCheckpointInput = MutationCreateCheckpointRequest['input'];
+type WorldlineSnapshotInput = QueryWorldlineSnapshotRequest['input'];
+type TextWindowInput = QueryTextWindowRequest['input'];
 
 // Until Wesley emits direct intent/observer clients, keep one narrow seam where
 // generated GraphQL operation names are transmuted into app-owned runtime calls.
