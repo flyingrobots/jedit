@@ -37,13 +37,13 @@ const EMPTY_LINE_COUNT = 1;
 const UTF8_ENCODER = new TextEncoder();
 
 type CreateBufferWorldlineInput = MutationOperationMap['createBufferWorldline']['input'];
-type CreateBufferWorldlineResult = MutationOperationMap['createBufferWorldline']['result'];
+type CreateBufferWorldlineResult = ReturnType<typeof MutationOperationSchemas.createBufferWorldline.result.parse>;
 type ReplaceRangeAsTickInput = MutationOperationMap['replaceRangeAsTick']['input'];
-type ReplaceRangeAsTickResult = MutationOperationMap['replaceRangeAsTick']['result'];
+type ReplaceRangeAsTickResult = ReturnType<typeof MutationOperationSchemas.replaceRangeAsTick.result.parse>;
 type CreateCheckpointInput = MutationOperationMap['createCheckpoint']['input'];
-type CreateCheckpointResult = MutationOperationMap['createCheckpoint']['result'];
+type CreateCheckpointResult = ReturnType<typeof MutationOperationSchemas.createCheckpoint.result.parse>;
 type WorldlineSnapshotInput = QueryOperationMap['worldlineSnapshot']['input'];
-type WorldlineSnapshotResult = QueryOperationMap['worldlineSnapshot']['result'];
+type WorldlineSnapshotResult = ReturnType<typeof QueryOperationSchemas.worldlineSnapshot.result.parse>;
 
 type JeditWorldlineSessionRecord = {
   readonly worldline: BufferWorldline;

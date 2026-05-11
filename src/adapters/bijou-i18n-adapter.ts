@@ -24,15 +24,15 @@ export class BijouI18nAdapter implements I18nPort {
 
   t(path: string, values?: Record<string, string | number>): string {
     const keys = path.split('.');
-    let current: object | string = this._catalog;
+    let current: Record<string, TranslationNode> | string = this._catalog;
 
     for (const key of keys) {
-      if (current == null || typeof current !== 'object') {
+      if (!isTranslationRecord(current)) {
         return path;
       }
       if (Object.prototype.hasOwnProperty.call(current, key)) {
-        const next = Object.getOwnPropertyDescriptor(current, key)?.value;
-        if (!isTranslationNode(next)) {
+        const next: TranslationNode | undefined = current[key];
+        if (next == null || !isTranslationNode(next)) {
           return path;
         }
         current = next;
@@ -76,6 +76,10 @@ function isTranslationNode(value: unknown): value is TranslationNode {
     }
   }
   return true;
+}
+
+function isTranslationRecord(value: unknown): value is Record<string, TranslationNode> {
+  return value != null && typeof value === 'object';
 }
 
 function resolveLocale(value: string): Locale {
