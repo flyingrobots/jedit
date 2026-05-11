@@ -3,6 +3,7 @@
   "objects": [
     {
       "kind": "mesh",
+      "mesh": "bunny",
       "radius": 1.0,
       "color": [224, 113, 63],
       "reflectivity": 0.18

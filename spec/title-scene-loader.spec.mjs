@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import * as fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
@@ -57,4 +59,54 @@ test('loaded mesh scenes do not expose scene-authored mesh position as ray-hit s
   assert.equal(Object.hasOwn(loadedMesh, 'position'), false);
   assert.ok(hit != null);
   assert.equal(hit.object, loadedMesh);
+});
+
+test('scene loader rejects malformed scene JSON with a decode error', async () => {
+  const { loader } = await loadTitleSceneLoaderModules();
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'jedit-scene-'));
+  const file = path.join(directory, 'broken.jedit-scene');
+  await fs.writeFile(file, '{ "objects": [', 'utf8');
+
+  await assert.rejects(
+    () => loader.loadTitleSceneFromFile(file, {}),
+    (error) => error?.name === 'SceneDecodeError' && String(error.message).includes('malformed'),
+  );
+});
+
+test('scene loader rejects unknown mesh ids with a decode error', async () => {
+  const { loader, titleScene } = await loadTitleSceneLoaderModules();
+
+  assert.throws(
+    () => loader.parseTitleSceneJson({
+      objects: [
+        {
+          kind: titleScene.TITLE_SCENE_SHAPE_KIND.Mesh,
+          mesh: 'dragon',
+          radius: 1,
+          color: [224, 113, 63],
+          reflectivity: 0.18,
+        },
+      ],
+    }, {}),
+    (error) => error?.name === 'SceneDecodeError' && String(error.message).includes('scene.objects[0].mesh'),
+  );
+});
+
+test('scene loader rejects known mesh ids when the mesh asset is unavailable', async () => {
+  const { loader, titleScene } = await loadTitleSceneLoaderModules();
+
+  assert.throws(
+    () => loader.parseTitleSceneJson({
+      objects: [
+        {
+          kind: titleScene.TITLE_SCENE_SHAPE_KIND.Mesh,
+          mesh: 'teapot',
+          radius: 1,
+          color: [224, 113, 63],
+          reflectivity: 0.18,
+        },
+      ],
+    }, {}),
+    (error) => error?.name === 'SceneLoadError' && String(error.message).includes('not loaded'),
+  );
 });
