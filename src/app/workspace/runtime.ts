@@ -1,5 +1,6 @@
 import type { Cmd, RuntimeIssue } from '@flyingrobots/bijou-tui';
 import { createInitialModel } from './init.js';
+import type { WorkspaceInitialModelSnapshot } from './init.js';
 import { manageGraftLifecycle } from './graft.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
@@ -17,6 +18,7 @@ import { clamp01, clampIndex } from './viewport.js';
 import { renderWorkspace } from './viewer.js';
 import { reduceProfilerMsg, type ProfilerMsg } from '../raytracer-profiler.js';
 import { createInitialProfilerState } from '../raytracer-profiler.js';
+import type { DrawerKind } from '../../ui/drawer-layout.js';
 
 export interface WorkspaceRuntimeDependencies {
   initialColumns: number;
@@ -24,6 +26,9 @@ export interface WorkspaceRuntimeDependencies {
   initialWorkingDirectory: string;
   createTimeTickCmd: () => Cmd<WorkspaceMsg>;
   createNotificationTickCmd: () => Cmd<WorkspaceMsg>;
+  createDrawerAnimationCmd: (kind: DrawerKind, from: number, to: number) => Cmd<WorkspaceMsg>[];
+  initialModel: WorkspaceInitialModelSnapshot;
+  nowMs: () => number;
 }
 
 export interface WorkspaceRuntime {
@@ -36,7 +41,15 @@ export interface WorkspaceRuntime {
 export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): WorkspaceRuntime => ({
   init: () => [
     {
-      ...createInitialModel(deps.initialWorkingDirectory, deps.initialColumns, deps.initialRows),
+      ...createInitialModel(
+        deps.initialWorkingDirectory,
+        deps.initialColumns,
+        deps.initialRows,
+        {
+          ...deps.initialModel,
+          nowMs: deps.initialModel.nowMs ?? deps.nowMs(),
+        },
+      ),
       profiler: createInitialProfilerState(),
     },
     [
@@ -45,6 +58,7 @@ export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): Work
     ],
   ],
   update: (msg, model): [WorkspaceModel, Cmd<WorkspaceMsg>[]] => {
+    const now = deps.nowMs();
     if (msg.type === 'resize') {
       const viewport = editorViewport({
         ...model,
@@ -62,7 +76,7 @@ export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): Work
       return applyNotificationState(
         resized,
         resized.notifications,
-        Date.now(),
+        now,
         deps.createNotificationTickCmd,
       );
     }
@@ -104,7 +118,6 @@ export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): Work
     }
 
     if (msg.type === 'time-tick') {
-      const now = Date.now();
       const frameTime = now - model.lastFrameMs;
       return [{
         ...model,
@@ -135,7 +148,12 @@ export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): Work
       return [model, []];
     }
 
-    return updateFromKey(msg, model);
+    return updateFromKey(
+      msg,
+      model,
+      deps.nowMs,
+      deps.createDrawerAnimationCmd,
+    );
   },
   view: (model) => renderWorkspace(model),
   routeRuntimeIssue: (issue) => ({ type: 'runtime-issue', issue }),

@@ -1,4 +1,4 @@
-import { animate, type Cmd } from '@flyingrobots/bijou-tui';
+import type { Cmd } from '@flyingrobots/bijou-tui';
 import { defaultFocusPane, type DrawerKind } from '../../ui/panel-focus.js';
 import type { FocusCycleState } from '../../ui/panel-focus.js';
 import { withFocusPane } from './focus.js';
@@ -7,10 +7,13 @@ import type { WorkspaceMsg } from './msg.js';
 
 const DRAWER_DURATION_MS = 160;
 
+export type CreateDrawerAnimationCmd = (kind: DrawerKind, from: number, to: number) => Cmd<WorkspaceMsg>[];
+
 export function openDrawer(
   model: WorkspaceModel,
   kind: DrawerKind,
   beginGraftRefresh: (model: WorkspaceModel, force: boolean) => [WorkspaceModel, Cmd<WorkspaceMsg>[]],
+  createDrawerAnimationCmd: CreateDrawerAnimationCmd,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (kind === 'graft') {
     const [next, cmds] = beginGraftRefresh({
@@ -26,7 +29,7 @@ export function openDrawer(
 
     return [
       next,
-      [...drawerAnimation('graft', model.graftDrawerProgress, 1), ...cmds],
+      [...drawerAnimation('graft', model.graftDrawerProgress, 1, createDrawerAnimationCmd), ...cmds],
     ];
   }
 
@@ -41,7 +44,7 @@ export function openDrawer(
 
   return [
     next,
-    drawerAnimation('files', model.fileDrawerProgress, 1),
+    drawerAnimation('files', model.fileDrawerProgress, 1, createDrawerAnimationCmd),
   ];
 }
 
@@ -49,15 +52,20 @@ export function toggleDrawer(
   model: WorkspaceModel,
   kind: DrawerKind,
   beginGraftRefresh: (model: WorkspaceModel, force: boolean) => [WorkspaceModel, Cmd<WorkspaceMsg>[]],
-): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
+  createDrawerAnimationCmd: CreateDrawerAnimationCmd,
+): [WorkspaceModel, Cmd<WorkspaceModel>[]] {
   if ((kind === 'files' && model.fileDrawerOpen) || (kind === 'graft' && model.graftDrawerOpen)) {
-    return closeDrawer(model, kind);
+    return closeDrawer(model, kind, createDrawerAnimationCmd);
   }
 
-  return openDrawer(model, kind, beginGraftRefresh);
+  return openDrawer(model, kind, beginGraftRefresh, createDrawerAnimationCmd);
 }
 
-export function closeDrawer(model: WorkspaceModel, kind: DrawerKind): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
+export function closeDrawer(
+  model: WorkspaceModel,
+  kind: DrawerKind,
+  createDrawerAnimationCmd: CreateDrawerAnimationCmd,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   const next = kind === 'files'
     ? {
       ...model,
@@ -76,18 +84,20 @@ export function closeDrawer(model: WorkspaceModel, kind: DrawerKind): [Workspace
 
   return [
     withFocusPane(next, defaultFocusPane(focusState)),
-    drawerAnimation(kind, kind === 'files' ? model.fileDrawerProgress : model.graftDrawerProgress, 0),
+    drawerAnimation(
+      kind,
+      kind === 'files' ? model.fileDrawerProgress : model.graftDrawerProgress,
+      0,
+      createDrawerAnimationCmd,
+    ),
   ];
 }
 
-function drawerAnimation(kind: DrawerKind, from: number, to: number): Cmd<WorkspaceMsg>[] {
-  return [
-    animate<WorkspaceMsg>({
-      type: 'tween',
-      from,
-      to,
-      duration: DRAWER_DURATION_MS,
-      onFrame: (value) => ({ type: 'drawer-progress', kind, value }),
-    }),
-  ];
+function drawerAnimation(
+  kind: DrawerKind,
+  from: number,
+  to: number,
+  createDrawerAnimationCmd: CreateDrawerAnimationCmd,
+): Cmd<WorkspaceMsg>[] {
+  return createDrawerAnimationCmd(kind, from, to);
 }

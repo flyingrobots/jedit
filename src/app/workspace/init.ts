@@ -1,19 +1,31 @@
-import { BijouI18nAdapter } from '../../adapters/bijou-i18n-adapter.js';
 import { loadEntries } from '../../adapters/filesystem.js';
 import { createTitleCameraState } from '../title-camera-session.js';
 import { createFeedbackState } from '../../ui/feedback.js';
-import { JEDIT_THEME_ENV, resolveInitialJeditTheme } from '../../ui/jedit-themes.js';
 import { titleBunnySceneCameraPlacement, titleSceneCameraPlacement } from '../../ui/title-scene.js';
 import { loadStartupTitleMesh } from './title-mesh.js';
 import type { FocusPane } from '../../ui/panel-focus.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
+import type { I18nPort } from '../../ports/i18n.js';
+import type { JeditTheme } from '../../ui/jedit-theme.js';
 
-export function createInitialModel(cwd: string, columns: number, rows: number): WorkspaceModel {
-  const titleSceneSeed = Math.random();
+export interface WorkspaceInitialModelSnapshot {
+  readonly titleSceneSeed: number;
+  readonly jeditTheme: JeditTheme;
+  readonly i18n: I18nPort;
+  readonly nowMs: number;
+}
+
+export function createInitialModel(
+  cwd: string,
+  columns: number,
+  rows: number,
+  snapshot: WorkspaceInitialModelSnapshot,
+): WorkspaceModel {
+  const { titleSceneSeed, jeditTheme, i18n, nowMs } = snapshot;
   const titleMesh = loadStartupTitleMesh();
   return {
-    i18n: new BijouI18nAdapter('en', 'ltr'),
+    i18n,
     workspaceRoot: cwd,
     cwd,
     entries: loadEntries(cwd),
@@ -28,7 +40,7 @@ export function createInitialModel(cwd: string, columns: number, rows: number): 
     ...createFeedbackState<WorkspaceMsg>(),
     settingsOpen: false,
     settingsFocusIndex: 0,
-    jeditTheme: resolveInitialJeditTheme(process.env[JEDIT_THEME_ENV]),
+    jeditTheme,
     graftInfo: undefined,
     graftLoading: false,
     graftRequestId: 0,
@@ -45,7 +57,7 @@ export function createInitialModel(cwd: string, columns: number, rows: number): 
     rows,
     time: 0,
     perfVisible: false,
-    lastFrameMs: Date.now(),
+    lastFrameMs: nowMs,
     frameTimeMs: 0,
     frameTimeHistory: [],
     titleCamera: createTitleCameraState(

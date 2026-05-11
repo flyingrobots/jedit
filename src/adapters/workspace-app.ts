@@ -1,31 +1,37 @@
 import { animate, perfOverlaySurface, type App, type Cmd } from '@flyingrobots/bijou-tui';
-import {
-  createNotificationTickCmd,
-} from '../ui/feedback.js';
+import { BijouI18nAdapter } from './bijou-i18n-adapter.js';
+import { createNotificationTickCmd } from '../ui/feedback.js';
+import { JEDIT_THEME_ENV, resolveInitialJeditTheme } from '../ui/jedit-themes.js';
+import { createWorkspaceRuntime, type WorkspaceRuntime } from '../app/workspace/runtime.js';
+import type { WorkspaceInitialModelSnapshot } from '../app/workspace/init.js';
 import type { WorkspaceModel } from '../app/workspace/model.js';
 import type { WorkspaceMsg } from '../app/workspace/msg.js';
-import { createWorkspaceRuntime, type WorkspaceRuntime } from '../app/workspace/runtime.js';
+import type { CreateDrawerAnimationCmd } from '../app/workspace/drawer.js';
+import type { DrawerKind } from '../ui/drawer-layout.js';
+
+const TIME_TICK_DURATION_MS = Number.MAX_SAFE_INTEGER;
+const DRAWER_DURATION_MS = 160;
 
 export interface WorkspaceAppOptions {
   initialColumns: number;
   initialRows: number;
   initialWorkingDirectory: string;
   perfEnabled: boolean;
-}
-
-const TIME_TICK_DURATION_MS = Number.MAX_SAFE_INTEGER;
-
-export interface WorkspaceAdapterApp {
-  readonly app: App<WorkspaceModel, WorkspaceMsg>;
+  nowMs?: () => number;
+  seed?: WorkspaceInitialModelSnapshot;
 }
 
 export function createWorkspaceApp(options: WorkspaceAppOptions): App<WorkspaceModel, WorkspaceMsg> {
-  const runtime: WorkspaceRuntime = createWorkspaceRuntime({
+  const nowMs = options.nowMs ?? (() => Date.now());
+  const runtime = createWorkspaceRuntime({
     initialColumns: options.initialColumns,
     initialRows: options.initialRows,
     initialWorkingDirectory: options.initialWorkingDirectory,
+    initialModel: options.seed ?? createInitialModelSnapshot(nowMs()),
+    nowMs,
     createTimeTickCmd: () => createTimeTickCmd(),
     createNotificationTickCmd: () => createNotificationTickCmd((atMs) => ({ type: 'notification-tick', atMs })),
+    createDrawerAnimationCmd: createDrawerAnimationCmd,
   });
 
   const app: App<WorkspaceModel, WorkspaceMsg> = {
@@ -36,17 +42,29 @@ export function createWorkspaceApp(options: WorkspaceAppOptions): App<WorkspaceM
   };
 
   return options.perfEnabled
-    ? createPerfApp(app)
+    ? createPerfApp(app, nowMs)
     : app;
 }
 
-function createPerfApp(realApp: App<WorkspaceModel, WorkspaceMsg>): App<WorkspaceModel, WorkspaceMsg> {
+function createInitialModelSnapshot(nowMs: number): WorkspaceInitialModelSnapshot {
+  return {
+    titleSceneSeed: Math.random(),
+    jeditTheme: resolveInitialJeditTheme(process.env[JEDIT_THEME_ENV]),
+    i18n: new BijouI18nAdapter('en', 'ltr'),
+    nowMs,
+  };
+}
+
+function createPerfApp(
+  realApp: App<WorkspaceModel, WorkspaceMsg>,
+  nowMs: () => number,
+): App<WorkspaceModel, WorkspaceMsg> {
   return {
     init: realApp.init,
     update: (msg, model) => {
-      const start = Date.now();
+      const start = nowMs();
       const [nextModel, cmds] = realApp.update(msg, model);
-      const end = Date.now();
+      const end = nowMs();
       return [{
         ...nextModel,
         lastFrameMs: start,
@@ -82,3 +100,13 @@ function createTimeTickCmd(): Cmd<WorkspaceMsg> {
     onFrame: (value) => ({ type: 'time-tick', time: value / 1000 }),
   });
 }
+
+const createDrawerAnimationCmd: CreateDrawerAnimationCmd = (kind: DrawerKind, from: number, to: number) => [
+  animate<WorkspaceMsg>({
+    type: 'tween',
+    from,
+    to,
+    duration: DRAWER_DURATION_MS,
+    onFrame: (value) => ({ type: 'drawer-progress', kind, value }),
+  }),
+];

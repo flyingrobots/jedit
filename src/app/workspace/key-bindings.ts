@@ -15,7 +15,7 @@ import {
   toggleMarkdownPreview,
 } from './editor-session.js';
 import { loadTitleSceneFromFile } from '../../adapters/title-scene-loader.js';
-import { toggleDrawer, closeDrawer } from './drawer.js';
+import { closeDrawer, type CreateDrawerAnimationCmd, toggleDrawer } from './drawer.js';
 import { focusCycleState } from './focus.js';
 import { cycleFocusPane, hasFocusablePeers } from '../../ui/panel-focus.js';
 import { updateJeditSettingsFromKey } from '../settings-session.js';
@@ -28,7 +28,12 @@ import { nextJeditTheme } from '../../ui/jedit-themes.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 
-export function updateFromKey(msg: KeyMsg, model: WorkspaceModel): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
+export function updateFromKey(
+  msg: KeyMsg,
+  model: WorkspaceModel,
+  nowMs: () => number,
+  createDrawerAnimationCmd: CreateDrawerAnimationCmd,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (msg.key === '`') {
     return [{ ...model, perfVisible: !model.perfVisible }, []];
   }
@@ -75,7 +80,7 @@ export function updateFromKey(msg: KeyMsg, model: WorkspaceModel): [WorkspaceMod
                   message: String(error),
                   level: 'error',
                   source: 'command',
-                  atMs: Date.now(),
+                  atMs: nowMs(),
                 },
               };
             }
@@ -124,19 +129,19 @@ export function updateFromKey(msg: KeyMsg, model: WorkspaceModel): [WorkspaceMod
   }
 
   if (msg.ctrl && !msg.alt && msg.key === 'b') {
-    return toggleDrawer(model, 'files', beginGraftRefresh);
+    return toggleDrawer(model, 'files', beginGraftRefresh, createDrawerAnimationCmd);
   }
 
   if (msg.ctrl && !msg.alt && msg.key === 'g') {
-    return toggleDrawer(model, 'graft', beginGraftRefresh);
+    return toggleDrawer(model, 'graft', beginGraftRefresh, createDrawerAnimationCmd);
   }
 
   if (msg.key === 'escape') {
     if (model.focusPane === 'files' && model.fileDrawerOpen) {
-      return closeDrawer(model, 'files');
+      return closeDrawer(model, 'files', createDrawerAnimationCmd);
     }
     if (model.focusPane === 'graft' && model.graftDrawerOpen) {
-      return closeDrawer(model, 'graft');
+      return closeDrawer(model, 'graft', createDrawerAnimationCmd);
     }
   }
 
@@ -145,7 +150,7 @@ export function updateFromKey(msg: KeyMsg, model: WorkspaceModel): [WorkspaceMod
   }
 
   if (model.focusPane === 'files' && model.fileDrawerOpen) {
-    return updateTreeFromKey(msg, model);
+    return updateTreeFromKey(msg, model, nowMs);
   }
 
   if (model.focusPane === 'graft' && model.graftDrawerOpen) {

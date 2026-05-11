@@ -11,9 +11,13 @@ import { type Cmd } from '@flyingrobots/bijou-tui';
 
 export const FILE_TREE_META_MIN = 0;
 
-export function updateTreeFromKey(msg: KeyMsg, model: WorkspaceModel): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
+export function updateTreeFromKey(
+  msg: KeyMsg,
+  model: WorkspaceModel,
+  nowMs: () => number,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (msg.key === 'r') {
-    return changeDirectory(model, model.cwd, DIRECTORY_ACTION_REFRESH);
+    return changeDirectory(model, model.cwd, DIRECTORY_ACTION_REFRESH, nowMs);
   }
 
   if (msg.key === 'backspace' || msg.key === 'left' || msg.key === 'h') {
@@ -22,7 +26,7 @@ export function updateTreeFromKey(msg: KeyMsg, model: WorkspaceModel): [Workspac
       return [model, []];
     }
 
-    return changeDirectory(model, parent, DIRECTORY_ACTION_OPEN);
+    return changeDirectory(model, parent, DIRECTORY_ACTION_OPEN, nowMs);
   }
 
   if (msg.key === 'down' || msg.key === 'j') {
@@ -52,7 +56,7 @@ export function updateTreeFromKey(msg: KeyMsg, model: WorkspaceModel): [Workspac
     }
 
     if (entry.kind === 'dir' || entry.kind === 'parent') {
-      return changeDirectory(model, entry.path, DIRECTORY_ACTION_OPEN);
+      return changeDirectory(model, entry.path, DIRECTORY_ACTION_OPEN, nowMs);
     }
 
     const editor = loadEditor(entry.path);
@@ -78,12 +82,17 @@ function openDirectory(model: WorkspaceModel, cwd: string): WorkspaceModel {
   };
 }
 
-function changeDirectory(model: WorkspaceModel, cwd: string, action: typeof DIRECTORY_ACTION_OPEN | typeof DIRECTORY_ACTION_REFRESH): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
+function changeDirectory(
+  model: WorkspaceModel,
+  cwd: string,
+  action: typeof DIRECTORY_ACTION_OPEN | typeof DIRECTORY_ACTION_REFRESH,
+  nowMs: () => number,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   try {
     return [openDirectory(model, cwd), []];
   } catch (cause) {
     const issue = describeDirectoryIssue(action, cwd, cause instanceof Error ? cause : String(cause));
-    const command = pushErrorToast(model, issue.title, issue.message, Date.now(), (atMs) => ({
+    const command = pushErrorToast(model, issue.title, issue.message, nowMs(), (atMs) => ({
       type: 'notification-tick',
       atMs,
     }));
