@@ -468,7 +468,11 @@ function isJsonValue(value: unknown): value is JsonValue {
   if (Array.isArray(value)) {
     return value.every(isJsonValue);
   }
-  return typeof value === 'object' && objectValuesAreJson(value);
+  return isJsonRecord(value) && objectValuesAreJson(value);
+}
+
+function isJsonRecord(value: unknown): value is Record<string, unknown> {
+  return value != null && typeof value === 'object' && !Array.isArray(value);
 }
 
 function objectValuesAreJson(value: Record<string, unknown>): boolean {
