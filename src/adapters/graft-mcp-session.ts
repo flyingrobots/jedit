@@ -282,16 +282,53 @@ async function callGraftTool(
   args: Record<string, string | number | boolean | null>,
 ): Promise<JsonValue> {
   const connection = await ensureGraftConnection(workspaceRoot);
-  const result = await connection.client.callTool({
+  const rawResult = await connection.client.callTool({
     name,
     arguments: args,
   });
+  const result = {
+    ...rawResult,
+    structuredContent: normalizeStructuredContent(rawResult.structuredContent),
+  };
 
-  if (result.isError === true) {
+  const isError = 'isError' in rawResult && rawResult.isError === true;
+  if (isError) {
     throw new GraftToolExecutionError(parseGraftErrorResult(result));
   }
 
   return parseGraftToolResult(result);
+}
+
+function normalizeStructuredContent(value: unknown): JsonValue | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (isJsonValue(value)) {
+    return value;
+  }
+
+  throw new GraftToolExecutionError('Invalid structuredContent returned by graft tool.');
+}
+
+function isJsonValue(value: unknown): value is JsonValue {
+  if (value === null) {
+    return true;
+  }
+
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return true;
+  }
+
+  if (Array.isArray(value)) {
+    return value.every(isJsonValue);
+  }
+
+  if (value == null || typeof value !== 'object') {
+    return false;
+  }
+
+  return Object.values(value).every(isJsonValue);
 }
 
 function parseGraftErrorResult(result: GraftCallToolResult): string {
