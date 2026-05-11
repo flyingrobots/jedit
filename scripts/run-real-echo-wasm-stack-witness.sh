@@ -8,8 +8,8 @@ set -euo pipefail
 # depend on Echo build state, and the real witness remains opt-in through
 # JEDIT_ECHO_WASM_MODULE.
 
-ECHO_WARP_WASM_DIR="${ECHO_WARP_WASM_DIR:-/Users/james/git/echo/crates/warp-wasm}"
-JEDIT_DIR="${JEDIT_DIR:-/Users/james/git/jedit}"
+ECHO_WARP_WASM_DIR="${ECHO_WARP_WASM_DIR:?set ECHO_WARP_WASM_DIR to echo/crates/warp-wasm}"
+JEDIT_DIR="${JEDIT_DIR:-$(pwd)}"
 ECHO_WASM_MODULE="${ECHO_WASM_MODULE:-${ECHO_WARP_WASM_DIR}/pkg/rmg_wasm.js}"
 
 cd "${ECHO_WARP_WASM_DIR}"
