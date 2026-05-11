@@ -1,9 +1,9 @@
-import { animate, perfOverlaySurface, type App, type Cmd } from '@flyingrobots/bijou-tui';
+import { animate, type App, type Cmd } from '@flyingrobots/bijou-tui';
 import { BijouI18nAdapter } from './bijou-i18n-adapter.js';
 import { createNotificationTickCmd } from '../ui/feedback.js';
 import { JEDIT_THEME_ENV, resolveInitialJeditTheme } from '../ui/jedit-themes.js';
 import { loadEntries } from './filesystem.js';
-import { createWorkspaceRuntime, type WorkspaceRuntime } from '../app/workspace/runtime.js';
+import { createWorkspaceRuntime } from '../app/workspace/runtime.js';
 import type { WorkspaceInitialModelSnapshot } from '../app/workspace/init.js';
 import type { WorkspaceModel } from '../app/workspace/model.js';
 import type { WorkspaceMsg } from '../app/workspace/msg.js';
@@ -114,17 +114,6 @@ function createPerfApp(
     },
     view: (model) => {
       const screen = realApp.view(model);
-      if (model.perfVisible) {
-        perfOverlaySurface(screen, {
-          label: 'jedit perf',
-          width: model.columns,
-          height: model.rows,
-          lastFrameMs: model.lastFrameMs,
-          frameTimeMs: model.frameTimeMs,
-          frameTimeHistory: model.frameTimeHistory,
-          theme: model.jeditTheme.perf,
-        });
-      }
       return screen;
     },
     routeRuntimeIssue: realApp.routeRuntimeIssue,
