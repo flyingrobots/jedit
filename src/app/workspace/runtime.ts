@@ -19,11 +19,13 @@ import { renderWorkspace } from './viewer.js';
 import { reduceProfilerMsg, type ProfilerMsg } from '../raytracer-profiler.js';
 import { createInitialProfilerState } from '../raytracer-profiler.js';
 import type { DrawerKind } from '../../ui/drawer-layout.js';
+import type { FileSystemPort } from '../../ports/file-system.js';
 
 export interface WorkspaceRuntimeDependencies {
   initialColumns: number;
   initialRows: number;
   initialWorkingDirectory: string;
+  fileSystem: FileSystemPort;
   createTimeTickCmd: () => Cmd<WorkspaceMsg>;
   createNotificationTickCmd: () => Cmd<WorkspaceMsg>;
   createDrawerAnimationCmd: (kind: DrawerKind, from: number, to: number) => Cmd<WorkspaceMsg>[];
@@ -153,6 +155,7 @@ export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): Work
       model,
       deps.nowMs,
       deps.createDrawerAnimationCmd,
+      deps.fileSystem,
     );
   },
   view: (model) => renderWorkspace(model),

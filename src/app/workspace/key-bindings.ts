@@ -25,6 +25,7 @@ import { updateTreeFromKey } from './file-tree.js';
 import { join } from 'node:path';
 import { updateViewerFromKey } from './viewer.js';
 import { nextJeditTheme } from '../../ui/jedit-themes.js';
+import type { FileSystemPort } from '../../ports/file-system.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 
@@ -33,6 +34,7 @@ export function updateFromKey(
   model: WorkspaceModel,
   nowMs: () => number,
   createDrawerAnimationCmd: CreateDrawerAnimationCmd,
+  fileSystem: FileSystemPort,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (msg.key === '`') {
     return [{ ...model, perfVisible: !model.perfVisible }, []];
@@ -150,7 +152,7 @@ export function updateFromKey(
   }
 
   if (model.focusPane === 'files' && model.fileDrawerOpen) {
-    return updateTreeFromKey(msg, model, nowMs);
+    return updateTreeFromKey(msg, model, nowMs, fileSystem);
   }
 
   if (model.focusPane === 'graft' && model.graftDrawerOpen) {

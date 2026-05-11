@@ -2,12 +2,17 @@ import { animate, perfOverlaySurface, type App, type Cmd } from '@flyingrobots/b
 import { BijouI18nAdapter } from './bijou-i18n-adapter.js';
 import { createNotificationTickCmd } from '../ui/feedback.js';
 import { JEDIT_THEME_ENV, resolveInitialJeditTheme } from '../ui/jedit-themes.js';
+import { loadEntries } from './filesystem.js';
 import { createWorkspaceRuntime, type WorkspaceRuntime } from '../app/workspace/runtime.js';
 import type { WorkspaceInitialModelSnapshot } from '../app/workspace/init.js';
 import type { WorkspaceModel } from '../app/workspace/model.js';
 import type { WorkspaceMsg } from '../app/workspace/msg.js';
 import type { CreateDrawerAnimationCmd } from '../app/workspace/drawer.js';
 import type { DrawerKind } from '../ui/drawer-layout.js';
+import { createTitleBunnyMesh, type TitleMesh } from '../ui/title-mesh.js';
+import { loadInitialTitleMesh, TITLE_MESH_LOAD_RESULT } from '../app/title-mesh-loader.js';
+import { loadTitleBunnyMeshSource } from './title-bunny-mesh.js';
+import { FileSystemPortAdapter } from './filesystem.js';
 
 const TIME_TICK_DURATION_MS = Number.MAX_SAFE_INTEGER;
 const DRAWER_DURATION_MS = 160;
@@ -27,7 +32,8 @@ export function createWorkspaceApp(options: WorkspaceAppOptions): App<WorkspaceM
     initialColumns: options.initialColumns,
     initialRows: options.initialRows,
     initialWorkingDirectory: options.initialWorkingDirectory,
-    initialModel: options.seed ?? createInitialModelSnapshot(nowMs()),
+    fileSystem: FileSystemPortAdapter,
+    initialModel: options.seed ?? createInitialModelSnapshot(nowMs(), options.initialWorkingDirectory),
     nowMs,
     createTimeTickCmd: () => createTimeTickCmd(),
     createNotificationTickCmd: () => createNotificationTickCmd((atMs) => ({ type: 'notification-tick', atMs })),
@@ -46,13 +52,27 @@ export function createWorkspaceApp(options: WorkspaceAppOptions): App<WorkspaceM
     : app;
 }
 
-function createInitialModelSnapshot(nowMs: number): WorkspaceInitialModelSnapshot {
+function createInitialModelSnapshot(nowMs: number, cwd: string): WorkspaceInitialModelSnapshot {
   return {
+    entries: loadEntries(cwd),
+    titleMesh: loadStartupTitleMesh(),
     titleSceneSeed: Math.random(),
     jeditTheme: resolveInitialJeditTheme(process.env[JEDIT_THEME_ENV]),
     i18n: new BijouI18nAdapter('en', 'ltr'),
     nowMs,
   };
+}
+
+function loadStartupTitleMesh(): TitleMesh | undefined {
+  const result = loadInitialTitleMesh({
+    loadSource: loadTitleBunnyMeshSource,
+    createMesh: createTitleBunnyMesh,
+  });
+  if (result.kind === TITLE_MESH_LOAD_RESULT.Loaded) {
+    return result.mesh;
+  }
+  process.stderr.write(`jedit title mesh unavailable: ${result.error}\n`);
+  return undefined;
 }
 
 function createPerfApp(

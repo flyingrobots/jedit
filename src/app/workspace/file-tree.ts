@@ -1,6 +1,7 @@
 import { dirname } from 'node:path';
 import type { KeyMsg } from '@flyingrobots/bijou-tui';
-import { DIRECTORY_ACTION_OPEN, DIRECTORY_ACTION_REFRESH, describeDirectoryIssue, loadEntries } from '../../adapters/filesystem.js';
+import type { FileSystemPort, DirectoryAction } from '../../ports/file-system.js';
+import { DIRECTORY_ACTION_OPEN, DIRECTORY_ACTION_REFRESH } from '../../ports/file-system.js';
 import { pushErrorToast } from '../../ui/feedback.js';
 import { clampIndex } from './viewport.js';
 import { withFocusPane } from './focus.js';
@@ -15,9 +16,10 @@ export function updateTreeFromKey(
   msg: KeyMsg,
   model: WorkspaceModel,
   nowMs: () => number,
+  fileSystem: FileSystemPort,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (msg.key === 'r') {
-    return changeDirectory(model, model.cwd, DIRECTORY_ACTION_REFRESH, nowMs);
+    return changeDirectory(model, model.cwd, DIRECTORY_ACTION_REFRESH, nowMs, fileSystem);
   }
 
   if (msg.key === 'backspace' || msg.key === 'left' || msg.key === 'h') {
@@ -26,7 +28,7 @@ export function updateTreeFromKey(
       return [model, []];
     }
 
-    return changeDirectory(model, parent, DIRECTORY_ACTION_OPEN, nowMs);
+    return changeDirectory(model, parent, DIRECTORY_ACTION_OPEN, nowMs, fileSystem);
   }
 
   if (msg.key === 'down' || msg.key === 'j') {
@@ -56,7 +58,7 @@ export function updateTreeFromKey(
     }
 
     if (entry.kind === 'dir' || entry.kind === 'parent') {
-      return changeDirectory(model, entry.path, DIRECTORY_ACTION_OPEN, nowMs);
+      return changeDirectory(model, entry.path, DIRECTORY_ACTION_OPEN, nowMs, fileSystem);
     }
 
     const editor = loadEditor(entry.path);
@@ -73,11 +75,15 @@ export function updateTreeFromKey(
   return [model, []];
 }
 
-function openDirectory(model: WorkspaceModel, cwd: string): WorkspaceModel {
+function openDirectory(
+  model: WorkspaceModel,
+  cwd: string,
+  fileSystem: FileSystemPort,
+): WorkspaceModel {
   return {
     ...model,
     cwd,
-    entries: loadEntries(cwd),
+    entries: fileSystem.loadEntries(cwd),
     selectedIndex: 0,
   };
 }
@@ -85,13 +91,14 @@ function openDirectory(model: WorkspaceModel, cwd: string): WorkspaceModel {
 function changeDirectory(
   model: WorkspaceModel,
   cwd: string,
-  action: typeof DIRECTORY_ACTION_OPEN | typeof DIRECTORY_ACTION_REFRESH,
+  action: DirectoryAction,
   nowMs: () => number,
+  fileSystem: FileSystemPort,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   try {
-    return [openDirectory(model, cwd), []];
+    return [openDirectory(model, cwd, fileSystem), []];
   } catch (cause) {
-    const issue = describeDirectoryIssue(action, cwd, cause instanceof Error ? cause : String(cause));
+    const issue = fileSystem.describeDirectoryIssue(action, cwd, cause instanceof Error ? cause : String(cause));
     const command = pushErrorToast(model, issue.title, issue.message, nowMs(), (atMs) => ({
       type: 'notification-tick',
       atMs,

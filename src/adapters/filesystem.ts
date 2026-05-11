@@ -1,18 +1,13 @@
 import { readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-
-export type EntryKind = 'parent' | 'dir' | 'file';
-
-export interface FileEntry {
-  readonly kind: EntryKind;
-  readonly name: string;
-  readonly path: string;
-}
-
-export interface DirectoryIssue {
-  readonly title: string;
-  readonly message: string;
-}
+import {
+  type DirectoryAction,
+  type DirectoryIssue,
+  type FileEntry,
+  type FileSystemPort,
+  DIRECTORY_ACTION_OPEN,
+  DIRECTORY_ACTION_REFRESH,
+} from '../ports/file-system.js';
 
 type Throwable =
   | Error
@@ -32,10 +27,7 @@ type FilesystemError = Error & {
   readonly code?: string;
 };
 
-export const DIRECTORY_ACTION_OPEN = 1;
-export const DIRECTORY_ACTION_REFRESH = 2;
-
-export type DirectoryAction = typeof DIRECTORY_ACTION_OPEN | typeof DIRECTORY_ACTION_REFRESH;
+export { DIRECTORY_ACTION_OPEN, DIRECTORY_ACTION_REFRESH };
 
 const DIRECTORY_ERROR_TITLE_OPEN = 'Cannot open directory';
 const DIRECTORY_ERROR_TITLE_REFRESH = 'Cannot refresh directory';
@@ -70,7 +62,7 @@ export function loadEntries(cwd: string): readonly FileEntry[] {
 export function describeDirectoryIssue(
   action: DirectoryAction,
   cwd: string,
-  cause: Throwable,
+  cause: Error | string,
 ): DirectoryIssue {
   const error = toFilesystemError(cause);
   return {
@@ -78,6 +70,11 @@ export function describeDirectoryIssue(
     message: formatDirectoryErrorMessage(cwd, error),
   };
 }
+
+export const FileSystemPortAdapter: FileSystemPort = {
+  loadEntries,
+  describeDirectoryIssue,
+};
 
 function compareEntries(a: FileEntry, b: FileEntry): number {
   if (a.kind === 'dir' && b.kind === 'file') {

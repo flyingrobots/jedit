@@ -1,18 +1,20 @@
-import { loadEntries } from '../../adapters/filesystem.js';
 import { createTitleCameraState } from '../title-camera-session.js';
 import { createFeedbackState } from '../../ui/feedback.js';
 import { titleBunnySceneCameraPlacement, titleSceneCameraPlacement } from '../../ui/title-scene.js';
-import { loadStartupTitleMesh } from './title-mesh.js';
 import type { FocusPane } from '../../ui/panel-focus.js';
+import type { TitleMesh } from '../../ui/title-mesh.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 import type { I18nPort } from '../../ports/i18n.js';
 import type { JeditTheme } from '../../ui/jedit-theme.js';
+import type { FileEntry } from '../../ports/file-system.js';
 
 export interface WorkspaceInitialModelSnapshot {
   readonly titleSceneSeed: number;
   readonly jeditTheme: JeditTheme;
   readonly i18n: I18nPort;
+  readonly entries: readonly FileEntry[];
+  readonly titleMesh?: TitleMesh;
   readonly nowMs: number;
 }
 
@@ -22,13 +24,12 @@ export function createInitialModel(
   rows: number,
   snapshot: WorkspaceInitialModelSnapshot,
 ): WorkspaceModel {
-  const { titleSceneSeed, jeditTheme, i18n, nowMs } = snapshot;
-  const titleMesh = loadStartupTitleMesh();
+  const { titleSceneSeed, jeditTheme, i18n, entries, titleMesh, nowMs } = snapshot;
   return {
     i18n,
     workspaceRoot: cwd,
     cwd,
-    entries: loadEntries(cwd),
+    entries,
     selectedIndex: 0,
     editor: undefined,
     viewMode: 'source',
