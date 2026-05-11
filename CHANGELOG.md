@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Hardened the real Echo WASM Stack Witness basis regression so it asserts the
+  encoded request coordinate comes from the resolved read basis instead of
+  inspecting request-construction source text.
 - Moved the real Echo WASM Stack Witness fixture basis behind a witness-only
   optic session resolver so request construction no longer directly references
   Echo's raw fixture worldline id.
