@@ -1,4 +1,3 @@
-import { dirname } from 'node:path';
 import type { KeyMsg } from '@flyingrobots/bijou-tui';
 import type { FileSystemPort, DirectoryAction } from '../../ports/file-system.js';
 import { DIRECTORY_ACTION_OPEN, DIRECTORY_ACTION_REFRESH } from '../../ports/file-system.js';
@@ -23,7 +22,7 @@ export function updateTreeFromKey(
   }
 
   if (msg.key === 'backspace' || msg.key === 'left' || msg.key === 'h') {
-    const parent = dirname(model.cwd);
+    const parent = fileSystem.dirname(model.cwd);
     if (parent === model.cwd) {
       return [model, []];
     }

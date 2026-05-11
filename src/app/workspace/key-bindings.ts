@@ -22,7 +22,6 @@ import { updateJeditSettingsFromKey } from '../settings-session.js';
 import { settingsRows, workspaceSettingsHandlers } from './settings.js';
 import { updateGraftDrawerFromKey } from './graft-drawer.js';
 import { updateTreeFromKey } from './file-tree.js';
-import { join } from 'node:path';
 import { updateViewerFromKey } from './viewer.js';
 import { nextJeditTheme } from '../../ui/jedit-themes.js';
 import type { FileSystemPort } from '../../ports/file-system.js';
@@ -71,7 +70,7 @@ export function updateFromKey(
         return [{ ...model, scenePickerOpen: false }, [
           async () => {
             try {
-              const scene = await loadTitleSceneFromFile(join(model.workspaceRoot, 'scenes', selected), model.titleMesh);
+              const scene = await loadTitleSceneFromFile(fileSystem.join(model.workspaceRoot, 'scenes', selected), model.titleMesh);
               return { type: 'load-scene-result', scene };
             } catch (error) {
               return {

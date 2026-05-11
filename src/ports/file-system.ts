@@ -17,4 +17,6 @@ export interface DirectoryIssue {
 export interface FileSystemPort {
   readonly loadEntries: (cwd: string) => readonly FileEntry[];
   readonly describeDirectoryIssue: (action: DirectoryAction, cwd: string, cause: Error | string) => DirectoryIssue;
+  readonly dirname: (cwd: string) => string;
+  readonly join: (...parts: readonly string[]) => string;
 }

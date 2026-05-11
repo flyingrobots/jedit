@@ -13,6 +13,7 @@ import { createTitleBunnyMesh, type TitleMesh } from '../ui/title-mesh.js';
 import { loadInitialTitleMesh, TITLE_MESH_LOAD_RESULT } from '../app/title-mesh-loader.js';
 import { loadTitleBunnyMeshSource } from './title-bunny-mesh.js';
 import { FileSystemPortAdapter } from './filesystem.js';
+import { createRaytracerProfilerPort } from './raytracer-profiler.js';
 
 const TIME_TICK_DURATION_MS = Number.MAX_SAFE_INTEGER;
 const DRAWER_DURATION_MS = 160;
@@ -33,6 +34,7 @@ export function createWorkspaceApp(options: WorkspaceAppOptions): App<WorkspaceM
     initialRows: options.initialRows,
     initialWorkingDirectory: options.initialWorkingDirectory,
     fileSystem: FileSystemPortAdapter,
+    profiler: createRaytracerProfilerPort(nowMs),
     initialModel: options.seed ?? createInitialModelSnapshot(nowMs(), options.initialWorkingDirectory),
     nowMs,
     createTimeTickCmd: () => createTimeTickCmd(),

@@ -74,6 +74,8 @@ export function describeDirectoryIssue(
 export const FileSystemPortAdapter: FileSystemPort = {
   loadEntries,
   describeDirectoryIssue,
+  dirname,
+  join,
 };
 
 function compareEntries(a: FileEntry, b: FileEntry): number {

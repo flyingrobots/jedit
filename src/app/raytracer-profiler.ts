@@ -1,5 +1,3 @@
-import { basename, join } from 'node:path';
-import { open, type FileHandle } from 'node:fs/promises';
 import type { Cmd, RuntimeIssue } from '@flyingrobots/bijou-tui';
 
 export interface ProfilerFrame {
@@ -12,11 +10,24 @@ export interface ProfilerFrame {
 export interface ProfilerState {
   readonly active: boolean;
   readonly filePath?: string;
-  readonly fileHandle?: FileHandle;
+  readonly fileHandle?: ProfilerHandle;
+}
+
+export interface ProfilerHandle {
+  readonly filePath: string;
+  readonly append: (frame: ProfilerFrame) => Promise<void>;
+  readonly close: () => Promise<void>;
+}
+
+export interface ProfilerTracePort {
+  readonly nowMs: () => number;
+  readonly beginTrace: (workspaceRoot: string) => Promise<ProfilerHandle>;
+  readonly appendTraceFrame: (handle: ProfilerHandle, frame: ProfilerFrame) => Promise<void>;
+  readonly endTrace: (handle: ProfilerHandle) => Promise<void>;
 }
 
 export type ProfilerMsg =
-  | { type: 'profiler-started'; filePath: string; fileHandle: FileHandle }
+  | { type: 'profiler-started'; filePath: string; fileHandle: ProfilerHandle }
   | { type: 'profiler-stopped' };
 
 export type ProfilerEffectMsg = ProfilerMsg | { type: 'runtime-issue'; issue: RuntimeIssue };
@@ -38,16 +49,15 @@ export function reduceProfilerMsg(state: ProfilerState, msg: ProfilerMsg): Profi
 export function toggleProfiler(
   state: ProfilerState,
   workspaceRoot: string,
+  profiler: ProfilerTracePort,
 ): [ProfilerState, Cmd<ProfilerEffectMsg>[]] {
   if (state.active && state.fileHandle != null) {
-    const fileName = state.filePath ? basename(state.filePath) : 'profile.jsonl';
-    // We deactivate immediately to prevent race conditions during close
     const nextState = { ...state, active: false };
     const activeHandle = state.fileHandle;
     return [nextState, [
       async (): Promise<ProfilerEffectMsg> => {
         try {
-          await activeHandle.close();
+          await profiler.endTrace(activeHandle);
           const stopped: ProfilerMsg = { type: 'profiler-stopped' };
           return stopped;
         } catch (err) {
@@ -57,7 +67,7 @@ export function toggleProfiler(
               message: `Failed to close profile: ${String(err)}`,
               level: 'error',
               source: 'command',
-              atMs: Date.now(),
+              atMs: profiler.nowMs(),
             },
           };
         }
@@ -66,10 +76,10 @@ export function toggleProfiler(
         return {
           type: 'runtime-issue',
           issue: {
-            message: `Profile trace saved to ${fileName}`,
+            message: `Profile trace saved to ${activeHandle.filePath}`,
             level: 'warning',
             source: 'command',
-            atMs: Date.now(),
+            atMs: profiler.nowMs(),
           },
         };
       },
@@ -79,10 +89,8 @@ export function toggleProfiler(
   return [state, [
     async (): Promise<ProfilerEffectMsg> => {
       try {
-        const fileName = `raytracer-profile-${Date.now()}.jsonl`;
-        const filePath = join(workspaceRoot, fileName);
-        const fileHandle = await open(filePath, 'a');
-        const started: ProfilerMsg = { type: 'profiler-started', filePath, fileHandle };
+        const fileHandle = await profiler.beginTrace(workspaceRoot);
+        const started: ProfilerMsg = { type: 'profiler-started', filePath: fileHandle.filePath, fileHandle };
         return started;
       } catch (err) {
         return {
@@ -91,17 +99,18 @@ export function toggleProfiler(
             message: `Failed to start profile: ${String(err)}`,
             level: 'error',
             source: 'command',
-            atMs: Date.now(),
+            atMs: profiler.nowMs(),
           },
         };
       }
-    }
+    },
   ]];
 }
 
 export function streamProfilerFrame(
   state: ProfilerState,
   frame: ProfilerFrame,
+  profiler: ProfilerTracePort,
 ): Cmd<ProfilerEffectMsg> | undefined {
   if (!state.active || state.fileHandle == null) {
     return undefined;
@@ -110,7 +119,7 @@ export function streamProfilerFrame(
   const activeHandle = state.fileHandle;
   return async (): Promise<ProfilerEffectMsg | undefined> => {
     try {
-      await activeHandle.appendFile(`${JSON.stringify(frame)}\n`, 'utf8');
+      await profiler.appendTraceFrame(activeHandle, frame);
       return undefined;
     } catch (err) {
       return {
@@ -119,7 +128,7 @@ export function streamProfilerFrame(
           message: `Failed to stream profile: ${String(err)}`,
           level: 'error',
           source: 'command',
-          atMs: Date.now(),
+          atMs: profiler.nowMs(),
         },
       };
     }

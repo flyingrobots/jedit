@@ -16,7 +16,13 @@ import { updateFromKey } from './key-bindings.js';
 import { updateFromMouse } from './mouse.js';
 import { clamp01, clampIndex } from './viewport.js';
 import { renderWorkspace } from './viewer.js';
-import { reduceProfilerMsg, type ProfilerMsg } from '../raytracer-profiler.js';
+import {
+  reduceProfilerMsg,
+  streamProfilerFrame,
+  toggleProfiler,
+  type ProfilerMsg,
+  type ProfilerTracePort,
+} from '../raytracer-profiler.js';
 import { createInitialProfilerState } from '../raytracer-profiler.js';
 import type { DrawerKind } from '../../ui/drawer-layout.js';
 import type { FileSystemPort } from '../../ports/file-system.js';
@@ -26,6 +32,7 @@ export interface WorkspaceRuntimeDependencies {
   initialRows: number;
   initialWorkingDirectory: string;
   fileSystem: FileSystemPort;
+  profiler: ProfilerTracePort;
   createTimeTickCmd: () => Cmd<WorkspaceMsg>;
   createNotificationTickCmd: () => Cmd<WorkspaceMsg>;
   createDrawerAnimationCmd: (kind: DrawerKind, from: number, to: number) => Cmd<WorkspaceMsg>[];
@@ -121,17 +128,29 @@ export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): Work
 
     if (msg.type === 'time-tick') {
       const frameTime = now - model.lastFrameMs;
-      return [{
+      const nextModel = {
         ...model,
         time: msg.time,
         lastFrameMs: now,
         frameTimeMs: frameTime,
         frameTimeHistory: [...model.frameTimeHistory, frameTime].slice(-50),
-      }, []];
+      };
+      const profilerStream = streamProfilerFrame(nextModel.profiler, {
+        time: msg.time,
+        frameTimeMs: frameTime,
+        columns: nextModel.columns,
+        rows: nextModel.rows,
+      }, deps.profiler);
+      return [nextModel, profilerStream == null ? [] : [profilerStream]];
     }
 
     if (msg.type === 'toggle-perf') {
       return [{ ...model, perfVisible: !model.perfVisible }, []];
+    }
+
+    if (msg.type === 'toggle-profiler') {
+      const [nextProfiler, commands] = toggleProfiler(model.profiler, model.workspaceRoot, deps.profiler);
+      return [{ ...model, profiler: nextProfiler }, commands];
     }
 
     if (msg.type === 'runtime-issue') {
