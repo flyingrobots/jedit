@@ -33,9 +33,12 @@ const LOGO_MIN_RENDER_HEIGHT = 2;
 const LOGO_MAX_RENDER_HEIGHT = 6;
 const LOGO_COLOR_RATE = 0.5;
 const LOGO_COLOR_ROW_PHASE = 0.37;
-const LOGO_COLOR_SWING = 0.14;
-const LOGO_SURFACE_BLEND = 0.26;
+const LOGO_COLOR_SWING = 0.24;
+const LOGO_SURFACE_BLEND = 0.06;
+const LOGO_COLOR_CONTRAST_BOOST = 1.35;
 const LOGO_FULL_TURN_RADIANS = Math.PI * 2;
+const RGB_CHANNEL_MIN = 0;
+const RGB_CHANNEL_MAX = 255;
 const BRAILLE_BLANK = '⠀';
 
 const FLYINGROBOTS_LOGO_LINES = parseFlyingRobotsLogo(readFlyingRobotsLogoSource());
@@ -105,7 +108,7 @@ export function paintFlyingRobotsLogo(
         char,
         fgRGB: flyingRobotsLogoColor(colors, col, bounds.width, row, time),
         bgRGB: colors.surface,
-        modifiers: [JEDIT_TEXT_MODIFIER.Dim],
+        modifiers: [JEDIT_TEXT_MODIFIER.Bold],
       });
     }
   }
@@ -147,7 +150,9 @@ function flyingRobotsLogoColor(
   const sourceRatio = col / Math.max(1, width - 1);
   const shimmer = Math.sin((time * LOGO_COLOR_RATE * LOGO_FULL_TURN_RADIANS) + (row * LOGO_COLOR_ROW_PHASE)) * LOGO_COLOR_SWING;
   const accentRatio = clamp(sourceRatio + shimmer);
-  return mixColor(colors.surface, mixColor(colors.info, colors.accent, accentRatio), 1 - LOGO_SURFACE_BLEND);
+  const base = mixColor(colors.info, colors.accent, accentRatio);
+  const vivid = contrastColor(colors.surface, base, LOGO_COLOR_CONTRAST_BOOST);
+  return mixColor(colors.surface, vivid, 1 - LOGO_SURFACE_BLEND);
 }
 
 function mixColor(from: Color3, to: Color3, ratio: number): Color3 {
@@ -161,4 +166,16 @@ function mixColor(from: Color3, to: Color3, ratio: number): Color3 {
 
 function clamp(value: number): number {
   return Math.max(0, Math.min(1, value));
+}
+
+function contrastColor(surface: Color3, color: Color3, boost: number): Color3 {
+  return [
+    clampChannel(surface[0] + ((color[0] - surface[0]) * boost)),
+    clampChannel(surface[1] + ((color[1] - surface[1]) * boost)),
+    clampChannel(surface[2] + ((color[2] - surface[2]) * boost)),
+  ];
+}
+
+function clampChannel(value: number): number {
+  return Math.max(RGB_CHANNEL_MIN, Math.min(RGB_CHANNEL_MAX, Math.round(value)));
 }

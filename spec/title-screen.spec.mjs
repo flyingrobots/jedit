@@ -30,6 +30,7 @@ const TITLE_LOGO_MAX_FRAME_OFFSET_DELTA = 0.02;
 const TITLE_LOGO_ANIMATION_PERF_FRAMES = 1200;
 const TITLE_LOGO_ANIMATION_PERF_BUDGET_MS = 240;
 const FLYINGROBOTS_LOGO_MIN_VISIBLE_CELLS = 24;
+const FLYINGROBOTS_LOGO_MIN_SURFACE_CONTRAST = 24;
 const FLYINGROBOTS_LOGO_MAX_VERTICAL_RATIO = 0.5;
 const BRAILLE_BLANK = '⠀';
 const REFLECTIVE_HIGHLIGHT_LUMINANCE = 190;
@@ -188,7 +189,10 @@ test('title screen renders the logo as a non-Braille themed glyph layer', async 
   const { title, themes, style } = await loadTitleModules();
   const theme = themes.availableJeditThemes()[0];
   const surface = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, fixedTitleRenderOptions());
-  const logoCells = cells(surface).filter((cell) => cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold));
+  const logoCells = cells(surface).filter((cell) => (
+    cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold)
+    && !isBraille(cell.char)
+  ));
 
   assert.ok(logoCells.length > 12);
   assert.ok(logoCells.every((cell) => !isBraille(cell.char)));
@@ -210,18 +214,27 @@ test('title screen animates logo glyph positions and color over time', async () 
   assert.notDeepEqual(laterLogo, firstLogo);
 });
 
-test('title screen incorporates the Flying Robots source logo as a dim Braille band', async () => {
+test('title screen incorporates the Flying Robots source logo as a bright Braille band', async () => {
   const { title, themes, style } = await loadTitleModules();
   const theme = themes.availableJeditThemes()[0];
   const surface = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, fixedTitleRenderOptions());
+  const bounds = title.flyingRobotsLogoCellBounds(TITLE_WIDTH, TITLE_HEIGHT);
   const sourceChars = flyingRobotsLogoInkChars();
-  const logoCells = positionedCells(surface).filter(({ cell }) => (
-    cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Dim)
+  assert.ok(bounds != null);
+
+  const logoCells = positionedCells(surface).filter(({ x, y, cell }) => (
+    x >= bounds.x
+    && x < bounds.x + bounds.width
+    && y >= bounds.y
+    && y < bounds.y + bounds.height
+    && cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold)
+    && !cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Dim)
+    && isBraille(cell.char)
   ));
 
   assert.ok(logoCells.length > FLYINGROBOTS_LOGO_MIN_VISIBLE_CELLS);
-  assert.ok(logoCells.every(({ cell }) => isBraille(cell.char)));
   assert.ok(logoCells.some(({ cell }) => sourceChars.has(cell.char)));
+  assert.ok(Math.max(...logoCells.map(({ cell }) => colorContrast(cell.fgRGB, cell.bgRGB))) > FLYINGROBOTS_LOGO_MIN_SURFACE_CONTRAST);
   assert.ok(Math.max(...logoCells.map(({ y }) => y)) < TITLE_HEIGHT * FLYINGROBOTS_LOGO_MAX_VERTICAL_RATIO);
 });
 
@@ -316,7 +329,10 @@ function cellColorKey(cell) {
 
 function logoCellKeys(surface, style) {
   return positionedCells(surface)
-    .filter(({ cell }) => cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold))
+    .filter(({ cell }) => (
+      cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold)
+      && !isBraille(cell.char)
+    ))
     .map(({ x, y, cell }) => `${x}:${y}:${cell.char}:${cellColorKey(cell)}`);
 }
 
@@ -332,4 +348,8 @@ function luminance(rgb) {
     return 0;
   }
   return (rgb[0] * 0.2126) + (rgb[1] * 0.7152) + (rgb[2] * 0.0722);
+}
+
+function colorContrast(fg, bg) {
+  return Math.abs(luminance(fg) - luminance(bg));
 }
