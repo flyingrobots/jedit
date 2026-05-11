@@ -3,7 +3,6 @@
   "objects": [
     {
       "kind": "mesh",
-      "position": [0, 0.75, 0],
       "radius": 1.0,
       "color": [224, 113, 63],
       "reflectivity": 0.18

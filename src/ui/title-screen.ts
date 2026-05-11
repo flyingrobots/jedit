@@ -11,6 +11,7 @@ import {
   generateTitleScene,
   intersectsTitleSceneObjectAlongRay,
   nearestTitleSceneObjectHit,
+  titleSceneObjectFootprintCenter,
   type TitleScene,
   type TitleSceneObject,
   type TitleSceneVector3,
@@ -335,8 +336,9 @@ function titleFloorCausticStrengthAt(
     if (object.reflectivity <= 0) {
       continue;
     }
-    const dx = point[0] - object.position[0];
-    const dz = point[2] - object.position[2];
+    const footprintCenter = titleSceneObjectFootprintCenter(object);
+    const dx = point[0] - footprintCenter[0];
+    const dz = point[2] - footprintCenter[2];
     const distance = Math.sqrt((dx * dx) + (dz * dz));
     const radius = (object.footprintRadius ?? object.radius) * CAUSTIC_RADIUS_SCALE;
     const falloff = Math.max(0, 1 - (distance / radius));
@@ -356,8 +358,9 @@ function titleFloorCausticStrengthAt(
 function titleFloorContactShadowMultiplierAt(point: Vector3, objects: readonly TitleSceneObject[]): number {
   let strength = 0;
   for (const object of objects) {
-    const dx = point[0] - object.position[0];
-    const dz = point[2] - object.position[2];
+    const footprintCenter = titleSceneObjectFootprintCenter(object);
+    const dx = point[0] - footprintCenter[0];
+    const dz = point[2] - footprintCenter[2];
     const falloff = Math.max(0, 1 - (Math.sqrt((dx * dx) + (dz * dz)) / (object.footprintRadius * CONTACT_SHADOW_RADIUS_SCALE)));
     strength = Math.max(strength, Math.pow(falloff, CONTACT_SHADOW_POWER) * CONTACT_SHADOW_STRENGTH);
   }

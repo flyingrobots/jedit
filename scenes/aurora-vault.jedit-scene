@@ -3,7 +3,6 @@
   "objects": [
     {
       "kind": "mesh",
-      "position": [0, 1.18, 0],
       "radius": 1.45,
       "footprintRadius": 1.45,
       "height": 2.35,

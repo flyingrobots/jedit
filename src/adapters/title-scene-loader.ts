@@ -10,16 +10,29 @@ export interface TitleSceneJson {
     readonly radius?: number;
   };
   readonly environment?: TitleSceneEnvironment;
-  readonly objects?: ReadonlyArray<{
-    readonly kind: string;
-    readonly mesh?: string;
-    readonly position: readonly [number, number, number];
-    readonly radius: number;
-    readonly footprintRadius?: number;
-    readonly height?: number;
-    readonly color: readonly [number, number, number];
-    readonly reflectivity: number;
-  }>;
+  readonly objects?: ReadonlyArray<TitleSceneJsonObject>;
+}
+
+type TitleSceneJsonObject = TitleSceneJsonPrimitiveObject | TitleSceneJsonMeshObject;
+
+interface TitleSceneJsonPrimitiveObject {
+  readonly kind: typeof TITLE_SCENE_SHAPE_KIND.Sphere | typeof TITLE_SCENE_SHAPE_KIND.Column;
+  readonly position: readonly [number, number, number];
+  readonly radius: number;
+  readonly footprintRadius?: number;
+  readonly height?: number;
+  readonly color: readonly [number, number, number];
+  readonly reflectivity: number;
+}
+
+interface TitleSceneJsonMeshObject {
+  readonly kind: typeof TITLE_SCENE_SHAPE_KIND.Mesh;
+  readonly mesh?: string;
+  readonly radius: number;
+  readonly footprintRadius?: number;
+  readonly height?: number;
+  readonly color: readonly [number, number, number];
+  readonly reflectivity: number;
 }
 
 export async function loadTitleSceneFromFile(path: string, meshes: TitleMeshLibrary): Promise<TitleScene> {
@@ -62,10 +75,11 @@ export function parseTitleSceneJson(json: TitleSceneJson, meshes: TitleMeshLibra
       if (mesh == null) {
         continue;
       }
+      // TODO: Mesh placement needs a real local/world transform pipeline.
+      // Mesh scene JSON intentionally has no position field until that exists.
       objects.push({
         kind: TITLE_SCENE_SHAPE_KIND.Mesh,
         mesh,
-        position: obj.position,
         radius: obj.radius,
         footprintRadius: obj.footprintRadius ?? obj.radius,
         height: obj.height ?? mesh.height,

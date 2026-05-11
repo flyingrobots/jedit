@@ -25,7 +25,6 @@ export interface TitleSceneColorSet {
 }
 
 interface TitleSceneBaseObject {
-  readonly position: TitleSceneVector3;
   readonly radius: number;
   readonly footprintRadius: number;
   readonly height: number;
@@ -35,6 +34,7 @@ interface TitleSceneBaseObject {
 
 export interface TitleScenePrimitiveObject extends TitleSceneBaseObject {
   readonly kind: TitleScenePrimitiveShapeKind;
+  readonly position: TitleSceneVector3;
 }
 
 export interface TitleSceneMeshObject extends TitleSceneBaseObject {
@@ -235,15 +235,9 @@ function createBunnySceneObjects(colors: TitleSceneColorSet, mesh: TitleMesh): r
 }
 
 function createMeshSceneObject(colors: TitleSceneColorSet, mesh: TitleMesh): TitleSceneMeshObject {
-  const bounds = mesh.bounds;
   return {
     kind: TITLE_SCENE_SHAPE_KIND.Mesh,
     mesh,
-    position: [
-      (bounds.min[0] + bounds.max[0]) / 2,
-      mesh.height / 2,
-      (bounds.min[2] + bounds.max[2]) / 2,
-    ],
     radius: mesh.footprintRadius,
     footprintRadius: mesh.footprintRadius,
     height: mesh.height,
@@ -286,12 +280,26 @@ function materialColor(index: number, random: () => number, colors: TitleSceneCo
 }
 
 function overlapsSceneObjects(candidate: TitleSceneObject, existing: readonly TitleSceneObject[]): boolean {
+  const candidateCenter = titleSceneObjectFootprintCenter(candidate);
   return existing.some((object) => {
-    const dx = candidate.position[0] - object.position[0];
-    const dz = candidate.position[2] - object.position[2];
+    const objectCenter = titleSceneObjectFootprintCenter(object);
+    const dx = candidateCenter[0] - objectCenter[0];
+    const dz = candidateCenter[2] - objectCenter[2];
     const distance = Math.sqrt((dx * dx) + (dz * dz));
     return distance < candidate.footprintRadius + object.footprintRadius + TITLE_SCENE_OBJECT_MARGIN;
   });
+}
+
+export function titleSceneObjectFootprintCenter(object: TitleSceneObject): TitleSceneVector3 {
+  if (object.kind !== TITLE_SCENE_SHAPE_KIND.Mesh) {
+    return object.position;
+  }
+
+  return [
+    (object.mesh.bounds.min[0] + object.mesh.bounds.max[0]) / 2,
+    object.height / 2,
+    (object.mesh.bounds.min[2] + object.mesh.bounds.max[2]) / 2,
+  ];
 }
 
 function titleSceneObjectHit(
@@ -309,7 +317,7 @@ function titleSceneObjectHit(
   }
 }
 
-function sphereHit(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleSceneObject): TitleSceneObjectHit | undefined {
+function sphereHit(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleScenePrimitiveObject): TitleSceneObjectHit | undefined {
   const distance = intersectSphere(origin, ray, object.position, object.radius);
   if (distance <= 0) {
     return undefined;
@@ -322,7 +330,7 @@ function sphereHit(origin: TitleSceneVector3, ray: TitleSceneVector3, object: Ti
   };
 }
 
-function columnHit(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleSceneObject): TitleSceneObjectHit | undefined {
+function columnHit(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleScenePrimitiveObject): TitleSceneObjectHit | undefined {
   let nearestDistance = -1;
   let nearestNormal: TitleSceneVector3 | undefined;
 
@@ -359,7 +367,7 @@ function columnHit(origin: TitleSceneVector3, ray: TitleSceneVector3, object: Ti
   };
 }
 
-function intersectColumnCap(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleSceneObject, capY: number): number {
+function intersectColumnCap(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleScenePrimitiveObject, capY: number): number {
   if (Math.abs(ray[1]) < 0.000001) {
     return -1;
   }
@@ -407,7 +415,7 @@ function intersectSphere(
   return first > 0 ? first : second;
 }
 
-function intersectColumnSide(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleSceneObject): number {
+function intersectColumnSide(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleScenePrimitiveObject): number {
   const dx = origin[0] - object.position[0];
   const dz = origin[2] - object.position[2];
   const a = (ray[0] * ray[0]) + (ray[2] * ray[2]);
