@@ -21,14 +21,14 @@ Everything else — types, tests, docs — is secondary documentation. If they d
 
 ### Mandatory Architectural Rules
 
-**1. Hexagonal Architecture (Ports & Adapters) — Required**  
+**1. Hexagonal Architecture (Ports & Adapters) — Required**
 Core domain logic must never depend on host-specific APIs, external libraries with side effects, or concrete implementations. All external capabilities are accessed exclusively through
 **ports** (interfaces). Adapters implement those ports for specific environments.
 
-**2. Dependency Injection — Required**  
+**2. Dependency Injection — Required**
 All dependencies are injected via constructors. No `new` of concrete classes inside core. No globals, service locators, or direct imports of adapters in domain code.
 
-**3. Encoding / Decoding Only at Boundaries — Required**  
+**3. Encoding / Decoding Only at Boundaries — Required**
 Serialization, deserialization, and codec work must happen **only** in adapters or dedicated boundary codec ports. Core works exclusively with rich domain objects.
 
 ---
@@ -114,14 +114,14 @@ For cross-realm values, normalize through adapters/boundaries and construct vali
 
 ### flyingrobots's Principles
 
-**P1:** Domain concepts with invariants or behavior deserve runtime-backed classes.  
-**P2:** Validation happens at construction and system boundaries.  
-**P3:** Behavior belongs on the type that owns it.  
-**P4:** Schemas (Zod etc.) are boundary guards only.  
-**P5:** Encoding/decoding is codec/adapter territory.  
-**P6:** Immutability by default.  
-**P7:** Determinism & replayability (ClockPort, RandomPort, etc.).  
-**P8:** Single source of truth = the runtime model.  
+**P1:** Domain concepts with invariants or behavior deserve runtime-backed classes.
+**P2:** Validation happens at construction and system boundaries.
+**P3:** Behavior belongs on the type that owns it.
+**P4:** Schemas (Zod etc.) are boundary guards only.
+**P5:** Encoding/decoding is codec/adapter territory.
+**P6:** Immutability by default.
+**P7:** Determinism & replayability (ClockPort, RandomPort, etc.).
+**P8:** Single source of truth = the runtime model.
 **P9:** Runtime dispatch (`instanceof`) when inside the same realm; for cross-realm values, normalize at the boundary before constructing domain types instead of relying on class identity.
 
 ---

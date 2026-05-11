@@ -22,7 +22,7 @@ async function loadTitleSceneModules() {
 
 test('column top cap intersection', async () => {
   const { titleScene } = await loadTitleSceneModules();
-  
+
   const column = {
     kind: 'column',
     position: [0, 1, 0], // y is height/2
@@ -38,7 +38,7 @@ test('column top cap intersection', async () => {
   const ray = [0, -1, 0];
 
   const hit = titleScene.nearestTitleSceneObjectHit(origin, ray, [column]);
-  
+
   assert.ok(hit != null, 'Ray should hit the column top cap');
   assert.equal(hit.object, column);
   // The distance should be from y=5 to y=2, so distance=3
@@ -48,7 +48,7 @@ test('column top cap intersection', async () => {
 
 test('column bottom cap intersection', async () => {
   const { titleScene } = await loadTitleSceneModules();
-  
+
   const column = {
     kind: 'column',
     position: [0, 1, 0],
@@ -64,7 +64,7 @@ test('column bottom cap intersection', async () => {
   const ray = [0, 1, 0];
 
   const hit = titleScene.nearestTitleSceneObjectHit(origin, ray, [column]);
-  
+
   assert.ok(hit != null, 'Ray should hit the column bottom cap');
   assert.equal(hit.object, column);
   // The distance should be from y=-1 to y=0, so distance=1
