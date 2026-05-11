@@ -1,9 +1,14 @@
 import * as fs from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import { SceneDecodeError, SceneLoadError } from '../domain/errors.js';
 import { TITLE_SCENE_FLOOR_KIND, type TitleSceneEnvironment } from '../ui/title-scene-environment.js';
 import { TITLE_SCENE_SHAPE_KIND, type TitleScene, type TitleSceneCameraPlacement, type TitleSceneObject, type TitleSceneVector3 } from '../ui/title-scene.js';
 import { TITLE_MESH_ID, type TitleMesh, type TitleMeshId, type TitleMeshLibrary } from '../ui/title-mesh.js';
-import type { TitleSceneLoaderPort } from '../ports/title-scene-loader.js';
+import {
+  BUILT_IN_TITLE_SCENE_NAMES,
+  type BuiltInTitleSceneName,
+  type TitleSceneLoaderPort,
+} from '../ports/title-scene-loader.js';
 
 type JsonValue = null | boolean | number | string | readonly JsonValue[] | JsonObject;
 type JsonObject = { readonly [key: string]: JsonValue | undefined };
@@ -13,6 +18,7 @@ const DEFAULT_CAMERA_RADIUS = 8.5;
 const VECTOR_LENGTH = 3;
 const COLOR_CHANNEL_MIN = 0;
 const COLOR_CHANNEL_MAX = 255;
+const BUILT_IN_TITLE_SCENE_SET = new Set<string>(BUILT_IN_TITLE_SCENE_NAMES);
 
 export async function loadTitleSceneFromFile(path: string, meshes: TitleMeshLibrary): Promise<TitleScene> {
   const content = await fs.readFile(path, 'utf8');
@@ -23,6 +29,13 @@ export async function loadTitleSceneFromFile(path: string, meshes: TitleMeshLibr
     throw new SceneDecodeError(`Scene JSON is malformed: ${error instanceof Error ? error.message : String(error)}`);
   }
   return parseTitleSceneJson(json, meshes);
+}
+
+export async function loadBuiltInTitleScene(name: BuiltInTitleSceneName, meshes: TitleMeshLibrary): Promise<TitleScene> {
+  if (!BUILT_IN_TITLE_SCENE_SET.has(name)) {
+    throw new SceneDecodeError(`Unknown built-in scene '${name}'.`);
+  }
+  return loadTitleSceneFromFile(fileURLToPath(new URL(`../scenes/${name}`, import.meta.url)), meshes);
 }
 
 export function parseTitleSceneJson(json: JsonValue, meshes: TitleMeshLibrary): TitleScene {
@@ -39,6 +52,7 @@ export function parseTitleSceneJson(json: JsonValue, meshes: TitleMeshLibrary): 
 export function createTitleSceneLoaderPort(): TitleSceneLoaderPort {
   return {
     loadTitleSceneFromFile,
+    loadBuiltInTitleScene,
   };
 }
 

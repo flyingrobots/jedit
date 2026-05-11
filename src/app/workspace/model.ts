@@ -2,6 +2,7 @@ import type { NotificationState } from '@flyingrobots/bijou-tui';
 import type { FileEntry } from '../../ports/file-system.js';
 import type { GraftInfo } from '../../ports/graft-session.js';
 import type { I18nPort } from '../../ports/i18n.js';
+import type { BuiltInTitleSceneName } from '../../ports/title-scene-loader.js';
 import type { SourceHighlightReading } from '../../ports/source-highlighter.js';
 import type { JeditTheme } from '../../ui/jedit-theme.js';
 import type { FocusPane } from '../../ui/panel-focus.js';
@@ -44,7 +45,7 @@ export interface WorkspaceModel {
   readonly titleMeshes: TitleMeshLibrary;
   readonly scenePickerOpen: boolean;
   readonly scenePickerFocusIndex: number;
-  readonly availableScenes: readonly string[];
+  readonly availableScenes: readonly BuiltInTitleSceneName[];
   readonly sceneOverride?: TitleScene;
   readonly columns: number;
   readonly rows: number;

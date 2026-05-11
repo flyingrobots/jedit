@@ -7,6 +7,7 @@ import type { TitleMeshLibrary } from '../../ui/title-mesh.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 import type { I18nPort } from '../../ports/i18n.js';
+import { BUILT_IN_TITLE_SCENE_NAMES } from '../../ports/title-scene-loader.js';
 import type { JeditTheme } from '../../ui/jedit-theme.js';
 import type { FileEntry } from '../../ports/file-system.js';
 
@@ -56,20 +57,7 @@ export function createInitialModel(
     titleMeshes,
     scenePickerOpen: false,
     scenePickerFocusIndex: 0,
-    availableScenes: [
-      'teapot-cornell.jedit-scene',
-      'teapot-gallery.jedit-scene',
-      'bunny.jedit-scene',
-      'neon-orbit.jedit-scene',
-      'mirror-hall.jedit-scene',
-      'eclipse-gate.jedit-scene',
-      'prism-garden.jedit-scene',
-      'aurora-vault.jedit-scene',
-      'ember-court.jedit-scene',
-      'sphere.jedit-scene',
-      'column.jedit-scene',
-      'sphere-ground.jedit-scene',
-    ],
+    availableScenes: BUILT_IN_TITLE_SCENE_NAMES,
     columns,
     rows,
     time: 0,

@@ -112,10 +112,7 @@ export function updateFromKey(
         return [{ ...model, scenePickerOpen: false }, [
           async () => {
             try {
-              const scene = await deps.titleSceneLoader.loadTitleSceneFromFile(
-                deps.fileSystem.join(model.workspaceRoot, 'scenes', selected),
-                model.titleMeshes,
-              );
+              const scene = await deps.titleSceneLoader.loadBuiltInTitleScene(selected, model.titleMeshes);
               return { type: 'load-scene-result', scene };
             } catch (error) {
               return {
