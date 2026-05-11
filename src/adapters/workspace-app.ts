@@ -70,9 +70,7 @@ export function createWorkspaceApp(options: WorkspaceAppOptions): App<WorkspaceM
     routeRuntimeIssue: runtime.routeRuntimeIssue,
   };
 
-  return options.perfEnabled
-    ? createPerfApp(app, nowMs)
-    : app;
+  return createPerfApp(app, nowMs, options.perfEnabled);
 }
 
 function createInitialModelSnapshot(
@@ -105,9 +103,16 @@ function loadStartupTitleMesh(): TitleMesh | undefined {
 function createPerfApp(
   realApp: App<WorkspaceModel, WorkspaceMsg>,
   nowMs: () => number,
+  initialPerfVisible: boolean,
 ): App<WorkspaceModel, WorkspaceMsg> {
   return {
-    init: realApp.init,
+    init: () => {
+      const [model, cmds] = realApp.init();
+      return [{
+        ...model,
+        perfVisible: initialPerfVisible || model.perfVisible,
+      }, cmds];
+    },
     update: (msg, model) => {
       const start = nowMs();
       const [nextModel, cmds] = realApp.update(msg, model);

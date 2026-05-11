@@ -26,6 +26,20 @@ async function loadWorkspaceRuntimeModule() {
   return import(pathToFileURL(path.join(REPO_ROOT, 'dist', 'app', 'workspace', 'runtime.js')).href);
 }
 
+async function loadWorkspaceAppModules() {
+  const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+  });
+  assert.equal(build.status, 0, build.stderr || build.stdout);
+
+  const [workspaceApp, themes] = await Promise.all([
+    import(pathToFileURL(path.join(REPO_ROOT, 'dist', 'adapters', 'workspace-app.js')).href),
+    import(pathToFileURL(path.join(REPO_ROOT, 'dist', 'ui', 'jedit-themes.js')).href),
+  ]);
+  return { workspaceApp, themes };
+}
+
 function mockDeps() {
   return {
     fileSystem: {
@@ -64,6 +78,15 @@ function mockDeps() {
   };
 }
 
+function mockI18n() {
+  return {
+    locale: 'en',
+    direction: 'ltr',
+    t: () => '',
+    setLocale: () => undefined,
+  };
+}
+
 function mockRuntime() {
   return {
     initialColumns: 120,
@@ -87,12 +110,7 @@ function mockRuntime() {
           background: 'black',
         },
       },
-      i18n: {
-        locale: 'en',
-        direction: 'ltr',
-        t: () => '',
-        setLocale: () => undefined,
-      },
+      i18n: mockI18n(),
       entries: [],
       nowMs: 0,
     },
@@ -127,3 +145,40 @@ test('runtime toggle-perf message flips perf visibility state', async () => {
   assert.equal(toggledOn.perfVisible, true);
   assert.equal(toggledOff.perfVisible, false);
 });
+
+test('workspace app renders perf overlay after toggle when perf starts disabled', async () => {
+  const { workspaceApp, themes } = await loadWorkspaceAppModules();
+  const app = workspaceApp.createWorkspaceApp({
+    initialColumns: 120,
+    initialRows: 24,
+    initialWorkingDirectory: '/repo',
+    perfEnabled: false,
+    nowMs: () => 0,
+    random: () => 0.5,
+    seed: {
+      titleSceneSeed: 0.5,
+      jeditTheme: themes.resolveInitialJeditTheme(undefined),
+      i18n: mockI18n(),
+      entries: [],
+      nowMs: 0,
+    },
+  });
+
+  const [initialModel] = app.init();
+  const [visibleModel] = app.update({ type: 'toggle-perf' }, initialModel);
+  const surface = app.view(visibleModel);
+
+  assert.match(surfaceText(surface), /jedit perf/);
+});
+
+function surfaceText(surface) {
+  const lines = [];
+  for (let row = 0; row < surface.height; row += 1) {
+    let line = '';
+    for (let col = 0; col < surface.width; col += 1) {
+      line += surface.get(col, row).char;
+    }
+    lines.push(line);
+  }
+  return lines.join('\n');
+}
