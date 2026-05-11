@@ -210,6 +210,21 @@ test('title scene uses Braille subpixels with averaged material colors', async (
   assert.ok(new Set(sceneCells.map(cellColorKey)).size > 3);
 });
 
+test('title scene can render as density-mapped ASCII instead of Braille', async () => {
+  const { title, themes, style } = await loadTitleModules();
+  const theme = themes.availableJeditThemes()[0];
+  const surface = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, fixedTitleRenderOptions({
+    renderMode: title.TITLE_RENDER_MODE.Ascii,
+  }));
+  const sceneCells = cells(surface).filter((cell) => !cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold));
+  const visibleSceneChars = new Set(sceneCells.map((cell) => cell.char).filter((char) => char !== ' '));
+
+  assert.ok(visibleSceneChars.size >= 3);
+  assert.ok([...visibleSceneChars].every((char) => !isBraille(char)));
+  assert.ok([...visibleSceneChars].every((char) => ' .:-=+*#%@'.includes(char)));
+  assert.ok(new Set(sceneCells.map(cellColorKey)).size > 3);
+});
+
 test('title scene keeps reflective highlights on sphere materials', async () => {
   const { title, themes, style } = await loadTitleModules();
   const theme = themes.availableJeditThemes()[0];

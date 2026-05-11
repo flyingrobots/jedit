@@ -1,6 +1,7 @@
 import { createTitleCameraState } from '../title-camera-session.js';
 import { createFeedbackState } from '../../ui/feedback.js';
 import { titleBunnySceneCameraPlacement, titleSceneCameraPlacement } from '../../ui/title-scene.js';
+import { TITLE_RENDER_MODE } from '../../ui/title-screen.js';
 import type { FocusPane } from '../../ui/panel-focus.js';
 import type { TitleMesh } from '../../ui/title-mesh.js';
 import type { WorkspaceModel } from './model.js';
@@ -65,6 +66,7 @@ export function createInitialModel(
     titleCamera: createTitleCameraState(
       titleMesh == null ? titleSceneCameraPlacement(titleSceneSeed) : titleBunnySceneCameraPlacement(),
     ),
+    titleRenderMode: TITLE_RENDER_MODE.Braille,
     profiler: {
       active: false,
     },

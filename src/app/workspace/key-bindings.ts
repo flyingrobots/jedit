@@ -22,6 +22,7 @@ import { updateGraftDrawerFromKey } from './graft-drawer.js';
 import { updateTreeFromKey } from './file-tree.js';
 import { updateViewerFromKey } from './viewer.js';
 import { nextJeditTheme } from '../../ui/jedit-themes.js';
+import { TITLE_RENDER_MODE } from '../../ui/title-screen.js';
 import { updateTitleCameraFromKey } from '../title-camera-session.js';
 import type { FileSystemPort } from '../../ports/file-system.js';
 import type { EditorFilePort } from '../../ports/editor-file.js';
@@ -112,6 +113,13 @@ export function updateFromKey(
   }
 
   if (model.editor == null) {
+    if (msg.key === '1') {
+      return [{ ...model, titleRenderMode: TITLE_RENDER_MODE.Braille }, []];
+    }
+    if (msg.key === '2') {
+      return [{ ...model, titleRenderMode: TITLE_RENDER_MODE.Ascii }, []];
+    }
+
     const update = updateTitleCameraFromKey(msg.key, model.titleCamera);
     if (update != null) {
       return [{ ...model, titleCamera: update.state }, update.commands];

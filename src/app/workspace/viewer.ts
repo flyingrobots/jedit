@@ -192,6 +192,7 @@ function renderViewer(model: WorkspaceModel, width: number, height: number): Sur
       sceneSeed: model.titleSceneSeed,
       mesh: model.titleMesh,
       sceneOverride: model.sceneOverride,
+      renderMode: model.titleRenderMode,
     });
   }
 

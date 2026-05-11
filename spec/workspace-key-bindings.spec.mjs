@@ -146,6 +146,27 @@ test('runtime toggle-perf message flips perf visibility state', async () => {
   assert.equal(toggledOff.perfVisible, false);
 });
 
+test('title screen number keys switch render modes without an editor', async () => {
+  const keyBindings = await loadWorkspaceKeyBindingsModule();
+  const [asciiModel] = keyBindings.updateFromKey(
+    { key: '2' },
+    { editor: undefined, titleRenderMode: 'braille' },
+    () => 0,
+    () => [],
+    mockDeps(),
+  );
+  const [brailleModel] = keyBindings.updateFromKey(
+    { key: '1' },
+    { editor: undefined, titleRenderMode: 'ascii' },
+    () => 0,
+    () => [],
+    mockDeps(),
+  );
+
+  assert.equal(asciiModel.titleRenderMode, 'ascii');
+  assert.equal(brailleModel.titleRenderMode, 'braille');
+});
+
 test('workspace app renders perf overlay after toggle when perf starts disabled', async () => {
   const { workspaceApp, themes } = await loadWorkspaceAppModules();
   const app = workspaceApp.createWorkspaceApp({

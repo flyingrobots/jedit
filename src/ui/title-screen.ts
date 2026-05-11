@@ -1,5 +1,6 @@
 import { type Surface } from '@flyingrobots/bijou';
 
+import { averagingAsciiCanvas } from './averaging-ascii-canvas.js';
 import { averagingBrailleCanvas, type BrailleShaderFn, type BrailleShaderSample, type RGB } from './averaging-braille-canvas.js';
 import { type JeditTheme } from './jedit-theme.js';
 import {
@@ -17,6 +18,14 @@ type Vector3 = TitleSceneVector3;
 type Color3 = RGB;
 export type TitleSceneSphere = TitleSceneObject;
 export { titleLogoCellBounds } from './title-logo.js';
+
+export const TITLE_RENDER_MODE = {
+  Braille: 'braille',
+  Ascii: 'ascii',
+} as const;
+
+export type TitleRenderMode = typeof TITLE_RENDER_MODE[keyof typeof TITLE_RENDER_MODE];
+
 export interface TitleFloorLightEffects {
   readonly shadowMultiplier: number;
   readonly contactShadowMultiplier: number;
@@ -40,6 +49,7 @@ export interface TitleScreenRenderOptions {
   readonly sceneSeed?: number;
   readonly mesh?: TitleMesh;
   readonly sceneOverride?: TitleScene;
+  readonly renderMode?: TitleRenderMode;
 }
 
 const DEFAULT_CAMERA_RADIUS = 8.5;
@@ -93,6 +103,7 @@ export function renderTitleScreen(
     sceneSeed = DEFAULT_TITLE_SCENE_SEED,
     mesh,
     sceneOverride,
+    renderMode = TITLE_RENDER_MODE.Braille,
   } = options;
   const colors = titleSceneMaterialColors(theme);
   const scene = sceneOverride ?? generateTitleScene(sceneSeed, colors, mesh);
@@ -101,7 +112,9 @@ export function renderTitleScreen(
     return sceneSampleAt(u, v, cols, rows, frameTime, camAngle, camRadius, scene.objects, colors);
   };
 
-  const surface = averagingBrailleCanvas(cols, rows, shader, time);
+  const surface = renderMode === TITLE_RENDER_MODE.Ascii
+    ? averagingAsciiCanvas(cols, rows, shader, time)
+    : averagingBrailleCanvas(cols, rows, shader, time);
   paintTitleLogo(surface, titleLogoCellBounds(cols, rows), colors, time);
   return surface;
 }

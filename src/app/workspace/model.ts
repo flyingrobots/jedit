@@ -7,6 +7,7 @@ import type { JeditTheme } from '../../ui/jedit-theme.js';
 import type { FocusPane } from '../../ui/panel-focus.js';
 import type { TitleMesh } from '../../ui/title-mesh.js';
 import type { TitleScene } from '../../ui/title-scene.js';
+import type { TitleRenderMode } from '../../ui/title-screen.js';
 import type { ProfilerState } from '../raytracer-profiler.js';
 import type { TitleCameraState } from '../title-camera-session.js';
 import type { EditorState } from './editor/model.js';
@@ -53,5 +54,6 @@ export interface WorkspaceModel {
   readonly frameTimeMs: number;
   readonly frameTimeHistory: readonly number[];
   readonly titleCamera: TitleCameraState;
+  readonly titleRenderMode: TitleRenderMode;
   readonly profiler: ProfilerState;
 }
