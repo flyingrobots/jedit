@@ -1,6 +1,6 @@
 import { createSurface, stringToSurface, type Surface } from '@flyingrobots/bijou';
-import type { Cmd, KeyMsg } from '@flyingrobots/bijou-tui';
-import { compositeFeedback, type NotificationState } from '../../ui/feedback.js';
+import type { Cmd, KeyMsg, NotificationState } from '@flyingrobots/bijou-tui';
+import { compositeFeedback } from '../../ui/feedback.js';
 import {
   activeWorkspaceTitle,
   centerLine,
