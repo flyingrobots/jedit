@@ -1,6 +1,11 @@
 import type { EditorMode, PendingNormal } from './mode.js';
 
-export type RegisterKind = 'char' | 'line';
+export const RegisterKinds = Object.freeze({
+  Char: 'char',
+  Line: 'line',
+} as const);
+
+export type RegisterKind = typeof RegisterKinds[keyof typeof RegisterKinds];
 
 export interface RegisterState {
   readonly kind: RegisterKind;

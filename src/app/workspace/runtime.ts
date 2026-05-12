@@ -24,7 +24,7 @@ import {
   type ProfilerTracePort,
 } from '../raytracer-profiler.js';
 import { createInitialProfilerState } from '../raytracer-profiler.js';
-import type { DrawerKind } from '../../ui/drawer-layout.js';
+import { DrawerKinds, type DrawerKind } from '../../ui/drawer-layout.js';
 import type { FileSystemPort } from '../../ports/file-system.js';
 import type { EditorFilePort } from '../../ports/editor-file.js';
 import type { GraftSessionPort } from '../../ports/graft-session.js';
@@ -101,7 +101,7 @@ export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): Work
     }
 
     if (msg.type === 'drawer-progress') {
-      const nextModel: WorkspaceModel = msg.kind === 'files'
+      const nextModel: WorkspaceModel = msg.kind === DrawerKinds.Files
         ? { ...model, fileDrawerProgress: clamp01(msg.value) }
         : { ...model, graftDrawerProgress: clamp01(msg.value) };
       return [nextModel, []];

@@ -1,7 +1,8 @@
 import type { KeyMsg } from '@flyingrobots/bijou-tui';
 import { joinLines, normalizeLines } from '../editor-lines.js';
 import { EditorModes, type EditorMode } from './editor/mode.js';
-import type { EditorState, HistoryEntry, RegisterKind } from './editor/model.js';
+import { RegisterKinds, type EditorState, type HistoryEntry, type RegisterKind } from './editor/model.js';
+import { PastePlacements, type PastePlacement } from './editor/key.js';
 
 const NORMAL_MODE = EditorModes.Normal;
 const INSERT_MODE = EditorModes.Insert;
@@ -10,15 +11,22 @@ const SPACE_TEXT = ' ';
 const LOWERCASE_A = 'a';
 const LOWERCASE_Z = 'z';
 const SINGLE_CHARACTER_KEY_LENGTH = 1;
+export const WordClasses = Object.freeze({
+  Punct: 'punct',
+  Space: 'space',
+  Word: 'word',
+} as const);
 
-export function pasteRegister(editor: EditorState, placement: 'before' | 'after'): EditorState {
+export type WordClass = typeof WordClasses[keyof typeof WordClasses];
+
+export function pasteRegister(editor: EditorState, placement: PastePlacement): EditorState {
   const register = editor.register;
   if (register == null) {
     return editor;
   }
 
-  if (register.kind === 'line') {
-    const index = placement === 'before' ? editor.cursorRow : editor.cursorRow + 1;
+  if (register.kind === RegisterKinds.Line) {
+    const index = placement === PastePlacements.Before ? editor.cursorRow : editor.cursorRow + 1;
     const inserted = register.text.split('\n');
     return commitMutation(editor, {
       lines: [...editor.lines.slice(0, index), ...inserted, ...editor.lines.slice(index)],
@@ -28,7 +36,7 @@ export function pasteRegister(editor: EditorState, placement: 'before' | 'after'
     });
   }
 
-  const insertionIndex = placement === 'before'
+  const insertionIndex = placement === PastePlacements.Before
     ? normalTextIndex(editor)
     : normalTextIndex(editor) + (currentLine(editor).length === 0 ? 0 : 1);
   const text = editorText(editor);
@@ -243,8 +251,8 @@ export function nextWordStartIndex(text: string, index: number, allowEnd = false
   }
 
   let cursor = Math.max(0, Math.min(index, text.length - 1));
-  if (classifyWordChar(text[cursor]) === 'space') {
-    while (cursor < text.length && classifyWordChar(text[cursor]) === 'space') {
+  if (classifyWordChar(text[cursor]) === WordClasses.Space) {
+    while (cursor < text.length && classifyWordChar(text[cursor]) === WordClasses.Space) {
       cursor += 1;
     }
   } else {
@@ -252,7 +260,7 @@ export function nextWordStartIndex(text: string, index: number, allowEnd = false
     while (cursor < text.length && classifyWordChar(text[cursor]) === currentClass) {
       cursor += 1;
     }
-    while (cursor < text.length && classifyWordChar(text[cursor]) === 'space') {
+    while (cursor < text.length && classifyWordChar(text[cursor]) === WordClasses.Space) {
       cursor += 1;
     }
   }
@@ -275,7 +283,7 @@ export function previousWordStartIndex(text: string, index: number): number {
   }
 
   cursor -= 1;
-  while (cursor > 0 && classifyWordChar(text[cursor]) === 'space') {
+  while (cursor > 0 && classifyWordChar(text[cursor]) === WordClasses.Space) {
     cursor -= 1;
   }
 
@@ -293,7 +301,7 @@ export function wordEndIndex(text: string, index: number): number {
   }
 
   let cursor = Math.max(0, Math.min(index, text.length - 1));
-  while (cursor < text.length && classifyWordChar(text[cursor]) === 'space') {
+  while (cursor < text.length && classifyWordChar(text[cursor]) === WordClasses.Space) {
     cursor += 1;
   }
   if (cursor >= text.length) {
@@ -308,14 +316,14 @@ export function wordEndIndex(text: string, index: number): number {
   return cursor;
 }
 
-export function classifyWordChar(char: string | undefined): 'punct' | 'space' | 'word' {
+export function classifyWordChar(char: string | undefined): WordClass {
   if (char == null || /\s/.test(char)) {
-    return 'space';
+    return WordClasses.Space;
   }
   if (/[A-Za-z0-9_]/.test(char)) {
-    return 'word';
+    return WordClasses.Word;
   }
-  return 'punct';
+  return WordClasses.Punct;
 }
 
 export function keyToText(msg: KeyMsg): string | undefined {

@@ -5,6 +5,8 @@ import { clampIndex } from './viewport.js';
 import { workspaceBodyHeight } from './viewport.js';
 import { editorViewport, ensureEditorVisible } from './editor-session.js';
 import { withFocusPane } from './focus.js';
+import { FocusPanes } from '../../ui/panel-focus.js';
+import { WorkspaceKeys, isWorkspaceDownKey, isWorkspaceRefreshKey, isWorkspaceUpKey } from './workspace-key.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 import type { Cmd } from '@flyingrobots/bijou-tui';
@@ -17,7 +19,7 @@ export function updateGraftDrawerFromKey(
   model: WorkspaceModel,
   beginGraftRefresh: (model: WorkspaceModel, force: boolean) => [WorkspaceModel, Cmd<WorkspaceMsg>[]],
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
-  if (msg.key === 'r') {
+  if (isWorkspaceRefreshKey(msg)) {
     return beginGraftRefresh(model, true);
   }
 
@@ -26,14 +28,14 @@ export function updateGraftDrawerFromKey(
     return [model, []];
   }
 
-  if (msg.key === 'down' || msg.key === 'j') {
+  if (isWorkspaceDownKey(msg)) {
     return [{
       ...model,
       graftSelectedIndex: clampIndex(model.graftSelectedIndex + 1, graftInfo.outlineItems.length),
     }, []];
   }
 
-  if (msg.key === 'up' || msg.key === 'k') {
+  if (isWorkspaceUpKey(msg)) {
     return [{
       ...model,
       graftSelectedIndex: clampIndex(model.graftSelectedIndex - 1, graftInfo.outlineItems.length),
@@ -47,35 +49,35 @@ export function updateGraftDrawerFromKey(
     GRAFT_CHANGE_ROWS,
   );
 
-  if (msg.key === 'pageup') {
+  if (msg.key === WorkspaceKeys.PageUp) {
     return [{
       ...model,
       graftSelectedIndex: clampIndex(model.graftSelectedIndex - visible, graftInfo.outlineItems.length),
     }, []];
   }
 
-  if (msg.key === 'pagedown') {
+  if (msg.key === WorkspaceKeys.PageDown) {
     return [{
       ...model,
       graftSelectedIndex: clampIndex(model.graftSelectedIndex + visible, graftInfo.outlineItems.length),
     }, []];
   }
 
-  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'g') {
+  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === WorkspaceKeys.G) {
     return [{
       ...model,
       graftSelectedIndex: 0,
     }, []];
   }
 
-  if (!msg.ctrl && !msg.alt && msg.shift && msg.key === 'g') {
+  if (!msg.ctrl && !msg.alt && msg.shift && msg.key === WorkspaceKeys.G) {
     return [{
       ...model,
       graftSelectedIndex: graftInfo.outlineItems.length - 1,
     }, []];
   }
 
-  if (msg.key === 'enter' && model.editor != null) {
+  if (msg.key === WorkspaceKeys.Enter && model.editor != null) {
     const selected = graftInfo.outlineItems[model.graftSelectedIndex];
     if (selected == null) {
       return [model, []];
@@ -92,7 +94,7 @@ export function updateGraftDrawerFromKey(
       withFocusPane({
         ...model,
         editor,
-      }, 'editor'),
+      }, FocusPanes.Editor),
       [],
     ];
   }

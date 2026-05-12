@@ -16,7 +16,7 @@ import {
 } from './editor-session.js';
 import { closeDrawer, type CreateDrawerAnimationCmd, toggleDrawer } from './drawer.js';
 import { focusCycleState } from './focus.js';
-import { cycleFocusPane, hasFocusablePeers } from '../../ui/panel-focus.js';
+import { cycleFocusPane, FocusPanes, hasFocusablePeers } from '../../ui/panel-focus.js';
 import { updateJeditSettingsFromKey } from '../settings-session.js';
 import { settingsRows, workspaceSettingsHandlers } from './settings.js';
 import { updateGraftDrawerFromKey } from './graft-drawer.js';
@@ -39,6 +39,14 @@ import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 import { EditorModes } from './editor/mode.js';
 import { ViewModes } from './view-mode.js';
+import { DrawerKinds } from '../../ui/drawer-layout.js';
+import {
+  isWorkspaceScenePickerAcceptKey,
+  isWorkspaceScenePickerCloseKey,
+  isWorkspaceScenePickerNextKey,
+  isWorkspaceScenePickerPreviousKey,
+  WorkspaceKeys,
+} from './workspace-key.js';
 
 export interface UpdateFromKeyDeps {
   readonly fileSystem: FileSystemPort;
@@ -67,15 +75,6 @@ const FALLBACK_TOAST_BACKGROUND = '#0e1116';
 const FALLBACK_TOAST_ACCENT = '#d897ff';
 const SCENE_PICKER_MIN_INDEX = 0;
 const SCENE_PICKER_STEP = 1;
-const WORKSPACE_KEY = Object.freeze({
-  Escape: 'escape',
-  ArrowUp: 'up',
-  ArrowDown: 'down',
-  Enter: 'enter',
-  Return: 'return',
-  J: 'j',
-  K: 'k',
-} as const);
 
 export function updateFromKey(
   msg: KeyMsg,
@@ -85,7 +84,7 @@ export function updateFromKey(
   createNotificationTickCmd: () => Cmd<WorkspaceMsg>,
   deps: UpdateFromKeyDeps,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
-  if (msg.key === '`') {
+  if (msg.key === WorkspaceKeys.Backtick) {
     return [
       model,
       [() => ({
@@ -149,7 +148,7 @@ export function updateFromKey(
   }
 
   if (model.editor == null) {
-    if (msg.key === '1') {
+    if (msg.key === WorkspaceKeys.One) {
       return pushTitleScreenToast(
         { ...model, titleRenderMode: TITLE_RENDER_MODE.Braille },
         TITLE_SHADER_TOAST_TITLE,
@@ -158,7 +157,7 @@ export function updateFromKey(
         createNotificationTickCmd,
       );
     }
-    if (msg.key === '2') {
+    if (msg.key === WorkspaceKeys.Two) {
       return pushTitleScreenToast(
         { ...model, titleRenderMode: TITLE_RENDER_MODE.Ascii },
         TITLE_SHADER_TOAST_TITLE,
@@ -167,7 +166,7 @@ export function updateFromKey(
         createNotificationTickCmd,
       );
     }
-    if (msg.key === '.') {
+    if (msg.key === WorkspaceKeys.Period) {
       if (model.titleRenderMode !== TITLE_RENDER_MODE.Ascii) {
         return [model, []];
       }
@@ -185,20 +184,20 @@ export function updateFromKey(
     }
   }
 
-  if (msg.ctrl && msg.key === 'c') {
+  if (msg.ctrl && msg.key === WorkspaceKeys.C) {
     return [model, [quit<WorkspaceMsg>()]];
   }
 
-  const insertModeActive = model.focusPane === 'editor' && model.viewMode === ViewModes.Source && model.editor?.mode === EditorModes.Insert;
+  const insertModeActive = model.focusPane === FocusPanes.Editor && model.viewMode === ViewModes.Source && model.editor?.mode === EditorModes.Insert;
   if (!insertModeActive && isFooterToggleKey(msg)) {
     return [{ ...model, footerVisible: !model.footerVisible }, []];
   }
 
-  if (!insertModeActive && msg.key === 'q') {
+  if (!insertModeActive && msg.key === WorkspaceKeys.Q) {
     return [model, [quit<WorkspaceMsg>()]];
   }
 
-  if (msg.ctrl && !msg.alt && msg.key === 's' && model.editor != null) {
+  if (msg.ctrl && !msg.alt && msg.key === WorkspaceKeys.S && model.editor != null) {
     const editor = saveEditor(model.editor, deps.editorFile);
     return beginEditorProjectionRefresh({
       ...model,
@@ -215,28 +214,28 @@ export function updateFromKey(
   }
 
   const focusState = focusCycleState(model);
-  if (msg.key === 'tab' && hasFocusablePeers(focusState)) {
+  if (msg.key === WorkspaceKeys.Tab && hasFocusablePeers(focusState)) {
     return [{ ...model, focusPane: cycleFocusPane(focusState) }, []];
   }
 
-  if (msg.ctrl && !msg.alt && msg.key === 'b') {
-    return toggleDrawer(model, 'files', (nextModel, force) => (
+  if (msg.ctrl && !msg.alt && msg.key === WorkspaceKeys.B) {
+    return toggleDrawer(model, DrawerKinds.Files, (nextModel, force) => (
       beginGraftRefresh(nextModel, force, deps.graftSession)
     ), createDrawerAnimationCmd);
   }
 
-  if (msg.ctrl && !msg.alt && msg.key === 'g') {
-    return toggleDrawer(model, 'graft', (nextModel, force) => (
+  if (msg.ctrl && !msg.alt && msg.key === WorkspaceKeys.G) {
+    return toggleDrawer(model, DrawerKinds.Graft, (nextModel, force) => (
       beginGraftRefresh(nextModel, force, deps.graftSession)
     ), createDrawerAnimationCmd);
   }
 
-  if (msg.key === 'escape') {
-    if (model.focusPane === 'files' && model.fileDrawerOpen) {
-      return closeDrawer(model, 'files', createDrawerAnimationCmd);
+  if (msg.key === WorkspaceKeys.Escape) {
+    if (model.focusPane === FocusPanes.Files && model.fileDrawerOpen) {
+      return closeDrawer(model, DrawerKinds.Files, createDrawerAnimationCmd);
     }
-    if (model.focusPane === 'graft' && model.graftDrawerOpen) {
-      return closeDrawer(model, 'graft', createDrawerAnimationCmd);
+    if (model.focusPane === FocusPanes.Graft && model.graftDrawerOpen) {
+      return closeDrawer(model, DrawerKinds.Graft, createDrawerAnimationCmd);
     }
   }
 
@@ -244,7 +243,7 @@ export function updateFromKey(
     return toggleMarkdownPreview(model, deps.sourceHighlighter);
   }
 
-  if (model.focusPane === 'files' && model.fileDrawerOpen) {
+  if (model.focusPane === FocusPanes.Files && model.fileDrawerOpen) {
     return updateTreeFromKey(
       msg,
       model,
@@ -258,7 +257,7 @@ export function updateFromKey(
     );
   }
 
-  if (model.focusPane === 'graft' && model.graftDrawerOpen) {
+  if (model.focusPane === FocusPanes.Graft && model.graftDrawerOpen) {
     return updateGraftDrawerFromKey(msg, model, (nextModel, force) => (
       beginGraftRefresh(nextModel, force, deps.graftSession)
     ));
@@ -319,17 +318,17 @@ function titleAsciiPaletteLabel(palette: TitleAsciiPalette): string {
 }
 
 function isScenePickerCloseKey(msg: KeyMsg): boolean {
-  return msg.key === WORKSPACE_KEY.Escape;
+  return isWorkspaceScenePickerCloseKey(msg);
 }
 
 function isScenePickerPreviousKey(msg: KeyMsg): boolean {
-  return msg.key === WORKSPACE_KEY.ArrowUp || msg.key === WORKSPACE_KEY.K;
+  return isWorkspaceScenePickerPreviousKey(msg);
 }
 
 function isScenePickerNextKey(msg: KeyMsg): boolean {
-  return msg.key === WORKSPACE_KEY.ArrowDown || msg.key === WORKSPACE_KEY.J;
+  return isWorkspaceScenePickerNextKey(msg);
 }
 
 function isScenePickerAcceptKey(msg: KeyMsg): boolean {
-  return msg.key === WORKSPACE_KEY.Enter || msg.key === WORKSPACE_KEY.Return;
+  return isWorkspaceScenePickerAcceptKey(msg);
 }

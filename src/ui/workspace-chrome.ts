@@ -2,7 +2,7 @@ import { createSurface, stringToSurface, type Surface } from '@flyingrobots/bijo
 import { clipToWidth } from '@flyingrobots/bijou-tui';
 import { basename } from 'node:path';
 
-import type { FileEntry } from '../ports/file-system.js';
+import { FileEntryKinds, type FileEntry } from '../ports/file-system.js';
 import {
   JEDIT_MARKDOWN_PREVIEW_TOGGLE_LABEL,
   JEDIT_SCENE_PICKER_TOGGLE_LABEL,
@@ -11,10 +11,10 @@ import {
 } from '../app/keybindings.js';
 import type { I18nPort } from '../ports/i18n.js';
 import type { JeditStyleToken } from './jedit-theme.js';
-import type { DrawerKind } from './drawer-layout.js';
-import { hasFocusablePeers, type FocusPane } from './panel-focus.js';
+import { DrawerKinds, type DrawerKind } from './drawer-layout.js';
+import { FocusPanes, hasFocusablePeers, type FocusPane } from './panel-focus.js';
 import { ViewModes, type ViewMode } from '../app/workspace/view-mode.js';
-import { PendingNormals, type EditorMode, type PendingNormal } from '../app/workspace/editor/mode.js';
+import { EditorModes, PendingNormals, type EditorMode, type PendingNormal } from '../app/workspace/editor/mode.js';
 
 const THEME_HINT = `${JEDIT_THEME_TOGGLE_LABEL} theme`;
 const FOOTER_HINT_SCENE_PICKER = 'scene_picker';
@@ -53,7 +53,7 @@ export function activeWorkspaceTitle(state: WorkspaceTitleState): string {
     return `${basename(state.editorPath)}${mark}`;
   }
 
-  if (state.selectedEntry?.kind === 'file') {
+  if (state.selectedEntry?.kind === FileEntryKinds.File) {
     return state.selectedEntry.name;
   }
 
@@ -109,12 +109,12 @@ function interactionModeKey(state: WorkspaceFooterState): string {
     return 'settings';
   }
 
-  if (state.focusPane === 'files' && state.fileDrawerOpen) {
-    return 'files';
+  if (state.focusPane === FocusPanes.Files && state.fileDrawerOpen) {
+    return FocusPanes.Files;
   }
 
-  if (state.focusPane === 'graft' && state.graftDrawerOpen) {
-    return 'graft';
+  if (state.focusPane === FocusPanes.Graft && state.graftDrawerOpen) {
+    return FocusPanes.Graft;
   }
 
   if (state.viewMode === ViewModes.Preview && state.markdownPreviewActive) {
@@ -135,23 +135,23 @@ function footerDetail(state: WorkspaceFooterState): string {
     return footerHints([t('j_k_move'), t('enter_change'), `${JEDIT_SETTINGS_TOGGLE_LABEL} close`, 'esc close']);
   }
 
-  if (state.focusPane === 'files' && state.fileDrawerOpen) {
-    return drawerFooterDetail(state, 'files');
+  if (state.focusPane === FocusPanes.Files && state.fileDrawerOpen) {
+    return drawerFooterDetail(state, DrawerKinds.Files);
   }
 
-  if (state.focusPane === 'graft' && state.graftDrawerOpen) {
-    return drawerFooterDetail(state, 'graft');
+  if (state.focusPane === FocusPanes.Graft && state.graftDrawerOpen) {
+    return drawerFooterDetail(state, DrawerKinds.Graft);
   }
 
   if (state.viewMode === ViewModes.Preview && state.markdownPreviewActive) {
     return footerHints([t('j_k_scroll'), `${JEDIT_MARKDOWN_PREVIEW_TOGGLE_LABEL} source`, THEME_HINT, focusHint(state), 'ctrl+b files', 'ctrl+g graft']);
   }
 
-  if (state.editorMode === 'insert') {
+  if (state.editorMode === EditorModes.Insert) {
     return footerHints([t('text_input'), t('esc_normal'), t('ctrl_s_save'), THEME_HINT, insertTabHint(state)]);
   }
 
-  if (state.editorMode === 'normal') {
+  if (state.editorMode === EditorModes.Normal) {
     return normalFooterDetail(state);
   }
 
@@ -165,7 +165,7 @@ function scenePickerHint(t: (key: string) => string): string {
 function drawerFooterDetail(state: WorkspaceFooterState, kind: DrawerKind): string {
   const t = (key: string) => state.i18n.t(`footer.hints.${key}`);
 
-  if (kind === 'files') {
+  if (kind === DrawerKinds.Files) {
     return footerHints([t('j_k_move'), 'enter open', 'backspace up', 'ctrl+b close', THEME_HINT, focusHint(state)]);
   }
 
@@ -203,11 +203,11 @@ function footerContextLine(state: WorkspaceFooterState): string {
     return 'settings';
   }
 
-  if (state.focusPane === 'files' && state.fileDrawerOpen) {
+  if (state.focusPane === FocusPanes.Files && state.fileDrawerOpen) {
     return state.selectedEntry?.path ?? state.cwd;
   }
 
-  if (state.focusPane === 'graft' && state.graftDrawerOpen) {
+  if (state.focusPane === FocusPanes.Graft && state.graftDrawerOpen) {
     if (state.graftSelection != null && state.graftPath != null) {
       return `${state.graftPath}:${state.graftSelection.startLine} ${state.graftSelection.kind} ${state.graftSelection.name}`;
     }

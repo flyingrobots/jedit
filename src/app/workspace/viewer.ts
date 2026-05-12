@@ -17,7 +17,7 @@ import { paintMarkdownPreview } from '../../ui/markdown-preview.js';
 import { resolveScenePickerDrawerWidth, renderScenePickerDrawer } from '../../ui/scene-picker-drawer.js';
 import { resolveSettingsDrawerWidth, renderSettingsDrawer } from '../../ui/settings-drawer.js';
 import { renderTitleScreen } from '../../ui/title-screen.js';
-import { resolveWorkspaceLayout, type DrawerKind } from '../../ui/drawer-layout.js';
+import { DrawerKinds, resolveWorkspaceLayout, type DrawerKind } from '../../ui/drawer-layout.js';
 import { hasFocusablePeers } from '../../ui/panel-focus.js';
 import {
   editorViewport,
@@ -47,6 +47,9 @@ import { focusCycleState } from './focus.js';
 import type { JeditStyleToken, JeditTheme } from '../../ui/jedit-theme.js';
 import { ViewModes } from './view-mode.js';
 import { EditorModes } from './editor/mode.js';
+
+const MIN_VIEWPORT_DIMENSION = 1;
+const VIEWER_PAD_MULTIPLIER = 2;
 
 export function updateViewerFromKey(
   msg: KeyMsg,
@@ -117,10 +120,10 @@ export function renderWorkspace(model: WorkspaceModel): Surface {
   screen.blit(renderViewer(model, layout.viewer.width, bodyHeight), layout.viewer.x, bodyTop);
 
   if (layout.fileDrawer.width > 0) {
-    screen.blit(renderDrawer('files', model, layout.fileDrawer.width, bodyHeight), layout.fileDrawer.x, bodyTop);
+    screen.blit(renderDrawer(DrawerKinds.Files, model, layout.fileDrawer.width, bodyHeight), layout.fileDrawer.x, bodyTop);
   }
   if (layout.graftDrawer.width > 0) {
-    screen.blit(renderDrawer('graft', model, layout.graftDrawer.width, bodyHeight), layout.graftDrawer.x, bodyTop);
+    screen.blit(renderDrawer(DrawerKinds.Graft, model, layout.graftDrawer.width, bodyHeight), layout.graftDrawer.x, bodyTop);
   }
 
   paintActivePaneEdge(screen, layout, {
@@ -224,13 +227,13 @@ function renderPreview(surface: Surface, editor: WorkspaceModel['editor'], theme
 
 function viewerViewport(width: number, height: number): { width: number; height: number } {
   return {
-    width: Math.max(1, width - (VIEWER_LEFT_PAD * 2)),
-    height: Math.max(1, height - (VIEWER_TOP_PAD * 2)),
+    width: Math.max(MIN_VIEWPORT_DIMENSION, width - (VIEWER_LEFT_PAD * VIEWER_PAD_MULTIPLIER)),
+    height: Math.max(MIN_VIEWPORT_DIMENSION, height - (VIEWER_TOP_PAD * VIEWER_PAD_MULTIPLIER)),
   };
 }
 
 function renderDrawer(kind: DrawerKind, model: WorkspaceModel, width: number, height: number): Surface {
-  if (kind === 'graft') {
+  if (kind === DrawerKinds.Graft) {
     return renderGraftDrawer(model, width, height);
   }
 

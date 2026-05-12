@@ -12,6 +12,7 @@ import { editorViewport } from './editor-session.js';
 import { settingsRows } from './settings.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import { ViewModes } from './view-mode.js';
+import { FocusPanes } from '../../ui/panel-focus.js';
 
 export function updateFromMouse(
   msg: MouseMsg,
@@ -28,10 +29,10 @@ export function updateFromMouse(
       settingsFocusIndex: moveSettingsFocusIndex(model.settingsFocusIndex, deltaRows, settingsRows(model).length),
     }, []];
   }
-  if (model.focusPane === 'files' && model.fileDrawerOpen) {
+  if (model.focusPane === FocusPanes.Files && model.fileDrawerOpen) {
     return [{ ...model, selectedIndex: scrollIndexByRows(model.selectedIndex, model.entries.length, deltaRows) }, []];
   }
-  if (model.focusPane === 'graft' && model.graftDrawerOpen) {
+  if (model.focusPane === FocusPanes.Graft && model.graftDrawerOpen) {
     return [{ ...model, graftSelectedIndex: scrollIndexByRows(model.graftSelectedIndex, model.graftInfo?.outlineItems.length ?? 0, deltaRows) }, []];
   }
   if (model.editor == null) {

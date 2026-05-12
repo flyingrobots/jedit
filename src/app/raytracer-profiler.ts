@@ -62,8 +62,15 @@ export function toggleProfiler(
       async (): Promise<ProfilerEffectMsg> => {
         try {
           await profiler.endTrace(activeHandle);
-          const stopped: ProfilerMsg = { type: 'profiler-stopped' };
-          return stopped;
+          return {
+            type: 'runtime-issue',
+            issue: {
+              message: `Profile trace saved to ${activeHandle.filePath}`,
+              level: ISSUE_LEVEL_WARNING,
+              source: ISSUE_SOURCE_COMMAND,
+              atMs: profiler.nowMs(),
+            },
+          };
         } catch (err) {
           return {
             type: 'runtime-issue',
@@ -75,17 +82,6 @@ export function toggleProfiler(
             },
           };
         }
-      },
-      (): ProfilerEffectMsg => {
-        return {
-          type: 'runtime-issue',
-          issue: {
-            message: `Profile trace saved to ${activeHandle.filePath}`,
-            level: ISSUE_LEVEL_WARNING,
-            source: ISSUE_SOURCE_COMMAND,
-            atMs: profiler.nowMs(),
-          },
-        };
       },
     ]];
   }

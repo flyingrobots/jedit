@@ -1,4 +1,9 @@
-export type DrawerKind = 'files' | 'graft';
+export const DrawerKinds = Object.freeze({
+  Files: 'files',
+  Graft: 'graft',
+} as const);
+
+export type DrawerKind = typeof DrawerKinds[keyof typeof DrawerKinds];
 
 export interface DrawerLayout {
   readonly width: number;
@@ -22,13 +27,13 @@ export function resolveDrawerLayout(kind: DrawerKind, columns: number, progress:
   const width = Math.round(resolveDrawerMaxWidth(kind, columns) * clamp01(progress));
   return {
     width,
-    x: kind === 'graft' ? Math.max(0, columns - width) : 0,
+    x: kind === DrawerKinds.Graft ? Math.max(0, columns - width) : 0,
   };
 }
 
 export function resolveWorkspaceLayout(columns: number, fileDrawerProgress: number, graftDrawerProgress: number): WorkspaceLayout {
-  const fileDrawer = resolveDrawerLayout('files', columns, fileDrawerProgress);
-  const graftDrawer = resolveDrawerLayout('graft', columns, graftDrawerProgress);
+  const fileDrawer = resolveDrawerLayout(DrawerKinds.Files, columns, fileDrawerProgress);
+  const graftDrawer = resolveDrawerLayout(DrawerKinds.Graft, columns, graftDrawerProgress);
   return {
     fileDrawer,
     graftDrawer,

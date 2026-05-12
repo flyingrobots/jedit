@@ -1,6 +1,7 @@
 import type { KeyMsg } from '@flyingrobots/bijou-tui';
 import { clampIndex } from './viewport.js';
-import { EditorModes, PendingNormals, type PendingNormal } from './editor/mode.js';
+import { EditorModes, PendingNormals, PendingOperators as PENDING_OPERATOR, type PendingNormal, type PendingOperator } from './editor/mode.js';
+import { EditorKeys as EDITOR_KEY, PastePlacements as PASTE_PLACEMENT } from './editor/key.js';
 import type { EditorState } from './editor/model.js';
 import * as editingHelpers from './editor-editing-helpers.js';
 
@@ -44,56 +45,12 @@ const {
 
 const INSERT_MODE = EditorModes.Insert;
 const INSERT_TAB_TEXT = '  ';
-const EDITOR_KEY = Object.freeze({
-  Escape: 'escape',
-  Left: 'left',
-  Right: 'right',
-  Up: 'up',
-  Down: 'down',
-  Home: 'home',
-  End: 'end',
-  PageUp: 'pageup',
-  PageDown: 'pagedown',
-  Backspace: 'backspace',
-  Delete: 'delete',
-  Enter: 'enter',
-  Tab: 'tab',
-  A: 'a',
-  B: 'b',
-  C: 'c',
-  D: 'd',
-  E: 'e',
-  G: 'g',
-  H: 'h',
-  I: 'i',
-  J: 'j',
-  K: 'k',
-  L: 'l',
-  O: 'o',
-  P: 'p',
-  R: 'r',
-  U: 'u',
-  W: 'w',
-  X: 'x',
-  Y: 'y',
-  LineStart: '0',
-  LineEnd: '$',
-  FirstNonWhitespace: '^',
-} as const);
 const KEY_DESCRIPTOR_SEPARATOR = '|';
 const MODIFIER_ACTIVE = '1';
 const MODIFIER_INACTIVE = '0';
-const PASTE_PLACEMENT = Object.freeze({
-  Before: 'before',
-  After: 'after',
-} as const);
-const PENDING_OPERATOR = Object.freeze({
-  Change: 'change',
-  Delete: 'delete',
-  Yank: 'yank',
-} as const);
-
-type PendingOperator = typeof PENDING_OPERATOR[keyof typeof PENDING_OPERATOR];
+const PREVIEW_MIN_SCROLL_ROW = 0;
+const PREVIEW_SCROLL_STEP = 1;
+const NORMAL_CURSOR_CLAMP_SENTINEL = Number.MAX_SAFE_INTEGER;
 
 interface EditorViewport {
   readonly width: number;
@@ -196,7 +153,7 @@ export function normalizeEditor(editor: EditorState): EditorState {
   const line = editor.lines[row] ?? '';
   const maxCol = editor.mode === INSERT_MODE
     ? line.length
-    : clampNormalCol(Number.MAX_SAFE_INTEGER, line);
+    : clampNormalCol(NORMAL_CURSOR_CLAMP_SENTINEL, line);
 
   return {
     ...editor,
@@ -283,6 +240,10 @@ export function updateNormalMode(
     return ensureEditorVisible({ ...editor, pendingNormal: undefined }, viewport.width, viewport.height);
   }
 
+  if (editor.readOnly) {
+    return ensureEditorVisible(editor, viewport.width, viewport.height);
+  }
+
   const pendingResult = applyPendingNormal(editor, msg, viewport);
   if (pendingResult != null) {
     return pendingResult;
@@ -336,17 +297,18 @@ function modifierId(value: boolean | undefined): string {
 }
 
 export function scrollPreview(editor: EditorState, msg: KeyMsg, height: number): EditorState {
-  if (msg.key === 'up' || msg.key === 'k') {
-    return { ...editor, scrollRow: Math.max(0, editor.scrollRow - 1) };
+  const maxScrollRow = Math.max(PREVIEW_MIN_SCROLL_ROW, editor.lines.length - PREVIEW_SCROLL_STEP);
+  if (msg.key === EDITOR_KEY.Up || msg.key === EDITOR_KEY.K) {
+    return { ...editor, scrollRow: Math.max(PREVIEW_MIN_SCROLL_ROW, editor.scrollRow - PREVIEW_SCROLL_STEP) };
   }
-  if (msg.key === 'down' || msg.key === 'j') {
-    return { ...editor, scrollRow: editor.scrollRow + 1 };
+  if (msg.key === EDITOR_KEY.Down || msg.key === EDITOR_KEY.J) {
+    return { ...editor, scrollRow: Math.min(maxScrollRow, editor.scrollRow + PREVIEW_SCROLL_STEP) };
   }
-  if (msg.key === 'pageup') {
-    return { ...editor, scrollRow: Math.max(0, editor.scrollRow - height) };
+  if (msg.key === EDITOR_KEY.PageUp) {
+    return { ...editor, scrollRow: Math.max(PREVIEW_MIN_SCROLL_ROW, editor.scrollRow - height) };
   }
-  if (msg.key === 'pagedown') {
-    return { ...editor, scrollRow: editor.scrollRow + height };
+  if (msg.key === EDITOR_KEY.PageDown) {
+    return { ...editor, scrollRow: Math.min(maxScrollRow, editor.scrollRow + height) };
   }
   return editor;
 }

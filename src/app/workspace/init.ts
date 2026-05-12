@@ -2,7 +2,7 @@ import { createTitleCameraState } from '../title-camera-session.js';
 import { createFeedbackState } from '../../ui/feedback.js';
 import { titleBunnySceneCameraPlacement, titleSceneCameraPlacement } from '../../ui/title-scene.js';
 import { TITLE_ASCII_PALETTE, TITLE_RENDER_MODE } from '../../ui/title-screen.js';
-import type { FocusPane } from '../../ui/panel-focus.js';
+import { FocusPanes, type FocusPane } from '../../ui/panel-focus.js';
 import type { TitleMeshLibrary } from '../../ui/title-mesh.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
@@ -12,7 +12,7 @@ import type { JeditTheme } from '../../ui/jedit-theme.js';
 import type { FileEntry } from '../../ports/file-system.js';
 import { ViewModes } from './view-mode.js';
 
-const INITIAL_FOCUS_PANE: FocusPane = 'editor';
+const INITIAL_FOCUS_PANE: FocusPane = FocusPanes.Editor;
 const INITIAL_VIEW_MODE = ViewModes.Source;
 
 export interface WorkspaceInitialModelSnapshot {

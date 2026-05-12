@@ -18,6 +18,9 @@ import {
 } from './editor-editing.js';
 import { EditorModes } from './editor/mode.js';
 
+const INITIAL_EDITOR_VIEWPORT_WIDTH = Number.MAX_SAFE_INTEGER;
+const INITIAL_EDITOR_VIEWPORT_HEIGHT = Number.MAX_SAFE_INTEGER;
+
 export interface EditorSessionPorts {
   readonly editorFile: EditorFilePort;
   readonly sourceHighlighter: SourceHighlighter;
@@ -44,7 +47,7 @@ export function loadEditor(filePath: string, editorFile: EditorFilePort): Editor
       mode: EditorModes.Normal,
       undoStack: [],
       redoStack: [],
-    }, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
+    }, INITIAL_EDITOR_VIEWPORT_WIDTH, INITIAL_EDITOR_VIEWPORT_HEIGHT);
   } catch (error) {
     return {
       path: filePath,

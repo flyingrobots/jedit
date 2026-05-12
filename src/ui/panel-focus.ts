@@ -1,4 +1,10 @@
-export type FocusPane = 'editor' | 'files' | 'graft';
+export const FocusPanes = Object.freeze({
+  Editor: 'editor',
+  Files: 'files',
+  Graft: 'graft',
+} as const);
+
+export type FocusPane = typeof FocusPanes[keyof typeof FocusPanes];
 
 export interface FocusCycleState {
   readonly fileDrawerOpen: boolean;
@@ -23,18 +29,18 @@ export function cycleFocusPane(state: FocusCycleState): FocusPane {
 
 export function defaultFocusPane(state: Omit<FocusCycleState, 'focusPane'>): FocusPane {
   if (state.hasEditor) {
-    return 'editor';
+    return FocusPanes.Editor;
   }
 
   if (state.fileDrawerOpen) {
-    return 'files';
+    return FocusPanes.Files;
   }
 
   if (state.graftDrawerOpen) {
-    return 'graft';
+    return FocusPanes.Graft;
   }
 
-  return 'editor';
+  return FocusPanes.Editor;
 }
 
 export function hasFocusablePeers(state: FocusCycleState): boolean {
@@ -42,22 +48,22 @@ export function hasFocusablePeers(state: FocusCycleState): boolean {
 }
 
 export function shouldClearPendingNormalOnPaneChange(from: FocusPane, to: FocusPane): boolean {
-  return from === 'editor' && to !== 'editor';
+  return from === FocusPanes.Editor && to !== FocusPanes.Editor;
 }
 
 export function visibleFocusPanes(state: FocusCycleState): readonly FocusPane[] {
   const panes: FocusPane[] = [];
 
   if (state.fileDrawerOpen) {
-    panes.push('files');
+    panes.push(FocusPanes.Files);
   }
 
   if (state.hasEditor) {
-    panes.push('editor');
+    panes.push(FocusPanes.Editor);
   }
 
   if (state.graftDrawerOpen) {
-    panes.push('graft');
+    panes.push(FocusPanes.Graft);
   }
 
   return panes;
@@ -66,7 +72,7 @@ export function visibleFocusPanes(state: FocusCycleState): readonly FocusPane[] 
 function firstVisiblePane(panes: readonly FocusPane[]): FocusPane {
   const pane = panes[0];
   if (pane == null) {
-    return 'editor';
+    return FocusPanes.Editor;
   }
 
   return pane;

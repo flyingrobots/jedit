@@ -1,6 +1,6 @@
 import type { KeyMsg } from '@flyingrobots/bijou-tui';
 import type { FileSystemPort, DirectoryAction } from '../../ports/file-system.js';
-import { DIRECTORY_ACTION_OPEN, DIRECTORY_ACTION_REFRESH } from '../../ports/file-system.js';
+import { DIRECTORY_ACTION_OPEN, DIRECTORY_ACTION_REFRESH, FileEntryKinds } from '../../ports/file-system.js';
 import type { EditorFilePort } from '../../ports/editor-file.js';
 import type { GraftSessionPort } from '../../ports/graft-session.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
@@ -9,9 +9,17 @@ import { clampIndex } from './viewport.js';
 import { withFocusPane } from './focus.js';
 import { beginEditorProjectionRefresh, isWorkspaceMarkdownFile, loadEditor } from './editor-session.js';
 import { ViewModes } from './view-mode.js';
+import { FocusPanes } from '../../ui/panel-focus.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 import { type Cmd } from '@flyingrobots/bijou-tui';
+import {
+  isWorkspaceBackKey,
+  isWorkspaceDownKey,
+  isWorkspaceOpenKey,
+  isWorkspaceRefreshKey,
+  isWorkspaceUpKey,
+} from './workspace-key.js';
 
 export const FILE_TREE_META_MIN = 0;
 
@@ -28,11 +36,11 @@ export function updateTreeFromKey(
   nowMs: () => number,
   deps: UpdateTreeFromKeyDeps,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
-  if (msg.key === 'r') {
+  if (isWorkspaceRefreshKey(msg)) {
     return changeDirectory(model, model.cwd, DIRECTORY_ACTION_REFRESH, nowMs, deps.fileSystem);
   }
 
-  if (msg.key === 'backspace' || msg.key === 'left' || msg.key === 'h') {
+  if (isWorkspaceBackKey(msg)) {
     const parent = deps.fileSystem.dirname(model.cwd);
     if (parent === model.cwd) {
       return [model, []];
@@ -41,7 +49,7 @@ export function updateTreeFromKey(
     return changeDirectory(model, parent, DIRECTORY_ACTION_OPEN, nowMs, deps.fileSystem);
   }
 
-  if (msg.key === 'down' || msg.key === 'j') {
+  if (isWorkspaceDownKey(msg)) {
     return [
       {
         ...model,
@@ -51,7 +59,7 @@ export function updateTreeFromKey(
     ];
   }
 
-  if (msg.key === 'up' || msg.key === 'k') {
+  if (isWorkspaceUpKey(msg)) {
     return [
       {
         ...model,
@@ -61,13 +69,13 @@ export function updateTreeFromKey(
     ];
   }
 
-  if (msg.key === 'enter' || msg.key === 'right' || msg.key === 'l') {
+  if (isWorkspaceOpenKey(msg)) {
     const entry = model.entries[model.selectedIndex];
     if (entry == null) {
       return [model, []];
     }
 
-    if (entry.kind === 'dir' || entry.kind === 'parent') {
+    if (entry.kind === FileEntryKinds.Directory || entry.kind === FileEntryKinds.Parent) {
       return changeDirectory(model, entry.path, DIRECTORY_ACTION_OPEN, nowMs, deps.fileSystem);
     }
 
@@ -79,7 +87,7 @@ export function updateTreeFromKey(
       graftInfo: undefined,
       graftLoading: false,
       graftSelectedIndex: 0,
-    }, 'editor'), model.graftDrawerOpen, {
+    }, FocusPanes.Editor), model.graftDrawerOpen, {
       editorFile: deps.editorFile,
       sourceHighlighter: deps.sourceHighlighter,
       graftSession: deps.graftSession,
