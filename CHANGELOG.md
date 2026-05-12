@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+- Addressed the latest PR #8 CodeRabbit follow-up by adding typed codec and
+  runtime-id errors, centralizing notification/profiler/workspace animation
+  tokens, hardening scene-load failure conversion, and localizing footer
+  context labels.
+- Addressed the current PR #8 CodeRabbit follow-up by centralizing workspace
+  runtime message and footer i18n tokens, making graft lifecycle timestamps
+  deterministic through the runtime clock, preserving scene-load failure detail,
+  and tightening the remaining review-standard docs and magic-number nits.
+- Addressed the follow-up PR #8 review pass by splitting the oversized
+  workspace keybinding spec, tightening runtime token objects, hardening
+  read-only/editor lifecycle behavior, and adding deterministic regression
+  coverage for profiler, graft, scene-loader, and mesh-footprint fixes.
+- Addressed PR #8 review feedback for built-in scene resolution, editor mode
+  transitions, contract runtime IDs, scene math, markdown detection, and
+  reviewer-requested runtime constants.
+- Fixed raytracer column math intersection which caused caps to be hollow when viewed from above or below.
+- Added a new `.jedit-scene` file format for defining scenes and created a scene loader adapter.
+- Added an interactive Scene Picker overlay to the title screen (toggleable via `F5`) for loading `.jedit-scene` debug scenes.
+- Fixed naive RTL string reversal in footer that corrupted UI labels; now correctly utilizes Bijou surface blitting.
+- Fortified the Bijou i18n adapter object traversal logic to enforce safe property access.
 - Added the app-facing text buffer optic GraphQL contract so Wesley can compile
   product-safe `createBuffer`, `replaceRange`, and `textWindow` surfaces while
   tests reject runtime coordinate root nouns and id-shaped variants from the

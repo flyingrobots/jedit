@@ -11,6 +11,8 @@ import {
 import { createInMemoryHotTextRuntime } from './in-memory-hot-text-runtime.js';
 import type { EchoKernelInfo, EchoWasmKernelTransport } from '../ports/echo-kernel-transport.js';
 import type { HotTextRuntimePort } from '../ports/hot-text-runtime.js';
+import type { HashPort } from '../ports/hash.js';
+import { createHashPort } from './hash.js';
 import {
   CREATE_BUFFER_WORLDLINE_OPERATION,
   CREATE_CHECKPOINT_OPERATION,
@@ -45,12 +47,14 @@ const RECOVERY_REFRESH_READING = 'refresh reading and retry';
 export interface CreateFakeEchoJeditOpticTransportOptions {
   readonly runtime?: HotTextRuntimePort;
   readonly moduleSpecifier?: string;
+  readonly hash?: HashPort;
 }
 
 export function createFakeEchoJeditOpticTransport(
   options: CreateFakeEchoJeditOpticTransportOptions = {},
 ): EchoWasmKernelTransport {
   const runtime = options.runtime ?? createInMemoryHotTextRuntime();
+  const hash = options.hash ?? createHashPort();
   const info: EchoKernelInfo = {
     moduleSpecifier: options.moduleSpecifier ?? FAKE_ECHO_JEDIT_MODULE_SPECIFIER,
     codecId: FAKE_ECHO_JEDIT_CODEC_ID,
@@ -63,10 +67,10 @@ export function createFakeEchoJeditOpticTransport(
       return info;
     },
     submitIntentBytes(intentBytes) {
-      return encodeJeditIntentResponse(executeIntent(runtime, decodeJeditIntentRequest(intentBytes)));
+      return encodeJeditIntentResponse(executeIntent(runtime, hash, decodeJeditIntentRequest(intentBytes)));
     },
     observeBytes(requestBytes) {
-      return encodeJeditObserveResponse(executeObserve(runtime, decodeJeditObserveRequest(requestBytes)));
+      return encodeJeditObserveResponse(executeObserve(runtime, hash, decodeJeditObserveRequest(requestBytes)));
     },
     schedulerStatusBytes() {
       return encodeJeditSchedulerStatus({
@@ -78,26 +82,30 @@ export function createFakeEchoJeditOpticTransport(
   };
 }
 
-function executeIntent(runtime: HotTextRuntimePort, request: JeditIntentRequest): JeditIntentResponse {
+function executeIntent(
+  runtime: HotTextRuntimePort,
+  hash: HashPort,
+  request: JeditIntentRequest,
+): JeditIntentResponse {
   try {
     switch (request.operationName) {
       case CREATE_BUFFER_WORLDLINE_OPERATION:
         return {
           status: JEDIT_TRANSPORT_STATUS_OK,
           operationName: CREATE_BUFFER_WORLDLINE_OPERATION,
-          execution: createBufferWorldline(runtime, request.input),
+          execution: createBufferWorldline(runtime, request.input, hash),
         };
       case REPLACE_RANGE_AS_TICK_OPERATION:
         return {
           status: JEDIT_TRANSPORT_STATUS_OK,
           operationName: REPLACE_RANGE_AS_TICK_OPERATION,
-          execution: replaceRangeAsTick(runtime, request.session, request.input),
+          execution: replaceRangeAsTick(runtime, request.session, request.input, hash),
         };
       case CREATE_CHECKPOINT_OPERATION:
         return {
           status: JEDIT_TRANSPORT_STATUS_OK,
           operationName: CREATE_CHECKPOINT_OPERATION,
-          execution: createCheckpoint(runtime, request.session, request.input),
+          execution: createCheckpoint(runtime, request.session, request.input, hash),
         };
     }
   } catch (error) {
@@ -109,7 +117,11 @@ function executeIntent(runtime: HotTextRuntimePort, request: JeditIntentRequest)
   }
 }
 
-function executeObserve(runtime: HotTextRuntimePort, request: JeditObserveRequest): JeditObserveResponse {
+function executeObserve(
+  runtime: HotTextRuntimePort,
+  hash: HashPort,
+  request: JeditObserveRequest,
+): JeditObserveResponse {
   try {
     switch (request.operationName) {
       case WORLDLINE_SNAPSHOT_OPERATION:
@@ -121,6 +133,7 @@ function executeObserve(runtime: HotTextRuntimePort, request: JeditObserveReques
             request.session,
             request.frontierRef,
             request.input,
+            hash,
           ),
         };
       case TEXT_WINDOW_OPERATION:
@@ -132,9 +145,10 @@ function executeObserve(runtime: HotTextRuntimePort, request: JeditObserveReques
             request.session,
             request.frontierRef,
             request.input,
+            hash,
           ),
         };
-    }
+      }
   } catch (error) {
     return {
       status: JEDIT_TRANSPORT_STATUS_OBSTRUCTED,

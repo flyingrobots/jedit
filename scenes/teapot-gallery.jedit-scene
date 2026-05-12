@@ -1,0 +1,61 @@
+{
+  "camera": { "angle": -0.72, "radius": 6.8 },
+  "environment": {
+    "background": [3, 6, 12],
+    "floor": {
+      "kind": "grid",
+      "dark": [19, 28, 42],
+      "light": [64, 88, 108],
+      "gridScale": 1.35,
+      "fadeDistance": 28
+    },
+    "light": {
+      "direction": [-1.6, 3.2, -0.65],
+      "ambient": 0.12,
+      "diffuse": 0.96,
+      "specularStrength": 0.9,
+      "rimStrength": 1.1
+    },
+    "walls": [
+      {
+        "normal": [0, 0, 1],
+        "offset": -4.2,
+        "color": [13, 20, 32]
+      }
+    ]
+  },
+  "objects": [
+    {
+      "kind": "mesh",
+      "mesh": "teapot",
+      "radius": 1.45,
+      "footprintRadius": 1.45,
+      "height": 2.2,
+      "color": [224, 113, 63],
+      "reflectivity": 0.44
+    },
+    {
+      "kind": "sphere",
+      "position": [1.72, 1.05, 0.75],
+      "radius": 0.7,
+      "color": [222, 232, 232],
+      "reflectivity": 1.0
+    },
+    {
+      "kind": "column",
+      "position": [-2.25, 1.35, -0.5],
+      "radius": 0.38,
+      "height": 2.7,
+      "color": [78, 195, 224],
+      "reflectivity": 0.58
+    },
+    {
+      "kind": "column",
+      "position": [2.55, 0.92, -1.35],
+      "radius": 0.32,
+      "height": 1.84,
+      "color": [112, 216, 167],
+      "reflectivity": 0.5
+    }
+  ]
+}

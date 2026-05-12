@@ -6,8 +6,7 @@ import type {
   JeditWorldlineSession,
   ReplaceRangeAsTickExecution,
 } from '../app/jedit-contract-runtime.js';
-import type { WorldlineSnapshotReadingEnvelope } from '../app/jedit-observer-runtime.js';
-import type { TextWindowReadingEnvelope } from '../app/jedit-observer-runtime.js';
+import type { TextWindowReadingEnvelope, WorldlineSnapshotReadingEnvelope } from '../app/jedit-observer-runtime.js';
 import type {
   MutationOperationName,
   QueryOperationName,
@@ -45,9 +44,18 @@ export const WORLDLINE_SNAPSHOT_OPERATION = queryWorldlineSnapshotOperation.fiel
 export const TEXT_WINDOW_OPERATION = queryTextWindowOperation.fieldName;
 
 const SCHEDULER_STATE_IDLE = 'IDLE';
+const INVALID_JSON_PAYLOAD_MESSAGE = 'invalid json payload';
 
 const TEXT_ENCODER = new TextEncoder();
 const TEXT_DECODER = new TextDecoder();
+
+export class InvalidJsonPayloadError extends Error {
+  public constructor() {
+    super(INVALID_JSON_PAYLOAD_MESSAGE);
+    this.name = 'InvalidJsonPayloadError';
+    Object.freeze(this);
+  }
+}
 
 const MutationOperationNameSchema = z.union([
   z.literal(CREATE_BUFFER_WORLDLINE_OPERATION),
@@ -365,9 +373,7 @@ export type JeditIntentRequest =
   | CreateBufferWorldlineIntentRequest
   | ReplaceRangeAsTickIntentRequest
   | CreateCheckpointIntentRequest;
-export type JeditObserveRequest =
-  | WorldlineSnapshotObserveRequest
-  | TextWindowObserveRequest;
+export type JeditObserveRequest = WorldlineSnapshotObserveRequest | TextWindowObserveRequest;
 export type JeditIntentResponse =
   | CreateBufferWorldlineIntentOkResponse
   | ReplaceRangeAsTickIntentOkResponse
@@ -379,15 +385,16 @@ export type JeditObserveResponse =
   | JeditObserveObstructedResponse;
 
 type JsonPrimitive = string | number | boolean | null;
-type JsonObject = { readonly [key: string]: JsonValue };
+type JsonObject = { readonly [key: string]: JsonValueCandidate };
 type JsonValue = JsonPrimitive | JsonObject | readonly JsonValue[];
+type JsonValueCandidate = JsonPrimitive | JsonObject | readonly JsonValueCandidate[];
 
 export function encodeJeditIntentRequest(request: JeditIntentRequest): Uint8Array {
   return encodeJson(JeditIntentRequestSchema.parse(request));
 }
 
 export function decodeJeditIntentRequest(bytes: Uint8Array): JeditIntentRequest {
-  return JeditIntentRequestSchema.parse(parseJsonBytes(bytes)) as JeditIntentRequest;
+  return JeditIntentRequestSchema.parse(parseJsonBytes(bytes));
 }
 
 export function encodeJeditObserveRequest(request: JeditObserveRequest): Uint8Array {
@@ -395,7 +402,7 @@ export function encodeJeditObserveRequest(request: JeditObserveRequest): Uint8Ar
 }
 
 export function decodeJeditObserveRequest(bytes: Uint8Array): JeditObserveRequest {
-  return JeditObserveRequestSchema.parse(parseJsonBytes(bytes)) as JeditObserveRequest;
+  return JeditObserveRequestSchema.parse(parseJsonBytes(bytes));
 }
 
 export function encodeJeditIntentResponse(response: JeditIntentResponse): Uint8Array {
@@ -403,7 +410,7 @@ export function encodeJeditIntentResponse(response: JeditIntentResponse): Uint8A
 }
 
 export function decodeJeditIntentResponse(bytes: Uint8Array): JeditIntentResponse {
-  return JeditIntentResponseSchema.parse(parseJsonBytes(bytes)) as JeditIntentResponse;
+  return JeditIntentResponseSchema.parse(parseJsonBytes(bytes));
 }
 
 export function encodeJeditObserveResponse(response: JeditObserveResponse): Uint8Array {
@@ -411,7 +418,7 @@ export function encodeJeditObserveResponse(response: JeditObserveResponse): Uint
 }
 
 export function decodeJeditObserveResponse(bytes: Uint8Array): JeditObserveResponse {
-  return JeditObserveResponseSchema.parse(parseJsonBytes(bytes)) as JeditObserveResponse;
+  return JeditObserveResponseSchema.parse(parseJsonBytes(bytes));
 }
 
 export function encodeJeditSchedulerStatus(status: JeditSchedulerStatus): Uint8Array {
@@ -453,5 +460,40 @@ function encodeJson(value: object): Uint8Array {
 }
 
 function parseJsonBytes(bytes: Uint8Array): JsonValue {
-  return JSON.parse(TEXT_DECODER.decode(bytes)) as JsonValue;
+  const value: JsonValueCandidate = JSON.parse(TEXT_DECODER.decode(bytes));
+  if (!isJsonValue(value)) {
+    throw new InvalidJsonPayloadError();
+  }
+  return value;
+}
+
+function isJsonValue(value: JsonValueCandidate): value is JsonValue {
+  if (value === null) {
+    return true;
+  }
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return true;
+  }
+  if (Array.isArray(value)) {
+    for (const member of value) {
+      if (!isJsonValue(member)) {
+        return false;
+      }
+    }
+    return true;
+  }
+  return isJsonRecord(value) && objectValuesAreJson(value);
+}
+
+function isJsonRecord(value: JsonValueCandidate): value is JsonObject {
+  return !Array.isArray(value) && value !== null && typeof value === 'object';
+}
+
+function objectValuesAreJson(value: JsonObject): boolean {
+  for (const member of Object.values(value)) {
+    if (!isJsonValue(member)) {
+      return false;
+    }
+  }
+  return true;
 }

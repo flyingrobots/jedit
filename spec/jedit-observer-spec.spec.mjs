@@ -8,6 +8,7 @@ const REPO_ROOT = process.cwd();
 const OBSERVER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-observer-spec.js');
 const OBSERVER_RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-observer-runtime.js');
 const CONTRACT_RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-runtime.js');
+const HASH_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'hash.js');
 const ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'in-memory-hot-text-runtime.js');
 const GENERATED_PLAN_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'generated', 'jedit', 'worldlineSnapshot.observer-plan.generated.js');
 
@@ -19,15 +20,16 @@ async function loadModules() {
 
   assert.equal(build.status, 0, build.stderr || build.stdout);
 
-  const [observer, observerRuntime, contractRuntime, adapter, generatedPlan] = await Promise.all([
+  const [observer, observerRuntime, contractRuntime, hashModule, adapter, generatedPlan] = await Promise.all([
     import(pathToFileURL(OBSERVER_MODULE_PATH).href),
     import(pathToFileURL(OBSERVER_RUNTIME_MODULE_PATH).href),
     import(pathToFileURL(CONTRACT_RUNTIME_MODULE_PATH).href),
+    import(pathToFileURL(HASH_MODULE_PATH).href),
     import(pathToFileURL(ADAPTER_MODULE_PATH).href),
     import(pathToFileURL(GENERATED_PLAN_MODULE_PATH).href),
   ]);
 
-  return { observer, observerRuntime, contractRuntime, adapter, generatedPlan };
+  return { observer, observerRuntime, contractRuntime, adapter, hash: hashModule.createHashPort(), generatedPlan };
 }
 
 test('worldlineSnapshot observer spec is memoryless, canonical-head only, and author-visible', async () => {
@@ -52,14 +54,14 @@ test('worldlineSnapshot observer spec is memoryless, canonical-head only, and au
 });
 
 test('worldlineSnapshot observer plan is compiled by Wesley and consumed at runtime', async () => {
-  const { observer, observerRuntime, contractRuntime, adapter, generatedPlan } = await loadModules();
+  const { observer, observerRuntime, contractRuntime, adapter, hash, generatedPlan } = await loadModules();
   const runtime = adapter.createInMemoryHotTextRuntime();
   const created = contractRuntime.createBufferWorldline(runtime, {
     bufferKey: 'notes/today.md',
     initialText: 'hello world',
     projectionPath: '/tmp/notes/today.md',
     createInitialCheckpoint: true,
-  });
+  }, hash);
   const authoredSpec = observer.createWorldlineSnapshotObserverSpec();
 
   assert.equal(generatedPlan.worldlineSnapshotObserverPlan.observerName, authoredSpec.observerName);
@@ -82,6 +84,7 @@ test('worldlineSnapshot observer plan is compiled by Wesley and consumed at runt
     created.nextSession,
     'frontier:wl:notes-today-md:1',
     snapshotInput,
+    hash,
   );
 
   assert.equal(envelope.planId, generatedPlan.worldlineSnapshotObserverPlan.planId);
@@ -95,14 +98,14 @@ test('worldlineSnapshot observer plan is compiled by Wesley and consumed at runt
 });
 
 test('worldlineSnapshot observer rejects malformed reading payloads', async () => {
-  const { observerRuntime, adapter, contractRuntime } = await loadModules();
+  const { observerRuntime, adapter, contractRuntime, hash } = await loadModules();
   const runtime = adapter.createInMemoryHotTextRuntime();
   const created = contractRuntime.createBufferWorldline(runtime, {
     bufferKey: 'notes/today.md',
     initialText: 'hello world',
     projectionPath: '/tmp/notes/today.md',
     createInitialCheckpoint: false,
-  });
+  }, hash);
 
   assert.throws(
     () => observerRuntime.readWorldlineSnapshotWithObserverPlan(
@@ -110,6 +113,7 @@ test('worldlineSnapshot observer rejects malformed reading payloads', async () =
       created.nextSession,
       'frontier:bad',
       {},
+      hash,
     ),
     /worldlineId/i,
   );

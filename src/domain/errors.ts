@@ -87,3 +87,13 @@ export class MeshVertexIndexOutOfRangeError extends JeditDomainError {}
  * Thrown when the title mesh fails to load (e.g. missing asset).
  */
 export class TitleMeshLoadError extends JeditDomainError {}
+
+/**
+ * Thrown when scene JSON does not match the runtime scene contract.
+ */
+export class SceneDecodeError extends JeditDomainError {}
+
+/**
+ * Thrown when decoded scene data references unavailable runtime assets.
+ */
+export class SceneLoadError extends JeditDomainError {}

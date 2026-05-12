@@ -1,4 +1,5 @@
 import type { HotTextRuntimePort } from '../ports/hot-text-runtime.js';
+import type { HashPort } from '../ports/hash.js';
 import {
   type JeditOpticClient,
   type OpenTextBufferExecution,
@@ -22,52 +23,49 @@ import {
   type WorldlineSnapshotReadingEnvelope,
 } from './jedit-observer-runtime.js';
 import type {
-  MutationCreateBufferWorldlineRequest,
-  MutationCreateCheckpointRequest,
-  MutationReplaceRangeAsTickRequest,
-  QueryTextWindowRequest,
-  QueryWorldlineSnapshotRequest,
-} from '../generated/jedit/hot-text-runtime.wesley.generated.js';
+  MutationOperationMap,
+  QueryOperationMap,
+} from '../generated/jedit/hot-text-runtime.types.generated.js';
 
-type CreateBufferWorldlineInput = MutationCreateBufferWorldlineRequest['input'];
-type ReplaceRangeAsTickInput = MutationReplaceRangeAsTickRequest['input'];
-type CreateCheckpointInput = MutationCreateCheckpointRequest['input'];
-type WorldlineSnapshotInput = QueryWorldlineSnapshotRequest['input'];
-type TextWindowInput = QueryTextWindowRequest['input'];
+type CreateBufferWorldlineInput = MutationOperationMap['createBufferWorldline']['input'];
+type ReplaceRangeAsTickInput = MutationOperationMap['replaceRangeAsTick']['input'];
+type CreateCheckpointInput = MutationOperationMap['createCheckpoint']['input'];
+type WorldlineSnapshotInput = QueryOperationMap['worldlineSnapshot']['input'];
+type TextWindowInput = QueryOperationMap['textWindow']['input'];
 
 // Until Wesley emits direct intent/observer clients, keep one narrow seam where
 // generated GraphQL operation names are transmuted into app-owned runtime calls.
-export function createInMemoryJeditOpticClient(runtime: HotTextRuntimePort): JeditOpticClient {
+export function createInMemoryJeditOpticClient(runtime: HotTextRuntimePort, hash: HashPort): JeditOpticClient {
   const readBasisHandles = new ReadBasisHandleRegistry();
   return {
     openTextBuffer(input: CreateBufferWorldlineInput): OpenTextBufferExecution {
-      const execution = createBufferWorldline(runtime, input);
+      const execution = createBufferWorldline(runtime, input, hash);
       return {
         ...execution,
         readBasisHandle: readBasisHandles.createForSession(execution.nextSession),
       };
     },
     createBufferWorldline(input: CreateBufferWorldlineInput): CreateBufferWorldlineExecution {
-      return createBufferWorldline(runtime, input);
+      return createBufferWorldline(runtime, input, hash);
     },
     replaceRangeAsTick(
       session: JeditWorldlineSession,
       input: ReplaceRangeAsTickInput,
     ): ReplaceRangeAsTickExecution {
-      return replaceRangeAsTick(runtime, session, input);
+      return replaceRangeAsTick(runtime, session, input, hash);
     },
     createCheckpoint(
       session: JeditWorldlineSession,
       input: CreateCheckpointInput,
     ): CreateCheckpointExecution {
-      return createCheckpoint(runtime, session, input);
+      return createCheckpoint(runtime, session, input, hash);
     },
     worldlineSnapshot(
       session: JeditWorldlineSession,
       frontierRef: string,
       input: WorldlineSnapshotInput,
     ): WorldlineSnapshotReadingEnvelope {
-      return readWorldlineSnapshotWithObserverPlan(runtime, session, frontierRef, input);
+      return readWorldlineSnapshotWithObserverPlan(runtime, session, frontierRef, input, hash);
     },
     textWindow(
       session: JeditWorldlineSession,
@@ -80,6 +78,7 @@ export function createInMemoryJeditOpticClient(runtime: HotTextRuntimePort): Jed
         session,
         frontierRef,
         toTextWindowInput(readBasisHandles, session, readBasisHandle, input),
+        hash,
       );
     },
   };

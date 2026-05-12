@@ -9,6 +9,7 @@ const OPTIC_CLIENT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-opti
 const ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'in-memory-hot-text-runtime.js');
 const TRANSPORT_CLIENT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-optic-client.js');
 const FAKE_TRANSPORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'fake-echo-jedit-optic-transport.js');
+const HASH_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'hash.js');
 const CODEC_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-optic-codec.js');
 const READ_BASIS_HANDLE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'read-basis-handle-registry.js');
 const TEXT_BUFFER_OPTIC_SESSION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'text-buffer-optic-session.js');
@@ -45,6 +46,7 @@ async function loadModules() {
     adapter,
     transportClientModule,
     fakeTransportModule,
+    hashModule,
     codecModule,
     readBasisHandleModule,
     textBufferOpticSessionModule,
@@ -53,6 +55,7 @@ async function loadModules() {
     import(pathToFileURL(ADAPTER_MODULE_PATH).href),
     import(pathToFileURL(TRANSPORT_CLIENT_MODULE_PATH).href),
     import(pathToFileURL(FAKE_TRANSPORT_MODULE_PATH).href),
+    import(pathToFileURL(HASH_MODULE_PATH).href),
     import(pathToFileURL(CODEC_MODULE_PATH).href),
     import(pathToFileURL(READ_BASIS_HANDLE_MODULE_PATH).href),
     import(pathToFileURL(TEXT_BUFFER_OPTIC_SESSION_MODULE_PATH).href),
@@ -63,6 +66,7 @@ async function loadModules() {
     adapter,
     transportClientModule,
     fakeTransportModule,
+    hashModule,
     codecModule,
     readBasisHandleModule,
     textBufferOpticSessionModule,
@@ -70,9 +74,9 @@ async function loadModules() {
 }
 
 test('in-memory optic client exposes GraphQL-shaped mutation and observer operations', async () => {
-  const { opticClientModule, adapter } = await loadModules();
+  const { opticClientModule, adapter, hashModule } = await loadModules();
   const runtime = adapter.createInMemoryHotTextRuntime();
-  const client = opticClientModule.createInMemoryJeditOpticClient(runtime);
+  const client = opticClientModule.createInMemoryJeditOpticClient(runtime, hashModule.createHashPort());
 
   const created = client.createBufferWorldline({
     bufferKey: 'notes/today.md',
@@ -205,6 +209,18 @@ test('transport-backed optic client exercises the fake Echo host through encoded
   assert.equal(stale.operationName, codecModule.REPLACE_RANGE_AS_TICK_OPERATION);
   assert.equal(stale.obstruction.code, 'JEDIT_CONTRACT_RUNTIME_ERROR');
   assert.match(stale.obstruction.message, /Base head mismatch/);
+});
+
+test('codec exposes a typed invalid JSON payload error', async () => {
+  const { codecModule } = await loadModules();
+
+  assert.equal(typeof codecModule.InvalidJsonPayloadError, 'function');
+  assert.throws(
+    () => {
+      throw new codecModule.InvalidJsonPayloadError();
+    },
+    (error) => error?.name === 'InvalidJsonPayloadError',
+  );
 });
 
 test('transport-backed textWindow uses an opaque read basis handle', async () => {

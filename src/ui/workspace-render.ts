@@ -1,6 +1,6 @@
 import { clipToWidth } from '@flyingrobots/bijou-tui';
 
-import type { FileEntry } from '../adapters/filesystem.js';
+import { FileEntryKinds, type FileEntry } from '../ports/file-system.js';
 
 export interface GraftOutlineDisplayItem {
   readonly kind: string;
@@ -36,10 +36,10 @@ export function formatGraftOutlineLine(item: GraftOutlineDisplayItem, selected: 
 
 export function formatTreeLine(entry: FileEntry, selected: boolean): string {
   const prefix = selected ? '› ' : '  ';
-  if (entry.kind === 'parent') {
+  if (entry.kind === FileEntryKinds.Parent) {
     return `${prefix}../`;
   }
-  if (entry.kind === 'dir') {
+  if (entry.kind === FileEntryKinds.Directory) {
     return `${prefix}${entry.name}/`;
   }
   return `${prefix}${entry.name}`;

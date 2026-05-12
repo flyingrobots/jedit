@@ -2,18 +2,87 @@ import { createSurface, stringToSurface, type Surface } from '@flyingrobots/bijo
 import { clipToWidth } from '@flyingrobots/bijou-tui';
 import { basename } from 'node:path';
 
-import type { FileEntry } from '../adapters/filesystem.js';
-import { JEDIT_MARKDOWN_PREVIEW_TOGGLE_LABEL, JEDIT_SETTINGS_TOGGLE_LABEL, JEDIT_THEME_TOGGLE_LABEL } from '../app/keybindings.js';
+import { FileEntryKinds, type FileEntry } from '../ports/file-system.js';
 import type { I18nPort } from '../ports/i18n.js';
 import type { JeditStyleToken } from './jedit-theme.js';
-import type { DrawerKind } from './drawer-layout.js';
-import { hasFocusablePeers, type FocusPane } from './panel-focus.js';
+import { DrawerKinds, type DrawerKind } from './drawer-layout.js';
+import { FocusPanes, hasFocusablePeers, type FocusPane } from './panel-focus.js';
+import { ViewModes, type ViewMode } from '../app/workspace/view-mode.js';
+import { EditorModes, PendingNormals, type EditorMode, type PendingNormal } from '../app/workspace/editor/mode.js';
 
-type ViewMode = 'source' | 'preview';
-type EditorMode = 'normal' | 'insert';
-type PendingNormal = 'c' | 'd' | 'g' | 'y';
+const FOOTER_ROWS = 2;
+const FOOTER_LINE_HEIGHT = 1;
+const FOOTER_PRIMARY_ROW = 0;
+const FOOTER_SECONDARY_ROW = 1;
+const FOOTER_ORIGIN = 0;
+const MIN_FOOTER_CONTENT_WIDTH = 1;
+const TEXT_DIRECTION_RTL = 'rtl';
+const FOOTER_MODE_BROWSE = 'browse';
+const FOOTER_MODE_INSERT = 'insert';
+const FOOTER_MODE_NORMAL = 'normal';
+const FOOTER_MODE_PREVIEW = 'preview';
+const FOOTER_MODE_SETTINGS = 'settings';
+const FOOTER_MODE_FILES = 'files';
+const FOOTER_MODE_GRAFT = 'graft';
+const FOOTER_CONTEXT_SETTINGS = 'footer.context.settings';
+const FOOTER_CONTEXT_GRAFT_EMPTY = 'footer.context.graft_empty';
 
-const THEME_HINT = `${JEDIT_THEME_TOGGLE_LABEL} theme`;
+const FocusPaneModeKeys: Record<FocusPane, string> = Object.freeze({
+  [FocusPanes.Editor]: FOOTER_MODE_BROWSE,
+  [FocusPanes.Files]: FOOTER_MODE_FILES,
+  [FocusPanes.Graft]: FOOTER_MODE_GRAFT,
+});
+
+const EditorModeKeys: Record<EditorMode, string> = Object.freeze({
+  [EditorModes.Insert]: FOOTER_MODE_INSERT,
+  [EditorModes.Normal]: FOOTER_MODE_NORMAL,
+});
+
+const FooterHintKeys = Object.freeze({
+  JkMove: 'j_k_move',
+  EnterChange: 'enter_change',
+  F2Close: 'f2_close',
+  EscClose: 'esc_close',
+  JkScroll: 'j_k_scroll',
+  F3Source: 'f3_source',
+  F3Preview: 'f3_preview',
+  TextInput: 'text_input',
+  EscNormal: 'esc_normal',
+  CtrlSSave: 'ctrl_s_save',
+  CtrlTTheme: 'ctrl_t_theme',
+  TabFocus: 'tab_focus',
+  TabIndent: 'tab_indent',
+  CtrlLScenePicker: 'ctrl_l_scene_picker',
+  CtrlBFiles: 'ctrl_b_files',
+  CtrlGGraft: 'ctrl_g_graft',
+  EnterOpen: 'enter_open',
+  BackspaceUp: 'backspace_up',
+  CtrlBClose: 'ctrl_b_close',
+  EnterJump: 'enter_jump',
+  RRefresh: 'r_refresh',
+  CtrlGClose: 'ctrl_g_close',
+  IInsert: 'i_insert',
+  OOpenLine: 'o_open_line',
+  CcLine: 'cc_line',
+  CwWord: 'cw_word',
+  CeWordEnd: 'ce_word_end',
+  C0Start: 'c0_start',
+  CEnd: 'c_end',
+  DdLine: 'dd_line',
+  DwWord: 'dw_word',
+  DeWordEnd: 'de_word_end',
+  D0Start: 'd0_start',
+  DEnd: 'd_end',
+  YyLine: 'yy_line',
+  YwWord: 'yw_word',
+  YeWordEnd: 'ye_word_end',
+  Y0Start: 'y0_start',
+  YEnd: 'y_end',
+  GgTop: 'gg_top',
+  EscCancel: 'esc_cancel',
+});
+
+type FooterHintTranslator = (key: string) => string;
 
 export interface WorkspaceTitleState {
   readonly cwd: string;
@@ -49,7 +118,7 @@ export function activeWorkspaceTitle(state: WorkspaceTitleState): string {
     return `${basename(state.editorPath)}${mark}`;
   }
 
-  if (state.selectedEntry?.kind === 'file') {
+  if (state.selectedEntry?.kind === FileEntryKinds.File) {
     return state.selectedEntry.name;
   }
 
@@ -69,19 +138,18 @@ export function centerLine(text: string, width: number): string {
 }
 
 export function renderWorkspaceFooter(state: WorkspaceFooterState, width: number, background: JeditStyleToken): Surface {
-  const surface = createSurface(width, 2);
+  const surface = createSurface(width, FOOTER_ROWS);
   fillSurface(surface, background);
+  if (width <= FOOTER_ORIGIN) {
+    return surface;
+  }
 
   const [primary, secondary] = workspaceFooterLines(state);
-  const primarySurface = stringToSurface(fitLine(primary, width), width, 1);
-  const secondarySurface = stringToSurface(fitLine(secondary, width), width, 1);
-  applyBackground(primarySurface, background);
-  applyBackground(secondarySurface, background);
+  const primaryLine = footerLineSurface(primary, width, background, state.i18n.direction);
+  const secondaryLine = footerLineSurface(secondary, width, background, state.i18n.direction);
 
-  // Logical positioning for RTL/LTR
-  const isRtl = state.i18n.direction === 'rtl';
-  surface.blit(primarySurface, isRtl ? width - primarySurface.width : 0, 0);
-  surface.blit(secondarySurface, isRtl ? width - secondarySurface.width : 0, 1);
+  surface.blit(primaryLine.surface, primaryLine.x, FOOTER_PRIMARY_ROW);
+  surface.blit(secondaryLine.surface, secondaryLine.x, FOOTER_SECONDARY_ROW);
   return surface;
 }
 
@@ -97,116 +165,119 @@ export function workspaceFooterLines(state: WorkspaceFooterState): readonly [str
   const primary = detail.length > 0 ? `${modeLabel} ${detail}` : modeLabel;
   const secondary = footerContextLine(state);
 
-  return [
-    state.i18n.direction === 'rtl' ? reverseLine(primary) : primary,
-    state.i18n.direction === 'rtl' ? reverseLine(secondary) : secondary,
-  ];
-}
-
-function reverseLine(text: string): string {
-  return [...text].reverse().join('');
+  return [primary, secondary];
 }
 
 function interactionModeKey(state: WorkspaceFooterState): string {
   if (state.settingsOpen) {
-    return 'settings';
+    return FOOTER_MODE_SETTINGS;
   }
 
-  if (state.focusPane === 'files' && state.fileDrawerOpen) {
-    return 'files';
+  if (state.focusPane === FocusPanes.Files && state.fileDrawerOpen) {
+    return FocusPaneModeKeys[FocusPanes.Files];
   }
 
-  if (state.focusPane === 'graft' && state.graftDrawerOpen) {
-    return 'graft';
+  if (state.focusPane === FocusPanes.Graft && state.graftDrawerOpen) {
+    return FocusPaneModeKeys[FocusPanes.Graft];
   }
 
-  if (state.viewMode === 'preview' && state.markdownPreviewActive) {
-    return 'preview';
+  if (state.viewMode === ViewModes.Preview && state.markdownPreviewActive) {
+    return FOOTER_MODE_PREVIEW;
   }
 
   if (state.editorMode != null) {
-    return state.editorMode;
+    return EditorModeKeys[state.editorMode];
   }
 
-  return 'browse';
+  return FOOTER_MODE_BROWSE;
 }
 
 function footerDetail(state: WorkspaceFooterState): string {
-  const t = (key: string) => state.i18n.t(`footer.hints.${key}`);
+  const t = footerHintTranslator(state);
 
   if (state.settingsOpen) {
-    return footerHints([t('j_k_move'), t('enter_change'), `${JEDIT_SETTINGS_TOGGLE_LABEL} close`, 'esc close']);
+    return footerHints([t(FooterHintKeys.JkMove), t(FooterHintKeys.EnterChange), t(FooterHintKeys.F2Close), t(FooterHintKeys.EscClose)]);
   }
 
-  if (state.focusPane === 'files' && state.fileDrawerOpen) {
-    return drawerFooterDetail(state, 'files');
+  if (state.focusPane === FocusPanes.Files && state.fileDrawerOpen) {
+    return drawerFooterDetail(state, DrawerKinds.Files, t);
   }
 
-  if (state.focusPane === 'graft' && state.graftDrawerOpen) {
-    return drawerFooterDetail(state, 'graft');
+  if (state.focusPane === FocusPanes.Graft && state.graftDrawerOpen) {
+    return drawerFooterDetail(state, DrawerKinds.Graft, t);
   }
 
-  if (state.viewMode === 'preview' && state.markdownPreviewActive) {
-    return footerHints([t('j_k_scroll'), `${JEDIT_MARKDOWN_PREVIEW_TOGGLE_LABEL} source`, THEME_HINT, focusHint(state), 'ctrl+b files', 'ctrl+g graft']);
+  if (state.viewMode === ViewModes.Preview && state.markdownPreviewActive) {
+    return footerHints([t(FooterHintKeys.JkScroll), t(FooterHintKeys.F3Source), themeHint(t), focusHint(state, t), t(FooterHintKeys.CtrlBFiles), t(FooterHintKeys.CtrlGGraft)]);
   }
 
-  if (state.editorMode === 'insert') {
-    return footerHints([t('text_input'), t('esc_normal'), t('ctrl_s_save'), THEME_HINT, insertTabHint(state)]);
+  if (state.editorMode === EditorModes.Insert) {
+    return footerHints([t(FooterHintKeys.TextInput), t(FooterHintKeys.EscNormal), t(FooterHintKeys.CtrlSSave), themeHint(t), insertTabHint(state, t)]);
   }
 
-  if (state.editorMode === 'normal') {
-    return normalFooterDetail(state);
+  if (state.editorMode === EditorModes.Normal) {
+    return normalFooterDetail(state, t);
   }
 
-  return footerHints([focusHint(state), THEME_HINT, 'ctrl+b files', 'ctrl+g graft']);
+  return footerHints([scenePickerHint(t), focusHint(state, t), themeHint(t), t(FooterHintKeys.CtrlBFiles), t(FooterHintKeys.CtrlGGraft)]);
 }
 
-function drawerFooterDetail(state: WorkspaceFooterState, kind: DrawerKind): string {
-  const t = (key: string) => state.i18n.t(`footer.hints.${key}`);
-
-  if (kind === 'files') {
-    return footerHints([t('j_k_move'), 'enter open', 'backspace up', 'ctrl+b close', THEME_HINT, focusHint(state)]);
-  }
-
-  return footerHints([t('j_k_move'), 'enter jump', 'r refresh', 'ctrl+g close', THEME_HINT, focusHint(state)]);
+function footerHintTranslator(state: WorkspaceFooterState): FooterHintTranslator {
+  return (key: string) => state.i18n.t(`footer.hints.${key}`);
 }
 
-function normalFooterDetail(state: WorkspaceFooterState): string {
+function scenePickerHint(t: FooterHintTranslator): string {
+  return t(FooterHintKeys.CtrlLScenePicker);
+}
+
+function themeHint(t: FooterHintTranslator): string {
+  return t(FooterHintKeys.CtrlTTheme);
+}
+
+function drawerFooterDetail(state: WorkspaceFooterState, kind: DrawerKind, t: FooterHintTranslator): string {
+  if (kind === DrawerKinds.Files) {
+    return footerHints([t(FooterHintKeys.JkMove), t(FooterHintKeys.EnterOpen), t(FooterHintKeys.BackspaceUp), t(FooterHintKeys.CtrlBClose), themeHint(t), focusHint(state, t)]);
+  }
+
+  return footerHints([t(FooterHintKeys.JkMove), t(FooterHintKeys.EnterJump), t(FooterHintKeys.RRefresh), t(FooterHintKeys.CtrlGClose), themeHint(t), focusHint(state, t)]);
+}
+
+function normalFooterDetail(state: WorkspaceFooterState, t: FooterHintTranslator): string {
   const pending = state.pendingNormal;
   if (pending != null) {
-    return pendingNormalFooterDetail(pending);
+    return pendingNormalFooterDetail(pending, t);
   }
 
-  const previewHint = state.markdownPreviewActive ? `${JEDIT_MARKDOWN_PREVIEW_TOGGLE_LABEL} preview` : 'ctrl+s save';
-  return footerHints(['i insert', 'o open line', previewHint, THEME_HINT, focusHint(state)]);
+  const previewHint = state.markdownPreviewActive ? t(FooterHintKeys.F3Preview) : t(FooterHintKeys.CtrlSSave);
+  return footerHints([t(FooterHintKeys.IInsert), t(FooterHintKeys.OOpenLine), previewHint, themeHint(t), focusHint(state, t)]);
 }
 
-function pendingNormalFooterDetail(pending: PendingNormal): string {
-  if (pending === 'c') {
-    return chordFooterHints('c', ['cc line', 'cw word', 'ce word-end', 'c0 start', 'c$ end']);
+function pendingNormalFooterDetail(pending: PendingNormal, t: FooterHintTranslator): string {
+  if (pending === PendingNormals.Change) {
+    return chordFooterHints('c', [t(FooterHintKeys.CcLine), t(FooterHintKeys.CwWord), t(FooterHintKeys.CeWordEnd), t(FooterHintKeys.C0Start), t(FooterHintKeys.CEnd)]);
   }
 
-  if (pending === 'd') {
-    return chordFooterHints('d', ['dd line', 'dw word', 'de word-end', 'd0 start', 'd$ end']);
+  if (pending === PendingNormals.Delete) {
+    return chordFooterHints('d', [t(FooterHintKeys.DdLine), t(FooterHintKeys.DwWord), t(FooterHintKeys.DeWordEnd), t(FooterHintKeys.D0Start), t(FooterHintKeys.DEnd)]);
   }
 
-  if (pending === 'y') {
-    return chordFooterHints('y', ['yy line', 'yw word', 'ye word-end', 'y0 start', 'y$ end']);
+  if (pending === PendingNormals.Yank) {
+    return chordFooterHints('y', [t(FooterHintKeys.YyLine), t(FooterHintKeys.YwWord), t(FooterHintKeys.YeWordEnd), t(FooterHintKeys.Y0Start), t(FooterHintKeys.YEnd)]);
   }
 
-  return chordFooterHints('g', ['gg top', 'esc cancel']);
+  return chordFooterHints('g', [t(FooterHintKeys.GgTop), t(FooterHintKeys.EscCancel)]);
 }
 
 function footerContextLine(state: WorkspaceFooterState): string {
   if (state.settingsOpen) {
-    return 'settings';
+    return state.i18n.t(FOOTER_CONTEXT_SETTINGS);
   }
 
-  if (state.focusPane === 'files' && state.fileDrawerOpen) {
+  if (state.focusPane === FocusPanes.Files && state.fileDrawerOpen) {
     return state.selectedEntry?.path ?? state.cwd;
   }
 
-  if (state.focusPane === 'graft' && state.graftDrawerOpen) {
+  if (state.focusPane === FocusPanes.Graft && state.graftDrawerOpen) {
     if (state.graftSelection != null && state.graftPath != null) {
       return `${state.graftPath}:${state.graftSelection.startLine} ${state.graftSelection.kind} ${state.graftSelection.name}`;
     }
@@ -215,7 +286,7 @@ function footerContextLine(state: WorkspaceFooterState): string {
       return state.graftPath;
     }
 
-    return 'open a file to inspect it';
+    return state.i18n.t(FOOTER_CONTEXT_GRAFT_EMPTY);
   }
 
   if (state.editorPath != null) {
@@ -264,6 +335,28 @@ function fitLine(text: string, width: number): string {
   return clipped.padEnd(width, ' ');
 }
 
+function footerLineSurface(
+  text: string,
+  width: number,
+  background: JeditStyleToken,
+  direction: I18nPort['direction'],
+): { readonly surface: Surface; readonly x: number } {
+  const content = footerLineContent(text, width);
+  const contentWidth = Math.max(MIN_FOOTER_CONTENT_WIDTH, Math.min(width, [...content].length));
+  const lineSurface = stringToSurface(fitLine(content, contentWidth), contentWidth, FOOTER_LINE_HEIGHT);
+  applyBackground(lineSurface, background);
+
+  return {
+    surface: lineSurface,
+    x: direction === TEXT_DIRECTION_RTL ? width - lineSurface.width : FOOTER_ORIGIN,
+  };
+}
+
+function footerLineContent(text: string, width: number): string {
+  const clipped = clipToWidth(text, width).trimEnd();
+  return clipped.length > 0 ? clipped : ' ';
+}
+
 function footerHasFocusablePeers(state: WorkspaceFooterState): boolean {
   return hasFocusablePeers({
     fileDrawerOpen: state.fileDrawerOpen,
@@ -273,12 +366,12 @@ function footerHasFocusablePeers(state: WorkspaceFooterState): boolean {
   });
 }
 
-function focusHint(state: WorkspaceFooterState): string | undefined {
-  return footerHasFocusablePeers(state) ? 'tab focus' : undefined;
+function focusHint(state: WorkspaceFooterState, t: FooterHintTranslator): string | undefined {
+  return footerHasFocusablePeers(state) ? t(FooterHintKeys.TabFocus) : undefined;
 }
 
-function insertTabHint(state: WorkspaceFooterState): string {
-  return footerHasFocusablePeers(state) ? 'tab focus' : 'tab indent';
+function insertTabHint(state: WorkspaceFooterState, t: FooterHintTranslator): string {
+  return footerHasFocusablePeers(state) ? t(FooterHintKeys.TabFocus) : t(FooterHintKeys.TabIndent);
 }
 
 function footerHints(parts: ReadonlyArray<string | undefined>): string {

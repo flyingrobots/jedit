@@ -1,4 +1,5 @@
 import type { RGB } from './averaging-braille-canvas.js';
+import type { TitleSceneEnvironment } from './title-scene-environment.js';
 import { nearestTitleMeshHit, type TitleMesh } from './title-mesh.js';
 
 export const TITLE_SCENE_SHAPE_KIND = {
@@ -24,7 +25,6 @@ export interface TitleSceneColorSet {
 }
 
 interface TitleSceneBaseObject {
-  readonly position: TitleSceneVector3;
   readonly radius: number;
   readonly footprintRadius: number;
   readonly height: number;
@@ -34,6 +34,7 @@ interface TitleSceneBaseObject {
 
 export interface TitleScenePrimitiveObject extends TitleSceneBaseObject {
   readonly kind: TitleScenePrimitiveShapeKind;
+  readonly position: TitleSceneVector3;
 }
 
 export interface TitleSceneMeshObject extends TitleSceneBaseObject {
@@ -51,6 +52,7 @@ export interface TitleSceneCameraPlacement {
 export interface TitleScene {
   readonly camera: TitleSceneCameraPlacement;
   readonly objects: readonly TitleSceneObject[];
+  readonly environment?: TitleSceneEnvironment;
 }
 
 export interface TitleSceneObjectHit {
@@ -83,7 +85,7 @@ const PRNG_SEED_SCALE = 0xffffffff;
 const PRNG_STEP = 0x6d2b79f5;
 const PRNG_DIVISOR = 4294967296;
 const COLUMN_RAY_EPSILON = 0.000001;
-const COLUMN_FLOOR_Y = 0;
+const COLUMN_HALF_HEIGHT_DIVISOR = 2;
 export const TITLE_SCENE_OBJECT_MARGIN = 0.28;
 
 const POSITION_TEMPLATES: readonly (readonly [number, number])[] = [
@@ -233,15 +235,9 @@ function createBunnySceneObjects(colors: TitleSceneColorSet, mesh: TitleMesh): r
 }
 
 function createMeshSceneObject(colors: TitleSceneColorSet, mesh: TitleMesh): TitleSceneMeshObject {
-  const bounds = mesh.bounds;
   return {
     kind: TITLE_SCENE_SHAPE_KIND.Mesh,
     mesh,
-    position: [
-      (bounds.min[0] + bounds.max[0]) / 2,
-      mesh.height / 2,
-      (bounds.min[2] + bounds.max[2]) / 2,
-    ],
     radius: mesh.footprintRadius,
     footprintRadius: mesh.footprintRadius,
     height: mesh.height,
@@ -284,12 +280,26 @@ function materialColor(index: number, random: () => number, colors: TitleSceneCo
 }
 
 function overlapsSceneObjects(candidate: TitleSceneObject, existing: readonly TitleSceneObject[]): boolean {
+  const candidateCenter = titleSceneObjectFootprintCenter(candidate);
   return existing.some((object) => {
-    const dx = candidate.position[0] - object.position[0];
-    const dz = candidate.position[2] - object.position[2];
+    const objectCenter = titleSceneObjectFootprintCenter(object);
+    const dx = candidateCenter[0] - objectCenter[0];
+    const dz = candidateCenter[2] - objectCenter[2];
     const distance = Math.sqrt((dx * dx) + (dz * dz));
     return distance < candidate.footprintRadius + object.footprintRadius + TITLE_SCENE_OBJECT_MARGIN;
   });
+}
+
+export function titleSceneObjectFootprintCenter(object: TitleSceneObject): TitleSceneVector3 {
+  if (object.kind !== TITLE_SCENE_SHAPE_KIND.Mesh) {
+    return object.position;
+  }
+
+  return [
+    (object.mesh.bounds.min[0] + object.mesh.bounds.max[0]) / COLUMN_HALF_HEIGHT_DIVISOR,
+    (object.mesh.bounds.min[1] + object.mesh.bounds.max[1]) / COLUMN_HALF_HEIGHT_DIVISOR,
+    (object.mesh.bounds.min[2] + object.mesh.bounds.max[2]) / COLUMN_HALF_HEIGHT_DIVISOR,
+  ];
 }
 
 function titleSceneObjectHit(
@@ -307,7 +317,7 @@ function titleSceneObjectHit(
   }
 }
 
-function sphereHit(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleSceneObject): TitleSceneObjectHit | undefined {
+function sphereHit(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleScenePrimitiveObject): TitleSceneObjectHit | undefined {
   const distance = intersectSphere(origin, ray, object.position, object.radius);
   if (distance <= 0) {
     return undefined;
@@ -320,17 +330,59 @@ function sphereHit(origin: TitleSceneVector3, ray: TitleSceneVector3, object: Ti
   };
 }
 
-function columnHit(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleSceneObject): TitleSceneObjectHit | undefined {
-  const distance = intersectColumnSide(origin, ray, object);
-  if (distance <= 0) {
+function columnHit(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleScenePrimitiveObject): TitleSceneObjectHit | undefined {
+  const bottomY = object.position[1] - (object.height / COLUMN_HALF_HEIGHT_DIVISOR);
+  const topY = object.position[1] + (object.height / COLUMN_HALF_HEIGHT_DIVISOR);
+  let nearestDistance = -1;
+  let nearestNormal: TitleSceneVector3 | undefined;
+
+  // Check side
+  const sideDistance = intersectColumnSide(origin, ray, object);
+  if (sideDistance > 0) {
+    nearestDistance = sideDistance;
+    const point = add(origin, scale(ray, sideDistance));
+    nearestNormal = normalize([point[0] - object.position[0], 0, point[2] - object.position[2]]);
+  }
+
+  const topDistance = intersectColumnCap(origin, ray, object, topY);
+  if (topDistance > 0 && (nearestDistance < 0 || topDistance < nearestDistance)) {
+    nearestDistance = topDistance;
+    nearestNormal = [0, 1, 0];
+  }
+
+  const bottomDistance = intersectColumnCap(origin, ray, object, bottomY);
+  if (bottomDistance > 0 && (nearestDistance < 0 || bottomDistance < nearestDistance)) {
+    nearestDistance = bottomDistance;
+    nearestNormal = [0, -1, 0];
+  }
+
+  if (nearestDistance <= 0 || nearestNormal == null) {
     return undefined;
   }
-  const point = add(origin, scale(ray, distance));
+
   return {
     object,
-    distance,
-    normal: normalize([point[0] - object.position[0], 0, point[2] - object.position[2]]),
+    distance: nearestDistance,
+    normal: nearestNormal,
   };
+}
+
+function intersectColumnCap(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleScenePrimitiveObject, capY: number): number {
+  if (Math.abs(ray[1]) <= COLUMN_RAY_EPSILON) {
+    return -1;
+  }
+  const t = (capY - origin[1]) / ray[1];
+  if (t <= 0) {
+    return -1;
+  }
+  const x = origin[0] + (ray[0] * t);
+  const z = origin[2] + (ray[2] * t);
+  const dx = x - object.position[0];
+  const dz = z - object.position[2];
+  if ((dx * dx) + (dz * dz) <= object.radius * object.radius) {
+    return t;
+  }
+  return -1;
 }
 
 function meshHit(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleSceneMeshObject): TitleSceneObjectHit | undefined {
@@ -363,7 +415,7 @@ function intersectSphere(
   return first > 0 ? first : second;
 }
 
-function intersectColumnSide(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleSceneObject): number {
+function intersectColumnSide(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleScenePrimitiveObject): number {
   const dx = origin[0] - object.position[0];
   const dz = origin[2] - object.position[2];
   const a = (ray[0] * ray[0]) + (ray[2] * ray[2]);
@@ -385,7 +437,7 @@ function intersectColumnSide(origin: TitleSceneVector3, ray: TitleSceneVector3, 
 function firstColumnRootInRange(
   origin: TitleSceneVector3,
   ray: TitleSceneVector3,
-  object: TitleSceneObject,
+  object: TitleScenePrimitiveObject,
   first: number,
   second: number,
 ): number {
@@ -398,11 +450,13 @@ function firstColumnRootInRange(
 function columnRootInRange(
   origin: TitleSceneVector3,
   ray: TitleSceneVector3,
-  object: TitleSceneObject,
+  object: TitleScenePrimitiveObject,
   distance: number,
 ): boolean {
+  const bottomY = object.position[1] - (object.height / COLUMN_HALF_HEIGHT_DIVISOR);
+  const topY = object.position[1] + (object.height / COLUMN_HALF_HEIGHT_DIVISOR);
   const y = origin[1] + (ray[1] * distance);
-  return distance > 0 && y >= COLUMN_FLOOR_Y && y <= object.height;
+  return distance > 0 && y >= bottomY && y <= topY;
 }
 
 function jitter(random: () => number): number {

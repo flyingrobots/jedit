@@ -1,6 +1,6 @@
 import type { Cell, Surface } from '@flyingrobots/bijou';
 import type { WorkspaceLayout } from './drawer-layout.js';
-import type { FocusPane } from './panel-focus.js';
+import { FocusPanes, type FocusPane } from './panel-focus.js';
 import type { JeditStyleToken } from './jedit-theme.js';
 
 const MIN_EDGE_HEIGHT = 0;
@@ -45,11 +45,11 @@ export function paintActivePaneEdge(
 }
 
 export function activePaneEdgeX(layout: WorkspaceLayout, state: ActivePaneEdgeState): number | undefined {
-  if (state.focusPane === 'files') {
+  if (state.focusPane === FocusPanes.Files) {
     return state.fileDrawerOpen && layout.fileDrawer.width > 0 ? layout.fileDrawer.x : undefined;
   }
 
-  if (state.focusPane === 'graft') {
+  if (state.focusPane === FocusPanes.Graft) {
     return state.graftDrawerOpen && layout.graftDrawer.width > 0 ? layout.graftDrawer.x : undefined;
   }
 

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, renameSync } from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
@@ -9,7 +9,10 @@ const REPO_ROOT = process.cwd();
 const TITLE_SCENE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-scene.js');
 const TITLE_MESH_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-mesh.js');
 const TITLE_BUNNY_MESH_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'title-bunny-mesh.js');
+const DOMAIN_ERRORS_PATH = path.join(REPO_ROOT, 'dist', 'domain', 'errors.js');
 const TITLE_BUNNY_DIST_ASSET_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'bunny.obj');
+const TITLE_TEAPOT_DIST_ASSET_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'utah_teapot.obj');
+const TITLE_TEAPOT_SOURCE_ASSET_PATH = path.join(REPO_ROOT, 'src', 'ui', 'utah_teapot.obj');
 const TITLE_CAMERA_PATH = path.join(REPO_ROOT, 'dist', 'app', 'title-camera-session.js');
 const FIXED_SCENE_SEED = 0.314159;
 const OTHER_SCENE_SEED = 0.271828;
@@ -18,6 +21,8 @@ const MIN_UNIQUE_MATERIALS = 3;
 const MIN_UNIQUE_RADII = 3;
 const MIN_BUNNY_VERTICES = 2500;
 const MIN_BUNNY_TRIANGLES = 4900;
+const MIN_TEAPOT_VERTICES = 7000;
+const MIN_TEAPOT_TRIANGLES = 14000;
 const BUNNY_SCENE_OBJECT_COUNT = 2;
 const MIRROR_REFLECTIVITY_MINIMUM = 0.9;
 const BUNNY_TITLE_CAMERA_HEIGHT = 2.65;
@@ -44,6 +49,7 @@ async function loadTitleSceneModules() {
     titleScene: await import(pathToFileURL(TITLE_SCENE_PATH).href),
     titleMesh: await import(pathToFileURL(TITLE_MESH_PATH).href),
     titleBunnyMesh: await import(pathToFileURL(TITLE_BUNNY_MESH_PATH).href),
+    domainErrors: await import(pathToFileURL(DOMAIN_ERRORS_PATH).href),
     titleCamera: await import(pathToFileURL(TITLE_CAMERA_PATH).href),
   };
 }
@@ -56,6 +62,7 @@ test('build copies the title bunny mesh asset into dist', async () => {
 
   assert.equal(build.status, 0, build.stderr || build.stdout);
   assert.ok(existsSync(TITLE_BUNNY_DIST_ASSET_PATH), 'dist/ui/bunny.obj should exist after build');
+  assert.ok(existsSync(TITLE_TEAPOT_DIST_ASSET_PATH), 'dist/ui/utah_teapot.obj should exist after build');
 });
 
 test('title scene generation is deterministic and seed-sensitive', async () => {
@@ -119,6 +126,54 @@ test('title scene can ray cast the loaded bunny mesh', async () => {
   assert.ok(hit.normal.some((component) => Math.abs(component) > 0));
 });
 
+test('title scene can construct the Utah teapot mesh from the source asset', async () => {
+  const { titleMesh, titleBunnyMesh } = await loadTitleSceneModules();
+  const meshSource = titleBunnyMesh.loadTitleTeapotMeshSource();
+  const mesh = titleMesh.createTitleTeapotMesh(meshSource);
+
+  assert.ok(meshSource.vertices.length >= MIN_TEAPOT_VERTICES);
+  assert.ok(meshSource.triangles.length >= MIN_TEAPOT_TRIANGLES);
+  assert.ok(mesh.height > 0);
+  assert.ok(mesh.footprintRadius > 0);
+});
+
+test('title mesh source loader fails fast when no candidate asset is available', async () => {
+  const { titleBunnyMesh, domainErrors } = await loadTitleSceneModules();
+  const hiddenPaths = [
+    hideExistingFile(TITLE_TEAPOT_DIST_ASSET_PATH),
+    hideExistingFile(TITLE_TEAPOT_SOURCE_ASSET_PATH),
+  ];
+
+  try {
+    assert.throws(
+      () => titleBunnyMesh.loadTitleTeapotMeshSource(),
+      (error) => error instanceof domainErrors.TitleMeshLoadError,
+    );
+  } finally {
+    restoreHiddenFiles(hiddenPaths);
+  }
+});
+
+test('mesh footprint center uses mesh bounds on every axis', async () => {
+  const { titleScene } = await loadTitleSceneModules();
+  const object = {
+    kind: titleScene.TITLE_SCENE_SHAPE_KIND.Mesh,
+    mesh: {
+      bounds: {
+        min: [-2, 4, -6],
+        max: [8, 10, 2],
+      },
+    },
+    radius: 1,
+    footprintRadius: 1,
+    height: 6,
+    color: [255, 255, 255],
+    reflectivity: 0.5,
+  };
+
+  assert.deepEqual(titleScene.titleSceneObjectFootprintCenter(object), [3, 7, -2]);
+});
+
 test('title mirror sphere reflects the loaded bunny mesh from the title camera', async () => {
   const { titleScene, titleMesh, titleBunnyMesh } = await loadTitleSceneModules();
   const mesh = titleMesh.createTitleBunnyMesh(titleBunnyMesh.loadTitleBunnyMeshSource());
@@ -156,6 +211,23 @@ function assertNonOverlapping(objects, margin) {
         distance >= first.footprintRadius + second.footprintRadius + margin,
         `${firstIndex} and ${secondIndex} should not overlap`,
       );
+    }
+  }
+}
+
+function hideExistingFile(filePath) {
+  if (!existsSync(filePath)) {
+    return undefined;
+  }
+  const hiddenPath = `${filePath}.jedit-test-hidden-${process.pid}`;
+  renameSync(filePath, hiddenPath);
+  return { hiddenPath, filePath };
+}
+
+function restoreHiddenFiles(hiddenPaths) {
+  for (const entry of hiddenPaths.toReversed()) {
+    if (entry != null) {
+      renameSync(entry.hiddenPath, entry.filePath);
     }
   }
 }

@@ -1,18 +1,13 @@
 import { readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-
-export type EntryKind = 'parent' | 'dir' | 'file';
-
-export interface FileEntry {
-  readonly kind: EntryKind;
-  readonly name: string;
-  readonly path: string;
-}
-
-export interface DirectoryIssue {
-  readonly title: string;
-  readonly message: string;
-}
+import {
+  type DirectoryAction,
+  type DirectoryIssue,
+  type FileEntry,
+  type FileSystemPort,
+  DIRECTORY_ACTION_OPEN,
+  DIRECTORY_ACTION_REFRESH,
+} from '../ports/file-system.js';
 
 type Throwable =
   | Error
@@ -28,14 +23,18 @@ type Throwable =
     readonly message?: string;
   };
 
-type FilesystemError = Error & {
+class FilesystemError extends Error {
   readonly code?: string;
-};
 
-export const DIRECTORY_ACTION_OPEN = 1;
-export const DIRECTORY_ACTION_REFRESH = 2;
+  constructor(message: string, code?: string) {
+    super(message);
+    this.name = 'FilesystemError';
+    this.code = code;
+    Object.setPrototypeOf(this, FilesystemError.prototype);
+  }
+}
 
-export type DirectoryAction = typeof DIRECTORY_ACTION_OPEN | typeof DIRECTORY_ACTION_REFRESH;
+export { DIRECTORY_ACTION_OPEN, DIRECTORY_ACTION_REFRESH };
 
 const DIRECTORY_ERROR_TITLE_OPEN = 'Cannot open directory';
 const DIRECTORY_ERROR_TITLE_REFRESH = 'Cannot refresh directory';
@@ -70,7 +69,7 @@ export function loadEntries(cwd: string): readonly FileEntry[] {
 export function describeDirectoryIssue(
   action: DirectoryAction,
   cwd: string,
-  cause: Throwable,
+  cause: Error | string,
 ): DirectoryIssue {
   const error = toFilesystemError(cause);
   return {
@@ -78,6 +77,13 @@ export function describeDirectoryIssue(
     message: formatDirectoryErrorMessage(cwd, error),
   };
 }
+
+export const FileSystemPortAdapter: FileSystemPort = {
+  loadEntries,
+  describeDirectoryIssue,
+  dirname,
+  join,
+};
 
 function compareEntries(a: FileEntry, b: FileEntry): number {
   if (a.kind === 'dir' && b.kind === 'file') {
@@ -90,31 +96,7 @@ function compareEntries(a: FileEntry, b: FileEntry): number {
 }
 
 function toFilesystemError(cause: Throwable): FilesystemError {
-  if (cause instanceof Error) {
-    return cause as FilesystemError;
-  }
-
-  const message = typeof cause === 'object'
-    && cause != null
-    && typeof cause.message === 'string'
-    ? cause.message
-    : String(cause);
-  const error = new Error(message) as FilesystemError;
-
-  if (
-    typeof cause === 'object'
-    && cause != null
-    && typeof cause.code === 'string'
-  ) {
-    Object.defineProperty(error, 'code', {
-      value: cause.code,
-      enumerable: true,
-      writable: false,
-      configurable: true,
-    });
-  }
-
-  return error;
+  return new FilesystemError(formatUnknownFilesystemError(cause), extractFilesystemCode(cause));
 }
 
 function formatDirectoryErrorMessage(cwd: string, error: FilesystemError): string {
@@ -128,4 +110,21 @@ function formatDirectoryErrorMessage(cwd: string, error: FilesystemError): strin
     return `not a directory: ${cwd}`;
   }
   return error.message.length > 0 ? error.message : `could not access: ${cwd}`;
+}
+
+function extractFilesystemCode(cause: Throwable): string | undefined {
+  return typeof cause === 'object'
+    && cause != null
+    && 'code' in cause
+    && typeof cause.code === 'string'
+    ? cause.code
+    : undefined;
+}
+
+function formatUnknownFilesystemError(cause: Throwable): string {
+  return typeof cause === 'object'
+    && cause != null
+    && typeof cause.message === 'string'
+    ? cause.message
+    : String(cause);
 }
