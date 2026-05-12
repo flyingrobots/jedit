@@ -1,4 +1,5 @@
 import * as fs from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { SceneDecodeError, SceneLoadError } from '../domain/errors.js';
 import { TITLE_SCENE_FLOOR_KIND, type TitleSceneEnvironment } from '../ui/title-scene-environment.js';
@@ -19,6 +20,10 @@ const VECTOR_LENGTH = 3;
 const COLOR_CHANNEL_MIN = 0;
 const COLOR_CHANNEL_MAX = 255;
 const BUILT_IN_TITLE_SCENE_SET = new Set<string>(BUILT_IN_TITLE_SCENE_NAMES);
+const BUILT_IN_SCENE_CANDIDATE_URLS = [
+  (name: BuiltInTitleSceneName): URL => new URL(`../scenes/${name}`, import.meta.url),
+  (name: BuiltInTitleSceneName): URL => new URL(`../../scenes/${name}`, import.meta.url),
+] as const;
 
 export async function loadTitleSceneFromFile(path: string, meshes: TitleMeshLibrary): Promise<TitleScene> {
   const content = await fs.readFile(path, 'utf8');
@@ -35,10 +40,7 @@ export async function loadBuiltInTitleScene(name: BuiltInTitleSceneName, meshes:
   if (!BUILT_IN_TITLE_SCENE_SET.has(name)) {
     throw new SceneDecodeError(`Unknown built-in scene '${name}'.`);
   }
-  // Built-in scenes resolve from the compiled adapter at `dist/adapters/`.
-  // `scripts/copy-assets.mjs` copies `scenes/` to `dist/scenes/` during build;
-  // update this path if the dist layout changes.
-  return loadTitleSceneFromFile(fileURLToPath(new URL(`../scenes/${name}`, import.meta.url)), meshes);
+  return loadTitleSceneFromFile(resolveBuiltInTitleScenePath(name), meshes);
 }
 
 export function parseTitleSceneJson(json: JsonValue, meshes: TitleMeshLibrary): TitleScene {
@@ -159,6 +161,16 @@ function titleSceneObjectMesh(meshId: TitleMeshId, meshes: TitleMeshLibrary, pat
     return meshes.teapot;
   }
   throw new SceneLoadError(`${path}.mesh references '${meshId}', but that mesh asset is not loaded.`);
+}
+
+function resolveBuiltInTitleScenePath(name: BuiltInTitleSceneName): string {
+  const candidates = BUILT_IN_SCENE_CANDIDATE_URLS.map((candidate) => fileURLToPath(candidate(name)));
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  throw new SceneLoadError(`Built-in scene asset is unavailable: ${candidates.join(', ')}`);
 }
 
 function objectAt(value: JsonValue | undefined, path: string): JsonObject {

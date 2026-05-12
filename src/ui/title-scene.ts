@@ -85,7 +85,7 @@ const PRNG_SEED_SCALE = 0xffffffff;
 const PRNG_STEP = 0x6d2b79f5;
 const PRNG_DIVISOR = 4294967296;
 const COLUMN_RAY_EPSILON = 0.000001;
-const COLUMN_FLOOR_Y = 0;
+const COLUMN_HALF_HEIGHT_DIVISOR = 2;
 export const TITLE_SCENE_OBJECT_MARGIN = 0.28;
 
 const POSITION_TEMPLATES: readonly (readonly [number, number])[] = [
@@ -331,6 +331,8 @@ function sphereHit(origin: TitleSceneVector3, ray: TitleSceneVector3, object: Ti
 }
 
 function columnHit(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleScenePrimitiveObject): TitleSceneObjectHit | undefined {
+  const bottomY = object.position[1] - (object.height / COLUMN_HALF_HEIGHT_DIVISOR);
+  const topY = object.position[1] + (object.height / COLUMN_HALF_HEIGHT_DIVISOR);
   let nearestDistance = -1;
   let nearestNormal: TitleSceneVector3 | undefined;
 
@@ -342,15 +344,13 @@ function columnHit(origin: TitleSceneVector3, ray: TitleSceneVector3, object: Ti
     nearestNormal = normalize([point[0] - object.position[0], 0, point[2] - object.position[2]]);
   }
 
-  // Check top cap (y = object.height)
-  const topDistance = intersectColumnCap(origin, ray, object, object.height);
+  const topDistance = intersectColumnCap(origin, ray, object, topY);
   if (topDistance > 0 && (nearestDistance < 0 || topDistance < nearestDistance)) {
     nearestDistance = topDistance;
     nearestNormal = [0, 1, 0];
   }
 
-  // Check bottom cap (y = COLUMN_FLOOR_Y)
-  const bottomDistance = intersectColumnCap(origin, ray, object, COLUMN_FLOOR_Y);
+  const bottomDistance = intersectColumnCap(origin, ray, object, bottomY);
   if (bottomDistance > 0 && (nearestDistance < 0 || bottomDistance < nearestDistance)) {
     nearestDistance = bottomDistance;
     nearestNormal = [0, -1, 0];
@@ -368,7 +368,7 @@ function columnHit(origin: TitleSceneVector3, ray: TitleSceneVector3, object: Ti
 }
 
 function intersectColumnCap(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleScenePrimitiveObject, capY: number): number {
-  if (Math.abs(ray[1]) < 0.000001) {
+  if (Math.abs(ray[1]) <= COLUMN_RAY_EPSILON) {
     return -1;
   }
   const t = (capY - origin[1]) / ray[1];
@@ -437,7 +437,7 @@ function intersectColumnSide(origin: TitleSceneVector3, ray: TitleSceneVector3, 
 function firstColumnRootInRange(
   origin: TitleSceneVector3,
   ray: TitleSceneVector3,
-  object: TitleSceneObject,
+  object: TitleScenePrimitiveObject,
   first: number,
   second: number,
 ): number {
@@ -450,11 +450,13 @@ function firstColumnRootInRange(
 function columnRootInRange(
   origin: TitleSceneVector3,
   ray: TitleSceneVector3,
-  object: TitleSceneObject,
+  object: TitleScenePrimitiveObject,
   distance: number,
 ): boolean {
+  const bottomY = object.position[1] - (object.height / COLUMN_HALF_HEIGHT_DIVISOR);
+  const topY = object.position[1] + (object.height / COLUMN_HALF_HEIGHT_DIVISOR);
   const y = origin[1] + (ray[1] * distance);
-  return distance > 0 && y >= COLUMN_FLOOR_Y && y <= object.height;
+  return distance > 0 && y >= bottomY && y <= topY;
 }
 
 function jitter(random: () => number): number {

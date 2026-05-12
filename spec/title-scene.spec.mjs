@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, renameSync } from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
@@ -11,6 +11,7 @@ const TITLE_MESH_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-mesh.js');
 const TITLE_BUNNY_MESH_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'title-bunny-mesh.js');
 const TITLE_BUNNY_DIST_ASSET_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'bunny.obj');
 const TITLE_TEAPOT_DIST_ASSET_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'utah_teapot.obj');
+const TITLE_TEAPOT_SOURCE_ASSET_PATH = path.join(REPO_ROOT, 'src', 'ui', 'utah_teapot.obj');
 const TITLE_CAMERA_PATH = path.join(REPO_ROOT, 'dist', 'app', 'title-camera-session.js');
 const FIXED_SCENE_SEED = 0.314159;
 const OTHER_SCENE_SEED = 0.271828;
@@ -134,6 +135,23 @@ test('title scene can construct the Utah teapot mesh from the source asset', asy
   assert.ok(mesh.footprintRadius > 0);
 });
 
+test('title mesh source loader fails fast when no candidate asset is available', async () => {
+  const { titleBunnyMesh } = await loadTitleSceneModules();
+  const hiddenPaths = [
+    hideExistingFile(TITLE_TEAPOT_DIST_ASSET_PATH),
+    hideExistingFile(TITLE_TEAPOT_SOURCE_ASSET_PATH),
+  ];
+
+  try {
+    assert.throws(
+      () => titleBunnyMesh.loadTitleTeapotMeshSource(),
+      (error) => error?.name === 'TitleMeshLoadError',
+    );
+  } finally {
+    restoreHiddenFiles(hiddenPaths);
+  }
+});
+
 test('title mirror sphere reflects the loaded bunny mesh from the title camera', async () => {
   const { titleScene, titleMesh, titleBunnyMesh } = await loadTitleSceneModules();
   const mesh = titleMesh.createTitleBunnyMesh(titleBunnyMesh.loadTitleBunnyMeshSource());
@@ -171,6 +189,23 @@ function assertNonOverlapping(objects, margin) {
         distance >= first.footprintRadius + second.footprintRadius + margin,
         `${firstIndex} and ${secondIndex} should not overlap`,
       );
+    }
+  }
+}
+
+function hideExistingFile(filePath) {
+  if (!existsSync(filePath)) {
+    return undefined;
+  }
+  const hiddenPath = `${filePath}.jedit-test-hidden-${process.pid}`;
+  renameSync(filePath, hiddenPath);
+  return { hiddenPath, filePath };
+}
+
+function restoreHiddenFiles(hiddenPaths) {
+  for (const entry of hiddenPaths.toReversed()) {
+    if (entry != null) {
+      renameSync(entry.hiddenPath, entry.filePath);
     }
   }
 }

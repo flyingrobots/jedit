@@ -11,6 +11,7 @@ const TITLE_SCENE_LOADER_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'title-
 const TITLE_SCENE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-scene.js');
 const TITLE_MESH_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-mesh.js');
 const TITLE_BUNNY_MESH_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'title-bunny-mesh.js');
+const DIST_SCENES_PATH = path.join(REPO_ROOT, 'dist', 'scenes');
 
 async function loadTitleSceneLoaderModules() {
   const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
@@ -26,6 +27,26 @@ async function loadTitleSceneLoaderModules() {
     titleMesh: await import(pathToFileURL(TITLE_MESH_PATH).href),
     titleBunnyMesh: await import(pathToFileURL(TITLE_BUNNY_MESH_PATH).href),
   };
+}
+
+async function hidePathIfExists(targetPath) {
+  const hiddenPath = path.join(os.tmpdir(), `jedit-hidden-${process.pid}-${Date.now()}-${path.basename(targetPath)}`);
+  try {
+    await fs.rename(targetPath, hiddenPath);
+    return hiddenPath;
+  } catch (error) {
+    if (error?.code === 'ENOENT') {
+      return undefined;
+    }
+    throw error;
+  }
+}
+
+async function restoreHiddenPath(hiddenPath, targetPath) {
+  if (hiddenPath == null) {
+    return;
+  }
+  await fs.rename(hiddenPath, targetPath);
 }
 
 function normalize(vector) {
@@ -59,6 +80,19 @@ test('loaded mesh scenes do not expose scene-authored mesh position as ray-hit s
   assert.equal(Object.hasOwn(loadedMesh, 'position'), false);
   assert.ok(hit != null);
   assert.equal(hit.object, loadedMesh);
+});
+
+test('built-in scene loader falls back to source scene assets when dist scenes are absent', async () => {
+  const { loader } = await loadTitleSceneLoaderModules();
+  const hiddenDistScenes = await hidePathIfExists(DIST_SCENES_PATH);
+
+  try {
+    const scene = await loader.loadBuiltInTitleScene('sphere.jedit-scene', {});
+
+    assert.equal(scene.objects.length, 1);
+  } finally {
+    await restoreHiddenPath(hiddenDistScenes, DIST_SCENES_PATH);
+  }
 });
 
 test('scene loader rejects malformed scene JSON with a decode error', async () => {

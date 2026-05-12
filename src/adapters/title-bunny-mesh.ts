@@ -6,6 +6,7 @@ import {
   ObjFaceNotTriangleError,
   ObjInvalidFaceIndexError,
   ObjInvalidVertexCoordinateError,
+  TitleMeshLoadError,
 } from '../domain/errors.js';
 
 const UTF8_ENCODING = 'utf8';
@@ -22,6 +23,7 @@ const FACE_FIRST_TOKEN = 1;
 const FACE_SECOND_TOKEN = 2;
 const FACE_THIRD_TOKEN = 3;
 const FACE_TOKEN_COUNT = 4;
+const ASSET_CANDIDATE_SEPARATOR = ', ';
 
 const TITLE_BUNNY_MESH_ASSET_URLS = [
   new URL('../ui/bunny.obj', import.meta.url),
@@ -62,17 +64,18 @@ export function decodeObjMeshSource(source: string): TitleMeshSource {
 }
 
 function meshAssetPath(assetUrls: readonly URL[]): string {
+  const checkedPaths: string[] = [];
   for (const assetUrl of assetUrls) {
     const filePath = fileURLToPath(assetUrl);
+    checkedPaths.push(filePath);
     if (existsSync(filePath)) {
       return filePath;
     }
   }
-  const fallback = assetUrls[0];
-  if (fallback == null) {
-    throw new Error('Title mesh asset URL list cannot be empty.');
+  if (checkedPaths.length === 0) {
+    throw new TitleMeshLoadError('Title mesh asset URL list cannot be empty.');
   }
-  return fileURLToPath(fallback);
+  throw new TitleMeshLoadError(`Title mesh asset is unavailable: ${checkedPaths.join(ASSET_CANDIDATE_SEPARATOR)}`);
 }
 
 function decodeVertexLine(line: string, lineNumber: number): TitleMeshVector3 {
