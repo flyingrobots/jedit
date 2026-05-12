@@ -516,6 +516,39 @@ test('TextBufferOptic creates, edits, and reads without exposing runtime coordin
   assert.equal(observed.evidence.readingId, observed.value.readingId);
 });
 
+test('TextBufferOptic rejects cloned read basis handles', async () => {
+  const {
+    transportClientModule,
+    fakeTransportModule,
+    readBasisHandleModule,
+    textBufferOpticSessionModule,
+  } = await loadModules();
+  const client = transportClientModule.createEchoTransportJeditOpticClient(
+    fakeTransportModule.createFakeEchoJeditOpticTransport(),
+  );
+  const session = textBufferOpticSessionModule.createTextBufferOpticSession(client);
+  const optic = await session.createBuffer({
+    bufferKey: STACK_WITNESS_BUFFER_KEY,
+    initialText: STACK_WITNESS_TEXT,
+    projectionPath: STACK_WITNESS_BUFFER_KEY,
+  });
+  const clonedReadBasis = Object.freeze({
+    kind: optic.currentReadBasis().kind,
+    id: optic.currentReadBasis().id,
+  });
+
+  await assert.rejects(
+    () => optic.textWindow(clonedReadBasis, {
+      cursorLine: FIRST_LINE,
+      viewportLineCount: SINGLE_LINE_WINDOW,
+      beforeLines: FIRST_LINE,
+      afterLines: FIRST_LINE,
+      maxBytes: byteLength(STACK_WITNESS_TEXT),
+    }),
+    readBasisHandleModule.ReadBasisHandleResolutionError,
+  );
+});
+
 function byteLength(text) {
   return UTF8_ENCODER.encode(text).length;
 }
