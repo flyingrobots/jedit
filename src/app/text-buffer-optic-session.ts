@@ -27,6 +27,7 @@ const FIRST_TEXT_BUFFER_SEQUENCE = 0;
 const FIRST_BUFFER_VERSION: BufferVersion = 0;
 const NEXT_BUFFER_VERSION_STEP = 1;
 const EMPTY_BYTE_LENGTH = 0;
+const TEXT_WINDOW_MIN_LINE_COUNT = 0;
 
 interface CreateTextBufferInput {
   readonly bufferKey: string;
@@ -148,7 +149,7 @@ function toObservedTextWindowReading(
     lineCount: envelope.reading.lineCount,
     cursorLine: input.cursorLine,
     viewportLineCount: input.viewportLineCount,
-    truncated: envelope.reading.hasMoreBefore || envelope.reading.hasMoreAfter,
+    truncated: textWindowWasTruncated(envelope, input),
   };
   return {
     value: reading,
@@ -172,6 +173,18 @@ function textWindowByteLength(envelope: TextWindowReadingEnvelope): number {
     (byteLength, line) => byteLength + line.endByte - line.startByte,
     EMPTY_BYTE_LENGTH,
   );
+}
+
+function textWindowWasTruncated(
+  envelope: TextWindowReadingEnvelope,
+  input: TextWindowRangeInput,
+): boolean {
+  const requestedLineCount = input.beforeLines + input.viewportLineCount + input.afterLines;
+  const availableLineCount = Math.max(
+    TEXT_WINDOW_MIN_LINE_COUNT,
+    envelope.reading.totalLineCount - envelope.reading.startLine,
+  );
+  return envelope.reading.lineCount < Math.min(requestedLineCount, availableLineCount);
 }
 
 function toFrontierRef(bufferId: TextBufferId, bufferVersion: BufferVersion): string {

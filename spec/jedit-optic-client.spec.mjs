@@ -549,6 +549,52 @@ test('TextBufferOptic rejects cloned read basis handles', async () => {
   );
 });
 
+test('TextBufferOptic does not mark a satisfied bounded aperture as truncated', async () => {
+  const {
+    transportClientModule,
+    fakeTransportModule,
+    textBufferOpticSessionModule,
+  } = await loadModules();
+  const client = transportClientModule.createEchoTransportJeditOpticClient(
+    fakeTransportModule.createFakeEchoJeditOpticTransport(),
+  );
+  const session = textBufferOpticSessionModule.createTextBufferOpticSession(client);
+  const lines = ['alpha', 'bravo', 'charlie', 'delta', 'echo'];
+  const optic = await session.createBuffer({
+    bufferKey: 'demo-multiline.txt',
+    initialText: lines.join('\n'),
+    projectionPath: 'demo-multiline.txt',
+  });
+
+  const observed = await optic.textWindow(optic.currentReadBasis(), {
+    cursorLine: 2,
+    viewportLineCount: 1,
+    beforeLines: 1,
+    afterLines: 1,
+    maxBytes: 1024,
+  });
+
+  assert.deepEqual(
+    observed.value.lines.map((line) => line.text),
+    ['bravo', 'charlie', 'delta'],
+  );
+  assert.equal(observed.value.truncated, false);
+
+  const byteBounded = await optic.textWindow(optic.currentReadBasis(), {
+    cursorLine: 2,
+    viewportLineCount: 1,
+    beforeLines: 1,
+    afterLines: 1,
+    maxBytes: 6,
+  });
+
+  assert.deepEqual(
+    byteBounded.value.lines.map((line) => line.text),
+    ['bravo'],
+  );
+  assert.equal(byteBounded.value.truncated, true);
+});
+
 function byteLength(text) {
   return UTF8_ENCODER.encode(text).length;
 }
