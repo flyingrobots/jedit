@@ -74,10 +74,28 @@ test('replaceRangeAsTick returns contract-shaped tick and receipt data', async (
   assert.equal(edited.result.receipt.baseHeadId, created.result.head.headId);
   assert.equal(edited.result.receipt.nextHeadId, edited.result.nextHead.headId);
   assert.equal(edited.result.receipt.rewriteKind, 'REPLACE_RANGE_AS_TICK');
+  assert.equal(edited.result.receipt.receiptId, 'receipt:1');
   assert.equal(edited.result.receipt.startByte, 5);
   assert.equal(edited.result.receipt.endByte, 5);
   assert.equal(edited.result.receipt.insertedByteLength, 10);
   assert.equal(edited.result.receipt.deletedByteLength, 0);
+});
+
+test('JeditWorldlineSession reports invalid root identifiers with a dedicated error code', async () => {
+  const { contractApp } = await loadModules();
+
+  assert.throws(
+    () => new contractApp.JeditWorldlineSession({
+      worldlineId: 'wl:/repo/notes.md',
+      bufferKey: 'notes.md',
+      canonicalHeadId: 'head:0',
+      projectionPath: '/repo/notes.md',
+    }, {
+      currentRoot: { id: Number.NaN },
+      checkpoints: [],
+    }, [], []),
+    (error) => error?.name === 'JeditContractRuntimeError' && error.code === 'INVALID_ROOT_ID',
+  );
 });
 
 test('createCheckpoint keeps checkpoint metadata in the app-owned adapter layer', async () => {

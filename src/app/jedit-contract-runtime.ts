@@ -23,6 +23,8 @@ import {
   byteLength,
   digest,
   lineCount,
+  parseHeadId,
+  parseWorldlineId,
   toCheckpointId,
   toHeadId,
   toReceiptId,
@@ -31,14 +33,21 @@ import {
   toWorldlineId,
 } from './jedit-contract-runtime-id.js';
 
-const JEDIT_CONTRACT_RUNTIME_ERROR_WORLDLINE_MISMATCH = 1;
-const JEDIT_CONTRACT_RUNTIME_ERROR_BASE_HEAD_MISMATCH = 2;
-const WORLDLINE_ID_PREFIX = 'wl:';
-const HEAD_ID_PREFIX = 'head:';
+export const JeditContractRuntimeErrorCode = Object.freeze({
+  WorldlineMismatch: 'WORLDLINE_MISMATCH',
+  BaseHeadMismatch: 'BASE_HEAD_MISMATCH',
+  InvalidRootId: 'INVALID_ROOT_ID',
+  InvalidWorldlineId: 'INVALID_WORLDLINE_ID',
+  InvalidHeadId: 'INVALID_HEAD_ID',
+} as const);
+
+export type JeditContractRuntimeErrorCode = typeof JeditContractRuntimeErrorCode[keyof typeof JeditContractRuntimeErrorCode];
 
 const TICK_KIND_TEXT_REWRITE: TickKind = 'TEXT_REWRITE';
 const TICK_RECEIPT_REWRITE_KIND_REPLACE_RANGE_AS_TICK: TickReceiptRewriteKind = 'REPLACE_RANGE_AS_TICK';
 const INITIAL_CHECKPOINT_KIND: CheckpointKind = 'INITIAL';
+const REPLACE_SUMMARY_PREFIX = 'replace';
+const REPLACE_SUMMARY_RANGE_SEPARATOR = '..';
 
 type CreateBufferWorldlineInput = MutationOperationMap['createBufferWorldline']['input'];
 type CreateBufferWorldlineResult = ReturnType<typeof MutationOperationSchemas.createBufferWorldline.result.parse>;
@@ -94,17 +103,8 @@ export class JeditWorldlineSession {
     return new JeditWorldlineSession(
       record.worldline,
       record.state,
-      record.tickMetadata.map((metadata) => ({
-        tickId: metadata.tickId,
-        kind: metadata.kind,
-        author: metadata.author,
-      })),
-      record.checkpointMetadata.map((metadata) => ({
-        checkpointId: metadata.checkpointId,
-        kind: metadata.kind,
-        label: metadata.label,
-        createdByTickId: metadata.createdByTickId,
-      })),
+      record.tickMetadata,
+      record.checkpointMetadata,
     );
   }
 }
@@ -138,9 +138,9 @@ interface CheckpointMetadata {
 }
 
 export class JeditContractRuntimeError extends Error {
-  public readonly code: number;
+  public readonly code: JeditContractRuntimeErrorCode;
 
-  public constructor(code: number, message: string) {
+  public constructor(code: JeditContractRuntimeErrorCode, message: string) {
     super(message);
     this.name = 'JeditContractRuntimeError';
     this.code = code;
@@ -414,8 +414,12 @@ function toTickReceiptRecord(
     endByte: receipt.replaceReceipt.replaced.end.byte,
     insertedByteLength: byteLength(insertText),
     deletedByteLength,
-    summary: `replace ${receipt.replaceReceipt.replaced.start.byte}..${receipt.replaceReceipt.replaced.end.byte}`,
+    summary: formatReplaceSummary(receipt.replaceReceipt.replaced.start.byte, receipt.replaceReceipt.replaced.end.byte),
   };
+}
+
+function formatReplaceSummary(startByte: number, endByte: number): string {
+  return `${REPLACE_SUMMARY_PREFIX} ${startByte}${REPLACE_SUMMARY_RANGE_SEPARATOR}${endByte}`;
 }
 
 function toCheckpointRecord(
@@ -440,7 +444,7 @@ function toCheckpointRecord(
 function ensureMatchingWorldline(session: JeditWorldlineSession, worldlineId: string): void {
   if (session.worldline.worldlineId !== worldlineId) {
     throw new JeditContractRuntimeError(
-      JEDIT_CONTRACT_RUNTIME_ERROR_WORLDLINE_MISMATCH,
+      JeditContractRuntimeErrorCode.WorldlineMismatch,
       `Worldline mismatch: expected ${session.worldline.worldlineId}, received ${worldlineId}.`,
     );
   }
@@ -449,7 +453,7 @@ function ensureMatchingWorldline(session: JeditWorldlineSession, worldlineId: st
 function ensureMatchingBaseHead(session: JeditWorldlineSession, baseHeadId: string): void {
   if (session.worldline.canonicalHeadId !== baseHeadId) {
     throw new JeditContractRuntimeError(
-      JEDIT_CONTRACT_RUNTIME_ERROR_BASE_HEAD_MISMATCH,
+      JeditContractRuntimeErrorCode.BaseHeadMismatch,
       `Base head mismatch: expected ${session.worldline.canonicalHeadId}, received ${baseHeadId}.`,
     );
   }
@@ -458,32 +462,32 @@ function ensureMatchingBaseHead(session: JeditWorldlineSession, baseHeadId: stri
 function ensureStateRootId(headId: string, rootId: number): void {
   if (!Number.isFinite(rootId) || !Number.isInteger(rootId)) {
     throw new JeditContractRuntimeError(
-      JEDIT_CONTRACT_RUNTIME_ERROR_WORLDLINE_MISMATCH,
+      JeditContractRuntimeErrorCode.InvalidRootId,
       `Invalid root identifier: ${rootId}.`,
     );
   }
 
   if (toHeadId(rootId) !== headId) {
     throw new JeditContractRuntimeError(
-      JEDIT_CONTRACT_RUNTIME_ERROR_BASE_HEAD_MISMATCH,
+      JeditContractRuntimeErrorCode.BaseHeadMismatch,
       `Canonical head mismatch: expected ${toHeadId(rootId)}, received ${headId}.`,
     );
   }
 }
 
 function ensureWorldlineId(worldlineId: string): void {
-  if (!worldlineId.startsWith(WORLDLINE_ID_PREFIX)) {
+  if (parseWorldlineId(worldlineId) == null) {
     throw new JeditContractRuntimeError(
-      JEDIT_CONTRACT_RUNTIME_ERROR_WORLDLINE_MISMATCH,
+      JeditContractRuntimeErrorCode.InvalidWorldlineId,
       `Invalid worldline identifier: ${worldlineId}.`,
     );
   }
 }
 
 function ensureHeadId(headId: string): void {
-  if (!headId.startsWith(HEAD_ID_PREFIX)) {
+  if (parseHeadId(headId) == null) {
     throw new JeditContractRuntimeError(
-      JEDIT_CONTRACT_RUNTIME_ERROR_BASE_HEAD_MISMATCH,
+      JeditContractRuntimeErrorCode.InvalidHeadId,
       `Invalid head identifier: ${headId}.`,
     );
   }

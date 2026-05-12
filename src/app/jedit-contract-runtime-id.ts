@@ -5,12 +5,40 @@ const CHECKPOINT_ID_PREFIX = 'checkpoint:';
 const TICK_ID_PREFIX = 'tick:';
 const RECEIPT_ID_PREFIX = 'receipt:';
 
+export class WorldlineId {
+  private constructor(public readonly value: string) {
+    Object.freeze(this);
+  }
+
+  public static fromProjectionPath(path: string): WorldlineId {
+    return new WorldlineId(`${WORLDLINE_ID_PREFIX}${path}`);
+  }
+
+  public static parse(value: string): WorldlineId | undefined {
+    return value.startsWith(WORLDLINE_ID_PREFIX) ? new WorldlineId(value) : undefined;
+  }
+}
+
+export class HeadId {
+  private constructor(public readonly value: string) {
+    Object.freeze(this);
+  }
+
+  public static fromRootId(rootId: number): HeadId {
+    return new HeadId(`${HEAD_ID_PREFIX}${rootId}`);
+  }
+
+  public static parse(value: string): HeadId | undefined {
+    return value.startsWith(HEAD_ID_PREFIX) ? new HeadId(value) : undefined;
+  }
+}
+
 export function toWorldlineId(path: string): string {
-  return `${WORLDLINE_ID_PREFIX}${path}`;
+  return WorldlineId.fromProjectionPath(path).value;
 }
 
 export function toHeadId(rootId: number): string {
-  return `${HEAD_ID_PREFIX}${rootId}`;
+  return HeadId.fromRootId(rootId).value;
 }
 
 export function toRootNodeId(rootId: number): string {
@@ -26,7 +54,15 @@ export function toTickId(tickId: number): string {
 }
 
 export function toReceiptId(tickId: number): string {
-  return `${RECEIPT_ID_PREFIX}${toTickId(tickId)}`;
+  return `${RECEIPT_ID_PREFIX}${tickId}`;
+}
+
+export function parseWorldlineId(value: string): WorldlineId | undefined {
+  return WorldlineId.parse(value);
+}
+
+export function parseHeadId(value: string): HeadId | undefined {
+  return HeadId.parse(value);
 }
 
 const UTF8_ENCODER = new TextEncoder();
