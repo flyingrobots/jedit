@@ -98,6 +98,23 @@ test('JeditWorldlineSession reports invalid root identifiers with a dedicated er
   );
 });
 
+test('JeditWorldlineSession rejects malformed head identifiers before root comparison', async () => {
+  const { contractApp } = await loadModules();
+
+  assert.throws(
+    () => new contractApp.JeditWorldlineSession({
+      worldlineId: 'wl:/repo/notes.md',
+      bufferKey: 'notes.md',
+      canonicalHeadId: 'head:stale',
+      projectionPath: '/repo/notes.md',
+    }, {
+      currentRoot: { id: 0 },
+      checkpoints: [],
+    }, [], []),
+    (error) => error?.name === 'JeditContractRuntimeError' && error.code === 'INVALID_HEAD_ID',
+  );
+});
+
 test('createCheckpoint keeps checkpoint metadata in the app-owned adapter layer', async () => {
   const { contractApp, adapter, hash } = await loadModules();
   const runtime = adapter.createInMemoryHotTextRuntime();

@@ -4,6 +4,7 @@ const ROOT_NODE_ID_PREFIX = 'root:';
 const CHECKPOINT_ID_PREFIX = 'checkpoint:';
 const TICK_ID_PREFIX = 'tick:';
 const RECEIPT_ID_PREFIX = 'receipt:';
+const NUMERIC_ID_PATTERN = /^\d+$/;
 
 export class WorldlineId {
   private constructor(public readonly value: string) {
@@ -29,7 +30,11 @@ export class HeadId {
   }
 
   public static parse(value: string): HeadId | undefined {
-    return value.startsWith(HEAD_ID_PREFIX) ? new HeadId(value) : undefined;
+    if (!value.startsWith(HEAD_ID_PREFIX)) {
+      return undefined;
+    }
+    const id = value.slice(HEAD_ID_PREFIX.length);
+    return NUMERIC_ID_PATTERN.test(id) ? new HeadId(value) : undefined;
   }
 }
 

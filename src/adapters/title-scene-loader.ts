@@ -1,5 +1,6 @@
 import * as fs from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SceneDecodeError, SceneLoadError } from '../domain/errors.js';
 import { TITLE_SCENE_FLOOR_KIND, type TitleSceneEnvironment } from '../ui/title-scene-environment.js';
@@ -13,6 +14,10 @@ import {
 
 type JsonValue = null | boolean | number | string | readonly JsonValue[] | JsonObject;
 type JsonObject = { readonly [key: string]: JsonValue | undefined };
+
+export interface TitleSceneLoaderOptions {
+  readonly builtInSceneDirectories?: readonly string[];
+}
 
 const DEFAULT_CAMERA_ANGLE = 0;
 const DEFAULT_CAMERA_RADIUS = 8.5;
@@ -40,7 +45,7 @@ export async function loadBuiltInTitleScene(name: BuiltInTitleSceneName, meshes:
   if (!BUILT_IN_TITLE_SCENE_SET.has(name)) {
     throw new SceneDecodeError(`Unknown built-in scene '${name}'.`);
   }
-  return loadTitleSceneFromFile(resolveBuiltInTitleScenePath(name), meshes);
+  return loadTitleSceneFromFile(resolveBuiltInTitleScenePath(name, undefined), meshes);
 }
 
 export function parseTitleSceneJson(json: JsonValue, meshes: TitleMeshLibrary): TitleScene {
@@ -54,10 +59,15 @@ export function parseTitleSceneJson(json: JsonValue, meshes: TitleMeshLibrary): 
   return { camera, objects, environment };
 }
 
-export function createTitleSceneLoaderPort(): TitleSceneLoaderPort {
+export function createTitleSceneLoaderPort(options: TitleSceneLoaderOptions = {}): TitleSceneLoaderPort {
   return {
     loadTitleSceneFromFile,
-    loadBuiltInTitleScene,
+    loadBuiltInTitleScene: async (name, meshes) => {
+      if (!BUILT_IN_TITLE_SCENE_SET.has(name)) {
+        throw new SceneDecodeError(`Unknown built-in scene '${name}'.`);
+      }
+      return loadTitleSceneFromFile(resolveBuiltInTitleScenePath(name, options.builtInSceneDirectories), meshes);
+    },
   };
 }
 
@@ -128,13 +138,14 @@ function decodeSceneObject(value: JsonValue, meshes: TitleMeshLibrary, path: str
   if (kind === TITLE_SCENE_SHAPE_KIND.Mesh) {
     const meshId = meshIdAt(object['mesh'], `${path}.mesh`);
     const mesh = titleSceneObjectMesh(meshId, meshes, path);
+    const radius = nonNegativeNumberAt(object['radius'], `${path}.radius`);
     // TODO: Mesh placement needs a real local/world transform pipeline.
     // Mesh scene JSON intentionally has no position field until that exists.
     return {
       kind: TITLE_SCENE_SHAPE_KIND.Mesh,
       mesh,
-      radius: nonNegativeNumberAt(object['radius'], `${path}.radius`),
-      footprintRadius: optionalNonNegativeNumber(object['footprintRadius'], `${path}.footprintRadius`) ?? nonNegativeNumberAt(object['radius'], `${path}.radius`),
+      radius,
+      footprintRadius: optionalNonNegativeNumber(object['footprintRadius'], `${path}.footprintRadius`) ?? radius,
       height: optionalNonNegativeNumber(object['height'], `${path}.height`) ?? mesh.height,
       color: colorAt(object['color'], `${path}.color`),
       reflectivity: finiteNumberAt(object['reflectivity'], `${path}.reflectivity`),
@@ -163,14 +174,21 @@ function titleSceneObjectMesh(meshId: TitleMeshId, meshes: TitleMeshLibrary, pat
   throw new SceneLoadError(`${path}.mesh references '${meshId}', but that mesh asset is not loaded.`);
 }
 
-function resolveBuiltInTitleScenePath(name: BuiltInTitleSceneName): string {
-  const candidates = BUILT_IN_SCENE_CANDIDATE_URLS.map((candidate) => fileURLToPath(candidate(name)));
+function resolveBuiltInTitleScenePath(name: BuiltInTitleSceneName, directories: readonly string[] | undefined): string {
+  const candidates = builtInSceneCandidates(name, directories);
   for (const candidate of candidates) {
     if (existsSync(candidate)) {
       return candidate;
     }
   }
   throw new SceneLoadError(`Built-in scene asset is unavailable: ${candidates.join(', ')}`);
+}
+
+function builtInSceneCandidates(name: BuiltInTitleSceneName, directories: readonly string[] | undefined): readonly string[] {
+  if (directories != null && directories.length > 0) {
+    return directories.map((directory) => path.join(directory, name));
+  }
+  return BUILT_IN_SCENE_CANDIDATE_URLS.map((candidate) => fileURLToPath(candidate(name)));
 }
 
 function objectAt(value: JsonValue | undefined, path: string): JsonObject {

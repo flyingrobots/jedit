@@ -296,9 +296,9 @@ export function titleSceneObjectFootprintCenter(object: TitleSceneObject): Title
   }
 
   return [
-    (object.mesh.bounds.min[0] + object.mesh.bounds.max[0]) / 2,
-    object.height / 2,
-    (object.mesh.bounds.min[2] + object.mesh.bounds.max[2]) / 2,
+    (object.mesh.bounds.min[0] + object.mesh.bounds.max[0]) / COLUMN_HALF_HEIGHT_DIVISOR,
+    (object.mesh.bounds.min[1] + object.mesh.bounds.max[1]) / COLUMN_HALF_HEIGHT_DIVISOR,
+    (object.mesh.bounds.min[2] + object.mesh.bounds.max[2]) / COLUMN_HALF_HEIGHT_DIVISOR,
   ];
 }
 

@@ -11,42 +11,27 @@ const TITLE_SCENE_LOADER_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'title-
 const TITLE_SCENE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-scene.js');
 const TITLE_MESH_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-mesh.js');
 const TITLE_BUNNY_MESH_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'title-bunny-mesh.js');
-const DIST_SCENES_PATH = path.join(REPO_ROOT, 'dist', 'scenes');
+let titleSceneLoaderModulesPromise;
 
 async function loadTitleSceneLoaderModules() {
-  const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
-    cwd: REPO_ROOT,
-    encoding: 'utf8',
-  });
+  if (titleSceneLoaderModulesPromise == null) {
+    titleSceneLoaderModulesPromise = Promise.resolve().then(async () => {
+      const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+      });
 
-  assert.equal(build.status, 0, build.stderr || build.stdout);
+      assert.equal(build.status, 0, build.stderr || build.stdout);
 
-  return {
-    loader: await import(pathToFileURL(TITLE_SCENE_LOADER_PATH).href),
-    titleScene: await import(pathToFileURL(TITLE_SCENE_PATH).href),
-    titleMesh: await import(pathToFileURL(TITLE_MESH_PATH).href),
-    titleBunnyMesh: await import(pathToFileURL(TITLE_BUNNY_MESH_PATH).href),
-  };
-}
-
-async function hidePathIfExists(targetPath) {
-  const hiddenPath = path.join(os.tmpdir(), `jedit-hidden-${process.pid}-${Date.now()}-${path.basename(targetPath)}`);
-  try {
-    await fs.rename(targetPath, hiddenPath);
-    return hiddenPath;
-  } catch (error) {
-    if (error?.code === 'ENOENT') {
-      return undefined;
-    }
-    throw error;
+      return {
+        loader: await import(pathToFileURL(TITLE_SCENE_LOADER_PATH).href),
+        titleScene: await import(pathToFileURL(TITLE_SCENE_PATH).href),
+        titleMesh: await import(pathToFileURL(TITLE_MESH_PATH).href),
+        titleBunnyMesh: await import(pathToFileURL(TITLE_BUNNY_MESH_PATH).href),
+      };
+    });
   }
-}
-
-async function restoreHiddenPath(hiddenPath, targetPath) {
-  if (hiddenPath == null) {
-    return;
-  }
-  await fs.rename(hiddenPath, targetPath);
+  return titleSceneLoaderModulesPromise;
 }
 
 function normalize(vector) {
@@ -82,16 +67,19 @@ test('loaded mesh scenes do not expose scene-authored mesh position as ray-hit s
   assert.equal(hit.object, loadedMesh);
 });
 
-test('built-in scene loader falls back to source scene assets when dist scenes are absent', async () => {
+test('built-in scene loader accepts an injected scene directory without mutating dist scenes', async () => {
   const { loader } = await loadTitleSceneLoaderModules();
-  const hiddenDistScenes = await hidePathIfExists(DIST_SCENES_PATH);
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'jedit-source-scenes-'));
+  const sceneFile = path.join(directory, 'bunny.jedit-scene');
+  await fs.writeFile(sceneFile, JSON.stringify({ objects: [] }), 'utf8');
 
   try {
-    const scene = await loader.loadBuiltInTitleScene('sphere.jedit-scene', {});
+    const port = loader.createTitleSceneLoaderPort({ builtInSceneDirectories: [directory] });
+    const scene = await port.loadBuiltInTitleScene('bunny.jedit-scene', {});
 
-    assert.equal(scene.objects.length, 1);
+    assert.equal(scene.objects.length, 0);
   } finally {
-    await restoreHiddenPath(hiddenDistScenes, DIST_SCENES_PATH);
+    await fs.rm(directory, { recursive: true, force: true });
   }
 });
 

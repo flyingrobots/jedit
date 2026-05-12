@@ -9,6 +9,7 @@ const REPO_ROOT = process.cwd();
 const TITLE_SCENE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-scene.js');
 const TITLE_MESH_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-mesh.js');
 const TITLE_BUNNY_MESH_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'title-bunny-mesh.js');
+const DOMAIN_ERRORS_PATH = path.join(REPO_ROOT, 'dist', 'domain', 'errors.js');
 const TITLE_BUNNY_DIST_ASSET_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'bunny.obj');
 const TITLE_TEAPOT_DIST_ASSET_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'utah_teapot.obj');
 const TITLE_TEAPOT_SOURCE_ASSET_PATH = path.join(REPO_ROOT, 'src', 'ui', 'utah_teapot.obj');
@@ -48,6 +49,7 @@ async function loadTitleSceneModules() {
     titleScene: await import(pathToFileURL(TITLE_SCENE_PATH).href),
     titleMesh: await import(pathToFileURL(TITLE_MESH_PATH).href),
     titleBunnyMesh: await import(pathToFileURL(TITLE_BUNNY_MESH_PATH).href),
+    domainErrors: await import(pathToFileURL(DOMAIN_ERRORS_PATH).href),
     titleCamera: await import(pathToFileURL(TITLE_CAMERA_PATH).href),
   };
 }
@@ -136,7 +138,7 @@ test('title scene can construct the Utah teapot mesh from the source asset', asy
 });
 
 test('title mesh source loader fails fast when no candidate asset is available', async () => {
-  const { titleBunnyMesh } = await loadTitleSceneModules();
+  const { titleBunnyMesh, domainErrors } = await loadTitleSceneModules();
   const hiddenPaths = [
     hideExistingFile(TITLE_TEAPOT_DIST_ASSET_PATH),
     hideExistingFile(TITLE_TEAPOT_SOURCE_ASSET_PATH),
@@ -145,11 +147,31 @@ test('title mesh source loader fails fast when no candidate asset is available',
   try {
     assert.throws(
       () => titleBunnyMesh.loadTitleTeapotMeshSource(),
-      (error) => error?.name === 'TitleMeshLoadError',
+      (error) => error instanceof domainErrors.TitleMeshLoadError,
     );
   } finally {
     restoreHiddenFiles(hiddenPaths);
   }
+});
+
+test('mesh footprint center uses mesh bounds on every axis', async () => {
+  const { titleScene } = await loadTitleSceneModules();
+  const object = {
+    kind: titleScene.TITLE_SCENE_SHAPE_KIND.Mesh,
+    mesh: {
+      bounds: {
+        min: [-2, 4, -6],
+        max: [8, 10, 2],
+      },
+    },
+    radius: 1,
+    footprintRadius: 1,
+    height: 6,
+    color: [255, 255, 255],
+    reflectivity: 0.5,
+  };
+
+  assert.deepEqual(titleScene.titleSceneObjectFootprintCenter(object), [3, 7, -2]);
 });
 
 test('title mirror sphere reflects the loaded bunny mesh from the title camera', async () => {
