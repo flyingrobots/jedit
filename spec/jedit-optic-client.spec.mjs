@@ -11,6 +11,7 @@ const TRANSPORT_CLIENT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'j
 const FAKE_TRANSPORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'fake-echo-jedit-optic-transport.js');
 const CODEC_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-optic-codec.js');
 const READ_BASIS_HANDLE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'read-basis-handle-registry.js');
+const TEXT_BUFFER_OPTIC_SESSION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'text-buffer-optic-session.js');
 const LEGACY_EAGER_LOAD_CAP_BYTES = 24 * 1024;
 const STACK_WITNESS_AUTHOR = 'stack-witness-0001';
 const STACK_WITNESS_BUFFER_KEY = 'demo.txt';
@@ -46,6 +47,7 @@ async function loadModules() {
     fakeTransportModule,
     codecModule,
     readBasisHandleModule,
+    textBufferOpticSessionModule,
   ] = await Promise.all([
     import(pathToFileURL(OPTIC_CLIENT_MODULE_PATH).href),
     import(pathToFileURL(ADAPTER_MODULE_PATH).href),
@@ -53,6 +55,7 @@ async function loadModules() {
     import(pathToFileURL(FAKE_TRANSPORT_MODULE_PATH).href),
     import(pathToFileURL(CODEC_MODULE_PATH).href),
     import(pathToFileURL(READ_BASIS_HANDLE_MODULE_PATH).href),
+    import(pathToFileURL(TEXT_BUFFER_OPTIC_SESSION_MODULE_PATH).href),
   ]);
 
   return {
@@ -62,6 +65,7 @@ async function loadModules() {
     fakeTransportModule,
     codecModule,
     readBasisHandleModule,
+    textBufferOpticSessionModule,
   };
 }
 
@@ -447,6 +451,148 @@ test('Stack Witness 0001 walks createBuffer -> replaceRange -> textWindow throug
   );
   assert.equal(envelope.reading.lines[0].startByte, FIRST_BYTE_OFFSET);
   assert.equal(envelope.reading.lines[0].endByte, byteLength(STACK_WITNESS_TEXT));
+});
+
+test('TextBufferOptic creates, edits, and reads without exposing runtime coordinates', async () => {
+  const {
+    transportClientModule,
+    fakeTransportModule,
+    textBufferOpticSessionModule,
+  } = await loadModules();
+  const client = transportClientModule.createEchoTransportJeditOpticClient(
+    fakeTransportModule.createFakeEchoJeditOpticTransport(),
+  );
+  const session = textBufferOpticSessionModule.createTextBufferOpticSession(client);
+
+  const optic = await session.createBuffer({
+    bufferKey: STACK_WITNESS_BUFFER_KEY,
+    initialText: EMPTY_TEXT,
+    projectionPath: STACK_WITNESS_BUFFER_KEY,
+  });
+  const readBasis = optic.currentReadBasis();
+
+  assert.deepEqual(Object.keys(optic.buffer).sort(), [
+    'bufferId',
+    'bufferKey',
+    'createdAt',
+    'projectionPath',
+  ]);
+  assert.equal(optic.buffer.bufferKey, STACK_WITNESS_BUFFER_KEY);
+  for (const rawFieldName of RAW_BASIS_FIELD_NAMES) {
+    assert.equal(Object.hasOwn(optic, rawFieldName), false);
+    assert.equal(Object.hasOwn(optic.buffer, rawFieldName), false);
+    assert.equal(Object.hasOwn(readBasis, rawFieldName), false);
+  }
+
+  const applied = await optic.applyIntent({
+    kind: 'replaceRange',
+    startByte: FIRST_BYTE_OFFSET,
+    endByte: FIRST_BYTE_OFFSET,
+    insertText: STACK_WITNESS_TEXT,
+  });
+
+  assert.equal(applied.buffer.bufferId, optic.buffer.bufferId);
+  assert.equal(applied.readBasis, optic.currentReadBasis());
+  assert.equal(applied.bufferVersion, 1);
+  assert.equal(typeof applied.receiptId, 'string');
+
+  const observed = await optic.textWindow(optic.currentReadBasis(), {
+    cursorLine: FIRST_LINE,
+    viewportLineCount: SINGLE_LINE_WINDOW,
+    beforeLines: FIRST_LINE,
+    afterLines: FIRST_LINE,
+    maxBytes: byteLength(STACK_WITNESS_TEXT),
+  });
+
+  assert.equal(observed.value.cursorLine, FIRST_LINE);
+  assert.equal(observed.value.viewportLineCount, SINGLE_LINE_WINDOW);
+  assert.equal(observed.value.lineCount, SINGLE_LINE_WINDOW);
+  assert.equal(observed.value.byteLength, byteLength(STACK_WITNESS_TEXT));
+  assert.equal(observed.value.truncated, false);
+  assert.deepEqual(
+    observed.value.lines.map((line) => line.text),
+    [STACK_WITNESS_TEXT],
+  );
+  assert.equal(observed.evidence.readingId, observed.value.readingId);
+});
+
+test('TextBufferOptic rejects cloned read basis handles', async () => {
+  const {
+    transportClientModule,
+    fakeTransportModule,
+    readBasisHandleModule,
+    textBufferOpticSessionModule,
+  } = await loadModules();
+  const client = transportClientModule.createEchoTransportJeditOpticClient(
+    fakeTransportModule.createFakeEchoJeditOpticTransport(),
+  );
+  const session = textBufferOpticSessionModule.createTextBufferOpticSession(client);
+  const optic = await session.createBuffer({
+    bufferKey: STACK_WITNESS_BUFFER_KEY,
+    initialText: STACK_WITNESS_TEXT,
+    projectionPath: STACK_WITNESS_BUFFER_KEY,
+  });
+  const clonedReadBasis = Object.freeze({
+    kind: optic.currentReadBasis().kind,
+    id: optic.currentReadBasis().id,
+  });
+
+  await assert.rejects(
+    () => optic.textWindow(clonedReadBasis, {
+      cursorLine: FIRST_LINE,
+      viewportLineCount: SINGLE_LINE_WINDOW,
+      beforeLines: FIRST_LINE,
+      afterLines: FIRST_LINE,
+      maxBytes: byteLength(STACK_WITNESS_TEXT),
+    }),
+    readBasisHandleModule.ReadBasisHandleResolutionError,
+  );
+});
+
+test('TextBufferOptic does not mark a satisfied bounded aperture as truncated', async () => {
+  const {
+    transportClientModule,
+    fakeTransportModule,
+    textBufferOpticSessionModule,
+  } = await loadModules();
+  const client = transportClientModule.createEchoTransportJeditOpticClient(
+    fakeTransportModule.createFakeEchoJeditOpticTransport(),
+  );
+  const session = textBufferOpticSessionModule.createTextBufferOpticSession(client);
+  const lines = ['alpha', 'bravo', 'charlie', 'delta', 'echo'];
+  const optic = await session.createBuffer({
+    bufferKey: 'demo-multiline.txt',
+    initialText: lines.join('\n'),
+    projectionPath: 'demo-multiline.txt',
+  });
+
+  const observed = await optic.textWindow(optic.currentReadBasis(), {
+    cursorLine: 2,
+    viewportLineCount: 1,
+    beforeLines: 1,
+    afterLines: 1,
+    maxBytes: 1024,
+  });
+
+  assert.deepEqual(
+    observed.value.lines.map((line) => line.text),
+    ['bravo', 'charlie', 'delta'],
+  );
+  assert.equal(observed.value.truncated, false);
+
+  const byteBounded = await optic.textWindow(optic.currentReadBasis(), {
+    cursorLine: 2,
+    viewportLineCount: 1,
+    beforeLines: 1,
+    afterLines: 1,
+    maxBytes: 6,
+  });
+
+  assert.deepEqual(
+    byteBounded.value.lines.map((line) => line.text),
+    ['bravo'],
+  );
+  assert.equal(byteBounded.value.truncated, true);
 });
 
 function byteLength(text) {

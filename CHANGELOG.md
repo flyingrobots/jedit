@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Introduced the first `TextBufferOptic` capability wrapper: app-facing code can
+  create a buffer, apply a `replaceRange` intent, and read a bounded text window
+  through the optic while raw runtime coordinates remain below the optic/session
+  boundary.
 - Defined the first `ReadBasisHandle` boundary for optic/session bootstrap:
   transport-backed `textWindow` calls now accept an opaque read-basis handle
   while the adapter resolves the handle into existing runtime coordinates, and
