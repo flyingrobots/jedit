@@ -1,5 +1,6 @@
 import type { Cmd } from '@flyingrobots/bijou-tui';
 import { JEDIT_THEME_MODE, type JeditTheme } from '../ui/jedit-theme.js';
+import { ViewModes, type ViewMode } from './workspace/view-mode.js';
 
 export const JEDIT_SETTING_ACTION = {
   CycleTheme: Symbol('jedit.settings.action.cycle-theme'),
@@ -22,7 +23,7 @@ export interface JeditSettingsState {
   readonly jeditTheme: JeditTheme;
   readonly footerVisible: boolean;
   readonly markdownPreviewActive: boolean;
-  readonly viewMode: 'source' | 'preview';
+  readonly viewMode: ViewMode;
 }
 
 export interface JeditSettingsHostState {
@@ -124,7 +125,7 @@ export function jeditSettingsRows(state: JeditSettingsState & { readonly i18n: {
       section: SETTINGS_SECTION_EDITOR,
       label: 'Markdown preview',
       description: 'Switch the active Markdown buffer between source and preview.',
-      valueLabel: state.viewMode === 'preview' ? VALUE_PREVIEW : VALUE_SOURCE,
+      valueLabel: state.viewMode === ViewModes.Preview ? VALUE_PREVIEW : VALUE_SOURCE,
       kind: JEDIT_SETTING_ROW_KIND.Choice,
       action: JEDIT_SETTING_ACTION.ToggleMarkdownPreview,
     });

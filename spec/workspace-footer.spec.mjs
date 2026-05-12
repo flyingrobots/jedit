@@ -142,3 +142,48 @@ test('workspace footer shows settings drawer controls while settings are open', 
     ],
   );
 });
+
+test('workspace footer obtains the scene picker hint label from i18n', async () => {
+  const footer = await loadFooterModule();
+  const requestedKeys = [];
+  const i18n = {
+    locale: 'en',
+    direction: 'ltr',
+    t: (path) => {
+      requestedKeys.push(path);
+      if (path === 'footer.mode.browse') {
+        return 'browse';
+      }
+      if (path === 'footer.hints.scene_picker') {
+        return 'scene picker';
+      }
+      const parts = path.split('.');
+      return parts[parts.length - 1].replace(/_/g, ' ');
+    },
+    setLocale: () => undefined,
+  };
+
+  assert.deepEqual(
+    footer.workspaceFooterLines({
+      i18n,
+      focusPane: 'editor',
+      fileDrawerOpen: false,
+      graftDrawerOpen: false,
+      viewMode: 'source',
+      markdownPreviewActive: false,
+      settingsOpen: false,
+      editorMode: undefined,
+      pendingNormal: undefined,
+      cwd: '/repo',
+      selectedEntry: undefined,
+      editorPath: undefined,
+      graftPath: undefined,
+      graftSelection: undefined,
+    }),
+    [
+      'BROWSE [ctrl+l scene picker · ctrl+t theme · ctrl+b files · ctrl+g graft]',
+      '/repo',
+    ],
+  );
+  assert.equal(requestedKeys.includes('footer.hints.scene_picker'), true);
+});

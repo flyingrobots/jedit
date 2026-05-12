@@ -31,6 +31,8 @@ import type { GraftSessionPort } from '../../ports/graft-session.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import type { TitleSceneLoaderPort } from '../../ports/title-scene-loader.js';
 
+const FRAME_TIME_HISTORY_SIZE = 50;
+
 export interface WorkspaceRuntimeDependencies {
   initialColumns: number;
   initialRows: number;
@@ -145,7 +147,7 @@ export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): Work
         time: msg.time,
         lastFrameMs: now,
         frameTimeMs: frameTime,
-        frameTimeHistory: [...model.frameTimeHistory, frameTime].slice(-50),
+        frameTimeHistory: [...model.frameTimeHistory, frameTime].slice(-FRAME_TIME_HISTORY_SIZE),
       };
       const profilerStream = streamProfilerFrame(nextModel.profiler, {
         time: msg.time,

@@ -10,6 +10,10 @@ import type { I18nPort } from '../../ports/i18n.js';
 import { BUILT_IN_TITLE_SCENE_NAMES } from '../../ports/title-scene-loader.js';
 import type { JeditTheme } from '../../ui/jedit-theme.js';
 import type { FileEntry } from '../../ports/file-system.js';
+import { ViewModes } from './view-mode.js';
+
+const INITIAL_FOCUS_PANE: FocusPane = 'editor';
+const INITIAL_VIEW_MODE = ViewModes.Source;
 
 export interface WorkspaceInitialModelSnapshot {
   readonly titleSceneSeed: number;
@@ -28,7 +32,7 @@ export function createInitialModel(
 ): WorkspaceModel {
   const { titleSceneSeed, jeditTheme, i18n, entries, nowMs } = snapshot;
   const titleMeshes = snapshot.titleMeshes ?? {};
-  const focusPane: FocusPane = 'editor';
+  const focusPane = INITIAL_FOCUS_PANE;
   return {
     i18n,
     workspaceRoot: cwd,
@@ -36,7 +40,7 @@ export function createInitialModel(
     entries,
     selectedIndex: 0,
     editor: undefined,
-    viewMode: 'source',
+    viewMode: INITIAL_VIEW_MODE,
     focusPane,
     fileDrawerOpen: false,
     fileDrawerProgress: 0,

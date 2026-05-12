@@ -37,6 +37,8 @@ import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import type { TitleSceneLoaderPort } from '../../ports/title-scene-loader.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
+import { EditorModes } from './editor/mode.js';
+import { ViewModes } from './view-mode.js';
 
 export interface UpdateFromKeyDeps {
   readonly fileSystem: FileSystemPort;
@@ -63,6 +65,17 @@ const NOTIFICATION_LOWER_RIGHT_PLACEMENT = 'LOWER_RIGHT';
 const FALLBACK_TOAST_FOREGROUND = '#e2e7ec';
 const FALLBACK_TOAST_BACKGROUND = '#0e1116';
 const FALLBACK_TOAST_ACCENT = '#d897ff';
+const SCENE_PICKER_MIN_INDEX = 0;
+const SCENE_PICKER_STEP = 1;
+const WORKSPACE_KEY = Object.freeze({
+  Escape: 'escape',
+  ArrowUp: 'up',
+  ArrowDown: 'down',
+  Enter: 'enter',
+  Return: 'return',
+  J: 'j',
+  K: 'k',
+} as const);
 
 export function updateFromKey(
   msg: KeyMsg,
@@ -94,19 +107,20 @@ export function updateFromKey(
   }
 
   if (model.scenePickerOpen) {
-    if (msg.key === 'escape') {
+    if (isScenePickerCloseKey(msg)) {
       return [{ ...model, scenePickerOpen: false }, []];
     }
-    if (msg.key === 'up' || msg.key === 'k') {
-      return [{ ...model, scenePickerFocusIndex: Math.max(0, model.scenePickerFocusIndex - 1) }, []];
+    if (isScenePickerPreviousKey(msg)) {
+      return [{ ...model, scenePickerFocusIndex: Math.max(SCENE_PICKER_MIN_INDEX, model.scenePickerFocusIndex - SCENE_PICKER_STEP) }, []];
     }
-    if (msg.key === 'down' || msg.key === 'j') {
+    if (isScenePickerNextKey(msg)) {
+      const maxIndex = Math.max(SCENE_PICKER_MIN_INDEX, model.availableScenes.length - SCENE_PICKER_STEP);
       return [{
         ...model,
-        scenePickerFocusIndex: Math.min(model.availableScenes.length - 1, model.scenePickerFocusIndex + 1),
+        scenePickerFocusIndex: Math.min(maxIndex, model.scenePickerFocusIndex + SCENE_PICKER_STEP),
       }, []];
     }
-    if (msg.key === 'enter' || msg.key === 'return') {
+    if (isScenePickerAcceptKey(msg)) {
       const selected = model.availableScenes[model.scenePickerFocusIndex];
       if (selected != null) {
         return [{ ...model, scenePickerOpen: false }, [
@@ -175,7 +189,7 @@ export function updateFromKey(
     return [model, [quit<WorkspaceMsg>()]];
   }
 
-  const insertModeActive = model.focusPane === 'editor' && model.viewMode === 'source' && model.editor?.mode === 'insert';
+  const insertModeActive = model.focusPane === 'editor' && model.viewMode === ViewModes.Source && model.editor?.mode === EditorModes.Insert;
   if (!insertModeActive && isFooterToggleKey(msg)) {
     return [{ ...model, footerVisible: !model.footerVisible }, []];
   }
@@ -302,4 +316,20 @@ function titleAsciiPaletteLabel(palette: TitleAsciiPalette): string {
     case TITLE_ASCII_PALETTE.Dither:
       return TITLE_ASCII_PALETTE_DITHER_LABEL;
   }
+}
+
+function isScenePickerCloseKey(msg: KeyMsg): boolean {
+  return msg.key === WORKSPACE_KEY.Escape;
+}
+
+function isScenePickerPreviousKey(msg: KeyMsg): boolean {
+  return msg.key === WORKSPACE_KEY.ArrowUp || msg.key === WORKSPACE_KEY.K;
+}
+
+function isScenePickerNextKey(msg: KeyMsg): boolean {
+  return msg.key === WORKSPACE_KEY.ArrowDown || msg.key === WORKSPACE_KEY.J;
+}
+
+function isScenePickerAcceptKey(msg: KeyMsg): boolean {
+  return msg.key === WORKSPACE_KEY.Enter || msg.key === WORKSPACE_KEY.Return;
 }

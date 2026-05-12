@@ -1,5 +1,6 @@
 import type { KeyMsg } from '@flyingrobots/bijou-tui';
 import { clampIndex } from './viewport.js';
+import { EditorModes } from './editor/mode.js';
 import type { EditorState } from './editor/model.js';
 import {
   clampNormalCol,
@@ -19,8 +20,8 @@ import {
   wordEndIndex,
 } from './editor-editing-core.js';
 
-const NORMAL_MODE = 'normal';
-const INSERT_MODE = 'insert';
+const NORMAL_MODE = EditorModes.Normal;
+const INSERT_MODE = EditorModes.Insert;
 
 export function applyPendingOperator(
   editor: EditorState,
@@ -257,8 +258,9 @@ export function deleteToLineEnd(editor: EditorState): EditorState {
 }
 
 export function changeToLineEnd(editor: EditorState): EditorState {
-  return deleteToLineEnd(editor).readOnly ? { ...editor, mode: INSERT_MODE, pendingNormal: undefined } : {
-    ...editor,
+  const result = editor.readOnly ? editor : deleteToLineEnd(editor);
+  return {
+    ...result,
     pendingNormal: undefined,
     mode: INSERT_MODE,
   };

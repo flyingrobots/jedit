@@ -1,10 +1,15 @@
 import type { KeyMsg } from '@flyingrobots/bijou-tui';
 import { joinLines, normalizeLines } from '../editor-lines.js';
-import type { EditorMode } from './editor/mode.js';
+import { EditorModes, type EditorMode } from './editor/mode.js';
 import type { EditorState, HistoryEntry, RegisterKind } from './editor/model.js';
 
-const NORMAL_MODE = 'normal';
-const INSERT_MODE = 'insert';
+const NORMAL_MODE = EditorModes.Normal;
+const INSERT_MODE = EditorModes.Insert;
+const SPACE_KEY = 'space';
+const SPACE_TEXT = ' ';
+const LOWERCASE_A = 'a';
+const LOWERCASE_Z = 'z';
+const SINGLE_CHARACTER_KEY_LENGTH = 1;
 
 export function pasteRegister(editor: EditorState, placement: 'before' | 'after'): EditorState {
   const register = editor.register;
@@ -318,15 +323,15 @@ export function keyToText(msg: KeyMsg): string | undefined {
     return undefined;
   }
 
-  if (msg.key === 'space') {
-    return ' ';
+  if (msg.key === SPACE_KEY) {
+    return SPACE_TEXT;
   }
 
-  if (msg.key.length !== 1) {
+  if (msg.key.length !== SINGLE_CHARACTER_KEY_LENGTH) {
     return undefined;
   }
 
-  if (msg.shift && msg.key >= 'a' && msg.key <= 'z') {
+  if (msg.shift && msg.key >= LOWERCASE_A && msg.key <= LOWERCASE_Z) {
     return msg.key.toUpperCase();
   }
 

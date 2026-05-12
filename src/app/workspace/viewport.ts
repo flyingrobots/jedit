@@ -6,6 +6,8 @@ export const MIN_ROWS = 12;
 export const VIEWER_LEFT_PAD = 4;
 export const VIEWER_TOP_PAD = 1;
 export const DRAWER_INNER_PAD = 1;
+export const HEADER_ROWS = 2;
+export const FOOTER_ROWS = 2;
 
 export interface WorkspaceViewport {
   readonly width: number;
@@ -27,8 +29,8 @@ export function clampIndex(index: number, size: number): number {
 }
 
 export function workspaceBodyHeight(rows: number, footerVisible: boolean): number {
-  const footerRows = footerVisible ? 2 : 0;
-  return Math.max(1, rows - 2 - footerRows);
+  const footerRows = footerVisible ? FOOTER_ROWS : 0;
+  return Math.max(1, rows - HEADER_ROWS - footerRows);
 }
 
 export function viewerViewport(width: number, height: number): WorkspaceViewport {

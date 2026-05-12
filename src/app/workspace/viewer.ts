@@ -27,6 +27,7 @@ import {
   DRAWER_INNER_PAD,
   VIEWER_LEFT_PAD,
   VIEWER_TOP_PAD,
+  FOOTER_ROWS,
 } from './viewport.js';
 import {
   isWorkspaceMarkdownFile,
@@ -44,6 +45,8 @@ import type { WorkspaceMsg } from './msg.js';
 import { settingsRows } from './settings.js';
 import { focusCycleState } from './focus.js';
 import type { JeditStyleToken, JeditTheme } from '../../ui/jedit-theme.js';
+import { ViewModes } from './view-mode.js';
+import { EditorModes } from './editor/mode.js';
 
 export function updateViewerFromKey(
   msg: KeyMsg,
@@ -55,7 +58,7 @@ export function updateViewerFromKey(
   }
 
   const viewport = editorViewport(model);
-  if (model.viewMode === 'preview') {
+  if (model.viewMode === ViewModes.Preview) {
     return [{
       ...model,
       editor: scrollPreview(model.editor, msg, viewport.height),
@@ -63,7 +66,7 @@ export function updateViewerFromKey(
   }
 
   const canTabIndent = !hasFocusablePeers(focusCycleState(model));
-  const editor = model.editor.mode === 'insert'
+  const editor = model.editor.mode === EditorModes.Insert
     ? updateInsertMode(model.editor, msg, viewport.width, viewport.height, canTabIndent)
     : updateNormalMode(model.editor, msg, viewport.width, viewport.height);
 
@@ -149,7 +152,7 @@ export function renderWorkspace(model: WorkspaceModel): Surface {
         graftSelection: selectedGraftSelection(model),
       }, model.columns, model.jeditTheme.surface.footer),
       0,
-      model.rows - 2,
+      model.rows - FOOTER_ROWS,
     );
   }
 
@@ -200,7 +203,7 @@ function renderViewer(model: WorkspaceModel, width: number, height: number): Sur
   const surface = createSurface(width, height);
   fillSurface(surface, model.jeditTheme.surface.workspace);
 
-  if (model.viewMode === 'preview' && isWorkspaceMarkdownFile(model.editor.path)) {
+  if (model.viewMode === ViewModes.Preview && isWorkspaceMarkdownFile(model.editor.path)) {
     return renderPreview(surface, model.editor, model.jeditTheme, width, height);
   }
 

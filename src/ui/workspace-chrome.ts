@@ -13,13 +13,11 @@ import type { I18nPort } from '../ports/i18n.js';
 import type { JeditStyleToken } from './jedit-theme.js';
 import type { DrawerKind } from './drawer-layout.js';
 import { hasFocusablePeers, type FocusPane } from './panel-focus.js';
-
-type ViewMode = 'source' | 'preview';
-type EditorMode = 'normal' | 'insert';
-type PendingNormal = 'c' | 'd' | 'g' | 'y';
+import { ViewModes, type ViewMode } from '../app/workspace/view-mode.js';
+import { PendingNormals, type EditorMode, type PendingNormal } from '../app/workspace/editor/mode.js';
 
 const THEME_HINT = `${JEDIT_THEME_TOGGLE_LABEL} theme`;
-const SCENE_PICKER_HINT = `${JEDIT_SCENE_PICKER_TOGGLE_LABEL} scenes`;
+const FOOTER_HINT_SCENE_PICKER = 'scene_picker';
 
 export interface WorkspaceTitleState {
   readonly cwd: string;
@@ -119,7 +117,7 @@ function interactionModeKey(state: WorkspaceFooterState): string {
     return 'graft';
   }
 
-  if (state.viewMode === 'preview' && state.markdownPreviewActive) {
+  if (state.viewMode === ViewModes.Preview && state.markdownPreviewActive) {
     return 'preview';
   }
 
@@ -145,7 +143,7 @@ function footerDetail(state: WorkspaceFooterState): string {
     return drawerFooterDetail(state, 'graft');
   }
 
-  if (state.viewMode === 'preview' && state.markdownPreviewActive) {
+  if (state.viewMode === ViewModes.Preview && state.markdownPreviewActive) {
     return footerHints([t('j_k_scroll'), `${JEDIT_MARKDOWN_PREVIEW_TOGGLE_LABEL} source`, THEME_HINT, focusHint(state), 'ctrl+b files', 'ctrl+g graft']);
   }
 
@@ -157,7 +155,11 @@ function footerDetail(state: WorkspaceFooterState): string {
     return normalFooterDetail(state);
   }
 
-  return footerHints([SCENE_PICKER_HINT, focusHint(state), THEME_HINT, 'ctrl+b files', 'ctrl+g graft']);
+  return footerHints([scenePickerHint(t), focusHint(state), THEME_HINT, 'ctrl+b files', 'ctrl+g graft']);
+}
+
+function scenePickerHint(t: (key: string) => string): string {
+  return `${JEDIT_SCENE_PICKER_TOGGLE_LABEL} ${t(FOOTER_HINT_SCENE_PICKER)}`;
 }
 
 function drawerFooterDetail(state: WorkspaceFooterState, kind: DrawerKind): string {
@@ -181,15 +183,15 @@ function normalFooterDetail(state: WorkspaceFooterState): string {
 }
 
 function pendingNormalFooterDetail(pending: PendingNormal): string {
-  if (pending === 'c') {
+  if (pending === PendingNormals.Change) {
     return chordFooterHints('c', ['cc line', 'cw word', 'ce word-end', 'c0 start', 'c$ end']);
   }
 
-  if (pending === 'd') {
+  if (pending === PendingNormals.Delete) {
     return chordFooterHints('d', ['dd line', 'dw word', 'de word-end', 'd0 start', 'd$ end']);
   }
 
-  if (pending === 'y') {
+  if (pending === PendingNormals.Yank) {
     return chordFooterHints('y', ['yy line', 'yw word', 'ye word-end', 'y0 start', 'y$ end']);
   }
 

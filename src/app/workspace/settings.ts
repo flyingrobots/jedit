@@ -6,6 +6,7 @@ import { isWorkspaceMarkdownFile } from './editor-session.js';
 import { type WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 import { nextJeditTheme, oppositeJeditTheme } from '../../ui/jedit-themes.js';
+import { ViewModes } from './view-mode.js';
 
 export function settingsRows(model: WorkspaceModel): ReturnType<typeof jeditSettingsRows> {
   return jeditSettingsRows({
@@ -35,7 +36,7 @@ export const workspaceSettingsHandlers: JeditSettingsHandlers<WorkspaceModel, Wo
     if (model.editor == null || !isWorkspaceMarkdownFile(model.editor.path)) {
       return [model, []];
     }
-    const nextMode = model.viewMode === 'source' ? 'preview' : 'source';
+    const nextMode = model.viewMode === ViewModes.Source ? ViewModes.Preview : ViewModes.Source;
     preview = { ...model, viewMode: nextMode };
     return [preview, []];
   },

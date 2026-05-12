@@ -11,6 +11,7 @@ import type { WorkspaceMsg } from './msg.js';
 import { editorViewport } from './editor-session.js';
 import { settingsRows } from './settings.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
+import { ViewModes } from './view-mode.js';
 
 export function updateFromMouse(
   msg: MouseMsg,
@@ -39,7 +40,7 @@ export function updateFromMouse(
   const viewport = editorViewport(model);
   const editor = scrollTextViewport(model.editor, deltaRows, viewport.height);
   const next = { ...model, editor };
-  return model.viewMode === 'source'
+  return model.viewMode === ViewModes.Source
     ? beginSourceHighlightRefresh<WorkspaceModel, WorkspaceMsg>(next, editor, viewport, sourceHighlighter)
     : [next, []];
 }

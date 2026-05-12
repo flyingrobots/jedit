@@ -20,6 +20,7 @@ export type TranslationSchema = {
       readonly ctrl_s_save: string;
       readonly tab_focus: string;
       readonly tab_indent: string;
+      readonly scene_picker: string;
     };
   };
 };
@@ -45,6 +46,7 @@ export const en: TranslationSchema = {
       ctrl_s_save: 'ctrl+s save',
       tab_focus: 'tab focus',
       tab_indent: 'tab indent',
+      scene_picker: 'scene picker',
     },
   },
 };
@@ -70,6 +72,7 @@ export const me: TranslationSchema = {
       ctrl_s_save: 'evas s+lrtc',
       tab_focus: 'sucof bat',
       tab_indent: 'tnedni bat',
+      scene_picker: 'rekcip enecs',
     },
   },
 };

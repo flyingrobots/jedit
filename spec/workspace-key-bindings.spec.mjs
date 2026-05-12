@@ -7,49 +7,72 @@ import { pathToFileURL } from 'node:url';
 import { createNotificationState } from '@flyingrobots/bijou-tui';
 
 const REPO_ROOT = process.cwd();
+let distBuildPromise;
+
+async function ensureDistBuilt() {
+  if (distBuildPromise == null) {
+    distBuildPromise = Promise.resolve().then(() => {
+      const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+      });
+      assert.equal(build.status, 0, build.stderr || build.stdout);
+    });
+  }
+  await distBuildPromise;
+}
 
 async function loadWorkspaceKeyBindingsModule() {
-  const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
-    cwd: REPO_ROOT,
-    encoding: 'utf8',
-  });
-  assert.equal(build.status, 0, build.stderr || build.stdout);
+  await ensureDistBuilt();
 
   return import(pathToFileURL(path.join(REPO_ROOT, 'dist', 'app', 'workspace', 'key-bindings.js')).href);
 }
 
 async function loadWorkspaceRuntimeModule() {
-  const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
-    cwd: REPO_ROOT,
-    encoding: 'utf8',
-  });
-  assert.equal(build.status, 0, build.stderr || build.stdout);
+  await ensureDistBuilt();
 
   return import(pathToFileURL(path.join(REPO_ROOT, 'dist', 'app', 'workspace', 'runtime.js')).href);
 }
 
 async function loadWorkspaceInitModule() {
-  const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
-    cwd: REPO_ROOT,
-    encoding: 'utf8',
-  });
-  assert.equal(build.status, 0, build.stderr || build.stdout);
+  await ensureDistBuilt();
 
   return import(pathToFileURL(path.join(REPO_ROOT, 'dist', 'app', 'workspace', 'init.js')).href);
 }
 
 async function loadWorkspaceAppModules() {
-  const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
-    cwd: REPO_ROOT,
-    encoding: 'utf8',
-  });
-  assert.equal(build.status, 0, build.stderr || build.stdout);
+  await ensureDistBuilt();
 
   const [workspaceApp, themes] = await Promise.all([
     import(pathToFileURL(path.join(REPO_ROOT, 'dist', 'adapters', 'workspace-app.js')).href),
     import(pathToFileURL(path.join(REPO_ROOT, 'dist', 'ui', 'jedit-themes.js')).href),
   ]);
   return { workspaceApp, themes };
+}
+
+async function loadWorkspaceEditorEditingModule() {
+  await ensureDistBuilt();
+  return import(pathToFileURL(path.join(REPO_ROOT, 'dist', 'app', 'workspace', 'editor-editing.js')).href);
+}
+
+async function loadWorkspaceFileTypesModule() {
+  await ensureDistBuilt();
+  return import(pathToFileURL(path.join(REPO_ROOT, 'dist', 'app', 'workspace', 'file-types.js')).href);
+}
+
+async function loadWorkspaceGraftModule() {
+  await ensureDistBuilt();
+  return import(pathToFileURL(path.join(REPO_ROOT, 'dist', 'app', 'workspace', 'graft.js')).href);
+}
+
+async function loadWorkspaceViewModeModule() {
+  await ensureDistBuilt();
+  return import(pathToFileURL(path.join(REPO_ROOT, 'dist', 'app', 'workspace', 'view-mode.js')).href);
+}
+
+async function loadWorkspaceEditorModeModule() {
+  await ensureDistBuilt();
+  return import(pathToFileURL(path.join(REPO_ROOT, 'dist', 'app', 'workspace', 'editor', 'mode.js')).href);
 }
 
 function mockDeps() {
@@ -161,6 +184,23 @@ function mockTitleScreenModel(overrides) {
     jeditTheme: mockJeditTheme(),
     titleRenderMode: 'braille',
     titleAsciiPalette: 'dense',
+    ...overrides,
+  };
+}
+
+function mockEditor(overrides) {
+  return {
+    path: '/repo/notes.md',
+    lines: ['hello world'],
+    cursorRow: 0,
+    cursorCol: 0,
+    scrollRow: 0,
+    scrollCol: 0,
+    dirty: false,
+    readOnly: false,
+    mode: 'normal',
+    undoStack: [],
+    redoStack: [],
     ...overrides,
   };
 }
@@ -423,6 +463,107 @@ test('scene picker loads built-in scenes by name without using workspace root pa
 
   assert.deepEqual(requestedScenes, ['bunny.jedit-scene']);
   assert.deepEqual(message, { type: 'load-scene-result', scene });
+});
+
+test('scene picker keeps focus index non-negative when no scenes are available', async () => {
+  const keyBindings = await loadWorkspaceKeyBindingsModule();
+  const [nextModel] = keyBindings.updateFromKey(
+    { key: 'down' },
+    mockTitleScreenModel({
+      scenePickerOpen: true,
+      scenePickerFocusIndex: 0,
+      availableScenes: [],
+    }),
+    () => 0,
+    () => [],
+    noopNotificationTickCmd,
+    mockDeps(),
+  );
+
+  assert.equal(nextModel.scenePickerFocusIndex, 0);
+});
+
+test('read-only insert mode still exits through escape', async () => {
+  const editing = await loadWorkspaceEditorEditingModule();
+  const nextEditor = editing.updateInsertMode(
+    mockEditor({ readOnly: true, mode: 'insert', cursorCol: 5 }),
+    { key: 'escape' },
+    80,
+    24,
+    true,
+  );
+
+  assert.equal(nextEditor.mode, 'normal');
+});
+
+test('normal mode change-to-line-end deletes text before entering insert mode', async () => {
+  const editing = await loadWorkspaceEditorEditingModule();
+  const nextEditor = editing.updateNormalMode(
+    mockEditor({ cursorCol: 6 }),
+    { key: 'c', shift: true, ctrl: false, alt: false },
+    80,
+    24,
+  );
+
+  assert.deepEqual(nextEditor.lines, ['hello ']);
+  assert.equal(nextEditor.mode, 'insert');
+  assert.equal(nextEditor.register.kind, 'char');
+  assert.equal(nextEditor.register.text, 'world');
+});
+
+test('markdown file detection normalizes uppercase extensions', async () => {
+  const fileTypes = await loadWorkspaceFileTypesModule();
+
+  assert.equal(fileTypes.isMarkdownFile('/repo/README.MD'), true);
+  assert.equal(fileTypes.isMarkdownFile('/repo/guide.Markdown'), true);
+});
+
+test('graft lifecycle command awaits close connection', async () => {
+  const graft = await loadWorkspaceGraftModule();
+  let closed = false;
+  const command = graft.manageGraftLifecycle(async () => {
+    closed = true;
+  });
+
+  const result = await command();
+
+  assert.equal(closed, true);
+  assert.equal(result, undefined);
+});
+
+test('runtime trims frame history to the configured window', async () => {
+  const runtimeModule = await loadWorkspaceRuntimeModule();
+  const runtime = runtimeModule.createWorkspaceRuntime({
+    ...mockRuntime(),
+    nowMs: () => 200,
+  });
+  const [initialModel] = runtime.init();
+  const [nextModel] = runtime.update({ type: 'time-tick', time: 2 }, {
+    ...initialModel,
+    lastFrameMs: 100,
+    frameTimeHistory: Array.from({ length: 55 }, (_, index) => index),
+  });
+
+  assert.equal(nextModel.frameTimeHistory.length, 50);
+  assert.deepEqual(nextModel.frameTimeHistory.slice(-1), [100]);
+});
+
+test('workspace view mode exposes runtime tokens', async () => {
+  const viewMode = await loadWorkspaceViewModeModule();
+
+  assert.equal(viewMode.ViewModes.Source, 'source');
+  assert.equal(viewMode.ViewModes.Preview, 'preview');
+});
+
+test('editor mode exposes runtime mode and pending operator tokens', async () => {
+  const mode = await loadWorkspaceEditorModeModule();
+
+  assert.equal(mode.EditorModes.Normal, 'normal');
+  assert.equal(mode.EditorModes.Insert, 'insert');
+  assert.equal(mode.PendingNormals.Change, 'c');
+  assert.equal(mode.PendingNormals.Delete, 'd');
+  assert.equal(mode.PendingNormals.GoTo, 'g');
+  assert.equal(mode.PendingNormals.Yank, 'y');
 });
 
 function surfaceText(surface) {

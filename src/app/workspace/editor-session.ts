@@ -8,6 +8,7 @@ import type { EditorFilePort } from '../../ports/editor-file.js';
 import type { GraftSessionPort } from '../../ports/graft-session.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import { isMarkdownFile } from './file-types.js';
+import { ViewModes } from './view-mode.js';
 import {
   ensureEditorVisible,
   scrollPreview,
@@ -15,6 +16,7 @@ import {
   updateInsertMode,
   updateNormalMode,
 } from './editor-editing.js';
+import { EditorModes } from './editor/mode.js';
 
 export interface EditorSessionPorts {
   readonly editorFile: EditorFilePort;
@@ -39,7 +41,7 @@ export function loadEditor(filePath: string, editorFile: EditorFilePort): Editor
       scrollCol: 0,
       dirty: false,
       readOnly: file.readOnly,
-      mode: 'normal',
+      mode: EditorModes.Normal,
       undoStack: [],
       redoStack: [],
     }, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
@@ -53,7 +55,7 @@ export function loadEditor(filePath: string, editorFile: EditorFilePort): Editor
       scrollCol: 0,
       dirty: false,
       readOnly: true,
-      mode: 'normal',
+      mode: EditorModes.Normal,
       undoStack: [],
       redoStack: [],
     };
@@ -83,10 +85,10 @@ export function toggleMarkdownPreview(
   const next: WorkspaceModel = {
     ...model,
     editor: normalizeEditor(model.editor),
-    viewMode: model.viewMode === 'source' ? 'preview' : 'source',
+    viewMode: model.viewMode === ViewModes.Source ? ViewModes.Preview : ViewModes.Source,
   };
 
-  if (next.viewMode === 'source') {
+  if (next.viewMode === ViewModes.Source) {
     return beginSourceHighlightRefresh<WorkspaceModel, WorkspaceMsg>(
       next,
       next.editor,

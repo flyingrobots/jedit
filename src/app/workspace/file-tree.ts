@@ -8,6 +8,7 @@ import { createNotificationTickCmd, pushErrorToast } from '../../ui/feedback.js'
 import { clampIndex } from './viewport.js';
 import { withFocusPane } from './focus.js';
 import { beginEditorProjectionRefresh, isWorkspaceMarkdownFile, loadEditor } from './editor-session.js';
+import { ViewModes } from './view-mode.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 import { type Cmd } from '@flyingrobots/bijou-tui';
@@ -74,7 +75,7 @@ export function updateTreeFromKey(
     return beginEditorProjectionRefresh(withFocusPane({
       ...model,
       editor,
-      viewMode: 'source',
+      viewMode: ViewModes.Source,
       graftInfo: undefined,
       graftLoading: false,
       graftSelectedIndex: 0,
