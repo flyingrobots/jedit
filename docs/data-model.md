@@ -184,7 +184,17 @@ The optic may freely hold `worldlineId` and `currentHeadId` in `InternalOpticSta
 
 ## App-facing GraphQL SDL
 
-This is the jedit-facing schema: product nouns plus an opaque app-safe read basis token. In GraphQL, `ReadBasisHandle` should be a custom scalar rather than an object type, because the token is intentionally opaque and should not invite field-level coupling.
+The canonical jedit-facing SDL now lives at
+[`contracts/jedit/text-buffer-optic.graphql`](../contracts/jedit/text-buffer-optic.graphql).
+It defines product nouns plus an opaque app-safe read basis token. In GraphQL,
+`ReadBasisHandle` is a custom scalar rather than an object type, because the
+token is intentionally opaque and should not invite field-level coupling.
+
+The SDL is intentionally compile-ready before its generated TypeScript artifact
+is committed. The current Wesley TypeScript emitter maps custom scalars such as
+`ReadBasisHandle` and `DateTime` to `unknown`; jedit should not check in that
+surface until Wesley has a scalar-mapping policy that preserves this repo's
+no-new-`unknown` rule.
 
 ```graphql
 scalar DateTime
@@ -212,16 +222,6 @@ type TextWindowReading {
   cursorLine: Int!
   viewportLineCount: Int!
   truncated: Boolean!
-}
-
-type ReadingEvidence {
-  readingId: ID!
-  receiptId: ID
-}
-
-type ObservedTextWindowReading {
-  value: TextWindowReading!
-  evidence: ReadingEvidence!
 }
 
 type CreateBufferPayload {
@@ -265,7 +265,7 @@ type Mutation {
 }
 
 type Query {
-  textWindow(readBasis: ReadBasisHandle!, input: TextWindowInput!): ObservedTextWindowReading!
+  textWindow(readBasis: ReadBasisHandle!, input: TextWindowInput!): TextWindowReading!
 }
 ```
 
