@@ -125,6 +125,43 @@ test('scene picker load failures preserve structured runtime issue detail', asyn
   assert.equal(message.issue.atMs, 987);
 });
 
+test('scene picker load failures preserve diagnostics for circular thrown values', async () => {
+  const [keyBindings, titleScreen] = await Promise.all([
+    importDist('app', 'workspace', 'key-bindings.js'),
+    importDist('ui', 'title-screen.js'),
+  ]);
+  const circular = {};
+  circular.self = circular;
+  const deps = {
+    ...mockDeps(),
+    titleSceneLoader: {
+      loadTitleSceneFromFile: async () => undefined,
+      loadBuiltInTitleScene: async () => {
+        throw circular;
+      },
+    },
+  };
+  const [, commands] = keyBindings.updateFromKey(
+    { type: 'key', key: 'enter', ctrl: false, alt: false, shift: false },
+    mockTitleScreenModel(titleScreen, {
+      scenePickerOpen: true,
+      scenePickerFocusIndex: 0,
+      availableScenes: ['circular.jedit-scene'],
+      titleMeshes: {},
+    }),
+    () => 654,
+    () => [],
+    noopNotificationTickCmd,
+    deps,
+  );
+
+  const message = await commands[0]();
+
+  assert.equal(message.type, 'runtime-issue');
+  assert.equal(message.issue.name, 'SceneLoadError');
+  assert.equal(message.issue.atMs, 654);
+});
+
 test('scene picker keeps focus index non-negative when no scenes are available', async () => {
   const [keyBindings, titleScreen] = await Promise.all([
     importDist('app', 'workspace', 'key-bindings.js'),

@@ -9,6 +9,10 @@
       "files": "files",
       "graft": "graft"
     },
+    "context": {
+      "settings": "settings",
+      "graft_empty": "open a file to inspect it"
+    },
     "hints": {
       "j_k_move": "j/k move",
       "enter_change": "enter change",

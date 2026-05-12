@@ -271,3 +271,45 @@ test('workspace footer right-aligns RTL footer text by visual content width', as
   assert.equal(primary.trimStart().startsWith('INSERT'), true);
   assert.equal(primary.endsWith(']'), true);
 });
+
+test('workspace footer obtains context labels from i18n', async () => {
+  const footer = await loadFooterModule();
+  const requestedKeys = [];
+  const i18n = {
+    locale: 'en',
+    direction: 'ltr',
+    t: (path) => {
+      requestedKeys.push(path);
+      if (path.startsWith('footer.mode.')) {
+        return path.slice('footer.mode.'.length);
+      }
+      return `<${path}>`;
+    },
+    setLocale: () => undefined,
+  };
+  const base = {
+    i18n,
+    focusPane: 'editor',
+    fileDrawerOpen: false,
+    graftDrawerOpen: false,
+    viewMode: 'source',
+    markdownPreviewActive: false,
+    settingsOpen: false,
+    editorMode: undefined,
+    pendingNormal: undefined,
+    cwd: '/repo',
+    selectedEntry: undefined,
+    editorPath: undefined,
+    graftPath: undefined,
+    graftSelection: undefined,
+  };
+
+  assert.equal(footer.workspaceFooterLines({ ...base, settingsOpen: true })[1], '<footer.context.settings>');
+  assert.equal(footer.workspaceFooterLines({
+    ...base,
+    focusPane: 'graft',
+    graftDrawerOpen: true,
+  })[1], '<footer.context.graft_empty>');
+  assert.equal(requestedKeys.includes('footer.context.settings'), true);
+  assert.equal(requestedKeys.includes('footer.context.graft_empty'), true);
+});

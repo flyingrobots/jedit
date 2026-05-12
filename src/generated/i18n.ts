@@ -10,6 +10,10 @@ export type TranslationSchema = {
       readonly files: string;
       readonly graft: string;
     };
+    readonly context: {
+      readonly settings: string;
+      readonly graft_empty: string;
+    };
     readonly hints: {
       readonly j_k_move: string;
       readonly enter_change: string;
@@ -68,6 +72,10 @@ export const en: TranslationSchema = {
       files: 'files',
       graft: 'graft',
     },
+    context: {
+      settings: 'settings',
+      graft_empty: 'open a file to inspect it',
+    },
     hints: {
       j_k_move: 'j/k move',
       enter_change: 'enter change',
@@ -125,6 +133,10 @@ export const me: TranslationSchema = {
       settings: 'sgnittes',
       files: 'selif',
       graft: 'tfarg',
+    },
+    context: {
+      settings: 'sgnittes',
+      graft_empty: 'ti tcepsni ot elif a nepo',
     },
     hints: {
       j_k_move: 'evom k/j',

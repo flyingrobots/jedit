@@ -189,7 +189,7 @@ function createTimeTickCmd(): Cmd<WorkspaceMsg> {
     from: 0,
     to: Number.MAX_SAFE_INTEGER,
     duration: TIME_TICK_DURATION_MS,
-    onFrame: (value) => ({ type: 'time-tick', time: value / 1000 }),
+    onFrame: (value) => ({ type: WorkspaceMessageTypes.TimeTick, time: value / 1000 }),
   });
 }
 
@@ -199,6 +199,6 @@ const createDrawerAnimationCmd: CreateDrawerAnimationCmd = (kind: DrawerKind, fr
     from,
     to,
     duration: DRAWER_DURATION_MS,
-    onFrame: (value) => ({ type: 'drawer-progress', kind, value }),
+    onFrame: (value) => ({ type: WorkspaceMessageTypes.DrawerProgress, kind, value }),
   }),
 ];

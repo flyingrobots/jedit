@@ -1,7 +1,13 @@
 import { colorHex, type TokenValue } from '@flyingrobots/bijou';
 import { quit, type KeyMsg } from '@flyingrobots/bijou-tui';
 import type { Cmd } from '@flyingrobots/bijou-tui';
-import { isFooterToggleKey, pushNotificationToast } from '../../ui/feedback.js';
+import {
+  isFooterToggleKey,
+  NotificationPlacements,
+  NotificationTones,
+  NotificationVariants,
+  pushNotificationToast,
+} from '../../ui/feedback.js';
 import {
   JEDIT_MARKDOWN_PREVIEW_TOGGLE_KEY,
   JEDIT_SCENE_PICKER_TOGGLE_KEY,
@@ -74,15 +80,21 @@ const TITLE_ASCII_PALETTE_HATCHING_LABEL = 'Hatching';
 const TITLE_ASCII_PALETTE_MATRIX_LABEL = 'Matrix';
 const TITLE_ASCII_PALETTE_BLOCKS_LABEL = 'Blocks';
 const TITLE_ASCII_PALETTE_DITHER_LABEL = 'Dither';
-const NOTIFICATION_TOAST_VARIANT = 'TOAST';
-const NOTIFICATION_INFO_TONE = 'INFO';
-const NOTIFICATION_LOWER_RIGHT_PLACEMENT = 'LOWER_RIGHT';
 const FALLBACK_TOAST_FOREGROUND = '#e2e7ec';
 const FALLBACK_TOAST_BACKGROUND = '#0e1116';
 const FALLBACK_TOAST_ACCENT = '#d897ff';
 const SCENE_PICKER_MIN_INDEX = 0;
 const SCENE_PICKER_STEP = 1;
 const UNKNOWN_SCENE_LOAD_FAILURE = 'Unable to describe scene load failure';
+const UNKNOWN_TITLE_ASCII_PALETTE_MESSAGE = 'Unknown TitleAsciiPalette variant';
+
+class InvalidTitleAsciiPaletteError extends Error {
+  public constructor(palette: string) {
+    super(`${UNKNOWN_TITLE_ASCII_PALETTE_MESSAGE}: ${palette}`);
+    this.name = 'InvalidTitleAsciiPaletteError';
+    Object.freeze(this);
+  }
+}
 
 export function updateFromKey(
   msg: KeyMsg,
@@ -138,7 +150,7 @@ export function updateFromKey(
             } catch (error) {
               const issue = error instanceof Error
                 ? describeSceneLoadError(error, nowMs())
-                : describeSceneLoadFailure(JSON.stringify(error), nowMs());
+                : describeSceneLoadFailure(String(error), nowMs());
               return {
                 type: WorkspaceMessageTypes.RuntimeIssue,
                 issue,
@@ -280,9 +292,9 @@ function pushTitleScreenToast(
   return pushNotificationToast(model, {
     title,
     message,
-    variant: NOTIFICATION_TOAST_VARIANT,
-    tone: NOTIFICATION_INFO_TONE,
-    placement: NOTIFICATION_LOWER_RIGHT_PLACEMENT,
+    variant: NotificationVariants.Toast,
+    tone: NotificationTones.Info,
+    placement: NotificationPlacements.LowerRight,
     bgToken: titleToastBackgroundToken(model),
     accentToken: titleToastAccentToken(model),
   }, nowMs(), createNotificationTickCmd);
@@ -320,7 +332,7 @@ function titleAsciiPaletteLabel(palette: TitleAsciiPalette): string {
       return TITLE_ASCII_PALETTE_DITHER_LABEL;
     default: {
       const exhaustive: never = palette;
-      return exhaustive;
+      throw new InvalidTitleAsciiPaletteError(String(exhaustive));
     }
   }
 }

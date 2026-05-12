@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import {
@@ -35,6 +35,21 @@ test('workspace runtime exposes message constants for central dispatch', async (
   );
 
   assert.equal(nextModel.perfVisible, true);
+});
+
+test('workspace app animation commands emit centralized message types', async () => {
+  const source = readFileSync(path.join(REPO_ROOT, 'src', 'adapters', 'workspace-app.ts'), 'utf8');
+
+  assert.doesNotMatch(source, /type: 'time-tick'/);
+  assert.doesNotMatch(source, /type: 'drawer-progress'/);
+});
+
+test('raytracer profiler uses centralized runtime issue tokens', async () => {
+  const source = readFileSync(path.join(REPO_ROOT, 'src', 'app', 'raytracer-profiler.ts'), 'utf8');
+
+  assert.doesNotMatch(source, /const ISSUE_LEVEL_ERROR/);
+  assert.doesNotMatch(source, /const ISSUE_LEVEL_WARNING/);
+  assert.doesNotMatch(source, /const ISSUE_SOURCE_COMMAND/);
 });
 
 test('runtime load-scene-result applies the loaded scene camera to title camera state', async () => {

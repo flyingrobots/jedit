@@ -24,6 +24,8 @@ const FOOTER_MODE_PREVIEW = 'preview';
 const FOOTER_MODE_SETTINGS = 'settings';
 const FOOTER_MODE_FILES = 'files';
 const FOOTER_MODE_GRAFT = 'graft';
+const FOOTER_CONTEXT_SETTINGS = 'footer.context.settings';
+const FOOTER_CONTEXT_GRAFT_EMPTY = 'footer.context.graft_empty';
 
 const FocusPaneModeKeys: Record<FocusPane, string> = Object.freeze({
   [FocusPanes.Editor]: FOOTER_MODE_BROWSE,
@@ -268,7 +270,7 @@ function pendingNormalFooterDetail(pending: PendingNormal, t: FooterHintTranslat
 
 function footerContextLine(state: WorkspaceFooterState): string {
   if (state.settingsOpen) {
-    return 'settings';
+    return state.i18n.t(FOOTER_CONTEXT_SETTINGS);
   }
 
   if (state.focusPane === FocusPanes.Files && state.fileDrawerOpen) {
@@ -284,7 +286,7 @@ function footerContextLine(state: WorkspaceFooterState): string {
       return state.graftPath;
     }
 
-    return 'open a file to inspect it';
+    return state.i18n.t(FOOTER_CONTEXT_GRAFT_EMPTY);
   }
 
   if (state.editorPath != null) {

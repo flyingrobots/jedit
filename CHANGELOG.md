@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Addressed the latest PR #8 CodeRabbit follow-up by adding typed codec and
+  runtime-id errors, centralizing notification/profiler/workspace animation
+  tokens, hardening scene-load failure conversion, and localizing footer
+  context labels.
 - Addressed the current PR #8 CodeRabbit follow-up by centralizing workspace
   runtime message and footer i18n tokens, making graft lifecycle timestamps
   deterministic through the runtime clock, preserving scene-load failure detail,

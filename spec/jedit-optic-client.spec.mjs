@@ -211,6 +211,18 @@ test('transport-backed optic client exercises the fake Echo host through encoded
   assert.match(stale.obstruction.message, /Base head mismatch/);
 });
 
+test('codec exposes a typed invalid JSON payload error', async () => {
+  const { codecModule } = await loadModules();
+
+  assert.equal(typeof codecModule.InvalidJsonPayloadError, 'function');
+  assert.throws(
+    () => {
+      throw new codecModule.InvalidJsonPayloadError();
+    },
+    (error) => error?.name === 'InvalidJsonPayloadError',
+  );
+});
+
 test('transport-backed textWindow uses an opaque read basis handle', async () => {
   const {
     transportClientModule,

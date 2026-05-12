@@ -11,6 +11,9 @@ import {
   type KeyMsg,
   type NotificationSpec,
   type NotificationState,
+  type NotificationPlacement,
+  type NotificationTone,
+  type NotificationVariant,
   type Overlay,
   type RuntimeIssue,
 } from '@flyingrobots/bijou-tui';
@@ -20,6 +23,27 @@ import { MissingCapabilityError } from '../domain/errors.js';
 
 const HELP_MODAL_WIDTH = 56;
 const NOTIFICATION_TICK_MS = 40;
+const NOTIFICATION_VARIANT_TOAST: NotificationVariant = 'TOAST';
+const NOTIFICATION_TONE_ERROR: NotificationTone = 'ERROR';
+const NOTIFICATION_TONE_INFO: NotificationTone = 'INFO';
+const NOTIFICATION_TONE_WARNING: NotificationTone = 'WARNING';
+const NOTIFICATION_PLACEMENT_BOTTOM_CENTER: NotificationPlacement = 'BOTTOM_CENTER';
+const NOTIFICATION_PLACEMENT_LOWER_RIGHT: NotificationPlacement = 'LOWER_RIGHT';
+
+export const NotificationVariants = Object.freeze({
+  Toast: NOTIFICATION_VARIANT_TOAST,
+});
+
+export const NotificationTones = Object.freeze({
+  Error: NOTIFICATION_TONE_ERROR,
+  Info: NOTIFICATION_TONE_INFO,
+  Warning: NOTIFICATION_TONE_WARNING,
+});
+
+export const NotificationPlacements = Object.freeze({
+  BottomCenter: NOTIFICATION_PLACEMENT_BOTTOM_CENTER,
+  LowerRight: NOTIFICATION_PLACEMENT_LOWER_RIGHT,
+});
 
 export interface NotificationHost<Msg> {
   readonly columns: number;
@@ -101,9 +125,9 @@ export function pushErrorToast<Msg, T extends NotificationHost<Msg>>(
   return pushNotificationToast(model, {
     title,
     message,
-    variant: 'TOAST',
-    tone: 'ERROR',
-    placement: 'BOTTOM_CENTER',
+    variant: NotificationVariants.Toast,
+    tone: NotificationTones.Error,
+    placement: NotificationPlacements.BottomCenter,
   }, nowMs, createTickCmd);
 }
 
@@ -115,9 +139,9 @@ export function pushRuntimeIssueToast<Msg, T extends NotificationHost<Msg>>(
   return pushNotificationToast(model, {
     title: issue.level === 'warning' ? 'Runtime warning' : 'Runtime error',
     message: `${issue.source}: ${issue.message}`,
-    variant: 'TOAST',
-    tone: issue.level === 'warning' ? 'WARNING' : 'ERROR',
-    placement: 'BOTTOM_CENTER',
+    variant: NotificationVariants.Toast,
+    tone: issue.level === 'warning' ? NotificationTones.Warning : NotificationTones.Error,
+    placement: NotificationPlacements.BottomCenter,
   }, issue.atMs, createTickCmd);
 }
 

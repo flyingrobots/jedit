@@ -1,4 +1,5 @@
 import type { Cmd, RuntimeIssue } from '@flyingrobots/bijou-tui';
+import { RuntimeIssueLevels, RuntimeIssueSources } from './workspace/runtime-issue.js';
 
 export interface ProfilerFrame {
   readonly time: number;
@@ -41,10 +42,6 @@ export type ProfilerMsg =
 
 export type ProfilerEffectMsg = ProfilerMsg | { type: typeof PROFILER_EFFECT_RUNTIME_ISSUE; issue: RuntimeIssue };
 
-const ISSUE_LEVEL_ERROR = 'error';
-const ISSUE_LEVEL_WARNING = 'warning';
-const ISSUE_SOURCE_COMMAND = 'command';
-
 export function createInitialProfilerState(): ProfilerState {
   return { active: false };
 }
@@ -75,8 +72,8 @@ export function toggleProfiler(
             type: PROFILER_EFFECT_RUNTIME_ISSUE,
             issue: {
               message: `Profile trace saved to ${activeHandle.filePath}`,
-              level: ISSUE_LEVEL_WARNING,
-              source: ISSUE_SOURCE_COMMAND,
+              level: RuntimeIssueLevels.Warning,
+              source: RuntimeIssueSources.Command,
               atMs: profiler.nowMs(),
             },
           };
@@ -85,8 +82,8 @@ export function toggleProfiler(
             type: PROFILER_EFFECT_RUNTIME_ISSUE,
             issue: {
               message: `Failed to close profile: ${String(err)}`,
-              level: ISSUE_LEVEL_ERROR,
-              source: ISSUE_SOURCE_COMMAND,
+              level: RuntimeIssueLevels.Error,
+              source: RuntimeIssueSources.Command,
               atMs: profiler.nowMs(),
             },
           };
@@ -106,8 +103,8 @@ export function toggleProfiler(
           type: PROFILER_EFFECT_RUNTIME_ISSUE,
           issue: {
             message: `Failed to start profile: ${String(err)}`,
-            level: ISSUE_LEVEL_ERROR,
-            source: ISSUE_SOURCE_COMMAND,
+            level: RuntimeIssueLevels.Error,
+            source: RuntimeIssueSources.Command,
             atMs: profiler.nowMs(),
           },
         };
@@ -135,8 +132,8 @@ export function streamProfilerFrame(
         type: PROFILER_EFFECT_RUNTIME_ISSUE,
         issue: {
           message: `Failed to stream profile: ${String(err)}`,
-          level: ISSUE_LEVEL_ERROR,
-          source: ISSUE_SOURCE_COMMAND,
+          level: RuntimeIssueLevels.Error,
+          source: RuntimeIssueSources.Command,
           atMs: profiler.nowMs(),
         },
       };

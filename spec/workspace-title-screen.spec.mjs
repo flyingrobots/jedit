@@ -46,6 +46,36 @@ test('title screen number keys switch render modes without an editor', async () 
   });
 });
 
+test('feedback module exposes notification presentation tokens', async () => {
+  const feedback = await importDist('ui', 'feedback.js');
+
+  assert.equal(feedback.NotificationVariants.Toast, 'TOAST');
+  assert.equal(feedback.NotificationTones.Info, 'INFO');
+  assert.equal(feedback.NotificationPlacements.LowerRight, 'LOWER_RIGHT');
+});
+
+test('title screen rejects unknown ASCII palettes instead of surfacing them in toast text', async () => {
+  const [keyBindings, titleScreen] = await Promise.all([
+    importDist('app', 'workspace', 'key-bindings.js'),
+    importDist('ui', 'title-screen.js'),
+  ]);
+
+  assert.throws(
+    () => keyBindings.updateFromKey(
+      { key: '2' },
+      mockTitleScreenModel(titleScreen, {
+        titleRenderMode: titleScreen.TITLE_RENDER_MODE.Braille,
+        titleAsciiPalette: 'future-palette',
+      }),
+      () => 0,
+      () => [],
+      noopNotificationTickCmd,
+      mockDeps(),
+    ),
+    (error) => error?.name === 'InvalidTitleAsciiPaletteError',
+  );
+});
+
 test('period cycles title screen ASCII palettes only when ASCII mode is active without an editor', async () => {
   const [keyBindings, titleScreen] = await Promise.all([
     importDist('app', 'workspace', 'key-bindings.js'),
