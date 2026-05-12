@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Addressed the follow-up PR #8 review pass by splitting the oversized
+  workspace keybinding spec, tightening runtime token objects, hardening
+  read-only/editor lifecycle behavior, and adding deterministic regression
+  coverage for profiler, graft, scene-loader, and mesh-footprint fixes.
 - Addressed PR #8 review feedback for built-in scene resolution, editor mode
   transitions, contract runtime IDs, scene math, markdown detection, and
   reviewer-requested runtime constants.

@@ -8,7 +8,7 @@ Everything else — types, tests, docs — is secondary documentation. If they d
 
 ---
 
-### Core Philosophy
+## Core Philosophy
 
 - Truth-seeking over cleverness
 - Explicit, boring, and robust
@@ -19,7 +19,7 @@ Everything else — types, tests, docs — is secondary documentation. If they d
 
 ---
 
-### Mandatory Architectural Rules
+## Mandatory Architectural Rules
 
 **1. Hexagonal Architecture (Ports & Adapters) — Required**
 Core domain logic must never depend on host-specific APIs, external libraries with side effects, or concrete implementations. All external capabilities are accessed exclusively through
@@ -33,7 +33,7 @@ Serialization, deserialization, and codec work must happen **only** in adapters 
 
 ---
 
-### Object Model & Modeling Rules
+## Object Model & Modeling Rules
 
 **Prefer classes with constructors for domain concepts.**
 
@@ -79,7 +79,7 @@ For cross-realm values, normalize through adapters/boundaries and construct vali
 
 ---
 
-### Strict Code Limits (Enforced)
+## Strict Code Limits (Enforced)
 
 - **File size**: ≤ **500 lines**
 - **Function / Method**: ≤ **35 lines** (excluding whitespace & trivial returns)
@@ -92,7 +92,7 @@ For cross-realm values, normalize through adapters/boundaries and construct vali
 
 ---
 
-### Language Policy
+## Language Policy
 
 **Banned without exception:**
 - `any`
@@ -112,7 +112,7 @@ For cross-realm values, normalize through adapters/boundaries and construct vali
 
 ---
 
-### flyingrobots's Principles
+## flyingrobots's Principles
 
 **P1:** Domain concepts with invariants or behavior deserve runtime-backed classes.
 **P2:** Validation happens at construction and system boundaries.
@@ -126,7 +126,7 @@ For cross-realm values, normalize through adapters/boundaries and construct vali
 
 ---
 
-### Sample ESLint Rules
+## Sample ESLint Rules
 
 ```json
 {
@@ -139,6 +139,14 @@ For cross-realm values, normalize through adapters/boundaries and construct vali
     "max-statements": ["error", 25],
 
     "@typescript-eslint/no-explicit-any": "error",
+    "@typescript-eslint/no-restricted-types": [
+      "error",
+      {
+        "types": {
+          "unknown": "Use a concrete type instead of unknown"
+        }
+      }
+    ],
     "@typescript-eslint/no-unsafe-assignment": "error",
     "@typescript-eslint/no-unsafe-member-access": "error",
     "@typescript-eslint/no-unsafe-return": "error",
@@ -152,14 +160,14 @@ For cross-realm values, normalize through adapters/boundaries and construct vali
 
 ---
 
-### Review Checklist (Mandatory on Every PR)
+## Review Checklist (Mandatory on Every PR)
 
 - Follows hexagonal architecture?
 - Dependencies properly injected?
 - Encoding/decoding only at boundaries?
 - File ≤ 500 lines? Functions ≤ 35 lines & depth ≤ 4?
 - Important domain concepts modeled as classes with constructor validation?
-- Invariants protected? No `any`? No `unknown`? No unsafe `as` assertions?
+- Invariants protected? Free of `any`, `unknown`, and unsafe `as` assertions?
 - Could the core run in a browser?
 - Time, randomness, and side effects properly abstracted?
 
