@@ -52,7 +52,7 @@ test('text buffer optic SDL exposes product nouns and opaque read handles', asyn
   for (const operationName of EXPECTED_APP_MUTATIONS) {
     assert.match(
       contract,
-      new RegExp(`\\b${operationName}\\s*\\(\\s*input:\\s*${toInputName(operationName)}!\\s*\\):`),
+      mutationSignaturePattern(operationName),
       `${operationName} must be present as an app-facing mutation`,
     );
   }
@@ -60,10 +60,29 @@ test('text buffer optic SDL exposes product nouns and opaque read handles', asyn
   for (const operationName of EXPECTED_APP_QUERIES) {
     assert.match(
       contract,
-      new RegExp(`\\b${operationName}\\s*\\(\\s*readBasis:\\s*ReadBasisHandle!`),
+      querySignaturePattern(operationName),
       `${operationName} must read through an opaque ReadBasisHandle`,
     );
   }
+});
+
+test('text buffer optic signature matchers reject partial declarations', () => {
+  assert.doesNotMatch(
+    'createBuffer(input: CreateBufferInput!):',
+    mutationSignaturePattern('createBuffer'),
+  );
+  assert.doesNotMatch(
+    'createBuffer(input: CreateBufferInput!): CreateBufferPayload',
+    mutationSignaturePattern('createBuffer'),
+  );
+  assert.doesNotMatch(
+    'textWindow(readBasis: ReadBasisHandle!): TextWindowReading!',
+    querySignaturePattern('textWindow'),
+  );
+  assert.doesNotMatch(
+    'textWindow(readBasis: ReadBasisHandle!, input: TextWindowInput!): TextWindowReading',
+    querySignaturePattern('textWindow'),
+  );
 });
 
 test('text buffer optic SDL does not expose runtime coordinates', async () => {
@@ -132,4 +151,17 @@ function toInputName(operationName) {
     return 'ReplaceRangeInput';
   }
   throw new Error(`Unhandled app mutation: ${operationName}`);
+}
+
+function mutationSignaturePattern(operationName) {
+  return new RegExp(
+    `\\b${operationName}\\s*\\(\\s*input:\\s*${toInputName(operationName)}!\\s*\\)\\s*:\\s*\\w+!`,
+  );
+}
+
+function querySignaturePattern(operationName) {
+  if (operationName === 'textWindow') {
+    return /\btextWindow\s*\(\s*readBasis:\s*ReadBasisHandle!\s*,\s*input:\s*TextWindowInput!\s*\)\s*:\s*\w+!/;
+  }
+  throw new Error(`Unhandled app query: ${operationName}`);
 }
