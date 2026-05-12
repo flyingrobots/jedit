@@ -26,11 +26,11 @@ Core rules:
 - Wesley operations require them explicitly.
 - Echo executes against them and produces evidence.
 
-> The app may hold the optic.  
-> The app may invoke the optic.  
+> The app may hold the optic.
+> The app may invoke the optic.
 > The app may not inspect the optic’s runtime coordinates.
 
-`ReadBasisHandle` is supporting machinery, not the star. `TextBufferOptic` is the primary authorized boundary object. 
+`ReadBasisHandle` is supporting machinery, not the star. `TextBufferOptic` is the primary authorized boundary object.
 
 ***
 
@@ -468,9 +468,9 @@ The optic is the authorized translator from product intent to runtime operation.
 
 The rope, piece table, or any other text data structure is not part of the jedit contract. The contract says:
 
-> replace byte range with text  
-> read bounded text window  
-> preserve deterministic history  
+> replace byte range with text
+> read bounded text window
+> preserve deterministic history
 > produce evidence-bearing readings
 
 Echo may implement this with a piece table, a rope, a persistent tree, a chunk graph, or any other structure that satisfies the law. Event-sourcing and projection-oriented systems routinely separate write-side history from read-side projections, which matches the split between admitted runtime operations and observed text windows here.
