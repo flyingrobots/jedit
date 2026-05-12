@@ -10,9 +10,13 @@ const DATA_MODEL_DOC_PATH = path.join(REPO_ROOT, 'docs', 'data-model.md');
 const PACKAGE_JSON_PATH = path.join(REPO_ROOT, 'package.json');
 
 const FORBIDDEN_APP_CONTRACT_TERMS = Object.freeze([
+  'worldline',
   'worldlineId',
+  'head',
   'headId',
+  'baseHead',
   'baseHeadId',
+  'canonicalHead',
   'canonicalHeadId',
   'tick',
   'rope',

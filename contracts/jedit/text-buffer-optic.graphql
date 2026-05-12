@@ -27,7 +27,7 @@ type TextBufferOptic {
     """Product buffer exposed by this optic."""
     buffer: TextBuffer!
 
-    """Opaque token used to request reads through this optic."""
+    """Opaque token used to request reads through this optic capability."""
     readBasis: ReadBasisHandle!
 
     """Session-local product version for this buffer optic."""
