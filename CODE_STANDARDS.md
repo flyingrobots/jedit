@@ -1,4 +1,4 @@
-### Rule 0: Runtime Truth Wins (Non-Negotiable)
+# Rule 0: Runtime Truth Wins (Non-Negotiable)
 
 When the program is running, only one question matters:
 
@@ -65,7 +65,7 @@ export class EventId {
     return new EventId(writerId, lamport);
   }
 
-  static is(value: unknown): value is EventId {
+  static is(value: object | null): value is EventId {
     return value instanceof EventId;
   }
 
@@ -81,7 +81,7 @@ For cross-realm values, normalize through adapters/boundaries and construct vali
 
 ### Strict Code Limits (Enforced)
 
-- **File size**: ≤ **1000 lines** (aim for < 600)
+- **File size**: ≤ **500 lines**
 - **Function / Method**: ≤ **35 lines** (excluding whitespace & trivial returns)
 - **Nesting depth**: ≤ **4**
 - **Cyclomatic complexity**: ≤ **8**
@@ -96,7 +96,7 @@ For cross-realm values, normalize through adapters/boundaries and construct vali
 
 **Banned without exception:**
 - `any`
-- `unknown` is allowed at external boundaries/parsing, and must not flow into core/domain types until it is validated and normalized
+- `unknown`
 - Type assertions (`as`)
 - `enum`
 - `throw new Error("string")`
@@ -131,7 +131,7 @@ For cross-realm values, normalize through adapters/boundaries and construct vali
 ```json
 {
   "rules": {
-    "max-lines": ["error", 1000],
+    "max-lines": ["error", 500],
     "max-lines-per-function": ["error", { "max": 35, "skipBlankLines": true, "skipComments": true }],
     "max-depth": ["error", 4],
     "max-params": ["error", 5],
@@ -157,9 +157,9 @@ For cross-realm values, normalize through adapters/boundaries and construct vali
 - Follows hexagonal architecture?
 - Dependencies properly injected?
 - Encoding/decoding only at boundaries?
-- File ≤ 1000 lines? Functions ≤ 35 lines & depth ≤ 4?
+- File ≤ 500 lines? Functions ≤ 35 lines & depth ≤ 4?
 - Important domain concepts modeled as classes with constructor validation?
-- Invariants protected? No `any`? No unsafe `as` assertions? No unvalidated `unknown` escaping boundaries?
+- Invariants protected? No `any`? No `unknown`? No unsafe `as` assertions?
 - Could the core run in a browser?
 - Time, randomness, and side effects properly abstracted?
 

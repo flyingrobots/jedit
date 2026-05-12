@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Addressed PR #8 review feedback for built-in scene resolution, editor mode
+  transitions, contract runtime IDs, scene math, markdown detection, and
+  reviewer-requested runtime constants.
 - Fixed raytracer column math intersection which caused caps to be hollow when viewed from above or below.
 - Added a new `.jedit-scene` file format for defining scenes and created a scene loader adapter.
 - Added an interactive Scene Picker overlay to the title screen (toggleable via `F5`) for loading `.jedit-scene` debug scenes.
