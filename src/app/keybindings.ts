@@ -18,6 +18,8 @@ export interface JeditKeyBinding {
   readonly shift?: boolean;
 }
 
+type JeditKeyChord = Pick<JeditKeyBinding, 'key' | 'ctrl' | 'alt' | 'shift'>;
+
 const KEY_F2 = 'f2';
 const KEY_F3 = 'f3';
 const KEY_L = 'l';
@@ -33,9 +35,15 @@ export const JEDIT_SETTINGS_TOGGLE_LABEL = KEY_F2;
 export const JEDIT_MARKDOWN_PREVIEW_TOGGLE_KEY = KEY_F3;
 export const JEDIT_MARKDOWN_PREVIEW_TOGGLE_LABEL = KEY_F3;
 export const JEDIT_SCENE_PICKER_TOGGLE_KEY = KEY_L;
-export const JEDIT_SCENE_PICKER_TOGGLE_LABEL = 'ctrl+l';
+export const JEDIT_SCENE_PICKER_TOGGLE_LABEL = formatJeditKeyLabel({
+  key: JEDIT_SCENE_PICKER_TOGGLE_KEY,
+  ctrl: true,
+});
 export const JEDIT_THEME_TOGGLE_KEY = KEY_T;
-export const JEDIT_THEME_TOGGLE_LABEL = 'ctrl+t';
+export const JEDIT_THEME_TOGGLE_LABEL = formatJeditKeyLabel({
+  key: JEDIT_THEME_TOGGLE_KEY,
+  ctrl: true,
+});
 
 export const JEDIT_KEY_BINDINGS = ensureUniqueJeditKeyBindings([
   {
@@ -77,7 +85,11 @@ export function ensureUniqueJeditKeyBindings<const Bindings extends readonly Jed
   return bindings;
 }
 
-function keyBindingSignature(binding: JeditKeyBinding): string {
+export function formatJeditKeyLabel(binding: JeditKeyChord): string {
+  return keyBindingSignature(binding);
+}
+
+function keyBindingSignature(binding: JeditKeyChord): string {
   const parts: string[] = [];
   if (binding.ctrl === true) {
     parts.push(MODIFIER_CTRL);

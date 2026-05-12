@@ -3,12 +3,15 @@ import type { I18nDirection, I18nPort } from '../ports/i18n.js';
 
 type TranslationNode = string | { [key: string]: TranslationNode };
 
+const DEFAULT_LOCALE: Locale = 'en';
+const DEFAULT_DIRECTION: I18nDirection = 'ltr';
+
 export class BijouI18nAdapter implements I18nPort {
   private _locale: Locale;
   private _direction: I18nDirection;
   private _catalog: TranslationSchema;
 
-  constructor(locale: Locale = 'en', direction: I18nDirection = 'ltr') {
+  constructor(locale: Locale = DEFAULT_LOCALE, direction: I18nDirection = DEFAULT_DIRECTION) {
     this._locale = locale;
     this._direction = direction;
     this._catalog = catalogs[locale];
@@ -83,9 +86,9 @@ function isTranslationRecord(value: string | Record<string, TranslationNode>): v
 }
 
 function resolveLocale(value: string): Locale {
-  return isLocale(value) ? value : 'en';
+  return isLocale(value) ? value : DEFAULT_LOCALE;
 }
 
 function isLocale(value: string): value is Locale {
-  return value === 'en' || value === 'me';
+  return Object.prototype.hasOwnProperty.call(catalogs, value);
 }

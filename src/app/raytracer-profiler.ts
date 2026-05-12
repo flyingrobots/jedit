@@ -32,6 +32,10 @@ export type ProfilerMsg =
 
 export type ProfilerEffectMsg = ProfilerMsg | { type: 'runtime-issue'; issue: RuntimeIssue };
 
+const ISSUE_LEVEL_ERROR = 'error';
+const ISSUE_LEVEL_WARNING = 'warning';
+const ISSUE_SOURCE_COMMAND = 'command';
+
 export function createInitialProfilerState(): ProfilerState {
   return { active: false };
 }
@@ -65,8 +69,8 @@ export function toggleProfiler(
             type: 'runtime-issue',
             issue: {
               message: `Failed to close profile: ${String(err)}`,
-              level: 'error',
-              source: 'command',
+              level: ISSUE_LEVEL_ERROR,
+              source: ISSUE_SOURCE_COMMAND,
               atMs: profiler.nowMs(),
             },
           };
@@ -77,8 +81,8 @@ export function toggleProfiler(
           type: 'runtime-issue',
           issue: {
             message: `Profile trace saved to ${activeHandle.filePath}`,
-            level: 'warning',
-            source: 'command',
+            level: ISSUE_LEVEL_WARNING,
+            source: ISSUE_SOURCE_COMMAND,
             atMs: profiler.nowMs(),
           },
         };
@@ -97,8 +101,8 @@ export function toggleProfiler(
           type: 'runtime-issue',
           issue: {
             message: `Failed to start profile: ${String(err)}`,
-            level: 'error',
-            source: 'command',
+            level: ISSUE_LEVEL_ERROR,
+            source: ISSUE_SOURCE_COMMAND,
             atMs: profiler.nowMs(),
           },
         };
@@ -126,8 +130,8 @@ export function streamProfilerFrame(
         type: 'runtime-issue',
         issue: {
           message: `Failed to stream profile: ${String(err)}`,
-          level: 'error',
-          source: 'command',
+          level: ISSUE_LEVEL_ERROR,
+          source: ISSUE_SOURCE_COMMAND,
           atMs: profiler.nowMs(),
         },
       };
