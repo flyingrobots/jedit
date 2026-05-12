@@ -14,6 +14,40 @@
 - Added an interactive Scene Picker overlay to the title screen (toggleable via `F5`) for loading `.jedit-scene` debug scenes.
 - Fixed naive RTL string reversal in footer that corrupted UI labels; now correctly utilizes Bijou surface blitting.
 - Fortified the Bijou i18n adapter object traversal logic to enforce safe property access.
+- Added the app-facing text buffer optic GraphQL contract so Wesley can compile
+  product-safe `createBuffer`, `replaceRange`, and `textWindow` surfaces while
+  tests reject runtime coordinate root nouns and id-shaped variants from the
+  app SDL.
+- Introduced the first `TextBufferOptic` capability wrapper: app-facing code can
+  create a buffer, apply a `replaceRange` intent, and read a bounded text window
+  through the optic while raw runtime coordinates remain below the optic/session
+  boundary.
+- Defined the first `ReadBasisHandle` boundary for optic/session bootstrap:
+  transport-backed `textWindow` calls now accept an opaque read-basis handle
+  while the adapter resolves the handle into existing runtime coordinates, and
+  handle IDs are deterministic diagnostic tokens rather than buffer keys or
+  substrate coordinates. The registry now rejects cloned/forged handles by
+  object identity instead of trusting `id` replay.
+- Hardened the real Echo WASM Stack Witness basis regression so it asserts the
+  encoded request coordinate comes from the resolved read basis instead of
+  inspecting request-construction source text.
+- Moved the real Echo WASM Stack Witness fixture basis behind a witness-only
+  optic session resolver so request construction no longer directly references
+  Echo's raw fixture worldline id.
+- Updated the real Echo WASM Stack Witness runner to delegate package
+  construction to Echo's `scripts/build-warp-wasm-package.sh` instead of
+  duplicating Echo's `wasm-pack` invocation in jedit.
+- Added an opt-in real Echo WASM Stack Witness 0001 transport witness that
+  proves `ReadingEnvelope + QueryBytes("hello")` can be consumed through the
+  existing jedit transport boundary when `JEDIT_ECHO_WASM_MODULE` is set.
+- Hardened the witness tooling so Wesley emission does not depend on a global
+  CLI, the Echo WASM runner resolves sibling paths explicitly, and the real
+  transport witness asserts Echo artifact identity before mapping test bytes.
+- Added a Stack Witness 0001 jedit consumer spec that walks create, edit, and
+  bounded text-window observation through the Echo-shaped transport port.
+- Added a hot-text contract readiness spec that verifies the authored SDL and
+  generated Wesley operation metadata stay aligned before the deferred Echo Rust
+  binding cutover.
 - Established a GitHub Actions CI workflow to automatically run build, tests, and quality checks on every push and pull request.
 - Fixed settings navigation on the title screen by routing settings keys before
   title camera controls.
