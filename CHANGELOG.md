@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added the app-facing text buffer optic GraphQL contract so Wesley can compile
+  product-safe `createBuffer`, `replaceRange`, and `textWindow` surfaces while
+  tests reject runtime coordinate leakage from the app SDL.
 - Introduced the first `TextBufferOptic` capability wrapper: app-facing code can
   create a buffer, apply a `replaceRange` intent, and read a bounded text window
   through the optic while raw runtime coordinates remain below the optic/session

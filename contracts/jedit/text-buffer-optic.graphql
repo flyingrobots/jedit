@@ -1,0 +1,82 @@
+"""
+App-facing text buffer optic contract.
+
+This schema owns editor nouns and opaque app capabilities. Runtime coordinates
+belong below this boundary.
+"""
+scalar DateTime
+scalar ReadBasisHandle
+
+type TextBuffer {
+    bufferId: ID!
+    bufferKey: String!
+    projectionPath: String
+    createdAt: DateTime!
+}
+
+type TextBufferOptic {
+    buffer: TextBuffer!
+    readBasis: ReadBasisHandle!
+    bufferVersion: Int!
+}
+
+type TextWindowLine {
+    lineNumber: Int!
+    startByte: Int!
+    endByte: Int!
+    text: String!
+}
+
+type TextWindowReading {
+    readingId: ID!
+    lines: [TextWindowLine!]!
+    byteLength: Int!
+    lineCount: Int!
+    cursorLine: Int!
+    viewportLineCount: Int!
+    truncated: Boolean!
+}
+
+type CreateBufferPayload {
+    buffer: TextBuffer!
+    readBasis: ReadBasisHandle!
+    bufferVersion: Int!
+    receiptId: ID!
+}
+
+type ReplaceRangePayload {
+    buffer: TextBuffer!
+    readBasis: ReadBasisHandle!
+    bufferVersion: Int!
+    receiptId: ID!
+}
+
+input CreateBufferInput {
+    bufferKey: String!
+    initialText: String!
+    projectionPath: String
+}
+
+input ReplaceRangeInput {
+    bufferId: ID!
+    startByte: Int!
+    endByte: Int!
+    insertText: String!
+}
+
+input TextWindowInput {
+    cursorLine: Int!
+    viewportLineCount: Int!
+    beforeLines: Int!
+    afterLines: Int!
+    maxBytes: Int!
+}
+
+type Mutation {
+    createBuffer(input: CreateBufferInput!): CreateBufferPayload!
+    replaceRange(input: ReplaceRangeInput!): ReplaceRangePayload!
+}
+
+type Query {
+    textWindow(readBasis: ReadBasisHandle!, input: TextWindowInput!): TextWindowReading!
+}

@@ -184,7 +184,11 @@ The optic may freely hold `worldlineId` and `currentHeadId` in `InternalOpticSta
 
 ## App-facing GraphQL SDL
 
-This is the jedit-facing schema: product nouns plus an opaque app-safe read basis token. In GraphQL, `ReadBasisHandle` should be a custom scalar rather than an object type, because the token is intentionally opaque and should not invite field-level coupling.
+The canonical jedit-facing SDL now lives at
+[`contracts/jedit/text-buffer-optic.graphql`](../contracts/jedit/text-buffer-optic.graphql).
+It defines product nouns plus an opaque app-safe read basis token. In GraphQL,
+`ReadBasisHandle` is a custom scalar rather than an object type, because the
+token is intentionally opaque and should not invite field-level coupling.
 
 ```graphql
 scalar DateTime
@@ -265,7 +269,7 @@ type Mutation {
 }
 
 type Query {
-  textWindow(readBasis: ReadBasisHandle!, input: TextWindowInput!): ObservedTextWindowReading!
+  textWindow(readBasis: ReadBasisHandle!, input: TextWindowInput!): TextWindowReading!
 }
 ```
 
