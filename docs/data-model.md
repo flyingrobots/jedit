@@ -224,16 +224,6 @@ type TextWindowReading {
   truncated: Boolean!
 }
 
-type ReadingEvidence {
-  readingId: ID!
-  receiptId: ID
-}
-
-type ObservedTextWindowReading {
-  value: TextWindowReading!
-  evidence: ReadingEvidence!
-}
-
 type CreateBufferPayload {
   buffer: TextBuffer!
   readBasis: ReadBasisHandle!

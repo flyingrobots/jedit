@@ -6,6 +6,8 @@ import test from 'node:test';
 const REPO_ROOT = process.cwd();
 const APP_CONTRACT_PATH = path.join(REPO_ROOT, 'contracts', 'jedit', 'text-buffer-optic.graphql');
 const RUNTIME_CONTRACT_PATH = path.join(REPO_ROOT, 'contracts', 'jedit', 'hot-text-runtime.graphql');
+const DATA_MODEL_DOC_PATH = path.join(REPO_ROOT, 'docs', 'data-model.md');
+const PACKAGE_JSON_PATH = path.join(REPO_ROOT, 'package.json');
 
 const FORBIDDEN_APP_CONTRACT_TERMS = Object.freeze([
   'worldlineId',
@@ -83,6 +85,39 @@ test('runtime-facing SDL remains the separate home for Echo coordinates', async 
   assert.match(runtimeContract, /\bTickReceipt\b/);
   assert.match(runtimeContract, /@wes_op/);
   assert.match(runtimeContract, /@wes_footprint/);
+});
+
+test('data model documentation mirrors the app-facing textWindow contract', async () => {
+  const dataModel = await readFile(DATA_MODEL_DOC_PATH, 'utf8');
+
+  assert.doesNotMatch(dataModel, /\btype\s+ReadingEvidence\b/);
+  assert.doesNotMatch(dataModel, /\btype\s+ObservedTextWindowReading\b/);
+  assert.match(
+    dataModel,
+    /\btextWindow\(readBasis:\s*ReadBasisHandle!,\s*input:\s*TextWindowInput!\):\s*TextWindowReading!/,
+  );
+});
+
+test('contract generation scripts keep runtime and app-facing SDL targets explicit', async () => {
+  const packageJson = JSON.parse(await readFile(PACKAGE_JSON_PATH, 'utf8'));
+  const scripts = packageJson.scripts;
+
+  assert.equal(
+    scripts['gen:contract:hot-text-runtime:wesley'],
+    'node scripts/run-wesley-tool.mjs cli emit typescript --schema contracts/jedit/hot-text-runtime.graphql --out src/generated/jedit/hot-text-runtime.wesley.generated.ts',
+  );
+  assert.equal(
+    scripts['gen:contract:text-buffer-optic:wesley'],
+    'node scripts/run-wesley-tool.mjs cli emit typescript --schema contracts/jedit/text-buffer-optic.graphql --out src/generated/jedit/text-buffer-optic.wesley.generated.ts',
+  );
+  assert.equal(
+    scripts['gen:contract:wesley'],
+    'npm run gen:contract:hot-text-runtime:wesley',
+  );
+  assert.equal(
+    scripts['gen:contract'].includes('gen:contract:text-buffer-optic:wesley'),
+    false,
+  );
 });
 
 function toInputName(operationName) {
