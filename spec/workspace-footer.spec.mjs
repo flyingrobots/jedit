@@ -154,8 +154,17 @@ test('workspace footer obtains the scene picker hint label from i18n', async () 
       if (path === 'footer.mode.browse') {
         return 'browse';
       }
-      if (path === 'footer.hints.scene_picker') {
-        return 'scene picker';
+      if (path === 'footer.hints.ctrl_l_scene_picker') {
+        return 'ctrl+l scene picker';
+      }
+      if (path === 'footer.hints.ctrl_t_theme') {
+        return 'ctrl+t theme';
+      }
+      if (path === 'footer.hints.ctrl_b_files') {
+        return 'ctrl+b files';
+      }
+      if (path === 'footer.hints.ctrl_g_graft') {
+        return 'ctrl+g graft';
       }
       const parts = path.split('.');
       return parts[parts.length - 1].replace(/_/g, ' ');
@@ -185,5 +194,80 @@ test('workspace footer obtains the scene picker hint label from i18n', async () 
       '/repo',
     ],
   );
-  assert.equal(requestedKeys.includes('footer.hints.scene_picker'), true);
+  assert.equal(requestedKeys.includes('footer.hints.ctrl_l_scene_picker'), true);
+});
+
+test('workspace footer obtains command hints from i18n', async () => {
+  const footer = await loadFooterModule();
+  const requestedKeys = [];
+  const i18n = {
+    locale: 'en',
+    direction: 'ltr',
+    t: (path) => {
+      requestedKeys.push(path);
+      if (path.startsWith('footer.mode.')) {
+        return path.slice('footer.mode.'.length);
+      }
+      return `<${path}>`;
+    },
+    setLocale: () => undefined,
+  };
+
+  const [primary] = footer.workspaceFooterLines({
+    i18n,
+    focusPane: 'files',
+    fileDrawerOpen: true,
+    graftDrawerOpen: false,
+    viewMode: 'source',
+    markdownPreviewActive: false,
+    settingsOpen: false,
+    editorMode: 'normal',
+    pendingNormal: undefined,
+    cwd: '/repo',
+    selectedEntry: {
+      kind: 'file',
+      name: 'todo.md',
+      path: '/repo/todo.md',
+    },
+    editorPath: '/repo/todo.md',
+    graftPath: undefined,
+    graftSelection: undefined,
+  });
+
+  assert.equal(primary.includes('<footer.hints.enter_open>'), true);
+  assert.equal(primary.includes('<footer.hints.backspace_up>'), true);
+  assert.equal(primary.includes('<footer.hints.ctrl_b_close>'), true);
+  assert.equal(requestedKeys.includes('footer.hints.enter_open'), true);
+  assert.equal(requestedKeys.includes('footer.hints.ctrl_b_close'), true);
+});
+
+test('workspace footer right-aligns RTL footer text by visual content width', async () => {
+  const footer = await loadFooterModule();
+  const i18n = {
+    locale: 'me',
+    direction: 'rtl',
+    t: (path) => {
+      if (path === 'footer.mode.insert') return 'insert';
+      if (path === 'footer.hints.text_input') return 'text';
+      if (path === 'footer.hints.esc_normal') return 'esc';
+      if (path === 'footer.hints.ctrl_s_save') return 'save';
+      if (path === 'footer.hints.tab_indent') return 'tab';
+      return '';
+    },
+    setLocale: () => undefined,
+  };
+  const surface = footer.renderWorkspaceFooter({
+    ...idleNormalState(),
+    i18n,
+    editorMode: 'insert',
+    markdownPreviewActive: false,
+  }, 60, {});
+  let primary = '';
+  for (let col = 0; col < surface.width; col += 1) {
+    primary += surface.get(col, 0).char;
+  }
+
+  assert.equal(primary.startsWith(' '), true);
+  assert.equal(primary.trimStart().startsWith('INSERT'), true);
+  assert.equal(primary.endsWith(']'), true);
 });

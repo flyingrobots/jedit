@@ -50,6 +50,8 @@ import { EditorModes } from './editor/mode.js';
 
 const MIN_VIEWPORT_DIMENSION = 1;
 const VIEWER_PAD_MULTIPLIER = 2;
+const WORKSPACE_BODY_TOP_OFFSET = 2;
+const DRAWER_PAD_MULTIPLIER = VIEWER_PAD_MULTIPLIER;
 
 export function updateViewerFromKey(
   msg: KeyMsg,
@@ -99,7 +101,7 @@ export function renderWorkspace(model: WorkspaceModel): Surface {
     return renderFeedback(screen, model.notifications, model.columns, model.rows);
   }
 
-  const bodyTop = 2;
+  const bodyTop = WORKSPACE_BODY_TOP_OFFSET;
   const bodyHeight = workspaceBodyHeight(model.rows, model.footerVisible);
   const layout = resolveWorkspaceLayout(model.columns, model.fileDrawerProgress, model.graftDrawerProgress);
 
@@ -240,8 +242,8 @@ function renderDrawer(kind: DrawerKind, model: WorkspaceModel, width: number, he
   const surface = createSurface(width, height);
   fillSurface(surface, model.jeditTheme.surface.drawer);
 
-  const listWidth = Math.max(1, width - (DRAWER_INNER_PAD * 2));
-  const listHeight = Math.max(1, height - (DRAWER_INNER_PAD * 2));
+  const listWidth = Math.max(MIN_VIEWPORT_DIMENSION, width - (DRAWER_INNER_PAD * DRAWER_PAD_MULTIPLIER));
+  const listHeight = Math.max(MIN_VIEWPORT_DIMENSION, height - (DRAWER_INNER_PAD * DRAWER_PAD_MULTIPLIER));
   const lines = model.entries.map((entry, index) => formatTreeLine(entry, index === model.selectedIndex));
   const content = stringToSurface(fitBlock(lines.join('\n'), listWidth, listHeight), listWidth, listHeight);
   applyBackground(content, model.jeditTheme.surface.drawer);
@@ -254,8 +256,8 @@ function renderGraftDrawer(model: WorkspaceModel, width: number, height: number)
   const surface = createSurface(width, height);
   fillSurface(surface, model.jeditTheme.surface.drawer);
 
-  const innerWidth = Math.max(1, width - (DRAWER_INNER_PAD * 2));
-  const innerHeight = Math.max(1, height - (DRAWER_INNER_PAD * 2));
+  const innerWidth = Math.max(MIN_VIEWPORT_DIMENSION, width - (DRAWER_INNER_PAD * DRAWER_PAD_MULTIPLIER));
+  const innerHeight = Math.max(MIN_VIEWPORT_DIMENSION, height - (DRAWER_INNER_PAD * DRAWER_PAD_MULTIPLIER));
   const lines = renderGraftDrawerLines(model, innerWidth, innerHeight);
   const content = stringToSurface(fitBlock(lines.join('\n'), innerWidth, innerHeight), innerWidth, innerHeight);
   applyBackground(content, model.jeditTheme.surface.drawer);

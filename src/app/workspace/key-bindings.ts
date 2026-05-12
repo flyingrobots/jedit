@@ -36,6 +36,13 @@ import type { GraftSessionPort } from '../../ports/graft-session.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import type { TitleSceneLoaderPort } from '../../ports/title-scene-loader.js';
 import type { WorkspaceModel } from './model.js';
+import { WorkspaceMessageTypes } from './msg.js';
+import {
+  RuntimeIssueLevels,
+  RuntimeIssueSources,
+  WorkspaceRuntimeIssueNames,
+  WorkspaceRuntimeIssueTypes,
+} from './runtime-issue.js';
 import type { WorkspaceMsg } from './msg.js';
 import { EditorModes } from './editor/mode.js';
 import { ViewModes } from './view-mode.js';
@@ -75,6 +82,7 @@ const FALLBACK_TOAST_BACKGROUND = '#0e1116';
 const FALLBACK_TOAST_ACCENT = '#d897ff';
 const SCENE_PICKER_MIN_INDEX = 0;
 const SCENE_PICKER_STEP = 1;
+const UNKNOWN_SCENE_LOAD_FAILURE = 'Unable to describe scene load failure';
 
 export function updateFromKey(
   msg: KeyMsg,
@@ -88,7 +96,7 @@ export function updateFromKey(
     return [
       model,
       [() => ({
-        type: 'toggle-perf',
+        type: WorkspaceMessageTypes.TogglePerf,
       })],
     ];
   }
@@ -106,38 +114,34 @@ export function updateFromKey(
   }
 
   if (model.scenePickerOpen) {
-    if (isScenePickerCloseKey(msg)) {
+    if (isWorkspaceScenePickerCloseKey(msg)) {
       return [{ ...model, scenePickerOpen: false }, []];
     }
-    if (isScenePickerPreviousKey(msg)) {
+    if (isWorkspaceScenePickerPreviousKey(msg)) {
       return [{ ...model, scenePickerFocusIndex: Math.max(SCENE_PICKER_MIN_INDEX, model.scenePickerFocusIndex - SCENE_PICKER_STEP) }, []];
     }
-    if (isScenePickerNextKey(msg)) {
+    if (isWorkspaceScenePickerNextKey(msg)) {
       const maxIndex = Math.max(SCENE_PICKER_MIN_INDEX, model.availableScenes.length - SCENE_PICKER_STEP);
       return [{
         ...model,
         scenePickerFocusIndex: Math.min(maxIndex, model.scenePickerFocusIndex + SCENE_PICKER_STEP),
       }, []];
     }
-    if (isScenePickerAcceptKey(msg)) {
+    if (isWorkspaceScenePickerAcceptKey(msg)) {
       const selected = model.availableScenes[model.scenePickerFocusIndex];
       if (selected != null) {
         return [{ ...model, scenePickerOpen: false }, [
           async () => {
             try {
               const scene = await deps.titleSceneLoader.loadBuiltInTitleScene(selected, model.titleMeshes);
-              return { type: 'load-scene-result', scene };
+              return { type: WorkspaceMessageTypes.LoadSceneResult, scene };
             } catch (error) {
+              const issue = error instanceof Error
+                ? describeSceneLoadError(error, nowMs())
+                : describeSceneLoadFailure(JSON.stringify(error), nowMs());
               return {
-                type: 'runtime-issue',
-                issue: {
-                  type: 'system',
-                  name: 'SceneLoadError',
-                  message: String(error),
-                  level: 'error',
-                  source: 'command',
-                  atMs: nowMs(),
-                },
+                type: WorkspaceMessageTypes.RuntimeIssue,
+                issue,
               };
             }
           },
@@ -314,21 +318,32 @@ function titleAsciiPaletteLabel(palette: TitleAsciiPalette): string {
       return TITLE_ASCII_PALETTE_BLOCKS_LABEL;
     case TITLE_ASCII_PALETTE.Dither:
       return TITLE_ASCII_PALETTE_DITHER_LABEL;
+    default: {
+      const exhaustive: never = palette;
+      return exhaustive;
+    }
   }
 }
 
-function isScenePickerCloseKey(msg: KeyMsg): boolean {
-  return isWorkspaceScenePickerCloseKey(msg);
+function describeSceneLoadError(error: Error, atMs: number) {
+  return {
+    type: WorkspaceRuntimeIssueTypes.System,
+    name: WorkspaceRuntimeIssueNames.SceneLoadError,
+    message: error.message,
+    level: RuntimeIssueLevels.Error,
+    source: RuntimeIssueSources.Command,
+    atMs,
+    ...(error.stack != null ? { stack: error.stack } : {}),
+  };
 }
 
-function isScenePickerPreviousKey(msg: KeyMsg): boolean {
-  return isWorkspaceScenePickerPreviousKey(msg);
-}
-
-function isScenePickerNextKey(msg: KeyMsg): boolean {
-  return isWorkspaceScenePickerNextKey(msg);
-}
-
-function isScenePickerAcceptKey(msg: KeyMsg): boolean {
-  return isWorkspaceScenePickerAcceptKey(msg);
+function describeSceneLoadFailure(encodedError: string | undefined, atMs: number) {
+  return {
+    type: WorkspaceRuntimeIssueTypes.System,
+    name: WorkspaceRuntimeIssueNames.SceneLoadError,
+    message: encodedError ?? UNKNOWN_SCENE_LOAD_FAILURE,
+    level: RuntimeIssueLevels.Error,
+    source: RuntimeIssueSources.Command,
+    atMs,
+  };
 }

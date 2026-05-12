@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Addressed the current PR #8 CodeRabbit follow-up by centralizing workspace
+  runtime message and footer i18n tokens, making graft lifecycle timestamps
+  deterministic through the runtime clock, preserving scene-load failure detail,
+  and tightening the remaining review-standard docs and magic-number nits.
 - Addressed the follow-up PR #8 review pass by splitting the oversized
   workspace keybinding spec, tightening runtime token objects, hardening
   read-only/editor lifecycle behavior, and adding deterministic regression

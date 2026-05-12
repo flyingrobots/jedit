@@ -485,9 +485,8 @@ function isJsonRecord(value: JsonValueCandidate): value is JsonRecord {
 }
 
 function objectValuesAreJson(value: JsonRecord): boolean {
-  for (const key of Object.keys(value)) {
-    const member = value[key];
-    if (member === undefined || !isJsonValue(member)) {
+  for (const member of Object.values(value)) {
+    if (!isJsonValue(member)) {
       return false;
     }
   }

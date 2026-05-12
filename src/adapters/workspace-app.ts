@@ -13,6 +13,7 @@ import { loadEntries } from './filesystem.js';
 import { createWorkspaceRuntime } from '../app/workspace/runtime.js';
 import type { WorkspaceInitialModelSnapshot } from '../app/workspace/init.js';
 import type { WorkspaceModel } from '../app/workspace/model.js';
+import { WorkspaceMessageTypes } from '../app/workspace/msg.js';
 import type { WorkspaceMsg } from '../app/workspace/msg.js';
 import type { CreateDrawerAnimationCmd } from '../app/workspace/drawer.js';
 import type { DrawerKind } from '../ui/drawer-layout.js';
@@ -60,7 +61,10 @@ export function createWorkspaceApp(options: WorkspaceAppOptions): App<WorkspaceM
     initialModel: options.seed ?? createInitialModelSnapshot(nowMs(), options.initialWorkingDirectory, random),
     nowMs,
     createTimeTickCmd: () => createTimeTickCmd(),
-    createNotificationTickCmd: () => createNotificationTickCmd((atMs) => ({ type: 'notification-tick', atMs })),
+    createNotificationTickCmd: () => createNotificationTickCmd((atMs) => ({
+      type: WorkspaceMessageTypes.NotificationTick,
+      atMs,
+    })),
     createDrawerAnimationCmd: createDrawerAnimationCmd,
   });
 

@@ -26,11 +26,20 @@ export interface ProfilerTracePort {
   readonly endTrace: (handle: ProfilerHandle) => Promise<void>;
 }
 
-export type ProfilerMsg =
-  | { type: 'profiler-started'; filePath: string; fileHandle: ProfilerHandle }
-  | { type: 'profiler-stopped' };
+const PROFILER_MESSAGE_STARTED = 'profiler-started';
+const PROFILER_MESSAGE_STOPPED = 'profiler-stopped';
+const PROFILER_EFFECT_RUNTIME_ISSUE = 'runtime-issue';
 
-export type ProfilerEffectMsg = ProfilerMsg | { type: 'runtime-issue'; issue: RuntimeIssue };
+export const ProfilerMessageTypes = Object.freeze({
+  Started: PROFILER_MESSAGE_STARTED,
+  Stopped: PROFILER_MESSAGE_STOPPED,
+});
+
+export type ProfilerMsg =
+  | { type: typeof ProfilerMessageTypes.Started; filePath: string; fileHandle: ProfilerHandle }
+  | { type: typeof ProfilerMessageTypes.Stopped };
+
+export type ProfilerEffectMsg = ProfilerMsg | { type: typeof PROFILER_EFFECT_RUNTIME_ISSUE; issue: RuntimeIssue };
 
 const ISSUE_LEVEL_ERROR = 'error';
 const ISSUE_LEVEL_WARNING = 'warning';
@@ -41,10 +50,10 @@ export function createInitialProfilerState(): ProfilerState {
 }
 
 export function reduceProfilerMsg(state: ProfilerState, msg: ProfilerMsg): ProfilerState {
-  if (msg.type === 'profiler-started') {
+  if (msg.type === ProfilerMessageTypes.Started) {
     return { active: true, filePath: msg.filePath, fileHandle: msg.fileHandle };
   }
-  if (msg.type === 'profiler-stopped') {
+  if (msg.type === ProfilerMessageTypes.Stopped) {
     return { active: false };
   }
   return state;
@@ -63,7 +72,7 @@ export function toggleProfiler(
         try {
           await profiler.endTrace(activeHandle);
           return {
-            type: 'runtime-issue',
+            type: PROFILER_EFFECT_RUNTIME_ISSUE,
             issue: {
               message: `Profile trace saved to ${activeHandle.filePath}`,
               level: ISSUE_LEVEL_WARNING,
@@ -73,7 +82,7 @@ export function toggleProfiler(
           };
         } catch (err) {
           return {
-            type: 'runtime-issue',
+            type: PROFILER_EFFECT_RUNTIME_ISSUE,
             issue: {
               message: `Failed to close profile: ${String(err)}`,
               level: ISSUE_LEVEL_ERROR,
@@ -90,11 +99,11 @@ export function toggleProfiler(
     async (): Promise<ProfilerEffectMsg> => {
       try {
         const fileHandle = await profiler.beginTrace(workspaceRoot);
-        const started: ProfilerMsg = { type: 'profiler-started', filePath: fileHandle.filePath, fileHandle };
+        const started: ProfilerMsg = { type: ProfilerMessageTypes.Started, filePath: fileHandle.filePath, fileHandle };
         return started;
       } catch (err) {
         return {
-          type: 'runtime-issue',
+          type: PROFILER_EFFECT_RUNTIME_ISSUE,
           issue: {
             message: `Failed to start profile: ${String(err)}`,
             level: ISSUE_LEVEL_ERROR,
@@ -123,7 +132,7 @@ export function streamProfilerFrame(
       return undefined;
     } catch (err) {
       return {
-        type: 'runtime-issue',
+        type: PROFILER_EFFECT_RUNTIME_ISSUE,
         issue: {
           message: `Failed to stream profile: ${String(err)}`,
           level: ISSUE_LEVEL_ERROR,

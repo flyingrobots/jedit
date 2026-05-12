@@ -11,6 +11,7 @@ import { beginEditorProjectionRefresh, isWorkspaceMarkdownFile, loadEditor } fro
 import { ViewModes } from './view-mode.js';
 import { FocusPanes } from '../../ui/panel-focus.js';
 import type { WorkspaceModel } from './model.js';
+import { WorkspaceMessageTypes } from './msg.js';
 import type { WorkspaceMsg } from './msg.js';
 import { type Cmd } from '@flyingrobots/bijou-tui';
 import {
@@ -127,7 +128,7 @@ function changeDirectory(
       issue.message,
       nowMs(),
       () => createNotificationTickCmd((atMs: number): WorkspaceMsg => ({
-        type: 'notification-tick',
+        type: WorkspaceMessageTypes.NotificationTick,
         atMs,
       })),
     );

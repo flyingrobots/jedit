@@ -22,14 +22,14 @@ test('graft lifecycle command returns a runtime issue when close fails', async (
   const graft = await importDist('app', 'workspace', 'graft.js');
   const command = graft.manageGraftLifecycle(async () => {
     throw new Error('close failed');
-  });
+  }, () => 321);
 
   const result = await command();
 
   assert.equal(result.type, 'runtime-issue');
   assert.equal(result.issue.level, 'error');
   assert.equal(result.issue.source, 'command');
-  assert.equal(result.issue.atMs, 0);
+  assert.equal(result.issue.atMs, 321);
 });
 
 test('workspace settings exposes locale and direction runtime tokens', async () => {

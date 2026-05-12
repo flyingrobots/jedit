@@ -17,6 +17,7 @@ import { updateFromMouse } from './mouse.js';
 import { clamp01, clampIndex } from './viewport.js';
 import { renderWorkspace } from './viewer.js';
 import {
+  ProfilerMessageTypes,
   reduceProfilerMsg,
   streamProfilerFrame,
   toggleProfiler,
@@ -30,24 +31,27 @@ import type { EditorFilePort } from '../../ports/editor-file.js';
 import type { GraftSessionPort } from '../../ports/graft-session.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import type { TitleSceneLoaderPort } from '../../ports/title-scene-loader.js';
+import { WorkspaceInputMessageTypes, WorkspaceMessageTypes } from './msg.js';
+
+export { WorkspaceInputMessageTypes, WorkspaceMessageTypes } from './msg.js';
 
 const FRAME_TIME_HISTORY_SIZE = 50;
 
 export interface WorkspaceRuntimeDependencies {
-  initialColumns: number;
-  initialRows: number;
-  initialWorkingDirectory: string;
-  fileSystem: FileSystemPort;
-  editorFile: EditorFilePort;
-  graftSession: GraftSessionPort;
-  sourceHighlighter: SourceHighlighter;
-  titleSceneLoader: TitleSceneLoaderPort;
-  profiler: ProfilerTracePort;
-  createTimeTickCmd: () => Cmd<WorkspaceMsg>;
-  createNotificationTickCmd: () => Cmd<WorkspaceMsg>;
-  createDrawerAnimationCmd: (kind: DrawerKind, from: number, to: number) => Cmd<WorkspaceMsg>[];
-  initialModel: WorkspaceInitialModelSnapshot;
-  nowMs: () => number;
+  readonly initialColumns: number;
+  readonly initialRows: number;
+  readonly initialWorkingDirectory: string;
+  readonly fileSystem: FileSystemPort;
+  readonly editorFile: EditorFilePort;
+  readonly graftSession: GraftSessionPort;
+  readonly sourceHighlighter: SourceHighlighter;
+  readonly titleSceneLoader: TitleSceneLoaderPort;
+  readonly profiler: ProfilerTracePort;
+  readonly createTimeTickCmd: () => Cmd<WorkspaceMsg>;
+  readonly createNotificationTickCmd: () => Cmd<WorkspaceMsg>;
+  readonly createDrawerAnimationCmd: (kind: DrawerKind, from: number, to: number) => Cmd<WorkspaceMsg>[];
+  readonly initialModel: WorkspaceInitialModelSnapshot;
+  readonly nowMs: () => number;
 }
 
 export interface WorkspaceRuntime {
@@ -72,13 +76,13 @@ export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): Work
       profiler: createInitialProfilerState(),
     },
     [
-      manageGraftLifecycle(deps.graftSession.closeConnection),
+      manageGraftLifecycle(deps.graftSession.closeConnection, deps.nowMs),
       deps.createTimeTickCmd(),
     ],
   ],
   update: (msg, model): [WorkspaceModel, Cmd<WorkspaceMsg>[]] => {
     const now = deps.nowMs();
-    if (msg.type === 'resize') {
+    if (msg.type === WorkspaceInputMessageTypes.Resize) {
       const viewport = editorViewport({
         ...model,
         columns: msg.columns,
@@ -100,14 +104,14 @@ export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): Work
       );
     }
 
-    if (msg.type === 'drawer-progress') {
+    if (msg.type === WorkspaceMessageTypes.DrawerProgress) {
       const nextModel: WorkspaceModel = msg.kind === DrawerKinds.Files
         ? { ...model, fileDrawerProgress: clamp01(msg.value) }
         : { ...model, graftDrawerProgress: clamp01(msg.value) };
       return [nextModel, []];
     }
 
-    if (msg.type === 'graft-info') {
+    if (msg.type === WorkspaceMessageTypes.GraftInfo) {
       if (msg.requestId !== model.graftRequestId) {
         return [model, []];
       }
@@ -120,7 +124,7 @@ export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): Work
       }, []];
     }
 
-    if (msg.type === 'load-scene-result') {
+    if (msg.type === WorkspaceMessageTypes.LoadSceneResult) {
       return [{
         ...model,
         sceneOverride: msg.scene,
@@ -136,11 +140,11 @@ export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): Work
       return [{ ...model, titleCamera: reduceTitleCameraMotion(model.titleCamera, msg) }, []];
     }
 
-    if (msg.type === 'notification-tick') {
+    if (msg.type === WorkspaceMessageTypes.NotificationTick) {
       return tickNotificationState(model, msg.atMs, deps.createNotificationTickCmd);
     }
 
-    if (msg.type === 'time-tick') {
+    if (msg.type === WorkspaceMessageTypes.TimeTick) {
       const frameTime = now - model.lastFrameMs;
       const nextModel = {
         ...model,
@@ -158,16 +162,16 @@ export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): Work
       return [nextModel, profilerStream == null ? [] : [profilerStream]];
     }
 
-    if (msg.type === 'toggle-perf') {
+    if (msg.type === WorkspaceMessageTypes.TogglePerf) {
       return [{ ...model, perfVisible: !model.perfVisible }, []];
     }
 
-    if (msg.type === 'toggle-profiler') {
+    if (msg.type === WorkspaceMessageTypes.ToggleProfiler) {
       const [nextProfiler, commands] = toggleProfiler(model.profiler, model.workspaceRoot, deps.profiler);
       return [{ ...model, profiler: nextProfiler }, commands];
     }
 
-    if (msg.type === 'runtime-issue') {
+    if (msg.type === WorkspaceMessageTypes.RuntimeIssue) {
       return pushRuntimeIssueToast(model, msg.issue, deps.createNotificationTickCmd);
     }
 
@@ -175,11 +179,11 @@ export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): Work
       return [{ ...model, profiler: reduceProfilerMsg(model.profiler, msg) }, []];
     }
 
-    if (msg.type === 'mouse') {
+    if (msg.type === WorkspaceInputMessageTypes.Mouse) {
       return updateFromMouse(msg, model, deps.sourceHighlighter);
     }
 
-    if (msg.type !== 'key') {
+    if (msg.type !== WorkspaceInputMessageTypes.Key) {
       return [model, []];
     }
 
@@ -199,12 +203,12 @@ export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): Work
     );
   },
   view: (model) => renderWorkspace(model),
-  routeRuntimeIssue: (issue) => ({ type: 'runtime-issue', issue }),
+  routeRuntimeIssue: (issue) => ({ type: WorkspaceMessageTypes.RuntimeIssue, issue }),
 });
 
 
 type WorkspaceRuntimeMsg = WorkspaceMsg | ResizeMsg | KeyMsg | MouseMsg;
 
 function isProfilerMsg(msg: WorkspaceRuntimeMsg): msg is ProfilerMsg {
-  return msg.type === 'profiler-started' || msg.type === 'profiler-stopped';
+  return msg.type === ProfilerMessageTypes.Started || msg.type === ProfilerMessageTypes.Stopped;
 }

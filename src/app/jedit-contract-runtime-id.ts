@@ -5,6 +5,7 @@ const CHECKPOINT_ID_PREFIX = 'checkpoint:';
 const TICK_ID_PREFIX = 'tick:';
 const RECEIPT_ID_PREFIX = 'receipt:';
 const NUMERIC_ID_PATTERN = /^\d+$/;
+const EMPTY_TEXT_LINE_COUNT = 1;
 
 export class WorldlineId {
   private constructor(public readonly value: string) {
@@ -78,7 +79,7 @@ export function byteLength(text: string): number {
 
 export function lineCount(text: string): number {
   if (text.length === 0) {
-    return 1;
+    return EMPTY_TEXT_LINE_COUNT;
   }
   return text.split('\n').length;
 }

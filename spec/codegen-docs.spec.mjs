@@ -36,6 +36,13 @@ test('CODE_STANDARDS mirrors enforced quality gate constraints', () => {
   assert.doesNotMatch(codeStandards, /max-lines": \["error", 1000\]/);
 });
 
+test('CODE_STANDARDS documents the executable typescript-eslint floating promises rule', () => {
+  const codeStandards = readFileSync(CODE_STANDARDS_PATH, 'utf8');
+
+  assert.match(codeStandards, /"@typescript-eslint\/no-floating-promises": "error"/);
+  assert.doesNotMatch(codeStandards, /"no-floating-promises": "error"/);
+});
+
 test('CODE_STANDARDS heading hierarchy increments one level at a time', () => {
   const codeStandards = readFileSync(CODE_STANDARDS_PATH, 'utf8');
 

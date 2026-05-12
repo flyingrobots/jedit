@@ -2,6 +2,7 @@ import { beginSourceHighlightRefresh } from '../source-highlight-session.js';
 import { editorViewport, type WorkspaceViewport } from './viewport.js';
 import type { Cmd } from '@flyingrobots/bijou-tui';
 import type { WorkspaceModel } from './model.js';
+import { WorkspaceMessageTypes } from './msg.js';
 import type { WorkspaceMsg } from './msg.js';
 import type { EditorState } from './editor/model.js';
 import type { EditorFilePort } from '../../ports/editor-file.js';
@@ -167,13 +168,13 @@ function requestGraftInfoCmd(
   return async () => {
     try {
       return {
-        type: 'graft-info',
+        type: WorkspaceMessageTypes.GraftInfo,
         requestId,
         info: await graftSession.loadGraftInfo(workspaceRoot, filePath, dirty),
       };
     } catch (cause) {
       return {
-        type: 'graft-info',
+        type: WorkspaceMessageTypes.GraftInfo,
         requestId,
         info: graftSession.failedGraftInfo(workspaceRoot, filePath, dirty, cause instanceof Error ? cause.message : String(cause)),
       };

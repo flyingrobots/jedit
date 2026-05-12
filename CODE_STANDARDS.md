@@ -153,7 +153,7 @@ For cross-realm values, normalize through adapters/boundaries and construct vali
     "@typescript-eslint/no-unsafe-call": "error",
     "@typescript-eslint/only-throw-error": "error",
     "@typescript-eslint/switch-exhaustiveness-check": "error",
-    "no-floating-promises": "error"
+    "@typescript-eslint/no-floating-promises": "error"
   }
 }
 ```

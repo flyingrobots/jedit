@@ -22,6 +22,21 @@ test('runtime toggle-perf message flips perf visibility state', async () => {
   assert.equal(toggledOff.perfVisible, false);
 });
 
+test('workspace runtime exposes message constants for central dispatch', async () => {
+  const runtimeModule = await importDist('app', 'workspace', 'runtime.js');
+  const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime());
+
+  assert.equal(runtimeModule.WorkspaceMessageTypes.TogglePerf, 'toggle-perf');
+  assert.equal(runtimeModule.WorkspaceInputMessageTypes.Key, 'key');
+
+  const [nextModel] = runtime.update(
+    { type: runtimeModule.WorkspaceMessageTypes.TogglePerf },
+    { perfVisible: false },
+  );
+
+  assert.equal(nextModel.perfVisible, true);
+});
+
 test('runtime load-scene-result applies the loaded scene camera to title camera state', async () => {
   const runtimeModule = await importDist('app', 'workspace', 'runtime.js');
   const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime());
