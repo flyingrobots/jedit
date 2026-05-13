@@ -31,15 +31,18 @@ These are hard repo rules, not suggestions:
 
 - `ARCHITECTURE.md` is the canonical repo architecture doctrine.
 - `scripts/quality-gate.mjs` is the current enforceable quality ratchet.
-- `quality-baseline.json` is temporary debt, not permission to add more debt.
+- `quality-baseline.json` is temporary debt tracking, not permission to add more debt.
+  Keep it empty when the ratchet is clean.
 
 ## Current Reality
 
-The repo is not fully compliant yet.
+The repo is still converging toward the full architecture doctrine, but the
+enforceable quality ratchet is currently clean.
 
-- `src/main.ts` currently exceeds the 500 line limit.
-- Existing `unknown` usage still exists and is tracked as debt.
-- The baseline exists to prevent regression while the code is being broken into proper hexagonal slices.
+- `scripts/quality-gate.mjs` currently enforces no `any`, no `unknown`, and no
+  TypeScript file over 500 lines.
+- `quality-baseline.json` should stay empty unless temporary ratcheted debt is
+  deliberately introduced and documented.
 
 ## Delivery Workflow
 
