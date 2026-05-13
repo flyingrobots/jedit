@@ -21,7 +21,7 @@ export function updateGlobalWorkspaceKey(
   model: WorkspaceModel,
   context: WorkspaceKeyBindingContext,
 ): KeyBindingResult | undefined {
-  return updatePerfKey(msg, model)
+  return updatePerfWorkspaceKey(msg, model)
     ?? updateQuitKey(msg, model)
     ?? updateFooterKey(msg, model)
     ?? updateSaveKey(msg, model, context)
@@ -31,7 +31,7 @@ export function updateGlobalWorkspaceKey(
     ?? updateMarkdownPreviewKey(msg, model, context);
 }
 
-function updatePerfKey(msg: KeyMsg, model: WorkspaceModel): KeyBindingResult | undefined {
+export function updatePerfWorkspaceKey(msg: KeyMsg, model: WorkspaceModel): KeyBindingResult | undefined {
   if (msg.key !== WorkspaceKeys.Backtick) {
     return undefined;
   }

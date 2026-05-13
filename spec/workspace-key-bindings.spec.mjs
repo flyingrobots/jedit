@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   importDist,
   mockDeps,
+  mockI18n,
   mockKeyBindingContext,
   mockTitleScreenModel,
 } from './workspace-helpers.mjs';
@@ -20,6 +21,41 @@ test('backtick key dispatches a toggle-perf workspace message', async () => {
 
   const message = await commands[0]();
   assert.deepEqual(message, { type: 'toggle-perf' });
+});
+
+test('backtick key remains a perf toggle while workspace overlays are open', async () => {
+  const [keyBindings, titleScreen, themes] = await Promise.all([
+    importDist('app', 'workspace', 'key-bindings.js'),
+    importDist('ui', 'title-screen.js'),
+    importDist('ui', 'jedit-themes.js'),
+  ]);
+  const jeditTheme = themes.availableJeditThemes()[0];
+  const overlays = [
+    mockTitleScreenModel(titleScreen, {
+      settingsOpen: true,
+      i18n: mockI18n(),
+      jeditTheme,
+      markdownPreviewActive: false,
+      viewMode: 'source',
+    }),
+    mockTitleScreenModel(titleScreen, {
+      scenePickerOpen: true,
+      scenePickerFocusIndex: 0,
+      availableScenes: ['bunny.jedit-scene'],
+    }),
+  ];
+
+  for (const model of overlays) {
+    const [nextModel, commands] = keyBindings.updateFromKey(
+      { key: '`' },
+      model,
+      mockKeyBindingContext(),
+    );
+
+    assert.equal(nextModel, model);
+    assert.equal(commands.length, 1);
+    assert.deepEqual(await commands[0](), { type: 'toggle-perf' });
+  }
 });
 
 test('ctrl-l opens the title scene picker when no editor is active', async () => {
