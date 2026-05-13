@@ -13,7 +13,7 @@
     "build": "tsc -p tsconfig.json && node scripts/copy-assets.mjs",
     "start": "node dist/main.js",
     "quality": "node scripts/quality-gate.mjs",
-    "test": "node --test spec/**/*.spec.mjs tests/**/*.spec.mjs",
+    "test": "node --test --test-concurrency=1 spec/**/*.spec.mjs tests/**/*.spec.mjs",
     "check": "npm run build && npm run test && npm run quality"
   },
   "dependencies": {

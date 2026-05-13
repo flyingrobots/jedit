@@ -3,8 +3,8 @@ import test from 'node:test';
 import {
   importDist,
   mockDeps,
+  mockKeyBindingContext,
   mockTitleScreenModel,
-  noopNotificationTickCmd,
 } from './workspace-helpers.mjs';
 
 test('backtick key dispatches a toggle-perf workspace message', async () => {
@@ -12,10 +12,7 @@ test('backtick key dispatches a toggle-perf workspace message', async () => {
   const [nextModel, commands] = keyBindings.updateFromKey(
     { key: '`' },
     { perfVisible: false },
-    () => 0,
-    () => [],
-    noopNotificationTickCmd,
-    mockDeps(),
+    mockKeyBindingContext(),
   );
 
   assert.equal(nextModel.perfVisible, false);
@@ -33,10 +30,7 @@ test('ctrl-l opens the title scene picker when no editor is active', async () =>
   const [nextModel] = keyBindings.updateFromKey(
     { type: 'key', key: 'l', ctrl: true, alt: false, shift: false },
     mockTitleScreenModel(titleScreen, { scenePickerOpen: false }),
-    () => 0,
-    () => [],
-    noopNotificationTickCmd,
-    mockDeps(),
+    mockKeyBindingContext(),
   );
 
   assert.equal(nextModel.scenePickerOpen, true);
@@ -75,10 +69,7 @@ test('scene picker loads built-in scenes by name without using workspace root pa
       availableScenes: ['bunny.jedit-scene'],
       titleMeshes: {},
     }),
-    () => 0,
-    () => [],
-    noopNotificationTickCmd,
-    deps,
+    mockKeyBindingContext({ deps }),
   );
   const message = await commands[0]();
 
@@ -109,10 +100,7 @@ test('scene picker load failures preserve structured runtime issue detail', asyn
       availableScenes: ['missing.jedit-scene'],
       titleMeshes: {},
     }),
-    () => 987,
-    () => [],
-    noopNotificationTickCmd,
-    deps,
+    mockKeyBindingContext({ nowMs: () => 987, deps }),
   );
 
   const message = await commands[0]();
@@ -149,10 +137,7 @@ test('scene picker load failures preserve diagnostics for circular thrown values
       availableScenes: ['circular.jedit-scene'],
       titleMeshes: {},
     }),
-    () => 654,
-    () => [],
-    noopNotificationTickCmd,
-    deps,
+    mockKeyBindingContext({ nowMs: () => 654, deps }),
   );
 
   const message = await commands[0]();
@@ -174,10 +159,7 @@ test('scene picker keeps focus index non-negative when no scenes are available',
       scenePickerFocusIndex: 0,
       availableScenes: [],
     }),
-    () => 0,
-    () => [],
-    noopNotificationTickCmd,
-    mockDeps(),
+    mockKeyBindingContext(),
   );
 
   assert.equal(nextModel.scenePickerFocusIndex, 0);

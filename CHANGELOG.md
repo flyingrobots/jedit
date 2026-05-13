@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Split workspace key dispatch into focused reducers with structural regression
+  coverage for import fan-in, parameter count, function length, nesting, and
+  cyclomatic complexity, and serialized the test runner to prevent concurrent
+  `dist` rebuild races.
 - Addressed the latest PR #8 CodeRabbit follow-up by adding typed codec and
   runtime-id errors, centralizing notification/profiler/workspace animation
   tokens, hardening scene-load failure conversion, and localizing footer

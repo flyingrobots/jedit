@@ -3,10 +3,9 @@ import test from 'node:test';
 import {
   hasNotification,
   importDist,
-  mockDeps,
+  mockKeyBindingContext,
   mockTitleScreenModel,
   notification,
-  noopNotificationTickCmd,
 } from './workspace-helpers.mjs';
 
 test('title screen number keys switch render modes without an editor', async () => {
@@ -17,18 +16,12 @@ test('title screen number keys switch render modes without an editor', async () 
   const [asciiModel] = keyBindings.updateFromKey(
     { key: '2' },
     mockTitleScreenModel(titleScreen, { titleRenderMode: titleScreen.TITLE_RENDER_MODE.Braille }),
-    () => 0,
-    () => [],
-    noopNotificationTickCmd,
-    mockDeps(),
+    mockKeyBindingContext(),
   );
   const [brailleModel] = keyBindings.updateFromKey(
     { key: '1' },
     mockTitleScreenModel(titleScreen, { titleRenderMode: titleScreen.TITLE_RENDER_MODE.Ascii }),
-    () => 0,
-    () => [],
-    noopNotificationTickCmd,
-    mockDeps(),
+    mockKeyBindingContext(),
   );
 
   assert.equal(asciiModel.titleRenderMode, titleScreen.TITLE_RENDER_MODE.Ascii);
@@ -67,10 +60,7 @@ test('title screen rejects unknown ASCII palettes instead of surfacing them in t
         titleRenderMode: titleScreen.TITLE_RENDER_MODE.Braille,
         titleAsciiPalette: 'future-palette',
       }),
-      () => 0,
-      () => [],
-      noopNotificationTickCmd,
-      mockDeps(),
+      mockKeyBindingContext(),
     ),
     (error) => error?.name === 'InvalidTitleAsciiPaletteError',
   );
@@ -87,10 +77,7 @@ test('period cycles title screen ASCII palettes only when ASCII mode is active w
       titleRenderMode: titleScreen.TITLE_RENDER_MODE.Braille,
       titleAsciiPalette: titleScreen.TITLE_ASCII_PALETTE.Dense,
     }),
-    () => 0,
-    () => [],
-    noopNotificationTickCmd,
-    mockDeps(),
+    mockKeyBindingContext(),
   );
   const [firstModel] = keyBindings.updateFromKey(
     { key: '.' },
@@ -98,18 +85,12 @@ test('period cycles title screen ASCII palettes only when ASCII mode is active w
       titleRenderMode: titleScreen.TITLE_RENDER_MODE.Ascii,
       titleAsciiPalette: titleScreen.TITLE_ASCII_PALETTE.Dense,
     }),
-    () => 0,
-    () => [],
-    noopNotificationTickCmd,
-    mockDeps(),
+    mockKeyBindingContext(),
   );
   const [secondModel] = keyBindings.updateFromKey(
     { key: '.' },
     firstModel,
-    () => 0,
-    () => [],
-    noopNotificationTickCmd,
-    mockDeps(),
+    mockKeyBindingContext(),
   );
 
   assert.equal(ignoredModel.titleRenderMode, titleScreen.TITLE_RENDER_MODE.Braille);
