@@ -66,6 +66,17 @@ export function mockDeps(overrides = {}) {
   };
 }
 
+export function mockKeyBindingContext(overrides = {}) {
+  const { deps: depsOverride, ...contextOverrides } = overrides;
+  return {
+    nowMs: () => 0,
+    createDrawerAnimationCmd: () => [],
+    createNotificationTickCmd: noopNotificationTickCmd,
+    deps: mockDeps(depsOverride ?? {}),
+    ...contextOverrides,
+  };
+}
+
 export function mockI18n(overrides = {}) {
   return {
     locale: 'en',

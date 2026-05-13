@@ -190,15 +190,17 @@ export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): Work
     return updateFromKey(
       msg,
       model,
-      deps.nowMs,
-      deps.createDrawerAnimationCmd,
-      deps.createNotificationTickCmd,
       {
-        fileSystem: deps.fileSystem,
-        editorFile: deps.editorFile,
-        sourceHighlighter: deps.sourceHighlighter,
-        graftSession: deps.graftSession,
-        titleSceneLoader: deps.titleSceneLoader,
+        nowMs: deps.nowMs,
+        createDrawerAnimationCmd: deps.createDrawerAnimationCmd,
+        createNotificationTickCmd: deps.createNotificationTickCmd,
+        deps: {
+          fileSystem: deps.fileSystem,
+          editorFile: deps.editorFile,
+          sourceHighlighter: deps.sourceHighlighter,
+          graftSession: deps.graftSession,
+          titleSceneLoader: deps.titleSceneLoader,
+        },
       },
     );
   },
