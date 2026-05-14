@@ -23,6 +23,8 @@ const MIN_BUNNY_VERTICES = 2500;
 const MIN_BUNNY_TRIANGLES = 4900;
 const MIN_TEAPOT_VERTICES = 7000;
 const MIN_TEAPOT_TRIANGLES = 14000;
+const TITLE_TEAPOT_HEIGHT = 2.2;
+const AXIS_Y = 1;
 const BUNNY_SCENE_OBJECT_COUNT = 2;
 const MIRROR_REFLECTIVITY_MINIMUM = 0.9;
 const BUNNY_TITLE_CAMERA_HEIGHT = 2.65;
@@ -135,6 +137,26 @@ test('title scene can construct the Utah teapot mesh from the source asset', asy
   assert.ok(meshSource.triangles.length >= MIN_TEAPOT_TRIANGLES);
   assert.ok(mesh.height > 0);
   assert.ok(mesh.footprintRadius > 0);
+});
+
+test('title teapot mesh rotates source Z into world up', async () => {
+  const { titleMesh } = await loadTitleSceneModules();
+  const mesh = titleMesh.createTitleTeapotMesh({
+    vertices: [
+      [0, 0, 0],
+      [1, 0, 0],
+      [0, 0, 2],
+    ],
+    triangles: [
+      [0, 1, 2],
+    ],
+  });
+
+  assert.equal(mesh.bounds.min[AXIS_Y], 0);
+  assert.equal(mesh.bounds.max[AXIS_Y], TITLE_TEAPOT_HEIGHT);
+  assert.equal(mesh.height, TITLE_TEAPOT_HEIGHT);
+  assert.equal(mesh.vertices[0][AXIS_Y], 0);
+  assert.equal(mesh.vertices[2][AXIS_Y], TITLE_TEAPOT_HEIGHT);
 });
 
 test('title mesh source loader fails fast when no candidate asset is available', async () => {
