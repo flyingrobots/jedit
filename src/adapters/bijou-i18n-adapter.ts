@@ -26,36 +26,8 @@ export class BijouI18nAdapter implements I18nPort {
   }
 
   t(path: string, values?: Record<string, string | number>): string {
-    const keys = path.split('.');
-    let current: Record<string, TranslationNode> | string = this._catalog;
-
-    for (const key of keys) {
-      if (!isTranslationRecord(current)) {
-        return path;
-      }
-      if (Object.prototype.hasOwnProperty.call(current, key)) {
-        const next: TranslationNode | undefined = current[key];
-        if (next == null || !isTranslationNode(next)) {
-          return path;
-        }
-        current = next;
-      } else {
-        return path;
-      }
-    }
-
-    if (typeof current !== 'string') {
-      return path;
-    }
-
-    let result = current;
-    if (values) {
-      for (const [key, value] of Object.entries(values)) {
-        result = result.replace(`{${key}}`, String(value));
-      }
-    }
-
-    return result;
+    const translation = resolveTranslation(this._catalog, path);
+    return translation == null ? path : interpolateTranslation(translation, values);
   }
 
   setLocale(locale: string, direction: I18nDirection): void {
@@ -69,20 +41,43 @@ function isTranslationNode(value: string | Record<string, TranslationNode>): val
   if (typeof value === 'string') {
     return true;
   }
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
-    return false;
-  }
-  for (const key of Object.keys(value)) {
-    const child = Object.getOwnPropertyDescriptor(value, key)?.value;
-    if (child === undefined || child === null || !isTranslationNode(child)) {
-      return false;
-    }
-  }
-  return true;
+  return isTranslationObject(value) && Object.values(value).every(isTranslationNode);
 }
 
 function isTranslationRecord(value: string | Record<string, TranslationNode>): value is Record<string, TranslationNode> {
   return value != null && typeof value === 'object';
+}
+
+function isTranslationObject(value: string | Record<string, TranslationNode>): value is Record<string, TranslationNode> {
+  return isTranslationRecord(value) && !Array.isArray(value);
+}
+
+function resolveTranslation(catalog: TranslationSchema, path: string): string | undefined {
+  let current: Record<string, TranslationNode> | string = catalog;
+  for (const key of path.split('.')) {
+    const next = translationChild(current, key);
+    if (next == null) {
+      return undefined;
+    }
+    current = next;
+  }
+  return typeof current === 'string' ? current : undefined;
+}
+
+function translationChild(current: Record<string, TranslationNode> | string, key: string): TranslationNode | undefined {
+  if (!isTranslationRecord(current) || !Object.prototype.hasOwnProperty.call(current, key)) {
+    return undefined;
+  }
+  const next = current[key];
+  return next == null || !isTranslationNode(next) ? undefined : next;
+}
+
+function interpolateTranslation(template: string, values: Record<string, string | number> | undefined): string {
+  let result = template;
+  for (const [key, value] of Object.entries(values ?? {})) {
+    result = result.replace(`{${key}}`, String(value));
+  }
+  return result;
 }
 
 function resolveLocale(value: string): Locale {

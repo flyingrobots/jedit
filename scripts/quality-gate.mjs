@@ -9,6 +9,8 @@ const BASELINE_PATH = path.join(ROOT, 'quality-baseline.json');
 const MAX_LINES_PER_FILE = 500;
 const MAX_PARAMETERS_PER_FUNCTION = 5;
 const MAX_RUNTIME_IMPORTS_PER_FILE = 12;
+const MAX_FUNCTION_LINES = 35;
+const MAX_CYCLOMATIC_COMPLEXITY = 8;
 const JSON_FLAG = '--json';
 
 function main() {
@@ -127,6 +129,26 @@ function main() {
       debt,
       improvements,
     });
+    recordCountRule({
+      relativePath,
+      rule: 'max-function-lines-35',
+      actual: counts.maxFunctionLineCount,
+      allowed: baseline.maxFunctionLines?.[relativePath] ?? MAX_FUNCTION_LINES,
+      cleanLimit: MAX_FUNCTION_LINES,
+      regressions,
+      debt,
+      improvements,
+    });
+    recordCountRule({
+      relativePath,
+      rule: 'complexity-8',
+      actual: counts.maxCyclomaticComplexity,
+      allowed: baseline.cyclomaticComplexity?.[relativePath] ?? MAX_CYCLOMATIC_COMPLEXITY,
+      cleanLimit: MAX_CYCLOMATIC_COMPLEXITY,
+      regressions,
+      debt,
+      improvements,
+    });
   }
 
   const result = {
@@ -141,6 +163,8 @@ function main() {
       'no-boolean-parameter',
       'no-anonymous-public-option-bag',
       'max-imports-12',
+      'max-function-lines-35',
+      'complexity-8',
       'max-lines-500',
     ],
     fileCount: files.length,
@@ -196,6 +220,8 @@ function loadBaseline() {
       booleanParameters: {},
       anonymousPublicOptionBags: {},
       runtimeImports: {},
+      maxFunctionLines: {},
+      cyclomaticComplexity: {},
     };
   }
 
@@ -233,6 +259,8 @@ function countForbiddenSyntax(relativePath, sourceText) {
     booleanParameter: 0,
     anonymousPublicOptionBag: 0,
     runtimeImportCount: runtimeImportCount(sourceFile),
+    maxFunctionLineCount: 0,
+    maxCyclomaticComplexity: 0,
   };
 
   visit(sourceFile);
@@ -257,6 +285,14 @@ function countForbiddenSyntax(relativePath, sourceText) {
     if (isRuntimeFunctionLike(node)) {
       counts.maxParameterCount = Math.max(counts.maxParameterCount, node.parameters.length);
       counts.booleanParameter += booleanParameterCount(node);
+      counts.maxFunctionLineCount = Math.max(
+        counts.maxFunctionLineCount,
+        functionBodyLineCount(sourceFile, node),
+      );
+      counts.maxCyclomaticComplexity = Math.max(
+        counts.maxCyclomaticComplexity,
+        cyclomaticComplexity(node),
+      );
       if (isPublicFunctionLike(node)) {
         counts.anonymousPublicOptionBag += anonymousPublicOptionBagCount(node);
       }
@@ -288,7 +324,88 @@ function isRuntimeFunctionLike(node) {
     || ts.isFunctionExpression(node)
     || ts.isArrowFunction(node)
     || ts.isMethodDeclaration(node)
+    || ts.isGetAccessorDeclaration(node)
+    || ts.isSetAccessorDeclaration(node)
     || ts.isConstructorDeclaration(node);
+}
+
+function functionBodyLineCount(sourceFile, node) {
+  if (node.body == null) {
+    return 0;
+  }
+
+  if (!ts.isBlock(node.body)) {
+    return codeLineCount(sourceFile, node.body.getStart(sourceFile), node.body.getEnd());
+  }
+
+  const statements = node.body.statements;
+  if (statements.length === 0) {
+    return 0;
+  }
+
+  return codeLineCount(
+    sourceFile,
+    statements[0].getStart(sourceFile),
+    statements[statements.length - 1].getEnd(),
+  );
+}
+
+function codeLineCount(sourceFile, startPosition, endPosition) {
+  const startLine = sourceFile.getLineAndCharacterOfPosition(startPosition).line;
+  const endLine = sourceFile.getLineAndCharacterOfPosition(endPosition).line;
+  return sourceFile.text
+    .split(/\r?\n/)
+    .slice(startLine, endLine + 1)
+    .filter(isCountedCodeLine)
+    .length;
+}
+
+function isCountedCodeLine(line) {
+  const trimmed = line.trim();
+  return trimmed.length > 0 && !trimmed.startsWith('//');
+}
+
+function cyclomaticComplexity(node) {
+  if (node.body == null) {
+    return 1;
+  }
+
+  let complexity = 1;
+  visitComplexityNode(node.body);
+  return complexity;
+
+  function visitComplexityNode(child) {
+    if (child !== node.body && isRuntimeFunctionLike(child)) {
+      return;
+    }
+    if (isCyclomaticBranch(child)) {
+      complexity += 1;
+    }
+    if (isShortCircuitBranch(child)) {
+      complexity += 1;
+    }
+    ts.forEachChild(child, visitComplexityNode);
+  }
+}
+
+function isCyclomaticBranch(node) {
+  return ts.isIfStatement(node)
+    || ts.isForStatement(node)
+    || ts.isForInStatement(node)
+    || ts.isForOfStatement(node)
+    || ts.isWhileStatement(node)
+    || ts.isDoStatement(node)
+    || ts.isCaseClause(node)
+    || ts.isConditionalExpression(node);
+}
+
+function isShortCircuitBranch(node) {
+  if (!ts.isBinaryExpression(node)) {
+    return false;
+  }
+  return node.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken
+    || node.operatorToken.kind === ts.SyntaxKind.BarBarToken
+    || node.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken;
 }
 
 function booleanParameterCount(node) {

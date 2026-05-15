@@ -89,6 +89,11 @@ interface GraftCallToolResult {
   readonly content?: readonly GraftTextBlock[];
 }
 
+interface GraftOutlineProjection {
+  readonly outlineItems: readonly GraftOutlineItem[];
+  readonly error?: string;
+}
+
 let graftConnection: GraftMcpConnection | undefined;
 let graftConnectionPromise: Promise<GraftMcpConnection> | undefined;
 let graftCliPath: string | undefined;
@@ -97,19 +102,33 @@ export async function loadGraftInfo(request: GraftFileRequest): Promise<GraftInf
   const { workspaceRoot, filePath, dirty } = request;
   const relativePath = relative(workspaceRoot, filePath).replace(/\\/g, '/');
   if (relativePath.startsWith('..') || isAbsolute(relativePath)) {
-    return {
-      path: filePath,
-      relativePath: filePath,
-      dirty,
-      outlineItems: [],
-      changeLines: ['outside workspace root'],
-      error: 'Graft only runs against files inside the launch workspace.',
-    };
+    return outsideWorkspaceGraftInfo({ filePath, dirty });
   }
 
-  let outlineItems: readonly GraftOutlineItem[] = [];
-  let error: string | undefined;
+  const outline = await loadGraftOutline(workspaceRoot, relativePath);
+  return {
+    path: filePath,
+    relativePath,
+    dirty,
+    outlineItems: outline.outlineItems,
+    changeLines: await loadGraftChanges(workspaceRoot, relativePath),
+    ...(dirty ? { notice: 'saved file only; unsaved edits are not reflected' } : {}),
+    ...(outline.error != null ? { error: outline.error } : {}),
+  };
+}
 
+function outsideWorkspaceGraftInfo(request: Pick<GraftFileRequest, 'filePath' | 'dirty'>): GraftInfo {
+  return {
+    path: request.filePath,
+    relativePath: request.filePath,
+    dirty: request.dirty,
+    outlineItems: [],
+    changeLines: ['outside workspace root'],
+    error: 'Graft only runs against files inside the launch workspace.',
+  };
+}
+
+async function loadGraftOutline(workspaceRoot: string, relativePath: string): Promise<GraftOutlineProjection> {
   try {
     const outline = decodeGraftFileOutlineResult(await callGraftTool(
       workspaceRoot,
@@ -117,28 +136,21 @@ export async function loadGraftInfo(request: GraftFileRequest): Promise<GraftInf
       { path: relativePath },
     ));
     if (outline.projection === GRAFT_PROJECTION_REFUSED) {
-      error = outline.reason ?? 'outline refused';
-    } else {
-      outlineItems = (outline.jumpTable ?? []).map((entry) => ({
-        kind: entry.kind,
-        name: entry.symbol,
-        startLine: entry.start,
-        endLine: entry.end,
-      }));
+      return { outlineItems: [], error: outline.reason ?? 'outline refused' };
     }
+    return { outlineItems: graftOutlineItems(outline) };
   } catch (cause) {
-    error = `graft outline failed: ${cause instanceof Error ? cause.message : String(cause)}`;
+    return { outlineItems: [], error: `graft outline failed: ${cause instanceof Error ? cause.message : String(cause)}` };
   }
+}
 
-  return {
-    path: filePath,
-    relativePath,
-    dirty,
-    outlineItems,
-    changeLines: await loadGraftChanges(workspaceRoot, relativePath),
-    ...(dirty ? { notice: 'saved file only; unsaved edits are not reflected' } : {}),
-    ...(error != null ? { error } : {}),
-  };
+function graftOutlineItems(outline: GraftFileOutlineResult): readonly GraftOutlineItem[] {
+  return (outline.jumpTable ?? []).map((entry) => ({
+    kind: entry.kind,
+    name: entry.symbol,
+    startLine: entry.start,
+    endLine: entry.end,
+  }));
 }
 
 export function failedGraftInfo(request: FailedGraftInfoRequest): GraftInfo {
@@ -216,53 +228,56 @@ function workspaceHasHead(workspaceRoot: string): boolean {
 }
 
 async function ensureGraftConnection(workspaceRoot: string): Promise<GraftMcpConnection> {
+  const reusable = await reusableGraftConnection(workspaceRoot);
+  if (reusable != null) {
+    return reusable;
+  }
+
+  await closeStaleGraftConnection();
+  graftConnectionPromise = openGraftConnection(workspaceRoot);
+  return graftConnectionPromise;
+}
+
+async function reusableGraftConnection(workspaceRoot: string): Promise<GraftMcpConnection | undefined> {
   if (graftConnection?.workspaceRoot === workspaceRoot) {
     return graftConnection;
   }
-
-  if (graftConnectionPromise != null) {
-    const pending = await graftConnectionPromise;
-    if (pending.workspaceRoot === workspaceRoot) {
-      return pending;
-    }
+  if (graftConnectionPromise == null) {
+    return undefined;
   }
+  const pending = await graftConnectionPromise;
+  return pending.workspaceRoot === workspaceRoot ? pending : undefined;
+}
 
+async function closeStaleGraftConnection(): Promise<void> {
   if (graftConnection != null) {
     await closeGraftConnection();
   }
+}
 
-  const transport = new StdioClientTransport({
+async function openGraftConnection(workspaceRoot: string): Promise<GraftMcpConnection> {
+  const transport = createGraftTransport(workspaceRoot);
+  const client = new Client({ name: 'jedit', version: '0.0.0' });
+  try {
+    await client.connect(transport);
+    graftConnection = { workspaceRoot, client, transport };
+    return graftConnection;
+  } catch (cause) {
+    await transport.close().catch(() => undefined);
+    throw cause;
+  } finally {
+    graftConnectionPromise = undefined;
+  }
+}
+
+function createGraftTransport(workspaceRoot: string): StdioClientTransport {
+  return new StdioClientTransport({
     command: process.execPath,
     args: [resolveGraftCliPath(), GRAFT_SERVE_COMMAND],
     cwd: workspaceRoot,
     env: processEnvRecord(),
     stderr: 'pipe',
   });
-  const client = new Client({
-    name: 'jedit',
-    version: '0.0.0',
-  });
-
-  const connectionPromise = (async () => {
-    try {
-      await client.connect(transport);
-      const connection = {
-        workspaceRoot,
-        client,
-        transport,
-      };
-      graftConnection = connection;
-      return connection;
-    } catch (cause) {
-      await transport.close().catch(() => undefined);
-      throw cause;
-    } finally {
-      graftConnectionPromise = undefined;
-    }
-  })();
-
-  graftConnectionPromise = connectionPromise;
-  return connectionPromise;
 }
 
 function resolveGraftCliPath(): string {
@@ -319,25 +334,23 @@ function isJsonValue(
   if (value === null) {
     return true;
   }
-
-  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+  if (isJsonPrimitiveValue(value)) {
     return true;
   }
-
   if (Array.isArray(value)) {
     return value.every(isJsonValue);
   }
+  return isJsonObjectValue(value) && Object.values(value).every(isJsonValue);
+}
 
-  if (value == null || typeof value !== 'object') {
-    return false;
-  }
+function isJsonPrimitiveValue(value: JsonValue | CallToolStructuredContent | readonly (JsonValue | CallToolStructuredChild)[]): value is JsonPrimitive {
+  return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
+}
 
-  for (const [, member] of Object.entries(value)) {
-    if (!isJsonValue(member)) {
-      return false;
-    }
-  }
-  return true;
+function isJsonObjectValue(
+  value: JsonValue | CallToolStructuredContent | readonly (JsonValue | CallToolStructuredChild)[],
+): value is JsonObject {
+  return value != null && typeof value === 'object' && !Array.isArray(value);
 }
 
 function parseGraftErrorResult(result: GraftCallToolResult): string {

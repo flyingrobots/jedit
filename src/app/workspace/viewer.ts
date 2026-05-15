@@ -43,29 +43,51 @@ export function renderWorkspace(model: WorkspaceModel): Surface {
   });
   const layout = resolveWorkspaceLayout(model.columns, model.fileDrawerProgress, model.graftDrawerProgress);
 
+  paintWorkspaceTitle(screen, model);
+  screen.blit(renderViewer(model, layout.viewer.width, bodyHeight), layout.viewer.x, bodyTop);
+  paintWorkspaceDrawers(screen, model, layout, bodyTop, bodyHeight);
+  paintWorkspaceFocusEdge(screen, model, layout, bodyTop, bodyHeight);
+  paintWorkspaceFooter(screen, model);
+  paintWorkspaceOverlays(screen, model, bodyTop, bodyHeight);
+
+  return renderFeedback(screen, model.notifications, model.columns, model.rows);
+}
+
+function paintWorkspaceTitle(screen: Surface, model: WorkspaceModel): void {
   screen.blit(
-    stringToSurface(
-      centerLine(activeWorkspaceTitle({
-        cwd: model.cwd,
-        editorPath: model.editor?.path,
-        editorDirty: model.editor?.dirty ?? false,
-        selectedEntry: model.entries[model.selectedIndex],
-      }), model.columns),
-      model.columns,
-      1,
-    ),
+    stringToSurface(centerLine(activeWorkspaceTitle({
+      cwd: model.cwd,
+      editorPath: model.editor?.path,
+      editorDirty: model.editor?.dirty ?? false,
+      selectedEntry: model.entries[model.selectedIndex],
+    }), model.columns), model.columns, 1),
     0,
     0,
   );
-  screen.blit(renderViewer(model, layout.viewer.width, bodyHeight), layout.viewer.x, bodyTop);
+}
 
+function paintWorkspaceDrawers(
+  screen: Surface,
+  model: WorkspaceModel,
+  layout: ReturnType<typeof resolveWorkspaceLayout>,
+  bodyTop: number,
+  bodyHeight: number,
+): void {
   if (layout.fileDrawer.width > 0) {
     screen.blit(renderDrawer(DrawerKinds.Files, model, layout.fileDrawer.width, bodyHeight), layout.fileDrawer.x, bodyTop);
   }
   if (layout.graftDrawer.width > 0) {
     screen.blit(renderDrawer(DrawerKinds.Graft, model, layout.graftDrawer.width, bodyHeight), layout.graftDrawer.x, bodyTop);
   }
+}
 
+function paintWorkspaceFocusEdge(
+  screen: Surface,
+  model: WorkspaceModel,
+  layout: ReturnType<typeof resolveWorkspaceLayout>,
+  bodyTop: number,
+  bodyHeight: number,
+): void {
   paintActivePaneEdge(screen, layout, {
     focusPane: model.focusPane,
     fileDrawerOpen: model.fileDrawerOpen,
@@ -75,7 +97,9 @@ export function renderWorkspace(model: WorkspaceModel): Surface {
     top: bodyTop,
     height: bodyHeight,
   });
+}
 
+function paintWorkspaceFooter(screen: Surface, model: WorkspaceModel): void {
   if (model.footerVisible) {
     screen.blit(
       renderWorkspaceFooter({
@@ -98,10 +122,6 @@ export function renderWorkspace(model: WorkspaceModel): Surface {
       model.rows - FOOTER_ROWS,
     );
   }
-
-  paintWorkspaceOverlays(screen, model, bodyTop, bodyHeight);
-
-  return renderFeedback(screen, model.notifications, model.columns, model.rows);
 }
 
 function selectedGraftSelection(model: WorkspaceModel): { kind: string; name: string; startLine: number } | undefined {

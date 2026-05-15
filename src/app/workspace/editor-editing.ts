@@ -173,7 +173,7 @@ export function updateInsertMode(
   msg: KeyMsg,
   options: UpdateInsertModeOptions,
 ): EditorState {
-  const viewport = {
+  const viewport: EditorViewport = {
     width: Math.max(1, options.viewportWidth),
     height: Math.max(1, options.viewportHeight),
   };
@@ -184,49 +184,84 @@ export function updateInsertMode(
   if (editor.readOnly) {
     return editor;
   }
-  if (msg.key === EDITOR_KEY.Left) {
-    return ensureEditorVisible(moveCursorLeftInsert(editor), viewport.width, viewport.height);
-  }
-  if (msg.key === EDITOR_KEY.Right) {
-    return ensureEditorVisible(moveCursorRightInsert(editor), viewport.width, viewport.height);
-  }
-  if (msg.key === EDITOR_KEY.Up) {
-    return ensureEditorVisible(moveCursorVerticalInsert(editor, -1), viewport.width, viewport.height);
-  }
-  if (msg.key === EDITOR_KEY.Down) {
-    return ensureEditorVisible(moveCursorVerticalInsert(editor, 1), viewport.width, viewport.height);
-  }
-  if (msg.key === EDITOR_KEY.Home) {
-    return ensureEditorVisible({ ...editor, cursorCol: 0 }, viewport.width, viewport.height);
-  }
-  if (msg.key === EDITOR_KEY.End) {
-    return ensureEditorVisible({ ...editor, cursorCol: currentLine(editor).length }, viewport.width, viewport.height);
-  }
-  if (msg.key === EDITOR_KEY.PageUp) {
-    return ensureEditorVisible(moveCursorVerticalInsert(editor, -viewport.height), viewport.width, viewport.height);
-  }
-  if (msg.key === EDITOR_KEY.PageDown) {
-    return ensureEditorVisible(moveCursorVerticalInsert(editor, viewport.height), viewport.width, viewport.height);
-  }
-  if (msg.key === EDITOR_KEY.Backspace) {
-    return ensureEditorVisible(backspace(editor), viewport.width, viewport.height);
-  }
-  if (msg.key === EDITOR_KEY.Delete) {
-    return ensureEditorVisible(deleteForward(editor), viewport.width, viewport.height);
-  }
-  if (msg.key === EDITOR_KEY.Enter) {
-    return ensureEditorVisible(insertNewline(editor), viewport.width, viewport.height);
-  }
-  if (options.allowTabIndent && msg.key === EDITOR_KEY.Tab) {
-    return ensureEditorVisible(insertText(editor, INSERT_TAB_TEXT), viewport.width, viewport.height);
-  }
 
-  const inserted = keyToText(msg);
-  if (inserted != null) {
-    return ensureEditorVisible(insertText(editor, inserted), viewport.width, viewport.height);
+  const edited = updateInsertNavigation(editor, msg, viewport)
+    ?? updateInsertMutation(editor, msg, options)
+    ?? updateInsertText(editor, msg);
+  if (edited != null) {
+    return ensureEditorVisible(edited, viewport.width, viewport.height);
   }
 
   return ensureEditorVisible(editor, viewport.width, viewport.height);
+}
+
+function updateInsertNavigation(
+  editor: EditorState,
+  msg: KeyMsg,
+  viewport: EditorViewport,
+): EditorState | undefined {
+  if (msg.key === EDITOR_KEY.Left) {
+    return moveCursorLeftInsert(editor);
+  }
+  if (msg.key === EDITOR_KEY.Right) {
+    return moveCursorRightInsert(editor);
+  }
+  return updateInsertVerticalNavigation(editor, msg, viewport);
+}
+
+function updateInsertVerticalNavigation(
+  editor: EditorState,
+  msg: KeyMsg,
+  viewport: EditorViewport,
+): EditorState | undefined {
+  if (msg.key === EDITOR_KEY.Up) {
+    return moveCursorVerticalInsert(editor, -1);
+  }
+  if (msg.key === EDITOR_KEY.Down) {
+    return moveCursorVerticalInsert(editor, 1);
+  }
+  if (msg.key === EDITOR_KEY.PageUp) {
+    return moveCursorVerticalInsert(editor, -viewport.height);
+  }
+  if (msg.key === EDITOR_KEY.PageDown) {
+    return moveCursorVerticalInsert(editor, viewport.height);
+  }
+  return updateInsertLineNavigation(editor, msg);
+}
+
+function updateInsertLineNavigation(editor: EditorState, msg: KeyMsg): EditorState | undefined {
+  if (msg.key === EDITOR_KEY.Home) {
+    return { ...editor, cursorCol: 0 };
+  }
+  if (msg.key === EDITOR_KEY.End) {
+    return { ...editor, cursorCol: currentLine(editor).length };
+  }
+  return undefined;
+}
+
+function updateInsertMutation(
+  editor: EditorState,
+  msg: KeyMsg,
+  options: Pick<UpdateInsertModeOptions, 'allowTabIndent'>,
+): EditorState | undefined {
+  if (msg.key === EDITOR_KEY.Backspace) {
+    return backspace(editor);
+  }
+  if (msg.key === EDITOR_KEY.Delete) {
+    return deleteForward(editor);
+  }
+  if (msg.key === EDITOR_KEY.Enter) {
+    return insertNewline(editor);
+  }
+  if (options.allowTabIndent && msg.key === EDITOR_KEY.Tab) {
+    return insertText(editor, INSERT_TAB_TEXT);
+  }
+  return undefined;
+}
+
+function updateInsertText(editor: EditorState, msg: KeyMsg): EditorState | undefined {
+  const inserted = keyToText(msg);
+  return inserted == null ? undefined : insertText(editor, inserted);
 }
 
 export function updateNormalMode(

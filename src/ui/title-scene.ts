@@ -14,6 +14,7 @@ export type TitleScenePrimitiveShapeKind =
   | typeof TITLE_SCENE_SHAPE_KIND.Column;
 export type TitleSceneVector3 = readonly [number, number, number];
 export type TitleSceneColor = RGB;
+type ColumnHitCandidate = { readonly distance: number; readonly normal: TitleSceneVector3 };
 
 export interface TitleSceneColorSet {
   readonly accent: TitleSceneColor;
@@ -333,38 +334,32 @@ function sphereHit(origin: TitleSceneVector3, ray: TitleSceneVector3, object: Ti
 function columnHit(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleScenePrimitiveObject): TitleSceneObjectHit | undefined {
   const bottomY = object.position[1] - (object.height / COLUMN_HALF_HEIGHT_DIVISOR);
   const topY = object.position[1] + (object.height / COLUMN_HALF_HEIGHT_DIVISOR);
-  let nearestDistance = -1;
-  let nearestNormal: TitleSceneVector3 | undefined;
+  const side = columnSideHitCandidate(origin, ray, object);
+  const top = columnCapHitCandidate(origin, ray, object, topY, [0, 1, 0]);
+  const bottom = columnCapHitCandidate(origin, ray, object, bottomY, [0, -1, 0]);
+  const hit = nearestColumnCandidate(nearestColumnCandidate(side, top), bottom);
+  return hit == null ? undefined : { object, distance: hit.distance, normal: hit.normal };
+}
 
-  // Check side
-  const sideDistance = intersectColumnSide(origin, ray, object);
-  if (sideDistance > 0) {
-    nearestDistance = sideDistance;
-    const point = add(origin, scale(ray, sideDistance));
-    nearestNormal = normalize([point[0] - object.position[0], 0, point[2] - object.position[2]]);
-  }
-
-  const topDistance = intersectColumnCap(origin, ray, object, topY);
-  if (topDistance > 0 && (nearestDistance < 0 || topDistance < nearestDistance)) {
-    nearestDistance = topDistance;
-    nearestNormal = [0, 1, 0];
-  }
-
-  const bottomDistance = intersectColumnCap(origin, ray, object, bottomY);
-  if (bottomDistance > 0 && (nearestDistance < 0 || bottomDistance < nearestDistance)) {
-    nearestDistance = bottomDistance;
-    nearestNormal = [0, -1, 0];
-  }
-
-  if (nearestDistance <= 0 || nearestNormal == null) {
+function columnSideHitCandidate(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleScenePrimitiveObject): ColumnHitCandidate | undefined {
+  const distance = intersectColumnSide(origin, ray, object);
+  if (distance <= 0) {
     return undefined;
   }
+  const point = add(origin, scale(ray, distance));
+  return { distance, normal: normalize([point[0] - object.position[0], 0, point[2] - object.position[2]]) };
+}
 
-  return {
-    object,
-    distance: nearestDistance,
-    normal: nearestNormal,
-  };
+function columnCapHitCandidate(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleScenePrimitiveObject, capY: number, normal: TitleSceneVector3): ColumnHitCandidate | undefined {
+  const distance = intersectColumnCap(origin, ray, object, capY);
+  return distance > 0 ? { distance, normal } : undefined;
+}
+
+function nearestColumnCandidate(current: ColumnHitCandidate | undefined, next: ColumnHitCandidate | undefined): ColumnHitCandidate | undefined {
+  if (current == null) {
+    return next;
+  }
+  return next != null && next.distance < current.distance ? next : current;
 }
 
 function intersectColumnCap(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleScenePrimitiveObject, capY: number): number {

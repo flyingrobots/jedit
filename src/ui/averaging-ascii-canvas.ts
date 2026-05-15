@@ -39,6 +39,17 @@ interface CollapseAsciiCellOptions {
   readonly palette: AsciiPaletteSpec;
 }
 
+interface CollapseAsciiAccumulator {
+  fgRed: number;
+  fgGreen: number;
+  fgBlue: number;
+  bgRed: number;
+  bgGreen: number;
+  bgBlue: number;
+  luminanceSum: number;
+  readonly modifiers: string[];
+}
+
 export interface AveragingAsciiCanvasOptions {
   readonly palette?: TitleAsciiPalette;
 }
@@ -107,45 +118,62 @@ export function averagingAsciiCanvas(
 }
 
 function collapseAsciiCell(options: CollapseAsciiCellOptions): Cell {
-  let fgRed = 0;
-  let fgGreen = 0;
-  let fgBlue = 0;
-  let bgRed = 0;
-  let bgGreen = 0;
-  let bgBlue = 0;
-  let luminanceSum = 0;
-  const modifiers: string[] = [];
+  const accumulator = createAsciiAccumulator();
 
   for (let sampleY = 0; sampleY < ASCII_ROWS_PER_CELL; sampleY += 1) {
     for (let sampleX = 0; sampleX < ASCII_COLUMNS_PER_CELL; sampleX += 1) {
-      const sample = options.shader({
-        u: ((options.x * ASCII_COLUMNS_PER_CELL) + sampleX) / (options.subpixelWidth - 1 || 1),
-        v: ((options.y * ASCII_ROWS_PER_CELL) + sampleY) / (options.subpixelHeight - 1 || 1),
-        time: options.time,
-      });
-
-      fgRed += sample.fgRGB[RED_INDEX];
-      fgGreen += sample.fgRGB[GREEN_INDEX];
-      fgBlue += sample.fgRGB[BLUE_INDEX];
-      bgRed += sample.bgRGB[RED_INDEX];
-      bgGreen += sample.bgRGB[GREEN_INDEX];
-      bgBlue += sample.bgRGB[BLUE_INDEX];
-      luminanceSum += sample.on ? luminance(sample.fgRGB) : 0;
-
-      for (const modifier of sample.modifiers ?? []) {
-        if (!modifiers.includes(modifier)) {
-          modifiers.push(modifier);
-        }
-      }
+      accumulateAsciiSample(accumulator, options, sampleX, sampleY);
     }
   }
 
   return {
-    char: asciiCharForLuminance(luminanceSum / ASCII_SAMPLE_COUNT, options.palette, options.x, options.y),
-    fgRGB: averageRgb(fgRed, fgGreen, fgBlue),
-    bgRGB: averageRgb(bgRed, bgGreen, bgBlue),
-    ...(modifiers.length > 0 ? { modifiers } : {}),
+    char: asciiCharForLuminance(accumulator.luminanceSum / ASCII_SAMPLE_COUNT, options.palette, options.x, options.y),
+    fgRGB: averageRgb(accumulator.fgRed, accumulator.fgGreen, accumulator.fgBlue),
+    bgRGB: averageRgb(accumulator.bgRed, accumulator.bgGreen, accumulator.bgBlue),
+    ...(accumulator.modifiers.length > 0 ? { modifiers: accumulator.modifiers } : {}),
   };
+}
+
+function createAsciiAccumulator(): CollapseAsciiAccumulator {
+  return {
+    fgRed: 0,
+    fgGreen: 0,
+    fgBlue: 0,
+    bgRed: 0,
+    bgGreen: 0,
+    bgBlue: 0,
+    luminanceSum: 0,
+    modifiers: [],
+  };
+}
+
+function accumulateAsciiSample(
+  accumulator: CollapseAsciiAccumulator,
+  options: CollapseAsciiCellOptions,
+  sampleX: number,
+  sampleY: number,
+): void {
+  const sample = options.shader({
+    u: ((options.x * ASCII_COLUMNS_PER_CELL) + sampleX) / (options.subpixelWidth - 1 || 1),
+    v: ((options.y * ASCII_ROWS_PER_CELL) + sampleY) / (options.subpixelHeight - 1 || 1),
+    time: options.time,
+  });
+  accumulator.fgRed += sample.fgRGB[RED_INDEX];
+  accumulator.fgGreen += sample.fgRGB[GREEN_INDEX];
+  accumulator.fgBlue += sample.fgRGB[BLUE_INDEX];
+  accumulator.bgRed += sample.bgRGB[RED_INDEX];
+  accumulator.bgGreen += sample.bgRGB[GREEN_INDEX];
+  accumulator.bgBlue += sample.bgRGB[BLUE_INDEX];
+  accumulator.luminanceSum += sample.on ? luminance(sample.fgRGB) : 0;
+  appendUniqueModifiers(accumulator.modifiers, sample.modifiers);
+}
+
+function appendUniqueModifiers(modifiers: string[], nextModifiers: readonly string[] | undefined): void {
+  for (const modifier of nextModifiers ?? []) {
+    if (!modifiers.includes(modifier)) {
+      modifiers.push(modifier);
+    }
+  }
 }
 
 export function nextTitleAsciiPalette(current: TitleAsciiPalette): TitleAsciiPalette {

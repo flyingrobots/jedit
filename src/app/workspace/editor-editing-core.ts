@@ -270,17 +270,11 @@ export function nextWordStartIndex(text: string, index: number, allowEnd = false
 
   let cursor = Math.max(0, Math.min(index, text.length - 1));
   if (classifyWordChar(text[cursor]) === WordClasses.Space) {
-    while (cursor < text.length && classifyWordChar(text[cursor]) === WordClasses.Space) {
-      cursor += 1;
-    }
+    cursor = skipWordClassForward(text, cursor, WordClasses.Space);
   } else {
     const currentClass = classifyWordChar(text[cursor]);
-    while (cursor < text.length && classifyWordChar(text[cursor]) === currentClass) {
-      cursor += 1;
-    }
-    while (cursor < text.length && classifyWordChar(text[cursor]) === WordClasses.Space) {
-      cursor += 1;
-    }
+    cursor = skipWordClassForward(text, cursor, currentClass);
+    cursor = skipWordClassForward(text, cursor, WordClasses.Space);
   }
 
   if (allowEnd) {
@@ -288,6 +282,14 @@ export function nextWordStartIndex(text: string, index: number, allowEnd = false
   }
 
   return Math.max(0, Math.min(text.length - 1, cursor));
+}
+
+function skipWordClassForward(text: string, start: number, wordClass: WordClass): number {
+  let cursor = start;
+  while (cursor < text.length && classifyWordChar(text[cursor]) === wordClass) {
+    cursor += 1;
+  }
+  return cursor;
 }
 
 export function previousWordStartIndex(text: string, index: number): number {

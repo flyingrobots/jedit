@@ -35,11 +35,22 @@ export interface WorkspaceAppOptions {
 export function createWorkspaceApp(options: WorkspaceAppOptions): App<WorkspaceModel, WorkspaceMsg> {
   const nowMs = options.nowMs ?? (() => Date.now());
   const random = options.random ?? Math.random;
+  const runtime = createWorkspaceRuntime(workspaceRuntimeDependencies(options, nowMs, random));
+  return createPerfApp(workspaceRuntimeApp(runtime), {
+    initialPerfVisible: options.perfEnabled,
+  });
+}
+
+function workspaceRuntimeDependencies(
+  options: WorkspaceAppOptions,
+  nowMs: () => number,
+  random: () => number,
+) {
   const editorFile = editorFilePort;
   const graftSession = createGraftSessionPort();
   const sourceHighlighter = createGraftSourceHighlighter();
   const titleSceneLoader = createTitleSceneLoaderPort();
-  const runtime = createWorkspaceRuntime({
+  return {
     initialColumns: options.initialColumns,
     initialRows: options.initialRows,
     initialWorkingDirectory: options.initialWorkingDirectory,
@@ -57,18 +68,18 @@ export function createWorkspaceApp(options: WorkspaceAppOptions): App<WorkspaceM
       atMs,
     })),
     createDrawerAnimationCmd: createDrawerAnimationCmd,
-  });
+  };
+}
 
-  const app: App<WorkspaceModel, WorkspaceMsg> = {
+function workspaceRuntimeApp(
+  runtime: ReturnType<typeof createWorkspaceRuntime>,
+): App<WorkspaceModel, WorkspaceMsg> {
+  return {
     init: runtime.init,
     update: runtime.update,
     view: runtime.view,
     routeRuntimeIssue: runtime.routeRuntimeIssue,
   };
-
-  return createPerfApp(app, {
-    initialPerfVisible: options.perfEnabled,
-  });
 }
 
 function createTimeTickCmd(): Cmd<WorkspaceMsg> {

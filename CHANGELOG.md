@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Ratcheted the quality gate to reject runtime functions above 35 body lines
+  and cyclomatic complexity above 8, with deterministic regression fixtures and
+  targeted source splits to keep the current tree clean.
 - Ratcheted the quality gate to reject raw `throw new Error`, non-`as const`
   type assertions, and runtime functions with more than five parameters, with
   regression fixtures for each rule.

@@ -4,23 +4,7 @@ import { EditorModes, PendingOperators, type PendingOperator } from './editor/mo
 import { EditorKeys, LineBoundaries, WordMotions, type LineBoundary, type WordMotion } from './editor/key.js';
 import type { EditorState } from './editor/model.js';
 import { RegisterKinds } from './editor/model.js';
-import {
-  clampNormalCol,
-  currentLine,
-  editorText,
-  yankTextRange,
-  deleteTextRange,
-  commitMutation,
-  snapshotEditor,
-  deleteForward,
-  leadingWhitespace,
-  lineStartTextIndex,
-  nextWordStartIndex,
-  normalPositionAtOrBeforeIndex,
-  normalTextIndex,
-  previousWordStartIndex,
-  wordEndIndex,
-} from './editor-editing-core.js';
+import { clampNormalCol, currentLine, editorText, yankTextRange, deleteTextRange, commitMutation, snapshotEditor, deleteForward, leadingWhitespace, lineStartTextIndex, nextWordStartIndex, normalPositionAtOrBeforeIndex, normalTextIndex, previousWordStartIndex, wordEndIndex } from './editor-editing-core.js';
 
 const NORMAL_MODE = EditorModes.Normal;
 const INSERT_MODE = EditorModes.Insert;
@@ -35,31 +19,59 @@ export function applyPendingOperator(
   }
 
   if (!msg.shift) {
-    if (operator === PendingOperators.Delete && msg.key === EditorKeys.D) {
-      return deleteCurrentLine(editor);
-    }
-    if (operator === PendingOperators.Change && msg.key === EditorKeys.C) {
-      return changeCurrentLine(editor);
-    }
-    if (operator === PendingOperators.Yank && msg.key === EditorKeys.Y) {
-      return yankCurrentLine(editor);
-    }
-    if (msg.key === EditorKeys.W) {
-      return applyWordMotionOperator(editor, operator, WordMotions.Start);
-    }
-    if (msg.key === EditorKeys.E) {
-      return applyWordMotionOperator(editor, operator, WordMotions.End);
-    }
-    if (msg.key === EditorKeys.LineStart) {
-      return applyLineBoundaryOperator(editor, operator, LineBoundaries.Start);
-    }
+    return applyUnshiftedPendingOperator(editor, operator, msg)
+      ?? applyLineEndPendingOperator(editor, operator, msg);
   }
 
-  if (msg.key === EditorKeys.LineEnd) {
-    return applyLineBoundaryOperator(editor, operator, LineBoundaries.End);
-  }
+  return applyLineEndPendingOperator(editor, operator, msg);
+}
 
+function applyUnshiftedPendingOperator(
+  editor: EditorState,
+  operator: PendingOperator,
+  msg: KeyMsg,
+): EditorState | undefined {
+  const lineOperator = applyRepeatedLineOperator(editor, operator, msg);
+  if (lineOperator != null) {
+    return lineOperator;
+  }
+  if (msg.key === EditorKeys.W) {
+    return applyWordMotionOperator(editor, operator, WordMotions.Start);
+  }
+  if (msg.key === EditorKeys.E) {
+    return applyWordMotionOperator(editor, operator, WordMotions.End);
+  }
+  if (msg.key === EditorKeys.LineStart) {
+    return applyLineBoundaryOperator(editor, operator, LineBoundaries.Start);
+  }
   return undefined;
+}
+
+function applyRepeatedLineOperator(
+  editor: EditorState,
+  operator: PendingOperator,
+  msg: KeyMsg,
+): EditorState | undefined {
+  if (operator === PendingOperators.Delete && msg.key === EditorKeys.D) {
+    return deleteCurrentLine(editor);
+  }
+  if (operator === PendingOperators.Change && msg.key === EditorKeys.C) {
+    return changeCurrentLine(editor);
+  }
+  if (operator === PendingOperators.Yank && msg.key === EditorKeys.Y) {
+    return yankCurrentLine(editor);
+  }
+  return undefined;
+}
+
+function applyLineEndPendingOperator(
+  editor: EditorState,
+  operator: PendingOperator,
+  msg: KeyMsg,
+): EditorState | undefined {
+  return msg.key === EditorKeys.LineEnd
+    ? applyLineBoundaryOperator(editor, operator, LineBoundaries.End)
+    : undefined;
 }
 
 export function applyWordMotionOperator(

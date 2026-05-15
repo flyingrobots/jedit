@@ -29,20 +29,37 @@ export function updateGraftDrawerFromKey(
     return [model, []];
   }
 
+  const selectedIndex = updateGraftSelectionIndex(msg, model, graftInfo.outlineItems.length);
+  if (selectedIndex != null) {
+    return [{ ...model, graftSelectedIndex: selectedIndex }, []];
+  }
+
+  return msg.key === WorkspaceKeys.Enter && model.editor != null
+    ? focusSelectedGraftItem(model)
+    : [model, []];
+}
+
+function updateGraftSelectionIndex(
+  msg: KeyMsg,
+  model: WorkspaceModel,
+  outlineLength: number,
+): number | undefined {
   if (isWorkspaceDownKey(msg)) {
-    return [{
-      ...model,
-      graftSelectedIndex: clampIndex(model.graftSelectedIndex + 1, graftInfo.outlineItems.length),
-    }, []];
+    return clampIndex(model.graftSelectedIndex + 1, outlineLength);
   }
 
   if (isWorkspaceUpKey(msg)) {
-    return [{
-      ...model,
-      graftSelectedIndex: clampIndex(model.graftSelectedIndex - 1, graftInfo.outlineItems.length),
-    }, []];
+    return clampIndex(model.graftSelectedIndex - 1, outlineLength);
   }
 
+  return updateGraftPageSelectionIndex(msg, model, outlineLength);
+}
+
+function updateGraftPageSelectionIndex(
+  msg: KeyMsg,
+  model: WorkspaceModel,
+  outlineLength: number,
+): number | undefined {
   const visible = graftVisibleOutlineRows(
     workspaceBodyHeight({
       rows: model.rows,
@@ -54,54 +71,54 @@ export function updateGraftDrawerFromKey(
   );
 
   if (msg.key === WorkspaceKeys.PageUp) {
-    return [{
-      ...model,
-      graftSelectedIndex: clampIndex(model.graftSelectedIndex - visible, graftInfo.outlineItems.length),
-    }, []];
+    return clampIndex(model.graftSelectedIndex - visible, outlineLength);
   }
 
   if (msg.key === WorkspaceKeys.PageDown) {
-    return [{
+    return clampIndex(model.graftSelectedIndex + visible, outlineLength);
+  }
+
+  return updateGraftExtremeSelectionIndex(msg, outlineLength);
+}
+
+function updateGraftExtremeSelectionIndex(msg: KeyMsg, outlineLength: number): number | undefined {
+  if (isPlainGraftEdgeKey(msg)) {
+    return 0;
+  }
+
+  if (isShiftGraftEdgeKey(msg)) {
+    return outlineLength - 1;
+  }
+
+  return undefined;
+}
+
+function isPlainGraftEdgeKey(msg: KeyMsg): boolean {
+  return !msg.ctrl && !msg.alt && !msg.shift && msg.key === WorkspaceKeys.G;
+}
+
+function isShiftGraftEdgeKey(msg: KeyMsg): boolean {
+  return !msg.ctrl && !msg.alt && msg.shift && msg.key === WorkspaceKeys.G;
+}
+
+function focusSelectedGraftItem(model: WorkspaceModel): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
+  const selected = model.graftInfo?.outlineItems[model.graftSelectedIndex];
+  if (selected == null || model.editor == null) {
+    return [model, []];
+  }
+
+  const viewport = editorViewport(model);
+  const editor = ensureEditorVisible({
+    ...model.editor,
+    cursorRow: Math.max(0, selected.startLine - 1),
+    cursorCol: 0,
+  }, viewport.width, viewport.height);
+
+  return [
+    withFocusPane({
       ...model,
-      graftSelectedIndex: clampIndex(model.graftSelectedIndex + visible, graftInfo.outlineItems.length),
-    }, []];
-  }
-
-  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === WorkspaceKeys.G) {
-    return [{
-      ...model,
-      graftSelectedIndex: 0,
-    }, []];
-  }
-
-  if (!msg.ctrl && !msg.alt && msg.shift && msg.key === WorkspaceKeys.G) {
-    return [{
-      ...model,
-      graftSelectedIndex: graftInfo.outlineItems.length - 1,
-    }, []];
-  }
-
-  if (msg.key === WorkspaceKeys.Enter && model.editor != null) {
-    const selected = graftInfo.outlineItems[model.graftSelectedIndex];
-    if (selected == null) {
-      return [model, []];
-    }
-
-    const viewport = editorViewport(model);
-    const editor = ensureEditorVisible({
-      ...model.editor,
-      cursorRow: Math.max(0, selected.startLine - 1),
-      cursorCol: 0,
-    }, viewport.width, viewport.height);
-
-    return [
-      withFocusPane({
-        ...model,
-        editor,
-      }, FocusPanes.Editor),
-      [],
-    ];
-  }
-
-  return [model, []];
+      editor,
+    }, FocusPanes.Editor),
+    [],
+  ];
 }

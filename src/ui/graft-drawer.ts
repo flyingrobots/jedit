@@ -26,21 +26,26 @@ export interface GraftDrawerState {
 export function renderGraftDrawerLines(model: GraftDrawerState, width: number, height: number): readonly string[] {
   const info = model.graftInfo;
   if (model.editor == null) {
-    return [
-      fitLine('graft', width),
-      fitLine('', width),
-      fitLine('open a file to inspect it', width),
-    ];
+    return fitGraftDrawerLines(['graft', '', 'open a file to inspect it'], width);
   }
 
   if (info == null) {
-    return [
-      fitLine('graft', width),
-      fitLine('', width),
-      fitLine(model.graftLoading ? 'loading...' : 'no graft data loaded', width),
-    ];
+    return fitGraftDrawerLines([
+      'graft',
+      '',
+      model.graftLoading ? 'loading...' : 'no graft data loaded',
+    ], width);
   }
 
+  return renderLoadedGraftDrawerLines(model, info, width, height);
+}
+
+function renderLoadedGraftDrawerLines(
+  model: GraftDrawerState,
+  info: GraftDrawerInfo,
+  width: number,
+  height: number,
+): readonly string[] {
   const metaLines = [
     'graft',
     info.relativePath,
@@ -64,4 +69,8 @@ export function renderGraftDrawerLines(model: GraftDrawerState, width: number, h
     ...outlineLines.map((line) => fitLine(line, width)),
     ...changeLines.slice(0, Math.max(0, height - metaLines.length - outlineLines.length)).map((line) => fitLine(line, width)),
   ];
+}
+
+function fitGraftDrawerLines(lines: readonly string[], width: number): readonly string[] {
+  return lines.map((line) => fitLine(line, width));
 }

@@ -289,3 +289,87 @@ test('quality gate rejects files above the import fan-in limit', () => {
     rmSync(fixtureRoot, { recursive: true, force: true });
   }
 });
+
+test('quality gate rejects functions above the line limit', () => {
+  const fixtureRoot = mkdtempSync(path.join(tmpdir(), 'jedit-quality-gate-'));
+
+  try {
+    mkdirSync(path.join(fixtureRoot, 'src'));
+    writeFileSync(
+      path.join(fixtureRoot, 'src', 'bad-function-lines.ts'),
+      [
+        'export function tooLong(): number {',
+        ...Array.from({ length: 36 }, (_, index) => `  const value${String(index)} = ${String(index)};`),
+        '  return value0;',
+        '}',
+        '',
+      ].join('\n'),
+    );
+
+    const result = spawnSync(process.execPath, [QUALITY_GATE_SCRIPT, '--json'], {
+      cwd: fixtureRoot,
+      encoding: 'utf8',
+    });
+    assert.notEqual(result.status, 0);
+
+    const parsed = JSON.parse(result.stdout);
+    assert.equal(parsed.ok, false);
+    assert.ok(parsed.enforcedRules.includes('max-function-lines-35'));
+    assert.deepEqual(parsed.regressions, [
+      {
+        file: 'src/bad-function-lines.ts',
+        rule: 'max-function-lines-35',
+        actual: 37,
+        allowed: 35,
+      },
+    ]);
+  } finally {
+    rmSync(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
+test('quality gate rejects functions above the complexity limit', () => {
+  const fixtureRoot = mkdtempSync(path.join(tmpdir(), 'jedit-quality-gate-'));
+
+  try {
+    mkdirSync(path.join(fixtureRoot, 'src'));
+    writeFileSync(
+      path.join(fixtureRoot, 'src', 'bad-complexity.ts'),
+      [
+        'export function tooComplex(value: number): number {',
+        '  let result = value;',
+        '  if (value > 0) { result += 1; }',
+        '  if (value > 1) { result += 1; }',
+        '  if (value > 2) { result += 1; }',
+        '  if (value > 3) { result += 1; }',
+        '  if (value > 4) { result += 1; }',
+        '  if (value > 5) { result += 1; }',
+        '  if (value > 6) { result += 1; }',
+        '  if (value > 7) { result += 1; }',
+        '  return result;',
+        '}',
+        '',
+      ].join('\n'),
+    );
+
+    const result = spawnSync(process.execPath, [QUALITY_GATE_SCRIPT, '--json'], {
+      cwd: fixtureRoot,
+      encoding: 'utf8',
+    });
+    assert.notEqual(result.status, 0);
+
+    const parsed = JSON.parse(result.stdout);
+    assert.equal(parsed.ok, false);
+    assert.ok(parsed.enforcedRules.includes('complexity-8'));
+    assert.deepEqual(parsed.regressions, [
+      {
+        file: 'src/bad-complexity.ts',
+        rule: 'complexity-8',
+        actual: 9,
+        allowed: 8,
+      },
+    ]);
+  } finally {
+    rmSync(fixtureRoot, { recursive: true, force: true });
+  }
+});

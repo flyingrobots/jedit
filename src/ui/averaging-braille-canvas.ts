@@ -26,6 +26,17 @@ interface CollapseBrailleCellOptions {
   readonly shader: BrailleShaderFn;
 }
 
+interface CollapseBrailleAccumulator {
+  code: number;
+  fgRed: number;
+  fgGreen: number;
+  fgBlue: number;
+  bgRed: number;
+  bgGreen: number;
+  bgBlue: number;
+  readonly modifiers: string[];
+}
+
 const BRAILLE_COLUMNS_PER_CELL = 2;
 const BRAILLE_ROWS_PER_CELL = 4;
 const BRAILLE_SAMPLE_COUNT = BRAILLE_COLUMNS_PER_CELL * BRAILLE_ROWS_PER_CELL;
@@ -71,48 +82,64 @@ export function averagingBrailleCanvas(
 }
 
 function collapseBrailleCell(options: CollapseBrailleCellOptions): Cell {
-  let code = 0;
-  let fgRed = 0;
-  let fgGreen = 0;
-  let fgBlue = 0;
-  let bgRed = 0;
-  let bgGreen = 0;
-  let bgBlue = 0;
-  const modifiers: string[] = [];
+  const accumulator = createBrailleAccumulator();
 
   for (let sampleY = 0; sampleY < BRAILLE_ROWS_PER_CELL; sampleY += 1) {
     for (let sampleX = 0; sampleX < BRAILLE_COLUMNS_PER_CELL; sampleX += 1) {
-      const sample = options.shader({
-        u: ((options.x * BRAILLE_COLUMNS_PER_CELL) + sampleX) / (options.subpixelWidth - 1 || 1),
-        v: ((options.y * BRAILLE_ROWS_PER_CELL) + sampleY) / (options.subpixelHeight - 1 || 1),
-        time: options.time,
-      });
-
-      if (sample.on) {
-        code |= BRAILLE_DOT_MAP[sampleY]![sampleX]!;
-      }
-
-      fgRed += sample.fgRGB[RED_INDEX];
-      fgGreen += sample.fgRGB[GREEN_INDEX];
-      fgBlue += sample.fgRGB[BLUE_INDEX];
-      bgRed += sample.bgRGB[RED_INDEX];
-      bgGreen += sample.bgRGB[GREEN_INDEX];
-      bgBlue += sample.bgRGB[BLUE_INDEX];
-
-      for (const modifier of sample.modifiers ?? []) {
-        if (!modifiers.includes(modifier)) {
-          modifiers.push(modifier);
-        }
-      }
+      accumulateBrailleSample(accumulator, options, sampleX, sampleY);
     }
   }
 
   return {
-    char: String.fromCodePoint(BRAILLE_BASE_CODE_POINT + code),
-    fgRGB: averageRgb(fgRed, fgGreen, fgBlue),
-    bgRGB: averageRgb(bgRed, bgGreen, bgBlue),
-    ...(modifiers.length > 0 ? { modifiers } : {}),
+    char: String.fromCodePoint(BRAILLE_BASE_CODE_POINT + accumulator.code),
+    fgRGB: averageRgb(accumulator.fgRed, accumulator.fgGreen, accumulator.fgBlue),
+    bgRGB: averageRgb(accumulator.bgRed, accumulator.bgGreen, accumulator.bgBlue),
+    ...(accumulator.modifiers.length > 0 ? { modifiers: accumulator.modifiers } : {}),
   };
+}
+
+function createBrailleAccumulator(): CollapseBrailleAccumulator {
+  return {
+    code: 0,
+    fgRed: 0,
+    fgGreen: 0,
+    fgBlue: 0,
+    bgRed: 0,
+    bgGreen: 0,
+    bgBlue: 0,
+    modifiers: [],
+  };
+}
+
+function accumulateBrailleSample(
+  accumulator: CollapseBrailleAccumulator,
+  options: CollapseBrailleCellOptions,
+  sampleX: number,
+  sampleY: number,
+): void {
+  const sample = options.shader({
+    u: ((options.x * BRAILLE_COLUMNS_PER_CELL) + sampleX) / (options.subpixelWidth - 1 || 1),
+    v: ((options.y * BRAILLE_ROWS_PER_CELL) + sampleY) / (options.subpixelHeight - 1 || 1),
+    time: options.time,
+  });
+  accumulator.code = sample.on
+    ? accumulator.code | BRAILLE_DOT_MAP[sampleY]![sampleX]!
+    : accumulator.code;
+  accumulator.fgRed += sample.fgRGB[RED_INDEX];
+  accumulator.fgGreen += sample.fgRGB[GREEN_INDEX];
+  accumulator.fgBlue += sample.fgRGB[BLUE_INDEX];
+  accumulator.bgRed += sample.bgRGB[RED_INDEX];
+  accumulator.bgGreen += sample.bgRGB[GREEN_INDEX];
+  accumulator.bgBlue += sample.bgRGB[BLUE_INDEX];
+  appendUniqueModifiers(accumulator.modifiers, sample.modifiers);
+}
+
+function appendUniqueModifiers(modifiers: string[], nextModifiers: readonly string[] | undefined): void {
+  for (const modifier of nextModifiers ?? []) {
+    if (!modifiers.includes(modifier)) {
+      modifiers.push(modifier);
+    }
+  }
 }
 
 function averageRgb(red: number, green: number, blue: number): RGB {

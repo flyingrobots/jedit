@@ -217,11 +217,7 @@ export function defineJeditTheme(
   const variables = new Map<string, JeditColorStop>();
   const draft = createThemeDraft(variables);
   build(draft);
-  const surface = {
-    workspace: styleTokenFromDraft(draft.surface.workspace),
-    drawer: styleTokenFromDraft(draft.surface.drawer),
-    footer: styleTokenFromDraft(draft.surface.footer),
-  };
+  const surface = buildSurfaceTokens(draft);
 
   return {
     name,
@@ -231,18 +227,7 @@ export function defineJeditTheme(
     companionThemeName: options.companionThemeName,
     variables,
     source: buildSourceTokens(draft.source),
-    sourceRoleMap: new Map([
-      [SOURCE_HIGHLIGHT_ROLE.Comment, JEDIT_SOURCE_TOKEN.Comment],
-      [SOURCE_HIGHLIGHT_ROLE.Function, JEDIT_SOURCE_TOKEN.Function],
-      [SOURCE_HIGHLIGHT_ROLE.Keyword, JEDIT_SOURCE_TOKEN.Keyword],
-      [SOURCE_HIGHLIGHT_ROLE.Number, JEDIT_SOURCE_TOKEN.Number],
-      [SOURCE_HIGHLIGHT_ROLE.Operator, JEDIT_SOURCE_TOKEN.Operator],
-      [SOURCE_HIGHLIGHT_ROLE.Property, JEDIT_SOURCE_TOKEN.Property],
-      [SOURCE_HIGHLIGHT_ROLE.Punctuation, JEDIT_SOURCE_TOKEN.Punctuation],
-      [SOURCE_HIGHLIGHT_ROLE.String, JEDIT_SOURCE_TOKEN.String],
-      [SOURCE_HIGHLIGHT_ROLE.Type, JEDIT_SOURCE_TOKEN.Type],
-      [SOURCE_HIGHLIGHT_ROLE.Variable, JEDIT_SOURCE_TOKEN.Variable],
-    ]),
+    sourceRoleMap: sourceRoleMap(),
     markdown: buildMarkdownTokens(draft.markdown),
     surface,
     cursor: {
@@ -257,6 +242,29 @@ export function defineJeditTheme(
       titleSceneFar: styleTokenFromDraft(draft.chrome.titleSceneFar),
     },
   };
+}
+
+function buildSurfaceTokens(draft: JeditThemeDraft): JeditTheme['surface'] {
+  return {
+    workspace: styleTokenFromDraft(draft.surface.workspace),
+    drawer: styleTokenFromDraft(draft.surface.drawer),
+    footer: styleTokenFromDraft(draft.surface.footer),
+  };
+}
+
+function sourceRoleMap(): JeditTheme['sourceRoleMap'] {
+  return new Map([
+    [SOURCE_HIGHLIGHT_ROLE.Comment, JEDIT_SOURCE_TOKEN.Comment],
+    [SOURCE_HIGHLIGHT_ROLE.Function, JEDIT_SOURCE_TOKEN.Function],
+    [SOURCE_HIGHLIGHT_ROLE.Keyword, JEDIT_SOURCE_TOKEN.Keyword],
+    [SOURCE_HIGHLIGHT_ROLE.Number, JEDIT_SOURCE_TOKEN.Number],
+    [SOURCE_HIGHLIGHT_ROLE.Operator, JEDIT_SOURCE_TOKEN.Operator],
+    [SOURCE_HIGHLIGHT_ROLE.Property, JEDIT_SOURCE_TOKEN.Property],
+    [SOURCE_HIGHLIGHT_ROLE.Punctuation, JEDIT_SOURCE_TOKEN.Punctuation],
+    [SOURCE_HIGHLIGHT_ROLE.String, JEDIT_SOURCE_TOKEN.String],
+    [SOURCE_HIGHLIGHT_ROLE.Type, JEDIT_SOURCE_TOKEN.Type],
+    [SOURCE_HIGHLIGHT_ROLE.Variable, JEDIT_SOURCE_TOKEN.Variable],
+  ]);
 }
 
 function createThemeDraft(variables: Map<string, JeditColorStop>): JeditThemeDraft {

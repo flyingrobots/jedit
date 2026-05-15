@@ -81,30 +81,14 @@ export function admitReplaceRangeTick(
 }
 
 function validateStateShape(currentRoot: BufferRoot, ticks: readonly AdmittedTick[]): void {
-  if (!Number.isInteger(currentRoot.id) || currentRoot.id < FIRST_TICK_ID) {
-    throw new TickAdmissionContractError(
-      TICK_ADMISSION_ERROR_INVALID_STATE,
-      'Tick admission requires a positive integer current root id.',
-    );
-  }
+  validatePositiveRootId(currentRoot.id, 'Tick admission requires a positive integer current root id.');
 
   let expectedTickId = FIRST_TICK_ID;
   let lastRootId: number | undefined;
 
   for (const tick of ticks) {
-    if (!Number.isInteger(tick.id) || tick.id !== expectedTickId) {
-      throw new TickAdmissionContractError(
-        TICK_ADMISSION_ERROR_INVALID_STATE,
-        'Tick admission history requires contiguous positive tick ids.',
-      );
-    }
-    if (!Number.isInteger(tick.rootId) || tick.rootId < FIRST_TICK_ID) {
-      throw new TickAdmissionContractError(
-        TICK_ADMISSION_ERROR_INVALID_STATE,
-        'Tick admission history requires positive integer root ids.',
-      );
-    }
-
+    validateExpectedTickId(tick.id, expectedTickId);
+    validatePositiveRootId(tick.rootId, 'Tick admission history requires positive integer root ids.');
     expectedTickId += 1;
     lastRootId = tick.rootId;
   }
@@ -113,6 +97,21 @@ function validateStateShape(currentRoot: BufferRoot, ticks: readonly AdmittedTic
     throw new TickAdmissionContractError(
       TICK_ADMISSION_ERROR_INVALID_STATE,
       'Tick admission current root must match the last admitted tick root.',
+    );
+  }
+}
+
+function validatePositiveRootId(rootId: number, message: string): void {
+  if (!Number.isInteger(rootId) || rootId < FIRST_TICK_ID) {
+    throw new TickAdmissionContractError(TICK_ADMISSION_ERROR_INVALID_STATE, message);
+  }
+}
+
+function validateExpectedTickId(tickId: number, expectedTickId: number): void {
+  if (!Number.isInteger(tickId) || tickId !== expectedTickId) {
+    throw new TickAdmissionContractError(
+      TICK_ADMISSION_ERROR_INVALID_STATE,
+      'Tick admission history requires contiguous positive tick ids.',
     );
   }
 }
