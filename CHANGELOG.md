@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Ratcheted the quality gate to reject runtime function bodies with more than
+  25 top-level statements, with isolated regression coverage that does not
+  overlap the function-length ratchet.
 - Ratcheted the quality gate to reject runtime function nesting deeper than
   four levels, with deterministic regression coverage for over-nested control
   flow.

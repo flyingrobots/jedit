@@ -12,6 +12,7 @@ const MAX_RUNTIME_IMPORTS_PER_FILE = 12;
 const MAX_FUNCTION_LINES = 35;
 const MAX_CYCLOMATIC_COMPLEXITY = 8;
 const MAX_NESTING_DEPTH = 4;
+const MAX_STATEMENTS_PER_FUNCTION = 25;
 const MAX_SOURCE_LINE_LENGTH = 160;
 const JSON_FLAG = '--json';
 
@@ -163,6 +164,16 @@ function main() {
     });
     recordCountRule({
       relativePath,
+      rule: 'max-statements-25',
+      actual: counts.maxStatementCount,
+      allowed: baseline.maxStatements?.[relativePath] ?? MAX_STATEMENTS_PER_FUNCTION,
+      cleanLimit: MAX_STATEMENTS_PER_FUNCTION,
+      regressions,
+      debt,
+      improvements,
+    });
+    recordCountRule({
+      relativePath,
       rule: 'max-line-length-160',
       actual: counts.maxSourceLineLength,
       allowed: baseline.maxLineLength?.[relativePath] ?? MAX_SOURCE_LINE_LENGTH,
@@ -188,6 +199,7 @@ function main() {
       'max-function-lines-35',
       'complexity-8',
       'max-depth-4',
+      'max-statements-25',
       'max-line-length-160',
       'max-lines-500',
     ],
@@ -247,6 +259,7 @@ function loadBaseline() {
       maxFunctionLines: {},
       cyclomaticComplexity: {},
       maxDepth: {},
+      maxStatements: {},
       maxLineLength: {},
     };
   }
@@ -288,6 +301,7 @@ function countForbiddenSyntax(relativePath, sourceText) {
     maxFunctionLineCount: 0,
     maxCyclomaticComplexity: 0,
     maxNestingDepth: 0,
+    maxStatementCount: 0,
     maxSourceLineLength: isGeneratedSource(relativePath) ? 0 : maxSourceLineLength(sourceText),
   };
 
@@ -324,6 +338,10 @@ function countForbiddenSyntax(relativePath, sourceText) {
       counts.maxNestingDepth = Math.max(
         counts.maxNestingDepth,
         nestingDepth(node),
+      );
+      counts.maxStatementCount = Math.max(
+        counts.maxStatementCount,
+        functionStatementCount(node),
       );
       if (isPublicFunctionLike(node)) {
         counts.anonymousPublicOptionBag += anonymousPublicOptionBagCount(node);
@@ -395,6 +413,18 @@ function codeLineCount(sourceFile, startPosition, endPosition) {
 function isCountedCodeLine(line) {
   const trimmed = line.trim();
   return trimmed.length > 0 && !trimmed.startsWith('//');
+}
+
+function functionStatementCount(node) {
+  if (node.body == null) {
+    return 0;
+  }
+
+  if (ts.isBlock(node.body)) {
+    return node.body.statements.length;
+  }
+
+  return 1;
 }
 
 function cyclomaticComplexity(node) {

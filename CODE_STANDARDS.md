@@ -84,6 +84,7 @@ For cross-realm values, normalize through adapters/boundaries and construct vali
 - **File size**: ≤ **500 lines**
 - **Source line length**: ≤ **160 characters**
 - **Function / Method**: ≤ **35 lines** (excluding whitespace & trivial returns)
+- **Statements per function body**: ≤ **25**
 - **Nesting depth**: ≤ **4**
 - **Cyclomatic complexity**: ≤ **8**
 - **Parameters**: ≤ **5** (use a named options class/object otherwise)

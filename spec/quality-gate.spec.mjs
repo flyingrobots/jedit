@@ -299,8 +299,9 @@ test('quality gate rejects functions above the line limit', () => {
       path.join(fixtureRoot, 'src', 'bad-function-lines.ts'),
       [
         'export function tooLong(): number {',
-        ...Array.from({ length: 36 }, (_, index) => `  const value${String(index)} = ${String(index)};`),
-        '  return value0;',
+        '  return [',
+        ...Array.from({ length: 35 }, (_, index) => `    ${String(index)},`),
+        '  ].length;',
         '}',
         '',
       ].join('\n'),
@@ -415,6 +416,44 @@ test('quality gate rejects functions above the nesting depth limit', () => {
         rule: 'max-depth-4',
         actual: 5,
         allowed: 4,
+      },
+    ]);
+  } finally {
+    rmSync(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
+test('quality gate rejects functions above the statement limit', () => {
+  const fixtureRoot = mkdtempSync(path.join(tmpdir(), 'jedit-quality-gate-'));
+
+  try {
+    mkdirSync(path.join(fixtureRoot, 'src'));
+    writeFileSync(
+      path.join(fixtureRoot, 'src', 'bad-statements.ts'),
+      [
+        'export function tooManyStatements(): void {',
+        '  let value = 0;',
+        ...Array.from({ length: 25 }, (_, index) => `  value += ${String(index + 1)};`),
+        '}',
+        '',
+      ].join('\n'),
+    );
+
+    const result = spawnSync(process.execPath, [QUALITY_GATE_SCRIPT, '--json'], {
+      cwd: fixtureRoot,
+      encoding: 'utf8',
+    });
+    assert.notEqual(result.status, 0);
+
+    const parsed = JSON.parse(result.stdout);
+    assert.equal(parsed.ok, false);
+    assert.ok(parsed.enforcedRules.includes('max-statements-25'));
+    assert.deepEqual(parsed.regressions, [
+      {
+        file: 'src/bad-statements.ts',
+        rule: 'max-statements-25',
+        actual: 26,
+        allowed: 25,
       },
     ]);
   } finally {
