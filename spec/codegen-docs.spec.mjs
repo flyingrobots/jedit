@@ -31,6 +31,7 @@ test('CODE_STANDARDS mirrors enforced quality gate constraints', () => {
 
   assert.match(codeStandards, FILE_SIZE_RULE_PATTERN);
   assert.match(codeStandards, /- `any`\n- `unknown`/);
+  assert.match(codeStandards, /- `enum`/);
   assert.match(codeStandards, /@typescript-eslint\/no-restricted-types/);
   assert.doesNotMatch(codeStandards, /unknown` is allowed/);
   assert.doesNotMatch(codeStandards, /max-lines": \["error", 1000\]/);

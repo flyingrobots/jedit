@@ -20,7 +20,7 @@ function main() {
     const relativePath = toRepoPath(filePath);
     const sourceText = fs.readFileSync(filePath, 'utf8');
     const lineCount = sourceText.split('\n').length;
-    const counts = countForbiddenTypeKeywords(relativePath, sourceText);
+    const counts = countForbiddenSyntax(relativePath, sourceText);
 
     const allowedLineCount = baseline.maxLines[relativePath] ?? MAX_LINES_PER_FILE;
     if (lineCount > allowedLineCount) {
@@ -64,11 +64,32 @@ function main() {
         }
       }
     }
+
+    const actualEnums = counts.enum;
+    const allowedEnums = baseline.enumDeclarations?.[relativePath] ?? 0;
+    if (actualEnums > allowedEnums) {
+      regressions.push({
+        file: relativePath,
+        rule: 'no-enum',
+        actual: actualEnums,
+        allowed: allowedEnums,
+      });
+    } else if (actualEnums > 0) {
+      debt.push({
+        file: relativePath,
+        rule: 'no-enum',
+        actual: actualEnums,
+        allowed: allowedEnums,
+      });
+      if (actualEnums < allowedEnums) {
+        improvements.push(`${relativePath}: no-enum improved ${allowedEnums} -> ${actualEnums}`);
+      }
+    }
   }
 
   const result = {
     ok: regressions.length === 0,
-    enforcedRules: ['no-any', 'no-unknown', 'max-lines-500'],
+    enforcedRules: ['no-any', 'no-unknown', 'no-enum', 'max-lines-500'],
     fileCount: files.length,
     regressions,
     debt,
@@ -89,6 +110,7 @@ function loadBaseline() {
     return {
       maxLines: {},
       forbiddenTypeKeywords: {},
+      enumDeclarations: {},
     };
   }
 
@@ -114,11 +136,12 @@ function collectTypeScriptFiles(directory) {
   return files.sort();
 }
 
-function countForbiddenTypeKeywords(relativePath, sourceText) {
+function countForbiddenSyntax(relativePath, sourceText) {
   const sourceFile = ts.createSourceFile(relativePath, sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
   const counts = {
     any: 0,
     unknown: 0,
+    enum: 0,
   };
 
   visit(sourceFile);
@@ -130,6 +153,9 @@ function countForbiddenTypeKeywords(relativePath, sourceText) {
     }
     if (node.kind === ts.SyntaxKind.UnknownKeyword) {
       counts.unknown += 1;
+    }
+    if (node.kind === ts.SyntaxKind.EnumDeclaration) {
+      counts.enum += 1;
     }
     ts.forEachChild(node, visit);
   }
