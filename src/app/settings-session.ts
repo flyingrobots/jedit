@@ -77,61 +77,93 @@ const KEY_SPACE = ' ';
 const KEY_SPACE_CANONICAL = 'space';
 const FOCUS_STEP_FORWARD = 1;
 const FOCUS_STEP_BACKWARD = -1;
+type SettingsKeyAction = 'close' | 'down' | 'up' | 'activate';
+
+const SETTINGS_KEY_ACTIONS = new Map<string, SettingsKeyAction>([
+  [KEY_ESCAPE, 'close'],
+  [KEY_DOWN, 'down'],
+  [KEY_J, 'down'],
+  [KEY_UP, 'up'],
+  [KEY_K, 'up'],
+  [KEY_ENTER, 'activate'],
+  [KEY_SPACE, 'activate'],
+  [KEY_SPACE_CANONICAL, 'activate'],
+]);
 
 export function jeditSettingsRows(state: JeditSettingsState & { readonly i18n: { readonly locale: string } }): readonly JeditSettingsRow[] {
   const rows: JeditSettingsRow[] = [
-    {
-      id: ROW_ID_LOCALE,
-      section: SETTINGS_SECTION_APPEARANCE,
-      label: 'Locale',
-      description: 'Switch between English (en) and Mirror English (me) for RTL testing.',
-      valueLabel: state.i18n.locale === 'en' ? 'English' : 'Mirror',
-      kind: JEDIT_SETTING_ROW_KIND.Choice,
-      action: JEDIT_SETTING_ACTION.ToggleLocale,
-    },
-    {
-      id: ROW_ID_THEME,
-      section: SETTINGS_SECTION_APPEARANCE,
-      label: 'Theme',
-      description: 'Switch between installed data-driven themes.',
-      valueLabel: state.jeditTheme.name,
-      kind: JEDIT_SETTING_ROW_KIND.Choice,
-      action: JEDIT_SETTING_ACTION.CycleTheme,
-    },
-    {
-      id: ROW_ID_THEME_MODE,
-      section: SETTINGS_SECTION_APPEARANCE,
-      label: 'Light/dark',
-      description: 'Switch the current theme to its light or dark companion.',
-      valueLabel: settingsThemeModeLabel(state.jeditTheme),
-      kind: JEDIT_SETTING_ROW_KIND.Choice,
-      action: JEDIT_SETTING_ACTION.ToggleThemeMode,
-    },
-    {
-      id: ROW_ID_FOOTER,
-      section: SETTINGS_SECTION_APPEARANCE,
-      label: 'Footer',
-      description: 'Show mode, focus, and command hints at the bottom edge.',
-      valueLabel: state.footerVisible ? VALUE_ON : VALUE_OFF,
-      kind: JEDIT_SETTING_ROW_KIND.Toggle,
-      checked: state.footerVisible,
-      action: JEDIT_SETTING_ACTION.ToggleFooter,
-    },
+    localeSettingsRow(state),
+    themeSettingsRow(state),
+    themeModeSettingsRow(state),
+    footerSettingsRow(state),
   ];
 
   if (state.markdownPreviewActive) {
-    rows.push({
-      id: ROW_ID_MARKDOWN_PREVIEW,
-      section: SETTINGS_SECTION_EDITOR,
-      label: 'Markdown preview',
-      description: 'Switch the active Markdown buffer between source and preview.',
-      valueLabel: state.viewMode === ViewModes.Preview ? VALUE_PREVIEW : VALUE_SOURCE,
-      kind: JEDIT_SETTING_ROW_KIND.Choice,
-      action: JEDIT_SETTING_ACTION.ToggleMarkdownPreview,
-    });
+    rows.push(markdownPreviewSettingsRow(state));
   }
 
   return rows;
+}
+
+function localeSettingsRow(state: JeditSettingsState & { readonly i18n: { readonly locale: string } }): JeditSettingsRow {
+  return {
+    id: ROW_ID_LOCALE,
+    section: SETTINGS_SECTION_APPEARANCE,
+    label: 'Locale',
+    description: 'Switch between English (en) and Mirror English (me) for RTL testing.',
+    valueLabel: state.i18n.locale === 'en' ? 'English' : 'Mirror',
+    kind: JEDIT_SETTING_ROW_KIND.Choice,
+    action: JEDIT_SETTING_ACTION.ToggleLocale,
+  };
+}
+
+function themeSettingsRow(state: JeditSettingsState): JeditSettingsRow {
+  return {
+    id: ROW_ID_THEME,
+    section: SETTINGS_SECTION_APPEARANCE,
+    label: 'Theme',
+    description: 'Switch between installed data-driven themes.',
+    valueLabel: state.jeditTheme.name,
+    kind: JEDIT_SETTING_ROW_KIND.Choice,
+    action: JEDIT_SETTING_ACTION.CycleTheme,
+  };
+}
+
+function themeModeSettingsRow(state: JeditSettingsState): JeditSettingsRow {
+  return {
+    id: ROW_ID_THEME_MODE,
+    section: SETTINGS_SECTION_APPEARANCE,
+    label: 'Light/dark',
+    description: 'Switch the current theme to its light or dark companion.',
+    valueLabel: settingsThemeModeLabel(state.jeditTheme),
+    kind: JEDIT_SETTING_ROW_KIND.Choice,
+    action: JEDIT_SETTING_ACTION.ToggleThemeMode,
+  };
+}
+
+function footerSettingsRow(state: JeditSettingsState): JeditSettingsRow {
+  return {
+    id: ROW_ID_FOOTER,
+    section: SETTINGS_SECTION_APPEARANCE,
+    label: 'Footer',
+    description: 'Show mode, focus, and command hints at the bottom edge.',
+    valueLabel: state.footerVisible ? VALUE_ON : VALUE_OFF,
+    kind: JEDIT_SETTING_ROW_KIND.Toggle,
+    checked: state.footerVisible,
+    action: JEDIT_SETTING_ACTION.ToggleFooter,
+  };
+}
+
+function markdownPreviewSettingsRow(state: JeditSettingsState): JeditSettingsRow {
+  return {
+    id: ROW_ID_MARKDOWN_PREVIEW,
+    section: SETTINGS_SECTION_EDITOR,
+    label: 'Markdown preview',
+    description: 'Switch the active Markdown buffer between source and preview.',
+    valueLabel: state.viewMode === ViewModes.Preview ? VALUE_PREVIEW : VALUE_SOURCE,
+    kind: JEDIT_SETTING_ROW_KIND.Choice,
+    action: JEDIT_SETTING_ACTION.ToggleMarkdownPreview,
+  };
 }
 
 function settingsThemeModeLabel(theme: JeditTheme): string {
@@ -163,19 +195,32 @@ export function updateJeditSettingsFromKey<Model extends JeditSettingsHostState,
   rows: readonly JeditSettingsRow[],
   handlers: JeditSettingsHandlers<Model, Command>,
 ): [Model, Cmd<Command>[]] {
-  if (msg.key === KEY_ESCAPE) {
+  const action = settingsKeyAction(msg.key);
+  return action == null
+    ? [model, []]
+    : reduceSettingsKeyAction(action, model, rows, handlers);
+}
+
+function settingsKeyAction(key: string): SettingsKeyAction | undefined {
+  return SETTINGS_KEY_ACTIONS.get(key);
+}
+
+function reduceSettingsKeyAction<Model extends JeditSettingsHostState, Command>(
+  action: SettingsKeyAction,
+  model: Model,
+  rows: readonly JeditSettingsRow[],
+  handlers: JeditSettingsHandlers<Model, Command>,
+): [Model, Cmd<Command>[]] {
+  if (action === 'close') {
     return [{ ...model, settingsOpen: false }, []];
   }
-  if (msg.key === KEY_DOWN || msg.key === KEY_J) {
+  if (action === 'down') {
     return [moveHostFocus(model, FOCUS_STEP_FORWARD, rows.length), []];
   }
-  if (msg.key === KEY_UP || msg.key === KEY_K) {
+  if (action === 'up') {
     return [moveHostFocus(model, FOCUS_STEP_BACKWARD, rows.length), []];
   }
-  if (msg.key === KEY_ENTER || msg.key === KEY_SPACE || msg.key === KEY_SPACE_CANONICAL) {
-    return activateSettingsRow(model, rows[clampSettingsFocusIndex(model.settingsFocusIndex, rows.length)]?.action, handlers);
-  }
-  return [model, []];
+  return activateSettingsRow(model, rows[clampSettingsFocusIndex(model.settingsFocusIndex, rows.length)]?.action, handlers);
 }
 
 function moveHostFocus<Model extends JeditSettingsHostState>(model: Model, delta: number, rowCount: number): Model {

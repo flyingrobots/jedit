@@ -34,11 +34,15 @@ export async function loadTitleSceneFromFile(path: string, meshes: TitleMeshLibr
   const content = await fs.readFile(path, 'utf8');
   let json: JsonValue;
   try {
-    json = JSON.parse(content) as JsonValue;
+    json = parseJsonText(content);
   } catch (error) {
     throw new SceneDecodeError(`Scene JSON is malformed: ${error instanceof Error ? error.message : String(error)}`);
   }
   return parseTitleSceneJson(json, meshes);
+}
+
+function parseJsonText(content: string): JsonValue {
+  return JSON.parse(content);
 }
 
 export async function loadBuiltInTitleScene(name: BuiltInTitleSceneName, meshes: TitleMeshLibrary): Promise<TitleScene> {
@@ -91,7 +95,10 @@ function decodeEnvironment(value: JsonValue | undefined): TitleSceneEnvironment 
     ...(environment['background'] == null ? {} : { background: colorAt(environment['background'], 'scene.environment.background') }),
     ...(environment['floor'] == null ? {} : { floor: decodeFloor(environment['floor']) }),
     ...(environment['light'] == null ? {} : { light: decodeLight(environment['light']) }),
-    ...(environment['walls'] == null ? {} : { walls: arrayAt(environment['walls'], 'scene.environment.walls').map((wall, index) => decodeWall(wall, `scene.environment.walls[${index}]`)) }),
+    ...(environment['walls'] == null ? {} : {
+      walls: arrayAt(environment['walls'], 'scene.environment.walls')
+        .map((wall, index) => decodeWall(wall, `scene.environment.walls[${index}]`)),
+    }),
   };
 }
 
@@ -259,7 +266,9 @@ function shapeKindAt(value: JsonValue | undefined, path: string): TitleSceneObje
   if (value === TITLE_SCENE_SHAPE_KIND.Sphere || value === TITLE_SCENE_SHAPE_KIND.Column || value === TITLE_SCENE_SHAPE_KIND.Mesh) {
     return value;
   }
-  throw new SceneDecodeError(`${path} must be one of '${TITLE_SCENE_SHAPE_KIND.Sphere}', '${TITLE_SCENE_SHAPE_KIND.Column}', or '${TITLE_SCENE_SHAPE_KIND.Mesh}'.`);
+  throw new SceneDecodeError(
+    `${path} must be one of '${TITLE_SCENE_SHAPE_KIND.Sphere}', '${TITLE_SCENE_SHAPE_KIND.Column}', or '${TITLE_SCENE_SHAPE_KIND.Mesh}'.`,
+  );
 }
 
 function meshIdAt(value: JsonValue | undefined, path: string): TitleMeshId {
@@ -273,7 +282,9 @@ function floorKindAt(value: JsonValue | undefined, path: string): NonNullable<Ti
   if (value === TITLE_SCENE_FLOOR_KIND.Grid || value === TITLE_SCENE_FLOOR_KIND.Solid || value === TITLE_SCENE_FLOOR_KIND.None) {
     return value;
   }
-  throw new SceneDecodeError(`${path} must be one of '${TITLE_SCENE_FLOOR_KIND.Grid}', '${TITLE_SCENE_FLOOR_KIND.Solid}', or '${TITLE_SCENE_FLOOR_KIND.None}'.`);
+  throw new SceneDecodeError(
+    `${path} must be one of '${TITLE_SCENE_FLOOR_KIND.Grid}', '${TITLE_SCENE_FLOOR_KIND.Solid}', or '${TITLE_SCENE_FLOOR_KIND.None}'.`,
+  );
 }
 
 function vectorLength(vector: TitleSceneVector3): number {

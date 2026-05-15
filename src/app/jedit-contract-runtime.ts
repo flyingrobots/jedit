@@ -13,10 +13,7 @@ import type {
   TickReceiptRewriteKind,
   TickReceipt,
 } from '../generated/jedit/hot-text-runtime.types.generated.js';
-import {
-  MutationOperationSchemas,
-  QueryOperationSchemas,
-} from '../generated/jedit/hot-text-runtime.zod.generated.js';
+import { MutationOperationSchemas, QueryOperationSchemas } from '../generated/jedit/hot-text-runtime.zod.generated.js';
 import type { HotTextBufferState, HotTextRuntimePort } from '../ports/hot-text-runtime.js';
 import type { HashPort } from '../ports/hash.js';
 import {
@@ -229,39 +226,19 @@ export function replaceRangeAsTick(
   );
 
   if (admission.receipt == null) {
-    return {
-      nextSession: createSessionFromExisting(session, admission.nextState, session.tickMetadata, session.checkpointMetadata),
-      result: undefined,
-    };
+    return noReplaceRangeAsTickExecution(session, admission.nextState);
   }
 
   const tickMetadata = createTickMetadata(admission.receipt, parsedInput.author ?? undefined);
-  const nextTickMetadata = [
-    ...session.tickMetadata,
-    tickMetadata,
-  ];
   const nextSession = createSessionFromExisting(
     session,
     admission.nextState,
-    nextTickMetadata,
+    [...session.tickMetadata, tickMetadata],
     session.checkpointMetadata,
   );
-  const tick = toTickRecord(nextSession, tickMetadata);
-  const result = MutationOperationSchemas.replaceRangeAsTick.result.parse({
-    worldline: nextSession.worldline,
-    nextHead: toHeadRecord(nextSession, hash),
-    tick,
-    receipt: toTickReceiptRecord(
-      admission.receipt,
-      baseHeadId,
-      nextSession.worldline.canonicalHeadId,
-      parsedInput.insertText,
-    ),
-  });
-
   return {
     nextSession: nextSession,
-    result,
+    result: replaceRangeAsTickResult({ nextSession, tickMetadata, receipt: admission.receipt, baseHeadId, insertText: parsedInput.insertText, hash }),
   };
 }
 
@@ -276,10 +253,7 @@ export function createCheckpoint(
 
   const saved = runtime.saveCheckpoint(session.state);
   if (saved.receipt == null) {
-    return {
-      nextSession: createSessionFromExisting(session, saved.nextState, session.tickMetadata, session.checkpointMetadata),
-      result: undefined,
-    };
+    return noCheckpointExecution(session, saved.nextState);
   }
 
   const checkpointMetadata = createCheckpointMetadata(
@@ -287,10 +261,7 @@ export function createCheckpoint(
     parsedInput.kind,
     parsedInput.label ?? undefined,
   );
-  const nextCheckpointMetadata = [
-    ...session.checkpointMetadata,
-    checkpointMetadata,
-  ];
+  const nextCheckpointMetadata = [...session.checkpointMetadata, checkpointMetadata];
   const nextSession = createSessionFromExisting(
     session,
     saved.nextState,
@@ -308,6 +279,39 @@ export function createCheckpoint(
     nextSession: nextSession,
     result,
   };
+}
+
+function noReplaceRangeAsTickExecution(
+  session: JeditWorldlineSession,
+  nextState: HotTextBufferState,
+): ReplaceRangeAsTickExecution {
+  return {
+    nextSession: createSessionFromExisting(session, nextState, session.tickMetadata, session.checkpointMetadata),
+    result: undefined,
+  };
+}
+
+function noCheckpointExecution(
+  session: JeditWorldlineSession,
+  nextState: HotTextBufferState,
+): CreateCheckpointExecution {
+  return {
+    nextSession: createSessionFromExisting(session, nextState, session.tickMetadata, session.checkpointMetadata),
+    result: undefined,
+  };
+}
+
+type ReplaceRangeAsTickResultInput = {
+  readonly nextSession: JeditWorldlineSession; readonly tickMetadata: TickMetadata; readonly receipt: TickAdmissionReceipt;
+  readonly baseHeadId: string; readonly insertText: string; readonly hash: HashPort;
+};
+function replaceRangeAsTickResult(input: ReplaceRangeAsTickResultInput): ReplaceRangeAsTickResult {
+  return MutationOperationSchemas.replaceRangeAsTick.result.parse({
+    worldline: input.nextSession.worldline,
+    nextHead: toHeadRecord(input.nextSession, input.hash),
+    tick: toTickRecord(input.nextSession, input.tickMetadata),
+    receipt: toTickReceiptRecord(input.receipt, input.baseHeadId, input.nextSession.worldline.canonicalHeadId, input.insertText),
+  });
 }
 
 function createSession(

@@ -95,7 +95,7 @@ function floorHit(
   floor: TitleSceneFloorEnvironment | undefined,
   colors: TitleEnvironmentDefaultColors,
 ): TitleEnvironmentSurfaceHit | undefined {
-  if (floor?.kind === TITLE_SCENE_FLOOR_KIND.None || Math.abs(ray[1]) <= PLANE_EPSILON) {
+  if (!floorCanBeHit(floor, ray)) {
     return undefined;
   }
   const distance = (FLOOR_Y - origin[1]) / ray[1];
@@ -105,11 +105,7 @@ function floorHit(
   const point = add(origin, scale(ray, distance));
   const fadeDistance = floor?.fadeDistance ?? DEFAULT_FLOOR_FADE_DISTANCE;
   const fade = Math.max(0, 1 - (distance / fadeDistance));
-  const dark = floor?.dark ?? colors.floorDark;
-  const light = floor?.light ?? colors.floorLight;
-  const color = floor?.kind === TITLE_SCENE_FLOOR_KIND.Solid
-    ? light
-    : checkerColor(point, dark, light, floor?.gridScale ?? DEFAULT_FLOOR_GRID_SCALE);
+  const color = floorColorAt(point, floor, colors);
 
   return {
     distance,
@@ -118,6 +114,22 @@ function floorHit(
     color: mixColor(colors.surface, color, fade),
     receivesFloorEffects: true,
   };
+}
+
+function floorCanBeHit(floor: TitleSceneFloorEnvironment | undefined, ray: TitleSceneVector3): boolean {
+  return floor?.kind !== TITLE_SCENE_FLOOR_KIND.None && Math.abs(ray[1]) > PLANE_EPSILON;
+}
+
+function floorColorAt(
+  point: TitleSceneVector3,
+  floor: TitleSceneFloorEnvironment | undefined,
+  colors: TitleEnvironmentDefaultColors,
+): TitleSceneEnvironmentColor {
+  const light = floor?.light ?? colors.floorLight;
+  if (floor?.kind === TITLE_SCENE_FLOOR_KIND.Solid) {
+    return light;
+  }
+  return checkerColor(point, floor?.dark ?? colors.floorDark, light, floor?.gridScale ?? DEFAULT_FLOOR_GRID_SCALE);
 }
 
 function wallHit(

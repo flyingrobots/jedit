@@ -173,23 +173,32 @@ function interactionModeKey(state: WorkspaceFooterState): string {
     return FOOTER_MODE_SETTINGS;
   }
 
+  const drawerMode = activeDrawerModeKey(state);
+  if (drawerMode != null) {
+    return drawerMode;
+  }
+
+  return previewModeActive(state)
+    ? FOOTER_MODE_PREVIEW
+    : editorModeKey(state);
+}
+
+function activeDrawerModeKey(state: WorkspaceFooterState): string | undefined {
   if (state.focusPane === FocusPanes.Files && state.fileDrawerOpen) {
     return FocusPaneModeKeys[FocusPanes.Files];
   }
-
   if (state.focusPane === FocusPanes.Graft && state.graftDrawerOpen) {
     return FocusPaneModeKeys[FocusPanes.Graft];
   }
+  return undefined;
+}
 
-  if (state.viewMode === ViewModes.Preview && state.markdownPreviewActive) {
-    return FOOTER_MODE_PREVIEW;
-  }
+function previewModeActive(state: WorkspaceFooterState): boolean {
+  return state.viewMode === ViewModes.Preview && state.markdownPreviewActive;
+}
 
-  if (state.editorMode != null) {
-    return EditorModeKeys[state.editorMode];
-  }
-
-  return FOOTER_MODE_BROWSE;
+function editorModeKey(state: WorkspaceFooterState): string {
+  return state.editorMode == null ? FOOTER_MODE_BROWSE : EditorModeKeys[state.editorMode];
 }
 
 function footerDetail(state: WorkspaceFooterState): string {
@@ -199,27 +208,36 @@ function footerDetail(state: WorkspaceFooterState): string {
     return footerHints([t(FooterHintKeys.JkMove), t(FooterHintKeys.EnterChange), t(FooterHintKeys.F2Close), t(FooterHintKeys.EscClose)]);
   }
 
+  return activeFooterDetail(state, t)
+    ?? footerHints([scenePickerHint(t), focusHint(state, t), themeHint(t), t(FooterHintKeys.CtrlBFiles), t(FooterHintKeys.CtrlGGraft)]);
+}
+
+function activeFooterDetail(state: WorkspaceFooterState, t: FooterHintTranslator): string | undefined {
+  const drawerDetail = activeDrawerFooterDetail(state, t);
+  if (drawerDetail != null) {
+    return drawerDetail;
+  }
+  if (previewModeActive(state)) {
+    return footerHints(previewFooterHints(state, t));
+  }
+  return editorFooterDetail(state, t);
+}
+
+function activeDrawerFooterDetail(state: WorkspaceFooterState, t: FooterHintTranslator): string | undefined {
   if (state.focusPane === FocusPanes.Files && state.fileDrawerOpen) {
     return drawerFooterDetail(state, DrawerKinds.Files, t);
   }
-
   if (state.focusPane === FocusPanes.Graft && state.graftDrawerOpen) {
     return drawerFooterDetail(state, DrawerKinds.Graft, t);
   }
+  return undefined;
+}
 
-  if (state.viewMode === ViewModes.Preview && state.markdownPreviewActive) {
-    return footerHints([t(FooterHintKeys.JkScroll), t(FooterHintKeys.F3Source), themeHint(t), focusHint(state, t), t(FooterHintKeys.CtrlBFiles), t(FooterHintKeys.CtrlGGraft)]);
-  }
-
+function editorFooterDetail(state: WorkspaceFooterState, t: FooterHintTranslator): string | undefined {
   if (state.editorMode === EditorModes.Insert) {
-    return footerHints([t(FooterHintKeys.TextInput), t(FooterHintKeys.EscNormal), t(FooterHintKeys.CtrlSSave), themeHint(t), insertTabHint(state, t)]);
+    return footerHints(insertModeFooterHints(state, t));
   }
-
-  if (state.editorMode === EditorModes.Normal) {
-    return normalFooterDetail(state, t);
-  }
-
-  return footerHints([scenePickerHint(t), focusHint(state, t), themeHint(t), t(FooterHintKeys.CtrlBFiles), t(FooterHintKeys.CtrlGGraft)]);
+  return state.editorMode === EditorModes.Normal ? normalFooterDetail(state, t) : undefined;
 }
 
 function footerHintTranslator(state: WorkspaceFooterState): FooterHintTranslator {
@@ -236,10 +254,10 @@ function themeHint(t: FooterHintTranslator): string {
 
 function drawerFooterDetail(state: WorkspaceFooterState, kind: DrawerKind, t: FooterHintTranslator): string {
   if (kind === DrawerKinds.Files) {
-    return footerHints([t(FooterHintKeys.JkMove), t(FooterHintKeys.EnterOpen), t(FooterHintKeys.BackspaceUp), t(FooterHintKeys.CtrlBClose), themeHint(t), focusHint(state, t)]);
+    return footerHints(fileDrawerFooterHints(state, t));
   }
 
-  return footerHints([t(FooterHintKeys.JkMove), t(FooterHintKeys.EnterJump), t(FooterHintKeys.RRefresh), t(FooterHintKeys.CtrlGClose), themeHint(t), focusHint(state, t)]);
+  return footerHints(graftDrawerFooterHints(state, t));
 }
 
 function normalFooterDetail(state: WorkspaceFooterState, t: FooterHintTranslator): string {
@@ -254,18 +272,67 @@ function normalFooterDetail(state: WorkspaceFooterState, t: FooterHintTranslator
 
 function pendingNormalFooterDetail(pending: PendingNormal, t: FooterHintTranslator): string {
   if (pending === PendingNormals.Change) {
-    return chordFooterHints('c', [t(FooterHintKeys.CcLine), t(FooterHintKeys.CwWord), t(FooterHintKeys.CeWordEnd), t(FooterHintKeys.C0Start), t(FooterHintKeys.CEnd)]);
+    return chordFooterHints('c', changeFooterHints(t));
   }
 
   if (pending === PendingNormals.Delete) {
-    return chordFooterHints('d', [t(FooterHintKeys.DdLine), t(FooterHintKeys.DwWord), t(FooterHintKeys.DeWordEnd), t(FooterHintKeys.D0Start), t(FooterHintKeys.DEnd)]);
+    return chordFooterHints('d', deleteFooterHints(t));
   }
 
   if (pending === PendingNormals.Yank) {
-    return chordFooterHints('y', [t(FooterHintKeys.YyLine), t(FooterHintKeys.YwWord), t(FooterHintKeys.YeWordEnd), t(FooterHintKeys.Y0Start), t(FooterHintKeys.YEnd)]);
+    return chordFooterHints('y', yankFooterHints(t));
   }
 
   return chordFooterHints('g', [t(FooterHintKeys.GgTop), t(FooterHintKeys.EscCancel)]);
+}
+
+function previewFooterHints(state: WorkspaceFooterState, t: FooterHintTranslator): ReadonlyArray<string | undefined> {
+  return [
+    t(FooterHintKeys.JkScroll),
+    t(FooterHintKeys.F3Source),
+    themeHint(t),
+    focusHint(state, t),
+    t(FooterHintKeys.CtrlBFiles),
+    t(FooterHintKeys.CtrlGGraft),
+  ];
+}
+
+function fileDrawerFooterHints(state: WorkspaceFooterState, t: FooterHintTranslator): ReadonlyArray<string | undefined> {
+  return [
+    t(FooterHintKeys.JkMove),
+    t(FooterHintKeys.EnterOpen),
+    t(FooterHintKeys.BackspaceUp),
+    t(FooterHintKeys.CtrlBClose),
+    themeHint(t),
+    focusHint(state, t),
+  ];
+}
+
+function graftDrawerFooterHints(state: WorkspaceFooterState, t: FooterHintTranslator): ReadonlyArray<string | undefined> {
+  return [
+    t(FooterHintKeys.JkMove),
+    t(FooterHintKeys.EnterJump),
+    t(FooterHintKeys.RRefresh),
+    t(FooterHintKeys.CtrlGClose),
+    themeHint(t),
+    focusHint(state, t),
+  ];
+}
+
+function insertModeFooterHints(state: WorkspaceFooterState, t: FooterHintTranslator): ReadonlyArray<string | undefined> {
+  return [t(FooterHintKeys.TextInput), t(FooterHintKeys.EscNormal), t(FooterHintKeys.CtrlSSave), themeHint(t), insertTabHint(state, t)];
+}
+
+function changeFooterHints(t: FooterHintTranslator): readonly string[] {
+  return [t(FooterHintKeys.CcLine), t(FooterHintKeys.CwWord), t(FooterHintKeys.CeWordEnd), t(FooterHintKeys.C0Start), t(FooterHintKeys.CEnd)];
+}
+
+function deleteFooterHints(t: FooterHintTranslator): readonly string[] {
+  return [t(FooterHintKeys.DdLine), t(FooterHintKeys.DwWord), t(FooterHintKeys.DeWordEnd), t(FooterHintKeys.D0Start), t(FooterHintKeys.DEnd)];
+}
+
+function yankFooterHints(t: FooterHintTranslator): readonly string[] {
+  return [t(FooterHintKeys.YyLine), t(FooterHintKeys.YwWord), t(FooterHintKeys.YeWordEnd), t(FooterHintKeys.Y0Start), t(FooterHintKeys.YEnd)];
 }
 
 function footerContextLine(state: WorkspaceFooterState): string {
@@ -278,15 +345,7 @@ function footerContextLine(state: WorkspaceFooterState): string {
   }
 
   if (state.focusPane === FocusPanes.Graft && state.graftDrawerOpen) {
-    if (state.graftSelection != null && state.graftPath != null) {
-      return `${state.graftPath}:${state.graftSelection.startLine} ${state.graftSelection.kind} ${state.graftSelection.name}`;
-    }
-
-    if (state.graftPath != null) {
-      return state.graftPath;
-    }
-
-    return state.i18n.t(FOOTER_CONTEXT_GRAFT_EMPTY);
+    return graftFooterContextLine(state);
   }
 
   if (state.editorPath != null) {
@@ -294,6 +353,16 @@ function footerContextLine(state: WorkspaceFooterState): string {
   }
 
   return state.cwd;
+}
+
+function graftFooterContextLine(state: WorkspaceFooterState): string {
+  if (state.graftSelection != null && state.graftPath != null) {
+    return `${state.graftPath}:${state.graftSelection.startLine} ${state.graftSelection.kind} ${state.graftSelection.name}`;
+  }
+  if (state.graftPath != null) {
+    return state.graftPath;
+  }
+  return state.i18n.t(FOOTER_CONTEXT_GRAFT_EMPTY);
 }
 
 function displayName(path: string): string {

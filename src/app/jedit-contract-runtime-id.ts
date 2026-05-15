@@ -103,6 +103,10 @@ export function parseReceiptId(value: string): number {
 
 const UTF8_ENCODER = new TextEncoder();
 
+export interface RuntimeHashPort {
+  readonly sha256Hex: (value: string) => string;
+}
+
 export function byteLength(text: string): number {
   return UTF8_ENCODER.encode(text).length;
 }
@@ -114,7 +118,7 @@ export function lineCount(text: string): number {
   return text.split('\n').length;
 }
 
-export function digest(text: string, hash: { readonly sha256Hex: (value: string) => string }): string {
+export function digest(text: string, hash: RuntimeHashPort): string {
   return hash.sha256Hex(text);
 }
 

@@ -32,7 +32,6 @@ export function createInitialModel(
 ): WorkspaceModel {
   const { titleSceneSeed, jeditTheme, i18n, entries, nowMs } = snapshot;
   const titleMeshes = snapshot.titleMeshes ?? {};
-  const focusPane = INITIAL_FOCUS_PANE;
   return {
     i18n,
     workspaceRoot: cwd,
@@ -41,41 +40,77 @@ export function createInitialModel(
     selectedIndex: 0,
     editor: undefined,
     viewMode: INITIAL_VIEW_MODE,
-    focusPane,
+    focusPane: INITIAL_FOCUS_PANE,
+    ...initialDrawerState(),
+    ...createFeedbackState<WorkspaceMsg>(),
+    ...initialSettingsState(),
+    jeditTheme,
+    ...initialGraftState(),
+    ...initialSourceHighlightState(),
+    titleSceneSeed,
+    titleMeshes,
+    columns,
+    rows,
+    ...initialSceneState(titleSceneSeed, titleMeshes),
+    ...initialRuntimeState(nowMs),
+  };
+}
+
+function initialDrawerState() {
+  return {
     fileDrawerOpen: false,
     fileDrawerProgress: 0,
     graftDrawerOpen: false,
     graftDrawerProgress: 0,
-    ...createFeedbackState<WorkspaceMsg>(),
+  };
+}
+
+function initialSettingsState() {
+  return {
     settingsOpen: false,
     settingsFocusIndex: 0,
-    jeditTheme,
+  };
+}
+
+function initialGraftState() {
+  return {
     graftInfo: undefined,
     graftLoading: false,
     graftRequestId: 0,
     graftSelectedIndex: 0,
+  };
+}
+
+function initialSourceHighlightState() {
+  return {
     sourceHighlight: undefined,
     sourceHighlightLoading: false,
     sourceHighlightRequestId: 0,
-    titleSceneSeed,
-    titleMeshes,
-    scenePickerOpen: false,
-    scenePickerFocusIndex: 0,
-    availableScenes: BUILT_IN_TITLE_SCENE_NAMES,
-    columns,
-    rows,
+  };
+}
+
+function initialRuntimeState(nowMs: number) {
+  return {
     time: 0,
     perfVisible: false,
     lastFrameMs: nowMs,
     frameTimeMs: 0,
     frameTimeHistory: [],
+    profiler: {
+      active: false,
+    },
+  };
+}
+
+function initialSceneState(titleSceneSeed: number, titleMeshes: TitleMeshLibrary) {
+  return {
+    scenePickerOpen: false,
+    scenePickerFocusIndex: 0,
+    availableScenes: BUILT_IN_TITLE_SCENE_NAMES,
     titleCamera: createTitleCameraState(
       titleMeshes.bunny == null ? titleSceneCameraPlacement(titleSceneSeed) : titleBunnySceneCameraPlacement(),
     ),
     titleRenderMode: TITLE_RENDER_MODE.Braille,
     titleAsciiPalette: TITLE_ASCII_PALETTE.Dense,
-    profiler: {
-      active: false,
-    },
   };
 }

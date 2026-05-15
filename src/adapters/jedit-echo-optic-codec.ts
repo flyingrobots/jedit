@@ -471,18 +471,17 @@ function isJsonValue(value: JsonValueCandidate): value is JsonValue {
   if (value === null) {
     return true;
   }
-  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+  if (isJsonPrimitive(value)) {
     return true;
   }
   if (Array.isArray(value)) {
-    for (const member of value) {
-      if (!isJsonValue(member)) {
-        return false;
-      }
-    }
-    return true;
+    return value.every(isJsonValue);
   }
   return isJsonRecord(value) && objectValuesAreJson(value);
+}
+
+function isJsonPrimitive(value: JsonValueCandidate): value is JsonPrimitive {
+  return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
 }
 
 function isJsonRecord(value: JsonValueCandidate): value is JsonObject {

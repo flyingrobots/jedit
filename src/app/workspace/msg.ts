@@ -47,3 +47,7 @@ export type WorkspaceMsg =
   | { type: typeof WorkspaceMessageTypes.TimeTick; time: number }
   | { type: typeof WorkspaceMessageTypes.TogglePerf }
   | { type: typeof WorkspaceMessageTypes.RuntimeIssue; issue: RuntimeIssue };
+
+export function workspaceSourceHighlightMessage(msg: SourceHighlightMsg): WorkspaceMsg {
+  return msg;
+}

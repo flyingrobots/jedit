@@ -1,5 +1,4 @@
 import { type Surface } from '@flyingrobots/bijou';
-
 import {
   averagingAsciiCanvas,
   TITLE_ASCII_PALETTE,
@@ -24,6 +23,7 @@ import {
 } from './title-scene-environment.js';
 import { paintTitleLogo, titleLogoCellBounds } from './title-logo.js';
 import type { TitleMesh } from './title-mesh.js';
+import type { ReflectedEnvironmentColorOptions, TitleSceneRayContext, TitleSceneSampleOptions } from './title-screen-sample.js';
 
 type Vector3 = TitleSceneVector3;
 type Color3 = RGB;
@@ -133,7 +133,18 @@ export function renderTitleScreen(
   const scene = sceneOverride ?? generateTitleScene(sceneSeed, colors, mesh);
 
   const shader: BrailleShaderFn = ({ u, v, time: frameTime }) => {
-    return sceneSampleAt(u, v, cols, rows, frameTime, camAngle, camRadius, scene.objects, colors, scene.environment);
+    return sceneSampleAt({
+      u,
+      v,
+      cols,
+      rows,
+      time: frameTime,
+      camAngle,
+      camRadius,
+      objects: scene.objects,
+      colors,
+      environment: scene.environment,
+    });
   };
 
   const surface = renderMode === TITLE_RENDER_MODE.Ascii
@@ -165,67 +176,103 @@ function fixedTitleSceneBaseColors(_theme: JeditTheme): Omit<TitleSceneMaterialC
   };
 }
 
-function sceneSampleAt(
-  u: number,
-  v: number,
-  cols: number,
-  rows: number,
-  time: number,
-  camAngle: number,
-  camRadius: number,
-  objects: readonly TitleSceneObject[],
-  colors: TitleSceneMaterialColors,
-  environment: TitleSceneEnvironment | undefined,
-): BrailleShaderSample {
-  const aspect = cols / Math.max(1, rows);
-  const rx = (u * 2 - 1) * aspect;
-  const ry = v * 2 - 1;
-  const finalAngle = camAngle + (time * CAMERA_DRIFT_RATE);
-  const origin: Vector3 = [
-    Math.sin(finalAngle) * camRadius,
-    CAMERA_HEIGHT,
-    Math.cos(finalAngle) * camRadius,
-  ];
-  const ray = getRayDir(origin, [0, CAMERA_TARGET_Y, 0], [rx, -ry - 0.2, 2.7]);
-  const lightDirection = titleSceneLightDirection(environment) ?? KEY_LIGHT_DIRECTION;
-  const objectHit = nearestTitleSceneObjectHit(origin, ray, objects);
-  const environmentHit = nearestTitleEnvironmentSurfaceHit(origin, ray, environment, colors);
+function sceneSampleAt(options: TitleSceneSampleOptions): BrailleShaderSample {
+  const context = titleSceneRayContext(options);
+  const objectHit = nearestTitleSceneObjectHit(context.origin, context.ray, options.objects);
+  const environmentHit = nearestTitleEnvironmentSurfaceHit(
+    context.origin,
+    context.ray,
+    options.environment,
+    options.colors,
+  );
 
   if (objectHit != null && (environmentHit == null || objectHit.distance < environmentHit.distance)) {
-    const point = add(origin, scale(ray, objectHit.distance));
-    const normal = objectHit.normal;
-    const reflectionRay = reflect(ray, normal);
-    const reflectionColor = reflectedEnvironmentColor(add(point, scale(normal, SHADOW_RAY_BIAS)), reflectionRay, colors, objects, time, objectHit.object, environment, lightDirection);
-    const fresnel = Math.pow(1 - Math.max(0, dot(scale(ray, -1), normal)), REFLECTION_FRESNEL_POWER);
-    const reflectionAmount = titleObjectReflectionAmount(objectHit.object.reflectivity, fresnel);
-    return {
-      on: true,
-      fgRGB: addColor(
-        mixColor(shadedObjectColor(objectHit, ray, colors, environment, lightDirection), reflectionColor, reflectionAmount),
-        objectRimLightColor(objectHit, ray, colors, environment),
-      ),
-      bgRGB: colors.surface,
-    };
+    return objectSceneSample(options, context, objectHit);
   }
 
   if (environmentHit != null) {
-    const effects = environmentHit.receivesFloorEffects
-      ? titleFloorLightEffectsAtWithLight(environmentHit.point, objects, time, lightDirection)
-      : { shadowMultiplier: 1, contactShadowMultiplier: 1, causticStrength: 0 };
-    const causticColor = scaleColor(colors.info, effects.causticStrength);
-    const fgRGB = addColor(scaleColor(environmentHit.color, effects.shadowMultiplier * effects.contactShadowMultiplier), causticColor);
-    return {
-      on: brailleSubpixelVisible(u, v, cols, rows, fgRGB),
-      fgRGB,
-      bgRGB: colors.surface,
-    };
+    return environmentSceneSample(options, context, environmentHit);
   }
 
-  const background = scaleColor(titleSceneBackgroundColor(environment, colors), SKY_TINT);
+  const background = scaleColor(titleSceneBackgroundColor(options.environment, options.colors), SKY_TINT);
   return {
     on: false,
     fgRGB: background,
     bgRGB: background,
+  };
+}
+
+function titleSceneRayContext(options: TitleSceneSampleOptions): TitleSceneRayContext {
+  const aspect = options.cols / Math.max(1, options.rows);
+  const rx = (options.u * 2 - 1) * aspect;
+  const ry = options.v * 2 - 1;
+  const finalAngle = options.camAngle + (options.time * CAMERA_DRIFT_RATE);
+  const origin: Vector3 = [
+    Math.sin(finalAngle) * options.camRadius,
+    CAMERA_HEIGHT,
+    Math.cos(finalAngle) * options.camRadius,
+  ];
+  return {
+    origin,
+    ray: getRayDir(origin, [0, CAMERA_TARGET_Y, 0], [rx, -ry - 0.2, 2.7]),
+    lightDirection: titleSceneLightDirection(options.environment) ?? KEY_LIGHT_DIRECTION,
+  };
+}
+
+function objectSceneSample(
+  options: TitleSceneSampleOptions,
+  context: TitleSceneRayContext,
+  objectHit: NonNullable<ReturnType<typeof nearestTitleSceneObjectHit>>,
+): BrailleShaderSample {
+  const normal = objectHit.normal;
+  const reflectionColor = objectReflectionColor(options, context, objectHit);
+  const fresnel = Math.pow(1 - Math.max(0, dot(scale(context.ray, -1), normal)), REFLECTION_FRESNEL_POWER);
+  const reflectionAmount = titleObjectReflectionAmount(objectHit.object.reflectivity, fresnel);
+  return {
+    on: true,
+    fgRGB: addColor(
+      mixColor(shadedObjectColor(objectHit, context.ray, options.colors, options.environment, context.lightDirection), reflectionColor, reflectionAmount),
+      objectRimLightColor(objectHit, context.ray, options.colors, options.environment),
+    ),
+    bgRGB: options.colors.surface,
+  };
+}
+
+function objectReflectionColor(
+  options: TitleSceneSampleOptions,
+  context: TitleSceneRayContext,
+  objectHit: NonNullable<ReturnType<typeof nearestTitleSceneObjectHit>>,
+): Color3 {
+  const point = add(context.origin, scale(context.ray, objectHit.distance));
+  return reflectedEnvironmentColor({
+    point: add(point, scale(objectHit.normal, SHADOW_RAY_BIAS)),
+    ray: reflect(context.ray, objectHit.normal),
+    colors: options.colors,
+    objects: options.objects,
+    time: options.time,
+    ignoredObject: objectHit.object,
+    environment: options.environment,
+    lightDirection: context.lightDirection,
+  });
+}
+
+function environmentSceneSample(
+  options: TitleSceneSampleOptions,
+  context: TitleSceneRayContext,
+  environmentHit: NonNullable<ReturnType<typeof nearestTitleEnvironmentSurfaceHit>>,
+): BrailleShaderSample {
+  const effects = environmentHit.receivesFloorEffects
+    ? titleFloorLightEffectsAtWithLight(environmentHit.point, options.objects, options.time, context.lightDirection)
+    : { shadowMultiplier: 1, contactShadowMultiplier: 1, causticStrength: 0 };
+  const causticColor = scaleColor(options.colors.info, effects.causticStrength);
+  const fgRGB = addColor(
+    scaleColor(environmentHit.color, effects.shadowMultiplier * effects.contactShadowMultiplier),
+    causticColor,
+  );
+  return {
+    on: brailleSubpixelVisible(options.u, options.v, options.cols, options.rows, fgRGB),
+    fgRGB,
+    bgRGB: options.colors.surface,
   };
 }
 
@@ -243,16 +290,17 @@ function titleObjectReflectionAmount(reflectivity: number, fresnel: number): num
   return reflectivity * (REFLECTION_EDGE_BIAS + ((1 - REFLECTION_EDGE_BIAS) * fresnel));
 }
 
-function reflectedEnvironmentColor(
-  point: Vector3,
-  ray: Vector3,
-  colors: TitleSceneMaterialColors,
-  objects: readonly TitleSceneObject[],
-  time: number,
-  ignoredObject: TitleSceneObject,
-  environment: TitleSceneEnvironment | undefined,
-  lightDirection: Vector3,
-): Color3 {
+function reflectedEnvironmentColor(options: ReflectedEnvironmentColorOptions): Color3 {
+  const {
+    point,
+    ray,
+    colors,
+    objects,
+    time,
+    ignoredObject,
+    environment,
+    lightDirection,
+  } = options;
   const objectHit = nearestTitleSceneObjectHit(point, ray, objects, ignoredObject);
   if (objectHit != null) {
     return scaleColor(shadedObjectColor(objectHit, ray, colors, environment, lightDirection), REFLECTION_OBJECT_TINT);

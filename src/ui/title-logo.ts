@@ -326,23 +326,38 @@ function titleLogoSourceLetters(mask: readonly (readonly number[])[]): readonly 
 
   for (let x = 0; x < JEDIT_LOGO_WIDTH; x++) {
     const occupied = titleLogoColumnOccupied(mask, x);
+    const column = { occupied, x };
     if (occupied && rangeStart == null) {
       rangeStart = x;
     }
 
-    if ((rangeStart != null) && (!occupied || x === JEDIT_LOGO_WIDTH - 1)) {
-      const rangeEnd = occupied && x === JEDIT_LOGO_WIDTH - 1 ? x : x - 1;
-      letters.push({
-        index: letters.length,
-        sourceX: rangeStart,
-        sourceWidth: rangeEnd - rangeStart + 1,
-        phaseSeconds: letters.length * LOGO_LETTER_PHASE_STEP_SECONDS,
-      });
+    if (logoLetterRangeEnded(rangeStart, column)) {
+      letters.push(titleLogoSourceLetter(letters.length, rangeStart, logoLetterRangeEnd(column)));
       rangeStart = undefined;
     }
   }
 
   return letters;
+}
+
+function logoLetterRangeEnded(
+  rangeStart: number | undefined,
+  column: { readonly occupied: boolean; readonly x: number },
+): rangeStart is number {
+  return rangeStart != null && (!column.occupied || column.x === JEDIT_LOGO_WIDTH - 1);
+}
+
+function logoLetterRangeEnd(column: { readonly occupied: boolean; readonly x: number }): number {
+  return column.occupied && column.x === JEDIT_LOGO_WIDTH - 1 ? column.x : column.x - 1;
+}
+
+function titleLogoSourceLetter(index: number, sourceX: number, rangeEnd: number): TitleLogoSourceLetter {
+  return {
+    index,
+    sourceX,
+    sourceWidth: rangeEnd - sourceX + 1,
+    phaseSeconds: index * LOGO_LETTER_PHASE_STEP_SECONDS,
+  };
 }
 
 function titleLogoColumnOccupied(mask: readonly (readonly number[])[], x: number): boolean {

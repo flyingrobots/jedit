@@ -121,22 +121,36 @@ export function nearestTitleMeshHit(
     }
 
     if (node.triangleIndices.length > 0) {
-      for (const triangleIndex of node.triangleIndices) {
-        const hit = intersectTitleMeshTriangle(origin, ray, mesh, triangleIndex);
-        if (hit != null && (nearest == null || hit.distance < nearest.distance)) {
-          nearest = hit;
-        }
-      }
+      nearest = nearestMeshTriangleHit(origin, ray, mesh, node.triangleIndices, nearest);
       return;
     }
 
-    if (node.left != null) {
-      visitMeshNode(node.left);
-    }
-    if (node.right != null) {
-      visitMeshNode(node.right);
+    visitMeshChild(node.left);
+    visitMeshChild(node.right);
+  }
+
+  function visitMeshChild(node: TitleMeshBvhNode | undefined): void {
+    if (node != null) {
+      visitMeshNode(node);
     }
   }
+}
+
+function nearestMeshTriangleHit(
+  origin: TitleMeshVector3,
+  ray: TitleMeshVector3,
+  mesh: TitleMesh,
+  triangleIndices: readonly number[],
+  nearest: TitleMeshHit | undefined,
+): TitleMeshHit | undefined {
+  let candidate = nearest;
+  for (const triangleIndex of triangleIndices) {
+    const hit = intersectTitleMeshTriangle(origin, ray, mesh, triangleIndex);
+    if (hit != null && (candidate == null || hit.distance < candidate.distance)) {
+      candidate = hit;
+    }
+  }
+  return candidate;
 }
 
 function createTitleMesh(source: TitleMeshSource, placement: TitleMeshPlacement): TitleMesh {
@@ -243,18 +257,12 @@ function intersectTitleMeshTriangle(
 
   const inverseDeterminant = 1 / determinant;
   const originToA = sub(origin, a);
-  const u = dot(originToA, rayCrossEdgeB) * inverseDeterminant;
-  if (u < 0 || u > 1) {
+  const barycentric = titleMeshTriangleBarycentric(ray, edgeA, originToA, rayCrossEdgeB, inverseDeterminant);
+  if (barycentric == null) {
     return undefined;
   }
 
-  const originCrossEdgeA = cross(originToA, edgeA);
-  const v = dot(ray, originCrossEdgeA) * inverseDeterminant;
-  if (v < 0 || u + v > 1) {
-    return undefined;
-  }
-
-  const distance = dot(edgeB, originCrossEdgeA) * inverseDeterminant;
+  const distance = dot(edgeB, barycentric.originCrossEdgeA) * inverseDeterminant;
   if (distance <= INTERSECTION_EPSILON) {
     return undefined;
   }
@@ -264,6 +272,22 @@ function intersectTitleMeshTriangle(
     distance,
     normal: dot(normal, ray) > 0 ? scale(normal, -1) : normal,
   };
+}
+
+function titleMeshTriangleBarycentric(
+  ray: TitleMeshVector3,
+  edgeA: TitleMeshVector3,
+  originToA: TitleMeshVector3,
+  rayCrossEdgeB: TitleMeshVector3,
+  inverseDeterminant: number,
+): { readonly originCrossEdgeA: TitleMeshVector3 } | undefined {
+  const u = dot(originToA, rayCrossEdgeB) * inverseDeterminant;
+  if (u < 0 || u > 1) {
+    return undefined;
+  }
+  const originCrossEdgeA = cross(originToA, edgeA);
+  const v = dot(ray, originCrossEdgeA) * inverseDeterminant;
+  return v < 0 || u + v > 1 ? undefined : { originCrossEdgeA };
 }
 
 function rayIntersectsBounds(

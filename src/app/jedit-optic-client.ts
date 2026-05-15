@@ -11,16 +11,11 @@ import {
   createBufferWorldline,
   createCheckpoint,
   replaceRangeAsTick,
-  type CreateBufferWorldlineExecution,
-  type CreateCheckpointExecution,
   type JeditWorldlineSession,
-  type ReplaceRangeAsTickExecution,
 } from './jedit-contract-runtime.js';
 import {
   readWorldlineSnapshotWithObserverPlan,
   readTextWindowWithObserverPlan,
-  type TextWindowReadingEnvelope,
-  type WorldlineSnapshotReadingEnvelope,
 } from './jedit-observer-runtime.js';
 import type {
   MutationOperationMap,
@@ -28,9 +23,6 @@ import type {
 } from '../generated/jedit/hot-text-runtime.types.generated.js';
 
 type CreateBufferWorldlineInput = MutationOperationMap['createBufferWorldline']['input'];
-type ReplaceRangeAsTickInput = MutationOperationMap['replaceRangeAsTick']['input'];
-type CreateCheckpointInput = MutationOperationMap['createCheckpoint']['input'];
-type WorldlineSnapshotInput = QueryOperationMap['worldlineSnapshot']['input'];
 type TextWindowInput = QueryOperationMap['textWindow']['input'];
 
 // Until Wesley emits direct intent/observer clients, keep one narrow seam where
@@ -38,49 +30,31 @@ type TextWindowInput = QueryOperationMap['textWindow']['input'];
 export function createInMemoryJeditOpticClient(runtime: HotTextRuntimePort, hash: HashPort): JeditOpticClient {
   const readBasisHandles = new ReadBasisHandleRegistry();
   return {
-    openTextBuffer(input: CreateBufferWorldlineInput): OpenTextBufferExecution {
-      const execution = createBufferWorldline(runtime, input, hash);
-      return {
-        ...execution,
-        readBasisHandle: readBasisHandles.createForSession(execution.nextSession),
-      };
-    },
-    createBufferWorldline(input: CreateBufferWorldlineInput): CreateBufferWorldlineExecution {
-      return createBufferWorldline(runtime, input, hash);
-    },
-    replaceRangeAsTick(
-      session: JeditWorldlineSession,
-      input: ReplaceRangeAsTickInput,
-    ): ReplaceRangeAsTickExecution {
-      return replaceRangeAsTick(runtime, session, input, hash);
-    },
-    createCheckpoint(
-      session: JeditWorldlineSession,
-      input: CreateCheckpointInput,
-    ): CreateCheckpointExecution {
-      return createCheckpoint(runtime, session, input, hash);
-    },
-    worldlineSnapshot(
-      session: JeditWorldlineSession,
-      frontierRef: string,
-      input: WorldlineSnapshotInput,
-    ): WorldlineSnapshotReadingEnvelope {
-      return readWorldlineSnapshotWithObserverPlan(runtime, session, frontierRef, input, hash);
-    },
-    textWindow(
-      session: JeditWorldlineSession,
-      frontierRef: string,
-      readBasisHandle: ReadBasisHandle,
-      input: TextWindowRangeInput,
-    ): TextWindowReadingEnvelope {
-      return readTextWindowWithObserverPlan(
-        runtime,
-        session,
-        frontierRef,
-        toTextWindowInput(readBasisHandles, session, readBasisHandle, input),
-        hash,
-      );
-    },
+    openTextBuffer: (input) => openTextBuffer(runtime, hash, readBasisHandles, input),
+    createBufferWorldline: (input) => createBufferWorldline(runtime, input, hash),
+    replaceRangeAsTick: (session, input) => replaceRangeAsTick(runtime, session, input, hash),
+    createCheckpoint: (session, input) => createCheckpoint(runtime, session, input, hash),
+    worldlineSnapshot: (session, frontierRef, input) => readWorldlineSnapshotWithObserverPlan(runtime, session, frontierRef, input, hash),
+    textWindow: (session, frontierRef, readBasisHandle, input) => readTextWindowWithObserverPlan(
+      runtime,
+      session,
+      frontierRef,
+      toTextWindowInput(readBasisHandles, session, readBasisHandle, input),
+      hash,
+    ),
+  };
+}
+
+function openTextBuffer(
+  runtime: HotTextRuntimePort,
+  hash: HashPort,
+  readBasisHandles: ReadBasisHandleRegistry,
+  input: CreateBufferWorldlineInput,
+): OpenTextBufferExecution {
+  const execution = createBufferWorldline(runtime, input, hash);
+  return {
+    ...execution,
+    readBasisHandle: readBasisHandles.createForSession(execution.nextSession),
   };
 }
 

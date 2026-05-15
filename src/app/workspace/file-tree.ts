@@ -37,65 +37,82 @@ export function updateTreeFromKey(
   nowMs: () => number,
   deps: UpdateTreeFromKeyDeps,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
+  const navigation = updateTreeNavigationFromKey(msg, model);
+  if (navigation != null) {
+    return [navigation, []];
+  }
+
   if (isWorkspaceRefreshKey(msg)) {
     return changeDirectory(model, model.cwd, DIRECTORY_ACTION_REFRESH, nowMs, deps.fileSystem);
   }
-
   if (isWorkspaceBackKey(msg)) {
-    const parent = deps.fileSystem.dirname(model.cwd);
-    if (parent === model.cwd) {
-      return [model, []];
-    }
-
-    return changeDirectory(model, parent, DIRECTORY_ACTION_OPEN, nowMs, deps.fileSystem);
+    return openParentDirectory(model, nowMs, deps.fileSystem);
   }
+  return isWorkspaceOpenKey(msg)
+    ? openSelectedTreeEntry(model, nowMs, deps)
+    : [model, []];
+}
 
+function updateTreeNavigationFromKey(msg: KeyMsg, model: WorkspaceModel): WorkspaceModel | undefined {
   if (isWorkspaceDownKey(msg)) {
-    return [
-      {
-        ...model,
-        selectedIndex: clampIndex(model.selectedIndex + 1, model.entries.length),
-      },
-      [],
-    ];
-  }
-
-  if (isWorkspaceUpKey(msg)) {
-    return [
-      {
-        ...model,
-        selectedIndex: clampIndex(model.selectedIndex - 1, model.entries.length),
-      },
-      [],
-    ];
-  }
-
-  if (isWorkspaceOpenKey(msg)) {
-    const entry = model.entries[model.selectedIndex];
-    if (entry == null) {
-      return [model, []];
-    }
-
-    if (entry.kind === FileEntryKinds.Directory || entry.kind === FileEntryKinds.Parent) {
-      return changeDirectory(model, entry.path, DIRECTORY_ACTION_OPEN, nowMs, deps.fileSystem);
-    }
-
-    const editor = loadEditor(entry.path, deps.editorFile);
-    return beginEditorProjectionRefresh(withFocusPane({
+    return {
       ...model,
-      editor,
-      viewMode: ViewModes.Source,
-      graftInfo: undefined,
-      graftLoading: false,
-      graftSelectedIndex: 0,
-    }, FocusPanes.Editor), model.graftDrawerOpen, {
-      editorFile: deps.editorFile,
-      sourceHighlighter: deps.sourceHighlighter,
-      graftSession: deps.graftSession,
-    });
+      selectedIndex: clampIndex(model.selectedIndex + 1, model.entries.length),
+    };
   }
+  if (isWorkspaceUpKey(msg)) {
+    return {
+      ...model,
+      selectedIndex: clampIndex(model.selectedIndex - 1, model.entries.length),
+    };
+  }
+  return undefined;
+}
 
-  return [model, []];
+function openParentDirectory(
+  model: WorkspaceModel,
+  nowMs: () => number,
+  fileSystem: FileSystemPort,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
+  const parent = fileSystem.dirname(model.cwd);
+  return parent === model.cwd
+    ? [model, []]
+    : changeDirectory(model, parent, DIRECTORY_ACTION_OPEN, nowMs, fileSystem);
+}
+
+function openSelectedTreeEntry(
+  model: WorkspaceModel,
+  nowMs: () => number,
+  deps: UpdateTreeFromKeyDeps,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
+  const entry = model.entries[model.selectedIndex];
+  if (entry == null) {
+    return [model, []];
+  }
+  if (entry.kind === FileEntryKinds.Directory || entry.kind === FileEntryKinds.Parent) {
+    return changeDirectory(model, entry.path, DIRECTORY_ACTION_OPEN, nowMs, deps.fileSystem);
+  }
+  return openEditorEntry(model, entry.path, deps);
+}
+
+function openEditorEntry(
+  model: WorkspaceModel,
+  path: string,
+  deps: UpdateTreeFromKeyDeps,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
+  const editor = loadEditor(path, deps.editorFile);
+  return beginEditorProjectionRefresh(withFocusPane({
+    ...model,
+    editor,
+    viewMode: ViewModes.Source,
+    graftInfo: undefined,
+    graftLoading: false,
+    graftSelectedIndex: 0,
+  }, FocusPanes.Editor), { refreshGraft: model.graftDrawerOpen }, {
+    editorFile: deps.editorFile,
+    sourceHighlighter: deps.sourceHighlighter,
+    graftSession: deps.graftSession,
+  });
 }
 
 function openDirectory(

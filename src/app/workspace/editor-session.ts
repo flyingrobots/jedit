@@ -2,8 +2,7 @@ import { beginSourceHighlightRefresh } from '../source-highlight-session.js';
 import { editorViewport, type WorkspaceViewport } from './viewport.js';
 import type { Cmd } from '@flyingrobots/bijou-tui';
 import type { WorkspaceModel } from './model.js';
-import { WorkspaceMessageTypes } from './msg.js';
-import type { WorkspaceMsg } from './msg.js';
+import { WorkspaceMessageTypes, workspaceSourceHighlightMessage, type WorkspaceMsg } from './msg.js';
 import type { EditorState } from './editor/model.js';
 import type { EditorFilePort } from '../../ports/editor-file.js';
 import type { GraftSessionPort } from '../../ports/graft-session.js';
@@ -26,6 +25,14 @@ export interface EditorSessionPorts {
   readonly editorFile: EditorFilePort;
   readonly sourceHighlighter: SourceHighlighter;
   readonly graftSession: GraftSessionPort;
+}
+
+export interface EditorProjectionRefreshOptions {
+  readonly refreshGraft: boolean;
+}
+
+export interface GraftRefreshOptions {
+  readonly force: boolean;
 }
 
 export function isWorkspaceMarkdownFile(path: string): boolean {
@@ -98,6 +105,7 @@ export function toggleMarkdownPreview(
       next.editor,
       editorViewport(next),
       sourceHighlighter,
+      workspaceSourceHighlightMessage,
     );
   }
 
@@ -106,22 +114,23 @@ export function toggleMarkdownPreview(
 
 export function beginEditorProjectionRefresh(
   model: WorkspaceModel,
-  refreshGraft: boolean,
+  options: EditorProjectionRefreshOptions,
   ports: EditorSessionPorts,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
-  const [withGraft, graftCmds] = beginGraftRefresh(model, refreshGraft, ports.graftSession);
+  const [withGraft, graftCmds] = beginGraftRefresh(model, { force: options.refreshGraft }, ports.graftSession);
   const [withHighlight, highlightCmds] = beginSourceHighlightRefresh<WorkspaceModel, WorkspaceMsg>(
     withGraft,
     withGraft.editor,
     editorViewport(withGraft),
     ports.sourceHighlighter,
+    workspaceSourceHighlightMessage,
   );
   return [withHighlight, [...graftCmds, ...highlightCmds]];
 }
 
 export function beginGraftRefresh(
   model: WorkspaceModel,
-  force: boolean,
+  options: GraftRefreshOptions,
   graftSession: GraftSessionPort,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (model.editor == null) {
@@ -133,7 +142,7 @@ export function beginGraftRefresh(
     }, []];
   }
 
-  if (!force && model.graftInfo?.path === model.editor.path && model.graftInfo.dirty === model.editor.dirty) {
+  if (!options.force && model.graftInfo?.path === model.editor.path && model.graftInfo.dirty === model.editor.dirty) {
     return [model, []];
   }
 
@@ -148,21 +157,21 @@ export function beginGraftRefresh(
       graftInfo: sameFile ? model.graftInfo : undefined,
       graftSelectedIndex: sameFile ? model.graftSelectedIndex : 0,
     },
-    [requestGraftInfoCmd(
-      requestId,
-      model.workspaceRoot,
-      model.editor.path,
-      model.editor.dirty,
-      graftSession,
-    )],
+    [requestGraftInfoCmd(requestId, {
+      workspaceRoot: model.workspaceRoot,
+      filePath: model.editor.path,
+      dirty: model.editor.dirty,
+    }, graftSession)],
   ];
 }
 
 function requestGraftInfoCmd(
   requestId: number,
-  workspaceRoot: string,
-  filePath: string,
-  dirty: boolean,
+  request: {
+    readonly workspaceRoot: string;
+    readonly filePath: string;
+    readonly dirty: boolean;
+  },
   graftSession: GraftSessionPort,
 ): Cmd<WorkspaceMsg> {
   return async () => {
@@ -170,13 +179,16 @@ function requestGraftInfoCmd(
       return {
         type: WorkspaceMessageTypes.GraftInfo,
         requestId,
-        info: await graftSession.loadGraftInfo(workspaceRoot, filePath, dirty),
+        info: await graftSession.loadGraftInfo(request),
       };
     } catch (cause) {
       return {
         type: WorkspaceMessageTypes.GraftInfo,
         requestId,
-        info: graftSession.failedGraftInfo(workspaceRoot, filePath, dirty, cause instanceof Error ? cause.message : String(cause)),
+        info: graftSession.failedGraftInfo({
+          ...request,
+          message: cause instanceof Error ? cause.message : String(cause),
+        }),
       };
     }
   };

@@ -13,9 +13,11 @@ test('read-only insert mode still exits through escape', async () => {
   const nextEditor = editing.updateInsertMode(
     mockEditor(mode, { readOnly: true, mode: mode.EditorModes.Insert, cursorCol: 5 }),
     { key: 'escape' },
-    80,
-    24,
-    true,
+    {
+      viewportWidth: 80,
+      viewportHeight: 24,
+      allowTabIndent: true,
+    },
   );
 
   assert.equal(nextEditor.mode, mode.EditorModes.Normal);

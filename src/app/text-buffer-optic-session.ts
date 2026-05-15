@@ -35,6 +35,12 @@ interface CreateTextBufferInput {
   readonly projectionPath?: string | null;
 }
 
+interface TextBufferOpticRuntimeState {
+  currentSession: JeditWorldlineSession;
+  currentReadBasis: ReadBasisHandle;
+  bufferVersion: BufferVersion;
+}
+
 export class TextBufferOpticError extends Error {
   public constructor(message: string) {
     super(message);
@@ -81,52 +87,80 @@ function createTextBufferOptic(
   initialSession: JeditWorldlineSession,
   initialReadBasis: ReadBasisHandle,
 ): TextBufferOptic {
-  let currentSession = initialSession;
-  let currentReadBasis = initialReadBasis;
-  let bufferVersion = FIRST_BUFFER_VERSION;
+  const state: TextBufferOpticRuntimeState = {
+    currentSession: initialSession,
+    currentReadBasis: initialReadBasis,
+    bufferVersion: FIRST_BUFFER_VERSION,
+  };
 
   return Object.freeze({
     buffer,
     currentReadBasis(): ReadBasisHandle {
-      return currentReadBasis;
+      return state.currentReadBasis;
     },
     async applyIntent(intent: ReplaceRangeIntent): Promise<ApplyIntentResult> {
-      if (intent.kind !== REPLACE_RANGE_INTENT_KIND) {
-        throw new TextBufferOpticError(`Unsupported text buffer intent: ${intent.kind}.`);
-      }
-      const execution = client.replaceRangeAsTick(currentSession, {
-        worldlineId: currentSession.worldline.worldlineId,
-        baseHeadId: currentSession.worldline.canonicalHeadId,
-        startByte: intent.startByte,
-        endByte: intent.endByte,
-        insertText: intent.insertText,
-        author: TEXT_BUFFER_OPTIC_AUTHOR,
-      });
-      if (execution.result == null) {
-        throw new TextBufferOpticError('Text buffer intent did not produce a runtime receipt.');
-      }
-      currentSession = execution.nextSession;
-      bufferVersion += NEXT_BUFFER_VERSION_STEP;
-      return {
-        buffer,
-        readBasis: currentReadBasis,
-        bufferVersion,
-        receiptId: execution.result.receipt.receiptId,
-      };
+      return applyTextBufferIntent(client, buffer, state, intent);
     },
     async textWindow(
       readBasis: ReadBasisHandle,
       input: TextWindowRangeInput,
     ): Promise<Observed<TextWindowReading>> {
-      const envelope = client.textWindow(
-        currentSession,
-        toFrontierRef(buffer.bufferId, bufferVersion),
-        readBasis,
-        input,
-      );
-      return toObservedTextWindowReading(envelope, input);
+      return readTextBufferWindow(client, buffer, state, readBasis, input);
     },
   });
+}
+
+function applyTextBufferIntent(
+  client: JeditOpticClient,
+  buffer: TextBuffer,
+  state: TextBufferOpticRuntimeState,
+  intent: ReplaceRangeIntent,
+): ApplyIntentResult {
+  if (intent.kind !== REPLACE_RANGE_INTENT_KIND) {
+    throw new TextBufferOpticError(`Unsupported text buffer intent: ${intent.kind}.`);
+  }
+  const execution = client.replaceRangeAsTick(state.currentSession, replaceRangeInput(state, intent));
+  if (execution.result == null) {
+    throw new TextBufferOpticError('Text buffer intent did not produce a runtime receipt.');
+  }
+  state.currentSession = execution.nextSession;
+  state.bufferVersion += NEXT_BUFFER_VERSION_STEP;
+  return {
+    buffer,
+    readBasis: state.currentReadBasis,
+    bufferVersion: state.bufferVersion,
+    receiptId: execution.result.receipt.receiptId,
+  };
+}
+
+function replaceRangeInput(
+  state: TextBufferOpticRuntimeState,
+  intent: ReplaceRangeIntent,
+): Parameters<JeditOpticClient['replaceRangeAsTick']>[1] {
+  return {
+    worldlineId: state.currentSession.worldline.worldlineId,
+    baseHeadId: state.currentSession.worldline.canonicalHeadId,
+    startByte: intent.startByte,
+    endByte: intent.endByte,
+    insertText: intent.insertText,
+    author: TEXT_BUFFER_OPTIC_AUTHOR,
+  };
+}
+
+function readTextBufferWindow(
+  client: JeditOpticClient,
+  buffer: TextBuffer,
+  state: TextBufferOpticRuntimeState,
+  readBasis: ReadBasisHandle,
+  input: TextWindowRangeInput,
+): Observed<TextWindowReading> {
+  const envelope = client.textWindow(
+    state.currentSession,
+    toFrontierRef(buffer.bufferId, state.bufferVersion),
+    readBasis,
+    input,
+  );
+  return toObservedTextWindowReading(envelope, input);
 }
 
 function toTextBuffer(sequence: number, input: CreateTextBufferInput): TextBuffer {

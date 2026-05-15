@@ -13,8 +13,18 @@ export interface GraftInfo {
   readonly error?: string;
 }
 
+export interface GraftFileRequest {
+  readonly workspaceRoot: string;
+  readonly filePath: string;
+  readonly dirty: boolean;
+}
+
+export interface FailedGraftInfoRequest extends GraftFileRequest {
+  readonly message: string;
+}
+
 export interface GraftSessionPort {
-  loadGraftInfo(workspaceRoot: string, filePath: string, dirty: boolean): Promise<GraftInfo>;
-  failedGraftInfo(workspaceRoot: string, filePath: string, dirty: boolean, message: string): GraftInfo;
+  loadGraftInfo(request: GraftFileRequest): Promise<GraftInfo>;
+  failedGraftInfo(request: FailedGraftInfoRequest): GraftInfo;
   closeConnection(): Promise<void>;
 }
