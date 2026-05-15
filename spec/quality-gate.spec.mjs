@@ -461,6 +461,72 @@ test('quality gate rejects functions above the statement limit', () => {
   }
 });
 
+test('quality gate rejects magic comparison literals in source logic', () => {
+  const fixtureRoot = mkdtempSync(path.join(tmpdir(), 'jedit-quality-gate-'));
+
+  try {
+    mkdirSync(path.join(fixtureRoot, 'src', 'app'), { recursive: true });
+    writeFileSync(
+      path.join(fixtureRoot, 'src', 'app', 'bad-magic-literals.ts'),
+      [
+        'export function accepts(status: string, count: number): boolean {',
+        "  return status === 'ready' || count === 42;",
+        '}',
+        '',
+      ].join('\n'),
+    );
+
+    const result = spawnSync(process.execPath, [QUALITY_GATE_SCRIPT, '--json'], {
+      cwd: fixtureRoot,
+      encoding: 'utf8',
+    });
+    assert.notEqual(result.status, 0);
+
+    const parsed = JSON.parse(result.stdout);
+    assert.equal(parsed.ok, false);
+    assert.ok(parsed.enforcedRules.includes('no-magic-comparison-literal'));
+    assert.deepEqual(parsed.regressions, [
+      {
+        file: 'src/app/bad-magic-literals.ts',
+        rule: 'no-magic-comparison-literal',
+        actual: 2,
+        allowed: 0,
+      },
+    ]);
+  } finally {
+    rmSync(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
+test('quality gate allows boundary comparison literals outside app and domain logic', () => {
+  const fixtureRoot = mkdtempSync(path.join(tmpdir(), 'jedit-quality-gate-'));
+
+  try {
+    mkdirSync(path.join(fixtureRoot, 'src', 'adapters'), { recursive: true });
+    writeFileSync(
+      path.join(fixtureRoot, 'src', 'adapters', 'wire-codec.ts'),
+      [
+        'export function acceptsWireToken(status: string, count: number): boolean {',
+        "  return status === 'ready' || count === 42;",
+        '}',
+        '',
+      ].join('\n'),
+    );
+
+    const result = spawnSync(process.execPath, [QUALITY_GATE_SCRIPT, '--json'], {
+      cwd: fixtureRoot,
+      encoding: 'utf8',
+    });
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+
+    const parsed = JSON.parse(result.stdout);
+    assert.equal(parsed.ok, true);
+    assert.equal(parsed.regressions.length, 0);
+  } finally {
+    rmSync(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
 test('quality gate rejects overlong source lines', () => {
   const fixtureRoot = mkdtempSync(path.join(tmpdir(), 'jedit-quality-gate-'));
   const overlongLine = `export const unreadable = '${'x'.repeat(150)}';`;

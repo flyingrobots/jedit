@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Ratcheted the quality gate to reject non-structural inline comparison
+  literals in `src/app` and `src/domain`, with boundary-scope regression
+  coverage and settings key actions moved to symbol-backed runtime tokens.
 - Ratcheted the quality gate to reject runtime function bodies with more than
   25 top-level statements, with isolated regression coverage that does not
   overlap the function-length ratchet.

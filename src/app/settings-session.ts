@@ -67,6 +67,9 @@ const VALUE_THEME_MODE_DARK = 'Dark';
 const VALUE_THEME_MODE_LIGHT = 'Light';
 const VALUE_SOURCE = 'Source';
 const VALUE_PREVIEW = 'Preview';
+const VALUE_LOCALE_ENGLISH = 'English';
+const VALUE_LOCALE_MIRROR = 'Mirror';
+const LOCALE_ENGLISH = 'en';
 const KEY_ESCAPE = 'escape';
 const KEY_DOWN = 'down';
 const KEY_UP = 'up';
@@ -77,17 +80,25 @@ const KEY_SPACE = ' ';
 const KEY_SPACE_CANONICAL = 'space';
 const FOCUS_STEP_FORWARD = 1;
 const FOCUS_STEP_BACKWARD = -1;
-type SettingsKeyAction = 'close' | 'down' | 'up' | 'activate';
+
+const SETTINGS_KEY_ACTION = {
+  Close: Symbol('jedit.settings.key-action.close'),
+  Down: Symbol('jedit.settings.key-action.down'),
+  Up: Symbol('jedit.settings.key-action.up'),
+  Activate: Symbol('jedit.settings.key-action.activate'),
+} as const;
+
+type SettingsKeyAction = typeof SETTINGS_KEY_ACTION[keyof typeof SETTINGS_KEY_ACTION];
 
 const SETTINGS_KEY_ACTIONS = new Map<string, SettingsKeyAction>([
-  [KEY_ESCAPE, 'close'],
-  [KEY_DOWN, 'down'],
-  [KEY_J, 'down'],
-  [KEY_UP, 'up'],
-  [KEY_K, 'up'],
-  [KEY_ENTER, 'activate'],
-  [KEY_SPACE, 'activate'],
-  [KEY_SPACE_CANONICAL, 'activate'],
+  [KEY_ESCAPE, SETTINGS_KEY_ACTION.Close],
+  [KEY_DOWN, SETTINGS_KEY_ACTION.Down],
+  [KEY_J, SETTINGS_KEY_ACTION.Down],
+  [KEY_UP, SETTINGS_KEY_ACTION.Up],
+  [KEY_K, SETTINGS_KEY_ACTION.Up],
+  [KEY_ENTER, SETTINGS_KEY_ACTION.Activate],
+  [KEY_SPACE, SETTINGS_KEY_ACTION.Activate],
+  [KEY_SPACE_CANONICAL, SETTINGS_KEY_ACTION.Activate],
 ]);
 
 export function jeditSettingsRows(state: JeditSettingsState & { readonly i18n: { readonly locale: string } }): readonly JeditSettingsRow[] {
@@ -111,7 +122,7 @@ function localeSettingsRow(state: JeditSettingsState & { readonly i18n: { readon
     section: SETTINGS_SECTION_APPEARANCE,
     label: 'Locale',
     description: 'Switch between English (en) and Mirror English (me) for RTL testing.',
-    valueLabel: state.i18n.locale === 'en' ? 'English' : 'Mirror',
+    valueLabel: state.i18n.locale === LOCALE_ENGLISH ? VALUE_LOCALE_ENGLISH : VALUE_LOCALE_MIRROR,
     kind: JEDIT_SETTING_ROW_KIND.Choice,
     action: JEDIT_SETTING_ACTION.ToggleLocale,
   };
@@ -211,13 +222,13 @@ function reduceSettingsKeyAction<Model extends JeditSettingsHostState, Command>(
   rows: readonly JeditSettingsRow[],
   handlers: JeditSettingsHandlers<Model, Command>,
 ): [Model, Cmd<Command>[]] {
-  if (action === 'close') {
+  if (action === SETTINGS_KEY_ACTION.Close) {
     return [{ ...model, settingsOpen: false }, []];
   }
-  if (action === 'down') {
+  if (action === SETTINGS_KEY_ACTION.Down) {
     return [moveHostFocus(model, FOCUS_STEP_FORWARD, rows.length), []];
   }
-  if (action === 'up') {
+  if (action === SETTINGS_KEY_ACTION.Up) {
     return [moveHostFocus(model, FOCUS_STEP_BACKWARD, rows.length), []];
   }
   return activateSettingsRow(model, rows[clampSettingsFocusIndex(model.settingsFocusIndex, rows.length)]?.action, handlers);

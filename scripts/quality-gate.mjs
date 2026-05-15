@@ -14,6 +14,7 @@ const MAX_CYCLOMATIC_COMPLEXITY = 8;
 const MAX_NESTING_DEPTH = 4;
 const MAX_STATEMENTS_PER_FUNCTION = 25;
 const MAX_SOURCE_LINE_LENGTH = 160;
+const STRUCTURAL_NUMBER_LITERALS = new Set([-1, 0, 1]);
 const JSON_FLAG = '--json';
 
 function main() {
@@ -182,6 +183,16 @@ function main() {
       debt,
       improvements,
     });
+    recordCountRule({
+      relativePath,
+      rule: 'no-magic-comparison-literal',
+      actual: counts.magicComparisonLiteral,
+      allowed: baseline.magicComparisonLiterals?.[relativePath] ?? 0,
+      cleanLimit: 0,
+      regressions,
+      debt,
+      improvements,
+    });
   }
 
   const result = {
@@ -201,6 +212,7 @@ function main() {
       'max-depth-4',
       'max-statements-25',
       'max-line-length-160',
+      'no-magic-comparison-literal',
       'max-lines-500',
     ],
     fileCount: files.length,
@@ -261,6 +273,7 @@ function loadBaseline() {
       maxDepth: {},
       maxStatements: {},
       maxLineLength: {},
+      magicComparisonLiterals: {},
     };
   }
 
@@ -288,6 +301,7 @@ function collectTypeScriptFiles(directory) {
 
 function countForbiddenSyntax(relativePath, sourceText) {
   const sourceFile = ts.createSourceFile(relativePath, sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const magicComparisonRuleTarget = isMagicComparisonRuleTarget(relativePath);
   const counts = {
     any: 0,
     unknown: 0,
@@ -303,6 +317,7 @@ function countForbiddenSyntax(relativePath, sourceText) {
     maxNestingDepth: 0,
     maxStatementCount: 0,
     maxSourceLineLength: isGeneratedSource(relativePath) ? 0 : maxSourceLineLength(sourceText),
+    magicComparisonLiteral: 0,
   };
 
   visit(sourceFile);
@@ -323,6 +338,9 @@ function countForbiddenSyntax(relativePath, sourceText) {
     }
     if (isForbiddenTypeAssertion(node, sourceFile)) {
       counts.typeAssertion += 1;
+    }
+    if (magicComparisonRuleTarget && isMagicComparisonLiteral(node)) {
+      counts.magicComparisonLiteral += 1;
     }
     if (isRuntimeFunctionLike(node)) {
       counts.maxParameterCount = Math.max(counts.maxParameterCount, node.parameters.length);
@@ -551,8 +569,77 @@ function isGeneratedSource(relativePath) {
   return relativePath.startsWith('src/generated/');
 }
 
+function isMagicComparisonRuleTarget(relativePath) {
+  return relativePath.startsWith('src/app/') || relativePath.startsWith('src/domain/');
+}
+
 function maxSourceLineLength(sourceText) {
   return Math.max(0, ...sourceText.split(/\r?\n/).map((line) => line.length));
+}
+
+function isMagicComparisonLiteral(node) {
+  if (isStructuralNumberLiteral(node)) {
+    return false;
+  }
+  if (!isComparableLiteral(node)) {
+    return false;
+  }
+  if (isSwitchCaseLiteral(node)) {
+    return true;
+  }
+  return isBinaryComparisonLiteral(node);
+}
+
+function isComparableLiteral(node) {
+  return ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node) || ts.isNumericLiteral(node);
+}
+
+function isStructuralNumberLiteral(node) {
+  if (!ts.isNumericLiteral(node)) {
+    return false;
+  }
+  return STRUCTURAL_NUMBER_LITERALS.has(numericLiteralValue(node));
+}
+
+function numericLiteralValue(node) {
+  if (
+    ts.isPrefixUnaryExpression(node.parent)
+    && node.parent.operator === ts.SyntaxKind.MinusToken
+    && node.parent.operand === node
+  ) {
+    return -Number(node.text);
+  }
+  return Number(node.text);
+}
+
+function isSwitchCaseLiteral(node) {
+  return ts.isCaseClause(node.parent) && node.parent.expression === node;
+}
+
+function isBinaryComparisonLiteral(node) {
+  const expression = comparisonExpressionForLiteral(node);
+  return expression != null && isComparisonOperator(expression.operatorToken.kind);
+}
+
+function comparisonExpressionForLiteral(node) {
+  if (ts.isBinaryExpression(node.parent)) {
+    return node.parent;
+  }
+  if (!ts.isPrefixUnaryExpression(node.parent) || !ts.isBinaryExpression(node.parent.parent)) {
+    return undefined;
+  }
+  return node.parent.parent;
+}
+
+function isComparisonOperator(kind) {
+  return kind === ts.SyntaxKind.EqualsEqualsEqualsToken
+    || kind === ts.SyntaxKind.ExclamationEqualsEqualsToken
+    || kind === ts.SyntaxKind.EqualsEqualsToken
+    || kind === ts.SyntaxKind.ExclamationEqualsToken
+    || kind === ts.SyntaxKind.LessThanToken
+    || kind === ts.SyntaxKind.LessThanEqualsToken
+    || kind === ts.SyntaxKind.GreaterThanToken
+    || kind === ts.SyntaxKind.GreaterThanEqualsToken;
 }
 
 function toRepoPath(filePath) {

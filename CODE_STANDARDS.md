@@ -106,6 +106,11 @@ For cross-realm values, normalize through adapters/boundaries and construct vali
 - Boolean trap parameters
 - Anonymous option bags in public APIs
 
+**Current magic-literal ratchet:**
+`src/app` and `src/domain` reject non-structural inline string/number literals in
+comparisons and switch cases. Promote behavioral tokens to named constants,
+runtime token objects, or domain classes before comparing.
+
 **Encouraged:**
 - Constructor-based validation
 - `readonly` + `private` + `Object.freeze()`
