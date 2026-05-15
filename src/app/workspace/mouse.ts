@@ -7,7 +7,7 @@ import {
 import { beginSourceHighlightRefresh } from '../source-highlight-session.js';
 import { moveSettingsFocusIndex } from '../settings-session.js';
 import type { WorkspaceModel } from './model.js';
-import type { WorkspaceMsg } from './msg.js';
+import { workspaceSourceHighlightMessage, type WorkspaceMsg } from './msg.js';
 import { editorViewport } from './editor-session.js';
 import { settingsRows } from './settings.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
@@ -42,6 +42,6 @@ export function updateFromMouse(
   const editor = scrollTextViewport(model.editor, deltaRows, viewport.height);
   const next = { ...model, editor };
   return model.viewMode === ViewModes.Source
-    ? beginSourceHighlightRefresh<WorkspaceModel, WorkspaceMsg>(next, editor, viewport, sourceHighlighter)
+    ? beginSourceHighlightRefresh<WorkspaceModel, WorkspaceMsg>(next, editor, viewport, sourceHighlighter, workspaceSourceHighlightMessage)
     : [next, []];
 }

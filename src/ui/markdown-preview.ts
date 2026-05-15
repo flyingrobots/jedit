@@ -27,6 +27,32 @@ export interface MarkdownPreviewLine {
 
 export type MarkdownPreviewTheme = JeditTheme;
 
+export interface PaintMarkdownPreviewOptions {
+  readonly text: string;
+  readonly scrollRow: number;
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+  readonly theme: MarkdownPreviewTheme;
+}
+
+interface PaintPreviewBackgroundOptions {
+  readonly line: MarkdownPreviewLine;
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly theme: MarkdownPreviewTheme;
+}
+
+interface PaintPreviewSegmentsOptions {
+  readonly segments: readonly MarkdownPreviewSegment[];
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly theme: MarkdownPreviewTheme;
+}
+
 export function previewMarkdownLines(text: string): readonly MarkdownPreviewLine[] {
   const lines: MarkdownPreviewLine[] = [];
   let inCodeFence = false;
@@ -120,42 +146,44 @@ export function previewMarkdownLines(text: string): readonly MarkdownPreviewLine
 
 export function paintMarkdownPreview(
   surface: Surface,
-  text: string,
-  scrollRow: number,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  theme: MarkdownPreviewTheme,
+  options: PaintMarkdownPreviewOptions,
 ) {
-  const lines = previewMarkdownLines(text);
-  for (let row = 0; row < height; row += 1) {
-    const line = lines[scrollRow + row];
+  const lines = previewMarkdownLines(options.text);
+  for (let row = 0; row < options.height; row += 1) {
+    const line = lines[options.scrollRow + row];
     if (line == null) {
       continue;
     }
 
-    paintPreviewBackground(surface, line, x, y + row, width, theme);
-    paintPreviewSegments(surface, line.segments, x, y + row, width, theme);
+    paintPreviewBackground(surface, {
+      line,
+      x: options.x,
+      y: options.y + row,
+      width: options.width,
+      theme: options.theme,
+    });
+    paintPreviewSegments(surface, {
+      segments: line.segments,
+      x: options.x,
+      y: options.y + row,
+      width: options.width,
+      theme: options.theme,
+    });
   }
 }
 
 function paintPreviewBackground(
   surface: Surface,
-  line: MarkdownPreviewLine,
-  x: number,
-  y: number,
-  width: number,
-  theme: MarkdownPreviewTheme,
+  options: PaintPreviewBackgroundOptions,
 ) {
-  if (line.kind !== 'code') {
+  if (options.line.kind !== 'code') {
     return;
   }
 
-  const token = codeLineToken(theme);
-  for (let column = 0; column < width; column += 1) {
-    const cell = surface.get(x + column, y);
-    surface.set(x + column, y, {
+  const token = codeLineToken(options.theme);
+  for (let column = 0; column < options.width; column += 1) {
+    const cell = surface.get(options.x + column, options.y);
+    surface.set(options.x + column, options.y, {
       ...cell,
       char: cell.char.length > 0 ? cell.char : ' ',
       bg: token.bg,
@@ -167,16 +195,12 @@ function paintPreviewBackground(
 
 function paintPreviewSegments(
   surface: Surface,
-  segments: readonly MarkdownPreviewSegment[],
-  x: number,
-  y: number,
-  width: number,
-  theme: MarkdownPreviewTheme,
+  options: PaintPreviewSegmentsOptions,
 ) {
-  let cursor = x;
-  const end = x + width;
+  let cursor = options.x;
+  const end = options.x + options.width;
 
-  for (const segment of segments) {
+  for (const segment of options.segments) {
     if (cursor >= end) {
       return;
     }
@@ -187,8 +211,8 @@ function paintPreviewSegments(
     }
 
     const segmentSurface = stringToSurface(clipped, [...clipped].length, 1);
-    applyToken(segmentSurface, tokenForTone(theme, segment.tone));
-    surface.blit(segmentSurface, cursor, y);
+    applyToken(segmentSurface, tokenForTone(options.theme, segment.tone));
+    surface.blit(segmentSurface, cursor, options.y);
     cursor += [...clipped].length;
   }
 }

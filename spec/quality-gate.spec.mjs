@@ -57,3 +57,114 @@ test('quality gate rejects TypeScript enum declarations', () => {
     rmSync(fixtureRoot, { recursive: true, force: true });
   }
 });
+
+test('quality gate rejects raw Error throws in source files', () => {
+  const fixtureRoot = mkdtempSync(path.join(tmpdir(), 'jedit-quality-gate-'));
+
+  try {
+    mkdirSync(path.join(fixtureRoot, 'src'));
+    writeFileSync(
+      path.join(fixtureRoot, 'src', 'bad-error.ts'),
+      [
+        'export function failHard() {',
+        "  throw new Error('boom');",
+        '}',
+        '',
+      ].join('\n'),
+    );
+
+    const result = spawnSync(process.execPath, [QUALITY_GATE_SCRIPT, '--json'], {
+      cwd: fixtureRoot,
+      encoding: 'utf8',
+    });
+    assert.notEqual(result.status, 0);
+
+    const parsed = JSON.parse(result.stdout);
+    assert.equal(parsed.ok, false);
+    assert.ok(parsed.enforcedRules.includes('no-throw-new-error'));
+    assert.deepEqual(parsed.regressions, [
+      {
+        file: 'src/bad-error.ts',
+        rule: 'no-throw-new-error',
+        actual: 1,
+        allowed: 0,
+      },
+    ]);
+  } finally {
+    rmSync(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
+test('quality gate rejects non-const type assertions in source files', () => {
+  const fixtureRoot = mkdtempSync(path.join(tmpdir(), 'jedit-quality-gate-'));
+
+  try {
+    mkdirSync(path.join(fixtureRoot, 'src'));
+    writeFileSync(
+      path.join(fixtureRoot, 'src', 'bad-cast.ts'),
+      [
+        'export function cast(value: string | number): string {',
+        '  return value as string;',
+        '}',
+        '',
+      ].join('\n'),
+    );
+
+    const result = spawnSync(process.execPath, [QUALITY_GATE_SCRIPT, '--json'], {
+      cwd: fixtureRoot,
+      encoding: 'utf8',
+    });
+    assert.notEqual(result.status, 0);
+
+    const parsed = JSON.parse(result.stdout);
+    assert.equal(parsed.ok, false);
+    assert.ok(parsed.enforcedRules.includes('no-type-assertion'));
+    assert.deepEqual(parsed.regressions, [
+      {
+        file: 'src/bad-cast.ts',
+        rule: 'no-type-assertion',
+        actual: 1,
+        allowed: 0,
+      },
+    ]);
+  } finally {
+    rmSync(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
+test('quality gate rejects functions above the parameter limit', () => {
+  const fixtureRoot = mkdtempSync(path.join(tmpdir(), 'jedit-quality-gate-'));
+
+  try {
+    mkdirSync(path.join(fixtureRoot, 'src'));
+    writeFileSync(
+      path.join(fixtureRoot, 'src', 'bad-params.ts'),
+      [
+        'export function tooMany(a: number, b: number, c: number, d: number, e: number, f: number): number {',
+        '  return a + b + c + d + e + f;',
+        '}',
+        '',
+      ].join('\n'),
+    );
+
+    const result = spawnSync(process.execPath, [QUALITY_GATE_SCRIPT, '--json'], {
+      cwd: fixtureRoot,
+      encoding: 'utf8',
+    });
+    assert.notEqual(result.status, 0);
+
+    const parsed = JSON.parse(result.stdout);
+    assert.equal(parsed.ok, false);
+    assert.ok(parsed.enforcedRules.includes('max-parameters-5'));
+    assert.deepEqual(parsed.regressions, [
+      {
+        file: 'src/bad-params.ts',
+        rule: 'max-parameters-5',
+        actual: 6,
+        allowed: 5,
+      },
+    ]);
+  } finally {
+    rmSync(fixtureRoot, { recursive: true, force: true });
+  }
+});

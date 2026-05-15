@@ -29,6 +29,16 @@ interface AsciiPaletteSpec {
   readonly dither?: boolean;
 }
 
+interface CollapseAsciiCellOptions {
+  readonly x: number;
+  readonly y: number;
+  readonly subpixelWidth: number;
+  readonly subpixelHeight: number;
+  readonly time: number;
+  readonly shader: BrailleShaderFn;
+  readonly palette: AsciiPaletteSpec;
+}
+
 export interface AveragingAsciiCanvasOptions {
   readonly palette?: TitleAsciiPalette;
 }
@@ -81,22 +91,22 @@ export function averagingAsciiCanvas(
 
   for (let y = 0; y < rows; y += 1) {
     for (let x = 0; x < cols; x += 1) {
-      surface.set(x, y, collapseAsciiCell(x, y, subpixelWidth, subpixelHeight, time, shader, palette));
+      surface.set(x, y, collapseAsciiCell({
+        x,
+        y,
+        subpixelWidth,
+        subpixelHeight,
+        time,
+        shader,
+        palette,
+      }));
     }
   }
 
   return surface;
 }
 
-function collapseAsciiCell(
-  x: number,
-  y: number,
-  subpixelWidth: number,
-  subpixelHeight: number,
-  time: number,
-  shader: BrailleShaderFn,
-  palette: AsciiPaletteSpec,
-): Cell {
+function collapseAsciiCell(options: CollapseAsciiCellOptions): Cell {
   let fgRed = 0;
   let fgGreen = 0;
   let fgBlue = 0;
@@ -108,10 +118,10 @@ function collapseAsciiCell(
 
   for (let sampleY = 0; sampleY < ASCII_ROWS_PER_CELL; sampleY += 1) {
     for (let sampleX = 0; sampleX < ASCII_COLUMNS_PER_CELL; sampleX += 1) {
-      const sample = shader({
-        u: ((x * ASCII_COLUMNS_PER_CELL) + sampleX) / (subpixelWidth - 1 || 1),
-        v: ((y * ASCII_ROWS_PER_CELL) + sampleY) / (subpixelHeight - 1 || 1),
-        time,
+      const sample = options.shader({
+        u: ((options.x * ASCII_COLUMNS_PER_CELL) + sampleX) / (options.subpixelWidth - 1 || 1),
+        v: ((options.y * ASCII_ROWS_PER_CELL) + sampleY) / (options.subpixelHeight - 1 || 1),
+        time: options.time,
       });
 
       fgRed += sample.fgRGB[RED_INDEX];
@@ -131,7 +141,7 @@ function collapseAsciiCell(
   }
 
   return {
-    char: asciiCharForLuminance(luminanceSum / ASCII_SAMPLE_COUNT, palette, x, y),
+    char: asciiCharForLuminance(luminanceSum / ASCII_SAMPLE_COUNT, options.palette, options.x, options.y),
     fgRGB: averageRgb(fgRed, fgGreen, fgBlue),
     bgRGB: averageRgb(bgRed, bgGreen, bgBlue),
     ...(modifiers.length > 0 ? { modifiers } : {}),

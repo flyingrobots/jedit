@@ -34,11 +34,15 @@ export async function loadTitleSceneFromFile(path: string, meshes: TitleMeshLibr
   const content = await fs.readFile(path, 'utf8');
   let json: JsonValue;
   try {
-    json = JSON.parse(content) as JsonValue;
+    json = parseJsonText(content);
   } catch (error) {
     throw new SceneDecodeError(`Scene JSON is malformed: ${error instanceof Error ? error.message : String(error)}`);
   }
   return parseTitleSceneJson(json, meshes);
+}
+
+function parseJsonText(content: string): JsonValue {
+  return JSON.parse(content);
 }
 
 export async function loadBuiltInTitleScene(name: BuiltInTitleSceneName, meshes: TitleMeshLibrary): Promise<TitleScene> {

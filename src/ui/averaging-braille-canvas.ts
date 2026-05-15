@@ -17,6 +17,15 @@ export interface BrailleShaderSample {
 
 export type BrailleShaderFn = (params: BrailleShaderParams) => BrailleShaderSample;
 
+interface CollapseBrailleCellOptions {
+  readonly x: number;
+  readonly y: number;
+  readonly subpixelWidth: number;
+  readonly subpixelHeight: number;
+  readonly time: number;
+  readonly shader: BrailleShaderFn;
+}
+
 const BRAILLE_COLUMNS_PER_CELL = 2;
 const BRAILLE_ROWS_PER_CELL = 4;
 const BRAILLE_SAMPLE_COUNT = BRAILLE_COLUMNS_PER_CELL * BRAILLE_ROWS_PER_CELL;
@@ -47,21 +56,21 @@ export function averagingBrailleCanvas(
 
   for (let y = 0; y < rows; y += 1) {
     for (let x = 0; x < cols; x += 1) {
-      surface.set(x, y, collapseBrailleCell(x, y, subpixelWidth, subpixelHeight, time, shader));
+      surface.set(x, y, collapseBrailleCell({
+        x,
+        y,
+        subpixelWidth,
+        subpixelHeight,
+        time,
+        shader,
+      }));
     }
   }
 
   return surface;
 }
 
-function collapseBrailleCell(
-  x: number,
-  y: number,
-  subpixelWidth: number,
-  subpixelHeight: number,
-  time: number,
-  shader: BrailleShaderFn,
-): Cell {
+function collapseBrailleCell(options: CollapseBrailleCellOptions): Cell {
   let code = 0;
   let fgRed = 0;
   let fgGreen = 0;
@@ -73,10 +82,10 @@ function collapseBrailleCell(
 
   for (let sampleY = 0; sampleY < BRAILLE_ROWS_PER_CELL; sampleY += 1) {
     for (let sampleX = 0; sampleX < BRAILLE_COLUMNS_PER_CELL; sampleX += 1) {
-      const sample = shader({
-        u: ((x * BRAILLE_COLUMNS_PER_CELL) + sampleX) / (subpixelWidth - 1 || 1),
-        v: ((y * BRAILLE_ROWS_PER_CELL) + sampleY) / (subpixelHeight - 1 || 1),
-        time,
+      const sample = options.shader({
+        u: ((options.x * BRAILLE_COLUMNS_PER_CELL) + sampleX) / (options.subpixelWidth - 1 || 1),
+        v: ((options.y * BRAILLE_ROWS_PER_CELL) + sampleY) / (options.subpixelHeight - 1 || 1),
+        time: options.time,
       });
 
       if (sample.on) {

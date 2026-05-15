@@ -41,7 +41,7 @@ import {
   shouldRefreshSourceHighlight,
 } from '../source-highlight-session.js';
 import type { WorkspaceModel } from './model.js';
-import type { WorkspaceMsg } from './msg.js';
+import { workspaceSourceHighlightMessage, type WorkspaceMsg } from './msg.js';
 import { settingsRows } from './settings.js';
 import { focusCycleState } from './focus.js';
 import type { JeditStyleToken, JeditTheme } from '../../ui/jedit-theme.js';
@@ -81,7 +81,7 @@ export function updateViewerFromKey(
   };
 
   return shouldRefreshSourceHighlight(model.editor, editor)
-    ? beginSourceHighlightRefresh(next, editor, viewport, sourceHighlighter)
+    ? beginSourceHighlightRefresh(next, editor, viewport, sourceHighlighter, workspaceSourceHighlightMessage)
     : [next, []];
 }
 
@@ -223,7 +223,15 @@ function renderViewer(model: WorkspaceModel, width: number, height: number): Sur
 
 function renderPreview(surface: Surface, editor: WorkspaceModel['editor'], theme: JeditTheme, width: number, height: number): Surface {
   const viewport = viewerViewport(width, height);
-  paintMarkdownPreview(surface, editor?.lines.join('\n') ?? '', editor?.scrollRow ?? 0, VIEWER_LEFT_PAD, VIEWER_TOP_PAD, viewport.width, viewport.height, theme);
+  paintMarkdownPreview(surface, {
+    text: editor?.lines.join('\n') ?? '',
+    scrollRow: editor?.scrollRow ?? 0,
+    x: VIEWER_LEFT_PAD,
+    y: VIEWER_TOP_PAD,
+    width: viewport.width,
+    height: viewport.height,
+    theme,
+  });
   return surface;
 }
 

@@ -30,8 +30,11 @@ test('CODE_STANDARDS mirrors enforced quality gate constraints', () => {
   const codeStandards = readFileSync(CODE_STANDARDS_PATH, 'utf8');
 
   assert.match(codeStandards, FILE_SIZE_RULE_PATTERN);
+  assert.match(codeStandards, /- \*\*Parameters\*\*: ≤ \*\*5\*\*/);
   assert.match(codeStandards, /- `any`\n- `unknown`/);
+  assert.match(codeStandards, /- Type assertions \(`as`\)/);
   assert.match(codeStandards, /- `enum`/);
+  assert.match(codeStandards, /- `throw new Error\("string"\)`/);
   assert.match(codeStandards, /@typescript-eslint\/no-restricted-types/);
   assert.doesNotMatch(codeStandards, /unknown` is allowed/);
   assert.doesNotMatch(codeStandards, /max-lines": \["error", 1000\]/);

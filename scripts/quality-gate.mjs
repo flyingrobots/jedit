@@ -7,6 +7,7 @@ const ROOT = process.cwd();
 const SOURCE_ROOT = path.join(ROOT, 'src');
 const BASELINE_PATH = path.join(ROOT, 'quality-baseline.json');
 const MAX_LINES_PER_FILE = 500;
+const MAX_PARAMETERS_PER_FUNCTION = 5;
 const JSON_FLAG = '--json';
 
 function main() {
@@ -43,53 +44,71 @@ function main() {
     }
 
     for (const key of ['any', 'unknown']) {
-      const actual = counts[key];
-      const allowed = baseline.forbiddenTypeKeywords[relativePath]?.[key] ?? 0;
-      if (actual > allowed) {
-        regressions.push({
-          file: relativePath,
-          rule: `no-${key}`,
-          actual,
-          allowed,
-        });
-      } else if (actual > 0) {
-        debt.push({
-          file: relativePath,
-          rule: `no-${key}`,
-          actual,
-          allowed,
-        });
-        if (actual < allowed) {
-          improvements.push(`${relativePath}: no-${key} improved ${allowed} -> ${actual}`);
-        }
-      }
+      recordCountRule({
+        relativePath,
+        rule: `no-${key}`,
+        actual: counts[key],
+        allowed: baseline.forbiddenTypeKeywords[relativePath]?.[key] ?? 0,
+        cleanLimit: 0,
+        regressions,
+        debt,
+        improvements,
+      });
     }
 
-    const actualEnums = counts.enum;
-    const allowedEnums = baseline.enumDeclarations?.[relativePath] ?? 0;
-    if (actualEnums > allowedEnums) {
-      regressions.push({
-        file: relativePath,
-        rule: 'no-enum',
-        actual: actualEnums,
-        allowed: allowedEnums,
-      });
-    } else if (actualEnums > 0) {
-      debt.push({
-        file: relativePath,
-        rule: 'no-enum',
-        actual: actualEnums,
-        allowed: allowedEnums,
-      });
-      if (actualEnums < allowedEnums) {
-        improvements.push(`${relativePath}: no-enum improved ${allowedEnums} -> ${actualEnums}`);
-      }
-    }
+    recordCountRule({
+      relativePath,
+      rule: 'no-enum',
+      actual: counts.enum,
+      allowed: baseline.enumDeclarations?.[relativePath] ?? 0,
+      cleanLimit: 0,
+      regressions,
+      debt,
+      improvements,
+    });
+    recordCountRule({
+      relativePath,
+      rule: 'no-throw-new-error',
+      actual: counts.throwNewError,
+      allowed: baseline.rawErrorThrows?.[relativePath] ?? 0,
+      cleanLimit: 0,
+      regressions,
+      debt,
+      improvements,
+    });
+    recordCountRule({
+      relativePath,
+      rule: 'no-type-assertion',
+      actual: counts.typeAssertion,
+      allowed: baseline.typeAssertions?.[relativePath] ?? 0,
+      cleanLimit: 0,
+      regressions,
+      debt,
+      improvements,
+    });
+    recordCountRule({
+      relativePath,
+      rule: 'max-parameters-5',
+      actual: counts.maxParameterCount,
+      allowed: baseline.maxParameters?.[relativePath] ?? MAX_PARAMETERS_PER_FUNCTION,
+      cleanLimit: MAX_PARAMETERS_PER_FUNCTION,
+      regressions,
+      debt,
+      improvements,
+    });
   }
 
   const result = {
     ok: regressions.length === 0,
-    enforcedRules: ['no-any', 'no-unknown', 'no-enum', 'max-lines-500'],
+    enforcedRules: [
+      'no-any',
+      'no-unknown',
+      'no-enum',
+      'no-throw-new-error',
+      'no-type-assertion',
+      'max-parameters-5',
+      'max-lines-500',
+    ],
     fileCount: files.length,
     regressions,
     debt,
@@ -105,12 +124,41 @@ function main() {
   process.exitCode = result.ok ? 0 : 1;
 }
 
+function recordCountRule(options) {
+  if (options.actual > options.allowed) {
+    options.regressions.push({
+      file: options.relativePath,
+      rule: options.rule,
+      actual: options.actual,
+      allowed: options.allowed,
+    });
+    return;
+  }
+
+  if (options.actual <= options.cleanLimit) {
+    return;
+  }
+
+  options.debt.push({
+    file: options.relativePath,
+    rule: options.rule,
+    actual: options.actual,
+    allowed: options.allowed,
+  });
+  if (options.actual < options.allowed) {
+    options.improvements.push(`${options.relativePath}: ${options.rule} improved ${options.allowed} -> ${options.actual}`);
+  }
+}
+
 function loadBaseline() {
   if (!fs.existsSync(BASELINE_PATH)) {
     return {
       maxLines: {},
       forbiddenTypeKeywords: {},
       enumDeclarations: {},
+      rawErrorThrows: {},
+      typeAssertions: {},
+      maxParameters: {},
     };
   }
 
@@ -142,6 +190,9 @@ function countForbiddenSyntax(relativePath, sourceText) {
     any: 0,
     unknown: 0,
     enum: 0,
+    throwNewError: 0,
+    typeAssertion: 0,
+    maxParameterCount: 0,
   };
 
   visit(sourceFile);
@@ -157,8 +208,43 @@ function countForbiddenSyntax(relativePath, sourceText) {
     if (node.kind === ts.SyntaxKind.EnumDeclaration) {
       counts.enum += 1;
     }
+    if (isThrowNewError(node)) {
+      counts.throwNewError += 1;
+    }
+    if (isForbiddenTypeAssertion(node, sourceFile)) {
+      counts.typeAssertion += 1;
+    }
+    if (isRuntimeFunctionLike(node)) {
+      counts.maxParameterCount = Math.max(counts.maxParameterCount, node.parameters.length);
+    }
     ts.forEachChild(node, visit);
   }
+}
+
+function isThrowNewError(node) {
+  if (!ts.isThrowStatement(node) || node.expression == null || !ts.isNewExpression(node.expression)) {
+    return false;
+  }
+
+  return ts.isIdentifier(node.expression.expression) && node.expression.expression.text === 'Error';
+}
+
+function isForbiddenTypeAssertion(node, sourceFile) {
+  if (ts.isTypeAssertionExpression(node)) {
+    return true;
+  }
+  if (!ts.isAsExpression(node)) {
+    return false;
+  }
+  return node.type.getText(sourceFile) !== 'const';
+}
+
+function isRuntimeFunctionLike(node) {
+  return ts.isFunctionDeclaration(node)
+    || ts.isFunctionExpression(node)
+    || ts.isArrowFunction(node)
+    || ts.isMethodDeclaration(node)
+    || ts.isConstructorDeclaration(node);
 }
 
 function toRepoPath(filePath) {

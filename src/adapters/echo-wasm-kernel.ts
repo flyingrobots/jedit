@@ -19,7 +19,7 @@ interface EchoWasmKernelModule {
 
 export interface CreateEchoWasmKernelTransportOptions {
   readonly moduleSpecifier?: string;
-  readonly moduleLoader?: (moduleSpecifier: string) => Promise<object>;
+  readonly moduleLoader?: (moduleSpecifier: string) => Promise<EchoWasmKernelModule>;
   readonly bootstrapModule?: boolean;
   readonly initializeKernel?: boolean;
 }
@@ -32,8 +32,7 @@ export async function createEchoWasmKernelTransport(
   const bootstrapModule = options.bootstrapModule ?? true;
   const initializeKernel = options.initializeKernel ?? true;
 
-  const rawModule = await moduleLoader(moduleSpecifier);
-  const kernelModule = toEchoWasmKernelModule(rawModule);
+  const kernelModule = await moduleLoader(moduleSpecifier);
 
   if (bootstrapModule) {
     await bootstrapEchoWasmModule(kernelModule);
@@ -61,12 +60,8 @@ export async function createEchoWasmKernelTransport(
   };
 }
 
-async function defaultModuleLoader(moduleSpecifier: string): Promise<object> {
-  return import(moduleSpecifier) as Promise<object>;
-}
-
-function toEchoWasmKernelModule(rawModule: object): EchoWasmKernelModule {
-  return rawModule as EchoWasmKernelModule;
+async function defaultModuleLoader(moduleSpecifier: string): Promise<EchoWasmKernelModule> {
+  return import(moduleSpecifier);
 }
 
 async function bootstrapEchoWasmModule(kernelModule: EchoWasmKernelModule): Promise<void> {

@@ -77,16 +77,15 @@ test('markdown preview paints headings and code blocks with distinct tokens', as
   });
 
   const surface = createSurface(24, 2, { char: ' ', empty: false });
-  preview.paintMarkdownPreview(
-    surface,
-    '# Title\n```ts\nconst answer = 42;\n```',
-    0,
-    0,
-    0,
-    24,
-    2,
+  preview.paintMarkdownPreview(surface, {
+    text: '# Title\n```ts\nconst answer = 42;\n```',
+    scrollRow: 0,
+    x: 0,
+    y: 0,
+    width: 24,
+    height: 2,
     theme,
-  );
+  });
 
   const headingCell = surface.get(0, 0);
   assert.equal(headingCell.fg, headingColor.hex);

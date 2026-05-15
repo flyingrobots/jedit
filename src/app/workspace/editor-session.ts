@@ -2,8 +2,7 @@ import { beginSourceHighlightRefresh } from '../source-highlight-session.js';
 import { editorViewport, type WorkspaceViewport } from './viewport.js';
 import type { Cmd } from '@flyingrobots/bijou-tui';
 import type { WorkspaceModel } from './model.js';
-import { WorkspaceMessageTypes } from './msg.js';
-import type { WorkspaceMsg } from './msg.js';
+import { WorkspaceMessageTypes, workspaceSourceHighlightMessage, type WorkspaceMsg } from './msg.js';
 import type { EditorState } from './editor/model.js';
 import type { EditorFilePort } from '../../ports/editor-file.js';
 import type { GraftSessionPort } from '../../ports/graft-session.js';
@@ -98,6 +97,7 @@ export function toggleMarkdownPreview(
       next.editor,
       editorViewport(next),
       sourceHighlighter,
+      workspaceSourceHighlightMessage,
     );
   }
 
@@ -115,6 +115,7 @@ export function beginEditorProjectionRefresh(
     withGraft.editor,
     editorViewport(withGraft),
     ports.sourceHighlighter,
+    workspaceSourceHighlightMessage,
   );
   return [withHighlight, [...graftCmds, ...highlightCmds]];
 }

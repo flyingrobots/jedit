@@ -70,6 +70,30 @@ export interface TitleScreenRenderOptions {
   readonly asciiPalette?: TitleAsciiPalette;
 }
 
+interface TitleSceneSampleOptions {
+  readonly u: number;
+  readonly v: number;
+  readonly cols: number;
+  readonly rows: number;
+  readonly time: number;
+  readonly camAngle: number;
+  readonly camRadius: number;
+  readonly objects: readonly TitleSceneObject[];
+  readonly colors: TitleSceneMaterialColors;
+  readonly environment: TitleSceneEnvironment | undefined;
+}
+
+interface ReflectedEnvironmentColorOptions {
+  readonly point: Vector3;
+  readonly ray: Vector3;
+  readonly colors: TitleSceneMaterialColors;
+  readonly objects: readonly TitleSceneObject[];
+  readonly time: number;
+  readonly ignoredObject: TitleSceneObject;
+  readonly environment: TitleSceneEnvironment | undefined;
+  readonly lightDirection: Vector3;
+}
+
 const DEFAULT_CAMERA_RADIUS = 8.5;
 const DEFAULT_TITLE_SCENE_SEED = 0.5;
 const CAMERA_DRIFT_RATE = 0.005;
@@ -133,7 +157,18 @@ export function renderTitleScreen(
   const scene = sceneOverride ?? generateTitleScene(sceneSeed, colors, mesh);
 
   const shader: BrailleShaderFn = ({ u, v, time: frameTime }) => {
-    return sceneSampleAt(u, v, cols, rows, frameTime, camAngle, camRadius, scene.objects, colors, scene.environment);
+    return sceneSampleAt({
+      u,
+      v,
+      cols,
+      rows,
+      time: frameTime,
+      camAngle,
+      camRadius,
+      objects: scene.objects,
+      colors,
+      environment: scene.environment,
+    });
   };
 
   const surface = renderMode === TITLE_RENDER_MODE.Ascii
@@ -165,18 +200,19 @@ function fixedTitleSceneBaseColors(_theme: JeditTheme): Omit<TitleSceneMaterialC
   };
 }
 
-function sceneSampleAt(
-  u: number,
-  v: number,
-  cols: number,
-  rows: number,
-  time: number,
-  camAngle: number,
-  camRadius: number,
-  objects: readonly TitleSceneObject[],
-  colors: TitleSceneMaterialColors,
-  environment: TitleSceneEnvironment | undefined,
-): BrailleShaderSample {
+function sceneSampleAt(options: TitleSceneSampleOptions): BrailleShaderSample {
+  const {
+    u,
+    v,
+    cols,
+    rows,
+    time,
+    camAngle,
+    camRadius,
+    objects,
+    colors,
+    environment,
+  } = options;
   const aspect = cols / Math.max(1, rows);
   const rx = (u * 2 - 1) * aspect;
   const ry = v * 2 - 1;
@@ -195,7 +231,16 @@ function sceneSampleAt(
     const point = add(origin, scale(ray, objectHit.distance));
     const normal = objectHit.normal;
     const reflectionRay = reflect(ray, normal);
-    const reflectionColor = reflectedEnvironmentColor(add(point, scale(normal, SHADOW_RAY_BIAS)), reflectionRay, colors, objects, time, objectHit.object, environment, lightDirection);
+    const reflectionColor = reflectedEnvironmentColor({
+      point: add(point, scale(normal, SHADOW_RAY_BIAS)),
+      ray: reflectionRay,
+      colors,
+      objects,
+      time,
+      ignoredObject: objectHit.object,
+      environment,
+      lightDirection,
+    });
     const fresnel = Math.pow(1 - Math.max(0, dot(scale(ray, -1), normal)), REFLECTION_FRESNEL_POWER);
     const reflectionAmount = titleObjectReflectionAmount(objectHit.object.reflectivity, fresnel);
     return {
@@ -243,16 +288,17 @@ function titleObjectReflectionAmount(reflectivity: number, fresnel: number): num
   return reflectivity * (REFLECTION_EDGE_BIAS + ((1 - REFLECTION_EDGE_BIAS) * fresnel));
 }
 
-function reflectedEnvironmentColor(
-  point: Vector3,
-  ray: Vector3,
-  colors: TitleSceneMaterialColors,
-  objects: readonly TitleSceneObject[],
-  time: number,
-  ignoredObject: TitleSceneObject,
-  environment: TitleSceneEnvironment | undefined,
-  lightDirection: Vector3,
-): Color3 {
+function reflectedEnvironmentColor(options: ReflectedEnvironmentColorOptions): Color3 {
+  const {
+    point,
+    ray,
+    colors,
+    objects,
+    time,
+    ignoredObject,
+    environment,
+    lightDirection,
+  } = options;
   const objectHit = nearestTitleSceneObjectHit(point, ray, objects, ignoredObject);
   if (objectHit != null) {
     return scaleColor(shadedObjectColor(objectHit, ray, colors, environment, lightDirection), REFLECTION_OBJECT_TINT);
