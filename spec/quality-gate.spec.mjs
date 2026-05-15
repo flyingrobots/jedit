@@ -374,6 +374,54 @@ test('quality gate rejects functions above the complexity limit', () => {
   }
 });
 
+test('quality gate rejects functions above the nesting depth limit', () => {
+  const fixtureRoot = mkdtempSync(path.join(tmpdir(), 'jedit-quality-gate-'));
+
+  try {
+    mkdirSync(path.join(fixtureRoot, 'src'));
+    writeFileSync(
+      path.join(fixtureRoot, 'src', 'bad-depth.ts'),
+      [
+        'export function tooDeep(value: number): number {',
+        '  if (value > 0) {',
+        '    if (value > 1) {',
+        '      if (value > 2) {',
+        '        if (value > 3) {',
+        '          if (value > 4) {',
+        '            return value;',
+        '          }',
+        '        }',
+        '      }',
+        '    }',
+        '  }',
+        '  return 0;',
+        '}',
+        '',
+      ].join('\n'),
+    );
+
+    const result = spawnSync(process.execPath, [QUALITY_GATE_SCRIPT, '--json'], {
+      cwd: fixtureRoot,
+      encoding: 'utf8',
+    });
+    assert.notEqual(result.status, 0);
+
+    const parsed = JSON.parse(result.stdout);
+    assert.equal(parsed.ok, false);
+    assert.ok(parsed.enforcedRules.includes('max-depth-4'));
+    assert.deepEqual(parsed.regressions, [
+      {
+        file: 'src/bad-depth.ts',
+        rule: 'max-depth-4',
+        actual: 5,
+        allowed: 4,
+      },
+    ]);
+  } finally {
+    rmSync(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
 test('quality gate rejects overlong source lines', () => {
   const fixtureRoot = mkdtempSync(path.join(tmpdir(), 'jedit-quality-gate-'));
   const overlongLine = `export const unreadable = '${'x'.repeat(150)}';`;

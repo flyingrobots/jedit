@@ -11,6 +11,7 @@ const MAX_PARAMETERS_PER_FUNCTION = 5;
 const MAX_RUNTIME_IMPORTS_PER_FILE = 12;
 const MAX_FUNCTION_LINES = 35;
 const MAX_CYCLOMATIC_COMPLEXITY = 8;
+const MAX_NESTING_DEPTH = 4;
 const MAX_SOURCE_LINE_LENGTH = 160;
 const JSON_FLAG = '--json';
 
@@ -152,6 +153,16 @@ function main() {
     });
     recordCountRule({
       relativePath,
+      rule: 'max-depth-4',
+      actual: counts.maxNestingDepth,
+      allowed: baseline.maxDepth?.[relativePath] ?? MAX_NESTING_DEPTH,
+      cleanLimit: MAX_NESTING_DEPTH,
+      regressions,
+      debt,
+      improvements,
+    });
+    recordCountRule({
+      relativePath,
       rule: 'max-line-length-160',
       actual: counts.maxSourceLineLength,
       allowed: baseline.maxLineLength?.[relativePath] ?? MAX_SOURCE_LINE_LENGTH,
@@ -176,6 +187,7 @@ function main() {
       'max-imports-12',
       'max-function-lines-35',
       'complexity-8',
+      'max-depth-4',
       'max-line-length-160',
       'max-lines-500',
     ],
@@ -234,6 +246,7 @@ function loadBaseline() {
       runtimeImports: {},
       maxFunctionLines: {},
       cyclomaticComplexity: {},
+      maxDepth: {},
       maxLineLength: {},
     };
   }
@@ -274,6 +287,7 @@ function countForbiddenSyntax(relativePath, sourceText) {
     runtimeImportCount: runtimeImportCount(sourceFile),
     maxFunctionLineCount: 0,
     maxCyclomaticComplexity: 0,
+    maxNestingDepth: 0,
     maxSourceLineLength: isGeneratedSource(relativePath) ? 0 : maxSourceLineLength(sourceText),
   };
 
@@ -306,6 +320,10 @@ function countForbiddenSyntax(relativePath, sourceText) {
       counts.maxCyclomaticComplexity = Math.max(
         counts.maxCyclomaticComplexity,
         cyclomaticComplexity(node),
+      );
+      counts.maxNestingDepth = Math.max(
+        counts.maxNestingDepth,
+        nestingDepth(node),
       );
       if (isPublicFunctionLike(node)) {
         counts.anonymousPublicOptionBag += anonymousPublicOptionBagCount(node);
@@ -420,6 +438,38 @@ function isShortCircuitBranch(node) {
   return node.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken
     || node.operatorToken.kind === ts.SyntaxKind.BarBarToken
     || node.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken;
+}
+
+function nestingDepth(node) {
+  if (node.body == null) {
+    return 0;
+  }
+
+  let maxDepth = 0;
+  visitDepthNode(node.body, 0);
+  return maxDepth;
+
+  function visitDepthNode(child, currentDepth) {
+    if (child !== node.body && isRuntimeFunctionLike(child)) {
+      return;
+    }
+
+    const childDepth = isNestingNode(child) ? currentDepth + 1 : currentDepth;
+    maxDepth = Math.max(maxDepth, childDepth);
+    ts.forEachChild(child, (grandchild) => visitDepthNode(grandchild, childDepth));
+  }
+}
+
+function isNestingNode(node) {
+  return ts.isIfStatement(node)
+    || ts.isForStatement(node)
+    || ts.isForInStatement(node)
+    || ts.isForOfStatement(node)
+    || ts.isWhileStatement(node)
+    || ts.isDoStatement(node)
+    || ts.isSwitchStatement(node)
+    || ts.isTryStatement(node)
+    || ts.isCatchClause(node);
 }
 
 function booleanParameterCount(node) {

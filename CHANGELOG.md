@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Ratcheted the quality gate to reject runtime function nesting deeper than
+  four levels, with deterministic regression coverage for over-nested control
+  flow.
 - Ratcheted the quality gate to reject hand-authored source lines above 160
   characters, with generated source exempted and current overlong readability
   debt split into human-scale declarations and helpers.
