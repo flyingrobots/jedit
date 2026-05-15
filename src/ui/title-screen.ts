@@ -23,6 +23,7 @@ import {
 } from './title-scene-environment.js';
 import { paintTitleLogo, titleLogoCellBounds } from './title-logo.js';
 import type { TitleMesh } from './title-mesh.js';
+import type { ReflectedEnvironmentColorOptions, TitleSceneRayContext, TitleSceneSampleOptions } from './title-screen-sample.js';
 
 type Vector3 = TitleSceneVector3;
 type Color3 = RGB;
@@ -68,10 +69,6 @@ export interface TitleScreenRenderOptions {
   readonly renderMode?: TitleRenderMode;
   readonly asciiPalette?: TitleAsciiPalette;
 }
-
-interface TitleSceneSampleOptions { readonly u: number; readonly v: number; readonly cols: number; readonly rows: number; readonly time: number; readonly camAngle: number; readonly camRadius: number; readonly objects: readonly TitleSceneObject[]; readonly colors: TitleSceneMaterialColors; readonly environment: TitleSceneEnvironment | undefined; }
-interface TitleSceneRayContext { readonly origin: Vector3; readonly ray: Vector3; readonly lightDirection: Vector3; }
-interface ReflectedEnvironmentColorOptions { readonly point: Vector3; readonly ray: Vector3; readonly colors: TitleSceneMaterialColors; readonly objects: readonly TitleSceneObject[]; readonly time: number; readonly ignoredObject: TitleSceneObject; readonly environment: TitleSceneEnvironment | undefined; readonly lightDirection: Vector3; }
 
 const DEFAULT_CAMERA_RADIUS = 8.5;
 const DEFAULT_TITLE_SCENE_SEED = 0.5;

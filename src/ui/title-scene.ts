@@ -347,10 +347,19 @@ function columnSideHitCandidate(origin: TitleSceneVector3, ray: TitleSceneVector
     return undefined;
   }
   const point = add(origin, scale(ray, distance));
-  return { distance, normal: normalize([point[0] - object.position[0], 0, point[2] - object.position[2]]) };
+  return {
+    distance,
+    normal: normalize([point[0] - object.position[0], 0, point[2] - object.position[2]]),
+  };
 }
 
-function columnCapHitCandidate(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleScenePrimitiveObject, capY: number, normal: TitleSceneVector3): ColumnHitCandidate | undefined {
+function columnCapHitCandidate(
+  origin: TitleSceneVector3,
+  ray: TitleSceneVector3,
+  object: TitleScenePrimitiveObject,
+  capY: number,
+  normal: TitleSceneVector3,
+): ColumnHitCandidate | undefined {
   const distance = intersectColumnCap(origin, ray, object, capY);
   return distance > 0 ? { distance, normal } : undefined;
 }

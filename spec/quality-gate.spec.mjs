@@ -373,3 +373,39 @@ test('quality gate rejects functions above the complexity limit', () => {
     rmSync(fixtureRoot, { recursive: true, force: true });
   }
 });
+
+test('quality gate rejects overlong source lines', () => {
+  const fixtureRoot = mkdtempSync(path.join(tmpdir(), 'jedit-quality-gate-'));
+  const overlongLine = `export const unreadable = '${'x'.repeat(150)}';`;
+
+  try {
+    mkdirSync(path.join(fixtureRoot, 'src'));
+    writeFileSync(
+      path.join(fixtureRoot, 'src', 'bad-line-length.ts'),
+      [
+        overlongLine,
+        '',
+      ].join('\n'),
+    );
+
+    const result = spawnSync(process.execPath, [QUALITY_GATE_SCRIPT, '--json'], {
+      cwd: fixtureRoot,
+      encoding: 'utf8',
+    });
+    assert.notEqual(result.status, 0);
+
+    const parsed = JSON.parse(result.stdout);
+    assert.equal(parsed.ok, false);
+    assert.ok(parsed.enforcedRules.includes('max-line-length-160'));
+    assert.deepEqual(parsed.regressions, [
+      {
+        file: 'src/bad-line-length.ts',
+        rule: 'max-line-length-160',
+        actual: overlongLine.length,
+        allowed: 160,
+      },
+    ]);
+  } finally {
+    rmSync(fixtureRoot, { recursive: true, force: true });
+  }
+});

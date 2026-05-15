@@ -82,6 +82,7 @@ For cross-realm values, normalize through adapters/boundaries and construct vali
 ## Strict Code Limits (Enforced)
 
 - **File size**: ≤ **500 lines**
+- **Source line length**: ≤ **160 characters**
 - **Function / Method**: ≤ **35 lines** (excluding whitespace & trivial returns)
 - **Nesting depth**: ≤ **4**
 - **Cyclomatic complexity**: ≤ **8**
@@ -132,6 +133,7 @@ For cross-realm values, normalize through adapters/boundaries and construct vali
 {
   "rules": {
     "max-lines": ["error", 500],
+    "max-len": ["error", { "code": 160 }],
     "max-lines-per-function": ["error", { "max": 35, "skipBlankLines": true, "skipComments": true }],
     "max-depth": ["error", 4],
     "max-params": ["error", 5],
@@ -165,7 +167,7 @@ For cross-realm values, normalize through adapters/boundaries and construct vali
 - Follows hexagonal architecture?
 - Dependencies properly injected?
 - Encoding/decoding only at boundaries?
-- File ≤ 500 lines? Functions ≤ 35 lines & depth ≤ 4?
+- File ≤ 500 lines? Source lines ≤ 160 chars? Functions ≤ 35 lines & depth ≤ 4?
 - Important domain concepts modeled as classes with constructor validation?
 - Invariants protected? Free of `any`, `unknown`, and unsafe `as` assertions?
 - Could the core run in a browser?

@@ -218,7 +218,7 @@ function activeFooterDetail(state: WorkspaceFooterState, t: FooterHintTranslator
     return drawerDetail;
   }
   if (previewModeActive(state)) {
-    return footerHints([t(FooterHintKeys.JkScroll), t(FooterHintKeys.F3Source), themeHint(t), focusHint(state, t), t(FooterHintKeys.CtrlBFiles), t(FooterHintKeys.CtrlGGraft)]);
+    return footerHints(previewFooterHints(state, t));
   }
   return editorFooterDetail(state, t);
 }
@@ -235,7 +235,7 @@ function activeDrawerFooterDetail(state: WorkspaceFooterState, t: FooterHintTran
 
 function editorFooterDetail(state: WorkspaceFooterState, t: FooterHintTranslator): string | undefined {
   if (state.editorMode === EditorModes.Insert) {
-    return footerHints([t(FooterHintKeys.TextInput), t(FooterHintKeys.EscNormal), t(FooterHintKeys.CtrlSSave), themeHint(t), insertTabHint(state, t)]);
+    return footerHints(insertModeFooterHints(state, t));
   }
   return state.editorMode === EditorModes.Normal ? normalFooterDetail(state, t) : undefined;
 }
@@ -254,10 +254,10 @@ function themeHint(t: FooterHintTranslator): string {
 
 function drawerFooterDetail(state: WorkspaceFooterState, kind: DrawerKind, t: FooterHintTranslator): string {
   if (kind === DrawerKinds.Files) {
-    return footerHints([t(FooterHintKeys.JkMove), t(FooterHintKeys.EnterOpen), t(FooterHintKeys.BackspaceUp), t(FooterHintKeys.CtrlBClose), themeHint(t), focusHint(state, t)]);
+    return footerHints(fileDrawerFooterHints(state, t));
   }
 
-  return footerHints([t(FooterHintKeys.JkMove), t(FooterHintKeys.EnterJump), t(FooterHintKeys.RRefresh), t(FooterHintKeys.CtrlGClose), themeHint(t), focusHint(state, t)]);
+  return footerHints(graftDrawerFooterHints(state, t));
 }
 
 function normalFooterDetail(state: WorkspaceFooterState, t: FooterHintTranslator): string {
@@ -272,18 +272,67 @@ function normalFooterDetail(state: WorkspaceFooterState, t: FooterHintTranslator
 
 function pendingNormalFooterDetail(pending: PendingNormal, t: FooterHintTranslator): string {
   if (pending === PendingNormals.Change) {
-    return chordFooterHints('c', [t(FooterHintKeys.CcLine), t(FooterHintKeys.CwWord), t(FooterHintKeys.CeWordEnd), t(FooterHintKeys.C0Start), t(FooterHintKeys.CEnd)]);
+    return chordFooterHints('c', changeFooterHints(t));
   }
 
   if (pending === PendingNormals.Delete) {
-    return chordFooterHints('d', [t(FooterHintKeys.DdLine), t(FooterHintKeys.DwWord), t(FooterHintKeys.DeWordEnd), t(FooterHintKeys.D0Start), t(FooterHintKeys.DEnd)]);
+    return chordFooterHints('d', deleteFooterHints(t));
   }
 
   if (pending === PendingNormals.Yank) {
-    return chordFooterHints('y', [t(FooterHintKeys.YyLine), t(FooterHintKeys.YwWord), t(FooterHintKeys.YeWordEnd), t(FooterHintKeys.Y0Start), t(FooterHintKeys.YEnd)]);
+    return chordFooterHints('y', yankFooterHints(t));
   }
 
   return chordFooterHints('g', [t(FooterHintKeys.GgTop), t(FooterHintKeys.EscCancel)]);
+}
+
+function previewFooterHints(state: WorkspaceFooterState, t: FooterHintTranslator): ReadonlyArray<string | undefined> {
+  return [
+    t(FooterHintKeys.JkScroll),
+    t(FooterHintKeys.F3Source),
+    themeHint(t),
+    focusHint(state, t),
+    t(FooterHintKeys.CtrlBFiles),
+    t(FooterHintKeys.CtrlGGraft),
+  ];
+}
+
+function fileDrawerFooterHints(state: WorkspaceFooterState, t: FooterHintTranslator): ReadonlyArray<string | undefined> {
+  return [
+    t(FooterHintKeys.JkMove),
+    t(FooterHintKeys.EnterOpen),
+    t(FooterHintKeys.BackspaceUp),
+    t(FooterHintKeys.CtrlBClose),
+    themeHint(t),
+    focusHint(state, t),
+  ];
+}
+
+function graftDrawerFooterHints(state: WorkspaceFooterState, t: FooterHintTranslator): ReadonlyArray<string | undefined> {
+  return [
+    t(FooterHintKeys.JkMove),
+    t(FooterHintKeys.EnterJump),
+    t(FooterHintKeys.RRefresh),
+    t(FooterHintKeys.CtrlGClose),
+    themeHint(t),
+    focusHint(state, t),
+  ];
+}
+
+function insertModeFooterHints(state: WorkspaceFooterState, t: FooterHintTranslator): ReadonlyArray<string | undefined> {
+  return [t(FooterHintKeys.TextInput), t(FooterHintKeys.EscNormal), t(FooterHintKeys.CtrlSSave), themeHint(t), insertTabHint(state, t)];
+}
+
+function changeFooterHints(t: FooterHintTranslator): readonly string[] {
+  return [t(FooterHintKeys.CcLine), t(FooterHintKeys.CwWord), t(FooterHintKeys.CeWordEnd), t(FooterHintKeys.C0Start), t(FooterHintKeys.CEnd)];
+}
+
+function deleteFooterHints(t: FooterHintTranslator): readonly string[] {
+  return [t(FooterHintKeys.DdLine), t(FooterHintKeys.DwWord), t(FooterHintKeys.DeWordEnd), t(FooterHintKeys.D0Start), t(FooterHintKeys.DEnd)];
+}
+
+function yankFooterHints(t: FooterHintTranslator): readonly string[] {
+  return [t(FooterHintKeys.YyLine), t(FooterHintKeys.YwWord), t(FooterHintKeys.YeWordEnd), t(FooterHintKeys.Y0Start), t(FooterHintKeys.YEnd)];
 }
 
 function footerContextLine(state: WorkspaceFooterState): string {

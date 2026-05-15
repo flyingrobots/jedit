@@ -50,8 +50,8 @@ export function resolveSettingsDrawerWidth(columns: number): number {
 export function renderSettingsDrawer(options: RenderSettingsDrawerOptions): Surface {
   const surface = createSurface(options.width, options.height);
   fillSurface(surface, options.theme.surface.drawer);
-  paintText(surface, SETTINGS_TITLE, SETTINGS_LEFT_PAD, SETTINGS_HEADER_ROW, options.theme.markdown.get(JEDIT_MARKDOWN_TOKEN.Heading) ?? options.theme.surface.drawer);
-  paintText(surface, SETTINGS_CLOSE_HINT, SETTINGS_LEFT_PAD, SETTINGS_HINT_ROW, options.theme.source.get(JEDIT_SOURCE_TOKEN.Comment) ?? options.theme.surface.drawer);
+  paintText(surface, SETTINGS_TITLE, SETTINGS_LEFT_PAD, SETTINGS_HEADER_ROW, settingsTitleToken(options));
+  paintText(surface, SETTINGS_CLOSE_HINT, SETTINGS_LEFT_PAD, SETTINGS_HINT_ROW, settingsHintToken(options));
 
   let y = SETTINGS_FIRST_ROW;
   let section = '';
@@ -81,7 +81,7 @@ function paintSettingsRow(surface: Surface, options: PaintSettingsRowOptions): v
   if (options.y >= surface.height) {
     return;
   }
-  const label = fitLine(`${options.selected ? SETTINGS_SELECTED_MARK : SETTINGS_UNSELECTED_MARK} ${rowMark(options.row)} ${options.row.label} ${options.row.valueLabel}`, Math.max(1, surface.width - options.x));
+  const label = fitLine(settingsRowLabel(options), Math.max(1, surface.width - options.x));
   const labelToken = options.selected ? options.theme.cursor.normal : options.theme.surface.drawer;
   paintText(surface, label, options.x, options.y, labelToken);
 
@@ -89,6 +89,19 @@ function paintSettingsRow(surface: Surface, options: PaintSettingsRowOptions): v
     const descriptionToken = options.theme.source.get(JEDIT_SOURCE_TOKEN.Comment) ?? options.theme.surface.drawer;
     paintText(surface, `  ${options.row.description}`, options.x, options.y + 1, descriptionToken);
   }
+}
+
+function settingsTitleToken(options: RenderSettingsDrawerOptions): JeditStyleToken {
+  return options.theme.markdown.get(JEDIT_MARKDOWN_TOKEN.Heading) ?? options.theme.surface.drawer;
+}
+
+function settingsHintToken(options: RenderSettingsDrawerOptions): JeditStyleToken {
+  return options.theme.source.get(JEDIT_SOURCE_TOKEN.Comment) ?? options.theme.surface.drawer;
+}
+
+function settingsRowLabel(options: PaintSettingsRowOptions): string {
+  const mark = options.selected ? SETTINGS_SELECTED_MARK : SETTINGS_UNSELECTED_MARK;
+  return `${mark} ${rowMark(options.row)} ${options.row.label} ${options.row.valueLabel}`;
 }
 
 function rowMark(row: JeditSettingsRow): string {

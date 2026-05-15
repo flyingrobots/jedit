@@ -13,10 +13,7 @@ import type {
   TickReceiptRewriteKind,
   TickReceipt,
 } from '../generated/jedit/hot-text-runtime.types.generated.js';
-import {
-  MutationOperationSchemas,
-  QueryOperationSchemas,
-} from '../generated/jedit/hot-text-runtime.zod.generated.js';
+import { MutationOperationSchemas, QueryOperationSchemas } from '../generated/jedit/hot-text-runtime.zod.generated.js';
 import type { HotTextBufferState, HotTextRuntimePort } from '../ports/hot-text-runtime.js';
 import type { HashPort } from '../ports/hash.js';
 import {
@@ -304,7 +301,11 @@ function noCheckpointExecution(
   };
 }
 
-function replaceRangeAsTickResult(input: { readonly nextSession: JeditWorldlineSession; readonly tickMetadata: TickMetadata; readonly receipt: TickAdmissionReceipt; readonly baseHeadId: string; readonly insertText: string; readonly hash: HashPort }): ReplaceRangeAsTickResult {
+type ReplaceRangeAsTickResultInput = {
+  readonly nextSession: JeditWorldlineSession; readonly tickMetadata: TickMetadata; readonly receipt: TickAdmissionReceipt;
+  readonly baseHeadId: string; readonly insertText: string; readonly hash: HashPort;
+};
+function replaceRangeAsTickResult(input: ReplaceRangeAsTickResultInput): ReplaceRangeAsTickResult {
   return MutationOperationSchemas.replaceRangeAsTick.result.parse({
     worldline: input.nextSession.worldline,
     nextHead: toHeadRecord(input.nextSession, input.hash),

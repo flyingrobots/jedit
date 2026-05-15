@@ -45,7 +45,9 @@ export function viewerViewport(width: number, height: number): WorkspaceViewport
   };
 }
 
-export function editorViewport(model: Pick<WorkspaceModel, 'columns' | 'rows' | 'fileDrawerProgress' | 'graftDrawerProgress' | 'footerVisible'>): WorkspaceViewport {
+type WorkspaceViewportModel = Pick<WorkspaceModel, 'columns' | 'rows' | 'fileDrawerProgress' | 'graftDrawerProgress' | 'footerVisible'>;
+
+export function editorViewport(model: WorkspaceViewportModel): WorkspaceViewport {
   const bodyHeight = workspaceBodyHeight({
     rows: model.rows,
     footerVisible: model.footerVisible,

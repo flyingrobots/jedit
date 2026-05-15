@@ -13,7 +13,17 @@ const QUOTE_BULLET = '│ ';
 const RULE_TEXT = '────────────────────────────────────────────────────────────────';
 
 type PreviewLineKind = 'blank' | 'body' | 'heading-strong' | 'heading' | 'heading-soft' | 'list' | 'quote' | 'code' | 'rule';
-type PreviewSegmentTone = 'body' | 'heading-strong' | 'heading' | 'heading-soft' | 'list-marker' | 'quote-marker' | 'quote-text' | 'code' | 'inline-code' | 'rule';
+type PreviewSegmentTone =
+  | 'body'
+  | 'heading-strong'
+  | 'heading'
+  | 'heading-soft'
+  | 'list-marker'
+  | 'quote-marker'
+  | 'quote-text'
+  | 'code'
+  | 'inline-code'
+  | 'rule';
 
 const MARKDOWN_TOKEN_BY_TONE = new Map<PreviewSegmentTone, JeditMarkdownToken>([
   ['heading-strong', JEDIT_MARKDOWN_TOKEN.HeadingStrong],

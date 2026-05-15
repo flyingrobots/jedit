@@ -11,6 +11,7 @@ const MAX_PARAMETERS_PER_FUNCTION = 5;
 const MAX_RUNTIME_IMPORTS_PER_FILE = 12;
 const MAX_FUNCTION_LINES = 35;
 const MAX_CYCLOMATIC_COMPLEXITY = 8;
+const MAX_SOURCE_LINE_LENGTH = 160;
 const JSON_FLAG = '--json';
 
 function main() {
@@ -149,6 +150,16 @@ function main() {
       debt,
       improvements,
     });
+    recordCountRule({
+      relativePath,
+      rule: 'max-line-length-160',
+      actual: counts.maxSourceLineLength,
+      allowed: baseline.maxLineLength?.[relativePath] ?? MAX_SOURCE_LINE_LENGTH,
+      cleanLimit: MAX_SOURCE_LINE_LENGTH,
+      regressions,
+      debt,
+      improvements,
+    });
   }
 
   const result = {
@@ -165,6 +176,7 @@ function main() {
       'max-imports-12',
       'max-function-lines-35',
       'complexity-8',
+      'max-line-length-160',
       'max-lines-500',
     ],
     fileCount: files.length,
@@ -222,6 +234,7 @@ function loadBaseline() {
       runtimeImports: {},
       maxFunctionLines: {},
       cyclomaticComplexity: {},
+      maxLineLength: {},
     };
   }
 
@@ -261,6 +274,7 @@ function countForbiddenSyntax(relativePath, sourceText) {
     runtimeImportCount: runtimeImportCount(sourceFile),
     maxFunctionLineCount: 0,
     maxCyclomaticComplexity: 0,
+    maxSourceLineLength: isGeneratedSource(relativePath) ? 0 : maxSourceLineLength(sourceText),
   };
 
   visit(sourceFile);
@@ -451,6 +465,14 @@ function runtimeImportCount(sourceFile) {
     .filter(ts.isImportDeclaration)
     .filter((statement) => statement.importClause == null || !statement.importClause.isTypeOnly)
     .length;
+}
+
+function isGeneratedSource(relativePath) {
+  return relativePath.startsWith('src/generated/');
+}
+
+function maxSourceLineLength(sourceText) {
+  return Math.max(0, ...sourceText.split(/\r?\n/).map((line) => line.length));
 }
 
 function toRepoPath(filePath) {

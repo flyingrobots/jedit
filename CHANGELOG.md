@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Ratcheted the quality gate to reject hand-authored source lines above 160
+  characters, with generated source exempted and current overlong readability
+  debt split into human-scale declarations and helpers.
 - Ratcheted the quality gate to reject runtime functions above 35 body lines
   and cyclomatic complexity above 8, with deterministic regression fixtures and
   targeted source splits to keep the current tree clean.

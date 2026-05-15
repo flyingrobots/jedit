@@ -4,7 +4,11 @@ import { EditorModes, PendingOperators, type PendingOperator } from './editor/mo
 import { EditorKeys, LineBoundaries, WordMotions, type LineBoundary, type WordMotion } from './editor/key.js';
 import type { EditorState } from './editor/model.js';
 import { RegisterKinds } from './editor/model.js';
-import { clampNormalCol, currentLine, editorText, yankTextRange, deleteTextRange, commitMutation, snapshotEditor, deleteForward, leadingWhitespace, lineStartTextIndex, nextWordStartIndex, normalPositionAtOrBeforeIndex, normalTextIndex, previousWordStartIndex, wordEndIndex } from './editor-editing-core.js';
+import {
+  clampNormalCol, currentLine, editorText, yankTextRange, deleteTextRange,
+  commitMutation, snapshotEditor, deleteForward, leadingWhitespace, lineStartTextIndex,
+  nextWordStartIndex, normalPositionAtOrBeforeIndex, normalTextIndex, previousWordStartIndex, wordEndIndex,
+} from './editor-editing-core.js';
 
 const NORMAL_MODE = EditorModes.Normal;
 const INSERT_MODE = EditorModes.Insert;
