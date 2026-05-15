@@ -14,6 +14,11 @@ export interface WorkspaceViewport {
   readonly height: number;
 }
 
+export interface WorkspaceBodyHeightOptions {
+  readonly rows: number;
+  readonly footerVisible: boolean;
+}
+
 export function clamp01(value: number): number {
   if (!Number.isFinite(value)) {
     return 0;
@@ -28,9 +33,9 @@ export function clampIndex(index: number, size: number): number {
   return Math.max(0, Math.min(size - 1, index));
 }
 
-export function workspaceBodyHeight(rows: number, footerVisible: boolean): number {
-  const footerRows = footerVisible ? FOOTER_ROWS : 0;
-  return Math.max(1, rows - HEADER_ROWS - footerRows);
+export function workspaceBodyHeight(options: WorkspaceBodyHeightOptions): number {
+  const footerRows = options.footerVisible ? FOOTER_ROWS : 0;
+  return Math.max(1, options.rows - HEADER_ROWS - footerRows);
 }
 
 export function viewerViewport(width: number, height: number): WorkspaceViewport {
@@ -41,7 +46,10 @@ export function viewerViewport(width: number, height: number): WorkspaceViewport
 }
 
 export function editorViewport(model: Pick<WorkspaceModel, 'columns' | 'rows' | 'fileDrawerProgress' | 'graftDrawerProgress' | 'footerVisible'>): WorkspaceViewport {
-  const bodyHeight = workspaceBodyHeight(model.rows, model.footerVisible);
+  const bodyHeight = workspaceBodyHeight({
+    rows: model.rows,
+    footerVisible: model.footerVisible,
+  });
   const layout = resolveWorkspaceLayout(model.columns, model.fileDrawerProgress, model.graftDrawerProgress);
   return viewerViewport(layout.viewer.width, bodyHeight);
 }

@@ -1,108 +1,46 @@
 import { createSurface, stringToSurface, type Surface } from '@flyingrobots/bijou';
-import type { Cmd, KeyMsg, NotificationState } from '@flyingrobots/bijou-tui';
+import type { NotificationState } from '@flyingrobots/bijou-tui';
 import { compositeFeedback } from '../../ui/feedback.js';
 import {
   activeWorkspaceTitle,
   centerLine,
   renderWorkspaceFooter,
 } from '../../ui/workspace-chrome.js';
-import {
-  fitBlock,
-  formatTreeLine,
-} from '../../ui/workspace-render.js';
-import { renderGraftDrawerLines } from '../../ui/graft-drawer.js';
-import { renderSourceViewer } from '../../ui/source-viewer.js';
 import { paintActivePaneEdge } from '../../ui/workspace-focus-edge.js';
-import { paintMarkdownPreview } from '../../ui/markdown-preview.js';
-import { resolveScenePickerDrawerWidth, renderScenePickerDrawer } from '../../ui/scene-picker-drawer.js';
-import { resolveSettingsDrawerWidth, renderSettingsDrawer } from '../../ui/settings-drawer.js';
-import { renderTitleScreen } from '../../ui/title-screen.js';
-import { DrawerKinds, resolveWorkspaceLayout, type DrawerKind } from '../../ui/drawer-layout.js';
-import { hasFocusablePeers } from '../../ui/panel-focus.js';
+import { DrawerKinds, resolveWorkspaceLayout } from '../../ui/drawer-layout.js';
 import {
-  editorViewport,
   MIN_COLUMNS,
   MIN_ROWS,
   workspaceBodyHeight,
-  DRAWER_INNER_PAD,
-  VIEWER_LEFT_PAD,
-  VIEWER_TOP_PAD,
   FOOTER_ROWS,
 } from './viewport.js';
-import {
-  isWorkspaceMarkdownFile,
-  scrollPreview,
-  updateInsertMode,
-  updateNormalMode,
-} from './editor-session.js';
-import type { SourceHighlighter } from '../../ports/source-highlighter.js';
-import {
-  beginSourceHighlightRefresh,
-  shouldRefreshSourceHighlight,
-} from '../source-highlight-session.js';
+import { isWorkspaceMarkdownFile } from './editor-session.js';
 import type { WorkspaceModel } from './model.js';
-import { workspaceSourceHighlightMessage, type WorkspaceMsg } from './msg.js';
-import { settingsRows } from './settings.js';
-import { focusCycleState } from './focus.js';
-import type { JeditStyleToken, JeditTheme } from '../../ui/jedit-theme.js';
-import { ViewModes } from './view-mode.js';
-import { EditorModes } from './editor/mode.js';
+import type { WorkspaceMsg } from './msg.js';
+import { renderViewer } from './viewer-content.js';
+import { renderDrawer } from './viewer-drawers.js';
+import { fillSurface } from './surface-fill.js';
+import { renderSmallTerminalNotice } from './small-terminal-view.js';
+import { paintWorkspaceOverlays } from './viewer-overlays.js';
 
-const MIN_VIEWPORT_DIMENSION = 1;
-const VIEWER_PAD_MULTIPLIER = 2;
 const WORKSPACE_BODY_TOP_OFFSET = 2;
-const DRAWER_PAD_MULTIPLIER = VIEWER_PAD_MULTIPLIER;
 
-export function updateViewerFromKey(
-  msg: KeyMsg,
-  model: WorkspaceModel,
-  sourceHighlighter: SourceHighlighter,
-): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
-  if (model.editor == null) {
-    return [model, []];
-  }
-
-  const viewport = editorViewport(model);
-  if (model.viewMode === ViewModes.Preview) {
-    return [{
-      ...model,
-      editor: scrollPreview(model.editor, msg, viewport.height),
-    }, []];
-  }
-
-  const canTabIndent = !hasFocusablePeers(focusCycleState(model));
-  const editor = model.editor.mode === EditorModes.Insert
-    ? updateInsertMode(model.editor, msg, viewport.width, viewport.height, canTabIndent)
-    : updateNormalMode(model.editor, msg, viewport.width, viewport.height);
-
-  const next: WorkspaceModel = {
-    ...model,
-    editor,
-  };
-
-  return shouldRefreshSourceHighlight(model.editor, editor)
-    ? beginSourceHighlightRefresh(next, editor, viewport, sourceHighlighter, workspaceSourceHighlightMessage)
-    : [next, []];
-}
+export { updateViewerFromKey } from './viewer-key.js';
 
 export function renderWorkspace(model: WorkspaceModel): Surface {
   const screen = createSurface(model.columns, model.rows);
   fillSurface(screen, model.jeditTheme.surface.workspace);
 
   if (model.columns < MIN_COLUMNS || model.rows < MIN_ROWS) {
-    const message = [
-      '',
-      'jedit',
-      '',
-      `need at least ${MIN_COLUMNS} columns x ${MIN_ROWS} rows`,
-      `current terminal: ${model.columns} x ${model.rows}`,
-    ].join('\n');
-    screen.blit(stringToSurface(fitBlock(message, model.columns, model.rows), model.columns, model.rows), 0, 0);
+    screen.blit(renderSmallTerminalNotice(model.columns, model.rows), 0, 0);
     return renderFeedback(screen, model.notifications, model.columns, model.rows);
   }
 
   const bodyTop = WORKSPACE_BODY_TOP_OFFSET;
-  const bodyHeight = workspaceBodyHeight(model.rows, model.footerVisible);
+  const bodyHeight = workspaceBodyHeight({
+    rows: model.rows,
+    footerVisible: model.footerVisible,
+  });
   const layout = resolveWorkspaceLayout(model.columns, model.fileDrawerProgress, model.graftDrawerProgress);
 
   screen.blit(
@@ -161,117 +99,9 @@ export function renderWorkspace(model: WorkspaceModel): Surface {
     );
   }
 
-  if (model.settingsOpen) {
-    screen.blit(
-      renderSettingsDrawer({
-        rows: settingsRows(model),
-        selectedIndex: model.settingsFocusIndex,
-        theme: model.jeditTheme,
-        width: resolveSettingsDrawerWidth(model.columns),
-        height: bodyHeight,
-      }),
-      0,
-      bodyTop,
-    );
-  }
-
-  if (model.scenePickerOpen && model.editor == null) {
-    screen.blit(
-      renderScenePickerDrawer({
-        scenes: model.availableScenes,
-        selectedIndex: model.scenePickerFocusIndex,
-        theme: model.jeditTheme,
-        width: resolveScenePickerDrawerWidth(model.columns),
-        height: bodyHeight,
-      }),
-      0,
-      bodyTop,
-    );
-  }
+  paintWorkspaceOverlays(screen, model, bodyTop, bodyHeight);
 
   return renderFeedback(screen, model.notifications, model.columns, model.rows);
-}
-
-function renderViewer(model: WorkspaceModel, width: number, height: number): Surface {
-  if (model.editor == null) {
-    return renderTitleScreen(width, height, model.time, model.jeditTheme, {
-      camAngle: model.titleCamera.angle,
-      camRadius: model.titleCamera.radius,
-      sceneSeed: model.titleSceneSeed,
-      mesh: model.titleMeshes.bunny,
-      sceneOverride: model.sceneOverride,
-      renderMode: model.titleRenderMode,
-      asciiPalette: model.titleAsciiPalette,
-    });
-  }
-
-  const surface = createSurface(width, height);
-  fillSurface(surface, model.jeditTheme.surface.workspace);
-
-  if (model.viewMode === ViewModes.Preview && isWorkspaceMarkdownFile(model.editor.path)) {
-    return renderPreview(surface, model.editor, model.jeditTheme, width, height);
-  }
-
-  const viewport = viewerViewport(width, height);
-  return renderSourceViewer(surface, model.editor, model.sourceHighlight?.path === model.editor.path ? model.sourceHighlight : undefined, {
-    viewport,
-    leftPad: VIEWER_LEFT_PAD,
-    topPad: VIEWER_TOP_PAD,
-    theme: model.jeditTheme,
-  });
-}
-
-function renderPreview(surface: Surface, editor: WorkspaceModel['editor'], theme: JeditTheme, width: number, height: number): Surface {
-  const viewport = viewerViewport(width, height);
-  paintMarkdownPreview(surface, {
-    text: editor?.lines.join('\n') ?? '',
-    scrollRow: editor?.scrollRow ?? 0,
-    x: VIEWER_LEFT_PAD,
-    y: VIEWER_TOP_PAD,
-    width: viewport.width,
-    height: viewport.height,
-    theme,
-  });
-  return surface;
-}
-
-function viewerViewport(width: number, height: number): { width: number; height: number } {
-  return {
-    width: Math.max(MIN_VIEWPORT_DIMENSION, width - (VIEWER_LEFT_PAD * VIEWER_PAD_MULTIPLIER)),
-    height: Math.max(MIN_VIEWPORT_DIMENSION, height - (VIEWER_TOP_PAD * VIEWER_PAD_MULTIPLIER)),
-  };
-}
-
-function renderDrawer(kind: DrawerKind, model: WorkspaceModel, width: number, height: number): Surface {
-  if (kind === DrawerKinds.Graft) {
-    return renderGraftDrawer(model, width, height);
-  }
-
-  const surface = createSurface(width, height);
-  fillSurface(surface, model.jeditTheme.surface.drawer);
-
-  const listWidth = Math.max(MIN_VIEWPORT_DIMENSION, width - (DRAWER_INNER_PAD * DRAWER_PAD_MULTIPLIER));
-  const listHeight = Math.max(MIN_VIEWPORT_DIMENSION, height - (DRAWER_INNER_PAD * DRAWER_PAD_MULTIPLIER));
-  const lines = model.entries.map((entry, index) => formatTreeLine(entry, index === model.selectedIndex));
-  const content = stringToSurface(fitBlock(lines.join('\n'), listWidth, listHeight), listWidth, listHeight);
-  applyBackground(content, model.jeditTheme.surface.drawer);
-  surface.blit(content, DRAWER_INNER_PAD, DRAWER_INNER_PAD);
-
-  return surface;
-}
-
-function renderGraftDrawer(model: WorkspaceModel, width: number, height: number): Surface {
-  const surface = createSurface(width, height);
-  fillSurface(surface, model.jeditTheme.surface.drawer);
-
-  const innerWidth = Math.max(MIN_VIEWPORT_DIMENSION, width - (DRAWER_INNER_PAD * DRAWER_PAD_MULTIPLIER));
-  const innerHeight = Math.max(MIN_VIEWPORT_DIMENSION, height - (DRAWER_INNER_PAD * DRAWER_PAD_MULTIPLIER));
-  const lines = renderGraftDrawerLines(model, innerWidth, innerHeight);
-  const content = stringToSurface(fitBlock(lines.join('\n'), innerWidth, innerHeight), innerWidth, innerHeight);
-  applyBackground(content, model.jeditTheme.surface.drawer);
-  surface.blit(content, DRAWER_INNER_PAD, DRAWER_INNER_PAD);
-
-  return surface;
 }
 
 function selectedGraftSelection(model: WorkspaceModel): { kind: string; name: string; startLine: number } | undefined {
@@ -284,34 +114,6 @@ function selectedGraftSelection(model: WorkspaceModel): { kind: string; name: st
     name: selected.name,
     startLine: selected.startLine,
   };
-}
-
-function fillSurface(surface: Surface, token: JeditStyleToken): void {
-  surface.fill({
-    char: ' ',
-    fg: token.fg,
-    fgRGB: token.fgRGB,
-    bg: token.bg,
-    bgRGB: token.bgRGB,
-    empty: false,
-  });
-}
-
-function applyBackground(surface: Surface, token: JeditStyleToken): void {
-  for (let y = 0; y < surface.height; y += 1) {
-    for (let x = 0; x < surface.width; x += 1) {
-      const cell = surface.get(x, y);
-      surface.set(x, y, {
-        ...cell,
-        char: cell.char.length > 0 ? cell.char : ' ',
-        fg: token.fg,
-        fgRGB: token.fgRGB,
-        bg: token.bg,
-        bgRGB: token.bgRGB,
-        empty: false,
-      });
-    }
-  }
 }
 
 function renderFeedback(screen: Surface, notifications: NotificationState<WorkspaceMsg>, columns: number, rows: number): Surface {

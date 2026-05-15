@@ -4,6 +4,7 @@ import { DRAWER_INNER_PAD } from './viewport.js';
 import { clampIndex } from './viewport.js';
 import { workspaceBodyHeight } from './viewport.js';
 import { editorViewport, ensureEditorVisible } from './editor-session.js';
+import type { GraftRefreshOptions } from './editor-session.js';
 import { withFocusPane } from './focus.js';
 import { FocusPanes } from '../../ui/panel-focus.js';
 import { WorkspaceKeys, isWorkspaceDownKey, isWorkspaceRefreshKey, isWorkspaceUpKey } from './workspace-key.js';
@@ -17,10 +18,10 @@ const GRAFT_CHANGE_ROWS = 5;
 export function updateGraftDrawerFromKey(
   msg: KeyMsg,
   model: WorkspaceModel,
-  beginGraftRefresh: (model: WorkspaceModel, force: boolean) => [WorkspaceModel, Cmd<WorkspaceMsg>[]],
+  beginGraftRefresh: (model: WorkspaceModel, options: GraftRefreshOptions) => [WorkspaceModel, Cmd<WorkspaceMsg>[]],
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (isWorkspaceRefreshKey(msg)) {
-    return beginGraftRefresh(model, true);
+    return beginGraftRefresh(model, { force: true });
   }
 
   const graftInfo = model.graftInfo;
@@ -43,7 +44,10 @@ export function updateGraftDrawerFromKey(
   }
 
   const visible = graftVisibleOutlineRows(
-    workspaceBodyHeight(model.rows, model.footerVisible),
+    workspaceBodyHeight({
+      rows: model.rows,
+      footerVisible: model.footerVisible,
+    }),
     DRAWER_INNER_PAD,
     GRAFT_META_ROWS,
     GRAFT_CHANGE_ROWS,

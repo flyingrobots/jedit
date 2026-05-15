@@ -55,7 +55,9 @@ export function renderGraftDrawerLines(model: GraftDrawerState, width: number, h
     ? ['no structural outline']
     : info.outlineItems
       .slice(outlineStart, outlineStart + outlineHeight)
-      .map((item, index) => formatGraftOutlineLine(item, outlineStart + index === model.graftSelectedIndex));
+      .map((item, index) => formatGraftOutlineLine(item, {
+        selected: outlineStart + index === model.graftSelectedIndex,
+      }));
 
   return [
     ...metaLines.map((line) => fitLine(line, width)),

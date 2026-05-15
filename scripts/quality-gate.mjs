@@ -8,6 +8,7 @@ const SOURCE_ROOT = path.join(ROOT, 'src');
 const BASELINE_PATH = path.join(ROOT, 'quality-baseline.json');
 const MAX_LINES_PER_FILE = 500;
 const MAX_PARAMETERS_PER_FUNCTION = 5;
+const MAX_RUNTIME_IMPORTS_PER_FILE = 12;
 const JSON_FLAG = '--json';
 
 function main() {
@@ -96,6 +97,36 @@ function main() {
       debt,
       improvements,
     });
+    recordCountRule({
+      relativePath,
+      rule: 'no-boolean-parameter',
+      actual: counts.booleanParameter,
+      allowed: baseline.booleanParameters?.[relativePath] ?? 0,
+      cleanLimit: 0,
+      regressions,
+      debt,
+      improvements,
+    });
+    recordCountRule({
+      relativePath,
+      rule: 'no-anonymous-public-option-bag',
+      actual: counts.anonymousPublicOptionBag,
+      allowed: baseline.anonymousPublicOptionBags?.[relativePath] ?? 0,
+      cleanLimit: 0,
+      regressions,
+      debt,
+      improvements,
+    });
+    recordCountRule({
+      relativePath,
+      rule: 'max-imports-12',
+      actual: counts.runtimeImportCount,
+      allowed: baseline.runtimeImports?.[relativePath] ?? MAX_RUNTIME_IMPORTS_PER_FILE,
+      cleanLimit: MAX_RUNTIME_IMPORTS_PER_FILE,
+      regressions,
+      debt,
+      improvements,
+    });
   }
 
   const result = {
@@ -107,6 +138,9 @@ function main() {
       'no-throw-new-error',
       'no-type-assertion',
       'max-parameters-5',
+      'no-boolean-parameter',
+      'no-anonymous-public-option-bag',
+      'max-imports-12',
       'max-lines-500',
     ],
     fileCount: files.length,
@@ -159,6 +193,9 @@ function loadBaseline() {
       rawErrorThrows: {},
       typeAssertions: {},
       maxParameters: {},
+      booleanParameters: {},
+      anonymousPublicOptionBags: {},
+      runtimeImports: {},
     };
   }
 
@@ -193,6 +230,9 @@ function countForbiddenSyntax(relativePath, sourceText) {
     throwNewError: 0,
     typeAssertion: 0,
     maxParameterCount: 0,
+    booleanParameter: 0,
+    anonymousPublicOptionBag: 0,
+    runtimeImportCount: runtimeImportCount(sourceFile),
   };
 
   visit(sourceFile);
@@ -216,6 +256,10 @@ function countForbiddenSyntax(relativePath, sourceText) {
     }
     if (isRuntimeFunctionLike(node)) {
       counts.maxParameterCount = Math.max(counts.maxParameterCount, node.parameters.length);
+      counts.booleanParameter += booleanParameterCount(node);
+      if (isPublicFunctionLike(node)) {
+        counts.anonymousPublicOptionBag += anonymousPublicOptionBagCount(node);
+      }
     }
     ts.forEachChild(node, visit);
   }
@@ -245,6 +289,51 @@ function isRuntimeFunctionLike(node) {
     || ts.isArrowFunction(node)
     || ts.isMethodDeclaration(node)
     || ts.isConstructorDeclaration(node);
+}
+
+function booleanParameterCount(node) {
+  return node.parameters.filter((parameter) => parameter.type?.kind === ts.SyntaxKind.BooleanKeyword).length;
+}
+
+function anonymousPublicOptionBagCount(node) {
+  return node.parameters.filter((parameter) => parameter.type != null && ts.isTypeLiteralNode(parameter.type)).length;
+}
+
+function isPublicFunctionLike(node) {
+  if (ts.isFunctionDeclaration(node)) {
+    return isExported(node);
+  }
+  if (ts.isMethodDeclaration(node)) {
+    return isPublicClassMember(node);
+  }
+  return isExportedVariableInitializer(node);
+}
+
+function isExported(node) {
+  return Boolean(node.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword));
+}
+
+function isPublicClassMember(node) {
+  if (node.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.PrivateKeyword || modifier.kind === ts.SyntaxKind.ProtectedKeyword)) {
+    return false;
+  }
+  return ts.isClassDeclaration(node.parent) && isExported(node.parent);
+}
+
+function isExportedVariableInitializer(node) {
+  const variableDeclaration = node.parent;
+  if (!ts.isVariableDeclaration(variableDeclaration)) {
+    return false;
+  }
+  const variableStatement = variableDeclaration.parent.parent;
+  return ts.isVariableStatement(variableStatement) && isExported(variableStatement);
+}
+
+function runtimeImportCount(sourceFile) {
+  return sourceFile.statements
+    .filter(ts.isImportDeclaration)
+    .filter((statement) => statement.importClause == null || !statement.importClause.isTypeOnly)
+    .length;
 }
 
 function toRepoPath(filePath) {

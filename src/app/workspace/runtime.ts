@@ -14,9 +14,9 @@ import { createTitleCameraState, reduceTitleCameraMotion, TITLE_CAMERA_MESSAGE }
 import { ensureEditorVisible, editorViewport } from './editor-session.js';
 import { updateFromKey } from './key-bindings.js';
 import { updateFromMouse } from './mouse.js';
-import { clamp01, clampIndex } from './viewport.js';
 import { renderWorkspace } from './viewer.js';
 import {
+  createInitialProfilerState,
   ProfilerMessageTypes,
   reduceProfilerMsg,
   streamProfilerFrame,
@@ -24,14 +24,14 @@ import {
   type ProfilerMsg,
   type ProfilerTracePort,
 } from '../raytracer-profiler.js';
-import { createInitialProfilerState } from '../raytracer-profiler.js';
-import { DrawerKinds, type DrawerKind } from '../../ui/drawer-layout.js';
+import type { DrawerKind } from '../../ui/drawer-layout.js';
 import type { FileSystemPort } from '../../ports/file-system.js';
 import type { EditorFilePort } from '../../ports/editor-file.js';
 import type { GraftSessionPort } from '../../ports/graft-session.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import type { TitleSceneLoaderPort } from '../../ports/title-scene-loader.js';
 import { WorkspaceInputMessageTypes, WorkspaceMessageTypes } from './msg.js';
+import { applyDrawerProgress, applyGraftInfo } from './runtime-state.js';
 
 export { WorkspaceInputMessageTypes, WorkspaceMessageTypes } from './msg.js';
 
@@ -105,10 +105,7 @@ export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): Work
     }
 
     if (msg.type === WorkspaceMessageTypes.DrawerProgress) {
-      const nextModel: WorkspaceModel = msg.kind === DrawerKinds.Files
-        ? { ...model, fileDrawerProgress: clamp01(msg.value) }
-        : { ...model, graftDrawerProgress: clamp01(msg.value) };
-      return [nextModel, []];
+      return [applyDrawerProgress(model, msg.kind, msg.value), []];
     }
 
     if (msg.type === WorkspaceMessageTypes.GraftInfo) {
@@ -116,12 +113,7 @@ export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): Work
         return [model, []];
       }
 
-      return [{
-        ...model,
-        graftInfo: msg.info,
-        graftLoading: false,
-        graftSelectedIndex: clampIndex(model.graftSelectedIndex, msg.info.outlineItems.length),
-      }, []];
+      return [applyGraftInfo(model, msg.info), []];
     }
 
     if (msg.type === WorkspaceMessageTypes.LoadSceneResult) {

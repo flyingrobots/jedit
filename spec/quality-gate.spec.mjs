@@ -168,3 +168,124 @@ test('quality gate rejects functions above the parameter limit', () => {
     rmSync(fixtureRoot, { recursive: true, force: true });
   }
 });
+
+test('quality gate rejects boolean parameters', () => {
+  const fixtureRoot = mkdtempSync(path.join(tmpdir(), 'jedit-quality-gate-'));
+
+  try {
+    mkdirSync(path.join(fixtureRoot, 'src'));
+    writeFileSync(
+      path.join(fixtureRoot, 'src', 'bad-boolean-param.ts'),
+      [
+        'export function setEnabled(enabled: boolean): boolean {',
+        '  return enabled;',
+        '}',
+        '',
+      ].join('\n'),
+    );
+
+    const result = spawnSync(process.execPath, [QUALITY_GATE_SCRIPT, '--json'], {
+      cwd: fixtureRoot,
+      encoding: 'utf8',
+    });
+    assert.notEqual(result.status, 0);
+
+    const parsed = JSON.parse(result.stdout);
+    assert.equal(parsed.ok, false);
+    assert.ok(parsed.enforcedRules.includes('no-boolean-parameter'));
+    assert.deepEqual(parsed.regressions, [
+      {
+        file: 'src/bad-boolean-param.ts',
+        rule: 'no-boolean-parameter',
+        actual: 1,
+        allowed: 0,
+      },
+    ]);
+  } finally {
+    rmSync(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
+test('quality gate rejects anonymous public option bags', () => {
+  const fixtureRoot = mkdtempSync(path.join(tmpdir(), 'jedit-quality-gate-'));
+
+  try {
+    mkdirSync(path.join(fixtureRoot, 'src'));
+    writeFileSync(
+      path.join(fixtureRoot, 'src', 'bad-option-bag.ts'),
+      [
+        'export function run(options: { readonly value: number }): number {',
+        '  return options.value;',
+        '}',
+        '',
+      ].join('\n'),
+    );
+
+    const result = spawnSync(process.execPath, [QUALITY_GATE_SCRIPT, '--json'], {
+      cwd: fixtureRoot,
+      encoding: 'utf8',
+    });
+    assert.notEqual(result.status, 0);
+
+    const parsed = JSON.parse(result.stdout);
+    assert.equal(parsed.ok, false);
+    assert.ok(parsed.enforcedRules.includes('no-anonymous-public-option-bag'));
+    assert.deepEqual(parsed.regressions, [
+      {
+        file: 'src/bad-option-bag.ts',
+        rule: 'no-anonymous-public-option-bag',
+        actual: 1,
+        allowed: 0,
+      },
+    ]);
+  } finally {
+    rmSync(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
+test('quality gate rejects files above the import fan-in limit', () => {
+  const fixtureRoot = mkdtempSync(path.join(tmpdir(), 'jedit-quality-gate-'));
+
+  try {
+    mkdirSync(path.join(fixtureRoot, 'src'));
+    writeFileSync(
+      path.join(fixtureRoot, 'src', 'bad-imports.ts'),
+      [
+        "import './a01.js';",
+        "import './a02.js';",
+        "import './a03.js';",
+        "import './a04.js';",
+        "import './a05.js';",
+        "import './a06.js';",
+        "import './a07.js';",
+        "import './a08.js';",
+        "import './a09.js';",
+        "import './a10.js';",
+        "import './a11.js';",
+        "import './a12.js';",
+        "import './a13.js';",
+        '',
+      ].join('\n'),
+    );
+
+    const result = spawnSync(process.execPath, [QUALITY_GATE_SCRIPT, '--json'], {
+      cwd: fixtureRoot,
+      encoding: 'utf8',
+    });
+    assert.notEqual(result.status, 0);
+
+    const parsed = JSON.parse(result.stdout);
+    assert.equal(parsed.ok, false);
+    assert.ok(parsed.enforcedRules.includes('max-imports-12'));
+    assert.deepEqual(parsed.regressions, [
+      {
+        file: 'src/bad-imports.ts',
+        rule: 'max-imports-12',
+        actual: 13,
+        allowed: 12,
+      },
+    ]);
+  } finally {
+    rmSync(fixtureRoot, { recursive: true, force: true });
+  }
+});

@@ -3,7 +3,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { dirname, isAbsolute, join, relative } from 'node:path';
-import type { GraftInfo, GraftSessionPort } from '../ports/graft-session.js';
+import type { FailedGraftInfoRequest, GraftFileRequest, GraftInfo, GraftSessionPort } from '../ports/graft-session.js';
 
 import {
   GraftInvalidPayloadError,
@@ -93,7 +93,8 @@ let graftConnection: GraftMcpConnection | undefined;
 let graftConnectionPromise: Promise<GraftMcpConnection> | undefined;
 let graftCliPath: string | undefined;
 
-export async function loadGraftInfo(workspaceRoot: string, filePath: string, dirty: boolean): Promise<GraftInfo> {
+export async function loadGraftInfo(request: GraftFileRequest): Promise<GraftInfo> {
+  const { workspaceRoot, filePath, dirty } = request;
   const relativePath = relative(workspaceRoot, filePath).replace(/\\/g, '/');
   if (relativePath.startsWith('..') || isAbsolute(relativePath)) {
     return {
@@ -140,12 +141,8 @@ export async function loadGraftInfo(workspaceRoot: string, filePath: string, dir
   };
 }
 
-export function failedGraftInfo(
-  workspaceRoot: string,
-  filePath: string,
-  dirty: boolean,
-  message: string,
-): GraftInfo {
+export function failedGraftInfo(request: FailedGraftInfoRequest): GraftInfo {
+  const { workspaceRoot, filePath, dirty, message } = request;
   return {
     path: filePath,
     relativePath: relative(workspaceRoot, filePath).replace(/\\/g, '/'),

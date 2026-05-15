@@ -88,7 +88,7 @@ export function updateTreeFromKey(
       graftInfo: undefined,
       graftLoading: false,
       graftSelectedIndex: 0,
-    }, FocusPanes.Editor), model.graftDrawerOpen, {
+    }, FocusPanes.Editor), { refreshGraft: model.graftDrawerOpen }, {
       editorFile: deps.editorFile,
       sourceHighlighter: deps.sourceHighlighter,
       graftSession: deps.graftSession,

@@ -20,8 +20,8 @@ export function updateFocusedPaneKey(
   }
 
   if (model.focusPane === FocusPanes.Graft && model.graftDrawerOpen) {
-    return updateGraftDrawerFromKey(msg, model, (nextModel, force) => (
-      beginGraftRefresh(nextModel, force, context.deps.graftSession)
+    return updateGraftDrawerFromKey(msg, model, (nextModel, options) => (
+      beginGraftRefresh(nextModel, options, context.deps.graftSession)
     ));
   }
 

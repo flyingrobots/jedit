@@ -8,6 +8,10 @@ export interface GraftOutlineDisplayItem {
   readonly startLine: number;
 }
 
+export interface SelectableLineOptions {
+  readonly selected: boolean;
+}
+
 export function fitBlock(text: string, width: number, height: number): string {
   const rawLines = text.split('\n');
   const lines: string[] = [];
@@ -29,13 +33,13 @@ export function fitLine(text: string, width: number): string {
   return clipped.padEnd(width, ' ');
 }
 
-export function formatGraftOutlineLine(item: GraftOutlineDisplayItem, selected: boolean): string {
-  const prefix = selected ? '› ' : '  ';
+export function formatGraftOutlineLine(item: GraftOutlineDisplayItem, options: SelectableLineOptions): string {
+  const prefix = options.selected ? '› ' : '  ';
   return `${prefix}${item.kind} ${item.name} · ${String(item.startLine)}`;
 }
 
-export function formatTreeLine(entry: FileEntry, selected: boolean): string {
-  const prefix = selected ? '› ' : '  ';
+export function formatTreeLine(entry: FileEntry, options: SelectableLineOptions): string {
+  const prefix = options.selected ? '› ' : '  ';
   if (entry.kind === FileEntryKinds.Parent) {
     return `${prefix}../`;
   }

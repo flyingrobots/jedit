@@ -7,11 +7,10 @@ import { cycleFocusPane, FocusPanes, hasFocusablePeers } from '../../ui/panel-fo
 import { isFooterToggleKey } from '../../ui/feedback.js';
 import { nextJeditTheme } from '../../ui/jedit-themes.js';
 import { DrawerKinds } from '../../ui/drawer-layout.js';
-import { EditorModes } from './editor/mode.js';
+import { insertModeActive } from './editor-state.js';
 import type { WorkspaceKeyBindingContext } from './key-binding-context.js';
 import type { WorkspaceModel } from './model.js';
 import { WorkspaceMessageTypes, type WorkspaceMsg } from './msg.js';
-import { ViewModes } from './view-mode.js';
 import { WorkspaceKeys } from './workspace-key.js';
 
 type KeyBindingResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
@@ -62,7 +61,9 @@ function updateSaveKey(
   }
 
   const editor = saveEditor(model.editor, context.deps.editorFile);
-  return beginEditorProjectionRefresh({ ...model, editor }, shouldRefreshGraft(model, editor.path), context.deps);
+  return beginEditorProjectionRefresh({ ...model, editor }, {
+    refreshGraft: shouldRefreshGraft(model, editor.path),
+  }, context.deps);
 }
 
 function updateThemeKey(msg: KeyMsg, model: WorkspaceModel): KeyBindingResult | undefined {
@@ -125,17 +126,11 @@ function toggleWorkspaceDrawer(
   kind: typeof DrawerKinds.Files | typeof DrawerKinds.Graft,
   context: WorkspaceKeyBindingContext,
 ): KeyBindingResult {
-  return toggleDrawer(model, kind, (nextModel, force) => (
-    beginGraftRefresh(nextModel, force, context.deps.graftSession)
+  return toggleDrawer(model, kind, (nextModel, options) => (
+    beginGraftRefresh(nextModel, options, context.deps.graftSession)
   ), context.createDrawerAnimationCmd);
 }
 
 function shouldRefreshGraft(model: WorkspaceModel, editorPath: string): boolean {
   return model.graftDrawerOpen || model.graftInfo?.path === editorPath;
-}
-
-function insertModeActive(model: WorkspaceModel): boolean {
-  return model.focusPane === FocusPanes.Editor
-    && model.viewMode === ViewModes.Source
-    && model.editor?.mode === EditorModes.Insert;
 }

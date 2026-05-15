@@ -5,13 +5,14 @@ import type { FocusCycleState } from '../../ui/panel-focus.js';
 import { withFocusPane } from './focus.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
+import type { GraftRefreshOptions } from './editor-session.js';
 
 export type CreateDrawerAnimationCmd = (kind: DrawerKind, from: number, to: number) => Cmd<WorkspaceMsg>[];
 
 export function openDrawer(
   model: WorkspaceModel,
   kind: DrawerKind,
-  beginGraftRefresh: (model: WorkspaceModel, force: boolean) => [WorkspaceModel, Cmd<WorkspaceMsg>[]],
+  beginGraftRefresh: (model: WorkspaceModel, options: GraftRefreshOptions) => [WorkspaceModel, Cmd<WorkspaceMsg>[]],
   createDrawerAnimationCmd: CreateDrawerAnimationCmd,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (kind === DrawerKinds.Graft) {
@@ -20,7 +21,7 @@ export function openDrawer(
         ...model,
         graftDrawerOpen: true,
       }, FocusPanes.Graft),
-    }, false);
+    }, { force: false });
 
     if (model.graftDrawerOpen) {
       return [next, cmds];
@@ -50,7 +51,7 @@ export function openDrawer(
 export function toggleDrawer(
   model: WorkspaceModel,
   kind: DrawerKind,
-  beginGraftRefresh: (model: WorkspaceModel, force: boolean) => [WorkspaceModel, Cmd<WorkspaceMsg>[]],
+  beginGraftRefresh: (model: WorkspaceModel, options: GraftRefreshOptions) => [WorkspaceModel, Cmd<WorkspaceMsg>[]],
   createDrawerAnimationCmd: CreateDrawerAnimationCmd,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if ((kind === DrawerKinds.Files && model.fileDrawerOpen) || (kind === DrawerKinds.Graft && model.graftDrawerOpen)) {

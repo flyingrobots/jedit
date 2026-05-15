@@ -57,6 +57,12 @@ interface EditorViewport {
   readonly height: number;
 }
 
+export interface UpdateInsertModeOptions {
+  readonly viewportWidth: number;
+  readonly viewportHeight: number;
+  readonly allowTabIndent: boolean;
+}
+
 interface KeyDescriptor {
   readonly key: string;
   readonly ctrl?: boolean;
@@ -165,13 +171,11 @@ export function normalizeEditor(editor: EditorState): EditorState {
 export function updateInsertMode(
   editor: EditorState,
   msg: KeyMsg,
-  viewportWidth: number,
-  viewportHeight: number,
-  allowTabIndent: boolean,
+  options: UpdateInsertModeOptions,
 ): EditorState {
   const viewport = {
-    width: Math.max(1, viewportWidth),
-    height: Math.max(1, viewportHeight),
+    width: Math.max(1, options.viewportWidth),
+    height: Math.max(1, options.viewportHeight),
   };
 
   if (msg.key === EDITOR_KEY.Escape) {
@@ -213,7 +217,7 @@ export function updateInsertMode(
   if (msg.key === EDITOR_KEY.Enter) {
     return ensureEditorVisible(insertNewline(editor), viewport.width, viewport.height);
   }
-  if (allowTabIndent && msg.key === EDITOR_KEY.Tab) {
+  if (options.allowTabIndent && msg.key === EDITOR_KEY.Tab) {
     return ensureEditorVisible(insertText(editor, INSERT_TAB_TEXT), viewport.width, viewport.height);
   }
 

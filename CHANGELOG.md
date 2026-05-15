@@ -5,6 +5,8 @@
 - Ratcheted the quality gate to reject raw `throw new Error`, non-`as const`
   type assertions, and runtime functions with more than five parameters, with
   regression fixtures for each rule.
+- Ratcheted the quality gate to reject direct boolean parameters, anonymous
+  public option bags, and runtime import fan-in above twelve imports per file.
 - Split workspace key dispatch into focused reducers with structural regression
   coverage for import fan-in, parameter count, function length, nesting, and
   cyclomatic complexity, and serialized the test runner to prevent concurrent

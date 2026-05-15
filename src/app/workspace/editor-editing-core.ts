@@ -19,6 +19,17 @@ export const WordClasses = Object.freeze({
 
 export type WordClass = typeof WordClasses[keyof typeof WordClasses];
 
+export interface DeleteTextRangeOptions {
+  readonly mode: EditorMode;
+  readonly register: RegisterKind;
+}
+
+export interface ReplaceCurrentLineOptions {
+  readonly line: string;
+  readonly cursorCol: number;
+  readonly dirty: boolean;
+}
+
 export function pasteRegister(editor: EditorState, placement: PastePlacement): EditorState {
   const register = editor.register;
   if (register == null) {
@@ -76,10 +87,7 @@ export function deleteTextRange(
   editor: EditorState,
   start: number,
   end: number,
-  options: {
-    readonly mode: EditorMode;
-    readonly register: RegisterKind;
-  },
+  options: DeleteTextRangeOptions,
 ): EditorState {
   const text = editorText(editor);
   const from = Math.max(0, Math.min(start, end));
@@ -112,7 +120,11 @@ export function backspace(editor: EditorState): EditorState {
   if (editor.cursorCol > 0) {
     const line = currentLine(editor);
     const nextLine = `${line.slice(0, editor.cursorCol - 1)}${line.slice(editor.cursorCol)}`;
-    return replaceCurrentLine(editor, nextLine, editor.cursorCol - 1, true);
+    return replaceCurrentLine(editor, {
+      line: nextLine,
+      cursorCol: editor.cursorCol - 1,
+      dirty: true,
+    });
   }
 
   if (editor.cursorRow === 0) {
@@ -134,7 +146,11 @@ export function deleteForward(editor: EditorState): EditorState {
   const line = currentLine(editor);
   if (editor.cursorCol < line.length) {
     const nextLine = `${line.slice(0, editor.cursorCol)}${line.slice(editor.cursorCol + 1)}`;
-    return replaceCurrentLine(editor, nextLine, editor.cursorCol, true);
+    return replaceCurrentLine(editor, {
+      line: nextLine,
+      cursorCol: editor.cursorCol,
+      dirty: true,
+    });
   }
 
   if (editor.cursorRow >= editor.lines.length - 1) {
@@ -170,20 +186,22 @@ export function insertNewline(editor: EditorState): EditorState {
 export function insertText(editor: EditorState, text: string): EditorState {
   const line = currentLine(editor);
   const nextLine = `${line.slice(0, editor.cursorCol)}${text}${line.slice(editor.cursorCol)}`;
-  return replaceCurrentLine(editor, nextLine, editor.cursorCol + text.length, true);
+  return replaceCurrentLine(editor, {
+    line: nextLine,
+    cursorCol: editor.cursorCol + text.length,
+    dirty: true,
+  });
 }
 
 export function replaceCurrentLine(
   editor: EditorState,
-  line: string,
-  cursorCol: number,
-  dirty: boolean,
+  options: ReplaceCurrentLineOptions,
 ): EditorState {
-  const nextLines = editor.lines.map((value, index) => (index === editor.cursorRow ? line : value));
+  const nextLines = editor.lines.map((value, index) => (index === editor.cursorRow ? options.line : value));
   return commitMutation(editor, {
     lines: nextLines,
-    cursorCol,
-    dirty: dirty || editor.dirty,
+    cursorCol: options.cursorCol,
+    dirty: options.dirty || editor.dirty,
   });
 }
 
