@@ -79,3 +79,10 @@ test('CHANGELOG documents switch-case scope for the magic-literal ratchet', () =
 
   assert.match(changelog, /non-structural inline comparison and\s+switch-case literals in `src\/app` and `src\/domain`/);
 });
+
+test('CODE_STANDARDS documents structural number exemptions for the magic-literal ratchet', () => {
+  const codeStandards = readFileSync(CODE_STANDARDS_PATH, 'utf8');
+
+  assert.match(codeStandards, /The structural number\s+literals `-1`, `0`, and `1` are exempt/);
+  assert.match(codeStandards, /Other numeric literals remain disallowed/);
+});

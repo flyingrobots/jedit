@@ -109,7 +109,10 @@ For cross-realm values, normalize through adapters/boundaries and construct vali
 **Current magic-literal ratchet:**
 `src/app` and `src/domain` reject non-structural inline string/number literals in
 comparisons and switch cases. Promote behavioral tokens to named constants,
-runtime token objects, or domain classes before comparing.
+runtime token objects, or domain classes before comparing. The structural number
+literals `-1`, `0`, and `1` are exempt in `scripts/quality-gate.mjs` for sentinel,
+empty/index, and single-step cases. Other numeric literals remain disallowed and
+must be named before comparison.
 
 **Encouraged:**
 - Constructor-based validation
