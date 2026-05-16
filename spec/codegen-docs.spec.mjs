@@ -6,6 +6,7 @@ import test from 'node:test';
 const REPO_ROOT = process.cwd();
 const README_PATH = path.join(REPO_ROOT, 'README.md');
 const CODE_STANDARDS_PATH = path.join(REPO_ROOT, 'CODE_STANDARDS.md');
+const CHANGELOG_PATH = path.join(REPO_ROOT, 'CHANGELOG.md');
 const FILE_SIZE_RULE_PATTERN = /\*\*File size\*\*: ≤ \*\*500 lines\*\*/;
 
 function firstLineOf(text) {
@@ -71,4 +72,10 @@ test('CODE_STANDARDS first-line extraction tolerates CRLF line endings', () => {
 
 test('CODE_STANDARDS file-size matcher requires the bold field label', () => {
   assert.doesNotMatch('- File size**: ≤ **500 lines**', FILE_SIZE_RULE_PATTERN);
+});
+
+test('CHANGELOG documents switch-case scope for the magic-literal ratchet', () => {
+  const changelog = readFileSync(CHANGELOG_PATH, 'utf8');
+
+  assert.match(changelog, /non-structural inline comparison and\s+switch-case literals in `src\/app` and `src\/domain`/);
 });
