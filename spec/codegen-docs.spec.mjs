@@ -94,6 +94,12 @@ test('CODE_STANDARDS documents structural number exemptions for the magic-litera
   assert.match(codeStandards, /Other numeric literals remain disallowed/);
 });
 
+test('CODE_STANDARDS documents catch nesting semantics', () => {
+  const codeStandards = readFileSync(CODE_STANDARDS_PATH, 'utf8');
+
+  assert.match(codeStandards, /`catch` clauses share the surrounding `try`\s+nesting level/);
+});
+
 test('quality gate script stays within the file-size doctrine', () => {
   assert.ok(lineCountOf(QUALITY_GATE_SCRIPT_PATH) <= MAX_CODE_STANDARD_LINES);
 });

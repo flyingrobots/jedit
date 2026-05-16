@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Documented and named the quality-gate catch-depth convention: catch bodies
+  continue the surrounding `try` nesting level rather than adding a new level.
 - Fixed `max-statements-25` accounting so nested executable statements count
   toward the function statement limit instead of only top-level body entries.
 - Split quality-gate ratchet fixtures into a dedicated spec file so the legacy

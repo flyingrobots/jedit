@@ -85,7 +85,8 @@ For cross-realm values, normalize through adapters/boundaries and construct vali
 - **Source line length**: ≤ **160 characters**
 - **Function / Method**: ≤ **35 lines** (excluding whitespace & trivial returns)
 - **Statements per function body**: ≤ **25**
-- **Nesting depth**: ≤ **4**
+- **Nesting depth**: ≤ **4** (`catch` clauses share the surrounding `try`
+  nesting level)
 - **Cyclomatic complexity**: ≤ **8**
 - **Parameters**: ≤ **5** (use a named options class/object otherwise)
 - **Class size**: ≤ **400 lines**, ≤ **15 public methods**

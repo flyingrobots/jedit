@@ -55,7 +55,7 @@ test('quality gate rejects functions above the nesting depth limit', () => {
   }
 });
 
-test('quality gate treats catch clauses as the try control level for nesting depth', () => {
+test('quality gate does not add an extra nesting level for catch clauses', () => {
   const fixtureRoot = mkdtempSync(path.join(tmpdir(), 'jedit-quality-gate-'));
 
   try {

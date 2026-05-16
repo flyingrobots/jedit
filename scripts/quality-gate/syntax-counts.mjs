@@ -222,6 +222,7 @@ function nestingDepth(node) {
 }
 
 function isNestingNode(node) {
+  // Catch bodies continue the surrounding try nesting level; catch is not an extra control nest.
   return ts.isIfStatement(node)
     || ts.isForStatement(node)
     || ts.isForInStatement(node)
