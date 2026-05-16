@@ -14,6 +14,8 @@ const MAX_CYCLOMATIC_COMPLEXITY = 8;
 const MAX_NESTING_DEPTH = 4;
 const MAX_STATEMENTS_PER_FUNCTION = 25;
 const MAX_SOURCE_LINE_LENGTH = 160;
+// Structural sentinels only: -1 for not-found, 0 for empty/index origins, and 1 for single-step/count cases.
+// Other integers are semantic in comparisons and must be named before use.
 const STRUCTURAL_NUMBER_LITERALS = new Set([-1, 0, 1]);
 const JSON_FLAG = '--json';
 
