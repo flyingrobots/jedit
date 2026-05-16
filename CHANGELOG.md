@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Split quality-gate syntax counting into a dedicated module so the executable
+  gate stays within the 500-line file-size doctrine.
 - Fixed nesting-depth accounting so `catch` clauses share the surrounding
   `try` control level instead of adding a false extra nesting level.
 - Ratcheted the quality gate to reject non-structural inline comparison and
