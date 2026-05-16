@@ -8,6 +8,7 @@ const README_PATH = path.join(REPO_ROOT, 'README.md');
 const CODE_STANDARDS_PATH = path.join(REPO_ROOT, 'CODE_STANDARDS.md');
 const CHANGELOG_PATH = path.join(REPO_ROOT, 'CHANGELOG.md');
 const QUALITY_GATE_SCRIPT_PATH = path.join(REPO_ROOT, 'scripts', 'quality-gate.mjs');
+const QUALITY_GATE_SPEC_PATH = path.join(REPO_ROOT, 'spec', 'quality-gate.spec.mjs');
 const FILE_SIZE_RULE_PATTERN = /\*\*File size\*\*: ≤ \*\*500 lines\*\*/;
 const MAX_CODE_STANDARD_LINES = 500;
 
@@ -95,4 +96,8 @@ test('CODE_STANDARDS documents structural number exemptions for the magic-litera
 
 test('quality gate script stays within the file-size doctrine', () => {
   assert.ok(lineCountOf(QUALITY_GATE_SCRIPT_PATH) <= MAX_CODE_STANDARD_LINES);
+});
+
+test('quality gate spec stays within the file-size doctrine', () => {
+  assert.ok(lineCountOf(QUALITY_GATE_SPEC_PATH) <= MAX_CODE_STANDARD_LINES);
 });
