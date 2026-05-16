@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- Split quality-gate ratchet fixtures into a dedicated spec file so the legacy
+  gate spec stays within the 500-line file-size doctrine.
+- Split quality-gate syntax counting into a dedicated module so the executable
+  gate stays within the 500-line file-size doctrine.
+- Fixed nesting-depth accounting so `catch` clauses share the surrounding
+  `try` control level instead of adding a false extra nesting level.
+- Ratcheted the quality gate to reject non-structural inline comparison and
+  switch-case literals in `src/app` and `src/domain`, with boundary-scope regression
+  coverage and settings key actions moved to symbol-backed runtime tokens.
+- Ratcheted the quality gate to reject runtime function bodies with more than
+  25 top-level statements, with isolated regression coverage that does not
+  overlap the function-length ratchet.
+- Ratcheted the quality gate to reject runtime function nesting deeper than
+  four levels, with deterministic regression coverage for over-nested control
+  flow.
 - Ratcheted the quality gate to reject hand-authored source lines above 160
   characters, with generated source exempted and current overlong readability
   debt split into human-scale declarations and helpers.

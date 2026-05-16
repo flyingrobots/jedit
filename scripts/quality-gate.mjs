@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import ts from 'typescript';
+import { countForbiddenSyntax } from './quality-gate/syntax-counts.mjs';
 
 const ROOT = process.cwd();
 const SOURCE_ROOT = path.join(ROOT, 'src');
@@ -11,6 +11,8 @@ const MAX_PARAMETERS_PER_FUNCTION = 5;
 const MAX_RUNTIME_IMPORTS_PER_FILE = 12;
 const MAX_FUNCTION_LINES = 35;
 const MAX_CYCLOMATIC_COMPLEXITY = 8;
+const MAX_NESTING_DEPTH = 4;
+const MAX_STATEMENTS_PER_FUNCTION = 25;
 const MAX_SOURCE_LINE_LENGTH = 160;
 const JSON_FLAG = '--json';
 
@@ -152,10 +154,40 @@ function main() {
     });
     recordCountRule({
       relativePath,
+      rule: 'max-depth-4',
+      actual: counts.maxNestingDepth,
+      allowed: baseline.maxDepth?.[relativePath] ?? MAX_NESTING_DEPTH,
+      cleanLimit: MAX_NESTING_DEPTH,
+      regressions,
+      debt,
+      improvements,
+    });
+    recordCountRule({
+      relativePath,
+      rule: 'max-statements-25',
+      actual: counts.maxStatementCount,
+      allowed: baseline.maxStatements?.[relativePath] ?? MAX_STATEMENTS_PER_FUNCTION,
+      cleanLimit: MAX_STATEMENTS_PER_FUNCTION,
+      regressions,
+      debt,
+      improvements,
+    });
+    recordCountRule({
+      relativePath,
       rule: 'max-line-length-160',
       actual: counts.maxSourceLineLength,
       allowed: baseline.maxLineLength?.[relativePath] ?? MAX_SOURCE_LINE_LENGTH,
       cleanLimit: MAX_SOURCE_LINE_LENGTH,
+      regressions,
+      debt,
+      improvements,
+    });
+    recordCountRule({
+      relativePath,
+      rule: 'no-magic-comparison-literal',
+      actual: counts.magicComparisonLiteral,
+      allowed: baseline.magicComparisonLiterals?.[relativePath] ?? 0,
+      cleanLimit: 0,
       regressions,
       debt,
       improvements,
@@ -176,7 +208,10 @@ function main() {
       'max-imports-12',
       'max-function-lines-35',
       'complexity-8',
+      'max-depth-4',
+      'max-statements-25',
       'max-line-length-160',
+      'no-magic-comparison-literal',
       'max-lines-500',
     ],
     fileCount: files.length,
@@ -234,7 +269,10 @@ function loadBaseline() {
       runtimeImports: {},
       maxFunctionLines: {},
       cyclomaticComplexity: {},
+      maxDepth: {},
+      maxStatements: {},
       maxLineLength: {},
+      magicComparisonLiterals: {},
     };
   }
 
@@ -258,221 +296,6 @@ function collectTypeScriptFiles(directory) {
     }
   }
   return files.sort();
-}
-
-function countForbiddenSyntax(relativePath, sourceText) {
-  const sourceFile = ts.createSourceFile(relativePath, sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
-  const counts = {
-    any: 0,
-    unknown: 0,
-    enum: 0,
-    throwNewError: 0,
-    typeAssertion: 0,
-    maxParameterCount: 0,
-    booleanParameter: 0,
-    anonymousPublicOptionBag: 0,
-    runtimeImportCount: runtimeImportCount(sourceFile),
-    maxFunctionLineCount: 0,
-    maxCyclomaticComplexity: 0,
-    maxSourceLineLength: isGeneratedSource(relativePath) ? 0 : maxSourceLineLength(sourceText),
-  };
-
-  visit(sourceFile);
-  return counts;
-
-  function visit(node) {
-    if (node.kind === ts.SyntaxKind.AnyKeyword) {
-      counts.any += 1;
-    }
-    if (node.kind === ts.SyntaxKind.UnknownKeyword) {
-      counts.unknown += 1;
-    }
-    if (node.kind === ts.SyntaxKind.EnumDeclaration) {
-      counts.enum += 1;
-    }
-    if (isThrowNewError(node)) {
-      counts.throwNewError += 1;
-    }
-    if (isForbiddenTypeAssertion(node, sourceFile)) {
-      counts.typeAssertion += 1;
-    }
-    if (isRuntimeFunctionLike(node)) {
-      counts.maxParameterCount = Math.max(counts.maxParameterCount, node.parameters.length);
-      counts.booleanParameter += booleanParameterCount(node);
-      counts.maxFunctionLineCount = Math.max(
-        counts.maxFunctionLineCount,
-        functionBodyLineCount(sourceFile, node),
-      );
-      counts.maxCyclomaticComplexity = Math.max(
-        counts.maxCyclomaticComplexity,
-        cyclomaticComplexity(node),
-      );
-      if (isPublicFunctionLike(node)) {
-        counts.anonymousPublicOptionBag += anonymousPublicOptionBagCount(node);
-      }
-    }
-    ts.forEachChild(node, visit);
-  }
-}
-
-function isThrowNewError(node) {
-  if (!ts.isThrowStatement(node) || node.expression == null || !ts.isNewExpression(node.expression)) {
-    return false;
-  }
-
-  return ts.isIdentifier(node.expression.expression) && node.expression.expression.text === 'Error';
-}
-
-function isForbiddenTypeAssertion(node, sourceFile) {
-  if (ts.isTypeAssertionExpression(node)) {
-    return true;
-  }
-  if (!ts.isAsExpression(node)) {
-    return false;
-  }
-  return node.type.getText(sourceFile) !== 'const';
-}
-
-function isRuntimeFunctionLike(node) {
-  return ts.isFunctionDeclaration(node)
-    || ts.isFunctionExpression(node)
-    || ts.isArrowFunction(node)
-    || ts.isMethodDeclaration(node)
-    || ts.isGetAccessorDeclaration(node)
-    || ts.isSetAccessorDeclaration(node)
-    || ts.isConstructorDeclaration(node);
-}
-
-function functionBodyLineCount(sourceFile, node) {
-  if (node.body == null) {
-    return 0;
-  }
-
-  if (!ts.isBlock(node.body)) {
-    return codeLineCount(sourceFile, node.body.getStart(sourceFile), node.body.getEnd());
-  }
-
-  const statements = node.body.statements;
-  if (statements.length === 0) {
-    return 0;
-  }
-
-  return codeLineCount(
-    sourceFile,
-    statements[0].getStart(sourceFile),
-    statements[statements.length - 1].getEnd(),
-  );
-}
-
-function codeLineCount(sourceFile, startPosition, endPosition) {
-  const startLine = sourceFile.getLineAndCharacterOfPosition(startPosition).line;
-  const endLine = sourceFile.getLineAndCharacterOfPosition(endPosition).line;
-  return sourceFile.text
-    .split(/\r?\n/)
-    .slice(startLine, endLine + 1)
-    .filter(isCountedCodeLine)
-    .length;
-}
-
-function isCountedCodeLine(line) {
-  const trimmed = line.trim();
-  return trimmed.length > 0 && !trimmed.startsWith('//');
-}
-
-function cyclomaticComplexity(node) {
-  if (node.body == null) {
-    return 1;
-  }
-
-  let complexity = 1;
-  visitComplexityNode(node.body);
-  return complexity;
-
-  function visitComplexityNode(child) {
-    if (child !== node.body && isRuntimeFunctionLike(child)) {
-      return;
-    }
-    if (isCyclomaticBranch(child)) {
-      complexity += 1;
-    }
-    if (isShortCircuitBranch(child)) {
-      complexity += 1;
-    }
-    ts.forEachChild(child, visitComplexityNode);
-  }
-}
-
-function isCyclomaticBranch(node) {
-  return ts.isIfStatement(node)
-    || ts.isForStatement(node)
-    || ts.isForInStatement(node)
-    || ts.isForOfStatement(node)
-    || ts.isWhileStatement(node)
-    || ts.isDoStatement(node)
-    || ts.isCaseClause(node)
-    || ts.isConditionalExpression(node);
-}
-
-function isShortCircuitBranch(node) {
-  if (!ts.isBinaryExpression(node)) {
-    return false;
-  }
-  return node.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken
-    || node.operatorToken.kind === ts.SyntaxKind.BarBarToken
-    || node.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken;
-}
-
-function booleanParameterCount(node) {
-  return node.parameters.filter((parameter) => parameter.type?.kind === ts.SyntaxKind.BooleanKeyword).length;
-}
-
-function anonymousPublicOptionBagCount(node) {
-  return node.parameters.filter((parameter) => parameter.type != null && ts.isTypeLiteralNode(parameter.type)).length;
-}
-
-function isPublicFunctionLike(node) {
-  if (ts.isFunctionDeclaration(node)) {
-    return isExported(node);
-  }
-  if (ts.isMethodDeclaration(node)) {
-    return isPublicClassMember(node);
-  }
-  return isExportedVariableInitializer(node);
-}
-
-function isExported(node) {
-  return Boolean(node.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword));
-}
-
-function isPublicClassMember(node) {
-  if (node.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.PrivateKeyword || modifier.kind === ts.SyntaxKind.ProtectedKeyword)) {
-    return false;
-  }
-  return ts.isClassDeclaration(node.parent) && isExported(node.parent);
-}
-
-function isExportedVariableInitializer(node) {
-  const variableDeclaration = node.parent;
-  if (!ts.isVariableDeclaration(variableDeclaration)) {
-    return false;
-  }
-  const variableStatement = variableDeclaration.parent.parent;
-  return ts.isVariableStatement(variableStatement) && isExported(variableStatement);
-}
-
-function runtimeImportCount(sourceFile) {
-  return sourceFile.statements
-    .filter(ts.isImportDeclaration)
-    .filter((statement) => statement.importClause == null || !statement.importClause.isTypeOnly)
-    .length;
-}
-
-function isGeneratedSource(relativePath) {
-  return relativePath.startsWith('src/generated/');
-}
-
-function maxSourceLineLength(sourceText) {
-  return Math.max(0, ...sourceText.split(/\r?\n/).map((line) => line.length));
 }
 
 function toRepoPath(filePath) {

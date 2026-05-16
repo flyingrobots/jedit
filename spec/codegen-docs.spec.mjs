@@ -6,10 +6,18 @@ import test from 'node:test';
 const REPO_ROOT = process.cwd();
 const README_PATH = path.join(REPO_ROOT, 'README.md');
 const CODE_STANDARDS_PATH = path.join(REPO_ROOT, 'CODE_STANDARDS.md');
+const CHANGELOG_PATH = path.join(REPO_ROOT, 'CHANGELOG.md');
+const QUALITY_GATE_SCRIPT_PATH = path.join(REPO_ROOT, 'scripts', 'quality-gate.mjs');
+const QUALITY_GATE_SPEC_PATH = path.join(REPO_ROOT, 'spec', 'quality-gate.spec.mjs');
 const FILE_SIZE_RULE_PATTERN = /\*\*File size\*\*: ≤ \*\*500 lines\*\*/;
+const MAX_CODE_STANDARD_LINES = 500;
 
 function firstLineOf(text) {
   return text.split(/\r?\n/)[0];
+}
+
+function lineCountOf(filePath) {
+  return readFileSync(filePath, 'utf8').split(/\r?\n/).length;
 }
 
 test('README documents the Wesley checkout required for contract codegen', () => {
@@ -71,4 +79,25 @@ test('CODE_STANDARDS first-line extraction tolerates CRLF line endings', () => {
 
 test('CODE_STANDARDS file-size matcher requires the bold field label', () => {
   assert.doesNotMatch('- File size**: ≤ **500 lines**', FILE_SIZE_RULE_PATTERN);
+});
+
+test('CHANGELOG documents switch-case scope for the magic-literal ratchet', () => {
+  const changelog = readFileSync(CHANGELOG_PATH, 'utf8');
+
+  assert.match(changelog, /non-structural inline comparison and\s+switch-case literals in `src\/app` and `src\/domain`/);
+});
+
+test('CODE_STANDARDS documents structural number exemptions for the magic-literal ratchet', () => {
+  const codeStandards = readFileSync(CODE_STANDARDS_PATH, 'utf8');
+
+  assert.match(codeStandards, /The structural number\s+literals `-1`, `0`, and `1` are exempt/);
+  assert.match(codeStandards, /Other numeric literals remain disallowed/);
+});
+
+test('quality gate script stays within the file-size doctrine', () => {
+  assert.ok(lineCountOf(QUALITY_GATE_SCRIPT_PATH) <= MAX_CODE_STANDARD_LINES);
+});
+
+test('quality gate spec stays within the file-size doctrine', () => {
+  assert.ok(lineCountOf(QUALITY_GATE_SPEC_PATH) <= MAX_CODE_STANDARD_LINES);
 });

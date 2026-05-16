@@ -84,6 +84,7 @@ For cross-realm values, normalize through adapters/boundaries and construct vali
 - **File size**: ≤ **500 lines**
 - **Source line length**: ≤ **160 characters**
 - **Function / Method**: ≤ **35 lines** (excluding whitespace & trivial returns)
+- **Statements per function body**: ≤ **25**
 - **Nesting depth**: ≤ **4**
 - **Cyclomatic complexity**: ≤ **8**
 - **Parameters**: ≤ **5** (use a named options class/object otherwise)
@@ -104,6 +105,14 @@ For cross-realm values, normalize through adapters/boundaries and construct vali
 - Magic numbers/strings
 - Boolean trap parameters
 - Anonymous option bags in public APIs
+
+**Current magic-literal ratchet:**
+`src/app` and `src/domain` reject non-structural inline string/number literals in
+comparisons and switch cases. Promote behavioral tokens to named constants,
+runtime token objects, or domain classes before comparing. The structural number
+literals `-1`, `0`, and `1` are exempt in `scripts/quality-gate.mjs` for sentinel,
+empty/index, and single-step cases. Other numeric literals remain disallowed and
+must be named before comparison.
 
 **Encouraged:**
 - Constructor-based validation

@@ -299,8 +299,9 @@ test('quality gate rejects functions above the line limit', () => {
       path.join(fixtureRoot, 'src', 'bad-function-lines.ts'),
       [
         'export function tooLong(): number {',
-        ...Array.from({ length: 36 }, (_, index) => `  const value${String(index)} = ${String(index)};`),
-        '  return value0;',
+        '  return [',
+        ...Array.from({ length: 35 }, (_, index) => `    ${String(index)},`),
+        '  ].length;',
         '}',
         '',
       ].join('\n'),
