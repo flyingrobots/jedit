@@ -516,8 +516,7 @@ function isNestingNode(node) {
     || ts.isWhileStatement(node)
     || ts.isDoStatement(node)
     || ts.isSwitchStatement(node)
-    || ts.isTryStatement(node)
-    || ts.isCatchClause(node);
+    || ts.isTryStatement(node);
 }
 
 function booleanParameterCount(node) {

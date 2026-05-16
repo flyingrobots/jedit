@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fixed nesting-depth accounting so `catch` clauses share the surrounding
+  `try` control level instead of adding a false extra nesting level.
 - Ratcheted the quality gate to reject non-structural inline comparison
   literals in `src/app` and `src/domain`, with boundary-scope regression
   coverage and settings key actions moved to symbol-backed runtime tokens.

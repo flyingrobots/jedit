@@ -423,6 +423,46 @@ test('quality gate rejects functions above the nesting depth limit', () => {
   }
 });
 
+test('quality gate treats catch clauses as the try control level for nesting depth', () => {
+  const fixtureRoot = mkdtempSync(path.join(tmpdir(), 'jedit-quality-gate-'));
+
+  try {
+    mkdirSync(path.join(fixtureRoot, 'src'));
+    writeFileSync(
+      path.join(fixtureRoot, 'src', 'catch-depth.ts'),
+      [
+        'export function recover(value: number): number {',
+        '  try {',
+        '    return value;',
+        '  } catch {',
+        '    if (value > 0) {',
+        '      if (value > 1) {',
+        '        if (value > 2) {',
+        '          return value;',
+        '        }',
+        '      }',
+        '    }',
+        '  }',
+        '  return 0;',
+        '}',
+        '',
+      ].join('\n'),
+    );
+
+    const result = spawnSync(process.execPath, [QUALITY_GATE_SCRIPT, '--json'], {
+      cwd: fixtureRoot,
+      encoding: 'utf8',
+    });
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+
+    const parsed = JSON.parse(result.stdout);
+    assert.equal(parsed.ok, true);
+    assert.equal(parsed.regressions.length, 0);
+  } finally {
+    rmSync(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
 test('quality gate rejects functions above the statement limit', () => {
   const fixtureRoot = mkdtempSync(path.join(tmpdir(), 'jedit-quality-gate-'));
 
