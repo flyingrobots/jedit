@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
@@ -17,7 +18,15 @@ function firstLineOf(text) {
 }
 
 function lineCountOf(filePath) {
-  return readFileSync(filePath, 'utf8').split(/\r?\n/).length;
+  const text = readFileSync(filePath, 'utf8');
+
+  if (text.length === 0) {
+    return 0;
+  }
+
+  const lineCount = text.split(/\r?\n/).length;
+
+  return /\r?\n$/.test(text) ? lineCount - 1 : lineCount;
 }
 
 test('README documents the Wesley checkout required for contract codegen', () => {
@@ -79,6 +88,23 @@ test('CODE_STANDARDS first-line extraction tolerates CRLF line endings', () => {
 
 test('CODE_STANDARDS file-size matcher requires the bold field label', () => {
   assert.doesNotMatch('- File size**: ≤ **500 lines**', FILE_SIZE_RULE_PATTERN);
+});
+
+test('lineCountOf does not count a trailing newline as an extra line', () => {
+  const fixtureRoot = mkdtempSync(path.join(tmpdir(), 'jedit-doc-lines-'));
+
+  try {
+    const lfFixturePath = path.join(fixtureRoot, 'lf.txt');
+    const crlfFixturePath = path.join(fixtureRoot, 'crlf.txt');
+
+    writeFileSync(lfFixturePath, 'one\ntwo\n');
+    writeFileSync(crlfFixturePath, 'one\r\ntwo\r\n');
+
+    assert.equal(lineCountOf(lfFixturePath), 2);
+    assert.equal(lineCountOf(crlfFixturePath), 2);
+  } finally {
+    rmSync(fixtureRoot, { force: true, recursive: true });
+  }
 });
 
 test('CHANGELOG documents switch-case scope for the magic-literal ratchet', () => {

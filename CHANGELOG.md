@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fixed docs file-size witness line counting so a trailing LF or CRLF does not
+  add a phantom line.
 - Documented and named the quality-gate catch-depth convention: catch bodies
   continue the surrounding `try` nesting level rather than adding a new level.
 - Fixed `max-statements-25` accounting so nested executable statements count
