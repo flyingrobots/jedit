@@ -143,11 +143,19 @@ function functionStatementCount(node) {
     return 0;
   }
 
-  if (ts.isBlock(node.body)) {
-    return node.body.statements.length;
-  }
+  let count = 0;
+  visitStatementNode(node.body);
+  return count;
 
-  return 1;
+  function visitStatementNode(child) {
+    if (child !== node.body && isRuntimeFunctionLike(child)) {
+      return;
+    }
+    if (ts.isStatement(child) && !ts.isBlock(child)) {
+      count += 1;
+    }
+    ts.forEachChild(child, visitStatementNode);
+  }
 }
 
 function cyclomaticComplexity(node) {

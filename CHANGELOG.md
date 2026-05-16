@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fixed `max-statements-25` accounting so nested executable statements count
+  toward the function statement limit instead of only top-level body entries.
 - Split quality-gate ratchet fixtures into a dedicated spec file so the legacy
   gate spec stays within the 500-line file-size doctrine.
 - Split quality-gate syntax counting into a dedicated module so the executable

@@ -133,6 +133,44 @@ test('quality gate rejects functions above the statement limit', () => {
   }
 });
 
+test('quality gate counts nested function body statements toward the statement limit', () => {
+  const fixtureRoot = mkdtempSync(path.join(tmpdir(), 'jedit-quality-gate-'));
+
+  try {
+    mkdirSync(path.join(fixtureRoot, 'src'));
+    writeFileSync(
+      path.join(fixtureRoot, 'src', 'bad-nested-statements.ts'),
+      [
+        'export function tooManyNestedStatements(value: number): void {',
+        '  if (value > 0) {',
+        ...Array.from({ length: 25 }, () => '    value;'),
+        '  }',
+        '}',
+        '',
+      ].join('\n'),
+    );
+
+    const result = spawnSync(process.execPath, [QUALITY_GATE_SCRIPT, '--json'], {
+      cwd: fixtureRoot,
+      encoding: 'utf8',
+    });
+    assert.notEqual(result.status, 0);
+
+    const parsed = JSON.parse(result.stdout);
+    assert.equal(parsed.ok, false);
+    assert.deepEqual(parsed.regressions, [
+      {
+        file: 'src/bad-nested-statements.ts',
+        rule: 'max-statements-25',
+        actual: 26,
+        allowed: 25,
+      },
+    ]);
+  } finally {
+    rmSync(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
 test('quality gate rejects magic comparison literals in source logic', () => {
   const fixtureRoot = mkdtempSync(path.join(tmpdir(), 'jedit-quality-gate-'));
 
