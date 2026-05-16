@@ -1,0 +1,298 @@
+"""
+Canonical app-owned structural history contract for jedit text buffers.
+
+This SDL extracts the current placeholder TypeScript model for text revisions,
+replace events, edit groups, checkpoints, readings, and evidence into the
+GraphQL surface that Wesley should consume later. It intentionally avoids
+storage data structures, substrate coordinates, file-cache internals, and
+transport fixture shapes.
+"""
+scalar DateTime
+scalar TextDigest
+
+enum TextHistorySourceKind {
+    NATIVE_EDITOR
+    IMPORTED_FILE
+    FALLBACK_TRANSLATION
+    GENERATED_FIXTURE
+    BOUNDARY_ADAPTER
+}
+
+enum TextHistoryReadingOrigin {
+    NATIVE
+    IMPORTED
+    FALLBACK_TRANSLATED
+    GENERATED
+}
+
+enum TextHistoryCommandStatus {
+    APPLIED
+    NO_OP
+    REJECTED
+}
+
+enum TextHistoryErrorCode {
+    INVALID_RANGE
+    OUT_OF_BOUNDS
+    INVALID_TEXT_BOUNDARY
+    INVALID_STATE
+    UNKNOWN_EVENT
+    INVALID_PROJECTION_PATH
+    STALE_BASIS
+}
+
+enum TextHistoryEventKind {
+    TEXT_REPLACE
+}
+
+enum TextEditGroupStatus {
+    OPEN
+    CLOSED
+}
+
+enum TextCheckpointKind {
+    MANUAL_SAVE
+    AUTO_SAVE
+    IMPORT_MARK
+    EXPORT_MARK
+}
+
+"""Where a fact, command, or reading came from."""
+type TextHistoryProvenance {
+    sourceKind: TextHistorySourceKind!
+    sourceLabel: String
+    observedAt: DateTime
+    externalEvidenceId: ID
+    projectionPath: String
+}
+
+"""Evidence that allows a reading or command result to be cited later."""
+type TextHistoryEvidence {
+    evidenceId: ID!
+    provenance: TextHistoryProvenance!
+    readingId: ID
+    receiptId: ID
+    eventId: ID
+    checkpointId: ID
+    sequenceNumber: Int
+}
+
+"""Canonical editable text history, independent from any storage backend."""
+type TextHistory {
+    historyId: ID!
+    bufferKey: String!
+    projectionPath: String
+    currentRevisionId: ID!
+    currentSequenceNumber: Int!
+    provenance: TextHistoryProvenance!
+}
+
+"""One materialized text revision identified by causal sequence."""
+type TextRevision {
+    revisionId: ID!
+    historyId: ID!
+    sequenceNumber: Int!
+    byteLength: Int!
+    lineCount: Int!
+    utf16Length: Int!
+    contentDigest: TextDigest
+    createdByEventId: ID
+    provenance: TextHistoryProvenance!
+}
+
+"""Half-open byte range in a UTF-8 text revision."""
+type TextByteRange {
+    startByte: Int!
+    endByte: Int!
+}
+
+"""Replacement witness for a text event."""
+type TextReplacement {
+    replacedRange: TextByteRange!
+    insertedTextDigest: TextDigest
+    insertedByteLength: Int!
+    deletedByteLength: Int!
+}
+
+"""Authorial history event admitted into the text history."""
+type TextHistoryEvent {
+    eventId: ID!
+    historyId: ID!
+    kind: TextHistoryEventKind!
+    sequenceNumber: Int!
+    baseRevisionId: ID!
+    nextRevisionId: ID!
+    replacement: TextReplacement!
+    author: String
+    provenance: TextHistoryProvenance!
+    evidence: TextHistoryEvidence!
+}
+
+"""Undo/edit grouping over admitted text events."""
+type TextEditGroup {
+    groupId: ID!
+    historyId: ID!
+    status: TextEditGroupStatus!
+    eventIds: [ID!]!
+    openedBy: TextHistoryProvenance!
+    closedBy: TextHistoryProvenance
+}
+
+"""Durable save/export/import marker over a text revision."""
+type TextCheckpoint {
+    checkpointId: ID!
+    historyId: ID!
+    revisionId: ID!
+    kind: TextCheckpointKind!
+    projectionPath: String!
+    provenance: TextHistoryProvenance!
+    evidence: TextHistoryEvidence!
+}
+
+"""One line in a bounded structural history reading."""
+type TextHistoryLine {
+    lineNumber: Int!
+    startByte: Int!
+    endByte: Int!
+    text: String!
+}
+
+"""Bounded, evidence-bearing reading of the canonical history."""
+type TextHistorySnapshotReading {
+    readingId: ID!
+    origin: TextHistoryReadingOrigin!
+    partial: Boolean!
+    stale: Boolean!
+    history: TextHistory!
+    currentRevision: TextRevision!
+    events: [TextHistoryEvent!]!
+    editGroups: [TextEditGroup!]!
+    checkpoints: [TextCheckpoint!]!
+    lines: [TextHistoryLine!]!
+    evidence: TextHistoryEvidence!
+}
+
+type TextHistoryError {
+    code: TextHistoryErrorCode!
+    fieldPath: [String!]!
+    evidence: TextHistoryEvidence
+}
+
+type CreateTextHistoryPayload {
+    status: TextHistoryCommandStatus!
+    history: TextHistory
+    currentRevision: TextRevision
+    evidence: TextHistoryEvidence!
+    errors: [TextHistoryError!]!
+}
+
+type ReplaceTextRangePayload {
+    status: TextHistoryCommandStatus!
+    history: TextHistory
+    currentRevision: TextRevision
+    event: TextHistoryEvent
+    evidence: TextHistoryEvidence!
+    errors: [TextHistoryError!]!
+}
+
+type TextEditGroupPayload {
+    status: TextHistoryCommandStatus!
+    history: TextHistory
+    editGroup: TextEditGroup
+    evidence: TextHistoryEvidence!
+    errors: [TextHistoryError!]!
+}
+
+type CreateTextCheckpointPayload {
+    status: TextHistoryCommandStatus!
+    history: TextHistory
+    checkpoint: TextCheckpoint
+    evidence: TextHistoryEvidence!
+    errors: [TextHistoryError!]!
+}
+
+input TextHistoryProvenanceInput {
+    sourceKind: TextHistorySourceKind!
+    sourceLabel: String
+    observedAt: DateTime
+    externalEvidenceId: ID
+    projectionPath: String
+}
+
+input CreateTextHistoryInput {
+    bufferKey: String!
+    initialText: String!
+    projectionPath: String
+    provenance: TextHistoryProvenanceInput!
+}
+
+input ReplaceTextRangeInput {
+    historyId: ID!
+    baseRevisionId: ID!
+    startByte: Int!
+    endByte: Int!
+    insertText: String!
+    author: String
+    provenance: TextHistoryProvenanceInput!
+}
+
+input OpenTextEditGroupInput {
+    historyId: ID!
+    provenance: TextHistoryProvenanceInput!
+}
+
+input IncludeTextEventInOpenGroupInput {
+    historyId: ID!
+    eventId: ID!
+    provenance: TextHistoryProvenanceInput!
+}
+
+input CloseTextEditGroupInput {
+    historyId: ID!
+    provenance: TextHistoryProvenanceInput!
+}
+
+input CreateTextCheckpointInput {
+    historyId: ID!
+    revisionId: ID!
+    kind: TextCheckpointKind!
+    projectionPath: String!
+    provenance: TextHistoryProvenanceInput!
+}
+
+input TextHistorySnapshotInput {
+    historyId: ID!
+    cursorLine: Int!
+    viewportLineCount: Int!
+    beforeLines: Int!
+    afterLines: Int!
+    maxBytes: Int!
+    includeEvents: Boolean = false
+    includeEditGroups: Boolean = false
+    includeCheckpoints: Boolean = true
+}
+
+type Mutation {
+    createTextHistory(input: CreateTextHistoryInput!): CreateTextHistoryPayload!
+        @wes_op(name: "createTextHistory")
+
+    replaceTextRange(input: ReplaceTextRangeInput!): ReplaceTextRangePayload!
+        @wes_op(name: "replaceTextRange")
+
+    openTextEditGroup(input: OpenTextEditGroupInput!): TextEditGroupPayload!
+        @wes_op(name: "openTextEditGroup")
+
+    includeTextEventInOpenGroup(input: IncludeTextEventInOpenGroupInput!): TextEditGroupPayload!
+        @wes_op(name: "includeTextEventInOpenGroup")
+
+    closeTextEditGroup(input: CloseTextEditGroupInput!): TextEditGroupPayload!
+        @wes_op(name: "closeTextEditGroup")
+
+    createTextCheckpoint(input: CreateTextCheckpointInput!): CreateTextCheckpointPayload!
+        @wes_op(name: "createTextCheckpoint")
+}
+
+type Query {
+    textHistorySnapshot(input: TextHistorySnapshotInput!): TextHistorySnapshotReading!
+        @wes_op(name: "textHistorySnapshot")
+}

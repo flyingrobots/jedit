@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added the canonical structural-history GraphQL schema for text revisions,
+  admitted replace events, edit groups, checkpoints, provenance, command
+  status, and evidence-bearing readings, plus readiness coverage and an
+  authority note that keeps the in-memory TypeScript model transitional.
 - Split quality-gate ratchet fixtures into a dedicated spec file so the legacy
   gate spec stays within the 500-line file-size doctrine.
 - Split quality-gate syntax counting into a dedicated module so the executable

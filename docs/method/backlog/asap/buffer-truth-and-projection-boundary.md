@@ -28,6 +28,10 @@ Context:
 - If we let preview, outline, source paint, and save semantics blur together,
   the editor will become harder to evolve before the real causal substrate
   even exists.
+- The schema-authority path for buffer truth now starts at
+  `contracts/jedit/structural-history.graphql`, with
+  `docs/design/structural-history-graphql-authority.md` explaining how the
+  current in-memory TypeScript model maps into canonical GraphQL.
 
 This note is the architectural version of "don’t lie to yourself."
 
