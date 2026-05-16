@@ -100,9 +100,32 @@ contract family is added. The intended flow is:
    generated payload shapes.
 4. Keep storage and substrate resolution behind ports.
 
-This slice deliberately does not add a package script because no generated
-artifact is consumed yet. Adding a script without consuming the result would
-only create another stale surface.
+The first schema-authority slice deliberately did not add a package script
+because no generated artifact was consumed yet. The `replaceTextRange` metadata
+slice adds the local generation command below once a real adapter boundary
+depends on generated operation identity.
+
+## First Metadata Consumer
+
+The first consumer is deliberately narrow:
+`src/app/structural-history-replace-text-range.ts` imports the checked-in
+`mutationReplaceTextRangeOperation` descriptor from
+`src/generated/jedit/structural-history-replace-text-range.wesley.generated.ts`.
+That descriptor carries the generated operation identity for
+`replaceTextRange`; the existing in-memory runtime still executes the edit via
+the old tick-admission model.
+
+The local generation command is:
+
+```sh
+JEDIT_WESLEY_ROOT=/path/to/wesley npm run gen:contract:structural-history:wesley
+```
+
+It writes the full Wesley TypeScript output to
+`.wesley-cache/structural-history.wesley.generated.ts`. The full artifact stays
+out of source for now because custom scalar mapping still emits TypeScript
+`unknown`; the checked-in descriptor is the metadata-only slice consumed by the
+adapter boundary.
 
 ## Out Of Scope
 

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Routed the current replace/tick in-memory adapter boundary through generated
+  structural-history `replaceTextRange` Wesley operation metadata while leaving
+  the transitional TypeScript runtime executor unchanged.
 - Added the canonical structural-history GraphQL schema for text revisions,
   admitted replace events, edit groups, checkpoints, provenance, command
   status, and evidence-bearing readings, plus readiness coverage and an

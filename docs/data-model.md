@@ -51,6 +51,11 @@ or boundary projections.
 The extraction note is
 [`docs/design/structural-history-graphql-authority.md`](design/structural-history-graphql-authority.md).
 
+The first generated-metadata consumer is the `replaceTextRange` boundary in
+`src/app/structural-history-replace-text-range.ts`. That adapter takes its
+operation identity from the Wesley descriptor while the current in-memory
+runtime remains the transitional executor.
+
 ***
 
 ## Layer split

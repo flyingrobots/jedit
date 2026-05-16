@@ -5,6 +5,7 @@ import type {
   SaveHotCheckpointResult,
 } from '../ports/hot-text-runtime.js';
 import type { TextRange } from '../domain/text-edit-contract.js';
+import { executeReplaceTextRange } from './structural-history-replace-text-range.js';
 
 export interface ApplyBufferEditResult {
   readonly nextState: HotTextBufferState;
@@ -39,24 +40,15 @@ export function applyBufferEdit(
   range: TextRange,
   text: string,
 ): ApplyBufferEditResult {
-  const admitted = runtime.admitReplaceRangeTick(state, range, text);
-  if (admitted.receipt === undefined) {
-    return { nextState: admitted.nextState };
-  }
-
-  if (admitted.nextState.openEditGroup == null) {
+  const execution = executeReplaceTextRange(runtime, state, range, text);
+  if (execution.tickId === undefined) {
     return {
-      nextState: admitted.nextState,
-      tickId: admitted.receipt.tickId,
+      nextState: execution.nextState,
     };
   }
-
   return {
-    nextState: runtime.includeTickInOpenGroup(
-      admitted.nextState,
-      admitted.receipt.tickId,
-    ),
-    tickId: admitted.receipt.tickId,
+    nextState: execution.nextState,
+    tickId: execution.tickId,
   };
 }
 
