@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Updated architecture and user-facing documentation to describe the
+  structural-history GraphQL authority slice, build-generated Wesley metadata,
+  and the current fake-versus-real Echo witness posture.
 - Routed the current replace/tick in-memory adapter boundary through generated
   structural-history `replaceTextRange` Wesley operation metadata while leaving
   the transitional TypeScript runtime executor unchanged. The metadata is now

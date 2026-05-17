@@ -41,6 +41,15 @@ not a forked runtime.
 - `spec/hot-text-contract-readiness.spec.mjs` verifies that mutation
   `@wes_footprint` metadata and bounded read operations are preserved before
   any Echo Rust binding generation runs.
+- `contracts/jedit/structural-history.graphql` is now the canonical product
+  structural-history SDL.
+- `scripts/gen-structural-history-wesley.mjs` uses published `wesley-cli` 0.0.4
+  to emit the full structural-history TypeScript artifact into `.wesley-cache`
+  and extract the ignored `replaceTextRange` operation descriptor consumed by
+  `src/app/structural-history-replace-text-range.ts`.
+- `spec/structural-history-replace-text-range-metadata.spec.mjs` verifies that
+  the descriptor is ignored, mirrors Wesley output, and drives the hot-buffer
+  adapter operation identity without changing storage behavior.
 
 The deferred Echo-dependent step is:
 

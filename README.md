@@ -20,6 +20,7 @@ IDE clone.
 
 The full invariant set is written down in
 [docs/design/project-invariants.md](docs/design/project-invariants.md).
+The short operational guide is [GUIDE.md](GUIDE.md).
 The end-to-end buffer rendering path is explained in
 [ADVANCED_GUIDE.md](ADVANCED_GUIDE.md).
 
@@ -47,7 +48,9 @@ The end-to-end buffer rendering path is explained in
 
 ## Stack posture
 
-`jedit` is currently the driving consumer for a narrow Echo/Wesley seam:
+`jedit` is currently the driving consumer for two narrow Echo/Wesley seams.
+
+The first seam is the transport witness:
 
 ```text
 Wesley fixture artifact shape
@@ -91,6 +94,19 @@ ECHO_WARP_WASM_DIR=/path/to/echo/crates/warp-wasm \
 The runner asks Echo to build its own WASM package boundary, then runs the
 jedit witness against the resulting module. This is still a witness ritual, not
 a published package contract.
+
+The second seam is schema authority for structural history:
+
+```text
+contracts/jedit/structural-history.graphql
+-> Wesley generated operation metadata
+-> replaceTextRange adapter boundary
+-> existing in-memory runtime executor
+```
+
+This path does not replace storage and does not wire Echo. It proves that the
+`replaceTextRange` operation identity comes from generated Wesley metadata
+instead of being duplicated by hand.
 
 ## Echo posture
 
@@ -139,6 +155,23 @@ human-readable scaffolding, not the durable Wesley runtime codec. The durable
 target remains Wesley-generated binary codecs shared across Rust and
 TypeScript.
 
+For structural history, the authored SDL is now the source of authority:
+
+- `contracts/jedit/structural-history.graphql`
+- `scripts/gen-structural-history-wesley.mjs`
+- `src/app/structural-history-replace-text-range.ts`
+
+`npm run build` and `npm test` run the structural-history generator before
+TypeScript compilation. The generator installs `wesley-cli` 0.0.4 into
+`.wesley-cache/cargo` when needed, emits the full TypeScript artifact to
+`.wesley-cache/structural-history.wesley.generated.ts`, and extracts an ignored
+adapter-facing descriptor at
+`src/generated/jedit/structural-history-replace-text-range.wesley.generated.ts`.
+
+That descriptor is generated build output, not committed source. The existing
+TypeScript model still executes the edit; generated metadata only owns the
+operation identity for this slice.
+
 ## Graft posture
 
 `jedit` should use Graft as its structural intelligence engine, not as its
@@ -176,6 +209,19 @@ runtime lives at
 The first app-owned observer authoring surface lives at
 [src/app/jedit-observer-spec.ts](src/app/jedit-observer-spec.ts).
 
+The app-owned structural-history contract lives at
+[contracts/jedit/structural-history.graphql](contracts/jedit/structural-history.graphql).
+It extracts the current in-memory text history model into canonical GraphQL
+facts for revisions, replacements, edit groups, checkpoints, provenance,
+command status, errors, and bounded readings. The design note is
+[docs/design/structural-history-graphql-authority.md](docs/design/structural-history-graphql-authority.md).
+
+The first structural-history consumer is
+[src/app/structural-history-replace-text-range.ts](src/app/structural-history-replace-text-range.ts).
+`applyBufferEdit(...)` carries the generated `replaceTextRange` operation
+identity through its result while the old in-memory hot-text runtime remains
+the executor.
+
 The intended long-term posture remains optic-shaped:
 
 - `jedit` submits contract intent to Echo.
@@ -205,16 +251,18 @@ JEDIT_WESLEY_ROOT=/path/to/wesley npm run gen:contract
 
 `JEDIT_WESLEY_ROOT` must point at a Wesley checkout that contains both
 `packages/wesley-host-node/bin/wesley.mjs` and
-`crates/wesley-cli/Cargo.toml`. The command writes the Rust-Wesley operation
-binding artifact beside the legacy TypeScript/Zod files. The app still keeps the
-legacy Zod validators until Wesley has a Rust-native validator emitter, but
-operation-name and request-input type seams should prefer the Rust-Wesley
-generated artifact.
+`crates/wesley-cli/Cargo.toml` for the legacy hot-text and observer generation
+paths. Structural-history metadata is the exception: it uses the published
+`wesley-cli` 0.0.4 crate through `scripts/gen-structural-history-wesley.mjs`
+and does not require a sibling Wesley checkout.
 
 The current readiness gate is `spec/hot-text-contract-readiness.spec.mjs`: it
 proves the authored SDL and generated Wesley TypeScript operation metadata agree
 on mutation footprints, bounded reads, and the contract surface that Echo-side
 generation will consume when that seam graduates beyond fixture witnesses.
+Structural-history readiness lives in
+`spec/structural-history-contract-readiness.spec.mjs` and
+`spec/structural-history-replace-text-range-metadata.spec.mjs`.
 
 Near-term product direction:
 
@@ -246,11 +294,16 @@ Right now the app gives you:
 - an opt-in real Echo WASM Stack Witness runner
 - an opaque `ReadBasisHandle` boundary that keeps raw Echo coordinates below the
   app-facing optic client
+- a structural-history GraphQL authority surface
+- build-generated `replaceTextRange` Wesley operation metadata consumed by the
+  hot-buffer adapter boundary
 
 ## Next steps
 
 - graduate `ReadBasisHandle` from witness/session scaffolding into a real
   optic/session bootstrap contract
+- route the next structural-history operation through generated Wesley metadata
+  without replacing storage
 - make jedit consume an Echo-owned, versioned WASM package artifact rather than
   relying on sibling-repo witness setup
 - remove the remaining fixture-only raw worldline derivation once Echo can

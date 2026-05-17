@@ -5,6 +5,7 @@ import test from 'node:test';
 
 const REPO_ROOT = process.cwd();
 const README_PATH = path.join(REPO_ROOT, 'README.md');
+const GUIDE_PATH = path.join(REPO_ROOT, 'GUIDE.md');
 const CODE_STANDARDS_PATH = path.join(REPO_ROOT, 'CODE_STANDARDS.md');
 const CHANGELOG_PATH = path.join(REPO_ROOT, 'CHANGELOG.md');
 const QUALITY_GATE_SCRIPT_PATH = path.join(REPO_ROOT, 'scripts', 'quality-gate.mjs');
@@ -25,6 +26,15 @@ test('README documents the Wesley checkout required for contract codegen', () =>
 
   assert.match(readme, /JEDIT_WESLEY_ROOT/);
   assert.match(readme, /JEDIT_WESLEY_ROOT=.*npm run gen:contract/s);
+});
+
+test('GUIDE documents build-local structural history Wesley generation', () => {
+  const guide = readFileSync(GUIDE_PATH, 'utf8');
+
+  assert.match(guide, /npm run gen:contract:structural-history:wesley/);
+  assert.match(guide, /wesley-cli` 0\.0\.4/);
+  assert.match(guide, /structural-history-replace-text-range\.wesley\.generated\.ts/);
+  assert.match(guide, /Do not edit it and do not commit it/);
 });
 
 test('CODE_STANDARDS starts with the runtime truth H1', () => {

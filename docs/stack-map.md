@@ -54,6 +54,11 @@ createBuffer
 - Real Echo WASM witness remains opt-in.
 - Fixture vars bytes are not the durable Wesley runtime codec.
 - `ReadBasisHandle` is the first anti-leak contract, not the complete optic protocol.
+- Structural-history SDL is now the product contract authority for text
+  revisions, replacement events, edit groups, checkpoints, provenance, command
+  status, and evidence-bearing readings.
+- `replaceTextRange` operation identity is consumed from build-generated Wesley
+  metadata while the old TypeScript runtime remains the transitional executor.
 - Continuum remains deferred until the seam is proven enough to publish.
 
 ## Operating rule
