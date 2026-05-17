@@ -5,9 +5,13 @@ import type {
   SaveHotCheckpointResult,
 } from '../ports/hot-text-runtime.js';
 import type { TextRange } from '../domain/text-edit-contract.js';
-import { executeReplaceTextRange } from './structural-history-replace-text-range.js';
+import {
+  executeReplaceTextRange,
+  type ReplaceTextRangeOperationName,
+} from './structural-history-replace-text-range.js';
 
 export interface ApplyBufferEditResult {
+  readonly operationName: ReplaceTextRangeOperationName;
   readonly nextState: HotTextBufferState;
   readonly tickId?: number;
 }
@@ -43,10 +47,12 @@ export function applyBufferEdit(
   const execution = executeReplaceTextRange(runtime, state, range, text);
   if (execution.tickId === undefined) {
     return {
+      operationName: execution.operationName,
       nextState: execution.nextState,
     };
   }
   return {
+    operationName: execution.operationName,
     nextState: execution.nextState,
     tickId: execution.tickId,
   };

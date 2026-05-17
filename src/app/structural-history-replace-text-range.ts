@@ -2,7 +2,7 @@ import type { TextRange } from '../domain/text-edit-contract.js';
 import { mutationReplaceTextRangeOperation } from '../generated/jedit/structural-history-replace-text-range.wesley.generated.js';
 import type { HotTextBufferState, HotTextRuntimePort } from '../ports/hot-text-runtime.js';
 
-type ReplaceTextRangeOperationName = typeof mutationReplaceTextRangeOperation.fieldName;
+export type ReplaceTextRangeOperationName = typeof mutationReplaceTextRangeOperation.fieldName;
 
 export interface ReplaceTextRangeExecution {
   readonly operationName: ReplaceTextRangeOperationName;

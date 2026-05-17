@@ -53,8 +53,10 @@ The extraction note is
 
 The first generated-metadata consumer is the `replaceTextRange` boundary in
 `src/app/structural-history-replace-text-range.ts`. That adapter takes its
-operation identity from the Wesley descriptor while the current in-memory
-runtime remains the transitional executor.
+operation identity from the build-generated Wesley descriptor while the current
+in-memory runtime remains the transitional executor. The descriptor is generated
+into an ignored source path during build/test; the authored SDL remains the
+committed authority.
 
 ***
 

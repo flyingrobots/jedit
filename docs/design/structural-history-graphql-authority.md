@@ -91,8 +91,8 @@ hand-authored authority beside the SDL.
 ## Wesley Generation
 
 Wesley generation should consume
-`contracts/jedit/structural-history.graphql` after the generator path for this
-contract family is added. The intended flow is:
+`contracts/jedit/structural-history.graphql` through the published
+`wesley-cli` 0.0.4 crate. The intended flow is:
 
 1. Author the domain contract in GraphQL.
 2. Generate TypeScript request, payload, and operation metadata from the SDL.
@@ -102,13 +102,13 @@ contract family is added. The intended flow is:
 
 The first schema-authority slice deliberately did not add a package script
 because no generated artifact was consumed yet. The `replaceTextRange` metadata
-slice adds the local generation command below once a real adapter boundary
-depends on generated operation identity.
+slice adds the local generation command below because a real adapter boundary
+now depends on generated operation identity.
 
 ## First Metadata Consumer
 
 The first consumer is deliberately narrow:
-`src/app/structural-history-replace-text-range.ts` imports the checked-in
+`src/app/structural-history-replace-text-range.ts` imports the build-generated
 `mutationReplaceTextRangeOperation` descriptor from
 `src/generated/jedit/structural-history-replace-text-range.wesley.generated.ts`.
 That descriptor carries the generated operation identity for
@@ -118,14 +118,20 @@ the old tick-admission model.
 The local generation command is:
 
 ```sh
-JEDIT_WESLEY_ROOT=/path/to/wesley npm run gen:contract:structural-history:wesley
+npm run gen:contract:structural-history:wesley
 ```
 
 It writes the full Wesley TypeScript output to
-`.wesley-cache/structural-history.wesley.generated.ts`. The full artifact stays
-out of source for now because custom scalar mapping still emits TypeScript
-`unknown`; the checked-in descriptor is the metadata-only slice consumed by the
-adapter boundary.
+`.wesley-cache/structural-history.wesley.generated.ts`, extracts the
+`mutationReplaceTextRangeOperation` descriptor, and writes the adapter-facing
+metadata file under `src/generated/jedit/`. That source file is ignored and is
+created by the build/test path rather than committed.
+
+The generator installs `wesley-cli` 0.0.4 into `.wesley-cache/cargo` when the
+expected binary is missing. This mirrors Echo's current direction: Echo's
+`echo-wesley-gen` consumes the published `wesley-core` 0.0.4 crate, while jedit
+uses the published CLI only to produce TypeScript operation metadata for this
+schema-authority slice.
 
 ## Out Of Scope
 

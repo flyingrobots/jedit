@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
@@ -10,6 +10,12 @@ const REPO_ROOT = process.cwd();
 const CONTRACT_PATH = path.join(REPO_ROOT, 'contracts', 'jedit', 'structural-history.graphql');
 const PACKAGE_JSON_PATH = path.join(REPO_ROOT, 'package.json');
 const CACHE_GENERATED_PATH = path.join(REPO_ROOT, '.wesley-cache', 'structural-history.wesley.generated.ts');
+const GENERATED_SOURCE_PATH = path.join(
+  'src',
+  'generated',
+  'jedit',
+  'structural-history-replace-text-range.wesley.generated.ts',
+);
 const GENERATED_MODULE_PATH = path.join(
   REPO_ROOT,
   'dist',
@@ -27,7 +33,6 @@ const HOT_BUFFER_SESSION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'hot-
 const HOT_TEXT_RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'in-memory-hot-text-runtime.js');
 const TEXT_EDIT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'domain', 'text-edit-contract.js');
 const STRUCTURAL_HISTORY_GENERATION_SCRIPT = 'gen:contract:structural-history:wesley';
-const LOCAL_WESLEY_ROOT = path.join(REPO_ROOT, '..', 'wesley');
 
 let builtModulesPromise;
 
@@ -38,44 +43,40 @@ test('structural history SDL marks replaceTextRange as a Wesley operation', asyn
   assert.match(contract, /@wes_op\(name: "replaceTextRange"\)/);
 });
 
-test('structural history generation path emits replaceTextRange metadata', async (context) => {
-  const wesleyRoot = resolveWesleyRoot();
-  if (wesleyRoot == null) {
-    context.skip('Set JEDIT_WESLEY_ROOT to run structural-history Wesley generation.');
-    return;
-  }
-
+test('structural history generation path emits replaceTextRange metadata', async () => {
   const packageJson = JSON.parse(await readFile(PACKAGE_JSON_PATH, 'utf8'));
 
-  assert.match(
+  assert.equal(
     packageJson.scripts[STRUCTURAL_HISTORY_GENERATION_SCRIPT],
-    /contracts\/jedit\/structural-history\.graphql/,
+    'node scripts/gen-structural-history-wesley.mjs',
   );
 
-  const generated = runStructuralHistoryGeneration(wesleyRoot);
+  const generated = runStructuralHistoryGeneration();
 
   assert.match(generated, /export const mutationReplaceTextRangeOperation = \{/);
   assert.match(generated, /fieldName: "replaceTextRange"/);
   assert.match(generated, /directives: \{"wes_op":\{"name":"replaceTextRange"\}\}/);
 });
 
-test('checked-in replaceTextRange descriptor mirrors Wesley generated metadata', async (context) => {
-  const wesleyRoot = resolveWesleyRoot();
-  if (wesleyRoot == null) {
-    context.skip('Set JEDIT_WESLEY_ROOT to compare checked-in metadata with Wesley output.');
-    return;
-  }
-
-  const generated = runStructuralHistoryGeneration(wesleyRoot);
+test('generated replaceTextRange descriptor is ignored and mirrors Wesley metadata', async () => {
+  const generated = runStructuralHistoryGeneration();
   const modules = await loadBuiltModules();
+  const generatedOperation = readGeneratedOperation(generated, 'mutationReplaceTextRangeOperation');
 
-  assert.equal(
-    modules.generatedMetadata.mutationReplaceTextRangeOperation.fieldName,
-    generatedField(generated, 'mutationReplaceTextRangeOperation'),
-  );
-  assert.equal(
-    modules.generatedMetadata.mutationReplaceTextRangeOperation.directives.wes_op.name,
-    modules.generatedMetadata.mutationReplaceTextRangeOperation.fieldName,
+  assert.equal(sourcePathIsTracked(GENERATED_SOURCE_PATH), false);
+  assert.equal(sourcePathIsIgnored(GENERATED_SOURCE_PATH), true);
+
+  assert.deepEqual(
+    modules.generatedMetadata.mutationReplaceTextRangeOperation,
+    {
+      operationType: generatedOperation.operationType,
+      fieldName: generatedOperation.fieldName,
+      directives: {
+        wes_op: {
+          name: generatedOperation.wesOpName,
+        },
+      },
+    },
   );
 });
 
@@ -109,6 +110,10 @@ test('replaceTextRange metadata route preserves hot buffer tick behavior', async
   const closed = modules.hotBufferSession.endEditGroup(runtime, result.nextState);
 
   assert.equal(modules.hotBufferSession.materializeHotBuffer(runtime, result.nextState), 'hello brave world');
+  assert.equal(
+    result.operationName,
+    modules.generatedMetadata.mutationReplaceTextRangeOperation.fieldName,
+  );
   assert.equal(result.tickId, 1);
   assert.deepEqual(closed.nextState.editGroups, [
     {
@@ -124,7 +129,7 @@ async function loadBuiltModules() {
   }
 
   builtModulesPromise = (async () => {
-    const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
+    const build = spawnSync('npm', ['run', '--silent', 'build'], {
       cwd: REPO_ROOT,
       encoding: 'utf8',
     });
@@ -151,24 +156,10 @@ async function loadBuiltModules() {
   return builtModulesPromise;
 }
 
-function resolveWesleyRoot() {
-  if (process.env.JEDIT_WESLEY_ROOT != null && process.env.JEDIT_WESLEY_ROOT.length > 0) {
-    return process.env.JEDIT_WESLEY_ROOT;
-  }
-  if (existsSync(LOCAL_WESLEY_ROOT)) {
-    return LOCAL_WESLEY_ROOT;
-  }
-  return null;
-}
-
-function runStructuralHistoryGeneration(wesleyRoot) {
+function runStructuralHistoryGeneration() {
   const generation = spawnSync('npm', ['run', '--silent', STRUCTURAL_HISTORY_GENERATION_SCRIPT], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
-    env: {
-      ...process.env,
-      JEDIT_WESLEY_ROOT: wesleyRoot,
-    },
   });
 
   assert.equal(generation.status, 0, generation.stderr || generation.stdout);
@@ -179,10 +170,39 @@ function readGeneratedCache() {
   return readFileSync(CACHE_GENERATED_PATH, 'utf8');
 }
 
-function generatedField(generated, operationConstantName) {
-  const pattern = new RegExp(`export const ${operationConstantName} = [\\s\\S]*?fieldName: "([^"]+)"`);
+function readGeneratedOperation(generated, operationConstantName) {
+  const pattern = new RegExp(
+    `export const ${operationConstantName} = \\{\\s*`
+      + 'operationType: "([^"]+)",\\s*'
+      + 'fieldName: "([^"]+)",\\s*'
+      + 'directives: \\{"wes_op":\\{"name":"([^"]+)"\\}\\},\\s*'
+      + '\\} as const;',
+  );
   const match = generated.match(pattern);
 
   assert.notEqual(match, null);
-  return match[1];
+  const [, operationType, fieldName, wesOpName] = match;
+  return {
+    operationType,
+    fieldName,
+    wesOpName,
+  };
+}
+
+function sourcePathIsTracked(relativePath) {
+  const tracked = spawnSync('git', ['ls-files', '--error-unmatch', relativePath], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+  });
+
+  return tracked.status === 0;
+}
+
+function sourcePathIsIgnored(relativePath) {
+  const ignored = spawnSync('git', ['check-ignore', relativePath], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+  });
+
+  return ignored.status === 0;
 }

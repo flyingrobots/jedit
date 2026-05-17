@@ -3,3 +3,4 @@ dist
 .codex/
 .wesley-cache/
 .obsidian/
+src/generated/jedit/structural-history-replace-text-range.wesley.generated.ts
