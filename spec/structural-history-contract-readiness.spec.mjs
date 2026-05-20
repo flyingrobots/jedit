@@ -6,6 +6,13 @@ import test from 'node:test';
 const REPO_ROOT = process.cwd();
 const CONTRACT_PATH = path.join(REPO_ROOT, 'contracts', 'jedit', 'structural-history.graphql');
 const DESIGN_NOTE_PATH = path.join(REPO_ROOT, 'docs', 'design', 'structural-history-graphql-authority.md');
+const DESIGN_CYCLE_PATH = path.join(
+  REPO_ROOT,
+  'docs',
+  'design',
+  '0016-structural-history-replace-text-range-metadata',
+  'replace-text-range-wesley-metadata.md',
+);
 const DATA_MODEL_DOC_PATH = path.join(REPO_ROOT, 'docs', 'data-model.md');
 const BACKLOG_DOC_PATH = path.join(
   REPO_ROOT,
@@ -16,6 +23,21 @@ const BACKLOG_DOC_PATH = path.join(
   'buffer-truth-and-projection-boundary.md',
 );
 const STRUCTURAL_HISTORY_CONTRACT_REF = 'contracts/jedit/structural-history.graphql';
+const STRUCTURAL_HISTORY_METADATA_CYCLE = '0016-structural-history-replace-text-range-metadata';
+
+const EXPECTED_METADATA_CYCLE_HILLS = Object.freeze([
+  /A maintainer can inspect the structural-history SDL and see\s+`replaceTextRange` declared as a Wesley operation/,
+  /A developer can run the normal build and test paths from a clean checkout\s+and have the ignored `replaceTextRange` descriptor generated/,
+  /A future runtime slice can call the hot-buffer replace boundary and observe\s+generated `replaceTextRange` operation identity/,
+]);
+
+const EXPECTED_METADATA_CYCLE_PLAYBACK = Object.freeze([
+  /Does the structural-history SDL mark `replaceTextRange` with `@wes_op`\?/,
+  /Does the structural-history generator emit the Wesley operation descriptor/,
+  /Is the extracted descriptor ignored generated output/,
+  /Does the app boundary import generated operation metadata/,
+  /Does routing through that boundary preserve replace admission/,
+]);
 
 const EXPECTED_TYPES = Object.freeze([
   'TextHistory',
@@ -123,6 +145,25 @@ test('structural history authority note documents extraction and deferred runtim
   assert.match(note, /Wesley generation should consume/);
   assert.match(note, /Runtime storage is out of scope/);
   assert.match(note, /Transitional TypeScript/);
+});
+
+test('structural history metadata cycle states the PR hills and playback', async () => {
+  const cycle = await readFile(DESIGN_CYCLE_PATH, 'utf8');
+
+  assert.match(cycle, new RegExp(`cycle: "${STRUCTURAL_HISTORY_METADATA_CYCLE}"`));
+  assert.match(cycle, /## Hills/);
+  assert.match(cycle, /## Playback Questions/);
+  assert.match(cycle, new RegExp(escapeRegExp(STRUCTURAL_HISTORY_CONTRACT_REF)));
+  assert.match(cycle, /spec\/structural-history-replace-text-range-metadata\.spec\.mjs/);
+  assert.match(cycle, /Runtime storage, persistent history, and generated[-\s]+payload-shape cutover stay\s+out of scope/);
+
+  for (const hill of EXPECTED_METADATA_CYCLE_HILLS) {
+    assert.match(cycle, hill);
+  }
+
+  for (const playbackQuestion of EXPECTED_METADATA_CYCLE_PLAYBACK) {
+    assert.match(cycle, playbackQuestion);
+  }
 });
 
 test('docs point future buffer-truth work at the structural history SDL', async () => {
