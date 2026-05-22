@@ -1,5 +1,14 @@
 # jedit
 
+<div align="center">
+<img alt="jedit" src="https://github.com/user-attachments/assets/f30d1fce-8d58-41e2-b2ce-113e0401e7d4" />
+
+<img width="393" height="221" alt="image" src="https://github.com/user-attachments/assets/eae717d0-771b-49a9-b4ca-5c8b3636a617" />
+
+
+</div>
+
+
 Terminal-first text and Markdown editing, built on Bijou and shaped around
 causal history through Echo.
 
