@@ -338,11 +338,11 @@ Test plan:
 
 Checklist:
 
-- [ ] Retained evidence ref type exists.
-- [ ] Receipt ref posture exists.
-- [ ] Reading envelope/payload posture exists.
-- [ ] Missing retention is typed.
-- [ ] Semantic and byte identities are distinct.
+- [x] Retained evidence ref type exists.
+- [x] Receipt ref posture exists.
+- [x] Reading envelope/payload posture exists.
+- [x] Missing retention is typed.
+- [x] Semantic and byte identities are distinct.
 
 ## Slice 11 - Agent CLI Real Echo Path
 

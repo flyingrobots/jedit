@@ -5,6 +5,7 @@ import type {
   TextWindowLine,
 } from './jedit-optic-client.js';
 import type { JeditIntentOutcome } from './jedit-intent-outcomes.js';
+import type { JeditRetainedEvidenceInventory } from './jedit-retained-evidence.js';
 
 export interface EchoPoweredTextBufferWitnessRequest {
   readonly bufferKey: BufferKey;
@@ -25,6 +26,7 @@ export interface EchoPoweredTextBufferWitnessReport {
   readonly bufferKey: BufferKey;
   readonly outcome: JeditIntentOutcome;
   readonly outcomeTrail: readonly JeditIntentOutcome[];
+  readonly retainedEvidence: JeditRetainedEvidenceInventory;
   readonly receiptId: string;
   readonly readingId: ReadingId;
   readonly text: string;

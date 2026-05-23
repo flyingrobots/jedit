@@ -10,11 +10,16 @@ import {
   createJeditIntentOutcomeLedger,
   createJeditReceiptHandle,
 } from './jedit-intent-outcomes.js';
+import { createJeditRetainedEvidenceInventory } from './jedit-retained-evidence.js';
 import type {
   JeditAcceptedPendingIntentOutcome,
   JeditAppliedIntentOutcome,
 } from '../ports/jedit-intent-outcomes.js';
-import { mutationReplaceRangeAsTickOperation } from '../generated/jedit/hot-text-runtime.wesley.generated.js';
+import {
+  mutationReplaceRangeAsTickOperation,
+  queryTextWindowOperation,
+} from '../generated/jedit/hot-text-runtime.wesley.generated.js';
+import { JEDIT_HOT_TEXT_PACKAGE_ID } from './jedit-contract-package.js';
 
 export async function runEchoPoweredTextBufferWitness(
   session: OpticSession,
@@ -61,6 +66,13 @@ function toWitnessReport(
     bufferKey: buffer.bufferKey,
     outcome,
     outcomeTrail: [pending, outcome],
+    retainedEvidence: createJeditRetainedEvidenceInventory({
+      packageId: JEDIT_HOT_TEXT_PACKAGE_ID,
+      mutationOperationName: mutationReplaceRangeAsTickOperation.fieldName,
+      queryOperationName: queryTextWindowOperation.fieldName,
+      receiptId: applied.receiptId,
+      readingId: observed.evidence.readingId,
+    }),
     receiptId: applied.receiptId,
     readingId: observed.evidence.readingId,
     text: observed.value.lines.map((line) => line.text).join('\n'),
