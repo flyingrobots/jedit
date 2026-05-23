@@ -17,7 +17,7 @@ contract operation and not an application capability.
 | Surface | Allowed | Forbidden |
 | :--- | :--- | :--- |
 | jedit app/product code | Submit canonical intent bytes, observe bounded readings, render product evidence. | Start Echo, stop Echo, request run-until-idle, inject ticks, inspect scheduler internals. |
-| jedit trusted Echo host adapter | Request run-until-idle, later request start/stop/cadence policy, decode trusted lifecycle responses. | Expose raw trusted control to app code, choose individual tick boundaries, mutate product state. |
+| jedit trusted Echo host adapter | Request run-until-idle, request stop, later request cadence policy, decode trusted lifecycle responses. | Expose raw trusted control to app code, choose individual tick boundaries, mutate product state. |
 | Echo runtime | Own the run loop, choose scheduler work, emit tick receipts, report lifecycle status. | Treat jedit product operations as trusted runtime control. |
 
 ## Implemented Shape
@@ -33,6 +33,7 @@ The current port exposes:
 
 ```text
 TrustedEchoRuntimeLifecyclePort.requestRunUntilIdle({ cycleLimit })
+TrustedEchoRuntimeLifecyclePort.requestStop()
 ```
 
 The adapter requires:
@@ -73,6 +74,20 @@ trusted host chooses Tick N
 application callback timing becomes causal history
 ```
 
+`requestStop` means:
+
+```text
+trusted host asks Echo to suspend future scheduler opportunities at a safe
+boundary
+```
+
+It does not mean:
+
+```text
+trusted host interrupts a half-committed tick
+application code cancels execution
+```
+
 ## Witness Integration
 
 The real Echo WASM stack witness now routes its until-idle control through the
@@ -83,6 +98,8 @@ createEchoWasmKernelHostTransport(...)
 -> { app, trustedHost }
 -> createTrustedEchoRuntimeLifecyclePort({ trustedHost, codec })
 -> lifecycle.requestRunUntilIdle({ cycleLimit })
+-> lifecycle.requestStop(), when the host is shutting down or suspending the
+   scheduler
 ```
 
 The app transport remains separate:
@@ -97,8 +114,10 @@ No app-facing jedit optic client receives the lifecycle port.
 ## Evidence
 
 - `trusted Echo lifecycle port requests run-until-idle without exposing tick injection`
+- `trusted Echo lifecycle port requests stop through trusted control only`
 - `trusted Echo lifecycle port keeps app transport out of lifecycle authority`
 - `real Echo WASM witness control intent honors configured cycle limit`
+- `real Echo WASM witness stop control stays on trusted lifecycle vocabulary`
 - `real Echo WASM Stack Witness 0001 transport emits ReadingEnvelope + QueryBytes`
 
 ## Non-Goals

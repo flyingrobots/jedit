@@ -20,5 +20,12 @@ export function createTrustedEchoRuntimeLifecyclePort(
         ),
       );
     },
+    requestStop() {
+      return options.codec.decodeStopResponse(
+        options.trustedHost.dispatchControlIntentBytes(
+          options.codec.encodeStopRequest(),
+        ),
+      );
+    },
   };
 }

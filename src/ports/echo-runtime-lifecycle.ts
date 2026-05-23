@@ -7,11 +7,19 @@ export interface EchoRunUntilIdleResult {
   readonly lastRunCompletion: string;
 }
 
+export interface EchoStopResult {
+  readonly accepted: boolean;
+  readonly lastRunCompletion: string;
+}
+
 export interface TrustedEchoRuntimeLifecyclePort {
   requestRunUntilIdle(request: EchoRunUntilIdleRequest): EchoRunUntilIdleResult;
+  requestStop(): EchoStopResult;
 }
 
 export interface EchoRuntimeLifecycleCodec {
   encodeRunUntilIdleRequest(request: EchoRunUntilIdleRequest): Uint8Array;
   decodeRunUntilIdleResponse(responseBytes: Uint8Array): EchoRunUntilIdleResult;
+  encodeStopRequest(): Uint8Array;
+  decodeStopResponse(responseBytes: Uint8Array): EchoStopResult;
 }

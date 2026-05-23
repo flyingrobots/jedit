@@ -125,7 +125,7 @@ and host authority split:
 
 - jedit application code submits canonical intents and observes readings;
 - trusted Echo host code owns package install, runtime lifecycle requests,
-  until-idle policy, and fault recovery through a dedicated lifecycle port;
+  until-idle/stop policy, and fault recovery through a dedicated lifecycle port;
 - the Echo-powered `TextBufferOptic` session requests lifecycle after mutations
   without exposing that lifecycle port to application code;
 - no jedit app path can tick or tunnel trusted runtime lifecycle control

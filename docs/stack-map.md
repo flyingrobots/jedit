@@ -85,6 +85,8 @@ The next release-gate slice plan is recorded in
 - `TrustedEchoRuntimeLifecyclePort.requestRunUntilIdle(...)` wraps raw trusted
   Echo control bytes so witness and host code do not talk in external tick
   vocabulary.
+- `TrustedEchoRuntimeLifecyclePort.requestStop()` wraps trusted Stop control
+  without exposing app-controlled cancellation or half-tick interruption.
 - `scripts/jedit-echo-powered-session.mjs --json` gives agents a fast
   product-session witness over the `TextBufferOptic` and trusted lifecycle
   wrapper. It uses the fake Echo-shaped transport; the opt-in real Echo WASM

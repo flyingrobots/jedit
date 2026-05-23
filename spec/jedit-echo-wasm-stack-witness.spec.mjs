@@ -106,6 +106,12 @@ test('real Echo WASM witness control intent honors configured cycle limit', () =
   assert.equal(controlIntent.mode.cycle_limit, CUSTOM_RUN_UNTIL_IDLE_CYCLE_LIMIT);
 });
 
+test('real Echo WASM witness stop control stays on trusted lifecycle vocabulary', () => {
+  const controlIntent = unpackControlIntentVars(packControlStopIntent());
+
+  assert.equal(controlIntent.kind, 'stop');
+});
+
 test('real Echo WASM witness report names retained-evidence and replay posture', () => {
   const queryBytes = encodeUtf8(STACK_WITNESS_TEXT);
   const artifact = createWitnessReportFixtureArtifact(queryBytes);
@@ -308,12 +314,28 @@ function packControlStartIntent(cycleLimit = RUN_UNTIL_IDLE_CYCLE_LIMIT) {
   }));
 }
 
+function packControlStopIntent() {
+  return packEintEnvelope(ECHO_CONTROL_OP_IDS.INTENT_V1, encodeCbor({
+    kind: 'stop',
+  }));
+}
+
 function createWitnessLifecycleCodec() {
   return {
     encodeRunUntilIdleRequest(request) {
       return packControlStartIntent(request.cycleLimit);
     },
     decodeRunUntilIdleResponse(responseBytes) {
+      const response = decodeOkEnvelope(responseBytes);
+      return {
+        accepted: response.accepted === true,
+        lastRunCompletion: response.scheduler_status.last_run_completion,
+      };
+    },
+    encodeStopRequest() {
+      return packControlStopIntent();
+    },
+    decodeStopResponse(responseBytes) {
       const response = decodeOkEnvelope(responseBytes);
       return {
         accepted: response.accepted === true,

@@ -718,6 +718,8 @@ It proves:
 - app code can submit canonical fixture intents through the app transport;
 - trusted host code can request Echo's internal run loop until idle through the
   trusted control transport;
+- trusted host code can request stop through the same lifecycle port without
+  exposing app-controlled cancellation;
 - app code can observe a bounded `textWindow` reading;
 - Echo returns `ReadingEnvelope` plus `QueryBytes`;
 - jedit can decode those bytes into a `TextWindowReading`;
@@ -790,6 +792,10 @@ That limit is a guardrail around Echo's own run loop; it is not an externally
 supplied tick stream. Future long-lived hosts may ask Echo to start on a
 cadence, stop, or recover faults, but those controls remain lifecycle requests.
 Echo still owns each logical tick boundary and every `TickReceipt`.
+
+The lifecycle port also carries `requestStop()`. Stop is trusted host control:
+it suspends future scheduler opportunities at a safe boundary. It is not a
+jedit application intent and it does not interrupt a half-committed tick.
 
 ## Agent Echo-Powered Session Witness
 

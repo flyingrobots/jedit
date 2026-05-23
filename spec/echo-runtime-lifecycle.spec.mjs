@@ -9,6 +9,8 @@ const LIFECYCLE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'echo-run
 const CYCLE_LIMIT = 7;
 const REQUEST_BYTES = Object.freeze([1, 2, 3]);
 const RESPONSE_BYTES = Object.freeze([4, 5, 6]);
+const STOP_REQUEST_BYTES = Object.freeze([7, 8, 9]);
+const STOP_RESPONSE_BYTES = Object.freeze([10, 11, 12]);
 
 async function loadLifecycleModule() {
   const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
@@ -43,6 +45,17 @@ test('trusted Echo lifecycle port requests run-until-idle without exposing tick 
           lastRunCompletion: 'quiesced',
         };
       },
+      encodeStopRequest() {
+        calls.push(['encode-stop']);
+        return Uint8Array.from(STOP_REQUEST_BYTES);
+      },
+      decodeStopResponse(bytes) {
+        calls.push(['decode-stop', Array.from(bytes)]);
+        return {
+          accepted: true,
+          lastRunCompletion: 'stopped',
+        };
+      },
     },
   });
 
@@ -63,6 +76,55 @@ test('trusted Echo lifecycle port requests run-until-idle without exposing tick 
   ]);
 });
 
+test('trusted Echo lifecycle port requests stop through trusted control only', async () => {
+  const lifecycleModule = await loadLifecycleModule();
+  const calls = [];
+  const lifecycle = lifecycleModule.createTrustedEchoRuntimeLifecyclePort({
+    trustedHost: {
+      dispatchControlIntentBytes(bytes) {
+        calls.push(['trusted-control', Array.from(bytes)]);
+        return Uint8Array.from(STOP_RESPONSE_BYTES);
+      },
+    },
+    codec: {
+      encodeRunUntilIdleRequest() {
+        return Uint8Array.from(REQUEST_BYTES);
+      },
+      decodeRunUntilIdleResponse() {
+        return {
+          accepted: true,
+          lastRunCompletion: 'quiesced',
+        };
+      },
+      encodeStopRequest() {
+        calls.push(['encode-stop']);
+        return Uint8Array.from(STOP_REQUEST_BYTES);
+      },
+      decodeStopResponse(bytes) {
+        calls.push(['decode-stop', Array.from(bytes)]);
+        return {
+          accepted: true,
+          lastRunCompletion: 'stopped',
+        };
+      },
+    },
+  });
+
+  assert.deepEqual(
+    lifecycle.requestStop(),
+    {
+      accepted: true,
+      lastRunCompletion: 'stopped',
+    },
+  );
+  assert.equal('tick' in lifecycle, false);
+  assert.deepEqual(calls, [
+    ['encode-stop'],
+    ['trusted-control', STOP_REQUEST_BYTES],
+    ['decode-stop', STOP_RESPONSE_BYTES],
+  ]);
+});
+
 test('trusted Echo lifecycle port keeps app transport out of lifecycle authority', async () => {
   const lifecycleModule = await loadLifecycleModule();
   const lifecycle = lifecycleModule.createTrustedEchoRuntimeLifecyclePort({
@@ -79,6 +141,15 @@ test('trusted Echo lifecycle port keeps app transport out of lifecycle authority
         return {
           accepted: true,
           lastRunCompletion: 'quiesced',
+        };
+      },
+      encodeStopRequest() {
+        return Uint8Array.from(STOP_REQUEST_BYTES);
+      },
+      decodeStopResponse() {
+        return {
+          accepted: true,
+          lastRunCompletion: 'stopped',
         };
       },
     },
