@@ -19,8 +19,9 @@ The current repository contains two relevant execution postures:
 1. The interactive jedit TUI path. This starts in `src/main.ts`, runs through
    Bijou, and edits local files through jedit workspace ports.
 2. The Echo witness path. This runs an opt-in real Echo WASM integration that
-   proves jedit can submit contract-shaped work, let a trusted host tick Echo,
-   observe a bounded reading, and produce a witness report.
+   proves jedit can submit contract-shaped work, let a trusted host request an
+   Echo-owned run policy, observe a bounded reading, and produce a witness
+   report.
 
 Those postures intentionally meet through ports and adapters. The interactive
 product can evolve toward the real Echo path without letting application code
@@ -192,7 +193,7 @@ classDiagram
   EchoWasmKernelHostTransport --> EchoWasmKernelTransport : exposes app side
   EchoWasmKernelHostTransport --> EchoTrustedHostControlTransport : exposes trusted host side
   EchoWasmKernelTransport --> EchoRuntime : dispatch and observe
-  EchoTrustedHostControlTransport --> EchoRuntime : scheduler control
+  EchoTrustedHostControlTransport --> EchoRuntime : trusted lifecycle requests
 ```
 
 ## Conceptual Entity Relationship Diagram
@@ -219,7 +220,7 @@ erDiagram
 
   INTENT_SUBMISSION }o--|| ECHO_APP_TRANSPORT : crosses
   ECHO_APP_TRANSPORT }o--|| ECHO_RUNTIME : dispatches_to
-  TRUSTED_HOST_CONTROL }o--|| ECHO_RUNTIME : ticks
+  TRUSTED_HOST_CONTROL }o--|| ECHO_RUNTIME : requests_lifecycle_policy
   ECHO_RUNTIME ||--o{ READING_ENVELOPE : emits
 
   READING_ENVELOPE ||--|| OBSERVER_PLAN : identifies
@@ -558,7 +559,8 @@ The split is the whole point:
 - Application code can submit intents and observe readings.
 - Trusted host code can dispatch runtime control intents.
 - Application code cannot tick Echo.
-- Application code cannot tunnel scheduler control through dispatch.
+- Application code cannot tunnel trusted runtime lifecycle control through
+  dispatch.
 
 `createEchoWasmKernelHostTransport(...)` returns both sides:
 
@@ -684,8 +686,8 @@ It proves:
 - jedit can load the generated contract metadata it expects;
 - jedit can load a real Echo WASM module through `createEchoWasmKernelHostTransport`;
 - app code can submit canonical fixture intents through the app transport;
-- trusted host code can run Echo until idle through the trusted control
-  transport;
+- trusted host code can request Echo's internal run loop until idle through the
+  trusted control transport;
 - app code can observe a bounded `textWindow` reading;
 - Echo returns `ReadingEnvelope` plus `QueryBytes`;
 - jedit can decode those bytes into a `TextWindowReading`;
@@ -727,16 +729,16 @@ sequenceDiagram
   Test->>AppTransport: submitIntentBytes(createBuffer)
   AppTransport->>Echo: dispatch_intent(bytes)
   Echo-->>AppTransport: ingress/admission response
-  Test->>TrustedHost: dispatchControlIntentBytes(start/until-idle)
+  Test->>TrustedHost: dispatchControlIntentBytes(request start/until-idle)
   TrustedHost->>Echo: dispatch_control_intent_trusted(bytes)
-  Echo-->>TrustedHost: scheduler control response
+  Echo-->>TrustedHost: runtime lifecycle response
 
   Test->>AppTransport: submitIntentBytes(replaceRange)
   AppTransport->>Echo: dispatch_intent(bytes)
   Echo-->>AppTransport: ingress/admission response
-  Test->>TrustedHost: dispatchControlIntentBytes(start/until-idle)
+  Test->>TrustedHost: dispatchControlIntentBytes(request start/until-idle)
   TrustedHost->>Echo: dispatch_control_intent_trusted(bytes)
-  Echo-->>TrustedHost: scheduler control response
+  Echo-->>TrustedHost: runtime lifecycle response
 
   Test->>AppTransport: observeBytes(textWindow QueryView)
   AppTransport->>Echo: observe(bytes)
@@ -746,9 +748,10 @@ sequenceDiagram
 ```
 
 The trusted-host control packet in this witness uses an until-idle cycle limit.
-That is test policy, not application authority. Future long-lived hosts may
-start Echo on a cadence, stop it, or recover faults, but those controls remain
-trusted-host controls.
+That limit is a guardrail around Echo's own run loop; it is not an externally
+supplied tick stream. Future long-lived hosts may ask Echo to start on a
+cadence, stop, or recover faults, but those controls remain lifecycle requests.
+Echo still owns each logical tick boundary and every `TickReceipt`.
 
 ## Intent, Tick, Receipt, Reading
 
@@ -760,7 +763,7 @@ The intended Echo shape is:
 ```text
 application submits intent
 -> Echo records/adopts ingress posture
--> trusted host grants scheduler opportunities
+-> trusted host requests runtime availability
 -> Echo scheduler chooses deterministic work
 -> Echo emits tick receipt
 -> application observes outcome or bounded reading
@@ -773,7 +776,7 @@ For jedit this means:
 - The editor asks for a replace-range operation.
 - The app adapter encodes contract-shaped intent bytes.
 - Echo admits or obstructs the intent.
-- A trusted host later lets Echo run.
+- A trusted host later requests Echo's internal run loop.
 - Echo's scheduler decides what applies.
 - jedit observes the resulting text window through a bounded query.
 
@@ -847,16 +850,18 @@ sequenceDiagram
   Node-->>OS: process exit
 ```
 
-## Start, Stop, and Trusted Ticking
+## Start, Stop, and Trusted Runtime Control
 
 The current witness uses trusted until-idle control. The design direction for a
 long-running host is still the same authority split:
 
 - The application may ask for work by submitting intents.
-- The trusted host may start or stop runtime ticking.
+- The trusted host may start or stop Echo's internal run loop.
 - The trusted host may choose cadence policy.
 - Echo owns logical ticks and receipt emission.
 - Wall-clock cadence is host policy, not semantic history.
+- Even trusted host code must not inject discrete ticks or choose individual
+  tick boundaries.
 
 If a future jedit host exposes:
 
@@ -879,7 +884,7 @@ Host start/stop:
   trusted runtime control input
 
 Echo tick:
-  runtime-owned logical execution boundary
+  runtime-owned logical execution boundary, never externally injected
 ```
 
 ## Current Completeness Matrix
@@ -964,7 +969,7 @@ sequenceDiagram
   Jedit->>AppAdapter: product-shaped edit/read request
   AppAdapter->>EchoApp: submitIntentBytes or observeBytes
   EchoApp->>Echo: dispatch_intent or observe
-  Host->>Echo: trusted scheduler control
+  Host->>Echo: trusted runtime lifecycle control
   Echo-->>EchoApp: ingress evidence, reading envelope, query bytes, or obstruction
   EchoApp-->>AppAdapter: runtime-facing response bytes
   AppAdapter-->>Jedit: jedit-shaped result or reading
@@ -973,8 +978,8 @@ sequenceDiagram
 
 The stack becomes release-grade when the product path and the witness path are
 the same path for real editing: jedit-authored contract, Wesley artifacts, Echo
-package install, jedit app intent, trusted host tick, Echo receipt, bounded
-reading, retained evidence, and replay.
+package install, jedit app intent, trusted host lifecycle request, Echo-owned
+tick receipt, bounded reading, retained evidence, and replay.
 
 ## Future Work Called Out by This Guide
 
@@ -997,6 +1002,7 @@ jedit owns editor semantics.
 Wesley owns contract compilation.
 Echo owns deterministic runtime truth.
 Application code submits and observes.
-Trusted host code ticks.
+Trusted host code requests runtime lifecycle.
+Echo ticks itself.
 Evidence tells the truth.
 ```
