@@ -85,6 +85,10 @@ The next release-gate slice plan is recorded in
 - `TrustedEchoRuntimeLifecyclePort.requestRunUntilIdle(...)` wraps raw trusted
   Echo control bytes so witness and host code do not talk in external tick
   vocabulary.
+- `scripts/jedit-echo-powered-session.mjs --json` gives agents a fast
+  product-session witness over the `TextBufferOptic` and trusted lifecycle
+  wrapper. It uses the fake Echo-shaped transport; the opt-in real Echo WASM
+  witness remains the substrate proof.
 - Fixture vars bytes are not the durable Wesley runtime codec.
 - `TextBufferOptic` is the target app-facing capability. The current proof uses
   the structural-history SDL and `replaceTextRange` as the first implemented

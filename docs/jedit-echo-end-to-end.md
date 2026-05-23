@@ -78,6 +78,7 @@ The files most relevant to this guide are:
 | `src/ports/jedit-optic-client.ts` | jedit-facing optic and observation interfaces. |
 | `src/adapters/jedit-echo-optic-client.ts` | Adapter from jedit optic calls to Echo-shaped transport bytes. |
 | `src/app/echo-powered-text-buffer-optic-session.ts` | Host-composed product session that requests lifecycle after mutations. |
+| `src/app/echo-powered-text-buffer-witness.ts` | App workflow witness over the Echo-powered product session. |
 | `src/ports/echo-kernel-transport.ts` | App-safe and trusted-host Echo transport ports. |
 | `src/adapters/echo-wasm-kernel.ts` | Real Echo WASM transport adapter. |
 | `src/ports/echo-runtime-lifecycle.ts` | Trusted-host runtime lifecycle port. |
@@ -90,6 +91,7 @@ The files most relevant to this guide are:
 | `contracts/jedit/text-buffer-optic.graphql` | jedit app-facing optic contract. |
 | `contracts/jedit/structural-history.graphql` | jedit structural history contract authority. |
 | `scripts/jedit-echo-witness.mjs` | CLI for the real Echo witness path. |
+| `scripts/jedit-echo-powered-session.mjs` | Fast agent CLI over the app-facing Echo-powered session. |
 | `scripts/ports/echo-witness-runner.mjs` | Witness runner port logic. |
 | `scripts/adapters/node-echo-witness-runner.mjs` | Node filesystem/process adapter for the witness runner. |
 | `spec/jedit-echo-wasm-stack-witness.spec.mjs` | Opt-in real Echo WASM stack witness. |
@@ -789,6 +791,56 @@ supplied tick stream. Future long-lived hosts may ask Echo to start on a
 cadence, stop, or recover faults, but those controls remain lifecycle requests.
 Echo still owns each logical tick boundary and every `TickReceipt`.
 
+## Agent Echo-Powered Session Witness
+
+The fast product-session command is:
+
+```sh
+npm run witness:echo:session
+```
+
+It is not the real Echo WASM substrate proof. It is a host-owned agent smoke
+path over the same app-facing product capability:
+
+```text
+TextBufferOptic session
+-> create buffer
+-> apply replace-range intent
+-> host lifecycle request
+-> observe text window
+-> JSON receipt/reading report
+```
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant Agent
+  participant CLI as jedit-echo-powered-session
+  participant Session as Echo-powered TextBufferOptic session
+  participant Client as app-safe optic client
+  participant Lifecycle as trusted lifecycle port
+  participant Transport as fake Echo-shaped transport
+
+  Agent->>CLI: npm run witness:echo:session
+  CLI->>Session: createBuffer(...)
+  Session->>Client: openTextBuffer(...)
+  Client->>Transport: submitIntentBytes(createBuffer)
+  Session->>Lifecycle: requestRunUntilIdle(cycleLimit)
+  CLI->>Session: applyIntent(replaceRange)
+  Session->>Client: replaceRangeAsTick(...)
+  Client->>Transport: submitIntentBytes(replaceRange)
+  Session->>Lifecycle: requestRunUntilIdle(cycleLimit)
+  CLI->>Session: textWindow(readBasis, aperture)
+  Session->>Client: textWindow(...)
+  Client->>Transport: observeBytes(textWindow)
+  CLI-->>Agent: JSON witness report
+```
+
+This command deliberately reports `transport: fake-echo-shaped`. The opt-in
+real Echo witness remains the authority for proving the actual Echo WASM
+substrate. The agent command proves the product-session lifecycle composition
+and keeps raw lifecycle control out of the app-facing optic.
+
 ## Intent, Tick, Receipt, Reading
 
 The most common misunderstanding is to treat application dispatch as "run this
@@ -937,6 +989,7 @@ Echo tick:
 | Trusted Echo host transport | Implemented separately from app transport. |
 | Real Echo write/read witness | Implemented as opt-in Stack Witness 0001. |
 | Echo-powered TextBufferOptic session | Implemented as host composition over app-safe client plus lifecycle port. |
+| Agent Echo-powered session witness | Implemented as `npm run witness:echo:session`. |
 | Durable retained evidence | Not complete; witness reports `missing_retention`. |
 | Durable replay | Not complete; witness reports `durable_replay_unavailable`. |
 | Full interactive TUI on Echo | Not complete; this is the release-gate direction. |
@@ -975,6 +1028,12 @@ Run the real Echo witness and include replay posture:
 ```sh
 ECHO_WARP_WASM_DIR=/path/to/echo/crates/warp-wasm \
   node scripts/jedit-echo-witness.mjs --json --replay
+```
+
+Run the fast product-session witness:
+
+```sh
+npm run witness:echo:session
 ```
 
 ## The End-to-End Story
@@ -1023,15 +1082,14 @@ tick receipt, bounded reading, retained evidence, and replay.
 This guide intentionally exposes gaps instead of papering over them:
 
 1. Move more interactive editor actions onto the Echo-backed contract path.
-2. Bind the Echo-powered session into a host-owned agent/CLI path.
-3. Replace fixture JSON transport bytes with durable Wesley-generated codecs.
-4. Complete retained evidence lookup for payloads, reading envelopes, and
+2. Replace fixture JSON transport bytes with durable Wesley-generated codecs.
+3. Complete retained evidence lookup for payloads, reading envelopes, and
    contract receipts.
-5. Complete durable replay for accepted edit/read evidence.
-6. Add explicit trusted host lifecycle controls for long-running jedit hosts.
-7. Add explicit SIGTERM/shutdown behavior if strong cleanup guarantees become
+4. Complete durable replay for accepted edit/read evidence.
+5. Add explicit trusted host lifecycle controls for long-running jedit hosts.
+6. Add explicit SIGTERM/shutdown behavior if strong cleanup guarantees become
    product requirements.
-8. Keep Echo generic while jedit becomes a serious product-shaped consumer.
+7. Keep Echo generic while jedit becomes a serious product-shaped consumer.
 
 The north star remains small but strict:
 

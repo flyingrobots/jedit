@@ -105,8 +105,10 @@ fixture behavior without changing the app authority model.
 
 ## Next Work
 
-The next integration step is to bind this powered session into a host-owned
-runtime path that can be exercised from an agent/CLI command:
+The next integration step is now recorded in
+`../0022-agent-echo-powered-session-witness/agent-echo-powered-session-witness.md`.
+It binds this powered session into a host-owned runtime path that can be
+exercised from an agent/CLI command:
 
 ```text
 create buffer

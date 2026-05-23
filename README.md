@@ -142,6 +142,17 @@ ECHO_WARP_WASM_DIR=/path/to/echo/crates/warp-wasm \
   node scripts/jedit-echo-witness.mjs --json --replay
 ```
 
+For a fast product-session smoke path that agents can run without a sibling
+Echo checkout, use:
+
+```sh
+npm run witness:echo:session
+```
+
+That command exercises `TextBufferOptic` through the host-owned lifecycle
+adapter and reports receipt/reading evidence as JSON. It uses the fake
+Echo-shaped transport and does not replace the opt-in real Echo WASM witness.
+
 The second seam is schema authority for structural history:
 
 ```text
@@ -343,6 +354,8 @@ Right now the app gives you:
 - a JSON-capable `scripts/jedit-echo-witness.mjs` command for agents and CI
   that reports generated contract metadata, observed reading identity, artifact
   hash, authority split, retained-evidence posture, and replay posture
+- a fast `scripts/jedit-echo-powered-session.mjs` command that exercises the
+  app-facing `TextBufferOptic` path and host lifecycle wrapper as JSON evidence
 - a `TextBufferOptic` boundary with opaque `ReadBasisHandle` support that keeps
   raw Echo coordinates below the app-facing optic client
 - a structural-history GraphQL authority surface
