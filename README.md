@@ -127,7 +127,7 @@ Agents should start with the shell witness before any richer MCP surface:
 
 ```sh
 ECHO_WARP_WASM_DIR=/path/to/echo/crates/warp-wasm \
-  scripts/run-real-echo-wasm-stack-witness.sh
+  node scripts/jedit-echo-witness.mjs --json
 ```
 
 The second seam is schema authority for structural history:
@@ -328,6 +328,7 @@ Right now the app gives you:
 - Stack Witness 0001 consumer coverage through a fake Echo-shaped transport
 - an opt-in real Echo WASM Stack Witness runner with separate app and trusted
   host transport surfaces
+- a JSON-capable `scripts/jedit-echo-witness.mjs` command for agents and CI
 - a `TextBufferOptic` boundary with opaque `ReadBasisHandle` support that keeps
   raw Echo coordinates below the app-facing optic client
 - a structural-history GraphQL authority surface

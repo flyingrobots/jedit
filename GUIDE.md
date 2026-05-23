@@ -105,6 +105,13 @@ For agent use, prefer the shell witness above. A future MCP surface can wrap the
 same command after retained evidence and replay output are strong enough to be
 worth exposing through a protocol.
 
+Agents that need machine-readable output should call the Node CLI directly:
+
+```sh
+ECHO_WARP_WASM_DIR=/path/to/echo/crates/warp-wasm \
+  node scripts/jedit-echo-witness.mjs --json
+```
+
 ## Current Runtime Truth
 
 The visible TUI editor still uses `EditorState.lines` as editable buffer truth.

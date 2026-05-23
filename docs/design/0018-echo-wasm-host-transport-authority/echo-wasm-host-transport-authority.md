@@ -71,7 +71,7 @@ The immediate agent interface should be a CLI, not an MCP server:
 
 ```sh
 ECHO_WARP_WASM_DIR=/path/to/echo/crates/warp-wasm \
-  scripts/run-real-echo-wasm-stack-witness.sh
+  node scripts/jedit-echo-witness.mjs --json
 ```
 
 That command already gives agents a deterministic shell witness. A later MCP
@@ -84,6 +84,7 @@ it would add protocol surface before the shell witness is trustworthy.
 - `echo wasm kernel transport stays byte-oriented and substrate-generic`
 - `echo wasm kernel host transport keeps trusted control off the app surface`
 - `echo wasm trusted host transport requires the raw trusted control export`
+- `jedit Echo witness CLI emits a dry-run JSON plan for agents`
 - `real Echo WASM Stack Witness 0001 transport emits ReadingEnvelope + QueryBytes`
 
 ## Non-Goals
