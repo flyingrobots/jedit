@@ -390,10 +390,10 @@ Test plan:
 
 Checklist:
 
-- [ ] MCP adapter exists or is extended.
-- [ ] Adapter delegates to witness port.
-- [ ] JSON schema matches CLI evidence.
-- [ ] No raw lifecycle/tick method leaks.
+- [x] MCP adapter exists or is extended.
+- [x] Adapter delegates to witness port.
+- [x] JSON schema matches CLI evidence.
+- [x] No raw lifecycle/tick method leaks.
 
 ## Slice 13 - Conflict And Rejection Path
 
