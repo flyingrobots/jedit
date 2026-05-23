@@ -311,11 +311,11 @@ Test plan:
 
 Checklist:
 
-- [ ] Outcome type exists.
-- [ ] Accepted/pending/applied distinction exists.
-- [ ] Rejection/obstruction are represented.
-- [ ] Receipt correlation is exposed through app-safe handles.
-- [ ] Tests cover non-applied accepted submission.
+- [x] Outcome type exists.
+- [x] Accepted/pending/applied distinction exists.
+- [x] Rejection/obstruction are represented.
+- [x] Receipt correlation is exposed through app-safe handles.
+- [x] Tests cover non-applied accepted submission.
 
 ## Slice 10 - Retained Evidence Lookup
 

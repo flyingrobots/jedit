@@ -4,6 +4,7 @@ import type {
   TextBufferId,
   TextWindowLine,
 } from './jedit-optic-client.js';
+import type { JeditIntentOutcome } from './jedit-intent-outcomes.js';
 
 export interface EchoPoweredTextBufferWitnessRequest {
   readonly bufferKey: BufferKey;
@@ -22,6 +23,8 @@ export interface EchoPoweredTextBufferWitnessRequest {
 export interface EchoPoweredTextBufferWitnessReport {
   readonly bufferId: TextBufferId;
   readonly bufferKey: BufferKey;
+  readonly outcome: JeditIntentOutcome;
+  readonly outcomeTrail: readonly JeditIntentOutcome[];
   readonly receiptId: string;
   readonly readingId: ReadingId;
   readonly text: string;
