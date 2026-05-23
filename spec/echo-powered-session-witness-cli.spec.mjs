@@ -35,6 +35,14 @@ test('Echo-powered session CLI reports app capability, lifecycle, and reading ev
     { cycleLimit: 6 },
     { cycleLimit: 6 },
   ]);
+  assert.deepEqual(summary.stopRequests, [
+    { requested: true },
+  ]);
+  assert.deepEqual(summary.shutdown, {
+    accepted: true,
+    lastRunCompletion: 'stopped',
+    appCanTick: false,
+  });
   assert.equal(summary.report.text, 'hello');
   assert.equal(typeof summary.report.receiptId, 'string');
   assert.equal(typeof summary.report.readingId, 'string');

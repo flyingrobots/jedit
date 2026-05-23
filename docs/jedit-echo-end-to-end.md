@@ -79,6 +79,7 @@ The files most relevant to this guide are:
 | `src/adapters/jedit-echo-optic-client.ts` | Adapter from jedit optic calls to Echo-shaped transport bytes. |
 | `src/app/echo-powered-text-buffer-optic-session.ts` | Host-composed product session that requests lifecycle after mutations. |
 | `src/app/echo-powered-text-buffer-witness.ts` | App workflow witness over the Echo-powered product session. |
+| `src/app/trusted-echo-runtime-host.ts` | Host helper for trusted Echo shutdown requests. |
 | `src/ports/echo-kernel-transport.ts` | App-safe and trusted-host Echo transport ports. |
 | `src/adapters/echo-wasm-kernel.ts` | Real Echo WASM transport adapter. |
 | `src/ports/echo-runtime-lifecycle.ts` | Trusted-host runtime lifecycle port. |
@@ -814,6 +815,7 @@ TextBufferOptic session
 -> apply replace-range intent
 -> host lifecycle request
 -> observe text window
+-> host stop request
 -> JSON receipt/reading report
 ```
 
@@ -839,13 +841,16 @@ sequenceDiagram
   CLI->>Session: textWindow(readBasis, aperture)
   Session->>Client: textWindow(...)
   Client->>Transport: observeBytes(textWindow)
+  CLI->>Lifecycle: requestStop()
   CLI-->>Agent: JSON witness report
 ```
 
 This command deliberately reports `transport: fake-echo-shaped`. The opt-in
 real Echo witness remains the authority for proving the actual Echo WASM
 substrate. The agent command proves the product-session lifecycle composition
-and keeps raw lifecycle control out of the app-facing optic.
+and keeps raw lifecycle control out of the app-facing optic. It also requests
+trusted stop at the end of the host-owned command, proving shutdown remains a
+host lifecycle concern.
 
 ## Intent, Tick, Receipt, Reading
 
@@ -996,6 +1001,7 @@ Echo tick:
 | Real Echo write/read witness | Implemented as opt-in Stack Witness 0001. |
 | Echo-powered TextBufferOptic session | Implemented as host composition over app-safe client plus lifecycle port. |
 | Agent Echo-powered session witness | Implemented as `npm run witness:echo:session`. |
+| Trusted host stop helper | Implemented as `stopTrustedEchoRuntime(...)`. |
 | Durable retained evidence | Not complete; witness reports `missing_retention`. |
 | Durable replay | Not complete; witness reports `durable_replay_unavailable`. |
 | Full interactive TUI on Echo | Not complete; this is the release-gate direction. |

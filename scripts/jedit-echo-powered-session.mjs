@@ -100,12 +100,20 @@ function parseCycleLimit(value) {
 async function runSessionWitness(options) {
   const modules = await loadDistModules();
   const lifecycleRequests = [];
+  const stopRequests = [];
   const lifecycle = {
     requestRunUntilIdle(request) {
       lifecycleRequests.push({ cycleLimit: request.cycleLimit });
       return {
         accepted: true,
         lastRunCompletion: RUNTIME_COMPLETION_QUIESCED,
+      };
+    },
+    requestStop() {
+      stopRequests.push({ requested: true });
+      return {
+        accepted: true,
+        lastRunCompletion: 'stopped',
       };
     },
   };
@@ -129,6 +137,7 @@ async function runSessionWitness(options) {
     afterLines: FIRST_LINE,
     maxBytes: DEFAULT_MAX_BYTES,
   });
+  const shutdown = modules.host.stopTrustedEchoRuntime(lifecycle);
 
   return {
     ok: true,
@@ -140,6 +149,8 @@ async function runSessionWitness(options) {
       trustedLifecyclePort: 'TrustedEchoRuntimeLifecyclePort',
     },
     lifecycleRequests,
+    stopRequests,
+    shutdown,
     report,
   };
 }
@@ -150,6 +161,7 @@ async function loadDistModules() {
     transportClient: await importDist('adapters/jedit-echo-optic-client.js'),
     poweredSession: await importDist('app/echo-powered-text-buffer-optic-session.js'),
     workflow: await importDist('app/echo-powered-text-buffer-witness.js'),
+    host: await importDist('app/trusted-echo-runtime-host.js'),
   };
 }
 
