@@ -1,6 +1,6 @@
 # jedit Powered By Echo Release Gate
 
-Status: slices 1-23 closed locally; release-gate evidence and continuation
+Status: slices 1-24 closed locally; release-gate evidence and continuation
 plan recorded.
 
 This plan defines the local release gate for the sentence:
@@ -729,11 +729,11 @@ Test plan:
 
 Checklist:
 
-- [ ] Handler invocation boundary exists.
-- [ ] Scheduler authority is required.
-- [ ] Non-scheduler authority is blocked.
-- [ ] Blocked invocation does not call handlers.
-- [ ] Focused invocation tests pass.
+- [x] Handler invocation boundary exists.
+- [x] Scheduler authority is required.
+- [x] Non-scheduler authority is blocked.
+- [x] Blocked invocation does not call handlers.
+- [x] Focused invocation tests pass.
 
 ## Slice 25 - Scheduler-Owned Installed Handler Guard
 
