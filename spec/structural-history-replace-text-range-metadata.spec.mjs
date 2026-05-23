@@ -58,6 +58,15 @@ test('structural history generation path emits replaceTextRange metadata', async
   assert.match(generated, /directives: \{"wes_op":\{"name":"replaceTextRange"\}\}/);
 });
 
+test('dev startup generates ignored replaceTextRange descriptor first', async () => {
+  const packageJson = JSON.parse(await readFile(PACKAGE_JSON_PATH, 'utf8'));
+
+  assert.equal(
+    packageJson.scripts.dev,
+    `npm run ${STRUCTURAL_HISTORY_GENERATION_SCRIPT} && tsx src/main.ts`,
+  );
+});
+
 test('generated replaceTextRange descriptor is ignored and mirrors Wesley metadata', async () => {
   const generated = runStructuralHistoryGeneration();
   const modules = await loadBuiltModules();

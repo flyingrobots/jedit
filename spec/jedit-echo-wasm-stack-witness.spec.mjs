@@ -44,10 +44,16 @@ const STACK_WITNESS_TEXT_WINDOW_VARS =
 const STACK_WITNESS_TEXT = 'hello';
 const STACK_WITNESS_BUFFER_KEY = 'demo.txt';
 const STACK_WITNESS_FRONTIER_REF = 'frontier:stack-witness-0001:B1';
+const EINT_ENVELOPE_HEADER_LENGTH = 12;
 const FIRST_BYTE_OFFSET = 0;
 const FIRST_LINE = 0;
 const SINGLE_LINE_WINDOW = 1;
-const RUN_UNTIL_IDLE_CYCLE_LIMIT = 4;
+const DEFAULT_RUN_UNTIL_IDLE_CYCLE_LIMIT = 4;
+const CUSTOM_RUN_UNTIL_IDLE_CYCLE_LIMIT = 9;
+const MINIMUM_RUN_UNTIL_IDLE_CYCLE_LIMIT = 1;
+const RUN_UNTIL_IDLE_CYCLE_LIMIT = readRunUntilIdleCycleLimit(
+  process.env.JEDIT_ECHO_WITNESS_CYCLE_LIMIT,
+);
 
 // Witnessed temporary Echo fixture assumption:
 // Echo `WarpKernel::new` derives `default_worldline` from
@@ -78,6 +84,16 @@ test('real Echo WASM witness request construction gets basis through an optic se
     toByteArray(alternateRequest.coordinate.worldline_id),
     toByteArray(textWindowBasis.worldlineIdBytes),
   );
+});
+
+test('real Echo WASM witness control intent honors configured cycle limit', () => {
+  const controlIntent = unpackControlIntentVars(
+    packControlStartIntent(CUSTOM_RUN_UNTIL_IDLE_CYCLE_LIMIT),
+  );
+
+  assert.equal(controlIntent.kind, 'start');
+  assert.equal(controlIntent.mode.kind, 'until_idle');
+  assert.equal(controlIntent.mode.cycle_limit, CUSTOM_RUN_UNTIL_IDLE_CYCLE_LIMIT);
 });
 
 test('real Echo WASM Stack Witness 0001 transport emits ReadingEnvelope + QueryBytes', {
@@ -193,14 +209,34 @@ function runEchoSchedulerUntilIdle(trustedHostTransport) {
   assert.equal(response.scheduler_status.last_run_completion, 'quiesced');
 }
 
-function packControlStartIntent() {
+function packControlStartIntent(cycleLimit = RUN_UNTIL_IDLE_CYCLE_LIMIT) {
   return packEintEnvelope(ECHO_CONTROL_OP_IDS.INTENT_V1, encodeCbor({
     kind: 'start',
     mode: {
       kind: 'until_idle',
-      cycle_limit: RUN_UNTIL_IDLE_CYCLE_LIMIT,
+      cycle_limit: cycleLimit,
     },
   }));
+}
+
+function readRunUntilIdleCycleLimit(rawValue) {
+  if (rawValue === undefined || rawValue.trim().length === 0) {
+    return DEFAULT_RUN_UNTIL_IDLE_CYCLE_LIMIT;
+  }
+
+  const parsed = Number.parseInt(rawValue, 10);
+  if (
+    !Number.isSafeInteger(parsed)
+      || parsed < MINIMUM_RUN_UNTIL_IDLE_CYCLE_LIMIT
+      || parsed.toString() !== rawValue.trim()
+  ) {
+    throw new Error(`invalid JEDIT_ECHO_WITNESS_CYCLE_LIMIT: ${rawValue}`);
+  }
+  return parsed;
+}
+
+function unpackControlIntentVars(intentBytes) {
+  return decodeCbor(intentBytes.slice(EINT_ENVELOPE_HEADER_LENGTH));
 }
 
 function createWitnessOnlyEchoFixtureBasisResolver() {

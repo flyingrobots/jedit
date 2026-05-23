@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx src/main.ts",
+    "dev": "npm run gen:contract:structural-history:wesley && tsx src/main.ts",
     "gen:observer": "node scripts/run-wesley-tool.mjs host-node observer-plan --spec src/app/jedit-observer-spec.ts --export createWorldlineSnapshotObserverSpec --out-file src/generated/jedit/worldlineSnapshot.observer-plan.generated.ts",
     "gen:contract:structural-history:wesley": "node scripts/gen-structural-history-wesley.mjs",
     "gen:contract:text-buffer-optic:wesley": "node scripts/run-wesley-tool.mjs cli emit typescript --schema contracts/jedit/text-buffer-optic.graphql --out src/generated/jedit/text-buffer-optic.wesley.generated.ts",
