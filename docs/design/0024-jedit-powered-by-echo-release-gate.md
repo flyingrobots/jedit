@@ -544,10 +544,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Release-gate script exists.
-- [ ] Script includes relevant focused tests.
-- [ ] Script is documented.
-- [ ] Script catches missing contract package path.
+- [x] Release-gate script exists.
+- [x] Script includes relevant focused tests.
+- [x] Script is documented.
+- [x] Script catches missing contract package path.
 
 ## Slice 19 - v0.1.0 Release Documentation
 

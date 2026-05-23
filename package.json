@@ -15,6 +15,7 @@
     "start": "node dist/main.js",
     "witness:echo": "node scripts/jedit-echo-witness.mjs",
     "witness:echo:session": "npm run build && node scripts/jedit-echo-powered-session.mjs --json",
+    "release-gate:echo": "node scripts/jedit-echo-release-gate.mjs",
     "quality": "node scripts/quality-gate.mjs",
     "test": "npm run gen:contract:structural-history:wesley && node --test --test-concurrency=1 spec/**/*.spec.mjs tests/**/*.spec.mjs",
     "check": "npm run build && npm run test && npm run quality"
