@@ -1,6 +1,6 @@
 # jedit Powered By Echo Release Gate
 
-Status: slices 1-22 closed locally; release-gate evidence and continuation
+Status: slices 1-23 closed locally; release-gate evidence and continuation
 plan recorded.
 
 This plan defines the local release gate for the sentence:
@@ -702,11 +702,11 @@ Test plan:
 
 Checklist:
 
-- [ ] Installed transport accepts a work sink.
-- [ ] Mutation submission records a work envelope.
-- [ ] Envelope is recorded before handler execution.
-- [ ] Query observation does not stage mutation work.
-- [ ] Focused installed transport tests pass.
+- [x] Installed transport accepts a work sink.
+- [x] Mutation submission records a work envelope.
+- [x] Envelope is recorded before handler execution.
+- [x] Query observation does not stage mutation work.
+- [x] Focused installed transport tests pass.
 
 ## Slice 24 - Handler Invocation Boundary
 

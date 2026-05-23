@@ -4,6 +4,7 @@ import {
 import {
   createJeditContractQueryObserverRegistry,
 } from '../app/jedit-contract-query-observers.js';
+import { JEDIT_HOT_TEXT_PACKAGE_ID } from '../app/jedit-contract-package.js';
 import { createInMemoryHotTextRuntime } from './in-memory-hot-text-runtime.js';
 import {
   installJeditContractPackage,
@@ -16,6 +17,11 @@ import {
 import type { EchoKernelInfo, EchoWasmKernelTransport } from '../ports/echo-kernel-transport.js';
 import type { HashPort } from '../ports/hash.js';
 import type { HotTextRuntimePort } from '../ports/hot-text-runtime.js';
+import {
+  createJeditRuntimeWorkEnvelope,
+  JEDIT_RUNTIME_WORK_OPERATION_KIND_MUTATION,
+  type JeditRuntimeWorkSink,
+} from '../ports/jedit-runtime-work-envelope.js';
 import { createHashPort } from './hash.js';
 import {
   CREATE_BUFFER_WORLDLINE_OPERATION,
@@ -51,46 +57,104 @@ export interface InstalledJeditContractEchoTransportOptions {
   readonly runtime?: HotTextRuntimePort;
   readonly hash?: HashPort;
   readonly moduleSpecifier?: string;
+  readonly workSink?: JeditRuntimeWorkSink;
+}
+
+interface InstalledJeditContractEchoTransportContext {
+  readonly info: EchoKernelInfo;
+  readonly hash: HashPort;
+  readonly installStatus: string;
+  readonly mutations: ReturnType<typeof createJeditContractMutationHandlerRegistry>;
+  readonly observers: ReturnType<typeof createJeditContractQueryObserverRegistry>;
+  readonly workSink?: JeditRuntimeWorkSink;
 }
 
 export function createInstalledJeditContractEchoTransport(
   options: InstalledJeditContractEchoTransportOptions = {},
 ): EchoWasmKernelTransport {
+  const context = createTransportContext(options);
+
+  return {
+    kernelInfo() {
+      return context.info;
+    },
+    submitIntentBytes(intentBytes) {
+      return submitInstalledIntent(context, intentBytes);
+    },
+    observeBytes(requestBytes) {
+      return observeInstalledRequest(context, requestBytes);
+    },
+    schedulerStatusBytes() {
+      return encodeInstalledSchedulerStatus();
+    },
+  };
+}
+
+function createTransportContext(
+  options: InstalledJeditContractEchoTransportOptions,
+): InstalledJeditContractEchoTransportContext {
   const runtime = options.runtime ?? createInMemoryHotTextRuntime();
   const hash = options.hash ?? createHashPort();
   const mutations = createJeditContractMutationHandlerRegistry({ runtime, hash });
   const observers = createJeditContractQueryObserverRegistry({ runtime, hash });
   const host = createRecordingPackageHost();
   const install = installJeditContractPackage({ host });
-  const info: EchoKernelInfo = {
-    moduleSpecifier: options.moduleSpecifier ?? INSTALLED_CONTRACT_MODULE_SPECIFIER,
-    codecId: INSTALLED_CONTRACT_CODEC_ID,
-    registryVersion: INSTALLED_CONTRACT_REGISTRY_VERSION,
-    schemaSha256Hex: INSTALLED_CONTRACT_SCHEMA_SHA256_HEX,
-  };
 
   return {
-    kernelInfo() {
-      return info;
+    info: {
+      moduleSpecifier: options.moduleSpecifier ?? INSTALLED_CONTRACT_MODULE_SPECIFIER,
+      codecId: INSTALLED_CONTRACT_CODEC_ID,
+      registryVersion: INSTALLED_CONTRACT_REGISTRY_VERSION,
+      schemaSha256Hex: INSTALLED_CONTRACT_SCHEMA_SHA256_HEX,
     },
-    submitIntentBytes(intentBytes) {
-      return encodeJeditIntentResponse(
-        executeIntent(install.hostResult.status, mutations, decodeJeditIntentRequest(intentBytes)),
-      );
-    },
-    observeBytes(requestBytes) {
-      return encodeJeditObserveResponse(
-        executeObserve(install.hostResult.status, observers, decodeJeditObserveRequest(requestBytes)),
-      );
-    },
-    schedulerStatusBytes() {
-      return encodeJeditSchedulerStatus({
-        kind: JEDIT_SCHEDULER_STATUS_KIND,
-        state: SCHEDULER_STATE_IDLE,
-        host: INSTALLED_CONTRACT_HOST,
-      });
-    },
+    hash,
+    installStatus: install.hostResult.status,
+    mutations,
+    observers,
+    workSink: options.workSink,
   };
+}
+
+function submitInstalledIntent(
+  context: InstalledJeditContractEchoTransportContext,
+  intentBytes: Uint8Array,
+): Uint8Array {
+  const request = decodeJeditIntentRequest(intentBytes);
+  recordRuntimeWorkEnvelope(context.workSink, intentBytes, request, context.hash);
+  return encodeJeditIntentResponse(
+    executeIntent(context.installStatus, context.mutations, request),
+  );
+}
+
+function observeInstalledRequest(
+  context: InstalledJeditContractEchoTransportContext,
+  requestBytes: Uint8Array,
+): Uint8Array {
+  return encodeJeditObserveResponse(
+    executeObserve(context.installStatus, context.observers, decodeJeditObserveRequest(requestBytes)),
+  );
+}
+
+function encodeInstalledSchedulerStatus(): Uint8Array {
+  return encodeJeditSchedulerStatus({
+    kind: JEDIT_SCHEDULER_STATUS_KIND,
+    state: SCHEDULER_STATE_IDLE,
+    host: INSTALLED_CONTRACT_HOST,
+  });
+}
+
+function recordRuntimeWorkEnvelope(
+  workSink: JeditRuntimeWorkSink | undefined,
+  intentBytes: Uint8Array,
+  request: JeditIntentRequest,
+  hash: HashPort,
+): void {
+  workSink?.recordRuntimeWorkEnvelope(createJeditRuntimeWorkEnvelope({
+    packageId: JEDIT_HOT_TEXT_PACKAGE_ID,
+    operationName: request.operationName,
+    operationKind: JEDIT_RUNTIME_WORK_OPERATION_KIND_MUTATION,
+    canonicalRequestBytes: intentBytes,
+  }, hash));
 }
 
 function executeIntent(
