@@ -30,9 +30,16 @@ These are hard repo rules, not suggestions:
 ## Structure
 
 - `ARCHITECTURE.md` is the canonical repo architecture doctrine.
+- `docs/BEARING.md` records the current execution gravity.
+- `docs/design/0024-jedit-powered-by-echo-release-gate.md` is the active
+  twenty-slice plan for proving jedit is powered by Echo while Echo remains
+  generic.
 - `scripts/quality-gate.mjs` is the current enforceable quality ratchet.
 - `quality-baseline.json` is temporary debt tracking, not permission to add more debt.
   Keep it empty when the ratchet is clean.
+
+Keep track of our progress in the plan doc by checking off slices just before
+you make the commit for that slice.
 
 ## Current Reality
 
