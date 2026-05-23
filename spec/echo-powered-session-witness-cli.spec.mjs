@@ -79,6 +79,45 @@ test('Echo-powered session CLI dry-run reports installed package witness plan', 
   assert.equal(summary.replay.status, 'UNAVAILABLE');
 });
 
+test('Echo-powered session CLI reports unsupported mutation as final obstruction', () => {
+  const result = spawnSync(process.execPath, [
+    CLI_PATH,
+    '--json',
+    '--unsupported-mutation',
+    'unsupportedMutation',
+  ], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  const summary = JSON.parse(result.stdout);
+  assert.equal(summary.ok, true);
+  assert.equal(summary.nonHappyPath.kind, 'UNSUPPORTED_MUTATION');
+  assert.equal(summary.nonHappyPath.outcome.status, 'OBSTRUCTED');
+  assert.equal(summary.nonHappyPath.hiddenRetry, false);
+  assert.equal(summary.nonHappyPath.healthyLaterWorkCanProceed, true);
+  assert.equal(summary.nonHappyPath.retryDoctrine, 'retry requires a new explicit causal input');
+});
+
+test('Echo-powered session CLI can run healthy work after unsupported mutation witness', () => {
+  const result = spawnSync(process.execPath, [
+    CLI_PATH,
+    '--json',
+    '--text',
+    'still healthy',
+  ], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  const summary = JSON.parse(result.stdout);
+  assert.equal(summary.ok, true);
+  assert.equal(summary.report.text, 'still healthy');
+  assert.equal(summary.report.outcome.status, 'APPLIED');
+});
+
 test('Echo-powered session CLI rejects invalid cycle limits as JSON failures', () => {
   const result = spawnSync(process.execPath, [
     CLI_PATH,

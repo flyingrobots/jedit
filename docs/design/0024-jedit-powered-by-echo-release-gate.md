@@ -415,10 +415,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Non-happy path selected.
-- [ ] Outcome is typed.
-- [ ] No hidden retry.
-- [ ] Docs explain explicit retry doctrine.
+- [x] Non-happy path selected.
+- [x] Outcome is typed.
+- [x] No hidden retry.
+- [x] Docs explain explicit retry doctrine.
 
 ## Slice 14 - Restart/Persistence Posture
 

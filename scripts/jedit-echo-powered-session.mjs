@@ -44,6 +44,7 @@ function parseArgs(args) {
     bufferKey: DEFAULT_BUFFER_KEY,
     insertText: DEFAULT_INSERT_TEXT,
     cycleLimit: DEFAULT_CYCLE_LIMIT,
+    unsupportedMutation: null,
   };
 
   for (let index = 0; index < args.length; index += 1) {
@@ -79,6 +80,13 @@ function parseArgs(args) {
       }
       options.cycleLimit = cycleLimit;
       index += 1;
+    } else if (arg === '--unsupported-mutation') {
+      const value = nextArg(args, index);
+      if (value === undefined) {
+        return { ...options, errorMessage: `missing value for ${arg}` };
+      }
+      options.unsupportedMutation = value;
+      index += 1;
     } else {
       return { ...options, errorMessage: `unknown argument: ${arg}` };
     }
@@ -106,6 +114,9 @@ async function runSessionWitness(options) {
   const modules = await loadDistModules();
   if (options.dryRun) {
     return dryRunSummary(options, modules.package);
+  }
+  if (options.unsupportedMutation != null) {
+    return unsupportedMutationSummary(options, modules);
   }
 
   const lifecycleRequests = [];
@@ -172,6 +183,35 @@ async function runSessionWitness(options) {
   };
 }
 
+function unsupportedMutationSummary(options, modules) {
+  const intent = modules.outcomes.createJeditIntentHandle(
+    options.unsupportedMutation,
+    `unsupported:${options.unsupportedMutation}`,
+  );
+  const outcome = modules.outcomes.createJeditIntentOutcomeLedger().obstructIntent(
+    intent,
+    modules.preflight.JEDIT_PACKAGE_REQUEST_UNSUPPORTED_MUTATION,
+  );
+
+  return {
+    ok: true,
+    schemaVersion: 1,
+    transport: TRANSPORT_INSTALLED_PACKAGE,
+    dryRun: false,
+    install: installSummary(modules.package),
+    nonHappyPath: {
+      kind: modules.preflight.classifyJeditPackageOperationRequest(
+        modules.preflight.jeditMutationOperationRequest(options.unsupportedMutation),
+      ),
+      outcome,
+      hiddenRetry: false,
+      healthyLaterWorkCanProceed: true,
+      retryDoctrine: 'retry requires a new explicit causal input',
+    },
+    replay: unavailableReplayPosture(),
+  };
+}
+
 function dryRunSummary(options, packageModule) {
   return {
     ok: true,
@@ -215,6 +255,8 @@ async function loadDistModules() {
     workflow: await importDist('app/echo-powered-text-buffer-witness.js'),
     host: await importDist('app/trusted-echo-runtime-host.js'),
     package: await importDist('app/jedit-contract-package.js'),
+    preflight: await importDist('app/jedit-contract-package-preflight.js'),
+    outcomes: await importDist('app/jedit-intent-outcomes.js'),
   };
 }
 
@@ -252,6 +294,8 @@ Options:
   --buffer-key <path>     Buffer key for the synthetic session.
   --text <text>           Text inserted by the replace-range intent.
   --cycle-limit <n>       Trusted host run-until-idle cycle limit.
+  --unsupported-mutation <name>
+                          Return an unsupported-mutation outcome without retrying.
   --dry-run               Emit the planned installed-package witness without running it.
   --json                  Emit machine-readable summary.
   --help                  Show this help text.

@@ -53,4 +53,6 @@ posture before the next slice-14 inspection point.
 - Mutation handlers run only during Echo scheduler-owned execution.
 - Query observers are read-only.
 - Retry is explicit new causal input.
+- Unsupported or rejected work is final for that attempt; a retry is a new
+  submission, not a hidden runtime loop.
 - Echo remains generic.
