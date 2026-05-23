@@ -39,12 +39,12 @@ boundary.
 The current jedit seam is already Echo-shaped: it submits intent bytes through
 an `EchoWasmKernelTransport` and observes through the same port. The fake host
 is still an app-local scaffold, though, and its `textWindow` response is already
-decoded into a jedit reading object rather than first consuming Echo's real
-`ReadingEnvelope + QueryBytes` fixture output.
+decoded into a jedit reading object rather than first consuming Echo's generic
+installed-observer boundary.
 
 The next convergence step is not to redesign jedit's contract. The next step is
-to let the boundary adapter consume the real Echo Stack Witness result and map
-that byte payload into the app-owned `TextWindowReading` shape.
+to install jedit-owned generated query observers into Echo and map the generic
+observer byte payload into the app-owned `TextWindowReading` shape.
 
 The current real-WASM witness still carries a derived Echo default-worldline id
 as explicit fixture evidence. That is temporary scaffolding for the raw
@@ -59,7 +59,8 @@ receive basis/worldline resolution through an optic or session capability.
   coordinate for reads.
 - Echo admits or obstructs the intent and owns causal-history truth.
 - jedit observes an optic-shaped `textWindow` read.
-- Echo returns `ReadingEnvelope + QueryBytes`.
+- Echo routes the query through an installed jedit-owned query observer and
+  returns `ReadingEnvelope + QueryBytes`.
 - the boundary adapter decodes those bytes into the existing app-facing
   `TextWindowReading`.
 

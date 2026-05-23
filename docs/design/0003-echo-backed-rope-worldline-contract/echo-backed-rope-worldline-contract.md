@@ -212,19 +212,20 @@ define when truth exists inside the editor.
 
 `jedit` does not own parser semantics or durable causal history storage.
 
-### Echo / `echo-text`
+### Echo / jedit contract host
 
-Echo is the intended owner of causal rope-worldline truth.
+Echo is the intended generic host of causal rope-worldline truth. jedit-owned
+contracts and generated host adapters own the rope vocabulary and text law.
 
 That means:
 
-- persistent piece-rope storage
-- ticks and tick receipts
-- anchors and transformable positions
+- persistent piece-rope storage modeled through the jedit contract
+- scheduler-owned ticks and tick receipts emitted by Echo
+- anchors and transformable positions defined by jedit contract law
 - future strands and admissions
 
-Echo is not the owner of UI behavior, panel lifecycle, or structural parser
-projection semantics.
+Echo is not the owner of UI behavior, panel lifecycle, structural parser
+projection semantics, or built-in rope/string manipulation.
 
 `jedit` is the right place for edit-group and undo policy layered over Echo
 ticks.
@@ -308,9 +309,10 @@ The first executable seam in this cycle is save-checkpoint semantics, because
 it pins down one of the most user-visible consequences of the causal rope model
 without requiring the full runtime to exist yet.
 
-The next executable seam after save-checkpoint semantics is tick-admission
-semantics: a lawful `ReplaceRange` should be admissible as a tick with a tick
-receipt, while a logical no-op should not mint a new tick.
+The next executable seam after save-checkpoint semantics is scheduler-owned
+admission semantics: a lawful `ReplaceRange` should become jedit contract work
+that Echo may decide during a tick and witness with a tick receipt, while a
+logical no-op should not mint a new tick.
 
 The executable seam after tick-admission semantics is edit-group semantics:
 `jedit` should be able to group one or more known ticks into a human-meaningful

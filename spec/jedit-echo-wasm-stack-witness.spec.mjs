@@ -164,14 +164,13 @@ test('real Echo WASM witness report bounds inline reading payload preview', () =
   assert.equal(payloadEntry.contentPreviewTruncated, true);
 });
 
-test('real Echo WASM Stack Witness 0001 transport emits ReadingEnvelope + QueryBytes', {
+test('real Echo WASM requires an installed observer before jedit textWindow can materialize', {
   skip: REAL_ECHO_WASM_MODULE === undefined
-    ? 'set JEDIT_ECHO_WASM_MODULE to an Echo warp-wasm JS module to run this opt-in witness'
+    ? 'set JEDIT_ECHO_WASM_MODULE to an Echo warp-wasm JS module to run this opt-in boundary witness'
     : false,
 }, async () => {
   assert.equal(typeof REAL_ECHO_WASM_MODULE, 'string');
 
-  const jeditGeneratedContract = await loadGeneratedContractMetadata();
   const echoModules = await loadEchoModules();
   const hostTransport = await echoModules.transport.createEchoWasmKernelHostTransport({
     moduleSpecifier: toModuleSpecifier(REAL_ECHO_WASM_MODULE),
@@ -197,36 +196,13 @@ test('real Echo WASM Stack Witness 0001 transport emits ReadingEnvelope + QueryB
 
   const opticSessionBasis = createWitnessOnlyEchoFixtureBasisResolver();
   const textWindowBasis = opticSessionBasis.resolveTextWindowBasis();
-  const artifact = decodeOkEnvelope(transport.observeBytes(
+  const error = decodeErrEnvelope(transport.observeBytes(
     encodeStackWitnessTextWindowRequest(textWindowBasis),
   ));
 
-  assertReadingEnvelopePresent(artifact);
-  assertStackWitnessArtifactIdentity(artifact, textWindowBasis);
-
-  const queryBytes = extractQueryBytes(artifact);
-  const appReading = toWitnessOnlyTextWindowReading(artifact, queryBytes);
-
-  assert.equal(UTF8_DECODER.decode(queryBytes), STACK_WITNESS_TEXT);
-  assert.equal(appReading.operationName, 'textWindow');
-  assert.equal(appReading.frontierRef, STACK_WITNESS_FRONTIER_REF);
-  assert.equal(appReading.reading.startLine, FIRST_LINE);
-  assert.equal(appReading.reading.lineCount, SINGLE_LINE_WINDOW);
-  assert.equal(appReading.reading.totalLineCount, SINGLE_LINE_WINDOW);
-  assert.equal(appReading.reading.hasMoreBefore, false);
-  assert.equal(appReading.reading.hasMoreAfter, false);
-  assert.deepEqual(
-    appReading.reading.lines.map((line) => line.text),
-    [STACK_WITNESS_TEXT],
-  );
-  assert.equal(jeditGeneratedContract.queries.textWindow.fieldName, 'textWindow');
-  writeWitnessReport(createWitnessReportArgs({
-    artifact,
-    appReading,
-    jeditGeneratedContract,
-    queryBytes,
-    textWindowBasis,
-  }));
+  assert.equal(error.code, 11);
+  assert.match(error.message, /query observation is not installed/);
+  writeBoundaryWitnessReport(error);
 });
 
 async function loadTransportModule() {
@@ -245,36 +221,6 @@ async function loadEchoModules() {
   return {
     transport: await loadTransportModule(),
     lifecycle: await import(pathToFileURL(LIFECYCLE_MODULE_PATH).href),
-  };
-}
-
-async function loadGeneratedContractMetadata() {
-  const generatedModulePath = path.join(
-    REPO_ROOT,
-    'dist',
-    'generated',
-    'jedit',
-    'hot-text-runtime.wesley.generated.js',
-  );
-  let generated;
-  try {
-    generated = await import(pathToFileURL(generatedModulePath).href);
-  } catch (cause) {
-    throw new Error(
-      `${generatedModulePath} not found; run scripts/run-real-echo-wasm-stack-witness.sh `
-        + 'or npm run build before invoking this witness.',
-      { cause },
-    );
-  }
-  return {
-    source: 'contracts/jedit/hot-text-runtime.graphql',
-    mutations: {
-      createBufferWorldline: generated.mutationCreateBufferWorldlineOperation,
-      replaceRangeAsTick: generated.mutationReplaceRangeAsTickOperation,
-    },
-    queries: {
-      textWindow: generated.queryTextWindowOperation,
-    },
   };
 }
 
@@ -417,34 +363,9 @@ function assertCoordinateUsesTextWindowBasis(request, textWindowBasis) {
   assert.equal(request.coordinate.at.kind, textWindowBasis.at.kind);
 }
 
-function assertReadingEnvelopePresent(artifact) {
-  assert.equal(typeof artifact.reading, 'object');
-  assert.notEqual(artifact.reading, null);
-  assert.equal(artifact.reading.observer_basis, 'query_view');
-  assert.equal(artifact.reading.budget_posture, 'unbounded_one_shot');
-  assert.equal(artifact.reading.rights_posture, 'kernel_public');
-  assert.equal(artifact.reading.residual_posture, 'complete');
-}
-
-function assertStackWitnessArtifactIdentity(artifact, basis) {
-  assert.equal(bytesToHex(artifact.resolved.worldline_id), basis.worldlineIdHex);
-  assert.equal(artifact.frame, 'query_view');
-  assert.equal(artifact.projection.kind, 'query');
-  assert.equal(artifact.projection.query_id, STACK_WITNESS_OP_IDS.TEXT_WINDOW_QUERY);
-  assert.deepEqual(
-    toByteArray(artifact.projection.vars_bytes),
-    bytesAsSequence(encodeUtf8(STACK_WITNESS_TEXT_WINDOW_VARS)),
-  );
-  assert.equal(artifact.payload.kind, 'query_bytes');
-}
-
-function extractQueryBytes(artifact) {
-  return Uint8Array.from(toByteArray(artifact.payload.data));
-}
-
-// Witness-only adapter: Echo's fixture returns QueryBytes("hello"), not durable
-// TextWindowReading metadata. The synthetic fields below are local test
-// scaffolding and must not become production adapter semantics.
+// Witness-only adapter: the local report fixture returns QueryBytes("hello"),
+// not durable TextWindowReading metadata. The synthetic fields below are local
+// test scaffolding and must not become production adapter semantics.
 function toWitnessOnlyTextWindowReading(artifact, queryBytes) {
   const text = UTF8_DECODER.decode(queryBytes);
   const worldlineId = bytesToHex(artifact.resolved.worldline_id);
@@ -492,6 +413,28 @@ function writeWitnessReport(args) {
 
   mkdirSync(path.dirname(WITNESS_REPORT_PATH), { recursive: true });
   writeFileSync(WITNESS_REPORT_PATH, `${JSON.stringify(createWitnessReport(args), null, 2)}\n`);
+}
+
+function writeBoundaryWitnessReport(error) {
+  if (WITNESS_REPORT_PATH === undefined) {
+    return;
+  }
+
+  const report = {
+    schemaVersion: WITNESS_REPORT_SCHEMA_VERSION,
+    boundary: {
+      status: 'unsupported_query_without_installed_observer',
+      errorCode: error.code,
+      message: error.message,
+    },
+    replay: {
+      status: 'obstructed',
+      obstruction: REPLAY_OBSTRUCTION_DURABLE_UNAVAILABLE,
+      reason: 'the current real Echo WASM witness proves a generic boundary obstruction, not durable replay',
+    },
+  };
+  mkdirSync(path.dirname(WITNESS_REPORT_PATH), { recursive: true });
+  writeFileSync(WITNESS_REPORT_PATH, `${JSON.stringify(report, null, 2)}\n`);
 }
 
 function createWitnessReportFixtureArtifact(queryBytes) {
@@ -567,5 +510,11 @@ function createGeneratedContractMetadataFixture() {
 function decodeOkEnvelope(bytes) {
   const decoded = decodeCbor(bytes);
   assert.equal(decoded.ok, true, decoded.message ?? 'Echo WASM returned an error envelope');
+  return decoded;
+}
+
+function decodeErrEnvelope(bytes) {
+  const decoded = decodeCbor(bytes);
+  assert.equal(decoded.ok, false, 'Echo WASM unexpectedly returned an ok envelope');
   return decoded;
 }

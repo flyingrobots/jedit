@@ -41,12 +41,16 @@ product pressure
 Stack Witness 0001:
 
 ```text
-createBuffer
--> replaceRange("hello")
--> textWindow(0..5)
--> ReadingEnvelope + QueryBytes("hello")
--> TextWindowReading
+jedit-shaped bytes
+-> trusted-host run request
+-> textWindow observation request
+-> UNSUPPORTED_QUERY without installed observer
 ```
+
+The old Stack Witness text fixture is historical. Echo no longer contains
+hardcoded `createBuffer`, `replaceRange`, or `textWindow` semantics; the next
+real proof must install jedit-owned generated mutation handlers and query
+observers through Echo's generic contract-host boundary.
 
 The current Echo `v0.1.0` release-gate proof starts from the implemented
 structural-history contract:
@@ -74,9 +78,10 @@ The next release-gate slice plan is recorded in
 - Real Echo WASM witness remains opt-in and now uses the app/host authority
   split: app intent submission stays on the app transport, while scheduler
   lifecycle requests use the trusted-host lifecycle port.
-- The current witness report names inline `ReadingEnvelope` and `QueryBytes`
-  evidence, then honestly reports durable retained refs as
-  `missing_retention`.
+- The current real Echo witness fails closed with `UNSUPPORTED_QUERY` unless a
+  jedit-owned generated query observer is installed. The local report fixture
+  can still name inline reading posture, but that is not Echo kernel text
+  semantics.
 - The current replay surface is a shell: `--replay` returns
   `durable_replay_unavailable` until Echo exposes durable replay evidence
   through the adapter.

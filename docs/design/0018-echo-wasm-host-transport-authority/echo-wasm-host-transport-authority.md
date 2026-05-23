@@ -116,7 +116,7 @@ is trustworthy.
 - direct JSON CLI run names inline retained evidence and missing-retention
   posture
 - `--replay` reports the typed replay posture without app tick authority
-- `real Echo WASM Stack Witness 0001 transport emits ReadingEnvelope + QueryBytes`
+- `real Echo WASM requires an installed observer before jedit textWindow can materialize`
 
 ## Non-Goals
 

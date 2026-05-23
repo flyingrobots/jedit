@@ -2,9 +2,16 @@
 
 ## Doctrine
 
-jedit owns the **editor contract** and product nouns. Echo owns **runtime execution** and substrate truth. Wesley compiles GraphQL SDL into runtime-specific artifacts such as Echo ops, Postgres schema, codecs, and observers.
+jedit owns the **editor contract** and product nouns. Echo owns **generic
+runtime execution**, admission, scheduler-owned ticks, receipts, readings, and
+retained evidence. Wesley compiles jedit-owned GraphQL SDL into generated
+artifacts such as Echo operation metadata, codecs, and observers.
 
-The rope, ticks, worldlines, and heads are **runtime law**, not editor law. The jedit contract is defined by product pressure first, then stabilized through witnessed execution and boundary discipline rather than by exposing substrate mechanics upward.
+The rope model is jedit contract law hosted through Echo's generic graph and
+contract-host surfaces. Echo must not implement a privileged jedit rope engine.
+The jedit contract is defined by product pressure first, then stabilized through
+witnessed execution and boundary discipline rather than by exposing substrate
+mechanics upward.
 
 Contract flow:
 
@@ -24,7 +31,8 @@ Core rules:
 - App-facing jedit code never sees `worldlineId`, `headId`, or other runtime coordinates.
 - `TextBufferOptic` is the authorized capability that may hold them privately.
 - Wesley operations require them explicitly.
-- Echo executes against them and produces evidence.
+- Echo hosts generic installed contracts, schedules admitted work, and produces
+  evidence.
 
 > The app may hold the optic.
 > The app may invoke the optic.
@@ -301,7 +309,10 @@ No `worldlineId` or `headId` appear here. Those are Echo runtime coordinates, no
 
 ## Echo/Wesley operation model
 
-Echo uses Wesley to compile runtime-facing operations from an Echo-owned SDL that includes domain directives such as `@wes_op` and `@wes_footprint`. GraphQL directives are implementation-defined metadata, and Wesley uses that fact to support domain-owned law without claiming universal runtime semantics itself.
+jedit uses Wesley to compile runtime-facing operations from jedit-owned SDL that
+includes domain directives such as `@wes_op` and `@wes_footprint`. GraphQL
+directives are implementation-defined metadata, and Wesley uses that fact to
+support domain-owned law without claiming universal runtime semantics itself.
 
 ```graphql
 directive @wes_op(name: String!) on FIELD_DEFINITION
@@ -343,7 +354,13 @@ type Query {
 }
 ```
 
-This schema is not app-facing; it is Echo/Wesley-facing. It may and should speak explicitly in `worldlineId`, `headId`, rope objects, ticks, and checkpoints. Wesley compiles the runtime law. Echo executes it. [apollographql](https://www.apollographql.com/docs/apollo-server/v3/schema/creating-directives)
+This schema is not app-facing; it is generated-host-facing. It may and should
+speak explicitly in `worldlineId`, `headId`, rope objects, ticks, and
+checkpoints because those are jedit contract coordinates below the
+`TextBufferOptic` boundary. Wesley compiles the contract law. Generated host
+adapters and jedit-owned contract code interpret the text nouns. Echo admits,
+schedules, records, and observes the resulting generic contract work.
+[apollographql](https://www.apollographql.com/docs/apollo-server/v3/schema/creating-directives)
 
 ***
 
@@ -492,14 +509,21 @@ The optic is the authorized translator from product intent to runtime operation.
 
 ## Rope posture and operating rule
 
-The rope, piece table, or any other text data structure is not part of the jedit contract. The contract says:
+The rope, piece table, or any other text data structure is part of the jedit
+contract and generated host model, not Echo core. The app-facing contract says:
 
 > replace byte range with text
 > read bounded text window
 > preserve deterministic history
 > produce evidence-bearing readings
 
-Echo may implement this with a piece table, a rope, a persistent tree, a chunk graph, or any other structure that satisfies the law. Event-sourcing and projection-oriented systems routinely separate write-side history from read-side projections, which matches the split between admitted runtime operations and observed text windows here.
+jedit may model this as rope-shaped Echo graph facts, a piece table, a
+persistent tree, a chunk graph, or another generated contract representation
+that satisfies the law. Echo should see generic installed contract work and
+retained evidence, not a built-in text data structure. Event-sourcing and
+projection-oriented systems routinely separate write-side history from
+read-side projections, which matches the split between admitted runtime
+operations and observed text windows here.
 
 **Operating rule:**
 

@@ -118,7 +118,7 @@ No app-facing jedit optic client receives the lifecycle port.
 - `trusted Echo lifecycle port keeps app transport out of lifecycle authority`
 - `real Echo WASM witness control intent honors configured cycle limit`
 - `real Echo WASM witness stop control stays on trusted lifecycle vocabulary`
-- `real Echo WASM Stack Witness 0001 transport emits ReadingEnvelope + QueryBytes`
+- `real Echo WASM requires an installed observer before jedit textWindow can materialize`
 
 ## Non-Goals
 
