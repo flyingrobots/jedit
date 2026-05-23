@@ -139,6 +139,34 @@ test('jedit Echo witness runner forwards witness replay result when present', ()
   assert.equal(result.summary.replay, replay);
 });
 
+test('jedit Echo witness runner obstructs malformed witness replay posture', () => {
+  const result = runEchoWitness({
+    dryRun: false,
+    json: true,
+    replay: true,
+  }, createWitnessReportAdapter({
+    replay: {
+      status: 'obstructed',
+    },
+    reading: {
+      readingId: 'reading-3',
+      artifactHash: 'artifact-3',
+    },
+  }));
+
+  assert.equal(result.status, 0);
+  assert.equal(result.summary.replay.status, 'obstructed');
+  assert.equal(result.summary.replay.obstruction, 'durable_replay_unavailable');
+  assert.equal(
+    result.summary.replay.reason,
+    'witness report carries malformed replay posture',
+  );
+  assert.deepEqual(result.summary.replay.readingIdentity, {
+    readingId: 'reading-3',
+    artifactHash: 'artifact-3',
+  });
+});
+
 function createWitnessReportFailureAdapter() {
   return createWitnessReportAdapter(undefined, {
     readFailure: new Error('invalid report JSON'),

@@ -15,6 +15,7 @@ import {
 } from './support/echo-wasm-cbor.mjs';
 import {
   createWitnessReport,
+  INLINE_PAYLOAD_PREVIEW_BYTE_LIMIT,
   REPLAY_OBSTRUCTION_DURABLE_UNAVAILABLE,
   RETAINED_EVIDENCE_POSTURE_MISSING,
   WITNESS_REPORT_SCHEMA_VERSION,
@@ -73,6 +74,7 @@ const ECHO_DERIVED_FIXTURE_DEFAULT_WORLDLINE_ID_HEX =
   '3e888b35fc1d18b5487da6704fa71c3374e95dd52bc83963239b127f9293f228';
 const STACK_WITNESS_ALTERNATE_WORLDLINE_ID_HEX =
   '0000000000000000000000000000000000000000000000000000000000000001';
+const PAYLOAD_PREVIEW_TEST_CHARACTER = 'x';
 
 const UTF8_DECODER = new TextDecoder();
 
@@ -103,7 +105,7 @@ test('real Echo WASM witness control intent honors configured cycle limit', () =
   assert.equal(controlIntent.mode.cycle_limit, CUSTOM_RUN_UNTIL_IDLE_CYCLE_LIMIT);
 });
 
-test('real Echo WASM witness report names retained-evidence and replay posture', async () => {
+test('real Echo WASM witness report names retained-evidence and replay posture', () => {
   const queryBytes = encodeUtf8(STACK_WITNESS_TEXT);
   const artifact = createWitnessReportFixtureArtifact(queryBytes);
   const textWindowBasis = createWitnessOnlyEchoFixtureBasisResolver().resolveTextWindowBasis();
@@ -111,7 +113,7 @@ test('real Echo WASM witness report names retained-evidence and replay posture',
   const report = createWitnessReport(createWitnessReportArgs({
     artifact,
     appReading,
-    jeditGeneratedContract: await loadGeneratedContractMetadata(),
+    jeditGeneratedContract: createGeneratedContractMetadataFixture(),
     queryBytes,
     textWindowBasis,
   }));
@@ -122,6 +124,8 @@ test('real Echo WASM witness report names retained-evidence and replay posture',
     report.retainedEvidence.availableInline.map((entry) => entry.role),
     ['reading_payload', 'reading_envelope'],
   );
+  assert.equal(report.retainedEvidence.availableInline[0].contentPreviewUtf8, STACK_WITNESS_TEXT);
+  assert.equal(report.retainedEvidence.availableInline[0].contentPreviewTruncated, false);
   assert.deepEqual(
     report.retainedEvidence.missing.map((entry) => entry.role),
     ['contract_receipt', 'reading_payload_ref', 'reading_envelope_ref'],
@@ -131,6 +135,26 @@ test('real Echo WASM witness report names retained-evidence and replay posture',
   assert.equal(report.replay.status, 'obstructed');
   assert.equal(report.replay.obstruction, REPLAY_OBSTRUCTION_DURABLE_UNAVAILABLE);
   assert.equal(report.replay.readingIdentity.readingId, appReading.reading.readingId);
+});
+
+test('real Echo WASM witness report bounds inline reading payload preview', () => {
+  const text = PAYLOAD_PREVIEW_TEST_CHARACTER.repeat(INLINE_PAYLOAD_PREVIEW_BYTE_LIMIT + 1);
+  const queryBytes = encodeUtf8(text);
+  const artifact = createWitnessReportFixtureArtifact(queryBytes);
+  const textWindowBasis = createWitnessOnlyEchoFixtureBasisResolver().resolveTextWindowBasis();
+  const appReading = toWitnessOnlyTextWindowReading(artifact, queryBytes);
+  const report = createWitnessReport(createWitnessReportArgs({
+    artifact,
+    appReading,
+    jeditGeneratedContract: createGeneratedContractMetadataFixture(),
+    queryBytes,
+    textWindowBasis,
+  }));
+  const payloadEntry = report.retainedEvidence.availableInline[0];
+
+  assert.equal(payloadEntry.byteLength, queryBytes.length);
+  assert.equal(payloadEntry.contentPreviewUtf8.length, INLINE_PAYLOAD_PREVIEW_BYTE_LIMIT);
+  assert.equal(payloadEntry.contentPreviewTruncated, true);
 });
 
 test('real Echo WASM Stack Witness 0001 transport emits ReadingEnvelope + QueryBytes', {
@@ -468,6 +492,25 @@ function createWitnessReportArgs({
     },
     queryBytes,
     textWindowBasis,
+  };
+}
+
+function createGeneratedContractMetadataFixture() {
+  return {
+    source: 'contracts/jedit/hot-text-runtime.graphql',
+    mutations: {
+      createBufferWorldline: {
+        fieldName: 'createBufferWorldline',
+      },
+      replaceRangeAsTick: {
+        fieldName: 'replaceRangeAsTick',
+      },
+    },
+    queries: {
+      textWindow: {
+        fieldName: 'textWindow',
+      },
+    },
   };
 }
 

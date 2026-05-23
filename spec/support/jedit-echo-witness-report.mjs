@@ -1,6 +1,7 @@
 import { bytesToHex } from './echo-wasm-cbor.mjs';
 
 const UTF8_DECODER = new TextDecoder();
+export const INLINE_PAYLOAD_PREVIEW_BYTE_LIMIT = 128;
 
 export const WITNESS_REPORT_SCHEMA_VERSION = 2;
 export const RETAINED_EVIDENCE_POSTURE_MISSING = 'missing_retention';
@@ -67,7 +68,10 @@ function createRetainedEvidenceInventory({
         role: 'reading_payload',
         source: 'ObservationPayload::QueryBytes',
         byteLength: queryBytes.length,
-        contentPreviewUtf8: UTF8_DECODER.decode(queryBytes),
+        contentPreviewUtf8: UTF8_DECODER.decode(
+          queryBytes.slice(0, INLINE_PAYLOAD_PREVIEW_BYTE_LIMIT),
+        ),
+        contentPreviewTruncated: queryBytes.length > INLINE_PAYLOAD_PREVIEW_BYTE_LIMIT,
       },
       {
         role: 'reading_envelope',

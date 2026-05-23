@@ -124,7 +124,7 @@ and host authority split:
 - jedit application code submits canonical intents and observes readings;
 - trusted Echo host code owns package install, scheduler control, until-idle
   policy, and fault recovery;
-- no jedit app path can tick or tunnel scheduler control through dispatch.
+- no jedit app path can tick or tunnel scheduler control through dispatch;
 - the witness report now inventories inline reading evidence and explicitly
   records missing durable retention as `missing_retention`;
 - `--replay` returns the report's replay posture, currently
