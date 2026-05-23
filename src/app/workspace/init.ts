@@ -11,6 +11,8 @@ import { BUILT_IN_TITLE_SCENE_NAMES } from '../../ports/title-scene-loader.js';
 import type { JeditTheme } from '../../ui/jedit-theme.js';
 import type { FileEntry } from '../../ports/file-system.js';
 import { ViewModes } from './view-mode.js';
+import type { InteractiveTextRuntimeMode } from '../interactive-text-runtime-mode.js';
+import { INTERACTIVE_TEXT_RUNTIME_LOCAL } from '../interactive-text-runtime-mode.js';
 
 const INITIAL_FOCUS_PANE: FocusPane = FocusPanes.Editor;
 const INITIAL_VIEW_MODE = ViewModes.Source;
@@ -22,6 +24,7 @@ export interface WorkspaceInitialModelSnapshot {
   readonly entries: readonly FileEntry[];
   readonly titleMeshes?: TitleMeshLibrary;
   readonly nowMs: number;
+  readonly interactiveTextRuntimeMode?: InteractiveTextRuntimeMode;
 }
 
 export function createInitialModel(
@@ -39,6 +42,7 @@ export function createInitialModel(
     entries,
     selectedIndex: 0,
     editor: undefined,
+    interactiveTextRuntimeMode: snapshot.interactiveTextRuntimeMode ?? INTERACTIVE_TEXT_RUNTIME_LOCAL,
     viewMode: INITIAL_VIEW_MODE,
     focusPane: INITIAL_FOCUS_PANE,
     ...initialDrawerState(),

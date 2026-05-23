@@ -12,10 +12,12 @@ test('main constructs a workspace app and runs it through bijou run()', () => {
   const createsAppImport = /createWorkspaceApp/.test(source);
   const createsWorkspaceApp = /const app\s*=\s*createWorkspaceApp\(/.test(source);
   const runsApp = /run\(app,/.test(source);
+  const hasEchoTextRuntimeOptIn = /JEDIT_TEXT_RUNTIME/.test(source);
   const hasLocalSettingsHandlers = /settingsHandlers/.test(source);
 
   assert.ok(createsAppImport);
   assert.ok(createsWorkspaceApp);
   assert.ok(runsApp);
+  assert.ok(hasEchoTextRuntimeOptIn);
   assert.equal(hasLocalSettingsHandlers, false);
 });

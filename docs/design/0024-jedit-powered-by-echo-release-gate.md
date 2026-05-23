@@ -495,10 +495,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Opt-in Echo-backed mode exists.
-- [ ] Narrow interactive edit path uses Echo.
-- [ ] Fallback mode remains available.
-- [ ] UI smoke test updated.
+- [x] Opt-in Echo-backed mode exists.
+- [x] Narrow interactive edit path uses Echo.
+- [x] Fallback mode remains available.
+- [x] UI smoke test updated.
 
 ## Slice 17 - Release Quickstart
 
