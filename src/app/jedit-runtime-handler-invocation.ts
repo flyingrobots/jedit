@@ -15,7 +15,11 @@ export type JeditHandlerInvocationAuthority =
   | typeof JEDIT_HANDLER_INVOCATION_AUTHORITY_APPLICATION;
 
 export type JeditHandlerInvocationOutcome =
-  | JeditHandlerInvocationInvoked
+  | JeditHandlerInvocationInvoked<JeditContractMutationHandlerResult>
+  | JeditHandlerInvocationBlocked;
+
+export type JeditHandlerInvocationCallOutcome<Result> =
+  | JeditHandlerInvocationInvoked<Result>
   | JeditHandlerInvocationBlocked;
 
 export interface JeditHandlerInvocationRequest {
@@ -23,9 +27,18 @@ export interface JeditHandlerInvocationRequest {
   readonly mutation: JeditContractMutationHandlerRequest;
 }
 
-export interface JeditHandlerInvocationInvoked {
+export interface JeditHandlerInvocationCall<Result> {
+  readonly authority: JeditHandlerInvocationAuthority;
+  invokeHandler(registry: JeditContractMutationHandlerRegistry): Result;
+}
+
+export interface JeditHandlerInvocationSink {
+  recordHandlerInvocationAuthority(authority: JeditHandlerInvocationAuthority): void;
+}
+
+export interface JeditHandlerInvocationInvoked<Result> {
   readonly status: typeof JEDIT_HANDLER_INVOCATION_STATUS_INVOKED;
-  readonly result: JeditContractMutationHandlerResult;
+  readonly result: Result;
 }
 
 export interface JeditHandlerInvocationBlocked {
@@ -42,13 +55,25 @@ export function invokeJeditMutationHandler(
   registry: JeditContractMutationHandlerRegistry,
   request: JeditHandlerInvocationRequest,
 ): JeditHandlerInvocationOutcome {
+  return invokeJeditHandlerWithAuthority(registry, {
+    authority: request.authority,
+    invokeHandler(targetRegistry) {
+      return targetRegistry.executeMutation(request.mutation);
+    },
+  });
+}
+
+export function invokeJeditHandlerWithAuthority<Result>(
+  registry: JeditContractMutationHandlerRegistry,
+  request: JeditHandlerInvocationCall<Result>,
+): JeditHandlerInvocationCallOutcome<Result> {
   if (request.authority !== JEDIT_HANDLER_INVOCATION_AUTHORITY_SCHEDULER) {
     return blockedInvocation();
   }
 
   return {
     status: JEDIT_HANDLER_INVOCATION_STATUS_INVOKED,
-    result: registry.executeMutation(request.mutation),
+    result: request.invokeHandler(registry),
   };
 }
 

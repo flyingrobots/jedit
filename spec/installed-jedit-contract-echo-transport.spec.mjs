@@ -11,6 +11,7 @@ const POWERED_SESSION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'echo-po
 const CODEC_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-optic-codec.js');
 const RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'in-memory-hot-text-runtime.js');
 const WORK_ENVELOPE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'ports', 'jedit-runtime-work-envelope.js');
+const INVOCATION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-runtime-handler-invocation.js');
 const BUFFER_KEY = 'notes/installed-contract.md';
 const INITIAL_TEXT = 'hello';
 const INSERT_TEXT = ' Echo';
@@ -64,9 +65,11 @@ test('TextBufferOptic headless flow uses installed jedit contract transport', as
   assert.equal(observed.value.lines[0].text, `${INITIAL_TEXT}${INSERT_TEXT}`);
   assert.deepEqual(lifecycleRequests, [CYCLE_LIMIT, CYCLE_LIMIT]);
   assert.equal('installContractPackage' in session, false);
+  assert.equal('invokeJeditMutationHandler' in session, false);
   assert.equal('requestRunUntilIdle' in session, false);
   assert.equal('tick' in session, false);
   assert.equal('installContractPackage' in optic, false);
+  assert.equal('invokeJeditMutationHandler' in optic, false);
   assert.equal('requestRunUntilIdle' in optic, false);
   assert.equal('tick' in optic, false);
 });
@@ -153,6 +156,35 @@ test('installed transport does not stage query observations as mutation work', a
   assert.equal(envelopes.length, 1);
 });
 
+test('installed transport invokes handlers with scheduler authority only', async () => {
+  const modules = await loadModules();
+  const authorities = [];
+  const transport = modules.transport.createInstalledJeditContractEchoTransport({
+    handlerInvocationSink: {
+      recordHandlerInvocationAuthority(authority) {
+        authorities.push(authority);
+      },
+    },
+  });
+
+  const response = modules.codec.decodeJeditIntentResponse(transport.submitIntentBytes(
+    modules.codec.encodeJeditIntentRequest({
+      kind: modules.codec.JEDIT_INTENT_REQUEST_KIND,
+      operationName: modules.codec.CREATE_BUFFER_WORLDLINE_OPERATION,
+      input: {
+        bufferKey: BUFFER_KEY,
+        initialText: INITIAL_TEXT,
+        projectionPath: BUFFER_KEY,
+      },
+    }),
+  ));
+
+  assert.equal(response.status, modules.codec.JEDIT_TRANSPORT_STATUS_OK);
+  assert.deepEqual(authorities, [
+    modules.invocation.JEDIT_HANDLER_INVOCATION_AUTHORITY_SCHEDULER,
+  ]);
+});
+
 async function loadModules() {
   if (modulesPromise) {
     return modulesPromise;
@@ -166,13 +198,14 @@ async function loadModules() {
 
     assert.equal(build.status, 0, build.stderr || build.stdout);
 
-    const [transport, client, poweredSession, codec, runtime, workEnvelope] = await Promise.all([
+    const [transport, client, poweredSession, codec, runtime, workEnvelope, invocation] = await Promise.all([
       import(pathToFileURL(TRANSPORT_MODULE_PATH).href),
       import(pathToFileURL(CLIENT_MODULE_PATH).href),
       import(pathToFileURL(POWERED_SESSION_MODULE_PATH).href),
       import(pathToFileURL(CODEC_MODULE_PATH).href),
       import(pathToFileURL(RUNTIME_MODULE_PATH).href),
       import(pathToFileURL(WORK_ENVELOPE_MODULE_PATH).href),
+      import(pathToFileURL(INVOCATION_MODULE_PATH).href),
     ]);
 
     return {
@@ -182,6 +215,7 @@ async function loadModules() {
       codec,
       runtime,
       workEnvelope,
+      invocation,
     };
   })();
 

@@ -1,6 +1,6 @@
 # jedit Powered By Echo Release Gate
 
-Status: slices 1-24 closed locally; release-gate evidence and continuation
+Status: slices 1-25 closed locally; release-gate evidence and continuation
 plan recorded.
 
 This plan defines the local release gate for the sentence:
@@ -758,11 +758,11 @@ Test plan:
 
 Checklist:
 
-- [ ] Installed transport uses the invocation boundary.
-- [ ] Scheduler source is observable in tests.
-- [ ] App-facing authority remains absent.
-- [ ] Headless flow still passes.
-- [ ] Quality gate passes.
+- [x] Installed transport uses the invocation boundary.
+- [x] Scheduler source is observable in tests.
+- [x] App-facing authority remains absent.
+- [x] Headless flow still passes.
+- [x] Quality gate passes.
 
 ## Slice 26 - Ticketed Runtime Ingress Shape
 

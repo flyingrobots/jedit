@@ -5,6 +5,12 @@ import {
   createJeditContractQueryObserverRegistry,
 } from '../app/jedit-contract-query-observers.js';
 import { JEDIT_HOT_TEXT_PACKAGE_ID } from '../app/jedit-contract-package.js';
+import {
+  invokeJeditHandlerWithAuthority,
+  JEDIT_HANDLER_INVOCATION_AUTHORITY_SCHEDULER,
+  JEDIT_HANDLER_INVOCATION_STATUS_BLOCKED,
+  type JeditHandlerInvocationSink,
+} from '../app/jedit-runtime-handler-invocation.js';
 import { createInMemoryHotTextRuntime } from './in-memory-hot-text-runtime.js';
 import {
   installJeditContractPackage,
@@ -58,6 +64,7 @@ export interface InstalledJeditContractEchoTransportOptions {
   readonly hash?: HashPort;
   readonly moduleSpecifier?: string;
   readonly workSink?: JeditRuntimeWorkSink;
+  readonly handlerInvocationSink?: JeditHandlerInvocationSink;
 }
 
 interface InstalledJeditContractEchoTransportContext {
@@ -67,6 +74,7 @@ interface InstalledJeditContractEchoTransportContext {
   readonly mutations: ReturnType<typeof createJeditContractMutationHandlerRegistry>;
   readonly observers: ReturnType<typeof createJeditContractQueryObserverRegistry>;
   readonly workSink?: JeditRuntimeWorkSink;
+  readonly handlerInvocationSink?: JeditHandlerInvocationSink;
 }
 
 export function createInstalledJeditContractEchoTransport(
@@ -112,6 +120,7 @@ function createTransportContext(
     mutations,
     observers,
     workSink: options.workSink,
+    handlerInvocationSink: options.handlerInvocationSink,
   };
 }
 
@@ -122,7 +131,7 @@ function submitInstalledIntent(
   const request = decodeJeditIntentRequest(intentBytes);
   recordRuntimeWorkEnvelope(context.workSink, intentBytes, request, context.hash);
   return encodeJeditIntentResponse(
-    executeIntent(context.installStatus, context.mutations, request),
+    executeIntent(context.installStatus, context.mutations, context.handlerInvocationSink, request),
   );
 }
 
@@ -160,6 +169,7 @@ function recordRuntimeWorkEnvelope(
 function executeIntent(
   installStatus: string,
   mutations: ReturnType<typeof createJeditContractMutationHandlerRegistry>,
+  invocationSink: JeditHandlerInvocationSink | undefined,
   request: JeditIntentRequest,
 ): JeditIntentResponse {
   if (installStatus !== ECHO_CONTRACT_PACKAGE_INSTALL_INSTALLED) {
@@ -168,24 +178,78 @@ function executeIntent(
 
   switch (request.operationName) {
     case CREATE_BUFFER_WORLDLINE_OPERATION:
-      return {
-        status: JEDIT_TRANSPORT_STATUS_OK,
-        operationName: CREATE_BUFFER_WORLDLINE_OPERATION,
-        execution: mutations.executeCreateBufferWorldlineMutation(request),
-      };
+      return executeCreateBufferIntent(mutations, invocationSink, request);
     case REPLACE_RANGE_AS_TICK_OPERATION:
-      return {
-        status: JEDIT_TRANSPORT_STATUS_OK,
-        operationName: REPLACE_RANGE_AS_TICK_OPERATION,
-        execution: mutations.executeReplaceRangeAsTickMutation(request),
-      };
+      return executeReplaceRangeIntent(mutations, invocationSink, request);
     case CREATE_CHECKPOINT_OPERATION:
-      return {
-        status: JEDIT_TRANSPORT_STATUS_OK,
-        operationName: CREATE_CHECKPOINT_OPERATION,
-        execution: mutations.executeCreateCheckpointMutation(request),
-      };
+      return executeCreateCheckpointIntent(mutations, invocationSink, request);
   }
+}
+
+function executeCreateBufferIntent(
+  mutations: ReturnType<typeof createJeditContractMutationHandlerRegistry>,
+  invocationSink: JeditHandlerInvocationSink | undefined,
+  request: Extract<JeditIntentRequest, { readonly operationName: typeof CREATE_BUFFER_WORLDLINE_OPERATION }>,
+): JeditIntentResponse {
+  const invocation = invokeSchedulerHandler(mutations, invocationSink, (registry) => (
+    registry.executeCreateBufferWorldlineMutation(request)
+  ));
+  if (invocation.status === JEDIT_HANDLER_INVOCATION_STATUS_BLOCKED) {
+    return obstructedIntent(request, invocation.obstruction);
+  }
+  return {
+    status: JEDIT_TRANSPORT_STATUS_OK,
+    operationName: CREATE_BUFFER_WORLDLINE_OPERATION,
+    execution: invocation.result,
+  };
+}
+
+function executeReplaceRangeIntent(
+  mutations: ReturnType<typeof createJeditContractMutationHandlerRegistry>,
+  invocationSink: JeditHandlerInvocationSink | undefined,
+  request: Extract<JeditIntentRequest, { readonly operationName: typeof REPLACE_RANGE_AS_TICK_OPERATION }>,
+): JeditIntentResponse {
+  const invocation = invokeSchedulerHandler(mutations, invocationSink, (registry) => (
+    registry.executeReplaceRangeAsTickMutation(request)
+  ));
+  if (invocation.status === JEDIT_HANDLER_INVOCATION_STATUS_BLOCKED) {
+    return obstructedIntent(request, invocation.obstruction);
+  }
+  return {
+    status: JEDIT_TRANSPORT_STATUS_OK,
+    operationName: REPLACE_RANGE_AS_TICK_OPERATION,
+    execution: invocation.result,
+  };
+}
+
+function executeCreateCheckpointIntent(
+  mutations: ReturnType<typeof createJeditContractMutationHandlerRegistry>,
+  invocationSink: JeditHandlerInvocationSink | undefined,
+  request: Extract<JeditIntentRequest, { readonly operationName: typeof CREATE_CHECKPOINT_OPERATION }>,
+): JeditIntentResponse {
+  const invocation = invokeSchedulerHandler(mutations, invocationSink, (registry) => (
+    registry.executeCreateCheckpointMutation(request)
+  ));
+  if (invocation.status === JEDIT_HANDLER_INVOCATION_STATUS_BLOCKED) {
+    return obstructedIntent(request, invocation.obstruction);
+  }
+  return {
+    status: JEDIT_TRANSPORT_STATUS_OK,
+    operationName: CREATE_CHECKPOINT_OPERATION,
+    execution: invocation.result,
+  };
+}
+
+function invokeSchedulerHandler<Result>(
+  mutations: ReturnType<typeof createJeditContractMutationHandlerRegistry>,
+  invocationSink: JeditHandlerInvocationSink | undefined,
+  invokeHandler: (registry: ReturnType<typeof createJeditContractMutationHandlerRegistry>) => Result,
+) {
+  invocationSink?.recordHandlerInvocationAuthority(JEDIT_HANDLER_INVOCATION_AUTHORITY_SCHEDULER);
+  return invokeJeditHandlerWithAuthority(mutations, {
+    authority: JEDIT_HANDLER_INVOCATION_AUTHORITY_SCHEDULER,
+    invokeHandler,
+  });
 }
 
 function executeObserve(
