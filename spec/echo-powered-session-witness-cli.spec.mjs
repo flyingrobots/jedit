@@ -49,6 +49,8 @@ test('Echo-powered session CLI reports app capability, lifecycle, and reading ev
   assert.equal(summary.report.outcome.status, 'APPLIED');
   assert.equal(summary.report.outcomeTrail[0].status, 'ACCEPTED_PENDING');
   assert.equal(summary.report.retainedEvidence.refs.length, 4);
+  assert.equal(summary.report.restartPosture.status, 'PARTIAL');
+  assert.equal(summary.report.restartPosture.acceptedSubmissionRecovery, 'UNAVAILABLE');
   assert.equal(summary.reading.readingId, summary.report.readingId);
   assert.equal(summary.replay.status, 'UNAVAILABLE');
   assert.equal(typeof summary.report.receiptId, 'string');

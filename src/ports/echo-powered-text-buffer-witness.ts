@@ -6,6 +6,7 @@ import type {
 } from './jedit-optic-client.js';
 import type { JeditIntentOutcome } from './jedit-intent-outcomes.js';
 import type { JeditRetainedEvidenceInventory } from './jedit-retained-evidence.js';
+import type { JeditRestartPosture } from './jedit-restart-posture.js';
 
 export interface EchoPoweredTextBufferWitnessRequest {
   readonly bufferKey: BufferKey;
@@ -27,6 +28,7 @@ export interface EchoPoweredTextBufferWitnessReport {
   readonly outcome: JeditIntentOutcome;
   readonly outcomeTrail: readonly JeditIntentOutcome[];
   readonly retainedEvidence: JeditRetainedEvidenceInventory;
+  readonly restartPosture: JeditRestartPosture;
   readonly receiptId: string;
   readonly readingId: ReadingId;
   readonly text: string;

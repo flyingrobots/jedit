@@ -11,6 +11,7 @@ import {
   createJeditReceiptHandle,
 } from './jedit-intent-outcomes.js';
 import { createJeditRetainedEvidenceInventory } from './jedit-retained-evidence.js';
+import { currentJeditRestartPosture } from './jedit-restart-posture.js';
 import type {
   JeditAcceptedPendingIntentOutcome,
   JeditAppliedIntentOutcome,
@@ -73,6 +74,7 @@ function toWitnessReport(
       receiptId: applied.receiptId,
       readingId: observed.evidence.readingId,
     }),
+    restartPosture: currentJeditRestartPosture(),
     receiptId: applied.receiptId,
     readingId: observed.evidence.readingId,
     text: observed.value.lines.map((line) => line.text).join('\n'),

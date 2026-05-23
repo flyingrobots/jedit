@@ -420,7 +420,7 @@ Checklist:
 - [x] No hidden retry.
 - [x] Docs explain explicit retry doctrine.
 
-## Slice 14 - Restart/Persistence Posture
+## Slice 14 - Echo-Hosted State And Restart Posture
 
 User story: As a host, I can describe what survives restart and what remains
 in-memory in the current release gate.
@@ -428,6 +428,11 @@ in-memory in the current release gate.
 Work:
 
 - Add restart posture to witness report.
+- Report the current state owner.
+- Report that process-local handler state is transitional when it is still
+  present.
+- Report Echo-hosted package/evidence posture separately from jedit's text
+  state owner.
 - If Echo exposes durable accepted-submission recovery, consume it.
 - Otherwise report typed durability obstruction.
 
@@ -439,10 +444,13 @@ Test plan:
 
 Checklist:
 
-- [ ] Restart posture exists.
-- [ ] Durable support is consumed if available.
-- [ ] Missing durable support is typed.
-- [ ] Docs avoid overclaiming persistence.
+- [x] Restart posture exists.
+- [x] Current state owner is reported.
+- [x] Process-local handler state is called transitional.
+- [x] Echo-hosted package/evidence posture is reported.
+- [x] Durable support is consumed if available.
+- [x] Missing durable support is typed.
+- [x] Docs avoid overclaiming persistence.
 
 ## Slice 15 - Local Replay Proof
 
