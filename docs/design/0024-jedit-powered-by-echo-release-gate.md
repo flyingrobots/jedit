@@ -284,11 +284,11 @@ Test plan:
 
 Checklist:
 
-- [ ] Trusted host start posture exists.
-- [ ] Trusted host stop posture exists.
-- [ ] App-facing API has no start/stop/tick authority.
-- [ ] Cadence is host policy.
-- [ ] Stop is clean and typed.
+- [x] Trusted host start posture exists.
+- [x] Trusted host stop posture exists.
+- [x] App-facing API has no start/stop/tick authority.
+- [x] Cadence is host policy.
+- [x] Stop is clean and typed.
 
 ## Slice 09 - Intent Outcome Observation
 

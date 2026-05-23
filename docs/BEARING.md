@@ -20,15 +20,19 @@ That plan is the source of truth for the next twenty slices.
 
 ## Immediate Work
 
-The next local inspection point is the first three slices of the release-gate
-plan:
+The current local inspection point is slice 8 of the release-gate plan:
 
 1. Plan and bearing signposts.
 2. jedit contract package descriptor.
 3. Package install preflight.
+4. Echo package install adapter.
+5. jedit mutation handler registration.
+6. jedit query observer registration.
+7. installed package `TextBufferOptic` headless flow.
+8. trusted host runtime loop.
 
-After those land, pause and inspect the boundary before registering mutation
-handlers or query observers.
+Pause here and inspect before moving into outcome observation, retained
+evidence lookup, and agent-facing real Echo witness surfaces.
 
 ## Non-Negotiables
 
