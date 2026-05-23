@@ -108,11 +108,11 @@ Test plan:
 
 Checklist:
 
-- [ ] Descriptor module exists.
-- [ ] Descriptor includes package/schema/artifact/codec identity.
-- [ ] Descriptor lists supported mutations from generated metadata.
-- [ ] Descriptor lists supported queries from generated metadata.
-- [ ] Descriptor has focused tests.
+- [x] Descriptor module exists.
+- [x] Descriptor includes package/schema/artifact/codec identity.
+- [x] Descriptor lists supported mutations from generated metadata.
+- [x] Descriptor lists supported queries from generated metadata.
+- [x] Descriptor has focused tests.
 
 ## Slice 03 - Package Install Preflight
 
