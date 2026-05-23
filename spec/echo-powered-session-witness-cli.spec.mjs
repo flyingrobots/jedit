@@ -28,7 +28,9 @@ test('Echo-powered session CLI reports app capability, lifecycle, and reading ev
   assert.equal(result.status, 0, result.stderr);
   const summary = JSON.parse(result.stdout);
   assert.equal(summary.ok, true);
-  assert.equal(summary.transport, 'fake-echo-shaped');
+  assert.equal(summary.transport, 'installed-jedit-contract');
+  assert.equal(summary.dryRun, false);
+  assert.equal(summary.install.packageId, 'jedit.hot-text-runtime');
   assert.equal(summary.authority.appFacingCapability, 'TextBufferOptic');
   assert.equal(summary.authority.appCanTick, false);
   assert.deepEqual(summary.lifecycleRequests, [
@@ -44,9 +46,37 @@ test('Echo-powered session CLI reports app capability, lifecycle, and reading ev
     appCanTick: false,
   });
   assert.equal(summary.report.text, 'hello');
+  assert.equal(summary.report.outcome.status, 'APPLIED');
+  assert.equal(summary.report.outcomeTrail[0].status, 'ACCEPTED_PENDING');
+  assert.equal(summary.report.retainedEvidence.refs.length, 4);
+  assert.equal(summary.reading.readingId, summary.report.readingId);
+  assert.equal(summary.replay.status, 'UNAVAILABLE');
   assert.equal(typeof summary.report.receiptId, 'string');
   assert.equal(typeof summary.report.readingId, 'string');
   assert.equal(summary.report.truncated, false);
+});
+
+test('Echo-powered session CLI dry-run reports installed package witness plan', () => {
+  const result = spawnSync(process.execPath, [
+    CLI_PATH,
+    '--json',
+    '--dry-run',
+    '--cycle-limit',
+    '8',
+  ], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  const summary = JSON.parse(result.stdout);
+  assert.equal(summary.ok, true);
+  assert.equal(summary.dryRun, true);
+  assert.equal(summary.transport, 'installed-jedit-contract');
+  assert.equal(summary.install.packageId, 'jedit.hot-text-runtime');
+  assert.equal(summary.plan.cycleLimit, 8);
+  assert.equal(summary.plan.appCanTick, false);
+  assert.equal(summary.replay.status, 'UNAVAILABLE');
 });
 
 test('Echo-powered session CLI rejects invalid cycle limits as JSON failures', () => {

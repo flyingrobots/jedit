@@ -12,6 +12,8 @@ const FIRST_LINE = 0;
 const SINGLE_LINE_WINDOW = 1;
 const DEFAULT_MAX_BYTES = 1024;
 const RUNTIME_COMPLETION_QUIESCED = 'quiesced';
+const TRANSPORT_INSTALLED_PACKAGE = 'installed-jedit-contract';
+const REPLAY_POSTURE_UNAVAILABLE = 'UNAVAILABLE';
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
@@ -38,6 +40,7 @@ function parseArgs(args) {
   const options = {
     json: false,
     help: false,
+    dryRun: false,
     bufferKey: DEFAULT_BUFFER_KEY,
     insertText: DEFAULT_INSERT_TEXT,
     cycleLimit: DEFAULT_CYCLE_LIMIT,
@@ -47,6 +50,8 @@ function parseArgs(args) {
     const arg = args[index];
     if (arg === '--json') {
       options.json = true;
+    } else if (arg === '--dry-run') {
+      options.dryRun = true;
     } else if (arg === '--help' || arg === '-h') {
       options.help = true;
     } else if (arg === '--buffer-key') {
@@ -99,6 +104,10 @@ function parseCycleLimit(value) {
 
 async function runSessionWitness(options) {
   const modules = await loadDistModules();
+  if (options.dryRun) {
+    return dryRunSummary(options, modules.package);
+  }
+
   const lifecycleRequests = [];
   const stopRequests = [];
   const lifecycle = {
@@ -118,7 +127,7 @@ async function runSessionWitness(options) {
     },
   };
   const client = modules.transportClient.createEchoTransportJeditOpticClient(
-    modules.fakeTransport.createFakeEchoJeditOpticTransport(),
+    modules.installedTransport.createInstalledJeditContractEchoTransport(),
   );
   const session = modules.poweredSession.createEchoPoweredTextBufferOpticSession({
     client,
@@ -142,7 +151,9 @@ async function runSessionWitness(options) {
   return {
     ok: true,
     schemaVersion: 1,
-    transport: 'fake-echo-shaped',
+    transport: TRANSPORT_INSTALLED_PACKAGE,
+    dryRun: false,
+    install: installSummary(modules.package),
     authority: {
       appFacingCapability: 'TextBufferOptic',
       appCanTick: false,
@@ -152,16 +163,58 @@ async function runSessionWitness(options) {
     stopRequests,
     shutdown,
     report,
+    reading: {
+      readingId: report.readingId,
+      lineCount: report.lines.length,
+      truncated: report.truncated,
+    },
+    replay: unavailableReplayPosture(),
+  };
+}
+
+function dryRunSummary(options, packageModule) {
+  return {
+    ok: true,
+    schemaVersion: 1,
+    transport: TRANSPORT_INSTALLED_PACKAGE,
+    dryRun: true,
+    install: installSummary(packageModule),
+    plan: {
+      bufferKey: options.bufferKey,
+      cycleLimit: options.cycleLimit,
+      submitIntent: true,
+      trustedHostDrainsRuntime: true,
+      appCanTick: false,
+    },
+    replay: unavailableReplayPosture(),
+  };
+}
+
+function installSummary(packageModule) {
+  return {
+    packageId: packageModule.JEDIT_HOT_TEXT_PACKAGE_ID,
+    version: packageModule.JEDIT_HOT_TEXT_PACKAGE_VERSION,
+    schemaId: packageModule.JEDIT_HOT_TEXT_SCHEMA_ID,
+    artifactId: packageModule.JEDIT_HOT_TEXT_ARTIFACT_ID,
+    codecId: packageModule.JEDIT_HOT_TEXT_CODEC_ID,
+  };
+}
+
+function unavailableReplayPosture() {
+  return {
+    status: REPLAY_POSTURE_UNAVAILABLE,
+    reason: 'local replay proof is scheduled for a later release-gate slice',
   };
 }
 
 async function loadDistModules() {
   return {
-    fakeTransport: await importDist('adapters/fake-echo-jedit-optic-transport.js'),
+    installedTransport: await importDist('adapters/installed-jedit-contract-echo-transport.js'),
     transportClient: await importDist('adapters/jedit-echo-optic-client.js'),
     poweredSession: await importDist('app/echo-powered-text-buffer-optic-session.js'),
     workflow: await importDist('app/echo-powered-text-buffer-witness.js'),
     host: await importDist('app/trusted-echo-runtime-host.js'),
+    package: await importDist('app/jedit-contract-package.js'),
   };
 }
 
@@ -199,6 +252,7 @@ Options:
   --buffer-key <path>     Buffer key for the synthetic session.
   --text <text>           Text inserted by the replace-range intent.
   --cycle-limit <n>       Trusted host run-until-idle cycle limit.
+  --dry-run               Emit the planned installed-package witness without running it.
   --json                  Emit machine-readable summary.
   --help                  Show this help text.
 `;

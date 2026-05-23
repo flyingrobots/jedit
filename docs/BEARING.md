@@ -20,7 +20,7 @@ That plan is the source of truth for the next twenty slices.
 
 ## Immediate Work
 
-The current local inspection point is slice 8 of the release-gate plan:
+The current local inspection point is slice 11 of the release-gate plan:
 
 1. Plan and bearing signposts.
 2. jedit contract package descriptor.
@@ -30,9 +30,20 @@ The current local inspection point is slice 8 of the release-gate plan:
 6. jedit query observer registration.
 7. installed package `TextBufferOptic` headless flow.
 8. trusted host runtime loop.
+9. intent outcome observation.
+10. retained evidence lookup.
+11. agent CLI installed-package witness path.
 
-Pause here and inspect before moving into outcome observation, retained
-evidence lookup, and agent-facing real Echo witness surfaces.
+Agents can inspect the installed-package witness path with:
+
+```bash
+npm run build
+node scripts/jedit-echo-powered-session.mjs --json --dry-run
+node scripts/jedit-echo-powered-session.mjs --json
+```
+
+Continue toward MCP adapter, rejection posture, and Echo-hosted state/restart
+posture before the next slice-14 inspection point.
 
 ## Non-Negotiables
 

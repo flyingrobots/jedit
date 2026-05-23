@@ -365,11 +365,11 @@ Test plan:
 
 Checklist:
 
-- [ ] CLI real path uses installed package flow.
-- [ ] CLI JSON includes install/outcome/reading evidence.
-- [ ] CLI dry-run stays stable.
-- [ ] CLI typed errors stay machine-readable.
-- [ ] Agent-facing docs updated.
+- [x] CLI real path uses installed package flow.
+- [x] CLI JSON includes install/outcome/reading evidence.
+- [x] CLI dry-run stays stable.
+- [x] CLI typed errors stay machine-readable.
+- [x] Agent-facing docs updated.
 
 ## Slice 12 - MCP Adapter For Agents
 
