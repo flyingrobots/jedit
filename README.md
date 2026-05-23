@@ -25,6 +25,8 @@ The full invariant set is written down in
 The short operational guide is [GUIDE.md](GUIDE.md).
 The end-to-end buffer rendering path is explained in
 [ADVANCED_GUIDE.md](ADVANCED_GUIDE.md).
+The process-level jedit + Echo path is explained in
+[docs/jedit-echo-end-to-end.md](docs/jedit-echo-end-to-end.md).
 
 - Zen core, instrumented edges. The main editor area stays visually quiet;
   richer context appears at the edges and only when it earns the space.

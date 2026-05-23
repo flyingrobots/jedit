@@ -1,0 +1,1002 @@
+# jedit + Echo End-to-End Guide
+
+This guide explains how jedit works from process entry to process termination,
+and how jedit interacts with Echo today. It assumes no prior knowledge of jedit,
+Echo, Wesley, Graft, Bijou, or the WARP stack.
+
+The short version:
+
+- jedit is a terminal editor and product pressure test for the Echo stack.
+- Echo is a deterministic runtime over witnessed causal history.
+- Wesley compiles jedit-authored GraphQL contracts into generated operation
+  metadata, types, codecs, and observer helpers.
+- Graft supplies structural intelligence such as outlines and diffs.
+- Bijou supplies the terminal application loop.
+- jedit must never smuggle editor nouns into Echo core.
+
+The current repository contains two relevant execution postures:
+
+1. The interactive jedit TUI path. This starts in `src/main.ts`, runs through
+   Bijou, and edits local files through jedit workspace ports.
+2. The Echo witness path. This runs an opt-in real Echo WASM integration that
+   proves jedit can submit contract-shaped work, let a trusted host tick Echo,
+   observe a bounded reading, and produce a witness report.
+
+Those postures intentionally meet through ports and adapters. The interactive
+product can evolve toward the real Echo path without letting application code
+gain tick authority or substrate coordinates.
+
+## Vocabulary
+
+| Term | Meaning in this repository |
+| --- | --- |
+| jedit | The terminal editor product and Echo release gate consumer. |
+| Echo | The generic deterministic WARP runtime. It owns admission, scheduling, ticks, receipts, and readings. |
+| Wesley | The contract compiler. It turns jedit-authored GraphQL SDL into runtime-facing artifacts. |
+| Bijou | The terminal UI application runtime used by jedit. |
+| Graft | The structural intelligence engine used for outlines, diffs, and source projections. |
+| Intent | Canonical request to change causal history. The application submits it; Echo admits and schedules it. |
+| Observation | Bounded request to read through an observer plan. Echo returns payload plus evidence. |
+| ReadingEnvelope | Evidence-carrying context for a read: basis, observer identity, posture, and payload identity. |
+| Tick | Scheduler-owned logical execution opportunity. Application code cannot create or command ticks. |
+| TickReceipt | Evidence that the scheduler decided work during a tick. It is not an AdmissionTicket. |
+| TextBufferOptic | A jedit-owned app capability. Echo must not contain this noun or know what it means. |
+| ReadBasisHandle | A jedit app-safe token that hides runtime coordinates below the app boundary. |
+
+## Non-Negotiable Boundary
+
+Echo is generic. jedit owns editor nouns.
+
+This means:
+
+- `TextBuffer`, `TextWindow`, `TextBufferOptic`, edit groups, panes, buffers,
+  and editor commands belong to jedit.
+- Echo owns generic runtime concepts: intent bytes, observation bytes,
+  scheduler status, trusted control, receipts, readings, witnesses, retained
+  artifacts, and runtime faults.
+- Wesley bridges them by compiling jedit-authored contracts into generated
+  artifacts.
+- A jedit adapter may translate `TextBufferOptic.applyIntent(...)` into Echo
+  intent bytes.
+- Echo core must never grow a `TextBufferOptic`.
+
+If a future change needs an Echo API named after a jedit product noun, the
+boundary is wrong. Put the noun in a contract, generated adapter, or jedit port.
+
+## Repository Map
+
+The files most relevant to this guide are:
+
+| Path | Role |
+| --- | --- |
+| `src/main.ts` | Process entry for the TUI application. |
+| `src/adapters/workspace-app.ts` | Wires concrete ports into the workspace runtime. |
+| `src/app/workspace/runtime.ts` | Pure-ish workspace update/view runtime. |
+| `src/app/workspace/model.ts` | Workspace model shape. |
+| `src/app/workspace/editor-session.ts` | File/editor session behavior. |
+| `src/ports/jedit-optic-client.ts` | jedit-facing optic and observation interfaces. |
+| `src/adapters/jedit-echo-optic-client.ts` | Adapter from jedit optic calls to Echo-shaped transport bytes. |
+| `src/ports/echo-kernel-transport.ts` | App-safe and trusted-host Echo transport ports. |
+| `src/adapters/echo-wasm-kernel.ts` | Real Echo WASM transport adapter. |
+| `src/adapters/fake-echo-jedit-optic-transport.ts` | Default fake Echo-shaped test transport. |
+| `src/app/jedit-contract-runtime.ts` | jedit-owned transitional hot-text contract executor. |
+| `src/app/jedit-observer-runtime.ts` | jedit-owned observer/read envelope helpers. |
+| `src/adapters/in-memory-hot-text-runtime.ts` | Transitional in-memory hot-text runtime. |
+| `contracts/jedit/hot-text-runtime.graphql` | jedit-authored hot-text runtime contract. |
+| `contracts/jedit/text-buffer-optic.graphql` | jedit app-facing optic contract. |
+| `contracts/jedit/structural-history.graphql` | jedit structural history contract authority. |
+| `scripts/jedit-echo-witness.mjs` | CLI for the real Echo witness path. |
+| `scripts/ports/echo-witness-runner.mjs` | Witness runner port logic. |
+| `scripts/adapters/node-echo-witness-runner.mjs` | Node filesystem/process adapter for the witness runner. |
+| `spec/jedit-echo-wasm-stack-witness.spec.mjs` | Opt-in real Echo WASM stack witness. |
+
+## System Class Diagram
+
+This diagram shows the major runtime participants. It is not a TypeScript class
+inventory; it is the useful object boundary map.
+
+```mermaid
+classDiagram
+  class MainTs {
+    +initDefaultContext()
+    +createWorkspaceApp()
+    +run()
+  }
+
+  class BijouRunLoop {
+    +init()
+    +update(message, model)
+    +view(model)
+    +routeRuntimeIssue(issue)
+  }
+
+  class WorkspaceApp {
+    +init()
+    +update()
+    +view()
+  }
+
+  class WorkspaceRuntime {
+    +init()
+    +update(message, model)
+    +view(model)
+  }
+
+  class WorkspaceModel {
+    +cwd
+    +entries
+    +editor
+    +viewMode
+    +focus
+    +notifications
+    +graftInfo
+    +profiler
+  }
+
+  class EditorState {
+    +path
+    +lines
+    +cursor
+    +scroll
+    +dirty
+    +readOnly
+    +mode
+    +undoStack
+    +redoStack
+  }
+
+  class FileSystemPort
+  class EditorFilePort
+  class GraftSessionPort
+  class SourceHighlighter
+
+  class JeditOpticClient {
+    +openTextBuffer(input)
+    +replaceRangeAsTick(session, input)
+    +textWindow(session, basis, input)
+  }
+
+  class EchoWasmKernelTransport {
+    +kernelInfo()
+    +submitIntentBytes(bytes)
+    +observeBytes(bytes)
+    +schedulerStatusBytes()
+  }
+
+  class EchoTrustedHostControlTransport {
+    +dispatchControlIntentBytes(bytes)
+  }
+
+  class EchoWasmKernelHostTransport {
+    +app
+    +trustedHost
+  }
+
+  class EchoRuntime {
+    +dispatch_intent(bytes)
+    +observe(bytes)
+    +scheduler_status()
+    +dispatch_control_intent_trusted(bytes)
+  }
+
+  MainTs --> WorkspaceApp : creates
+  MainTs --> BijouRunLoop : passes app to
+  WorkspaceApp --> WorkspaceRuntime : wraps
+  WorkspaceRuntime --> WorkspaceModel : owns
+  WorkspaceModel --> EditorState : optional current editor
+  WorkspaceRuntime --> FileSystemPort : reads directory
+  WorkspaceRuntime --> EditorFilePort : loads and saves files
+  WorkspaceRuntime --> GraftSessionPort : asks for structure
+  WorkspaceRuntime --> SourceHighlighter : asks for source projection
+  JeditOpticClient --> EchoWasmKernelTransport : app-safe bytes
+  EchoWasmKernelHostTransport --> EchoWasmKernelTransport : exposes app side
+  EchoWasmKernelHostTransport --> EchoTrustedHostControlTransport : exposes trusted host side
+  EchoWasmKernelTransport --> EchoRuntime : dispatch and observe
+  EchoTrustedHostControlTransport --> EchoRuntime : scheduler control
+```
+
+## Conceptual Entity Relationship Diagram
+
+This is a conceptual ER diagram, not a database schema. It names the durable
+relationships the system is trying to prove.
+
+```mermaid
+erDiagram
+  JEDIT_PROCESS ||--|| WORKSPACE_MODEL : owns
+  WORKSPACE_MODEL ||--o| EDITOR_STATE : displays
+  EDITOR_STATE ||--o{ EDIT_OPERATION : receives
+
+  TEXT_BUFFER ||--|| TEXT_BUFFER_OPTIC : guarded_by
+  TEXT_BUFFER_OPTIC ||--o{ INTENT_SUBMISSION : submits
+  TEXT_BUFFER_OPTIC ||--o{ READ_BASIS_HANDLE : issues
+
+  READ_BASIS_HANDLE }o--|| JEDIT_WORLDLINE_SESSION : resolves_below_app_boundary
+  JEDIT_WORLDLINE_SESSION ||--|| BUFFER_WORLDLINE : wraps
+  BUFFER_WORLDLINE ||--|| ROPE_HEAD : has_current_head
+  BUFFER_WORLDLINE ||--o{ TICK : advances_by
+  TICK ||--|| TICK_RECEIPT : witnessed_by
+  BUFFER_WORLDLINE ||--o{ CHECKPOINT : retains
+
+  INTENT_SUBMISSION }o--|| ECHO_APP_TRANSPORT : crosses
+  ECHO_APP_TRANSPORT }o--|| ECHO_RUNTIME : dispatches_to
+  TRUSTED_HOST_CONTROL }o--|| ECHO_RUNTIME : ticks
+  ECHO_RUNTIME ||--o{ READING_ENVELOPE : emits
+
+  READING_ENVELOPE ||--|| OBSERVER_PLAN : identifies
+  READING_ENVELOPE ||--|| QUERY_BYTES : carries
+  READING_ENVELOPE ||--o{ RETAINED_EVIDENCE : inventories
+```
+
+## Process Startup: `int main()`
+
+jedit is TypeScript, so the practical equivalent of `int main()` is
+`src/main.ts`.
+
+```ts
+initDefaultContext();
+
+const app = createWorkspaceApp({
+  initialColumns: process.stdout.columns ?? 100,
+  initialRows: process.stdout.rows ?? 32,
+  initialWorkingDirectory: process.cwd(),
+  perfEnabled: envBoolean(process.env.JEDIT_PERF),
+});
+
+run(app, { mouse: JEDIT_TERMINAL_MOUSE_OPTIONS.mouse });
+```
+
+The startup sequence is:
+
+1. Node starts the built entry point (`node dist/main.js`) or development entry
+   point (`tsx src/main.ts`).
+2. `initDefaultContext()` initializes Bijou's default Node context.
+3. jedit reads terminal dimensions from `process.stdout`.
+4. jedit chooses the launch workspace as `process.cwd()`.
+5. jedit reads `JEDIT_PERF`; only `1` enables the perf overlay.
+6. jedit calls `createWorkspaceApp(...)`.
+7. jedit hands the app to Bijou's `run(...)`.
+8. Bijou owns terminal IO and calls jedit's `init`, `update`, and `view`
+   functions.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant Shell
+  participant Node
+  participant Main as src/main.ts
+  participant BijouNode as bijou-node
+  participant AppFactory as createWorkspaceApp
+  participant BijouTui as bijou-tui run()
+
+  Shell->>Node: node dist/main.js
+  Node->>Main: load module
+  Main->>BijouNode: initDefaultContext()
+  Main->>Main: read stdout size, cwd, JEDIT_PERF
+  Main->>AppFactory: createWorkspaceApp(options)
+  AppFactory-->>Main: App<WorkspaceModel, WorkspaceMsg>
+  Main->>BijouTui: run(app, mouse options)
+  BijouTui->>BijouTui: enter terminal application loop
+```
+
+## Workspace App Construction
+
+`createWorkspaceApp` lives in `src/adapters/workspace-app.ts`. It is where the
+pure workspace runtime receives concrete ports.
+
+The adapter installs:
+
+- `FileSystemPortAdapter` for directory entries.
+- `editorFilePort` for opening and saving file text.
+- `createGraftSessionPort()` for Graft MCP calls.
+- `createGraftSourceHighlighter()` for source highlighting.
+- `createTitleSceneLoaderPort()` for the title scene.
+- `createRaytracerProfilerPort(nowMs)` for profiling.
+- `createInitialModelSnapshot(...)` for initial workspace state.
+- Bijou animation commands for time ticks, notification ticks, and drawer
+  animation.
+
+The important architectural point is that the runtime does not import Node
+filesystem APIs or Graft SDK calls directly. It receives ports.
+
+```mermaid
+flowchart TD
+  Main[src/main.ts]
+  Factory[createWorkspaceApp]
+  Runtime[createWorkspaceRuntime]
+  Model[createInitialModelSnapshot]
+  FS[FileSystemPortAdapter]
+  EditorFile[editorFilePort]
+  Graft[createGraftSessionPort]
+  Highlight[createGraftSourceHighlighter]
+  Scene[createTitleSceneLoaderPort]
+  Profiler[createRaytracerProfilerPort]
+  Bijou[Bijou App]
+
+  Main --> Factory
+  Factory --> Model
+  Factory --> FS
+  Factory --> EditorFile
+  Factory --> Graft
+  Factory --> Highlight
+  Factory --> Scene
+  Factory --> Profiler
+  Factory --> Runtime
+  Runtime --> Bijou
+```
+
+## The Bijou Runtime Loop
+
+Bijou repeatedly calls the app:
+
+- `init()` once at startup.
+- `update(message, model)` whenever terminal input, resize, animation, or async
+  command output arrives.
+- `view(model)` after model changes.
+- `routeRuntimeIssue(issue)` when Bijou needs to report runtime issues back into
+  app messages.
+
+jedit's workspace runtime handles messages in this order:
+
+1. Resize messages.
+2. State messages such as drawer progress, Graft results, scene loading, source
+   highlight results, and title camera frames.
+3. Effect messages such as notification ticks, time ticks, perf toggles,
+   profiler events, and runtime issues.
+4. Input messages from mouse and keyboard.
+
+That ordering matters: external state updates and runtime effects are applied
+before interactive key or mouse routing.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant Bijou
+  participant Runtime as WorkspaceRuntime
+  participant Model as WorkspaceModel
+  participant Renderer as renderWorkspace
+  participant Terminal
+
+  Bijou->>Runtime: init()
+  Runtime-->>Bijou: initial model + commands
+  loop terminal lifetime
+    Terminal->>Bijou: key, mouse, resize, or command result
+    Bijou->>Runtime: update(message, model)
+    Runtime->>Runtime: route resize/state/effect/input
+    Runtime-->>Bijou: next model + commands
+    Bijou->>Runtime: view(next model)
+    Runtime->>Renderer: renderWorkspace(model)
+    Renderer-->>Bijou: terminal view tree
+    Bijou-->>Terminal: draw frame
+  end
+```
+
+## Interactive Editing Path
+
+The current TUI path is still a conventional local editor surface. It opens,
+edits, and saves files through jedit ports. This path is intentionally kept
+separate from the Echo witness path until the Echo-backed contract path is
+ready to become the normal editor runtime.
+
+A typical local file flow is:
+
+1. User presses a key.
+2. `updateFromKey` routes it by current workspace state and focus.
+3. File-opening commands call `loadEditor(...)`.
+4. `loadEditor` calls `editorFile.loadEditorFile(...)`.
+5. The returned file text becomes an `EditorState`.
+6. Editing updates `EditorState.lines`, cursor, dirty flag, and undo/redo
+   stacks.
+7. Saving calls `saveEditor(...)`.
+8. `saveEditor` calls `editorFile.saveEditorFile(...)`.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant User
+  participant Bijou
+  participant Runtime as WorkspaceRuntime
+  participant Keys as updateFromKey
+  participant EditorSession as editor-session
+  participant EditorFilePort
+  participant Model as WorkspaceModel
+
+  User->>Bijou: keypress
+  Bijou->>Runtime: update(KeyMsg, model)
+  Runtime->>Keys: updateFromKey(msg, model, deps)
+  Keys->>EditorSession: loadEditor(filePath, editorFile)
+  EditorSession->>EditorFilePort: loadEditorFile(filePath)
+  EditorFilePort-->>EditorSession: lines or load error
+  EditorSession-->>Keys: EditorState
+  Keys-->>Runtime: next WorkspaceModel
+  Runtime-->>Bijou: model + commands
+```
+
+This is not the full Echo-backed editing path yet. The current release-gate work
+is about proving the same product-shaped edit/read/replay path through Echo
+before declaring Echo `v0.1.0`.
+
+## Graft Path
+
+Graft is structural intelligence, not editing truth.
+
+jedit uses Graft for:
+
+- file outlines;
+- structural diffs;
+- source highlighting and projections;
+- future structural selections and inspections.
+
+The Graft port is an adapter:
+
+```text
+WorkspaceRuntime
+-> GraftSessionPort
+-> @flyingrobots/graft MCP stdio transport
+-> Graft tools such as file_outline and graft_diff
+-> GraftInfo message
+-> WorkspaceModel.graftInfo
+```
+
+Graft results are projections over files or buffers. They do not replace jedit's
+editor state, Echo's causal history, or Wesley contract authority.
+
+## jedit Contract Model
+
+jedit expresses the Echo-facing editor model as contracts.
+
+The important contract surfaces are:
+
+- `contracts/jedit/text-buffer-optic.graphql`: the app-facing product optic.
+- `contracts/jedit/hot-text-runtime.graphql`: the current hot-text runtime
+  contract.
+- `contracts/jedit/structural-history.graphql`: the structural history authority
+  for revisions, replacements, edit groups, checkpoints, provenance, command
+  status, errors, and bounded readings.
+
+The app-facing model is intentionally capability-shaped:
+
+```text
+OpticSession
+-> TextBufferOptic
+-> currentReadBasis()
+-> applyIntent(replace range)
+-> textWindow(read basis, bounded input)
+```
+
+The app can hold and use a `TextBufferOptic`. It cannot inspect the private
+runtime coordinates that make the optic work.
+
+The current TypeScript contract shape is defined in
+`src/ports/jedit-optic-client.ts`:
+
+- `TextBufferOptic`;
+- `OpticSession`;
+- `ReadBasisHandle`;
+- `ReplaceRangeIntent`;
+- `TextWindowReading`;
+- `Observed<T>`;
+- `JeditMutationOpticClient`;
+- `JeditObserverOpticClient`.
+
+The important anti-leak rule:
+
+```text
+ReadBasisHandle.id is diagnostic.
+ReadBasisHandle is not authority.
+The adapter resolves it through a WeakMap binding.
+Forged or cloned handles fail.
+```
+
+## App-Safe Read Basis Handles
+
+`ReadBasisHandleRegistry` hides runtime coordinates below the app boundary.
+
+When a jedit session creates a buffer:
+
+1. Echo or the fake transport returns a `JeditWorldlineSession`.
+2. The adapter creates a `ReadBasisHandle`.
+3. The registry stores a private binding from that handle object to the
+   worldline id.
+4. App-facing code receives only `{ kind: 'read-basis-handle', id: ... }`.
+
+When app code asks for a text window:
+
+1. The app supplies the `ReadBasisHandle`.
+2. The adapter checks object identity and handle kind.
+3. The adapter checks that the handle belongs to the supplied session.
+4. The adapter resolves the private `worldlineId`.
+5. The adapter encodes the lower-level query request.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant App
+  participant OpticClient as JeditOpticClient
+  participant Registry as ReadBasisHandleRegistry
+  participant Transport as EchoWasmKernelTransport
+
+  App->>OpticClient: openTextBuffer(input)
+  OpticClient->>Transport: submitIntentBytes(createBufferWorldline)
+  Transport-->>OpticClient: nextSession
+  OpticClient->>Registry: createForSession(nextSession)
+  Registry-->>OpticClient: opaque ReadBasisHandle
+  OpticClient-->>App: buffer + readBasisHandle
+
+  App->>OpticClient: textWindow(session, handle, input)
+  OpticClient->>Registry: resolveWorldlineId(session, handle)
+  Registry-->>OpticClient: private worldlineId
+  OpticClient->>Transport: observeBytes(textWindow with worldlineId)
+  Transport-->>OpticClient: TextWindowReadingEnvelope
+  OpticClient-->>App: observed text window
+```
+
+## Echo Transport Ports
+
+jedit sees Echo through ports in `src/ports/echo-kernel-transport.ts`.
+
+The app-safe port is:
+
+```ts
+interface EchoWasmKernelTransport {
+  kernelInfo(): EchoKernelInfo;
+  submitIntentBytes(intentBytes: Uint8Array): Uint8Array;
+  observeBytes(requestBytes: Uint8Array): Uint8Array;
+  schedulerStatusBytes(): Uint8Array;
+}
+```
+
+The trusted-host port is separate:
+
+```ts
+interface EchoTrustedHostControlTransport {
+  dispatchControlIntentBytes(controlIntentBytes: Uint8Array): Uint8Array;
+}
+```
+
+The split is the whole point:
+
+- Application code can submit intents and observe readings.
+- Trusted host code can dispatch runtime control intents.
+- Application code cannot tick Echo.
+- Application code cannot tunnel scheduler control through dispatch.
+
+`createEchoWasmKernelHostTransport(...)` returns both sides:
+
+```text
+{
+  app: EchoWasmKernelTransport,
+  trustedHost: EchoTrustedHostControlTransport
+}
+```
+
+The real adapter in `src/adapters/echo-wasm-kernel.ts` loads a WASM module and
+adapts these Echo exports:
+
+- `dispatch_intent`;
+- `observe`;
+- `scheduler_status`;
+- `dispatch_control_intent_trusted`;
+- `get_codec_id`;
+- `get_registry_version`;
+- `get_schema_sha256_hex`.
+
+## Fake Echo-Shaped Transport
+
+`src/adapters/fake-echo-jedit-optic-transport.ts` implements the app-safe Echo
+transport without loading real Echo.
+
+It exists so default jedit tests can exercise the app-facing contract without
+depending on a sibling Echo checkout or a WASM build.
+
+The fake transport:
+
+- uses `createInMemoryHotTextRuntime()`;
+- decodes jedit JSON fixture request bytes;
+- executes jedit-owned contract runtime functions;
+- returns encoded OK or obstructed responses;
+- exposes an idle scheduler status.
+
+It is not Echo core, and it is not a distributed runtime. It is a test adapter
+that preserves the shape of the real app boundary.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant App
+  participant Client as JeditOpticClient
+  participant Fake as FakeEchoJeditOpticTransport
+  participant Contract as jedit-contract-runtime
+  participant Memory as InMemoryHotTextRuntime
+  participant Observer as jedit-observer-runtime
+
+  App->>Client: replaceRangeAsTick(session, input)
+  Client->>Fake: submitIntentBytes(JSON fixture bytes)
+  Fake->>Contract: replaceRangeAsTick(runtime, session, input, hash)
+  Contract->>Memory: admitReplaceRangeTick(state, range, text)
+  Memory-->>Contract: nextState + optional receipt
+  Contract-->>Fake: execution result
+  Fake-->>Client: encoded OK response
+
+  App->>Client: textWindow(session, basis, input)
+  Client->>Fake: observeBytes(JSON fixture bytes)
+  Fake->>Observer: readTextWindowWithObserverPlan(...)
+  Observer->>Memory: materialize/read snapshot
+  Observer-->>Fake: TextWindowReadingEnvelope
+  Fake-->>Client: encoded observation response
+```
+
+## Real Echo WASM Witness Path
+
+The real Echo integration is currently opt-in and witness-driven.
+
+The command is:
+
+```sh
+ECHO_WARP_WASM_DIR=/path/to/echo/crates/warp-wasm \
+  node scripts/jedit-echo-witness.mjs --json --replay
+```
+
+The witness runner:
+
+1. Validates the Echo `warp-wasm` directory.
+2. Locates Echo's `scripts/build-warp-wasm-package.sh`.
+3. Builds Echo's WASM package.
+4. Runs `npm run build` in jedit.
+5. Runs `node --test spec/jedit-echo-wasm-stack-witness.spec.mjs`.
+6. Reads the witness report JSON.
+7. Optionally summarizes replay posture.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant User
+  participant CLI as scripts/jedit-echo-witness.mjs
+  participant Runner as echo-witness-runner port
+  participant NodeAdapter as node-echo-witness-runner adapter
+  participant EchoBuild as Echo WASM build script
+  participant JeditBuild as npm run build
+  participant Test as jedit-echo-wasm-stack-witness
+  participant Report as witness report JSON
+
+  User->>CLI: node scripts/jedit-echo-witness.mjs --json --replay
+  CLI->>Runner: runEchoWitness(options, adapter)
+  Runner->>NodeAdapter: createPlan(options)
+  NodeAdapter-->>Runner: build-echo-wasm, build-jedit, run-real-echo-witness
+  Runner->>NodeAdapter: runStep(build-echo-wasm)
+  NodeAdapter->>EchoBuild: scripts/build-warp-wasm-package.sh
+  Runner->>NodeAdapter: runStep(build-jedit)
+  NodeAdapter->>JeditBuild: npm run build
+  Runner->>NodeAdapter: runStep(run-real-echo-witness)
+  NodeAdapter->>Test: node --test spec/jedit-echo-wasm-stack-witness.spec.mjs
+  Test->>Report: write stack-witness-report.json
+  Runner->>NodeAdapter: readWitnessReport(path)
+  NodeAdapter-->>Runner: report
+  Runner-->>CLI: summary + replay posture
+  CLI-->>User: JSON or human summary
+```
+
+## What the Stack Witness Proves
+
+`spec/jedit-echo-wasm-stack-witness.spec.mjs` is the current real Echo witness.
+
+It proves:
+
+- jedit can load the generated contract metadata it expects;
+- jedit can load a real Echo WASM module through `createEchoWasmKernelHostTransport`;
+- app code can submit canonical fixture intents through the app transport;
+- trusted host code can run Echo until idle through the trusted control
+  transport;
+- app code can observe a bounded `textWindow` reading;
+- Echo returns `ReadingEnvelope` plus `QueryBytes`;
+- jedit can decode those bytes into a `TextWindowReading`;
+- the witness report inventories inline evidence and missing durable retention;
+- `--replay` reports the current replay posture instead of pretending durable
+  replay is complete.
+
+The current stack witness is deliberately tiny:
+
+```text
+createBuffer
+-> replaceRange("hello")
+-> textWindow(0..5)
+-> Echo ReadingEnvelope + QueryBytes("hello")
+-> jedit TextWindowReading
+-> witness report with retained evidence posture
+```
+
+This is enough to prove the app/host authority split and the read/write seam. It
+is not yet the full interactive editor running on Echo for every edit.
+
+## Real Echo Witness Sequence
+
+The witness does not let jedit app code tick Echo. It uses two transports.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant Test as Stack Witness Test
+  participant HostTransport as EchoWasmKernelHostTransport
+  participant AppTransport as app transport
+  participant TrustedHost as trusted host transport
+  participant Echo as Echo WASM Runtime
+  participant Report as Witness Report
+
+  Test->>HostTransport: createEchoWasmKernelHostTransport(module)
+  HostTransport-->>Test: { app, trustedHost }
+
+  Test->>AppTransport: submitIntentBytes(createBuffer)
+  AppTransport->>Echo: dispatch_intent(bytes)
+  Echo-->>AppTransport: ingress/admission response
+  Test->>TrustedHost: dispatchControlIntentBytes(start/until-idle)
+  TrustedHost->>Echo: dispatch_control_intent_trusted(bytes)
+  Echo-->>TrustedHost: scheduler control response
+
+  Test->>AppTransport: submitIntentBytes(replaceRange)
+  AppTransport->>Echo: dispatch_intent(bytes)
+  Echo-->>AppTransport: ingress/admission response
+  Test->>TrustedHost: dispatchControlIntentBytes(start/until-idle)
+  TrustedHost->>Echo: dispatch_control_intent_trusted(bytes)
+  Echo-->>TrustedHost: scheduler control response
+
+  Test->>AppTransport: observeBytes(textWindow QueryView)
+  AppTransport->>Echo: observe(bytes)
+  Echo-->>AppTransport: ObservationArtifact
+  AppTransport-->>Test: ReadingEnvelope + QueryBytes
+  Test->>Report: write retained evidence and replay posture
+```
+
+The trusted-host control packet in this witness uses an until-idle cycle limit.
+That is test policy, not application authority. Future long-lived hosts may
+start Echo on a cadence, stop it, or recover faults, but those controls remain
+trusted-host controls.
+
+## Intent, Tick, Receipt, Reading
+
+The most common misunderstanding is to treat application dispatch as "run this
+now." That is wrong.
+
+The intended Echo shape is:
+
+```text
+application submits intent
+-> Echo records/adopts ingress posture
+-> trusted host grants scheduler opportunities
+-> Echo scheduler chooses deterministic work
+-> Echo emits tick receipt
+-> application observes outcome or bounded reading
+```
+
+Application code controls neither tick boundaries nor scheduler order.
+
+For jedit this means:
+
+- The editor asks for a replace-range operation.
+- The app adapter encodes contract-shaped intent bytes.
+- Echo admits or obstructs the intent.
+- A trusted host later lets Echo run.
+- Echo's scheduler decides what applies.
+- jedit observes the resulting text window through a bounded query.
+
+If an edit conflicts with another edit, the answer should be an explicit
+rejection or obstruction. Hidden retry is not allowed. A retry must be a new
+causal input.
+
+## Observation and Retained Evidence
+
+Echo observations return more than payload bytes. The witness expects:
+
+- `QueryBytes`: the raw reading payload.
+- `ReadingEnvelope`: evidence about the reading basis and observer posture.
+- Generated contract metadata: the query identity jedit expected.
+- Retained evidence posture: what material is inline and what durable material
+  is missing.
+- Replay posture: currently obstructed by durable replay unavailability.
+
+The witness report is not a vanity log. It is the current machine-readable proof
+surface for the release gate.
+
+Current retained evidence posture:
+
+```text
+available inline:
+  reading_payload
+  reading_envelope
+
+missing durable retention:
+  contract_receipt
+  reading_payload_ref
+  reading_envelope_ref
+```
+
+That means jedit can show the payload and envelope from the witness run, but the
+durable retention/replay layer is still a known gap.
+
+## Shutdown: From SIGTERM to Process Exit
+
+jedit currently does not install a jedit-specific SIGTERM handler in
+`src/main.ts`. The process lifecycle is mostly inherited from Node and Bijou.
+
+The current practical behavior is:
+
+1. The operating system or parent process sends SIGTERM.
+2. Node begins termination according to its signal behavior.
+3. The Bijou terminal loop is interrupted as the process exits.
+4. Any explicit jedit cleanup only runs if the surrounding runtime gives pending
+   commands a chance to complete.
+
+The workspace runtime does include a Graft lifecycle command that calls
+`graftSession.closeConnection`. This protects against stale Graft MCP state in
+normal app-command execution, but it should not be documented as a full SIGTERM
+finalizer. A future host lifecycle slice should add explicit shutdown handling
+if jedit needs strong cleanup guarantees.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant OS
+  participant Node
+  participant Bijou
+  participant Jedit as jedit runtime
+  participant Graft as Graft MCP session
+
+  OS->>Node: SIGTERM
+  Node--xBijou: terminate event loop
+  Note over Jedit: No jedit-specific SIGTERM handler is currently installed in src/main.ts.
+  Jedit->>Graft: closeConnection() when lifecycle command runs
+  Graft-->>Jedit: closed or ignored close failure
+  Node-->>OS: process exit
+```
+
+## Start, Stop, and Trusted Ticking
+
+The current witness uses trusted until-idle control. The design direction for a
+long-running host is still the same authority split:
+
+- The application may ask for work by submitting intents.
+- The trusted host may start or stop runtime ticking.
+- The trusted host may choose cadence policy.
+- Echo owns logical ticks and receipt emission.
+- Wall-clock cadence is host policy, not semantic history.
+
+If a future jedit host exposes:
+
+```text
+Start(tickFrequency = 1/60)
+Stop()
+```
+
+those controls belong behind a trusted host port or adapter. They must not be
+available through `TextBufferOptic`, editor commands, query observers, or normal
+application intent submission.
+
+The key distinction:
+
+```text
+User edit:
+  application causal input
+
+Host start/stop:
+  trusted runtime control input
+
+Echo tick:
+  runtime-owned logical execution boundary
+```
+
+## Current Completeness Matrix
+
+| Area | Current status |
+| --- | --- |
+| Terminal application startup | Implemented through Bijou and `src/main.ts`. |
+| Local file editing | Implemented through jedit workspace/editor ports. |
+| Graft structural intelligence | Implemented through MCP adapter and source highlighter ports. |
+| jedit app-facing optic contract | Designed and partly represented through `TextBufferOptic`, `ReadBasisHandle`, and SDL. |
+| Wesley generated operation metadata | Used for hot-text and structural-history operation identity. |
+| Fake Echo-shaped transport | Implemented for default tests and app-boundary pressure. |
+| Real Echo WASM app transport | Implemented through `echo-wasm-kernel.ts`. |
+| Trusted Echo host transport | Implemented separately from app transport. |
+| Real Echo write/read witness | Implemented as opt-in Stack Witness 0001. |
+| Durable retained evidence | Not complete; witness reports `missing_retention`. |
+| Durable replay | Not complete; witness reports `durable_replay_unavailable`. |
+| Full interactive TUI on Echo | Not complete; this is the release-gate direction. |
+| Explicit SIGTERM cleanup | Not complete as a jedit-specific lifecycle contract. |
+
+## How to Run the Important Paths
+
+Run the interactive development app:
+
+```sh
+npm run dev
+```
+
+Build and start the compiled app:
+
+```sh
+npm run build
+npm start
+```
+
+Run the default checks:
+
+```sh
+npm run check
+```
+
+Plan the real Echo witness without running it:
+
+```sh
+ECHO_WARP_WASM_DIR=/path/to/echo/crates/warp-wasm \
+  node scripts/jedit-echo-witness.mjs --dry-run --json
+```
+
+Run the real Echo witness and include replay posture:
+
+```sh
+ECHO_WARP_WASM_DIR=/path/to/echo/crates/warp-wasm \
+  node scripts/jedit-echo-witness.mjs --json --replay
+```
+
+## The End-to-End Story
+
+Here is the whole current stack in one sequence.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant Developer
+  participant Shell
+  participant Jedit as jedit TUI
+  participant Wesley
+  participant AppAdapter as jedit Echo adapter
+  participant EchoApp as Echo app transport
+  participant Host as trusted host transport
+  participant Echo
+  participant Graft
+
+  Developer->>Shell: npm run dev or npm start
+  Shell->>Jedit: start src/main.ts / dist/main.js
+  Jedit->>Jedit: initialize workspace model and ports
+  Jedit->>Graft: request outlines/diffs as projections
+  Graft-->>Jedit: structural intelligence
+
+  Developer->>Wesley: generate contract artifacts during build/test
+  Wesley-->>Jedit: operation metadata, types, schemas, observer identity
+
+  Jedit->>AppAdapter: product-shaped edit/read request
+  AppAdapter->>EchoApp: submitIntentBytes or observeBytes
+  EchoApp->>Echo: dispatch_intent or observe
+  Host->>Echo: trusted scheduler control
+  Echo-->>EchoApp: ingress evidence, reading envelope, query bytes, or obstruction
+  EchoApp-->>AppAdapter: runtime-facing response bytes
+  AppAdapter-->>Jedit: jedit-shaped result or reading
+  Jedit-->>Developer: terminal view update
+```
+
+The stack becomes release-grade when the product path and the witness path are
+the same path for real editing: jedit-authored contract, Wesley artifacts, Echo
+package install, jedit app intent, trusted host tick, Echo receipt, bounded
+reading, retained evidence, and replay.
+
+## Future Work Called Out by This Guide
+
+This guide intentionally exposes gaps instead of papering over them:
+
+1. Move more interactive editor actions onto the Echo-backed contract path.
+2. Replace fixture JSON transport bytes with durable Wesley-generated codecs.
+3. Complete retained evidence lookup for payloads, reading envelopes, and
+   contract receipts.
+4. Complete durable replay for accepted edit/read evidence.
+5. Add explicit trusted host lifecycle controls for long-running jedit hosts.
+6. Add explicit SIGTERM/shutdown behavior if strong cleanup guarantees become
+   product requirements.
+7. Keep Echo generic while jedit becomes a serious product-shaped consumer.
+
+The north star remains small but strict:
+
+```text
+jedit owns editor semantics.
+Wesley owns contract compilation.
+Echo owns deterministic runtime truth.
+Application code submits and observes.
+Trusted host code ticks.
+Evidence tells the truth.
+```
