@@ -171,7 +171,16 @@ async function loadGeneratedContractMetadata() {
     'jedit',
     'hot-text-runtime.wesley.generated.js',
   );
-  const generated = await import(pathToFileURL(generatedModulePath).href);
+  let generated;
+  try {
+    generated = await import(pathToFileURL(generatedModulePath).href);
+  } catch (cause) {
+    throw new Error(
+      `${generatedModulePath} not found; run scripts/run-real-echo-wasm-stack-witness.sh `
+        + 'or npm run build before invoking this witness.',
+      { cause },
+    );
+  }
   return {
     source: 'contracts/jedit/hot-text-runtime.graphql',
     mutations: {

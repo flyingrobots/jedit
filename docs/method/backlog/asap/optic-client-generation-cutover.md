@@ -45,16 +45,19 @@ not a forked runtime.
   structural-history SDL.
 - `scripts/gen-structural-history-wesley.mjs` uses published `wesley-cli` 0.0.4
   to emit the full structural-history TypeScript artifact into `.wesley-cache`
-  and extract the ignored `replaceTextRange` operation descriptor consumed by
-  `src/app/structural-history-replace-text-range.ts`.
+  and extract the ignored `replaceTextRange` operation descriptor into
+  `src/generated/jedit/structural-history-replace-text-range.wesley.generated.ts`.
+  `src/app/structural-history-replace-text-range.ts` consumes that generated
+  source path as the canonical descriptor location.
 - `spec/structural-history-replace-text-range-metadata.spec.mjs` verifies that
   the descriptor is ignored, mirrors Wesley output, and drives the hot-buffer
   adapter operation identity without changing storage behavior.
 
 The deferred Echo-dependent step is:
 
-1. Use the Continuum `jedit-echo-dev` warpspace lock or explicit local path to
-   select the Echo checkout.
+1. Use a lockfile-pinned Echo checkout, such as a future Continuum
+   `jedit-echo-dev` warpspace lock, or an explicit local path to select the Echo
+   checkout.
 2. Run `echo-wesley-gen` against `contracts/jedit/hot-text-runtime.graphql`.
 3. Write the generated Rust binding artifact into a jedit-owned Rust contract
    crate.
@@ -67,9 +70,11 @@ The deferred Echo-dependent step is:
 Until Echo is free, do not add local sibling `../echo` dependencies to committed
 jedit manifests and do not generate a second, divergent SDL file.
 
-Current release-gate correction: the opt-in real Echo WASM witness still tries
-to send scheduler control through app-facing dispatch. That is stale. The next
-cutover must preserve Echo's app/host authority split instead of weakening it.
+Historical release-gate correction: pre-cutover witness paths tried to send
+scheduler control through app-facing dispatch. The current opt-in real Echo WASM
+witness uses `hostTransport.trustedHost.dispatchControlIntentBytes(...)`, while
+the app transport intentionally omits `dispatchControlIntentBytes(...)`. Future
+cutovers must preserve that app/host authority split instead of weakening it.
 
 ## Non-Goals
 

@@ -46,19 +46,44 @@ function parseArgs(args, env) {
     } else if (arg === '--help' || arg === '-h') {
       options.help = true;
     } else if (arg === '--echo-warp-wasm-dir') {
-      options.echoWarpWasmDir = nextArg(args, index, arg);
+      const value = nextArg(args, index);
+      if (value === undefined) {
+        options.errorMessage = `missing value for ${arg}`;
+        break;
+      }
+      options.echoWarpWasmDir = value;
       index += 1;
     } else if (arg === '--echo-wasm-module') {
-      options.echoWasmModule = nextArg(args, index, arg);
+      const value = nextArg(args, index);
+      if (value === undefined) {
+        options.errorMessage = `missing value for ${arg}`;
+        break;
+      }
+      options.echoWasmModule = value;
       index += 1;
     } else if (arg === '--jedit-dir') {
-      options.jeditDir = nextArg(args, index, arg);
+      const value = nextArg(args, index);
+      if (value === undefined) {
+        options.errorMessage = `missing value for ${arg}`;
+        break;
+      }
+      options.jeditDir = value;
       index += 1;
     } else if (arg === '--witness-report') {
-      options.witnessReportPath = nextArg(args, index, arg);
+      const value = nextArg(args, index);
+      if (value === undefined) {
+        options.errorMessage = `missing value for ${arg}`;
+        break;
+      }
+      options.witnessReportPath = value;
       index += 1;
     } else if (arg === '--cycle-limit') {
-      options.cycleLimit = nextArg(args, index, arg);
+      const value = nextArg(args, index);
+      if (value === undefined) {
+        options.errorMessage = `missing value for ${arg}`;
+        break;
+      }
+      options.cycleLimit = value;
       index += 1;
     } else {
       options.errorMessage = `unknown argument: ${arg}`;
@@ -68,10 +93,10 @@ function parseArgs(args, env) {
   return options;
 }
 
-function nextArg(args, index, name) {
+function nextArg(args, index) {
   const value = args[index + 1];
   if (value == null || value.startsWith('--')) {
-    return `missing:${name}`;
+    return undefined;
   }
   return value;
 }

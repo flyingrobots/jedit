@@ -48,10 +48,12 @@ createBuffer
 -> TextWindowReading
 ```
 
-The next proof is the Echo `v0.1.0` release gate:
+The current Echo `v0.1.0` release-gate proof starts from the implemented
+structural-history contract:
 
 ```text
-jedit-authored `TextBufferOptic` contract
+jedit-authored `contracts/jedit/structural-history.graphql`
+-> `replaceTextRange` operation identity
 -> Wesley generated artifacts
 -> Echo package install
 -> app-safe edit intent submission
@@ -65,11 +67,15 @@ jedit-authored `TextBufferOptic` contract
 ## Current scaffolding
 
 - Fake Echo-shaped transport remains valid as a controlled witness posture.
-- Real Echo WASM witness remains opt-in and currently needs the app/host
-  authority split before it can become a release witness.
+- Real Echo WASM witness remains opt-in and now uses the app/host authority
+  split: app intent submission stays on the app transport, while scheduler
+  control uses the trusted-host transport.
 - Fixture vars bytes are not the durable Wesley runtime codec.
-- `TextBufferOptic` is the primary app-facing capability; `ReadBasisHandle` is
-  an opaque supporting token, not the complete optic protocol.
+- `TextBufferOptic` is the target app-facing capability. The current proof uses
+  the structural-history SDL and `replaceTextRange` as the first implemented
+  operation on that path.
+- `ReadBasisHandle` is an opaque supporting token, not the complete optic
+  protocol.
 - Structural-history SDL is now the product contract authority for text
   revisions, replacement events, edit groups, checkpoints, provenance, command
   status, and evidence-bearing readings.

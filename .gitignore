@@ -4,4 +4,4 @@ dist
 .wesley-cache/
 .jedit-cache/
 .obsidian/
-src/generated/jedit/structural-history-replace-text-range.wesley.generated.ts
+src/generated/**/*.wesley.generated.ts

@@ -7,7 +7,9 @@ GraphQL surface that Wesley should consume later. It intentionally avoids
 storage data structures, substrate coordinates, file-cache internals, and
 transport fixture shapes.
 """
+# ISO 8601 datetime string.
 scalar DateTime
+# Content digest for text data. The concrete digest algorithm is runtime-owned.
 scalar TextDigest
 
 enum TextHistorySourceKind {

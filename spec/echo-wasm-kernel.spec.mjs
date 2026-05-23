@@ -139,19 +139,17 @@ test('echo wasm kernel host transport keeps trusted control off the app surface'
 
 test('echo wasm trusted host transport requires the raw trusted control export', async () => {
   const transportModule = await loadTransportModule();
-  const hostTransport = await transportModule.createEchoWasmKernelHostTransport({
-    moduleSpecifier: 'virtual:echo-wasm',
-    moduleLoader: async () => ({
-      dispatch_intent: () => new Uint8Array([1]),
-      observe: () => new Uint8Array([2]),
-      scheduler_status: () => new Uint8Array([3]),
+  await assert.rejects(
+    () => transportModule.createEchoWasmKernelHostTransport({
+      moduleSpecifier: 'virtual:echo-wasm',
+      moduleLoader: async () => ({
+        dispatch_intent: () => new Uint8Array([1]),
+        observe: () => new Uint8Array([2]),
+        scheduler_status: () => new Uint8Array([3]),
+      }),
+      bootstrapModule: false,
+      initializeKernel: false,
     }),
-    bootstrapModule: false,
-    initializeKernel: false,
-  });
-
-  assert.throws(
-    () => hostTransport.trustedHost.dispatchControlIntentBytes(new Uint8Array([1])),
     /dispatch_control_intent_trusted/i,
   );
 });

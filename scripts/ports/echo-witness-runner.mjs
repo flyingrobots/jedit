@@ -59,6 +59,25 @@ function runPlannedEchoWitness({ adapter, options, plan, startedAt }) {
     }
   }
 
+  const witnessReportResult = readWitnessReport(adapter, plan.witnessReportPath);
+  if (!witnessReportResult.ok) {
+    return {
+      status: 1,
+      summary: {
+        ok: false,
+        dryRun: false,
+        message: 'failed to read witness report',
+        echoWarpWasmDir: plan.echoWarpWasmDir,
+        echoWasmModule: plan.echoWasmModule,
+        witnessReportPath: plan.witnessReportPath,
+        witnessReport: null,
+        witnessReportError: witnessReportResult.errorMessage,
+        steps,
+        durationMs: adapter.nowMs() - startedAt,
+      },
+    };
+  }
+
   return {
     status: 0,
     summary: {
@@ -67,11 +86,25 @@ function runPlannedEchoWitness({ adapter, options, plan, startedAt }) {
       echoWarpWasmDir: plan.echoWarpWasmDir,
       echoWasmModule: plan.echoWasmModule,
       witnessReportPath: plan.witnessReportPath,
-      witnessReport: adapter.readWitnessReport(plan.witnessReportPath),
+      witnessReport: witnessReportResult.report,
       steps,
       durationMs: adapter.nowMs() - startedAt,
     },
   };
+}
+
+function readWitnessReport(adapter, witnessReportPath) {
+  try {
+    return {
+      ok: true,
+      report: adapter.readWitnessReport(witnessReportPath),
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      errorMessage: error instanceof Error ? error.message : String(error),
+    };
+  }
 }
 
 function dryRunStep(step) {

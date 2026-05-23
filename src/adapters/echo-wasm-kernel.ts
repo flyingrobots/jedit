@@ -29,6 +29,8 @@ interface EchoWasmKernelModule {
   readonly get_schema_sha256_hex?: () => string | null | undefined;
 }
 
+type BytePayloadMethod = (bytes: Uint8Array) => Uint8Array;
+
 export interface CreateEchoWasmKernelTransportOptions {
   readonly moduleSpecifier?: string;
   readonly moduleLoader?: (moduleSpecifier: string) => Promise<EchoWasmKernelModule>;
@@ -45,17 +47,21 @@ interface InstalledEchoWasmKernel {
 export async function createEchoWasmKernelTransport(
   options: CreateEchoWasmKernelTransportOptions = {},
 ): Promise<EchoWasmKernelTransport> {
-  return (await createEchoWasmKernelHostTransport(options)).app;
+  return createAppTransport(await installEchoWasmKernel(options));
 }
 
 export async function createEchoWasmKernelHostTransport(
   options: CreateEchoWasmKernelTransportOptions = {},
 ): Promise<EchoWasmKernelHostTransport> {
   const installed = await installEchoWasmKernel(options);
+  const trustedDispatch = requireBytePayloadMethod(
+    installed.kernelModule.dispatch_control_intent_trusted,
+    OPERATION_DISPATCH_CONTROL_INTENT_TRUSTED,
+  );
 
   return {
     app: createAppTransport(installed),
-    trustedHost: createTrustedHostTransport(installed.kernelModule),
+    trustedHost: createTrustedHostTransport(trustedDispatch),
   };
 }
 
@@ -110,11 +116,11 @@ function createAppTransport(installed: InstalledEchoWasmKernel): EchoWasmKernelT
   };
 }
 
-function createTrustedHostTransport(kernelModule: EchoWasmKernelModule): EchoTrustedHostControlTransport {
+function createTrustedHostTransport(trustedDispatch: BytePayloadMethod): EchoTrustedHostControlTransport {
   return {
     dispatchControlIntentBytes(controlIntentBytes) {
       return invokeRequiredBytePayloadMethod(
-        kernelModule.dispatch_control_intent_trusted,
+        trustedDispatch,
         OPERATION_DISPATCH_CONTROL_INTENT_TRUSTED,
         controlIntentBytes,
       );
@@ -166,6 +172,19 @@ function toEchoKernelInfo(moduleSpecifier: string, kernelModule: EchoWasmKernelM
     registryVersion: invokeOptionalStringMethod(kernelModule.get_registry_version, OPERATION_GET_REGISTRY_VERSION),
     schemaSha256Hex: invokeOptionalStringMethod(kernelModule.get_schema_sha256_hex, OPERATION_GET_SCHEMA_SHA256_HEX),
   };
+}
+
+function requireBytePayloadMethod(
+  fn: BytePayloadMethod | undefined,
+  operation: string,
+): BytePayloadMethod {
+  if (typeof fn !== 'function') {
+    throw new EchoKernelTransportError(
+      operation,
+      `Echo wasm module does not expose ${operation}`,
+    );
+  }
+  return fn;
 }
 
 function invokeOptionalStringMethod(
