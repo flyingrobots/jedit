@@ -1,9 +1,6 @@
 # jedit
 
-<div align="center">
-<img alt="jedit title screen" src="https://github.com/user-attachments/assets/c15575ba-b680-4880-baed-2bfa55c84b10" />
-</div>
-
+![jedit title screen](https://github.com/user-attachments/assets/c15575ba-b680-4880-baed-2bfa55c84b10)
 
 Terminal-first text and Markdown editing, built on Bijou and shaped around
 causal history through Echo.
@@ -60,11 +57,12 @@ Echo from this repository.
 The proof is deliberately product-shaped:
 
 ```text
-jedit-authored `TextBufferOptic` contract
+jedit-authored structural-history contract
 -> Wesley generated artifacts
 -> Echo package install
 -> jedit app submits edit intent
--> trusted Echo host ticks
+-> trusted Echo host authorizes scheduler opportunities
+-> Echo scheduler emits tick receipts
 -> jedit observes outcome
 -> jedit queries bounded text reading
 -> retained evidence and replay prove the result

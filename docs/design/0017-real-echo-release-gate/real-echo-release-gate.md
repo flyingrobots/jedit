@@ -11,11 +11,12 @@ jedit proves Echo is buildable when a clean jedit checkout can run a documented
 real Echo witness that uses jedit-owned contracts and generated artifacts:
 
 ```text
-jedit-authored `TextBufferOptic` SDL
+jedit-authored structural-history SDL
 -> Wesley generated artifacts
 -> Echo package install
 -> jedit app submits canonical edit intent
--> trusted Echo host stages and ticks
+-> trusted Echo host stages work and authorizes scheduler opportunities
+-> Echo scheduler emits tick receipts
 -> jedit observes applied, rejected, or obstructed outcome
 -> jedit queries bounded text reading
 -> retained receipt and reading evidence can be inspected
@@ -63,6 +64,8 @@ Trusted Echo host code may:
 
 - install generated contract packages;
 - stage ticketed runtime ingress;
+- record trusted runtime-control commands such as Start, Stop, cadence, or
+  drain policy;
 - run scheduler passes;
 - choose until-idle or cadence policy;
 - recover faulted heads or runtime posture.
@@ -70,6 +73,7 @@ Trusted Echo host code may:
 jedit application code must not:
 
 - tick Echo;
+- start or stop Echo through app intent dispatch;
 - send scheduler control through app dispatch;
 - access worldline ids, heads, or scheduler internals;
 - treat raw transport arrival as semantic Echo history;

@@ -57,12 +57,16 @@ jedit-authored `contracts/jedit/structural-history.graphql`
 -> Wesley generated artifacts
 -> Echo package install
 -> app-safe edit intent submission
--> trusted-host scheduler tick
+-> trusted-host runtime-control policy
+-> scheduler-owned tick receipt
 -> observed outcome
 -> bounded text reading
 -> retained evidence
 -> replay proof
 ```
+
+The next release-gate slice plan is recorded in
+`docs/design/0019-echo-runtime-control-release-slices/echo-runtime-control-release-slices.md`.
 
 ## Current scaffolding
 
@@ -70,6 +74,8 @@ jedit-authored `contracts/jedit/structural-history.graphql`
 - Real Echo WASM witness remains opt-in and now uses the app/host authority
   split: app intent submission stays on the app transport, while scheduler
   control uses the trusted-host transport.
+- Start/Stop/cadence are trusted host runtime-control history. They are not
+  jedit contract intents and they do not create ticks directly.
 - Fixture vars bytes are not the durable Wesley runtime codec.
 - `TextBufferOptic` is the target app-facing capability. The current proof uses
   the structural-history SDL and `replaceTextRange` as the first implemented
