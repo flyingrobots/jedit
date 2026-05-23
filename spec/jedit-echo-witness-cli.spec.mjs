@@ -98,7 +98,54 @@ test('jedit Echo witness runner reports witness report read failures', () => {
   assert.match(result.summary.witnessReportError, /invalid report JSON/);
 });
 
+test('jedit Echo witness runner returns typed replay obstruction when replay is unavailable', () => {
+  const result = runEchoWitness({
+    dryRun: false,
+    json: true,
+    replay: true,
+  }, createWitnessReportAdapter({
+    reading: {
+      readingId: 'reading-1',
+      artifactHash: 'artifact-1',
+    },
+  }));
+
+  assert.equal(result.status, 0);
+  assert.equal(result.summary.ok, true);
+  assert.equal(result.summary.replayRequested, true);
+  assert.equal(result.summary.replay.status, 'obstructed');
+  assert.equal(result.summary.replay.obstruction, 'durable_replay_unavailable');
+  assert.deepEqual(result.summary.replay.readingIdentity, {
+    readingId: 'reading-1',
+    artifactHash: 'artifact-1',
+  });
+});
+
+test('jedit Echo witness runner forwards witness replay result when present', () => {
+  const replay = {
+    status: 'identity_replay_shape',
+    readingIdentity: {
+      readingId: 'reading-2',
+      artifactHash: 'artifact-2',
+    },
+  };
+  const result = runEchoWitness({
+    dryRun: false,
+    json: true,
+    replay: true,
+  }, createWitnessReportAdapter({ replay }));
+
+  assert.equal(result.status, 0);
+  assert.equal(result.summary.replay, replay);
+});
+
 function createWitnessReportFailureAdapter() {
+  return createWitnessReportAdapter(undefined, {
+    readFailure: new Error('invalid report JSON'),
+  });
+}
+
+function createWitnessReportAdapter(report, options = {}) {
   return {
     createPlan() {
       return {
@@ -112,7 +159,10 @@ function createWitnessReportFailureAdapter() {
       return 0;
     },
     readWitnessReport() {
-      throw new Error('invalid report JSON');
+      if (options.readFailure instanceof Error) {
+        throw options.readFailure;
+      }
+      return report;
     },
     runStep() {
       return {

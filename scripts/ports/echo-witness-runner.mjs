@@ -24,6 +24,7 @@ export function runEchoWitness(options, adapter) {
       summary: {
         ok: true,
         dryRun: true,
+        replayRequested: options.replay,
         echoWarpWasmDir: plan.echoWarpWasmDir,
         echoWasmModule: plan.echoWasmModule,
         witnessReportPath: plan.witnessReportPath,
@@ -78,17 +79,40 @@ function runPlannedEchoWitness({ adapter, options, plan, startedAt }) {
     };
   }
 
+  const replay = options.replay === true
+    ? summarizeReplayPosture(witnessReportResult.report)
+    : undefined;
+
   return {
     status: 0,
     summary: {
       ok: true,
       dryRun: false,
+      replayRequested: options.replay,
       echoWarpWasmDir: plan.echoWarpWasmDir,
       echoWasmModule: plan.echoWasmModule,
       witnessReportPath: plan.witnessReportPath,
       witnessReport: witnessReportResult.report,
+      ...(replay === undefined ? {} : { replay }),
       steps,
       durationMs: adapter.nowMs() - startedAt,
+    },
+  };
+}
+
+function summarizeReplayPosture(report) {
+  if (report != null && typeof report === 'object' && report.replay != null) {
+    return report.replay;
+  }
+
+  const reading = report != null && typeof report === 'object' ? report.reading : undefined;
+  return {
+    status: 'obstructed',
+    obstruction: 'durable_replay_unavailable',
+    reason: 'witness report does not carry a replay proof yet',
+    readingIdentity: {
+      readingId: typeof reading?.readingId === 'string' ? reading.readingId : null,
+      artifactHash: typeof reading?.artifactHash === 'string' ? reading.artifactHash : null,
     },
   };
 }
