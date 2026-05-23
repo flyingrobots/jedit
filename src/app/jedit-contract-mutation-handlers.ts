@@ -58,6 +58,15 @@ export interface JeditContractMutationHandlerRegistryOptions {
 
 export interface JeditContractMutationHandlerRegistry {
   readonly mutationOperationNames: readonly string[];
+  executeCreateBufferWorldlineMutation(
+    request: JeditCreateBufferWorldlineMutationRequest,
+  ): CreateBufferWorldlineExecution;
+  executeReplaceRangeAsTickMutation(
+    request: JeditReplaceRangeAsTickMutationRequest,
+  ): ReplaceRangeAsTickExecution;
+  executeCreateCheckpointMutation(
+    request: JeditCreateCheckpointMutationRequest,
+  ): CreateCheckpointExecution;
   executeMutation(
     request: JeditContractMutationHandlerRequest,
   ): JeditContractMutationHandlerResult;
@@ -72,6 +81,21 @@ export function createJeditContractMutationHandlerRegistry(
       mutationReplaceRangeAsTickOperation.fieldName,
       mutationCreateCheckpointOperation.fieldName,
     ]),
+    executeCreateBufferWorldlineMutation(
+      request: JeditCreateBufferWorldlineMutationRequest,
+    ): CreateBufferWorldlineExecution {
+      return executeCreateBufferWorldlineMutation(options, request);
+    },
+    executeReplaceRangeAsTickMutation(
+      request: JeditReplaceRangeAsTickMutationRequest,
+    ): ReplaceRangeAsTickExecution {
+      return executeReplaceRangeAsTickMutation(options, request);
+    },
+    executeCreateCheckpointMutation(
+      request: JeditCreateCheckpointMutationRequest,
+    ): CreateCheckpointExecution {
+      return executeCreateCheckpointMutation(options, request);
+    },
     executeMutation(
       request: JeditContractMutationHandlerRequest,
     ): JeditContractMutationHandlerResult {
@@ -86,20 +110,41 @@ function executeJeditMutation(
 ): JeditContractMutationHandlerResult {
   switch (request.operationName) {
     case mutationCreateBufferWorldlineOperation.fieldName:
-      return createBufferWorldline(options.runtime, request.input, options.hash);
+      return executeCreateBufferWorldlineMutation(options, request);
     case mutationReplaceRangeAsTickOperation.fieldName:
-      return replaceRangeAsTick(
-        options.runtime,
-        request.session,
-        request.input,
-        options.hash,
-      );
+      return executeReplaceRangeAsTickMutation(options, request);
     case mutationCreateCheckpointOperation.fieldName:
-      return createCheckpoint(
-        options.runtime,
-        request.session,
-        request.input,
-        options.hash,
-      );
+      return executeCreateCheckpointMutation(options, request);
   }
+}
+
+function executeCreateBufferWorldlineMutation(
+  options: JeditContractMutationHandlerRegistryOptions,
+  request: JeditCreateBufferWorldlineMutationRequest,
+): CreateBufferWorldlineExecution {
+  return createBufferWorldline(options.runtime, request.input, options.hash);
+}
+
+function executeReplaceRangeAsTickMutation(
+  options: JeditContractMutationHandlerRegistryOptions,
+  request: JeditReplaceRangeAsTickMutationRequest,
+): ReplaceRangeAsTickExecution {
+  return replaceRangeAsTick(
+    options.runtime,
+    request.session,
+    request.input,
+    options.hash,
+  );
+}
+
+function executeCreateCheckpointMutation(
+  options: JeditContractMutationHandlerRegistryOptions,
+  request: JeditCreateCheckpointMutationRequest,
+): CreateCheckpointExecution {
+  return createCheckpoint(
+    options.runtime,
+    request.session,
+    request.input,
+    options.hash,
+  );
 }

@@ -146,7 +146,7 @@ Checklist:
 - [x] Unsupported queries are rejected before observer execution.
 - [x] Preflight has focused tests.
 
-## Slice 04 - Echo WASM Package Install Adapter
+## Slice 04 - Echo Package Install Adapter
 
 User story: As a trusted host adapter, I can translate the jedit package
 descriptor into Echo's generic package-install API without app code seeing
@@ -155,7 +155,7 @@ runtime internals.
 Work:
 
 - Add the first jedit adapter that targets Echo's generic installed package
-  boundary.
+  boundary shape.
 - Pass only generic package/operation/query/observer identity to Echo.
 - Preserve app/host split: package install is trusted host work.
 - Return typed install posture to jedit-side code.
@@ -231,17 +231,19 @@ Checklist:
 - [x] Observer context is read-only.
 - [x] Unsupported query remains unsupported without registration.
 
-## Slice 07 - Real Echo TextBufferOptic Headless Flow
+## Slice 07 - Installed Package TextBufferOptic Headless Flow
 
 User story: As an app caller, I can create a text buffer, apply an edit, and read
 a text window through `TextBufferOptic`, while Echo remains the generic runtime.
 
 Work:
 
-- Wire `TextBufferOptic` to the real Echo package/handler/observer path for one
-  headless flow.
+- Wire `TextBufferOptic` to the installed package/handler/observer transport
+  path for one headless flow.
 - Keep trusted host lifecycle outside app-facing API.
-- Replace the fake transport in this witness only.
+- Replace the fake transport in this witness only. This slice proves the
+  jedit-owned package boundary path; later slices bind that path to the real
+  Echo WASM package install surface when it is available.
 
 Test plan:
 
@@ -254,11 +256,11 @@ Test plan:
 
 Checklist:
 
-- [ ] Headless flow uses real Echo package path.
-- [ ] `TextBufferOptic` creates/opens buffer.
-- [ ] `replaceRange` goes through Echo.
-- [ ] `textWindow` goes through Echo observer.
-- [ ] App surface has no runtime authority.
+- [x] Headless flow uses installed jedit package transport path.
+- [x] `TextBufferOptic` creates/opens buffer.
+- [x] `replaceRange` goes through the installed mutation handler path.
+- [x] `textWindow` goes through the installed query observer path.
+- [x] App surface has no runtime authority.
 
 ## Slice 08 - Trusted Host Runtime Loop
 

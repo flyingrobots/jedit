@@ -50,6 +50,12 @@ export interface JeditContractQueryObserverRegistryOptions {
 export interface JeditContractQueryObserverRegistry {
   readonly queryOperationNames: readonly string[];
   supportsQueryObserver(operationName: string): boolean;
+  observeWorldlineSnapshot(
+    request: JeditWorldlineSnapshotObserverRequest,
+  ): WorldlineSnapshotReadingEnvelope;
+  observeTextWindow(
+    request: JeditTextWindowObserverRequest,
+  ): TextWindowReadingEnvelope;
   observeQuery(
     request: JeditContractQueryObserverRequest,
   ): JeditContractQueryObserverResult;
@@ -68,6 +74,16 @@ export function createJeditContractQueryObserverRegistry(
     supportsQueryObserver(operationName: string): boolean {
       return queryOperationNames.includes(operationName);
     },
+    observeWorldlineSnapshot(
+      request: JeditWorldlineSnapshotObserverRequest,
+    ): WorldlineSnapshotReadingEnvelope {
+      return observeWorldlineSnapshot(options, request);
+    },
+    observeTextWindow(
+      request: JeditTextWindowObserverRequest,
+    ): TextWindowReadingEnvelope {
+      return observeTextWindow(options, request);
+    },
     observeQuery(
       request: JeditContractQueryObserverRequest,
     ): JeditContractQueryObserverResult {
@@ -82,20 +98,34 @@ function observeJeditQuery(
 ): JeditContractQueryObserverResult {
   switch (request.operationName) {
     case queryWorldlineSnapshotOperation.fieldName:
-      return readWorldlineSnapshotWithObserverPlan(
-        options.runtime,
-        request.session,
-        request.frontierRef,
-        request.input,
-        options.hash,
-      );
+      return observeWorldlineSnapshot(options, request);
     case queryTextWindowOperation.fieldName:
-      return readTextWindowWithObserverPlan(
-        options.runtime,
-        request.session,
-        request.frontierRef,
-        request.input,
-        options.hash,
-      );
+      return observeTextWindow(options, request);
   }
+}
+
+function observeWorldlineSnapshot(
+  options: JeditContractQueryObserverRegistryOptions,
+  request: JeditWorldlineSnapshotObserverRequest,
+): WorldlineSnapshotReadingEnvelope {
+  return readWorldlineSnapshotWithObserverPlan(
+    options.runtime,
+    request.session,
+    request.frontierRef,
+    request.input,
+    options.hash,
+  );
+}
+
+function observeTextWindow(
+  options: JeditContractQueryObserverRegistryOptions,
+  request: JeditTextWindowObserverRequest,
+): TextWindowReadingEnvelope {
+  return readTextWindowWithObserverPlan(
+    options.runtime,
+    request.session,
+    request.frontierRef,
+    request.input,
+    options.hash,
+  );
 }
