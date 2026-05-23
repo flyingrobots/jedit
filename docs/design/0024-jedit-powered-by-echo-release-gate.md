@@ -520,10 +520,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Quickstart exists.
-- [ ] Commands are executable.
-- [ ] Expected output is current.
-- [ ] Troubleshooting covers common failures.
+- [x] Quickstart exists.
+- [x] Commands are executable.
+- [x] Expected output is current.
+- [x] Troubleshooting covers common failures.
 
 ## Slice 18 - Release Gate Quality Ratchet
 
