@@ -74,10 +74,12 @@ ECHO_WARP_WASM_DIR=/path/to/echo/crates/warp-wasm \
   node scripts/jedit-echo-witness.mjs --json
 ```
 
-That command already gives agents a deterministic shell witness. A later MCP
-server can wrap the same command once the release witness has richer retained
-evidence and replay output. The MCP should not be the first authority boundary;
-it would add protocol surface before the shell witness is trustworthy.
+That command emits a machine-readable summary plus a witness report naming the
+app/host authority split, fixture operation ids, observed reading identity,
+artifact hash, residual posture, observer basis, and product-shaped text. A
+later MCP server can wrap the same command once replay output is strong enough
+to expose through a protocol. The MCP should not be the first authority
+boundary; it would add protocol surface before the shell witness is trustworthy.
 
 ## Evidence
 
@@ -85,6 +87,7 @@ it would add protocol surface before the shell witness is trustworthy.
 - `echo wasm kernel host transport keeps trusted control off the app surface`
 - `echo wasm trusted host transport requires the raw trusted control export`
 - `jedit Echo witness CLI emits a dry-run JSON plan for agents`
+- direct JSON CLI run includes a witness report with `ReadingEnvelope` posture
 - `real Echo WASM Stack Witness 0001 transport emits ReadingEnvelope + QueryBytes`
 
 ## Non-Goals

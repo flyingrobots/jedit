@@ -112,6 +112,10 @@ ECHO_WARP_WASM_DIR=/path/to/echo/crates/warp-wasm \
   node scripts/jedit-echo-witness.mjs --json
 ```
 
+The JSON output includes command status and, on success, a witness report with
+reading identity, artifact hash, residual posture, observer basis, and the
+product-shaped text result.
+
 ## Current Runtime Truth
 
 The visible TUI editor still uses `EditorState.lines` as editable buffer truth.

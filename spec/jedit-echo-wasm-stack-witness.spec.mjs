@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -19,6 +20,11 @@ const REAL_ECHO_WASM_MODULE_RAW = process.env.JEDIT_ECHO_WASM_MODULE;
 const REAL_ECHO_WASM_MODULE =
   typeof REAL_ECHO_WASM_MODULE_RAW === 'string' && REAL_ECHO_WASM_MODULE_RAW.trim().length > 0
     ? REAL_ECHO_WASM_MODULE_RAW
+    : undefined;
+const WITNESS_REPORT_PATH_RAW = process.env.JEDIT_ECHO_WITNESS_REPORT;
+const WITNESS_REPORT_PATH =
+  typeof WITNESS_REPORT_PATH_RAW === 'string' && WITNESS_REPORT_PATH_RAW.trim().length > 0
+    ? WITNESS_REPORT_PATH_RAW
     : undefined;
 
 const STACK_WITNESS_OP_IDS = Object.freeze({
@@ -124,6 +130,7 @@ test('real Echo WASM Stack Witness 0001 transport emits ReadingEnvelope + QueryB
     appReading.reading.lines.map((line) => line.text),
     [STACK_WITNESS_TEXT],
   );
+  writeWitnessReport({ artifact, appReading, textWindowBasis });
 });
 
 async function loadTransportModule() {
@@ -291,6 +298,39 @@ function toWitnessOnlyTextWindowReading(artifact, queryBytes) {
       }],
     },
   };
+}
+
+function writeWitnessReport({ artifact, appReading, textWindowBasis }) {
+  if (WITNESS_REPORT_PATH === undefined) {
+    return;
+  }
+
+  mkdirSync(path.dirname(WITNESS_REPORT_PATH), { recursive: true });
+  writeFileSync(WITNESS_REPORT_PATH, `${JSON.stringify({
+    schemaVersion: 1,
+    authority: {
+      applicationDispatch: 'submitIntentBytes',
+      trustedHostControl: 'dispatchControlIntentBytes',
+    },
+    fixture: 'stack-witness-0001',
+    operations: {
+      createBuffer: STACK_WITNESS_OP_IDS.CREATE_BUFFER,
+      replaceRange: STACK_WITNESS_OP_IDS.REPLACE_RANGE,
+      textWindowQuery: STACK_WITNESS_OP_IDS.TEXT_WINDOW_QUERY,
+    },
+    reading: {
+      operationName: appReading.operationName,
+      frontierRef: appReading.frontierRef,
+      text: appReading.reading.lines.map((line) => line.text).join('\n'),
+      readingId: appReading.reading.readingId,
+      artifactHash: bytesToHex(artifact.artifact_hash),
+      residualPosture: artifact.reading.residual_posture,
+      observerBasis: artifact.reading.observer_basis,
+      frame: artifact.frame,
+      queryId: artifact.projection.query_id,
+      basisWorldlineId: textWindowBasis.worldlineIdHex,
+    },
+  }, null, 2)}\n`);
 }
 
 function decodeOkEnvelope(bytes) {

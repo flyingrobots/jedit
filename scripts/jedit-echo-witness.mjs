@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { accessSync, constants } from 'node:fs';
+import { accessSync, constants, existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -25,6 +25,7 @@ function main() {
       message: plan.errorMessage,
       echoWarpWasmDir: options.echoWarpWasmDir,
       echoWasmModule: options.echoWasmModule,
+      witnessReportPath: options.witnessReportPath,
       steps: [],
       durationMs: Date.now() - startedAt,
     });
@@ -37,6 +38,7 @@ function main() {
       dryRun: true,
       echoWarpWasmDir: plan.echoWarpWasmDir,
       echoWasmModule: plan.echoWasmModule,
+      witnessReportPath: plan.witnessReportPath,
       steps: plan.steps.map(dryRunStep),
       durationMs: Date.now() - startedAt,
     });
@@ -54,6 +56,7 @@ function main() {
         message: `${step.name} failed with status ${result.status}`,
         echoWarpWasmDir: plan.echoWarpWasmDir,
         echoWasmModule: plan.echoWasmModule,
+        witnessReportPath: plan.witnessReportPath,
         steps,
         durationMs: Date.now() - startedAt,
       });
@@ -66,6 +69,8 @@ function main() {
     dryRun: false,
     echoWarpWasmDir: plan.echoWarpWasmDir,
     echoWasmModule: plan.echoWasmModule,
+    witnessReportPath: plan.witnessReportPath,
+    witnessReport: readWitnessReport(plan.witnessReportPath),
     steps,
     durationMs: Date.now() - startedAt,
   });
@@ -79,6 +84,7 @@ function parseArgs(args, env) {
     help: false,
     echoWarpWasmDir: env.ECHO_WARP_WASM_DIR,
     echoWasmModule: env.ECHO_WASM_MODULE,
+    witnessReportPath: env.JEDIT_ECHO_WITNESS_REPORT,
     jeditDir: env.JEDIT_DIR ?? REPO_ROOT,
     cycleLimit: env.JEDIT_ECHO_WITNESS_CYCLE_LIMIT ?? DEFAULT_CYCLE_LIMIT,
   };
@@ -99,6 +105,9 @@ function parseArgs(args, env) {
       index += 1;
     } else if (arg === '--jedit-dir') {
       options.jeditDir = nextArg(args, index, arg);
+      index += 1;
+    } else if (arg === '--witness-report') {
+      options.witnessReportPath = nextArg(args, index, arg);
       index += 1;
     } else if (arg === '--cycle-limit') {
       options.cycleLimit = nextArg(args, index, arg);
@@ -132,6 +141,10 @@ function createPlan(options) {
   const echoRepoRoot = path.resolve(echoWarpWasmDir, '..', '..');
   const echoWasmBuildScript = path.join(echoRepoRoot, 'scripts', 'build-warp-wasm-package.sh');
   const echoWasmModule = path.resolve(options.echoWasmModule ?? path.join(echoWarpWasmDir, 'pkg', 'rmg_wasm.js'));
+  const witnessReportPath = path.resolve(
+    options.witnessReportPath
+      ?? path.join(jeditDir, '.jedit-cache', 'echo-witness', 'stack-witness-report.json'),
+  );
 
   const validationError = validatePlanPaths({ echoWarpWasmDir, echoWasmBuildScript, jeditDir });
   if (validationError != null) {
@@ -141,6 +154,7 @@ function createPlan(options) {
   return {
     echoWarpWasmDir,
     echoWasmModule,
+    witnessReportPath,
     steps: [
       {
         name: 'build-echo-wasm',
@@ -163,6 +177,7 @@ function createPlan(options) {
         cwd: jeditDir,
         env: {
           JEDIT_ECHO_WASM_MODULE: echoWasmModule,
+          JEDIT_ECHO_WITNESS_REPORT: witnessReportPath,
           JEDIT_ECHO_WITNESS_CYCLE_LIMIT: options.cycleLimit,
         },
       },
@@ -224,6 +239,13 @@ function dryRunStep(step) {
   };
 }
 
+function readWitnessReport(reportPath) {
+  if (!existsSync(reportPath)) {
+    return undefined;
+  }
+  return JSON.parse(readFileSync(reportPath, 'utf8'));
+}
+
 function commandLine(step) {
   return [step.command, ...step.args].join(' ');
 }
@@ -248,6 +270,7 @@ function helpText() {
 Options:
   --echo-warp-wasm-dir <path>  Path to echo/crates/warp-wasm.
   --echo-wasm-module <path>    Path to pkg/rmg_wasm.js. Defaults under warp-wasm.
+  --witness-report <path>      Path for the JSON witness report.
   --jedit-dir <path>           jedit checkout root. Defaults to this repo.
   --cycle-limit <n>            Until-idle cycle limit for the witness.
   --json                       Emit machine-readable summary.

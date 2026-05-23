@@ -2,5 +2,6 @@ node_modules
 dist
 .codex/
 .wesley-cache/
+.jedit-cache/
 .obsidian/
 src/generated/jedit/structural-history-replace-text-range.wesley.generated.ts

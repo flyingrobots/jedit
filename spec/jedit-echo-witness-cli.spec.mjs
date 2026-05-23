@@ -35,6 +35,7 @@ test('jedit Echo witness CLI emits a dry-run JSON plan for agents', async () => 
     assert.equal(summary.ok, true);
     assert.equal(summary.dryRun, true);
     assert.equal(summary.echoWarpWasmDir, echoDir);
+    assert.match(summary.witnessReportPath, /\.jedit-cache\/echo-witness\/stack-witness-report\.json$/);
     assert.equal(summary.steps.length, 3);
     assert.deepEqual(summary.steps.map((step) => step.name), [
       'build-echo-wasm',
