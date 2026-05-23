@@ -169,11 +169,11 @@ Test plan:
 
 Checklist:
 
-- [ ] Generic Echo package port shape exists in jedit.
-- [ ] Trusted adapter installs descriptor through that port.
-- [ ] App-facing API cannot install packages.
-- [ ] Install posture is typed.
-- [ ] Tests prove no app install authority.
+- [x] Generic Echo package port shape exists in jedit.
+- [x] Trusted adapter installs descriptor through that port.
+- [x] App-facing API cannot install packages.
+- [x] Install posture is typed.
+- [x] Tests prove no app install authority.
 
 ## Slice 05 - Mutation Handler Registration
 
