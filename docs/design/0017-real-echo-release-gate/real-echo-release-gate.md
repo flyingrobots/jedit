@@ -44,8 +44,10 @@ coordinates below the optic boundary. App-facing jedit code may not.
 ## Current Blocker
 
 The current opt-in real Echo WASM witness now has a local app/host split. The
-next blocker is to move from the old stack-witness fixture shape toward a
-jedit-owned generated contract path with retained evidence and replay.
+current witness report also inventories inline reading evidence and returns
+typed postures for missing durable retention and replay. The next blocker is to
+move from the old stack-witness fixture shape toward a jedit-owned generated
+contract path with real retained evidence and durable replay.
 
 The previous rejection remains important doctrine: Echo should reject scheduler
 `start` / `until_idle` control through app-facing dispatch. jedit must preserve
@@ -92,6 +94,10 @@ The first passing real Echo witness should prove:
 - at least one non-happy path such as unsupported operation, lawful rejection,
   obstruction, residual reading, or missing retention.
 
+The current intermediate witness is allowed to report `missing_retention` and
+`durable_replay_unavailable` so the gap is machine-readable. Those postures do
+not satisfy the final release gate.
+
 ## Non-Goals
 
 - Do not build the full editor on Echo in this slice.
@@ -105,6 +111,8 @@ The first passing real Echo witness should prove:
 
 1. Keep the fake Echo-shaped harness as the stable app-facing contract.
 2. Keep the real Echo witness path on separate app and trusted-host adapters.
-3. Prove `create/replace/read` with retained evidence.
+3. Replace the current `missing_retention` witness posture with generic retained
+   receipt and reading refs from Echo.
 4. Add an agent-friendly CLI witness before adding an MCP wrapper.
-5. Add replay proof before accepting the gate.
+5. Replace the current `durable_replay_unavailable` posture with replay proof
+   before accepting the gate.

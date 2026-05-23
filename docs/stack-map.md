@@ -61,8 +61,8 @@ jedit-authored `contracts/jedit/structural-history.graphql`
 -> scheduler-owned tick receipt
 -> observed outcome
 -> bounded text reading
--> retained evidence
--> replay proof
+-> retained-evidence inventory
+-> replay posture
 ```
 
 The next release-gate slice plan is recorded in
@@ -74,6 +74,12 @@ The next release-gate slice plan is recorded in
 - Real Echo WASM witness remains opt-in and now uses the app/host authority
   split: app intent submission stays on the app transport, while scheduler
   control uses the trusted-host transport.
+- The current witness report names inline `ReadingEnvelope` and `QueryBytes`
+  evidence, then honestly reports durable retained refs as
+  `missing_retention`.
+- The current replay surface is a shell: `--replay` returns
+  `durable_replay_unavailable` until Echo exposes durable replay evidence
+  through the adapter.
 - Start/Stop/cadence are trusted host runtime-control history. They are not
   jedit contract intents and they do not create ticks directly.
 - Fixture vars bytes are not the durable Wesley runtime codec.
