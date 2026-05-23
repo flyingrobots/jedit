@@ -7,6 +7,9 @@ The active release-gate plan is
 [`docs/design/0024-jedit-powered-by-echo-release-gate.md`](design/0024-jedit-powered-by-echo-release-gate.md).
 That plan is the source of truth for the next twenty slices.
 
+The release-facing summary lives in
+[`docs/releases/v0.1.0/README.md`](releases/v0.1.0/README.md).
+
 ## Current Truth
 
 - `TextBufferOptic` is a jedit app capability.

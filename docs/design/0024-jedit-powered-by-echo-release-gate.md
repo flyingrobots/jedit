@@ -569,10 +569,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Release docs updated.
-- [ ] Evidence commands linked.
-- [ ] Non-goals listed.
-- [ ] Echo generic boundary stated.
+- [x] Release docs updated.
+- [x] Evidence commands linked.
+- [x] Non-goals listed.
+- [x] Echo generic boundary stated.
 
 ## Slice 20 - Release Gate Closeout
 

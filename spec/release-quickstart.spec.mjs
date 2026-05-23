@@ -6,6 +6,7 @@ import test from 'node:test';
 
 const REPO_ROOT = process.cwd();
 const QUICKSTART_PATH = path.join(REPO_ROOT, 'docs', 'releases', 'v0.1.0', 'quickstart.md');
+const RELEASE_README_PATH = path.join(REPO_ROOT, 'docs', 'releases', 'v0.1.0', 'README.md');
 const WITNESS_SCRIPT = path.join(REPO_ROOT, 'scripts', 'jedit-echo-powered-session.mjs');
 
 test('v0.1.0 quickstart documents executable witness commands', () => {
@@ -17,6 +18,16 @@ test('v0.1.0 quickstart documents executable witness commands', () => {
   assert.match(source, /JEDIT_TEXT_RUNTIME=echo npm start/);
   assert.match(source, /"transport": "installed-jedit-contract"/);
   assert.match(source, /"appCanTick": false/);
+});
+
+test('v0.1.0 release docs name evidence commands non-goals and Echo generic boundary', () => {
+  const source = readFileSync(RELEASE_README_PATH, 'utf8');
+
+  assert.match(source, /npm run release-gate:echo/);
+  assert.match(source, /Echo remains generic/);
+  assert.match(source, /No full Continuum transport/);
+  assert.match(source, /No full observer-rights or revelation lattice/);
+  assert.match(source, /No jedit nouns in Echo core/);
 });
 
 test('v0.1.0 quickstart dry-run command executes', () => {
