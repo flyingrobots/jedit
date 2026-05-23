@@ -1,6 +1,12 @@
+const ALLOWED_REPLAY_STATUSES = new Set([
+  'identity_replay_shape',
+  'obstructed',
+]);
+
 export function runEchoWitness(options, adapter) {
   const startedAt = adapter.nowMs();
   const plan = adapter.createPlan(options);
+  const replayRequested = options.replay === true;
 
   if (plan.errorMessage != null) {
     return {
@@ -24,7 +30,7 @@ export function runEchoWitness(options, adapter) {
       summary: {
         ok: true,
         dryRun: true,
-        replayRequested: options.replay,
+        replayRequested,
         echoWarpWasmDir: plan.echoWarpWasmDir,
         echoWasmModule: plan.echoWasmModule,
         witnessReportPath: plan.witnessReportPath,
@@ -34,10 +40,22 @@ export function runEchoWitness(options, adapter) {
     };
   }
 
-  return runPlannedEchoWitness({ adapter, options, plan, startedAt });
+  return runPlannedEchoWitness({
+    adapter,
+    options,
+    plan,
+    replayRequested,
+    startedAt,
+  });
 }
 
-function runPlannedEchoWitness({ adapter, options, plan, startedAt }) {
+function runPlannedEchoWitness({
+  adapter,
+  options,
+  plan,
+  replayRequested,
+  startedAt,
+}) {
   const steps = [];
 
   for (const step of plan.steps) {
@@ -79,7 +97,7 @@ function runPlannedEchoWitness({ adapter, options, plan, startedAt }) {
     };
   }
 
-  const replay = options.replay === true
+  const replay = replayRequested
     ? summarizeReplayPosture(witnessReportResult.report)
     : undefined;
 
@@ -88,7 +106,7 @@ function runPlannedEchoWitness({ adapter, options, plan, startedAt }) {
     summary: {
       ok: true,
       dryRun: false,
-      replayRequested: options.replay,
+      replayRequested,
       echoWarpWasmDir: plan.echoWarpWasmDir,
       echoWasmModule: plan.echoWasmModule,
       witnessReportPath: plan.witnessReportPath,
@@ -113,6 +131,9 @@ function summarizeReplayPosture(report) {
 
 function hasValidReplayPosture(report) {
   if (!hasReplayPosture(report) || typeof report.replay.status !== 'string') {
+    return false;
+  }
+  if (!ALLOWED_REPLAY_STATUSES.has(report.replay.status)) {
     return false;
   }
   if (report.replay.status === 'obstructed' && typeof report.replay.obstruction !== 'string') {
