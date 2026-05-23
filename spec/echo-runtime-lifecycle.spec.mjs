@@ -1,0 +1,90 @@
+import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import path from 'node:path';
+import test from 'node:test';
+import { pathToFileURL } from 'node:url';
+
+const REPO_ROOT = process.cwd();
+const LIFECYCLE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'echo-runtime-lifecycle.js');
+const CYCLE_LIMIT = 7;
+const REQUEST_BYTES = Object.freeze([1, 2, 3]);
+const RESPONSE_BYTES = Object.freeze([4, 5, 6]);
+
+async function loadLifecycleModule() {
+  const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+  });
+
+  assert.equal(build.status, 0, build.stderr || build.stdout);
+
+  return import(pathToFileURL(LIFECYCLE_MODULE_PATH).href);
+}
+
+test('trusted Echo lifecycle port requests run-until-idle without exposing tick injection', async () => {
+  const lifecycleModule = await loadLifecycleModule();
+  const calls = [];
+  const lifecycle = lifecycleModule.createTrustedEchoRuntimeLifecyclePort({
+    trustedHost: {
+      dispatchControlIntentBytes(bytes) {
+        calls.push(['trusted-control', Array.from(bytes)]);
+        return Uint8Array.from(RESPONSE_BYTES);
+      },
+    },
+    codec: {
+      encodeRunUntilIdleRequest(request) {
+        calls.push(['encode-run-until-idle', request.cycleLimit]);
+        return Uint8Array.from(REQUEST_BYTES);
+      },
+      decodeRunUntilIdleResponse(bytes) {
+        calls.push(['decode-run-until-idle', Array.from(bytes)]);
+        return {
+          accepted: true,
+          lastRunCompletion: 'quiesced',
+        };
+      },
+    },
+  });
+
+  assert.deepEqual(
+    lifecycle.requestRunUntilIdle({ cycleLimit: CYCLE_LIMIT }),
+    {
+      accepted: true,
+      lastRunCompletion: 'quiesced',
+    },
+  );
+  assert.equal('tick' in lifecycle, false);
+  assert.equal('stepTick' in lifecycle, false);
+  assert.equal('advanceTick' in lifecycle, false);
+  assert.deepEqual(calls, [
+    ['encode-run-until-idle', CYCLE_LIMIT],
+    ['trusted-control', REQUEST_BYTES],
+    ['decode-run-until-idle', RESPONSE_BYTES],
+  ]);
+});
+
+test('trusted Echo lifecycle port keeps app transport out of lifecycle authority', async () => {
+  const lifecycleModule = await loadLifecycleModule();
+  const lifecycle = lifecycleModule.createTrustedEchoRuntimeLifecyclePort({
+    trustedHost: {
+      dispatchControlIntentBytes() {
+        return Uint8Array.from(RESPONSE_BYTES);
+      },
+    },
+    codec: {
+      encodeRunUntilIdleRequest() {
+        return Uint8Array.from(REQUEST_BYTES);
+      },
+      decodeRunUntilIdleResponse() {
+        return {
+          accepted: true,
+          lastRunCompletion: 'quiesced',
+        };
+      },
+    },
+  });
+
+  assert.equal('submitIntentBytes' in lifecycle, false);
+  assert.equal('observeBytes' in lifecycle, false);
+  assert.equal('schedulerStatusBytes' in lifecycle, false);
+});

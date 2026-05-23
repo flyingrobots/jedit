@@ -79,6 +79,8 @@ The files most relevant to this guide are:
 | `src/adapters/jedit-echo-optic-client.ts` | Adapter from jedit optic calls to Echo-shaped transport bytes. |
 | `src/ports/echo-kernel-transport.ts` | App-safe and trusted-host Echo transport ports. |
 | `src/adapters/echo-wasm-kernel.ts` | Real Echo WASM transport adapter. |
+| `src/ports/echo-runtime-lifecycle.ts` | Trusted-host runtime lifecycle port. |
+| `src/adapters/echo-runtime-lifecycle.ts` | Adapter from lifecycle requests to trusted Echo control bytes. |
 | `src/adapters/fake-echo-jedit-optic-transport.ts` | Default fake Echo-shaped test transport. |
 | `src/app/jedit-contract-runtime.ts` | jedit-owned transitional hot-text contract executor. |
 | `src/app/jedit-observer-runtime.ts` | jedit-owned observer/read envelope helpers. |
@@ -554,10 +556,22 @@ interface EchoTrustedHostControlTransport {
 }
 ```
 
+Raw trusted control is then wrapped by the jedit lifecycle port:
+
+```ts
+interface TrustedEchoRuntimeLifecyclePort {
+  requestRunUntilIdle(request: EchoRunUntilIdleRequest): EchoRunUntilIdleResult;
+}
+```
+
+The lifecycle port is still trusted-host-only. Its job is to make host code
+talk about lifecycle policy instead of raw control bytes or external tick
+injection.
+
 The split is the whole point:
 
 - Application code can submit intents and observe readings.
-- Trusted host code can dispatch runtime control intents.
+- Trusted host code can request runtime lifecycle policy.
 - Application code cannot tick Echo.
 - Application code cannot tunnel trusted runtime lifecycle control through
   dispatch.
@@ -719,26 +733,34 @@ sequenceDiagram
   participant Test as Stack Witness Test
   participant HostTransport as EchoWasmKernelHostTransport
   participant AppTransport as app transport
+  participant Lifecycle as trusted lifecycle port
   participant TrustedHost as trusted host transport
   participant Echo as Echo WASM Runtime
   participant Report as Witness Report
 
   Test->>HostTransport: createEchoWasmKernelHostTransport(module)
   HostTransport-->>Test: { app, trustedHost }
+  Test->>Lifecycle: createTrustedEchoRuntimeLifecyclePort(trustedHost, codec)
 
   Test->>AppTransport: submitIntentBytes(createBuffer)
   AppTransport->>Echo: dispatch_intent(bytes)
   Echo-->>AppTransport: ingress/admission response
-  Test->>TrustedHost: dispatchControlIntentBytes(request start/until-idle)
+  Test->>Lifecycle: requestRunUntilIdle(cycleLimit)
+  Lifecycle->>TrustedHost: dispatchControlIntentBytes(control bytes)
   TrustedHost->>Echo: dispatch_control_intent_trusted(bytes)
   Echo-->>TrustedHost: runtime lifecycle response
+  TrustedHost-->>Lifecycle: response bytes
+  Lifecycle-->>Test: lifecycle result
 
   Test->>AppTransport: submitIntentBytes(replaceRange)
   AppTransport->>Echo: dispatch_intent(bytes)
   Echo-->>AppTransport: ingress/admission response
-  Test->>TrustedHost: dispatchControlIntentBytes(request start/until-idle)
+  Test->>Lifecycle: requestRunUntilIdle(cycleLimit)
+  Lifecycle->>TrustedHost: dispatchControlIntentBytes(control bytes)
   TrustedHost->>Echo: dispatch_control_intent_trusted(bytes)
   Echo-->>TrustedHost: runtime lifecycle response
+  TrustedHost-->>Lifecycle: response bytes
+  Lifecycle-->>Test: lifecycle result
 
   Test->>AppTransport: observeBytes(textWindow QueryView)
   AppTransport->>Echo: observe(bytes)
@@ -747,7 +769,7 @@ sequenceDiagram
   Test->>Report: write retained evidence and replay posture
 ```
 
-The trusted-host control packet in this witness uses an until-idle cycle limit.
+The trusted lifecycle request in this witness uses an until-idle cycle limit.
 That limit is a guardrail around Echo's own run loop; it is not an externally
 supplied tick stream. Future long-lived hosts may ask Echo to start on a
 cadence, stop, or recover faults, but those controls remain lifecycle requests.

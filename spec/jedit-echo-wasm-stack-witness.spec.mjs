@@ -23,6 +23,7 @@ import {
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const TRANSPORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'echo-wasm-kernel.js');
+const LIFECYCLE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'echo-runtime-lifecycle.js');
 const REAL_ECHO_WASM_MODULE_RAW = process.env.JEDIT_ECHO_WASM_MODULE;
 const REAL_ECHO_WASM_MODULE =
   typeof REAL_ECHO_WASM_MODULE_RAW === 'string' && REAL_ECHO_WASM_MODULE_RAW.trim().length > 0
@@ -165,24 +166,28 @@ test('real Echo WASM Stack Witness 0001 transport emits ReadingEnvelope + QueryB
   assert.equal(typeof REAL_ECHO_WASM_MODULE, 'string');
 
   const jeditGeneratedContract = await loadGeneratedContractMetadata();
-  const transportModule = await loadTransportModule();
-  const hostTransport = await transportModule.createEchoWasmKernelHostTransport({
+  const echoModules = await loadEchoModules();
+  const hostTransport = await echoModules.transport.createEchoWasmKernelHostTransport({
     moduleSpecifier: toModuleSpecifier(REAL_ECHO_WASM_MODULE),
   });
   const transport = hostTransport.app;
+  const lifecycle = echoModules.lifecycle.createTrustedEchoRuntimeLifecyclePort({
+    trustedHost: hostTransport.trustedHost,
+    codec: createWitnessLifecycleCodec(),
+  });
 
   dispatchFixtureIntent(
     transport,
     STACK_WITNESS_OP_IDS.CREATE_BUFFER,
     STACK_WITNESS_CREATE_BUFFER_VARS,
   );
-  runEchoSchedulerUntilIdle(hostTransport.trustedHost);
+  requestEchoRunUntilIdle(lifecycle);
   dispatchFixtureIntent(
     transport,
     STACK_WITNESS_OP_IDS.REPLACE_RANGE,
     STACK_WITNESS_REPLACE_RANGE_VARS,
   );
-  runEchoSchedulerUntilIdle(hostTransport.trustedHost);
+  requestEchoRunUntilIdle(lifecycle);
 
   const opticSessionBasis = createWitnessOnlyEchoFixtureBasisResolver();
   const textWindowBasis = opticSessionBasis.resolveTextWindowBasis();
@@ -228,6 +233,13 @@ async function loadTransportModule() {
       { cause },
     );
   }
+}
+
+async function loadEchoModules() {
+  return {
+    transport: await loadTransportModule(),
+    lifecycle: await import(pathToFileURL(LIFECYCLE_MODULE_PATH).href),
+  };
 }
 
 async function loadGeneratedContractMetadata() {
@@ -277,12 +289,13 @@ function dispatchFixtureIntent(transport, opId, varsText) {
   assert.equal(response.accepted, true);
 }
 
-function runEchoSchedulerUntilIdle(trustedHostTransport) {
-  const response = decodeOkEnvelope(
-    trustedHostTransport.dispatchControlIntentBytes(packControlStartIntent()),
-  );
-  assert.equal(response.accepted, true);
-  assert.equal(response.scheduler_status.last_run_completion, 'quiesced');
+function requestEchoRunUntilIdle(lifecycle) {
+  const result = lifecycle.requestRunUntilIdle({
+    cycleLimit: RUN_UNTIL_IDLE_CYCLE_LIMIT,
+  });
+
+  assert.equal(result.accepted, true);
+  assert.equal(result.lastRunCompletion, 'quiesced');
 }
 
 function packControlStartIntent(cycleLimit = RUN_UNTIL_IDLE_CYCLE_LIMIT) {
@@ -293,6 +306,21 @@ function packControlStartIntent(cycleLimit = RUN_UNTIL_IDLE_CYCLE_LIMIT) {
       cycle_limit: cycleLimit,
     },
   }));
+}
+
+function createWitnessLifecycleCodec() {
+  return {
+    encodeRunUntilIdleRequest(request) {
+      return packControlStartIntent(request.cycleLimit);
+    },
+    decodeRunUntilIdleResponse(responseBytes) {
+      const response = decodeOkEnvelope(responseBytes);
+      return {
+        accepted: response.accepted === true,
+        lastRunCompletion: response.scheduler_status.last_run_completion,
+      };
+    },
+  };
 }
 
 function readRunUntilIdleCycleLimit(rawValue) {

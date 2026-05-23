@@ -57,7 +57,7 @@ jedit-authored `contracts/jedit/structural-history.graphql`
 -> Wesley generated artifacts
 -> Echo package install
 -> app-safe edit intent submission
--> trusted-host runtime-control policy
+-> trusted-host lifecycle request
 -> scheduler-owned tick receipt
 -> observed outcome
 -> bounded text reading
@@ -73,7 +73,7 @@ The next release-gate slice plan is recorded in
 - Fake Echo-shaped transport remains valid as a controlled witness posture.
 - Real Echo WASM witness remains opt-in and now uses the app/host authority
   split: app intent submission stays on the app transport, while scheduler
-  control uses the trusted-host transport.
+  lifecycle requests use the trusted-host lifecycle port.
 - The current witness report names inline `ReadingEnvelope` and `QueryBytes`
   evidence, then honestly reports durable retained refs as
   `missing_retention`.
@@ -82,6 +82,9 @@ The next release-gate slice plan is recorded in
   through the adapter.
 - Start/Stop/cadence are trusted host runtime-control history. They are not
   jedit contract intents and they do not create ticks directly.
+- `TrustedEchoRuntimeLifecyclePort.requestRunUntilIdle(...)` wraps raw trusted
+  Echo control bytes so witness and host code do not talk in external tick
+  vocabulary.
 - Fixture vars bytes are not the durable Wesley runtime codec.
 - `TextBufferOptic` is the target app-facing capability. The current proof uses
   the structural-history SDL and `replaceTextRange` as the first implemented

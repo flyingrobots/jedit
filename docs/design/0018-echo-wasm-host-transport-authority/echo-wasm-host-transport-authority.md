@@ -18,14 +18,15 @@ jedit application adapter
 -> inspect scheduler status as metadata
 
 trusted Echo host adapter
--> dispatch packed Echo control intent bytes
+-> request runtime lifecycle policy
+-> dispatch packed Echo control intent bytes below the lifecycle port
 ```
 
 The application adapter cannot tick Echo and cannot call the raw trusted control
 export. The trusted host adapter may call Echo's raw
 `dispatch_control_intent_trusted(...)` export so the opt-in release witness can
-run Echo until idle without tunneling scheduler control through application
-dispatch.
+request Echo's internal run loop until idle without tunneling trusted runtime
+lifecycle control through application dispatch.
 
 ## Why This Exists
 
@@ -39,7 +40,8 @@ application product capability
 -> app-safe intent/observe transport
 
 trusted host/runtime owner
--> scheduler control transport
+-> trusted runtime lifecycle port
+-> raw control transport below the adapter
 ```
 
 The fake Echo-shaped transport remains useful for default tests. The real WASM
@@ -54,6 +56,8 @@ WASM package.
 - `EchoTrustedHostControlTransport`, the trusted host-control surface;
 - `EchoWasmKernelHostTransport`, which bundles the two without merging their
   authority.
+- `TrustedEchoRuntimeLifecyclePort`, the trusted lifecycle vocabulary that wraps
+  raw control bytes for host-owned code.
 
 `src/adapters/echo-wasm-kernel.ts` now exports:
 
@@ -64,6 +68,8 @@ WASM package.
 
 The app-safe object deliberately has no `dispatchControlIntentBytes(...)`
 method. The trusted host object deliberately has no submit or observe methods.
+The lifecycle port deliberately exposes `requestRunUntilIdle(...)`, not `tick`,
+`stepTick`, or any externally injected tick API.
 
 The agent witness runner follows the same port/adapter rule:
 
@@ -102,6 +108,8 @@ is trustworthy.
 - `echo wasm kernel transport stays byte-oriented and substrate-generic`
 - `echo wasm kernel host transport keeps trusted control off the app surface`
 - `echo wasm trusted host transport requires the raw trusted control export`
+- `trusted Echo lifecycle port requests run-until-idle without exposing tick injection`
+- `trusted Echo lifecycle port keeps app transport out of lifecycle authority`
 - `jedit Echo witness CLI emits a dry-run JSON plan for agents`
 - direct JSON CLI run includes a witness report with `ReadingEnvelope` posture
 - direct JSON CLI run cites generated `hot-text-runtime` operation metadata
@@ -113,6 +121,7 @@ is trustworthy.
 ## Non-Goals
 
 - No Echo ticks through app dispatch.
+- No externally injected host tick stream.
 - No app access to Echo worldline ids or scheduler internals.
 - No high-level product API in this slice.
 - No MCP server before the shell witness is green and useful.
