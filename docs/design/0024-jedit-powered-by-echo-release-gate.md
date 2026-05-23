@@ -1,6 +1,6 @@
 # jedit Powered By Echo Release Gate
 
-Status: slices 1-21 closed locally; release-gate evidence and continuation
+Status: slices 1-22 closed locally; release-gate evidence and continuation
 plan recorded.
 
 This plan defines the local release gate for the sentence:
@@ -674,11 +674,11 @@ Test plan:
 
 Checklist:
 
-- [ ] Runtime work envelope type exists.
-- [ ] Submission id is deterministic.
-- [ ] Operation kind is typed.
-- [ ] Envelope is free of text/editor semantic fields.
-- [ ] Focused envelope tests pass.
+- [x] Runtime work envelope type exists.
+- [x] Submission id is deterministic.
+- [x] Operation kind is typed.
+- [x] Envelope is free of text/editor semantic fields.
+- [x] Focused envelope tests pass.
 
 ## Slice 23 - Installed Transport Work Envelope Staging
 
