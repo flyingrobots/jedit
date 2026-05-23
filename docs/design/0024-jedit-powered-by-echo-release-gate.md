@@ -197,11 +197,11 @@ Test plan:
 
 Checklist:
 
-- [ ] Mutation handler registry exists in jedit adapter layer.
-- [ ] `createBufferWorldline` handler registered.
-- [ ] `replaceRangeAsTick` handler registered.
-- [ ] `createCheckpoint` handler registered.
-- [ ] App dispatch cannot call handlers directly.
+- [x] Mutation handler registry exists in jedit adapter layer.
+- [x] `createBufferWorldline` handler registered.
+- [x] `replaceRangeAsTick` handler registered.
+- [x] `createCheckpoint` handler registered.
+- [x] App dispatch cannot call handlers directly.
 
 ## Slice 06 - Query Observer Registration
 
