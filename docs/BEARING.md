@@ -5,7 +5,8 @@ without moving jedit nouns into Echo.
 
 The active release-gate plan is
 [`docs/design/0024-jedit-powered-by-echo-release-gate.md`](design/0024-jedit-powered-by-echo-release-gate.md).
-That plan is the source of truth for the next twenty slices.
+That plan is the source of truth for the first twenty slices and the current
+continuation budget through slice 40.
 
 The release-facing summary lives in
 [`docs/releases/v0.1.0/README.md`](releases/v0.1.0/README.md).
@@ -23,22 +24,14 @@ The release-facing summary lives in
 
 ## Immediate Work
 
-The current local inspection point is slice 14 of the release-gate plan:
+The current local inspection point is slice 25 of the release-gate plan's
+continuation budget:
 
-1. Plan and bearing signposts.
-2. jedit contract package descriptor.
-3. Package install preflight.
-4. Echo package install adapter.
-5. jedit mutation handler registration.
-6. jedit query observer registration.
-7. installed package `TextBufferOptic` headless flow.
-8. trusted host runtime loop.
-9. intent outcome observation.
-10. retained evidence lookup.
-11. agent CLI installed-package witness path.
-12. MCP-style witness adapter for agents.
-13. unsupported-operation outcome path.
-14. Echo-hosted state and restart posture.
+21. continuation plan and remote posture.
+22. runtime work envelope boundary.
+23. installed transport work envelope staging.
+24. handler invocation boundary.
+25. scheduler-owned installed handler guard.
 
 Agents can inspect the installed-package witness path with:
 
@@ -48,10 +41,10 @@ node scripts/jedit-echo-powered-session.mjs --json --dry-run
 node scripts/jedit-echo-powered-session.mjs --json
 ```
 
-Pause after slice 14 for inspection. The current branch must remain honest that
+Pause after slice 25 for inspection. The current branch must remain honest that
 jedit has an installed package/evidence path, while the text contract handler
-state is still process-local and durable accepted-submission recovery is
-reported as unavailable.
+state is still transitional until the state-port and durable-submission slices
+land.
 
 ## Non-Negotiables
 
