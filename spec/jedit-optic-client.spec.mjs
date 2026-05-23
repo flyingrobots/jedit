@@ -13,6 +13,12 @@ const HASH_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'hash.js');
 const CODEC_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-optic-codec.js');
 const READ_BASIS_HANDLE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'read-basis-handle-registry.js');
 const TEXT_BUFFER_OPTIC_SESSION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'text-buffer-optic-session.js');
+const ECHO_POWERED_TEXT_BUFFER_OPTIC_SESSION_MODULE_PATH = path.join(
+  REPO_ROOT,
+  'dist',
+  'app',
+  'echo-powered-text-buffer-optic-session.js',
+);
 const LEGACY_EAGER_LOAD_CAP_BYTES = 24 * 1024;
 const STACK_WITNESS_AUTHOR = 'stack-witness-0001';
 const STACK_WITNESS_BUFFER_KEY = 'demo.txt';
@@ -50,6 +56,7 @@ async function loadModules() {
     codecModule,
     readBasisHandleModule,
     textBufferOpticSessionModule,
+    echoPoweredTextBufferOpticSessionModule,
   ] = await Promise.all([
     import(pathToFileURL(OPTIC_CLIENT_MODULE_PATH).href),
     import(pathToFileURL(ADAPTER_MODULE_PATH).href),
@@ -59,6 +66,7 @@ async function loadModules() {
     import(pathToFileURL(CODEC_MODULE_PATH).href),
     import(pathToFileURL(READ_BASIS_HANDLE_MODULE_PATH).href),
     import(pathToFileURL(TEXT_BUFFER_OPTIC_SESSION_MODULE_PATH).href),
+    import(pathToFileURL(ECHO_POWERED_TEXT_BUFFER_OPTIC_SESSION_MODULE_PATH).href),
   ]);
 
   return {
@@ -70,6 +78,7 @@ async function loadModules() {
     codecModule,
     readBasisHandleModule,
     textBufferOpticSessionModule,
+    echoPoweredTextBufferOpticSessionModule,
   };
 }
 
@@ -609,6 +618,57 @@ test('TextBufferOptic does not mark a satisfied bounded aperture as truncated', 
     ['bravo'],
   );
   assert.equal(byteBounded.value.truncated, true);
+});
+
+test('Echo-powered TextBufferOptic requests lifecycle after mutations only', async () => {
+  const {
+    transportClientModule,
+    fakeTransportModule,
+    echoPoweredTextBufferOpticSessionModule,
+  } = await loadModules();
+  const lifecycleRequests = [];
+  const client = transportClientModule.createEchoTransportJeditOpticClient(
+    fakeTransportModule.createFakeEchoJeditOpticTransport(),
+  );
+  const session = echoPoweredTextBufferOpticSessionModule.createEchoPoweredTextBufferOpticSession({
+    client,
+    lifecycle: {
+      requestRunUntilIdle(request) {
+        lifecycleRequests.push(request.cycleLimit);
+        return {
+          accepted: true,
+          lastRunCompletion: 'quiesced',
+        };
+      },
+    },
+    cycleLimit: 5,
+  });
+
+  const optic = await session.createBuffer({
+    bufferKey: STACK_WITNESS_BUFFER_KEY,
+    initialText: EMPTY_TEXT,
+    projectionPath: STACK_WITNESS_BUFFER_KEY,
+  });
+  await optic.applyIntent({
+    kind: 'replaceRange',
+    startByte: FIRST_BYTE_OFFSET,
+    endByte: FIRST_BYTE_OFFSET,
+    insertText: STACK_WITNESS_TEXT,
+  });
+  const observed = await optic.textWindow(optic.currentReadBasis(), {
+    cursorLine: FIRST_LINE,
+    viewportLineCount: SINGLE_LINE_WINDOW,
+    beforeLines: FIRST_LINE,
+    afterLines: FIRST_LINE,
+    maxBytes: byteLength(STACK_WITNESS_TEXT),
+  });
+
+  assert.equal(observed.value.lines[0].text, STACK_WITNESS_TEXT);
+  assert.deepEqual(lifecycleRequests, [5, 5]);
+  assert.equal('requestRunUntilIdle' in session, false);
+  assert.equal('tick' in session, false);
+  assert.equal('requestRunUntilIdle' in optic, false);
+  assert.equal('tick' in optic, false);
 });
 
 function byteLength(text) {

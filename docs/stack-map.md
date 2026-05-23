@@ -89,6 +89,9 @@ The next release-gate slice plan is recorded in
 - `TextBufferOptic` is the target app-facing capability. The current proof uses
   the structural-history SDL and `replaceTextRange` as the first implemented
   operation on that path.
+- `createEchoPoweredTextBufferOpticSession(...)` now composes the app-facing
+  optic capability with trusted lifecycle requests after mutations while reads
+  remain app-safe.
 - `ReadBasisHandle` is an opaque supporting token, not the complete optic
   protocol.
 - Structural-history SDL is now the product contract authority for text

@@ -77,6 +77,7 @@ The files most relevant to this guide are:
 | `src/app/workspace/editor-session.ts` | File/editor session behavior. |
 | `src/ports/jedit-optic-client.ts` | jedit-facing optic and observation interfaces. |
 | `src/adapters/jedit-echo-optic-client.ts` | Adapter from jedit optic calls to Echo-shaped transport bytes. |
+| `src/app/echo-powered-text-buffer-optic-session.ts` | Host-composed product session that requests lifecycle after mutations. |
 | `src/ports/echo-kernel-transport.ts` | App-safe and trusted-host Echo transport ports. |
 | `src/adapters/echo-wasm-kernel.ts` | Real Echo WASM transport adapter. |
 | `src/ports/echo-runtime-lifecycle.ts` | Trusted-host runtime lifecycle port. |
@@ -468,6 +469,19 @@ OpticSession
 
 The app can hold and use a `TextBufferOptic`. It cannot inspect the private
 runtime coordinates that make the optic work.
+
+The Echo-powered session composes that product capability with trusted runtime
+lifecycle below the app boundary:
+
+```text
+TextBufferOptic.applyIntent(...)
+-> app-safe JeditOpticClient mutation
+-> TrustedEchoRuntimeLifecyclePort.requestRunUntilIdle(...)
+-> later TextBufferOptic.textWindow(...)
+```
+
+The session and optic returned to application code still do not expose
+`requestRunUntilIdle`, raw trusted control bytes, or any tick method.
 
 The current TypeScript contract shape is defined in
 `src/ports/jedit-optic-client.ts`:
@@ -922,6 +936,7 @@ Echo tick:
 | Real Echo WASM app transport | Implemented through `echo-wasm-kernel.ts`. |
 | Trusted Echo host transport | Implemented separately from app transport. |
 | Real Echo write/read witness | Implemented as opt-in Stack Witness 0001. |
+| Echo-powered TextBufferOptic session | Implemented as host composition over app-safe client plus lifecycle port. |
 | Durable retained evidence | Not complete; witness reports `missing_retention`. |
 | Durable replay | Not complete; witness reports `durable_replay_unavailable`. |
 | Full interactive TUI on Echo | Not complete; this is the release-gate direction. |
@@ -1008,14 +1023,15 @@ tick receipt, bounded reading, retained evidence, and replay.
 This guide intentionally exposes gaps instead of papering over them:
 
 1. Move more interactive editor actions onto the Echo-backed contract path.
-2. Replace fixture JSON transport bytes with durable Wesley-generated codecs.
-3. Complete retained evidence lookup for payloads, reading envelopes, and
+2. Bind the Echo-powered session into a host-owned agent/CLI path.
+3. Replace fixture JSON transport bytes with durable Wesley-generated codecs.
+4. Complete retained evidence lookup for payloads, reading envelopes, and
    contract receipts.
-4. Complete durable replay for accepted edit/read evidence.
-5. Add explicit trusted host lifecycle controls for long-running jedit hosts.
-6. Add explicit SIGTERM/shutdown behavior if strong cleanup guarantees become
+5. Complete durable replay for accepted edit/read evidence.
+6. Add explicit trusted host lifecycle controls for long-running jedit hosts.
+7. Add explicit SIGTERM/shutdown behavior if strong cleanup guarantees become
    product requirements.
-7. Keep Echo generic while jedit becomes a serious product-shaped consumer.
+8. Keep Echo generic while jedit becomes a serious product-shaped consumer.
 
 The north star remains small but strict:
 
