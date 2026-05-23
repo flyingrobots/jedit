@@ -139,12 +139,12 @@ Test plan:
 
 Checklist:
 
-- [ ] Preflight module exists.
-- [ ] Required mutations are validated.
-- [ ] Required queries are validated.
-- [ ] Unsupported mutations are rejected before runtime work.
-- [ ] Unsupported queries are rejected before observer execution.
-- [ ] Preflight has focused tests.
+- [x] Preflight module exists.
+- [x] Required mutations are validated.
+- [x] Required queries are validated.
+- [x] Unsupported mutations are rejected before runtime work.
+- [x] Unsupported queries are rejected before observer execution.
+- [x] Preflight has focused tests.
 
 ## Slice 04 - Echo WASM Package Install Adapter
 
