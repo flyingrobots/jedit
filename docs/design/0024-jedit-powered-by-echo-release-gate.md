@@ -471,10 +471,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Replay command path exists.
-- [ ] Stable identity comparison exists.
-- [ ] Wall-clock is non-semantic.
-- [ ] Mismatch is typed.
+- [x] Replay command path exists.
+- [x] Stable identity comparison exists.
+- [x] Wall-clock is non-semantic.
+- [x] Mismatch is typed.
 
 ## Slice 16 - Interactive TUI Adapter Cutover
 

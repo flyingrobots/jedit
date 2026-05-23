@@ -102,6 +102,24 @@ test('Echo-powered session CLI reports unsupported mutation as final obstruction
   assert.equal(summary.nonHappyPath.retryDoctrine, 'retry requires a new explicit causal input');
 });
 
+test('Echo-powered session CLI has a local replay compare path', () => {
+  const result = spawnSync(process.execPath, [
+    CLI_PATH,
+    '--json',
+    '--replay-local',
+  ], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  const summary = JSON.parse(result.stdout);
+  assert.equal(summary.ok, true);
+  assert.equal(summary.replayLocal.status, 'MATCH');
+  assert.equal(summary.replayLocal.first.receiptId, summary.replayLocal.second.receiptId);
+  assert.equal(summary.replayLocal.wallClockCadenceSemantic, false);
+});
+
 test('Echo-powered session CLI can run healthy work after unsupported mutation witness', () => {
   const result = spawnSync(process.execPath, [
     CLI_PATH,

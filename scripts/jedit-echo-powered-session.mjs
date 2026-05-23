@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -41,6 +42,7 @@ function parseArgs(args) {
     json: false,
     help: false,
     dryRun: false,
+    replayLocal: false,
     bufferKey: DEFAULT_BUFFER_KEY,
     insertText: DEFAULT_INSERT_TEXT,
     cycleLimit: DEFAULT_CYCLE_LIMIT,
@@ -53,6 +55,8 @@ function parseArgs(args) {
       options.json = true;
     } else if (arg === '--dry-run') {
       options.dryRun = true;
+    } else if (arg === '--replay-local') {
+      options.replayLocal = true;
     } else if (arg === '--help' || arg === '-h') {
       options.help = true;
     } else if (arg === '--buffer-key') {
@@ -114,6 +118,9 @@ async function runSessionWitness(options) {
   const modules = await loadDistModules();
   if (options.dryRun) {
     return dryRunSummary(options, modules.package);
+  }
+  if (options.replayLocal) {
+    return replaySummary(runReplayChild(options), runReplayChild(options));
   }
   if (options.unsupportedMutation != null) {
     return unsupportedMutationSummary(options, modules);
@@ -181,6 +188,68 @@ async function runSessionWitness(options) {
     },
     replay: unavailableReplayPosture(),
   };
+}
+
+function runReplayChild(options) {
+  const result = spawnSync(process.execPath, replayChildArgs(options), {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+  });
+  if (result.status !== 0) {
+    throw new Error(result.stderr || result.stdout);
+  }
+  return JSON.parse(result.stdout);
+}
+
+function replayChildArgs(options) {
+  return [
+    fileURLToPath(import.meta.url),
+    '--json',
+    '--buffer-key',
+    options.bufferKey,
+    '--text',
+    options.insertText,
+    '--cycle-limit',
+    options.cycleLimit.toString(),
+  ];
+}
+
+function replaySummary(first, second) {
+  const firstIdentity = replayIdentity(first);
+  const secondIdentity = replayIdentity(second);
+  const mismatchField = replayMismatchField(firstIdentity, secondIdentity);
+  return {
+    ok: true,
+    schemaVersion: 1,
+    transport: TRANSPORT_INSTALLED_PACKAGE,
+    dryRun: false,
+    replayLocal: {
+      status: mismatchField == null ? 'MATCH' : 'MISMATCH',
+      first: firstIdentity,
+      second: secondIdentity,
+      mismatchField,
+      wallClockCadenceSemantic: false,
+    },
+  };
+}
+
+function replayIdentity(summary) {
+  return {
+    packageId: summary.install.packageId,
+    outcomeStatus: summary.report.outcome.status,
+    receiptId: summary.report.receiptId,
+    readingId: summary.report.readingId,
+    text: summary.report.text,
+  };
+}
+
+function replayMismatchField(first, second) {
+  for (const field of ['packageId', 'outcomeStatus', 'receiptId', 'readingId', 'text']) {
+    if (first[field] !== second[field]) {
+      return field;
+    }
+  }
+  return null;
 }
 
 function unsupportedMutationSummary(options, modules) {
@@ -296,6 +365,7 @@ Options:
   --cycle-limit <n>       Trusted host run-until-idle cycle limit.
   --unsupported-mutation <name>
                           Return an unsupported-mutation outcome without retrying.
+  --replay-local          Run the installed-package witness twice and compare stable evidence.
   --dry-run               Emit the planned installed-package witness without running it.
   --json                  Emit machine-readable summary.
   --help                  Show this help text.
