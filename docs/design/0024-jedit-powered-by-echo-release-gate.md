@@ -225,11 +225,11 @@ Test plan:
 
 Checklist:
 
-- [ ] Query observer registry exists in jedit adapter layer.
-- [ ] `worldlineSnapshot` observer registered.
-- [ ] `textWindow` observer registered.
-- [ ] Observer context is read-only.
-- [ ] Unsupported query remains unsupported without registration.
+- [x] Query observer registry exists in jedit adapter layer.
+- [x] `worldlineSnapshot` observer registered.
+- [x] `textWindow` observer registered.
+- [x] Observer context is read-only.
+- [x] Unsupported query remains unsupported without registration.
 
 ## Slice 07 - Real Echo TextBufferOptic Headless Flow
 

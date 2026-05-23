@@ -89,8 +89,9 @@ function readTextWindow(
   assertNonNegativeCount(input.afterLines, 'afterLines');
   assertPositiveCount(input.maxBytes, 'maxBytes');
 
-  // Fake-only implementation detail: derive the bounded reading from the
-  // current snapshot until Echo can stream line windows directly.
+  // Adapter-local implementation detail: derive the bounded reading from the
+  // current jedit contract session while Echo hosts only the generic observer
+  // invocation and evidence envelope.
   const snapshot = readWorldlineSnapshot(runtime, session, {
     worldlineId: input.worldlineId,
   }, hash);
