@@ -85,10 +85,10 @@ The current stack posture is:
 - Continuum remains intentionally untouched until the local product/runtime seam
   is proven enough to publish as a shared protocol family.
 
-The opt-in real Echo WASM witness currently exposes the right next failure: it
-still tries to tunnel scheduler control through app-facing dispatch. Echo now
-rejects that. jedit must split app and host authority rather than asking Echo
-to weaken the dispatch boundary.
+The opt-in real Echo WASM witness now preserves the required authority split:
+application code submits and observes, while trusted host code owns scheduler
+control. The next pressure is not tick authority; it is retained evidence,
+replay, and a jedit-owned generated contract path.
 
 ## Boundary doctrine
 
@@ -191,7 +191,7 @@ product.
 Near-term work should stay narrow:
 
 1. Keep Stack Witness 0001 green across the fake transport.
-2. Replace the stale real Echo WASM witness with an app/host split:
+2. Keep the real Echo WASM witness on an app/host split:
    application submits and observes, trusted host ticks.
 3. Graduate `TextBufferOptic` and `ReadBasisHandle` into a real optic/session
    bootstrap contract.

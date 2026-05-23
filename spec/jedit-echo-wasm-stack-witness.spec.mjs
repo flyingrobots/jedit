@@ -82,22 +82,23 @@ test('real Echo WASM Stack Witness 0001 transport emits ReadingEnvelope + QueryB
   assert.equal(typeof REAL_ECHO_WASM_MODULE, 'string');
 
   const transportModule = await loadTransportModule();
-  const transport = await transportModule.createEchoWasmKernelTransport({
+  const hostTransport = await transportModule.createEchoWasmKernelHostTransport({
     moduleSpecifier: toModuleSpecifier(REAL_ECHO_WASM_MODULE),
   });
+  const transport = hostTransport.app;
 
   dispatchFixtureIntent(
     transport,
     STACK_WITNESS_OP_IDS.CREATE_BUFFER,
     STACK_WITNESS_CREATE_BUFFER_VARS,
   );
-  runEchoSchedulerUntilIdle(transport);
+  runEchoSchedulerUntilIdle(hostTransport.trustedHost);
   dispatchFixtureIntent(
     transport,
     STACK_WITNESS_OP_IDS.REPLACE_RANGE,
     STACK_WITNESS_REPLACE_RANGE_VARS,
   );
-  runEchoSchedulerUntilIdle(transport);
+  runEchoSchedulerUntilIdle(hostTransport.trustedHost);
 
   const opticSessionBasis = createWitnessOnlyEchoFixtureBasisResolver();
   const textWindowBasis = opticSessionBasis.resolveTextWindowBasis();
@@ -154,8 +155,10 @@ function dispatchFixtureIntent(transport, opId, varsText) {
   assert.equal(response.accepted, true);
 }
 
-function runEchoSchedulerUntilIdle(transport) {
-  const response = decodeOkEnvelope(transport.submitIntentBytes(packControlStartIntent()));
+function runEchoSchedulerUntilIdle(trustedHostTransport) {
+  const response = decodeOkEnvelope(
+    trustedHostTransport.dispatchControlIntentBytes(packControlStartIntent()),
+  );
   assert.equal(response.accepted, true);
   assert.equal(response.scheduler_status.last_run_completion, 'quiesced');
 }

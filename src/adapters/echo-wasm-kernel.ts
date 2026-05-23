@@ -1,15 +1,27 @@
 import {
   EchoKernelTransportError,
   type EchoKernelInfo,
+  type EchoTrustedHostControlTransport,
+  type EchoWasmKernelHostTransport,
   type EchoWasmKernelTransport,
 } from '../ports/echo-kernel-transport.js';
 
 const DEFAULT_ECHO_WASM_MODULE = 'warp-wasm';
+const OPERATION_MODULE_BOOTSTRAP = 'module-bootstrap';
+const OPERATION_KERNEL_INIT = 'kernel-init';
+const OPERATION_DISPATCH_INTENT = 'dispatch_intent';
+const OPERATION_DISPATCH_CONTROL_INTENT_TRUSTED = 'dispatch_control_intent_trusted';
+const OPERATION_OBSERVE = 'observe';
+const OPERATION_SCHEDULER_STATUS = 'scheduler_status';
+const OPERATION_GET_CODEC_ID = 'get_codec_id';
+const OPERATION_GET_REGISTRY_VERSION = 'get_registry_version';
+const OPERATION_GET_SCHEMA_SHA256_HEX = 'get_schema_sha256_hex';
 
 interface EchoWasmKernelModule {
   readonly default?: (() => Promise<void>) | (() => void);
   readonly init?: () => Uint8Array;
   readonly dispatch_intent?: (intentBytes: Uint8Array) => Uint8Array;
+  readonly dispatch_control_intent_trusted?: (controlIntentBytes: Uint8Array) => Uint8Array;
   readonly observe?: (requestBytes: Uint8Array) => Uint8Array;
   readonly scheduler_status?: () => Uint8Array;
   readonly get_codec_id?: () => string | null | undefined;
@@ -24,9 +36,32 @@ export interface CreateEchoWasmKernelTransportOptions {
   readonly initializeKernel?: boolean;
 }
 
+interface InstalledEchoWasmKernel {
+  readonly moduleSpecifier: string;
+  readonly kernelModule: EchoWasmKernelModule;
+  readonly info: EchoKernelInfo;
+}
+
 export async function createEchoWasmKernelTransport(
   options: CreateEchoWasmKernelTransportOptions = {},
 ): Promise<EchoWasmKernelTransport> {
+  return (await createEchoWasmKernelHostTransport(options)).app;
+}
+
+export async function createEchoWasmKernelHostTransport(
+  options: CreateEchoWasmKernelTransportOptions = {},
+): Promise<EchoWasmKernelHostTransport> {
+  const installed = await installEchoWasmKernel(options);
+
+  return {
+    app: createAppTransport(installed),
+    trustedHost: createTrustedHostTransport(installed.kernelModule),
+  };
+}
+
+async function installEchoWasmKernel(
+  options: CreateEchoWasmKernelTransportOptions,
+): Promise<InstalledEchoWasmKernel> {
   const moduleSpecifier = options.moduleSpecifier ?? DEFAULT_ECHO_WASM_MODULE;
   const moduleLoader = options.moduleLoader ?? defaultModuleLoader;
   const bootstrapModule = options.bootstrapModule ?? true;
@@ -45,17 +80,44 @@ export async function createEchoWasmKernelTransport(
   const info = toEchoKernelInfo(moduleSpecifier, kernelModule);
 
   return {
+    moduleSpecifier,
+    kernelModule,
+    info,
+  };
+}
+
+function createAppTransport(installed: InstalledEchoWasmKernel): EchoWasmKernelTransport {
+  const kernelModule = installed.kernelModule;
+  const info = installed.info;
+
+  return {
     kernelInfo() {
       return info;
     },
     submitIntentBytes(intentBytes) {
-      return invokeRequiredBytePayloadMethod(kernelModule.dispatch_intent, 'dispatch_intent', intentBytes);
+      return invokeRequiredBytePayloadMethod(
+        kernelModule.dispatch_intent,
+        OPERATION_DISPATCH_INTENT,
+        intentBytes,
+      );
     },
     observeBytes(requestBytes) {
-      return invokeRequiredBytePayloadMethod(kernelModule.observe, 'observe', requestBytes);
+      return invokeRequiredBytePayloadMethod(kernelModule.observe, OPERATION_OBSERVE, requestBytes);
     },
     schedulerStatusBytes() {
-      return invokeRequiredZeroArgBytesMethod(kernelModule.scheduler_status, 'scheduler_status');
+      return invokeRequiredZeroArgBytesMethod(kernelModule.scheduler_status, OPERATION_SCHEDULER_STATUS);
+    },
+  };
+}
+
+function createTrustedHostTransport(kernelModule: EchoWasmKernelModule): EchoTrustedHostControlTransport {
+  return {
+    dispatchControlIntentBytes(controlIntentBytes) {
+      return invokeRequiredBytePayloadMethod(
+        kernelModule.dispatch_control_intent_trusted,
+        OPERATION_DISPATCH_CONTROL_INTENT_TRUSTED,
+        controlIntentBytes,
+      );
     },
   };
 }
@@ -74,7 +136,7 @@ async function bootstrapEchoWasmModule(kernelModule: EchoWasmKernelModule): Prom
     await bootstrap();
   } catch (error) {
     throw new EchoKernelTransportError(
-      'module-bootstrap',
+      OPERATION_MODULE_BOOTSTRAP,
       'Echo wasm module bootstrap failed',
       { cause: error },
     );
@@ -90,7 +152,7 @@ function invokeKernelInit(kernelModule: EchoWasmKernelModule): void {
     kernelModule.init();
   } catch (error) {
     throw new EchoKernelTransportError(
-      'kernel-init',
+      OPERATION_KERNEL_INIT,
       'Echo kernel initialization failed',
       { cause: error },
     );
@@ -100,9 +162,9 @@ function invokeKernelInit(kernelModule: EchoWasmKernelModule): void {
 function toEchoKernelInfo(moduleSpecifier: string, kernelModule: EchoWasmKernelModule): EchoKernelInfo {
   return {
     moduleSpecifier,
-    codecId: invokeOptionalStringMethod(kernelModule.get_codec_id, 'get_codec_id'),
-    registryVersion: invokeOptionalStringMethod(kernelModule.get_registry_version, 'get_registry_version'),
-    schemaSha256Hex: invokeOptionalStringMethod(kernelModule.get_schema_sha256_hex, 'get_schema_sha256_hex'),
+    codecId: invokeOptionalStringMethod(kernelModule.get_codec_id, OPERATION_GET_CODEC_ID),
+    registryVersion: invokeOptionalStringMethod(kernelModule.get_registry_version, OPERATION_GET_REGISTRY_VERSION),
+    schemaSha256Hex: invokeOptionalStringMethod(kernelModule.get_schema_sha256_hex, OPERATION_GET_SCHEMA_SHA256_HEX),
   };
 }
 

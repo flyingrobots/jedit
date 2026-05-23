@@ -115,15 +115,20 @@ The runner asks Echo to build its own WASM package boundary, then runs the
 jedit witness against the resulting module. This is still a witness ritual, not
 a published package contract.
 
-Current status: the opt-in real Echo WASM witness is stale in an important and
-useful way. It still attempts to send scheduler control through the app-facing
-`dispatch_intent` path. Current Echo correctly rejects that. The next witness
-must split application and host authority:
+Current status: the opt-in real Echo WASM witness uses the required application
+and host authority split:
 
 - jedit application code submits canonical intents and observes readings;
 - trusted Echo host code owns package install, scheduler control, until-idle
   policy, and fault recovery;
 - no jedit app path can tick or tunnel scheduler control through dispatch.
+
+Agents should start with the shell witness before any richer MCP surface:
+
+```sh
+ECHO_WARP_WASM_DIR=/path/to/echo/crates/warp-wasm \
+  scripts/run-real-echo-wasm-stack-witness.sh
+```
 
 The second seam is schema authority for structural history:
 
@@ -321,7 +326,8 @@ Right now the app gives you:
 - source editing with dirty tracking and save
 - Markdown preview rendered from the in-memory buffer
 - Stack Witness 0001 consumer coverage through a fake Echo-shaped transport
-- an opt-in real Echo WASM Stack Witness runner
+- an opt-in real Echo WASM Stack Witness runner with separate app and trusted
+  host transport surfaces
 - a `TextBufferOptic` boundary with opaque `ReadBasisHandle` support that keeps
   raw Echo coordinates below the app-facing optic client
 - a structural-history GraphQL authority surface
@@ -330,8 +336,8 @@ Right now the app gives you:
 
 ## Next steps
 
-- replace the stale real Echo WASM witness with the app/host split required by
-  Echo `v0.1.0`
+- keep pushing the real Echo WASM witness toward retained evidence and replay
+  without granting app code tick authority
 - graduate `TextBufferOptic` and `ReadBasisHandle` from witness/session
   scaffolding into a real optic/session bootstrap contract
 - route the next structural-history operation through generated Wesley metadata

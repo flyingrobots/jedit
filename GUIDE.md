@@ -92,9 +92,7 @@ That script asks Echo to build its own WASM package boundary and then runs the
 jedit witness with `JEDIT_ECHO_WASM_MODULE` pointed at the resulting module.
 
 Current status: the real Echo WASM witness is a release-gate work item, not a
-green default check. It still reflects the old model where app-facing dispatch
-could carry scheduler control. Current Echo correctly rejects that. The next
-iteration must split the witness into:
+green default check. It uses the current Echo authority model:
 
 ```text
 jedit app adapter: submit intents and observe readings
@@ -102,6 +100,10 @@ trusted Echo host adapter: install package, stage ingress, tick until idle
 ```
 
 Do not fix the witness by granting app code tick authority.
+
+For agent use, prefer the shell witness above. A future MCP surface can wrap the
+same command after retained evidence and replay output are strong enough to be
+worth exposing through a protocol.
 
 ## Current Runtime Truth
 

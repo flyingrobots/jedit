@@ -42,11 +42,13 @@ coordinates below the optic boundary. App-facing jedit code may not.
 
 ## Current Blocker
 
-The current opt-in real Echo WASM witness still reflects an older model. It
-tries to send scheduler `start` / `until_idle` control through app-facing
-dispatch. Current Echo rejects that path as forbidden control intent.
+The current opt-in real Echo WASM witness now has a local app/host split. The
+next blocker is to move from the old stack-witness fixture shape toward a
+jedit-owned generated contract path with retained evidence and replay.
 
-That rejection is correct. jedit must adapt to Echo's authority boundary.
+The previous rejection remains important doctrine: Echo should reject scheduler
+`start` / `until_idle` control through app-facing dispatch. jedit must preserve
+that authority boundary while improving the witness.
 
 ## Required Authority Split
 
@@ -98,7 +100,7 @@ The first passing real Echo witness should prove:
 ## Immediate Work
 
 1. Keep the fake Echo-shaped harness as the stable app-facing contract.
-2. Add a real Echo witness path with separate app and trusted-host adapters.
-3. Replace app-dispatched scheduler control with a host-owned scheduler call.
-4. Prove `create/replace/read` with retained evidence.
+2. Keep the real Echo witness path on separate app and trusted-host adapters.
+3. Prove `create/replace/read` with retained evidence.
+4. Add an agent-friendly CLI witness before adding an MCP wrapper.
 5. Add replay proof before accepting the gate.
