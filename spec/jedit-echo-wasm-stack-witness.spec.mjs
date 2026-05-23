@@ -87,6 +87,7 @@ test('real Echo WASM Stack Witness 0001 transport emits ReadingEnvelope + QueryB
 }, async () => {
   assert.equal(typeof REAL_ECHO_WASM_MODULE, 'string');
 
+  const jeditGeneratedContract = await loadGeneratedContractMetadata();
   const transportModule = await loadTransportModule();
   const hostTransport = await transportModule.createEchoWasmKernelHostTransport({
     moduleSpecifier: toModuleSpecifier(REAL_ECHO_WASM_MODULE),
@@ -130,7 +131,8 @@ test('real Echo WASM Stack Witness 0001 transport emits ReadingEnvelope + QueryB
     appReading.reading.lines.map((line) => line.text),
     [STACK_WITNESS_TEXT],
   );
-  writeWitnessReport({ artifact, appReading, textWindowBasis });
+  assert.equal(jeditGeneratedContract.queries.textWindow.fieldName, 'textWindow');
+  writeWitnessReport({ artifact, appReading, jeditGeneratedContract, textWindowBasis });
 });
 
 async function loadTransportModule() {
@@ -143,6 +145,27 @@ async function loadTransportModule() {
       { cause },
     );
   }
+}
+
+async function loadGeneratedContractMetadata() {
+  const generatedModulePath = path.join(
+    REPO_ROOT,
+    'dist',
+    'generated',
+    'jedit',
+    'hot-text-runtime.wesley.generated.js',
+  );
+  const generated = await import(pathToFileURL(generatedModulePath).href);
+  return {
+    source: 'contracts/jedit/hot-text-runtime.graphql',
+    mutations: {
+      createBufferWorldline: generated.mutationCreateBufferWorldlineOperation,
+      replaceRangeAsTick: generated.mutationReplaceRangeAsTickOperation,
+    },
+    queries: {
+      textWindow: generated.queryTextWindowOperation,
+    },
+  };
 }
 
 function toModuleSpecifier(modulePath) {
@@ -300,7 +323,7 @@ function toWitnessOnlyTextWindowReading(artifact, queryBytes) {
   };
 }
 
-function writeWitnessReport({ artifact, appReading, textWindowBasis }) {
+function writeWitnessReport({ artifact, appReading, jeditGeneratedContract, textWindowBasis }) {
   if (WITNESS_REPORT_PATH === undefined) {
     return;
   }
@@ -318,6 +341,7 @@ function writeWitnessReport({ artifact, appReading, textWindowBasis }) {
       replaceRange: STACK_WITNESS_OP_IDS.REPLACE_RANGE,
       textWindowQuery: STACK_WITNESS_OP_IDS.TEXT_WINDOW_QUERY,
     },
+    jeditGeneratedContract,
     reading: {
       operationName: appReading.operationName,
       frontierRef: appReading.frontierRef,

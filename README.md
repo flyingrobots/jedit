@@ -329,7 +329,8 @@ Right now the app gives you:
 - an opt-in real Echo WASM Stack Witness runner with separate app and trusted
   host transport surfaces
 - a JSON-capable `scripts/jedit-echo-witness.mjs` command for agents and CI
-  that reports the observed reading identity, artifact hash, and authority split
+  that reports generated contract metadata, observed reading identity, artifact
+  hash, and authority split
 - a `TextBufferOptic` boundary with opaque `ReadBasisHandle` support that keeps
   raw Echo coordinates below the app-facing optic client
 - a structural-history GraphQL authority surface

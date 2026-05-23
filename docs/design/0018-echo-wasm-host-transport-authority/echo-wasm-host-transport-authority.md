@@ -65,6 +65,18 @@ WASM package.
 The app-safe object deliberately has no `dispatchControlIntentBytes(...)`
 method. The trusted host object deliberately has no submit or observe methods.
 
+The agent witness runner follows the same port/adapter rule:
+
+- `scripts/ports/echo-witness-runner.mjs` owns orchestration over an abstract
+  witness runner adapter;
+- `scripts/adapters/node-echo-witness-runner.mjs` owns filesystem paths,
+  sibling Echo checkout resolution, process spawning, and witness-report reads;
+- `scripts/jedit-echo-witness.mjs` is only CLI argument parsing and summary
+  emission.
+
+Echo build paths and host process execution are therefore adapter concerns, not
+application or witness-orchestration logic.
+
 ## Agent Surface
 
 The immediate agent interface should be a CLI, not an MCP server:
@@ -75,11 +87,12 @@ ECHO_WARP_WASM_DIR=/path/to/echo/crates/warp-wasm \
 ```
 
 That command emits a machine-readable summary plus a witness report naming the
-app/host authority split, fixture operation ids, observed reading identity,
-artifact hash, residual posture, observer basis, and product-shaped text. A
-later MCP server can wrap the same command once replay output is strong enough
-to expose through a protocol. The MCP should not be the first authority
-boundary; it would add protocol surface before the shell witness is trustworthy.
+app/host authority split, fixture operation ids, generated jedit contract
+metadata, observed reading identity, artifact hash, residual posture, observer
+basis, and product-shaped text. A later MCP server can wrap the same command
+once replay output is strong enough to expose through a protocol. The MCP
+should not be the first authority boundary; it would add protocol surface before
+the shell witness is trustworthy.
 
 ## Evidence
 
@@ -88,6 +101,7 @@ boundary; it would add protocol surface before the shell witness is trustworthy.
 - `echo wasm trusted host transport requires the raw trusted control export`
 - `jedit Echo witness CLI emits a dry-run JSON plan for agents`
 - direct JSON CLI run includes a witness report with `ReadingEnvelope` posture
+- direct JSON CLI run cites generated `hot-text-runtime` operation metadata
 - `real Echo WASM Stack Witness 0001 transport emits ReadingEnvelope + QueryBytes`
 
 ## Non-Goals

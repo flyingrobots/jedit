@@ -10,7 +10,7 @@ const REPO_ROOT = process.cwd();
 const CLI_PATH = path.join(REPO_ROOT, 'scripts', 'jedit-echo-witness.mjs');
 
 test('jedit Echo witness CLI emits a dry-run JSON plan for agents', async () => {
-    const tempDir = await mkdtemp(path.join(tmpdir(), 'jedit-echo-witness-'));
+  const tempDir = await mkdtemp(path.join(tmpdir(), 'jedit-echo-witness-'));
   try {
     const echoDir = path.join(tempDir, 'echo', 'crates', 'warp-wasm');
     mkdirSync(echoDir, { recursive: true });

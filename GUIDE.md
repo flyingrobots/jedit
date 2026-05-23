@@ -113,8 +113,8 @@ ECHO_WARP_WASM_DIR=/path/to/echo/crates/warp-wasm \
 ```
 
 The JSON output includes command status and, on success, a witness report with
-reading identity, artifact hash, residual posture, observer basis, and the
-product-shaped text result.
+generated contract metadata, reading identity, artifact hash, residual posture,
+observer basis, and the product-shaped text result.
 
 ## Current Runtime Truth
 
