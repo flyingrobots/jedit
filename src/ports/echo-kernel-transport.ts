@@ -12,6 +12,15 @@ export interface EchoWasmKernelTransport {
   schedulerStatusBytes(): Uint8Array;
 }
 
+export interface EchoTrustedHostControlTransport {
+  dispatchControlIntentBytes(controlIntentBytes: Uint8Array): Uint8Array;
+}
+
+export interface EchoWasmKernelHostTransport {
+  readonly app: EchoWasmKernelTransport;
+  readonly trustedHost: EchoTrustedHostControlTransport;
+}
+
 export class EchoKernelTransportError extends Error {
   public readonly operation: string;
 

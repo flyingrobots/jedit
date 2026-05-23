@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Updated architecture and user-facing documentation to describe the
+  structural-history GraphQL authority slice, build-generated Wesley metadata,
+  and the current fake-versus-real Echo witness posture.
+- Routed the current replace/tick in-memory adapter boundary through generated
+  structural-history `replaceTextRange` Wesley operation metadata while leaving
+  the transitional TypeScript runtime executor unchanged. The metadata is now
+  generated during build/test from `wesley-cli` 0.0.4 instead of being checked
+  in as source.
+- Added the canonical structural-history GraphQL schema for text revisions,
+  admitted replace events, edit groups, checkpoints, provenance, command
+  status, and evidence-bearing readings, plus readiness coverage and an
+  authority note that keeps the in-memory TypeScript model transitional.
 - Split quality-gate ratchet fixtures into a dedicated spec file so the legacy
   gate spec stays within the 500-line file-size doctrine.
 - Split quality-gate syntax counting into a dedicated module so the executable

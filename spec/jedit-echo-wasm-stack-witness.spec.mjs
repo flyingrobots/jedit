@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -20,6 +21,11 @@ const REAL_ECHO_WASM_MODULE =
   typeof REAL_ECHO_WASM_MODULE_RAW === 'string' && REAL_ECHO_WASM_MODULE_RAW.trim().length > 0
     ? REAL_ECHO_WASM_MODULE_RAW
     : undefined;
+const WITNESS_REPORT_PATH_RAW = process.env.JEDIT_ECHO_WITNESS_REPORT;
+const WITNESS_REPORT_PATH =
+  typeof WITNESS_REPORT_PATH_RAW === 'string' && WITNESS_REPORT_PATH_RAW.trim().length > 0
+    ? WITNESS_REPORT_PATH_RAW
+    : undefined;
 
 const STACK_WITNESS_OP_IDS = Object.freeze({
   CREATE_BUFFER: 0x5357_0001,
@@ -38,10 +44,16 @@ const STACK_WITNESS_TEXT_WINDOW_VARS =
 const STACK_WITNESS_TEXT = 'hello';
 const STACK_WITNESS_BUFFER_KEY = 'demo.txt';
 const STACK_WITNESS_FRONTIER_REF = 'frontier:stack-witness-0001:B1';
+const EINT_ENVELOPE_HEADER_LENGTH = 12;
 const FIRST_BYTE_OFFSET = 0;
 const FIRST_LINE = 0;
 const SINGLE_LINE_WINDOW = 1;
-const RUN_UNTIL_IDLE_CYCLE_LIMIT = 4;
+const DEFAULT_RUN_UNTIL_IDLE_CYCLE_LIMIT = 4;
+const CUSTOM_RUN_UNTIL_IDLE_CYCLE_LIMIT = 9;
+const MINIMUM_RUN_UNTIL_IDLE_CYCLE_LIMIT = 1;
+const RUN_UNTIL_IDLE_CYCLE_LIMIT = readRunUntilIdleCycleLimit(
+  process.env.JEDIT_ECHO_WITNESS_CYCLE_LIMIT,
+);
 
 // Witnessed temporary Echo fixture assumption:
 // Echo `WarpKernel::new` derives `default_worldline` from
@@ -74,6 +86,16 @@ test('real Echo WASM witness request construction gets basis through an optic se
   );
 });
 
+test('real Echo WASM witness control intent honors configured cycle limit', () => {
+  const controlIntent = unpackControlIntentVars(
+    packControlStartIntent(CUSTOM_RUN_UNTIL_IDLE_CYCLE_LIMIT),
+  );
+
+  assert.equal(controlIntent.kind, 'start');
+  assert.equal(controlIntent.mode.kind, 'until_idle');
+  assert.equal(controlIntent.mode.cycle_limit, CUSTOM_RUN_UNTIL_IDLE_CYCLE_LIMIT);
+});
+
 test('real Echo WASM Stack Witness 0001 transport emits ReadingEnvelope + QueryBytes', {
   skip: REAL_ECHO_WASM_MODULE === undefined
     ? 'set JEDIT_ECHO_WASM_MODULE to an Echo warp-wasm JS module to run this opt-in witness'
@@ -81,23 +103,25 @@ test('real Echo WASM Stack Witness 0001 transport emits ReadingEnvelope + QueryB
 }, async () => {
   assert.equal(typeof REAL_ECHO_WASM_MODULE, 'string');
 
+  const jeditGeneratedContract = await loadGeneratedContractMetadata();
   const transportModule = await loadTransportModule();
-  const transport = await transportModule.createEchoWasmKernelTransport({
+  const hostTransport = await transportModule.createEchoWasmKernelHostTransport({
     moduleSpecifier: toModuleSpecifier(REAL_ECHO_WASM_MODULE),
   });
+  const transport = hostTransport.app;
 
   dispatchFixtureIntent(
     transport,
     STACK_WITNESS_OP_IDS.CREATE_BUFFER,
     STACK_WITNESS_CREATE_BUFFER_VARS,
   );
-  runEchoSchedulerUntilIdle(transport);
+  runEchoSchedulerUntilIdle(hostTransport.trustedHost);
   dispatchFixtureIntent(
     transport,
     STACK_WITNESS_OP_IDS.REPLACE_RANGE,
     STACK_WITNESS_REPLACE_RANGE_VARS,
   );
-  runEchoSchedulerUntilIdle(transport);
+  runEchoSchedulerUntilIdle(hostTransport.trustedHost);
 
   const opticSessionBasis = createWitnessOnlyEchoFixtureBasisResolver();
   const textWindowBasis = opticSessionBasis.resolveTextWindowBasis();
@@ -123,6 +147,8 @@ test('real Echo WASM Stack Witness 0001 transport emits ReadingEnvelope + QueryB
     appReading.reading.lines.map((line) => line.text),
     [STACK_WITNESS_TEXT],
   );
+  assert.equal(jeditGeneratedContract.queries.textWindow.fieldName, 'textWindow');
+  writeWitnessReport({ artifact, appReading, jeditGeneratedContract, textWindowBasis });
 });
 
 async function loadTransportModule() {
@@ -135,6 +161,36 @@ async function loadTransportModule() {
       { cause },
     );
   }
+}
+
+async function loadGeneratedContractMetadata() {
+  const generatedModulePath = path.join(
+    REPO_ROOT,
+    'dist',
+    'generated',
+    'jedit',
+    'hot-text-runtime.wesley.generated.js',
+  );
+  let generated;
+  try {
+    generated = await import(pathToFileURL(generatedModulePath).href);
+  } catch (cause) {
+    throw new Error(
+      `${generatedModulePath} not found; run scripts/run-real-echo-wasm-stack-witness.sh `
+        + 'or npm run build before invoking this witness.',
+      { cause },
+    );
+  }
+  return {
+    source: 'contracts/jedit/hot-text-runtime.graphql',
+    mutations: {
+      createBufferWorldline: generated.mutationCreateBufferWorldlineOperation,
+      replaceRangeAsTick: generated.mutationReplaceRangeAsTickOperation,
+    },
+    queries: {
+      textWindow: generated.queryTextWindowOperation,
+    },
+  };
 }
 
 function toModuleSpecifier(modulePath) {
@@ -154,20 +210,42 @@ function dispatchFixtureIntent(transport, opId, varsText) {
   assert.equal(response.accepted, true);
 }
 
-function runEchoSchedulerUntilIdle(transport) {
-  const response = decodeOkEnvelope(transport.submitIntentBytes(packControlStartIntent()));
+function runEchoSchedulerUntilIdle(trustedHostTransport) {
+  const response = decodeOkEnvelope(
+    trustedHostTransport.dispatchControlIntentBytes(packControlStartIntent()),
+  );
   assert.equal(response.accepted, true);
   assert.equal(response.scheduler_status.last_run_completion, 'quiesced');
 }
 
-function packControlStartIntent() {
+function packControlStartIntent(cycleLimit = RUN_UNTIL_IDLE_CYCLE_LIMIT) {
   return packEintEnvelope(ECHO_CONTROL_OP_IDS.INTENT_V1, encodeCbor({
     kind: 'start',
     mode: {
       kind: 'until_idle',
-      cycle_limit: RUN_UNTIL_IDLE_CYCLE_LIMIT,
+      cycle_limit: cycleLimit,
     },
   }));
+}
+
+function readRunUntilIdleCycleLimit(rawValue) {
+  if (rawValue === undefined || rawValue.trim().length === 0) {
+    return DEFAULT_RUN_UNTIL_IDLE_CYCLE_LIMIT;
+  }
+
+  const parsed = Number.parseInt(rawValue, 10);
+  if (
+    !Number.isSafeInteger(parsed)
+      || parsed < MINIMUM_RUN_UNTIL_IDLE_CYCLE_LIMIT
+      || parsed.toString() !== rawValue.trim()
+  ) {
+    throw new Error(`invalid JEDIT_ECHO_WITNESS_CYCLE_LIMIT: ${rawValue}`);
+  }
+  return parsed;
+}
+
+function unpackControlIntentVars(intentBytes) {
+  return decodeCbor(intentBytes.slice(EINT_ENVELOPE_HEADER_LENGTH));
 }
 
 function createWitnessOnlyEchoFixtureBasisResolver() {
@@ -288,6 +366,40 @@ function toWitnessOnlyTextWindowReading(artifact, queryBytes) {
       }],
     },
   };
+}
+
+function writeWitnessReport({ artifact, appReading, jeditGeneratedContract, textWindowBasis }) {
+  if (WITNESS_REPORT_PATH === undefined) {
+    return;
+  }
+
+  mkdirSync(path.dirname(WITNESS_REPORT_PATH), { recursive: true });
+  writeFileSync(WITNESS_REPORT_PATH, `${JSON.stringify({
+    schemaVersion: 1,
+    authority: {
+      applicationDispatch: 'submitIntentBytes',
+      trustedHostControl: 'dispatchControlIntentBytes',
+    },
+    fixture: 'stack-witness-0001',
+    operations: {
+      createBuffer: STACK_WITNESS_OP_IDS.CREATE_BUFFER,
+      replaceRange: STACK_WITNESS_OP_IDS.REPLACE_RANGE,
+      textWindowQuery: STACK_WITNESS_OP_IDS.TEXT_WINDOW_QUERY,
+    },
+    jeditGeneratedContract,
+    reading: {
+      operationName: appReading.operationName,
+      frontierRef: appReading.frontierRef,
+      text: appReading.reading.lines.map((line) => line.text).join('\n'),
+      readingId: appReading.reading.readingId,
+      artifactHash: bytesToHex(artifact.artifact_hash),
+      residualPosture: artifact.reading.residual_posture,
+      observerBasis: artifact.reading.observer_basis,
+      frame: artifact.frame,
+      queryId: artifact.projection.query_id,
+      basisWorldlineId: textWindowBasis.worldlineIdHex,
+    },
+  }, null, 2)}\n`);
 }
 
 function decodeOkEnvelope(bytes) {

@@ -3,17 +3,19 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx src/main.ts",
+    "dev": "npm run gen:contract:structural-history:wesley && tsx src/main.ts",
     "gen:observer": "node scripts/run-wesley-tool.mjs host-node observer-plan --spec src/app/jedit-observer-spec.ts --export createWorldlineSnapshotObserverSpec --out-file src/generated/jedit/worldlineSnapshot.observer-plan.generated.ts",
+    "gen:contract:structural-history:wesley": "node scripts/gen-structural-history-wesley.mjs",
     "gen:contract:text-buffer-optic:wesley": "node scripts/run-wesley-tool.mjs cli emit typescript --schema contracts/jedit/text-buffer-optic.graphql --out src/generated/jedit/text-buffer-optic.wesley.generated.ts",
     "gen:contract:hot-text-runtime:wesley": "node scripts/run-wesley-tool.mjs cli emit typescript --schema contracts/jedit/hot-text-runtime.graphql --out src/generated/jedit/hot-text-runtime.wesley.generated.ts",
-    "gen:contract:wesley": "npm run gen:contract:hot-text-runtime:wesley",
+    "gen:contract:wesley": "npm run gen:contract:hot-text-runtime:wesley && npm run gen:contract:structural-history:wesley",
     "gen:contract:legacy": "node scripts/run-wesley-tool.mjs host-node typescript --schema contracts/jedit/hot-text-runtime.graphql --out-file src/generated/jedit/hot-text-runtime.types.generated.ts && node scripts/run-wesley-tool.mjs host-node zod --schema contracts/jedit/hot-text-runtime.graphql --out-file src/generated/jedit/hot-text-runtime.zod.generated.ts",
     "gen:contract": "npm run gen:contract:wesley && npm run gen:contract:legacy && npm run gen:observer",
-    "build": "tsc -p tsconfig.json && node scripts/copy-assets.mjs",
+    "build": "npm run gen:contract:structural-history:wesley && tsc -p tsconfig.json && node scripts/copy-assets.mjs",
     "start": "node dist/main.js",
+    "witness:echo": "node scripts/jedit-echo-witness.mjs",
     "quality": "node scripts/quality-gate.mjs",
-    "test": "node --test --test-concurrency=1 spec/**/*.spec.mjs tests/**/*.spec.mjs",
+    "test": "npm run gen:contract:structural-history:wesley && node --test --test-concurrency=1 spec/**/*.spec.mjs tests/**/*.spec.mjs",
     "check": "npm run build && npm run test && npm run quality"
   },
   "dependencies": {

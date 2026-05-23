@@ -135,7 +135,11 @@ test('contract generation scripts keep runtime and app-facing SDL targets explic
   );
   assert.equal(
     scripts['gen:contract:wesley'],
-    'npm run gen:contract:hot-text-runtime:wesley',
+    'npm run gen:contract:hot-text-runtime:wesley && npm run gen:contract:structural-history:wesley',
+  );
+  assert.equal(
+    scripts['gen:contract:structural-history:wesley'],
+    'node scripts/gen-structural-history-wesley.mjs',
   );
   assert.equal(
     scripts['gen:contract'].includes('gen:contract:text-buffer-optic:wesley'),

@@ -34,6 +34,32 @@ Core rules:
 
 ***
 
+## Structural history authority
+
+The canonical structural history SDL now lives at
+[`contracts/jedit/structural-history.graphql`](../contracts/jedit/structural-history.graphql).
+It extracts the current in-memory TypeScript facts for text revisions, admitted
+replace events, edit groups, checkpoints, provenance, command status, and
+evidence-bearing readings into a GraphQL contract that Wesley should consume in
+a later generation slice.
+
+The hand-authored TypeScript model below is now transitional evidence. It
+documents current behavior and adapter shape, but future structural history work
+should extend the SDL first and then move TypeScript toward generated contracts
+or boundary projections.
+
+The extraction note is
+[`docs/design/structural-history-graphql-authority.md`](design/structural-history-graphql-authority.md).
+
+The first generated-metadata consumer is the `replaceTextRange` boundary in
+`src/app/structural-history-replace-text-range.ts`. That adapter takes its
+operation identity from the build-generated Wesley descriptor while the current
+in-memory runtime remains the transitional executor. The descriptor is generated
+into an ignored source path during build/test; the authored SDL remains the
+committed authority.
+
+***
+
 ## Layer split
 
 ### Conceptual layers

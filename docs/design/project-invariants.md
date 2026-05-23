@@ -23,9 +23,21 @@ separate.
 - ports own typed capability contracts
 - adapters own boundary decode and encode
 - UI owns presentation and input mapping
+- contracts own authored SDL authority
+- generated artifacts are consumed at boundaries, not hand-authored as
+  competing runtime truth
 
 The running app must move toward this shape over time rather than merely
 documenting it aspirationally.
+
+### Schema authority rule
+
+When a domain structure is moving from placeholder TypeScript into a durable
+contract, the order is GraphQL SDL first, Wesley metadata second, adapter
+consumption third, runtime storage later. The current example is structural
+history: `contracts/jedit/structural-history.graphql` owns the product facts,
+and the `replaceTextRange` adapter boundary consumes build-generated Wesley
+operation metadata while the in-memory runtime remains transitional.
 
 ### 2. Runtime truth beats type theater
 
@@ -143,6 +155,8 @@ destroy causal history by default.
 Echo's tick should be treated as the canonical causal-history boundary.
 
 - `ReplaceRange` and related edit law describe what is lawful
+- `replaceTextRange` operation identity comes from generated Wesley metadata at
+  the structural-history adapter boundary
 - a tick admits lawful change into the worldline
 - `jedit` may group ticks into edit groups for undo/history
 
