@@ -1,6 +1,6 @@
 # jedit Powered By Echo Release Gate
 
-Status: active 20-slice execution plan.
+Status: slices 1-20 closed locally; release-gate evidence recorded.
 
 This plan defines the local release gate for the sentence:
 
@@ -595,8 +595,8 @@ Test plan:
 
 Checklist:
 
-- [ ] Release-gate script passes.
-- [ ] `npm run check` passes.
-- [ ] Final witness report recorded.
-- [ ] Plan final status updated.
-- [ ] Release notes prepared.
+- [x] Release-gate script passes.
+- [x] `npm run check` passes.
+- [x] Final witness report recorded.
+- [x] Plan final status updated.
+- [x] Release notes prepared.

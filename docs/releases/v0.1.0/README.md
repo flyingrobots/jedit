@@ -1,6 +1,6 @@
 # jedit v0.1.0 Echo Release Gate
 
-Status: in progress.
+Status: release-gate closeout prepared.
 
 The v0.1.0 release gate is the claim:
 
@@ -44,6 +44,12 @@ npm run release-gate:echo
 ```
 
 See [quickstart.md](quickstart.md) for the guided path.
+
+Recorded closeout evidence:
+
+- [`final-witness-report.json`](final-witness-report.json)
+- [`local-replay-report.json`](local-replay-report.json)
+- [`pr-notes.md`](pr-notes.md)
 
 ## Generic Echo Boundary
 

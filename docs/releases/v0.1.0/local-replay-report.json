@@ -1,0 +1,25 @@
+{
+  "ok": true,
+  "schemaVersion": 1,
+  "transport": "installed-jedit-contract",
+  "dryRun": false,
+  "replayLocal": {
+    "status": "MATCH",
+    "first": {
+      "packageId": "jedit.hot-text-runtime",
+      "outcomeStatus": "APPLIED",
+      "receiptId": "receipt:1",
+      "readingId": "text-window:head:3:0:1:1024",
+      "text": "hello"
+    },
+    "second": {
+      "packageId": "jedit.hot-text-runtime",
+      "outcomeStatus": "APPLIED",
+      "receiptId": "receipt:1",
+      "readingId": "text-window:head:3:0:1:1024",
+      "text": "hello"
+    },
+    "mismatchField": null,
+    "wallClockCadenceSemantic": false
+  }
+}

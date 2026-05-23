@@ -312,7 +312,7 @@ function installSummary(packageModule) {
 function unavailableReplayPosture() {
   return {
     status: REPLAY_POSTURE_UNAVAILABLE,
-    reason: 'local replay proof is scheduled for a later release-gate slice',
+    reason: 'use --replay-local for local replay; durable and Continuum replay remain unavailable',
   };
 }
 
