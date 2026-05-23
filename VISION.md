@@ -87,8 +87,10 @@ The current stack posture is:
 
 The opt-in real Echo WASM witness now preserves the required authority split:
 application code submits and observes, while trusted host code owns scheduler
-control. The next pressure is not tick authority; it is retained evidence,
-replay, and a jedit-owned generated contract path.
+control. The witness also reports inline reading evidence, missing durable
+retention posture, and replay obstruction posture. The next pressure is not
+tick authority; it is replacing those honest obstructions with generic retained
+refs, durable replay, and a jedit-owned generated contract path.
 
 ## Boundary doctrine
 
@@ -151,7 +153,9 @@ The Echo boundary should eventually feel boring:
 
 The current real WASM witness is a necessary bridge, not a public contract. It
 exists to keep pressure on the byte ABI until Echo provides a durable package
-and session bootstrap.
+and session bootstrap. It may report `missing_retention` or
+`durable_replay_unavailable`; those are release-gate blockers, not acceptable
+v0.1.0 end states.
 
 ## Wesley relationship
 
@@ -193,14 +197,16 @@ Near-term work should stay narrow:
 1. Keep Stack Witness 0001 green across the fake transport.
 2. Keep the real Echo WASM witness on an app/host split:
    application submits and observes, trusted host ticks.
-3. Graduate `TextBufferOptic` and `ReadBasisHandle` into a real optic/session
+3. Keep the witness report honest about inline evidence, missing retained refs,
+   and replay obstruction.
+4. Graduate `TextBufferOptic` and `ReadBasisHandle` into a real optic/session
    bootstrap contract.
-4. Move remaining fixture-only basis lore below a durable session boundary.
-5. Consume an Echo-owned versioned WASM package artifact.
-6. Replace hand-authored fixture assumptions with Wesley-generated helpers.
-7. Add editor semantics only when they are pulled by the causal seam:
+5. Move remaining fixture-only basis lore below a durable session boundary.
+6. Consume an Echo-owned versioned WASM package artifact.
+7. Replace hand-authored fixture assumptions with Wesley-generated helpers.
+8. Add editor semantics only when they are pulled by the causal seam:
    `createBuffer`, `replaceRange`, `textWindow`, then undo as inverse history.
-8. Bring Continuum in only after the local jedit/Echo boundary is proven enough
+9. Bring Continuum in only after the local jedit/Echo boundary is proven enough
    to publish without speculative ontology.
 
 ## Non-goals right now

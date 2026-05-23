@@ -25,6 +25,8 @@ The full invariant set is written down in
 The short operational guide is [GUIDE.md](GUIDE.md).
 The end-to-end buffer rendering path is explained in
 [ADVANCED_GUIDE.md](ADVANCED_GUIDE.md).
+The process-level jedit + Echo path is explained in
+[docs/jedit-echo-end-to-end.md](docs/jedit-echo-end-to-end.md).
 
 - Zen core, instrumented edges. The main editor area stays visually quiet;
   richer context appears at the edges and only when it earns the space.
@@ -122,15 +124,20 @@ Current status: the opt-in real Echo WASM witness uses the required application
 and host authority split:
 
 - jedit application code submits canonical intents and observes readings;
-- trusted Echo host code owns package install, scheduler control, until-idle
-  policy, and fault recovery;
-- no jedit app path can tick or tunnel scheduler control through dispatch.
+- trusted Echo host code owns package install, runtime lifecycle control,
+  until-idle policy, and fault recovery;
+- no jedit app path can tick or tunnel trusted runtime lifecycle control
+  through dispatch;
+- the witness report now inventories inline reading evidence and explicitly
+  records missing durable retention as `missing_retention`;
+- `--replay` returns the report's replay posture, currently
+  `durable_replay_unavailable` until durable replay is wired.
 
 Agents should start with the shell witness before any richer MCP surface:
 
 ```sh
 ECHO_WARP_WASM_DIR=/path/to/echo/crates/warp-wasm \
-  node scripts/jedit-echo-witness.mjs --json
+  node scripts/jedit-echo-witness.mjs --json --replay
 ```
 
 The second seam is schema authority for structural history:
@@ -333,7 +340,7 @@ Right now the app gives you:
   host transport surfaces
 - a JSON-capable `scripts/jedit-echo-witness.mjs` command for agents and CI
   that reports generated contract metadata, observed reading identity, artifact
-  hash, and authority split
+  hash, authority split, retained-evidence posture, and replay posture
 - a `TextBufferOptic` boundary with opaque `ReadBasisHandle` support that keeps
   raw Echo coordinates below the app-facing optic client
 - a structural-history GraphQL authority surface
@@ -342,8 +349,9 @@ Right now the app gives you:
 
 ## Next steps
 
-- keep pushing the real Echo WASM witness toward retained evidence and replay
-  without granting app code tick authority
+- replace the real Echo WASM witness's current `missing_retention` and
+  `durable_replay_unavailable` postures with generic Echo retained refs and a
+  durable replay proof, without granting app code tick authority
 - graduate `TextBufferOptic` and `ReadBasisHandle` from witness/session
   scaffolding into a real optic/session bootstrap contract
 - route the next structural-history operation through generated Wesley metadata

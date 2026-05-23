@@ -89,10 +89,13 @@ ECHO_WARP_WASM_DIR=/path/to/echo/crates/warp-wasm \
 That command emits a machine-readable summary plus a witness report naming the
 app/host authority split, fixture operation ids, generated jedit contract
 metadata, observed reading identity, artifact hash, residual posture, observer
-basis, and product-shaped text. A later MCP server can wrap the same command
-once replay output is strong enough to expose through a protocol. The MCP
-should not be the first authority boundary; it would add protocol surface before
-the shell witness is trustworthy.
+basis, product-shaped text, retained-evidence inventory, and replay posture.
+With `--replay`, the summary includes the report replay posture. The current
+posture is `durable_replay_unavailable`, which is honest obstruction rather
+than a durable proof. A later MCP server can wrap the same command once replay
+output is strong enough to expose through a protocol. The MCP should not be the
+first authority boundary; it would add protocol surface before the shell witness
+is trustworthy.
 
 ## Evidence
 
@@ -102,6 +105,9 @@ the shell witness is trustworthy.
 - `jedit Echo witness CLI emits a dry-run JSON plan for agents`
 - direct JSON CLI run includes a witness report with `ReadingEnvelope` posture
 - direct JSON CLI run cites generated `hot-text-runtime` operation metadata
+- direct JSON CLI run names inline retained evidence and missing-retention
+  posture
+- `--replay` reports the typed replay posture without app tick authority
 - `real Echo WASM Stack Witness 0001 transport emits ReadingEnvelope + QueryBytes`
 
 ## Non-Goals

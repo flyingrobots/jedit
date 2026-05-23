@@ -1,6 +1,12 @@
+const ALLOWED_REPLAY_STATUSES = new Set([
+  'identity_replay_shape',
+  'obstructed',
+]);
+
 export function runEchoWitness(options, adapter) {
   const startedAt = adapter.nowMs();
   const plan = adapter.createPlan(options);
+  const replayRequested = options.replay === true;
 
   if (plan.errorMessage != null) {
     return {
@@ -24,6 +30,7 @@ export function runEchoWitness(options, adapter) {
       summary: {
         ok: true,
         dryRun: true,
+        replayRequested,
         echoWarpWasmDir: plan.echoWarpWasmDir,
         echoWasmModule: plan.echoWasmModule,
         witnessReportPath: plan.witnessReportPath,
@@ -33,10 +40,22 @@ export function runEchoWitness(options, adapter) {
     };
   }
 
-  return runPlannedEchoWitness({ adapter, options, plan, startedAt });
+  return runPlannedEchoWitness({
+    adapter,
+    options,
+    plan,
+    replayRequested,
+    startedAt,
+  });
 }
 
-function runPlannedEchoWitness({ adapter, options, plan, startedAt }) {
+function runPlannedEchoWitness({
+  adapter,
+  options,
+  plan,
+  replayRequested,
+  startedAt,
+}) {
   const steps = [];
 
   for (const step of plan.steps) {
@@ -78,17 +97,72 @@ function runPlannedEchoWitness({ adapter, options, plan, startedAt }) {
     };
   }
 
+  const replay = replayRequested
+    ? summarizeReplayPosture(witnessReportResult.report)
+    : undefined;
+
   return {
     status: 0,
     summary: {
       ok: true,
       dryRun: false,
+      replayRequested,
       echoWarpWasmDir: plan.echoWarpWasmDir,
       echoWasmModule: plan.echoWasmModule,
       witnessReportPath: plan.witnessReportPath,
       witnessReport: witnessReportResult.report,
+      ...(replay === undefined ? {} : { replay }),
       steps,
       durationMs: adapter.nowMs() - startedAt,
+    },
+  };
+}
+
+function summarizeReplayPosture(report) {
+  if (hasValidReplayPosture(report)) {
+    return report.replay;
+  }
+
+  const reason = hasReplayPosture(report)
+    ? 'witness report carries malformed replay posture'
+    : 'witness report does not carry a replay proof yet';
+  return createReplayUnavailablePosture(report, reason);
+}
+
+function hasValidReplayPosture(report) {
+  if (!hasReplayPosture(report) || typeof report.replay.status !== 'string') {
+    return false;
+  }
+  if (!ALLOWED_REPLAY_STATUSES.has(report.replay.status)) {
+    return false;
+  }
+  if (report.replay.status === 'obstructed' && typeof report.replay.obstruction !== 'string') {
+    return false;
+  }
+  return report.replay.readingIdentity === undefined
+    || hasValidReadingIdentity(report.replay.readingIdentity);
+}
+
+function hasReplayPosture(report) {
+  return report != null && typeof report === 'object'
+    && report.replay != null && typeof report.replay === 'object';
+}
+
+function hasValidReadingIdentity(readingIdentity) {
+  return readingIdentity != null && typeof readingIdentity === 'object'
+    && typeof readingIdentity.readingId === 'string'
+    && typeof readingIdentity.artifactHash === 'string';
+}
+
+function createReplayUnavailablePosture(report, reason) {
+  const reading = report != null && typeof report === 'object' ? report.reading : undefined;
+  return {
+    status: 'obstructed',
+    obstruction: 'durable_replay_unavailable',
+    reason,
+    readingIdentity: {
+      readingId: typeof reading?.readingId === 'string' ? reading.readingId : null,
+      artifactHash: typeof reading?.artifactHash === 'string' ? reading.artifactHash : null,
     },
   };
 }

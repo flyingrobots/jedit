@@ -85,6 +85,16 @@ test('jedit Echo witness CLI rejects valued flags without sentinel paths', () =>
   assert.equal(summary.message, 'missing value for --echo-warp-wasm-dir');
 });
 
+test('jedit Echo witness runner normalizes dry-run replay flag to false', () => {
+  const result = runEchoWitness({
+    dryRun: true,
+    json: true,
+  }, createWitnessReportAdapter(undefined));
+
+  assert.equal(result.status, 0);
+  assert.equal(result.summary.replayRequested, false);
+});
+
 test('jedit Echo witness runner reports witness report read failures', () => {
   const result = runEchoWitness({
     dryRun: false,
@@ -98,7 +108,114 @@ test('jedit Echo witness runner reports witness report read failures', () => {
   assert.match(result.summary.witnessReportError, /invalid report JSON/);
 });
 
+test('jedit Echo witness runner returns typed replay obstruction when replay is unavailable', () => {
+  const result = runEchoWitness({
+    dryRun: false,
+    json: true,
+    replay: true,
+  }, createWitnessReportAdapter({
+    reading: {
+      readingId: 'reading-1',
+      artifactHash: 'artifact-1',
+    },
+  }));
+
+  assert.equal(result.status, 0);
+  assert.equal(result.summary.ok, true);
+  assert.equal(result.summary.replayRequested, true);
+  assert.equal(result.summary.replay.status, 'obstructed');
+  assert.equal(result.summary.replay.obstruction, 'durable_replay_unavailable');
+  assert.deepEqual(result.summary.replay.readingIdentity, {
+    readingId: 'reading-1',
+    artifactHash: 'artifact-1',
+  });
+});
+
+test('jedit Echo witness runner forwards witness replay result when present', () => {
+  const replay = {
+    status: 'identity_replay_shape',
+    readingIdentity: {
+      readingId: 'reading-2',
+      artifactHash: 'artifact-2',
+    },
+  };
+  const result = runEchoWitness({
+    dryRun: false,
+    json: true,
+    replay: true,
+  }, createWitnessReportAdapter({ replay }));
+
+  assert.equal(result.status, 0);
+  assert.equal(result.summary.replay, replay);
+});
+
+test('jedit Echo witness runner rejects unknown witness replay statuses', () => {
+  const result = runEchoWitness({
+    dryRun: false,
+    json: true,
+    replay: true,
+  }, createWitnessReportAdapter({
+    replay: {
+      status: 'surprise_replay',
+      readingIdentity: {
+        readingId: 'reading-unknown',
+        artifactHash: 'artifact-unknown',
+      },
+    },
+    reading: {
+      readingId: 'reading-4',
+      artifactHash: 'artifact-4',
+    },
+  }));
+
+  assert.equal(result.status, 0);
+  assert.equal(result.summary.replay.status, 'obstructed');
+  assert.equal(result.summary.replay.obstruction, 'durable_replay_unavailable');
+  assert.equal(
+    result.summary.replay.reason,
+    'witness report carries malformed replay posture',
+  );
+  assert.deepEqual(result.summary.replay.readingIdentity, {
+    readingId: 'reading-4',
+    artifactHash: 'artifact-4',
+  });
+});
+
+test('jedit Echo witness runner obstructs malformed witness replay posture', () => {
+  const result = runEchoWitness({
+    dryRun: false,
+    json: true,
+    replay: true,
+  }, createWitnessReportAdapter({
+    replay: {
+      status: 'obstructed',
+    },
+    reading: {
+      readingId: 'reading-3',
+      artifactHash: 'artifact-3',
+    },
+  }));
+
+  assert.equal(result.status, 0);
+  assert.equal(result.summary.replay.status, 'obstructed');
+  assert.equal(result.summary.replay.obstruction, 'durable_replay_unavailable');
+  assert.equal(
+    result.summary.replay.reason,
+    'witness report carries malformed replay posture',
+  );
+  assert.deepEqual(result.summary.replay.readingIdentity, {
+    readingId: 'reading-3',
+    artifactHash: 'artifact-3',
+  });
+});
+
 function createWitnessReportFailureAdapter() {
+  return createWitnessReportAdapter(undefined, {
+    readFailure: new Error('invalid report JSON'),
+  });
+}
+
+function createWitnessReportAdapter(report, options = {}) {
   return {
     createPlan() {
       return {
@@ -112,7 +229,10 @@ function createWitnessReportFailureAdapter() {
       return 0;
     },
     readWitnessReport() {
-      throw new Error('invalid report JSON');
+      if (options.readFailure instanceof Error) {
+        throw options.readFailure;
+      }
+      return report;
     },
     runStep() {
       return {

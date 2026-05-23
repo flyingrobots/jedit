@@ -62,6 +62,11 @@ identity, reading identity, artifact hash, and missing-retention posture.
 Witness: `node scripts/jedit-echo-witness.mjs --json` reports retained evidence
 without leaking scheduler internals.
 
+Current implementation note: the report now records inline `QueryBytes` and
+`ReadingEnvelope` evidence and names durable receipt/payload/envelope refs as
+`missing_retention`. Real Echo retained refs remain a later replacement for
+that posture.
+
 ### 3. Echo Retained Evidence Ref Surface Check
 
 Coordinate with Echo if the WASM/API surface does not expose enough generic
@@ -69,6 +74,10 @@ retained evidence refs. jedit should consume generic refs only through its
 adapter.
 
 Witness: jedit can report evidence refs without private Echo runtime access.
+
+Current implementation note: the current Echo WASM witness exposes enough
+inline observation evidence to report the gap, but not enough durable retained
+refs to satisfy the release gate. No jedit code should fabricate those refs.
 
 ### 4. Adapter Consumes Echo Retained Refs
 
@@ -85,6 +94,9 @@ identity, or return a typed replay obstruction when durable replay is not yet
 available.
 
 Witness: CLI replay does not require app-facing tick authority.
+
+Current implementation note: `--replay` now returns the report replay posture.
+Until durable replay exists, the posture is `durable_replay_unavailable`.
 
 ### 6. Product-Facing Intent Outcome Consumption
 

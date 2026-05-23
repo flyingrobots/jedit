@@ -28,6 +28,7 @@ function main() {
 function parseArgs(args, env) {
   const options = {
     dryRun: false,
+    replay: false,
     json: false,
     help: false,
     echoWarpWasmDir: env.ECHO_WARP_WASM_DIR,
@@ -41,6 +42,8 @@ function parseArgs(args, env) {
     const arg = args[index];
     if (arg === '--dry-run') {
       options.dryRun = true;
+    } else if (arg === '--replay') {
+      options.replay = true;
     } else if (arg === '--json') {
       options.json = true;
     } else if (arg === '--help' || arg === '-h') {
@@ -124,6 +127,7 @@ Options:
   --witness-report <path>      Path for the JSON witness report.
   --jedit-dir <path>           jedit checkout root. Defaults to this repo.
   --cycle-limit <n>            Until-idle cycle limit for the witness.
+  --replay                     Include the replay shell result in the summary.
   --json                       Emit machine-readable summary.
   --dry-run                    Validate and print the command plan without running it.
   --help                       Show this help text.
