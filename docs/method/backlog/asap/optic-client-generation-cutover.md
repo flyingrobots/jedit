@@ -53,15 +53,23 @@ not a forked runtime.
 
 The deferred Echo-dependent step is:
 
-1. Use the Continuum `jedit-echo-dev` warpspace lock to select the Echo checkout.
+1. Use the Continuum `jedit-echo-dev` warpspace lock or explicit local path to
+   select the Echo checkout.
 2. Run `echo-wesley-gen` against `contracts/jedit/hot-text-runtime.graphql`.
 3. Write the generated Rust binding artifact into a jedit-owned Rust contract
    crate.
-4. Verify the generated registry artifact with
+4. Install the generated package into Echo through trusted host authority.
+5. Submit edits through the app-facing jedit adapter, not trusted host control.
+6. Run scheduler work through trusted Echo host authority.
+7. Verify the generated registry artifact with
    `echo_registry_api::verify_contract_artifact(...)`.
 
 Until Echo is free, do not add local sibling `../echo` dependencies to committed
 jedit manifests and do not generate a second, divergent SDL file.
+
+Current release-gate correction: the opt-in real Echo WASM witness still tries
+to send scheduler control through app-facing dispatch. That is stale. The next
+cutover must preserve Echo's app/host authority split instead of weakening it.
 
 ## Non-Goals
 

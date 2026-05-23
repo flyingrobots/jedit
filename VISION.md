@@ -56,7 +56,7 @@ product path has forced into existence.
 
 ## Current checkpoint
 
-The first cross-stack truth is Stack Witness 0001:
+The first cross-stack truth was Stack Witness 0001:
 
 ```text
 createBuffer
@@ -69,15 +69,26 @@ createBuffer
 This is intentionally small. It proves the first editor/runtime seam without
 turning the repo into protocol theater.
 
+The next checkpoint is stronger: jedit is now the release gate for Echo
+`v0.1.0`. Echo is not considered ready to build with until this repository can
+run a real Echo witness for a contract-backed edit, scheduler-owned tick,
+observed outcome, bounded text reading, retained evidence, and replay.
+
 The current stack posture is:
 
 - Wesley publishes the fixture artifact shape.
 - Echo hosts the fixture runtime path and owns the WASM package export boundary.
 - jedit consumes the seam through a fake transport and an opt-in real Echo WASM
   witness.
-- jedit now keeps read coordinates behind an opaque `ReadBasisHandle`.
+- jedit now keeps read coordinates behind `TextBufferOptic` and an opaque
+  `ReadBasisHandle`.
 - Continuum remains intentionally untouched until the local product/runtime seam
   is proven enough to publish as a shared protocol family.
+
+The opt-in real Echo WASM witness currently exposes the right next failure: it
+still tries to tunnel scheduler control through app-facing dispatch. Echo now
+rejects that. jedit must split app and host authority rather than asking Echo
+to weaken the dispatch boundary.
 
 ## Boundary doctrine
 
@@ -105,6 +116,7 @@ App-facing jedit code may know about:
 - panes
 - panels
 - lenses
+- `TextBufferOptic`
 - `ReadBasisHandle`
 - product-shaped readings such as `TextWindowReading`
 
@@ -112,13 +124,14 @@ The durable direction is:
 
 ```text
 open buffer/session
--> receive opaque read basis handle
--> request bounded text window through that handle
+-> receive TextBufferOptic
+-> request bounded text window through its opaque read basis handle
 -> receive product-shaped reading plus evidence-bearing runtime envelope
 ```
 
-The handle is not the basis. The handle is an opaque capability that lets the
-session resolve the correct basis below the app boundary.
+The handle is not the basis. `TextBufferOptic` is the app-facing capability;
+`ReadBasisHandle` is an opaque supporting token that lets the session resolve
+the correct basis below the app boundary.
 
 ## Echo relationship
 
@@ -177,14 +190,17 @@ product.
 
 Near-term work should stay narrow:
 
-1. Keep Stack Witness 0001 green across fake and real Echo WASM transport.
-2. Graduate `ReadBasisHandle` into a real optic/session bootstrap contract.
-3. Move remaining fixture-only basis lore below a durable session boundary.
-4. Consume an Echo-owned versioned WASM package artifact.
-5. Replace hand-authored fixture assumptions with Wesley-generated helpers.
-6. Add editor semantics only when they are pulled by the causal seam:
+1. Keep Stack Witness 0001 green across the fake transport.
+2. Replace the stale real Echo WASM witness with an app/host split:
+   application submits and observes, trusted host ticks.
+3. Graduate `TextBufferOptic` and `ReadBasisHandle` into a real optic/session
+   bootstrap contract.
+4. Move remaining fixture-only basis lore below a durable session boundary.
+5. Consume an Echo-owned versioned WASM package artifact.
+6. Replace hand-authored fixture assumptions with Wesley-generated helpers.
+7. Add editor semantics only when they are pulled by the causal seam:
    `createBuffer`, `replaceRange`, `textWindow`, then undo as inverse history.
-7. Bring Continuum in only after the local jedit/Echo boundary is proven enough
+8. Bring Continuum in only after the local jedit/Echo boundary is proven enough
    to publish without speculative ontology.
 
 ## Non-goals right now

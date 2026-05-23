@@ -48,12 +48,28 @@ createBuffer
 -> TextWindowReading
 ```
 
+The next proof is the Echo `v0.1.0` release gate:
+
+```text
+jedit-authored `TextBufferOptic` contract
+-> Wesley generated artifacts
+-> Echo package install
+-> app-safe edit intent submission
+-> trusted-host scheduler tick
+-> observed outcome
+-> bounded text reading
+-> retained evidence
+-> replay proof
+```
+
 ## Current scaffolding
 
 - Fake Echo-shaped transport remains valid as a controlled witness posture.
-- Real Echo WASM witness remains opt-in.
+- Real Echo WASM witness remains opt-in and currently needs the app/host
+  authority split before it can become a release witness.
 - Fixture vars bytes are not the durable Wesley runtime codec.
-- `ReadBasisHandle` is the first anti-leak contract, not the complete optic protocol.
+- `TextBufferOptic` is the primary app-facing capability; `ReadBasisHandle` is
+  an opaque supporting token, not the complete optic protocol.
 - Structural-history SDL is now the product contract authority for text
   revisions, replacement events, edit groups, checkpoints, provenance, command
   status, and evidence-bearing readings.

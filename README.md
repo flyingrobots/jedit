@@ -48,6 +48,26 @@ The end-to-end buffer rendering path is explained in
 
 ## Stack posture
 
+`jedit` is now the release gate for Echo `v0.1.0`. Echo does not ship that
+release until jedit can run a real contract-backed edit/read/replay path on
+Echo from this repository.
+
+The proof is deliberately product-shaped:
+
+```text
+jedit-authored `TextBufferOptic` contract
+-> Wesley generated artifacts
+-> Echo package install
+-> jedit app submits edit intent
+-> trusted Echo host ticks
+-> jedit observes outcome
+-> jedit queries bounded text reading
+-> retained evidence and replay prove the result
+```
+
+This replaces the older idea that an in-repo Echo fixture is enough. The fixture
+is useful. The release gate is jedit working on Echo without app tick authority.
+
 `jedit` is currently the driving consumer for two narrow Echo/Wesley seams.
 
 The first seam is the transport witness:
@@ -56,7 +76,7 @@ The first seam is the transport witness:
 Wesley fixture artifact shape
 -> Echo runtime and WASM package boundary
 -> jedit transport witness
--> opaque ReadBasisHandle anti-leak contract
+-> TextBufferOptic anti-leak contract
 ```
 
 The stack checkpoint is deliberately small:
@@ -95,6 +115,16 @@ The runner asks Echo to build its own WASM package boundary, then runs the
 jedit witness against the resulting module. This is still a witness ritual, not
 a published package contract.
 
+Current status: the opt-in real Echo WASM witness is stale in an important and
+useful way. It still attempts to send scheduler control through the app-facing
+`dispatch_intent` path. Current Echo correctly rejects that. The next witness
+must split application and host authority:
+
+- jedit application code submits canonical intents and observes readings;
+- trusted Echo host code owns package install, scheduler control, until-idle
+  policy, and fault recovery;
+- no jedit app path can tick or tunnel scheduler control through dispatch.
+
 The second seam is schema authority for structural history:
 
 ```text
@@ -123,18 +153,18 @@ runtime evidence, worldline state, and observed readings.
 coordinates, scheduler implementation details, or current fixture derivation
 lore.
 
-The current `ReadBasisHandle` contract is the first anti-leak boundary:
+The current optic capability contract is the anti-leak boundary:
 
-- App-facing code receives an opaque handle.
-- The handle has shape `{ kind, id }`.
-- The `id` is diagnostic, not authority.
-- The session/adapter layer resolves the handle into runtime coordinates below
-  the app boundary.
+- App-facing code holds a `TextBufferOptic`.
+- The optic may issue an opaque `ReadBasisHandle`.
+- The handle has shape `{ kind, id }`; the `id` is diagnostic, not authority.
+- The optic/session adapter resolves private runtime coordinates below the app
+  boundary.
 - Forged or cloned handles are rejected.
 
-This is not the final optic/session protocol. It is the first durable product
-constraint: jedit core should ask for readings through opaque capabilities, not
-by manufacturing Echo substrate coordinates.
+This is not the final optic/session protocol. It is the durable product
+constraint: jedit core should ask for edits and readings through authorized
+capabilities, not by manufacturing Echo substrate coordinates.
 
 ## Wesley posture
 
@@ -292,16 +322,18 @@ Right now the app gives you:
 - Markdown preview rendered from the in-memory buffer
 - Stack Witness 0001 consumer coverage through a fake Echo-shaped transport
 - an opt-in real Echo WASM Stack Witness runner
-- an opaque `ReadBasisHandle` boundary that keeps raw Echo coordinates below the
-  app-facing optic client
+- a `TextBufferOptic` boundary with opaque `ReadBasisHandle` support that keeps
+  raw Echo coordinates below the app-facing optic client
 - a structural-history GraphQL authority surface
 - build-generated `replaceTextRange` Wesley operation metadata consumed by the
   hot-buffer adapter boundary
 
 ## Next steps
 
-- graduate `ReadBasisHandle` from witness/session scaffolding into a real
-  optic/session bootstrap contract
+- replace the stale real Echo WASM witness with the app/host split required by
+  Echo `v0.1.0`
+- graduate `TextBufferOptic` and `ReadBasisHandle` from witness/session
+  scaffolding into a real optic/session bootstrap contract
 - route the next structural-history operation through generated Wesley metadata
   without replacing storage
 - make jedit consume an Echo-owned, versioned WASM package artifact rather than
