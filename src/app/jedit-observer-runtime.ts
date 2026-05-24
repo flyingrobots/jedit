@@ -8,29 +8,22 @@ import type { JeditWorldlineSession } from './jedit-contract-runtime.js';
 import { readWorldlineSnapshot } from './jedit-contract-runtime.js';
 import type { HashPort } from '../ports/hash.js';
 
-const TEXT_WINDOW_PLAN_ID_PREFIX = 'observer-plan:textWindow:';
-const TEXT_WINDOW_OBSERVER_NAME = 'textWindow';
-const TEXT_WINDOW_OPERATION_NAME = 'textWindow';
-const TEXT_WINDOW_PLAN_KIND = 'TEXT_WINDOW';
-const TEXT_WINDOW_APERTURE_KIND = 'BOUNDED_TEXT_WINDOW';
-const TEXT_WINDOW_BASIS_KIND = 'JEDIT_HOT_TEXT';
-const TEXT_WINDOW_STATE_MODE = 'MEMORYLESS';
-const TEXT_WINDOW_EMIT_KIND = 'TEXT_WINDOW_READING';
-// The generated observer plan id carries a stable digest prefix instead of the
-// full hash so snapshots stay readable while remaining deterministic.
-const TEXT_WINDOW_SPEC_HASH_LENGTH = 16;
 const TEXT_WINDOW_MIN_LINE = 0;
 const TEXT_WINDOW_MIN_COUNT = 1;
 const TEXT_WINDOW_LINE_SEPARATOR_BYTE_LENGTH = 1;
 const UTF8_ENCODER = new TextEncoder();
 const TEXT_WINDOW_PLAN_SPEC = Object.freeze({
-  observerName: TEXT_WINDOW_OBSERVER_NAME,
-  kind: TEXT_WINDOW_PLAN_KIND,
-  operationName: TEXT_WINDOW_OPERATION_NAME,
-  aperture: TEXT_WINDOW_APERTURE_KIND,
-  basis: TEXT_WINDOW_BASIS_KIND,
-  state: TEXT_WINDOW_STATE_MODE,
-  emit: TEXT_WINDOW_EMIT_KIND,
+  idPrefix: 'observer-plan:textWindow:',
+  observerName: 'textWindow',
+  kind: 'TEXT_WINDOW',
+  operationName: 'textWindow',
+  aperture: 'BOUNDED_TEXT_WINDOW',
+  basis: 'JEDIT_HOT_TEXT',
+  state: 'MEMORYLESS',
+  emit: 'TEXT_WINDOW_READING',
+  // Use 16 hex chars (64 bits) so generated ids stay readable while retaining
+  // a stable deterministic digest prefix for this single local observer plan.
+  hashLength: 16,
 });
 
 type WorldlineSnapshotInput = QueryOperationMap['worldlineSnapshot']['input'];
@@ -88,15 +81,15 @@ export function readTextWindowWithObserverPlan(
 
   return {
     planId: textWindowPlanId(hash),
-    observerName: TEXT_WINDOW_OBSERVER_NAME,
-    operationName: TEXT_WINDOW_OPERATION_NAME,
+    observerName: TEXT_WINDOW_PLAN_SPEC.observerName,
+    operationName: TEXT_WINDOW_PLAN_SPEC.operationName,
     frontierRef,
     reading: schemas.result.parse(reading),
   };
 }
 
 function textWindowPlanId(hash: HashPort): string {
-  return `${TEXT_WINDOW_PLAN_ID_PREFIX}${hash.sha256Hex(JSON.stringify(TEXT_WINDOW_PLAN_SPEC)).slice(0, TEXT_WINDOW_SPEC_HASH_LENGTH)}`;
+  return `${TEXT_WINDOW_PLAN_SPEC.idPrefix}${hash.sha256Hex(JSON.stringify(TEXT_WINDOW_PLAN_SPEC)).slice(0, TEXT_WINDOW_PLAN_SPEC.hashLength)}`;
 }
 
 function readTextWindow(
