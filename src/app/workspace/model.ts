@@ -15,6 +15,7 @@ import type { TextRuntimeProfile } from '../text-runtime-profile.js';
 import type { EditorState } from './editor/model.js';
 import type { WorkspaceMsg } from './msg.js';
 import type { ViewMode } from './view-mode.js';
+import type { WorkspaceTextAuthority } from './workspace-text-authority.js';
 
 export interface WorkspaceModel {
   readonly i18n: I18nPort;
@@ -24,6 +25,7 @@ export interface WorkspaceModel {
   readonly selectedIndex: number;
   readonly editor?: EditorState;
   readonly textRuntimeProfile: TextRuntimeProfile;
+  readonly textAuthority: WorkspaceTextAuthority;
   readonly viewMode: ViewMode;
   readonly focusPane: FocusPane;
   readonly fileDrawerOpen: boolean;

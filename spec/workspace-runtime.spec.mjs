@@ -148,6 +148,30 @@ test('workspace app preserves seeded text runtime profile when option is absent'
   assert.equal(initialModel.textRuntimeProfile, profile.TEXT_RUNTIME_PROFILE_TEST_LOCAL);
 });
 
+test('initial workspace model separates text authority from render cache', async () => {
+  const [initModule, themes, profile, authority] = await Promise.all([
+    importDist('app', 'workspace', 'init.js'),
+    importDist('ui', 'jedit-themes.js'),
+    importDist('app', 'text-runtime-profile.js'),
+    importDist('app', 'workspace', 'workspace-text-authority.js'),
+  ]);
+  const model = initModule.createInitialModel('/repo', 120, 24, {
+    titleSceneSeed: 0.5,
+    jeditTheme: themes.resolveInitialJeditTheme(undefined),
+    i18n: mockI18n(),
+    entries: [],
+    nowMs: 0,
+  });
+
+  assert.equal(model.textRuntimeProfile, profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED);
+  assert.equal(model.textAuthority.kind, authority.WorkspaceTextAuthorityKinds.None);
+  assert.equal(model.textAuthority.profile, profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED);
+  assert.equal(model.editor, undefined);
+  assert.equal('requestRunUntilIdle' in model.textAuthority, false);
+  assert.equal('requestStart' in model.textAuthority, false);
+  assert.equal('requestStop' in model.textAuthority, false);
+});
+
 test('initial workspace scene picker lists authored scene assets that exist on disk', async () => {
   const initModule = await importDist('app', 'workspace', 'init.js');
   const model = initModule.createInitialModel('/repo', 120, 24, {

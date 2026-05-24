@@ -104,10 +104,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Add or update workspace text authority types.
-- [ ] Keep display lines as cache-only data.
-- [ ] Cover authority/cache distinction in tests.
-- [ ] Update design docs if names differ from this plan.
+- [x] Add or update workspace text authority types.
+- [x] Keep display lines as cache-only data.
+- [x] Cover authority/cache distinction in tests.
+- [x] Update design docs if names differ from this plan.
 
 ### Slice 82 - Open File Through Production Session
 
