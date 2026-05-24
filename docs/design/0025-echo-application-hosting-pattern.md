@@ -411,10 +411,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Second contract fixture exists.
-- [ ] Same hosting shape works.
-- [ ] No jedit product imports leak into the second app.
-- [ ] Generic helper docs cover both apps.
+- [x] Second contract fixture exists.
+- [x] Same hosting shape works.
+- [x] No jedit product imports leak into the second app.
+- [x] Generic helper docs cover both apps.
 
 ### Slice 40 - Developer App Host Guide
 
