@@ -48,8 +48,8 @@ test('Echo-powered session CLI reports app capability, lifecycle, and reading ev
   assert.equal(summary.report.text, 'hello');
   assert.equal(summary.report.outcome.status, 'APPLIED');
   assert.equal(summary.report.outcomeTrail[0].status, 'ACCEPTED_PENDING');
-  assert.equal(summary.report.receiptCorrelation.status, 'RECEIPT_CORRELATION_MISSING');
-  assert.equal('receipt' in summary.report.receiptCorrelation, false);
+  assert.equal(summary.report.receiptCorrelation.status, 'RECEIPT_CORRELATION_AVAILABLE');
+  assert.equal(summary.report.receiptCorrelation.receipt.receiptId, summary.report.receiptId);
   assert.equal(summary.report.ticketedRuntimeIngress.status, 'TICKETED_RUNTIME_INGRESS_MISSING');
   assert.notEqual(
     summary.report.ticketedRuntimeIngress.submissionId,

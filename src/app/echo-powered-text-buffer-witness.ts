@@ -10,7 +10,7 @@ import {
   createJeditIntentOutcomeLedger,
   createJeditReceiptHandle,
 } from './jedit-intent-outcomes.js';
-import { missingJeditReceiptCorrelation } from './jedit-receipt-correlation.js';
+import { correlateJeditEchoReceipt } from './jedit-receipt-correlation.js';
 import { createJeditRetainedEvidenceInventory } from './jedit-retained-evidence.js';
 import { currentJeditRestartPosture } from './jedit-restart-posture.js';
 import { missingJeditTicketedRuntimeIngress } from './jedit-ticketed-runtime-ingress.js';
@@ -69,7 +69,10 @@ function toWitnessReport(
     bufferKey: buffer.bufferKey,
     outcome,
     outcomeTrail: [pending, outcome],
-    receiptCorrelation: missingJeditReceiptCorrelation(outcome.intent.submissionId),
+    receiptCorrelation: correlateJeditEchoReceipt({
+      submissionId: outcome.intent.submissionId,
+      receiptId: applied.receiptId,
+    }),
     ticketedRuntimeIngress: missingJeditTicketedRuntimeIngress(outcome.intent.submissionId),
     retainedEvidence: createJeditRetainedEvidenceInventory({
       packageId: JEDIT_HOT_TEXT_PACKAGE_ID,

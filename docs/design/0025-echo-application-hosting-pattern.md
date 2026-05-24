@@ -332,10 +332,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Happy path has real receipt correlation.
-- [ ] Missing receipt remains typed.
-- [ ] Unsupported operation does not fabricate receipt.
-- [ ] Witness report exposes correlation.
+- [x] Happy path has real receipt correlation.
+- [x] Missing receipt remains typed.
+- [x] Unsupported operation does not fabricate receipt.
+- [x] Witness report exposes correlation.
 
 ### Slice 37 - Real Local Retained Evidence Lookup
 
