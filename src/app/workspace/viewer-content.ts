@@ -49,6 +49,11 @@ export function renderViewer(model: WorkspaceModel, width: number, height: numbe
   });
 }
 
+export function isWorkspaceMarkdownPreviewAvailable(model: WorkspaceModel): boolean {
+  const editor = displayEditor(model);
+  return editor != null && isWorkspaceMarkdownFile(editor.path);
+}
+
 function displayEditor(model: WorkspaceModel): WorkspaceModel['editor'] {
   return isWorkspaceTextAuthorityOpened(model.textAuthority) && model.textAuthority.cache != null
     ? editorFromWorkspaceTextCache(model.textAuthority, model.editor)

@@ -43,6 +43,15 @@ save/export, checkpoint, and static guard coverage now run through the
 jedit-owned production text session. `EditorState.lines` remains a render and
 navigation cache, not production text authority.
 
+The current branch also closes slices 101-110: render-cache terminology is
+explicit, reading-cache behavior is isolated, edit range planning has a
+jedit-owned boundary, replace commands flow through the production session,
+production undo/redo is explicitly unsupported until modeled as causal input,
+footer/preview/highlight surfaces consume reading material, active-buffer save
+targeting is covered, and test-local fallback remains fixture-only.
+The local notes for this package live in
+[`docs/design/0032-jedit-echo-reading-cache-and-fallback-boundaries.md`](design/0032-jedit-echo-reading-cache-and-fallback-boundaries.md).
+
 The developer-facing recipe lives in
 [`docs/echo-application-hosting-guide.md`](echo-application-hosting-guide.md).
 
@@ -53,6 +62,8 @@ credible. The current production text session and witness prove that jedit can
 drive its text model through a jedit-owned Echo-hosted session. Slices 81-90
 make the interactive workspace consume that session as production text
 authority for open, edit, render, save, export, and checkpoint flows.
+Slices 101-110 close remaining render-cache, edit-planner, status, and
+fixture-fallback ambiguity before WSC durability begins.
 
 Core claim:
 
@@ -726,10 +737,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Rename ambiguous render cache fields or helpers.
-- [ ] Update docs and tests.
-- [ ] Keep compatibility where necessary.
-- [ ] Run focused workspace specs.
+- [x] Rename ambiguous render cache fields or helpers.
+- [x] Update docs and tests.
+- [x] Keep compatibility where necessary.
+- [x] Run focused workspace specs.
 
 ### Slice 102 - Text Reading Cache Module Boundary
 
@@ -754,10 +765,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Add text reading cache module.
-- [ ] Move cache materialization helpers.
-- [ ] Cover missing/stale posture.
-- [ ] Update consumers.
+- [x] Add text reading cache module.
+- [x] Move cache materialization helpers.
+- [x] Cover missing/stale posture.
+- [x] Update consumers.
 
 ### Slice 103 - Cursor And Selection Planner Boundary
 
@@ -781,10 +792,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Add cursor/selection planner boundary.
-- [ ] Move range conversion there.
-- [ ] Cover supported ranges.
-- [ ] Cover unsupported ranges.
+- [x] Add cursor/selection planner boundary.
+- [x] Move range conversion there.
+- [x] Cover supported ranges.
+- [x] Cover unsupported ranges.
 
 ### Slice 104 - Replace Selection Through Session
 
@@ -808,10 +819,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Route selection replace through planner.
-- [ ] Submit replace through production session.
-- [ ] Refresh reading after applied replace.
-- [ ] Cover obstruction path.
+- [x] Route selection replace through planner.
+- [x] Submit replace through production session.
+- [x] Refresh reading after applied replace.
+- [x] Cover obstruction path.
 
 ### Slice 105 - Undo And Redo Policy Boundary
 
@@ -836,10 +847,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Define production undo/redo policy.
-- [ ] Block hidden local undo/redo.
-- [ ] Add tests for chosen policy.
-- [ ] Update docs.
+- [x] Define production undo/redo policy.
+- [x] Block hidden local undo/redo.
+- [x] Add tests for chosen policy.
+- [x] Update docs.
 
 ### Slice 106 - Dirty, Pending, And Stale UI Posture
 
@@ -863,10 +874,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Add posture model if needed.
-- [ ] Render concise status.
-- [ ] Cover posture transitions.
-- [ ] Cover obstruction distinctions.
+- [x] Add posture model if needed.
+- [x] Render concise status.
+- [x] Cover posture transitions.
+- [x] Cover obstruction distinctions.
 
 ### Slice 107 - Source Highlight From Reading Material
 
@@ -890,10 +901,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Route highlight input through reading material.
-- [ ] Remove production direct file/text bypass.
-- [ ] Cover success and failure.
-- [ ] Update guard if needed.
+- [x] Route highlight input through reading material.
+- [x] Remove production direct file/text bypass.
+- [x] Cover success and failure.
+- [x] Update guard if needed.
 
 ### Slice 108 - Preview From Reading Material
 
@@ -917,10 +928,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Route preview through reading material.
-- [ ] Add missing-reading posture.
-- [ ] Cover no-edit behavior.
-- [ ] Run render specs.
+- [x] Route preview through reading material.
+- [x] Add missing-reading posture.
+- [x] Cover no-edit behavior.
+- [x] Run render specs.
 
 ### Slice 109 - Multi-Buffer Authority Map
 
@@ -945,10 +956,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Define multi-buffer or explicit single-buffer policy.
-- [ ] Implement authority map if in scope.
-- [ ] Cover file switch behavior.
-- [ ] Cover active-buffer save behavior.
+- [x] Define multi-buffer or explicit single-buffer policy.
+- [x] Implement authority map if in scope.
+- [x] Cover file switch behavior.
+- [x] Cover active-buffer save behavior.
 
 ### Slice 110 - Fixture-Local Fallback Quarantine
 
@@ -972,10 +983,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Narrow test-local fallback creation.
-- [ ] Document fallback scope.
-- [ ] Extend guard coverage.
-- [ ] Cover profile behavior.
+- [x] Narrow test-local fallback creation.
+- [x] Document fallback scope.
+- [x] Extend guard coverage.
+- [x] Cover profile behavior.
 
 ### Slice 111 - WSC Durability Scope Document
 

@@ -1,16 +1,18 @@
 import type { RuntimeIssue } from '@flyingrobots/bijou-tui';
 import type { TextRuntimeProfile } from '../text-runtime-profile.js';
 import type { EditorState } from './editor/model.js';
-import { EditorModes } from './editor/mode.js';
+import {
+  editorFromWorkspaceTextReadingCache,
+  WorkspaceTextReadingPostures,
+  workspaceTextReadingCachePosture,
+  type WorkspaceTextReadingCache,
+  type WorkspaceTextReadingPosture,
+} from './workspace-text-reading-cache.js';
 
 const AUTHORITY_NONE = 'none';
 const AUTHORITY_PENDING_OPEN = 'pending-open';
 const AUTHORITY_OPENED = 'opened';
 const AUTHORITY_OBSTRUCTED = 'obstructed';
-const FIRST_LINE = 0;
-const FIRST_COLUMN = 0;
-const EMPTY_LINE = '';
-const EMPTY_STACK = Object.freeze([]);
 
 export const WorkspaceTextAuthorityKinds = Object.freeze({
   None: AUTHORITY_NONE,
@@ -22,15 +24,7 @@ export const WorkspaceTextAuthorityKinds = Object.freeze({
 export type WorkspaceTextAuthorityKind =
   typeof WorkspaceTextAuthorityKinds[keyof typeof WorkspaceTextAuthorityKinds];
 
-export interface WorkspaceTextReadingCache {
-  readonly bufferId: string;
-  readonly readingId: string;
-  readonly lines: readonly string[];
-  readonly lineCount: number;
-  readonly cursorLine: number;
-  readonly viewportLineCount: number;
-  readonly truncated: boolean;
-}
+export type { WorkspaceTextReadingCache } from './workspace-text-reading-cache.js';
 
 export interface WorkspaceTextAuthorityNone {
   readonly kind: typeof AUTHORITY_NONE;
@@ -191,32 +185,30 @@ export function editorFromWorkspaceTextCache(
   authority: WorkspaceTextAuthorityOpened,
   existing: EditorState | undefined,
 ): EditorState {
-  const lines = authority.cache?.lines ?? [EMPTY_LINE];
-  return {
-    path: authority.filePath,
-    lines,
-    cursorRow: editorCursorRow(authority, existing, lines),
-    cursorCol: existing?.cursorCol ?? FIRST_COLUMN,
-    scrollRow: existing?.scrollRow ?? FIRST_LINE,
-    scrollCol: existing?.scrollCol ?? FIRST_COLUMN,
+  return editorFromWorkspaceTextReadingCache({
+    filePath: authority.filePath,
     dirty: authority.dirty,
     readOnly: authority.readOnly,
-    mode: existing?.mode ?? EditorModes.Normal,
-    pendingNormal: existing?.pendingNormal,
-    register: existing?.register,
-    undoStack: existing?.undoStack ?? EMPTY_STACK,
-    redoStack: existing?.redoStack ?? EMPTY_STACK,
-  };
+    cache: authority.cache,
+    existing,
+  });
 }
 
-function editorCursorRow(
-  authority: WorkspaceTextAuthorityOpened,
-  existing: EditorState | undefined,
-  lines: readonly string[],
-): number {
-  return clampLine(existing?.cursorRow ?? authority.cache?.cursorLine ?? FIRST_LINE, lines);
-}
-
-function clampLine(row: number, lines: readonly string[]): number {
-  return Math.max(FIRST_LINE, Math.min(row, Math.max(FIRST_LINE, lines.length - 1)));
+export function workspaceTextAuthorityPosture(
+  authority: WorkspaceTextAuthority,
+): WorkspaceTextReadingPosture {
+  if (authority.kind === AUTHORITY_OPENED) {
+    return workspaceTextReadingCachePosture({
+      kind: authority.kind,
+      dirty: authority.dirty,
+      cache: authority.cache,
+      lastCheckpointId: authority.lastCheckpointId,
+      lastExportReadingId: authority.lastExportReadingId,
+    });
+  }
+  return workspaceTextReadingCachePosture({
+    kind: authority.kind === AUTHORITY_NONE
+      ? WorkspaceTextReadingPostures.NoText
+      : authority.kind,
+  });
 }

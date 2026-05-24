@@ -6,13 +6,14 @@ const DEFAULT_COLUMNS = 100;
 const DEFAULT_ROWS = 24;
 
 export async function createWorkspaceEchoAppHarness(options = {}) {
-  const [runtimeModule, fileSystem, focus, profile, viewerContent, themes] = await Promise.all([
+  const [runtimeModule, fileSystem, focus, profile, viewerContent, themes, viewer] = await Promise.all([
     importDist('app', 'workspace', 'runtime.js'),
     importDist('ports', 'file-system.js'),
     importDist('ui', 'panel-focus.js'),
     importDist('app', 'text-runtime-profile.js'),
     importDist('app', 'workspace', 'viewer-content.js'),
     importDist('ui', 'jedit-themes.js'),
+    importDist('app', 'workspace', 'viewer.js'),
   ]);
   const savedFiles = [];
   const calls = {
@@ -49,6 +50,9 @@ export async function createWorkspaceEchoAppHarness(options = {}) {
       saveEditorFile: (filePath, lines) => {
         savedFiles.push({ filePath, lines });
       },
+    },
+    sourceHighlighter: options.sourceHighlighter ?? {
+      highlight: async () => ({ path: '', partial: false, spans: [] }),
     },
     productionTextSession,
     nowMs: () => options.nowMs ?? DEFAULT_NOW_MS,
@@ -89,6 +93,9 @@ export async function createWorkspaceEchoAppHarness(options = {}) {
     renderText() {
       return surfaceText(viewerContent.renderViewer(model, options.columns ?? DEFAULT_COLUMNS, options.rows ?? DEFAULT_ROWS));
     },
+    renderWorkspaceText() {
+      return surfaceText(viewer.renderWorkspace(model));
+    },
   };
 }
 
@@ -111,7 +118,7 @@ function recordingProductionTextSession(calls, options) {
         kind: 'opened',
         optic: {
           buffer: {
-            bufferId: options.bufferId ?? 'buffer:notes',
+            bufferId: options.bufferIdByKey?.get(request.bufferKey) ?? options.bufferId ?? 'buffer:notes',
           },
         },
       };

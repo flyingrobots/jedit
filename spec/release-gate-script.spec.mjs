@@ -71,6 +71,7 @@ test('release-gate script includes hosting replay and static guard witnesses', (
   assert.match(source, /spec\/production-text-session-cli\.spec\.mjs/);
   assert.match(source, /spec\/workspace-text-cutover\.spec\.mjs/);
   assert.match(source, /spec\/workspace-app-echo-cutover\.spec\.mjs/);
+  assert.match(source, /spec\/workspace-text-boundaries\.spec\.mjs/);
   assert.match(source, /spec\/workspace-echo-witness-cli\.spec\.mjs/);
   assert.match(source, /spec\/production-cutover-guard\.spec\.mjs/);
   assert.match(source, /jedit-production-cutover-guard\.mjs/);

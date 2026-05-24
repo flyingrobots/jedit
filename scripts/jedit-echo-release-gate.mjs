@@ -36,6 +36,7 @@ const FOCUSED_TESTS = Object.freeze([
   'spec/production-text-session-cli.spec.mjs',
   'spec/workspace-text-cutover.spec.mjs',
   'spec/workspace-app-echo-cutover.spec.mjs',
+  'spec/workspace-text-boundaries.spec.mjs',
   'spec/workspace-echo-witness-cli.spec.mjs',
   'spec/production-cutover-guard.spec.mjs',
   'spec/release-quickstart.spec.mjs',

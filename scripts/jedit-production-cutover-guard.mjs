@@ -21,10 +21,12 @@ const DEFAULT_LIFECYCLE_AUTHORITY_FILES = Object.freeze([
   'src/app/workspace/runtime.ts',
   'src/app/workspace/viewer-content.ts',
   'src/app/workspace/viewer-key.ts',
+  'src/app/workspace/workspace-text-edit-planner.ts',
   'src/app/workspace/workspace-save-key.ts',
   'src/app/workspace/workspace-text-authority.ts',
   'src/app/workspace/workspace-text-commands.ts',
   'src/app/workspace/workspace-text-position.ts',
+  'src/app/workspace/workspace-text-reading-cache.ts',
   'src/app/workspace/workspace-text-results.ts',
   'src/app/workspace/workspace-text-runtime-state.ts',
 ]);

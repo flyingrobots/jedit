@@ -3,7 +3,9 @@
 
 # jedit Echo Real App Proof PR Notes
 
-Status: draft PR package for slices 91-100.
+Status: completed local PR package for slices 91-100. Slices 101-110 are
+tracked in
+[`0032-jedit-echo-reading-cache-and-fallback-boundaries.md`](0032-jedit-echo-reading-cache-and-fallback-boundaries.md).
 
 ## Scope
 

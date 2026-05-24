@@ -104,6 +104,7 @@ export interface WorkspaceFooterState {
   readonly cwd: string;
   readonly selectedEntry?: FileEntry;
   readonly editorPath?: string;
+  readonly textPosture?: string;
   readonly graftPath?: string;
   readonly graftSelection?: {
     readonly kind: string;
@@ -349,10 +350,14 @@ function footerContextLine(state: WorkspaceFooterState): string {
   }
 
   if (state.editorPath != null) {
-    return state.editorPath;
+    return editorFooterContextLine(state.editorPath, state.textPosture);
   }
 
   return state.cwd;
+}
+
+function editorFooterContextLine(editorPath: string, textPosture: string | undefined): string {
+  return textPosture == null ? editorPath : `${editorPath} [${textPosture}]`;
 }
 
 function graftFooterContextLine(state: WorkspaceFooterState): string {

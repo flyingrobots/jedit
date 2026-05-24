@@ -1,5 +1,5 @@
 import type { RuntimeIssue } from '@flyingrobots/bijou-tui';
-import type { WorkspaceTextReadingCache } from './workspace-text-authority.js';
+import type { WorkspaceTextReadingCache } from './workspace-text-reading-cache.js';
 
 const RESULT_OPENED = 'opened';
 const RESULT_APPLIED = 'applied';

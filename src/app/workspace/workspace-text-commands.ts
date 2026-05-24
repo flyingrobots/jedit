@@ -8,7 +8,7 @@ import type {
 import { ProductionTextSessionOutcomeKinds } from './production-text-session.js';
 import { RuntimeIssueLevels, RuntimeIssueSources } from './runtime-issue.js';
 import { WorkspaceMessageTypes, type WorkspaceMsg } from './msg.js';
-import type { WorkspaceTextReadingCache } from './workspace-text-authority.js';
+import type { WorkspaceTextReadingCache } from './workspace-text-reading-cache.js';
 import {
   WorkspaceTextResultKinds,
   type WorkspaceTextCheckpointResult,

@@ -43,6 +43,11 @@ These are hard repo rules, not suggestions:
 - `docs/design/0027-echo-hosted-production-cutover.md` is the active production
   cutover plan for slices 61-80. Keep track of progress in that plan doc by
   checking off slices just before you make the commit for that slice.
+- `docs/BEARING.md` is the active plan for the powered-by-Echo completion
+  budget after slice 80. Keep track of progress there by checking off slices
+  just before you make the commit for that slice.
+- `docs/design/0032-jedit-echo-reading-cache-and-fallback-boundaries.md`
+  records the local package for slices 101-110.
 - `scripts/quality-gate.mjs` is the current enforceable quality ratchet.
 - `quality-baseline.json` is temporary debt tracking, not permission to add more debt.
   Keep it empty when the ratchet is clean.

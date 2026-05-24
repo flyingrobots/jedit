@@ -16,7 +16,7 @@ import { EditorModes } from './editor/mode.js';
 import { EditorKeys } from './editor/key.js';
 import { focusCycleState } from './focus.js';
 import type { WorkspaceModel } from './model.js';
-import { workspaceSourceHighlightMessage, type WorkspaceMsg } from './msg.js';
+import { WorkspaceMessageTypes, workspaceSourceHighlightMessage, type WorkspaceMsg } from './msg.js';
 import { ViewModes } from './view-mode.js';
 import {
   createWorkspaceTextEditCmd,
@@ -25,10 +25,21 @@ import {
   WorkspaceTextEditCommandKinds,
 } from './workspace-text-commands.js';
 import { WorkspaceTextAuthorityKinds } from './workspace-text-authority.js';
-import { byteOffsetForTextPosition, nextByteOffset, previousByteOffset } from './workspace-text-position.js';
+import {
+  planWorkspaceTextBackspace,
+  planWorkspaceTextDeleteUnderCursor,
+  planWorkspaceTextInsert,
+  WorkspaceTextEditPlanKinds,
+  type WorkspaceTextDeletePlan,
+  type WorkspaceTextInsertPlan,
+} from './workspace-text-edit-planner.js';
+import { RuntimeIssueLevels, RuntimeIssueSources } from './runtime-issue.js';
 
 const INSERT_TAB_TEXT = '  ';
 const INSERT_NEWLINE_TEXT = '\n';
+const UNSUPPORTED_PRODUCTION_EDIT_TITLE = 'Unsupported production text command';
+const UNSUPPORTED_UNDO_MESSAGE = 'Undo must be submitted as explicit causal input before production use.';
+const UNSUPPORTED_REDO_MESSAGE = 'Redo must be submitted as explicit causal input before production use.';
 
 export function updateViewerFromKey(
   msg: KeyMsg,
@@ -93,6 +104,10 @@ function productionNormalModeEdit(
   productionTextSession: ProductionTextSession,
   editor: NonNullable<WorkspaceModel['editor']>,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] | undefined {
+  const unsupported = unsupportedProductionHistoryEdit(msg, model);
+  if (unsupported != null) {
+    return unsupported;
+  }
   const deleteEdit = normalModeDeleteEdit(msg, model, productionTextSession);
   if (deleteEdit != null) {
     return deleteEdit;
@@ -165,15 +180,7 @@ function productionInsertText(
   if (editor == null) {
     return undefined;
   }
-  const startByte = byteOffsetForTextPosition(editor.lines, {
-    row: editor.cursorRow,
-    column: editor.cursorCol,
-  });
-  return queueProductionTextEdit(model, productionTextSession, {
-    kind: WorkspaceTextEditCommandKinds.Insert,
-      startByte,
-      insertText,
-    });
+  return queueProductionTextPlan(model, productionTextSession, planWorkspaceTextInsert(editor, insertText));
 }
 
 function productionInsertNavigation(
@@ -238,21 +245,10 @@ function productionBackspace(
   if (editor == null) {
     return undefined;
   }
-  const endByte = byteOffsetForTextPosition(editor.lines, {
-    row: editor.cursorRow,
-    column: editor.cursorCol,
-  });
-  const startByte = previousByteOffset(editor.lines, {
-    row: editor.cursorRow,
-    column: editor.cursorCol,
-  });
-  return startByte === endByte
+  const plan = planWorkspaceTextBackspace(editor);
+  return plan.kind === WorkspaceTextEditPlanKinds.Unsupported
     ? [model, []]
-    : queueProductionTextEdit(model, productionTextSession, {
-      kind: WorkspaceTextEditCommandKinds.Delete,
-      startByte,
-      endByte,
-    });
+    : queueProductionTextPlan(model, productionTextSession, plan);
 }
 
 function productionDeleteUnderCursor(
@@ -263,30 +259,60 @@ function productionDeleteUnderCursor(
   if (editor == null) {
     return undefined;
   }
-  const startByte = byteOffsetForTextPosition(editor.lines, {
-    row: editor.cursorRow,
-    column: editor.cursorCol,
-  });
-  const endByte = nextByteOffset(editor.lines, {
-    row: editor.cursorRow,
-    column: editor.cursorCol,
-  });
-  return startByte === endByte
+  const plan = planWorkspaceTextDeleteUnderCursor(editor);
+  return plan.kind === WorkspaceTextEditPlanKinds.Unsupported
     ? [model, []]
+    : queueProductionTextPlan(model, productionTextSession, plan);
+}
+
+function queueProductionTextPlan(
+  model: WorkspaceModel,
+  productionTextSession: ProductionTextSession,
+  plan: WorkspaceTextInsertPlan | WorkspaceTextDeletePlan,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
+  return plan.kind === WorkspaceTextEditPlanKinds.Insert
+    ? queueProductionTextEdit(model, productionTextSession, {
+      kind: WorkspaceTextEditCommandKinds.Insert,
+      startByte: plan.startByte,
+      insertText: plan.insertText,
+    })
     : queueProductionTextEdit(model, productionTextSession, {
       kind: WorkspaceTextEditCommandKinds.Delete,
-      startByte,
-      endByte,
+      startByte: plan.startByte,
+      endByte: plan.endByte,
     });
+}
+
+function unsupportedProductionHistoryEdit(
+  msg: KeyMsg,
+  model: WorkspaceModel,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] | undefined {
+  if (!isUnsupportedProductionHistoryKey(msg)) {
+    return undefined;
+  }
+  const message = msg.key === EditorKeys.U ? UNSUPPORTED_UNDO_MESSAGE : UNSUPPORTED_REDO_MESSAGE;
+  return [model, [() => ({
+    type: WorkspaceMessageTypes.RuntimeIssue,
+    issue: {
+      name: 'UnsupportedProductionTextHistoryCommand',
+      title: UNSUPPORTED_PRODUCTION_EDIT_TITLE,
+      message,
+      level: RuntimeIssueLevels.Error,
+      source: RuntimeIssueSources.Command,
+      atMs: model.time,
+    },
+  })]];
+}
+
+function isUnsupportedProductionHistoryKey(msg: KeyMsg): boolean {
+  return (msg.key === EditorKeys.U && !msg.ctrl && !msg.alt)
+    || (msg.key === EditorKeys.R && msg.ctrl && !msg.alt);
 }
 
 function queueProductionTextEdit(
   model: WorkspaceModel,
   productionTextSession: ProductionTextSession,
-  edit: (
-    | { readonly kind: typeof WorkspaceTextEditCommandKinds.Insert; readonly startByte: number; readonly insertText: string }
-    | { readonly kind: typeof WorkspaceTextEditCommandKinds.Delete; readonly startByte: number; readonly endByte: number }
-  ),
+  edit: ProductionTextEditRequest,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (model.textAuthority.kind !== WorkspaceTextAuthorityKinds.Opened) {
     return [model, []];
@@ -310,6 +336,18 @@ function queueProductionTextEdit(
     }),
   ]];
 }
+
+type ProductionTextEditRequest =
+  | {
+    readonly kind: typeof WorkspaceTextEditCommandKinds.Insert;
+    readonly startByte: number;
+    readonly insertText: string;
+  }
+  | {
+    readonly kind: typeof WorkspaceTextEditCommandKinds.Delete;
+    readonly startByte: number;
+    readonly endByte: number;
+  };
 
 function insertTextFromKey(msg: KeyMsg): string | undefined {
   if (msg.ctrl || msg.alt) {
