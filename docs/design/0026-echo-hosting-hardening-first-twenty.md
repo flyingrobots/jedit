@@ -365,9 +365,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Release gate includes hosting witness.
-- [ ] Release gate includes replay witness.
-- [ ] Release gate includes static guards.
+- [x] Release gate includes hosting witness.
+- [x] Release gate includes replay witness.
+- [x] Release gate includes static guards.
 
 ### Slice 60 - Drift Reflection And Next Plan
 

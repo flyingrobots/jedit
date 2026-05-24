@@ -10,6 +10,7 @@ const FOCUSED_TESTS = Object.freeze([
   'spec/jedit-contract-package-install.spec.mjs',
   'spec/jedit-contract-mutation-handlers.spec.mjs',
   'spec/jedit-contract-query-observers.spec.mjs',
+  'spec/jedit-runtime-handler-invocation.spec.mjs',
   'spec/installed-jedit-contract-echo-transport.spec.mjs',
   'spec/jedit-contract-entity-facts.spec.mjs',
   'spec/jedit-contract-state-port.spec.mjs',
@@ -19,6 +20,7 @@ const FOCUSED_TESTS = Object.freeze([
   'spec/jedit-ticketed-runtime-ingress.spec.mjs',
   'spec/jedit-ticketed-work-boundary.spec.mjs',
   'spec/jedit-restart-witness.spec.mjs',
+  'spec/jedit-restart-recovery.spec.mjs',
   'spec/echo-hosting-counter-template.spec.mjs',
   'spec/trusted-echo-runtime-loop.spec.mjs',
   'spec/jedit-intent-outcomes.spec.mjs',
@@ -27,6 +29,7 @@ const FOCUSED_TESTS = Object.freeze([
   'spec/jedit-echo-witness-mcp-adapter.spec.mjs',
   'spec/jedit-restart-posture.spec.mjs',
   'spec/jedit-local-replay-proof.spec.mjs',
+  'spec/echo-application-hosting-guide.spec.mjs',
   'spec/interactive-echo-text-session.spec.mjs',
   'spec/release-quickstart.spec.mjs',
 ]);

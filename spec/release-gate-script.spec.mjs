@@ -56,3 +56,13 @@ test('release-gate script metadata check passes with current required files', ()
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /metadata ok/);
 });
+
+test('release-gate script includes hosting replay and static guard witnesses', () => {
+  const source = readFileSync(RELEASE_GATE_SCRIPT, 'utf8');
+
+  assert.match(source, /spec\/echo-powered-session-witness-cli\.spec\.mjs/);
+  assert.match(source, /spec\/jedit-local-replay-proof\.spec\.mjs/);
+  assert.match(source, /spec\/echo-application-hosting-guide\.spec\.mjs/);
+  assert.match(source, /spec\/jedit-restart-recovery\.spec\.mjs/);
+  assert.match(source, /npm', \['run', '--silent', 'quality'\]/);
+});
