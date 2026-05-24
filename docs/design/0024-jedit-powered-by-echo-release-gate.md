@@ -1,6 +1,6 @@
 # jedit Powered By Echo Release Gate
 
-Status: slices 1-28 closed locally; release-gate evidence and continuation
+Status: slices 1-29 closed locally; release-gate evidence and continuation
 plan recorded.
 
 This plan defines the local release gate for the sentence:
@@ -859,10 +859,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Entity/fact model exists.
-- [ ] Session conversion exists.
-- [ ] Fact identities are stable.
-- [ ] Tests prove deterministic conversion.
+- [x] Entity/fact model exists.
+- [x] Session conversion exists.
+- [x] Fact identities are stable.
+- [x] Tests prove deterministic conversion.
 
 ## Slice 30 - Echo-Backed State Port
 
