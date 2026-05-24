@@ -384,11 +384,11 @@ Test plan:
 
 Checklist:
 
-- [ ] Restart witness exists.
-- [ ] Pending posture covered.
-- [ ] Decided posture covered.
-- [ ] Unknown posture covered.
-- [ ] Recovery is non-executing.
+- [x] Restart witness exists.
+- [x] Pending posture covered.
+- [x] Decided posture covered.
+- [x] Unknown posture covered.
+- [x] Recovery is non-executing.
 
 ### Slice 39 - Second-App Template Proof
 
