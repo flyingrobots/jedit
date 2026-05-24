@@ -5,7 +5,10 @@ import {
   createJeditContractQueryObserverRegistry,
 } from '../app/jedit-contract-query-observers.js';
 import { JEDIT_HOT_TEXT_PACKAGE_ID } from '../app/jedit-contract-package.js';
-import { createInMemoryJeditContractStatePort } from '../app/jedit-contract-state-port.js';
+import {
+  createInMemoryJeditContractStatePort,
+  JeditContractStatePortError,
+} from '../app/jedit-contract-state-port.js';
 import {
   invokeJeditHandlerWithAuthority,
   JEDIT_HANDLER_INVOCATION_AUTHORITY_SCHEDULER,
@@ -60,6 +63,7 @@ const INSTALLED_CONTRACT_HOST = 'installed-jedit-contract';
 const SCHEDULER_STATE_IDLE = 'IDLE';
 const PACKAGE_NOT_INSTALLED_CODE = 'JEDIT_PACKAGE_NOT_INSTALLED';
 const PACKAGE_NOT_INSTALLED_RECOVERY = 'install package through trusted host';
+const STATE_MISSING_RECOVERY = 'publish jedit contract state before observing';
 
 export interface InstalledJeditContractEchoTransportOptions {
   readonly runtime?: HotTextRuntimePort;
@@ -108,7 +112,7 @@ function createTransportContext(
   const hash = options.hash ?? createHashPort();
   const statePort = options.statePort ?? createInMemoryJeditContractStatePort();
   const mutations = createJeditContractMutationHandlerRegistry({ runtime, hash, statePort });
-  const observers = createJeditContractQueryObserverRegistry({ runtime, hash });
+  const observers = createJeditContractQueryObserverRegistry({ runtime, hash, statePort });
   const host = createRecordingPackageHost();
   const install = installJeditContractPackage({ host });
 
@@ -143,9 +147,16 @@ function observeInstalledRequest(
   context: InstalledJeditContractEchoTransportContext,
   requestBytes: Uint8Array,
 ): Uint8Array {
-  return encodeJeditObserveResponse(
-    executeObserve(context.installStatus, context.observers, decodeJeditObserveRequest(requestBytes)),
-  );
+  const request = decodeJeditObserveRequest(requestBytes);
+  try {
+    return encodeJeditObserveResponse(
+      executeObserve(context.installStatus, context.observers, request),
+    );
+  } catch (error) {
+    return encodeJeditObserveResponse(
+      obstructedObserve(request, observeErrorObstruction(error instanceof Error ? error : undefined)),
+    );
+  }
 }
 
 function encodeInstalledSchedulerStatus(): Uint8Array {
@@ -304,6 +315,23 @@ function obstructedObserve(
 }
 
 function packageNotInstalledObstruction(): JeditTransportObstruction {
+  return {
+    code: PACKAGE_NOT_INSTALLED_CODE,
+    message: PACKAGE_NOT_INSTALLED_CODE,
+    recovery: PACKAGE_NOT_INSTALLED_RECOVERY,
+  };
+}
+
+function observeErrorObstruction(error: Error | undefined): JeditTransportObstruction {
+  if (error instanceof JeditContractStatePortError) {
+    return {
+      code: error.code,
+      message: error.message,
+      recovery: STATE_MISSING_RECOVERY,
+      worldlineId: error.worldlineId,
+    };
+  }
+
   return {
     code: PACKAGE_NOT_INSTALLED_CODE,
     message: PACKAGE_NOT_INSTALLED_CODE,

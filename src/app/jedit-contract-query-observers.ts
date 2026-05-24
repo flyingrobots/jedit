@@ -6,6 +6,7 @@ import {
   readTextWindowWithObserverPlan,
   readWorldlineSnapshotWithObserverPlan,
 } from './jedit-observer-runtime.js';
+import { requireJeditContractFactSet } from './jedit-contract-state-port.js';
 import type { JeditWorldlineSession } from './jedit-contract-runtime.js';
 import type {
   QueryOperationMap,
@@ -16,6 +17,7 @@ import {
 } from '../generated/jedit/hot-text-runtime.wesley.generated.js';
 import type { HashPort } from '../ports/hash.js';
 import type { HotTextRuntimePort } from '../ports/hot-text-runtime.js';
+import type { JeditContractStatePort } from '../ports/jedit-contract-state-port.js';
 
 type WorldlineSnapshotInput = QueryOperationMap['worldlineSnapshot']['input'];
 type TextWindowInput = QueryOperationMap['textWindow']['input'];
@@ -45,6 +47,7 @@ export interface JeditTextWindowObserverRequest {
 export interface JeditContractQueryObserverRegistryOptions {
   readonly runtime: HotTextRuntimePort;
   readonly hash: HashPort;
+  readonly statePort?: JeditContractStatePort;
 }
 
 export interface JeditContractQueryObserverRegistry {
@@ -108,6 +111,7 @@ function observeWorldlineSnapshot(
   options: JeditContractQueryObserverRegistryOptions,
   request: JeditWorldlineSnapshotObserverRequest,
 ): WorldlineSnapshotReadingEnvelope {
+  requireStateIfAvailable(options, request.input.worldlineId);
   return readWorldlineSnapshotWithObserverPlan(
     options.runtime,
     request.session,
@@ -121,6 +125,7 @@ function observeTextWindow(
   options: JeditContractQueryObserverRegistryOptions,
   request: JeditTextWindowObserverRequest,
 ): TextWindowReadingEnvelope {
+  requireStateIfAvailable(options, request.input.worldlineId);
   return readTextWindowWithObserverPlan(
     options.runtime,
     request.session,
@@ -128,4 +133,13 @@ function observeTextWindow(
     request.input,
     options.hash,
   );
+}
+
+function requireStateIfAvailable(
+  options: JeditContractQueryObserverRegistryOptions,
+  worldlineId: string,
+): void {
+  if (options.statePort != null) {
+    requireJeditContractFactSet(options.statePort, worldlineId);
+  }
 }

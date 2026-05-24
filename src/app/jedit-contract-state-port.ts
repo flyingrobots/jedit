@@ -21,6 +21,18 @@ import type { HashPort } from '../ports/hash.js';
 
 const MISSING_STATE_REASON = 'jedit contract fact set is not present in the state port';
 
+export class JeditContractStatePortError extends Error {
+  public readonly code: typeof JEDIT_CONTRACT_STATE_MISSING_CODE;
+  public readonly worldlineId: string;
+
+  public constructor(worldlineId: string) {
+    super(MISSING_STATE_REASON);
+    this.name = 'JeditContractStatePortError';
+    this.code = JEDIT_CONTRACT_STATE_MISSING_CODE;
+    this.worldlineId = worldlineId;
+  }
+}
+
 export function createInMemoryJeditContractStatePort(): JeditContractStatePort {
   const factSets = new Map<string, JeditContractEntityFactSet>();
 
@@ -55,6 +67,18 @@ export function readJeditContractFactSet(
   worldlineId: string,
 ): JeditContractStateReadResult {
   return port.readFactSet(worldlineId);
+}
+
+export function requireJeditContractFactSet(
+  port: JeditContractStatePort,
+  worldlineId: string,
+): JeditContractEntityFactSet {
+  const read = port.readFactSet(worldlineId);
+  if (read.status === JEDIT_CONTRACT_STATE_READ_MISSING) {
+    throw new JeditContractStatePortError(worldlineId);
+  }
+
+  return read.factSet;
 }
 
 function missingFactSet(worldlineId: string): JeditContractStateReadMissing {

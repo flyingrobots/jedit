@@ -216,6 +216,65 @@ test('installed transport publishes handler state through jedit state port', asy
   assert.equal(read.status, modules.state.JEDIT_CONTRACT_STATE_READ_FOUND);
 });
 
+test('installed query observers require state-port-backed basis', async () => {
+  const modules = await loadModules();
+  const statePort = createMissingReadStatePort(modules);
+  const transport = modules.transport.createInstalledJeditContractEchoTransport({
+    statePort,
+  });
+  const createResponse = modules.codec.decodeJeditIntentResponse(transport.submitIntentBytes(
+    modules.codec.encodeJeditIntentRequest({
+      kind: modules.codec.JEDIT_INTENT_REQUEST_KIND,
+      operationName: modules.codec.CREATE_BUFFER_WORLDLINE_OPERATION,
+      input: {
+        bufferKey: BUFFER_KEY,
+        initialText: INITIAL_TEXT,
+        projectionPath: BUFFER_KEY,
+      },
+    }),
+  ));
+  const observeResponse = modules.codec.decodeJeditObserveResponse(transport.observeBytes(
+    modules.codec.encodeJeditObserveRequest({
+      kind: modules.codec.JEDIT_OBSERVE_REQUEST_KIND,
+      operationName: modules.codec.TEXT_WINDOW_OPERATION,
+      session: createResponse.execution.nextSession,
+      frontierRef: createResponse.execution.nextSession.worldline.canonicalHeadId,
+      input: {
+        worldlineId: createResponse.execution.nextSession.worldline.worldlineId,
+        cursorLine: FIRST_LINE,
+        viewportLineCount: SINGLE_LINE,
+        beforeLines: FIRST_LINE,
+        afterLines: FIRST_LINE,
+        maxBytes: BYTE_BUDGET,
+      },
+    }),
+  ));
+
+  assert.equal(observeResponse.status, modules.codec.JEDIT_TRANSPORT_STATUS_OBSTRUCTED);
+  assert.equal(observeResponse.obstruction.code, modules.state.JEDIT_CONTRACT_STATE_MISSING_CODE);
+});
+
+function createMissingReadStatePort(modules) {
+  return {
+    writeFactSet(factSet) {
+      return {
+        status: modules.state.JEDIT_CONTRACT_STATE_WRITE_STORED,
+        factSet,
+      };
+    },
+    readFactSet(worldlineId) {
+      return {
+        status: modules.state.JEDIT_CONTRACT_STATE_READ_MISSING,
+        worldlineId,
+        obstruction: {
+          code: modules.state.JEDIT_CONTRACT_STATE_MISSING_CODE,
+          reason: 'test missing state',
+        },
+      };
+    },
+  };
+}
+
 async function loadModules() {
   if (modulesPromise) {
     return modulesPromise;

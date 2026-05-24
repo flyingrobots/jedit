@@ -256,10 +256,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Snapshot observer uses state port.
-- [ ] Text-window observer uses state port.
-- [ ] Missing state is typed.
-- [ ] Read-only authority holds.
+- [x] Snapshot observer uses state port.
+- [x] Text-window observer uses state port.
+- [x] Missing state is typed.
+- [x] Read-only authority holds.
 
 ### Slice 34 - Submission Ledger Port
 
