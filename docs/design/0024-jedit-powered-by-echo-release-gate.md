@@ -1,6 +1,6 @@
 # jedit Powered By Echo Release Gate
 
-Status: slices 1-26 closed locally; release-gate evidence and continuation
+Status: slices 1-27 closed locally; release-gate evidence and continuation
 plan recorded.
 
 This plan defines the local release gate for the sentence:
@@ -809,10 +809,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Receipt correlation port exists.
-- [ ] Real receipt mapping path exists.
-- [ ] Missing receipt posture is typed.
-- [ ] Tests cover unsupported operations.
+- [x] Receipt correlation port exists.
+- [x] Real receipt mapping path exists.
+- [x] Missing receipt posture is typed.
+- [x] Tests cover unsupported operations.
 
 ## Slice 28 - Retained Evidence Adapter Against Echo Retention
 

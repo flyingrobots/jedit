@@ -5,6 +5,7 @@ import type {
   TextWindowLine,
 } from './jedit-optic-client.js';
 import type { JeditIntentOutcome } from './jedit-intent-outcomes.js';
+import type { JeditReceiptCorrelation } from './jedit-receipt-correlation.js';
 import type { JeditRetainedEvidenceInventory } from './jedit-retained-evidence.js';
 import type { JeditRestartPosture } from './jedit-restart-posture.js';
 import type { JeditTicketedRuntimeIngressPosture } from './jedit-ticketed-runtime-ingress.js';
@@ -28,6 +29,7 @@ export interface EchoPoweredTextBufferWitnessReport {
   readonly bufferKey: BufferKey;
   readonly outcome: JeditIntentOutcome;
   readonly outcomeTrail: readonly JeditIntentOutcome[];
+  readonly receiptCorrelation: JeditReceiptCorrelation;
   readonly ticketedRuntimeIngress: JeditTicketedRuntimeIngressPosture;
   readonly retainedEvidence: JeditRetainedEvidenceInventory;
   readonly restartPosture: JeditRestartPosture;
