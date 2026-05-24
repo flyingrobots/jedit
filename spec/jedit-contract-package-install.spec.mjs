@@ -54,6 +54,25 @@ test('trusted adapter blocks invalid package before reaching Echo package port',
   );
 });
 
+test('recording package host treats duplicate install as idempotent and conflicts as blocked', async () => {
+  const modules = await loadModules();
+  const descriptor = modules.packageModule.jeditHotTextContractPackage();
+  const host = modules.installer.createRecordingEchoContractPackageHost();
+  const first = modules.installer.installJeditContractPackage({ host, descriptor });
+  const duplicate = modules.installer.installJeditContractPackage({ host, descriptor });
+  const conflict = modules.installer.installJeditContractPackage({
+    host,
+    descriptor: {
+      ...descriptor,
+      artifactId: `${descriptor.artifactId}.conflict`,
+    },
+  });
+
+  assert.equal(first.hostResult.status, modules.hostPort.ECHO_CONTRACT_PACKAGE_INSTALL_INSTALLED);
+  assert.equal(duplicate.hostResult.status, modules.hostPort.ECHO_CONTRACT_PACKAGE_INSTALL_INSTALLED);
+  assert.equal(conflict.hostResult.status, modules.hostPort.ECHO_CONTRACT_PACKAGE_INSTALL_BLOCKED);
+});
+
 async function loadModules() {
   if (modulesPromise) {
     return modulesPromise;

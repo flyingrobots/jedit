@@ -268,6 +268,16 @@ function packControlStopIntent() {
 
 function createWitnessLifecycleCodec() {
   return {
+    encodeStartRequest() {
+      return packControlStartIntent();
+    },
+    decodeStartResponse(responseBytes) {
+      const response = decodeOkEnvelope(responseBytes);
+      return {
+        accepted: response.accepted === true,
+        lastRunCompletion: response.scheduler_status.last_run_completion,
+      };
+    },
     encodeRunUntilIdleRequest(request) {
       return packControlStartIntent(request.cycleLimit);
     },

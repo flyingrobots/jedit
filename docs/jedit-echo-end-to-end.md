@@ -983,8 +983,8 @@ sequenceDiagram
 
 ## Start, Stop, and Trusted Runtime Control
 
-The current witness uses trusted until-idle control. The design direction for a
-long-running host is still the same authority split:
+The current witness records trusted start, until-idle drain, and stop posture.
+The design direction for a long-running host is still the same authority split:
 
 - The application may ask for work by submitting intents.
 - The trusted host may start or stop Echo's internal run loop.
@@ -994,10 +994,10 @@ long-running host is still the same authority split:
 - Even trusted host code must not inject discrete ticks or choose individual
   tick boundaries.
 
-If a future jedit host exposes:
+The host-facing shape is:
 
 ```text
-Start(tickFrequency = 1/60)
+Start(tickIntervalSeconds = 1/60)
 Stop()
 ```
 

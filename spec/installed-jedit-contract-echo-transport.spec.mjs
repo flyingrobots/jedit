@@ -15,6 +15,7 @@ const INVOCATION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-runtim
 const STATE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-state-port.js');
 const LEDGER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-submission-ledger.js');
 const TICKETED_WORK_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-ticketed-work-boundary.js');
+const HOST_PORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'ports', 'echo-contract-package-host.js');
 const BUFFER_KEY = 'notes/installed-contract.md';
 const INITIAL_TEXT = 'hello';
 const INSERT_TEXT = ' Echo';
@@ -23,6 +24,8 @@ const INSERT_BYTE = 5;
 const FIRST_LINE = 0;
 const SINGLE_LINE = 1;
 const BYTE_BUDGET = 80;
+const PACKAGE_INSTALL_BLOCKED_MESSAGE = 'blocked in test host';
+const PACKAGE_NOT_INSTALLED_CODE = 'JEDIT_PACKAGE_NOT_INSTALLED';
 
 let modulesPromise;
 
@@ -285,6 +288,52 @@ test('installed transport blocks unticketed work before handler invocation', asy
   assert.deepEqual(envelopes, []);
 });
 
+test('installed transport accepts package host injection and blocks non-installed packages', async () => {
+  const modules = await loadModules();
+  const hostRequests = [];
+  const handlerAuthorities = [];
+  const envelopes = [];
+  const transport = modules.transport.createInstalledJeditContractEchoTransport({
+    packageHost: {
+      installContractPackage(request) {
+        hostRequests.push(request);
+        return {
+          status: modules.hostPort.ECHO_CONTRACT_PACKAGE_INSTALL_BLOCKED,
+          packageId: request.packageId,
+          message: PACKAGE_INSTALL_BLOCKED_MESSAGE,
+        };
+      },
+    },
+    handlerInvocationSink: {
+      recordHandlerInvocationAuthority(authority) {
+        handlerAuthorities.push(authority);
+      },
+    },
+    workSink: {
+      recordRuntimeWorkEnvelope(envelope) {
+        envelopes.push(envelope);
+      },
+    },
+  });
+  const response = modules.codec.decodeJeditIntentResponse(transport.submitIntentBytes(
+    modules.codec.encodeJeditIntentRequest({
+      kind: modules.codec.JEDIT_INTENT_REQUEST_KIND,
+      operationName: modules.codec.CREATE_BUFFER_WORLDLINE_OPERATION,
+      input: {
+        bufferKey: BUFFER_KEY,
+        initialText: INITIAL_TEXT,
+        projectionPath: BUFFER_KEY,
+      },
+    }),
+  ));
+
+  assert.equal(hostRequests.length, 1);
+  assert.equal(response.status, modules.codec.JEDIT_TRANSPORT_STATUS_OBSTRUCTED);
+  assert.equal(response.obstruction.code, PACKAGE_NOT_INSTALLED_CODE);
+  assert.deepEqual(handlerAuthorities, []);
+  assert.deepEqual(envelopes, []);
+});
+
 test('installed transport keeps submission identity aligned across ledger ticket and work', async () => {
   const modules = await loadModules();
   const ledgerRecords = [];
@@ -458,6 +507,7 @@ async function loadModules() {
       state,
       ledger,
       ticketedWork,
+      hostPort,
     ] = await Promise.all([
       import(pathToFileURL(TRANSPORT_MODULE_PATH).href),
       import(pathToFileURL(CLIENT_MODULE_PATH).href),
@@ -469,6 +519,7 @@ async function loadModules() {
       import(pathToFileURL(STATE_MODULE_PATH).href),
       import(pathToFileURL(LEDGER_MODULE_PATH).href),
       import(pathToFileURL(TICKETED_WORK_MODULE_PATH).href),
+      import(pathToFileURL(HOST_PORT_MODULE_PATH).href),
     ]);
 
     return {
@@ -482,6 +533,7 @@ async function loadModules() {
       state,
       ledger,
       ticketedWork,
+      hostPort,
     };
   })();
 

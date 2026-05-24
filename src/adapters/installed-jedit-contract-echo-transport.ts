@@ -85,12 +85,13 @@ export interface InstalledJeditContractEchoTransportOptions {
   readonly statePort?: JeditContractStatePort;
   readonly submissionLedger?: JeditSubmissionLedgerPort;
   readonly ticketedWorkPort?: JeditTicketedWorkPort;
+  readonly packageHost?: EchoContractPackageHostPort;
 }
 
 interface InstalledJeditContractEchoTransportContext {
   readonly info: EchoKernelInfo;
   readonly hash: HashPort;
-  readonly installStatus: string;
+  readonly isPackageInstalled: boolean;
   readonly mutations: ReturnType<typeof createJeditContractMutationHandlerRegistry>;
   readonly observers: ReturnType<typeof createJeditContractQueryObserverRegistry>;
   readonly workSink?: JeditRuntimeWorkSink;
@@ -136,8 +137,9 @@ function createTransportContext(
   const statePort = options.statePort ?? defaults.statePort;
   const mutations = createJeditContractMutationHandlerRegistry({ runtime, hash, statePort });
   const observers = createJeditContractQueryObserverRegistry({ runtime, hash, statePort });
-  const host = createRecordingPackageHost();
+  const host = options.packageHost ?? createRecordingPackageHost();
   const install = installJeditContractPackage({ host });
+  const isPackageInstalled = install.hostResult.status === ECHO_CONTRACT_PACKAGE_INSTALL_INSTALLED;
 
   return {
     info: {
@@ -147,7 +149,7 @@ function createTransportContext(
       schemaSha256Hex: INSTALLED_CONTRACT_SCHEMA_SHA256_HEX,
     },
     hash,
-    installStatus: install.hostResult.status,
+    isPackageInstalled,
     mutations,
     observers,
     workSink: options.workSink,
@@ -162,6 +164,9 @@ function submitInstalledIntent(
   intentBytes: Uint8Array,
 ): Uint8Array {
   const request = decodeJeditIntentRequest(intentBytes);
+  if (!context.isPackageInstalled) {
+    return encodeJeditIntentResponse(obstructedIntent(request, packageNotInstalledObstruction()));
+  }
   const submission = recordAcceptedSubmission(context, intentBytes, request);
   const ticketedWork = context.ticketedWorkPort.issueTicketedWork(submission);
   if (ticketedWork.status !== JEDIT_TICKETED_WORK_AVAILABLE) {
@@ -170,7 +175,7 @@ function submitInstalledIntent(
   recordRuntimeWorkEnvelope(context.workSink, intentBytes, request, context.hash, submission.submissionId);
 
   return encodeJeditIntentResponse(
-    executeIntent(context.installStatus, context.mutations, context.handlerInvocationSink, request),
+    executeIntent(context.mutations, context.handlerInvocationSink, request),
   );
 }
 
@@ -195,9 +200,12 @@ function observeInstalledRequest(
   requestBytes: Uint8Array,
 ): Uint8Array {
   const request = decodeJeditObserveRequest(requestBytes);
+  if (!context.isPackageInstalled) {
+    return encodeJeditObserveResponse(obstructedObserve(request, packageNotInstalledObstruction()));
+  }
   try {
     return encodeJeditObserveResponse(
-      executeObserve(context.installStatus, context.observers, request),
+      executeObserve(context.observers, request),
     );
   } catch (error) {
     return encodeJeditObserveResponse(
@@ -235,15 +243,10 @@ function bytesToHex(bytes: Uint8Array): string {
 }
 
 function executeIntent(
-  installStatus: string,
   mutations: ReturnType<typeof createJeditContractMutationHandlerRegistry>,
   invocationSink: JeditHandlerInvocationSink | undefined,
   request: JeditIntentRequest,
 ): JeditIntentResponse {
-  if (installStatus !== ECHO_CONTRACT_PACKAGE_INSTALL_INSTALLED) {
-    return obstructedIntent(request, packageNotInstalledObstruction());
-  }
-
   switch (request.operationName) {
     case CREATE_BUFFER_WORLDLINE_OPERATION:
       return executeCreateBufferIntent(mutations, invocationSink, request);
@@ -321,14 +324,9 @@ function invokeSchedulerHandler<Result>(
 }
 
 function executeObserve(
-  installStatus: string,
   observers: ReturnType<typeof createJeditContractQueryObserverRegistry>,
   request: JeditObserveRequest,
 ): JeditObserveResponse {
-  if (installStatus !== ECHO_CONTRACT_PACKAGE_INSTALL_INSTALLED) {
-    return obstructedObserve(request, packageNotInstalledObstruction());
-  }
-
   switch (request.operationName) {
     case WORLDLINE_SNAPSHOT_OPERATION:
       return {

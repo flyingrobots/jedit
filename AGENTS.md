@@ -37,6 +37,9 @@ These are hard repo rules, not suggestions:
 - `docs/design/0025-echo-application-hosting-pattern.md` is the active
   post-release-pressure ten-slice plan for proving the reusable Echo
   application-hosting pattern before applying it to Graft, Think, or other apps.
+- `docs/design/0026-echo-hosting-hardening-first-twenty.md` is the active
+  hardening plan for slices 41-60. Keep track of our progress in that plan doc
+  by checking off slices just before you make the commit for that slice.
 - `scripts/quality-gate.mjs` is the current enforceable quality ratchet.
 - `quality-baseline.json` is temporary debt tracking, not permission to add more debt.
   Keep it empty when the ratchet is clean.

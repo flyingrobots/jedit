@@ -5,6 +5,7 @@ import test from 'node:test';
 
 const REPO_ROOT = process.cwd();
 const CLI_PATH = path.join(REPO_ROOT, 'scripts', 'jedit-echo-powered-session.mjs');
+const TICK_INTERVAL_SECONDS = 1 / 60;
 
 test('Echo-powered session CLI reports app capability, lifecycle, and reading evidence', () => {
   const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
@@ -33,7 +34,18 @@ test('Echo-powered session CLI reports app capability, lifecycle, and reading ev
   assert.equal(summary.install.packageId, 'jedit.hot-text-runtime');
   assert.equal(summary.authority.appFacingCapability, 'TextBufferOptic');
   assert.equal(summary.authority.appCanTick, false);
-  assert.deepEqual(summary.lifecycleRequests, []);
+  assert.deepEqual(summary.lifecycleRequests, [
+    { tickIntervalSeconds: TICK_INTERVAL_SECONDS },
+    { cycleLimit: 6 },
+  ]);
+  assert.deepEqual(summary.startup, {
+    accepted: true,
+    lastRunCompletion: 'started',
+  });
+  assert.deepEqual(summary.drain, {
+    accepted: true,
+    lastRunCompletion: 'quiesced',
+  });
   assert.deepEqual(summary.stopRequests, [
     { requested: true },
   ]);

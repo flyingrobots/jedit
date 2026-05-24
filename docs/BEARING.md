@@ -14,6 +14,12 @@ That plan is the source of truth for the next ten slices: make `jedit` prove the
 reusable Echo application-hosting pattern before applying the model to Graft,
 Think, or other apps.
 
+The active hardening plan is
+[`docs/design/0026-echo-hosting-hardening-first-twenty.md`](design/0026-echo-hosting-hardening-first-twenty.md).
+That plan records slices 41-60. The current local inspection point is slice 50:
+trusted lifecycle start/drain/stop, package identity, install posture, and the
+Echo no-app-noun guard are closed; pause for reflection before continuing.
+
 The developer-facing recipe lives in
 [`docs/echo-application-hosting-guide.md`](echo-application-hosting-guide.md).
 
@@ -28,9 +34,9 @@ The developer-facing recipe lives in
 - The current real Echo witness fails closed with `UNSUPPORTED_QUERY` unless a
   jedit-owned query observer is installed.
 
-## Immediate Work
+## Completed Local Batch
 
-The current local inspection point is slice 40 of the application-hosting
+The previous local inspection point was slice 40 of the application-hosting
 pattern plan:
 
 31. application hosting contract pattern.
@@ -52,10 +58,22 @@ node scripts/jedit-echo-powered-session.mjs --json --dry-run
 node scripts/jedit-echo-powered-session.mjs --json
 ```
 
-Pause after slice 40 for inspection. The current branch now proves the reusable
-Echo application-hosting pattern with `jedit` and a small second-app template,
-while remaining honest that distributed transport, settlement shells, streaming,
-and full observer-rights governance are outside this batch.
+The current branch now extends that proof through slice 50 of the hardening
+plan:
+
+41. trusted runtime lifecycle doctrine closure.
+42. runtime host port finalization.
+43. Echo adapter lifecycle integration.
+44. lifecycle failure posture.
+45. agent lifecycle surface.
+46. contract package identity audit.
+47. no app nouns in Echo gate.
+48. jedit contract package install fixture.
+49. unsupported operation boundary.
+50. package reinstall and duplicate policy.
+
+Pause after slice 50 for inspection. Distributed transport, settlement shells,
+streaming, and full observer-rights governance remain outside this batch.
 
 ## Non-Negotiables
 

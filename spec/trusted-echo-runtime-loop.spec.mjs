@@ -10,6 +10,7 @@ const TRANSPORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'installe
 const CLIENT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-optic-client.js');
 const POWERED_SESSION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'echo-powered-text-buffer-optic-session.js');
 const TICK_FREQUENCY_HZ = 60;
+const TICK_INTERVAL_SECONDS = 1 / 60;
 const CYCLE_LIMIT = 7;
 const BUFFER_KEY = 'notes/runtime-loop.md';
 const INITIAL_TEXT = 'loop';
@@ -33,15 +34,37 @@ test('trusted Echo runtime loop records host cadence and drains through lifecycl
     state: modules.loop.TRUSTED_ECHO_RUNTIME_LOOP_RUNNING,
     tickFrequencyHz: TICK_FREQUENCY_HZ,
     cycleLimit: CYCLE_LIMIT,
+    lastRunCompletion: 'started',
   });
   assert.deepEqual(loop.drain(), {
     accepted: true,
     lastRunCompletion: 'quiesced',
   });
 
+  assert.deepEqual(lifecycle.startRequests, [TICK_INTERVAL_SECONDS]);
   assert.deepEqual(lifecycle.runRequests, [CYCLE_LIMIT]);
   assert.equal('tick' in loop, false);
   assert.equal('requestRunUntilIdle' in loop, false);
+});
+
+test('trusted Echo runtime loop keeps rejected start from enabling drain', async () => {
+  const modules = await loadModules();
+  const lifecycle = recordingLifecycle();
+  lifecycle.rejectStart = true;
+  const loop = modules.loop.createTrustedEchoRuntimeLoop({ lifecycle });
+
+  assert.deepEqual(loop.start({
+    tickFrequencyHz: TICK_FREQUENCY_HZ,
+    cycleLimit: CYCLE_LIMIT,
+  }), {
+    state: modules.loop.TRUSTED_ECHO_RUNTIME_LOOP_STOPPED,
+    lastRunCompletion: 'start-rejected',
+  });
+  assert.deepEqual(loop.drain(), {
+    accepted: false,
+    lastRunCompletion: modules.loop.TRUSTED_ECHO_RUNTIME_LOOP_NOT_RUNNING,
+  });
+  assert.deepEqual(lifecycle.runRequests, []);
 });
 
 test('trusted Echo runtime loop stops through lifecycle port', async () => {
@@ -116,8 +139,17 @@ async function loadModules() {
 
 function recordingLifecycle() {
   return {
+    rejectStart: false,
+    startRequests: [],
     runRequests: [],
     stopRequests: 0,
+    requestStart(request) {
+      this.startRequests.push(request.tickIntervalSeconds);
+      return {
+        accepted: !this.rejectStart,
+        lastRunCompletion: this.rejectStart ? 'start-rejected' : 'started',
+      };
+    },
     requestRunUntilIdle(request) {
       this.runRequests.push(request.cycleLimit);
       return {

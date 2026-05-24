@@ -8,6 +8,7 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, '..');
 const DEFAULT_BUFFER_KEY = 'agent-demo.txt';
 const DEFAULT_INSERT_TEXT = 'hello';
 const DEFAULT_CYCLE_LIMIT = 4;
+const DEFAULT_TICK_INTERVAL_SECONDS = 1 / 60;
 const FIRST_BYTE = 0;
 const FIRST_LINE = 0;
 const SINGLE_LINE_WINDOW = 1;
@@ -129,6 +130,13 @@ async function runSessionWitness(options) {
   const lifecycleRequests = [];
   const stopRequests = [];
   const lifecycle = {
+    requestStart(request) {
+      lifecycleRequests.push({ tickIntervalSeconds: request.tickIntervalSeconds });
+      return {
+        accepted: true,
+        lastRunCompletion: 'started',
+      };
+    },
     requestRunUntilIdle(request) {
       lifecycleRequests.push({ cycleLimit: request.cycleLimit });
       return {
@@ -144,6 +152,9 @@ async function runSessionWitness(options) {
       };
     },
   };
+  const startup = lifecycle.requestStart({
+    tickIntervalSeconds: DEFAULT_TICK_INTERVAL_SECONDS,
+  });
   const client = modules.transportClient.createEchoTransportJeditOpticClient(
     modules.installedTransport.createInstalledJeditContractEchoTransport(),
   );
@@ -162,6 +173,7 @@ async function runSessionWitness(options) {
     afterLines: FIRST_LINE,
     maxBytes: DEFAULT_MAX_BYTES,
   });
+  const drain = lifecycle.requestRunUntilIdle({ cycleLimit: options.cycleLimit });
   const shutdown = modules.host.stopTrustedEchoRuntime(lifecycle);
 
   return {
@@ -176,6 +188,8 @@ async function runSessionWitness(options) {
       trustedLifecyclePort: 'TrustedEchoRuntimeLifecyclePort',
     },
     lifecycleRequests,
+    startup,
+    drain,
     stopRequests,
     shutdown,
     report,

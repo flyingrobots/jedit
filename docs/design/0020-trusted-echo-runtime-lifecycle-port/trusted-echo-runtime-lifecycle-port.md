@@ -32,6 +32,7 @@ src/adapters/echo-runtime-lifecycle.ts
 The current port exposes:
 
 ```text
+TrustedEchoRuntimeLifecyclePort.requestStart({ tickIntervalSeconds })
 TrustedEchoRuntimeLifecyclePort.requestRunUntilIdle({ cycleLimit })
 TrustedEchoRuntimeLifecyclePort.requestStop()
 ```
@@ -58,6 +59,21 @@ The lifecycle port must not grow methods named or shaped like:
 - `nextTick`;
 - `advanceTick`;
 - `runOneTick`.
+
+`requestStart` means:
+
+```text
+trusted host asks Echo to begin its own internal run loop using host cadence
+policy
+```
+
+It does not mean:
+
+```text
+trusted host supplies a discrete tick
+trusted host chooses individual tick boundaries
+wall-clock cadence becomes semantic history
+```
 
 `requestRunUntilIdle` means:
 
