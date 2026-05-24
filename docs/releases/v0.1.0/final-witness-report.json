@@ -50,7 +50,7 @@
       "intent": {
         "kind": "jedit-intent-handle",
         "operationName": "replaceRangeAsTick",
-        "submissionId": "jedit-submission:text-buffer:0:0:0:hello"
+        "submissionId": "jedit-submission:7b226275666665724964223a22746578742d6275666665723a30222c22656e6442797465223a302c22696e7365727454657874223a2268656c6c6f204563686f222c22737461727442797465223a307d"
       },
       "receipt": {
         "kind": "jedit-receipt-handle",
@@ -63,7 +63,7 @@
         "intent": {
           "kind": "jedit-intent-handle",
           "operationName": "replaceRangeAsTick",
-          "submissionId": "jedit-submission:text-buffer:0:0:0:hello"
+          "submissionId": "jedit-submission:7b226275666665724964223a22746578742d6275666665723a30222c22656e6442797465223a302c22696e7365727454657874223a2268656c6c6f204563686f222c22737461727442797465223a307d"
         }
       },
       {
@@ -71,7 +71,7 @@
         "intent": {
           "kind": "jedit-intent-handle",
           "operationName": "replaceRangeAsTick",
-          "submissionId": "jedit-submission:text-buffer:0:0:0:hello"
+          "submissionId": "jedit-submission:7b226275666665724964223a22746578742d6275666665723a30222c22656e6442797465223a302c22696e7365727454657874223a2268656c6c6f204563686f222c22737461727442797465223a307d"
         },
         "receipt": {
           "kind": "jedit-receipt-handle",
@@ -88,7 +88,7 @@
     },
     "receiptCorrelation": {
       "status": "RECEIPT_CORRELATION_MISSING",
-      "submissionId": "jedit-submission:text-buffer:0:0:0:hello",
+      "submissionId": "jedit-submission:7b226275666665724964223a22746578742d6275666665723a30222c22656e6442797465223a302c22696e7365727454657874223a2268656c6c6f204563686f222c22737461727442797465223a307d",
       "obstruction": {
         "code": "JEDIT_RECEIPT_CORRELATION_UNAVAILABLE",
         "reason": "Echo receipt correlation is not available for this submission"
@@ -96,7 +96,7 @@
     },
     "ticketedRuntimeIngress": {
       "status": "TICKETED_RUNTIME_INGRESS_MISSING",
-      "submissionId": "jedit-submission:text-buffer:0:0:0:hello",
+      "submissionId": "jedit-submission:7b226275666665724964223a22746578742d6275666665723a30222c22656e6442797465223a302c22696e7365727454657874223a2268656c6c6f204563686f222c22737461727442797465223a307d",
       "obstruction": {
         "code": "JEDIT_TICKETED_RUNTIME_INGRESS_UNAVAILABLE",
         "reason": "Echo admission ticket and ticketed runtime ingress are not exposed in this release-gate slice"
@@ -179,13 +179,13 @@
     },
     "receiptId": "receipt:1",
     "readingId": "text-window:head:3:0:1:1024",
-    "text": "hello",
+    "text": "hello Echo",
     "lines": [
       {
         "lineNumber": 0,
         "startByte": 0,
-        "endByte": 5,
-        "text": "hello"
+        "endByte": 10,
+        "text": "hello Echo"
       }
     ],
     "truncated": false

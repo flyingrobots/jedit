@@ -70,18 +70,21 @@ test('semantic coordinate mismatch does not become a retained evidence hit', asy
     readingId: READING_ID,
   });
   const payloadRef = inventory.refs.find((ref) => ref.role === modules.evidence.JEDIT_EVIDENCE_ROLE_READING_PAYLOAD);
+  assert.ok(payloadRef, 'expected reading payload retained ref');
   const records = modules.lookup.createJeditEchoRetainedMaterialRecords(inventory);
+  const mismatchedRecord = records.find((record) => record.byteHash !== payloadRef.byteIdentity.byteHash);
+  assert.ok(mismatchedRecord, 'expected retained material record with distinct byte hash');
   const rewrittenPayloadRef = {
     ...payloadRef,
     byteIdentity: {
       ...payloadRef.byteIdentity,
-      byteHash: records[0].byteHash,
+      byteHash: mismatchedRecord.byteHash,
     },
   };
   const lookup = modules.lookup.createInMemoryJeditEchoRetentionLookupPort(records);
   const result = modules.lookup.lookupJeditRetainedEvidenceMaterial(lookup, rewrittenPayloadRef);
 
-  assert.notEqual(rewrittenPayloadRef.semanticCoordinate.coordinate, inventory.refs[0].semanticCoordinate.coordinate);
+  assert.notEqual(rewrittenPayloadRef.semanticCoordinate.coordinate, mismatchedRecord.semanticCoordinate.coordinate);
   assert.equal(result.status, modules.lookup.JEDIT_ECHO_RETENTION_LOOKUP_MISSING);
 });
 

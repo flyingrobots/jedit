@@ -26,6 +26,14 @@ import {
   type JeditRetentionObstruction,
 } from '../ports/jedit-retained-evidence.js';
 
+const PACKAGE_INSTALL_OPERATION_NAME = 'package-install';
+const PACKAGE_BYTE_HASH_PREFIX = 'package:';
+const RECEIPT_BYTE_HASH_PREFIX = 'receipt:';
+const READING_ENVELOPE_COORDINATE_PREFIX = 'envelope:';
+const READING_ENVELOPE_BYTE_HASH_PREFIX = 'reading-envelope:';
+const READING_PAYLOAD_COORDINATE_PREFIX = 'payload:';
+const READING_PAYLOAD_BYTE_HASH_PREFIX = 'reading-payload:';
+
 export function createJeditRetainedEvidenceInventory(
   input: JeditRetainedEvidenceInventoryInput,
 ): JeditRetainedEvidenceInventory {
@@ -53,9 +61,9 @@ function packageRef(input: JeditRetainedEvidenceInventoryInput): JeditRetainedEv
   return evidenceRef({
     role: JEDIT_EVIDENCE_ROLE_PACKAGE,
     packageId: input.packageId,
-    operationName: 'package-install',
+    operationName: PACKAGE_INSTALL_OPERATION_NAME,
     coordinate: input.packageId,
-    byteHash: `package:${input.packageId}`,
+    byteHash: `${PACKAGE_BYTE_HASH_PREFIX}${input.packageId}`,
   });
 }
 
@@ -65,7 +73,7 @@ function receiptRef(input: JeditRetainedEvidenceInventoryInput): JeditRetainedEv
     packageId: input.packageId,
     operationName: input.mutationOperationName,
     coordinate: input.receiptId,
-    byteHash: `receipt:${input.receiptId}`,
+    byteHash: `${RECEIPT_BYTE_HASH_PREFIX}${input.receiptId}`,
   });
 }
 
@@ -74,8 +82,8 @@ function readingEnvelopeRef(input: JeditRetainedEvidenceInventoryInput): JeditRe
     role: JEDIT_EVIDENCE_ROLE_READING_ENVELOPE,
     packageId: input.packageId,
     operationName: input.queryOperationName,
-    coordinate: `envelope:${input.readingId}`,
-    byteHash: `reading-envelope:${input.readingId}`,
+    coordinate: `${READING_ENVELOPE_COORDINATE_PREFIX}${input.readingId}`,
+    byteHash: `${READING_ENVELOPE_BYTE_HASH_PREFIX}${input.readingId}`,
   });
 }
 
@@ -84,8 +92,8 @@ function readingPayloadRef(input: JeditRetainedEvidenceInventoryInput): JeditRet
     role: JEDIT_EVIDENCE_ROLE_READING_PAYLOAD,
     packageId: input.packageId,
     operationName: input.queryOperationName,
-    coordinate: `payload:${input.readingId}`,
-    byteHash: `reading-payload:${input.readingId}`,
+    coordinate: `${READING_PAYLOAD_COORDINATE_PREFIX}${input.readingId}`,
+    byteHash: `${READING_PAYLOAD_BYTE_HASH_PREFIX}${input.readingId}`,
   });
 }
 

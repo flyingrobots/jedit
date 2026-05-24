@@ -627,9 +627,9 @@ jedit submits generic work envelopes
 The continuation does not authorize Echo to know about ropes, buffers, windows,
 or editor commands. Those remain jedit-owned contract semantics.
 
-Remote posture: this branch was pushed through slice 25 at `2a71650` before
-slice 26 began. Later slice groups must check `git status --short --branch`
-and PR state directly; do not infer publication from this paragraph.
+Publication posture: this historical plan records local slice checkpoints, not
+current remote truth. Agents must check `git status --short --branch`, pushed
+commits, and PR state directly before claiming any slice group is published.
 
 ## Slice 21 - Continuation Plan And Remote Posture
 

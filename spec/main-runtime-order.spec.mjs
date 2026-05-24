@@ -12,7 +12,8 @@ test('main constructs a workspace app and runs it through bijou run()', () => {
   const createsAppImport = /createWorkspaceApp/.test(source);
   const createsWorkspaceApp = /const app\s*=\s*createWorkspaceApp\(/.test(source);
   const runsApp = /run\(app,/.test(source);
-  const hasEchoTextRuntimeOptIn = /JEDIT_TEXT_RUNTIME/.test(source);
+  const hasEchoTextRuntimeOptIn = /parseInteractiveTextRuntimeMode\(\s*process\.env\[ENV_KEYS\.TextRuntime\]\s*,\s*\)/.test(source)
+    && /createWorkspaceApp\([\s\S]*interactiveTextRuntimeMode[\s\S]*\)/.test(source);
   const hasLocalSettingsHandlers = /settingsHandlers/.test(source);
 
   assert.ok(createsAppImport);

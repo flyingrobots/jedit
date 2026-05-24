@@ -42,16 +42,16 @@ The developer-facing recipe lives in
 The previous local inspection point was slice 40 of the application-hosting
 pattern plan:
 
-31. application hosting contract pattern.
-32. `jedit` state authority cutover.
-33. read-side state authority cutover.
-34. submission ledger port.
-35. ticketed work boundary.
-36. real receipt correlation.
-37. real local retained evidence lookup.
-38. restart and recovery witness.
-39. second-app template proof.
-40. developer app host guide.
+1. Slice 31: application hosting contract pattern.
+2. Slice 32: `jedit` state authority cutover.
+3. Slice 33: read-side state authority cutover.
+4. Slice 34: submission ledger port.
+5. Slice 35: ticketed work boundary.
+6. Slice 36: real receipt correlation.
+7. Slice 37: real local retained evidence lookup.
+8. Slice 38: restart and recovery witness.
+9. Slice 39: second-app template proof.
+10. Slice 40: developer app host guide.
 
 Agents can inspect the installed-package witness path with:
 
@@ -64,16 +64,16 @@ node scripts/jedit-echo-powered-session.mjs --json
 The current branch now extends that proof through slice 50 of the hardening
 plan:
 
-41. trusted runtime lifecycle doctrine closure.
-42. runtime host port finalization.
-43. Echo adapter lifecycle integration.
-44. lifecycle failure posture.
-45. agent lifecycle surface.
-46. contract package identity audit.
-47. no app nouns in Echo gate.
-48. jedit contract package install fixture.
-49. unsupported operation boundary.
-50. package reinstall and duplicate policy.
+1. Slice 41: trusted runtime lifecycle doctrine closure.
+2. Slice 42: runtime host port finalization.
+3. Slice 43: Echo adapter lifecycle integration.
+4. Slice 44: lifecycle failure posture.
+5. Slice 45: agent lifecycle surface.
+6. Slice 46: contract package identity audit.
+7. Slice 47: no app nouns in Echo gate.
+8. Slice 48: jedit contract package install fixture.
+9. Slice 49: unsupported operation boundary.
+10. Slice 50: package reinstall and duplicate policy.
 
 Slice-50 drift closure is complete. Continue next with slice 51: ticketed
 mutation execution tightening. Distributed transport, settlement shells,

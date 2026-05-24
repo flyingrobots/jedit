@@ -8,6 +8,9 @@ import type {
   JeditRetainedEvidenceRef,
 } from '../ports/jedit-retained-evidence.js';
 import {
+  JEDIT_RETAINED_EVIDENCE_PRESENT_INLINE,
+} from '../ports/jedit-retained-evidence.js';
+import {
   JEDIT_ECHO_RETENTION_LOOKUP_HIT,
   JEDIT_ECHO_RETENTION_LOOKUP_MISSING,
   type JeditEchoRetainedMaterialRecord,
@@ -34,16 +37,17 @@ export function createInMemoryJeditEchoRetentionLookupPort(
 export function createJeditEchoRetainedMaterialRecords(
   inventory: JeditRetainedEvidenceInventory,
 ): readonly JeditEchoRetainedMaterialRecord[] {
-  return inventory.refs.flatMap((ref) => (
-    ref.byteIdentity == null ? [] : [{
-      byteHash: ref.byteIdentity.byteHash,
+  return inventory.refs.flatMap((ref) => {
+    const byteHash = refByteHash(ref);
+    return byteHash == null ? [] : [{
+      byteHash,
       semanticCoordinate: ref.semanticCoordinate,
       materialBytesHex: toHex(JSON.stringify({
         role: ref.role,
         semanticCoordinate: ref.semanticCoordinate,
       })),
-    }]
-  ));
+    }];
+  });
 }
 
 export function lookupJeditRetainedEvidenceMaterial(
@@ -57,7 +61,7 @@ function lookupRetainedEvidence(
   retainedMaterial: RetainedMaterialIndex,
   ref: JeditRetainedEvidenceRef,
 ): JeditEchoRetentionLookupResult {
-  const byteHash = ref.byteIdentity?.byteHash;
+  const byteHash = refByteHash(ref);
   if (byteHash == null) {
     return missingRetainedEvidence(ref);
   }
@@ -157,4 +161,10 @@ function retainedMaterialRecord(
     ?.get(ref.semanticCoordinate.packageId)
     ?.get(ref.semanticCoordinate.operationName)
     ?.get(ref.semanticCoordinate.coordinate);
+}
+
+function refByteHash(ref: JeditRetainedEvidenceRef): string | undefined {
+  return ref.posture === JEDIT_RETAINED_EVIDENCE_PRESENT_INLINE
+    ? ref.byteIdentity.byteHash
+    : undefined;
 }

@@ -13,6 +13,7 @@ test('retained reading payload byte identity is distinct from query identity', a
   const retained = await loadRetained();
   const inventory = sampleInventory(retained);
   const payload = inventory.refs.find((ref) => ref.role === retained.JEDIT_EVIDENCE_ROLE_READING_PAYLOAD);
+  assert.ok(payload, 'expected reading payload retained ref');
 
   assert.equal(payload.semanticCoordinate.operationName, 'textWindow');
   assert.equal(payload.semanticCoordinate.coordinate, 'payload:reading-1');
@@ -24,6 +25,7 @@ test('missing retained material is a typed obstruction', async () => {
   const retained = await loadRetained();
   const inventory = sampleInventory(retained);
   const receipt = inventory.refs.find((ref) => ref.role === retained.JEDIT_EVIDENCE_ROLE_RECEIPT);
+  assert.ok(receipt, 'expected receipt retained ref');
 
   assert.deepEqual(retained.missingJeditRetentionMaterial(receipt), {
     code: retained.JEDIT_RETENTION_OBSTRUCTION_MISSING_MATERIAL,

@@ -17,7 +17,7 @@ contract operation and not an application capability.
 | Surface | Allowed | Forbidden |
 | :--- | :--- | :--- |
 | jedit app/product code | Submit canonical intent bytes, observe bounded readings, render product evidence. | Start Echo, stop Echo, request run-until-idle, inject ticks, inspect scheduler internals. |
-| jedit trusted Echo host adapter | Request run-until-idle, request stop, later request cadence policy, decode trusted lifecycle responses. | Expose raw trusted control to app code, choose individual tick boundaries, mutate product state. |
+| jedit trusted Echo host adapter | Request start with scheduler cadence policy, request run-until-idle, request stop, decode trusted lifecycle responses. | Expose raw trusted control to app code, choose individual tick boundaries, mutate product state. |
 | Echo runtime | Own the run loop, choose scheduler work, emit tick receipts, report lifecycle status. | Treat jedit product operations as trusted runtime control. |
 
 ## Implemented Shape
@@ -36,6 +36,10 @@ TrustedEchoRuntimeLifecyclePort.requestStart({ tickIntervalSeconds })
 TrustedEchoRuntimeLifecyclePort.requestRunUntilIdle({ cycleLimit })
 TrustedEchoRuntimeLifecyclePort.requestStop()
 ```
+
+The current TypeScript field name is `tickIntervalSeconds` for compatibility
+with the merged port. Read it as scheduler cadence policy, not as authority to
+inject or choose individual ticks.
 
 The adapter requires:
 

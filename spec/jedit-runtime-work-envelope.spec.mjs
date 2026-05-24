@@ -13,8 +13,8 @@ const PACKAGE_ID = 'jedit-hot-text-runtime';
 const OPERATION_NAME = 'replaceRangeAsTick';
 const FIRST_REQUEST = new Uint8Array([1, 2, 3, 4]);
 const SECOND_REQUEST = new Uint8Array([1, 2, 3, 5]);
-const FIRST_SUBMISSION_ID = 'jedit-submission:first';
-const SECOND_SUBMISSION_ID = 'jedit-submission:second';
+const FIRST_SUBMISSION_ID = testSubmissionId('first');
+const SECOND_SUBMISSION_ID = testSubmissionId('second');
 
 let modulesPromise;
 
@@ -57,6 +57,10 @@ test('runtime work envelope port does not encode editor semantic fields', () => 
 
   assert.doesNotMatch(source, /TextBufferOptic|rope|pane|cursor|textWindow|bufferKey|insertText|replaceRange/);
 });
+
+function testSubmissionId(label) {
+  return `jedit-submission:${label}`;
+}
 
 async function loadModules() {
   if (modulesPromise) {

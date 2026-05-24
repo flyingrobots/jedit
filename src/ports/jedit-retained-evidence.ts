@@ -32,13 +32,24 @@ export interface JeditEvidenceSemanticCoordinate {
   readonly coordinate: string;
 }
 
-export interface JeditRetainedEvidenceRef {
+export interface JeditRetainedEvidenceRefBase {
   readonly kind: typeof JEDIT_RETAINED_EVIDENCE_REF_KIND;
   readonly role: JeditRetainedEvidenceRole;
   readonly semanticCoordinate: JeditEvidenceSemanticCoordinate;
-  readonly byteIdentity?: JeditEvidenceByteIdentity;
-  readonly posture: JeditRetainedEvidencePosture;
 }
+
+export interface JeditRetainedEvidenceRefPresentInline extends JeditRetainedEvidenceRefBase {
+  readonly byteIdentity: JeditEvidenceByteIdentity;
+  readonly posture: typeof JEDIT_RETAINED_EVIDENCE_PRESENT_INLINE;
+}
+
+export interface JeditRetainedEvidenceRefMissing extends JeditRetainedEvidenceRefBase {
+  readonly posture: typeof JEDIT_RETAINED_EVIDENCE_MISSING;
+}
+
+export type JeditRetainedEvidenceRef =
+  | JeditRetainedEvidenceRefPresentInline
+  | JeditRetainedEvidenceRefMissing;
 
 export interface JeditRetentionObstruction {
   readonly code: typeof JEDIT_RETENTION_OBSTRUCTION_MISSING_MATERIAL;

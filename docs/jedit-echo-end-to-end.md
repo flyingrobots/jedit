@@ -873,13 +873,13 @@ sequenceDiagram
   CLI-->>Agent: JSON witness report
 ```
 
-This command deliberately reports `transport: fake-echo-shaped`. The opt-in
-real Echo witness remains the authority for proving what the current Echo WASM
-substrate actually supports. Today it proves the generic boundary fails closed
-without an installed jedit observer. The agent command proves the product-session
-lifecycle composition and keeps raw lifecycle control out of the app-facing
-optic. It also requests trusted stop at the end of the host-owned command,
-proving shutdown remains a host lifecycle concern.
+This command reports `transport: installed-jedit-contract` and proves the
+product-session lifecycle composition over the installed jedit contract
+transport. The opt-in real Echo WASM witness remains the authority for proving
+what the current Echo WASM substrate actually supports. The agent command keeps
+raw lifecycle control out of the app-facing optic and requests trusted stop at
+the end of the host-owned command, proving shutdown remains a host lifecycle
+concern.
 
 ## Intent, Tick, Receipt, Reading
 
@@ -947,8 +947,8 @@ missing durable retention:
 ```
 
 That means jedit can show payload and envelope evidence in the product-session
-fixture path, while the real Echo path still needs installed package/observer
-integration before durable retention/replay can close.
+path, while the real Echo WASM substrate still needs package/observer
+integration to be installed before durable retention/replay can close.
 
 ## Shutdown: From SIGTERM to Process Exit
 
@@ -1139,7 +1139,7 @@ This guide intentionally exposes gaps instead of papering over them:
 6. Add explicit trusted host lifecycle controls for long-running jedit hosts.
 7. Add explicit SIGTERM/shutdown behavior if strong cleanup guarantees become
    product requirements.
-7. Keep Echo generic while jedit becomes a serious product-shaped consumer.
+8. Keep Echo generic while jedit becomes a serious product-shaped consumer.
 
 The north star remains small but strict:
 
