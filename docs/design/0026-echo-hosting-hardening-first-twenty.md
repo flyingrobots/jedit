@@ -296,10 +296,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Restart adapter exists.
-- [ ] Pending posture loads.
-- [ ] Decided posture loads.
-- [ ] Half-accepted posture is blocked.
+- [x] Restart adapter exists.
+- [x] Pending posture loads.
+- [x] Decided posture loads.
+- [x] Half-accepted posture is blocked.
 
 ### Slice 56 - Local Replay Proof Hardening
 
