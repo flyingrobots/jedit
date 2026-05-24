@@ -1,20 +1,23 @@
 import type {
   ApplyIntentResult,
   BufferVersion,
-  JeditOpticClient,
+  CreateTextBufferRequest,
   Observed,
-  OpticSession,
   ReadBasisHandle,
   ReplaceRangeIntent,
   SessionId,
   TextBuffer,
   TextBufferId,
   TextBufferOptic,
+  TextBufferSessionPort,
   TextWindowLine,
   TextWindowRangeInput,
   TextWindowReading,
+} from '../ports/text-buffer-session.js';
+import { REPLACE_RANGE_INTENT_KIND } from '../ports/text-buffer-session.js';
+import type {
+  JeditOpticClient,
 } from '../ports/jedit-optic-client.js';
-import { REPLACE_RANGE_INTENT_KIND } from '../ports/jedit-optic-client.js';
 import type { JeditWorldlineSession } from './jedit-contract-runtime.js';
 import type { TextWindowReadingEnvelope } from './jedit-observer-runtime.js';
 
@@ -29,12 +32,6 @@ const NEXT_BUFFER_VERSION_STEP = 1;
 const EMPTY_BYTE_LENGTH = 0;
 const TEXT_WINDOW_MIN_LINE_COUNT = 0;
 
-interface CreateTextBufferInput {
-  readonly bufferKey: string;
-  readonly initialText: string;
-  readonly projectionPath?: string | null;
-}
-
 interface TextBufferOpticRuntimeState {
   currentSession: JeditWorldlineSession;
   currentReadBasis: ReadBasisHandle;
@@ -48,13 +45,13 @@ export class TextBufferOpticError extends Error {
   }
 }
 
-export function createTextBufferOpticSession(client: JeditOpticClient): OpticSession {
+export function createTextBufferSession(client: JeditOpticClient): TextBufferSessionPort {
   let nextBufferId = FIRST_TEXT_BUFFER_SEQUENCE;
   const optics = new Map<TextBufferId, TextBufferOptic>();
 
   return {
     sessionId: OPTIC_SESSION_ID,
-    async createBuffer(input: CreateTextBufferInput): Promise<TextBufferOptic> {
+    async createBuffer(input: CreateTextBufferRequest): Promise<TextBufferOptic> {
       const buffer = toTextBuffer(nextBufferId, input);
       nextBufferId += NEXT_BUFFER_VERSION_STEP;
       const opened = client.openTextBuffer({
@@ -163,7 +160,7 @@ function readTextBufferWindow(
   return toObservedTextWindowReading(envelope, input);
 }
 
-function toTextBuffer(sequence: number, input: CreateTextBufferInput): TextBuffer {
+function toTextBuffer(sequence: number, input: CreateTextBufferRequest): TextBuffer {
   return Object.freeze({
     bufferId: `${TEXT_BUFFER_ID_PREFIX}${sequence}`,
     bufferKey: input.bufferKey,

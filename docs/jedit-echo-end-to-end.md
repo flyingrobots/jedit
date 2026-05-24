@@ -93,34 +93,35 @@ sequenceDiagram
 
 The files most relevant to this guide are:
 
-| Path | Role |
-| --- | --- |
-| `src/main.ts` | Process entry for the TUI application. |
-| `src/adapters/workspace-app.ts` | Wires concrete ports into the workspace runtime. |
-| `src/app/workspace/runtime.ts` | Pure-ish workspace update/view runtime. |
-| `src/app/workspace/model.ts` | Workspace model shape. |
-| `src/app/workspace/editor-session.ts` | File/editor session behavior. |
-| `src/ports/jedit-optic-client.ts` | jedit-facing optic and observation interfaces. |
-| `src/adapters/jedit-echo-optic-client.ts` | Adapter from jedit optic calls to Echo-shaped transport bytes. |
-| `src/app/echo-powered-text-buffer-optic-session.ts` | Host-composed product session that keeps lifecycle outside app-facing dispatch. |
-| `src/app/echo-powered-text-buffer-witness.ts` | App workflow witness over the Echo-powered product session. |
-| `src/app/trusted-echo-runtime-host.ts` | Host helper for trusted Echo shutdown requests. |
-| `src/ports/echo-kernel-transport.ts` | App-safe and trusted-host Echo transport ports. |
-| `src/adapters/echo-wasm-kernel.ts` | Real Echo WASM transport adapter. |
-| `src/ports/echo-runtime-lifecycle.ts` | Trusted-host runtime lifecycle port. |
-| `src/adapters/echo-runtime-lifecycle.ts` | Adapter from lifecycle requests to trusted Echo control bytes. |
-| `src/adapters/fake-echo-jedit-optic-transport.ts` | Default fake Echo-shaped test transport. |
-| `src/app/jedit-contract-runtime.ts` | jedit-owned transitional hot-text contract executor. |
-| `src/app/jedit-observer-runtime.ts` | jedit-owned observer/read envelope helpers. |
-| `src/adapters/in-memory-hot-text-runtime.ts` | Transitional in-memory hot-text runtime. |
-| `contracts/jedit/hot-text-runtime.graphql` | jedit-authored hot-text runtime contract. |
-| `contracts/jedit/text-buffer-optic.graphql` | jedit app-facing optic contract. |
-| `contracts/jedit/structural-history.graphql` | jedit structural history contract authority. |
-| `scripts/jedit-echo-witness.mjs` | CLI for the real Echo witness path. |
-| `scripts/jedit-echo-powered-session.mjs` | Fast agent CLI over the app-facing Echo-powered session. |
-| `scripts/ports/echo-witness-runner.mjs` | Witness runner port logic. |
-| `scripts/adapters/node-echo-witness-runner.mjs` | Node filesystem/process adapter for the witness runner. |
-| `spec/jedit-echo-wasm-stack-witness.spec.mjs` | Opt-in real Echo WASM generic observer-boundary witness. |
+| Path                                              | Role                                                           |
+| ------------------------------------------------- | -------------------------------------------------------------- |
+| `src/main.ts`                                     | Process entry for the TUI application.                         |
+| `src/adapters/workspace-app.ts`                   | Wires concrete ports into the workspace runtime.               |
+| `src/app/workspace/runtime.ts`                    | Pure-ish workspace update/view runtime.                        |
+| `src/app/workspace/model.ts`                      | Workspace model shape.                                         |
+| `src/app/workspace/editor-session.ts`             | File/editor session behavior.                                  |
+| `src/ports/text-buffer-session.ts`                | jedit app-facing text-buffer session port.                     |
+| `src/ports/jedit-optic-client.ts`                 | Lower jedit optic client interface consumed by adapters.       |
+| `src/adapters/jedit-echo-optic-client.ts`         | Adapter from jedit optic calls to Echo-shaped transport bytes. |
+| `src/adapters/echo-backed-text-buffer-session.ts` | Echo-backed implementation of the text-buffer session port.    |
+| `src/app/echo-powered-text-buffer-witness.ts`     | App workflow witness over the Echo-powered product session.    |
+| `src/app/trusted-echo-runtime-host.ts`            | Host helper for trusted Echo shutdown requests.                |
+| `src/ports/echo-kernel-transport.ts`              | App-safe and trusted-host Echo transport ports.                |
+| `src/adapters/echo-wasm-kernel.ts`                | Real Echo WASM transport adapter.                              |
+| `src/ports/echo-runtime-lifecycle.ts`             | Trusted-host runtime lifecycle port.                           |
+| `src/adapters/echo-runtime-lifecycle.ts`          | Adapter from lifecycle requests to trusted Echo control bytes. |
+| `src/adapters/fake-echo-jedit-optic-transport.ts` | Default fake Echo-shaped test transport.                       |
+| `src/app/jedit-contract-runtime.ts`               | jedit-owned transitional hot-text contract executor.           |
+| `src/app/jedit-observer-runtime.ts`               | jedit-owned observer/read envelope helpers.                    |
+| `src/adapters/in-memory-hot-text-runtime.ts`      | Transitional in-memory hot-text runtime.                       |
+| `contracts/jedit/hot-text-runtime.graphql`        | jedit-authored hot-text runtime contract.                      |
+| `contracts/jedit/text-buffer-optic.graphql`       | jedit app-facing optic contract.                               |
+| `contracts/jedit/structural-history.graphql`      | jedit structural history contract authority.                   |
+| `scripts/jedit-echo-witness.mjs`                  | CLI for the real Echo witness path.                            |
+| `scripts/jedit-echo-powered-session.mjs`          | Fast agent CLI over the app-facing Echo-powered session.       |
+| `scripts/ports/echo-witness-runner.mjs`           | Witness runner port logic.                                     |
+| `scripts/adapters/node-echo-witness-runner.mjs`   | Node filesystem/process adapter for the witness runner.        |
+| `spec/jedit-echo-wasm-stack-witness.spec.mjs`     | Opt-in real Echo WASM generic observer-boundary witness.       |
 
 ## TypeScript Model
 
@@ -495,7 +496,7 @@ The important contract surfaces are:
 The app-facing model is intentionally capability-shaped:
 
 ```text
-OpticSession
+TextBufferSessionPort
 -> TextBufferOptic
 -> currentReadBasis()
 -> applyIntent(replace range)
@@ -505,8 +506,8 @@ OpticSession
 The app can hold and use a `TextBufferOptic`. It cannot inspect the private
 runtime coordinates that make the optic work.
 
-The Echo-powered session composes that product capability with trusted runtime
-lifecycle below the app boundary:
+The Echo-backed session adapter composes that product capability with trusted
+runtime lifecycle below the app boundary:
 
 ```text
 TextBufferOptic.applyIntent(...)
@@ -519,14 +520,18 @@ The session and optic returned to application code still do not expose
 `requestRunUntilIdle`, raw trusted control bytes, or any tick method.
 
 The current TypeScript contract shape is defined in
-`src/ports/jedit-optic-client.ts`:
+`src/ports/text-buffer-session.ts`:
 
 - `TextBufferOptic`;
-- `OpticSession`;
+- `TextBufferSessionPort`;
 - `ReadBasisHandle`;
 - `ReplaceRangeIntent`;
 - `TextWindowReading`;
 - `Observed<T>`;
+
+The lower generated/transport client shape remains in
+`src/ports/jedit-optic-client.ts`:
+
 - `JeditMutationOpticClient`;
 - `JeditObserverOpticClient`.
 
@@ -850,7 +855,7 @@ sequenceDiagram
   autonumber
   participant Agent
   participant CLI as jedit-echo-powered-session
-  participant Session as Echo-powered TextBufferOptic session
+  participant Session as Echo-backed TextBufferSessionPort
   participant Client as app-safe optic client
   participant Transport as fake Echo-shaped transport
 
@@ -1031,7 +1036,7 @@ Echo tick:
 | Real Echo WASM app transport | Implemented through `echo-wasm-kernel.ts`. |
 | Trusted Echo host transport | Implemented separately from app transport. |
 | Real Echo generic boundary witness | Implemented as opt-in unsupported-query proof without hardcoded jedit text semantics. |
-| Echo-powered TextBufferOptic session | Implemented as host composition over app-safe client plus lifecycle port. |
+| Echo-backed TextBufferSessionPort | Implemented as an adapter over app-safe client plus lifecycle port. |
 | Agent Echo-powered session witness | Implemented as `npm run witness:echo:session`. |
 | Trusted host stop helper | Implemented as `stopTrustedEchoRuntime(...)`. |
 | Durable retained evidence | Not complete; witness reports `missing_retention`. |

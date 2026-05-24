@@ -9,7 +9,7 @@ const HANDLERS_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract
 const PACKAGE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-package.js');
 const RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'in-memory-hot-text-runtime.js');
 const HASH_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'hash.js');
-const SESSION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'text-buffer-optic-session.js');
+const SESSION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'text-buffer-session.js');
 const TRANSPORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'fake-echo-jedit-optic-transport.js');
 const CLIENT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-optic-client.js');
 const BUFFER_KEY = 'notes/handler.md';
@@ -68,12 +68,12 @@ test('jedit mutation handlers execute create replace and checkpoint behind regis
   assert.equal(checkpoint.result.checkpoint.kind, CHECKPOINT_KIND);
 });
 
-test('app-facing TextBufferOptic session does not expose mutation handlers', async () => {
+test('app-facing TextBufferSession port does not expose mutation handlers', async () => {
   const modules = await loadModules();
   const client = modules.client.createEchoTransportJeditOpticClient(
     modules.transport.createFakeEchoJeditOpticTransport(),
   );
-  const session = modules.session.createTextBufferOpticSession(client);
+  const session = modules.session.createTextBufferSession(client);
   const optic = await session.createBuffer({
     bufferKey: BUFFER_KEY,
     initialText: INITIAL_TEXT,

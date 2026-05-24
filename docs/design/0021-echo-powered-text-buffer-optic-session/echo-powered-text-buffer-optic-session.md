@@ -1,11 +1,12 @@
-# Echo-Powered TextBufferOptic Session
+# Echo-Backed TextBufferSession Port
 
 Status: implemented local boundary.
 
 ## Claim
 
-jedit can compose its app-facing `TextBufferOptic` capability with the trusted
-Echo lifecycle port without exposing lifecycle control to application code.
+jedit can expose a `TextBufferSessionPort` that returns app-facing
+`TextBufferOptic` buffer capabilities while keeping the trusted Echo lifecycle
+port behind adapters.
 
 This slice is a local integration step toward the release-gate sentence:
 
@@ -17,7 +18,8 @@ It does not claim that every interactive editor action is already backed by
 real Echo. It proves the product-facing session boundary can be wired as:
 
 ```text
-TextBufferOptic mutation
+TextBufferSessionPort
+-> TextBufferOptic mutation
 -> app-safe jedit/Echo optic client
 -> trusted host loop may drain Echo independently
 -> later bounded read
@@ -25,22 +27,24 @@ TextBufferOptic mutation
 
 ## Implemented Shape
 
-The new source boundary is:
+The app-facing port is:
 
 ```text
-src/app/echo-powered-text-buffer-optic-session.ts
+src/ports/text-buffer-session.ts
 ```
 
-It builds on the existing app capability:
+The reusable app implementation is:
 
 ```text
-createTextBufferOpticSession(client)
+src/app/text-buffer-session.ts
+createTextBufferSession(client)
 ```
 
-and composes the same app-facing capability for Echo-backed transports:
+The Echo-backed adapter is:
 
 ```text
-createEchoPoweredTextBufferOpticSession({
+src/adapters/echo-backed-text-buffer-session.ts
+createEchoBackedTextBufferSession({
   client,
 })
 ```
@@ -59,7 +63,7 @@ Read methods also remain app-safe and do not request lifecycle control:
 
 ## Authority Rule
 
-The returned `OpticSession` and `TextBufferOptic` do not expose:
+The returned `TextBufferSessionPort` and `TextBufferOptic` do not expose:
 
 - `requestRunUntilIdle`;
 - `tick`;
@@ -87,7 +91,7 @@ can replace fixture behavior without changing the app authority model.
 
 ## Evidence
 
-- `Echo-powered TextBufferOptic does not request lifecycle during app-facing dispatch`
+- `Echo-backed TextBufferSession port does not request lifecycle during app-facing dispatch`
 - `trusted Echo lifecycle port requests run-until-idle without exposing tick injection`
 - `transport-backed optic client exercises the fake Echo host through encoded bytes`
 

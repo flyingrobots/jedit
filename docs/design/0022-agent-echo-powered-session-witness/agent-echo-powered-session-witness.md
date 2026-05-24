@@ -12,7 +12,7 @@ This is a host-owned smoke path. It proves the product-facing capability shape:
 agent command
 -> host constructs Echo-shaped transport
 -> host constructs trusted lifecycle port
--> host constructs Echo-powered TextBufferOptic session
+-> host constructs Echo-backed TextBufferSessionPort
 -> create buffer
 -> apply replace-range intent
 -> observe text window
@@ -36,7 +36,8 @@ node scripts/jedit-echo-powered-session.mjs --json
 
 The emitted report names:
 
-- the app-facing capability (`TextBufferOptic`);
+- the app-facing session port (`TextBufferSessionPort`);
+- the app-facing buffer capability (`TextBufferOptic`);
 - the transport posture (`fake-echo-shaped`);
 - the fact that app code cannot tick;
 - the fact that app-facing dispatch does not request lifecycle drain;
@@ -78,7 +79,7 @@ jedit's default test suite. It does not replace the real Echo WASM witness.
 
 - `Echo-powered session CLI reports app capability, lifecycle, and reading evidence`
 - `Echo-powered session CLI rejects invalid cycle limits as JSON failures`
-- `Echo-powered TextBufferOptic does not request lifecycle during app-facing dispatch`
+- `Echo-backed TextBufferSession port does not request lifecycle during app-facing dispatch`
 
 ## Not In This Slice
 

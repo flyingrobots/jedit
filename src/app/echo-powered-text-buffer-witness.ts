@@ -1,4 +1,4 @@
-import type { OpticSession } from '../ports/jedit-optic-client.js';
+import type { TextBufferSessionPort } from '../ports/text-buffer-session.js';
 import type { ApplyIntentResult, Observed, TextWindowReading } from '../ports/jedit-optic-client.js';
 import { REPLACE_RANGE_INTENT_KIND } from '../ports/jedit-optic-client.js';
 import type {
@@ -26,7 +26,7 @@ import {
 import { JEDIT_HOT_TEXT_PACKAGE_ID } from './jedit-contract-package.js';
 
 export async function runEchoPoweredTextBufferWitness(
-  session: OpticSession,
+  session: TextBufferSessionPort,
   request: EchoPoweredTextBufferWitnessRequest,
 ): Promise<EchoPoweredTextBufferWitnessReport> {
   const outcomes = createJeditIntentOutcomeLedger();

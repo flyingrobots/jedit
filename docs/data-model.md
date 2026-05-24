@@ -85,7 +85,7 @@ jedit lives at the **product** and **contract** layers. Echo lives at the **runt
 ### Editor-side ownership
 
 - **Product nouns**: `TextBuffer`, `TextWindowReading`, edit intents.
-- **Session capability**: `OpticSession`.
+- **Session capability**: `TextBufferSessionPort`.
 - **Per-buffer capability**: `TextBufferOptic`.
 - **App-safe token**: `ReadBasisHandle`.
 - **Runtime coordinates**: `worldlineId`, `headId` (private to optic + Echo).
@@ -188,7 +188,7 @@ export interface TextBufferOptic {
 
 // ---------- session capability ----------
 
-export interface OpticSession {
+export interface TextBufferSessionPort {
   readonly sessionId: SessionId;
 
   createBuffer(input: {
@@ -403,7 +403,7 @@ classDiagram
     +textWindow(readBasis, input)
   }
 
-  class OpticSession {
+  class TextBufferSessionPort {
     +sessionId
     +createBuffer(input)
     +getBufferOptic(bufferId)
@@ -421,7 +421,7 @@ classDiagram
     +observe()
   }
 
-  OpticSession --> TextBufferOptic
+  TextBufferSessionPort --> TextBufferOptic
   TextBufferOptic --> TextBuffer
   TextBufferOptic --> ReadBasisHandle
   TextBufferOptic --> ObservedTextWindowReading
@@ -485,7 +485,7 @@ Runtime coordinates exist (`worldline_id`, `head_id`, etc.) but remain below the
 ```mermaid
 sequenceDiagram
   participant App as jedit app
-  participant S as OpticSession
+  participant S as TextBufferSessionPort
   participant O as TextBufferOptic
   participant W as Wesley/Echo ops
   participant R as Echo runtime

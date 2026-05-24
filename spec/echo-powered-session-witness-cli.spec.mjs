@@ -32,7 +32,8 @@ test('Echo-powered session CLI reports app capability, lifecycle, and reading ev
   assert.equal(summary.transport, 'installed-jedit-contract');
   assert.equal(summary.dryRun, false);
   assert.equal(summary.install.packageId, 'jedit.hot-text-runtime');
-  assert.equal(summary.authority.appFacingCapability, 'TextBufferOptic');
+  assert.equal(summary.authority.appFacingSessionPort, 'TextBufferSessionPort');
+  assert.equal(summary.authority.appFacingBufferCapability, 'TextBufferOptic');
   assert.equal(summary.authority.appCanTick, false);
   assert.deepEqual(summary.lifecycleRequests, [
     { tickIntervalSeconds: TICK_INTERVAL_SECONDS },

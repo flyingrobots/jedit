@@ -52,7 +52,8 @@ The real witness should include these stable fields:
     "packageId": "jedit.hot-text-runtime"
   },
   "authority": {
-    "appFacingCapability": "TextBufferOptic",
+    "appFacingSessionPort": "TextBufferSessionPort",
+    "appFacingBufferCapability": "TextBufferOptic",
     "appCanTick": false
   },
   "report": {

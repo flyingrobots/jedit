@@ -12,12 +12,12 @@ const FAKE_TRANSPORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'fak
 const HASH_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'hash.js');
 const CODEC_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-optic-codec.js');
 const READ_BASIS_HANDLE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'read-basis-handle-registry.js');
-const TEXT_BUFFER_OPTIC_SESSION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'text-buffer-optic-session.js');
-const ECHO_POWERED_TEXT_BUFFER_OPTIC_SESSION_MODULE_PATH = path.join(
+const TEXT_BUFFER_SESSION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'text-buffer-session.js');
+const ECHO_BACKED_TEXT_BUFFER_SESSION_MODULE_PATH = path.join(
   REPO_ROOT,
   'dist',
-  'app',
-  'echo-powered-text-buffer-optic-session.js',
+  'adapters',
+  'echo-backed-text-buffer-session.js',
 );
 const LEGACY_EAGER_LOAD_CAP_BYTES = 24 * 1024;
 const STACK_WITNESS_AUTHOR = 'stack-witness-0001';
@@ -55,8 +55,8 @@ async function loadModules() {
     hashModule,
     codecModule,
     readBasisHandleModule,
-    textBufferOpticSessionModule,
-    echoPoweredTextBufferOpticSessionModule,
+    textBufferSessionModule,
+    echoBackedTextBufferSessionModule,
   ] = await Promise.all([
     import(pathToFileURL(OPTIC_CLIENT_MODULE_PATH).href),
     import(pathToFileURL(ADAPTER_MODULE_PATH).href),
@@ -65,8 +65,8 @@ async function loadModules() {
     import(pathToFileURL(HASH_MODULE_PATH).href),
     import(pathToFileURL(CODEC_MODULE_PATH).href),
     import(pathToFileURL(READ_BASIS_HANDLE_MODULE_PATH).href),
-    import(pathToFileURL(TEXT_BUFFER_OPTIC_SESSION_MODULE_PATH).href),
-    import(pathToFileURL(ECHO_POWERED_TEXT_BUFFER_OPTIC_SESSION_MODULE_PATH).href),
+      import(pathToFileURL(TEXT_BUFFER_SESSION_MODULE_PATH).href),
+      import(pathToFileURL(ECHO_BACKED_TEXT_BUFFER_SESSION_MODULE_PATH).href),
   ]);
 
   return {
@@ -77,8 +77,8 @@ async function loadModules() {
     hashModule,
     codecModule,
     readBasisHandleModule,
-    textBufferOpticSessionModule,
-    echoPoweredTextBufferOpticSessionModule,
+    textBufferSessionModule,
+    echoBackedTextBufferSessionModule,
   };
 }
 
@@ -482,12 +482,12 @@ test('TextBufferOptic creates, edits, and reads without exposing runtime coordin
   const {
     transportClientModule,
     fakeTransportModule,
-    textBufferOpticSessionModule,
+    textBufferSessionModule,
   } = await loadModules();
   const client = transportClientModule.createEchoTransportJeditOpticClient(
     fakeTransportModule.createFakeEchoJeditOpticTransport(),
   );
-  const session = textBufferOpticSessionModule.createTextBufferOpticSession(client);
+  const session = textBufferSessionModule.createTextBufferSession(client);
 
   const optic = await session.createBuffer({
     bufferKey: STACK_WITNESS_BUFFER_KEY,
@@ -546,12 +546,12 @@ test('TextBufferOptic rejects cloned read basis handles', async () => {
     transportClientModule,
     fakeTransportModule,
     readBasisHandleModule,
-    textBufferOpticSessionModule,
+    textBufferSessionModule,
   } = await loadModules();
   const client = transportClientModule.createEchoTransportJeditOpticClient(
     fakeTransportModule.createFakeEchoJeditOpticTransport(),
   );
-  const session = textBufferOpticSessionModule.createTextBufferOpticSession(client);
+  const session = textBufferSessionModule.createTextBufferSession(client);
   const optic = await session.createBuffer({
     bufferKey: STACK_WITNESS_BUFFER_KEY,
     initialText: STACK_WITNESS_TEXT,
@@ -578,12 +578,12 @@ test('TextBufferOptic does not mark a satisfied bounded aperture as truncated', 
   const {
     transportClientModule,
     fakeTransportModule,
-    textBufferOpticSessionModule,
+    textBufferSessionModule,
   } = await loadModules();
   const client = transportClientModule.createEchoTransportJeditOpticClient(
     fakeTransportModule.createFakeEchoJeditOpticTransport(),
   );
-  const session = textBufferOpticSessionModule.createTextBufferOpticSession(client);
+  const session = textBufferSessionModule.createTextBufferSession(client);
   const lines = ['alpha', 'bravo', 'charlie', 'delta', 'echo'];
   const optic = await session.createBuffer({
     bufferKey: 'demo-multiline.txt',
@@ -620,16 +620,16 @@ test('TextBufferOptic does not mark a satisfied bounded aperture as truncated', 
   assert.equal(byteBounded.value.truncated, true);
 });
 
-test('Echo-powered TextBufferOptic does not request lifecycle during app-facing dispatch', async () => {
+test('Echo-backed TextBufferSession port does not request lifecycle during app-facing dispatch', async () => {
   const {
     transportClientModule,
     fakeTransportModule,
-    echoPoweredTextBufferOpticSessionModule,
+    echoBackedTextBufferSessionModule,
   } = await loadModules();
   const client = transportClientModule.createEchoTransportJeditOpticClient(
     fakeTransportModule.createFakeEchoJeditOpticTransport(),
   );
-  const session = echoPoweredTextBufferOpticSessionModule.createEchoPoweredTextBufferOpticSession({
+  const session = echoBackedTextBufferSessionModule.createEchoBackedTextBufferSession({
     client,
   });
 

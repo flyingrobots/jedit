@@ -7,7 +7,7 @@ import { pathToFileURL } from 'node:url';
 const REPO_ROOT = process.cwd();
 const TRANSPORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'installed-jedit-contract-echo-transport.js');
 const CLIENT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-optic-client.js');
-const POWERED_SESSION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'echo-powered-text-buffer-optic-session.js');
+const SESSION_ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'echo-backed-text-buffer-session.js');
 const CODEC_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-optic-codec.js');
 const RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'in-memory-hot-text-runtime.js');
 const WORK_ENVELOPE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'ports', 'jedit-runtime-work-envelope.js');
@@ -33,7 +33,7 @@ test('TextBufferOptic headless flow uses installed jedit contract transport', as
   const modules = await loadModules();
   const transport = modules.transport.createInstalledJeditContractEchoTransport();
   const client = modules.client.createEchoTransportJeditOpticClient(transport);
-  const session = modules.poweredSession.createEchoPoweredTextBufferOpticSession({
+  const session = modules.sessionAdapter.createEchoBackedTextBufferSession({
     client,
   });
 
@@ -499,7 +499,7 @@ async function loadModules() {
     const [
       transport,
       client,
-      poweredSession,
+    sessionAdapter,
       codec,
       runtime,
       workEnvelope,
@@ -511,7 +511,7 @@ async function loadModules() {
     ] = await Promise.all([
       import(pathToFileURL(TRANSPORT_MODULE_PATH).href),
       import(pathToFileURL(CLIENT_MODULE_PATH).href),
-      import(pathToFileURL(POWERED_SESSION_MODULE_PATH).href),
+      import(pathToFileURL(SESSION_ADAPTER_MODULE_PATH).href),
       import(pathToFileURL(CODEC_MODULE_PATH).href),
       import(pathToFileURL(RUNTIME_MODULE_PATH).href),
       import(pathToFileURL(WORK_ENVELOPE_MODULE_PATH).href),
@@ -525,7 +525,7 @@ async function loadModules() {
     return {
       transport,
       client,
-      poweredSession,
+      sessionAdapter,
       codec,
       runtime,
       workEnvelope,

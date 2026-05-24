@@ -8,7 +8,7 @@ const REPO_ROOT = process.cwd();
 const LOOP_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'trusted-echo-runtime-loop.js');
 const TRANSPORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'installed-jedit-contract-echo-transport.js');
 const CLIENT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-optic-client.js');
-const POWERED_SESSION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'echo-powered-text-buffer-optic-session.js');
+const SESSION_ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'echo-backed-text-buffer-session.js');
 const TICK_FREQUENCY_HZ = 60;
 const TICK_INTERVAL_SECONDS = 1 / 60;
 const CYCLE_LIMIT = 7;
@@ -85,11 +85,11 @@ test('trusted Echo runtime loop stops through lifecycle port', async () => {
   assert.equal(lifecycle.stopRequests, 1);
 });
 
-test('app-facing Echo-powered session does not expose trusted host loop control', async () => {
+test('app-facing Echo-backed TextBufferSession port does not expose trusted host loop control', async () => {
   const modules = await loadModules();
   const transport = modules.transport.createInstalledJeditContractEchoTransport();
   const client = modules.client.createEchoTransportJeditOpticClient(transport);
-  const session = modules.poweredSession.createEchoPoweredTextBufferOpticSession({
+  const session = modules.sessionAdapter.createEchoBackedTextBufferSession({
     client,
   });
   const optic = await session.createBuffer({
@@ -119,18 +119,18 @@ async function loadModules() {
 
     assert.equal(build.status, 0, build.stderr || build.stdout);
 
-    const [loop, transport, client, poweredSession] = await Promise.all([
+    const [loop, transport, client, sessionAdapter] = await Promise.all([
       import(pathToFileURL(LOOP_MODULE_PATH).href),
       import(pathToFileURL(TRANSPORT_MODULE_PATH).href),
       import(pathToFileURL(CLIENT_MODULE_PATH).href),
-      import(pathToFileURL(POWERED_SESSION_MODULE_PATH).href),
+      import(pathToFileURL(SESSION_ADAPTER_MODULE_PATH).href),
     ]);
 
     return {
       loop,
       transport,
       client,
-      poweredSession,
+      sessionAdapter,
     };
   })();
 

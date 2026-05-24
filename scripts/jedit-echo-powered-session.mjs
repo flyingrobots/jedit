@@ -158,7 +158,7 @@ async function runSessionWitness(options) {
   const client = modules.transportClient.createEchoTransportJeditOpticClient(
     modules.installedTransport.createInstalledJeditContractEchoTransport(),
   );
-  const session = modules.poweredSession.createEchoPoweredTextBufferOpticSession({
+  const session = modules.sessionAdapter.createEchoBackedTextBufferSession({
     client,
   });
   const report = await modules.workflow.runEchoPoweredTextBufferWitness(session, {
@@ -183,7 +183,8 @@ async function runSessionWitness(options) {
     dryRun: false,
     install: installSummary(modules.package),
     authority: {
-      appFacingCapability: 'TextBufferOptic',
+      appFacingSessionPort: 'TextBufferSessionPort',
+      appFacingBufferCapability: 'TextBufferOptic',
       appCanTick: false,
       trustedLifecyclePort: 'TrustedEchoRuntimeLifecyclePort',
     },
@@ -332,7 +333,7 @@ async function loadDistModules() {
   return {
     installedTransport: await importDist('adapters/installed-jedit-contract-echo-transport.js'),
     transportClient: await importDist('adapters/jedit-echo-optic-client.js'),
-    poweredSession: await importDist('app/echo-powered-text-buffer-optic-session.js'),
+    sessionAdapter: await importDist('adapters/echo-backed-text-buffer-session.js'),
     workflow: await importDist('app/echo-powered-text-buffer-witness.js'),
     host: await importDist('app/trusted-echo-runtime-host.js'),
     package: await importDist('app/jedit-contract-package.js'),

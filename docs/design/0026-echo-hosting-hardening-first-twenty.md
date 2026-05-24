@@ -211,6 +211,8 @@ Checklist:
 - [x] Durable restart persistence remains future work under slice 55; current
   witness output must continue reporting partial restart posture.
 - [x] PR/CI review state remains branch process, not architectural truth.
+- [x] `TextBufferSessionPort` owns the jedit app-facing session boundary, while
+  `createEchoBackedTextBufferSession(...)` is only one adapter behind the port.
 
 ### Slice 51 - Ticketed Mutation Execution Tightening
 

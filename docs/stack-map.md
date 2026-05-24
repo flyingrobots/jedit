@@ -99,12 +99,12 @@ The next release-gate slice plan is recorded in
 - `stopTrustedEchoRuntime(...)` is the deterministic host shutdown primitive
   for Echo lifecycle control. It is not app-facing stop/cancel behavior.
 - Fixture vars bytes are not the durable Wesley runtime codec.
-- `TextBufferOptic` is the target app-facing capability. The current proof uses
-  the structural-history SDL and `replaceTextRange` as the first implemented
-  operation on that path.
-- `createEchoPoweredTextBufferOpticSession(...)` composes the app-facing optic
-  capability without exposing trusted lifecycle control. Host loops drain Echo
-  separately.
+- `TextBufferSessionPort` is the jedit app-facing session port. It returns
+  `TextBufferOptic` buffer capabilities while keeping the backing runtime
+  behind adapters.
+- `createEchoBackedTextBufferSession(...)` is the Echo-backed adapter. It
+  composes the app-facing session port without exposing trusted lifecycle
+  control. Host loops drain Echo separately.
 - `ReadBasisHandle` is an opaque supporting token, not the complete optic
   protocol.
 - Structural-history SDL is now the product contract authority for text
