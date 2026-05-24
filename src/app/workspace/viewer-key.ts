@@ -84,21 +84,58 @@ function updateProductionTextEditFromKey(
   if (editor.mode === EditorModes.Insert) {
     return productionInsertModeEdit(msg, model, productionTextSession);
   }
-  if (msg.key === EditorKeys.X && !msg.ctrl && !msg.alt) {
-    return productionDeleteUnderCursor(model, productionTextSession);
+  return productionNormalModeEdit(msg, model, productionTextSession, editor);
+}
+
+function productionNormalModeEdit(
+  msg: KeyMsg,
+  model: WorkspaceModel,
+  productionTextSession: ProductionTextSession,
+  editor: NonNullable<WorkspaceModel['editor']>,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] | undefined {
+  const deleteEdit = normalModeDeleteEdit(msg, model, productionTextSession);
+  if (deleteEdit != null) {
+    return deleteEdit;
   }
+  return productionNormalModeNavigation(msg, model, productionTextSession, editor);
+}
+
+function normalModeDeleteEdit(
+  msg: KeyMsg,
+  model: WorkspaceModel,
+  productionTextSession: ProductionTextSession,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] | undefined {
+  return msg.key === EditorKeys.X && !msg.ctrl && !msg.alt
+    ? productionDeleteUnderCursor(model, productionTextSession)
+    : undefined;
+}
+
+function productionNormalModeNavigation(
+  msg: KeyMsg,
+  model: WorkspaceModel,
+  productionTextSession: ProductionTextSession,
+  editor: NonNullable<WorkspaceModel['editor']>,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] | undefined {
   const viewport = editorViewport(model);
   const moved = updateNormalMode(editor, msg, viewport.width, viewport.height);
   if (moved.lines !== editor.lines) {
     return [model, []];
   }
-  if (moved !== editor) {
-    return updateProductionTextView(model, productionTextSession, moved);
-  }
-  return undefined;
+  return moved !== editor
+    ? updateProductionTextView(model, productionTextSession, moved)
+    : undefined;
 }
 
 function productionInsertModeEdit(
+  msg: KeyMsg,
+  model: WorkspaceModel,
+  productionTextSession: ProductionTextSession,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] | undefined {
+  return productionInsertMutation(msg, model, productionTextSession)
+    ?? productionInsertNavigation(msg, model, productionTextSession);
+}
+
+function productionInsertMutation(
   msg: KeyMsg,
   model: WorkspaceModel,
   productionTextSession: ProductionTextSession,
@@ -108,25 +145,24 @@ function productionInsertModeEdit(
     return undefined;
   }
   const insertText = insertTextFromKey(msg);
-  if (insertText == null) {
-    if (msg.key === EditorKeys.Backspace) {
-      return productionBackspace(model, productionTextSession);
-    }
-    if (msg.key === EditorKeys.Delete) {
-      return productionDeleteUnderCursor(model, productionTextSession);
-    }
-    const viewport = editorViewport(model);
-    const moved = updateInsertMode(editor, msg, {
-      viewportWidth: viewport.width,
-      viewportHeight: viewport.height,
-      allowTabIndent: !hasFocusablePeers(focusCycleState(model)),
-    });
-    if (moved.lines !== editor.lines) {
-      return [model, []];
-    }
-    if (moved !== editor) {
-      return updateProductionTextView(model, productionTextSession, moved);
-    }
+  if (insertText != null) {
+    return productionInsertText(model, productionTextSession, insertText);
+  }
+  if (msg.key === EditorKeys.Backspace) {
+    return productionBackspace(model, productionTextSession);
+  }
+  return msg.key === EditorKeys.Delete
+    ? productionDeleteUnderCursor(model, productionTextSession)
+    : undefined;
+}
+
+function productionInsertText(
+  model: WorkspaceModel,
+  productionTextSession: ProductionTextSession,
+  insertText: string,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] | undefined {
+  const editor = model.editor;
+  if (editor == null) {
     return undefined;
   }
   const startByte = byteOffsetForTextPosition(editor.lines, {
@@ -135,9 +171,32 @@ function productionInsertModeEdit(
   });
   return queueProductionTextEdit(model, productionTextSession, {
     kind: WorkspaceTextEditCommandKinds.Insert,
-    startByte,
-    insertText,
+      startByte,
+      insertText,
+    });
+}
+
+function productionInsertNavigation(
+  msg: KeyMsg,
+  model: WorkspaceModel,
+  productionTextSession: ProductionTextSession,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] | undefined {
+  const editor = model.editor;
+  if (editor == null) {
+    return undefined;
+  }
+  const viewport = editorViewport(model);
+  const moved = updateInsertMode(editor, msg, {
+    viewportWidth: viewport.width,
+    viewportHeight: viewport.height,
+    allowTabIndent: !hasFocusablePeers(focusCycleState(model)),
   });
+  if (moved.lines !== editor.lines) {
+    return [model, []];
+  }
+  return moved !== editor
+    ? updateProductionTextView(model, productionTextSession, moved)
+    : undefined;
 }
 
 function updateProductionTextView(

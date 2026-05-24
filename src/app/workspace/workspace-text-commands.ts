@@ -110,6 +110,15 @@ export interface WorkspaceTextReadCommandRequest {
   readonly aperture: ProductionTextViewportAperture;
 }
 
+export interface WorkspaceTextObservedReading {
+  readonly readingId: string;
+  readonly lines: readonly { readonly text: string }[];
+  readonly lineCount: number;
+  readonly cursorLine: number;
+  readonly viewportLineCount: number;
+  readonly truncated: boolean;
+}
+
 export function createWorkspaceTextOpenCmd(
   request: WorkspaceTextOpenCommandRequest,
 ): Cmd<WorkspaceMsg> {
@@ -385,14 +394,7 @@ function obstructedRead(filePath: string, issue: RuntimeIssue): WorkspaceTextRea
 
 export function readingCache(
   bufferId: string,
-  reading: {
-    readonly readingId: string;
-    readonly lines: readonly { readonly text: string }[];
-    readonly lineCount: number;
-    readonly cursorLine: number;
-    readonly viewportLineCount: number;
-    readonly truncated: boolean;
-  },
+  reading: WorkspaceTextObservedReading,
 ): WorkspaceTextReadingCache {
   return {
     bufferId,

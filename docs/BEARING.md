@@ -37,8 +37,11 @@ exports materialized text, reports retained refs, and proves local replay
 through `TextBufferSessionPort`. The release gate now runs the production
 session witness and static guard.
 
-The interactive workspace still has visible legacy direct `EditorState.lines`
-paths; do not mistake the production session witness for full TUI cutover.
+The current branch extends that proof through slices 81-90: interactive
+workspace open, initial read, render, insert/delete/backspace, viewport refresh,
+save/export, checkpoint, and static guard coverage now run through the
+jedit-owned production text session. `EditorState.lines` remains a render and
+navigation cache, not production text authority.
 
 The developer-facing recipe lives in
 [`docs/echo-application-hosting-guide.md`](echo-application-hosting-guide.md).
@@ -47,9 +50,9 @@ The developer-facing recipe lives in
 
 The next plan is not WSC. WSC waits until the interactive workspace cutover is
 credible. The current production text session and witness prove that jedit can
-drive its text model through a jedit-owned Echo-hosted session. The interactive
-workspace still needs to consume that session as the only production text
-authority.
+drive its text model through a jedit-owned Echo-hosted session. Slices 81-90
+make the interactive workspace consume that session as production text
+authority for open, edit, render, save, export, and checkpoint flows.
 
 Core claim:
 
@@ -60,20 +63,26 @@ Echo remains generic and contains no text, editor, file, buffer, cursor, or
 selection nouns.
 ```
 
-Remaining drift to close:
+Closed drift:
 
-- `src/app/file-tree.ts` still opens files through direct editor loading.
-- `src/app/viewer-key.ts` still routes key edits through direct editor update
-  helpers.
-- `src/app/viewer-content.ts` still renders from direct `EditorState.lines`
-  authority.
-- `src/app/global-key-bindings.ts` still saves through direct editor save
-  helpers.
-- The legacy line model is not yet fixture-scoped or adapter-private.
+- `src/app/workspace/file-tree.ts` opens production files through the text
+  session port.
+- `src/app/workspace/viewer-key.ts` plans production text mutations through
+  session commands instead of mutating cached lines.
+- `src/app/workspace/viewer-content.ts` renders production text from the
+  reading cache.
+- `src/app/workspace/global-key-bindings.ts` saves production text by exporting
+  and checkpointing through the session port.
+- The production cutover guard covers current production session files and
+  catches legacy authority bypass tokens.
 
-The unfinished slices are slices 81-90. Each slice below includes its user
-story, acceptance criteria, test plan, and checklist. Check off slice items only
-when the executable witness for that item is green.
+Remaining caveat:
+
+- The legacy line model still exists for render/cache/navigation mechanics and
+  explicit test-local fixtures. It is not production text authority.
+
+Slices 81-90 are now closed locally. Each slice below includes its user story,
+acceptance criteria, test plan, and checklist.
 
 ### Slice 81 - Workspace Text Authority State
 
@@ -359,10 +368,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Quarantine legacy helper modules.
-- [ ] Expand static guard over production workspace paths.
-- [ ] Preserve explicit fixture/test-local escape hatches.
-- [ ] Update docs naming legacy state as non-production authority.
+- [x] Quarantine legacy helper modules.
+- [x] Expand static guard over production workspace paths.
+- [x] Preserve explicit fixture/test-local escape hatches.
+- [x] Update docs naming legacy state as non-production authority.
 
 ### Slice 90 - Interactive Echo Cutover Gate
 
@@ -396,10 +405,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Add interactive workspace witness to release gate.
-- [ ] Prove open/edit/read/save/checkpoint through production session.
-- [ ] Prove no UI tick authority.
-- [ ] Mark slices 81-90 complete before starting WSC work.
+- [x] Add interactive workspace witness to release gate.
+- [x] Prove open/edit/read/save/checkpoint through production session.
+- [x] Prove no UI tick authority.
+- [x] Mark slices 81-90 complete before starting WSC work.
 
 ## Current Truth
 
@@ -411,9 +420,10 @@ Checklist:
 - Echo must not contain hardcoded jedit or text-buffer behavior.
 - The current real Echo witness fails closed with `UNSUPPORTED_QUERY` unless a
   jedit-owned query observer is installed.
-- The remaining production cutover work is wiring interactive workspace
-  open/edit/render/save behavior through the production text session/controller
-  and then quarantining the legacy direct line-mutation path.
+- Interactive workspace production text flows now open, edit, render, save,
+  export, and checkpoint through the production text session/controller. The
+  remaining caveat is legacy line state kept as render/cache/navigation
+  mechanics and explicit test-local fixture support, not production authority.
 - After interactive workspace cutover, the next durability bar is Echo-native
   WSC causal-history serialization: the full causal history of editing a file
   in jedit should be recoverable across application lifecycles, and jedit

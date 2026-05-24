@@ -6,6 +6,12 @@ const OPTION_SAMPLE_FORBIDDEN_FILE = '--sample-forbidden-file';
 const DEFAULT_PRODUCTION_FILES = Object.freeze([
   'src/app/workspace/production-text-session.ts',
   'src/app/workspace/production-text-session-witness.ts',
+  'src/app/workspace/file-tree.ts',
+  'src/app/workspace/viewer-content.ts',
+  'src/app/workspace/workspace-text-authority.ts',
+  'src/app/workspace/workspace-text-commands.ts',
+  'src/app/workspace/workspace-text-position.ts',
+  'src/app/workspace/workspace-text-results.ts',
   'src/adapters/text-runtime-profile-session.ts',
 ]);
 const REMOVED_TRANSITIONAL_FILES = Object.freeze([
@@ -13,17 +19,17 @@ const REMOVED_TRANSITIONAL_FILES = Object.freeze([
   'src/adapters/interactive-echo-text-session.ts',
 ]);
 const FORBIDDEN_PATTERNS = Object.freeze([
-  'loadEditor',
-  'saveEditor',
-  'updateInsertMode',
-  'updateNormalMode',
-  'editor.lines',
-  'requestStart',
-  'requestRunUntilIdle',
-  'requestStop',
-  'interactiveTextRuntimeMode',
-  'InteractiveTextRuntimeMode',
-  'INTERACTIVE_TEXT_RUNTIME',
+  { label: 'loadEditor', pattern: /\bloadEditor\b(?!File)/u },
+  { label: 'saveEditor', pattern: /\bsaveEditor\b(?!File)/u },
+  { label: 'updateInsertMode', pattern: /\bupdateInsertMode\b/u },
+  { label: 'updateNormalMode', pattern: /\bupdateNormalMode\b/u },
+  { label: 'editor.lines', pattern: /\beditor\.lines\b/u },
+  { label: 'requestStart', pattern: /\brequestStart\b/u },
+  { label: 'requestRunUntilIdle', pattern: /\brequestRunUntilIdle\b/u },
+  { label: 'requestStop', pattern: /\brequestStop\b/u },
+  { label: 'interactiveTextRuntimeMode', pattern: /\binteractiveTextRuntimeMode\b/u },
+  { label: 'InteractiveTextRuntimeMode', pattern: /\bInteractiveTextRuntimeMode\b/u },
+  { label: 'INTERACTIVE_TEXT_RUNTIME', pattern: /\bINTERACTIVE_TEXT_RUNTIME\b/u },
 ]);
 
 const options = parseArgs(process.argv.slice(2));
@@ -86,6 +92,6 @@ function forbiddenSourceFailures(filePaths) {
 function forbiddenSourceFileFailures(filePath) {
   const source = readFileSync(filePath, 'utf8');
   return FORBIDDEN_PATTERNS
-    .filter((pattern) => source.includes(pattern))
-    .map((pattern) => `${filePath}: forbidden production cutover token: ${pattern}`);
+    .filter((entry) => entry.pattern.test(source))
+    .map((entry) => `${filePath}: forbidden production cutover token: ${entry.label}`);
 }

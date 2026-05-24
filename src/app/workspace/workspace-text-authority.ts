@@ -66,6 +66,18 @@ export interface WorkspaceTextAuthorityObstructed {
   readonly issue: RuntimeIssue;
 }
 
+export interface OpenedWorkspaceTextAuthorityOptions {
+  readonly profile: TextRuntimeProfile;
+  readonly filePath: string;
+  readonly bufferId: string;
+  readonly readOnly: boolean;
+  readonly dirty: boolean;
+  readonly cache?: WorkspaceTextReadingCache;
+  readonly lastReceiptId?: string;
+  readonly lastCheckpointId?: string;
+  readonly lastExportReadingId?: string;
+}
+
 export type WorkspaceTextAuthority =
   | WorkspaceTextAuthorityNone
   | WorkspaceTextAuthorityPendingOpen
@@ -94,17 +106,9 @@ export function pendingWorkspaceTextOpen(
   };
 }
 
-export function openedWorkspaceTextAuthority(options: {
-  readonly profile: TextRuntimeProfile;
-  readonly filePath: string;
-  readonly bufferId: string;
-  readonly readOnly: boolean;
-  readonly dirty: boolean;
-  readonly cache?: WorkspaceTextReadingCache;
-  readonly lastReceiptId?: string;
-  readonly lastCheckpointId?: string;
-  readonly lastExportReadingId?: string;
-}): WorkspaceTextAuthorityOpened {
+export function openedWorkspaceTextAuthority(
+  options: OpenedWorkspaceTextAuthorityOptions,
+): WorkspaceTextAuthorityOpened {
   return {
     kind: AUTHORITY_OPENED,
     profile: options.profile,
@@ -191,7 +195,7 @@ export function editorFromWorkspaceTextCache(
   return {
     path: authority.filePath,
     lines,
-    cursorRow: clampLine(existing?.cursorRow ?? authority.cache?.cursorLine ?? FIRST_LINE, lines),
+    cursorRow: editorCursorRow(authority, existing, lines),
     cursorCol: existing?.cursorCol ?? FIRST_COLUMN,
     scrollRow: existing?.scrollRow ?? FIRST_LINE,
     scrollCol: existing?.scrollCol ?? FIRST_COLUMN,
@@ -203,6 +207,14 @@ export function editorFromWorkspaceTextCache(
     undoStack: existing?.undoStack ?? EMPTY_STACK,
     redoStack: existing?.redoStack ?? EMPTY_STACK,
   };
+}
+
+function editorCursorRow(
+  authority: WorkspaceTextAuthorityOpened,
+  existing: EditorState | undefined,
+  lines: readonly string[],
+): number {
+  return clampLine(existing?.cursorRow ?? authority.cache?.cursorLine ?? FIRST_LINE, lines);
 }
 
 function clampLine(row: number, lines: readonly string[]): number {

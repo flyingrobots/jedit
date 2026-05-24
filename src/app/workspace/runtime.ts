@@ -1,9 +1,6 @@
-import type { Cmd, KeyMsg, MouseMsg, ResizeMsg, RuntimeIssue } from '@flyingrobots/bijou-tui';
 import { createInitialModel } from './init.js';
-import type { WorkspaceInitialModelSnapshot } from './init.js';
 import { manageGraftLifecycle } from './graft.js';
 import type { WorkspaceModel } from './model.js';
-import type { WorkspaceMsg } from './msg.js';
 import {
   applyNotificationState,
   pushRuntimeIssueToast,
@@ -11,7 +8,7 @@ import {
 } from '../../ui/feedback.js';
 import { reduceSourceHighlightMsg, SOURCE_HIGHLIGHT_MESSAGE } from '../source-highlight-session.js';
 import { createTitleCameraState, reduceTitleCameraMotion, TITLE_CAMERA_MESSAGE } from '../title-camera-session.js';
-import { beginEditorProjectionRefresh, ensureEditorVisible, editorViewport } from './editor-session.js';
+import { ensureEditorVisible, editorViewport } from './editor-session.js';
 import { updateFromKey } from './key-bindings.js';
 import { updateFromMouse } from './mouse.js';
 import { renderWorkspace } from './viewer.js';
@@ -22,59 +19,20 @@ import {
   streamProfilerFrame,
   toggleProfiler,
   type ProfilerMsg,
-  type ProfilerTracePort,
 } from '../raytracer-profiler.js';
-import type { DrawerKind } from '../../ui/drawer-layout.js';
-import type { FileSystemPort } from '../../ports/file-system.js';
-import type { EditorFilePort } from '../../ports/editor-file.js';
-import type { GraftSessionPort } from '../../ports/graft-session.js';
-import type { SourceHighlighter } from '../../ports/source-highlighter.js';
-import type { TitleSceneLoaderPort } from '../../ports/title-scene-loader.js';
-import { FocusPanes } from '../../ui/panel-focus.js';
-import { WorkspaceInputMessageTypes, WorkspaceMessageTypes } from './msg.js';
-import { applyDrawerProgress, applyGraftInfo } from './runtime-state.js';
-import type { ProductionTextSession } from './production-text-session.js';
-import {
-  editorFromWorkspaceTextCache,
-  openedWorkspaceTextAuthority,
-  obstructedWorkspaceTextAuthority,
-  WorkspaceTextAuthorityKinds,
-  workspaceTextAuthorityWithCache,
-  workspaceTextAuthorityWithCheckpoint,
-  workspaceTextAuthorityWithExport,
-  workspaceTextAuthorityWithReceipt,
-} from './workspace-text-authority.js';
-import { WorkspaceTextResultKinds } from './workspace-text-results.js';
-import { ViewModes } from './view-mode.js';
+import { WorkspaceInputMessageTypes, WorkspaceMessageTypes, type WorkspaceMsg } from './msg.js';
+import { applyDrawerProgress, applyGraftInfo, applyWorkspaceTextMessage } from './workspace-state-reducers.js';
+import type {
+  WorkspaceRuntime,
+  WorkspaceRuntimeDependencies,
+  WorkspaceRuntimeMsg,
+  WorkspaceRuntimeResult,
+  WorkspaceResizeMsg,
+} from './workspace-runtime-dependencies.js';
 
 export { WorkspaceInputMessageTypes, WorkspaceMessageTypes } from './msg.js';
 
 const FRAME_TIME_HISTORY_SIZE = 50;
-
-export interface WorkspaceRuntimeDependencies {
-  readonly initialColumns: number;
-  readonly initialRows: number;
-  readonly initialWorkingDirectory: string;
-  readonly fileSystem: FileSystemPort;
-  readonly editorFile: EditorFilePort;
-  readonly graftSession: GraftSessionPort;
-  readonly sourceHighlighter: SourceHighlighter;
-  readonly titleSceneLoader: TitleSceneLoaderPort;
-  readonly productionTextSession: ProductionTextSession;
-  readonly profiler: ProfilerTracePort;
-  readonly createTimeTickCmd: () => Cmd<WorkspaceMsg>;
-  readonly createNotificationTickCmd: () => Cmd<WorkspaceMsg>;
-  readonly createDrawerAnimationCmd: (kind: DrawerKind, from: number, to: number) => Cmd<WorkspaceMsg>[];
-  readonly initialModel: WorkspaceInitialModelSnapshot;
-  readonly nowMs: () => number;
-}
-
-export interface WorkspaceRuntime {
-  init: () => [WorkspaceModel, Cmd<WorkspaceMsg>[]];
-  update: (msg: WorkspaceRuntimeMsg, model: WorkspaceModel) => [WorkspaceModel, Cmd<WorkspaceMsg>[]];
-  view: (model: WorkspaceModel) => ReturnType<typeof renderWorkspace>;
-  routeRuntimeIssue: (issue: RuntimeIssue) => WorkspaceMsg;
-}
 
 export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): WorkspaceRuntime => ({
   init: () => [
@@ -100,9 +58,6 @@ export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): Work
   routeRuntimeIssue: (issue) => ({ type: WorkspaceMessageTypes.RuntimeIssue, issue }),
 });
 
-
-type WorkspaceRuntimeMsg = WorkspaceMsg | ResizeMsg | KeyMsg | MouseMsg;
-type WorkspaceRuntimeResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 
 function updateWorkspaceRuntime(
   deps: WorkspaceRuntimeDependencies,
@@ -136,7 +91,7 @@ function updateResizeMessage(
   return applyNotificationState(resized, resized.notifications, deps.nowMs(), deps.createNotificationTickCmd);
 }
 
-function resizeWorkspaceModel(model: WorkspaceModel, msg: ResizeMsg): WorkspaceModel {
+function resizeWorkspaceModel(model: WorkspaceModel, msg: WorkspaceResizeMsg): WorkspaceModel {
   const viewport = editorViewport({
     ...model,
     columns: msg.columns,
@@ -169,168 +124,13 @@ function updateWorkspaceStateMessage(
   if (msg.type === SOURCE_HIGHLIGHT_MESSAGE) {
     return [reduceSourceHighlightMsg(model, msg), []];
   }
-  if (msg.type === WorkspaceMessageTypes.TextOpenResult) {
-    return applyTextOpenResult(deps, msg, model);
-  }
-  if (msg.type === WorkspaceMessageTypes.TextEditResult) {
-    return applyTextEditResult(deps, msg, model);
-  }
-  if (msg.type === WorkspaceMessageTypes.TextCheckpointResult) {
-    return applyTextCheckpointResult(deps, msg, model);
-  }
-  if (msg.type === WorkspaceMessageTypes.TextExportResult) {
-    return applyTextExportResult(deps, msg, model);
-  }
-  if (msg.type === WorkspaceMessageTypes.TextReadResult) {
-    return applyTextReadResult(deps, msg, model);
+  const text = isWorkspaceMsg(msg) ? applyWorkspaceTextMessage(deps, msg, model) : undefined;
+  if (text != null) {
+    return text;
   }
   return msg.type === TITLE_CAMERA_MESSAGE.Frame
     ? [{ ...model, titleCamera: reduceTitleCameraMotion(model.titleCamera, msg) }, []]
     : undefined;
-}
-
-function applyTextEditResult(
-  deps: WorkspaceRuntimeDependencies,
-  msg: Extract<WorkspaceMsg, { type: typeof WorkspaceMessageTypes.TextEditResult }>,
-  model: WorkspaceModel,
-): WorkspaceRuntimeResult {
-  const authority = model.textAuthority;
-  if (authority.kind !== WorkspaceTextAuthorityKinds.Opened || msg.requestId !== model.textRequestId) {
-    return [model, []];
-  }
-  if (msg.result.kind === WorkspaceTextResultKinds.Obstructed) {
-    return pushRuntimeIssueToast(model, msg.result.issue, deps.createNotificationTickCmd);
-  }
-  const withReceipt = workspaceTextAuthorityWithReceipt(authority, msg.result.receiptId);
-  const withCache = workspaceTextAuthorityWithCache(withReceipt, msg.result.cache);
-  const next = {
-    ...model,
-    textAuthority: withCache,
-    editor: editorFromWorkspaceTextCache(withCache, model.editor),
-  };
-  return beginEditorProjectionRefresh(next, { refreshGraft: shouldRefreshGraftAfterTextChange(model) }, {
-    editorFile: deps.editorFile,
-    sourceHighlighter: deps.sourceHighlighter,
-    graftSession: deps.graftSession,
-  });
-}
-
-function applyTextCheckpointResult(
-  deps: WorkspaceRuntimeDependencies,
-  msg: Extract<WorkspaceMsg, { type: typeof WorkspaceMessageTypes.TextCheckpointResult }>,
-  model: WorkspaceModel,
-): WorkspaceRuntimeResult {
-  const authority = model.textAuthority;
-  if (authority.kind !== WorkspaceTextAuthorityKinds.Opened || msg.requestId !== model.textRequestId) {
-    return [model, []];
-  }
-  if (msg.result.kind === WorkspaceTextResultKinds.Obstructed) {
-    return pushRuntimeIssueToast(model, msg.result.issue, deps.createNotificationTickCmd);
-  }
-  const textAuthority = workspaceTextAuthorityWithCheckpoint(authority, msg.result.checkpointId);
-  return [{
-    ...model,
-    textAuthority,
-    editor: editorFromWorkspaceTextCache(textAuthority, model.editor),
-  }, []];
-}
-
-function applyTextExportResult(
-  deps: WorkspaceRuntimeDependencies,
-  msg: Extract<WorkspaceMsg, { type: typeof WorkspaceMessageTypes.TextExportResult }>,
-  model: WorkspaceModel,
-): WorkspaceRuntimeResult {
-  const authority = model.textAuthority;
-  if (authority.kind !== WorkspaceTextAuthorityKinds.Opened || msg.requestId !== model.textRequestId) {
-    return [model, []];
-  }
-  if (msg.result.kind === WorkspaceTextResultKinds.Obstructed) {
-    return pushRuntimeIssueToast(model, msg.result.issue, deps.createNotificationTickCmd);
-  }
-  const textAuthority = workspaceTextAuthorityWithExport(authority, msg.result.readingId);
-  return [{
-    ...model,
-    textAuthority,
-    editor: editorFromWorkspaceTextCache(textAuthority, model.editor),
-  }, []];
-}
-
-function applyTextReadResult(
-  deps: WorkspaceRuntimeDependencies,
-  msg: Extract<WorkspaceMsg, { type: typeof WorkspaceMessageTypes.TextReadResult }>,
-  model: WorkspaceModel,
-): WorkspaceRuntimeResult {
-  const authority = model.textAuthority;
-  if (authority.kind !== WorkspaceTextAuthorityKinds.Opened || msg.requestId !== model.textRequestId) {
-    return [model, []];
-  }
-  if (msg.result.kind === WorkspaceTextResultKinds.Obstructed) {
-    return pushRuntimeIssueToast(model, msg.result.issue, deps.createNotificationTickCmd);
-  }
-  const textAuthority = workspaceTextAuthorityWithCache(authority, msg.result.cache);
-  return [{
-    ...model,
-    textAuthority,
-    editor: editorFromWorkspaceTextCache(textAuthority, model.editor),
-  }, []];
-}
-
-function applyTextOpenResult(
-  deps: WorkspaceRuntimeDependencies,
-  msg: Extract<WorkspaceMsg, { type: typeof WorkspaceMessageTypes.TextOpenResult }>,
-  model: WorkspaceModel,
-): WorkspaceRuntimeResult {
-  if (
-    model.textAuthority.kind !== WorkspaceTextAuthorityKinds.PendingOpen
-    || model.textAuthority.requestId !== msg.requestId
-  ) {
-    return [model, []];
-  }
-  if (msg.result.kind === WorkspaceTextResultKinds.Obstructed) {
-    const obstructed = {
-      ...model,
-      textAuthority: obstructedWorkspaceTextAuthority(
-        model.textRuntimeProfile,
-        msg.result.filePath,
-        msg.requestId,
-        msg.result.issue,
-      ),
-    };
-    return pushRuntimeIssueToast(obstructed, msg.result.issue, deps.createNotificationTickCmd);
-  }
-  const textAuthority = openedWorkspaceTextAuthority({
-    profile: model.textRuntimeProfile,
-    filePath: msg.result.filePath,
-    bufferId: msg.result.bufferId,
-    readOnly: msg.result.readOnly,
-    dirty: false,
-    cache: msg.result.cache,
-  });
-  const next = withFocusPaneRefresh({
-    ...model,
-    textAuthority,
-    editor: editorFromWorkspaceTextCache(textAuthority, model.editor),
-    viewMode: ViewModes.Source,
-    graftInfo: undefined,
-    graftLoading: false,
-    graftSelectedIndex: 0,
-  });
-  return beginEditorProjectionRefresh(next, { refreshGraft: model.graftDrawerOpen }, {
-    editorFile: deps.editorFile,
-    sourceHighlighter: deps.sourceHighlighter,
-    graftSession: deps.graftSession,
-  });
-}
-
-function withFocusPaneRefresh(model: WorkspaceModel): WorkspaceModel {
-  return {
-    ...model,
-    focusPane: FocusPanes.Editor,
-  };
-}
-
-function shouldRefreshGraftAfterTextChange(model: WorkspaceModel): boolean {
-  return model.graftDrawerOpen || model.graftInfo?.path === model.editor?.path;
 }
 
 function updateGraftInfoMessage(
@@ -340,6 +140,12 @@ function updateGraftInfoMessage(
   return msg.requestId === model.graftRequestId
     ? [applyGraftInfo(model, msg.info), []]
     : [model, []];
+}
+
+function isWorkspaceMsg(msg: WorkspaceRuntimeMsg): msg is WorkspaceMsg {
+  return msg.type !== WorkspaceInputMessageTypes.Resize
+    && msg.type !== WorkspaceInputMessageTypes.Key
+    && msg.type !== WorkspaceInputMessageTypes.Mouse;
 }
 
 function applySceneLoadResult(
