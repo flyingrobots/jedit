@@ -19,6 +19,9 @@ import { createTitleSceneLoaderPort } from './title-scene-loader.js';
 import { createInitialModelSnapshot } from './workspace-initial-model-snapshot.js';
 import { createPerfApp } from './workspace-perf-app.js';
 import type { TextRuntimeProfile } from '../app/text-runtime-profile.js';
+import { TEXT_RUNTIME_PROFILE_ECHO_HOSTED } from '../app/text-runtime-profile.js';
+import { createTextRuntimeProfileSession } from './text-runtime-profile-session.js';
+import { createProductionTextSession } from '../app/workspace/production-text-session.js';
 
 const TIME_TICK_DURATION_MS = Number.MAX_SAFE_INTEGER;
 const DRAWER_DURATION_MS = 160;
@@ -49,6 +52,12 @@ function workspaceRuntimeDependencies(
   random: () => number,
 ) {
   const editorFile = editorFilePort;
+  const textRuntimeProfile = options.textRuntimeProfile
+    ?? options.seed?.textRuntimeProfile
+    ?? TEXT_RUNTIME_PROFILE_ECHO_HOSTED;
+  const textSessionBinding = createTextRuntimeProfileSession({
+    profile: textRuntimeProfile,
+  });
   const graftSession = createGraftSessionPort();
   const sourceHighlighter = createGraftSourceHighlighter();
   const titleSceneLoader = createTitleSceneLoaderPort();
@@ -58,6 +67,7 @@ function workspaceRuntimeDependencies(
     initialWorkingDirectory: options.initialWorkingDirectory,
     fileSystem: FileSystemPortAdapter,
     editorFile,
+    productionTextSession: createProductionTextSession(textSessionBinding.session),
     graftSession,
     sourceHighlighter,
     titleSceneLoader,
@@ -65,7 +75,7 @@ function workspaceRuntimeDependencies(
     initialModel: {
       ...(options.seed ?? createInitialModelSnapshot(nowMs(), options.initialWorkingDirectory, random)),
       ...(options.textRuntimeProfile == null ? {} : {
-        textRuntimeProfile: options.textRuntimeProfile,
+        textRuntimeProfile,
       }),
     },
     nowMs,

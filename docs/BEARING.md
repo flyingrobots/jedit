@@ -137,10 +137,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Route production file open through the text session port.
-- [ ] Preserve file adapter as an import source, not text authority.
-- [ ] Represent open obstruction in workspace state.
-- [ ] Cover open behavior with deterministic tests.
+- [x] Route production file open through the text session port.
+- [x] Preserve file adapter as an import source, not text authority.
+- [x] Represent open obstruction in workspace state.
+- [x] Cover open behavior with deterministic tests.
 
 ### Slice 83 - Initial Bounded Reading After Open
 
@@ -167,10 +167,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Trigger initial bounded read after open.
-- [ ] Populate render cache from reading output.
-- [ ] Store reading identity/posture.
-- [ ] Prove query/read path remains read-only.
+- [x] Trigger initial bounded read after open.
+- [x] Populate render cache from reading output.
+- [x] Store reading identity/posture.
+- [x] Prove query/read path remains read-only.
 
 ### Slice 84 - Render From Reading Cache
 

@@ -11,7 +11,7 @@ import {
 } from '../../ui/feedback.js';
 import { reduceSourceHighlightMsg, SOURCE_HIGHLIGHT_MESSAGE } from '../source-highlight-session.js';
 import { createTitleCameraState, reduceTitleCameraMotion, TITLE_CAMERA_MESSAGE } from '../title-camera-session.js';
-import { ensureEditorVisible, editorViewport } from './editor-session.js';
+import { beginEditorProjectionRefresh, ensureEditorVisible, editorViewport } from './editor-session.js';
 import { updateFromKey } from './key-bindings.js';
 import { updateFromMouse } from './mouse.js';
 import { renderWorkspace } from './viewer.js';
@@ -30,8 +30,18 @@ import type { EditorFilePort } from '../../ports/editor-file.js';
 import type { GraftSessionPort } from '../../ports/graft-session.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import type { TitleSceneLoaderPort } from '../../ports/title-scene-loader.js';
+import { FocusPanes } from '../../ui/panel-focus.js';
 import { WorkspaceInputMessageTypes, WorkspaceMessageTypes } from './msg.js';
 import { applyDrawerProgress, applyGraftInfo } from './runtime-state.js';
+import type { ProductionTextSession } from './production-text-session.js';
+import {
+  editorFromWorkspaceTextCache,
+  openedWorkspaceTextAuthority,
+  obstructedWorkspaceTextAuthority,
+  WorkspaceTextAuthorityKinds,
+} from './workspace-text-authority.js';
+import { WorkspaceTextResultKinds } from './workspace-text-results.js';
+import { ViewModes } from './view-mode.js';
 
 export { WorkspaceInputMessageTypes, WorkspaceMessageTypes } from './msg.js';
 
@@ -46,6 +56,7 @@ export interface WorkspaceRuntimeDependencies {
   readonly graftSession: GraftSessionPort;
   readonly sourceHighlighter: SourceHighlighter;
   readonly titleSceneLoader: TitleSceneLoaderPort;
+  readonly productionTextSession: ProductionTextSession;
   readonly profiler: ProfilerTracePort;
   readonly createTimeTickCmd: () => Cmd<WorkspaceMsg>;
   readonly createNotificationTickCmd: () => Cmd<WorkspaceMsg>;
@@ -98,7 +109,7 @@ function updateWorkspaceRuntime(
   if (resized != null) {
     return resized;
   }
-  const state = updateWorkspaceStateMessage(msg, model);
+  const state = updateWorkspaceStateMessage(deps, msg, model);
   if (state != null) {
     return state;
   }
@@ -138,6 +149,7 @@ function resizeWorkspaceModel(model: WorkspaceModel, msg: ResizeMsg): WorkspaceM
 }
 
 function updateWorkspaceStateMessage(
+  deps: WorkspaceRuntimeDependencies,
   msg: WorkspaceRuntimeMsg,
   model: WorkspaceModel,
 ): WorkspaceRuntimeResult | undefined {
@@ -153,9 +165,66 @@ function updateWorkspaceStateMessage(
   if (msg.type === SOURCE_HIGHLIGHT_MESSAGE) {
     return [reduceSourceHighlightMsg(model, msg), []];
   }
+  if (msg.type === WorkspaceMessageTypes.TextOpenResult) {
+    return applyTextOpenResult(deps, msg, model);
+  }
   return msg.type === TITLE_CAMERA_MESSAGE.Frame
     ? [{ ...model, titleCamera: reduceTitleCameraMotion(model.titleCamera, msg) }, []]
     : undefined;
+}
+
+function applyTextOpenResult(
+  deps: WorkspaceRuntimeDependencies,
+  msg: Extract<WorkspaceMsg, { type: typeof WorkspaceMessageTypes.TextOpenResult }>,
+  model: WorkspaceModel,
+): WorkspaceRuntimeResult {
+  if (
+    model.textAuthority.kind !== WorkspaceTextAuthorityKinds.PendingOpen
+    || model.textAuthority.requestId !== msg.requestId
+  ) {
+    return [model, []];
+  }
+  if (msg.result.kind === WorkspaceTextResultKinds.Obstructed) {
+    const obstructed = {
+      ...model,
+      textAuthority: obstructedWorkspaceTextAuthority(
+        model.textRuntimeProfile,
+        msg.result.filePath,
+        msg.requestId,
+        msg.result.issue,
+      ),
+    };
+    return pushRuntimeIssueToast(obstructed, msg.result.issue, deps.createNotificationTickCmd);
+  }
+  const textAuthority = openedWorkspaceTextAuthority({
+    profile: model.textRuntimeProfile,
+    filePath: msg.result.filePath,
+    bufferId: msg.result.bufferId,
+    readOnly: msg.result.readOnly,
+    dirty: false,
+    cache: msg.result.cache,
+  });
+  const next = withFocusPaneRefresh({
+    ...model,
+    textAuthority,
+    editor: editorFromWorkspaceTextCache(textAuthority, model.editor),
+    viewMode: ViewModes.Source,
+    graftInfo: undefined,
+    graftLoading: false,
+    graftSelectedIndex: 0,
+  });
+  return beginEditorProjectionRefresh(next, { refreshGraft: model.graftDrawerOpen }, {
+    editorFile: deps.editorFile,
+    sourceHighlighter: deps.sourceHighlighter,
+    graftSession: deps.graftSession,
+  });
+}
+
+function withFocusPaneRefresh(model: WorkspaceModel): WorkspaceModel {
+  return {
+    ...model,
+    focusPane: FocusPanes.Editor,
+  };
 }
 
 function updateGraftInfoMessage(
@@ -259,6 +328,7 @@ function workspaceKeyDeps(deps: WorkspaceRuntimeDependencies) {
       sourceHighlighter: deps.sourceHighlighter,
       graftSession: deps.graftSession,
       titleSceneLoader: deps.titleSceneLoader,
+      productionTextSession: deps.productionTextSession,
     },
   };
 }

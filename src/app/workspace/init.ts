@@ -46,6 +46,7 @@ export function createInitialModel(
     editor: undefined,
     textRuntimeProfile,
     textAuthority: createWorkspaceTextAuthority(textRuntimeProfile),
+    textRequestId: 0,
     viewMode: INITIAL_VIEW_MODE,
     focusPane: INITIAL_FOCUS_PANE,
     ...initialDrawerState(),

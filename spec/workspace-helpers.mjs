@@ -62,7 +62,36 @@ export function mockDeps(overrides = {}) {
       loadTitleSceneFromFile: async () => undefined,
       loadBuiltInTitleScene: async () => undefined,
     },
+    productionTextSession: fakeProductionTextSession(),
     ...overrides,
+  };
+}
+
+export function fakeProductionTextSession(overrides = {}) {
+  return {
+    openBuffer: async () => ({ kind: 'obstructed', obstruction: fakeProductionTextObstruction() }),
+    insertText: async () => ({ kind: 'obstructed', obstruction: fakeProductionTextObstruction() }),
+    replaceRange: async () => ({ kind: 'obstructed', obstruction: fakeProductionTextObstruction() }),
+    deleteRange: async () => ({ kind: 'obstructed', obstruction: fakeProductionTextObstruction() }),
+    multiRangeEdit: async () => ({ kind: 'obstructed', obstruction: fakeProductionTextObstruction() }),
+    checkpointBuffer: async () => ({ kind: 'obstructed', obstruction: fakeProductionTextObstruction() }),
+    observeWindow: async () => ({ kind: 'obstructed', obstruction: fakeProductionTextObstruction() }),
+    exportWindow: async () => ({ kind: 'obstructed', obstruction: fakeProductionTextObstruction() }),
+    ...overrides,
+  };
+}
+
+export function fakeProductionTextObstruction() {
+  return {
+    code: 'test-obstruction',
+    issue: {
+      name: 'TestProductionTextIssue',
+      title: 'test production text issue',
+      message: 'test production text issue',
+      level: 'error',
+      source: 'command',
+      atMs: 0,
+    },
   };
 }
 

@@ -26,6 +26,7 @@ export interface WorkspaceModel {
   readonly editor?: EditorState;
   readonly textRuntimeProfile: TextRuntimeProfile;
   readonly textAuthority: WorkspaceTextAuthority;
+  readonly textRequestId: number;
   readonly viewMode: ViewMode;
   readonly focusPane: FocusPane;
   readonly fileDrawerOpen: boolean;
