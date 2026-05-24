@@ -16,12 +16,18 @@ Think, or other apps.
 
 The active hardening plan is
 [`docs/design/0026-echo-hosting-hardening-first-twenty.md`](design/0026-echo-hosting-hardening-first-twenty.md).
-That plan records slices 41-60. The current local inspection point is slice 50:
-trusted lifecycle start/drain/stop, package identity, install posture, and the
-Echo no-app-noun guard are closed. The drift closure before slice 51 is also
-closed: local evidence is explicitly marked as process-local, retained lookup
-requires semantic coordinate match, durable restart remains future work, and the
-Echo app-noun guard scope is documented.
+That plan records slices 41-60. The current branch closes slice 60: trusted
+lifecycle start/drain/stop, package identity, install posture, Echo no-app-noun
+guards, ticketed mutation authority, read-only query observers, local receipt
+correlation, retained lookup, restart recovery, replay identity, counter
+template portability, guide drift checks, and release-gate consolidation are
+closed locally.
+
+The proposed next plan is
+[`docs/design/0027-echo-powered-ui-adoption-next-ten.md`](design/0027-echo-powered-ui-adoption-next-ten.md).
+It starts with slice 61: inventory the interactive editor's read/write paths
+and prepare the UI cutover to `TextBufferSessionPort`/Echo mode without moving
+text semantics into Echo.
 
 The developer-facing recipe lives in
 [`docs/echo-application-hosting-guide.md`](echo-application-hosting-guide.md).
@@ -61,7 +67,7 @@ node scripts/jedit-echo-powered-session.mjs --json --dry-run
 node scripts/jedit-echo-powered-session.mjs --json
 ```
 
-The current branch now extends that proof through slice 50 of the hardening
+The current branch now extends that proof through slice 60 of the hardening
 plan:
 
 1. Slice 41: trusted runtime lifecycle doctrine closure.
@@ -74,10 +80,21 @@ plan:
 8. Slice 48: jedit contract package install fixture.
 9. Slice 49: unsupported operation boundary.
 10. Slice 50: package reinstall and duplicate policy.
+11. Slice 51: ticketed mutation execution tightening.
+12. Slice 52: query observer read-only tightening.
+13. Slice 53: receipt correlation happy path closure.
+14. Slice 54: retained reading lookup closure.
+15. Slice 55: restart persistence adapter boundary.
+16. Slice 56: local replay proof hardening.
+17. Slice 57: second-app template authority audit.
+18. Slice 58: developer guide drift check.
+19. Slice 59: PR release gate consolidation.
+20. Slice 60: drift reflection and next plan.
 
-Slice-50 drift closure is complete. Continue next with slice 51: ticketed
-mutation execution tightening. Distributed transport, settlement shells,
-streaming, and full observer-rights governance remain outside this batch.
+Slice-60 reflection is complete. The next proposed tranche is interactive
+Echo-mode UI adoption, starting with slice 61. Distributed transport,
+settlement shells, streaming, and full observer-rights governance remain outside
+this batch.
 
 ## Non-Negotiables
 

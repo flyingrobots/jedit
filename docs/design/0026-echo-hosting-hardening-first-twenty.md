@@ -383,6 +383,6 @@ Test plan:
 
 Checklist:
 
-- [ ] Reflection exists.
-- [ ] BEARING is current.
-- [ ] Next active slice is explicit.
+- [x] Reflection exists.
+- [x] BEARING is current.
+- [x] Next active slice is explicit.
