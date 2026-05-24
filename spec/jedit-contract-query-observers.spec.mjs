@@ -67,10 +67,23 @@ test('jedit query observer registry has no lifecycle or mutation authority', asy
   const context = createContext(modules);
 
   assert.equal(context.observers.supportsQueryObserver('unsupportedQuery'), false);
-  assert.equal('requestRunUntilIdle' in context.observers, false);
-  assert.equal('tick' in context.observers, false);
-  assert.equal('executeMutation' in context.observers, false);
+  assert.deepEqual(absentAuthorityMethods(context.observers), []);
 });
+
+function absentAuthorityMethods(observerRegistry) {
+  return [
+    'requestStart',
+    'requestRunUntilIdle',
+    'requestStop',
+    'tick',
+    'submitIntentBytes',
+    'executeMutation',
+    'createBuffer',
+    'replaceRange',
+    'writeFactSet',
+    'writeState',
+  ].filter((methodName) => methodName in observerRegistry);
+}
 
 async function loadModules() {
   if (modulesPromise) {

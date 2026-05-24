@@ -245,9 +245,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Query observer context remains read-only.
-- [ ] Query observer has no lifecycle surface.
-- [ ] Query runtime failures remain typed.
+- [x] Query observer context remains read-only.
+- [x] Query observer has no lifecycle surface.
+- [x] Query runtime failures remain typed.
 
 ### Slice 53 - Receipt Correlation Happy Path Closure
 
