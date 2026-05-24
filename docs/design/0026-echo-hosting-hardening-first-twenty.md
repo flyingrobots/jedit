@@ -314,9 +314,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Replay identity excludes wall-clock timing.
-- [ ] Replay equality avoids diagnostic prose.
-- [ ] Replay witness is deterministic.
+- [x] Replay identity excludes wall-clock timing.
+- [x] Replay equality avoids diagnostic prose.
+- [x] Replay witness is deterministic.
 
 ### Slice 57 - Second-App Template Authority Audit
 
