@@ -23,7 +23,7 @@ test('scheduler authority invokes a registered jedit mutation handler', async ()
   };
 
   const outcome = invocation.invokeJeditMutationHandler(registry, {
-    authority: invocation.JEDIT_HANDLER_INVOCATION_AUTHORITY_SCHEDULER,
+    authority: invocation.JEDIT_HANDLER_INVOCATION_SCHEDULER_AUTHORITY,
     mutation: {
       operationName: OPERATION_NAME,
     },
@@ -43,7 +43,7 @@ test('application authority is blocked before jedit mutation handler execution',
   };
 
   const outcome = invocation.invokeJeditMutationHandler(registry, {
-    authority: invocation.JEDIT_HANDLER_INVOCATION_AUTHORITY_APPLICATION,
+    authority: invocation.JEDIT_HANDLER_INVOCATION_APPLICATION_AUTHORITY,
     mutation: {
       operationName: OPERATION_NAME,
     },

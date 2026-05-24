@@ -62,7 +62,7 @@ function lookupRetainedEvidence(
     return missingRetainedEvidence(ref);
   }
 
-  const record = retainedMaterial.bySemanticCoordinate.get(retainedMaterialKey(byteHash, ref));
+  const record = retainedMaterialRecord(retainedMaterial, byteHash, ref);
   if (record == null) {
     return missingRetainedEvidence(ref);
   }
@@ -96,30 +96,65 @@ function toHex(value: string): string {
 }
 
 interface RetainedMaterialIndex {
-  readonly bySemanticCoordinate: ReadonlyMap<string, JeditEchoRetainedMaterialRecord>;
+  readonly byByteHash: RetainedMaterialByteHashIndex;
 }
+
+type RetainedMaterialByteHashIndex =
+  ReadonlyMap<string, RetainedMaterialPackageIndex>;
+type RetainedMaterialPackageIndex =
+  ReadonlyMap<string, RetainedMaterialOperationIndex>;
+type RetainedMaterialOperationIndex =
+  ReadonlyMap<string, RetainedMaterialCoordinateIndex>;
+type RetainedMaterialCoordinateIndex =
+  ReadonlyMap<string, JeditEchoRetainedMaterialRecord>;
 
 function indexRetainedMaterial(
   records: readonly JeditEchoRetainedMaterialRecord[],
 ): RetainedMaterialIndex {
-  const bySemanticCoordinate = new Map<string, JeditEchoRetainedMaterialRecord>();
+  const byByteHash = new Map<string, Map<string, Map<string, Map<string, JeditEchoRetainedMaterialRecord>>>>();
 
   for (const record of records) {
-    bySemanticCoordinate.set(retainedMaterialRecordKey(record), record);
+    indexRetainedMaterialRecord(byByteHash, record);
   }
 
   return {
-    bySemanticCoordinate,
+    byByteHash,
   };
 }
 
-function retainedMaterialRecordKey(record: JeditEchoRetainedMaterialRecord): string {
-  return JSON.stringify([record.byteHash, record.semanticCoordinate]);
+function indexRetainedMaterialRecord(
+  byByteHash: Map<string, Map<string, Map<string, Map<string, JeditEchoRetainedMaterialRecord>>>>,
+  record: JeditEchoRetainedMaterialRecord,
+): void {
+  if (record.semanticCoordinate == null) {
+    return;
+  }
+  let byPackage = byByteHash.get(record.byteHash);
+  if (byPackage == null) {
+    byPackage = new Map();
+    byByteHash.set(record.byteHash, byPackage);
+  }
+  let byOperation = byPackage.get(record.semanticCoordinate.packageId);
+  if (byOperation == null) {
+    byOperation = new Map();
+    byPackage.set(record.semanticCoordinate.packageId, byOperation);
+  }
+  let byCoordinate = byOperation.get(record.semanticCoordinate.operationName);
+  if (byCoordinate == null) {
+    byCoordinate = new Map();
+    byOperation.set(record.semanticCoordinate.operationName, byCoordinate);
+  }
+  byCoordinate.set(record.semanticCoordinate.coordinate, record);
 }
 
-function retainedMaterialKey(
+function retainedMaterialRecord(
+  index: RetainedMaterialIndex,
   byteHash: string,
   ref: JeditRetainedEvidenceRef,
-): string {
-  return JSON.stringify([byteHash, ref.semanticCoordinate]);
+): JeditEchoRetainedMaterialRecord | undefined {
+  return index.byByteHash
+    .get(byteHash)
+    ?.get(ref.semanticCoordinate.packageId)
+    ?.get(ref.semanticCoordinate.operationName)
+    ?.get(ref.semanticCoordinate.coordinate);
 }

@@ -20,9 +20,6 @@ export const JEDIT_CONTRACT_PACKAGE_INSTALL_PREFLIGHT_BLOCKED = 'PREFLIGHT_BLOCK
 export const JEDIT_CONTRACT_PACKAGE_INSTALL_HOST_RESULT = 'HOST_RESULT';
 
 const CONFLICTING_PACKAGE_IDENTITY_MESSAGE = 'CONFLICTING_PACKAGE_IDENTITY';
-const PACKAGE_IDENTITY_FIELD_SEPARATOR = '|';
-const PACKAGE_IDENTITY_LIST_SEPARATOR = ',';
-const PACKAGE_OBSERVER_FIELD_SEPARATOR = ':';
 
 export type JeditContractPackageInstallSource =
   | typeof JEDIT_CONTRACT_PACKAGE_INSTALL_PREFLIGHT_BLOCKED
@@ -44,7 +41,7 @@ export function createRecordingEchoContractPackageHost(): EchoContractPackageHos
   return {
     installContractPackage(request) {
       const installed = installedPackages.get(request.packageId);
-      if (installed != null && echoContractPackageInstallIdentity(installed) !== echoContractPackageInstallIdentity(request)) {
+      if (installed != null && !sameEchoContractPackageInstallIdentity(installed, request)) {
         return {
           status: ECHO_CONTRACT_PACKAGE_INSTALL_BLOCKED,
           packageId: request.packageId,
@@ -85,22 +82,39 @@ export function installJeditContractPackage(
   };
 }
 
-function echoContractPackageInstallIdentity(
-  request: EchoContractPackageInstallRequest,
-): string {
-  return [
-    request.packageId,
-    request.packageVersion,
-    request.schemaId,
-    request.artifactId,
-    request.codecId,
-    request.mutationOperationNames.join(PACKAGE_IDENTITY_LIST_SEPARATOR),
-    request.queryOperationNames.join(PACKAGE_IDENTITY_LIST_SEPARATOR),
-    request.queryObservers.map((observer) => [
-      observer.queryName,
-      observer.observerPlanId,
-    ].join(PACKAGE_OBSERVER_FIELD_SEPARATOR)).join(PACKAGE_IDENTITY_LIST_SEPARATOR),
-  ].join(PACKAGE_IDENTITY_FIELD_SEPARATOR);
+function sameEchoContractPackageInstallIdentity(
+  left: EchoContractPackageInstallRequest,
+  right: EchoContractPackageInstallRequest,
+): boolean {
+  return left.packageId === right.packageId
+    && left.packageVersion === right.packageVersion
+    && left.schemaId === right.schemaId
+    && left.artifactId === right.artifactId
+    && left.codecId === right.codecId
+    && sameStringList(left.mutationOperationNames, right.mutationOperationNames)
+    && sameStringList(left.queryOperationNames, right.queryOperationNames)
+    && sameQueryObserverList(left.queryObservers, right.queryObservers);
+}
+
+function sameStringList(
+  left: readonly string[],
+  right: readonly string[],
+): boolean {
+  return left.length === right.length
+    && left.every((value, index) => value === right[index]);
+}
+
+function sameQueryObserverList(
+  left: EchoContractPackageInstallRequest['queryObservers'],
+  right: EchoContractPackageInstallRequest['queryObservers'],
+): boolean {
+  return left.length === right.length
+    && left.every((observer, index) => {
+      const matching = right[index];
+      return matching != null
+        && observer.queryName === matching.queryName
+        && observer.observerPlanId === matching.observerPlanId;
+    });
 }
 
 function toEchoInstallRequest(

@@ -16,6 +16,8 @@ const TEXT_WINDOW_APERTURE_KIND = 'BOUNDED_TEXT_WINDOW';
 const TEXT_WINDOW_BASIS_KIND = 'JEDIT_HOT_TEXT';
 const TEXT_WINDOW_STATE_MODE = 'MEMORYLESS';
 const TEXT_WINDOW_EMIT_KIND = 'TEXT_WINDOW_READING';
+// The generated observer plan id carries a stable digest prefix instead of the
+// full hash so snapshots stay readable while remaining deterministic.
 const TEXT_WINDOW_SPEC_HASH_LENGTH = 16;
 const TEXT_WINDOW_MIN_LINE = 0;
 const TEXT_WINDOW_MIN_COUNT = 1;

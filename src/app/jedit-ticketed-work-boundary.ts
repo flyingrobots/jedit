@@ -50,10 +50,14 @@ export function missingJeditTicketedWork(submissionId: string): JeditTicketedWor
 }
 
 function ticketIdFor(request: JeditTicketedWorkRequest, hash: HashPort): string {
-  return `${TICKET_ID_PREFIX}${hash.sha256Hex([
-    request.submissionId,
-    request.packageId,
-    request.operationName,
-    request.canonicalRequestBytesHex,
-  ].join('|'))}`;
+  return `${TICKET_ID_PREFIX}${hash.sha256Hex(ticketDigestMaterial(request))}`;
+}
+
+function ticketDigestMaterial(request: JeditTicketedWorkRequest): string {
+  return JSON.stringify({
+    canonicalRequestBytesHex: request.canonicalRequestBytesHex,
+    operationName: request.operationName,
+    packageId: request.packageId,
+    submissionId: request.submissionId,
+  });
 }

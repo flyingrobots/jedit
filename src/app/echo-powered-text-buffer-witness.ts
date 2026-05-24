@@ -25,6 +25,9 @@ import {
 } from '../generated/jedit/hot-text-runtime.wesley.generated.js';
 import { JEDIT_HOT_TEXT_PACKAGE_ID } from './jedit-contract-package.js';
 
+const SUBMISSION_ID_PREFIX = 'jedit-submission:';
+const UTF8_ENCODER = new TextEncoder();
+
 export async function runEchoPoweredTextBufferWitness(
   session: TextBufferSessionPort,
   request: EchoPoweredTextBufferWitnessRequest,
@@ -93,11 +96,14 @@ function toReplaceRangeSubmissionId(
   bufferId: string,
   request: EchoPoweredTextBufferWitnessRequest,
 ): string {
-  return [
-    'jedit-submission',
+  return `${SUBMISSION_ID_PREFIX}${toHex(JSON.stringify({
     bufferId,
-    request.startByte.toString(),
-    request.endByte.toString(),
-    request.insertText,
-  ].join(':');
+    endByte: request.endByte,
+    insertText: request.insertText,
+    startByte: request.startByte,
+  }))}`;
+}
+
+function toHex(value: string): string {
+  return Array.from(UTF8_ENCODER.encode(value), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }

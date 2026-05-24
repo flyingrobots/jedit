@@ -178,7 +178,7 @@ test('installed transport invokes handlers with scheduler authority only', async
 
   assert.equal(response.status, modules.codec.JEDIT_TRANSPORT_STATUS_OK);
   assert.deepEqual(authorities, [
-    modules.invocation.JEDIT_HANDLER_INVOCATION_AUTHORITY_SCHEDULER,
+    modules.invocation.JEDIT_HANDLER_INVOCATION_SCHEDULER_AUTHORITY,
   ]);
 });
 

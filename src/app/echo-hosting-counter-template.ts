@@ -35,11 +35,11 @@ export function createInMemoryCounterTemplateStatePort(): CounterTemplateStatePo
 
   return {
     readState() {
-      return state;
+      return cloneState(state);
     },
     writeState(nextState) {
-      state = nextState;
-      return state;
+      state = cloneState(nextState);
+      return cloneState(state);
     },
   };
 }
@@ -65,6 +65,12 @@ export function observeCounterTemplateValue(
   const state = statePort.readState();
   return {
     readingId: `${READING_ID_PREFIX}${hash.sha256Hex(state.value.toString())}`,
+    value: state.value,
+  };
+}
+
+function cloneState(state: CounterTemplateState): CounterTemplateState {
+  return {
     value: state.value,
   };
 }

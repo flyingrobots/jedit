@@ -10,6 +10,10 @@ import {
   replaceRangeAsTick,
 } from './jedit-contract-runtime.js';
 import { publishJeditContractSessionFacts } from './jedit-contract-state-port.js';
+import {
+  JEDIT_HOT_TEXT_MUTATION_OPERATION_NAMES,
+  type JeditHotTextRequiredMutationOperationNames,
+} from './jedit-contract-package.js';
 import type {
   MutationOperationMap,
 } from '../generated/jedit/hot-text-runtime.types.generated.js';
@@ -60,7 +64,7 @@ export interface JeditContractMutationHandlerRegistryOptions {
 }
 
 export interface JeditContractMutationHandlerRegistry {
-  readonly mutationOperationNames: readonly string[];
+  readonly mutationOperationNames: JeditHotTextRequiredMutationOperationNames;
   executeCreateBufferWorldlineMutation(
     request: JeditCreateBufferWorldlineMutationRequest,
   ): CreateBufferWorldlineExecution;
@@ -79,11 +83,7 @@ export function createJeditContractMutationHandlerRegistry(
   options: JeditContractMutationHandlerRegistryOptions,
 ): JeditContractMutationHandlerRegistry {
   return Object.freeze({
-    mutationOperationNames: Object.freeze([
-      mutationCreateBufferWorldlineOperation.fieldName,
-      mutationReplaceRangeAsTickOperation.fieldName,
-      mutationCreateCheckpointOperation.fieldName,
-    ]),
+    mutationOperationNames: JEDIT_HOT_TEXT_MUTATION_OPERATION_NAMES,
     executeCreateBufferWorldlineMutation(
       request: JeditCreateBufferWorldlineMutationRequest,
     ): CreateBufferWorldlineExecution {

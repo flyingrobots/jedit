@@ -18,6 +18,13 @@ const MISSING_QUERY_CODE = 'MISSING_QUERY';
 const MUTATION_REQUEST_KIND = 'MUTATION';
 const QUERY_REQUEST_KIND = 'QUERY';
 
+export const JEDIT_PACKAGE_OPERATION_REQUEST_MUTATION = Object.freeze({
+  kind: MUTATION_REQUEST_KIND,
+});
+export const JEDIT_PACKAGE_OPERATION_REQUEST_QUERY = Object.freeze({
+  kind: QUERY_REQUEST_KIND,
+});
+
 export type JeditPackagePreflightStatus =
   | typeof JEDIT_PACKAGE_PREFLIGHT_READY
   | typeof JEDIT_PACKAGE_PREFLIGHT_BLOCKED;
@@ -29,8 +36,8 @@ export type JeditPackagePreflightIssueCode =
   | typeof MISSING_QUERY_CODE;
 
 export type JeditPackageOperationRequestKind =
-  | typeof MUTATION_REQUEST_KIND
-  | typeof QUERY_REQUEST_KIND;
+  | typeof JEDIT_PACKAGE_OPERATION_REQUEST_MUTATION
+  | typeof JEDIT_PACKAGE_OPERATION_REQUEST_QUERY;
 
 export type JeditPackageOperationSupport =
   | typeof JEDIT_PACKAGE_REQUEST_SUPPORTED
@@ -72,7 +79,7 @@ export function classifyJeditPackageOperationRequest(
   request: JeditPackageOperationRequest,
   descriptor: JeditContractPackageDescriptor = jeditHotTextContractPackage(),
 ): JeditPackageOperationSupport {
-  if (request.kind === MUTATION_REQUEST_KIND) {
+  if (request.kind === JEDIT_PACKAGE_OPERATION_REQUEST_MUTATION) {
     return includesOperation(descriptor.mutationOperationNames, request.operationName)
       ? JEDIT_PACKAGE_REQUEST_SUPPORTED
       : JEDIT_PACKAGE_REQUEST_UNSUPPORTED_MUTATION;
@@ -87,7 +94,7 @@ export function jeditMutationOperationRequest(
   operationName: string,
 ): JeditPackageOperationRequest {
   return {
-    kind: MUTATION_REQUEST_KIND,
+    kind: JEDIT_PACKAGE_OPERATION_REQUEST_MUTATION,
     operationName,
   };
 }
@@ -96,7 +103,7 @@ export function jeditQueryOperationRequest(
   operationName: string,
 ): JeditPackageOperationRequest {
   return {
-    kind: QUERY_REQUEST_KIND,
+    kind: JEDIT_PACKAGE_OPERATION_REQUEST_QUERY,
     operationName,
   };
 }

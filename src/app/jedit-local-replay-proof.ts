@@ -7,6 +7,8 @@ import type {
 export const JEDIT_LOCAL_REPLAY_MATCH = 'MATCH';
 export const JEDIT_LOCAL_REPLAY_MISMATCH = 'MISMATCH';
 
+const WALL_CLOCK_CADENCE_IS_SEMANTIC = false;
+
 export interface JeditLocalReplayIdentity {
   readonly packageId: string;
   readonly outcomeStatus: string;
@@ -38,6 +40,44 @@ export interface JeditLocalReplayProofOptions {
   readonly witness: JeditEchoAgentWitnessPort;
 }
 
+interface JeditLocalReplayIdentityField {
+  readonly name: keyof JeditLocalReplayIdentity;
+  read(identity: JeditLocalReplayIdentity): string;
+}
+
+const REPLAY_IDENTITY_FIELDS: readonly JeditLocalReplayIdentityField[] = Object.freeze([
+  Object.freeze({
+    name: 'packageId',
+    read(identity: JeditLocalReplayIdentity) {
+      return identity.packageId;
+    },
+  }),
+  Object.freeze({
+    name: 'outcomeStatus',
+    read(identity: JeditLocalReplayIdentity) {
+      return identity.outcomeStatus;
+    },
+  }),
+  Object.freeze({
+    name: 'receiptId',
+    read(identity: JeditLocalReplayIdentity) {
+      return identity.receiptId;
+    },
+  }),
+  Object.freeze({
+    name: 'readingId',
+    read(identity: JeditLocalReplayIdentity) {
+      return identity.readingId;
+    },
+  }),
+  Object.freeze({
+    name: 'text',
+    read(identity: JeditLocalReplayIdentity) {
+      return identity.text;
+    },
+  }),
+]);
+
 export async function proveLocalJeditReplay(
   options: JeditLocalReplayProofOptions,
   request: JeditEchoWitnessRequest,
@@ -51,7 +91,7 @@ export async function proveLocalJeditReplay(
       status: JEDIT_LOCAL_REPLAY_MATCH,
       first,
       second,
-      wallClockCadenceSemantic: false,
+      wallClockCadenceSemantic: WALL_CLOCK_CADENCE_IS_SEMANTIC,
     };
   }
 
@@ -60,7 +100,7 @@ export async function proveLocalJeditReplay(
     first,
     second,
     mismatchField,
-    wallClockCadenceSemantic: false,
+    wallClockCadenceSemantic: WALL_CLOCK_CADENCE_IS_SEMANTIC,
   };
 }
 
@@ -78,20 +118,10 @@ function firstMismatch(
   first: JeditLocalReplayIdentity,
   second: JeditLocalReplayIdentity,
 ): keyof JeditLocalReplayIdentity | undefined {
-  if (first.packageId !== second.packageId) {
-    return 'packageId';
-  }
-  if (first.outcomeStatus !== second.outcomeStatus) {
-    return 'outcomeStatus';
-  }
-  if (first.receiptId !== second.receiptId) {
-    return 'receiptId';
-  }
-  if (first.readingId !== second.readingId) {
-    return 'readingId';
-  }
-  if (first.text !== second.text) {
-    return 'text';
+  for (const field of REPLAY_IDENTITY_FIELDS) {
+    if (field.read(first) !== field.read(second)) {
+      return field.name;
+    }
   }
   return undefined;
 }

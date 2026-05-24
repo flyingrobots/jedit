@@ -10,9 +10,16 @@ export const JEDIT_HANDLER_INVOCATION_STATUS_INVOKED = 'INVOKED';
 export const JEDIT_HANDLER_INVOCATION_STATUS_BLOCKED = 'BLOCKED';
 export const JEDIT_HANDLER_INVOCATION_BLOCKED_CODE = 'JEDIT_HANDLER_INVOCATION_REQUIRES_SCHEDULER';
 
+export const JEDIT_HANDLER_INVOCATION_SCHEDULER_AUTHORITY = Object.freeze({
+  label: JEDIT_HANDLER_INVOCATION_AUTHORITY_SCHEDULER,
+});
+export const JEDIT_HANDLER_INVOCATION_APPLICATION_AUTHORITY = Object.freeze({
+  label: JEDIT_HANDLER_INVOCATION_AUTHORITY_APPLICATION,
+});
+
 export type JeditHandlerInvocationAuthority =
-  | typeof JEDIT_HANDLER_INVOCATION_AUTHORITY_SCHEDULER
-  | typeof JEDIT_HANDLER_INVOCATION_AUTHORITY_APPLICATION;
+  | typeof JEDIT_HANDLER_INVOCATION_SCHEDULER_AUTHORITY
+  | typeof JEDIT_HANDLER_INVOCATION_APPLICATION_AUTHORITY;
 
 export type JeditHandlerInvocationOutcome =
   | JeditHandlerInvocationInvoked<JeditContractMutationHandlerResult>
@@ -67,7 +74,7 @@ export function invokeJeditHandlerWithAuthority<Result>(
   registry: JeditContractMutationHandlerRegistry,
   request: JeditHandlerInvocationCall<Result>,
 ): JeditHandlerInvocationCallOutcome<Result> {
-  if (request.authority !== JEDIT_HANDLER_INVOCATION_AUTHORITY_SCHEDULER) {
+  if (!isSchedulerAuthority(request.authority)) {
     return blockedInvocation();
   }
 
@@ -75,6 +82,10 @@ export function invokeJeditHandlerWithAuthority<Result>(
     status: JEDIT_HANDLER_INVOCATION_STATUS_INVOKED,
     result: request.invokeHandler(registry),
   };
+}
+
+function isSchedulerAuthority(authority: JeditHandlerInvocationAuthority): boolean {
+  return authority === JEDIT_HANDLER_INVOCATION_SCHEDULER_AUTHORITY;
 }
 
 function blockedInvocation(): JeditHandlerInvocationBlocked {

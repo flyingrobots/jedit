@@ -13,7 +13,7 @@ import {
 } from '../app/jedit-hosting-boundaries.js';
 import {
   invokeJeditHandlerWithAuthority,
-  JEDIT_HANDLER_INVOCATION_AUTHORITY_SCHEDULER,
+  JEDIT_HANDLER_INVOCATION_SCHEDULER_AUTHORITY,
   JEDIT_HANDLER_INVOCATION_STATUS_BLOCKED,
   type JeditHandlerInvocationSink,
 } from '../app/jedit-runtime-handler-invocation.js';
@@ -316,9 +316,9 @@ function invokeSchedulerHandler<Result>(
   invocationSink: JeditHandlerInvocationSink | undefined,
   invokeHandler: (registry: ReturnType<typeof createJeditContractMutationHandlerRegistry>) => Result,
 ) {
-  invocationSink?.recordHandlerInvocationAuthority(JEDIT_HANDLER_INVOCATION_AUTHORITY_SCHEDULER);
+  invocationSink?.recordHandlerInvocationAuthority(JEDIT_HANDLER_INVOCATION_SCHEDULER_AUTHORITY);
   return invokeJeditHandlerWithAuthority(mutations, {
-    authority: JEDIT_HANDLER_INVOCATION_AUTHORITY_SCHEDULER,
+    authority: JEDIT_HANDLER_INVOCATION_SCHEDULER_AUTHORITY,
     invokeHandler,
   });
 }

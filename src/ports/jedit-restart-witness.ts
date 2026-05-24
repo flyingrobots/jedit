@@ -5,6 +5,7 @@ export const JEDIT_RESTART_WITNESS_DECIDED = 'JEDIT_RESTART_WITNESS_DECIDED';
 export const JEDIT_RESTART_WITNESS_REJECTED = 'JEDIT_RESTART_WITNESS_REJECTED';
 export const JEDIT_RESTART_WITNESS_UNKNOWN = 'JEDIT_RESTART_WITNESS_UNKNOWN';
 export const JEDIT_RESTART_WITNESS_HALF_ACCEPTED_BLOCKED = 'JEDIT_RESTART_WITNESS_HALF_ACCEPTED_BLOCKED';
+export const JEDIT_RESTART_WITNESS_HALF_ACCEPTED_OBSTRUCTION_CODE = 'JEDIT_HALF_ACCEPTED_SUBMISSION_BLOCKED';
 
 export interface JeditRestartWitnessPending {
   readonly status: typeof JEDIT_RESTART_WITNESS_PENDING;
@@ -31,7 +32,7 @@ export interface JeditRestartWitnessUnknown {
 export interface JeditRestartWitnessHalfAcceptedBlocked {
   readonly status: typeof JEDIT_RESTART_WITNESS_HALF_ACCEPTED_BLOCKED;
   readonly submissionId: string;
-  readonly obstructionCode: string;
+  readonly obstructionCode: typeof JEDIT_RESTART_WITNESS_HALF_ACCEPTED_OBSTRUCTION_CODE;
 }
 
 export type JeditRestartWitnessPosture =

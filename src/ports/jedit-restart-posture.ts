@@ -3,6 +3,7 @@ export const JEDIT_RESTART_STATE_OWNER_PROCESS_LOCAL_HANDLER = 'PROCESS_LOCAL_HA
 export const JEDIT_ECHO_HOSTED_STATE_POSTURE_EVIDENCE_ONLY = 'ECHO_PACKAGE_AND_EVIDENCE_ONLY';
 export const JEDIT_DURABILITY_POSTURE_UNAVAILABLE = 'UNAVAILABLE';
 export const JEDIT_DURABILITY_OBSTRUCTION_CODE = 'DURABLE_ACCEPTED_SUBMISSION_RECOVERY_UNAVAILABLE';
+export const JEDIT_HALF_ACCEPTED_SUBMISSION_NOT_CLAIMED = false;
 
 export interface JeditDurabilityObstruction {
   readonly code: typeof JEDIT_DURABILITY_OBSTRUCTION_CODE;
@@ -14,6 +15,6 @@ export interface JeditRestartPosture {
   readonly stateOwner: typeof JEDIT_RESTART_STATE_OWNER_PROCESS_LOCAL_HANDLER;
   readonly echoHostedStatePosture: typeof JEDIT_ECHO_HOSTED_STATE_POSTURE_EVIDENCE_ONLY;
   readonly acceptedSubmissionRecovery: typeof JEDIT_DURABILITY_POSTURE_UNAVAILABLE;
-  readonly halfAcceptedSubmissionClaimed: false;
+  readonly halfAcceptedSubmissionClaimed: typeof JEDIT_HALF_ACCEPTED_SUBMISSION_NOT_CLAIMED;
   readonly obstruction: JeditDurabilityObstruction;
 }

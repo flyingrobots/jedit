@@ -28,9 +28,17 @@ export const JEDIT_HOT_TEXT_QUERY_OPERATION_NAMES = [
 
 export type JeditHotTextMutationOperationName =
   (typeof JEDIT_HOT_TEXT_MUTATION_OPERATION_NAMES)[number];
+export type JeditHotTextMutationOperationNames =
+  readonly JeditHotTextMutationOperationName[];
+export type JeditHotTextRequiredMutationOperationNames =
+  typeof JEDIT_HOT_TEXT_MUTATION_OPERATION_NAMES;
 
 export type JeditHotTextQueryOperationName =
   (typeof JEDIT_HOT_TEXT_QUERY_OPERATION_NAMES)[number];
+export type JeditHotTextQueryOperationNames =
+  readonly JeditHotTextQueryOperationName[];
+export type JeditHotTextRequiredQueryOperationNames =
+  typeof JEDIT_HOT_TEXT_QUERY_OPERATION_NAMES;
 
 export interface JeditContractQueryObserverDescriptor {
   readonly queryName: JeditHotTextQueryOperationName;
@@ -43,8 +51,8 @@ export interface JeditContractPackageDescriptor {
   readonly schemaId: string;
   readonly artifactId: string;
   readonly codecId: string;
-  readonly mutationOperationNames: readonly JeditHotTextMutationOperationName[];
-  readonly queryOperationNames: readonly JeditHotTextQueryOperationName[];
+  readonly mutationOperationNames: JeditHotTextMutationOperationNames;
+  readonly queryOperationNames: JeditHotTextQueryOperationNames;
   readonly queryObservers: readonly JeditContractQueryObserverDescriptor[];
 }
 
@@ -54,8 +62,8 @@ export const JEDIT_HOT_TEXT_CONTRACT_PACKAGE: JeditContractPackageDescriptor = O
   schemaId: JEDIT_HOT_TEXT_SCHEMA_ID,
   artifactId: JEDIT_HOT_TEXT_ARTIFACT_ID,
   codecId: JEDIT_HOT_TEXT_CODEC_ID,
-  mutationOperationNames: Object.freeze([...JEDIT_HOT_TEXT_MUTATION_OPERATION_NAMES]),
-  queryOperationNames: Object.freeze([...JEDIT_HOT_TEXT_QUERY_OPERATION_NAMES]),
+  mutationOperationNames: JEDIT_HOT_TEXT_MUTATION_OPERATION_NAMES,
+  queryOperationNames: JEDIT_HOT_TEXT_QUERY_OPERATION_NAMES,
   queryObservers: Object.freeze(
     JEDIT_HOT_TEXT_QUERY_OPERATION_NAMES.map((queryName) => Object.freeze({
       queryName,
