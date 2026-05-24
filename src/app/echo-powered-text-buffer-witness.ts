@@ -10,7 +10,7 @@ import {
   createJeditIntentOutcomeLedger,
   createJeditReceiptHandle,
 } from './jedit-intent-outcomes.js';
-import { missingJeditReceiptCorrelation } from './jedit-receipt-correlation.js';
+import { correlateJeditEchoReceipt } from './jedit-receipt-correlation.js';
 import { createJeditRetainedEvidenceInventory } from './jedit-retained-evidence.js';
 import { currentJeditRestartPosture } from './jedit-restart-posture.js';
 import { missingJeditTicketedRuntimeIngress } from './jedit-ticketed-runtime-ingress.js';
@@ -68,13 +68,20 @@ function toWitnessReport(
   applied: ApplyIntentResult,
   observed: Observed<TextWindowReading>,
 ): EchoPoweredTextBufferWitnessReport {
+  const receiptCorrelation = correlateJeditEchoReceipt({
+    submissionId: outcome.intent.submissionId,
+    receiptId: applied.receiptId,
+  });
+
   return {
     bufferId: buffer.bufferId,
     bufferKey: buffer.bufferKey,
     outcome,
     outcomeTrail: [pending, outcome],
-    evidencePosture: localProcessJeditWitnessEvidencePosture(),
-    receiptCorrelation: missingJeditReceiptCorrelation(outcome.intent.submissionId),
+    evidencePosture: localProcessJeditWitnessEvidencePosture({
+      receiptCorrelation: receiptCorrelation.status,
+    }),
+    receiptCorrelation,
     ticketedRuntimeIngress: missingJeditTicketedRuntimeIngress(outcome.intent.submissionId),
     retainedEvidence: createJeditRetainedEvidenceInventory({
       packageId: JEDIT_HOT_TEXT_PACKAGE_ID,

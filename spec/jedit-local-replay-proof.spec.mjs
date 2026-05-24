@@ -32,6 +32,16 @@ test('local replay proof reports typed mismatch without using wall-clock cadence
   assert.equal(proof.wallClockCadenceSemantic, false);
 });
 
+test('local replay proof ignores diagnostic prose outside semantic identity', async () => {
+  const replay = await loadReplay();
+  const proof = await replay.proveLocalJeditReplay({
+    witness: diagnosticChangingWitness(),
+  }, witnessRequest());
+
+  assert.equal(proof.status, replay.JEDIT_LOCAL_REPLAY_MATCH);
+  assert.equal(proof.wallClockCadenceSemantic, false);
+});
+
 function witnessRequest() {
   return {
     bufferKey: 'replay.md',
@@ -60,6 +70,26 @@ function mismatchingWitness() {
     async run() {
       callCount += 1;
       return runSummary(callCount === 1 ? 'reading-1' : 'reading-2');
+    },
+  };
+}
+
+function diagnosticChangingWitness() {
+  let callCount = 0;
+  return {
+    async dryRun() {
+      return dryRunSummary();
+    },
+    async run() {
+      callCount += 1;
+      const summary = runSummary('reading-1');
+      return {
+        ...summary,
+        replay: {
+          status: 'UNAVAILABLE',
+          reason: callCount === 1 ? 'first diagnostic' : 'second diagnostic',
+        },
+      };
     },
   };
 }

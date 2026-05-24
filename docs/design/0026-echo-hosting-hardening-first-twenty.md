@@ -227,9 +227,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Unticketed work blocks handler invocation.
-- [ ] App authority cannot invoke handlers.
-- [ ] Scheduler authority object is explicit.
+- [x] Unticketed work blocks handler invocation.
+- [x] App authority cannot invoke handlers.
+- [x] Scheduler authority object is explicit.
 
 ### Slice 52 - Query Observer Read-Only Tightening
 
@@ -245,9 +245,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Query observer context remains read-only.
-- [ ] Query observer has no lifecycle surface.
-- [ ] Query runtime failures remain typed.
+- [x] Query observer context remains read-only.
+- [x] Query observer has no lifecycle surface.
+- [x] Query runtime failures remain typed.
 
 ### Slice 53 - Receipt Correlation Happy Path Closure
 
@@ -262,9 +262,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Applied mutation reports real correlation.
-- [ ] Unsupported mutation does not fabricate receipt.
-- [ ] CLI summary carries correlation identity.
+- [x] Applied mutation reports real correlation.
+- [x] Unsupported mutation does not fabricate receipt.
+- [x] CLI summary carries correlation identity.
 
 ### Slice 54 - Retained Reading Lookup Closure
 
@@ -279,9 +279,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Envelope lookup works.
-- [ ] Payload lookup works.
-- [ ] Semantic coordinate mismatch is not a cache hit.
+- [x] Envelope lookup works.
+- [x] Payload lookup works.
+- [x] Semantic coordinate mismatch is not a cache hit.
 
 ### Slice 55 - Restart Persistence Adapter Boundary
 
@@ -296,10 +296,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Restart adapter exists.
-- [ ] Pending posture loads.
-- [ ] Decided posture loads.
-- [ ] Half-accepted posture is blocked.
+- [x] Restart adapter exists.
+- [x] Pending posture loads.
+- [x] Decided posture loads.
+- [x] Half-accepted posture is blocked.
 
 ### Slice 56 - Local Replay Proof Hardening
 
@@ -314,9 +314,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Replay identity excludes wall-clock timing.
-- [ ] Replay equality avoids diagnostic prose.
-- [ ] Replay witness is deterministic.
+- [x] Replay identity excludes wall-clock timing.
+- [x] Replay equality avoids diagnostic prose.
+- [x] Replay witness is deterministic.
 
 ### Slice 57 - Second-App Template Authority Audit
 
@@ -331,9 +331,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Counter install path passes.
-- [ ] Counter mutation/query path passes.
-- [ ] Import audit passes.
+- [x] Counter install path passes.
+- [x] Counter mutation/query path passes.
+- [x] Import audit passes.
 
 ### Slice 58 - Developer Guide Drift Check
 
@@ -348,9 +348,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Guide commands are current.
-- [ ] Port names are current.
-- [ ] Tick authority doctrine is correct.
+- [x] Guide commands are current.
+- [x] Port names are current.
+- [x] Tick authority doctrine is correct.
 
 ### Slice 59 - PR Release Gate Consolidation
 
@@ -365,9 +365,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Release gate includes hosting witness.
-- [ ] Release gate includes replay witness.
-- [ ] Release gate includes static guards.
+- [x] Release gate includes hosting witness.
+- [x] Release gate includes replay witness.
+- [x] Release gate includes static guards.
 
 ### Slice 60 - Drift Reflection And Next Plan
 
@@ -383,6 +383,6 @@ Test plan:
 
 Checklist:
 
-- [ ] Reflection exists.
-- [ ] BEARING is current.
-- [ ] Next active slice is explicit.
+- [x] Reflection exists.
+- [x] BEARING is current.
+- [x] Next active slice is explicit.
