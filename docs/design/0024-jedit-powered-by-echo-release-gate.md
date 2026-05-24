@@ -1,6 +1,6 @@
 # jedit Powered By Echo Release Gate
 
-Status: slices 1-27 closed locally; release-gate evidence and continuation
+Status: slices 1-28 closed locally; release-gate evidence and continuation
 plan recorded.
 
 This plan defines the local release gate for the sentence:
@@ -834,10 +834,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Echo retention lookup port exists.
-- [ ] Receipt lookup path exists.
-- [ ] Reading lookup path exists.
-- [ ] Missing material is typed.
+- [x] Echo retention lookup port exists.
+- [x] Receipt lookup path exists.
+- [x] Reading lookup path exists.
+- [x] Missing material is typed.
 
 ## Slice 29 - Echo-Hosted Contract Entity Model
 
