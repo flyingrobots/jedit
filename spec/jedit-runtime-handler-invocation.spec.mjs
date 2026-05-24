@@ -53,6 +53,33 @@ test('application authority is blocked before jedit mutation handler execution',
   assert.equal(outcome.obstruction.code, invocation.JEDIT_HANDLER_INVOCATION_BLOCKED_CODE);
 });
 
+test('scheduler authority cannot be forged with matching caller strings', async () => {
+  const invocation = await loadInvocationModule();
+  const registry = {
+    executeMutation() {
+      assert.fail('forged scheduler labels must not invoke mutation handlers');
+    },
+  };
+  const forgedAuthority = {
+    kind: invocation.JEDIT_HANDLER_INVOCATION_AUTHORITY_KIND,
+    label: invocation.JEDIT_HANDLER_INVOCATION_AUTHORITY_SCHEDULER,
+  };
+
+  const outcome = invocation.invokeJeditMutationHandler(registry, {
+    authority: forgedAuthority,
+    mutation: {
+      operationName: OPERATION_NAME,
+    },
+  });
+
+  assert.equal(
+    invocation.JEDIT_HANDLER_INVOCATION_SCHEDULER_AUTHORITY.kind,
+    invocation.JEDIT_HANDLER_INVOCATION_AUTHORITY_KIND,
+  );
+  assert.equal(outcome.status, invocation.JEDIT_HANDLER_INVOCATION_STATUS_BLOCKED);
+  assert.equal(outcome.obstruction.code, invocation.JEDIT_HANDLER_INVOCATION_BLOCKED_CODE);
+});
+
 async function loadInvocationModule() {
   if (invocationModulePromise) {
     return invocationModulePromise;

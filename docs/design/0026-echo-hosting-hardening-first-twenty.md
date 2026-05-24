@@ -227,9 +227,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Unticketed work blocks handler invocation.
-- [ ] App authority cannot invoke handlers.
-- [ ] Scheduler authority object is explicit.
+- [x] Unticketed work blocks handler invocation.
+- [x] App authority cannot invoke handlers.
+- [x] Scheduler authority object is explicit.
 
 ### Slice 52 - Query Observer Read-Only Tightening
 
