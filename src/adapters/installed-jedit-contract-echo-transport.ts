@@ -14,6 +14,7 @@ import {
   createJeditSubmissionId,
   recordAcceptedJeditSubmission,
 } from '../app/jedit-submission-ledger.js';
+import { createInMemoryJeditTicketedWorkPort } from '../app/jedit-ticketed-work-boundary.js';
 import {
   invokeJeditHandlerWithAuthority,
   JEDIT_HANDLER_INVOCATION_AUTHORITY_SCHEDULER,
@@ -34,6 +35,11 @@ import type { HashPort } from '../ports/hash.js';
 import type { HotTextRuntimePort } from '../ports/hot-text-runtime.js';
 import type { JeditContractStatePort } from '../ports/jedit-contract-state-port.js';
 import type { JeditSubmissionLedgerPort } from '../ports/jedit-submission-ledger.js';
+import {
+  JEDIT_TICKETED_WORK_AVAILABLE,
+  type JeditTicketedWorkPort,
+  type JeditTicketedWorkResult,
+} from '../ports/jedit-ticketed-work-boundary.js';
 import {
   createJeditRuntimeWorkEnvelope,
   JEDIT_RUNTIME_WORK_OPERATION_KIND_MUTATION,
@@ -79,6 +85,7 @@ export interface InstalledJeditContractEchoTransportOptions {
   readonly handlerInvocationSink?: JeditHandlerInvocationSink;
   readonly statePort?: JeditContractStatePort;
   readonly submissionLedger?: JeditSubmissionLedgerPort;
+  readonly ticketedWorkPort?: JeditTicketedWorkPort;
 }
 
 interface InstalledJeditContractEchoTransportContext {
@@ -90,6 +97,14 @@ interface InstalledJeditContractEchoTransportContext {
   readonly workSink?: JeditRuntimeWorkSink;
   readonly handlerInvocationSink?: JeditHandlerInvocationSink;
   readonly submissionLedger: JeditSubmissionLedgerPort;
+  readonly ticketedWorkPort: JeditTicketedWorkPort;
+}
+
+interface AcceptedSubmissionContext {
+  readonly submissionId: string;
+  readonly packageId: string;
+  readonly operationName: string;
+  readonly canonicalRequestBytesHex: string;
 }
 
 export function createInstalledJeditContractEchoTransport(
@@ -138,6 +153,7 @@ function createTransportContext(
     workSink: options.workSink,
     handlerInvocationSink: options.handlerInvocationSink,
     submissionLedger: options.submissionLedger ?? createInMemoryJeditSubmissionLedgerPort(),
+    ticketedWorkPort: options.ticketedWorkPort ?? createInMemoryJeditTicketedWorkPort(hash),
   };
 }
 
@@ -147,7 +163,12 @@ function submitInstalledIntent(
 ): Uint8Array {
   const request = decodeJeditIntentRequest(intentBytes);
   recordRuntimeWorkEnvelope(context.workSink, intentBytes, request, context.hash);
-  recordAcceptedSubmission(context, intentBytes, request);
+  const submission = recordAcceptedSubmission(context, intentBytes, request);
+  const ticketedWork = context.ticketedWorkPort.issueTicketedWork(submission);
+  if (ticketedWork.status !== JEDIT_TICKETED_WORK_AVAILABLE) {
+    return encodeJeditIntentResponse(obstructedIntent(request, ticketedWorkObstruction(ticketedWork)));
+  }
+
   return encodeJeditIntentResponse(
     executeIntent(context.installStatus, context.mutations, context.handlerInvocationSink, request),
   );
@@ -157,14 +178,16 @@ function recordAcceptedSubmission(
   context: InstalledJeditContractEchoTransportContext,
   intentBytes: Uint8Array,
   request: JeditIntentRequest,
-): void {
+): AcceptedSubmissionContext {
   const canonicalRequestBytesHex = bytesToHex(intentBytes);
-  recordAcceptedJeditSubmission(context.submissionLedger, {
+  const submission = {
     submissionId: createJeditSubmissionId(canonicalRequestBytesHex, context.hash),
     packageId: JEDIT_HOT_TEXT_PACKAGE_ID,
     operationName: request.operationName,
     canonicalRequestBytesHex,
-  });
+  };
+  recordAcceptedJeditSubmission(context.submissionLedger, submission);
+  return submission;
 }
 
 function observeInstalledRequest(
@@ -347,6 +370,16 @@ function packageNotInstalledObstruction(): JeditTransportObstruction {
     code: PACKAGE_NOT_INSTALLED_CODE,
     message: PACKAGE_NOT_INSTALLED_CODE,
     recovery: PACKAGE_NOT_INSTALLED_RECOVERY,
+  };
+}
+
+function ticketedWorkObstruction(
+  ticketedWork: Exclude<JeditTicketedWorkResult, { readonly status: typeof JEDIT_TICKETED_WORK_AVAILABLE }>,
+): JeditTransportObstruction {
+  return {
+    code: ticketedWork.obstruction.code,
+    message: ticketedWork.obstruction.reason,
+    recovery: 'issue ticketed work before handler invocation',
   };
 }
 

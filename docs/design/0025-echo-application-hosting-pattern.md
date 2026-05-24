@@ -307,10 +307,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Ticketed work boundary exists.
-- [ ] Unticketed work is blocked.
-- [ ] Ticket and submission identities are distinct.
-- [ ] Handler invocation still requires scheduler authority.
+- [x] Ticketed work boundary exists.
+- [x] Unticketed work is blocked.
+- [x] Ticket and submission identities are distinct.
+- [x] Handler invocation still requires scheduler authority.
 
 ### Slice 36 - Real Receipt Correlation
 

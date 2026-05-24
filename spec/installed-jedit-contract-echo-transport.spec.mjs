@@ -14,6 +14,7 @@ const WORK_ENVELOPE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'ports', 'jedit-r
 const INVOCATION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-runtime-handler-invocation.js');
 const STATE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-state-port.js');
 const LEDGER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-submission-ledger.js');
+const TICKETED_WORK_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-ticketed-work-boundary.js');
 const BUFFER_KEY = 'notes/installed-contract.md';
 const INITIAL_TEXT = 'hello';
 const INSERT_TEXT = ' Echo';
@@ -258,6 +259,38 @@ test('installed transport records accepted submissions before handler execution'
   assert.deepEqual(events, ['submission', 'handler']);
 });
 
+test('installed transport blocks unticketed work before handler invocation', async () => {
+  const modules = await loadModules();
+  const handlerAuthorities = [];
+  const transport = modules.transport.createInstalledJeditContractEchoTransport({
+    ticketedWorkPort: {
+      issueTicketedWork(request) {
+        return modules.ticketedWork.missingJeditTicketedWork(request.submissionId);
+      },
+    },
+    handlerInvocationSink: {
+      recordHandlerInvocationAuthority(authority) {
+        handlerAuthorities.push(authority);
+      },
+    },
+  });
+  const response = modules.codec.decodeJeditIntentResponse(transport.submitIntentBytes(
+    modules.codec.encodeJeditIntentRequest({
+      kind: modules.codec.JEDIT_INTENT_REQUEST_KIND,
+      operationName: modules.codec.CREATE_BUFFER_WORLDLINE_OPERATION,
+      input: {
+        bufferKey: BUFFER_KEY,
+        initialText: INITIAL_TEXT,
+        projectionPath: BUFFER_KEY,
+      },
+    }),
+  ));
+
+  assert.equal(response.status, modules.codec.JEDIT_TRANSPORT_STATUS_OBSTRUCTED);
+  assert.equal(response.obstruction.code, modules.ticketedWork.JEDIT_TICKETED_WORK_MISSING_CODE);
+  assert.deepEqual(handlerAuthorities, []);
+});
+
 test('installed query observers require state-port-backed basis', async () => {
   const modules = await loadModules();
   const statePort = createMissingReadStatePort(modules);
@@ -330,7 +363,18 @@ async function loadModules() {
 
     assert.equal(build.status, 0, build.stderr || build.stdout);
 
-    const [transport, client, poweredSession, codec, runtime, workEnvelope, invocation, state, ledger] = await Promise.all([
+    const [
+      transport,
+      client,
+      poweredSession,
+      codec,
+      runtime,
+      workEnvelope,
+      invocation,
+      state,
+      ledger,
+      ticketedWork,
+    ] = await Promise.all([
       import(pathToFileURL(TRANSPORT_MODULE_PATH).href),
       import(pathToFileURL(CLIENT_MODULE_PATH).href),
       import(pathToFileURL(POWERED_SESSION_MODULE_PATH).href),
@@ -340,6 +384,7 @@ async function loadModules() {
       import(pathToFileURL(INVOCATION_MODULE_PATH).href),
       import(pathToFileURL(STATE_MODULE_PATH).href),
       import(pathToFileURL(LEDGER_MODULE_PATH).href),
+      import(pathToFileURL(TICKETED_WORK_MODULE_PATH).href),
     ]);
 
     return {
@@ -352,6 +397,7 @@ async function loadModules() {
       invocation,
       state,
       ledger,
+      ticketedWork,
     };
   })();
 
