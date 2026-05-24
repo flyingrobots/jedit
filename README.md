@@ -124,8 +124,10 @@ Current status: the opt-in real Echo WASM witness uses the required application
 and host authority split:
 
 - jedit application code submits canonical intents and observes readings;
-- trusted Echo host code owns package install, runtime lifecycle control,
-  until-idle policy, and fault recovery;
+- trusted Echo host code owns package install, runtime lifecycle requests,
+  until-idle/stop policy, and fault recovery through a dedicated lifecycle port;
+- the Echo-powered `TextBufferOptic` session requests lifecycle after mutations
+  without exposing that lifecycle port to application code;
 - no jedit app path can tick or tunnel trusted runtime lifecycle control
   through dispatch;
 - the witness report now inventories inline reading evidence and explicitly
@@ -139,6 +141,18 @@ Agents should start with the shell witness before any richer MCP surface:
 ECHO_WARP_WASM_DIR=/path/to/echo/crates/warp-wasm \
   node scripts/jedit-echo-witness.mjs --json --replay
 ```
+
+For a fast product-session smoke path that agents can run without a sibling
+Echo checkout, use:
+
+```sh
+npm run witness:echo:session
+```
+
+That command exercises `TextBufferOptic` through the host-owned lifecycle
+adapter, requests trusted stop during host shutdown, and reports
+receipt/reading evidence as JSON. It uses the fake Echo-shaped transport and
+does not replace the opt-in real Echo WASM witness.
 
 The second seam is schema authority for structural history:
 
@@ -341,6 +355,9 @@ Right now the app gives you:
 - a JSON-capable `scripts/jedit-echo-witness.mjs` command for agents and CI
   that reports generated contract metadata, observed reading identity, artifact
   hash, authority split, retained-evidence posture, and replay posture
+- a fast `scripts/jedit-echo-powered-session.mjs` command that exercises the
+  app-facing `TextBufferOptic` path, trusted lifecycle wrapper, and host stop
+  request as JSON evidence
 - a `TextBufferOptic` boundary with opaque `ReadBasisHandle` support that keeps
   raw Echo coordinates below the app-facing optic client
 - a structural-history GraphQL authority surface

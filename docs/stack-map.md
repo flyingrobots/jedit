@@ -41,12 +41,16 @@ product pressure
 Stack Witness 0001:
 
 ```text
-createBuffer
--> replaceRange("hello")
--> textWindow(0..5)
--> ReadingEnvelope + QueryBytes("hello")
--> TextWindowReading
+jedit-shaped bytes
+-> trusted-host run request
+-> textWindow observation request
+-> UNSUPPORTED_QUERY without installed observer
 ```
+
+The old Stack Witness text fixture is historical. Echo no longer contains
+hardcoded `createBuffer`, `replaceRange`, or `textWindow` semantics; the next
+real proof must install jedit-owned generated mutation handlers and query
+observers through Echo's generic contract-host boundary.
 
 The current Echo `v0.1.0` release-gate proof starts from the implemented
 structural-history contract:
@@ -57,7 +61,7 @@ jedit-authored `contracts/jedit/structural-history.graphql`
 -> Wesley generated artifacts
 -> Echo package install
 -> app-safe edit intent submission
--> trusted-host runtime-control policy
+-> trusted-host lifecycle loop
 -> scheduler-owned tick receipt
 -> observed outcome
 -> bounded text reading
@@ -73,19 +77,34 @@ The next release-gate slice plan is recorded in
 - Fake Echo-shaped transport remains valid as a controlled witness posture.
 - Real Echo WASM witness remains opt-in and now uses the app/host authority
   split: app intent submission stays on the app transport, while scheduler
-  control uses the trusted-host transport.
-- The current witness report names inline `ReadingEnvelope` and `QueryBytes`
-  evidence, then honestly reports durable retained refs as
-  `missing_retention`.
+  lifecycle requests use the trusted-host lifecycle port.
+- The current real Echo witness fails closed with `UNSUPPORTED_QUERY` unless a
+  jedit-owned generated query observer is installed. The local report fixture
+  can still name inline reading posture, but that is not Echo kernel text
+  semantics.
 - The current replay surface is a shell: `--replay` returns
   `durable_replay_unavailable` until Echo exposes durable replay evidence
   through the adapter.
 - Start/Stop/cadence are trusted host runtime-control history. They are not
   jedit contract intents and they do not create ticks directly.
+- `TrustedEchoRuntimeLifecyclePort.requestRunUntilIdle(...)` wraps raw trusted
+  Echo control bytes so witness and host code do not talk in external tick
+  vocabulary.
+- `TrustedEchoRuntimeLifecyclePort.requestStop()` wraps trusted Stop control
+  without exposing app-controlled cancellation or half-tick interruption.
+- `scripts/jedit-echo-powered-session.mjs --json` gives agents a fast
+  product-session witness over the `TextBufferOptic` and trusted lifecycle
+  wrapper. It uses the fake Echo-shaped transport; the opt-in real Echo WASM
+  witness remains the substrate proof.
+- `stopTrustedEchoRuntime(...)` is the deterministic host shutdown primitive
+  for Echo lifecycle control. It is not app-facing stop/cancel behavior.
 - Fixture vars bytes are not the durable Wesley runtime codec.
-- `TextBufferOptic` is the target app-facing capability. The current proof uses
-  the structural-history SDL and `replaceTextRange` as the first implemented
-  operation on that path.
+- `TextBufferSessionPort` is the jedit app-facing session port. It returns
+  `TextBufferOptic` buffer capabilities while keeping the backing runtime
+  behind adapters.
+- `createEchoBackedTextBufferSession(...)` is the Echo-backed adapter. It
+  composes the app-facing session port without exposing trusted lifecycle
+  control. Host loops drain Echo separately.
 - `ReadBasisHandle` is an opaque supporting token, not the complete optic
   protocol.
 - Structural-history SDL is now the product contract authority for text

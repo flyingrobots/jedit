@@ -66,7 +66,7 @@ Echo's core nouns are a better fit for editing:
 
 These map much more naturally onto editor reality:
 
-- a text mutation can be admitted as a tick
+- a text mutation can become scheduler-owned contract work with a tick receipt
 - a suggestion or private draft can live as a strand
 - comparison across alternatives becomes a braid problem
 - save becomes a checkpoint, not a fake commit

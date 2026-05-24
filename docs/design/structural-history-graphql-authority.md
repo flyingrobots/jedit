@@ -20,7 +20,7 @@ readings.
 - `src/domain/tick-admission-contract.ts`
 - `src/domain/edit-group-contract.ts`
 - `src/domain/save-checkpoint-contract.ts`
-- `src/app/text-buffer-optic-session.ts`
+- `src/app/text-buffer-session.ts`
 - `src/ports/jedit-optic-client.ts`
 
 The inspected behavior already separates the app-facing text buffer optic from

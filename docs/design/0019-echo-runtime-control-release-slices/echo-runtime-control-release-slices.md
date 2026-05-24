@@ -8,7 +8,7 @@ runtime-control doctrine:
 ```text
 Start/Stop are trusted runtime-control history.
 Start/Stop are not jedit contract intents.
-Start/Stop authorize scheduler opportunities; they do not create ticks.
+Start/Stop request Echo runtime lifecycle policy; they do not create ticks.
 TickReceipt remains Echo scheduler-owned execution evidence.
 ```
 
@@ -25,9 +25,9 @@ jedit-authored domain operation.
 | jedit trusted Echo host adapter | Install packages, call trusted Echo control, choose cadence/drain policy, run witness loops. | Expose raw trusted control to app code or mutate jedit product state directly. |
 | Echo scheduler | Select work, attempt ticks, emit receipts, roll back failed attempts. | Treat jedit product commands as scheduler control. |
 
-`Start(tickFrequency = 1/60)` is a trusted host policy command. It starts
-scheduler opportunities under host cadence. It is not a request from the editor
-contract to run one tick now.
+`Start(tickFrequency = 1/60)` is a trusted host policy command. It asks Echo
+to run its own internal loop under host cadence. It is not a request from the
+editor contract or host adapter to run one externally supplied tick now.
 
 ## Design Consequences
 
@@ -39,6 +39,11 @@ contract to run one tick now.
 - Replay must not sleep to reproduce wall-clock cadence. It should replay
   logical control epochs and scheduler receipts.
 - Stopping the host must not interrupt a half-committed tick.
+
+Current implementation note: jedit now has
+`TrustedEchoRuntimeLifecyclePort.requestRunUntilIdle(...)`. The real Echo WASM
+witness uses that port instead of calling raw trusted-control bytes directly.
+The port still delegates to Echo's trusted control export below an adapter.
 
 ## Next Ten Slices From jedit's Side
 

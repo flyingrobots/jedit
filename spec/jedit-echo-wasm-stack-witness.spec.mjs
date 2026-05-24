@@ -23,6 +23,7 @@ import {
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const TRANSPORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'echo-wasm-kernel.js');
+const LIFECYCLE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'echo-runtime-lifecycle.js');
 const REAL_ECHO_WASM_MODULE_RAW = process.env.JEDIT_ECHO_WASM_MODULE;
 const REAL_ECHO_WASM_MODULE =
   typeof REAL_ECHO_WASM_MODULE_RAW === 'string' && REAL_ECHO_WASM_MODULE_RAW.trim().length > 0
@@ -105,6 +106,12 @@ test('real Echo WASM witness control intent honors configured cycle limit', () =
   assert.equal(controlIntent.mode.cycle_limit, CUSTOM_RUN_UNTIL_IDLE_CYCLE_LIMIT);
 });
 
+test('real Echo WASM witness stop control stays on trusted lifecycle vocabulary', () => {
+  const controlIntent = unpackControlIntentVars(packControlStopIntent());
+
+  assert.equal(controlIntent.kind, 'stop');
+});
+
 test('real Echo WASM witness report names retained-evidence and replay posture', () => {
   const queryBytes = encodeUtf8(STACK_WITNESS_TEXT);
   const artifact = createWitnessReportFixtureArtifact(queryBytes);
@@ -157,65 +164,45 @@ test('real Echo WASM witness report bounds inline reading payload preview', () =
   assert.equal(payloadEntry.contentPreviewTruncated, true);
 });
 
-test('real Echo WASM Stack Witness 0001 transport emits ReadingEnvelope + QueryBytes', {
+test('real Echo WASM requires an installed observer before jedit textWindow can materialize', {
   skip: REAL_ECHO_WASM_MODULE === undefined
-    ? 'set JEDIT_ECHO_WASM_MODULE to an Echo warp-wasm JS module to run this opt-in witness'
+    ? 'set JEDIT_ECHO_WASM_MODULE to an Echo warp-wasm JS module to run this opt-in boundary witness'
     : false,
 }, async () => {
   assert.equal(typeof REAL_ECHO_WASM_MODULE, 'string');
 
-  const jeditGeneratedContract = await loadGeneratedContractMetadata();
-  const transportModule = await loadTransportModule();
-  const hostTransport = await transportModule.createEchoWasmKernelHostTransport({
+  const echoModules = await loadEchoModules();
+  const hostTransport = await echoModules.transport.createEchoWasmKernelHostTransport({
     moduleSpecifier: toModuleSpecifier(REAL_ECHO_WASM_MODULE),
   });
   const transport = hostTransport.app;
+  const lifecycle = echoModules.lifecycle.createTrustedEchoRuntimeLifecyclePort({
+    trustedHost: hostTransport.trustedHost,
+    codec: createWitnessLifecycleCodec(),
+  });
 
   dispatchFixtureIntent(
     transport,
     STACK_WITNESS_OP_IDS.CREATE_BUFFER,
     STACK_WITNESS_CREATE_BUFFER_VARS,
   );
-  runEchoSchedulerUntilIdle(hostTransport.trustedHost);
+  requestEchoRunUntilIdle(lifecycle);
   dispatchFixtureIntent(
     transport,
     STACK_WITNESS_OP_IDS.REPLACE_RANGE,
     STACK_WITNESS_REPLACE_RANGE_VARS,
   );
-  runEchoSchedulerUntilIdle(hostTransport.trustedHost);
+  requestEchoRunUntilIdle(lifecycle);
 
   const opticSessionBasis = createWitnessOnlyEchoFixtureBasisResolver();
   const textWindowBasis = opticSessionBasis.resolveTextWindowBasis();
-  const artifact = decodeOkEnvelope(transport.observeBytes(
+  const error = decodeErrEnvelope(transport.observeBytes(
     encodeStackWitnessTextWindowRequest(textWindowBasis),
   ));
 
-  assertReadingEnvelopePresent(artifact);
-  assertStackWitnessArtifactIdentity(artifact, textWindowBasis);
-
-  const queryBytes = extractQueryBytes(artifact);
-  const appReading = toWitnessOnlyTextWindowReading(artifact, queryBytes);
-
-  assert.equal(UTF8_DECODER.decode(queryBytes), STACK_WITNESS_TEXT);
-  assert.equal(appReading.operationName, 'textWindow');
-  assert.equal(appReading.frontierRef, STACK_WITNESS_FRONTIER_REF);
-  assert.equal(appReading.reading.startLine, FIRST_LINE);
-  assert.equal(appReading.reading.lineCount, SINGLE_LINE_WINDOW);
-  assert.equal(appReading.reading.totalLineCount, SINGLE_LINE_WINDOW);
-  assert.equal(appReading.reading.hasMoreBefore, false);
-  assert.equal(appReading.reading.hasMoreAfter, false);
-  assert.deepEqual(
-    appReading.reading.lines.map((line) => line.text),
-    [STACK_WITNESS_TEXT],
-  );
-  assert.equal(jeditGeneratedContract.queries.textWindow.fieldName, 'textWindow');
-  writeWitnessReport(createWitnessReportArgs({
-    artifact,
-    appReading,
-    jeditGeneratedContract,
-    queryBytes,
-    textWindowBasis,
-  }));
+  assert.equal(error.code, 11);
+  assert.match(error.message, /query observation is not installed/);
+  writeBoundaryWitnessReport(error);
 });
 
 async function loadTransportModule() {
@@ -230,33 +217,10 @@ async function loadTransportModule() {
   }
 }
 
-async function loadGeneratedContractMetadata() {
-  const generatedModulePath = path.join(
-    REPO_ROOT,
-    'dist',
-    'generated',
-    'jedit',
-    'hot-text-runtime.wesley.generated.js',
-  );
-  let generated;
-  try {
-    generated = await import(pathToFileURL(generatedModulePath).href);
-  } catch (cause) {
-    throw new Error(
-      `${generatedModulePath} not found; run scripts/run-real-echo-wasm-stack-witness.sh `
-        + 'or npm run build before invoking this witness.',
-      { cause },
-    );
-  }
+async function loadEchoModules() {
   return {
-    source: 'contracts/jedit/hot-text-runtime.graphql',
-    mutations: {
-      createBufferWorldline: generated.mutationCreateBufferWorldlineOperation,
-      replaceRangeAsTick: generated.mutationReplaceRangeAsTickOperation,
-    },
-    queries: {
-      textWindow: generated.queryTextWindowOperation,
-    },
+    transport: await loadTransportModule(),
+    lifecycle: await import(pathToFileURL(LIFECYCLE_MODULE_PATH).href),
   };
 }
 
@@ -277,12 +241,13 @@ function dispatchFixtureIntent(transport, opId, varsText) {
   assert.equal(response.accepted, true);
 }
 
-function runEchoSchedulerUntilIdle(trustedHostTransport) {
-  const response = decodeOkEnvelope(
-    trustedHostTransport.dispatchControlIntentBytes(packControlStartIntent()),
-  );
-  assert.equal(response.accepted, true);
-  assert.equal(response.scheduler_status.last_run_completion, 'quiesced');
+function requestEchoRunUntilIdle(lifecycle) {
+  const result = lifecycle.requestRunUntilIdle({
+    cycleLimit: RUN_UNTIL_IDLE_CYCLE_LIMIT,
+  });
+
+  assert.equal(result.accepted, true);
+  assert.equal(result.lastRunCompletion, 'quiesced');
 }
 
 function packControlStartIntent(cycleLimit = RUN_UNTIL_IDLE_CYCLE_LIMIT) {
@@ -293,6 +258,47 @@ function packControlStartIntent(cycleLimit = RUN_UNTIL_IDLE_CYCLE_LIMIT) {
       cycle_limit: cycleLimit,
     },
   }));
+}
+
+function packControlStopIntent() {
+  return packEintEnvelope(ECHO_CONTROL_OP_IDS.INTENT_V1, encodeCbor({
+    kind: 'stop',
+  }));
+}
+
+function createWitnessLifecycleCodec() {
+  return {
+    encodeStartRequest() {
+      return packControlStartIntent();
+    },
+    decodeStartResponse(responseBytes) {
+      const response = decodeOkEnvelope(responseBytes);
+      return {
+        accepted: response.accepted === true,
+        lastRunCompletion: response.scheduler_status.last_run_completion,
+      };
+    },
+    encodeRunUntilIdleRequest(request) {
+      return packControlStartIntent(request.cycleLimit);
+    },
+    decodeRunUntilIdleResponse(responseBytes) {
+      const response = decodeOkEnvelope(responseBytes);
+      return {
+        accepted: response.accepted === true,
+        lastRunCompletion: response.scheduler_status.last_run_completion,
+      };
+    },
+    encodeStopRequest() {
+      return packControlStopIntent();
+    },
+    decodeStopResponse(responseBytes) {
+      const response = decodeOkEnvelope(responseBytes);
+      return {
+        accepted: response.accepted === true,
+        lastRunCompletion: response.scheduler_status.last_run_completion,
+      };
+    },
+  };
 }
 
 function readRunUntilIdleCycleLimit(rawValue) {
@@ -367,34 +373,9 @@ function assertCoordinateUsesTextWindowBasis(request, textWindowBasis) {
   assert.equal(request.coordinate.at.kind, textWindowBasis.at.kind);
 }
 
-function assertReadingEnvelopePresent(artifact) {
-  assert.equal(typeof artifact.reading, 'object');
-  assert.notEqual(artifact.reading, null);
-  assert.equal(artifact.reading.observer_basis, 'query_view');
-  assert.equal(artifact.reading.budget_posture, 'unbounded_one_shot');
-  assert.equal(artifact.reading.rights_posture, 'kernel_public');
-  assert.equal(artifact.reading.residual_posture, 'complete');
-}
-
-function assertStackWitnessArtifactIdentity(artifact, basis) {
-  assert.equal(bytesToHex(artifact.resolved.worldline_id), basis.worldlineIdHex);
-  assert.equal(artifact.frame, 'query_view');
-  assert.equal(artifact.projection.kind, 'query');
-  assert.equal(artifact.projection.query_id, STACK_WITNESS_OP_IDS.TEXT_WINDOW_QUERY);
-  assert.deepEqual(
-    toByteArray(artifact.projection.vars_bytes),
-    bytesAsSequence(encodeUtf8(STACK_WITNESS_TEXT_WINDOW_VARS)),
-  );
-  assert.equal(artifact.payload.kind, 'query_bytes');
-}
-
-function extractQueryBytes(artifact) {
-  return Uint8Array.from(toByteArray(artifact.payload.data));
-}
-
-// Witness-only adapter: Echo's fixture returns QueryBytes("hello"), not durable
-// TextWindowReading metadata. The synthetic fields below are local test
-// scaffolding and must not become production adapter semantics.
+// Witness-only adapter: the local report fixture returns QueryBytes("hello"),
+// not durable TextWindowReading metadata. The synthetic fields below are local
+// test scaffolding and must not become production adapter semantics.
 function toWitnessOnlyTextWindowReading(artifact, queryBytes) {
   const text = UTF8_DECODER.decode(queryBytes);
   const worldlineId = bytesToHex(artifact.resolved.worldline_id);
@@ -442,6 +423,28 @@ function writeWitnessReport(args) {
 
   mkdirSync(path.dirname(WITNESS_REPORT_PATH), { recursive: true });
   writeFileSync(WITNESS_REPORT_PATH, `${JSON.stringify(createWitnessReport(args), null, 2)}\n`);
+}
+
+function writeBoundaryWitnessReport(error) {
+  if (WITNESS_REPORT_PATH === undefined) {
+    return;
+  }
+
+  const report = {
+    schemaVersion: WITNESS_REPORT_SCHEMA_VERSION,
+    boundary: {
+      status: 'unsupported_query_without_installed_observer',
+      errorCode: error.code,
+      message: error.message,
+    },
+    replay: {
+      status: 'obstructed',
+      obstruction: REPLAY_OBSTRUCTION_DURABLE_UNAVAILABLE,
+      reason: 'the current real Echo WASM witness proves a generic boundary obstruction, not durable replay',
+    },
+  };
+  mkdirSync(path.dirname(WITNESS_REPORT_PATH), { recursive: true });
+  writeFileSync(WITNESS_REPORT_PATH, `${JSON.stringify(report, null, 2)}\n`);
 }
 
 function createWitnessReportFixtureArtifact(queryBytes) {
@@ -517,5 +520,11 @@ function createGeneratedContractMetadataFixture() {
 function decodeOkEnvelope(bytes) {
   const decoded = decodeCbor(bytes);
   assert.equal(decoded.ok, true, decoded.message ?? 'Echo WASM returned an error envelope');
+  return decoded;
+}
+
+function decodeErrEnvelope(bytes) {
+  const decoded = decodeCbor(bytes);
+  assert.equal(decoded.ok, false, 'Echo WASM unexpectedly returned an ok envelope');
   return decoded;
 }

@@ -6,6 +6,7 @@ import type { AdmittedTick, TickAdmissionReceipt } from '../domain/tick-admissio
 export interface HotTextBufferState {
   readonly path: string;
   readonly currentRoot: BufferRoot;
+  readonly roots: readonly BufferRoot[];
   readonly ticks: readonly AdmittedTick[];
   readonly editGroups: readonly EditGroup[];
   readonly openEditGroup?: OpenEditGroup;

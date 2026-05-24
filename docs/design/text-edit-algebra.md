@@ -14,9 +14,9 @@ The static/dynamic rewrite-footprint split is described in
 
 ## One Sentence
 
-`jedit` should treat a buffer as a persistent piece-rope worldline in Echo's
-causal history, with files, Markdown ASTs, previews, and viewport state as
-projections rather than truth.
+`jedit` should treat a buffer as a persistent piece-rope worldline modeled by
+the jedit contract over Echo's generic causal substrate, with files, Markdown
+ASTs, previews, and viewport state as projections rather than truth.
 
 ## Stack
 
@@ -29,10 +29,10 @@ The stack should be read like this:
 
 For `jedit`, that implies:
 
-- Echo owns causal truth, ticks, tick receipts, strands, admission, and
-  replay.
-- `echo-text` owns rope structure, anchors, range transforms, and text edit
-  algebra.
+- Echo owns generic causal truth, scheduler-owned ticks, tick receipts,
+  strands, admission, and replay.
+- `jedit` contract code owns rope structure, anchors, range transforms, and
+  text edit algebra over Echo-hosted graph facts and retained artifacts.
 - `jedit` owns UI, buffer lifecycle, viewport, file tree, save/open flows,
   preview, and edit-group policy over ticks.
 - `git-warp` stays outside the engine as an import/export or mirroring adapter.
@@ -50,7 +50,8 @@ Not:
 - file-plus-undo-stack
 - snapshots as the primary truth
 
-A buffer head points to a persistent rope root carried by Echo causal history.
+A buffer head points to a persistent rope root carried by jedit contract history
+inside Echo-hosted causal evidence.
 
 ## Piece-Rope Model
 
@@ -178,12 +179,14 @@ worldline boundary is the tick.
 That means:
 
 - `ReplaceRange` describes what text rewrite is lawful.
-- Echo admits that rewrite into causal history as a tick.
-- a tick emits a tick receipt as the witness of the transition.
+- Echo admits the jedit contract rewrite into scheduler-owned causal work.
+- the scheduler-owned tick emits a tick receipt as the witness of the
+  transition.
 - `jedit` may group one or more ticks into an edit group for undo/history.
 
-This keeps the canonical boundary aligned with Echo while still letting the
-editor present larger human-meaningful actions than a single tick.
+This keeps the canonical boundary aligned with Echo without giving jedit app
+code tick authority, while still letting the editor present larger
+human-meaningful actions than a single tick.
 
 The footprint for that tick-admitted rewrite should be read as:
 

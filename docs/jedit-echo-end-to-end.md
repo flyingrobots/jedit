@@ -20,8 +20,8 @@ The current repository contains two relevant execution postures:
    Bijou, and edits local files through jedit workspace ports.
 2. The Echo witness path. This runs an opt-in real Echo WASM integration that
    proves jedit can submit contract-shaped work, let a trusted host request an
-   Echo-owned run policy, observe a bounded reading, and produce a witness
-   report.
+   Echo-owned run policy, and receive a typed `UNSUPPORTED_QUERY` obstruction
+   instead of hardcoded text when no generated observer is installed.
 
 Those postures intentionally meet through ports and adapters. The interactive
 product can evolve toward the real Echo path without letting application code
@@ -44,7 +44,7 @@ gain tick authority or substrate coordinates.
 | TextBufferOptic | A jedit-owned app capability. Echo must not contain this noun or know what it means. |
 | ReadBasisHandle | A jedit app-safe token that hides runtime coordinates below the app boundary. |
 
-## Non-Negotiable Boundary
+## Doctrine
 
 Echo is generic. jedit owns editor nouns.
 
@@ -64,34 +64,73 @@ This means:
 If a future change needs an Echo API named after a jedit product noun, the
 boundary is wrong. Put the noun in a contract, generated adapter, or jedit port.
 
+```mermaid
+sequenceDiagram
+  autonumber
+  participant App as jedit app
+  participant Port as jedit port or optic
+  participant Adapter as generated/host adapter
+  participant Echo as Echo generic runtime
+
+  App->>Port: apply text-domain intent
+  Port->>Adapter: encode contract operation bytes
+  Adapter->>Echo: submit generic intent bytes
+  Echo-->>Adapter: witnessed ingress/admission evidence
+  Adapter-->>Port: app-safe receipt handle
+  Port-->>App: TextBufferOptic result
+
+  App->>Port: request bounded text reading
+  Port->>Adapter: encode contract query bytes
+  Adapter->>Echo: observe QueryView
+  Echo-->>Adapter: ReadingEnvelope + generic payload or obstruction
+  Adapter-->>Port: decode jedit-owned reading
+  Port-->>App: TextWindowReading + evidence
+
+  Note over App,Echo: jedit owns text nouns; Echo owns generic time, admission, receipts, and readings.
+```
+
 ## Repository Map
 
 The files most relevant to this guide are:
 
-| Path | Role |
-| --- | --- |
-| `src/main.ts` | Process entry for the TUI application. |
-| `src/adapters/workspace-app.ts` | Wires concrete ports into the workspace runtime. |
-| `src/app/workspace/runtime.ts` | Pure-ish workspace update/view runtime. |
-| `src/app/workspace/model.ts` | Workspace model shape. |
-| `src/app/workspace/editor-session.ts` | File/editor session behavior. |
-| `src/ports/jedit-optic-client.ts` | jedit-facing optic and observation interfaces. |
-| `src/adapters/jedit-echo-optic-client.ts` | Adapter from jedit optic calls to Echo-shaped transport bytes. |
-| `src/ports/echo-kernel-transport.ts` | App-safe and trusted-host Echo transport ports. |
-| `src/adapters/echo-wasm-kernel.ts` | Real Echo WASM transport adapter. |
-| `src/adapters/fake-echo-jedit-optic-transport.ts` | Default fake Echo-shaped test transport. |
-| `src/app/jedit-contract-runtime.ts` | jedit-owned transitional hot-text contract executor. |
-| `src/app/jedit-observer-runtime.ts` | jedit-owned observer/read envelope helpers. |
-| `src/adapters/in-memory-hot-text-runtime.ts` | Transitional in-memory hot-text runtime. |
-| `contracts/jedit/hot-text-runtime.graphql` | jedit-authored hot-text runtime contract. |
-| `contracts/jedit/text-buffer-optic.graphql` | jedit app-facing optic contract. |
-| `contracts/jedit/structural-history.graphql` | jedit structural history contract authority. |
-| `scripts/jedit-echo-witness.mjs` | CLI for the real Echo witness path. |
-| `scripts/ports/echo-witness-runner.mjs` | Witness runner port logic. |
-| `scripts/adapters/node-echo-witness-runner.mjs` | Node filesystem/process adapter for the witness runner. |
-| `spec/jedit-echo-wasm-stack-witness.spec.mjs` | Opt-in real Echo WASM stack witness. |
+| Path                                              | Role                                                           |
+| ------------------------------------------------- | -------------------------------------------------------------- |
+| `src/main.ts`                                     | Process entry for the TUI application.                         |
+| `src/adapters/workspace-app.ts`                   | Wires concrete ports into the workspace runtime.               |
+| `src/app/workspace/runtime.ts`                    | Pure-ish workspace update/view runtime.                        |
+| `src/app/workspace/model.ts`                      | Workspace model shape.                                         |
+| `src/app/workspace/editor-session.ts`             | File/editor session behavior.                                  |
+| `src/ports/text-buffer-session.ts`                | jedit app-facing text-buffer session port.                     |
+| `src/ports/jedit-optic-client.ts`                 | Lower jedit optic client interface consumed by adapters.       |
+| `src/adapters/jedit-echo-optic-client.ts`         | Adapter from jedit optic calls to Echo-shaped transport bytes. |
+| `src/adapters/echo-backed-text-buffer-session.ts` | Echo-backed implementation of the text-buffer session port.    |
+| `src/app/echo-powered-text-buffer-witness.ts`     | App workflow witness over the Echo-powered product session.    |
+| `src/app/trusted-echo-runtime-host.ts`            | Host helper for trusted Echo shutdown requests.                |
+| `src/ports/echo-kernel-transport.ts`              | App-safe and trusted-host Echo transport ports.                |
+| `src/adapters/echo-wasm-kernel.ts`                | Real Echo WASM transport adapter.                              |
+| `src/ports/echo-runtime-lifecycle.ts`             | Trusted-host runtime lifecycle port.                           |
+| `src/adapters/echo-runtime-lifecycle.ts`          | Adapter from lifecycle requests to trusted Echo control bytes. |
+| `src/adapters/fake-echo-jedit-optic-transport.ts` | Default fake Echo-shaped test transport.                       |
+| `src/app/jedit-contract-runtime.ts`               | jedit-owned transitional hot-text contract executor.           |
+| `src/app/jedit-observer-runtime.ts`               | jedit-owned observer/read envelope helpers.                    |
+| `src/adapters/in-memory-hot-text-runtime.ts`      | Transitional in-memory hot-text runtime.                       |
+| `contracts/jedit/hot-text-runtime.graphql`        | jedit-authored hot-text runtime contract.                      |
+| `contracts/jedit/text-buffer-optic.graphql`       | jedit app-facing optic contract.                               |
+| `contracts/jedit/structural-history.graphql`      | jedit structural history contract authority.                   |
+| `scripts/jedit-echo-witness.mjs`                  | CLI for the real Echo witness path.                            |
+| `scripts/jedit-echo-powered-session.mjs`          | Fast agent CLI over the app-facing Echo-powered session.       |
+| `scripts/ports/echo-witness-runner.mjs`           | Witness runner port logic.                                     |
+| `scripts/adapters/node-echo-witness-runner.mjs`   | Node filesystem/process adapter for the witness runner.        |
+| `spec/jedit-echo-wasm-stack-witness.spec.mjs`     | Opt-in real Echo WASM generic observer-boundary witness.       |
 
-## System Class Diagram
+## TypeScript Model
+
+The TypeScript side is deliberately split into product capabilities, ports, and
+adapters. `TextBufferOptic` is a jedit app capability. `JeditOpticClient` is a
+jedit port. Echo transports are generic byte/control ports. None of these
+classes implies that Echo implements text buffers.
+
+## TypeScript Class Diagram
 
 This diagram shows the major runtime participants. It is not a TypeScript class
 inventory; it is the useful object boundary map.
@@ -196,7 +235,7 @@ classDiagram
   EchoTrustedHostControlTransport --> EchoRuntime : trusted lifecycle requests
 ```
 
-## Conceptual Entity Relationship Diagram
+## TypeScript Entity Relationship Diagram
 
 This is a conceptual ER diagram, not a database schema. It names the durable
 relationships the system is trying to prove.
@@ -457,7 +496,7 @@ The important contract surfaces are:
 The app-facing model is intentionally capability-shaped:
 
 ```text
-OpticSession
+TextBufferSessionPort
 -> TextBufferOptic
 -> currentReadBasis()
 -> applyIntent(replace range)
@@ -467,15 +506,32 @@ OpticSession
 The app can hold and use a `TextBufferOptic`. It cannot inspect the private
 runtime coordinates that make the optic work.
 
+The Echo-backed session adapter composes that product capability with trusted
+runtime lifecycle below the app boundary:
+
+```text
+TextBufferOptic.applyIntent(...)
+-> app-safe JeditOpticClient mutation
+-> TrustedEchoRuntimeLifecyclePort.requestRunUntilIdle(...)
+-> later TextBufferOptic.textWindow(...)
+```
+
+The session and optic returned to application code still do not expose
+`requestRunUntilIdle`, raw trusted control bytes, or any tick method.
+
 The current TypeScript contract shape is defined in
-`src/ports/jedit-optic-client.ts`:
+`src/ports/text-buffer-session.ts`:
 
 - `TextBufferOptic`;
-- `OpticSession`;
+- `TextBufferSessionPort`;
 - `ReadBasisHandle`;
 - `ReplaceRangeIntent`;
 - `TextWindowReading`;
 - `Observed<T>`;
+
+The lower generated/transport client shape remains in
+`src/ports/jedit-optic-client.ts`:
+
 - `JeditMutationOpticClient`;
 - `JeditObserverOpticClient`.
 
@@ -554,10 +610,22 @@ interface EchoTrustedHostControlTransport {
 }
 ```
 
+Raw trusted control is then wrapped by the jedit lifecycle port:
+
+```ts
+interface TrustedEchoRuntimeLifecyclePort {
+  requestRunUntilIdle(request: EchoRunUntilIdleRequest): EchoRunUntilIdleResult;
+}
+```
+
+The lifecycle port is still trusted-host-only. Its job is to make host code
+talk about lifecycle policy instead of raw control bytes or external tick
+injection.
+
 The split is the whole point:
 
 - Application code can submit intents and observe readings.
-- Trusted host code can dispatch runtime control intents.
+- Trusted host code can request runtime lifecycle policy.
 - Application code cannot tick Echo.
 - Application code cannot tunnel trusted runtime lifecycle control through
   dispatch.
@@ -658,7 +726,7 @@ sequenceDiagram
   participant EchoBuild as Echo WASM build script
   participant JeditBuild as npm run build
   participant Test as jedit-echo-wasm-stack-witness
-  participant Report as witness report JSON
+  participant Report as boundary witness report JSON
 
   User->>CLI: node scripts/jedit-echo-witness.mjs --json --replay
   CLI->>Runner: runEchoWitness(options, adapter)
@@ -670,44 +738,44 @@ sequenceDiagram
   NodeAdapter->>JeditBuild: npm run build
   Runner->>NodeAdapter: runStep(run-real-echo-witness)
   NodeAdapter->>Test: node --test spec/jedit-echo-wasm-stack-witness.spec.mjs
-  Test->>Report: write stack-witness-report.json
+  Test->>Report: write boundary obstruction report
   Runner->>NodeAdapter: readWitnessReport(path)
   NodeAdapter-->>Runner: report
   Runner-->>CLI: summary + replay posture
   CLI-->>User: JSON or human summary
 ```
 
-## What the Stack Witness Proves
+## What the Real Echo Witness Proves
 
 `spec/jedit-echo-wasm-stack-witness.spec.mjs` is the current real Echo witness.
 
 It proves:
 
-- jedit can load the generated contract metadata it expects;
 - jedit can load a real Echo WASM module through `createEchoWasmKernelHostTransport`;
 - app code can submit canonical fixture intents through the app transport;
 - trusted host code can request Echo's internal run loop until idle through the
   trusted control transport;
-- app code can observe a bounded `textWindow` reading;
-- Echo returns `ReadingEnvelope` plus `QueryBytes`;
-- jedit can decode those bytes into a `TextWindowReading`;
-- the witness report inventories inline evidence and missing durable retention;
-- `--replay` reports the current replay posture instead of pretending durable
-  replay is complete.
+- trusted host code can request stop through the same lifecycle port without
+  exposing app-controlled cancellation;
+- app code cannot materialize a jedit `textWindow` query unless Echo has an
+  installed contract query observer for that query id;
+- Echo returns `UNSUPPORTED_QUERY` instead of hardcoded text bytes when no
+  observer is installed.
 
-The current stack witness is deliberately tiny:
+The current real Echo boundary witness is deliberately tiny:
 
 ```text
-createBuffer
--> replaceRange("hello")
--> textWindow(0..5)
--> Echo ReadingEnvelope + QueryBytes("hello")
--> jedit TextWindowReading
--> witness report with retained evidence posture
+submit jedit-shaped fixture bytes
+-> trusted host requests Echo-owned run-until-idle
+-> request textWindow QueryView without an installed observer
+-> Echo UNSUPPORTED_QUERY obstruction
 ```
 
-This is enough to prove the app/host authority split and the read/write seam. It
-is not yet the full interactive editor running on Echo for every edit.
+This is enough to prove the app/host authority split and the absence of
+hardcoded jedit text semantics in Echo. It is not yet the full interactive
+editor running on Echo for every edit. The next real proof must install a
+jedit-authored contract package with mutation handlers and query observers
+through the generic Echo contract-host boundary.
 
 ## Real Echo Witness Sequence
 
@@ -716,42 +784,102 @@ The witness does not let jedit app code tick Echo. It uses two transports.
 ```mermaid
 sequenceDiagram
   autonumber
-  participant Test as Stack Witness Test
+  participant Test as Real Echo Boundary Test
   participant HostTransport as EchoWasmKernelHostTransport
   participant AppTransport as app transport
+  participant Lifecycle as trusted lifecycle port
   participant TrustedHost as trusted host transport
   participant Echo as Echo WASM Runtime
-  participant Report as Witness Report
-
   Test->>HostTransport: createEchoWasmKernelHostTransport(module)
   HostTransport-->>Test: { app, trustedHost }
+  Test->>Lifecycle: createTrustedEchoRuntimeLifecyclePort(trustedHost, codec)
 
   Test->>AppTransport: submitIntentBytes(createBuffer)
   AppTransport->>Echo: dispatch_intent(bytes)
   Echo-->>AppTransport: ingress/admission response
-  Test->>TrustedHost: dispatchControlIntentBytes(request start/until-idle)
+  Test->>Lifecycle: requestRunUntilIdle(cycleLimit)
+  Lifecycle->>TrustedHost: dispatchControlIntentBytes(control bytes)
   TrustedHost->>Echo: dispatch_control_intent_trusted(bytes)
   Echo-->>TrustedHost: runtime lifecycle response
+  TrustedHost-->>Lifecycle: response bytes
+  Lifecycle-->>Test: lifecycle result
 
   Test->>AppTransport: submitIntentBytes(replaceRange)
   AppTransport->>Echo: dispatch_intent(bytes)
   Echo-->>AppTransport: ingress/admission response
-  Test->>TrustedHost: dispatchControlIntentBytes(request start/until-idle)
+  Test->>Lifecycle: requestRunUntilIdle(cycleLimit)
+  Lifecycle->>TrustedHost: dispatchControlIntentBytes(control bytes)
   TrustedHost->>Echo: dispatch_control_intent_trusted(bytes)
   Echo-->>TrustedHost: runtime lifecycle response
+  TrustedHost-->>Lifecycle: response bytes
+  Lifecycle-->>Test: lifecycle result
 
   Test->>AppTransport: observeBytes(textWindow QueryView)
   AppTransport->>Echo: observe(bytes)
-  Echo-->>AppTransport: ObservationArtifact
-  AppTransport-->>Test: ReadingEnvelope + QueryBytes
-  Test->>Report: write retained evidence and replay posture
+  Echo-->>AppTransport: UNSUPPORTED_QUERY unless observer is installed
+  AppTransport-->>Test: error envelope
 ```
 
-The trusted-host control packet in this witness uses an until-idle cycle limit.
+The trusted lifecycle request in this witness uses an until-idle cycle limit.
 That limit is a guardrail around Echo's own run loop; it is not an externally
 supplied tick stream. Future long-lived hosts may ask Echo to start on a
 cadence, stop, or recover faults, but those controls remain lifecycle requests.
 Echo still owns each logical tick boundary and every `TickReceipt`.
+
+The lifecycle port also carries `requestStop()`. Stop is trusted host control:
+it suspends future scheduler opportunities at a safe boundary. It is not a
+jedit application intent and it does not interrupt a half-committed tick.
+
+## Agent Echo-Powered Session Witness
+
+The fast product-session command is:
+
+```sh
+npm run witness:echo:session
+```
+
+It is not the real Echo WASM substrate proof. It is a host-owned agent smoke
+path over the same app-facing product capability:
+
+```text
+TextBufferOptic session
+-> create buffer
+-> apply replace-range intent
+-> observe text window
+-> host stop request
+-> JSON receipt/reading report
+```
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant Agent
+  participant CLI as jedit-echo-powered-session
+  participant Session as Echo-backed TextBufferSessionPort
+  participant Client as app-safe optic client
+  participant Transport as fake Echo-shaped transport
+
+  Agent->>CLI: npm run witness:echo:session
+  CLI->>Session: createBuffer(...)
+  Session->>Client: openTextBuffer(...)
+  Client->>Transport: submitIntentBytes(createBuffer)
+  CLI->>Session: applyIntent(replaceRange)
+  Session->>Client: replaceRangeAsTick(...)
+  Client->>Transport: submitIntentBytes(replaceRange)
+  CLI->>Session: textWindow(readBasis, aperture)
+  Session->>Client: textWindow(...)
+  Client->>Transport: observeBytes(textWindow)
+  CLI->>CLI: trusted host stop request
+  CLI-->>Agent: JSON witness report
+```
+
+This command reports `transport: installed-jedit-contract` and proves the
+product-session lifecycle composition over the installed jedit contract
+transport. The opt-in real Echo WASM witness remains the authority for proving
+what the current Echo WASM substrate actually supports. The agent command keeps
+raw lifecycle control out of the app-facing optic and requests trusted stop at
+the end of the host-owned command, proving shutdown remains a host lifecycle
+concern.
 
 ## Intent, Tick, Receipt, Reading
 
@@ -778,7 +906,8 @@ For jedit this means:
 - Echo admits or obstructs the intent.
 - A trusted host later requests Echo's internal run loop.
 - Echo's scheduler decides what applies.
-- jedit observes the resulting text window through a bounded query.
+- jedit observes the resulting text window through a bounded query once a
+  matching generated contract observer is installed.
 
 If an edit conflicts with another edit, the answer should be an explicit
 rejection or obstruction. Hidden retry is not allowed. A retry must be a new
@@ -786,7 +915,8 @@ causal input.
 
 ## Observation and Retained Evidence
 
-Echo observations return more than payload bytes. The witness expects:
+Echo observations return more than payload bytes once an observer is installed.
+The final jedit release path needs:
 
 - `QueryBytes`: the raw reading payload.
 - `ReadingEnvelope`: evidence about the reading basis and observer posture.
@@ -794,6 +924,11 @@ Echo observations return more than payload bytes. The witness expects:
 - Retained evidence posture: what material is inline and what durable material
   is missing.
 - Replay posture: currently obstructed by durable replay unavailability.
+
+The current opt-in real Echo WASM witness is one step earlier: it verifies that
+Echo fails closed with `UNSUPPORTED_QUERY` when jedit asks for `textWindow`
+without an installed generated observer. That is intentional. Echo must not
+return hardcoded text bytes from a kernel fixture.
 
 The witness report is not a vanity log. It is the current machine-readable proof
 surface for the release gate.
@@ -811,8 +946,9 @@ missing durable retention:
   reading_envelope_ref
 ```
 
-That means jedit can show the payload and envelope from the witness run, but the
-durable retention/replay layer is still a known gap.
+That means jedit can show payload and envelope evidence in the product-session
+path, while the real Echo WASM substrate still needs package/observer
+integration to be installed before durable retention/replay can close.
 
 ## Shutdown: From SIGTERM to Process Exit
 
@@ -852,8 +988,8 @@ sequenceDiagram
 
 ## Start, Stop, and Trusted Runtime Control
 
-The current witness uses trusted until-idle control. The design direction for a
-long-running host is still the same authority split:
+The current witness records trusted start, until-idle drain, and stop posture.
+The design direction for a long-running host is still the same authority split:
 
 - The application may ask for work by submitting intents.
 - The trusted host may start or stop Echo's internal run loop.
@@ -863,10 +999,10 @@ long-running host is still the same authority split:
 - Even trusted host code must not inject discrete ticks or choose individual
   tick boundaries.
 
-If a future jedit host exposes:
+The host-facing shape is:
 
 ```text
-Start(tickFrequency = 1/60)
+Start(tickIntervalSeconds = 1/60)
 Stop()
 ```
 
@@ -899,7 +1035,10 @@ Echo tick:
 | Fake Echo-shaped transport | Implemented for default tests and app-boundary pressure. |
 | Real Echo WASM app transport | Implemented through `echo-wasm-kernel.ts`. |
 | Trusted Echo host transport | Implemented separately from app transport. |
-| Real Echo write/read witness | Implemented as opt-in Stack Witness 0001. |
+| Real Echo generic boundary witness | Implemented as opt-in unsupported-query proof without hardcoded jedit text semantics. |
+| Echo-backed TextBufferSessionPort | Implemented as an adapter over app-safe client plus lifecycle port. |
+| Agent Echo-powered session witness | Implemented as `npm run witness:echo:session`. |
+| Trusted host stop helper | Implemented as `stopTrustedEchoRuntime(...)`. |
 | Durable retained evidence | Not complete; witness reports `missing_retention`. |
 | Durable replay | Not complete; witness reports `durable_replay_unavailable`. |
 | Full interactive TUI on Echo | Not complete; this is the release-gate direction. |
@@ -940,6 +1079,12 @@ ECHO_WARP_WASM_DIR=/path/to/echo/crates/warp-wasm \
   node scripts/jedit-echo-witness.mjs --json --replay
 ```
 
+Run the fast product-session witness:
+
+```sh
+npm run witness:echo:session
+```
+
 ## The End-to-End Story
 
 Here is the whole current stack in one sequence.
@@ -978,22 +1123,23 @@ sequenceDiagram
 
 The stack becomes release-grade when the product path and the witness path are
 the same path for real editing: jedit-authored contract, Wesley artifacts, Echo
-package install, jedit app intent, trusted host lifecycle request, Echo-owned
-tick receipt, bounded reading, retained evidence, and replay.
+package install, jedit app intent, trusted host runtime loop, Echo-owned tick
+receipt, bounded reading, retained evidence, and replay.
 
 ## Future Work Called Out by This Guide
 
 This guide intentionally exposes gaps instead of papering over them:
 
 1. Move more interactive editor actions onto the Echo-backed contract path.
-2. Replace fixture JSON transport bytes with durable Wesley-generated codecs.
-3. Complete retained evidence lookup for payloads, reading envelopes, and
+2. Install jedit-authored contract packages into Echo through the generic registry boundary.
+3. Replace fixture JSON transport bytes with durable Wesley-generated codecs.
+4. Complete retained evidence lookup for payloads, reading envelopes, and
    contract receipts.
-4. Complete durable replay for accepted edit/read evidence.
-5. Add explicit trusted host lifecycle controls for long-running jedit hosts.
-6. Add explicit SIGTERM/shutdown behavior if strong cleanup guarantees become
+5. Complete durable replay for accepted edit/read evidence.
+6. Add explicit trusted host lifecycle controls for long-running jedit hosts.
+7. Add explicit SIGTERM/shutdown behavior if strong cleanup guarantees become
    product requirements.
-7. Keep Echo generic while jedit becomes a serious product-shaped consumer.
+8. Keep Echo generic while jedit becomes a serious product-shaped consumer.
 
 The north star remains small but strict:
 

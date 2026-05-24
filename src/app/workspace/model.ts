@@ -11,6 +11,7 @@ import type { TitleScene } from '../../ui/title-scene.js';
 import type { TitleAsciiPalette, TitleRenderMode } from '../../ui/title-screen.js';
 import type { ProfilerState } from '../raytracer-profiler.js';
 import type { TitleCameraState } from '../title-camera-session.js';
+import type { InteractiveTextRuntimeMode } from '../interactive-text-runtime-mode.js';
 import type { EditorState } from './editor/model.js';
 import type { WorkspaceMsg } from './msg.js';
 import type { ViewMode } from './view-mode.js';
@@ -22,6 +23,7 @@ export interface WorkspaceModel {
   readonly entries: readonly FileEntry[];
   readonly selectedIndex: number;
   readonly editor?: EditorState;
+  readonly interactiveTextRuntimeMode: InteractiveTextRuntimeMode;
   readonly viewMode: ViewMode;
   readonly focusPane: FocusPane;
   readonly fileDrawerOpen: boolean;

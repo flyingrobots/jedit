@@ -127,7 +127,7 @@ test('The cycle makes the causal history, reading, and projection split explicit
   assert.match(designDoc, /### Reading truths/);
   assert.match(designDoc, /### Projection and export truths/);
   assert.match(designDoc, /### `jedit`/);
-  assert.match(designDoc, /### Echo \/ `echo-text`/);
+  assert.match(designDoc, /### Echo \/ jedit contract host/);
   assert.match(designDoc, /### Graft/);
   assert.match(designDoc, /### Filesystem and Git adapters/);
 });

@@ -1,0 +1,25 @@
+type CounterState {
+  value: Int!
+}
+
+input IncrementCounterInput {
+  amount: Int!
+}
+
+type IncrementCounterPayload {
+  value: Int!
+  receiptId: String!
+}
+
+type CounterValueReading {
+  value: Int!
+  readingId: String!
+}
+
+type Mutation {
+  incrementCounter(input: IncrementCounterInput!): IncrementCounterPayload!
+}
+
+type Query {
+  counterValue: CounterValueReading!
+}

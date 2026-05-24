@@ -120,6 +120,34 @@ test('workspace app renders perf overlay after toggle when perf starts disabled'
   assert.match(text, /rss\s+\d+\.\d MB/);
 });
 
+test('workspace app preserves seeded interactive text runtime mode when option is absent', async () => {
+  const [workspaceApp, themes, mode] = await Promise.all([
+    importDist('adapters', 'workspace-app.js'),
+    importDist('ui', 'jedit-themes.js'),
+    importDist('app', 'interactive-text-runtime-mode.js'),
+  ]);
+  const app = workspaceApp.createWorkspaceApp({
+    initialColumns: 120,
+    initialRows: 24,
+    initialWorkingDirectory: '/repo',
+    perfEnabled: false,
+    nowMs: () => 0,
+    random: () => 0.5,
+    seed: {
+      titleSceneSeed: 0.5,
+      jeditTheme: themes.resolveInitialJeditTheme(undefined),
+      i18n: mockI18n(),
+      entries: [],
+      nowMs: 0,
+      interactiveTextRuntimeMode: mode.INTERACTIVE_TEXT_RUNTIME_ECHO,
+    },
+  });
+
+  const [initialModel] = app.init();
+
+  assert.equal(initialModel.interactiveTextRuntimeMode, mode.INTERACTIVE_TEXT_RUNTIME_ECHO);
+});
+
 test('initial workspace scene picker lists authored scene assets that exist on disk', async () => {
   const initModule = await importDist('app', 'workspace', 'init.js');
   const model = initModule.createInitialModel('/repo', 120, 24, {

@@ -8,13 +8,23 @@ import type { JeditWorldlineSession } from './jedit-contract-runtime.js';
 import { readWorldlineSnapshot } from './jedit-contract-runtime.js';
 import type { HashPort } from '../ports/hash.js';
 
-const TEXT_WINDOW_PLAN_ID = 'observer-plan:textWindow:fake-v1';
-const TEXT_WINDOW_OBSERVER_NAME = 'textWindow';
-const TEXT_WINDOW_OPERATION_NAME = 'textWindow';
 const TEXT_WINDOW_MIN_LINE = 0;
 const TEXT_WINDOW_MIN_COUNT = 1;
 const TEXT_WINDOW_LINE_SEPARATOR_BYTE_LENGTH = 1;
 const UTF8_ENCODER = new TextEncoder();
+const TEXT_WINDOW_PLAN_SPEC = Object.freeze({
+  idPrefix: 'observer-plan:textWindow:',
+  observerName: 'textWindow',
+  kind: 'TEXT_WINDOW',
+  operationName: 'textWindow',
+  aperture: 'BOUNDED_TEXT_WINDOW',
+  basis: 'JEDIT_HOT_TEXT',
+  state: 'MEMORYLESS',
+  emit: 'TEXT_WINDOW_READING',
+  // Use 16 hex chars (64 bits) so generated ids stay readable while retaining
+  // a stable deterministic digest prefix for this single local observer plan.
+  hashLength: 16,
+});
 
 type WorldlineSnapshotInput = QueryOperationMap['worldlineSnapshot']['input'];
 type WorldlineSnapshotReading = QueryOperationMap['worldlineSnapshot']['result'];
@@ -70,12 +80,16 @@ export function readTextWindowWithObserverPlan(
   const reading = readTextWindow(runtime, session, parsedInput, hash);
 
   return {
-    planId: TEXT_WINDOW_PLAN_ID,
-    observerName: TEXT_WINDOW_OBSERVER_NAME,
-    operationName: TEXT_WINDOW_OPERATION_NAME,
+    planId: textWindowPlanId(hash),
+    observerName: TEXT_WINDOW_PLAN_SPEC.observerName,
+    operationName: TEXT_WINDOW_PLAN_SPEC.operationName,
     frontierRef,
     reading: schemas.result.parse(reading),
   };
+}
+
+function textWindowPlanId(hash: HashPort): string {
+  return `${TEXT_WINDOW_PLAN_SPEC.idPrefix}${hash.sha256Hex(JSON.stringify(TEXT_WINDOW_PLAN_SPEC)).slice(0, TEXT_WINDOW_PLAN_SPEC.hashLength)}`;
 }
 
 function readTextWindow(
@@ -89,8 +103,9 @@ function readTextWindow(
   assertNonNegativeCount(input.afterLines, 'afterLines');
   assertPositiveCount(input.maxBytes, 'maxBytes');
 
-  // Fake-only implementation detail: derive the bounded reading from the
-  // current snapshot until Echo can stream line windows directly.
+  // Adapter-local implementation detail: derive the bounded reading from the
+  // current jedit contract session while Echo hosts only the generic observer
+  // invocation and evidence envelope.
   const snapshot = readWorldlineSnapshot(runtime, session, {
     worldlineId: input.worldlineId,
   }, hash);
