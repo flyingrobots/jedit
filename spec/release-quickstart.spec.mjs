@@ -27,7 +27,7 @@ test('v0.1.0 quickstart documents executable witness commands', () => {
 test('v0.1.0 release docs name evidence commands non-goals and Echo generic boundary', () => {
   const source = readFileSync(RELEASE_README_PATH, 'utf8');
 
-  assert.match(source, /npm run release-gate:echo/);
+  assert.match(source, /npm run release-gate:jedit-echo/);
   assert.match(source, /Echo remains generic/);
   assert.match(source, /No full Continuum transport/);
   assert.match(source, /No full observer-rights or revelation lattice/);

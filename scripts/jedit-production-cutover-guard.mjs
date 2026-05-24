@@ -14,19 +14,36 @@ const DEFAULT_PRODUCTION_FILES = Object.freeze([
   'src/app/workspace/workspace-text-results.ts',
   'src/adapters/text-runtime-profile-session.ts',
 ]);
+const DEFAULT_LIFECYCLE_AUTHORITY_FILES = Object.freeze([
+  'src/app/workspace/file-tree.ts',
+  'src/app/workspace/global-key-bindings.ts',
+  'src/app/workspace/key-bindings.ts',
+  'src/app/workspace/runtime.ts',
+  'src/app/workspace/viewer-content.ts',
+  'src/app/workspace/viewer-key.ts',
+  'src/app/workspace/workspace-save-key.ts',
+  'src/app/workspace/workspace-text-authority.ts',
+  'src/app/workspace/workspace-text-commands.ts',
+  'src/app/workspace/workspace-text-position.ts',
+  'src/app/workspace/workspace-text-results.ts',
+  'src/app/workspace/workspace-text-runtime-state.ts',
+]);
 const REMOVED_TRANSITIONAL_FILES = Object.freeze([
   'src/app/interactive-text-runtime-mode.ts',
   'src/adapters/interactive-echo-text-session.ts',
 ]);
-const FORBIDDEN_PATTERNS = Object.freeze([
+const FORBIDDEN_LEGACY_AUTHORITY_PATTERNS = Object.freeze([
   { label: 'loadEditor', pattern: /\bloadEditor\b(?!File)/u },
   { label: 'saveEditor', pattern: /\bsaveEditor\b(?!File)/u },
   { label: 'updateInsertMode', pattern: /\bupdateInsertMode\b/u },
   { label: 'updateNormalMode', pattern: /\bupdateNormalMode\b/u },
   { label: 'editor.lines', pattern: /\beditor\.lines\b/u },
+]);
+const FORBIDDEN_LIFECYCLE_AUTHORITY_PATTERNS = Object.freeze([
   { label: 'requestStart', pattern: /\brequestStart\b/u },
   { label: 'requestRunUntilIdle', pattern: /\brequestRunUntilIdle\b/u },
   { label: 'requestStop', pattern: /\brequestStop\b/u },
+  { label: 'tick', pattern: /\btick\s*\(/u },
   { label: 'interactiveTextRuntimeMode', pattern: /\binteractiveTextRuntimeMode\b/u },
   { label: 'InteractiveTextRuntimeMode', pattern: /\bInteractiveTextRuntimeMode\b/u },
   { label: 'INTERACTIVE_TEXT_RUNTIME', pattern: /\bINTERACTIVE_TEXT_RUNTIME\b/u },
@@ -35,8 +52,12 @@ const FORBIDDEN_PATTERNS = Object.freeze([
 const options = parseArgs(process.argv.slice(2));
 const failures = [
   ...removedFileFailures(),
-  ...forbiddenSourceFailures(DEFAULT_PRODUCTION_FILES),
-  ...forbiddenSourceFailures(options.sampleForbiddenFiles),
+  ...forbiddenSourceFailures(DEFAULT_PRODUCTION_FILES, FORBIDDEN_LEGACY_AUTHORITY_PATTERNS),
+  ...forbiddenSourceFailures(DEFAULT_LIFECYCLE_AUTHORITY_FILES, FORBIDDEN_LIFECYCLE_AUTHORITY_PATTERNS),
+  ...forbiddenSourceFailures(options.sampleForbiddenFiles, [
+    ...FORBIDDEN_LEGACY_AUTHORITY_PATTERNS,
+    ...FORBIDDEN_LIFECYCLE_AUTHORITY_PATTERNS,
+  ]),
 ];
 
 if (failures.length > 0) {
@@ -85,13 +106,13 @@ function removedFileFailures() {
   });
 }
 
-function forbiddenSourceFailures(filePaths) {
-  return filePaths.flatMap((filePath) => forbiddenSourceFileFailures(filePath));
+function forbiddenSourceFailures(filePaths, forbiddenPatterns) {
+  return filePaths.flatMap((filePath) => forbiddenSourceFileFailures(filePath, forbiddenPatterns));
 }
 
-function forbiddenSourceFileFailures(filePath) {
+function forbiddenSourceFileFailures(filePath, forbiddenPatterns) {
   const source = readFileSync(filePath, 'utf8');
-  return FORBIDDEN_PATTERNS
+  return forbiddenPatterns
     .filter((entry) => entry.pattern.test(source))
     .map((entry) => `${filePath}: forbidden production cutover token: ${entry.label}`);
 }

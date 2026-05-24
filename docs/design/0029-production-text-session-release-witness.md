@@ -52,7 +52,7 @@ npm run build
 node scripts/jedit-production-text-session.mjs --json --text "hello Echo"
 node scripts/jedit-production-text-session.mjs --json --replay-local
 node scripts/jedit-production-cutover-guard.mjs
-npm run release-gate:echo
+npm run release-gate:jedit-echo
 ```
 
 ## Non-Negotiables

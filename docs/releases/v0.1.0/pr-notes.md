@@ -13,7 +13,7 @@ boundary; no jedit text nouns are introduced into Echo.
 
 ## Evidence
 
-- `npm run release-gate:echo`
+- `npm run release-gate:jedit-echo`
 - `npm run check`
 - `node scripts/jedit-echo-powered-session.mjs --json --text "hello Echo"`
 - `node scripts/jedit-echo-powered-session.mjs --json --replay-local`

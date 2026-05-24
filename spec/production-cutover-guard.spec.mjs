@@ -24,6 +24,7 @@ test('production cutover guard catches sample legacy bypass tokens', () => {
   writeFileSync(sample, [
     "import { loadEditor } from './editor-session.js';",
     'const leaked = editor.lines;',
+    'lifecycle.requestRunUntilIdle();',
   ].join('\n'));
 
   const result = spawnSync(process.execPath, [
@@ -38,4 +39,5 @@ test('production cutover guard catches sample legacy bypass tokens', () => {
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /loadEditor/);
   assert.match(result.stderr, /editor\.lines/);
+  assert.match(result.stderr, /requestRunUntilIdle/);
 });

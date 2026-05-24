@@ -45,7 +45,7 @@ node scripts/jedit-echo-powered-session.mjs --json
 node scripts/jedit-echo-powered-session.mjs --json --replay-local
 node scripts/jedit-production-text-session.mjs --json
 node scripts/jedit-production-text-session.mjs --json --replay-local
-npm run release-gate:echo
+npm run release-gate:jedit-echo
 ```
 
 See [quickstart.md](quickstart.md) for the guided path.
@@ -91,7 +91,7 @@ adapters, ports, handlers, observers, and application code.
 
 ## Remaining Release Question
 
-The release gate is honest once `npm run release-gate:echo` and the final
+The release gate is honest once `npm run release-gate:jedit-echo` and the final
 closeout checklist pass on a clean checkout. Until durable Echo-hosted
 submission/text-state recovery exists, restart posture remains explicitly
 partial rather than promoted to a durable storage claim.

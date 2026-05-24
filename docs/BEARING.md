@@ -397,8 +397,8 @@ Acceptance criteria:
 
 Test plan:
 
-- Add the interactive workspace smoke to `npm run release-gate:echo`.
-- Run `npm run release-gate:echo`.
+- Add the interactive workspace smoke to `npm run release-gate:jedit-echo`.
+- Run `npm run release-gate:jedit-echo`.
 - Run `npm test` or the narrow relevant suites covering workspace command and
   render paths.
 - Run `git diff --check`.
@@ -448,10 +448,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Add canonical `release-gate:jedit-echo` script.
-- [ ] Update docs and quickstarts.
-- [ ] Preserve or intentionally remove the old alias.
-- [ ] Cover script naming with tests.
+- [x] Add canonical `release-gate:jedit-echo` script.
+- [x] Update docs and quickstarts.
+- [x] Preserve or intentionally remove the old alias.
+- [x] Cover script naming with tests.
 
 ### Slice 92 - Real App Harness Boundary
 
@@ -476,10 +476,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Add real app harness module or test helper.
-- [ ] Inject deterministic ports.
-- [ ] Keep trusted lifecycle hidden.
-- [ ] Cover harness construction with tests.
+- [x] Add real app harness module or test helper.
+- [x] Inject deterministic ports.
+- [x] Keep trusted lifecycle hidden.
+- [x] Cover harness construction with tests.
 
 ### Slice 93 - Real App Open File Proof
 
@@ -504,10 +504,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Drive real app file open.
-- [ ] Verify production session open/read calls.
-- [ ] Verify rendered cache comes from reading.
-- [ ] Verify no tick authority leak.
+- [x] Drive real app file open.
+- [x] Verify production session open/read calls.
+- [x] Verify rendered cache comes from reading.
+- [x] Verify no tick authority leak.
 
 ### Slice 94 - Real App Edit Proof
 
@@ -532,10 +532,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Drive insert through real app key path.
-- [ ] Drive delete/backspace through real app key path.
-- [ ] Assert receipt and reading posture.
-- [ ] Assert no direct authoritative line mutation.
+- [x] Drive insert through real app key path.
+- [x] Drive delete/backspace through real app key path.
+- [x] Assert receipt and reading posture.
+- [x] Assert no direct authoritative line mutation.
 
 ### Slice 95 - Real App Save And Export Proof
 
@@ -560,10 +560,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Drive `ctrl-s` through real app key path.
-- [ ] Verify export precedes host file write.
-- [ ] Verify checkpoint remains separate.
-- [ ] Cover export failure posture.
+- [x] Drive `ctrl-s` through real app key path.
+- [x] Verify export precedes host file write.
+- [x] Verify checkpoint remains separate.
+- [x] Cover export failure posture.
 
 ### Slice 96 - Real App Obstruction Posture
 
@@ -587,10 +587,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Cover open obstruction.
-- [ ] Cover edit/read obstruction.
-- [ ] Cover export/checkpoint obstruction.
-- [ ] Assert no hidden retry.
+- [x] Cover open obstruction.
+- [x] Cover edit/read obstruction.
+- [x] Cover export/checkpoint obstruction.
+- [x] Assert no hidden retry.
 
 ### Slice 97 - Agent Workspace Witness
 
@@ -614,10 +614,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Add agent-facing workspace witness.
-- [ ] Cover successful structured report.
-- [ ] Cover obstruction report.
-- [ ] Guard against lifecycle authority exposure.
+- [x] Add agent-facing workspace witness.
+- [x] Cover successful structured report.
+- [x] Cover obstruction report.
+- [x] Guard against lifecycle authority exposure.
 
 ### Slice 98 - UI Lifecycle Authority Audit
 
@@ -642,10 +642,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Expand lifecycle authority guard.
-- [ ] Add fixture allow-list if required.
-- [ ] Verify app-facing types remain safe.
-- [ ] Run release gate.
+- [x] Expand lifecycle authority guard.
+- [x] Add fixture allow-list if required.
+- [x] Verify app-facing types remain safe.
+- [x] Run release gate.
 
 ### Slice 99 - Legacy Text Authority Inventory
 
@@ -670,10 +670,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Inventory legacy helper paths.
-- [ ] Assign a disposition to each path.
-- [ ] Reference inventory from docs or guard.
-- [ ] Verify no ambiguous production authority remains.
+- [x] Inventory legacy helper paths.
+- [x] Assign a disposition to each path.
+- [x] Reference inventory from docs or guard.
+- [x] Verify no ambiguous production authority remains.
 
 ### Slice 100 - PR Gate And Review Package
 
@@ -698,9 +698,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Update PR notes.
-- [ ] Run all local gates.
-- [ ] Self-review against plan.
+- [x] Update PR notes.
+- [x] Run all local gates.
+- [x] Self-review against plan.
 - [ ] Push for review.
 
 ### Slice 101 - Rename Render Cache Concepts
