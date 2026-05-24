@@ -15,8 +15,8 @@ agent command
 -> host constructs Echo-powered TextBufferOptic session
 -> create buffer
 -> apply replace-range intent
--> trusted lifecycle request
 -> observe text window
+-> trusted stop request
 -> JSON witness report
 ```
 
@@ -39,7 +39,8 @@ The emitted report names:
 - the app-facing capability (`TextBufferOptic`);
 - the transport posture (`fake-echo-shaped`);
 - the fact that app code cannot tick;
-- trusted lifecycle requests made by the host-owned session wrapper;
+- the fact that app-facing dispatch does not request lifecycle drain;
+- trusted stop requested by the host command;
 - the resulting receipt id, reading id, text window lines, and truncation
   posture.
 
@@ -77,7 +78,7 @@ jedit's default test suite. It does not replace the real Echo WASM witness.
 
 - `Echo-powered session CLI reports app capability, lifecycle, and reading evidence`
 - `Echo-powered session CLI rejects invalid cycle limits as JSON failures`
-- `Echo-powered TextBufferOptic requests lifecycle after mutations only`
+- `Echo-powered TextBufferOptic does not request lifecycle during app-facing dispatch`
 
 ## Not In This Slice
 

@@ -620,28 +620,17 @@ test('TextBufferOptic does not mark a satisfied bounded aperture as truncated', 
   assert.equal(byteBounded.value.truncated, true);
 });
 
-test('Echo-powered TextBufferOptic requests lifecycle after mutations only', async () => {
+test('Echo-powered TextBufferOptic does not request lifecycle during app-facing dispatch', async () => {
   const {
     transportClientModule,
     fakeTransportModule,
     echoPoweredTextBufferOpticSessionModule,
   } = await loadModules();
-  const lifecycleRequests = [];
   const client = transportClientModule.createEchoTransportJeditOpticClient(
     fakeTransportModule.createFakeEchoJeditOpticTransport(),
   );
   const session = echoPoweredTextBufferOpticSessionModule.createEchoPoweredTextBufferOpticSession({
     client,
-    lifecycle: {
-      requestRunUntilIdle(request) {
-        lifecycleRequests.push(request.cycleLimit);
-        return {
-          accepted: true,
-          lastRunCompletion: 'quiesced',
-        };
-      },
-    },
-    cycleLimit: 5,
   });
 
   const optic = await session.createBuffer({
@@ -664,7 +653,6 @@ test('Echo-powered TextBufferOptic requests lifecycle after mutations only', asy
   });
 
   assert.equal(observed.value.lines[0].text, STACK_WITNESS_TEXT);
-  assert.deepEqual(lifecycleRequests, [5, 5]);
   assert.equal('requestRunUntilIdle' in session, false);
   assert.equal('tick' in session, false);
   assert.equal('requestRunUntilIdle' in optic, false);

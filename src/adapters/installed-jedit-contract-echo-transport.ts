@@ -72,6 +72,9 @@ const SCHEDULER_STATE_IDLE = 'IDLE';
 const PACKAGE_NOT_INSTALLED_CODE = 'JEDIT_PACKAGE_NOT_INSTALLED';
 const PACKAGE_NOT_INSTALLED_RECOVERY = 'install package through trusted host';
 const STATE_MISSING_RECOVERY = 'publish jedit contract state before observing';
+const QUERY_OBSERVER_RUNTIME_ERROR_CODE = 'JEDIT_QUERY_OBSERVER_RUNTIME_ERROR';
+const QUERY_OBSERVER_RUNTIME_ERROR_RECOVERY = 'refresh the reading basis or fix query input';
+const QUERY_OBSERVER_RUNTIME_ERROR_MESSAGE = 'Jedit query observer failed while producing the reading';
 
 export interface InstalledJeditContractEchoTransportOptions {
   readonly runtime?: HotTextRuntimePort;
@@ -159,12 +162,12 @@ function submitInstalledIntent(
   intentBytes: Uint8Array,
 ): Uint8Array {
   const request = decodeJeditIntentRequest(intentBytes);
-  recordRuntimeWorkEnvelope(context.workSink, intentBytes, request, context.hash);
   const submission = recordAcceptedSubmission(context, intentBytes, request);
   const ticketedWork = context.ticketedWorkPort.issueTicketedWork(submission);
   if (ticketedWork.status !== JEDIT_TICKETED_WORK_AVAILABLE) {
     return encodeJeditIntentResponse(obstructedIntent(request, ticketedWorkObstruction(ticketedWork)));
   }
+  recordRuntimeWorkEnvelope(context.workSink, intentBytes, request, context.hash, submission.submissionId);
 
   return encodeJeditIntentResponse(
     executeIntent(context.installStatus, context.mutations, context.handlerInvocationSink, request),
@@ -216,8 +219,10 @@ function recordRuntimeWorkEnvelope(
   intentBytes: Uint8Array,
   request: JeditIntentRequest,
   hash: HashPort,
+  submissionId: string,
 ): void {
   workSink?.recordRuntimeWorkEnvelope(createJeditRuntimeWorkEnvelope({
+    submissionId,
     packageId: JEDIT_HOT_TEXT_PACKAGE_ID,
     operationName: request.operationName,
     operationKind: JEDIT_RUNTIME_WORK_OPERATION_KIND_MUTATION,
@@ -391,9 +396,9 @@ function observeErrorObstruction(error: Error | undefined): JeditTransportObstru
   }
 
   return {
-    code: PACKAGE_NOT_INSTALLED_CODE,
-    message: PACKAGE_NOT_INSTALLED_CODE,
-    recovery: PACKAGE_NOT_INSTALLED_RECOVERY,
+    code: QUERY_OBSERVER_RUNTIME_ERROR_CODE,
+    message: error?.message ?? QUERY_OBSERVER_RUNTIME_ERROR_MESSAGE,
+    recovery: QUERY_OBSERVER_RUNTIME_ERROR_RECOVERY,
   };
 }
 

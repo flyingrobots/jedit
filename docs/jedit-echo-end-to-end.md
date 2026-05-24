@@ -102,7 +102,7 @@ The files most relevant to this guide are:
 | `src/app/workspace/editor-session.ts` | File/editor session behavior. |
 | `src/ports/jedit-optic-client.ts` | jedit-facing optic and observation interfaces. |
 | `src/adapters/jedit-echo-optic-client.ts` | Adapter from jedit optic calls to Echo-shaped transport bytes. |
-| `src/app/echo-powered-text-buffer-optic-session.ts` | Host-composed product session that requests lifecycle after mutations. |
+| `src/app/echo-powered-text-buffer-optic-session.ts` | Host-composed product session that keeps lifecycle outside app-facing dispatch. |
 | `src/app/echo-powered-text-buffer-witness.ts` | App workflow witness over the Echo-powered product session. |
 | `src/app/trusted-echo-runtime-host.ts` | Host helper for trusted Echo shutdown requests. |
 | `src/ports/echo-kernel-transport.ts` | App-safe and trusted-host Echo transport ports. |
@@ -840,7 +840,6 @@ path over the same app-facing product capability:
 TextBufferOptic session
 -> create buffer
 -> apply replace-range intent
--> host lifecycle request
 -> observe text window
 -> host stop request
 -> JSON receipt/reading report
@@ -853,22 +852,19 @@ sequenceDiagram
   participant CLI as jedit-echo-powered-session
   participant Session as Echo-powered TextBufferOptic session
   participant Client as app-safe optic client
-  participant Lifecycle as trusted lifecycle port
   participant Transport as fake Echo-shaped transport
 
   Agent->>CLI: npm run witness:echo:session
   CLI->>Session: createBuffer(...)
   Session->>Client: openTextBuffer(...)
   Client->>Transport: submitIntentBytes(createBuffer)
-  Session->>Lifecycle: requestRunUntilIdle(cycleLimit)
   CLI->>Session: applyIntent(replaceRange)
   Session->>Client: replaceRangeAsTick(...)
   Client->>Transport: submitIntentBytes(replaceRange)
-  Session->>Lifecycle: requestRunUntilIdle(cycleLimit)
   CLI->>Session: textWindow(readBasis, aperture)
   Session->>Client: textWindow(...)
   Client->>Transport: observeBytes(textWindow)
-  CLI->>Lifecycle: requestStop()
+  CLI->>CLI: trusted host stop request
   CLI-->>Agent: JSON witness report
 ```
 
@@ -1122,8 +1118,8 @@ sequenceDiagram
 
 The stack becomes release-grade when the product path and the witness path are
 the same path for real editing: jedit-authored contract, Wesley artifacts, Echo
-package install, jedit app intent, trusted host lifecycle request, Echo-owned
-tick receipt, bounded reading, retained evidence, and replay.
+package install, jedit app intent, trusted host runtime loop, Echo-owned tick
+receipt, bounded reading, retained evidence, and replay.
 
 ## Future Work Called Out by This Guide
 

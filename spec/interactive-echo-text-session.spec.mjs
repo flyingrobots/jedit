@@ -12,34 +12,26 @@ let modulesPromise;
 
 test('interactive Echo text mode drives a narrow edit/read path through Echo-backed session', async () => {
   const modules = await loadModules();
-  const lifecycleRequests = [];
   const binding = modules.session.createInteractiveTextSession({
     mode: modules.mode.INTERACTIVE_TEXT_RUNTIME_ECHO,
-    lifecycle: lifecycle(lifecycleRequests),
-    cycleLimit: 6,
   });
 
   const text = await runNarrowEditRead(binding.session, 'echo');
 
   assert.equal(binding.mode, modules.mode.INTERACTIVE_TEXT_RUNTIME_ECHO);
   assert.equal(text, 'echo');
-  assert.deepEqual(lifecycleRequests, [6, 6]);
 });
 
 test('interactive local fallback remains available without lifecycle authority', async () => {
   const modules = await loadModules();
-  const lifecycleRequests = [];
   const binding = modules.session.createInteractiveTextSession({
     mode: modules.mode.INTERACTIVE_TEXT_RUNTIME_LOCAL,
-    lifecycle: lifecycle(lifecycleRequests),
-    cycleLimit: 6,
   });
 
   const text = await runNarrowEditRead(binding.session, 'local');
 
   assert.equal(binding.mode, modules.mode.INTERACTIVE_TEXT_RUNTIME_LOCAL);
   assert.equal(text, 'local');
-  assert.deepEqual(lifecycleRequests, []);
 });
 
 test('interactive text runtime mode parser defaults to local unless explicitly opted in', async () => {
@@ -79,18 +71,6 @@ test('workspace initial model carries the interactive text runtime mode', async 
 
   assert.equal(model.interactiveTextRuntimeMode, modules.mode.INTERACTIVE_TEXT_RUNTIME_ECHO);
 });
-
-function lifecycle(lifecycleRequests) {
-  return {
-    requestRunUntilIdle(request) {
-      lifecycleRequests.push(request.cycleLimit);
-      return {
-        accepted: true,
-        lastRunCompletion: 'quiesced',
-      };
-    },
-  };
-}
 
 async function runNarrowEditRead(session, text) {
   const optic = await session.createBuffer({

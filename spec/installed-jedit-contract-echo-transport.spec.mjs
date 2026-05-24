@@ -22,28 +22,16 @@ const FIRST_BYTE = 0;
 const INSERT_BYTE = 5;
 const FIRST_LINE = 0;
 const SINGLE_LINE = 1;
-const CYCLE_LIMIT = 5;
 const BYTE_BUDGET = 80;
 
 let modulesPromise;
 
 test('TextBufferOptic headless flow uses installed jedit contract transport', async () => {
   const modules = await loadModules();
-  const lifecycleRequests = [];
   const transport = modules.transport.createInstalledJeditContractEchoTransport();
   const client = modules.client.createEchoTransportJeditOpticClient(transport);
   const session = modules.poweredSession.createEchoPoweredTextBufferOpticSession({
     client,
-    lifecycle: {
-      requestRunUntilIdle(request) {
-        lifecycleRequests.push(request.cycleLimit);
-        return {
-          accepted: true,
-          lastRunCompletion: 'quiesced',
-        };
-      },
-    },
-    cycleLimit: CYCLE_LIMIT,
   });
 
   const optic = await session.createBuffer({
@@ -66,7 +54,6 @@ test('TextBufferOptic headless flow uses installed jedit contract transport', as
   });
 
   assert.equal(observed.value.lines[0].text, `${INITIAL_TEXT}${INSERT_TEXT}`);
-  assert.deepEqual(lifecycleRequests, [CYCLE_LIMIT, CYCLE_LIMIT]);
   assert.equal('installContractPackage' in session, false);
   assert.equal('invokeJeditMutationHandler' in session, false);
   assert.equal('writeFactSet' in session, false);
@@ -262,7 +249,13 @@ test('installed transport records accepted submissions before handler execution'
 test('installed transport blocks unticketed work before handler invocation', async () => {
   const modules = await loadModules();
   const handlerAuthorities = [];
+  const envelopes = [];
   const transport = modules.transport.createInstalledJeditContractEchoTransport({
+    workSink: {
+      recordRuntimeWorkEnvelope(envelope) {
+        envelopes.push(envelope);
+      },
+    },
     ticketedWorkPort: {
       issueTicketedWork(request) {
         return modules.ticketedWork.missingJeditTicketedWork(request.submissionId);
@@ -289,6 +282,61 @@ test('installed transport blocks unticketed work before handler invocation', asy
   assert.equal(response.status, modules.codec.JEDIT_TRANSPORT_STATUS_OBSTRUCTED);
   assert.equal(response.obstruction.code, modules.ticketedWork.JEDIT_TICKETED_WORK_MISSING_CODE);
   assert.deepEqual(handlerAuthorities, []);
+  assert.deepEqual(envelopes, []);
+});
+
+test('installed transport keeps submission identity aligned across ledger ticket and work', async () => {
+  const modules = await loadModules();
+  const ledgerRecords = [];
+  const ticketRequests = [];
+  const envelopes = [];
+  const baseLedger = modules.ledger.createInMemoryJeditSubmissionLedgerPort();
+  const transport = modules.transport.createInstalledJeditContractEchoTransport({
+    submissionLedger: {
+      recordAcceptedSubmission(record) {
+        ledgerRecords.push(record);
+        return baseLedger.recordAcceptedSubmission(record);
+      },
+      readSubmission(submissionId) {
+        return baseLedger.readSubmission(submissionId);
+      },
+    },
+    ticketedWorkPort: {
+      issueTicketedWork(request) {
+        ticketRequests.push(request);
+        return {
+          status: modules.ticketedWork.JEDIT_TICKETED_WORK_AVAILABLE,
+          submissionId: request.submissionId,
+          ticketId: 'ticket:test',
+          packageId: request.packageId,
+          operationName: request.operationName,
+        };
+      },
+    },
+    workSink: {
+      recordRuntimeWorkEnvelope(envelope) {
+        envelopes.push(envelope);
+      },
+    },
+  });
+  const response = modules.codec.decodeJeditIntentResponse(transport.submitIntentBytes(
+    modules.codec.encodeJeditIntentRequest({
+      kind: modules.codec.JEDIT_INTENT_REQUEST_KIND,
+      operationName: modules.codec.CREATE_BUFFER_WORLDLINE_OPERATION,
+      input: {
+        bufferKey: BUFFER_KEY,
+        initialText: INITIAL_TEXT,
+        projectionPath: BUFFER_KEY,
+      },
+    }),
+  ));
+
+  assert.equal(response.status, modules.codec.JEDIT_TRANSPORT_STATUS_OK);
+  assert.equal(ledgerRecords.length, 1);
+  assert.equal(ticketRequests.length, 1);
+  assert.equal(envelopes.length, 1);
+  assert.equal(ledgerRecords[0].submissionId, ticketRequests[0].submissionId);
+  assert.equal(ledgerRecords[0].submissionId, envelopes[0].submissionId);
 });
 
 test('installed query observers require state-port-backed basis', async () => {
@@ -327,6 +375,42 @@ test('installed query observers require state-port-backed basis', async () => {
 
   assert.equal(observeResponse.status, modules.codec.JEDIT_TRANSPORT_STATUS_OBSTRUCTED);
   assert.equal(observeResponse.obstruction.code, modules.state.JEDIT_CONTRACT_STATE_MISSING_CODE);
+});
+
+test('installed query observer runtime errors do not masquerade as package install failures', async () => {
+  const modules = await loadModules();
+  const transport = modules.transport.createInstalledJeditContractEchoTransport();
+  const createResponse = modules.codec.decodeJeditIntentResponse(transport.submitIntentBytes(
+    modules.codec.encodeJeditIntentRequest({
+      kind: modules.codec.JEDIT_INTENT_REQUEST_KIND,
+      operationName: modules.codec.CREATE_BUFFER_WORLDLINE_OPERATION,
+      input: {
+        bufferKey: BUFFER_KEY,
+        initialText: INITIAL_TEXT,
+        projectionPath: BUFFER_KEY,
+      },
+    }),
+  ));
+  const observeResponse = modules.codec.decodeJeditObserveResponse(transport.observeBytes(
+    modules.codec.encodeJeditObserveRequest({
+      kind: modules.codec.JEDIT_OBSERVE_REQUEST_KIND,
+      operationName: modules.codec.TEXT_WINDOW_OPERATION,
+      session: createResponse.execution.nextSession,
+      frontierRef: createResponse.execution.nextSession.worldline.canonicalHeadId,
+      input: {
+        worldlineId: createResponse.execution.nextSession.worldline.worldlineId,
+        cursorLine: FIRST_LINE,
+        viewportLineCount: SINGLE_LINE,
+        beforeLines: FIRST_LINE,
+        afterLines: FIRST_LINE,
+        maxBytes: 0,
+      },
+    }),
+  ));
+
+  assert.equal(observeResponse.status, modules.codec.JEDIT_TRANSPORT_STATUS_OBSTRUCTED);
+  assert.equal(observeResponse.obstruction.code, 'JEDIT_QUERY_OBSERVER_RUNTIME_ERROR');
+  assert.notEqual(observeResponse.obstruction.code, 'JEDIT_PACKAGE_NOT_INSTALLED');
 });
 
 function createMissingReadStatePort(modules) {

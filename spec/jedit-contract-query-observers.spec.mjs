@@ -58,6 +58,8 @@ test('jedit query observers read worldline snapshots and text windows', async ()
 
   assert.equal(snapshot.reading.text, INITIAL_TEXT);
   assert.equal(textWindow.reading.lines[0].text, INITIAL_TEXT);
+  assert.match(textWindow.planId, /^observer-plan:textWindow:/);
+  assert.equal(textWindow.planId.includes('fake'), false);
 });
 
 test('jedit query observer registry has no lifecycle or mutation authority', async () => {

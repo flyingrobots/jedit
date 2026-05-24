@@ -149,8 +149,6 @@ async function runSessionWitness(options) {
   );
   const session = modules.poweredSession.createEchoPoweredTextBufferOpticSession({
     client,
-    lifecycle,
-    cycleLimit: options.cycleLimit,
   });
   const report = await modules.workflow.runEchoPoweredTextBufferWitness(session, {
     bufferKey: options.bufferKey,

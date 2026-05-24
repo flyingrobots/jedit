@@ -8,13 +8,10 @@ import {
   INTERACTIVE_TEXT_RUNTIME_LOCAL,
   type InteractiveTextRuntimeMode,
 } from '../app/interactive-text-runtime-mode.js';
-import type { TrustedEchoRuntimeLifecyclePort } from '../ports/echo-runtime-lifecycle.js';
 import type { OpticSession } from '../ports/jedit-optic-client.js';
 
 export interface InteractiveTextSessionOptions {
   readonly mode: InteractiveTextRuntimeMode;
-  readonly lifecycle: TrustedEchoRuntimeLifecyclePort;
-  readonly cycleLimit: number;
 }
 
 export interface InteractiveTextSessionBinding {
@@ -26,18 +23,16 @@ export function createInteractiveTextSession(
   options: InteractiveTextSessionOptions,
 ): InteractiveTextSessionBinding {
   return options.mode === INTERACTIVE_TEXT_RUNTIME_ECHO
-    ? echoBackedSession(options)
+    ? echoBackedSession()
     : localSession();
 }
 
-function echoBackedSession(options: InteractiveTextSessionOptions): InteractiveTextSessionBinding {
+function echoBackedSession(): InteractiveTextSessionBinding {
   const transport = createInstalledJeditContractEchoTransport();
   return {
     mode: INTERACTIVE_TEXT_RUNTIME_ECHO,
     session: createEchoPoweredTextBufferOpticSession({
       client: createEchoTransportJeditOpticClient(transport),
-      lifecycle: options.lifecycle,
-      cycleLimit: options.cycleLimit,
     }),
   };
 }

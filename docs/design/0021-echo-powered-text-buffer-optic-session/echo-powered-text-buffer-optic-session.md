@@ -19,7 +19,7 @@ real Echo. It proves the product-facing session boundary can be wired as:
 ```text
 TextBufferOptic mutation
 -> app-safe jedit/Echo optic client
--> trusted lifecycle request
+-> trusted host loop may drain Echo independently
 -> later bounded read
 ```
 
@@ -37,25 +37,22 @@ It builds on the existing app capability:
 createTextBufferOpticSession(client)
 ```
 
-and adds host lifecycle composition:
+and composes the same app-facing capability for Echo-backed transports:
 
 ```text
 createEchoPoweredTextBufferOpticSession({
   client,
-  lifecycle,
-  cycleLimit,
 })
 ```
 
-Mutation methods call the app-safe client first and then request Echo's
-internal run loop through the trusted lifecycle port:
+Mutation methods call only the app-safe client:
 
 - `openTextBuffer`;
 - `createBufferWorldline`;
 - `replaceRangeAsTick`;
 - `createCheckpoint`.
 
-Read methods remain app-safe and do not request lifecycle control:
+Read methods also remain app-safe and do not request lifecycle control:
 
 - `worldlineSnapshot`;
 - `textWindow`.
@@ -69,8 +66,8 @@ The returned `OpticSession` and `TextBufferOptic` do not expose:
 - raw trusted control bytes;
 - scheduler status internals.
 
-The lifecycle object stays in the host-owned adapter layer. Application code
-still sees only the product capability.
+The lifecycle object stays in the host-owned adapter layer and is not called by
+app-facing dispatch. Application code still sees only the product capability.
 
 ## Why This Is Transitional
 
@@ -80,17 +77,17 @@ will eventually separate:
 
 ```text
 accepted intent
--> lifecycle request
+-> trusted host loop drains Echo independently
 -> outcome observation
 ```
 
 This slice does not pretend that product-facing outcome observation is finished.
-It puts the lifecycle boundary in the right place so the next slices can replace
-fixture behavior without changing the app authority model.
+It keeps the lifecycle boundary outside app-facing dispatch so the next slices
+can replace fixture behavior without changing the app authority model.
 
 ## Evidence
 
-- `Echo-powered TextBufferOptic requests lifecycle after mutations only`
+- `Echo-powered TextBufferOptic does not request lifecycle during app-facing dispatch`
 - `trusted Echo lifecycle port requests run-until-idle without exposing tick injection`
 - `transport-backed optic client exercises the fake Echo host through encoded bytes`
 

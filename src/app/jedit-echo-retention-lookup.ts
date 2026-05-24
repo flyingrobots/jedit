@@ -22,10 +22,7 @@ const UTF8_ENCODER = new TextEncoder();
 export function createInMemoryJeditEchoRetentionLookupPort(
   records: readonly JeditEchoRetainedMaterialRecord[],
 ): JeditEchoRetentionLookupPort {
-  const retainedMaterial = new Map(records.map((record) => [
-    record.byteHash,
-    record,
-  ]));
+  const retainedMaterial = indexRetainedMaterial(records);
 
   return {
     lookupRetainedEvidence(ref) {
@@ -57,7 +54,7 @@ export function lookupJeditRetainedEvidenceMaterial(
 }
 
 function lookupRetainedEvidence(
-  retainedMaterial: ReadonlyMap<string, JeditEchoRetainedMaterialRecord>,
+  retainedMaterial: RetainedMaterialIndex,
   ref: JeditRetainedEvidenceRef,
 ): JeditEchoRetentionLookupResult {
   const byteHash = ref.byteIdentity?.byteHash;
@@ -65,14 +62,13 @@ function lookupRetainedEvidence(
     return missingRetainedEvidence(ref);
   }
 
-  const record = retainedMaterial.get(byteHash);
+  const record = retainedMaterial.bySemanticCoordinate.get(retainedMaterialKey(byteHash, ref))
+    ?? retainedMaterial.byByteHash.get(byteHash);
   if (record == null) {
     return missingRetainedEvidence(ref);
   }
 
-  return !semanticCoordinateMatches(record, ref)
-    ? missingRetainedEvidence(ref)
-    : retainedEvidenceHit(ref, record.materialBytesHex);
+  return retainedEvidenceHit(ref, record.materialBytesHex);
 }
 
 function retainedEvidenceHit(
@@ -96,14 +92,42 @@ function missingRetainedEvidence(
   };
 }
 
-function semanticCoordinateMatches(
-  record: JeditEchoRetainedMaterialRecord,
-  ref: JeditRetainedEvidenceRef,
-): boolean {
-  return record.semanticCoordinate == null
-    || JSON.stringify(record.semanticCoordinate) === JSON.stringify(ref.semanticCoordinate);
-}
-
 function toHex(value: string): string {
   return Array.from(UTF8_ENCODER.encode(value), (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+interface RetainedMaterialIndex {
+  readonly bySemanticCoordinate: ReadonlyMap<string, JeditEchoRetainedMaterialRecord>;
+  readonly byByteHash: ReadonlyMap<string, JeditEchoRetainedMaterialRecord>;
+}
+
+function indexRetainedMaterial(
+  records: readonly JeditEchoRetainedMaterialRecord[],
+): RetainedMaterialIndex {
+  const bySemanticCoordinate = new Map<string, JeditEchoRetainedMaterialRecord>();
+  const byByteHash = new Map<string, JeditEchoRetainedMaterialRecord>();
+
+  for (const record of records) {
+    if (record.semanticCoordinate == null) {
+      byByteHash.set(record.byteHash, record);
+    } else {
+      bySemanticCoordinate.set(retainedMaterialRecordKey(record), record);
+    }
+  }
+
+  return {
+    bySemanticCoordinate,
+    byByteHash,
+  };
+}
+
+function retainedMaterialRecordKey(record: JeditEchoRetainedMaterialRecord): string {
+  return JSON.stringify([record.byteHash, record.semanticCoordinate]);
+}
+
+function retainedMaterialKey(
+  byteHash: string,
+  ref: JeditRetainedEvidenceRef,
+): string {
+  return JSON.stringify([byteHash, ref.semanticCoordinate]);
 }

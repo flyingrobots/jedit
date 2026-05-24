@@ -61,7 +61,7 @@ jedit-authored `contracts/jedit/structural-history.graphql`
 -> Wesley generated artifacts
 -> Echo package install
 -> app-safe edit intent submission
--> trusted-host lifecycle request
+-> trusted-host lifecycle loop
 -> scheduler-owned tick receipt
 -> observed outcome
 -> bounded text reading
@@ -102,9 +102,9 @@ The next release-gate slice plan is recorded in
 - `TextBufferOptic` is the target app-facing capability. The current proof uses
   the structural-history SDL and `replaceTextRange` as the first implemented
   operation on that path.
-- `createEchoPoweredTextBufferOpticSession(...)` now composes the app-facing
-  optic capability with trusted lifecycle requests after mutations while reads
-  remain app-safe.
+- `createEchoPoweredTextBufferOpticSession(...)` composes the app-facing optic
+  capability without exposing trusted lifecycle control. Host loops drain Echo
+  separately.
 - `ReadBasisHandle` is an opaque supporting token, not the complete optic
   protocol.
 - Structural-history SDL is now the product contract authority for text

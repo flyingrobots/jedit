@@ -64,13 +64,10 @@ test('trusted Echo runtime loop stops through lifecycle port', async () => {
 
 test('app-facing Echo-powered session does not expose trusted host loop control', async () => {
   const modules = await loadModules();
-  const lifecycle = recordingLifecycle();
   const transport = modules.transport.createInstalledJeditContractEchoTransport();
   const client = modules.client.createEchoTransportJeditOpticClient(transport);
   const session = modules.poweredSession.createEchoPoweredTextBufferOpticSession({
     client,
-    lifecycle,
-    cycleLimit: CYCLE_LIMIT,
   });
   const optic = await session.createBuffer({
     bufferKey: BUFFER_KEY,

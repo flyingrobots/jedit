@@ -84,6 +84,52 @@ test('semantic coordinate mismatch does not become a retained evidence hit', asy
   assert.equal(result.status, modules.lookup.JEDIT_ECHO_RETENTION_LOOKUP_MISSING);
 });
 
+test('retention lookup supports same byte identity under multiple semantic coordinates', async () => {
+  const modules = await loadModules();
+  const inventory = modules.evidence.createJeditRetainedEvidenceInventory({
+    packageId: PACKAGE_ID,
+    mutationOperationName: MUTATION_OPERATION,
+    queryOperationName: QUERY_OPERATION,
+    receiptId: RECEIPT_ID,
+    readingId: READING_ID,
+  });
+  const [firstRef, secondRef] = inventory.refs;
+  const sharedByteHash = 'shared-byte-hash';
+  const firstMaterial = '6669727374';
+  const secondMaterial = '7365636f6e64';
+  const lookup = modules.lookup.createInMemoryJeditEchoRetentionLookupPort([
+    {
+      byteHash: sharedByteHash,
+      semanticCoordinate: firstRef.semanticCoordinate,
+      materialBytesHex: firstMaterial,
+    },
+    {
+      byteHash: sharedByteHash,
+      semanticCoordinate: secondRef.semanticCoordinate,
+      materialBytesHex: secondMaterial,
+    },
+  ]);
+  const firstResult = modules.lookup.lookupJeditRetainedEvidenceMaterial(lookup, {
+    ...firstRef,
+    byteIdentity: {
+      ...firstRef.byteIdentity,
+      byteHash: sharedByteHash,
+    },
+  });
+  const secondResult = modules.lookup.lookupJeditRetainedEvidenceMaterial(lookup, {
+    ...secondRef,
+    byteIdentity: {
+      ...secondRef.byteIdentity,
+      byteHash: sharedByteHash,
+    },
+  });
+
+  assert.equal(firstResult.status, modules.lookup.JEDIT_ECHO_RETENTION_LOOKUP_HIT);
+  assert.equal(firstResult.materialBytesHex, firstMaterial);
+  assert.equal(secondResult.status, modules.lookup.JEDIT_ECHO_RETENTION_LOOKUP_HIT);
+  assert.equal(secondResult.materialBytesHex, secondMaterial);
+});
+
 test('missing retained material returns typed obstruction', async () => {
   const modules = await loadModules();
   const inventory = modules.evidence.createJeditRetainedEvidenceInventory({

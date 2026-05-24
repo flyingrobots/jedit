@@ -13,6 +13,8 @@ const PACKAGE_ID = 'jedit-hot-text-runtime';
 const OPERATION_NAME = 'replaceRangeAsTick';
 const FIRST_REQUEST = new Uint8Array([1, 2, 3, 4]);
 const SECOND_REQUEST = new Uint8Array([1, 2, 3, 5]);
+const FIRST_SUBMISSION_ID = 'jedit-submission:first';
+const SECOND_SUBMISSION_ID = 'jedit-submission:second';
 
 let modulesPromise;
 
@@ -21,18 +23,21 @@ test('runtime work envelope identity is content addressed by generic request mat
   const hash = modules.hash.createHashPort();
 
   const first = modules.envelope.createJeditRuntimeWorkEnvelope({
+    submissionId: FIRST_SUBMISSION_ID,
     packageId: PACKAGE_ID,
     operationName: OPERATION_NAME,
     operationKind: modules.envelope.JEDIT_RUNTIME_WORK_OPERATION_KIND_MUTATION,
     canonicalRequestBytes: FIRST_REQUEST,
   }, hash);
   const same = modules.envelope.createJeditRuntimeWorkEnvelope({
+    submissionId: FIRST_SUBMISSION_ID,
     packageId: PACKAGE_ID,
     operationName: OPERATION_NAME,
     operationKind: modules.envelope.JEDIT_RUNTIME_WORK_OPERATION_KIND_MUTATION,
     canonicalRequestBytes: FIRST_REQUEST,
   }, hash);
   const changed = modules.envelope.createJeditRuntimeWorkEnvelope({
+    submissionId: SECOND_SUBMISSION_ID,
     packageId: PACKAGE_ID,
     operationName: OPERATION_NAME,
     operationKind: modules.envelope.JEDIT_RUNTIME_WORK_OPERATION_KIND_MUTATION,
@@ -41,6 +46,7 @@ test('runtime work envelope identity is content addressed by generic request mat
 
   assert.equal(first.submissionId, same.submissionId);
   assert.notEqual(first.submissionId, changed.submissionId);
+  assert.equal(first.submissionId, FIRST_SUBMISSION_ID);
   assert.equal(first.canonicalRequestBytesHex, '01020304');
   assert.equal(first.requestByteLength, FIRST_REQUEST.length);
   assert.equal(first.operationKind, modules.envelope.JEDIT_RUNTIME_WORK_OPERATION_KIND_MUTATION);
