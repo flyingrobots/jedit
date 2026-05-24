@@ -331,9 +331,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Counter install path passes.
-- [ ] Counter mutation/query path passes.
-- [ ] Import audit passes.
+- [x] Counter install path passes.
+- [x] Counter mutation/query path passes.
+- [x] Import audit passes.
 
 ### Slice 58 - Developer Guide Drift Check
 
