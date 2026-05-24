@@ -5,6 +5,7 @@ import {
   createJeditContractQueryObserverRegistry,
 } from '../app/jedit-contract-query-observers.js';
 import { JEDIT_HOT_TEXT_PACKAGE_ID } from '../app/jedit-contract-package.js';
+import { createInMemoryJeditContractStatePort } from '../app/jedit-contract-state-port.js';
 import {
   invokeJeditHandlerWithAuthority,
   JEDIT_HANDLER_INVOCATION_AUTHORITY_SCHEDULER,
@@ -23,6 +24,7 @@ import {
 import type { EchoKernelInfo, EchoWasmKernelTransport } from '../ports/echo-kernel-transport.js';
 import type { HashPort } from '../ports/hash.js';
 import type { HotTextRuntimePort } from '../ports/hot-text-runtime.js';
+import type { JeditContractStatePort } from '../ports/jedit-contract-state-port.js';
 import {
   createJeditRuntimeWorkEnvelope,
   JEDIT_RUNTIME_WORK_OPERATION_KIND_MUTATION,
@@ -65,6 +67,7 @@ export interface InstalledJeditContractEchoTransportOptions {
   readonly moduleSpecifier?: string;
   readonly workSink?: JeditRuntimeWorkSink;
   readonly handlerInvocationSink?: JeditHandlerInvocationSink;
+  readonly statePort?: JeditContractStatePort;
 }
 
 interface InstalledJeditContractEchoTransportContext {
@@ -103,7 +106,8 @@ function createTransportContext(
 ): InstalledJeditContractEchoTransportContext {
   const runtime = options.runtime ?? createInMemoryHotTextRuntime();
   const hash = options.hash ?? createHashPort();
-  const mutations = createJeditContractMutationHandlerRegistry({ runtime, hash });
+  const statePort = options.statePort ?? createInMemoryJeditContractStatePort();
+  const mutations = createJeditContractMutationHandlerRegistry({ runtime, hash, statePort });
   const observers = createJeditContractQueryObserverRegistry({ runtime, hash });
   const host = createRecordingPackageHost();
   const install = installJeditContractPackage({ host });

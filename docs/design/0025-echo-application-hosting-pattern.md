@@ -230,10 +230,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Installed handlers use the state port.
-- [ ] In-memory adapter remains behind the port.
-- [ ] App-facing API remains clean.
-- [ ] Existing installed flow passes.
+- [x] Installed handlers use the state port.
+- [x] In-memory adapter remains behind the port.
+- [x] App-facing API remains clean.
+- [x] Existing installed flow passes.
 
 ### Slice 33 - Read-Side State Authority Cutover
 
@@ -467,4 +467,3 @@ surfaces; app-hosting uses explicit ports for package install, submission,
 ticketed work, state, query observation, receipt correlation, retention, and
 restart posture.
 ```
-

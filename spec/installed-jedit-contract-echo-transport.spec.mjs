@@ -12,6 +12,7 @@ const CODEC_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-o
 const RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'in-memory-hot-text-runtime.js');
 const WORK_ENVELOPE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'ports', 'jedit-runtime-work-envelope.js');
 const INVOCATION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-runtime-handler-invocation.js');
+const STATE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-state-port.js');
 const BUFFER_KEY = 'notes/installed-contract.md';
 const INITIAL_TEXT = 'hello';
 const INSERT_TEXT = ' Echo';
@@ -189,6 +190,32 @@ test('installed transport invokes handlers with scheduler authority only', async
   ]);
 });
 
+test('installed transport publishes handler state through jedit state port', async () => {
+  const modules = await loadModules();
+  const statePort = modules.state.createInMemoryJeditContractStatePort();
+  const transport = modules.transport.createInstalledJeditContractEchoTransport({
+    statePort,
+  });
+  const createResponse = modules.codec.decodeJeditIntentResponse(transport.submitIntentBytes(
+    modules.codec.encodeJeditIntentRequest({
+      kind: modules.codec.JEDIT_INTENT_REQUEST_KIND,
+      operationName: modules.codec.CREATE_BUFFER_WORLDLINE_OPERATION,
+      input: {
+        bufferKey: BUFFER_KEY,
+        initialText: INITIAL_TEXT,
+        projectionPath: BUFFER_KEY,
+      },
+    }),
+  ));
+
+  assert.equal(createResponse.status, modules.codec.JEDIT_TRANSPORT_STATUS_OK);
+  const read = modules.state.readJeditContractFactSet(
+    statePort,
+    createResponse.execution.nextSession.worldline.worldlineId,
+  );
+  assert.equal(read.status, modules.state.JEDIT_CONTRACT_STATE_READ_FOUND);
+});
+
 async function loadModules() {
   if (modulesPromise) {
     return modulesPromise;
@@ -202,7 +229,7 @@ async function loadModules() {
 
     assert.equal(build.status, 0, build.stderr || build.stdout);
 
-    const [transport, client, poweredSession, codec, runtime, workEnvelope, invocation] = await Promise.all([
+    const [transport, client, poweredSession, codec, runtime, workEnvelope, invocation, state] = await Promise.all([
       import(pathToFileURL(TRANSPORT_MODULE_PATH).href),
       import(pathToFileURL(CLIENT_MODULE_PATH).href),
       import(pathToFileURL(POWERED_SESSION_MODULE_PATH).href),
@@ -210,6 +237,7 @@ async function loadModules() {
       import(pathToFileURL(RUNTIME_MODULE_PATH).href),
       import(pathToFileURL(WORK_ENVELOPE_MODULE_PATH).href),
       import(pathToFileURL(INVOCATION_MODULE_PATH).href),
+      import(pathToFileURL(STATE_MODULE_PATH).href),
     ]);
 
     return {
@@ -220,6 +248,7 @@ async function loadModules() {
       runtime,
       workEnvelope,
       invocation,
+      state,
     };
   })();
 

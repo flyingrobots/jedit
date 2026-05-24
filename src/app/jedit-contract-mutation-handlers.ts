@@ -9,6 +9,7 @@ import {
   createCheckpoint,
   replaceRangeAsTick,
 } from './jedit-contract-runtime.js';
+import { publishJeditContractSessionFacts } from './jedit-contract-state-port.js';
 import type {
   MutationOperationMap,
 } from '../generated/jedit/hot-text-runtime.types.generated.js';
@@ -19,6 +20,7 @@ import {
 } from '../generated/jedit/hot-text-runtime.wesley.generated.js';
 import type { HashPort } from '../ports/hash.js';
 import type { HotTextRuntimePort } from '../ports/hot-text-runtime.js';
+import type { JeditContractStatePort } from '../ports/jedit-contract-state-port.js';
 
 type CreateBufferWorldlineInput = MutationOperationMap['createBufferWorldline']['input'];
 type ReplaceRangeAsTickInput = MutationOperationMap['replaceRangeAsTick']['input'];
@@ -54,6 +56,7 @@ export interface JeditCreateCheckpointMutationRequest {
 export interface JeditContractMutationHandlerRegistryOptions {
   readonly runtime: HotTextRuntimePort;
   readonly hash: HashPort;
+  readonly statePort?: JeditContractStatePort;
 }
 
 export interface JeditContractMutationHandlerRegistry {
@@ -122,29 +125,42 @@ function executeCreateBufferWorldlineMutation(
   options: JeditContractMutationHandlerRegistryOptions,
   request: JeditCreateBufferWorldlineMutationRequest,
 ): CreateBufferWorldlineExecution {
-  return createBufferWorldline(options.runtime, request.input, options.hash);
+  return publishExecution(options, createBufferWorldline(options.runtime, request.input, options.hash));
 }
 
 function executeReplaceRangeAsTickMutation(
   options: JeditContractMutationHandlerRegistryOptions,
   request: JeditReplaceRangeAsTickMutationRequest,
 ): ReplaceRangeAsTickExecution {
-  return replaceRangeAsTick(
+  return publishExecution(options, replaceRangeAsTick(
     options.runtime,
     request.session,
     request.input,
     options.hash,
-  );
+  ));
 }
 
 function executeCreateCheckpointMutation(
   options: JeditContractMutationHandlerRegistryOptions,
   request: JeditCreateCheckpointMutationRequest,
 ): CreateCheckpointExecution {
-  return createCheckpoint(
+  return publishExecution(options, createCheckpoint(
     options.runtime,
     request.session,
     request.input,
     options.hash,
-  );
+  ));
+}
+
+function publishExecution<
+  Execution extends JeditContractMutationHandlerResult,
+>(
+  options: JeditContractMutationHandlerRegistryOptions,
+  execution: Execution,
+): Execution {
+  if (options.statePort != null) {
+    publishJeditContractSessionFacts(options.statePort, execution.nextSession, options.hash);
+  }
+
+  return execution;
 }
