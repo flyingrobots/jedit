@@ -66,10 +66,14 @@ test('TextBufferOptic headless flow uses installed jedit contract transport', as
   assert.deepEqual(lifecycleRequests, [CYCLE_LIMIT, CYCLE_LIMIT]);
   assert.equal('installContractPackage' in session, false);
   assert.equal('invokeJeditMutationHandler' in session, false);
+  assert.equal('writeFactSet' in session, false);
+  assert.equal('readFactSet' in session, false);
   assert.equal('requestRunUntilIdle' in session, false);
   assert.equal('tick' in session, false);
   assert.equal('installContractPackage' in optic, false);
   assert.equal('invokeJeditMutationHandler' in optic, false);
+  assert.equal('writeFactSet' in optic, false);
+  assert.equal('readFactSet' in optic, false);
   assert.equal('requestRunUntilIdle' in optic, false);
   assert.equal('tick' in optic, false);
 });

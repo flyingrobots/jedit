@@ -1,6 +1,6 @@
 # jedit Powered By Echo Release Gate
 
-Status: slices 1-29 closed locally; release-gate evidence and continuation
+Status: slices 1-30 closed locally; release-gate evidence and continuation
 plan recorded.
 
 This plan defines the local release gate for the sentence:
@@ -883,10 +883,10 @@ Test plan:
 
 Checklist:
 
-- [ ] State port exists.
-- [ ] In-memory adapter exists.
-- [ ] Runtime can use the port.
-- [ ] App-facing API remains clean.
+- [x] State port exists.
+- [x] In-memory adapter exists.
+- [x] Runtime can use the port.
+- [x] App-facing API remains clean.
 
 ## Slice 31 - Text Runtime Port Cutover
 
