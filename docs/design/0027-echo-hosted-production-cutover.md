@@ -33,6 +33,25 @@ Echo remains generic and never learns jedit nouns.
   may remain only while it is explicitly marked as a test/dev fixture or hidden
   behind an adapter port.
 
+## Production Cutover Acceptance Bar
+
+Production cutover is complete only when all of these are true:
+
+- production text editing flows are Echo-hosted by default;
+- no product path depends on the legacy in-memory text model as source of
+  truth;
+- any retained legacy model is quarantined as a test fixture or adapter-local
+  implementation detail behind ports;
+- jedit text materialization is derived from Echo causal state through jedit
+  ports and contract-owned observers;
+- Echo contains no jedit nouns, text-buffer nouns, or editor-specific
+  semantics;
+- export reads from an Echo causal basis and does not mutate Echo state;
+- WSC durability work is explicitly deferred until after slice 80 unless a prior
+  slice exposes an unavoidable storage dependency;
+- the release gate proves the production cutover instead of merely proving a
+  headless witness path.
+
 ## Current Reflection
 
 The previous branch closed the hardening batch without changing Echo's
