@@ -1,15 +1,18 @@
 # BEARING
 
-Current bearing: prove, with executable evidence, that jedit is powered by Echo
-without moving jedit nouns into Echo.
+Current bearing: prove, with executable evidence, that `jedit` is the first
+correct Echo-hosted application without moving `jedit` nouns into Echo.
 
-The active release-gate plan is
+The completed release-gate baseline is
 [`docs/design/0024-jedit-powered-by-echo-release-gate.md`](design/0024-jedit-powered-by-echo-release-gate.md).
-That plan is the source of truth for the first twenty slices and the current
-continuation budget through slice 40.
+That plan records slices 1-30 and the proof that `jedit` has an installed
+package/evidence path.
 
-The release-facing summary lives in
-[`docs/releases/v0.1.0/README.md`](releases/v0.1.0/README.md).
+The active post-release-pressure direction is
+[`docs/design/0025-echo-application-hosting-pattern.md`](design/0025-echo-application-hosting-pattern.md).
+That plan is the source of truth for the next ten slices: make `jedit` prove the
+reusable Echo application-hosting pattern before applying the model to Graft,
+Think, or other apps.
 
 ## Current Truth
 
@@ -24,14 +27,14 @@ The release-facing summary lives in
 
 ## Immediate Work
 
-The current local inspection point is slice 25 of the release-gate plan's
-continuation budget:
+The current local inspection point is slice 31 of the application-hosting
+pattern plan:
 
-21. continuation plan and remote posture.
-22. runtime work envelope boundary.
-23. installed transport work envelope staging.
-24. handler invocation boundary.
-25. scheduler-owned installed handler guard.
+31. application hosting contract pattern.
+32. `jedit` state authority cutover.
+33. read-side state authority cutover.
+34. submission ledger port.
+35. ticketed work boundary.
 
 Agents can inspect the installed-package witness path with:
 
@@ -41,10 +44,10 @@ node scripts/jedit-echo-powered-session.mjs --json --dry-run
 node scripts/jedit-echo-powered-session.mjs --json
 ```
 
-Pause after slice 25 for inspection. The current branch must remain honest that
-jedit has an installed package/evidence path, while the text contract handler
-state is still transitional until the state-port and durable-submission slices
-land.
+Pause after slice 31 for inspection. The current branch must remain honest that
+`jedit` has an installed package/evidence path and app-owned state-port shapes,
+while the installed handler and observer paths still need to cut over to the
+state-port authority in later slices.
 
 ## Non-Negotiables
 

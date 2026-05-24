@@ -1,7 +1,12 @@
 # jedit Powered By Echo Release Gate
 
-Status: slices 1-30 closed locally; release-gate evidence and continuation
-plan recorded.
+Status: slices 1-30 closed locally; release-gate evidence recorded.
+
+After slice 30, release pressure was deliberately removed. The active
+post-release-pressure continuation lives in
+[`0025-echo-application-hosting-pattern.md`](0025-echo-application-hosting-pattern.md)
+and supersedes the earlier release-shaped slice 31-40 plan below. Keep this file
+as the historical baseline for slices 1-30.
 
 This plan defines the local release gate for the sentence:
 
