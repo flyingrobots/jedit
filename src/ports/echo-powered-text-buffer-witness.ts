@@ -5,7 +5,6 @@ import type {
   TextWindowLine,
 } from './jedit-optic-client.js';
 import type { JeditIntentOutcome } from './jedit-intent-outcomes.js';
-import type { JEDIT_RECEIPT_CORRELATION_MISSING } from './jedit-receipt-correlation.js';
 import type { JeditReceiptCorrelation } from './jedit-receipt-correlation.js';
 import type { JeditRetainedEvidenceInventory } from './jedit-retained-evidence.js';
 import type { JEDIT_DURABILITY_POSTURE_UNAVAILABLE } from './jedit-restart-posture.js';
@@ -17,7 +16,7 @@ export const JEDIT_WITNESS_EVIDENCE_SCOPE_LOCAL_PROCESS = 'LOCAL_PROCESS_WITNESS
 
 export interface JeditWitnessEvidencePosture {
   readonly scope: typeof JEDIT_WITNESS_EVIDENCE_SCOPE_LOCAL_PROCESS;
-  readonly receiptCorrelation: typeof JEDIT_RECEIPT_CORRELATION_MISSING;
+  readonly receiptCorrelation: JeditReceiptCorrelation['status'];
   readonly ticketedRuntimeIngress: typeof JEDIT_TICKETED_RUNTIME_INGRESS_MISSING;
   readonly durableAcceptedSubmissionRecovery: typeof JEDIT_DURABILITY_POSTURE_UNAVAILABLE;
   readonly syntheticReceiptClaimed: false;

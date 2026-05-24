@@ -57,13 +57,20 @@ test('Echo-powered session CLI reports app capability, lifecycle, and reading ev
   assert.equal(summary.report.outcomeTrail[0].status, 'ACCEPTED_PENDING');
   assert.deepEqual(summary.report.evidencePosture, {
     scope: 'LOCAL_PROCESS_WITNESS',
-    receiptCorrelation: 'RECEIPT_CORRELATION_MISSING',
+    receiptCorrelation: 'RECEIPT_CORRELATION_AVAILABLE',
     ticketedRuntimeIngress: 'TICKETED_RUNTIME_INGRESS_MISSING',
     durableAcceptedSubmissionRecovery: 'UNAVAILABLE',
     syntheticReceiptClaimed: false,
   });
-  assert.equal(summary.report.receiptCorrelation.status, 'RECEIPT_CORRELATION_MISSING');
-  assert.equal('receipt' in summary.report.receiptCorrelation, false);
+  assert.equal(summary.report.receiptCorrelation.status, 'RECEIPT_CORRELATION_AVAILABLE');
+  assert.equal(
+    summary.report.receiptCorrelation.receipt.receiptId,
+    summary.report.outcome.receipt.receiptId,
+  );
+  assert.equal(
+    summary.report.receiptCorrelation.submissionId,
+    summary.report.outcome.intent.submissionId,
+  );
   assert.equal(summary.report.ticketedRuntimeIngress.status, 'TICKETED_RUNTIME_INGRESS_MISSING');
   assert.notEqual(
     summary.report.ticketedRuntimeIngress.submissionId,
@@ -123,6 +130,8 @@ test('Echo-powered session CLI reports unsupported mutation as final obstruction
   assert.equal(summary.nonHappyPath.hiddenRetry, false);
   assert.equal(summary.nonHappyPath.healthyLaterWorkCanProceed, true);
   assert.equal(summary.nonHappyPath.retryDoctrine, 'retry requires a new explicit causal input');
+  assert.equal(summary.nonHappyPath.receiptCorrelation.status, 'RECEIPT_CORRELATION_UNSUPPORTED');
+  assert.equal('receipt' in summary.nonHappyPath.receiptCorrelation, false);
 });
 
 test('Echo-powered session CLI has a local replay compare path', () => {

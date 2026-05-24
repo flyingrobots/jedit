@@ -262,9 +262,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Applied mutation reports real correlation.
-- [ ] Unsupported mutation does not fabricate receipt.
-- [ ] CLI summary carries correlation identity.
+- [x] Applied mutation reports real correlation.
+- [x] Unsupported mutation does not fabricate receipt.
+- [x] CLI summary carries correlation identity.
 
 ### Slice 54 - Retained Reading Lookup Closure
 

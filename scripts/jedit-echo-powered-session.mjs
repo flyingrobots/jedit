@@ -274,6 +274,10 @@ function unsupportedMutationSummary(options, modules) {
     intent,
     modules.preflight.JEDIT_PACKAGE_REQUEST_UNSUPPORTED_MUTATION,
   );
+  const receiptCorrelation = modules.correlation.unsupportedJeditReceiptCorrelation(
+    intent.submissionId,
+    modules.preflight.JEDIT_PACKAGE_REQUEST_UNSUPPORTED_MUTATION,
+  );
 
   return {
     ok: true,
@@ -289,6 +293,7 @@ function unsupportedMutationSummary(options, modules) {
       hiddenRetry: false,
       healthyLaterWorkCanProceed: true,
       retryDoctrine: 'retry requires a new explicit causal input',
+      receiptCorrelation,
     },
     replay: unavailableReplayPosture(),
   };
@@ -338,6 +343,7 @@ async function loadDistModules() {
     host: await importDist('app/trusted-echo-runtime-host.js'),
     package: await importDist('app/jedit-contract-package.js'),
     preflight: await importDist('app/jedit-contract-package-preflight.js'),
+    correlation: await importDist('app/jedit-receipt-correlation.js'),
     outcomes: await importDist('app/jedit-intent-outcomes.js'),
   };
 }
