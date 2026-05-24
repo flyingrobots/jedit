@@ -34,6 +34,45 @@ test('interactive local fallback remains available without lifecycle authority',
   assert.equal(text, 'local');
 });
 
+test('interactive text session accepts injected session factories', async () => {
+  const modules = await loadModules();
+  const calls = [];
+  const localSession = fakeTextBufferSession('local-injected');
+  const echoSession = fakeTextBufferSession('echo-injected');
+
+  const local = modules.session.createInteractiveTextSession({
+    mode: modules.mode.INTERACTIVE_TEXT_RUNTIME_LOCAL,
+    localSessionFactory: {
+      create() {
+        calls.push('local');
+        return localSession;
+      },
+    },
+  });
+  const echo = modules.session.createInteractiveTextSession({
+    mode: modules.mode.INTERACTIVE_TEXT_RUNTIME_ECHO,
+    echoSessionFactory: {
+      create() {
+        calls.push('echo');
+        return echoSession;
+      },
+    },
+  });
+
+  assert.equal(local.session, localSession);
+  assert.equal(echo.session, echoSession);
+  assert.deepEqual(calls, ['local', 'echo']);
+});
+
+test('interactive text session rejects unknown runtime modes', async () => {
+  const modules = await loadModules();
+
+  assert.throws(
+    () => modules.session.createInteractiveTextSession({ mode: 'bad-mode' }),
+    modules.session.InteractiveTextSessionError,
+  );
+});
+
 test('interactive text runtime mode parser defaults to local unless explicitly opted in', async () => {
   const modules = await loadModules();
 
@@ -92,6 +131,21 @@ async function runNarrowEditRead(session, text) {
     maxBytes: 80,
   });
   return observed.value.lines.map((line) => line.text).join('\n');
+}
+
+function fakeTextBufferSession(sessionId) {
+  return {
+    sessionId,
+    async createBuffer() {
+      return {};
+    },
+    async getBufferOptic() {
+      return null;
+    },
+    async listBuffers() {
+      return [];
+    },
+  };
 }
 
 async function loadModules() {

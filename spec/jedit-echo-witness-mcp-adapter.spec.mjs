@@ -12,8 +12,9 @@ let adapterPromise;
 test('jedit Echo witness MCP adapter delegates dry-run to witness port', async () => {
   const adapterModule = await loadAdapter();
   const calls = [];
+  const requests = [];
   const adapter = adapterModule.createJeditEchoWitnessMcpAdapter({
-    witness: fakeWitness(calls),
+    witness: fakeWitness(calls, requests),
   });
 
   const result = await adapter.call(witnessRequest(true));
@@ -22,13 +23,15 @@ test('jedit Echo witness MCP adapter delegates dry-run to witness port', async (
   assert.equal(result.structuredContent.ok, true);
   assert.equal(result.structuredContent.dryRun, true);
   assert.deepEqual(calls, ['dryRun']);
+  assert.equal('dryRun' in requests[0], false);
 });
 
 test('jedit Echo witness MCP adapter delegates real call to witness port', async () => {
   const adapterModule = await loadAdapter();
   const calls = [];
+  const requests = [];
   const adapter = adapterModule.createJeditEchoWitnessMcpAdapter({
-    witness: fakeWitness(calls),
+    witness: fakeWitness(calls, requests),
   });
 
   const result = await adapter.call(witnessRequest(false));
@@ -37,6 +40,7 @@ test('jedit Echo witness MCP adapter delegates real call to witness port', async
   assert.equal(result.structuredContent.dryRun, false);
   assert.equal(result.structuredContent.report.outcome.status, 'APPLIED');
   assert.deepEqual(calls, ['run']);
+  assert.equal('dryRun' in requests[0], false);
 });
 
 test('jedit Echo witness MCP adapter exposes no trusted lifecycle authority', async () => {
@@ -60,10 +64,11 @@ function witnessRequest(dryRun) {
   };
 }
 
-function fakeWitness(calls) {
+function fakeWitness(calls, requests = []) {
   return {
     async dryRun(request) {
       calls.push('dryRun');
+      requests.push(request);
       return {
         ok: true,
         schemaVersion: 1,
@@ -80,8 +85,9 @@ function fakeWitness(calls) {
         replay: replayPosture(),
       };
     },
-    async run() {
+    async run(request) {
       calls.push('run');
+      requests.push(request);
       return {
         ok: true,
         schemaVersion: 1,

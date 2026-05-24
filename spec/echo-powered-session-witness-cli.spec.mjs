@@ -6,13 +6,10 @@ import test from 'node:test';
 const REPO_ROOT = process.cwd();
 const CLI_PATH = path.join(REPO_ROOT, 'scripts', 'jedit-echo-powered-session.mjs');
 const TICK_INTERVAL_SECONDS = 1 / 60;
+let built = false;
 
 test('Echo-powered session CLI reports app capability, lifecycle, and reading evidence', () => {
-  const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
-    cwd: REPO_ROOT,
-    encoding: 'utf8',
-  });
-  assert.equal(build.status, 0, build.stderr || build.stdout);
+  ensureBuilt();
 
   const result = spawnSync(process.execPath, [
     CLI_PATH,
@@ -83,6 +80,7 @@ test('Echo-powered session CLI reports app capability, lifecycle, and reading ev
 });
 
 test('Echo-powered session CLI dry-run reports installed package witness plan', () => {
+  ensureBuilt();
   const result = spawnSync(process.execPath, [
     CLI_PATH,
     '--json',
@@ -106,6 +104,7 @@ test('Echo-powered session CLI dry-run reports installed package witness plan', 
 });
 
 test('Echo-powered session CLI reports unsupported mutation as final obstruction', () => {
+  ensureBuilt();
   const result = spawnSync(process.execPath, [
     CLI_PATH,
     '--json',
@@ -127,6 +126,7 @@ test('Echo-powered session CLI reports unsupported mutation as final obstruction
 });
 
 test('Echo-powered session CLI has a local replay compare path', () => {
+  ensureBuilt();
   const result = spawnSync(process.execPath, [
     CLI_PATH,
     '--json',
@@ -145,6 +145,7 @@ test('Echo-powered session CLI has a local replay compare path', () => {
 });
 
 test('Echo-powered session CLI can run healthy work after unsupported mutation witness', () => {
+  ensureBuilt();
   const result = spawnSync(process.execPath, [
     CLI_PATH,
     '--json',
@@ -163,6 +164,7 @@ test('Echo-powered session CLI can run healthy work after unsupported mutation w
 });
 
 test('Echo-powered session CLI rejects invalid cycle limits as JSON failures', () => {
+  ensureBuilt();
   const result = spawnSync(process.execPath, [
     CLI_PATH,
     '--json',
@@ -178,3 +180,49 @@ test('Echo-powered session CLI rejects invalid cycle limits as JSON failures', (
   assert.equal(summary.ok, false);
   assert.equal(summary.message, 'invalid cycle limit: 0');
 });
+
+test('Echo-powered session CLI handles non-report human summaries', () => {
+  ensureBuilt();
+
+  const dryRun = spawnSync(process.execPath, [
+    CLI_PATH,
+    '--dry-run',
+  ], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+  });
+  const unsupported = spawnSync(process.execPath, [
+    CLI_PATH,
+    '--unsupported-mutation',
+    'unsupportedMutation',
+  ], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+  });
+  const replay = spawnSync(process.execPath, [
+    CLI_PATH,
+    '--replay-local',
+  ], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+  });
+
+  assert.equal(dryRun.status, 0, dryRun.stderr);
+  assert.match(dryRun.stdout, /dry-run prepared successfully/);
+  assert.equal(unsupported.status, 0, unsupported.stderr);
+  assert.match(unsupported.stdout, /expected non-happy-path summary/);
+  assert.equal(replay.status, 0, replay.stderr);
+  assert.match(replay.stdout, /local replay MATCH/);
+});
+
+function ensureBuilt() {
+  if (built) {
+    return;
+  }
+  const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+  });
+  assert.equal(build.status, 0, build.stderr || build.stdout);
+  built = true;
+}

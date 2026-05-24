@@ -64,7 +64,9 @@ function workspaceRuntimeDependencies(
     profiler: createRaytracerProfilerPort(nowMs),
     initialModel: {
       ...(options.seed ?? createInitialModelSnapshot(nowMs(), options.initialWorkingDirectory, random)),
-      interactiveTextRuntimeMode: options.interactiveTextRuntimeMode,
+      ...(options.interactiveTextRuntimeMode == null ? {} : {
+        interactiveTextRuntimeMode: options.interactiveTextRuntimeMode,
+      }),
     },
     nowMs,
     createTimeTickCmd: () => createTimeTickCmd(),

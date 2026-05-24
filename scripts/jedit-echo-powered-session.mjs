@@ -358,7 +358,23 @@ function emitSummary(options, summary) {
     process.stdout.write(`${JSON.stringify(summary, null, 2)}\n`);
     return;
   }
-  process.stdout.write(`jedit Echo-powered session passed: ${summary.report.text}\n`);
+  if (summary.report?.text != null) {
+    process.stdout.write(`jedit Echo-powered session passed: ${summary.report.text}\n`);
+    return;
+  }
+  if (summary.dryRun) {
+    process.stdout.write('jedit Echo-powered session dry-run prepared successfully.\n');
+    return;
+  }
+  if (summary.nonHappyPath != null) {
+    process.stdout.write('jedit Echo-powered session produced expected non-happy-path summary.\n');
+    return;
+  }
+  if (summary.replayLocal != null) {
+    process.stdout.write(`jedit Echo-powered session local replay ${summary.replayLocal.status}.\n`);
+    return;
+  }
+  process.stdout.write('jedit Echo-powered session completed.\n');
 }
 
 function emitFailure(options, message) {

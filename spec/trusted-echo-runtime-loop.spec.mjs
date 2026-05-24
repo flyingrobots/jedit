@@ -14,6 +14,8 @@ const TICK_INTERVAL_SECONDS = 1 / 60;
 const CYCLE_LIMIT = 7;
 const BUFFER_KEY = 'notes/runtime-loop.md';
 const INITIAL_TEXT = 'loop';
+const INVALID_TICK_FREQUENCY_HZ = 0;
+const INVALID_CYCLE_LIMIT = 0;
 
 let modulesPromise;
 
@@ -67,6 +69,29 @@ test('trusted Echo runtime loop keeps rejected start from enabling drain', async
   assert.deepEqual(lifecycle.runRequests, []);
 });
 
+test('trusted Echo runtime loop rejects invalid start requests before lifecycle control', async () => {
+  const modules = await loadModules();
+  const lifecycle = recordingLifecycle();
+  const loop = modules.loop.createTrustedEchoRuntimeLoop({ lifecycle });
+
+  assert.deepEqual(loop.start({
+    tickFrequencyHz: INVALID_TICK_FREQUENCY_HZ,
+    cycleLimit: CYCLE_LIMIT,
+  }), {
+    state: modules.loop.TRUSTED_ECHO_RUNTIME_LOOP_STOPPED,
+    lastRunCompletion: 'invalid-start-request',
+  });
+  assert.deepEqual(loop.start({
+    tickFrequencyHz: TICK_FREQUENCY_HZ,
+    cycleLimit: INVALID_CYCLE_LIMIT,
+  }), {
+    state: modules.loop.TRUSTED_ECHO_RUNTIME_LOOP_STOPPED,
+    lastRunCompletion: 'invalid-start-request',
+  });
+  assert.deepEqual(lifecycle.startRequests, []);
+  assert.deepEqual(lifecycle.runRequests, []);
+});
+
 test('trusted Echo runtime loop stops through lifecycle port', async () => {
   const modules = await loadModules();
   const lifecycle = recordingLifecycle();
@@ -83,6 +108,28 @@ test('trusted Echo runtime loop stops through lifecycle port', async () => {
   });
   assert.equal(loop.status().state, modules.loop.TRUSTED_ECHO_RUNTIME_LOOP_STOPPED);
   assert.equal(lifecycle.stopRequests, 1);
+});
+
+test('trusted Echo runtime loop remains running when stop is rejected', async () => {
+  const modules = await loadModules();
+  const lifecycle = recordingLifecycle();
+  lifecycle.rejectStop = true;
+  const loop = modules.loop.createTrustedEchoRuntimeLoop({ lifecycle });
+
+  loop.start({
+    tickFrequencyHz: TICK_FREQUENCY_HZ,
+    cycleLimit: CYCLE_LIMIT,
+  });
+
+  assert.deepEqual(loop.stop(), {
+    accepted: false,
+    lastRunCompletion: 'stop-rejected',
+  });
+  assert.equal(loop.status().state, modules.loop.TRUSTED_ECHO_RUNTIME_LOOP_RUNNING);
+  assert.deepEqual(loop.drain(), {
+    accepted: true,
+    lastRunCompletion: 'quiesced',
+  });
 });
 
 test('app-facing Echo-backed TextBufferSession port does not expose trusted host loop control', async () => {
@@ -104,6 +151,18 @@ test('app-facing Echo-backed TextBufferSession port does not expose trusted host
   assert.equal('start' in optic, false);
   assert.equal('stop' in optic, false);
   assert.equal('tick' in optic, false);
+
+  const lifecycle = recordingLifecycle();
+  const beforeReadRequestCount = lifecycleRequestCount(lifecycle);
+  await optic.textWindow(optic.currentReadBasis(), {
+    cursorLine: 0,
+    beforeLines: 0,
+    viewportLineCount: 1,
+    afterLines: 0,
+    maxBytes: 80,
+  });
+
+  assert.equal(lifecycleRequestCount(lifecycle), beforeReadRequestCount);
 });
 
 async function loadModules() {
@@ -140,6 +199,7 @@ async function loadModules() {
 function recordingLifecycle() {
   return {
     rejectStart: false,
+    rejectStop: false,
     startRequests: [],
     runRequests: [],
     stopRequests: 0,
@@ -160,9 +220,15 @@ function recordingLifecycle() {
     requestStop() {
       this.stopRequests += 1;
       return {
-        accepted: true,
-        lastRunCompletion: 'stopped',
+        accepted: !this.rejectStop,
+        lastRunCompletion: this.rejectStop ? 'stop-rejected' : 'stopped',
       };
     },
   };
+}
+
+function lifecycleRequestCount(lifecycle) {
+  return lifecycle.startRequests.length
+    + lifecycle.runRequests.length
+    + lifecycle.stopRequests;
 }

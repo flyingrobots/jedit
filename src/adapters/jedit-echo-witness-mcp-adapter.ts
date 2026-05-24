@@ -28,11 +28,12 @@ export function createJeditEchoWitnessMcpAdapter(
 ): JeditEchoWitnessMcpAdapter {
   return {
     async call(request) {
+      const { dryRun, ...witnessRequest } = request;
       return {
         toolName: JEDIT_ECHO_WITNESS_MCP_TOOL_NAME,
-        structuredContent: request.dryRun
-          ? await options.witness.dryRun(request)
-          : await options.witness.run(request),
+        structuredContent: dryRun
+          ? await options.witness.dryRun(witnessRequest)
+          : await options.witness.run(witnessRequest),
       };
     },
   };

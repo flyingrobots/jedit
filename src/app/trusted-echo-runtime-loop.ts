@@ -1,12 +1,17 @@
 import type {
+  EchoRunCompletion,
   EchoRunUntilIdleResult,
   EchoStopResult,
   TrustedEchoRuntimeLifecyclePort,
 } from '../ports/echo-runtime-lifecycle.js';
+import {
+  ECHO_RUN_COMPLETION_INVALID_START_REQUEST,
+  ECHO_RUN_COMPLETION_NOT_RUNNING,
+} from '../ports/echo-runtime-lifecycle.js';
 
 export const TRUSTED_ECHO_RUNTIME_LOOP_RUNNING = 'RUNNING';
 export const TRUSTED_ECHO_RUNTIME_LOOP_STOPPED = 'STOPPED';
-export const TRUSTED_ECHO_RUNTIME_LOOP_NOT_RUNNING = 'not-running';
+export const TRUSTED_ECHO_RUNTIME_LOOP_NOT_RUNNING = ECHO_RUN_COMPLETION_NOT_RUNNING;
 
 const SECONDS_PER_HERTZ = 1;
 
@@ -23,7 +28,7 @@ export interface TrustedEchoRuntimeLoopStatus {
   readonly state: TrustedEchoRuntimeLoopState;
   readonly tickFrequencyHz?: number;
   readonly cycleLimit?: number;
-  readonly lastRunCompletion?: string;
+  readonly lastRunCompletion?: EchoRunCompletion;
 }
 
 export interface TrustedEchoRuntimeLoop {
@@ -70,6 +75,11 @@ function startTrustedEchoRuntimeLoop(
   memory: TrustedEchoRuntimeLoopMemory,
   request: TrustedEchoRuntimeStartRequest,
 ): TrustedEchoRuntimeLoopStatus {
+  if (!isValidStartRequest(request)) {
+    memory.currentStatus = stoppedStatus(ECHO_RUN_COMPLETION_INVALID_START_REQUEST);
+    memory.currentCycleLimit = undefined;
+    return memory.currentStatus;
+  }
   const startResult = lifecycle.requestStart({
     tickIntervalSeconds: SECONDS_PER_HERTZ / request.tickFrequencyHz,
   });
@@ -103,14 +113,16 @@ function stopTrustedEchoRuntimeLoop(
   memory: TrustedEchoRuntimeLoopMemory,
 ): EchoStopResult {
   const result = lifecycle.requestStop();
-  memory.currentStatus = stoppedStatus();
-  memory.currentCycleLimit = undefined;
+  if (result.accepted) {
+    memory.currentStatus = stoppedStatus();
+    memory.currentCycleLimit = undefined;
+  }
   return result;
 }
 
 function runningStatus(
   request: TrustedEchoRuntimeStartRequest,
-  lastRunCompletion: string,
+  lastRunCompletion: EchoRunCompletion,
 ): TrustedEchoRuntimeLoopStatus {
   return {
     state: TRUSTED_ECHO_RUNTIME_LOOP_RUNNING,
@@ -121,8 +133,8 @@ function runningStatus(
 }
 
 function stoppedStatus(): TrustedEchoRuntimeLoopStatus;
-function stoppedStatus(lastRunCompletion: string): TrustedEchoRuntimeLoopStatus;
-function stoppedStatus(lastRunCompletion?: string): TrustedEchoRuntimeLoopStatus {
+function stoppedStatus(lastRunCompletion: EchoRunCompletion): TrustedEchoRuntimeLoopStatus;
+function stoppedStatus(lastRunCompletion?: EchoRunCompletion): TrustedEchoRuntimeLoopStatus {
   return lastRunCompletion == null
     ? {
       state: TRUSTED_ECHO_RUNTIME_LOOP_STOPPED,
@@ -138,4 +150,11 @@ function notRunningResult(): EchoRunUntilIdleResult {
     accepted: false,
     lastRunCompletion: TRUSTED_ECHO_RUNTIME_LOOP_NOT_RUNNING,
   };
+}
+
+function isValidStartRequest(request: TrustedEchoRuntimeStartRequest): boolean {
+  return Number.isFinite(request.tickFrequencyHz)
+    && request.tickFrequencyHz > 0
+    && Number.isSafeInteger(request.cycleLimit)
+    && request.cycleLimit > 0;
 }
