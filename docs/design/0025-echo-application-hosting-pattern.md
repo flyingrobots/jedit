@@ -359,10 +359,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Receipt material lookup works.
-- [ ] Reading envelope lookup works.
-- [ ] Reading payload lookup works.
-- [ ] Semantic coordinate and byte identity remain distinct.
+- [x] Receipt material lookup works.
+- [x] Reading envelope lookup works.
+- [x] Reading payload lookup works.
+- [x] Semantic coordinate and byte identity remain distinct.
 
 ### Slice 38 - Restart And Recovery Witness
 

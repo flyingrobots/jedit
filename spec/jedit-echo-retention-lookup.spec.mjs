@@ -39,6 +39,51 @@ test('retention lookup succeeds through Echo-shaped lookup port', async () => {
   assert.equal(result.materialBytesHex, PAYLOAD_BYTES_HEX);
 });
 
+test('retention lookup loads local receipt envelope and payload materials', async () => {
+  const modules = await loadModules();
+  const inventory = modules.evidence.createJeditRetainedEvidenceInventory({
+    packageId: PACKAGE_ID,
+    mutationOperationName: MUTATION_OPERATION,
+    queryOperationName: QUERY_OPERATION,
+    receiptId: RECEIPT_ID,
+    readingId: READING_ID,
+  });
+  const lookup = modules.lookup.createInMemoryJeditEchoRetentionLookupPort(
+    modules.lookup.createJeditEchoRetainedMaterialRecords(inventory),
+  );
+
+  for (const ref of inventory.refs) {
+    const result = modules.lookup.lookupJeditRetainedEvidenceMaterial(lookup, ref);
+    assert.equal(result.status, modules.lookup.JEDIT_ECHO_RETENTION_LOOKUP_HIT);
+    assert.equal(typeof result.materialBytesHex, 'string');
+  }
+});
+
+test('semantic coordinate mismatch does not become a retained evidence hit', async () => {
+  const modules = await loadModules();
+  const inventory = modules.evidence.createJeditRetainedEvidenceInventory({
+    packageId: PACKAGE_ID,
+    mutationOperationName: MUTATION_OPERATION,
+    queryOperationName: QUERY_OPERATION,
+    receiptId: RECEIPT_ID,
+    readingId: READING_ID,
+  });
+  const payloadRef = inventory.refs.find((ref) => ref.role === modules.evidence.JEDIT_EVIDENCE_ROLE_READING_PAYLOAD);
+  const records = modules.lookup.createJeditEchoRetainedMaterialRecords(inventory);
+  const rewrittenPayloadRef = {
+    ...payloadRef,
+    byteIdentity: {
+      ...payloadRef.byteIdentity,
+      byteHash: records[0].byteHash,
+    },
+  };
+  const lookup = modules.lookup.createInMemoryJeditEchoRetentionLookupPort(records);
+  const result = modules.lookup.lookupJeditRetainedEvidenceMaterial(lookup, rewrittenPayloadRef);
+
+  assert.notEqual(rewrittenPayloadRef.semanticCoordinate.coordinate, inventory.refs[0].semanticCoordinate.coordinate);
+  assert.equal(result.status, modules.lookup.JEDIT_ECHO_RETENTION_LOOKUP_MISSING);
+});
+
 test('missing retained material returns typed obstruction', async () => {
   const modules = await loadModules();
   const inventory = modules.evidence.createJeditRetainedEvidenceInventory({

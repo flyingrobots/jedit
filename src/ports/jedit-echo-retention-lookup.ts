@@ -1,4 +1,5 @@
 import type {
+  JeditEvidenceSemanticCoordinate,
   JeditRetainedEvidenceRef,
   JeditRetentionObstruction,
 } from './jedit-retained-evidence.js';
@@ -8,6 +9,7 @@ export const JEDIT_ECHO_RETENTION_LOOKUP_MISSING = 'ECHO_RETENTION_LOOKUP_MISSIN
 
 export interface JeditEchoRetainedMaterialRecord {
   readonly byteHash: string;
+  readonly semanticCoordinate?: JeditEvidenceSemanticCoordinate;
   readonly materialBytesHex: string;
 }
 

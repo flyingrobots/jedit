@@ -3,7 +3,10 @@ export {
   JEDIT_ECHO_RETENTION_LOOKUP_MISSING,
 } from '../ports/jedit-echo-retention-lookup.js';
 import { missingJeditRetentionMaterial } from './jedit-retained-evidence.js';
-import type { JeditRetainedEvidenceRef } from '../ports/jedit-retained-evidence.js';
+import type {
+  JeditRetainedEvidenceInventory,
+  JeditRetainedEvidenceRef,
+} from '../ports/jedit-retained-evidence.js';
 import {
   JEDIT_ECHO_RETENTION_LOOKUP_HIT,
   JEDIT_ECHO_RETENTION_LOOKUP_MISSING,
@@ -14,12 +17,14 @@ import {
   type JeditEchoRetentionLookupResult,
 } from '../ports/jedit-echo-retention-lookup.js';
 
+const UTF8_ENCODER = new TextEncoder();
+
 export function createInMemoryJeditEchoRetentionLookupPort(
   records: readonly JeditEchoRetainedMaterialRecord[],
 ): JeditEchoRetentionLookupPort {
   const retainedMaterial = new Map(records.map((record) => [
     record.byteHash,
-    record.materialBytesHex,
+    record,
   ]));
 
   return {
@@ -27,6 +32,21 @@ export function createInMemoryJeditEchoRetentionLookupPort(
       return lookupRetainedEvidence(retainedMaterial, ref);
     },
   };
+}
+
+export function createJeditEchoRetainedMaterialRecords(
+  inventory: JeditRetainedEvidenceInventory,
+): readonly JeditEchoRetainedMaterialRecord[] {
+  return inventory.refs.flatMap((ref) => (
+    ref.byteIdentity == null ? [] : [{
+      byteHash: ref.byteIdentity.byteHash,
+      semanticCoordinate: ref.semanticCoordinate,
+      materialBytesHex: toHex(JSON.stringify({
+        role: ref.role,
+        semanticCoordinate: ref.semanticCoordinate,
+      })),
+    }]
+  ));
 }
 
 export function lookupJeditRetainedEvidenceMaterial(
@@ -37,7 +57,7 @@ export function lookupJeditRetainedEvidenceMaterial(
 }
 
 function lookupRetainedEvidence(
-  retainedMaterial: ReadonlyMap<string, string>,
+  retainedMaterial: ReadonlyMap<string, JeditEchoRetainedMaterialRecord>,
   ref: JeditRetainedEvidenceRef,
 ): JeditEchoRetentionLookupResult {
   const byteHash = ref.byteIdentity?.byteHash;
@@ -45,10 +65,14 @@ function lookupRetainedEvidence(
     return missingRetainedEvidence(ref);
   }
 
-  const materialBytesHex = retainedMaterial.get(byteHash);
-  return materialBytesHex == null
+  const record = retainedMaterial.get(byteHash);
+  if (record == null) {
+    return missingRetainedEvidence(ref);
+  }
+
+  return !semanticCoordinateMatches(record, ref)
     ? missingRetainedEvidence(ref)
-    : retainedEvidenceHit(ref, materialBytesHex);
+    : retainedEvidenceHit(ref, record.materialBytesHex);
 }
 
 function retainedEvidenceHit(
@@ -70,4 +94,16 @@ function missingRetainedEvidence(
     ref,
     obstruction: missingJeditRetentionMaterial(ref),
   };
+}
+
+function semanticCoordinateMatches(
+  record: JeditEchoRetainedMaterialRecord,
+  ref: JeditRetainedEvidenceRef,
+): boolean {
+  return record.semanticCoordinate == null
+    || JSON.stringify(record.semanticCoordinate) === JSON.stringify(ref.semanticCoordinate);
+}
+
+function toHex(value: string): string {
+  return Array.from(UTF8_ENCODER.encode(value), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
