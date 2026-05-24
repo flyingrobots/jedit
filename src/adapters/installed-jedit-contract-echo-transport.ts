@@ -10,6 +10,11 @@ import {
   JeditContractStatePortError,
 } from '../app/jedit-contract-state-port.js';
 import {
+  createInMemoryJeditSubmissionLedgerPort,
+  createJeditSubmissionId,
+  recordAcceptedJeditSubmission,
+} from '../app/jedit-submission-ledger.js';
+import {
   invokeJeditHandlerWithAuthority,
   JEDIT_HANDLER_INVOCATION_AUTHORITY_SCHEDULER,
   JEDIT_HANDLER_INVOCATION_STATUS_BLOCKED,
@@ -28,6 +33,7 @@ import type { EchoKernelInfo, EchoWasmKernelTransport } from '../ports/echo-kern
 import type { HashPort } from '../ports/hash.js';
 import type { HotTextRuntimePort } from '../ports/hot-text-runtime.js';
 import type { JeditContractStatePort } from '../ports/jedit-contract-state-port.js';
+import type { JeditSubmissionLedgerPort } from '../ports/jedit-submission-ledger.js';
 import {
   createJeditRuntimeWorkEnvelope,
   JEDIT_RUNTIME_WORK_OPERATION_KIND_MUTATION,
@@ -72,6 +78,7 @@ export interface InstalledJeditContractEchoTransportOptions {
   readonly workSink?: JeditRuntimeWorkSink;
   readonly handlerInvocationSink?: JeditHandlerInvocationSink;
   readonly statePort?: JeditContractStatePort;
+  readonly submissionLedger?: JeditSubmissionLedgerPort;
 }
 
 interface InstalledJeditContractEchoTransportContext {
@@ -82,6 +89,7 @@ interface InstalledJeditContractEchoTransportContext {
   readonly observers: ReturnType<typeof createJeditContractQueryObserverRegistry>;
   readonly workSink?: JeditRuntimeWorkSink;
   readonly handlerInvocationSink?: JeditHandlerInvocationSink;
+  readonly submissionLedger: JeditSubmissionLedgerPort;
 }
 
 export function createInstalledJeditContractEchoTransport(
@@ -129,6 +137,7 @@ function createTransportContext(
     observers,
     workSink: options.workSink,
     handlerInvocationSink: options.handlerInvocationSink,
+    submissionLedger: options.submissionLedger ?? createInMemoryJeditSubmissionLedgerPort(),
   };
 }
 
@@ -138,9 +147,24 @@ function submitInstalledIntent(
 ): Uint8Array {
   const request = decodeJeditIntentRequest(intentBytes);
   recordRuntimeWorkEnvelope(context.workSink, intentBytes, request, context.hash);
+  recordAcceptedSubmission(context, intentBytes, request);
   return encodeJeditIntentResponse(
     executeIntent(context.installStatus, context.mutations, context.handlerInvocationSink, request),
   );
+}
+
+function recordAcceptedSubmission(
+  context: InstalledJeditContractEchoTransportContext,
+  intentBytes: Uint8Array,
+  request: JeditIntentRequest,
+): void {
+  const canonicalRequestBytesHex = bytesToHex(intentBytes);
+  recordAcceptedJeditSubmission(context.submissionLedger, {
+    submissionId: createJeditSubmissionId(canonicalRequestBytesHex, context.hash),
+    packageId: JEDIT_HOT_TEXT_PACKAGE_ID,
+    operationName: request.operationName,
+    canonicalRequestBytesHex,
+  });
 }
 
 function observeInstalledRequest(
@@ -179,6 +203,10 @@ function recordRuntimeWorkEnvelope(
     operationKind: JEDIT_RUNTIME_WORK_OPERATION_KIND_MUTATION,
     canonicalRequestBytes: intentBytes,
   }, hash));
+}
+
+function bytesToHex(bytes: Uint8Array): string {
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
 function executeIntent(

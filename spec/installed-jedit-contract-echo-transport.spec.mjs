@@ -13,6 +13,7 @@ const RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'in-memory-
 const WORK_ENVELOPE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'ports', 'jedit-runtime-work-envelope.js');
 const INVOCATION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-runtime-handler-invocation.js');
 const STATE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-state-port.js');
+const LEDGER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-submission-ledger.js');
 const BUFFER_KEY = 'notes/installed-contract.md';
 const INITIAL_TEXT = 'hello';
 const INSERT_TEXT = ' Echo';
@@ -216,6 +217,47 @@ test('installed transport publishes handler state through jedit state port', asy
   assert.equal(read.status, modules.state.JEDIT_CONTRACT_STATE_READ_FOUND);
 });
 
+test('installed transport records accepted submissions before handler execution', async () => {
+  const modules = await loadModules();
+  const events = [];
+  const baseLedger = modules.ledger.createInMemoryJeditSubmissionLedgerPort();
+  const submissionLedger = {
+    recordAcceptedSubmission(record) {
+      events.push('submission');
+      return baseLedger.recordAcceptedSubmission(record);
+    },
+    readSubmission(submissionId) {
+      return baseLedger.readSubmission(submissionId);
+    },
+  };
+  const baseRuntime = modules.runtime.createInMemoryHotTextRuntime();
+  const runtime = {
+    ...baseRuntime,
+    createBuffer(pathValue, textValue) {
+      events.push('handler');
+      return baseRuntime.createBuffer(pathValue, textValue);
+    },
+  };
+  const transport = modules.transport.createInstalledJeditContractEchoTransport({
+    runtime,
+    submissionLedger,
+  });
+
+  modules.codec.decodeJeditIntentResponse(transport.submitIntentBytes(
+    modules.codec.encodeJeditIntentRequest({
+      kind: modules.codec.JEDIT_INTENT_REQUEST_KIND,
+      operationName: modules.codec.CREATE_BUFFER_WORLDLINE_OPERATION,
+      input: {
+        bufferKey: BUFFER_KEY,
+        initialText: INITIAL_TEXT,
+        projectionPath: BUFFER_KEY,
+      },
+    }),
+  ));
+
+  assert.deepEqual(events, ['submission', 'handler']);
+});
+
 test('installed query observers require state-port-backed basis', async () => {
   const modules = await loadModules();
   const statePort = createMissingReadStatePort(modules);
@@ -288,7 +330,7 @@ async function loadModules() {
 
     assert.equal(build.status, 0, build.stderr || build.stdout);
 
-    const [transport, client, poweredSession, codec, runtime, workEnvelope, invocation, state] = await Promise.all([
+    const [transport, client, poweredSession, codec, runtime, workEnvelope, invocation, state, ledger] = await Promise.all([
       import(pathToFileURL(TRANSPORT_MODULE_PATH).href),
       import(pathToFileURL(CLIENT_MODULE_PATH).href),
       import(pathToFileURL(POWERED_SESSION_MODULE_PATH).href),
@@ -297,6 +339,7 @@ async function loadModules() {
       import(pathToFileURL(WORK_ENVELOPE_MODULE_PATH).href),
       import(pathToFileURL(INVOCATION_MODULE_PATH).href),
       import(pathToFileURL(STATE_MODULE_PATH).href),
+      import(pathToFileURL(LEDGER_MODULE_PATH).href),
     ]);
 
     return {
@@ -308,6 +351,7 @@ async function loadModules() {
       workEnvelope,
       invocation,
       state,
+      ledger,
     };
   })();
 

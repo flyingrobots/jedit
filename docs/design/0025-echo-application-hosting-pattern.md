@@ -282,10 +282,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Submission ledger port exists.
-- [ ] Accepted submission is recorded before execution.
-- [ ] Duplicate posture is deterministic.
-- [ ] App-facing API cannot write ledger entries.
+- [x] Submission ledger port exists.
+- [x] Accepted submission is recorded before execution.
+- [x] Duplicate posture is deterministic.
+- [x] App-facing API cannot write ledger entries.
 
 ### Slice 35 - Ticketed Work Boundary
 
