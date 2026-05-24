@@ -2,29 +2,40 @@ import type { RuntimeIssue } from '@flyingrobots/bijou-tui';
 import type {
   ApplyIntentResult,
   Observed,
+  CreateTextBufferCheckpointResult,
   TextBufferOptic,
   TextBufferSessionPort,
   TextWindowRangeInput,
   TextWindowReading,
 } from '../../ports/text-buffer-session.js';
-import { REPLACE_RANGE_INTENT_KIND } from '../../ports/text-buffer-session.js';
+import {
+  REPLACE_RANGE_INTENT_KIND,
+  TEXT_BUFFER_CHECKPOINT_KIND_MANUAL_SAVE,
+} from '../../ports/text-buffer-session.js';
 import { RuntimeIssueLevels, RuntimeIssueSources } from './runtime-issue.js';
 
 const EMPTY_INSERT_TEXT = '';
 const OPEN_OBSTRUCTION_CODE = 'text-buffer-open-obstructed';
 const EDIT_OBSTRUCTION_CODE = 'text-buffer-edit-obstructed';
 const QUERY_OBSTRUCTION_CODE = 'text-buffer-query-obstructed';
+const CHECKPOINT_OBSTRUCTION_CODE = 'text-buffer-checkpoint-obstructed';
 const MISSING_BUFFER_OBSTRUCTION_CODE = 'text-buffer-missing-obstructed';
+const TEXT_EXPORT_OBSTRUCTION_CODE = 'text-buffer-export-obstructed';
 const GROUPED_EDIT_OBSTRUCTION_MESSAGE = 'Grouped production text edits require explicit jedit command planning.';
+const TEXT_EXPORT_LINE_SEPARATOR = '\n';
 const OUTCOME_OPENED = 'opened';
 const OUTCOME_APPLIED = 'applied';
+const OUTCOME_CHECKPOINTED = 'checkpointed';
 const OUTCOME_OBSERVED = 'observed';
+const OUTCOME_EXPORTED = 'exported';
 const OUTCOME_OBSTRUCTED = 'obstructed';
 
 export const ProductionTextSessionOutcomeKinds = Object.freeze({
   Opened: OUTCOME_OPENED,
   Applied: OUTCOME_APPLIED,
+  Checkpointed: OUTCOME_CHECKPOINTED,
   Observed: OUTCOME_OBSERVED,
+  Exported: OUTCOME_EXPORTED,
   Obstructed: OUTCOME_OBSTRUCTED,
 } as const);
 
@@ -32,6 +43,8 @@ export const ProductionTextObstructionCodes = Object.freeze({
   Open: OPEN_OBSTRUCTION_CODE,
   Edit: EDIT_OBSTRUCTION_CODE,
   Query: QUERY_OBSTRUCTION_CODE,
+  Checkpoint: CHECKPOINT_OBSTRUCTION_CODE,
+  Export: TEXT_EXPORT_OBSTRUCTION_CODE,
   MissingBuffer: MISSING_BUFFER_OBSTRUCTION_CODE,
 } as const);
 
@@ -96,6 +109,18 @@ export interface ProductionTextWindowRequest {
   readonly atMs: number;
 }
 
+export interface ProductionTextCheckpointRequest {
+  readonly bufferId: string;
+  readonly label?: string | null;
+  readonly atMs: number;
+}
+
+export interface ProductionTextExportRequest {
+  readonly bufferId: string;
+  readonly aperture: ProductionTextViewportAperture;
+  readonly atMs: number;
+}
+
 export interface ProductionTextObstruction {
   readonly code: ProductionTextObstructionCode;
   readonly issue: RuntimeIssue;
@@ -111,9 +136,20 @@ export interface ProductionTextEditApplied {
   readonly result: ApplyIntentResult;
 }
 
+export interface ProductionTextCheckpointed {
+  readonly kind: typeof OUTCOME_CHECKPOINTED;
+  readonly result: CreateTextBufferCheckpointResult;
+}
+
 export interface ProductionTextWindowObserved {
   readonly kind: typeof OUTCOME_OBSERVED;
   readonly observed: Observed<TextWindowReading>;
+}
+
+export interface ProductionTextExported {
+  readonly kind: typeof OUTCOME_EXPORTED;
+  readonly text: string;
+  readonly readingId: string;
 }
 
 export interface ProductionTextObstructed {
@@ -133,13 +169,23 @@ export type ProductionTextWindowOutcome =
   | ProductionTextWindowObserved
   | ProductionTextObstructed;
 
+export type ProductionTextCheckpointOutcome =
+  | ProductionTextCheckpointed
+  | ProductionTextObstructed;
+
+export type ProductionTextExportOutcome =
+  | ProductionTextExported
+  | ProductionTextObstructed;
+
 export interface ProductionTextSession {
   openBuffer(request: ProductionTextOpenRequest): Promise<ProductionTextOpenOutcome>;
   insertText(request: ProductionTextInsertRequest): Promise<ProductionTextEditOutcome>;
   replaceRange(request: ProductionTextReplaceRequest): Promise<ProductionTextEditOutcome>;
   deleteRange(request: ProductionTextDeleteRequest): Promise<ProductionTextEditOutcome>;
   multiRangeEdit(request: ProductionTextMultiRangeRequest): Promise<ProductionTextEditOutcome>;
+  checkpointBuffer(request: ProductionTextCheckpointRequest): Promise<ProductionTextCheckpointOutcome>;
   observeWindow(request: ProductionTextWindowRequest): Promise<ProductionTextWindowOutcome>;
+  exportWindow(request: ProductionTextExportRequest): Promise<ProductionTextExportOutcome>;
 }
 
 export function createProductionTextSession(
@@ -161,8 +207,55 @@ export function createProductionTextSession(
     },
     deleteRange: (request: ProductionTextDeleteRequest) => deleteRange(session, request),
     multiRangeEdit: (request: ProductionTextMultiRangeRequest) => multiRangeEdit(request),
+    checkpointBuffer: (request: ProductionTextCheckpointRequest) => checkpointBuffer(session, request),
     observeWindow: (request: ProductionTextWindowRequest) => observeWindow(session, request),
+    exportWindow: (request: ProductionTextExportRequest) => exportWindow(session, request),
   });
+}
+
+async function checkpointBuffer(
+  session: TextBufferSessionPort,
+  request: ProductionTextCheckpointRequest,
+): Promise<ProductionTextCheckpointOutcome> {
+  try {
+    const optic = await session.getBufferOptic(request.bufferId);
+    if (optic == null) {
+      return missingBuffer(request.atMs);
+    }
+    const result = await optic.createCheckpoint({
+      kind: TEXT_BUFFER_CHECKPOINT_KIND_MANUAL_SAVE,
+      label: request.label,
+    });
+    return {
+      kind: OUTCOME_CHECKPOINTED,
+      result,
+    };
+  } catch (cause) {
+    return obstructed(
+      CHECKPOINT_OBSTRUCTION_CODE,
+      request.atMs,
+      cause instanceof Error ? cause.message : String(cause),
+    );
+  }
+}
+
+async function exportWindow(
+  session: TextBufferSessionPort,
+  request: ProductionTextExportRequest,
+): Promise<ProductionTextExportOutcome> {
+  const observed = await observeWindow(session, request);
+  if (observed.kind === OUTCOME_OBSTRUCTED) {
+    return obstructed(
+      TEXT_EXPORT_OBSTRUCTION_CODE,
+      request.atMs,
+      observed.obstruction.issue.message,
+    );
+  }
+  return {
+    kind: OUTCOME_EXPORTED,
+    text: materializeObservedText(observed.observed),
+    readingId: observed.observed.evidence.readingId,
+  };
 }
 
 async function multiRangeEdit(
@@ -245,6 +338,12 @@ export function textWindowInputFromViewport(
     afterLines: aperture.afterLines,
     maxBytes: aperture.maxBytes,
   };
+}
+
+export function materializeObservedText(
+  observed: Observed<TextWindowReading>,
+): string {
+  return observed.value.lines.map((line) => line.text).join(TEXT_EXPORT_LINE_SEPARATOR);
 }
 
 async function applyReplaceRange(

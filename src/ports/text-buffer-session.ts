@@ -1,4 +1,7 @@
-import type { QueryTextWindowRequest } from '../generated/jedit/hot-text-runtime.wesley.generated.js';
+import type {
+  CheckpointKind,
+  QueryTextWindowRequest,
+} from '../generated/jedit/hot-text-runtime.wesley.generated.js';
 
 export const READ_BASIS_HANDLE_KIND = 'read-basis-handle';
 export const REPLACE_RANGE_INTENT_KIND = 'replaceRange';
@@ -8,6 +11,8 @@ export type BufferKey = string;
 export type ReadingId = string;
 export type BufferVersion = number;
 export type SessionId = string;
+
+export const TEXT_BUFFER_CHECKPOINT_KIND_MANUAL_SAVE: CheckpointKind = 'MANUAL_SAVE';
 
 export interface ReadBasisHandle {
   readonly kind: typeof READ_BASIS_HANDLE_KIND;
@@ -52,6 +57,19 @@ export interface ApplyIntentResult {
   readonly receiptId: string;
 }
 
+export interface CreateTextBufferCheckpointRequest {
+  readonly kind: CheckpointKind;
+  readonly label?: string | null;
+}
+
+export interface CreateTextBufferCheckpointResult {
+  readonly buffer: TextBuffer;
+  readonly readBasis: ReadBasisHandle;
+  readonly bufferVersion: BufferVersion;
+  readonly checkpointId: string;
+  readonly checkpointKind: CheckpointKind;
+}
+
 export interface Observed<T> {
   readonly value: T;
   readonly evidence: {
@@ -66,6 +84,10 @@ export interface TextBufferOptic {
   currentReadBasis(): ReadBasisHandle;
 
   applyIntent(intent: ReplaceRangeIntent): Promise<ApplyIntentResult>;
+
+  createCheckpoint(
+    request: CreateTextBufferCheckpointRequest,
+  ): Promise<CreateTextBufferCheckpointResult>;
 
   textWindow(
     readBasis: ReadBasisHandle,

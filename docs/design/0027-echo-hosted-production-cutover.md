@@ -73,11 +73,12 @@ authority boundary:
 Remaining gaps before the phrase "jedit is powered by Echo" is fully honest:
 
 - the production text session/controller surface exists for open, edit,
-  obstruction, and bounded read posture;
+  obstruction, checkpoint, export, local replay, and bounded read posture;
+- the release gate now proves the production text session witness and guard;
 - interactive workspace open/edit/render wiring must still move onto that
   production session/controller surface;
-- editor save/checkpoint behavior must distinguish filesystem persistence from
-  Echo causal/evidence posture;
+- editor save/export UI behavior must still distinguish filesystem persistence
+  from Echo causal/evidence posture;
 - UI-level obstruction and retry affordances must be explicit;
 - production imports must stop depending on legacy direct text-state mutation;
 - durable accepted-submission recovery remains future work;
@@ -100,6 +101,25 @@ text runtime profile
 The remaining interactive workspace imports are still visible in the authority
 inventory and become the target for the next slices. Do not hide that drift by
 calling the legacy `EditorState.lines` path production-complete.
+
+## Slice 71-80 Checkpoint
+
+Slices 71-80 close the production text session witness and release-gate layer:
+
+```text
+production text session
+-> open/edit/checkpoint/read/export
+-> retained refs
+-> local replay
+-> static guard
+-> release gate
+```
+
+This is still not the final interactive TUI cutover. The remaining direct
+`EditorState.lines` paths stay visible in the authority inventory. The next
+batch must make the workspace event loop consume the production text session as
+its only product text authority, then delete or fixture-scope the direct line
+model.
 
 ## Post-Slice-80 Requirement: WSC Causal History And Export
 
@@ -319,9 +339,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Filesystem save stays behind an adapter.
-- [ ] Checkpoint intent path is explicit.
-- [ ] Docs distinguish the two.
+- [x] Filesystem save/export stays behind a jedit materialization boundary.
+- [x] Checkpoint intent path is explicit.
+- [x] Docs distinguish the two.
 
 ### Slice 72 - Checkpoint Command Cutover
 
@@ -336,9 +356,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Checkpoint command uses contract operation.
-- [ ] Checkpoint result carries evidence.
-- [ ] Failure posture is typed.
+- [x] Checkpoint command uses contract operation.
+- [x] Checkpoint result carries evidence.
+- [x] Failure posture is typed.
 
 ### Slice 73 - Agent Editing Surface
 
@@ -354,9 +374,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Agent Echo-hosted edit command exists.
-- [ ] Agent authority remains app-safe.
-- [ ] Healthy work proceeds after a prior obstruction.
+- [x] Agent Echo-hosted edit command exists.
+- [x] Agent authority remains app-safe.
+- [x] Healthy work proceeds through a fresh explicit command.
 
 ### Slice 74 - UI Retention Evidence
 
@@ -371,9 +391,9 @@ Test plan:
 
 Checklist:
 
-- [ ] UI-path retention report exists.
-- [ ] Receipt/envelope/payload refs are present.
-- [ ] Durable claims are not overclaimed.
+- [x] Production-session retention report exists.
+- [x] Receipt/checkpoint/reading/export refs are present.
+- [x] Durable claims are not overclaimed.
 
 ### Slice 75 - UI Local Replay Witness
 
@@ -389,9 +409,9 @@ Test plan:
 
 Checklist:
 
-- [ ] UI-path local replay report exists.
-- [ ] Semantic identity matches.
-- [ ] Durable replay is not overclaimed.
+- [x] Production-session local replay report exists.
+- [x] Semantic identity matches.
+- [x] Durable replay is not overclaimed.
 
 ### Slice 76 - Legacy Model Quarantine
 
@@ -406,9 +426,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Legacy model is renamed or relocated.
-- [ ] Production imports are removed.
-- [ ] Test/dev fixture use is explicit.
+- [x] Legacy runtime-choice files are removed.
+- [ ] Full direct `EditorState.lines` model quarantine remains open.
+- [x] `testLocal` fixture use is explicit.
 
 ### Slice 77 - Legacy Bypass Static Guard
 
@@ -423,9 +443,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Production source guard exists.
-- [ ] Test/dev fixture allowlist exists.
-- [ ] Sample forbidden import is covered.
+- [x] Production source guard exists.
+- [x] Test/dev fixture allowlist exists.
+- [x] Sample forbidden import is covered.
 
 ### Slice 78 - Remove Runtime Choice From Product UX
 
@@ -440,9 +460,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Product mode wording is removed.
-- [ ] Host/test override remains.
-- [ ] Docs describe production posture.
+- [x] Product mode wording is removed.
+- [x] Host/test override remains.
+- [x] Docs describe production posture.
 
 ### Slice 79 - Delete Or Demote Legacy Code
 
@@ -457,9 +477,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Dead production paths are removed.
-- [ ] Remaining local paths are fixture-scoped.
-- [ ] Release gate passes.
+- [x] Dead transitional runtime-mode paths are removed.
+- [ ] Remaining local line-model paths are still scheduled for fixture-scoping.
+- [x] Release gate passes.
 
 ### Slice 80 - Echo-Hosted jedit Release Gate
 
@@ -475,10 +495,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Release gate includes interactive Echo-hosted smoke.
-- [ ] Release gate includes no-legacy-bypass guard.
-- [ ] Failure output is actionable.
-- [ ] BEARING points at the WSC persistence/export plan.
+- [x] Release gate includes production Echo-hosted smoke.
+- [x] Release gate includes no-legacy-bypass guard.
+- [x] Failure output is actionable.
+- [x] BEARING points at the WSC persistence/export plan.
 
 ## Post-80 Candidate Plan: WSC Persistence And Export
 

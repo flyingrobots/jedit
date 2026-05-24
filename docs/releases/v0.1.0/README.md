@@ -32,6 +32,8 @@ of stable evidence identities.
 - Local replay proof.
 - Echo-hosted text runtime profile, with explicit `testLocal` dev/test escape hatch.
 - Production text session controller for open, edit, and bounded read posture.
+- Production text session witness CLI with checkpoint, retained evidence refs,
+  local replay, and export-as-reading posture.
 - Release quickstart.
 - Focused release-gate command.
 
@@ -41,6 +43,8 @@ of stable evidence identities.
 npm run build
 node scripts/jedit-echo-powered-session.mjs --json
 node scripts/jedit-echo-powered-session.mjs --json --replay-local
+node scripts/jedit-production-text-session.mjs --json
+node scripts/jedit-production-text-session.mjs --json --replay-local
 npm run release-gate:echo
 ```
 

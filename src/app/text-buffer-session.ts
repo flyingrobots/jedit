@@ -1,6 +1,8 @@
 import type {
   ApplyIntentResult,
   BufferVersion,
+  CreateTextBufferCheckpointRequest,
+  CreateTextBufferCheckpointResult,
   CreateTextBufferRequest,
   Observed,
   ReadBasisHandle,
@@ -98,6 +100,11 @@ function createTextBufferOptic(
     async applyIntent(intent: ReplaceRangeIntent): Promise<ApplyIntentResult> {
       return applyTextBufferIntent(client, buffer, state, intent);
     },
+    async createCheckpoint(
+      request: CreateTextBufferCheckpointRequest,
+    ): Promise<CreateTextBufferCheckpointResult> {
+      return createTextBufferCheckpoint(client, buffer, state, request);
+    },
     async textWindow(
       readBasis: ReadBasisHandle,
       input: TextWindowRangeInput,
@@ -158,6 +165,30 @@ function readTextBufferWindow(
     input,
   );
   return toObservedTextWindowReading(envelope, input);
+}
+
+function createTextBufferCheckpoint(
+  client: JeditOpticClient,
+  buffer: TextBuffer,
+  state: TextBufferOpticRuntimeState,
+  request: CreateTextBufferCheckpointRequest,
+): CreateTextBufferCheckpointResult {
+  const execution = client.createCheckpoint(state.currentSession, {
+    worldlineId: state.currentSession.worldline.worldlineId,
+    kind: request.kind,
+    label: request.label,
+  });
+  if (execution.result == null) {
+    throw new TextBufferOpticError('Text buffer checkpoint did not produce checkpoint evidence.');
+  }
+  state.currentSession = execution.nextSession;
+  return {
+    buffer,
+    readBasis: state.currentReadBasis,
+    bufferVersion: state.bufferVersion,
+    checkpointId: execution.result.checkpoint.checkpointId,
+    checkpointKind: execution.result.checkpoint.kind,
+  };
 }
 
 function toTextBuffer(sequence: number, input: CreateTextBufferRequest): TextBuffer {

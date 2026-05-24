@@ -32,6 +32,9 @@ const FOCUSED_TESTS = Object.freeze([
   'spec/echo-application-hosting-guide.spec.mjs',
   'spec/text-runtime-profile-session.spec.mjs',
   'spec/production-text-session.spec.mjs',
+  'spec/production-text-session-witness.spec.mjs',
+  'spec/production-text-session-cli.spec.mjs',
+  'spec/production-cutover-guard.spec.mjs',
   'spec/release-quickstart.spec.mjs',
 ]);
 
@@ -93,6 +96,7 @@ function checkRequiredFile(filePath, label) {
 function runReleaseGate() {
   return runCommand('npm', ['run', '--silent', 'build'])
     || runCommand(process.execPath, ['--test', '--test-concurrency=1', ...FOCUSED_TESTS])
+    || runCommand(process.execPath, ['scripts/jedit-production-cutover-guard.mjs'])
     || runCommand('npm', ['run', '--silent', 'quality']);
 }
 

@@ -118,6 +118,58 @@ test('production text session reads bounded windows from cursor and viewport ape
   assert.equal(outcome.observed.evidence.readingId, 'reading:1');
 });
 
+test('production text session creates manual checkpoint evidence through app capability', async () => {
+  const module = await loadModule();
+  const checkpoints = [];
+  const optic = fakeTextBufferOptic({
+    createCheckpoint(request) {
+      checkpoints.push(request);
+      return checkpointResult();
+    },
+  });
+  const production = module.createProductionTextSession(fakeTextBufferSession({ optic }));
+
+  const outcome = await production.checkpointBuffer({
+    bufferId: BUFFER_ID,
+    label: 'manual save',
+    atMs: AT_MS,
+  });
+
+  assert.equal(outcome.kind, module.ProductionTextSessionOutcomeKinds.Checkpointed);
+  assert.equal(outcome.result.checkpointId, 'checkpoint:1');
+  assert.equal(outcome.result.checkpointKind, 'MANUAL_SAVE');
+  assert.deepEqual(checkpoints, [{
+    kind: 'MANUAL_SAVE',
+    label: 'manual save',
+  }]);
+});
+
+test('production text session exports materialized text from bounded readings without edit intent', async () => {
+  const module = await loadModule();
+  const applyIntentCalls = [];
+  const optic = fakeTextBufferOptic({
+    applyIntent(intent) {
+      applyIntentCalls.push(intent);
+      return appliedResult();
+    },
+    textWindow() {
+      return observedReading();
+    },
+  });
+  const production = module.createProductionTextSession(fakeTextBufferSession({ optic }));
+
+  const outcome = await production.exportWindow({
+    bufferId: BUFFER_ID,
+    aperture: VIEWPORT_APERTURE,
+    atMs: AT_MS,
+  });
+
+  assert.equal(outcome.kind, module.ProductionTextSessionOutcomeKinds.Exported);
+  assert.equal(outcome.text, 'text');
+  assert.equal(outcome.readingId, 'reading:1');
+  assert.deepEqual(applyIntentCalls, []);
+});
+
 test('production text session maps obstructed edits to typed runtime issue posture without retry', async () => {
   const module = await loadModule();
   let applyCalls = 0;
@@ -212,6 +264,9 @@ function fakeTextBufferOptic(overrides = {}) {
     async applyIntent(intent) {
       return overrides.applyIntent == null ? appliedResult() : overrides.applyIntent(intent);
     },
+    async createCheckpoint(request) {
+      return overrides.createCheckpoint == null ? checkpointResult() : overrides.createCheckpoint(request);
+    },
     async textWindow(readBasis, input) {
       return overrides.textWindow == null ? observedReading() : overrides.textWindow(readBasis, input);
     },
@@ -229,6 +284,21 @@ function appliedResult() {
     readBasis: { kind: 'read-basis-handle', id: 'basis:1' },
     bufferVersion: 1,
     receiptId: 'receipt:1',
+  };
+}
+
+function checkpointResult() {
+  return {
+    buffer: {
+      bufferId: BUFFER_ID,
+      bufferKey: 'notes.md',
+      projectionPath: 'notes.md',
+      createdAt: '1970-01-01T00:00:00.000Z',
+    },
+    readBasis: { kind: 'read-basis-handle', id: 'basis:1' },
+    bufferVersion: 1,
+    checkpointId: 'checkpoint:1',
+    checkpointKind: 'MANUAL_SAVE',
   };
 }
 
