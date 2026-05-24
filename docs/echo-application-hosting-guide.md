@@ -81,7 +81,7 @@ classDiagram
     class EchoRuntime {
         +admit()
         +schedule()
-        +tick()
+        +runSchedulerOwnedTicks()
         +retainEvidence()
     }
 
@@ -180,6 +180,13 @@ because the host restarted.
 
 `TextBufferOptic` is a `jedit` noun. Echo must not import it.
 
+Current port names used by this proof:
+
+- `TextBufferSessionPort`;
+- `TrustedEchoRuntimeLifecyclePort`;
+- `EchoContractPackageHostPort`;
+- `JeditRestartRecoveryPort`.
+
 ## Second-App Template
 
 The counter template exists to prove the pattern is not `jedit`-only:
@@ -224,9 +231,10 @@ From a clean checkout:
 npm run build
 npm run --silent quality
 npm run --silent release-gate:echo
-node spec/echo-hosting-counter-template.spec.mjs
+node --test --test-concurrency=1 spec/echo-hosting-counter-template.spec.mjs
 node scripts/jedit-echo-powered-session.mjs --json --dry-run
 node scripts/jedit-echo-powered-session.mjs --json
+node scripts/jedit-echo-powered-session.mjs --json --replay-local
 ```
 
 ## Non-Goals
@@ -240,4 +248,3 @@ This guide does not require:
 - settlement shells;
 - full observer-rights governance;
 - social/speculative lane policy.
-

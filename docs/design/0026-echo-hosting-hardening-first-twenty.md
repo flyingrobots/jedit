@@ -348,9 +348,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Guide commands are current.
-- [ ] Port names are current.
-- [ ] Tick authority doctrine is correct.
+- [x] Guide commands are current.
+- [x] Port names are current.
+- [x] Tick authority doctrine is correct.
 
 ### Slice 59 - PR Release Gate Consolidation
 
