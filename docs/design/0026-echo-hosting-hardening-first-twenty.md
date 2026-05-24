@@ -279,9 +279,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Envelope lookup works.
-- [ ] Payload lookup works.
-- [ ] Semantic coordinate mismatch is not a cache hit.
+- [x] Envelope lookup works.
+- [x] Payload lookup works.
+- [x] Semantic coordinate mismatch is not a cache hit.
 
 ### Slice 55 - Restart Persistence Adapter Boundary
 

@@ -60,6 +60,36 @@ test('retention lookup loads local receipt envelope and payload materials', asyn
   }
 });
 
+test('retention lookup resolves reading envelope and payload refs separately', async () => {
+  const modules = await loadModules();
+  const inventory = modules.evidence.createJeditRetainedEvidenceInventory({
+    packageId: PACKAGE_ID,
+    mutationOperationName: MUTATION_OPERATION,
+    queryOperationName: QUERY_OPERATION,
+    receiptId: RECEIPT_ID,
+    readingId: READING_ID,
+  });
+  const envelopeRef = inventory.refs.find((ref) => (
+    ref.role === modules.evidence.JEDIT_EVIDENCE_ROLE_READING_ENVELOPE
+  ));
+  const payloadRef = inventory.refs.find((ref) => (
+    ref.role === modules.evidence.JEDIT_EVIDENCE_ROLE_READING_PAYLOAD
+  ));
+  assert.ok(envelopeRef, 'expected reading envelope retained ref');
+  assert.ok(payloadRef, 'expected reading payload retained ref');
+  const lookup = modules.lookup.createInMemoryJeditEchoRetentionLookupPort(
+    modules.lookup.createJeditEchoRetainedMaterialRecords(inventory),
+  );
+
+  const envelope = modules.lookup.lookupJeditRetainedEvidenceMaterial(lookup, envelopeRef);
+  const payload = modules.lookup.lookupJeditRetainedEvidenceMaterial(lookup, payloadRef);
+
+  assert.equal(envelope.status, modules.lookup.JEDIT_ECHO_RETENTION_LOOKUP_HIT);
+  assert.equal(payload.status, modules.lookup.JEDIT_ECHO_RETENTION_LOOKUP_HIT);
+  assert.notEqual(envelope.materialBytesHex, payload.materialBytesHex);
+  assert.notEqual(envelope.ref.semanticCoordinate.coordinate, payload.ref.semanticCoordinate.coordinate);
+});
+
 test('semantic coordinate mismatch does not become a retained evidence hit', async () => {
   const modules = await loadModules();
   const inventory = modules.evidence.createJeditRetainedEvidenceInventory({
