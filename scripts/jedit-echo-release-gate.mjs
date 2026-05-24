@@ -30,7 +30,8 @@ const FOCUSED_TESTS = Object.freeze([
   'spec/jedit-restart-posture.spec.mjs',
   'spec/jedit-local-replay-proof.spec.mjs',
   'spec/echo-application-hosting-guide.spec.mjs',
-  'spec/interactive-echo-text-session.spec.mjs',
+  'spec/text-runtime-profile-session.spec.mjs',
+  'spec/production-text-session.spec.mjs',
   'spec/release-quickstart.spec.mjs',
 ]);
 

@@ -120,11 +120,11 @@ test('workspace app renders perf overlay after toggle when perf starts disabled'
   assert.match(text, /rss\s+\d+\.\d MB/);
 });
 
-test('workspace app preserves seeded interactive text runtime mode when option is absent', async () => {
-  const [workspaceApp, themes, mode] = await Promise.all([
+test('workspace app preserves seeded text runtime profile when option is absent', async () => {
+  const [workspaceApp, themes, profile] = await Promise.all([
     importDist('adapters', 'workspace-app.js'),
     importDist('ui', 'jedit-themes.js'),
-    importDist('app', 'interactive-text-runtime-mode.js'),
+    importDist('app', 'text-runtime-profile.js'),
   ]);
   const app = workspaceApp.createWorkspaceApp({
     initialColumns: 120,
@@ -139,13 +139,13 @@ test('workspace app preserves seeded interactive text runtime mode when option i
       i18n: mockI18n(),
       entries: [],
       nowMs: 0,
-      interactiveTextRuntimeMode: mode.INTERACTIVE_TEXT_RUNTIME_ECHO,
+      textRuntimeProfile: profile.TEXT_RUNTIME_PROFILE_TEST_LOCAL,
     },
   });
 
   const [initialModel] = app.init();
 
-  assert.equal(initialModel.interactiveTextRuntimeMode, mode.INTERACTIVE_TEXT_RUNTIME_ECHO);
+  assert.equal(initialModel.textRuntimeProfile, profile.TEXT_RUNTIME_PROFILE_TEST_LOCAL);
 });
 
 test('initial workspace scene picker lists authored scene assets that exist on disk', async () => {

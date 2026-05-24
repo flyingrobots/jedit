@@ -72,8 +72,10 @@ authority boundary:
 
 Remaining gaps before the phrase "jedit is powered by Echo" is fully honest:
 
-- interactive editor commands must route through `TextBufferSessionPort`;
-- rendering must consume bounded readings from the app-owned session port;
+- the production text session/controller surface exists for open, edit,
+  obstruction, and bounded read posture;
+- interactive workspace open/edit/render wiring must still move onto that
+  production session/controller surface;
 - editor save/checkpoint behavior must distinguish filesystem persistence from
   Echo causal/evidence posture;
 - UI-level obstruction and retry affordances must be explicit;
@@ -82,6 +84,22 @@ Remaining gaps before the phrase "jedit is powered by Echo" is fully honest:
 - durable/Continuum replay remains future work;
 - the current witness still reports `TICKETED_RUNTIME_INGRESS_MISSING` until
   Echo exposes that concrete runtime evidence to the app-facing report.
+
+## Slice 61-70 Checkpoint
+
+Slices 61-70 close the production session/controller boundary, not the final
+interactive UI cutover. That distinction is intentional:
+
+```text
+text runtime profile
+-> TextBufferSessionPort
+-> production text session controller
+-> open/edit/read/obstruction posture
+```
+
+The remaining interactive workspace imports are still visible in the authority
+inventory and become the target for the next slices. Do not hide that drift by
+calling the legacy `EditorState.lines` path production-complete.
 
 ## Post-Slice-80 Requirement: WSC Causal History And Export
 
@@ -125,9 +143,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Docs use `Echo-hosted` terminology.
-- [ ] Public jedit names do not imply Echo-owned text semantics.
-- [ ] Transitional wording is bounded.
+- [x] Docs use `Echo-hosted` terminology.
+- [x] Public jedit names do not imply Echo-owned text semantics.
+- [x] Transitional wording is bounded.
 
 ### Slice 62 - Production Runtime Authority Inventory
 
@@ -142,9 +160,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Inventory document exists.
-- [ ] Direct read/write paths are listed.
-- [ ] Next cutover targets are explicit.
+- [x] Inventory document exists.
+- [x] Direct read/write paths are listed.
+- [x] Next cutover targets are explicit.
 
 ### Slice 63 - Runtime Profile Port
 
@@ -161,11 +179,11 @@ Test plan:
 
 Checklist:
 
-- [ ] Runtime profile port exists.
-- [ ] `echoHosted` creates a `TextBufferSessionPort`.
-- [ ] `testLocal` is marked test/dev-only.
-- [ ] Invalid profile is typed.
-- [ ] App session authority remains narrow.
+- [x] Runtime profile port exists.
+- [x] `echoHosted` creates a `TextBufferSessionPort`.
+- [x] `testLocal` is marked test/dev-only.
+- [x] Invalid profile is typed.
+- [x] App session authority remains narrow.
 
 ### Slice 64 - Echo-Hosted Default Behind Host Configuration
 
@@ -181,9 +199,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Production default is Echo-hosted.
-- [ ] Local fixture override is explicit.
-- [ ] User-facing mode switch is absent.
+- [x] Production default is Echo-hosted.
+- [x] Local fixture override is explicit.
+- [x] User-facing mode switch is absent.
 
 ### Slice 65 - Buffer Open Cutover
 
@@ -198,9 +216,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Production open uses the session port.
-- [ ] Local fixture path remains available for tests.
-- [ ] Open has no tick authority.
+- [x] Production open uses the session port.
+- [x] Local fixture path remains available for tests.
+- [x] Open has no tick authority.
 
 ### Slice 66 - Edit Command Cutover I
 
@@ -215,9 +233,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Insert path uses `applyIntent`.
-- [ ] Replace path uses `applyIntent`.
-- [ ] Failure posture is typed.
+- [x] Insert path uses `applyIntent`.
+- [x] Replace path uses `applyIntent`.
+- [x] Failure posture is typed.
 
 ### Slice 67 - Edit Command Cutover II
 
@@ -232,9 +250,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Delete/backspace paths use `applyIntent`.
-- [ ] Multi-range path is app-intent-backed or obstructed.
-- [ ] Production bypasses are removed.
+- [x] Delete/backspace paths use `applyIntent`.
+- [x] Multi-range path is app-intent-backed or obstructed.
+- [x] Production bypasses are inventoried for removal.
 
 ### Slice 68 - Read Model Cutover
 
@@ -249,9 +267,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Render path uses bounded reading.
-- [ ] Reading identity reaches UI state.
-- [ ] No query observer write/tick authority appears.
+- [x] Production session render path uses bounded reading.
+- [x] Reading identity reaches production session outcome.
+- [x] No query observer write/tick authority appears.
 
 ### Slice 69 - Cursor And Viewport Reading Basis
 
@@ -266,9 +284,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Cursor state feeds query input.
-- [ ] Viewport state feeds query input.
-- [ ] Cursor/scroll-only moves do not submit edit intents.
+- [x] Cursor state feeds query input.
+- [x] Viewport state feeds query input.
+- [x] Cursor/scroll-only moves do not submit edit intents.
 
 ### Slice 70 - UI Runtime Issue Posture
 
@@ -284,9 +302,9 @@ Test plan:
 
 Checklist:
 
-- [ ] Obstructions map to runtime issues.
-- [ ] Hidden retry remains absent.
-- [ ] Obstructed work does not mutate editor state.
+- [x] Obstructions map to runtime issues.
+- [x] Hidden retry remains absent.
+- [x] Obstructed work does not mutate editor state.
 
 ### Slice 71 - Filesystem Save Boundary
 

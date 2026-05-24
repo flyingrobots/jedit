@@ -29,6 +29,14 @@ parallel product path. The mission is to make jedit's production text model
 Echo-hosted, quarantine or delete the legacy in-memory authority path, and keep
 Echo free of text/editor nouns.
 
+The current branch closes slices 61-70 at the production session/controller
+boundary: text runtime terminology is now `echoHosted`/`testLocal`, the default
+profile is Echo-hosted, direct text authority paths are inventoried, and the
+production text session opens, edits, observes bounded windows, and reports
+typed obstruction posture through `TextBufferSessionPort`. The interactive
+workspace still has visible legacy direct `EditorState.lines` paths; do not
+mistake the controller boundary for full UI cutover.
+
 The developer-facing recipe lives in
 [`docs/echo-application-hosting-guide.md`](echo-application-hosting-guide.md).
 
@@ -42,6 +50,9 @@ The developer-facing recipe lives in
 - Echo must not contain hardcoded jedit or text-buffer behavior.
 - The current real Echo witness fails closed with `UNSUPPORTED_QUERY` unless a
   jedit-owned query observer is installed.
+- The remaining production cutover work is wiring interactive workspace
+  open/edit/render/save behavior through the production text session/controller
+  and then quarantining the legacy direct line-mutation path.
 - Post-slice-80, the next durability bar is Echo-native WSC causal-history
   serialization: the full causal history of editing a file in jedit should be
   recoverable across application lifecycles, and jedit should materialize file
@@ -95,10 +106,12 @@ plan:
 19. Slice 59: PR release gate consolidation.
 20. Slice 60: drift reflection and next plan.
 
-Slice-60 reflection is complete. Continue with slice 61 in the production
-cutover plan. After slice 80, the next likely plan is WSC-backed persistence and
-point-in-time export. Distributed transport, settlement shells, streaming, and
-full observer-rights governance remain outside this batch.
+Slice-70 reflection is next. Continue with slice 71 in the production cutover
+plan after reviewing the visible drift between the production session/controller
+and the interactive workspace. After slice 80, the next likely plan is
+WSC-backed persistence and point-in-time export. Distributed transport,
+settlement shells, streaming, and full observer-rights governance remain outside
+this batch.
 
 ## Non-Negotiables
 

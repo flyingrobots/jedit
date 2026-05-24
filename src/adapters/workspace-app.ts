@@ -18,7 +18,7 @@ import { createGraftSourceHighlighter } from './graft-source-highlighter.js';
 import { createTitleSceneLoaderPort } from './title-scene-loader.js';
 import { createInitialModelSnapshot } from './workspace-initial-model-snapshot.js';
 import { createPerfApp } from './workspace-perf-app.js';
-import type { InteractiveTextRuntimeMode } from '../app/interactive-text-runtime-mode.js';
+import type { TextRuntimeProfile } from '../app/text-runtime-profile.js';
 
 const TIME_TICK_DURATION_MS = Number.MAX_SAFE_INTEGER;
 const DRAWER_DURATION_MS = 160;
@@ -27,7 +27,7 @@ export interface WorkspaceAppOptions {
   initialColumns: number;
   initialRows: number;
   initialWorkingDirectory: string;
-  interactiveTextRuntimeMode?: InteractiveTextRuntimeMode;
+  textRuntimeProfile?: TextRuntimeProfile;
   perfEnabled: boolean;
   nowMs?: () => number;
   random?: () => number;
@@ -64,8 +64,8 @@ function workspaceRuntimeDependencies(
     profiler: createRaytracerProfilerPort(nowMs),
     initialModel: {
       ...(options.seed ?? createInitialModelSnapshot(nowMs(), options.initialWorkingDirectory, random)),
-      ...(options.interactiveTextRuntimeMode == null ? {} : {
-        interactiveTextRuntimeMode: options.interactiveTextRuntimeMode,
+      ...(options.textRuntimeProfile == null ? {} : {
+        textRuntimeProfile: options.textRuntimeProfile,
       }),
     },
     nowMs,

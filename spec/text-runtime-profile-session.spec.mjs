@@ -1,0 +1,179 @@
+import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import path from 'node:path';
+import test from 'node:test';
+import { pathToFileURL } from 'node:url';
+
+const REPO_ROOT = process.cwd();
+const SESSION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'text-runtime-profile-session.js');
+const PROFILE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'text-runtime-profile.js');
+
+let modulesPromise;
+
+test('Echo-hosted text runtime profile drives a narrow edit/read path through Echo-backed session', async () => {
+  const modules = await loadModules();
+  const binding = modules.session.createTextRuntimeProfileSession({
+    profile: modules.profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+  });
+
+  const text = await runNarrowEditRead(binding.session, 'echoHosted');
+
+  assert.equal(binding.profile, modules.profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED);
+  assert.equal(text, 'echoHosted');
+  assert.equal('requestRunUntilIdle' in binding.session, false);
+});
+
+test('test-local text runtime profile remains explicit and without lifecycle authority', async () => {
+  const modules = await loadModules();
+  const binding = modules.session.createTextRuntimeProfileSession({
+    profile: modules.profile.TEXT_RUNTIME_PROFILE_TEST_LOCAL,
+  });
+
+  const text = await runNarrowEditRead(binding.session, 'testLocal');
+
+  assert.equal(binding.profile, modules.profile.TEXT_RUNTIME_PROFILE_TEST_LOCAL);
+  assert.equal(text, 'testLocal');
+  assert.equal('requestRunUntilIdle' in binding.session, false);
+});
+
+test('text runtime profile session accepts injected session factories', async () => {
+  const modules = await loadModules();
+  const calls = [];
+  const testLocalSession = fakeTextBufferSession('test-local-injected');
+  const echoHostedSession = fakeTextBufferSession('echo-hosted-injected');
+
+  const testLocal = modules.session.createTextRuntimeProfileSession({
+    profile: modules.profile.TEXT_RUNTIME_PROFILE_TEST_LOCAL,
+    testLocalSessionFactory: {
+      create() {
+        calls.push('testLocal');
+        return testLocalSession;
+      },
+    },
+  });
+  const echoHosted = modules.session.createTextRuntimeProfileSession({
+    profile: modules.profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+    echoHostedSessionFactory: {
+      create() {
+        calls.push('echoHosted');
+        return echoHostedSession;
+      },
+    },
+  });
+
+  assert.equal(testLocal.session, testLocalSession);
+  assert.equal(echoHosted.session, echoHostedSession);
+  assert.deepEqual(calls, ['testLocal', 'echoHosted']);
+});
+
+test('text runtime profile session rejects unknown profiles', async () => {
+  const modules = await loadModules();
+
+  assert.throws(
+    () => modules.session.createTextRuntimeProfileSession({ profile: 'bad-profile' }),
+    modules.session.TextRuntimeProfileSessionError,
+  );
+});
+
+test('text runtime profile parser defaults to Echo-hosted and obstructs invalid profiles', async () => {
+  const modules = await loadModules();
+
+  assert.deepEqual(modules.profile.parseTextRuntimeProfile(undefined), {
+    kind: modules.profile.TEXT_RUNTIME_PROFILE_PARSE_OK,
+    profile: modules.profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+  });
+  assert.deepEqual(modules.profile.parseTextRuntimeProfile('testLocal'), {
+    kind: modules.profile.TEXT_RUNTIME_PROFILE_PARSE_OK,
+    profile: modules.profile.TEXT_RUNTIME_PROFILE_TEST_LOCAL,
+  });
+  assert.deepEqual(modules.profile.parseTextRuntimeProfile('legacy'), {
+    kind: modules.profile.TEXT_RUNTIME_PROFILE_PARSE_OBSTRUCTED,
+    code: modules.profile.TEXT_RUNTIME_PROFILE_UNSUPPORTED_CODE,
+    suppliedValue: 'legacy',
+    fallbackProfile: modules.profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+  });
+});
+
+test('workspace initial model carries the text runtime profile', async () => {
+  const modules = await loadModules();
+  const workspace = await import(pathToFileURL(path.join(
+    REPO_ROOT,
+    'dist',
+    'app',
+    'workspace',
+    'init.js',
+  )).href);
+  const model = workspace.createInitialModel('/tmp/jedit', 80, 24, {
+    entries: [],
+    titleSceneSeed: 0.5,
+    jeditTheme: {
+      name: 'test',
+      mode: 'dark',
+      colors: {},
+    },
+    i18n: {},
+    nowMs: 0,
+    textRuntimeProfile: modules.profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+  });
+
+  assert.equal(model.textRuntimeProfile, modules.profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED);
+});
+
+async function runNarrowEditRead(session, text) {
+  const optic = await session.createBuffer({
+    bufferKey: `${text}.md`,
+    initialText: '',
+    projectionPath: `${text}.md`,
+  });
+  await optic.applyIntent({
+    kind: 'replaceRange',
+    startByte: 0,
+    endByte: 0,
+    insertText: text,
+  });
+  const observed = await optic.textWindow(optic.currentReadBasis(), {
+    cursorLine: 0,
+    beforeLines: 0,
+    viewportLineCount: 1,
+    afterLines: 0,
+    maxBytes: 80,
+  });
+  return observed.value.lines.map((line) => line.text).join('\n');
+}
+
+function fakeTextBufferSession(sessionId) {
+  return {
+    sessionId,
+    async createBuffer() {
+      return {};
+    },
+    async getBufferOptic() {
+      return null;
+    },
+    async listBuffers() {
+      return [];
+    },
+  };
+}
+
+async function loadModules() {
+  if (modulesPromise) {
+    return modulesPromise;
+  }
+
+  modulesPromise = (async () => {
+    const build = spawnSync('npm', ['run', '--silent', 'build'], {
+      cwd: REPO_ROOT,
+      encoding: 'utf8',
+    });
+
+    assert.equal(build.status, 0, build.stderr || build.stdout);
+    const [session, profile] = await Promise.all([
+      import(pathToFileURL(SESSION_MODULE_PATH).href),
+      import(pathToFileURL(PROFILE_MODULE_PATH).href),
+    ]);
+    return { session, profile };
+  })();
+
+  return modulesPromise;
+}

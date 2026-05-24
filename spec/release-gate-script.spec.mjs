@@ -64,5 +64,7 @@ test('release-gate script includes hosting replay and static guard witnesses', (
   assert.match(source, /spec\/jedit-local-replay-proof\.spec\.mjs/);
   assert.match(source, /spec\/echo-application-hosting-guide\.spec\.mjs/);
   assert.match(source, /spec\/jedit-restart-recovery\.spec\.mjs/);
+  assert.match(source, /spec\/text-runtime-profile-session\.spec\.mjs/);
+  assert.match(source, /spec\/production-text-session\.spec\.mjs/);
   assert.match(source, /npm', \['run', '--silent', 'quality'\]/);
 });
