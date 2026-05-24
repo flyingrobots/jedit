@@ -29,34 +29,38 @@ import {
   type JeditSubmissionLedgerPort,
 } from '../ports/jedit-submission-ledger.js';
 
+type JeditRestartOutcomeRecovery = (
+  intent: JeditIntentHandle,
+  outcome: JeditIntentOutcome,
+) => JeditRestartWitnessPosture;
+
+const MISSING_SUBMISSION_READ_STATUSES: ReadonlySet<string> = new Set([
+  JEDIT_SUBMISSION_LEDGER_READ_MISSING,
+]);
+const UNKNOWN_OUTCOME_STATUSES: ReadonlySet<string> = new Set([
+  JEDIT_INTENT_OUTCOME_UNKNOWN,
+]);
+const KNOWN_SUBMISSION_RECOVERY_BY_OUTCOME_STATUS: ReadonlyMap<string, JeditRestartOutcomeRecovery> = new Map([
+  [JEDIT_INTENT_OUTCOME_ACCEPTED_PENDING, pendingPosture],
+  [JEDIT_INTENT_OUTCOME_APPLIED, decidedPosture],
+  [JEDIT_INTENT_OUTCOME_REJECTED, rejectedOutcomePosture],
+  [JEDIT_INTENT_OUTCOME_OBSTRUCTED, obstructedOutcomePosture],
+  [JEDIT_INTENT_OUTCOME_UNKNOWN, pendingPosture],
+]);
+
 export function recoverJeditSubmissionAfterRestart(
   ledger: JeditSubmissionLedgerPort,
   intent: JeditIntentHandle,
   outcome: JeditIntentOutcome,
 ): JeditRestartWitnessPosture {
   const read = ledger.readSubmission(intent.submissionId);
-  if (read.status === JEDIT_SUBMISSION_LEDGER_READ_MISSING) {
-    return outcome.status === JEDIT_INTENT_OUTCOME_UNKNOWN
+  if (MISSING_SUBMISSION_READ_STATUSES.has(read.status)) {
+    return UNKNOWN_OUTCOME_STATUSES.has(outcome.status)
       ? unknownPosture(intent)
       : halfAcceptedPosture(intent);
   }
 
-  switch (outcome.status) {
-    case JEDIT_INTENT_OUTCOME_ACCEPTED_PENDING:
-      return pendingPosture(intent);
-    case JEDIT_INTENT_OUTCOME_APPLIED:
-      return {
-        status: JEDIT_RESTART_WITNESS_DECIDED,
-        submissionId: intent.submissionId,
-        receipt: outcome.receipt,
-      };
-    case JEDIT_INTENT_OUTCOME_REJECTED:
-      return rejectedPosture(intent, outcome.reason);
-    case JEDIT_INTENT_OUTCOME_OBSTRUCTED:
-      return rejectedPosture(intent, outcome.obstructionCode);
-    case JEDIT_INTENT_OUTCOME_UNKNOWN:
-      return pendingPosture(intent);
-  }
+  return knownSubmissionPosture(intent, outcome);
 }
 
 function pendingPosture(intent: JeditIntentHandle): JeditRestartWitnessPosture {
@@ -75,6 +79,46 @@ function rejectedPosture(
     submissionId: intent.submissionId,
     reason,
   };
+}
+
+function knownSubmissionPosture(
+  intent: JeditIntentHandle,
+  outcome: JeditIntentOutcome,
+): JeditRestartWitnessPosture {
+  return KNOWN_SUBMISSION_RECOVERY_BY_OUTCOME_STATUS.get(outcome.status)?.(intent, outcome)
+    ?? pendingPosture(intent);
+}
+
+function decidedPosture(
+  intent: JeditIntentHandle,
+  outcome: JeditIntentOutcome,
+): JeditRestartWitnessPosture {
+  if (!('receipt' in outcome)) {
+    return halfAcceptedPosture(intent);
+  }
+  return {
+    status: JEDIT_RESTART_WITNESS_DECIDED,
+    submissionId: intent.submissionId,
+    receipt: outcome.receipt,
+  };
+}
+
+function rejectedOutcomePosture(
+  intent: JeditIntentHandle,
+  outcome: JeditIntentOutcome,
+): JeditRestartWitnessPosture {
+  return 'reason' in outcome
+    ? rejectedPosture(intent, outcome.reason)
+    : halfAcceptedPosture(intent);
+}
+
+function obstructedOutcomePosture(
+  intent: JeditIntentHandle,
+  outcome: JeditIntentOutcome,
+): JeditRestartWitnessPosture {
+  return 'obstructionCode' in outcome
+    ? rejectedPosture(intent, outcome.obstructionCode)
+    : halfAcceptedPosture(intent);
 }
 
 function unknownPosture(intent: JeditIntentHandle): JeditRestartWitnessPosture {
