@@ -12,6 +12,7 @@ import {
 } from './jedit-intent-outcomes.js';
 import { createJeditRetainedEvidenceInventory } from './jedit-retained-evidence.js';
 import { currentJeditRestartPosture } from './jedit-restart-posture.js';
+import { missingJeditTicketedRuntimeIngress } from './jedit-ticketed-runtime-ingress.js';
 import type {
   JeditAcceptedPendingIntentOutcome,
   JeditAppliedIntentOutcome,
@@ -67,6 +68,7 @@ function toWitnessReport(
     bufferKey: buffer.bufferKey,
     outcome,
     outcomeTrail: [pending, outcome],
+    ticketedRuntimeIngress: missingJeditTicketedRuntimeIngress(outcome.intent.submissionId),
     retainedEvidence: createJeditRetainedEvidenceInventory({
       packageId: JEDIT_HOT_TEXT_PACKAGE_ID,
       mutationOperationName: mutationReplaceRangeAsTickOperation.fieldName,

@@ -1,6 +1,6 @@
 # jedit Powered By Echo Release Gate
 
-Status: slices 1-25 closed locally; release-gate evidence and continuation
+Status: slices 1-26 closed locally; release-gate evidence and continuation
 plan recorded.
 
 This plan defines the local release gate for the sentence:
@@ -784,10 +784,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Ticketed ingress type exists.
-- [ ] Submission and ticket identity are distinct.
-- [ ] Missing ticket posture is typed.
-- [ ] Witness report uses the posture.
+- [x] Ticketed ingress type exists.
+- [x] Submission and ticket identity are distinct.
+- [x] Missing ticket posture is typed.
+- [x] Witness report uses the posture.
 
 ## Slice 27 - Real Echo Receipt Correlation Adapter
 

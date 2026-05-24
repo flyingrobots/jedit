@@ -48,6 +48,11 @@ test('Echo-powered session CLI reports app capability, lifecycle, and reading ev
   assert.equal(summary.report.text, 'hello');
   assert.equal(summary.report.outcome.status, 'APPLIED');
   assert.equal(summary.report.outcomeTrail[0].status, 'ACCEPTED_PENDING');
+  assert.equal(summary.report.ticketedRuntimeIngress.status, 'TICKETED_RUNTIME_INGRESS_MISSING');
+  assert.notEqual(
+    summary.report.ticketedRuntimeIngress.submissionId,
+    summary.report.outcome.receipt.receiptId,
+  );
   assert.equal(summary.report.retainedEvidence.refs.length, 4);
   assert.equal(summary.report.restartPosture.status, 'PARTIAL');
   assert.equal(summary.report.restartPosture.acceptedSubmissionRecovery, 'UNAVAILABLE');

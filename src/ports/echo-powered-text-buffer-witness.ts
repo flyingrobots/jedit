@@ -7,6 +7,7 @@ import type {
 import type { JeditIntentOutcome } from './jedit-intent-outcomes.js';
 import type { JeditRetainedEvidenceInventory } from './jedit-retained-evidence.js';
 import type { JeditRestartPosture } from './jedit-restart-posture.js';
+import type { JeditTicketedRuntimeIngressPosture } from './jedit-ticketed-runtime-ingress.js';
 
 export interface EchoPoweredTextBufferWitnessRequest {
   readonly bufferKey: BufferKey;
@@ -27,6 +28,7 @@ export interface EchoPoweredTextBufferWitnessReport {
   readonly bufferKey: BufferKey;
   readonly outcome: JeditIntentOutcome;
   readonly outcomeTrail: readonly JeditIntentOutcome[];
+  readonly ticketedRuntimeIngress: JeditTicketedRuntimeIngressPosture;
   readonly retainedEvidence: JeditRetainedEvidenceInventory;
   readonly restartPosture: JeditRestartPosture;
   readonly receiptId: string;
