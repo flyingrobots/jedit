@@ -194,6 +194,24 @@ Checklist:
 - [x] Identical reinstall succeeds.
 - [x] Conflicting reinstall is blocked.
 
+## Drift Closure Before Slice 51
+
+The slice-50 reflection found four drift risks. They are closed or explicitly
+bounded here before the next slice batch starts.
+
+Checklist:
+
+- [x] Local witness evidence is stamped as `LOCAL_PROCESS_WITNESS` and does not
+  claim durable receipt correlation, ticketed runtime ingress, or accepted
+  submission recovery.
+- [x] Retained material lookup requires both byte identity and semantic
+  coordinate match; byte hash alone is not retained evidence.
+- [x] Echo's app-noun guard is intentionally production-source-scoped. Tests and
+  docs may contain app-shaped fixtures only as external-consumer examples.
+- [x] Durable restart persistence remains future work under slice 55; current
+  witness output must continue reporting partial restart posture.
+- [x] PR/CI review state remains branch process, not architectural truth.
+
 ### Slice 51 - Ticketed Mutation Execution Tightening
 
 User story: As `jedit`, mutation handlers run only after ticketed runtime work

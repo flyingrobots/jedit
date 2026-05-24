@@ -14,6 +14,7 @@ import { missingJeditReceiptCorrelation } from './jedit-receipt-correlation.js';
 import { createJeditRetainedEvidenceInventory } from './jedit-retained-evidence.js';
 import { currentJeditRestartPosture } from './jedit-restart-posture.js';
 import { missingJeditTicketedRuntimeIngress } from './jedit-ticketed-runtime-ingress.js';
+import { localProcessJeditWitnessEvidencePosture } from './jedit-witness-evidence-posture.js';
 import type {
   JeditAcceptedPendingIntentOutcome,
   JeditAppliedIntentOutcome,
@@ -69,6 +70,7 @@ function toWitnessReport(
     bufferKey: buffer.bufferKey,
     outcome,
     outcomeTrail: [pending, outcome],
+    evidencePosture: localProcessJeditWitnessEvidencePosture(),
     receiptCorrelation: missingJeditReceiptCorrelation(outcome.intent.submissionId),
     ticketedRuntimeIngress: missingJeditTicketedRuntimeIngress(outcome.intent.submissionId),
     retainedEvidence: createJeditRetainedEvidenceInventory({

@@ -29,6 +29,7 @@ test('retention lookup succeeds through Echo-shaped lookup port', async () => {
   const lookup = modules.lookup.createInMemoryJeditEchoRetentionLookupPort([
     {
       byteHash: payloadRef.byteIdentity.byteHash,
+      semanticCoordinate: payloadRef.semanticCoordinate,
       materialBytesHex: PAYLOAD_BYTES_HEX,
     },
   ]);
@@ -81,6 +82,27 @@ test('semantic coordinate mismatch does not become a retained evidence hit', asy
   const result = modules.lookup.lookupJeditRetainedEvidenceMaterial(lookup, rewrittenPayloadRef);
 
   assert.notEqual(rewrittenPayloadRef.semanticCoordinate.coordinate, inventory.refs[0].semanticCoordinate.coordinate);
+  assert.equal(result.status, modules.lookup.JEDIT_ECHO_RETENTION_LOOKUP_MISSING);
+});
+
+test('byte identity without semantic coordinate is not retained evidence', async () => {
+  const modules = await loadModules();
+  const inventory = modules.evidence.createJeditRetainedEvidenceInventory({
+    packageId: PACKAGE_ID,
+    mutationOperationName: MUTATION_OPERATION,
+    queryOperationName: QUERY_OPERATION,
+    receiptId: RECEIPT_ID,
+    readingId: READING_ID,
+  });
+  const payloadRef = inventory.refs.find((ref) => ref.role === modules.evidence.JEDIT_EVIDENCE_ROLE_READING_PAYLOAD);
+  const lookup = modules.lookup.createInMemoryJeditEchoRetentionLookupPort([
+    {
+      byteHash: payloadRef.byteIdentity.byteHash,
+      materialBytesHex: PAYLOAD_BYTES_HEX,
+    },
+  ]);
+  const result = modules.lookup.lookupJeditRetainedEvidenceMaterial(lookup, payloadRef);
+
   assert.equal(result.status, modules.lookup.JEDIT_ECHO_RETENTION_LOOKUP_MISSING);
 });
 
@@ -160,6 +182,7 @@ test('query identity is not treated as payload retention identity', async () => 
   const lookup = modules.lookup.createInMemoryJeditEchoRetentionLookupPort([
     {
       byteHash: QUERY_OPERATION,
+      semanticCoordinate: payloadRef.semanticCoordinate,
       materialBytesHex: PAYLOAD_BYTES_HEX,
     },
   ]);

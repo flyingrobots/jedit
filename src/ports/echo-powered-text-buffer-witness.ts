@@ -5,10 +5,23 @@ import type {
   TextWindowLine,
 } from './jedit-optic-client.js';
 import type { JeditIntentOutcome } from './jedit-intent-outcomes.js';
+import type { JEDIT_RECEIPT_CORRELATION_MISSING } from './jedit-receipt-correlation.js';
 import type { JeditReceiptCorrelation } from './jedit-receipt-correlation.js';
 import type { JeditRetainedEvidenceInventory } from './jedit-retained-evidence.js';
+import type { JEDIT_DURABILITY_POSTURE_UNAVAILABLE } from './jedit-restart-posture.js';
 import type { JeditRestartPosture } from './jedit-restart-posture.js';
+import type { JEDIT_TICKETED_RUNTIME_INGRESS_MISSING } from './jedit-ticketed-runtime-ingress.js';
 import type { JeditTicketedRuntimeIngressPosture } from './jedit-ticketed-runtime-ingress.js';
+
+export const JEDIT_WITNESS_EVIDENCE_SCOPE_LOCAL_PROCESS = 'LOCAL_PROCESS_WITNESS';
+
+export interface JeditWitnessEvidencePosture {
+  readonly scope: typeof JEDIT_WITNESS_EVIDENCE_SCOPE_LOCAL_PROCESS;
+  readonly receiptCorrelation: typeof JEDIT_RECEIPT_CORRELATION_MISSING;
+  readonly ticketedRuntimeIngress: typeof JEDIT_TICKETED_RUNTIME_INGRESS_MISSING;
+  readonly durableAcceptedSubmissionRecovery: typeof JEDIT_DURABILITY_POSTURE_UNAVAILABLE;
+  readonly syntheticReceiptClaimed: false;
+}
 
 export interface EchoPoweredTextBufferWitnessRequest {
   readonly bufferKey: BufferKey;
@@ -29,6 +42,7 @@ export interface EchoPoweredTextBufferWitnessReport {
   readonly bufferKey: BufferKey;
   readonly outcome: JeditIntentOutcome;
   readonly outcomeTrail: readonly JeditIntentOutcome[];
+  readonly evidencePosture: JeditWitnessEvidencePosture;
   readonly receiptCorrelation: JeditReceiptCorrelation;
   readonly ticketedRuntimeIngress: JeditTicketedRuntimeIngressPosture;
   readonly retainedEvidence: JeditRetainedEvidenceInventory;

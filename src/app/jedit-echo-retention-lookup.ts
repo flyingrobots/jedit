@@ -62,8 +62,7 @@ function lookupRetainedEvidence(
     return missingRetainedEvidence(ref);
   }
 
-  const record = retainedMaterial.bySemanticCoordinate.get(retainedMaterialKey(byteHash, ref))
-    ?? retainedMaterial.byByteHash.get(byteHash);
+  const record = retainedMaterial.bySemanticCoordinate.get(retainedMaterialKey(byteHash, ref));
   if (record == null) {
     return missingRetainedEvidence(ref);
   }
@@ -98,26 +97,19 @@ function toHex(value: string): string {
 
 interface RetainedMaterialIndex {
   readonly bySemanticCoordinate: ReadonlyMap<string, JeditEchoRetainedMaterialRecord>;
-  readonly byByteHash: ReadonlyMap<string, JeditEchoRetainedMaterialRecord>;
 }
 
 function indexRetainedMaterial(
   records: readonly JeditEchoRetainedMaterialRecord[],
 ): RetainedMaterialIndex {
   const bySemanticCoordinate = new Map<string, JeditEchoRetainedMaterialRecord>();
-  const byByteHash = new Map<string, JeditEchoRetainedMaterialRecord>();
 
   for (const record of records) {
-    if (record.semanticCoordinate == null) {
-      byByteHash.set(record.byteHash, record);
-    } else {
-      bySemanticCoordinate.set(retainedMaterialRecordKey(record), record);
-    }
+    bySemanticCoordinate.set(retainedMaterialRecordKey(record), record);
   }
 
   return {
     bySemanticCoordinate,
-    byByteHash,
   };
 }
 

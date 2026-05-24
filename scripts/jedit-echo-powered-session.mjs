@@ -372,7 +372,7 @@ function helpText() {
   return `Usage: node scripts/jedit-echo-powered-session.mjs [options]
 
 Options:
-  --buffer-key <path>     Buffer key for the synthetic session.
+  --buffer-key <path>     Buffer key for the local witness session.
   --text <text>           Text inserted by the replace-range intent.
   --cycle-limit <n>       Trusted host run-until-idle cycle limit.
   --unsupported-mutation <name>

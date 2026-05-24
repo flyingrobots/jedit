@@ -18,7 +18,10 @@ The active hardening plan is
 [`docs/design/0026-echo-hosting-hardening-first-twenty.md`](design/0026-echo-hosting-hardening-first-twenty.md).
 That plan records slices 41-60. The current local inspection point is slice 50:
 trusted lifecycle start/drain/stop, package identity, install posture, and the
-Echo no-app-noun guard are closed; pause for reflection before continuing.
+Echo no-app-noun guard are closed. The drift closure before slice 51 is also
+closed: local evidence is explicitly marked as process-local, retained lookup
+requires semantic coordinate match, durable restart remains future work, and the
+Echo app-noun guard scope is documented.
 
 The developer-facing recipe lives in
 [`docs/echo-application-hosting-guide.md`](echo-application-hosting-guide.md).
@@ -72,7 +75,8 @@ plan:
 49. unsupported operation boundary.
 50. package reinstall and duplicate policy.
 
-Pause after slice 50 for inspection. Distributed transport, settlement shells,
+Slice-50 drift closure is complete. Continue next with slice 51: ticketed
+mutation execution tightening. Distributed transport, settlement shells,
 streaming, and full observer-rights governance remain outside this batch.
 
 ## Non-Negotiables
