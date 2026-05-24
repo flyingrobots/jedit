@@ -34,7 +34,7 @@ export function jeditContractSessionToFacts(
     facts: Object.freeze([
       worldlineFact(session, hash),
       headFact(session, hash),
-      rootFact(session, hash),
+      ...rootFacts(session, hash),
       ...tickFacts(session, hash),
       ...checkpointFacts(session, hash),
     ]),
@@ -61,12 +61,23 @@ function headFact(session: JeditWorldlineSession, hash: HashPort): JeditHeadEnti
   }, hash);
 }
 
-function rootFact(session: JeditWorldlineSession, hash: HashPort): JeditRootEntityFact {
+function rootFacts(
+  session: JeditWorldlineSession,
+  hash: HashPort,
+): readonly JeditRootEntityFact[] {
+  return session.state.roots.map((root) => rootFact(session, hash, root));
+}
+
+function rootFact(
+  session: JeditWorldlineSession,
+  hash: HashPort,
+  root: JeditWorldlineSession['state']['currentRoot'],
+): JeditRootEntityFact {
   return withFactId({
     kind: JEDIT_CONTRACT_ENTITY_FACT_ROOT,
     worldlineId: session.worldline.worldlineId,
-    rootId: session.state.currentRoot.id,
-    textDigest: hash.sha256Hex(session.state.currentRoot.text),
+    rootId: root.id,
+    textDigest: hash.sha256Hex(root.text),
   }, hash);
 }
 

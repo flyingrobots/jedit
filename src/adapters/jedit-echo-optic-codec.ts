@@ -97,6 +97,7 @@ const SaveCheckpointSchema = z.object({
 const HotTextBufferStateSchema = z.object({
   path: z.string(),
   currentRoot: BufferRootSchema,
+  roots: z.array(BufferRootSchema),
   ticks: z.array(AdmittedTickSchema),
   editGroups: z.array(EditGroupSchema),
   openEditGroup: OpenEditGroupSchema.optional(),

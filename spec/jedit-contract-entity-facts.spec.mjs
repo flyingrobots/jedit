@@ -41,6 +41,39 @@ test('checkpoint sessions emit checkpoint entity facts', async () => {
   assert.ok(factSet.facts.some((fact) => fact.kind === modules.facts.JEDIT_CONTRACT_ENTITY_FACT_CHECKPOINT));
 });
 
+test('historical checkpoint roots are represented by root facts', async () => {
+  const modules = await loadModules();
+  const runtime = modules.hotRuntime.createInMemoryHotTextRuntime();
+  const hash = modules.hash.createHashPort();
+  const created = modules.runtime.createBufferWorldline(runtime, {
+    bufferKey: BUFFER_KEY,
+    initialText: INITIAL_TEXT,
+    projectionPath: BUFFER_KEY,
+    createInitialCheckpoint: true,
+  }, hash);
+  const edited = modules.runtime.replaceRangeAsTick(runtime, created.nextSession, {
+    worldlineId: created.result.worldline.worldlineId,
+    baseHeadId: created.result.head.headId,
+    startByte: INITIAL_TEXT.length,
+    endByte: INITIAL_TEXT.length,
+    insertText: INSERT_TEXT,
+  }, hash).nextSession;
+  const factSet = modules.facts.jeditContractSessionToFacts(edited, hash);
+  const rootFactIds = new Set(
+    factSet.facts
+      .filter((fact) => fact.kind === modules.facts.JEDIT_CONTRACT_ENTITY_FACT_ROOT)
+      .map((fact) => fact.rootId),
+  );
+  const referencedRootIds = factSet.facts
+    .filter((fact) => fact.kind !== modules.facts.JEDIT_CONTRACT_ENTITY_FACT_WORLDLINE)
+    .map((fact) => fact.rootId);
+
+  assert.ok(rootFactIds.size > 1);
+  for (const rootId of referencedRootIds) {
+    assert.equal(rootFactIds.has(rootId), true, `missing root fact for referenced root ${rootId}`);
+  }
+});
+
 function createEditedSession(modules) {
   const runtime = modules.hotRuntime.createInMemoryHotTextRuntime();
   const hash = modules.hash.createHashPort();

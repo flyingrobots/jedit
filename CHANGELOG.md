@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Preserved jedit contract root history in the Echo-facing runtime state so
+  tick and checkpoint facts do not reference roots without corresponding root
+  facts.
 - Updated architecture and user-facing documentation to describe the
   structural-history GraphQL authority slice, build-generated Wesley metadata,
   and the current fake-versus-real Echo witness posture.

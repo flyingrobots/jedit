@@ -854,6 +854,7 @@ Work:
 Test plan:
 
 - Session converts to stable fact set.
+- Historical tick and checkpoint roots have corresponding root facts.
 - Fact set contains no Echo-specific editor APIs.
 - Same session produces same fact identities.
 
@@ -861,6 +862,7 @@ Checklist:
 
 - [x] Entity/fact model exists.
 - [x] Session conversion exists.
+- [x] Historical root references have matching root facts.
 - [x] Fact identities are stable.
 - [x] Tests prove deterministic conversion.
 
