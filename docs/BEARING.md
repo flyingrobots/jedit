@@ -235,10 +235,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Add production insert command planner.
-- [ ] Add production replace command planner.
-- [ ] Refresh bounded reading after applied outcome.
-- [ ] Cover obstruction and no-local-mutation behavior.
+- [x] Add production insert command planner.
+- [x] Add production replace command planner.
+- [x] Refresh bounded reading after applied outcome.
+- [x] Cover obstruction and no-local-mutation behavior.
 
 ### Slice 86 - Delete And Backspace Command Planner
 
@@ -265,10 +265,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Add production delete command planner.
-- [ ] Add production backspace command planner.
-- [ ] Define unsupported multi-range posture if needed.
-- [ ] Cover delete behavior with deterministic tests.
+- [x] Add production delete command planner.
+- [x] Add production backspace command planner.
+- [x] Define unsupported multi-range posture if needed.
+- [x] Cover delete behavior with deterministic tests.
 
 ### Slice 87 - Cursor And Viewport Refresh Reads
 
@@ -296,10 +296,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Separate cursor state from Echo reading basis.
-- [ ] Add aperture-change read refresh logic.
-- [ ] Avoid edit submission on movement.
-- [ ] Cover movement and viewport refresh with tests.
+- [x] Separate cursor state from Echo reading basis.
+- [x] Add aperture-change read refresh logic.
+- [x] Avoid edit submission on movement.
+- [x] Cover movement and viewport refresh with tests.
 
 ### Slice 88 - Save And Export UI Boundary
 
@@ -328,10 +328,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Route save through materialized Echo-backed text.
-- [ ] Keep checkpoint and file export distinct.
-- [ ] Preserve dirty posture on failed save/export.
-- [ ] Cover save/export behavior with tests.
+- [x] Route save through materialized Echo-backed text.
+- [x] Keep checkpoint and file export distinct.
+- [x] Preserve dirty posture on failed save/export.
+- [x] Cover save/export behavior with tests.
 
 ### Slice 89 - Legacy Direct Mutation Quarantine
 

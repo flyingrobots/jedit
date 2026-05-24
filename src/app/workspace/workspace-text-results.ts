@@ -5,6 +5,7 @@ const RESULT_OPENED = 'opened';
 const RESULT_APPLIED = 'applied';
 const RESULT_CHECKPOINTED = 'checkpointed';
 const RESULT_EXPORTED = 'exported';
+const RESULT_READ = 'read';
 const RESULT_OBSTRUCTED = 'obstructed';
 
 export const WorkspaceTextResultKinds = Object.freeze({
@@ -12,6 +13,7 @@ export const WorkspaceTextResultKinds = Object.freeze({
   Applied: RESULT_APPLIED,
   Checkpointed: RESULT_CHECKPOINTED,
   Exported: RESULT_EXPORTED,
+  Read: RESULT_READ,
   Obstructed: RESULT_OBSTRUCTED,
 } as const);
 
@@ -45,6 +47,13 @@ export interface WorkspaceTextExportedResult {
   readonly readingId: string;
 }
 
+export interface WorkspaceTextReadResult {
+  readonly kind: typeof RESULT_READ;
+  readonly filePath: string;
+  readonly bufferId: string;
+  readonly cache: WorkspaceTextReadingCache;
+}
+
 export interface WorkspaceTextObstructedResult {
   readonly kind: typeof RESULT_OBSTRUCTED;
   readonly filePath: string;
@@ -65,4 +74,8 @@ export type WorkspaceTextCheckpointResult =
 
 export type WorkspaceTextExportResult =
   | WorkspaceTextExportedResult
+  | WorkspaceTextObstructedResult;
+
+export type WorkspaceTextReadCommandResult =
+  | WorkspaceTextReadResult
   | WorkspaceTextObstructedResult;

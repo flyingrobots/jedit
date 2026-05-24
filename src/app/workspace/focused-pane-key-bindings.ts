@@ -25,5 +25,5 @@ export function updateFocusedPaneKey(
     ));
   }
 
-  return updateViewerFromKey(msg, model, context.deps.sourceHighlighter);
+  return updateViewerFromKey(msg, model, context.deps.sourceHighlighter, context.deps.productionTextSession);
 }

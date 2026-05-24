@@ -39,6 +39,10 @@ import {
   openedWorkspaceTextAuthority,
   obstructedWorkspaceTextAuthority,
   WorkspaceTextAuthorityKinds,
+  workspaceTextAuthorityWithCache,
+  workspaceTextAuthorityWithCheckpoint,
+  workspaceTextAuthorityWithExport,
+  workspaceTextAuthorityWithReceipt,
 } from './workspace-text-authority.js';
 import { WorkspaceTextResultKinds } from './workspace-text-results.js';
 import { ViewModes } from './view-mode.js';
@@ -168,9 +172,107 @@ function updateWorkspaceStateMessage(
   if (msg.type === WorkspaceMessageTypes.TextOpenResult) {
     return applyTextOpenResult(deps, msg, model);
   }
+  if (msg.type === WorkspaceMessageTypes.TextEditResult) {
+    return applyTextEditResult(deps, msg, model);
+  }
+  if (msg.type === WorkspaceMessageTypes.TextCheckpointResult) {
+    return applyTextCheckpointResult(deps, msg, model);
+  }
+  if (msg.type === WorkspaceMessageTypes.TextExportResult) {
+    return applyTextExportResult(deps, msg, model);
+  }
+  if (msg.type === WorkspaceMessageTypes.TextReadResult) {
+    return applyTextReadResult(deps, msg, model);
+  }
   return msg.type === TITLE_CAMERA_MESSAGE.Frame
     ? [{ ...model, titleCamera: reduceTitleCameraMotion(model.titleCamera, msg) }, []]
     : undefined;
+}
+
+function applyTextEditResult(
+  deps: WorkspaceRuntimeDependencies,
+  msg: Extract<WorkspaceMsg, { type: typeof WorkspaceMessageTypes.TextEditResult }>,
+  model: WorkspaceModel,
+): WorkspaceRuntimeResult {
+  const authority = model.textAuthority;
+  if (authority.kind !== WorkspaceTextAuthorityKinds.Opened || msg.requestId !== model.textRequestId) {
+    return [model, []];
+  }
+  if (msg.result.kind === WorkspaceTextResultKinds.Obstructed) {
+    return pushRuntimeIssueToast(model, msg.result.issue, deps.createNotificationTickCmd);
+  }
+  const withReceipt = workspaceTextAuthorityWithReceipt(authority, msg.result.receiptId);
+  const withCache = workspaceTextAuthorityWithCache(withReceipt, msg.result.cache);
+  const next = {
+    ...model,
+    textAuthority: withCache,
+    editor: editorFromWorkspaceTextCache(withCache, model.editor),
+  };
+  return beginEditorProjectionRefresh(next, { refreshGraft: shouldRefreshGraftAfterTextChange(model) }, {
+    editorFile: deps.editorFile,
+    sourceHighlighter: deps.sourceHighlighter,
+    graftSession: deps.graftSession,
+  });
+}
+
+function applyTextCheckpointResult(
+  deps: WorkspaceRuntimeDependencies,
+  msg: Extract<WorkspaceMsg, { type: typeof WorkspaceMessageTypes.TextCheckpointResult }>,
+  model: WorkspaceModel,
+): WorkspaceRuntimeResult {
+  const authority = model.textAuthority;
+  if (authority.kind !== WorkspaceTextAuthorityKinds.Opened || msg.requestId !== model.textRequestId) {
+    return [model, []];
+  }
+  if (msg.result.kind === WorkspaceTextResultKinds.Obstructed) {
+    return pushRuntimeIssueToast(model, msg.result.issue, deps.createNotificationTickCmd);
+  }
+  const textAuthority = workspaceTextAuthorityWithCheckpoint(authority, msg.result.checkpointId);
+  return [{
+    ...model,
+    textAuthority,
+    editor: editorFromWorkspaceTextCache(textAuthority, model.editor),
+  }, []];
+}
+
+function applyTextExportResult(
+  deps: WorkspaceRuntimeDependencies,
+  msg: Extract<WorkspaceMsg, { type: typeof WorkspaceMessageTypes.TextExportResult }>,
+  model: WorkspaceModel,
+): WorkspaceRuntimeResult {
+  const authority = model.textAuthority;
+  if (authority.kind !== WorkspaceTextAuthorityKinds.Opened || msg.requestId !== model.textRequestId) {
+    return [model, []];
+  }
+  if (msg.result.kind === WorkspaceTextResultKinds.Obstructed) {
+    return pushRuntimeIssueToast(model, msg.result.issue, deps.createNotificationTickCmd);
+  }
+  const textAuthority = workspaceTextAuthorityWithExport(authority, msg.result.readingId);
+  return [{
+    ...model,
+    textAuthority,
+    editor: editorFromWorkspaceTextCache(textAuthority, model.editor),
+  }, []];
+}
+
+function applyTextReadResult(
+  deps: WorkspaceRuntimeDependencies,
+  msg: Extract<WorkspaceMsg, { type: typeof WorkspaceMessageTypes.TextReadResult }>,
+  model: WorkspaceModel,
+): WorkspaceRuntimeResult {
+  const authority = model.textAuthority;
+  if (authority.kind !== WorkspaceTextAuthorityKinds.Opened || msg.requestId !== model.textRequestId) {
+    return [model, []];
+  }
+  if (msg.result.kind === WorkspaceTextResultKinds.Obstructed) {
+    return pushRuntimeIssueToast(model, msg.result.issue, deps.createNotificationTickCmd);
+  }
+  const textAuthority = workspaceTextAuthorityWithCache(authority, msg.result.cache);
+  return [{
+    ...model,
+    textAuthority,
+    editor: editorFromWorkspaceTextCache(textAuthority, model.editor),
+  }, []];
 }
 
 function applyTextOpenResult(
@@ -225,6 +327,10 @@ function withFocusPaneRefresh(model: WorkspaceModel): WorkspaceModel {
     ...model,
     focusPane: FocusPanes.Editor,
   };
+}
+
+function shouldRefreshGraftAfterTextChange(model: WorkspaceModel): boolean {
+  return model.graftDrawerOpen || model.graftInfo?.path === model.editor?.path;
 }
 
 function updateGraftInfoMessage(

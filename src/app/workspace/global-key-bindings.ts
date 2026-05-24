@@ -12,6 +12,12 @@ import type { WorkspaceKeyBindingContext } from './key-binding-context.js';
 import type { WorkspaceModel } from './model.js';
 import { WorkspaceMessageTypes, type WorkspaceMsg } from './msg.js';
 import { WorkspaceKeys } from './workspace-key.js';
+import {
+  createWorkspaceTextCheckpointCmd,
+  createWorkspaceTextExportCmd,
+  defaultWorkspaceTextAperture,
+} from './workspace-text-commands.js';
+import { WorkspaceTextAuthorityKinds } from './workspace-text-authority.js';
 
 type KeyBindingResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 
@@ -59,11 +65,42 @@ function updateSaveKey(
   if (!msg.ctrl || msg.alt || msg.key !== WorkspaceKeys.S || model.editor == null) {
     return undefined;
   }
+  if (model.textAuthority.kind === WorkspaceTextAuthorityKinds.Opened) {
+    return saveProductionText(model, context);
+  }
 
   const editor = saveEditor(model.editor, context.deps.editorFile);
   return beginEditorProjectionRefresh({ ...model, editor }, {
     refreshGraft: shouldRefreshGraft(model, editor.path),
   }, context.deps);
+}
+
+function saveProductionText(
+  model: WorkspaceModel,
+  context: WorkspaceKeyBindingContext,
+): KeyBindingResult {
+  if (model.textAuthority.kind !== WorkspaceTextAuthorityKinds.Opened) {
+    return [model, []];
+  }
+  const requestId = model.textRequestId + 1;
+  const base = {
+    requestId,
+    filePath: model.textAuthority.filePath,
+    bufferId: model.textAuthority.bufferId,
+    productionTextSession: context.deps.productionTextSession,
+    atMs: context.nowMs(),
+  };
+  return [{
+    ...model,
+    textRequestId: requestId,
+  }, [
+    createWorkspaceTextExportCmd({
+      ...base,
+      editorFile: context.deps.editorFile,
+      aperture: defaultWorkspaceTextAperture(),
+    }),
+    createWorkspaceTextCheckpointCmd(base),
+  ]];
 }
 
 function updateThemeKey(msg: KeyMsg, model: WorkspaceModel): KeyBindingResult | undefined {
