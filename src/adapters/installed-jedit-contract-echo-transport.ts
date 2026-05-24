@@ -6,15 +6,11 @@ import {
 } from '../app/jedit-contract-query-observers.js';
 import { JEDIT_HOT_TEXT_PACKAGE_ID } from '../app/jedit-contract-package.js';
 import {
-  createInMemoryJeditContractStatePort,
-  JeditContractStatePortError,
-} from '../app/jedit-contract-state-port.js';
-import {
-  createInMemoryJeditSubmissionLedgerPort,
+  createDefaultJeditHostingBoundaries,
   createJeditSubmissionId,
+  JeditContractStatePortError,
   recordAcceptedJeditSubmission,
-} from '../app/jedit-submission-ledger.js';
-import { createInMemoryJeditTicketedWorkPort } from '../app/jedit-ticketed-work-boundary.js';
+} from '../app/jedit-hosting-boundaries.js';
 import {
   invokeJeditHandlerWithAuthority,
   JEDIT_HANDLER_INVOCATION_AUTHORITY_SCHEDULER,
@@ -133,7 +129,8 @@ function createTransportContext(
 ): InstalledJeditContractEchoTransportContext {
   const runtime = options.runtime ?? createInMemoryHotTextRuntime();
   const hash = options.hash ?? createHashPort();
-  const statePort = options.statePort ?? createInMemoryJeditContractStatePort();
+  const defaults = createDefaultJeditHostingBoundaries(hash);
+  const statePort = options.statePort ?? defaults.statePort;
   const mutations = createJeditContractMutationHandlerRegistry({ runtime, hash, statePort });
   const observers = createJeditContractQueryObserverRegistry({ runtime, hash, statePort });
   const host = createRecordingPackageHost();
@@ -152,8 +149,8 @@ function createTransportContext(
     observers,
     workSink: options.workSink,
     handlerInvocationSink: options.handlerInvocationSink,
-    submissionLedger: options.submissionLedger ?? createInMemoryJeditSubmissionLedgerPort(),
-    ticketedWorkPort: options.ticketedWorkPort ?? createInMemoryJeditTicketedWorkPort(hash),
+    submissionLedger: options.submissionLedger ?? defaults.submissionLedger,
+    ticketedWorkPort: options.ticketedWorkPort ?? defaults.ticketedWorkPort,
   };
 }
 

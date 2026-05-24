@@ -43,10 +43,7 @@ export function recoverJeditSubmissionAfterRestart(
 
   switch (outcome.status) {
     case JEDIT_INTENT_OUTCOME_ACCEPTED_PENDING:
-      return {
-        status: JEDIT_RESTART_WITNESS_PENDING,
-        submissionId: intent.submissionId,
-      };
+      return pendingPosture(intent);
     case JEDIT_INTENT_OUTCOME_APPLIED:
       return {
         status: JEDIT_RESTART_WITNESS_DECIDED,
@@ -54,23 +51,30 @@ export function recoverJeditSubmissionAfterRestart(
         receipt: outcome.receipt,
       };
     case JEDIT_INTENT_OUTCOME_REJECTED:
-      return {
-        status: JEDIT_RESTART_WITNESS_REJECTED,
-        submissionId: intent.submissionId,
-        reason: outcome.reason,
-      };
+      return rejectedPosture(intent, outcome.reason);
     case JEDIT_INTENT_OUTCOME_OBSTRUCTED:
-      return {
-        status: JEDIT_RESTART_WITNESS_REJECTED,
-        submissionId: intent.submissionId,
-        reason: outcome.obstructionCode,
-      };
+      return rejectedPosture(intent, outcome.obstructionCode);
     case JEDIT_INTENT_OUTCOME_UNKNOWN:
-      return {
-        status: JEDIT_RESTART_WITNESS_PENDING,
-        submissionId: intent.submissionId,
-      };
+      return pendingPosture(intent);
   }
+}
+
+function pendingPosture(intent: JeditIntentHandle): JeditRestartWitnessPosture {
+  return {
+    status: JEDIT_RESTART_WITNESS_PENDING,
+    submissionId: intent.submissionId,
+  };
+}
+
+function rejectedPosture(
+  intent: JeditIntentHandle,
+  reason: string,
+): JeditRestartWitnessPosture {
+  return {
+    status: JEDIT_RESTART_WITNESS_REJECTED,
+    submissionId: intent.submissionId,
+    reason,
+  };
 }
 
 function unknownPosture(intent: JeditIntentHandle): JeditRestartWitnessPosture {

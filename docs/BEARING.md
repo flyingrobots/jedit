@@ -14,6 +14,9 @@ That plan is the source of truth for the next ten slices: make `jedit` prove the
 reusable Echo application-hosting pattern before applying the model to Graft,
 Think, or other apps.
 
+The developer-facing recipe lives in
+[`docs/echo-application-hosting-guide.md`](echo-application-hosting-guide.md).
+
 ## Current Truth
 
 - `TextBufferOptic` is a jedit app capability.
@@ -27,7 +30,7 @@ Think, or other apps.
 
 ## Immediate Work
 
-The current local inspection point is slice 31 of the application-hosting
+The current local inspection point is slice 40 of the application-hosting
 pattern plan:
 
 31. application hosting contract pattern.
@@ -35,6 +38,11 @@ pattern plan:
 33. read-side state authority cutover.
 34. submission ledger port.
 35. ticketed work boundary.
+36. real receipt correlation.
+37. real local retained evidence lookup.
+38. restart and recovery witness.
+39. second-app template proof.
+40. developer app host guide.
 
 Agents can inspect the installed-package witness path with:
 
@@ -44,10 +52,10 @@ node scripts/jedit-echo-powered-session.mjs --json --dry-run
 node scripts/jedit-echo-powered-session.mjs --json
 ```
 
-Pause after slice 31 for inspection. The current branch must remain honest that
-`jedit` has an installed package/evidence path and app-owned state-port shapes,
-while the installed handler and observer paths still need to cut over to the
-state-port authority in later slices.
+Pause after slice 40 for inspection. The current branch now proves the reusable
+Echo application-hosting pattern with `jedit` and a small second-app template,
+while remaining honest that distributed transport, settlement shells, streaming,
+and full observer-rights governance are outside this batch.
 
 ## Non-Negotiables
 

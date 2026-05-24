@@ -437,10 +437,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Developer guide exists.
-- [ ] Diagrams are included.
-- [ ] Evidence commands are current.
-- [ ] BEARING reflects completed status.
+- [x] Developer guide exists.
+- [x] Diagrams are included.
+- [x] Evidence commands are current.
+- [x] BEARING reflects completed status.
 
 ## Non-Goals
 
