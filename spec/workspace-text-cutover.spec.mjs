@@ -6,6 +6,7 @@ import {
   mockI18n,
   mockJeditTheme,
   mockRuntime,
+  surfaceText,
 } from './workspace-helpers.mjs';
 
 test('file open routes through production text session and applies initial bounded reading', async () => {
@@ -105,4 +106,60 @@ test('file open routes through production text session and applies initial bound
   assert.deepEqual(openedModel.editor.lines, ['hello', 'world']);
   assert.equal(openedModel.editor.dirty, false);
   assert.equal(openedModel.editor.readOnly, false);
+});
+
+test('viewer renders production text from reading cache instead of stale editor lines', async () => {
+  const [viewerContent, modeModule, authority, profile] = await Promise.all([
+    importDist('app', 'workspace', 'viewer-content.js'),
+    importDist('app', 'workspace', 'editor', 'mode.js'),
+    importDist('app', 'workspace', 'workspace-text-authority.js'),
+    importDist('app', 'text-runtime-profile.js'),
+  ]);
+  const model = {
+    editor: {
+      path: '/repo/notes.txt',
+      lines: ['stale local line'],
+      cursorRow: 0,
+      cursorCol: 0,
+      scrollRow: 0,
+      scrollCol: 0,
+      dirty: false,
+      readOnly: false,
+      mode: modeModule.EditorModes.Normal,
+      undoStack: [],
+      redoStack: [],
+    },
+    textAuthority: authority.openedWorkspaceTextAuthority({
+      profile: profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+      filePath: '/repo/notes.txt',
+      bufferId: 'buffer:notes',
+      readOnly: false,
+      dirty: false,
+      cache: {
+        bufferId: 'buffer:notes',
+        readingId: 'reading:fresh',
+        lines: ['fresh Echo reading'],
+        lineCount: 1,
+        cursorLine: 0,
+        viewportLineCount: 24,
+        truncated: false,
+      },
+    }),
+    viewMode: 'source',
+    sourceHighlight: undefined,
+    time: 0,
+    jeditTheme: mockJeditTheme(),
+    titleCamera: { angle: 0, radius: 0 },
+    titleSceneSeed: 0,
+    titleMeshes: {},
+    sceneOverride: undefined,
+    titleRenderMode: 'braille',
+    titleAsciiPalette: 'dense',
+  };
+
+  const surface = viewerContent.renderViewer(model, 80, 16);
+  const text = surfaceText(surface);
+
+  assert.match(text, /fresh Echo reading/);
+  assert.doesNotMatch(text, /stale local line/);
 });

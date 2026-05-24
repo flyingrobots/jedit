@@ -201,10 +201,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Route production viewer rendering through reading cache.
-- [ ] Route preview/highlighting through reading materialization ports.
-- [ ] Add explicit missing-reading posture.
-- [ ] Expand guard coverage for direct render authority.
+- [x] Route production viewer rendering through reading cache.
+- [x] Route preview/highlighting through reading materialization ports.
+- [x] Add explicit missing-reading posture.
+- [x] Expand guard coverage for direct render authority.
 
 ### Slice 85 - Insert And Replace Command Planner
 
