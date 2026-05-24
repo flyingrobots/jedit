@@ -10,9 +10,8 @@ package/evidence path.
 
 The active post-release-pressure direction is
 [`docs/design/0025-echo-application-hosting-pattern.md`](design/0025-echo-application-hosting-pattern.md).
-That plan is the source of truth for the next ten slices: make `jedit` prove the
-reusable Echo application-hosting pattern before applying the model to Graft,
-Think, or other apps.
+That completed plan proved the reusable Echo application-hosting pattern before
+applying the model to Graft, Think, or other apps.
 
 The active hardening plan is
 [`docs/design/0026-echo-hosting-hardening-first-twenty.md`](design/0026-echo-hosting-hardening-first-twenty.md).
@@ -23,11 +22,12 @@ correlation, retained lookup, restart recovery, replay identity, counter
 template portability, guide drift checks, and release-gate consolidation are
 closed locally.
 
-The proposed next plan is
-[`docs/design/0027-echo-powered-ui-adoption-next-ten.md`](design/0027-echo-powered-ui-adoption-next-ten.md).
-It starts with slice 61: inventory the interactive editor's read/write paths
-and prepare the UI cutover to `TextBufferSessionPort`/Echo mode without moving
-text semantics into Echo.
+The active production cutover plan is
+[`docs/design/0027-echo-hosted-production-cutover.md`](design/0027-echo-hosted-production-cutover.md).
+It records slices 61-80. The mission is no longer "support Echo mode" as a
+parallel product path. The mission is to make jedit's production text model
+Echo-hosted, quarantine or delete the legacy in-memory authority path, and keep
+Echo free of text/editor nouns.
 
 The developer-facing recipe lives in
 [`docs/echo-application-hosting-guide.md`](echo-application-hosting-guide.md).
@@ -42,6 +42,10 @@ The developer-facing recipe lives in
 - Echo must not contain hardcoded jedit or text-buffer behavior.
 - The current real Echo witness fails closed with `UNSUPPORTED_QUERY` unless a
   jedit-owned query observer is installed.
+- Post-slice-80, the next durability bar is Echo-native WSC causal-history
+  serialization: the full causal history of editing a file in jedit should be
+  recoverable across application lifecycles, and jedit should materialize file
+  artifacts from any historical point through its own export adapter.
 
 ## Completed Local Batch
 
@@ -91,10 +95,10 @@ plan:
 19. Slice 59: PR release gate consolidation.
 20. Slice 60: drift reflection and next plan.
 
-Slice-60 reflection is complete. The next proposed tranche is interactive
-Echo-mode UI adoption, starting with slice 61. Distributed transport,
-settlement shells, streaming, and full observer-rights governance remain outside
-this batch.
+Slice-60 reflection is complete. Continue with slice 61 in the production
+cutover plan. After slice 80, the next likely plan is WSC-backed persistence and
+point-in-time export. Distributed transport, settlement shells, streaming, and
+full observer-rights governance remain outside this batch.
 
 ## Non-Negotiables
 

@@ -31,15 +31,18 @@ These are hard repo rules, not suggestions:
 
 - `ARCHITECTURE.md` is the canonical repo architecture doctrine.
 - `docs/BEARING.md` records the current execution gravity.
-- `docs/design/0024-jedit-powered-by-echo-release-gate.md` is the active
+- `docs/design/0024-jedit-powered-by-echo-release-gate.md` is the completed
   baseline plan for the first thirty slices proving jedit has an installed
   package/evidence path while Echo remains generic.
-- `docs/design/0025-echo-application-hosting-pattern.md` is the active
+- `docs/design/0025-echo-application-hosting-pattern.md` is the completed
   post-release-pressure ten-slice plan for proving the reusable Echo
   application-hosting pattern before applying it to Graft, Think, or other apps.
-- `docs/design/0026-echo-hosting-hardening-first-twenty.md` is the active
+- `docs/design/0026-echo-hosting-hardening-first-twenty.md` is the completed
   hardening plan for slices 41-60. Keep track of our progress in that plan doc
   by checking off slices just before you make the commit for that slice.
+- `docs/design/0027-echo-hosted-production-cutover.md` is the active production
+  cutover plan for slices 61-80. Keep track of progress in that plan doc by
+  checking off slices just before you make the commit for that slice.
 - `scripts/quality-gate.mjs` is the current enforceable quality ratchet.
 - `quality-baseline.json` is temporary debt tracking, not permission to add more debt.
   Keep it empty when the ratchet is clean.
