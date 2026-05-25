@@ -7,7 +7,7 @@ import { WorkspaceKeys } from './workspace-key.js';
 import {
   createWorkspaceTextCheckpointCmd,
   createWorkspaceTextExportCmd,
-  defaultWorkspaceTextAperture,
+  fullWorkspaceTextExportAperture,
 } from './workspace-text-commands.js';
 import { WorkspaceTextAuthorityKinds } from './workspace-text-authority.js';
 
@@ -62,7 +62,7 @@ function saveProductionText(
     createWorkspaceTextExportCmd({
       ...base,
       editorFile: context.deps.editorFile,
-      aperture: defaultWorkspaceTextAperture(),
+      aperture: fullWorkspaceTextExportAperture(),
     }),
     createWorkspaceTextCheckpointCmd(base),
   ]];

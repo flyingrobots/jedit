@@ -34,6 +34,11 @@ const DEFAULT_VIEWPORT_LINE_COUNT = 24;
 const DEFAULT_BEFORE_LINES = 0;
 const DEFAULT_AFTER_LINES = 0;
 const DEFAULT_MAX_BYTES = 1048576;
+const FULL_EXPORT_CURSOR_LINE = 0;
+const FULL_EXPORT_BEFORE_LINES = 0;
+const FULL_EXPORT_AFTER_LINES = 0;
+const FULL_EXPORT_VIEWPORT_LINE_COUNT = Number.MAX_SAFE_INTEGER;
+const FULL_EXPORT_MAX_BYTES = Number.MAX_SAFE_INTEGER;
 
 export const WorkspaceTextEditCommandKinds = Object.freeze({
   Insert: EDIT_COMMAND_INSERT,
@@ -136,6 +141,16 @@ export function defaultWorkspaceTextAperture(): ProductionTextViewportAperture {
     beforeLines: DEFAULT_BEFORE_LINES,
     afterLines: DEFAULT_AFTER_LINES,
     maxBytes: DEFAULT_MAX_BYTES,
+  };
+}
+
+export function fullWorkspaceTextExportAperture(): ProductionTextViewportAperture {
+  return {
+    cursorLine: FULL_EXPORT_CURSOR_LINE,
+    viewportLineCount: FULL_EXPORT_VIEWPORT_LINE_COUNT,
+    beforeLines: FULL_EXPORT_BEFORE_LINES,
+    afterLines: FULL_EXPORT_AFTER_LINES,
+    maxBytes: FULL_EXPORT_MAX_BYTES,
   };
 }
 

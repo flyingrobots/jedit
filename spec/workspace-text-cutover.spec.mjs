@@ -396,12 +396,17 @@ test('ctrl-s exports production text and checkpoints without direct local save f
     importDist('app', 'text-runtime-profile.js'),
   ]);
   const savedFiles = [];
+  const exportCalls = [];
+  const documentLines = Array.from({ length: 30 }, (_, index) => `line ${index}`);
   const productionTextSession = {
-    exportWindow: async () => ({
-      kind: 'exported',
-      text: 'from Echo',
-      readingId: 'reading:export',
-    }),
+    exportWindow: async (request) => {
+      exportCalls.push(request);
+      return {
+        kind: 'exported',
+        text: documentLines.slice(0, request.aperture.viewportLineCount).join('\n'),
+        readingId: 'reading:export',
+      };
+    },
     checkpointBuffer: async () => ({
       kind: 'checkpointed',
       result: {
@@ -456,7 +461,18 @@ test('ctrl-s exports production text and checkpoints without direct local save f
   const [exportedModel] = runtime.update(exportMessage, pendingSave);
   const [checkpointedModel] = runtime.update(checkpointMessage, exportedModel);
 
-  assert.deepEqual(savedFiles, [{ filePath: '/repo/notes.txt', lines: ['from Echo'] }]);
+  assert.deepEqual(exportCalls, [{
+    bufferId: 'buffer:notes',
+    aperture: {
+      cursorLine: 0,
+      viewportLineCount: Number.MAX_SAFE_INTEGER,
+      beforeLines: 0,
+      afterLines: 0,
+      maxBytes: Number.MAX_SAFE_INTEGER,
+    },
+    atMs: 99,
+  }]);
+  assert.deepEqual(savedFiles, [{ filePath: '/repo/notes.txt', lines: documentLines }]);
   assert.equal(checkpointedModel.textAuthority.lastExportReadingId, 'reading:export');
   assert.equal(checkpointedModel.textAuthority.lastCheckpointId, 'checkpoint:save');
   assert.equal(checkpointedModel.editor.dirty, false);
