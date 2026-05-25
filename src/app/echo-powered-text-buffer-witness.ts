@@ -89,6 +89,7 @@ function toWitnessReport(
       queryOperationName: queryTextWindowOperation.fieldName,
       receiptId: applied.receiptId,
       readingId: observed.evidence.readingId,
+      readingEvidence: observed.evidence.retainedEvidence,
     }),
     restartPosture: currentJeditRestartPosture(),
     receiptId: applied.receiptId,

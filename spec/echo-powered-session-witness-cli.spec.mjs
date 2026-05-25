@@ -77,6 +77,14 @@ test('Echo-powered session CLI reports app capability, lifecycle, and reading ev
     summary.report.outcome.receipt.receiptId,
   );
   assert.equal(summary.report.retainedEvidence.refs.length, 4);
+  const readingRefs = summary.report.retainedEvidence.refs.filter((ref) => (
+    ref.role === 'READING_ENVELOPE' || ref.role === 'READING_PAYLOAD'
+  ));
+  assert.deepEqual(readingRefs.map((ref) => ref.posture), [
+    'MISSING',
+    'MISSING',
+  ]);
+  assert.equal(readingRefs.every((ref) => 'byteIdentity' in ref), false);
   assert.equal(summary.report.restartPosture.status, 'PARTIAL');
   assert.equal(summary.report.restartPosture.acceptedSubmissionRecovery, 'UNAVAILABLE');
   assert.equal(summary.reading.readingId, summary.report.readingId);

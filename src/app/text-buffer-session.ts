@@ -217,6 +217,7 @@ function toObservedTextWindowReading(
     value: reading,
     evidence: {
       readingId: reading.readingId,
+      retainedEvidence: envelope.retainedEvidence,
     },
   };
 }

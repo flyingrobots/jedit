@@ -52,6 +52,11 @@ targeting is covered, and test-local fallback remains fixture-only.
 The local notes for this package live in
 [`docs/design/0032-jedit-echo-reading-cache-and-fallback-boundaries.md`](design/0032-jedit-echo-reading-cache-and-fallback-boundaries.md).
 
+The current branch also advances the Echo retained-evidence release-gate batch:
+the text-window observer adapter now projects reading retained-evidence posture
+into `TextBufferSessionPort`, and the witness consumes those refs instead of
+manufacturing reading evidence after observation.
+
 The developer-facing recipe lives in
 [`docs/echo-application-hosting-guide.md`](echo-application-hosting-guide.md).
 

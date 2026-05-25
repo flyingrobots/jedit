@@ -63,6 +63,13 @@ export interface JeditRetainedEvidenceInventoryInput {
   readonly queryOperationName: string;
   readonly receiptId: string;
   readonly readingId: string;
+  readonly readingEvidence?: JeditRetainedEvidenceInventory;
+}
+
+export interface JeditReadingRetainedEvidenceInventoryInput {
+  readonly packageId: string;
+  readonly queryOperationName: string;
+  readonly readingId: string;
 }
 
 export interface JeditRetainedEvidenceInventory {

@@ -116,6 +116,7 @@ test('production text session reads bounded windows from cursor and viewport ape
   }]);
   assert.deepEqual(applyIntentCalls, []);
   assert.equal(outcome.observed.evidence.readingId, 'reading:1');
+  assert.equal(outcome.observed.evidence.retainedEvidence?.refs.length, 2);
 });
 
 test('production text session creates manual checkpoint evidence through app capability', async () => {
@@ -315,6 +316,32 @@ function observedReading() {
     },
     evidence: {
       readingId: 'reading:1',
+      retainedEvidence: {
+        refs: [
+          {
+            kind: 'jedit-retained-evidence-ref',
+            role: 'READING_ENVELOPE',
+            semanticCoordinate: {
+              kind: 'semantic-coordinate',
+              packageId: 'jedit.hot-text-runtime',
+              operationName: 'textWindow',
+              coordinate: 'envelope:reading:1',
+            },
+            posture: 'MISSING',
+          },
+          {
+            kind: 'jedit-retained-evidence-ref',
+            role: 'READING_PAYLOAD',
+            semanticCoordinate: {
+              kind: 'semantic-coordinate',
+              packageId: 'jedit.hot-text-runtime',
+              operationName: 'textWindow',
+              coordinate: 'payload:reading:1',
+            },
+            posture: 'MISSING',
+          },
+        ],
+      },
     },
   };
 }

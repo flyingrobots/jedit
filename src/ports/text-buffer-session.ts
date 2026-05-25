@@ -2,6 +2,7 @@ import type {
   CheckpointKind,
   QueryTextWindowRequest,
 } from '../generated/jedit/hot-text-runtime.wesley.generated.js';
+import type { JeditRetainedEvidenceInventory } from './jedit-retained-evidence.js';
 
 export const READ_BASIS_HANDLE_KIND = 'read-basis-handle';
 export const REPLACE_RANGE_INTENT_KIND = 'replaceRange';
@@ -75,6 +76,7 @@ export interface Observed<T> {
   readonly evidence: {
     readonly readingId: string;
     readonly receiptId?: string;
+    readonly retainedEvidence?: JeditRetainedEvidenceInventory;
   };
 }
 
