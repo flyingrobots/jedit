@@ -47,6 +47,33 @@ test('retained evidence refs include semantic coordinates for host inventory', a
   assert.equal(inventory.refs.every((ref) => ref.semanticCoordinate.packageId === 'jedit-package'), true);
 });
 
+test('host inventory can reuse adapter-projected missing reading evidence', async () => {
+  const retained = await loadRetained();
+  const readingEvidence = retained.createJeditReadingRetainedEvidenceInventory({
+    packageId: 'jedit-package',
+    queryOperationName: 'textWindow',
+    readingId: 'reading-1',
+  });
+  const inventory = retained.createJeditRetainedEvidenceInventory({
+    packageId: 'jedit-package',
+    mutationOperationName: 'replaceRangeAsTick',
+    queryOperationName: 'textWindow',
+    receiptId: 'receipt-1',
+    readingId: 'reading-1',
+    readingEvidence,
+  });
+  const readingRefs = inventory.refs.filter((ref) => (
+    ref.role === retained.JEDIT_EVIDENCE_ROLE_READING_ENVELOPE
+      || ref.role === retained.JEDIT_EVIDENCE_ROLE_READING_PAYLOAD
+  ));
+
+  assert.deepEqual(readingRefs.map((ref) => ref.posture), [
+    retained.JEDIT_RETAINED_EVIDENCE_MISSING,
+    retained.JEDIT_RETAINED_EVIDENCE_MISSING,
+  ]);
+  assert.equal(readingRefs.every((ref) => 'byteIdentity' in ref), false);
+});
+
 function sampleInventory(retained) {
   return retained.createJeditRetainedEvidenceInventory({
     packageId: 'jedit-package',

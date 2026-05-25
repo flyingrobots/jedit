@@ -1,17 +1,17 @@
 import { quit, type Cmd, type KeyMsg } from '@flyingrobots/bijou-tui';
-import { JEDIT_MARKDOWN_PREVIEW_TOGGLE_KEY, JEDIT_THEME_TOGGLE_KEY } from '../keybindings.js';
-import { beginEditorProjectionRefresh, beginGraftRefresh, saveEditor, toggleMarkdownPreview } from './editor-session.js';
+import { beginGraftRefresh } from './editor-session.js';
 import { closeDrawer, toggleDrawer } from './drawer.js';
 import { focusCycleState } from './focus.js';
 import { cycleFocusPane, FocusPanes, hasFocusablePeers } from '../../ui/panel-focus.js';
 import { isFooterToggleKey } from '../../ui/feedback.js';
-import { nextJeditTheme } from '../../ui/jedit-themes.js';
 import { DrawerKinds } from '../../ui/drawer-layout.js';
 import { insertModeActive } from './editor-state.js';
 import type { WorkspaceKeyBindingContext } from './key-binding-context.js';
 import type { WorkspaceModel } from './model.js';
 import { WorkspaceMessageTypes, type WorkspaceMsg } from './msg.js';
 import { WorkspaceKeys } from './workspace-key.js';
+import { updateSaveKey } from './workspace-save-key.js';
+import { updateMarkdownPreviewKey, updateThemeKey } from './workspace-view-mode-keys.js';
 
 type KeyBindingResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 
@@ -49,28 +49,6 @@ function updateFooterKey(msg: KeyMsg, model: WorkspaceModel): KeyBindingResult |
     return undefined;
   }
   return [{ ...model, footerVisible: !model.footerVisible }, []];
-}
-
-function updateSaveKey(
-  msg: KeyMsg,
-  model: WorkspaceModel,
-  context: WorkspaceKeyBindingContext,
-): KeyBindingResult | undefined {
-  if (!msg.ctrl || msg.alt || msg.key !== WorkspaceKeys.S || model.editor == null) {
-    return undefined;
-  }
-
-  const editor = saveEditor(model.editor, context.deps.editorFile);
-  return beginEditorProjectionRefresh({ ...model, editor }, {
-    refreshGraft: shouldRefreshGraft(model, editor.path),
-  }, context.deps);
-}
-
-function updateThemeKey(msg: KeyMsg, model: WorkspaceModel): KeyBindingResult | undefined {
-  if (!msg.ctrl || msg.alt || msg.key !== JEDIT_THEME_TOGGLE_KEY) {
-    return undefined;
-  }
-  return [{ ...model, jeditTheme: nextJeditTheme(model.jeditTheme) }, []];
 }
 
 function updateFocusKey(msg: KeyMsg, model: WorkspaceModel): KeyBindingResult | undefined {
@@ -111,16 +89,6 @@ function updateEscapeKey(
     : undefined;
 }
 
-function updateMarkdownPreviewKey(
-  msg: KeyMsg,
-  model: WorkspaceModel,
-  context: WorkspaceKeyBindingContext,
-): KeyBindingResult | undefined {
-  return msg.key === JEDIT_MARKDOWN_PREVIEW_TOGGLE_KEY
-    ? toggleMarkdownPreview(model, context.deps.sourceHighlighter)
-    : undefined;
-}
-
 function toggleWorkspaceDrawer(
   model: WorkspaceModel,
   kind: typeof DrawerKinds.Files | typeof DrawerKinds.Graft,
@@ -129,8 +97,4 @@ function toggleWorkspaceDrawer(
   return toggleDrawer(model, kind, (nextModel, options) => (
     beginGraftRefresh(nextModel, options, context.deps.graftSession)
   ), context.createDrawerAnimationCmd);
-}
-
-function shouldRefreshGraft(model: WorkspaceModel, editorPath: string): boolean {
-  return model.graftDrawerOpen || model.graftInfo?.path === editorPath;
 }

@@ -1,9 +1,6 @@
-import type { Cmd, KeyMsg, MouseMsg, ResizeMsg, RuntimeIssue } from '@flyingrobots/bijou-tui';
 import { createInitialModel } from './init.js';
-import type { WorkspaceInitialModelSnapshot } from './init.js';
 import { manageGraftLifecycle } from './graft.js';
 import type { WorkspaceModel } from './model.js';
-import type { WorkspaceMsg } from './msg.js';
 import {
   applyNotificationState,
   pushRuntimeIssueToast,
@@ -22,44 +19,20 @@ import {
   streamProfilerFrame,
   toggleProfiler,
   type ProfilerMsg,
-  type ProfilerTracePort,
 } from '../raytracer-profiler.js';
-import type { DrawerKind } from '../../ui/drawer-layout.js';
-import type { FileSystemPort } from '../../ports/file-system.js';
-import type { EditorFilePort } from '../../ports/editor-file.js';
-import type { GraftSessionPort } from '../../ports/graft-session.js';
-import type { SourceHighlighter } from '../../ports/source-highlighter.js';
-import type { TitleSceneLoaderPort } from '../../ports/title-scene-loader.js';
-import { WorkspaceInputMessageTypes, WorkspaceMessageTypes } from './msg.js';
-import { applyDrawerProgress, applyGraftInfo } from './runtime-state.js';
+import { WorkspaceInputMessageTypes, WorkspaceMessageTypes, type WorkspaceMsg } from './msg.js';
+import { applyDrawerProgress, applyGraftInfo, applyWorkspaceTextMessage } from './workspace-state-reducers.js';
+import type {
+  WorkspaceRuntime,
+  WorkspaceRuntimeDependencies,
+  WorkspaceRuntimeMsg,
+  WorkspaceRuntimeResult,
+  WorkspaceResizeMsg,
+} from './workspace-runtime-dependencies.js';
 
 export { WorkspaceInputMessageTypes, WorkspaceMessageTypes } from './msg.js';
 
 const FRAME_TIME_HISTORY_SIZE = 50;
-
-export interface WorkspaceRuntimeDependencies {
-  readonly initialColumns: number;
-  readonly initialRows: number;
-  readonly initialWorkingDirectory: string;
-  readonly fileSystem: FileSystemPort;
-  readonly editorFile: EditorFilePort;
-  readonly graftSession: GraftSessionPort;
-  readonly sourceHighlighter: SourceHighlighter;
-  readonly titleSceneLoader: TitleSceneLoaderPort;
-  readonly profiler: ProfilerTracePort;
-  readonly createTimeTickCmd: () => Cmd<WorkspaceMsg>;
-  readonly createNotificationTickCmd: () => Cmd<WorkspaceMsg>;
-  readonly createDrawerAnimationCmd: (kind: DrawerKind, from: number, to: number) => Cmd<WorkspaceMsg>[];
-  readonly initialModel: WorkspaceInitialModelSnapshot;
-  readonly nowMs: () => number;
-}
-
-export interface WorkspaceRuntime {
-  init: () => [WorkspaceModel, Cmd<WorkspaceMsg>[]];
-  update: (msg: WorkspaceRuntimeMsg, model: WorkspaceModel) => [WorkspaceModel, Cmd<WorkspaceMsg>[]];
-  view: (model: WorkspaceModel) => ReturnType<typeof renderWorkspace>;
-  routeRuntimeIssue: (issue: RuntimeIssue) => WorkspaceMsg;
-}
 
 export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): WorkspaceRuntime => ({
   init: () => [
@@ -86,9 +59,6 @@ export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): Work
 });
 
 
-type WorkspaceRuntimeMsg = WorkspaceMsg | ResizeMsg | KeyMsg | MouseMsg;
-type WorkspaceRuntimeResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
-
 function updateWorkspaceRuntime(
   deps: WorkspaceRuntimeDependencies,
   msg: WorkspaceRuntimeMsg,
@@ -98,7 +68,7 @@ function updateWorkspaceRuntime(
   if (resized != null) {
     return resized;
   }
-  const state = updateWorkspaceStateMessage(msg, model);
+  const state = updateWorkspaceStateMessage(deps, msg, model);
   if (state != null) {
     return state;
   }
@@ -121,7 +91,7 @@ function updateResizeMessage(
   return applyNotificationState(resized, resized.notifications, deps.nowMs(), deps.createNotificationTickCmd);
 }
 
-function resizeWorkspaceModel(model: WorkspaceModel, msg: ResizeMsg): WorkspaceModel {
+function resizeWorkspaceModel(model: WorkspaceModel, msg: WorkspaceResizeMsg): WorkspaceModel {
   const viewport = editorViewport({
     ...model,
     columns: msg.columns,
@@ -138,6 +108,7 @@ function resizeWorkspaceModel(model: WorkspaceModel, msg: ResizeMsg): WorkspaceM
 }
 
 function updateWorkspaceStateMessage(
+  deps: WorkspaceRuntimeDependencies,
   msg: WorkspaceRuntimeMsg,
   model: WorkspaceModel,
 ): WorkspaceRuntimeResult | undefined {
@@ -153,6 +124,10 @@ function updateWorkspaceStateMessage(
   if (msg.type === SOURCE_HIGHLIGHT_MESSAGE) {
     return [reduceSourceHighlightMsg(model, msg), []];
   }
+  const text = isWorkspaceMsg(msg) ? applyWorkspaceTextMessage(deps, msg, model) : undefined;
+  if (text != null) {
+    return text;
+  }
   return msg.type === TITLE_CAMERA_MESSAGE.Frame
     ? [{ ...model, titleCamera: reduceTitleCameraMotion(model.titleCamera, msg) }, []]
     : undefined;
@@ -165,6 +140,12 @@ function updateGraftInfoMessage(
   return msg.requestId === model.graftRequestId
     ? [applyGraftInfo(model, msg.info), []]
     : [model, []];
+}
+
+function isWorkspaceMsg(msg: WorkspaceRuntimeMsg): msg is WorkspaceMsg {
+  return msg.type !== WorkspaceInputMessageTypes.Resize
+    && msg.type !== WorkspaceInputMessageTypes.Key
+    && msg.type !== WorkspaceInputMessageTypes.Mouse;
 }
 
 function applySceneLoadResult(
@@ -259,6 +240,7 @@ function workspaceKeyDeps(deps: WorkspaceRuntimeDependencies) {
       sourceHighlighter: deps.sourceHighlighter,
       graftSession: deps.graftSession,
       titleSceneLoader: deps.titleSceneLoader,
+      productionTextSession: deps.productionTextSession,
     },
   };
 }

@@ -12,13 +12,14 @@ test('main constructs a workspace app and runs it through bijou run()', () => {
   const createsAppImport = /createWorkspaceApp/.test(source);
   const createsWorkspaceApp = /const app\s*=\s*createWorkspaceApp\(/.test(source);
   const runsApp = /run\(app,/.test(source);
-  const hasEchoTextRuntimeOptIn = /parseInteractiveTextRuntimeMode\(\s*process\.env\[ENV_KEYS\.TextRuntime\]\s*,\s*\)/.test(source)
-    && /createWorkspaceApp\([\s\S]*interactiveTextRuntimeMode[\s\S]*\)/.test(source);
+  const hasEchoHostedTextRuntimeProfile = /parseTextRuntimeProfile\(\s*process\.env\[ENV_KEYS\.TextRuntime\]\s*,\s*\)/.test(source)
+    && /resolveTextRuntimeProfile\(/.test(source)
+    && /createWorkspaceApp\([\s\S]*textRuntimeProfile[\s\S]*\)/.test(source);
   const hasLocalSettingsHandlers = /settingsHandlers/.test(source);
 
   assert.ok(createsAppImport);
   assert.ok(createsWorkspaceApp);
   assert.ok(runsApp);
-  assert.ok(hasEchoTextRuntimeOptIn);
+  assert.ok(hasEchoHostedTextRuntimeProfile);
   assert.equal(hasLocalSettingsHandlers, false);
 });

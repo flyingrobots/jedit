@@ -7,10 +7,7 @@ import type {
   ReplaceRangeAsTickExecution,
 } from '../app/jedit-contract-runtime.js';
 import type { TextWindowReadingEnvelope, WorldlineSnapshotReadingEnvelope } from '../app/jedit-observer-runtime.js';
-import type {
-  MutationOperationName,
-  QueryOperationName,
-} from '../generated/jedit/hot-text-runtime.types.generated.js';
+import type { MutationOperationName, QueryOperationName } from '../generated/jedit/hot-text-runtime.types.generated.js';
 import {
   mutationCreateBufferWorldlineOperation,
   mutationCreateCheckpointOperation,
@@ -30,6 +27,7 @@ import {
   QueryOperationSchemas,
   TickKindSchema,
 } from '../generated/jedit/hot-text-runtime.zod.generated.js';
+import { JeditRetainedEvidenceInventorySchema } from './jedit-retained-evidence-codec.js';
 
 export const JEDIT_INTENT_REQUEST_KIND = 'jedit.intent-request';
 export const JEDIT_OBSERVE_REQUEST_KIND = 'jedit.observe-request';
@@ -153,6 +151,7 @@ const TextWindowReadingEnvelopeSchema = z.object({
   operationName: z.literal(TEXT_WINDOW_OPERATION),
   frontierRef: z.string(),
   reading: QueryOperationSchemas.textWindow.result,
+  retainedEvidence: JeditRetainedEvidenceInventorySchema,
 });
 
 const CreateBufferWorldlineIntentRequestSchema = z.object({

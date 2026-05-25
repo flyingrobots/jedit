@@ -4,8 +4,11 @@ import type {
 import { QueryOperationSchemas } from '../generated/jedit/hot-text-runtime.zod.generated.js';
 import { worldlineSnapshotObserverPlan } from '../generated/jedit/worldlineSnapshot.observer-plan.generated.js';
 import type { HotTextRuntimePort } from '../ports/hot-text-runtime.js';
+import type { JeditRetainedEvidenceInventory } from '../ports/jedit-retained-evidence.js';
 import type { JeditWorldlineSession } from './jedit-contract-runtime.js';
 import { readWorldlineSnapshot } from './jedit-contract-runtime.js';
+import { JEDIT_HOT_TEXT_PACKAGE_ID } from './jedit-contract-package.js';
+import { createJeditReadingRetainedEvidenceInventory } from './jedit-retained-evidence.js';
 import type { HashPort } from '../ports/hash.js';
 
 const TEXT_WINDOW_MIN_LINE = 0;
@@ -46,6 +49,7 @@ export interface TextWindowReadingEnvelope {
   readonly operationName: string;
   readonly frontierRef: string;
   readonly reading: TextWindowReading;
+  readonly retainedEvidence: JeditRetainedEvidenceInventory;
 }
 
 export function readWorldlineSnapshotWithObserverPlan(
@@ -85,6 +89,11 @@ export function readTextWindowWithObserverPlan(
     operationName: TEXT_WINDOW_PLAN_SPEC.operationName,
     frontierRef,
     reading: schemas.result.parse(reading),
+    retainedEvidence: createJeditReadingRetainedEvidenceInventory({
+      packageId: JEDIT_HOT_TEXT_PACKAGE_ID,
+      queryOperationName: TEXT_WINDOW_PLAN_SPEC.operationName,
+      readingId: reading.readingId,
+    }),
   };
 }
 

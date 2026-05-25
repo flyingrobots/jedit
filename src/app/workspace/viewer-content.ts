@@ -7,6 +7,10 @@ import type { WorkspaceModel } from './model.js';
 import { isWorkspaceMarkdownFile } from './editor-session.js';
 import { ViewModes } from './view-mode.js';
 import {
+  editorFromWorkspaceTextCache,
+  isWorkspaceTextAuthorityOpened,
+} from './workspace-text-authority.js';
+import {
   VIEWER_LEFT_PAD,
   VIEWER_TOP_PAD,
 } from './viewport.js';
@@ -16,7 +20,8 @@ const MIN_VIEWPORT_DIMENSION = 1;
 const VIEWER_PAD_MULTIPLIER = 2;
 
 export function renderViewer(model: WorkspaceModel, width: number, height: number): Surface {
-  if (model.editor == null) {
+  const editor = displayEditor(model);
+  if (editor == null) {
     return renderTitleScreen(width, height, model.time, model.jeditTheme, {
       camAngle: model.titleCamera.angle,
       camRadius: model.titleCamera.radius,
@@ -31,17 +36,28 @@ export function renderViewer(model: WorkspaceModel, width: number, height: numbe
   const surface = createSurface(width, height);
   fillSurface(surface, model.jeditTheme.surface.workspace);
 
-  if (model.viewMode === ViewModes.Preview && isWorkspaceMarkdownFile(model.editor.path)) {
-    return renderPreview(surface, model.editor, model.jeditTheme, width, height);
+  if (model.viewMode === ViewModes.Preview && isWorkspaceMarkdownFile(editor.path)) {
+    return renderPreview(surface, editor, model.jeditTheme, width, height);
   }
 
   const viewport = viewerViewport(width, height);
-  return renderSourceViewer(surface, model.editor, model.sourceHighlight?.path === model.editor.path ? model.sourceHighlight : undefined, {
+  return renderSourceViewer(surface, editor, model.sourceHighlight?.path === editor.path ? model.sourceHighlight : undefined, {
     viewport,
     leftPad: VIEWER_LEFT_PAD,
     topPad: VIEWER_TOP_PAD,
     theme: model.jeditTheme,
   });
+}
+
+export function isWorkspaceMarkdownPreviewAvailable(model: WorkspaceModel): boolean {
+  const editor = displayEditor(model);
+  return editor != null && isWorkspaceMarkdownFile(editor.path);
+}
+
+function displayEditor(model: WorkspaceModel): WorkspaceModel['editor'] {
+  return isWorkspaceTextAuthorityOpened(model.textAuthority) && model.textAuthority.cache != null
+    ? editorFromWorkspaceTextCache(model.textAuthority, model.editor)
+    : model.editor;
 }
 
 function renderPreview(surface: Surface, editor: WorkspaceModel['editor'], theme: JeditTheme, width: number, height: number): Surface {

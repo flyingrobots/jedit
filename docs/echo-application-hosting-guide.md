@@ -230,7 +230,7 @@ From a clean checkout:
 ```bash
 npm run build
 npm run --silent quality
-npm run --silent release-gate:echo
+npm run --silent release-gate:jedit-echo
 node --test --test-concurrency=1 spec/echo-hosting-counter-template.spec.mjs
 node scripts/jedit-echo-powered-session.mjs --json --dry-run
 node scripts/jedit-echo-powered-session.mjs --json

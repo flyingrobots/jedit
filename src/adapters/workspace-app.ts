@@ -1,16 +1,8 @@
-import {
-  animate,
-  type App,
-  type Cmd,
-} from '@flyingrobots/bijou-tui';
-import { createNotificationTickCmd } from '../ui/feedback.js';
+import type { App } from '@flyingrobots/bijou-tui';
 import { FileSystemPortAdapter } from './filesystem.js';
 import { createWorkspaceRuntime } from '../app/workspace/runtime.js';
-import type { WorkspaceInitialModelSnapshot } from '../app/workspace/init.js';
 import type { WorkspaceModel } from '../app/workspace/model.js';
-import { WorkspaceMessageTypes, type WorkspaceMsg } from '../app/workspace/msg.js';
-import type { CreateDrawerAnimationCmd } from '../app/workspace/drawer.js';
-import type { DrawerKind } from '../ui/drawer-layout.js';
+import type { WorkspaceMsg } from '../app/workspace/msg.js';
 import { createRaytracerProfilerPort } from './raytracer-profiler.js';
 import { editorFilePort } from './editor-file.js';
 import { createGraftSessionPort } from './graft-mcp-session.js';
@@ -18,20 +10,26 @@ import { createGraftSourceHighlighter } from './graft-source-highlighter.js';
 import { createTitleSceneLoaderPort } from './title-scene-loader.js';
 import { createInitialModelSnapshot } from './workspace-initial-model-snapshot.js';
 import { createPerfApp } from './workspace-perf-app.js';
-import type { InteractiveTextRuntimeMode } from '../app/interactive-text-runtime-mode.js';
-
-const TIME_TICK_DURATION_MS = Number.MAX_SAFE_INTEGER;
-const DRAWER_DURATION_MS = 160;
+import {
+  createWorkspaceProductionTextSession,
+  resolveWorkspaceTextRuntimeProfile,
+  type WorkspaceTextRuntimeProfileOptions,
+} from './workspace-production-text-session.js';
+import {
+  createWorkspaceDrawerAnimationCmd,
+  createWorkspaceNotificationTickCmd,
+  createWorkspaceTimeTickCmd,
+} from './workspace-animation-commands.js';
 
 export interface WorkspaceAppOptions {
   initialColumns: number;
   initialRows: number;
   initialWorkingDirectory: string;
-  interactiveTextRuntimeMode?: InteractiveTextRuntimeMode;
+  textRuntimeProfile?: WorkspaceTextRuntimeProfileOptions['textRuntimeProfile'];
   perfEnabled: boolean;
   nowMs?: () => number;
   random?: () => number;
-  seed?: WorkspaceInitialModelSnapshot;
+  seed?: ReturnType<typeof createInitialModelSnapshot>;
 }
 
 export function createWorkspaceApp(options: WorkspaceAppOptions): App<WorkspaceModel, WorkspaceMsg> {
@@ -49,6 +47,10 @@ function workspaceRuntimeDependencies(
   random: () => number,
 ) {
   const editorFile = editorFilePort;
+  const textRuntimeProfile = resolveWorkspaceTextRuntimeProfile({
+    textRuntimeProfile: options.textRuntimeProfile,
+    seedTextRuntimeProfile: options.seed?.textRuntimeProfile,
+  });
   const graftSession = createGraftSessionPort();
   const sourceHighlighter = createGraftSourceHighlighter();
   const titleSceneLoader = createTitleSceneLoaderPort();
@@ -58,29 +60,25 @@ function workspaceRuntimeDependencies(
     initialWorkingDirectory: options.initialWorkingDirectory,
     fileSystem: FileSystemPortAdapter,
     editorFile,
+    productionTextSession: createWorkspaceProductionTextSession(textRuntimeProfile),
     graftSession,
     sourceHighlighter,
     titleSceneLoader,
     profiler: createRaytracerProfilerPort(nowMs),
     initialModel: {
       ...(options.seed ?? createInitialModelSnapshot(nowMs(), options.initialWorkingDirectory, random)),
-      ...(options.interactiveTextRuntimeMode == null ? {} : {
-        interactiveTextRuntimeMode: options.interactiveTextRuntimeMode,
+      ...(options.textRuntimeProfile == null ? {} : {
+        textRuntimeProfile,
       }),
     },
     nowMs,
-    createTimeTickCmd: () => createTimeTickCmd(),
-    createNotificationTickCmd: () => createNotificationTickCmd((atMs) => ({
-      type: WorkspaceMessageTypes.NotificationTick,
-      atMs,
-    })),
-    createDrawerAnimationCmd: createDrawerAnimationCmd,
+    createTimeTickCmd: createWorkspaceTimeTickCmd,
+    createNotificationTickCmd: createWorkspaceNotificationTickCmd,
+    createDrawerAnimationCmd: createWorkspaceDrawerAnimationCmd,
   };
 }
 
-function workspaceRuntimeApp(
-  runtime: ReturnType<typeof createWorkspaceRuntime>,
-): App<WorkspaceModel, WorkspaceMsg> {
+function workspaceRuntimeApp(runtime: ReturnType<typeof createWorkspaceRuntime>): App<WorkspaceModel, WorkspaceMsg> {
   return {
     init: runtime.init,
     update: runtime.update,
@@ -88,23 +86,3 @@ function workspaceRuntimeApp(
     routeRuntimeIssue: runtime.routeRuntimeIssue,
   };
 }
-
-function createTimeTickCmd(): Cmd<WorkspaceMsg> {
-  return animate<WorkspaceMsg>({
-    type: 'tween',
-    from: 0,
-    to: Number.MAX_SAFE_INTEGER,
-    duration: TIME_TICK_DURATION_MS,
-    onFrame: (value) => ({ type: WorkspaceMessageTypes.TimeTick, time: value / 1000 }),
-  });
-}
-
-const createDrawerAnimationCmd: CreateDrawerAnimationCmd = (kind: DrawerKind, from: number, to: number) => [
-  animate<WorkspaceMsg>({
-    type: 'tween',
-    from,
-    to,
-    duration: DRAWER_DURATION_MS,
-    onFrame: (value) => ({ type: WorkspaceMessageTypes.DrawerProgress, kind, value }),
-  }),
-];

@@ -5,6 +5,7 @@ export {
   JEDIT_EVIDENCE_ROLE_READING_PAYLOAD,
   JEDIT_EVIDENCE_ROLE_RECEIPT,
   JEDIT_EVIDENCE_SEMANTIC_COORDINATE_KIND,
+  JEDIT_RETAINED_EVIDENCE_MISSING,
   JEDIT_RETAINED_EVIDENCE_PRESENT_INLINE,
   JEDIT_RETAINED_EVIDENCE_REF_KIND,
   JEDIT_RETENTION_OBSTRUCTION_MISSING_MATERIAL,
@@ -16,6 +17,7 @@ import {
   JEDIT_EVIDENCE_ROLE_READING_PAYLOAD,
   JEDIT_EVIDENCE_ROLE_RECEIPT,
   JEDIT_EVIDENCE_SEMANTIC_COORDINATE_KIND,
+  JEDIT_RETAINED_EVIDENCE_MISSING,
   JEDIT_RETAINED_EVIDENCE_PRESENT_INLINE,
   JEDIT_RETAINED_EVIDENCE_REF_KIND,
   JEDIT_RETENTION_OBSTRUCTION_MISSING_MATERIAL,
@@ -23,6 +25,7 @@ import {
   type JeditRetainedEvidenceInventoryInput,
   type JeditRetainedEvidenceRef,
   type JeditRetainedEvidenceRole,
+  type JeditReadingRetainedEvidenceInventoryInput,
   type JeditRetentionObstruction,
 } from '../ports/jedit-retained-evidence.js';
 
@@ -41,8 +44,18 @@ export function createJeditRetainedEvidenceInventory(
     refs: [
       packageRef(input),
       receiptRef(input),
-      readingEnvelopeRef(input),
-      readingPayloadRef(input),
+      ...readingEvidenceRefs(input),
+    ],
+  };
+}
+
+export function createJeditReadingRetainedEvidenceInventory(
+  input: JeditReadingRetainedEvidenceInventoryInput,
+): JeditRetainedEvidenceInventory {
+  return {
+    refs: [
+      missingReadingEnvelopeRef(input),
+      missingReadingPayloadRef(input),
     ],
   };
 }
@@ -58,7 +71,7 @@ export function missingJeditRetentionMaterial(
 }
 
 function packageRef(input: JeditRetainedEvidenceInventoryInput): JeditRetainedEvidenceRef {
-  return evidenceRef({
+  return presentEvidenceRef({
     role: JEDIT_EVIDENCE_ROLE_PACKAGE,
     packageId: input.packageId,
     operationName: PACKAGE_INSTALL_OPERATION_NAME,
@@ -68,7 +81,7 @@ function packageRef(input: JeditRetainedEvidenceInventoryInput): JeditRetainedEv
 }
 
 function receiptRef(input: JeditRetainedEvidenceInventoryInput): JeditRetainedEvidenceRef {
-  return evidenceRef({
+  return presentEvidenceRef({
     role: JEDIT_EVIDENCE_ROLE_RECEIPT,
     packageId: input.packageId,
     operationName: input.mutationOperationName,
@@ -78,7 +91,7 @@ function receiptRef(input: JeditRetainedEvidenceInventoryInput): JeditRetainedEv
 }
 
 function readingEnvelopeRef(input: JeditRetainedEvidenceInventoryInput): JeditRetainedEvidenceRef {
-  return evidenceRef({
+  return presentEvidenceRef({
     role: JEDIT_EVIDENCE_ROLE_READING_ENVELOPE,
     packageId: input.packageId,
     operationName: input.queryOperationName,
@@ -88,7 +101,7 @@ function readingEnvelopeRef(input: JeditRetainedEvidenceInventoryInput): JeditRe
 }
 
 function readingPayloadRef(input: JeditRetainedEvidenceInventoryInput): JeditRetainedEvidenceRef {
-  return evidenceRef({
+  return presentEvidenceRef({
     role: JEDIT_EVIDENCE_ROLE_READING_PAYLOAD,
     packageId: input.packageId,
     operationName: input.queryOperationName,
@@ -97,15 +110,57 @@ function readingPayloadRef(input: JeditRetainedEvidenceInventoryInput): JeditRet
   });
 }
 
+function readingEvidenceRefs(
+  input: JeditRetainedEvidenceInventoryInput,
+): readonly JeditRetainedEvidenceRef[] {
+  if (input.readingEvidence != null) {
+    return input.readingEvidence.refs.filter(isReadingEvidenceRef);
+  }
+  return [
+    readingEnvelopeRef(input),
+    readingPayloadRef(input),
+  ];
+}
+
+function isReadingEvidenceRef(ref: JeditRetainedEvidenceRef): boolean {
+  return ref.role === JEDIT_EVIDENCE_ROLE_READING_ENVELOPE
+    || ref.role === JEDIT_EVIDENCE_ROLE_READING_PAYLOAD;
+}
+
+function missingReadingEnvelopeRef(
+  input: JeditReadingRetainedEvidenceInventoryInput,
+): JeditRetainedEvidenceRef {
+  return missingEvidenceRef({
+    role: JEDIT_EVIDENCE_ROLE_READING_ENVELOPE,
+    packageId: input.packageId,
+    operationName: input.queryOperationName,
+    coordinate: `${READING_ENVELOPE_COORDINATE_PREFIX}${input.readingId}`,
+  });
+}
+
+function missingReadingPayloadRef(
+  input: JeditReadingRetainedEvidenceInventoryInput,
+): JeditRetainedEvidenceRef {
+  return missingEvidenceRef({
+    role: JEDIT_EVIDENCE_ROLE_READING_PAYLOAD,
+    packageId: input.packageId,
+    operationName: input.queryOperationName,
+    coordinate: `${READING_PAYLOAD_COORDINATE_PREFIX}${input.readingId}`,
+  });
+}
+
 interface EvidenceRefInput {
   readonly role: JeditRetainedEvidenceRole;
   readonly packageId: string;
   readonly operationName: string;
   readonly coordinate: string;
+}
+
+interface PresentEvidenceRefInput extends EvidenceRefInput {
   readonly byteHash: string;
 }
 
-function evidenceRef(input: EvidenceRefInput): JeditRetainedEvidenceRef {
+function presentEvidenceRef(input: PresentEvidenceRefInput): JeditRetainedEvidenceRef {
   return {
     kind: JEDIT_RETAINED_EVIDENCE_REF_KIND,
     role: input.role,
@@ -120,5 +175,19 @@ function evidenceRef(input: EvidenceRefInput): JeditRetainedEvidenceRef {
       byteHash: input.byteHash,
     },
     posture: JEDIT_RETAINED_EVIDENCE_PRESENT_INLINE,
+  };
+}
+
+function missingEvidenceRef(input: EvidenceRefInput): JeditRetainedEvidenceRef {
+  return {
+    kind: JEDIT_RETAINED_EVIDENCE_REF_KIND,
+    role: input.role,
+    semanticCoordinate: {
+      kind: JEDIT_EVIDENCE_SEMANTIC_COORDINATE_KIND,
+      packageId: input.packageId,
+      operationName: input.operationName,
+      coordinate: input.coordinate,
+    },
+    posture: JEDIT_RETAINED_EVIDENCE_MISSING,
   };
 }

@@ -13,10 +13,12 @@ boundary; no jedit text nouns are introduced into Echo.
 
 ## Evidence
 
-- `npm run release-gate:echo`
+- `npm run release-gate:jedit-echo`
 - `npm run check`
 - `node scripts/jedit-echo-powered-session.mjs --json --text "hello Echo"`
 - `node scripts/jedit-echo-powered-session.mjs --json --replay-local`
+- `node scripts/jedit-production-text-session.mjs --json --text "hello Echo"`
+- `node scripts/jedit-production-text-session.mjs --json --replay-local`
 
 Recorded reports:
 
@@ -32,3 +34,5 @@ Recorded reports:
   lattice.
 - Application code still has no tick, start, stop, install, or lifecycle
   authority.
+- `testLocal` remains a dev/test fixture profile, not a user-facing product
+  mode.

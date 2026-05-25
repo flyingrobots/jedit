@@ -6,6 +6,7 @@ import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import type { TitleSceneLoaderPort } from '../../ports/title-scene-loader.js';
 import type { CreateDrawerAnimationCmd } from './drawer.js';
 import type { WorkspaceMsg } from './msg.js';
+import type { ProductionTextSession } from './production-text-session.js';
 
 export interface UpdateFromKeyDeps {
   readonly fileSystem: FileSystemPort;
@@ -13,6 +14,7 @@ export interface UpdateFromKeyDeps {
   readonly sourceHighlighter: SourceHighlighter;
   readonly graftSession: GraftSessionPort;
   readonly titleSceneLoader: TitleSceneLoaderPort;
+  readonly productionTextSession: ProductionTextSession;
 }
 
 export interface WorkspaceKeyBindingContext {

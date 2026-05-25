@@ -17,7 +17,9 @@ test('v0.1.0 quickstart documents executable witness commands', () => {
   assert.match(source, /npm run build/);
   assert.match(source, /--json --dry-run/);
   assert.match(source, /--json --replay-local/);
-  assert.match(source, /JEDIT_TEXT_RUNTIME=echo npm start/);
+  assert.match(source, /jedit-production-text-session\.mjs --json/);
+  assert.match(source, /JEDIT_TEXT_RUNTIME=echoHosted npm start/);
+  assert.match(source, /testLocal.*dev\/test fixture/);
   assert.match(source, /"transport": "installed-jedit-contract"/);
   assert.match(source, /"appCanTick": false/);
 });
@@ -25,7 +27,7 @@ test('v0.1.0 quickstart documents executable witness commands', () => {
 test('v0.1.0 release docs name evidence commands non-goals and Echo generic boundary', () => {
   const source = readFileSync(RELEASE_README_PATH, 'utf8');
 
-  assert.match(source, /npm run release-gate:echo/);
+  assert.match(source, /npm run release-gate:jedit-echo/);
   assert.match(source, /Echo remains generic/);
   assert.match(source, /No full Continuum transport/);
   assert.match(source, /No full observer-rights or revelation lattice/);

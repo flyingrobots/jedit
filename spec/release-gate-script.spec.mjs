@@ -11,7 +11,8 @@ const RELEASE_GATE_SCRIPT = path.join(REPO_ROOT, 'scripts', 'jedit-echo-release-
 test('package exposes the jedit Echo release-gate script', () => {
   const packageJson = JSON.parse(readFileSync(PACKAGE_JSON_PATH, 'utf8'));
 
-  assert.equal(packageJson.scripts['release-gate:echo'], 'node scripts/jedit-echo-release-gate.mjs');
+  assert.equal(packageJson.scripts['release-gate:jedit-echo'], 'node scripts/jedit-echo-release-gate.mjs');
+  assert.equal(packageJson.scripts['release-gate:echo'], 'npm run release-gate:jedit-echo');
 });
 
 test('release-gate script validates required package descriptor metadata', () => {
@@ -64,5 +65,15 @@ test('release-gate script includes hosting replay and static guard witnesses', (
   assert.match(source, /spec\/jedit-local-replay-proof\.spec\.mjs/);
   assert.match(source, /spec\/echo-application-hosting-guide\.spec\.mjs/);
   assert.match(source, /spec\/jedit-restart-recovery\.spec\.mjs/);
+  assert.match(source, /spec\/text-runtime-profile-session\.spec\.mjs/);
+  assert.match(source, /spec\/production-text-session\.spec\.mjs/);
+  assert.match(source, /spec\/production-text-session-witness\.spec\.mjs/);
+  assert.match(source, /spec\/production-text-session-cli\.spec\.mjs/);
+  assert.match(source, /spec\/workspace-text-cutover\.spec\.mjs/);
+  assert.match(source, /spec\/workspace-app-echo-cutover\.spec\.mjs/);
+  assert.match(source, /spec\/workspace-text-boundaries\.spec\.mjs/);
+  assert.match(source, /spec\/workspace-echo-witness-cli\.spec\.mjs/);
+  assert.match(source, /spec\/production-cutover-guard\.spec\.mjs/);
+  assert.match(source, /jedit-production-cutover-guard\.mjs/);
   assert.match(source, /npm', \['run', '--silent', 'quality'\]/);
 });

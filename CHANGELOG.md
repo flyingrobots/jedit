@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Fixed Echo-hosted production text save so `Ctrl-S` requests a full-buffer
+  export aperture before writing a file, preventing bounded viewport readings
+  from truncating long files on disk.
 - Preserved jedit contract root history in the Echo-facing runtime state so
   tick and checkpoint facts do not reference roots without corresponding root
   facts.

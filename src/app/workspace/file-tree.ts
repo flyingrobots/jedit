@@ -7,13 +7,16 @@ import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import { createNotificationTickCmd, pushErrorToast } from '../../ui/feedback.js';
 import { clampIndex } from './viewport.js';
 import { withFocusPane } from './focus.js';
-import { beginEditorProjectionRefresh, isWorkspaceMarkdownFile, loadEditor } from './editor-session.js';
+import { isWorkspaceMarkdownFile } from './editor-session.js';
 import { ViewModes } from './view-mode.js';
 import { FocusPanes } from '../../ui/panel-focus.js';
 import type { WorkspaceModel } from './model.js';
 import { WorkspaceMessageTypes } from './msg.js';
 import type { WorkspaceMsg } from './msg.js';
 import { type Cmd } from '@flyingrobots/bijou-tui';
+import type { ProductionTextSession } from './production-text-session.js';
+import { createWorkspaceTextOpenCmd, defaultWorkspaceTextAperture } from './workspace-text-commands.js';
+import { pendingWorkspaceTextOpen } from './workspace-text-authority.js';
 import {
   isWorkspaceBackKey,
   isWorkspaceDownKey,
@@ -29,6 +32,7 @@ interface UpdateTreeFromKeyDeps {
   readonly editorFile: EditorFilePort;
   readonly sourceHighlighter: SourceHighlighter;
   readonly graftSession: GraftSessionPort;
+  readonly productionTextSession: ProductionTextSession;
 }
 
 export function updateTreeFromKey(
@@ -92,27 +96,36 @@ function openSelectedTreeEntry(
   if (entry.kind === FileEntryKinds.Directory || entry.kind === FileEntryKinds.Parent) {
     return changeDirectory(model, entry.path, DIRECTORY_ACTION_OPEN, nowMs, deps.fileSystem);
   }
-  return openEditorEntry(model, entry.path, deps);
+  return openEditorEntry(model, entry.path, nowMs, deps);
 }
 
 function openEditorEntry(
   model: WorkspaceModel,
   path: string,
+  nowMs: () => number,
   deps: UpdateTreeFromKeyDeps,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
-  const editor = loadEditor(path, deps.editorFile);
-  return beginEditorProjectionRefresh(withFocusPane({
+  const requestId = model.textRequestId + 1;
+  const atMs = nowMs();
+  return [withFocusPane({
     ...model,
-    editor,
+    textRequestId: requestId,
+    textAuthority: pendingWorkspaceTextOpen(model.textRuntimeProfile, path, requestId, atMs),
+    editor: undefined,
     viewMode: ViewModes.Source,
     graftInfo: undefined,
     graftLoading: false,
     graftSelectedIndex: 0,
-  }, FocusPanes.Editor), { refreshGraft: model.graftDrawerOpen }, {
-    editorFile: deps.editorFile,
-    sourceHighlighter: deps.sourceHighlighter,
-    graftSession: deps.graftSession,
-  });
+  }, FocusPanes.Editor), [
+    createWorkspaceTextOpenCmd({
+      requestId,
+      filePath: path,
+      editorFile: deps.editorFile,
+      productionTextSession: deps.productionTextSession,
+      atMs,
+      aperture: defaultWorkspaceTextAperture(),
+    }),
+  ]];
 }
 
 function openDirectory(

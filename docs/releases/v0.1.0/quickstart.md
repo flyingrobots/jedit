@@ -27,16 +27,23 @@ Run the installed-package edit/read witness:
 node scripts/jedit-echo-powered-session.mjs --json --text "hello Echo"
 ```
 
+Run the production text session witness:
+
+```bash
+node scripts/jedit-production-text-session.mjs --json --text "hello Echo"
+```
+
 Compare two local witness runs using stable evidence identity:
 
 ```bash
 node scripts/jedit-echo-powered-session.mjs --json --replay-local
+node scripts/jedit-production-text-session.mjs --json --replay-local
 ```
 
-Start the interactive app with the Echo-backed text runtime selected:
+Start the interactive app with the Echo-hosted production text profile:
 
 ```bash
-JEDIT_TEXT_RUNTIME=echo npm start
+JEDIT_TEXT_RUNTIME=echoHosted npm start
 ```
 
 ## Expected JSON Shape
@@ -114,5 +121,7 @@ Authority violation:
 
 - Application code must not tick Echo.
 - `TextBufferOptic` is a jedit capability.
+- `echoHosted` is the production text runtime profile.
+- `testLocal` is a dev/test fixture profile, not a product mode.
 - Echo sees generic package, operation, query, handler, observer, receipt, and
   reading evidence surfaces.

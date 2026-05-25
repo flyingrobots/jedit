@@ -1,0 +1,432 @@
+import type { Cmd, RuntimeIssue } from '@flyingrobots/bijou-tui';
+import type { EditorFilePort } from '../../ports/editor-file.js';
+import { joinLines, normalizeLines } from '../editor-lines.js';
+import type {
+  ProductionTextSession,
+  ProductionTextViewportAperture,
+} from './production-text-session.js';
+import { ProductionTextSessionOutcomeKinds } from './production-text-session.js';
+import { RuntimeIssueLevels, RuntimeIssueSources } from './runtime-issue.js';
+import { WorkspaceMessageTypes, type WorkspaceMsg } from './msg.js';
+import type { WorkspaceTextReadingCache } from './workspace-text-reading-cache.js';
+import {
+  WorkspaceTextResultKinds,
+  type WorkspaceTextCheckpointResult,
+  type WorkspaceTextEditResult,
+  type WorkspaceTextExportResult,
+  type WorkspaceTextOpenResult,
+  type WorkspaceTextReadCommandResult,
+} from './workspace-text-results.js';
+
+const ISSUE_LEVEL_ERROR = RuntimeIssueLevels.Error;
+const ISSUE_SOURCE_COMMAND = RuntimeIssueSources.Command;
+const OPEN_FAILURE_PREFIX = 'Text open failed';
+const EDIT_FAILURE_PREFIX = 'Text edit failed';
+const CHECKPOINT_FAILURE_PREFIX = 'Text checkpoint failed';
+const EXPORT_FAILURE_PREFIX = 'Text export failed';
+const READ_FAILURE_PREFIX = 'Text read failed';
+const CHECKPOINT_LABEL = 'interactive workspace save';
+const EDIT_COMMAND_INSERT = 'insert';
+const EDIT_COMMAND_REPLACE = 'replace';
+const EDIT_COMMAND_DELETE = 'delete';
+const INITIAL_CURSOR_LINE = 0;
+const DEFAULT_VIEWPORT_LINE_COUNT = 24;
+const DEFAULT_BEFORE_LINES = 0;
+const DEFAULT_AFTER_LINES = 0;
+const DEFAULT_MAX_BYTES = 1048576;
+const FULL_EXPORT_CURSOR_LINE = 0;
+const FULL_EXPORT_BEFORE_LINES = 0;
+const FULL_EXPORT_AFTER_LINES = 0;
+const FULL_EXPORT_VIEWPORT_LINE_COUNT = Number.MAX_SAFE_INTEGER;
+const FULL_EXPORT_MAX_BYTES = Number.MAX_SAFE_INTEGER;
+
+export const WorkspaceTextEditCommandKinds = Object.freeze({
+  Insert: EDIT_COMMAND_INSERT,
+  Replace: EDIT_COMMAND_REPLACE,
+  Delete: EDIT_COMMAND_DELETE,
+} as const);
+
+export interface WorkspaceTextOpenCommandRequest {
+  readonly requestId: number;
+  readonly filePath: string;
+  readonly editorFile: EditorFilePort;
+  readonly productionTextSession: ProductionTextSession;
+  readonly atMs: number;
+  readonly aperture?: ProductionTextViewportAperture;
+}
+
+export interface WorkspaceTextCommandBase {
+  readonly requestId: number;
+  readonly filePath: string;
+  readonly bufferId: string;
+  readonly productionTextSession: ProductionTextSession;
+  readonly atMs: number;
+  readonly aperture: ProductionTextViewportAperture;
+}
+
+export interface WorkspaceTextInsertCommandRequest extends WorkspaceTextCommandBase {
+  readonly kind: typeof EDIT_COMMAND_INSERT;
+  readonly startByte: number;
+  readonly insertText: string;
+}
+
+export interface WorkspaceTextReplaceCommandRequest extends WorkspaceTextCommandBase {
+  readonly kind: typeof EDIT_COMMAND_REPLACE;
+  readonly startByte: number;
+  readonly endByte: number;
+  readonly insertText: string;
+}
+
+export interface WorkspaceTextDeleteCommandRequest extends WorkspaceTextCommandBase {
+  readonly kind: typeof EDIT_COMMAND_DELETE;
+  readonly startByte: number;
+  readonly endByte: number;
+}
+
+export type WorkspaceTextEditCommandRequest =
+  | WorkspaceTextInsertCommandRequest
+  | WorkspaceTextReplaceCommandRequest
+  | WorkspaceTextDeleteCommandRequest;
+
+export interface WorkspaceTextCheckpointCommandRequest {
+  readonly requestId: number;
+  readonly filePath: string;
+  readonly bufferId: string;
+  readonly productionTextSession: ProductionTextSession;
+  readonly atMs: number;
+}
+
+export interface WorkspaceTextExportCommandRequest {
+  readonly requestId: number;
+  readonly filePath: string;
+  readonly bufferId: string;
+  readonly editorFile: EditorFilePort;
+  readonly productionTextSession: ProductionTextSession;
+  readonly atMs: number;
+  readonly aperture: ProductionTextViewportAperture;
+}
+
+export interface WorkspaceTextReadCommandRequest {
+  readonly requestId: number;
+  readonly filePath: string;
+  readonly bufferId: string;
+  readonly productionTextSession: ProductionTextSession;
+  readonly atMs: number;
+  readonly aperture: ProductionTextViewportAperture;
+}
+
+export interface WorkspaceTextObservedReading {
+  readonly readingId: string;
+  readonly lines: readonly { readonly text: string }[];
+  readonly lineCount: number;
+  readonly cursorLine: number;
+  readonly viewportLineCount: number;
+  readonly truncated: boolean;
+}
+
+export function createWorkspaceTextOpenCmd(
+  request: WorkspaceTextOpenCommandRequest,
+): Cmd<WorkspaceMsg> {
+  return async () => ({
+    type: WorkspaceMessageTypes.TextOpenResult,
+    requestId: request.requestId,
+    result: await openWorkspaceText(request),
+  });
+}
+
+export function defaultWorkspaceTextAperture(): ProductionTextViewportAperture {
+  return {
+    cursorLine: INITIAL_CURSOR_LINE,
+    viewportLineCount: DEFAULT_VIEWPORT_LINE_COUNT,
+    beforeLines: DEFAULT_BEFORE_LINES,
+    afterLines: DEFAULT_AFTER_LINES,
+    maxBytes: DEFAULT_MAX_BYTES,
+  };
+}
+
+export function fullWorkspaceTextExportAperture(): ProductionTextViewportAperture {
+  return {
+    cursorLine: FULL_EXPORT_CURSOR_LINE,
+    viewportLineCount: FULL_EXPORT_VIEWPORT_LINE_COUNT,
+    beforeLines: FULL_EXPORT_BEFORE_LINES,
+    afterLines: FULL_EXPORT_AFTER_LINES,
+    maxBytes: FULL_EXPORT_MAX_BYTES,
+  };
+}
+
+export function createWorkspaceTextEditCmd(
+  request: WorkspaceTextEditCommandRequest,
+): Cmd<WorkspaceMsg> {
+  return async () => ({
+    type: WorkspaceMessageTypes.TextEditResult,
+    requestId: request.requestId,
+    result: await editWorkspaceText(request),
+  });
+}
+
+export function createWorkspaceTextCheckpointCmd(
+  request: WorkspaceTextCheckpointCommandRequest,
+): Cmd<WorkspaceMsg> {
+  return async () => ({
+    type: WorkspaceMessageTypes.TextCheckpointResult,
+    requestId: request.requestId,
+    result: await checkpointWorkspaceText(request),
+  });
+}
+
+export function createWorkspaceTextExportCmd(
+  request: WorkspaceTextExportCommandRequest,
+): Cmd<WorkspaceMsg> {
+  return async () => ({
+    type: WorkspaceMessageTypes.TextExportResult,
+    requestId: request.requestId,
+    result: await exportWorkspaceText(request),
+  });
+}
+
+export function createWorkspaceTextReadCmd(
+  request: WorkspaceTextReadCommandRequest,
+): Cmd<WorkspaceMsg> {
+  return async () => ({
+    type: WorkspaceMessageTypes.TextReadResult,
+    requestId: request.requestId,
+    result: await readWorkspaceText(request),
+  });
+}
+
+async function openWorkspaceText(
+  request: WorkspaceTextOpenCommandRequest,
+): Promise<WorkspaceTextOpenResult> {
+  try {
+    const loaded = request.editorFile.loadEditorFile(request.filePath);
+    const opened = await request.productionTextSession.openBuffer({
+      bufferKey: request.filePath,
+      initialText: joinLines(loaded.lines),
+      projectionPath: request.filePath,
+      atMs: request.atMs,
+    });
+    if (opened.kind === ProductionTextSessionOutcomeKinds.Obstructed) {
+      return obstructedOpen(request.filePath, opened.obstruction.issue);
+    }
+    const observed = await request.productionTextSession.observeWindow({
+      bufferId: opened.optic.buffer.bufferId,
+      aperture: request.aperture ?? defaultWorkspaceTextAperture(),
+      atMs: request.atMs,
+    });
+    if (observed.kind === ProductionTextSessionOutcomeKinds.Obstructed) {
+      return obstructedOpen(request.filePath, observed.obstruction.issue);
+    }
+    return {
+      kind: WorkspaceTextResultKinds.Opened,
+      filePath: request.filePath,
+      bufferId: opened.optic.buffer.bufferId,
+      readOnly: loaded.readOnly,
+      cache: readingCache(opened.optic.buffer.bufferId, observed.observed.value),
+    };
+  } catch (cause) {
+    return obstructedOpen(
+      request.filePath,
+      runtimeIssue(`${OPEN_FAILURE_PREFIX}: ${cause instanceof Error ? cause.message : String(cause)}`, request.atMs),
+    );
+  }
+}
+
+async function editWorkspaceText(
+  request: WorkspaceTextEditCommandRequest,
+): Promise<WorkspaceTextEditResult> {
+  try {
+    const edited = await applyWorkspaceTextEdit(request);
+    if (edited.kind === ProductionTextSessionOutcomeKinds.Obstructed) {
+      return obstructedEdit(request.filePath, edited.obstruction.issue);
+    }
+    const observed = await request.productionTextSession.observeWindow({
+      bufferId: request.bufferId,
+      aperture: request.aperture,
+      atMs: request.atMs,
+    });
+    if (observed.kind === ProductionTextSessionOutcomeKinds.Obstructed) {
+      return obstructedEdit(request.filePath, observed.obstruction.issue);
+    }
+    return {
+      kind: WorkspaceTextResultKinds.Applied,
+      filePath: request.filePath,
+      bufferId: request.bufferId,
+      receiptId: edited.result.receiptId,
+      cache: readingCache(request.bufferId, observed.observed.value),
+    };
+  } catch (cause) {
+    return obstructedEdit(
+      request.filePath,
+      runtimeIssue(`${EDIT_FAILURE_PREFIX}: ${cause instanceof Error ? cause.message : String(cause)}`, request.atMs),
+    );
+  }
+}
+
+function applyWorkspaceTextEdit(request: WorkspaceTextEditCommandRequest) {
+  if (request.kind === EDIT_COMMAND_INSERT) {
+    return request.productionTextSession.insertText({
+      bufferId: request.bufferId,
+      startByte: request.startByte,
+      insertText: request.insertText,
+      atMs: request.atMs,
+    });
+  }
+  if (request.kind === EDIT_COMMAND_REPLACE) {
+    return request.productionTextSession.replaceRange({
+      bufferId: request.bufferId,
+      startByte: request.startByte,
+      endByte: request.endByte,
+      insertText: request.insertText,
+      atMs: request.atMs,
+    });
+  }
+  return request.productionTextSession.deleteRange({
+    bufferId: request.bufferId,
+    startByte: request.startByte,
+    endByte: request.endByte,
+    atMs: request.atMs,
+  });
+}
+
+async function checkpointWorkspaceText(
+  request: WorkspaceTextCheckpointCommandRequest,
+): Promise<WorkspaceTextCheckpointResult> {
+  try {
+    const checkpointed = await request.productionTextSession.checkpointBuffer({
+      bufferId: request.bufferId,
+      label: CHECKPOINT_LABEL,
+      atMs: request.atMs,
+    });
+    if (checkpointed.kind === ProductionTextSessionOutcomeKinds.Obstructed) {
+      return obstructedCheckpoint(request.filePath, checkpointed.obstruction.issue);
+    }
+    return {
+      kind: WorkspaceTextResultKinds.Checkpointed,
+      filePath: request.filePath,
+      bufferId: request.bufferId,
+      checkpointId: checkpointed.result.checkpointId,
+    };
+  } catch (cause) {
+    return obstructedCheckpoint(
+      request.filePath,
+      runtimeIssue(`${CHECKPOINT_FAILURE_PREFIX}: ${cause instanceof Error ? cause.message : String(cause)}`, request.atMs),
+    );
+  }
+}
+
+async function exportWorkspaceText(
+  request: WorkspaceTextExportCommandRequest,
+): Promise<WorkspaceTextExportResult> {
+  try {
+    const exported = await request.productionTextSession.exportWindow({
+      bufferId: request.bufferId,
+      aperture: request.aperture,
+      atMs: request.atMs,
+    });
+    if (exported.kind === ProductionTextSessionOutcomeKinds.Obstructed) {
+      return obstructedExport(request.filePath, exported.obstruction.issue);
+    }
+    request.editorFile.saveEditorFile(request.filePath, normalizeLines(exported.text));
+    return {
+      kind: WorkspaceTextResultKinds.Exported,
+      filePath: request.filePath,
+      bufferId: request.bufferId,
+      readingId: exported.readingId,
+    };
+  } catch (cause) {
+    return obstructedExport(
+      request.filePath,
+      runtimeIssue(`${EXPORT_FAILURE_PREFIX}: ${cause instanceof Error ? cause.message : String(cause)}`, request.atMs),
+    );
+  }
+}
+
+async function readWorkspaceText(
+  request: WorkspaceTextReadCommandRequest,
+): Promise<WorkspaceTextReadCommandResult> {
+  try {
+    const observed = await request.productionTextSession.observeWindow({
+      bufferId: request.bufferId,
+      aperture: request.aperture,
+      atMs: request.atMs,
+    });
+    if (observed.kind === ProductionTextSessionOutcomeKinds.Obstructed) {
+      return obstructedRead(request.filePath, observed.obstruction.issue);
+    }
+    return {
+      kind: WorkspaceTextResultKinds.Read,
+      filePath: request.filePath,
+      bufferId: request.bufferId,
+      cache: readingCache(request.bufferId, observed.observed.value),
+    };
+  } catch (cause) {
+    return obstructedRead(
+      request.filePath,
+      runtimeIssue(`${READ_FAILURE_PREFIX}: ${cause instanceof Error ? cause.message : String(cause)}`, request.atMs),
+    );
+  }
+}
+
+function obstructedOpen(filePath: string, issue: RuntimeIssue): WorkspaceTextOpenResult {
+  return {
+    kind: WorkspaceTextResultKinds.Obstructed,
+    filePath,
+    issue,
+  };
+}
+
+function obstructedEdit(filePath: string, issue: RuntimeIssue): WorkspaceTextEditResult {
+  return {
+    kind: WorkspaceTextResultKinds.Obstructed,
+    filePath,
+    issue,
+  };
+}
+
+function obstructedCheckpoint(filePath: string, issue: RuntimeIssue): WorkspaceTextCheckpointResult {
+  return {
+    kind: WorkspaceTextResultKinds.Obstructed,
+    filePath,
+    issue,
+  };
+}
+
+function obstructedExport(filePath: string, issue: RuntimeIssue): WorkspaceTextExportResult {
+  return {
+    kind: WorkspaceTextResultKinds.Obstructed,
+    filePath,
+    issue,
+  };
+}
+
+function obstructedRead(filePath: string, issue: RuntimeIssue): WorkspaceTextReadCommandResult {
+  return {
+    kind: WorkspaceTextResultKinds.Obstructed,
+    filePath,
+    issue,
+  };
+}
+
+export function readingCache(
+  bufferId: string,
+  reading: WorkspaceTextObservedReading,
+): WorkspaceTextReadingCache {
+  return {
+    bufferId,
+    readingId: reading.readingId,
+    lines: reading.lines.map((line) => line.text),
+    lineCount: reading.lineCount,
+    cursorLine: reading.cursorLine,
+    viewportLineCount: reading.viewportLineCount,
+    truncated: reading.truncated,
+  };
+}
+
+function runtimeIssue(message: string, atMs: number): RuntimeIssue {
+  return {
+    message,
+    level: ISSUE_LEVEL_ERROR,
+    source: ISSUE_SOURCE_COMMAND,
+    atMs,
+  };
+}

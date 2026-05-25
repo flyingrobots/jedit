@@ -14,18 +14,24 @@ The short version:
 - Bijou supplies the terminal application loop.
 - jedit must never smuggle editor nouns into Echo core.
 
-The current repository contains two relevant execution postures:
+The current repository contains three relevant execution postures:
 
 1. The interactive jedit TUI path. This starts in `src/main.ts`, runs through
-   Bijou, and edits local files through jedit workspace ports.
-2. The Echo witness path. This runs an opt-in real Echo WASM integration that
+   Bijou, and is being cut over from direct editor state to the production text
+   session.
+2. The production text session path. This is the jedit-owned
+   `TextBufferSessionPort` facade used by tests and witnesses to open, edit,
+   checkpoint, observe bounded windows, export text, and retain refs through the
+   Echo-hosted contract surface.
+3. The Echo witness path. This runs an opt-in real Echo WASM integration that
    proves jedit can submit contract-shaped work, let a trusted host request an
    Echo-owned run policy, and receive a typed `UNSUPPORTED_QUERY` obstruction
    instead of hardcoded text when no generated observer is installed.
 
 Those postures intentionally meet through ports and adapters. The interactive
-product can evolve toward the real Echo path without letting application code
-gain tick authority or substrate coordinates.
+product is now being wired to consume the production text session as its only
+production text authority without letting application code gain tick authority
+or substrate coordinates.
 
 ## Vocabulary
 
@@ -93,35 +99,37 @@ sequenceDiagram
 
 The files most relevant to this guide are:
 
-| Path                                              | Role                                                           |
-| ------------------------------------------------- | -------------------------------------------------------------- |
-| `src/main.ts`                                     | Process entry for the TUI application.                         |
-| `src/adapters/workspace-app.ts`                   | Wires concrete ports into the workspace runtime.               |
-| `src/app/workspace/runtime.ts`                    | Pure-ish workspace update/view runtime.                        |
-| `src/app/workspace/model.ts`                      | Workspace model shape.                                         |
-| `src/app/workspace/editor-session.ts`             | File/editor session behavior.                                  |
-| `src/ports/text-buffer-session.ts`                | jedit app-facing text-buffer session port.                     |
-| `src/ports/jedit-optic-client.ts`                 | Lower jedit optic client interface consumed by adapters.       |
-| `src/adapters/jedit-echo-optic-client.ts`         | Adapter from jedit optic calls to Echo-shaped transport bytes. |
-| `src/adapters/echo-backed-text-buffer-session.ts` | Echo-backed implementation of the text-buffer session port.    |
-| `src/app/echo-powered-text-buffer-witness.ts`     | App workflow witness over the Echo-powered product session.    |
-| `src/app/trusted-echo-runtime-host.ts`            | Host helper for trusted Echo shutdown requests.                |
-| `src/ports/echo-kernel-transport.ts`              | App-safe and trusted-host Echo transport ports.                |
-| `src/adapters/echo-wasm-kernel.ts`                | Real Echo WASM transport adapter.                              |
-| `src/ports/echo-runtime-lifecycle.ts`             | Trusted-host runtime lifecycle port.                           |
-| `src/adapters/echo-runtime-lifecycle.ts`          | Adapter from lifecycle requests to trusted Echo control bytes. |
-| `src/adapters/fake-echo-jedit-optic-transport.ts` | Default fake Echo-shaped test transport.                       |
-| `src/app/jedit-contract-runtime.ts`               | jedit-owned transitional hot-text contract executor.           |
-| `src/app/jedit-observer-runtime.ts`               | jedit-owned observer/read envelope helpers.                    |
-| `src/adapters/in-memory-hot-text-runtime.ts`      | Transitional in-memory hot-text runtime.                       |
-| `contracts/jedit/hot-text-runtime.graphql`        | jedit-authored hot-text runtime contract.                      |
-| `contracts/jedit/text-buffer-optic.graphql`       | jedit app-facing optic contract.                               |
-| `contracts/jedit/structural-history.graphql`      | jedit structural history contract authority.                   |
-| `scripts/jedit-echo-witness.mjs`                  | CLI for the real Echo witness path.                            |
-| `scripts/jedit-echo-powered-session.mjs`          | Fast agent CLI over the app-facing Echo-powered session.       |
-| `scripts/ports/echo-witness-runner.mjs`           | Witness runner port logic.                                     |
-| `scripts/adapters/node-echo-witness-runner.mjs`   | Node filesystem/process adapter for the witness runner.        |
-| `spec/jedit-echo-wasm-stack-witness.spec.mjs`     | Opt-in real Echo WASM generic observer-boundary witness.       |
+| Path                                                   | Role                                                                          |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| `src/main.ts`                                          | Process entry for the TUI application.                                        |
+| `src/adapters/workspace-app.ts`                        | Wires concrete ports into the workspace runtime.                              |
+| `src/app/workspace/runtime.ts`                         | Pure-ish workspace update/view runtime.                                       |
+| `src/app/workspace/model.ts`                           | Workspace model shape.                                                        |
+| `src/app/workspace/editor-session.ts`                  | File/editor session behavior.                                                 |
+| `src/app/workspace/production-text-session.ts`         | jedit-owned production text session facade over the text-buffer session port. |
+| `src/app/workspace/production-text-session-witness.ts` | Local witness proving open/edit/checkpoint/read/export/replay posture.        |
+| `src/ports/text-buffer-session.ts`                     | jedit app-facing text-buffer session port.                                    |
+| `src/ports/jedit-optic-client.ts`                      | Lower jedit optic client interface consumed by adapters.                      |
+| `src/adapters/jedit-echo-optic-client.ts`              | Adapter from jedit optic calls to Echo-shaped transport bytes.                |
+| `src/adapters/echo-backed-text-buffer-session.ts`      | Echo-backed implementation of the text-buffer session port.                   |
+| `src/app/echo-powered-text-buffer-witness.ts`          | App workflow witness over the Echo-powered product session.                   |
+| `src/app/trusted-echo-runtime-host.ts`                 | Host helper for trusted Echo shutdown requests.                               |
+| `src/ports/echo-kernel-transport.ts`                   | App-safe and trusted-host Echo transport ports.                               |
+| `src/adapters/echo-wasm-kernel.ts`                     | Real Echo WASM transport adapter.                                             |
+| `src/ports/echo-runtime-lifecycle.ts`                  | Trusted-host runtime lifecycle port.                                          |
+| `src/adapters/echo-runtime-lifecycle.ts`               | Adapter from lifecycle requests to trusted Echo control bytes.                |
+| `src/adapters/fake-echo-jedit-optic-transport.ts`      | Default fake Echo-shaped test transport.                                      |
+| `src/app/jedit-contract-runtime.ts`                    | jedit-owned transitional hot-text contract executor.                          |
+| `src/app/jedit-observer-runtime.ts`                    | jedit-owned observer/read envelope helpers.                                   |
+| `src/adapters/in-memory-hot-text-runtime.ts`           | Transitional in-memory hot-text runtime.                                      |
+| `contracts/jedit/hot-text-runtime.graphql`             | jedit-authored hot-text runtime contract.                                     |
+| `contracts/jedit/text-buffer-optic.graphql`            | jedit app-facing optic contract.                                              |
+| `contracts/jedit/structural-history.graphql`           | jedit structural history contract authority.                                  |
+| `scripts/jedit-echo-witness.mjs`                       | CLI for the real Echo witness path.                                           |
+| `scripts/jedit-echo-powered-session.mjs`               | Fast agent CLI over the app-facing Echo-powered session.                      |
+| `scripts/ports/echo-witness-runner.mjs`                | Witness runner port logic.                                                    |
+| `scripts/adapters/node-echo-witness-runner.mjs`        | Node filesystem/process adapter for the witness runner.                       |
+| `spec/jedit-echo-wasm-stack-witness.spec.mjs`          | Opt-in real Echo WASM generic observer-boundary witness.                      |
 
 ## TypeScript Model
 
@@ -412,12 +420,26 @@ sequenceDiagram
 
 ## Interactive Editing Path
 
-The current TUI path is still a conventional local editor surface. It opens,
-edits, and saves files through jedit ports. This path is intentionally kept
-separate from the Echo witness path until the Echo-backed contract path is
-ready to become the normal editor runtime.
+The current TUI path is the active cutover target. Historically it opened,
+edited, and saved files through direct `EditorState.lines` helpers. That legacy
+path is no longer the production target. The production target is:
 
-A typical local file flow is:
+```text
+workspace key or file event
+-> jedit workspace command planner
+-> ProductionTextSession
+-> TextBufferSessionPort
+-> jedit contract operation or query
+-> Echo-hosted causal state
+-> bounded reading cache
+-> terminal render
+```
+
+The direct in-memory line model may remain only as a fixture, adapter-private
+implementation detail, or temporary render cache. It must not be treated as the
+production source of truth.
+
+A legacy local file flow still visible in the codebase is:
 
 1. User presses a key.
 2. `updateFromKey` routes it by current workspace state and focus.
@@ -451,9 +473,41 @@ sequenceDiagram
   Runtime-->>Bijou: model + commands
 ```
 
-This is not the full Echo-backed editing path yet. The current release-gate work
-is about proving the same product-shaped edit/read/replay path through Echo
-before declaring Echo `v0.1.0`.
+This legacy path is the drift tracked by `docs/BEARING.md` slices 81-90. The
+production text session witness already proves the headless path. The remaining
+work is to make the interactive workspace event loop consume that same
+production session for open, edit, render, save/export, and checkpoint.
+
+The intended production interactive flow is:
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant User
+  participant Bijou
+  participant Runtime as WorkspaceRuntime
+  participant Planner as workspace command planner
+  participant Session as ProductionTextSession
+  participant Port as TextBufferSessionPort
+  participant Cache as reading-derived render cache
+  participant View as viewer renderer
+
+  User->>Bijou: keypress or file open
+  Bijou->>Runtime: update(message, model)
+  Runtime->>Planner: plan open/edit/read/save/checkpoint
+  Planner->>Session: openBuffer / insertText / replaceRange / deleteRange
+  Session->>Port: jedit-owned contract capability call
+  Port-->>Session: app-safe outcome or obstruction
+  Planner->>Session: observeWindow after successful open/edit or aperture change
+  Session-->>Planner: bounded reading + evidence
+  Planner->>Cache: replace render cache from reading
+  Runtime->>View: render cache, posture, and evidence
+  View-->>Bijou: terminal view tree
+```
+
+The planner may update cursor and viewport UI state locally. It must not use
+cursor movement as a mutation, and it must not request Echo ticks. Echo ticks
+itself under trusted runtime ownership.
 
 ## Graft Path
 
@@ -506,18 +560,19 @@ TextBufferSessionPort
 The app can hold and use a `TextBufferOptic`. It cannot inspect the private
 runtime coordinates that make the optic work.
 
-The Echo-backed session adapter composes that product capability with trusted
-runtime lifecycle below the app boundary:
+The Echo-backed session adapter composes that product capability with the
+app-safe client boundary:
 
 ```text
 TextBufferOptic.applyIntent(...)
 -> app-safe JeditOpticClient mutation
--> TrustedEchoRuntimeLifecyclePort.requestRunUntilIdle(...)
 -> later TextBufferOptic.textWindow(...)
 ```
 
 The session and optic returned to application code still do not expose
-`requestRunUntilIdle`, raw trusted control bytes, or any tick method.
+`requestRunUntilIdle`, raw trusted control bytes, or any tick method. Trusted
+host lifecycle is a separate host adapter concern; it is not part of app-facing
+dispatch.
 
 The current TypeScript contract shape is defined in
 `src/ports/text-buffer-session.ts`:
@@ -668,6 +723,12 @@ The fake transport:
 
 It is not Echo core, and it is not a distributed runtime. It is a test adapter
 that preserves the shape of the real app boundary.
+
+The current lower jedit client still exposes `replaceRangeAsTick(...)` because
+that is the historical generated operation name in the hot-text contract. This
+is jedit contract terminology, not an Echo tick authority grant. The app-facing
+production session exposes insert, replace, delete, checkpoint, observe, and
+export operations; it does not expose a tick method.
 
 ```mermaid
 sequenceDiagram
@@ -937,18 +998,20 @@ Current retained evidence posture:
 
 ```text
 available inline:
-  reading_payload
-  reading_envelope
+  package_identity
+  contract_receipt
 
 missing durable retention:
-  contract_receipt
-  reading_payload_ref
   reading_envelope_ref
+  reading_payload_ref
 ```
 
-That means jedit can show payload and envelope evidence in the product-session
-path, while the real Echo WASM substrate still needs package/observer
-integration to be installed before durable retention/replay can close.
+That means the session-level witness consumes reading-evidence posture from the
+observer adapter instead of manufacturing reading refs later in the witness
+layer. The current observer adapter can say the reading envelope and reading
+payload refs are missing durable material; future Echo/WSC retention work must
+replace that posture with durable evidence instead of changing jedit's app
+boundary.
 
 ## Shutdown: From SIGTERM to Process Exit
 
@@ -1036,12 +1099,14 @@ Echo tick:
 | Real Echo WASM app transport | Implemented through `echo-wasm-kernel.ts`. |
 | Trusted Echo host transport | Implemented separately from app transport. |
 | Real Echo generic boundary witness | Implemented as opt-in unsupported-query proof without hardcoded jedit text semantics. |
-| Echo-backed TextBufferSessionPort | Implemented as an adapter over app-safe client plus lifecycle port. |
+| Echo-backed TextBufferSessionPort | Implemented as an adapter over the app-safe client boundary. |
+| Production text session witness | Implemented for open, edit, checkpoint, bounded read, export, retained refs, and local replay posture. |
+| Interactive workspace Echo cutover | Active slices 81-90; direct `EditorState.lines` authority remains visible and must be removed from production paths. |
 | Agent Echo-powered session witness | Implemented as `npm run witness:echo:session`. |
 | Trusted host stop helper | Implemented as `stopTrustedEchoRuntime(...)`. |
 | Durable retained evidence | Not complete; witness reports `missing_retention`. |
 | Durable replay | Not complete; witness reports `durable_replay_unavailable`. |
-| Full interactive TUI on Echo | Not complete; this is the release-gate direction. |
+| Full interactive TUI on Echo | Not complete; this is the active BEARING plan. |
 | Explicit SIGTERM cleanup | Not complete as a jedit-specific lifecycle contract. |
 
 ## How to Run the Important Paths
@@ -1085,6 +1150,13 @@ Run the fast product-session witness:
 npm run witness:echo:session
 ```
 
+Run the production text session witness:
+
+```sh
+npm run build
+node scripts/jedit-production-text-session.mjs --json
+```
+
 ## The End-to-End Story
 
 Here is the whole current stack in one sequence.
@@ -1114,32 +1186,38 @@ sequenceDiagram
   Jedit->>AppAdapter: product-shaped edit/read request
   AppAdapter->>EchoApp: submitIntentBytes or observeBytes
   EchoApp->>Echo: dispatch_intent or observe
-  Host->>Echo: trusted runtime lifecycle control
+  Host->>Echo: trusted runtime lifecycle control outside app dispatch
   Echo-->>EchoApp: ingress evidence, reading envelope, query bytes, or obstruction
   EchoApp-->>AppAdapter: runtime-facing response bytes
   AppAdapter-->>Jedit: jedit-shaped result or reading
   Jedit-->>Developer: terminal view update
 ```
 
-The stack becomes release-grade when the product path and the witness path are
-the same path for real editing: jedit-authored contract, Wesley artifacts, Echo
-package install, jedit app intent, trusted host runtime loop, Echo-owned tick
-receipt, bounded reading, retained evidence, and replay.
+The stack becomes release-grade when the interactive product path and the
+production session witness path are the same path for real editing:
+jedit-authored contract, Wesley artifacts, Echo package install, jedit app
+intent, trusted host runtime loop outside app dispatch, Echo-owned tick receipt,
+bounded reading, retained evidence, and replay.
 
 ## Future Work Called Out by This Guide
 
 This guide intentionally exposes gaps instead of papering over them:
 
-1. Move more interactive editor actions onto the Echo-backed contract path.
-2. Install jedit-authored contract packages into Echo through the generic registry boundary.
-3. Replace fixture JSON transport bytes with durable Wesley-generated codecs.
-4. Complete retained evidence lookup for payloads, reading envelopes, and
+1. Complete BEARING slices 81-90 so the interactive workspace opens, edits,
+   renders, saves/exports, and checkpoints through the production text session.
+2. Quarantine legacy direct `EditorState.lines` mutation as fixture-only or
+   adapter-private behavior.
+3. Install jedit-authored contract packages into Echo through the generic registry boundary.
+4. Replace fixture JSON transport bytes with durable Wesley-generated codecs.
+5. Complete retained evidence lookup for payloads, reading envelopes, and
    contract receipts.
-5. Complete durable replay for accepted edit/read evidence.
-6. Add explicit trusted host lifecycle controls for long-running jedit hosts.
-7. Add explicit SIGTERM/shutdown behavior if strong cleanup guarantees become
+6. Complete durable replay for accepted edit/read evidence.
+7. Add explicit trusted host lifecycle controls for long-running jedit hosts.
+8. Add Echo WSC causal-history persistence only after interactive cutover is
+   credible.
+9. Add explicit SIGTERM/shutdown behavior if strong cleanup guarantees become
    product requirements.
-8. Keep Echo generic while jedit becomes a serious product-shaped consumer.
+10. Keep Echo generic while jedit becomes a serious product-shaped consumer.
 
 The north star remains small but strict:
 

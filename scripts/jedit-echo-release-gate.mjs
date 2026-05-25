@@ -30,7 +30,15 @@ const FOCUSED_TESTS = Object.freeze([
   'spec/jedit-restart-posture.spec.mjs',
   'spec/jedit-local-replay-proof.spec.mjs',
   'spec/echo-application-hosting-guide.spec.mjs',
-  'spec/interactive-echo-text-session.spec.mjs',
+  'spec/text-runtime-profile-session.spec.mjs',
+  'spec/production-text-session.spec.mjs',
+  'spec/production-text-session-witness.spec.mjs',
+  'spec/production-text-session-cli.spec.mjs',
+  'spec/workspace-text-cutover.spec.mjs',
+  'spec/workspace-app-echo-cutover.spec.mjs',
+  'spec/workspace-text-boundaries.spec.mjs',
+  'spec/workspace-echo-witness-cli.spec.mjs',
+  'spec/production-cutover-guard.spec.mjs',
   'spec/release-quickstart.spec.mjs',
 ]);
 
@@ -92,6 +100,7 @@ function checkRequiredFile(filePath, label) {
 function runReleaseGate() {
   return runCommand('npm', ['run', '--silent', 'build'])
     || runCommand(process.execPath, ['--test', '--test-concurrency=1', ...FOCUSED_TESTS])
+    || runCommand(process.execPath, ['scripts/jedit-production-cutover-guard.mjs'])
     || runCommand('npm', ['run', '--silent', 'quality']);
 }
 

@@ -14,14 +14,14 @@ import {
   workspaceBodyHeight,
   FOOTER_ROWS,
 } from './viewport.js';
-import { isWorkspaceMarkdownFile } from './editor-session.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
-import { renderViewer } from './viewer-content.js';
+import { isWorkspaceMarkdownPreviewAvailable, renderViewer } from './viewer-content.js';
 import { renderDrawer } from './viewer-drawers.js';
 import { fillSurface } from './surface-fill.js';
 import { renderSmallTerminalNotice } from './small-terminal-view.js';
 import { paintWorkspaceOverlays } from './viewer-overlays.js';
+import { workspaceTextAuthorityPosture } from './workspace-text-authority.js';
 
 const WORKSPACE_BODY_TOP_OFFSET = 2;
 
@@ -108,13 +108,14 @@ function paintWorkspaceFooter(screen: Surface, model: WorkspaceModel): void {
         fileDrawerOpen: model.fileDrawerOpen,
         graftDrawerOpen: model.graftDrawerOpen,
         viewMode: model.viewMode,
-        markdownPreviewActive: model.editor != null && isWorkspaceMarkdownFile(model.editor.path),
+        markdownPreviewActive: isWorkspaceMarkdownPreviewAvailable(model),
         editorMode: model.editor?.mode,
         pendingNormal: model.editor?.pendingNormal,
         settingsOpen: model.settingsOpen,
         cwd: model.cwd,
         selectedEntry: model.entries[model.selectedIndex],
         editorPath: model.editor?.path,
+        textPosture: workspaceTextAuthorityPosture(model.textAuthority),
         graftPath: model.graftInfo?.path,
         graftSelection: selectedGraftSelection(model),
       }, model.columns, model.jeditTheme.surface.footer),

@@ -126,11 +126,11 @@ and host authority split:
 - jedit application code submits canonical intents and observes readings;
 - trusted Echo host code owns package install, runtime lifecycle requests,
   until-idle/stop policy, and fault recovery through a dedicated lifecycle port;
-- the Echo-powered `TextBufferOptic` session requests lifecycle after mutations
+- the Echo-powered `TextBufferSessionPort` path requests lifecycle after mutations
   without exposing that lifecycle port to application code;
 - no jedit app path can tick or tunnel trusted runtime lifecycle control
   through dispatch;
-- the witness report now inventories inline reading evidence and explicitly
+- the witness report consumes adapter-projected reading evidence and explicitly
   records missing durable retention as `missing_retention`;
 - `--replay` returns the report's replay posture, currently
   `durable_replay_unavailable` until durable replay is wired.
