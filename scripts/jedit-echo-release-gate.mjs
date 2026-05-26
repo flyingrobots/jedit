@@ -26,6 +26,7 @@ const FOCUSED_TESTS = Object.freeze([
   'spec/jedit-intent-outcomes.spec.mjs',
   'spec/jedit-retained-evidence.spec.mjs',
   'spec/echo-powered-session-witness-cli.spec.mjs',
+  'spec/jedit-echo-release-gate-report.spec.mjs',
   'spec/jedit-echo-witness-mcp-adapter.spec.mjs',
   'spec/jedit-restart-posture.spec.mjs',
   'spec/jedit-local-replay-proof.spec.mjs',
@@ -50,6 +51,8 @@ if (metadataStatus !== 0) {
   process.exitCode = metadataStatus;
 } else if (options.metadataOnly) {
   process.stdout.write('jedit Echo release gate metadata ok\n');
+} else if (options.jsonReport) {
+  process.exitCode = runJsonReport();
 } else {
   process.exitCode = runReleaseGate();
 }
@@ -59,12 +62,15 @@ function parseArgs(args) {
     packageDescriptor: DEFAULT_PACKAGE_DESCRIPTOR,
     observerWitness: DEFAULT_OBSERVER_WITNESS,
     metadataOnly: false,
+    jsonReport: false,
   };
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
     if (arg === '--metadata-only') {
       options.metadataOnly = true;
+    } else if (arg === '--json-report') {
+      options.jsonReport = true;
     } else if (arg === '--package-descriptor') {
       options.packageDescriptor = requiredValue(args, index, arg);
       index += 1;
@@ -104,10 +110,123 @@ function runReleaseGate() {
     || runCommand('npm', ['run', '--silent', 'quality']);
 }
 
+function runJsonReport() {
+  const build = runCommandCapture('npm', ['run', '--silent', 'build']);
+  if (build.status !== 0) {
+    return emitReportFailure('build_failed', build);
+  }
+  const happy = runWitnessJson(['--json', '--text', 'release gate']);
+  const nonHappy = runWitnessJson(['--json', '--unsupported-mutation', 'unsupportedMutation']);
+  const replay = runWitnessJson(['--json', '--replay-local', '--text', 'release gate']);
+  if (!happy.ok) {
+    return emitReportFailure('happy_path_failed', happy.result);
+  }
+  if (!nonHappy.ok) {
+    return emitReportFailure('non_happy_path_failed', nonHappy.result);
+  }
+  if (!replay.ok) {
+    return emitReportFailure('local_replay_failed', replay.result);
+  }
+  process.stdout.write(`${JSON.stringify(toReleaseGateReport(happy.summary, nonHappy.summary, replay.summary), null, 2)}\n`);
+  return 0;
+}
+
 function runCommand(command, args) {
   const result = spawnSync(command, args, {
     cwd: process.cwd(),
     stdio: 'inherit',
   });
   return result.status ?? 1;
+}
+
+function runWitnessJson(args) {
+  const result = runCommandCapture(process.execPath, ['scripts/jedit-echo-powered-session.mjs', ...args]);
+  if (result.status !== 0) {
+    return {
+      ok: false,
+      result,
+    };
+  }
+  return parseJsonResult(result);
+}
+
+function runCommandCapture(command, args) {
+  const result = spawnSync(command, args, {
+    cwd: process.cwd(),
+    encoding: 'utf8',
+  });
+  return {
+    status: result.status ?? 1,
+    stdout: result.stdout,
+    stderr: result.stderr,
+  };
+}
+
+function parseJsonResult(result) {
+  try {
+    return {
+      ok: true,
+      summary: JSON.parse(result.stdout),
+      result,
+    };
+  } catch (cause) {
+    return {
+      ok: false,
+      result: {
+        ...result,
+        stderr: cause instanceof Error ? cause.message : String(cause),
+      },
+    };
+  }
+}
+
+function emitReportFailure(reason, result) {
+  process.stdout.write(`${JSON.stringify({
+    ok: false,
+    schemaVersion: 1,
+    reason,
+    status: result.status,
+    stderr: result.stderr,
+  }, null, 2)}\n`);
+  return result.status === 0 ? 1 : result.status;
+}
+
+function toReleaseGateReport(happy, nonHappy, replay) {
+  return {
+    ok: true,
+    schemaVersion: 1,
+    transport: happy.transport,
+    install: happy.install,
+    authority: toAuthorityReport(happy),
+    happyPath: toHappyPathReport(happy),
+    nonHappyPath: nonHappy.nonHappyPath,
+    replay: replay.replayLocal,
+    releaseGate: {
+      hiddenRetry: nonHappy.nonHappyPath.hiddenRetry,
+      appCanTick: happy.authority.appCanTick,
+      retainedEvidenceRefCount: happy.report.retainedEvidence.refs.length,
+    },
+  };
+}
+
+function toAuthorityReport(happy) {
+  return {
+    appFacingSessionPort: happy.authority.appFacingSessionPort,
+    appFacingBufferCapability: happy.authority.appFacingBufferCapability,
+    trustedLifecyclePort: happy.authority.trustedLifecyclePort,
+    appCanTick: happy.authority.appCanTick,
+    lifecycleRequests: happy.lifecycleRequests,
+    shutdown: happy.shutdown,
+  };
+}
+
+function toHappyPathReport(happy) {
+  return {
+    outcome: happy.report.outcome.status,
+    roundTrip: happy.report.roundTrip,
+    receiptCorrelation: happy.report.receiptCorrelation.status,
+    retainedEvidence: happy.report.retainedEvidence,
+    reading: happy.reading,
+    restartPosture: happy.report.restartPosture,
+  };
 }

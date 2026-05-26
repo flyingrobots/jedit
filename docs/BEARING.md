@@ -64,6 +64,9 @@ the witness now reports an explicit mutation/query round trip: the
 structural-history package owns the `replaceTextRange` mutation and receipt
 coordinate, while the transitional hot-text package still owns the bounded
 `textWindow` observer until the generated structural-history query path lands.
+`scripts/jedit-echo-release-gate.mjs --json-report` now emits the consolidated
+happy path, unsupported mutation path, local replay posture, retained evidence,
+and authority-boundary report for the current release-gate PR.
 
 The developer-facing recipe lives in
 [`docs/echo-application-hosting-guide.md`](echo-application-hosting-guide.md).

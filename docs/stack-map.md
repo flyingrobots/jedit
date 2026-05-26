@@ -118,6 +118,10 @@ The next release-gate slice plan is recorded in
   port. The witness also reports a mutation/query round trip where
   structural-history owns the mutation/receipt coordinate and the transitional
   hot-text package still owns the bounded `textWindow` observer.
+- `scripts/jedit-echo-release-gate.mjs --json-report` is the current
+  consolidated jedit/Echo proof report. It joins the happy path, unsupported
+  mutation path, local replay posture, retained evidence refs, and authority
+  checks into one JSON artifact.
 - Continuum remains deferred until the seam is proven enough to publish.
 
 ## Operating rule
