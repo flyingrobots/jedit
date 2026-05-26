@@ -1,5 +1,6 @@
 import {
   jeditHotTextContractPackage,
+  jeditStructuralHistoryContractPackage,
   type JeditContractPackageDescriptor,
 } from './jedit-contract-package.js';
 
@@ -13,6 +14,7 @@ const DUPLICATE_MUTATION_CODE = 'DUPLICATE_MUTATION';
 const DUPLICATE_QUERY_CODE = 'DUPLICATE_QUERY';
 const MISSING_MUTATION_CODE = 'MISSING_MUTATION';
 const MISSING_QUERY_CODE = 'MISSING_QUERY';
+const UNKNOWN_PACKAGE_CODE = 'UNKNOWN_PACKAGE';
 const MUTATION_REQUEST_KIND = 'MUTATION';
 const QUERY_REQUEST_KIND = 'QUERY';
 
@@ -31,7 +33,8 @@ export type JeditPackagePreflightIssueCode =
   | typeof DUPLICATE_MUTATION_CODE
   | typeof DUPLICATE_QUERY_CODE
   | typeof MISSING_MUTATION_CODE
-  | typeof MISSING_QUERY_CODE;
+  | typeof MISSING_QUERY_CODE
+  | typeof UNKNOWN_PACKAGE_CODE;
 
 export type JeditPackageOperationRequestKind =
   | typeof JEDIT_PACKAGE_OPERATION_REQUEST_MUTATION
@@ -60,16 +63,18 @@ export interface JeditPackageOperationRequest {
 export function preflightJeditContractPackageInstall(
   descriptor: JeditContractPackageDescriptor = jeditHotTextContractPackage(),
 ): JeditPackagePreflightResult {
+  const required = canonicalRequiredOperations(descriptor);
   const issues = [
+    ...unknownPackageIssues(descriptor, required),
     ...missingRequiredIssues(
       MISSING_MUTATION_CODE,
       descriptor.mutationOperationNames,
-      descriptor.requiredMutationOperationNames,
+      required?.mutationOperationNames ?? [],
     ),
     ...missingRequiredIssues(
       MISSING_QUERY_CODE,
       descriptor.queryOperationNames,
-      descriptor.requiredQueryOperationNames,
+      required?.queryOperationNames ?? [],
     ),
     ...duplicateIssues(DUPLICATE_MUTATION_CODE, descriptor.mutationOperationNames),
     ...duplicateIssues(DUPLICATE_QUERY_CODE, descriptor.queryOperationNames),
@@ -147,4 +152,44 @@ function duplicateIssues(
 
 function includesOperation(values: readonly string[], operationName: string): boolean {
   return values.includes(operationName);
+}
+
+interface CanonicalRequiredOperations {
+  readonly mutationOperationNames: readonly string[];
+  readonly queryOperationNames: readonly string[];
+}
+
+function canonicalRequiredOperations(
+  descriptor: JeditContractPackageDescriptor,
+): CanonicalRequiredOperations | null {
+  const canonical = canonicalPackageDescriptors().find((candidate) => (
+    candidate.packageId === descriptor.packageId
+  ));
+  if (canonical == null) {
+    return null;
+  }
+  return {
+    mutationOperationNames: canonical.requiredMutationOperationNames,
+    queryOperationNames: canonical.requiredQueryOperationNames,
+  };
+}
+
+function canonicalPackageDescriptors(): readonly JeditContractPackageDescriptor[] {
+  return [
+    jeditHotTextContractPackage(),
+    jeditStructuralHistoryContractPackage(),
+  ];
+}
+
+function unknownPackageIssues(
+  descriptor: JeditContractPackageDescriptor,
+  required: CanonicalRequiredOperations | null,
+): readonly JeditPackagePreflightIssue[] {
+  if (required != null) {
+    return [];
+  }
+  return [{
+    code: UNKNOWN_PACKAGE_CODE,
+    operationName: descriptor.packageId,
+  }];
 }
