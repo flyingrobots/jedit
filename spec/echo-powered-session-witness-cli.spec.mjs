@@ -53,6 +53,10 @@ test('Echo-powered session CLI reports app capability, lifecycle, and reading ev
     appCanTick: false,
   });
   assert.equal(summary.report.text, 'hello');
+  assert.equal(summary.report.editIntent.operationName, 'replaceTextRange');
+  assert.equal(summary.report.editIntent.input.historyId, summary.report.bufferId);
+  assert.equal(summary.report.editIntent.input.provenance.sourceKind, 'BOUNDARY_ADAPTER');
+  assert.equal(summary.report.outcome.intent.operationName, summary.report.editIntent.operationName);
   assert.equal(summary.report.outcome.status, 'APPLIED');
   assert.equal(summary.report.outcomeTrail[0].status, 'ACCEPTED_PENDING');
   assert.deepEqual(summary.report.evidencePosture, {
@@ -77,6 +81,8 @@ test('Echo-powered session CLI reports app capability, lifecycle, and reading ev
     summary.report.outcome.receipt.receiptId,
   );
   assert.equal(summary.report.retainedEvidence.refs.length, 4);
+  const receiptRef = summary.report.retainedEvidence.refs.find((ref) => ref.role === 'RECEIPT');
+  assert.equal(receiptRef.semanticCoordinate.operationName, 'replaceTextRange');
   const readingRefs = summary.report.retainedEvidence.refs.filter((ref) => (
     ref.role === 'READING_ENVELOPE' || ref.role === 'READING_PAYLOAD'
   ));

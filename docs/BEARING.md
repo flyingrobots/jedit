@@ -55,7 +55,10 @@ The local notes for this package live in
 The current branch also advances the Echo retained-evidence release-gate batch:
 the text-window observer adapter now projects reading retained-evidence posture
 into `TextBufferSessionPort`, and the witness consumes those refs instead of
-manufacturing reading evidence after observation.
+manufacturing reading evidence after observation. The same witness now carries
+generated structural-history `replaceTextRange` intent material from Wesley
+metadata while the lower hot-text executor remains a transitional adapter
+detail.
 
 The developer-facing recipe lives in
 [`docs/echo-application-hosting-guide.md`](echo-application-hosting-guide.md).

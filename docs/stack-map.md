@@ -112,6 +112,10 @@ The next release-gate slice plan is recorded in
   status, and evidence-bearing readings.
 - `replaceTextRange` operation identity is consumed from build-generated Wesley
   metadata while the old TypeScript runtime remains the transitional executor.
+- `scripts/jedit-echo-powered-session.mjs --json` reports the structural
+  `replaceTextRange` edit intent in the witness summary. The current host still
+  translates into the transitional hot-text executor until the generated
+  package install slice lands.
 - Continuum remains deferred until the seam is proven enough to publish.
 
 ## Operating rule

@@ -11,6 +11,7 @@ import type { JEDIT_DURABILITY_POSTURE_UNAVAILABLE } from './jedit-restart-postu
 import type { JeditRestartPosture } from './jedit-restart-posture.js';
 import type { JEDIT_TICKETED_RUNTIME_INGRESS_MISSING } from './jedit-ticketed-runtime-ingress.js';
 import type { JeditTicketedRuntimeIngressPosture } from './jedit-ticketed-runtime-ingress.js';
+import type { StructuralHistoryReplaceTextRangeRequest } from './structural-history-replace-text-range.js';
 
 export const JEDIT_WITNESS_EVIDENCE_SCOPE_LOCAL_PROCESS = 'LOCAL_PROCESS_WITNESS';
 
@@ -39,6 +40,7 @@ export interface EchoPoweredTextBufferWitnessRequest {
 export interface EchoPoweredTextBufferWitnessReport {
   readonly bufferId: TextBufferId;
   readonly bufferKey: BufferKey;
+  readonly editIntent: StructuralHistoryReplaceTextRangeRequest;
   readonly outcome: JeditIntentOutcome;
   readonly outcomeTrail: readonly JeditIntentOutcome[];
   readonly evidencePosture: JeditWitnessEvidencePosture;
