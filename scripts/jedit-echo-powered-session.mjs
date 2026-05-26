@@ -335,7 +335,7 @@ function installSummary(packageModule) {
 
   return {
     ...hotTextPackage,
-    generatedPackages: [
+    generatedPackageDescriptors: [
       hotTextPackage,
       structuralHistoryPackage,
     ],

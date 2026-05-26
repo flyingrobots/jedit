@@ -20,7 +20,9 @@ test('jedit Echo release gate emits happy, non-happy, replay, and authority evid
 
   assert.equal(report.ok, true);
   assert.equal(report.transport, 'installed-jedit-contract');
-  assert.equal(report.install.generatedPackages.length, 2);
+  assert.equal(report.install.packageId, 'jedit.hot-text-runtime');
+  assert.equal('generatedPackages' in report.install, false);
+  assert.equal(report.install.generatedPackageDescriptors.length, 2);
   assert.equal(report.authority.appFacingSessionPort, 'TextBufferSessionPort');
   assert.equal(report.authority.trustedLifecyclePort, 'TrustedEchoRuntimeLifecyclePort');
   assert.equal(report.authority.appCanTick, false);
