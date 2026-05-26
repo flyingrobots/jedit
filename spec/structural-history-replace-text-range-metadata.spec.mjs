@@ -102,6 +102,41 @@ test('replace/tick adapter consumes generated replaceTextRange operation identit
   );
 });
 
+test('structural history request builder emits generated replaceTextRange intent material', async () => {
+  const modules = await loadBuiltModules();
+
+  const request = modules.boundary.createStructuralHistoryReplaceTextRangeRequest({
+    historyId: 'text-buffer:0',
+    baseRevisionSequence: 0,
+    startByte: 1,
+    endByte: 2,
+    insertText: 'x',
+    author: 'test-author',
+    sourceLabel: 'test-boundary',
+    externalEvidenceId: 'read-basis:0',
+    projectionPath: 'notes/example.md',
+  });
+
+  assert.equal(
+    request.operationName,
+    modules.generatedMetadata.mutationReplaceTextRangeOperation.fieldName,
+  );
+  assert.deepEqual(request.input, {
+    historyId: 'text-buffer:0',
+    baseRevisionId: 'text-revision:text-buffer:0:0',
+    startByte: 1,
+    endByte: 2,
+    insertText: 'x',
+    author: 'test-author',
+    provenance: {
+      sourceKind: 'BOUNDARY_ADAPTER',
+      sourceLabel: 'test-boundary',
+      externalEvidenceId: 'read-basis:0',
+      projectionPath: 'notes/example.md',
+    },
+  });
+});
+
 test('replaceTextRange metadata route preserves hot buffer tick behavior', async () => {
   const modules = await loadBuiltModules();
   const runtime = modules.hotTextRuntime.createInMemoryHotTextRuntime();

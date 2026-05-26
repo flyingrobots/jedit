@@ -33,6 +33,28 @@ test('trusted adapter installs jedit package through a generic Echo package port
   ]);
 });
 
+test('trusted adapter installs structural history package through a generic Echo package port', async () => {
+  const modules = await loadModules();
+  const descriptor = modules.packageModule.jeditStructuralHistoryContractPackage();
+  const host = recordingHost(modules);
+  const result = modules.installer.installJeditContractPackage({ host, descriptor });
+
+  assert.equal(result.source, modules.installer.JEDIT_CONTRACT_PACKAGE_INSTALL_HOST_RESULT);
+  assert.equal(result.hostResult.status, modules.hostPort.ECHO_CONTRACT_PACKAGE_INSTALL_INSTALLED);
+  assert.deepEqual(host.requests, [
+    {
+      packageId: descriptor.packageId,
+      packageVersion: descriptor.packageVersion,
+      schemaId: descriptor.schemaId,
+      artifactId: descriptor.artifactId,
+      codecId: descriptor.codecId,
+      mutationOperationNames: descriptor.mutationOperationNames,
+      queryOperationNames: [],
+      queryObservers: [],
+    },
+  ]);
+});
+
 test('trusted adapter blocks invalid package before reaching Echo package port', async () => {
   const modules = await loadModules();
   const descriptor = modules.packageModule.jeditHotTextContractPackage();

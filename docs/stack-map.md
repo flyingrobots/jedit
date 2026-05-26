@@ -112,6 +112,16 @@ The next release-gate slice plan is recorded in
   status, and evidence-bearing readings.
 - `replaceTextRange` operation identity is consumed from build-generated Wesley
   metadata while the old TypeScript runtime remains the transitional executor.
+- `scripts/jedit-echo-powered-session.mjs --json` reports the structural
+  `replaceTextRange` edit intent in the witness summary. The structural-history
+  generated-package descriptor now installs through the generic Echo package
+  port. The witness also reports a mutation/query round trip where
+  structural-history owns the mutation/receipt coordinate and the transitional
+  hot-text package still owns the bounded `textWindow` observer.
+- `scripts/jedit-echo-release-gate.mjs --json-report` is the current
+  consolidated jedit/Echo proof report. It joins the happy path, unsupported
+  mutation path, local replay posture, retained evidence refs, and authority
+  checks into one JSON artifact.
 - Continuum remains deferred until the seam is proven enough to publish.
 
 ## Operating rule

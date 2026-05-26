@@ -55,7 +55,18 @@ The local notes for this package live in
 The current branch also advances the Echo retained-evidence release-gate batch:
 the text-window observer adapter now projects reading retained-evidence posture
 into `TextBufferSessionPort`, and the witness consumes those refs instead of
-manufacturing reading evidence after observation.
+manufacturing reading evidence after observation. The same witness now carries
+generated structural-history `replaceTextRange` intent material from Wesley
+metadata while the lower hot-text executor remains a transitional adapter
+detail. The structural-history contract also has an explicit generated-package
+descriptor that installs through the same generic Echo contract-package port;
+the witness now reports an explicit mutation/query round trip: the
+structural-history package owns the `replaceTextRange` mutation and receipt
+coordinate, while the transitional hot-text package still owns the bounded
+`textWindow` observer until the generated structural-history query path lands.
+`scripts/jedit-echo-release-gate.mjs --json-report` now emits the consolidated
+happy path, unsupported mutation path, local replay posture, retained evidence,
+and authority-boundary report for the current release-gate PR.
 
 The developer-facing recipe lives in
 [`docs/echo-application-hosting-guide.md`](echo-application-hosting-guide.md).

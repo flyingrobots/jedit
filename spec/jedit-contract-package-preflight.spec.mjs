@@ -18,6 +18,15 @@ test('jedit package install preflight accepts the generated descriptor', async (
   assert.deepEqual(result.issues, []);
 });
 
+test('jedit package install preflight accepts the structural history descriptor', async () => {
+  const modules = await loadModules();
+  const descriptor = modules.packageModule.jeditStructuralHistoryContractPackage();
+  const result = modules.preflight.preflightJeditContractPackageInstall(descriptor);
+
+  assert.equal(result.status, modules.preflight.JEDIT_PACKAGE_PREFLIGHT_READY);
+  assert.deepEqual(result.issues, []);
+});
+
 test('jedit package install preflight rejects missing required mutations and queries', async () => {
   const modules = await loadModules();
   const descriptor = modules.packageModule.jeditHotTextContractPackage();
@@ -25,6 +34,24 @@ test('jedit package install preflight rejects missing required mutations and que
     ...descriptor,
     mutationOperationNames: descriptor.mutationOperationNames.slice(1),
     queryOperationNames: descriptor.queryOperationNames.slice(1),
+  });
+
+  assert.equal(result.status, modules.preflight.JEDIT_PACKAGE_PREFLIGHT_BLOCKED);
+  assert.deepEqual(
+    result.issues.map((issue) => issue.code),
+    ['MISSING_MUTATION', 'MISSING_QUERY'],
+  );
+});
+
+test('jedit package install preflight uses canonical required operations', async () => {
+  const modules = await loadModules();
+  const descriptor = modules.packageModule.jeditHotTextContractPackage();
+  const result = modules.preflight.preflightJeditContractPackageInstall({
+    ...descriptor,
+    mutationOperationNames: descriptor.mutationOperationNames.slice(1),
+    queryOperationNames: descriptor.queryOperationNames.slice(1),
+    requiredMutationOperationNames: descriptor.mutationOperationNames.slice(1),
+    requiredQueryOperationNames: descriptor.queryOperationNames.slice(1),
   });
 
   assert.equal(result.status, modules.preflight.JEDIT_PACKAGE_PREFLIGHT_BLOCKED);
@@ -56,6 +83,21 @@ test('jedit package install preflight rejects duplicate mutations and queries', 
   );
 });
 
+test('jedit package install preflight blocks unknown package identities', async () => {
+  const modules = await loadModules();
+  const descriptor = modules.packageModule.jeditHotTextContractPackage();
+  const result = modules.preflight.preflightJeditContractPackageInstall({
+    ...descriptor,
+    packageId: 'jedit.unknown-package',
+  });
+
+  assert.equal(result.status, modules.preflight.JEDIT_PACKAGE_PREFLIGHT_BLOCKED);
+  assert.deepEqual(
+    result.issues.map((issue) => issue.code),
+    ['UNKNOWN_PACKAGE'],
+  );
+});
+
 test('jedit package operation requests fail closed before runtime work', async () => {
   const modules = await loadModules();
   const descriptor = modules.packageModule.jeditHotTextContractPackage();
@@ -75,6 +117,26 @@ test('jedit package operation requests fail closed before runtime work', async (
   assert.equal(
     modules.preflight.classifyJeditPackageOperationRequest(
       modules.preflight.jeditQueryOperationRequest('unsupportedQuery'),
+    ),
+    modules.preflight.JEDIT_PACKAGE_REQUEST_UNSUPPORTED_QUERY,
+  );
+});
+
+test('jedit structural history package requests reject unsupported queries at the package boundary', async () => {
+  const modules = await loadModules();
+  const descriptor = modules.packageModule.jeditStructuralHistoryContractPackage();
+
+  assert.equal(
+    modules.preflight.classifyJeditPackageOperationRequest(
+      modules.preflight.jeditMutationOperationRequest(descriptor.mutationOperationNames[0]),
+      descriptor,
+    ),
+    modules.preflight.JEDIT_PACKAGE_REQUEST_SUPPORTED,
+  );
+  assert.equal(
+    modules.preflight.classifyJeditPackageOperationRequest(
+      modules.preflight.jeditQueryOperationRequest('textWindow'),
+      descriptor,
     ),
     modules.preflight.JEDIT_PACKAGE_REQUEST_UNSUPPORTED_QUERY,
   );

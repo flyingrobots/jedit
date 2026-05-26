@@ -7,6 +7,13 @@ import { pathToFileURL } from 'node:url';
 const REPO_ROOT = process.cwd();
 const PACKAGE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-package.js');
 const GENERATED_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'generated', 'jedit', 'hot-text-runtime.wesley.generated.js');
+const STRUCTURAL_HISTORY_GENERATED_MODULE_PATH = path.join(
+  REPO_ROOT,
+  'dist',
+  'generated',
+  'jedit',
+  'structural-history-replace-text-range.wesley.generated.js',
+);
 
 let modulesPromise;
 
@@ -49,6 +56,27 @@ test('jedit hot text package descriptor stamps query observer identities', async
   );
 });
 
+test('jedit structural history package descriptor binds generated operation metadata', async () => {
+  const modules = await loadModules();
+  const descriptor = modules.packageModule.jeditStructuralHistoryContractPackage();
+
+  assert.equal(descriptor.packageId, modules.packageModule.JEDIT_STRUCTURAL_HISTORY_PACKAGE_ID);
+  assert.equal(descriptor.packageVersion, modules.packageModule.JEDIT_STRUCTURAL_HISTORY_PACKAGE_VERSION);
+  assert.equal(descriptor.schemaId, modules.packageModule.JEDIT_STRUCTURAL_HISTORY_SCHEMA_ID);
+  assert.equal(descriptor.artifactId, modules.packageModule.JEDIT_STRUCTURAL_HISTORY_ARTIFACT_ID);
+  assert.equal(descriptor.codecId, modules.packageModule.JEDIT_STRUCTURAL_HISTORY_CODEC_ID);
+  assert.deepEqual(
+    descriptor.mutationOperationNames,
+    [
+      modules.structuralHistoryGenerated.mutationReplaceTextRangeOperation.fieldName,
+    ],
+  );
+  assert.deepEqual(descriptor.queryOperationNames, []);
+  assert.deepEqual(descriptor.requiredMutationOperationNames, descriptor.mutationOperationNames);
+  assert.deepEqual(descriptor.requiredQueryOperationNames, []);
+  assert.deepEqual(descriptor.queryObservers, []);
+});
+
 async function loadModules() {
   if (modulesPromise) {
     return modulesPromise;
@@ -62,14 +90,16 @@ async function loadModules() {
 
     assert.equal(build.status, 0, build.stderr || build.stdout);
 
-    const [packageModule, generated] = await Promise.all([
+    const [packageModule, generated, structuralHistoryGenerated] = await Promise.all([
       import(pathToFileURL(PACKAGE_MODULE_PATH).href),
       import(pathToFileURL(GENERATED_MODULE_PATH).href),
+      import(pathToFileURL(STRUCTURAL_HISTORY_GENERATED_MODULE_PATH).href),
     ]);
 
     return {
       packageModule,
       generated,
+      structuralHistoryGenerated,
     };
   })();
 

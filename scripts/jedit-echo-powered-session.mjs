@@ -318,12 +318,27 @@ function dryRunSummary(options, packageModule) {
 }
 
 function installSummary(packageModule) {
-  return {
+  const hotTextPackage = {
     packageId: packageModule.JEDIT_HOT_TEXT_PACKAGE_ID,
     version: packageModule.JEDIT_HOT_TEXT_PACKAGE_VERSION,
     schemaId: packageModule.JEDIT_HOT_TEXT_SCHEMA_ID,
     artifactId: packageModule.JEDIT_HOT_TEXT_ARTIFACT_ID,
     codecId: packageModule.JEDIT_HOT_TEXT_CODEC_ID,
+  };
+  const structuralHistoryPackage = {
+    packageId: packageModule.JEDIT_STRUCTURAL_HISTORY_PACKAGE_ID,
+    version: packageModule.JEDIT_STRUCTURAL_HISTORY_PACKAGE_VERSION,
+    schemaId: packageModule.JEDIT_STRUCTURAL_HISTORY_SCHEMA_ID,
+    artifactId: packageModule.JEDIT_STRUCTURAL_HISTORY_ARTIFACT_ID,
+    codecId: packageModule.JEDIT_STRUCTURAL_HISTORY_CODEC_ID,
+  };
+
+  return {
+    ...hotTextPackage,
+    generatedPackageDescriptors: [
+      hotTextPackage,
+      structuralHistoryPackage,
+    ],
   };
 }
 
