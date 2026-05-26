@@ -60,7 +60,10 @@ generated structural-history `replaceTextRange` intent material from Wesley
 metadata while the lower hot-text executor remains a transitional adapter
 detail. The structural-history contract also has an explicit generated-package
 descriptor that installs through the same generic Echo contract-package port;
-the next slice still owes the real structural-history mutation/query round trip.
+the witness now reports an explicit mutation/query round trip: the
+structural-history package owns the `replaceTextRange` mutation and receipt
+coordinate, while the transitional hot-text package still owns the bounded
+`textWindow` observer until the generated structural-history query path lands.
 
 The developer-facing recipe lives in
 [`docs/echo-application-hosting-guide.md`](echo-application-hosting-guide.md).

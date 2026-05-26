@@ -115,8 +115,9 @@ The next release-gate slice plan is recorded in
 - `scripts/jedit-echo-powered-session.mjs --json` reports the structural
   `replaceTextRange` edit intent in the witness summary. The structural-history
   generated-package descriptor now installs through the generic Echo package
-  port; the current host still translates into the transitional hot-text
-  executor until the real structural-history round-trip slice lands.
+  port. The witness also reports a mutation/query round trip where
+  structural-history owns the mutation/receipt coordinate and the transitional
+  hot-text package still owns the bounded `textWindow` observer.
 - Continuum remains deferred until the seam is proven enough to publish.
 
 ## Operating rule

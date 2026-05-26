@@ -37,6 +37,18 @@ export interface EchoPoweredTextBufferWitnessRequest {
   readonly maxBytes: number;
 }
 
+export interface EchoPoweredTextBufferRoundTripReport {
+  readonly mutationPackageId: string;
+  readonly mutationOperationName: string;
+  readonly mutationOutcomeStatus: JeditIntentOutcome['status'];
+  readonly queryPackageId: string;
+  readonly queryOperationName: string;
+  readonly readingId: ReadingId;
+  readonly text: string;
+  readonly retainedEvidenceRefCount: number;
+  readonly appCanTick: false;
+}
+
 export interface EchoPoweredTextBufferWitnessReport {
   readonly bufferId: TextBufferId;
   readonly bufferKey: BufferKey;
@@ -50,6 +62,7 @@ export interface EchoPoweredTextBufferWitnessReport {
   readonly restartPosture: JeditRestartPosture;
   readonly receiptId: string;
   readonly readingId: ReadingId;
+  readonly roundTrip: EchoPoweredTextBufferRoundTripReport;
   readonly text: string;
   readonly lines: readonly TextWindowLine[];
   readonly truncated: boolean;

@@ -81,11 +81,18 @@ test('Echo-powered session CLI reports app capability, lifecycle, and reading ev
     summary.report.outcome.receipt.receiptId,
   );
   assert.equal(summary.report.retainedEvidence.refs.length, 4);
+  const packageRef = summary.report.retainedEvidence.refs.find((ref) => ref.role === 'PACKAGE_IDENTITY');
+  assert.equal(packageRef.semanticCoordinate.packageId, 'jedit.structural-history');
   const receiptRef = summary.report.retainedEvidence.refs.find((ref) => ref.role === 'RECEIPT');
+  assert.equal(receiptRef.semanticCoordinate.packageId, 'jedit.structural-history');
   assert.equal(receiptRef.semanticCoordinate.operationName, 'replaceTextRange');
   const readingRefs = summary.report.retainedEvidence.refs.filter((ref) => (
     ref.role === 'READING_ENVELOPE' || ref.role === 'READING_PAYLOAD'
   ));
+  assert.deepEqual(readingRefs.map((ref) => ref.semanticCoordinate.packageId), [
+    'jedit.hot-text-runtime',
+    'jedit.hot-text-runtime',
+  ]);
   assert.deepEqual(readingRefs.map((ref) => ref.posture), [
     'MISSING',
     'MISSING',
@@ -94,6 +101,17 @@ test('Echo-powered session CLI reports app capability, lifecycle, and reading ev
   assert.equal(summary.report.restartPosture.status, 'PARTIAL');
   assert.equal(summary.report.restartPosture.acceptedSubmissionRecovery, 'UNAVAILABLE');
   assert.equal(summary.reading.readingId, summary.report.readingId);
+  assert.deepEqual(summary.report.roundTrip, {
+    mutationPackageId: 'jedit.structural-history',
+    mutationOperationName: 'replaceTextRange',
+    mutationOutcomeStatus: 'APPLIED',
+    queryPackageId: 'jedit.hot-text-runtime',
+    queryOperationName: 'textWindow',
+    readingId: summary.report.readingId,
+    text: 'hello',
+    retainedEvidenceRefCount: 4,
+    appCanTick: false,
+  });
   assert.equal(summary.replay.status, 'UNAVAILABLE');
   assert.equal(typeof summary.report.receiptId, 'string');
   assert.equal(typeof summary.report.readingId, 'string');

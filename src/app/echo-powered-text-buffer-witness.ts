@@ -7,6 +7,7 @@ import type {
 import type { ApplyIntentResult, Observed, TextWindowReading } from '../ports/jedit-optic-client.js';
 import { REPLACE_RANGE_INTENT_KIND } from '../ports/jedit-optic-client.js';
 import type {
+  EchoPoweredTextBufferRoundTripReport,
   EchoPoweredTextBufferWitnessReport,
   EchoPoweredTextBufferWitnessRequest,
 } from '../ports/echo-powered-text-buffer-witness.js';
@@ -25,7 +26,10 @@ import type {
   JeditAppliedIntentOutcome,
 } from '../ports/jedit-intent-outcomes.js';
 import { queryTextWindowOperation } from '../generated/jedit/hot-text-runtime.wesley.generated.js';
-import { JEDIT_HOT_TEXT_PACKAGE_ID } from './jedit-contract-package.js';
+import {
+  JEDIT_HOT_TEXT_PACKAGE_ID,
+  JEDIT_STRUCTURAL_HISTORY_PACKAGE_ID,
+} from './jedit-contract-package.js';
 import {
   createStructuralHistoryReplaceTextRangeRequest,
 } from './structural-history-replace-text-range.js';
@@ -128,6 +132,15 @@ function toWitnessReport(input: WitnessReportInput): EchoPoweredTextBufferWitnes
     submissionId: input.outcome.intent.submissionId,
     receiptId: input.applied.receiptId,
   });
+  const text = input.observed.value.lines.map((line) => line.text).join('\n');
+  const retainedEvidence = createJeditRetainedEvidenceInventory({
+    packageId: JEDIT_STRUCTURAL_HISTORY_PACKAGE_ID,
+    mutationOperationName: input.editIntent.operationName,
+    queryOperationName: queryTextWindowOperation.fieldName,
+    receiptId: input.applied.receiptId,
+    readingId: input.observed.evidence.readingId,
+    readingEvidence: input.observed.evidence.retainedEvidence,
+  });
 
   return {
     bufferId: input.buffer.bufferId,
@@ -140,20 +153,32 @@ function toWitnessReport(input: WitnessReportInput): EchoPoweredTextBufferWitnes
     }),
     receiptCorrelation,
     ticketedRuntimeIngress: missingJeditTicketedRuntimeIngress(input.outcome.intent.submissionId),
-    retainedEvidence: createJeditRetainedEvidenceInventory({
-      packageId: JEDIT_HOT_TEXT_PACKAGE_ID,
-      mutationOperationName: input.editIntent.operationName,
-      queryOperationName: queryTextWindowOperation.fieldName,
-      receiptId: input.applied.receiptId,
-      readingId: input.observed.evidence.readingId,
-      readingEvidence: input.observed.evidence.retainedEvidence,
-    }),
+    retainedEvidence,
     restartPosture: currentJeditRestartPosture(),
     receiptId: input.applied.receiptId,
     readingId: input.observed.evidence.readingId,
-    text: input.observed.value.lines.map((line) => line.text).join('\n'),
+    roundTrip: toRoundTripReport(input, retainedEvidence.refs.length, text),
+    text,
     lines: input.observed.value.lines,
     truncated: input.observed.value.truncated,
+  };
+}
+
+function toRoundTripReport(
+  input: WitnessReportInput,
+  retainedEvidenceRefCount: number,
+  text: string,
+): EchoPoweredTextBufferRoundTripReport {
+  return {
+    mutationPackageId: JEDIT_STRUCTURAL_HISTORY_PACKAGE_ID,
+    mutationOperationName: input.editIntent.operationName,
+    mutationOutcomeStatus: input.outcome.status,
+    queryPackageId: JEDIT_HOT_TEXT_PACKAGE_ID,
+    queryOperationName: queryTextWindowOperation.fieldName,
+    readingId: input.observed.evidence.readingId,
+    text,
+    retainedEvidenceRefCount,
+    appCanTick: false,
   };
 }
 
