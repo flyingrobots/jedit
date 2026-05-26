@@ -18,6 +18,15 @@ test('jedit package install preflight accepts the generated descriptor', async (
   assert.deepEqual(result.issues, []);
 });
 
+test('jedit package install preflight accepts the structural history descriptor', async () => {
+  const modules = await loadModules();
+  const descriptor = modules.packageModule.jeditStructuralHistoryContractPackage();
+  const result = modules.preflight.preflightJeditContractPackageInstall(descriptor);
+
+  assert.equal(result.status, modules.preflight.JEDIT_PACKAGE_PREFLIGHT_READY);
+  assert.deepEqual(result.issues, []);
+});
+
 test('jedit package install preflight rejects missing required mutations and queries', async () => {
   const modules = await loadModules();
   const descriptor = modules.packageModule.jeditHotTextContractPackage();
@@ -75,6 +84,26 @@ test('jedit package operation requests fail closed before runtime work', async (
   assert.equal(
     modules.preflight.classifyJeditPackageOperationRequest(
       modules.preflight.jeditQueryOperationRequest('unsupportedQuery'),
+    ),
+    modules.preflight.JEDIT_PACKAGE_REQUEST_UNSUPPORTED_QUERY,
+  );
+});
+
+test('jedit structural history package requests reject unsupported queries at the package boundary', async () => {
+  const modules = await loadModules();
+  const descriptor = modules.packageModule.jeditStructuralHistoryContractPackage();
+
+  assert.equal(
+    modules.preflight.classifyJeditPackageOperationRequest(
+      modules.preflight.jeditMutationOperationRequest(descriptor.mutationOperationNames[0]),
+      descriptor,
+    ),
+    modules.preflight.JEDIT_PACKAGE_REQUEST_SUPPORTED,
+  );
+  assert.equal(
+    modules.preflight.classifyJeditPackageOperationRequest(
+      modules.preflight.jeditQueryOperationRequest('textWindow'),
+      descriptor,
     ),
     modules.preflight.JEDIT_PACKAGE_REQUEST_UNSUPPORTED_QUERY,
   );

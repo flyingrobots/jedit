@@ -1,6 +1,4 @@
 import {
-  JEDIT_HOT_TEXT_MUTATION_OPERATION_NAMES,
-  JEDIT_HOT_TEXT_QUERY_OPERATION_NAMES,
   jeditHotTextContractPackage,
   type JeditContractPackageDescriptor,
 } from './jedit-contract-package.js';
@@ -63,8 +61,16 @@ export function preflightJeditContractPackageInstall(
   descriptor: JeditContractPackageDescriptor = jeditHotTextContractPackage(),
 ): JeditPackagePreflightResult {
   const issues = [
-    ...missingRequiredIssues(MISSING_MUTATION_CODE, descriptor.mutationOperationNames, JEDIT_HOT_TEXT_MUTATION_OPERATION_NAMES),
-    ...missingRequiredIssues(MISSING_QUERY_CODE, descriptor.queryOperationNames, JEDIT_HOT_TEXT_QUERY_OPERATION_NAMES),
+    ...missingRequiredIssues(
+      MISSING_MUTATION_CODE,
+      descriptor.mutationOperationNames,
+      descriptor.requiredMutationOperationNames,
+    ),
+    ...missingRequiredIssues(
+      MISSING_QUERY_CODE,
+      descriptor.queryOperationNames,
+      descriptor.requiredQueryOperationNames,
+    ),
     ...duplicateIssues(DUPLICATE_MUTATION_CODE, descriptor.mutationOperationNames),
     ...duplicateIssues(DUPLICATE_QUERY_CODE, descriptor.queryOperationNames),
   ];

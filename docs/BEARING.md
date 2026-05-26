@@ -58,7 +58,9 @@ into `TextBufferSessionPort`, and the witness consumes those refs instead of
 manufacturing reading evidence after observation. The same witness now carries
 generated structural-history `replaceTextRange` intent material from Wesley
 metadata while the lower hot-text executor remains a transitional adapter
-detail.
+detail. The structural-history contract also has an explicit generated-package
+descriptor that installs through the same generic Echo contract-package port;
+the next slice still owes the real structural-history mutation/query round trip.
 
 The developer-facing recipe lives in
 [`docs/echo-application-hosting-guide.md`](echo-application-hosting-guide.md).
