@@ -28,7 +28,7 @@ The required artifact is a jedit recovery report that proves:
 - [x] Slice 32: Production legacy memory static guard.
 - [x] Slice 33: Release-gate runtime tripwire mode.
 - [x] Slice 23: Recovered bounded reading path.
-- [ ] Slice 24: Happy-path recovery gate scenario.
+- [x] Slice 24: Happy-path recovery gate scenario.
 - [ ] Slice 25: Retry after local amnesia scenario.
 - [ ] Slice 34: Materialize artifact from recovered causal basis.
 

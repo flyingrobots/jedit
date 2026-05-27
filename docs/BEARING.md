@@ -93,7 +93,7 @@ Can jedit consume Echo truth through ports without local memory fallback?
 - [x] Slice 32: \[jedit] production legacy memory static guard.
 - [x] Slice 33: \[jedit] release-gate runtime tripwire mode.
 - [x] Slice 23: \[jedit] recovered bounded reading path.
-- [ ] Slice 24: \[jedit] happy-path recovery gate scenario.
+- [x] Slice 24: \[jedit] happy-path recovery gate scenario.
 - [ ] Slice 25: \[jedit] retry after local amnesia scenario.
 - [ ] Slice 34: \[jedit] materialize artifact from recovered causal basis.
 
