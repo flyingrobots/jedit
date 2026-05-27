@@ -1,9 +1,22 @@
 import {
+  ECHO_CAUSAL_COMMIT_EVIDENCE_CONTRACT,
+  ECHO_CAUSAL_COMMIT_EVIDENCE_SCHEMA_VERSION,
   ECHO_EVIDENCE_HEALTH_COMPLETE,
+  ECHO_RECOVERY_ACCEPTED_EVIDENCE_PRESENT,
   ECHO_RECOVERY_CHAIN_NOT_REQUESTED,
+  ECHO_RECOVERY_EMPTY_COUNT,
+  ECHO_RECOVERY_FIXTURE_ROOT,
+  ECHO_RECOVERY_GATE_CONTRACT,
+  ECHO_RECOVERY_GATE_SCHEMA_VERSION,
+  ECHO_RECOVERY_IDEMPOTENCY_IDEMPOTENT_RETRY,
+  ECHO_RECOVERY_INTAKE_DUPLICATE_SAME_SUBMISSION,
   ECHO_RECOVERY_PORT_AVAILABLE,
   ECHO_RECOVERY_PORT_INVALID_REQUEST,
   ECHO_RECOVERY_PORT_UNAVAILABLE,
+  ECHO_RECOVERY_PRODUCER_CLI,
+  ECHO_RECOVERY_PRODUCER_VERSION,
+  ECHO_RECOVERY_SUBMISSION_SCHEMA_VERSION,
+  ECHO_RECOVERY_TAIL_CLEAN,
   ECHO_SUBMISSION_DECISION_NONE,
   ECHO_SUBMISSION_LIFECYCLE_NOT_FOUND,
   type EchoCausalCommitEvidenceEnvelope,
@@ -63,14 +76,14 @@ export function createFakeEchoRecoveryPort(
 export function validateEchoRecoveryGateRequest(
   request: EchoRecoveryGateRequest,
 ): EchoRecoveryGateResult | null {
-  if (request.submissionId.length === 0) {
+  if (request.submissionId.trim().length === 0) {
     return invalid(
       MISSING_SUBMISSION_CODE,
       'Echo recovery request requires a submission id.',
       'submissionId',
     );
   }
-  if (request.canonicalEnvelopeDigest.length === 0) {
+  if (request.canonicalEnvelopeDigest.trim().length === 0) {
     return invalid(
       MISSING_ENVELOPE_CODE,
       'Echo recovery request requires a canonical envelope digest.',
@@ -85,11 +98,11 @@ export function createEchoRecoveryGateFixture(
   canonicalEnvelopeDigest: string,
 ): EchoRecoveryGateReport {
   return {
-    schemaVersion: 'echo.recovery.external_app_gate.v1',
-    producer: 'echo-cli',
-    producerVersion: '0.1.0',
-    compatibility: compatibility('echo.recovery.external_app_gate'),
-    tailPosture: 'Clean',
+    schemaVersion: ECHO_RECOVERY_GATE_SCHEMA_VERSION,
+    producer: ECHO_RECOVERY_PRODUCER_CLI,
+    producerVersion: ECHO_RECOVERY_PRODUCER_VERSION,
+    compatibility: compatibility(ECHO_RECOVERY_GATE_CONTRACT),
+    tailPosture: ECHO_RECOVERY_TAIL_CLEAN,
     certificate: certificate(),
     submission: submissionReport(submissionId, canonicalEnvelopeDigest),
     causalChain: causalChainNotRequested(),
@@ -102,17 +115,17 @@ function submissionReport(
   canonicalEnvelopeDigest: string,
 ): EchoRecoverySubmissionReport {
   return {
-    schemaVersion: 'echo.recovery.submission_posture.v1',
-    producer: 'echo-cli',
-    root: '.echo-test-fixture',
+    schemaVersion: ECHO_RECOVERY_SUBMISSION_SCHEMA_VERSION,
+    producer: ECHO_RECOVERY_PRODUCER_CLI,
+    root: ECHO_RECOVERY_FIXTURE_ROOT,
     submission: {
       submissionId,
       canonicalEnvelopeDigest,
     },
     intake: {
-      disposition: 'duplicate_same_submission',
-      idempotencyLaw: 'idempotent_retry',
-      acceptedEvidence: 'present',
+      disposition: ECHO_RECOVERY_INTAKE_DUPLICATE_SAME_SUBMISSION,
+      idempotencyLaw: ECHO_RECOVERY_IDEMPOTENCY_IDEMPOTENT_RETRY,
+      acceptedEvidence: ECHO_RECOVERY_ACCEPTED_EVIDENCE_PRESENT,
     },
     lifecycle: {
       posture: ECHO_SUBMISSION_LIFECYCLE_NOT_FOUND,
@@ -182,29 +195,29 @@ function compatibility(contract: string): EchoRecoveryCompatibility {
 
 function certificate(): EchoRecoveryCertificateSummary {
   return {
-    committedTransactionsReplayed: 0,
-    obstructionCount: 0,
+    committedTransactionsReplayed: ECHO_RECOVERY_EMPTY_COUNT,
+    obstructionCount: ECHO_RECOVERY_EMPTY_COUNT,
     submissionPostureCounts: postureCounts(),
   };
 }
 
 function postureCounts(): EchoRecoverySubmissionPostureCounts {
   return {
-    total: 0,
-    acceptedPending: 0,
-    decidedApplied: 0,
-    decidedRejected: 0,
-    obstructed: 0,
-    recoveryFaulted: 0,
+    total: ECHO_RECOVERY_EMPTY_COUNT,
+    acceptedPending: ECHO_RECOVERY_EMPTY_COUNT,
+    decidedApplied: ECHO_RECOVERY_EMPTY_COUNT,
+    decidedRejected: ECHO_RECOVERY_EMPTY_COUNT,
+    obstructed: ECHO_RECOVERY_EMPTY_COUNT,
+    recoveryFaulted: ECHO_RECOVERY_EMPTY_COUNT,
   };
 }
 
 function commitEvidenceEnvelope(): EchoCausalCommitEvidenceEnvelope {
   return {
-    schemaVersion: 'echo.causal_commit_evidence.v1',
-    producer: 'echo-cli',
-    producerVersion: '0.1.0',
-    compatibility: compatibility('echo.causal_commit_evidence'),
+    schemaVersion: ECHO_CAUSAL_COMMIT_EVIDENCE_SCHEMA_VERSION,
+    producer: ECHO_RECOVERY_PRODUCER_CLI,
+    producerVersion: ECHO_RECOVERY_PRODUCER_VERSION,
+    compatibility: compatibility(ECHO_CAUSAL_COMMIT_EVIDENCE_CONTRACT),
     evidence: [],
   };
 }

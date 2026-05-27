@@ -21,6 +21,7 @@ const BASIS_DIGEST_FLAG = '--basis-digest';
 const READING_BASIS_DIGEST_FLAG = '--reading-basis-digest';
 const SEMANTIC_COORDINATE_DIGEST_FLAG = '--semantic-coordinate-digest';
 const READING_ID_FLAG = '--reading-id';
+const EMPTY_COMMAND_FAILURE_MESSAGE = 'Echo recovery command failed without stderr output.';
 
 export interface EchoCliRecoveryAdapterConfig {
   readonly command: EchoRecoveryCommandPort;
@@ -54,10 +55,10 @@ export function createEchoCliRecoveryAdapter(
 }
 
 function validateRequest(request: EchoRecoveryGateRequest): EchoRecoveryGateResult | null {
-  if (request.submissionId.length === 0) {
+  if (request.submissionId.trim().length === 0) {
     return invalid(MISSING_SUBMISSION_CODE, 'Echo recovery requires a submission id.');
   }
-  if (request.canonicalEnvelopeDigest.length === 0) {
+  if (request.canonicalEnvelopeDigest.trim().length === 0) {
     return invalid(MISSING_ENVELOPE_CODE, 'Echo recovery requires an envelope digest.');
   }
   return null;
@@ -105,11 +106,14 @@ function invalid(code: string, message: string): EchoRecoveryGateResult {
 }
 
 function commandUnavailable(stderr: string): EchoRecoveryGateResult {
+  const message = stderr.length === 0
+    ? EMPTY_COMMAND_FAILURE_MESSAGE
+    : stderr;
   return {
     status: ECHO_RECOVERY_PORT_UNAVAILABLE,
     diagnostic: {
       code: COMMAND_FAILED_CODE,
-      message: stderr,
+      message,
     },
   };
 }

@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
@@ -38,7 +37,7 @@ test('release-gate tripwire reports detected fallback after a local fallback att
   assert.equal(module.legacyFallbackStatusFromTripwire(snapshot), 'detected');
 });
 
-test('disabled tripwire records attempts without marking the release gate detected', async () => {
+test('disabled tripwire records attempts and preserves detected fallback evidence', async () => {
   const module = await loadModule();
   const tripwire = module.createJeditLocalFallbackTripwire({
     mode: 'disabled',
@@ -51,21 +50,14 @@ test('disabled tripwire records attempts without marking the release gate detect
 
   assert.equal(snapshot.status, 'ignored');
   assert.equal(snapshot.attempts.length, 1);
-  assert.equal(module.legacyFallbackStatusFromTripwire(snapshot), 'not_detected');
+  assert.equal(module.legacyFallbackStatusFromTripwire(snapshot), 'detected');
 });
 
 async function loadModule() {
   if (modulePromise) {
     return modulePromise;
   }
-  modulePromise = (async () => {
-    const build = spawnSync('npm', ['run', '--silent', 'build'], {
-      cwd: REPO_ROOT,
-      encoding: 'utf8',
-    });
-
-    assert.equal(build.status, 0, build.stderr || build.stdout);
-    return import(pathToFileURL(TRIPWIRE_MODULE_PATH).href);
+  modulePromise = (async () => {    return import(pathToFileURL(TRIPWIRE_MODULE_PATH).href);
   })();
   return modulePromise;
 }

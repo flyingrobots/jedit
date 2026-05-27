@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
@@ -52,6 +51,21 @@ test('jedit recovers after local amnesia by using only the Echo recovery token',
   assert.equal(tripwire.snapshot().status, 'clear');
 });
 
+test('recovery amnesia rejects unsupported token schema versions', async () => {
+  const modules = await loadModules();
+  const token = modules.amnesia.createJeditRecoveryAmnesiaToken({
+    identity: editIdentity(modules),
+  });
+
+  assert.throws(
+    () => modules.amnesia.rehydrateJeditIdentityFromAmnesiaToken({
+      ...token,
+      schemaVersion: 'jedit.recovery_amnesia_token.v0',
+    }),
+    /Unsupported jedit recovery amnesia token schema version/u,
+  );
+});
+
 function appliedEchoReport(modules, identity) {
   const report = modules.recovery.createEchoRecoveryGateFixture(
     identity.submissionId,
@@ -98,13 +112,6 @@ async function loadModules() {
   }
 
   modulesPromise = (async () => {
-    const build = spawnSync('npm', ['run', '--silent', 'build'], {
-      cwd: REPO_ROOT,
-      encoding: 'utf8',
-    });
-
-    assert.equal(build.status, 0, build.stderr || build.stdout);
-
     const [amnesia, scenario, recovery, tripwire, identity, hash] = await Promise.all([
       import(pathToFileURL(AMNESIA_MODULE_PATH).href),
       import(pathToFileURL(SCENARIO_MODULE_PATH).href),

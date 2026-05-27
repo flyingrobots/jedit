@@ -173,13 +173,6 @@ async function loadBuiltModules() {
   }
 
   builtModulesPromise = (async () => {
-    const build = spawnSync('npm', ['run', '--silent', 'build'], {
-      cwd: REPO_ROOT,
-      encoding: 'utf8',
-    });
-
-    assert.equal(build.status, 0, build.stderr || build.stdout);
-
     const [generatedMetadata, boundary, hotBufferSession, hotTextRuntime, textEdit] = await Promise.all([
       import(pathToFileURL(GENERATED_MODULE_PATH).href),
       import(pathToFileURL(BOUNDARY_MODULE_PATH).href),

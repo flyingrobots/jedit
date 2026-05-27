@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
@@ -68,6 +67,30 @@ test('stable edit submission identity preserves same submission id for conflicti
   assert.notEqual(conflictingRetry.canonicalEnvelopeDigest, original.canonicalEnvelopeDigest);
 });
 
+test('stable edit submission identity does not collide on embedded separators', async () => {
+  const modules = await loadModules();
+  const first = modules.identity.createJeditEditSubmissionIdentity(
+    identityInput({
+      appInstanceId: 'jedit-app:a',
+      sessionId: 'jedit-session:b\u001fc',
+      clientOperationId: 'client-op:separator',
+      canonicalEnvelopeDigest: 'envelope:separator',
+    }),
+    modules.hash.createHashPort(),
+  );
+  const second = modules.identity.createJeditEditSubmissionIdentity(
+    identityInput({
+      appInstanceId: 'jedit-app:a\u001fjedit-session:b',
+      sessionId: 'c',
+      clientOperationId: 'client-op:separator',
+      canonicalEnvelopeDigest: 'envelope:separator',
+    }),
+    modules.hash.createHashPort(),
+  );
+
+  assert.notEqual(second.submissionId, first.submissionId);
+});
+
 function identityInput(overrides) {
   return {
     appInstanceId: 'jedit-app:test',
@@ -85,13 +108,6 @@ async function loadModules() {
   }
 
   modulesPromise = (async () => {
-    const build = spawnSync('npm', ['run', '--silent', 'build'], {
-      cwd: REPO_ROOT,
-      encoding: 'utf8',
-    });
-
-    assert.equal(build.status, 0, build.stderr || build.stdout);
-
     const [identity, hash] = await Promise.all([
       import(pathToFileURL(IDENTITY_MODULE_PATH).href),
       import(pathToFileURL(HASH_MODULE_PATH).href),

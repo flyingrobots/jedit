@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
@@ -54,6 +53,30 @@ test('jedit recovery gate scenario blocks on unavailable Echo recovery evidence'
 
   assert.equal(result.status, 'JEDIT_RECOVERY_GATE_SCENARIO_BLOCKED');
   assert.equal(result.diagnostic.code, 'echo_recovery_fixture_not_found');
+});
+
+test('jedit recovery gate scenario blocks on recovery adapter exceptions', async () => {
+  const modules = await loadModules();
+  const identity = editIdentity(modules, 'client-op:throw');
+  const recovery = {
+    async readExternalAppRecoveryGate() {
+      throw new Error('adapter exploded');
+    },
+  };
+  const tripwire = modules.tripwire.createJeditLocalFallbackTripwire({
+    mode: 'enforced',
+  });
+
+  const result = await modules.scenario.runJeditRecoveryGateScenario({
+    recovery,
+    identity,
+    reading: readingRequest(),
+    tripwire,
+  });
+
+  assert.equal(result.status, 'JEDIT_RECOVERY_GATE_SCENARIO_BLOCKED');
+  assert.equal(result.diagnostic.code, 'jedit_recovery_adapter_exception');
+  assert.match(result.diagnostic.message, /adapter exploded/u);
 });
 
 test('jedit recovery gate scenario refuses Echo source-of-truth after tripwire fallback', async () => {
@@ -130,13 +153,6 @@ async function loadModules() {
   }
 
   modulesPromise = (async () => {
-    const build = spawnSync('npm', ['run', '--silent', 'build'], {
-      cwd: REPO_ROOT,
-      encoding: 'utf8',
-    });
-
-    assert.equal(build.status, 0, build.stderr || build.stdout);
-
     const [scenario, recovery, tripwire, identity, hash] = await Promise.all([
       import(pathToFileURL(SCENARIO_MODULE_PATH).href),
       import(pathToFileURL(RECOVERY_MODULE_PATH).href),

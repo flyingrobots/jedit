@@ -7,7 +7,6 @@ import {
 } from '../ports/jedit-edit-submission-identity.js';
 
 const IDENTITY_VERSION = 'jedit-edit-submission-identity:v1';
-const FIELD_SEPARATOR = '\u{1f}';
 
 export function createJeditEditSubmissionIdentity(
   input: JeditEditSubmissionIdentityInput,
@@ -29,7 +28,7 @@ export function createJeditEditSubmissionIdentity(
 }
 
 function stableSubmissionBasis(input: JeditEditSubmissionIdentityInput): string {
-  return [
+  return identityTuple([
     IDENTITY_VERSION,
     input.appInstanceId,
     input.sessionId,
@@ -37,13 +36,17 @@ function stableSubmissionBasis(input: JeditEditSubmissionIdentityInput): string 
     input.contractPackageId,
     input.contractOperationName,
     input.causalBasisDigest,
-  ].join(FIELD_SEPARATOR);
+  ]);
 }
 
 function idempotencyBasis(submissionId: string, canonicalEnvelopeDigest: string): string {
-  return [
+  return identityTuple([
     IDENTITY_VERSION,
     submissionId,
     canonicalEnvelopeDigest,
-  ].join(FIELD_SEPARATOR);
+  ]);
+}
+
+function identityTuple(fields: readonly string[]): string {
+  return JSON.stringify(fields);
 }

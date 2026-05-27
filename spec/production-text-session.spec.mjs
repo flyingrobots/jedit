@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
@@ -350,14 +349,7 @@ async function loadModule() {
   if (modulePromise) {
     return modulePromise;
   }
-  modulePromise = (async () => {
-    const build = spawnSync('npm', ['run', '--silent', 'build'], {
-      cwd: REPO_ROOT,
-      encoding: 'utf8',
-    });
-
-    assert.equal(build.status, 0, build.stderr || build.stdout);
-    return import(pathToFileURL(MODULE_PATH).href);
+  modulePromise = (async () => {    return import(pathToFileURL(MODULE_PATH).href);
   })();
   return modulePromise;
 }

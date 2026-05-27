@@ -6,11 +6,15 @@ import {
   ECHO_EVIDENCE_HEALTH_INCOMPLETE,
   ECHO_EVIDENCE_HEALTH_MISSING_RETENTION,
   ECHO_EVIDENCE_HEALTH_REDACTED,
+  ECHO_RECOVERY_ACCEPTED_EVIDENCE_PRESENT,
   ECHO_RECOVERY_CHAIN_EVALUATED,
   ECHO_RECOVERY_CHAIN_INCOMPLETE,
   ECHO_RECOVERY_CHAIN_NOT_REQUESTED,
+  ECHO_RECOVERY_IDEMPOTENCY_IDEMPOTENT_RETRY,
+  ECHO_RECOVERY_INTAKE_DUPLICATE_SAME_SUBMISSION,
   ECHO_RECOVERY_PORT_AVAILABLE,
   ECHO_RECOVERY_PORT_UNAVAILABLE,
+  ECHO_RECOVERY_TAIL_CLEAN,
   ECHO_SUBMISSION_DECISION_APPLIED,
   ECHO_SUBMISSION_DECISION_NONE,
   ECHO_SUBMISSION_DECISION_OBSTRUCTED,
@@ -35,12 +39,20 @@ const ROOT_FIELD = 'stdout';
 
 interface EchoRecoveryJsonParsed {
   readonly status: typeof ECHO_RECOVERY_JSON_PARSED;
-  readonly report: JSON;
+  readonly report: JsonValue;
 }
 
 type EchoRecoveryJsonParseResult =
   | EchoRecoveryJsonParsed
   | EchoRecoveryGateUnavailable;
+
+type JsonValue =
+  | null
+  | boolean
+  | number
+  | string
+  | readonly JsonValue[]
+  | { readonly [key: string]: JsonValue };
 
 const CompatibilityJsonSchema = z.object({
   contract: z.string(),
@@ -71,9 +83,9 @@ const SubmissionJsonSchema = z.object({
     canonical_envelope_digest: z.string(),
   }),
   intake: z.object({
-    disposition: z.string(),
-    idempotency_law: z.string(),
-    accepted_evidence: z.string(),
+    disposition: z.literal(ECHO_RECOVERY_INTAKE_DUPLICATE_SAME_SUBMISSION),
+    idempotency_law: z.literal(ECHO_RECOVERY_IDEMPOTENCY_IDEMPOTENT_RETRY),
+    accepted_evidence: z.literal(ECHO_RECOVERY_ACCEPTED_EVIDENCE_PRESENT),
   }),
   lifecycle: z.object({
     posture: z.union([
@@ -111,7 +123,13 @@ const CausalChainJsonSchema = z.object({
     z.literal(ECHO_RECOVERY_CHAIN_INCOMPLETE),
   ]),
   posture: z.string().nullable(),
-  evidence_health: z.string().nullable(),
+  evidence_health: z.union([
+    z.literal(ECHO_EVIDENCE_HEALTH_COMPLETE),
+    z.literal(ECHO_EVIDENCE_HEALTH_INCOMPLETE),
+    z.literal(ECHO_EVIDENCE_HEALTH_CORRUPT),
+    z.literal(ECHO_EVIDENCE_HEALTH_MISSING_RETENTION),
+    z.literal(ECHO_EVIDENCE_HEALTH_REDACTED),
+  ]).nullable(),
   ticket_digest: z.string().nullable(),
   receipt_digest: z.string().nullable(),
   basis_digest: z.string().nullable(),
@@ -150,7 +168,7 @@ const GateJsonSchema = z.object({
   producer: z.string(),
   producer_version: z.string(),
   compatibility: CompatibilityJsonSchema,
-  tail_posture: z.string(),
+  tail_posture: z.literal(ECHO_RECOVERY_TAIL_CLEAN),
   certificate: CertificateJsonSchema,
   submission: SubmissionJsonSchema,
   causal_chain: CausalChainJsonSchema,

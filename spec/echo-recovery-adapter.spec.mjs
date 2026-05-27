@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
@@ -72,6 +71,23 @@ test('Echo CLI recovery adapter reports command failure as unavailable', async (
 
   assert.equal(result.status, 'ECHO_RECOVERY_PORT_UNAVAILABLE');
   assert.equal(result.diagnostic.code, 'echo_recovery_command_failed');
+});
+
+test('Echo CLI recovery adapter reports empty command failures with fallback diagnostics', async () => {
+  const modules = await loadModules();
+  const adapter = modules.adapter.createEchoCliRecoveryAdapter({
+    command: commandPort([], 2, ''),
+    executable: 'echo-cli',
+    root: '.echo-wal',
+  });
+
+  const result = await adapter.readExternalAppRecoveryGate({
+    submissionId: 'submission:failed-empty',
+    canonicalEnvelopeDigest: 'envelope:failed-empty',
+  });
+
+  assert.equal(result.status, 'ECHO_RECOVERY_PORT_UNAVAILABLE');
+  assert.equal(result.diagnostic.message, 'Echo recovery command failed without stderr output.');
 });
 
 test('Echo CLI recovery adapter reports malformed JSON as unavailable', async () => {
@@ -214,13 +230,6 @@ async function loadModules() {
   }
 
   modulesPromise = (async () => {
-    const build = spawnSync('npm', ['run', '--silent', 'build'], {
-      cwd: REPO_ROOT,
-      encoding: 'utf8',
-    });
-
-    assert.equal(build.status, 0, build.stderr || build.stdout);
-
     const [adapter, command] = await Promise.all([
       import(pathToFileURL(ADAPTER_MODULE_PATH).href),
       import(pathToFileURL(COMMAND_MODULE_PATH).href),

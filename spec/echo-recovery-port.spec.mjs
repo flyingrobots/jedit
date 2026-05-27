@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
@@ -39,6 +38,17 @@ test('Echo recovery request validation names missing submission id', async () =>
   assert.equal(result.diagnostic.field, 'submissionId');
 });
 
+test('Echo recovery request validation rejects whitespace-only envelope digests', async () => {
+  const modules = await loadModules();
+  const result = modules.recovery.validateEchoRecoveryGateRequest({
+    submissionId: 'submission:fixture',
+    canonicalEnvelopeDigest: '   ',
+  });
+
+  assert.equal(result.status, 'ECHO_RECOVERY_PORT_INVALID_REQUEST');
+  assert.equal(result.diagnostic.field, 'canonicalEnvelopeDigest');
+});
+
 test('fake Echo recovery port reports unavailable for missing fixture', async () => {
   const modules = await loadModules();
   const port = modules.recovery.createFakeEchoRecoveryPort([]);
@@ -58,13 +68,6 @@ async function loadModules() {
   }
 
   modulesPromise = (async () => {
-    const build = spawnSync('npm', ['run', '--silent', 'build'], {
-      cwd: REPO_ROOT,
-      encoding: 'utf8',
-    });
-
-    assert.equal(build.status, 0, build.stderr || build.stdout);
-
     const recovery = await import(pathToFileURL(RECOVERY_MODULE_PATH).href);
 
     return {

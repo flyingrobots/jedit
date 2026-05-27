@@ -1,7 +1,9 @@
 import {
   ECHO_EVIDENCE_HEALTH_COMPLETE,
   ECHO_RECOVERY_CHAIN_EVALUATED,
+  ECHO_RECOVERY_CHAIN_INCOMPLETE,
   ECHO_RECOVERY_CHAIN_NOT_REQUESTED,
+  type EchoRecoveryChainStatus,
   type EchoRecoveryCausalChainReport,
   type EchoRecoveryGateReport,
 } from '../ports/echo-recovery.js';
@@ -14,6 +16,7 @@ import {
 } from '../ports/jedit-recovered-bounded-reading.js';
 
 const REASON_CHAIN_NOT_EVALUATED = 'echo_causal_chain_not_evaluated';
+const REASON_CHAIN_INCOMPLETE = 'echo_causal_chain_incomplete';
 const REASON_CHAIN_EVIDENCE_INCOMPLETE = 'echo_causal_chain_evidence_incomplete';
 const REASON_CHAIN_MISSING_READING_FIELDS = 'echo_causal_chain_missing_reading_fields';
 
@@ -26,14 +29,22 @@ export function readRecoveredBoundedReading(
 export function readRecoveredBoundedReadingFromChain(
   chain: EchoRecoveryCausalChainReport,
 ): JeditRecoveredBoundedReadingResult {
-  if (chain.status === ECHO_RECOVERY_CHAIN_NOT_REQUESTED) {
-    return {
-      status: JEDIT_RECOVERED_READING_NOT_REQUESTED,
-    };
+  switch (chain.status) {
+    case ECHO_RECOVERY_CHAIN_NOT_REQUESTED:
+      return {
+        status: JEDIT_RECOVERED_READING_NOT_REQUESTED,
+      };
+    case ECHO_RECOVERY_CHAIN_INCOMPLETE:
+      return incomplete(REASON_CHAIN_INCOMPLETE);
+    case ECHO_RECOVERY_CHAIN_EVALUATED:
+      return readEvaluatedRecoveredBoundedReading(chain);
   }
-  if (chain.status !== ECHO_RECOVERY_CHAIN_EVALUATED) {
-    return incomplete(REASON_CHAIN_NOT_EVALUATED);
-  }
+  return unknownChainStatus(chain.status);
+}
+
+function readEvaluatedRecoveredBoundedReading(
+  chain: EchoRecoveryCausalChainReport,
+): JeditRecoveredBoundedReadingResult {
   if (chain.evidenceHealth !== ECHO_EVIDENCE_HEALTH_COMPLETE) {
     return incomplete(REASON_CHAIN_EVIDENCE_INCOMPLETE);
   }
@@ -79,4 +90,9 @@ function incomplete(reason: string): JeditRecoveredBoundedReadingResult {
     status: JEDIT_RECOVERED_READING_INCOMPLETE,
     reason,
   };
+}
+
+function unknownChainStatus(status: never): JeditRecoveredBoundedReadingResult {
+  const chainStatus: EchoRecoveryChainStatus = status;
+  return incomplete(`${REASON_CHAIN_NOT_EVALUATED}:${chainStatus}`);
 }

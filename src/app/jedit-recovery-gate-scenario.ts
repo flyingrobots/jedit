@@ -1,5 +1,7 @@
 import {
   ECHO_RECOVERY_PORT_AVAILABLE,
+  ECHO_RECOVERY_PORT_UNAVAILABLE,
+  type EchoRecoveryGateResult,
 } from '../ports/echo-recovery.js';
 import { mapEchoRecoveryToRecoveredEditPosture } from './echo-recovery-posture.js';
 import { legacyFallbackStatusFromTripwire } from './jedit-local-fallback-tripwire.js';
@@ -15,14 +17,14 @@ import {
   type JeditRecoveryGateScenarioResult,
 } from '../ports/jedit-recovery-gate-scenario.js';
 
+const RECOVERY_ADAPTER_EXCEPTION_CODE = 'jedit_recovery_adapter_exception';
+const RECOVERY_ADAPTER_EXCEPTION_MESSAGE =
+  'Echo recovery adapter threw before returning a recovery result.';
+
 export async function runJeditRecoveryGateScenario(
   input: JeditRecoveryGateScenarioInput,
 ): Promise<JeditRecoveryGateScenarioResult> {
-  const recovery = await input.recovery.readExternalAppRecoveryGate({
-    submissionId: input.identity.submissionId,
-    canonicalEnvelopeDigest: input.identity.canonicalEnvelopeDigest,
-    reading: input.reading,
-  });
+  const recovery = await readRecovery(input);
   if (recovery.status !== ECHO_RECOVERY_PORT_AVAILABLE) {
     return {
       status: JEDIT_RECOVERY_GATE_SCENARIO_BLOCKED,
@@ -46,4 +48,27 @@ export async function runJeditRecoveryGateScenario(
     }),
     recoveredReading: readRecoveredBoundedReading(recovery.report),
   };
+}
+
+async function readRecovery(
+  input: JeditRecoveryGateScenarioInput,
+): Promise<EchoRecoveryGateResult> {
+  try {
+    return await input.recovery.readExternalAppRecoveryGate({
+      submissionId: input.identity.submissionId,
+      canonicalEnvelopeDigest: input.identity.canonicalEnvelopeDigest,
+      reading: input.reading,
+    });
+  } catch (error) {
+    const message = error instanceof Error
+      ? error.message
+      : RECOVERY_ADAPTER_EXCEPTION_MESSAGE;
+    return {
+      status: ECHO_RECOVERY_PORT_UNAVAILABLE,
+      diagnostic: {
+        code: RECOVERY_ADAPTER_EXCEPTION_CODE,
+        message,
+      },
+    };
+  }
 }

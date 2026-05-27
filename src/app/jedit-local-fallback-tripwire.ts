@@ -34,6 +34,7 @@ export function legacyFallbackStatusFromTripwire(
   snapshotValue: JeditLocalFallbackTripwireSnapshot,
 ) {
   return snapshotValue.status === JEDIT_LOCAL_FALLBACK_TRIPWIRE_TRIPPED
+    || snapshotValue.status === JEDIT_LOCAL_FALLBACK_TRIPWIRE_IGNORED
     ? JEDIT_LEGACY_FALLBACK_DETECTED
     : JEDIT_LEGACY_FALLBACK_NOT_DETECTED;
 }

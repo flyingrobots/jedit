@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
@@ -49,6 +48,17 @@ test('recovered bounded reading fails closed for incomplete chain evidence', asy
   assert.equal(result.reason, 'echo_causal_chain_evidence_incomplete');
 });
 
+test('recovered bounded reading gives incomplete chain status a distinct reason', async () => {
+  const modules = await loadModules();
+  const report = withCausalChain('complete');
+  report.causalChain.status = 'incomplete';
+
+  const result = modules.reading.readRecoveredBoundedReading(report);
+
+  assert.equal(result.status, 'JEDIT_RECOVERED_READING_INCOMPLETE');
+  assert.equal(result.reason, 'echo_causal_chain_incomplete');
+});
+
 test('recovered bounded reading fails closed when evaluated chain lacks a reading id', async () => {
   const modules = await loadModules();
   const report = withCausalChain('complete');
@@ -94,13 +104,6 @@ async function loadModules() {
   }
 
   modulesPromise = (async () => {
-    const build = spawnSync('npm', ['run', '--silent', 'build'], {
-      cwd: REPO_ROOT,
-      encoding: 'utf8',
-    });
-
-    assert.equal(build.status, 0, build.stderr || build.stdout);
-
     const [reading, recovery] = await Promise.all([
       import(pathToFileURL(READING_MODULE_PATH).href),
       import(pathToFileURL(RECOVERY_MODULE_PATH).href),

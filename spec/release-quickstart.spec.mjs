@@ -46,12 +46,6 @@ test('v0.1.0 closeout records final witness and local replay reports', () => {
 });
 
 test('v0.1.0 quickstart dry-run command executes', () => {
-  const build = spawnSync('npm', ['run', '--silent', 'build'], {
-    cwd: REPO_ROOT,
-    encoding: 'utf8',
-  });
-  assert.equal(build.status, 0, build.stderr || build.stdout);
-
   const result = spawnSync(process.execPath, [
     WITNESS_SCRIPT,
     '--json',

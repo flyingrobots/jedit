@@ -21,6 +21,9 @@ export function createJeditRecoveryAmnesiaToken(
 export function rehydrateJeditIdentityFromAmnesiaToken(
   token: JeditRecoveryAmnesiaToken,
 ): JeditEditSubmissionIdentity {
+  if (token.schemaVersion !== JEDIT_RECOVERY_AMNESIA_TOKEN_SCHEMA) {
+    throw new TypeError('Unsupported jedit recovery amnesia token schema version.');
+  }
   return {
     submissionId: token.submissionId,
     idempotencyKeyDigest: token.idempotencyKeyDigest,

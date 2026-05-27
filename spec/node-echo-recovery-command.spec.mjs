@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
@@ -25,19 +24,27 @@ test('node Echo recovery command preserves spawn errors in stderr diagnostics', 
   assert.match(result.stderr, /ENOENT|spawn/u);
 });
 
+test('node Echo recovery command terminates timed out subprocesses', async () => {
+  const module = await loadModule();
+  const port = module.createNodeEchoRecoveryCommandPort();
+
+  const result = await port.run({
+    executable: process.execPath,
+    args: ['-e', 'setTimeout(() => {}, 10000);'],
+    timeoutMs: 10,
+  });
+
+  assert.equal(result.status, 'ECHO_RECOVERY_COMMAND_EXITED');
+  assert.equal(result.exitCode, 1);
+  assert.match(result.stderr, /timed out/u);
+});
+
 async function loadModule() {
   if (modulePromise) {
     return modulePromise;
   }
 
-  modulePromise = (async () => {
-    const build = spawnSync('npm', ['run', '--silent', 'build'], {
-      cwd: REPO_ROOT,
-      encoding: 'utf8',
-    });
-
-    assert.equal(build.status, 0, build.stderr || build.stdout);
-    return import(pathToFileURL(COMMAND_MODULE_PATH).href);
+  modulePromise = (async () => {    return import(pathToFileURL(COMMAND_MODULE_PATH).href);
   })();
 
   return modulePromise;

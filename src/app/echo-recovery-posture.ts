@@ -1,6 +1,9 @@
 import {
   ECHO_EVIDENCE_HEALTH_COMPLETE,
   ECHO_EVIDENCE_HEALTH_CORRUPT,
+  ECHO_EVIDENCE_HEALTH_INCOMPLETE,
+  ECHO_EVIDENCE_HEALTH_MISSING_RETENTION,
+  ECHO_EVIDENCE_HEALTH_REDACTED,
   ECHO_SUBMISSION_DECISION_APPLIED,
   ECHO_SUBMISSION_DECISION_NONE,
   ECHO_SUBMISSION_DECISION_OBSTRUCTED,
@@ -9,7 +12,10 @@ import {
   ECHO_SUBMISSION_LIFECYCLE_ACCEPTED_PENDING,
   ECHO_SUBMISSION_LIFECYCLE_DECIDED,
   ECHO_SUBMISSION_LIFECYCLE_NOT_FOUND,
+  type EchoEvidenceHealthStatus,
   type EchoRecoveryGateReport,
+  type EchoSubmissionDecisionResult,
+  type EchoSubmissionLifecycleStatus,
 } from '../ports/echo-recovery.js';
 import {
   JEDIT_RECOVERED_EDIT_APPLIED,
@@ -18,22 +24,21 @@ import {
   JEDIT_RECOVERED_EDIT_INCOMPLETE,
   JEDIT_RECOVERED_EDIT_PENDING,
   JEDIT_RECOVERED_EDIT_PROCESSING,
+  JEDIT_RECOVERED_EDIT_REASON_BLOCKED,
+  JEDIT_RECOVERED_EDIT_REASON_COMPLETE,
+  JEDIT_RECOVERED_EDIT_REASON_CORRUPT,
+  JEDIT_RECOVERED_EDIT_REASON_INCOMPLETE,
+  JEDIT_RECOVERED_EDIT_REASON_PENDING,
+  JEDIT_RECOVERED_EDIT_REASON_PROCESSING,
+  JEDIT_RECOVERED_EDIT_REASON_REJECTED,
+  JEDIT_RECOVERED_EDIT_REASON_UNKNOWN,
+  JEDIT_RECOVERED_EDIT_REASON_UNSUPPORTED,
   JEDIT_RECOVERED_EDIT_REJECTED,
   JEDIT_RECOVERED_EDIT_UNKNOWN,
   JEDIT_RECOVERED_EDIT_UNSUPPORTED,
   type JeditRecoveredEditPosture,
   type JeditRecoveredEditStatus,
 } from '../ports/recovered-edit-status.js';
-
-const COMPLETE_REASON = 'echo_recovery_complete';
-const PENDING_REASON = 'echo_accepted_pending';
-const PROCESSING_REASON = 'echo_accepted_deciding';
-const UNKNOWN_REASON = 'echo_submission_not_found';
-const REJECTED_REASON = 'echo_decision_rejected';
-const BLOCKED_REASON = 'echo_decision_obstructed';
-const INCOMPLETE_REASON = 'echo_recovery_incomplete';
-const CORRUPT_REASON = 'echo_recovery_corrupt_or_untrusted';
-const UNSUPPORTED_REASON = 'unsupported_echo_posture';
 
 export function mapEchoRecoveryToRecoveredEditPosture(
   report: EchoRecoveryGateReport,
@@ -51,72 +56,93 @@ export function mapEchoRecoveryToRecoveredEditPosture(
   };
 }
 
-function mapStatus(lifecycle: string, decision: string, health: string): JeditRecoveredEditStatus {
-  if (health === ECHO_EVIDENCE_HEALTH_CORRUPT) {
-    return JEDIT_RECOVERED_EDIT_ERROR;
+function mapStatus(
+  lifecycle: EchoSubmissionLifecycleStatus,
+  decision: EchoSubmissionDecisionResult,
+  health: EchoEvidenceHealthStatus,
+): JeditRecoveredEditStatus {
+  switch (health) {
+    case ECHO_EVIDENCE_HEALTH_CORRUPT:
+      return JEDIT_RECOVERED_EDIT_ERROR;
+    case ECHO_EVIDENCE_HEALTH_COMPLETE:
+      return mapLifecycle(lifecycle, decision);
+    case ECHO_EVIDENCE_HEALTH_INCOMPLETE:
+    case ECHO_EVIDENCE_HEALTH_MISSING_RETENTION:
+    case ECHO_EVIDENCE_HEALTH_REDACTED:
+      return JEDIT_RECOVERED_EDIT_INCOMPLETE;
   }
-  if (health !== ECHO_EVIDENCE_HEALTH_COMPLETE) {
-    return JEDIT_RECOVERED_EDIT_INCOMPLETE;
-  }
-  if (lifecycle === ECHO_SUBMISSION_LIFECYCLE_NOT_FOUND) {
-    return JEDIT_RECOVERED_EDIT_UNKNOWN;
-  }
-  if (lifecycle === ECHO_SUBMISSION_LIFECYCLE_ACCEPTED_PENDING) {
-    return JEDIT_RECOVERED_EDIT_PENDING;
-  }
-  if (lifecycle === ECHO_SUBMISSION_LIFECYCLE_ACCEPTED_DECIDING) {
-    return JEDIT_RECOVERED_EDIT_PROCESSING;
-  }
-  if (lifecycle !== ECHO_SUBMISSION_LIFECYCLE_DECIDED) {
-    return JEDIT_RECOVERED_EDIT_UNSUPPORTED;
-  }
-  return mapDecision(decision);
+  return unsupportedEvidenceHealth(health);
 }
 
-function mapDecision(decision: string): JeditRecoveredEditStatus {
-  if (decision === ECHO_SUBMISSION_DECISION_APPLIED) {
-    return JEDIT_RECOVERED_EDIT_APPLIED;
+function mapLifecycle(
+  lifecycle: EchoSubmissionLifecycleStatus,
+  decision: EchoSubmissionDecisionResult,
+): JeditRecoveredEditStatus {
+  switch (lifecycle) {
+    case ECHO_SUBMISSION_LIFECYCLE_NOT_FOUND:
+      return JEDIT_RECOVERED_EDIT_UNKNOWN;
+    case ECHO_SUBMISSION_LIFECYCLE_ACCEPTED_PENDING:
+      return JEDIT_RECOVERED_EDIT_PENDING;
+    case ECHO_SUBMISSION_LIFECYCLE_ACCEPTED_DECIDING:
+      return JEDIT_RECOVERED_EDIT_PROCESSING;
+    case ECHO_SUBMISSION_LIFECYCLE_DECIDED:
+      return mapDecision(decision);
   }
-  if (decision === ECHO_SUBMISSION_DECISION_REJECTED) {
-    return JEDIT_RECOVERED_EDIT_REJECTED;
+  return unsupportedProtocolState();
+}
+
+function mapDecision(decision: EchoSubmissionDecisionResult): JeditRecoveredEditStatus {
+  switch (decision) {
+    case ECHO_SUBMISSION_DECISION_APPLIED:
+      return JEDIT_RECOVERED_EDIT_APPLIED;
+    case ECHO_SUBMISSION_DECISION_REJECTED:
+      return JEDIT_RECOVERED_EDIT_REJECTED;
+    case ECHO_SUBMISSION_DECISION_OBSTRUCTED:
+      return JEDIT_RECOVERED_EDIT_BLOCKED;
+    case ECHO_SUBMISSION_DECISION_NONE:
+      return JEDIT_RECOVERED_EDIT_INCOMPLETE;
   }
-  if (decision === ECHO_SUBMISSION_DECISION_OBSTRUCTED) {
-    return JEDIT_RECOVERED_EDIT_BLOCKED;
-  }
-  if (decision === ECHO_SUBMISSION_DECISION_NONE) {
-    return JEDIT_RECOVERED_EDIT_INCOMPLETE;
-  }
-  return JEDIT_RECOVERED_EDIT_UNSUPPORTED;
+  return unsupportedProtocolState();
 }
 
 function reasonForStatus(status: JeditRecoveredEditStatus): string {
   if (status === JEDIT_RECOVERED_EDIT_APPLIED) {
-    return COMPLETE_REASON;
+    return JEDIT_RECOVERED_EDIT_REASON_COMPLETE;
   }
   if (status === JEDIT_RECOVERED_EDIT_PENDING) {
-    return PENDING_REASON;
+    return JEDIT_RECOVERED_EDIT_REASON_PENDING;
   }
   if (status === JEDIT_RECOVERED_EDIT_PROCESSING) {
-    return PROCESSING_REASON;
+    return JEDIT_RECOVERED_EDIT_REASON_PROCESSING;
   }
   if (status === JEDIT_RECOVERED_EDIT_UNKNOWN) {
-    return UNKNOWN_REASON;
+    return JEDIT_RECOVERED_EDIT_REASON_UNKNOWN;
   }
   return nonAppliedReason(status);
 }
 
 function nonAppliedReason(status: JeditRecoveredEditStatus): string {
   if (status === JEDIT_RECOVERED_EDIT_REJECTED) {
-    return REJECTED_REASON;
+    return JEDIT_RECOVERED_EDIT_REASON_REJECTED;
   }
   if (status === JEDIT_RECOVERED_EDIT_BLOCKED) {
-    return BLOCKED_REASON;
+    return JEDIT_RECOVERED_EDIT_REASON_BLOCKED;
   }
   if (status === JEDIT_RECOVERED_EDIT_ERROR) {
-    return CORRUPT_REASON;
+    return JEDIT_RECOVERED_EDIT_REASON_CORRUPT;
   }
   if (status === JEDIT_RECOVERED_EDIT_UNSUPPORTED) {
-    return UNSUPPORTED_REASON;
+    return JEDIT_RECOVERED_EDIT_REASON_UNSUPPORTED;
   }
-  return INCOMPLETE_REASON;
+  return JEDIT_RECOVERED_EDIT_REASON_INCOMPLETE;
+}
+
+function unsupportedEvidenceHealth(health: never): JeditRecoveredEditStatus {
+  return unsupportedProtocolState(health);
+}
+
+function unsupportedProtocolState(): JeditRecoveredEditStatus;
+function unsupportedProtocolState(state: never): JeditRecoveredEditStatus;
+function unsupportedProtocolState(): JeditRecoveredEditStatus {
+  return JEDIT_RECOVERED_EDIT_UNSUPPORTED;
 }
