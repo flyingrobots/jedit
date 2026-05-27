@@ -30,7 +30,7 @@ The required artifact is a jedit recovery report that proves:
 - [x] Slice 23: Recovered bounded reading path.
 - [x] Slice 24: Happy-path recovery gate scenario.
 - [x] Slice 25: Retry after local amnesia scenario.
-- [ ] Slice 34: Materialize artifact from recovered causal basis.
+- [x] Slice 34: Materialize artifact from recovered causal basis.
 
 Check off each slice here and in `docs/BEARING.md` immediately before the
 commit that lands the slice.
