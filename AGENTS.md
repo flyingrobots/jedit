@@ -48,6 +48,10 @@ These are hard repo rules, not suggestions:
   just before you make the commit for that slice.
 - `docs/design/0032-jedit-echo-reading-cache-and-fallback-boundaries.md`
   records the local package for slices 101-110.
+- `docs/design/0033-echo-authoritative-recovery-gate-b.md` records the current
+  local companion plan for consuming Echo recovery truth through jedit-owned
+  ports. Keep track of progress there and in `docs/BEARING.md` by checking off
+  slices just before you make the commit for that slice.
 - `scripts/quality-gate.mjs` is the current enforceable quality ratchet.
 - `quality-baseline.json` is temporary debt tracking, not permission to add more debt.
   Keep it empty when the ratchet is clean.
