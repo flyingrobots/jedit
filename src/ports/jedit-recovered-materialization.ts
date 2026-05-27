@@ -11,6 +11,11 @@ export const JEDIT_RECOVERED_PAYLOAD_SOURCE_ECHO_READING =
 export interface JeditRecoveredMaterializationPayload {
   readonly source: string;
   readonly text: string;
+  readonly textDigest: string;
+  readonly readingId: string;
+  readonly basisDigest: string;
+  readonly readingBasisDigest: string;
+  readonly semanticCoordinateDigest: string;
 }
 
 export interface JeditRecoveredMaterializationInput {

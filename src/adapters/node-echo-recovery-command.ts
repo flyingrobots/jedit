@@ -28,7 +28,17 @@ function runEchoRecoveryCommand(
   return {
     status: ECHO_RECOVERY_COMMAND_EXITED,
     exitCode: result.status ?? 1,
-    stdout: result.stdout,
-    stderr: result.stderr,
+    stdout: result.stdout ?? '',
+    stderr: stderrForResult(result.stderr ?? '', result.error?.message ?? ''),
   };
+}
+
+function stderrForResult(stderr: string, errorMessage: string): string {
+  if (stderr.length === 0) {
+    return errorMessage;
+  }
+  if (errorMessage.length === 0) {
+    return stderr;
+  }
+  return `${stderr}\n${errorMessage}`;
 }
