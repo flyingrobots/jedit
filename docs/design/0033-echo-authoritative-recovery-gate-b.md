@@ -23,7 +23,7 @@ The required artifact is a jedit recovery report that proves:
 - [x] Slice 18: Echo recovery port interface.
 - [x] Slice 19: Echo recovery adapter implementation.
 - [x] Slice 20: Generic-to-editor posture mapping.
-- [ ] Slice 21: Stable edit submission identity.
+- [x] Slice 21: Stable edit submission identity.
 - [ ] Slice 22: Recovery evidence report fields.
 - [ ] Slice 32: Production legacy memory static guard.
 - [ ] Slice 33: Release-gate runtime tripwire mode.

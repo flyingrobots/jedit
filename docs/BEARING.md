@@ -88,7 +88,7 @@ Can jedit consume Echo truth through ports without local memory fallback?
 - [x] Slice 18: \[jedit] Echo recovery port interface.
 - [x] Slice 19: \[jedit] Echo recovery adapter implementation.
 - [x] Slice 20: \[jedit] generic-to-editor posture mapping.
-- [ ] Slice 21: \[jedit] stable edit submission identity.
+- [x] Slice 21: \[jedit] stable edit submission identity.
 - [ ] Slice 22: \[jedit] recovery evidence report fields.
 - [ ] Slice 32: \[jedit] production legacy memory static guard.
 - [ ] Slice 33: \[jedit] release-gate runtime tripwire mode.
