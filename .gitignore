@@ -1,6 +1,7 @@
 node_modules
 dist
 .codex/
+.claude/
 .wesley-cache/
 .jedit-cache/
 .obsidian/
