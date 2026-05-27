@@ -41,3 +41,27 @@ test('production cutover guard catches sample legacy bypass tokens', () => {
   assert.match(result.stderr, /editor\.lines/);
   assert.match(result.stderr, /requestRunUntilIdle/);
 });
+
+test('production cutover guard catches sample recovery local-memory fallback tokens', () => {
+  const tempDir = mkdtempSync(path.join(tmpdir(), 'jedit-recovery-guard-'));
+  const sample = path.join(tempDir, 'sample.ts');
+  writeFileSync(sample, [
+    "import { createInMemoryHotTextRuntime } from './in-memory-hot-text-runtime.js';",
+    'const text = getCurrentText(currentBuffer);',
+    'saveFromBuffer(text);',
+  ].join('\n'));
+
+  const result = spawnSync(process.execPath, [
+    GUARD_PATH,
+    '--sample-forbidden-file',
+    sample,
+  ], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+  });
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /createInMemoryHotTextRuntime/);
+  assert.match(result.stderr, /getCurrentText/);
+  assert.match(result.stderr, /saveFromBuffer/);
+});

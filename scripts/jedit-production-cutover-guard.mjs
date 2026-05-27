@@ -30,6 +30,13 @@ const DEFAULT_LIFECYCLE_AUTHORITY_FILES = Object.freeze([
   'src/app/workspace/workspace-text-results.ts',
   'src/app/workspace/workspace-text-runtime-state.ts',
 ]);
+const DEFAULT_RECOVERY_GATE_FILES = Object.freeze([
+  'src/adapters/echo-cli-recovery-adapter.ts',
+  'src/adapters/echo-recovery-codec.ts',
+  'src/app/echo-recovery-posture.ts',
+  'src/app/jedit-edit-submission-identity.ts',
+  'src/app/jedit-recovery-evidence-report.ts',
+]);
 const REMOVED_TRANSITIONAL_FILES = Object.freeze([
   'src/app/interactive-text-runtime-mode.ts',
   'src/adapters/interactive-echo-text-session.ts',
@@ -50,15 +57,27 @@ const FORBIDDEN_LIFECYCLE_AUTHORITY_PATTERNS = Object.freeze([
   { label: 'InteractiveTextRuntimeMode', pattern: /\bInteractiveTextRuntimeMode\b/u },
   { label: 'INTERACTIVE_TEXT_RUNTIME', pattern: /\bINTERACTIVE_TEXT_RUNTIME\b/u },
 ]);
+const FORBIDDEN_RECOVERY_FALLBACK_PATTERNS = Object.freeze([
+  { label: 'createInMemoryHotTextRuntime', pattern: /\bcreateInMemoryHotTextRuntime\b/u },
+  { label: 'in-memory-hot-text-runtime', pattern: /\bin-memory-hot-text-runtime\b/u },
+  { label: 'createTextBufferSession', pattern: /\bcreateTextBufferSession\b/u },
+  { label: 'HotTextBufferState', pattern: /\bHotTextBufferState\b/u },
+  { label: 'getCurrentText', pattern: /\bgetCurrentText\b/u },
+  { label: 'readLocalText', pattern: /\breadLocalText\b/u },
+  { label: 'currentBuffer', pattern: /\bcurrentBuffer\b/u },
+  { label: 'saveFromBuffer', pattern: /\bsaveFromBuffer\b/u },
+]);
 
 const options = parseArgs(process.argv.slice(2));
 const failures = [
   ...removedFileFailures(),
   ...forbiddenSourceFailures(DEFAULT_PRODUCTION_FILES, FORBIDDEN_LEGACY_AUTHORITY_PATTERNS),
   ...forbiddenSourceFailures(DEFAULT_LIFECYCLE_AUTHORITY_FILES, FORBIDDEN_LIFECYCLE_AUTHORITY_PATTERNS),
+  ...forbiddenSourceFailures(DEFAULT_RECOVERY_GATE_FILES, FORBIDDEN_RECOVERY_FALLBACK_PATTERNS),
   ...forbiddenSourceFailures(options.sampleForbiddenFiles, [
     ...FORBIDDEN_LEGACY_AUTHORITY_PATTERNS,
     ...FORBIDDEN_LIFECYCLE_AUTHORITY_PATTERNS,
+    ...FORBIDDEN_RECOVERY_FALLBACK_PATTERNS,
   ]),
 ];
 
