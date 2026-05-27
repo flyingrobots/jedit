@@ -71,6 +71,32 @@ and authority-boundary report for the current release-gate PR.
 The developer-facing recipe lives in
 [`docs/echo-application-hosting-guide.md`](echo-application-hosting-guide.md).
 
+## Active Plan: Echo Authoritative Recovery Gate B
+
+The current branch advances
+[`docs/design/0033-echo-authoritative-recovery-gate-b.md`](design/0033-echo-authoritative-recovery-gate-b.md).
+Echo now exposes a generic recovery gate payload; jedit must consume that truth
+through app-owned ports, keep CLI/process/WAL details adapter-private, block
+legacy local-memory fallback, and emit an honest recovery report.
+
+Gate question:
+
+```text
+Can jedit consume Echo truth through ports without local memory fallback?
+```
+
+- [x] Slice 18: \[jedit] Echo recovery port interface.
+- [ ] Slice 19: \[jedit] Echo recovery adapter implementation.
+- [ ] Slice 20: \[jedit] generic-to-editor posture mapping.
+- [ ] Slice 21: \[jedit] stable edit submission identity.
+- [ ] Slice 22: \[jedit] recovery evidence report fields.
+- [ ] Slice 32: \[jedit] production legacy memory static guard.
+- [ ] Slice 33: \[jedit] release-gate runtime tripwire mode.
+- [ ] Slice 23: \[jedit] recovered bounded reading path.
+- [ ] Slice 24: \[jedit] happy-path recovery gate scenario.
+- [ ] Slice 25: \[jedit] retry after local amnesia scenario.
+- [ ] Slice 34: \[jedit] materialize artifact from recovered causal basis.
+
 ## Active Plan: Interactive Workspace Echo Cutover
 
 The next plan is not WSC. WSC waits until the interactive workspace cutover is
