@@ -24,6 +24,14 @@ npm run dev
 
 Open a file from the file drawer or pass a path directly. The editor stays out of your way until you need it.
 
+## Contract codegen
+
+Most day-to-day builds generate structural-history metadata through the published Wesley CLI. The legacy hot-text and observer codegen paths still require a local Wesley checkout:
+
+```sh
+JEDIT_WESLEY_ROOT=/path/to/wesley npm run gen:contract
+```
+
 ## Design principles
 
 - **Zen core, instrumented edges.** The main editor area stays visually quiet; richer context appears at the edges and only when it earns the space.
