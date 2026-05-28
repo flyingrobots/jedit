@@ -212,7 +212,17 @@ await test('codec primitives', async t => {
         );
     });
 
-    // ── option ────────────────────────────────────────────────────────────
+    await t.test('string invalid utf-8 bytes throw CodecError', () => {
+        const { CodecError } = mod;
+        // Manually build: u32 LE length=1, then 0xff (invalid UTF-8 byte)
+        const w = new Writer();
+        w.writeU32Le(1);
+        w.writeU8(0xff);
+        const r = new Reader(w.finish());
+        assert.throws(() => r.readString(), CodecError);
+    });
+
+        // ── option ────────────────────────────────────────────────────────────
 
     await t.test('option None wire byte is 0x00', () => {
         const w = new Writer();

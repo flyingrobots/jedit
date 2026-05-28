@@ -189,7 +189,11 @@ export class Reader {
             this.view.byteOffset + at,
             len,
         );
-        return new TextDecoder('utf-8', { fatal: true }).decode(slice);
+        try {
+            return new TextDecoder('utf-8', { fatal: true }).decode(slice);
+        } catch {
+            throw new CodecError('invalid utf-8');
+        }
     }
 
     readOption<T>(decode: (r: Reader) => T): T | null {
