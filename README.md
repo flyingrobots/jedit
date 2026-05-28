@@ -2,8 +2,8 @@
 
 ![jedit title screen](https://github.com/user-attachments/assets/c15575ba-b680-4880-baed-2bfa55c84b10)
 
-Terminal-first text and Markdown editing, built on Bijou and shaped around
-causal history through Echo.
+Terminal-first, Vim-shaped editor built on Bijou and shaped around causal
+history through Echo.
 
 `jedit` is the product pressure for the Echo stack — a real editor that forces
 the lower layers to prove the seams that matter: contract-shaped edits, bounded
