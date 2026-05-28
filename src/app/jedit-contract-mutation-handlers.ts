@@ -16,12 +16,12 @@ import {
 } from './jedit-contract-package.js';
 import type {
   MutationOperationMap,
-} from '../generated/jedit/hot-text-runtime.types.generated.js';
+} from '../generated/jedit/rope.types.generated.js';
 import {
   mutationCreateBufferWorldlineOperation,
   mutationCreateCheckpointOperation,
   mutationReplaceRangeAsTickOperation,
-} from '../generated/jedit/hot-text-runtime.wesley.generated.js';
+} from '../generated/jedit/rope.wesley.generated.js';
 import type { HashPort } from '../ports/hash.js';
 import type { HotTextRuntimePort } from '../ports/hot-text-runtime.js';
 import type { JeditContractStatePort } from '../ports/jedit-contract-state-port.js';

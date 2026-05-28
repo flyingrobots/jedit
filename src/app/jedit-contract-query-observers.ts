@@ -10,11 +10,11 @@ import { requireJeditContractFactSet } from './jedit-contract-state-port.js';
 import type { JeditWorldlineSession } from './jedit-contract-runtime.js';
 import type {
   QueryOperationMap,
-} from '../generated/jedit/hot-text-runtime.types.generated.js';
+} from '../generated/jedit/rope.types.generated.js';
 import {
   queryTextWindowOperation,
   queryWorldlineSnapshotOperation,
-} from '../generated/jedit/hot-text-runtime.wesley.generated.js';
+} from '../generated/jedit/rope.wesley.generated.js';
 import type { HashPort } from '../ports/hash.js';
 import type { HotTextRuntimePort } from '../ports/hot-text-runtime.js';
 import type { JeditContractStatePort } from '../ports/jedit-contract-state-port.js';

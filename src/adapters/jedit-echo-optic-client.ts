@@ -9,7 +9,7 @@ import type { TextWindowReadingEnvelope } from '../app/jedit-observer-runtime.js
 import type {
   MutationOperationMap,
   QueryOperationMap,
-} from '../generated/jedit/hot-text-runtime.types.generated.js';
+} from '../generated/jedit/rope.types.generated.js';
 import type { EchoWasmKernelTransport } from '../ports/echo-kernel-transport.js';
 import {
   type JeditOpticClient,

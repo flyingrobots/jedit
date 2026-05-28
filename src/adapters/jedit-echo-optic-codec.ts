@@ -7,7 +7,7 @@ import type {
   ReplaceRangeAsTickExecution,
 } from '../app/jedit-contract-runtime.js';
 import type { TextWindowReadingEnvelope, WorldlineSnapshotReadingEnvelope } from '../app/jedit-observer-runtime.js';
-import type { MutationOperationName, QueryOperationName } from '../generated/jedit/hot-text-runtime.types.generated.js';
+import type { MutationOperationName, QueryOperationName } from '../generated/jedit/rope.types.generated.js';
 import {
   mutationCreateBufferWorldlineOperation,
   mutationCreateCheckpointOperation,
@@ -19,14 +19,14 @@ import {
   type MutationReplaceRangeAsTickRequest,
   type QueryTextWindowRequest,
   type QueryWorldlineSnapshotRequest,
-} from '../generated/jedit/hot-text-runtime.wesley.generated.js';
+} from '../generated/jedit/rope.wesley.generated.js';
 import {
   BufferWorldlineSchema,
   CheckpointKindSchema,
   MutationOperationSchemas,
   QueryOperationSchemas,
-  TickKindSchema,
-} from '../generated/jedit/hot-text-runtime.zod.generated.js';
+  RewriteKindSchema,
+} from '../generated/jedit/rope.zod.generated.js';
 import { JeditRetainedEvidenceInventorySchema } from './jedit-retained-evidence-codec.js';
 
 export const JEDIT_INTENT_REQUEST_KIND = 'jedit.intent-request';
@@ -104,7 +104,7 @@ const HotTextBufferStateSchema = z.object({
 
 const TickMetadataSchema = z.object({
   tickId: z.number().int(),
-  kind: TickKindSchema,
+  kind: RewriteKindSchema,
   author: z.string().optional(),
 });
 
@@ -112,7 +112,7 @@ const CheckpointMetadataSchema = z.object({
   checkpointId: z.number().int(),
   kind: CheckpointKindSchema,
   label: z.string().optional(),
-  createdByTickId: z.number().int().optional(),
+  createdByRopeRewriteId: z.number().int().optional(),
 });
 
 const JeditWorldlineSessionSchema = z.object({

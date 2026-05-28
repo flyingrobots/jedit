@@ -20,7 +20,7 @@ import {
 import type {
   MutationOperationMap,
   QueryOperationMap,
-} from '../generated/jedit/hot-text-runtime.types.generated.js';
+} from '../generated/jedit/rope.types.generated.js';
 
 type CreateBufferWorldlineInput = MutationOperationMap['createBufferWorldline']['input'];
 type TextWindowInput = QueryOperationMap['textWindow']['input'];

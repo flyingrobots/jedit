@@ -107,7 +107,7 @@ test('in-memory optic client exposes GraphQL-shaped mutation and observer operat
   });
 
   assert.ok(edited.result);
-  assert.equal(edited.result.receipt.rewriteKind, 'REPLACE_RANGE_AS_TICK');
+  assert.equal(edited.result.ropeDiff.rewriteKind, 'REPLACE_RANGE_AS_TICK');
 
   const saved = client.createCheckpoint(edited.nextSession, {
     worldlineId: edited.nextSession.worldline.worldlineId,

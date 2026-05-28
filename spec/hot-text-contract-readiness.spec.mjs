@@ -6,13 +6,13 @@ import test from 'node:test';
 import { pathToFileURL } from 'node:url';
 
 const REPO_ROOT = process.cwd();
-const CONTRACT_PATH = path.join(REPO_ROOT, 'contracts', 'jedit', 'hot-text-runtime.graphql');
+const CONTRACT_PATH = path.join(REPO_ROOT, 'contracts', 'jedit', 'rope.graphql');
 const GENERATED_MODULE_PATH = path.join(
   REPO_ROOT,
   'dist',
   'generated',
   'jedit',
-  'hot-text-runtime.wesley.generated.js',
+  'rope.wesley.generated.js',
 );
 
 const EXPECTED_MUTATION_NAMES = [
@@ -104,8 +104,8 @@ test('generated Wesley metadata preserves the jedit mutation footprint boundary'
   assert.ok(replaceFootprint.reads.includes('RopeHead'));
   assert.ok(replaceFootprint.reads.includes('TextBlob'));
   assert.ok(replaceFootprint.reads.includes('Anchor'));
-  assert.ok(replaceFootprint.creates.includes('Tick'));
-  assert.ok(replaceFootprint.creates.includes('TickReceipt'));
+  assert.ok(replaceFootprint.creates.includes('RopeRewrite'));
+  assert.ok(replaceFootprint.creates.includes('RopeDiff'));
   assert.ok(replaceFootprint.creates.includes('RopeHead'));
   assert.deepEqual(
     replaceFootprint.closures.map((closure) => closure.operator),

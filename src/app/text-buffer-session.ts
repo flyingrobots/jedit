@@ -133,7 +133,7 @@ function applyTextBufferIntent(
     buffer,
     readBasis: state.currentReadBasis,
     bufferVersion: state.bufferVersion,
-    receiptId: execution.result.receipt.receiptId,
+    receiptId: execution.result.ropeDiff.ropeDiffId,
   };
 }
 

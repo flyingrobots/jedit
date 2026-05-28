@@ -5,3 +5,4 @@ dist
 .jedit-cache/
 .obsidian/
 src/generated/**/*.wesley.generated.ts
+.claude/

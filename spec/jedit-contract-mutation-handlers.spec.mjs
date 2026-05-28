@@ -64,7 +64,7 @@ test('jedit mutation handlers execute create replace and checkpoint behind regis
   });
 
   assert.equal(created.result.worldline.bufferKey, BUFFER_KEY);
-  assert.equal(replaced.result.receipt.insertedByteLength, INSERT_TEXT.length);
+  assert.equal(replaced.result.ropeDiff.insertedByteLength, INSERT_TEXT.length);
   assert.equal(checkpoint.result.checkpoint.kind, CHECKPOINT_KIND);
 });
 

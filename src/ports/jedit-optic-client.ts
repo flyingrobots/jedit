@@ -3,7 +3,7 @@ import type {
   MutationCreateCheckpointRequest,
   MutationReplaceRangeAsTickRequest,
   QueryWorldlineSnapshotRequest,
-} from '../generated/jedit/hot-text-runtime.wesley.generated.js';
+} from '../generated/jedit/rope.wesley.generated.js';
 import type {
   CreateBufferWorldlineExecution,
   CreateCheckpointExecution,

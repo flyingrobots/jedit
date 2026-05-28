@@ -4,15 +4,15 @@ import {
   mutationReplaceRangeAsTickOperation,
   queryTextWindowOperation,
   queryWorldlineSnapshotOperation,
-} from '../generated/jedit/hot-text-runtime.wesley.generated.js';
+} from '../generated/jedit/rope.wesley.generated.js';
 import {
   mutationReplaceTextRangeOperation,
 } from '../generated/jedit/structural-history-replace-text-range.wesley.generated.js';
 
 export const JEDIT_HOT_TEXT_PACKAGE_ID = 'jedit.hot-text-runtime';
 export const JEDIT_HOT_TEXT_PACKAGE_VERSION = '0.1.0-release-gate';
-export const JEDIT_HOT_TEXT_SCHEMA_ID = 'contracts/jedit/hot-text-runtime.graphql';
-export const JEDIT_HOT_TEXT_ARTIFACT_ID = 'src/generated/jedit/hot-text-runtime.wesley.generated.ts';
+export const JEDIT_HOT_TEXT_SCHEMA_ID = 'contracts/jedit/rope.graphql';
+export const JEDIT_HOT_TEXT_ARTIFACT_ID = 'src/generated/jedit/rope.wesley.generated.ts';
 export const JEDIT_HOT_TEXT_CODEC_ID = 'jedit-hot-text-runtime-json-v1';
 export const JEDIT_STRUCTURAL_HISTORY_PACKAGE_ID = 'jedit.structural-history';
 export const JEDIT_STRUCTURAL_HISTORY_PACKAGE_VERSION = '0.1.0-release-gate';

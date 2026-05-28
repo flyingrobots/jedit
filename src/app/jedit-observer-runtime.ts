@@ -1,7 +1,7 @@
 import type {
   QueryOperationMap,
-} from '../generated/jedit/hot-text-runtime.types.generated.js';
-import { QueryOperationSchemas } from '../generated/jedit/hot-text-runtime.zod.generated.js';
+} from '../generated/jedit/rope.types.generated.js';
+import { QueryOperationSchemas } from '../generated/jedit/rope.zod.generated.js';
 import { worldlineSnapshotObserverPlan } from '../generated/jedit/worldlineSnapshot.observer-plan.generated.js';
 import type { HotTextRuntimePort } from '../ports/hot-text-runtime.js';
 import type { JeditRetainedEvidenceInventory } from '../ports/jedit-retained-evidence.js';

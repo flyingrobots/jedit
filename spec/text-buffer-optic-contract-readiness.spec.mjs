@@ -5,7 +5,7 @@ import test from 'node:test';
 
 const REPO_ROOT = process.cwd();
 const APP_CONTRACT_PATH = path.join(REPO_ROOT, 'contracts', 'jedit', 'text-buffer-optic.graphql');
-const RUNTIME_CONTRACT_PATH = path.join(REPO_ROOT, 'contracts', 'jedit', 'hot-text-runtime.graphql');
+const RUNTIME_CONTRACT_PATH = path.join(REPO_ROOT, 'contracts', 'jedit', 'rope.graphql');
 const DATA_MODEL_DOC_PATH = path.join(REPO_ROOT, 'docs', 'data-model.md');
 const PACKAGE_JSON_PATH = path.join(REPO_ROOT, 'package.json');
 
@@ -105,7 +105,7 @@ test('runtime-facing SDL remains the separate home for Echo coordinates', async 
   assert.match(runtimeContract, /\bworldlineId\b/);
   assert.match(runtimeContract, /\bbaseHeadId\b/);
   assert.match(runtimeContract, /\bRopeHead\b/);
-  assert.match(runtimeContract, /\bTickReceipt\b/);
+  assert.match(runtimeContract, /\bRopeDiff\b/);
   assert.match(runtimeContract, /@wes_op/);
   assert.match(runtimeContract, /@wes_footprint/);
 });
@@ -126,8 +126,8 @@ test('contract generation scripts keep runtime and app-facing SDL targets explic
   const scripts = packageJson.scripts;
 
   assert.equal(
-    scripts['gen:contract:hot-text-runtime:wesley'],
-    'node scripts/run-wesley-tool.mjs cli emit typescript --schema contracts/jedit/hot-text-runtime.graphql --out src/generated/jedit/hot-text-runtime.wesley.generated.ts',
+    scripts['gen:contract:rope:wesley'],
+    'node scripts/run-wesley-tool.mjs cli emit typescript --schema contracts/jedit/rope.graphql --out src/generated/jedit/rope.wesley.generated.ts',
   );
   assert.equal(
     scripts['gen:contract:text-buffer-optic:wesley'],
@@ -135,7 +135,7 @@ test('contract generation scripts keep runtime and app-facing SDL targets explic
   );
   assert.equal(
     scripts['gen:contract:wesley'],
-    'npm run gen:contract:hot-text-runtime:wesley && npm run gen:contract:structural-history:wesley',
+    'npm run gen:contract:rope:wesley && npm run gen:contract:structural-history:wesley',
   );
   assert.equal(
     scripts['gen:contract:structural-history:wesley'],

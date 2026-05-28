@@ -6,7 +6,7 @@ import { pathToFileURL } from 'node:url';
 
 const REPO_ROOT = process.cwd();
 const PACKAGE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-package.js');
-const GENERATED_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'generated', 'jedit', 'hot-text-runtime.wesley.generated.js');
+const GENERATED_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'generated', 'jedit', 'rope.wesley.generated.js');
 const STRUCTURAL_HISTORY_GENERATED_MODULE_PATH = path.join(
   REPO_ROOT,
   'dist',

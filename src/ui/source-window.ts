@@ -1,4 +1,4 @@
-import type { QueryOperationMap } from '../generated/jedit/hot-text-runtime.types.generated.js';
+import type { QueryOperationMap } from '../generated/jedit/rope.types.generated.js';
 import { fitLine } from './workspace-render.js';
 
 const ZERO_INDEX = 0;

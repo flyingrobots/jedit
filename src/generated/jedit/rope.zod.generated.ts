@@ -13,11 +13,8 @@ export type AnchorBias = z.infer<typeof AnchorBiasSchema>;
 export const AnchorStickinessSchema = z.enum(["LEADING", "TRAILING", "EXPAND"]);
 export type AnchorStickiness = z.infer<typeof AnchorStickinessSchema>;
 
-export const TickKindSchema = z.enum(["BUFFER_CREATE", "TEXT_REWRITE", "CHECKPOINT_CREATE", "ANCHOR_REGISTER"]);
-export type TickKind = z.infer<typeof TickKindSchema>;
-
-export const TickReceiptRewriteKindSchema = z.enum(["CREATE_BUFFER_WORLDLINE", "REPLACE_RANGE_AS_TICK", "CREATE_CHECKPOINT", "REGISTER_ANCHOR"]);
-export type TickReceiptRewriteKind = z.infer<typeof TickReceiptRewriteKindSchema>;
+export const RewriteKindSchema = z.enum(["CREATE_BUFFER_WORLDLINE", "REPLACE_RANGE_AS_TICK", "CREATE_CHECKPOINT", "REGISTER_ANCHOR"]);
+export type RewriteKind = z.infer<typeof RewriteKindSchema>;
 
 export const CheckpointKindSchema = z.enum(["INITIAL", "MANUAL_SAVE", "AUTO_SAVE"]);
 export type CheckpointKind = z.infer<typeof CheckpointKindSchema>;
@@ -27,7 +24,7 @@ export const BufferWorldlineSchema = z.object({
   worldlineId: z.string(),
   bufferKey: z.string(),
   canonicalHeadId: z.string(),
-  createdAtTickId: z.string().nullable().optional(),
+  createdAtRopeRewriteId: z.string().nullable().optional(),
   projectionPath: z.string().nullable().optional()
 });
 export type BufferWorldline = z.infer<typeof BufferWorldlineSchema>;
@@ -83,21 +80,21 @@ export const AnchorSchema = z.object({
 });
 export type Anchor = z.infer<typeof AnchorSchema>;
 
-export const TickSchema = z.object({
-  tickId: z.string(),
+export const RopeRewriteSchema = z.object({
+  ropeRewriteId: z.string(),
   worldlineId: z.string(),
-  kind: TickKindSchema,
+  kind: RewriteKindSchema,
   sequenceNumber: z.number().int(),
   author: z.string().nullable().optional()
 });
-export type Tick = z.infer<typeof TickSchema>;
+export type RopeRewrite = z.infer<typeof RopeRewriteSchema>;
 
-export const TickReceiptSchema = z.object({
-  receiptId: z.string(),
-  tickId: z.string(),
+export const RopeDiffSchema = z.object({
+  ropeDiffId: z.string(),
+  ropeRewriteId: z.string(),
   baseHeadId: z.string(),
   nextHeadId: z.string(),
-  rewriteKind: TickReceiptRewriteKindSchema,
+  rewriteKind: RewriteKindSchema,
   startByte: z.number().int().nullable().optional(),
   endByte: z.number().int().nullable().optional(),
   insertedByteLength: z.number().int(),
@@ -105,7 +102,7 @@ export const TickReceiptSchema = z.object({
   inverseFragmentDigest: z.string().nullable().optional(),
   summary: z.string().nullable().optional()
 });
-export type TickReceipt = z.infer<typeof TickReceiptSchema>;
+export type RopeDiff = z.infer<typeof RopeDiffSchema>;
 
 export const CheckpointSchema = z.object({
   checkpointId: z.string(),
@@ -113,7 +110,7 @@ export const CheckpointSchema = z.object({
   headId: z.string(),
   kind: CheckpointKindSchema,
   label: z.string().nullable().optional(),
-  createdByTickId: z.string().nullable().optional()
+  createdByRopeRewriteId: z.string().nullable().optional()
 });
 export type Checkpoint = z.infer<typeof CheckpointSchema>;
 
@@ -156,8 +153,8 @@ export type CreateBufferWorldlineResult = z.infer<typeof CreateBufferWorldlineRe
 export const ReplaceRangeAsTickResultSchema = z.object({
   worldline: z.lazy(() => BufferWorldlineSchema),
   nextHead: z.lazy(() => RopeHeadSchema),
-  tick: z.lazy(() => TickSchema),
-  receipt: z.lazy(() => TickReceiptSchema)
+  ropeRewrite: z.lazy(() => RopeRewriteSchema),
+  ropeDiff: z.lazy(() => RopeDiffSchema)
 });
 export type ReplaceRangeAsTickResult = z.infer<typeof ReplaceRangeAsTickResultSchema>;
 
