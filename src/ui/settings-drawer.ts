@@ -30,6 +30,14 @@ export interface RenderSettingsDrawerOptions {
   readonly height: number;
 }
 
+interface PaintSettingsRowOptions {
+  readonly row: JeditSettingsRow;
+  readonly selected: boolean;
+  readonly x: number;
+  readonly y: number;
+  readonly theme: JeditTheme;
+}
+
 export function resolveSettingsDrawerWidth(columns: number): number {
   const boundedColumns = Math.max(SETTINGS_DRAWER_MIN_WIDTH, columns);
   return Math.min(
@@ -42,8 +50,8 @@ export function resolveSettingsDrawerWidth(columns: number): number {
 export function renderSettingsDrawer(options: RenderSettingsDrawerOptions): Surface {
   const surface = createSurface(options.width, options.height);
   fillSurface(surface, options.theme.surface.drawer);
-  paintText(surface, SETTINGS_TITLE, SETTINGS_LEFT_PAD, SETTINGS_HEADER_ROW, options.theme.markdown.get(JEDIT_MARKDOWN_TOKEN.Heading) ?? options.theme.surface.drawer);
-  paintText(surface, SETTINGS_CLOSE_HINT, SETTINGS_LEFT_PAD, SETTINGS_HINT_ROW, options.theme.source.get(JEDIT_SOURCE_TOKEN.Comment) ?? options.theme.surface.drawer);
+  paintText(surface, SETTINGS_TITLE, SETTINGS_LEFT_PAD, SETTINGS_HEADER_ROW, settingsTitleToken(options));
+  paintText(surface, SETTINGS_CLOSE_HINT, SETTINGS_LEFT_PAD, SETTINGS_HINT_ROW, settingsHintToken(options));
 
   let y = SETTINGS_FIRST_ROW;
   let section = '';
@@ -57,24 +65,43 @@ export function renderSettingsDrawer(options: RenderSettingsDrawerOptions): Surf
       paintText(surface, section, SETTINGS_LEFT_PAD, y, options.theme.markdown.get(JEDIT_MARKDOWN_TOKEN.HeadingSoft) ?? options.theme.surface.drawer);
       y += SETTINGS_ROW_GAP;
     }
-    paintSettingsRow(surface, row, index === options.selectedIndex, SETTINGS_LEFT_PAD, y, options.theme);
+    paintSettingsRow(surface, {
+      row,
+      selected: index === options.selectedIndex,
+      x: SETTINGS_LEFT_PAD,
+      y,
+      theme: options.theme,
+    });
     y += SETTINGS_ROW_HEIGHT;
   }
   return surface;
 }
 
-function paintSettingsRow(surface: Surface, row: JeditSettingsRow, selected: boolean, x: number, y: number, theme: JeditTheme): void {
-  if (y >= surface.height) {
+function paintSettingsRow(surface: Surface, options: PaintSettingsRowOptions): void {
+  if (options.y >= surface.height) {
     return;
   }
-  const label = fitLine(`${selected ? SETTINGS_SELECTED_MARK : SETTINGS_UNSELECTED_MARK} ${rowMark(row)} ${row.label} ${row.valueLabel}`, Math.max(1, surface.width - x));
-  const labelToken = selected ? theme.cursor.normal : theme.surface.drawer;
-  paintText(surface, label, x, y, labelToken);
+  const label = fitLine(settingsRowLabel(options), Math.max(1, surface.width - options.x));
+  const labelToken = options.selected ? options.theme.cursor.normal : options.theme.surface.drawer;
+  paintText(surface, label, options.x, options.y, labelToken);
 
-  if (y + 1 < surface.height) {
-    const descriptionToken = theme.source.get(JEDIT_SOURCE_TOKEN.Comment) ?? theme.surface.drawer;
-    paintText(surface, `  ${row.description}`, x, y + 1, descriptionToken);
+  if (options.y + 1 < surface.height) {
+    const descriptionToken = options.theme.source.get(JEDIT_SOURCE_TOKEN.Comment) ?? options.theme.surface.drawer;
+    paintText(surface, `  ${options.row.description}`, options.x, options.y + 1, descriptionToken);
   }
+}
+
+function settingsTitleToken(options: RenderSettingsDrawerOptions): JeditStyleToken {
+  return options.theme.markdown.get(JEDIT_MARKDOWN_TOKEN.Heading) ?? options.theme.surface.drawer;
+}
+
+function settingsHintToken(options: RenderSettingsDrawerOptions): JeditStyleToken {
+  return options.theme.source.get(JEDIT_SOURCE_TOKEN.Comment) ?? options.theme.surface.drawer;
+}
+
+function settingsRowLabel(options: PaintSettingsRowOptions): string {
+  const mark = options.selected ? SETTINGS_SELECTED_MARK : SETTINGS_UNSELECTED_MARK;
+  return `${mark} ${rowMark(options.row)} ${options.row.label} ${options.row.valueLabel}`;
 }
 
 function rowMark(row: JeditSettingsRow): string {

@@ -1,12 +1,19 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import ts from 'typescript';
+import { countForbiddenSyntax } from './quality-gate/syntax-counts.mjs';
 
 const ROOT = process.cwd();
 const SOURCE_ROOT = path.join(ROOT, 'src');
 const BASELINE_PATH = path.join(ROOT, 'quality-baseline.json');
 const MAX_LINES_PER_FILE = 500;
+const MAX_PARAMETERS_PER_FUNCTION = 5;
+const MAX_RUNTIME_IMPORTS_PER_FILE = 12;
+const MAX_FUNCTION_LINES = 35;
+const MAX_CYCLOMATIC_COMPLEXITY = 8;
+const MAX_NESTING_DEPTH = 4;
+const MAX_STATEMENTS_PER_FUNCTION = 25;
+const MAX_SOURCE_LINE_LENGTH = 160;
 const JSON_FLAG = '--json';
 
 function main() {
@@ -20,7 +27,7 @@ function main() {
     const relativePath = toRepoPath(filePath);
     const sourceText = fs.readFileSync(filePath, 'utf8');
     const lineCount = sourceText.split('\n').length;
-    const counts = countForbiddenTypeKeywords(relativePath, sourceText);
+    const counts = countForbiddenSyntax(relativePath, sourceText);
 
     const allowedLineCount = baseline.maxLines[relativePath] ?? MAX_LINES_PER_FILE;
     if (lineCount > allowedLineCount) {
@@ -43,32 +50,170 @@ function main() {
     }
 
     for (const key of ['any', 'unknown']) {
-      const actual = counts[key];
-      const allowed = baseline.forbiddenTypeKeywords[relativePath]?.[key] ?? 0;
-      if (actual > allowed) {
-        regressions.push({
-          file: relativePath,
-          rule: `no-${key}`,
-          actual,
-          allowed,
-        });
-      } else if (actual > 0) {
-        debt.push({
-          file: relativePath,
-          rule: `no-${key}`,
-          actual,
-          allowed,
-        });
-        if (actual < allowed) {
-          improvements.push(`${relativePath}: no-${key} improved ${allowed} -> ${actual}`);
-        }
-      }
+      recordCountRule({
+        relativePath,
+        rule: `no-${key}`,
+        actual: counts[key],
+        allowed: baseline.forbiddenTypeKeywords[relativePath]?.[key] ?? 0,
+        cleanLimit: 0,
+        regressions,
+        debt,
+        improvements,
+      });
     }
+
+    recordCountRule({
+      relativePath,
+      rule: 'no-enum',
+      actual: counts.enum,
+      allowed: baseline.enumDeclarations?.[relativePath] ?? 0,
+      cleanLimit: 0,
+      regressions,
+      debt,
+      improvements,
+    });
+    recordCountRule({
+      relativePath,
+      rule: 'no-throw-new-error',
+      actual: counts.throwNewError,
+      allowed: baseline.rawErrorThrows?.[relativePath] ?? 0,
+      cleanLimit: 0,
+      regressions,
+      debt,
+      improvements,
+    });
+    recordCountRule({
+      relativePath,
+      rule: 'no-type-assertion',
+      actual: counts.typeAssertion,
+      allowed: baseline.typeAssertions?.[relativePath] ?? 0,
+      cleanLimit: 0,
+      regressions,
+      debt,
+      improvements,
+    });
+    recordCountRule({
+      relativePath,
+      rule: 'max-parameters-5',
+      actual: counts.maxParameterCount,
+      allowed: baseline.maxParameters?.[relativePath] ?? MAX_PARAMETERS_PER_FUNCTION,
+      cleanLimit: MAX_PARAMETERS_PER_FUNCTION,
+      regressions,
+      debt,
+      improvements,
+    });
+    recordCountRule({
+      relativePath,
+      rule: 'no-boolean-parameter',
+      actual: counts.booleanParameter,
+      allowed: baseline.booleanParameters?.[relativePath] ?? 0,
+      cleanLimit: 0,
+      regressions,
+      debt,
+      improvements,
+    });
+    recordCountRule({
+      relativePath,
+      rule: 'no-anonymous-public-option-bag',
+      actual: counts.anonymousPublicOptionBag,
+      allowed: baseline.anonymousPublicOptionBags?.[relativePath] ?? 0,
+      cleanLimit: 0,
+      regressions,
+      debt,
+      improvements,
+    });
+    recordCountRule({
+      relativePath,
+      rule: 'max-imports-12',
+      actual: counts.runtimeImportCount,
+      allowed: baseline.runtimeImports?.[relativePath] ?? MAX_RUNTIME_IMPORTS_PER_FILE,
+      cleanLimit: MAX_RUNTIME_IMPORTS_PER_FILE,
+      regressions,
+      debt,
+      improvements,
+    });
+    recordCountRule({
+      relativePath,
+      rule: 'max-function-lines-35',
+      actual: counts.maxFunctionLineCount,
+      allowed: baseline.maxFunctionLines?.[relativePath] ?? MAX_FUNCTION_LINES,
+      cleanLimit: MAX_FUNCTION_LINES,
+      regressions,
+      debt,
+      improvements,
+    });
+    recordCountRule({
+      relativePath,
+      rule: 'complexity-8',
+      actual: counts.maxCyclomaticComplexity,
+      allowed: baseline.cyclomaticComplexity?.[relativePath] ?? MAX_CYCLOMATIC_COMPLEXITY,
+      cleanLimit: MAX_CYCLOMATIC_COMPLEXITY,
+      regressions,
+      debt,
+      improvements,
+    });
+    recordCountRule({
+      relativePath,
+      rule: 'max-depth-4',
+      actual: counts.maxNestingDepth,
+      allowed: baseline.maxDepth?.[relativePath] ?? MAX_NESTING_DEPTH,
+      cleanLimit: MAX_NESTING_DEPTH,
+      regressions,
+      debt,
+      improvements,
+    });
+    recordCountRule({
+      relativePath,
+      rule: 'max-statements-25',
+      actual: counts.maxStatementCount,
+      allowed: baseline.maxStatements?.[relativePath] ?? MAX_STATEMENTS_PER_FUNCTION,
+      cleanLimit: MAX_STATEMENTS_PER_FUNCTION,
+      regressions,
+      debt,
+      improvements,
+    });
+    recordCountRule({
+      relativePath,
+      rule: 'max-line-length-160',
+      actual: counts.maxSourceLineLength,
+      allowed: baseline.maxLineLength?.[relativePath] ?? MAX_SOURCE_LINE_LENGTH,
+      cleanLimit: MAX_SOURCE_LINE_LENGTH,
+      regressions,
+      debt,
+      improvements,
+    });
+    recordCountRule({
+      relativePath,
+      rule: 'no-magic-comparison-literal',
+      actual: counts.magicComparisonLiteral,
+      allowed: baseline.magicComparisonLiterals?.[relativePath] ?? 0,
+      cleanLimit: 0,
+      regressions,
+      debt,
+      improvements,
+    });
   }
 
   const result = {
     ok: regressions.length === 0,
-    enforcedRules: ['no-any', 'no-unknown', 'max-lines-500'],
+    enforcedRules: [
+      'no-any',
+      'no-unknown',
+      'no-enum',
+      'no-throw-new-error',
+      'no-type-assertion',
+      'max-parameters-5',
+      'no-boolean-parameter',
+      'no-anonymous-public-option-bag',
+      'max-imports-12',
+      'max-function-lines-35',
+      'complexity-8',
+      'max-depth-4',
+      'max-statements-25',
+      'max-line-length-160',
+      'no-magic-comparison-literal',
+      'max-lines-500',
+    ],
     fileCount: files.length,
     regressions,
     debt,
@@ -84,11 +229,50 @@ function main() {
   process.exitCode = result.ok ? 0 : 1;
 }
 
+function recordCountRule(options) {
+  if (options.actual > options.allowed) {
+    options.regressions.push({
+      file: options.relativePath,
+      rule: options.rule,
+      actual: options.actual,
+      allowed: options.allowed,
+    });
+    return;
+  }
+
+  if (options.actual <= options.cleanLimit) {
+    return;
+  }
+
+  options.debt.push({
+    file: options.relativePath,
+    rule: options.rule,
+    actual: options.actual,
+    allowed: options.allowed,
+  });
+  if (options.actual < options.allowed) {
+    options.improvements.push(`${options.relativePath}: ${options.rule} improved ${options.allowed} -> ${options.actual}`);
+  }
+}
+
 function loadBaseline() {
   if (!fs.existsSync(BASELINE_PATH)) {
     return {
       maxLines: {},
       forbiddenTypeKeywords: {},
+      enumDeclarations: {},
+      rawErrorThrows: {},
+      typeAssertions: {},
+      maxParameters: {},
+      booleanParameters: {},
+      anonymousPublicOptionBags: {},
+      runtimeImports: {},
+      maxFunctionLines: {},
+      cyclomaticComplexity: {},
+      maxDepth: {},
+      maxStatements: {},
+      maxLineLength: {},
+      magicComparisonLiterals: {},
     };
   }
 
@@ -112,27 +296,6 @@ function collectTypeScriptFiles(directory) {
     }
   }
   return files.sort();
-}
-
-function countForbiddenTypeKeywords(relativePath, sourceText) {
-  const sourceFile = ts.createSourceFile(relativePath, sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
-  const counts = {
-    any: 0,
-    unknown: 0,
-  };
-
-  visit(sourceFile);
-  return counts;
-
-  function visit(node) {
-    if (node.kind === ts.SyntaxKind.AnyKeyword) {
-      counts.any += 1;
-    }
-    if (node.kind === ts.SyntaxKind.UnknownKeyword) {
-      counts.unknown += 1;
-    }
-    ts.forEachChild(node, visit);
-  }
 }
 
 function toRepoPath(filePath) {

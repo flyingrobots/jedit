@@ -1,16 +1,29 @@
 import type { KeyMsg } from '@flyingrobots/bijou-tui';
 import type { FileSystemPort, DirectoryAction } from '../../ports/file-system.js';
-import { DIRECTORY_ACTION_OPEN, DIRECTORY_ACTION_REFRESH } from '../../ports/file-system.js';
+import { DIRECTORY_ACTION_OPEN, DIRECTORY_ACTION_REFRESH, FileEntryKinds } from '../../ports/file-system.js';
 import type { EditorFilePort } from '../../ports/editor-file.js';
 import type { GraftSessionPort } from '../../ports/graft-session.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import { createNotificationTickCmd, pushErrorToast } from '../../ui/feedback.js';
 import { clampIndex } from './viewport.js';
 import { withFocusPane } from './focus.js';
-import { beginEditorProjectionRefresh, isWorkspaceMarkdownFile, loadEditor } from './editor-session.js';
+import { isWorkspaceMarkdownFile } from './editor-session.js';
+import { ViewModes } from './view-mode.js';
+import { FocusPanes } from '../../ui/panel-focus.js';
 import type { WorkspaceModel } from './model.js';
+import { WorkspaceMessageTypes } from './msg.js';
 import type { WorkspaceMsg } from './msg.js';
 import { type Cmd } from '@flyingrobots/bijou-tui';
+import type { ProductionTextSession } from './production-text-session.js';
+import { createWorkspaceTextOpenCmd, defaultWorkspaceTextAperture } from './workspace-text-commands.js';
+import { pendingWorkspaceTextOpen } from './workspace-text-authority.js';
+import {
+  isWorkspaceBackKey,
+  isWorkspaceDownKey,
+  isWorkspaceOpenKey,
+  isWorkspaceRefreshKey,
+  isWorkspaceUpKey,
+} from './workspace-key.js';
 
 export const FILE_TREE_META_MIN = 0;
 
@@ -19,6 +32,7 @@ interface UpdateTreeFromKeyDeps {
   readonly editorFile: EditorFilePort;
   readonly sourceHighlighter: SourceHighlighter;
   readonly graftSession: GraftSessionPort;
+  readonly productionTextSession: ProductionTextSession;
 }
 
 export function updateTreeFromKey(
@@ -27,65 +41,91 @@ export function updateTreeFromKey(
   nowMs: () => number,
   deps: UpdateTreeFromKeyDeps,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
-  if (msg.key === 'r') {
+  const navigation = updateTreeNavigationFromKey(msg, model);
+  if (navigation != null) {
+    return [navigation, []];
+  }
+
+  if (isWorkspaceRefreshKey(msg)) {
     return changeDirectory(model, model.cwd, DIRECTORY_ACTION_REFRESH, nowMs, deps.fileSystem);
   }
-
-  if (msg.key === 'backspace' || msg.key === 'left' || msg.key === 'h') {
-    const parent = deps.fileSystem.dirname(model.cwd);
-    if (parent === model.cwd) {
-      return [model, []];
-    }
-
-    return changeDirectory(model, parent, DIRECTORY_ACTION_OPEN, nowMs, deps.fileSystem);
+  if (isWorkspaceBackKey(msg)) {
+    return openParentDirectory(model, nowMs, deps.fileSystem);
   }
+  return isWorkspaceOpenKey(msg)
+    ? openSelectedTreeEntry(model, nowMs, deps)
+    : [model, []];
+}
 
-  if (msg.key === 'down' || msg.key === 'j') {
-    return [
-      {
-        ...model,
-        selectedIndex: clampIndex(model.selectedIndex + 1, model.entries.length),
-      },
-      [],
-    ];
-  }
-
-  if (msg.key === 'up' || msg.key === 'k') {
-    return [
-      {
-        ...model,
-        selectedIndex: clampIndex(model.selectedIndex - 1, model.entries.length),
-      },
-      [],
-    ];
-  }
-
-  if (msg.key === 'enter' || msg.key === 'right' || msg.key === 'l') {
-    const entry = model.entries[model.selectedIndex];
-    if (entry == null) {
-      return [model, []];
-    }
-
-    if (entry.kind === 'dir' || entry.kind === 'parent') {
-      return changeDirectory(model, entry.path, DIRECTORY_ACTION_OPEN, nowMs, deps.fileSystem);
-    }
-
-    const editor = loadEditor(entry.path, deps.editorFile);
-    return beginEditorProjectionRefresh(withFocusPane({
+function updateTreeNavigationFromKey(msg: KeyMsg, model: WorkspaceModel): WorkspaceModel | undefined {
+  if (isWorkspaceDownKey(msg)) {
+    return {
       ...model,
-      editor,
-      viewMode: 'source',
-      graftInfo: undefined,
-      graftLoading: false,
-      graftSelectedIndex: 0,
-    }, 'editor'), model.graftDrawerOpen, {
-      editorFile: deps.editorFile,
-      sourceHighlighter: deps.sourceHighlighter,
-      graftSession: deps.graftSession,
-    });
+      selectedIndex: clampIndex(model.selectedIndex + 1, model.entries.length),
+    };
   }
+  if (isWorkspaceUpKey(msg)) {
+    return {
+      ...model,
+      selectedIndex: clampIndex(model.selectedIndex - 1, model.entries.length),
+    };
+  }
+  return undefined;
+}
 
-  return [model, []];
+function openParentDirectory(
+  model: WorkspaceModel,
+  nowMs: () => number,
+  fileSystem: FileSystemPort,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
+  const parent = fileSystem.dirname(model.cwd);
+  return parent === model.cwd
+    ? [model, []]
+    : changeDirectory(model, parent, DIRECTORY_ACTION_OPEN, nowMs, fileSystem);
+}
+
+function openSelectedTreeEntry(
+  model: WorkspaceModel,
+  nowMs: () => number,
+  deps: UpdateTreeFromKeyDeps,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
+  const entry = model.entries[model.selectedIndex];
+  if (entry == null) {
+    return [model, []];
+  }
+  if (entry.kind === FileEntryKinds.Directory || entry.kind === FileEntryKinds.Parent) {
+    return changeDirectory(model, entry.path, DIRECTORY_ACTION_OPEN, nowMs, deps.fileSystem);
+  }
+  return openEditorEntry(model, entry.path, nowMs, deps);
+}
+
+function openEditorEntry(
+  model: WorkspaceModel,
+  path: string,
+  nowMs: () => number,
+  deps: UpdateTreeFromKeyDeps,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
+  const requestId = model.textRequestId + 1;
+  const atMs = nowMs();
+  return [withFocusPane({
+    ...model,
+    textRequestId: requestId,
+    textAuthority: pendingWorkspaceTextOpen(model.textRuntimeProfile, path, requestId, atMs),
+    editor: undefined,
+    viewMode: ViewModes.Source,
+    graftInfo: undefined,
+    graftLoading: false,
+    graftSelectedIndex: 0,
+  }, FocusPanes.Editor), [
+    createWorkspaceTextOpenCmd({
+      requestId,
+      filePath: path,
+      editorFile: deps.editorFile,
+      productionTextSession: deps.productionTextSession,
+      atMs,
+      aperture: defaultWorkspaceTextAperture(),
+    }),
+  ]];
 }
 
 function openDirectory(
@@ -118,7 +158,7 @@ function changeDirectory(
       issue.message,
       nowMs(),
       () => createNotificationTickCmd((atMs: number): WorkspaceMsg => ({
-        type: 'notification-tick',
+        type: WorkspaceMessageTypes.NotificationTick,
         atMs,
       })),
     );

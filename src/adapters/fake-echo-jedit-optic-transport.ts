@@ -123,38 +123,34 @@ function executeObserve(
   request: JeditObserveRequest,
 ): JeditObserveResponse {
   try {
-    switch (request.operationName) {
-      case WORLDLINE_SNAPSHOT_OPERATION:
-        return {
-          status: JEDIT_TRANSPORT_STATUS_OK,
-          operationName: WORLDLINE_SNAPSHOT_OPERATION,
-          envelope: readWorldlineSnapshotWithObserverPlan(
-            runtime,
-            request.session,
-            request.frontierRef,
-            request.input,
-            hash,
-          ),
-        };
-      case TEXT_WINDOW_OPERATION:
-        return {
-          status: JEDIT_TRANSPORT_STATUS_OK,
-          operationName: TEXT_WINDOW_OPERATION,
-          envelope: readTextWindowWithObserverPlan(
-            runtime,
-            request.session,
-            request.frontierRef,
-            request.input,
-            hash,
-          ),
-        };
-      }
+    return executeObservedOperation(runtime, hash, request);
   } catch (error) {
     return {
       status: JEDIT_TRANSPORT_STATUS_OBSTRUCTED,
       operationName: request.operationName,
       obstruction: toObserveObstruction(request, error instanceof Error ? error : undefined),
     };
+  }
+}
+
+function executeObservedOperation(
+  runtime: HotTextRuntimePort,
+  hash: HashPort,
+  request: JeditObserveRequest,
+): JeditObserveResponse {
+  switch (request.operationName) {
+    case WORLDLINE_SNAPSHOT_OPERATION:
+      return {
+        status: JEDIT_TRANSPORT_STATUS_OK,
+        operationName: WORLDLINE_SNAPSHOT_OPERATION,
+        envelope: readWorldlineSnapshotWithObserverPlan(runtime, request.session, request.frontierRef, request.input, hash),
+      };
+    case TEXT_WINDOW_OPERATION:
+      return {
+        status: JEDIT_TRANSPORT_STATUS_OK,
+        operationName: TEXT_WINDOW_OPERATION,
+        envelope: readTextWindowWithObserverPlan(runtime, request.session, request.frontierRef, request.input, hash),
+      };
   }
 }
 

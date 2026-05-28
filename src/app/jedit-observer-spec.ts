@@ -89,40 +89,62 @@ export function createWorldlineSnapshotObserverSpec(): WorldlineSnapshotObserver
     observerName: WORLDLINE_SNAPSHOT_OBSERVER_NAME,
     kind: WORLDLINE_SNAPSHOT_OBSERVER_KIND,
     operationName: WORLDLINE_SNAPSHOT_OBSERVER_NAME,
-    aperture: {
-      kind: WORLDLINE_SNAPSHOT_APERTURE_KIND,
-      inputBinding: WORLDLINE_SNAPSHOT_INPUT_BINDING,
-      materialization: WORLDLINE_SNAPSHOT_MATERIALIZATION_KIND,
-      historyWindow: WORLDLINE_SNAPSHOT_HISTORY_WINDOW,
-      maxWorldlines: SINGLE_WORLDLINE,
-    },
-    basis: {
-      kind: WORLDLINE_SNAPSHOT_BASIS_KIND,
-      nodeKinds: WORLDLINE_SNAPSHOT_NODE_KINDS,
-      derivedSurfaces: WORLDLINE_SNAPSHOT_DERIVED_SURFACES,
-    },
-    state: {
-      mode: WORLDLINE_SNAPSHOT_STATE_MODE,
-      schemaId: WORLDLINE_SNAPSHOT_STATE_SCHEMA_ID,
-    },
-    update: {
-      kind: WORLDLINE_SNAPSHOT_UPDATE_KIND,
-    },
-    emit: {
-      kind: WORLDLINE_SNAPSHOT_EMIT_KIND,
-      readingSchemaId: WORLDLINE_SNAPSHOT_READING_SCHEMA_ID,
-    },
-    budgets: {
-      materialization: WORLDLINE_SNAPSHOT_MATERIALIZATION_KIND,
-      historyWindow: WORLDLINE_SNAPSHOT_HISTORY_WINDOW,
-      maxWorldlines: SINGLE_WORLDLINE,
-    },
-    rights: {
-      schemaId: WORLDLINE_SNAPSHOT_RIGHTS_SCHEMA_ID,
-      exposureTier: WORLDLINE_SNAPSHOT_EXPOSURE_TIER,
-      revelationTier: WORLDLINE_SNAPSHOT_REVELATION_TIER,
-      redactionPolicy: WORLDLINE_SNAPSHOT_REDACTION_POLICY,
-    },
+    aperture: worldlineSnapshotAperture(),
+    basis: worldlineSnapshotBasis(),
+    state: worldlineSnapshotStateSpec(),
+    update: { kind: WORLDLINE_SNAPSHOT_UPDATE_KIND },
+    emit: worldlineSnapshotEmitPlan(),
+    budgets: worldlineSnapshotBudget(),
+    rights: worldlineSnapshotRights(),
+  };
+}
+
+function worldlineSnapshotAperture(): WorldlineSnapshotObserverAperture {
+  return {
+    kind: WORLDLINE_SNAPSHOT_APERTURE_KIND,
+    inputBinding: WORLDLINE_SNAPSHOT_INPUT_BINDING,
+    materialization: WORLDLINE_SNAPSHOT_MATERIALIZATION_KIND,
+    historyWindow: WORLDLINE_SNAPSHOT_HISTORY_WINDOW,
+    maxWorldlines: SINGLE_WORLDLINE,
+  };
+}
+
+function worldlineSnapshotBasis(): WorldlineSnapshotObserverBasis {
+  return {
+    kind: WORLDLINE_SNAPSHOT_BASIS_KIND,
+    nodeKinds: WORLDLINE_SNAPSHOT_NODE_KINDS,
+    derivedSurfaces: WORLDLINE_SNAPSHOT_DERIVED_SURFACES,
+  };
+}
+
+function worldlineSnapshotStateSpec(): WorldlineSnapshotObserverStateSpec {
+  return {
+    mode: WORLDLINE_SNAPSHOT_STATE_MODE,
+    schemaId: WORLDLINE_SNAPSHOT_STATE_SCHEMA_ID,
+  };
+}
+
+function worldlineSnapshotEmitPlan(): WorldlineSnapshotObserverEmitPlan {
+  return {
+    kind: WORLDLINE_SNAPSHOT_EMIT_KIND,
+    readingSchemaId: WORLDLINE_SNAPSHOT_READING_SCHEMA_ID,
+  };
+}
+
+function worldlineSnapshotBudget(): WorldlineSnapshotObserverBudget {
+  return {
+    materialization: WORLDLINE_SNAPSHOT_MATERIALIZATION_KIND,
+    historyWindow: WORLDLINE_SNAPSHOT_HISTORY_WINDOW,
+    maxWorldlines: SINGLE_WORLDLINE,
+  };
+}
+
+function worldlineSnapshotRights(): WorldlineSnapshotObserverRights {
+  return {
+    schemaId: WORLDLINE_SNAPSHOT_RIGHTS_SCHEMA_ID,
+    exposureTier: WORLDLINE_SNAPSHOT_EXPOSURE_TIER,
+    revelationTier: WORLDLINE_SNAPSHOT_REVELATION_TIER,
+    redactionPolicy: WORLDLINE_SNAPSHOT_REDACTION_POLICY,
   };
 }
 

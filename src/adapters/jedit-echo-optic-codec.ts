@@ -6,23 +6,19 @@ import type {
   JeditWorldlineSession,
   ReplaceRangeAsTickExecution,
 } from '../app/jedit-contract-runtime.js';
-import type { WorldlineSnapshotReadingEnvelope } from '../app/jedit-observer-runtime.js';
-import type { TextWindowReadingEnvelope } from '../app/jedit-observer-runtime.js';
-import type {
-  MutationOperationName,
-  QueryOperationName,
-} from '../generated/jedit/hot-text-runtime.types.generated.js';
+import type { TextWindowReadingEnvelope, WorldlineSnapshotReadingEnvelope } from '../app/jedit-observer-runtime.js';
+import type { MutationOperationName, QueryOperationName } from '../generated/jedit/hot-text-runtime.types.generated.js';
 import {
-  createBufferWorldlineOperation,
-  createCheckpointOperation,
-  replaceRangeAsTickOperation,
-  textWindowOperation,
-  worldlineSnapshotOperation,
-  type CreateBufferWorldlineRequest,
-  type CreateCheckpointRequest,
-  type ReplaceRangeAsTickRequest,
-  type TextWindowRequest,
-  type WorldlineSnapshotRequest,
+  mutationCreateBufferWorldlineOperation,
+  mutationCreateCheckpointOperation,
+  mutationReplaceRangeAsTickOperation,
+  queryTextWindowOperation,
+  queryWorldlineSnapshotOperation,
+  type MutationCreateBufferWorldlineRequest,
+  type MutationCreateCheckpointRequest,
+  type MutationReplaceRangeAsTickRequest,
+  type QueryTextWindowRequest,
+  type QueryWorldlineSnapshotRequest,
 } from '../generated/jedit/hot-text-runtime.wesley.generated.js';
 import {
   BufferWorldlineSchema,
@@ -31,6 +27,7 @@ import {
   QueryOperationSchemas,
   TickKindSchema,
 } from '../generated/jedit/hot-text-runtime.zod.generated.js';
+import { JeditRetainedEvidenceInventorySchema } from './jedit-retained-evidence-codec.js';
 
 export const JEDIT_INTENT_REQUEST_KIND = 'jedit.intent-request';
 export const JEDIT_OBSERVE_REQUEST_KIND = 'jedit.observe-request';
@@ -38,16 +35,25 @@ export const JEDIT_SCHEDULER_STATUS_KIND = 'jedit.scheduler-status';
 export const JEDIT_TRANSPORT_STATUS_OK = 'OK';
 export const JEDIT_TRANSPORT_STATUS_OBSTRUCTED = 'OBSTRUCTED';
 
-export const CREATE_BUFFER_WORLDLINE_OPERATION = createBufferWorldlineOperation.fieldName;
-export const REPLACE_RANGE_AS_TICK_OPERATION = replaceRangeAsTickOperation.fieldName;
-export const CREATE_CHECKPOINT_OPERATION = createCheckpointOperation.fieldName;
-export const WORLDLINE_SNAPSHOT_OPERATION = worldlineSnapshotOperation.fieldName;
-export const TEXT_WINDOW_OPERATION = textWindowOperation.fieldName;
+export const CREATE_BUFFER_WORLDLINE_OPERATION = mutationCreateBufferWorldlineOperation.fieldName;
+export const REPLACE_RANGE_AS_TICK_OPERATION = mutationReplaceRangeAsTickOperation.fieldName;
+export const CREATE_CHECKPOINT_OPERATION = mutationCreateCheckpointOperation.fieldName;
+export const WORLDLINE_SNAPSHOT_OPERATION = queryWorldlineSnapshotOperation.fieldName;
+export const TEXT_WINDOW_OPERATION = queryTextWindowOperation.fieldName;
 
 const SCHEDULER_STATE_IDLE = 'IDLE';
+const INVALID_JSON_PAYLOAD_MESSAGE = 'invalid json payload';
 
 const TEXT_ENCODER = new TextEncoder();
 const TEXT_DECODER = new TextDecoder();
+
+export class InvalidJsonPayloadError extends Error {
+  public constructor() {
+    super(INVALID_JSON_PAYLOAD_MESSAGE);
+    this.name = 'InvalidJsonPayloadError';
+    Object.freeze(this);
+  }
+}
 
 const MutationOperationNameSchema = z.union([
   z.literal(CREATE_BUFFER_WORLDLINE_OPERATION),
@@ -89,6 +95,7 @@ const SaveCheckpointSchema = z.object({
 const HotTextBufferStateSchema = z.object({
   path: z.string(),
   currentRoot: BufferRootSchema,
+  roots: z.array(BufferRootSchema),
   ticks: z.array(AdmittedTickSchema),
   editGroups: z.array(EditGroupSchema),
   openEditGroup: OpenEditGroupSchema.optional(),
@@ -144,6 +151,7 @@ const TextWindowReadingEnvelopeSchema = z.object({
   operationName: z.literal(TEXT_WINDOW_OPERATION),
   frontierRef: z.string(),
   reading: QueryOperationSchemas.textWindow.result,
+  retainedEvidence: JeditRetainedEvidenceInventorySchema,
 });
 
 const CreateBufferWorldlineIntentRequestSchema = z.object({
@@ -266,24 +274,26 @@ const JeditObserveResponseSchema = z.union([
 export type JeditMutationOperationName = MutationOperationName;
 export type JeditQueryOperationName = QueryOperationName;
 
+type InputOf<Request extends { readonly input: object }> = Request['input'];
+
 export interface CreateBufferWorldlineIntentRequest {
   readonly kind: typeof JEDIT_INTENT_REQUEST_KIND;
   readonly operationName: typeof CREATE_BUFFER_WORLDLINE_OPERATION;
-  readonly input: CreateBufferWorldlineRequest['input'];
+  readonly input: InputOf<MutationCreateBufferWorldlineRequest>;
 }
 
 export interface ReplaceRangeAsTickIntentRequest {
   readonly kind: typeof JEDIT_INTENT_REQUEST_KIND;
   readonly operationName: typeof REPLACE_RANGE_AS_TICK_OPERATION;
   readonly session: JeditWorldlineSession;
-  readonly input: ReplaceRangeAsTickRequest['input'];
+  readonly input: InputOf<MutationReplaceRangeAsTickRequest>;
 }
 
 export interface CreateCheckpointIntentRequest {
   readonly kind: typeof JEDIT_INTENT_REQUEST_KIND;
   readonly operationName: typeof CREATE_CHECKPOINT_OPERATION;
   readonly session: JeditWorldlineSession;
-  readonly input: CreateCheckpointRequest['input'];
+  readonly input: InputOf<MutationCreateCheckpointRequest>;
 }
 
 export interface WorldlineSnapshotObserveRequest {
@@ -291,7 +301,7 @@ export interface WorldlineSnapshotObserveRequest {
   readonly operationName: typeof WORLDLINE_SNAPSHOT_OPERATION;
   readonly session: JeditWorldlineSession;
   readonly frontierRef: string;
-  readonly input: WorldlineSnapshotRequest['input'];
+  readonly input: InputOf<QueryWorldlineSnapshotRequest>;
 }
 
 export interface TextWindowObserveRequest {
@@ -299,7 +309,7 @@ export interface TextWindowObserveRequest {
   readonly operationName: typeof TEXT_WINDOW_OPERATION;
   readonly session: JeditWorldlineSession;
   readonly frontierRef: string;
-  readonly input: TextWindowRequest['input'];
+  readonly input: InputOf<QueryTextWindowRequest>;
 }
 
 export interface JeditTransportObstruction {
@@ -363,9 +373,7 @@ export type JeditIntentRequest =
   | CreateBufferWorldlineIntentRequest
   | ReplaceRangeAsTickIntentRequest
   | CreateCheckpointIntentRequest;
-export type JeditObserveRequest =
-  | WorldlineSnapshotObserveRequest
-  | TextWindowObserveRequest;
+export type JeditObserveRequest = WorldlineSnapshotObserveRequest | TextWindowObserveRequest;
 export type JeditIntentResponse =
   | CreateBufferWorldlineIntentOkResponse
   | ReplaceRangeAsTickIntentOkResponse
@@ -377,10 +385,9 @@ export type JeditObserveResponse =
   | JeditObserveObstructedResponse;
 
 type JsonPrimitive = string | number | boolean | null;
-type JsonRecord = { readonly [key: string]: JsonValueCandidate };
+type JsonObject = { readonly [key: string]: JsonValueCandidate };
 type JsonValue = JsonPrimitive | JsonObject | readonly JsonValue[];
-type JsonValueCandidate = JsonPrimitive | JsonRecord | readonly JsonValueCandidate[];
-type JsonObject = JsonRecord;
+type JsonValueCandidate = JsonPrimitive | JsonObject | readonly JsonValueCandidate[];
 
 export function encodeJeditIntentRequest(request: JeditIntentRequest): Uint8Array {
   return encodeJson(JeditIntentRequestSchema.parse(request));
@@ -455,7 +462,7 @@ function encodeJson(value: object): Uint8Array {
 function parseJsonBytes(bytes: Uint8Array): JsonValue {
   const value: JsonValueCandidate = JSON.parse(TEXT_DECODER.decode(bytes));
   if (!isJsonValue(value)) {
-    throw new Error('invalid json payload');
+    throw new InvalidJsonPayloadError();
   }
   return value;
 }
@@ -464,28 +471,26 @@ function isJsonValue(value: JsonValueCandidate): value is JsonValue {
   if (value === null) {
     return true;
   }
-  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+  if (isJsonPrimitive(value)) {
     return true;
   }
   if (Array.isArray(value)) {
-    for (const member of value) {
-      if (!isJsonValue(member)) {
-        return false;
-      }
-    }
-    return true;
+    return value.every(isJsonValue);
   }
   return isJsonRecord(value) && objectValuesAreJson(value);
 }
 
-function isJsonRecord(value: JsonValueCandidate): value is JsonRecord {
+function isJsonPrimitive(value: JsonValueCandidate): value is JsonPrimitive {
+  return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
+}
+
+function isJsonRecord(value: JsonValueCandidate): value is JsonObject {
   return !Array.isArray(value) && value !== null && typeof value === 'object';
 }
 
-function objectValuesAreJson(value: JsonRecord): boolean {
-  for (const key of Object.keys(value)) {
-    const member = value[key];
-    if (member === undefined || !isJsonValue(member)) {
+function objectValuesAreJson(value: JsonObject): boolean {
+  for (const member of Object.values(value)) {
+    if (!isJsonValue(member)) {
       return false;
     }
   }

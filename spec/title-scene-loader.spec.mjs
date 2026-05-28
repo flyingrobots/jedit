@@ -11,21 +11,27 @@ const TITLE_SCENE_LOADER_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'title-
 const TITLE_SCENE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-scene.js');
 const TITLE_MESH_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-mesh.js');
 const TITLE_BUNNY_MESH_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'title-bunny-mesh.js');
+let titleSceneLoaderModulesPromise;
 
 async function loadTitleSceneLoaderModules() {
-  const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
-    cwd: REPO_ROOT,
-    encoding: 'utf8',
-  });
+  if (titleSceneLoaderModulesPromise == null) {
+    titleSceneLoaderModulesPromise = Promise.resolve().then(async () => {
+      const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+      });
 
-  assert.equal(build.status, 0, build.stderr || build.stdout);
+      assert.equal(build.status, 0, build.stderr || build.stdout);
 
-  return {
-    loader: await import(pathToFileURL(TITLE_SCENE_LOADER_PATH).href),
-    titleScene: await import(pathToFileURL(TITLE_SCENE_PATH).href),
-    titleMesh: await import(pathToFileURL(TITLE_MESH_PATH).href),
-    titleBunnyMesh: await import(pathToFileURL(TITLE_BUNNY_MESH_PATH).href),
-  };
+      return {
+        loader: await import(pathToFileURL(TITLE_SCENE_LOADER_PATH).href),
+        titleScene: await import(pathToFileURL(TITLE_SCENE_PATH).href),
+        titleMesh: await import(pathToFileURL(TITLE_MESH_PATH).href),
+        titleBunnyMesh: await import(pathToFileURL(TITLE_BUNNY_MESH_PATH).href),
+      };
+    });
+  }
+  return titleSceneLoaderModulesPromise;
 }
 
 function normalize(vector) {
@@ -59,6 +65,22 @@ test('loaded mesh scenes do not expose scene-authored mesh position as ray-hit s
   assert.equal(Object.hasOwn(loadedMesh, 'position'), false);
   assert.ok(hit != null);
   assert.equal(hit.object, loadedMesh);
+});
+
+test('built-in scene loader accepts an injected scene directory without mutating dist scenes', async () => {
+  const { loader } = await loadTitleSceneLoaderModules();
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'jedit-source-scenes-'));
+  const sceneFile = path.join(directory, 'bunny.jedit-scene');
+  await fs.writeFile(sceneFile, JSON.stringify({ objects: [] }), 'utf8');
+
+  try {
+    const port = loader.createTitleSceneLoaderPort({ builtInSceneDirectories: [directory] });
+    const scene = await port.loadBuiltInTitleScene('bunny.jedit-scene', {});
+
+    assert.equal(scene.objects.length, 0);
+  } finally {
+    await fs.rm(directory, { recursive: true, force: true });
+  }
 });
 
 test('scene loader rejects malformed scene JSON with a decode error', async () => {

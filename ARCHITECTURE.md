@@ -28,6 +28,17 @@ The broader project doctrine is written down in
   UI translates Bijou events into app commands and renders app state into surfaces.
   UI does not own business rules.
 
+- `contracts/jedit`
+  Authored GraphQL SDL for jedit-owned structural/domain contracts.
+  These files are the contract authority; TypeScript models are transitional
+  evidence or generated/projection surfaces.
+
+- `src/generated`
+  Generated artifacts consumed by adapters or app boundaries.
+  Generated files are not hand-authored authority. Some artifacts are checked in
+  because existing tests consume them directly; the structural-history
+  `replaceTextRange` descriptor is generated during build/test and ignored.
+
 ## Non-Negotiables
 
 - One file, one runtime truth.
@@ -45,6 +56,32 @@ Compile-time types are not a substitute for runtime truth.
 - External input is untrusted until decoded at the adapter boundary.
 - Domain code works with validated runtime objects only.
 - Invalid states should be rejected early, not threaded through the system as loose primitives.
+
+## Contract Authority
+
+GraphQL SDL is the canonical structural contract for app-owned history and
+readings. Wesley generation is the intended path from SDL to operation
+metadata, codecs, request shapes, and later runtime bindings.
+
+The current structural-history authority is
+[`contracts/jedit/structural-history.graphql`](contracts/jedit/structural-history.graphql).
+It names text histories, revisions, replacement events, edit groups,
+checkpoints, provenance, command status, and evidence-bearing readings without
+canonizing the placeholder TypeScript storage shapes.
+
+The first generated-metadata consumer is deliberately narrow:
+
+```text
+contracts/jedit/structural-history.graphql
+-> wesley-cli 0.0.4 TypeScript emission
+-> ignored replaceTextRange descriptor under src/generated/jedit
+-> src/app/structural-history-replace-text-range.ts
+-> existing in-memory hot-text runtime executor
+```
+
+Generated metadata is now the authority for the `replaceTextRange` operation
+identity. Runtime execution remains transitional. Do not wire Echo, git-warp,
+SQLite, filesystem caches, or in-memory indexes into the structural-history SDL.
 
 ## Dependency Rule
 

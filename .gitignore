@@ -2,4 +2,6 @@ node_modules
 dist
 .codex/
 .wesley-cache/
+.jedit-cache/
 .obsidian/
+src/generated/**/*.wesley.generated.ts

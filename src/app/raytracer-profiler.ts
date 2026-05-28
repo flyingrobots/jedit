@@ -1,4 +1,5 @@
 import type { Cmd, RuntimeIssue } from '@flyingrobots/bijou-tui';
+import { RuntimeIssueLevels, RuntimeIssueSources } from './workspace/runtime-issue.js';
 
 export interface ProfilerFrame {
   readonly time: number;
@@ -26,21 +27,30 @@ export interface ProfilerTracePort {
   readonly endTrace: (handle: ProfilerHandle) => Promise<void>;
 }
 
-export type ProfilerMsg =
-  | { type: 'profiler-started'; filePath: string; fileHandle: ProfilerHandle }
-  | { type: 'profiler-stopped' };
+const PROFILER_MESSAGE_STARTED = 'profiler-started';
+const PROFILER_MESSAGE_STOPPED = 'profiler-stopped';
+const PROFILER_EFFECT_RUNTIME_ISSUE = 'runtime-issue';
 
-export type ProfilerEffectMsg = ProfilerMsg | { type: 'runtime-issue'; issue: RuntimeIssue };
+export const ProfilerMessageTypes = Object.freeze({
+  Started: PROFILER_MESSAGE_STARTED,
+  Stopped: PROFILER_MESSAGE_STOPPED,
+});
+
+export type ProfilerMsg =
+  | { type: typeof ProfilerMessageTypes.Started; filePath: string; fileHandle: ProfilerHandle }
+  | { type: typeof ProfilerMessageTypes.Stopped };
+
+export type ProfilerEffectMsg = ProfilerMsg | { type: typeof PROFILER_EFFECT_RUNTIME_ISSUE; issue: RuntimeIssue };
 
 export function createInitialProfilerState(): ProfilerState {
   return { active: false };
 }
 
 export function reduceProfilerMsg(state: ProfilerState, msg: ProfilerMsg): ProfilerState {
-  if (msg.type === 'profiler-started') {
+  if (msg.type === ProfilerMessageTypes.Started) {
     return { active: true, filePath: msg.filePath, fileHandle: msg.fileHandle };
   }
-  if (msg.type === 'profiler-stopped') {
+  if (msg.type === ProfilerMessageTypes.Stopped) {
     return { active: false };
   }
   return state;
@@ -53,58 +63,44 @@ export function toggleProfiler(
 ): [ProfilerState, Cmd<ProfilerEffectMsg>[]] {
   if (state.active && state.fileHandle != null) {
     const nextState = { ...state, active: false };
-    const activeHandle = state.fileHandle;
-    return [nextState, [
-      async (): Promise<ProfilerEffectMsg> => {
-        try {
-          await profiler.endTrace(activeHandle);
-          const stopped: ProfilerMsg = { type: 'profiler-stopped' };
-          return stopped;
-        } catch (err) {
-          return {
-            type: 'runtime-issue',
-            issue: {
-              message: `Failed to close profile: ${String(err)}`,
-              level: 'error',
-              source: 'command',
-              atMs: profiler.nowMs(),
-            },
-          };
-        }
-      },
-      (): ProfilerEffectMsg => {
-        return {
-          type: 'runtime-issue',
-          issue: {
-            message: `Profile trace saved to ${activeHandle.filePath}`,
-            level: 'warning',
-            source: 'command',
-            atMs: profiler.nowMs(),
-          },
-        };
-      },
-    ]];
+    return [nextState, [endProfilerTraceCmd(state.fileHandle, profiler)]];
   }
 
-  return [state, [
-    async (): Promise<ProfilerEffectMsg> => {
-      try {
-        const fileHandle = await profiler.beginTrace(workspaceRoot);
-        const started: ProfilerMsg = { type: 'profiler-started', filePath: fileHandle.filePath, fileHandle };
-        return started;
-      } catch (err) {
-        return {
-          type: 'runtime-issue',
-          issue: {
-            message: `Failed to start profile: ${String(err)}`,
-            level: 'error',
-            source: 'command',
-            atMs: profiler.nowMs(),
-          },
-        };
-      }
+  return [state, [startProfilerTraceCmd(workspaceRoot, profiler)]];
+}
+
+function endProfilerTraceCmd(activeHandle: ProfilerHandle, profiler: ProfilerTracePort): Cmd<ProfilerEffectMsg> {
+  return async (): Promise<ProfilerEffectMsg> => {
+    try {
+      await profiler.endTrace(activeHandle);
+      return runtimeIssueEffect(`Profile trace saved to ${activeHandle.filePath}`, RuntimeIssueLevels.Warning, profiler);
+    } catch (err) {
+      return runtimeIssueEffect(`Failed to close profile: ${String(err)}`, RuntimeIssueLevels.Error, profiler);
+    }
+  };
+}
+
+function startProfilerTraceCmd(workspaceRoot: string, profiler: ProfilerTracePort): Cmd<ProfilerEffectMsg> {
+  return async (): Promise<ProfilerEffectMsg> => {
+    try {
+      const fileHandle = await profiler.beginTrace(workspaceRoot);
+      return { type: ProfilerMessageTypes.Started, filePath: fileHandle.filePath, fileHandle };
+    } catch (err) {
+      return runtimeIssueEffect(`Failed to start profile: ${String(err)}`, RuntimeIssueLevels.Error, profiler);
+    }
+  };
+}
+
+function runtimeIssueEffect(message: string, level: RuntimeIssue['level'], profiler: ProfilerTracePort): ProfilerEffectMsg {
+  return {
+    type: PROFILER_EFFECT_RUNTIME_ISSUE,
+    issue: {
+      message,
+      level,
+      source: RuntimeIssueSources.Command,
+      atMs: profiler.nowMs(),
     },
-  ]];
+  };
 }
 
 export function streamProfilerFrame(
@@ -123,11 +119,11 @@ export function streamProfilerFrame(
       return undefined;
     } catch (err) {
       return {
-        type: 'runtime-issue',
+        type: PROFILER_EFFECT_RUNTIME_ISSUE,
         issue: {
           message: `Failed to stream profile: ${String(err)}`,
-          level: 'error',
-          source: 'command',
+          level: RuntimeIssueLevels.Error,
+          source: RuntimeIssueSources.Command,
           atMs: profiler.nowMs(),
         },
       };

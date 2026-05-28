@@ -3,8 +3,16 @@ export const DIRECTORY_ACTION_REFRESH = 2 as const;
 
 export type DirectoryAction = typeof DIRECTORY_ACTION_OPEN | typeof DIRECTORY_ACTION_REFRESH;
 
+export const FileEntryKinds = Object.freeze({
+  Parent: 'parent',
+  Directory: 'dir',
+  File: 'file',
+} as const);
+
+export type FileEntryKind = typeof FileEntryKinds[keyof typeof FileEntryKinds];
+
 export interface FileEntry {
-  readonly kind: 'parent' | 'dir' | 'file';
+  readonly kind: FileEntryKind;
   readonly name: string;
   readonly path: string;
 }

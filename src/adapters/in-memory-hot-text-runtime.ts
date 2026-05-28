@@ -42,9 +42,12 @@ export function createInMemoryHotTextRuntime(): HotTextRuntimePort {
 }
 
 function createBuffer(path: string, initialText: string): HotTextBufferState {
+  const currentRoot = createBufferRoot(initialText);
+
   return {
     path,
-    currentRoot: createBufferRoot(initialText),
+    currentRoot,
+    roots: [currentRoot],
     ticks: [],
     editGroups: [],
     checkpoints: [],
@@ -74,6 +77,7 @@ function admitReplaceRangeTick(
     nextState: {
       path: state.path,
       currentRoot: result.nextState.currentRoot,
+      roots: [...state.roots, result.nextState.currentRoot],
       ticks: [...result.nextState.ticks],
       editGroups: [...state.editGroups],
       openEditGroup: copyOpenEditGroup(state),
@@ -107,6 +111,7 @@ function saveCheckpoint(state: HotTextBufferState): SaveHotCheckpointResult {
     nextState: {
       path: state.path,
       currentRoot: state.currentRoot,
+      roots: [...state.roots],
       ticks: [...state.ticks],
       editGroups: [...state.editGroups],
       openEditGroup: copyOpenEditGroup(state),
@@ -156,6 +161,7 @@ function withEditGroupState(state: HotTextBufferState, next: EditGroupState): Ho
   return {
     path: state.path,
     currentRoot: state.currentRoot,
+    roots: [...state.roots],
     ticks: [...state.ticks],
     editGroups: [...next.groups],
     openEditGroup: next.openGroup == null ? undefined : {

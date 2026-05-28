@@ -1,5 +1,7 @@
 import type { KeyMsg } from '@flyingrobots/bijou-tui';
 import { clampIndex } from './viewport.js';
+import { EditorModes, PendingNormals, PendingOperators as PENDING_OPERATOR, type PendingNormal, type PendingOperator } from './editor/mode.js';
+import { EditorKeys as EDITOR_KEY, PastePlacements as PASTE_PLACEMENT } from './editor/key.js';
 import type { EditorState } from './editor/model.js';
 import * as editingHelpers from './editor-editing-helpers.js';
 
@@ -41,7 +43,86 @@ const {
   clampNormalCol,
 } = editingHelpers;
 
-const INSERT_MODE = 'insert';
+const INSERT_MODE = EditorModes.Insert;
+const INSERT_TAB_TEXT = '  ';
+const KEY_DESCRIPTOR_SEPARATOR = '|';
+const MODIFIER_ACTIVE = '1';
+const MODIFIER_INACTIVE = '0';
+const PREVIEW_MIN_SCROLL_ROW = 0;
+const PREVIEW_SCROLL_STEP = 1;
+const NORMAL_CURSOR_CLAMP_SENTINEL = Number.MAX_SAFE_INTEGER;
+
+interface EditorViewport {
+  readonly width: number;
+  readonly height: number;
+}
+
+export interface UpdateInsertModeOptions {
+  readonly viewportWidth: number;
+  readonly viewportHeight: number;
+  readonly allowTabIndent: boolean;
+}
+
+interface KeyDescriptor {
+  readonly key: string;
+  readonly ctrl?: boolean;
+  readonly alt?: boolean;
+  readonly shift?: boolean;
+}
+
+interface NormalCommandDefinition extends KeyDescriptor {
+  readonly run: (editor: EditorState, viewport: EditorViewport) => EditorState;
+}
+
+const PENDING_OPERATOR_BY_TOKEN = new Map<PendingNormal, PendingOperator>([
+  [PendingNormals.Change, PENDING_OPERATOR.Change],
+  [PendingNormals.Delete, PENDING_OPERATOR.Delete],
+  [PendingNormals.Yank, PENDING_OPERATOR.Yank],
+]);
+
+const NORMAL_COMMANDS: readonly NormalCommandDefinition[] = [
+  { key: EDITOR_KEY.I, run: (editor) => ({ ...editor, mode: INSERT_MODE }) },
+  { key: EDITOR_KEY.A, run: (editor) => enterInsertAfterCursor(editor) },
+  { key: EDITOR_KEY.A, shift: true, run: (editor) => enterInsertAtLineEnd(editor) },
+  { key: EDITOR_KEY.I, shift: true, run: (editor) => enterInsertAtFirstNonWhitespace(editor) },
+  { key: EDITOR_KEY.O, run: (editor) => openLineBelow(editor) },
+  { key: EDITOR_KEY.O, shift: true, run: (editor) => openLineAbove(editor) },
+  { key: EDITOR_KEY.U, run: (editor) => undo(editor) },
+  { key: EDITOR_KEY.R, ctrl: true, run: (editor) => redo(editor) },
+  { key: EDITOR_KEY.P, run: (editor) => pasteRegister(editor, PASTE_PLACEMENT.After) },
+  { key: EDITOR_KEY.P, shift: true, run: (editor) => pasteRegister(editor, PASTE_PLACEMENT.Before) },
+  { key: EDITOR_KEY.X, run: (editor) => deleteCharUnderCursor(editor) },
+  { key: EDITOR_KEY.W, run: (editor) => moveCursorToNextWordStart(editor) },
+  { key: EDITOR_KEY.B, run: (editor) => moveCursorToPreviousWordStart(editor) },
+  { key: EDITOR_KEY.E, run: (editor) => moveCursorToWordEnd(editor) },
+  { key: EDITOR_KEY.FirstNonWhitespace, run: (editor) => moveCursorToFirstNonWhitespace(editor) },
+  { key: EDITOR_KEY.D, run: (editor) => ({ ...editor, pendingNormal: PendingNormals.Delete }) },
+  { key: EDITOR_KEY.C, run: (editor) => ({ ...editor, pendingNormal: PendingNormals.Change }) },
+  { key: EDITOR_KEY.Y, run: (editor) => ({ ...editor, pendingNormal: PendingNormals.Yank }) },
+  { key: EDITOR_KEY.G, run: (editor) => ({ ...editor, pendingNormal: PendingNormals.GoTo }) },
+  { key: EDITOR_KEY.G, shift: true, run: (editor) => moveCursorToBottom(editor) },
+  { key: EDITOR_KEY.D, shift: true, run: (editor) => deleteToLineEnd(editor) },
+  { key: EDITOR_KEY.C, shift: true, run: (editor) => changeToLineEnd(editor) },
+  { key: EDITOR_KEY.Y, shift: true, run: (editor) => yankCurrentLine(editor) },
+  { key: EDITOR_KEY.LineStart, run: (editor) => moveCursorToLineStart(editor) },
+  { key: EDITOR_KEY.LineEnd, run: (editor) => moveCursorToLineEnd(editor) },
+  { key: EDITOR_KEY.H, run: (editor) => moveCursorLeftNormal(editor) },
+  { key: EDITOR_KEY.Left, run: (editor) => moveCursorLeftNormal(editor) },
+  { key: EDITOR_KEY.L, run: (editor) => moveCursorRightNormal(editor) },
+  { key: EDITOR_KEY.Right, run: (editor) => moveCursorRightNormal(editor) },
+  { key: EDITOR_KEY.J, run: (editor) => moveCursorVerticalNormal(editor, 1) },
+  { key: EDITOR_KEY.Down, run: (editor) => moveCursorVerticalNormal(editor, 1) },
+  { key: EDITOR_KEY.K, run: (editor) => moveCursorVerticalNormal(editor, -1) },
+  { key: EDITOR_KEY.Up, run: (editor) => moveCursorVerticalNormal(editor, -1) },
+  { key: EDITOR_KEY.PageUp, run: (editor, viewport) => moveCursorVerticalNormal(editor, -viewport.height) },
+  { key: EDITOR_KEY.PageDown, run: (editor, viewport) => moveCursorVerticalNormal(editor, viewport.height) },
+  { key: EDITOR_KEY.Home, run: (editor) => moveCursorToLineStart(editor) },
+  { key: EDITOR_KEY.End, run: (editor) => moveCursorToLineEnd(editor) },
+];
+
+const NORMAL_COMMAND_MAP = new Map<string, NormalCommandDefinition['run']>(
+  NORMAL_COMMANDS.map((command) => [keyDescriptorId(command), command.run]),
+);
 
 export function ensureEditorVisible(editor: EditorState, width: number, height: number): EditorState {
   const normalized = normalizeEditor(editor);
@@ -78,7 +159,7 @@ export function normalizeEditor(editor: EditorState): EditorState {
   const line = editor.lines[row] ?? '';
   const maxCol = editor.mode === INSERT_MODE
     ? line.length
-    : clampNormalCol(Number.MAX_SAFE_INTEGER, line);
+    : clampNormalCol(NORMAL_CURSOR_CLAMP_SENTINEL, line);
 
   return {
     ...editor,
@@ -90,64 +171,97 @@ export function normalizeEditor(editor: EditorState): EditorState {
 export function updateInsertMode(
   editor: EditorState,
   msg: KeyMsg,
-  viewportWidth: number,
-  viewportHeight: number,
-  allowTabIndent: boolean,
+  options: UpdateInsertModeOptions,
 ): EditorState {
+  const viewport: EditorViewport = {
+    width: Math.max(1, options.viewportWidth),
+    height: Math.max(1, options.viewportHeight),
+  };
+
+  if (msg.key === EDITOR_KEY.Escape) {
+    return ensureEditorVisible(enterNormalMode(editor), viewport.width, viewport.height);
+  }
   if (editor.readOnly) {
     return editor;
   }
-  const viewport = {
-    width: Math.max(1, viewportWidth),
-    height: Math.max(1, viewportHeight),
-  };
 
-  if (msg.key === 'escape') {
-    return ensureEditorVisible(enterNormalMode(editor), viewport.width, viewport.height);
-  }
-  if (msg.key === 'left') {
-    return ensureEditorVisible(moveCursorLeftInsert(editor), viewport.width, viewport.height);
-  }
-  if (msg.key === 'right') {
-    return ensureEditorVisible(moveCursorRightInsert(editor), viewport.width, viewport.height);
-  }
-  if (msg.key === 'up') {
-    return ensureEditorVisible(moveCursorVerticalInsert(editor, -1), viewport.width, viewport.height);
-  }
-  if (msg.key === 'down') {
-    return ensureEditorVisible(moveCursorVerticalInsert(editor, 1), viewport.width, viewport.height);
-  }
-  if (msg.key === 'home') {
-    return ensureEditorVisible({ ...editor, cursorCol: 0 }, viewport.width, viewport.height);
-  }
-  if (msg.key === 'end') {
-    return ensureEditorVisible({ ...editor, cursorCol: currentLine(editor).length }, viewport.width, viewport.height);
-  }
-  if (msg.key === 'pageup') {
-    return ensureEditorVisible(moveCursorVerticalInsert(editor, -viewport.height), viewport.width, viewport.height);
-  }
-  if (msg.key === 'pagedown') {
-    return ensureEditorVisible(moveCursorVerticalInsert(editor, viewport.height), viewport.width, viewport.height);
-  }
-  if (msg.key === 'backspace') {
-    return ensureEditorVisible(backspace(editor), viewport.width, viewport.height);
-  }
-  if (msg.key === 'delete') {
-    return ensureEditorVisible(deleteForward(editor), viewport.width, viewport.height);
-  }
-  if (msg.key === 'enter') {
-    return ensureEditorVisible(insertNewline(editor), viewport.width, viewport.height);
-  }
-  if (allowTabIndent && msg.key === 'tab') {
-    return ensureEditorVisible(insertText(editor, '  '), viewport.width, viewport.height);
-  }
-
-  const inserted = keyToText(msg);
-  if (inserted != null) {
-    return ensureEditorVisible(insertText(editor, inserted), viewport.width, viewport.height);
+  const edited = updateInsertNavigation(editor, msg, viewport)
+    ?? updateInsertMutation(editor, msg, options)
+    ?? updateInsertText(editor, msg);
+  if (edited != null) {
+    return ensureEditorVisible(edited, viewport.width, viewport.height);
   }
 
   return ensureEditorVisible(editor, viewport.width, viewport.height);
+}
+
+function updateInsertNavigation(
+  editor: EditorState,
+  msg: KeyMsg,
+  viewport: EditorViewport,
+): EditorState | undefined {
+  if (msg.key === EDITOR_KEY.Left) {
+    return moveCursorLeftInsert(editor);
+  }
+  if (msg.key === EDITOR_KEY.Right) {
+    return moveCursorRightInsert(editor);
+  }
+  return updateInsertVerticalNavigation(editor, msg, viewport);
+}
+
+function updateInsertVerticalNavigation(
+  editor: EditorState,
+  msg: KeyMsg,
+  viewport: EditorViewport,
+): EditorState | undefined {
+  if (msg.key === EDITOR_KEY.Up) {
+    return moveCursorVerticalInsert(editor, -1);
+  }
+  if (msg.key === EDITOR_KEY.Down) {
+    return moveCursorVerticalInsert(editor, 1);
+  }
+  if (msg.key === EDITOR_KEY.PageUp) {
+    return moveCursorVerticalInsert(editor, -viewport.height);
+  }
+  if (msg.key === EDITOR_KEY.PageDown) {
+    return moveCursorVerticalInsert(editor, viewport.height);
+  }
+  return updateInsertLineNavigation(editor, msg);
+}
+
+function updateInsertLineNavigation(editor: EditorState, msg: KeyMsg): EditorState | undefined {
+  if (msg.key === EDITOR_KEY.Home) {
+    return { ...editor, cursorCol: 0 };
+  }
+  if (msg.key === EDITOR_KEY.End) {
+    return { ...editor, cursorCol: currentLine(editor).length };
+  }
+  return undefined;
+}
+
+function updateInsertMutation(
+  editor: EditorState,
+  msg: KeyMsg,
+  options: Pick<UpdateInsertModeOptions, 'allowTabIndent'>,
+): EditorState | undefined {
+  if (msg.key === EDITOR_KEY.Backspace) {
+    return backspace(editor);
+  }
+  if (msg.key === EDITOR_KEY.Delete) {
+    return deleteForward(editor);
+  }
+  if (msg.key === EDITOR_KEY.Enter) {
+    return insertNewline(editor);
+  }
+  if (options.allowTabIndent && msg.key === EDITOR_KEY.Tab) {
+    return insertText(editor, INSERT_TAB_TEXT);
+  }
+  return undefined;
+}
+
+function updateInsertText(editor: EditorState, msg: KeyMsg): EditorState | undefined {
+  const inserted = keyToText(msg);
+  return inserted == null ? undefined : insertText(editor, inserted);
 }
 
 export function updateNormalMode(
@@ -161,160 +275,79 @@ export function updateNormalMode(
     height: Math.max(1, viewportHeight),
   };
 
-  if (msg.key === 'escape') {
+  if (msg.key === EDITOR_KEY.Escape) {
     return ensureEditorVisible({ ...editor, pendingNormal: undefined }, viewport.width, viewport.height);
   }
 
-  if (editor.pendingNormal === 'd') {
-    const cleared = { ...editor, pendingNormal: undefined };
-    const operated = applyPendingOperator(cleared, 'delete', msg);
-    if (operated != null) {
-      return ensureEditorVisible(operated, viewport.width, viewport.height);
-    }
-    return updateNormalMode(cleared, msg, viewport.width, viewport.height);
+  if (editor.readOnly) {
+    return ensureEditorVisible(editor, viewport.width, viewport.height);
   }
 
-  if (editor.pendingNormal === 'c') {
-    const cleared = { ...editor, pendingNormal: undefined };
-    const operated = applyPendingOperator(cleared, 'change', msg);
-    if (operated != null) {
-      return ensureEditorVisible(operated, viewport.width, viewport.height);
-    }
-    return updateNormalMode(cleared, msg, viewport.width, viewport.height);
+  const pendingResult = applyPendingNormal(editor, msg, viewport);
+  if (pendingResult != null) {
+    return pendingResult;
   }
 
-  if (editor.pendingNormal === 'y') {
-    const cleared = { ...editor, pendingNormal: undefined };
-    const operated = applyPendingOperator(cleared, 'yank', msg);
-    if (operated != null) {
-      return ensureEditorVisible(operated, viewport.width, viewport.height);
-    }
-    return updateNormalMode(cleared, msg, viewport.width, viewport.height);
-  }
-
-  if (editor.pendingNormal === 'g') {
-    const cleared = { ...editor, pendingNormal: undefined };
-    if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'g') {
-      return ensureEditorVisible(moveCursorToTop(cleared), viewport.width, viewport.height);
-    }
-    return updateNormalMode(cleared, msg, viewport.width, viewport.height);
-  }
-
-  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'i') {
-    return ensureEditorVisible({ ...editor, mode: INSERT_MODE }, viewport.width, viewport.height);
-  }
-  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'a') {
-    return ensureEditorVisible(enterInsertAfterCursor(editor), viewport.width, viewport.height);
-  }
-  if (!msg.ctrl && !msg.alt && msg.shift && msg.key === 'a') {
-    return ensureEditorVisible(enterInsertAtLineEnd(editor), viewport.width, viewport.height);
-  }
-  if (!msg.ctrl && !msg.alt && msg.shift && msg.key === 'i') {
-    return ensureEditorVisible(enterInsertAtFirstNonWhitespace(editor), viewport.width, viewport.height);
-  }
-  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'o') {
-    return ensureEditorVisible(openLineBelow(editor), viewport.width, viewport.height);
-  }
-  if (!msg.ctrl && !msg.alt && msg.shift && msg.key === 'o') {
-    return ensureEditorVisible(openLineAbove(editor), viewport.width, viewport.height);
-  }
-  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'u') {
-    return ensureEditorVisible(undo(editor), viewport.width, viewport.height);
-  }
-  if (msg.ctrl && !msg.alt && !msg.shift && msg.key === 'r') {
-    return ensureEditorVisible(redo(editor), viewport.width, viewport.height);
-  }
-  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'p') {
-    return ensureEditorVisible(pasteRegister(editor, 'after'), viewport.width, viewport.height);
-  }
-  if (!msg.ctrl && !msg.alt && msg.shift && msg.key === 'p') {
-    return ensureEditorVisible(pasteRegister(editor, 'before'), viewport.width, viewport.height);
-  }
-  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'x') {
-    return ensureEditorVisible(deleteCharUnderCursor(editor), viewport.width, viewport.height);
-  }
-  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'w') {
-    return ensureEditorVisible(moveCursorToNextWordStart(editor), viewport.width, viewport.height);
-  }
-  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'b') {
-    return ensureEditorVisible(moveCursorToPreviousWordStart(editor), viewport.width, viewport.height);
-  }
-  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'e') {
-    return ensureEditorVisible(moveCursorToWordEnd(editor), viewport.width, viewport.height);
-  }
-  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === '^') {
-    return ensureEditorVisible(moveCursorToFirstNonWhitespace(editor), viewport.width, viewport.height);
-  }
-  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'd') {
-    return ensureEditorVisible({ ...editor, pendingNormal: 'd' }, viewport.width, viewport.height);
-  }
-  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'c') {
-    return ensureEditorVisible({ ...editor, pendingNormal: 'c' }, viewport.width, viewport.height);
-  }
-  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'y') {
-    return ensureEditorVisible({ ...editor, pendingNormal: 'y' }, viewport.width, viewport.height);
-  }
-  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === 'g') {
-    return ensureEditorVisible({ ...editor, pendingNormal: 'g' }, viewport.width, viewport.height);
-  }
-  if (!msg.ctrl && !msg.alt && msg.shift && msg.key === 'g') {
-    return ensureEditorVisible(moveCursorToBottom(editor), viewport.width, viewport.height);
-  }
-  if (!msg.ctrl && !msg.alt && msg.shift && msg.key === 'd') {
-    return ensureEditorVisible(deleteToLineEnd(editor), viewport.width, viewport.height);
-  }
-  if (!msg.ctrl && !msg.alt && msg.shift && msg.key === 'c') {
-    return ensureEditorVisible(changeToLineEnd(editor), viewport.width, viewport.height);
-  }
-  if (!msg.ctrl && !msg.alt && msg.shift && msg.key === 'y') {
-    return ensureEditorVisible(yankCurrentLine(editor), viewport.width, viewport.height);
-  }
-  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === '0') {
-    return ensureEditorVisible(moveCursorToLineStart(editor), viewport.width, viewport.height);
-  }
-  if (!msg.ctrl && !msg.alt && !msg.shift && msg.key === '$') {
-    return ensureEditorVisible(moveCursorToLineEnd(editor), viewport.width, viewport.height);
-  }
-  if (!msg.ctrl && !msg.alt && (msg.key === 'h' || msg.key === 'left')) {
-    return ensureEditorVisible(moveCursorLeftNormal(editor), viewport.width, viewport.height);
-  }
-  if (!msg.ctrl && !msg.alt && (msg.key === 'l' || msg.key === 'right')) {
-    return ensureEditorVisible(moveCursorRightNormal(editor), viewport.width, viewport.height);
-  }
-  if (!msg.ctrl && !msg.alt && (msg.key === 'j' || msg.key === 'down')) {
-    return ensureEditorVisible(moveCursorVerticalNormal(editor, 1), viewport.width, viewport.height);
-  }
-  if (!msg.ctrl && !msg.alt && (msg.key === 'k' || msg.key === 'up')) {
-    return ensureEditorVisible(moveCursorVerticalNormal(editor, -1), viewport.width, viewport.height);
-  }
-  if (!msg.ctrl && !msg.alt && msg.key === 'pageup') {
-    return ensureEditorVisible(moveCursorVerticalNormal(editor, -viewport.height), viewport.width, viewport.height);
-  }
-  if (!msg.ctrl && !msg.alt && msg.key === 'pagedown') {
-    return ensureEditorVisible(moveCursorVerticalNormal(editor, viewport.height), viewport.width, viewport.height);
-  }
-  if (!msg.ctrl && !msg.alt && msg.key === 'home') {
-    return ensureEditorVisible(moveCursorToLineStart(editor), viewport.width, viewport.height);
-  }
-  if (!msg.ctrl && !msg.alt && msg.key === 'end') {
-    return ensureEditorVisible(moveCursorToLineEnd(editor), viewport.width, viewport.height);
+  const command = NORMAL_COMMAND_MAP.get(keyDescriptorId(msg));
+  if (command != null) {
+    return ensureEditorVisible(command(editor, viewport), viewport.width, viewport.height);
   }
 
   return ensureEditorVisible(editor, viewport.width, viewport.height);
 }
 
+function applyPendingNormal(
+  editor: EditorState,
+  msg: KeyMsg,
+  viewport: EditorViewport,
+): EditorState | undefined {
+  const pending = editor.pendingNormal;
+  if (pending == null) {
+    return undefined;
+  }
+
+  const cleared = { ...editor, pendingNormal: undefined };
+  if (pending === PendingNormals.GoTo) {
+    if (keyDescriptorId(msg) === keyDescriptorId({ key: EDITOR_KEY.G })) {
+      return ensureEditorVisible(moveCursorToTop(cleared), viewport.width, viewport.height);
+    }
+    return updateNormalMode(cleared, msg, viewport.width, viewport.height);
+  }
+
+  const operator = PENDING_OPERATOR_BY_TOKEN.get(pending);
+  const operated = operator == null ? undefined : applyPendingOperator(cleared, operator, msg);
+  if (operated != null) {
+    return ensureEditorVisible(operated, viewport.width, viewport.height);
+  }
+  return updateNormalMode(cleared, msg, viewport.width, viewport.height);
+}
+
+function keyDescriptorId(descriptor: KeyDescriptor): string {
+  return [
+    modifierId(descriptor.ctrl),
+    modifierId(descriptor.alt),
+    modifierId(descriptor.shift),
+    descriptor.key,
+  ].join(KEY_DESCRIPTOR_SEPARATOR);
+}
+
+function modifierId(value: boolean | undefined): string {
+  return value === true ? MODIFIER_ACTIVE : MODIFIER_INACTIVE;
+}
+
 export function scrollPreview(editor: EditorState, msg: KeyMsg, height: number): EditorState {
-  if (msg.key === 'up' || msg.key === 'k') {
-    return { ...editor, scrollRow: Math.max(0, editor.scrollRow - 1) };
+  const maxScrollRow = Math.max(PREVIEW_MIN_SCROLL_ROW, editor.lines.length - PREVIEW_SCROLL_STEP);
+  if (msg.key === EDITOR_KEY.Up || msg.key === EDITOR_KEY.K) {
+    return { ...editor, scrollRow: Math.max(PREVIEW_MIN_SCROLL_ROW, editor.scrollRow - PREVIEW_SCROLL_STEP) };
   }
-  if (msg.key === 'down' || msg.key === 'j') {
-    return { ...editor, scrollRow: editor.scrollRow + 1 };
+  if (msg.key === EDITOR_KEY.Down || msg.key === EDITOR_KEY.J) {
+    return { ...editor, scrollRow: Math.min(maxScrollRow, editor.scrollRow + PREVIEW_SCROLL_STEP) };
   }
-  if (msg.key === 'pageup') {
-    return { ...editor, scrollRow: Math.max(0, editor.scrollRow - height) };
+  if (msg.key === EDITOR_KEY.PageUp) {
+    return { ...editor, scrollRow: Math.max(PREVIEW_MIN_SCROLL_ROW, editor.scrollRow - height) };
   }
-  if (msg.key === 'pagedown') {
-    return { ...editor, scrollRow: editor.scrollRow + height };
+  if (msg.key === EDITOR_KEY.PageDown) {
+    return { ...editor, scrollRow: Math.min(maxScrollRow, editor.scrollRow + height) };
   }
   return editor;
 }

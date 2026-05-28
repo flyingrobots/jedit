@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 
 const REPO_ROOT = process.cwd();
 const CONTRACT_APP_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-runtime.js');
+const CONTRACT_ID_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-runtime-id.js');
 const ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'in-memory-hot-text-runtime.js');
 const HASH_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'hash.js');
 
@@ -17,13 +18,14 @@ async function loadModules() {
 
   assert.equal(build.status, 0, build.stderr || build.stdout);
 
-  const [contractApp, adapter, hashAdapter] = await Promise.all([
+  const [contractApp, contractIds, adapter, hashAdapter] = await Promise.all([
     import(pathToFileURL(CONTRACT_APP_MODULE_PATH).href),
+    import(pathToFileURL(CONTRACT_ID_MODULE_PATH).href),
     import(pathToFileURL(ADAPTER_MODULE_PATH).href),
     import(pathToFileURL(HASH_MODULE_PATH).href),
   ]);
 
-  return { contractApp, adapter, hash: hashAdapter.createHashPort() };
+  return { contractApp, contractIds, adapter, hash: hashAdapter.createHashPort() };
 }
 
 test('createBufferWorldline returns contract-shaped worldline and head data', async () => {
@@ -74,10 +76,58 @@ test('replaceRangeAsTick returns contract-shaped tick and receipt data', async (
   assert.equal(edited.result.receipt.baseHeadId, created.result.head.headId);
   assert.equal(edited.result.receipt.nextHeadId, edited.result.nextHead.headId);
   assert.equal(edited.result.receipt.rewriteKind, 'REPLACE_RANGE_AS_TICK');
+  assert.equal(edited.result.receipt.receiptId, 'receipt:1');
   assert.equal(edited.result.receipt.startByte, 5);
   assert.equal(edited.result.receipt.endByte, 5);
   assert.equal(edited.result.receipt.insertedByteLength, 10);
   assert.equal(edited.result.receipt.deletedByteLength, 0);
+});
+
+test('runtime id helpers round-trip numeric identifiers symmetrically', async () => {
+  const { contractIds } = await loadModules();
+
+  assert.equal(contractIds.parseRootNodeId(contractIds.toRootNodeId(7)), 7);
+  assert.equal(contractIds.parseCheckpointId(contractIds.toCheckpointId(8)), 8);
+  assert.equal(contractIds.parseTickId(contractIds.toTickId(9)), 9);
+  assert.equal(contractIds.parseReceiptId(contractIds.toReceiptId(10)), 10);
+  assert.throws(
+    () => contractIds.parseTickId('tick:not-a-number'),
+    (error) => error?.name === 'JeditRuntimeIdParseError',
+  );
+});
+
+test('JeditWorldlineSession reports invalid root identifiers with a dedicated error code', async () => {
+  const { contractApp } = await loadModules();
+
+  assert.throws(
+    () => new contractApp.JeditWorldlineSession({
+      worldlineId: 'wl:/repo/notes.md',
+      bufferKey: 'notes.md',
+      canonicalHeadId: 'head:0',
+      projectionPath: '/repo/notes.md',
+    }, {
+      currentRoot: { id: Number.NaN },
+      checkpoints: [],
+    }, [], []),
+    (error) => error?.name === 'JeditContractRuntimeError' && error.code === 'INVALID_ROOT_ID',
+  );
+});
+
+test('JeditWorldlineSession rejects malformed head identifiers before root comparison', async () => {
+  const { contractApp } = await loadModules();
+
+  assert.throws(
+    () => new contractApp.JeditWorldlineSession({
+      worldlineId: 'wl:/repo/notes.md',
+      bufferKey: 'notes.md',
+      canonicalHeadId: 'head:stale',
+      projectionPath: '/repo/notes.md',
+    }, {
+      currentRoot: { id: 0 },
+      checkpoints: [],
+    }, [], []),
+    (error) => error?.name === 'JeditContractRuntimeError' && error.code === 'INVALID_HEAD_ID',
+  );
 });
 
 test('createCheckpoint keeps checkpoint metadata in the app-owned adapter layer', async () => {

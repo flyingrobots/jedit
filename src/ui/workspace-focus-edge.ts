@@ -1,6 +1,6 @@
 import type { Cell, Surface } from '@flyingrobots/bijou';
 import type { WorkspaceLayout } from './drawer-layout.js';
-import type { FocusPane } from './panel-focus.js';
+import { FocusPanes, type FocusPane } from './panel-focus.js';
 import type { JeditStyleToken } from './jedit-theme.js';
 
 const MIN_EDGE_HEIGHT = 0;
@@ -45,15 +45,19 @@ export function paintActivePaneEdge(
 }
 
 export function activePaneEdgeX(layout: WorkspaceLayout, state: ActivePaneEdgeState): number | undefined {
-  if (state.focusPane === 'files') {
-    return state.fileDrawerOpen && layout.fileDrawer.width > 0 ? layout.fileDrawer.x : undefined;
+  if (state.focusPane === FocusPanes.Files) {
+    return visiblePaneEdgeX({ visible: state.fileDrawerOpen, width: layout.fileDrawer.width, x: layout.fileDrawer.x });
   }
 
-  if (state.focusPane === 'graft') {
-    return state.graftDrawerOpen && layout.graftDrawer.width > 0 ? layout.graftDrawer.x : undefined;
+  if (state.focusPane === FocusPanes.Graft) {
+    return visiblePaneEdgeX({ visible: state.graftDrawerOpen, width: layout.graftDrawer.width, x: layout.graftDrawer.x });
   }
 
-  return state.hasEditor && layout.viewer.width > 0 ? layout.viewer.x : undefined;
+  return visiblePaneEdgeX({ visible: state.hasEditor, width: layout.viewer.width, x: layout.viewer.x });
+}
+
+function visiblePaneEdgeX(options: { readonly visible: boolean; readonly width: number; readonly x: number }): number | undefined {
+  return options.visible && options.width > 0 ? options.x : undefined;
 }
 
 function edgeStyle(cell: Cell, token: JeditStyleToken): CellStyle {

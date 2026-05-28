@@ -11,7 +11,32 @@ const TRANSPORT_CLIENT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'j
 const FAKE_TRANSPORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'fake-echo-jedit-optic-transport.js');
 const HASH_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'hash.js');
 const CODEC_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-optic-codec.js');
+const READ_BASIS_HANDLE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'read-basis-handle-registry.js');
+const TEXT_BUFFER_SESSION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'text-buffer-session.js');
+const ECHO_BACKED_TEXT_BUFFER_SESSION_MODULE_PATH = path.join(
+  REPO_ROOT,
+  'dist',
+  'adapters',
+  'echo-backed-text-buffer-session.js',
+);
 const LEGACY_EAGER_LOAD_CAP_BYTES = 24 * 1024;
+const STACK_WITNESS_AUTHOR = 'stack-witness-0001';
+const STACK_WITNESS_BUFFER_KEY = 'demo.txt';
+const STACK_WITNESS_FRONTIER_REF = 'frontier:stack-witness-0001:B1';
+const STACK_WITNESS_TEXT = 'hello';
+const EMPTY_TEXT = '';
+const FIRST_BYTE_OFFSET = 0;
+const FIRST_LINE = 0;
+const SINGLE_LINE_WINDOW = 1;
+const SEMANTIC_READ_BASIS_HANDLE_PREFIX = 'text-buffer:';
+const RAW_BASIS_FIELD_NAMES = Object.freeze([
+  'worldlineId',
+  'basisRef',
+  'headId',
+  'tick',
+  'root',
+  'strand',
+]);
 const UTF8_ENCODER = new TextEncoder();
 
 async function loadModules() {
@@ -22,16 +47,39 @@ async function loadModules() {
 
   assert.equal(build.status, 0, build.stderr || build.stdout);
 
-  const [opticClientModule, adapter, transportClientModule, fakeTransportModule, hashModule, codecModule] = await Promise.all([
+  const [
+    opticClientModule,
+    adapter,
+    transportClientModule,
+    fakeTransportModule,
+    hashModule,
+    codecModule,
+    readBasisHandleModule,
+    textBufferSessionModule,
+    echoBackedTextBufferSessionModule,
+  ] = await Promise.all([
     import(pathToFileURL(OPTIC_CLIENT_MODULE_PATH).href),
     import(pathToFileURL(ADAPTER_MODULE_PATH).href),
     import(pathToFileURL(TRANSPORT_CLIENT_MODULE_PATH).href),
     import(pathToFileURL(FAKE_TRANSPORT_MODULE_PATH).href),
     import(pathToFileURL(HASH_MODULE_PATH).href),
     import(pathToFileURL(CODEC_MODULE_PATH).href),
+    import(pathToFileURL(READ_BASIS_HANDLE_MODULE_PATH).href),
+      import(pathToFileURL(TEXT_BUFFER_SESSION_MODULE_PATH).href),
+      import(pathToFileURL(ECHO_BACKED_TEXT_BUFFER_SESSION_MODULE_PATH).href),
   ]);
 
-  return { opticClientModule, adapter, transportClientModule, fakeTransportModule, hashModule, codecModule };
+  return {
+    opticClientModule,
+    adapter,
+    transportClientModule,
+    fakeTransportModule,
+    hashModule,
+    codecModule,
+    readBasisHandleModule,
+    textBufferSessionModule,
+    echoBackedTextBufferSessionModule,
+  };
 }
 
 test('in-memory optic client exposes GraphQL-shaped mutation and observer operations', async () => {
@@ -85,7 +133,11 @@ test('in-memory optic client exposes GraphQL-shaped mutation and observer operat
 });
 
 test('transport-backed optic client exercises the fake Echo host through encoded bytes', async () => {
-  const { transportClientModule, fakeTransportModule, codecModule } = await loadModules();
+  const {
+    transportClientModule,
+    fakeTransportModule,
+    codecModule,
+  } = await loadModules();
   const fakeTransport = fakeTransportModule.createFakeEchoJeditOpticTransport();
   const calls = [];
   const transport = {
@@ -168,8 +220,25 @@ test('transport-backed optic client exercises the fake Echo host through encoded
   assert.match(stale.obstruction.message, /Base head mismatch/);
 });
 
-test('transport-backed textWindow returns a bounded large-file reading', async () => {
-  const { transportClientModule, fakeTransportModule, codecModule } = await loadModules();
+test('codec exposes a typed invalid JSON payload error', async () => {
+  const { codecModule } = await loadModules();
+
+  assert.equal(typeof codecModule.InvalidJsonPayloadError, 'function');
+  assert.throws(
+    () => {
+      throw new codecModule.InvalidJsonPayloadError();
+    },
+    (error) => error?.name === 'InvalidJsonPayloadError',
+  );
+});
+
+test('transport-backed textWindow uses an opaque read basis handle', async () => {
+  const {
+    transportClientModule,
+    fakeTransportModule,
+    codecModule,
+    readBasisHandleModule,
+  } = await loadModules();
   const fakeTransport = fakeTransportModule.createFakeEchoJeditOpticTransport();
   const observedRequests = [];
   const transport = {
@@ -196,18 +265,70 @@ test('transport-backed textWindow returns a bounded large-file reading', async (
 
   assert.ok(byteLength(largeText) > LEGACY_EAGER_LOAD_CAP_BYTES);
 
-  const created = client.createBufferWorldline({
+  const opened = client.openTextBuffer({
     bufferKey: 'src/large-main.ts',
     initialText: largeText,
     projectionPath: '/tmp/src/large-main.ts',
     createInitialCheckpoint: false,
   });
 
+  assert.equal(opened.readBasisHandle.kind, 'read-basis-handle');
+  assert.equal(typeof opened.readBasisHandle.id, 'string');
+  assert.equal(opened.readBasisHandle.id.includes(opened.nextSession.worldline.worldlineId), false);
+  assert.equal(opened.readBasisHandle.id.includes(opened.nextSession.worldline.canonicalHeadId), false);
+  assert.equal(opened.readBasisHandle.id.includes(opened.nextSession.worldline.bufferKey), false);
+  assert.deepEqual(Object.keys(opened.readBasisHandle).sort(), ['id', 'kind']);
+  for (const rawFieldName of RAW_BASIS_FIELD_NAMES) {
+    assert.equal(
+      Object.hasOwn(opened.readBasisHandle, rawFieldName),
+      false,
+      `ReadBasisHandle must not expose ${rawFieldName}`,
+    );
+  }
+  const semanticReadBasisHandle = Object.freeze({
+    kind: opened.readBasisHandle.kind,
+    id: `${SEMANTIC_READ_BASIS_HANDLE_PREFIX}${opened.nextSession.worldline.bufferKey}`,
+  });
+  assert.throws(
+    () => client.textWindow(
+      opened.nextSession,
+      'frontier:text-window:semantic-forgery',
+      semanticReadBasisHandle,
+      {
+        cursorLine: 0,
+        viewportLineCount: 1,
+        beforeLines: 0,
+        afterLines: 0,
+        maxBytes: 128,
+      },
+    ),
+    readBasisHandleModule.ReadBasisHandleResolutionError,
+  );
+  const clonedReadBasisHandle = Object.freeze({
+    kind: opened.readBasisHandle.kind,
+    id: opened.readBasisHandle.id,
+  });
+  assert.throws(
+    () => client.textWindow(
+      opened.nextSession,
+      'frontier:text-window:cloned-handle',
+      clonedReadBasisHandle,
+      {
+        cursorLine: 0,
+        viewportLineCount: 1,
+        beforeLines: 0,
+        afterLines: 0,
+        maxBytes: 128,
+      },
+    ),
+    readBasisHandleModule.ReadBasisHandleResolutionError,
+  );
+
   const envelope = client.textWindow(
-    created.nextSession,
+    opened.nextSession,
     'frontier:text-window:1',
+    opened.readBasisHandle,
     {
-      worldlineId: created.nextSession.worldline.worldlineId,
       cursorLine: 500,
       viewportLineCount: 4,
       beforeLines: 1,
@@ -218,6 +339,7 @@ test('transport-backed textWindow returns a bounded large-file reading', async (
 
   assert.equal(observedRequests.length, 1);
   assert.equal(observedRequests[0].operationName, codecModule.TEXT_WINDOW_OPERATION);
+  assert.equal(observedRequests[0].input.worldlineId, opened.nextSession.worldline.worldlineId);
   assert.equal(envelope.operationName, codecModule.TEXT_WINDOW_OPERATION);
   assert.equal(envelope.frontierRef, 'frontier:text-window:1');
   assert.equal(envelope.reading.text, undefined);
@@ -234,6 +356,307 @@ test('transport-backed textWindow returns a bounded large-file reading', async (
   assert.equal(envelope.reading.lines[0].startByte, lineStartByte(largeLines, 499));
   assert.equal(envelope.reading.lines[0].endByte, lineStartByte(largeLines, 500) - 1);
   assert.ok(JSON.stringify(envelope.reading).length < byteLength(largeText));
+
+  const otherOpened = client.openTextBuffer({
+    bufferKey: 'src/other-main.ts',
+    initialText: 'other',
+    projectionPath: '/tmp/src/other-main.ts',
+    createInitialCheckpoint: false,
+  });
+  assert.throws(
+    () => client.textWindow(
+      otherOpened.nextSession,
+      'frontier:text-window:cross-session',
+      opened.readBasisHandle,
+      {
+        cursorLine: FIRST_LINE,
+        viewportLineCount: SINGLE_LINE_WINDOW,
+        beforeLines: FIRST_LINE,
+        afterLines: FIRST_LINE,
+        maxBytes: 128,
+      },
+    ),
+    readBasisHandleModule.ReadBasisHandleResolutionError,
+  );
+  const otherEnvelope = client.textWindow(
+    otherOpened.nextSession,
+    'frontier:text-window:other',
+    otherOpened.readBasisHandle,
+    {
+      cursorLine: FIRST_LINE,
+      viewportLineCount: SINGLE_LINE_WINDOW,
+      beforeLines: FIRST_LINE,
+      afterLines: FIRST_LINE,
+      maxBytes: 128,
+    },
+  );
+  assert.deepEqual(
+    otherEnvelope.reading.lines.map((line) => line.text),
+    ['other'],
+  );
+});
+
+test('Stack Witness 0001 walks createBuffer -> replaceRange -> textWindow through Echo transport', async () => {
+  const { transportClientModule, fakeTransportModule, codecModule } = await loadModules();
+  const fakeTransport = fakeTransportModule.createFakeEchoJeditOpticTransport();
+  const intentRequests = [];
+  const observeRequests = [];
+  const transport = {
+    kernelInfo() {
+      return fakeTransport.kernelInfo();
+    },
+    submitIntentBytes(bytes) {
+      intentRequests.push(codecModule.decodeJeditIntentRequest(bytes));
+      return fakeTransport.submitIntentBytes(bytes);
+    },
+    observeBytes(bytes) {
+      observeRequests.push(codecModule.decodeJeditObserveRequest(bytes));
+      return fakeTransport.observeBytes(bytes);
+    },
+    schedulerStatusBytes() {
+      return fakeTransport.schedulerStatusBytes();
+    },
+  };
+  const client = transportClientModule.createEchoTransportJeditOpticClient(transport);
+
+  const opened = client.openTextBuffer({
+    bufferKey: STACK_WITNESS_BUFFER_KEY,
+    initialText: EMPTY_TEXT,
+    projectionPath: STACK_WITNESS_BUFFER_KEY,
+    createInitialCheckpoint: false,
+  });
+
+  const edited = client.replaceRangeAsTick(opened.nextSession, {
+    worldlineId: opened.nextSession.worldline.worldlineId,
+    baseHeadId: opened.nextSession.worldline.canonicalHeadId,
+    startByte: FIRST_BYTE_OFFSET,
+    endByte: FIRST_BYTE_OFFSET,
+    insertText: STACK_WITNESS_TEXT,
+    author: STACK_WITNESS_AUTHOR,
+  });
+  assert.notEqual(
+    edited.nextSession.worldline.canonicalHeadId,
+    opened.nextSession.worldline.canonicalHeadId,
+  );
+
+  const envelope = client.textWindow(
+    edited.nextSession,
+    STACK_WITNESS_FRONTIER_REF,
+    opened.readBasisHandle,
+    {
+      cursorLine: FIRST_LINE,
+      viewportLineCount: SINGLE_LINE_WINDOW,
+      beforeLines: FIRST_LINE,
+      afterLines: FIRST_LINE,
+      maxBytes: byteLength(STACK_WITNESS_TEXT),
+    },
+  );
+
+  assert.deepEqual(
+    intentRequests.map((request) => request.operationName),
+    [
+      codecModule.CREATE_BUFFER_WORLDLINE_OPERATION,
+      codecModule.REPLACE_RANGE_AS_TICK_OPERATION,
+    ],
+  );
+  assert.equal(observeRequests.length, 1);
+  assert.equal(observeRequests[0].operationName, codecModule.TEXT_WINDOW_OPERATION);
+  assert.equal(envelope.operationName, codecModule.TEXT_WINDOW_OPERATION);
+  assert.equal(envelope.frontierRef, STACK_WITNESS_FRONTIER_REF);
+  assert.equal(envelope.reading.worldline.worldlineId, edited.nextSession.worldline.worldlineId);
+  assert.equal(envelope.reading.head.headId, edited.nextSession.worldline.canonicalHeadId);
+  assert.equal(envelope.reading.startLine, FIRST_LINE);
+  assert.equal(envelope.reading.lineCount, SINGLE_LINE_WINDOW);
+  assert.equal(envelope.reading.totalLineCount, SINGLE_LINE_WINDOW);
+  assert.equal(envelope.reading.hasMoreBefore, false);
+  assert.equal(envelope.reading.hasMoreAfter, false);
+  assert.deepEqual(
+    envelope.reading.lines.map((line) => line.text),
+    [STACK_WITNESS_TEXT],
+  );
+  assert.equal(envelope.reading.lines[0].startByte, FIRST_BYTE_OFFSET);
+  assert.equal(envelope.reading.lines[0].endByte, byteLength(STACK_WITNESS_TEXT));
+});
+
+test('TextBufferOptic creates, edits, and reads without exposing runtime coordinates', async () => {
+  const {
+    transportClientModule,
+    fakeTransportModule,
+    textBufferSessionModule,
+  } = await loadModules();
+  const client = transportClientModule.createEchoTransportJeditOpticClient(
+    fakeTransportModule.createFakeEchoJeditOpticTransport(),
+  );
+  const session = textBufferSessionModule.createTextBufferSession(client);
+
+  const optic = await session.createBuffer({
+    bufferKey: STACK_WITNESS_BUFFER_KEY,
+    initialText: EMPTY_TEXT,
+    projectionPath: STACK_WITNESS_BUFFER_KEY,
+  });
+  const readBasis = optic.currentReadBasis();
+
+  assert.deepEqual(Object.keys(optic.buffer).sort(), [
+    'bufferId',
+    'bufferKey',
+    'createdAt',
+    'projectionPath',
+  ]);
+  assert.equal(optic.buffer.bufferKey, STACK_WITNESS_BUFFER_KEY);
+  for (const rawFieldName of RAW_BASIS_FIELD_NAMES) {
+    assert.equal(Object.hasOwn(optic, rawFieldName), false);
+    assert.equal(Object.hasOwn(optic.buffer, rawFieldName), false);
+    assert.equal(Object.hasOwn(readBasis, rawFieldName), false);
+  }
+
+  const applied = await optic.applyIntent({
+    kind: 'replaceRange',
+    startByte: FIRST_BYTE_OFFSET,
+    endByte: FIRST_BYTE_OFFSET,
+    insertText: STACK_WITNESS_TEXT,
+  });
+
+  assert.equal(applied.buffer.bufferId, optic.buffer.bufferId);
+  assert.equal(applied.readBasis, optic.currentReadBasis());
+  assert.equal(applied.bufferVersion, 1);
+  assert.equal(typeof applied.receiptId, 'string');
+
+  const observed = await optic.textWindow(optic.currentReadBasis(), {
+    cursorLine: FIRST_LINE,
+    viewportLineCount: SINGLE_LINE_WINDOW,
+    beforeLines: FIRST_LINE,
+    afterLines: FIRST_LINE,
+    maxBytes: byteLength(STACK_WITNESS_TEXT),
+  });
+
+  assert.equal(observed.value.cursorLine, FIRST_LINE);
+  assert.equal(observed.value.viewportLineCount, SINGLE_LINE_WINDOW);
+  assert.equal(observed.value.lineCount, SINGLE_LINE_WINDOW);
+  assert.equal(observed.value.byteLength, byteLength(STACK_WITNESS_TEXT));
+  assert.equal(observed.value.truncated, false);
+  assert.deepEqual(
+    observed.value.lines.map((line) => line.text),
+    [STACK_WITNESS_TEXT],
+  );
+  assert.equal(observed.evidence.readingId, observed.value.readingId);
+});
+
+test('TextBufferOptic rejects cloned read basis handles', async () => {
+  const {
+    transportClientModule,
+    fakeTransportModule,
+    readBasisHandleModule,
+    textBufferSessionModule,
+  } = await loadModules();
+  const client = transportClientModule.createEchoTransportJeditOpticClient(
+    fakeTransportModule.createFakeEchoJeditOpticTransport(),
+  );
+  const session = textBufferSessionModule.createTextBufferSession(client);
+  const optic = await session.createBuffer({
+    bufferKey: STACK_WITNESS_BUFFER_KEY,
+    initialText: STACK_WITNESS_TEXT,
+    projectionPath: STACK_WITNESS_BUFFER_KEY,
+  });
+  const clonedReadBasis = Object.freeze({
+    kind: optic.currentReadBasis().kind,
+    id: optic.currentReadBasis().id,
+  });
+
+  await assert.rejects(
+    () => optic.textWindow(clonedReadBasis, {
+      cursorLine: FIRST_LINE,
+      viewportLineCount: SINGLE_LINE_WINDOW,
+      beforeLines: FIRST_LINE,
+      afterLines: FIRST_LINE,
+      maxBytes: byteLength(STACK_WITNESS_TEXT),
+    }),
+    readBasisHandleModule.ReadBasisHandleResolutionError,
+  );
+});
+
+test('TextBufferOptic does not mark a satisfied bounded aperture as truncated', async () => {
+  const {
+    transportClientModule,
+    fakeTransportModule,
+    textBufferSessionModule,
+  } = await loadModules();
+  const client = transportClientModule.createEchoTransportJeditOpticClient(
+    fakeTransportModule.createFakeEchoJeditOpticTransport(),
+  );
+  const session = textBufferSessionModule.createTextBufferSession(client);
+  const lines = ['alpha', 'bravo', 'charlie', 'delta', 'echo'];
+  const optic = await session.createBuffer({
+    bufferKey: 'demo-multiline.txt',
+    initialText: lines.join('\n'),
+    projectionPath: 'demo-multiline.txt',
+  });
+
+  const observed = await optic.textWindow(optic.currentReadBasis(), {
+    cursorLine: 2,
+    viewportLineCount: 1,
+    beforeLines: 1,
+    afterLines: 1,
+    maxBytes: 1024,
+  });
+
+  assert.deepEqual(
+    observed.value.lines.map((line) => line.text),
+    ['bravo', 'charlie', 'delta'],
+  );
+  assert.equal(observed.value.truncated, false);
+
+  const byteBounded = await optic.textWindow(optic.currentReadBasis(), {
+    cursorLine: 2,
+    viewportLineCount: 1,
+    beforeLines: 1,
+    afterLines: 1,
+    maxBytes: 6,
+  });
+
+  assert.deepEqual(
+    byteBounded.value.lines.map((line) => line.text),
+    ['bravo'],
+  );
+  assert.equal(byteBounded.value.truncated, true);
+});
+
+test('Echo-backed TextBufferSession port does not request lifecycle during app-facing dispatch', async () => {
+  const {
+    transportClientModule,
+    fakeTransportModule,
+    echoBackedTextBufferSessionModule,
+  } = await loadModules();
+  const client = transportClientModule.createEchoTransportJeditOpticClient(
+    fakeTransportModule.createFakeEchoJeditOpticTransport(),
+  );
+  const session = echoBackedTextBufferSessionModule.createEchoBackedTextBufferSession({
+    client,
+  });
+
+  const optic = await session.createBuffer({
+    bufferKey: STACK_WITNESS_BUFFER_KEY,
+    initialText: EMPTY_TEXT,
+    projectionPath: STACK_WITNESS_BUFFER_KEY,
+  });
+  await optic.applyIntent({
+    kind: 'replaceRange',
+    startByte: FIRST_BYTE_OFFSET,
+    endByte: FIRST_BYTE_OFFSET,
+    insertText: STACK_WITNESS_TEXT,
+  });
+  const observed = await optic.textWindow(optic.currentReadBasis(), {
+    cursorLine: FIRST_LINE,
+    viewportLineCount: SINGLE_LINE_WINDOW,
+    beforeLines: FIRST_LINE,
+    afterLines: FIRST_LINE,
+    maxBytes: byteLength(STACK_WITNESS_TEXT),
+  });
+
+  assert.equal(observed.value.lines[0].text, STACK_WITNESS_TEXT);
+  assert.equal('requestRunUntilIdle' in session, false);
+  assert.equal('tick' in session, false);
+  assert.equal('requestRunUntilIdle' in optic, false);
+  assert.equal('tick' in optic, false);
 });
 
 function byteLength(text) {

@@ -1,4 +1,6 @@
 import * as fs from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SceneDecodeError, SceneLoadError } from '../domain/errors.js';
 import { TITLE_SCENE_FLOOR_KIND, type TitleSceneEnvironment } from '../ui/title-scene-environment.js';
@@ -13,32 +15,41 @@ import {
 type JsonValue = null | boolean | number | string | readonly JsonValue[] | JsonObject;
 type JsonObject = { readonly [key: string]: JsonValue | undefined };
 
+export interface TitleSceneLoaderOptions {
+  readonly builtInSceneDirectories?: readonly string[];
+}
+
 const DEFAULT_CAMERA_ANGLE = 0;
 const DEFAULT_CAMERA_RADIUS = 8.5;
 const VECTOR_LENGTH = 3;
 const COLOR_CHANNEL_MIN = 0;
 const COLOR_CHANNEL_MAX = 255;
 const BUILT_IN_TITLE_SCENE_SET = new Set<string>(BUILT_IN_TITLE_SCENE_NAMES);
+const BUILT_IN_SCENE_CANDIDATE_URLS = [
+  (name: BuiltInTitleSceneName): URL => new URL(`../scenes/${name}`, import.meta.url),
+  (name: BuiltInTitleSceneName): URL => new URL(`../../scenes/${name}`, import.meta.url),
+] as const;
 
 export async function loadTitleSceneFromFile(path: string, meshes: TitleMeshLibrary): Promise<TitleScene> {
   const content = await fs.readFile(path, 'utf8');
   let json: JsonValue;
   try {
-    json = JSON.parse(content) as JsonValue;
+    json = parseJsonText(content);
   } catch (error) {
     throw new SceneDecodeError(`Scene JSON is malformed: ${error instanceof Error ? error.message : String(error)}`);
   }
   return parseTitleSceneJson(json, meshes);
 }
 
+function parseJsonText(content: string): JsonValue {
+  return JSON.parse(content);
+}
+
 export async function loadBuiltInTitleScene(name: BuiltInTitleSceneName, meshes: TitleMeshLibrary): Promise<TitleScene> {
   if (!BUILT_IN_TITLE_SCENE_SET.has(name)) {
     throw new SceneDecodeError(`Unknown built-in scene '${name}'.`);
   }
-  // Built-in scenes resolve from the compiled adapter at `dist/adapters/`.
-  // `scripts/copy-assets.mjs` copies `scenes/` to `dist/scenes/` during build;
-  // update this path if the dist layout changes.
-  return loadTitleSceneFromFile(fileURLToPath(new URL(`../scenes/${name}`, import.meta.url)), meshes);
+  return loadTitleSceneFromFile(resolveBuiltInTitleScenePath(name, undefined), meshes);
 }
 
 export function parseTitleSceneJson(json: JsonValue, meshes: TitleMeshLibrary): TitleScene {
@@ -52,10 +63,15 @@ export function parseTitleSceneJson(json: JsonValue, meshes: TitleMeshLibrary): 
   return { camera, objects, environment };
 }
 
-export function createTitleSceneLoaderPort(): TitleSceneLoaderPort {
+export function createTitleSceneLoaderPort(options: TitleSceneLoaderOptions = {}): TitleSceneLoaderPort {
   return {
     loadTitleSceneFromFile,
-    loadBuiltInTitleScene,
+    loadBuiltInTitleScene: async (name, meshes) => {
+      if (!BUILT_IN_TITLE_SCENE_SET.has(name)) {
+        throw new SceneDecodeError(`Unknown built-in scene '${name}'.`);
+      }
+      return loadTitleSceneFromFile(resolveBuiltInTitleScenePath(name, options.builtInSceneDirectories), meshes);
+    },
   };
 }
 
@@ -79,7 +95,10 @@ function decodeEnvironment(value: JsonValue | undefined): TitleSceneEnvironment 
     ...(environment['background'] == null ? {} : { background: colorAt(environment['background'], 'scene.environment.background') }),
     ...(environment['floor'] == null ? {} : { floor: decodeFloor(environment['floor']) }),
     ...(environment['light'] == null ? {} : { light: decodeLight(environment['light']) }),
-    ...(environment['walls'] == null ? {} : { walls: arrayAt(environment['walls'], 'scene.environment.walls').map((wall, index) => decodeWall(wall, `scene.environment.walls[${index}]`)) }),
+    ...(environment['walls'] == null ? {} : {
+      walls: arrayAt(environment['walls'], 'scene.environment.walls')
+        .map((wall, index) => decodeWall(wall, `scene.environment.walls[${index}]`)),
+    }),
   };
 }
 
@@ -126,13 +145,14 @@ function decodeSceneObject(value: JsonValue, meshes: TitleMeshLibrary, path: str
   if (kind === TITLE_SCENE_SHAPE_KIND.Mesh) {
     const meshId = meshIdAt(object['mesh'], `${path}.mesh`);
     const mesh = titleSceneObjectMesh(meshId, meshes, path);
+    const radius = nonNegativeNumberAt(object['radius'], `${path}.radius`);
     // TODO: Mesh placement needs a real local/world transform pipeline.
     // Mesh scene JSON intentionally has no position field until that exists.
     return {
       kind: TITLE_SCENE_SHAPE_KIND.Mesh,
       mesh,
-      radius: nonNegativeNumberAt(object['radius'], `${path}.radius`),
-      footprintRadius: optionalNonNegativeNumber(object['footprintRadius'], `${path}.footprintRadius`) ?? nonNegativeNumberAt(object['radius'], `${path}.radius`),
+      radius,
+      footprintRadius: optionalNonNegativeNumber(object['footprintRadius'], `${path}.footprintRadius`) ?? radius,
       height: optionalNonNegativeNumber(object['height'], `${path}.height`) ?? mesh.height,
       color: colorAt(object['color'], `${path}.color`),
       reflectivity: finiteNumberAt(object['reflectivity'], `${path}.reflectivity`),
@@ -159,6 +179,23 @@ function titleSceneObjectMesh(meshId: TitleMeshId, meshes: TitleMeshLibrary, pat
     return meshes.teapot;
   }
   throw new SceneLoadError(`${path}.mesh references '${meshId}', but that mesh asset is not loaded.`);
+}
+
+function resolveBuiltInTitleScenePath(name: BuiltInTitleSceneName, directories: readonly string[] | undefined): string {
+  const candidates = builtInSceneCandidates(name, directories);
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  throw new SceneLoadError(`Built-in scene asset is unavailable: ${candidates.join(', ')}`);
+}
+
+function builtInSceneCandidates(name: BuiltInTitleSceneName, directories: readonly string[] | undefined): readonly string[] {
+  if (directories != null && directories.length > 0) {
+    return directories.map((directory) => path.join(directory, name));
+  }
+  return BUILT_IN_SCENE_CANDIDATE_URLS.map((candidate) => fileURLToPath(candidate(name)));
 }
 
 function objectAt(value: JsonValue | undefined, path: string): JsonObject {
@@ -229,7 +266,9 @@ function shapeKindAt(value: JsonValue | undefined, path: string): TitleSceneObje
   if (value === TITLE_SCENE_SHAPE_KIND.Sphere || value === TITLE_SCENE_SHAPE_KIND.Column || value === TITLE_SCENE_SHAPE_KIND.Mesh) {
     return value;
   }
-  throw new SceneDecodeError(`${path} must be one of '${TITLE_SCENE_SHAPE_KIND.Sphere}', '${TITLE_SCENE_SHAPE_KIND.Column}', or '${TITLE_SCENE_SHAPE_KIND.Mesh}'.`);
+  throw new SceneDecodeError(
+    `${path} must be one of '${TITLE_SCENE_SHAPE_KIND.Sphere}', '${TITLE_SCENE_SHAPE_KIND.Column}', or '${TITLE_SCENE_SHAPE_KIND.Mesh}'.`,
+  );
 }
 
 function meshIdAt(value: JsonValue | undefined, path: string): TitleMeshId {
@@ -243,7 +282,9 @@ function floorKindAt(value: JsonValue | undefined, path: string): NonNullable<Ti
   if (value === TITLE_SCENE_FLOOR_KIND.Grid || value === TITLE_SCENE_FLOOR_KIND.Solid || value === TITLE_SCENE_FLOOR_KIND.None) {
     return value;
   }
-  throw new SceneDecodeError(`${path} must be one of '${TITLE_SCENE_FLOOR_KIND.Grid}', '${TITLE_SCENE_FLOOR_KIND.Solid}', or '${TITLE_SCENE_FLOOR_KIND.None}'.`);
+  throw new SceneDecodeError(
+    `${path} must be one of '${TITLE_SCENE_FLOOR_KIND.Grid}', '${TITLE_SCENE_FLOOR_KIND.Solid}', or '${TITLE_SCENE_FLOOR_KIND.None}'.`,
+  );
 }
 
 function vectorLength(vector: TitleSceneVector3): number {

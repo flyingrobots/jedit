@@ -1,11 +1,15 @@
 import { clipToWidth } from '@flyingrobots/bijou-tui';
 
-import type { FileEntry } from '../ports/file-system.js';
+import { FileEntryKinds, type FileEntry } from '../ports/file-system.js';
 
 export interface GraftOutlineDisplayItem {
   readonly kind: string;
   readonly name: string;
   readonly startLine: number;
+}
+
+export interface SelectableLineOptions {
+  readonly selected: boolean;
 }
 
 export function fitBlock(text: string, width: number, height: number): string {
@@ -29,17 +33,17 @@ export function fitLine(text: string, width: number): string {
   return clipped.padEnd(width, ' ');
 }
 
-export function formatGraftOutlineLine(item: GraftOutlineDisplayItem, selected: boolean): string {
-  const prefix = selected ? '› ' : '  ';
+export function formatGraftOutlineLine(item: GraftOutlineDisplayItem, options: SelectableLineOptions): string {
+  const prefix = options.selected ? '› ' : '  ';
   return `${prefix}${item.kind} ${item.name} · ${String(item.startLine)}`;
 }
 
-export function formatTreeLine(entry: FileEntry, selected: boolean): string {
-  const prefix = selected ? '› ' : '  ';
-  if (entry.kind === 'parent') {
+export function formatTreeLine(entry: FileEntry, options: SelectableLineOptions): string {
+  const prefix = options.selected ? '› ' : '  ';
+  if (entry.kind === FileEntryKinds.Parent) {
     return `${prefix}../`;
   }
-  if (entry.kind === 'dir') {
+  if (entry.kind === FileEntryKinds.Directory) {
     return `${prefix}${entry.name}/`;
   }
   return `${prefix}${entry.name}`;

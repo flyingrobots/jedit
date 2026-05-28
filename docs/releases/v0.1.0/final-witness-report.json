@@ -1,0 +1,202 @@
+{
+  "ok": true,
+  "schemaVersion": 1,
+  "transport": "installed-jedit-contract",
+  "dryRun": false,
+  "install": {
+    "packageId": "jedit.hot-text-runtime",
+    "version": "0.1.0-release-gate",
+    "schemaId": "contracts/jedit/hot-text-runtime.graphql",
+    "artifactId": "src/generated/jedit/hot-text-runtime.wesley.generated.ts",
+    "codecId": "jedit-hot-text-runtime-json-v1"
+  },
+  "authority": {
+    "appFacingSessionPort": "TextBufferSessionPort",
+    "appFacingBufferCapability": "TextBufferOptic",
+    "appCanTick": false,
+    "trustedLifecyclePort": "TrustedEchoRuntimeLifecyclePort"
+  },
+  "lifecycleRequests": [
+    {
+      "tickIntervalSeconds": 0.016666666666666666
+    },
+    {
+      "cycleLimit": 4
+    }
+  ],
+  "startup": {
+    "accepted": true,
+    "lastRunCompletion": "started"
+  },
+  "drain": {
+    "accepted": true,
+    "lastRunCompletion": "quiesced"
+  },
+  "stopRequests": [
+    {
+      "requested": true
+    }
+  ],
+  "shutdown": {
+    "accepted": true,
+    "lastRunCompletion": "stopped",
+    "appCanTick": false
+  },
+  "report": {
+    "bufferId": "text-buffer:0",
+    "bufferKey": "agent-demo.txt",
+    "outcome": {
+      "status": "APPLIED",
+      "intent": {
+        "kind": "jedit-intent-handle",
+        "operationName": "replaceRangeAsTick",
+        "submissionId": "jedit-submission:7b226275666665724964223a22746578742d6275666665723a30222c22656e6442797465223a302c22696e7365727454657874223a2268656c6c6f204563686f222c22737461727442797465223a307d"
+      },
+      "receipt": {
+        "kind": "jedit-receipt-handle",
+        "receiptId": "receipt:1"
+      }
+    },
+    "outcomeTrail": [
+      {
+        "status": "ACCEPTED_PENDING",
+        "intent": {
+          "kind": "jedit-intent-handle",
+          "operationName": "replaceRangeAsTick",
+          "submissionId": "jedit-submission:7b226275666665724964223a22746578742d6275666665723a30222c22656e6442797465223a302c22696e7365727454657874223a2268656c6c6f204563686f222c22737461727442797465223a307d"
+        }
+      },
+      {
+        "status": "APPLIED",
+        "intent": {
+          "kind": "jedit-intent-handle",
+          "operationName": "replaceRangeAsTick",
+          "submissionId": "jedit-submission:7b226275666665724964223a22746578742d6275666665723a30222c22656e6442797465223a302c22696e7365727454657874223a2268656c6c6f204563686f222c22737461727442797465223a307d"
+        },
+        "receipt": {
+          "kind": "jedit-receipt-handle",
+          "receiptId": "receipt:1"
+        }
+      }
+    ],
+    "evidencePosture": {
+      "scope": "LOCAL_PROCESS_WITNESS",
+      "receiptCorrelation": "RECEIPT_CORRELATION_MISSING",
+      "ticketedRuntimeIngress": "TICKETED_RUNTIME_INGRESS_MISSING",
+      "durableAcceptedSubmissionRecovery": "UNAVAILABLE",
+      "syntheticReceiptClaimed": false
+    },
+    "receiptCorrelation": {
+      "status": "RECEIPT_CORRELATION_MISSING",
+      "submissionId": "jedit-submission:7b226275666665724964223a22746578742d6275666665723a30222c22656e6442797465223a302c22696e7365727454657874223a2268656c6c6f204563686f222c22737461727442797465223a307d",
+      "obstruction": {
+        "code": "JEDIT_RECEIPT_CORRELATION_UNAVAILABLE",
+        "reason": "Echo receipt correlation is not available for this submission"
+      }
+    },
+    "ticketedRuntimeIngress": {
+      "status": "TICKETED_RUNTIME_INGRESS_MISSING",
+      "submissionId": "jedit-submission:7b226275666665724964223a22746578742d6275666665723a30222c22656e6442797465223a302c22696e7365727454657874223a2268656c6c6f204563686f222c22737461727442797465223a307d",
+      "obstruction": {
+        "code": "JEDIT_TICKETED_RUNTIME_INGRESS_UNAVAILABLE",
+        "reason": "Echo admission ticket and ticketed runtime ingress are not exposed in this release-gate slice"
+      }
+    },
+    "retainedEvidence": {
+      "refs": [
+        {
+          "kind": "jedit-retained-evidence-ref",
+          "role": "PACKAGE_IDENTITY",
+          "semanticCoordinate": {
+            "kind": "semantic-coordinate",
+            "packageId": "jedit.hot-text-runtime",
+            "operationName": "package-install",
+            "coordinate": "jedit.hot-text-runtime"
+          },
+          "byteIdentity": {
+            "kind": "byte-identity",
+            "byteHash": "package:jedit.hot-text-runtime"
+          },
+          "posture": "PRESENT_INLINE"
+        },
+        {
+          "kind": "jedit-retained-evidence-ref",
+          "role": "RECEIPT",
+          "semanticCoordinate": {
+            "kind": "semantic-coordinate",
+            "packageId": "jedit.hot-text-runtime",
+            "operationName": "replaceRangeAsTick",
+            "coordinate": "receipt:1"
+          },
+          "byteIdentity": {
+            "kind": "byte-identity",
+            "byteHash": "receipt:receipt:1"
+          },
+          "posture": "PRESENT_INLINE"
+        },
+        {
+          "kind": "jedit-retained-evidence-ref",
+          "role": "READING_ENVELOPE",
+          "semanticCoordinate": {
+            "kind": "semantic-coordinate",
+            "packageId": "jedit.hot-text-runtime",
+            "operationName": "textWindow",
+            "coordinate": "envelope:text-window:head:3:0:1:1024"
+          },
+          "byteIdentity": {
+            "kind": "byte-identity",
+            "byteHash": "reading-envelope:text-window:head:3:0:1:1024"
+          },
+          "posture": "PRESENT_INLINE"
+        },
+        {
+          "kind": "jedit-retained-evidence-ref",
+          "role": "READING_PAYLOAD",
+          "semanticCoordinate": {
+            "kind": "semantic-coordinate",
+            "packageId": "jedit.hot-text-runtime",
+            "operationName": "textWindow",
+            "coordinate": "payload:text-window:head:3:0:1:1024"
+          },
+          "byteIdentity": {
+            "kind": "byte-identity",
+            "byteHash": "reading-payload:text-window:head:3:0:1:1024"
+          },
+          "posture": "PRESENT_INLINE"
+        }
+      ]
+    },
+    "restartPosture": {
+      "status": "PARTIAL",
+      "stateOwner": "PROCESS_LOCAL_HANDLER_STATE",
+      "echoHostedStatePosture": "ECHO_PACKAGE_AND_EVIDENCE_ONLY",
+      "acceptedSubmissionRecovery": "UNAVAILABLE",
+      "halfAcceptedSubmissionClaimed": false,
+      "obstruction": {
+        "code": "DURABLE_ACCEPTED_SUBMISSION_RECOVERY_UNAVAILABLE",
+        "reason": "jedit contract handler state is process-local in this release-gate slice"
+      }
+    },
+    "receiptId": "receipt:1",
+    "readingId": "text-window:head:3:0:1:1024",
+    "text": "hello Echo",
+    "lines": [
+      {
+        "lineNumber": 0,
+        "startByte": 0,
+        "endByte": 10,
+        "text": "hello Echo"
+      }
+    ],
+    "truncated": false
+  },
+  "reading": {
+    "readingId": "text-window:head:3:0:1:1024",
+    "lineCount": 1,
+    "truncated": false
+  },
+  "replay": {
+    "status": "UNAVAILABLE",
+    "reason": "use --replay-local for local replay; durable and Continuum replay remain unavailable"
+  }
+}

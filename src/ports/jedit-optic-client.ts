@@ -1,9 +1,8 @@
 import type {
-  CreateBufferWorldlineRequest,
-  CreateCheckpointRequest,
-  ReplaceRangeAsTickRequest,
-  TextWindowRequest,
-  WorldlineSnapshotRequest,
+  MutationCreateBufferWorldlineRequest,
+  MutationCreateCheckpointRequest,
+  MutationReplaceRangeAsTickRequest,
+  QueryWorldlineSnapshotRequest,
 } from '../generated/jedit/hot-text-runtime.wesley.generated.js';
 import type {
   CreateBufferWorldlineExecution,
@@ -13,20 +12,48 @@ import type {
 } from '../app/jedit-contract-runtime.js';
 import type { WorldlineSnapshotReadingEnvelope } from '../app/jedit-observer-runtime.js';
 import type { TextWindowReadingEnvelope } from '../app/jedit-observer-runtime.js';
+import type { ReadBasisHandle, TextWindowRangeInput } from './text-buffer-session.js';
+export type {
+  ApplyIntentResult,
+  BufferKey,
+  BufferVersion,
+  CreateTextBufferRequest,
+  Observed,
+  ReadBasisHandle,
+  ReadingId,
+  ReplaceRangeIntent,
+  SessionId,
+  TextBuffer,
+  TextBufferId,
+  TextBufferOptic,
+  TextBufferSessionPort,
+  TextWindowLine,
+  TextWindowRangeInput,
+  TextWindowReading,
+} from './text-buffer-session.js';
+export { READ_BASIS_HANDLE_KIND, REPLACE_RANGE_INTENT_KIND } from './text-buffer-session.js';
+
+export interface OpenTextBufferExecution extends CreateBufferWorldlineExecution {
+  readonly readBasisHandle: ReadBasisHandle;
+}
 
 export interface JeditMutationOpticClient {
+  openTextBuffer(
+    input: MutationCreateBufferWorldlineRequest['input'],
+  ): OpenTextBufferExecution;
+
   createBufferWorldline(
-    input: CreateBufferWorldlineRequest['input'],
+    input: MutationCreateBufferWorldlineRequest['input'],
   ): CreateBufferWorldlineExecution;
 
   replaceRangeAsTick(
     session: JeditWorldlineSession,
-    input: ReplaceRangeAsTickRequest['input'],
+    input: MutationReplaceRangeAsTickRequest['input'],
   ): ReplaceRangeAsTickExecution;
 
   createCheckpoint(
     session: JeditWorldlineSession,
-    input: CreateCheckpointRequest['input'],
+    input: MutationCreateCheckpointRequest['input'],
   ): CreateCheckpointExecution;
 }
 
@@ -34,13 +61,14 @@ export interface JeditObserverOpticClient {
   worldlineSnapshot(
     session: JeditWorldlineSession,
     frontierRef: string,
-    input: WorldlineSnapshotRequest['input'],
+    input: QueryWorldlineSnapshotRequest['input'],
   ): WorldlineSnapshotReadingEnvelope;
 
   textWindow(
     session: JeditWorldlineSession,
     frontierRef: string,
-    input: TextWindowRequest['input'],
+    readBasisHandle: ReadBasisHandle,
+    input: TextWindowRangeInput,
   ): TextWindowReadingEnvelope;
 }
 

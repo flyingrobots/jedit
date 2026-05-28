@@ -2,11 +2,110 @@
 
 ## Unreleased
 
+- Fixed Echo-hosted production text save so `Ctrl-S` requests a full-buffer
+  export aperture before writing a file, preventing bounded viewport readings
+  from truncating long files on disk.
+- Preserved jedit contract root history in the Echo-facing runtime state so
+  tick and checkpoint facts do not reference roots without corresponding root
+  facts.
+- Updated architecture and user-facing documentation to describe the
+  structural-history GraphQL authority slice, build-generated Wesley metadata,
+  and the current fake-versus-real Echo witness posture.
+- Routed the current replace/tick in-memory adapter boundary through generated
+  structural-history `replaceTextRange` Wesley operation metadata while leaving
+  the transitional TypeScript runtime executor unchanged. The metadata is now
+  generated during build/test from `wesley-cli` 0.0.4 instead of being checked
+  in as source.
+- Added the canonical structural-history GraphQL schema for text revisions,
+  admitted replace events, edit groups, checkpoints, provenance, command
+  status, and evidence-bearing readings, plus readiness coverage and an
+  authority note that keeps the in-memory TypeScript model transitional.
+- Split quality-gate ratchet fixtures into a dedicated spec file so the legacy
+  gate spec stays within the 500-line file-size doctrine.
+- Split quality-gate syntax counting into a dedicated module so the executable
+  gate stays within the 500-line file-size doctrine.
+- Fixed nesting-depth accounting so `catch` clauses share the surrounding
+  `try` control level instead of adding a false extra nesting level.
+- Ratcheted the quality gate to reject non-structural inline comparison and
+  switch-case literals in `src/app` and `src/domain`, with boundary-scope regression
+  coverage and settings key actions moved to symbol-backed runtime tokens.
+- Ratcheted the quality gate to reject runtime function bodies with more than
+  25 top-level statements, with isolated regression coverage that does not
+  overlap the function-length ratchet.
+- Ratcheted the quality gate to reject runtime function nesting deeper than
+  four levels, with deterministic regression coverage for over-nested control
+  flow.
+- Ratcheted the quality gate to reject hand-authored source lines above 160
+  characters, with generated source exempted and current overlong readability
+  debt split into human-scale declarations and helpers.
+- Ratcheted the quality gate to reject runtime functions above 35 body lines
+  and cyclomatic complexity above 8, with deterministic regression fixtures and
+  targeted source splits to keep the current tree clean.
+- Ratcheted the quality gate to reject raw `throw new Error`, non-`as const`
+  type assertions, and runtime functions with more than five parameters, with
+  regression fixtures for each rule.
+- Ratcheted the quality gate to reject direct boolean parameters, anonymous
+  public option bags, and runtime import fan-in above twelve imports per file.
+- Split workspace key dispatch into focused reducers with structural regression
+  coverage for import fan-in, parameter count, function length, nesting, and
+  cyclomatic complexity, and serialized the test runner to prevent concurrent
+  `dist` rebuild races.
+- Preserved the backtick perf toggle while workspace overlays such as settings
+  and the scene picker are open.
+- Addressed the latest PR #8 CodeRabbit follow-up by adding typed codec and
+  runtime-id errors, centralizing notification/profiler/workspace animation
+  tokens, hardening scene-load failure conversion, and localizing footer
+  context labels.
+- Addressed the current PR #8 CodeRabbit follow-up by centralizing workspace
+  runtime message and footer i18n tokens, making graft lifecycle timestamps
+  deterministic through the runtime clock, preserving scene-load failure detail,
+  and tightening the remaining review-standard docs and magic-number nits.
+- Addressed the follow-up PR #8 review pass by splitting the oversized
+  workspace keybinding spec, tightening runtime token objects, hardening
+  read-only/editor lifecycle behavior, and adding deterministic regression
+  coverage for profiler, graft, scene-loader, and mesh-footprint fixes.
+- Addressed PR #8 review feedback for built-in scene resolution, editor mode
+  transitions, contract runtime IDs, scene math, markdown detection, and
+  reviewer-requested runtime constants.
 - Fixed raytracer column math intersection which caused caps to be hollow when viewed from above or below.
 - Added a new `.jedit-scene` file format for defining scenes and created a scene loader adapter.
 - Added an interactive Scene Picker overlay to the title screen (toggleable via `F5`) for loading `.jedit-scene` debug scenes.
 - Fixed naive RTL string reversal in footer that corrupted UI labels; now correctly utilizes Bijou surface blitting.
 - Fortified the Bijou i18n adapter object traversal logic to enforce safe property access.
+- Added the app-facing text buffer optic GraphQL contract so Wesley can compile
+  product-safe `createBuffer`, `replaceRange`, and `textWindow` surfaces while
+  tests reject runtime coordinate root nouns and id-shaped variants from the
+  app SDL.
+- Introduced the first `TextBufferOptic` capability wrapper: app-facing code can
+  create a buffer, apply a `replaceRange` intent, and read a bounded text window
+  through the optic while raw runtime coordinates remain below the optic/session
+  boundary.
+- Defined the first `ReadBasisHandle` boundary for optic/session bootstrap:
+  transport-backed `textWindow` calls now accept an opaque read-basis handle
+  while the adapter resolves the handle into existing runtime coordinates, and
+  handle IDs are deterministic diagnostic tokens rather than buffer keys or
+  substrate coordinates. The registry now rejects cloned/forged handles by
+  object identity instead of trusting `id` replay.
+- Hardened the real Echo WASM Stack Witness basis regression so it asserts the
+  encoded request coordinate comes from the resolved read basis instead of
+  inspecting request-construction source text.
+- Moved the real Echo WASM Stack Witness fixture basis behind a witness-only
+  optic session resolver so request construction no longer directly references
+  Echo's raw fixture worldline id.
+- Updated the real Echo WASM Stack Witness runner to delegate package
+  construction to Echo's `scripts/build-warp-wasm-package.sh` instead of
+  duplicating Echo's `wasm-pack` invocation in jedit.
+- Added an opt-in real Echo WASM Stack Witness 0001 transport witness that
+  proves `ReadingEnvelope + QueryBytes("hello")` can be consumed through the
+  existing jedit transport boundary when `JEDIT_ECHO_WASM_MODULE` is set.
+- Hardened the witness tooling so Wesley emission does not depend on a global
+  CLI, the Echo WASM runner resolves sibling paths explicitly, and the real
+  transport witness asserts Echo artifact identity before mapping test bytes.
+- Added a Stack Witness 0001 jedit consumer spec that walks create, edit, and
+  bounded text-window observation through the Echo-shaped transport port.
+- Added a hot-text contract readiness spec that verifies the authored SDL and
+  generated Wesley operation metadata stay aligned before the deferred Echo Rust
+  binding cutover.
 - Established a GitHub Actions CI workflow to automatically run build, tests, and quality checks on every push and pull request.
 - Fixed settings navigation on the title screen by routing settings keys before
   title camera controls.

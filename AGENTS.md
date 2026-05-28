@@ -30,16 +30,40 @@ These are hard repo rules, not suggestions:
 ## Structure
 
 - `ARCHITECTURE.md` is the canonical repo architecture doctrine.
+- `docs/BEARING.md` records the current execution gravity.
+- `docs/design/0024-jedit-powered-by-echo-release-gate.md` is the completed
+  baseline plan for the first thirty slices proving jedit has an installed
+  package/evidence path while Echo remains generic.
+- `docs/design/0025-echo-application-hosting-pattern.md` is the completed
+  post-release-pressure ten-slice plan for proving the reusable Echo
+  application-hosting pattern before applying it to Graft, Think, or other apps.
+- `docs/design/0026-echo-hosting-hardening-first-twenty.md` is the completed
+  hardening plan for slices 41-60. Keep track of our progress in that plan doc
+  by checking off slices just before you make the commit for that slice.
+- `docs/design/0027-echo-hosted-production-cutover.md` is the active production
+  cutover plan for slices 61-80. Keep track of progress in that plan doc by
+  checking off slices just before you make the commit for that slice.
+- `docs/BEARING.md` is the active plan for the powered-by-Echo completion
+  budget after slice 80. Keep track of progress there by checking off slices
+  just before you make the commit for that slice.
+- `docs/design/0032-jedit-echo-reading-cache-and-fallback-boundaries.md`
+  records the local package for slices 101-110.
 - `scripts/quality-gate.mjs` is the current enforceable quality ratchet.
-- `quality-baseline.json` is temporary debt, not permission to add more debt.
+- `quality-baseline.json` is temporary debt tracking, not permission to add more debt.
+  Keep it empty when the ratchet is clean.
+
+Keep track of our progress in the plan doc by checking off slices just before
+you make the commit for that slice.
 
 ## Current Reality
 
-The repo is not fully compliant yet.
+The repo is still converging toward the full architecture doctrine, but the
+enforceable quality ratchet is currently clean.
 
-- `src/main.ts` currently exceeds the 500 line limit.
-- Existing `unknown` usage still exists and is tracked as debt.
-- The baseline exists to prevent regression while the code is being broken into proper hexagonal slices.
+- `scripts/quality-gate.mjs` currently enforces no `any`, no `unknown`, and no
+  TypeScript file over 500 lines.
+- `quality-baseline.json` should stay empty unless temporary ratcheted debt is
+  deliberately introduced and documented.
 
 ## Delivery Workflow
 

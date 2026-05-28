@@ -314,20 +314,32 @@ function invertColor(color: RgbTuple): RgbTuple {
 }
 
 function applyThemeTokens(draft: JeditThemeDraft, variables: ThemeVariables): void {
+  applySurfaceThemeTokens(draft, variables);
+  applyCursorThemeTokens(draft, variables);
+  applyChromeThemeTokens(draft, variables);
+  applySourceThemeTokens(draft, variables);
+  applyMarkdownThemeTokens(draft, variables);
+}
+
+function applySurfaceThemeTokens(draft: JeditThemeDraft, variables: ThemeVariables): void {
   draft.surface.workspace.foregroundColor = variables.ink;
   draft.surface.workspace.backgroundColor = variables.surface;
   draft.surface.drawer.foregroundColor = variables.ink;
   draft.surface.drawer.backgroundColor = variables.surfaceMuted;
   draft.surface.footer.foregroundColor = variables.ink;
   draft.surface.footer.backgroundColor = variables.surfaceMuted;
+}
 
+function applyCursorThemeTokens(draft: JeditThemeDraft, variables: ThemeVariables): void {
   draft.cursor.normal.foregroundColor = variables.ink;
   draft.cursor.normal.backgroundColor = variables.accent;
   draft.cursor.normal.modifiers = [JEDIT_TEXT_MODIFIER.Inverse];
   draft.cursor.normal.spring = draft.spring({ mass: 1, stiffness: 180, damping: 24 });
   draft.cursor.insert.foregroundColor = variables.info;
   draft.cursor.insert.modifiers = [JEDIT_TEXT_MODIFIER.Underline];
+}
 
+function applyChromeThemeTokens(draft: JeditThemeDraft, variables: ThemeVariables): void {
   draft.chrome.activeEdge.char = ACTIVE_EDGE_CHAR;
   draft.chrome.activeEdge.foregroundColor = variables.accent;
   draft.chrome.titleLogo.foregroundColor = variables.accent.to(variables.info).easeInOut(6);
@@ -341,7 +353,9 @@ function applyThemeTokens(draft: JeditThemeDraft, variables: ThemeVariables): vo
   draft.chrome.titleSceneNear.backgroundColor = variables.surface;
   draft.chrome.titleSceneFar.foregroundColor = variables.muted;
   draft.chrome.titleSceneFar.backgroundColor = variables.surface;
+}
 
+function applySourceThemeTokens(draft: JeditThemeDraft, variables: ThemeVariables): void {
   draft.source.comment.foregroundColor = variables.muted;
   draft.source.comment.modifiers = [JEDIT_TEXT_MODIFIER.Dim, JEDIT_TEXT_MODIFIER.Italic];
   draft.source.function.foregroundColor = variables.accent;
@@ -356,7 +370,9 @@ function applyThemeTokens(draft: JeditThemeDraft, variables: ThemeVariables): vo
   draft.source.string.foregroundColor = variables.success;
   draft.source.type.foregroundColor = variables.accent;
   draft.source.variable.foregroundColor = variables.ink;
+}
 
+function applyMarkdownThemeTokens(draft: JeditThemeDraft, variables: ThemeVariables): void {
   draft.markdown.body.foregroundColor = variables.ink;
   draft.markdown.headingStrong.foregroundColor = variables.accent;
   draft.markdown.headingStrong.modifiers = [JEDIT_TEXT_MODIFIER.Bold];

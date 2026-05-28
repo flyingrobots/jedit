@@ -6,14 +6,19 @@ import { pathToFileURL } from 'node:url';
 
 const REPO_ROOT = process.cwd();
 const KEYBINDINGS_PATH = path.join(REPO_ROOT, 'dist', 'app', 'keybindings.js');
+let keybindingsBuildPromise;
 
 async function loadKeybindingsModule() {
-  const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
-    cwd: REPO_ROOT,
-    encoding: 'utf8',
-  });
-
-  assert.equal(build.status, 0, build.stderr || build.stdout);
+  if (keybindingsBuildPromise == null) {
+    keybindingsBuildPromise = Promise.resolve().then(() => {
+      const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+      });
+      assert.equal(build.status, 0, build.stderr || build.stdout);
+    });
+  }
+  await keybindingsBuildPromise;
 
   return import(pathToFileURL(KEYBINDINGS_PATH).href);
 }
@@ -39,4 +44,16 @@ test('settings and markdown preview use different function keys', async () => {
   assert.equal(keybindings.JEDIT_SETTINGS_TOGGLE_KEY, 'f2');
   assert.equal(keybindings.JEDIT_MARKDOWN_PREVIEW_TOGGLE_KEY, 'f3');
   assert.notEqual(keybindings.JEDIT_SETTINGS_TOGGLE_KEY, keybindings.JEDIT_MARKDOWN_PREVIEW_TOGGLE_KEY);
+});
+
+test('scene picker label is derived from the key binding metadata', async () => {
+  const keybindings = await loadKeybindingsModule();
+
+  assert.equal(
+    keybindings.JEDIT_SCENE_PICKER_TOGGLE_LABEL,
+    keybindings.formatJeditKeyLabel({
+      key: keybindings.JEDIT_SCENE_PICKER_TOGGLE_KEY,
+      ctrl: true,
+    }),
+  );
 });

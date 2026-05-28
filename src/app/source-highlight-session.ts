@@ -28,25 +28,23 @@ export interface SourceHighlightViewport {
   readonly height: number;
 }
 
+export type SourceHighlightMessageMapper<M> = (msg: SourceHighlightMsg) => M;
+
 export function beginSourceHighlightRefresh<Model extends SourceHighlightState, M>(
   model: Model,
   editor: SourceHighlightEditor | undefined,
   viewport: SourceHighlightViewport,
   highlighter: SourceHighlighter,
+  mapMessage: SourceHighlightMessageMapper<M>,
 ): [Model, Cmd<M>[]] {
   if (editor == null) {
-    return [{ ...model, sourceHighlight: undefined, sourceHighlightLoading: false } as Model, []];
+    return [clearSourceHighlight(model), []];
   }
 
   const requestId = model.sourceHighlightRequestId + 1;
   return [
-    {
-      ...model,
-      sourceHighlight: undefined,
-      sourceHighlightLoading: true,
-      sourceHighlightRequestId: requestId,
-    } as Model,
-    [requestSourceHighlightCmd(requestId, editor, viewport, highlighter)],
+    startSourceHighlight(model, requestId),
+    [requestSourceHighlightCmd(requestId, editor, viewport, highlighter, mapMessage)],
   ];
 }
 
@@ -54,11 +52,10 @@ export function reduceSourceHighlightMsg<Model extends SourceHighlightState>(mod
   if (msg.requestId !== model.sourceHighlightRequestId) {
     return model;
   }
-  return {
-    ...model,
+  return Object.assign({}, model, {
     sourceHighlight: msg.info,
     sourceHighlightLoading: false,
-  } as Model;
+  });
 }
 
 export function shouldRefreshSourceHighlight(previous: SourceHighlightEditor, next: SourceHighlightEditor): boolean {
@@ -72,10 +69,11 @@ function requestSourceHighlightCmd<M>(
   editor: SourceHighlightEditor,
   viewport: SourceHighlightViewport,
   highlighter: SourceHighlighter,
+  mapMessage: SourceHighlightMessageMapper<M>,
 ): Cmd<M> {
   return async () => {
     try {
-      return {
+      return mapMessage({
         type: SOURCE_HIGHLIGHT_MESSAGE,
         requestId,
         info: await highlighter.highlight({
@@ -86,9 +84,9 @@ function requestSourceHighlightCmd<M>(
           headId: `${editor.path}${HEAD_ID_SEPARATOR}${String(requestId)}`,
           tick: requestId,
         }),
-      } as M;
+      });
     } catch (cause) {
-      return {
+      return mapMessage({
         type: SOURCE_HIGHLIGHT_MESSAGE,
         requestId,
         info: {
@@ -97,7 +95,22 @@ function requestSourceHighlightCmd<M>(
           spans: [],
           error: cause instanceof Error ? cause.message : String(cause),
         },
-      } as M;
+      });
     }
   };
+}
+
+function clearSourceHighlight<Model extends SourceHighlightState>(model: Model): Model {
+  return Object.assign({}, model, {
+    sourceHighlight: undefined,
+    sourceHighlightLoading: false,
+  });
+}
+
+function startSourceHighlight<Model extends SourceHighlightState>(model: Model, requestId: number): Model {
+  return Object.assign({}, model, {
+    sourceHighlight: undefined,
+    sourceHighlightLoading: true,
+    sourceHighlightRequestId: requestId,
+  });
 }

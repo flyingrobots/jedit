@@ -31,9 +31,53 @@ Context:
 This task should define the cutover boundary so the fake remains a scaffold,
 not a forked runtime.
 
+## Current Safe Slice
+
+`jedit` now has a local readiness gate for the existing authored contract:
+
+- `contracts/jedit/hot-text-runtime.graphql` remains the canonical SDL surface.
+- `src/generated/jedit/hot-text-runtime.wesley.generated.ts` remains the
+  generated operation metadata used by the current TypeScript adapter layer.
+- `spec/hot-text-contract-readiness.spec.mjs` verifies that mutation
+  `@wes_footprint` metadata and bounded read operations are preserved before
+  any Echo Rust binding generation runs.
+- `contracts/jedit/structural-history.graphql` is now the canonical product
+  structural-history SDL.
+- `scripts/gen-structural-history-wesley.mjs` uses published `wesley-cli` 0.0.4
+  to emit the full structural-history TypeScript artifact into `.wesley-cache`
+  and extract the ignored `replaceTextRange` operation descriptor into
+  `src/generated/jedit/structural-history-replace-text-range.wesley.generated.ts`.
+  `src/app/structural-history-replace-text-range.ts` consumes that generated
+  source path as the canonical descriptor location.
+- `spec/structural-history-replace-text-range-metadata.spec.mjs` verifies that
+  the descriptor is ignored, mirrors Wesley output, and drives the hot-buffer
+  adapter operation identity without changing storage behavior.
+
+The deferred Echo-dependent step is:
+
+1. Use a lockfile-pinned Echo checkout, such as a future Continuum
+   `jedit-echo-dev` warpspace lock, or an explicit local path to select the Echo
+   checkout.
+2. Run `echo-wesley-gen` against `contracts/jedit/hot-text-runtime.graphql`.
+3. Write the generated Rust binding artifact into a jedit-owned Rust contract
+   crate.
+4. Install the generated package into Echo through trusted host authority.
+5. Submit edits through the app-facing jedit adapter, not trusted host control.
+6. Run scheduler work through trusted Echo host authority.
+7. Verify the generated registry artifact with
+   `echo_registry_api::verify_contract_artifact(...)`.
+
+Until Echo is free, do not add local sibling `../echo` dependencies to committed
+jedit manifests and do not generate a second, divergent SDL file.
+
+Historical release-gate correction: pre-cutover witness paths tried to send
+scheduler control through app-facing dispatch. The current opt-in real Echo WASM
+witness uses `hostTransport.trustedHost.dispatchControlIntentBytes(...)`, while
+the app transport intentionally omits `dispatchControlIntentBytes(...)`. Future
+cutovers must preserve that app/host authority split instead of weakening it.
+
 ## Non-Goals
 
 - Depending on an Echo API that has not shipped yet.
 - Preserving fake-only codecs after the generated client exists.
 - Rewriting the entire app around generated types in one pass.
-

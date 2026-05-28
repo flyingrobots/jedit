@@ -70,6 +70,34 @@ The important point is that mutations change plain editor state. They do not
 write ANSI escapes, style tokens, syntax classes, or preview state into the
 buffer.
 
+## Structural History Metadata Path
+
+The visible TUI editor still mutates `EditorState.lines`, but the repo now has
+a separate structural-history authority path for the hot-buffer/session seam.
+That path is intentionally narrow and does not replace runtime storage.
+
+The current flow is:
+
+```text
+contracts/jedit/structural-history.graphql
+  -> npm run gen:contract:structural-history:wesley
+  -> .wesley-cache/structural-history.wesley.generated.ts
+  -> ignored replaceTextRange descriptor under src/generated/jedit
+  -> src/app/structural-history-replace-text-range.ts
+  -> src/app/hot-buffer-session.ts
+  -> src/adapters/in-memory-hot-text-runtime.ts
+```
+
+The generated descriptor supplies the `replaceTextRange` operation identity.
+The existing TypeScript runtime still admits the edit, creates the tick, updates
+open edit groups, and materializes text. This keeps the slice small: schema and
+generated metadata become authority for one operation boundary while storage,
+Echo admission, and generated domain model replacement remain out of scope.
+
+`npm run build` and `npm test` run this generation step before TypeScript
+compilation so a clean checkout can compile without a checked-in generated
+descriptor. The descriptor path is ignored because it is build output.
+
 ## The Frame Loop
 
 Bijou TUI runs the app declared in `src/main.ts`.
@@ -348,6 +376,22 @@ EditorState.lines
 These paths are intentionally boring. The buffer can become more causal and the
 projections can become smarter, but the render loop should remain a clear
 conversion from buffer truth to bounded projections to themed cells.
+
+The structural-history replace/tick witness path is separate from the render
+loop:
+
+```text
+ReplaceTextRangeInput shape in GraphQL SDL
+  -> generated replaceTextRange operation metadata
+  -> executeReplaceTextRange
+  -> admitReplaceRangeTick
+  -> optional includeTickInOpenGroup
+  -> ApplyBufferEditResult with operationName, nextState, and optional tickId
+```
+
+This path is about operation identity and causal admission. It should not leak
+theme state, syntax classes, terminal surfaces, or filesystem projection
+details into the structural-history contract.
 
 ## Appendix: Theme Token Glossary
 

@@ -1,4 +1,4 @@
-### Rule 0: Runtime Truth Wins (Non-Negotiable)
+# Rule 0: Runtime Truth Wins (Non-Negotiable)
 
 When the program is running, only one question matters:
 
@@ -8,7 +8,7 @@ Everything else — types, tests, docs — is secondary documentation. If they d
 
 ---
 
-### Core Philosophy
+## Core Philosophy
 
 - Truth-seeking over cleverness
 - Explicit, boring, and robust
@@ -19,7 +19,7 @@ Everything else — types, tests, docs — is secondary documentation. If they d
 
 ---
 
-### Mandatory Architectural Rules
+## Mandatory Architectural Rules
 
 **1. Hexagonal Architecture (Ports & Adapters) — Required**
 Core domain logic must never depend on host-specific APIs, external libraries with side effects, or concrete implementations. All external capabilities are accessed exclusively through
@@ -33,7 +33,7 @@ Serialization, deserialization, and codec work must happen **only** in adapters 
 
 ---
 
-### Object Model & Modeling Rules
+## Object Model & Modeling Rules
 
 **Prefer classes with constructors for domain concepts.**
 
@@ -65,7 +65,7 @@ export class EventId {
     return new EventId(writerId, lamport);
   }
 
-  static is(value: unknown): value is EventId {
+  static is(value: object | null): value is EventId {
     return value instanceof EventId;
   }
 
@@ -79,10 +79,12 @@ For cross-realm values, normalize through adapters/boundaries and construct vali
 
 ---
 
-### Strict Code Limits (Enforced)
+## Strict Code Limits (Enforced)
 
-- **File size**: ≤ **1000 lines** (aim for < 600)
+- **File size**: ≤ **500 lines**
+- **Source line length**: ≤ **160 characters**
 - **Function / Method**: ≤ **35 lines** (excluding whitespace & trivial returns)
+- **Statements per function body**: ≤ **25**
 - **Nesting depth**: ≤ **4**
 - **Cyclomatic complexity**: ≤ **8**
 - **Parameters**: ≤ **5** (use a named options class/object otherwise)
@@ -92,17 +94,25 @@ For cross-realm values, normalize through adapters/boundaries and construct vali
 
 ---
 
-### Language Policy
+## Language Policy
 
 **Banned without exception:**
 - `any`
-- `unknown` is allowed at external boundaries/parsing, and must not flow into core/domain types until it is validated and normalized
+- `unknown`
 - Type assertions (`as`)
 - `enum`
 - `throw new Error("string")`
 - Magic numbers/strings
 - Boolean trap parameters
 - Anonymous option bags in public APIs
+
+**Current magic-literal ratchet:**
+`src/app` and `src/domain` reject non-structural inline string/number literals in
+comparisons and switch cases. Promote behavioral tokens to named constants,
+runtime token objects, or domain classes before comparing. The structural number
+literals `-1`, `0`, and `1` are exempt in `scripts/quality-gate.mjs` for sentinel,
+empty/index, and single-step cases. Other numeric literals remain disallowed and
+must be named before comparison.
 
 **Encouraged:**
 - Constructor-based validation
@@ -112,7 +122,7 @@ For cross-realm values, normalize through adapters/boundaries and construct vali
 
 ---
 
-### flyingrobots's Principles
+## flyingrobots's Principles
 
 **P1:** Domain concepts with invariants or behavior deserve runtime-backed classes.
 **P2:** Validation happens at construction and system boundaries.
@@ -126,12 +136,13 @@ For cross-realm values, normalize through adapters/boundaries and construct vali
 
 ---
 
-### Sample ESLint Rules
+## Sample ESLint Rules
 
 ```json
 {
   "rules": {
-    "max-lines": ["error", 1000],
+    "max-lines": ["error", 500],
+    "max-len": ["error", { "code": 160 }],
     "max-lines-per-function": ["error", { "max": 35, "skipBlankLines": true, "skipComments": true }],
     "max-depth": ["error", 4],
     "max-params": ["error", 5],
@@ -139,27 +150,35 @@ For cross-realm values, normalize through adapters/boundaries and construct vali
     "max-statements": ["error", 25],
 
     "@typescript-eslint/no-explicit-any": "error",
+    "@typescript-eslint/no-restricted-types": [
+      "error",
+      {
+        "types": {
+          "unknown": "Use a concrete type instead of unknown"
+        }
+      }
+    ],
     "@typescript-eslint/no-unsafe-assignment": "error",
     "@typescript-eslint/no-unsafe-member-access": "error",
     "@typescript-eslint/no-unsafe-return": "error",
     "@typescript-eslint/no-unsafe-call": "error",
     "@typescript-eslint/only-throw-error": "error",
     "@typescript-eslint/switch-exhaustiveness-check": "error",
-    "no-floating-promises": "error"
+    "@typescript-eslint/no-floating-promises": "error"
   }
 }
 ```
 
 ---
 
-### Review Checklist (Mandatory on Every PR)
+## Review Checklist (Mandatory on Every PR)
 
 - Follows hexagonal architecture?
 - Dependencies properly injected?
 - Encoding/decoding only at boundaries?
-- File ≤ 1000 lines? Functions ≤ 35 lines & depth ≤ 4?
+- File ≤ 500 lines? Source lines ≤ 160 chars? Functions ≤ 35 lines & depth ≤ 4?
 - Important domain concepts modeled as classes with constructor validation?
-- Invariants protected? No `any`? No unsafe `as` assertions? No unvalidated `unknown` escaping boundaries?
+- Invariants protected? Free of `any`, `unknown`, and unsafe `as` assertions?
 - Could the core run in a browser?
 - Time, randomness, and side effects properly abstracted?
 

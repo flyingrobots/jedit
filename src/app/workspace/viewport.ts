@@ -6,10 +6,17 @@ export const MIN_ROWS = 12;
 export const VIEWER_LEFT_PAD = 4;
 export const VIEWER_TOP_PAD = 1;
 export const DRAWER_INNER_PAD = 1;
+export const HEADER_ROWS = 2;
+export const FOOTER_ROWS = 2;
 
 export interface WorkspaceViewport {
   readonly width: number;
   readonly height: number;
+}
+
+export interface WorkspaceBodyHeightOptions {
+  readonly rows: number;
+  readonly footerVisible: boolean;
 }
 
 export function clamp01(value: number): number {
@@ -26,9 +33,9 @@ export function clampIndex(index: number, size: number): number {
   return Math.max(0, Math.min(size - 1, index));
 }
 
-export function workspaceBodyHeight(rows: number, footerVisible: boolean): number {
-  const footerRows = footerVisible ? 2 : 0;
-  return Math.max(1, rows - 2 - footerRows);
+export function workspaceBodyHeight(options: WorkspaceBodyHeightOptions): number {
+  const footerRows = options.footerVisible ? FOOTER_ROWS : 0;
+  return Math.max(1, options.rows - HEADER_ROWS - footerRows);
 }
 
 export function viewerViewport(width: number, height: number): WorkspaceViewport {
@@ -38,8 +45,13 @@ export function viewerViewport(width: number, height: number): WorkspaceViewport
   };
 }
 
-export function editorViewport(model: Pick<WorkspaceModel, 'columns' | 'rows' | 'fileDrawerProgress' | 'graftDrawerProgress' | 'footerVisible'>): WorkspaceViewport {
-  const bodyHeight = workspaceBodyHeight(model.rows, model.footerVisible);
+type WorkspaceViewportModel = Pick<WorkspaceModel, 'columns' | 'rows' | 'fileDrawerProgress' | 'graftDrawerProgress' | 'footerVisible'>;
+
+export function editorViewport(model: WorkspaceViewportModel): WorkspaceViewport {
+  const bodyHeight = workspaceBodyHeight({
+    rows: model.rows,
+    footerVisible: model.footerVisible,
+  });
   const layout = resolveWorkspaceLayout(model.columns, model.fileDrawerProgress, model.graftDrawerProgress);
   return viewerViewport(layout.viewer.width, bodyHeight);
 }

@@ -36,7 +36,7 @@ export function resolveScenePickerDrawerWidth(columns: number): number {
 export function renderScenePickerDrawer(options: RenderScenePickerDrawerOptions): Surface {
   const surface = createSurface(options.width, options.height);
   fillSurface(surface, options.theme.surface.drawer);
-  paintText(surface, SCENE_PICKER_TITLE, SCENE_PICKER_LEFT_PAD, SCENE_PICKER_HEADER_ROW, options.theme.markdown.get(JEDIT_MARKDOWN_TOKEN.Heading) ?? options.theme.surface.drawer);
+  paintText(surface, SCENE_PICKER_TITLE, SCENE_PICKER_LEFT_PAD, SCENE_PICKER_HEADER_ROW, scenePickerTitleToken(options));
   paintText(surface, SCENE_PICKER_CLOSE_HINT, SCENE_PICKER_LEFT_PAD, SCENE_PICKER_HINT_ROW, options.theme.surface.drawer);
 
   let y = SCENE_PICKER_FIRST_ROW;
@@ -44,12 +44,20 @@ export function renderScenePickerDrawer(options: RenderScenePickerDrawerOptions)
     const scene = options.scenes[index];
     if (scene == null) continue;
     const selected = index === options.selectedIndex;
-    const label = fitLine(`${selected ? SCENE_PICKER_SELECTED_MARK : SCENE_PICKER_UNSELECTED_MARK} ${scene}`, Math.max(1, options.width - SCENE_PICKER_LEFT_PAD));
+    const label = fitLine(scenePickerRowLabel({ selected, scene }), Math.max(1, options.width - SCENE_PICKER_LEFT_PAD));
     const token = selected ? options.theme.cursor.normal : options.theme.surface.drawer;
     paintText(surface, label, SCENE_PICKER_LEFT_PAD, y, token);
     y += SCENE_PICKER_ROW_HEIGHT;
   }
   return surface;
+}
+
+function scenePickerTitleToken(options: RenderScenePickerDrawerOptions): JeditStyleToken {
+  return options.theme.markdown.get(JEDIT_MARKDOWN_TOKEN.Heading) ?? options.theme.surface.drawer;
+}
+
+function scenePickerRowLabel(options: { readonly selected: boolean; readonly scene: string }): string {
+  return `${options.selected ? SCENE_PICKER_SELECTED_MARK : SCENE_PICKER_UNSELECTED_MARK} ${options.scene}`;
 }
 
 function paintText(surface: Surface, text: string, x: number, y: number, token: JeditStyleToken): void {

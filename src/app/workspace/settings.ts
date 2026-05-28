@@ -6,6 +6,17 @@ import { isWorkspaceMarkdownFile } from './editor-session.js';
 import { type WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 import { nextJeditTheme, oppositeJeditTheme } from '../../ui/jedit-themes.js';
+import { ViewModes } from './view-mode.js';
+
+export const WorkspaceLocales = Object.freeze({
+  Default: 'en',
+  Alternate: 'me',
+} as const);
+
+export const WorkspaceTextDirections = Object.freeze({
+  Ltr: 'ltr',
+  Rtl: 'rtl',
+} as const);
 
 export function settingsRows(model: WorkspaceModel): ReturnType<typeof jeditSettingsRows> {
   return jeditSettingsRows({
@@ -35,13 +46,13 @@ export const workspaceSettingsHandlers: JeditSettingsHandlers<WorkspaceModel, Wo
     if (model.editor == null || !isWorkspaceMarkdownFile(model.editor.path)) {
       return [model, []];
     }
-    const nextMode = model.viewMode === 'source' ? 'preview' : 'source';
+    const nextMode = model.viewMode === ViewModes.Source ? ViewModes.Preview : ViewModes.Source;
     preview = { ...model, viewMode: nextMode };
     return [preview, []];
   },
   toggleLocale: (model) => {
-    const nextLocale = model.i18n.locale === 'en' ? 'me' : 'en';
-    const nextDirection = nextLocale === 'me' ? 'rtl' : 'ltr';
+    const nextLocale = model.i18n.locale === WorkspaceLocales.Default ? WorkspaceLocales.Alternate : WorkspaceLocales.Default;
+    const nextDirection = nextLocale === WorkspaceLocales.Alternate ? WorkspaceTextDirections.Rtl : WorkspaceTextDirections.Ltr;
     model.i18n.setLocale(nextLocale, nextDirection);
     return [model, []];
   },

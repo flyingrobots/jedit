@@ -10,15 +10,25 @@ const SPRING_FRAME_DT = 1 / 60;
 const SLOW_FRAME_DT = 1;
 const SPRING_FRAME_LIMIT = 160;
 
+let titleCameraSessionPromise;
+
 async function loadTitleCameraSession() {
-  const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
-    cwd: REPO_ROOT,
-    encoding: 'utf8',
-  });
+  if (titleCameraSessionPromise) {
+    return titleCameraSessionPromise;
+  }
 
-  assert.equal(build.status, 0, build.stderr || build.stdout);
+  titleCameraSessionPromise = (async () => {
+    const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
+      cwd: REPO_ROOT,
+      encoding: 'utf8',
+    });
 
-  return import(pathToFileURL(TITLE_CAMERA_PATH).href);
+    assert.equal(build.status, 0, build.stderr || build.stdout);
+
+    return import(pathToFileURL(TITLE_CAMERA_PATH).href);
+  })();
+
+  return titleCameraSessionPromise;
 }
 
 test('title camera arrow keys move targets through spring commands', async () => {

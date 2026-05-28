@@ -1,30 +1,21 @@
 import type { KeyMsg } from '@flyingrobots/bijou-tui';
 import { clampIndex } from './viewport.js';
+import { EditorModes, PendingOperators, type PendingOperator } from './editor/mode.js';
+import { EditorKeys, LineBoundaries, WordMotions, type LineBoundary, type WordMotion } from './editor/key.js';
 import type { EditorState } from './editor/model.js';
+import { RegisterKinds } from './editor/model.js';
 import {
-  clampNormalCol,
-  currentLine,
-  editorText,
-  yankTextRange,
-  deleteTextRange,
-  commitMutation,
-  snapshotEditor,
-  deleteForward,
-  leadingWhitespace,
-  lineStartTextIndex,
-  nextWordStartIndex,
-  normalPositionAtOrBeforeIndex,
-  normalTextIndex,
-  previousWordStartIndex,
-  wordEndIndex,
+  clampNormalCol, currentLine, editorText, yankTextRange, deleteTextRange,
+  commitMutation, snapshotEditor, deleteForward, leadingWhitespace, lineStartTextIndex,
+  nextWordStartIndex, normalPositionAtOrBeforeIndex, normalTextIndex, previousWordStartIndex, wordEndIndex,
 } from './editor-editing-core.js';
 
-const NORMAL_MODE = 'normal';
-const INSERT_MODE = 'insert';
+const NORMAL_MODE = EditorModes.Normal;
+const INSERT_MODE = EditorModes.Insert;
 
 export function applyPendingOperator(
   editor: EditorState,
-  operator: 'change' | 'delete' | 'yank',
+  operator: PendingOperator,
   msg: KeyMsg,
 ): EditorState | undefined {
   if (msg.ctrl || msg.alt) {
@@ -32,47 +23,75 @@ export function applyPendingOperator(
   }
 
   if (!msg.shift) {
-    if (operator === 'delete' && msg.key === 'd') {
-      return deleteCurrentLine(editor);
-    }
-    if (operator === 'change' && msg.key === 'c') {
-      return changeCurrentLine(editor);
-    }
-    if (operator === 'yank' && msg.key === 'y') {
-      return yankCurrentLine(editor);
-    }
-    if (msg.key === 'w') {
-      return applyWordMotionOperator(editor, operator, 'w');
-    }
-    if (msg.key === 'e') {
-      return applyWordMotionOperator(editor, operator, 'e');
-    }
-    if (msg.key === '0') {
-      return applyLineBoundaryOperator(editor, operator, 'start');
-    }
+    return applyUnshiftedPendingOperator(editor, operator, msg)
+      ?? applyLineEndPendingOperator(editor, operator, msg);
   }
 
-  if (msg.key === '$') {
-    return applyLineBoundaryOperator(editor, operator, 'end');
-  }
+  return applyLineEndPendingOperator(editor, operator, msg);
+}
 
+function applyUnshiftedPendingOperator(
+  editor: EditorState,
+  operator: PendingOperator,
+  msg: KeyMsg,
+): EditorState | undefined {
+  const lineOperator = applyRepeatedLineOperator(editor, operator, msg);
+  if (lineOperator != null) {
+    return lineOperator;
+  }
+  if (msg.key === EditorKeys.W) {
+    return applyWordMotionOperator(editor, operator, WordMotions.Start);
+  }
+  if (msg.key === EditorKeys.E) {
+    return applyWordMotionOperator(editor, operator, WordMotions.End);
+  }
+  if (msg.key === EditorKeys.LineStart) {
+    return applyLineBoundaryOperator(editor, operator, LineBoundaries.Start);
+  }
   return undefined;
+}
+
+function applyRepeatedLineOperator(
+  editor: EditorState,
+  operator: PendingOperator,
+  msg: KeyMsg,
+): EditorState | undefined {
+  if (operator === PendingOperators.Delete && msg.key === EditorKeys.D) {
+    return deleteCurrentLine(editor);
+  }
+  if (operator === PendingOperators.Change && msg.key === EditorKeys.C) {
+    return changeCurrentLine(editor);
+  }
+  if (operator === PendingOperators.Yank && msg.key === EditorKeys.Y) {
+    return yankCurrentLine(editor);
+  }
+  return undefined;
+}
+
+function applyLineEndPendingOperator(
+  editor: EditorState,
+  operator: PendingOperator,
+  msg: KeyMsg,
+): EditorState | undefined {
+  return msg.key === EditorKeys.LineEnd
+    ? applyLineBoundaryOperator(editor, operator, LineBoundaries.End)
+    : undefined;
 }
 
 export function applyWordMotionOperator(
   editor: EditorState,
-  operator: 'change' | 'delete' | 'yank',
-  motion: 'e' | 'w',
+  operator: PendingOperator,
+  motion: WordMotion,
 ): EditorState {
   const text = editorText(editor);
   if (text.length === 0) {
-    return operator === 'change'
+    return operator === PendingOperators.Change
       ? { ...editor, mode: INSERT_MODE, pendingNormal: undefined }
       : editor;
   }
 
   const start = normalTextIndex(editor);
-  const end = motion === 'w'
+  const end = motion === WordMotions.Start
     ? nextWordStartIndex(text, start, true)
     : Math.min(text.length, wordEndIndex(text, start) + 1);
 
@@ -82,17 +101,17 @@ export function applyWordMotionOperator(
 
 export function applyLineBoundaryOperator(
   editor: EditorState,
-  operator: 'change' | 'delete' | 'yank',
-  boundary: 'end' | 'start',
+  operator: PendingOperator,
+  boundary: LineBoundary,
 ): EditorState {
   const line = currentLine(editor);
   const lineStart = lineStartTextIndex(editor.lines, editor.cursorRow);
   const cursor = normalTextIndex(editor);
-  const from = boundary === 'start' ? lineStart : cursor;
-  const to = boundary === 'start' ? cursor + 1 : lineStart + line.length;
+  const from = boundary === LineBoundaries.Start ? lineStart : cursor;
+  const to = boundary === LineBoundaries.Start ? cursor + 1 : lineStart + line.length;
 
   if (from >= to) {
-    return operator === 'change'
+    return operator === PendingOperators.Change
       ? { ...editor, mode: INSERT_MODE, pendingNormal: undefined }
       : editor;
   }
@@ -102,17 +121,17 @@ export function applyLineBoundaryOperator(
 
 export function applyCharwiseOperator(
   editor: EditorState,
-  operator: 'change' | 'delete' | 'yank',
+  operator: PendingOperator,
   start: number,
   end: number,
 ): EditorState {
-  if (operator === 'yank') {
-    return yankTextRange(editor, start, end, 'char');
+  if (operator === PendingOperators.Yank) {
+    return yankTextRange(editor, start, end, RegisterKinds.Char);
   }
 
   return deleteTextRange(editor, start, end, {
-    mode: operator === 'change' ? INSERT_MODE : NORMAL_MODE,
-    register: 'char',
+    mode: operator === PendingOperators.Change ? INSERT_MODE : NORMAL_MODE,
+    register: RegisterKinds.Char,
   });
 }
 
@@ -252,13 +271,14 @@ export function deleteToLineEnd(editor: EditorState): EditorState {
   return deleteTextRange(editor, normalTextIndex(editor), lineStartTextIndex(editor.lines, editor.cursorRow) + currentLine(editor).length,
     {
       mode: NORMAL_MODE,
-      register: 'char',
+      register: RegisterKinds.Char,
     });
 }
 
 export function changeToLineEnd(editor: EditorState): EditorState {
-  return deleteToLineEnd(editor).readOnly ? { ...editor, mode: INSERT_MODE, pendingNormal: undefined } : {
-    ...editor,
+  const result = editor.readOnly ? editor : deleteToLineEnd(editor);
+  return {
+    ...result,
     pendingNormal: undefined,
     mode: INSERT_MODE,
   };
@@ -267,7 +287,7 @@ export function changeToLineEnd(editor: EditorState): EditorState {
 export function yankCurrentLine(editor: EditorState): EditorState {
   const line = currentLine(editor);
   const start = lineStartTextIndex(editor.lines, editor.cursorRow);
-  return yankTextRange(editor, start, start + line.length, 'line');
+  return yankTextRange(editor, start, start + line.length, RegisterKinds.Line);
 }
 
 export function deleteCurrentLine(editor: EditorState): EditorState {
@@ -276,7 +296,7 @@ export function deleteCurrentLine(editor: EditorState): EditorState {
   const includeLineBreak = editor.cursorRow < editor.lines.length - 1 ? 1 : 0;
   return deleteTextRange(editor, start, start + line.length + includeLineBreak, {
     mode: NORMAL_MODE,
-    register: 'line',
+    register: RegisterKinds.Line,
   });
 }
 

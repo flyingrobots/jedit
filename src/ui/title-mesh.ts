@@ -29,6 +29,7 @@ export interface TitleMeshHit {
 
 interface TitleMeshPlacement {
   readonly height: number;
+  readonly pitchRadians: number;
   readonly yawRadians: number;
   readonly centerX: number;
   readonly floorY: number;
@@ -53,12 +54,16 @@ type Axis = typeof AXIS_X | typeof AXIS_Y | typeof AXIS_Z;
 const AXIS_X = 0;
 const AXIS_Y = 1;
 const AXIS_Z = 2;
+const ZERO_RADIANS = 0;
+const RIGHT_ANGLE_RADIANS = Math.PI / 2;
 const TITLE_BUNNY_HEIGHT = 2.35;
+const TITLE_BUNNY_PITCH_RADIANS = ZERO_RADIANS;
 const TITLE_BUNNY_YAW_RADIANS = Math.PI * 0.18;
 const TITLE_BUNNY_CENTER_X = -0.85;
 const TITLE_BUNNY_FLOOR_Y = 0;
 const TITLE_BUNNY_CENTER_Z = -0.15;
 const TITLE_TEAPOT_HEIGHT = 2.2;
+const TITLE_TEAPOT_PITCH_RADIANS = -RIGHT_ANGLE_RADIANS;
 const TITLE_TEAPOT_YAW_RADIANS = -Math.PI * 0.1;
 const TITLE_TEAPOT_CENTER_X = 0;
 const TITLE_TEAPOT_FLOOR_Y = 0;
@@ -82,6 +87,7 @@ export interface TitleMeshLibrary {
 export function createTitleBunnyMesh(source: TitleMeshSource): TitleMesh {
   return createTitleMesh(source, {
     height: TITLE_BUNNY_HEIGHT,
+    pitchRadians: TITLE_BUNNY_PITCH_RADIANS,
     yawRadians: TITLE_BUNNY_YAW_RADIANS,
     centerX: TITLE_BUNNY_CENTER_X,
     floorY: TITLE_BUNNY_FLOOR_Y,
@@ -92,6 +98,7 @@ export function createTitleBunnyMesh(source: TitleMeshSource): TitleMesh {
 export function createTitleTeapotMesh(source: TitleMeshSource): TitleMesh {
   return createTitleMesh(source, {
     height: TITLE_TEAPOT_HEIGHT,
+    pitchRadians: TITLE_TEAPOT_PITCH_RADIANS,
     yawRadians: TITLE_TEAPOT_YAW_RADIANS,
     centerX: TITLE_TEAPOT_CENTER_X,
     floorY: TITLE_TEAPOT_FLOOR_Y,
@@ -114,27 +121,42 @@ export function nearestTitleMeshHit(
     }
 
     if (node.triangleIndices.length > 0) {
-      for (const triangleIndex of node.triangleIndices) {
-        const hit = intersectTitleMeshTriangle(origin, ray, mesh, triangleIndex);
-        if (hit != null && (nearest == null || hit.distance < nearest.distance)) {
-          nearest = hit;
-        }
-      }
+      nearest = nearestMeshTriangleHit(origin, ray, mesh, node.triangleIndices, nearest);
       return;
     }
 
-    if (node.left != null) {
-      visitMeshNode(node.left);
-    }
-    if (node.right != null) {
-      visitMeshNode(node.right);
+    visitMeshChild(node.left);
+    visitMeshChild(node.right);
+  }
+
+  function visitMeshChild(node: TitleMeshBvhNode | undefined): void {
+    if (node != null) {
+      visitMeshNode(node);
     }
   }
 }
 
+function nearestMeshTriangleHit(
+  origin: TitleMeshVector3,
+  ray: TitleMeshVector3,
+  mesh: TitleMesh,
+  triangleIndices: readonly number[],
+  nearest: TitleMeshHit | undefined,
+): TitleMeshHit | undefined {
+  let candidate = nearest;
+  for (const triangleIndex of triangleIndices) {
+    const hit = intersectTitleMeshTriangle(origin, ray, mesh, triangleIndex);
+    if (hit != null && (candidate == null || hit.distance < candidate.distance)) {
+      candidate = hit;
+    }
+  }
+  return candidate;
+}
+
 function createTitleMesh(source: TitleMeshSource, placement: TitleMeshPlacement): TitleMesh {
-  const sourceBounds = boundsForVertices(source.vertices);
-  const vertices = source.vertices.map((vertex) => transformVertex(vertex, sourceBounds, placement));
+  const orientedVertices = source.vertices.map((vertex) => pitchVertex(vertex, placement.pitchRadians));
+  const sourceBounds = boundsForVertices(orientedVertices);
+  const vertices = orientedVertices.map((vertex) => transformVertex(vertex, sourceBounds, placement));
   const triangles = source.triangles.map((indices) => triangleData(vertices, indices));
   if (triangles.length === 0) {
     throw new EmptyMeshError('Title mesh must contain at least one triangle.');
@@ -150,6 +172,19 @@ function createTitleMesh(source: TitleMeshSource, placement: TitleMeshPlacement)
     footprintRadius: footprintRadiusForVertices(vertices, placement.centerX, placement.centerZ),
     root: buildBvhNode(triangles, triangleIndices),
   };
+}
+
+function pitchVertex(vertex: TitleMeshVector3, radians: number): TitleMeshVector3 {
+  if (radians === ZERO_RADIANS) {
+    return vertex;
+  }
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+  return [
+    vertex[AXIS_X],
+    (vertex[AXIS_Y] * cos) - (vertex[AXIS_Z] * sin),
+    (vertex[AXIS_Y] * sin) + (vertex[AXIS_Z] * cos),
+  ];
 }
 
 function transformVertex(vertex: TitleMeshVector3, bounds: TitleMeshBounds, placement: TitleMeshPlacement): TitleMeshVector3 {
@@ -222,18 +257,12 @@ function intersectTitleMeshTriangle(
 
   const inverseDeterminant = 1 / determinant;
   const originToA = sub(origin, a);
-  const u = dot(originToA, rayCrossEdgeB) * inverseDeterminant;
-  if (u < 0 || u > 1) {
+  const barycentric = titleMeshTriangleBarycentric(ray, edgeA, originToA, rayCrossEdgeB, inverseDeterminant);
+  if (barycentric == null) {
     return undefined;
   }
 
-  const originCrossEdgeA = cross(originToA, edgeA);
-  const v = dot(ray, originCrossEdgeA) * inverseDeterminant;
-  if (v < 0 || u + v > 1) {
-    return undefined;
-  }
-
-  const distance = dot(edgeB, originCrossEdgeA) * inverseDeterminant;
+  const distance = dot(edgeB, barycentric.originCrossEdgeA) * inverseDeterminant;
   if (distance <= INTERSECTION_EPSILON) {
     return undefined;
   }
@@ -243,6 +272,22 @@ function intersectTitleMeshTriangle(
     distance,
     normal: dot(normal, ray) > 0 ? scale(normal, -1) : normal,
   };
+}
+
+function titleMeshTriangleBarycentric(
+  ray: TitleMeshVector3,
+  edgeA: TitleMeshVector3,
+  originToA: TitleMeshVector3,
+  rayCrossEdgeB: TitleMeshVector3,
+  inverseDeterminant: number,
+): { readonly originCrossEdgeA: TitleMeshVector3 } | undefined {
+  const u = dot(originToA, rayCrossEdgeB) * inverseDeterminant;
+  if (u < 0 || u > 1) {
+    return undefined;
+  }
+  const originCrossEdgeA = cross(originToA, edgeA);
+  const v = dot(ray, originCrossEdgeA) * inverseDeterminant;
+  return v < 0 || u + v > 1 ? undefined : { originCrossEdgeA };
 }
 
 function rayIntersectsBounds(
