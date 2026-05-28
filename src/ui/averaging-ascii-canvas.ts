@@ -158,9 +158,10 @@ function accumulateAsciiSample(
     v: ((options.y * ASCII_ROWS_PER_CELL) + sampleY) / (options.subpixelHeight - 1 || 1),
     time: options.time,
   });
-  accumulator.fgRed += sample.fgRGB[RED_INDEX];
-  accumulator.fgGreen += sample.fgRGB[GREEN_INDEX];
-  accumulator.fgBlue += sample.fgRGB[BLUE_INDEX];
+  const visibleFgRGB = sample.on ? sample.fgRGB : sample.bgRGB;
+  accumulator.fgRed += visibleFgRGB[RED_INDEX];
+  accumulator.fgGreen += visibleFgRGB[GREEN_INDEX];
+  accumulator.fgBlue += visibleFgRGB[BLUE_INDEX];
   accumulator.bgRed += sample.bgRGB[RED_INDEX];
   accumulator.bgGreen += sample.bgRGB[GREEN_INDEX];
   accumulator.bgBlue += sample.bgRGB[BLUE_INDEX];
