@@ -8,6 +8,8 @@ const REPO_ROOT = process.cwd();
 const TITLE_SCREEN_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-screen.js');
 const TITLE_LOGO_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-logo.js');
 const TITLE_SCENE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-scene.js');
+const TITLE_SCENE_ENVIRONMENT_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-scene-environment.js');
+const ASCII_CANVAS_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'averaging-ascii-canvas.js');
 const BRAILLE_CANVAS_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'averaging-braille-canvas.js');
 const THEMES_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'jedit-themes.js');
 const STYLE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'jedit-theme.js');
@@ -50,6 +52,8 @@ async function loadTitleModules() {
     title: await import(pathToFileURL(TITLE_SCREEN_PATH).href),
     titleLogo: await import(pathToFileURL(TITLE_LOGO_PATH).href),
     titleScene: await import(pathToFileURL(TITLE_SCENE_PATH).href),
+    titleSceneEnvironment: await import(pathToFileURL(TITLE_SCENE_ENVIRONMENT_PATH).href),
+    asciiCanvas: await import(pathToFileURL(ASCII_CANVAS_PATH).href),
     brailleCanvas: await import(pathToFileURL(BRAILLE_CANVAS_PATH).href),
     themes: await import(pathToFileURL(THEMES_PATH).href),
     style: await import(pathToFileURL(STYLE_PATH).href),
@@ -248,6 +252,28 @@ test('title scene ASCII palettes produce distinct glyph vocabularies', async () 
   assert.ok(sceneGlyphs(dither, style).every((char) => ' .:-=+*#%@'.includes(char)));
 });
 
+test('ASCII canvas colors inactive samples as background instead of inactive foreground', async () => {
+  const { asciiCanvas } = await loadTitleModules();
+  const surface = asciiCanvas.averagingAsciiCanvas(1, 1, ({ u, v }) => {
+    if (u === 0 && v === 0) {
+      return {
+        on: true,
+        fgRGB: [255, 0, 0],
+        bgRGB: [0, 0, 0],
+      };
+    }
+    return {
+      on: false,
+      fgRGB: [0, 0, 255],
+      bgRGB: [0, 0, 0],
+    };
+  }, 0, { palette: asciiCanvas.TITLE_ASCII_PALETTE.Dense });
+  const cell = surface.get(0, 0);
+
+  assert.deepEqual(cell.fgRGB, [64, 0, 0]);
+  assert.deepEqual(cell.bgRGB, [0, 0, 0]);
+});
+
 test('title scene keeps reflective highlights on sphere materials', async () => {
   const { title, themes, style } = await loadTitleModules();
   const theme = themes.availableJeditThemes()[0];
@@ -298,6 +324,34 @@ test('title floor light effects expose sphere shadows and caustics', async () =>
   assert.equal(farAway.shadowMultiplier, 1);
   assert.equal(farAway.contactShadowMultiplier, 1);
   assert.equal(farAway.causticStrength, 0);
+});
+
+test('title environment does not report floor hits once floor fade reaches zero', async () => {
+  const { titleSceneEnvironment } = await loadTitleModules();
+  const colors = {
+    surface: [5, 7, 12],
+    floorDark: [55, 75, 88],
+    floorLight: [222, 232, 232],
+  };
+  const floor = {
+    kind: titleSceneEnvironment.TITLE_SCENE_FLOOR_KIND.Solid,
+    fadeDistance: 2,
+  };
+  const visibleHit = titleSceneEnvironment.nearestTitleEnvironmentSurfaceHit(
+    [0, 1, 0],
+    [0, -1, 0],
+    { floor },
+    colors,
+  );
+  const fadedHit = titleSceneEnvironment.nearestTitleEnvironmentSurfaceHit(
+    [0, 3, 0],
+    [0, -1, 0],
+    { floor },
+    colors,
+  );
+
+  assert.ok(visibleHit != null);
+  assert.equal(fadedHit, undefined);
 });
 
 test('title screen is deterministic for a fixed scene seed and frame time', async () => {
