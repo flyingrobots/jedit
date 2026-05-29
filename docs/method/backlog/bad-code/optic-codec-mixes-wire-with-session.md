@@ -71,3 +71,23 @@ how sessions reach handlers.
 Starting the EINT cutover for the optic client. There's a Think
 handoff entry from 2026-05-28 that walks through the change in
 detail — see `[[handoff-1780002453726]]`.
+
+## Status update — 2026-05-29
+
+Partially resolved by Slice B of the EINT cutover (jedit commit
+`26a8f43`). The wire no longer carries session — only `(op_id, vars)`.
+A client-side `JeditWorldlineSessionPort` resolves session-by-worldlineId
+on the transport side after EINT decode.
+
+That fix is a **scaffold**, not a full resolution. The port is jedit code
+inventing an engine-flavored concept (causal context per writer) because
+Echo had no name for it. It works only because the optic client and the
+in-process transport share memory in the same process; it cannot ship
+across a real WASM transport.
+
+The full resolution is tracked by echo cycle 0025 — sessions as causal
+contexts (`echo/docs/design/0025-sessions-as-causal-contexts/design.md`)
+and its jedit-side companion [[sessions-migration]] in
+`docs/method/backlog/asap/`. When 0025 ships and jedit completes the
+migration phases, the session-port, its adapter, and the EINT bridge get
+deleted, and this card is fully resolved.
