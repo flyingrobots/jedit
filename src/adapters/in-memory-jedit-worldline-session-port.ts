@@ -1,0 +1,36 @@
+// SPDX-License-Identifier: Apache-2.0
+// In-memory adapter for JeditWorldlineSessionPort. Stores the latest session
+// per worldlineId. Optic client registers a session before each call;
+// transport resolves it by the worldlineId carried in the decoded input.
+
+import type { JeditWorldlineSession } from '../app/jedit-contract-runtime.js';
+import {
+  JeditWorldlineSessionNotRegisteredError,
+  type JeditWorldlineSessionPort,
+} from '../ports/jedit-worldline-session-port.js';
+
+// Re-export so adapters that need both the port + adapter import one module.
+export {
+  JeditWorldlineSessionNotRegisteredError,
+  type JeditWorldlineSessionPort,
+} from '../ports/jedit-worldline-session-port.js';
+
+export function createInMemoryJeditWorldlineSessionPort(): JeditWorldlineSessionPort {
+  const sessionsByWorldlineId = new Map<string, JeditWorldlineSession>();
+
+  return {
+    registerSession(session) {
+      sessionsByWorldlineId.set(session.worldline.worldlineId, session);
+    },
+    getSession(worldlineId) {
+      const session = sessionsByWorldlineId.get(worldlineId);
+      if (session === undefined) {
+        throw new JeditWorldlineSessionNotRegisteredError(worldlineId);
+      }
+      return session;
+    },
+    clearSession(worldlineId) {
+      sessionsByWorldlineId.delete(worldlineId);
+    },
+  };
+}

@@ -56,7 +56,7 @@ export function createTextBufferSession(client: JeditOpticClient): TextBufferSes
     async createBuffer(input: CreateTextBufferRequest): Promise<TextBufferOptic> {
       const buffer = toTextBuffer(nextBufferId, input);
       nextBufferId += NEXT_BUFFER_VERSION_STEP;
-      const opened = client.openTextBuffer({
+      const opened = await client.openTextBuffer({
         bufferKey: input.bufferKey,
         initialText: input.initialText,
         projectionPath: input.projectionPath ?? input.bufferKey,
@@ -114,16 +114,16 @@ function createTextBufferOptic(
   });
 }
 
-function applyTextBufferIntent(
+async function applyTextBufferIntent(
   client: JeditOpticClient,
   buffer: TextBuffer,
   state: TextBufferOpticRuntimeState,
   intent: ReplaceRangeIntent,
-): ApplyIntentResult {
+): Promise<ApplyIntentResult> {
   if (intent.kind !== REPLACE_RANGE_INTENT_KIND) {
     throw new TextBufferOpticError(`Unsupported text buffer intent: ${intent.kind}.`);
   }
-  const execution = client.replaceRangeAsTick(state.currentSession, replaceRangeInput(state, intent));
+  const execution = await client.replaceRangeAsTick(state.currentSession, replaceRangeInput(state, intent));
   if (execution.result == null) {
     throw new TextBufferOpticError('Text buffer intent did not produce a runtime receipt.');
   }
@@ -151,14 +151,14 @@ function replaceRangeInput(
   };
 }
 
-function readTextBufferWindow(
+async function readTextBufferWindow(
   client: JeditOpticClient,
   buffer: TextBuffer,
   state: TextBufferOpticRuntimeState,
   readBasis: ReadBasisHandle,
   input: TextWindowRangeInput,
-): Observed<TextWindowReading> {
-  const envelope = client.textWindow(
+): Promise<Observed<TextWindowReading>> {
+  const envelope = await client.textWindow(
     state.currentSession,
     toFrontierRef(buffer.bufferId, state.bufferVersion),
     readBasis,
@@ -167,13 +167,13 @@ function readTextBufferWindow(
   return toObservedTextWindowReading(envelope, input);
 }
 
-function createTextBufferCheckpoint(
+async function createTextBufferCheckpoint(
   client: JeditOpticClient,
   buffer: TextBuffer,
   state: TextBufferOpticRuntimeState,
   request: CreateTextBufferCheckpointRequest,
-): CreateTextBufferCheckpointResult {
-  const execution = client.createCheckpoint(state.currentSession, {
+): Promise<CreateTextBufferCheckpointResult> {
+  const execution = await client.createCheckpoint(state.currentSession, {
     worldlineId: state.currentSession.worldline.worldlineId,
     kind: request.kind,
     label: request.label,

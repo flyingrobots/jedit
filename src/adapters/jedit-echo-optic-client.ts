@@ -17,31 +17,34 @@ import {
   type ReadBasisHandle,
   type TextWindowRangeInput,
 } from '../ports/jedit-optic-client.js';
+import type { JeditWorldlineSessionPort } from '../ports/jedit-worldline-session-port.js';
 import { ReadBasisHandleRegistry } from '../app/read-basis-handle-registry.js';
 import {
   CREATE_BUFFER_WORLDLINE_OPERATION,
   CREATE_CHECKPOINT_OPERATION,
   decodeJeditIntentResponse,
   decodeJeditObserveResponse,
-  encodeJeditIntentRequest,
   encodeJeditObserveRequest,
-  JEDIT_INTENT_REQUEST_KIND,
   JEDIT_OBSERVE_REQUEST_KIND,
   JEDIT_TRANSPORT_STATUS_OBSTRUCTED,
   REPLACE_RANGE_AS_TICK_OPERATION,
   TEXT_WINDOW_OPERATION,
-  toCreateBufferWorldlineExecution,
-  toCreateCheckpointExecution,
-  toReplaceRangeAsTickExecution,
-  toTextWindowReadingEnvelope,
-  toWorldlineSnapshotReadingEnvelope,
   WORLDLINE_SNAPSHOT_OPERATION,
-  type JeditIntentRequest,
   type JeditIntentResponse,
   type JeditObserveRequest,
   type JeditObserveResponse,
   type JeditTransportObstruction,
 } from './jedit-echo-optic-codec.js';
+import {
+  encodeJeditMutationIntentEnvelope,
+  type JeditMutationEnvelopeInput,
+} from './jedit-mutation-envelope-codec.js';
+import { createInMemoryJeditWorldlineSessionPort } from './in-memory-jedit-worldline-session-port.js';
+import type {
+  CreateBufferWorldlineVars,
+  CreateCheckpointVars,
+  ReplaceRangeAsTickVars,
+} from '../generated/jedit/rope.codec.generated.js';
 
 type CreateBufferWorldlineInput = MutationOperationMap['createBufferWorldline']['input'];
 type ReplaceRangeAsTickInput = MutationOperationMap['replaceRangeAsTick']['input'];
@@ -56,6 +59,16 @@ interface TextWindowTransportRequest {
   readonly frontierRef: string;
   readonly readBasisHandle: ReadBasisHandle;
   readonly input: TextWindowRangeInput;
+}
+
+interface OpticClientContext {
+  readonly transport: EchoWasmKernelTransport;
+  readonly sessionPort: JeditWorldlineSessionPort;
+  readonly readBasisHandles: ReadBasisHandleRegistry;
+}
+
+export interface CreateEchoTransportJeditOpticClientOptions {
+  readonly sessionPort?: JeditWorldlineSessionPort;
 }
 
 export class JeditOpticTransportObstructionError extends Error {
@@ -79,91 +92,107 @@ export class JeditOpticTransportProtocolError extends Error {
 
 export function createEchoTransportJeditOpticClient(
   transport: EchoWasmKernelTransport,
+  options: CreateEchoTransportJeditOpticClientOptions = {},
 ): JeditOpticClient {
-  const readBasisHandles = new ReadBasisHandleRegistry();
+  const context: OpticClientContext = {
+    transport,
+    // Prefer the transport's session port (in-process transports) so the
+    // optic client registers sessions on the same instance the transport
+    // reads from. Falls back to provided/default for real-WASM transports.
+    sessionPort: options.sessionPort ?? transport.jeditSessionPort ?? createInMemoryJeditWorldlineSessionPort(),
+    readBasisHandles: new ReadBasisHandleRegistry(),
+  };
   return {
-    openTextBuffer: (input) => openTextBufferViaTransport(transport, readBasisHandles, input),
-    createBufferWorldline: (input) => createBufferWorldlineViaTransport(transport, input),
-    replaceRangeAsTick: (session, input) => replaceRangeAsTickViaTransport(transport, session, input),
-    createCheckpoint: (session, input) => createCheckpointViaTransport(transport, session, input),
-    worldlineSnapshot: (session, frontierRef, input) => worldlineSnapshotViaTransport(transport, session, frontierRef, input),
-    textWindow: (session, frontierRef, readBasisHandle, input) => textWindowViaTransport(transport, readBasisHandles, {
+    openTextBuffer: (input) => openTextBufferViaTransport(context, input),
+    createBufferWorldline: (input) => createBufferWorldlineViaTransport(context, input),
+    replaceRangeAsTick: (session, input) => replaceRangeAsTickViaTransport(context, session, input),
+    createCheckpoint: (session, input) => createCheckpointViaTransport(context, session, input),
+    worldlineSnapshot: (session, frontierRef, input) => worldlineSnapshotViaTransport(context, session, frontierRef, input),
+    textWindow: (session, frontierRef, readBasisHandle, input) => textWindowViaTransport(context, {
       session,
       frontierRef,
       readBasisHandle,
       input,
     }),
+    requestRunUntilIdle: async () => {
+      // In-process transports complete synchronously inside their await microtasks;
+      // a single Promise.resolve() boundary suffices to flush them. Real async
+      // wiring (worker / daemon) will replace this with a transport-level barrier.
+      await Promise.resolve();
+    },
   };
 }
 
-function openTextBufferViaTransport(
-  transport: EchoWasmKernelTransport,
-  readBasisHandles: ReadBasisHandleRegistry,
+async function openTextBufferViaTransport(
+  context: OpticClientContext,
   input: CreateBufferWorldlineInput,
-): OpenTextBufferExecution {
-  const execution = createBufferWorldlineViaTransport(transport, input);
+): Promise<OpenTextBufferExecution> {
+  const execution = await createBufferWorldlineViaTransport(context, input);
   return {
     ...execution,
-    readBasisHandle: readBasisHandles.createForSession(execution.nextSession),
+    readBasisHandle: context.readBasisHandles.createForSession(execution.nextSession),
   };
 }
 
-function createBufferWorldlineViaTransport(
-  transport: EchoWasmKernelTransport,
+async function createBufferWorldlineViaTransport(
+  context: OpticClientContext,
   input: CreateBufferWorldlineInput,
-): CreateBufferWorldlineExecution {
-  const response = checkedIntentResponse(transport, {
-    kind: JEDIT_INTENT_REQUEST_KIND,
+): Promise<CreateBufferWorldlineExecution> {
+  const response = await dispatchMutation(context, {
     operationName: CREATE_BUFFER_WORLDLINE_OPERATION,
-    input,
+    vars: toCreateBufferWorldlineVars(input),
   });
   if (response.operationName !== CREATE_BUFFER_WORLDLINE_OPERATION) {
     throwUnexpectedOperation(CREATE_BUFFER_WORLDLINE_OPERATION, response.operationName);
   }
-  return toCreateBufferWorldlineExecution(response.execution);
+  const execution = response.execution;
+  context.sessionPort.registerSession(execution.nextSession);
+  return execution;
 }
 
-function replaceRangeAsTickViaTransport(
-  transport: EchoWasmKernelTransport,
+async function replaceRangeAsTickViaTransport(
+  context: OpticClientContext,
   session: JeditWorldlineSession,
   input: ReplaceRangeAsTickInput,
-): ReplaceRangeAsTickExecution {
-  const response = checkedIntentResponse(transport, {
-    kind: JEDIT_INTENT_REQUEST_KIND,
+): Promise<ReplaceRangeAsTickExecution> {
+  context.sessionPort.registerSession(session);
+  const response = await dispatchMutation(context, {
     operationName: REPLACE_RANGE_AS_TICK_OPERATION,
-    session,
-    input,
+    vars: toReplaceRangeAsTickVars(input),
   });
   if (response.operationName !== REPLACE_RANGE_AS_TICK_OPERATION) {
     throwUnexpectedOperation(REPLACE_RANGE_AS_TICK_OPERATION, response.operationName);
   }
-  return toReplaceRangeAsTickExecution(response.execution);
+  const execution = response.execution;
+  context.sessionPort.registerSession(execution.nextSession);
+  return execution;
 }
 
-function createCheckpointViaTransport(
-  transport: EchoWasmKernelTransport,
+async function createCheckpointViaTransport(
+  context: OpticClientContext,
   session: JeditWorldlineSession,
   input: CreateCheckpointInput,
-): CreateCheckpointExecution {
-  const response = checkedIntentResponse(transport, {
-    kind: JEDIT_INTENT_REQUEST_KIND,
+): Promise<CreateCheckpointExecution> {
+  context.sessionPort.registerSession(session);
+  const response = await dispatchMutation(context, {
     operationName: CREATE_CHECKPOINT_OPERATION,
-    session,
-    input,
+    vars: toCreateCheckpointVars(input),
   });
   if (response.operationName !== CREATE_CHECKPOINT_OPERATION) {
     throwUnexpectedOperation(CREATE_CHECKPOINT_OPERATION, response.operationName);
   }
-  return toCreateCheckpointExecution(response.execution);
+  const execution = response.execution;
+  context.sessionPort.registerSession(execution.nextSession);
+  return execution;
 }
 
-function worldlineSnapshotViaTransport(
-  transport: EchoWasmKernelTransport,
+async function worldlineSnapshotViaTransport(
+  context: OpticClientContext,
   session: JeditWorldlineSession,
   frontierRef: string,
   input: WorldlineSnapshotInput,
-): WorldlineSnapshotReadingEnvelope {
-  const response = checkedObserveResponse(transport, {
+): Promise<WorldlineSnapshotReadingEnvelope> {
+  const response = await checkedObserveResponse(context, {
     kind: JEDIT_OBSERVE_REQUEST_KIND,
     operationName: WORLDLINE_SNAPSHOT_OPERATION,
     session,
@@ -173,25 +202,24 @@ function worldlineSnapshotViaTransport(
   if (response.operationName !== WORLDLINE_SNAPSHOT_OPERATION) {
     throwUnexpectedOperation(WORLDLINE_SNAPSHOT_OPERATION, response.operationName);
   }
-  return toWorldlineSnapshotReadingEnvelope(response.envelope);
+  return response.envelope;
 }
 
-function textWindowViaTransport(
-  transport: EchoWasmKernelTransport,
-  readBasisHandles: ReadBasisHandleRegistry,
+async function textWindowViaTransport(
+  context: OpticClientContext,
   request: TextWindowTransportRequest,
-): TextWindowReadingEnvelope {
-  const response = checkedObserveResponse(transport, {
+): Promise<TextWindowReadingEnvelope> {
+  const response = await checkedObserveResponse(context, {
     kind: JEDIT_OBSERVE_REQUEST_KIND,
     operationName: TEXT_WINDOW_OPERATION,
     session: request.session,
     frontierRef: request.frontierRef,
-    input: toTextWindowInput(readBasisHandles, request.session, request.readBasisHandle, request.input),
+    input: toTextWindowInput(context.readBasisHandles, request.session, request.readBasisHandle, request.input),
   });
   if (response.operationName !== TEXT_WINDOW_OPERATION) {
     throwUnexpectedOperation(TEXT_WINDOW_OPERATION, response.operationName);
   }
-  return toTextWindowReadingEnvelope(response.envelope);
+  return response.envelope;
 }
 
 function toTextWindowInput(
@@ -206,40 +234,59 @@ function toTextWindowInput(
   };
 }
 
-function submitIntent(
-  transport: EchoWasmKernelTransport,
-  request: JeditIntentRequest,
-): JeditIntentResponse {
-  return decodeJeditIntentResponse(
-    transport.submitIntentBytes(encodeJeditIntentRequest(request)),
-  );
+function toCreateBufferWorldlineVars(input: CreateBufferWorldlineInput): CreateBufferWorldlineVars {
+  return {
+    input: {
+      bufferKey: input.bufferKey,
+      initialText: input.initialText ?? null,
+      projectionPath: input.projectionPath ?? null,
+      createInitialCheckpoint: input.createInitialCheckpoint ?? null,
+    },
+  };
 }
 
-function observe(
-  transport: EchoWasmKernelTransport,
-  request: JeditObserveRequest,
-): JeditObserveResponse {
-  return decodeJeditObserveResponse(
-    transport.observeBytes(encodeJeditObserveRequest(request)),
-  );
+function toReplaceRangeAsTickVars(input: ReplaceRangeAsTickInput): ReplaceRangeAsTickVars {
+  return {
+    input: {
+      worldlineId: input.worldlineId,
+      baseHeadId: input.baseHeadId,
+      startByte: input.startByte,
+      endByte: input.endByte,
+      insertText: input.insertText,
+      author: input.author ?? null,
+    },
+  };
 }
 
-function checkedIntentResponse(
-  transport: EchoWasmKernelTransport,
-  request: JeditIntentRequest,
-): JeditOkIntentResponse {
-  const response = submitIntent(transport, request);
+function toCreateCheckpointVars(input: CreateCheckpointInput): CreateCheckpointVars {
+  return {
+    input: {
+      worldlineId: input.worldlineId,
+      kind: input.kind,
+      label: input.label ?? null,
+    },
+  };
+}
+
+async function dispatchMutation(
+  context: OpticClientContext,
+  envelope: JeditMutationEnvelopeInput,
+): Promise<JeditOkIntentResponse> {
+  const responseBytes = context.transport.submitIntentBytes(encodeJeditMutationIntentEnvelope(envelope));
+  const response = decodeJeditIntentResponse(responseBytes);
   if (response.status === JEDIT_TRANSPORT_STATUS_OBSTRUCTED) {
     throw new JeditOpticTransportObstructionError(response.operationName, response.obstruction);
   }
   return response;
 }
 
-function checkedObserveResponse(
-  transport: EchoWasmKernelTransport,
+async function checkedObserveResponse(
+  context: OpticClientContext,
   request: JeditObserveRequest,
-): JeditOkObserveResponse {
-  const response = observe(transport, request);
+): Promise<JeditOkObserveResponse> {
+  const response = decodeJeditObserveResponse(
+    context.transport.observeBytes(encodeJeditObserveRequest(request)),
+  );
   if (response.status === JEDIT_TRANSPORT_STATUS_OBSTRUCTED) {
     throw new JeditOpticTransportObstructionError(response.operationName, response.obstruction);
   }

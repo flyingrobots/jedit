@@ -29,6 +29,13 @@ import {
 } from '../generated/jedit/rope.zod.generated.js';
 import { JeditRetainedEvidenceInventorySchema } from './jedit-retained-evidence-codec.js';
 
+// EINT envelope codec re-export (kept here so adapters import wire and
+// envelope codecs from one module — see quality-gate import cap).
+export {
+  decodeJeditMutationIntentEnvelope, encodeJeditMutationIntentEnvelope, UnknownMutationOpIdError,
+  type DecodedJeditMutationIntent, type JeditMutationEnvelopeInput,
+} from './jedit-mutation-envelope-codec.js';
+
 export const JEDIT_INTENT_REQUEST_KIND = 'jedit.intent-request';
 export const JEDIT_OBSERVE_REQUEST_KIND = 'jedit.observe-request';
 export const JEDIT_SCHEDULER_STATUS_KIND = 'jedit.scheduler-status';
@@ -154,26 +161,6 @@ const TextWindowReadingEnvelopeSchema = z.object({
   retainedEvidence: JeditRetainedEvidenceInventorySchema,
 });
 
-const CreateBufferWorldlineIntentRequestSchema = z.object({
-  kind: z.literal(JEDIT_INTENT_REQUEST_KIND),
-  operationName: z.literal(CREATE_BUFFER_WORLDLINE_OPERATION),
-  input: MutationOperationSchemas.createBufferWorldline.input,
-});
-
-const ReplaceRangeAsTickIntentRequestSchema = z.object({
-  kind: z.literal(JEDIT_INTENT_REQUEST_KIND),
-  operationName: z.literal(REPLACE_RANGE_AS_TICK_OPERATION),
-  session: JeditWorldlineSessionSchema,
-  input: MutationOperationSchemas.replaceRangeAsTick.input,
-});
-
-const CreateCheckpointIntentRequestSchema = z.object({
-  kind: z.literal(JEDIT_INTENT_REQUEST_KIND),
-  operationName: z.literal(CREATE_CHECKPOINT_OPERATION),
-  session: JeditWorldlineSessionSchema,
-  input: MutationOperationSchemas.createCheckpoint.input,
-});
-
 const WorldlineSnapshotObserveRequestSchema = z.object({
   kind: z.literal(JEDIT_OBSERVE_REQUEST_KIND),
   operationName: z.literal(WORLDLINE_SNAPSHOT_OPERATION),
@@ -246,12 +233,6 @@ const SchedulerStatusSchema = z.object({
   state: z.literal(SCHEDULER_STATE_IDLE),
   host: z.string(),
 });
-
-const JeditIntentRequestSchema = z.union([
-  CreateBufferWorldlineIntentRequestSchema,
-  ReplaceRangeAsTickIntentRequestSchema,
-  CreateCheckpointIntentRequestSchema,
-]);
 
 const JeditObserveRequestSchema = z.union([
   WorldlineSnapshotObserveRequestSchema,
@@ -389,14 +370,6 @@ type JsonObject = { readonly [key: string]: JsonValueCandidate };
 type JsonValue = JsonPrimitive | JsonObject | readonly JsonValue[];
 type JsonValueCandidate = JsonPrimitive | JsonObject | readonly JsonValueCandidate[];
 
-export function encodeJeditIntentRequest(request: JeditIntentRequest): Uint8Array {
-  return encodeJson(JeditIntentRequestSchema.parse(request));
-}
-
-export function decodeJeditIntentRequest(bytes: Uint8Array): JeditIntentRequest {
-  return JeditIntentRequestSchema.parse(parseJsonBytes(bytes));
-}
-
 export function encodeJeditObserveRequest(request: JeditObserveRequest): Uint8Array {
   return encodeJson(JeditObserveRequestSchema.parse(request));
 }
@@ -423,36 +396,6 @@ export function decodeJeditObserveResponse(bytes: Uint8Array): JeditObserveRespo
 
 export function encodeJeditSchedulerStatus(status: JeditSchedulerStatus): Uint8Array {
   return encodeJson(SchedulerStatusSchema.parse(status));
-}
-
-export function toCreateBufferWorldlineExecution(
-  execution: CreateBufferWorldlineExecution,
-): CreateBufferWorldlineExecution {
-  return execution;
-}
-
-export function toReplaceRangeAsTickExecution(
-  execution: ReplaceRangeAsTickExecution,
-): ReplaceRangeAsTickExecution {
-  return execution;
-}
-
-export function toCreateCheckpointExecution(
-  execution: CreateCheckpointExecution,
-): CreateCheckpointExecution {
-  return execution;
-}
-
-export function toWorldlineSnapshotReadingEnvelope(
-  envelope: WorldlineSnapshotReadingEnvelope,
-): WorldlineSnapshotReadingEnvelope {
-  return envelope;
-}
-
-export function toTextWindowReadingEnvelope(
-  envelope: TextWindowReadingEnvelope,
-): TextWindowReadingEnvelope {
-  return envelope;
 }
 
 function encodeJson(value: object): Uint8Array {

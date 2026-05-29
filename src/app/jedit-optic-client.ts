@@ -30,18 +30,21 @@ type TextWindowInput = QueryOperationMap['textWindow']['input'];
 export function createInMemoryJeditOpticClient(runtime: HotTextRuntimePort, hash: HashPort): JeditOpticClient {
   const readBasisHandles = new ReadBasisHandleRegistry();
   return {
-    openTextBuffer: (input) => openTextBuffer(runtime, hash, readBasisHandles, input),
-    createBufferWorldline: (input) => createBufferWorldline(runtime, input, hash),
-    replaceRangeAsTick: (session, input) => replaceRangeAsTick(runtime, session, input, hash),
-    createCheckpoint: (session, input) => createCheckpoint(runtime, session, input, hash),
-    worldlineSnapshot: (session, frontierRef, input) => readWorldlineSnapshotWithObserverPlan(runtime, session, frontierRef, input, hash),
-    textWindow: (session, frontierRef, readBasisHandle, input) => readTextWindowWithObserverPlan(
+    openTextBuffer: async (input) => openTextBuffer(runtime, hash, readBasisHandles, input),
+    createBufferWorldline: async (input) => createBufferWorldline(runtime, input, hash),
+    replaceRangeAsTick: async (session, input) => replaceRangeAsTick(runtime, session, input, hash),
+    createCheckpoint: async (session, input) => createCheckpoint(runtime, session, input, hash),
+    worldlineSnapshot: async (session, frontierRef, input) => readWorldlineSnapshotWithObserverPlan(runtime, session, frontierRef, input, hash),
+    textWindow: async (session, frontierRef, readBasisHandle, input) => readTextWindowWithObserverPlan(
       runtime,
       session,
       frontierRef,
       toTextWindowInput(readBasisHandles, session, readBasisHandle, input),
       hash,
     ),
+    requestRunUntilIdle: async () => {
+      await Promise.resolve();
+    },
   };
 }
 

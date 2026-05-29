@@ -4,10 +4,10 @@ import {
 import {
   createJeditContractQueryObserverRegistry,
 } from '../app/jedit-contract-query-observers.js';
-import { JEDIT_HOT_TEXT_PACKAGE_ID } from '../app/jedit-contract-package.js';
 import {
   createDefaultJeditHostingBoundaries,
   createJeditSubmissionId,
+  JEDIT_HOT_TEXT_PACKAGE_ID,
   JeditContractStatePortError,
   recordAcceptedJeditSubmission,
 } from '../app/jedit-hosting-boundaries.js';
@@ -45,7 +45,6 @@ import { createHashPort } from './hash.js';
 import {
   CREATE_BUFFER_WORLDLINE_OPERATION,
   CREATE_CHECKPOINT_OPERATION,
-  decodeJeditIntentRequest,
   decodeJeditObserveRequest,
   encodeJeditIntentResponse,
   encodeJeditObserveResponse,
@@ -62,6 +61,11 @@ import {
   type JeditObserveResponse,
   type JeditTransportObstruction,
 } from './jedit-echo-optic-codec.js';
+import type { JeditWorldlineSessionPort } from '../ports/jedit-worldline-session-port.js';
+import {
+  createInstalledJeditEintBridge,
+  type JeditEintBridge,
+} from './installed-jedit-eint-bridge.js';
 
 const INSTALLED_CONTRACT_MODULE_SPECIFIER = 'installed:jedit-hot-text-runtime';
 const INSTALLED_CONTRACT_CODEC_ID = 'jedit.installed-contract+json';
@@ -86,6 +90,7 @@ export interface InstalledJeditContractEchoTransportOptions {
   readonly submissionLedger?: JeditSubmissionLedgerPort;
   readonly ticketedWorkPort?: JeditTicketedWorkPort;
   readonly packageHost?: EchoContractPackageHostPort;
+  readonly sessionPort?: JeditWorldlineSessionPort;
 }
 
 interface InstalledJeditContractEchoTransportContext {
@@ -98,6 +103,7 @@ interface InstalledJeditContractEchoTransportContext {
   readonly handlerInvocationSink?: JeditHandlerInvocationSink;
   readonly submissionLedger: JeditSubmissionLedgerPort;
   readonly ticketedWorkPort: JeditTicketedWorkPort;
+  readonly bridge: JeditEintBridge;
 }
 
 interface AcceptedSubmissionContext {
@@ -125,6 +131,7 @@ export function createInstalledJeditContractEchoTransport(
     schedulerStatusBytes() {
       return encodeInstalledSchedulerStatus();
     },
+    jeditSessionPort: context.bridge.sessionPort,
   };
 }
 
@@ -156,6 +163,7 @@ function createTransportContext(
     handlerInvocationSink: options.handlerInvocationSink,
     submissionLedger: options.submissionLedger ?? defaults.submissionLedger,
     ticketedWorkPort: options.ticketedWorkPort ?? defaults.ticketedWorkPort,
+    bridge: createInstalledJeditEintBridge({ sessionPort: options.sessionPort }),
   };
 }
 
@@ -163,7 +171,11 @@ function submitInstalledIntent(
   context: InstalledJeditContractEchoTransportContext,
   intentBytes: Uint8Array,
 ): Uint8Array {
-  const request = decodeJeditIntentRequest(intentBytes);
+  const resolved = context.bridge.resolveIntent(intentBytes);
+  if (resolved.status === 'obstructed') {
+    return encodeJeditIntentResponse(resolved.response);
+  }
+  const request = resolved.request;
   if (!context.isPackageInstalled) {
     return encodeJeditIntentResponse(obstructedIntent(request, packageNotInstalledObstruction()));
   }
@@ -173,10 +185,7 @@ function submitInstalledIntent(
     return encodeJeditIntentResponse(obstructedIntent(request, ticketedWorkObstruction(ticketedWork)));
   }
   recordRuntimeWorkEnvelope(context.workSink, intentBytes, request, context.hash, submission.submissionId);
-
-  return encodeJeditIntentResponse(
-    executeIntent(context.mutations, context.handlerInvocationSink, request),
-  );
+  return encodeJeditIntentResponse(executeIntent(context.mutations, context.handlerInvocationSink, request));
 }
 
 function recordAcceptedSubmission(

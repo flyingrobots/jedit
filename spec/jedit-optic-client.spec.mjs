@@ -19,6 +19,18 @@ const ECHO_BACKED_TEXT_BUFFER_SESSION_MODULE_PATH = path.join(
   'adapters',
   'echo-backed-text-buffer-session.js',
 );
+const ENVELOPE_CODEC_MODULE_PATH = path.join(
+  REPO_ROOT,
+  'dist',
+  'adapters',
+  'jedit-mutation-envelope-codec.js',
+);
+const SESSION_PORT_MODULE_PATH = path.join(
+  REPO_ROOT,
+  'dist',
+  'adapters',
+  'in-memory-jedit-worldline-session-port.js',
+);
 const LEGACY_EAGER_LOAD_CAP_BYTES = 24 * 1024;
 const STACK_WITNESS_AUTHOR = 'stack-witness-0001';
 const STACK_WITNESS_BUFFER_KEY = 'demo.txt';
@@ -57,6 +69,8 @@ async function loadModules() {
     readBasisHandleModule,
     textBufferSessionModule,
     echoBackedTextBufferSessionModule,
+    envelopeCodecModule,
+    sessionPortModule,
   ] = await Promise.all([
     import(pathToFileURL(OPTIC_CLIENT_MODULE_PATH).href),
     import(pathToFileURL(ADAPTER_MODULE_PATH).href),
@@ -67,6 +81,8 @@ async function loadModules() {
     import(pathToFileURL(READ_BASIS_HANDLE_MODULE_PATH).href),
       import(pathToFileURL(TEXT_BUFFER_SESSION_MODULE_PATH).href),
       import(pathToFileURL(ECHO_BACKED_TEXT_BUFFER_SESSION_MODULE_PATH).href),
+    import(pathToFileURL(ENVELOPE_CODEC_MODULE_PATH).href),
+    import(pathToFileURL(SESSION_PORT_MODULE_PATH).href),
   ]);
 
   return {
@@ -79,6 +95,8 @@ async function loadModules() {
     readBasisHandleModule,
     textBufferSessionModule,
     echoBackedTextBufferSessionModule,
+    envelopeCodecModule,
+    sessionPortModule,
   };
 }
 
@@ -87,7 +105,7 @@ test('in-memory optic client exposes GraphQL-shaped mutation and observer operat
   const runtime = adapter.createInMemoryHotTextRuntime();
   const client = opticClientModule.createInMemoryJeditOpticClient(runtime, hashModule.createHashPort());
 
-  const created = client.createBufferWorldline({
+  const created = await client.createBufferWorldline({
     bufferKey: 'notes/today.md',
     initialText: 'hello world',
     projectionPath: '/tmp/notes/today.md',
@@ -97,7 +115,7 @@ test('in-memory optic client exposes GraphQL-shaped mutation and observer operat
   assert.equal(created.result.worldline.bufferKey, 'notes/today.md');
   assert.equal(created.result.checkpoint?.kind, 'INITIAL');
 
-  const edited = client.replaceRangeAsTick(created.nextSession, {
+  const edited = await client.replaceRangeAsTick(created.nextSession, {
     worldlineId: created.nextSession.worldline.worldlineId,
     baseHeadId: created.nextSession.worldline.canonicalHeadId,
     startByte: 5,
@@ -109,7 +127,7 @@ test('in-memory optic client exposes GraphQL-shaped mutation and observer operat
   assert.ok(edited.result);
   assert.equal(edited.result.ropeDiff.rewriteKind, 'REPLACE_RANGE_AS_TICK');
 
-  const saved = client.createCheckpoint(edited.nextSession, {
+  const saved = await client.createCheckpoint(edited.nextSession, {
     worldlineId: edited.nextSession.worldline.worldlineId,
     kind: 'MANUAL_SAVE',
     label: 'after edit',
@@ -118,7 +136,7 @@ test('in-memory optic client exposes GraphQL-shaped mutation and observer operat
   assert.ok(saved.result);
   assert.equal(saved.result.checkpoint.kind, 'MANUAL_SAVE');
 
-  const reading = client.worldlineSnapshot(
+  const reading = await client.worldlineSnapshot(
     saved.nextSession,
     'frontier:wl:notes-today-md:2',
     {
@@ -137,8 +155,11 @@ test('transport-backed optic client exercises the fake Echo host through encoded
     transportClientModule,
     fakeTransportModule,
     codecModule,
+    envelopeCodecModule,
+    sessionPortModule,
   } = await loadModules();
-  const fakeTransport = fakeTransportModule.createFakeEchoJeditOpticTransport();
+  const sessionPort = sessionPortModule.createInMemoryJeditWorldlineSessionPort();
+  const fakeTransport = fakeTransportModule.createFakeEchoJeditOpticTransport({ sessionPort });
   const calls = [];
   const transport = {
     kernelInfo() {
@@ -157,16 +178,16 @@ test('transport-backed optic client exercises the fake Echo host through encoded
       return fakeTransport.schedulerStatusBytes();
     },
   };
-  const client = transportClientModule.createEchoTransportJeditOpticClient(transport);
+  const client = transportClientModule.createEchoTransportJeditOpticClient(transport, { sessionPort });
 
-  const created = client.createBufferWorldline({
+  const created = await client.createBufferWorldline({
     bufferKey: 'notes/transport.md',
     initialText: 'alpha omega',
     projectionPath: '/tmp/notes/transport.md',
     createInitialCheckpoint: true,
   });
 
-  const edited = client.replaceRangeAsTick(created.nextSession, {
+  const edited = await client.replaceRangeAsTick(created.nextSession, {
     worldlineId: created.nextSession.worldline.worldlineId,
     baseHeadId: created.nextSession.worldline.canonicalHeadId,
     startByte: 5,
@@ -175,13 +196,13 @@ test('transport-backed optic client exercises the fake Echo host through encoded
     author: 'transport-test',
   });
 
-  const saved = client.createCheckpoint(edited.nextSession, {
+  const saved = await client.createCheckpoint(edited.nextSession, {
     worldlineId: edited.nextSession.worldline.worldlineId,
     kind: 'MANUAL_SAVE',
     label: 'transport checkpoint',
   });
 
-  const reading = client.worldlineSnapshot(
+  const reading = await client.worldlineSnapshot(
     saved.nextSession,
     'frontier:transport:1',
     {
@@ -199,17 +220,20 @@ test('transport-backed optic client exercises the fake Echo host through encoded
     assert.ok(entry[1] instanceof Array, 'transport calls should capture byte arrays, not runtime objects');
   }
 
-  const staleBytes = fakeTransport.submitIntentBytes(codecModule.encodeJeditIntentRequest({
-    kind: codecModule.JEDIT_INTENT_REQUEST_KIND,
+  // Stale base head injection: send a valid EINT envelope but with a stale
+  // baseHeadId. Session is resolved via port (already registered above), and
+  // the handler rejects on base head mismatch.
+  const staleBytes = fakeTransport.submitIntentBytes(envelopeCodecModule.encodeJeditMutationIntentEnvelope({
     operationName: codecModule.REPLACE_RANGE_AS_TICK_OPERATION,
-    session: created.nextSession,
-    input: {
-      worldlineId: created.nextSession.worldline.worldlineId,
-      baseHeadId: 'head:stale',
-      startByte: 0,
-      endByte: 0,
-      insertText: '!',
-      author: 'transport-test',
+    vars: {
+      input: {
+        worldlineId: created.nextSession.worldline.worldlineId,
+        baseHeadId: 'head:stale',
+        startByte: 0,
+        endByte: 0,
+        insertText: '!',
+        author: 'transport-test',
+      },
     },
   }));
   const stale = codecModule.decodeJeditIntentResponse(staleBytes);
@@ -255,6 +279,7 @@ test('transport-backed textWindow uses an opaque read basis handle', async () =>
     schedulerStatusBytes() {
       return fakeTransport.schedulerStatusBytes();
     },
+    jeditSessionPort: fakeTransport.jeditSessionPort,
   };
   const client = transportClientModule.createEchoTransportJeditOpticClient(transport);
   const largeLines = Array.from(
@@ -265,7 +290,7 @@ test('transport-backed textWindow uses an opaque read basis handle', async () =>
 
   assert.ok(byteLength(largeText) > LEGACY_EAGER_LOAD_CAP_BYTES);
 
-  const opened = client.openTextBuffer({
+  const opened = await client.openTextBuffer({
     bufferKey: 'src/large-main.ts',
     initialText: largeText,
     projectionPath: '/tmp/src/large-main.ts',
@@ -289,7 +314,7 @@ test('transport-backed textWindow uses an opaque read basis handle', async () =>
     kind: opened.readBasisHandle.kind,
     id: `${SEMANTIC_READ_BASIS_HANDLE_PREFIX}${opened.nextSession.worldline.bufferKey}`,
   });
-  assert.throws(
+  await assert.rejects(
     () => client.textWindow(
       opened.nextSession,
       'frontier:text-window:semantic-forgery',
@@ -308,7 +333,7 @@ test('transport-backed textWindow uses an opaque read basis handle', async () =>
     kind: opened.readBasisHandle.kind,
     id: opened.readBasisHandle.id,
   });
-  assert.throws(
+  await assert.rejects(
     () => client.textWindow(
       opened.nextSession,
       'frontier:text-window:cloned-handle',
@@ -324,7 +349,7 @@ test('transport-backed textWindow uses an opaque read basis handle', async () =>
     readBasisHandleModule.ReadBasisHandleResolutionError,
   );
 
-  const envelope = client.textWindow(
+  const envelope = await client.textWindow(
     opened.nextSession,
     'frontier:text-window:1',
     opened.readBasisHandle,
@@ -357,13 +382,13 @@ test('transport-backed textWindow uses an opaque read basis handle', async () =>
   assert.equal(envelope.reading.lines[0].endByte, lineStartByte(largeLines, 500) - 1);
   assert.ok(JSON.stringify(envelope.reading).length < byteLength(largeText));
 
-  const otherOpened = client.openTextBuffer({
+  const otherOpened = await client.openTextBuffer({
     bufferKey: 'src/other-main.ts',
     initialText: 'other',
     projectionPath: '/tmp/src/other-main.ts',
     createInitialCheckpoint: false,
   });
-  assert.throws(
+  await assert.rejects(
     () => client.textWindow(
       otherOpened.nextSession,
       'frontier:text-window:cross-session',
@@ -378,7 +403,7 @@ test('transport-backed textWindow uses an opaque read basis handle', async () =>
     ),
     readBasisHandleModule.ReadBasisHandleResolutionError,
   );
-  const otherEnvelope = client.textWindow(
+  const otherEnvelope = await client.textWindow(
     otherOpened.nextSession,
     'frontier:text-window:other',
     otherOpened.readBasisHandle,
@@ -397,7 +422,7 @@ test('transport-backed textWindow uses an opaque read basis handle', async () =>
 });
 
 test('Stack Witness 0001 walks createBuffer -> replaceRange -> textWindow through Echo transport', async () => {
-  const { transportClientModule, fakeTransportModule, codecModule } = await loadModules();
+  const { transportClientModule, fakeTransportModule, codecModule, envelopeCodecModule } = await loadModules();
   const fakeTransport = fakeTransportModule.createFakeEchoJeditOpticTransport();
   const intentRequests = [];
   const observeRequests = [];
@@ -406,7 +431,7 @@ test('Stack Witness 0001 walks createBuffer -> replaceRange -> textWindow throug
       return fakeTransport.kernelInfo();
     },
     submitIntentBytes(bytes) {
-      intentRequests.push(codecModule.decodeJeditIntentRequest(bytes));
+      intentRequests.push(envelopeCodecModule.decodeJeditMutationIntentEnvelope(bytes));
       return fakeTransport.submitIntentBytes(bytes);
     },
     observeBytes(bytes) {
@@ -416,17 +441,20 @@ test('Stack Witness 0001 walks createBuffer -> replaceRange -> textWindow throug
     schedulerStatusBytes() {
       return fakeTransport.schedulerStatusBytes();
     },
+    // Proxies must forward the session port so the optic client registers
+    // sessions on the same instance the fake transport reads from.
+    jeditSessionPort: fakeTransport.jeditSessionPort,
   };
   const client = transportClientModule.createEchoTransportJeditOpticClient(transport);
 
-  const opened = client.openTextBuffer({
+  const opened = await client.openTextBuffer({
     bufferKey: STACK_WITNESS_BUFFER_KEY,
     initialText: EMPTY_TEXT,
     projectionPath: STACK_WITNESS_BUFFER_KEY,
     createInitialCheckpoint: false,
   });
 
-  const edited = client.replaceRangeAsTick(opened.nextSession, {
+  const edited = await client.replaceRangeAsTick(opened.nextSession, {
     worldlineId: opened.nextSession.worldline.worldlineId,
     baseHeadId: opened.nextSession.worldline.canonicalHeadId,
     startByte: FIRST_BYTE_OFFSET,
@@ -439,7 +467,7 @@ test('Stack Witness 0001 walks createBuffer -> replaceRange -> textWindow throug
     opened.nextSession.worldline.canonicalHeadId,
   );
 
-  const envelope = client.textWindow(
+  const envelope = await client.textWindow(
     edited.nextSession,
     STACK_WITNESS_FRONTIER_REF,
     opened.readBasisHandle,
