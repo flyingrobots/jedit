@@ -28,6 +28,11 @@ try {
     mod = await import(ROPE_CODEC_PATH);
 } catch (err) {
     // Emit a single failing test so the test runner reports the gap clearly.
+    // We do NOT call process.exit(...) here: process.exit terminates the
+    // process synchronously, which can short-circuit node:test before the
+    // registered test runs and turn a missing generated artifact into a
+    // false-green run. Let node:test own termination — when this test
+    // throws, the runner sets exit code 1 on its own.
     test('rope.codec.generated.ts must exist (run Wesley le-binary-typescript emitter)', () => {
         throw new Error(
             `rope.codec.generated.js not found. Run:\n` +
@@ -37,11 +42,24 @@ try {
             `Original error: ${String(err)}`,
         );
     });
-    process.exit(0); // don't cascade into undefined-function errors
 }
 
 // ---------------------------------------------------------------------------
 // helpers
+
+/**
+ * Encode a u32 as 4 little-endian bytes regardless of platform endianness.
+ *
+ * Uint32Array#buffer reflects platform byte order — using it to build
+ * "expected" wire bytes assumes the host is little-endian, which is true
+ * on x86/arm64 dev machines but is not a portable guarantee. DataView
+ * with the littleEndian flag is the portable way to force LE bytes.
+ */
+function u32LeBytes(value) {
+    const buf = new ArrayBuffer(4);
+    new DataView(buf).setUint32(0, value, /* littleEndian */ true);
+    return new Uint8Array(buf);
+}
 // ---------------------------------------------------------------------------
 
 function hex(bytes) {
@@ -141,7 +159,7 @@ await test('rope codec — encodeCreateBufferWorldlineVars', async t => {
         // bufferKey "demo.txt" = 8 bytes; length prefix 08 00 00 00
         const keyBytes = new TextEncoder().encode('demo.txt');
         const expected = new Uint8Array([
-            ...new Uint8Array(new Uint32Array([keyBytes.length]).buffer), // u32 LE length
+            ...u32LeBytes(keyBytes.length), // u32 LE length
             ...keyBytes,          // "demo.txt"
             0x00,                 // initialText: null
             0x00,                 // projectionPath: null
@@ -164,10 +182,10 @@ await test('rope codec — encodeCreateBufferWorldlineVars', async t => {
         const keyBytes = enc.encode('a');
         const textBytes = enc.encode('hello');
         const expected = new Uint8Array([
-            ...new Uint8Array(new Uint32Array([keyBytes.length]).buffer),
+            ...u32LeBytes(keyBytes.length),
             ...keyBytes,
             0x01, // initialText present
-            ...new Uint8Array(new Uint32Array([textBytes.length]).buffer),
+            ...u32LeBytes(textBytes.length),
             ...textBytes,
             0x00, // projectionPath null
             0x01, // createInitialCheckpoint present
