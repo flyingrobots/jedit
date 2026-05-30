@@ -18,11 +18,15 @@ import {
   type JeditIntentRequest,
   type JeditIntentResponse,
 } from './jedit-echo-optic-codec.js';
-import { createInMemoryJeditWorldlineSessionPort } from './in-memory-jedit-worldline-session-port.js';
 import {
   JeditWorldlineSessionNotRegisteredError,
   type JeditWorldlineSessionPort,
 } from '../ports/jedit-worldline-session-port.js';
+// Re-exported so transport factories that wire the bridge can also
+// construct the default in-memory port from one import statement (keeps
+// installed-jedit-contract-echo-transport.ts under the quality-gate
+// import cap).
+export { createInMemoryJeditWorldlineSessionPort } from './in-memory-jedit-worldline-session-port.js';
 import {
   assertNever,
   envelopeDecodeObstructedResponse,
@@ -56,13 +60,34 @@ export interface JeditEintBridge {
 }
 
 export interface CreateJeditEintBridgeOptions {
-  readonly sessionPort?: JeditWorldlineSessionPort;
+  /**
+   * Required — the bridge will NOT construct a private fallback port if
+   * this is undefined. The shared-session-port invariant is the whole
+   * point of Slice B; a private fallback hides DI mistakes behind a
+   * spurious SESSION_NOT_REGISTERED obstruction emitted at dispatch time
+   * instead of failing fast at construction.
+   */
+  readonly sessionPort: JeditWorldlineSessionPort;
+}
+
+export class JeditEintBridgeDependencyError extends Error {
+  public constructor(message: string) {
+    super(message);
+    this.name = 'JeditEintBridgeDependencyError';
+  }
 }
 
 export function createInstalledJeditEintBridge(
-  options: CreateJeditEintBridgeOptions = {},
+  options: CreateJeditEintBridgeOptions,
 ): JeditEintBridge {
-  const sessionPort = options.sessionPort ?? createInMemoryJeditWorldlineSessionPort();
+  // Reject undefined at runtime as well as at the type level — TS bypasses
+  // (e.g. JS callers, `as unknown` casts) must still fail loudly here.
+  if (options === undefined || options.sessionPort === undefined) {
+    throw new JeditEintBridgeDependencyError(
+      'createInstalledJeditEintBridge: options.sessionPort is required (no private fallback)',
+    );
+  }
+  const { sessionPort } = options;
   return {
     sessionPort,
     decodeEnvelope(intentBytes) {

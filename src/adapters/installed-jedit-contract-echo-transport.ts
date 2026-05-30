@@ -64,6 +64,7 @@ import {
 import type { JeditWorldlineSessionPort } from '../ports/jedit-worldline-session-port.js';
 import type { JeditTransportSeam } from '../ports/jedit-transport-seam.js';
 import {
+  createInMemoryJeditWorldlineSessionPort,
   createInstalledJeditEintBridge,
   type JeditEintBridge,
 } from './installed-jedit-eint-bridge.js';
@@ -136,6 +137,20 @@ export function createInstalledJeditContractEchoTransport(
   };
 }
 
+/**
+ * Resolve the session port at the transport-factory boundary. The bridge
+ * itself rejects undefined (no private fallback); the responsibility for
+ * constructing a default in-memory port lives here, at the seam between
+ * caller and bridge. The same instance is exposed via the seam's
+ * jeditSessionPort so the optic client adopts it via
+ * resolveSharedSessionPort.
+ */
+function resolveTransportSessionPort(
+  provided: JeditWorldlineSessionPort | undefined,
+): JeditWorldlineSessionPort {
+  return provided ?? createInMemoryJeditWorldlineSessionPort();
+}
+
 function createTransportContext(
   options: InstalledJeditContractEchoTransportOptions,
 ): InstalledJeditContractEchoTransportContext {
@@ -148,6 +163,7 @@ function createTransportContext(
   const host = options.packageHost ?? createRecordingPackageHost();
   const install = installJeditContractPackage({ host });
   const isPackageInstalled = install.hostResult.status === ECHO_CONTRACT_PACKAGE_INSTALL_INSTALLED;
+  const sessionPort = resolveTransportSessionPort(options.sessionPort);
 
   return {
     info: {
@@ -164,7 +180,7 @@ function createTransportContext(
     handlerInvocationSink: options.handlerInvocationSink,
     submissionLedger: options.submissionLedger ?? defaults.submissionLedger,
     ticketedWorkPort: options.ticketedWorkPort ?? defaults.ticketedWorkPort,
-    bridge: createInstalledJeditEintBridge({ sessionPort: options.sessionPort }),
+    bridge: createInstalledJeditEintBridge({ sessionPort }),
   };
 }
 
