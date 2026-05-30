@@ -21,8 +21,11 @@ acceptance_criteria:
 
 # Sessions Migration
 
-Companion to [echo cycle 0025 — sessions as causal
-contexts](../../../../../echo/docs/design/0025-sessions-as-causal-contexts/design.md).
+Companion to **echo cycle 0025 — sessions as causal contexts**, documented
+in the Echo repository at
+`docs/design/0025-sessions-as-causal-contexts/design.md`. (A cross-repo
+relative-path link was avoided here because the two repositories are
+separate Git roots; the path is descriptive rather than clickable.)
 
 ## Current smell
 
@@ -191,5 +194,5 @@ that could drift between processes.
 
 This card grew out of a cross-repo design conversation rooted in the
 jedit Slice B EINT cutover (commit `26a8f43`). The Echo-side design is
-[0025 — Sessions as Causal
-Contexts](../../../../../echo/docs/design/0025-sessions-as-causal-contexts/design.md).
+**0025 — Sessions as Causal Contexts**, in the Echo repository at
+`docs/design/0025-sessions-as-causal-contexts/design.md`.

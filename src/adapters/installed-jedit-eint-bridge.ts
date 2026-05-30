@@ -18,11 +18,11 @@ import {
   type JeditIntentRequest,
   type JeditIntentResponse,
 } from './jedit-echo-optic-codec.js';
+import { createInMemoryJeditWorldlineSessionPort } from './in-memory-jedit-worldline-session-port.js';
 import {
-  createInMemoryJeditWorldlineSessionPort,
   JeditWorldlineSessionNotRegisteredError,
   type JeditWorldlineSessionPort,
-} from './in-memory-jedit-worldline-session-port.js';
+} from '../ports/jedit-worldline-session-port.js';
 import {
   assertNever,
   envelopeDecodeObstructedResponse,

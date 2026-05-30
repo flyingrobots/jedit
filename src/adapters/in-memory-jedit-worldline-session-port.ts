@@ -9,12 +9,6 @@ import {
   type JeditWorldlineSessionPort,
 } from '../ports/jedit-worldline-session-port.js';
 
-// Re-export so adapters that need both the port + adapter import one module.
-export {
-  JeditWorldlineSessionNotRegisteredError,
-  type JeditWorldlineSessionPort,
-} from '../ports/jedit-worldline-session-port.js';
-
 export function createInMemoryJeditWorldlineSessionPort(): JeditWorldlineSessionPort {
   const sessionsByWorldlineId = new Map<string, JeditWorldlineSession>();
 

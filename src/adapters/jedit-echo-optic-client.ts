@@ -150,6 +150,12 @@ async function createBufferWorldlineViaTransport(
   context: OpticClientContext,
   input: CreateBufferWorldlineInput,
 ): Promise<CreateBufferWorldlineExecution> {
+  // createBufferWorldline does not consume a pre-existing session — it
+  // creates the worldline (and therefore the first session that names it).
+  // No pre-call registration; we register `execution.nextSession` AFTER
+  // the response so later mutations against this worldline can resolve.
+  // (replaceRangeAsTick and createCheckpoint, by contrast, take a session
+  // arg and register it BEFORE dispatching.)
   const response = await dispatchMutation(context, {
     operationName: CREATE_BUFFER_WORLDLINE_OPERATION,
     vars: toCreateBufferWorldlineVars(input),
@@ -280,6 +286,11 @@ function toCreateCheckpointVars(input: CreateCheckpointInput): CreateCheckpointV
   };
 }
 
+// Marked `async` to expose a Promise-returning surface even though the
+// underlying in-process transport completes synchronously. The async
+// keyword is the seam that will defer for real once a worker / daemon /
+// truly-async transport replaces the in-process one (Phase 4 / 6 of the
+// 0024 plan). Today: zero awaits inside.
 async function dispatchMutation(
   context: OpticClientContext,
   envelope: JeditMutationEnvelopeInput,
@@ -292,6 +303,7 @@ async function dispatchMutation(
   return response;
 }
 
+// Same async-surface / sync-impl pattern as dispatchMutation above.
 async function checkedObserveResponse(
   context: OpticClientContext,
   request: JeditObserveRequest,
