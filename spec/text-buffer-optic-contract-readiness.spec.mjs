@@ -106,6 +106,9 @@ test('runtime-facing SDL remains the separate home for Echo coordinates', async 
   assert.match(runtimeContract, /\bbaseHeadId\b/);
   assert.match(runtimeContract, /\bRopeHead\b/);
   assert.match(runtimeContract, /\bRopeDiff\b/);
+  // Cutover ratchet: legacy type names must be gone from the runtime SDL.
+  assert.doesNotMatch(runtimeContract, /\bTickReceipt\b/);
+  assert.doesNotMatch(runtimeContract, /\bTick\b/);
   assert.match(runtimeContract, /@wes_op/);
   assert.match(runtimeContract, /@wes_footprint/);
 });

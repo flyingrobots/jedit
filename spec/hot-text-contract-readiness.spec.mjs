@@ -107,6 +107,15 @@ test('generated Wesley metadata preserves the jedit mutation footprint boundary'
   assert.ok(replaceFootprint.creates.includes('RopeRewrite'));
   assert.ok(replaceFootprint.creates.includes('RopeDiff'));
   assert.ok(replaceFootprint.creates.includes('RopeHead'));
+  // Cutover is full, not half: legacy footprint type names must be gone.
+  assert.ok(
+    !replaceFootprint.creates.includes('Tick'),
+    'legacy footprint name "Tick" must be removed after rope rename',
+  );
+  assert.ok(
+    !replaceFootprint.creates.includes('TickReceipt'),
+    'legacy footprint name "TickReceipt" must be removed after rope rename',
+  );
   assert.deepEqual(
     replaceFootprint.closures.map((closure) => closure.operator),
     ['ropeRangeClosure', 'anchorsIntersectingEditWindow'],
