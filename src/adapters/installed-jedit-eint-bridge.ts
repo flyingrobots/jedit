@@ -82,9 +82,12 @@ export class JeditEintBridgeDependencyError extends Error {
 export function createInstalledJeditEintBridge(
   options: CreateJeditEintBridgeOptions,
 ): JeditEintBridge {
-  // Reject undefined at runtime as well as at the type level — TS bypasses
-  // (e.g. JS callers, `as unknown` casts) must still fail loudly here.
-  if (options === undefined || options.sessionPort === undefined) {
+  // Reject both null and undefined at runtime as well as at the type level —
+  // TS bypasses (JS callers, `as unknown` casts) must still fail loudly. A
+  // null sessionPort blows up downstream in the bridge's getSession path
+  // and defeats the "fail loudly here" contract; the nullish check covers
+  // both forgotten-arg cases.
+  if (options == null || options.sessionPort == null) {
     throw new JeditEintBridgeDependencyError(
       'createInstalledJeditEintBridge: options.sessionPort is required (no private fallback)',
     );

@@ -25,6 +25,23 @@ test('bridge factory requires sessionPort — undefined throws fast', () => {
   );
 });
 
+test('bridge factory requires sessionPort — null throws fast', () => {
+  // JS callers can pass null even when the TS type forbids it. The runtime
+  // guard must catch both null and undefined, otherwise a null port blows
+  // up later in the bridge's getSession path with an opaque TypeError.
+  assert.throws(
+    () => createInstalledJeditEintBridge({ sessionPort: null }),
+    /sessionPort/,
+  );
+});
+
+test('bridge factory requires sessionPort — null options throws fast', () => {
+  assert.throws(
+    () => createInstalledJeditEintBridge(null),
+    /sessionPort/,
+  );
+});
+
 test('bridge factory accepts an explicit sessionPort', () => {
   const sessionPort = createInMemoryJeditWorldlineSessionPort();
   const bridge = createInstalledJeditEintBridge({ sessionPort });
