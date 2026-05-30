@@ -15,6 +15,23 @@
 // ---------------------------------------------------------------------------
 
 const INITIAL_CAPACITY = 256;
+const U8_MAX = 0xff;
+const U16_MAX = 0xffff;
+const U32_MAX = 0xffffffff;
+const I32_MIN = -0x80000000;
+const I32_MAX = 0x7fffffff;
+
+function assertUint(name: string, v: number, max: number): void {
+    if (!Number.isInteger(v) || v < 0 || v > max) {
+        throw new CodecError(`${name} ${v} is out of range`);
+    }
+}
+
+function assertInt32(v: number): void {
+    if (!Number.isInteger(v) || v < I32_MIN || v > I32_MAX) {
+        throw new CodecError(`i32 ${v} is out of range`);
+    }
+}
 
 export class Writer {
     private buf: Uint8Array;
@@ -45,24 +62,28 @@ export class Writer {
     }
 
     writeU8(v: number): void {
+        assertUint('u8', v, U8_MAX);
         this.reserve(1);
-        this.buf[this.pos] = v & 0xff;
+        this.buf[this.pos] = v;
         this.pos += 1;
     }
 
     writeU16Le(v: number): void {
+        assertUint('u16', v, U16_MAX);
         this.reserve(2);
         this.view.setUint16(this.pos, v, /* littleEndian */ true);
         this.pos += 2;
     }
 
     writeU32Le(v: number): void {
+        assertUint('u32', v, U32_MAX);
         this.reserve(4);
         this.view.setUint32(this.pos, v, /* littleEndian */ true);
         this.pos += 4;
     }
 
     writeI32Le(v: number): void {
+        assertInt32(v);
         this.reserve(4);
         this.view.setInt32(this.pos, v, /* littleEndian */ true);
         this.pos += 4;

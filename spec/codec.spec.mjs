@@ -54,6 +54,53 @@ await test('codec primitives', async t => {
         assert.equal(value, 255);
     });
 
+    // ── range checks (fail-fast on invalid integer inputs) ─────────────────
+
+    await t.test('writeU8 rejects negative', () => {
+        const w = new Writer();
+        assert.throws(() => w.writeU8(-1), /out of range|u8/i);
+    });
+
+    await t.test('writeU8 rejects > 255', () => {
+        const w = new Writer();
+        assert.throws(() => w.writeU8(256), /out of range|u8/i);
+    });
+
+    await t.test('writeU8 rejects non-integer', () => {
+        const w = new Writer();
+        assert.throws(() => w.writeU8(1.5), /out of range|u8/i);
+    });
+
+    await t.test('writeU16Le rejects > 65535', () => {
+        const w = new Writer();
+        assert.throws(() => w.writeU16Le(65536), /out of range|u16/i);
+    });
+
+    await t.test('writeU32Le rejects > u32 max', () => {
+        const w = new Writer();
+        assert.throws(() => w.writeU32Le(0x1_0000_0000), /out of range|u32/i);
+    });
+
+    await t.test('writeU32Le rejects negative', () => {
+        const w = new Writer();
+        assert.throws(() => w.writeU32Le(-1), /out of range|u32/i);
+    });
+
+    await t.test('writeI32Le rejects > i32 max', () => {
+        const w = new Writer();
+        assert.throws(() => w.writeI32Le(0x8000_0000), /out of range|i32/i);
+    });
+
+    await t.test('writeI32Le rejects < i32 min', () => {
+        const w = new Writer();
+        assert.throws(() => w.writeI32Le(-0x8000_0001), /out of range|i32/i);
+    });
+
+    await t.test('writeI32Le rejects non-integer', () => {
+        const w = new Writer();
+        assert.throws(() => w.writeI32Le(0.5), /out of range|i32/i);
+    });
+
     // ── u32 ───────────────────────────────────────────────────────────────
 
     await t.test('u32 wire bytes — 0x01020304 is little-endian', () => {
@@ -164,18 +211,18 @@ await test('codec primitives', async t => {
 
     await t.test('bool wire bytes', () => {
         const w = new Writer();
-        w.writeBool(false);
-        w.writeBool(true);
+        w.writeBool(0);
+        w.writeBool(1);
         assert.deepEqual(w.finish(), new Uint8Array([0x00, 0x01]));
     });
 
     await t.test('bool roundtrip false', () => {
-        const { value } = rt(w => w.writeBool(false), r => r.readBool());
+        const { value } = rt(w => w.writeBool(0), r => r.readBool());
         assert.equal(value, false);
     });
 
     await t.test('bool roundtrip true', () => {
-        const { value } = rt(w => w.writeBool(true), r => r.readBool());
+        const { value } = rt(w => w.writeBool(1), r => r.readBool());
         assert.equal(value, true);
     });
 
@@ -303,11 +350,11 @@ await test('codec primitives', async t => {
 
     await t.test('golden: bool(false) = 00, bool(true) = 01', () => {
         const wf = new Writer();
-        wf.writeBool(false);
+        wf.writeBool(0);
         assert.deepEqual(wf.finish(), new Uint8Array([0x00]));
 
         const wt = new Writer();
-        wt.writeBool(true);
+        wt.writeBool(1);
         assert.deepEqual(wt.finish(), new Uint8Array([0x01]));
     });
 
