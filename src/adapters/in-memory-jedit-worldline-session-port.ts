@@ -6,11 +6,12 @@
 import type { JeditWorldlineSession } from '../app/jedit-contract-runtime.js';
 import {
   JeditWorldlineSessionNotRegisteredError,
+  type JeditWorldlineId,
   type JeditWorldlineSessionPort,
 } from '../ports/jedit-worldline-session-port.js';
 
 export function createInMemoryJeditWorldlineSessionPort(): JeditWorldlineSessionPort {
-  const sessionsByWorldlineId = new Map<string, JeditWorldlineSession>();
+  const sessionsByWorldlineId = new Map<JeditWorldlineId, JeditWorldlineSession>();
 
   return {
     registerSession(session) {

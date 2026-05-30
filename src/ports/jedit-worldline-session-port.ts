@@ -8,16 +8,37 @@
 
 import type { JeditWorldlineSession } from '../app/jedit-contract-runtime.js';
 
+/**
+ * Canonical worldline identifier as exposed by the session port.
+ *
+ * Today this is a string alias (no runtime brand) because the broader
+ * worldlineId surface across src/app, src/ports, and the generated rope
+ * contract still uses raw `string`. Promoting to a true branded value
+ * object is a coordinated refactor scoped to the Phase 2 implementation
+ * of echo cycle 0025 (sessions as causal contexts) — at that point the
+ * engine-side `SessionId` and `WorldlineId` become first-class types and
+ * jedit threads them through instead of inventing client-side variants.
+ *
+ * Until then, the alias gives consumers something to import and name so
+ * that future migration can be a single-point change here rather than a
+ * search-and-replace across every caller.
+ *
+ * Canonical form invariant: must equal the `worldlineId` of a
+ * `JeditWorldlineSession.worldline` obtained from the contract runtime.
+ * Constructing one by string concatenation is undefined behavior.
+ */
+export type JeditWorldlineId = string;
+
 export interface JeditWorldlineSessionPort {
   registerSession(session: JeditWorldlineSession): void;
-  getSession(worldlineId: string): JeditWorldlineSession;
-  clearSession(worldlineId: string): void;
+  getSession(worldlineId: JeditWorldlineId): JeditWorldlineSession;
+  clearSession(worldlineId: JeditWorldlineId): void;
 }
 
 export class JeditWorldlineSessionNotRegisteredError extends Error {
-  public readonly worldlineId: string;
+  public readonly worldlineId: JeditWorldlineId;
 
-  public constructor(worldlineId: string) {
+  public constructor(worldlineId: JeditWorldlineId) {
     super(`No jedit worldline session registered for worldlineId=${worldlineId}`);
     this.name = 'JeditWorldlineSessionNotRegisteredError';
     this.worldlineId = worldlineId;
