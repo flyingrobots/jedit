@@ -1,7 +1,7 @@
 import type {
   CheckpointKind,
   QueryTextWindowRequest,
-} from '../generated/jedit/hot-text-runtime.wesley.generated.js';
+} from '../generated/jedit/rope.wesley.generated.js';
 import type { JeditRetainedEvidenceInventory } from './jedit-retained-evidence.js';
 
 export const READ_BASIS_HANDLE_KIND = 'read-basis-handle';

@@ -25,7 +25,7 @@ import type {
   JeditAcceptedPendingIntentOutcome,
   JeditAppliedIntentOutcome,
 } from '../ports/jedit-intent-outcomes.js';
-import { queryTextWindowOperation } from '../generated/jedit/hot-text-runtime.wesley.generated.js';
+import { queryTextWindowOperation } from '../generated/jedit/rope.wesley.generated.js';
 import {
   JEDIT_HOT_TEXT_PACKAGE_ID,
   JEDIT_STRUCTURAL_HISTORY_PACKAGE_ID,

@@ -91,15 +91,7 @@ test('installed transport stages runtime work before mutation handler execution'
       },
     },
   });
-  const intentBytes = modules.codec.encodeJeditIntentRequest({
-    kind: modules.codec.JEDIT_INTENT_REQUEST_KIND,
-    operationName: modules.codec.CREATE_BUFFER_WORLDLINE_OPERATION,
-    input: {
-      bufferKey: BUFFER_KEY,
-      initialText: INITIAL_TEXT,
-      projectionPath: BUFFER_KEY,
-    },
-  });
+  const intentBytes = createBufferWorldlineEnvelope(modules);
 
   const response = modules.codec.decodeJeditIntentResponse(transport.submitIntentBytes(intentBytes));
 
@@ -122,15 +114,7 @@ test('installed transport does not stage query observations as mutation work', a
     },
   });
   const createResponse = modules.codec.decodeJeditIntentResponse(transport.submitIntentBytes(
-    modules.codec.encodeJeditIntentRequest({
-      kind: modules.codec.JEDIT_INTENT_REQUEST_KIND,
-      operationName: modules.codec.CREATE_BUFFER_WORLDLINE_OPERATION,
-      input: {
-        bufferKey: BUFFER_KEY,
-        initialText: INITIAL_TEXT,
-        projectionPath: BUFFER_KEY,
-      },
-    }),
+    createBufferWorldlineEnvelope(modules),
   ));
 
   assert.equal(createResponse.status, modules.codec.JEDIT_TRANSPORT_STATUS_OK);
@@ -164,15 +148,7 @@ test('installed transport invokes handlers with scheduler authority only', async
   });
 
   const response = modules.codec.decodeJeditIntentResponse(transport.submitIntentBytes(
-    modules.codec.encodeJeditIntentRequest({
-      kind: modules.codec.JEDIT_INTENT_REQUEST_KIND,
-      operationName: modules.codec.CREATE_BUFFER_WORLDLINE_OPERATION,
-      input: {
-        bufferKey: BUFFER_KEY,
-        initialText: INITIAL_TEXT,
-        projectionPath: BUFFER_KEY,
-      },
-    }),
+    createBufferWorldlineEnvelope(modules),
   ));
 
   assert.equal(response.status, modules.codec.JEDIT_TRANSPORT_STATUS_OK);
@@ -188,15 +164,7 @@ test('installed transport publishes handler state through jedit state port', asy
     statePort,
   });
   const createResponse = modules.codec.decodeJeditIntentResponse(transport.submitIntentBytes(
-    modules.codec.encodeJeditIntentRequest({
-      kind: modules.codec.JEDIT_INTENT_REQUEST_KIND,
-      operationName: modules.codec.CREATE_BUFFER_WORLDLINE_OPERATION,
-      input: {
-        bufferKey: BUFFER_KEY,
-        initialText: INITIAL_TEXT,
-        projectionPath: BUFFER_KEY,
-      },
-    }),
+    createBufferWorldlineEnvelope(modules),
   ));
 
   assert.equal(createResponse.status, modules.codec.JEDIT_TRANSPORT_STATUS_OK);
@@ -234,15 +202,7 @@ test('installed transport records accepted submissions before handler execution'
   });
 
   modules.codec.decodeJeditIntentResponse(transport.submitIntentBytes(
-    modules.codec.encodeJeditIntentRequest({
-      kind: modules.codec.JEDIT_INTENT_REQUEST_KIND,
-      operationName: modules.codec.CREATE_BUFFER_WORLDLINE_OPERATION,
-      input: {
-        bufferKey: BUFFER_KEY,
-        initialText: INITIAL_TEXT,
-        projectionPath: BUFFER_KEY,
-      },
-    }),
+    createBufferWorldlineEnvelope(modules),
   ));
 
   assert.deepEqual(events, ['submission', 'handler']);
@@ -270,15 +230,7 @@ test('installed transport blocks unticketed work before handler invocation', asy
     },
   });
   const response = modules.codec.decodeJeditIntentResponse(transport.submitIntentBytes(
-    modules.codec.encodeJeditIntentRequest({
-      kind: modules.codec.JEDIT_INTENT_REQUEST_KIND,
-      operationName: modules.codec.CREATE_BUFFER_WORLDLINE_OPERATION,
-      input: {
-        bufferKey: BUFFER_KEY,
-        initialText: INITIAL_TEXT,
-        projectionPath: BUFFER_KEY,
-      },
-    }),
+    createBufferWorldlineEnvelope(modules),
   ));
 
   assert.equal(response.status, modules.codec.JEDIT_TRANSPORT_STATUS_OBSTRUCTED);
@@ -315,15 +267,7 @@ test('installed transport accepts package host injection and blocks non-installe
     },
   });
   const response = modules.codec.decodeJeditIntentResponse(transport.submitIntentBytes(
-    modules.codec.encodeJeditIntentRequest({
-      kind: modules.codec.JEDIT_INTENT_REQUEST_KIND,
-      operationName: modules.codec.CREATE_BUFFER_WORLDLINE_OPERATION,
-      input: {
-        bufferKey: BUFFER_KEY,
-        initialText: INITIAL_TEXT,
-        projectionPath: BUFFER_KEY,
-      },
-    }),
+    createBufferWorldlineEnvelope(modules),
   ));
 
   assert.equal(hostRequests.length, 1);
@@ -368,15 +312,7 @@ test('installed transport keeps submission identity aligned across ledger ticket
     },
   });
   const response = modules.codec.decodeJeditIntentResponse(transport.submitIntentBytes(
-    modules.codec.encodeJeditIntentRequest({
-      kind: modules.codec.JEDIT_INTENT_REQUEST_KIND,
-      operationName: modules.codec.CREATE_BUFFER_WORLDLINE_OPERATION,
-      input: {
-        bufferKey: BUFFER_KEY,
-        initialText: INITIAL_TEXT,
-        projectionPath: BUFFER_KEY,
-      },
-    }),
+    createBufferWorldlineEnvelope(modules),
   ));
 
   assert.equal(response.status, modules.codec.JEDIT_TRANSPORT_STATUS_OK);
@@ -394,15 +330,7 @@ test('installed query observers require state-port-backed basis', async () => {
     statePort,
   });
   const createResponse = modules.codec.decodeJeditIntentResponse(transport.submitIntentBytes(
-    modules.codec.encodeJeditIntentRequest({
-      kind: modules.codec.JEDIT_INTENT_REQUEST_KIND,
-      operationName: modules.codec.CREATE_BUFFER_WORLDLINE_OPERATION,
-      input: {
-        bufferKey: BUFFER_KEY,
-        initialText: INITIAL_TEXT,
-        projectionPath: BUFFER_KEY,
-      },
-    }),
+    createBufferWorldlineEnvelope(modules),
   ));
   const observeResponse = modules.codec.decodeJeditObserveResponse(transport.observeBytes(
     modules.codec.encodeJeditObserveRequest({
@@ -429,15 +357,7 @@ test('installed query observer runtime errors do not masquerade as package insta
   const modules = await loadModules();
   const transport = modules.transport.createInstalledJeditContractEchoTransport();
   const createResponse = modules.codec.decodeJeditIntentResponse(transport.submitIntentBytes(
-    modules.codec.encodeJeditIntentRequest({
-      kind: modules.codec.JEDIT_INTENT_REQUEST_KIND,
-      operationName: modules.codec.CREATE_BUFFER_WORLDLINE_OPERATION,
-      input: {
-        bufferKey: BUFFER_KEY,
-        initialText: INITIAL_TEXT,
-        projectionPath: BUFFER_KEY,
-      },
-    }),
+    createBufferWorldlineEnvelope(modules),
   ));
   const observeResponse = modules.codec.decodeJeditObserveResponse(transport.observeBytes(
     modules.codec.encodeJeditObserveRequest({
@@ -459,6 +379,37 @@ test('installed query observer runtime errors do not masquerade as package insta
   assert.equal(observeResponse.status, modules.codec.JEDIT_TRANSPORT_STATUS_OBSTRUCTED);
   assert.equal(observeResponse.obstruction.code, 'JEDIT_QUERY_OBSERVER_RUNTIME_ERROR');
   assert.notEqual(observeResponse.obstruction.code, 'JEDIT_PACKAGE_NOT_INSTALLED');
+});
+
+function createBufferWorldlineEnvelope(modules) {
+  return modules.codec.encodeJeditMutationIntentEnvelope({
+    operationName: modules.codec.CREATE_BUFFER_WORLDLINE_OPERATION,
+    vars: {
+      input: {
+        bufferKey: BUFFER_KEY,
+        initialText: INITIAL_TEXT,
+        projectionPath: BUFFER_KEY,
+        createInitialCheckpoint: null,
+      },
+    },
+  });
+}
+
+test('installed transport: malformed EINT envelope yields obstructed response with absent operationName', async () => {
+  const modules = await loadModules();
+  const transport = modules.transport.createInstalledJeditContractEchoTransport();
+  // Bytes that are NOT a valid EINT envelope. The bridge's decode step must
+  // fail before any operationName is known, so the obstructed response
+  // omits operationName entirely and the consumer is forced to branch on
+  // obstruction.code.
+  const garbage = new Uint8Array([0x00, 0x01, 0x02, 0x03, 0x04]);
+  const responseBytes = transport.submitIntentBytes(garbage);
+  const response = modules.codec.decodeJeditIntentResponse(responseBytes);
+
+  assert.equal(response.status, modules.codec.JEDIT_TRANSPORT_STATUS_OBSTRUCTED);
+  assert.equal(response.operationName, undefined,
+    'operationName MUST be absent on envelope-decode-failure obstructions');
+  assert.equal(response.obstruction.code, 'JEDIT_MUTATION_ENVELOPE_INVALID');
 });
 
 function createMissingReadStatePort(modules) {

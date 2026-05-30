@@ -8,12 +8,11 @@ import type {
   MutationOperationMap,
   QueryOperationMap,
   RopeHead,
-  Tick,
-  TickKind,
-  TickReceiptRewriteKind,
-  TickReceipt,
-} from '../generated/jedit/hot-text-runtime.types.generated.js';
-import { MutationOperationSchemas, QueryOperationSchemas } from '../generated/jedit/hot-text-runtime.zod.generated.js';
+  RopeRewrite,
+  RewriteKind,
+  RopeDiff,
+} from '../generated/jedit/rope.types.generated.js';
+import { MutationOperationSchemas, QueryOperationSchemas } from '../generated/jedit/rope.zod.generated.js';
 import type { HotTextBufferState, HotTextRuntimePort } from '../ports/hot-text-runtime.js';
 import type { HashPort } from '../ports/hash.js';
 import {
@@ -40,8 +39,7 @@ export const JeditContractRuntimeErrorCode = Object.freeze({
 
 export type JeditContractRuntimeErrorCode = typeof JeditContractRuntimeErrorCode[keyof typeof JeditContractRuntimeErrorCode];
 
-const TICK_KIND_TEXT_REWRITE: TickKind = 'TEXT_REWRITE';
-const TICK_RECEIPT_REWRITE_KIND_REPLACE_RANGE_AS_TICK: TickReceiptRewriteKind = 'REPLACE_RANGE_AS_TICK';
+const REWRITE_KIND_REPLACE_RANGE_AS_TICK: RewriteKind = 'REPLACE_RANGE_AS_TICK';
 const INITIAL_CHECKPOINT_KIND: CheckpointKind = 'INITIAL';
 const REPLACE_SUMMARY_PREFIX = 'replace';
 const REPLACE_SUMMARY_RANGE_SEPARATOR = '..';
@@ -64,7 +62,7 @@ type JeditWorldlineSessionRecord = {
 
 type TickMetadataRecord = {
   readonly tickId: number;
-  readonly kind: TickKind;
+  readonly kind: RewriteKind;
   readonly author?: string;
 };
 
@@ -72,7 +70,7 @@ type CheckpointMetadataRecord = {
   readonly checkpointId: number;
   readonly kind: CreateCheckpointInput['kind'];
   readonly label?: string;
-  readonly createdByTickId?: number;
+  readonly createdByRopeRewriteId?: number;
 };
 
 export class JeditWorldlineSession {
@@ -123,7 +121,7 @@ export interface CreateCheckpointExecution {
 
 interface TickMetadata {
   readonly tickId: number;
-  readonly kind: TickKind;
+  readonly kind: RewriteKind;
   readonly author?: string;
 }
 
@@ -131,7 +129,7 @@ interface CheckpointMetadata {
   readonly checkpointId: number;
   readonly kind: CreateCheckpointInput['kind'];
   readonly label?: string;
-  readonly createdByTickId?: number;
+  readonly createdByRopeRewriteId?: number;
 }
 
 export class JeditContractRuntimeError extends Error {
@@ -309,8 +307,8 @@ function replaceRangeAsTickResult(input: ReplaceRangeAsTickResultInput): Replace
   return MutationOperationSchemas.replaceRangeAsTick.result.parse({
     worldline: input.nextSession.worldline,
     nextHead: toHeadRecord(input.nextSession, input.hash),
-    tick: toTickRecord(input.nextSession, input.tickMetadata),
-    receipt: toTickReceiptRecord(input.receipt, input.baseHeadId, input.nextSession.worldline.canonicalHeadId, input.insertText),
+    ropeRewrite: toRopeRewriteRecord(input.nextSession, input.tickMetadata),
+    ropeDiff: toRopeDiffRecord(input.receipt, input.baseHeadId, input.nextSession.worldline.canonicalHeadId, input.insertText),
   });
 }
 
@@ -355,7 +353,7 @@ function createSessionFromExisting(
 function createTickMetadata(receipt: TickAdmissionReceipt, author: string | undefined): TickMetadata {
   return {
     tickId: receipt.tickId,
-    kind: TICK_KIND_TEXT_REWRITE,
+    kind: REWRITE_KIND_REPLACE_RANGE_AS_TICK,
     author,
   };
 }
@@ -390,9 +388,9 @@ function toHeadRecord(session: JeditWorldlineSession, hash: HashPort): RopeHead 
   };
 }
 
-function toTickRecord(session: JeditWorldlineSession, metadata: TickMetadata): Tick {
+function toRopeRewriteRecord(session: JeditWorldlineSession, metadata: TickMetadata): RopeRewrite {
   return {
-    tickId: toTickId(metadata.tickId),
+    ropeRewriteId: toTickId(metadata.tickId),
     worldlineId: session.worldline.worldlineId,
     kind: metadata.kind,
     sequenceNumber: metadata.tickId,
@@ -400,20 +398,20 @@ function toTickRecord(session: JeditWorldlineSession, metadata: TickMetadata): T
   };
 }
 
-function toTickReceiptRecord(
+function toRopeDiffRecord(
   receipt: TickAdmissionReceipt,
   baseHeadId: string,
   nextHeadId: string,
   insertText: string,
-): TickReceipt {
+): RopeDiff {
   const deletedByteLength = receipt.replaceReceipt.replaced.end.byte - receipt.replaceReceipt.replaced.start.byte;
 
   return {
-    receiptId: toReceiptId(receipt.tickId),
-    tickId: toTickId(receipt.tickId),
+    ropeDiffId: toReceiptId(receipt.tickId),
+    ropeRewriteId: toTickId(receipt.tickId),
     baseHeadId,
     nextHeadId,
-    rewriteKind: TICK_RECEIPT_REWRITE_KIND_REPLACE_RANGE_AS_TICK,
+    rewriteKind: REWRITE_KIND_REPLACE_RANGE_AS_TICK,
     startByte: receipt.replaceReceipt.replaced.start.byte,
     endByte: receipt.replaceReceipt.replaced.end.byte,
     insertedByteLength: byteLength(insertText),
@@ -441,7 +439,7 @@ function toCheckpointRecord(
     headId,
     kind: metadata.kind,
     label: metadata.label,
-    createdByTickId: metadata.createdByTickId == null ? undefined : toTickId(metadata.createdByTickId),
+    createdByRopeRewriteId: metadata.createdByRopeRewriteId == null ? undefined : toTickId(metadata.createdByRopeRewriteId),
   };
 }
 

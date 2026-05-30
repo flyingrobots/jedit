@@ -9,14 +9,14 @@ import {
   readWorldlineSnapshotWithObserverPlan,
 } from '../app/jedit-observer-runtime.js';
 import { createInMemoryHotTextRuntime } from './in-memory-hot-text-runtime.js';
-import type { EchoKernelInfo, EchoWasmKernelTransport } from '../ports/echo-kernel-transport.js';
+import type { EchoKernelInfo } from '../ports/echo-kernel-transport.js';
+import type { JeditTransportSeam } from '../ports/jedit-transport-seam.js';
 import type { HotTextRuntimePort } from '../ports/hot-text-runtime.js';
 import type { HashPort } from '../ports/hash.js';
 import { createHashPort } from './hash.js';
 import {
   CREATE_BUFFER_WORLDLINE_OPERATION,
   CREATE_CHECKPOINT_OPERATION,
-  decodeJeditIntentRequest,
   decodeJeditObserveRequest,
   encodeJeditIntentResponse,
   encodeJeditObserveResponse,
@@ -27,12 +27,25 @@ import {
   REPLACE_RANGE_AS_TICK_OPERATION,
   TEXT_WINDOW_OPERATION,
   WORLDLINE_SNAPSHOT_OPERATION,
-  type JeditIntentRequest,
   type JeditIntentResponse,
   type JeditObserveRequest,
   type JeditObserveResponse,
   type JeditTransportObstruction,
 } from './jedit-echo-optic-codec.js';
+import {
+  decodeJeditMutationIntentEnvelope,
+  type DecodedJeditMutationIntent,
+} from './jedit-mutation-envelope-codec.js';
+import {
+  JeditWorldlineSessionNotRegisteredError,
+  type JeditWorldlineSessionPort,
+} from '../ports/jedit-worldline-session-port.js';
+import { createInMemoryJeditWorldlineSessionPort } from './in-memory-jedit-worldline-session-port.js';
+import {
+  assertNever,
+  envelopeDecodeObstructedResponse,
+  sessionNotRegisteredObstruction,
+} from './jedit-mutation-obstruction-mappers.js';
 
 const FAKE_ECHO_JEDIT_MODULE_SPECIFIER = 'fake:echo-jedit-optic';
 const FAKE_ECHO_JEDIT_CODEC_ID = 'jedit.fake-echo-optic+json';
@@ -48,13 +61,23 @@ export interface CreateFakeEchoJeditOpticTransportOptions {
   readonly runtime?: HotTextRuntimePort;
   readonly moduleSpecifier?: string;
   readonly hash?: HashPort;
+  readonly sessionPort?: JeditWorldlineSessionPort;
+}
+
+interface FakeTransportContext {
+  readonly runtime: HotTextRuntimePort;
+  readonly hash: HashPort;
+  readonly sessionPort: JeditWorldlineSessionPort;
 }
 
 export function createFakeEchoJeditOpticTransport(
   options: CreateFakeEchoJeditOpticTransportOptions = {},
-): EchoWasmKernelTransport {
-  const runtime = options.runtime ?? createInMemoryHotTextRuntime();
-  const hash = options.hash ?? createHashPort();
+): JeditTransportSeam {
+  const context: FakeTransportContext = {
+    runtime: options.runtime ?? createInMemoryHotTextRuntime(),
+    hash: options.hash ?? createHashPort(),
+    sessionPort: options.sessionPort ?? createInMemoryJeditWorldlineSessionPort(),
+  };
   const info: EchoKernelInfo = {
     moduleSpecifier: options.moduleSpecifier ?? FAKE_ECHO_JEDIT_MODULE_SPECIFIER,
     codecId: FAKE_ECHO_JEDIT_CODEC_ID,
@@ -67,10 +90,10 @@ export function createFakeEchoJeditOpticTransport(
       return info;
     },
     submitIntentBytes(intentBytes) {
-      return encodeJeditIntentResponse(executeIntent(runtime, hash, decodeJeditIntentRequest(intentBytes)));
+      return encodeJeditIntentResponse(executeEnvelope(context, intentBytes));
     },
     observeBytes(requestBytes) {
-      return encodeJeditObserveResponse(executeObserve(runtime, hash, decodeJeditObserveRequest(requestBytes)));
+      return encodeJeditObserveResponse(executeObserve(context, decodeJeditObserveRequest(requestBytes)));
     },
     schedulerStatusBytes() {
       return encodeJeditSchedulerStatus({
@@ -79,51 +102,76 @@ export function createFakeEchoJeditOpticTransport(
         host: FAKE_ECHO_JEDIT_HOST,
       });
     },
+    jeditSessionPort: context.sessionPort,
   };
 }
 
-function executeIntent(
-  runtime: HotTextRuntimePort,
-  hash: HashPort,
-  request: JeditIntentRequest,
+function executeEnvelope(
+  context: FakeTransportContext,
+  intentBytes: Uint8Array,
 ): JeditIntentResponse {
+  let decoded: DecodedJeditMutationIntent;
   try {
-    switch (request.operationName) {
-      case CREATE_BUFFER_WORLDLINE_OPERATION:
-        return {
-          status: JEDIT_TRANSPORT_STATUS_OK,
-          operationName: CREATE_BUFFER_WORLDLINE_OPERATION,
-          execution: createBufferWorldline(runtime, request.input, hash),
-        };
-      case REPLACE_RANGE_AS_TICK_OPERATION:
-        return {
-          status: JEDIT_TRANSPORT_STATUS_OK,
-          operationName: REPLACE_RANGE_AS_TICK_OPERATION,
-          execution: replaceRangeAsTick(runtime, request.session, request.input, hash),
-        };
-      case CREATE_CHECKPOINT_OPERATION:
-        return {
-          status: JEDIT_TRANSPORT_STATUS_OK,
-          operationName: CREATE_CHECKPOINT_OPERATION,
-          execution: createCheckpoint(runtime, request.session, request.input, hash),
-        };
-    }
+    decoded = decodeJeditMutationIntentEnvelope(intentBytes);
   } catch (error) {
+    return envelopeDecodeObstructedResponse(error instanceof Error ? error : undefined);
+  }
+  try {
+    return executeDecodedMutation(context, decoded);
+  } catch (error) {
+    if (error instanceof JeditWorldlineSessionNotRegisteredError) {
+      return {
+        status: JEDIT_TRANSPORT_STATUS_OBSTRUCTED,
+        operationName: decoded.operationName,
+        obstruction: sessionNotRegisteredObstruction(error),
+      };
+    }
     return {
       status: JEDIT_TRANSPORT_STATUS_OBSTRUCTED,
-      operationName: request.operationName,
-      obstruction: toIntentObstruction(request, error instanceof Error ? error : undefined),
+      operationName: decoded.operationName,
+      obstruction: toMutationObstruction(decoded, error instanceof Error ? error : undefined),
     };
   }
 }
 
+function executeDecodedMutation(
+  context: FakeTransportContext,
+  decoded: DecodedJeditMutationIntent,
+): JeditIntentResponse {
+  switch (decoded.operationName) {
+    case CREATE_BUFFER_WORLDLINE_OPERATION:
+      return {
+        status: JEDIT_TRANSPORT_STATUS_OK,
+        operationName: CREATE_BUFFER_WORLDLINE_OPERATION,
+        execution: createBufferWorldline(context.runtime, decoded.vars.input, context.hash),
+      };
+    case REPLACE_RANGE_AS_TICK_OPERATION: {
+      const session = context.sessionPort.getSession(decoded.vars.input.worldlineId);
+      return {
+        status: JEDIT_TRANSPORT_STATUS_OK,
+        operationName: REPLACE_RANGE_AS_TICK_OPERATION,
+        execution: replaceRangeAsTick(context.runtime, session, decoded.vars.input, context.hash),
+      };
+    }
+    case CREATE_CHECKPOINT_OPERATION: {
+      const session = context.sessionPort.getSession(decoded.vars.input.worldlineId);
+      return {
+        status: JEDIT_TRANSPORT_STATUS_OK,
+        operationName: CREATE_CHECKPOINT_OPERATION,
+        execution: createCheckpoint(context.runtime, session, decoded.vars.input, context.hash),
+      };
+    }
+    default:
+      return assertNever(decoded, 'Unsupported decoded mutation intent');
+  }
+}
+
 function executeObserve(
-  runtime: HotTextRuntimePort,
-  hash: HashPort,
+  context: FakeTransportContext,
   request: JeditObserveRequest,
 ): JeditObserveResponse {
   try {
-    return executeObservedOperation(runtime, hash, request);
+    return executeObservedOperation(context, request);
   } catch (error) {
     return {
       status: JEDIT_TRANSPORT_STATUS_OBSTRUCTED,
@@ -134,8 +182,7 @@ function executeObserve(
 }
 
 function executeObservedOperation(
-  runtime: HotTextRuntimePort,
-  hash: HashPort,
+  context: FakeTransportContext,
   request: JeditObserveRequest,
 ): JeditObserveResponse {
   switch (request.operationName) {
@@ -143,38 +190,36 @@ function executeObservedOperation(
       return {
         status: JEDIT_TRANSPORT_STATUS_OK,
         operationName: WORLDLINE_SNAPSHOT_OPERATION,
-        envelope: readWorldlineSnapshotWithObserverPlan(runtime, request.session, request.frontierRef, request.input, hash),
+        envelope: readWorldlineSnapshotWithObserverPlan(context.runtime, request.session, request.frontierRef, request.input, context.hash),
       };
     case TEXT_WINDOW_OPERATION:
       return {
         status: JEDIT_TRANSPORT_STATUS_OK,
         operationName: TEXT_WINDOW_OPERATION,
-        envelope: readTextWindowWithObserverPlan(runtime, request.session, request.frontierRef, request.input, hash),
+        envelope: readTextWindowWithObserverPlan(context.runtime, request.session, request.frontierRef, request.input, context.hash),
       };
   }
 }
 
-function toIntentObstruction(
-  request: JeditIntentRequest,
+function toMutationObstruction(
+  decoded: DecodedJeditMutationIntent,
   error: Error | undefined,
 ): JeditTransportObstruction {
   const obstruction = toBaseObstruction(error);
 
-  switch (request.operationName) {
+  switch (decoded.operationName) {
     case CREATE_BUFFER_WORLDLINE_OPERATION:
       return obstruction;
     case REPLACE_RANGE_AS_TICK_OPERATION:
       return {
         ...obstruction,
-        worldlineId: request.session.worldline.worldlineId,
-        requestedBaseHeadId: request.input.baseHeadId,
-        currentHeadId: request.session.worldline.canonicalHeadId,
+        worldlineId: decoded.vars.input.worldlineId,
+        requestedBaseHeadId: decoded.vars.input.baseHeadId,
       };
     case CREATE_CHECKPOINT_OPERATION:
       return {
         ...obstruction,
-        worldlineId: request.session.worldline.worldlineId,
-        currentHeadId: request.session.worldline.canonicalHeadId,
+        worldlineId: decoded.vars.input.worldlineId,
       };
   }
 }

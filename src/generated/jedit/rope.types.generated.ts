@@ -3,15 +3,14 @@ export type TextEncoding = "UTF8";
 export type AnchorKind = "CURSOR" | "SELECTION" | "BOOKMARK" | "COMMENT" | "DIAGNOSTIC_TARGET" | "AI_TARGET";
 export type AnchorBias = "LEFT" | "RIGHT";
 export type AnchorStickiness = "LEADING" | "TRAILING" | "EXPAND";
-export type TickKind = "BUFFER_CREATE" | "TEXT_REWRITE" | "CHECKPOINT_CREATE" | "ANCHOR_REGISTER";
-export type TickReceiptRewriteKind = "CREATE_BUFFER_WORLDLINE" | "REPLACE_RANGE_AS_TICK" | "CREATE_CHECKPOINT" | "REGISTER_ANCHOR";
+export type RewriteKind = "CREATE_BUFFER_WORLDLINE" | "REPLACE_RANGE_AS_TICK" | "CREATE_CHECKPOINT" | "REGISTER_ANCHOR";
 export type CheckpointKind = "INITIAL" | "MANUAL_SAVE" | "AUTO_SAVE";
 // Object Types
 export interface BufferWorldline {
   worldlineId: string;
   bufferKey: string;
   canonicalHeadId: string;
-  createdAtTickId?: string | null;
+  createdAtRopeRewriteId?: string | null;
   projectionPath?: string | null;
 }
 export interface RopeHead {
@@ -55,19 +54,19 @@ export interface Anchor {
   endBias?: AnchorBias | null;
   stickiness?: AnchorStickiness | null;
 }
-export interface Tick {
-  tickId: string;
+export interface RopeRewrite {
+  ropeRewriteId: string;
   worldlineId: string;
-  kind: TickKind;
+  kind: RewriteKind;
   sequenceNumber: number;
   author?: string | null;
 }
-export interface TickReceipt {
-  receiptId: string;
-  tickId: string;
+export interface RopeDiff {
+  ropeDiffId: string;
+  ropeRewriteId: string;
   baseHeadId: string;
   nextHeadId: string;
-  rewriteKind: TickReceiptRewriteKind;
+  rewriteKind: RewriteKind;
   startByte?: number | null;
   endByte?: number | null;
   insertedByteLength: number;
@@ -81,7 +80,7 @@ export interface Checkpoint {
   headId: string;
   kind: CheckpointKind;
   label?: string | null;
-  createdByTickId?: string | null;
+  createdByRopeRewriteId?: string | null;
 }
 export interface WorldlineSnapshot {
   worldline: BufferWorldline;
@@ -114,8 +113,8 @@ export interface CreateBufferWorldlineResult {
 export interface ReplaceRangeAsTickResult {
   worldline: BufferWorldline;
   nextHead: RopeHead;
-  tick: Tick;
-  receipt: TickReceipt;
+  ropeRewrite: RopeRewrite;
+  ropeDiff: RopeDiff;
 }
 export interface CreateCheckpointResult {
   worldline: BufferWorldline;

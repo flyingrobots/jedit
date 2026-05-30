@@ -1,4 +1,5 @@
 {
   "maxLines": {},
-  "forbiddenTypeKeywords": {}
+  "forbiddenTypeKeywords": {},
+  "booleanParameters": {}
 }

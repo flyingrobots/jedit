@@ -3,7 +3,7 @@ import type {
   MutationCreateCheckpointRequest,
   MutationReplaceRangeAsTickRequest,
   QueryWorldlineSnapshotRequest,
-} from '../generated/jedit/hot-text-runtime.wesley.generated.js';
+} from '../generated/jedit/rope.wesley.generated.js';
 import type {
   CreateBufferWorldlineExecution,
   CreateCheckpointExecution,
@@ -40,21 +40,21 @@ export interface OpenTextBufferExecution extends CreateBufferWorldlineExecution 
 export interface JeditMutationOpticClient {
   openTextBuffer(
     input: MutationCreateBufferWorldlineRequest['input'],
-  ): OpenTextBufferExecution;
+  ): Promise<OpenTextBufferExecution>;
 
   createBufferWorldline(
     input: MutationCreateBufferWorldlineRequest['input'],
-  ): CreateBufferWorldlineExecution;
+  ): Promise<CreateBufferWorldlineExecution>;
 
   replaceRangeAsTick(
     session: JeditWorldlineSession,
     input: MutationReplaceRangeAsTickRequest['input'],
-  ): ReplaceRangeAsTickExecution;
+  ): Promise<ReplaceRangeAsTickExecution>;
 
   createCheckpoint(
     session: JeditWorldlineSession,
     input: MutationCreateCheckpointRequest['input'],
-  ): CreateCheckpointExecution;
+  ): Promise<CreateCheckpointExecution>;
 }
 
 export interface JeditObserverOpticClient {
@@ -62,14 +62,21 @@ export interface JeditObserverOpticClient {
     session: JeditWorldlineSession,
     frontierRef: string,
     input: QueryWorldlineSnapshotRequest['input'],
-  ): WorldlineSnapshotReadingEnvelope;
+  ): Promise<WorldlineSnapshotReadingEnvelope>;
 
   textWindow(
     session: JeditWorldlineSession,
     frontierRef: string,
     readBasisHandle: ReadBasisHandle,
     input: TextWindowRangeInput,
-  ): TextWindowReadingEnvelope;
+  ): Promise<TextWindowReadingEnvelope>;
 }
 
-export interface JeditOpticClient extends JeditMutationOpticClient, JeditObserverOpticClient {}
+export interface JeditOpticClientLifecycle {
+  requestRunUntilIdle(): Promise<void>;
+}
+
+export interface JeditOpticClient
+  extends JeditMutationOpticClient,
+    JeditObserverOpticClient,
+    JeditOpticClientLifecycle {}

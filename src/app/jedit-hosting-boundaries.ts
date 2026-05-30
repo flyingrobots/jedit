@@ -5,6 +5,7 @@ export {
   createJeditSubmissionId,
   recordAcceptedJeditSubmission,
 } from './jedit-submission-ledger.js';
+export { JEDIT_HOT_TEXT_PACKAGE_ID } from './jedit-contract-package.js';
 import {
   createInMemoryJeditContractStatePort,
 } from './jedit-contract-state-port.js';

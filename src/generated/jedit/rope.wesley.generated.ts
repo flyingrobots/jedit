@@ -21,7 +21,7 @@ export interface BufferWorldline {
   worldlineId: string;
   bufferKey: string;
   canonicalHeadId: string;
-  createdAtTickId: string | null;
+  createdAtRopeRewriteId: string | null;
   projectionPath: string | null;
 }
 
@@ -31,7 +31,7 @@ export interface Checkpoint {
   headId: string;
   kind: CheckpointKind;
   label: string | null;
-  createdByTickId: string | null;
+  createdByRopeRewriteId: string | null;
 }
 
 export type CheckpointKind = "INITIAL" | "MANUAL_SAVE" | "AUTO_SAVE";
@@ -73,9 +73,11 @@ export interface ReplaceRangeAsTickInput {
 export interface ReplaceRangeAsTickResult {
   worldline: BufferWorldline;
   nextHead: RopeHead;
-  tick: Tick;
-  receipt: TickReceipt;
+  ropeRewrite: RopeRewrite;
+  ropeDiff: RopeDiff;
 }
+
+export type RewriteKind = "CREATE_BUFFER_WORLDLINE" | "REPLACE_RANGE_AS_TICK" | "CREATE_CHECKPOINT" | "REGISTER_ANCHOR";
 
 export interface RopeBranch {
   branchId: string;
@@ -83,6 +85,20 @@ export interface RopeBranch {
   lineCount: number;
   utf16Length: number;
   height: number | null;
+}
+
+export interface RopeDiff {
+  ropeDiffId: string;
+  ropeRewriteId: string;
+  baseHeadId: string;
+  nextHeadId: string;
+  rewriteKind: RewriteKind;
+  startByte: number | null;
+  endByte: number | null;
+  insertedByteLength: number;
+  deletedByteLength: number;
+  inverseFragmentDigest: string | null;
+  summary: string | null;
 }
 
 export interface RopeHead {
@@ -103,6 +119,14 @@ export interface RopeLeaf {
   byteLength: number;
   lineCount: number;
   utf16Length: number;
+}
+
+export interface RopeRewrite {
+  ropeRewriteId: string;
+  worldlineId: string;
+  kind: RewriteKind;
+  sequenceNumber: number;
+  author: string | null;
 }
 
 export interface TextBlob {
@@ -142,32 +166,6 @@ export interface TextWindowReading {
   lines: TextLineReading[];
 }
 
-export interface Tick {
-  tickId: string;
-  worldlineId: string;
-  kind: TickKind;
-  sequenceNumber: number;
-  author: string | null;
-}
-
-export type TickKind = "BUFFER_CREATE" | "TEXT_REWRITE" | "CHECKPOINT_CREATE" | "ANCHOR_REGISTER";
-
-export interface TickReceipt {
-  receiptId: string;
-  tickId: string;
-  baseHeadId: string;
-  nextHeadId: string;
-  rewriteKind: TickReceiptRewriteKind;
-  startByte: number | null;
-  endByte: number | null;
-  insertedByteLength: number;
-  deletedByteLength: number;
-  inverseFragmentDigest: string | null;
-  summary: string | null;
-}
-
-export type TickReceiptRewriteKind = "CREATE_BUFFER_WORLDLINE" | "REPLACE_RANGE_AS_TICK" | "CREATE_CHECKPOINT" | "REGISTER_ANCHOR";
-
 export interface WorldlineSnapshot {
   worldline: BufferWorldline;
   head: RopeHead;
@@ -206,7 +204,7 @@ export type MutationReplaceRangeAsTickResponse = ReplaceRangeAsTickResult;
 export const mutationReplaceRangeAsTickOperation = {
   operationType: "MUTATION",
   fieldName: "replaceRangeAsTick",
-  directives: {"wes_op":{"name":"replaceRangeAsTick"},"wes_footprint":{"reads":["BufferWorldline","RopeHead","RopeBranch","RopeLeaf","TextBlob","Anchor"],"writes":["BufferWorldline"],"creates":["TextBlob","RopeLeaf","RopeBranch","RopeHead","Tick","TickReceipt"],"slots":[{"slot":"worldline","kind":"BufferWorldline","bindFromArg":"input.worldlineId","access":["READ","WRITE"]},{"slot":"baseHead","kind":"RopeHead","bindFromArg":"input.baseHeadId","access":["READ"]}],"closures":[{"slot":"touchedRope","fromSlot":"baseHead","operator":"ropeRangeClosure","argBindings":["input.startByte","input.endByte"],"reads":["RopeBranch","RopeLeaf","TextBlob"],"cardinality":"MANY"},{"slot":"affectedAnchors","fromSlot":"worldline","operator":"anchorsIntersectingEditWindow","argBindings":["baseHead","input.startByte","input.endByte"],"reads":["Anchor"],"cardinality":"MANY"}],"createSlots":[{"slot":"newBlob","kind":"TextBlob","cardinality":"OPTIONAL"},{"slot":"newLeaves","kind":"RopeLeaf","cardinality":"MANY"},{"slot":"newBranches","kind":"RopeBranch","cardinality":"MANY"},{"slot":"nextHead","kind":"RopeHead"},{"slot":"tick","kind":"Tick"},{"slot":"receipt","kind":"TickReceipt"}],"updates":[{"slot":"worldline","fields":["canonicalHead"]}],"forbids":["AstState","Diagnostics","GitWitness","UiState"]}},
+  directives: {"wes_op":{"name":"replaceRangeAsTick"},"wes_footprint":{"reads":["BufferWorldline","RopeHead","RopeBranch","RopeLeaf","TextBlob","Anchor"],"writes":["BufferWorldline"],"creates":["TextBlob","RopeLeaf","RopeBranch","RopeHead","RopeRewrite","RopeDiff"],"slots":[{"slot":"worldline","kind":"BufferWorldline","bindFromArg":"input.worldlineId","access":["READ","WRITE"]},{"slot":"baseHead","kind":"RopeHead","bindFromArg":"input.baseHeadId","access":["READ"]}],"closures":[{"slot":"touchedRope","fromSlot":"baseHead","operator":"ropeRangeClosure","argBindings":["input.startByte","input.endByte"],"reads":["RopeBranch","RopeLeaf","TextBlob"],"cardinality":"MANY"},{"slot":"affectedAnchors","fromSlot":"worldline","operator":"anchorsIntersectingEditWindow","argBindings":["baseHead","input.startByte","input.endByte"],"reads":["Anchor"],"cardinality":"MANY"}],"createSlots":[{"slot":"newBlob","kind":"TextBlob","cardinality":"OPTIONAL"},{"slot":"newLeaves","kind":"RopeLeaf","cardinality":"MANY"},{"slot":"newBranches","kind":"RopeBranch","cardinality":"MANY"},{"slot":"nextHead","kind":"RopeHead"},{"slot":"ropeRewrite","kind":"RopeRewrite"},{"slot":"ropeDiff","kind":"RopeDiff"}],"updates":[{"slot":"worldline","fields":["canonicalHead"]}],"forbids":["AstState","Diagnostics","GitWitness","UiState"]}},
 } as const;
 
 export type MutationReplaceRangeAsTickOperation = {
@@ -224,7 +222,7 @@ export type MutationCreateCheckpointResponse = CreateCheckpointResult;
 export const mutationCreateCheckpointOperation = {
   operationType: "MUTATION",
   fieldName: "createCheckpoint",
-  directives: {"wes_op":{"name":"createCheckpoint"},"wes_footprint":{"reads":["BufferWorldline","RopeHead"],"creates":["Checkpoint"],"slots":[{"slot":"worldline","kind":"BufferWorldline","bindFromArg":"input.worldlineId","access":["READ"]},{"slot":"currentHead","kind":"RopeHead","bindFromSlot":"worldline","bindRelation":"CANONICAL_HEAD","access":["READ"]}],"createSlots":[{"slot":"checkpoint","kind":"Checkpoint"}],"updates":[],"forbids":["RopeBranch","RopeLeaf","TextBlob","Tick","TickReceipt","AstState","Diagnostics","GitWitness","UiState"]}},
+  directives: {"wes_op":{"name":"createCheckpoint"},"wes_footprint":{"reads":["BufferWorldline","RopeHead"],"creates":["Checkpoint"],"slots":[{"slot":"worldline","kind":"BufferWorldline","bindFromArg":"input.worldlineId","access":["READ"]},{"slot":"currentHead","kind":"RopeHead","bindFromSlot":"worldline","bindRelation":"CANONICAL_HEAD","access":["READ"]}],"createSlots":[{"slot":"checkpoint","kind":"Checkpoint"}],"updates":[],"forbids":["RopeBranch","RopeLeaf","TextBlob","RopeRewrite","RopeDiff","AstState","Diagnostics","GitWitness","UiState"]}},
 } as const;
 
 export type MutationCreateCheckpointOperation = {

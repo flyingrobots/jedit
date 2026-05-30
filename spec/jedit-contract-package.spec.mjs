@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url';
 
 const REPO_ROOT = process.cwd();
 const PACKAGE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-package.js');
-const GENERATED_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'generated', 'jedit', 'hot-text-runtime.wesley.generated.js');
+const GENERATED_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'generated', 'jedit', 'rope.wesley.generated.js');
 const STRUCTURAL_HISTORY_GENERATED_MODULE_PATH = path.join(
   REPO_ROOT,
   'dist',
@@ -25,6 +25,11 @@ test('jedit hot text package descriptor binds generated operation metadata', asy
   assert.equal(descriptor.schemaId, modules.packageModule.JEDIT_HOT_TEXT_SCHEMA_ID);
   assert.equal(descriptor.artifactId, modules.packageModule.JEDIT_HOT_TEXT_ARTIFACT_ID);
   assert.equal(descriptor.codecId, modules.packageModule.JEDIT_HOT_TEXT_CODEC_ID);
+  // Ratchet: bind the descriptor IDs to the explicit rope paths so a stale
+  // descriptor/constant pair cannot drift together (renaming the constant
+  // would otherwise hide a missed migration here).
+  assert.equal(descriptor.schemaId, 'contracts/jedit/rope.graphql');
+  assert.equal(descriptor.artifactId, 'src/generated/jedit/rope.wesley.generated.ts');
   assert.deepEqual(
     descriptor.mutationOperationNames,
     [

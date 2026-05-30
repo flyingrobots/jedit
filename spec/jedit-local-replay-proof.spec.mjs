@@ -167,8 +167,8 @@ function installSummary() {
   return {
     packageId: 'jedit.hot-text-runtime',
     version: '0.1.0-release-gate',
-    schemaId: 'contracts/jedit/hot-text-runtime.graphql',
-    artifactId: 'src/generated/jedit/hot-text-runtime.wesley.generated.ts',
+    schemaId: 'contracts/jedit/rope.graphql',
+    artifactId: 'src/generated/jedit/rope.wesley.generated.ts',
     codecId: 'jedit-hot-text-runtime-json-v1',
   };
 }

@@ -4,10 +4,10 @@ import {
 import {
   createJeditContractQueryObserverRegistry,
 } from '../app/jedit-contract-query-observers.js';
-import { JEDIT_HOT_TEXT_PACKAGE_ID } from '../app/jedit-contract-package.js';
 import {
   createDefaultJeditHostingBoundaries,
   createJeditSubmissionId,
+  JEDIT_HOT_TEXT_PACKAGE_ID,
   JeditContractStatePortError,
   recordAcceptedJeditSubmission,
 } from '../app/jedit-hosting-boundaries.js';
@@ -26,7 +26,7 @@ import {
   type EchoContractPackageHostPort,
   type EchoContractPackageInstallRequest,
 } from '../ports/echo-contract-package-host.js';
-import type { EchoKernelInfo, EchoWasmKernelTransport } from '../ports/echo-kernel-transport.js';
+import type { EchoKernelInfo } from '../ports/echo-kernel-transport.js';
 import type { HashPort } from '../ports/hash.js';
 import type { HotTextRuntimePort } from '../ports/hot-text-runtime.js';
 import type { JeditContractStatePort } from '../ports/jedit-contract-state-port.js';
@@ -45,7 +45,6 @@ import { createHashPort } from './hash.js';
 import {
   CREATE_BUFFER_WORLDLINE_OPERATION,
   CREATE_CHECKPOINT_OPERATION,
-  decodeJeditIntentRequest,
   decodeJeditObserveRequest,
   encodeJeditIntentResponse,
   encodeJeditObserveResponse,
@@ -62,6 +61,15 @@ import {
   type JeditObserveResponse,
   type JeditTransportObstruction,
 } from './jedit-echo-optic-codec.js';
+import type { JeditWorldlineSessionPort } from '../ports/jedit-worldline-session-port.js';
+import type { JeditTransportSeam } from '../ports/jedit-transport-seam.js';
+import {
+  createInMemoryJeditWorldlineSessionPort,
+  createInstalledJeditEintBridge,
+  isDecodedEnvelopeObstructed,
+  isResolvedIntentObstructed,
+  type JeditEintBridge,
+} from './installed-jedit-eint-bridge.js';
 
 const INSTALLED_CONTRACT_MODULE_SPECIFIER = 'installed:jedit-hot-text-runtime';
 const INSTALLED_CONTRACT_CODEC_ID = 'jedit.installed-contract+json';
@@ -86,6 +94,7 @@ export interface InstalledJeditContractEchoTransportOptions {
   readonly submissionLedger?: JeditSubmissionLedgerPort;
   readonly ticketedWorkPort?: JeditTicketedWorkPort;
   readonly packageHost?: EchoContractPackageHostPort;
+  readonly sessionPort?: JeditWorldlineSessionPort;
 }
 
 interface InstalledJeditContractEchoTransportContext {
@@ -98,6 +107,7 @@ interface InstalledJeditContractEchoTransportContext {
   readonly handlerInvocationSink?: JeditHandlerInvocationSink;
   readonly submissionLedger: JeditSubmissionLedgerPort;
   readonly ticketedWorkPort: JeditTicketedWorkPort;
+  readonly bridge: JeditEintBridge;
 }
 
 interface AcceptedSubmissionContext {
@@ -109,7 +119,7 @@ interface AcceptedSubmissionContext {
 
 export function createInstalledJeditContractEchoTransport(
   options: InstalledJeditContractEchoTransportOptions = {},
-): EchoWasmKernelTransport {
+): JeditTransportSeam {
   const context = createTransportContext(options);
 
   return {
@@ -125,7 +135,22 @@ export function createInstalledJeditContractEchoTransport(
     schedulerStatusBytes() {
       return encodeInstalledSchedulerStatus();
     },
+    jeditSessionPort: context.bridge.sessionPort,
   };
+}
+
+/**
+ * Resolve the session port at the transport-factory boundary. The bridge
+ * itself rejects undefined (no private fallback); the responsibility for
+ * constructing a default in-memory port lives here, at the seam between
+ * caller and bridge. The same instance is exposed via the seam's
+ * jeditSessionPort so the optic client adopts it via
+ * resolveSharedSessionPort.
+ */
+function resolveTransportSessionPort(
+  provided: JeditWorldlineSessionPort | undefined,
+): JeditWorldlineSessionPort {
+  return provided ?? createInMemoryJeditWorldlineSessionPort();
 }
 
 function createTransportContext(
@@ -140,6 +165,7 @@ function createTransportContext(
   const host = options.packageHost ?? createRecordingPackageHost();
   const install = installJeditContractPackage({ host });
   const isPackageInstalled = install.hostResult.status === ECHO_CONTRACT_PACKAGE_INSTALL_INSTALLED;
+  const sessionPort = resolveTransportSessionPort(options.sessionPort);
 
   return {
     info: {
@@ -156,6 +182,7 @@ function createTransportContext(
     handlerInvocationSink: options.handlerInvocationSink,
     submissionLedger: options.submissionLedger ?? defaults.submissionLedger,
     ticketedWorkPort: options.ticketedWorkPort ?? defaults.ticketedWorkPort,
+    bridge: createInstalledJeditEintBridge({ sessionPort }),
   };
 }
 
@@ -163,20 +190,37 @@ function submitInstalledIntent(
   context: InstalledJeditContractEchoTransportContext,
   intentBytes: Uint8Array,
 ): Uint8Array {
-  const request = decodeJeditIntentRequest(intentBytes);
-  if (!context.isPackageInstalled) {
-    return encodeJeditIntentResponse(obstructedIntent(request, packageNotInstalledObstruction()));
+  // Stage 1: decode the envelope.
+  const decodeResult = context.bridge.decodeEnvelope(intentBytes);
+  if (isDecodedEnvelopeObstructed(decodeResult)) {
+    return encodeJeditIntentResponse(decodeResult.response);
   }
+  const envelope = decodeResult.decoded;
+  // Stage 2: check package installation BEFORE resolving session. Package
+  // not installed is more fundamental than session not registered, so it
+  // must surface first; a session-aware caller hitting a stale transport
+  // should not see the derived session error.
+  if (!context.isPackageInstalled) {
+    return encodeJeditIntentResponse({
+      status: JEDIT_TRANSPORT_STATUS_OBSTRUCTED,
+      operationName: envelope.operationName,
+      obstruction: packageNotInstalledObstruction(),
+    });
+  }
+  // Stage 3: resolve session via the port.
+  const resolved = context.bridge.resolveSession(envelope);
+  if (isResolvedIntentObstructed(resolved)) {
+    return encodeJeditIntentResponse(resolved.response);
+  }
+  const request = resolved.request;
+  // Stage 4: existing ticketed-work + handler-invocation pipeline.
   const submission = recordAcceptedSubmission(context, intentBytes, request);
   const ticketedWork = context.ticketedWorkPort.issueTicketedWork(submission);
   if (ticketedWork.status !== JEDIT_TICKETED_WORK_AVAILABLE) {
     return encodeJeditIntentResponse(obstructedIntent(request, ticketedWorkObstruction(ticketedWork)));
   }
   recordRuntimeWorkEnvelope(context.workSink, intentBytes, request, context.hash, submission.submissionId);
-
-  return encodeJeditIntentResponse(
-    executeIntent(context.mutations, context.handlerInvocationSink, request),
-  );
+  return encodeJeditIntentResponse(executeIntent(context.mutations, context.handlerInvocationSink, request));
 }
 
 function recordAcceptedSubmission(

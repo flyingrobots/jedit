@@ -7,7 +7,7 @@ import type {
   ReplaceRangeAsTickExecution,
 } from '../app/jedit-contract-runtime.js';
 import type { TextWindowReadingEnvelope, WorldlineSnapshotReadingEnvelope } from '../app/jedit-observer-runtime.js';
-import type { MutationOperationName, QueryOperationName } from '../generated/jedit/hot-text-runtime.types.generated.js';
+import type { MutationOperationName, QueryOperationName } from '../generated/jedit/rope.types.generated.js';
 import {
   mutationCreateBufferWorldlineOperation,
   mutationCreateCheckpointOperation,
@@ -19,15 +19,22 @@ import {
   type MutationReplaceRangeAsTickRequest,
   type QueryTextWindowRequest,
   type QueryWorldlineSnapshotRequest,
-} from '../generated/jedit/hot-text-runtime.wesley.generated.js';
+} from '../generated/jedit/rope.wesley.generated.js';
 import {
   BufferWorldlineSchema,
   CheckpointKindSchema,
   MutationOperationSchemas,
   QueryOperationSchemas,
-  TickKindSchema,
-} from '../generated/jedit/hot-text-runtime.zod.generated.js';
+  RewriteKindSchema,
+} from '../generated/jedit/rope.zod.generated.js';
 import { JeditRetainedEvidenceInventorySchema } from './jedit-retained-evidence-codec.js';
+
+// EINT envelope codec re-export (kept here so adapters import wire and
+// envelope codecs from one module — see quality-gate import cap).
+export {
+  decodeJeditMutationIntentEnvelope, encodeJeditMutationIntentEnvelope, UnknownMutationOpIdError,
+  type DecodedJeditMutationIntent, type JeditMutationEnvelopeInput,
+} from './jedit-mutation-envelope-codec.js';
 
 export const JEDIT_INTENT_REQUEST_KIND = 'jedit.intent-request';
 export const JEDIT_OBSERVE_REQUEST_KIND = 'jedit.observe-request';
@@ -104,7 +111,7 @@ const HotTextBufferStateSchema = z.object({
 
 const TickMetadataSchema = z.object({
   tickId: z.number().int(),
-  kind: TickKindSchema,
+  kind: RewriteKindSchema,
   author: z.string().optional(),
 });
 
@@ -112,7 +119,7 @@ const CheckpointMetadataSchema = z.object({
   checkpointId: z.number().int(),
   kind: CheckpointKindSchema,
   label: z.string().optional(),
-  createdByTickId: z.number().int().optional(),
+  createdByRopeRewriteId: z.number().int().optional(),
 });
 
 const JeditWorldlineSessionSchema = z.object({
@@ -152,26 +159,6 @@ const TextWindowReadingEnvelopeSchema = z.object({
   frontierRef: z.string(),
   reading: QueryOperationSchemas.textWindow.result,
   retainedEvidence: JeditRetainedEvidenceInventorySchema,
-});
-
-const CreateBufferWorldlineIntentRequestSchema = z.object({
-  kind: z.literal(JEDIT_INTENT_REQUEST_KIND),
-  operationName: z.literal(CREATE_BUFFER_WORLDLINE_OPERATION),
-  input: MutationOperationSchemas.createBufferWorldline.input,
-});
-
-const ReplaceRangeAsTickIntentRequestSchema = z.object({
-  kind: z.literal(JEDIT_INTENT_REQUEST_KIND),
-  operationName: z.literal(REPLACE_RANGE_AS_TICK_OPERATION),
-  session: JeditWorldlineSessionSchema,
-  input: MutationOperationSchemas.replaceRangeAsTick.input,
-});
-
-const CreateCheckpointIntentRequestSchema = z.object({
-  kind: z.literal(JEDIT_INTENT_REQUEST_KIND),
-  operationName: z.literal(CREATE_CHECKPOINT_OPERATION),
-  session: JeditWorldlineSessionSchema,
-  input: MutationOperationSchemas.createCheckpoint.input,
 });
 
 const WorldlineSnapshotObserveRequestSchema = z.object({
@@ -217,11 +204,41 @@ const CreateCheckpointIntentOkResponseSchema = z.object({
   execution: CreateCheckpointExecutionSchema,
 });
 
-const IntentObstructedResponseSchema = z.object({
+/**
+ * Decode-failure obstruction: envelope could not be parsed, so the
+ * operation name is not known. Discriminated by
+ * obstruction.code === 'JEDIT_MUTATION_ENVELOPE_INVALID'.
+ */
+const IntentDecodeFailureObstructedResponseSchema = z.object({
+  status: z.literal(JEDIT_TRANSPORT_STATUS_OBSTRUCTED),
+  obstruction: JeditTransportObstructionSchema.extend({
+    code: z.literal('JEDIT_MUTATION_ENVELOPE_INVALID'),
+  }),
+}).strict();
+
+/**
+ * Normal intent obstruction: operationName is REQUIRED. Covers anything
+ * past the envelope decode boundary (package gate, session gate, base-
+ * head mismatch, capability denial, execution-stage failures). The code
+ * is REFINED to forbid JEDIT_MUTATION_ENVELOPE_INVALID — owned by the
+ * decode-failure variant; otherwise that mixed state revalidates.
+ */
+const IntentNormalObstructedResponseSchema = z.object({
   status: z.literal(JEDIT_TRANSPORT_STATUS_OBSTRUCTED),
   operationName: MutationOperationNameSchema,
-  obstruction: JeditTransportObstructionSchema,
+  obstruction: JeditTransportObstructionSchema.refine(
+    (obstruction) => obstruction.code !== 'JEDIT_MUTATION_ENVELOPE_INVALID',
+    { message: 'code JEDIT_MUTATION_ENVELOPE_INVALID is reserved for IntentDecodeFailureObstructedResponse (no operationName)' },
+  ),
 });
+
+// Split union makes the illegal state "obstructed without operationName
+// but also without the decode-failure marker" unrepresentable at the
+// schema/type level.
+const IntentObstructedResponseSchema = z.union([
+  IntentDecodeFailureObstructedResponseSchema,
+  IntentNormalObstructedResponseSchema,
+]);
 
 const WorldlineSnapshotObserveOkResponseSchema = z.object({
   status: z.literal(JEDIT_TRANSPORT_STATUS_OK),
@@ -246,12 +263,6 @@ const SchedulerStatusSchema = z.object({
   state: z.literal(SCHEDULER_STATE_IDLE),
   host: z.string(),
 });
-
-const JeditIntentRequestSchema = z.union([
-  CreateBufferWorldlineIntentRequestSchema,
-  ReplaceRangeAsTickIntentRequestSchema,
-  CreateCheckpointIntentRequestSchema,
-]);
 
 const JeditObserveRequestSchema = z.union([
   WorldlineSnapshotObserveRequestSchema,
@@ -339,11 +350,39 @@ export interface CreateCheckpointIntentOkResponse {
   readonly execution: CreateCheckpointExecution;
 }
 
-export interface JeditIntentObstructedResponse {
+/**
+ * Decode-failure obstruction: envelope failed to parse, operation name
+ * is unknown. Discriminated by `obstruction.code` ===
+ * `'JEDIT_MUTATION_ENVELOPE_INVALID'`. Carries no operationName field.
+ */
+export interface JeditIntentDecodeFailureObstructedResponse {
+  readonly status: typeof JEDIT_TRANSPORT_STATUS_OBSTRUCTED;
+  readonly obstruction: JeditTransportObstruction & {
+    readonly code: 'JEDIT_MUTATION_ENVELOPE_INVALID';
+  };
+}
+
+/**
+ * Normal intent obstruction: operationName is REQUIRED. Covers
+ * package-not-installed, session-gate, head-inbox admission (base-head
+ * mismatch), capability denied, execution-stage failures.
+ */
+export interface JeditIntentNormalObstructedResponse {
   readonly status: typeof JEDIT_TRANSPORT_STATUS_OBSTRUCTED;
   readonly operationName: JeditMutationOperationName;
   readonly obstruction: JeditTransportObstruction;
 }
+
+/**
+ * Discriminated union over obstructed intent responses. The two variants
+ * make the illegal state "obstructed without operationName but also
+ * without the decode-failure marker" unrepresentable at the type level.
+ * Consumers branch on `'operationName' in response` (or equivalently on
+ * `response.obstruction.code === 'JEDIT_MUTATION_ENVELOPE_INVALID'`).
+ */
+export type JeditIntentObstructedResponse =
+  | JeditIntentDecodeFailureObstructedResponse
+  | JeditIntentNormalObstructedResponse;
 
 export interface WorldlineSnapshotObserveOkResponse {
   readonly status: typeof JEDIT_TRANSPORT_STATUS_OK;
@@ -389,14 +428,6 @@ type JsonObject = { readonly [key: string]: JsonValueCandidate };
 type JsonValue = JsonPrimitive | JsonObject | readonly JsonValue[];
 type JsonValueCandidate = JsonPrimitive | JsonObject | readonly JsonValueCandidate[];
 
-export function encodeJeditIntentRequest(request: JeditIntentRequest): Uint8Array {
-  return encodeJson(JeditIntentRequestSchema.parse(request));
-}
-
-export function decodeJeditIntentRequest(bytes: Uint8Array): JeditIntentRequest {
-  return JeditIntentRequestSchema.parse(parseJsonBytes(bytes));
-}
-
 export function encodeJeditObserveRequest(request: JeditObserveRequest): Uint8Array {
   return encodeJson(JeditObserveRequestSchema.parse(request));
 }
@@ -423,36 +454,6 @@ export function decodeJeditObserveResponse(bytes: Uint8Array): JeditObserveRespo
 
 export function encodeJeditSchedulerStatus(status: JeditSchedulerStatus): Uint8Array {
   return encodeJson(SchedulerStatusSchema.parse(status));
-}
-
-export function toCreateBufferWorldlineExecution(
-  execution: CreateBufferWorldlineExecution,
-): CreateBufferWorldlineExecution {
-  return execution;
-}
-
-export function toReplaceRangeAsTickExecution(
-  execution: ReplaceRangeAsTickExecution,
-): ReplaceRangeAsTickExecution {
-  return execution;
-}
-
-export function toCreateCheckpointExecution(
-  execution: CreateCheckpointExecution,
-): CreateCheckpointExecution {
-  return execution;
-}
-
-export function toWorldlineSnapshotReadingEnvelope(
-  envelope: WorldlineSnapshotReadingEnvelope,
-): WorldlineSnapshotReadingEnvelope {
-  return envelope;
-}
-
-export function toTextWindowReadingEnvelope(
-  envelope: TextWindowReadingEnvelope,
-): TextWindowReadingEnvelope {
-  return envelope;
 }
 
 function encodeJson(value: object): Uint8Array {

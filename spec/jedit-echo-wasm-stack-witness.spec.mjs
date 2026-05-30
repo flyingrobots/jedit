@@ -388,7 +388,7 @@ function toWitnessOnlyTextWindowReading(artifact, queryBytes) {
         worldlineId,
         bufferKey: STACK_WITNESS_BUFFER_KEY,
         canonicalHeadId: headId,
-        createdAtTickId: null,
+        createdAtRopeRewriteId: null,
         projectionPath: STACK_WITNESS_BUFFER_KEY,
       },
       head: {
@@ -500,7 +500,7 @@ function createWitnessReportArgs({
 
 function createGeneratedContractMetadataFixture() {
   return {
-    source: 'contracts/jedit/hot-text-runtime.graphql',
+    source: 'contracts/jedit/rope.graphql',
     mutations: {
       createBufferWorldline: {
         fieldName: 'createBufferWorldline',

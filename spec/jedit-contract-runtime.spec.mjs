@@ -70,17 +70,17 @@ test('replaceRangeAsTick returns contract-shaped tick and receipt data', async (
   assert.ok(edited.result);
   assert.equal(contractApp.materializeWorldline(runtime, edited.nextSession), 'hello brave new world');
   assert.equal(edited.result.worldline.canonicalHeadId, edited.result.nextHead.headId);
-  assert.equal(edited.result.tick.worldlineId, edited.result.worldline.worldlineId);
-  assert.equal(edited.result.tick.kind, 'TEXT_REWRITE');
-  assert.equal(edited.result.tick.author, 'tester');
-  assert.equal(edited.result.receipt.baseHeadId, created.result.head.headId);
-  assert.equal(edited.result.receipt.nextHeadId, edited.result.nextHead.headId);
-  assert.equal(edited.result.receipt.rewriteKind, 'REPLACE_RANGE_AS_TICK');
-  assert.equal(edited.result.receipt.receiptId, 'receipt:1');
-  assert.equal(edited.result.receipt.startByte, 5);
-  assert.equal(edited.result.receipt.endByte, 5);
-  assert.equal(edited.result.receipt.insertedByteLength, 10);
-  assert.equal(edited.result.receipt.deletedByteLength, 0);
+  assert.equal(edited.result.ropeRewrite.worldlineId, edited.result.worldline.worldlineId);
+  assert.equal(edited.result.ropeRewrite.kind, 'REPLACE_RANGE_AS_TICK');
+  assert.equal(edited.result.ropeRewrite.author, 'tester');
+  assert.equal(edited.result.ropeDiff.baseHeadId, created.result.head.headId);
+  assert.equal(edited.result.ropeDiff.nextHeadId, edited.result.nextHead.headId);
+  assert.equal(edited.result.ropeDiff.rewriteKind, 'REPLACE_RANGE_AS_TICK');
+  assert.equal(edited.result.ropeDiff.ropeDiffId, 'receipt:1');
+  assert.equal(edited.result.ropeDiff.startByte, 5);
+  assert.equal(edited.result.ropeDiff.endByte, 5);
+  assert.equal(edited.result.ropeDiff.insertedByteLength, 10);
+  assert.equal(edited.result.ropeDiff.deletedByteLength, 0);
 });
 
 test('runtime id helpers round-trip numeric identifiers symmetrically', async () => {
