@@ -66,6 +66,8 @@ import type { JeditTransportSeam } from '../ports/jedit-transport-seam.js';
 import {
   createInMemoryJeditWorldlineSessionPort,
   createInstalledJeditEintBridge,
+  isDecodedEnvelopeObstructed,
+  isResolvedIntentObstructed,
   type JeditEintBridge,
 } from './installed-jedit-eint-bridge.js';
 
@@ -190,7 +192,7 @@ function submitInstalledIntent(
 ): Uint8Array {
   // Stage 1: decode the envelope.
   const decodeResult = context.bridge.decodeEnvelope(intentBytes);
-  if (decodeResult.status === 'obstructed') {
+  if (isDecodedEnvelopeObstructed(decodeResult)) {
     return encodeJeditIntentResponse(decodeResult.response);
   }
   const envelope = decodeResult.decoded;
@@ -207,7 +209,7 @@ function submitInstalledIntent(
   }
   // Stage 3: resolve session via the port.
   const resolved = context.bridge.resolveSession(envelope);
-  if (resolved.status === 'obstructed') {
+  if (isResolvedIntentObstructed(resolved)) {
     return encodeJeditIntentResponse(resolved.response);
   }
   const request = resolved.request;

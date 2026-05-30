@@ -43,6 +43,25 @@ export type ResolvedIntent =
   | { readonly status: 'ok'; readonly request: JeditIntentRequest }
   | { readonly status: 'obstructed'; readonly response: JeditIntentResponse };
 
+/**
+ * Type-guard discriminator for DecodedEnvelope: returns true exactly when
+ * the envelope is in the obstructed state. Callers should consume this
+ * instead of comparing `result.status === 'obstructed'` so the stringly
+ * dispatch stays out of consumer logic.
+ */
+export function isDecodedEnvelopeObstructed(
+  result: DecodedEnvelope,
+): result is Extract<DecodedEnvelope, { status: 'obstructed' }> {
+  return result.status === 'obstructed';
+}
+
+/** Type-guard discriminator for ResolvedIntent (same pattern). */
+export function isResolvedIntentObstructed(
+  result: ResolvedIntent,
+): result is Extract<ResolvedIntent, { status: 'obstructed' }> {
+  return result.status === 'obstructed';
+}
+
 export interface JeditEintBridge {
   readonly sessionPort: JeditWorldlineSessionPort;
   /**
