@@ -20,12 +20,6 @@ test('Echo application hosting guide names current ports and no app tick authori
 });
 
 test('Echo application hosting guide counter witness command is executable', () => {
-  const build = spawnSync('npm', ['run', '--silent', 'build'], {
-    cwd: REPO_ROOT,
-    encoding: 'utf8',
-  });
-  assert.equal(build.status, 0, build.stderr || build.stdout);
-
   const result = spawnSync(process.execPath, [
     '--test',
     '--test-concurrency=1',

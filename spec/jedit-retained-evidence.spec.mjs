@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
@@ -89,14 +88,7 @@ async function loadRetained() {
     return retainedPromise;
   }
 
-  retainedPromise = (async () => {
-    const build = spawnSync('npm', ['run', '--silent', 'build'], {
-      cwd: REPO_ROOT,
-      encoding: 'utf8',
-    });
-
-    assert.equal(build.status, 0, build.stderr || build.stdout);
-    return import(pathToFileURL(RETAINED_MODULE_PATH).href);
+  retainedPromise = (async () => {    return import(pathToFileURL(RETAINED_MODULE_PATH).href);
   })();
 
   return retainedPromise;

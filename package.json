@@ -18,8 +18,8 @@
     "release-gate:echo": "npm run release-gate:jedit-echo",
     "release-gate:jedit-echo": "node scripts/jedit-echo-release-gate.mjs",
     "quality": "node scripts/quality-gate.mjs",
-    "test": "npm run gen:contract:structural-history:wesley && node --test --test-concurrency=1 spec/**/*.spec.mjs tests/**/*.spec.mjs",
-    "check": "npm run build && npm run test && npm run quality"
+    "test": "npm run build && node --test --test-concurrency=1 spec/**/*.spec.mjs tests/**/*.spec.mjs",
+    "check": "npm run test && npm run quality"
   },
   "dependencies": {
     "@flyingrobots/bijou": "5.0.0",

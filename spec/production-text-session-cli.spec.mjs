@@ -8,7 +8,6 @@ const CLI_PATH = path.join(REPO_ROOT, 'scripts', 'jedit-production-text-session.
 const INSERT_TEXT = 'cli text';
 
 test('production text session CLI reports edit reading checkpoint and export evidence', () => {
-  build();
   const result = spawnSync(process.execPath, [
     CLI_PATH,
     '--json',
@@ -31,7 +30,6 @@ test('production text session CLI reports edit reading checkpoint and export evi
 });
 
 test('production text session CLI reports stable local replay posture', () => {
-  build();
   const result = spawnSync(process.execPath, [
     CLI_PATH,
     '--json',
@@ -51,11 +49,3 @@ test('production text session CLI reports stable local replay posture', () => {
   assert.equal(report.first.status, 'applied');
   assert.equal(report.second.status, 'applied');
 });
-
-function build() {
-  const result = spawnSync('npm', ['run', '--silent', 'build'], {
-    cwd: REPO_ROOT,
-    encoding: 'utf8',
-  });
-  assert.equal(result.status, 0, result.stderr || result.stdout);
-}

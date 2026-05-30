@@ -29,6 +29,7 @@ Press `?` inside the editor for the key binding reference.
 - **File drawer** — directory navigation, open files with Enter
 - **Graft drawer** — current-file structural outline and change summary via MCP
 - **Markdown preview** — live lens over the active buffer (`ctrl+p` to toggle)
+- **Syntax highlighting** — themed source rendering for supported languages
 - **Echo-backed text session** — every edit submits a contract intent through `TextBufferOptic`; a fake Echo transport handles it in-process for default use, a real Echo WASM transport is available opt-in
 - **Structural-history contract** — `replaceTextRange` operation identity comes from Wesley-generated metadata, not hardcoded strings
 - **Witness scripts** — JSON-reporting evidence tools for CI and agents (see [Witnesses](#witnesses))
@@ -42,6 +43,8 @@ Press `?` inside the editor for the key binding reference.
 | [GUIDE.md](GUIDE.md) | Running, building, validating, generating contracts |
 | [ADVANCED_GUIDE.md](ADVANCED_GUIDE.md) | How a buffer becomes terminal pixels — the full render path |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Layer rules, dependency graph, editor vocabulary, testing rules |
+| [VISION.md](VISION.md) | Long-term product direction |
+| [AGENTS.md](AGENTS.md) | Agent-specific guidance and witness commands |
 | [docs/technical-teardown.md](docs/technical-teardown.md) | **Deep technical reference** — domain dictionary, golden paths, payload anatomy, trade-offs, security boundaries, async model |
 | [docs/jedit-echo-end-to-end.md](docs/jedit-echo-end-to-end.md) | The full jedit + Echo process-level path |
 | [docs/design/](docs/design/) | Design notes: project invariants, runtime temperatures, text-edit algebra, causal event model, structural history |

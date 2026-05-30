@@ -56,6 +56,7 @@ export interface TitleEnvironmentDefaultColors {
 const DEFAULT_FLOOR_GRID_SCALE = 0.7;
 const DEFAULT_FLOOR_FADE_DISTANCE = 36;
 const PLANE_EPSILON = 0.000001;
+const FLOOR_VISIBILITY_EPSILON = 0.000001;
 const FLOOR_Y = 0;
 
 export function titleSceneBackgroundColor(
@@ -105,6 +106,9 @@ function floorHit(
   const point = add(origin, scale(ray, distance));
   const fadeDistance = floor?.fadeDistance ?? DEFAULT_FLOOR_FADE_DISTANCE;
   const fade = Math.max(0, 1 - (distance / fadeDistance));
+  if (fade <= FLOOR_VISIBILITY_EPSILON) {
+    return undefined;
+  }
   const color = floorColorAt(point, floor, colors);
 
   return {
