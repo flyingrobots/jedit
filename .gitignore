@@ -5,4 +5,8 @@ dist
 .jedit-cache/
 .obsidian/
 src/generated/**/*.wesley.generated.ts
+# Wesley-emitted rope contract is consumed by jedit at compile time AND clean
+# checkout cannot regenerate it (requires JEDIT_WESLEY_ROOT). Track it like
+# the sibling rope.*.generated.ts files.
+!src/generated/jedit/rope.wesley.generated.ts
 .claude/
