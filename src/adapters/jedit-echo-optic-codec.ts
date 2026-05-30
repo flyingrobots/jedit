@@ -217,15 +217,19 @@ const IntentDecodeFailureObstructedResponseSchema = z.object({
 }).strict();
 
 /**
- * Normal intent obstruction: operationName is REQUIRED. Covers
- * package-not-installed, session-gate, head-inbox admission (base-head
- * mismatch), capability denied, execution-stage failures, etc. Anything
- * that reached or passed the envelope decode boundary.
+ * Normal intent obstruction: operationName is REQUIRED. Covers anything
+ * past the envelope decode boundary (package gate, session gate, base-
+ * head mismatch, capability denial, execution-stage failures). The code
+ * is REFINED to forbid JEDIT_MUTATION_ENVELOPE_INVALID — owned by the
+ * decode-failure variant; otherwise that mixed state revalidates.
  */
 const IntentNormalObstructedResponseSchema = z.object({
   status: z.literal(JEDIT_TRANSPORT_STATUS_OBSTRUCTED),
   operationName: MutationOperationNameSchema,
-  obstruction: JeditTransportObstructionSchema,
+  obstruction: JeditTransportObstructionSchema.refine(
+    (obstruction) => obstruction.code !== 'JEDIT_MUTATION_ENVELOPE_INVALID',
+    { message: 'code JEDIT_MUTATION_ENVELOPE_INVALID is reserved for IntentDecodeFailureObstructedResponse (no operationName)' },
+  ),
 });
 
 // Split union makes the illegal state "obstructed without operationName
