@@ -173,10 +173,11 @@ function submitInstalledIntent(
   intentBytes: Uint8Array,
 ): Uint8Array {
   // Stage 1: decode the envelope.
-  const decoded = context.bridge.decodeEnvelope(intentBytes);
-  if (decoded.status === 'obstructed') {
-    return encodeJeditIntentResponse(decoded.response);
+  const decodeResult = context.bridge.decodeEnvelope(intentBytes);
+  if (decodeResult.status === 'obstructed') {
+    return encodeJeditIntentResponse(decodeResult.response);
   }
+  const envelope = decodeResult.decoded;
   // Stage 2: check package installation BEFORE resolving session. Package
   // not installed is more fundamental than session not registered, so it
   // must surface first; a session-aware caller hitting a stale transport
@@ -184,12 +185,12 @@ function submitInstalledIntent(
   if (!context.isPackageInstalled) {
     return encodeJeditIntentResponse({
       status: JEDIT_TRANSPORT_STATUS_OBSTRUCTED,
-      operationName: decoded.decoded.operationName,
+      operationName: envelope.operationName,
       obstruction: packageNotInstalledObstruction(),
     });
   }
   // Stage 3: resolve session via the port.
-  const resolved = context.bridge.resolveSession(decoded.decoded);
+  const resolved = context.bridge.resolveSession(envelope);
   if (resolved.status === 'obstructed') {
     return encodeJeditIntentResponse(resolved.response);
   }

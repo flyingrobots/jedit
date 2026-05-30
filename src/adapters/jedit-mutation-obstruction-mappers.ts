@@ -2,6 +2,17 @@
 // Shared mutation-obstruction mappers used by both in-process transports
 // (`installed-jedit-eint-bridge.ts` and `fake-echo-jedit-optic-transport.ts`)
 // so the wire-level / session-level obstruction shapes stay consistent.
+//
+// Two functions, two return shapes:
+//
+//   envelopeDecodeObstructedResponse → JeditIntentResponse (full response)
+//     Returns the whole response because envelope decode fails BEFORE the
+//     caller has any structured upstream context to compose an obstruction
+//     into; the obstruction is the response.
+//
+//   sessionNotRegisteredObstruction → JeditTransportObstruction (just the
+//     obstruction; the caller composes it into a response, attaching the
+//     operationName they already know from the decoded envelope).
 
 import {
   JEDIT_TRANSPORT_STATUS_OBSTRUCTED,
@@ -55,8 +66,10 @@ export class JeditExhaustivenessError extends Error {
 /**
  * Runtime + compile-time exhaustiveness guard. Used in `switch` statements
  * over discriminated unions so missing a variant fails at compile and at
- * runtime if the variant escapes type-checking somehow.
+ * runtime if the variant escapes type-checking somehow. Dumps the offending
+ * value via `JSON.stringify` so the diagnostic identifies which variant
+ * leaked through rather than printing the bare string `undefined`.
  */
 export function assertNever(value: never, message: string): never {
-  throw new JeditExhaustivenessError(`${message}: ${String(value)}`);
+  throw new JeditExhaustivenessError(`${message}: ${JSON.stringify(value)}`);
 }

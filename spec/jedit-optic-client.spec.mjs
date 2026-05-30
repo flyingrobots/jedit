@@ -244,6 +244,22 @@ test('transport-backed optic client exercises the fake Echo host through encoded
   assert.match(stale.obstruction.message, /Base head mismatch/);
 });
 
+test('fake transport: malformed EINT envelope yields obstructed response with absent operationName', async () => {
+  const { fakeTransportModule, codecModule } = await loadModules();
+  const fakeTransport = fakeTransportModule.createFakeEchoJeditOpticTransport();
+  // Bytes that are NOT a valid EINT envelope. Envelope decode must fail
+  // before any operationName is known, so the obstructed response omits
+  // operationName entirely — consumers must branch on obstruction.code.
+  const garbage = new Uint8Array([0xff, 0xfe, 0xfd, 0xfc, 0xfb]);
+  const responseBytes = fakeTransport.submitIntentBytes(garbage);
+  const response = codecModule.decodeJeditIntentResponse(responseBytes);
+
+  assert.equal(response.status, codecModule.JEDIT_TRANSPORT_STATUS_OBSTRUCTED);
+  assert.equal(response.operationName, undefined,
+    'operationName MUST be absent on envelope-decode-failure obstructions');
+  assert.equal(response.obstruction.code, 'JEDIT_MUTATION_ENVELOPE_INVALID');
+});
+
 test('codec exposes a typed invalid JSON payload error', async () => {
   const { codecModule } = await loadModules();
 

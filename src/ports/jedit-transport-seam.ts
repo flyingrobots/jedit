@@ -41,9 +41,14 @@ export interface JeditTransportSeam extends EchoWasmKernelTransport {
  * real-WASM transport returns plain `EchoWasmKernelTransport`. The optic
  * client uses this guard to enforce the shared-port invariant without
  * silently creating a private fallback port for the in-process case.
+ *
+ * The `in` check is sufficient: `JeditTransportSeam` declares
+ * `jeditSessionPort` as a required field, so any object that has the key
+ * also satisfies the type. Implementations that bypass TypeScript and
+ * return `undefined` despite the type are violating the contract.
  */
 export function isJeditTransportSeam(
   transport: EchoWasmKernelTransport,
 ): transport is JeditTransportSeam {
-  return 'jeditSessionPort' in transport && transport.jeditSessionPort !== undefined;
+  return 'jeditSessionPort' in transport;
 }

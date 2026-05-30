@@ -17,10 +17,7 @@ import {
   type ReadBasisHandle,
   type TextWindowRangeInput,
 } from '../ports/jedit-optic-client.js';
-import {
-  isJeditTransportSeam,
-  type JeditTransportSeam,
-} from '../ports/jedit-transport-seam.js';
+import { isJeditTransportSeam } from '../ports/jedit-transport-seam.js';
 import type { JeditWorldlineSessionPort } from '../ports/jedit-worldline-session-port.js';
 import { ReadBasisHandleRegistry } from '../app/read-basis-handle-registry.js';
 import {
@@ -105,8 +102,16 @@ export class JeditSessionPortMismatchError extends Error {
   }
 }
 
+/**
+ * Accepts any `EchoWasmKernelTransport`. In-process transports return a
+ * `JeditTransportSeam` (which extends the base) and carry the shared
+ * session port via `jeditSessionPort`; the type guard
+ * `isJeditTransportSeam` picks that up. Real-WASM transports remain plain
+ * `EchoWasmKernelTransport` and the caller must supply
+ * `options.sessionPort` instead.
+ */
 export function createEchoTransportJeditOpticClient(
-  transport: EchoWasmKernelTransport | JeditTransportSeam,
+  transport: EchoWasmKernelTransport,
   options: CreateEchoTransportJeditOpticClientOptions = {},
 ): JeditOpticClient {
   const context: OpticClientContext = {
@@ -345,7 +350,7 @@ function throwUnexpectedOperation(expected: string, actual: string): never {
  *   creating a port the transport will never read from.
  */
 function resolveSharedSessionPort(
-  transport: EchoWasmKernelTransport | JeditTransportSeam,
+  transport: EchoWasmKernelTransport,
   optionsSessionPort: JeditWorldlineSessionPort | undefined,
 ): JeditWorldlineSessionPort {
   const transportPort = isJeditTransportSeam(transport) ? transport.jeditSessionPort : undefined;

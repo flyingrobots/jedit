@@ -396,6 +396,23 @@ function createBufferWorldlineEnvelope(modules) {
   });
 }
 
+test('installed transport: malformed EINT envelope yields obstructed response with absent operationName', async () => {
+  const modules = await loadModules();
+  const transport = modules.transport.createInstalledJeditContractEchoTransport();
+  // Bytes that are NOT a valid EINT envelope. The bridge's decode step must
+  // fail before any operationName is known, so the obstructed response
+  // omits operationName entirely and the consumer is forced to branch on
+  // obstruction.code.
+  const garbage = new Uint8Array([0x00, 0x01, 0x02, 0x03, 0x04]);
+  const responseBytes = transport.submitIntentBytes(garbage);
+  const response = modules.codec.decodeJeditIntentResponse(responseBytes);
+
+  assert.equal(response.status, modules.codec.JEDIT_TRANSPORT_STATUS_OBSTRUCTED);
+  assert.equal(response.operationName, undefined,
+    'operationName MUST be absent on envelope-decode-failure obstructions');
+  assert.equal(response.obstruction.code, 'JEDIT_MUTATION_ENVELOPE_INVALID');
+});
+
 function createMissingReadStatePort(modules) {
   return {
     writeFactSet(factSet) {
