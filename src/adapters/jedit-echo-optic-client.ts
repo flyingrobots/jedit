@@ -75,11 +75,16 @@ export interface CreateEchoTransportJeditOpticClientOptions {
 }
 
 export class JeditOpticTransportObstructionError extends Error {
-  public readonly operationName: string;
+  /**
+   * Absent only when envelope decode failed before the operation could be
+   * read. Consumers should branch on `obstruction.code` first, not on
+   * operationName.
+   */
+  public readonly operationName: string | undefined;
   public readonly obstruction: JeditTransportObstruction;
 
-  public constructor(operationName: string, obstruction: JeditTransportObstruction) {
-    super(`Jedit optic transport obstructed ${operationName}: ${obstruction.message}`);
+  public constructor(operationName: string | undefined, obstruction: JeditTransportObstruction) {
+    super(`Jedit optic transport obstructed ${operationName ?? '<unknown operation>'}: ${obstruction.message}`);
     this.name = 'JeditOpticTransportObstructionError';
     this.operationName = operationName;
     this.obstruction = obstruction;

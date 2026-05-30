@@ -41,6 +41,11 @@ import {
   type JeditWorldlineSessionPort,
 } from '../ports/jedit-worldline-session-port.js';
 import { createInMemoryJeditWorldlineSessionPort } from './in-memory-jedit-worldline-session-port.js';
+import {
+  assertNever,
+  envelopeDecodeObstructedResponse,
+  sessionNotRegisteredObstruction,
+} from './jedit-mutation-obstruction-mappers.js';
 
 const FAKE_ECHO_JEDIT_MODULE_SPECIFIER = 'fake:echo-jedit-optic';
 const FAKE_ECHO_JEDIT_CODEC_ID = 'jedit.fake-echo-optic+json';
@@ -51,10 +56,6 @@ const SCHEDULER_STATE_IDLE = 'IDLE';
 const JEDIT_CONTRACT_RUNTIME_ERROR_CODE = 'JEDIT_CONTRACT_RUNTIME_ERROR';
 const JEDIT_FAKE_HOST_ERROR_CODE = 'JEDIT_FAKE_HOST_ERROR';
 const RECOVERY_REFRESH_READING = 'refresh reading and retry';
-const MUTATION_ENVELOPE_DECODE_ERROR_CODE = 'JEDIT_MUTATION_ENVELOPE_INVALID';
-const MUTATION_ENVELOPE_DECODE_RECOVERY = 'resubmit the intent using a valid EINT mutation envelope';
-const SESSION_NOT_REGISTERED_CODE = 'JEDIT_WORLDLINE_SESSION_NOT_REGISTERED';
-const SESSION_NOT_REGISTERED_RECOVERY = 'register the worldline session via the optic client before dispatching';
 
 export interface CreateFakeEchoJeditOpticTransportOptions {
   readonly runtime?: HotTextRuntimePort;
@@ -160,6 +161,8 @@ function executeDecodedMutation(
         execution: createCheckpoint(context.runtime, session, decoded.vars.input, context.hash),
       };
     }
+    default:
+      return assertNever(decoded, 'Unsupported decoded mutation intent');
   }
 }
 
@@ -253,26 +256,5 @@ function toBaseObstruction(error: Error | undefined): JeditTransportObstruction 
     code: JEDIT_FAKE_HOST_ERROR_CODE,
     message: 'Fake Echo host failed while handling the request.',
     recovery: RECOVERY_REFRESH_READING,
-  };
-}
-
-function envelopeDecodeObstructedResponse(error: Error | undefined): JeditIntentResponse {
-  return {
-    status: JEDIT_TRANSPORT_STATUS_OBSTRUCTED,
-    operationName: CREATE_BUFFER_WORLDLINE_OPERATION,
-    obstruction: {
-      code: MUTATION_ENVELOPE_DECODE_ERROR_CODE,
-      message: error?.message ?? 'invalid mutation envelope',
-      recovery: MUTATION_ENVELOPE_DECODE_RECOVERY,
-    },
-  };
-}
-
-function sessionNotRegisteredObstruction(error: JeditWorldlineSessionNotRegisteredError): JeditTransportObstruction {
-  return {
-    code: SESSION_NOT_REGISTERED_CODE,
-    message: error.message,
-    worldlineId: error.worldlineId,
-    recovery: SESSION_NOT_REGISTERED_RECOVERY,
   };
 }

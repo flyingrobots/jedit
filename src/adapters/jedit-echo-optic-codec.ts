@@ -206,7 +206,12 @@ const CreateCheckpointIntentOkResponseSchema = z.object({
 
 const IntentObstructedResponseSchema = z.object({
   status: z.literal(JEDIT_TRANSPORT_STATUS_OBSTRUCTED),
-  operationName: MutationOperationNameSchema,
+  // operationName is optional because the envelope decode path can fail
+  // BEFORE the operationName is known. All other obstruction stages (package
+  // not installed, base head mismatch, session not registered, etc.) DO know
+  // the operationName and must set it. Consumers must branch on
+  // obstruction.code, not assume operationName is always present.
+  operationName: MutationOperationNameSchema.optional(),
   obstruction: JeditTransportObstructionSchema,
 });
 
@@ -322,7 +327,14 @@ export interface CreateCheckpointIntentOkResponse {
 
 export interface JeditIntentObstructedResponse {
   readonly status: typeof JEDIT_TRANSPORT_STATUS_OBSTRUCTED;
-  readonly operationName: JeditMutationOperationName;
+  /**
+   * Absent only when envelope decode failed before the operation name
+   * could be read. All other obstruction stages (package not installed,
+   * session not registered, base head mismatch, etc.) MUST set this.
+   * Consumers must branch on `obstruction.code` first, not assume
+   * operationName is always present.
+   */
+  readonly operationName?: JeditMutationOperationName;
   readonly obstruction: JeditTransportObstruction;
 }
 

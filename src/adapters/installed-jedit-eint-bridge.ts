@@ -23,11 +23,11 @@ import {
   JeditWorldlineSessionNotRegisteredError,
   type JeditWorldlineSessionPort,
 } from './in-memory-jedit-worldline-session-port.js';
-
-const MUTATION_ENVELOPE_DECODE_ERROR_CODE = 'JEDIT_MUTATION_ENVELOPE_INVALID';
-const MUTATION_ENVELOPE_DECODE_RECOVERY = 'resubmit the intent using a valid EINT mutation envelope';
-const SESSION_NOT_REGISTERED_CODE = 'JEDIT_WORLDLINE_SESSION_NOT_REGISTERED';
-const SESSION_NOT_REGISTERED_RECOVERY = 'register the worldline session via the optic client before dispatching';
+import {
+  assertNever,
+  envelopeDecodeObstructedResponse,
+  sessionNotRegisteredObstruction,
+} from './jedit-mutation-obstruction-mappers.js';
 
 export type DecodedEnvelope =
   | { readonly status: 'ok'; readonly decoded: DecodedJeditMutationIntent }
@@ -96,12 +96,7 @@ function resolveSessionInternal(
       return obstructed({
         status: JEDIT_TRANSPORT_STATUS_OBSTRUCTED,
         operationName: decoded.operationName,
-        obstruction: {
-          code: SESSION_NOT_REGISTERED_CODE,
-          message: error.message,
-          worldlineId: error.worldlineId,
-          recovery: SESSION_NOT_REGISTERED_RECOVERY,
-        },
+        obstruction: sessionNotRegisteredObstruction(error),
       });
     }
     throw error;
@@ -124,21 +119,9 @@ function buildHandlerRequestFromEnvelope(
       const session = sessionPort.getSession(decoded.vars.input.worldlineId);
       return { kind, operationName: decoded.operationName, session, input: decoded.vars.input };
     }
+    default:
+      return assertNever(decoded, 'Unsupported decoded mutation intent');
   }
-}
-
-function envelopeDecodeObstructedResponse(error: Error | undefined): JeditIntentResponse {
-  return {
-    status: JEDIT_TRANSPORT_STATUS_OBSTRUCTED,
-    // EINT decode failed before we know the operationName; consumers branch on
-    // obstruction.code (JEDIT_MUTATION_ENVELOPE_INVALID), not operationName.
-    operationName: CREATE_BUFFER_WORLDLINE_OPERATION,
-    obstruction: {
-      code: MUTATION_ENVELOPE_DECODE_ERROR_CODE,
-      message: error?.message ?? 'invalid mutation envelope',
-      recovery: MUTATION_ENVELOPE_DECODE_RECOVERY,
-    },
-  };
 }
 
 function obstructed(response: JeditIntentResponse): ResolvedIntent {
