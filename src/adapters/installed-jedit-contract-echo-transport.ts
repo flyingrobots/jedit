@@ -172,14 +172,29 @@ function submitInstalledIntent(
   context: InstalledJeditContractEchoTransportContext,
   intentBytes: Uint8Array,
 ): Uint8Array {
-  const resolved = context.bridge.resolveIntent(intentBytes);
+  // Stage 1: decode the envelope.
+  const decoded = context.bridge.decodeEnvelope(intentBytes);
+  if (decoded.status === 'obstructed') {
+    return encodeJeditIntentResponse(decoded.response);
+  }
+  // Stage 2: check package installation BEFORE resolving session. Package
+  // not installed is more fundamental than session not registered, so it
+  // must surface first; a session-aware caller hitting a stale transport
+  // should not see the derived session error.
+  if (!context.isPackageInstalled) {
+    return encodeJeditIntentResponse({
+      status: JEDIT_TRANSPORT_STATUS_OBSTRUCTED,
+      operationName: decoded.decoded.operationName,
+      obstruction: packageNotInstalledObstruction(),
+    });
+  }
+  // Stage 3: resolve session via the port.
+  const resolved = context.bridge.resolveSession(decoded.decoded);
   if (resolved.status === 'obstructed') {
     return encodeJeditIntentResponse(resolved.response);
   }
   const request = resolved.request;
-  if (!context.isPackageInstalled) {
-    return encodeJeditIntentResponse(obstructedIntent(request, packageNotInstalledObstruction()));
-  }
+  // Stage 4: existing ticketed-work + handler-invocation pipeline.
   const submission = recordAcceptedSubmission(context, intentBytes, request);
   const ticketedWork = context.ticketedWorkPort.issueTicketedWork(submission);
   if (ticketedWork.status !== JEDIT_TICKETED_WORK_AVAILABLE) {

@@ -29,13 +29,30 @@ const MUTATION_ENVELOPE_DECODE_RECOVERY = 'resubmit the intent using a valid EIN
 const SESSION_NOT_REGISTERED_CODE = 'JEDIT_WORLDLINE_SESSION_NOT_REGISTERED';
 const SESSION_NOT_REGISTERED_RECOVERY = 'register the worldline session via the optic client before dispatching';
 
+export type DecodedEnvelope =
+  | { readonly status: 'ok'; readonly decoded: DecodedJeditMutationIntent }
+  | { readonly status: 'obstructed'; readonly response: JeditIntentResponse };
+
 export type ResolvedIntent =
   | { readonly status: 'ok'; readonly request: JeditIntentRequest }
   | { readonly status: 'obstructed'; readonly response: JeditIntentResponse };
 
 export interface JeditEintBridge {
   readonly sessionPort: JeditWorldlineSessionPort;
-  resolveIntent(intentBytes: Uint8Array): ResolvedIntent;
+  /**
+   * Decode the EINT envelope. Used by the installed transport so it can
+   * check package-installed status (and emit a faithful obstructed
+   * response keyed off the decoded operationName) BEFORE attempting
+   * session resolution. Decoupling these two stages lets diagnostic
+   * obstructions surface the more fundamental failure first.
+   */
+  decodeEnvelope(intentBytes: Uint8Array): DecodedEnvelope;
+  /**
+   * Resolve the session for a previously-decoded mutation envelope.
+   * Looks up by `decoded.vars.input.worldlineId` for mutations that
+   * carry a session; `createBufferWorldline` does not consult the port.
+   */
+  resolveSession(decoded: DecodedJeditMutationIntent): ResolvedIntent;
 }
 
 export interface CreateJeditEintBridgeOptions {
@@ -48,22 +65,30 @@ export function createInstalledJeditEintBridge(
   const sessionPort = options.sessionPort ?? createInMemoryJeditWorldlineSessionPort();
   return {
     sessionPort,
-    resolveIntent(intentBytes) {
-      return resolveIntentInternal(sessionPort, intentBytes);
+    decodeEnvelope(intentBytes) {
+      return decodeEnvelopeInternal(intentBytes);
+    },
+    resolveSession(decoded) {
+      return resolveSessionInternal(sessionPort, decoded);
     },
   };
 }
 
-function resolveIntentInternal(
-  sessionPort: JeditWorldlineSessionPort,
-  intentBytes: Uint8Array,
-): ResolvedIntent {
-  let decoded: DecodedJeditMutationIntent;
+function decodeEnvelopeInternal(intentBytes: Uint8Array): DecodedEnvelope {
   try {
-    decoded = decodeJeditMutationIntentEnvelope(intentBytes);
+    return { status: 'ok', decoded: decodeJeditMutationIntentEnvelope(intentBytes) };
   } catch (error) {
-    return obstructed(envelopeDecodeObstructedResponse(error instanceof Error ? error : undefined));
+    return {
+      status: 'obstructed',
+      response: envelopeDecodeObstructedResponse(error instanceof Error ? error : undefined),
+    };
   }
+}
+
+function resolveSessionInternal(
+  sessionPort: JeditWorldlineSessionPort,
+  decoded: DecodedJeditMutationIntent,
+): ResolvedIntent {
   try {
     return { status: 'ok', request: buildHandlerRequestFromEnvelope(sessionPort, decoded) };
   } catch (error) {
