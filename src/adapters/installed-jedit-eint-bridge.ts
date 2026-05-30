@@ -8,16 +8,18 @@
 // concerns and bounded by the quality gate's complexity / import / line caps.
 
 import {
-  CREATE_BUFFER_WORLDLINE_OPERATION,
-  CREATE_CHECKPOINT_OPERATION,
   decodeJeditMutationIntentEnvelope,
   JEDIT_INTENT_REQUEST_KIND,
   JEDIT_TRANSPORT_STATUS_OBSTRUCTED,
-  REPLACE_RANGE_AS_TICK_OPERATION,
   type DecodedJeditMutationIntent,
   type JeditIntentRequest,
   type JeditIntentResponse,
 } from './jedit-echo-optic-codec.js';
+import {
+  OP_CREATE_BUFFER_WORLDLINE,
+  OP_CREATE_CHECKPOINT,
+  OP_REPLACE_RANGE_AS_TICK,
+} from '../generated/jedit/rope.codec.generated.js';
 import {
   JeditWorldlineSessionNotRegisteredError,
   type JeditWorldlineSessionPort,
@@ -132,15 +134,19 @@ function buildHandlerRequestFromEnvelope(
   sessionPort: JeditWorldlineSessionPort,
   decoded: DecodedJeditMutationIntent,
 ): JeditIntentRequest {
+  // Dispatch on the numeric opId (stable wire discriminant), not on the
+  // operationName string. The decoded value carries both, but opId is the
+  // single source of truth from the envelope boundary; switching on the
+  // string would create two tags that can drift.
   const kind = JEDIT_INTENT_REQUEST_KIND;
-  switch (decoded.operationName) {
-    case CREATE_BUFFER_WORLDLINE_OPERATION:
+  switch (decoded.opId) {
+    case OP_CREATE_BUFFER_WORLDLINE:
       return { kind, operationName: decoded.operationName, input: decoded.vars.input };
-    case REPLACE_RANGE_AS_TICK_OPERATION: {
+    case OP_REPLACE_RANGE_AS_TICK: {
       const session = sessionPort.getSession(decoded.vars.input.worldlineId);
       return { kind, operationName: decoded.operationName, session, input: decoded.vars.input };
     }
-    case CREATE_CHECKPOINT_OPERATION: {
+    case OP_CREATE_CHECKPOINT: {
       const session = sessionPort.getSession(decoded.vars.input.worldlineId);
       return { kind, operationName: decoded.operationName, session, input: decoded.vars.input };
     }

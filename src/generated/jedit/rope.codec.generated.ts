@@ -307,7 +307,7 @@ export function _decWorldlineSnapshotInput(r: Reader): WorldlineSnapshotInput {
 
 // ─── mutation createBufferWorldline ───
 /** EINT op id for mutation `createBufferWorldline`. Stable across Rust and TypeScript emitters. */
-export const OP_CREATE_BUFFER_WORLDLINE: number = 2519122874;
+export const OP_CREATE_BUFFER_WORLDLINE = 2519122874 as const;
 export interface CreateBufferWorldlineVars {
     input: CreateBufferWorldlineInput;
 }
@@ -325,7 +325,7 @@ export function decodeCreateBufferWorldlineVars(b: Uint8Array): CreateBufferWorl
 
 // ─── mutation replaceRangeAsTick ───
 /** EINT op id for mutation `replaceRangeAsTick`. Stable across Rust and TypeScript emitters. */
-export const OP_REPLACE_RANGE_AS_TICK: number = 3329158538;
+export const OP_REPLACE_RANGE_AS_TICK = 3329158538 as const;
 export interface ReplaceRangeAsTickVars {
     input: ReplaceRangeAsTickInput;
 }
@@ -343,7 +343,7 @@ export function decodeReplaceRangeAsTickVars(b: Uint8Array): ReplaceRangeAsTickV
 
 // ─── mutation createCheckpoint ───
 /** EINT op id for mutation `createCheckpoint`. Stable across Rust and TypeScript emitters. */
-export const OP_CREATE_CHECKPOINT: number = 3744251216;
+export const OP_CREATE_CHECKPOINT = 3744251216 as const;
 export interface CreateCheckpointVars {
     input: CreateCheckpointInput;
 }
@@ -361,7 +361,7 @@ export function decodeCreateCheckpointVars(b: Uint8Array): CreateCheckpointVars 
 
 // ─── query worldlineSnapshot ───
 /** EINT op id for query `worldlineSnapshot`. Stable across Rust and TypeScript emitters. */
-export const OP_WORLDLINE_SNAPSHOT: number = 3219688859;
+export const OP_WORLDLINE_SNAPSHOT = 3219688859 as const;
 export interface WorldlineSnapshotVars {
     input: WorldlineSnapshotInput;
 }
@@ -379,7 +379,7 @@ export function decodeWorldlineSnapshotVars(b: Uint8Array): WorldlineSnapshotVar
 
 // ─── query textWindow ───
 /** EINT op id for query `textWindow`. Stable across Rust and TypeScript emitters. */
-export const OP_TEXT_WINDOW: number = 2414231278;
+export const OP_TEXT_WINDOW = 2414231278 as const;
 export interface TextWindowVars {
     input: TextWindowInput;
 }
