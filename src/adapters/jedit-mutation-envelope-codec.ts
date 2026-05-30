@@ -99,6 +99,21 @@ export function encodeJeditMutationIntentEnvelope(
                 OP_CREATE_CHECKPOINT,
                 encodeCreateCheckpointVars(request.vars),
             );
+        default:
+            // Runtime guard: TS exhaustiveness already enforces this at
+            // compile time, but if JeditMutationEnvelopeInput gains a variant
+            // and this switch falls through, callers must not silently get
+            // an undefined Uint8Array. assertNever lives in
+            // jedit-mutation-obstruction-mappers; using it would couple this
+            // module to an unrelated file, so we inline a tiny throw here.
+            throw new UnsupportedEncodeOperationError(request);
+    }
+}
+
+class UnsupportedEncodeOperationError extends Error {
+    public constructor(value: never) {
+        super(`encodeJeditMutationIntentEnvelope: unsupported request shape ${JSON.stringify(value)}`);
+        this.name = 'UnsupportedEncodeOperationError';
     }
 }
 
