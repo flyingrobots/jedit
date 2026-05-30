@@ -40,16 +40,20 @@ functions in and out. This counter violates that contract. Specifically:
 Pass an ID allocator explicitly. Two options:
 
 **Option A — pass an opaque ID in:**
+
 ```typescript
 export function createBufferRoot(id: number, text: string): BufferRoot
 ```
+
 Callers (the adapter layer) own the counter. The domain is now purely
 functional.
 
 **Option B — pass an allocator function:**
+
 ```typescript
 export function createBufferRoot(allocateId: () => number, text: string): BufferRoot
 ```
+
 Slightly more flexible; callers can inject a mock counter in tests.
 
 Either option removes all mutable state from `src/domain/` and makes the

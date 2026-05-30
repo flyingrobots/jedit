@@ -209,7 +209,7 @@ Wesley is the contract compiler. It reads **GraphQL SDL** files and emits TypeSc
 
 ## 3. Entry Point: `src/main.ts`
 
-```
+```text
 src/main.ts → createWorkspaceApp() → run(app, { mouse })
 ```
 
@@ -681,7 +681,7 @@ The `EditorState.pendingNormal` field stores `'d'`, `'c'`, `'y'`, or `'g'` while
 
 Normal-mode commands are a static table of `{ key, ctrl?, shift?, run }` records. Matching uses a descriptor string:
 
-```
+```text
 descriptor = `${key}|${ctrl?'1':'0'}|${alt?'1':'0'}|${shift?'1':'0'}`
 ```
 
@@ -825,7 +825,7 @@ The no-op detection is a clever optimization: pressing `x` on an empty line woul
 
 The contiguity invariant is strict: tick IDs must be dense integers (`1, 2, 3, …`). No gaps. The `currentRoot.id` must match the `rootId` of the most recently admitted tick.
 
-```
+```text
 admitReplaceRangeTick :: (TickAdmissionState, TextRange, TextFragment) → TickAdmissionResult
 ```
 
@@ -835,7 +835,7 @@ This invariant is what makes the tick sequence a **causal chain** rather than an
 
 Edit groups map ticks to product-level undo actions. One keystroke → one open group → one close → one group receipt.
 
-```
+```text
 openEditGroup → [includeTickInOpenGroup × N] → closeEditGroup → EditGroupReceipt?
 ```
 
@@ -1021,6 +1021,7 @@ classDiagram
 The adapter is **functionally stateless** — it is a collection of pure functions. State is owned by the caller (`JeditWorldlineSession`) and passed in on every call. This is an unusual design choice in JavaScript (where classes holding `this` state are the norm) but it makes testing trivial: you can call any function with any constructed state and assert the output without any setup/teardown.
 
 The extraction pattern:
+
 ```typescript
 function toTickAdmissionState(state: HotTextBufferState): TickAdmissionState {
   return createTickAdmissionState(state.currentRoot, state.ticks);
@@ -1319,7 +1320,7 @@ The `closures` section is equally interesting. The `touchedRope` closure says: "
 
 The structural history path is a second, parallel contract surface for the editor's history model — a complement to the rope schema, modeling the *history taxonomy* rather than the raw substrate.
 
-```
+```text
 contracts/jedit/structural-history.graphql
     → scripts/gen-structural-history-wesley.mjs (installs wesley-cli 0.0.4)
     → .wesley-cache/structural-history.wesley.generated.ts
