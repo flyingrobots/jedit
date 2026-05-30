@@ -26,7 +26,7 @@ import {
   type EchoContractPackageHostPort,
   type EchoContractPackageInstallRequest,
 } from '../ports/echo-contract-package-host.js';
-import type { EchoKernelInfo, EchoWasmKernelTransport } from '../ports/echo-kernel-transport.js';
+import type { EchoKernelInfo } from '../ports/echo-kernel-transport.js';
 import type { HashPort } from '../ports/hash.js';
 import type { HotTextRuntimePort } from '../ports/hot-text-runtime.js';
 import type { JeditContractStatePort } from '../ports/jedit-contract-state-port.js';
@@ -62,6 +62,7 @@ import {
   type JeditTransportObstruction,
 } from './jedit-echo-optic-codec.js';
 import type { JeditWorldlineSessionPort } from '../ports/jedit-worldline-session-port.js';
+import type { JeditTransportSeam } from '../ports/jedit-transport-seam.js';
 import {
   createInstalledJeditEintBridge,
   type JeditEintBridge,
@@ -115,7 +116,7 @@ interface AcceptedSubmissionContext {
 
 export function createInstalledJeditContractEchoTransport(
   options: InstalledJeditContractEchoTransportOptions = {},
-): EchoWasmKernelTransport {
+): JeditTransportSeam {
   const context = createTransportContext(options);
 
   return {

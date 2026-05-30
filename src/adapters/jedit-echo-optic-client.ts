@@ -17,6 +17,10 @@ import {
   type ReadBasisHandle,
   type TextWindowRangeInput,
 } from '../ports/jedit-optic-client.js';
+import {
+  isJeditTransportSeam,
+  type JeditTransportSeam,
+} from '../ports/jedit-transport-seam.js';
 import type { JeditWorldlineSessionPort } from '../ports/jedit-worldline-session-port.js';
 import { ReadBasisHandleRegistry } from '../app/read-basis-handle-registry.js';
 import {
@@ -39,7 +43,6 @@ import {
   encodeJeditMutationIntentEnvelope,
   type JeditMutationEnvelopeInput,
 } from './jedit-mutation-envelope-codec.js';
-import { createInMemoryJeditWorldlineSessionPort } from './in-memory-jedit-worldline-session-port.js';
 import type {
   CreateBufferWorldlineVars,
   CreateCheckpointVars,
@@ -90,16 +93,20 @@ export class JeditOpticTransportProtocolError extends Error {
   }
 }
 
+export class JeditSessionPortMismatchError extends Error {
+  public constructor(message: string) {
+    super(message);
+    this.name = 'JeditSessionPortMismatchError';
+  }
+}
+
 export function createEchoTransportJeditOpticClient(
-  transport: EchoWasmKernelTransport,
+  transport: EchoWasmKernelTransport | JeditTransportSeam,
   options: CreateEchoTransportJeditOpticClientOptions = {},
 ): JeditOpticClient {
   const context: OpticClientContext = {
     transport,
-    // Prefer the transport's session port (in-process transports) so the
-    // optic client registers sessions on the same instance the transport
-    // reads from. Falls back to provided/default for real-WASM transports.
-    sessionPort: options.sessionPort ?? transport.jeditSessionPort ?? createInMemoryJeditWorldlineSessionPort(),
+    sessionPort: resolveSharedSessionPort(transport, options.sessionPort),
     readBasisHandles: new ReadBasisHandleRegistry(),
   };
   return {
@@ -296,5 +303,47 @@ async function checkedObserveResponse(
 function throwUnexpectedOperation(expected: string, actual: string): never {
   throw new JeditOpticTransportProtocolError(
     `Expected ${expected} transport response, received ${actual}.`,
+  );
+}
+
+/**
+ * Enforce the Slice B shared-session-port invariant.
+ *
+ * The optic client and the in-process transport must register / read from
+ * exactly one `JeditWorldlineSessionPort` instance. A silent fallback —
+ * "create a private port if neither side provides one" — would re-create
+ * the C6 divergence bug the review caught.
+ *
+ * Rules:
+ *
+ * - If `options.sessionPort` AND `transport.jeditSessionPort` are both
+ *   provided, they must be the same object instance. Mismatch is a hard
+ *   error (`JeditSessionPortMismatchError`).
+ * - If the transport is a `JeditTransportSeam` (in-process), use its port.
+ *   This is the canonical path: the transport owns the port and the
+ *   client adopts it.
+ * - If the transport is a plain `EchoWasmKernelTransport` (real-WASM, no
+ *   session-port concept), the caller must provide `options.sessionPort`.
+ *   Otherwise the slice cannot function and we error rather than silently
+ *   creating a port the transport will never read from.
+ */
+function resolveSharedSessionPort(
+  transport: EchoWasmKernelTransport | JeditTransportSeam,
+  optionsSessionPort: JeditWorldlineSessionPort | undefined,
+): JeditWorldlineSessionPort {
+  const transportPort = isJeditTransportSeam(transport) ? transport.jeditSessionPort : undefined;
+  if (optionsSessionPort !== undefined && transportPort !== undefined && optionsSessionPort !== transportPort) {
+    throw new JeditSessionPortMismatchError(
+      'options.sessionPort differs from transport.jeditSessionPort; pass exactly one shared instance.',
+    );
+  }
+  if (transportPort !== undefined) {
+    return transportPort;
+  }
+  if (optionsSessionPort !== undefined) {
+    return optionsSessionPort;
+  }
+  throw new JeditSessionPortMismatchError(
+    'No session port available: pass options.sessionPort, or supply a transport that implements JeditTransportSeam.',
   );
 }

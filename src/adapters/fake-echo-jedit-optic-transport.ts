@@ -9,7 +9,8 @@ import {
   readWorldlineSnapshotWithObserverPlan,
 } from '../app/jedit-observer-runtime.js';
 import { createInMemoryHotTextRuntime } from './in-memory-hot-text-runtime.js';
-import type { EchoKernelInfo, EchoWasmKernelTransport } from '../ports/echo-kernel-transport.js';
+import type { EchoKernelInfo } from '../ports/echo-kernel-transport.js';
+import type { JeditTransportSeam } from '../ports/jedit-transport-seam.js';
 import type { HotTextRuntimePort } from '../ports/hot-text-runtime.js';
 import type { HashPort } from '../ports/hash.js';
 import { createHashPort } from './hash.js';
@@ -70,7 +71,7 @@ interface FakeTransportContext {
 
 export function createFakeEchoJeditOpticTransport(
   options: CreateFakeEchoJeditOpticTransportOptions = {},
-): EchoWasmKernelTransport {
+): JeditTransportSeam {
   const context: FakeTransportContext = {
     runtime: options.runtime ?? createInMemoryHotTextRuntime(),
     hash: options.hash ?? createHashPort(),
