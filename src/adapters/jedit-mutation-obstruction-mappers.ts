@@ -67,9 +67,28 @@ export class JeditExhaustivenessError extends Error {
  * Runtime + compile-time exhaustiveness guard. Used in `switch` statements
  * over discriminated unions so missing a variant fails at compile and at
  * runtime if the variant escapes type-checking somehow. Dumps the offending
- * value via `JSON.stringify` so the diagnostic identifies which variant
- * leaked through rather than printing the bare string `undefined`.
+ * value via a try/catch around JSON.stringify so the diagnostic identifies
+ * which variant leaked through; cyclic objects and BigInt (which both make
+ * JSON.stringify itself throw) fall back to String(value) so the intended
+ * JeditExhaustivenessError still constructs.
  */
 export function assertNever(value: never, message: string): never {
-  throw new JeditExhaustivenessError(`${message}: ${JSON.stringify(value)}`);
+  throw new JeditExhaustivenessError(`${message}: ${describeValue(value)}`);
+}
+
+function describeValue(value: never): string {
+  try {
+    const rendered = JSON.stringify(value);
+    if (rendered !== undefined) {
+      return rendered;
+    }
+  } catch {
+    // JSON.stringify throws on cyclic structures and BigInt; fall through
+    // to the safe representation below.
+  }
+  try {
+    return String(value);
+  } catch {
+    return '<unserializable value>';
+  }
 }
