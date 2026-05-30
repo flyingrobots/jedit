@@ -2,6 +2,7 @@ import type {
   QueryOperationMap,
 } from '../generated/jedit/rope.types.generated.js';
 import { QueryOperationSchemas } from '../generated/jedit/rope.zod.generated.js';
+import { queryTextWindowOperation } from '../generated/jedit/rope.wesley.generated.js';
 import { worldlineSnapshotObserverPlan } from '../generated/jedit/worldlineSnapshot.observer-plan.generated.js';
 import type { HotTextRuntimePort } from '../ports/hot-text-runtime.js';
 import type { JeditRetainedEvidenceInventory } from '../ports/jedit-retained-evidence.js';
@@ -19,7 +20,7 @@ const TEXT_WINDOW_PLAN_SPEC = Object.freeze({
   idPrefix: 'observer-plan:textWindow:',
   observerName: 'textWindow',
   kind: 'TEXT_WINDOW',
-  operationName: 'textWindow',
+  operationName: queryTextWindowOperation.fieldName,
   aperture: 'BOUNDED_TEXT_WINDOW',
   basis: 'JEDIT_HOT_TEXT',
   state: 'MEMORYLESS',
