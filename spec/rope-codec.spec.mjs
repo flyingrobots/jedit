@@ -340,3 +340,49 @@ await test('rope codec — worldlineSnapshot and textWindow vars', async t => {
         assert.deepEqual(decodeTextWindowVars(encodeTextWindowVars(input)), input);
     });
 });
+
+await test('rope codec — top-level vars decoders reject trailing bytes', async t => {
+  const {
+    encodeCreateBufferWorldlineVars,
+    decodeCreateBufferWorldlineVars,
+    encodeReplaceRangeAsTickVars,
+    decodeReplaceRangeAsTickVars,
+    encodeCreateCheckpointVars,
+    decodeCreateCheckpointVars,
+  } = mod;
+  // Replay/submission-identity invariant: vars decoders MUST reject any
+  // payload that has bytes past the structurally-declared end. Otherwise
+  // "canonical + garbage" could decode the canonical input and discard the
+  // trailer, allowing two distinct submission byte strings to execute the
+  // same mutation under different recorded submission IDs.
+
+  await t.test('decodeCreateBufferWorldlineVars rejects trailing byte', () => {
+    const canonical = encodeCreateBufferWorldlineVars({
+      input: { bufferKey: 'a', initialText: null, projectionPath: null, createInitialCheckpoint: null },
+    });
+    const padded = new Uint8Array(canonical.byteLength + 1);
+    padded.set(canonical, 0);
+    padded[canonical.byteLength] = 0xff;
+    assert.throws(() => decodeCreateBufferWorldlineVars(padded), /trailing/);
+  });
+
+  await t.test('decodeReplaceRangeAsTickVars rejects trailing byte', () => {
+    const canonical = encodeReplaceRangeAsTickVars({
+      input: { worldlineId: 'wl', baseHeadId: 'h', startByte: 0, endByte: 0, insertText: '', author: null },
+    });
+    const padded = new Uint8Array(canonical.byteLength + 1);
+    padded.set(canonical, 0);
+    padded[canonical.byteLength] = 0xff;
+    assert.throws(() => decodeReplaceRangeAsTickVars(padded), /trailing/);
+  });
+
+  await t.test('decodeCreateCheckpointVars rejects trailing byte', () => {
+    const canonical = encodeCreateCheckpointVars({
+      input: { worldlineId: 'wl', kind: 'MANUAL_SAVE', label: null },
+    });
+    const padded = new Uint8Array(canonical.byteLength + 1);
+    padded.set(canonical, 0);
+    padded[canonical.byteLength] = 0xff;
+    assert.throws(() => decodeCreateCheckpointVars(padded), /trailing/);
+  });
+});

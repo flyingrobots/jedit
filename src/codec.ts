@@ -166,6 +166,11 @@ export class Reader {
         this.pos = 0;
     }
 
+    /** Number of bytes left to consume from the underlying buffer. */
+    remaining(): number {
+        return this.view.byteLength - this.pos;
+    }
+
     private take(n: number): number {
         const start = this.pos;
         if (start + n > this.view.byteLength) {

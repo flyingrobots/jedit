@@ -318,9 +318,13 @@ export function encodeCreateBufferWorldlineVars(v: CreateBufferWorldlineVars): U
 }
 export function decodeCreateBufferWorldlineVars(b: Uint8Array): CreateBufferWorldlineVars {
     const r = new Reader(b);
-    return {
+    const out = {
         input: _decCreateBufferWorldlineInput(r),
     };
+    if (r.remaining() !== 0) {
+        throw new CodecError(`decodeCreateBufferWorldlineVars: ${r.remaining()} trailing byte(s)`);
+    }
+    return out;
 }
 
 // ─── mutation replaceRangeAsTick ───
@@ -336,9 +340,13 @@ export function encodeReplaceRangeAsTickVars(v: ReplaceRangeAsTickVars): Uint8Ar
 }
 export function decodeReplaceRangeAsTickVars(b: Uint8Array): ReplaceRangeAsTickVars {
     const r = new Reader(b);
-    return {
+    const out = {
         input: _decReplaceRangeAsTickInput(r),
     };
+    if (r.remaining() !== 0) {
+        throw new CodecError(`decodeReplaceRangeAsTickVars: ${r.remaining()} trailing byte(s)`);
+    }
+    return out;
 }
 
 // ─── mutation createCheckpoint ───
@@ -354,9 +362,13 @@ export function encodeCreateCheckpointVars(v: CreateCheckpointVars): Uint8Array 
 }
 export function decodeCreateCheckpointVars(b: Uint8Array): CreateCheckpointVars {
     const r = new Reader(b);
-    return {
+    const out = {
         input: _decCreateCheckpointInput(r),
     };
+    if (r.remaining() !== 0) {
+        throw new CodecError(`decodeCreateCheckpointVars: ${r.remaining()} trailing byte(s)`);
+    }
+    return out;
 }
 
 // ─── query worldlineSnapshot ───
@@ -372,9 +384,13 @@ export function encodeWorldlineSnapshotVars(v: WorldlineSnapshotVars): Uint8Arra
 }
 export function decodeWorldlineSnapshotVars(b: Uint8Array): WorldlineSnapshotVars {
     const r = new Reader(b);
-    return {
+    const out = {
         input: _decWorldlineSnapshotInput(r),
     };
+    if (r.remaining() !== 0) {
+        throw new CodecError(`decodeWorldlineSnapshotVars: ${r.remaining()} trailing byte(s)`);
+    }
+    return out;
 }
 
 // ─── query textWindow ───
@@ -390,7 +406,11 @@ export function encodeTextWindowVars(v: TextWindowVars): Uint8Array {
 }
 export function decodeTextWindowVars(b: Uint8Array): TextWindowVars {
     const r = new Reader(b);
-    return {
+    const out = {
         input: _decTextWindowInput(r),
     };
+    if (r.remaining() !== 0) {
+        throw new CodecError(`decodeTextWindowVars: ${r.remaining()} trailing byte(s)`);
+    }
+    return out;
 }

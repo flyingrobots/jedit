@@ -128,6 +128,11 @@ export function decodeJeditMutationIntentEnvelope(
     bytes: Uint8Array,
 ): DecodedJeditMutationIntent {
     const { opId, vars } = unpackIntentV1(bytes);
+    // unpackIntentV1 rejects envelope-level trailing bytes. The generated
+    // top-level vars decoders enforce a vars-level trailing-byte check too,
+    // so "canonical vars + garbage" framed as one vars slice cannot decode
+    // the canonical input and silently drop the trailer; the submission-
+    // identity invariant holds end-to-end.
     switch (opId) {
         case OP_CREATE_BUFFER_WORLDLINE:
             return {
@@ -151,3 +156,4 @@ export function decodeJeditMutationIntentEnvelope(
             throw new UnknownMutationOpIdError(opId);
     }
 }
+
