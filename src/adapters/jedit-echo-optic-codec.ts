@@ -204,16 +204,37 @@ const CreateCheckpointIntentOkResponseSchema = z.object({
   execution: CreateCheckpointExecutionSchema,
 });
 
-const IntentObstructedResponseSchema = z.object({
+/**
+ * Decode-failure obstruction: envelope could not be parsed, so the
+ * operation name is not known. Discriminated by
+ * obstruction.code === 'JEDIT_MUTATION_ENVELOPE_INVALID'.
+ */
+const IntentDecodeFailureObstructedResponseSchema = z.object({
   status: z.literal(JEDIT_TRANSPORT_STATUS_OBSTRUCTED),
-  // operationName is optional because the envelope decode path can fail
-  // BEFORE the operationName is known. All other obstruction stages (package
-  // not installed, base head mismatch, session not registered, etc.) DO know
-  // the operationName and must set it. Consumers must branch on
-  // obstruction.code, not assume operationName is always present.
-  operationName: MutationOperationNameSchema.optional(),
+  obstruction: JeditTransportObstructionSchema.extend({
+    code: z.literal('JEDIT_MUTATION_ENVELOPE_INVALID'),
+  }),
+}).strict();
+
+/**
+ * Normal intent obstruction: operationName is REQUIRED. Covers
+ * package-not-installed, session-gate, head-inbox admission (base-head
+ * mismatch), capability denied, execution-stage failures, etc. Anything
+ * that reached or passed the envelope decode boundary.
+ */
+const IntentNormalObstructedResponseSchema = z.object({
+  status: z.literal(JEDIT_TRANSPORT_STATUS_OBSTRUCTED),
+  operationName: MutationOperationNameSchema,
   obstruction: JeditTransportObstructionSchema,
 });
+
+// Split union makes the illegal state "obstructed without operationName
+// but also without the decode-failure marker" unrepresentable at the
+// schema/type level.
+const IntentObstructedResponseSchema = z.union([
+  IntentDecodeFailureObstructedResponseSchema,
+  IntentNormalObstructedResponseSchema,
+]);
 
 const WorldlineSnapshotObserveOkResponseSchema = z.object({
   status: z.literal(JEDIT_TRANSPORT_STATUS_OK),
@@ -325,18 +346,39 @@ export interface CreateCheckpointIntentOkResponse {
   readonly execution: CreateCheckpointExecution;
 }
 
-export interface JeditIntentObstructedResponse {
+/**
+ * Decode-failure obstruction: envelope failed to parse, operation name
+ * is unknown. Discriminated by `obstruction.code` ===
+ * `'JEDIT_MUTATION_ENVELOPE_INVALID'`. Carries no operationName field.
+ */
+export interface JeditIntentDecodeFailureObstructedResponse {
   readonly status: typeof JEDIT_TRANSPORT_STATUS_OBSTRUCTED;
-  /**
-   * Absent only when envelope decode failed before the operation name
-   * could be read. All other obstruction stages (package not installed,
-   * session not registered, base head mismatch, etc.) MUST set this.
-   * Consumers must branch on `obstruction.code` first, not assume
-   * operationName is always present.
-   */
-  readonly operationName?: JeditMutationOperationName;
+  readonly obstruction: JeditTransportObstruction & {
+    readonly code: 'JEDIT_MUTATION_ENVELOPE_INVALID';
+  };
+}
+
+/**
+ * Normal intent obstruction: operationName is REQUIRED. Covers
+ * package-not-installed, session-gate, head-inbox admission (base-head
+ * mismatch), capability denied, execution-stage failures.
+ */
+export interface JeditIntentNormalObstructedResponse {
+  readonly status: typeof JEDIT_TRANSPORT_STATUS_OBSTRUCTED;
+  readonly operationName: JeditMutationOperationName;
   readonly obstruction: JeditTransportObstruction;
 }
+
+/**
+ * Discriminated union over obstructed intent responses. The two variants
+ * make the illegal state "obstructed without operationName but also
+ * without the decode-failure marker" unrepresentable at the type level.
+ * Consumers branch on `'operationName' in response` (or equivalently on
+ * `response.obstruction.code === 'JEDIT_MUTATION_ENVELOPE_INVALID'`).
+ */
+export type JeditIntentObstructedResponse =
+  | JeditIntentDecodeFailureObstructedResponse
+  | JeditIntentNormalObstructedResponse;
 
 export interface WorldlineSnapshotObserveOkResponse {
   readonly status: typeof JEDIT_TRANSPORT_STATUS_OK;

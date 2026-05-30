@@ -303,7 +303,10 @@ async function dispatchMutation(
   const responseBytes = context.transport.submitIntentBytes(encodeJeditMutationIntentEnvelope(envelope));
   const response = decodeJeditIntentResponse(responseBytes);
   if (response.status === JEDIT_TRANSPORT_STATUS_OBSTRUCTED) {
-    throw new JeditOpticTransportObstructionError(response.operationName, response.obstruction);
+    // Decode-failure obstructions carry no operationName by type construction;
+    // normal obstructions require it. Branch via 'in' narrowing.
+    const operationName = 'operationName' in response ? response.operationName : undefined;
+    throw new JeditOpticTransportObstructionError(operationName, response.obstruction);
   }
   return response;
 }
