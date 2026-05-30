@@ -73,5 +73,13 @@ export function unpackIntentV1(bytes: Uint8Array): UnpackedIntent {
         const remaining = bytes.byteLength - ENVELOPE_HEADER_BYTES;
         throw new EintEnvelopeError(`vars_len ${varsLen} exceeds remaining bytes ${remaining}`);
     }
+    if (varsEnd < bytes.byteLength) {
+        // Trailing bytes after declared vars are rejected. Submission identity
+        // hashes the full canonical bytes; silently dropping trailers would
+        // allow multiple distinct byte strings to decode to the same envelope
+        // and break the intended 1:1 evidence/replay mapping for EINT intents.
+        const trailing = bytes.byteLength - varsEnd;
+        throw new EintEnvelopeError(`envelope has ${trailing} trailing byte(s) after declared vars`);
+    }
     return { opId, vars: bytes.subarray(ENVELOPE_HEADER_BYTES, varsEnd) };
 }

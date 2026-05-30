@@ -98,6 +98,22 @@ test('EINT — unpackIntentV1', async t => {
         ]);
         assert.throws(() => unpackIntentV1(bytes), EintEnvelopeError);
     });
+
+    await t.test('rejects trailing bytes after declared vars_len (replay determinism)', () => {
+        // header + 1 var byte + 1 trailing byte. Two distinct byte strings
+        // (with vs without trailing) must not both decode to the same envelope —
+        // installed transport hashes the FULL bytes for submission identity, so
+        // silently truncating trailing data would break the 1:1 evidence/replay
+        // mapping for EINT intents.
+        const bytes = new Uint8Array([
+            0x45, 0x49, 0x4e, 0x54,           // "EINT"
+            0x01, 0x00, 0x00, 0x00,           // op_id = 1
+            0x01, 0x00, 0x00, 0x00,           // vars_len = 1
+            0xaa,                             // declared var
+            0xff,                             // trailing garbage that must be rejected
+        ]);
+        assert.throws(() => unpackIntentV1(bytes), EintEnvelopeError);
+    });
 });
 
 test('EINT — cross-boundary parity with echo-wasm-abi::pack_intent_v1', async t => {
