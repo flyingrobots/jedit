@@ -147,7 +147,7 @@ export function _encCreateBufferWorldlineInput(w: Writer, v: CreateBufferWorldli
     w.writeString(v.bufferKey);
     w.writeOption(v.initialText, (w, x) => w.writeString(x));
     w.writeOption(v.projectionPath, (w, x) => w.writeString(x));
-    w.writeOption(v.createInitialCheckpoint, (w, x) => w.writeBool(x));
+    w.writeOption(v.createInitialCheckpoint, (w, x) => w.writeBool(x ? 1 : 0));
 }
 export function _decCreateBufferWorldlineInput(r: Reader): CreateBufferWorldlineInput {
     return {

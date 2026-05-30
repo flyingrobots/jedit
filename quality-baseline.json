@@ -1,7 +1,5 @@
 {
   "maxLines": {},
   "forbiddenTypeKeywords": {},
-  "booleanParameters": {
-    "src/codec.ts": 1
-  }
+  "booleanParameters": {}
 }
