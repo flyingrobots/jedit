@@ -50,5 +50,29 @@ export interface JeditTransportSeam extends EchoWasmKernelTransport {
 export function isJeditTransportSeam(
   transport: EchoWasmKernelTransport,
 ): transport is JeditTransportSeam {
-  return 'jeditSessionPort' in transport;
+  if (!('jeditSessionPort' in transport)) {
+    return false;
+  }
+  const candidate = transport.jeditSessionPort;
+  if (candidate === null || candidate === undefined || typeof candidate !== 'object') {
+    return false;
+  }
+  // Validate the required runtime surface so downstream consumers don't
+  // immediately crash on .registerSession(...) when a transport returns a
+  // half-shaped object that happens to have the discriminator key.
+  return hasFunctionProperty(candidate, 'registerSession')
+    && hasFunctionProperty(candidate, 'getSession')
+    && hasFunctionProperty(candidate, 'clearSession');
+}
+
+function hasFunctionProperty(
+  value: object,
+  name: 'registerSession' | 'getSession' | 'clearSession',
+): boolean {
+  if (!(name in value)) {
+    return false;
+  }
+  const descriptor = Object.getOwnPropertyDescriptor(value, name)
+    ?? Object.getOwnPropertyDescriptor(Object.getPrototypeOf(value), name);
+  return typeof descriptor?.value === 'function';
 }
