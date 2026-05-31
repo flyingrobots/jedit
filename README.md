@@ -22,6 +22,8 @@ IDE clone.
 
 The full invariant set is written down in
 [docs/design/project-invariants.md](docs/design/project-invariants.md).
+The identity doctrine is canonical in
+[docs/design/echo-identity-doctrine.md](docs/design/echo-identity-doctrine.md).
 The short operational guide is [GUIDE.md](GUIDE.md).
 The end-to-end buffer rendering path is explained in
 [ADVANCED_GUIDE.md](ADVANCED_GUIDE.md).

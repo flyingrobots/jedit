@@ -48,6 +48,7 @@ The broader project doctrine is written down in
 - No magic strings or magic numbers in behavioral logic.
 - No stringly state machines in core logic.
 - Runtime objects must carry meaning immediately after boundary decode.
+- No ambient path/host/user/machine values in hashed payloads.
 
 ## Runtime First
 
@@ -82,6 +83,23 @@ contracts/jedit/structural-history.graphql
 Generated metadata is now the authority for the `replaceTextRange` operation
 identity. Runtime execution remains transitional. Do not wire Echo, git-warp,
 SQLite, filesystem caches, or in-memory indexes into the structural-history SDL.
+
+## Identity Doctrine (Locked)
+
+Runtime identity follows the locked doctrine in
+[docs/design/echo-identity-doctrine.md](docs/design/echo-identity-doctrine.md):
+
+- **Values** (`ContentRef`, `RecordRef`) are content-addressed.
+- **Things** (`WorldlineId`, `SessionId`, `AnchorId`, `NamespaceId`, `BindingId`)
+  are declared IDs.
+- **Names** are bindings and stay in local/policy resolution layers.
+- **Views** are Basis specs used for observation, not storage units.
+- **WSC transport** carries selected records + binding hints and does not rewrite
+  canonical payload bytes.
+
+Import policy for transported history is explicit:
+`inspect` (default), `fork`, or `adopt`.
+That policy must be represented in binding metadata so behavior survives reopen.
 
 ## Dependency Rule
 

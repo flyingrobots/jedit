@@ -55,6 +55,11 @@ Remaining gaps before the phrase "jedit is powered by Echo" is fully honest:
 User story: As a maintainer, I can see every interactive editor path that reads
 or writes text state and whether it already goes through `TextBufferSessionPort`.
 
+Guardrail: this slice is blocked unless behavior remains aligned with
+[`echo-identity-doctrine.md`](echo-identity-doctrine.md):
+values are hashed, things are declared IDs, names are bindings, and import
+policy is explicit.
+
 Test plan:
 
 - Static inventory lists direct editor-state text mutation/read paths.
@@ -66,6 +71,7 @@ Checklist:
 - [ ] Inventory document exists.
 - [ ] Direct read/write paths are listed.
 - [ ] Next cutover targets are explicit.
+- [ ] `docs/design/echo-identity-doctrine.md` is linked before acceptance close.
 
 ### Slice 62 - Runtime Selection Port
 
