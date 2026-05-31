@@ -9,6 +9,10 @@ const ASSETS = [
     destination: join('dist', 'ui', 'bunny.obj'),
   },
   {
+    source: join('src', 'ui', 'flyingrobotslogo.txt'),
+    destination: join('dist', 'ui', 'flyingrobotslogo.txt'),
+  },
+  {
     source: join('src', 'ui', 'utah_teapot.obj'),
     destination: join('dist', 'ui', 'utah_teapot.obj'),
   },

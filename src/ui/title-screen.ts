@@ -6,6 +6,7 @@ import {
 } from './averaging-ascii-canvas.js';
 import { averagingBrailleCanvas, type BrailleShaderFn, type BrailleShaderSample, type RGB } from './averaging-braille-canvas.js';
 import { type JeditTheme } from './jedit-theme.js';
+import { flyingRobotsLogoCellBounds, paintFlyingRobotsLogo } from './flyingrobots-logo.js';
 import {
   generateTitleScene,
   intersectsTitleSceneObjectAlongRay,
@@ -28,6 +29,7 @@ import type { ReflectedEnvironmentColorOptions, TitleSceneRayContext, TitleScene
 type Vector3 = TitleSceneVector3;
 type Color3 = RGB;
 export type TitleSceneSphere = TitleSceneObject;
+export { flyingRobotsLogoCellBounds } from './flyingrobots-logo.js';
 export { titleLogoCellBounds } from './title-logo.js';
 
 export const TITLE_RENDER_MODE = {
@@ -150,6 +152,7 @@ export function renderTitleScreen(
   const surface = renderMode === TITLE_RENDER_MODE.Ascii
     ? averagingAsciiCanvas(cols, rows, shader, time, { palette: asciiPalette })
     : averagingBrailleCanvas(cols, rows, shader, time);
+  paintFlyingRobotsLogo(surface, flyingRobotsLogoCellBounds(cols, rows), colors, time);
   paintTitleLogo(surface, titleLogoCellBounds(cols, rows), colors, time);
   return surface;
 }

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
@@ -13,6 +14,7 @@ const ASCII_CANVAS_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'averaging-ascii-ca
 const BRAILLE_CANVAS_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'averaging-braille-canvas.js');
 const THEMES_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'jedit-themes.js');
 const STYLE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'jedit-theme.js');
+const FLYINGROBOTS_LOGO_PATH = path.join(REPO_ROOT, 'src', 'ui', 'flyingrobotslogo.txt');
 const FIXED_TITLE_SEED = 0.417;
 const TITLE_WIDTH = 96;
 const TITLE_HEIGHT = 28;
@@ -29,8 +31,13 @@ const TITLE_LOGO_NEXT_FRAME_TIME = TITLE_LOGO_SMOOTH_FRAME_TIME + (1 / 60);
 const TITLE_LOGO_MAX_FRAME_OFFSET_DELTA = 0.02;
 const TITLE_LOGO_ANIMATION_PERF_FRAMES = 1200;
 const TITLE_LOGO_ANIMATION_PERF_BUDGET_MS = 240;
+const FLYINGROBOTS_LOGO_MIN_VISIBLE_CELLS = 24;
+const FLYINGROBOTS_LOGO_MIN_SURFACE_CONTRAST = 24;
+const FLYINGROBOTS_LOGO_MAX_VERTICAL_RATIO = 0.5;
+const BRAILLE_BLANK = '⠀';
 const REFLECTIVE_HIGHLIGHT_LUMINANCE = 190;
 const FIXED_TITLE_CAMERA_ANGLE = 0.25;
+let titleModulesPromise;
 
 function fixedTitleRenderOptions(extra = {}) {
   return {
@@ -41,6 +48,10 @@ function fixedTitleRenderOptions(extra = {}) {
 }
 
 async function loadTitleModules() {
+  if (titleModulesPromise != null) {
+    return titleModulesPromise;
+  }
+
   const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
@@ -48,7 +59,7 @@ async function loadTitleModules() {
 
   assert.equal(build.status, 0, build.stderr || build.stdout);
 
-  return {
+  titleModulesPromise = Promise.resolve({
     title: await import(pathToFileURL(TITLE_SCREEN_PATH).href),
     titleLogo: await import(pathToFileURL(TITLE_LOGO_PATH).href),
     titleScene: await import(pathToFileURL(TITLE_SCENE_PATH).href),
@@ -57,7 +68,8 @@ async function loadTitleModules() {
     brailleCanvas: await import(pathToFileURL(BRAILLE_CANVAS_PATH).href),
     themes: await import(pathToFileURL(THEMES_PATH).href),
     style: await import(pathToFileURL(STYLE_PATH).href),
-  };
+  });
+  return titleModulesPromise;
 }
 
 function cells(surface) {
@@ -181,7 +193,10 @@ test('title screen renders the logo as a non-Braille themed glyph layer', async 
   const { title, themes, style } = await loadTitleModules();
   const theme = themes.availableJeditThemes()[0];
   const surface = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, fixedTitleRenderOptions());
-  const logoCells = cells(surface).filter((cell) => cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold));
+  const logoCells = cells(surface).filter((cell) => (
+    cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold)
+    && !isBraille(cell.char)
+  ));
 
   assert.ok(logoCells.length > 12);
   assert.ok(logoCells.every((cell) => !isBraille(cell.char)));
@@ -200,6 +215,30 @@ test('title screen animates logo glyph positions and color over time', async () 
   assert.ok(firstLogo.length > 12);
   assert.ok(laterLogo.length > 12);
   assert.notDeepEqual(laterLogo, firstLogo);
+});
+
+test('title screen incorporates the Flying Robots source logo as a bright Braille band', async () => {
+  const { title, themes, style } = await loadTitleModules();
+  const theme = themes.availableJeditThemes()[0];
+  const surface = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, fixedTitleRenderOptions());
+  const bounds = title.flyingRobotsLogoCellBounds(TITLE_WIDTH, TITLE_HEIGHT);
+  const sourceChars = flyingRobotsLogoInkChars();
+  assert.ok(bounds != null);
+
+  const logoCells = positionedCells(surface).filter(({ x, y, cell }) => (
+    x >= bounds.x
+    && x < bounds.x + bounds.width
+    && y >= bounds.y
+    && y < bounds.y + bounds.height
+    && cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold)
+    && !cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Dim)
+    && isBraille(cell.char)
+  ));
+
+  assert.ok(logoCells.length > FLYINGROBOTS_LOGO_MIN_VISIBLE_CELLS);
+  assert.ok(logoCells.some(({ cell }) => sourceChars.has(cell.char)));
+  assert.ok(Math.max(...logoCells.map(({ cell }) => colorContrast(cell.fgRGB, cell.bgRGB))) > FLYINGROBOTS_LOGO_MIN_SURFACE_CONTRAST);
+  assert.ok(Math.max(...logoCells.map(({ y }) => y)) < TITLE_HEIGHT * FLYINGROBOTS_LOGO_MAX_VERTICAL_RATIO);
 });
 
 test('title scene uses Braille subpixels with averaged material colors', async () => {
@@ -381,8 +420,18 @@ function cellColorKey(cell) {
 
 function logoCellKeys(surface, style) {
   return positionedCells(surface)
-    .filter(({ cell }) => cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold))
+    .filter(({ cell }) => (
+      cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold)
+      && !isBraille(cell.char)
+    ))
     .map(({ x, y, cell }) => `${x}:${y}:${cell.char}:${cellColorKey(cell)}`);
+}
+
+function flyingRobotsLogoInkChars() {
+  return new Set(
+    Array.from(readFileSync(FLYINGROBOTS_LOGO_PATH, 'utf8'))
+      .filter((char) => char !== BRAILLE_BLANK && char.trim().length > 0),
+  );
 }
 
 function sceneGlyphs(surface, style) {
@@ -403,4 +452,8 @@ function luminance(rgb) {
     return 0;
   }
   return (rgb[0] * 0.2126) + (rgb[1] * 0.7152) + (rgb[2] * 0.0722);
+}
+
+function colorContrast(fg, bg) {
+  return Math.abs(luminance(fg) - luminance(bg));
 }
