@@ -30,6 +30,7 @@ deletion_trigger:
 symbols:
   - JeditWorldlineSessionPort
   - JeditWorldlineSessionNotRegisteredError
+  - JeditWorldlineId
   - JeditTransportSeam
   - createInMemoryJeditWorldlineSessionPort
   - installed-jedit-eint-bridge
@@ -86,6 +87,19 @@ the scaffold is considered deleted only when:
      criteria.
 3. This leash file moves to `docs/method/graveyard/leash/` with the
    deletion SHA appended.
+
+## Adjacent symbols deliberately NOT on the leash
+
+- `JeditWorldlineSession` (from `src/app/jedit-contract-runtime.ts`)
+  is the real contract-runtime session and survives Phase 2; only
+  its identity backing changes. The `JeditWorldlineId` alias is on
+  the leash because its replacement by the engine-side `WorldlineId`
+  is part of the Phase 2 GREEN contract per its own JSDoc on
+  `src/ports/jedit-worldline-session-port.ts:11-30`.
+- The fake/installed transport adapters, optic-client surfaces, and
+  EINT codecs survive Phase 2 too; they thread `SessionId` through
+  instead of carrying client-side causal state. Do not leash them
+  here.
 
 ## What this scaffold is NOT
 
