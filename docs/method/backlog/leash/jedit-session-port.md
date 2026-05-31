@@ -32,6 +32,7 @@ symbols:
   - JeditWorldlineSessionNotRegisteredError
   - JeditWorldlineId
   - JeditTransportSeam
+  - jeditSessionPort
   - createInMemoryJeditWorldlineSessionPort
   - installed-jedit-eint-bridge
 files:
@@ -87,6 +88,20 @@ the scaffold is considered deleted only when:
      criteria.
 3. This leash file moves to `docs/method/graveyard/leash/` with the
    deletion SHA appended.
+
+## Why both `JeditTransportSeam` and `jeditSessionPort` are on the list
+
+`JeditTransportSeam` is the TypeScript interface; `jeditSessionPort`
+is the runtime field name it requires (see
+`src/ports/jedit-transport-seam.ts` and the `isJeditTransportSeam`
+type guard). The grep proof needs the runtime key too, because a
+caller in `src/adapters/fake-echo-jedit-optic-transport.ts`,
+`src/adapters/installed-jedit-contract-echo-transport.ts`, or
+`spec/jedit-optic-client.spec.mjs` that still constructs a
+`{ jeditSessionPort: ... }` literal would be invisible to a grep
+that only searched for the interface name (TS types are
+compile-time; the runtime key is what survives into the emitted
+JS surface).
 
 ## Adjacent symbols deliberately NOT on the leash
 
