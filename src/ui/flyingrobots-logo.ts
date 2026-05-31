@@ -20,6 +20,14 @@ export interface FlyingRobotsLogoColors {
   readonly surface: Color3;
 }
 
+interface FlyingRobotsLogoPaintContext {
+  readonly bounds: FlyingRobotsLogoBounds;
+  readonly colors: FlyingRobotsLogoColors;
+  readonly time: number;
+  readonly row: number;
+  readonly sourceLine: readonly string[];
+}
+
 const UTF8_ENCODING = 'utf8';
 const FLYINGROBOTS_LOGO_FILE_NAME = 'flyingrobotslogo.txt';
 const SOURCE_ASSET_DIR = 'src';
@@ -82,36 +90,64 @@ export function paintFlyingRobotsLogo(
   }
 
   for (let row = 0; row < bounds.height; row++) {
-    const y = bounds.y + row;
-    if (y < 0 || y >= surface.height) {
-      continue;
-    }
-    const sourceY = sourceIndex(row, bounds.height, FLYINGROBOTS_LOGO_HEIGHT);
-    const sourceLine = FLYINGROBOTS_LOGO_LINES[sourceY];
-    if (sourceLine == null) {
-      continue;
-    }
-
-    for (let col = 0; col < bounds.width; col++) {
-      const x = bounds.x + col;
-      if (x < 0 || x >= surface.width) {
-        continue;
-      }
-
-      const sourceX = sourceIndex(col, bounds.width, sourceLine.length);
-      const char = sourceLine[sourceX];
-      if (char == null || !isLogoInk(char)) {
-        continue;
-      }
-
-      surface.set(x, y, {
-        char,
-        fgRGB: flyingRobotsLogoColor(colors, col, bounds.width, row, time),
-        bgRGB: colors.surface,
-        modifiers: [JEDIT_TEXT_MODIFIER.Bold],
-      });
-    }
+    paintFlyingRobotsLogoRow(surface, bounds, colors, time, row);
   }
+}
+
+function paintFlyingRobotsLogoRow(
+  surface: Surface,
+  bounds: FlyingRobotsLogoBounds,
+  colors: FlyingRobotsLogoColors,
+  time: number,
+  row: number,
+): void {
+  const y = bounds.y + row;
+  if (isOutsideSurface(y, surface.height)) {
+    return;
+  }
+
+  const sourceLine = FLYINGROBOTS_LOGO_LINES[sourceIndex(row, bounds.height, FLYINGROBOTS_LOGO_HEIGHT)];
+  if (sourceLine == null) {
+    return;
+  }
+
+  for (let col = 0; col < bounds.width; col++) {
+    paintFlyingRobotsLogoCell(surface, {
+      bounds,
+      colors,
+      time,
+      row,
+      sourceLine,
+    }, col);
+  }
+}
+
+function paintFlyingRobotsLogoCell(
+  surface: Surface,
+  context: FlyingRobotsLogoPaintContext,
+  col: number,
+): void {
+  const { bounds, colors, row, sourceLine, time } = context;
+  const x = bounds.x + col;
+  if (isOutsideSurface(x, surface.width)) {
+    return;
+  }
+
+  const char = sourceLine[sourceIndex(col, bounds.width, sourceLine.length)];
+  if (char == null || !isLogoInk(char)) {
+    return;
+  }
+
+  surface.set(x, bounds.y + row, {
+    char,
+    fgRGB: flyingRobotsLogoColor(colors, col, bounds.width, row, time),
+    bgRGB: colors.surface,
+    modifiers: [JEDIT_TEXT_MODIFIER.Bold],
+  });
+}
+
+function isOutsideSurface(position: number, limit: number): boolean {
+  return position < 0 || position >= limit;
 }
 
 function readFlyingRobotsLogoSource(): string {

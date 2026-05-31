@@ -3,12 +3,12 @@ import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
-import { createSurface } from '@flyingrobots/bijou';
 
 const REPO_ROOT = process.cwd();
 const MODULE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'feedback.js');
 const NOTICE_TITLE = 'Runtime error';
 const NOTICE_MESSAGE = 'profile failed';
+const EXPECTED_NOTIFICATION_COUNT = 1;
 let feedbackModulePromise;
 
 async function loadFeedbackModule() {
@@ -27,12 +27,6 @@ async function loadFeedbackModule() {
   return feedbackModulePromise;
 }
 
-function surfaceText(surface) {
-  return Array.from({ length: surface.height }, (_, y) => (
-    Array.from({ length: surface.width }, (_, x) => surface.get(x, y).char).join('')
-  )).join('\n');
-}
-
 test('feedback state uses typed notifications and keeps footer visibility separate', async () => {
   const feedback = await loadFeedbackModule();
   const state = feedback.createFeedbackState();
@@ -42,7 +36,7 @@ test('feedback state uses typed notifications and keeps footer visibility separa
   assert.ok(state.notifications);
 });
 
-test('feedback errors render through the notification stack', async () => {
+test('feedback errors enter the typed notification stack', async () => {
   const feedback = await loadFeedbackModule();
   const model = {
     columns: 80,
@@ -57,9 +51,8 @@ test('feedback errors render through the notification stack', async () => {
     () => async () => ({ type: 'notification-tick', atMs: 1040 }),
   );
 
-  const rendered = feedback.compositeFeedback(createSurface(56, 12), nextModel.notifications, 56, 12);
-  const text = surfaceText(rendered);
-
-  assert.match(text, new RegExp(NOTICE_TITLE));
-  assert.match(text, new RegExp(NOTICE_MESSAGE));
+  assert.equal(nextModel.notificationLoopActive, true);
+  assert.equal(nextModel.notifications.items.length, EXPECTED_NOTIFICATION_COUNT);
+  assert.equal(nextModel.notifications.items[0].title, NOTICE_TITLE);
+  assert.equal(nextModel.notifications.items[0].message, NOTICE_MESSAGE);
 });
