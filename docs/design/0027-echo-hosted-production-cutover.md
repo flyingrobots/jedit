@@ -21,6 +21,9 @@ Echo remains generic and never learns jedit nouns.
 
 ## Doctrine
 
+- Identity follows the locked
+  [`echo-identity-doctrine.md`](echo-identity-doctrine.md): values are hashed,
+  things are declared IDs, names are bindings, and views are Basis.
 - `EchoHosted` is jedit host terminology, not Echo terminology.
 - Echo must not define `TextBufferOptic`, text buffers, ropes, panes, cursors,
   text windows, filesystem save policy, or editor commands.

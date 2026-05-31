@@ -1865,6 +1865,9 @@ Checklist:
   editor policy belong in jedit contracts, generated adapters, or jedit ports.
 - Echo owns generic admission, scheduling, ticks, receipts, QueryView routing,
   retained evidence, and obstruction/fault posture.
+- `docs/design/echo-identity-doctrine.md` is now the canonical identity rulebook:
+  values are content-hashed, things are declared IDs, names are bindings, views
+  are Basis.
 - Echo must not contain hardcoded jedit or text-buffer behavior.
 - The current real Echo witness fails closed with `UNSUPPORTED_QUERY` unless a
   jedit-owned query observer is installed.

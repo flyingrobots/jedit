@@ -61,6 +61,16 @@ rules, the three pure domain contracts, the dual-transport design, the
 `jedit` is aiming for a quiet editing surface with smart edges, not a terminal
 IDE clone.
 
+The full invariant set is written down in
+[docs/design/project-invariants.md](docs/design/project-invariants.md).
+The identity doctrine is canonical in
+[docs/design/echo-identity-doctrine.md](docs/design/echo-identity-doctrine.md).
+The short operational guide is [GUIDE.md](GUIDE.md).
+The end-to-end buffer rendering path is explained in
+[ADVANCED_GUIDE.md](ADVANCED_GUIDE.md).
+The process-level jedit + Echo path is explained in
+[docs/jedit-echo-end-to-end.md](docs/jedit-echo-end-to-end.md).
+
 - Zen core, instrumented edges. The main editor area stays visually quiet;
   richer context appears at the edges and only when it earns the space.
 - Minimal by default. Panels are hidden until explicitly opened.

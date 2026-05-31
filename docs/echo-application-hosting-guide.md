@@ -10,6 +10,14 @@ applications such as Graft and Think.
 
 Echo remains generic.
 
+Identity is locked by [docs/design/echo-identity-doctrine.md](design/echo-identity-doctrine.md):
+
+- Values are content-addressed (`ContentRef`/`RecordRef`).
+- Logical entity identities are declared IDs (random or public-key-derived).
+- Bindings are local resolution and do not leak into hashed payloads.
+- Basis defines observations; it is not storage.
+- Transport import is explicit (`inspect`, `fork`, `adopt`).
+
 Applications own:
 
 - domain nouns;
