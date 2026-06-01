@@ -10,6 +10,7 @@ const TITLE_SCREEN_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-screen.js');
 const TITLE_LOGO_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-logo.js');
 const TITLE_SCENE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-scene.js');
 const TITLE_SCENE_ENVIRONMENT_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-scene-environment.js');
+const TITLE_SCREEN_OPTICS_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-screen-optics.js');
 const ASCII_CANVAS_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'averaging-ascii-canvas.js');
 const BRAILLE_CANVAS_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'averaging-braille-canvas.js');
 const THEMES_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'jedit-themes.js');
@@ -34,6 +35,17 @@ const TITLE_LOGO_ANIMATION_PERF_BUDGET_MS = 240;
 const FLYINGROBOTS_LOGO_MIN_VISIBLE_CELLS = 24;
 const FLYINGROBOTS_LOGO_MIN_SURFACE_CONTRAST = 24;
 const FLYINGROBOTS_LOGO_MAX_VERTICAL_RATIO = 0.5;
+const FLYINGROBOTS_LOGO_FADE_START_SECONDS = 15;
+const JEDIT_LOGO_FADE_START_SECONDS = 30;
+const TITLE_LOGO_FADE_DURATION_SECONDS = 3;
+const LOGO_FADE_MIDPOINT_RATIO = 0.5;
+const LOGO_FADE_END_OFFSET_SECONDS = 0.01;
+const THEME_VARIABLE_ACCENT = 'accent';
+const SPOTLIGHT_CAMERA_ANGLE = 0.14;
+const SPOTLIGHT_CAMERA_RADIUS = 6.4;
+const SPOTLIGHT_CAMERA_HEIGHT = 2.65;
+const SPOTLIGHT_SPHERE_CENTER = [0, 0.78, 0];
+const SPOTLIGHT_COLOR_DELTA = 80;
 const BRAILLE_BLANK = '⠀';
 const REFLECTIVE_HIGHLIGHT_LUMINANCE = 190;
 const FIXED_TITLE_CAMERA_ANGLE = 0.25;
@@ -64,6 +76,7 @@ async function loadTitleModules() {
     titleLogo: await import(pathToFileURL(TITLE_LOGO_PATH).href),
     titleScene: await import(pathToFileURL(TITLE_SCENE_PATH).href),
     titleSceneEnvironment: await import(pathToFileURL(TITLE_SCENE_ENVIRONMENT_PATH).href),
+    titleOptics: await import(pathToFileURL(TITLE_SCREEN_OPTICS_PATH).href),
     asciiCanvas: await import(pathToFileURL(ASCII_CANVAS_PATH).href),
     brailleCanvas: await import(pathToFileURL(BRAILLE_CANVAS_PATH).href),
     themes: await import(pathToFileURL(THEMES_PATH).href),
@@ -225,20 +238,55 @@ test('title screen incorporates the Flying Robots source logo as a bright Braill
   const sourceChars = flyingRobotsLogoInkChars();
   assert.ok(bounds != null);
 
-  const logoCells = positionedCells(surface).filter(({ x, y, cell }) => (
-    x >= bounds.x
-    && x < bounds.x + bounds.width
-    && y >= bounds.y
-    && y < bounds.y + bounds.height
-    && cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold)
-    && !cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Dim)
-    && isBraille(cell.char)
-  ));
+  const logoCells = flyingRobotsLogoCells(surface, bounds, style);
 
   assert.ok(logoCells.length > FLYINGROBOTS_LOGO_MIN_VISIBLE_CELLS);
   assert.ok(logoCells.some(({ cell }) => sourceChars.has(cell.char)));
   assert.ok(Math.max(...logoCells.map(({ cell }) => colorContrast(cell.fgRGB, cell.bgRGB))) > FLYINGROBOTS_LOGO_MIN_SURFACE_CONTRAST);
   assert.ok(Math.max(...logoCells.map(({ y }) => y)) < TITLE_HEIGHT * FLYINGROBOTS_LOGO_MAX_VERTICAL_RATIO);
+});
+
+test('Flying Robots logo fades out after fifteen seconds', async () => {
+  const { title, themes, style } = await loadTitleModules();
+  const theme = themes.availableJeditThemes()[0];
+  const bounds = title.flyingRobotsLogoCellBounds(TITLE_WIDTH, TITLE_HEIGHT);
+  assert.ok(bounds != null);
+  assert.equal(title.FLYINGROBOTS_LOGO_FADE_START_SECONDS, FLYINGROBOTS_LOGO_FADE_START_SECONDS);
+  assert.equal(title.TITLE_LOGO_FADE_DURATION_SECONDS, TITLE_LOGO_FADE_DURATION_SECONDS);
+
+  const before = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, fixedTitleRenderOptions());
+  const during = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, logoFadeMidpoint(title.FLYINGROBOTS_LOGO_FADE_START_SECONDS), theme, fixedTitleRenderOptions());
+  const after = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, logoFadeEnd(title.FLYINGROBOTS_LOGO_FADE_START_SECONDS), theme, fixedTitleRenderOptions());
+  const beforeCells = flyingRobotsLogoCells(before, bounds, style);
+  const duringCells = flyingRobotsLogoCells(during, bounds, style);
+  const afterCells = flyingRobotsLogoCells(after, bounds, style);
+
+  assert.ok(beforeCells.length > FLYINGROBOTS_LOGO_MIN_VISIBLE_CELLS);
+  assert.ok(duringCells.length > 0);
+  assert.ok(maxCellContrast(duringCells) < maxCellContrast(beforeCells));
+  assert.ok(duringCells.every(({ cell }) => cell.opacity < title.TITLE_LOGO_OPACITY.Visible));
+  assert.ok(duringCells.every(({ cell }) => cell.opacity > title.TITLE_LOGO_OPACITY.Hidden));
+  assert.equal(afterCells.length, 0);
+});
+
+test('jedit title logo fades out after thirty seconds', async () => {
+  const { title, themes, style } = await loadTitleModules();
+  const theme = themes.availableJeditThemes()[0];
+  assert.equal(title.JEDIT_LOGO_FADE_START_SECONDS, JEDIT_LOGO_FADE_START_SECONDS);
+  assert.equal(title.TITLE_LOGO_FADE_DURATION_SECONDS, TITLE_LOGO_FADE_DURATION_SECONDS);
+
+  const before = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, fixedTitleRenderOptions());
+  const during = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, logoFadeMidpoint(title.JEDIT_LOGO_FADE_START_SECONDS), theme, fixedTitleRenderOptions());
+  const after = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, logoFadeEnd(title.JEDIT_LOGO_FADE_START_SECONDS), theme, fixedTitleRenderOptions());
+  const beforeCells = titleLogoCells(before, style);
+  const duringCells = titleLogoCells(during, style);
+  const afterCells = titleLogoCells(after, style);
+
+  assert.ok(beforeCells.length > 12);
+  assert.ok(duringCells.length > 0);
+  assert.ok(duringCells.every(({ cell }) => cell.opacity < title.TITLE_LOGO_OPACITY.Visible));
+  assert.ok(duringCells.every(({ cell }) => cell.opacity > title.TITLE_LOGO_OPACITY.Hidden));
+  assert.equal(afterCells.length, 0);
 });
 
 test('title scene uses Braille subpixels with averaged material colors', async () => {
@@ -340,6 +388,30 @@ test('title scene keeps checker floor material contrast stable across built-in t
   }
 });
 
+test('title scene spotlight uses the current theme accent token', async () => {
+  const { title, themes } = await loadTitleModules();
+
+  for (const theme of themes.availableJeditThemes()) {
+    const colors = title.titleSceneMaterialColors(theme);
+
+    assert.deepEqual(colors.spotlight, theme.variables.get(THEME_VARIABLE_ACCENT).rgb);
+  }
+});
+
+test('title scene spotlight targets a point between the camera start and sphere', async () => {
+  const { titleOptics, themes } = await loadTitleModules();
+  const theme = themes.availableJeditThemes()[0];
+  const color = theme.variables.get(THEME_VARIABLE_ACCENT).rgb;
+  const cameraStart = titleCameraStart(SPOTLIGHT_CAMERA_ANGLE, SPOTLIGHT_CAMERA_RADIUS);
+  const spotlight = titleOptics.titleSceneSpotlightAt(cameraStart, SPOTLIGHT_SPHERE_CENTER, color);
+
+  assert.deepEqual(spotlight.color, color);
+  assert.ok(distance(spotlight.target, cameraStart) < distance(SPOTLIGHT_SPHERE_CENTER, cameraStart));
+  assert.ok(distance(spotlight.target, SPOTLIGHT_SPHERE_CENTER) < distance(SPOTLIGHT_SPHERE_CENTER, cameraStart));
+  assert.ok(titleOptics.titleSceneSpotlightStrengthAt(spotlight.target, spotlight) > 0);
+  assert.equal(titleOptics.titleSceneSpotlightStrengthAt(add(spotlight.target, [4, 0, 0]), spotlight), 0);
+});
+
 test('title floor light effects expose sphere shadows and caustics', async () => {
   const { title, titleScene } = await loadTitleModules();
   const spheres = [
@@ -363,6 +435,99 @@ test('title floor light effects expose sphere shadows and caustics', async () =>
   assert.equal(farAway.shadowMultiplier, 1);
   assert.equal(farAway.contactShadowMultiplier, 1);
   assert.equal(farAway.causticStrength, 0);
+
+  const transparentSphere = [{ ...spheres[0], reflectivity: 0, transparency: 0.7 }];
+  const underTransparentSphere = title.titleFloorLightEffectsAt([0, 0, 0], transparentSphere, 0);
+  assert.ok(underTransparentSphere.causticStrength > 0);
+});
+
+test('title object optics refract transmitted color by material index', async () => {
+  const { titleOptics, titleScene, titleSceneEnvironment } = await loadTitleModules();
+  const colors = {
+    accent: [0, 0, 0],
+    info: [0, 0, 0],
+    success: [0, 0, 0],
+    ink: [0, 0, 0],
+    muted: [0, 0, 0],
+    surface: [0, 0, 0],
+    floorDark: [0, 0, 0],
+    floorLight: [0, 0, 0],
+    spotlight: [0, 0, 0],
+  };
+  const environment = {
+    floor: { kind: titleSceneEnvironment.TITLE_SCENE_FLOOR_KIND.None },
+    light: { ambient: 0, diffuse: 0, specularStrength: 0, rimStrength: 0 },
+    walls: [
+      { normal: [0, 0, 1], offset: -5, color: [240, 20, 20] },
+      { normal: [-1, 0, 0], offset: -2, color: [20, 20, 240] },
+    ],
+  };
+  const context = {
+    origin: [0, 0, 0],
+    ray: normalize([0.45, 0, -1]),
+    lightDirection: [0, 1, 0],
+    spotlight: titleOptics.titleSceneSpotlightAt([0, 4, 2], [0, 0, 0], colors.spotlight),
+  };
+  const straightGlass = glassSphere(titleScene, 1);
+  const bentGlass = glassSphere(titleScene, 1.6);
+  const straightColor = titleOptics.titleObjectSurfaceColor(
+    sampleOptions(straightGlass, colors, environment),
+    context,
+    { object: straightGlass, distance: 0, normal: [0, 0, 1] },
+  );
+  const bentColor = titleOptics.titleObjectSurfaceColor(
+    sampleOptions(bentGlass, colors, environment),
+    context,
+    { object: bentGlass, distance: 0, normal: [0, 0, 1] },
+  );
+
+  assert.ok(straightColor[2] > straightColor[0] + 40);
+  assert.ok(bentColor[0] > bentColor[2] + 40);
+});
+
+test('title scene spotlight visibly tints an object under the beam', async () => {
+  const { titleOptics, titleScene, themes } = await loadTitleModules();
+  const theme = themes.availableJeditThemes()[0];
+  const color = theme.variables.get(THEME_VARIABLE_ACCENT).rgb;
+  const spotlight = titleOptics.titleSceneSpotlightAt(
+    titleCameraStart(SPOTLIGHT_CAMERA_ANGLE, SPOTLIGHT_CAMERA_RADIUS),
+    SPOTLIGHT_SPHERE_CENTER,
+    color,
+  );
+  const colors = {
+    accent: [0, 0, 0],
+    info: [0, 0, 0],
+    success: [0, 0, 0],
+    ink: [0, 0, 0],
+    muted: [0, 0, 0],
+    surface: [0, 0, 0],
+    floorDark: [0, 0, 0],
+    floorLight: [0, 0, 0],
+    spotlight: color,
+  };
+  const object = {
+    kind: titleScene.TITLE_SCENE_SHAPE_KIND.Sphere,
+    position: spotlight.target,
+    radius: 1,
+    footprintRadius: 1,
+    height: 2,
+    color: [0, 0, 0],
+    reflectivity: 0,
+  };
+  const environment = { light: { ambient: 0, diffuse: 0, specularStrength: 0, rimStrength: 0 } };
+  const underColor = titleOptics.titleObjectSurfaceColor(
+    sampleOptions(object, colors, environment),
+    spotlightTestContext(spotlight.target, spotlight),
+    { object, distance: 1, normal: [0, 1, 0] },
+  );
+  const awayColor = titleOptics.titleObjectSurfaceColor(
+    sampleOptions(object, colors, environment),
+    spotlightTestContext(add(spotlight.target, [4, 0, 0]), spotlight),
+    { object, distance: 1, normal: [0, 1, 0] },
+  );
+
+  assert.ok(underColor[0] > awayColor[0] + SPOTLIGHT_COLOR_DELTA);
+  assert.ok(underColor[2] > awayColor[2] + SPOTLIGHT_COLOR_DELTA);
 });
 
 test('title environment does not report floor hits once floor fade reaches zero', async () => {
@@ -414,17 +579,86 @@ test('title screen render options keep scene seed separate from camera angle', a
   assert.notDeepEqual(cells(otherSeed), cells(sameSeed));
 });
 
+function glassSphere(titleScene, refractiveIndex) {
+  return {
+    kind: titleScene.TITLE_SCENE_SHAPE_KIND.Sphere,
+    position: [0, 0, 0],
+    radius: 1,
+    footprintRadius: 1,
+    height: 2,
+    color: [0, 0, 0],
+    reflectivity: 0,
+    transparency: 0.9,
+    refractiveIndex,
+  };
+}
+
+function sampleOptions(object, colors, environment) {
+  return {
+    u: 0.5,
+    v: 0.5,
+    cols: 1,
+    rows: 1,
+    time: 0,
+    camAngle: 0,
+    camRadius: 1,
+    objects: [object],
+    colors,
+    environment,
+  };
+}
+
+function titleCameraStart(angle, radius) {
+  return [
+    Math.sin(angle) * radius,
+    SPOTLIGHT_CAMERA_HEIGHT,
+    Math.cos(angle) * radius,
+  ];
+}
+
+function spotlightTestContext(point, spotlight) {
+  return {
+    origin: add(point, [0, 1, 0]),
+    ray: [0, -1, 0],
+    lightDirection: [0, 1, 0],
+    spotlight,
+  };
+}
+
 function cellColorKey(cell) {
   return cell.fg ?? cell.fgRGB?.join(',') ?? '';
 }
 
 function logoCellKeys(surface, style) {
-  return positionedCells(surface)
-    .filter(({ cell }) => (
-      cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold)
-      && !isBraille(cell.char)
-    ))
+  return titleLogoCells(surface, style)
     .map(({ x, y, cell }) => `${x}:${y}:${cell.char}:${cellColorKey(cell)}`);
+}
+
+function titleLogoCells(surface, style) {
+  return positionedCells(surface).filter(({ cell }) => (
+    cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold)
+    && !isBraille(cell.char)
+  ));
+}
+
+function flyingRobotsLogoCells(surface, bounds, style) {
+  return positionedCells(surface).filter(({ x, y, cell }) => (
+    x >= bounds.x
+    && x < bounds.x + bounds.width
+    && y >= bounds.y
+    && y < bounds.y + bounds.height
+    && cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold)
+    && !cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Dim)
+    && isBraille(cell.char)
+  ));
+}
+
+function logoFadeMidpoint(fadeStartSeconds) {
+  return fadeStartSeconds + (TITLE_LOGO_FADE_DURATION_SECONDS * LOGO_FADE_MIDPOINT_RATIO);
+}
+
+function logoFadeEnd(fadeStartSeconds) {
+  return fadeStartSeconds + TITLE_LOGO_FADE_DURATION_SECONDS + LOGO_FADE_END_OFFSET_SECONDS;
 }
 
 function flyingRobotsLogoInkChars() {
@@ -447,6 +681,19 @@ function sceneCellKeys(surface, style) {
     .map((cell) => `${cell.char}:${cellColorKey(cell)}`);
 }
 
+function normalize(vector) {
+  const length = Math.sqrt(vector.reduce((sum, component) => sum + (component * component), 0));
+  return vector.map((component) => component / length);
+}
+
+function add(a, b) {
+  return a.map((component, index) => component + b[index]);
+}
+
+function distance(a, b) {
+  return Math.sqrt(a.reduce((sum, component, index) => sum + ((component - b[index]) ** 2), 0));
+}
+
 function luminance(rgb) {
   if (rgb == null) {
     return 0;
@@ -456,4 +703,8 @@ function luminance(rgb) {
 
 function colorContrast(fg, bg) {
   return Math.abs(luminance(fg) - luminance(bg));
+}
+
+function maxCellContrast(logoCells) {
+  return Math.max(...logoCells.map(({ cell }) => colorContrast(cell.fgRGB, cell.bgRGB)));
 }

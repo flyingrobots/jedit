@@ -4,6 +4,7 @@ import { createSpringState, springStep, type SpringConfig } from '@flyingrobots/
 import { type RGB } from './averaging-braille-canvas.js';
 import { JEDIT_TEXT_MODIFIER } from './jedit-theme.js';
 import { JEDIT_LOGO_HEIGHT, JEDIT_LOGO_MASK, JEDIT_LOGO_WIDTH } from './logo-data.js';
+import { TITLE_LOGO_OPACITY, titleLogoOverlayCell } from './title-logo-fade.js';
 
 type Color3 = RGB;
 
@@ -101,14 +102,18 @@ export function paintTitleLogo(
   bounds: LogoBounds,
   colors: TitleLogoColors,
   time: number,
+  opacity: number = TITLE_LOGO_OPACITY.Visible,
 ): void {
+  if (opacity <= TITLE_LOGO_OPACITY.Hidden) {
+    return;
+  }
   if (bounds.renderMode === TITLE_LOGO_RENDER_MODE.CompactText) {
-    paintCompactTitleLogo(surface, bounds, colors, time);
+    paintCompactTitleLogo(surface, bounds, colors, time, opacity);
     return;
   }
 
   for (const letter of titleLogoAnimatedLetters(bounds, time)) {
-    paintTitleLogoLetter(surface, letter, colors);
+    paintTitleLogoLetter(surface, letter, colors, opacity);
   }
 }
 
@@ -174,6 +179,7 @@ function paintCompactTitleLogo(
   bounds: LogoBounds,
   colors: TitleLogoColors,
   time: number,
+  opacity: number,
 ): void {
   const text = LOGO_COMPACT_TEXT.slice(0, bounds.width);
   for (let index = 0; index < text.length; index++) {
@@ -189,12 +195,13 @@ function paintCompactTitleLogo(
     const phaseSeconds = index * LOGO_LETTER_PHASE_STEP_SECONDS;
     const bounce = titleLogoSpringBounceAt(time, phaseSeconds);
     const colorShift = Math.sin((time * LOGO_LETTER_COLOR_RATE) + phaseSeconds) * LOGO_LETTER_COLOR_SWING;
-    surface.set(x, y, {
+    const overlay = {
       char,
       fgRGB: mixColor(colors.accent, colors.info, compactLogoColorRatio(index, text.length, colorShift + (bounce.offset * LOGO_LETTER_COLOR_SWING))),
       bgRGB: colors.surface,
       modifiers: [JEDIT_TEXT_MODIFIER.Bold],
-    });
+    };
+    surface.set(x, y, titleLogoOverlayCell(surface.get(x, y), overlay, opacity, colors.surface));
   }
 }
 
@@ -202,6 +209,7 @@ function paintTitleLogoLetter(
   surface: Surface,
   letter: TitleLogoAnimatedLetter,
   colors: TitleLogoColors,
+  opacity: number,
 ): void {
   const minY = Math.floor(letter.y);
   const maxY = Math.ceil(letter.y + letter.height);
@@ -223,12 +231,13 @@ function paintTitleLogoLetter(
         continue;
       }
 
-      surface.set(x, y, {
+      const overlay = {
         char,
         fgRGB: mixColor(colors.accent, colors.info, titleLogoCellColorRatio(letter, col)),
         bgRGB: colors.surface,
         modifiers: [JEDIT_TEXT_MODIFIER.Bold],
-      });
+      };
+      surface.set(x, y, titleLogoOverlayCell(surface.get(x, y), overlay, opacity, colors.surface));
     }
   }
 }

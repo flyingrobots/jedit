@@ -24,12 +24,17 @@ const MIN_BUNNY_TRIANGLES = 4900;
 const MIN_TEAPOT_VERTICES = 7000;
 const MIN_TEAPOT_TRIANGLES = 14000;
 const TITLE_TEAPOT_HEIGHT = 2.2;
+const AXIS_X = 0;
 const AXIS_Y = 1;
-const BUNNY_SCENE_OBJECT_COUNT = 2;
+const AXIS_Z = 2;
+const BUNNY_SCENE_OBJECT_COUNT = 3;
 const MIRROR_REFLECTIVITY_MINIMUM = 0.9;
 const BUNNY_TITLE_CAMERA_HEIGHT = 2.65;
 const MIRROR_REFLECTION_RAY_BIAS = 0.03;
-const MIRROR_REFLECTION_TARGET = [0.44, 0.95, 0.35];
+const MIRROR_REFLECTION_TARGET = [0.83, 1.43, -0.95];
+const ORBIT_LATER_TIME = 1.75;
+const ORBIT_OPPOSITE_TOLERANCE = 0.000001;
+const LOCAL_YAW_LATER_TIME = 0.9;
 const SCENE_COLORS = {
   accent: [216, 151, 255],
   info: [101, 194, 255],
@@ -102,30 +107,81 @@ test('initial title camera state can use a seeded scene placement', async () => 
   assert.equal(camera.radiusTarget, placement.radius);
 });
 
-test('title scene can ray cast the loaded bunny mesh', async () => {
+test('title scene builds a mirror sphere with orbiting bunny and cube', async () => {
   const { titleScene, titleMesh, titleBunnyMesh } = await loadTitleSceneModules();
   const meshSource = titleBunnyMesh.loadTitleBunnyMeshSource();
   const mesh = titleMesh.createTitleBunnyMesh(meshSource);
   const scene = titleScene.generateTitleScene(FIXED_SCENE_SEED, SCENE_COLORS, mesh);
-  const primary = scene.objects[0];
-  const mirror = scene.objects[1];
+  const mirror = scene.objects[0];
+  const rabbit = scene.objects[1];
+  const cube = scene.objects[2];
 
   assert.ok(meshSource.vertices.length >= MIN_BUNNY_VERTICES);
   assert.ok(meshSource.triangles.length >= MIN_BUNNY_TRIANGLES);
   assert.equal(scene.objects.length, BUNNY_SCENE_OBJECT_COUNT);
-  assert.equal(primary.kind, titleScene.TITLE_SCENE_SHAPE_KIND.Mesh);
-  assert.equal(primary.mesh, mesh);
   assert.equal(mirror.kind, titleScene.TITLE_SCENE_SHAPE_KIND.Sphere);
   assert.ok(mirror.reflectivity >= MIRROR_REFLECTIVITY_MINIMUM);
+  assert.equal(rabbit.kind, titleScene.TITLE_SCENE_SHAPE_KIND.Mesh);
+  assert.equal(rabbit.mesh, mesh);
+  assert.equal(rabbit.transparency, undefined);
+  assert.equal(cube.kind, titleScene.TITLE_SCENE_SHAPE_KIND.Cube);
+  assert.ok(rabbit.orbit != null);
+  assert.ok(cube.orbit != null);
+  assert.ok(rabbit.localYaw != null);
+  assert.ok(cube.localYaw != null);
+  assert.deepEqual(cube.orbit.center, rabbit.orbit.center);
+  assert.equal(cube.orbit.radius, rabbit.orbit.radius);
+  assert.equal(cube.orbit.angularSpeed, rabbit.orbit.angularSpeed);
+  assertOppositeOrbit(titleScene, mirror, rabbit, cube, 0);
+  assertOppositeOrbit(titleScene, mirror, rabbit, cube, ORBIT_LATER_TIME);
+  assert.notDeepEqual(
+    planarCenter(titleScene.titleSceneObjectFootprintCenter(rabbit, 0)),
+    planarCenter(titleScene.titleSceneObjectFootprintCenter(rabbit, ORBIT_LATER_TIME)),
+  );
 
-  const origin = [-1, 1.1, 4.5];
-  const ray = normalize([-0.05, -0.04, -1]);
-  const hit = titleScene.nearestTitleSceneObjectHit(origin, ray, scene.objects);
+  const placement = titleScene.titleBunnySceneCameraPlacement();
+  const origin = [
+    Math.sin(placement.angle) * placement.radius,
+    BUNNY_TITLE_CAMERA_HEIGHT,
+    Math.cos(placement.angle) * placement.radius,
+  ];
+  const ray = normalize(sub(titleScene.titleSceneObjectFootprintCenter(rabbit), origin));
+  const hit = titleScene.nearestTitleSceneObjectHit(origin, ray, scene.objects, undefined, 0);
 
   assert.ok(hit != null);
   assert.equal(hit.object.kind, titleScene.TITLE_SCENE_SHAPE_KIND.Mesh);
   assert.ok(hit.distance > 0);
   assert.ok(hit.normal.some((component) => Math.abs(component) > 0));
+
+  const cubeCenter = titleScene.titleSceneObjectFootprintCenter(cube);
+  const cubeHit = titleScene.nearestTitleSceneObjectHit(add(cubeCenter, [0, 0, 3]), [0, 0, -1], [cube]);
+  assert.ok(cubeHit != null);
+  assert.equal(cubeHit.object.kind, titleScene.TITLE_SCENE_SHAPE_KIND.Cube);
+  const cubeLaterCenter = titleScene.titleSceneObjectFootprintCenter(cube, LOCAL_YAW_LATER_TIME);
+  const cubeLaterHit = titleScene.nearestTitleSceneObjectHit(
+    add(cubeLaterCenter, [0, 0, 3]),
+    [0, 0, -1],
+    [cube],
+    undefined,
+    LOCAL_YAW_LATER_TIME,
+  );
+  assert.ok(cubeLaterHit != null);
+  assert.notDeepEqual(normalKey(cubeHit.normal), normalKey(cubeLaterHit.normal));
+
+  const stillRabbit = { ...rabbit, orbit: undefined };
+  const stillRabbitCenter = titleScene.titleSceneObjectFootprintCenter(stillRabbit);
+  const rabbitRay = normalize(sub(stillRabbitCenter, add(stillRabbitCenter, [0, 0.2, 4])));
+  const rabbitHit = titleScene.nearestTitleSceneObjectHit(add(stillRabbitCenter, [0, 0.2, 4]), rabbitRay, [stillRabbit]);
+  const rabbitLaterHit = titleScene.nearestTitleSceneObjectHit(
+    add(stillRabbitCenter, [0, 0.2, 4]),
+    rabbitRay,
+    [stillRabbit],
+    undefined,
+    LOCAL_YAW_LATER_TIME,
+  );
+  assert.ok(rabbitHit != null);
+  assert.ok(rabbitLaterHit != null);
+  assert.notDeepEqual(normalKey(rabbitHit.normal), normalKey(rabbitLaterHit.normal));
 });
 
 test('title scene can construct the Utah teapot mesh from the source asset', async () => {
@@ -235,6 +291,22 @@ function assertNonOverlapping(objects, margin) {
       );
     }
   }
+}
+
+function assertOppositeOrbit(titleScene, mirror, rabbit, cube, time) {
+  const mirrorCenter = titleScene.titleSceneObjectFootprintCenter(mirror, time);
+  const rabbitCenter = titleScene.titleSceneObjectFootprintCenter(rabbit, time);
+  const cubeCenter = titleScene.titleSceneObjectFootprintCenter(cube, time);
+  assert.ok(Math.abs((rabbitCenter[AXIS_X] - mirrorCenter[AXIS_X]) + (cubeCenter[AXIS_X] - mirrorCenter[AXIS_X])) < ORBIT_OPPOSITE_TOLERANCE);
+  assert.ok(Math.abs((rabbitCenter[AXIS_Z] - mirrorCenter[AXIS_Z]) + (cubeCenter[AXIS_Z] - mirrorCenter[AXIS_Z])) < ORBIT_OPPOSITE_TOLERANCE);
+}
+
+function planarCenter(center) {
+  return [center[AXIS_X].toFixed(3), center[AXIS_Z].toFixed(3)];
+}
+
+function normalKey(normal) {
+  return normal.map((component) => component.toFixed(3));
 }
 
 function hideExistingFile(filePath) {

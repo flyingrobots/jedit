@@ -1,17 +1,22 @@
 import type { RGB } from './averaging-braille-canvas.js';
+import { titleSceneCubeHit } from './title-scene-cube.js';
 import type { TitleSceneEnvironment } from './title-scene-environment.js';
-import { nearestTitleMeshHit, type TitleMesh } from './title-mesh.js';
+import { titleSceneMeshHit } from './title-scene-mesh-hit.js';
+import { createBunnySceneObjects, titleBunnySceneCameraPlacement } from './title-bunny-scene.js';
+import type { TitleMesh } from './title-mesh.js';
+import {
+  titleSceneObjectFootprintCenterAt,
+  titleScenePrimitivePositionAt,
+} from './title-scene-transform.js';
+import {
+  TITLE_SCENE_SHAPE_KIND,
+  type TitleScenePrimitiveShapeKind,
+} from './title-scene-shape-kind.js';
 
-export const TITLE_SCENE_SHAPE_KIND = {
-  Sphere: 'sphere',
-  Column: 'column',
-  Mesh: 'mesh',
-} as const;
-
-export type TitleSceneShapeKind = typeof TITLE_SCENE_SHAPE_KIND[keyof typeof TITLE_SCENE_SHAPE_KIND];
-export type TitleScenePrimitiveShapeKind =
-  | typeof TITLE_SCENE_SHAPE_KIND.Sphere
-  | typeof TITLE_SCENE_SHAPE_KIND.Column;
+export { titleBunnySceneCameraPlacement } from './title-bunny-scene.js';
+export { titleSceneObjectFootprintCenterAt as titleSceneObjectFootprintCenter } from './title-scene-transform.js';
+export { TITLE_SCENE_SHAPE_KIND } from './title-scene-shape-kind.js';
+export type { TitleScenePrimitiveShapeKind, TitleSceneShapeKind } from './title-scene-shape-kind.js';
 export type TitleSceneVector3 = readonly [number, number, number];
 export type TitleSceneColor = RGB;
 type ColumnHitCandidate = { readonly distance: number; readonly normal: TitleSceneVector3 };
@@ -25,12 +30,28 @@ export interface TitleSceneColorSet {
   readonly surface: TitleSceneColor;
 }
 
+export interface TitleSceneOrbit {
+  readonly center: TitleSceneVector3;
+  readonly radius: number;
+  readonly phase: number;
+  readonly angularSpeed: number;
+}
+
+export interface TitleSceneLocalYaw {
+  readonly phase: number;
+  readonly angularSpeed: number;
+}
+
 interface TitleSceneBaseObject {
   readonly radius: number;
   readonly footprintRadius: number;
   readonly height: number;
   readonly color: TitleSceneColor;
   readonly reflectivity: number;
+  readonly transparency?: number;
+  readonly refractiveIndex?: number;
+  readonly orbit?: TitleSceneOrbit;
+  readonly localYaw?: TitleSceneLocalYaw;
 }
 
 export interface TitleScenePrimitiveObject extends TitleSceneBaseObject {
@@ -41,6 +62,7 @@ export interface TitleScenePrimitiveObject extends TitleSceneBaseObject {
 export interface TitleSceneMeshObject extends TitleSceneBaseObject {
   readonly kind: typeof TITLE_SCENE_SHAPE_KIND.Mesh;
   readonly mesh: TitleMesh;
+  readonly offset?: TitleSceneVector3;
 }
 
 export type TitleSceneObject = TitleScenePrimitiveObject | TitleSceneMeshObject;
@@ -64,15 +86,8 @@ export interface TitleSceneObjectHit {
 
 const CAMERA_MIN_RADIUS = 7.2;
 const CAMERA_RADIUS_SPAN = 3;
-const BUNNY_SCENE_CAMERA_ANGLE = -0.58;
-const BUNNY_SCENE_CAMERA_RADIUS = 5.4;
 const FULL_TURN_RADIANS = Math.PI * 2;
 const SCENE_OBJECT_COUNT = 6;
-const BUNNY_SCENE_MIRROR_SPHERE_RADIUS = 1.25;
-const BUNNY_SCENE_MIRROR_SPHERE_HEIGHT = BUNNY_SCENE_MIRROR_SPHERE_RADIUS * 2;
-const BUNNY_SCENE_MIRROR_SPHERE_FOOTPRINT_RADIUS = BUNNY_SCENE_MIRROR_SPHERE_RADIUS;
-const BUNNY_SCENE_MIRROR_SPHERE_REFLECTIVITY = 1;
-const BUNNY_SCENE_MESH_REFLECTIVITY = 0.18;
 const PRIMARY_SPHERE_MIN_RADIUS = 1.05;
 const PRIMARY_SPHERE_RADIUS_SPAN = 0.22;
 const SECONDARY_MIN_RADIUS = 0.45;
@@ -87,6 +102,8 @@ const PRNG_STEP = 0x6d2b79f5;
 const PRNG_DIVISOR = 4294967296;
 const COLUMN_RAY_EPSILON = 0.000001;
 const COLUMN_HALF_HEIGHT_DIVISOR = 2;
+const COLUMN_TOP_NORMAL: TitleSceneVector3 = [0, 1, 0];
+const COLUMN_BOTTOM_NORMAL: TitleSceneVector3 = [0, -1, 0];
 export const TITLE_SCENE_OBJECT_MARGIN = 0.28;
 
 const POSITION_TEMPLATES: readonly (readonly [number, number])[] = [
@@ -109,7 +126,7 @@ export function generateTitleScene(seed: number, colors: TitleSceneColorSet, mes
   const random = seededRandom(seed);
   const objects: TitleSceneObject[] = [];
   for (let index = 0; index < SCENE_OBJECT_COUNT; index += 1) {
-    const object = placeSceneObject(index, random, colors, objects, mesh);
+    const object = placeSceneObject(index, random, colors, objects);
     objects.push(object);
   }
   return {
@@ -126,25 +143,19 @@ export function titleSceneCameraPlacement(seed: number): TitleSceneCameraPlaceme
   };
 }
 
-export function titleBunnySceneCameraPlacement(): TitleSceneCameraPlacement {
-  return {
-    angle: BUNNY_SCENE_CAMERA_ANGLE,
-    radius: BUNNY_SCENE_CAMERA_RADIUS,
-  };
-}
-
 export function nearestTitleSceneObjectHit(
   origin: TitleSceneVector3,
   ray: TitleSceneVector3,
   objects: readonly TitleSceneObject[],
   ignoredObject?: TitleSceneObject,
+  time?: number,
 ): TitleSceneObjectHit | undefined {
   let nearest: TitleSceneObjectHit | undefined;
   for (const object of objects) {
     if (object === ignoredObject) {
       continue;
     }
-    const hit = titleSceneObjectHit(origin, ray, object);
+    const hit = titleSceneObjectHit(origin, ray, object, time);
     if (hit != null && hit.distance > 0 && (nearest == null || hit.distance < nearest.distance)) {
       nearest = hit;
     }
@@ -156,8 +167,9 @@ export function intersectsTitleSceneObjectAlongRay(
   origin: TitleSceneVector3,
   ray: TitleSceneVector3,
   object: TitleSceneObject,
+  time?: number,
 ): boolean {
-  const hit = titleSceneObjectHit(origin, ray, object);
+  const hit = titleSceneObjectHit(origin, ray, object, time);
   return hit != null && hit.distance > 0;
 }
 
@@ -166,27 +178,21 @@ function placeSceneObject(
   random: () => number,
   colors: TitleSceneColorSet,
   existing: readonly TitleSceneObject[],
-  mesh: TitleMesh | undefined,
 ): TitleSceneObject {
   for (let attempt = 0; attempt < PLACEMENT_ATTEMPTS; attempt += 1) {
-    const candidate = createSceneObject(index, random, colors, mesh);
+    const candidate = createSceneObject(index, random, colors);
     if (!overlapsSceneObjects(candidate, existing)) {
       return candidate;
     }
   }
-  return createFallbackSceneObject(index, colors, mesh);
+  return createFallbackSceneObject(index, colors);
 }
 
 function createSceneObject(
   index: number,
   random: () => number,
   colors: TitleSceneColorSet,
-  mesh: TitleMesh | undefined,
 ): TitleSceneObject {
-  if (index === 0 && mesh != null) {
-    return createMeshSceneObject(colors, mesh);
-  }
-
   const kind = sceneShapeKind(index, random);
   const template = POSITION_TEMPLATES[index % POSITION_TEMPLATES.length] ?? [0, 0];
   const radius = index === 0
@@ -208,11 +214,7 @@ function createSceneObject(
   };
 }
 
-function createFallbackSceneObject(index: number, colors: TitleSceneColorSet, mesh: TitleMesh | undefined): TitleSceneObject {
-  if (index === 0 && mesh != null) {
-    return createMeshSceneObject(colors, mesh);
-  }
-
+function createFallbackSceneObject(index: number, colors: TitleSceneColorSet): TitleSceneObject {
   const kind = index === 1 ? TITLE_SCENE_SHAPE_KIND.Column : TITLE_SCENE_SHAPE_KIND.Sphere;
   const template = POSITION_TEMPLATES[index % POSITION_TEMPLATES.length] ?? [0, 0];
   const radius = index === 0 ? PRIMARY_SPHERE_MIN_RADIUS : FALLBACK_SECONDARY_RADIUS;
@@ -225,37 +227,6 @@ function createFallbackSceneObject(index: number, colors: TitleSceneColorSet, me
     height,
     color: materialColor(index, seededRandom(index), colors),
     reflectivity: 0.18,
-  };
-}
-
-function createBunnySceneObjects(colors: TitleSceneColorSet, mesh: TitleMesh): readonly TitleSceneObject[] {
-  return [
-    createMeshSceneObject(colors, mesh),
-    createMirrorSphere(colors),
-  ];
-}
-
-function createMeshSceneObject(colors: TitleSceneColorSet, mesh: TitleMesh): TitleSceneMeshObject {
-  return {
-    kind: TITLE_SCENE_SHAPE_KIND.Mesh,
-    mesh,
-    radius: mesh.footprintRadius,
-    footprintRadius: mesh.footprintRadius,
-    height: mesh.height,
-    color: colors.accent,
-    reflectivity: BUNNY_SCENE_MESH_REFLECTIVITY,
-  };
-}
-
-function createMirrorSphere(colors: TitleSceneColorSet): TitleScenePrimitiveObject {
-  return {
-    kind: TITLE_SCENE_SHAPE_KIND.Sphere,
-    position: [1.34, BUNNY_SCENE_MIRROR_SPHERE_RADIUS, 0.55],
-    radius: BUNNY_SCENE_MIRROR_SPHERE_RADIUS,
-    footprintRadius: BUNNY_SCENE_MIRROR_SPHERE_FOOTPRINT_RADIUS,
-    height: BUNNY_SCENE_MIRROR_SPHERE_HEIGHT,
-    color: colors.ink,
-    reflectivity: BUNNY_SCENE_MIRROR_SPHERE_REFLECTIVITY,
   };
 }
 
@@ -281,9 +252,9 @@ function materialColor(index: number, random: () => number, colors: TitleSceneCo
 }
 
 function overlapsSceneObjects(candidate: TitleSceneObject, existing: readonly TitleSceneObject[]): boolean {
-  const candidateCenter = titleSceneObjectFootprintCenter(candidate);
+  const candidateCenter = titleSceneObjectFootprintCenterAt(candidate);
   return existing.some((object) => {
-    const objectCenter = titleSceneObjectFootprintCenter(object);
+    const objectCenter = titleSceneObjectFootprintCenterAt(object);
     const dx = candidateCenter[0] - objectCenter[0];
     const dz = candidateCenter[2] - objectCenter[2];
     const distance = Math.sqrt((dx * dx) + (dz * dz));
@@ -291,35 +262,32 @@ function overlapsSceneObjects(candidate: TitleSceneObject, existing: readonly Ti
   });
 }
 
-export function titleSceneObjectFootprintCenter(object: TitleSceneObject): TitleSceneVector3 {
-  if (object.kind !== TITLE_SCENE_SHAPE_KIND.Mesh) {
-    return object.position;
-  }
-
-  return [
-    (object.mesh.bounds.min[0] + object.mesh.bounds.max[0]) / COLUMN_HALF_HEIGHT_DIVISOR,
-    (object.mesh.bounds.min[1] + object.mesh.bounds.max[1]) / COLUMN_HALF_HEIGHT_DIVISOR,
-    (object.mesh.bounds.min[2] + object.mesh.bounds.max[2]) / COLUMN_HALF_HEIGHT_DIVISOR,
-  ];
-}
-
 function titleSceneObjectHit(
   origin: TitleSceneVector3,
   ray: TitleSceneVector3,
   object: TitleSceneObject,
+  time?: number,
 ): TitleSceneObjectHit | undefined {
   switch (object.kind) {
     case TITLE_SCENE_SHAPE_KIND.Column:
-      return columnHit(origin, ray, object);
+      return columnHit(origin, ray, object, time);
+    case TITLE_SCENE_SHAPE_KIND.Cube:
+      return titleSceneCubeHit(origin, ray, object, time);
     case TITLE_SCENE_SHAPE_KIND.Mesh:
-      return meshHit(origin, ray, object);
+      return titleSceneMeshHit(origin, ray, object, time);
     case TITLE_SCENE_SHAPE_KIND.Sphere:
-      return sphereHit(origin, ray, object);
+      return sphereHit(origin, ray, object, time);
   }
 }
 
-function sphereHit(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleScenePrimitiveObject): TitleSceneObjectHit | undefined {
-  const distance = intersectSphere(origin, ray, object.position, object.radius);
+function sphereHit(
+  origin: TitleSceneVector3,
+  ray: TitleSceneVector3,
+  object: TitleScenePrimitiveObject,
+  time: number | undefined,
+): TitleSceneObjectHit | undefined {
+  const position = titleScenePrimitivePositionAt(object, time);
+  const distance = intersectSphere(origin, ray, position, object.radius);
   if (distance <= 0) {
     return undefined;
   }
@@ -327,29 +295,40 @@ function sphereHit(origin: TitleSceneVector3, ray: TitleSceneVector3, object: Ti
   return {
     object,
     distance,
-    normal: normalize(sub(point, object.position)),
+    normal: normalize(sub(point, position)),
   };
 }
 
-function columnHit(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleScenePrimitiveObject): TitleSceneObjectHit | undefined {
-  const bottomY = object.position[1] - (object.height / COLUMN_HALF_HEIGHT_DIVISOR);
-  const topY = object.position[1] + (object.height / COLUMN_HALF_HEIGHT_DIVISOR);
-  const side = columnSideHitCandidate(origin, ray, object);
-  const top = columnCapHitCandidate(origin, ray, object, topY, [0, 1, 0]);
-  const bottom = columnCapHitCandidate(origin, ray, object, bottomY, [0, -1, 0]);
+function columnHit(
+  origin: TitleSceneVector3,
+  ray: TitleSceneVector3,
+  object: TitleScenePrimitiveObject,
+  time: number | undefined,
+): TitleSceneObjectHit | undefined {
+  const position = titleScenePrimitivePositionAt(object, time);
+  const bottomY = position[1] - (object.height / COLUMN_HALF_HEIGHT_DIVISOR);
+  const topY = position[1] + (object.height / COLUMN_HALF_HEIGHT_DIVISOR);
+  const side = columnSideHitCandidate(origin, ray, object, position);
+  const top = columnCapHitCandidate(origin, ray, object, position, topY);
+  const bottom = columnCapHitCandidate(origin, ray, object, position, bottomY);
   const hit = nearestColumnCandidate(nearestColumnCandidate(side, top), bottom);
   return hit == null ? undefined : { object, distance: hit.distance, normal: hit.normal };
 }
 
-function columnSideHitCandidate(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleScenePrimitiveObject): ColumnHitCandidate | undefined {
-  const distance = intersectColumnSide(origin, ray, object);
+function columnSideHitCandidate(
+  origin: TitleSceneVector3,
+  ray: TitleSceneVector3,
+  object: TitleScenePrimitiveObject,
+  position: TitleSceneVector3,
+): ColumnHitCandidate | undefined {
+  const distance = intersectColumnSide(origin, ray, object, position);
   if (distance <= 0) {
     return undefined;
   }
   const point = add(origin, scale(ray, distance));
   return {
     distance,
-    normal: normalize([point[0] - object.position[0], 0, point[2] - object.position[2]]),
+    normal: normalize([point[0] - position[0], 0, point[2] - position[2]]),
   };
 }
 
@@ -357,10 +336,11 @@ function columnCapHitCandidate(
   origin: TitleSceneVector3,
   ray: TitleSceneVector3,
   object: TitleScenePrimitiveObject,
+  position: TitleSceneVector3,
   capY: number,
-  normal: TitleSceneVector3,
 ): ColumnHitCandidate | undefined {
-  const distance = intersectColumnCap(origin, ray, object, capY);
+  const distance = intersectColumnCap(origin, ray, object, position, capY);
+  const normal = capY > position[1] ? COLUMN_TOP_NORMAL : COLUMN_BOTTOM_NORMAL;
   return distance > 0 ? { distance, normal } : undefined;
 }
 
@@ -371,7 +351,13 @@ function nearestColumnCandidate(current: ColumnHitCandidate | undefined, next: C
   return next != null && next.distance < current.distance ? next : current;
 }
 
-function intersectColumnCap(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleScenePrimitiveObject, capY: number): number {
+function intersectColumnCap(
+  origin: TitleSceneVector3,
+  ray: TitleSceneVector3,
+  object: TitleScenePrimitiveObject,
+  position: TitleSceneVector3,
+  capY: number,
+): number {
   if (Math.abs(ray[1]) <= COLUMN_RAY_EPSILON) {
     return -1;
   }
@@ -381,23 +367,12 @@ function intersectColumnCap(origin: TitleSceneVector3, ray: TitleSceneVector3, o
   }
   const x = origin[0] + (ray[0] * t);
   const z = origin[2] + (ray[2] * t);
-  const dx = x - object.position[0];
-  const dz = z - object.position[2];
+  const dx = x - position[0];
+  const dz = z - position[2];
   if ((dx * dx) + (dz * dz) <= object.radius * object.radius) {
     return t;
   }
   return -1;
-}
-
-function meshHit(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleSceneMeshObject): TitleSceneObjectHit | undefined {
-  const hit = nearestTitleMeshHit(origin, ray, object.mesh);
-  return hit == null
-    ? undefined
-    : {
-        object,
-        distance: hit.distance,
-        normal: hit.normal,
-      };
 }
 
 function intersectSphere(
@@ -419,9 +394,14 @@ function intersectSphere(
   return first > 0 ? first : second;
 }
 
-function intersectColumnSide(origin: TitleSceneVector3, ray: TitleSceneVector3, object: TitleScenePrimitiveObject): number {
-  const dx = origin[0] - object.position[0];
-  const dz = origin[2] - object.position[2];
+function intersectColumnSide(
+  origin: TitleSceneVector3,
+  ray: TitleSceneVector3,
+  object: TitleScenePrimitiveObject,
+  position: TitleSceneVector3,
+): number {
+  const dx = origin[0] - position[0];
+  const dz = origin[2] - position[2];
   const a = (ray[0] * ray[0]) + (ray[2] * ray[2]);
   if (a <= COLUMN_RAY_EPSILON) {
     return -1;
@@ -435,30 +415,31 @@ function intersectColumnSide(origin: TitleSceneVector3, ray: TitleSceneVector3, 
   const root = Math.sqrt(discriminant);
   const first = (-b - root) / (2 * a);
   const second = (-b + root) / (2 * a);
-  return firstColumnRootInRange(origin, ray, object, first, second);
+  return firstColumnRootInRange(origin, ray, object, position, [first, second]);
 }
 
 function firstColumnRootInRange(
   origin: TitleSceneVector3,
   ray: TitleSceneVector3,
   object: TitleScenePrimitiveObject,
-  first: number,
-  second: number,
+  position: TitleSceneVector3,
+  roots: readonly [number, number],
 ): number {
-  if (columnRootInRange(origin, ray, object, first)) {
-    return first;
+  if (columnRootInRange(origin, ray, object, position, roots[0])) {
+    return roots[0];
   }
-  return columnRootInRange(origin, ray, object, second) ? second : -1;
+  return columnRootInRange(origin, ray, object, position, roots[1]) ? roots[1] : -1;
 }
 
 function columnRootInRange(
   origin: TitleSceneVector3,
   ray: TitleSceneVector3,
   object: TitleScenePrimitiveObject,
+  position: TitleSceneVector3,
   distance: number,
 ): boolean {
-  const bottomY = object.position[1] - (object.height / COLUMN_HALF_HEIGHT_DIVISOR);
-  const topY = object.position[1] + (object.height / COLUMN_HALF_HEIGHT_DIVISOR);
+  const bottomY = position[1] - (object.height / COLUMN_HALF_HEIGHT_DIVISOR);
+  const topY = position[1] + (object.height / COLUMN_HALF_HEIGHT_DIVISOR);
   const y = origin[1] + (ray[1] * distance);
   return distance > 0 && y >= bottomY && y <= topY;
 }

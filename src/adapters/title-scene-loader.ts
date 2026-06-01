@@ -14,6 +14,10 @@ import {
 
 type JsonValue = null | boolean | number | string | readonly JsonValue[] | JsonObject;
 type JsonObject = { readonly [key: string]: JsonValue | undefined };
+interface DecodedOpticalMaterial {
+  readonly transparency?: number;
+  readonly refractiveIndex?: number;
+}
 
 export interface TitleSceneLoaderOptions {
   readonly builtInSceneDirectories?: readonly string[];
@@ -24,6 +28,9 @@ const DEFAULT_CAMERA_RADIUS = 8.5;
 const VECTOR_LENGTH = 3;
 const COLOR_CHANNEL_MIN = 0;
 const COLOR_CHANNEL_MAX = 255;
+const MATERIAL_RATIO_MIN = 0;
+const MATERIAL_RATIO_MAX = 1;
+const REFRACTIVE_INDEX_MIN = 1;
 const BUILT_IN_TITLE_SCENE_SET = new Set<string>(BUILT_IN_TITLE_SCENE_NAMES);
 const BUILT_IN_SCENE_CANDIDATE_URLS = [
   (name: BuiltInTitleSceneName): URL => new URL(`../scenes/${name}`, import.meta.url),
@@ -156,6 +163,7 @@ function decodeSceneObject(value: JsonValue, meshes: TitleMeshLibrary, path: str
       height: optionalNonNegativeNumber(object['height'], `${path}.height`) ?? mesh.height,
       color: colorAt(object['color'], `${path}.color`),
       reflectivity: finiteNumberAt(object['reflectivity'], `${path}.reflectivity`),
+      ...decodeOpticalMaterial(object, path),
     };
   }
 
@@ -168,6 +176,16 @@ function decodeSceneObject(value: JsonValue, meshes: TitleMeshLibrary, path: str
     height: optionalNonNegativeNumber(object['height'], `${path}.height`) ?? radius * 2,
     color: colorAt(object['color'], `${path}.color`),
     reflectivity: finiteNumberAt(object['reflectivity'], `${path}.reflectivity`),
+    ...decodeOpticalMaterial(object, path),
+  };
+}
+
+function decodeOpticalMaterial(object: JsonObject, path: string): DecodedOpticalMaterial {
+  const transparency = optionalRatioNumber(object['transparency'], `${path}.transparency`);
+  const refractiveIndex = optionalRefractiveIndex(object['refractiveIndex'], `${path}.refractiveIndex`);
+  return {
+    ...(transparency == null ? {} : { transparency }),
+    ...(refractiveIndex == null ? {} : { refractiveIndex }),
   };
 }
 
@@ -239,6 +257,28 @@ function optionalNonNegativeNumber(value: JsonValue | undefined, path: string): 
   return value == null ? undefined : nonNegativeNumberAt(value, path);
 }
 
+function optionalRatioNumber(value: JsonValue | undefined, path: string): number | undefined {
+  if (value == null) {
+    return undefined;
+  }
+  const number = finiteNumberAt(value, path);
+  if (number < MATERIAL_RATIO_MIN || number > MATERIAL_RATIO_MAX) {
+    throw new SceneDecodeError(`${path} must be between ${MATERIAL_RATIO_MIN} and ${MATERIAL_RATIO_MAX}.`);
+  }
+  return number;
+}
+
+function optionalRefractiveIndex(value: JsonValue | undefined, path: string): number | undefined {
+  if (value == null) {
+    return undefined;
+  }
+  const number = finiteNumberAt(value, path);
+  if (number < REFRACTIVE_INDEX_MIN) {
+    throw new SceneDecodeError(`${path} must be at least ${REFRACTIVE_INDEX_MIN}.`);
+  }
+  return number;
+}
+
 function vectorAt(value: JsonValue | undefined, path: string): TitleSceneVector3 {
   const vector = arrayAt(value, path);
   if (vector.length !== VECTOR_LENGTH) {
@@ -263,11 +303,17 @@ function colorAt(value: JsonValue | undefined, path: string): readonly [number, 
 }
 
 function shapeKindAt(value: JsonValue | undefined, path: string): TitleSceneObject['kind'] {
-  if (value === TITLE_SCENE_SHAPE_KIND.Sphere || value === TITLE_SCENE_SHAPE_KIND.Column || value === TITLE_SCENE_SHAPE_KIND.Mesh) {
+  if (
+    value === TITLE_SCENE_SHAPE_KIND.Sphere
+    || value === TITLE_SCENE_SHAPE_KIND.Column
+    || value === TITLE_SCENE_SHAPE_KIND.Cube
+    || value === TITLE_SCENE_SHAPE_KIND.Mesh
+  ) {
     return value;
   }
   throw new SceneDecodeError(
-    `${path} must be one of '${TITLE_SCENE_SHAPE_KIND.Sphere}', '${TITLE_SCENE_SHAPE_KIND.Column}', or '${TITLE_SCENE_SHAPE_KIND.Mesh}'.`,
+    `${path} must be one of '${TITLE_SCENE_SHAPE_KIND.Sphere}', '${TITLE_SCENE_SHAPE_KIND.Column}', `
+      + `'${TITLE_SCENE_SHAPE_KIND.Cube}', or '${TITLE_SCENE_SHAPE_KIND.Mesh}'.`,
   );
 }
 

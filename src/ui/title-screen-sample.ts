@@ -19,6 +19,7 @@ export interface TitleSceneRayContext {
   readonly origin: TitleSceneVector3;
   readonly ray: TitleSceneVector3;
   readonly lightDirection: TitleSceneVector3;
+  readonly spotlight: TitleSceneSpotlight;
 }
 
 export interface ReflectedEnvironmentColorOptions {
@@ -30,4 +31,15 @@ export interface ReflectedEnvironmentColorOptions {
   readonly ignoredObject: TitleSceneObject;
   readonly environment: TitleSceneEnvironment | undefined;
   readonly lightDirection: TitleSceneVector3;
+  readonly spotlight: TitleSceneSpotlight;
+}
+
+export interface TitleSceneSpotlight {
+  readonly source: TitleSceneVector3;
+  readonly target: TitleSceneVector3;
+  readonly direction: TitleSceneVector3;
+  readonly color: readonly [number, number, number];
+  readonly intensity: number;
+  readonly innerConeCosine: number;
+  readonly outerConeCosine: number;
 }
