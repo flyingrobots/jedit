@@ -18,7 +18,9 @@ test('v0.1.0 quickstart documents executable witness commands', () => {
   assert.match(source, /--json --dry-run/);
   assert.match(source, /--json --replay-local/);
   assert.match(source, /jedit-production-text-session\.mjs --json/);
-  assert.match(source, /JEDIT_TEXT_RUNTIME=echoHosted npm start/);
+  assert.match(source, /npm start/);
+  assert.match(source, /default text runtime is the Echo-hosted/);
+  assert.match(source, /JEDIT_TEXT_RUNTIME=echoHosted npm start.*same/);
   assert.match(source, /testLocal.*dev\/test fixture/);
   assert.match(source, /"transport": "installed-jedit-contract"/);
   assert.match(source, /"appCanTick": false/);

@@ -30,7 +30,7 @@ Press `?` inside the editor for the key binding reference.
 - **Graft drawer** — current-file structural outline and change summary via MCP
 - **Markdown preview** — live lens over the active buffer (`ctrl+p` to toggle)
 - **Syntax highlighting** — themed source rendering for supported languages
-- **Echo-backed text session** — every edit submits a contract intent through `TextBufferOptic`; a fake Echo transport handles it in-process for default use, a real Echo WASM transport is available opt-in
+- **Echo-hosted text session** — every edit submits a contract intent through `TextBufferOptic`; the default production path uses the installed jedit contract transport, while `testLocal` remains an explicit dev/test fixture
 - **Structural-history contract** — `replaceTextRange` operation identity comes from Wesley-generated metadata, not hardcoded strings
 - **Witness scripts** — JSON-reporting evidence tools for CI and agents (see [Witnesses](#witnesses))
 
@@ -129,9 +129,9 @@ Full posture details live in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 | Variable | Effect |
 |----------|--------|
-| `JEDIT_TEXT_RUNTIME` | Unset → fake in-process Echo transport (default). Set to `echo-wasm` for the real Echo WASM transport. |
+| `JEDIT_TEXT_RUNTIME` | Unset → `echoHosted` production text runtime (default). Set to `testLocal` only for dev/test fixture runs. |
 | `JEDIT_PERF` | Set to `1` to enable the frame-time performance overlay. |
-| `ECHO_WARP_WASM_DIR` | Path to Echo's `crates/warp-wasm` directory. Required for the real WASM witness only. |
+| `ECHO_WARP_WASM_DIR` | Path to Echo's `crates/warp-wasm` directory. Required for the opt-in real WASM witness only, not for the default TUI. |
 
 ### Validate
 
@@ -139,15 +139,16 @@ Full posture details live in [ARCHITECTURE.md](ARCHITECTURE.md).
 npm run check   # build + test + quality gate
 ```
 
-Default tests use the fake Echo transport. No sibling repo checkout required.
+The default app runtime is Echo-hosted and requires no sibling repo checkout.
+Focused tests may opt into `testLocal` when they need fixture-only behavior.
 
 ### Witnesses
 
 ```sh
-# Fast smoke path — fake transport, no Echo checkout needed
+# Fast smoke path — installed jedit contract transport, no Echo checkout needed
 npm run witness:echo:session
 
-# Full opt-in witness — requires a built Echo checkout
+# Opt-in real WASM witness — requires a built Echo checkout
 ECHO_WARP_WASM_DIR=/path/to/echo/crates/warp-wasm \
   node scripts/jedit-echo-witness.mjs --json --replay
 ```

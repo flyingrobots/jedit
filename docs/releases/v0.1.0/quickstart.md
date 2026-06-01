@@ -40,11 +40,16 @@ node scripts/jedit-echo-powered-session.mjs --json --replay-local
 node scripts/jedit-production-text-session.mjs --json --replay-local
 ```
 
-Start the interactive app with the Echo-hosted production text profile:
+Start the interactive app. The default text runtime is the Echo-hosted
+production profile:
 
 ```bash
-JEDIT_TEXT_RUNTIME=echoHosted npm start
+npm start
 ```
+
+For explicit demos, `JEDIT_TEXT_RUNTIME=echoHosted npm start` selects the same
+profile. `JEDIT_TEXT_RUNTIME=testLocal npm start` is a dev/test fixture escape
+hatch, not the product default.
 
 ## Expected JSON Shape
 

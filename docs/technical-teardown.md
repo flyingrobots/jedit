@@ -247,8 +247,8 @@ flowchart TD
     A[process start] --> B["initDefaultContext<br />Bijou terminal setup"]
     B --> C["parseTextRuntimeProfile<br />from JEDIT_TEXT_RUNTIME env"]
     C --> D{profile?}
-    D -- "echo-hosted (default)" --> E["createWorkspaceApp<br />with fake Echo transport"]
-    D -- "echo-wasm / custom" --> F["createWorkspaceApp<br />with real Echo WASM transport"]
+    D -- "echoHosted (default)" --> E["createWorkspaceApp<br />with installed jedit contract transport"]
+    D -- "testLocal fixture" --> F["createWorkspaceApp<br />with fixture-local transport"]
     E --> G["run(app) — Bijou TEA loop begins"]
     F --> G
 ```
@@ -304,10 +304,11 @@ Controls the entire text backend. This is the most impactful lever in the codeba
 
 | Value | Effect |
 |-------|--------|
-| *(unset)* | `echo-hosted` default — fake in-process Echo transport backed by in-memory `HotTextBufferState`. Zero external dependencies. All tests use this. |
-| `echo-wasm` | Real Echo WASM transport. Requires `ECHO_WARP_WASM_DIR` to point at a built Echo checkout. Echo runs as a compiled Rust WASM module. |
+| *(unset)* | `echoHosted` default — installed jedit contract transport with no sibling checkout required. This is the production TUI path. |
+| `echoHosted` | Explicitly selects the same production text runtime as the unset default. |
+| `testLocal` | Fixture-local text runtime for dev/test runs that deliberately avoid the production transport. |
 
-**Architectural implication**: Because the profile is resolved at process start and injected into `createWorkspaceApp`, there is no conditional logic in the app or domain layers about which backend is running. The same `TextBufferOptic` code path executes identically in both cases. The swap point is a single factory call in `workspace-production-text-session.ts`.
+**Architectural implication**: Because the profile is resolved at process start and injected into `createWorkspaceApp`, there is no conditional logic in the app or domain layers about which backend is running. The same `TextBufferOptic` code path executes identically in production and fixture profiles. The swap point is a single factory call in `workspace-production-text-session.ts`.
 
 **Trade-off**: This "inject at boot" design means you cannot hot-swap the text runtime without restarting the process. That is an acceptable trade-off for development — it makes the runtime boundary explicit and prevents runtime feature-flag drift.
 
@@ -323,7 +324,7 @@ Internally, `frameTimeHistory` in `WorkspaceModel` is an array of the last 50 fr
 
 ### `ECHO_WARP_WASM_DIR`
 
-Only relevant when `JEDIT_TEXT_RUNTIME=echo-wasm`. Points at the directory containing Echo's compiled WASM module. Used exclusively by the witness scripts (`scripts/jedit-echo-witness.mjs`, `scripts/run-real-echo-wasm-stack-witness.sh`).
+Only relevant for the opt-in real Echo WASM witness. Points at the directory containing Echo's compiled WASM module. Used exclusively by the witness scripts (`scripts/jedit-echo-witness.mjs`, `scripts/run-real-echo-wasm-stack-witness.sh`).
 
 This variable is intentionally absent from the main app boot path — it is only read by the witness scripts that build and exercise the real Echo transport. This prevents accidental production dependency on a sibling repository checkout.
 
@@ -476,13 +477,13 @@ graph LR
 
 **`src/ports`** — Interface definitions only. A port describes a typed runtime contract; it never decodes raw payloads. Examples: `HotTextRuntimePort`, `TextBufferSessionPort`, `FileSystemPort`, `GraftSessionPort`, `SourceHighlighter`.
 
-**`src/adapters`** — Concrete implementations. Raw strings, JSON bytes, and MCP payloads are decoded *here* and *only here*. Contains: the in-memory hot text runtime, the fake Echo transport, the real Echo WASM transport client, the filesystem adapter, Graft MCP session, source highlighter.
+**`src/adapters`** — Concrete implementations. Raw strings, JSON bytes, and MCP payloads are decoded *here* and *only here*. Contains: the installed jedit contract transport, the fixture-local transport, the real Echo WASM witness client, the filesystem adapter, Graft MCP session, source highlighter.
 
 **`src/ui`** — Presentation and input mapping. UI translates Bijou events into app commands and renders app state into `Surface` cells. It does not own business rules.
 
 ### Why This Matters in Practice
 
-The separation is enforced by convention, not by a module bundler boundary. The benefit is demonstrated by the dual-transport design: the entire test suite runs against the fake Echo transport (`createFakeEchoJeditOpticTransport`) without any modification to `src/app` or `src/domain`. Swapping the transport is a single-line change in `workspace-production-text-session.ts` — no other file knows or cares.
+The separation is enforced by convention, not by a module bundler boundary. The benefit is demonstrated by the profile-transport design: the default app runs through the installed jedit contract transport, while focused fixture tests can inject `testLocal` without any modification to `src/app` or `src/domain`. Swapping the transport is a single factory decision in `workspace-production-text-session.ts` — no other file knows or cares.
 
 ---
 
@@ -502,7 +503,7 @@ graph TB
         BIJOU_SURFACE["Surface, Cmd, KeyMsg types"]
     end
 
-    subgraph echo_border["Echo border (WASM or fake)"]
+    subgraph echo_border["Echo border (installed contract, WASM witness, or fixture)"]
         ECHO_TRANSPORT["EchoWasmKernelTransport interface<br />submitIntentBytes / observeBytes"]
     end
 
@@ -531,11 +532,11 @@ graph TB
 
 ### The Echo Border
 
-**Where**: `src/adapters/fake-echo-jedit-optic-transport.ts` (fake) and `src/adapters/installed-jedit-contract-echo-transport.ts` (real). The border is the `EchoWasmKernelTransport` port.
+**Where**: `src/adapters/installed-jedit-contract-echo-transport.ts` (default production path), `src/adapters/fake-echo-jedit-optic-transport.ts` (fixture-local path), and `src/adapters/echo-wasm-kernel.ts` (opt-in WASM witness path). The border is the `EchoWasmKernelTransport` port.
 
 **What crosses the border**: `Uint8Array` in, `Uint8Array` out. No JavaScript objects, no shared memory, no callbacks. The byte arrays are JSON-encoded intent requests and observe requests.
 
-**Why bytes at the border**: WASM modules communicate via linear memory. When the real Echo transport calls into the WASM module, it passes a pointer and length into WASM linear memory, gets back a pointer and length. The fake transport uses the same `Uint8Array` interface to keep the codec layer honest — the same JSON parsing and Zod validation runs in both cases.
+**Why bytes at the border**: WASM modules communicate via linear memory. When the Echo WASM witness calls into the WASM module, it passes a pointer and length into WASM linear memory, gets back a pointer and length. The installed-contract and fixture-local transports use the same `Uint8Array` interface to keep the codec layer honest — the same boundary decoding rules run in each profile.
 
 **What jedit cannot control past this border (real WASM)**: The Echo scheduler's admission decisions. The timing of tick sequencing. The internal rope tree structure. These are Echo's domain.
 
@@ -620,7 +621,7 @@ classDiagram
 
 **`editor?: EditorState`** — The `?` is significant. When no file is open, `editor` is `undefined` and the workspace shows the animated title screen. The title screen is not a separate route — it is just the absent-editor state. This elegantly avoids a `page`/`route` concept entirely.
 
-**`textAuthority: WorkspaceTextAuthority`** — The bridge between the legacy `lines[]` buffer and the Echo-backed `TextBufferOptic` path. It tracks which buffer is currently backed by Echo, the `bufferId`, and the latest `ReadBasisHandle`. The UI reads from `EditorState.lines`; the Echo session advances independently.
+**`textAuthority: WorkspaceTextAuthority`** — The workspace posture for Echo-hosted text authority. It tracks which buffer is backed by the production text session, the `bufferId`, the latest reading cache, and the current obstruction/export/checkpoint posture. `EditorState.lines` remains render/navigation cache material, not production text authority.
 
 **`fileDrawerProgress / graftDrawerProgress`** — Floating-point animation state (`0.0` to `1.0`). The layout engine reads these on every frame to calculate drawer pixel widths. Partial values produce the slide-open animation. Animation is data, not code.
 
@@ -709,7 +710,7 @@ This is simple and correct but O(n) in memory per edit — a 10,000-line file wi
 
 ### UTF-8 Dual-Track Awareness
 
-Insert mode builds on `insertText(editor, text)` which works on the `lines[]` array as JavaScript strings (UTF-16 internally). The production text path works in **byte offsets** — `byteOffsetForTextPosition` converts `{ row, column }` to a UTF-8 byte offset before submitting to the text runtime. These two representations must be kept in sync; divergence is a latent bug that the migration to a single Echo-backed truth will resolve.
+Insert mode builds on jedit-owned edit planning over displayed text positions. The production text path works in **byte offsets** — `byteOffsetForTextPosition` converts `{ row, column }` to a UTF-8 byte offset before submitting to the text runtime. Render/cache positions and Echo-hosted text authority must stay synchronized through bounded readings; production edits should not treat local line arrays as the source of truth.
 
 ---
 
