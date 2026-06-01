@@ -26,6 +26,10 @@ export interface JeditSettingsState {
   readonly viewMode: ViewMode;
 }
 
+export interface JeditSettingsI18nState {
+  readonly localeLabel: string;
+}
+
 export interface JeditSettingsHostState {
   readonly settingsOpen: boolean;
   readonly settingsFocusIndex: number;
@@ -67,9 +71,6 @@ const VALUE_THEME_MODE_DARK = 'Dark';
 const VALUE_THEME_MODE_LIGHT = 'Light';
 const VALUE_SOURCE = 'Source';
 const VALUE_PREVIEW = 'Preview';
-const VALUE_LOCALE_ENGLISH = 'English';
-const VALUE_LOCALE_MIRROR = 'Mirror';
-const LOCALE_ENGLISH = 'en';
 const KEY_ESCAPE = 'escape';
 const KEY_DOWN = 'down';
 const KEY_UP = 'up';
@@ -101,7 +102,7 @@ const SETTINGS_KEY_ACTIONS = new Map<string, SettingsKeyAction>([
   [KEY_SPACE_CANONICAL, SETTINGS_KEY_ACTION.Activate],
 ]);
 
-export function jeditSettingsRows(state: JeditSettingsState & { readonly i18n: { readonly locale: string } }): readonly JeditSettingsRow[] {
+export function jeditSettingsRows(state: JeditSettingsState & { readonly i18n: JeditSettingsI18nState }): readonly JeditSettingsRow[] {
   const rows: JeditSettingsRow[] = [
     localeSettingsRow(state),
     themeSettingsRow(state),
@@ -116,13 +117,13 @@ export function jeditSettingsRows(state: JeditSettingsState & { readonly i18n: {
   return rows;
 }
 
-function localeSettingsRow(state: JeditSettingsState & { readonly i18n: { readonly locale: string } }): JeditSettingsRow {
+function localeSettingsRow(state: JeditSettingsState & { readonly i18n: JeditSettingsI18nState }): JeditSettingsRow {
   return {
     id: ROW_ID_LOCALE,
     section: SETTINGS_SECTION_APPEARANCE,
     label: 'Locale',
-    description: 'Switch between English (en) and Mirror English (me) for RTL testing.',
-    valueLabel: state.i18n.locale === LOCALE_ENGLISH ? VALUE_LOCALE_ENGLISH : VALUE_LOCALE_MIRROR,
+    description: 'Cycle through installed locale catalogs.',
+    valueLabel: state.i18n.localeLabel,
     kind: JEDIT_SETTING_ROW_KIND.Choice,
     action: JEDIT_SETTING_ACTION.ToggleLocale,
   };

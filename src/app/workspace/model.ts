@@ -16,6 +16,7 @@ import type { EditorState } from './editor/model.js';
 import type { WorkspaceMsg } from './msg.js';
 import type { ViewMode } from './view-mode.js';
 import type { WorkspaceTextAuthority } from './workspace-text-authority.js';
+import type { EchoHistoryEntry } from './echo-history.js';
 
 export interface WorkspaceModel {
   readonly i18n: I18nPort;
@@ -33,6 +34,10 @@ export interface WorkspaceModel {
   readonly fileDrawerProgress: number;
   readonly graftDrawerOpen: boolean;
   readonly graftDrawerProgress: number;
+  readonly historyDrawerOpen: boolean;
+  readonly historyDrawerProgress: number;
+  readonly echoHistory: readonly EchoHistoryEntry[];
+  readonly echoHistorySelectedIndex: number;
   readonly notifications: NotificationState<WorkspaceMsg>;
   readonly notificationLoopActive: boolean;
   readonly footerVisible: boolean;

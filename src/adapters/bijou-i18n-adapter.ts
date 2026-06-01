@@ -1,10 +1,21 @@
-import { catalogs, type Locale, type TranslationSchema } from '../generated/i18n.js';
-import type { I18nDirection, I18nPort } from '../ports/i18n.js';
+import {
+  catalogs,
+  localeMetadata,
+  locales as generatedLocales,
+  type Locale,
+  type TranslationSchema,
+} from '../generated/i18n.js';
+import type { I18nDirection, I18nLocaleOption, I18nPort } from '../ports/i18n.js';
 
 type TranslationNode = string | { [key: string]: TranslationNode };
 
 const DEFAULT_LOCALE: Locale = 'en';
 const DEFAULT_DIRECTION: I18nDirection = 'ltr';
+const LOCALE_OPTIONS: readonly I18nLocaleOption[] = generatedLocales.map((locale) => ({
+  locale,
+  label: localeMetadata[locale].label,
+  direction: localeMetadata[locale].direction,
+}));
 
 export class BijouI18nAdapter implements I18nPort {
   private _locale: Locale;
@@ -21,8 +32,16 @@ export class BijouI18nAdapter implements I18nPort {
     return this._locale;
   }
 
+  get localeLabel(): string {
+    return localeMetadata[this._locale].label;
+  }
+
   get direction(): I18nDirection {
     return this._direction;
+  }
+
+  get locales(): readonly I18nLocaleOption[] {
+    return LOCALE_OPTIONS;
   }
 
   t(path: string, values?: Record<string, string | number>): string {
@@ -85,5 +104,6 @@ function resolveLocale(value: string): Locale {
 }
 
 function isLocale(value: string): value is Locale {
-  return Object.prototype.hasOwnProperty.call(catalogs, value);
+  return Object.prototype.hasOwnProperty.call(catalogs, value)
+    && Object.prototype.hasOwnProperty.call(localeMetadata, value);
 }

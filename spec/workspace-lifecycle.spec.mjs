@@ -35,9 +35,19 @@ test('graft lifecycle command returns a runtime issue when close fails', async (
 test('workspace settings exposes locale and direction runtime tokens', async () => {
   const settings = await importDist('app', 'workspace', 'settings.js');
   const localeChanges = [];
+  const nextLocale = {
+    locale: 'fr',
+    label: 'Francais',
+    direction: settings.WorkspaceTextDirections.Ltr,
+  };
   const model = {
     i18n: mockI18n({
       locale: settings.WorkspaceLocales.Default,
+      locales: [{
+        locale: settings.WorkspaceLocales.Default,
+        label: 'English',
+        direction: settings.WorkspaceTextDirections.Ltr,
+      }, nextLocale],
       setLocale: (locale, direction) => {
         localeChanges.push({ locale, direction });
       },
@@ -47,8 +57,8 @@ test('workspace settings exposes locale and direction runtime tokens', async () 
   settings.workspaceSettingsHandlers.toggleLocale(model);
 
   assert.deepEqual(localeChanges, [{
-    locale: settings.WorkspaceLocales.Alternate,
-    direction: settings.WorkspaceTextDirections.Rtl,
+    locale: nextLocale.locale,
+    direction: nextLocale.direction,
   }]);
 });
 
@@ -62,9 +72,11 @@ test('workspace exposes runtime tokens for drawer, focus, file entry, and key di
 
   assert.equal(drawerLayout.DrawerKinds.Files, 'files');
   assert.equal(drawerLayout.DrawerKinds.Graft, 'graft');
+  assert.equal(drawerLayout.DrawerKinds.History, 'history');
   assert.equal(panelFocus.FocusPanes.Editor, 'editor');
   assert.equal(panelFocus.FocusPanes.Files, 'files');
   assert.equal(panelFocus.FocusPanes.Graft, 'graft');
+  assert.equal(panelFocus.FocusPanes.History, 'history');
   assert.equal(fileSystem.FileEntryKinds.Directory, 'dir');
   assert.equal(fileSystem.FileEntryKinds.Parent, 'parent');
   assert.equal(workspaceKey.WorkspaceKeys.Backtick, '`');

@@ -27,13 +27,19 @@ async function loadI18nModules() {
 test('locale resolution follows the runtime catalog registry', async () => {
   const { adapter, generated } = await loadI18nModules();
   const original = generated.catalogs[EXTRA_LOCALE];
+  const originalMetadata = generated.localeMetadata[EXTRA_LOCALE];
   generated.catalogs[EXTRA_LOCALE] = generated.en;
+  generated.localeMetadata[EXTRA_LOCALE] = {
+    label: 'Extra',
+    direction: 'ltr',
+  };
 
   try {
     const i18n = new adapter.BijouI18nAdapter();
     i18n.setLocale(EXTRA_LOCALE, 'ltr');
 
     assert.equal(i18n.locale, EXTRA_LOCALE);
+    assert.equal(i18n.localeLabel, 'Extra');
     assert.equal(i18n.t('footer.mode.browse'), generated.en.footer.mode.browse);
   } finally {
     if (original === undefined) {
@@ -41,5 +47,37 @@ test('locale resolution follows the runtime catalog registry', async () => {
     } else {
       generated.catalogs[EXTRA_LOCALE] = original;
     }
+    if (originalMetadata === undefined) {
+      delete generated.localeMetadata[EXTRA_LOCALE];
+    } else {
+      generated.localeMetadata[EXTRA_LOCALE] = originalMetadata;
+    }
   }
+});
+
+test('generated catalogs include the installed application locales', async () => {
+  const { adapter, generated } = await loadI18nModules();
+  const i18n = new adapter.BijouI18nAdapter();
+
+  assert.deepEqual(generated.locales, ['en', 'fr', 'it', 'de', 'es', 'ko', 'ja', 'zh-Hans', 'pt-BR', 'me']);
+  assert.deepEqual(
+    i18n.locales.map((locale) => [locale.locale, locale.label, locale.direction]),
+    [
+      ['en', 'English', 'ltr'],
+      ['fr', 'Francais', 'ltr'],
+      ['it', 'Italiano', 'ltr'],
+      ['de', 'Deutsch', 'ltr'],
+      ['es', 'Espanol', 'ltr'],
+      ['ko', '한국어', 'ltr'],
+      ['ja', '日本語', 'ltr'],
+      ['zh-Hans', '简体中文', 'ltr'],
+      ['pt-BR', 'Portugues (Brasil)', 'ltr'],
+      ['me', 'Mirror English', 'rtl'],
+    ],
+  );
+
+  i18n.setLocale('ja', 'ltr');
+
+  assert.equal(i18n.localeLabel, '日本語');
+  assert.equal(i18n.t('footer.mode.preview'), generated.ja.footer.mode.preview);
 });

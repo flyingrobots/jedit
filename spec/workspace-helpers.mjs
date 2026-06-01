@@ -109,7 +109,13 @@ export function mockKeyBindingContext(overrides = {}) {
 export function mockI18n(overrides = {}) {
   return {
     locale: 'en',
+    localeLabel: 'English',
     direction: 'ltr',
+    locales: [{
+      locale: 'en',
+      label: 'English',
+      direction: 'ltr',
+    }],
     t: () => '',
     setLocale: () => undefined,
     ...overrides,
@@ -171,6 +177,15 @@ export function mockJeditTheme() {
 export function mockTitleScreenModel(titleScreen, overrides = {}) {
   return {
     editor: undefined,
+    focusPane: 'editor',
+    fileDrawerOpen: false,
+    fileDrawerProgress: 0,
+    graftDrawerOpen: false,
+    graftDrawerProgress: 0,
+    historyDrawerOpen: false,
+    historyDrawerProgress: 0,
+    echoHistory: [],
+    echoHistorySelectedIndex: 0,
     columns: 120,
     rows: 24,
     notifications: createNotificationState(),

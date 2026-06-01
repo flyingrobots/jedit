@@ -7,6 +7,13 @@ import { WorkspaceMessageTypes, type WorkspaceMsg } from './msg.js';
 import type { WorkspaceRuntimeDependencies } from './workspace-runtime-dependencies.js';
 import { ViewModes } from './view-mode.js';
 import {
+  appendEchoHistoryEntry,
+  EchoHistoryEntryKinds,
+  EchoHistoryEntryStatuses,
+  type EchoHistoryEntry,
+  type EchoHistoryEntryDraft,
+} from './echo-history.js';
+import {
   editorFromWorkspaceTextCache,
   openedWorkspaceTextAuthority,
   obstructedWorkspaceTextAuthority,
@@ -19,6 +26,8 @@ import {
 import { WorkspaceTextResultKinds, type WorkspaceTextOpenedResult } from './workspace-text-results.js';
 
 export type WorkspaceRuntimeResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
+
+const EMPTY_ECHO_HISTORY: readonly EchoHistoryEntry[] = [];
 
 export function applyWorkspaceTextMessage(
   deps: WorkspaceRuntimeDependencies,
@@ -54,13 +63,18 @@ function applyTextOpenResult(
     return [model, []];
   }
   if (msg.result.kind === WorkspaceTextResultKinds.Obstructed) {
-    const obstructed = {
+    const obstructed = withEchoHistoryEntry({
       ...model,
       textAuthority: obstructedTextAuthority(model, msg.result.filePath, msg.requestId, msg.result.issue),
-    };
+    }, obstructedHistoryEntry(EchoHistoryEntryKinds.Open, msg.result.filePath, msg.result.issue));
     return pushRuntimeIssueToast(obstructed, msg.result.issue, deps.createNotificationTickCmd);
   }
-  return refreshAfterOpen(deps, openedTextModel(model, msg.result));
+  return refreshAfterOpen(deps, withEchoHistoryEntry(openedTextModel(model, msg.result), {
+    kind: EchoHistoryEntryKinds.Open,
+    status: EchoHistoryEntryStatuses.Opened,
+    evidenceId: msg.result.cache.readingId,
+    summary: msg.result.filePath,
+  }));
 }
 
 function obstructedTextAuthority(
@@ -111,17 +125,26 @@ function applyTextEditResult(
     return [model, []];
   }
   if (msg.result.kind === WorkspaceTextResultKinds.Obstructed) {
-    return pushRuntimeIssueToast(model, msg.result.issue, deps.createNotificationTickCmd);
+    return pushRuntimeIssueToast(
+      withEchoHistoryEntry(model, obstructedHistoryEntry(EchoHistoryEntryKinds.Edit, msg.result.filePath, msg.result.issue)),
+      msg.result.issue,
+      deps.createNotificationTickCmd,
+    );
   }
   const withCache = workspaceTextAuthorityWithCache(
     workspaceTextAuthorityWithReceipt(authority, msg.result.receiptId),
     msg.result.cache,
   );
-  return refreshAfterEdit(deps, {
+  return refreshAfterEdit(deps, withEchoHistoryEntry({
     ...model,
     textAuthority: withCache,
     editor: editorFromWorkspaceTextCache(withCache, model.editor),
-  });
+  }, {
+    kind: EchoHistoryEntryKinds.Edit,
+    status: EchoHistoryEntryStatuses.Applied,
+    evidenceId: msg.result.receiptId,
+    summary: msg.result.filePath,
+  }));
 }
 
 function applyTextCheckpointResult(
@@ -134,10 +157,19 @@ function applyTextCheckpointResult(
     return [model, []];
   }
   if (msg.result.kind === WorkspaceTextResultKinds.Obstructed) {
-    return pushRuntimeIssueToast(model, msg.result.issue, deps.createNotificationTickCmd);
+    return pushRuntimeIssueToast(
+      withEchoHistoryEntry(model, obstructedHistoryEntry(EchoHistoryEntryKinds.Checkpoint, msg.result.filePath, msg.result.issue)),
+      msg.result.issue,
+      deps.createNotificationTickCmd,
+    );
   }
   const textAuthority = workspaceTextAuthorityWithCheckpoint(authority, msg.result.checkpointId);
-  return [withTextAuthority(model, textAuthority), []];
+  return [withEchoHistoryEntry(withTextAuthority(model, textAuthority), {
+    kind: EchoHistoryEntryKinds.Checkpoint,
+    status: EchoHistoryEntryStatuses.Checkpointed,
+    evidenceId: msg.result.checkpointId,
+    summary: msg.result.filePath,
+  }), []];
 }
 
 function applyTextExportResult(
@@ -150,10 +182,19 @@ function applyTextExportResult(
     return [model, []];
   }
   if (msg.result.kind === WorkspaceTextResultKinds.Obstructed) {
-    return pushRuntimeIssueToast(model, msg.result.issue, deps.createNotificationTickCmd);
+    return pushRuntimeIssueToast(
+      withEchoHistoryEntry(model, obstructedHistoryEntry(EchoHistoryEntryKinds.Export, msg.result.filePath, msg.result.issue)),
+      msg.result.issue,
+      deps.createNotificationTickCmd,
+    );
   }
   const textAuthority = workspaceTextAuthorityWithExport(authority, msg.result.readingId);
-  return [withTextAuthority(model, textAuthority), []];
+  return [withEchoHistoryEntry(withTextAuthority(model, textAuthority), {
+    kind: EchoHistoryEntryKinds.Export,
+    status: EchoHistoryEntryStatuses.Exported,
+    evidenceId: msg.result.readingId,
+    summary: msg.result.filePath,
+  }), []];
 }
 
 function applyTextReadResult(
@@ -166,9 +207,18 @@ function applyTextReadResult(
     return [model, []];
   }
   if (msg.result.kind === WorkspaceTextResultKinds.Obstructed) {
-    return pushRuntimeIssueToast(model, msg.result.issue, deps.createNotificationTickCmd);
+    return pushRuntimeIssueToast(
+      withEchoHistoryEntry(model, obstructedHistoryEntry(EchoHistoryEntryKinds.Read, msg.result.filePath, msg.result.issue)),
+      msg.result.issue,
+      deps.createNotificationTickCmd,
+    );
   }
-  return [withTextAuthority(model, workspaceTextAuthorityWithCache(authority, msg.result.cache)), []];
+  return [withEchoHistoryEntry(withTextAuthority(model, workspaceTextAuthorityWithCache(authority, msg.result.cache)), {
+    kind: EchoHistoryEntryKinds.Read,
+    status: EchoHistoryEntryStatuses.Observed,
+    evidenceId: msg.result.cache.readingId,
+    summary: msg.result.filePath,
+  }), []];
 }
 
 function refreshAfterOpen(
@@ -193,6 +243,27 @@ function withTextAuthority(
     ...model,
     textAuthority,
     editor: editorFromWorkspaceTextCache(textAuthority, model.editor),
+  };
+}
+
+function withEchoHistoryEntry(model: WorkspaceModel, draft: EchoHistoryEntryDraft): WorkspaceModel {
+  const echoHistory = appendEchoHistoryEntry(model.echoHistory ?? EMPTY_ECHO_HISTORY, draft);
+  return {
+    ...model,
+    echoHistory,
+    echoHistorySelectedIndex: Math.max(0, echoHistory.length - 1),
+  };
+}
+
+function obstructedHistoryEntry(
+  kind: EchoHistoryEntryDraft['kind'],
+  filePath: string,
+  issue: RuntimeIssue,
+): EchoHistoryEntryDraft {
+  return {
+    kind,
+    status: EchoHistoryEntryStatuses.Obstructed,
+    summary: `${filePath}: ${issue.message}`,
   };
 }
 

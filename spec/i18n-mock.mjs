@@ -7,8 +7,10 @@ export function createI18nMock() {
     ctrl_l_scene_picker: 'ctrl+l scene picker',
     ctrl_b_files: 'ctrl+b files',
     ctrl_g_graft: 'ctrl+g graft',
+    ctrl_h_history: 'ctrl+h history',
     ctrl_b_close: 'ctrl+b close',
     ctrl_g_close: 'ctrl+g close',
+    ctrl_h_close: 'ctrl+h close',
     f2_close: 'f2 close',
     f3_source: 'f3 source',
     f3_preview: 'f3 preview',
@@ -21,7 +23,13 @@ export function createI18nMock() {
   };
   return {
     locale: 'en',
+    localeLabel: 'English',
     direction: 'ltr',
+    locales: [{
+      locale: 'en',
+      label: 'English',
+      direction: 'ltr',
+    }],
     t: (path) => {
       const parts = path.split('.');
       const id = parts[parts.length - 1];

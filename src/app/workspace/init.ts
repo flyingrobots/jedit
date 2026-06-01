@@ -70,6 +70,10 @@ function initialDrawerState() {
     fileDrawerProgress: 0,
     graftDrawerOpen: false,
     graftDrawerProgress: 0,
+    historyDrawerOpen: false,
+    historyDrawerProgress: 0,
+    echoHistory: [],
+    echoHistorySelectedIndex: 0,
   };
 }
 

@@ -7,6 +7,7 @@ import { beginGraftRefresh } from './editor-session.js';
 import type { WorkspaceKeyBindingContext } from './key-binding-context.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
+import { updateEchoHistorySelectionFromKey } from './echo-history.js';
 
 type KeyBindingResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 
@@ -25,5 +26,16 @@ export function updateFocusedPaneKey(
     ));
   }
 
+  if (model.focusPane === FocusPanes.History && model.historyDrawerOpen) {
+    return updateHistoryDrawerFromKey(msg, model);
+  }
+
   return updateViewerFromKey(msg, model, context.deps.sourceHighlighter, context.deps.productionTextSession);
+}
+
+function updateHistoryDrawerFromKey(msg: KeyMsg, model: WorkspaceModel): KeyBindingResult {
+  const selectedIndex = updateEchoHistorySelectionFromKey(msg, model.echoHistorySelectedIndex, model.echoHistory.length);
+  return selectedIndex == null
+    ? [model, []]
+    : [{ ...model, echoHistorySelectedIndex: selectedIndex }, []];
 }

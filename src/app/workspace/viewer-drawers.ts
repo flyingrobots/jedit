@@ -8,6 +8,7 @@ import {
 import type { WorkspaceModel } from './model.js';
 import { DRAWER_INNER_PAD } from './viewport.js';
 import { applyBackground, fillSurface } from './surface-fill.js';
+import { renderEchoHistoryLines } from './echo-history.js';
 
 const MIN_VIEWPORT_DIMENSION = 1;
 const DRAWER_PAD_MULTIPLIER = 2;
@@ -15,6 +16,9 @@ const DRAWER_PAD_MULTIPLIER = 2;
 export function renderDrawer(kind: DrawerKind, model: WorkspaceModel, width: number, height: number): Surface {
   if (kind === DrawerKinds.Graft) {
     return renderGraftDrawer(model, width, height);
+  }
+  if (kind === DrawerKinds.History) {
+    return renderHistoryDrawer(model, width, height);
   }
 
   const surface = createSurface(width, height);
@@ -26,6 +30,20 @@ export function renderDrawer(kind: DrawerKind, model: WorkspaceModel, width: num
     selected: index === model.selectedIndex,
   }));
   const content = stringToSurface(fitBlock(lines.join('\n'), listWidth, listHeight), listWidth, listHeight);
+  applyBackground(content, model.jeditTheme.surface.drawer);
+  surface.blit(content, DRAWER_INNER_PAD, DRAWER_INNER_PAD);
+
+  return surface;
+}
+
+function renderHistoryDrawer(model: WorkspaceModel, width: number, height: number): Surface {
+  const surface = createSurface(width, height);
+  fillSurface(surface, model.jeditTheme.surface.drawer);
+
+  const innerWidth = Math.max(MIN_VIEWPORT_DIMENSION, width - (DRAWER_INNER_PAD * DRAWER_PAD_MULTIPLIER));
+  const innerHeight = Math.max(MIN_VIEWPORT_DIMENSION, height - (DRAWER_INNER_PAD * DRAWER_PAD_MULTIPLIER));
+  const lines = renderEchoHistoryLines(model.echoHistory, model.echoHistorySelectedIndex, innerWidth, innerHeight);
+  const content = stringToSurface(fitBlock(lines.join('\n'), innerWidth, innerHeight), innerWidth, innerHeight);
   applyBackground(content, model.jeditTheme.surface.drawer);
   surface.blit(content, DRAWER_INNER_PAD, DRAWER_INNER_PAD);
 

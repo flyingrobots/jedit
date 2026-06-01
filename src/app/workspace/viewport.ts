@@ -45,13 +45,21 @@ export function viewerViewport(width: number, height: number): WorkspaceViewport
   };
 }
 
-type WorkspaceViewportModel = Pick<WorkspaceModel, 'columns' | 'rows' | 'fileDrawerProgress' | 'graftDrawerProgress' | 'footerVisible'>;
+type WorkspaceViewportModel = Pick<
+  WorkspaceModel,
+  'columns' | 'rows' | 'fileDrawerProgress' | 'graftDrawerProgress' | 'historyDrawerProgress' | 'footerVisible'
+>;
 
 export function editorViewport(model: WorkspaceViewportModel): WorkspaceViewport {
   const bodyHeight = workspaceBodyHeight({
     rows: model.rows,
     footerVisible: model.footerVisible,
   });
-  const layout = resolveWorkspaceLayout(model.columns, model.fileDrawerProgress, model.graftDrawerProgress);
+  const layout = resolveWorkspaceLayout(
+    model.columns,
+    model.fileDrawerProgress,
+    model.graftDrawerProgress,
+    model.historyDrawerProgress,
+  );
   return viewerViewport(layout.viewer.width, bodyHeight);
 }

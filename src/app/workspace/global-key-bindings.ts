@@ -4,7 +4,7 @@ import { closeDrawer, toggleDrawer } from './drawer.js';
 import { focusCycleState } from './focus.js';
 import { cycleFocusPane, FocusPanes, hasFocusablePeers } from '../../ui/panel-focus.js';
 import { isFooterToggleKey } from '../../ui/feedback.js';
-import { DrawerKinds } from '../../ui/drawer-layout.js';
+import { DrawerKinds, type DrawerKind } from '../../ui/drawer-layout.js';
 import { insertModeActive } from './editor-state.js';
 import type { WorkspaceKeyBindingContext } from './key-binding-context.js';
 import type { WorkspaceModel } from './model.js';
@@ -64,13 +64,25 @@ function updateDrawerKey(
   model: WorkspaceModel,
   context: WorkspaceKeyBindingContext,
 ): KeyBindingResult | undefined {
-  if (msg.ctrl && !msg.alt && msg.key === WorkspaceKeys.B) {
-    return toggleWorkspaceDrawer(model, DrawerKinds.Files, context);
-  }
-  if (msg.ctrl && !msg.alt && msg.key === WorkspaceKeys.G) {
-    return toggleWorkspaceDrawer(model, DrawerKinds.Graft, context);
+  const kind = drawerKindFromToggleKey(msg);
+  if (kind != null) {
+    return toggleWorkspaceDrawer(model, kind, context);
   }
   return updateEscapeKey(msg, model, context);
+}
+
+function drawerKindFromToggleKey(msg: KeyMsg): DrawerKind | undefined {
+  if (isCtrlWorkspaceKey(msg, WorkspaceKeys.B)) {
+    return DrawerKinds.Files;
+  }
+  if (isCtrlWorkspaceKey(msg, WorkspaceKeys.G)) {
+    return DrawerKinds.Graft;
+  }
+  return isCtrlWorkspaceKey(msg, WorkspaceKeys.H) ? DrawerKinds.History : undefined;
+}
+
+function isCtrlWorkspaceKey(msg: KeyMsg, key: string): boolean {
+  return msg.ctrl === true && msg.alt !== true && msg.key === key;
 }
 
 function updateEscapeKey(
@@ -84,14 +96,17 @@ function updateEscapeKey(
   if (model.focusPane === FocusPanes.Files && model.fileDrawerOpen) {
     return closeDrawer(model, DrawerKinds.Files, context.createDrawerAnimationCmd);
   }
-  return model.focusPane === FocusPanes.Graft && model.graftDrawerOpen
-    ? closeDrawer(model, DrawerKinds.Graft, context.createDrawerAnimationCmd)
+  if (model.focusPane === FocusPanes.Graft && model.graftDrawerOpen) {
+    return closeDrawer(model, DrawerKinds.Graft, context.createDrawerAnimationCmd);
+  }
+  return model.focusPane === FocusPanes.History && model.historyDrawerOpen
+    ? closeDrawer(model, DrawerKinds.History, context.createDrawerAnimationCmd)
     : undefined;
 }
 
 function toggleWorkspaceDrawer(
   model: WorkspaceModel,
-  kind: typeof DrawerKinds.Files | typeof DrawerKinds.Graft,
+  kind: DrawerKind,
   context: WorkspaceKeyBindingContext,
 ): KeyBindingResult {
   return toggleDrawer(model, kind, (nextModel, options) => (
