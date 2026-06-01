@@ -37,7 +37,7 @@ test('workspace settings exposes locale and direction runtime tokens', async () 
   const localeChanges = [];
   const nextLocale = {
     locale: 'fr',
-    label: 'Francais',
+    label: 'Français',
     direction: settings.WorkspaceTextDirections.Ltr,
   };
   const model = {

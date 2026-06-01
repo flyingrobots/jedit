@@ -64,14 +64,14 @@ test('generated catalogs include the installed application locales', async () =>
     i18n.locales.map((locale) => [locale.locale, locale.label, locale.direction]),
     [
       ['en', 'English', 'ltr'],
-      ['fr', 'Francais', 'ltr'],
+      ['fr', 'Français', 'ltr'],
       ['it', 'Italiano', 'ltr'],
       ['de', 'Deutsch', 'ltr'],
-      ['es', 'Espanol', 'ltr'],
+      ['es', 'Español', 'ltr'],
       ['ko', '한국어', 'ltr'],
       ['ja', '日本語', 'ltr'],
       ['zh-Hans', '简体中文', 'ltr'],
-      ['pt-BR', 'Portugues (Brasil)', 'ltr'],
+      ['pt-BR', 'Português (Brasil)', 'ltr'],
       ['me', 'Mirror English', 'rtl'],
     ],
   );
