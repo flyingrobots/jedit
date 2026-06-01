@@ -11,6 +11,7 @@ import {
   generateTitleScene,
   nearestTitleSceneObjectHit,
   type TitleScene,
+  type TitleSceneCameraPlacement,
   type TitleSceneObject,
   type TitleSceneVector3,
 } from './title-scene.js';
@@ -137,6 +138,7 @@ export function renderTitleScreen(
       time: frameTime,
       camAngle,
       camRadius,
+      spotlightCamera: scene.camera,
       objects: scene.objects,
       colors,
       environment: scene.environment,
@@ -174,7 +176,7 @@ function paintTitleScreenLogoLayers(
 }
 
 export function titleSceneMaterialColors(theme: JeditTheme): TitleSceneMaterialColors {
-  const baseColors = fixedTitleSceneBaseColors(theme);
+  const baseColors = titleSceneBaseColors(theme);
   const floorColors = orderedFloorMaterialColors(baseColors.ink, baseColors.muted);
 
   return {
@@ -184,7 +186,7 @@ export function titleSceneMaterialColors(theme: JeditTheme): TitleSceneMaterialC
   };
 }
 
-function fixedTitleSceneBaseColors(_theme: JeditTheme): Omit<TitleSceneMaterialColors, 'floorDark' | 'floorLight'> {
+function titleSceneBaseColors(theme: JeditTheme): Omit<TitleSceneMaterialColors, 'floorDark' | 'floorLight'> {
   return {
     accent: [224, 113, 63],
     info: [78, 195, 224],
@@ -192,7 +194,7 @@ function fixedTitleSceneBaseColors(_theme: JeditTheme): Omit<TitleSceneMaterialC
     ink: [222, 232, 232],
     muted: [55, 75, 88],
     surface: [5, 7, 12],
-    spotlight: themeAccentColor(_theme),
+    spotlight: themeAccentColor(theme),
   };
 }
 
@@ -226,16 +228,12 @@ function sceneSampleAt(options: TitleSceneSampleOptions): BrailleShaderSample {
   };
 }
 
-function titleSceneRayContext(options: TitleSceneSampleOptions): TitleSceneRayContext {
+export function titleSceneRayContext(options: TitleSceneSampleOptions): TitleSceneRayContext {
   const aspect = options.cols / Math.max(1, options.rows);
   const rx = (options.u * 2 - 1) * aspect;
   const ry = options.v * 2 - 1;
   const finalAngle = options.camAngle + (options.time * CAMERA_DRIFT_RATE);
-  const cameraStart: Vector3 = [
-    Math.sin(options.camAngle) * options.camRadius,
-    CAMERA_HEIGHT,
-    Math.cos(options.camAngle) * options.camRadius,
-  ];
+  const cameraStart = titleSceneCameraPosition(options.spotlightCamera);
   const origin: Vector3 = [
     Math.sin(finalAngle) * options.camRadius,
     CAMERA_HEIGHT,
@@ -248,6 +246,14 @@ function titleSceneRayContext(options: TitleSceneSampleOptions): TitleSceneRayCo
     lightDirection: titleSceneLightDirection(options.environment) ?? TITLE_KEY_LIGHT_DIRECTION,
     spotlight: titleSceneSpotlightAt(cameraStart, sphereCenter, options.colors.spotlight),
   };
+}
+
+function titleSceneCameraPosition(camera: TitleSceneCameraPlacement): Vector3 {
+  return [
+    Math.sin(camera.angle) * camera.radius,
+    CAMERA_HEIGHT,
+    Math.cos(camera.angle) * camera.radius,
+  ];
 }
 
 function objectSceneSample(

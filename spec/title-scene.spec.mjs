@@ -168,6 +168,20 @@ test('title scene builds a mirror sphere with orbiting bunny and cube', async ()
   assert.ok(cubeLaterHit != null);
   assert.notDeepEqual(normalKey(cubeHit.normal), normalKey(cubeLaterHit.normal));
 
+  const centeredCube = {
+    kind: titleScene.TITLE_SCENE_SHAPE_KIND.Cube,
+    position: [0, 1, 0],
+    radius: 1,
+    footprintRadius: Math.SQRT2,
+    height: 2,
+    color: SCENE_COLORS.success,
+    reflectivity: 0,
+  };
+  const insideCubeHit = titleScene.nearestTitleSceneObjectHit([0, 1, 0], [1, 0, 0], [centeredCube]);
+  assert.ok(insideCubeHit != null);
+  assert.equal(insideCubeHit.distance, 1);
+  assert.deepEqual(insideCubeHit.normal, [1, 0, 0]);
+
   const stillRabbit = { ...rabbit, orbit: undefined };
   const stillRabbitCenter = titleScene.titleSceneObjectFootprintCenter(stillRabbit);
   const rabbitRay = normalize(sub(stillRabbitCenter, add(stillRabbitCenter, [0, 0.2, 4])));

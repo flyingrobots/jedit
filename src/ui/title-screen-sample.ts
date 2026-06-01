@@ -1,6 +1,6 @@
 import type { TitleSceneEnvironment } from './title-scene-environment.js';
 import type { TitleSceneMaterialColors } from './title-screen.js';
-import type { TitleSceneObject, TitleSceneVector3 } from './title-scene.js';
+import type { TitleSceneCameraPlacement, TitleSceneObject, TitleSceneVector3 } from './title-scene.js';
 
 export interface TitleSceneSampleOptions {
   readonly u: number;
@@ -10,6 +10,7 @@ export interface TitleSceneSampleOptions {
   readonly time: number;
   readonly camAngle: number;
   readonly camRadius: number;
+  readonly spotlightCamera: TitleSceneCameraPlacement;
   readonly objects: readonly TitleSceneObject[];
   readonly colors: TitleSceneMaterialColors;
   readonly environment: TitleSceneEnvironment | undefined;

@@ -19,7 +19,15 @@ interface CubeBounds {
 interface CubeAxisHit {
   readonly near: number;
   readonly far: number;
-  readonly normal: TitleSceneVector3;
+  readonly nearNormal: TitleSceneVector3;
+  readonly farNormal: TitleSceneVector3;
+}
+
+interface CubeHitInterval {
+  readonly nearDistance: number;
+  readonly farDistance: number;
+  readonly nearNormal: TitleSceneVector3;
+  readonly farNormal: TitleSceneVector3;
 }
 
 type CubeAxis = typeof CUBE_AXIS_X | typeof CUBE_AXIS_Y | typeof CUBE_AXIS_Z;
@@ -32,6 +40,12 @@ const CUBE_HALF_HEIGHT_DIVISOR = 2;
 const CUBE_RAY_EPSILON = 0.000001;
 const CUBE_NEGATIVE_NORMAL = -1;
 const CUBE_POSITIVE_NORMAL = 1;
+const EMPTY_CUBE_HIT_INTERVAL: CubeHitInterval = {
+  nearDistance: -Infinity,
+  farDistance: Infinity,
+  nearNormal: [0, 0, 0],
+  farNormal: [0, 0, 0],
+};
 
 export function titleSceneCubeHit(
   origin: TitleSceneVector3,
@@ -44,27 +58,56 @@ export function titleSceneCubeHit(
   const localOrigin = inverseRotateTitleScenePointAroundY(origin, position, yaw);
   const localRay = inverseRotateTitleSceneVectorY(ray, yaw);
   const bounds = cubeBounds(position, object);
-  let nearDistance = -Infinity;
-  let farDistance = Infinity;
-  let normal: TitleSceneVector3 = [0, 0, 0];
+  const interval = cubeHitInterval(localOrigin, localRay, bounds);
+  if (interval == null) {
+    return undefined;
+  }
 
+  const distance = cubeHitDistance(interval);
+  const normal = cubeHitNormal(interval);
+  return distance <= 0 ? undefined : { object, distance, normal: rotateTitleSceneVectorY(normal, yaw) };
+}
+
+function cubeHitInterval(
+  origin: TitleSceneVector3,
+  ray: TitleSceneVector3,
+  bounds: CubeBounds,
+): CubeHitInterval | undefined {
+  let interval = EMPTY_CUBE_HIT_INTERVAL;
   for (const axis of CUBE_AXES) {
-    const axisHit = cubeAxisHit(localOrigin, localRay, bounds, axis);
+    const axisHit = cubeAxisHit(origin, ray, bounds, axis);
     if (axisHit == null) {
       return undefined;
     }
-    if (axisHit.near > nearDistance) {
-      nearDistance = axisHit.near;
-      normal = axisHit.normal;
-    }
-    farDistance = Math.min(farDistance, axisHit.far);
-    if (farDistance < nearDistance) {
+    const merged = mergeCubeAxisHit(interval, axisHit);
+    if (merged == null) {
       return undefined;
     }
+    interval = merged;
   }
+  return interval;
+}
 
-  const distance = nearDistance > 0 ? nearDistance : farDistance;
-  return distance <= 0 ? undefined : { object, distance, normal: rotateTitleSceneVectorY(normal, yaw) };
+function mergeCubeAxisHit(interval: CubeHitInterval, axisHit: CubeAxisHit): CubeHitInterval | undefined {
+  const nearDistance = Math.max(interval.nearDistance, axisHit.near);
+  const farDistance = Math.min(interval.farDistance, axisHit.far);
+  if (farDistance < nearDistance) {
+    return undefined;
+  }
+  return {
+    nearDistance,
+    farDistance,
+    nearNormal: axisHit.near > interval.nearDistance ? axisHit.nearNormal : interval.nearNormal,
+    farNormal: axisHit.far < interval.farDistance ? axisHit.farNormal : interval.farNormal,
+  };
+}
+
+function cubeHitDistance(interval: CubeHitInterval): number {
+  return interval.nearDistance > 0 ? interval.nearDistance : interval.farDistance;
+}
+
+function cubeHitNormal(interval: CubeHitInterval): TitleSceneVector3 {
+  return interval.nearDistance > 0 ? interval.nearNormal : interval.farNormal;
 }
 
 function cubeBounds(position: TitleSceneVector3, object: TitleScenePrimitiveObject): CubeBounds {
@@ -85,7 +128,7 @@ function cubeAxisHit(
   if (Math.abs(direction) <= CUBE_RAY_EPSILON) {
     return origin[axis] < bounds.min[axis] || origin[axis] > bounds.max[axis]
       ? undefined
-      : { near: -Infinity, far: Infinity, normal: [0, 0, 0] };
+      : { near: -Infinity, far: Infinity, nearNormal: [0, 0, 0], farNormal: [0, 0, 0] };
   }
   return cubeDirectedAxisHit(origin, bounds, axis, direction);
 }
@@ -101,7 +144,8 @@ function cubeDirectedAxisHit(
   return {
     near: Math.min(first, second),
     far: Math.max(first, second),
-    normal: cubeFaceNormal(axis, direction > 0 ? CUBE_NEGATIVE_NORMAL : CUBE_POSITIVE_NORMAL),
+    nearNormal: cubeFaceNormal(axis, direction > 0 ? CUBE_NEGATIVE_NORMAL : CUBE_POSITIVE_NORMAL),
+    farNormal: cubeFaceNormal(axis, direction > 0 ? CUBE_POSITIVE_NORMAL : CUBE_NEGATIVE_NORMAL),
   };
 }
 
