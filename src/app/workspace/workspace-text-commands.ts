@@ -8,6 +8,7 @@ import type {
 import { ProductionTextSessionOutcomeKinds } from './production-text-session.js';
 import { RuntimeIssueLevels, RuntimeIssueSources } from './runtime-issue.js';
 import { WorkspaceMessageTypes, type WorkspaceMsg } from './msg.js';
+import type { TextPosition } from './workspace-text-position.js';
 import type { WorkspaceTextReadingCache } from './workspace-text-reading-cache.js';
 import {
   WorkspaceTextResultKinds,
@@ -62,6 +63,7 @@ export interface WorkspaceTextCommandBase {
   readonly productionTextSession: ProductionTextSession;
   readonly atMs: number;
   readonly aperture: ProductionTextViewportAperture;
+  readonly cursorAfter?: TextPosition;
 }
 
 export interface WorkspaceTextInsertCommandRequest extends WorkspaceTextCommandBase {
@@ -253,6 +255,7 @@ async function editWorkspaceText(
       bufferId: request.bufferId,
       receiptId: edited.result.receiptId,
       cache: readingCache(request.bufferId, observed.observed.value),
+      cursorAfter: request.cursorAfter,
     };
   } catch (cause) {
     return obstructedEdit(

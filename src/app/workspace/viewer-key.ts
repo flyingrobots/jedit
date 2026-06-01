@@ -275,11 +275,13 @@ function queueProductionTextPlan(
       kind: WorkspaceTextEditCommandKinds.Insert,
       startByte: plan.startByte,
       insertText: plan.insertText,
+      cursorAfter: plan.cursorAfter,
     })
     : queueProductionTextEdit(model, productionTextSession, {
       kind: WorkspaceTextEditCommandKinds.Delete,
       startByte: plan.startByte,
       endByte: plan.endByte,
+      cursorAfter: plan.cursorAfter,
     });
 }
 
@@ -342,11 +344,13 @@ type ProductionTextEditRequest =
     readonly kind: typeof WorkspaceTextEditCommandKinds.Insert;
     readonly startByte: number;
     readonly insertText: string;
+    readonly cursorAfter: WorkspaceTextInsertPlan['cursorAfter'];
   }
   | {
     readonly kind: typeof WorkspaceTextEditCommandKinds.Delete;
     readonly startByte: number;
     readonly endByte: number;
+    readonly cursorAfter: WorkspaceTextDeletePlan['cursorAfter'];
   };
 
 function insertTextFromKey(msg: KeyMsg): string | undefined {

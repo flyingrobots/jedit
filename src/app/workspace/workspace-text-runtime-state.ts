@@ -1,7 +1,7 @@
 import type { Cmd, RuntimeIssue } from '@flyingrobots/bijou-tui';
 import { FocusPanes } from '../../ui/panel-focus.js';
 import { pushRuntimeIssueToast } from '../../ui/feedback.js';
-import { beginEditorProjectionRefresh } from './editor-session.js';
+import { beginEditorProjectionRefresh, editorViewport, ensureEditorVisible } from './editor-session.js';
 import type { WorkspaceModel } from './model.js';
 import { WorkspaceMessageTypes, type WorkspaceMsg } from './msg.js';
 import type { WorkspaceRuntimeDependencies } from './workspace-runtime-dependencies.js';
@@ -24,6 +24,7 @@ import {
   workspaceTextAuthorityWithReceipt,
 } from './workspace-text-authority.js';
 import { WorkspaceTextResultKinds, type WorkspaceTextOpenedResult } from './workspace-text-results.js';
+import type { TextPosition } from './workspace-text-position.js';
 
 export type WorkspaceRuntimeResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 
@@ -138,13 +139,30 @@ function applyTextEditResult(
   return refreshAfterEdit(deps, withEchoHistoryEntry({
     ...model,
     textAuthority: withCache,
-    editor: editorFromWorkspaceTextCache(withCache, model.editor),
+    editor: editorAfterTextEdit(model, withCache, msg.result.cursorAfter),
   }, {
     kind: EchoHistoryEntryKinds.Edit,
     status: EchoHistoryEntryStatuses.Applied,
     evidenceId: msg.result.receiptId,
     summary: msg.result.filePath,
   }));
+}
+
+function editorAfterTextEdit(
+  model: WorkspaceModel,
+  authority: Extract<WorkspaceModel['textAuthority'], { kind: typeof WorkspaceTextAuthorityKinds.Opened }>,
+  cursorAfter: TextPosition | undefined,
+) {
+  const editor = editorFromWorkspaceTextCache(authority, model.editor);
+  if (cursorAfter == null) {
+    return editor;
+  }
+  const viewport = editorViewport(model);
+  return ensureEditorVisible({
+    ...editor,
+    cursorRow: cursorAfter.row,
+    cursorCol: cursorAfter.column,
+  }, viewport.width, viewport.height);
 }
 
 function applyTextCheckpointResult(

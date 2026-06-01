@@ -1,4 +1,5 @@
 import type { RuntimeIssue } from '@flyingrobots/bijou-tui';
+import type { TextPosition } from './workspace-text-position.js';
 import type { WorkspaceTextReadingCache } from './workspace-text-reading-cache.js';
 
 const RESULT_OPENED = 'opened';
@@ -31,6 +32,7 @@ export interface WorkspaceTextAppliedResult {
   readonly bufferId: string;
   readonly receiptId: string;
   readonly cache: WorkspaceTextReadingCache;
+  readonly cursorAfter?: TextPosition;
 }
 
 export interface WorkspaceTextCheckpointedResult {

@@ -56,11 +56,13 @@ test('text edit planner owns cursor selection and unsupported range posture', as
     kind: planner.WorkspaceTextEditPlanKinds.Insert,
     startByte: 1,
     insertText: 'X',
+    cursorAfter: { row: 0, column: 2 },
   });
   assert.deepEqual(planner.planWorkspaceTextDeleteUnderCursor(editor), {
     kind: planner.WorkspaceTextEditPlanKinds.Delete,
     startByte: 1,
     endByte: 2,
+    cursorAfter: { row: 0, column: 1 },
   });
   assert.deepEqual(planner.planWorkspaceTextSelectionReplace(editor, {
     startRow: 0,
@@ -72,6 +74,7 @@ test('text edit planner owns cursor selection and unsupported range posture', as
     startByte: 1,
     endByte: 6,
     insertText: 'Z',
+    cursorAfter: { row: 0, column: 2 },
   });
   assert.deepEqual(planner.planWorkspaceTextSelectionReplace(editor, undefined, 'Z'), {
     kind: planner.WorkspaceTextEditPlanKinds.Unsupported,

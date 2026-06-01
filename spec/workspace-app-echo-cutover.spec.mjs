@@ -42,6 +42,29 @@ test('real workspace app path edits through production text session', async () =
   assert.doesNotMatch(harness.renderText(), /before edit/);
 });
 
+test('real workspace app path advances insert cursor after each echoed character', async () => {
+  const harness = await openedHarness({ readings: ['before edit', 'h', 'he', 'hel', 'hell', 'hello'] });
+
+  await harness.key('i');
+  for (const character of ['h', 'e', 'l', 'l', 'o']) {
+    await harness.runFirst(await harness.key(character));
+  }
+
+  assert.deepEqual(harness.calls.insert.map((call) => ({
+    startByte: call.startByte,
+    insertText: call.insertText,
+  })), [
+    { startByte: 0, insertText: 'h' },
+    { startByte: 1, insertText: 'e' },
+    { startByte: 2, insertText: 'l' },
+    { startByte: 3, insertText: 'l' },
+    { startByte: 4, insertText: 'o' },
+  ]);
+  assert.equal(harness.model.editor.cursorCol, 5);
+  assert.match(harness.renderText(), /hello/);
+  assert.doesNotMatch(harness.renderText(), /olleh/);
+});
+
 test('real workspace app path saves by exporting and checkpointing production text', async () => {
   const harness = await openedHarness({ exportText: 'saved from Echo' });
 
