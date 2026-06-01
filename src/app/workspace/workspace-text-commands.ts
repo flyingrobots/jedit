@@ -7,6 +7,7 @@ import type {
 } from './production-text-session.js';
 import { ProductionTextSessionOutcomeKinds } from './production-text-session.js';
 import { RuntimeIssueLevels, RuntimeIssueSources } from './runtime-issue.js';
+import { textPositionForByteOffset, utf8ByteLength } from './workspace-text-position.js';
 import { WorkspaceMessageTypes, type WorkspaceMsg } from './msg.js';
 import type { WorkspaceTextReadingCache } from './workspace-text-reading-cache.js';
 import {
@@ -253,6 +254,10 @@ async function editWorkspaceText(
       bufferId: request.bufferId,
       receiptId: edited.result.receiptId,
       cache: readingCache(request.bufferId, observed.observed.value),
+      cursorAfter: textPositionForByteOffset(
+        readingCache(request.bufferId, observed.observed.value).lines,
+        cursorByteOffsetAfterEdit(request),
+      ),
     };
   } catch (cause) {
     return obstructedEdit(
@@ -260,6 +265,13 @@ async function editWorkspaceText(
       runtimeIssue(`${EDIT_FAILURE_PREFIX}: ${cause instanceof Error ? cause.message : String(cause)}`, request.atMs),
     );
   }
+}
+
+function cursorByteOffsetAfterEdit(request: WorkspaceTextEditCommandRequest): number {
+  if (request.kind === EDIT_COMMAND_DELETE) {
+    return request.startByte;
+  }
+  return request.startByte + utf8ByteLength(request.insertText);
 }
 
 function applyWorkspaceTextEdit(request: WorkspaceTextEditCommandRequest) {

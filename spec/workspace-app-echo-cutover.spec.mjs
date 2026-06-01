@@ -42,6 +42,25 @@ test('real workspace app path edits through production text session', async () =
   assert.doesNotMatch(harness.renderText(), /before edit/);
 });
 
+test('real workspace app path advances cursor across sequential insert keys', async () => {
+  const session = sequentialInsertProductionTextSession();
+  const harness = await createWorkspaceEchoAppHarness({
+    hostLines: [''],
+    productionTextSession: session.productionTextSession,
+  });
+
+  await harness.runFirst(await harness.key('enter'));
+  await harness.key('i');
+  for (const key of ['h', 'e', 'l', 'l', 'o']) {
+    await harness.runFirst(await harness.key(key));
+  }
+
+  assert.deepEqual(session.insertStarts, [0, 1, 2, 3, 4]);
+  assert.match(harness.renderText(), /hello/);
+  assert.doesNotMatch(harness.renderText(), /olleh/);
+  assert.equal(harness.model.editor.cursorCol, 5);
+});
+
 test('real workspace app path saves by exporting and checkpointing production text', async () => {
   const harness = await openedHarness({ exportText: 'saved from Echo' });
 
@@ -93,4 +112,40 @@ async function openedHarness(options = {}) {
     fileDrawerOpen: false,
   });
   return harness;
+}
+
+function sequentialInsertProductionTextSession() {
+  let text = '';
+  let readingIndex = 0;
+  const insertStarts = [];
+  return {
+    insertStarts,
+    productionTextSession: {
+      openBuffer: async (request) => {
+        text = request.initialText;
+        return { kind: 'opened', optic: { buffer: { bufferId: 'buffer:notes' } } };
+      },
+      insertText: async (request) => {
+        insertStarts.push(request.startByte);
+        text = `${text.slice(0, request.startByte)}${request.insertText}${text.slice(request.startByte)}`;
+        return { kind: 'applied', result: { receiptId: `receipt:${insertStarts.length}` } };
+      },
+      observeWindow: async () => {
+        readingIndex += 1;
+        return {
+          kind: 'observed',
+          observed: {
+            value: {
+              readingId: `reading:${readingIndex}`,
+              lines: [{ text }],
+              lineCount: 1,
+              cursorLine: 0,
+              viewportLineCount: 24,
+              truncated: false,
+            },
+          },
+        };
+      },
+    },
+  };
 }

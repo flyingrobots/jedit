@@ -120,8 +120,24 @@ function applyTextEditResult(
   return refreshAfterEdit(deps, {
     ...model,
     textAuthority: withCache,
-    editor: editorFromWorkspaceTextCache(withCache, model.editor),
+    editor: editorAfterAppliedTextEdit(withCache, model.editor, msg.result),
   });
+}
+
+function editorAfterAppliedTextEdit(
+  authority: ReturnType<typeof workspaceTextAuthorityWithCache>,
+  existing: WorkspaceModel['editor'],
+  result: Extract<WorkspaceMsg, { type: typeof WorkspaceMessageTypes.TextEditResult }>['result'],
+): WorkspaceModel['editor'] {
+  if (result.kind !== WorkspaceTextResultKinds.Applied) {
+    return editorFromWorkspaceTextCache(authority, existing);
+  }
+  const editor = editorFromWorkspaceTextCache(authority, existing);
+  return {
+    ...editor,
+    cursorRow: result.cursorAfter.row,
+    cursorCol: result.cursorAfter.column,
+  };
 }
 
 function applyTextCheckpointResult(
