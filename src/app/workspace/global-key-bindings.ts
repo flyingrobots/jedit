@@ -1,4 +1,11 @@
-import { quit, type Cmd, type KeyMsg } from '@flyingrobots/bijou-tui';
+import {
+  isShellQuitConfirmAccept,
+  isShellQuitConfirmDismiss,
+  isShellQuitRequest,
+  quit,
+  type Cmd,
+  type KeyMsg,
+} from '@flyingrobots/bijou-tui';
 import { beginGraftRefresh } from './editor-session.js';
 import { closeDrawer, toggleDrawer } from './drawer.js';
 import { focusCycleState } from './focus.js';
@@ -14,6 +21,19 @@ import { updateSaveKey } from './workspace-save-key.js';
 import { updateMarkdownPreviewKey, updateThemeKey } from './workspace-view-mode-keys.js';
 
 type KeyBindingResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
+
+export function updateQuitConfirmationKey(msg: KeyMsg, model: WorkspaceModel): KeyBindingResult | undefined {
+  if (!model.quitConfirmOpen) {
+    return undefined;
+  }
+  if (isShellQuitConfirmAccept(msg)) {
+    return [{ ...model, quitConfirmOpen: false }, [quit<WorkspaceMsg>()]];
+  }
+  if (isShellQuitConfirmDismiss(msg)) {
+    return [{ ...model, quitConfirmOpen: false }, []];
+  }
+  return [model, []];
+}
 
 export function updateGlobalWorkspaceKey(
   msg: KeyMsg,
@@ -41,7 +61,13 @@ function updateQuitKey(msg: KeyMsg, model: WorkspaceModel): KeyBindingResult | u
   if (msg.ctrl && msg.key === WorkspaceKeys.C) {
     return [model, [quit<WorkspaceMsg>()]];
   }
-  return !insertModeActive(model) && msg.key === WorkspaceKeys.Q ? [model, [quit<WorkspaceMsg>()]] : undefined;
+  return !insertModeActive(model) && isPlainShellQuitRequest(msg)
+    ? [{ ...model, quitConfirmOpen: true }, []]
+    : undefined;
+}
+
+function isPlainShellQuitRequest(msg: KeyMsg): boolean {
+  return isShellQuitRequest(msg) && msg.key === WorkspaceKeys.Q;
 }
 
 function updateFooterKey(msg: KeyMsg, model: WorkspaceModel): KeyBindingResult | undefined {

@@ -190,6 +190,7 @@ export function mockTitleScreenModel(titleScreen, overrides = {}) {
     rows: 24,
     notifications: createNotificationState(),
     notificationLoopActive: false,
+    quitConfirmOpen: false,
     jeditTheme: mockJeditTheme(),
     titleRenderMode: titleScreen.TITLE_RENDER_MODE.Braille,
     titleAsciiPalette: titleScreen.TITLE_ASCII_PALETTE.Dense,

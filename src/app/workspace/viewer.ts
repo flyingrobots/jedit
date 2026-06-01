@@ -1,5 +1,4 @@
 import { createSurface, stringToSurface, type Surface } from '@flyingrobots/bijou';
-import type { NotificationState } from '@flyingrobots/bijou-tui';
 import { compositeFeedback } from '../../ui/feedback.js';
 import {
   activeWorkspaceTitle,
@@ -15,12 +14,11 @@ import {
   FOOTER_ROWS,
 } from './viewport.js';
 import type { WorkspaceModel } from './model.js';
-import type { WorkspaceMsg } from './msg.js';
 import { isWorkspaceMarkdownPreviewAvailable, renderViewer } from './viewer-content.js';
 import { renderDrawer } from './viewer-drawers.js';
 import { fillSurface } from './surface-fill.js';
 import { renderSmallTerminalNotice } from './small-terminal-view.js';
-import { paintWorkspaceOverlays } from './viewer-overlays.js';
+import { paintWorkspaceOverlays, workspaceFeedbackOverlay } from './viewer-overlays.js';
 import { workspaceTextAuthorityPosture } from './workspace-text-authority.js';
 
 const WORKSPACE_BODY_TOP_OFFSET = 2;
@@ -33,7 +31,7 @@ export function renderWorkspace(model: WorkspaceModel): Surface {
 
   if (model.columns < MIN_COLUMNS || model.rows < MIN_ROWS) {
     screen.blit(renderSmallTerminalNotice(model.columns, model.rows), 0, 0);
-    return renderFeedback(screen, model.notifications, model.columns, model.rows);
+    return renderFeedback(screen, model);
   }
 
   const bodyTop = WORKSPACE_BODY_TOP_OFFSET;
@@ -55,7 +53,7 @@ export function renderWorkspace(model: WorkspaceModel): Surface {
   paintWorkspaceFooter(screen, model);
   paintWorkspaceOverlays(screen, model, bodyTop, bodyHeight);
 
-  return renderFeedback(screen, model.notifications, model.columns, model.rows);
+  return renderFeedback(screen, model);
 }
 
 function paintWorkspaceTitle(screen: Surface, model: WorkspaceModel): void {
@@ -148,6 +146,6 @@ function selectedGraftSelection(model: WorkspaceModel): { kind: string; name: st
   };
 }
 
-function renderFeedback(screen: Surface, notifications: NotificationState<WorkspaceMsg>, columns: number, rows: number): Surface {
-  return compositeFeedback(screen, notifications, columns, rows);
+function renderFeedback(screen: Surface, model: WorkspaceModel): Surface {
+  return compositeFeedback(screen, model.notifications, model.columns, model.rows, workspaceFeedbackOverlay(model));
 }

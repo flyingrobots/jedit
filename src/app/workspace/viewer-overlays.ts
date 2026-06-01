@@ -1,4 +1,5 @@
 import type { Surface } from '@flyingrobots/bijou';
+import { renderShellQuitOverlay, type Overlay } from '@flyingrobots/bijou-tui';
 import { resolveScenePickerDrawerWidth, renderScenePickerDrawer } from '../../ui/scene-picker-drawer.js';
 import { resolveSettingsDrawerWidth, renderSettingsDrawer } from '../../ui/settings-drawer.js';
 import type { WorkspaceModel } from './model.js';
@@ -37,4 +38,10 @@ export function paintWorkspaceOverlays(
       bodyTop,
     );
   }
+}
+
+export function workspaceFeedbackOverlay(model: WorkspaceModel): Overlay | undefined {
+  return model.quitConfirmOpen
+    ? renderShellQuitOverlay(model.columns, model.rows)
+    : undefined;
 }

@@ -40,6 +40,7 @@ export interface WorkspaceModel {
   readonly echoHistorySelectedIndex: number;
   readonly notifications: NotificationState<WorkspaceMsg>;
   readonly notificationLoopActive: boolean;
+  readonly quitConfirmOpen: boolean;
   readonly footerVisible: boolean;
   readonly settingsOpen: boolean;
   readonly settingsFocusIndex: number;

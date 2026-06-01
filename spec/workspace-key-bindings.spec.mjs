@@ -98,6 +98,57 @@ test('ctrl-h opens Echo history and clears pending editor motion', async () => {
   assert.deepEqual(commands, []);
 });
 
+test('plain q opens Bijou quit confirmation instead of quitting immediately', async () => {
+  const [keyBindings, titleScreen, editorMode] = await Promise.all([
+    importDist('app', 'workspace', 'key-bindings.js'),
+    importDist('ui', 'title-screen.js'),
+    importDist('app', 'workspace', 'editor', 'mode.js'),
+  ]);
+
+  const [nextModel, commands] = keyBindings.updateFromKey(
+    { type: 'key', key: 'q', ctrl: false, alt: false, shift: false },
+    mockTitleScreenModel(titleScreen, {
+      editor: mockEditor(editorMode),
+      focusPane: 'editor',
+      historyDrawerOpen: true,
+      historyDrawerProgress: 1,
+    }),
+    mockKeyBindingContext(),
+  );
+
+  assert.equal(nextModel.quitConfirmOpen, true);
+  assert.deepEqual(commands, []);
+});
+
+test('Bijou quit confirmation accepts y and dismisses q without editor input', async () => {
+  const [keyBindings, titleScreen, editorMode] = await Promise.all([
+    importDist('app', 'workspace', 'key-bindings.js'),
+    importDist('ui', 'title-screen.js'),
+    importDist('app', 'workspace', 'editor', 'mode.js'),
+  ]);
+  const model = mockTitleScreenModel(titleScreen, {
+    editor: mockEditor(editorMode),
+    focusPane: 'editor',
+    quitConfirmOpen: true,
+  });
+
+  const [accepted, quitCommands] = keyBindings.updateFromKey(
+    { type: 'key', key: 'y', ctrl: false, alt: false, shift: false },
+    model,
+    mockKeyBindingContext(),
+  );
+  const [dismissed, dismissCommands] = keyBindings.updateFromKey(
+    { type: 'key', key: 'q', ctrl: false, alt: false, shift: false },
+    model,
+    mockKeyBindingContext(),
+  );
+
+  assert.equal(accepted.quitConfirmOpen, false);
+  assert.equal(quitCommands.length, 1);
+  assert.equal(dismissed.quitConfirmOpen, false);
+  assert.deepEqual(dismissCommands, []);
+});
+
 test('scene picker loads built-in scenes by name without using workspace root paths', async () => {
   const [keyBindings, titleScreen] = await Promise.all([
     importDist('app', 'workspace', 'key-bindings.js'),

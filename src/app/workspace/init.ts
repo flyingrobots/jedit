@@ -51,6 +51,7 @@ export function createInitialModel(
     focusPane: INITIAL_FOCUS_PANE,
     ...initialDrawerState(),
     ...createFeedbackState<WorkspaceMsg>(),
+    ...initialShellState(),
     ...initialSettingsState(),
     jeditTheme,
     ...initialGraftState(),
@@ -81,6 +82,12 @@ function initialSettingsState() {
   return {
     settingsOpen: false,
     settingsFocusIndex: 0,
+  };
+}
+
+function initialShellState() {
+  return {
+    quitConfirmOpen: false,
   };
 }
 
