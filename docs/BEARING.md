@@ -536,7 +536,7 @@ Progress ledger:
 - [x] 121 - Startup Recovery From WSC.
 - [x] 122 - Persist Edits After Settlement.
 - [x] 123 - Restart Round Trip Proof.
-- [ ] 124 - Historical Basis Selection.
+- [x] 124 - Historical Basis Selection.
 - [ ] 125 - Current History Export.
 - [ ] 126 - Point-In-Time Export.
 - [ ] 127 - History Listing And Evidence View.
@@ -1531,10 +1531,18 @@ Test plan:
 
 Checklist:
 
-- [ ] Add app-safe historical basis model.
-- [ ] Add basis selection command/port.
-- [ ] Keep selection read-only.
-- [ ] Cover missing basis.
+- [x] Add app-safe historical basis model.
+- [x] Add basis selection command/port.
+- [x] Keep selection read-only.
+- [x] Cover missing basis.
+
+Proof note:
+
+- `src/ports/jedit-wsc-history-basis.ts` defines app-safe historical basis
+  terms over retained WSC envelope evidence. `src/app/jedit-wsc-history-basis.ts`
+  lists deterministic bases and selects one read-only through the workspace
+  store. `spec/jedit-wsc-history-basis.spec.mjs` covers deterministic listing,
+  selection without workspace mutation, and missing-basis obstruction.
 
 ### Slice 125 - Current History Export
 
