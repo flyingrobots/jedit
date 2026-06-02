@@ -510,7 +510,7 @@ Progress ledger:
 - [x] 109 - Multi-Buffer Authority Map.
 - [x] 110 - Fixture-Local Fallback Quarantine.
 - [x] 111 - WSC Durability Scope Document.
-- [ ] 112 - Echo WSC Store Port.
+- [x] 112 - Echo WSC Store Port.
 - [ ] 113 - Persist Accepted Submission Events.
 - [ ] 114 - Persist Ticket And Receipt Correlation.
 - [ ] 115 - Persist Reading And Retention Refs.
@@ -1129,6 +1129,8 @@ User story:
 As Echo, I need a generic WSC store port so causal-history persistence is
 behind a runtime adapter and not tied to jedit.
 
+Echo commit: `a4ed532f feat: add generic WSC store port`.
+
 Acceptance criteria:
 
 - [Echo] The port names generic causal-history records, not text/editor nouns.
@@ -1144,10 +1146,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Define generic WSC store port.
-- [ ] Add deterministic envelope format tests.
-- [ ] Add typed obstruction path.
-- [ ] Keep jedit nouns out of Echo.
+- [x] Define generic WSC store port.
+- [x] Add deterministic envelope format tests.
+- [x] Add typed obstruction path.
+- [x] Keep jedit nouns out of Echo.
 
 ### Slice 113 - Persist Accepted Submission Events
 
