@@ -516,7 +516,7 @@ Progress ledger:
 - [x] 115 - Persist Reading And Retention Refs.
 - [x] 116 - WSC Atomic Commit Markers.
 - [x] 117 - Recover Pending Submissions.
-- [ ] 118 - Recover Decided Submissions.
+- [x] 118 - Recover Decided Submissions.
 - [ ] 119 - Reject Half-Accepted WSC State.
 - [ ] 120 - jedit WSC Workspace Store Adapter.
 - [ ] 121 - Startup Recovery From WSC.
@@ -1308,6 +1308,8 @@ User story:
 As a user restarting jedit after an applied or rejected edit, I want the decided
 outcome to recover with evidence.
 
+Echo commit: `6b17054d feat: recover decided submissions from WSC`.
+
 Acceptance criteria:
 
 - [Echo] Applied and rejected outcomes recover from WSC.
@@ -1323,10 +1325,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Recover applied outcome.
-- [ ] Recover rejected outcome.
-- [ ] Restore receipt correlation.
-- [ ] Keep rejection final for that attempt.
+- [x] Recover applied outcome.
+- [x] Recover rejected outcome.
+- [x] Restore receipt correlation.
+- [x] Keep rejection final for that attempt.
 
 ### Slice 119 - Reject Half-Accepted WSC State
 
