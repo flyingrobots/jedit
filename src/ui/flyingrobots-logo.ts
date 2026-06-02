@@ -4,6 +4,7 @@ import { type Surface } from '@flyingrobots/bijou';
 
 import { type RGB } from './averaging-braille-canvas.js';
 import { JEDIT_TEXT_MODIFIER } from './jedit-theme.js';
+import { clampTitleOverlayRatio, paintTitleOverlayCell } from './title-overlay-cell.js';
 
 type Color3 = RGB;
 
@@ -20,10 +21,19 @@ export interface FlyingRobotsLogoColors {
   readonly surface: Color3;
 }
 
+export interface FlyingRobotsLogoPaintOptions {
+  readonly opacity?: number;
+}
+
 interface FlyingRobotsLogoPaintContext {
+  readonly surface: Surface;
   readonly bounds: FlyingRobotsLogoBounds;
   readonly colors: FlyingRobotsLogoColors;
   readonly time: number;
+  readonly opacity: number;
+}
+
+interface FlyingRobotsLogoCellPaintContext extends FlyingRobotsLogoPaintContext {
   readonly row: number;
   readonly sourceLine: readonly string[];
 }
@@ -45,6 +55,12 @@ const LOGO_COLOR_SWING = 0.24;
 const LOGO_SURFACE_BLEND = 0.06;
 const LOGO_COLOR_CONTRAST_BOOST = 1.35;
 const LOGO_FULL_TURN_RADIANS = Math.PI * 2;
+const LOGO_DEFAULT_OPACITY = 1;
+const PRESENTS_TEXT = 'PRESENTS';
+const PRESENTS_VERTICAL_GAP_ROWS = 0;
+const PRESENTS_COLOR_RATE = 0.12;
+const PRESENTS_COLOR_SWING = 0.18;
+const PRESENTS_SURFACE_BLEND = 0.2;
 const RGB_CHANNEL_MIN = 0;
 const RGB_CHANNEL_MAX = 255;
 const BRAILLE_BLANK = '⠀';
@@ -84,23 +100,26 @@ export function paintFlyingRobotsLogo(
   bounds: FlyingRobotsLogoBounds | undefined,
   colors: FlyingRobotsLogoColors,
   time: number,
+  options: FlyingRobotsLogoPaintOptions = {},
 ): void {
   if (bounds == null) {
     return;
   }
 
-  for (let row = 0; row < bounds.height; row++) {
-    paintFlyingRobotsLogoRow(surface, bounds, colors, time, row);
+  const opacity = clampTitleOverlayRatio(options.opacity ?? LOGO_DEFAULT_OPACITY);
+  if (opacity <= 0) {
+    return;
   }
+
+  const context = { surface, bounds, colors, time, opacity };
+  for (let row = 0; row < bounds.height; row++) {
+    paintFlyingRobotsLogoRow(context, row);
+  }
+  paintFlyingRobotsPresents(surface, bounds, colors, time, opacity);
 }
 
-function paintFlyingRobotsLogoRow(
-  surface: Surface,
-  bounds: FlyingRobotsLogoBounds,
-  colors: FlyingRobotsLogoColors,
-  time: number,
-  row: number,
-): void {
+function paintFlyingRobotsLogoRow(context: FlyingRobotsLogoPaintContext, row: number): void {
+  const { bounds, surface } = context;
   const y = bounds.y + row;
   if (isOutsideSurface(y, surface.height)) {
     return;
@@ -112,22 +131,15 @@ function paintFlyingRobotsLogoRow(
   }
 
   for (let col = 0; col < bounds.width; col++) {
-    paintFlyingRobotsLogoCell(surface, {
-      bounds,
-      colors,
-      time,
-      row,
-      sourceLine,
-    }, col);
+    paintFlyingRobotsLogoCell({ ...context, row, sourceLine }, col);
   }
 }
 
 function paintFlyingRobotsLogoCell(
-  surface: Surface,
-  context: FlyingRobotsLogoPaintContext,
+  context: FlyingRobotsLogoCellPaintContext,
   col: number,
 ): void {
-  const { bounds, colors, row, sourceLine, time } = context;
+  const { bounds, colors, row, sourceLine, surface, time } = context;
   const x = bounds.x + col;
   if (isOutsideSurface(x, surface.width)) {
     return;
@@ -138,12 +150,42 @@ function paintFlyingRobotsLogoCell(
     return;
   }
 
-  surface.set(x, bounds.y + row, {
+  paintTitleOverlayCell(surface, x, bounds.y + row, {
     char,
     fgRGB: flyingRobotsLogoColor(colors, col, bounds.width, row, time),
     bgRGB: colors.surface,
     modifiers: [JEDIT_TEXT_MODIFIER.Bold],
+    opacity: context.opacity,
   });
+}
+
+function paintFlyingRobotsPresents(
+  surface: Surface,
+  bounds: FlyingRobotsLogoBounds,
+  colors: FlyingRobotsLogoColors,
+  time: number,
+  opacity: number,
+): void {
+  const text = PRESENTS_TEXT.slice(0, Math.max(0, surface.width));
+  const y = bounds.y + bounds.height + PRESENTS_VERTICAL_GAP_ROWS;
+  if (text.length === 0 || isOutsideSurface(y, surface.height)) {
+    return;
+  }
+
+  const xStart = Math.max(0, Math.floor((surface.width - text.length) / 2));
+  for (let index = 0; index < text.length; index++) {
+    const char = text[index];
+    if (char == null) {
+      continue;
+    }
+    paintTitleOverlayCell(surface, xStart + index, y, {
+      char,
+      fgRGB: flyingRobotsPresentsColor(colors, index, text.length, time),
+      bgRGB: colors.surface,
+      modifiers: [JEDIT_TEXT_MODIFIER.Dim],
+      opacity,
+    });
+  }
 }
 
 function isOutsideSurface(position: number, limit: number): boolean {
@@ -189,6 +231,18 @@ function flyingRobotsLogoColor(
   const base = mixColor(colors.info, colors.accent, accentRatio);
   const vivid = contrastColor(colors.surface, base, LOGO_COLOR_CONTRAST_BOOST);
   return mixColor(colors.surface, vivid, 1 - LOGO_SURFACE_BLEND);
+}
+
+function flyingRobotsPresentsColor(
+  colors: FlyingRobotsLogoColors,
+  index: number,
+  length: number,
+  time: number,
+): Color3 {
+  const sourceRatio = index / Math.max(1, length - 1);
+  const shimmer = Math.sin((time * PRESENTS_COLOR_RATE * LOGO_FULL_TURN_RADIANS) + sourceRatio) * PRESENTS_COLOR_SWING;
+  const vivid = contrastColor(colors.surface, mixColor(colors.accent, colors.info, clamp(sourceRatio + shimmer)), LOGO_COLOR_CONTRAST_BOOST);
+  return mixColor(colors.surface, vivid, 1 - PRESENTS_SURFACE_BLEND);
 }
 
 function mixColor(from: Color3, to: Color3, ratio: number): Color3 {

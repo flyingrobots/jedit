@@ -30,6 +30,7 @@ export function renderViewer(model: WorkspaceModel, width: number, height: numbe
       sceneOverride: model.sceneOverride,
       renderMode: model.titleRenderMode,
       asciiPalette: model.titleAsciiPalette,
+      textDirection: model.i18n.direction,
     });
   }
 

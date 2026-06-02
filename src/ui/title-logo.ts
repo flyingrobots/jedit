@@ -4,6 +4,7 @@ import { createSpringState, springStep, type SpringConfig } from '@flyingrobots/
 import { type RGB } from './averaging-braille-canvas.js';
 import { JEDIT_TEXT_MODIFIER } from './jedit-theme.js';
 import { JEDIT_LOGO_HEIGHT, JEDIT_LOGO_MASK, JEDIT_LOGO_WIDTH } from './logo-data.js';
+import { clampTitleOverlayRatio, paintTitleOverlayCell } from './title-overlay-cell.js';
 
 type Color3 = RGB;
 
@@ -12,7 +13,18 @@ export const TITLE_LOGO_RENDER_MODE = {
   CompactText: Symbol('jedit.title-logo.render-mode.compact-text'),
 } as const;
 
+export const TITLE_LOGO_SHEEN_DIRECTION = {
+  LeftToRight: 'ltr',
+  RightToLeft: 'rtl',
+} as const;
+
 export type TitleLogoRenderMode = typeof TITLE_LOGO_RENDER_MODE[keyof typeof TITLE_LOGO_RENDER_MODE];
+export type TitleLogoSheenDirection = typeof TITLE_LOGO_SHEEN_DIRECTION[keyof typeof TITLE_LOGO_SHEEN_DIRECTION];
+
+export interface TitleLogoSheen {
+  readonly progress: number;
+  readonly direction: TitleLogoSheenDirection;
+}
 
 export interface LogoBounds {
   readonly x: number;
@@ -25,7 +37,13 @@ export interface LogoBounds {
 export interface TitleLogoColors {
   readonly accent: Color3;
   readonly info: Color3;
+  readonly success: Color3;
   readonly surface: Color3;
+}
+
+export interface TitleLogoPaintOptions {
+  readonly opacity?: number;
+  readonly sheen?: TitleLogoSheen;
 }
 
 export interface TitleLogoAnimatedLetter {
@@ -76,6 +94,9 @@ const LOGO_MASK_BITS_PER_BYTE = 8;
 const LOGO_MASK_HEX_BYTE_LENGTH = 4;
 const LOGO_MASK_HEX_PREFIX_LENGTH = 2;
 const LOGO_FULL_TURN_RADIANS = Math.PI * 2;
+const LOGO_DEFAULT_OPACITY = 1;
+const LOGO_SHEEN_WIDTH_RATIO = 0.16;
+const LOGO_SHEEN_POWER = 2;
 const LOGO_LETTER_BOUNCE_PERIOD_SECONDS = 10.4;
 const LOGO_LETTER_BOUNCE_AMPLITUDE_ROWS = 0.34;
 const LOGO_LETTER_BOUNCE_SECONDARY_AMPLITUDE_ROWS = 0.07;
@@ -101,14 +122,20 @@ export function paintTitleLogo(
   bounds: LogoBounds,
   colors: TitleLogoColors,
   time: number,
+  options: TitleLogoPaintOptions = {},
 ): void {
+  const opacity = clampTitleOverlayRatio(options.opacity ?? LOGO_DEFAULT_OPACITY);
+  if (opacity <= 0) {
+    return;
+  }
+
   if (bounds.renderMode === TITLE_LOGO_RENDER_MODE.CompactText) {
-    paintCompactTitleLogo(surface, bounds, colors, time);
+    paintCompactTitleLogo(surface, bounds, colors, time, { opacity, sheen: options.sheen });
     return;
   }
 
   for (const letter of titleLogoAnimatedLetters(bounds, time)) {
-    paintTitleLogoLetter(surface, letter, colors);
+    paintTitleLogoLetter(surface, letter, colors, { opacity, sheen: options.sheen });
   }
 }
 
@@ -174,6 +201,7 @@ function paintCompactTitleLogo(
   bounds: LogoBounds,
   colors: TitleLogoColors,
   time: number,
+  options: Required<Pick<TitleLogoPaintOptions, 'opacity'>> & Pick<TitleLogoPaintOptions, 'sheen'>,
 ): void {
   const text = LOGO_COMPACT_TEXT.slice(0, bounds.width);
   for (let index = 0; index < text.length; index++) {
@@ -189,11 +217,18 @@ function paintCompactTitleLogo(
     const phaseSeconds = index * LOGO_LETTER_PHASE_STEP_SECONDS;
     const bounce = titleLogoSpringBounceAt(time, phaseSeconds);
     const colorShift = Math.sin((time * LOGO_LETTER_COLOR_RATE) + phaseSeconds) * LOGO_LETTER_COLOR_SWING;
-    surface.set(x, y, {
+    const sourceRatio = index / Math.max(1, text.length - 1);
+    paintTitleOverlayCell(surface, x, y, {
       char,
-      fgRGB: mixColor(colors.accent, colors.info, compactLogoColorRatio(index, text.length, colorShift + (bounce.offset * LOGO_LETTER_COLOR_SWING))),
+      fgRGB: titleLogoDisplayColor(
+        colors,
+        compactLogoColorRatio(index, text.length, colorShift + (bounce.offset * LOGO_LETTER_COLOR_SWING)),
+        sourceRatio,
+        options.sheen,
+      ),
       bgRGB: colors.surface,
       modifiers: [JEDIT_TEXT_MODIFIER.Bold],
+      opacity: options.opacity,
     });
   }
 }
@@ -202,6 +237,7 @@ function paintTitleLogoLetter(
   surface: Surface,
   letter: TitleLogoAnimatedLetter,
   colors: TitleLogoColors,
+  options: Required<Pick<TitleLogoPaintOptions, 'opacity'>> & Pick<TitleLogoPaintOptions, 'sheen'>,
 ): void {
   const minY = Math.floor(letter.y);
   const maxY = Math.ceil(letter.y + letter.height);
@@ -223,11 +259,18 @@ function paintTitleLogoLetter(
         continue;
       }
 
-      surface.set(x, y, {
+      const sourceRatio = titleLogoCellSourceRatio(letter, col);
+      paintTitleOverlayCell(surface, x, y, {
         char,
-        fgRGB: mixColor(colors.accent, colors.info, titleLogoCellColorRatio(letter, col)),
+        fgRGB: titleLogoDisplayColor(
+          colors,
+          titleLogoCellColorRatioFromSource(sourceRatio, letter.colorShift),
+          sourceRatio,
+          options.sheen,
+        ),
         bgRGB: colors.surface,
         modifiers: [JEDIT_TEXT_MODIFIER.Bold],
+        opacity: options.opacity,
       });
     }
   }
@@ -272,12 +315,40 @@ function titleLogoGlyphForCoverage(coverage: number): string | undefined {
   return undefined;
 }
 
-function titleLogoCellColorRatio(letter: TitleLogoAnimatedLetter, col: number): number {
-  const sourceCellRatio = (letter.sourceX + (((col + 0.5) / letter.width) * letter.sourceWidth)) / JEDIT_LOGO_WIDTH;
+function titleLogoCellSourceRatio(letter: TitleLogoAnimatedLetter, col: number): number {
+  return (letter.sourceX + (((col + 0.5) / letter.width) * letter.sourceWidth)) / JEDIT_LOGO_WIDTH;
+}
+
+function titleLogoCellColorRatioFromSource(sourceCellRatio: number, colorShift: number): number {
   return clamp(
     (sourceCellRatio * LOGO_COLOR_SOURCE_WIDTH)
-      + ((sourceCellRatio + letter.colorShift) * LOGO_COLOR_ANIMATION_WIDTH),
+      + ((sourceCellRatio + colorShift) * LOGO_COLOR_ANIMATION_WIDTH),
   );
+}
+
+function titleLogoDisplayColor(
+  colors: TitleLogoColors,
+  baseRatio: number,
+  sourceRatio: number,
+  sheen: TitleLogoSheen | undefined,
+): Color3 {
+  const base = mixColor(colors.accent, colors.info, baseRatio);
+  const sheenIntensity = titleLogoSheenIntensity(sourceRatio, sheen);
+  return sheenIntensity <= 0 ? base : mixColor(base, colors.success, sheenIntensity);
+}
+
+function titleLogoSheenIntensity(sourceRatio: number, sheen: TitleLogoSheen | undefined): number {
+  if (sheen == null) {
+    return 0;
+  }
+  const center = sheen.direction === TITLE_LOGO_SHEEN_DIRECTION.RightToLeft
+    ? 1 - clamp(sheen.progress)
+    : clamp(sheen.progress);
+  const distance = Math.abs(sourceRatio - center);
+  if (distance >= LOGO_SHEEN_WIDTH_RATIO) {
+    return 0;
+  }
+  return Math.pow(1 - (distance / LOGO_SHEEN_WIDTH_RATIO), LOGO_SHEEN_POWER);
 }
 
 function compactLogoColorRatio(index: number, length: number, colorShift: number): number {
