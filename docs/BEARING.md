@@ -537,7 +537,7 @@ Progress ledger:
 - [x] 122 - Persist Edits After Settlement.
 - [x] 123 - Restart Round Trip Proof.
 - [x] 124 - Historical Basis Selection.
-- [ ] 125 - Current History Export.
+- [x] 125 - Current History Export.
 - [ ] 126 - Point-In-Time Export.
 - [ ] 127 - History Listing And Evidence View.
 - [ ] 128 - Replay Same Edits Same Evidence.
@@ -1566,10 +1566,21 @@ Test plan:
 
 Checklist:
 
-- [ ] Implement current history export.
-- [ ] Record export evidence.
-- [ ] Preserve read-only boundary.
-- [ ] Cover materialization failure.
+- [x] Implement current history export.
+- [x] Record export evidence.
+- [x] Preserve read-only boundary.
+- [x] Cover materialization failure.
+
+Proof note:
+
+- `src/ports/jedit-wsc-current-history-export.ts` defines the app-facing
+  current-history export and materialization contract.
+  `src/app/jedit-wsc-current-history-export.ts` lists retained WSC envelopes,
+  selects the latest basis, materializes the retained envelope through an
+  explicit app materializer, and writes the host artifact only after successful
+  materialization. `spec/jedit-wsc-current-history-export.spec.mjs` covers
+  current export evidence, read-only WSC behavior, missing basis, and
+  materialization failure.
 
 ### Slice 126 - Point-In-Time Export
 
