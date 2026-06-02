@@ -478,6 +478,68 @@ The plan has five bars:
 4. [Echo][jedit] Persist and recover causal editing history through WSC.
 5. [jedit][Echo] Close replay, export, authority, and release-readiness proofs.
 
+Recovered execution posture:
+
+- [x] Free slice A: recover the active branch context. The current branch is
+  `enable-echo-hosted-tui-default`; recovered planning work through slice 110 is
+  already present on this branch.
+- [x] Free slice B: make the 50-slice budget visible as one progress ledger.
+- [x] Free slice C: set the next execution window. Work proceeds through slices
+  111-125, then pauses for a drift check before slice 126.
+
+Progress ledger:
+
+- [x] 91 - Rename The jedit Echo Gate.
+- [x] 92 - Real App Harness Boundary.
+- [x] 93 - Real App Open File Proof.
+- [x] 94 - Real App Edit Proof.
+- [x] 95 - Real App Save And Export Proof.
+- [x] 96 - Real App Obstruction Posture.
+- [x] 97 - Agent Workspace Witness.
+- [x] 98 - UI Lifecycle Authority Audit.
+- [x] 99 - Legacy Text Authority Inventory.
+- [x] 100 - PR Gate And Review Package.
+- [x] 101 - Rename Render Cache Concepts.
+- [x] 102 - Text Reading Cache Module Boundary.
+- [x] 103 - Cursor And Selection Planner Boundary.
+- [x] 104 - Replace Selection Through Session.
+- [x] 105 - Undo And Redo Policy Boundary.
+- [x] 106 - Dirty, Pending, And Stale UI Posture.
+- [x] 107 - Source Highlight From Reading Material.
+- [x] 108 - Preview From Reading Material.
+- [x] 109 - Multi-Buffer Authority Map.
+- [x] 110 - Fixture-Local Fallback Quarantine.
+- [ ] 111 - WSC Durability Scope Document.
+- [ ] 112 - Echo WSC Store Port.
+- [ ] 113 - Persist Accepted Submission Events.
+- [ ] 114 - Persist Ticket And Receipt Correlation.
+- [ ] 115 - Persist Reading And Retention Refs.
+- [ ] 116 - WSC Atomic Commit Markers.
+- [ ] 117 - Recover Pending Submissions.
+- [ ] 118 - Recover Decided Submissions.
+- [ ] 119 - Reject Half-Accepted WSC State.
+- [ ] 120 - jedit WSC Workspace Store Adapter.
+- [ ] 121 - Startup Recovery From WSC.
+- [ ] 122 - Persist Edits After Settlement.
+- [ ] 123 - Restart Round Trip Proof.
+- [ ] 124 - Historical Basis Selection.
+- [ ] 125 - Current History Export.
+- [ ] 126 - Point-In-Time Export.
+- [ ] 127 - History Listing And Evidence View.
+- [ ] 128 - Replay Same Edits Same Evidence.
+- [ ] 129 - Host Timing Permutation Proof.
+- [ ] 130 - Conflict And Rejection Retention.
+- [ ] 131 - Multi-File History Recovery.
+- [ ] 132 - Agent Historical Export.
+- [ ] 133 - WSC Release Gate Integration.
+- [ ] 134 - DIND Replay Closeout.
+- [ ] 135 - Portability Template Update.
+- [ ] 136 - Graft/Think Readiness Checklist.
+- [ ] 137 - End-To-End Guide Refresh.
+- [ ] 138 - Version And Compatibility Audit.
+- [ ] 139 - Authority And Security Audit.
+- [ ] 140 - Powered By Echo Release Candidate Gate.
+
 ### Slice 91 - Rename The jedit Echo Gate
 
 User story:
@@ -754,7 +816,7 @@ Checklist:
 - [x] Update PR notes.
 - [x] Run all local gates.
 - [x] Self-review against plan.
-- [ ] Push for review.
+- [x] Push for review.
 
 ### Slice 101 - Rename Render Cache Concepts
 
