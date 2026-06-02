@@ -514,7 +514,7 @@ Progress ledger:
 - [x] 113 - Persist Accepted Submission Events.
 - [x] 114 - Persist Ticket And Receipt Correlation.
 - [x] 115 - Persist Reading And Retention Refs.
-- [ ] 116 - WSC Atomic Commit Markers.
+- [x] 116 - WSC Atomic Commit Markers.
 - [ ] 117 - Recover Pending Submissions.
 - [ ] 118 - Recover Decided Submissions.
 - [ ] 119 - Reject Half-Accepted WSC State.
@@ -1250,6 +1250,8 @@ User story:
 As Echo, I need crash-consistent WSC writes so a restart never sees half-written
 causal history as valid.
 
+Echo commit: `8580ac67 feat: add WSC commit markers`.
+
 Acceptance criteria:
 
 - [Echo] WSC writes use a commit marker or equivalent atomic protocol.
@@ -1265,10 +1267,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Add commit marker protocol.
-- [ ] Reject incomplete writes.
-- [ ] Prove idempotent recovery.
-- [ ] Expose obstruction to jedit.
+- [x] Add commit marker protocol.
+- [x] Reject incomplete writes.
+- [x] Prove idempotent recovery.
+- [x] Expose obstruction to jedit.
 
 ### Slice 117 - Recover Pending Submissions
 
