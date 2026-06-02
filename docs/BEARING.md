@@ -487,6 +487,17 @@ Recovered execution posture:
 - [x] Free slice C: set the next execution window. Work proceeds through slices
   111-125, then pauses for a drift check before slice 126.
 
+Drift-check watch items:
+
+- WSC iteration time is now a first-class concern for the slice-126 drift
+  check. Current observed focused witnesses are slow: `cargo test -p warp-core
+  --test wsc_store_tests --no-run` and `cargo clippy -p warp-core --test
+  wsc_store_tests -- -D warnings -D missing_docs` have taken roughly 45-68s
+  because the target pulls `echo-graph` and `echo-dry-tests`; the Echo
+  pre-commit hook adds roughly 25s for `warp-core` lib clippy/check. Candidate
+  follow-up: split or slim the WSC store contract target so WSC envelope/store
+  changes can validate without the broader adapter stack.
+
 Progress ledger:
 
 - [x] 91 - Rename The jedit Echo Gate.
@@ -517,7 +528,7 @@ Progress ledger:
 - [x] 116 - WSC Atomic Commit Markers.
 - [x] 117 - Recover Pending Submissions.
 - [x] 118 - Recover Decided Submissions.
-- [ ] 119 - Reject Half-Accepted WSC State.
+- [x] 119 - Reject Half-Accepted WSC State.
 - [ ] 120 - jedit WSC Workspace Store Adapter.
 - [ ] 121 - Startup Recovery From WSC.
 - [ ] 122 - Persist Edits After Settlement.
@@ -1337,6 +1348,8 @@ User story:
 As a maintainer, I want corrupt or half-accepted WSC state to fail closed, so
 jedit never shows invented history.
 
+Echo commit: `0ae88f5c feat: reject incomplete WSC causal history`.
+
 Acceptance criteria:
 
 - [Echo] Recovery detects missing submission, ticket, receipt, or retained
@@ -1353,10 +1366,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Add corrupt WSC fixtures.
-- [ ] Detect half-accepted states.
-- [ ] Surface typed obstruction.
-- [ ] Block local authority fallback.
+- [x] Add corrupt WSC fixtures.
+- [x] Detect half-accepted states.
+- [x] Surface typed obstruction.
+- [x] Block local authority fallback.
 
 ### Slice 120 - jedit WSC Workspace Store Adapter
 
