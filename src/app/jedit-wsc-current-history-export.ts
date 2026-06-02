@@ -1,6 +1,7 @@
 import type { EditorFilePort } from '../ports/editor-file.js';
 import {
   JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED,
+  type JeditWscWorkspaceEnvelope,
   type JeditWscWorkspaceStoreObstruction,
   type JeditWscWorkspaceStorePort,
 } from '../ports/jedit-wsc-workspace-store.js';
@@ -9,6 +10,7 @@ import {
   JEDIT_WSC_CURRENT_HISTORY_EXPORT_EVIDENCE_PREFIX,
   JEDIT_WSC_CURRENT_HISTORY_EXPORT_OBSTRUCTED,
   JEDIT_WSC_CURRENT_HISTORY_HOST_ARTIFACT_WRITE_FAILED,
+  JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_FAILED,
   JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_OBSTRUCTED,
   JEDIT_WSC_CURRENT_HISTORY_MISSING_CURRENT_BASIS,
   JEDIT_WSC_CURRENT_HISTORY_WSC_STORE_OBSTRUCTED,
@@ -17,20 +19,32 @@ import {
   type JeditWscCurrentHistoryMaterializer,
 } from '../ports/jedit-wsc-current-history-export.js';
 import {
-  JEDIT_WSC_HISTORY_BASIS_OBSTRUCTED,
   type JeditWscHistoricalBasis,
-  type JeditWscHistoryBasisObstruction,
 } from '../ports/jedit-wsc-history-basis.js';
-import {
-  listJeditWscHistoricalBases,
-  selectJeditWscHistoricalBasis,
-} from './jedit-wsc-history-basis.js';
+import { listJeditWscHistoricalBases } from './jedit-wsc-history-basis.js';
+
+interface CurrentWscHistoryBasis {
+  readonly basis: JeditWscHistoricalBasis;
+  readonly envelope: JeditWscWorkspaceEnvelope;
+}
+
+interface CurrentWscHistoryCandidate {
+  readonly envelopeId: string;
+  readonly envelope: JeditWscWorkspaceEnvelope;
+  readonly submittedAtMs: number;
+}
+
+interface CurrentWscHistoryCandidates {
+  readonly candidates: readonly CurrentWscHistoryCandidate[];
+}
 
 export interface ExportCurrentJeditWscHistoryInput {
   readonly store: JeditWscWorkspaceStorePort;
   readonly editorFile: EditorFilePort;
   readonly materializer: JeditWscCurrentHistoryMaterializer;
 }
+
+const WSC_EDIT_SETTLEMENT_SCHEMA_VERSION = 'jedit.workspace_text_edit_settlement.v1';
 
 export function exportCurrentJeditWscHistory(
   input: ExportCurrentJeditWscHistoryInput,
@@ -39,29 +53,33 @@ export function exportCurrentJeditWscHistory(
   if (!('basis' in currentBasis)) {
     return currentBasis;
   }
-  const selected = selectJeditWscHistoricalBasis(input.store, currentBasis.basis.basisId);
-  if (selected.status === JEDIT_WSC_HISTORY_BASIS_OBSTRUCTED) {
-    return basisObstructed(selected.obstruction);
-  }
-  const materialized = input.materializer.materialize(selected.envelope, selected.basis);
+  const materialized = input.materializer.materialize(currentBasis.envelope, currentBasis.basis);
   if (materialized.status === JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_OBSTRUCTED) {
-    return exportObstructed(materialized.obstruction.code, materialized.obstruction.message, selected.basis.basisId);
+    return exportObstructed(materialized.obstruction.code, materialized.obstruction.message, currentBasis.basis.basisId);
   }
-  return writeHostArtifact(input.editorFile, selected.basis, materialized.artifact);
+  return writeHostArtifact(input.editorFile, currentBasis.basis, materialized.artifact);
 }
 
 function currentWscHistoryBasis(
   store: JeditWscWorkspaceStorePort,
-): { readonly basis: JeditWscHistoricalBasis } | JeditWscCurrentHistoryExportObstructed {
+): CurrentWscHistoryBasis | JeditWscCurrentHistoryExportObstructed {
   const listed = store.listEnvelopes();
   if (listed.status === JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED) {
     return storeObstructed(listed.obstruction);
   }
-  const bases = listJeditWscHistoricalBases(listed.envelopeIds).bases;
-  const basis = bases.at(-1);
+  const recovered = currentHistoryCandidates(store, listed.envelopeIds);
+  if (!('candidates' in recovered)) {
+    return recovered;
+  }
+  const ordered = [...recovered.candidates].sort(compareCurrentHistoryCandidates);
+  const current = ordered.at(-1);
+  if (current == null) {
+    return exportObstructed(JEDIT_WSC_CURRENT_HISTORY_MISSING_CURRENT_BASIS, 'No WSC current basis is retained.');
+  }
+  const basis = listJeditWscHistoricalBases(ordered.map((candidate) => candidate.envelopeId)).bases.at(-1);
   return basis == null
     ? exportObstructed(JEDIT_WSC_CURRENT_HISTORY_MISSING_CURRENT_BASIS, 'No WSC current basis is retained.')
-    : { basis };
+    : { basis, envelope: current.envelope };
 }
 
 function writeHostArtifact(
@@ -88,10 +106,53 @@ function writeHostArtifact(
   };
 }
 
-function basisObstructed(
-  obstruction: JeditWscHistoryBasisObstruction,
-): JeditWscCurrentHistoryExportObstructed {
-  return exportObstructed(obstruction.code, obstruction.message, obstruction.basisId);
+function currentHistoryCandidates(
+  store: JeditWscWorkspaceStorePort,
+  envelopeIds: readonly string[],
+): CurrentWscHistoryCandidates | JeditWscCurrentHistoryExportObstructed {
+  const candidates: CurrentWscHistoryCandidate[] = [];
+  for (const envelopeId of envelopeIds) {
+    const read = store.readEnvelope(envelopeId);
+    if (read.status === JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED) {
+      return storeObstructed(read.obstruction);
+    }
+    const submittedAtMs = submittedAtMsFromEnvelope(read.envelope);
+    if (submittedAtMs == null) {
+      return exportObstructed(
+        JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_FAILED,
+        `WSC envelope lacks current-basis metadata: ${read.envelope.envelopeId}`,
+        read.envelope.envelopeId,
+      );
+    }
+    candidates.push({
+      envelopeId: read.envelope.envelopeId,
+      envelope: read.envelope,
+      submittedAtMs,
+    });
+  }
+  return { candidates };
+}
+
+function submittedAtMsFromEnvelope(envelope: JeditWscWorkspaceEnvelope): number | undefined {
+  try {
+    const payload = JSON.parse(Buffer.from(envelope.bytes).toString('utf8'));
+    return payload?.schemaVersion === WSC_EDIT_SETTLEMENT_SCHEMA_VERSION
+      && Number.isFinite(payload.submittedAtMs)
+      ? payload.submittedAtMs
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function compareCurrentHistoryCandidates(
+  left: CurrentWscHistoryCandidate,
+  right: CurrentWscHistoryCandidate,
+): number {
+  if (left.submittedAtMs !== right.submittedAtMs) {
+    return left.submittedAtMs - right.submittedAtMs;
+  }
+  return left.envelopeId.localeCompare(right.envelopeId);
 }
 
 function storeObstructed(

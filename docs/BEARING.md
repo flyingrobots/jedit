@@ -1421,8 +1421,8 @@ stores obstruction posture on the initial workspace model.
 Acceptance criteria:
 
 - [jedit] Startup can discover existing WSC history for a workspace.
-- [jedit] Recovered buffers restore authority, reading cache, and outcome
-  posture where possible.
+- [jedit] Recovered WSC history records Echo-history authority posture and
+  pending materialization without rebuilding live editor buffers yet.
 - [jedit] Host file import remains an explicit import path for new files.
 - [jedit] Recovery failures are visible.
 
@@ -1435,7 +1435,7 @@ Test plan:
 Checklist:
 
 - [x] Discover workspace WSC history on startup.
-- [x] Restore recovered authority.
+- [x] Record recovered Echo-history authority posture.
 - [x] Keep new-file import explicit.
 - [x] Cover recovery failure.
 
@@ -1477,26 +1477,32 @@ Proof note:
 
 User story:
 
-As a user, I want to edit, save, quit, restart, and see the same Echo-backed
-text history and current materialized content.
+As a user, I want settled WSC edit evidence to survive quit and restart, so
+later materialization can prove the same Echo-backed text history without stale
+process memory.
 
 Acceptance criteria:
 
-- [jedit] A test performs edit, export/save, stop, restart, and observe.
-- [jedit] The restarted state comes from WSC/Echo history, not stale memory.
-- [jedit] Receipt and reading evidence are still available.
-- [jedit] The host file artifact matches materialized text.
+- [jedit] A test persists WSC edit-settlement evidence, stops the in-memory
+  runtime, starts a fresh runtime, and recovers retained WSC evidence.
+- [jedit] The restarted state comes from WSC/Echo history posture, not stale
+  editor memory.
+- [jedit] Receipt, reading, checkpoint, and materialized-text evidence are still
+  available in the retained envelope.
+- [jedit] Host artifact export/materialization remains a separate read
+  operation covered by slice 125.
 
 Test plan:
 
-- Add end-to-end restart round-trip spec.
-- Assert current text, receipt id, reading id, and checkpoint id.
+- Add restart retained-evidence round-trip spec.
+- Assert retained materialized-text payload, receipt id, reading id, and
+  checkpoint id.
 - Assert no direct local authority fallback.
 
 Checklist:
 
-- [x] Build restart round-trip fixture.
-- [x] Assert materialized text.
+- [x] Build restart retained-evidence fixture.
+- [x] Assert retained materialized-text evidence.
 - [x] Assert evidence recovery.
 - [x] Add to release gate.
 

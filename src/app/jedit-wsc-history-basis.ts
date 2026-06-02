@@ -24,21 +24,21 @@ export function listJeditWscHistoricalBases(
 ): JeditWscHistoryBasisListed {
   return {
     status: JEDIT_WSC_HISTORY_BASIS_LISTED,
-    bases: [...envelopeIds].sort().map(historicalBasis),
+    bases: envelopeIds.map(historicalBasis),
   };
 }
 
 export function selectJeditWscHistoricalBasis(
   store: JeditWscWorkspaceStorePort,
-  basisId: string,
+  basis: JeditWscHistoricalBasis,
 ): JeditWscHistoryBasisSelectionResult {
-  const read = store.readEnvelope(basisId);
+  const read = store.readEnvelope(basis.envelopeId);
   if (read.status === JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED) {
-    return obstructedBasis(basisId, read.obstruction);
+    return obstructedBasis(basis.basisId, read.obstruction);
   }
   return {
     status: JEDIT_WSC_HISTORY_BASIS_SELECTED,
-    basis: historicalBasis(read.envelope.envelopeId, 0),
+    basis,
     envelope: read.envelope,
   };
 }

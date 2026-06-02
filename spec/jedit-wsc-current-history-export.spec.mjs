@@ -4,6 +4,8 @@ import { importDist } from './workspace-helpers.mjs';
 
 const BASIS_A = 'a'.repeat(64);
 const BASIS_B = 'b'.repeat(64);
+const BASIS_OLD_LEX_HIGH = 'f'.repeat(64);
+const BASIS_CURRENT_LEX_LOW = '0'.repeat(64);
 const READING_ID = 'reading:125';
 
 test('current WSC history export materializes latest basis before writing host artifact', async () => {
@@ -16,7 +18,7 @@ test('current WSC history export materializes latest basis before writing host a
         status: 'JEDIT_WSC_WORKSPACE_STORE_READ',
         envelope: {
           envelopeId: basisId,
-          bytes: Uint8Array.from([1, 2, 5]),
+          bytes: settlementBytes(basisId === BASIS_B ? 20 : 10),
         },
         workspacePath: '/repo/.jedit/echo-wsc/envelopes',
       }),
@@ -41,6 +43,30 @@ test('current WSC history export materializes latest basis before writing host a
   assert.equal(writeCount, 0);
 });
 
+test('current WSC history export uses retained causal time instead of lexicographic envelope id', async () => {
+  const [currentExport, ports] = await exportModules();
+  const saved = [];
+  const result = currentExport.exportCurrentJeditWscHistory({
+    store: fakeStore({
+      envelopeIds: [BASIS_CURRENT_LEX_LOW, BASIS_OLD_LEX_HIGH],
+      readEnvelope: (basisId) => ({
+        status: 'JEDIT_WSC_WORKSPACE_STORE_READ',
+        envelope: {
+          envelopeId: basisId,
+          bytes: settlementBytes(basisId === BASIS_CURRENT_LEX_LOW ? 20 : 10),
+        },
+        workspacePath: '/repo/.jedit/echo-wsc/envelopes',
+      }),
+    }),
+    editorFile: fakeEditorFile(saved),
+    materializer: envelopeMaterializer(),
+  });
+
+  assert.equal(result.status, ports.JEDIT_WSC_CURRENT_HISTORY_EXPORTED);
+  assert.equal(result.basisId, BASIS_CURRENT_LEX_LOW);
+  assert.deepEqual(saved, [{ filePath: '/repo/notes.txt', lines: ['t=20'] }]);
+});
+
 test('current WSC history export does not write host artifact when materialization fails', async () => {
   const [currentExport, ports] = await exportModules();
   const saved = [];
@@ -50,7 +76,7 @@ test('current WSC history export does not write host artifact when materializati
         status: 'JEDIT_WSC_WORKSPACE_STORE_READ',
         envelope: {
           envelopeId: basisId,
-          bytes: Uint8Array.from([9]),
+          bytes: settlementBytes(20),
         },
         workspacePath: '/repo/.jedit/echo-wsc/envelopes',
       }),
@@ -145,4 +171,27 @@ function materializer(artifact) {
       artifact,
     }),
   };
+}
+
+function envelopeMaterializer() {
+  return {
+    materialize: (envelope) => {
+      const payload = JSON.parse(new TextDecoder().decode(envelope.bytes));
+      return {
+        status: 'JEDIT_WSC_CURRENT_HISTORY_MATERIALIZED',
+        artifact: {
+          filePath: '/repo/notes.txt',
+          lines: [`t=${payload.submittedAtMs}`],
+          readingId: READING_ID,
+        },
+      };
+    },
+  };
+}
+
+function settlementBytes(submittedAtMs) {
+  return new TextEncoder().encode(JSON.stringify({
+    schemaVersion: 'jedit.workspace_text_edit_settlement.v1',
+    submittedAtMs,
+  }));
 }

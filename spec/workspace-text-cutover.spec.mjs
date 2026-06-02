@@ -214,7 +214,35 @@ test('insert and delete keys submit production text edits without local line mut
     productionTextSession,
   );
   const insertMessage = await insertCommands[0]();
-  const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime({ productionTextSession }));
+  assert.equal(insertMessage.result.wscSettlementEnvelope.envelopeId.length, 64);
+  assert.deepEqual(Array.from(insertMessage.result.wscSettlementEnvelope.bytes).slice(0, 1), [123]);
+  const settlementWrites = [];
+  const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime({
+    productionTextSession,
+    wscWorkspaceStore: {
+      writeEnvelope: (envelope) => {
+        settlementWrites.push(envelope);
+        return {
+          status: 'JEDIT_WSC_WORKSPACE_STORE_WRITTEN',
+          envelopeId: envelope.envelopeId,
+          byteLength: envelope.bytes.byteLength,
+          workspacePath: '/repo/.jedit/echo-wsc/envelopes',
+        };
+      },
+      readEnvelope: () => ({
+        status: 'JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED',
+        obstruction: {
+          code: 'missing_envelope',
+          message: 'missing envelope',
+        },
+      }),
+      listEnvelopes: () => ({
+        status: 'JEDIT_WSC_WORKSPACE_STORE_LISTED',
+        envelopeIds: [],
+        workspacePath: '/repo/.jedit/echo-wsc/envelopes',
+      }),
+    },
+  }));
   const [insertedModel] = runtime.update(insertMessage, pendingInsert);
 
   assert.deepEqual(baseModel.editor.lines, ['abc']);
@@ -224,6 +252,7 @@ test('insert and delete keys submit production text edits without local line mut
     insertText: 'X',
     atMs: 12,
   }]);
+  assert.deepEqual(settlementWrites, [insertMessage.result.wscSettlementEnvelope]);
   assert.deepEqual(insertedModel.editor.lines, ['aXbc']);
   assert.equal(insertedModel.textAuthority.lastReceiptId, 'receipt:insert');
 

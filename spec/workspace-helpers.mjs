@@ -98,7 +98,12 @@ export function fakeProductionTextObstruction() {
 
 export function fakeWscWorkspaceStore() {
   return {
-    writeEnvelope: () => ({ status: 'JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED' }),
+    writeEnvelope: (envelope) => ({
+      status: 'JEDIT_WSC_WORKSPACE_STORE_WRITTEN',
+      envelopeId: envelope.envelopeId,
+      byteLength: envelope.bytes.byteLength,
+      workspacePath: '/repo/.jedit/echo-wsc/envelopes',
+    }),
     readEnvelope: () => ({ status: 'JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED' }),
     listEnvelopes: () => ({ status: 'JEDIT_WSC_WORKSPACE_STORE_LISTED', envelopeIds: [] }),
   };

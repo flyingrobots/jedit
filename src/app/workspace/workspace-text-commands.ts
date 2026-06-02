@@ -18,6 +18,7 @@ import {
   type WorkspaceTextOpenResult,
   type WorkspaceTextReadCommandResult,
 } from './workspace-text-results.js';
+import { createWorkspaceTextEditSettlementEnvelope } from './workspace-text-wsc-settlement.js';
 
 const ISSUE_LEVEL_ERROR = RuntimeIssueLevels.Error;
 const ISSUE_SOURCE_COMMAND = RuntimeIssueSources.Command;
@@ -249,13 +250,15 @@ async function editWorkspaceText(
     if (observed.kind === ProductionTextSessionOutcomeKinds.Obstructed) {
       return obstructedEdit(request.filePath, observed.obstruction.issue);
     }
+    const cache = readingCache(request.bufferId, observed.observed.value);
     return {
       kind: WorkspaceTextResultKinds.Applied,
       filePath: request.filePath,
       bufferId: request.bufferId,
       receiptId: edited.result.receiptId,
-      cache: readingCache(request.bufferId, observed.observed.value),
+      cache,
       cursorAfter: request.cursorAfter,
+      wscSettlementEnvelope: createWorkspaceTextEditSettlementEnvelope(request, edited.result.receiptId, cache),
     };
   } catch (cause) {
     return obstructedEdit(
