@@ -122,8 +122,49 @@ function firstVisibleSettingsRow(
   selectedIndex: number,
   height: number,
 ): number {
-  const visibleRows = Math.max(1, Math.floor((height - SETTINGS_FIRST_ROW) / SETTINGS_ROW_HEIGHT));
-  return Math.max(0, Math.min(selectedIndex, rows.length - visibleRows));
+  const selected = clampedSettingsRowIndex(rows, selectedIndex);
+  let first = selected;
+  while (first > 0 && selectedSettingsRowFits(rows, first - 1, selected, height)) {
+    first -= 1;
+  }
+  return first;
+}
+
+function clampedSettingsRowIndex(rows: readonly JeditSettingsRow[], selectedIndex: number): number {
+  return Math.max(0, Math.min(selectedIndex, rows.length - 1));
+}
+
+function selectedSettingsRowFits(
+  rows: readonly JeditSettingsRow[],
+  firstIndex: number,
+  selectedIndex: number,
+  height: number,
+): boolean {
+  return selectedSettingsRowBottom(rows, firstIndex, selectedIndex) <= height;
+}
+
+function selectedSettingsRowBottom(
+  rows: readonly JeditSettingsRow[],
+  firstIndex: number,
+  selectedIndex: number,
+): number {
+  let y = SETTINGS_FIRST_ROW;
+  let section = '';
+  for (let index = firstIndex; index <= selectedIndex; index += 1) {
+    const row = rows[index];
+    if (row == null) {
+      continue;
+    }
+    if (row.section !== section) {
+      section = row.section;
+      y += SETTINGS_ROW_GAP;
+    }
+    if (index === selectedIndex) {
+      return y + SETTINGS_ROW_HEIGHT;
+    }
+    y += SETTINGS_ROW_HEIGHT;
+  }
+  return y;
 }
 
 function paintText(surface: Surface, text: string, x: number, y: number, token: JeditStyleToken): void {

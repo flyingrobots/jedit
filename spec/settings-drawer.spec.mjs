@@ -61,3 +61,26 @@ test('settings drawer renders structured rows and highlights the selected row', 
   assert.equal(surface.get(2, 8).fg, theme.cursor.normal.fg);
   assert.equal(surface.get(2, 8).bg, theme.cursor.normal.bg);
 });
+
+test('settings drawer keeps the focused row visible when section headers consume short drawers', async () => {
+  const { drawer, settings, themes } = await loadDrawerModules();
+  const theme = themes.availableJeditThemes()[0];
+  const rows = settings.jeditSettingsRows({
+    i18n: createI18nMock(),
+    jeditTheme: theme,
+    footerVisible: true,
+    markdownPreviewActive: true,
+    viewMode: 'source',
+  });
+  const selectedIndex = rows.findIndex((row) => row.id === 'markdown-preview');
+
+  const surface = drawer.renderSettingsDrawer({
+    rows,
+    selectedIndex,
+    theme,
+    width: 42,
+    height: 12,
+  });
+
+  assert.match(surfaceText(surface), /› ↻ Markdown preview Source/);
+});
