@@ -1,4 +1,5 @@
 import type { RuntimeIssue } from '@flyingrobots/bijou-tui';
+import type { JeditWscWorkspaceEnvelope } from '../../ports/jedit-wsc-workspace-store.js';
 import type { TextPosition } from './workspace-text-position.js';
 import type { WorkspaceTextReadingCache } from './workspace-text-reading-cache.js';
 
@@ -33,6 +34,7 @@ export interface WorkspaceTextAppliedResult {
   readonly receiptId: string;
   readonly cache: WorkspaceTextReadingCache;
   readonly cursorAfter?: TextPosition;
+  readonly wscSettlementEnvelope?: JeditWscWorkspaceEnvelope;
 }
 
 export interface WorkspaceTextCheckpointedResult {

@@ -24,12 +24,20 @@ import {
   workspaceTextAuthorityWithExport,
   workspaceTextAuthorityWithReceipt,
 } from './workspace-text-authority.js';
-import { WorkspaceTextResultKinds, type WorkspaceTextOpenedResult } from './workspace-text-results.js';
+import {
+  WorkspaceTextResultKinds,
+  type WorkspaceTextAppliedResult,
+  type WorkspaceTextOpenedResult,
+} from './workspace-text-results.js';
 import type { TextPosition } from './workspace-text-position.js';
 
 export type WorkspaceRuntimeResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 
 const EMPTY_ECHO_HISTORY: readonly EchoHistoryEntry[] = [];
+const WSC_WORKSPACE_STORE_OBSTRUCTED_STATUS = 'JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED';
+const WSC_SETTLEMENT_OBSTRUCTION_PREFIX = 'WSC edit settlement failed';
+const ISSUE_LEVEL_ERROR = 'error';
+const ISSUE_SOURCE_COMMAND = 'command';
 
 export function applyWorkspaceTextMessage(
   deps: WorkspaceRuntimeDependencies,
@@ -133,6 +141,10 @@ function applyTextEditResult(
       deps.createNotificationTickCmd,
     );
   }
+  const settlement = persistEditSettlement(deps, msg.result, model);
+  if (settlement != null) {
+    return settlement;
+  }
   const withCache = workspaceTextAuthorityWithCache(
     workspaceTextAuthorityWithReceipt(authority, msg.result.receiptId),
     msg.result.cache,
@@ -147,6 +159,39 @@ function applyTextEditResult(
     evidenceId: msg.result.receiptId,
     summary: msg.result.filePath,
   }));
+}
+
+function persistEditSettlement(
+  deps: WorkspaceRuntimeDependencies,
+  result: WorkspaceTextAppliedResult,
+  model: WorkspaceModel,
+): WorkspaceRuntimeResult | undefined {
+  if (result.wscSettlementEnvelope == null) {
+    return undefined;
+  }
+  const stored = deps.wscWorkspaceStore.writeEnvelope(result.wscSettlementEnvelope);
+  if (stored.status !== WSC_WORKSPACE_STORE_OBSTRUCTED_STATUS) {
+    return undefined;
+  }
+  const issue = settlementObstructionIssue(result.filePath, stored.obstruction, deps.nowMs());
+  return pushRuntimeIssueToast(
+    withEchoHistoryEntry(model, obstructedHistoryEntry(EchoHistoryEntryKinds.Edit, result.filePath, issue)),
+    issue,
+    deps.createNotificationTickCmd,
+  );
+}
+
+function settlementObstructionIssue(
+  filePath: string,
+  obstruction: { readonly code: string; readonly message: string },
+  atMs: number,
+): RuntimeIssue {
+  return {
+    message: `${WSC_SETTLEMENT_OBSTRUCTION_PREFIX}: ${filePath}: ${obstruction.message}`,
+    level: ISSUE_LEVEL_ERROR,
+    source: ISSUE_SOURCE_COMMAND,
+    atMs,
+  };
 }
 
 function editorAfterTextEdit(

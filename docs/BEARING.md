@@ -497,6 +497,9 @@ Drift-check watch items:
   pre-commit hook adds roughly 25s for `warp-core` lib clippy/check. Candidate
   follow-up: split or slim the WSC store contract target so WSC envelope/store
   changes can validate without the broader adapter stack.
+- jedit WSC reducer slices can keep a fast red/green loop by running the
+  focused Node spec first, then `tsc`, `quality-gate`, and `git diff --check`
+  once before commit. Slice 122's focused witness stayed near two seconds.
 
 Progress ledger:
 
@@ -531,7 +534,7 @@ Progress ledger:
 - [x] 119 - Reject Half-Accepted WSC State.
 - [x] 120 - jedit WSC Workspace Store Adapter.
 - [x] 121 - Startup Recovery From WSC.
-- [ ] 122 - Persist Edits After Settlement.
+- [x] 122 - Persist Edits After Settlement.
 - [ ] 123 - Restart Round Trip Proof.
 - [ ] 124 - Historical Basis Selection.
 - [ ] 125 - Current History Export.
@@ -1458,10 +1461,17 @@ Test plan:
 
 Checklist:
 
-- [ ] Persist applied edit evidence.
-- [ ] Persist rejected outcome evidence.
-- [ ] Persist obstruction posture where appropriate.
-- [ ] Cover persistence failure.
+- [x] Persist applied edit evidence.
+- [x] Persist rejected outcome evidence.
+- [x] Persist obstruction posture where appropriate.
+- [x] Cover persistence failure.
+
+Proof note:
+
+- `spec/jedit-wsc-edit-settlement.spec.mjs` proves applied edit results write
+  their WSC settlement envelope before accepting a receipt, WSC write
+  obstruction keeps the UI from claiming durability, and obstructed edit
+  results preserve honest outcome evidence without writing settlement bytes.
 
 ### Slice 123 - Restart Round Trip Proof
 
