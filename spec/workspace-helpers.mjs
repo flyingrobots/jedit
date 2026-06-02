@@ -63,6 +63,7 @@ export function mockDeps(overrides = {}) {
       loadBuiltInTitleScene: async () => undefined,
     },
     productionTextSession: fakeProductionTextSession(),
+    wscWorkspaceStore: fakeWscWorkspaceStore(),
     ...overrides,
   };
 }
@@ -92,6 +93,14 @@ export function fakeProductionTextObstruction() {
       source: 'command',
       atMs: 0,
     },
+  };
+}
+
+export function fakeWscWorkspaceStore() {
+  return {
+    writeEnvelope: () => ({ status: 'JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED' }),
+    readEnvelope: () => ({ status: 'JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED' }),
+    listEnvelopes: () => ({ status: 'JEDIT_WSC_WORKSPACE_STORE_LISTED', envelopeIds: [] }),
   };
 }
 

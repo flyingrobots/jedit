@@ -9,6 +9,7 @@ import { createGraftSessionPort } from './graft-mcp-session.js';
 import { createGraftSourceHighlighter } from './graft-source-highlighter.js';
 import { createTitleSceneLoaderPort } from './title-scene-loader.js';
 import { createInitialModelSnapshot } from './workspace-initial-model-snapshot.js';
+import { createNodeJeditWscWorkspaceStore } from './jedit-wsc-workspace-store.js';
 import { createPerfApp } from './workspace-perf-app.js';
 import {
   createWorkspaceProductionTextSession,
@@ -61,6 +62,7 @@ function workspaceRuntimeDependencies(
     fileSystem: FileSystemPortAdapter,
     editorFile,
     productionTextSession: createWorkspaceProductionTextSession(textRuntimeProfile),
+    wscWorkspaceStore: createNodeJeditWscWorkspaceStore(options.initialWorkingDirectory),
     graftSession,
     sourceHighlighter,
     titleSceneLoader,

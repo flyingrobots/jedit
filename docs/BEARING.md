@@ -529,7 +529,7 @@ Progress ledger:
 - [x] 117 - Recover Pending Submissions.
 - [x] 118 - Recover Decided Submissions.
 - [x] 119 - Reject Half-Accepted WSC State.
-- [ ] 120 - jedit WSC Workspace Store Adapter.
+- [x] 120 - jedit WSC Workspace Store Adapter.
 - [ ] 121 - Startup Recovery From WSC.
 - [ ] 122 - Persist Edits After Settlement.
 - [ ] 123 - Restart Round Trip Proof.
@@ -1378,6 +1378,11 @@ User story:
 As a jedit host, I want a workspace WSC adapter that connects Echo's generic
 WSC store to the project directory without teaching Echo about files.
 
+Implementation: `src/ports/jedit-wsc-workspace-store.ts` defines the
+jedit-owned generic WSC envelope store port, and
+`src/adapters/jedit-wsc-workspace-store.ts` implements the Node workspace path
+policy under `.jedit/echo-wsc/envelopes/`.
+
 Acceptance criteria:
 
 - [jedit] The adapter owns path policy and project-directory placement.
@@ -1393,10 +1398,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Add jedit WSC workspace adapter.
-- [ ] Keep path policy in jedit.
-- [ ] Inject adapter into session.
-- [ ] Cover path failures.
+- [x] Add jedit WSC workspace adapter.
+- [x] Keep path policy in jedit.
+- [x] Inject adapter into session.
+- [x] Cover path failures.
 
 ### Slice 121 - Startup Recovery From WSC
 
