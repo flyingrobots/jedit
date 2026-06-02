@@ -513,7 +513,7 @@ Progress ledger:
 - [x] 112 - Echo WSC Store Port.
 - [x] 113 - Persist Accepted Submission Events.
 - [x] 114 - Persist Ticket And Receipt Correlation.
-- [ ] 115 - Persist Reading And Retention Refs.
+- [x] 115 - Persist Reading And Retention Refs.
 - [ ] 116 - WSC Atomic Commit Markers.
 - [ ] 117 - Recover Pending Submissions.
 - [ ] 118 - Recover Decided Submissions.
@@ -1218,6 +1218,11 @@ User story:
 As a user, I want retained readings and payload references to recover after
 restart, so jedit can explain what it displays.
 
+Echo commits:
+
+- `1d64cd0b feat: persist retention refs in WSC`
+- `c1c21353 test: cover retention WSC obstruction posture`
+
 Acceptance criteria:
 
 - [Echo] Reading envelope refs and payload refs serialize distinctly.
@@ -1233,10 +1238,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Persist reading envelope refs.
-- [ ] Persist payload refs.
-- [ ] Persist semantic coordinates.
-- [ ] Cover missing material.
+- [x] Persist reading envelope refs.
+- [x] Persist payload refs.
+- [x] Persist semantic coordinates.
+- [x] Cover missing material.
 
 ### Slice 116 - WSC Atomic Commit Markers
 
