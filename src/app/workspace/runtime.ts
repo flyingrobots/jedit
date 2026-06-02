@@ -1,4 +1,4 @@
-import { createInitialModel } from './init.js';
+import { createInitialModel, recoverJeditWorkspaceFromWsc } from './init.js';
 import { manageGraftLifecycle } from './graft.js';
 import type { WorkspaceModel } from './model.js';
 import {
@@ -35,29 +35,32 @@ export { WorkspaceInputMessageTypes, WorkspaceMessageTypes } from './msg.js';
 const FRAME_TIME_HISTORY_SIZE = 50;
 
 export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): WorkspaceRuntime => ({
-  init: () => [
-    {
-      ...createInitialModel(
-        deps.initialWorkingDirectory,
-        deps.initialColumns,
-        deps.initialRows,
-        {
-          ...deps.initialModel,
-          nowMs: deps.initialModel.nowMs ?? deps.nowMs(),
-        },
-      ),
-      profiler: createInitialProfilerState(),
-    },
-    [
-      manageGraftLifecycle(deps.graftSession.closeConnection, deps.nowMs),
-      deps.createTimeTickCmd(),
-    ],
-  ],
+  init: () => {
+    const wscStartupRecovery = recoverJeditWorkspaceFromWsc(deps.wscWorkspaceStore);
+    return [
+      {
+        ...createInitialModel(
+          deps.initialWorkingDirectory,
+          deps.initialColumns,
+          deps.initialRows,
+          {
+            ...deps.initialModel,
+            nowMs: deps.initialModel.nowMs ?? deps.nowMs(),
+            wscStartupRecovery,
+          },
+        ),
+        profiler: createInitialProfilerState(),
+      },
+      [
+        manageGraftLifecycle(deps.graftSession.closeConnection, deps.nowMs),
+        deps.createTimeTickCmd(),
+      ],
+    ];
+  },
   update: (msg, model) => updateWorkspaceRuntime(deps, msg, model),
   view: (model) => renderWorkspace(model),
   routeRuntimeIssue: (issue) => ({ type: WorkspaceMessageTypes.RuntimeIssue, issue }),
 });
-
 
 function updateWorkspaceRuntime(
   deps: WorkspaceRuntimeDependencies,

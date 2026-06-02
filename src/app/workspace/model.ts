@@ -12,6 +12,7 @@ import type { TitleAsciiPalette, TitleRenderMode } from '../../ui/title-screen.j
 import type { ProfilerState } from '../raytracer-profiler.js';
 import type { TitleCameraState } from '../title-camera-session.js';
 import type { TextRuntimeProfile } from '../text-runtime-profile.js';
+import type { JeditWscStartupRecoveryResult } from '../../ports/jedit-wsc-startup-recovery.js';
 import type { EditorState } from './editor/model.js';
 import type { WorkspaceMsg } from './msg.js';
 import type { ViewMode } from './view-mode.js';
@@ -27,6 +28,7 @@ export interface WorkspaceModel {
   readonly editor?: EditorState;
   readonly textRuntimeProfile: TextRuntimeProfile;
   readonly textAuthority: WorkspaceTextAuthority;
+  readonly wscStartupRecovery: JeditWscStartupRecoveryResult;
   readonly textRequestId: number;
   readonly viewMode: ViewMode;
   readonly focusPane: FocusPane;

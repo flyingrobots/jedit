@@ -530,7 +530,7 @@ Progress ledger:
 - [x] 118 - Recover Decided Submissions.
 - [x] 119 - Reject Half-Accepted WSC State.
 - [x] 120 - jedit WSC Workspace Store Adapter.
-- [ ] 121 - Startup Recovery From WSC.
+- [x] 121 - Startup Recovery From WSC.
 - [ ] 122 - Persist Edits After Settlement.
 - [ ] 123 - Restart Round Trip Proof.
 - [ ] 124 - Historical Basis Selection.
@@ -1410,6 +1410,11 @@ User story:
 As a user reopening jedit, I want the workspace to recover Echo-backed text
 authority from WSC instead of starting from host file bytes only.
 
+Implementation: startup recovery now lists committed WSC workspace envelopes
+through the injected store, records no-history as explicit import required,
+records found WSC history as Echo-history authority pending materialization, and
+stores obstruction posture on the initial workspace model.
+
 Acceptance criteria:
 
 - [jedit] Startup can discover existing WSC history for a workspace.
@@ -1426,10 +1431,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Discover workspace WSC history on startup.
-- [ ] Restore recovered authority.
-- [ ] Keep new-file import explicit.
-- [ ] Cover recovery failure.
+- [x] Discover workspace WSC history on startup.
+- [x] Restore recovered authority.
+- [x] Keep new-file import explicit.
+- [x] Cover recovery failure.
 
 ### Slice 122 - Persist Edits After Settlement
 

@@ -13,7 +13,11 @@ import type { FileEntry } from '../../ports/file-system.js';
 import { ViewModes } from './view-mode.js';
 import type { TextRuntimeProfile } from '../text-runtime-profile.js';
 import { TEXT_RUNTIME_PROFILE_ECHO_HOSTED } from '../text-runtime-profile.js';
+import type { JeditWscStartupRecoveryResult } from '../../ports/jedit-wsc-startup-recovery.js';
+import { unrecoveredJeditWscStartupRecovery } from '../jedit-wsc-startup-recovery.js';
 import { createWorkspaceTextAuthority } from './workspace-text-authority.js';
+
+export { recoverJeditWorkspaceFromWsc } from '../jedit-wsc-startup-recovery.js';
 
 const INITIAL_FOCUS_PANE: FocusPane = FocusPanes.Editor;
 const INITIAL_VIEW_MODE = ViewModes.Source;
@@ -26,6 +30,7 @@ export interface WorkspaceInitialModelSnapshot {
   readonly titleMeshes?: TitleMeshLibrary;
   readonly nowMs: number;
   readonly textRuntimeProfile?: TextRuntimeProfile;
+  readonly wscStartupRecovery?: JeditWscStartupRecoveryResult;
 }
 
 export function createInitialModel(
@@ -46,6 +51,7 @@ export function createInitialModel(
     editor: undefined,
     textRuntimeProfile,
     textAuthority: createWorkspaceTextAuthority(textRuntimeProfile),
+    wscStartupRecovery: snapshot.wscStartupRecovery ?? unrecoveredJeditWscStartupRecovery(),
     textRequestId: 0,
     viewMode: INITIAL_VIEW_MODE,
     focusPane: INITIAL_FOCUS_PANE,
