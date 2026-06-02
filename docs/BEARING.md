@@ -512,7 +512,7 @@ Progress ledger:
 - [x] 111 - WSC Durability Scope Document.
 - [x] 112 - Echo WSC Store Port.
 - [x] 113 - Persist Accepted Submission Events.
-- [ ] 114 - Persist Ticket And Receipt Correlation.
+- [x] 114 - Persist Ticket And Receipt Correlation.
 - [ ] 115 - Persist Reading And Retention Refs.
 - [ ] 116 - WSC Atomic Commit Markers.
 - [ ] 117 - Recover Pending Submissions.
@@ -1188,6 +1188,8 @@ User story:
 As a user, I want a decided edit to recover with its ticket and receipt
 correlation after restart.
 
+Echo commit: `68cc77cb feat: persist receipt correlation in WSC`.
+
 Acceptance criteria:
 
 - [Echo] Admission ticket, ticketed ingress, and receipt correlation serialize
@@ -1204,10 +1206,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Persist ticket/ingress correlation.
-- [ ] Persist receipt correlation.
-- [ ] Recover outcome handles.
-- [ ] Cover missing correlation.
+- [x] Persist ticket/ingress correlation.
+- [x] Persist receipt correlation.
+- [x] Recover outcome handles.
+- [x] Cover missing correlation.
 
 ### Slice 115 - Persist Reading And Retention Refs
 
