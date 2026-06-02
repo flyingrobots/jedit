@@ -28,21 +28,21 @@ test('locale resolution follows the runtime catalog registry', async () => {
   const { adapter, generated } = await loadI18nModules();
   const original = generated.catalogs[EXTRA_LOCALE];
   const originalMetadata = generated.localeMetadata[EXTRA_LOCALE];
-	  generated.catalogs[EXTRA_LOCALE] = generated.en;
-	  generated.localeMetadata[EXTRA_LOCALE] = {
-	    label: 'Extra',
-	    direction: 'rtl',
-	  };
+  generated.catalogs[EXTRA_LOCALE] = generated.en;
+  generated.localeMetadata[EXTRA_LOCALE] = {
+    label: 'Extra',
+    direction: 'rtl',
+  };
 
-	  try {
-	    const i18n = new adapter.BijouI18nAdapter();
-	    i18n.setLocale(EXTRA_LOCALE);
+  try {
+    const i18n = new adapter.BijouI18nAdapter();
+    i18n.setLocale(EXTRA_LOCALE);
 
-	    assert.equal(i18n.locale, EXTRA_LOCALE);
-	    assert.equal(i18n.localeLabel, 'Extra');
-	    assert.equal(i18n.direction, 'rtl');
-	    assert.equal(i18n.t('footer.mode.browse'), generated.en.footer.mode.browse);
-	  } finally {
+    assert.equal(i18n.locale, EXTRA_LOCALE);
+    assert.equal(i18n.localeLabel, 'Extra');
+    assert.equal(i18n.direction, 'rtl');
+    assert.equal(i18n.t('footer.mode.browse'), generated.en.footer.mode.browse);
+  } finally {
     if (original === undefined) {
       delete generated.catalogs[EXTRA_LOCALE];
     } else {
@@ -110,19 +110,27 @@ test('generated catalogs include the installed application locales', async () =>
     ],
   );
 
-	  i18n.setLocale('ja');
+  i18n.setLocale('ja');
 
-	  assert.equal(i18n.localeLabel, '日本語');
-	  assert.equal(i18n.direction, 'ltr');
-	  assert.equal(i18n.t('footer.mode.preview'), generated.ja.footer.mode.preview);
+  assert.equal(i18n.localeLabel, '日本語');
+  assert.equal(i18n.direction, 'ltr');
+  assert.equal(i18n.t('footer.mode.preview'), generated.ja.footer.mode.preview);
 
-	  i18n.setLocale('me');
+  i18n.setLocale('me');
 
-	  assert.equal(i18n.localeLabel, 'Mirror English');
-	  assert.equal(i18n.direction, 'rtl');
+  assert.equal(i18n.localeLabel, 'Mirror English');
+  assert.equal(i18n.direction, 'rtl');
 
-	  i18n.setLocale('missing-locale');
+  i18n.setLocale('missing-locale');
 
-	  assert.equal(i18n.locale, 'en');
-	  assert.equal(i18n.direction, 'ltr');
-	});
+  assert.equal(i18n.locale, 'en');
+  assert.equal(i18n.direction, 'ltr');
+});
+
+test('mirror English preserves interpolation placeholders while reversing surrounding text', async () => {
+  const { adapter, generated } = await loadI18nModules();
+  const i18n = new adapter.BijouI18nAdapter('me');
+
+  assert.equal(generated.me.footer.context.history_count, '{count} :ecnedive ohcE');
+  assert.equal(i18n.t('footer.context.history_count', { count: 3 }), '3 :ecnedive ohcE');
+});

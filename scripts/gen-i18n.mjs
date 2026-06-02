@@ -11,6 +11,8 @@ const DEFAULT_LOCALE = 'en';
 const DIRECTION_LTR = 'ltr';
 const DIRECTION_RTL = 'rtl';
 const IDENTIFIER_PATTERN = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
+const PLACEHOLDER_SPLIT_PATTERN = /(\{[A-Za-z_][A-Za-z0-9_]*\})/g;
+const PLACEHOLDER_EXACT_PATTERN = /^\{[A-Za-z_][A-Za-z0-9_]*\}$/;
 
 const source = JSON.parse(readFileSync(SOURCE, 'utf8'));
 const root = readRecord(source, 'translations root');
@@ -186,11 +188,23 @@ function propertyKey(key) {
 
 function mirrorMessages(value) {
   if (typeof value === 'string') {
-    return [...value].reverse().join('');
+    return mirrorText(value);
   }
   const mirrored = {};
   for (const [key, child] of Object.entries(value)) {
     mirrored[key] = mirrorMessages(child);
   }
   return mirrored;
+}
+
+function mirrorText(value) {
+  return value
+    .split(PLACEHOLDER_SPLIT_PATTERN)
+    .reverse()
+    .map(mirrorTextPart)
+    .join('');
+}
+
+function mirrorTextPart(value) {
+  return PLACEHOLDER_EXACT_PATTERN.test(value) ? value : [...value].reverse().join('');
 }
