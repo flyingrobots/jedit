@@ -515,7 +515,7 @@ Progress ledger:
 - [x] 114 - Persist Ticket And Receipt Correlation.
 - [x] 115 - Persist Reading And Retention Refs.
 - [x] 116 - WSC Atomic Commit Markers.
-- [ ] 117 - Recover Pending Submissions.
+- [x] 117 - Recover Pending Submissions.
 - [ ] 118 - Recover Decided Submissions.
 - [ ] 119 - Reject Half-Accepted WSC State.
 - [ ] 120 - jedit WSC Workspace Store Adapter.
@@ -1279,6 +1279,8 @@ User story:
 As a user restarting jedit after submitting an edit, I want pending accepted
 submissions to remain visible and honest.
 
+Echo commit: `7fe747a1 feat: recover pending submissions from WSC`.
+
 Acceptance criteria:
 
 - [Echo] Pending submissions recover from WSC.
@@ -1294,10 +1296,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Recover pending submission state.
-- [ ] Keep pending distinct from applied.
-- [ ] Display jedit pending posture.
-- [ ] Prove no hidden retry.
+- [x] Recover pending submission state.
+- [x] Keep pending distinct from applied.
+- [x] Display jedit pending posture.
+- [x] Prove no hidden retry.
 
 ### Slice 118 - Recover Decided Submissions
 
