@@ -535,7 +535,7 @@ Progress ledger:
 - [x] 120 - jedit WSC Workspace Store Adapter.
 - [x] 121 - Startup Recovery From WSC.
 - [x] 122 - Persist Edits After Settlement.
-- [ ] 123 - Restart Round Trip Proof.
+- [x] 123 - Restart Round Trip Proof.
 - [ ] 124 - Historical Basis Selection.
 - [ ] 125 - Current History Export.
 - [ ] 126 - Point-In-Time Export.
@@ -1495,10 +1495,19 @@ Test plan:
 
 Checklist:
 
-- [ ] Build restart round-trip fixture.
-- [ ] Assert materialized text.
-- [ ] Assert evidence recovery.
-- [ ] Add to release gate.
+- [x] Build restart round-trip fixture.
+- [x] Assert materialized text.
+- [x] Assert evidence recovery.
+- [x] Add to release gate.
+
+Proof note:
+
+- `spec/jedit-wsc-restart-round-trip.spec.mjs` proves a WSC-backed edit
+  settlement envelope is written through the real Node workspace store, a fresh
+  runtime recovers the envelope id on restart without carrying stale editor
+  memory, and the recovered bytes still contain the receipt, reading,
+  checkpoint, and materialized-text evidence. Full current-history host export
+  remains slice 125.
 
 ### Slice 124 - Historical Basis Selection
 

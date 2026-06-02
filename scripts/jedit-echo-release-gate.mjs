@@ -39,6 +39,7 @@ const FOCUSED_TESTS = Object.freeze([
   'spec/workspace-app-echo-cutover.spec.mjs',
   'spec/workspace-text-boundaries.spec.mjs',
   'spec/workspace-echo-witness-cli.spec.mjs',
+  'spec/jedit-wsc-restart-round-trip.spec.mjs',
   'spec/production-cutover-guard.spec.mjs',
   'spec/release-quickstart.spec.mjs',
 ]);
