@@ -18,7 +18,8 @@
           "context": {
             "settings": "settings",
             "graft_empty": "open a file to inspect it",
-            "history_empty": "no Echo evidence yet"
+            "history_empty": "no Echo evidence yet",
+            "history_count": "Echo evidence: {count}"
           },
           "hints": {
             "j_k_move": "j/k move",
@@ -66,6 +67,11 @@
             "gg_top": "gg top",
             "esc_cancel": "esc cancel"
           }
+        },
+        "history": {
+          "title": "Echo History",
+          "empty": "No Echo evidence yet",
+          "header": "#   tick  kind        status       evidence       summary"
         }
       }
     },
@@ -87,7 +93,8 @@
           "context": {
             "settings": "paramètres",
             "graft_empty": "ouvrez un fichier pour l'inspecter",
-            "history_empty": "pas encore de preuve Echo"
+            "history_empty": "pas encore de preuve Echo",
+            "history_count": "Preuves Echo : {count}"
           },
           "hints": {
             "j_k_move": "j/k déplacer",
@@ -135,6 +142,11 @@
             "gg_top": "gg haut",
             "esc_cancel": "esc annuler"
           }
+        },
+        "history": {
+          "title": "Historique Echo",
+          "empty": "Pas encore de preuve Echo",
+          "header": "#   tick  type        statut       preuve         résumé"
         }
       }
     },
@@ -156,7 +168,8 @@
           "context": {
             "settings": "impostazioni",
             "graft_empty": "apri un file per ispezionarlo",
-            "history_empty": "nessuna prova Echo ancora"
+            "history_empty": "nessuna prova Echo ancora",
+            "history_count": "Prove Echo: {count}"
           },
           "hints": {
             "j_k_move": "j/k muovi",
@@ -204,6 +217,11 @@
             "gg_top": "gg cima",
             "esc_cancel": "esc annulla"
           }
+        },
+        "history": {
+          "title": "Cronologia Echo",
+          "empty": "Nessuna prova Echo ancora",
+          "header": "#   tick  tipo        stato        prova          riepilogo"
         }
       }
     },
@@ -225,7 +243,8 @@
           "context": {
             "settings": "einstellungen",
             "graft_empty": "datei öffnen zum prüfen",
-            "history_empty": "noch keine Echo-Nachweise"
+            "history_empty": "noch keine Echo-Nachweise",
+            "history_count": "Echo-Nachweise: {count}"
           },
           "hints": {
             "j_k_move": "j/k bewegen",
@@ -273,6 +292,11 @@
             "gg_top": "gg oben",
             "esc_cancel": "esc abbrechen"
           }
+        },
+        "history": {
+          "title": "Echo-Verlauf",
+          "empty": "Noch keine Echo-Nachweise",
+          "header": "#   tick  art         status       nachweis      zusammenfassung"
         }
       }
     },
@@ -294,7 +318,8 @@
           "context": {
             "settings": "ajustes",
             "graft_empty": "abre un archivo para inspeccionarlo",
-            "history_empty": "sin evidencia Echo todavía"
+            "history_empty": "sin evidencia Echo todavía",
+            "history_count": "Evidencia Echo: {count}"
           },
           "hints": {
             "j_k_move": "j/k mover",
@@ -342,6 +367,11 @@
             "gg_top": "gg arriba",
             "esc_cancel": "esc cancelar"
           }
+        },
+        "history": {
+          "title": "Historial Echo",
+          "empty": "Sin evidencia Echo todavía",
+          "header": "#   tick  tipo        estado       evidencia     resumen"
         }
       }
     },
@@ -363,7 +393,8 @@
           "context": {
             "settings": "설정",
             "graft_empty": "검사할 파일을 여세요",
-            "history_empty": "아직 Echo 증거 없음"
+            "history_empty": "아직 Echo 증거 없음",
+            "history_count": "Echo 증거: {count}"
           },
           "hints": {
             "j_k_move": "j/k 이동",
@@ -411,6 +442,11 @@
             "gg_top": "gg 맨 위",
             "esc_cancel": "esc 취소"
           }
+        },
+        "history": {
+          "title": "Echo 기록",
+          "empty": "아직 Echo 증거 없음",
+          "header": "#   tick  종류        상태         증거           요약"
         }
       }
     },
@@ -432,7 +468,8 @@
           "context": {
             "settings": "設定",
             "graft_empty": "検査するファイルを開く",
-            "history_empty": "Echo 証拠はまだありません"
+            "history_empty": "Echo 証拠はまだありません",
+            "history_count": "Echo 証拠: {count}"
           },
           "hints": {
             "j_k_move": "j/k 移動",
@@ -480,6 +517,11 @@
             "gg_top": "gg 先頭",
             "esc_cancel": "esc 取消"
           }
+        },
+        "history": {
+          "title": "Echo 履歴",
+          "empty": "Echo 証拠はまだありません",
+          "header": "#   tick  種類        状態         証拠           概要"
         }
       }
     },
@@ -501,7 +543,8 @@
           "context": {
             "settings": "设置",
             "graft_empty": "打开文件以检查",
-            "history_empty": "还没有 Echo 证据"
+            "history_empty": "还没有 Echo 证据",
+            "history_count": "Echo 证据: {count}"
           },
           "hints": {
             "j_k_move": "j/k 移动",
@@ -549,6 +592,11 @@
             "gg_top": "gg 顶部",
             "esc_cancel": "esc 取消"
           }
+        },
+        "history": {
+          "title": "Echo 历史",
+          "empty": "还没有 Echo 证据",
+          "header": "#   tick  类型        状态         证据           摘要"
         }
       }
     },
@@ -570,7 +618,8 @@
           "context": {
             "settings": "configurações",
             "graft_empty": "abra um arquivo para inspecionar",
-            "history_empty": "nenhuma evidência Echo ainda"
+            "history_empty": "nenhuma evidência Echo ainda",
+            "history_count": "Evidências Echo: {count}"
           },
           "hints": {
             "j_k_move": "j/k mover",
@@ -618,6 +667,836 @@
             "gg_top": "gg topo",
             "esc_cancel": "esc cancelar"
           }
+        },
+        "history": {
+          "title": "Histórico Echo",
+          "empty": "Nenhuma evidência Echo ainda",
+          "header": "#   tick  tipo        status       evidência     resumo"
+        }
+      }
+    },
+    "ru": {
+      "label": "Русский",
+      "direction": "ltr",
+      "messages": {
+        "footer": {
+          "mode": {
+            "browse": "обзор",
+            "insert": "вставка",
+            "normal": "обычный",
+            "preview": "просмотр",
+            "settings": "настройки",
+            "files": "файлы",
+            "graft": "graft",
+            "history": "история"
+          },
+          "context": {
+            "settings": "настройки",
+            "graft_empty": "откройте файл для проверки",
+            "history_empty": "пока нет доказательств Echo",
+            "history_count": "Доказательства Echo: {count}"
+          },
+          "hints": {
+            "j_k_move": "j/k переместить",
+            "enter_change": "enter изменить",
+            "f2_close": "f2 закрыть",
+            "esc_close": "esc закрыть",
+            "j_k_scroll": "j/k прокрутка",
+            "f3_source": "f3 исходник",
+            "f3_preview": "f3 просмотр",
+            "text_input": "ввод текста",
+            "esc_normal": "esc обычный",
+            "ctrl_s_save": "ctrl+s сохранить",
+            "ctrl_t_theme": "ctrl+t тема",
+            "tab_focus": "tab фокус",
+            "tab_indent": "tab отступ",
+            "ctrl_l_scene_picker": "ctrl+l сцена",
+            "scene_picker": "выбор сцены",
+            "ctrl_b_files": "ctrl+b файлы",
+            "ctrl_g_graft": "ctrl+g graft",
+            "ctrl_h_history": "ctrl+h история",
+            "enter_open": "enter открыть",
+            "backspace_up": "backspace вверх",
+            "ctrl_b_close": "ctrl+b закрыть",
+            "enter_jump": "enter перейти",
+            "r_refresh": "r обновить",
+            "ctrl_g_close": "ctrl+g закрыть",
+            "ctrl_h_close": "ctrl+h закрыть",
+            "i_insert": "i вставка",
+            "o_open_line": "o открыть строку",
+            "cc_line": "cc строка",
+            "cw_word": "cw слово",
+            "ce_word_end": "ce конец слова",
+            "c0_start": "c0 начало",
+            "c_end": "c$ конец",
+            "dd_line": "dd строка",
+            "dw_word": "dw слово",
+            "de_word_end": "de конец слова",
+            "d0_start": "d0 начало",
+            "d_end": "d$ конец",
+            "yy_line": "yy строка",
+            "yw_word": "yw слово",
+            "ye_word_end": "ye конец слова",
+            "y0_start": "y0 начало",
+            "y_end": "y$ конец",
+            "gg_top": "gg верх",
+            "esc_cancel": "esc отмена"
+          }
+        },
+        "history": {
+          "title": "История Echo",
+          "empty": "Пока нет доказательств Echo",
+          "header": "#   tick  тип         статус      доказательство  сводка"
+        }
+      }
+    },
+    "ar": {
+      "label": "العربية",
+      "direction": "rtl",
+      "messages": {
+        "footer": {
+          "mode": {
+            "browse": "تصفح",
+            "insert": "إدراج",
+            "normal": "عادي",
+            "preview": "معاينة",
+            "settings": "إعدادات",
+            "files": "ملفات",
+            "graft": "Graft",
+            "history": "السجل"
+          },
+          "context": {
+            "settings": "إعدادات",
+            "graft_empty": "افتح ملفا لفحصه",
+            "history_empty": "لا توجد أدلة Echo بعد",
+            "history_count": "أدلة Echo: {count}"
+          },
+          "hints": {
+            "j_k_move": "j/k تحريك",
+            "enter_change": "enter تغيير",
+            "f2_close": "f2 إغلاق",
+            "esc_close": "esc إغلاق",
+            "j_k_scroll": "j/k تمرير",
+            "f3_source": "f3 المصدر",
+            "f3_preview": "f3 معاينة",
+            "text_input": "إدخال نص",
+            "esc_normal": "esc عادي",
+            "ctrl_s_save": "ctrl+s حفظ",
+            "ctrl_t_theme": "ctrl+t سمة",
+            "tab_focus": "tab تركيز",
+            "tab_indent": "tab إزاحة",
+            "ctrl_l_scene_picker": "ctrl+l مشهد",
+            "scene_picker": "اختيار مشهد",
+            "ctrl_b_files": "ctrl+b ملفات",
+            "ctrl_g_graft": "ctrl+g graft",
+            "ctrl_h_history": "ctrl+h سجل",
+            "enter_open": "enter فتح",
+            "backspace_up": "backspace أعلى",
+            "ctrl_b_close": "ctrl+b إغلاق",
+            "enter_jump": "enter انتقال",
+            "r_refresh": "r تحديث",
+            "ctrl_g_close": "ctrl+g إغلاق",
+            "ctrl_h_close": "ctrl+h إغلاق",
+            "i_insert": "i إدراج",
+            "o_open_line": "o فتح سطر",
+            "cc_line": "cc سطر",
+            "cw_word": "cw كلمة",
+            "ce_word_end": "ce نهاية كلمة",
+            "c0_start": "c0 بداية",
+            "c_end": "c$ نهاية",
+            "dd_line": "dd سطر",
+            "dw_word": "dw كلمة",
+            "de_word_end": "de نهاية كلمة",
+            "d0_start": "d0 بداية",
+            "d_end": "d$ نهاية",
+            "yy_line": "yy سطر",
+            "yw_word": "yw كلمة",
+            "ye_word_end": "ye نهاية كلمة",
+            "y0_start": "y0 بداية",
+            "y_end": "y$ نهاية",
+            "gg_top": "gg أعلى",
+            "esc_cancel": "esc إلغاء"
+          }
+        },
+        "history": {
+          "title": "سجل Echo",
+          "empty": "لا توجد أدلة Echo بعد",
+          "header": "#   tick  النوع       الحالة      الدليل         الملخص"
+        }
+      }
+    },
+    "id": {
+      "label": "Bahasa Indonesia",
+      "direction": "ltr",
+      "messages": {
+        "footer": {
+          "mode": {
+            "browse": "jelajah",
+            "insert": "sisip",
+            "normal": "normal",
+            "preview": "pratinjau",
+            "settings": "pengaturan",
+            "files": "berkas",
+            "graft": "graft",
+            "history": "riwayat"
+          },
+          "context": {
+            "settings": "pengaturan",
+            "graft_empty": "buka berkas untuk diperiksa",
+            "history_empty": "belum ada bukti Echo",
+            "history_count": "Bukti Echo: {count}"
+          },
+          "hints": {
+            "j_k_move": "j/k pindah",
+            "enter_change": "enter ubah",
+            "f2_close": "f2 tutup",
+            "esc_close": "esc tutup",
+            "j_k_scroll": "j/k gulir",
+            "f3_source": "f3 sumber",
+            "f3_preview": "f3 pratinjau",
+            "text_input": "input teks",
+            "esc_normal": "esc normal",
+            "ctrl_s_save": "ctrl+s simpan",
+            "ctrl_t_theme": "ctrl+t tema",
+            "tab_focus": "tab fokus",
+            "tab_indent": "tab inden",
+            "ctrl_l_scene_picker": "ctrl+l adegan",
+            "scene_picker": "pilih adegan",
+            "ctrl_b_files": "ctrl+b berkas",
+            "ctrl_g_graft": "ctrl+g graft",
+            "ctrl_h_history": "ctrl+h riwayat",
+            "enter_open": "enter buka",
+            "backspace_up": "backspace naik",
+            "ctrl_b_close": "ctrl+b tutup",
+            "enter_jump": "enter lompat",
+            "r_refresh": "r segarkan",
+            "ctrl_g_close": "ctrl+g tutup",
+            "ctrl_h_close": "ctrl+h tutup",
+            "i_insert": "i sisip",
+            "o_open_line": "o buka baris",
+            "cc_line": "cc baris",
+            "cw_word": "cw kata",
+            "ce_word_end": "ce akhir kata",
+            "c0_start": "c0 awal",
+            "c_end": "c$ akhir",
+            "dd_line": "dd baris",
+            "dw_word": "dw kata",
+            "de_word_end": "de akhir kata",
+            "d0_start": "d0 awal",
+            "d_end": "d$ akhir",
+            "yy_line": "yy baris",
+            "yw_word": "yw kata",
+            "ye_word_end": "ye akhir kata",
+            "y0_start": "y0 awal",
+            "y_end": "y$ akhir",
+            "gg_top": "gg atas",
+            "esc_cancel": "esc batal"
+          }
+        },
+        "history": {
+          "title": "Riwayat Echo",
+          "empty": "Belum ada bukti Echo",
+          "header": "#   tick  jenis       status      bukti         ringkasan"
+        }
+      }
+    },
+    "tr": {
+      "label": "Türkçe",
+      "direction": "ltr",
+      "messages": {
+        "footer": {
+          "mode": {
+            "browse": "gözat",
+            "insert": "ekle",
+            "normal": "normal",
+            "preview": "önizleme",
+            "settings": "ayarlar",
+            "files": "dosyalar",
+            "graft": "graft",
+            "history": "geçmiş"
+          },
+          "context": {
+            "settings": "ayarlar",
+            "graft_empty": "incelemek için dosya aç",
+            "history_empty": "henüz Echo kanıtı yok",
+            "history_count": "Echo kanıtı: {count}"
+          },
+          "hints": {
+            "j_k_move": "j/k taşı",
+            "enter_change": "enter değiştir",
+            "f2_close": "f2 kapat",
+            "esc_close": "esc kapat",
+            "j_k_scroll": "j/k kaydır",
+            "f3_source": "f3 kaynak",
+            "f3_preview": "f3 önizleme",
+            "text_input": "metin girişi",
+            "esc_normal": "esc normal",
+            "ctrl_s_save": "ctrl+s kaydet",
+            "ctrl_t_theme": "ctrl+t tema",
+            "tab_focus": "tab odak",
+            "tab_indent": "tab girinti",
+            "ctrl_l_scene_picker": "ctrl+l sahne",
+            "scene_picker": "sahne seçici",
+            "ctrl_b_files": "ctrl+b dosyalar",
+            "ctrl_g_graft": "ctrl+g graft",
+            "ctrl_h_history": "ctrl+h geçmiş",
+            "enter_open": "enter aç",
+            "backspace_up": "backspace yukarı",
+            "ctrl_b_close": "ctrl+b kapat",
+            "enter_jump": "enter git",
+            "r_refresh": "r yenile",
+            "ctrl_g_close": "ctrl+g kapat",
+            "ctrl_h_close": "ctrl+h kapat",
+            "i_insert": "i ekle",
+            "o_open_line": "o satır aç",
+            "cc_line": "cc satır",
+            "cw_word": "cw kelime",
+            "ce_word_end": "ce kelime sonu",
+            "c0_start": "c0 başlangıç",
+            "c_end": "c$ son",
+            "dd_line": "dd satır",
+            "dw_word": "dw kelime",
+            "de_word_end": "de kelime sonu",
+            "d0_start": "d0 başlangıç",
+            "d_end": "d$ son",
+            "yy_line": "yy satır",
+            "yw_word": "yw kelime",
+            "ye_word_end": "ye kelime sonu",
+            "y0_start": "y0 başlangıç",
+            "y_end": "y$ son",
+            "gg_top": "gg üst",
+            "esc_cancel": "esc iptal"
+          }
+        },
+        "history": {
+          "title": "Echo Geçmişi",
+          "empty": "Henüz Echo kanıtı yok",
+          "header": "#   tick  tür         durum       kanıt         özet"
+        }
+      }
+    },
+    "hi": {
+      "label": "हिन्दी",
+      "direction": "ltr",
+      "messages": {
+        "footer": {
+          "mode": {
+            "browse": "ब्राउज़",
+            "insert": "सम्मिलित",
+            "normal": "सामान्य",
+            "preview": "पूर्वावलोकन",
+            "settings": "सेटिंग",
+            "files": "फाइलें",
+            "graft": "Graft",
+            "history": "इतिहास"
+          },
+          "context": {
+            "settings": "सेटिंग",
+            "graft_empty": "जांचने के लिए फाइल खोलें",
+            "history_empty": "अभी कोई Echo प्रमाण नहीं",
+            "history_count": "Echo प्रमाण: {count}"
+          },
+          "hints": {
+            "j_k_move": "j/k चलें",
+            "enter_change": "enter बदलें",
+            "f2_close": "f2 बंद",
+            "esc_close": "esc बंद",
+            "j_k_scroll": "j/k स्क्रोल",
+            "f3_source": "f3 स्रोत",
+            "f3_preview": "f3 पूर्वावलोकन",
+            "text_input": "पाठ इनपुट",
+            "esc_normal": "esc सामान्य",
+            "ctrl_s_save": "ctrl+s सहेजें",
+            "ctrl_t_theme": "ctrl+t थीम",
+            "tab_focus": "tab फोकस",
+            "tab_indent": "tab इंडेंट",
+            "ctrl_l_scene_picker": "ctrl+l दृश्य",
+            "scene_picker": "दृश्य चयन",
+            "ctrl_b_files": "ctrl+b फाइलें",
+            "ctrl_g_graft": "ctrl+g graft",
+            "ctrl_h_history": "ctrl+h इतिहास",
+            "enter_open": "enter खोलें",
+            "backspace_up": "backspace ऊपर",
+            "ctrl_b_close": "ctrl+b बंद",
+            "enter_jump": "enter जाएं",
+            "r_refresh": "r ताज़ा",
+            "ctrl_g_close": "ctrl+g बंद",
+            "ctrl_h_close": "ctrl+h बंद",
+            "i_insert": "i सम्मिलित",
+            "o_open_line": "o पंक्ति खोलें",
+            "cc_line": "cc पंक्ति",
+            "cw_word": "cw शब्द",
+            "ce_word_end": "ce शब्द अंत",
+            "c0_start": "c0 शुरुआत",
+            "c_end": "c$ अंत",
+            "dd_line": "dd पंक्ति",
+            "dw_word": "dw शब्द",
+            "de_word_end": "de शब्द अंत",
+            "d0_start": "d0 शुरुआत",
+            "d_end": "d$ अंत",
+            "yy_line": "yy पंक्ति",
+            "yw_word": "yw शब्द",
+            "ye_word_end": "ye शब्द अंत",
+            "y0_start": "y0 शुरुआत",
+            "y_end": "y$ अंत",
+            "gg_top": "gg ऊपर",
+            "esc_cancel": "esc रद्द"
+          }
+        },
+        "history": {
+          "title": "Echo इतिहास",
+          "empty": "अभी कोई Echo प्रमाण नहीं",
+          "header": "#   tick  प्रकार      स्थिति      प्रमाण        सारांश"
+        }
+      }
+    },
+    "nl": {
+      "label": "Nederlands",
+      "direction": "ltr",
+      "messages": {
+        "footer": {
+          "mode": {
+            "browse": "bladeren",
+            "insert": "invoegen",
+            "normal": "normaal",
+            "preview": "voorbeeld",
+            "settings": "instellingen",
+            "files": "bestanden",
+            "graft": "graft",
+            "history": "geschiedenis"
+          },
+          "context": {
+            "settings": "instellingen",
+            "graft_empty": "open een bestand om te inspecteren",
+            "history_empty": "nog geen Echo-bewijs",
+            "history_count": "Echo-bewijs: {count}"
+          },
+          "hints": {
+            "j_k_move": "j/k bewegen",
+            "enter_change": "enter wijzigen",
+            "f2_close": "f2 sluiten",
+            "esc_close": "esc sluiten",
+            "j_k_scroll": "j/k scrollen",
+            "f3_source": "f3 bron",
+            "f3_preview": "f3 voorbeeld",
+            "text_input": "tekstinvoer",
+            "esc_normal": "esc normaal",
+            "ctrl_s_save": "ctrl+s opslaan",
+            "ctrl_t_theme": "ctrl+t thema",
+            "tab_focus": "tab focus",
+            "tab_indent": "tab inspringen",
+            "ctrl_l_scene_picker": "ctrl+l scène",
+            "scene_picker": "scènekiezer",
+            "ctrl_b_files": "ctrl+b bestanden",
+            "ctrl_g_graft": "ctrl+g graft",
+            "ctrl_h_history": "ctrl+h geschiedenis",
+            "enter_open": "enter openen",
+            "backspace_up": "backspace omhoog",
+            "ctrl_b_close": "ctrl+b sluiten",
+            "enter_jump": "enter springen",
+            "r_refresh": "r vernieuwen",
+            "ctrl_g_close": "ctrl+g sluiten",
+            "ctrl_h_close": "ctrl+h sluiten",
+            "i_insert": "i invoegen",
+            "o_open_line": "o regel openen",
+            "cc_line": "cc regel",
+            "cw_word": "cw woord",
+            "ce_word_end": "ce woord-einde",
+            "c0_start": "c0 begin",
+            "c_end": "c$ einde",
+            "dd_line": "dd regel",
+            "dw_word": "dw woord",
+            "de_word_end": "de woord-einde",
+            "d0_start": "d0 begin",
+            "d_end": "d$ einde",
+            "yy_line": "yy regel",
+            "yw_word": "yw woord",
+            "ye_word_end": "ye woord-einde",
+            "y0_start": "y0 begin",
+            "y_end": "y$ einde",
+            "gg_top": "gg boven",
+            "esc_cancel": "esc annuleren"
+          }
+        },
+        "history": {
+          "title": "Echo-geschiedenis",
+          "empty": "Nog geen Echo-bewijs",
+          "header": "#   tick  soort       status      bewijs        samenvatting"
+        }
+      }
+    },
+    "pl": {
+      "label": "Polski",
+      "direction": "ltr",
+      "messages": {
+        "footer": {
+          "mode": {
+            "browse": "przeglądaj",
+            "insert": "wstaw",
+            "normal": "normalny",
+            "preview": "podgląd",
+            "settings": "ustawienia",
+            "files": "pliki",
+            "graft": "graft",
+            "history": "historia"
+          },
+          "context": {
+            "settings": "ustawienia",
+            "graft_empty": "otwórz plik do sprawdzenia",
+            "history_empty": "brak jeszcze dowodów Echo",
+            "history_count": "Dowody Echo: {count}"
+          },
+          "hints": {
+            "j_k_move": "j/k przesuń",
+            "enter_change": "enter zmień",
+            "f2_close": "f2 zamknij",
+            "esc_close": "esc zamknij",
+            "j_k_scroll": "j/k przewiń",
+            "f3_source": "f3 źródło",
+            "f3_preview": "f3 podgląd",
+            "text_input": "wpisywanie tekstu",
+            "esc_normal": "esc normalny",
+            "ctrl_s_save": "ctrl+s zapisz",
+            "ctrl_t_theme": "ctrl+t motyw",
+            "tab_focus": "tab fokus",
+            "tab_indent": "tab wcięcie",
+            "ctrl_l_scene_picker": "ctrl+l scena",
+            "scene_picker": "wybór sceny",
+            "ctrl_b_files": "ctrl+b pliki",
+            "ctrl_g_graft": "ctrl+g graft",
+            "ctrl_h_history": "ctrl+h historia",
+            "enter_open": "enter otwórz",
+            "backspace_up": "backspace w górę",
+            "ctrl_b_close": "ctrl+b zamknij",
+            "enter_jump": "enter skocz",
+            "r_refresh": "r odśwież",
+            "ctrl_g_close": "ctrl+g zamknij",
+            "ctrl_h_close": "ctrl+h zamknij",
+            "i_insert": "i wstaw",
+            "o_open_line": "o otwórz linię",
+            "cc_line": "cc linia",
+            "cw_word": "cw słowo",
+            "ce_word_end": "ce koniec słowa",
+            "c0_start": "c0 początek",
+            "c_end": "c$ koniec",
+            "dd_line": "dd linia",
+            "dw_word": "dw słowo",
+            "de_word_end": "de koniec słowa",
+            "d0_start": "d0 początek",
+            "d_end": "d$ koniec",
+            "yy_line": "yy linia",
+            "yw_word": "yw słowo",
+            "ye_word_end": "ye koniec słowa",
+            "y0_start": "y0 początek",
+            "y_end": "y$ koniec",
+            "gg_top": "gg góra",
+            "esc_cancel": "esc anuluj"
+          }
+        },
+        "history": {
+          "title": "Historia Echo",
+          "empty": "Brak jeszcze dowodów Echo",
+          "header": "#   tick  typ         status      dowód        podsumowanie"
+        }
+      }
+    },
+    "vi": {
+      "label": "Tiếng Việt",
+      "direction": "ltr",
+      "messages": {
+        "footer": {
+          "mode": {
+            "browse": "duyệt",
+            "insert": "chèn",
+            "normal": "thường",
+            "preview": "xem trước",
+            "settings": "cài đặt",
+            "files": "tệp",
+            "graft": "graft",
+            "history": "lịch sử"
+          },
+          "context": {
+            "settings": "cài đặt",
+            "graft_empty": "mở tệp để kiểm tra",
+            "history_empty": "chưa có bằng chứng Echo",
+            "history_count": "Bằng chứng Echo: {count}"
+          },
+          "hints": {
+            "j_k_move": "j/k di chuyển",
+            "enter_change": "enter đổi",
+            "f2_close": "f2 đóng",
+            "esc_close": "esc đóng",
+            "j_k_scroll": "j/k cuộn",
+            "f3_source": "f3 nguồn",
+            "f3_preview": "f3 xem trước",
+            "text_input": "nhập văn bản",
+            "esc_normal": "esc thường",
+            "ctrl_s_save": "ctrl+s lưu",
+            "ctrl_t_theme": "ctrl+t giao diện",
+            "tab_focus": "tab tiêu điểm",
+            "tab_indent": "tab thụt lề",
+            "ctrl_l_scene_picker": "ctrl+l cảnh",
+            "scene_picker": "chọn cảnh",
+            "ctrl_b_files": "ctrl+b tệp",
+            "ctrl_g_graft": "ctrl+g graft",
+            "ctrl_h_history": "ctrl+h lịch sử",
+            "enter_open": "enter mở",
+            "backspace_up": "backspace lên",
+            "ctrl_b_close": "ctrl+b đóng",
+            "enter_jump": "enter nhảy",
+            "r_refresh": "r làm mới",
+            "ctrl_g_close": "ctrl+g đóng",
+            "ctrl_h_close": "ctrl+h đóng",
+            "i_insert": "i chèn",
+            "o_open_line": "o mở dòng",
+            "cc_line": "cc dòng",
+            "cw_word": "cw từ",
+            "ce_word_end": "ce cuối từ",
+            "c0_start": "c0 đầu",
+            "c_end": "c$ cuối",
+            "dd_line": "dd dòng",
+            "dw_word": "dw từ",
+            "de_word_end": "de cuối từ",
+            "d0_start": "d0 đầu",
+            "d_end": "d$ cuối",
+            "yy_line": "yy dòng",
+            "yw_word": "yw từ",
+            "ye_word_end": "ye cuối từ",
+            "y0_start": "y0 đầu",
+            "y_end": "y$ cuối",
+            "gg_top": "gg đầu",
+            "esc_cancel": "esc hủy"
+          }
+        },
+        "history": {
+          "title": "Lịch sử Echo",
+          "empty": "Chưa có bằng chứng Echo",
+          "header": "#   tick  loại        trạng thái   bằng chứng   tóm tắt"
+        }
+      }
+    },
+    "th": {
+      "label": "ไทย",
+      "direction": "ltr",
+      "messages": {
+        "footer": {
+          "mode": {
+            "browse": "เรียกดู",
+            "insert": "แทรก",
+            "normal": "ปกติ",
+            "preview": "ดูตัวอย่าง",
+            "settings": "ตั้งค่า",
+            "files": "ไฟล์",
+            "graft": "Graft",
+            "history": "ประวัติ"
+          },
+          "context": {
+            "settings": "ตั้งค่า",
+            "graft_empty": "เปิดไฟล์เพื่อตรวจสอบ",
+            "history_empty": "ยังไม่มีหลักฐาน Echo",
+            "history_count": "หลักฐาน Echo: {count}"
+          },
+          "hints": {
+            "j_k_move": "j/k ย้าย",
+            "enter_change": "enter เปลี่ยน",
+            "f2_close": "f2 ปิด",
+            "esc_close": "esc ปิด",
+            "j_k_scroll": "j/k เลื่อน",
+            "f3_source": "f3 ต้นฉบับ",
+            "f3_preview": "f3 ดูตัวอย่าง",
+            "text_input": "ป้อนข้อความ",
+            "esc_normal": "esc ปกติ",
+            "ctrl_s_save": "ctrl+s บันทึก",
+            "ctrl_t_theme": "ctrl+t ธีม",
+            "tab_focus": "tab โฟกัส",
+            "tab_indent": "tab เยื้อง",
+            "ctrl_l_scene_picker": "ctrl+l ฉาก",
+            "scene_picker": "เลือกฉาก",
+            "ctrl_b_files": "ctrl+b ไฟล์",
+            "ctrl_g_graft": "ctrl+g graft",
+            "ctrl_h_history": "ctrl+h ประวัติ",
+            "enter_open": "enter เปิด",
+            "backspace_up": "backspace ขึ้น",
+            "ctrl_b_close": "ctrl+b ปิด",
+            "enter_jump": "enter ไป",
+            "r_refresh": "r รีเฟรช",
+            "ctrl_g_close": "ctrl+g ปิด",
+            "ctrl_h_close": "ctrl+h ปิด",
+            "i_insert": "i แทรก",
+            "o_open_line": "o เปิดบรรทัด",
+            "cc_line": "cc บรรทัด",
+            "cw_word": "cw คำ",
+            "ce_word_end": "ce จบคำ",
+            "c0_start": "c0 เริ่ม",
+            "c_end": "c$ จบ",
+            "dd_line": "dd บรรทัด",
+            "dw_word": "dw คำ",
+            "de_word_end": "de จบคำ",
+            "d0_start": "d0 เริ่ม",
+            "d_end": "d$ จบ",
+            "yy_line": "yy บรรทัด",
+            "yw_word": "yw คำ",
+            "ye_word_end": "ye จบคำ",
+            "y0_start": "y0 เริ่ม",
+            "y_end": "y$ จบ",
+            "gg_top": "gg บน",
+            "esc_cancel": "esc ยกเลิก"
+          }
+        },
+        "history": {
+          "title": "ประวัติ Echo",
+          "empty": "ยังไม่มีหลักฐาน Echo",
+          "header": "#   tick  ชนิด       สถานะ       หลักฐาน      สรุป"
+        }
+      }
+    },
+    "fa": {
+      "label": "فارسی",
+      "direction": "rtl",
+      "messages": {
+        "footer": {
+          "mode": {
+            "browse": "مرور",
+            "insert": "درج",
+            "normal": "عادی",
+            "preview": "پیش‌نمایش",
+            "settings": "تنظیمات",
+            "files": "فایل‌ها",
+            "graft": "Graft",
+            "history": "تاریخچه"
+          },
+          "context": {
+            "settings": "تنظیمات",
+            "graft_empty": "برای بررسی یک فایل باز کنید",
+            "history_empty": "هنوز مدرک Echo وجود ندارد",
+            "history_count": "مدارک Echo: {count}"
+          },
+          "hints": {
+            "j_k_move": "j/k حرکت",
+            "enter_change": "enter تغییر",
+            "f2_close": "f2 بستن",
+            "esc_close": "esc بستن",
+            "j_k_scroll": "j/k پیمایش",
+            "f3_source": "f3 منبع",
+            "f3_preview": "f3 پیش‌نمایش",
+            "text_input": "ورودی متن",
+            "esc_normal": "esc عادی",
+            "ctrl_s_save": "ctrl+s ذخیره",
+            "ctrl_t_theme": "ctrl+t پوسته",
+            "tab_focus": "tab تمرکز",
+            "tab_indent": "tab تورفتگی",
+            "ctrl_l_scene_picker": "ctrl+l صحنه",
+            "scene_picker": "انتخاب صحنه",
+            "ctrl_b_files": "ctrl+b فایل‌ها",
+            "ctrl_g_graft": "ctrl+g graft",
+            "ctrl_h_history": "ctrl+h تاریخچه",
+            "enter_open": "enter باز کردن",
+            "backspace_up": "backspace بالا",
+            "ctrl_b_close": "ctrl+b بستن",
+            "enter_jump": "enter پرش",
+            "r_refresh": "r تازه‌سازی",
+            "ctrl_g_close": "ctrl+g بستن",
+            "ctrl_h_close": "ctrl+h بستن",
+            "i_insert": "i درج",
+            "o_open_line": "o باز کردن خط",
+            "cc_line": "cc خط",
+            "cw_word": "cw واژه",
+            "ce_word_end": "ce پایان واژه",
+            "c0_start": "c0 آغاز",
+            "c_end": "c$ پایان",
+            "dd_line": "dd خط",
+            "dw_word": "dw واژه",
+            "de_word_end": "de پایان واژه",
+            "d0_start": "d0 آغاز",
+            "d_end": "d$ پایان",
+            "yy_line": "yy خط",
+            "yw_word": "yw واژه",
+            "ye_word_end": "ye پایان واژه",
+            "y0_start": "y0 آغاز",
+            "y_end": "y$ پایان",
+            "gg_top": "gg بالا",
+            "esc_cancel": "esc لغو"
+          }
+        },
+        "history": {
+          "title": "تاریخچه Echo",
+          "empty": "هنوز مدرک Echo وجود ندارد",
+          "header": "#   tick  نوع         وضعیت      مدرک         خلاصه"
+        }
+      }
+    },
+    "he": {
+      "label": "עברית",
+      "direction": "rtl",
+      "messages": {
+        "footer": {
+          "mode": {
+            "browse": "עיון",
+            "insert": "הוספה",
+            "normal": "רגיל",
+            "preview": "תצוגה",
+            "settings": "הגדרות",
+            "files": "קבצים",
+            "graft": "Graft",
+            "history": "היסטוריה"
+          },
+          "context": {
+            "settings": "הגדרות",
+            "graft_empty": "פתח קובץ לבדיקה",
+            "history_empty": "עדיין אין ראיות Echo",
+            "history_count": "ראיות Echo: {count}"
+          },
+          "hints": {
+            "j_k_move": "j/k הזז",
+            "enter_change": "enter שנה",
+            "f2_close": "f2 סגור",
+            "esc_close": "esc סגור",
+            "j_k_scroll": "j/k גלול",
+            "f3_source": "f3 מקור",
+            "f3_preview": "f3 תצוגה",
+            "text_input": "קלט טקסט",
+            "esc_normal": "esc רגיל",
+            "ctrl_s_save": "ctrl+s שמור",
+            "ctrl_t_theme": "ctrl+t ערכת נושא",
+            "tab_focus": "tab מיקוד",
+            "tab_indent": "tab הזחה",
+            "ctrl_l_scene_picker": "ctrl+l סצנה",
+            "scene_picker": "בחירת סצנה",
+            "ctrl_b_files": "ctrl+b קבצים",
+            "ctrl_g_graft": "ctrl+g graft",
+            "ctrl_h_history": "ctrl+h היסטוריה",
+            "enter_open": "enter פתח",
+            "backspace_up": "backspace למעלה",
+            "ctrl_b_close": "ctrl+b סגור",
+            "enter_jump": "enter קפוץ",
+            "r_refresh": "r רענן",
+            "ctrl_g_close": "ctrl+g סגור",
+            "ctrl_h_close": "ctrl+h סגור",
+            "i_insert": "i הוסף",
+            "o_open_line": "o פתח שורה",
+            "cc_line": "cc שורה",
+            "cw_word": "cw מילה",
+            "ce_word_end": "ce סוף מילה",
+            "c0_start": "c0 התחלה",
+            "c_end": "c$ סוף",
+            "dd_line": "dd שורה",
+            "dw_word": "dw מילה",
+            "de_word_end": "de סוף מילה",
+            "d0_start": "d0 התחלה",
+            "d_end": "d$ סוף",
+            "yy_line": "yy שורה",
+            "yw_word": "yw מילה",
+            "ye_word_end": "ye סוף מילה",
+            "y0_start": "y0 התחלה",
+            "y_end": "y$ סוף",
+            "gg_top": "gg למעלה",
+            "esc_cancel": "esc בטל"
+          }
+        },
+        "history": {
+          "title": "היסטוריית Echo",
+          "empty": "עדיין אין ראיות Echo",
+          "header": "#   tick  סוג         מצב        ראיה         סיכום"
         }
       }
     }

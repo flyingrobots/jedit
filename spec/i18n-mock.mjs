@@ -1,4 +1,4 @@
-export function createI18nMock() {
+export function createI18nMock(overrides = {}) {
   const hints = {
     j_k_move: 'j/k move',
     j_k_scroll: 'j/k scroll',
@@ -30,12 +30,21 @@ export function createI18nMock() {
       label: 'English',
       direction: 'ltr',
     }],
-    t: (path) => {
-      const parts = path.split('.');
-      const id = parts[parts.length - 1];
-      if (hints[id] != null) return hints[id];
+	    t: (path, values) => {
+	      if (path === 'footer.context.history_count') {
+	        return `Echo evidence: ${values?.count ?? 0}`;
+	      }
+	      if (path === 'history.title') return 'Echo History';
+	      if (path === 'history.empty') return 'No Echo evidence yet';
+	      if (path === 'history.header') {
+	        return '#   tick  kind        status       evidence       summary';
+	      }
+	      const parts = path.split('.');
+	      const id = parts[parts.length - 1];
+	      if (hints[id] != null) return hints[id];
       return id.replace(/_/g, ' ');
     },
-    setLocale: () => {}
-  };
-}
+	    setLocale: () => {},
+    ...overrides,
+	  };
+		}

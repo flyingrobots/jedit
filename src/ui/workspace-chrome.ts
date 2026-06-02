@@ -28,7 +28,7 @@ const FOOTER_MODE_HISTORY = 'history';
 const FOOTER_CONTEXT_SETTINGS = 'footer.context.settings';
 const FOOTER_CONTEXT_GRAFT_EMPTY = 'footer.context.graft_empty';
 const FOOTER_CONTEXT_HISTORY_EMPTY = 'footer.context.history_empty';
-const FOOTER_CONTEXT_HISTORY_PREFIX = 'Echo evidence';
+const FOOTER_CONTEXT_HISTORY_COUNT = 'footer.context.history_count';
 
 const DrawerModeKeys: Record<DrawerKind, string> = Object.freeze({
   [DrawerKinds.Files]: FOOTER_MODE_FILES,
@@ -403,7 +403,7 @@ function historyFooterContextLine(state: WorkspaceFooterState): string {
   const count = state.echoHistoryCount ?? 0;
   return count === 0
     ? state.i18n.t(FOOTER_CONTEXT_HISTORY_EMPTY)
-    : `${FOOTER_CONTEXT_HISTORY_PREFIX}: ${String(count)}`;
+    : state.i18n.t(FOOTER_CONTEXT_HISTORY_COUNT, { count });
 }
 
 function displayName(path: string): string {

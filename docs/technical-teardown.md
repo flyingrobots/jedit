@@ -648,8 +648,8 @@ flowchart TD
     P1 --> P2["updateSettingsKey<br />theme picker overlay"]
     P2 --> P3["updateScenePickerKey<br />title scene chooser"]
     P3 --> P4["updateTitleScreenKey<br />title screen controls"]
-    P4 --> P5["updateGlobalWorkspaceKey<br />open/close file + graft drawers"]
-    P5 --> P6["updateFocusedPaneKey<br />delegate to focused pane:<br />editor / file drawer / graft"]
+    P4 --> P5["updateGlobalWorkspaceKey<br />open/close file + graft + history drawers"]
+    P5 --> P6["updateFocusedPaneKey<br />delegate to focused pane:<br />editor / file drawer / graft / history"]
 ```
 
 The priority chain is architectural policy encoded as code order. `updatePerfWorkspaceKey` is first — the profiler toggle must always work, even if the editor has swallowed key focus. Overlays (`updateSettingsKey`, `updateScenePickerKey`) intercept before global workspace commands because an open overlay should capture all input. The focused pane is last because it handles only keys that nothing else claimed.
@@ -731,8 +731,8 @@ sequenceDiagram
     Bijou->>RW: view(model)
     RW->>RW: createSurface(columns, rows)
     RW->>RW: fillSurface (background color)
-    RW->>Layout: resolveWorkspaceLayout(columns, fileProgress, graftProgress)
-    Layout-->>RW: viewer:{x,width}, fileDrawer:{x,width}, graftDrawer:{x,width}
+    RW->>Layout: resolveWorkspaceLayout(columns, fileProgress, graftProgress, historyProgress)
+    Layout-->>RW: viewer, fileDrawer, graftDrawer, historyDrawer rectangles
     RW->>Chrome: paintWorkspaceTitle — blit at row 0
     RW->>Viewer: renderViewer(model, width, bodyHeight)
     Viewer-->>RW: editor Surface (source or preview)
@@ -743,6 +743,9 @@ sequenceDiagram
     RW->>Drawer: renderDrawer(Graft, model, width, height)
     Drawer-->>RW: graft outline Surface
     RW->>RW: screen.blit(graftSurface, graftDrawer.x, 2)
+    RW->>Drawer: renderDrawer(History, model, width, height)
+    Drawer-->>RW: Echo history Surface
+    RW->>RW: screen.blit(historySurface, historyDrawer.x, 2)
     RW->>RW: paintWorkspaceFocusEdge
     RW->>RW: paintWorkspaceFooter
     RW->>RW: paintWorkspaceOverlays
@@ -753,7 +756,11 @@ sequenceDiagram
 
 ### Layout as Pure Math
 
-`resolveWorkspaceLayout` maps three numbers (terminal columns, file drawer progress 0–1, graft drawer progress 0–1) to three pixel rectangles. The animation is implicit — the layout function is called every frame, and the progress values in the model are incremented by animation `Cmd`s over time. There is no "animation system" — the animation is just model state advancing on a timer.
+`resolveWorkspaceLayout` maps terminal columns plus file, Graft, and Echo
+History drawer progress values to pixel rectangles. The animation is implicit —
+the layout function is called every frame, and the progress values in the model
+are incremented by animation `Cmd`s over time. There is no "animation system" —
+the animation is just model state advancing on a timer.
 
 ### Surface Composition via `blit`
 

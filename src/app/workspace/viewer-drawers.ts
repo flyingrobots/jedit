@@ -42,7 +42,13 @@ function renderHistoryDrawer(model: WorkspaceModel, width: number, height: numbe
 
   const innerWidth = Math.max(MIN_VIEWPORT_DIMENSION, width - (DRAWER_INNER_PAD * DRAWER_PAD_MULTIPLIER));
   const innerHeight = Math.max(MIN_VIEWPORT_DIMENSION, height - (DRAWER_INNER_PAD * DRAWER_PAD_MULTIPLIER));
-  const lines = renderEchoHistoryLines(model.echoHistory, model.echoHistorySelectedIndex, innerWidth, innerHeight);
+  const lines = renderEchoHistoryLines(
+    model.echoHistory,
+    model.echoHistorySelectedIndex,
+    innerWidth,
+    innerHeight,
+    model.i18n,
+  );
   const content = stringToSurface(fitBlock(lines.join('\n'), innerWidth, innerHeight), innerWidth, innerHeight);
   applyBackground(content, model.jeditTheme.surface.drawer);
   surface.blit(content, DRAWER_INNER_PAD, DRAWER_INNER_PAD);

@@ -226,13 +226,16 @@ test('workspace footer obtains command hints from i18n', async () => {
   const i18n = {
     locale: 'en',
     direction: 'ltr',
-    t: (path) => {
-      requestedKeys.push(path);
-      if (path.startsWith('footer.mode.')) {
-        return path.slice('footer.mode.'.length);
-      }
-      return `<${path}>`;
-    },
+	    t: (path, values) => {
+	      requestedKeys.push(path);
+	      if (path.startsWith('footer.mode.')) {
+	        return path.slice('footer.mode.'.length);
+	      }
+	      if (path === 'footer.context.history_count') {
+	        return `<${path}:${values?.count}>`;
+	      }
+	      return `<${path}>`;
+	    },
     setLocale: () => undefined,
   };
 
@@ -299,16 +302,19 @@ test('workspace footer right-aligns RTL footer text by visual content width', as
 test('workspace footer obtains context labels from i18n', async () => {
   const footer = await loadFooterModule();
   const requestedKeys = [];
-  const i18n = {
-    locale: 'en',
-    direction: 'ltr',
-    t: (path) => {
-      requestedKeys.push(path);
-      if (path.startsWith('footer.mode.')) {
-        return path.slice('footer.mode.'.length);
-      }
-      return `<${path}>`;
-    },
+	  const i18n = {
+	    locale: 'en',
+	    direction: 'ltr',
+	    t: (path, values) => {
+	      requestedKeys.push(path);
+	      if (path === 'footer.context.history_count') {
+	        return `<${path}:${values?.count}>`;
+	      }
+	      if (path.startsWith('footer.mode.')) {
+	        return path.slice('footer.mode.'.length);
+	      }
+	      return `<${path}>`;
+	    },
     setLocale: () => undefined,
   };
   const base = {
@@ -340,7 +346,14 @@ test('workspace footer obtains context labels from i18n', async () => {
     focusPane: 'history',
     historyDrawerOpen: true,
   })[1], '<footer.context.history_empty>');
+  assert.equal(footer.workspaceFooterLines({
+    ...base,
+    focusPane: 'history',
+    historyDrawerOpen: true,
+    echoHistoryCount: 2,
+  })[1], '<footer.context.history_count:2>');
   assert.equal(requestedKeys.includes('footer.context.settings'), true);
   assert.equal(requestedKeys.includes('footer.context.graft_empty'), true);
   assert.equal(requestedKeys.includes('footer.context.history_empty'), true);
+  assert.equal(requestedKeys.includes('footer.context.history_count'), true);
 });

@@ -10,7 +10,6 @@ import type { I18nDirection, I18nLocaleOption, I18nPort } from '../ports/i18n.js
 type TranslationNode = string | { [key: string]: TranslationNode };
 
 const DEFAULT_LOCALE: Locale = 'en';
-const DEFAULT_DIRECTION: I18nDirection = 'ltr';
 const LOCALE_OPTIONS: readonly I18nLocaleOption[] = generatedLocales.map((locale) => ({
   locale,
   label: localeMetadata[locale].label,
@@ -22,10 +21,11 @@ export class BijouI18nAdapter implements I18nPort {
   private _direction: I18nDirection;
   private _catalog: TranslationSchema;
 
-  constructor(locale: Locale = DEFAULT_LOCALE, direction: I18nDirection = DEFAULT_DIRECTION) {
-    this._locale = locale;
-    this._direction = direction;
-    this._catalog = catalogs[locale];
+  constructor(locale: string = DEFAULT_LOCALE) {
+    const resolved = resolveLocale(locale);
+    this._locale = resolved;
+    this._direction = localeMetadata[resolved].direction;
+    this._catalog = catalogs[resolved];
   }
 
   get locale(): string {
@@ -49,9 +49,9 @@ export class BijouI18nAdapter implements I18nPort {
     return translation == null ? path : interpolateTranslation(translation, values);
   }
 
-  setLocale(locale: string, direction: I18nDirection): void {
+  setLocale(locale: string): void {
     this._locale = resolveLocale(locale);
-    this._direction = direction;
+    this._direction = localeMetadata[this._locale].direction;
     this._catalog = catalogs[this._locale];
   }
 }

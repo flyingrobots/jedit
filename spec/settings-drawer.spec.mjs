@@ -53,10 +53,11 @@ test('settings drawer renders structured rows and highlights the selected row', 
 
   assert.match(text, /Settings/);
   assert.match(text, /F2\/Esc close/);
+  assert.match(text, /● English Current/);
   assert.match(text, /↻ Theme/);
   assert.match(text, /☑ Footer/);
   assert.match(text, /↻ Markdown preview/);
-  assert.equal(surface.get(2, 7).char, '›');
-  assert.equal(surface.get(2, 7).fg, theme.cursor.normal.fg);
-  assert.equal(surface.get(2, 7).bg, theme.cursor.normal.bg);
+  assert.equal(surface.get(2, 8).char, '›');
+  assert.equal(surface.get(2, 8).fg, theme.cursor.normal.fg);
+  assert.equal(surface.get(2, 8).bg, theme.cursor.normal.bg);
 });

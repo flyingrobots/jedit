@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { createI18nMock } from './i18n-mock.mjs';
 import { createWorkspaceEchoAppHarness } from './workspace-echo-app-harness.mjs';
 import { importDist, surfaceText } from './workspace-helpers.mjs';
 
@@ -50,4 +51,49 @@ test('ctrl-h focuses Echo history and j/k navigates its selected row', async () 
   assert.equal(harness.model.echoHistorySelectedIndex, selected - 1);
   await harness.key('j');
   assert.equal(harness.model.echoHistorySelectedIndex, selected);
+});
+
+test('Echo history keeps the appended entry selected after tick sorting', async () => {
+  const history = await importDist('app', 'workspace', 'echo-history.js');
+  let entries = [];
+  entries = history.appendEchoHistoryEntry(entries, {
+    kind: history.EchoHistoryEntryKinds.Open,
+    status: history.EchoHistoryEntryStatuses.Opened,
+    evidenceId: 'tick:10',
+    summary: 'late',
+  });
+  entries = history.appendEchoHistoryEntry(entries, {
+    kind: history.EchoHistoryEntryKinds.Edit,
+    status: history.EchoHistoryEntryStatuses.Applied,
+    evidenceId: 'tick:5',
+    summary: 'early',
+  });
+
+  const selected = history.sortedEchoHistoryIndexForSequence(entries, entries.at(-1).sequence);
+  const lines = history.renderEchoHistoryLines(entries, selected, 80, 5, createI18nMock());
+
+  assert.equal(selected, 0);
+  assert.match(lines.join('\n'), /›\s+2\s+5\s+edit\s+applied\s+tick:5\s+early/);
+});
+
+test('Echo history drawer obtains its chrome text from i18n', async () => {
+  const history = await importDist('app', 'workspace', 'echo-history.js');
+  const i18n = {
+    t: (path) => `<${path}>`,
+  };
+  const empty = history.renderEchoHistoryLines([], 0, 60, 3, i18n).join('\n');
+  const listed = history.renderEchoHistoryLines([
+    {
+      sequence: 1,
+      tickId: 1,
+      kind: history.EchoHistoryEntryKinds.Open,
+      status: history.EchoHistoryEntryStatuses.Opened,
+      evidenceId: 'tick:1',
+      summary: 'opened',
+    },
+  ], 0, 60, 3, i18n).join('\n');
+
+  assert.match(empty, /<history\.title>/);
+  assert.match(empty, /<history\.empty>/);
+  assert.match(listed, /<history\.header>/);
 });

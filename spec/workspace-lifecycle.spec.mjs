@@ -32,7 +32,7 @@ test('graft lifecycle command returns a runtime issue when close fails', async (
   assert.equal(result.issue.atMs, 321);
 });
 
-test('workspace settings exposes locale and direction runtime tokens', async () => {
+test('workspace settings selects a locale through runtime tokens', async () => {
   const settings = await importDist('app', 'workspace', 'settings.js');
   const localeChanges = [];
   const nextLocale = {
@@ -48,19 +48,16 @@ test('workspace settings exposes locale and direction runtime tokens', async () 
         label: 'English',
         direction: settings.WorkspaceTextDirections.Ltr,
       }, nextLocale],
-      setLocale: (locale, direction) => {
-        localeChanges.push({ locale, direction });
-      },
+	      setLocale: (locale) => {
+	        localeChanges.push(locale);
+	      },
     }),
   };
 
-  settings.workspaceSettingsHandlers.toggleLocale(model);
+  settings.workspaceSettingsHandlers.selectLocale(model, nextLocale);
 
-  assert.deepEqual(localeChanges, [{
-    locale: nextLocale.locale,
-    direction: nextLocale.direction,
-  }]);
-});
+	  assert.deepEqual(localeChanges, [nextLocale.locale]);
+	});
 
 test('workspace exposes runtime tokens for drawer, focus, file entry, and key dispatch values', async () => {
   const [drawerLayout, panelFocus, fileSystem, workspaceKey] = await Promise.all([

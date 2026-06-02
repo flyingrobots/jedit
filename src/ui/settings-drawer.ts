@@ -17,6 +17,8 @@ const SETTINGS_ROW_HEIGHT = 2;
 const SETTINGS_SELECTED_MARK = '›';
 const SETTINGS_UNSELECTED_MARK = ' ';
 const SETTINGS_CHOICE_MARK = '↻';
+const SETTINGS_OPTION_SELECTED_MARK = '●';
+const SETTINGS_OPTION_MARK = '○';
 const SETTINGS_CHECKED_MARK = '☑';
 const SETTINGS_UNCHECKED_MARK = '☐';
 const SETTINGS_CLOSE_HINT = `${JEDIT_SETTINGS_TOGGLE_LABEL.toUpperCase()}/Esc close`;
@@ -52,10 +54,11 @@ export function renderSettingsDrawer(options: RenderSettingsDrawerOptions): Surf
   fillSurface(surface, options.theme.surface.drawer);
   paintText(surface, SETTINGS_TITLE, SETTINGS_LEFT_PAD, SETTINGS_HEADER_ROW, settingsTitleToken(options));
   paintText(surface, SETTINGS_CLOSE_HINT, SETTINGS_LEFT_PAD, SETTINGS_HINT_ROW, settingsHintToken(options));
+  const firstVisibleRow = firstVisibleSettingsRow(options.rows, options.selectedIndex, options.height);
 
   let y = SETTINGS_FIRST_ROW;
   let section = '';
-  for (let index = 0; index < options.rows.length && y < options.height; index += 1) {
+  for (let index = firstVisibleRow; index < options.rows.length && y < options.height; index += 1) {
     const row = options.rows[index];
     if (row == null) {
       continue;
@@ -108,7 +111,19 @@ function rowMark(row: JeditSettingsRow): string {
   if (row.kind === JEDIT_SETTING_ROW_KIND.Choice) {
     return SETTINGS_CHOICE_MARK;
   }
+  if (row.kind === JEDIT_SETTING_ROW_KIND.Option) {
+    return row.checked === true ? SETTINGS_OPTION_SELECTED_MARK : SETTINGS_OPTION_MARK;
+  }
   return row.checked === true ? SETTINGS_CHECKED_MARK : SETTINGS_UNCHECKED_MARK;
+}
+
+function firstVisibleSettingsRow(
+  rows: readonly JeditSettingsRow[],
+  selectedIndex: number,
+  height: number,
+): number {
+  const visibleRows = Math.max(1, Math.floor((height - SETTINGS_FIRST_ROW) / SETTINGS_ROW_HEIGHT));
+  return Math.max(0, Math.min(selectedIndex, rows.length - visibleRows));
 }
 
 function paintText(surface: Surface, text: string, x: number, y: number, token: JeditStyleToken): void {

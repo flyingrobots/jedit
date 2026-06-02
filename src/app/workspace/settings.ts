@@ -1,11 +1,11 @@
 import {
   jeditSettingsRows,
+  type JeditSettingsLocaleSelection,
   type JeditSettingsHandlers,
 } from '../settings-session.js';
 import { isWorkspaceMarkdownFile } from './editor-session.js';
 import { type WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
-import type { I18nLocaleOption } from '../../ports/i18n.js';
 import { nextJeditTheme, oppositeJeditTheme } from '../../ui/jedit-themes.js';
 import { ViewModes } from './view-mode.js';
 
@@ -18,12 +18,6 @@ export const WorkspaceTextDirections = Object.freeze({
   Ltr: 'ltr',
   Rtl: 'rtl',
 } as const);
-
-const FALLBACK_LOCALE_OPTION: I18nLocaleOption = {
-  locale: WorkspaceLocales.Default,
-  label: 'English',
-  direction: WorkspaceTextDirections.Ltr,
-};
 
 export function settingsRows(model: WorkspaceModel): ReturnType<typeof jeditSettingsRows> {
   return jeditSettingsRows({
@@ -57,19 +51,12 @@ export const workspaceSettingsHandlers: JeditSettingsHandlers<WorkspaceModel, Wo
     preview = { ...model, viewMode: nextMode };
     return [preview, []];
   },
-  toggleLocale: (model) => {
-    const nextLocale = nextWorkspaceLocale(model.i18n.locale, model.i18n.locales);
-    model.i18n.setLocale(nextLocale.locale, nextLocale.direction);
+  selectLocale: (model, locale) => {
+    applyWorkspaceLocale(model, locale);
     return [model, []];
   },
 };
 
-function nextWorkspaceLocale(currentLocale: string, locales: readonly I18nLocaleOption[]): I18nLocaleOption {
-  if (locales.length === 0) {
-    return FALLBACK_LOCALE_OPTION;
-  }
-
-  const currentIndex = locales.findIndex((locale) => locale.locale === currentLocale);
-  const nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % locales.length;
-  return locales[nextIndex] ?? FALLBACK_LOCALE_OPTION;
+function applyWorkspaceLocale(model: WorkspaceModel, locale: JeditSettingsLocaleSelection): void {
+  model.i18n.setLocale(locale.locale);
 }

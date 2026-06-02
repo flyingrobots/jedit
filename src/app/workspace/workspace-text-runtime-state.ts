@@ -10,6 +10,7 @@ import {
   appendEchoHistoryEntry,
   EchoHistoryEntryKinds,
   EchoHistoryEntryStatuses,
+  sortedEchoHistoryIndexForSequence,
   type EchoHistoryEntry,
   type EchoHistoryEntryDraft,
 } from './echo-history.js';
@@ -266,10 +267,11 @@ function withTextAuthority(
 
 function withEchoHistoryEntry(model: WorkspaceModel, draft: EchoHistoryEntryDraft): WorkspaceModel {
   const echoHistory = appendEchoHistoryEntry(model.echoHistory ?? EMPTY_ECHO_HISTORY, draft);
+  const sequence = echoHistory.at(-1)?.sequence ?? EMPTY_ECHO_HISTORY.length;
   return {
     ...model,
     echoHistory,
-    echoHistorySelectedIndex: Math.max(0, echoHistory.length - 1),
+    echoHistorySelectedIndex: sortedEchoHistoryIndexForSequence(echoHistory, sequence),
   };
 }
 

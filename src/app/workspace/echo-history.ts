@@ -1,4 +1,5 @@
 import type { KeyMsg } from '@flyingrobots/bijou-tui';
+import type { I18nPort } from '../../ports/i18n.js';
 import { fitLine } from '../../ui/workspace-render.js';
 import { clampIndex } from './viewport.js';
 import { isWorkspaceDownKey, isWorkspaceUpKey, WorkspaceKeys } from './workspace-key.js';
@@ -16,9 +17,9 @@ const STATUS_EXPORTED = 'exported';
 const STATUS_OBSTRUCTED = 'obstructed';
 const NO_TICK = '-';
 const NO_EVIDENCE = '-';
-const TITLE = 'Echo History';
-const EMPTY_MESSAGE = 'No Echo evidence yet';
-const HEADER = '#   tick  kind        status       evidence       summary';
+const TITLE_KEY = 'history.title';
+const EMPTY_MESSAGE_KEY = 'history.empty';
+const HEADER_KEY = 'history.header';
 const TICK_PATTERN = /(?:tick|receipt):(\d+)/;
 const HISTORY_PAGE_STEP = 10;
 const SEQUENCE_CELL_WIDTH = 3;
@@ -89,6 +90,15 @@ export function sortedEchoHistoryEntries(
   return [...entries].sort(compareEchoHistoryEntries);
 }
 
+export function sortedEchoHistoryIndexForSequence(
+  entries: readonly EchoHistoryEntry[],
+  sequence: number,
+): number {
+  const sorted = sortedEchoHistoryEntries(entries);
+  const index = sorted.findIndex((entry) => entry.sequence === sequence);
+  return index < 0 ? clampIndex(entries.length - 1, entries.length) : index;
+}
+
 export function updateEchoHistorySelectionFromKey(
   msg: KeyMsg,
   selectedIndex: number,
@@ -117,12 +127,18 @@ export function renderEchoHistoryLines(
   selectedIndex: number,
   width: number,
   height: number,
+  i18n: I18nPort,
 ): readonly string[] {
   const sorted = sortedEchoHistoryEntries(entries);
   const rows = sorted.length === 0
-    ? [EMPTY_MESSAGE]
-    : [HEADER, ...visibleRows(sorted, selectedIndex, Math.max(1, height - 2))];
-  return [TITLE, ...rows].slice(0, height).map((line) => fitLine(line, width));
+    ? [historyText(i18n, EMPTY_MESSAGE_KEY)]
+    : [
+        historyText(i18n, HEADER_KEY),
+        ...visibleRows(sorted, selectedIndex, Math.max(1, height - 2)),
+      ];
+  return [historyText(i18n, TITLE_KEY), ...rows]
+    .slice(0, height)
+    .map((line) => fitLine(line, width));
 }
 
 function visibleRows(
@@ -131,7 +147,9 @@ function visibleRows(
   visible: number,
 ): readonly string[] {
   const start = historyScrollStart(selectedIndex, entries.length, visible);
-  return entries.slice(start, start + visible).map((entry, offset) => historyRow(entry, start + offset, selectedIndex));
+  return entries
+    .slice(start, start + visible)
+    .map((entry, offset) => historyRow(entry, start + offset, selectedIndex));
 }
 
 function historyRow(entry: EchoHistoryEntry, rowIndex: number, selectedIndex: number): string {
@@ -161,6 +179,10 @@ function cell(value: string, width: number): string {
 
 function tickLabel(entry: EchoHistoryEntry): string {
   return entry.tickId == null ? NO_TICK : String(entry.tickId);
+}
+
+function historyText(i18n: I18nPort, key: string): string {
+  return i18n.t(key);
 }
 
 function nextSequence(entries: readonly EchoHistoryEntry[]): number {

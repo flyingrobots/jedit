@@ -19,7 +19,7 @@ export interface I18nPort {
   t(path: string, values?: Record<string, string | number>): string;
 
   /**
-   * Set the current locale and direction.
+   * Set the current locale. Direction follows locale metadata.
    */
-  setLocale(locale: string, direction: I18nDirection): void;
+  setLocale(locale: string): void;
 }

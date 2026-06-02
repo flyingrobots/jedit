@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { importDist, mockI18n, mockJeditTheme, mockRuntime, surfaceText } from './workspace-helpers.mjs';
+import { createI18nMock } from './i18n-mock.mjs';
+import { importDist, mockJeditTheme, mockRuntime, surfaceText } from './workspace-helpers.mjs';
 
 const DEFAULT_NOW_MS = 42;
 const DEFAULT_COLUMNS = 100;
@@ -33,7 +34,7 @@ export async function createWorkspaceEchoAppHarness(options = {}) {
     initialModel: {
       titleSceneSeed: 0.5,
       jeditTheme: themes.resolveInitialJeditTheme(undefined),
-      i18n: mockI18n(),
+      i18n: options.i18n ?? createI18nMock(),
       entries: options.entries ?? [{
         kind: fileSystem.FileEntryKinds.File,
         name: options.fileName ?? 'notes.md',
