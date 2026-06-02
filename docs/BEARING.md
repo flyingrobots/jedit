@@ -509,7 +509,7 @@ Progress ledger:
 - [x] 108 - Preview From Reading Material.
 - [x] 109 - Multi-Buffer Authority Map.
 - [x] 110 - Fixture-Local Fallback Quarantine.
-- [ ] 111 - WSC Durability Scope Document.
+- [x] 111 - WSC Durability Scope Document.
 - [ ] 112 - Echo WSC Store Port.
 - [ ] 113 - Persist Accepted Submission Events.
 - [ ] 114 - Persist Ticket And Receipt Correlation.
@@ -1099,6 +1099,8 @@ User story:
 As a maintainer, I want a precise WSC durability scope before code changes, so
 we do not turn persistence into unbounded storage redesign.
 
+Scope doc: `docs/design/0035-jedit-wsc-durability-scope.md`.
+
 Acceptance criteria:
 
 - The doc defines what WSC must persist for jedit editing history.
@@ -1115,10 +1117,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Write WSC durability scope.
-- [ ] Define accepted restart states.
-- [ ] Define jedit export boundary.
-- [ ] Link from BEARING.
+- [x] Write WSC durability scope.
+- [x] Define accepted restart states.
+- [x] Define jedit export boundary.
+- [x] Link from BEARING.
 
 ### Slice 112 - Echo WSC Store Port
 
