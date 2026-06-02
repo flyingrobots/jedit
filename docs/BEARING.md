@@ -511,7 +511,7 @@ Progress ledger:
 - [x] 110 - Fixture-Local Fallback Quarantine.
 - [x] 111 - WSC Durability Scope Document.
 - [x] 112 - Echo WSC Store Port.
-- [ ] 113 - Persist Accepted Submission Events.
+- [x] 113 - Persist Accepted Submission Events.
 - [ ] 114 - Persist Ticket And Receipt Correlation.
 - [ ] 115 - Persist Reading And Retention Refs.
 - [ ] 116 - WSC Atomic Commit Markers.
@@ -1158,6 +1158,8 @@ User story:
 As Echo, I want accepted submissions written to WSC before tick decision, so
 accepted-but-not-yet-decided jedit edits survive restart.
 
+Echo commit: `98936624 feat: persist accepted submissions in WSC`.
+
 Acceptance criteria:
 
 - [Echo] Accepted submission events serialize with stable identity.
@@ -1174,10 +1176,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Serialize accepted submission event.
-- [ ] Preserve duplicate posture.
-- [ ] Block half-accepted state.
-- [ ] Expose pending posture to jedit.
+- [x] Serialize accepted submission event.
+- [x] Preserve duplicate posture.
+- [x] Block half-accepted state.
+- [x] Expose pending posture to jedit.
 
 ### Slice 114 - Persist Ticket And Receipt Correlation
 
