@@ -387,59 +387,6 @@ test('title scene keeps checker floor material contrast stable across built-in t
   }
 });
 
-test('title floor light effects expose sphere shadows and caustics', async () => {
-  const { title, titleScene } = await loadTitleModules();
-  const spheres = [
-    {
-      kind: titleScene.TITLE_SCENE_SHAPE_KIND.Sphere,
-      position: [0, 1, 0],
-      radius: 1.25,
-      footprintRadius: 1.25,
-      height: 2.5,
-      color: [255, 255, 255],
-      reflectivity: 0.5,
-    },
-  ];
-
-  const underSphere = title.titleFloorLightEffectsAt([0, 0, 0], spheres, 0);
-  const farAway = title.titleFloorLightEffectsAt([20, 0, 20], spheres, 0);
-
-  assert.ok(underSphere.shadowMultiplier < 1);
-  assert.ok(underSphere.contactShadowMultiplier < 1);
-  assert.ok(underSphere.causticStrength > 0);
-  assert.equal(farAway.shadowMultiplier, 1);
-  assert.equal(farAway.contactShadowMultiplier, 1);
-  assert.equal(farAway.causticStrength, 0);
-});
-
-test('title environment does not report floor hits once floor fade reaches zero', async () => {
-  const { titleSceneEnvironment } = await loadTitleModules();
-  const colors = {
-    surface: [5, 7, 12],
-    floorDark: [55, 75, 88],
-    floorLight: [222, 232, 232],
-  };
-  const floor = {
-    kind: titleSceneEnvironment.TITLE_SCENE_FLOOR_KIND.Solid,
-    fadeDistance: 2,
-  };
-  const visibleHit = titleSceneEnvironment.nearestTitleEnvironmentSurfaceHit(
-    [0, 1, 0],
-    [0, -1, 0],
-    { floor },
-    colors,
-  );
-  const fadedHit = titleSceneEnvironment.nearestTitleEnvironmentSurfaceHit(
-    [0, 3, 0],
-    [0, -1, 0],
-    { floor },
-    colors,
-  );
-
-  assert.ok(visibleHit != null);
-  assert.equal(fadedHit, undefined);
-});
-
 test('title screen is deterministic for a fixed scene seed and frame time', async () => {
   const { title, themes } = await loadTitleModules();
   const theme = themes.availableJeditThemes()[0];

@@ -12,6 +12,7 @@ export interface TitleSceneMaterialColors {
   readonly surface: Color3;
   readonly floorDark: Color3;
   readonly floorLight: Color3;
+  readonly spotlight: Color3;
 }
 
 const LUMINANCE_RED_WEIGHT = 0.2126;
@@ -42,13 +43,15 @@ export function titleSceneMaterialColors(theme: JeditTheme): TitleSceneMaterialC
 }
 
 function titleSceneBaseColors(theme: JeditTheme): Omit<TitleSceneMaterialColors, 'floorDark' | 'floorLight'> {
+  const accent = titleSceneThemeColor(theme, TITLE_SCENE_ACCENT_VARIABLE, TITLE_SCENE_ACCENT_COLOR);
   return {
-    accent: titleSceneThemeColor(theme, TITLE_SCENE_ACCENT_VARIABLE, TITLE_SCENE_ACCENT_COLOR),
+    accent,
     info: titleSceneThemeColor(theme, TITLE_SCENE_INFO_VARIABLE, TITLE_SCENE_INFO_COLOR),
     success: titleSceneThemeColor(theme, TITLE_SCENE_SUCCESS_VARIABLE, TITLE_SCENE_SUCCESS_COLOR),
     ink: titleSceneThemeColor(theme, TITLE_SCENE_INK_VARIABLE, TITLE_SCENE_INK_COLOR),
     muted: titleSceneThemeColor(theme, TITLE_SCENE_MUTED_VARIABLE, TITLE_SCENE_MUTED_COLOR),
     surface: titleSceneThemeColor(theme, TITLE_SCENE_SURFACE_VARIABLE, TITLE_SCENE_SURFACE_COLOR),
+    spotlight: accent,
   };
 }
 

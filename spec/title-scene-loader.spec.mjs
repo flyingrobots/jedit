@@ -61,6 +61,42 @@ test('loaded mesh scenes do not expose scene-authored mesh position as ray-hit s
   assert.equal(hit.object, loadedMesh);
 });
 
+test('scene loader decodes bounded optical material fields', async () => {
+  const { loader, titleScene } = await loadTitleSceneLoaderModules();
+  const scene = loader.parseTitleSceneJson({
+    objects: [
+      {
+        kind: titleScene.TITLE_SCENE_SHAPE_KIND.Sphere,
+        position: [0, 1, 0],
+        radius: 1,
+        color: [120, 220, 255],
+        reflectivity: 0.12,
+        transparency: 0.64,
+        refractiveIndex: 1.45,
+      },
+    ],
+  }, {});
+  const glass = scene.objects[0];
+
+  assert.equal(glass.transparency, 0.64);
+  assert.equal(glass.refractiveIndex, 1.45);
+  assert.throws(
+    () => loader.parseTitleSceneJson({
+      objects: [
+        {
+          kind: titleScene.TITLE_SCENE_SHAPE_KIND.Sphere,
+          position: [0, 1, 0],
+          radius: 1,
+          color: [120, 220, 255],
+          reflectivity: 0.12,
+          transparency: 1.64,
+        },
+      ],
+    }, {}),
+    (error) => error?.name === 'SceneDecodeError' && String(error.message).includes('transparency'),
+  );
+});
+
 test('built-in scene loader accepts an injected scene directory without mutating dist scenes', async () => {
   const { loader } = await loadTitleSceneLoaderModules();
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'jedit-source-scenes-'));

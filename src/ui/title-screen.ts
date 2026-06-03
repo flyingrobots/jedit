@@ -9,10 +9,9 @@ import { type JeditTheme } from './jedit-theme.js';
 import { flyingRobotsLogoCellBounds, paintFlyingRobotsLogo } from './flyingrobots-logo.js';
 import {
   generateTitleScene,
-  intersectsTitleSceneObjectAlongRay,
   nearestTitleSceneObjectHit,
-  titleSceneObjectFootprintCenter,
   type TitleScene,
+  type TitleSceneCameraPlacement,
   type TitleSceneObject,
   type TitleSceneVector3,
 } from './title-scene.js';
@@ -20,7 +19,6 @@ import {
   nearestTitleEnvironmentSurfaceHit,
   titleSceneBackgroundColor,
   titleSceneLightDirection,
-  type TitleSceneEnvironment,
 } from './title-scene-environment.js';
 import { paintTitleLogo, titleLogoCellBounds } from './title-logo.js';
 import type { TitleMesh } from './title-mesh.js';
@@ -35,7 +33,14 @@ import {
   titleSceneMaterialColors,
   type TitleSceneMaterialColors,
 } from './title-scene-material-colors.js';
-import type { ReflectedEnvironmentColorOptions, TitleSceneRayContext, TitleSceneSampleOptions } from './title-screen-sample.js';
+import {
+  TITLE_KEY_LIGHT_DIRECTION,
+  TITLE_SKY_TINT,
+  titleFloorLightEffectsAtWithLight,
+  titleObjectSurfaceColor,
+  titleSceneSpotlightAt,
+} from './title-screen-optics.js';
+import type { TitleSceneRayContext, TitleSceneSampleOptions } from './title-screen-sample.js';
 
 type Vector3 = TitleSceneVector3;
 type Color3 = RGB;
@@ -43,6 +48,7 @@ export type TitleSceneSphere = TitleSceneObject;
 export { flyingRobotsLogoCellBounds } from './flyingrobots-logo.js';
 export { titleSceneMaterialColors, type TitleSceneMaterialColors } from './title-scene-material-colors.js';
 export { titleLogoCellBounds } from './title-logo.js';
+export { titleFloorLightEffectsAt } from './title-screen-optics.js';
 
 export const TITLE_RENDER_MODE = {
   Braille: 'braille',
@@ -87,32 +93,6 @@ const DEFAULT_TITLE_SCENE_SEED = 0.5;
 export const TITLE_CAMERA_DRIFT_RATE = 0.024;
 const CAMERA_HEIGHT = 2.65;
 const CAMERA_TARGET_Y = 0.78;
-const LIGHT_AMBIENT = 0.24;
-const LIGHT_DIFFUSE = 0.76;
-const KEY_LIGHT_DIRECTION: Vector3 = normalize([-1.3, 2.8, -1.7]);
-const SPECULAR_POWER = 28;
-const SPECULAR_STRENGTH = 0.52;
-const RIM_LIGHT_POWER = 2.2;
-const RIM_LIGHT_STRENGTH = 0.74;
-const REFLECTION_EDGE_BIAS = 0.28;
-const REFLECTION_FRESNEL_POWER = 3;
-const MIRROR_REFLECTIVITY_THRESHOLD = 0.95;
-const MIRROR_REFLECTION_AMOUNT = 1;
-const REFLECTION_OBJECT_TINT = 1.18;
-const SKY_TINT = 1.08;
-const SURFACE_REFLECTION_TINT = 0.72;
-const SHADOW_RAY_BIAS = 0.03;
-const FLOOR_SHADOW_MULTIPLIER = 0.34;
-const CONTACT_SHADOW_RADIUS_SCALE = 1.32;
-const CONTACT_SHADOW_STRENGTH = 0.72;
-const CONTACT_SHADOW_POWER = 1.75;
-const CONTACT_SHADOW_MIN_MULTIPLIER = 0.18;
-const CAUSTIC_RADIUS_SCALE = 2.4;
-const CAUSTIC_WAVE_FREQUENCY = 3.1;
-const CAUSTIC_WAVE_SECONDARY_FREQUENCY = 1.7;
-const CAUSTIC_TIME_RATE = 0.9;
-const CAUSTIC_STRENGTH = 0.45;
-const MAX_CAUSTIC_STRENGTH = 0.42;
 const BRAILLE_DITHER_MATRIX_SIZE = 4;
 const BRAILLE_DITHER_DENOMINATOR = BRAILLE_DITHER_MATRIX_SIZE * BRAILLE_DITHER_MATRIX_SIZE;
 const RGB_CHANNEL_MAX = 255;
@@ -153,6 +133,7 @@ export function renderTitleScreen(
       time: frameTime,
       camAngle,
       camRadius,
+      spotlightCamera: scene.camera,
       objects: scene.objects,
       colors,
       environment: scene.environment,
@@ -178,7 +159,7 @@ function paintTitlePresentationLogos(surface: Surface, options: TitlePresentatio
 
 function sceneSampleAt(options: TitleSceneSampleOptions): BrailleShaderSample {
   const context = titleSceneRayContext(options);
-  const objectHit = nearestTitleSceneObjectHit(context.origin, context.ray, options.objects);
+  const objectHit = nearestTitleSceneObjectHit(context.origin, context.ray, options.objects, undefined, options.time);
   const environmentHit = nearestTitleEnvironmentSurfaceHit(
     context.origin,
     context.ray,
@@ -194,7 +175,7 @@ function sceneSampleAt(options: TitleSceneSampleOptions): BrailleShaderSample {
     return environmentSceneSample(options, context, environmentHit);
   }
 
-  const background = scaleColor(titleSceneBackgroundColor(options.environment, options.colors), SKY_TINT);
+  const background = scaleColor(titleSceneBackgroundColor(options.environment, options.colors), TITLE_SKY_TINT);
   return {
     on: false,
     fgRGB: background,
@@ -202,21 +183,32 @@ function sceneSampleAt(options: TitleSceneSampleOptions): BrailleShaderSample {
   };
 }
 
-function titleSceneRayContext(options: TitleSceneSampleOptions): TitleSceneRayContext {
+export function titleSceneRayContext(options: TitleSceneSampleOptions): TitleSceneRayContext {
   const aspect = options.cols / Math.max(1, options.rows);
   const rx = (options.u * 2 - 1) * aspect;
   const ry = options.v * 2 - 1;
   const finalAngle = options.camAngle + (options.time * TITLE_CAMERA_DRIFT_RATE);
+  const cameraStart = titleSceneCameraPosition(options.spotlightCamera);
   const origin: Vector3 = [
     Math.sin(finalAngle) * options.camRadius,
     CAMERA_HEIGHT,
     Math.cos(finalAngle) * options.camRadius,
   ];
+  const sphereCenter: Vector3 = [0, CAMERA_TARGET_Y, 0];
   return {
     origin,
     ray: getRayDir(origin, [0, CAMERA_TARGET_Y, 0], [rx, -ry - 0.2, 2.7]),
-    lightDirection: titleSceneLightDirection(options.environment) ?? KEY_LIGHT_DIRECTION,
+    lightDirection: titleSceneLightDirection(options.environment) ?? TITLE_KEY_LIGHT_DIRECTION,
+    spotlight: titleSceneSpotlightAt(cameraStart, sphereCenter, options.colors.spotlight),
   };
+}
+
+function titleSceneCameraPosition(camera: TitleSceneCameraPlacement): Vector3 {
+  return [
+    Math.sin(camera.angle) * camera.radius,
+    CAMERA_HEIGHT,
+    Math.cos(camera.angle) * camera.radius,
+  ];
 }
 
 function objectSceneSample(
@@ -224,36 +216,11 @@ function objectSceneSample(
   context: TitleSceneRayContext,
   objectHit: NonNullable<ReturnType<typeof nearestTitleSceneObjectHit>>,
 ): BrailleShaderSample {
-  const normal = objectHit.normal;
-  const reflectionColor = objectReflectionColor(options, context, objectHit);
-  const fresnel = Math.pow(1 - Math.max(0, dot(scale(context.ray, -1), normal)), REFLECTION_FRESNEL_POWER);
-  const reflectionAmount = titleObjectReflectionAmount(objectHit.object.reflectivity, fresnel);
   return {
     on: true,
-    fgRGB: addColor(
-      mixColor(shadedObjectColor(objectHit, context.ray, options.colors, options.environment, context.lightDirection), reflectionColor, reflectionAmount),
-      objectRimLightColor(objectHit, context.ray, options.colors, options.environment),
-    ),
+    fgRGB: titleObjectSurfaceColor(options, context, objectHit),
     bgRGB: options.colors.surface,
   };
-}
-
-function objectReflectionColor(
-  options: TitleSceneSampleOptions,
-  context: TitleSceneRayContext,
-  objectHit: NonNullable<ReturnType<typeof nearestTitleSceneObjectHit>>,
-): Color3 {
-  const point = add(context.origin, scale(context.ray, objectHit.distance));
-  return reflectedEnvironmentColor({
-    point: add(point, scale(objectHit.normal, SHADOW_RAY_BIAS)),
-    ray: reflect(context.ray, objectHit.normal),
-    colors: options.colors,
-    objects: options.objects,
-    time: options.time,
-    ignoredObject: objectHit.object,
-    environment: options.environment,
-    lightDirection: context.lightDirection,
-  });
 }
 
 function environmentSceneSample(
@@ -281,147 +248,6 @@ function brailleSubpixelVisible(u: number, v: number, cols: number, rows: number
   const y = Math.floor(v * rows * 4) % BRAILLE_DITHER_MATRIX_SIZE;
   const threshold = (BRAILLE_DITHER_MATRIX[y]![x]! + 0.5) / BRAILLE_DITHER_DENOMINATOR;
   return (titleColorLuminance(color) / RGB_CHANNEL_MAX) >= threshold;
-}
-
-function titleObjectReflectionAmount(reflectivity: number, fresnel: number): number {
-  if (reflectivity >= MIRROR_REFLECTIVITY_THRESHOLD) {
-    return MIRROR_REFLECTION_AMOUNT;
-  }
-  return reflectivity * (REFLECTION_EDGE_BIAS + ((1 - REFLECTION_EDGE_BIAS) * fresnel));
-}
-
-function reflectedEnvironmentColor(options: ReflectedEnvironmentColorOptions): Color3 {
-  const {
-    point,
-    ray,
-    colors,
-    objects,
-    time,
-    ignoredObject,
-    environment,
-    lightDirection,
-  } = options;
-  const objectHit = nearestTitleSceneObjectHit(point, ray, objects, ignoredObject);
-  if (objectHit != null) {
-    return scaleColor(shadedObjectColor(objectHit, ray, colors, environment, lightDirection), REFLECTION_OBJECT_TINT);
-  }
-
-  const environmentHit = nearestTitleEnvironmentSurfaceHit(point, ray, environment, colors);
-  if (environmentHit != null) {
-    const effects = environmentHit.receivesFloorEffects
-      ? titleFloorLightEffectsAtWithLight(environmentHit.point, objects, time, lightDirection)
-      : { shadowMultiplier: 1, contactShadowMultiplier: 1, causticStrength: 0 };
-    const causticColor = scaleColor(colors.info, effects.causticStrength);
-    return scaleColor(
-      addColor(scaleColor(environmentHit.color, effects.shadowMultiplier * effects.contactShadowMultiplier), causticColor),
-      SURFACE_REFLECTION_TINT,
-    );
-  }
-
-  return mixColor(scaleColor(titleSceneBackgroundColor(environment, colors), SKY_TINT), colors.muted, Math.max(0, ray[1]));
-}
-
-function shadedObjectColor(
-  objectHit: { readonly object: TitleSceneObject; readonly normal: Vector3 },
-  ray: Vector3,
-  colors: TitleSceneMaterialColors,
-  environment: TitleSceneEnvironment | undefined,
-  lightDirection: Vector3,
-): Color3 {
-  const light = Math.max(0, dot(objectHit.normal, lightDirection));
-  const intensity = (environment?.light?.ambient ?? LIGHT_AMBIENT) + (light * (environment?.light?.diffuse ?? LIGHT_DIFFUSE));
-  const viewDirection = scale(ray, -1);
-  const halfVector = normalize(add(lightDirection, viewDirection));
-  const specular = Math.pow(Math.max(0, dot(objectHit.normal, halfVector)), SPECULAR_POWER) * (environment?.light?.specularStrength ?? SPECULAR_STRENGTH);
-  return addColor(scaleColor(objectHit.object.color, intensity), scaleColor(colors.ink, specular));
-}
-
-function objectRimLightColor(
-  objectHit: { readonly object: TitleSceneObject; readonly normal: Vector3 },
-  ray: Vector3,
-  colors: TitleSceneMaterialColors,
-  environment: TitleSceneEnvironment | undefined,
-): Color3 {
-  const viewAlignment = Math.max(0, dot(objectHit.normal, scale(ray, -1)));
-  const strength = Math.pow(1 - viewAlignment, RIM_LIGHT_POWER) * (environment?.light?.rimStrength ?? RIM_LIGHT_STRENGTH);
-  const color = objectHit.object.reflectivity >= MIRROR_REFLECTIVITY_THRESHOLD ? colors.ink : colors.info;
-  return scaleColor(color, strength);
-}
-
-export function titleFloorLightEffectsAt(
-  point: Vector3,
-  objects: readonly TitleSceneObject[],
-  time: number,
-): TitleFloorLightEffects {
-  return titleFloorLightEffectsAtWithLight(point, objects, time, KEY_LIGHT_DIRECTION);
-}
-
-function titleFloorLightEffectsAtWithLight(
-  point: Vector3,
-  objects: readonly TitleSceneObject[],
-  time: number,
-  lightDirection: Vector3,
-): TitleFloorLightEffects {
-  return {
-    shadowMultiplier: titleFloorPointInShadow(point, objects, lightDirection) ? FLOOR_SHADOW_MULTIPLIER : 1,
-    contactShadowMultiplier: titleFloorContactShadowMultiplierAt(point, objects),
-    causticStrength: titleFloorCausticStrengthAt(point, objects, time),
-  };
-}
-
-function titleFloorPointInShadow(point: Vector3, objects: readonly TitleSceneObject[], lightDirection: Vector3): boolean {
-  const shadowOrigin = add(point, [0, SHADOW_RAY_BIAS, 0]);
-  return objects.some((object) => intersectsTitleSceneObjectAlongRay(shadowOrigin, lightDirection, object));
-}
-
-function titleFloorCausticStrengthAt(
-  point: Vector3,
-  objects: readonly TitleSceneObject[],
-  time: number,
-): number {
-  let strength = 0;
-  for (const object of objects) {
-    if (object.reflectivity <= 0) {
-      continue;
-    }
-    const footprintCenter = titleSceneObjectFootprintCenter(object);
-    const dx = point[0] - footprintCenter[0];
-    const dz = point[2] - footprintCenter[2];
-    const distance = Math.sqrt((dx * dx) + (dz * dz));
-    const radius = (object.footprintRadius ?? object.radius) * CAUSTIC_RADIUS_SCALE;
-    const falloff = Math.max(0, 1 - (distance / radius));
-    if (falloff <= 0) {
-      continue;
-    }
-    const wave = (Math.sin(
-      (dx * CAUSTIC_WAVE_FREQUENCY)
-        + (dz * CAUSTIC_WAVE_SECONDARY_FREQUENCY)
-        + (time * CAUSTIC_TIME_RATE),
-    ) + 1) / 2;
-    strength += falloff * wave * object.reflectivity * CAUSTIC_STRENGTH;
-  }
-  return Math.min(MAX_CAUSTIC_STRENGTH, strength);
-}
-
-function titleFloorContactShadowMultiplierAt(point: Vector3, objects: readonly TitleSceneObject[]): number {
-  let strength = 0;
-  for (const object of objects) {
-    const footprintCenter = titleSceneObjectFootprintCenter(object);
-    const dx = point[0] - footprintCenter[0];
-    const dz = point[2] - footprintCenter[2];
-    const falloff = Math.max(0, 1 - (Math.sqrt((dx * dx) + (dz * dz)) / (object.footprintRadius * CONTACT_SHADOW_RADIUS_SCALE)));
-    strength = Math.max(strength, Math.pow(falloff, CONTACT_SHADOW_POWER) * CONTACT_SHADOW_STRENGTH);
-  }
-  return Math.max(CONTACT_SHADOW_MIN_MULTIPLIER, 1 - strength);
-}
-
-function mixColor(from: Color3, to: Color3, ratio: number): Color3 {
-  const clamped = Math.max(0, Math.min(1, ratio));
-  return [
-    Math.round(from[0] + ((to[0] - from[0]) * clamped)),
-    Math.round(from[1] + ((to[1] - from[1]) * clamped)),
-    Math.round(from[2] + ((to[2] - from[2]) * clamped)),
-  ];
 }
 
 function scaleColor(color: Color3, scalar: number): Color3 {
@@ -460,10 +286,6 @@ function normalize(vector: Vector3): Vector3 {
   return length === 0 ? [0, 0, 0] : [vector[0] / length, vector[1] / length, vector[2] / length];
 }
 
-function dot(a: Vector3, b: Vector3): number {
-  return (a[0] * b[0]) + (a[1] * b[1]) + (a[2] * b[2]);
-}
-
 function add(a: Vector3, b: Vector3): Vector3 {
   return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 }
@@ -474,8 +296,4 @@ function sub(a: Vector3, b: Vector3): Vector3 {
 
 function scale(vector: Vector3, scalar: number): Vector3 {
   return [vector[0] * scalar, vector[1] * scalar, vector[2] * scalar];
-}
-
-function reflect(ray: Vector3, normal: Vector3): Vector3 {
-  return sub(ray, scale(normal, 2 * dot(ray, normal)));
 }
