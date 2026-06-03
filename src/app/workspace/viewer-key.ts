@@ -12,11 +12,12 @@ import {
   updateInsertMode,
   updateNormalMode,
 } from './editor-session.js';
+import { snapshotEditor } from './editor-editing-core.js';
 import { EditorModes, PendingNormals } from './editor/mode.js';
 import { EditorKeys } from './editor/key.js';
 import { focusCycleState } from './focus.js';
 import type { WorkspaceModel } from './model.js';
-import { WorkspaceMessageTypes, workspaceSourceHighlightMessage, type WorkspaceMsg } from './msg.js';
+import { workspaceSourceHighlightMessage, type WorkspaceMsg } from './msg.js';
 import { ViewModes } from './view-mode.js';
 import {
   createWorkspaceTextEditCmd,
@@ -39,14 +40,10 @@ import {
   type WorkspaceTextReplacePlan,
   type WorkspaceTextUnsupportedPlan,
 } from './workspace-text-edit-planner.js';
-import { RuntimeIssueLevels, RuntimeIssueSources } from './runtime-issue.js';
 
 const INSERT_TAB_TEXT = '  ';
 const INSERT_NEWLINE_TEXT = '\n';
 const INSERT_SPACE_TEXT = ' ';
-const UNSUPPORTED_PRODUCTION_EDIT_TITLE = 'Unsupported production text command';
-const UNSUPPORTED_UNDO_MESSAGE = 'Undo must be submitted as explicit causal input before production use.';
-const UNSUPPORTED_REDO_MESSAGE = 'Redo must be submitted as explicit causal input before production use.';
 
 export function updateViewerFromKey(
   msg: KeyMsg,
@@ -111,10 +108,6 @@ function productionNormalModeEdit(
   productionTextSession: ProductionTextSession,
   editor: NonNullable<WorkspaceModel['editor']>,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] | undefined {
-  const unsupported = unsupportedProductionHistoryEdit(msg, model);
-  if (unsupported != null) {
-    return unsupported;
-  }
   const normalEdit = productionNormalModeLocalEdit(msg, model, productionTextSession, editor);
   if (normalEdit != null) {
     return normalEdit;
@@ -137,7 +130,8 @@ function productionNormalModeLocalEdit(
   if (moved.lines === editor.lines) {
     return undefined;
   }
-  const plan = normalModeLinePlan(msg, editor, moved)
+  const plan = normalModeHistoryPlan(msg, editor, moved)
+    ?? normalModeLinePlan(msg, editor, moved)
     ?? normalModeTransitionPlan(editor, moved);
   return plan.kind === WorkspaceTextEditPlanKinds.Unsupported
     ? [model, []]
@@ -192,8 +186,35 @@ function modelWithQueuedNormalEdit(
       mode: moved.mode,
       pendingNormal: moved.pendingNormal,
       register: moved.register,
+      undoStack: moved.undoStack,
+      redoStack: moved.redoStack,
     },
   };
+}
+
+function modelWithProductionUndoSnapshot(model: WorkspaceModel): WorkspaceModel {
+  const editor = model.editor;
+  if (editor == null) {
+    return model;
+  }
+  return {
+    ...model,
+    editor: {
+      ...editor,
+      undoStack: [...editor.undoStack, snapshotEditor(editor)],
+      redoStack: [],
+    },
+  };
+}
+
+function normalModeHistoryPlan(
+  msg: KeyMsg,
+  editor: NonNullable<WorkspaceModel['editor']>,
+  moved: NonNullable<WorkspaceModel['editor']>,
+): WorkspaceTextNormalPlan | undefined {
+  return isNormalModeHistoryKey(msg)
+    ? planWorkspaceTextReplaceTransition(editor, moved)
+    : undefined;
 }
 
 function normalModeDeleteEdit(
@@ -261,7 +282,11 @@ function productionInsertText(
   if (editor == null) {
     return undefined;
   }
-  return queueProductionTextPlan(model, productionTextSession, planWorkspaceTextInsert(editor, insertText));
+  return queueProductionTextPlan(
+    modelWithProductionUndoSnapshot(model),
+    productionTextSession,
+    planWorkspaceTextInsert(editor, insertText),
+  );
 }
 
 function productionInsertNavigation(
@@ -329,7 +354,7 @@ function productionBackspace(
   const plan = planWorkspaceTextBackspace(editor);
   return plan.kind === WorkspaceTextEditPlanKinds.Unsupported
     ? [model, []]
-    : queueProductionTextPlan(model, productionTextSession, plan);
+    : queueProductionTextPlan(modelWithProductionUndoSnapshot(model), productionTextSession, plan);
 }
 
 function productionDeleteUnderCursor(
@@ -343,7 +368,7 @@ function productionDeleteUnderCursor(
   const plan = planWorkspaceTextDeleteUnderCursor(editor);
   return plan.kind === WorkspaceTextEditPlanKinds.Unsupported
     ? [model, []]
-    : queueProductionTextPlan(model, productionTextSession, plan);
+    : queueProductionTextPlan(modelWithProductionUndoSnapshot(model), productionTextSession, plan);
 }
 
 function queueProductionTextPlan(
@@ -375,30 +400,9 @@ function queueProductionTextPlan(
     });
 }
 
-function unsupportedProductionHistoryEdit(
-  msg: KeyMsg,
-  model: WorkspaceModel,
-): [WorkspaceModel, Cmd<WorkspaceMsg>[]] | undefined {
-  if (!isUnsupportedProductionHistoryKey(msg)) {
-    return undefined;
-  }
-  const message = msg.key === EditorKeys.U ? UNSUPPORTED_UNDO_MESSAGE : UNSUPPORTED_REDO_MESSAGE;
-  return [model, [() => ({
-    type: WorkspaceMessageTypes.RuntimeIssue,
-    issue: {
-      name: 'UnsupportedProductionTextHistoryCommand',
-      title: UNSUPPORTED_PRODUCTION_EDIT_TITLE,
-      message,
-      level: RuntimeIssueLevels.Error,
-      source: RuntimeIssueSources.Command,
-      atMs: model.time,
-    },
-  })]];
-}
-
-function isUnsupportedProductionHistoryKey(msg: KeyMsg): boolean {
+function isNormalModeHistoryKey(msg: KeyMsg): boolean {
   return (msg.key === EditorKeys.U && !msg.ctrl && !msg.alt)
-    || (msg.key === EditorKeys.R && msg.ctrl && !msg.alt);
+    || (msg.key === EditorKeys.R && msg.ctrl && !msg.alt && !msg.shift);
 }
 
 function queueProductionTextEdit(

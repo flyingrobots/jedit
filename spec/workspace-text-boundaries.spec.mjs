@@ -135,20 +135,64 @@ test('replace command submits through production text session and refreshes read
   assert.equal(message.result.cache.lines[0], 'replaced from reading');
 });
 
-test('production undo and redo are explicit unsupported posture not local mutation', async () => {
-  const harness = await openedHarness();
-  const beforeLines = harness.model.editor.lines;
+test('production undo and redo submit Echo replacement edits', async () => {
+  const harness = await openedHarness({
+    readings: ['abc', 'bc', 'abc', 'bc'],
+  });
 
-  const undoCommands = await harness.key('u');
-  const undoMessage = undoCommands[0]();
-  const redoCommands = await harness.key('r', { ctrl: true });
-  const redoMessage = redoCommands[0]();
+  await harness.runFirst(await harness.key('x'));
+  await harness.runFirst(await harness.key('u'));
+  await harness.runFirst(await harness.key('r', { ctrl: true }));
 
-  assert.equal(undoMessage.type, 'runtime-issue');
-  assert.match(undoMessage.issue.message, /explicit causal input/);
-  assert.equal(redoMessage.type, 'runtime-issue');
-  assert.match(redoMessage.issue.message, /explicit causal input/);
-  assert.equal(harness.model.editor.lines, beforeLines);
+  assert.deepEqual(harness.calls.delete, [{
+    bufferId: 'buffer:notes',
+    startByte: 0,
+    endByte: 1,
+    atMs: 0,
+  }]);
+  assert.deepEqual(harness.calls.replace, [
+    {
+      bufferId: 'buffer:notes',
+      startByte: 0,
+      endByte: 0,
+      insertText: 'a',
+      atMs: 0,
+    },
+    {
+      bufferId: 'buffer:notes',
+      startByte: 0,
+      endByte: 1,
+      insertText: '',
+      atMs: 0,
+    },
+  ]);
+  assert.deepEqual(harness.model.editor.lines, ['bc']);
+});
+
+test('production insert-mode edits can be undone through Echo', async () => {
+  const harness = await openedHarness({
+    readings: ['a', 'Xa', 'a'],
+  });
+
+  await harness.key('i');
+  await harness.runFirst(await harness.key('X', { shift: true }));
+  await harness.key('escape');
+  await harness.runFirst(await harness.key('u'));
+
+  assert.deepEqual(harness.calls.insert, [{
+    bufferId: 'buffer:notes',
+    startByte: 0,
+    insertText: 'X',
+    atMs: 0,
+  }]);
+  assert.deepEqual(harness.calls.replace, [{
+    bufferId: 'buffer:notes',
+    startByte: 0,
+    endByte: 1,
+    insertText: '',
+    atMs: 0,
+  }]);
+  assert.deepEqual(harness.model.editor.lines, ['a']);
 });
 
 test('footer renders production text posture without exposing text authority', async () => {
