@@ -72,6 +72,20 @@ current-directory rows, and opens selected file rows through the existing
 production file-open command path. Directory rows reuse the existing file-tree
 directory transition path and keep the modal open in the new directory.
 
+## Frozen Title Backdrop
+
+While the startup modal is open, the title scene is a frozen backdrop. The
+renderer should keep the last rendered title surface and reuse it under the
+modal instead of retracing the ray scene for every modal input update.
+
+This is a render-performance posture only:
+
+- the retained backdrop is not workspace state or Echo state;
+- time ticks may continue updating runtime timing fields;
+- closing the modal resumes normal title rendering from the current model;
+- if there is no retained backdrop for the current viewport, the renderer may
+  trace one frame and then freeze that frame for subsequent modal redraws.
+
 ## Small Screens
 
 The modal participates in the same Bijou breakpoint posture as drawers and
@@ -137,6 +151,7 @@ Focused witnesses:
 - workspace render spec for modal input and current-directory files;
 - workspace key spec for input editing and Escape close;
 - workspace key spec for selected file open and selected directory traversal;
+- workspace render spec proving modal input reuses the frozen title backdrop;
 - small-screen spec proving the modal does not override the minimum-terminal
   notice.
 

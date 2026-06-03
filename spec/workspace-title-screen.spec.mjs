@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { stringToSurface } from '@flyingrobots/bijou';
 import {
   hasNotification,
   importDist,
@@ -134,6 +135,71 @@ test('enter and escape skip title intro into the startup file modal', async () =
   assert.equal(escaped.startupFileModalOpen, true);
   assert.deepEqual(enterCommands, []);
   assert.deepEqual(escapeCommands, []);
+});
+
+test('startup file modal reuses the frozen title backdrop while input changes', async () => {
+  const [viewerContent, titleScreen] = await Promise.all([
+    importDist('app', 'workspace', 'viewer-content.js'),
+    importDist('ui', 'title-screen.js'),
+  ]);
+  const tracedTimes = [];
+  const titleRenderer = (width, height, time) => {
+    tracedTimes.push(time);
+    return stringToSurface(`trace ${tracedTimes.length} time ${time}`, width, height);
+  };
+  const base = mockTitleScreenModel(titleScreen, {
+    time: 1,
+    startupIntroComplete: false,
+    startupFileModalOpen: false,
+  });
+  viewerContent.clearFrozenTitleBackdrop();
+
+  const live = viewerContent.renderViewerWithTitleRenderer(base, 44, 6, titleRenderer);
+  const openModal = viewerContent.renderViewerWithTitleRenderer({
+    ...base,
+    time: 7,
+    startupIntroComplete: true,
+    startupFileModalOpen: true,
+  }, 44, 6, titleRenderer);
+  const typed = viewerContent.renderViewerWithTitleRenderer({
+    ...base,
+    time: 8,
+    startupIntroComplete: true,
+    startupFileModalOpen: true,
+    startupFileModalInput: 'read',
+  }, 44, 6, titleRenderer);
+
+  assert.deepEqual(tracedTimes, [1]);
+  assert.equal(surfaceText(openModal), surfaceText(live));
+  assert.equal(surfaceText(typed), surfaceText(live));
+});
+
+test('startup file modal traces one fallback backdrop frame when no title cache exists', async () => {
+  const [viewerContent, titleScreen] = await Promise.all([
+    importDist('app', 'workspace', 'viewer-content.js'),
+    importDist('ui', 'title-screen.js'),
+  ]);
+  const tracedTimes = [];
+  const titleRenderer = (width, height, time) => {
+    tracedTimes.push(time);
+    return stringToSurface(`fallback ${tracedTimes.length} time ${time}`, width, height);
+  };
+  const model = mockTitleScreenModel(titleScreen, {
+    time: 7,
+    startupIntroComplete: true,
+    startupFileModalOpen: true,
+  });
+  viewerContent.clearFrozenTitleBackdrop();
+
+  const first = viewerContent.renderViewerWithTitleRenderer(model, 44, 6, titleRenderer);
+  const second = viewerContent.renderViewerWithTitleRenderer({
+    ...model,
+    time: 8,
+    startupFileModalInput: 'r',
+  }, 44, 6, titleRenderer);
+
+  assert.deepEqual(tracedTimes, [7]);
+  assert.equal(surfaceText(second), surfaceText(first));
 });
 
 test('startup intro skip does not interrupt focused file drawer open', async () => {
