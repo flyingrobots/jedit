@@ -565,7 +565,7 @@ Progress ledger:
 - [x] 123 - Restart Round Trip Proof.
 - [x] 124 - Historical Basis Selection.
 - [x] 125 - Current History Export.
-- [ ] 126 - Point-In-Time Export.
+- [x] 126 - Point-In-Time Export.
 - [ ] 127 - History Listing And Evidence View.
 - [ ] 128 - Replay Same Edits Same Evidence.
 - [ ] 129 - Host Timing Permutation Proof.
@@ -1638,10 +1638,19 @@ Test plan:
 
 Checklist:
 
-- [ ] Add historical export command.
-- [ ] Resolve basis-specific material.
-- [ ] Cover multiple points in time.
-- [ ] Cover missing material.
+- [x] Add historical export command.
+- [x] Resolve basis-specific material.
+- [x] Cover multiple points in time.
+- [x] Cover missing material.
+
+Proof note:
+
+- `src/app/jedit-wsc-current-history-export.ts` now exposes
+  `exportJeditWscHistoryAtBasis`, which resolves a requested retained WSC
+  envelope id and reuses the same materialize-then-write boundary as current
+  export. `spec/jedit-wsc-current-history-export.spec.mjs` covers exporting two
+  different historical bases, preserving the active editor state, and returning
+  typed obstruction when requested retained material is missing.
 
 ### Slice 127 - History Listing And Evidence View
 

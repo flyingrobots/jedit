@@ -98,6 +98,76 @@ test('current WSC history export tie-breaks same-time envelopes by bytewise id o
   }
 });
 
+test('point-in-time WSC history export materializes the requested historical basis', async () => {
+  const [currentExport, ports] = await exportModules();
+  const saved = [];
+  let writeCount = 0;
+  const store = fakeStore({
+    envelopeIds: [BASIS_A, BASIS_B],
+    readEnvelope: (basisId) => ({
+      status: 'JEDIT_WSC_WORKSPACE_STORE_READ',
+      envelope: {
+        envelopeId: basisId,
+        bytes: settlementBytes(basisId === BASIS_A ? 10 : 20),
+      },
+      workspacePath: '/repo/.jedit/echo-wsc/envelopes',
+    }),
+    writeEnvelope: () => {
+      writeCount += 1;
+      return obstructedStoreWrite();
+    },
+  });
+
+  const oldResult = currentExport.exportJeditWscHistoryAtBasis({
+    store,
+    basisId: BASIS_A,
+    editorFile: fakeEditorFile(saved),
+    materializer: envelopeMaterializer(),
+  });
+  const newResult = currentExport.exportJeditWscHistoryAtBasis({
+    store,
+    basisId: BASIS_B,
+    editorFile: fakeEditorFile(saved),
+    materializer: envelopeMaterializer(),
+  });
+
+  assert.equal(oldResult.status, ports.JEDIT_WSC_CURRENT_HISTORY_EXPORTED);
+  assert.equal(oldResult.basisId, BASIS_A);
+  assert.equal(newResult.status, ports.JEDIT_WSC_CURRENT_HISTORY_EXPORTED);
+  assert.equal(newResult.basisId, BASIS_B);
+  assert.deepEqual(saved, [
+    { filePath: '/repo/notes.txt', lines: ['t=10'] },
+    { filePath: '/repo/notes.txt', lines: ['t=20'] },
+  ]);
+  assert.equal(writeCount, 0);
+});
+
+test('point-in-time WSC history export does not change the active editor state', async () => {
+  const [currentExport, ports] = await exportModules();
+  const activeEditorLines = ['current', 'workspace', 'state'];
+  const saved = [];
+  const result = currentExport.exportJeditWscHistoryAtBasis({
+    store: fakeStore({
+      envelopeIds: [BASIS_A, BASIS_B],
+      readEnvelope: (basisId) => ({
+        status: 'JEDIT_WSC_WORKSPACE_STORE_READ',
+        envelope: {
+          envelopeId: basisId,
+          bytes: settlementBytes(basisId === BASIS_A ? 10 : 20),
+        },
+        workspacePath: '/repo/.jedit/echo-wsc/envelopes',
+      }),
+    }),
+    basisId: BASIS_A,
+    editorFile: fakeEditorFile(saved, activeEditorLines),
+    materializer: envelopeMaterializer(),
+  });
+
+  assert.equal(result.status, ports.JEDIT_WSC_CURRENT_HISTORY_EXPORTED);
+  assert.deepEqual(activeEditorLines, ['current', 'workspace', 'state']);
+  assert.deepEqual(saved, [{ filePath: '/repo/notes.txt', lines: ['t=10'] }]);
+});
+
 test('current WSC history export does not write host artifact when materialization fails', async () => {
   const [currentExport, ports] = await exportModules();
   const saved = [];
@@ -126,6 +196,32 @@ test('current WSC history export does not write host artifact when materializati
 
   assert.equal(result.status, ports.JEDIT_WSC_CURRENT_HISTORY_EXPORT_OBSTRUCTED);
   assert.equal(result.obstruction.code, ports.JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_FAILED);
+  assert.deepEqual(saved, []);
+});
+
+test('point-in-time WSC history export returns typed obstruction for missing retained material', async () => {
+  const [currentExport, ports] = await exportModules();
+  const saved = [];
+  const result = currentExport.exportJeditWscHistoryAtBasis({
+    store: fakeStore({
+      envelopeIds: [BASIS_A],
+      readEnvelope: () => ({
+        status: 'JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED',
+        obstruction: {
+          code: 'missing_envelope',
+          message: 'missing requested WSC envelope',
+          envelopeId: BASIS_B,
+        },
+      }),
+    }),
+    basisId: BASIS_B,
+    editorFile: fakeEditorFile(saved),
+    materializer: envelopeMaterializer(),
+  });
+
+  assert.equal(result.status, ports.JEDIT_WSC_CURRENT_HISTORY_EXPORT_OBSTRUCTED);
+  assert.equal(result.obstruction.code, ports.JEDIT_WSC_CURRENT_HISTORY_WSC_STORE_OBSTRUCTED);
+  assert.equal(result.obstruction.basisId, BASIS_B);
   assert.deepEqual(saved, []);
 });
 
@@ -183,10 +279,10 @@ function obstructedStoreWrite() {
   };
 }
 
-function fakeEditorFile(saved) {
+function fakeEditorFile(saved, activeLines = []) {
   return {
     loadEditorFile: () => ({
-      lines: [],
+      lines: activeLines,
       readOnly: false,
     }),
     saveEditorFile: (filePath, lines) => {
