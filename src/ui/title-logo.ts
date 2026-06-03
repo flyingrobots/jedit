@@ -13,9 +13,12 @@ export const TITLE_LOGO_RENDER_MODE = {
   CompactText: Symbol('jedit.title-logo.render-mode.compact-text'),
 } as const;
 
+const TITLE_LOGO_SHEEN_DIRECTION_LEFT_TO_RIGHT = 'ltr';
+const TITLE_LOGO_SHEEN_DIRECTION_RIGHT_TO_LEFT = 'rtl';
+
 export const TITLE_LOGO_SHEEN_DIRECTION = {
-  LeftToRight: 'ltr',
-  RightToLeft: 'rtl',
+  LeftToRight: TITLE_LOGO_SHEEN_DIRECTION_LEFT_TO_RIGHT,
+  RightToLeft: TITLE_LOGO_SHEEN_DIRECTION_RIGHT_TO_LEFT,
 } as const;
 
 export type TitleLogoRenderMode = typeof TITLE_LOGO_RENDER_MODE[keyof typeof TITLE_LOGO_RENDER_MODE];

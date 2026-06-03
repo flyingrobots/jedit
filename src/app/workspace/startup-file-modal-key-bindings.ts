@@ -20,6 +20,7 @@ type KeyBindingResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 
 const STARTUP_FILE_MODAL_SELECTION_STEP = 1;
 const STARTUP_FILE_MODAL_EMPTY_INPUT_LENGTH = 0;
+const STARTUP_FILE_MODAL_SINGLE_CHAR_LENGTH = 1;
 
 export function updateStartupFileModalKey(
   msg: KeyMsg,
@@ -104,7 +105,7 @@ function modalInputEmpty(model: WorkspaceModel): boolean {
 }
 
 function appendableStartupFileModalText(msg: KeyMsg): string | undefined {
-  return msg.ctrl || msg.alt || msg.key.length !== STARTUP_FILE_MODAL_SELECTION_STEP
+  return msg.ctrl || msg.alt || msg.key.length !== STARTUP_FILE_MODAL_SINGLE_CHAR_LENGTH
     ? undefined
     : msg.key;
 }

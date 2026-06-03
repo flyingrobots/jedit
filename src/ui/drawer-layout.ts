@@ -32,11 +32,7 @@ const DRAWER_INDEX_GRAFT = 1;
 const DRAWER_INDEX_HISTORY = 2;
 
 export function resolveDrawerLayout(kind: DrawerKind, columns: number, progress: number, rightOffset = 0): DrawerLayout {
-  const width = Math.round(resolveDrawerMaxWidth(kind, columns) * clamp01(progress));
-  return {
-    width,
-    x: isRightDrawer(kind) ? Math.max(0, columns - rightOffset - width) : 0,
-  };
+  return drawerLayoutForWidth(kind, columns, resolveDrawerWidth(kind, columns, progress), rightOffset);
 }
 
 export function resolveWorkspaceLayout(

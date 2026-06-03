@@ -3,9 +3,10 @@ import type { JeditWscWorkspaceEnvelope } from '../../ports/jedit-wsc-workspace-
 import type { WorkspaceTextEditCommandRequest } from './workspace-text-commands.js';
 import type { WorkspaceTextReadingCache } from './workspace-text-reading-cache.js';
 
-const WSC_EDIT_SETTLEMENT_SCHEMA_VERSION = 'jedit.workspace_text_edit_settlement.v1';
-const UTF8_ENCODING = 'utf8';
+export const WSC_EDIT_SETTLEMENT_SCHEMA_VERSION = 'jedit.workspace_text_edit_settlement.v1';
+export const UTF8_ENCODING = 'utf8';
 const SHA256_ALGORITHM = 'sha256';
+const HEX_DIGEST_ENCODING = 'hex';
 const EMPTY_INSERT_TEXT = '';
 
 export function createWorkspaceTextEditSettlementEnvelope(
@@ -15,7 +16,7 @@ export function createWorkspaceTextEditSettlementEnvelope(
 ): JeditWscWorkspaceEnvelope {
   const bytes = Buffer.from(JSON.stringify(settlementPayload(request, receiptId, cache)), UTF8_ENCODING);
   return {
-    envelopeId: createHash(SHA256_ALGORITHM).update(bytes).digest('hex'),
+    envelopeId: createHash(SHA256_ALGORITHM).update(bytes).digest(HEX_DIGEST_ENCODING),
     bytes,
   };
 }

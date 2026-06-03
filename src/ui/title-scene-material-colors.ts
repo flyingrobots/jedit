@@ -17,9 +17,15 @@ export interface TitleSceneMaterialColors {
 const LUMINANCE_RED_WEIGHT = 0.2126;
 const LUMINANCE_GREEN_WEIGHT = 0.7152;
 const LUMINANCE_BLUE_WEIGHT = 0.0722;
+const TITLE_SCENE_ACCENT_COLOR: Color3 = [224, 113, 63];
+const TITLE_SCENE_INFO_COLOR: Color3 = [78, 195, 224];
+const TITLE_SCENE_SUCCESS_COLOR: Color3 = [112, 216, 167];
+const TITLE_SCENE_INK_COLOR: Color3 = [222, 232, 232];
+const TITLE_SCENE_MUTED_COLOR: Color3 = [55, 75, 88];
+const TITLE_SCENE_SURFACE_COLOR: Color3 = [5, 7, 12];
 
-export function titleSceneMaterialColors(theme: JeditTheme): TitleSceneMaterialColors {
-  const baseColors = fixedTitleSceneBaseColors(theme);
+export function titleSceneMaterialColors(_theme: JeditTheme): TitleSceneMaterialColors {
+  const baseColors = fixedTitleSceneBaseColors();
   const floorColors = orderedFloorMaterialColors(baseColors.ink, baseColors.muted);
 
   return {
@@ -29,14 +35,14 @@ export function titleSceneMaterialColors(theme: JeditTheme): TitleSceneMaterialC
   };
 }
 
-function fixedTitleSceneBaseColors(_theme: JeditTheme): Omit<TitleSceneMaterialColors, 'floorDark' | 'floorLight'> {
+function fixedTitleSceneBaseColors(): Omit<TitleSceneMaterialColors, 'floorDark' | 'floorLight'> {
   return {
-    accent: [224, 113, 63],
-    info: [78, 195, 224],
-    success: [112, 216, 167],
-    ink: [222, 232, 232],
-    muted: [55, 75, 88],
-    surface: [5, 7, 12],
+    accent: TITLE_SCENE_ACCENT_COLOR,
+    info: TITLE_SCENE_INFO_COLOR,
+    success: TITLE_SCENE_SUCCESS_COLOR,
+    ink: TITLE_SCENE_INK_COLOR,
+    muted: TITLE_SCENE_MUTED_COLOR,
+    surface: TITLE_SCENE_SURFACE_COLOR,
   };
 }
 

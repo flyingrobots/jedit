@@ -22,4 +22,9 @@ export interface I18nPort {
    * Set the current locale. Direction follows locale metadata.
    */
   setLocale(locale: string): void;
+
+  /**
+   * Return an equivalent i18n port using the requested locale.
+   */
+  withLocale(locale: string): I18nPort;
 }

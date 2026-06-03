@@ -8,6 +8,15 @@ import { settingsRows } from './settings.js';
 import { startupFileModalRows } from './startup-file-modal.js';
 import { MIN_COLUMNS, MIN_ROWS } from './viewport.js';
 
+const STARTUP_FILE_MODAL_I18N_KEYS = Object.freeze({
+  Title: 'startupFileModal.title',
+  Hint: 'startupFileModal.hint',
+  InputLabel: 'startupFileModal.input_label',
+  CurrentDirectory: 'startupFileModal.current_directory',
+  Empty: 'startupFileModal.empty',
+  NoMatch: 'startupFileModal.no_match',
+} as const);
+
 export function paintWorkspaceOverlays(
   screen: Surface,
   model: WorkspaceModel,
@@ -53,12 +62,24 @@ export function workspaceFeedbackOverlay(model: WorkspaceModel): Overlay | undef
       input: model.startupFileModalInput,
       rows: startupFileModalRows(model.entries, model.startupFileModalInput),
       selectedIndex: model.startupFileModalSelectedIndex,
+      copy: startupFileModalCopy(model),
       theme: model.jeditTheme,
       screenWidth: model.columns,
       screenHeight: model.rows,
     });
   }
   return undefined;
+}
+
+function startupFileModalCopy(model: WorkspaceModel) {
+  return {
+    title: model.i18n.t(STARTUP_FILE_MODAL_I18N_KEYS.Title),
+    hint: model.i18n.t(STARTUP_FILE_MODAL_I18N_KEYS.Hint),
+    inputLabel: model.i18n.t(STARTUP_FILE_MODAL_I18N_KEYS.InputLabel),
+    currentDirectory: model.i18n.t(STARTUP_FILE_MODAL_I18N_KEYS.CurrentDirectory),
+    empty: model.i18n.t(STARTUP_FILE_MODAL_I18N_KEYS.Empty),
+    noMatch: model.i18n.t(STARTUP_FILE_MODAL_I18N_KEYS.NoMatch),
+  };
 }
 
 function shouldRenderStartupFileModal(model: WorkspaceModel): boolean {

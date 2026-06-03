@@ -10,7 +10,7 @@ import { createTitleCameraState, reduceTitleCameraMotion, TITLE_CAMERA_MESSAGE }
 import { ensureEditorVisible, editorViewport } from './editor-session.js';
 import { updateFromKey } from './key-bindings.js';
 import { updateFromMouse } from './mouse.js';
-import { renderWorkspace } from './viewer.js';
+import { createWorkspaceRenderer } from './viewer.js';
 import {
   createInitialProfilerState,
   ProfilerMessageTypes,
@@ -38,30 +38,33 @@ export { WorkspaceInputMessageTypes, WorkspaceMessageTypes } from './msg.js';
 
 const FRAME_TIME_HISTORY_SIZE = 50;
 
-export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): WorkspaceRuntime => ({
-  init: () => {
-    const wscStartupRecovery = recoverJeditWorkspaceFromWsc(deps.wscWorkspaceStore);
-    return [
-      {
-        ...createInitialModel(
-          deps.initialWorkingDirectory,
-          deps.initialColumns,
-          deps.initialRows,
-          {
-            ...deps.initialModel,
-            nowMs: deps.initialModel.nowMs ?? deps.nowMs(),
-            wscStartupRecovery,
-          },
-        ),
-        profiler: createInitialProfilerState(),
-      },
-      [deps.createTimeTickCmd()],
-    ];
-  },
-  update: (msg, model) => updateWorkspaceRuntime(deps, msg, model),
-  view: (model) => renderWorkspace(model),
-  routeRuntimeIssue: (issue) => ({ type: WorkspaceMessageTypes.RuntimeIssue, issue }),
-});
+export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): WorkspaceRuntime => {
+  const renderWorkspace = createWorkspaceRenderer();
+  return {
+    init: () => {
+      const wscStartupRecovery = recoverJeditWorkspaceFromWsc(deps.wscWorkspaceStore);
+      return [
+        {
+          ...createInitialModel(
+            deps.initialWorkingDirectory,
+            deps.initialColumns,
+            deps.initialRows,
+            {
+              ...deps.initialModel,
+              nowMs: deps.initialModel.nowMs ?? deps.nowMs(),
+              wscStartupRecovery,
+            },
+          ),
+          profiler: createInitialProfilerState(),
+        },
+        [deps.createTimeTickCmd()],
+      ];
+    },
+    update: (msg, model) => updateWorkspaceRuntime(deps, msg, model),
+    view: (model) => renderWorkspace(model),
+    routeRuntimeIssue: (issue) => ({ type: WorkspaceMessageTypes.RuntimeIssue, issue }),
+  };
+};
 
 function updateWorkspaceRuntime(
   deps: WorkspaceRuntimeDependencies,

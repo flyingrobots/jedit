@@ -181,7 +181,13 @@ function forbiddenSourceFailures(filePaths, forbiddenPatterns) {
 }
 
 function forbiddenSourceFileFailures(filePath, forbiddenPatterns) {
-  const source = readFileSync(filePath, 'utf8');
+  let source;
+  try {
+    source = readFileSync(filePath, 'utf8');
+  } catch (cause) {
+    const message = cause instanceof Error ? cause.message : String(cause);
+    return [`${filePath}: missing guarded production cutover file: ${message}`];
+  }
   return forbiddenPatterns
     .filter((entry) => entry.pattern.test(source))
     .map((entry) => `${filePath}: forbidden production cutover token: ${entry.label}`);

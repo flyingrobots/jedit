@@ -52,11 +52,13 @@ export const workspaceSettingsHandlers: JeditSettingsHandlers<WorkspaceModel, Wo
     return [preview, []];
   },
   selectLocale: (model, locale) => {
-    applyWorkspaceLocale(model, locale);
-    return [model, []];
+    return [applyWorkspaceLocale(model, locale), []];
   },
 };
 
-function applyWorkspaceLocale(model: WorkspaceModel, locale: JeditSettingsLocaleSelection): void {
-  model.i18n.setLocale(locale.locale);
+function applyWorkspaceLocale(model: WorkspaceModel, locale: JeditSettingsLocaleSelection): WorkspaceModel {
+  return {
+    ...model,
+    i18n: model.i18n.withLocale(locale.locale),
+  };
 }

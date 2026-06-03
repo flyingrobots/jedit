@@ -14,7 +14,7 @@ export function createInitialModelSnapshot(
     titleMeshes: loadStartupTitleMeshes(),
     titleSceneSeed: random(),
     jeditTheme: resolveInitialJeditTheme(process.env[JEDIT_THEME_ENV]),
-    i18n: new BijouI18nAdapter('en'),
+    i18n: new BijouI18nAdapter(),
     nowMs,
   };
 }

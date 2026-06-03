@@ -5,6 +5,14 @@ export const JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED = 'JEDIT_WSC_WORKSPACE_STORE_O
 export const JEDIT_WSC_WORKSPACE_STORE_INVALID_ENVELOPE_ID = 'invalid_envelope_id';
 export const JEDIT_WSC_WORKSPACE_STORE_HOST_PATH_ERROR = 'host_path_error';
 export const JEDIT_WSC_WORKSPACE_STORE_MISSING_ENVELOPE = 'missing_envelope';
+export const JEDIT_WSC_WORKSPACE_STORE_DIGEST_MISMATCH = 'digest_mismatch';
+
+export const JEDIT_WSC_WORKSPACE_STORE_STATUS = Object.freeze({
+  Written: JEDIT_WSC_WORKSPACE_STORE_WRITTEN,
+  Read: JEDIT_WSC_WORKSPACE_STORE_READ,
+  Listed: JEDIT_WSC_WORKSPACE_STORE_LISTED,
+  Obstructed: JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED,
+} as const);
 
 export interface JeditWscWorkspaceEnvelope {
   readonly envelopeId: string;

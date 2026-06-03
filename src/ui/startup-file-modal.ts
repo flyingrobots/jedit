@@ -8,21 +8,26 @@ export interface StartupFileModalRenderRow {
   readonly entry: FileEntry;
 }
 
+export interface StartupFileModalCopy {
+  readonly title: string;
+  readonly hint: string;
+  readonly inputLabel: string;
+  readonly currentDirectory: string;
+  readonly empty: string;
+  readonly noMatch: string;
+}
+
 export interface RenderStartupFileModalOptions {
   readonly cwd: string;
   readonly input: string;
   readonly rows: readonly StartupFileModalRenderRow[];
   readonly selectedIndex: number;
+  readonly copy: StartupFileModalCopy;
   readonly theme: JeditTheme;
   readonly screenWidth: number;
   readonly screenHeight: number;
 }
 
-const STARTUP_MODAL_TITLE = 'Open file';
-const STARTUP_MODAL_HINT = 'Type filter · Enter open · Esc close';
-const STARTUP_MODAL_INPUT_LABEL = 'Filter';
-const STARTUP_MODAL_EMPTY_TEXT = 'No files in this directory';
-const STARTUP_MODAL_NO_MATCH_TEXT = 'No files match';
 const STARTUP_MODAL_FALLBACK_FOREGROUND = '#e2e7ec';
 const STARTUP_MODAL_FALLBACK_BACKGROUND = '#0e1116';
 const STARTUP_MODAL_MAX_WIDTH = 72;
@@ -44,9 +49,9 @@ export function renderStartupFileModal(options: RenderStartupFileModalOptions): 
     width: Math.max(STARTUP_MODAL_BODY_MIN_WIDTH, width - STARTUP_MODAL_BODY_HORIZONTAL_BORDER),
   });
   return modal({
-    title: STARTUP_MODAL_TITLE,
+    title: options.copy.title,
     body,
-    hint: STARTUP_MODAL_HINT,
+    hint: options.copy.hint,
     screenWidth: options.screenWidth,
     screenHeight: options.screenHeight,
     width,
@@ -66,10 +71,10 @@ function createStartupFileModalBody(
   const surface = createSurface(options.width, STARTUP_MODAL_BODY_HEIGHT);
   fillSurface(surface, options.theme.surface.drawer);
   paintText(surface, options.cwd, STARTUP_MODAL_CWD_ROW, options.theme.source.get(JEDIT_SOURCE_TOKEN.Comment) ?? options.theme.surface.drawer);
-  paintText(surface, inputLine(options.input), STARTUP_MODAL_INPUT_ROW, options.theme.cursor.insert);
+  paintText(surface, inputLine(options.input, options.copy), STARTUP_MODAL_INPUT_ROW, options.theme.cursor.insert);
   paintText(
     surface,
-    'Current directory',
+    options.copy.currentDirectory,
     STARTUP_MODAL_LIST_LABEL_ROW,
     options.theme.markdown.get(JEDIT_MARKDOWN_TOKEN.HeadingSoft) ?? options.theme.surface.drawer,
   );
@@ -84,7 +89,7 @@ function paintRows(
   if (options.rows.length === 0) {
     paintText(
       surface,
-      emptyText(options.input),
+      emptyText(options.input, options.copy),
       STARTUP_MODAL_FIRST_FILE_ROW,
       options.theme.source.get(JEDIT_SOURCE_TOKEN.Comment) ?? options.theme.surface.drawer,
     );
@@ -94,7 +99,7 @@ function paintRows(
   for (let index = firstRow; index < visibleRowEnd(options.rows.length, firstRow); index += 1) {
     const row = options.rows[index];
     if (row != null) {
-      paintStartupFileRow(surface, options, row.entry, index);
+      paintStartupFileRow(surface, options, row.entry, index, firstRow);
     }
   }
 }
@@ -104,19 +109,20 @@ function paintStartupFileRow(
   options: RenderStartupFileModalOptions,
   entry: FileEntry,
   index: number,
+  firstRow: number,
 ): void {
   const selected = index === options.selectedIndex;
   const token = selected ? options.theme.cursor.normal : options.theme.surface.drawer;
-  const row = STARTUP_MODAL_FIRST_FILE_ROW + (index - firstVisibleRow(options));
+  const row = STARTUP_MODAL_FIRST_FILE_ROW + (index - firstRow);
   paintText(surface, formatTreeLine(entry, { selected }), row, token);
 }
 
-function inputLine(input: string): string {
-  return `${STARTUP_MODAL_INPUT_LABEL}: ${input}`;
+function inputLine(input: string, copy: StartupFileModalCopy): string {
+  return `${copy.inputLabel}: ${input}`;
 }
 
-function emptyText(input: string): string {
-  return input.length === 0 ? STARTUP_MODAL_EMPTY_TEXT : STARTUP_MODAL_NO_MATCH_TEXT;
+function emptyText(input: string, copy: StartupFileModalCopy): string {
+  return input.length === 0 ? copy.empty : copy.noMatch;
 }
 
 function firstVisibleRow(options: Pick<RenderStartupFileModalOptions, 'rows' | 'selectedIndex'>): number {

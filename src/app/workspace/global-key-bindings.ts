@@ -57,13 +57,22 @@ export function updatePerfWorkspaceKey(msg: KeyMsg, model: WorkspaceModel): KeyB
   return [model, [() => ({ type: WorkspaceMessageTypes.TogglePerf })]];
 }
 
-function updateQuitKey(msg: KeyMsg, model: WorkspaceModel): KeyBindingResult | undefined {
-  if (msg.ctrl && msg.key === WorkspaceKeys.C) {
-    return [model, [quit<WorkspaceMsg>()]];
-  }
-  return !insertModeActive(model) && isPlainShellQuitRequest(msg)
-    ? [{ ...model, quitConfirmOpen: true }, []]
+export function updateHardGlobalWorkspaceKey(msg: KeyMsg, model: WorkspaceModel): KeyBindingResult | undefined {
+  return updateForceQuitWorkspaceKey(msg, model)
+    ?? updatePerfWorkspaceKey(msg, model);
+}
+
+export function updateForceQuitWorkspaceKey(msg: KeyMsg, model: WorkspaceModel): KeyBindingResult | undefined {
+  return msg.ctrl && msg.key === WorkspaceKeys.C
+    ? [model, [quit<WorkspaceMsg>()]]
     : undefined;
+}
+
+function updateQuitKey(msg: KeyMsg, model: WorkspaceModel): KeyBindingResult | undefined {
+  return updateForceQuitWorkspaceKey(msg, model)
+    ?? (!insertModeActive(model) && isPlainShellQuitRequest(msg)
+    ? [{ ...model, quitConfirmOpen: true }, []]
+    : undefined);
 }
 
 function isPlainShellQuitRequest(msg: KeyMsg): boolean {

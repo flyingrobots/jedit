@@ -33,7 +33,7 @@ test('applied text edit persists WSC settlement evidence before accepting receip
   assert.equal(next.echoHistory.at(-1).status, modules.history.EchoHistoryEntryStatuses.Applied);
 });
 
-test('obstructed WSC settlement keeps applied edit from becoming durable UI state', async () => {
+test('obstructed WSC settlement keeps the applied edit visible with honest retention warning', async () => {
   const modules = await workspaceModules();
   const obstruction = {
     code: modules.storePorts.JEDIT_WSC_WORKSPACE_STORE_HOST_PATH_ERROR,
@@ -49,8 +49,9 @@ test('obstructed WSC settlement keeps applied edit from becoming durable UI stat
   const model = openedTextModel(modules);
   const [next] = runtime.update(appliedEditMessage(modules), model);
 
-  assert.equal(next.textAuthority.lastReceiptId, undefined);
-  assert.deepEqual(next.editor.lines, ['before']);
+  assert.equal(next.textAuthority.lastReceiptId, 'receipt:122');
+  assert.deepEqual(next.editor.lines, ['after']);
+  assert.equal(next.echoHistory.at(-2).status, modules.history.EchoHistoryEntryStatuses.Applied);
   assert.equal(next.echoHistory.at(-1).status, modules.history.EchoHistoryEntryStatuses.Obstructed);
   assert.match(next.echoHistory.at(-1).summary, /workspace path blocked/);
 });

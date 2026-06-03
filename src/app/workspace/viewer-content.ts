@@ -25,6 +25,10 @@ interface FrozenTitleBackdrop {
   readonly surface: Surface;
 }
 
+interface ViewerContentRendererState {
+  frozenTitleBackdrop?: FrozenTitleBackdrop;
+}
+
 export type TitleScreenRenderer = (
   width: number,
   height: number,
@@ -33,10 +37,27 @@ export type TitleScreenRenderer = (
   options: TitleScreenRenderOptions,
 ) => Surface;
 
-let frozenTitleBackdrop: FrozenTitleBackdrop | undefined;
+export interface ViewerContentRenderer {
+  renderViewer(model: WorkspaceModel, width: number, height: number): Surface;
+  clearFrozenTitleBackdrop(): void;
+}
+
+export function createViewerContentRenderer(
+  titleRenderer: TitleScreenRenderer = renderTitleScreen,
+): ViewerContentRenderer {
+  const state: ViewerContentRendererState = {};
+  return {
+    renderViewer(model, width, height) {
+      return renderViewerWithState(model, width, height, titleRenderer, state);
+    },
+    clearFrozenTitleBackdrop() {
+      state.frozenTitleBackdrop = undefined;
+    },
+  };
+}
 
 export function renderViewer(model: WorkspaceModel, width: number, height: number): Surface {
-  return renderViewerWithTitleRenderer(model, width, height, renderTitleScreen);
+  return createViewerContentRenderer().renderViewer(model, width, height);
 }
 
 export function renderViewerWithTitleRenderer(
@@ -45,9 +66,19 @@ export function renderViewerWithTitleRenderer(
   height: number,
   titleRenderer: TitleScreenRenderer,
 ): Surface {
+  return createViewerContentRenderer(titleRenderer).renderViewer(model, width, height);
+}
+
+function renderViewerWithState(
+  model: WorkspaceModel,
+  width: number,
+  height: number,
+  titleRenderer: TitleScreenRenderer,
+  state: ViewerContentRendererState,
+): Surface {
   const editor = displayEditor(model);
   if (editor == null) {
-    return renderTitleBackdrop(model, width, height, titleRenderer);
+    return renderTitleBackdrop(model, width, height, titleRenderer, state);
   }
 
   const surface = createSurface(width, height);
@@ -66,18 +97,15 @@ export function renderViewerWithTitleRenderer(
   });
 }
 
-export function clearFrozenTitleBackdrop(): void {
-  frozenTitleBackdrop = undefined;
-}
-
 function renderTitleBackdrop(
   model: WorkspaceModel,
   width: number,
   height: number,
   titleRenderer: TitleScreenRenderer,
+  state: ViewerContentRendererState,
 ): Surface {
   if (model.startupFileModalOpen) {
-    const frozen = frozenTitleBackdropFor(width, height);
+    const frozen = frozenTitleBackdropFor(state, width, height);
     if (frozen != null) {
       return copySurface(frozen);
     }
@@ -93,13 +121,17 @@ function renderTitleBackdrop(
       asciiPalette: model.titleAsciiPalette,
       textDirection: model.i18n.direction,
   });
-  frozenTitleBackdrop = { width, height, surface: rendered };
+  state.frozenTitleBackdrop = { width, height, surface: rendered };
   return rendered;
 }
 
-function frozenTitleBackdropFor(width: number, height: number): Surface | undefined {
-  return frozenTitleBackdrop?.width === width && frozenTitleBackdrop.height === height
-    ? frozenTitleBackdrop.surface
+function frozenTitleBackdropFor(
+  state: ViewerContentRendererState,
+  width: number,
+  height: number,
+): Surface | undefined {
+  return state.frozenTitleBackdrop?.width === width && state.frozenTitleBackdrop.height === height
+    ? state.frozenTitleBackdrop.surface
     : undefined;
 }
 

@@ -1,6 +1,12 @@
 import { TITLE_LOGO_SHEEN_DIRECTION, type TitleLogoSheen } from './title-logo.js';
 
-export type TitleScreenTextDirection = 'ltr' | 'rtl';
+export const TITLE_SCREEN_TEXT_DIRECTION = {
+  LeftToRight: TITLE_LOGO_SHEEN_DIRECTION.LeftToRight,
+  RightToLeft: TITLE_LOGO_SHEEN_DIRECTION.RightToLeft,
+} as const;
+
+export type TitleScreenTextDirection =
+  typeof TITLE_SCREEN_TEXT_DIRECTION[keyof typeof TITLE_SCREEN_TEXT_DIRECTION];
 
 export interface TitlePresentationSequence {
   readonly flyingRobotsOpacity: number;
@@ -8,7 +14,6 @@ export interface TitlePresentationSequence {
   readonly titleSheen?: TitleLogoSheen;
 }
 
-const TITLE_TEXT_DIRECTION_RTL = 'rtl';
 const TITLE_SEQUENCE_FLYINGROBOTS_APPEAR_SECONDS = 0;
 const TITLE_SEQUENCE_TITLE_APPEAR_SECONDS = 2;
 const TITLE_SEQUENCE_SHEEN_START_SECONDS = 3;
@@ -51,7 +56,7 @@ function titleLogoSheenAt(time: number, textDirection: TitleScreenTextDirection)
       (time - TITLE_SEQUENCE_SHEEN_START_SECONDS)
         / TITLE_SEQUENCE_SHEEN_DURATION_SECONDS,
     ),
-    direction: textDirection === TITLE_TEXT_DIRECTION_RTL
+    direction: textDirection === TITLE_SCREEN_TEXT_DIRECTION.RightToLeft
       ? TITLE_LOGO_SHEEN_DIRECTION.RightToLeft
       : TITLE_LOGO_SHEEN_DIRECTION.LeftToRight,
   };

@@ -25,6 +25,7 @@ import {
 import { paintTitleLogo, titleLogoCellBounds } from './title-logo.js';
 import type { TitleMesh } from './title-mesh.js';
 import {
+  TITLE_SCREEN_TEXT_DIRECTION,
   titlePresentationSequence,
   type TitlePresentationSequence,
   type TitleScreenTextDirection,
@@ -114,6 +115,7 @@ const CAUSTIC_STRENGTH = 0.45;
 const MAX_CAUSTIC_STRENGTH = 0.42;
 const BRAILLE_DITHER_MATRIX_SIZE = 4;
 const BRAILLE_DITHER_DENOMINATOR = BRAILLE_DITHER_MATRIX_SIZE * BRAILLE_DITHER_MATRIX_SIZE;
+const RGB_CHANNEL_MAX = 255;
 const BRAILLE_DITHER_MATRIX: readonly (readonly number[])[] = [
   [0, 8, 2, 10],
   [12, 4, 14, 6],
@@ -136,7 +138,7 @@ export function renderTitleScreen(
     sceneOverride,
     renderMode = TITLE_RENDER_MODE.Braille,
     asciiPalette = TITLE_ASCII_PALETTE.Dense,
-    textDirection = 'ltr',
+    textDirection = TITLE_SCREEN_TEXT_DIRECTION.LeftToRight,
   } = options;
   const colors = titleSceneMaterialColors(theme);
   const scene = sceneOverride ?? generateTitleScene(sceneSeed, colors, mesh);
@@ -278,7 +280,7 @@ function brailleSubpixelVisible(u: number, v: number, cols: number, rows: number
   const x = Math.floor(u * cols * 2) % BRAILLE_DITHER_MATRIX_SIZE;
   const y = Math.floor(v * rows * 4) % BRAILLE_DITHER_MATRIX_SIZE;
   const threshold = (BRAILLE_DITHER_MATRIX[y]![x]! + 0.5) / BRAILLE_DITHER_DENOMINATOR;
-  return (titleColorLuminance(color) / 255) >= threshold;
+  return (titleColorLuminance(color) / RGB_CHANNEL_MAX) >= threshold;
 }
 
 function titleObjectReflectionAmount(reflectivity: number, fresnel: number): number {

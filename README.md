@@ -27,7 +27,7 @@ Press `?` inside the editor for the key binding reference.
 
 - **Vim-shaped editing** — Normal/Insert modes, `w b e dd yy p u ctrl+r`, and growing
 - **File drawer** — directory navigation, open files with Enter
-- **Graft drawer** — current-file structural outline and change summary via MCP
+- **Graft drawer** — current-file structural outline and change summary via the direct Graft API
 - **Markdown preview** — live lens over the active buffer (`ctrl+p` to toggle)
 - **Syntax highlighting** — themed source rendering for supported languages
 - **Echo-hosted text session** — every edit submits a contract intent through
@@ -117,8 +117,8 @@ canonical authority. TypeScript types, Zod schemas, and operation metadata are
 generated output — not authored source.
 
 **Graft** provides structural intelligence (syntax spans, outlines, diagnostics,
-structural diff) over in-memory buffer snapshots. It is an enrichment engine,
-not the editing kernel. The current MCP transport is transitional.
+structural diff) over saved workspace files through the direct `@flyingrobots/graft`
+API. It is an enrichment engine, not the editing kernel.
 
 Full posture details live in [ARCHITECTURE.md](ARCHITECTURE.md).
 

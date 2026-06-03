@@ -14,7 +14,11 @@ import {
   FOOTER_ROWS,
 } from './viewport.js';
 import type { WorkspaceModel } from './model.js';
-import { isWorkspaceMarkdownPreviewAvailable, renderViewer } from './viewer-content.js';
+import {
+  createViewerContentRenderer,
+  isWorkspaceMarkdownPreviewAvailable,
+  type ViewerContentRenderer,
+} from './viewer-content.js';
 import { renderDrawer } from './viewer-drawers.js';
 import { fillSurface } from './surface-fill.js';
 import { renderSmallTerminalNotice } from './small-terminal-view.js';
@@ -25,7 +29,18 @@ const WORKSPACE_BODY_TOP_OFFSET = 2;
 
 export { updateViewerFromKey } from './viewer-key.js';
 
+export type WorkspaceRenderer = (model: WorkspaceModel) => Surface;
+
+export function createWorkspaceRenderer(): WorkspaceRenderer {
+  const viewerContent = createViewerContentRenderer();
+  return (model) => renderWorkspaceWithViewer(model, viewerContent);
+}
+
 export function renderWorkspace(model: WorkspaceModel): Surface {
+  return renderWorkspaceWithViewer(model, createViewerContentRenderer());
+}
+
+function renderWorkspaceWithViewer(model: WorkspaceModel, viewerContent: ViewerContentRenderer): Surface {
   const screen = createSurface(model.columns, model.rows);
   fillSurface(screen, model.jeditTheme.surface.workspace);
 
@@ -47,7 +62,7 @@ export function renderWorkspace(model: WorkspaceModel): Surface {
   );
 
   paintWorkspaceTitle(screen, model);
-  screen.blit(renderViewer(model, layout.viewer.width, bodyHeight), layout.viewer.x, bodyTop);
+  screen.blit(viewerContent.renderViewer(model, layout.viewer.width, bodyHeight), layout.viewer.x, bodyTop);
   paintWorkspaceDrawers(screen, model, layout, bodyTop, bodyHeight);
   paintWorkspaceFocusEdge(screen, model, layout, bodyTop, bodyHeight);
   paintWorkspaceFooter(screen, model);

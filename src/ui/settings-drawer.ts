@@ -40,6 +40,14 @@ interface PaintSettingsRowOptions {
   readonly theme: JeditTheme;
 }
 
+interface SettingsRowLayout {
+  readonly index: number;
+  readonly row: JeditSettingsRow;
+  readonly section?: string;
+  readonly sectionY?: number;
+  readonly rowY: number;
+}
+
 export function resolveSettingsDrawerWidth(columns: number): number {
   const boundedColumns = Math.max(SETTINGS_DRAWER_MIN_WIDTH, columns);
   return Math.min(
@@ -55,27 +63,26 @@ export function renderSettingsDrawer(options: RenderSettingsDrawerOptions): Surf
   paintText(surface, SETTINGS_TITLE, SETTINGS_LEFT_PAD, SETTINGS_HEADER_ROW, settingsTitleToken(options));
   paintText(surface, SETTINGS_CLOSE_HINT, SETTINGS_LEFT_PAD, SETTINGS_HINT_ROW, settingsHintToken(options));
   const firstVisibleRow = firstVisibleSettingsRow(options.rows, options.selectedIndex, options.height);
-
-  let y = SETTINGS_FIRST_ROW;
-  let section = '';
-  for (let index = firstVisibleRow; index < options.rows.length && y < options.height; index += 1) {
-    const row = options.rows[index];
-    if (row == null) {
-      continue;
-    }
-    if (row.section !== section) {
-      section = row.section;
-      paintText(surface, section, SETTINGS_LEFT_PAD, y, options.theme.markdown.get(JEDIT_MARKDOWN_TOKEN.HeadingSoft) ?? options.theme.surface.drawer);
-      y += SETTINGS_ROW_GAP;
+  for (const layout of settingsRowLayouts(options.rows, firstVisibleRow)) {
+    if (layout.section != null && layout.sectionY != null) {
+      paintText(
+        surface,
+        layout.section,
+        SETTINGS_LEFT_PAD,
+        layout.sectionY,
+        options.theme.markdown.get(JEDIT_MARKDOWN_TOKEN.HeadingSoft) ?? options.theme.surface.drawer,
+      );
     }
     paintSettingsRow(surface, {
-      row,
-      selected: index === options.selectedIndex,
+      row: layout.row,
+      selected: layout.index === options.selectedIndex,
       x: SETTINGS_LEFT_PAD,
-      y,
+      y: layout.rowY,
       theme: options.theme,
     });
-    y += SETTINGS_ROW_HEIGHT;
+    if (layout.rowY >= options.height) {
+      break;
+    }
   }
   return surface;
 }
@@ -148,23 +155,38 @@ function selectedSettingsRowBottom(
   firstIndex: number,
   selectedIndex: number,
 ): number {
+  const selectedLayout = settingsRowLayouts(rows, firstIndex, selectedIndex)
+    .find((layout) => layout.index === selectedIndex);
+  return selectedLayout == null ? SETTINGS_FIRST_ROW : selectedLayout.rowY + SETTINGS_ROW_HEIGHT;
+}
+
+function settingsRowLayouts(
+  rows: readonly JeditSettingsRow[],
+  firstIndex: number,
+  lastIndex = rows.length - 1,
+): readonly SettingsRowLayout[] {
+  const layouts: SettingsRowLayout[] = [];
   let y = SETTINGS_FIRST_ROW;
   let section = '';
-  for (let index = firstIndex; index <= selectedIndex; index += 1) {
+  for (let index = firstIndex; index < rows.length && index <= lastIndex; index += 1) {
     const row = rows[index];
     if (row == null) {
       continue;
     }
+    let sectionY: number | undefined;
+    let sectionTitle: string | undefined;
     if (row.section !== section) {
       section = row.section;
+      sectionTitle = section;
+      sectionY = y;
       y += SETTINGS_ROW_GAP;
     }
-    if (index === selectedIndex) {
-      return y + SETTINGS_ROW_HEIGHT;
-    }
+    layouts.push(sectionTitle == null || sectionY == null
+      ? { index, row, rowY: y }
+      : { index, row, section: sectionTitle, sectionY, rowY: y });
     y += SETTINGS_ROW_HEIGHT;
   }
-  return y;
+  return layouts;
 }
 
 function paintText(surface: Surface, text: string, x: number, y: number, token: JeditStyleToken): void {

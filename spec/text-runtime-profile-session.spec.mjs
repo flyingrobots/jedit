@@ -79,7 +79,7 @@ test('text runtime profile parser defaults to Echo-hosted and obstructs non-Echo
   );
 });
 
-test('workspace initial model carries the text runtime profile', async () => {
+test('workspace initial model pins the Echo-hosted text runtime profile', async () => {
   const modules = await loadModules();
   const workspace = await import(pathToFileURL(path.join(
     REPO_ROOT,
@@ -98,7 +98,6 @@ test('workspace initial model carries the text runtime profile', async () => {
     },
     i18n: {},
     nowMs: 0,
-    textRuntimeProfile: modules.profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
   });
 
   assert.equal(model.textRuntimeProfile, modules.profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED);

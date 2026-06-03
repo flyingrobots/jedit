@@ -22,6 +22,10 @@ import {
   type JeditWscHistoricalBasis,
 } from '../ports/jedit-wsc-history-basis.js';
 import { listJeditWscHistoricalBases } from './jedit-wsc-history-basis.js';
+import {
+  UTF8_ENCODING,
+  WSC_EDIT_SETTLEMENT_SCHEMA_VERSION,
+} from './workspace/workspace-text-wsc-settlement.js';
 
 interface CurrentWscHistoryBasis {
   readonly basis: JeditWscHistoricalBasis;
@@ -43,8 +47,6 @@ export interface ExportCurrentJeditWscHistoryInput {
   readonly editorFile: EditorFilePort;
   readonly materializer: JeditWscCurrentHistoryMaterializer;
 }
-
-const WSC_EDIT_SETTLEMENT_SCHEMA_VERSION = 'jedit.workspace_text_edit_settlement.v1';
 
 export function exportCurrentJeditWscHistory(
   input: ExportCurrentJeditWscHistoryInput,
@@ -135,7 +137,7 @@ function currentHistoryCandidates(
 
 function submittedAtMsFromEnvelope(envelope: JeditWscWorkspaceEnvelope): number | undefined {
   try {
-    const payload = JSON.parse(Buffer.from(envelope.bytes).toString('utf8'));
+    const payload = JSON.parse(Buffer.from(envelope.bytes).toString(UTF8_ENCODING));
     return payload?.schemaVersion === WSC_EDIT_SETTLEMENT_SCHEMA_VERSION
       && Number.isFinite(payload.submittedAtMs)
       ? payload.submittedAtMs
@@ -152,7 +154,17 @@ function compareCurrentHistoryCandidates(
   if (left.submittedAtMs !== right.submittedAtMs) {
     return left.submittedAtMs - right.submittedAtMs;
   }
-  return left.envelopeId.localeCompare(right.envelopeId);
+  return compareEnvelopeIds(left.envelopeId, right.envelopeId);
+}
+
+function compareEnvelopeIds(left: string, right: string): number {
+  if (left < right) {
+    return -1;
+  }
+  if (left > right) {
+    return 1;
+  }
+  return 0;
 }
 
 function storeObstructed(

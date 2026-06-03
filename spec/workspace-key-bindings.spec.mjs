@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { QUIT } from '@flyingrobots/bijou-tui';
 import {
   importDist,
   mockDeps,
@@ -44,6 +45,11 @@ test('backtick key remains a perf toggle while workspace overlays are open', asy
       scenePickerFocusIndex: 0,
       availableScenes: ['bunny.jedit-scene'],
     }),
+    mockTitleScreenModel(titleScreen, {
+      startupIntroComplete: true,
+      startupFileModalOpen: true,
+      startupFileModalInput: '',
+    }),
   ];
 
   for (const model of overlays) {
@@ -57,6 +63,27 @@ test('backtick key remains a perf toggle while workspace overlays are open', asy
     assert.equal(commands.length, 1);
     assert.deepEqual(await commands[0](), { type: 'toggle-perf' });
   }
+});
+
+test('ctrl-c still quits while startup file modal is open', async () => {
+  const [keyBindings, titleScreen] = await Promise.all([
+    importDist('app', 'workspace', 'key-bindings.js'),
+    importDist('ui', 'title-screen.js'),
+  ]);
+
+  const [nextModel, commands] = keyBindings.updateFromKey(
+    { type: 'key', key: 'c', ctrl: true, alt: false, shift: false },
+    mockTitleScreenModel(titleScreen, {
+      startupIntroComplete: true,
+      startupFileModalOpen: true,
+      startupFileModalInput: 'read',
+    }),
+    mockKeyBindingContext(),
+  );
+
+  assert.equal(nextModel.startupFileModalInput, 'read');
+  assert.equal(commands.length, 1);
+  assert.equal(await commands[0](), QUIT);
 });
 
 test('ctrl-l opens the title scene picker when no editor is active', async () => {

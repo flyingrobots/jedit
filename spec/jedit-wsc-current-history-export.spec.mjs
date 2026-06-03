@@ -67,6 +67,37 @@ test('current WSC history export uses retained causal time instead of lexicograp
   assert.deepEqual(saved, [{ filePath: '/repo/notes.txt', lines: ['t=20'] }]);
 });
 
+test('current WSC history export tie-breaks same-time envelopes by bytewise id order', async () => {
+  const [currentExport, ports] = await exportModules();
+  const saved = [];
+  const originalLocaleCompare = String.prototype.localeCompare;
+  try {
+    String.prototype.localeCompare = function reverseLocaleCompare(other) {
+      return originalLocaleCompare.call(String(other), String(this));
+    };
+    const result = currentExport.exportCurrentJeditWscHistory({
+      store: fakeStore({
+        envelopeIds: [BASIS_A, BASIS_B],
+        readEnvelope: (basisId) => ({
+          status: 'JEDIT_WSC_WORKSPACE_STORE_READ',
+          envelope: {
+            envelopeId: basisId,
+            bytes: settlementBytes(20),
+          },
+          workspacePath: '/repo/.jedit/echo-wsc/envelopes',
+        }),
+      }),
+      editorFile: fakeEditorFile(saved),
+      materializer: envelopeMaterializer(),
+    });
+
+    assert.equal(result.status, ports.JEDIT_WSC_CURRENT_HISTORY_EXPORTED);
+    assert.equal(result.basisId, BASIS_B);
+  } finally {
+    String.prototype.localeCompare = originalLocaleCompare;
+  }
+});
+
 test('current WSC history export does not write host artifact when materialization fails', async () => {
   const [currentExport, ports] = await exportModules();
   const saved = [];

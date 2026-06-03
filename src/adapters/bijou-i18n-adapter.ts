@@ -54,6 +54,10 @@ export class BijouI18nAdapter implements I18nPort {
     this._direction = localeMetadata[this._locale].direction;
     this._catalog = catalogs[this._locale];
   }
+
+  withLocale(locale: string): I18nPort {
+    return new BijouI18nAdapter(locale);
+  }
 }
 
 function isTranslationNode(value: string | Record<string, TranslationNode>): value is TranslationNode {

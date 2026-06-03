@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -9,8 +10,13 @@ import { pathToFileURL } from 'node:url';
 const REPO_ROOT = process.cwd();
 const ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-wsc-workspace-store.js');
 const PORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'ports', 'jedit-wsc-workspace-store.js');
-const ENVELOPE_ID_A = 'a'.repeat(64);
-const ENVELOPE_ID_B = 'b'.repeat(64);
+const BYTES_A = Uint8Array.from([1, 2, 3]);
+const BYTES_B = Uint8Array.from([4, 5]);
+const HOST_FAILURE_BYTES = Uint8Array.from([9]);
+const ENVELOPE_ID_A = digestBytes(BYTES_A);
+const ENVELOPE_ID_B = digestBytes(BYTES_B);
+const HOST_FAILURE_ENVELOPE_ID = digestBytes(HOST_FAILURE_BYTES);
+const CORRUPT_ENVELOPE_BYTES = Uint8Array.from([9, 9, 9]);
 
 let modulesPromise;
 
@@ -18,16 +24,14 @@ test('workspace WSC store writes reads and lists generic envelopes under jedit p
   const modules = await loadModules();
   const workspaceRoot = createTempDir(t);
   const store = modules.adapter.createNodeJeditWscWorkspaceStore(workspaceRoot);
-  const firstBytes = Uint8Array.from([1, 2, 3]);
-  const secondBytes = Uint8Array.from([4, 5]);
 
   const firstWrite = store.writeEnvelope({
     envelopeId: ENVELOPE_ID_B,
-    bytes: secondBytes,
+    bytes: BYTES_B,
   });
   const secondWrite = store.writeEnvelope({
     envelopeId: ENVELOPE_ID_A,
-    bytes: firstBytes,
+    bytes: BYTES_A,
   });
   const list = store.listEnvelopes();
   const read = store.readEnvelope(ENVELOPE_ID_A);
@@ -37,7 +41,7 @@ test('workspace WSC store writes reads and lists generic envelopes under jedit p
   assert.equal(list.status, modules.ports.JEDIT_WSC_WORKSPACE_STORE_LISTED);
   assert.deepEqual(list.envelopeIds, [ENVELOPE_ID_A, ENVELOPE_ID_B]);
   assert.equal(read.status, modules.ports.JEDIT_WSC_WORKSPACE_STORE_READ);
-  assert.deepEqual(Array.from(read.envelope.bytes), Array.from(firstBytes));
+  assert.deepEqual(Array.from(read.envelope.bytes), Array.from(BYTES_A));
 });
 
 test('workspace WSC store rejects non-digest envelope ids before touching host paths', async (t) => {
@@ -53,6 +57,38 @@ test('workspace WSC store rejects non-digest envelope ids before touching host p
   assert.equal(result.status, modules.ports.JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED);
   assert.equal(result.obstruction.code, modules.ports.JEDIT_WSC_WORKSPACE_STORE_INVALID_ENVELOPE_ID);
   assert.equal(fs.existsSync(path.join(workspaceRoot, 'escape')), false);
+});
+
+test('workspace WSC store rejects content that does not match the envelope id digest', async (t) => {
+  const modules = await loadModules();
+  const workspaceRoot = createTempDir(t);
+  const store = modules.adapter.createNodeJeditWscWorkspaceStore(workspaceRoot);
+
+  const write = store.writeEnvelope({
+    envelopeId: ENVELOPE_ID_A,
+    bytes: CORRUPT_ENVELOPE_BYTES,
+  });
+
+  assert.equal(write.status, modules.ports.JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED);
+  assert.equal(write.obstruction.code, modules.ports.JEDIT_WSC_WORKSPACE_STORE_DIGEST_MISMATCH);
+});
+
+test('workspace WSC store detects corrupt retained files before listing or reading them', async (t) => {
+  const modules = await loadModules();
+  const workspaceRoot = createTempDir(t);
+  const storeDirectory = path.dirname(expectedEnvelopePath(workspaceRoot, ENVELOPE_ID_A));
+  fs.mkdirSync(storeDirectory, { recursive: true });
+  fs.writeFileSync(expectedEnvelopePath(workspaceRoot, ENVELOPE_ID_A), Buffer.from(CORRUPT_ENVELOPE_BYTES));
+  fs.writeFileSync(path.join(storeDirectory, `${ENVELOPE_ID_B}.wsc-envelope.tmp`), Buffer.from(BYTES_B));
+  const store = modules.adapter.createNodeJeditWscWorkspaceStore(workspaceRoot);
+
+  const read = store.readEnvelope(ENVELOPE_ID_A);
+  const list = store.listEnvelopes();
+
+  assert.equal(read.status, modules.ports.JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED);
+  assert.equal(read.obstruction.code, modules.ports.JEDIT_WSC_WORKSPACE_STORE_DIGEST_MISMATCH);
+  assert.equal(list.status, modules.ports.JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED);
+  assert.equal(list.obstruction.code, modules.ports.JEDIT_WSC_WORKSPACE_STORE_DIGEST_MISMATCH);
 });
 
 test('workspace WSC store reports missing envelopes as typed obstruction', async (t) => {
@@ -73,8 +109,8 @@ test('workspace WSC store reports host path failures as typed obstruction', asyn
   const store = modules.adapter.createNodeJeditWscWorkspaceStore(workspaceRoot);
 
   const result = store.writeEnvelope({
-    envelopeId: ENVELOPE_ID_A,
-    bytes: Uint8Array.from([9]),
+    envelopeId: HOST_FAILURE_ENVELOPE_ID,
+    bytes: HOST_FAILURE_BYTES,
   });
 
   assert.equal(result.status, modules.ports.JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED);
@@ -112,4 +148,8 @@ function createTempDir(t) {
 
 function expectedEnvelopePath(workspaceRoot, envelopeId) {
   return path.join(workspaceRoot, '.jedit', 'echo-wsc', 'envelopes', `${envelopeId}.wsc-envelope`);
+}
+
+function digestBytes(bytes) {
+  return createHash('sha256').update(Buffer.from(bytes)).digest('hex');
 }

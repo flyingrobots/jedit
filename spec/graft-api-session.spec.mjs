@@ -6,19 +6,33 @@ import { pathToFileURL } from 'node:url';
 
 const REPO_ROOT = process.cwd();
 const GRAFT_API_SESSION_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'graft-api-session.js');
+const ERRORS_PATH = path.join(REPO_ROOT, 'dist', 'domain', 'errors.js');
+
+let modulesPromise;
 
 async function loadGraftApiSession() {
+  if (modulesPromise == null) {
+    modulesPromise = buildAndImportGraftApiSession();
+  }
+  return modulesPromise;
+}
+
+async function buildAndImportGraftApiSession() {
   const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
   });
 
   assert.equal(build.status, 0, build.stderr || build.stdout);
-  return import(pathToFileURL(GRAFT_API_SESSION_PATH).href);
+  const [graft, errors] = await Promise.all([
+    import(pathToFileURL(GRAFT_API_SESSION_PATH).href),
+    import(pathToFileURL(ERRORS_PATH).href),
+  ]);
+  return { graft, errors };
 }
 
 test('Graft file outline decoder accepts runtime-validated outline payloads', async () => {
-  const graft = await loadGraftApiSession();
+  const { graft } = await loadGraftApiSession();
   const result = graft.decodeGraftFileOutlineResult({
     projection: 'ready',
     jumpTable: [
@@ -45,7 +59,7 @@ test('Graft file outline decoder accepts runtime-validated outline payloads', as
 });
 
 test('Graft session port uses the direct API without a close lifecycle', async () => {
-  const graft = await loadGraftApiSession();
+  const { graft } = await loadGraftApiSession();
   const created = [];
   const calls = [];
   const api = {
@@ -112,7 +126,7 @@ test('Graft session port uses the direct API without a close lifecycle', async (
 });
 
 test('Graft file outline decoder rejects malformed jump table entries', async () => {
-  const graft = await loadGraftApiSession();
+  const { graft } = await loadGraftApiSession();
 
   assert.throws(
     () => graft.decodeGraftFileOutlineResult({
@@ -130,7 +144,7 @@ test('Graft file outline decoder rejects malformed jump table entries', async ()
 });
 
 test('Graft diff decoder rejects malformed structural diff entries', async () => {
-  const graft = await loadGraftApiSession();
+  const { graft } = await loadGraftApiSession();
 
   assert.throws(
     () => graft.decodeGraftStructDiffResult({
@@ -147,5 +161,31 @@ test('Graft diff decoder rejects malformed structural diff entries', async () =>
       ],
     }),
     /files\[0\]\.diff\.changed\[0\]\.name/,
+  );
+});
+
+test('Graft tool parser extracts text content blocks and rejects missing text payloads', async () => {
+  const { graft, errors } = await loadGraftApiSession();
+
+  assert.deepEqual(graft.parseGraftToolResult({
+    content: [{
+      type: 'text',
+      text: JSON.stringify({
+        projection: 'ready',
+        jumpTable: [],
+      }),
+    }],
+  }), {
+    projection: 'ready',
+    jumpTable: [],
+  });
+  assert.throws(
+    () => graft.parseGraftToolResult({
+      content: [{
+        type: 'image',
+        text: JSON.stringify({ ignored: true }),
+      }],
+    }),
+    errors.GraftInvalidPayloadError,
   );
 });

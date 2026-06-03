@@ -40,6 +40,10 @@ test('workspace runtime init does not schedule a Graft sidecar lifecycle command
 test('workspace settings selects a locale through runtime tokens', async () => {
   const settings = await importDist('app', 'workspace', 'settings.js');
   const localeChanges = [];
+  const replacementI18n = mockI18n({
+    locale: 'fr',
+    localeLabel: 'Français',
+  });
   const nextLocale = {
     locale: 'fr',
     label: 'Français',
@@ -53,16 +57,23 @@ test('workspace settings selects a locale through runtime tokens', async () => {
         label: 'English',
         direction: settings.WorkspaceTextDirections.Ltr,
       }, nextLocale],
-	      setLocale: (locale) => {
-	        localeChanges.push(locale);
-	      },
+      setLocale: (locale) => {
+        localeChanges.push(locale);
+      },
+      withLocale: (locale) => {
+        localeChanges.push(locale);
+        return replacementI18n;
+      },
     }),
   };
 
-  settings.workspaceSettingsHandlers.selectLocale(model, nextLocale);
+  const [selected] = settings.workspaceSettingsHandlers.selectLocale(model, nextLocale);
 
-	  assert.deepEqual(localeChanges, [nextLocale.locale]);
-	});
+  assert.notEqual(selected, model);
+  assert.notEqual(selected.i18n, model.i18n);
+  assert.equal(selected.i18n, replacementI18n);
+  assert.deepEqual(localeChanges, [nextLocale.locale]);
+});
 
 test('workspace exposes runtime tokens for drawer, focus, file entry, and key dispatch values', async () => {
   const [drawerLayout, panelFocus, fileSystem, workspaceKey] = await Promise.all([

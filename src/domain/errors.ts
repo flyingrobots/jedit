@@ -19,12 +19,12 @@ export class GraftPackageNotFoundError extends JeditDomainError {}
 export class GraftToolExecutionError extends JeditDomainError {}
 
 /**
- * Thrown when an MCP result lacks expected text content.
+ * Thrown when a Graft tool result lacks expected text content.
  */
 export class GraftNoTextContentError extends JeditDomainError {}
 
 /**
- * Thrown when an MCP payload does not match the expected structural shape.
+ * Thrown when a Graft payload does not match the expected structural shape.
  */
 export class GraftInvalidPayloadError extends JeditDomainError {}
 

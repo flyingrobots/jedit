@@ -35,7 +35,7 @@ export function updateFocusedPaneKey(
 
 function updateHistoryDrawerFromKey(msg: KeyMsg, model: WorkspaceModel): KeyBindingResult {
   const selectedIndex = updateEchoHistorySelectionFromKey(msg, model.echoHistorySelectedIndex, model.echoHistory.length);
-  return selectedIndex == null
+  return selectedIndex === undefined
     ? [model, []]
     : [{ ...model, echoHistorySelectedIndex: selectedIndex }, []];
 }

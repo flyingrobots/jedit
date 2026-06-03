@@ -70,6 +70,16 @@ test('production cutover guard catches sample non-Echo runtime profile tokens', 
   assert.match(result.stderr, /defaultTestLocalSessionFactory/);
 });
 
+test('production cutover guard reports missing guarded source files as failures', () => {
+  const missing = path.join(tmpdir(), 'jedit-cutover-missing-file.ts');
+
+  const result = spawnGuard('--sample-forbidden-file', missing);
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /missing guarded production cutover file/);
+  assert.match(result.stderr, /jedit-cutover-missing-file\.ts/);
+});
+
 function spawnGuard(...args) {
   return spawnSync(process.execPath, [
     GUARD_PATH,

@@ -5,16 +5,16 @@ import { importDist, mockRuntime } from './workspace-helpers.mjs';
 const ENVELOPE_ID = 'c'.repeat(64);
 
 test('WSC startup recovery keeps no-history startup as explicit host import', async () => {
-  const [recovery, ports] = await startupModules();
-  const result = recovery.recoverJeditWorkspaceFromWsc(fakeStore([]));
+  const [recovery, ports, storePorts] = await startupModules();
+  const result = recovery.recoverJeditWorkspaceFromWsc(fakeStore([], storePorts));
 
   assert.equal(result.status, ports.JEDIT_WSC_STARTUP_RECOVERY_NO_HISTORY);
   assert.equal(result.hostImportMode, ports.JEDIT_WSC_STARTUP_HOST_IMPORT_EXPLICIT);
 });
 
 test('WSC startup recovery records recovered Echo history without materializing host bytes', async () => {
-  const [recovery, ports] = await startupModules();
-  const result = recovery.recoverJeditWorkspaceFromWsc(fakeStore([ENVELOPE_ID]));
+  const [recovery, ports, storePorts] = await startupModules();
+  const result = recovery.recoverJeditWorkspaceFromWsc(fakeStore([ENVELOPE_ID], storePorts));
 
   assert.equal(result.status, ports.JEDIT_WSC_STARTUP_RECOVERY_RECOVERED);
   assert.equal(result.authorityPosture, ports.JEDIT_WSC_STARTUP_AUTHORITY_ECHO_HISTORY);
@@ -44,9 +44,10 @@ test('workspace runtime init stores injected WSC startup recovery result', async
     importDist('app', 'workspace', 'runtime.js'),
     importDist('ports', 'jedit-wsc-startup-recovery.js'),
   ]);
+  const storePorts = await importDist('ports', 'jedit-wsc-workspace-store.js');
 
   const appRuntime = runtime.createWorkspaceRuntime(mockRuntime({
-    wscWorkspaceStore: fakeStore([ENVELOPE_ID]),
+    wscWorkspaceStore: fakeStore([ENVELOPE_ID], storePorts),
   }));
   const [model] = appRuntime.init();
 
@@ -62,12 +63,12 @@ async function startupModules() {
   ]);
 }
 
-function fakeStore(envelopeIds) {
+function fakeStore(envelopeIds, storePorts) {
   return {
-    writeEnvelope: () => ({ status: 'JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED' }),
-    readEnvelope: () => ({ status: 'JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED' }),
+    writeEnvelope: () => ({ status: storePorts.JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED }),
+    readEnvelope: () => ({ status: storePorts.JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED }),
     listEnvelopes: () => ({
-      status: 'JEDIT_WSC_WORKSPACE_STORE_LISTED',
+      status: storePorts.JEDIT_WSC_WORKSPACE_STORE_LISTED,
       envelopeIds,
       workspacePath: '/repo/.jedit/echo-wsc/envelopes',
     }),

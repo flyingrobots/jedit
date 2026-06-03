@@ -11,7 +11,6 @@ import {
   EchoHistoryEntryKinds,
   EchoHistoryEntryStatuses,
   sortedEchoHistoryIndexForSequence,
-  type EchoHistoryEntry,
   type EchoHistoryEntryDraft,
 } from './echo-history.js';
 import {
@@ -30,11 +29,12 @@ import {
   type WorkspaceTextOpenedResult,
 } from './workspace-text-results.js';
 import type { TextPosition } from './workspace-text-position.js';
+import {
+  JEDIT_WSC_WORKSPACE_STORE_STATUS,
+} from '../../ports/jedit-wsc-workspace-store.js';
 
 export type WorkspaceRuntimeResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 
-const EMPTY_ECHO_HISTORY: readonly EchoHistoryEntry[] = [];
-const WSC_WORKSPACE_STORE_OBSTRUCTED_STATUS = 'JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED';
 const WSC_SETTLEMENT_OBSTRUCTION_PREFIX = 'WSC edit settlement failed';
 const ISSUE_LEVEL_ERROR = 'error';
 const ISSUE_SOURCE_COMMAND = 'command';
@@ -141,15 +141,11 @@ function applyTextEditResult(
       deps.createNotificationTickCmd,
     );
   }
-  const settlement = persistEditSettlement(deps, msg.result, model);
-  if (settlement != null) {
-    return settlement;
-  }
   const withCache = workspaceTextAuthorityWithCache(
     workspaceTextAuthorityWithReceipt(authority, msg.result.receiptId),
     msg.result.cache,
   );
-  return refreshAfterEdit(deps, withEchoHistoryEntry({
+  const applied = withEchoHistoryEntry({
     ...model,
     textAuthority: withCache,
     editor: editorAfterTextEdit(model, withCache, msg.result.cursorAfter),
@@ -158,7 +154,12 @@ function applyTextEditResult(
     status: EchoHistoryEntryStatuses.Applied,
     evidenceId: msg.result.receiptId,
     summary: msg.result.filePath,
-  }));
+  });
+  const [refreshed, refreshCommands] = refreshAfterEdit(deps, applied);
+  const settlement = persistEditSettlement(deps, msg.result, refreshed);
+  return settlement == null
+    ? [refreshed, refreshCommands]
+    : [settlement[0], [...refreshCommands, ...settlement[1]]];
 }
 
 function persistEditSettlement(
@@ -170,7 +171,7 @@ function persistEditSettlement(
     return undefined;
   }
   const stored = deps.wscWorkspaceStore.writeEnvelope(result.wscSettlementEnvelope);
-  if (stored.status !== WSC_WORKSPACE_STORE_OBSTRUCTED_STATUS) {
+  if (stored.status !== JEDIT_WSC_WORKSPACE_STORE_STATUS.Obstructed) {
     return undefined;
   }
   const issue = settlementObstructionIssue(result.filePath, stored.obstruction, deps.nowMs());
@@ -311,8 +312,8 @@ function withTextAuthority(
 }
 
 function withEchoHistoryEntry(model: WorkspaceModel, draft: EchoHistoryEntryDraft): WorkspaceModel {
-  const echoHistory = appendEchoHistoryEntry(model.echoHistory ?? EMPTY_ECHO_HISTORY, draft);
-  const sequence = echoHistory.at(-1)?.sequence ?? EMPTY_ECHO_HISTORY.length;
+  const echoHistory = appendEchoHistoryEntry(model.echoHistory, draft);
+  const sequence = echoHistory.at(-1)?.sequence ?? 0;
   return {
     ...model,
     echoHistory,

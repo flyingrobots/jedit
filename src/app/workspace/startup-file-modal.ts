@@ -110,5 +110,5 @@ function shouldAutoOpenStartupFileModal(model: WorkspaceModel): boolean {
 }
 
 function normalizeStartupFileFilter(value: string): string {
-  return value.toLocaleLowerCase();
+  return value.toLowerCase();
 }

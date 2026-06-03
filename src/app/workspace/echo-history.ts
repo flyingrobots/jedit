@@ -22,6 +22,7 @@ const EMPTY_MESSAGE_KEY = 'history.empty';
 const HEADER_KEY = 'history.header';
 const TICK_PATTERN = /(?:tick|receipt):(\d+)/;
 const HISTORY_PAGE_STEP = 10;
+// Compact table cells keep the History drawer readable beside editor content.
 const SEQUENCE_CELL_WIDTH = 3;
 const TICK_CELL_WIDTH = 5;
 const KIND_CELL_WIDTH = 10;
@@ -96,6 +97,7 @@ export function sortedEchoHistoryIndexForSequence(
 ): number {
   const sorted = sortedEchoHistoryEntries(entries);
   const index = sorted.findIndex((entry) => entry.sequence === sequence);
+  // Missing sequence means a race or stale caller selected an obsolete entry; keep focus on newest evidence.
   return index < 0 ? clampIndex(entries.length - 1, entries.length) : index;
 }
 
@@ -186,7 +188,7 @@ function historyText(i18n: I18nPort, key: string): string {
 }
 
 function nextSequence(entries: readonly EchoHistoryEntry[]): number {
-  return (entries.at(-1)?.sequence ?? 0) + 1;
+  return Math.max(0, ...entries.map((entry) => entry.sequence)) + 1;
 }
 
 function tickIdFromEvidence(evidenceId: string | undefined): number | undefined {

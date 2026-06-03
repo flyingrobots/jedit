@@ -6,6 +6,15 @@ import { createNotificationState } from '@flyingrobots/bijou-tui';
 
 export const REPO_ROOT = process.cwd();
 
+const MOCK_I18N_TRANSLATIONS = Object.freeze({
+  'startupFileModal.title': 'Open file',
+  'startupFileModal.hint': 'Type filter · Enter open · Esc close',
+  'startupFileModal.input_label': 'Filter',
+  'startupFileModal.current_directory': 'Current directory',
+  'startupFileModal.empty': 'No files in this directory',
+  'startupFileModal.no_match': 'No files match',
+});
+
 let distBuildPromise;
 
 export async function ensureDistBuilt() {
@@ -130,10 +139,22 @@ export function mockI18n(overrides = {}) {
       label: 'English',
       direction: 'ltr',
     }],
-    t: () => '',
+    t: (key, values) => applyMockTranslationValues(
+      overrides.translations?.[key] ?? MOCK_I18N_TRANSLATIONS[key] ?? '',
+      values,
+    ),
     setLocale: () => undefined,
+    withLocale: (locale) => mockI18n({ ...overrides, locale }),
     ...overrides,
   };
+}
+
+function applyMockTranslationValues(template, values) {
+  let result = template;
+  for (const [key, value] of Object.entries(values ?? {})) {
+    result = result.replace(`{${key}}`, String(value));
+  }
+  return result;
 }
 
 export function mockRuntime(overrides = {}) {

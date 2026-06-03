@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -60,6 +60,7 @@ ${catalogEntries}
 };
 `;
 
+mkdirSync(OUT_DIR, { recursive: true });
 writeFileSync(OUT_FILE, tsContent);
 console.log('Generated src/generated/i18n.ts');
 

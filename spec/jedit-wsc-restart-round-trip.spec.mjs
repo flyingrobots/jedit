@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -10,11 +11,14 @@ import {
   mockRuntime,
 } from './workspace-helpers.mjs';
 
-const ENVELOPE_ID = 'e'.repeat(64);
 const RECEIPT_ID = 'receipt:123';
 const READING_ID = 'reading:123';
 const CHECKPOINT_ID = 'checkpoint:123';
 const MATERIALIZED_TEXT = 'hello from WSC restart';
+const SHA256_ALGORITHM = 'sha256';
+const HEX_DIGEST_ENCODING = 'hex';
+const SETTLEMENT_ENVELOPE_BYTES = encodeSettlement(settlementEvidence());
+const ENVELOPE_ID = digestBytes(SETTLEMENT_ENVELOPE_BYTES);
 
 test('WSC edit evidence survives stop and restart without stale workspace memory', async (t) => {
   const modules = await workspaceModules();
@@ -94,7 +98,7 @@ function appliedEditMessage(modules, workspaceRoot) {
       cache: readingCache(READING_ID, [MATERIALIZED_TEXT]),
       wscSettlementEnvelope: {
         envelopeId: ENVELOPE_ID,
-        bytes: encodeSettlement(settlementEvidence()),
+        bytes: SETTLEMENT_ENVELOPE_BYTES,
       },
     },
   };
@@ -143,6 +147,10 @@ function encodeSettlement(evidence) {
 
 function decodeSettlement(bytes) {
   return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+function digestBytes(bytes) {
+  return createHash(SHA256_ALGORITHM).update(bytes).digest(HEX_DIGEST_ENCODING);
 }
 
 function notesPath(workspaceRoot) {

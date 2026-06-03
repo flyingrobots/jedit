@@ -72,6 +72,14 @@
           "title": "Echo History",
           "empty": "No Echo evidence yet",
           "header": "#   tick  kind        status       evidence       summary"
+        },
+        "startupFileModal": {
+          "title": "Open file",
+          "hint": "Type filter · Enter open · Esc close",
+          "input_label": "Filter",
+          "current_directory": "Current directory",
+          "empty": "No files in this directory",
+          "no_match": "No files match"
         }
       }
     },
@@ -147,6 +155,14 @@
           "title": "Historique Echo",
           "empty": "Pas encore de preuve Echo",
           "header": "#   tick  type        statut       preuve         résumé"
+        },
+        "startupFileModal": {
+          "title": "Open file",
+          "hint": "Type filter · Enter open · Esc close",
+          "input_label": "Filter",
+          "current_directory": "Current directory",
+          "empty": "No files in this directory",
+          "no_match": "No files match"
         }
       }
     },
@@ -222,6 +238,14 @@
           "title": "Cronologia Echo",
           "empty": "Nessuna prova Echo ancora",
           "header": "#   tick  tipo        stato        prova          riepilogo"
+        },
+        "startupFileModal": {
+          "title": "Open file",
+          "hint": "Type filter · Enter open · Esc close",
+          "input_label": "Filter",
+          "current_directory": "Current directory",
+          "empty": "No files in this directory",
+          "no_match": "No files match"
         }
       }
     },
@@ -297,6 +321,14 @@
           "title": "Echo-Verlauf",
           "empty": "Noch keine Echo-Nachweise",
           "header": "#   tick  art         status       nachweis      zusammenfassung"
+        },
+        "startupFileModal": {
+          "title": "Open file",
+          "hint": "Type filter · Enter open · Esc close",
+          "input_label": "Filter",
+          "current_directory": "Current directory",
+          "empty": "No files in this directory",
+          "no_match": "No files match"
         }
       }
     },
@@ -372,6 +404,14 @@
           "title": "Historial Echo",
           "empty": "Sin evidencia Echo todavía",
           "header": "#   tick  tipo        estado       evidencia     resumen"
+        },
+        "startupFileModal": {
+          "title": "Open file",
+          "hint": "Type filter · Enter open · Esc close",
+          "input_label": "Filter",
+          "current_directory": "Current directory",
+          "empty": "No files in this directory",
+          "no_match": "No files match"
         }
       }
     },
@@ -447,6 +487,14 @@
           "title": "Echo 기록",
           "empty": "아직 Echo 증거 없음",
           "header": "#   tick  종류        상태         증거           요약"
+        },
+        "startupFileModal": {
+          "title": "Open file",
+          "hint": "Type filter · Enter open · Esc close",
+          "input_label": "Filter",
+          "current_directory": "Current directory",
+          "empty": "No files in this directory",
+          "no_match": "No files match"
         }
       }
     },
@@ -522,6 +570,14 @@
           "title": "Echo 履歴",
           "empty": "Echo 証拠はまだありません",
           "header": "#   tick  種類        状態         証拠           概要"
+        },
+        "startupFileModal": {
+          "title": "Open file",
+          "hint": "Type filter · Enter open · Esc close",
+          "input_label": "Filter",
+          "current_directory": "Current directory",
+          "empty": "No files in this directory",
+          "no_match": "No files match"
         }
       }
     },
@@ -597,6 +653,14 @@
           "title": "Echo 历史",
           "empty": "还没有 Echo 证据",
           "header": "#   tick  类型        状态         证据           摘要"
+        },
+        "startupFileModal": {
+          "title": "Open file",
+          "hint": "Type filter · Enter open · Esc close",
+          "input_label": "Filter",
+          "current_directory": "Current directory",
+          "empty": "No files in this directory",
+          "no_match": "No files match"
         }
       }
     },
@@ -672,6 +736,14 @@
           "title": "Histórico Echo",
           "empty": "Nenhuma evidência Echo ainda",
           "header": "#   tick  tipo        status       evidência     resumo"
+        },
+        "startupFileModal": {
+          "title": "Open file",
+          "hint": "Type filter · Enter open · Esc close",
+          "input_label": "Filter",
+          "current_directory": "Current directory",
+          "empty": "No files in this directory",
+          "no_match": "No files match"
         }
       }
     },
@@ -747,6 +819,14 @@
           "title": "История Echo",
           "empty": "Пока нет доказательств Echo",
           "header": "#   tick  тип         статус      доказательство  сводка"
+        },
+        "startupFileModal": {
+          "title": "Open file",
+          "hint": "Type filter · Enter open · Esc close",
+          "input_label": "Filter",
+          "current_directory": "Current directory",
+          "empty": "No files in this directory",
+          "no_match": "No files match"
         }
       }
     },
@@ -822,6 +902,14 @@
           "title": "سجل Echo",
           "empty": "لا توجد أدلة Echo بعد",
           "header": "#   tick  النوع       الحالة      الدليل         الملخص"
+        },
+        "startupFileModal": {
+          "title": "Open file",
+          "hint": "Type filter · Enter open · Esc close",
+          "input_label": "Filter",
+          "current_directory": "Current directory",
+          "empty": "No files in this directory",
+          "no_match": "No files match"
         }
       }
     },
@@ -897,6 +985,14 @@
           "title": "Riwayat Echo",
           "empty": "Belum ada bukti Echo",
           "header": "#   tick  jenis       status      bukti         ringkasan"
+        },
+        "startupFileModal": {
+          "title": "Open file",
+          "hint": "Type filter · Enter open · Esc close",
+          "input_label": "Filter",
+          "current_directory": "Current directory",
+          "empty": "No files in this directory",
+          "no_match": "No files match"
         }
       }
     },
@@ -972,6 +1068,14 @@
           "title": "Echo Geçmişi",
           "empty": "Henüz Echo kanıtı yok",
           "header": "#   tick  tür         durum       kanıt         özet"
+        },
+        "startupFileModal": {
+          "title": "Open file",
+          "hint": "Type filter · Enter open · Esc close",
+          "input_label": "Filter",
+          "current_directory": "Current directory",
+          "empty": "No files in this directory",
+          "no_match": "No files match"
         }
       }
     },
@@ -1047,6 +1151,14 @@
           "title": "Echo इतिहास",
           "empty": "अभी कोई Echo प्रमाण नहीं",
           "header": "#   tick  प्रकार      स्थिति      प्रमाण        सारांश"
+        },
+        "startupFileModal": {
+          "title": "Open file",
+          "hint": "Type filter · Enter open · Esc close",
+          "input_label": "Filter",
+          "current_directory": "Current directory",
+          "empty": "No files in this directory",
+          "no_match": "No files match"
         }
       }
     },
@@ -1122,6 +1234,14 @@
           "title": "Echo-geschiedenis",
           "empty": "Nog geen Echo-bewijs",
           "header": "#   tick  soort       status      bewijs        samenvatting"
+        },
+        "startupFileModal": {
+          "title": "Open file",
+          "hint": "Type filter · Enter open · Esc close",
+          "input_label": "Filter",
+          "current_directory": "Current directory",
+          "empty": "No files in this directory",
+          "no_match": "No files match"
         }
       }
     },
@@ -1197,6 +1317,14 @@
           "title": "Historia Echo",
           "empty": "Brak jeszcze dowodów Echo",
           "header": "#   tick  typ         status      dowód        podsumowanie"
+        },
+        "startupFileModal": {
+          "title": "Open file",
+          "hint": "Type filter · Enter open · Esc close",
+          "input_label": "Filter",
+          "current_directory": "Current directory",
+          "empty": "No files in this directory",
+          "no_match": "No files match"
         }
       }
     },
@@ -1272,6 +1400,14 @@
           "title": "Lịch sử Echo",
           "empty": "Chưa có bằng chứng Echo",
           "header": "#   tick  loại        trạng thái   bằng chứng   tóm tắt"
+        },
+        "startupFileModal": {
+          "title": "Open file",
+          "hint": "Type filter · Enter open · Esc close",
+          "input_label": "Filter",
+          "current_directory": "Current directory",
+          "empty": "No files in this directory",
+          "no_match": "No files match"
         }
       }
     },
@@ -1347,6 +1483,14 @@
           "title": "ประวัติ Echo",
           "empty": "ยังไม่มีหลักฐาน Echo",
           "header": "#   tick  ชนิด       สถานะ       หลักฐาน      สรุป"
+        },
+        "startupFileModal": {
+          "title": "Open file",
+          "hint": "Type filter · Enter open · Esc close",
+          "input_label": "Filter",
+          "current_directory": "Current directory",
+          "empty": "No files in this directory",
+          "no_match": "No files match"
         }
       }
     },
@@ -1422,6 +1566,14 @@
           "title": "تاریخچه Echo",
           "empty": "هنوز مدرک Echo وجود ندارد",
           "header": "#   tick  نوع         وضعیت      مدرک         خلاصه"
+        },
+        "startupFileModal": {
+          "title": "Open file",
+          "hint": "Type filter · Enter open · Esc close",
+          "input_label": "Filter",
+          "current_directory": "Current directory",
+          "empty": "No files in this directory",
+          "no_match": "No files match"
         }
       }
     },
@@ -1497,6 +1649,14 @@
           "title": "היסטוריית Echo",
           "empty": "עדיין אין ראיות Echo",
           "header": "#   tick  סוג         מצב        ראיה         סיכום"
+        },
+        "startupFileModal": {
+          "title": "Open file",
+          "hint": "Type filter · Enter open · Esc close",
+          "input_label": "Filter",
+          "current_directory": "Current directory",
+          "empty": "No files in this directory",
+          "no_match": "No files match"
         }
       }
     }

@@ -262,7 +262,7 @@ function workspaceHasHead(workspaceRoot: string): boolean {
   }
 }
 
-function parseGraftToolResult(result: GraftToolResult): JsonValue {
+export function parseGraftToolResult(result: GraftToolResult): JsonValue {
   const text = result.content
     .find((block) => block.type === 'text')
     ?.text;

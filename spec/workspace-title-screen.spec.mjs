@@ -5,6 +5,7 @@ import {
   hasNotification,
   importDist,
   mockDeps,
+  mockI18n,
   mockKeyBindingContext,
   mockTitleScreenModel,
   notification,
@@ -152,22 +153,22 @@ test('startup file modal reuses the frozen title backdrop while input changes', 
     startupIntroComplete: false,
     startupFileModalOpen: false,
   });
-  viewerContent.clearFrozenTitleBackdrop();
+  const renderer = viewerContent.createViewerContentRenderer(titleRenderer);
 
-  const live = viewerContent.renderViewerWithTitleRenderer(base, 44, 6, titleRenderer);
-  const openModal = viewerContent.renderViewerWithTitleRenderer({
+  const live = renderer.renderViewer(base, 44, 6);
+  const openModal = renderer.renderViewer({
     ...base,
     time: 7,
     startupIntroComplete: true,
     startupFileModalOpen: true,
-  }, 44, 6, titleRenderer);
-  const typed = viewerContent.renderViewerWithTitleRenderer({
+  }, 44, 6);
+  const typed = renderer.renderViewer({
     ...base,
     time: 8,
     startupIntroComplete: true,
     startupFileModalOpen: true,
     startupFileModalInput: 'read',
-  }, 44, 6, titleRenderer);
+  }, 44, 6);
 
   assert.deepEqual(tracedTimes, [1]);
   assert.equal(surfaceText(openModal), surfaceText(live));
@@ -189,17 +190,42 @@ test('startup file modal traces one fallback backdrop frame when no title cache 
     startupIntroComplete: true,
     startupFileModalOpen: true,
   });
-  viewerContent.clearFrozenTitleBackdrop();
+  const renderer = viewerContent.createViewerContentRenderer(titleRenderer);
 
-  const first = viewerContent.renderViewerWithTitleRenderer(model, 44, 6, titleRenderer);
-  const second = viewerContent.renderViewerWithTitleRenderer({
+  const first = renderer.renderViewer(model, 44, 6);
+  const second = renderer.renderViewer({
     ...model,
     time: 8,
     startupFileModalInput: 'r',
-  }, 44, 6, titleRenderer);
+  }, 44, 6);
 
   assert.deepEqual(tracedTimes, [7]);
   assert.equal(surfaceText(second), surfaceText(first));
+});
+
+test('startup file modal title backdrop cache is isolated per renderer instance', async () => {
+  const [viewerContent, titleScreen] = await Promise.all([
+    importDist('app', 'workspace', 'viewer-content.js'),
+    importDist('ui', 'title-screen.js'),
+  ]);
+  const firstRenderer = viewerContent.createViewerContentRenderer((width, height) => stringToSurface('session one', width, height));
+  const secondRenderer = viewerContent.createViewerContentRenderer((width, height) => stringToSurface('session two', width, height));
+  const base = mockTitleScreenModel(titleScreen, {
+    time: 1,
+    startupIntroComplete: false,
+    startupFileModalOpen: false,
+  });
+
+  firstRenderer.renderViewer(base, 44, 6);
+  const second = secondRenderer.renderViewer({
+    ...base,
+    time: 7,
+    startupIntroComplete: true,
+    startupFileModalOpen: true,
+  }, 44, 6);
+
+  assert.match(surfaceText(second), /session two/);
+  assert.doesNotMatch(surfaceText(second), /session one/);
 });
 
 test('startup intro skip does not interrupt focused file drawer open', async () => {
@@ -237,7 +263,7 @@ test('startup file modal renders current directory files over the title screen',
     importDist('ports', 'file-system.js'),
   ]);
   const model = mockTitleScreenModel(titleScreen, {
-    i18n: { direction: 'ltr' },
+    i18n: mockI18n(),
     cwd: '/repo',
     workspaceRoot: '/repo',
     jeditTheme: themes.availableJeditThemes()[0],
@@ -267,7 +293,7 @@ test('startup file modal input filters current directory rows', async () => {
     importDist('ports', 'file-system.js'),
   ]);
   const model = mockTitleScreenModel(titleScreen, {
-    i18n: { direction: 'ltr' },
+    i18n: mockI18n(),
     cwd: '/repo',
     workspaceRoot: '/repo',
     jeditTheme: themes.availableJeditThemes()[0],
@@ -407,7 +433,7 @@ test('startup file modal renders empty and no-match states', async () => {
     importDist('ports', 'file-system.js'),
   ]);
   const base = {
-    i18n: { direction: 'ltr' },
+    i18n: mockI18n(),
     jeditTheme: themes.availableJeditThemes()[0],
     startupIntroComplete: true,
     startupFileModalOpen: true,

@@ -54,7 +54,7 @@ mindmap
         Ticks & receipts
         WASM transport
       Graft
-        MCP over stdio
+        Direct API
         AST snapshots
         Symbol outlines
       Wesley
@@ -166,12 +166,12 @@ graph TD
 
     BIJOU["@flyingrobots/bijou-tui<br />The Elm Architecture for terminals.<br />Provides: App loop, Surface cells,<br />Cmd effects, KeyMsg, MouseMsg"]
     ECHO["Echo Runtime<br />Causal text substrate.<br />Worldlines, Rope trees, Ticks,<br />Receipts, Scheduler, WASM boundary"]
-    GRAFT["@flyingrobots/graft<br />Structural intelligence engine.<br />AST snapshots, syntax spans,<br />fold regions, diagnostics — via MCP"]
+    GRAFT["@flyingrobots/graft<br />Structural intelligence engine.<br />AST snapshots, syntax spans,<br />fold regions, diagnostics — direct API"]
     WESLEY["Wesley / wesley-cli<br />GraphQL SDL compiler.<br />SDL → TypeScript types, Zod schemas,<br />operation metadata, codecs"]
 
     jedit -- "run(app, opts)" --> BIJOU
     jedit -- "intent / observe via transport" --> ECHO
-    jedit -- "MCP session requests" --> GRAFT
+    jedit -- "direct API requests" --> GRAFT
     DOM -- "SDL authority" --> WESLEY
     WESLEY -- "generated artifacts" --> jedit
 ```
@@ -182,7 +182,7 @@ Bijou is an in-house TUI framework implementing **The Elm Architecture (TEA)** f
 
 - An `App<Model, Msg>` interface with `init`, `update`, and `view`
 - A `Surface` type — a 2D grid of styled cells (characters + ANSI color/style)
-- `Cmd<Msg>` for scheduling asynchronous effects (filesystem reads, MCP calls, timers)
+- `Cmd<Msg>` for scheduling asynchronous effects (filesystem reads, Graft API calls, timers)
 - Terminal event decoding — raw bytes become typed `KeyMsg`, `MouseMsg`, or `ResizeMsg` values
 
 The TEA pattern means the entire application state is a single immutable value. The `update` function is a pure function from `(Msg, Model) → [Model, Cmd[]]`. There are no mutable singletons. State change happens only through messages.
@@ -199,7 +199,7 @@ Echo is the causal text substrate. It models text as **worldlines** — ordered 
 
 ### Graft
 
-Graft is a structural intelligence engine — AST spans, fold regions, symbol outlines, diagnostics, rename previews, structural diffs. `jedit` reaches Graft through an **MCP (Model Context Protocol) session**, treating it as an intelligent adapter rather than an editor kernel.
+Graft is a structural intelligence engine — AST spans, fold regions, symbol outlines, diagnostics, rename previews, structural diffs. `jedit` reaches Graft through the direct `@flyingrobots/graft` API, treating it as an intelligent adapter rather than an editor kernel.
 
 ### Wesley
 
@@ -283,7 +283,7 @@ During bootstrap:
 - The initial `WorkspaceModel` is constructed from `createInitialModelSnapshot` — this snapshot picks the initial theme, seeds the title screen animation, sets up i18n, and chooses the initial working directory.
 - Bijou calls `init()` on the workspace runtime, which returns `[initialModel, startupCmds]`. The startup commands include the time-tick loop and the Graft lifecycle manager.
 
-Critically, **no I/O happens during bootstrap**. The filesystem, MCP session, and Echo transport are only touched *after* Bijou begins executing commands from `init`.
+Critically, **no I/O happens during bootstrap**. The filesystem, Graft API, and Echo transport are only touched *after* Bijou begins executing commands from `init`.
 
 ### Runtime Phase (runs on every event)
 
@@ -359,7 +359,7 @@ sequenceDiagram
     View-->>Bijou: Surface (grid of styled cells)
     Bijou->>Terminal: diff Surface → ANSI escape sequences
     loop async commands
-        Bijou->>Bijou: execute Cmd (filesystem, MCP, timer...)
+        Bijou->>Bijou: execute Cmd (filesystem, Graft API, timer...)
         Bijou->>Runtime: update(ResultMsg, currentModel)
     end
 ```
@@ -400,7 +400,7 @@ sequenceDiagram
     User->>Update: press Enter on file
     Update-->>Bijou: [newModel, [graftRefreshCmd, echoOpenCmd, highlightCmd]]
     Note over Bijou: All three Cmds launched concurrently
-    Bijou->>Graft: execute graftRefreshCmd (async MCP call)
+    Bijou->>Graft: execute graftRefreshCmd (async direct API call)
     Bijou->>Echo: execute echoOpenCmd (async Echo transport)
     Bijou->>HL: execute highlightCmd (async Graft highlight)
     Graft-->>Bijou: GraftInfo message (arrives first)
@@ -470,7 +470,7 @@ graph LR
     APP["src/app<br />Use Cases<br />Orchestration<br />Workspace logic"]
     DOM["src/domain<br />Runtime truth<br />Pure contracts<br />No external deps"]
     PORTS["src/ports<br />Interface definitions<br />Typed runtime contracts"]
-    ADAPT["src/adapters<br />Concrete implementations<br />Filesystem, MCP, Echo, Bijou"]
+    ADAPT["src/adapters<br />Concrete implementations<br />Filesystem, Graft, Echo, Bijou"]
 
     UI --> APP
     APP --> DOM
@@ -486,7 +486,7 @@ graph LR
 
 **`src/ports`** — Interface definitions only. A port describes a typed runtime contract; it never decodes raw payloads. Examples: `HotTextRuntimePort`, `TextBufferSessionPort`, `FileSystemPort`, `GraftSessionPort`, `SourceHighlighter`.
 
-**`src/adapters`** — Concrete implementations. Raw strings, JSON bytes, and MCP payloads are decoded *here* and *only here*. Contains: the installed jedit contract transport, the fake transport used by focused tests, the real Echo WASM witness client, the filesystem adapter, Graft MCP session, source highlighter.
+**`src/adapters`** — Concrete implementations. Raw strings, JSON bytes, and Graft API payloads are decoded *here* and *only here*. Contains: the installed jedit contract transport, the fake transport used by focused tests, the real Echo WASM witness client, the filesystem adapter, Graft direct API session, source highlighter.
 
 **`src/ui`** — Presentation and input mapping. UI translates Bijou events into app commands and renders app state into `Surface` cells. It does not own business rules.
 
@@ -516,8 +516,8 @@ graph TB
         ECHO_TRANSPORT["EchoWasmKernelTransport interface<br />submitIntentBytes / observeBytes"]
     end
 
-    subgraph graft_border["Graft border (stdio MCP)"]
-        MCP_STDIO["JSON-RPC over child process stdio"]
+    subgraph graft_border["Graft border (direct API)"]
+        GRAFT_DIRECT_API["@flyingrobots/graft repo-local API"]
     end
 
     subgraph fs_border["Node.js filesystem"]
@@ -527,7 +527,7 @@ graph TB
     APP_CODE --> BIJOU_SURFACE
     ADAPT_CODE --> BIJOU_RUN
     ADAPT_CODE --> ECHO_TRANSPORT
-    ADAPT_CODE --> MCP_STDIO
+    ADAPT_CODE --> GRAFT_DIRECT_API
     ADAPT_CODE --> FS_API
 ```
 
@@ -551,7 +551,7 @@ graph TB
 
 ### The Graft Border
 
-**Where**: `src/adapters/graft-api-session.ts`. Graft runs in-process through the `@flyingrobots/graft` direct API. `jedit` keeps Graft behind `GraftSessionPort`, but it does not launch a repo-local MCP child process for editor-local enrichment.
+**Where**: `src/adapters/graft-api-session.ts`. Graft runs in-process through the `@flyingrobots/graft` direct API. `jedit` keeps Graft behind `GraftSessionPort`, but it does not launch a repo-local child process for editor-local enrichment.
 
 **What crosses the border**: A repo-local API call with `{ path }` → Graft tool-shaped output for `file_outline` and `graft_diff`, decoded into `GraftInfo`. Unsaved edits are not sent to Graft; when the editor buffer is dirty, the drawer reports that it reflects the saved file only.
 
@@ -1269,9 +1269,9 @@ The `BASE_HEAD_MISMATCH` case is the most important — it means two edits raced
 
 In the fake transport these errors should be impossible (the same process encodes and decodes). In the real WASM transport they indicate a version mismatch between `jedit` and the Echo WASM module. The error propagates as a `RuntimeIssue`.
 
-### Level 4: External Process Failure
+### Level 4: External Capability Failure
 
-**Graft process crash**: The MCP session catches all errors and converts them to a `GraftInfo` with empty content. The graft drawer shows nothing. The editor continues to work normally — structural intelligence is enrichment, not critical path.
+**Graft API failure**: The Graft adapter catches structural-query failures and converts them to a `GraftInfo` with empty content plus an error. The graft drawer shows the failure posture. The editor continues to work normally — structural intelligence is enrichment, not critical path.
 
 **Filesystem error on open**: `loadEditorFile` catches all `fs.readFileSync` errors and returns a read-only single-line buffer containing the error message string. The editor opens in read-only mode with the error visible. This is an intentional UX decision — the error state is visible and recoverable (the user can close and reopen).
 
@@ -1374,7 +1374,7 @@ sequenceDiagram
 
 The `GraftInfo` payload carries an `outline` (list of structural symbols with `{ kind, name, startLine }`) and a diff summary string. The graft drawer renders this as a navigable list.
 
-**Transport is not architecture**: The MCP-over-stdio path is explicitly noted as transitional. The long-term posture is Graft as a built-in engine with a direct API surface, not a separate process. The port interface (`GraftSessionPort`) already abstracts away the transport — switching from stdio MCP to a native binding would be a single adapter replacement.
+**Transport is not architecture**: The former sidecar path has been retired for editor-local enrichment. Graft is now reached through a direct API surface behind `GraftSessionPort`, and the runtime still depends on the port rather than the concrete adapter.
 
 ---
 
@@ -1569,7 +1569,7 @@ graph TB
     subgraph "External World"
         TERM["Terminal<br />(keystrokes, resize, mouse)"]
         FS["Filesystem<br />(open, read, save)"]
-        GRAFT_PROC["Graft Process<br />(MCP over stdio)"]
+        GRAFT_API["Graft direct API<br />(@flyingrobots/graft)"]
         ECHO_WASM["Echo WASM<br />(or in-memory fake)"]
     end
 
@@ -1622,7 +1622,7 @@ graph TB
     FEW -->|"synchronous byte calls"| JCR
     IECW -->|"WASM byte calls"| ECHO_WASM
     FS_ADAPT --> FS
-    GRAFT_ADAPT --> GRAFT_PROC
+    GRAFT_ADAPT --> GRAFT_API
     WR --> RW
     ZOD -->|"runtime validation"| JCR
     TYPES -->|"type definitions"| TBS
