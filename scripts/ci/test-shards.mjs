@@ -65,7 +65,8 @@ const WORKSPACE_SPEC_PATTERNS = Object.freeze([
 ]);
 
 export const TEST_SHARDS = Object.freeze({
-  Contracts: 'contracts',
+  ContractApi: 'contract-api',
+  CycleProofs: 'cycle-proofs',
   DocsRelease: 'docs-release',
   EchoAuthority: 'echo-authority',
   MiscFast: 'misc-fast',
@@ -74,7 +75,8 @@ export const TEST_SHARDS = Object.freeze({
 });
 
 export const TEST_SHARD_NAMES = Object.freeze([
-  TEST_SHARDS.Contracts,
+  TEST_SHARDS.ContractApi,
+  TEST_SHARDS.CycleProofs,
   TEST_SHARDS.DocsRelease,
   TEST_SHARDS.EchoAuthority,
   TEST_SHARDS.MiscFast,
@@ -109,8 +111,11 @@ export function testShardForSpec(filePath) {
   if (includesAny(name, DOCS_SPEC_PATTERNS)) {
     return TEST_SHARDS.DocsRelease;
   }
-  if (repoPath.startsWith('tests/') || includesAny(name, CONTRACT_SPEC_PATTERNS)) {
-    return TEST_SHARDS.Contracts;
+  if (repoPath.startsWith('tests/')) {
+    return TEST_SHARDS.CycleProofs;
+  }
+  if (includesAny(name, CONTRACT_SPEC_PATTERNS)) {
+    return TEST_SHARDS.ContractApi;
   }
   if (includesAny(name, ECHO_SPEC_PATTERNS)) {
     return TEST_SHARDS.EchoAuthority;

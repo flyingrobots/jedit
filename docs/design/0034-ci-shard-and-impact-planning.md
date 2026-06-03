@@ -34,6 +34,8 @@ finishing in seconds. The long pole was the single `Run checks` step.
 - Unknown paths force the full shard set.
 - Workflow, package, TypeScript config, shard-planner, and quality-gate changes
   force the full shard set.
+- Package changes that parse as Bijou-only dependency bumps use a narrower
+  package-compatibility plan instead of full CI.
 - Mainline pushes and explicit full runs execute the full shard set.
 - Echo authority and release-gate paths run the release gate.
 - Skipped shards must be explainable from the changed path set.
@@ -43,7 +45,8 @@ finishing in seconds. The long pole was the single `Run checks` step.
 
 | Shard | Scope |
 | --- | --- |
-| `contracts` | Contract, codec, observer, operation, and algebra specs. |
+| `contract-api` | Contract, codec, observer, operation, and generated API specs. |
+| `cycle-proofs` | Cycle design proof specs under `tests/`. |
 | `docs-release` | Documentation, guide, quickstart, and release-script specs. |
 | `echo-authority` | Echo hosting, recovery, production text, WSC, restart, retained evidence, and release authority specs. |
 | `misc-fast` | Small specs that are not owned by a narrower domain shard. |
@@ -62,8 +65,9 @@ depend on ignored generated source files in a fresh checkout.
 
 | Changed path | Required checks |
 | --- | --- |
-| `.github/**`, `package*.json`, `tsconfig*.json`, `scripts/ci/**`, `scripts/quality*` | Full shard set and release gate. |
-| `contracts/**`, generated contract code, Wesley tooling | `contracts`, `echo-authority`, release gate. |
+| `.github/**`, non-Bijou package changes, `tsconfig*.json`, `scripts/ci/**`, `scripts/quality*` | Full shard set and release gate. |
+| `package*.json` with only Bijou dependency version/resolution changes | `contract-api`, `echo-authority`, `workspace-ui`, release gate. |
+| `contracts/**`, generated contract code, Wesley tooling | `contract-api`, `echo-authority`, release gate. |
 | Echo authority surfaces | `echo-authority`, `workspace-ui`, release gate. |
 | Workspace surfaces | `workspace-ui`, `echo-authority`. |
 | Title scene and theme surfaces | `title-rendering`, `workspace-ui`. |

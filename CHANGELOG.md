@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Split the CI contract shard into `contract-api` and `cycle-proofs`, and added
+  a Bijou-only package dependency fast path that runs `contract-api`,
+  `echo-authority`, `workspace-ui`, and the Echo release gate instead of the
+  full shard set.
 - Fixed Echo-hosted normal-mode undo and redo so `u` and `Ctrl-R` submit
   production text replacement edits through Echo instead of emitting an
   unsupported runtime-error toast.

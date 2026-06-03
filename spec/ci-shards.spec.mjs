@@ -9,7 +9,7 @@ import {
   specsByShard,
   testShardForSpec,
 } from '../scripts/ci/test-shards.mjs';
-import { impactForPath, planChangedShards } from '../scripts/ci/changed-shards.mjs';
+import { PACKAGE_CHANGE_KINDS, impactForPath, planChangedShards } from '../scripts/ci/changed-shards.mjs';
 
 const TYPESCRIPT_BUILD_SNIPPET = 'node_modules/typescript/bin/' + 'tsc';
 
@@ -30,7 +30,8 @@ test('known specs map to stable shard owners', () => {
   assert.equal(testShardForSpec('spec/title-screen.spec.mjs'), TEST_SHARDS.TitleRendering);
   assert.equal(testShardForSpec('spec/workspace-footer.spec.mjs'), TEST_SHARDS.WorkspaceUi);
   assert.equal(testShardForSpec('spec/jedit-wsc-workspace-store.spec.mjs'), TEST_SHARDS.EchoAuthority);
-  assert.equal(testShardForSpec('tests/replace-range-cycle.spec.mjs'), TEST_SHARDS.Contracts);
+  assert.equal(testShardForSpec('spec/rope-codec.spec.mjs'), TEST_SHARDS.ContractApi);
+  assert.equal(testShardForSpec('tests/replace-range-cycle.spec.mjs'), TEST_SHARDS.CycleProofs);
   assert.equal(testShardForSpec('spec/release-quickstart.spec.mjs'), TEST_SHARDS.DocsRelease);
 });
 
@@ -56,6 +57,24 @@ test('planner routes Echo authority changes through release gate', () => {
   assert.equal(plan.full, false);
   assert.equal(plan.releaseGate, true);
   assert.deepEqual(plan.testShards, [TEST_SHARDS.EchoAuthority, TEST_SHARDS.WorkspaceUi]);
+});
+
+test('planner narrows Bijou-only dependency bumps to runtime compatibility shards', () => {
+  const plan = planChangedShards(['package.json', 'package-lock.json'], {
+    packageChangeKind: PACKAGE_CHANGE_KINDS.BijouOnly,
+  });
+
+  assert.equal(plan.full, false);
+  assert.equal(plan.releaseGate, true);
+  assert.deepEqual(plan.testShards, [
+    TEST_SHARDS.ContractApi,
+    TEST_SHARDS.EchoAuthority,
+    TEST_SHARDS.WorkspaceUi,
+  ]);
+  assert.deepEqual(
+    plan.reasons.map((reason) => reason.reason),
+    ['bijou-dependency-change', 'bijou-dependency-change'],
+  );
 });
 
 test('planner forces full CI for planner and unknown paths', () => {
