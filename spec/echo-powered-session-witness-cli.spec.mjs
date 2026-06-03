@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import test from 'node:test';
+import { ensureDistBuiltSync } from './dist-helpers.mjs';
 
 const REPO_ROOT = process.cwd();
 const CLI_PATH = path.join(REPO_ROOT, 'scripts', 'jedit-echo-powered-session.mjs');
@@ -262,10 +263,6 @@ function ensureBuilt() {
   if (built) {
     return;
   }
-  const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
-    cwd: REPO_ROOT,
-    encoding: 'utf8',
-  });
-  assert.equal(build.status, 0, build.stderr || build.stdout);
+  ensureDistBuiltSync();
   built = true;
 }

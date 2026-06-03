@@ -5,9 +5,48 @@ on:
     branches: [ main, enhancements ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      full:
+        description: Run the full shard set
+        required: false
+        default: true
+        type: boolean
 
 jobs:
-  check:
+  plan:
+    name: plan
+    runs-on: ubuntu-latest
+    outputs:
+      test_shards: ${{ steps.plan.outputs.test_shards }}
+      release_gate: ${{ steps.plan.outputs.release_gate }}
+      full: ${{ steps.plan.outputs.full }}
+
+    steps:
+      - uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: 22
+
+      - name: Plan shards
+        id: plan
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || 'origin/main' }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          FULL_CI: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' && inputs.full || github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'full-ci') }}
+        run: |
+          args=(--base "$BASE_SHA" --head "$HEAD_SHA" --json --summary --github-output)
+          if [[ "$FULL_CI" == "true" ]]; then
+            args+=(--full)
+          fi
+          node scripts/ci/changed-shards.mjs "${args[@]}"
+
+  build:
+    name: static / build
     runs-on: ubuntu-latest
 
     steps:
@@ -22,5 +61,125 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run checks
-        run: npm run check
+      - name: Build
+        run: npm run build
+
+      - name: Upload dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: jedit-dist
+          path: dist
+          if-no-files-found: error
+
+  test-shards:
+    name: test / ${{ matrix.shard }}
+    needs: [ plan, build ]
+    if: needs.plan.outputs.test_shards != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJson(needs.plan.outputs.test_shards) }}
+
+    steps:
+      - uses: actions/checkout@v6.0.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download dist
+        uses: actions/download-artifact@v4
+        with:
+          name: jedit-dist
+          path: dist
+
+      - name: Run shard
+        env:
+          JEDIT_DIST_PREBUILT: '1'
+        run: npm run ci:shard -- ${{ matrix.shard }}
+
+  quality:
+    name: quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6.0.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run quality gate
+        run: npm run quality
+
+  release-gate:
+    name: release-gate / jedit-echo
+    needs: [ plan ]
+    if: needs.plan.outputs.release_gate == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6.0.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Echo release gate
+        run: npm run release-gate:jedit-echo
+
+  check:
+    name: check
+    needs: [ plan, build, test-shards, quality, release-gate ]
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Verify required jobs
+        env:
+          PLAN_RESULT: ${{ needs.plan.result }}
+          BUILD_RESULT: ${{ needs.build.result }}
+          TEST_SHARDS_RESULT: ${{ needs.test-shards.result }}
+          QUALITY_RESULT: ${{ needs.quality.result }}
+          RELEASE_GATE_RESULT: ${{ needs.release-gate.result }}
+        run: |
+          failed=0
+          for result in "$PLAN_RESULT" "$BUILD_RESULT" "$QUALITY_RESULT"; do
+            if [[ "$result" != "success" ]]; then
+              failed=1
+            fi
+          done
+          if [[ "$TEST_SHARDS_RESULT" != "success" && "$TEST_SHARDS_RESULT" != "skipped" ]]; then
+            failed=1
+          fi
+          if [[ "$RELEASE_GATE_RESULT" != "success" && "$RELEASE_GATE_RESULT" != "skipped" ]]; then
+            failed=1
+          fi
+          {
+            echo "### CI aggregate"
+            echo
+            echo "| Job | Result |"
+            echo "| --- | --- |"
+            echo "| plan | $PLAN_RESULT |"
+            echo "| static / build | $BUILD_RESULT |"
+            echo "| test shards | $TEST_SHARDS_RESULT |"
+            echo "| quality | $QUALITY_RESULT |"
+            echo "| release gate | $RELEASE_GATE_RESULT |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$failed"

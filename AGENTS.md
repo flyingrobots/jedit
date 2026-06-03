@@ -5,6 +5,9 @@
 - Never amend commits. Make a new commit.
 - Never rebase unless the user explicitly approves it after a concrete explanation.
 - Never force git operations.
+- Draft pull requests are allowed only for design-cycle kickoff or active cycle
+  work. Convert them to ready before merge. If draft PRs are unavailable, use a
+  normal PR with the `work-in-progress` label.
 
 ## Quality Doctrine
 
@@ -31,6 +34,10 @@ These are hard repo rules, not suggestions:
 
 - `ARCHITECTURE.md` is the canonical repo architecture doctrine.
 - `docs/BEARING.md` records the current execution gravity.
+- `docs/method/process.md` is the canonical cycle workflow.
+- `docs/design/TEMPLATE.md` is the required template for full cycle designs.
+- `docs/design/0034-design-cycle-template-and-lifecycle.md` records the policy
+  decision that made executable design docs official.
 - `docs/design/0024-jedit-powered-by-echo-release-gate.md` is the completed
   baseline plan for the first thirty slices proving jedit has an installed
   package/evidence path while Echo remains generic.
@@ -58,6 +65,25 @@ These are hard repo rules, not suggestions:
 
 Keep track of our progress in the plan doc by checking off slices just before
 you make the commit for that slice.
+
+## Design Cycle Workflow
+
+- Start full cycles from a fetched merge target, almost always `origin/main`.
+- Create or link a GitHub issue before the design doc lands.
+- Write full cycle docs from `docs/design/TEMPLATE.md`.
+- Commit and push the design doc before implementation work.
+- Open an early PR and mark the issue and PR `work-in-progress` while the cycle
+  is active.
+- Design docs define intent. They do not prove implementation.
+- For implementation work, at least one required test must exercise the actual
+  software surface: package API, runtime behavior, rendered output, scripted app
+  flow, command behavior, schema validation, lower-mode output, or CI/tooling
+  behavior.
+- Design-doc assertions are allowed only as evidence-ledger checks. They cannot
+  be the only acceptance test for product, runtime, UI, or tooling work.
+- Fill in the design doc retrospective before marking the PR ready.
+- Create GitHub issues for deferred work instead of hiding follow-on debt in
+  prose.
 
 ## Current Reality
 
