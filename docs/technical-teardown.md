@@ -32,7 +32,7 @@ This document is a progressive, end-to-end technical explanation of `jedit` aime
 21. [Unhappy Paths and Error Handling](#21-unhappy-paths-and-error-handling)
 22. [The GraphQL SDL and Wesley Code Generation](#22-the-graphql-sdl-and-wesley-code-generation)
 23. [The Structural History Path](#23-the-structural-history-path)
-24. [Graft Integration — Structural Intelligence via MCP](#24-graft-integration--structural-intelligence-via-mcp)
+24. [Graft Integration — Structural Intelligence via Direct API](#24-graft-integration--structural-intelligence-via-direct-api)
 25. [Golden Path: Opening and Editing a File](#25-golden-path-opening-and-editing-a-file)
 26. [Golden Path: A Keystroke to Terminal Pixels](#26-golden-path-a-keystroke-to-terminal-pixels)
 27. [Architectural Trade-offs](#27-architectural-trade-offs)
@@ -54,7 +54,7 @@ mindmap
         Ticks & receipts
         WASM transport
       Graft
-        MCP over stdio
+        Direct API
         AST snapshots
         Symbol outlines
       Wesley
@@ -80,7 +80,7 @@ mindmap
         FakeEchoTransport
         EchoWasmTransport
         FilesystemAdapter
-        GraftMcpSession
+        GraftApiSession
       src/ui
         renderWorkspace
         Vim key bindings
@@ -166,12 +166,12 @@ graph TD
 
     BIJOU["@flyingrobots/bijou-tui<br />The Elm Architecture for terminals.<br />Provides: App loop, Surface cells,<br />Cmd effects, KeyMsg, MouseMsg"]
     ECHO["Echo Runtime<br />Causal text substrate.<br />Worldlines, Rope trees, Ticks,<br />Receipts, Scheduler, WASM boundary"]
-    GRAFT["@flyingrobots/graft<br />Structural intelligence engine.<br />AST snapshots, syntax spans,<br />fold regions, diagnostics — via MCP"]
+    GRAFT["@flyingrobots/graft<br />Structural intelligence engine.<br />AST snapshots, syntax spans,<br />fold regions, diagnostics — direct API"]
     WESLEY["Wesley / wesley-cli<br />GraphQL SDL compiler.<br />SDL → TypeScript types, Zod schemas,<br />operation metadata, codecs"]
 
     jedit -- "run(app, opts)" --> BIJOU
     jedit -- "intent / observe via transport" --> ECHO
-    jedit -- "MCP session requests" --> GRAFT
+    jedit -- "direct API requests" --> GRAFT
     DOM -- "SDL authority" --> WESLEY
     WESLEY -- "generated artifacts" --> jedit
 ```
@@ -182,7 +182,7 @@ Bijou is an in-house TUI framework implementing **The Elm Architecture (TEA)** f
 
 - An `App<Model, Msg>` interface with `init`, `update`, and `view`
 - A `Surface` type — a 2D grid of styled cells (characters + ANSI color/style)
-- `Cmd<Msg>` for scheduling asynchronous effects (filesystem reads, MCP calls, timers)
+- `Cmd<Msg>` for scheduling asynchronous effects (filesystem reads, Graft API calls, timers)
 - Terminal event decoding — raw bytes become typed `KeyMsg`, `MouseMsg`, or `ResizeMsg` values
 
 The TEA pattern means the entire application state is a single immutable value. The `update` function is a pure function from `(Msg, Model) → [Model, Cmd[]]`. There are no mutable singletons. State change happens only through messages.
@@ -199,7 +199,7 @@ Echo is the causal text substrate. It models text as **worldlines** — ordered 
 
 ### Graft
 
-Graft is a structural intelligence engine — AST spans, fold regions, symbol outlines, diagnostics, rename previews, structural diffs. `jedit` reaches Graft through an **MCP (Model Context Protocol) session**, treating it as an intelligent adapter rather than an editor kernel.
+Graft is a structural intelligence engine — AST spans, fold regions, symbol outlines, diagnostics, rename previews, structural diffs. `jedit` reaches Graft through the direct `@flyingrobots/graft` API, treating it as an intelligent adapter rather than an editor kernel.
 
 ### Wesley
 
@@ -213,30 +213,36 @@ Wesley is the contract compiler. It reads **GraphQL SDL** files and emits TypeSc
 src/main.ts → createWorkspaceApp() → run(app, { mouse })
 ```
 
-`main.ts` is deliberately thin — nine meaningful lines of logic:
+`main.ts` is deliberately thin — the entry point validates startup knobs,
+initializes Bijou, constructs the app, and hands it to the TUI runner:
 
 ```typescript
 // src/main.ts (abridged)
-initDefaultContext();
-
-const textRuntimeProfile = resolveTextRuntimeProfile(
+requireTextRuntimeProfile(
   parseTextRuntimeProfile(process.env['JEDIT_TEXT_RUNTIME'])
 );
+
+initDefaultContext();
 
 const app = createWorkspaceApp({
   initialColumns: process.stdout.columns ?? 100,
   initialRows:    process.stdout.rows    ?? 32,
   initialWorkingDirectory: process.cwd(),
-  textRuntimeProfile,
   perfEnabled: envBoolean(process.env['JEDIT_PERF']),
 });
 
 run(app, { mouse: JEDIT_TERMINAL_MOUSE_OPTIONS.mouse });
 ```
 
+**`requireTextRuntimeProfile()`** validates `JEDIT_TEXT_RUNTIME` before Bijou
+touches terminal raw mode. Unset and `echoHosted` are accepted. Any other value
+is unsupported startup input.
+
 **`initDefaultContext()`** initializes the Bijou TUI context — sets up raw terminal mode, ANSI output streams, signal handlers for `SIGTERM`/`SIGINT`.
 
-**`textRuntimeProfile`** is determined from the `JEDIT_TEXT_RUNTIME` environment variable. This single variable switches the entire text runtime. The profile is resolved before the app is constructed, so the transport is injected at construction time rather than discovered lazily.
+**`textRuntimeProfile`** remains visible in the model as evidence posture, but
+the production TUI has exactly one admissible value: `echoHosted`. There is no
+non-Echo operating profile.
 
 **`createWorkspaceApp()`** wires all adapters, constructs the initial model, and returns a Bijou `App` object. Crucially, it does not start anything — it returns a pure description of the application.
 
@@ -244,13 +250,10 @@ run(app, { mouse: JEDIT_TERMINAL_MOUSE_OPTIONS.mouse });
 
 ```mermaid
 flowchart TD
-    A[process start] --> B["initDefaultContext<br />Bijou terminal setup"]
-    B --> C["parseTextRuntimeProfile<br />from JEDIT_TEXT_RUNTIME env"]
-    C --> D{profile?}
-    D -- "echo-hosted (default)" --> E["createWorkspaceApp<br />with fake Echo transport"]
-    D -- "echo-wasm / custom" --> F["createWorkspaceApp<br />with real Echo WASM transport"]
-    E --> G["run(app) — Bijou TEA loop begins"]
-    F --> G
+    A[process start] --> B["validate JEDIT_TEXT_RUNTIME<br />unset or echoHosted only"]
+    B --> C["initDefaultContext<br />Bijou terminal setup"]
+    C --> D["createWorkspaceApp<br />with installed jedit contract transport"]
+    D --> E["run(app) — Bijou TEA loop begins"]
 ```
 
 ---
@@ -264,8 +267,8 @@ It is worth drawing a hard line between what happens *once at startup* and what 
 ```mermaid
 flowchart LR
     subgraph Bootstrap["Bootstrap — runs once"]
-        B1["initDefaultContext<br />terminal raw mode"]
-        B2["parseTextRuntimeProfile<br />env var → profile enum"]
+        B1["validate JEDIT_TEXT_RUNTIME<br />fail closed before raw mode"]
+        B2["initDefaultContext<br />terminal raw mode"]
         B3["createWorkspaceApp<br />wire all adapters<br />build initial model snapshot"]
         B4["Bijou: init()<br />create initial WorkspaceModel<br />emit startup Cmds"]
         B5["Bijou: launch Cmds<br />start time tick loop<br />manage Graft lifecycle"]
@@ -275,12 +278,12 @@ flowchart LR
 
 During bootstrap:
 
-- The text runtime profile is locked in — it cannot change without restarting the process.
+- The text runtime profile is locked to Echo-hosted production behavior.
 - All port adapters are instantiated: `FileSystemPortAdapter`, `GraftSessionPort`, `SourceHighlighter`, `TitleSceneLoaderPort`.
 - The initial `WorkspaceModel` is constructed from `createInitialModelSnapshot` — this snapshot picks the initial theme, seeds the title screen animation, sets up i18n, and chooses the initial working directory.
 - Bijou calls `init()` on the workspace runtime, which returns `[initialModel, startupCmds]`. The startup commands include the time-tick loop and the Graft lifecycle manager.
 
-Critically, **no I/O happens during bootstrap**. The filesystem, MCP session, and Echo transport are only touched *after* Bijou begins executing commands from `init`.
+Critically, **no I/O happens during bootstrap**. The filesystem, Graft API, and Echo transport are only touched *after* Bijou begins executing commands from `init`.
 
 ### Runtime Phase (runs on every event)
 
@@ -296,20 +299,27 @@ Key runtime invariants:
 
 ## 5. Configuration and Environment Tuning
 
-`jedit` currently has three environment variables that materially change runtime behavior:
+`jedit` currently has three environment variables relevant to runtime startup:
 
 ### `JEDIT_TEXT_RUNTIME`
 
-Controls the entire text backend. This is the most impactful lever in the codebase.
+Validates the text runtime posture. It no longer switches the text backend.
 
 | Value | Effect |
 |-------|--------|
-| *(unset)* | `echo-hosted` default — fake in-process Echo transport backed by in-memory `HotTextBufferState`. Zero external dependencies. All tests use this. |
-| `echo-wasm` | Real Echo WASM transport. Requires `ECHO_WARP_WASM_DIR` to point at a built Echo checkout. Echo runs as a compiled Rust WASM module. |
+| *(unset)* | `echoHosted` default — installed jedit contract transport with no sibling checkout required. This is the production TUI path. |
+| `echoHosted` | Explicitly selects the same production text runtime as the unset default. |
+| anything else | Unsupported startup input; the TUI fails before terminal raw mode. |
 
-**Architectural implication**: Because the profile is resolved at process start and injected into `createWorkspaceApp`, there is no conditional logic in the app or domain layers about which backend is running. The same `TextBufferOptic` code path executes identically in both cases. The swap point is a single factory call in `workspace-production-text-session.ts`.
+**Architectural implication**: Because the profile has only one production
+value, there is no conditional logic in the app or domain layers about which
+backend is running. The production `TextBufferOptic` path always uses the
+installed jedit contract transport. Focused tests that need fake behavior
+inject fake ports directly instead of selecting a runtime mode.
 
-**Trade-off**: This "inject at boot" design means you cannot hot-swap the text runtime without restarting the process. That is an acceptable trade-off for development — it makes the runtime boundary explicit and prevents runtime feature-flag drift.
+**Trade-off**: Removing the fixture profile gives up a convenient command-line
+escape hatch, but it prevents runtime feature-flag drift and makes Echo
+authority the only production story.
 
 ### `JEDIT_PERF`
 
@@ -323,7 +333,7 @@ Internally, `frameTimeHistory` in `WorkspaceModel` is an array of the last 50 fr
 
 ### `ECHO_WARP_WASM_DIR`
 
-Only relevant when `JEDIT_TEXT_RUNTIME=echo-wasm`. Points at the directory containing Echo's compiled WASM module. Used exclusively by the witness scripts (`scripts/jedit-echo-witness.mjs`, `scripts/run-real-echo-wasm-stack-witness.sh`).
+Only relevant for the opt-in real Echo WASM witness. Points at the directory containing Echo's compiled WASM module. Used exclusively by the witness scripts (`scripts/jedit-echo-witness.mjs`, `scripts/run-real-echo-wasm-stack-witness.sh`).
 
 This variable is intentionally absent from the main app boot path — it is only read by the witness scripts that build and exercise the real Echo transport. This prevents accidental production dependency on a sibling repository checkout.
 
@@ -349,7 +359,7 @@ sequenceDiagram
     View-->>Bijou: Surface (grid of styled cells)
     Bijou->>Terminal: diff Surface → ANSI escape sequences
     loop async commands
-        Bijou->>Bijou: execute Cmd (filesystem, MCP, timer...)
+        Bijou->>Bijou: execute Cmd (filesystem, Graft API, timer...)
         Bijou->>Runtime: update(ResultMsg, currentModel)
     end
 ```
@@ -390,7 +400,7 @@ sequenceDiagram
     User->>Update: press Enter on file
     Update-->>Bijou: [newModel, [graftRefreshCmd, echoOpenCmd, highlightCmd]]
     Note over Bijou: All three Cmds launched concurrently
-    Bijou->>Graft: execute graftRefreshCmd (async MCP call)
+    Bijou->>Graft: execute graftRefreshCmd (async direct API call)
     Bijou->>Echo: execute echoOpenCmd (async Echo transport)
     Bijou->>HL: execute highlightCmd (async Graft highlight)
     Graft-->>Bijou: GraftInfo message (arrives first)
@@ -460,7 +470,7 @@ graph LR
     APP["src/app<br />Use Cases<br />Orchestration<br />Workspace logic"]
     DOM["src/domain<br />Runtime truth<br />Pure contracts<br />No external deps"]
     PORTS["src/ports<br />Interface definitions<br />Typed runtime contracts"]
-    ADAPT["src/adapters<br />Concrete implementations<br />Filesystem, MCP, Echo, Bijou"]
+    ADAPT["src/adapters<br />Concrete implementations<br />Filesystem, Graft, Echo, Bijou"]
 
     UI --> APP
     APP --> DOM
@@ -476,13 +486,13 @@ graph LR
 
 **`src/ports`** — Interface definitions only. A port describes a typed runtime contract; it never decodes raw payloads. Examples: `HotTextRuntimePort`, `TextBufferSessionPort`, `FileSystemPort`, `GraftSessionPort`, `SourceHighlighter`.
 
-**`src/adapters`** — Concrete implementations. Raw strings, JSON bytes, and MCP payloads are decoded *here* and *only here*. Contains: the in-memory hot text runtime, the fake Echo transport, the real Echo WASM transport client, the filesystem adapter, Graft MCP session, source highlighter.
+**`src/adapters`** — Concrete implementations. Raw strings, JSON bytes, and Graft API payloads are decoded *here* and *only here*. Contains: the installed jedit contract transport, the fake transport used by focused tests, the real Echo WASM witness client, the filesystem adapter, Graft direct API session, source highlighter.
 
 **`src/ui`** — Presentation and input mapping. UI translates Bijou events into app commands and renders app state into `Surface` cells. It does not own business rules.
 
 ### Why This Matters in Practice
 
-The separation is enforced by convention, not by a module bundler boundary. The benefit is demonstrated by the dual-transport design: the entire test suite runs against the fake Echo transport (`createFakeEchoJeditOpticTransport`) without any modification to `src/app` or `src/domain`. Swapping the transport is a single-line change in `workspace-production-text-session.ts` — no other file knows or cares.
+The separation is enforced by convention, not by a module bundler boundary. The benefit is demonstrated by the transport design: the production app always runs through the installed jedit contract transport, while focused fixture tests can inject fake ports without any modification to `src/app` or `src/domain`. There is no production runtime profile switch.
 
 ---
 
@@ -502,12 +512,12 @@ graph TB
         BIJOU_SURFACE["Surface, Cmd, KeyMsg types"]
     end
 
-    subgraph echo_border["Echo border (WASM or fake)"]
+    subgraph echo_border["Echo border (installed contract, WASM witness, or fixture)"]
         ECHO_TRANSPORT["EchoWasmKernelTransport interface<br />submitIntentBytes / observeBytes"]
     end
 
-    subgraph graft_border["Graft border (stdio MCP)"]
-        MCP_STDIO["JSON-RPC over child process stdio"]
+    subgraph graft_border["Graft border (direct API)"]
+        GRAFT_DIRECT_API["@flyingrobots/graft repo-local API"]
     end
 
     subgraph fs_border["Node.js filesystem"]
@@ -517,7 +527,7 @@ graph TB
     APP_CODE --> BIJOU_SURFACE
     ADAPT_CODE --> BIJOU_RUN
     ADAPT_CODE --> ECHO_TRANSPORT
-    ADAPT_CODE --> MCP_STDIO
+    ADAPT_CODE --> GRAFT_DIRECT_API
     ADAPT_CODE --> FS_API
 ```
 
@@ -531,21 +541,21 @@ graph TB
 
 ### The Echo Border
 
-**Where**: `src/adapters/fake-echo-jedit-optic-transport.ts` (fake) and `src/adapters/installed-jedit-contract-echo-transport.ts` (real). The border is the `EchoWasmKernelTransport` port.
+**Where**: `src/adapters/installed-jedit-contract-echo-transport.ts` (default production path), `src/adapters/fake-echo-jedit-optic-transport.ts` (focused test fixture path), and `src/adapters/echo-wasm-kernel.ts` (opt-in WASM witness path). The border is the `EchoWasmKernelTransport` port.
 
 **What crosses the border**: `Uint8Array` in, `Uint8Array` out. No JavaScript objects, no shared memory, no callbacks. The byte arrays are JSON-encoded intent requests and observe requests.
 
-**Why bytes at the border**: WASM modules communicate via linear memory. When the real Echo transport calls into the WASM module, it passes a pointer and length into WASM linear memory, gets back a pointer and length. The fake transport uses the same `Uint8Array` interface to keep the codec layer honest — the same JSON parsing and Zod validation runs in both cases.
+**Why bytes at the border**: WASM modules communicate via linear memory. When the Echo WASM witness calls into the WASM module, it passes a pointer and length into WASM linear memory, gets back a pointer and length. The installed-contract and fake test transports use the same `Uint8Array` interface to keep the codec layer honest — the same boundary decoding rules run in production and focused tests.
 
 **What jedit cannot control past this border (real WASM)**: The Echo scheduler's admission decisions. The timing of tick sequencing. The internal rope tree structure. These are Echo's domain.
 
 ### The Graft Border
 
-**Where**: `src/adapters/graft-mcp-session.ts`. Graft runs as a separate OS process. `jedit` communicates with it via MCP (Model Context Protocol), which is JSON-RPC over the child process's stdin/stdout.
+**Where**: `src/adapters/graft-api-session.ts`. Graft runs in-process through the `@flyingrobots/graft` direct API. `jedit` keeps Graft behind `GraftSessionPort`, but it does not launch a repo-local child process for editor-local enrichment.
 
-**What crosses the border**: A JSON-RPC request with `{ path, content }` → a response with `{ outline: [...], diffSummary: string }`. The full buffer content is sent on every request (Graft receives a snapshot, not a stream of edits).
+**What crosses the border**: A repo-local API call with `{ path }` → Graft tool-shaped output for `file_outline` and `graft_diff`, decoded into `GraftInfo`. Unsaved edits are not sent to Graft; when the editor buffer is dirty, the drawer reports that it reflects the saved file only.
 
-**Failure mode**: If the Graft process crashes or is slow, the MCP session times out or errors. This produces a `RuntimeIssue` message that `routeRuntimeIssue` converts into a toast notification. The editor continues to work — Graft is enrichment, not load-bearing.
+**Failure mode**: If the Graft API refuses, cannot parse, or fails a structural query, the adapter returns an empty drawer payload with an error line. The editor continues to work — Graft is enrichment, not load-bearing.
 
 ### The Filesystem Border
 
@@ -620,7 +630,7 @@ classDiagram
 
 **`editor?: EditorState`** — The `?` is significant. When no file is open, `editor` is `undefined` and the workspace shows the animated title screen. The title screen is not a separate route — it is just the absent-editor state. This elegantly avoids a `page`/`route` concept entirely.
 
-**`textAuthority: WorkspaceTextAuthority`** — The bridge between the legacy `lines[]` buffer and the Echo-backed `TextBufferOptic` path. It tracks which buffer is currently backed by Echo, the `bufferId`, and the latest `ReadBasisHandle`. The UI reads from `EditorState.lines`; the Echo session advances independently.
+**`textAuthority: WorkspaceTextAuthority`** — The workspace posture for Echo-hosted text authority. It tracks which buffer is backed by the production text session, the `bufferId`, the latest reading cache, and the current obstruction/export/checkpoint posture. `EditorState.lines` remains render/navigation cache material, not production text authority.
 
 **`fileDrawerProgress / graftDrawerProgress`** — Floating-point animation state (`0.0` to `1.0`). The layout engine reads these on every frame to calculate drawer pixel widths. Partial values produce the slide-open animation. Animation is data, not code.
 
@@ -647,8 +657,8 @@ flowchart TD
     P1 --> P2["updateSettingsKey<br />theme picker overlay"]
     P2 --> P3["updateScenePickerKey<br />title scene chooser"]
     P3 --> P4["updateTitleScreenKey<br />title screen controls"]
-    P4 --> P5["updateGlobalWorkspaceKey<br />open/close file + graft drawers"]
-    P5 --> P6["updateFocusedPaneKey<br />delegate to focused pane:<br />editor / file drawer / graft"]
+    P4 --> P5["updateGlobalWorkspaceKey<br />open/close file + graft + history drawers"]
+    P5 --> P6["updateFocusedPaneKey<br />delegate to focused pane:<br />editor / file drawer / graft / history"]
 ```
 
 The priority chain is architectural policy encoded as code order. `updatePerfWorkspaceKey` is first — the profiler toggle must always work, even if the editor has swallowed key focus. Overlays (`updateSettingsKey`, `updateScenePickerKey`) intercept before global workspace commands because an open overlay should capture all input. The focused pane is last because it handles only keys that nothing else claimed.
@@ -709,7 +719,7 @@ This is simple and correct but O(n) in memory per edit — a 10,000-line file wi
 
 ### UTF-8 Dual-Track Awareness
 
-Insert mode builds on `insertText(editor, text)` which works on the `lines[]` array as JavaScript strings (UTF-16 internally). The production text path works in **byte offsets** — `byteOffsetForTextPosition` converts `{ row, column }` to a UTF-8 byte offset before submitting to the text runtime. These two representations must be kept in sync; divergence is a latent bug that the migration to a single Echo-backed truth will resolve.
+Insert mode builds on jedit-owned edit planning over displayed text positions. The production text path works in **byte offsets** — `byteOffsetForTextPosition` converts `{ row, column }` to a UTF-8 byte offset before submitting to the text runtime. Render/cache positions and Echo-hosted text authority must stay synchronized through bounded readings; production edits should not treat local line arrays as the source of truth.
 
 ---
 
@@ -730,8 +740,8 @@ sequenceDiagram
     Bijou->>RW: view(model)
     RW->>RW: createSurface(columns, rows)
     RW->>RW: fillSurface (background color)
-    RW->>Layout: resolveWorkspaceLayout(columns, fileProgress, graftProgress)
-    Layout-->>RW: viewer:{x,width}, fileDrawer:{x,width}, graftDrawer:{x,width}
+    RW->>Layout: resolveWorkspaceLayout(columns, fileProgress, graftProgress, historyProgress)
+    Layout-->>RW: viewer, fileDrawer, graftDrawer, historyDrawer rectangles
     RW->>Chrome: paintWorkspaceTitle — blit at row 0
     RW->>Viewer: renderViewer(model, width, bodyHeight)
     Viewer-->>RW: editor Surface (source or preview)
@@ -742,6 +752,9 @@ sequenceDiagram
     RW->>Drawer: renderDrawer(Graft, model, width, height)
     Drawer-->>RW: graft outline Surface
     RW->>RW: screen.blit(graftSurface, graftDrawer.x, 2)
+    RW->>Drawer: renderDrawer(History, model, width, height)
+    Drawer-->>RW: Echo history Surface
+    RW->>RW: screen.blit(historySurface, historyDrawer.x, 2)
     RW->>RW: paintWorkspaceFocusEdge
     RW->>RW: paintWorkspaceFooter
     RW->>RW: paintWorkspaceOverlays
@@ -752,7 +765,11 @@ sequenceDiagram
 
 ### Layout as Pure Math
 
-`resolveWorkspaceLayout` maps three numbers (terminal columns, file drawer progress 0–1, graft drawer progress 0–1) to three pixel rectangles. The animation is implicit — the layout function is called every frame, and the progress values in the model are incremented by animation `Cmd`s over time. There is no "animation system" — the animation is just model state advancing on a timer.
+`resolveWorkspaceLayout` maps terminal columns plus file, Graft, and Echo
+History drawer progress values to pixel rectangles. The animation is implicit —
+the layout function is called every frame, and the progress values in the model
+are incremented by animation `Cmd`s over time. There is no "animation system" —
+the animation is just model state advancing on a timer.
 
 ### Surface Composition via `blit`
 
@@ -1252,9 +1269,9 @@ The `BASE_HEAD_MISMATCH` case is the most important — it means two edits raced
 
 In the fake transport these errors should be impossible (the same process encodes and decodes). In the real WASM transport they indicate a version mismatch between `jedit` and the Echo WASM module. The error propagates as a `RuntimeIssue`.
 
-### Level 4: External Process Failure
+### Level 4: External Capability Failure
 
-**Graft process crash**: The MCP session catches all errors and converts them to a `GraftInfo` with empty content. The graft drawer shows nothing. The editor continues to work normally — structural intelligence is enrichment, not critical path.
+**Graft API failure**: The Graft adapter catches structural-query failures and converts them to a `GraftInfo` with empty content plus an error. The graft drawer shows the failure posture. The editor continues to work normally — structural intelligence is enrichment, not critical path.
 
 **Filesystem error on open**: `loadEditorFile` catches all `fs.readFileSync` errors and returns a read-only single-line buffer containing the error message string. The editor opens in read-only mode with the error visible. This is an intentional UX decision — the error state is visible and recoverable (the user can close and reopen).
 
@@ -1335,29 +1352,29 @@ This is a **staged migration pattern**: the generated metadata owns the operatio
 
 ---
 
-## 24. Graft Integration — Structural Intelligence via MCP
+## 24. Graft Integration — Structural Intelligence via Direct API
 
 ```mermaid
 sequenceDiagram
     participant UI as jedit UI
     participant WS as workspace update
     participant Graft as GraftSessionPort
-    participant MCP as graft-mcp-session adapter
-    participant GraftProc as Graft process (separate)
+    participant API as graft-api-session adapter
+    participant GraftLib as @flyingrobots/graft API
 
     UI->>WS: file opened / graft drawer opened
-    WS->>Graft: queryGraftInfo(path, content)
-    Graft->>MCP: sendRequest("graft/outline", { path, content })
-    MCP->>GraftProc: JSON-RPC over stdio
-    GraftProc-->>MCP: { outline: [...], diffSummary: "..." }
-    MCP-->>Graft: GraftInfo
+    WS->>Graft: loadGraftInfo(path)
+    Graft->>API: callTool("file_outline" / "graft_diff", { path })
+    API->>GraftLib: createRepoLocalGraft + callGraftTool
+    GraftLib-->>API: tool-shaped structural output
+    API-->>Graft: GraftInfo
     Graft-->>WS: WorkspaceMessageTypes.GraftInfo message
     WS->>WS: applyGraftInfo(model, info)
 ```
 
 The `GraftInfo` payload carries an `outline` (list of structural symbols with `{ kind, name, startLine }`) and a diff summary string. The graft drawer renders this as a navigable list.
 
-**Transport is not architecture**: The MCP-over-stdio path is explicitly noted as transitional. The long-term posture is Graft as a built-in engine with a direct API surface, not a separate process. The port interface (`GraftSessionPort`) already abstracts away the transport — switching from stdio MCP to a native binding would be a single adapter replacement.
+**Transport is not architecture**: The former sidecar path has been retired for editor-local enrichment. Graft is now reached through a direct API surface behind `GraftSessionPort`, and the runtime still depends on the port rather than the concrete adapter.
 
 ---
 
@@ -1552,7 +1569,7 @@ graph TB
     subgraph "External World"
         TERM["Terminal<br />(keystrokes, resize, mouse)"]
         FS["Filesystem<br />(open, read, save)"]
-        GRAFT_PROC["Graft Process<br />(MCP over stdio)"]
+        GRAFT_API["Graft direct API<br />(@flyingrobots/graft)"]
         ECHO_WASM["Echo WASM<br />(or in-memory fake)"]
     end
 
@@ -1564,7 +1581,7 @@ graph TB
             FEW["fake-echo-jedit-optic-transport<br />In-process fake Echo"]
             IECW["installed-jedit-contract-echo-transport<br />Real Echo WASM bridge"]
             FS_ADAPT["filesystem.ts<br />Node fs wrapping"]
-            GRAFT_ADAPT["graft-mcp-session.ts<br />MCP client"]
+            GRAFT_ADAPT["graft-api-session.ts<br />Direct Graft API"]
         end
         subgraph "src/app"
             WR["workspace/runtime.ts<br />init / update / view"]
@@ -1605,7 +1622,7 @@ graph TB
     FEW -->|"synchronous byte calls"| JCR
     IECW -->|"WASM byte calls"| ECHO_WASM
     FS_ADAPT --> FS
-    GRAFT_ADAPT --> GRAFT_PROC
+    GRAFT_ADAPT --> GRAFT_API
     WR --> RW
     ZOD -->|"runtime validation"| JCR
     TYPES -->|"type definitions"| TBS

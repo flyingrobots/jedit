@@ -1,4 +1,5 @@
 import type { Cmd } from '@flyingrobots/bijou-tui';
+import type { I18nDirection } from '../ports/i18n.js';
 import { JEDIT_THEME_MODE, type JeditTheme } from '../ui/jedit-theme.js';
 import { ViewModes, type ViewMode } from './workspace/view-mode.js';
 
@@ -7,13 +8,14 @@ export const JEDIT_SETTING_ACTION = {
   ToggleThemeMode: Symbol('jedit.settings.action.toggle-theme-mode'),
   ToggleFooter: Symbol('jedit.settings.action.toggle-footer'),
   ToggleMarkdownPreview: Symbol('jedit.settings.action.toggle-markdown-preview'),
-  ToggleLocale: Symbol('jedit.settings.action.toggle-locale'),
+  SelectLocale: Symbol('jedit.settings.action.select-locale'),
 } as const;
 
 export type JeditSettingAction = typeof JEDIT_SETTING_ACTION[keyof typeof JEDIT_SETTING_ACTION];
 
 export const JEDIT_SETTING_ROW_KIND = {
   Choice: Symbol('jedit.settings.row.choice'),
+  Option: Symbol('jedit.settings.row.option'),
   Toggle: Symbol('jedit.settings.row.toggle'),
 } as const;
 
@@ -24,6 +26,21 @@ export interface JeditSettingsState {
   readonly footerVisible: boolean;
   readonly markdownPreviewActive: boolean;
   readonly viewMode: ViewMode;
+}
+
+export interface JeditSettingsI18nState {
+  readonly locale: string;
+  readonly localeLabel: string;
+  readonly locales: readonly JeditSettingsLocaleOption[];
+}
+
+export interface JeditSettingsLocaleSelection {
+  readonly locale: string;
+  readonly direction: I18nDirection;
+}
+
+export interface JeditSettingsLocaleOption extends JeditSettingsLocaleSelection {
+  readonly label: string;
 }
 
 export interface JeditSettingsHostState {
@@ -40,7 +57,7 @@ export interface JeditSettingsHandlers<Model, Command> {
   toggleThemeMode(model: Model): [Model, Cmd<Command>[]];
   toggleFooter(model: Model): [Model, Cmd<Command>[]];
   toggleMarkdownPreview(model: Model): [Model, Cmd<Command>[]];
-  toggleLocale(model: Model): [Model, Cmd<Command>[]];
+  selectLocale(model: Model, locale: JeditSettingsLocaleSelection): [Model, Cmd<Command>[]];
 }
 
 export interface JeditSettingsRow {
@@ -51,25 +68,25 @@ export interface JeditSettingsRow {
   readonly valueLabel: string;
   readonly kind: JeditSettingRowKind;
   readonly checked?: boolean;
+  readonly locale?: JeditSettingsLocaleSelection;
   readonly action: JeditSettingAction;
 }
 
+const SETTINGS_SECTION_LANGUAGE = 'Language';
 const SETTINGS_SECTION_APPEARANCE = 'Appearance';
 const SETTINGS_SECTION_EDITOR = 'Editor';
 const ROW_ID_THEME = 'theme';
 const ROW_ID_THEME_MODE = 'theme-mode';
 const ROW_ID_FOOTER = 'footer';
 const ROW_ID_MARKDOWN_PREVIEW = 'markdown-preview';
-const ROW_ID_LOCALE = 'locale';
+const ROW_ID_LOCALE_PREFIX = 'locale:';
 const VALUE_ON = 'On';
 const VALUE_OFF = 'Off';
 const VALUE_THEME_MODE_DARK = 'Dark';
 const VALUE_THEME_MODE_LIGHT = 'Light';
 const VALUE_SOURCE = 'Source';
 const VALUE_PREVIEW = 'Preview';
-const VALUE_LOCALE_ENGLISH = 'English';
-const VALUE_LOCALE_MIRROR = 'Mirror';
-const LOCALE_ENGLISH = 'en';
+const VALUE_CURRENT = 'Current';
 const KEY_ESCAPE = 'escape';
 const KEY_DOWN = 'down';
 const KEY_UP = 'up';
@@ -101,9 +118,9 @@ const SETTINGS_KEY_ACTIONS = new Map<string, SettingsKeyAction>([
   [KEY_SPACE_CANONICAL, SETTINGS_KEY_ACTION.Activate],
 ]);
 
-export function jeditSettingsRows(state: JeditSettingsState & { readonly i18n: { readonly locale: string } }): readonly JeditSettingsRow[] {
+export function jeditSettingsRows(state: JeditSettingsState & { readonly i18n: JeditSettingsI18nState }): readonly JeditSettingsRow[] {
   const rows: JeditSettingsRow[] = [
-    localeSettingsRow(state),
+    ...localeSettingsRows(state.i18n),
     themeSettingsRow(state),
     themeModeSettingsRow(state),
     footerSettingsRow(state),
@@ -116,15 +133,25 @@ export function jeditSettingsRows(state: JeditSettingsState & { readonly i18n: {
   return rows;
 }
 
-function localeSettingsRow(state: JeditSettingsState & { readonly i18n: { readonly locale: string } }): JeditSettingsRow {
+function localeSettingsRows(i18n: JeditSettingsI18nState): readonly JeditSettingsRow[] {
+  return i18n.locales.map((locale) => localeSettingsRow(i18n, locale));
+}
+
+function localeSettingsRow(
+  i18n: JeditSettingsI18nState,
+  locale: JeditSettingsLocaleOption,
+): JeditSettingsRow {
+  const active = locale.locale === i18n.locale;
   return {
-    id: ROW_ID_LOCALE,
-    section: SETTINGS_SECTION_APPEARANCE,
-    label: 'Locale',
-    description: 'Switch between English (en) and Mirror English (me) for RTL testing.',
-    valueLabel: state.i18n.locale === LOCALE_ENGLISH ? VALUE_LOCALE_ENGLISH : VALUE_LOCALE_MIRROR,
-    kind: JEDIT_SETTING_ROW_KIND.Choice,
-    action: JEDIT_SETTING_ACTION.ToggleLocale,
+    id: `${ROW_ID_LOCALE_PREFIX}${locale.locale}`,
+    section: SETTINGS_SECTION_LANGUAGE,
+    label: locale.label,
+    description: `${locale.locale} ${locale.direction.toUpperCase()}`,
+    valueLabel: active ? VALUE_CURRENT : locale.locale,
+    kind: JEDIT_SETTING_ROW_KIND.Option,
+    checked: active,
+    locale,
+    action: JEDIT_SETTING_ACTION.SelectLocale,
   };
 }
 
@@ -231,7 +258,7 @@ function reduceSettingsKeyAction<Model extends JeditSettingsHostState, Command>(
   if (action === SETTINGS_KEY_ACTION.Up) {
     return [moveHostFocus(model, FOCUS_STEP_BACKWARD, rows.length), []];
   }
-  return activateSettingsRow(model, rows[clampSettingsFocusIndex(model.settingsFocusIndex, rows.length)]?.action, handlers);
+  return activateSettingsRow(model, rows[clampSettingsFocusIndex(model.settingsFocusIndex, rows.length)], handlers);
 }
 
 function moveHostFocus<Model extends JeditSettingsHostState>(model: Model, delta: number, rowCount: number): Model {
@@ -243,9 +270,10 @@ function moveHostFocus<Model extends JeditSettingsHostState>(model: Model, delta
 
 function activateSettingsRow<Model, Command>(
   model: Model,
-  action: JeditSettingAction | undefined,
+  row: JeditSettingsRow | undefined,
   handlers: JeditSettingsHandlers<Model, Command>,
 ): [Model, Cmd<Command>[]] {
+  const action = row?.action;
   if (action === JEDIT_SETTING_ACTION.CycleTheme) {
     return handlers.cycleTheme(model);
   }
@@ -258,8 +286,8 @@ function activateSettingsRow<Model, Command>(
   if (action === JEDIT_SETTING_ACTION.ToggleMarkdownPreview) {
     return handlers.toggleMarkdownPreview(model);
   }
-  if (action === JEDIT_SETTING_ACTION.ToggleLocale) {
-    return handlers.toggleLocale(model);
+  if (action === JEDIT_SETTING_ACTION.SelectLocale && row?.locale != null) {
+    return handlers.selectLocale(model, row.locale);
   }
   return [model, []];
 }

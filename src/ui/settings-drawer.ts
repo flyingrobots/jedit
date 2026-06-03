@@ -17,6 +17,8 @@ const SETTINGS_ROW_HEIGHT = 2;
 const SETTINGS_SELECTED_MARK = '›';
 const SETTINGS_UNSELECTED_MARK = ' ';
 const SETTINGS_CHOICE_MARK = '↻';
+const SETTINGS_OPTION_SELECTED_MARK = '●';
+const SETTINGS_OPTION_MARK = '○';
 const SETTINGS_CHECKED_MARK = '☑';
 const SETTINGS_UNCHECKED_MARK = '☐';
 const SETTINGS_CLOSE_HINT = `${JEDIT_SETTINGS_TOGGLE_LABEL.toUpperCase()}/Esc close`;
@@ -38,6 +40,14 @@ interface PaintSettingsRowOptions {
   readonly theme: JeditTheme;
 }
 
+interface SettingsRowLayout {
+  readonly index: number;
+  readonly row: JeditSettingsRow;
+  readonly section?: string;
+  readonly sectionY?: number;
+  readonly rowY: number;
+}
+
 export function resolveSettingsDrawerWidth(columns: number): number {
   const boundedColumns = Math.max(SETTINGS_DRAWER_MIN_WIDTH, columns);
   return Math.min(
@@ -52,27 +62,27 @@ export function renderSettingsDrawer(options: RenderSettingsDrawerOptions): Surf
   fillSurface(surface, options.theme.surface.drawer);
   paintText(surface, SETTINGS_TITLE, SETTINGS_LEFT_PAD, SETTINGS_HEADER_ROW, settingsTitleToken(options));
   paintText(surface, SETTINGS_CLOSE_HINT, SETTINGS_LEFT_PAD, SETTINGS_HINT_ROW, settingsHintToken(options));
-
-  let y = SETTINGS_FIRST_ROW;
-  let section = '';
-  for (let index = 0; index < options.rows.length && y < options.height; index += 1) {
-    const row = options.rows[index];
-    if (row == null) {
-      continue;
-    }
-    if (row.section !== section) {
-      section = row.section;
-      paintText(surface, section, SETTINGS_LEFT_PAD, y, options.theme.markdown.get(JEDIT_MARKDOWN_TOKEN.HeadingSoft) ?? options.theme.surface.drawer);
-      y += SETTINGS_ROW_GAP;
+  const firstVisibleRow = firstVisibleSettingsRow(options.rows, options.selectedIndex, options.height);
+  for (const layout of settingsRowLayouts(options.rows, firstVisibleRow)) {
+    if (layout.section != null && layout.sectionY != null) {
+      paintText(
+        surface,
+        layout.section,
+        SETTINGS_LEFT_PAD,
+        layout.sectionY,
+        options.theme.markdown.get(JEDIT_MARKDOWN_TOKEN.HeadingSoft) ?? options.theme.surface.drawer,
+      );
     }
     paintSettingsRow(surface, {
-      row,
-      selected: index === options.selectedIndex,
+      row: layout.row,
+      selected: layout.index === options.selectedIndex,
       x: SETTINGS_LEFT_PAD,
-      y,
+      y: layout.rowY,
       theme: options.theme,
     });
-    y += SETTINGS_ROW_HEIGHT;
+    if (layout.rowY >= options.height) {
+      break;
+    }
   }
   return surface;
 }
@@ -108,7 +118,75 @@ function rowMark(row: JeditSettingsRow): string {
   if (row.kind === JEDIT_SETTING_ROW_KIND.Choice) {
     return SETTINGS_CHOICE_MARK;
   }
+  if (row.kind === JEDIT_SETTING_ROW_KIND.Option) {
+    return row.checked === true ? SETTINGS_OPTION_SELECTED_MARK : SETTINGS_OPTION_MARK;
+  }
   return row.checked === true ? SETTINGS_CHECKED_MARK : SETTINGS_UNCHECKED_MARK;
+}
+
+function firstVisibleSettingsRow(
+  rows: readonly JeditSettingsRow[],
+  selectedIndex: number,
+  height: number,
+): number {
+  const selected = clampedSettingsRowIndex(rows, selectedIndex);
+  let first = selected;
+  while (first > 0 && selectedSettingsRowFits(rows, first - 1, selected, height)) {
+    first -= 1;
+  }
+  return first;
+}
+
+function clampedSettingsRowIndex(rows: readonly JeditSettingsRow[], selectedIndex: number): number {
+  return Math.max(0, Math.min(selectedIndex, rows.length - 1));
+}
+
+function selectedSettingsRowFits(
+  rows: readonly JeditSettingsRow[],
+  firstIndex: number,
+  selectedIndex: number,
+  height: number,
+): boolean {
+  return selectedSettingsRowBottom(rows, firstIndex, selectedIndex) <= height;
+}
+
+function selectedSettingsRowBottom(
+  rows: readonly JeditSettingsRow[],
+  firstIndex: number,
+  selectedIndex: number,
+): number {
+  const selectedLayout = settingsRowLayouts(rows, firstIndex, selectedIndex)
+    .find((layout) => layout.index === selectedIndex);
+  return selectedLayout == null ? SETTINGS_FIRST_ROW : selectedLayout.rowY + SETTINGS_ROW_HEIGHT;
+}
+
+function settingsRowLayouts(
+  rows: readonly JeditSettingsRow[],
+  firstIndex: number,
+  lastIndex = rows.length - 1,
+): readonly SettingsRowLayout[] {
+  const layouts: SettingsRowLayout[] = [];
+  let y = SETTINGS_FIRST_ROW;
+  let section = '';
+  for (let index = firstIndex; index < rows.length && index <= lastIndex; index += 1) {
+    const row = rows[index];
+    if (row == null) {
+      continue;
+    }
+    let sectionY: number | undefined;
+    let sectionTitle: string | undefined;
+    if (row.section !== section) {
+      section = row.section;
+      sectionTitle = section;
+      sectionY = y;
+      y += SETTINGS_ROW_GAP;
+    }
+    layouts.push(sectionTitle == null || sectionY == null
+      ? { index, row, rowY: y }
+      : { index, row, section: sectionTitle, sectionY, rowY: y });
+    y += SETTINGS_ROW_HEIGHT;
+  }
+  return layouts;
 }
 
 function paintText(surface: Surface, text: string, x: number, y: number, token: JeditStyleToken): void {

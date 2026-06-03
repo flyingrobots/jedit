@@ -1,10 +1,15 @@
 import type { KeyMsg } from '@flyingrobots/bijou-tui';
 import { updateFocusedPaneKey } from './focused-pane-key-bindings.js';
-import { updateGlobalWorkspaceKey, updatePerfWorkspaceKey } from './global-key-bindings.js';
+import {
+  updateGlobalWorkspaceKey,
+  updateHardGlobalWorkspaceKey,
+  updateQuitConfirmationKey,
+} from './global-key-bindings.js';
 import type { WorkspaceKeyBindingContext } from './key-binding-context.js';
 import type { WorkspaceModel } from './model.js';
 import { updateScenePickerKey } from './scene-picker-key-bindings.js';
 import { updateSettingsKey } from './settings-key-bindings.js';
+import { updateStartupFileModalKey } from './startup-file-modal-key-bindings.js';
 import { updateTitleScreenKey } from './title-screen-key-bindings.js';
 
 export type { UpdateFromKeyDeps } from './key-binding-context.js';
@@ -14,7 +19,9 @@ export function updateFromKey(
   model: WorkspaceModel,
   context: WorkspaceKeyBindingContext,
 ) {
-  return updatePerfWorkspaceKey(msg, model)
+  return updateQuitConfirmationKey(msg, model)
+    ?? updateHardGlobalWorkspaceKey(msg, model)
+    ?? updateStartupFileModalKey(msg, model, context)
     ?? updateSettingsKey(msg, model)
     ?? updateScenePickerKey(msg, model, context)
     ?? updateTitleScreenKey(msg, model, context)

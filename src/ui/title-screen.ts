@@ -6,6 +6,7 @@ import {
 } from './averaging-ascii-canvas.js';
 import { averagingBrailleCanvas, type BrailleShaderFn, type BrailleShaderSample, type RGB } from './averaging-braille-canvas.js';
 import { type JeditTheme } from './jedit-theme.js';
+import { flyingRobotsLogoCellBounds, paintFlyingRobotsLogo } from './flyingrobots-logo.js';
 import {
   generateTitleScene,
   intersectsTitleSceneObjectAlongRay,
@@ -23,11 +24,24 @@ import {
 } from './title-scene-environment.js';
 import { paintTitleLogo, titleLogoCellBounds } from './title-logo.js';
 import type { TitleMesh } from './title-mesh.js';
+import {
+  TITLE_SCREEN_TEXT_DIRECTION,
+  titlePresentationSequence,
+  type TitlePresentationSequence,
+  type TitleScreenTextDirection,
+} from './title-presentation-sequence.js';
+import {
+  titleColorLuminance,
+  titleSceneMaterialColors,
+  type TitleSceneMaterialColors,
+} from './title-scene-material-colors.js';
 import type { ReflectedEnvironmentColorOptions, TitleSceneRayContext, TitleSceneSampleOptions } from './title-screen-sample.js';
 
 type Vector3 = TitleSceneVector3;
 type Color3 = RGB;
 export type TitleSceneSphere = TitleSceneObject;
+export { flyingRobotsLogoCellBounds } from './flyingrobots-logo.js';
+export { titleSceneMaterialColors, type TitleSceneMaterialColors } from './title-scene-material-colors.js';
 export { titleLogoCellBounds } from './title-logo.js';
 
 export const TITLE_RENDER_MODE = {
@@ -49,17 +63,6 @@ export interface TitleFloorLightEffects {
   readonly causticStrength: number;
 }
 
-export interface TitleSceneMaterialColors {
-  readonly accent: Color3;
-  readonly info: Color3;
-  readonly success: Color3;
-  readonly ink: Color3;
-  readonly muted: Color3;
-  readonly surface: Color3;
-  readonly floorDark: Color3;
-  readonly floorLight: Color3;
-}
-
 export interface TitleScreenRenderOptions {
   readonly camAngle: number;
   readonly camRadius?: number;
@@ -68,11 +71,20 @@ export interface TitleScreenRenderOptions {
   readonly sceneOverride?: TitleScene;
   readonly renderMode?: TitleRenderMode;
   readonly asciiPalette?: TitleAsciiPalette;
+  readonly textDirection?: TitleScreenTextDirection;
+}
+
+interface TitlePresentationLogoPaintOptions {
+  readonly cols: number;
+  readonly rows: number;
+  readonly time: number;
+  readonly colors: TitleSceneMaterialColors;
+  readonly sequence: TitlePresentationSequence;
 }
 
 const DEFAULT_CAMERA_RADIUS = 8.5;
 const DEFAULT_TITLE_SCENE_SEED = 0.5;
-const CAMERA_DRIFT_RATE = 0.005;
+export const TITLE_CAMERA_DRIFT_RATE = 0.024;
 const CAMERA_HEIGHT = 2.65;
 const CAMERA_TARGET_Y = 0.78;
 const LIGHT_AMBIENT = 0.24;
@@ -101,11 +113,9 @@ const CAUSTIC_WAVE_SECONDARY_FREQUENCY = 1.7;
 const CAUSTIC_TIME_RATE = 0.9;
 const CAUSTIC_STRENGTH = 0.45;
 const MAX_CAUSTIC_STRENGTH = 0.42;
-const LUMINANCE_RED_WEIGHT = 0.2126;
-const LUMINANCE_GREEN_WEIGHT = 0.7152;
-const LUMINANCE_BLUE_WEIGHT = 0.0722;
 const BRAILLE_DITHER_MATRIX_SIZE = 4;
 const BRAILLE_DITHER_DENOMINATOR = BRAILLE_DITHER_MATRIX_SIZE * BRAILLE_DITHER_MATRIX_SIZE;
+const RGB_CHANNEL_MAX = 255;
 const BRAILLE_DITHER_MATRIX: readonly (readonly number[])[] = [
   [0, 8, 2, 10],
   [12, 4, 14, 6],
@@ -128,9 +138,11 @@ export function renderTitleScreen(
     sceneOverride,
     renderMode = TITLE_RENDER_MODE.Braille,
     asciiPalette = TITLE_ASCII_PALETTE.Dense,
+    textDirection = TITLE_SCREEN_TEXT_DIRECTION.LeftToRight,
   } = options;
   const colors = titleSceneMaterialColors(theme);
   const scene = sceneOverride ?? generateTitleScene(sceneSeed, colors, mesh);
+  const sequence = titlePresentationSequence(time, textDirection);
 
   const shader: BrailleShaderFn = ({ u, v, time: frameTime }) => {
     return sceneSampleAt({
@@ -150,30 +162,18 @@ export function renderTitleScreen(
   const surface = renderMode === TITLE_RENDER_MODE.Ascii
     ? averagingAsciiCanvas(cols, rows, shader, time, { palette: asciiPalette })
     : averagingBrailleCanvas(cols, rows, shader, time);
-  paintTitleLogo(surface, titleLogoCellBounds(cols, rows), colors, time);
+  paintTitlePresentationLogos(surface, { cols, rows, time, colors, sequence });
   return surface;
 }
 
-export function titleSceneMaterialColors(theme: JeditTheme): TitleSceneMaterialColors {
-  const baseColors = fixedTitleSceneBaseColors(theme);
-  const floorColors = orderedFloorMaterialColors(baseColors.ink, baseColors.muted);
-
-  return {
-    ...baseColors,
-    floorDark: floorColors.dark,
-    floorLight: floorColors.light,
-  };
-}
-
-function fixedTitleSceneBaseColors(_theme: JeditTheme): Omit<TitleSceneMaterialColors, 'floorDark' | 'floorLight'> {
-  return {
-    accent: [224, 113, 63],
-    info: [78, 195, 224],
-    success: [112, 216, 167],
-    ink: [222, 232, 232],
-    muted: [55, 75, 88],
-    surface: [5, 7, 12],
-  };
+function paintTitlePresentationLogos(surface: Surface, options: TitlePresentationLogoPaintOptions): void {
+  paintFlyingRobotsLogo(surface, flyingRobotsLogoCellBounds(options.cols, options.rows), options.colors, options.time, {
+    opacity: options.sequence.flyingRobotsOpacity,
+  });
+  paintTitleLogo(surface, titleLogoCellBounds(options.cols, options.rows), options.colors, options.time, {
+    opacity: options.sequence.titleOpacity,
+    sheen: options.sequence.titleSheen,
+  });
 }
 
 function sceneSampleAt(options: TitleSceneSampleOptions): BrailleShaderSample {
@@ -206,7 +206,7 @@ function titleSceneRayContext(options: TitleSceneSampleOptions): TitleSceneRayCo
   const aspect = options.cols / Math.max(1, options.rows);
   const rx = (options.u * 2 - 1) * aspect;
   const ry = options.v * 2 - 1;
-  const finalAngle = options.camAngle + (options.time * CAMERA_DRIFT_RATE);
+  const finalAngle = options.camAngle + (options.time * TITLE_CAMERA_DRIFT_RATE);
   const origin: Vector3 = [
     Math.sin(finalAngle) * options.camRadius,
     CAMERA_HEIGHT,
@@ -280,7 +280,7 @@ function brailleSubpixelVisible(u: number, v: number, cols: number, rows: number
   const x = Math.floor(u * cols * 2) % BRAILLE_DITHER_MATRIX_SIZE;
   const y = Math.floor(v * rows * 4) % BRAILLE_DITHER_MATRIX_SIZE;
   const threshold = (BRAILLE_DITHER_MATRIX[y]![x]! + 0.5) / BRAILLE_DITHER_DENOMINATOR;
-  return (colorLuminance(color) / 255) >= threshold;
+  return (titleColorLuminance(color) / RGB_CHANNEL_MAX) >= threshold;
 }
 
 function titleObjectReflectionAmount(reflectivity: number, fresnel: number): number {
@@ -413,21 +413,6 @@ function titleFloorContactShadowMultiplierAt(point: Vector3, objects: readonly T
     strength = Math.max(strength, Math.pow(falloff, CONTACT_SHADOW_POWER) * CONTACT_SHADOW_STRENGTH);
   }
   return Math.max(CONTACT_SHADOW_MIN_MULTIPLIER, 1 - strength);
-}
-
-function orderedFloorMaterialColors(
-  first: Color3,
-  second: Color3,
-): { readonly dark: Color3; readonly light: Color3 } {
-  return colorLuminance(first) <= colorLuminance(second)
-    ? { dark: first, light: second }
-    : { dark: second, light: first };
-}
-
-function colorLuminance(color: Color3): number {
-  return (color[0] * LUMINANCE_RED_WEIGHT)
-    + (color[1] * LUMINANCE_GREEN_WEIGHT)
-    + (color[2] * LUMINANCE_BLUE_WEIGHT);
 }
 
 function mixColor(from: Color3, to: Color3, ratio: number): Color3 {

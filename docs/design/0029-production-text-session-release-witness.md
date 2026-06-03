@@ -60,7 +60,8 @@ npm run release-gate:jedit-echo
 - Echo still does not know text buffers, files, panes, cursors, selections, or
   exports.
 - `TextBufferOptic` remains a jedit capability.
-- `testLocal` remains a dev/test fixture profile, not a product mode.
+- The production TUI has no non-Echo text runtime profile; focused tests use
+  direct fake-port injection when they need fixture behavior.
 - Export is a reading/materialization over a jedit-owned basis.
 - Hidden retry remains absent.
 - Durable WSC replay remains post-slice-80.

@@ -200,6 +200,10 @@ truth.
 Important decisions should land in inspectable docs, tests, and code, not live
 only in chat.
 
+Design docs define intent, but executable witnesses prove implementation.
+Design-doc assertions may support evidence ledgers, but they are not sufficient
+proof for product, runtime, UI, or tooling work.
+
 ### 19. Graceful degradation is mandatory
 
 If structural readings are partial, unsupported, or stale, or if ecosystem

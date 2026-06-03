@@ -27,10 +27,11 @@ Press `?` inside the editor for the key binding reference.
 
 - **Vim-shaped editing** — Normal/Insert modes, `w b e dd yy p u ctrl+r`, and growing
 - **File drawer** — directory navigation, open files with Enter
-- **Graft drawer** — current-file structural outline and change summary via MCP
+- **Graft drawer** — current-file structural outline and change summary via the direct Graft API
 - **Markdown preview** — live lens over the active buffer (`ctrl+p` to toggle)
 - **Syntax highlighting** — themed source rendering for supported languages
-- **Echo-backed text session** — every edit submits a contract intent through `TextBufferOptic`; a fake Echo transport handles it in-process for default use, a real Echo WASM transport is available opt-in
+- **Echo-hosted text session** — every edit submits a contract intent through
+  `TextBufferOptic`; the production TUI has no non-Echo text runtime mode
 - **Structural-history contract** — `replaceTextRange` operation identity comes from Wesley-generated metadata, not hardcoded strings
 - **Witness scripts** — JSON-reporting evidence tools for CI and agents (see [Witnesses](#witnesses))
 
@@ -60,6 +61,16 @@ rules, the three pure domain contracts, the dual-transport design, the
 
 `jedit` is aiming for a quiet editing surface with smart edges, not a terminal
 IDE clone.
+
+The full invariant set is written down in
+[docs/design/project-invariants.md](docs/design/project-invariants.md).
+The identity doctrine is canonical in
+[docs/design/echo-identity-doctrine.md](docs/design/echo-identity-doctrine.md).
+The short operational guide is [GUIDE.md](GUIDE.md).
+The end-to-end buffer rendering path is explained in
+[ADVANCED_GUIDE.md](ADVANCED_GUIDE.md).
+The process-level jedit + Echo path is explained in
+[docs/jedit-echo-end-to-end.md](docs/jedit-echo-end-to-end.md).
 
 - Zen core, instrumented edges. The main editor area stays visually quiet;
   richer context appears at the edges and only when it earns the space.
@@ -106,8 +117,8 @@ canonical authority. TypeScript types, Zod schemas, and operation metadata are
 generated output — not authored source.
 
 **Graft** provides structural intelligence (syntax spans, outlines, diagnostics,
-structural diff) over in-memory buffer snapshots. It is an enrichment engine,
-not the editing kernel. The current MCP transport is transitional.
+structural diff) over saved workspace files through the direct `@flyingrobots/graft`
+API. It is an enrichment engine, not the editing kernel.
 
 Full posture details live in [ARCHITECTURE.md](ARCHITECTURE.md).
 
@@ -119,9 +130,9 @@ Full posture details live in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 | Variable | Effect |
 |----------|--------|
-| `JEDIT_TEXT_RUNTIME` | Unset → fake in-process Echo transport (default). Set to `echo-wasm` for the real Echo WASM transport. |
+| `JEDIT_TEXT_RUNTIME` | Unset or `echoHosted` → Echo-hosted production text runtime. Any other value is unsupported startup input. |
 | `JEDIT_PERF` | Set to `1` to enable the frame-time performance overlay. |
-| `ECHO_WARP_WASM_DIR` | Path to Echo's `crates/warp-wasm` directory. Required for the real WASM witness only. |
+| `ECHO_WARP_WASM_DIR` | Path to Echo's `crates/warp-wasm` directory. Required for the opt-in real WASM witness only, not for the default TUI. |
 
 ### Validate
 
@@ -129,15 +140,17 @@ Full posture details live in [ARCHITECTURE.md](ARCHITECTURE.md).
 npm run check   # build + test + quality gate
 ```
 
-Default tests use the fake Echo transport. No sibling repo checkout required.
+The default app runtime is Echo-hosted and requires no sibling repo checkout.
+Focused tests may still inject fake ports directly when they need fixture-only
+behavior, but the production TUI does not expose a non-Echo runtime profile.
 
 ### Witnesses
 
 ```sh
-# Fast smoke path — fake transport, no Echo checkout needed
+# Fast smoke path — installed jedit contract transport, no Echo checkout needed
 npm run witness:echo:session
 
-# Full opt-in witness — requires a built Echo checkout
+# Opt-in real WASM witness — requires a built Echo checkout
 ECHO_WARP_WASM_DIR=/path/to/echo/crates/warp-wasm \
   node scripts/jedit-echo-witness.mjs --json --replay
 ```

@@ -335,7 +335,7 @@ The adapter installs:
 
 - `FileSystemPortAdapter` for directory entries.
 - `editorFilePort` for opening and saving file text.
-- `createGraftSessionPort()` for Graft MCP calls.
+- `createGraftSessionPort()` for direct Graft API calls.
 - `createGraftSourceHighlighter()` for source highlighting.
 - `createTitleSceneLoaderPort()` for the title scene.
 - `createRaytracerProfilerPort(nowMs)` for profiling.
@@ -525,7 +525,7 @@ The Graft port is an adapter:
 ```text
 WorkspaceRuntime
 -> GraftSessionPort
--> @flyingrobots/graft MCP stdio transport
+-> @flyingrobots/graft direct API
 -> Graft tools such as file_outline and graft_diff
 -> GraftInfo message
 -> WorkspaceModel.graftInfo
@@ -1026,11 +1026,11 @@ The current practical behavior is:
 4. Any explicit jedit cleanup only runs if the surrounding runtime gives pending
    commands a chance to complete.
 
-The workspace runtime does include a Graft lifecycle command that calls
-`graftSession.closeConnection`. This protects against stale Graft MCP state in
-normal app-command execution, but it should not be documented as a full SIGTERM
-finalizer. A future host lifecycle slice should add explicit shutdown handling
-if jedit needs strong cleanup guarantees.
+The workspace runtime no longer schedules a Graft sidecar lifecycle command.
+`graftSession.closeConnection` remains on the port as a harmless cleanup hook,
+but the direct API adapter has no repo-local child process to drain during
+normal app-command execution. A future host lifecycle slice should add explicit
+shutdown handling if jedit needs strong cleanup guarantees.
 
 ```mermaid
 sequenceDiagram
@@ -1039,13 +1039,12 @@ sequenceDiagram
   participant Node
   participant Bijou
   participant Jedit as jedit runtime
-  participant Graft as Graft MCP session
+  participant Graft as Graft direct API
 
   OS->>Node: SIGTERM
   Node--xBijou: terminate event loop
   Note over Jedit: No jedit-specific SIGTERM handler is currently installed in src/main.ts.
-  Jedit->>Graft: closeConnection() when lifecycle command runs
-  Graft-->>Jedit: closed or ignored close failure
+  Note over Graft: No editor-local sidecar process is launched.
   Node-->>OS: process exit
 ```
 
@@ -1092,7 +1091,7 @@ Echo tick:
 | --- | --- |
 | Terminal application startup | Implemented through Bijou and `src/main.ts`. |
 | Local file editing | Implemented through jedit workspace/editor ports. |
-| Graft structural intelligence | Implemented through MCP adapter and source highlighter ports. |
+| Graft structural intelligence | Implemented through direct API adapter and source highlighter ports. |
 | jedit app-facing optic contract | Designed and partly represented through `TextBufferOptic`, `ReadBasisHandle`, and SDL. |
 | Wesley generated operation metadata | Used for hot-text and structural-history operation identity. |
 | Fake Echo-shaped transport | Implemented for default tests and app-boundary pressure. |

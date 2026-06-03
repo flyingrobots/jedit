@@ -3,53 +3,76 @@ import test from 'node:test';
 import {
   importDist,
   mockI18n,
+  mockRuntime,
 } from './workspace-helpers.mjs';
 
-test('graft lifecycle command awaits close connection', async () => {
-  const graft = await importDist('app', 'workspace', 'graft.js');
+test('workspace runtime init does not schedule a Graft sidecar lifecycle command', async () => {
+  const runtimeModule = await importDist('app', 'workspace', 'runtime.js');
   let closed = false;
-  const command = graft.manageGraftLifecycle(async () => {
-    closed = true;
-  });
+  const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime({
+    graftSession: {
+      loadGraftInfo: async () => ({
+        path: '/repo/main.md',
+        relativePath: 'main.md',
+        dirty: false,
+        outlineItems: [],
+        changeLines: [],
+      }),
+      failedGraftInfo: () => ({
+        path: '/repo/main.md',
+        relativePath: 'main.md',
+        dirty: false,
+        outlineItems: [],
+        changeLines: [],
+      }),
+      closeConnection: async () => {
+        closed = true;
+      },
+    },
+  }));
 
-  const result = await command();
+  const [, commands] = runtime.init();
 
-  assert.equal(closed, true);
-  assert.equal(result, undefined);
+  assert.equal(commands.length, 1);
+  assert.equal(closed, false);
 });
 
-test('graft lifecycle command returns a runtime issue when close fails', async () => {
-  const graft = await importDist('app', 'workspace', 'graft.js');
-  const command = graft.manageGraftLifecycle(async () => {
-    throw new Error('close failed');
-  }, () => 321);
-
-  const result = await command();
-
-  assert.equal(result.type, 'runtime-issue');
-  assert.equal(result.issue.level, 'error');
-  assert.equal(result.issue.source, 'command');
-  assert.equal(result.issue.atMs, 321);
-});
-
-test('workspace settings exposes locale and direction runtime tokens', async () => {
+test('workspace settings selects a locale through runtime tokens', async () => {
   const settings = await importDist('app', 'workspace', 'settings.js');
   const localeChanges = [];
+  const replacementI18n = mockI18n({
+    locale: 'fr',
+    localeLabel: 'Français',
+  });
+  const nextLocale = {
+    locale: 'fr',
+    label: 'Français',
+    direction: settings.WorkspaceTextDirections.Ltr,
+  };
   const model = {
     i18n: mockI18n({
       locale: settings.WorkspaceLocales.Default,
-      setLocale: (locale, direction) => {
-        localeChanges.push({ locale, direction });
+      locales: [{
+        locale: settings.WorkspaceLocales.Default,
+        label: 'English',
+        direction: settings.WorkspaceTextDirections.Ltr,
+      }, nextLocale],
+      setLocale: (locale) => {
+        localeChanges.push(locale);
+      },
+      withLocale: (locale) => {
+        localeChanges.push(locale);
+        return replacementI18n;
       },
     }),
   };
 
-  settings.workspaceSettingsHandlers.toggleLocale(model);
+  const [selected] = settings.workspaceSettingsHandlers.selectLocale(model, nextLocale);
 
-  assert.deepEqual(localeChanges, [{
-    locale: settings.WorkspaceLocales.Alternate,
-    direction: settings.WorkspaceTextDirections.Rtl,
-  }]);
+  assert.notEqual(selected, model);
+  assert.notEqual(selected.i18n, model.i18n);
+  assert.equal(selected.i18n, replacementI18n);
+  assert.deepEqual(localeChanges, [nextLocale.locale]);
 });
 
 test('workspace exposes runtime tokens for drawer, focus, file entry, and key dispatch values', async () => {
@@ -62,9 +85,11 @@ test('workspace exposes runtime tokens for drawer, focus, file entry, and key di
 
   assert.equal(drawerLayout.DrawerKinds.Files, 'files');
   assert.equal(drawerLayout.DrawerKinds.Graft, 'graft');
+  assert.equal(drawerLayout.DrawerKinds.History, 'history');
   assert.equal(panelFocus.FocusPanes.Editor, 'editor');
   assert.equal(panelFocus.FocusPanes.Files, 'files');
   assert.equal(panelFocus.FocusPanes.Graft, 'graft');
+  assert.equal(panelFocus.FocusPanes.History, 'history');
   assert.equal(fileSystem.FileEntryKinds.Directory, 'dir');
   assert.equal(fileSystem.FileEntryKinds.Parent, 'parent');
   assert.equal(workspaceKey.WorkspaceKeys.Backtick, '`');

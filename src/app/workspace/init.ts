@@ -11,9 +11,13 @@ import { BUILT_IN_TITLE_SCENE_NAMES } from '../../ports/title-scene-loader.js';
 import type { JeditTheme } from '../../ui/jedit-theme.js';
 import type { FileEntry } from '../../ports/file-system.js';
 import { ViewModes } from './view-mode.js';
-import type { TextRuntimeProfile } from '../text-runtime-profile.js';
 import { TEXT_RUNTIME_PROFILE_ECHO_HOSTED } from '../text-runtime-profile.js';
+import type { JeditWscStartupRecoveryResult } from '../../ports/jedit-wsc-startup-recovery.js';
+import { unrecoveredJeditWscStartupRecovery } from '../jedit-wsc-startup-recovery.js';
 import { createWorkspaceTextAuthority } from './workspace-text-authority.js';
+import { initialStartupFileModalState } from './startup-file-modal.js';
+
+export { recoverJeditWorkspaceFromWsc } from '../jedit-wsc-startup-recovery.js';
 
 const INITIAL_FOCUS_PANE: FocusPane = FocusPanes.Editor;
 const INITIAL_VIEW_MODE = ViewModes.Source;
@@ -25,7 +29,7 @@ export interface WorkspaceInitialModelSnapshot {
   readonly entries: readonly FileEntry[];
   readonly titleMeshes?: TitleMeshLibrary;
   readonly nowMs: number;
-  readonly textRuntimeProfile?: TextRuntimeProfile;
+  readonly wscStartupRecovery?: JeditWscStartupRecoveryResult;
 }
 
 export function createInitialModel(
@@ -36,7 +40,7 @@ export function createInitialModel(
 ): WorkspaceModel {
   const { titleSceneSeed, jeditTheme, i18n, entries, nowMs } = snapshot;
   const titleMeshes = snapshot.titleMeshes ?? {};
-  const textRuntimeProfile = snapshot.textRuntimeProfile ?? TEXT_RUNTIME_PROFILE_ECHO_HOSTED;
+  const textRuntimeProfile = TEXT_RUNTIME_PROFILE_ECHO_HOSTED;
   return {
     i18n,
     workspaceRoot: cwd,
@@ -46,11 +50,14 @@ export function createInitialModel(
     editor: undefined,
     textRuntimeProfile,
     textAuthority: createWorkspaceTextAuthority(textRuntimeProfile),
+    wscStartupRecovery: snapshot.wscStartupRecovery ?? unrecoveredJeditWscStartupRecovery(),
     textRequestId: 0,
     viewMode: INITIAL_VIEW_MODE,
     focusPane: INITIAL_FOCUS_PANE,
     ...initialDrawerState(),
+    ...initialStartupFileModalState(),
     ...createFeedbackState<WorkspaceMsg>(),
+    ...initialShellState(),
     ...initialSettingsState(),
     jeditTheme,
     ...initialGraftState(),
@@ -70,6 +77,10 @@ function initialDrawerState() {
     fileDrawerProgress: 0,
     graftDrawerOpen: false,
     graftDrawerProgress: 0,
+    historyDrawerOpen: false,
+    historyDrawerProgress: 0,
+    echoHistory: [],
+    echoHistorySelectedIndex: 0,
   };
 }
 
@@ -77,6 +88,12 @@ function initialSettingsState() {
   return {
     settingsOpen: false,
     settingsFocusIndex: 0,
+  };
+}
+
+function initialShellState() {
+  return {
+    quitConfirmOpen: false,
   };
 }
 

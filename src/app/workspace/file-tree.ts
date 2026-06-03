@@ -27,7 +27,7 @@ import {
 
 export const FILE_TREE_META_MIN = 0;
 
-interface UpdateTreeFromKeyDeps {
+export interface UpdateTreeFromKeyDeps {
   readonly fileSystem: FileSystemPort;
   readonly editorFile: EditorFilePort;
   readonly sourceHighlighter: SourceHighlighter;
@@ -93,6 +93,15 @@ function openSelectedTreeEntry(
   if (entry == null) {
     return [model, []];
   }
+  return openWorkspaceFileEntry(model, entry, nowMs, deps);
+}
+
+export function openWorkspaceFileEntry(
+  model: WorkspaceModel,
+  entry: NonNullable<WorkspaceModel['entries'][number]>,
+  nowMs: () => number,
+  deps: UpdateTreeFromKeyDeps,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (entry.kind === FileEntryKinds.Directory || entry.kind === FileEntryKinds.Parent) {
     return changeDirectory(model, entry.path, DIRECTORY_ACTION_OPEN, nowMs, deps.fileSystem);
   }

@@ -1,10 +1,17 @@
-import { quit, type Cmd, type KeyMsg } from '@flyingrobots/bijou-tui';
+import {
+  isShellQuitConfirmAccept,
+  isShellQuitConfirmDismiss,
+  isShellQuitRequest,
+  quit,
+  type Cmd,
+  type KeyMsg,
+} from '@flyingrobots/bijou-tui';
 import { beginGraftRefresh } from './editor-session.js';
 import { closeDrawer, toggleDrawer } from './drawer.js';
 import { focusCycleState } from './focus.js';
 import { cycleFocusPane, FocusPanes, hasFocusablePeers } from '../../ui/panel-focus.js';
 import { isFooterToggleKey } from '../../ui/feedback.js';
-import { DrawerKinds } from '../../ui/drawer-layout.js';
+import { DrawerKinds, type DrawerKind } from '../../ui/drawer-layout.js';
 import { insertModeActive } from './editor-state.js';
 import type { WorkspaceKeyBindingContext } from './key-binding-context.js';
 import type { WorkspaceModel } from './model.js';
@@ -14,6 +21,19 @@ import { updateSaveKey } from './workspace-save-key.js';
 import { updateMarkdownPreviewKey, updateThemeKey } from './workspace-view-mode-keys.js';
 
 type KeyBindingResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
+
+export function updateQuitConfirmationKey(msg: KeyMsg, model: WorkspaceModel): KeyBindingResult | undefined {
+  if (!model.quitConfirmOpen) {
+    return undefined;
+  }
+  if (isShellQuitConfirmAccept(msg)) {
+    return [{ ...model, quitConfirmOpen: false }, [quit<WorkspaceMsg>()]];
+  }
+  if (isShellQuitConfirmDismiss(msg)) {
+    return [{ ...model, quitConfirmOpen: false }, []];
+  }
+  return [model, []];
+}
 
 export function updateGlobalWorkspaceKey(
   msg: KeyMsg,
@@ -37,11 +57,26 @@ export function updatePerfWorkspaceKey(msg: KeyMsg, model: WorkspaceModel): KeyB
   return [model, [() => ({ type: WorkspaceMessageTypes.TogglePerf })]];
 }
 
+export function updateHardGlobalWorkspaceKey(msg: KeyMsg, model: WorkspaceModel): KeyBindingResult | undefined {
+  return updateForceQuitWorkspaceKey(msg, model)
+    ?? updatePerfWorkspaceKey(msg, model);
+}
+
+export function updateForceQuitWorkspaceKey(msg: KeyMsg, model: WorkspaceModel): KeyBindingResult | undefined {
+  return msg.ctrl && msg.key === WorkspaceKeys.C
+    ? [model, [quit<WorkspaceMsg>()]]
+    : undefined;
+}
+
 function updateQuitKey(msg: KeyMsg, model: WorkspaceModel): KeyBindingResult | undefined {
-  if (msg.ctrl && msg.key === WorkspaceKeys.C) {
-    return [model, [quit<WorkspaceMsg>()]];
-  }
-  return !insertModeActive(model) && msg.key === WorkspaceKeys.Q ? [model, [quit<WorkspaceMsg>()]] : undefined;
+  return updateForceQuitWorkspaceKey(msg, model)
+    ?? (!insertModeActive(model) && isPlainShellQuitRequest(msg)
+    ? [{ ...model, quitConfirmOpen: true }, []]
+    : undefined);
+}
+
+function isPlainShellQuitRequest(msg: KeyMsg): boolean {
+  return isShellQuitRequest(msg) && msg.key === WorkspaceKeys.Q;
 }
 
 function updateFooterKey(msg: KeyMsg, model: WorkspaceModel): KeyBindingResult | undefined {
@@ -64,13 +99,25 @@ function updateDrawerKey(
   model: WorkspaceModel,
   context: WorkspaceKeyBindingContext,
 ): KeyBindingResult | undefined {
-  if (msg.ctrl && !msg.alt && msg.key === WorkspaceKeys.B) {
-    return toggleWorkspaceDrawer(model, DrawerKinds.Files, context);
-  }
-  if (msg.ctrl && !msg.alt && msg.key === WorkspaceKeys.G) {
-    return toggleWorkspaceDrawer(model, DrawerKinds.Graft, context);
+  const kind = drawerKindFromToggleKey(msg);
+  if (kind != null) {
+    return toggleWorkspaceDrawer(model, kind, context);
   }
   return updateEscapeKey(msg, model, context);
+}
+
+function drawerKindFromToggleKey(msg: KeyMsg): DrawerKind | undefined {
+  if (isCtrlWorkspaceKey(msg, WorkspaceKeys.B)) {
+    return DrawerKinds.Files;
+  }
+  if (isCtrlWorkspaceKey(msg, WorkspaceKeys.G)) {
+    return DrawerKinds.Graft;
+  }
+  return isCtrlWorkspaceKey(msg, WorkspaceKeys.H) ? DrawerKinds.History : undefined;
+}
+
+function isCtrlWorkspaceKey(msg: KeyMsg, key: string): boolean {
+  return msg.ctrl === true && msg.alt !== true && msg.key === key;
 }
 
 function updateEscapeKey(
@@ -84,14 +131,17 @@ function updateEscapeKey(
   if (model.focusPane === FocusPanes.Files && model.fileDrawerOpen) {
     return closeDrawer(model, DrawerKinds.Files, context.createDrawerAnimationCmd);
   }
-  return model.focusPane === FocusPanes.Graft && model.graftDrawerOpen
-    ? closeDrawer(model, DrawerKinds.Graft, context.createDrawerAnimationCmd)
+  if (model.focusPane === FocusPanes.Graft && model.graftDrawerOpen) {
+    return closeDrawer(model, DrawerKinds.Graft, context.createDrawerAnimationCmd);
+  }
+  return model.focusPane === FocusPanes.History && model.historyDrawerOpen
+    ? closeDrawer(model, DrawerKinds.History, context.createDrawerAnimationCmd)
     : undefined;
 }
 
 function toggleWorkspaceDrawer(
   model: WorkspaceModel,
-  kind: typeof DrawerKinds.Files | typeof DrawerKinds.Graft,
+  kind: DrawerKind,
   context: WorkspaceKeyBindingContext,
 ): KeyBindingResult {
   return toggleDrawer(model, kind, (nextModel, options) => (

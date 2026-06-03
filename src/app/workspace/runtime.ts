@@ -1,5 +1,4 @@
-import { createInitialModel } from './init.js';
-import { manageGraftLifecycle } from './graft.js';
+import { createInitialModel, recoverJeditWorkspaceFromWsc } from './init.js';
 import type { WorkspaceModel } from './model.js';
 import {
   applyNotificationState,
@@ -11,7 +10,7 @@ import { createTitleCameraState, reduceTitleCameraMotion, TITLE_CAMERA_MESSAGE }
 import { ensureEditorVisible, editorViewport } from './editor-session.js';
 import { updateFromKey } from './key-bindings.js';
 import { updateFromMouse } from './mouse.js';
-import { renderWorkspace } from './viewer.js';
+import { createWorkspaceRenderer } from './viewer.js';
 import {
   createInitialProfilerState,
   ProfilerMessageTypes,
@@ -21,7 +20,12 @@ import {
   type ProfilerMsg,
 } from '../raytracer-profiler.js';
 import { WorkspaceInputMessageTypes, WorkspaceMessageTypes, type WorkspaceMsg } from './msg.js';
-import { applyDrawerProgress, applyGraftInfo, applyWorkspaceTextMessage } from './workspace-state-reducers.js';
+import {
+  applyDrawerProgress,
+  applyGraftInfo,
+  applyStartupIntroTime,
+  applyWorkspaceTextMessage,
+} from './workspace-state-reducers.js';
 import type {
   WorkspaceRuntime,
   WorkspaceRuntimeDependencies,
@@ -34,30 +38,33 @@ export { WorkspaceInputMessageTypes, WorkspaceMessageTypes } from './msg.js';
 
 const FRAME_TIME_HISTORY_SIZE = 50;
 
-export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): WorkspaceRuntime => ({
-  init: () => [
-    {
-      ...createInitialModel(
-        deps.initialWorkingDirectory,
-        deps.initialColumns,
-        deps.initialRows,
+export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): WorkspaceRuntime => {
+  const renderWorkspace = createWorkspaceRenderer();
+  return {
+    init: () => {
+      const wscStartupRecovery = recoverJeditWorkspaceFromWsc(deps.wscWorkspaceStore);
+      return [
         {
-          ...deps.initialModel,
-          nowMs: deps.initialModel.nowMs ?? deps.nowMs(),
+          ...createInitialModel(
+            deps.initialWorkingDirectory,
+            deps.initialColumns,
+            deps.initialRows,
+            {
+              ...deps.initialModel,
+              nowMs: deps.initialModel.nowMs ?? deps.nowMs(),
+              wscStartupRecovery,
+            },
+          ),
+          profiler: createInitialProfilerState(),
         },
-      ),
-      profiler: createInitialProfilerState(),
+        [deps.createTimeTickCmd()],
+      ];
     },
-    [
-      manageGraftLifecycle(deps.graftSession.closeConnection, deps.nowMs),
-      deps.createTimeTickCmd(),
-    ],
-  ],
-  update: (msg, model) => updateWorkspaceRuntime(deps, msg, model),
-  view: (model) => renderWorkspace(model),
-  routeRuntimeIssue: (issue) => ({ type: WorkspaceMessageTypes.RuntimeIssue, issue }),
-});
-
+    update: (msg, model) => updateWorkspaceRuntime(deps, msg, model),
+    view: (model) => renderWorkspace(model),
+    routeRuntimeIssue: (issue) => ({ type: WorkspaceMessageTypes.RuntimeIssue, issue }),
+  };
+};
 
 function updateWorkspaceRuntime(
   deps: WorkspaceRuntimeDependencies,
@@ -183,13 +190,13 @@ function updateTimeTickMessage(
 ): WorkspaceRuntimeResult {
   const now = deps.nowMs();
   const frameTime = now - model.lastFrameMs;
-  const nextModel = {
+  const nextModel = applyStartupIntroTime({
     ...model,
     time,
     lastFrameMs: now,
     frameTimeMs: frameTime,
     frameTimeHistory: [...model.frameTimeHistory, frameTime].slice(-FRAME_TIME_HISTORY_SIZE),
-  };
+  });
   const profilerStream = streamProfilerFrame(nextModel.profiler, {
     time,
     frameTimeMs: frameTime,

@@ -51,6 +51,35 @@ test('production cutover guard catches sample recovery local-memory fallback tok
   assert.match(result.stderr, /saveFromBuffer/);
 });
 
+test('production cutover guard catches sample non-Echo runtime profile tokens', () => {
+  const tempDir = mkdtempSync(path.join(tmpdir(), 'jedit-runtime-profile-guard-'));
+  const sample = path.join(tempDir, 'sample.ts');
+  writeFileSync(sample, [
+    "export const TEXT_RUNTIME_PROFILE_TEST_LOCAL = 'testLocal';",
+    'const fallbackProfile = TEXT_RUNTIME_PROFILE_TEST_LOCAL;',
+    'const testLocalSessionFactory = defaultTestLocalSessionFactory();',
+  ].join('\n'));
+
+  const result = spawnGuard('--sample-forbidden-file', sample);
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /TEXT_RUNTIME_PROFILE_TEST_LOCAL/);
+  assert.match(result.stderr, /testLocal profile/);
+  assert.match(result.stderr, /fallbackProfile/);
+  assert.match(result.stderr, /testLocalSessionFactory/);
+  assert.match(result.stderr, /defaultTestLocalSessionFactory/);
+});
+
+test('production cutover guard reports missing guarded source files as failures', () => {
+  const missing = path.join(tmpdir(), 'jedit-cutover-missing-file.ts');
+
+  const result = spawnGuard('--sample-forbidden-file', missing);
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /missing guarded production cutover file/);
+  assert.match(result.stderr, /jedit-cutover-missing-file\.ts/);
+});
+
 function spawnGuard(...args) {
   return spawnSync(process.execPath, [
     GUARD_PATH,

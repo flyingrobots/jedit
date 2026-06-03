@@ -2,11 +2,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
+import { REPO_ROOT, ensureDistBuilt } from './dist-helpers.mjs';
 
-const REPO_ROOT = process.cwd();
 const MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'editor-file.js');
 const LEGACY_TRUNCATION_BYTES = 24_000;
 const LARGE_LINE_COUNT = 900;
@@ -15,12 +14,7 @@ const TRUNCATION_MARKER = '[truncated]';
 const BINARY_FILE_MESSAGE = '[binary file]';
 
 async function loadEditorFileModule() {
-  const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
-    cwd: REPO_ROOT,
-    encoding: 'utf8',
-  });
-
-  assert.equal(build.status, 0, build.stderr || build.stdout);
+  await ensureDistBuilt();
 
   return import(pathToFileURL(MODULE_PATH).href);
 }

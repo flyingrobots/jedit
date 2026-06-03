@@ -1,8 +1,21 @@
 import type { Surface } from '@flyingrobots/bijou';
+import { renderShellQuitOverlay, type Overlay } from '@flyingrobots/bijou-tui';
 import { resolveScenePickerDrawerWidth, renderScenePickerDrawer } from '../../ui/scene-picker-drawer.js';
 import { resolveSettingsDrawerWidth, renderSettingsDrawer } from '../../ui/settings-drawer.js';
+import { renderStartupFileModal } from '../../ui/startup-file-modal.js';
 import type { WorkspaceModel } from './model.js';
 import { settingsRows } from './settings.js';
+import { startupFileModalRows } from './startup-file-modal.js';
+import { MIN_COLUMNS, MIN_ROWS } from './viewport.js';
+
+const STARTUP_FILE_MODAL_I18N_KEYS = Object.freeze({
+  Title: 'startupFileModal.title',
+  Hint: 'startupFileModal.hint',
+  InputLabel: 'startupFileModal.input_label',
+  CurrentDirectory: 'startupFileModal.current_directory',
+  Empty: 'startupFileModal.empty',
+  NoMatch: 'startupFileModal.no_match',
+} as const);
 
 export function paintWorkspaceOverlays(
   screen: Surface,
@@ -37,4 +50,41 @@ export function paintWorkspaceOverlays(
       bodyTop,
     );
   }
+}
+
+export function workspaceFeedbackOverlay(model: WorkspaceModel): Overlay | undefined {
+  if (model.quitConfirmOpen) {
+    return renderShellQuitOverlay(model.columns, model.rows);
+  }
+  if (shouldRenderStartupFileModal(model)) {
+    return renderStartupFileModal({
+      cwd: model.cwd,
+      input: model.startupFileModalInput,
+      rows: startupFileModalRows(model.entries, model.startupFileModalInput),
+      selectedIndex: model.startupFileModalSelectedIndex,
+      copy: startupFileModalCopy(model),
+      theme: model.jeditTheme,
+      screenWidth: model.columns,
+      screenHeight: model.rows,
+    });
+  }
+  return undefined;
+}
+
+function startupFileModalCopy(model: WorkspaceModel) {
+  return {
+    title: model.i18n.t(STARTUP_FILE_MODAL_I18N_KEYS.Title),
+    hint: model.i18n.t(STARTUP_FILE_MODAL_I18N_KEYS.Hint),
+    inputLabel: model.i18n.t(STARTUP_FILE_MODAL_I18N_KEYS.InputLabel),
+    currentDirectory: model.i18n.t(STARTUP_FILE_MODAL_I18N_KEYS.CurrentDirectory),
+    empty: model.i18n.t(STARTUP_FILE_MODAL_I18N_KEYS.Empty),
+    noMatch: model.i18n.t(STARTUP_FILE_MODAL_I18N_KEYS.NoMatch),
+  };
+}
+
+function shouldRenderStartupFileModal(model: WorkspaceModel): boolean {
+  return model.startupFileModalOpen
+    && model.editor == null
+    && model.columns >= MIN_COLUMNS
+    && model.rows >= MIN_ROWS;
 }

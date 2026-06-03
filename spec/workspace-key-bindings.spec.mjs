@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { QUIT } from '@flyingrobots/bijou-tui';
 import {
   importDist,
   mockDeps,
+  mockEditor,
   mockI18n,
   mockKeyBindingContext,
   mockTitleScreenModel,
@@ -43,6 +45,11 @@ test('backtick key remains a perf toggle while workspace overlays are open', asy
       scenePickerFocusIndex: 0,
       availableScenes: ['bunny.jedit-scene'],
     }),
+    mockTitleScreenModel(titleScreen, {
+      startupIntroComplete: true,
+      startupFileModalOpen: true,
+      startupFileModalInput: '',
+    }),
   ];
 
   for (const model of overlays) {
@@ -58,6 +65,27 @@ test('backtick key remains a perf toggle while workspace overlays are open', asy
   }
 });
 
+test('ctrl-c still quits while startup file modal is open', async () => {
+  const [keyBindings, titleScreen] = await Promise.all([
+    importDist('app', 'workspace', 'key-bindings.js'),
+    importDist('ui', 'title-screen.js'),
+  ]);
+
+  const [nextModel, commands] = keyBindings.updateFromKey(
+    { type: 'key', key: 'c', ctrl: true, alt: false, shift: false },
+    mockTitleScreenModel(titleScreen, {
+      startupIntroComplete: true,
+      startupFileModalOpen: true,
+      startupFileModalInput: 'read',
+    }),
+    mockKeyBindingContext(),
+  );
+
+  assert.equal(nextModel.startupFileModalInput, 'read');
+  assert.equal(commands.length, 1);
+  assert.equal(await commands[0](), QUIT);
+});
+
 test('ctrl-l opens the title scene picker when no editor is active', async () => {
   const [keyBindings, titleScreen] = await Promise.all([
     importDist('app', 'workspace', 'key-bindings.js'),
@@ -70,6 +98,82 @@ test('ctrl-l opens the title scene picker when no editor is active', async () =>
   );
 
   assert.equal(nextModel.scenePickerOpen, true);
+});
+
+test('ctrl-h opens Echo history and clears pending editor motion', async () => {
+  const [keyBindings, titleScreen, editorMode] = await Promise.all([
+    importDist('app', 'workspace', 'key-bindings.js'),
+    importDist('ui', 'title-screen.js'),
+    importDist('app', 'workspace', 'editor', 'mode.js'),
+  ]);
+  const editor = mockEditor(editorMode, { pendingNormal: editorMode.PendingNormals.Delete });
+
+  const [nextModel, commands] = keyBindings.updateFromKey(
+    { type: 'key', key: 'h', ctrl: true, alt: false, shift: false },
+    mockTitleScreenModel(titleScreen, {
+      editor,
+      focusPane: 'editor',
+      historyDrawerOpen: false,
+      historyDrawerProgress: 0,
+    }),
+    mockKeyBindingContext(),
+  );
+
+  assert.equal(nextModel.historyDrawerOpen, true);
+  assert.equal(nextModel.focusPane, 'history');
+  assert.equal(nextModel.editor.pendingNormal, undefined);
+  assert.deepEqual(commands, []);
+});
+
+test('plain q opens Bijou quit confirmation instead of quitting immediately', async () => {
+  const [keyBindings, titleScreen, editorMode] = await Promise.all([
+    importDist('app', 'workspace', 'key-bindings.js'),
+    importDist('ui', 'title-screen.js'),
+    importDist('app', 'workspace', 'editor', 'mode.js'),
+  ]);
+
+  const [nextModel, commands] = keyBindings.updateFromKey(
+    { type: 'key', key: 'q', ctrl: false, alt: false, shift: false },
+    mockTitleScreenModel(titleScreen, {
+      editor: mockEditor(editorMode),
+      focusPane: 'editor',
+      historyDrawerOpen: true,
+      historyDrawerProgress: 1,
+    }),
+    mockKeyBindingContext(),
+  );
+
+  assert.equal(nextModel.quitConfirmOpen, true);
+  assert.deepEqual(commands, []);
+});
+
+test('Bijou quit confirmation accepts y and dismisses q without editor input', async () => {
+  const [keyBindings, titleScreen, editorMode] = await Promise.all([
+    importDist('app', 'workspace', 'key-bindings.js'),
+    importDist('ui', 'title-screen.js'),
+    importDist('app', 'workspace', 'editor', 'mode.js'),
+  ]);
+  const model = mockTitleScreenModel(titleScreen, {
+    editor: mockEditor(editorMode),
+    focusPane: 'editor',
+    quitConfirmOpen: true,
+  });
+
+  const [accepted, quitCommands] = keyBindings.updateFromKey(
+    { type: 'key', key: 'y', ctrl: false, alt: false, shift: false },
+    model,
+    mockKeyBindingContext(),
+  );
+  const [dismissed, dismissCommands] = keyBindings.updateFromKey(
+    { type: 'key', key: 'q', ctrl: false, alt: false, shift: false },
+    model,
+    mockKeyBindingContext(),
+  );
+
+  assert.equal(accepted.quitConfirmOpen, false);
+  assert.equal(quitCommands.length, 1);
+  assert.equal(dismissed.quitConfirmOpen, false);
+  assert.deepEqual(dismissCommands, []);
 });
 
 test('scene picker loads built-in scenes by name without using workspace root paths', async () => {
