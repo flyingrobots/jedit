@@ -48,6 +48,17 @@ export interface ExportCurrentJeditWscHistoryInput {
   readonly materializer: JeditWscCurrentHistoryMaterializer;
 }
 
+export interface ExportJeditWscHistoryAtBasisInput extends ExportCurrentJeditWscHistoryInput {
+  readonly basisId: string;
+}
+
+interface ExportJeditWscHistoryBasisInput {
+  readonly basis: JeditWscHistoricalBasis;
+  readonly envelope: JeditWscWorkspaceEnvelope;
+  readonly editorFile: EditorFilePort;
+  readonly materializer: JeditWscCurrentHistoryMaterializer;
+}
+
 export function exportCurrentJeditWscHistory(
   input: ExportCurrentJeditWscHistoryInput,
 ): JeditWscCurrentHistoryExportResult {
@@ -55,11 +66,62 @@ export function exportCurrentJeditWscHistory(
   if (!('basis' in currentBasis)) {
     return currentBasis;
   }
-  const materialized = input.materializer.materialize(currentBasis.envelope, currentBasis.basis);
-  if (materialized.status === JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_OBSTRUCTED) {
-    return exportObstructed(materialized.obstruction.code, materialized.obstruction.message, currentBasis.basis.basisId);
+  return exportJeditWscHistoryBasis({
+    basis: currentBasis.basis,
+    envelope: currentBasis.envelope,
+    editorFile: input.editorFile,
+    materializer: input.materializer,
+  });
+}
+
+export function exportJeditWscHistoryAtBasis(
+  input: ExportJeditWscHistoryAtBasisInput,
+): JeditWscCurrentHistoryExportResult {
+  const historicalBasis = historicalWscHistoryBasis(input.store, input.basisId);
+  if (!('basis' in historicalBasis)) {
+    return historicalBasis;
   }
-  return writeHostArtifact(input.editorFile, currentBasis.basis, materialized.artifact);
+  return exportJeditWscHistoryBasis({
+    basis: historicalBasis.basis,
+    envelope: historicalBasis.envelope,
+    editorFile: input.editorFile,
+    materializer: input.materializer,
+  });
+}
+
+function exportJeditWscHistoryBasis(
+  input: ExportJeditWscHistoryBasisInput,
+): JeditWscCurrentHistoryExportResult {
+  const materialized = input.materializer.materialize(input.envelope, input.basis);
+  if (materialized.status === JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_OBSTRUCTED) {
+    return exportObstructed(materialized.obstruction.code, materialized.obstruction.message, input.basis.basisId);
+  }
+  return writeHostArtifact(input.editorFile, input.basis, materialized.artifact);
+}
+
+function historicalWscHistoryBasis(
+  store: JeditWscWorkspaceStorePort,
+  basisId: string,
+): CurrentWscHistoryBasis | JeditWscCurrentHistoryExportObstructed {
+  const listed = store.listEnvelopes();
+  if (listed.status === JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED) {
+    return storeObstructed(listed.obstruction);
+  }
+  const basis = listJeditWscHistoricalBases(listed.envelopeIds)
+    .bases
+    .find((candidate) => candidate.basisId === basisId);
+  if (basis == null) {
+    return exportObstructed(
+      JEDIT_WSC_CURRENT_HISTORY_MISSING_CURRENT_BASIS,
+      `No WSC historical basis is retained for ${basisId}.`,
+      basisId,
+    );
+  }
+  const read = store.readEnvelope(basis.envelopeId);
+  if (read.status === JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED) {
+    return storeObstructed(read.obstruction);
+  }
+  return { basis, envelope: read.envelope };
 }
 
 function currentWscHistoryBasis(
