@@ -1,32 +1,21 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import test from 'node:test';
-import { pathToFileURL } from 'node:url';
-
-const REPO_ROOT = process.cwd();
-const GRAFT_API_SESSION_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'graft-api-session.js');
-const ERRORS_PATH = path.join(REPO_ROOT, 'dist', 'domain', 'errors.js');
+import { REPO_ROOT, importDist } from './dist-helpers.mjs';
 
 let modulesPromise;
 
 async function loadGraftApiSession() {
   if (modulesPromise == null) {
-    modulesPromise = buildAndImportGraftApiSession();
+    modulesPromise = importGraftApiSession();
   }
   return modulesPromise;
 }
 
-async function buildAndImportGraftApiSession() {
-  const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
-    cwd: REPO_ROOT,
-    encoding: 'utf8',
-  });
-
-  assert.equal(build.status, 0, build.stderr || build.stdout);
+async function importGraftApiSession() {
   const [graft, errors] = await Promise.all([
-    import(pathToFileURL(GRAFT_API_SESSION_PATH).href),
-    import(pathToFileURL(ERRORS_PATH).href),
+    importDist('adapters', 'graft-api-session.js'),
+    importDist('domain', 'errors.js'),
   ]);
   return { graft, errors };
 }

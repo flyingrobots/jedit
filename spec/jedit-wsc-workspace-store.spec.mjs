@@ -1,15 +1,11 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { pathToFileURL } from 'node:url';
+import { importDist } from './dist-helpers.mjs';
 
-const REPO_ROOT = process.cwd();
-const ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-wsc-workspace-store.js');
-const PORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'ports', 'jedit-wsc-workspace-store.js');
 const BYTES_A = Uint8Array.from([1, 2, 3]);
 const BYTES_B = Uint8Array.from([4, 5]);
 const HOST_FAILURE_BYTES = Uint8Array.from([9]);
@@ -119,20 +115,15 @@ test('workspace WSC store reports host path failures as typed obstruction', asyn
 
 async function loadModules() {
   if (modulesPromise == null) {
-    modulesPromise = buildAndImportModules();
+    modulesPromise = importModules();
   }
   return modulesPromise;
 }
 
-async function buildAndImportModules() {
-  const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
-    cwd: REPO_ROOT,
-    encoding: 'utf8',
-  });
-  assert.equal(build.status, 0, build.stderr || build.stdout);
+async function importModules() {
   const [adapter, ports] = await Promise.all([
-    import(pathToFileURL(ADAPTER_MODULE_PATH).href),
-    import(pathToFileURL(PORT_MODULE_PATH).href),
+    importDist('adapters', 'jedit-wsc-workspace-store.js'),
+    importDist('ports', 'jedit-wsc-workspace-store.js'),
   ]);
   return {
     adapter,

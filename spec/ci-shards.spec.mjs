@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import {
@@ -9,6 +10,8 @@ import {
   testShardForSpec,
 } from '../scripts/ci/test-shards.mjs';
 import { impactForPath, planChangedShards } from '../scripts/ci/changed-shards.mjs';
+
+const TYPESCRIPT_BUILD_SNIPPET = 'node_modules/typescript/bin/' + 'tsc';
 
 test('test shard manifest assigns every spec to one non-empty shard', () => {
   const specs = discoverSpecFiles();
@@ -65,4 +68,12 @@ test('planner routes changed specs to their owning shard', () => {
 
   assert.equal(plan.full, false);
   assert.deepEqual(plan.testShards, [TEST_SHARDS.TitleRendering]);
+});
+
+test('spec files use the dist helper instead of per-spec TypeScript builds', () => {
+  const offenders = discoverSpecFiles()
+    .filter((specPath) => specPath.startsWith('spec/'))
+    .filter((specPath) => readFileSync(specPath, 'utf8').includes(TYPESCRIPT_BUILD_SNIPPET));
+
+  assert.deepEqual(offenders, []);
 });
