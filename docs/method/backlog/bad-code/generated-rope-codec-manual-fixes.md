@@ -13,9 +13,9 @@ keywords:
 blocked_by:
   - Wesley TS emitter support for top-level vars trailing-byte checks
 acceptance_criteria:
-  - Wesley TS emitter generates top-level vars trailing-byte checks.
-  - Regenerating jedit/src/generated/jedit/rope.codec.generated.ts preserves the checks.
-  - Tests fail (RED) if generated vars decoders accept trailing bytes.
+  - Wesley TS emitter generates top-level vars trailing-byte checks for mutation and query vars decoders.
+  - Regenerating jedit/src/generated/jedit/rope.codec.generated.ts preserves mutation and query checks.
+  - Tests fail (RED) if any generated mutation or query vars decoder accepts trailing bytes.
   - No manual post-generation edits remain in generated codec output.
 ---
 
@@ -81,10 +81,11 @@ Two-step:
    be empty (or trivially equivalent — formatting only). If non-
    empty, the emitter is missing a case.
 
-Then `spec/rope-codec.spec.mjs` keeps its existing trailing-byte
-regression tests as the gate: any future regen that drops the
-checks turns those tests red immediately, before the broken file
-gets committed.
+Then `spec/rope-codec.spec.mjs` keeps trailing-byte regression tests
+for both mutation vars decoders and query vars decoders
+(`decodeWorldlineSnapshotVars`, `decodeTextWindowVars`) as the gate:
+any future regen that drops the checks turns those tests red
+immediately, before the broken file gets committed.
 
 ## Related cards
 
@@ -114,9 +115,9 @@ Resolve this card when:
 1. The Wesley TS emitter emits the trailing-byte check for every
    top-level vars decoder.
 2. A regenerated `rope.codec.generated.ts` compiles, passes
-   `spec/rope-codec.spec.mjs` (including the trailing-byte
-   regressions), and shows zero functional drift from the current
-   hand-edited file.
+   `spec/rope-codec.spec.mjs` (including mutation and query
+   trailing-byte regressions), and shows zero functional drift from
+   the current hand-edited file.
 3. The commit-message caveat about "regen will need the wesley
    emitter to produce this check too" no longer applies and can be
    removed from any future codec-related commit.
