@@ -369,4 +369,4 @@ What remains open:
 
 PR:
 
-- <pending>
+- https://github.com/flyingrobots/jedit/pull/52
