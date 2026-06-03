@@ -5,7 +5,7 @@ import type { WorkspaceModel } from '../app/workspace/model.js';
 import type { WorkspaceMsg } from '../app/workspace/msg.js';
 import { createRaytracerProfilerPort } from './raytracer-profiler.js';
 import { editorFilePort } from './editor-file.js';
-import { createGraftSessionPort } from './graft-mcp-session.js';
+import { createGraftSessionPort } from './graft-api-session.js';
 import { createGraftSourceHighlighter } from './graft-source-highlighter.js';
 import { createTitleSceneLoaderPort } from './title-scene-loader.js';
 import { createInitialModelSnapshot } from './workspace-initial-model-snapshot.js';

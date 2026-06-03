@@ -32,7 +32,7 @@ This document is a progressive, end-to-end technical explanation of `jedit` aime
 21. [Unhappy Paths and Error Handling](#21-unhappy-paths-and-error-handling)
 22. [The GraphQL SDL and Wesley Code Generation](#22-the-graphql-sdl-and-wesley-code-generation)
 23. [The Structural History Path](#23-the-structural-history-path)
-24. [Graft Integration — Structural Intelligence via MCP](#24-graft-integration--structural-intelligence-via-mcp)
+24. [Graft Integration — Structural Intelligence via Direct API](#24-graft-integration--structural-intelligence-via-direct-api)
 25. [Golden Path: Opening and Editing a File](#25-golden-path-opening-and-editing-a-file)
 26. [Golden Path: A Keystroke to Terminal Pixels](#26-golden-path-a-keystroke-to-terminal-pixels)
 27. [Architectural Trade-offs](#27-architectural-trade-offs)
@@ -80,7 +80,7 @@ mindmap
         FakeEchoTransport
         EchoWasmTransport
         FilesystemAdapter
-        GraftMcpSession
+        GraftApiSession
       src/ui
         renderWorkspace
         Vim key bindings
@@ -551,11 +551,11 @@ graph TB
 
 ### The Graft Border
 
-**Where**: `src/adapters/graft-mcp-session.ts`. Graft runs as a separate OS process. `jedit` communicates with it via MCP (Model Context Protocol), which is JSON-RPC over the child process's stdin/stdout.
+**Where**: `src/adapters/graft-api-session.ts`. Graft runs in-process through the `@flyingrobots/graft` direct API. `jedit` keeps Graft behind `GraftSessionPort`, but it does not launch a repo-local MCP child process for editor-local enrichment.
 
-**What crosses the border**: A JSON-RPC request with `{ path, content }` → a response with `{ outline: [...], diffSummary: string }`. The full buffer content is sent on every request (Graft receives a snapshot, not a stream of edits).
+**What crosses the border**: A repo-local API call with `{ path }` → Graft tool-shaped output for `file_outline` and `graft_diff`, decoded into `GraftInfo`. Unsaved edits are not sent to Graft; when the editor buffer is dirty, the drawer reports that it reflects the saved file only.
 
-**Failure mode**: If the Graft process crashes or is slow, the MCP session times out or errors. This produces a `RuntimeIssue` message that `routeRuntimeIssue` converts into a toast notification. The editor continues to work — Graft is enrichment, not load-bearing.
+**Failure mode**: If the Graft API refuses, cannot parse, or fails a structural query, the adapter returns an empty drawer payload with an error line. The editor continues to work — Graft is enrichment, not load-bearing.
 
 ### The Filesystem Border
 
@@ -1352,22 +1352,22 @@ This is a **staged migration pattern**: the generated metadata owns the operatio
 
 ---
 
-## 24. Graft Integration — Structural Intelligence via MCP
+## 24. Graft Integration — Structural Intelligence via Direct API
 
 ```mermaid
 sequenceDiagram
     participant UI as jedit UI
     participant WS as workspace update
     participant Graft as GraftSessionPort
-    participant MCP as graft-mcp-session adapter
-    participant GraftProc as Graft process (separate)
+    participant API as graft-api-session adapter
+    participant GraftLib as @flyingrobots/graft API
 
     UI->>WS: file opened / graft drawer opened
-    WS->>Graft: queryGraftInfo(path, content)
-    Graft->>MCP: sendRequest("graft/outline", { path, content })
-    MCP->>GraftProc: JSON-RPC over stdio
-    GraftProc-->>MCP: { outline: [...], diffSummary: "..." }
-    MCP-->>Graft: GraftInfo
+    WS->>Graft: loadGraftInfo(path)
+    Graft->>API: callTool("file_outline" / "graft_diff", { path })
+    API->>GraftLib: createRepoLocalGraft + callGraftTool
+    GraftLib-->>API: tool-shaped structural output
+    API-->>Graft: GraftInfo
     Graft-->>WS: WorkspaceMessageTypes.GraftInfo message
     WS->>WS: applyGraftInfo(model, info)
 ```
@@ -1581,7 +1581,7 @@ graph TB
             FEW["fake-echo-jedit-optic-transport<br />In-process fake Echo"]
             IECW["installed-jedit-contract-echo-transport<br />Real Echo WASM bridge"]
             FS_ADAPT["filesystem.ts<br />Node fs wrapping"]
-            GRAFT_ADAPT["graft-mcp-session.ts<br />MCP client"]
+            GRAFT_ADAPT["graft-api-session.ts<br />Direct Graft API"]
         end
         subgraph "src/app"
             WR["workspace/runtime.ts<br />init / update / view"]

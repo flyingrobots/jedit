@@ -63,7 +63,6 @@ work should avoid growing them:
 | `src/ui/title-scene.ts` | 496 |
 | `src/app/jedit-contract-runtime.ts` | 495 |
 | `src/app/workspace/editor-editing-helpers.ts` | 476 |
-| `src/adapters/graft-mcp-session.ts` | 466 |
 | `src/ui/title-screen.ts` | 449 |
 | `src/ui/theme-builder.ts` | 428 |
 
@@ -139,11 +138,9 @@ Measured direct host APIs:
 
 | API | Location | Initial classification |
 | :--- | :--- | :--- |
-| `process.env` | `src/adapters/graft-mcp-session.ts:463` | Adapter boundary, acceptable if isolated. |
 | `Date.now` | `src/adapters/workspace-app.ts:45` | Adapter injection default, acceptable. |
 | `Math.random` | `src/adapters/workspace-app.ts:46` | Adapter injection default, acceptable. |
 | `process.env` | `src/adapters/workspace-app.ts:90` | Adapter boundary, should be injected/configured later. |
-| `Date.now` | `src/app/workspace/graft.ts:9` | App/core leak; should use injected clock. |
 | `process.cwd` | `src/main.ts:8` | Process entry point, acceptable. |
 | `process.env` | `src/main.ts:27` | Process entry point, acceptable. |
 | `Date.now` | `src/ui/feedback.ts:75` | UI helper fallback; should be made explicit through caller/capability. |

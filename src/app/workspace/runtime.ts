@@ -1,5 +1,4 @@
 import { createInitialModel, recoverJeditWorkspaceFromWsc } from './init.js';
-import { manageGraftLifecycle } from './graft.js';
 import type { WorkspaceModel } from './model.js';
 import {
   applyNotificationState,
@@ -56,10 +55,7 @@ export const createWorkspaceRuntime = (deps: WorkspaceRuntimeDependencies): Work
         ),
         profiler: createInitialProfilerState(),
       },
-      [
-        manageGraftLifecycle(deps.graftSession.closeConnection, deps.nowMs),
-        deps.createTimeTickCmd(),
-      ],
+      [deps.createTimeTickCmd()],
     ];
   },
   update: (msg, model) => updateWorkspaceRuntime(deps, msg, model),

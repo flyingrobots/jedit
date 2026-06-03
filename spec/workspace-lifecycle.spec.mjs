@@ -3,33 +3,38 @@ import test from 'node:test';
 import {
   importDist,
   mockI18n,
+  mockRuntime,
 } from './workspace-helpers.mjs';
 
-test('graft lifecycle command awaits close connection', async () => {
-  const graft = await importDist('app', 'workspace', 'graft.js');
+test('workspace runtime init does not schedule a Graft sidecar lifecycle command', async () => {
+  const runtimeModule = await importDist('app', 'workspace', 'runtime.js');
   let closed = false;
-  const command = graft.manageGraftLifecycle(async () => {
-    closed = true;
-  });
+  const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime({
+    graftSession: {
+      loadGraftInfo: async () => ({
+        path: '/repo/main.md',
+        relativePath: 'main.md',
+        dirty: false,
+        outlineItems: [],
+        changeLines: [],
+      }),
+      failedGraftInfo: () => ({
+        path: '/repo/main.md',
+        relativePath: 'main.md',
+        dirty: false,
+        outlineItems: [],
+        changeLines: [],
+      }),
+      closeConnection: async () => {
+        closed = true;
+      },
+    },
+  }));
 
-  const result = await command();
+  const [, commands] = runtime.init();
 
-  assert.equal(closed, true);
-  assert.equal(result, undefined);
-});
-
-test('graft lifecycle command returns a runtime issue when close fails', async () => {
-  const graft = await importDist('app', 'workspace', 'graft.js');
-  const command = graft.manageGraftLifecycle(async () => {
-    throw new Error('close failed');
-  }, () => 321);
-
-  const result = await command();
-
-  assert.equal(result.type, 'runtime-issue');
-  assert.equal(result.issue.level, 'error');
-  assert.equal(result.issue.source, 'command');
-  assert.equal(result.issue.atMs, 321);
+  assert.equal(commands.length, 1);
+  assert.equal(closed, false);
 });
 
 test('workspace settings selects a locale through runtime tokens', async () => {

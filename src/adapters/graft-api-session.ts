@@ -1,38 +1,36 @@
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { createRepoLocalGraft } from '@flyingrobots/graft';
 import { execFileSync } from 'node:child_process';
-import { createRequire } from 'node:module';
-import { dirname, isAbsolute, join, relative } from 'node:path';
+import { isAbsolute, relative } from 'node:path';
 import type { FailedGraftInfoRequest, GraftFileRequest, GraftInfo, GraftSessionPort } from '../ports/graft-session.js';
 
-import {
-  GraftInvalidPayloadError,
-  GraftNoTextContentError,
-  GraftPackageNotFoundError,
-  GraftToolExecutionError,
-} from '../domain/errors.js';
+import { GraftInvalidPayloadError } from '../domain/errors.js';
 
-const require = createRequire(import.meta.url);
-
-const GRAFT_PACKAGE_SPECIFIER = '@flyingrobots/graft';
-const GRAFT_PACKAGE_JSON_SPECIFIER = '@flyingrobots/graft/package.json';
-const GRAFT_BIN_PATH = 'bin/graft.js';
-const GRAFT_SERVE_COMMAND = 'serve';
 const GRAFT_FILE_OUTLINE_TOOL = 'file_outline';
 const GRAFT_DIFF_TOOL = 'graft_diff';
 const GRAFT_PROJECTION_REFUSED = 'refused';
 
 type JsonPrimitive = string | number | boolean | null;
 type JsonValue = JsonPrimitive | readonly JsonValue[] | JsonObject;
+type GraftToolName = typeof GRAFT_FILE_OUTLINE_TOOL | typeof GRAFT_DIFF_TOOL;
+type GraftToolArgs = Record<string, JsonValue>;
+type DefaultGraftApiSession = ReturnType<typeof createRepoLocalGraft>;
 
 interface JsonObject {
   readonly [key: string]: JsonValue;
 }
-type JsonValueCandidate = JsonPrimitive | JsonRecordCandidate | readonly JsonValueCandidate[];
-type JsonRecordCandidate = { readonly [key: string]: JsonValueCandidate };
-type CallToolResult = Awaited<ReturnType<Client['callTool']>>;
-type CallToolStructuredContent = CallToolResult['structuredContent'];
-type CallToolStructuredChild = CallToolStructuredContent extends Record<string, infer V> ? V : never;
+
+export interface GraftApiCreateOptions {
+  readonly cwd: string;
+}
+
+export interface GraftApiBindings<TSession = DefaultGraftApiSession> {
+  createRepoLocalGraft(options: GraftApiCreateOptions): TSession;
+  callGraftTool(session: TSession, name: GraftToolName, args: GraftToolArgs): Promise<JsonValue>;
+}
+
+export interface GraftSessionPortOptions<TSession = DefaultGraftApiSession> {
+  readonly api?: GraftApiBindings<TSession>;
+}
 
 export interface GraftOutlineItem {
   readonly kind: string;
@@ -72,10 +70,9 @@ export interface GraftStructDiffResult {
   }>;
 }
 
-interface GraftMcpConnection {
-  readonly workspaceRoot: string;
-  readonly client: Client;
-  readonly transport: StdioClientTransport;
+interface GraftOutlineProjection {
+  readonly outlineItems: readonly GraftOutlineItem[];
+  readonly error?: string;
 }
 
 interface GraftTextBlock {
@@ -83,35 +80,84 @@ interface GraftTextBlock {
   readonly text?: string;
 }
 
-interface GraftCallToolResult {
-  readonly isError?: boolean;
-  readonly structuredContent?: JsonValue;
-  readonly content?: readonly GraftTextBlock[];
+interface GraftToolResult {
+  readonly content: readonly GraftTextBlock[];
 }
 
-interface GraftOutlineProjection {
-  readonly outlineItems: readonly GraftOutlineItem[];
-  readonly error?: string;
+interface GraftApiConnection<TSession> {
+  readonly workspaceRoot: string;
+  readonly session: TSession;
 }
 
-let graftConnection: GraftMcpConnection | undefined;
-let graftConnectionPromise: Promise<GraftMcpConnection> | undefined;
-let graftCliPath: string | undefined;
+interface GraftApiSessionManager {
+  callTool(workspaceRoot: string, name: GraftToolName, args: GraftToolArgs): Promise<JsonValue>;
+  close(): Promise<void>;
+}
 
-export async function loadGraftInfo(request: GraftFileRequest): Promise<GraftInfo> {
+export function createGraftSessionPort<TSession = DefaultGraftApiSession>(
+  options: GraftSessionPortOptions<TSession> = {},
+): GraftSessionPort {
+  const manager = options.api == null
+    ? createGraftApiSessionManager(defaultGraftApiBindings())
+    : createGraftApiSessionManager(options.api);
+
+  return {
+    loadGraftInfo: (request) => loadGraftInfo(request, manager),
+    failedGraftInfo,
+    closeConnection: manager.close,
+  };
+}
+
+function defaultGraftApiBindings(): GraftApiBindings {
+  return {
+    createRepoLocalGraft,
+    async callGraftTool(session, name, args) {
+      return parseGraftToolResult(await session.callTool(name, args));
+    },
+  };
+}
+
+function createGraftApiSessionManager<TSession>(api: GraftApiBindings<TSession>): GraftApiSessionManager {
+  let connection: GraftApiConnection<TSession> | undefined;
+
+  return {
+    async callTool(workspaceRoot, name, args) {
+      const activeConnection = connection?.workspaceRoot === workspaceRoot
+        ? connection
+        : createConnection(api, workspaceRoot);
+      connection = activeConnection;
+      return api.callGraftTool(activeConnection.session, name, args);
+    },
+    async close() {
+      connection = undefined;
+    },
+  };
+}
+
+function createConnection<TSession>(
+  api: GraftApiBindings<TSession>,
+  workspaceRoot: string,
+): GraftApiConnection<TSession> {
+  return {
+    workspaceRoot,
+    session: api.createRepoLocalGraft({ cwd: workspaceRoot }),
+  };
+}
+
+async function loadGraftInfo(request: GraftFileRequest, manager: GraftApiSessionManager): Promise<GraftInfo> {
   const { workspaceRoot, filePath, dirty } = request;
   const relativePath = relative(workspaceRoot, filePath).replace(/\\/g, '/');
   if (relativePath.startsWith('..') || isAbsolute(relativePath)) {
     return outsideWorkspaceGraftInfo({ filePath, dirty });
   }
 
-  const outline = await loadGraftOutline(workspaceRoot, relativePath);
+  const outline = await loadGraftOutline(manager, workspaceRoot, relativePath);
   return {
     path: filePath,
     relativePath,
     dirty,
     outlineItems: outline.outlineItems,
-    changeLines: await loadGraftChanges(workspaceRoot, relativePath),
+    changeLines: await loadGraftChanges(manager, workspaceRoot, relativePath),
     ...(dirty ? { notice: 'saved file only; unsaved edits are not reflected' } : {}),
     ...(outline.error != null ? { error: outline.error } : {}),
   };
@@ -128,9 +174,13 @@ function outsideWorkspaceGraftInfo(request: Pick<GraftFileRequest, 'filePath' | 
   };
 }
 
-async function loadGraftOutline(workspaceRoot: string, relativePath: string): Promise<GraftOutlineProjection> {
+async function loadGraftOutline(
+  manager: GraftApiSessionManager,
+  workspaceRoot: string,
+  relativePath: string,
+): Promise<GraftOutlineProjection> {
   try {
-    const outline = decodeGraftFileOutlineResult(await callGraftTool(
+    const outline = decodeGraftFileOutlineResult(await manager.callTool(
       workspaceRoot,
       GRAFT_FILE_OUTLINE_TOOL,
       { path: relativePath },
@@ -166,32 +216,17 @@ export function failedGraftInfo(request: FailedGraftInfoRequest): GraftInfo {
   };
 }
 
-export async function closeGraftConnection(): Promise<void> {
-  const connection = graftConnection;
-  graftConnection = undefined;
-  if (connection == null) {
-    return;
-  }
-
-  await connection.client.close().catch(() => undefined);
-  await connection.transport.close().catch(() => undefined);
-}
-
-export function createGraftSessionPort(): GraftSessionPort {
-  return {
-    loadGraftInfo,
-    failedGraftInfo,
-    closeConnection: closeGraftConnection,
-  };
-}
-
-async function loadGraftChanges(workspaceRoot: string, relativePath: string): Promise<readonly string[]> {
+async function loadGraftChanges(
+  manager: GraftApiSessionManager,
+  workspaceRoot: string,
+  relativePath: string,
+): Promise<readonly string[]> {
   if (!workspaceHasHead(workspaceRoot)) {
     return ['no git baseline yet'];
   }
 
   try {
-    const diff = decodeGraftStructDiffResult(await callGraftTool(
+    const diff = decodeGraftStructDiffResult(await manager.callTool(
       workspaceRoot,
       GRAFT_DIFF_TOOL,
       { path: relativePath },
@@ -227,157 +262,58 @@ function workspaceHasHead(workspaceRoot: string): boolean {
   }
 }
 
-async function ensureGraftConnection(workspaceRoot: string): Promise<GraftMcpConnection> {
-  const reusable = await reusableGraftConnection(workspaceRoot);
-  if (reusable != null) {
-    return reusable;
-  }
-
-  await closeStaleGraftConnection();
-  graftConnectionPromise = openGraftConnection(workspaceRoot);
-  return graftConnectionPromise;
-}
-
-async function reusableGraftConnection(workspaceRoot: string): Promise<GraftMcpConnection | undefined> {
-  if (graftConnection?.workspaceRoot === workspaceRoot) {
-    return graftConnection;
-  }
-  if (graftConnectionPromise == null) {
-    return undefined;
-  }
-  const pending = await graftConnectionPromise;
-  return pending.workspaceRoot === workspaceRoot ? pending : undefined;
-}
-
-async function closeStaleGraftConnection(): Promise<void> {
-  if (graftConnection != null) {
-    await closeGraftConnection();
-  }
-}
-
-async function openGraftConnection(workspaceRoot: string): Promise<GraftMcpConnection> {
-  const transport = createGraftTransport(workspaceRoot);
-  const client = new Client({ name: 'jedit', version: '0.0.0' });
-  try {
-    await client.connect(transport);
-    graftConnection = { workspaceRoot, client, transport };
-    return graftConnection;
-  } catch (cause) {
-    await transport.close().catch(() => undefined);
-    throw cause;
-  } finally {
-    graftConnectionPromise = undefined;
-  }
-}
-
-function createGraftTransport(workspaceRoot: string): StdioClientTransport {
-  return new StdioClientTransport({
-    command: process.execPath,
-    args: [resolveGraftCliPath(), GRAFT_SERVE_COMMAND],
-    cwd: workspaceRoot,
-    env: processEnvRecord(),
-    stderr: 'pipe',
-  });
-}
-
-function resolveGraftCliPath(): string {
-  if (graftCliPath != null) {
-    return graftCliPath;
-  }
-
-  try {
-    graftCliPath = join(dirname(require.resolve(GRAFT_PACKAGE_JSON_SPECIFIER)), GRAFT_BIN_PATH);
-    return graftCliPath;
-  } catch (cause) {
-    throw new GraftPackageNotFoundError(`${GRAFT_PACKAGE_SPECIFIER} is not installed: ${cause instanceof Error ? cause.message : String(cause)}`);
-  }
-}
-
-async function callGraftTool(
-  workspaceRoot: string,
-  name: string,
-  args: Record<string, string | number | boolean | null>,
-): Promise<JsonValue> {
-  const connection = await ensureGraftConnection(workspaceRoot);
-  const rawResult = await connection.client.callTool({
-    name,
-    arguments: args,
-  });
-  const result = {
-    ...rawResult,
-    structuredContent: normalizeStructuredContent(rawResult.structuredContent),
-  };
-
-  const isError = 'isError' in rawResult && rawResult.isError === true;
-  if (isError) {
-    throw new GraftToolExecutionError(parseGraftErrorResult(result));
-  }
-
-  return parseGraftToolResult(result);
-}
-
-function normalizeStructuredContent(value: CallToolStructuredContent): JsonValue | undefined {
-  if (value === undefined) {
-    return undefined;
-  }
-
-  if (isJsonValue(value)) {
-    return value;
-  }
-
-  throw new GraftToolExecutionError('Invalid structuredContent returned by graft tool.');
-}
-
-function isJsonValue(
-  value: JsonValue | CallToolStructuredContent | readonly (JsonValue | CallToolStructuredChild)[],
-): value is JsonValue {
-  if (value === null) {
-    return true;
-  }
-  if (isJsonPrimitiveValue(value)) {
-    return true;
-  }
-  if (Array.isArray(value)) {
-    return value.every(isJsonValue);
-  }
-  return isJsonObjectValue(value) && Object.values(value).every(isJsonValue);
-}
-
-function isJsonPrimitiveValue(value: JsonValue | CallToolStructuredContent | readonly (JsonValue | CallToolStructuredChild)[]): value is JsonPrimitive {
-  return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
-}
-
-function isJsonObjectValue(
-  value: JsonValue | CallToolStructuredContent | readonly (JsonValue | CallToolStructuredChild)[],
-): value is JsonObject {
-  return value != null && typeof value === 'object' && !Array.isArray(value);
-}
-
-function parseGraftErrorResult(result: GraftCallToolResult): string {
-  if (result.structuredContent !== undefined) {
-    return String(result.structuredContent);
-  }
-
-  return result.content
-    ?.find((block) => block.type === 'text')
-    ?.text ?? 'Graft tool returned an error';
-}
-
-function parseGraftToolResult(result: GraftCallToolResult): JsonValue {
-  if (result.structuredContent !== undefined) {
-    return result.structuredContent;
-  }
-
+function parseGraftToolResult(result: GraftToolResult): JsonValue {
   const text = result.content
-    ?.find((block) => block.type === 'text')
+    .find((block) => block.type === 'text')
     ?.text;
 
   if (text == null) {
-    throw new GraftNoTextContentError('No text content in MCP result');
+    throw new GraftInvalidPayloadError('Graft tool result did not contain a text payload');
   }
 
-  const parsed: JsonValue = JSON.parse(text);
-  return parsed;
+  return parseJsonText(text);
+}
+
+function parseJsonText(text: string): JsonValue {
+  try {
+    return parseJsonValue(JSON.parse(text), 'Graft tool result');
+  } catch (cause) {
+    if (cause instanceof GraftInvalidPayloadError) {
+      throw cause;
+    }
+    throw new GraftInvalidPayloadError(`Graft tool result must be JSON: ${cause instanceof Error ? cause.message : String(cause)}`);
+  }
+}
+
+function parseJsonValue(value: JsonValue | undefined, path: string): JsonValue {
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'number') {
+    return parseJsonNumber(value, path);
+  }
+  if (Array.isArray(value)) {
+    return value.map((entry, index) => parseJsonValue(entry, `${path}[${String(index)}]`));
+  }
+  if (isJsonObject(value)) {
+    return parseJsonObjectValue(value, path);
+  }
+  throw new GraftInvalidPayloadError(`${path} must be JSON`);
+}
+
+function parseJsonNumber(value: number, path: string): number {
+  if (!Number.isFinite(value)) {
+    throw new GraftInvalidPayloadError(`${path} must be a finite number`);
+  }
+  return value;
+}
+
+function parseJsonObjectValue(value: JsonObject, path: string): JsonObject {
+  const result: Record<string, JsonValue> = {};
+  for (const [key, child] of Object.entries(value)) {
+    result[key] = parseJsonValue(child, `${path}.${key}`);
+  }
+  return result;
 }
 
 export function decodeGraftFileOutlineResult(value: JsonValue): GraftFileOutlineResult {
@@ -466,10 +402,4 @@ function asNumber(value: JsonValue | undefined, path: string): number {
     throw new GraftInvalidPayloadError(`${path} must be a finite number`);
   }
   return value;
-}
-
-function processEnvRecord(): Record<string, string> {
-  return Object.fromEntries(
-    Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined),
-  );
 }
