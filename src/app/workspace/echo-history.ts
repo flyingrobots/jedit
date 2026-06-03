@@ -21,12 +21,17 @@ const TITLE_KEY = 'history.title';
 const EMPTY_MESSAGE_KEY = 'history.empty';
 const HEADER_KEY = 'history.header';
 const TICK_PATTERN = /(?:tick|receipt):(\d+)/;
+// Ten-row jumps mirror the compact drawer body height on common terminal sizes.
 const HISTORY_PAGE_STEP = 10;
-// Compact table cells keep the History drawer readable beside editor content.
+// Three digits keep the newest sequence visible without widening the drawer.
 const SEQUENCE_CELL_WIDTH = 3;
+// Five digits cover short tick ids while preserving room for summary text.
 const TICK_CELL_WIDTH = 5;
+// Ten cells fit the longest authored kind label, "checkpoint".
 const KIND_CELL_WIDTH = 10;
+// Twelve cells fit the longest authored status label, "checkpointed".
 const STATUS_CELL_WIDTH = 12;
+// Evidence ids are intentionally truncated to keep the table scannable.
 const EVIDENCE_CELL_WIDTH = 16;
 
 export const EchoHistoryEntryKinds = Object.freeze({
