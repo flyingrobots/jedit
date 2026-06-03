@@ -67,11 +67,10 @@ Initial file rows should be useful with current state and cheap to compute:
 - row labels that distinguish directories from files without exposing host
   adapter internals.
 
-The first implementation may render the input as local UI state without
-executing open/search behavior. Typing into the input filters the visible
-current-directory rows and changes only modal state. Opening a selected file can
-land in a later slice if it needs to share the production file-open command
-path.
+The first implementation renders the input as local UI state, filters visible
+current-directory rows, and opens selected file rows through the existing
+production file-open command path. Directory rows reuse the existing file-tree
+directory transition path and keep the modal open in the new directory.
 
 ## Small Screens
 
@@ -108,7 +107,7 @@ While intro is active:
 - `enter`: skip intro and open startup modal.
 - `esc`: skip intro and open startup modal.
 
-While startup modal is open:
+While the startup modal is open:
 
 - printable keys append to the input.
 - `backspace` deletes from the input.
@@ -117,8 +116,8 @@ While startup modal is open:
 - `k`, `up`: move file selection up when the input is empty or the
   modal is in list navigation posture.
 - `esc`: close the modal.
-- `enter`: accepts the input or selected file only after a later slice adds
-  command execution; until then it is intentionally inert.
+- `enter`: opens the selected file through the existing production open path,
+  or enters the selected directory while keeping the modal open.
 
 ## Evidence
 
@@ -137,6 +136,7 @@ Focused witnesses:
 - workspace key spec for Enter/Escape skip before modal;
 - workspace render spec for modal input and current-directory files;
 - workspace key spec for input editing and Escape close;
+- workspace key spec for selected file open and selected directory traversal;
 - small-screen spec proving the modal does not override the minimum-terminal
   notice.
 
@@ -144,19 +144,19 @@ Focused witnesses:
 
 - [x] Slice 1: retime the pure title presentation sequence.
 - [x] Slice 2: pin the new logo/sheens timeline with focused title specs.
-- [ ] Slice 3: add startup-flow state to the workspace model.
-- [ ] Slice 4: derive current-directory modal rows from `WorkspaceModel.entries`.
-- [ ] Slice 5: render the startup modal shell with input and file rows.
-- [ ] Slice 6: integrate the modal as a workspace overlay above the title scene.
-- [ ] Slice 7: preserve the small-terminal notice as the highest-priority view.
-- [ ] Slice 8: skip the intro with Enter or Escape before other title keys.
-- [ ] Slice 9: auto-complete the intro and open the modal at the timeline end.
-- [ ] Slice 10: edit modal input with printable keys and Backspace.
-- [ ] Slice 11: filter file rows from the modal input.
-- [ ] Slice 12: navigate modal file rows with arrows and Vim-shaped keys.
-- [ ] Slice 13: open the selected file through the existing production open path.
-- [ ] Slice 14: handle directories, empty directories, and no-match states.
-- [ ] Slice 15: close quality gaps, document follow-on ideas/debt, and refresh the PR.
+- [x] Slice 3: add startup-flow state to the workspace model.
+- [x] Slice 4: derive current-directory modal rows from `WorkspaceModel.entries`.
+- [x] Slice 5: render the startup modal shell with input and file rows.
+- [x] Slice 6: integrate the modal as a workspace overlay above the title scene.
+- [x] Slice 7: preserve the small-terminal notice as the highest-priority view.
+- [x] Slice 8: skip the intro with Enter or Escape before other title keys.
+- [x] Slice 9: auto-complete the intro and open the modal at the timeline end.
+- [x] Slice 10: edit modal input with printable keys and Backspace.
+- [x] Slice 11: filter file rows from the modal input.
+- [x] Slice 12: navigate modal file rows with arrows and Vim-shaped keys.
+- [x] Slice 13: open the selected file through the existing production open path.
+- [x] Slice 14: handle directories, empty directories, and no-match states.
+- [x] Slice 15: close quality gaps, document follow-on ideas/debt, and refresh the PR.
 
 ## Non-Goals
 

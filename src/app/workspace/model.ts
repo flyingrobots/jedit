@@ -18,8 +18,9 @@ import type { WorkspaceMsg } from './msg.js';
 import type { ViewMode } from './view-mode.js';
 import type { WorkspaceTextAuthority } from './workspace-text-authority.js';
 import type { EchoHistoryEntry } from './echo-history.js';
+import type { StartupFileModalState } from './startup-file-modal.js';
 
-export interface WorkspaceModel {
+export interface WorkspaceModel extends StartupFileModalState {
   readonly i18n: I18nPort;
   readonly workspaceRoot: string;
   readonly cwd: string;

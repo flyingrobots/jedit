@@ -21,7 +21,12 @@ import {
   type ProfilerMsg,
 } from '../raytracer-profiler.js';
 import { WorkspaceInputMessageTypes, WorkspaceMessageTypes, type WorkspaceMsg } from './msg.js';
-import { applyDrawerProgress, applyGraftInfo, applyWorkspaceTextMessage } from './workspace-state-reducers.js';
+import {
+  applyDrawerProgress,
+  applyGraftInfo,
+  applyStartupIntroTime,
+  applyWorkspaceTextMessage,
+} from './workspace-state-reducers.js';
 import type {
   WorkspaceRuntime,
   WorkspaceRuntimeDependencies,
@@ -186,13 +191,13 @@ function updateTimeTickMessage(
 ): WorkspaceRuntimeResult {
   const now = deps.nowMs();
   const frameTime = now - model.lastFrameMs;
-  const nextModel = {
+  const nextModel = applyStartupIntroTime({
     ...model,
     time,
     lastFrameMs: now,
     frameTimeMs: frameTime,
     frameTimeHistory: [...model.frameTimeHistory, frameTime].slice(-FRAME_TIME_HISTORY_SIZE),
-  };
+  });
   const profilerStream = streamProfilerFrame(nextModel.profiler, {
     time,
     frameTimeMs: frameTime,

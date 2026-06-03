@@ -15,6 +15,7 @@ import { TEXT_RUNTIME_PROFILE_ECHO_HOSTED } from '../text-runtime-profile.js';
 import type { JeditWscStartupRecoveryResult } from '../../ports/jedit-wsc-startup-recovery.js';
 import { unrecoveredJeditWscStartupRecovery } from '../jedit-wsc-startup-recovery.js';
 import { createWorkspaceTextAuthority } from './workspace-text-authority.js';
+import { initialStartupFileModalState } from './startup-file-modal.js';
 
 export { recoverJeditWorkspaceFromWsc } from '../jedit-wsc-startup-recovery.js';
 
@@ -54,6 +55,7 @@ export function createInitialModel(
     viewMode: INITIAL_VIEW_MODE,
     focusPane: INITIAL_FOCUS_PANE,
     ...initialDrawerState(),
+    ...initialStartupFileModalState(),
     ...createFeedbackState<WorkspaceMsg>(),
     ...initialShellState(),
     ...initialSettingsState(),
