@@ -1,5 +1,5 @@
 import type { TitleSceneEnvironment } from './title-scene-environment.js';
-import type { TitleSceneMaterialColors } from './title-screen.js';
+import type { TitleSceneMaterialColors } from './title-scene-material-colors.js';
 import type { TitleSceneCameraPlacement, TitleSceneObject, TitleSceneVector3 } from './title-scene.js';
 
 export interface TitleSceneSampleOptions {

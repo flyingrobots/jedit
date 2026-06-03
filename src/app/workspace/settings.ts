@@ -1,5 +1,6 @@
 import {
   jeditSettingsRows,
+  type JeditSettingsLocaleSelection,
   type JeditSettingsHandlers,
 } from '../settings-session.js';
 import { isWorkspaceMarkdownFile } from './editor-session.js';
@@ -50,10 +51,14 @@ export const workspaceSettingsHandlers: JeditSettingsHandlers<WorkspaceModel, Wo
     preview = { ...model, viewMode: nextMode };
     return [preview, []];
   },
-  toggleLocale: (model) => {
-    const nextLocale = model.i18n.locale === WorkspaceLocales.Default ? WorkspaceLocales.Alternate : WorkspaceLocales.Default;
-    const nextDirection = nextLocale === WorkspaceLocales.Alternate ? WorkspaceTextDirections.Rtl : WorkspaceTextDirections.Ltr;
-    model.i18n.setLocale(nextLocale, nextDirection);
-    return [model, []];
+  selectLocale: (model, locale) => {
+    return [applyWorkspaceLocale(model, locale), []];
   },
 };
+
+function applyWorkspaceLocale(model: WorkspaceModel, locale: JeditSettingsLocaleSelection): WorkspaceModel {
+  return {
+    ...model,
+    i18n: model.i18n.withLocale(locale.locale),
+  };
+}

@@ -2,10 +2,13 @@ import { shouldClearPendingNormalOnPaneChange, type FocusCycleState, type FocusP
 import type { WorkspaceModel } from './model.js';
 import type { EditorState } from './editor/model.js';
 
-export function focusCycleState(model: Pick<WorkspaceModel, 'fileDrawerOpen' | 'graftDrawerOpen' | 'editor' | 'focusPane'>): FocusCycleState {
+export function focusCycleState(
+  model: Pick<WorkspaceModel, 'fileDrawerOpen' | 'graftDrawerOpen' | 'historyDrawerOpen' | 'editor' | 'focusPane'>,
+): FocusCycleState {
   return {
     fileDrawerOpen: model.fileDrawerOpen,
     graftDrawerOpen: model.graftDrawerOpen,
+    historyDrawerOpen: model.historyDrawerOpen,
     hasEditor: model.editor != null,
     focusPane: model.focusPane,
   };

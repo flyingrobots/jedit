@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
+import { REPO_ROOT, ensureDistBuilt } from './dist-helpers.mjs';
 
-const REPO_ROOT = process.cwd();
 const TITLE_SCREEN_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-screen.js');
 const TITLE_LOGO_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-logo.js');
+const TITLE_SCENE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-scene.js');
+const TITLE_SCENE_ENVIRONMENT_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-scene-environment.js');
 const ASCII_CANVAS_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'averaging-ascii-canvas.js');
 const BRAILLE_CANVAS_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'averaging-braille-canvas.js');
 const THEMES_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'jedit-themes.js');
@@ -24,16 +25,25 @@ const COMPACT_TITLE_HEIGHT = 12;
 const COMPACT_TITLE_TEXT = 'jedit';
 const TITLE_LOGO_LETTER_COUNT = 5;
 const TITLE_LOGO_MOTION_TIME = 0.7;
+const TITLE_SEQUENCE_START_TIME = 0;
+const TITLE_LOGO_BEFORE_TIME = 1;
+const TITLE_LOGO_VISIBLE_TIME = 2;
+const TITLE_LOGO_SHEEN_EARLY_TIME = 3.25;
+const INTRO_LOGOS_STILL_VISIBLE_TIME = 6.5;
+const INTRO_LOGOS_GONE_TIME = 7.25;
+const POST_INTRO_SCENE_TIME = INTRO_LOGOS_GONE_TIME;
 const TITLE_LOGO_SMOOTH_FRAME_TIME = 0.74;
 const TITLE_LOGO_NEXT_FRAME_TIME = TITLE_LOGO_SMOOTH_FRAME_TIME + (1 / 60);
 const TITLE_LOGO_MAX_FRAME_OFFSET_DELTA = 0.02;
 const TITLE_LOGO_ANIMATION_PERF_FRAMES = 1200;
 const TITLE_LOGO_ANIMATION_PERF_BUDGET_MS = 240;
+const MIN_READABLE_CAMERA_DRIFT_RATE = 0.02;
 const FLYINGROBOTS_LOGO_MIN_VISIBLE_CELLS = 24;
 const FLYINGROBOTS_LOGO_MIN_SURFACE_CONTRAST = 24;
 const FLYINGROBOTS_LOGO_MAX_VERTICAL_RATIO = 0.5;
 const BRAILLE_BLANK = '⠀';
 const REFLECTIVE_HIGHLIGHT_LUMINANCE = 190;
+const PRESENTS_TEXT = 'PRESENTS';
 const FIXED_TITLE_CAMERA_ANGLE = 0.25;
 let titleModulesPromise;
 
@@ -50,16 +60,13 @@ async function loadTitleModules() {
     return titleModulesPromise;
   }
 
-  const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
-    cwd: REPO_ROOT,
-    encoding: 'utf8',
-  });
-
-  assert.equal(build.status, 0, build.stderr || build.stdout);
+  await ensureDistBuilt();
 
   titleModulesPromise = Promise.resolve({
     title: await import(pathToFileURL(TITLE_SCREEN_PATH).href),
     titleLogo: await import(pathToFileURL(TITLE_LOGO_PATH).href),
+    titleScene: await import(pathToFileURL(TITLE_SCENE_PATH).href),
+    titleSceneEnvironment: await import(pathToFileURL(TITLE_SCENE_ENVIRONMENT_PATH).href),
     asciiCanvas: await import(pathToFileURL(ASCII_CANVAS_PATH).href),
     brailleCanvas: await import(pathToFileURL(BRAILLE_CANVAS_PATH).href),
     themes: await import(pathToFileURL(THEMES_PATH).href),
@@ -176,7 +183,7 @@ test('title logo falls back to compact text when bitmap compression would become
   const { title, titleLogo, themes, style } = await loadTitleModules();
   const bounds = title.titleLogoCellBounds(COMPACT_TITLE_WIDTH, COMPACT_TITLE_HEIGHT);
   const theme = themes.availableJeditThemes()[0];
-  const surface = title.renderTitleScreen(COMPACT_TITLE_WIDTH, COMPACT_TITLE_HEIGHT, 0, theme, fixedTitleRenderOptions());
+  const surface = title.renderTitleScreen(COMPACT_TITLE_WIDTH, COMPACT_TITLE_HEIGHT, TITLE_LOGO_VISIBLE_TIME, theme, fixedTitleRenderOptions());
   const logoCells = cells(surface).filter((cell) => cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold));
 
   assert.equal(bounds.renderMode, titleLogo.TITLE_LOGO_RENDER_MODE.CompactText);
@@ -188,7 +195,7 @@ test('title logo falls back to compact text when bitmap compression would become
 test('title screen renders the logo as a non-Braille themed glyph layer', async () => {
   const { title, themes, style } = await loadTitleModules();
   const theme = themes.availableJeditThemes()[0];
-  const surface = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, fixedTitleRenderOptions());
+  const surface = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, TITLE_LOGO_VISIBLE_TIME, theme, fixedTitleRenderOptions());
   const logoCells = cells(surface).filter((cell) => (
     cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold)
     && !isBraille(cell.char)
@@ -203,8 +210,8 @@ test('title screen renders the logo as a non-Braille themed glyph layer', async 
 test('title screen animates logo glyph positions and color over time', async () => {
   const { title, themes, style } = await loadTitleModules();
   const theme = themes.availableJeditThemes()[0];
-  const first = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, fixedTitleRenderOptions());
-  const later = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, TITLE_LOGO_MOTION_TIME, theme, fixedTitleRenderOptions());
+  const first = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, TITLE_LOGO_VISIBLE_TIME, theme, fixedTitleRenderOptions());
+  const later = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, TITLE_LOGO_VISIBLE_TIME + TITLE_LOGO_MOTION_TIME, theme, fixedTitleRenderOptions());
   const firstLogo = logoCellKeys(first, style);
   const laterLogo = logoCellKeys(later, style);
 
@@ -216,12 +223,20 @@ test('title screen animates logo glyph positions and color over time', async () 
 test('title screen incorporates the Flying Robots source logo as a bright Braille band', async () => {
   const { title, themes, style } = await loadTitleModules();
   const theme = themes.availableJeditThemes()[0];
-  const surface = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, fixedTitleRenderOptions());
+  const surface = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, TITLE_SEQUENCE_START_TIME, theme, fixedTitleRenderOptions());
   const bounds = title.flyingRobotsLogoCellBounds(TITLE_WIDTH, TITLE_HEIGHT);
   const sourceChars = flyingRobotsLogoInkChars();
   assert.ok(bounds != null);
 
-  const logoCells = flyingRobotsLogoCells(surface, bounds, style);
+  const logoCells = positionedCells(surface).filter(({ x, y, cell }) => (
+    x >= bounds.x
+    && x < bounds.x + bounds.width
+    && y >= bounds.y
+    && y < bounds.y + bounds.height
+    && cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold)
+    && !cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Dim)
+    && isBraille(cell.char)
+  ));
 
   assert.ok(logoCells.length > FLYINGROBOTS_LOGO_MIN_VISIBLE_CELLS);
   assert.ok(logoCells.some(({ cell }) => sourceChars.has(cell.char)));
@@ -229,10 +244,54 @@ test('title screen incorporates the Flying Robots source logo as a bright Braill
   assert.ok(Math.max(...logoCells.map(({ y }) => y)) < TITLE_HEIGHT * FLYINGROBOTS_LOGO_MAX_VERTICAL_RATIO);
 });
 
+test('title presentation sequence gates both logo layers on the requested timeline', async () => {
+  const { title, themes, style } = await loadTitleModules();
+  const theme = themes.availableJeditThemes()[0];
+  const start = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, TITLE_SEQUENCE_START_TIME, theme, fixedTitleRenderOptions());
+  const beforeTitle = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, TITLE_LOGO_BEFORE_TIME, theme, fixedTitleRenderOptions());
+  const titleVisible = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, TITLE_LOGO_VISIBLE_TIME, theme, fixedTitleRenderOptions());
+  const stillVisible = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, INTRO_LOGOS_STILL_VISIBLE_TIME, theme, fixedTitleRenderOptions());
+  const gone = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, INTRO_LOGOS_GONE_TIME, theme, fixedTitleRenderOptions());
+
+  assert.ok(flyingRobotsLogoCells(start, title, style).length > FLYINGROBOTS_LOGO_MIN_VISIBLE_CELLS);
+  assert.equal(surfaceContainsText(start, PRESENTS_TEXT), true);
+  assert.equal(titleLogoCells(start, style).length, 0);
+  assert.equal(titleLogoCells(beforeTitle, style).length, 0);
+  assert.ok(flyingRobotsLogoCells(beforeTitle, title, style).length > FLYINGROBOTS_LOGO_MIN_VISIBLE_CELLS);
+  assert.ok(titleLogoCells(titleVisible, style).length > 12);
+  assert.ok(flyingRobotsLogoCells(titleVisible, title, style).length > FLYINGROBOTS_LOGO_MIN_VISIBLE_CELLS);
+  assert.ok(titleLogoCells(stillVisible, style).length > 12);
+  assert.ok(flyingRobotsLogoCells(stillVisible, title, style).length > FLYINGROBOTS_LOGO_MIN_VISIBLE_CELLS);
+  assert.equal(flyingRobotsLogoCells(gone, title, style).length, 0);
+  assert.equal(surfaceContainsText(gone, PRESENTS_TEXT), false);
+  assert.equal(titleLogoCells(gone, style).length, 0);
+});
+
+test('title logo sheen sweep follows the local text direction', async () => {
+  const { title, themes, style } = await loadTitleModules();
+  const theme = themes.availableJeditThemes()[0];
+  const ltr = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, TITLE_LOGO_SHEEN_EARLY_TIME, theme, fixedTitleRenderOptions({
+    textDirection: 'ltr',
+  }));
+  const rtl = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, TITLE_LOGO_SHEEN_EARLY_TIME, theme, fixedTitleRenderOptions({
+    textDirection: 'rtl',
+  }));
+
+  assert.ok(brightestTitleLogoColumn(ltr, style) < TITLE_WIDTH / 2);
+  assert.ok(brightestTitleLogoColumn(rtl, style) > TITLE_WIDTH / 2);
+  assert.notDeepEqual(logoCellKeys(ltr, style), logoCellKeys(rtl, style));
+});
+
+test('title camera ambient drift is fast enough to read as orbiting', async () => {
+  const { title } = await loadTitleModules();
+
+  assert.ok(title.TITLE_CAMERA_DRIFT_RATE >= MIN_READABLE_CAMERA_DRIFT_RATE);
+});
+
 test('title scene uses Braille subpixels with averaged material colors', async () => {
   const { title, themes, style } = await loadTitleModules();
   const theme = themes.availableJeditThemes()[0];
-  const surface = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, fixedTitleRenderOptions());
+  const surface = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, POST_INTRO_SCENE_TIME, theme, fixedTitleRenderOptions());
   const sceneCells = cells(surface).filter((cell) => !cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold));
   const visibleSceneChars = new Set(sceneCells.map((cell) => cell.char).filter((char) => char !== ' '));
 
@@ -244,7 +303,7 @@ test('title scene uses Braille subpixels with averaged material colors', async (
 test('title scene can render as density-mapped ASCII instead of Braille', async () => {
   const { title, themes, style } = await loadTitleModules();
   const theme = themes.availableJeditThemes()[0];
-  const surface = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, fixedTitleRenderOptions({
+  const surface = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, POST_INTRO_SCENE_TIME, theme, fixedTitleRenderOptions({
     renderMode: title.TITLE_RENDER_MODE.Ascii,
     asciiPalette: title.TITLE_ASCII_PALETTE.Dense,
   }));
@@ -260,15 +319,15 @@ test('title scene can render as density-mapped ASCII instead of Braille', async 
 test('title scene ASCII palettes produce distinct glyph vocabularies', async () => {
   const { title, themes, style } = await loadTitleModules();
   const theme = themes.availableJeditThemes()[0];
-  const dense = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, fixedTitleRenderOptions({
+  const dense = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, POST_INTRO_SCENE_TIME, theme, fixedTitleRenderOptions({
     renderMode: title.TITLE_RENDER_MODE.Ascii,
     asciiPalette: title.TITLE_ASCII_PALETTE.Dense,
   }));
-  const blocks = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, fixedTitleRenderOptions({
+  const blocks = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, POST_INTRO_SCENE_TIME, theme, fixedTitleRenderOptions({
     renderMode: title.TITLE_RENDER_MODE.Ascii,
     asciiPalette: title.TITLE_ASCII_PALETTE.Blocks,
   }));
-  const dither = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, fixedTitleRenderOptions({
+  const dither = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, POST_INTRO_SCENE_TIME, theme, fixedTitleRenderOptions({
     renderMode: title.TITLE_RENDER_MODE.Ascii,
     asciiPalette: title.TITLE_ASCII_PALETTE.Dither,
   }));
@@ -304,7 +363,7 @@ test('ASCII canvas colors inactive samples as background instead of inactive for
 test('title scene keeps reflective highlights on sphere materials', async () => {
   const { title, themes, style } = await loadTitleModules();
   const theme = themes.availableJeditThemes()[0];
-  const surface = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, 0, theme, fixedTitleRenderOptions());
+  const surface = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, POST_INTRO_SCENE_TIME, theme, fixedTitleRenderOptions());
   const sceneCells = cells(surface).filter((cell) => (
     !cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold)
     && isBraille(cell.char)
@@ -353,28 +412,50 @@ function cellColorKey(cell) {
   return cell.fg ?? cell.fgRGB?.join(',') ?? '';
 }
 
+function titleLogoCells(surface, style) {
+  return positionedCells(surface)
+    .filter(({ cell }) => (
+      cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold)
+      && !isBraille(cell.char)
+    ));
+}
+
 function logoCellKeys(surface, style) {
   return titleLogoCells(surface, style)
     .map(({ x, y, cell }) => `${x}:${y}:${cell.char}:${cellColorKey(cell)}`);
 }
 
-function titleLogoCells(surface, style) {
-  return positionedCells(surface).filter(({ cell }) => (
-    cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold)
-    && !isBraille(cell.char)
-  ));
-}
-
-function flyingRobotsLogoCells(surface, bounds, style) {
+function flyingRobotsLogoCells(surface, title, style) {
+  const bounds = title.flyingRobotsLogoCellBounds(surface.width, surface.height);
+  assert.ok(bounds != null);
   return positionedCells(surface).filter(({ x, y, cell }) => (
     x >= bounds.x
     && x < bounds.x + bounds.width
     && y >= bounds.y
     && y < bounds.y + bounds.height
     && cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Bold)
-    && !cell.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Dim)
     && isBraille(cell.char)
   ));
+}
+
+function surfaceContainsText(surface, text) {
+  for (let y = 0; y < surface.height; y += 1) {
+    const row = Array.from({ length: surface.width }, (_, x) => surface.get(x, y).char).join('');
+    if (row.includes(text)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function brightestTitleLogoColumn(surface, style) {
+  const titleCells = titleLogoCells(surface, style);
+  assert.ok(titleCells.length > 0);
+  return titleCells
+    .map(({ x, cell }) => ({ x, luminance: luminance(cell.fgRGB) }))
+    .reduce((brightest, candidate) => (
+      candidate.luminance > brightest.luminance ? candidate : brightest
+    )).x;
 }
 
 function flyingRobotsLogoInkChars() {

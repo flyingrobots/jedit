@@ -1,5 +1,12 @@
 import type { EditorState } from './editor/model.js';
-import { byteOffsetForTextPosition, nextByteOffset, previousByteOffset } from './workspace-text-position.js';
+import {
+  byteOffsetForTextPosition,
+  nextByteOffset,
+  positionAfterInsertedText,
+  previousByteOffset,
+  previousTextPosition,
+  type TextPosition,
+} from './workspace-text-position.js';
 
 const PLAN_INSERT = 'insert';
 const PLAN_REPLACE = 'replace';
@@ -33,6 +40,7 @@ export interface WorkspaceTextInsertPlan {
   readonly kind: typeof PLAN_INSERT;
   readonly startByte: number;
   readonly insertText: string;
+  readonly cursorAfter: TextPosition;
 }
 
 export interface WorkspaceTextReplacePlan {
@@ -40,12 +48,14 @@ export interface WorkspaceTextReplacePlan {
   readonly startByte: number;
   readonly endByte: number;
   readonly insertText: string;
+  readonly cursorAfter: TextPosition;
 }
 
 export interface WorkspaceTextDeletePlan {
   readonly kind: typeof PLAN_DELETE;
   readonly startByte: number;
   readonly endByte: number;
+  readonly cursorAfter: TextPosition;
 }
 
 export interface WorkspaceTextUnsupportedPlan {
@@ -63,13 +73,12 @@ export function planWorkspaceTextInsert(
   editor: EditorState,
   insertText: string,
 ): WorkspaceTextInsertPlan {
+  const position = editorTextPosition(editor);
   return {
     kind: PLAN_INSERT,
-    startByte: byteOffsetForTextPosition(editor.lines, {
-      row: editor.cursorRow,
-      column: editor.cursorCol,
-    }),
+    startByte: byteOffsetForTextPosition(editor.lines, position),
     insertText,
+    cursorAfter: positionAfterInsertedText(position, insertText),
   };
 }
 
@@ -94,39 +103,52 @@ export function planWorkspaceTextSelectionReplace(
     startByte: Math.min(startByte, endByte),
     endByte: Math.max(startByte, endByte),
     insertText,
+    cursorAfter: positionAfterInsertedText(
+      startByte <= endByte
+        ? { row: selection.startRow, column: selection.startColumn }
+        : { row: selection.endRow, column: selection.endColumn },
+      insertText,
+    ),
   };
 }
 
 export function planWorkspaceTextBackspace(
   editor: EditorState,
 ): WorkspaceTextDeletePlan | WorkspaceTextUnsupportedPlan {
-  const endByte = byteOffsetForTextPosition(editor.lines, {
-    row: editor.cursorRow,
-    column: editor.cursorCol,
-  });
-  const startByte = previousByteOffset(editor.lines, {
-    row: editor.cursorRow,
-    column: editor.cursorCol,
-  });
+  const position = editorTextPosition(editor);
+  const endByte = byteOffsetForTextPosition(editor.lines, position);
+  const startByte = previousByteOffset(editor.lines, position);
   return startByte === endByte
     ? unsupportedPlan(UNSUPPORTED_EMPTY_BACKSPACE)
-    : { kind: PLAN_DELETE, startByte, endByte };
+    : {
+      kind: PLAN_DELETE,
+      startByte,
+      endByte,
+      cursorAfter: previousTextPosition(editor.lines, position),
+    };
 }
 
 export function planWorkspaceTextDeleteUnderCursor(
   editor: EditorState,
 ): WorkspaceTextDeletePlan | WorkspaceTextUnsupportedPlan {
-  const startByte = byteOffsetForTextPosition(editor.lines, {
-    row: editor.cursorRow,
-    column: editor.cursorCol,
-  });
-  const endByte = nextByteOffset(editor.lines, {
-    row: editor.cursorRow,
-    column: editor.cursorCol,
-  });
+  const position = editorTextPosition(editor);
+  const startByte = byteOffsetForTextPosition(editor.lines, position);
+  const endByte = nextByteOffset(editor.lines, position);
   return startByte === endByte
     ? unsupportedPlan(UNSUPPORTED_EMPTY_DELETE)
-    : { kind: PLAN_DELETE, startByte, endByte };
+    : {
+      kind: PLAN_DELETE,
+      startByte,
+      endByte,
+      cursorAfter: position,
+    };
+}
+
+function editorTextPosition(editor: EditorState): TextPosition {
+  return {
+    row: editor.cursorRow,
+    column: editor.cursorCol,
+  };
 }
 
 function unsupportedPlan(

@@ -1,0 +1,99 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { createI18nMock } from './i18n-mock.mjs';
+import { createWorkspaceEchoAppHarness } from './workspace-echo-app-harness.mjs';
+import { importDist, surfaceText } from './workspace-helpers.mjs';
+
+test('Echo history drawer renders workspace-visible Echo evidence', async () => {
+  const drawers = await importDist('app', 'workspace', 'viewer-drawers.js');
+  const harness = await createWorkspaceEchoAppHarness({
+    readings: ['before edit', 'after edit'],
+    exportText: 'saved from Echo',
+  });
+
+  await harness.runFirst(await harness.key('enter'));
+  await harness.key('i');
+  await harness.runFirst(await harness.key('X', { shift: true }));
+  const saveCommands = await harness.key('s', { ctrl: true });
+  await harness.run(saveCommands[0]);
+  await harness.run(saveCommands[1]);
+
+  assert.deepEqual(harness.model.echoHistory.map((entry) => [entry.kind, entry.status, entry.evidenceId]), [
+    ['open', 'opened', 'reading:1'],
+    ['edit', 'applied', 'receipt:insert'],
+    ['export', 'exported', 'reading:export'],
+    ['checkpoint', 'checkpointed', 'checkpoint:save'],
+  ]);
+  assert.equal(harness.model.echoHistorySelectedIndex, 3);
+
+  const rendered = surfaceText(drawers.renderDrawer('history', harness.model, 76, 8));
+  assert.match(rendered, /Echo History/);
+  assert.match(rendered, /receipt:insert/);
+  assert.match(rendered, /checkpoint:save/);
+});
+
+test('ctrl-h focuses Echo history and j/k navigates its selected row', async () => {
+  const harness = await createWorkspaceEchoAppHarness({
+    readings: ['before edit', 'after edit'],
+  });
+
+  await harness.runFirst(await harness.key('enter'));
+  await harness.key('i');
+  await harness.runFirst(await harness.key('X', { shift: true }));
+  await harness.runFirst(await harness.key('s', { ctrl: true }));
+  await harness.key('h', { ctrl: true });
+
+  assert.equal(harness.model.historyDrawerOpen, true);
+  assert.equal(harness.model.focusPane, 'history');
+
+  const selected = harness.model.echoHistorySelectedIndex;
+  await harness.key('k');
+  assert.equal(harness.model.echoHistorySelectedIndex, selected - 1);
+  await harness.key('j');
+  assert.equal(harness.model.echoHistorySelectedIndex, selected);
+});
+
+test('Echo history keeps the appended entry selected after tick sorting', async () => {
+  const history = await importDist('app', 'workspace', 'echo-history.js');
+  let entries = [];
+  entries = history.appendEchoHistoryEntry(entries, {
+    kind: history.EchoHistoryEntryKinds.Open,
+    status: history.EchoHistoryEntryStatuses.Opened,
+    evidenceId: 'tick:10',
+    summary: 'late',
+  });
+  entries = history.appendEchoHistoryEntry(entries, {
+    kind: history.EchoHistoryEntryKinds.Edit,
+    status: history.EchoHistoryEntryStatuses.Applied,
+    evidenceId: 'tick:5',
+    summary: 'early',
+  });
+
+  const selected = history.sortedEchoHistoryIndexForSequence(entries, entries.at(-1).sequence);
+  const lines = history.renderEchoHistoryLines(entries, selected, 80, 5, createI18nMock());
+
+  assert.equal(selected, 0);
+  assert.match(lines.join('\n'), /›\s+2\s+5\s+edit\s+applied\s+tick:5\s+early/);
+});
+
+test('Echo history drawer obtains its chrome text from i18n', async () => {
+  const history = await importDist('app', 'workspace', 'echo-history.js');
+  const i18n = {
+    t: (path) => `<${path}>`,
+  };
+  const empty = history.renderEchoHistoryLines([], 0, 60, 3, i18n).join('\n');
+  const listed = history.renderEchoHistoryLines([
+    {
+      sequence: 1,
+      tickId: 1,
+      kind: history.EchoHistoryEntryKinds.Open,
+      status: history.EchoHistoryEntryStatuses.Opened,
+      evidenceId: 'tick:1',
+      summary: 'opened',
+    },
+  ], 0, 60, 3, i18n).join('\n');
+
+  assert.match(empty, /<history\.title>/);
+  assert.match(empty, /<history\.empty>/);
+  assert.match(listed, /<history\.header>/);
+});

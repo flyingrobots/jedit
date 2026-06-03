@@ -120,7 +120,7 @@ test('workspace app renders perf overlay after toggle when perf starts disabled'
   assert.match(text, /rss\s+\d+\.\d MB/);
 });
 
-test('workspace app preserves seeded text runtime profile when option is absent', async () => {
+test('workspace app rejects stale non-Echo seeded text runtime profile', async () => {
   const [workspaceApp, themes, profile] = await Promise.all([
     importDist('adapters', 'workspace-app.js'),
     importDist('ui', 'jedit-themes.js'),
@@ -139,13 +139,13 @@ test('workspace app preserves seeded text runtime profile when option is absent'
       i18n: mockI18n(),
       entries: [],
       nowMs: 0,
-      textRuntimeProfile: profile.TEXT_RUNTIME_PROFILE_TEST_LOCAL,
+      textRuntimeProfile: 'testLocal',
     },
   });
 
   const [initialModel] = app.init();
 
-  assert.equal(initialModel.textRuntimeProfile, profile.TEXT_RUNTIME_PROFILE_TEST_LOCAL);
+  assert.equal(initialModel.textRuntimeProfile, profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED);
 });
 
 test('initial workspace model separates text authority from render cache', async () => {
@@ -217,6 +217,23 @@ test('runtime trims frame history to the configured window', async () => {
 
   assert.equal(nextModel.frameTimeHistory.length, 50);
   assert.deepEqual(nextModel.frameTimeHistory.slice(-1), [100]);
+});
+
+test('runtime opens the startup file modal when the title intro completes', async () => {
+  const runtimeModule = await importDist('app', 'workspace', 'runtime.js');
+  const runtime = runtimeModule.createWorkspaceRuntime({
+    ...mockRuntime(),
+    nowMs: () => 7000,
+  });
+  const [initialModel] = runtime.init();
+  const [nextModel, commands] = runtime.update({ type: 'time-tick', time: 7 }, {
+    ...initialModel,
+    lastFrameMs: 6500,
+  });
+
+  assert.equal(nextModel.startupIntroComplete, true);
+  assert.equal(nextModel.startupFileModalOpen, true);
+  assert.deepEqual(commands, []);
 });
 
 test('stopping a failed profile trace emits only the close failure issue', async () => {

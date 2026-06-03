@@ -1,5 +1,4 @@
 import { createSurface, stringToSurface, type Surface } from '@flyingrobots/bijou';
-import type { NotificationState } from '@flyingrobots/bijou-tui';
 import { compositeFeedback } from '../../ui/feedback.js';
 import {
   activeWorkspaceTitle,
@@ -15,25 +14,39 @@ import {
   FOOTER_ROWS,
 } from './viewport.js';
 import type { WorkspaceModel } from './model.js';
-import type { WorkspaceMsg } from './msg.js';
-import { isWorkspaceMarkdownPreviewAvailable, renderViewer } from './viewer-content.js';
+import {
+  createViewerContentRenderer,
+  isWorkspaceMarkdownPreviewAvailable,
+  type ViewerContentRenderer,
+} from './viewer-content.js';
 import { renderDrawer } from './viewer-drawers.js';
 import { fillSurface } from './surface-fill.js';
 import { renderSmallTerminalNotice } from './small-terminal-view.js';
-import { paintWorkspaceOverlays } from './viewer-overlays.js';
+import { paintWorkspaceOverlays, workspaceFeedbackOverlay } from './viewer-overlays.js';
 import { workspaceTextAuthorityPosture } from './workspace-text-authority.js';
 
 const WORKSPACE_BODY_TOP_OFFSET = 2;
 
 export { updateViewerFromKey } from './viewer-key.js';
 
+export type WorkspaceRenderer = (model: WorkspaceModel) => Surface;
+
+export function createWorkspaceRenderer(): WorkspaceRenderer {
+  const viewerContent = createViewerContentRenderer();
+  return (model) => renderWorkspaceWithViewer(model, viewerContent);
+}
+
 export function renderWorkspace(model: WorkspaceModel): Surface {
+  return renderWorkspaceWithViewer(model, createViewerContentRenderer());
+}
+
+function renderWorkspaceWithViewer(model: WorkspaceModel, viewerContent: ViewerContentRenderer): Surface {
   const screen = createSurface(model.columns, model.rows);
   fillSurface(screen, model.jeditTheme.surface.workspace);
 
   if (model.columns < MIN_COLUMNS || model.rows < MIN_ROWS) {
     screen.blit(renderSmallTerminalNotice(model.columns, model.rows), 0, 0);
-    return renderFeedback(screen, model.notifications, model.columns, model.rows);
+    return renderFeedback(screen, model);
   }
 
   const bodyTop = WORKSPACE_BODY_TOP_OFFSET;
@@ -41,16 +54,21 @@ export function renderWorkspace(model: WorkspaceModel): Surface {
     rows: model.rows,
     footerVisible: model.footerVisible,
   });
-  const layout = resolveWorkspaceLayout(model.columns, model.fileDrawerProgress, model.graftDrawerProgress);
+  const layout = resolveWorkspaceLayout(
+    model.columns,
+    model.fileDrawerProgress,
+    model.graftDrawerProgress,
+    model.historyDrawerProgress,
+  );
 
   paintWorkspaceTitle(screen, model);
-  screen.blit(renderViewer(model, layout.viewer.width, bodyHeight), layout.viewer.x, bodyTop);
+  screen.blit(viewerContent.renderViewer(model, layout.viewer.width, bodyHeight), layout.viewer.x, bodyTop);
   paintWorkspaceDrawers(screen, model, layout, bodyTop, bodyHeight);
   paintWorkspaceFocusEdge(screen, model, layout, bodyTop, bodyHeight);
   paintWorkspaceFooter(screen, model);
   paintWorkspaceOverlays(screen, model, bodyTop, bodyHeight);
 
-  return renderFeedback(screen, model.notifications, model.columns, model.rows);
+  return renderFeedback(screen, model);
 }
 
 function paintWorkspaceTitle(screen: Surface, model: WorkspaceModel): void {
@@ -79,6 +97,9 @@ function paintWorkspaceDrawers(
   if (layout.graftDrawer.width > 0) {
     screen.blit(renderDrawer(DrawerKinds.Graft, model, layout.graftDrawer.width, bodyHeight), layout.graftDrawer.x, bodyTop);
   }
+  if (layout.historyDrawer.width > 0) {
+    screen.blit(renderDrawer(DrawerKinds.History, model, layout.historyDrawer.width, bodyHeight), layout.historyDrawer.x, bodyTop);
+  }
 }
 
 function paintWorkspaceFocusEdge(
@@ -92,6 +113,7 @@ function paintWorkspaceFocusEdge(
     focusPane: model.focusPane,
     fileDrawerOpen: model.fileDrawerOpen,
     graftDrawerOpen: model.graftDrawerOpen,
+    historyDrawerOpen: model.historyDrawerOpen,
     hasEditor: model.editor != null,
   }, model.jeditTheme.chrome.activeEdge, {
     top: bodyTop,
@@ -107,6 +129,7 @@ function paintWorkspaceFooter(screen: Surface, model: WorkspaceModel): void {
         focusPane: model.focusPane,
         fileDrawerOpen: model.fileDrawerOpen,
         graftDrawerOpen: model.graftDrawerOpen,
+        historyDrawerOpen: model.historyDrawerOpen,
         viewMode: model.viewMode,
         markdownPreviewActive: isWorkspaceMarkdownPreviewAvailable(model),
         editorMode: model.editor?.mode,
@@ -116,6 +139,7 @@ function paintWorkspaceFooter(screen: Surface, model: WorkspaceModel): void {
         selectedEntry: model.entries[model.selectedIndex],
         editorPath: model.editor?.path,
         textPosture: workspaceTextAuthorityPosture(model.textAuthority),
+        echoHistoryCount: model.echoHistory.length,
         graftPath: model.graftInfo?.path,
         graftSelection: selectedGraftSelection(model),
       }, model.columns, model.jeditTheme.surface.footer),
@@ -137,6 +161,6 @@ function selectedGraftSelection(model: WorkspaceModel): { kind: string; name: st
   };
 }
 
-function renderFeedback(screen: Surface, notifications: NotificationState<WorkspaceMsg>, columns: number, rows: number): Surface {
-  return compositeFeedback(screen, notifications, columns, rows);
+function renderFeedback(screen: Surface, model: WorkspaceModel): Surface {
+  return compositeFeedback(screen, model.notifications, model.columns, model.rows, workspaceFeedbackOverlay(model));
 }

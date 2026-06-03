@@ -191,11 +191,11 @@ Checklist:
 
 User story: As a host operator, I can construct the production
 `TextBufferSessionPort` through a jedit-owned runtime profile port, while
-legacy local state remains explicitly test/dev-only.
+legacy local state remains outside production runtime selection.
 
 Test plan:
 
-- Runtime profile accepts explicit `echoHosted` and `testLocal` profiles.
+- Runtime profile accepts `echoHosted` as the only production profile.
 - Unknown profile returns typed configuration obstruction.
 - Selected app session exposes no tick, lifecycle, package install, handler, or
   state-port authority.
@@ -204,26 +204,25 @@ Checklist:
 
 - [x] Runtime profile port exists.
 - [x] `echoHosted` creates a `TextBufferSessionPort`.
-- [x] `testLocal` is marked test/dev-only.
+- [x] Non-Echo profile input is rejected.
 - [x] Invalid profile is typed.
 - [x] App session authority remains narrow.
 
 ### Slice 64 - Echo-Hosted Default Behind Host Configuration
 
 User story: As a host operator, the configured production runtime profile is
-Echo-hosted, while the local in-memory profile remains an explicit development
-escape hatch.
+Echo-hosted, while local in-memory helpers remain focused test scaffolding.
 
 Test plan:
 
 - Default production configuration selects Echo-hosted session creation.
-- Development/test override can select local fixture profile.
+- Development/test fixtures inject fake ports directly.
 - Product UI does not expose runtime selection as a normal user feature.
 
 Checklist:
 
 - [x] Production default is Echo-hosted.
-- [x] Local fixture override is explicit.
+- [x] Non-Echo runtime profile selection is absent.
 - [x] User-facing mode switch is absent.
 
 ### Slice 65 - Buffer Open Cutover
@@ -423,7 +422,7 @@ production authority path.
 
 Test plan:
 
-- Legacy local model lives under a test/dev fixture or adapter-internal name.
+- Legacy local model lives under a focused test fixture or adapter-internal name.
 - Production app code cannot import legacy direct mutation modules.
 - Existing tests either use production ports or explicitly opt into fixtures.
 
@@ -431,7 +430,7 @@ Checklist:
 
 - [x] Legacy runtime-choice files are removed.
 - [ ] Full direct `EditorState.lines` model quarantine remains open.
-- [x] `testLocal` fixture use is explicit.
+- [x] Non-Echo runtime profile selection is removed.
 
 ### Slice 77 - Legacy Bypass Static Guard
 

@@ -16,23 +16,47 @@ export function openDrawer(
   createDrawerAnimationCmd: CreateDrawerAnimationCmd,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (kind === DrawerKinds.Graft) {
-    const [next, cmds] = beginGraftRefresh({
-      ...withFocusPane({
-        ...model,
-        graftDrawerOpen: true,
-      }, FocusPanes.Graft),
-    }, { force: false });
-
-    if (model.graftDrawerOpen) {
-      return [next, cmds];
-    }
-
-    return [
-      next,
-      [...drawerAnimation(DrawerKinds.Graft, model.graftDrawerProgress, 1, createDrawerAnimationCmd), ...cmds],
-    ];
+    return openGraftDrawer(model, beginGraftRefresh, createDrawerAnimationCmd);
   }
 
+  if (kind === DrawerKinds.History) {
+    return openHistoryDrawer(model, createDrawerAnimationCmd);
+  }
+
+  return openFileDrawer(model, createDrawerAnimationCmd);
+}
+
+function openGraftDrawer(
+  model: WorkspaceModel,
+  beginGraftRefresh: (model: WorkspaceModel, options: GraftRefreshOptions) => [WorkspaceModel, Cmd<WorkspaceMsg>[]],
+  createDrawerAnimationCmd: CreateDrawerAnimationCmd,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
+  const [next, cmds] = beginGraftRefresh({
+    ...withFocusPane({ ...model, graftDrawerOpen: true }, FocusPanes.Graft),
+  }, { force: false });
+  if (model.graftDrawerOpen) {
+    return [next, cmds];
+  }
+  return [
+    next,
+    [...drawerAnimation(DrawerKinds.Graft, model.graftDrawerProgress, 1, createDrawerAnimationCmd), ...cmds],
+  ];
+}
+
+function openHistoryDrawer(
+  model: WorkspaceModel,
+  createDrawerAnimationCmd: CreateDrawerAnimationCmd,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
+  const next = withFocusPane({ ...model, historyDrawerOpen: true }, FocusPanes.History);
+  return model.historyDrawerOpen
+    ? [next, []]
+    : [next, drawerAnimation(DrawerKinds.History, model.historyDrawerProgress, 1, createDrawerAnimationCmd)];
+}
+
+function openFileDrawer(
+  model: WorkspaceModel,
+  createDrawerAnimationCmd: CreateDrawerAnimationCmd,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   const next = withFocusPane({
     ...model,
     fileDrawerOpen: true,
@@ -58,6 +82,10 @@ export function toggleDrawer(
     return closeDrawer(model, kind, createDrawerAnimationCmd);
   }
 
+  if (kind === DrawerKinds.History && model.historyDrawerOpen) {
+    return closeDrawer(model, kind, createDrawerAnimationCmd);
+  }
+
   return openDrawer(model, kind, beginGraftRefresh, createDrawerAnimationCmd);
 }
 
@@ -71,14 +99,12 @@ export function closeDrawer(
       ...model,
       fileDrawerOpen: false,
     }
-    : {
-      ...model,
-      graftDrawerOpen: false,
-    };
+    : closeRightDrawerModel(model, kind);
 
   const focusState: Omit<FocusCycleState, 'focusPane'> = {
     fileDrawerOpen: kind === DrawerKinds.Files ? false : next.fileDrawerOpen,
     graftDrawerOpen: kind === DrawerKinds.Graft ? false : next.graftDrawerOpen,
+    historyDrawerOpen: kind === DrawerKinds.History ? false : next.historyDrawerOpen,
     hasEditor: next.editor != null,
   };
 
@@ -86,11 +112,30 @@ export function closeDrawer(
     withFocusPane(next, defaultFocusPane(focusState)),
     drawerAnimation(
       kind,
-      kind === DrawerKinds.Files ? model.fileDrawerProgress : model.graftDrawerProgress,
+      drawerProgress(model, kind),
       0,
       createDrawerAnimationCmd,
     ),
   ];
+}
+
+function closeRightDrawerModel(model: WorkspaceModel, kind: DrawerKind): WorkspaceModel {
+  return kind === DrawerKinds.Graft
+    ? {
+      ...model,
+      graftDrawerOpen: false,
+    }
+    : {
+      ...model,
+      historyDrawerOpen: false,
+    };
+}
+
+function drawerProgress(model: WorkspaceModel, kind: DrawerKind): number {
+  if (kind === DrawerKinds.Files) {
+    return model.fileDrawerProgress;
+  }
+  return kind === DrawerKinds.Graft ? model.graftDrawerProgress : model.historyDrawerProgress;
 }
 
 function drawerAnimation(

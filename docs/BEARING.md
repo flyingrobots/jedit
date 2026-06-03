@@ -30,12 +30,11 @@ Echo-hosted, quarantine or delete the legacy in-memory authority path, and keep
 Echo free of text/editor nouns.
 
 The current branch closes slices 61-80 at the production session and witness
-boundary: text runtime terminology is now `echoHosted`/`testLocal`, the default
-profile is Echo-hosted, direct text authority paths are inventoried, and the
-production text session opens, edits, checkpoints, observes bounded windows,
-exports materialized text, reports retained refs, and proves local replay
-through `TextBufferSessionPort`. The release gate now runs the production
-session witness and static guard.
+boundary: text runtime posture is now Echo-hosted only, direct text authority
+paths are inventoried, and the production text session opens, edits,
+checkpoints, observes bounded windows, exports materialized text, reports
+retained refs, and proves local replay through `TextBufferSessionPort`. The
+release gate now runs the production session witness and static guard.
 
 The current branch extends that proof through slices 81-90: interactive
 workspace open, initial read, render, insert/delete/backspace, viewport refresh,
@@ -48,7 +47,8 @@ explicit, reading-cache behavior is isolated, edit range planning has a
 jedit-owned boundary, replace commands flow through the production session,
 production undo/redo is explicitly unsupported until modeled as causal input,
 footer/preview/highlight surfaces consume reading material, active-buffer save
-targeting is covered, and test-local fallback remains fixture-only.
+targeting is covered, and non-Echo text runtime profiles have been removed
+from the production TUI surface.
 The local notes for this package live in
 [`docs/design/0032-jedit-echo-reading-cache-and-fallback-boundaries.md`](design/0032-jedit-echo-reading-cache-and-fallback-boundaries.md).
 
@@ -70,6 +70,33 @@ and authority-boundary report for the current release-gate PR.
 
 The developer-facing recipe lives in
 [`docs/echo-application-hosting-guide.md`](echo-application-hosting-guide.md).
+
+The active title startup UX slice is
+[`docs/design/0036-title-intro-startup-file-modal.md`](design/0036-title-intro-startup-file-modal.md).
+It records the deterministic intro timing, Enter/Escape skip behavior, and the
+post-intro startup modal with input and current-directory files. This is jedit
+UI state only; it does not create Echo work, add a recent-workspace database, or
+reopen non-Echo runtime modes.
+
+## Active Plan: Executable Design Cycle Template
+
+The current branch advances
+[`docs/design/0034-design-cycle-template-and-lifecycle.md`](design/0034-design-cycle-template-and-lifecycle.md).
+The goal is to make full-cycle design docs official, repo-specific, and hostile
+to fake proof: design defines intent, while implementation requires executable
+witnesses over real software surfaces.
+
+## Active Plan: CI Shard And Impact Planning
+
+The current branch advances
+[`docs/design/0034-ci-shard-and-impact-planning.md`](design/0034-ci-shard-and-impact-planning.md).
+The goal is to shorten jedit pull-request iteration time by splitting the
+single `npm run check` CI monolith into auditable shards, while keeping a final
+aggregate `check` gate and forcing full CI whenever the planner cannot prove a
+narrower shard set is sufficient.
+Shard jobs consume the build job's `dist` artifact through
+`spec/dist-helpers.mjs`; spec-local loaders must not rebuild TypeScript when
+`JEDIT_DIST_PREBUILT=1`.
 
 ## Active Plan: Echo Authoritative Recovery Gate B
 
@@ -105,7 +132,7 @@ drive its text model through a jedit-owned Echo-hosted session. Slices 81-90
 make the interactive workspace consume that session as production text
 authority for open, edit, render, save, export, and checkpoint flows.
 Slices 101-110 close remaining render-cache, edit-planner, status, and
-fixture-fallback ambiguity before WSC durability begins.
+runtime-profile ambiguity before WSC durability begins.
 
 Core claim:
 
@@ -132,7 +159,7 @@ Closed drift:
 Remaining caveat:
 
 - The legacy line model still exists for render/cache/navigation mechanics and
-  explicit test-local fixtures. It is not production text authority.
+  focused fake-port tests. It is not production text authority.
 
 Slices 81-90 are now closed locally. Each slice below includes its user story,
 acceptance criteria, test plan, and checklist.
@@ -478,6 +505,82 @@ The plan has five bars:
 4. [Echo][jedit] Persist and recover causal editing history through WSC.
 5. [jedit][Echo] Close replay, export, authority, and release-readiness proofs.
 
+Recovered execution posture:
+
+- [x] Free slice A: recover the active branch context. The current branch is
+  `enable-echo-hosted-tui-default`; recovered planning work through slice 110 is
+  already present on this branch.
+- [x] Free slice B: make the 50-slice budget visible as one progress ledger.
+- [x] Free slice C: set the next execution window. Work proceeds through slices
+  111-125, then pauses for a drift check before slice 126.
+
+Drift-check watch items:
+
+- WSC iteration time is now a first-class concern for the slice-126 drift
+  check. Current observed focused witnesses are slow: `cargo test -p warp-core
+  --test wsc_store_tests --no-run` and `cargo clippy -p warp-core --test
+  wsc_store_tests -- -D warnings -D missing_docs` have taken roughly 45-68s
+  because the target pulls `echo-graph` and `echo-dry-tests`; the Echo
+  pre-commit hook adds roughly 25s for `warp-core` lib clippy/check. Candidate
+  follow-up: split or slim the WSC store contract target so WSC envelope/store
+  changes can validate without the broader adapter stack.
+- jedit WSC reducer slices can keep a fast red/green loop by running the
+  focused Node spec first, then `tsc`, `quality-gate`, and `git diff --check`
+  once before commit. Slice 122's focused witness stayed near two seconds.
+
+Progress ledger:
+
+- [x] 91 - Rename The jedit Echo Gate.
+- [x] 92 - Real App Harness Boundary.
+- [x] 93 - Real App Open File Proof.
+- [x] 94 - Real App Edit Proof.
+- [x] 95 - Real App Save And Export Proof.
+- [x] 96 - Real App Obstruction Posture.
+- [x] 97 - Agent Workspace Witness.
+- [x] 98 - UI Lifecycle Authority Audit.
+- [x] 99 - Legacy Text Authority Inventory.
+- [x] 100 - PR Gate And Review Package.
+- [x] 101 - Rename Render Cache Concepts.
+- [x] 102 - Text Reading Cache Module Boundary.
+- [x] 103 - Cursor And Selection Planner Boundary.
+- [x] 104 - Replace Selection Through Session.
+- [x] 105 - Undo And Redo Policy Boundary.
+- [x] 106 - Dirty, Pending, And Stale UI Posture.
+- [x] 107 - Source Highlight From Reading Material.
+- [x] 108 - Preview From Reading Material.
+- [x] 109 - Multi-Buffer Authority Map.
+- [x] 110 - Fixture-Local Fallback Quarantine.
+- [x] 111 - WSC Durability Scope Document.
+- [x] 112 - Echo WSC Store Port.
+- [x] 113 - Persist Accepted Submission Events.
+- [x] 114 - Persist Ticket And Receipt Correlation.
+- [x] 115 - Persist Reading And Retention Refs.
+- [x] 116 - WSC Atomic Commit Markers.
+- [x] 117 - Recover Pending Submissions.
+- [x] 118 - Recover Decided Submissions.
+- [x] 119 - Reject Half-Accepted WSC State.
+- [x] 120 - jedit WSC Workspace Store Adapter.
+- [x] 121 - Startup Recovery From WSC.
+- [x] 122 - Persist Edits After Settlement.
+- [x] 123 - Restart Round Trip Proof.
+- [x] 124 - Historical Basis Selection.
+- [x] 125 - Current History Export.
+- [ ] 126 - Point-In-Time Export.
+- [ ] 127 - History Listing And Evidence View.
+- [ ] 128 - Replay Same Edits Same Evidence.
+- [ ] 129 - Host Timing Permutation Proof.
+- [ ] 130 - Conflict And Rejection Retention.
+- [ ] 131 - Multi-File History Recovery.
+- [ ] 132 - Agent Historical Export.
+- [ ] 133 - WSC Release Gate Integration.
+- [ ] 134 - DIND Replay Closeout.
+- [ ] 135 - Portability Template Update.
+- [ ] 136 - Graft/Think Readiness Checklist.
+- [ ] 137 - End-To-End Guide Refresh.
+- [ ] 138 - Version And Compatibility Audit.
+- [ ] 139 - Authority And Security Audit.
+- [ ] 140 - Powered By Echo Release Candidate Gate.
+
 ### Slice 91 - Rename The jedit Echo Gate
 
 User story:
@@ -754,7 +857,7 @@ Checklist:
 - [x] Update PR notes.
 - [x] Run all local gates.
 - [x] Self-review against plan.
-- [ ] Push for review.
+- [x] Push for review.
 
 ### Slice 101 - Rename Render Cache Concepts
 
@@ -1007,26 +1110,27 @@ Checklist:
 
 User story:
 
-As a maintainer, I want local direct text behavior available only as explicit
-fixture support, so production cannot silently fall back to in-memory editing.
+As a maintainer, I want local direct text behavior available only through
+focused fake-port tests, so production cannot silently fall back to in-memory
+editing or select a non-Echo runtime profile.
 
 Acceptance criteria:
 
-- Test-local profile names are explicit.
+- Non-Echo profile names are not accepted runtime input.
 - Production defaults cannot select direct local authority accidentally.
 - Static guard catches fallback imports in production modules.
-- Fixture docs state the fallback is not product behavior.
+- Fixture docs state fake ports are test scaffolding, not product behavior.
 
 Test plan:
 
-- Add profile parser tests for invalid and test-local profiles.
+- Add profile parser tests for invalid and legacy non-Echo profiles.
 - Add guard sample tests.
 - Run the jedit Echo release gate.
 
 Checklist:
 
-- [x] Narrow test-local fallback creation.
-- [x] Document fallback scope.
+- [x] Delete non-Echo runtime profile selection.
+- [x] Document fake-port scope.
 - [x] Extend guard coverage.
 - [x] Cover profile behavior.
 
@@ -1036,6 +1140,8 @@ User story:
 
 As a maintainer, I want a precise WSC durability scope before code changes, so
 we do not turn persistence into unbounded storage redesign.
+
+Scope doc: `docs/design/0035-jedit-wsc-durability-scope.md`.
 
 Acceptance criteria:
 
@@ -1053,10 +1159,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Write WSC durability scope.
-- [ ] Define accepted restart states.
-- [ ] Define jedit export boundary.
-- [ ] Link from BEARING.
+- [x] Write WSC durability scope.
+- [x] Define accepted restart states.
+- [x] Define jedit export boundary.
+- [x] Link from BEARING.
 
 ### Slice 112 - Echo WSC Store Port
 
@@ -1064,6 +1170,8 @@ User story:
 
 As Echo, I need a generic WSC store port so causal-history persistence is
 behind a runtime adapter and not tied to jedit.
+
+Echo commit: `a4ed532f feat: add generic WSC store port`.
 
 Acceptance criteria:
 
@@ -1080,10 +1188,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Define generic WSC store port.
-- [ ] Add deterministic envelope format tests.
-- [ ] Add typed obstruction path.
-- [ ] Keep jedit nouns out of Echo.
+- [x] Define generic WSC store port.
+- [x] Add deterministic envelope format tests.
+- [x] Add typed obstruction path.
+- [x] Keep jedit nouns out of Echo.
 
 ### Slice 113 - Persist Accepted Submission Events
 
@@ -1091,6 +1199,8 @@ User story:
 
 As Echo, I want accepted submissions written to WSC before tick decision, so
 accepted-but-not-yet-decided jedit edits survive restart.
+
+Echo commit: `98936624 feat: persist accepted submissions in WSC`.
 
 Acceptance criteria:
 
@@ -1108,10 +1218,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Serialize accepted submission event.
-- [ ] Preserve duplicate posture.
-- [ ] Block half-accepted state.
-- [ ] Expose pending posture to jedit.
+- [x] Serialize accepted submission event.
+- [x] Preserve duplicate posture.
+- [x] Block half-accepted state.
+- [x] Expose pending posture to jedit.
 
 ### Slice 114 - Persist Ticket And Receipt Correlation
 
@@ -1119,6 +1229,8 @@ User story:
 
 As a user, I want a decided edit to recover with its ticket and receipt
 correlation after restart.
+
+Echo commit: `68cc77cb feat: persist receipt correlation in WSC`.
 
 Acceptance criteria:
 
@@ -1136,10 +1248,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Persist ticket/ingress correlation.
-- [ ] Persist receipt correlation.
-- [ ] Recover outcome handles.
-- [ ] Cover missing correlation.
+- [x] Persist ticket/ingress correlation.
+- [x] Persist receipt correlation.
+- [x] Recover outcome handles.
+- [x] Cover missing correlation.
 
 ### Slice 115 - Persist Reading And Retention Refs
 
@@ -1147,6 +1259,11 @@ User story:
 
 As a user, I want retained readings and payload references to recover after
 restart, so jedit can explain what it displays.
+
+Echo commits:
+
+- `1d64cd0b feat: persist retention refs in WSC`
+- `c1c21353 test: cover retention WSC obstruction posture`
 
 Acceptance criteria:
 
@@ -1163,10 +1280,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Persist reading envelope refs.
-- [ ] Persist payload refs.
-- [ ] Persist semantic coordinates.
-- [ ] Cover missing material.
+- [x] Persist reading envelope refs.
+- [x] Persist payload refs.
+- [x] Persist semantic coordinates.
+- [x] Cover missing material.
 
 ### Slice 116 - WSC Atomic Commit Markers
 
@@ -1174,6 +1291,8 @@ User story:
 
 As Echo, I need crash-consistent WSC writes so a restart never sees half-written
 causal history as valid.
+
+Echo commit: `8580ac67 feat: add WSC commit markers`.
 
 Acceptance criteria:
 
@@ -1190,10 +1309,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Add commit marker protocol.
-- [ ] Reject incomplete writes.
-- [ ] Prove idempotent recovery.
-- [ ] Expose obstruction to jedit.
+- [x] Add commit marker protocol.
+- [x] Reject incomplete writes.
+- [x] Prove idempotent recovery.
+- [x] Expose obstruction to jedit.
 
 ### Slice 117 - Recover Pending Submissions
 
@@ -1201,6 +1320,8 @@ User story:
 
 As a user restarting jedit after submitting an edit, I want pending accepted
 submissions to remain visible and honest.
+
+Echo commit: `7fe747a1 feat: recover pending submissions from WSC`.
 
 Acceptance criteria:
 
@@ -1217,10 +1338,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Recover pending submission state.
-- [ ] Keep pending distinct from applied.
-- [ ] Display jedit pending posture.
-- [ ] Prove no hidden retry.
+- [x] Recover pending submission state.
+- [x] Keep pending distinct from applied.
+- [x] Display jedit pending posture.
+- [x] Prove no hidden retry.
 
 ### Slice 118 - Recover Decided Submissions
 
@@ -1228,6 +1349,8 @@ User story:
 
 As a user restarting jedit after an applied or rejected edit, I want the decided
 outcome to recover with evidence.
+
+Echo commit: `6b17054d feat: recover decided submissions from WSC`.
 
 Acceptance criteria:
 
@@ -1244,10 +1367,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Recover applied outcome.
-- [ ] Recover rejected outcome.
-- [ ] Restore receipt correlation.
-- [ ] Keep rejection final for that attempt.
+- [x] Recover applied outcome.
+- [x] Recover rejected outcome.
+- [x] Restore receipt correlation.
+- [x] Keep rejection final for that attempt.
 
 ### Slice 119 - Reject Half-Accepted WSC State
 
@@ -1255,6 +1378,8 @@ User story:
 
 As a maintainer, I want corrupt or half-accepted WSC state to fail closed, so
 jedit never shows invented history.
+
+Echo commit: `0ae88f5c feat: reject incomplete WSC causal history`.
 
 Acceptance criteria:
 
@@ -1272,10 +1397,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Add corrupt WSC fixtures.
-- [ ] Detect half-accepted states.
-- [ ] Surface typed obstruction.
-- [ ] Block local authority fallback.
+- [x] Add corrupt WSC fixtures.
+- [x] Detect half-accepted states.
+- [x] Surface typed obstruction.
+- [x] Block local authority fallback.
 
 ### Slice 120 - jedit WSC Workspace Store Adapter
 
@@ -1283,6 +1408,11 @@ User story:
 
 As a jedit host, I want a workspace WSC adapter that connects Echo's generic
 WSC store to the project directory without teaching Echo about files.
+
+Implementation: `src/ports/jedit-wsc-workspace-store.ts` defines the
+jedit-owned generic WSC envelope store port, and
+`src/adapters/jedit-wsc-workspace-store.ts` implements the Node workspace path
+policy under `.jedit/echo-wsc/envelopes/`.
 
 Acceptance criteria:
 
@@ -1299,10 +1429,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Add jedit WSC workspace adapter.
-- [ ] Keep path policy in jedit.
-- [ ] Inject adapter into session.
-- [ ] Cover path failures.
+- [x] Add jedit WSC workspace adapter.
+- [x] Keep path policy in jedit.
+- [x] Inject adapter into session.
+- [x] Cover path failures.
 
 ### Slice 121 - Startup Recovery From WSC
 
@@ -1311,11 +1441,16 @@ User story:
 As a user reopening jedit, I want the workspace to recover Echo-backed text
 authority from WSC instead of starting from host file bytes only.
 
+Implementation: startup recovery now lists committed WSC workspace envelopes
+through the injected store, records no-history as explicit import required,
+records found WSC history as Echo-history authority pending materialization, and
+stores obstruction posture on the initial workspace model.
+
 Acceptance criteria:
 
 - [jedit] Startup can discover existing WSC history for a workspace.
-- [jedit] Recovered buffers restore authority, reading cache, and outcome
-  posture where possible.
+- [jedit] Recovered WSC history records Echo-history authority posture and
+  pending materialization without rebuilding live editor buffers yet.
 - [jedit] Host file import remains an explicit import path for new files.
 - [jedit] Recovery failures are visible.
 
@@ -1327,10 +1462,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Discover workspace WSC history on startup.
-- [ ] Restore recovered authority.
-- [ ] Keep new-file import explicit.
-- [ ] Cover recovery failure.
+- [x] Discover workspace WSC history on startup.
+- [x] Record recovered Echo-history authority posture.
+- [x] Keep new-file import explicit.
+- [x] Cover recovery failure.
 
 ### Slice 122 - Persist Edits After Settlement
 
@@ -1354,37 +1489,59 @@ Test plan:
 
 Checklist:
 
-- [ ] Persist applied edit evidence.
-- [ ] Persist rejected outcome evidence.
-- [ ] Persist obstruction posture where appropriate.
-- [ ] Cover persistence failure.
+- [x] Persist applied edit evidence.
+- [x] Persist rejected outcome evidence.
+- [x] Persist obstruction posture where appropriate.
+- [x] Cover persistence failure.
+
+Proof note:
+
+- `spec/jedit-wsc-edit-settlement.spec.mjs` proves applied edit results write
+  their WSC settlement envelope before accepting a receipt, WSC write
+  obstruction keeps the UI from claiming durability, and obstructed edit
+  results preserve honest outcome evidence without writing settlement bytes.
 
 ### Slice 123 - Restart Round Trip Proof
 
 User story:
 
-As a user, I want to edit, save, quit, restart, and see the same Echo-backed
-text history and current materialized content.
+As a user, I want settled WSC edit evidence to survive quit and restart, so
+later materialization can prove the same Echo-backed text history without stale
+process memory.
 
 Acceptance criteria:
 
-- [jedit] A test performs edit, export/save, stop, restart, and observe.
-- [jedit] The restarted state comes from WSC/Echo history, not stale memory.
-- [jedit] Receipt and reading evidence are still available.
-- [jedit] The host file artifact matches materialized text.
+- [jedit] A test persists WSC edit-settlement evidence, stops the in-memory
+  runtime, starts a fresh runtime, and recovers retained WSC evidence.
+- [jedit] The restarted state comes from WSC/Echo history posture, not stale
+  editor memory.
+- [jedit] Receipt, reading, checkpoint, and materialized-text evidence are still
+  available in the retained envelope.
+- [jedit] Host artifact export/materialization remains a separate read
+  operation covered by slice 125.
 
 Test plan:
 
-- Add end-to-end restart round-trip spec.
-- Assert current text, receipt id, reading id, and checkpoint id.
+- Add restart retained-evidence round-trip spec.
+- Assert retained materialized-text payload, receipt id, reading id, and
+  checkpoint id.
 - Assert no direct local authority fallback.
 
 Checklist:
 
-- [ ] Build restart round-trip fixture.
-- [ ] Assert materialized text.
-- [ ] Assert evidence recovery.
-- [ ] Add to release gate.
+- [x] Build restart retained-evidence fixture.
+- [x] Assert retained materialized-text evidence.
+- [x] Assert evidence recovery.
+- [x] Add to release gate.
+
+Proof note:
+
+- `spec/jedit-wsc-restart-round-trip.spec.mjs` proves a WSC-backed edit
+  settlement envelope is written through the real Node workspace store, a fresh
+  runtime recovers the envelope id on restart without carrying stale editor
+  memory, and the recovered bytes still contain the receipt, reading,
+  checkpoint, and materialized-text evidence. Full current-history host export
+  remains slice 125.
 
 ### Slice 124 - Historical Basis Selection
 
@@ -1408,10 +1565,18 @@ Test plan:
 
 Checklist:
 
-- [ ] Add app-safe historical basis model.
-- [ ] Add basis selection command/port.
-- [ ] Keep selection read-only.
-- [ ] Cover missing basis.
+- [x] Add app-safe historical basis model.
+- [x] Add basis selection command/port.
+- [x] Keep selection read-only.
+- [x] Cover missing basis.
+
+Proof note:
+
+- `src/ports/jedit-wsc-history-basis.ts` defines app-safe historical basis
+  terms over retained WSC envelope evidence. `src/app/jedit-wsc-history-basis.ts`
+  lists deterministic bases and selects one read-only through the workspace
+  store. `spec/jedit-wsc-history-basis.spec.mjs` covers deterministic listing,
+  selection without workspace mutation, and missing-basis obstruction.
 
 ### Slice 125 - Current History Export
 
@@ -1435,10 +1600,21 @@ Test plan:
 
 Checklist:
 
-- [ ] Implement current history export.
-- [ ] Record export evidence.
-- [ ] Preserve read-only boundary.
-- [ ] Cover materialization failure.
+- [x] Implement current history export.
+- [x] Record export evidence.
+- [x] Preserve read-only boundary.
+- [x] Cover materialization failure.
+
+Proof note:
+
+- `src/ports/jedit-wsc-current-history-export.ts` defines the app-facing
+  current-history export and materialization contract.
+  `src/app/jedit-wsc-current-history-export.ts` lists retained WSC envelopes,
+  selects the latest basis, materializes the retained envelope through an
+  explicit app materializer, and writes the host artifact only after successful
+  materialization. `spec/jedit-wsc-current-history-export.spec.mjs` covers
+  current export evidence, read-only WSC behavior, missing basis, and
+  materialization failure.
 
 ### Slice 126 - Point-In-Time Export
 
@@ -1702,7 +1878,7 @@ Acceptance criteria:
 - [jedit] It includes production session, reading cache, retention, recovery,
   and export boundaries.
 - [jedit] It forbids app nouns in Echo.
-- [jedit] It explains fixture-local fallback policy.
+- [jedit] It explains fake-port fixture policy without reopening runtime modes.
 
 Test plan:
 

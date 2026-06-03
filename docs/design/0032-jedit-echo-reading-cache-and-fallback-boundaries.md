@@ -31,8 +31,8 @@ highlight, and save semantics inside jedit-owned modules and ports.
   lines.
 - Slice 109: the current policy is explicit single-active-buffer authority;
   save targets the active production buffer only.
-- Slice 110: test-local fallback remains explicit fixture behavior and invalid
-  profile input falls back to Echo-hosted production behavior.
+- Slice 110: non-Echo profile input is rejected; focused fake-port tests remain
+  fixture scaffolding without becoming a production runtime mode.
 
 ## Doctrine
 

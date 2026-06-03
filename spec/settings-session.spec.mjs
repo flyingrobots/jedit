@@ -1,21 +1,15 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
 import { createI18nMock } from './i18n-mock.mjs';
+import { REPO_ROOT, ensureDistBuilt } from './dist-helpers.mjs';
 
-const REPO_ROOT = process.cwd();
 const SESSION_PATH = path.join(REPO_ROOT, 'dist', 'app', 'settings-session.js');
 const THEMES_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'jedit-themes.js');
 
 async function loadSettingsModules() {
-  const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
-    cwd: REPO_ROOT,
-    encoding: 'utf8',
-  });
-
-  assert.equal(build.status, 0, build.stderr || build.stdout);
+  await ensureDistBuilt();
 
   return {
     settings: await import(pathToFileURL(SESSION_PATH).href),
@@ -26,9 +20,22 @@ async function loadSettingsModules() {
 test('jedit settings rows expose theme, footer, and markdown preview preferences', async () => {
   const { settings, themes } = await loadSettingsModules();
   const theme = themes.availableJeditThemes()[0];
+  const frenchLocale = {
+    locale: 'fr',
+    label: 'Français',
+    direction: 'ltr',
+  };
 
   const rows = settings.jeditSettingsRows({
-    i18n: createI18nMock(),
+    i18n: createI18nMock({
+      locale: frenchLocale.locale,
+      localeLabel: frenchLocale.label,
+      locales: [{
+        locale: 'en',
+        label: 'English',
+        direction: 'ltr',
+      }, frenchLocale],
+    }),
     jeditTheme: theme,
     footerVisible: true,
     markdownPreviewActive: true,
@@ -36,13 +43,14 @@ test('jedit settings rows expose theme, footer, and markdown preview preferences
   });
 
   assert.deepEqual(
-    rows.map((row) => [row.label, row.valueLabel, row.kind]),
+    rows.map((row) => [row.label, row.valueLabel, row.kind, row.checked === true]),
     [
-      ['Locale', 'English', settings.JEDIT_SETTING_ROW_KIND.Choice],
-      ['Theme', theme.name, settings.JEDIT_SETTING_ROW_KIND.Choice],
-      ['Light/dark', 'Dark', settings.JEDIT_SETTING_ROW_KIND.Choice],
-      ['Footer', 'On', settings.JEDIT_SETTING_ROW_KIND.Toggle],
-      ['Markdown preview', 'Source', settings.JEDIT_SETTING_ROW_KIND.Choice],
+      ['English', 'en', settings.JEDIT_SETTING_ROW_KIND.Option, false],
+      ['Français', 'Current', settings.JEDIT_SETTING_ROW_KIND.Option, true],
+      ['Theme', theme.name, settings.JEDIT_SETTING_ROW_KIND.Choice, false],
+      ['Light/dark', 'Dark', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
+      ['Footer', 'On', settings.JEDIT_SETTING_ROW_KIND.Toggle, true],
+      ['Markdown preview', 'Source', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
     ],
   );
 });
@@ -82,12 +90,15 @@ test('settings key reducer closes, moves, and activates focused settings rows', 
     toggleMarkdownPreview(model) {
       return [{ ...model, viewMode: 'preview' }, []];
     },
-    toggleLocale(model) {
-      return [{ ...model, toggledLocale: true }, []];
+    selectLocale(model, locale) {
+      return [{ ...model, selectedLocale: locale.locale }, []];
     },
   };
 
   assert.equal(settings.toggleSettingsOpen(baseModel).settingsOpen, false);
+
+  const [activatedLocale] = settings.updateJeditSettingsFromKey({ key: 'enter' }, baseModel, rows, handlers);
+  assert.equal(activatedLocale.selectedLocale, 'en');
 
   const [closed] = settings.updateJeditSettingsFromKey({ key: 'escape' }, baseModel, rows, handlers);
   assert.equal(closed.settingsOpen, false);

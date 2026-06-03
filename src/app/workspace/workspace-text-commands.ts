@@ -8,6 +8,7 @@ import type {
 import { ProductionTextSessionOutcomeKinds } from './production-text-session.js';
 import { RuntimeIssueLevels, RuntimeIssueSources } from './runtime-issue.js';
 import { WorkspaceMessageTypes, type WorkspaceMsg } from './msg.js';
+import type { TextPosition } from './workspace-text-position.js';
 import type { WorkspaceTextReadingCache } from './workspace-text-reading-cache.js';
 import {
   WorkspaceTextResultKinds,
@@ -17,6 +18,7 @@ import {
   type WorkspaceTextOpenResult,
   type WorkspaceTextReadCommandResult,
 } from './workspace-text-results.js';
+import { createWorkspaceTextEditSettlementEnvelope } from './workspace-text-wsc-settlement.js';
 
 const ISSUE_LEVEL_ERROR = RuntimeIssueLevels.Error;
 const ISSUE_SOURCE_COMMAND = RuntimeIssueSources.Command;
@@ -62,6 +64,7 @@ export interface WorkspaceTextCommandBase {
   readonly productionTextSession: ProductionTextSession;
   readonly atMs: number;
   readonly aperture: ProductionTextViewportAperture;
+  readonly cursorAfter?: TextPosition;
 }
 
 export interface WorkspaceTextInsertCommandRequest extends WorkspaceTextCommandBase {
@@ -247,12 +250,15 @@ async function editWorkspaceText(
     if (observed.kind === ProductionTextSessionOutcomeKinds.Obstructed) {
       return obstructedEdit(request.filePath, observed.obstruction.issue);
     }
+    const cache = readingCache(request.bufferId, observed.observed.value);
     return {
       kind: WorkspaceTextResultKinds.Applied,
       filePath: request.filePath,
       bufferId: request.bufferId,
       receiptId: edited.result.receiptId,
-      cache: readingCache(request.bufferId, observed.observed.value),
+      cache,
+      cursorAfter: request.cursorAfter,
+      wscSettlementEnvelope: createWorkspaceTextEditSettlementEnvelope(request, edited.result.receiptId, cache),
     };
   } catch (cause) {
     return obstructedEdit(

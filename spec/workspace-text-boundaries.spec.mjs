@@ -56,11 +56,13 @@ test('text edit planner owns cursor selection and unsupported range posture', as
     kind: planner.WorkspaceTextEditPlanKinds.Insert,
     startByte: 1,
     insertText: 'X',
+    cursorAfter: { row: 0, column: 2 },
   });
   assert.deepEqual(planner.planWorkspaceTextDeleteUnderCursor(editor), {
     kind: planner.WorkspaceTextEditPlanKinds.Delete,
     startByte: 1,
     endByte: 2,
+    cursorAfter: { row: 0, column: 1 },
   });
   assert.deepEqual(planner.planWorkspaceTextSelectionReplace(editor, {
     startRow: 0,
@@ -72,6 +74,7 @@ test('text edit planner owns cursor selection and unsupported range posture', as
     startByte: 1,
     endByte: 6,
     insertText: 'Z',
+    cursorAfter: { row: 0, column: 2 },
   });
   assert.deepEqual(planner.planWorkspaceTextSelectionReplace(editor, undefined, 'Z'), {
     kind: planner.WorkspaceTextEditPlanKinds.Unsupported,
@@ -226,18 +229,20 @@ test('single-buffer policy keeps save targeted to active production buffer', asy
   assert.deepEqual(harness.savedFiles, [{ filePath: '/repo/b.md', lines: ['B exported'] }]);
 });
 
-test('test-local profile is explicit fixture fallback and invalid profile falls back to Echo-hosted', async () => {
+test('non-Echo text runtime profiles are unsupported startup input', async () => {
   const profile = await importDist('app', 'text-runtime-profile.js');
 
   assert.deepEqual(profile.parseTextRuntimeProfile('testLocal'), {
-    kind: profile.TEXT_RUNTIME_PROFILE_PARSE_OK,
-    profile: profile.TEXT_RUNTIME_PROFILE_TEST_LOCAL,
+    kind: profile.TEXT_RUNTIME_PROFILE_PARSE_OBSTRUCTED,
+    code: profile.TEXT_RUNTIME_PROFILE_UNSUPPORTED_CODE,
+    suppliedValue: 'testLocal',
+    requiredProfile: profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
   });
   assert.deepEqual(profile.parseTextRuntimeProfile('legacy'), {
     kind: profile.TEXT_RUNTIME_PROFILE_PARSE_OBSTRUCTED,
     code: profile.TEXT_RUNTIME_PROFILE_UNSUPPORTED_CODE,
     suppliedValue: 'legacy',
-    fallbackProfile: profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+    requiredProfile: profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
   });
 });
 

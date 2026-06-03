@@ -1,22 +1,16 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
 import { createI18nMock } from './i18n-mock.mjs';
+import { REPO_ROOT, ensureDistBuilt } from './dist-helpers.mjs';
 
-const REPO_ROOT = process.cwd();
 const DRAWER_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'settings-drawer.js');
 const SESSION_PATH = path.join(REPO_ROOT, 'dist', 'app', 'settings-session.js');
 const THEMES_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'jedit-themes.js');
 
 async function loadDrawerModules() {
-  const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
-    cwd: REPO_ROOT,
-    encoding: 'utf8',
-  });
-
-  assert.equal(build.status, 0, build.stderr || build.stdout);
+  await ensureDistBuilt();
 
   return {
     drawer: await import(pathToFileURL(DRAWER_PATH).href),
@@ -53,10 +47,34 @@ test('settings drawer renders structured rows and highlights the selected row', 
 
   assert.match(text, /Settings/);
   assert.match(text, /F2\/Esc close/);
+  assert.match(text, /● English Current/);
   assert.match(text, /↻ Theme/);
   assert.match(text, /☑ Footer/);
   assert.match(text, /↻ Markdown preview/);
-  assert.equal(surface.get(2, 7).char, '›');
-  assert.equal(surface.get(2, 7).fg, theme.cursor.normal.fg);
-  assert.equal(surface.get(2, 7).bg, theme.cursor.normal.bg);
+  assert.equal(surface.get(2, 8).char, '›');
+  assert.equal(surface.get(2, 8).fg, theme.cursor.normal.fg);
+  assert.equal(surface.get(2, 8).bg, theme.cursor.normal.bg);
+});
+
+test('settings drawer keeps the focused row visible when section headers consume short drawers', async () => {
+  const { drawer, settings, themes } = await loadDrawerModules();
+  const theme = themes.availableJeditThemes()[0];
+  const rows = settings.jeditSettingsRows({
+    i18n: createI18nMock(),
+    jeditTheme: theme,
+    footerVisible: true,
+    markdownPreviewActive: true,
+    viewMode: 'source',
+  });
+  const selectedIndex = rows.findIndex((row) => row.id === 'markdown-preview');
+
+  const surface = drawer.renderSettingsDrawer({
+    rows,
+    selectedIndex,
+    theme,
+    width: 42,
+    height: 12,
+  });
+
+  assert.match(surfaceText(surface), /› ↻ Markdown preview Source/);
 });

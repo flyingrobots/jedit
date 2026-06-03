@@ -10,7 +10,8 @@ import {
   titleSceneBackgroundColor,
   type TitleSceneEnvironment,
 } from './title-scene-environment.js';
-import type { TitleFloorLightEffects, TitleSceneMaterialColors } from './title-screen.js';
+import type { TitleSceneMaterialColors } from './title-scene-material-colors.js';
+import type { TitleFloorLightEffects } from './title-screen.js';
 import type { ReflectedEnvironmentColorOptions, TitleSceneRayContext, TitleSceneSampleOptions } from './title-screen-sample.js';
 import type { TitleSceneSpotlight } from './title-screen-sample.js';
 

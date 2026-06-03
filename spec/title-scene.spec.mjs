@@ -4,8 +4,8 @@ import { existsSync, renameSync } from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
+import { REPO_ROOT, ensureDistBuilt, isPrebuiltDistEnabled } from './dist-helpers.mjs';
 
-const REPO_ROOT = process.cwd();
 const TITLE_SCENE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-scene.js');
 const TITLE_MESH_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-mesh.js');
 const TITLE_BUNNY_MESH_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'title-bunny-mesh.js');
@@ -44,24 +44,39 @@ const SCENE_COLORS = {
   surface: [14, 17, 22],
 };
 
+let titleSceneModulesPromise;
+
 async function loadTitleSceneModules() {
-  const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
-    cwd: REPO_ROOT,
-    encoding: 'utf8',
+  if (titleSceneModulesPromise != null) {
+    return titleSceneModulesPromise;
+  }
+  titleSceneModulesPromise = Promise.resolve().then(async () => {
+    await ensureTitleSceneDist();
+    return {
+      titleScene: await import(pathToFileURL(TITLE_SCENE_PATH).href),
+      titleMesh: await import(pathToFileURL(TITLE_MESH_PATH).href),
+      titleBunnyMesh: await import(pathToFileURL(TITLE_BUNNY_MESH_PATH).href),
+      domainErrors: await import(pathToFileURL(DOMAIN_ERRORS_PATH).href),
+      titleCamera: await import(pathToFileURL(TITLE_CAMERA_PATH).href),
+    };
   });
+  return titleSceneModulesPromise;
+}
 
-  assert.equal(build.status, 0, build.stderr || build.stdout);
-
-  return {
-    titleScene: await import(pathToFileURL(TITLE_SCENE_PATH).href),
-    titleMesh: await import(pathToFileURL(TITLE_MESH_PATH).href),
-    titleBunnyMesh: await import(pathToFileURL(TITLE_BUNNY_MESH_PATH).href),
-    domainErrors: await import(pathToFileURL(DOMAIN_ERRORS_PATH).href),
-    titleCamera: await import(pathToFileURL(TITLE_CAMERA_PATH).href),
-  };
+async function ensureTitleSceneDist() {
+  if (isPrebuiltDistEnabled()) {
+    assert.ok(existsSync(TITLE_SCENE_PATH), 'dist/ui/title-scene.js should exist when dist is prebuilt');
+    return;
+  }
+  await ensureDistBuilt();
 }
 
 test('build copies the title bunny mesh asset into dist', async () => {
+  if (isPrebuiltDistEnabled()) {
+    assert.ok(existsSync(TITLE_BUNNY_DIST_ASSET_PATH), 'dist/ui/bunny.obj should exist when dist is prebuilt');
+    assert.ok(existsSync(TITLE_TEAPOT_DIST_ASSET_PATH), 'dist/ui/utah_teapot.obj should exist when dist is prebuilt');
+    return;
+  }
   const build = spawnSync('npm', ['run', 'build'], {
     cwd: REPO_ROOT,
     encoding: 'utf8',

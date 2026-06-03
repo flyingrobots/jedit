@@ -3,6 +3,7 @@ import type { DrawerKind } from '../../ui/drawer-layout.js';
 import type { EditorFilePort } from '../../ports/editor-file.js';
 import type { FileSystemPort } from '../../ports/file-system.js';
 import type { GraftSessionPort } from '../../ports/graft-session.js';
+import type { JeditWscWorkspaceStorePort } from '../../ports/jedit-wsc-workspace-store.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import type { TitleSceneLoaderPort } from '../../ports/title-scene-loader.js';
 import type { WorkspaceInitialModelSnapshot } from './init.js';
@@ -26,6 +27,7 @@ export interface WorkspaceRuntimeDependencies {
   readonly sourceHighlighter: SourceHighlighter;
   readonly titleSceneLoader: TitleSceneLoaderPort;
   readonly productionTextSession: ProductionTextSession;
+  readonly wscWorkspaceStore: JeditWscWorkspaceStorePort;
   readonly profiler: ProfilerTracePort;
   readonly createTimeTickCmd: () => Cmd<WorkspaceMsg>;
   readonly createNotificationTickCmd: () => Cmd<WorkspaceMsg>;

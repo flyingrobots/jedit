@@ -1,19 +1,13 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
+import { REPO_ROOT, ensureDistBuilt } from './dist-helpers.mjs';
 
-const REPO_ROOT = process.cwd();
 const MODULE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'workspace-focus-edge.js');
 
 async function loadFocusEdgeModule() {
-  const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
-    cwd: REPO_ROOT,
-    encoding: 'utf8',
-  });
-
-  assert.equal(build.status, 0, build.stderr || build.stdout);
+  await ensureDistBuilt();
 
   return import(pathToFileURL(MODULE_PATH).href);
 }
@@ -23,6 +17,7 @@ function layout() {
     fileDrawer: { x: 0, width: 4 },
     viewer: { x: 4, width: 4 },
     graftDrawer: { x: 8, width: 4 },
+    historyDrawer: { x: 12, width: 4 },
   };
 }
 
@@ -45,6 +40,7 @@ test('workspace focus edge paints the focused editor left edge', async () => {
     focusPane: 'editor',
     fileDrawerOpen: true,
     graftDrawerOpen: true,
+    historyDrawerOpen: true,
     hasEditor: true,
   }, edgeToken(), {
     top: 1,
@@ -70,6 +66,7 @@ test('workspace focus edge moves to the focused graft drawer', async () => {
     focusPane: 'graft',
     fileDrawerOpen: true,
     graftDrawerOpen: true,
+    historyDrawerOpen: true,
     hasEditor: true,
   }, edgeToken(), {
     top: 0,
@@ -81,6 +78,27 @@ test('workspace focus edge moves to the focused graft drawer', async () => {
   assert.equal(surface.get(8, 1).fg, '#d897ff');
 });
 
+test('workspace focus edge moves to the focused history drawer', async () => {
+  const { createSurface } = await import('@flyingrobots/bijou');
+  const focusEdge = await loadFocusEdgeModule();
+  const surface = createSurface(16, 3, { char: '.', fg: '#111111', bg: '#222222', empty: false });
+
+  focusEdge.paintActivePaneEdge(surface, layout(), {
+    focusPane: 'history',
+    fileDrawerOpen: true,
+    graftDrawerOpen: true,
+    historyDrawerOpen: true,
+    hasEditor: true,
+  }, edgeToken(), {
+    top: 0,
+    height: 3,
+  });
+
+  assert.equal(surface.get(8, 1).char, '.');
+  assert.equal(surface.get(12, 1).char, '░');
+  assert.equal(surface.get(12, 1).fg, '#d897ff');
+});
+
 test('workspace focus edge skips panes that are not visible', async () => {
   const { createSurface } = await import('@flyingrobots/bijou');
   const focusEdge = await loadFocusEdgeModule();
@@ -90,6 +108,7 @@ test('workspace focus edge skips panes that are not visible', async () => {
     focusPane: 'files',
     fileDrawerOpen: false,
     graftDrawerOpen: true,
+    historyDrawerOpen: true,
     hasEditor: true,
   }, edgeToken(), {
     top: 0,
