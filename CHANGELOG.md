@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Fixed Echo-hosted normal-mode undo and redo so `u` and `Ctrl-R` submit
+  production text replacement edits through Echo instead of emitting an
+  unsupported runtime-error toast.
 - Fixed Echo-hosted production text save so `Ctrl-S` requests a full-buffer
   export aperture before writing a file, preventing bounded viewport readings
   from truncating long files on disk.
