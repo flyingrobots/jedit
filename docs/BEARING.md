@@ -72,10 +72,11 @@ The developer-facing recipe lives in
 [`docs/echo-application-hosting-guide.md`](echo-application-hosting-guide.md).
 
 The active title startup UX slice is
-[`docs/design/0036-title-intro-startup-activity-modal.md`](design/0036-title-intro-startup-activity-modal.md).
+[`docs/design/0036-title-intro-startup-file-modal.md`](design/0036-title-intro-startup-file-modal.md).
 It records the deterministic intro timing, Enter/Escape skip behavior, and the
-post-intro startup modal with input and Recent Activity. This is jedit UI state
-only; it does not create Echo work or reopen non-Echo runtime modes.
+post-intro startup modal with input and current-directory files. This is jedit
+UI state only; it does not create Echo work, add a recent-workspace database, or
+reopen non-Echo runtime modes.
 
 ## Active Plan: Echo Authoritative Recovery Gate B
 
