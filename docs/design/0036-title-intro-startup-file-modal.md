@@ -140,6 +140,24 @@ Focused witnesses:
 - small-screen spec proving the modal does not override the minimum-terminal
   notice.
 
+## Fifteen-Slice Ledger
+
+- [ ] Slice 1: retime the pure title presentation sequence.
+- [ ] Slice 2: pin the new logo/sheens timeline with focused title specs.
+- [ ] Slice 3: add startup-flow state to the workspace model.
+- [ ] Slice 4: derive current-directory modal rows from `WorkspaceModel.entries`.
+- [ ] Slice 5: render the startup modal shell with input and file rows.
+- [ ] Slice 6: integrate the modal as a workspace overlay above the title scene.
+- [ ] Slice 7: preserve the small-terminal notice as the highest-priority view.
+- [ ] Slice 8: skip the intro with Enter or Escape before other title keys.
+- [ ] Slice 9: auto-complete the intro and open the modal at the timeline end.
+- [ ] Slice 10: edit modal input with printable keys and Backspace.
+- [ ] Slice 11: filter file rows from the modal input.
+- [ ] Slice 12: navigate modal file rows with arrows and Vim-shaped keys.
+- [ ] Slice 13: open the selected file through the existing production open path.
+- [ ] Slice 14: handle directories, empty directories, and no-match states.
+- [ ] Slice 15: close quality gaps, document follow-on ideas/debt, and refresh the PR.
+
 ## Non-Goals
 
 - No command palette implementation.
