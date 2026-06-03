@@ -168,6 +168,45 @@ test('point-in-time WSC history export does not change the active editor state',
   assert.deepEqual(saved, [{ filePath: '/repo/notes.txt', lines: ['t=10'] }]);
 });
 
+test('point-in-time WSC history export preserves listed historical basis metadata', async () => {
+  const [currentExport, ports] = await exportModules();
+  const saved = [];
+  const materializedSequences = [];
+  const result = currentExport.exportJeditWscHistoryAtBasis({
+    store: fakeStore({
+      envelopeIds: [BASIS_A, BASIS_B],
+      readEnvelope: (basisId) => ({
+        status: 'JEDIT_WSC_WORKSPACE_STORE_READ',
+        envelope: {
+          envelopeId: basisId,
+          bytes: settlementBytes(basisId === BASIS_A ? 10 : 20),
+        },
+        workspacePath: '/repo/.jedit/echo-wsc/envelopes',
+      }),
+    }),
+    basisId: BASIS_B,
+    editorFile: fakeEditorFile(saved),
+    materializer: {
+      materialize: (_envelope, basis) => {
+        materializedSequences.push(basis.sequence);
+        return {
+          status: ports.JEDIT_WSC_CURRENT_HISTORY_MATERIALIZED,
+          artifact: {
+            filePath: '/repo/notes.txt',
+            lines: [`sequence=${String(basis.sequence)}`],
+            readingId: READING_ID,
+          },
+        };
+      },
+    },
+  });
+
+  assert.equal(result.status, ports.JEDIT_WSC_CURRENT_HISTORY_EXPORTED);
+  assert.equal(result.basisId, BASIS_B);
+  assert.deepEqual(materializedSequences, [2]);
+  assert.deepEqual(saved, [{ filePath: '/repo/notes.txt', lines: ['sequence=2'] }]);
+});
+
 test('current WSC history export does not write host artifact when materialization fails', async () => {
   const [currentExport, ports] = await exportModules();
   const saved = [];
@@ -204,7 +243,7 @@ test('point-in-time WSC history export returns typed obstruction for missing ret
   const saved = [];
   const result = currentExport.exportJeditWscHistoryAtBasis({
     store: fakeStore({
-      envelopeIds: [BASIS_A],
+      envelopeIds: [BASIS_B],
       readEnvelope: () => ({
         status: 'JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED',
         obstruction: {

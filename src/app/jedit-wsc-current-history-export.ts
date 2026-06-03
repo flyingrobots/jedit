@@ -103,14 +103,25 @@ function historicalWscHistoryBasis(
   store: JeditWscWorkspaceStorePort,
   basisId: string,
 ): CurrentWscHistoryBasis | JeditWscCurrentHistoryExportObstructed {
-  const read = store.readEnvelope(basisId);
+  const listed = store.listEnvelopes();
+  if (listed.status === JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED) {
+    return storeObstructed(listed.obstruction);
+  }
+  const basis = listJeditWscHistoricalBases(listed.envelopeIds)
+    .bases
+    .find((candidate) => candidate.basisId === basisId);
+  if (basis == null) {
+    return exportObstructed(
+      JEDIT_WSC_CURRENT_HISTORY_MISSING_CURRENT_BASIS,
+      `No WSC historical basis is retained for ${basisId}.`,
+      basisId,
+    );
+  }
+  const read = store.readEnvelope(basis.envelopeId);
   if (read.status === JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED) {
     return storeObstructed(read.obstruction);
   }
-  const basis = listJeditWscHistoricalBases([basisId]).bases.at(0);
-  return basis == null
-    ? exportObstructed(JEDIT_WSC_CURRENT_HISTORY_MISSING_CURRENT_BASIS, `No WSC historical basis is retained for ${basisId}.`, basisId)
-    : { basis, envelope: read.envelope };
+  return { basis, envelope: read.envelope };
 }
 
 function currentWscHistoryBasis(
