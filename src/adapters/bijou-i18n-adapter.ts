@@ -1,28 +1,47 @@
-import { catalogs, type Locale, type TranslationSchema } from '../generated/i18n.js';
-import type { I18nDirection, I18nPort } from '../ports/i18n.js';
+import {
+  catalogs,
+  localeMetadata,
+  locales as generatedLocales,
+  type Locale,
+  type TranslationSchema,
+} from '../generated/i18n.js';
+import type { I18nDirection, I18nLocaleOption, I18nPort } from '../ports/i18n.js';
 
 type TranslationNode = string | { [key: string]: TranslationNode };
 
 const DEFAULT_LOCALE: Locale = 'en';
-const DEFAULT_DIRECTION: I18nDirection = 'ltr';
+const LOCALE_OPTIONS: readonly I18nLocaleOption[] = generatedLocales.map((locale) => ({
+  locale,
+  label: localeMetadata[locale].label,
+  direction: localeMetadata[locale].direction,
+}));
 
 export class BijouI18nAdapter implements I18nPort {
   private _locale: Locale;
   private _direction: I18nDirection;
   private _catalog: TranslationSchema;
 
-  constructor(locale: Locale = DEFAULT_LOCALE, direction: I18nDirection = DEFAULT_DIRECTION) {
-    this._locale = locale;
-    this._direction = direction;
-    this._catalog = catalogs[locale];
+  constructor(locale: string = DEFAULT_LOCALE) {
+    const resolved = resolveLocale(locale);
+    this._locale = resolved;
+    this._direction = localeMetadata[resolved].direction;
+    this._catalog = catalogs[resolved];
   }
 
   get locale(): string {
     return this._locale;
   }
 
+  get localeLabel(): string {
+    return localeMetadata[this._locale].label;
+  }
+
   get direction(): I18nDirection {
     return this._direction;
+  }
+
+  get locales(): readonly I18nLocaleOption[] {
+    return LOCALE_OPTIONS;
   }
 
   t(path: string, values?: Record<string, string | number>): string {
@@ -30,10 +49,14 @@ export class BijouI18nAdapter implements I18nPort {
     return translation == null ? path : interpolateTranslation(translation, values);
   }
 
-  setLocale(locale: string, direction: I18nDirection): void {
+  setLocale(locale: string): void {
     this._locale = resolveLocale(locale);
-    this._direction = direction;
+    this._direction = localeMetadata[this._locale].direction;
     this._catalog = catalogs[this._locale];
+  }
+
+  withLocale(locale: string): I18nPort {
+    return new BijouI18nAdapter(locale);
   }
 }
 
@@ -85,5 +108,6 @@ function resolveLocale(value: string): Locale {
 }
 
 function isLocale(value: string): value is Locale {
-  return Object.prototype.hasOwnProperty.call(catalogs, value);
+  return Object.prototype.hasOwnProperty.call(catalogs, value)
+    && Object.prototype.hasOwnProperty.call(localeMetadata, value);
 }

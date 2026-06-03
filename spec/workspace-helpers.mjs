@@ -1,7 +1,15 @@
-import assert from 'node:assert/strict';
 import path from 'node:path';
 import { createNotificationState } from '@flyingrobots/bijou-tui';
 import { REPO_ROOT, ensureDistBuilt, importDist } from './dist-helpers.mjs';
+
+const MOCK_I18N_TRANSLATIONS = Object.freeze({
+  'startupFileModal.title': 'Open file',
+  'startupFileModal.hint': 'Type filter · Enter open · Esc close',
+  'startupFileModal.input_label': 'Filter',
+  'startupFileModal.current_directory': 'Current directory',
+  'startupFileModal.empty': 'No files in this directory',
+  'startupFileModal.no_match': 'No files match',
+});
 
 export { REPO_ROOT, ensureDistBuilt, importDist };
 
@@ -42,6 +50,7 @@ export function mockDeps(overrides = {}) {
       loadBuiltInTitleScene: async () => undefined,
     },
     productionTextSession: fakeProductionTextSession(),
+    wscWorkspaceStore: fakeWscWorkspaceStore(),
     ...overrides,
   };
 }
@@ -74,6 +83,19 @@ export function fakeProductionTextObstruction() {
   };
 }
 
+export function fakeWscWorkspaceStore() {
+  return {
+    writeEnvelope: (envelope) => ({
+      status: 'JEDIT_WSC_WORKSPACE_STORE_WRITTEN',
+      envelopeId: envelope.envelopeId,
+      byteLength: envelope.bytes.byteLength,
+      workspacePath: '/repo/.jedit/echo-wsc/envelopes',
+    }),
+    readEnvelope: () => ({ status: 'JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED' }),
+    listEnvelopes: () => ({ status: 'JEDIT_WSC_WORKSPACE_STORE_LISTED', envelopeIds: [] }),
+  };
+}
+
 export function mockKeyBindingContext(overrides = {}) {
   const { deps: depsOverride, ...contextOverrides } = overrides;
   return {
@@ -88,11 +110,29 @@ export function mockKeyBindingContext(overrides = {}) {
 export function mockI18n(overrides = {}) {
   return {
     locale: 'en',
+    localeLabel: 'English',
     direction: 'ltr',
-    t: () => '',
+    locales: [{
+      locale: 'en',
+      label: 'English',
+      direction: 'ltr',
+    }],
+    t: (key, values) => applyMockTranslationValues(
+      overrides.translations?.[key] ?? MOCK_I18N_TRANSLATIONS[key] ?? '',
+      values,
+    ),
     setLocale: () => undefined,
+    withLocale: (locale) => mockI18n({ ...overrides, locale }),
     ...overrides,
   };
+}
+
+function applyMockTranslationValues(template, values) {
+  let result = template;
+  for (const [key, value] of Object.entries(values ?? {})) {
+    result = result.replace(`{${key}}`, String(value));
+  }
+  return result;
 }
 
 export function mockRuntime(overrides = {}) {
@@ -150,11 +190,53 @@ export function mockJeditTheme() {
 export function mockTitleScreenModel(titleScreen, overrides = {}) {
   return {
     editor: undefined,
+    workspaceRoot: '/repo',
+    cwd: '/repo',
+    entries: [],
+    selectedIndex: 0,
+    textRuntimeProfile: 'echoHosted',
+    textAuthority: {
+      kind: 'none',
+      profile: 'echoHosted',
+    },
+    textRequestId: 0,
+    viewMode: 'source',
+    focusPane: 'editor',
+    fileDrawerOpen: false,
+    fileDrawerProgress: 0,
+    graftDrawerOpen: false,
+    graftDrawerProgress: 0,
+    historyDrawerOpen: false,
+    historyDrawerProgress: 0,
+    echoHistory: [],
+    echoHistorySelectedIndex: 0,
+    settingsOpen: false,
+    settingsFocusIndex: 0,
+    scenePickerOpen: false,
+    scenePickerFocusIndex: 0,
+    availableScenes: [],
     columns: 120,
     rows: 24,
     notifications: createNotificationState(),
     notificationLoopActive: false,
+    quitConfirmOpen: false,
+    startupIntroComplete: false,
+    startupFileModalOpen: false,
+    startupFileModalInput: '',
+    startupFileModalSelectedIndex: 0,
     jeditTheme: mockJeditTheme(),
+    i18n: mockI18n(),
+    time: 0,
+    titleSceneSeed: 0.5,
+    titleMeshes: {},
+    titleCamera: {
+      angle: 0,
+      angleTarget: 0,
+      angleMotionId: 0,
+      radius: 8.5,
+      radiusTarget: 8.5,
+      radiusMotionId: 0,
+    },
     titleRenderMode: titleScreen.TITLE_RENDER_MODE.Braille,
     titleAsciiPalette: titleScreen.TITLE_ASCII_PALETTE.Dense,
     ...overrides,

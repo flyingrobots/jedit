@@ -94,8 +94,10 @@ The next release-gate slice plan is recorded in
   without exposing app-controlled cancellation or half-tick interruption.
 - `scripts/jedit-echo-powered-session.mjs --json` gives agents a fast
   product-session witness over the `TextBufferOptic` and trusted lifecycle
-  wrapper. It uses the fake Echo-shaped transport; the opt-in real Echo WASM
-  witness remains the substrate proof.
+  wrapper. The default TUI and release-gate path use the installed jedit
+  contract transport; fixture-local fake transport remains available for
+  focused tests, and the opt-in real Echo WASM witness remains the substrate
+  proof.
 - `stopTrustedEchoRuntime(...)` is the deterministic host shutdown primitive
   for Echo lifecycle control. It is not app-facing stop/cancel behavior.
 - Fixture vars bytes are not the durable Wesley runtime codec.

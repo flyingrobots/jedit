@@ -116,9 +116,10 @@ composes the frame:
 2. Main viewer.
 3. File drawer if open.
 4. Graft drawer if open.
-5. Active pane edge marker.
-6. Two-line footer if enabled.
-7. Notification overlay.
+5. Echo History drawer if open.
+6. Active pane edge marker.
+7. Two-line footer if enabled.
+8. Notification overlay.
 
 Each child renderer returns its own `Surface`. The root workspace blits those
 child surfaces into the correct positions.
@@ -131,8 +132,8 @@ surfaces. Bijou handles terminal output after the final composed surface exists.
 The render path separates terminal layout from buffer projection.
 
 `renderWorkspace(...)` asks `resolveWorkspaceLayout(...)` for the current file
-drawer, viewer, and Graft drawer rectangles. It then computes the viewer body
-height from the terminal rows and footer visibility.
+drawer, viewer, Graft drawer, and Echo History drawer rectangles. It then
+computes the viewer body height from the terminal rows and footer visibility.
 
 `viewerViewport(width, height)` subtracts the viewer padding from that layout
 rectangle. The resulting viewport tells source and preview renderers how many
@@ -289,12 +290,13 @@ over the row.
 
 ## Drawers And Footer
 
-The file drawer, Graft drawer, and footer are not buffers.
+The file drawer, Graft drawer, Echo History drawer, and footer are not buffers.
 
 They are independent projections over workspace state:
 
 - The file drawer projects directory entries.
 - The Graft drawer projects current-file Graft info.
+- The Echo History drawer projects visible Echo evidence entries.
 - The footer projects focus, mode, pending chord, active file, and selection
   context.
 
@@ -318,6 +320,7 @@ routes the scroll to the focused surface:
 
 - file drawer selection
 - Graft drawer selection
+- Echo History drawer selection
 - source editor viewport
 - Markdown preview viewport
 

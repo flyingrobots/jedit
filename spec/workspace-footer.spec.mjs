@@ -19,6 +19,7 @@ function idleNormalState() {
     focusPane: 'editor',
     fileDrawerOpen: false,
     graftDrawerOpen: false,
+    historyDrawerOpen: false,
     viewMode: 'source',
     markdownPreviewActive: true,
     settingsOpen: false,
@@ -85,7 +86,7 @@ test('workspace footer shows f3 as the Markdown preview source toggle', async ()
       viewMode: 'preview',
     }),
     [
-      'PREVIEW [j/k scroll · f3 source · ctrl+t theme · ctrl+b files · ctrl+g graft]',
+      'PREVIEW [j/k scroll · f3 source · ctrl+t theme · ctrl+b files · ctrl+g graft · ctrl+h history]',
       '/repo/notes/todo.md',
     ],
   );
@@ -100,6 +101,7 @@ test('workspace footer shows file drawer controls and the selected file path', a
       focusPane: 'files',
       fileDrawerOpen: true,
       graftDrawerOpen: false,
+      historyDrawerOpen: false,
       viewMode: 'source',
       markdownPreviewActive: false,
       settingsOpen: false,
@@ -118,6 +120,23 @@ test('workspace footer shows file drawer controls and the selected file path', a
     [
       'FILES [j/k move · enter open · backspace up · ctrl+b close · ctrl+t theme · tab focus]',
       '/repo/notes/very-long-file-name.md',
+    ],
+  );
+});
+
+test('workspace footer shows history drawer controls and evidence count', async () => {
+  const footer = await loadFooterModule();
+
+  assert.deepEqual(
+    footer.workspaceFooterLines({
+      ...idleNormalState(),
+      focusPane: 'history',
+      historyDrawerOpen: true,
+      echoHistoryCount: 3,
+    }),
+    [
+      'HISTORY [j/k move · ctrl+h close · esc close · ctrl+t theme · tab focus]',
+      'Echo evidence: 3',
     ],
   );
 });
@@ -160,6 +179,9 @@ test('workspace footer obtains the scene picker hint label from i18n', async () 
       if (path === 'footer.hints.ctrl_g_graft') {
         return 'ctrl+g graft';
       }
+      if (path === 'footer.hints.ctrl_h_history') {
+        return 'ctrl+h history';
+      }
       const parts = path.split('.');
       return parts[parts.length - 1].replace(/_/g, ' ');
     },
@@ -172,6 +194,7 @@ test('workspace footer obtains the scene picker hint label from i18n', async () 
       focusPane: 'editor',
       fileDrawerOpen: false,
       graftDrawerOpen: false,
+      historyDrawerOpen: false,
       viewMode: 'source',
       markdownPreviewActive: false,
       settingsOpen: false,
@@ -184,7 +207,7 @@ test('workspace footer obtains the scene picker hint label from i18n', async () 
       graftSelection: undefined,
     }),
     [
-      'BROWSE [ctrl+l scene picker · ctrl+t theme · ctrl+b files · ctrl+g graft]',
+      'BROWSE [ctrl+l scene picker · ctrl+t theme · ctrl+b files · ctrl+g graft · ctrl+h history]',
       '/repo',
     ],
   );
@@ -197,13 +220,16 @@ test('workspace footer obtains command hints from i18n', async () => {
   const i18n = {
     locale: 'en',
     direction: 'ltr',
-    t: (path) => {
-      requestedKeys.push(path);
-      if (path.startsWith('footer.mode.')) {
-        return path.slice('footer.mode.'.length);
-      }
-      return `<${path}>`;
-    },
+	    t: (path, values) => {
+	      requestedKeys.push(path);
+	      if (path.startsWith('footer.mode.')) {
+	        return path.slice('footer.mode.'.length);
+	      }
+	      if (path === 'footer.context.history_count') {
+	        return `<${path}:${values?.count}>`;
+	      }
+	      return `<${path}>`;
+	    },
     setLocale: () => undefined,
   };
 
@@ -212,6 +238,7 @@ test('workspace footer obtains command hints from i18n', async () => {
     focusPane: 'files',
     fileDrawerOpen: true,
     graftDrawerOpen: false,
+    historyDrawerOpen: false,
     viewMode: 'source',
     markdownPreviewActive: false,
     settingsOpen: false,
@@ -269,16 +296,19 @@ test('workspace footer right-aligns RTL footer text by visual content width', as
 test('workspace footer obtains context labels from i18n', async () => {
   const footer = await loadFooterModule();
   const requestedKeys = [];
-  const i18n = {
-    locale: 'en',
-    direction: 'ltr',
-    t: (path) => {
-      requestedKeys.push(path);
-      if (path.startsWith('footer.mode.')) {
-        return path.slice('footer.mode.'.length);
-      }
-      return `<${path}>`;
-    },
+	  const i18n = {
+	    locale: 'en',
+	    direction: 'ltr',
+	    t: (path, values) => {
+	      requestedKeys.push(path);
+	      if (path === 'footer.context.history_count') {
+	        return `<${path}:${values?.count}>`;
+	      }
+	      if (path.startsWith('footer.mode.')) {
+	        return path.slice('footer.mode.'.length);
+	      }
+	      return `<${path}>`;
+	    },
     setLocale: () => undefined,
   };
   const base = {
@@ -286,6 +316,7 @@ test('workspace footer obtains context labels from i18n', async () => {
     focusPane: 'editor',
     fileDrawerOpen: false,
     graftDrawerOpen: false,
+    historyDrawerOpen: false,
     viewMode: 'source',
     markdownPreviewActive: false,
     settingsOpen: false,
@@ -304,6 +335,19 @@ test('workspace footer obtains context labels from i18n', async () => {
     focusPane: 'graft',
     graftDrawerOpen: true,
   })[1], '<footer.context.graft_empty>');
+  assert.equal(footer.workspaceFooterLines({
+    ...base,
+    focusPane: 'history',
+    historyDrawerOpen: true,
+  })[1], '<footer.context.history_empty>');
+  assert.equal(footer.workspaceFooterLines({
+    ...base,
+    focusPane: 'history',
+    historyDrawerOpen: true,
+    echoHistoryCount: 2,
+  })[1], '<footer.context.history_count:2>');
   assert.equal(requestedKeys.includes('footer.context.settings'), true);
   assert.equal(requestedKeys.includes('footer.context.graft_empty'), true);
+  assert.equal(requestedKeys.includes('footer.context.history_empty'), true);
+  assert.equal(requestedKeys.includes('footer.context.history_count'), true);
 });

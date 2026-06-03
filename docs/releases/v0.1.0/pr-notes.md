@@ -34,5 +34,5 @@ Recorded reports:
   lattice.
 - Application code still has no tick, start, stop, install, or lifecycle
   authority.
-- `testLocal` remains a dev/test fixture profile, not a user-facing product
-  mode.
+- The production TUI has no non-Echo text runtime profile; focused tests use
+  direct fake-port injection instead of a runtime mode.

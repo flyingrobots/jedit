@@ -47,10 +47,34 @@ test('settings drawer renders structured rows and highlights the selected row', 
 
   assert.match(text, /Settings/);
   assert.match(text, /F2\/Esc close/);
+  assert.match(text, /● English Current/);
   assert.match(text, /↻ Theme/);
   assert.match(text, /☑ Footer/);
   assert.match(text, /↻ Markdown preview/);
-  assert.equal(surface.get(2, 7).char, '›');
-  assert.equal(surface.get(2, 7).fg, theme.cursor.normal.fg);
-  assert.equal(surface.get(2, 7).bg, theme.cursor.normal.bg);
+  assert.equal(surface.get(2, 8).char, '›');
+  assert.equal(surface.get(2, 8).fg, theme.cursor.normal.fg);
+  assert.equal(surface.get(2, 8).bg, theme.cursor.normal.bg);
+});
+
+test('settings drawer keeps the focused row visible when section headers consume short drawers', async () => {
+  const { drawer, settings, themes } = await loadDrawerModules();
+  const theme = themes.availableJeditThemes()[0];
+  const rows = settings.jeditSettingsRows({
+    i18n: createI18nMock(),
+    jeditTheme: theme,
+    footerVisible: true,
+    markdownPreviewActive: true,
+    viewMode: 'source',
+  });
+  const selectedIndex = rows.findIndex((row) => row.id === 'markdown-preview');
+
+  const surface = drawer.renderSettingsDrawer({
+    rows,
+    selectedIndex,
+    theme,
+    width: 42,
+    height: 12,
+  });
+
+  assert.match(surfaceText(surface), /› ↻ Markdown preview Source/);
 });

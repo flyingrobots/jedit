@@ -2,7 +2,7 @@ import { initDefaultContext } from '@flyingrobots/bijou-node';
 import { run } from '@flyingrobots/bijou-tui';
 import { JEDIT_TERMINAL_MOUSE_OPTIONS } from './ui/terminal-mouse.js';
 import { createWorkspaceApp } from './adapters/workspace-app.js';
-import { parseTextRuntimeProfile, resolveTextRuntimeProfile } from './app/text-runtime-profile.js';
+import { parseTextRuntimeProfile, requireTextRuntimeProfile } from './app/text-runtime-profile.js';
 
 const DEFAULT_TERMINAL_COLUMNS = 100;
 const DEFAULT_TERMINAL_ROWS = 32;
@@ -20,17 +20,16 @@ const BOOLEAN_BY_ENV_VALUE: Readonly<Record<string, boolean>> = Object.freeze({
   [ENV_BOOLEAN.Disabled]: false,
 });
 
-initDefaultContext();
-
-const textRuntimeProfile = resolveTextRuntimeProfile(parseTextRuntimeProfile(
+requireTextRuntimeProfile(parseTextRuntimeProfile(
   process.env[ENV_KEYS.TextRuntime],
 ));
+
+initDefaultContext();
 
 const app = createWorkspaceApp({
   initialColumns: process.stdout.columns ?? DEFAULT_TERMINAL_COLUMNS,
   initialRows: process.stdout.rows ?? DEFAULT_TERMINAL_ROWS,
   initialWorkingDirectory: DEFAULT_WORKING_DIRECTORY,
-  textRuntimeProfile,
   perfEnabled: envBoolean(process.env[ENV_KEYS.Perf]),
 });
 

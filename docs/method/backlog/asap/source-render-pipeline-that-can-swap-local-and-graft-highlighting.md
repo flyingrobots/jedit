@@ -24,7 +24,7 @@ preview renderer: classification on one side, paint on the other.
 Context:
 
 - `jedit` can already paint per-cell color in the terminal.
-- Current Graft MCP surfaces are still structural, not token/span oriented.
+- Current Graft direct API surfaces are still structural, not token/span oriented.
 - We want visible editor improvement now without painting ourselves into a
   corner before Graft grows buffer-aware syntax span APIs.
 
