@@ -264,6 +264,45 @@ test('point-in-time WSC history export returns typed obstruction for missing ret
   assert.deepEqual(saved, []);
 });
 
+test('point-in-time WSC history export obstructs unknown historical basis without materializing', async () => {
+  const [currentExport, ports] = await exportModules();
+  const saved = [];
+  let materializeCount = 0;
+  const result = currentExport.exportJeditWscHistoryAtBasis({
+    store: fakeStore({
+      envelopeIds: [BASIS_A],
+      readEnvelope: () => ({
+        status: 'JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED',
+        obstruction: {
+          code: 'missing_envelope',
+          message: 'must not read an unlisted basis',
+          envelopeId: BASIS_B,
+        },
+      }),
+    }),
+    basisId: BASIS_B,
+    editorFile: fakeEditorFile(saved),
+    materializer: {
+      materialize: () => {
+        materializeCount += 1;
+        return {
+          status: ports.JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_OBSTRUCTED,
+          obstruction: {
+            code: ports.JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_FAILED,
+            message: 'must not materialize an unlisted basis',
+          },
+        };
+      },
+    },
+  });
+
+  assert.equal(result.status, ports.JEDIT_WSC_CURRENT_HISTORY_EXPORT_OBSTRUCTED);
+  assert.equal(result.obstruction.code, ports.JEDIT_WSC_CURRENT_HISTORY_MISSING_CURRENT_BASIS);
+  assert.equal(result.obstruction.basisId, BASIS_B);
+  assert.equal(materializeCount, 0);
+  assert.deepEqual(saved, []);
+});
+
 test('current WSC history export returns typed obstruction when no basis is retained', async () => {
   const [currentExport, ports] = await exportModules();
   const result = currentExport.exportCurrentJeditWscHistory({
