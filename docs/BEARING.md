@@ -71,6 +71,14 @@ and authority-boundary report for the current release-gate PR.
 The developer-facing recipe lives in
 [`docs/echo-application-hosting-guide.md`](echo-application-hosting-guide.md).
 
+## Active Plan: Executable Design Cycle Template
+
+The current branch advances
+[`docs/design/0034-design-cycle-template-and-lifecycle.md`](design/0034-design-cycle-template-and-lifecycle.md).
+The goal is to make full-cycle design docs official, repo-specific, and hostile
+to fake proof: design defines intent, while implementation requires executable
+witnesses over real software surfaces.
+
 ## Active Plan: Echo Authoritative Recovery Gate B
 
 The current branch advances
