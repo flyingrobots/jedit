@@ -1,10 +1,9 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
+import { REPO_ROOT, ensureDistBuilt } from './dist-helpers.mjs';
 
-const REPO_ROOT = process.cwd();
 const THEMES_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'jedit-themes.js');
 const STYLE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'jedit-theme.js');
 const EDITOR_INSPIRED_THEME_NAMES = [
@@ -31,12 +30,7 @@ const LUMINANCE_GREEN_WEIGHT = 0.7152;
 const LUMINANCE_BLUE_WEIGHT = 0.0722;
 
 async function loadThemesModule() {
-  const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
-    cwd: REPO_ROOT,
-    encoding: 'utf8',
-  });
-
-  assert.equal(build.status, 0, build.stderr || build.stdout);
+  await ensureDistBuilt();
 
   return {
     themes: await import(pathToFileURL(THEMES_PATH).href),

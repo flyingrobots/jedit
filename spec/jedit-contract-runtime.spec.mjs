@@ -1,22 +1,16 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
+import { REPO_ROOT, ensureDistBuilt } from './dist-helpers.mjs';
 
-const REPO_ROOT = process.cwd();
 const CONTRACT_APP_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-runtime.js');
 const CONTRACT_ID_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-runtime-id.js');
 const ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'in-memory-hot-text-runtime.js');
 const HASH_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'hash.js');
 
 async function loadModules() {
-  const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
-    cwd: REPO_ROOT,
-    encoding: 'utf8',
-  });
-
-  assert.equal(build.status, 0, build.stderr || build.stdout);
+  await ensureDistBuilt();
 
   const [contractApp, contractIds, adapter, hashAdapter] = await Promise.all([
     import(pathToFileURL(CONTRACT_APP_MODULE_PATH).href),

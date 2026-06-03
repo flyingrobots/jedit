@@ -79,6 +79,9 @@ The goal is to shorten jedit pull-request iteration time by splitting the
 single `npm run check` CI monolith into auditable shards, while keeping a final
 aggregate `check` gate and forcing full CI whenever the planner cannot prove a
 narrower shard set is sufficient.
+Shard jobs consume the build job's `dist` artifact through
+`spec/dist-helpers.mjs`; spec-local loaders must not rebuild TypeScript when
+`JEDIT_DIST_PREBUILT=1`.
 
 ## Active Plan: Echo Authoritative Recovery Gate B
 

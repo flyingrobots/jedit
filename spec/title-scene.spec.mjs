@@ -4,8 +4,8 @@ import { existsSync, renameSync } from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
+import { REPO_ROOT, ensureDistBuilt, isPrebuiltDistEnabled } from './dist-helpers.mjs';
 
-const REPO_ROOT = process.cwd();
 const TITLE_SCENE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-scene.js');
 const TITLE_MESH_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-mesh.js');
 const TITLE_BUNNY_MESH_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'title-bunny-mesh.js');
@@ -14,8 +14,6 @@ const TITLE_BUNNY_DIST_ASSET_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'bunny.ob
 const TITLE_TEAPOT_DIST_ASSET_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'utah_teapot.obj');
 const TITLE_TEAPOT_SOURCE_ASSET_PATH = path.join(REPO_ROOT, 'src', 'ui', 'utah_teapot.obj');
 const TITLE_CAMERA_PATH = path.join(REPO_ROOT, 'dist', 'app', 'title-camera-session.js');
-const PREBUILT_DIST_ENV = 'JEDIT_DIST_PREBUILT';
-const PREBUILT_DIST_ENABLED = '1';
 const FIXED_SCENE_SEED = 0.314159;
 const OTHER_SCENE_SEED = 0.271828;
 const MIN_OBJECT_COUNT = 6;
@@ -61,20 +59,15 @@ async function loadTitleSceneModules() {
 }
 
 async function ensureTitleSceneDist() {
-  if (process.env[PREBUILT_DIST_ENV] === PREBUILT_DIST_ENABLED) {
-    assert.ok(existsSync(TITLE_SCENE_PATH), `${TITLE_SCENE_PATH} should exist when ${PREBUILT_DIST_ENV}=1`);
+  if (isPrebuiltDistEnabled()) {
+    assert.ok(existsSync(TITLE_SCENE_PATH), 'dist/ui/title-scene.js should exist when dist is prebuilt');
     return;
   }
-  const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
-    cwd: REPO_ROOT,
-    encoding: 'utf8',
-  });
-
-  assert.equal(build.status, 0, build.stderr || build.stdout);
+  await ensureDistBuilt();
 }
 
 test('build copies the title bunny mesh asset into dist', async () => {
-  if (process.env[PREBUILT_DIST_ENV] === PREBUILT_DIST_ENABLED) {
+  if (isPrebuiltDistEnabled()) {
     assert.ok(existsSync(TITLE_BUNNY_DIST_ASSET_PATH), 'dist/ui/bunny.obj should exist when dist is prebuilt');
     assert.ok(existsSync(TITLE_TEAPOT_DIST_ASSET_PATH), 'dist/ui/utah_teapot.obj should exist when dist is prebuilt');
     return;

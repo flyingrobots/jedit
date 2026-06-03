@@ -53,6 +53,11 @@ finishing in seconds. The long pole was the single `Run checks` step.
 Static build and quality are separate non-test jobs. The release gate is a
 separate conditional job.
 
+Shard jobs receive the `dist` artifact from the build job and set
+`JEDIT_DIST_PREBUILT=1`. Specs that import compiled modules must use the shared
+`spec/dist-helpers.mjs` loader path so shard jobs do not rebuild TypeScript or
+depend on ignored generated source files in a fresh checkout.
+
 ## Path Impact Rules
 
 | Changed path | Required checks |
@@ -75,7 +80,8 @@ Every plan also runs static build and quality.
 - [x] Slice 2: add the shard manifest and every-spec coverage check.
 - [x] Slice 3: add the changed-path impact planner.
 - [x] Slice 4: add shard runner scripts and package commands.
-- [x] Slice 5: add prebuilt-dist support for specs that used to rebuild dist.
+- [x] Slice 5: add shared prebuilt-dist support for specs that used to rebuild
+  dist.
 - [x] Slice 6: add planner/shard tests.
 - [x] Slice 7: split GitHub Actions into plan, build, shard, release-gate,
   quality, and aggregate `check` jobs.
@@ -99,3 +105,5 @@ This campaign is ready when:
   unknown-path cases.
 - `npm run check` remains green locally.
 - GitHub CI reports a final aggregate `check` job and exposes shard-level jobs.
+- Shard jobs import compiled modules from the downloaded build artifact instead
+  of running per-spec TypeScript rebuilds.
