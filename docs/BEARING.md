@@ -71,6 +71,15 @@ and authority-boundary report for the current release-gate PR.
 The developer-facing recipe lives in
 [`docs/echo-application-hosting-guide.md`](echo-application-hosting-guide.md).
 
+## Active Plan: CI Shard And Impact Planning
+
+The current branch advances
+[`docs/design/0034-ci-shard-and-impact-planning.md`](design/0034-ci-shard-and-impact-planning.md).
+The goal is to shorten jedit pull-request iteration time by splitting the
+single `npm run check` CI monolith into auditable shards, while keeping a final
+aggregate `check` gate and forcing full CI whenever the planner cannot prove a
+narrower shard set is sufficient.
+
 ## Active Plan: Echo Authoritative Recovery Gate B
 
 The current branch advances

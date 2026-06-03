@@ -14,6 +14,8 @@ const TITLE_BUNNY_DIST_ASSET_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'bunny.ob
 const TITLE_TEAPOT_DIST_ASSET_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'utah_teapot.obj');
 const TITLE_TEAPOT_SOURCE_ASSET_PATH = path.join(REPO_ROOT, 'src', 'ui', 'utah_teapot.obj');
 const TITLE_CAMERA_PATH = path.join(REPO_ROOT, 'dist', 'app', 'title-camera-session.js');
+const PREBUILT_DIST_ENV = 'JEDIT_DIST_PREBUILT';
+const PREBUILT_DIST_ENABLED = '1';
 const FIXED_SCENE_SEED = 0.314159;
 const OTHER_SCENE_SEED = 0.271828;
 const MIN_OBJECT_COUNT = 6;
@@ -39,24 +41,44 @@ const SCENE_COLORS = {
   surface: [14, 17, 22],
 };
 
+let titleSceneModulesPromise;
+
 async function loadTitleSceneModules() {
+  if (titleSceneModulesPromise != null) {
+    return titleSceneModulesPromise;
+  }
+  titleSceneModulesPromise = Promise.resolve().then(async () => {
+    await ensureTitleSceneDist();
+    return {
+      titleScene: await import(pathToFileURL(TITLE_SCENE_PATH).href),
+      titleMesh: await import(pathToFileURL(TITLE_MESH_PATH).href),
+      titleBunnyMesh: await import(pathToFileURL(TITLE_BUNNY_MESH_PATH).href),
+      domainErrors: await import(pathToFileURL(DOMAIN_ERRORS_PATH).href),
+      titleCamera: await import(pathToFileURL(TITLE_CAMERA_PATH).href),
+    };
+  });
+  return titleSceneModulesPromise;
+}
+
+async function ensureTitleSceneDist() {
+  if (process.env[PREBUILT_DIST_ENV] === PREBUILT_DIST_ENABLED) {
+    assert.ok(existsSync(TITLE_SCENE_PATH), `${TITLE_SCENE_PATH} should exist when ${PREBUILT_DIST_ENV}=1`);
+    return;
+  }
   const build = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
   });
 
   assert.equal(build.status, 0, build.stderr || build.stdout);
-
-  return {
-    titleScene: await import(pathToFileURL(TITLE_SCENE_PATH).href),
-    titleMesh: await import(pathToFileURL(TITLE_MESH_PATH).href),
-    titleBunnyMesh: await import(pathToFileURL(TITLE_BUNNY_MESH_PATH).href),
-    domainErrors: await import(pathToFileURL(DOMAIN_ERRORS_PATH).href),
-    titleCamera: await import(pathToFileURL(TITLE_CAMERA_PATH).href),
-  };
 }
 
 test('build copies the title bunny mesh asset into dist', async () => {
+  if (process.env[PREBUILT_DIST_ENV] === PREBUILT_DIST_ENABLED) {
+    assert.ok(existsSync(TITLE_BUNNY_DIST_ASSET_PATH), 'dist/ui/bunny.obj should exist when dist is prebuilt');
+    assert.ok(existsSync(TITLE_TEAPOT_DIST_ASSET_PATH), 'dist/ui/utah_teapot.obj should exist when dist is prebuilt');
+    return;
+  }
   const build = spawnSync('npm', ['run', 'build'], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
