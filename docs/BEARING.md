@@ -79,6 +79,18 @@ The goal is to make full-cycle design docs official, repo-specific, and hostile
 to fake proof: design defines intent, while implementation requires executable
 witnesses over real software surfaces.
 
+## Active Plan: CI Shard And Impact Planning
+
+The current branch advances
+[`docs/design/0034-ci-shard-and-impact-planning.md`](design/0034-ci-shard-and-impact-planning.md).
+The goal is to shorten jedit pull-request iteration time by splitting the
+single `npm run check` CI monolith into auditable shards, while keeping a final
+aggregate `check` gate and forcing full CI whenever the planner cannot prove a
+narrower shard set is sufficient.
+Shard jobs consume the build job's `dist` artifact through
+`spec/dist-helpers.mjs`; spec-local loaders must not rebuild TypeScript when
+`JEDIT_DIST_PREBUILT=1`.
+
 ## Active Plan: Echo Authoritative Recovery Gate B
 
 The current branch advances
