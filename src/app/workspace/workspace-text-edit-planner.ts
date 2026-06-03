@@ -1,5 +1,9 @@
 import type { EditorState } from './editor/model.js';
 import {
+  editorText,
+  insertPositionAtIndex,
+} from './editor-editing-core.js';
+import {
   byteOffsetForTextPosition,
   nextByteOffset,
   positionAfterInsertedText,
@@ -15,6 +19,7 @@ const PLAN_UNSUPPORTED = 'unsupported';
 const UNSUPPORTED_SELECTION = 'unsupported-selection';
 const UNSUPPORTED_EMPTY_BACKSPACE = 'empty-backspace';
 const UNSUPPORTED_EMPTY_DELETE = 'empty-delete';
+const UNSUPPORTED_EMPTY_TRANSITION = 'empty-transition';
 
 export const WorkspaceTextEditPlanKinds = Object.freeze({
   Insert: PLAN_INSERT,
@@ -27,6 +32,7 @@ export const WorkspaceTextEditPlanUnsupportedReasons = Object.freeze({
   Selection: UNSUPPORTED_SELECTION,
   EmptyBackspace: UNSUPPORTED_EMPTY_BACKSPACE,
   EmptyDelete: UNSUPPORTED_EMPTY_DELETE,
+  EmptyTransition: UNSUPPORTED_EMPTY_TRANSITION,
 } as const);
 
 export interface WorkspaceTextSelectionRange {
@@ -60,7 +66,11 @@ export interface WorkspaceTextDeletePlan {
 
 export interface WorkspaceTextUnsupportedPlan {
   readonly kind: typeof PLAN_UNSUPPORTED;
-  readonly reason: typeof UNSUPPORTED_SELECTION | typeof UNSUPPORTED_EMPTY_BACKSPACE | typeof UNSUPPORTED_EMPTY_DELETE;
+  readonly reason:
+    | typeof UNSUPPORTED_SELECTION
+    | typeof UNSUPPORTED_EMPTY_BACKSPACE
+    | typeof UNSUPPORTED_EMPTY_DELETE
+    | typeof UNSUPPORTED_EMPTY_TRANSITION;
 }
 
 export type WorkspaceTextEditPlan =
@@ -144,11 +154,159 @@ export function planWorkspaceTextDeleteUnderCursor(
     };
 }
 
+export function planWorkspaceTextDeleteTransition(
+  editor: EditorState,
+  nextEditor: EditorState,
+): WorkspaceTextDeletePlan | WorkspaceTextUnsupportedPlan {
+  const transition = workspaceTextTransition(editor, nextEditor);
+  return transition == null || transition.insertText.length > 0
+    ? unsupportedPlan(UNSUPPORTED_EMPTY_TRANSITION)
+    : {
+      kind: PLAN_DELETE,
+      startByte: transition.startByte,
+      endByte: transition.endByte,
+      cursorAfter: transition.cursorAfter,
+    };
+}
+
+export function planWorkspaceTextDeleteLine(
+  editor: EditorState,
+  nextEditor: EditorState,
+): WorkspaceTextDeletePlan | WorkspaceTextUnsupportedPlan {
+  const range = currentLineRange(editor);
+  return range.startByte === range.endByte
+    ? unsupportedPlan(UNSUPPORTED_EMPTY_TRANSITION)
+    : {
+      kind: PLAN_DELETE,
+      startByte: range.startByte,
+      endByte: range.endByte,
+      cursorAfter: editorTextPosition(nextEditor),
+    };
+}
+
+export function planWorkspaceTextReplaceTransition(
+  editor: EditorState,
+  nextEditor: EditorState,
+): WorkspaceTextReplacePlan | WorkspaceTextUnsupportedPlan {
+  const transition = workspaceTextTransition(editor, nextEditor);
+  return transition == null
+    ? unsupportedPlan(UNSUPPORTED_EMPTY_TRANSITION)
+    : {
+      kind: PLAN_REPLACE,
+      startByte: transition.startByte,
+      endByte: transition.endByte,
+      insertText: transition.insertText,
+      cursorAfter: transition.cursorAfter,
+    };
+}
+
+export function planWorkspaceTextReplaceLine(
+  editor: EditorState,
+  nextEditor: EditorState,
+): WorkspaceTextReplacePlan | WorkspaceTextUnsupportedPlan {
+  const range = currentLineRange(editor);
+  return range.startByte === range.endByte
+    ? unsupportedPlan(UNSUPPORTED_EMPTY_TRANSITION)
+    : {
+      kind: PLAN_REPLACE,
+      startByte: range.startByte,
+      endByte: range.endByte,
+      insertText: '',
+      cursorAfter: editorTextPosition(nextEditor),
+    };
+}
+
 function editorTextPosition(editor: EditorState): TextPosition {
   return {
     row: editor.cursorRow,
     column: editor.cursorCol,
   };
+}
+
+function currentLineRange(editor: EditorState): WorkspaceTextRange {
+  const row = Math.max(0, Math.min(editor.cursorRow, Math.max(0, editor.lines.length - 1)));
+  const line = editor.lines[row] ?? '';
+  return {
+    startByte: byteOffsetForTextPosition(editor.lines, { row, column: 0 }),
+    endByte: byteOffsetForTextPosition(editor.lines, lineEndPosition(editor, row, line)),
+  };
+}
+
+function lineEndPosition(editor: EditorState, row: number, line: string): TextPosition {
+  return row < editor.lines.length - 1
+    ? { row: row + 1, column: 0 }
+    : { row, column: line.length };
+}
+
+function workspaceTextTransition(
+  editor: EditorState,
+  nextEditor: EditorState,
+): WorkspaceTextTransition | undefined {
+  const before = editorText(editor);
+  const after = editorText(nextEditor);
+  const prefixLength = commonPrefixLength(before, after);
+  const suffixLength = commonSuffixLength(before, after, prefixLength);
+  const endIndex = before.length - suffixLength;
+  if (prefixLength === endIndex && suffixLength === after.length - prefixLength) {
+    return undefined;
+  }
+  const start = textPositionAtIndex(editor.lines, prefixLength);
+  const end = textPositionAtIndex(editor.lines, endIndex);
+  return {
+    startByte: byteOffsetForTextPosition(editor.lines, start),
+    endByte: byteOffsetForTextPosition(editor.lines, end),
+    insertText: after.slice(prefixLength, after.length - suffixLength),
+    cursorAfter: editorTextPosition(nextEditor),
+  };
+}
+
+function textPositionAtIndex(lines: readonly string[], index: number): TextPosition {
+  const position = insertPositionAtIndex(lines, index);
+  return {
+    row: position.row,
+    column: position.col,
+  };
+}
+
+function commonPrefixLength(before: string, after: string): number {
+  let index = 0;
+  while (index < before.length && index < after.length && before[index] === after[index]) {
+    index += 1;
+  }
+  return index;
+}
+
+function commonSuffixLength(before: string, after: string, prefixLength: number): number {
+  let length = 0;
+  while (shouldExtendCommonSuffix(before, after, prefixLength, length)) {
+    length += 1;
+  }
+  return length;
+}
+
+function shouldExtendCommonSuffix(
+  before: string,
+  after: string,
+  prefixLength: number,
+  suffixLength: number,
+): boolean {
+  const beforeIndex = before.length - suffixLength - 1;
+  const afterIndex = after.length - suffixLength - 1;
+  return beforeIndex >= prefixLength
+    && afterIndex >= prefixLength
+    && before[beforeIndex] === after[afterIndex];
+}
+
+interface WorkspaceTextTransition {
+  readonly startByte: number;
+  readonly endByte: number;
+  readonly insertText: string;
+  readonly cursorAfter: TextPosition;
+}
+
+interface WorkspaceTextRange {
+  readonly startByte: number;
+  readonly endByte: number;
 }
 
 function unsupportedPlan(

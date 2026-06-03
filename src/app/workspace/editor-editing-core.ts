@@ -2,11 +2,11 @@ import type { KeyMsg } from '@flyingrobots/bijou-tui';
 import { joinLines, normalizeLines } from '../editor-lines.js';
 import { EditorModes, type EditorMode } from './editor/mode.js';
 import { RegisterKinds, type EditorState, type HistoryEntry, type RegisterKind } from './editor/model.js';
-import { PastePlacements, type PastePlacement } from './editor/key.js';
+import { EditorKeys, PastePlacements, type PastePlacement } from './editor/key.js';
 
 const NORMAL_MODE = EditorModes.Normal;
 const INSERT_MODE = EditorModes.Insert;
-const SPACE_KEY = 'space';
+const SPACE_KEY = EditorKeys.Space;
 const SPACE_TEXT = ' ';
 const LOWERCASE_A = 'a';
 const LOWERCASE_Z = 'z';
