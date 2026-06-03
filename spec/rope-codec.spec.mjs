@@ -349,6 +349,10 @@ await test('rope codec — top-level vars decoders reject trailing bytes', async
     decodeReplaceRangeAsTickVars,
     encodeCreateCheckpointVars,
     decodeCreateCheckpointVars,
+    encodeWorldlineSnapshotVars,
+    decodeWorldlineSnapshotVars,
+    encodeTextWindowVars,
+    decodeTextWindowVars,
   } = mod;
   // Replay/submission-identity invariant: vars decoders MUST reject any
   // payload that has bytes past the structurally-declared end. Otherwise
@@ -384,5 +388,32 @@ await test('rope codec — top-level vars decoders reject trailing bytes', async
     padded.set(canonical, 0);
     padded[canonical.byteLength] = 0xff;
     assert.throws(() => decodeCreateCheckpointVars(padded), /trailing/);
+  });
+
+  await t.test('decodeWorldlineSnapshotVars rejects trailing byte', () => {
+    const canonical = encodeWorldlineSnapshotVars({
+      input: { worldlineId: 'wl' },
+    });
+    const padded = new Uint8Array(canonical.byteLength + 1);
+    padded.set(canonical, 0);
+    padded[canonical.byteLength] = 0xff;
+    assert.throws(() => decodeWorldlineSnapshotVars(padded), /trailing/);
+  });
+
+  await t.test('decodeTextWindowVars rejects trailing byte', () => {
+    const canonical = encodeTextWindowVars({
+      input: {
+        worldlineId: 'wl',
+        cursorLine: 0,
+        viewportLineCount: 10,
+        beforeLines: 1,
+        afterLines: 1,
+        maxBytes: 1024,
+      },
+    });
+    const padded = new Uint8Array(canonical.byteLength + 1);
+    padded.set(canonical, 0);
+    padded[canonical.byteLength] = 0xff;
+    assert.throws(() => decodeTextWindowVars(padded), /trailing/);
   });
 });
