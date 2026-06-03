@@ -9,12 +9,11 @@ export interface TitlePresentationSequence {
 }
 
 const TITLE_TEXT_DIRECTION_RTL = 'rtl';
-const TITLE_SEQUENCE_FLYINGROBOTS_APPEAR_SECONDS = 5;
-const TITLE_SEQUENCE_TITLE_APPEAR_SECONDS = 7;
-const TITLE_SEQUENCE_SHEEN_START_SECONDS = 8;
-const TITLE_SEQUENCE_FLYINGROBOTS_FADE_SECONDS = 10;
-const TITLE_SEQUENCE_TITLE_FADE_SECONDS = 15;
-const TITLE_SEQUENCE_FADE_DURATION_SECONDS = 1;
+const TITLE_SEQUENCE_FLYINGROBOTS_APPEAR_SECONDS = 0;
+const TITLE_SEQUENCE_TITLE_APPEAR_SECONDS = 2;
+const TITLE_SEQUENCE_SHEEN_START_SECONDS = 3;
+const TITLE_SEQUENCE_COMPLETE_SECONDS = 7;
+const TITLE_SEQUENCE_FADE_DURATION_SECONDS = 0;
 const TITLE_SEQUENCE_SHEEN_DURATION_SECONDS = 2;
 
 export function titlePresentationSequence(
@@ -24,14 +23,14 @@ export function titlePresentationSequence(
   const titleOpacity = titleSequenceOpacity(
     time,
     TITLE_SEQUENCE_TITLE_APPEAR_SECONDS,
-    TITLE_SEQUENCE_TITLE_FADE_SECONDS,
+    TITLE_SEQUENCE_COMPLETE_SECONDS,
     TITLE_SEQUENCE_FADE_DURATION_SECONDS,
   );
   return {
     flyingRobotsOpacity: titleSequenceOpacity(
       time,
       TITLE_SEQUENCE_FLYINGROBOTS_APPEAR_SECONDS,
-      TITLE_SEQUENCE_FLYINGROBOTS_FADE_SECONDS,
+      TITLE_SEQUENCE_COMPLETE_SECONDS,
       TITLE_SEQUENCE_FADE_DURATION_SECONDS,
     ),
     titleOpacity,
@@ -67,7 +66,7 @@ function titleSequenceOpacity(
   if (time < appearAt || time >= fadeAt + fadeDuration) {
     return 0;
   }
-  if (time < fadeAt) {
+  if (fadeDuration === 0 || time < fadeAt) {
     return 1;
   }
   return clampTitleSequenceRatio(1 - ((time - fadeAt) / fadeDuration));

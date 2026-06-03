@@ -142,8 +142,8 @@ Focused witnesses:
 
 ## Fifteen-Slice Ledger
 
-- [ ] Slice 1: retime the pure title presentation sequence.
-- [ ] Slice 2: pin the new logo/sheens timeline with focused title specs.
+- [x] Slice 1: retime the pure title presentation sequence.
+- [x] Slice 2: pin the new logo/sheens timeline with focused title specs.
 - [ ] Slice 3: add startup-flow state to the workspace model.
 - [ ] Slice 4: derive current-directory modal rows from `WorkspaceModel.entries`.
 - [ ] Slice 5: render the startup modal shell with input and file rows.
