@@ -30,7 +30,7 @@ of stable evidence identities.
 - Unsupported-operation obstruction witness.
 - Restart posture that honestly reports process-local handler state.
 - Local replay proof.
-- Echo-hosted text runtime profile, with explicit `testLocal` dev/test escape hatch.
+- Echo-hosted text runtime profile, with no production non-Echo operating mode.
 - Production text session controller for open, edit, and bounded read posture.
 - Production text session witness CLI with checkpoint, retained evidence refs,
   local replay, and export-as-reading posture.

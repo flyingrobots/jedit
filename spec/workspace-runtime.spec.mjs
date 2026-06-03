@@ -120,7 +120,7 @@ test('workspace app renders perf overlay after toggle when perf starts disabled'
   assert.match(text, /rss\s+\d+\.\d MB/);
 });
 
-test('workspace app preserves seeded text runtime profile when option is absent', async () => {
+test('workspace app rejects stale non-Echo seeded text runtime profile', async () => {
   const [workspaceApp, themes, profile] = await Promise.all([
     importDist('adapters', 'workspace-app.js'),
     importDist('ui', 'jedit-themes.js'),
@@ -139,13 +139,13 @@ test('workspace app preserves seeded text runtime profile when option is absent'
       i18n: mockI18n(),
       entries: [],
       nowMs: 0,
-      textRuntimeProfile: profile.TEXT_RUNTIME_PROFILE_TEST_LOCAL,
+      textRuntimeProfile: 'testLocal',
     },
   });
 
   const [initialModel] = app.init();
 
-  assert.equal(initialModel.textRuntimeProfile, profile.TEXT_RUNTIME_PROFILE_TEST_LOCAL);
+  assert.equal(initialModel.textRuntimeProfile, profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED);
 });
 
 test('initial workspace model separates text authority from render cache', async () => {

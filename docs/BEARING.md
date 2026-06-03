@@ -30,12 +30,11 @@ Echo-hosted, quarantine or delete the legacy in-memory authority path, and keep
 Echo free of text/editor nouns.
 
 The current branch closes slices 61-80 at the production session and witness
-boundary: text runtime terminology is now `echoHosted`/`testLocal`, the default
-profile is Echo-hosted, direct text authority paths are inventoried, and the
-production text session opens, edits, checkpoints, observes bounded windows,
-exports materialized text, reports retained refs, and proves local replay
-through `TextBufferSessionPort`. The release gate now runs the production
-session witness and static guard.
+boundary: text runtime posture is now Echo-hosted only, direct text authority
+paths are inventoried, and the production text session opens, edits,
+checkpoints, observes bounded windows, exports materialized text, reports
+retained refs, and proves local replay through `TextBufferSessionPort`. The
+release gate now runs the production session witness and static guard.
 
 The current branch extends that proof through slices 81-90: interactive
 workspace open, initial read, render, insert/delete/backspace, viewport refresh,
@@ -48,7 +47,8 @@ explicit, reading-cache behavior is isolated, edit range planning has a
 jedit-owned boundary, replace commands flow through the production session,
 production undo/redo is explicitly unsupported until modeled as causal input,
 footer/preview/highlight surfaces consume reading material, active-buffer save
-targeting is covered, and test-local fallback remains fixture-only.
+targeting is covered, and non-Echo text runtime profiles have been removed
+from the production TUI surface.
 The local notes for this package live in
 [`docs/design/0032-jedit-echo-reading-cache-and-fallback-boundaries.md`](design/0032-jedit-echo-reading-cache-and-fallback-boundaries.md).
 
@@ -105,7 +105,7 @@ drive its text model through a jedit-owned Echo-hosted session. Slices 81-90
 make the interactive workspace consume that session as production text
 authority for open, edit, render, save, export, and checkpoint flows.
 Slices 101-110 close remaining render-cache, edit-planner, status, and
-fixture-fallback ambiguity before WSC durability begins.
+runtime-profile ambiguity before WSC durability begins.
 
 Core claim:
 
@@ -132,7 +132,7 @@ Closed drift:
 Remaining caveat:
 
 - The legacy line model still exists for render/cache/navigation mechanics and
-  explicit test-local fixtures. It is not production text authority.
+  focused fake-port tests. It is not production text authority.
 
 Slices 81-90 are now closed locally. Each slice below includes its user story,
 acceptance criteria, test plan, and checklist.
@@ -1083,26 +1083,27 @@ Checklist:
 
 User story:
 
-As a maintainer, I want local direct text behavior available only as explicit
-fixture support, so production cannot silently fall back to in-memory editing.
+As a maintainer, I want local direct text behavior available only through
+focused fake-port tests, so production cannot silently fall back to in-memory
+editing or select a non-Echo runtime profile.
 
 Acceptance criteria:
 
-- Test-local profile names are explicit.
+- Non-Echo profile names are not accepted runtime input.
 - Production defaults cannot select direct local authority accidentally.
 - Static guard catches fallback imports in production modules.
-- Fixture docs state the fallback is not product behavior.
+- Fixture docs state fake ports are test scaffolding, not product behavior.
 
 Test plan:
 
-- Add profile parser tests for invalid and test-local profiles.
+- Add profile parser tests for invalid and legacy non-Echo profiles.
 - Add guard sample tests.
 - Run the jedit Echo release gate.
 
 Checklist:
 
-- [x] Narrow test-local fallback creation.
-- [x] Document fallback scope.
+- [x] Delete non-Echo runtime profile selection.
+- [x] Document fake-port scope.
 - [x] Extend guard coverage.
 - [x] Cover profile behavior.
 
@@ -1850,7 +1851,7 @@ Acceptance criteria:
 - [jedit] It includes production session, reading cache, retention, recovery,
   and export boundaries.
 - [jedit] It forbids app nouns in Echo.
-- [jedit] It explains fixture-local fallback policy.
+- [jedit] It explains fake-port fixture policy without reopening runtime modes.
 
 Test plan:
 

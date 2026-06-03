@@ -49,8 +49,8 @@ remove them without guessing.
 
 ## Cutover Invariants
 
-- `echoHosted` is the default production runtime profile.
-- `testLocal` is an explicit dev/test fixture profile.
+- `echoHosted` is the only production runtime profile.
+- Focused tests use fake-port injection instead of a non-Echo runtime profile.
 - Opening a production buffer uses `TextBufferSessionPort.createBuffer(...)`.
 - Editing a production buffer uses `TextBufferOptic.applyIntent(...)`.
 - Rendering a production buffer uses `TextBufferOptic.textWindow(...)`.

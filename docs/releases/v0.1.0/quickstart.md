@@ -48,8 +48,7 @@ npm start
 ```
 
 For explicit demos, `JEDIT_TEXT_RUNTIME=echoHosted npm start` selects the same
-profile. `JEDIT_TEXT_RUNTIME=testLocal npm start` is a dev/test fixture escape
-hatch, not the product default.
+profile. Any other `JEDIT_TEXT_RUNTIME` value is unsupported startup input.
 
 ## Expected JSON Shape
 
@@ -127,6 +126,6 @@ Authority violation:
 - Application code must not tick Echo.
 - `TextBufferOptic` is a jedit capability.
 - `echoHosted` is the production text runtime profile.
-- `testLocal` is a dev/test fixture profile, not a product mode.
+- The production TUI does not expose a non-Echo text runtime profile.
 - Echo sees generic package, operation, query, handler, observer, receipt, and
   reading evidence surfaces.

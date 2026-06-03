@@ -21,7 +21,7 @@ test('v0.1.0 quickstart documents executable witness commands', () => {
   assert.match(source, /npm start/);
   assert.match(source, /default text runtime is the Echo-hosted/);
   assert.match(source, /JEDIT_TEXT_RUNTIME=echoHosted npm start.*same/);
-  assert.match(source, /testLocal.*dev\/test fixture/);
+  assert.match(source, /Any other `JEDIT_TEXT_RUNTIME` value is unsupported/);
   assert.match(source, /"transport": "installed-jedit-contract"/);
   assert.match(source, /"appCanTick": false/);
 });

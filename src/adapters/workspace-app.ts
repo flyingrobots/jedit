@@ -11,11 +11,7 @@ import { createTitleSceneLoaderPort } from './title-scene-loader.js';
 import { createInitialModelSnapshot } from './workspace-initial-model-snapshot.js';
 import { createNodeJeditWscWorkspaceStore } from './jedit-wsc-workspace-store.js';
 import { createPerfApp } from './workspace-perf-app.js';
-import {
-  createWorkspaceProductionTextSession,
-  resolveWorkspaceTextRuntimeProfile,
-  type WorkspaceTextRuntimeProfileOptions,
-} from './workspace-production-text-session.js';
+import { createWorkspaceProductionTextSession } from './workspace-production-text-session.js';
 import {
   createWorkspaceDrawerAnimationCmd,
   createWorkspaceNotificationTickCmd,
@@ -26,7 +22,6 @@ export interface WorkspaceAppOptions {
   initialColumns: number;
   initialRows: number;
   initialWorkingDirectory: string;
-  textRuntimeProfile?: WorkspaceTextRuntimeProfileOptions['textRuntimeProfile'];
   perfEnabled: boolean;
   nowMs?: () => number;
   random?: () => number;
@@ -48,10 +43,6 @@ function workspaceRuntimeDependencies(
   random: () => number,
 ) {
   const editorFile = editorFilePort;
-  const textRuntimeProfile = resolveWorkspaceTextRuntimeProfile({
-    textRuntimeProfile: options.textRuntimeProfile,
-    seedTextRuntimeProfile: options.seed?.textRuntimeProfile,
-  });
   const graftSession = createGraftSessionPort();
   const sourceHighlighter = createGraftSourceHighlighter();
   const titleSceneLoader = createTitleSceneLoaderPort();
@@ -61,18 +52,13 @@ function workspaceRuntimeDependencies(
     initialWorkingDirectory: options.initialWorkingDirectory,
     fileSystem: FileSystemPortAdapter,
     editorFile,
-    productionTextSession: createWorkspaceProductionTextSession(textRuntimeProfile),
+    productionTextSession: createWorkspaceProductionTextSession(),
     wscWorkspaceStore: createNodeJeditWscWorkspaceStore(options.initialWorkingDirectory),
     graftSession,
     sourceHighlighter,
     titleSceneLoader,
     profiler: createRaytracerProfilerPort(nowMs),
-    initialModel: {
-      ...(options.seed ?? createInitialModelSnapshot(nowMs(), options.initialWorkingDirectory, random)),
-      ...(options.textRuntimeProfile == null ? {} : {
-        textRuntimeProfile,
-      }),
-    },
+    initialModel: options.seed ?? createInitialModelSnapshot(nowMs(), options.initialWorkingDirectory, random),
     nowMs,
     createTimeTickCmd: createWorkspaceTimeTickCmd,
     createNotificationTickCmd: createWorkspaceNotificationTickCmd,

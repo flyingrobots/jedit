@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 
 const OPTION_SAMPLE_FORBIDDEN_FILE = '--sample-forbidden-file';
 const PRODUCTION_FILE = Object.freeze({
+  TEXT_RUNTIME_PROFILE: 'src/app/text-runtime-profile.ts',
   TEXT_SESSION: 'src/app/workspace/production-text-session.ts',
   TEXT_SESSION_WITNESS: 'src/app/workspace/production-text-session-witness.ts',
   FILE_TREE: 'src/app/workspace/file-tree.ts',
@@ -42,6 +43,7 @@ const TRANSITIONAL_FILE = Object.freeze({
   INTERACTIVE_ECHO_TEXT_SESSION: 'src/adapters/interactive-echo-text-session.ts',
 });
 const DEFAULT_PRODUCTION_FILES = Object.freeze([
+  PRODUCTION_FILE.TEXT_RUNTIME_PROFILE,
   PRODUCTION_FILE.TEXT_SESSION,
   PRODUCTION_FILE.TEXT_SESSION_WITNESS,
   PRODUCTION_FILE.FILE_TREE,
@@ -105,15 +107,24 @@ const FORBIDDEN_RECOVERY_FALLBACK_PATTERNS = Object.freeze([
   { label: 'currentBuffer', pattern: /\bcurrentBuffer\b/u },
   { label: 'saveFromBuffer', pattern: /\bsaveFromBuffer\b/u },
 ]);
+const FORBIDDEN_NON_ECHO_RUNTIME_MODE_PATTERNS = Object.freeze([
+  { label: 'TEXT_RUNTIME_PROFILE_TEST_LOCAL', pattern: /\bTEXT_RUNTIME_PROFILE_TEST_LOCAL\b/u },
+  { label: 'testLocal profile', pattern: /\btestLocal\b/u },
+  { label: 'testLocalSessionFactory', pattern: /\btestLocalSessionFactory\b/u },
+  { label: 'defaultTestLocalSessionFactory', pattern: /\bdefaultTestLocalSessionFactory\b/u },
+  { label: 'fallbackProfile', pattern: /\bfallbackProfile\b/u },
+]);
 
 const options = parseArgs(process.argv.slice(2));
 const failures = [
   ...removedFileFailures(),
   ...forbiddenSourceFailures(DEFAULT_PRODUCTION_FILES, FORBIDDEN_LEGACY_AUTHORITY_PATTERNS),
+  ...forbiddenSourceFailures(DEFAULT_PRODUCTION_FILES, FORBIDDEN_NON_ECHO_RUNTIME_MODE_PATTERNS),
   ...forbiddenSourceFailures(DEFAULT_LIFECYCLE_AUTHORITY_FILES, FORBIDDEN_LIFECYCLE_AUTHORITY_PATTERNS),
   ...forbiddenSourceFailures(DEFAULT_RECOVERY_GATE_FILES, FORBIDDEN_RECOVERY_FALLBACK_PATTERNS),
   ...forbiddenSourceFailures(options.sampleForbiddenFiles, [
     ...FORBIDDEN_LEGACY_AUTHORITY_PATTERNS,
+    ...FORBIDDEN_NON_ECHO_RUNTIME_MODE_PATTERNS,
     ...FORBIDDEN_LIFECYCLE_AUTHORITY_PATTERNS,
     ...FORBIDDEN_RECOVERY_FALLBACK_PATTERNS,
   ]),

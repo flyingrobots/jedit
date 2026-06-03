@@ -22,34 +22,11 @@ test('Echo-hosted text runtime profile drives a narrow edit/read path through Ec
   assert.equal('requestRunUntilIdle' in binding.session, false);
 });
 
-test('test-local text runtime profile remains explicit and without lifecycle authority', async () => {
-  const modules = await loadModules();
-  const binding = modules.session.createTextRuntimeProfileSession({
-    profile: modules.profile.TEXT_RUNTIME_PROFILE_TEST_LOCAL,
-  });
-
-  const text = await runNarrowEditRead(binding.session, 'testLocal');
-
-  assert.equal(binding.profile, modules.profile.TEXT_RUNTIME_PROFILE_TEST_LOCAL);
-  assert.equal(text, 'testLocal');
-  assert.equal('requestRunUntilIdle' in binding.session, false);
-});
-
-test('text runtime profile session accepts injected session factories', async () => {
+test('text runtime profile session accepts injected Echo-hosted session factories', async () => {
   const modules = await loadModules();
   const calls = [];
-  const testLocalSession = fakeTextBufferSession('test-local-injected');
   const echoHostedSession = fakeTextBufferSession('echo-hosted-injected');
 
-  const testLocal = modules.session.createTextRuntimeProfileSession({
-    profile: modules.profile.TEXT_RUNTIME_PROFILE_TEST_LOCAL,
-    testLocalSessionFactory: {
-      create() {
-        calls.push('testLocal');
-        return testLocalSession;
-      },
-    },
-  });
   const echoHosted = modules.session.createTextRuntimeProfileSession({
     profile: modules.profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
     echoHostedSessionFactory: {
@@ -60,9 +37,8 @@ test('text runtime profile session accepts injected session factories', async ()
     },
   });
 
-  assert.equal(testLocal.session, testLocalSession);
   assert.equal(echoHosted.session, echoHostedSession);
-  assert.deepEqual(calls, ['testLocal', 'echoHosted']);
+  assert.deepEqual(calls, ['echoHosted']);
 });
 
 test('text runtime profile session rejects unknown profiles', async () => {
@@ -74,7 +50,7 @@ test('text runtime profile session rejects unknown profiles', async () => {
   );
 });
 
-test('text runtime profile parser defaults to Echo-hosted and obstructs invalid profiles', async () => {
+test('text runtime profile parser defaults to Echo-hosted and obstructs non-Echo profiles', async () => {
   const modules = await loadModules();
 
   assert.deepEqual(modules.profile.parseTextRuntimeProfile(undefined), {
@@ -82,15 +58,25 @@ test('text runtime profile parser defaults to Echo-hosted and obstructs invalid 
     profile: modules.profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
   });
   assert.deepEqual(modules.profile.parseTextRuntimeProfile('testLocal'), {
-    kind: modules.profile.TEXT_RUNTIME_PROFILE_PARSE_OK,
-    profile: modules.profile.TEXT_RUNTIME_PROFILE_TEST_LOCAL,
+    kind: modules.profile.TEXT_RUNTIME_PROFILE_PARSE_OBSTRUCTED,
+    code: modules.profile.TEXT_RUNTIME_PROFILE_UNSUPPORTED_CODE,
+    suppliedValue: 'testLocal',
+    requiredProfile: modules.profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
   });
   assert.deepEqual(modules.profile.parseTextRuntimeProfile('legacy'), {
     kind: modules.profile.TEXT_RUNTIME_PROFILE_PARSE_OBSTRUCTED,
     code: modules.profile.TEXT_RUNTIME_PROFILE_UNSUPPORTED_CODE,
     suppliedValue: 'legacy',
-    fallbackProfile: modules.profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+    requiredProfile: modules.profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
   });
+  assert.equal(
+    modules.profile.requireTextRuntimeProfile(modules.profile.parseTextRuntimeProfile('echoHosted')),
+    modules.profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+  );
+  assert.throws(
+    () => modules.profile.requireTextRuntimeProfile(modules.profile.parseTextRuntimeProfile('testLocal')),
+    modules.profile.TextRuntimeProfileError,
+  );
 });
 
 test('workspace initial model carries the text runtime profile', async () => {

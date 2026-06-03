@@ -213,30 +213,36 @@ Wesley is the contract compiler. It reads **GraphQL SDL** files and emits TypeSc
 src/main.ts → createWorkspaceApp() → run(app, { mouse })
 ```
 
-`main.ts` is deliberately thin — nine meaningful lines of logic:
+`main.ts` is deliberately thin — the entry point validates startup knobs,
+initializes Bijou, constructs the app, and hands it to the TUI runner:
 
 ```typescript
 // src/main.ts (abridged)
-initDefaultContext();
-
-const textRuntimeProfile = resolveTextRuntimeProfile(
+requireTextRuntimeProfile(
   parseTextRuntimeProfile(process.env['JEDIT_TEXT_RUNTIME'])
 );
+
+initDefaultContext();
 
 const app = createWorkspaceApp({
   initialColumns: process.stdout.columns ?? 100,
   initialRows:    process.stdout.rows    ?? 32,
   initialWorkingDirectory: process.cwd(),
-  textRuntimeProfile,
   perfEnabled: envBoolean(process.env['JEDIT_PERF']),
 });
 
 run(app, { mouse: JEDIT_TERMINAL_MOUSE_OPTIONS.mouse });
 ```
 
+**`requireTextRuntimeProfile()`** validates `JEDIT_TEXT_RUNTIME` before Bijou
+touches terminal raw mode. Unset and `echoHosted` are accepted. Any other value
+is unsupported startup input.
+
 **`initDefaultContext()`** initializes the Bijou TUI context — sets up raw terminal mode, ANSI output streams, signal handlers for `SIGTERM`/`SIGINT`.
 
-**`textRuntimeProfile`** is determined from the `JEDIT_TEXT_RUNTIME` environment variable. This single variable switches the entire text runtime. The profile is resolved before the app is constructed, so the transport is injected at construction time rather than discovered lazily.
+**`textRuntimeProfile`** remains visible in the model as evidence posture, but
+the production TUI has exactly one admissible value: `echoHosted`. There is no
+non-Echo operating profile.
 
 **`createWorkspaceApp()`** wires all adapters, constructs the initial model, and returns a Bijou `App` object. Crucially, it does not start anything — it returns a pure description of the application.
 
@@ -244,13 +250,10 @@ run(app, { mouse: JEDIT_TERMINAL_MOUSE_OPTIONS.mouse });
 
 ```mermaid
 flowchart TD
-    A[process start] --> B["initDefaultContext<br />Bijou terminal setup"]
-    B --> C["parseTextRuntimeProfile<br />from JEDIT_TEXT_RUNTIME env"]
-    C --> D{profile?}
-    D -- "echoHosted (default)" --> E["createWorkspaceApp<br />with installed jedit contract transport"]
-    D -- "testLocal fixture" --> F["createWorkspaceApp<br />with fixture-local transport"]
-    E --> G["run(app) — Bijou TEA loop begins"]
-    F --> G
+    A[process start] --> B["validate JEDIT_TEXT_RUNTIME<br />unset or echoHosted only"]
+    B --> C["initDefaultContext<br />Bijou terminal setup"]
+    C --> D["createWorkspaceApp<br />with installed jedit contract transport"]
+    D --> E["run(app) — Bijou TEA loop begins"]
 ```
 
 ---
@@ -264,8 +267,8 @@ It is worth drawing a hard line between what happens *once at startup* and what 
 ```mermaid
 flowchart LR
     subgraph Bootstrap["Bootstrap — runs once"]
-        B1["initDefaultContext<br />terminal raw mode"]
-        B2["parseTextRuntimeProfile<br />env var → profile enum"]
+        B1["validate JEDIT_TEXT_RUNTIME<br />fail closed before raw mode"]
+        B2["initDefaultContext<br />terminal raw mode"]
         B3["createWorkspaceApp<br />wire all adapters<br />build initial model snapshot"]
         B4["Bijou: init()<br />create initial WorkspaceModel<br />emit startup Cmds"]
         B5["Bijou: launch Cmds<br />start time tick loop<br />manage Graft lifecycle"]
@@ -275,7 +278,7 @@ flowchart LR
 
 During bootstrap:
 
-- The text runtime profile is locked in — it cannot change without restarting the process.
+- The text runtime profile is locked to Echo-hosted production behavior.
 - All port adapters are instantiated: `FileSystemPortAdapter`, `GraftSessionPort`, `SourceHighlighter`, `TitleSceneLoaderPort`.
 - The initial `WorkspaceModel` is constructed from `createInitialModelSnapshot` — this snapshot picks the initial theme, seeds the title screen animation, sets up i18n, and chooses the initial working directory.
 - Bijou calls `init()` on the workspace runtime, which returns `[initialModel, startupCmds]`. The startup commands include the time-tick loop and the Graft lifecycle manager.
@@ -296,21 +299,27 @@ Key runtime invariants:
 
 ## 5. Configuration and Environment Tuning
 
-`jedit` currently has three environment variables that materially change runtime behavior:
+`jedit` currently has three environment variables relevant to runtime startup:
 
 ### `JEDIT_TEXT_RUNTIME`
 
-Controls the entire text backend. This is the most impactful lever in the codebase.
+Validates the text runtime posture. It no longer switches the text backend.
 
 | Value | Effect |
 |-------|--------|
 | *(unset)* | `echoHosted` default — installed jedit contract transport with no sibling checkout required. This is the production TUI path. |
 | `echoHosted` | Explicitly selects the same production text runtime as the unset default. |
-| `testLocal` | Fixture-local text runtime for dev/test runs that deliberately avoid the production transport. |
+| anything else | Unsupported startup input; the TUI fails before terminal raw mode. |
 
-**Architectural implication**: Because the profile is resolved at process start and injected into `createWorkspaceApp`, there is no conditional logic in the app or domain layers about which backend is running. The same `TextBufferOptic` code path executes identically in production and fixture profiles. The swap point is a single factory call in `workspace-production-text-session.ts`.
+**Architectural implication**: Because the profile has only one production
+value, there is no conditional logic in the app or domain layers about which
+backend is running. The production `TextBufferOptic` path always uses the
+installed jedit contract transport. Focused tests that need fake behavior
+inject fake ports directly instead of selecting a runtime mode.
 
-**Trade-off**: This "inject at boot" design means you cannot hot-swap the text runtime without restarting the process. That is an acceptable trade-off for development — it makes the runtime boundary explicit and prevents runtime feature-flag drift.
+**Trade-off**: Removing the fixture profile gives up a convenient command-line
+escape hatch, but it prevents runtime feature-flag drift and makes Echo
+authority the only production story.
 
 ### `JEDIT_PERF`
 
@@ -477,13 +486,13 @@ graph LR
 
 **`src/ports`** — Interface definitions only. A port describes a typed runtime contract; it never decodes raw payloads. Examples: `HotTextRuntimePort`, `TextBufferSessionPort`, `FileSystemPort`, `GraftSessionPort`, `SourceHighlighter`.
 
-**`src/adapters`** — Concrete implementations. Raw strings, JSON bytes, and MCP payloads are decoded *here* and *only here*. Contains: the installed jedit contract transport, the fixture-local transport, the real Echo WASM witness client, the filesystem adapter, Graft MCP session, source highlighter.
+**`src/adapters`** — Concrete implementations. Raw strings, JSON bytes, and MCP payloads are decoded *here* and *only here*. Contains: the installed jedit contract transport, the fake transport used by focused tests, the real Echo WASM witness client, the filesystem adapter, Graft MCP session, source highlighter.
 
 **`src/ui`** — Presentation and input mapping. UI translates Bijou events into app commands and renders app state into `Surface` cells. It does not own business rules.
 
 ### Why This Matters in Practice
 
-The separation is enforced by convention, not by a module bundler boundary. The benefit is demonstrated by the profile-transport design: the default app runs through the installed jedit contract transport, while focused fixture tests can inject `testLocal` without any modification to `src/app` or `src/domain`. Swapping the transport is a single factory decision in `workspace-production-text-session.ts` — no other file knows or cares.
+The separation is enforced by convention, not by a module bundler boundary. The benefit is demonstrated by the transport design: the production app always runs through the installed jedit contract transport, while focused fixture tests can inject fake ports without any modification to `src/app` or `src/domain`. There is no production runtime profile switch.
 
 ---
 
@@ -532,11 +541,11 @@ graph TB
 
 ### The Echo Border
 
-**Where**: `src/adapters/installed-jedit-contract-echo-transport.ts` (default production path), `src/adapters/fake-echo-jedit-optic-transport.ts` (fixture-local path), and `src/adapters/echo-wasm-kernel.ts` (opt-in WASM witness path). The border is the `EchoWasmKernelTransport` port.
+**Where**: `src/adapters/installed-jedit-contract-echo-transport.ts` (default production path), `src/adapters/fake-echo-jedit-optic-transport.ts` (focused test fixture path), and `src/adapters/echo-wasm-kernel.ts` (opt-in WASM witness path). The border is the `EchoWasmKernelTransport` port.
 
 **What crosses the border**: `Uint8Array` in, `Uint8Array` out. No JavaScript objects, no shared memory, no callbacks. The byte arrays are JSON-encoded intent requests and observe requests.
 
-**Why bytes at the border**: WASM modules communicate via linear memory. When the Echo WASM witness calls into the WASM module, it passes a pointer and length into WASM linear memory, gets back a pointer and length. The installed-contract and fixture-local transports use the same `Uint8Array` interface to keep the codec layer honest — the same boundary decoding rules run in each profile.
+**Why bytes at the border**: WASM modules communicate via linear memory. When the Echo WASM witness calls into the WASM module, it passes a pointer and length into WASM linear memory, gets back a pointer and length. The installed-contract and fake test transports use the same `Uint8Array` interface to keep the codec layer honest — the same boundary decoding rules run in production and focused tests.
 
 **What jedit cannot control past this border (real WASM)**: The Echo scheduler's admission decisions. The timing of tick sequencing. The internal rope tree structure. These are Echo's domain.
 
