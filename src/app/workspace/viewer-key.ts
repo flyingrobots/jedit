@@ -12,7 +12,7 @@ import {
   updateInsertMode,
   updateNormalMode,
 } from './editor-session.js';
-import { EditorModes } from './editor/mode.js';
+import { EditorModes, PendingNormals } from './editor/mode.js';
 import { EditorKeys } from './editor/key.js';
 import { focusCycleState } from './focus.js';
 import type { WorkspaceModel } from './model.js';
@@ -27,11 +27,17 @@ import {
 import { WorkspaceTextAuthorityKinds } from './workspace-text-authority.js';
 import {
   planWorkspaceTextBackspace,
+  planWorkspaceTextDeleteLine,
+  planWorkspaceTextDeleteTransition,
   planWorkspaceTextDeleteUnderCursor,
   planWorkspaceTextInsert,
+  planWorkspaceTextReplaceLine,
+  planWorkspaceTextReplaceTransition,
   WorkspaceTextEditPlanKinds,
   type WorkspaceTextDeletePlan,
   type WorkspaceTextInsertPlan,
+  type WorkspaceTextReplacePlan,
+  type WorkspaceTextUnsupportedPlan,
 } from './workspace-text-edit-planner.js';
 import { RuntimeIssueLevels, RuntimeIssueSources } from './runtime-issue.js';
 
@@ -109,11 +115,85 @@ function productionNormalModeEdit(
   if (unsupported != null) {
     return unsupported;
   }
+  const normalEdit = productionNormalModeLocalEdit(msg, model, productionTextSession, editor);
+  if (normalEdit != null) {
+    return normalEdit;
+  }
   const deleteEdit = normalModeDeleteEdit(msg, model, productionTextSession);
   if (deleteEdit != null) {
     return deleteEdit;
   }
   return productionNormalModeNavigation(msg, model, productionTextSession, editor);
+}
+
+function productionNormalModeLocalEdit(
+  msg: KeyMsg,
+  model: WorkspaceModel,
+  productionTextSession: ProductionTextSession,
+  editor: NonNullable<WorkspaceModel['editor']>,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] | undefined {
+  const viewport = editorViewport(model);
+  const moved = updateNormalMode(editor, msg, viewport.width, viewport.height);
+  if (moved.lines === editor.lines) {
+    return undefined;
+  }
+  const plan = normalModeLinePlan(msg, editor, moved)
+    ?? normalModeTransitionPlan(editor, moved);
+  return plan.kind === WorkspaceTextEditPlanKinds.Unsupported
+    ? [model, []]
+    : queueProductionTextPlan(
+      modelWithQueuedNormalEdit(model, moved),
+      productionTextSession,
+      plan,
+    );
+}
+
+function normalModeLinePlan(
+  msg: KeyMsg,
+  editor: NonNullable<WorkspaceModel['editor']>,
+  moved: NonNullable<WorkspaceModel['editor']>,
+): WorkspaceTextNormalPlan | undefined {
+  if (msg.ctrl || msg.alt || msg.shift) {
+    return undefined;
+  }
+  if (editor.pendingNormal === PendingNormals.Delete && msg.key === EditorKeys.D) {
+    return planWorkspaceTextDeleteLine(editor, moved);
+  }
+  return editor.pendingNormal === PendingNormals.Change && msg.key === EditorKeys.C
+    ? planWorkspaceTextReplaceLine(editor, moved)
+    : undefined;
+}
+
+function normalModeTransitionPlan(
+  editor: NonNullable<WorkspaceModel['editor']>,
+  moved: NonNullable<WorkspaceModel['editor']>,
+): WorkspaceTextNormalPlan {
+  return moved.mode === EditorModes.Insert
+    ? planWorkspaceTextReplaceTransition(editor, moved)
+    : planWorkspaceTextDeleteTransition(editor, moved);
+}
+
+function modelWithQueuedNormalEdit(
+  model: WorkspaceModel,
+  moved: NonNullable<WorkspaceModel['editor']>,
+): WorkspaceModel {
+  const editor = model.editor;
+  if (editor == null) {
+    return model;
+  }
+  return {
+    ...model,
+    editor: {
+      ...editor,
+      cursorRow: moved.cursorRow,
+      cursorCol: moved.cursorCol,
+      scrollRow: moved.scrollRow,
+      scrollCol: moved.scrollCol,
+      mode: moved.mode,
+      pendingNormal: moved.pendingNormal,
+      register: moved.register,
+    },
+  };
 }
 
 function normalModeDeleteEdit(
@@ -269,12 +349,21 @@ function productionDeleteUnderCursor(
 function queueProductionTextPlan(
   model: WorkspaceModel,
   productionTextSession: ProductionTextSession,
-  plan: WorkspaceTextInsertPlan | WorkspaceTextDeletePlan,
+  plan: WorkspaceTextInsertPlan | WorkspaceTextReplacePlan | WorkspaceTextDeletePlan,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
-  return plan.kind === WorkspaceTextEditPlanKinds.Insert
-    ? queueProductionTextEdit(model, productionTextSession, {
+  if (plan.kind === WorkspaceTextEditPlanKinds.Insert) {
+    return queueProductionTextEdit(model, productionTextSession, {
       kind: WorkspaceTextEditCommandKinds.Insert,
       startByte: plan.startByte,
+      insertText: plan.insertText,
+      cursorAfter: plan.cursorAfter,
+    });
+  }
+  return plan.kind === WorkspaceTextEditPlanKinds.Replace
+    ? queueProductionTextEdit(model, productionTextSession, {
+      kind: WorkspaceTextEditCommandKinds.Replace,
+      startByte: plan.startByte,
+      endByte: plan.endByte,
       insertText: plan.insertText,
       cursorAfter: plan.cursorAfter,
     })
@@ -348,11 +437,23 @@ type ProductionTextEditRequest =
     readonly cursorAfter: WorkspaceTextInsertPlan['cursorAfter'];
   }
   | {
+    readonly kind: typeof WorkspaceTextEditCommandKinds.Replace;
+    readonly startByte: number;
+    readonly endByte: number;
+    readonly insertText: string;
+    readonly cursorAfter: WorkspaceTextReplacePlan['cursorAfter'];
+  }
+  | {
     readonly kind: typeof WorkspaceTextEditCommandKinds.Delete;
     readonly startByte: number;
     readonly endByte: number;
     readonly cursorAfter: WorkspaceTextDeletePlan['cursorAfter'];
   };
+
+type WorkspaceTextNormalPlan =
+  | WorkspaceTextReplacePlan
+  | WorkspaceTextDeletePlan
+  | WorkspaceTextUnsupportedPlan;
 
 function insertTextFromKey(msg: KeyMsg): string | undefined {
   if (msg.ctrl || msg.alt) {

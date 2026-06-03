@@ -308,6 +308,130 @@ test('insert and delete keys submit production text edits without local line mut
   assert.deepEqual(backspacedModel.editor.lines, ['bc']);
 });
 
+test('normal mode dd submits a production line delete edit', async () => {
+  const [viewerKey, runtimeModule, modeModule, authority, profile] = await Promise.all([
+    importDist('app', 'workspace', 'viewer-key.js'),
+    importDist('app', 'workspace', 'runtime.js'),
+    importDist('app', 'workspace', 'editor', 'mode.js'),
+    importDist('app', 'workspace', 'workspace-text-authority.js'),
+    importDist('app', 'text-runtime-profile.js'),
+  ]);
+  const deletes = [];
+  const productionTextSession = {
+    deleteRange: async (request) => {
+      deletes.push(request);
+      return { kind: 'applied', result: { receiptId: 'receipt:dd' } };
+    },
+    observeWindow: async () => ({
+      kind: 'observed',
+      observed: {
+        value: {
+          readingId: 'reading:dd',
+          lines: [{ text: 'one' }, { text: 'three' }],
+          lineCount: 2,
+          cursorLine: 1,
+          viewportLineCount: 24,
+          truncated: false,
+        },
+      },
+    }),
+  };
+  const model = textWorkspaceModel(modeModule, authority, profile, {
+    lines: ['one', 'two', 'three'],
+    cursorRow: 1,
+    cursorCol: 1,
+  });
+  const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime({ productionTextSession }));
+
+  const [pendingDelete, pendingCommands] = viewerKey.updateViewerFromKey(
+    { key: 'd', ctrl: false, alt: false, shift: false },
+    model,
+    mockDeps().sourceHighlighter,
+    productionTextSession,
+  );
+  const [queuedDelete, deleteCommands] = viewerKey.updateViewerFromKey(
+    { key: 'd', ctrl: false, alt: false, shift: false },
+    pendingDelete,
+    mockDeps().sourceHighlighter,
+    productionTextSession,
+  );
+  const deleteMessage = await deleteCommands[0]();
+  const [deletedModel] = runtime.update(deleteMessage, queuedDelete);
+
+  assert.equal(pendingCommands.length, 0);
+  assert.deepEqual(deletes, [{
+    bufferId: 'buffer:notes',
+    startByte: 4,
+    endByte: 8,
+    atMs: 12,
+  }]);
+  assert.deepEqual(deletedModel.editor.lines, ['one', 'three']);
+  assert.equal(deletedModel.editor.mode, modeModule.EditorModes.Normal);
+  assert.equal(deletedModel.editor.cursorRow, 1);
+  assert.equal(deletedModel.editor.cursorCol, 0);
+});
+
+test('normal mode cw submits a production change edit and enters insert mode', async () => {
+  const [viewerKey, runtimeModule, modeModule, authority, profile] = await Promise.all([
+    importDist('app', 'workspace', 'viewer-key.js'),
+    importDist('app', 'workspace', 'runtime.js'),
+    importDist('app', 'workspace', 'editor', 'mode.js'),
+    importDist('app', 'workspace', 'workspace-text-authority.js'),
+    importDist('app', 'text-runtime-profile.js'),
+  ]);
+  const replacements = [];
+  const productionTextSession = {
+    replaceRange: async (request) => {
+      replacements.push(request);
+      return { kind: 'applied', result: { receiptId: 'receipt:cw' } };
+    },
+    observeWindow: async () => ({
+      kind: 'observed',
+      observed: {
+        value: {
+          readingId: 'reading:cw',
+          lines: [{ text: 'beta' }],
+          lineCount: 1,
+          cursorLine: 0,
+          viewportLineCount: 24,
+          truncated: false,
+        },
+      },
+    }),
+  };
+  const model = textWorkspaceModel(modeModule, authority, profile, {
+    lines: ['alpha beta'],
+    cursorCol: 0,
+  });
+  const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime({ productionTextSession }));
+
+  const [pendingChange] = viewerKey.updateViewerFromKey(
+    { key: 'c', ctrl: false, alt: false, shift: false },
+    model,
+    mockDeps().sourceHighlighter,
+    productionTextSession,
+  );
+  const [queuedChange, changeCommands] = viewerKey.updateViewerFromKey(
+    { key: 'w', ctrl: false, alt: false, shift: false },
+    pendingChange,
+    mockDeps().sourceHighlighter,
+    productionTextSession,
+  );
+  const changeMessage = await changeCommands[0]();
+  const [changedModel] = runtime.update(changeMessage, queuedChange);
+
+  assert.deepEqual(replacements, [{
+    bufferId: 'buffer:notes',
+    startByte: 0,
+    endByte: 6,
+    insertText: '',
+    atMs: 12,
+  }]);
+  assert.deepEqual(changedModel.editor.lines, ['beta']);
+  assert.equal(changedModel.editor.mode, modeModule.EditorModes.Insert);
+  assert.equal(changedModel.editor.cursorCol, 0);
+});
+
 function editReadingText(index) {
   if (index === 1) {
     return 'aXbc';
