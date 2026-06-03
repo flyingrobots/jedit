@@ -27,17 +27,17 @@
     "check": "npm run build && npm run test:all && npm run quality"
   },
   "dependencies": {
-    "@flyingrobots/bijou": "5.0.0",
-    "@flyingrobots/bijou-i18n": "^5.0.0",
-    "@flyingrobots/bijou-node": "5.0.0",
-    "@flyingrobots/bijou-tui": "5.0.0",
-    "@flyingrobots/bijou-tui-app": "5.0.0",
+    "@flyingrobots/bijou": "7.0.0",
+    "@flyingrobots/bijou-i18n": "^7.0.0",
+    "@flyingrobots/bijou-node": "7.0.0",
+    "@flyingrobots/bijou-tui": "7.0.0",
+    "@flyingrobots/bijou-tui-app": "7.0.0",
     "@flyingrobots/graft": "0.7.1",
     "@modelcontextprotocol/sdk": "^1.29.0"
   },
   "devDependencies": {
-    "@flyingrobots/bijou-i18n-tools-node": "^5.0.0",
-    "@flyingrobots/bijou-i18n-tools-xlsx": "^5.0.0",
+    "@flyingrobots/bijou-i18n-tools-node": "^7.0.0",
+    "@flyingrobots/bijou-i18n-tools-xlsx": "^7.0.0",
     "@types/node": "^22.0.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
