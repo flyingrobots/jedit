@@ -65,6 +65,27 @@ test('real workspace app path advances insert cursor after each echoed character
   assert.doesNotMatch(harness.renderText(), /olleh/);
 });
 
+test('real workspace app path inserts canonical spacebar token in insert mode', async () => {
+  const harness = await openedHarness({ readings: ['before edit', 'h', 'hi', 'hi ', 'hi x'] });
+
+  await harness.key('i');
+  for (const key of ['h', 'i', 'space', 'x']) {
+    await harness.runFirst(await harness.key(key));
+  }
+
+  assert.deepEqual(harness.calls.insert.map((call) => ({
+    startByte: call.startByte,
+    insertText: call.insertText,
+  })), [
+    { startByte: 0, insertText: 'h' },
+    { startByte: 1, insertText: 'i' },
+    { startByte: 2, insertText: ' ' },
+    { startByte: 3, insertText: 'x' },
+  ]);
+  assert.equal(harness.model.editor.cursorCol, 4);
+  assert.match(harness.renderText(), /hi x/);
+});
+
 test('real workspace app path saves by exporting and checkpointing production text', async () => {
   const harness = await openedHarness({ exportText: 'saved from Echo' });
 

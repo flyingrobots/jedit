@@ -37,6 +37,7 @@ import { RuntimeIssueLevels, RuntimeIssueSources } from './runtime-issue.js';
 
 const INSERT_TAB_TEXT = '  ';
 const INSERT_NEWLINE_TEXT = '\n';
+const INSERT_SPACE_TEXT = ' ';
 const UNSUPPORTED_PRODUCTION_EDIT_TITLE = 'Unsupported production text command';
 const UNSUPPORTED_UNDO_MESSAGE = 'Undo must be submitted as explicit causal input before production use.';
 const UNSUPPORTED_REDO_MESSAGE = 'Redo must be submitted as explicit causal input before production use.';
@@ -362,6 +363,9 @@ function insertTextFromKey(msg: KeyMsg): string | undefined {
   }
   if (msg.key === EditorKeys.Tab) {
     return INSERT_TAB_TEXT;
+  }
+  if (msg.key === EditorKeys.Space) {
+    return INSERT_SPACE_TEXT;
   }
   return msg.key.length === 1 ? msg.key : undefined;
 }

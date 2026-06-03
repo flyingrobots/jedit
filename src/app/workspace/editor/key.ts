@@ -11,6 +11,7 @@ export const EditorKeys = Object.freeze({
   Backspace: 'backspace',
   Delete: 'delete',
   Enter: 'enter',
+  Space: 'space',
   Tab: 'tab',
   A: 'a',
   B: 'b',
