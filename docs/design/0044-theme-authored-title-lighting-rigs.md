@@ -122,6 +122,7 @@ and floor light ordering across built-in themes.
 
 Contracts:
 
+- `src/ui/jedit-theme-palettes.ts`
 - `src/ui/title-scene-lighting-tokens.ts`
 - `src/ui/title-scene-material-colors.ts`
 
@@ -131,6 +132,9 @@ Contracts:
 - `Spotlight`;
 - `FloorDark`;
 - `FloorLight`.
+
+`jedit-theme-palettes.ts` will keep authored palette data, including any
+optional title-scene lighting rig, outside the main theme behavior module.
 
 `titleSceneMaterialColors(theme)` will:
 
@@ -239,12 +243,12 @@ current fallback behavior preserved.
 
 ## Implementation Slices
 
-- [ ] Slice 1: Commit this design packet. Commit message:
+- [x] Slice 1: Commit this design packet. Commit message:
       `docs: design theme authored title lighting`.
-- [ ] Slice 2: Add RED specs for fallback and authored lighting variables.
-- [ ] Slice 3: Add lighting variable constants and material-color derivation.
-- [ ] Slice 4: Author one built-in theme rig.
-- [ ] Slice 5: Verify focused specs, title render specs, build, quality, and
+- [x] Slice 2: Add RED specs for fallback and authored lighting variables.
+- [x] Slice 3: Add lighting variable constants and material-color derivation.
+- [x] Slice 4: Author one built-in theme rig.
+- [x] Slice 5: Verify focused specs, title render specs, build, quality, and
       formatting.
 - [ ] Slice 6: Push, mark PR ready, and merge when eligible.
 
@@ -252,15 +256,15 @@ current fallback behavior preserved.
 
 Behavior tests required:
 
-- [ ] `spec/title-scene-lighting-rig.spec.mjs` fails before lighting variables
+- [x] `spec/title-scene-lighting-rig.spec.mjs` fails before lighting variables
       are consumed and passes after implementation.
-- [ ] Existing title-screen optics tests still prove spotlight behavior.
-- [ ] Existing title-scene render contrast tests stay green.
-- [ ] `npm run quality` stays green.
+- [x] Existing title-screen optics tests still prove spotlight behavior.
+- [x] Existing title-scene render contrast tests stay green.
+- [x] `npm run quality` stays green.
 
 Documentation and process tests:
 
-- [ ] Prettier validates this design doc.
+- [x] Prettier validates this design doc.
 
 Rule: documentation tests cannot be the only proof for implementation work.
 
@@ -268,13 +272,13 @@ Rule: documentation tests cannot be the only proof for implementation work.
 
 The work is done when:
 
-- [ ] Fallback themes still derive spotlight from accent.
-- [ ] One authored theme derives spotlight/floor colors from `title.scene.*`
+- [x] Fallback themes still derive spotlight from accent.
+- [x] One authored theme derives spotlight/floor colors from `title.scene.*`
       variables.
-- [ ] Floor dark/light contrast remains ordered for all built-in themes.
-- [ ] No renderer branch keys off a theme name.
-- [ ] Issue and PR are linked correctly.
-- [ ] Local validation is green.
+- [x] Floor dark/light contrast remains ordered for all built-in themes.
+- [x] No renderer branch keys off a theme name.
+- [x] Issue and PR are linked correctly.
+- [x] Local validation is green.
 - [ ] CI is green before merge.
 
 ## Validation Plan
@@ -285,7 +289,7 @@ Commands expected before PR:
 npm run build
 JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/title-scene-lighting-rig.spec.mjs spec/title-screen-optics.spec.mjs spec/title-scene-render.spec.mjs
 npm run quality
-npx --no-install prettier --check docs/design/0044-theme-authored-title-lighting-rigs.md src/ui/title-scene-lighting-tokens.ts src/ui/title-scene-material-colors.ts src/ui/jedit-themes.ts spec/title-scene-lighting-rig.spec.mjs spec/title-screen-optics.spec.mjs spec/title-scene-render.spec.mjs
+npx --no-install prettier --check docs/design/0044-theme-authored-title-lighting-rigs.md src/ui/title-scene-lighting-tokens.ts src/ui/title-scene-material-colors.ts src/ui/jedit-themes.ts src/ui/jedit-theme-palettes.ts spec/title-scene-lighting-rig.spec.mjs spec/title-screen-optics.spec.mjs spec/title-scene-render.spec.mjs
 ```
 
 ## Playback / Witness
@@ -316,20 +320,30 @@ lighting variables can be separate issues after color rigs prove stable.
 
 ## Retrospective
 
-Fill this in after implementation.
-
 What changed from the design:
 
-- Pending.
+- Implementation matched the design. The first authored rig is Monokai, using
+  `title.scene.spotlight`, `title.scene.floor.dark`, and
+  `title.scene.floor.light` variables. The authored palette table now lives in
+  `src/ui/jedit-theme-palettes.ts` so `src/ui/jedit-themes.ts` stays under the
+  quality gate line cap.
 
 What the tests proved:
 
-- Pending.
+- `spec/title-scene-lighting-rig.spec.mjs` proved RED missing-token behavior,
+  fallback spotlight derivation, authored spotlight derivation, authored floor
+  colors, and authored floor contrast.
+- `spec/title-screen-optics.spec.mjs` proved spotlight behavior still works
+  through the existing optics without theme-name renderer branches.
+- `spec/title-scene-render.spec.mjs` proved built-in floor light/dark contrast
+  stays ordered.
+- `npm run build`, `npm run quality`, Prettier, and `git diff --check` stayed
+  green locally.
 
 What remains open:
 
-- Pending.
+- CI must pass before merge.
 
 PR:
 
-- Pending.
+- https://github.com/flyingrobots/jedit/pull/95
