@@ -13,6 +13,8 @@
     "gen:contract": "npm run gen:contract:wesley && npm run gen:contract:legacy && npm run gen:observer",
     "build": "npm run gen:contract:structural-history:wesley && tsc -p tsconfig.json && node scripts/copy-assets.mjs",
     "start": "node dist/main.js",
+    "title:preview": "npm run build && node scripts/title-scene-preview.mjs",
+    "title:record": "npm run build && node scripts/title-scene-record.mjs",
     "witness:echo": "node scripts/jedit-echo-witness.mjs",
     "witness:echo:session": "npm run build && node scripts/jedit-echo-powered-session.mjs --json",
     "release-gate:echo": "npm run release-gate:jedit-echo",

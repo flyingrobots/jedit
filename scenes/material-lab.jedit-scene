@@ -1,0 +1,81 @@
+{
+  "camera": { "angle": -0.18, "radius": 8.4 },
+  "environment": {
+    "background": [3, 5, 9],
+    "floor": {
+      "kind": "grid",
+      "dark": [12, 18, 28],
+      "light": [78, 96, 118],
+      "gridScale": 1.0,
+      "fadeDistance": 24
+    },
+    "light": {
+      "direction": [-1.2, 3.0, -0.85],
+      "ambient": 0.1,
+      "diffuse": 0.96,
+      "specularStrength": 1.0,
+      "rimStrength": 1.2
+    },
+    "walls": [
+      {
+        "normal": [0, 0, 1],
+        "offset": -3.4,
+        "color": [9, 14, 24]
+      }
+    ]
+  },
+  "objects": [
+    {
+      "label": "matte",
+      "kind": "sphere",
+      "position": [-3.0, 0.55, 0.15],
+      "radius": 0.55,
+      "color": [112, 216, 167],
+      "reflectivity": 0.0
+    },
+    {
+      "label": "mirror",
+      "kind": "sphere",
+      "position": [-1.75, 0.55, 0.15],
+      "radius": 0.55,
+      "color": [222, 232, 232],
+      "reflectivity": 1.0
+    },
+    {
+      "label": "transparent",
+      "kind": "sphere",
+      "position": [-0.5, 0.55, 0.15],
+      "radius": 0.55,
+      "color": [78, 195, 224],
+      "reflectivity": 0.08,
+      "transparency": 0.72
+    },
+    {
+      "label": "refractive",
+      "kind": "sphere",
+      "position": [0.75, 0.55, 0.15],
+      "radius": 0.55,
+      "color": [224, 113, 63],
+      "reflectivity": 0.12,
+      "transparency": 0.78,
+      "refractiveIndex": 1.52
+    },
+    {
+      "label": "rim-column",
+      "kind": "column",
+      "position": [2.0, 0.95, 0.0],
+      "radius": 0.34,
+      "height": 1.9,
+      "color": [78, 195, 224],
+      "reflectivity": 0.32
+    },
+    {
+      "label": "spotlight-target",
+      "kind": "sphere",
+      "position": [3.15, 0.5, -0.2],
+      "radius": 0.5,
+      "color": [224, 113, 63],
+      "reflectivity": 0.36
+    }
+  ]
+}
