@@ -1,13 +1,17 @@
-import type { Cell, Surface } from '@flyingrobots/bijou';
-import type { SourceHighlightReading, SourceHighlightRole, SourceHighlightSpan } from '../ports/source-highlighter.js';
-import type { JeditStyleToken, JeditTheme } from './jedit-theme.js';
-import type { SourceWindowReading } from './source-window.js';
+import type { Cell, Surface } from "@flyingrobots/bijou";
+import type {
+  SourceHighlightReading,
+  SourceHighlightRole,
+  SourceHighlightSpan,
+} from "../ports/source-highlighter.js";
+import type { JeditStyleToken, JeditTheme } from "./jedit-theme.js";
+import type { SourceWindowReading } from "./source-window.js";
 
 const ZERO_INDEX = 0;
 const MIN_RENDER_SIZE = 1;
-const SPACE_CHAR = ' ';
+const SPACE_CHAR = " ";
 
-type CellStyle = Pick<Cell, 'fg' | 'bg' | 'fgRGB' | 'bgRGB' | 'modifiers'>;
+type CellStyle = Pick<Cell, "fg" | "bg" | "fgRGB" | "bgRGB" | "modifiers">;
 
 export interface PaintHighlightedSourceWindowOptions {
   readonly x: number;
@@ -30,13 +34,18 @@ export function paintHighlightedSourceWindow(
 
   for (let row = ZERO_INDEX; row < safeHeight; row += 1) {
     const sourceLine = reading.lines[row];
-    const sourceText = sourceLine?.text ?? '';
+    const sourceText = sourceLine?.text ?? "";
     const sourceRow = sourceLine?.lineNumber ?? reading.startLine + row;
 
     for (let col = ZERO_INDEX; col < safeWidth; col += 1) {
       const sourceCol = safeScrollCol + col;
       const char = sourceText[sourceCol] ?? SPACE_CHAR;
-      const style = styleAt(highlight?.spans ?? [], sourceRow, sourceCol, options.theme);
+      const style = styleAt(
+        highlight?.spans ?? [],
+        sourceRow,
+        sourceCol,
+        options.theme,
+      );
       surface.set(options.x + col, options.y + row, {
         char,
         ...style,
@@ -52,15 +61,20 @@ function styleAt(
   column: number,
   theme: JeditTheme,
 ): CellStyle {
+  const baseStyle = tokenStyle(theme.surface.workspace);
   for (const span of spans) {
     if (spanContainsCell(span, row, column)) {
-      return styleForRole(span.role, theme);
+      return mergeCellStyles(baseStyle, styleForRole(span.role, theme));
     }
   }
-  return {};
+  return baseStyle;
 }
 
-function spanContainsCell(span: SourceHighlightSpan, row: number, column: number): boolean {
+function spanContainsCell(
+  span: SourceHighlightSpan,
+  row: number,
+  column: number,
+): boolean {
   if (row < span.range.start.row || row > span.range.end.row) {
     return false;
   }
@@ -89,5 +103,15 @@ function tokenStyle(token: JeditStyleToken): CellStyle {
     fgRGB: token.fgRGB,
     bgRGB: token.bgRGB,
     modifiers: token.modifiers == null ? undefined : [...token.modifiers],
+  };
+}
+
+function mergeCellStyles(base: CellStyle, overlay: CellStyle): CellStyle {
+  return {
+    fg: overlay.fg ?? base.fg,
+    bg: overlay.bg ?? base.bg,
+    fgRGB: overlay.fgRGB ?? base.fgRGB,
+    bgRGB: overlay.bgRGB ?? base.bgRGB,
+    modifiers: overlay.modifiers ?? base.modifiers,
   };
 }
