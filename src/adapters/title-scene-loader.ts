@@ -1,5 +1,5 @@
 import * as fs from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { SceneDecodeError, SceneLoadError } from "../domain/errors.js";
@@ -67,6 +67,26 @@ export async function loadTitleSceneFromFile(
   meshes: TitleMeshLibrary,
 ): Promise<TitleScene> {
   const content = await fs.readFile(path, "utf8");
+  return parseTitleSceneText(content, meshes);
+}
+
+export function loadBuiltInTitleSceneSync(
+  name: BuiltInTitleSceneName,
+  meshes: TitleMeshLibrary,
+): TitleScene {
+  if (!BUILT_IN_TITLE_SCENE_SET.has(name)) {
+    throw new SceneDecodeError(`Unknown built-in scene '${name}'.`);
+  }
+  return parseTitleSceneText(
+    readFileSync(resolveBuiltInTitleScenePath(name, undefined), "utf8"),
+    meshes,
+  );
+}
+
+function parseTitleSceneText(
+  content: string,
+  meshes: TitleMeshLibrary,
+): TitleScene {
   let json: JsonValue;
   try {
     json = parseJsonText(content);

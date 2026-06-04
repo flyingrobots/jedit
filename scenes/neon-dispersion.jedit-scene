@@ -1,0 +1,152 @@
+{
+  "camera": { "angle": -0.42, "radius": 7.6 },
+  "environment": {
+    "background": [2, 3, 7],
+    "floor": {
+      "kind": "grid",
+      "dark": [4, 7, 11],
+      "light": [28, 35, 44],
+      "gridScale": 1.35,
+      "fadeDistance": 25
+    },
+    "light": {
+      "direction": [-0.95, 2.85, -1.25],
+      "ambient": 0.08,
+      "diffuse": 0.92,
+      "specularStrength": 1.18,
+      "rimStrength": 1.34
+    },
+    "walls": [
+      {
+        "normal": [0, 0, 1],
+        "offset": -3.7,
+        "color": [10, 12, 17]
+      },
+      {
+        "normal": [1, 0, 0],
+        "offset": -3.8,
+        "color": [8, 10, 14]
+      },
+      {
+        "normal": [-1, 0, 0],
+        "offset": -3.8,
+        "color": [8, 10, 14]
+      },
+      {
+        "normal": [0, -1, 0],
+        "offset": -3.2,
+        "color": [18, 20, 25]
+      }
+    ]
+  },
+  "objects": [
+    {
+      "label": "dispersion-core",
+      "kind": "cube",
+      "position": [0.0, 1.04, 0.0],
+      "radius": 0.66,
+      "height": 1.52,
+      "footprintRadius": 0.78,
+      "color": [194, 236, 255],
+      "reflectivity": 0.2,
+      "transparency": 0.78,
+      "refractiveIndex": 1.72
+    },
+    {
+      "label": "dispersion-shard-left",
+      "kind": "cube",
+      "position": [-0.7, 0.82, -0.12],
+      "radius": 0.36,
+      "height": 1.05,
+      "footprintRadius": 0.47,
+      "color": [255, 118, 216],
+      "reflectivity": 0.16,
+      "transparency": 0.7,
+      "refractiveIndex": 1.58
+    },
+    {
+      "label": "dispersion-shard-right",
+      "kind": "cube",
+      "position": [0.7, 0.86, 0.12],
+      "radius": 0.38,
+      "height": 1.12,
+      "footprintRadius": 0.49,
+      "color": [78, 228, 255],
+      "reflectivity": 0.18,
+      "transparency": 0.72,
+      "refractiveIndex": 1.62
+    },
+    {
+      "label": "pink-neon-tube",
+      "kind": "column",
+      "position": [-1.42, 1.05, 0.16],
+      "radius": 0.07,
+      "height": 2.1,
+      "footprintRadius": 0.2,
+      "color": [255, 32, 178],
+      "reflectivity": 0.72
+    },
+    {
+      "label": "cyan-neon-tube",
+      "kind": "column",
+      "position": [1.42, 1.05, -0.16],
+      "radius": 0.07,
+      "height": 2.1,
+      "footprintRadius": 0.2,
+      "color": [34, 231, 255],
+      "reflectivity": 0.72
+    },
+    {
+      "label": "violet-neon-tube",
+      "kind": "column",
+      "position": [0.0, 1.0, 1.35],
+      "radius": 0.065,
+      "height": 2.0,
+      "footprintRadius": 0.2,
+      "color": [164, 78, 255],
+      "reflectivity": 0.62
+    },
+    {
+      "label": "wet-floor-reflector",
+      "kind": "cube",
+      "position": [0.0, 0.04, 0.38],
+      "radius": 1.85,
+      "height": 0.08,
+      "footprintRadius": 1.85,
+      "color": [12, 16, 23],
+      "reflectivity": 0.68
+    },
+    {
+      "label": "chrome-orb-front",
+      "kind": "sphere",
+      "position": [-1.1, 1.68, 2.18],
+      "radius": 0.24,
+      "color": [232, 240, 246],
+      "reflectivity": 1.0
+    },
+    {
+      "label": "chrome-orb-rear",
+      "kind": "sphere",
+      "position": [1.4, 1.62, -1.9],
+      "radius": 0.28,
+      "color": [224, 233, 240],
+      "reflectivity": 0.96
+    },
+    {
+      "label": "matte-depth-left",
+      "kind": "sphere",
+      "position": [-2.32, 1.22, 0.96],
+      "radius": 0.2,
+      "color": [4, 5, 8],
+      "reflectivity": 0.03
+    },
+    {
+      "label": "matte-depth-right",
+      "kind": "sphere",
+      "position": [2.2, 1.28, 0.72],
+      "radius": 0.18,
+      "color": [5, 6, 9],
+      "reflectivity": 0.03
+    }
+  ]
+}

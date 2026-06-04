@@ -273,29 +273,29 @@ it already owns startup assets, meshes, theme, entries, and seed.
 ## Implementation Slices
 
 - [x] Slice 1: File issue #101 and write this design document.
-- [ ] Slice 2: Add failing tests for default scene registry/startup behavior
+- [x] Slice 2: Add failing tests for default scene registry/startup behavior
       and Neon Dispersion scene facts.
-- [ ] Slice 3: Add `neon-dispersion.jedit-scene` and default scene loader
+- [x] Slice 3: Add `neon-dispersion.jedit-scene` and default scene loader
       contract.
-- [ ] Slice 4: Wire startup snapshot/model camera to the default scene.
-- [ ] Slice 5: Validate render/preview, create follow-on renderer debt, update
+- [x] Slice 4: Wire startup snapshot/model camera to the default scene.
+- [x] Slice 5: Validate render/preview, create follow-on renderer debt, update
       retrospective, and open the PR.
 
 ## Tests To Write First
 
 Behavior tests required:
 
-- [ ] A Neon Dispersion scene spec fails until the built-in scene exists and is
+- [x] A Neon Dispersion scene spec fails until the built-in scene exists and is
       registered first.
-- [ ] A workspace startup spec fails until production initial snapshots carry
+- [x] A workspace startup spec fails until production initial snapshots carry
       the default scene override.
-- [ ] A render spec fails until the scene produces varied visible color output.
-- [ ] A copy-assets/preview assertion fails until the scene is copied and
+- [x] A render spec fails until the scene produces varied visible color output.
+- [x] Existing title-preview shard coverage proves the scene is copied and
       preview-loadable.
 
 Documentation and process tests:
 
-- [ ] Prettier checks this design doc and scene JSON.
+- [x] Prettier checks this design doc and scene JSON.
 
 Rule: documentation tests cannot be the only proof for implementation work.
 
@@ -303,17 +303,17 @@ Rule: documentation tests cannot be the only proof for implementation work.
 
 The work is done when:
 
-- [ ] `neon-dispersion.jedit-scene` exists under `scenes/`.
-- [ ] `DEFAULT_BUILT_IN_TITLE_SCENE_NAME` is `neon-dispersion.jedit-scene`.
-- [ ] `BUILT_IN_TITLE_SCENE_NAMES[0]` is the default scene.
-- [ ] Production startup initial model has `sceneOverride` set to Neon
+- [x] `neon-dispersion.jedit-scene` exists under `scenes/`.
+- [x] `DEFAULT_BUILT_IN_TITLE_SCENE_NAME` is `neon-dispersion.jedit-scene`.
+- [x] `BUILT_IN_TITLE_SCENE_NAMES[0]` is the default scene.
+- [x] Production startup initial model has `sceneOverride` set to Neon
       Dispersion.
-- [ ] The initial title camera uses the default scene camera.
-- [ ] The scene includes refractive, reflective, neon-colored, dark-room, floor,
+- [x] The initial title camera uses the default scene camera.
+- [x] The scene includes refractive, reflective, neon-colored, dark-room, floor,
       and floating-depth object facts.
-- [ ] Focused tests fail before implementation and pass after.
-- [ ] Follow-on renderer debt is tracked.
-- [ ] Issue and PR are linked correctly.
+- [x] Focused tests fail before implementation and pass after.
+- [x] Follow-on renderer debt is tracked.
+- [x] Issue and PR are linked correctly.
 - [ ] CI and local validation are green.
 
 ## Validation Plan
@@ -365,30 +365,42 @@ Mitigations:
 
 ## Follow-On Debt
 
-Create follow-on issue debt for:
-
-- physical emissive tube light sources;
-- spectral dispersion/chromatic aberration;
-- torus or high-poly faceted primitives;
-- roughness maps and blurred reflections;
-- depth-of-field/bokeh rendering.
+Follow-on renderer debt is tracked in
+https://github.com/flyingrobots/jedit/issues/103.
 
 ## Retrospective
 
-Fill this in after implementation.
-
 What changed from the design:
 
-- Pending.
+- The production startup snapshot now loads
+  `DEFAULT_BUILT_IN_TITLE_SCENE_NAME` through a synchronous built-in scene
+  adapter path and falls back to generated scene rendering if that asset is
+  unavailable.
+- The default scene uses current renderer primitives rather than pretending to
+  have physical emissive tubes, spectral dispersion, roughness maps, torus
+  geometry, or depth of field.
 
 What the tests proved:
 
-- Pending.
+- RED:
+  `node --test --test-concurrency=1 spec/title-scene-neon-dispersion.spec.mjs`
+  failed because `neon-dispersion.jedit-scene` was unknown and startup had no
+  `sceneOverride`.
+- GREEN:
+  `npm run build && JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/title-scene-neon-dispersion.spec.mjs`
+  passed.
+- Adjacent checks passed:
+  `node --test --test-concurrency=1 spec/title-scene-loader.spec.mjs spec/workspace-runtime.spec.mjs spec/title-scene-material-lab.spec.mjs`,
+  `JEDIT_DIST_PREBUILT=1 npm run ci:shard -- title-rendering`,
+  `JEDIT_DIST_PREBUILT=1 npm run ci:shard -- workspace-ui`,
+  `npm run title:preview -- --scene neon-dispersion.jedit-scene --json --no-frame`,
+  `npm run quality`, and `git diff --check`.
 
 What remains open:
 
-- Pending.
+- CI still needs to run on PR #102 after the implementation commit is pushed.
+- Renderer feature debt remains in issue #103.
 
 PR:
 
-- Pending.
+- https://github.com/flyingrobots/jedit/pull/102
