@@ -124,6 +124,7 @@ export function impactForPath(pathName, packageChangeKind = PACKAGE_CHANGE_KINDS
     return shardImpact(BIJOU_DEPENDENCY_REASON, [
       TEST_SHARDS.ContractApi,
       TEST_SHARDS.EchoAuthority,
+      TEST_SHARDS.TitleRendering,
       TEST_SHARDS.WorkspaceUi,
     ], true);
   }

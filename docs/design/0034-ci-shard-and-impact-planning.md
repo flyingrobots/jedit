@@ -66,7 +66,7 @@ depend on ignored generated source files in a fresh checkout.
 | Changed path | Required checks |
 | --- | --- |
 | `.github/**`, non-Bijou package changes, `tsconfig*.json`, `scripts/ci/**`, `scripts/quality*` | Full shard set and release gate. |
-| `package*.json` with only Bijou dependency version/resolution changes | `contract-api`, `echo-authority`, `workspace-ui`, release gate. |
+| `package*.json` with only Bijou dependency version/resolution changes | `contract-api`, `echo-authority`, `title-rendering`, `workspace-ui`, release gate. |
 | `contracts/**`, generated contract code, Wesley tooling | `contract-api`, `echo-authority`, release gate. |
 | Echo authority surfaces | `echo-authority`, `workspace-ui`, release gate. |
 | Workspace surfaces | `workspace-ui`, `echo-authority`. |

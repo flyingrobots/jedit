@@ -72,6 +72,7 @@ test('planner narrows Bijou-only dependency bumps to runtime compatibility shard
   assert.deepEqual(plan.testShards, [
     TEST_SHARDS.ContractApi,
     TEST_SHARDS.EchoAuthority,
+    TEST_SHARDS.TitleRendering,
     TEST_SHARDS.WorkspaceUi,
   ]);
   assert.deepEqual(

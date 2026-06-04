@@ -4,8 +4,8 @@
 
 - Split the CI contract shard into `contract-api` and `cycle-proofs`, and added
   a Bijou-only package dependency fast path that runs `contract-api`,
-  `echo-authority`, `workspace-ui`, and the Echo release gate instead of the
-  full shard set.
+  `echo-authority`, `title-rendering`, `workspace-ui`, and the Echo release gate
+  instead of the full shard set.
 - Restored generated structural-history descriptor sources into CI shard jobs
   so `cycle-proofs` can typecheck source contracts from the shared build
   artifact.
