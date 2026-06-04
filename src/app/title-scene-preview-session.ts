@@ -89,9 +89,12 @@ export interface TitleScenePreviewCameraInspector {
 export interface TitleScenePreviewObjectInspector {
   readonly index: number;
   readonly count: number;
+  readonly label?: string;
   readonly kind: string;
   readonly radius: number;
   readonly reflectivity: number;
+  readonly transparency?: number;
+  readonly refractiveIndex?: number;
   readonly color: TitleSceneColor;
   readonly center: TitleSceneVector3;
   readonly orbitPhase?: number;
@@ -292,6 +295,7 @@ function inspectTitleSceneObject(
   return {
     index: model.selectedObjectIndex,
     count,
+    ...titleSceneObjectMaterialFacts(object),
     kind: object.kind,
     radius: object.radius,
     reflectivity: object.reflectivity,
@@ -303,6 +307,23 @@ function inspectTitleSceneObject(
     ...(object.localYaw == null
       ? {}
       : { localYaw: titleSceneLocalYawAt(object, model.timeSeconds) }),
+  };
+}
+
+function titleSceneObjectMaterialFacts(
+  object: TitleSceneObject,
+): Pick<
+  TitleScenePreviewObjectInspector,
+  "label" | "transparency" | "refractiveIndex"
+> {
+  return {
+    ...(object.label == null ? {} : { label: object.label }),
+    ...(object.transparency == null
+      ? {}
+      : { transparency: object.transparency }),
+    ...(object.refractiveIndex == null
+      ? {}
+      : { refractiveIndex: object.refractiveIndex }),
   };
 }
 

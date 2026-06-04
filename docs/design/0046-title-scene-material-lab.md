@@ -274,30 +274,31 @@ runtime labels and focused specs.
 
 - [x] Slice 1: Commit this design packet. Commit message:
       `docs: design title scene material lab`.
-- [ ] Slice 2: Add RED specs for missing material lab registration, labels, and
+- [x] Slice 2: Add RED specs for missing material lab registration, labels, and
       inspector facts.
-- [ ] Slice 3: Add optional object labels to scene object model and loader.
-- [ ] Slice 4: Add `material-lab.jedit-scene` and register it as non-default.
-- [ ] Slice 5: Add focused render/optics witness for material lab floor/light
+- [x] Slice 3: Add optional object labels to scene object model and loader.
+- [x] Slice 4: Add `material-lab.jedit-scene` and register it as non-default.
+- [x] Slice 5: Add focused render/optics witness for material lab floor/light
       behavior.
-- [ ] Slice 6: Verify build, focused specs, title-rendering shard, quality,
-      formatting, push, mark PR ready, and merge when eligible.
+- [x] Slice 6: Verify build, focused specs, title-rendering shard, quality,
+      and formatting.
+- [ ] Slice 7: Push, mark PR ready, and merge when eligible.
 
 ## Tests To Write First
 
 Behavior tests required:
 
-- [ ] `spec/title-scene-material-lab.spec.mjs` fails before the scene is
+- [x] `spec/title-scene-material-lab.spec.mjs` fails before the scene is
       registered and passes after implementation.
-- [ ] Loader test fails before labels decode and passes after implementation.
-- [ ] Preview inspector test fails before label/optical fields are exposed and
+- [x] Loader test fails before labels decode and passes after implementation.
+- [x] Preview inspector test fails before label/optical fields are exposed and
       passes after implementation.
-- [ ] Focused render/optics test proves floor/light behavior using the material
+- [x] Focused render/optics test proves floor/light behavior using the material
       lab scene.
 
 Documentation and process tests:
 
-- [ ] Prettier validates this design doc.
+- [x] Prettier validates this design doc.
 
 Rule: documentation tests cannot be the only proof for implementation work.
 
@@ -305,14 +306,14 @@ Rule: documentation tests cannot be the only proof for implementation work.
 
 The work is done when:
 
-- [ ] `material-lab.jedit-scene` is registered but not first/default.
-- [ ] Loaded material lab objects include the expected lane labels.
-- [ ] The lab includes matte, mirror, transparent, refractive, rim, spotlight,
+- [x] `material-lab.jedit-scene` is registered but not first/default.
+- [x] Loaded material lab objects include the expected lane labels.
+- [x] The lab includes matte, mirror, transparent, refractive, rim, spotlight,
       and floor coverage.
-- [ ] Preview inspector exposes selected object label and optical fields.
-- [ ] Focused render/optics witness proves material lab light/floor behavior.
-- [ ] Issue and PR are linked correctly.
-- [ ] Local validation is green.
+- [x] Preview inspector exposes selected object label and optical fields.
+- [x] Focused render/optics witness proves material lab light/floor behavior.
+- [x] Issue and PR are linked correctly.
+- [x] Local validation is green.
 - [ ] CI is green before merge.
 
 ## Validation Plan
@@ -324,7 +325,22 @@ npm run build
 JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/title-scene-material-lab.spec.mjs spec/title-scene-loader.spec.mjs spec/title-scene-preview-session.spec.mjs
 JEDIT_DIST_PREBUILT=1 npm run ci:shard -- title-rendering
 npm run quality
-npx --no-install prettier --check docs/design/0046-title-scene-material-lab.md scenes/material-lab.jedit-scene src/ports/title-scene-loader.ts src/adapters/title-scene-loader.ts src/ui/title-scene.ts src/app/title-scene-preview-session.ts spec/title-scene-material-lab.spec.mjs spec/title-scene-loader.spec.mjs spec/title-scene-preview-session.spec.mjs
+npx --no-install prettier --check docs/design/0046-title-scene-material-lab.md src/ports/title-scene-loader.ts src/adapters/title-scene-loader.ts src/adapters/title-scene-json-decoder.ts src/adapters/title-scene-environment-decoder.ts src/ui/title-scene.ts src/ui/title-scene-hit.ts src/app/title-scene-preview-session.ts spec/title-scene-material-lab.spec.mjs
+npx --no-install prettier --parser json --check scenes/material-lab.jedit-scene
+git diff --check
+```
+
+Executed local validation:
+
+```bash
+JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/title-scene-material-lab.spec.mjs
+npm run build
+JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/title-scene-material-lab.spec.mjs spec/title-scene-loader.spec.mjs spec/title-scene-preview-session.spec.mjs
+JEDIT_DIST_PREBUILT=1 npm run ci:shard -- title-rendering
+npm run quality
+npx --no-install prettier --check docs/design/0046-title-scene-material-lab.md src/ports/title-scene-loader.ts src/adapters/title-scene-loader.ts src/adapters/title-scene-json-decoder.ts src/adapters/title-scene-environment-decoder.ts src/ui/title-scene.ts src/ui/title-scene-hit.ts src/app/title-scene-preview-session.ts spec/title-scene-material-lab.spec.mjs
+npx --no-install prettier --parser json --check scenes/material-lab.jedit-scene
+git diff --check
 ```
 
 ## Playback / Witness
@@ -357,20 +373,29 @@ per-lane golden fixtures, or richer material metadata should be separate issues.
 
 ## Retrospective
 
-Fill this in after implementation.
-
 What changed from the design:
 
-- Pending.
+- Implemented the material lab as a non-default built-in JSON scene with six
+  labeled lanes.
+- Added optional object labels to the scene object model and loader.
+- Exposed label, transparency, and refractive index through preview inspector
+  facts.
+- Split scene JSON/environment decoding and ray-hit geometry into focused
+  helper modules so the implementation remains below quality-gate line limits.
 
 What the tests proved:
 
-- Pending.
+- RED: `spec/title-scene-material-lab.spec.mjs` failed while
+  `material-lab.jedit-scene` was not registered.
+- GREEN: focused specs proved registration order, expected labels, material
+  fields, inspector facts, and floor/light behavior.
+- The `title-rendering` shard passed with the new scene included in built-in
+  coverage.
 
 What remains open:
 
-- Pending.
+- Remote CI still has to run before merge.
 
 PR:
 
-- Pending.
+- https://github.com/flyingrobots/jedit/pull/96
