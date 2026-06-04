@@ -9,6 +9,7 @@ import {
   MeshTriangleIndexOutOfRangeError,
   MeshVertexIndexOutOfRangeError,
 } from "../domain/errors.js";
+import { validateTitleMeshWinding } from "./title-mesh-winding.js";
 
 export type { TitleMeshSource, TitleMeshTriangle, TitleMeshVector3 };
 
@@ -140,6 +141,8 @@ export function createTitleMesh(
   const triangles = source.triangles.map((indices) =>
     triangleData(vertices, indices),
   );
+  const meshTriangles = triangles.map((triangle) => triangle.indices);
+  validateTitleMeshWinding(vertices, meshTriangles);
   if (triangles.length === 0) {
     throw new EmptyMeshError("Title mesh must contain at least one triangle.");
   }
@@ -148,7 +151,7 @@ export function createTitleMesh(
   const bounds = boundsForVertices(vertices);
   return {
     vertices,
-    triangles: triangles.map((triangle) => triangle.indices),
+    triangles: meshTriangles,
     bounds,
     height: bounds.max[AXIS_Y] - bounds.min[AXIS_Y],
     footprintRadius: footprintRadiusForVertices(

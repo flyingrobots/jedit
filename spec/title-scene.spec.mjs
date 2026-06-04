@@ -17,6 +17,7 @@ const TITLE_MESH_LIBRARY_PATH = path.join(
   "ui",
   "title-mesh-library.js",
 );
+const TITLE_MESH_PATH = path.join(REPO_ROOT, "dist", "ui", "title-mesh.js");
 const TITLE_BUNNY_MESH_PATH = path.join(
   REPO_ROOT,
   "dist",
@@ -86,6 +87,32 @@ const SCENE_COLORS = {
   muted: [126, 137, 148],
   surface: [14, 17, 22],
 };
+const UNIT_MESH_PLACEMENT = {
+  height: 1,
+  pitchRadians: 0,
+  yawRadians: 0,
+  centerX: 0,
+  floorY: 0,
+  centerZ: 0,
+};
+const TETRAHEDRON_VERTICES = [
+  [0, 0, 0],
+  [1, 0, 0],
+  [0, 1, 0],
+  [0, 0, 1],
+];
+const OUTWARD_TETRAHEDRON_TRIANGLES = [
+  [0, 2, 1],
+  [0, 1, 3],
+  [1, 2, 3],
+  [2, 0, 3],
+];
+const INVERTED_TETRAHEDRON_TRIANGLES = [
+  [0, 1, 2],
+  [0, 3, 1],
+  [1, 3, 2],
+  [2, 3, 0],
+];
 
 let titleSceneModulesPromise;
 
@@ -100,6 +127,7 @@ async function loadTitleSceneModules() {
       titleMeshLibrary: await import(
         pathToFileURL(TITLE_MESH_LIBRARY_PATH).href
       ),
+      titleMesh: await import(pathToFileURL(TITLE_MESH_PATH).href),
       titleBunnyMesh: await import(pathToFileURL(TITLE_BUNNY_MESH_PATH).href),
       domainErrors: await import(pathToFileURL(DOMAIN_ERRORS_PATH).href),
       titleCamera: await import(pathToFileURL(TITLE_CAMERA_PATH).href),
@@ -375,6 +403,59 @@ test("title teapot mesh rotates source Z into world up", async () => {
   assert.equal(mesh.height, TITLE_TEAPOT_HEIGHT);
   assert.equal(mesh.vertices[0][AXIS_Y], 0);
   assert.equal(mesh.vertices[2][AXIS_Y], TITLE_TEAPOT_HEIGHT);
+});
+
+test("title mesh rejects adjacent triangles with inconsistent winding", async () => {
+  const { titleMesh, domainErrors } = await loadTitleSceneModules();
+
+  assert.throws(
+    () =>
+      titleMesh.createTitleMesh(
+        {
+          vertices: [
+            [0, 0, 0],
+            [1, 0, 0],
+            [0, 1, 0],
+            [1, 1, 0],
+          ],
+          triangles: [
+            [0, 1, 2],
+            [1, 2, 3],
+          ],
+        },
+        UNIT_MESH_PLACEMENT,
+      ),
+    (error) => error instanceof domainErrors.MeshInconsistentWindingError,
+  );
+});
+
+test("title mesh rejects closed meshes with globally inverted winding", async () => {
+  const { titleMesh, domainErrors } = await loadTitleSceneModules();
+
+  assert.throws(
+    () =>
+      titleMesh.createTitleMesh(
+        {
+          vertices: TETRAHEDRON_VERTICES,
+          triangles: INVERTED_TETRAHEDRON_TRIANGLES,
+        },
+        UNIT_MESH_PLACEMENT,
+      ),
+    (error) => error instanceof domainErrors.MeshInvertedWindingError,
+  );
+});
+
+test("title mesh accepts closed meshes with outward winding", async () => {
+  const { titleMesh } = await loadTitleSceneModules();
+  const mesh = titleMesh.createTitleMesh(
+    {
+      vertices: TETRAHEDRON_VERTICES,
+      triangles: OUTWARD_TETRAHEDRON_TRIANGLES,
+    },
+    UNIT_MESH_PLACEMENT,
+  );
+
+  assert.equal(mesh.triangles.length, OUTWARD_TETRAHEDRON_TRIANGLES.length);
 });
 
 test("title mesh source loader fails fast when no candidate asset is available", async () => {
