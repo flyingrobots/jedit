@@ -11,6 +11,10 @@ const TITLE_SCENE_ENVIRONMENT_PATH = path.join(
   DIST_UI_PATH,
   "title-scene-environment.js",
 );
+const TITLE_SCENE_DIRECTOR_PATH = path.join(
+  DIST_UI_PATH,
+  "title-scene-director.js",
+);
 const TITLE_SCREEN_OPTICS_PATH = path.join(
   DIST_UI_PATH,
   "title-screen-optics.js",
@@ -75,6 +79,7 @@ async function importTitleModules() {
     title: await import(moduleUrl(TITLE_SCREEN_PATH)),
     titleLogo: await import(moduleUrl(TITLE_LOGO_PATH)),
     titleScene: await import(moduleUrl(TITLE_SCENE_PATH)),
+    titleDirector: await import(moduleUrl(TITLE_SCENE_DIRECTOR_PATH)),
     titleSceneEnvironment: await import(
       moduleUrl(TITLE_SCENE_ENVIRONMENT_PATH)
     ),
