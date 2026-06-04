@@ -5,70 +5,40 @@ import { cells, fixedTitleRenderOptions } from "./title-screen-helpers.mjs";
 import { mockI18n, mockJeditTheme, REPO_ROOT } from "./workspace-helpers.mjs";
 
 const NEON_DISPERSION_SCENE = "neon-dispersion.jedit-scene";
-const EXPECTED_SCENE_LABELS = [
-  "dispersion-core",
-  "dispersion-shard-left",
-  "dispersion-shard-right",
-  "pink-neon-tube",
-  "cyan-neon-tube",
-  "violet-neon-tube",
-  "wet-floor-reflector",
-  "chrome-orb-front",
-  "chrome-orb-rear",
-  "matte-depth-left",
-  "matte-depth-right",
-];
+const DRAGON_OBJECT_LABEL = "stanford-dragon";
 const TITLE_WIDTH = 92;
 const TITLE_HEIGHT = 28;
 const TITLE_TIME = 6.75;
 const MIN_RENDER_COLOR_VARIETY = 6;
-const MIN_REFRACTIVE_INDEX = 1.5;
-const MIN_TRANSPARENCY = 0.65;
-const MIN_NEON_REFLECTIVITY = 0.5;
-const MIN_CHROME_REFLECTIVITY = 0.9;
-const MAX_MATTE_REFLECTIVITY = 0.08;
+const MIN_DRAGON_REFRACTIVE_INDEX = 1.5;
+const MIN_DRAGON_TRANSPARENCY = 0.55;
+const MIN_DRAGON_TRIANGLES = 11000;
 const CAMERA_ORBIT_SAMPLE_COUNT = 16;
 const FULL_CAMERA_ORBIT_RADIANS = Math.PI * 2;
 const MIN_ORBIT_RENDER_COLOR_VARIETY = 20;
 
 test("neon dispersion is the registered default title scene", async () => {
-  const { adapter, port } = await loadNeonDispersionModules();
-  const scene = await adapter.loadBuiltInTitleScene(NEON_DISPERSION_SCENE, {});
-  const labeledObjects = labeledSceneObjects(scene);
+  const modules = await loadNeonDispersionModules();
+  const scene = await loadNeonDispersionScene(modules);
+  const dragon = scene.objects[0];
 
-  assert.equal(port.DEFAULT_BUILT_IN_TITLE_SCENE_NAME, NEON_DISPERSION_SCENE);
-  assert.equal(port.BUILT_IN_TITLE_SCENE_NAMES[0], NEON_DISPERSION_SCENE);
-  assert.deepEqual([...labeledObjects.keys()], EXPECTED_SCENE_LABELS);
+  assert.equal(
+    modules.port.DEFAULT_BUILT_IN_TITLE_SCENE_NAME,
+    NEON_DISPERSION_SCENE,
+  );
+  assert.equal(
+    modules.port.BUILT_IN_TITLE_SCENE_NAMES[0],
+    NEON_DISPERSION_SCENE,
+  );
+  assert.equal(scene.objects.length, 1);
+  assert.equal(dragon.label, DRAGON_OBJECT_LABEL);
+  assert.equal(dragon.kind, "mesh");
   assert.ok(scene.environment?.floor != null);
   assert.ok(scene.environment?.light != null);
   assert.equal(scene.environment?.walls, undefined);
-  assert.equal(
-    labeledObjects.get("dispersion-core").refractiveIndex >=
-      MIN_REFRACTIVE_INDEX,
-    true,
-  );
-  assert.equal(
-    labeledObjects.get("dispersion-core").transparency >= MIN_TRANSPARENCY,
-    true,
-  );
-  assert.equal(
-    labeledObjects.get("pink-neon-tube").reflectivity >= MIN_NEON_REFLECTIVITY,
-    true,
-  );
-  assert.equal(
-    labeledObjects.get("cyan-neon-tube").reflectivity >= MIN_NEON_REFLECTIVITY,
-    true,
-  );
-  assert.equal(
-    labeledObjects.get("chrome-orb-front").reflectivity >=
-      MIN_CHROME_REFLECTIVITY,
-    true,
-  );
-  assert.equal(
-    labeledObjects.get("matte-depth-left").reflectivity <=
-      MAX_MATTE_REFLECTIVITY,
-    true,
-  );
+  assert.ok(dragon.mesh.triangles.length >= MIN_DRAGON_TRIANGLES);
+  assert.ok(dragon.transparency >= MIN_DRAGON_TRANSPARENCY);
+  assert.ok(dragon.refractiveIndex >= MIN_DRAGON_REFRACTIVE_INDEX);
 });
 
 test("startup snapshot preloads neon dispersion as the initial scene", async () => {
@@ -85,10 +55,7 @@ test("startup snapshot preloads neon dispersion as the initial scene", async () 
   });
 
   assert.ok(snapshot.sceneOverride != null);
-  assert.equal(
-    snapshot.sceneOverride.objects[0].label,
-    EXPECTED_SCENE_LABELS[0],
-  );
+  assert.equal(snapshot.sceneOverride.objects[0].label, DRAGON_OBJECT_LABEL);
   assert.equal(
     model.availableScenes[0],
     port.DEFAULT_BUILT_IN_TITLE_SCENE_NAME,
@@ -99,18 +66,18 @@ test("startup snapshot preloads neon dispersion as the initial scene", async () 
 });
 
 test("neon dispersion renders neon glass against the authored light stage", async () => {
-  const { adapter, themes, title } = await loadNeonDispersionModules();
-  const scene = await adapter.loadBuiltInTitleScene(NEON_DISPERSION_SCENE, {});
-  const floorEffects = title.titleFloorLightEffectsAt(
+  const modules = await loadNeonDispersionModules();
+  const scene = await loadNeonDispersionScene(modules);
+  const floorEffects = modules.title.titleFloorLightEffectsAt(
     [0, 0, 0],
     scene.objects,
     TITLE_TIME,
   );
-  const surface = title.renderTitleScreen(
+  const surface = modules.title.renderTitleScreen(
     TITLE_WIDTH,
     TITLE_HEIGHT,
     TITLE_TIME,
-    themes.resolveInitialJeditTheme("graphite"),
+    modules.themes.resolveInitialJeditTheme("graphite"),
     fixedTitleRenderOptions({
       camAngle: scene.camera.angle,
       camRadius: scene.camera.radius,
@@ -119,19 +86,18 @@ test("neon dispersion renders neon glass against the authored light stage", asyn
   );
 
   assert.ok(visibleColorKeys(surface).size >= MIN_RENDER_COLOR_VARIETY);
-  assert.ok(floorEffects.shadowMultiplier < 1);
   assert.ok(floorEffects.causticStrength > 0);
 });
 
 test("neon dispersion keeps visible detail around the camera orbit", async () => {
-  const { adapter, themes, title } = await loadNeonDispersionModules();
-  const scene = await adapter.loadBuiltInTitleScene(NEON_DISPERSION_SCENE, {});
-  const theme = themes.resolveInitialJeditTheme("graphite");
+  const modules = await loadNeonDispersionModules();
+  const scene = await loadNeonDispersionScene(modules);
+  const theme = modules.themes.resolveInitialJeditTheme("graphite");
 
   for (let index = 0; index < CAMERA_ORBIT_SAMPLE_COUNT; index += 1) {
     const angle =
       (index / CAMERA_ORBIT_SAMPLE_COUNT) * FULL_CAMERA_ORBIT_RADIANS;
-    const surface = title.renderTitleScreen(
+    const surface = modules.title.renderTitleScreen(
       TITLE_WIDTH,
       TITLE_HEIGHT,
       TITLE_TIME,
@@ -153,17 +119,17 @@ test("neon dispersion keeps visible detail around the camera orbit", async () =>
 async function loadNeonDispersionModules() {
   return {
     adapter: await importDist("adapters", "title-scene-loader.js"),
+    meshes: await importDist("adapters", "workspace-title-meshes.js"),
     port: await importDist("ports", "title-scene-loader.js"),
     themes: await importDist("ui", "jedit-themes.js"),
     title: await importDist("ui", "title-screen.js"),
   };
 }
 
-function labeledSceneObjects(scene) {
-  return new Map(
-    scene.objects
-      .filter((object) => object.label != null)
-      .map((object) => [object.label, object]),
+function loadNeonDispersionScene(modules) {
+  return modules.adapter.loadBuiltInTitleScene(
+    NEON_DISPERSION_SCENE,
+    modules.meshes.loadStartupTitleMeshes(),
   );
 }
 

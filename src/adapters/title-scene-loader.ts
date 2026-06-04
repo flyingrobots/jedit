@@ -12,10 +12,10 @@ import {
 } from "../ui/title-scene.js";
 import {
   TITLE_MESH_ID,
-  type TitleMesh,
   type TitleMeshId,
   type TitleMeshLibrary,
-} from "../ui/title-mesh.js";
+} from "../ui/title-mesh-library.js";
+import type { TitleMesh } from "../ui/title-mesh.js";
 import {
   BUILT_IN_TITLE_SCENE_NAMES,
   type BuiltInTitleSceneName,
@@ -267,6 +267,9 @@ function titleSceneObjectMesh(
   if (meshId === TITLE_MESH_ID.Bunny && meshes.bunny != null) {
     return meshes.bunny;
   }
+  if (meshId === TITLE_MESH_ID.Dragon && meshes.dragon != null) {
+    return meshes.dragon;
+  }
   if (meshId === TITLE_MESH_ID.Teapot && meshes.teapot != null) {
     return meshes.teapot;
   }
@@ -353,10 +356,14 @@ function shapeKindAt(
 }
 
 function meshIdAt(value: JsonValue | undefined, path: string): TitleMeshId {
-  if (value === TITLE_MESH_ID.Bunny || value === TITLE_MESH_ID.Teapot) {
+  if (
+    value === TITLE_MESH_ID.Bunny ||
+    value === TITLE_MESH_ID.Dragon ||
+    value === TITLE_MESH_ID.Teapot
+  ) {
     return value;
   }
   throw new SceneDecodeError(
-    `${path} must be one of '${TITLE_MESH_ID.Bunny}' or '${TITLE_MESH_ID.Teapot}'.`,
+    `${path} must be one of '${TITLE_MESH_ID.Bunny}', '${TITLE_MESH_ID.Dragon}', or '${TITLE_MESH_ID.Teapot}'.`,
   );
 }

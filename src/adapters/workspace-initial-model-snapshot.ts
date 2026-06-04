@@ -2,7 +2,7 @@ import { BijouI18nAdapter } from "./bijou-i18n-adapter.js";
 import type { WorkspaceInitialModelSnapshot } from "../app/workspace/init.js";
 import { DEFAULT_BUILT_IN_TITLE_SCENE_NAME } from "../ports/title-scene-loader.js";
 import type { TitleScene } from "../ui/title-scene.js";
-import type { TitleMeshLibrary } from "../ui/title-mesh.js";
+import type { TitleMeshLibrary } from "../ui/title-mesh-library.js";
 import {
   JEDIT_THEME_ENV,
   resolveInitialJeditTheme,

@@ -1,24 +1,27 @@
-import type { NotificationState } from '@flyingrobots/bijou-tui';
-import type { FileEntry } from '../../ports/file-system.js';
-import type { GraftInfo } from '../../ports/graft-session.js';
-import type { I18nPort } from '../../ports/i18n.js';
-import type { BuiltInTitleSceneName } from '../../ports/title-scene-loader.js';
-import type { SourceHighlightReading } from '../../ports/source-highlighter.js';
-import type { JeditTheme } from '../../ui/jedit-theme.js';
-import type { FocusPane } from '../../ui/panel-focus.js';
-import type { TitleMeshLibrary } from '../../ui/title-mesh.js';
-import type { TitleScene } from '../../ui/title-scene.js';
-import type { TitleAsciiPalette, TitleRenderMode } from '../../ui/title-screen.js';
-import type { ProfilerState } from '../raytracer-profiler.js';
-import type { TitleCameraState } from '../title-camera-session.js';
-import type { TextRuntimeProfile } from '../text-runtime-profile.js';
-import type { JeditWscStartupRecoveryResult } from '../../ports/jedit-wsc-startup-recovery.js';
-import type { EditorState } from './editor/model.js';
-import type { WorkspaceMsg } from './msg.js';
-import type { ViewMode } from './view-mode.js';
-import type { WorkspaceTextAuthority } from './workspace-text-authority.js';
-import type { EchoHistoryEntry } from './echo-history.js';
-import type { StartupFileModalState } from './startup-file-modal.js';
+import type { NotificationState } from "@flyingrobots/bijou-tui";
+import type { FileEntry } from "../../ports/file-system.js";
+import type { GraftInfo } from "../../ports/graft-session.js";
+import type { I18nPort } from "../../ports/i18n.js";
+import type { BuiltInTitleSceneName } from "../../ports/title-scene-loader.js";
+import type { SourceHighlightReading } from "../../ports/source-highlighter.js";
+import type { JeditTheme } from "../../ui/jedit-theme.js";
+import type { FocusPane } from "../../ui/panel-focus.js";
+import type { TitleMeshLibrary } from "../../ui/title-mesh-library.js";
+import type { TitleScene } from "../../ui/title-scene.js";
+import type {
+  TitleAsciiPalette,
+  TitleRenderMode,
+} from "../../ui/title-screen.js";
+import type { ProfilerState } from "../raytracer-profiler.js";
+import type { TitleCameraState } from "../title-camera-session.js";
+import type { TextRuntimeProfile } from "../text-runtime-profile.js";
+import type { JeditWscStartupRecoveryResult } from "../../ports/jedit-wsc-startup-recovery.js";
+import type { EditorState } from "./editor/model.js";
+import type { WorkspaceMsg } from "./msg.js";
+import type { ViewMode } from "./view-mode.js";
+import type { WorkspaceTextAuthority } from "./workspace-text-authority.js";
+import type { EchoHistoryEntry } from "./echo-history.js";
+import type { StartupFileModalState } from "./startup-file-modal.js";
 
 export interface WorkspaceModel extends StartupFileModalState {
   readonly i18n: I18nPort;

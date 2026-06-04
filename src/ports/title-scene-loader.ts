@@ -1,5 +1,5 @@
 import type { TitleScene } from "../ui/title-scene.js";
-import type { TitleMeshLibrary } from "../ui/title-mesh.js";
+import type { TitleMeshLibrary } from "../ui/title-mesh-library.js";
 
 /**
  * Authoritative registry of product-visible built-in title scenes.

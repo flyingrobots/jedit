@@ -20,13 +20,11 @@ updated: "2026-06-04"
 
 Jedit will add `neon-dispersion.jedit-scene` as the first built-in title scene
 and make it the production startup default by loading it into the initial
-workspace snapshot. The scene will use the renderer's real current primitives:
-transparent/refractive objects, high-reflectivity chrome objects, a dark
-background, floor reflection/caustic posture, and hot-pink/cyan
-neon-colored geometry. Unsupported cinematic requests such as true emissive
-tube lights, wavelength dispersion, roughness maps, torus primitives, and depth
-of field will be tracked as follow-on renderer work instead of implied by the
-scene asset.
+workspace snapshot. The scene will use a single refractive Stanford Dragon mesh
+on a dark reflective title stage. Unsupported cinematic requests such as true
+emissive tube lights, wavelength dispersion, roughness maps, torus primitives,
+finite room geometry, and depth of field will be tracked as follow-on renderer
+work instead of implied by the scene asset.
 
 ## Sponsored Human
 
@@ -45,8 +43,8 @@ loaded.
 
 By the end of this cycle, startup loads `neon-dispersion.jedit-scene` as the
 default title scene, the scene picker lists it first, and focused specs prove
-the scene's refractive, reflective, neon, environment, and render-variety
-posture.
+the scene's refractive Stanford Dragon mesh, environment, provenance, and
+render-variety posture.
 
 ## Current Truth
 
@@ -87,6 +85,9 @@ or preview commands.
 This cycle includes:
 
 - Adding `scenes/neon-dispersion.jedit-scene`.
+- Adding `src/ui/stanford_dragon_res4.obj` as a built-in title mesh asset with
+  provenance documentation.
+- Registering the `dragon` mesh ID and startup mesh loader.
 - Exporting a named default built-in title scene constant.
 - Registering Neon Dispersion first in the built-in scene registry.
 - Loading the default built-in scene into production startup snapshots.
@@ -110,12 +111,9 @@ This cycle does not include:
 ## User Experience / Product Shape
 
 On startup, before any editor is open, the title screen shows Neon Dispersion by
-default: a refractive central crystal cluster on a dark ray-traced light
-stage, neon pink/cyan tubes represented by luminous thin columns, a dark
-reflective floor, and floating chrome/matte spheres for depth. The user does
-not need to press
-`ctrl+l` or use the scene picker. The scene picker still works and lists Neon
-Dispersion first.
+default: a solo refractive Stanford Dragon mesh on a dark ray-traced light
+stage. The user does not need to press `ctrl+l` or use the scene picker. The
+scene picker still works and lists Neon Dispersion first.
 
 ### User Journey
 
@@ -184,14 +182,14 @@ Lower-mode proof is through specs and CLI preview:
 
 ## Data / State Model
 
-| Category                  | Description                                        |
-| ------------------------- | -------------------------------------------------- |
-| Source of truth           | `scenes/neon-dispersion.jedit-scene`.              |
-| Derived state             | Loaded `TitleScene` and initial `sceneOverride`.   |
-| Invalid states            | Default scene missing, malformed, or unregistered. |
-| Reset behavior            | Scene can be changed through the existing picker.  |
-| Serialization             | `.jedit-scene` JSON copied into `dist/scenes`.     |
-| Deterministic assumptions | Same scene/theme/time renders same surface.        |
+| Category                  | Description                                                                 |
+| ------------------------- | --------------------------------------------------------------------------- |
+| Source of truth           | `scenes/neon-dispersion.jedit-scene` and `src/ui/stanford_dragon_res4.obj`. |
+| Derived state             | Loaded `TitleScene`, dragon `TitleMesh`, and initial `sceneOverride`.       |
+| Invalid states            | Default scene or dragon mesh missing, malformed, or unregistered.           |
+| Reset behavior            | Scene can be changed through the existing picker.                           |
+| Serialization             | `.jedit-scene` JSON copied into `dist/scenes`; OBJ copied into `dist/ui`.   |
+| Deterministic assumptions | Same scene/theme/time renders same surface.                                 |
 
 ```mermaid
 flowchart LR
@@ -281,6 +279,8 @@ it already owns startup assets, meshes, theme, entries, and seed.
 - [x] Slice 4: Wire startup snapshot/model camera to the default scene.
 - [x] Slice 5: Validate render/preview, create follow-on renderer debt, update
       retrospective, and open the PR.
+- [x] Slice 6: Replace the cube/neon cluster with a solo Stanford Dragon mesh
+      and prove the built-in dragon asset path.
 
 ## Tests To Write First
 
@@ -293,6 +293,8 @@ Behavior tests required:
 - [x] A render spec fails until the scene produces varied visible color output.
 - [x] Existing title-preview shard coverage proves the scene is copied and
       preview-loadable.
+- [x] A title mesh spec fails until `stanford_dragon_res4.obj` is copied and
+      loadable as the `dragon` mesh.
 
 Documentation and process tests:
 
@@ -310,8 +312,9 @@ The work is done when:
 - [x] Production startup initial model has `sceneOverride` set to Neon
       Dispersion.
 - [x] The initial title camera uses the default scene camera.
-- [x] The scene includes refractive, reflective, neon-colored, dark-stage,
-      floor, and floating-depth object facts.
+- [x] The scene includes a single refractive Stanford Dragon mesh on a
+      dark-stage floor.
+- [x] Stanford Dragon provenance is documented.
 - [x] Focused tests fail before implementation and pass after.
 - [x] Follow-on renderer debt is tracked.
 - [x] Issue and PR are linked correctly.
@@ -323,12 +326,12 @@ Commands expected before PR completion:
 
 ```bash
 npm run build
-JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/title-scene-neon-dispersion.spec.mjs spec/workspace-runtime.spec.mjs spec/workspace-title-screen.spec.mjs
+JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/title-scene-neon-dispersion.spec.mjs spec/title-scene.spec.mjs spec/title-scene-loader.spec.mjs
 JEDIT_DIST_PREBUILT=1 npm run ci:shard -- title-rendering
 JEDIT_DIST_PREBUILT=1 npm run ci:shard -- workspace-ui
 npm run title:preview -- --scene neon-dispersion.jedit-scene --json --no-frame
 npm run quality
-npx --no-install prettier --check docs/design/0101-neon-dispersion-default-scene.md src/ports/title-scene-loader.ts src/adapters/title-scene-loader.ts src/adapters/workspace-initial-model-snapshot.ts src/app/workspace/init.ts spec/title-scene-neon-dispersion.spec.mjs spec/workspace-runtime.spec.mjs
+npx --no-install prettier --check docs/design/0101-neon-dispersion-default-scene.md docs/assets/stanford-dragon.md scripts/copy-assets.mjs spec/title-scene-loader.spec.mjs spec/title-scene-neon-dispersion.spec.mjs spec/title-scene.spec.mjs src/adapters/title-bunny-mesh.ts src/adapters/title-scene-loader.ts src/adapters/workspace-initial-model-snapshot.ts src/adapters/workspace-title-meshes.ts src/app/workspace/init.ts src/app/workspace/model.ts src/ports/title-scene-loader.ts src/ui/title-mesh.ts src/ui/title-mesh-library.ts
 npx --no-install prettier --parser json --check scenes/neon-dispersion.jedit-scene
 git diff --check
 ```
@@ -385,6 +388,11 @@ What changed from the design:
   camera view from some orbit angles. The landed scene removes those walls and
   treats the scene as a dark light stage until finite or one-sided room
   geometry exists.
+- The final product direction narrowed the authored scene to a single
+  refractive Stanford Dragon mesh on a dark reflective grid stage.
+- Named mesh constructors and mesh IDs moved into `src/ui/title-mesh-library.ts`
+  so `src/ui/title-mesh.ts` stays a generic BVH/intersection engine under the
+  500-line quality ratchet.
 
 What the tests proved:
 
@@ -403,6 +411,18 @@ What the tests proved:
   `npm run quality`, and `git diff --check`.
 - A follow-up RED/GREEN regression proved Neon Dispersion no longer collapses
   to a flat wall/background around the camera orbit.
+- A second follow-up RED/GREEN regression proved the default scene contains one
+  `stanford-dragon` mesh object, the `dragon` mesh asset is copied into `dist/`,
+  the Stanford Dragon source asset is loadable, and the scene loader accepts
+  `dragon` as a known mesh ID while still rejecting unknown mesh IDs.
+- Final local validation passed:
+  `npm run build`,
+  `JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/title-scene-neon-dispersion.spec.mjs spec/title-scene.spec.mjs spec/title-scene-loader.spec.mjs`,
+  `JEDIT_DIST_PREBUILT=1 npm run ci:shard -- title-rendering`,
+  `JEDIT_DIST_PREBUILT=1 npm run ci:shard -- workspace-ui`,
+  `npm run title:preview -- --scene neon-dispersion.jedit-scene --json --no-frame`,
+  `npm run quality`, focused Prettier checks, scene JSON Prettier check, and
+  `git diff --check`.
 
 What remains open:
 

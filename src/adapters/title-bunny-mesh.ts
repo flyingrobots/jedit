@@ -1,18 +1,22 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import type { TitleMeshSource, TitleMeshTriangle, TitleMeshVector3 } from '../ports/title-mesh.js';
+import { existsSync, readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import type {
+  TitleMeshSource,
+  TitleMeshTriangle,
+  TitleMeshVector3,
+} from "../ports/title-mesh.js";
 import {
   ObjFaceIndexOutOfRangeError,
   ObjFaceNotTriangleError,
   ObjInvalidFaceIndexError,
   ObjInvalidVertexCoordinateError,
   TitleMeshLoadError,
-} from '../domain/errors.js';
+} from "../domain/errors.js";
 
-const UTF8_ENCODING = 'utf8';
-const OBJ_VERTEX_PREFIX = 'v ';
-const OBJ_FACE_PREFIX = 'f ';
-const OBJ_FACE_VERTEX_SEPARATOR = '/';
+const UTF8_ENCODING = "utf8";
+const OBJ_VERTEX_PREFIX = "v ";
+const OBJ_FACE_PREFIX = "f ";
+const OBJ_FACE_VERTEX_SEPARATOR = "/";
 const LINE_BREAK_PATTERN = /\r?\n/;
 const TOKEN_SEPARATOR_PATTERN = /\s+/;
 const OBJ_INDEX_BASE = 1;
@@ -23,24 +27,39 @@ const FACE_FIRST_TOKEN = 1;
 const FACE_SECOND_TOKEN = 2;
 const FACE_THIRD_TOKEN = 3;
 const FACE_TOKEN_COUNT = 4;
-const ASSET_CANDIDATE_SEPARATOR = ', ';
+const ASSET_CANDIDATE_SEPARATOR = ", ";
 
 const TITLE_BUNNY_MESH_ASSET_URLS = [
-  new URL('../ui/bunny.obj', import.meta.url),
-  new URL('../../src/ui/bunny.obj', import.meta.url),
+  new URL("../ui/bunny.obj", import.meta.url),
+  new URL("../../src/ui/bunny.obj", import.meta.url),
 ] as const;
 
 const TITLE_TEAPOT_MESH_ASSET_URLS = [
-  new URL('../ui/utah_teapot.obj', import.meta.url),
-  new URL('../../src/ui/utah_teapot.obj', import.meta.url),
+  new URL("../ui/utah_teapot.obj", import.meta.url),
+  new URL("../../src/ui/utah_teapot.obj", import.meta.url),
+] as const;
+
+const TITLE_DRAGON_MESH_ASSET_URLS = [
+  new URL("../ui/stanford_dragon_res4.obj", import.meta.url),
+  new URL("../../src/ui/stanford_dragon_res4.obj", import.meta.url),
 ] as const;
 
 export function loadTitleBunnyMeshSource(): TitleMeshSource {
-  return decodeObjMeshSource(readFileSync(meshAssetPath(TITLE_BUNNY_MESH_ASSET_URLS), UTF8_ENCODING));
+  return decodeObjMeshSource(
+    readFileSync(meshAssetPath(TITLE_BUNNY_MESH_ASSET_URLS), UTF8_ENCODING),
+  );
 }
 
 export function loadTitleTeapotMeshSource(): TitleMeshSource {
-  return decodeObjMeshSource(readFileSync(meshAssetPath(TITLE_TEAPOT_MESH_ASSET_URLS), UTF8_ENCODING));
+  return decodeObjMeshSource(
+    readFileSync(meshAssetPath(TITLE_TEAPOT_MESH_ASSET_URLS), UTF8_ENCODING),
+  );
+}
+
+export function loadTitleDragonMeshSource(): TitleMeshSource {
+  return decodeObjMeshSource(
+    readFileSync(meshAssetPath(TITLE_DRAGON_MESH_ASSET_URLS), UTF8_ENCODING),
+  );
 }
 
 export function decodeObjMeshSource(source: string): TitleMeshSource {
@@ -49,7 +68,7 @@ export function decodeObjMeshSource(source: string): TitleMeshSource {
   const lines = source.split(LINE_BREAK_PATTERN);
 
   for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index]?.trim() ?? '';
+    const line = lines[index]?.trim() ?? "";
     const lineNumber = index + 1;
     if (line.startsWith(OBJ_VERTEX_PREFIX)) {
       vertices.push(decodeVertexLine(line, lineNumber));
@@ -73,9 +92,11 @@ function meshAssetPath(assetUrls: readonly URL[]): string {
     }
   }
   if (checkedPaths.length === 0) {
-    throw new TitleMeshLoadError('Title mesh asset URL list cannot be empty.');
+    throw new TitleMeshLoadError("Title mesh asset URL list cannot be empty.");
   }
-  throw new TitleMeshLoadError(`Title mesh asset is unavailable: ${checkedPaths.join(ASSET_CANDIDATE_SEPARATOR)}`);
+  throw new TitleMeshLoadError(
+    `Title mesh asset is unavailable: ${checkedPaths.join(ASSET_CANDIDATE_SEPARATOR)}`,
+  );
 }
 
 function decodeVertexLine(line: string, lineNumber: number): TitleMeshVector3 {
@@ -87,10 +108,16 @@ function decodeVertexLine(line: string, lineNumber: number): TitleMeshVector3 {
   ];
 }
 
-function decodeFaceLine(line: string, vertexCount: number, lineNumber: number): TitleMeshTriangle {
+function decodeFaceLine(
+  line: string,
+  vertexCount: number,
+  lineNumber: number,
+): TitleMeshTriangle {
   const tokens = line.split(TOKEN_SEPARATOR_PATTERN);
   if (tokens.length !== FACE_TOKEN_COUNT) {
-    throw new ObjFaceNotTriangleError(`OBJ face at line ${lineNumber} is not a triangle.`);
+    throw new ObjFaceNotTriangleError(
+      `OBJ face at line ${lineNumber} is not a triangle.`,
+    );
   }
   return [
     decodeFaceIndex(tokens[FACE_FIRST_TOKEN], vertexCount, lineNumber),
@@ -99,16 +126,24 @@ function decodeFaceLine(line: string, vertexCount: number, lineNumber: number): 
   ];
 }
 
-function decodeFaceIndex(token: string | undefined, vertexCount: number, lineNumber: number): number {
-  const rawIndex = token?.split(OBJ_FACE_VERTEX_SEPARATOR)[0] ?? '';
+function decodeFaceIndex(
+  token: string | undefined,
+  vertexCount: number,
+  lineNumber: number,
+): number {
+  const rawIndex = token?.split(OBJ_FACE_VERTEX_SEPARATOR)[0] ?? "";
   const parsed = Number(rawIndex);
   if (!Number.isInteger(parsed)) {
-    throw new ObjInvalidFaceIndexError(`OBJ face index at line ${lineNumber} is invalid.`);
+    throw new ObjInvalidFaceIndexError(
+      `OBJ face index at line ${lineNumber} is invalid.`,
+    );
   }
 
   const index = parsed > 0 ? parsed - OBJ_INDEX_BASE : vertexCount + parsed;
   if (index < 0 || index >= vertexCount) {
-    throw new ObjFaceIndexOutOfRangeError(`OBJ face index at line ${lineNumber} is out of range.`);
+    throw new ObjFaceIndexOutOfRangeError(
+      `OBJ face index at line ${lineNumber} is out of range.`,
+    );
   }
   return index;
 }
@@ -116,7 +151,9 @@ function decodeFaceIndex(token: string | undefined, vertexCount: number, lineNum
 function decodeNumber(token: string | undefined, lineNumber: number): number {
   const value = Number(token);
   if (!Number.isFinite(value)) {
-    throw new ObjInvalidVertexCoordinateError(`OBJ vertex coordinate at line ${lineNumber} is invalid.`);
+    throw new ObjInvalidVertexCoordinateError(
+      `OBJ vertex coordinate at line ${lineNumber} is invalid.`,
+    );
   }
   return value;
 }

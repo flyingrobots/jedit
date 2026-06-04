@@ -10,7 +10,7 @@ import {
   TITLE_RENDER_MODE,
 } from "../../ui/title-screen.js";
 import { FocusPanes, type FocusPane } from "../../ui/panel-focus.js";
-import type { TitleMeshLibrary } from "../../ui/title-mesh.js";
+import type { TitleMeshLibrary } from "../../ui/title-mesh-library.js";
 import type { WorkspaceModel } from "./model.js";
 import type { WorkspaceMsg } from "./msg.js";
 import type { I18nPort } from "../../ports/i18n.js";
