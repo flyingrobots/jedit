@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { importDist } from "./dist-helpers.mjs";
 import { loadTitleModules } from "./title-screen-helpers.mjs";
 
 const THEME_VARIABLE_ACCENT = "accent";
@@ -11,10 +12,14 @@ const SPOTLIGHT_COLOR_DELTA = 80;
 const SECOND_RENDER_CAMERA_ANGLE = 1.7;
 const SECOND_RENDER_CAMERA_RADIUS = 8.9;
 
-test("title scene spotlight uses the current theme accent token", async () => {
+test("title scene spotlight falls back to accent when no lighting rig is authored", async () => {
   const { title, themes } = await loadTitleModules();
+  const lighting = await importDist("ui", "title-scene-lighting-tokens.js");
 
   for (const theme of themes.availableJeditThemes()) {
+    if (theme.variables.has(lighting.TITLE_SCENE_LIGHTING_VARIABLE.Spotlight)) {
+      continue;
+    }
     const colors = title.titleSceneMaterialColors(theme);
 
     assert.deepEqual(
