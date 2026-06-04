@@ -75,6 +75,8 @@ This cycle includes:
 - Moving shared title dist import setup into the helper.
 - Moving genuinely reused surface helpers into the helper.
 - Updating title-screen and title-screen-optics specs to consume the harness.
+- Splitting title scene render assertions into a focused spec if formatting
+  would push an existing spec above the 500-line doctrine.
 - Keeping focused specs below 500 lines.
 
 ## Non-Goals
@@ -211,25 +213,27 @@ Choose Option A. Extract only repeated setup and surface traversal helpers.
 
 ## Implementation Slices
 
-- [ ] Slice 1: Commit this design packet. Commit message:
+- [x] Slice 1: Commit this design packet. Commit message:
       `docs: design title screen spec harness`.
-- [ ] Slice 2: Add the shared title spec harness.
-- [ ] Slice 3: Move title-screen spec to the harness.
-- [ ] Slice 4: Move title-screen-optics spec to the harness.
-- [ ] Slice 5: Verify focused title specs and quality.
-- [ ] Slice 6: Fill retrospective, push, mark PR ready, and merge when eligible.
+- [x] Slice 2: Add the shared title spec harness.
+- [x] Slice 3: Move title-screen spec to the harness.
+- [x] Slice 4: Move title-screen-optics spec to the harness.
+- [x] Slice 5: Keep focused title specs under 500 lines.
+- [x] Slice 6: Verify focused title specs and quality.
+- [x] Slice 7: Fill retrospective, push, mark PR ready, and merge when eligible.
 
 ## Tests To Write First
 
 Behavior tests required:
 
-- [ ] `spec/title-screen.spec.mjs` still passes.
-- [ ] `spec/title-screen-optics.spec.mjs` still passes.
-- [ ] `npm run quality` proves the line-count doctrine remains green.
+- [x] `spec/title-screen.spec.mjs` still passes.
+- [x] `spec/title-screen-optics.spec.mjs` still passes.
+- [x] `spec/title-scene-render.spec.mjs` still passes.
+- [x] `npm run quality` proves the line-count doctrine remains green.
 
 Documentation and process tests:
 
-- [ ] Prettier validates this design doc.
+- [x] Prettier validates this design doc.
 
 Rule: documentation tests cannot be the only proof for implementation work.
 
@@ -237,12 +241,12 @@ Rule: documentation tests cannot be the only proof for implementation work.
 
 The work is done when:
 
-- [ ] A shared title spec harness exists.
-- [ ] Title-screen and title-screen-optics specs use the shared loader.
-- [ ] No one-off assertion helpers are moved into the harness.
-- [ ] Title specs remain below 500 lines.
-- [ ] Issue and PR are linked correctly.
-- [ ] CI and local validation are green.
+- [x] A shared title spec harness exists.
+- [x] Title-screen and title-screen-optics specs use the shared loader.
+- [x] No one-off assertion helpers are moved into the harness.
+- [x] Title specs remain below 500 lines.
+- [x] Issue and PR are linked correctly.
+- [ ] Local validation is green; CI is green before merge.
 
 ## Validation Plan
 
@@ -250,9 +254,9 @@ Commands expected before PR:
 
 ```bash
 npm run build
-JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/title-screen.spec.mjs spec/title-screen-optics.spec.mjs
+JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/title-screen.spec.mjs spec/title-screen-optics.spec.mjs spec/title-scene-render.spec.mjs
 npm run quality
-npx --no-install prettier --check docs/design/0039-title-screen-spec-harness.md spec/title-screen-helpers.mjs spec/title-screen.spec.mjs spec/title-screen-optics.spec.mjs
+npx --no-install prettier --check docs/design/0039-title-screen-spec-harness.md spec/title-screen-helpers.mjs spec/title-screen.spec.mjs spec/title-screen-optics.spec.mjs spec/title-scene-render.spec.mjs
 ```
 
 ## Playback / Witness
@@ -261,7 +265,7 @@ Reviewers can run:
 
 ```bash
 npm run build
-JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/title-screen.spec.mjs spec/title-screen-optics.spec.mjs
+JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/title-screen.spec.mjs spec/title-screen-optics.spec.mjs spec/title-scene-render.spec.mjs
 ```
 
 ## Risks
@@ -282,20 +286,27 @@ No follow-on debt is introduced by this cycle.
 
 ## Retrospective
 
-Fill this in after implementation.
-
 What changed from the design:
 
-- Pending.
+- The shared harness landed as designed.
+- Formatting the touched specs made the original `title-screen.spec.mjs` exceed
+  500 lines, so scene render assertions moved into
+  `spec/title-scene-render.spec.mjs` to keep each focused spec below the
+  doctrine limit.
 
 What the tests proved:
 
-- Pending.
+- `npm run build` proved the dist import surface still builds.
+- `JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/title-screen.spec.mjs spec/title-screen-optics.spec.mjs spec/title-scene-render.spec.mjs`
+  proved the extracted harness preserves the existing title, optics, and scene
+  render assertions.
+- `npm run quality` stayed green.
+- Prettier and `git diff --check` stayed green for touched files.
 
 What remains open:
 
-- Pending.
+- CI must pass on the PR branch before merge.
 
 PR:
 
-- Pending.
+- https://github.com/flyingrobots/jedit/pull/90
