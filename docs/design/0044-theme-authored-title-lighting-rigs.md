@@ -288,8 +288,9 @@ Commands expected before PR:
 ```bash
 npm run build
 JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/title-scene-lighting-rig.spec.mjs spec/title-screen-optics.spec.mjs spec/title-scene-render.spec.mjs
+JEDIT_DIST_PREBUILT=1 npm run ci:shard -- title-rendering
 npm run quality
-npx --no-install prettier --check docs/design/0044-theme-authored-title-lighting-rigs.md src/ui/title-scene-lighting-tokens.ts src/ui/title-scene-material-colors.ts src/ui/jedit-themes.ts src/ui/jedit-theme-palettes.ts spec/title-scene-lighting-rig.spec.mjs spec/title-screen-optics.spec.mjs spec/title-scene-render.spec.mjs
+npx --no-install prettier --check docs/design/0044-theme-authored-title-lighting-rigs.md src/ui/title-scene-lighting-tokens.ts src/ui/title-scene-material-colors.ts src/ui/jedit-themes.ts src/ui/jedit-theme-palettes.ts spec/title-scene-lighting-rig.spec.mjs spec/title-screen-optics.spec.mjs spec/title-scene-render.spec.mjs spec/theme-switch.spec.mjs
 ```
 
 ## Playback / Witness
@@ -337,8 +338,11 @@ What the tests proved:
   through the existing optics without theme-name renderer branches.
 - `spec/title-scene-render.spec.mjs` proved built-in floor light/dark contrast
   stays ordered.
-- `npm run build`, `npm run quality`, Prettier, and `git diff --check` stayed
-  green locally.
+- `spec/theme-switch.spec.mjs` proved built-in themes still expose the canonical
+  editor palette while permitting only the authored title-scene lighting
+  variables as optional rig data.
+- `npm run build`, `JEDIT_DIST_PREBUILT=1 npm run ci:shard -- title-rendering`,
+  `npm run quality`, Prettier, and `git diff --check` stayed green locally.
 
 What remains open:
 
