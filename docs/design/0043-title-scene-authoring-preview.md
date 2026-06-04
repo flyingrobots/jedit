@@ -76,6 +76,8 @@ mode, selected object, and scene facts as stable data.
 This cycle includes:
 
 - Adding a pure `src/app/title-scene-preview-session.ts` session contract.
+- Adding a small `src/app/title-scene-preview-input.ts` input vocabulary
+  re-exported by the session contract.
 - Adding preview inputs for time scrub, camera angle/radius adjustment, theme
   cycling, render-mode cycling, scene cycling, and selected-object cycling.
 - Adding an inspector snapshot that reports scene/theme/render/camera/object
@@ -158,7 +160,7 @@ the visible inspector without requiring visual inspection of the rendered frame.
 
 Contract: `src/app/title-scene-preview-session.ts`.
 
-The module will export:
+The session module will export:
 
 - `TITLE_SCENE_PREVIEW_INPUT`;
 - `TITLE_SCENE_PREVIEW_RENDER_MODE`;
@@ -293,14 +295,14 @@ preview work can reuse the same controls and inspector contract.
 
 ## Implementation Slices
 
-- [ ] Slice 1: Commit this design packet. Commit message:
+- [x] Slice 1: Commit this design packet. Commit message:
       `docs: design title scene authoring preview`.
-- [ ] Slice 2: Add RED session and CLI tests for missing preview contract.
-- [ ] Slice 3: Add the pure preview session, reducer, render options, and
+- [x] Slice 2: Add RED session and CLI tests for missing preview contract.
+- [x] Slice 3: Add the pure preview session, reducer, render options, and
       inspector.
-- [ ] Slice 4: Add `scripts/title-scene-preview.mjs` and
+- [x] Slice 4: Add `scripts/title-scene-preview.mjs` and
       `npm run title:preview`.
-- [ ] Slice 5: Verify focused tests, build, quality, formatting, and
+- [x] Slice 5: Verify focused tests, build, quality, formatting, and
       retrospective.
 - [ ] Slice 6: Push, mark PR ready, and merge when eligible.
 
@@ -308,16 +310,16 @@ preview work can reuse the same controls and inspector contract.
 
 Behavior tests required:
 
-- [ ] `spec/title-scene-preview-session.spec.mjs` fails before the preview
+- [x] `spec/title-scene-preview-session.spec.mjs` fails before the preview
       session exists and passes after implementation.
-- [ ] `spec/title-scene-preview-cli.spec.mjs` fails before the CLI exists and
+- [x] `spec/title-scene-preview-cli.spec.mjs` fails before the CLI exists and
       passes after implementation.
-- [ ] Existing title-screen render specs stay green.
-- [ ] `npm run quality` stays green.
+- [x] Existing title-screen render specs stay green.
+- [x] `npm run quality` stays green.
 
 Documentation and process tests:
 
-- [ ] Prettier validates this design doc.
+- [x] Prettier validates this design doc.
 
 Rule: documentation tests cannot be the only proof for implementation work.
 
@@ -325,12 +327,12 @@ Rule: documentation tests cannot be the only proof for implementation work.
 
 The work is done when:
 
-- [ ] Preview state/control contract is covered by behavior tests.
-- [ ] CLI JSON output proves scene/theme/render/camera/object inspection.
-- [ ] Plain CLI output renders a deterministic terminal frame and inspector.
-- [ ] Normal startup behavior is unchanged.
-- [ ] Issue and PR are linked correctly.
-- [ ] Local validation is green.
+- [x] Preview state/control contract is covered by behavior tests.
+- [x] CLI JSON output proves scene/theme/render/camera/object inspection.
+- [x] Plain CLI output renders a deterministic terminal frame and inspector.
+- [x] Normal startup behavior is unchanged.
+- [x] Issue and PR are linked correctly.
+- [x] Local validation is green.
 - [ ] CI is green before merge.
 
 ## Validation Plan
@@ -341,7 +343,7 @@ Commands expected before PR:
 npm run build
 JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/title-scene-preview-session.spec.mjs spec/title-scene-preview-cli.spec.mjs spec/title-screen.spec.mjs
 npm run quality
-npx --no-install prettier --check docs/design/0043-title-scene-authoring-preview.md src/app/title-scene-preview-session.ts scripts/title-scene-preview.mjs spec/title-scene-preview-session.spec.mjs spec/title-scene-preview-cli.spec.mjs package.json
+npx --no-install prettier --check docs/design/0043-title-scene-authoring-preview.md src/app/title-scene-preview-input.ts src/app/title-scene-preview-session.ts scripts/title-scene-preview.mjs spec/title-scene-preview-session.spec.mjs spec/title-scene-preview-cli.spec.mjs package.json
 ```
 
 ## Playback / Witness
@@ -374,20 +376,32 @@ can be filed separately after the session contract proves useful.
 
 ## Retrospective
 
-Fill this in after implementation.
-
 What changed from the design:
 
-- Pending.
+- The preview input vocabulary moved into
+  `src/app/title-scene-preview-input.ts` and is re-exported by
+  `title-scene-preview-session.ts` so the session module stays below the
+  500-line quality cap.
+- The CLI loads only the final selected scene instead of eagerly decoding every
+  built-in scene. This keeps valid requested scenes usable even when unrelated
+  authoring fixtures need follow-up.
 
 What the tests proved:
 
-- Pending.
+- `spec/title-scene-preview-session.spec.mjs` proved deterministic preview
+  controls, scene/object cycling, render-mode cycling, and object inspection
+  facts without pixel scraping.
+- `spec/title-scene-preview-cli.spec.mjs` proved JSON output, plain terminal
+  frame output, and custom scene path loading.
+- `spec/title-screen.spec.mjs` proved normal title-screen behavior stayed
+  stable.
+- `npm run build`, `npm run quality`, Prettier, and `git diff --check` stayed
+  green locally.
 
 What remains open:
 
-- Pending.
+- CI must pass before merge.
 
 PR:
 
-- Pending.
+- https://github.com/flyingrobots/jedit/pull/94
