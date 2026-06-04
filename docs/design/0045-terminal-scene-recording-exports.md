@@ -294,26 +294,26 @@ observable contract is deterministic frame serialization.
 ## Implementation Slices
 
 - [x] Slice 1: Write this design document and open the cycle PR.
-- [ ] Slice 2: Add a failing CLI spec for deterministic JSON recording.
-- [ ] Slice 3: Add `scripts/title-scene-record.mjs` and `npm run title:record`.
-- [ ] Slice 4: Add text, HTML, ANSI, and explicit output-file serialization.
-- [ ] Slice 5: Ignore explicit title recording artifacts and update the
+- [x] Slice 2: Add a failing CLI spec for deterministic JSON recording.
+- [x] Slice 3: Add `scripts/title-scene-record.mjs` and `npm run title:record`.
+- [x] Slice 4: Add text, HTML, ANSI, and explicit output-file serialization.
+- [x] Slice 5: Ignore explicit title recording artifacts and update the
       retrospective with validation evidence.
 
 ## Tests To Write First
 
 Behavior tests required:
 
-- [ ] `spec/title-scene-record-cli.spec.mjs` proves fixed JSON inputs produce
+- [x] `spec/title-scene-record-cli.spec.mjs` proves fixed JSON inputs produce
       byte-identical output on repeated runs.
-- [ ] `spec/title-scene-record-cli.spec.mjs` proves text output emits expected
+- [x] `spec/title-scene-record-cli.spec.mjs` proves text output emits expected
       frame labels and glyph rows.
-- [ ] `spec/title-scene-record-cli.spec.mjs` proves `--output` writes the
+- [x] `spec/title-scene-record-cli.spec.mjs` proves `--output` writes the
       chosen artifact and leaves stdout quiet.
 
 Documentation and process tests:
 
-- [ ] Prettier checks this design doc.
+- [x] Prettier checks this design doc.
 
 Rule: documentation tests cannot be the only proof for implementation work.
 
@@ -321,15 +321,15 @@ Rule: documentation tests cannot be the only proof for implementation work.
 
 The work is done when:
 
-- [ ] `npm run title:record` exists and builds before running the recorder.
-- [ ] JSON recording output is deterministic for fixed inputs.
-- [ ] JSON frames include glyph rows plus RGB foreground/background metadata.
-- [ ] Recorder output defaults to stdout and writes files only with `--output`.
-- [ ] Generated title recording artifacts are ignored unless explicitly staged.
-- [ ] The recorder uses `renderTitleScreen`.
-- [ ] The recorder runs headless in local and CI test processes.
-- [ ] Issue and PR are linked correctly.
-- [ ] CI and local validation are green.
+- [x] `npm run title:record` exists and builds before running the recorder.
+- [x] JSON recording output is deterministic for fixed inputs.
+- [x] JSON frames include glyph rows plus RGB foreground/background metadata.
+- [x] Recorder output defaults to stdout and writes files only with `--output`.
+- [x] Generated title recording artifacts are ignored unless explicitly staged.
+- [x] The recorder uses `renderTitleScreen`.
+- [x] The recorder runs headless in local and CI test processes.
+- [x] Issue and PR are linked correctly.
+- [x] Local validation is green; remote CI remains the PR merge gate.
 
 ## Validation Plan
 
@@ -340,7 +340,7 @@ npm run build
 JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/title-scene-record-cli.spec.mjs
 JEDIT_DIST_PREBUILT=1 npm run ci:shard -- title-rendering
 npm run quality
-npx --no-install prettier --check docs/design/0045-terminal-scene-recording-exports.md scripts/title-scene-record.mjs spec/title-scene-record-cli.spec.mjs package.json .gitignore
+npx --no-install prettier --check docs/design/0045-terminal-scene-recording-exports.md scripts/title-scene-record.mjs spec/title-scene-record-cli.spec.mjs package.json
 git diff --check
 ```
 
@@ -378,20 +378,33 @@ recorded artifacts become a regular review gate.
 
 ## Retrospective
 
-Fill this in after implementation.
-
 What changed from the design:
 
-- Pending.
+- The implementation matched the planned dedicated recorder CLI.
+- `title-recordings/` was added to `.gitignore` as the default explicit
+  artifact directory.
+- The validation plan dropped `.gitignore` from the Prettier command because
+  this repo's Prettier setup does not infer a parser for that file.
 
 What the tests proved:
 
-- Pending.
+- RED:
+  `JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/title-scene-record-cli.spec.mjs`
+  failed because `scripts/title-scene-record.mjs` did not exist.
+- GREEN:
+  `JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/title-scene-record-cli.spec.mjs`
+  passed with 3 tests.
+- `JEDIT_DIST_PREBUILT=1 npm run ci:shard -- title-rendering` passed with 97
+  tests.
+- `npm run title:record -- --format text --frames 1 --width 24 --height 8 --scene sphere.jedit-scene --theme graphite --render-mode ascii`
+  built and emitted a terminal text recording.
+- `npm run quality`, Prettier, and `git diff --check` passed.
 
 What remains open:
 
-- Pending.
+- Visual diff or color-distance comparison remains deferred follow-on work.
+- Remote CI and review gates are handled by PR #98.
 
 PR:
 
-- Pending.
+- https://github.com/flyingrobots/jedit/pull/98
