@@ -48,6 +48,10 @@ import {
   titleObjectSurfaceColor,
   titleSceneSpotlightForCameraPlacement,
 } from "./title-screen-optics.js";
+import {
+  TITLE_SCENE_DEFAULT_DIRECTOR_TIMELINE,
+  titleSceneCameraAngleAt,
+} from "./title-scene-director.js";
 import type {
   TitleSceneRayContext,
   TitleSceneSampleOptions,
@@ -117,7 +121,8 @@ interface TitleSceneShaderOptions {
 
 const DEFAULT_CAMERA_RADIUS = 8.5;
 const DEFAULT_TITLE_SCENE_SEED = 0.5;
-export const TITLE_CAMERA_DRIFT_RATE = 0.024;
+export const TITLE_CAMERA_DRIFT_RATE =
+  TITLE_SCENE_DEFAULT_DIRECTOR_TIMELINE.camera.driftRate;
 const CAMERA_TARGET_Y = 0.78;
 const BRAILLE_DITHER_MATRIX_SIZE = 4;
 const BRAILLE_DITHER_DENOMINATOR =
@@ -261,7 +266,11 @@ function titleSceneRayContext(
   const aspect = options.cols / Math.max(1, options.rows);
   const rx = (options.u * 2 - 1) * aspect;
   const ry = options.v * 2 - 1;
-  const finalAngle = options.camAngle + options.time * TITLE_CAMERA_DRIFT_RATE;
+  const finalAngle = titleSceneCameraAngleAt(
+    TITLE_SCENE_DEFAULT_DIRECTOR_TIMELINE,
+    options.camAngle,
+    options.time,
+  );
   const origin: Vector3 = [
     Math.sin(finalAngle) * options.camRadius,
     TITLE_SCENE_CAMERA_HEIGHT,

@@ -230,13 +230,13 @@ rendering stable.
 
 ## Implementation Slices
 
-- [ ] Slice 1: Commit this design packet. Commit message:
+- [x] Slice 1: Commit this design packet. Commit message:
       `docs: design title scene director timeline`.
-- [ ] Slice 2: Add focused director timeline specs and prove the module is
+- [x] Slice 2: Add focused director timeline specs and prove the module is
       missing.
-- [ ] Slice 3: Add the director timeline module and validation helpers.
-- [ ] Slice 4: Move presentation sequence and camera drift to the timeline.
-- [ ] Slice 5: Verify focused director specs plus existing title specs, build,
+- [x] Slice 3: Add the director timeline module and validation helpers.
+- [x] Slice 4: Move presentation sequence and camera drift to the timeline.
+- [x] Slice 5: Verify focused director specs plus existing title specs, build,
       quality, and formatting.
 - [ ] Slice 6: Fill retrospective, push, mark PR ready, and merge when eligible.
 
@@ -244,15 +244,15 @@ rendering stable.
 
 Behavior tests required:
 
-- [ ] `spec/title-scene-director.spec.mjs` fails before the module exists and
+- [x] `spec/title-scene-director.spec.mjs` fails before the module exists and
       passes after implementation.
-- [ ] `spec/title-screen.spec.mjs` still proves current logo timing.
-- [ ] `spec/title-scene-render.spec.mjs` still proves camera drift.
-- [ ] `npm run quality` stays green.
+- [x] `spec/title-screen.spec.mjs` still proves current logo timing.
+- [x] `spec/title-scene-render.spec.mjs` still proves camera drift.
+- [x] `npm run quality` stays green.
 
 Documentation and process tests:
 
-- [ ] Prettier validates this design doc.
+- [x] Prettier validates this design doc.
 
 Rule: documentation tests cannot be the only proof for implementation work.
 
@@ -260,12 +260,13 @@ Rule: documentation tests cannot be the only proof for implementation work.
 
 The work is done when:
 
-- [ ] Default logo and camera cues are represented by timeline data.
-- [ ] Timeline data is runtime-validated.
-- [ ] Default title render behavior remains stable under existing specs.
-- [ ] Camera and logo behavior are inspectable by focused specs.
-- [ ] Issue and PR are linked correctly.
-- [ ] Local validation is green; CI is green before merge.
+- [x] Default logo and camera cues are represented by timeline data.
+- [x] Timeline data is runtime-validated.
+- [x] Default title render behavior remains stable under existing specs.
+- [x] Camera and logo behavior are inspectable by focused specs.
+- [x] Issue and PR are linked correctly.
+- [x] Local validation is green.
+- [ ] CI is green before merge.
 
 ## Validation Plan
 
@@ -306,20 +307,25 @@ No follow-on debt is introduced by this cycle.
 
 ## Retrospective
 
-Fill this in after implementation.
-
 What changed from the design:
 
-- Pending.
+- Implementation matched the design. The default title timing and camera drift
+  now flow through `TITLE_SCENE_DEFAULT_DIRECTOR_TIMELINE`, which is validated
+  before export.
 
 What the tests proved:
 
-- Pending.
+- `spec/title-scene-director.spec.mjs` proved the RED missing-module failure,
+  default cue values, validation failures, deterministic sheen progress, and
+  deterministic camera angle interpolation.
+- `spec/title-screen.spec.mjs` and `spec/title-scene-render.spec.mjs` proved
+  the visible logo timing and render-facing drift behavior stayed stable.
+- `npm run build` and `npm run quality` stayed green.
 
 What remains open:
 
-- Pending.
+- CI must pass before merge.
 
 PR:
 
-- Pending.
+- https://github.com/flyingrobots/jedit/pull/93
