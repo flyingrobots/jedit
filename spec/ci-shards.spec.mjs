@@ -12,6 +12,9 @@ import {
 import { PACKAGE_CHANGE_KINDS, impactForPath, planChangedShards } from '../scripts/ci/changed-shards.mjs';
 
 const TYPESCRIPT_BUILD_SNIPPET = 'node_modules/typescript/bin/' + 'tsc';
+const CI_WORKFLOW_PATH = '.github/workflows/ci.yml';
+const STRUCTURAL_HISTORY_DESCRIPTOR_PATH =
+  'src/generated/jedit/structural-history-replace-text-range.wesley.generated.ts';
 
 test('test shard manifest assigns every spec to one non-empty shard', () => {
   const specs = discoverSpecFiles();
@@ -96,3 +99,14 @@ test('spec files use the dist helper instead of per-spec TypeScript builds', () 
 
   assert.deepEqual(offenders, []);
 });
+
+test('CI build artifact restores generated sources required by cycle proofs', () => {
+  const workflow = readFileSync(CI_WORKFLOW_PATH, 'utf8');
+
+  assert.match(workflow, new RegExp(escapeRegex(STRUCTURAL_HISTORY_DESCRIPTOR_PATH)));
+  assert.match(workflow, /name: Download build artifacts\s+uses: actions\/download-artifact@v4\s+with:\s+name: jedit-dist\s+path: \./);
+});
+
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
