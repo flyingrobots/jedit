@@ -115,33 +115,33 @@ mindmap
 
 These terms appear throughout the codebase with precise meanings that differ from everyday usage. Read this before diving into the code.
 
-| Term | Definition |
-|------|-----------|
-| **Worldline** | Echo's causal lane for admitted history. In jedit docs this usually means the causal coordinate that hosts a text-buffer contract session, not a mutable editor object. |
-| **Tick** | One scheduler-owned unit of Echo progress. A keypress may propose an intent, but Echo decides whether and when that intent becomes a tick. |
-| **Rope** | Contract vocabulary from the transitional jedit text schema. It describes byte-precise text structure for generated operations and fixture execution; it is not an Echo-core product noun. |
-| **BufferRoot** | Transitional hot-text runtime value naming a full text snapshot at a point in the contract fixture. Production UI code treats it as adapter/runtime detail. |
-| **RopeHead** | Transitional contract head coordinate for the text-buffer fixture path. Production app code should hide it behind `ReadBasisHandle`, readings, and authority posture. |
-| **Receipt** | Machine-readable evidence for an Echo or jedit-contract operation outcome. Production receipts should correlate admitted intent, tick outcome, retained reading, or WSC evidence instead of acting as log lines. |
-| **Intent** | A request to perform a mutation. Application code submits intent material; Echo admission, scheduling, receipts, and retained evidence remain below the application boundary. |
-| **Observe** | A bounded read request. Unlike a raw string dump, an observation returns structured evidence: reading identity, basis/frontier posture, and retained-evidence posture when available. |
-| **TextBufferOptic** | The app-facing capability object for one text-buffer session. It is how jedit talks to the Echo-hosted text authority without exposing runtime coordinates to the UI. |
-| **ReadBasisHandle** | An opaque capability token produced by the optic after buffer creation, mutation, or recovery. Application code passes it back to `textWindow()` to request a read. It cannot be forged or cloned. |
-| **Frontier** | A causal marker for an observation. It identifies the point against which a reading was taken without giving UI code scheduler or tick authority. |
-| **Reading Cache** | Render/navigation material derived from a bounded Echo-backed text reading. `EditorState.lines` is cache material in production, not the source of text authority. |
-| **Edit Group** | Product-level grouping of editing actions. The current local grouping/snapshot mechanics are transitional until undo and redo become explicit causal input. |
-| **Checkpoint** | A named posture marker created through the text session. It is useful for save/export evidence, but the UI does not get direct Echo checkpoint authority. |
-| **Structural History** | The product-layer taxonomy of text history events: revisions, replacements, edit groups, provenance, command status. It describes what the editor did above the generic Echo boundary. |
-| **Optic** | A general term for a capability-bounded view or interaction with runtime truth. jedit owns product optics; Echo owns generic admission, readings, receipts, and retention. |
-| **Transport** | The byte-level I/O channel between the optic client and the Echo-hosted contract path. Production uses the installed jedit contract transport; fake and real-WASM paths are focused witnesses/fixtures. |
-| **Worldline Session** | A `JeditWorldlineSession` bundle used by the transitional contract runtime and witnesses. It is not the long-term durable authority; WSC/WAL-backed Echo evidence is the durability boundary. |
-| **WSC Workspace Store** | jedit's adapter-private placement policy for generic Echo WSC envelopes under the workspace. It owns host paths; Echo owns generic envelope semantics. |
-| **File Aperture** | Echo-owned direction for treating host files as observed boundary artifacts and materialization targets. jedit should open arbitrary files normally while Echo owns causal observation, drift, and materialization evidence. |
-| **Witness** | A test script that exercises the full stack in a product-shaped way and records evidence. Witnesses are not unit tests — they are proofs that the seams work end-to-end. The `scripts/jedit-echo-witness.mjs` script is the primary witness. |
-| **Footprint** | The declared set of entity kinds an operation reads, writes, creates, and forbids. Encoded in the `@wes_footprint` SDL directive. Used by the Echo scheduler for conflict detection and admission control. |
-| **Surface** | Bijou's 2D array of styled terminal cells. A `Surface` is the output of the `view` function — the entire terminal screen as a data value. Bijou diffs successive surfaces and emits ANSI escape sequences for only the changed cells. |
-| **Cmd** | A Bijou effect descriptor. `Cmd<Msg>` is an opaque value returned from `update` that Bijou executes asynchronously. When the async work completes, Bijou delivers a `Msg` back to `update`. |
-| **TEA** | The Elm Architecture — a reactive pattern: `init` produces initial state, `update(Msg, Model)` produces new state and effects, `view(Model)` produces a rendered output. All state lives in the model; all change happens through messages. |
+| Term                    | Definition                                                                                                                                                                                                                                   |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Worldline**           | Echo's causal lane for admitted history. In jedit docs this usually means the causal coordinate that hosts a text-buffer contract session, not a mutable editor object.                                                                      |
+| **Tick**                | One scheduler-owned unit of Echo progress. A keypress may propose an intent, but Echo decides whether and when that intent becomes a tick.                                                                                                   |
+| **Rope**                | Contract vocabulary from the transitional jedit text schema. It describes byte-precise text structure for generated operations and fixture execution; it is not an Echo-core product noun.                                                   |
+| **BufferRoot**          | Transitional hot-text runtime value naming a full text snapshot at a point in the contract fixture. Production UI code treats it as adapter/runtime detail.                                                                                  |
+| **RopeHead**            | Transitional contract head coordinate for the text-buffer fixture path. Production app code should hide it behind `ReadBasisHandle`, readings, and authority posture.                                                                        |
+| **Receipt**             | Machine-readable evidence for an Echo or jedit-contract operation outcome. Production receipts should correlate admitted intent, tick outcome, retained reading, or WSC evidence instead of acting as log lines.                             |
+| **Intent**              | A request to perform a mutation. Application code submits intent material; Echo admission, scheduling, receipts, and retained evidence remain below the application boundary.                                                                |
+| **Observe**             | A bounded read request. Unlike a raw string dump, an observation returns structured evidence: reading identity, basis/frontier posture, and retained-evidence posture when available.                                                        |
+| **TextBufferOptic**     | The app-facing capability object for one text-buffer session. It is how jedit talks to the Echo-hosted text authority without exposing runtime coordinates to the UI.                                                                        |
+| **ReadBasisHandle**     | An opaque capability token produced by the optic after buffer creation, mutation, or recovery. Application code passes it back to `textWindow()` to request a read. It cannot be forged or cloned.                                           |
+| **Frontier**            | A causal marker for an observation. It identifies the point against which a reading was taken without giving UI code scheduler or tick authority.                                                                                            |
+| **Reading Cache**       | Render/navigation material derived from a bounded Echo-backed text reading. `EditorState.lines` is cache material in production, not the source of text authority.                                                                           |
+| **Edit Group**          | Product-level grouping of editing actions. The current local grouping/snapshot mechanics are transitional until undo and redo become explicit causal input.                                                                                  |
+| **Checkpoint**          | A named posture marker created through the text session. It is useful for save/export evidence, but the UI does not get direct Echo checkpoint authority.                                                                                    |
+| **Structural History**  | The product-layer taxonomy of text history events: revisions, replacements, edit groups, provenance, command status. It describes what the editor did above the generic Echo boundary.                                                       |
+| **Optic**               | A general term for a capability-bounded view or interaction with runtime truth. jedit owns product optics; Echo owns generic admission, readings, receipts, and retention.                                                                   |
+| **Transport**           | The byte-level I/O channel between the optic client and the Echo-hosted contract path. Production uses the installed jedit contract transport; fake and real-WASM paths are focused witnesses/fixtures.                                      |
+| **Worldline Session**   | A `JeditWorldlineSession` bundle used by the transitional contract runtime and witnesses. It is not the long-term durable authority; WSC/WAL-backed Echo evidence is the durability boundary.                                                |
+| **WSC Workspace Store** | jedit's adapter-private placement policy for generic Echo WSC envelopes under the workspace. It owns host paths; Echo owns generic envelope semantics.                                                                                       |
+| **File Aperture**       | Echo-owned direction for treating host files as observed boundary artifacts and materialization targets. jedit should open arbitrary files normally while Echo owns causal observation, drift, and materialization evidence.                 |
+| **Witness**             | A test script that exercises the full stack in a product-shaped way and records evidence. Witnesses are not unit tests — they are proofs that the seams work end-to-end. The `scripts/jedit-echo-witness.mjs` script is the primary witness. |
+| **Footprint**           | The declared set of entity kinds an operation reads, writes, creates, and forbids. Encoded in the `@wes_footprint` SDL directive. Used by the Echo scheduler for conflict detection and admission control.                                   |
+| **Surface**             | Bijou's 2D array of styled terminal cells. A `Surface` is the output of the `view` function — the entire terminal screen as a data value. Bijou diffs successive surfaces and emits ANSI escape sequences for only the changed cells.        |
+| **Cmd**                 | A Bijou effect descriptor. `Cmd<Msg>` is an opaque value returned from `update` that Bijou executes asynchronously. When the async work completes, Bijou delivers a `Msg` back to `update`.                                                  |
+| **TEA**                 | The Elm Architecture — a reactive pattern: `init` produces initial state, `update(Msg, Model)` produces new state and effects, `view(Model)` produces a rendered output. All state lives in the model; all change happens through messages.  |
 
 ---
 
@@ -160,11 +160,11 @@ These terms appear throughout the codebase with precise meanings that differ fro
 - A deterministic no-file title flow that opens a current-directory startup
   file modal after the intro sequence
 
-That description makes it sound like a standard terminal editor. What makes `jedit` architecturally interesting is its *purpose*: it is the **release gate** for a broader distributed runtime stack called **Echo**. The README states this philosophy plainly:
+That description makes it sound like a standard terminal editor. What makes `jedit` architecturally interesting is its _purpose_: it is the **release gate** for a broader distributed runtime stack called **Echo**. The README states this philosophy plainly:
 
-> *Product pressure determines architecture truth. The stack should advance when a real editor constraint forces a seam to become honest, not when an abstract protocol theory wants a place to land.*
+> _Product pressure determines architecture truth. The stack should advance when a real editor constraint forces a seam to become honest, not when an abstract protocol theory wants a place to land._
 
-`jedit` doesn't just use Echo — it *proves* Echo. Every edit intent it submits,
+`jedit` doesn't just use Echo — it _proves_ Echo. Every edit intent it submits,
 every bounded text reading it requests, every retained receipt it inspects, and
 every WSC-backed recovery/export posture it reports is evidence that the
 underlying causal runtime works from the perspective of a real product. This
@@ -271,16 +271,16 @@ initializes Bijou, constructs the app, and hands it to the TUI runner:
 ```typescript
 // src/main.ts (abridged)
 requireTextRuntimeProfile(
-  parseTextRuntimeProfile(process.env['JEDIT_TEXT_RUNTIME'])
+  parseTextRuntimeProfile(process.env["JEDIT_TEXT_RUNTIME"]),
 );
 
 initDefaultContext();
 
 const app = createWorkspaceApp({
   initialColumns: process.stdout.columns ?? 100,
-  initialRows:    process.stdout.rows    ?? 32,
+  initialRows: process.stdout.rows ?? 32,
   initialWorkingDirectory: process.cwd(),
-  perfEnabled: envBoolean(process.env['JEDIT_PERF']),
+  perfEnabled: envBoolean(process.env["JEDIT_PERF"]),
 });
 
 run(app, { mouse: JEDIT_TERMINAL_MOUSE_OPTIONS.mouse });
@@ -312,7 +312,7 @@ flowchart TD
 
 ## 4. Bootstrapping vs. Runtime
 
-It is worth drawing a hard line between what happens *once at startup* and what happens *on every event*. Confusing these two phases is a common source of bugs in reactive apps.
+It is worth drawing a hard line between what happens _once at startup_ and what happens _on every event_. Confusing these two phases is a common source of bugs in reactive apps.
 
 ### Bootstrap Phase (runs once)
 
@@ -335,7 +335,7 @@ During bootstrap:
 - The initial `WorkspaceModel` is constructed from `createInitialModelSnapshot` — this snapshot picks the initial theme, seeds the title screen animation, sets up i18n, and chooses the initial working directory.
 - Bijou calls `init()` on the workspace runtime, which returns `[initialModel, startupCmds]`. The startup commands include the time-tick loop and the Graft lifecycle manager.
 
-Critically, **no I/O happens during bootstrap**. The filesystem, Graft API, and Echo transport are only touched *after* Bijou begins executing commands from `init`.
+Critically, **no I/O happens during bootstrap**. The filesystem, Graft API, and Echo transport are only touched _after_ Bijou begins executing commands from `init`.
 
 ### Runtime Phase (runs on every event)
 
@@ -357,11 +357,11 @@ Key runtime invariants:
 
 Validates the text runtime posture. It no longer switches the text backend.
 
-| Value | Effect |
-|-------|--------|
-| *(unset)* | `echoHosted` default — installed jedit contract transport with no sibling checkout required. This is the production TUI path. |
-| `echoHosted` | Explicitly selects the same production text runtime as the unset default. |
-| anything else | Unsupported startup input; the TUI fails before terminal raw mode. |
+| Value         | Effect                                                                                                                        |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| _(unset)_     | `echoHosted` default — installed jedit contract transport with no sibling checkout required. This is the production TUI path. |
+| `echoHosted`  | Explicitly selects the same production text runtime as the unset default.                                                     |
+| anything else | Unsupported startup input; the TUI fails before terminal raw mode.                                                            |
 
 **Architectural implication**: Because the profile has only one production
 value, there is no conditional logic in the app or domain layers about which
@@ -418,11 +418,11 @@ sequenceDiagram
 
 The three functions that `createWorkspaceRuntime` must implement:
 
-| Function | Signature | Role |
-|----------|-----------|------|
-| `init` | `() → [Model, Cmd[]]` | Construct the initial model and launch startup effects |
-| `update` | `(Msg, Model) → [Model, Cmd[]]` | Pure state transition — the entire application logic |
-| `view` | `(Model) → Surface` | Pure render — translate model into a terminal pixel grid |
+| Function | Signature                       | Role                                                     |
+| -------- | ------------------------------- | -------------------------------------------------------- |
+| `init`   | `() → [Model, Cmd[]]`           | Construct the initial model and launch startup effects   |
+| `update` | `(Msg, Model) → [Model, Cmd[]]` | Pure state transition — the entire application logic     |
+| `view`   | `(Model) → Surface`             | Pure render — translate model into a terminal pixel grid |
 
 A fourth function, `routeRuntimeIssue`, converts unhandled async errors into messages the update loop can handle gracefully (displaying a toast notification rather than crashing).
 
@@ -432,13 +432,13 @@ A fourth function, `routeRuntimeIssue`, converts unhandled async errors into mes
 
 ## 7. Concurrency and Asynchronous Flows
 
-This section addresses the most common question from developers new to TEA: *how does a reactive immutable model handle concurrent async operations without race conditions?*
+This section addresses the most common question from developers new to TEA: _how does a reactive immutable model handle concurrent async operations without race conditions?_
 
 ### The Key Insight: Sequential Update, Concurrent Effects
 
 The `update` function processes **one message at a time**. Bijou's event loop is single-threaded (Node.js event loop). There is no possibility of two `update` calls running simultaneously.
 
-However, multiple `Cmd` effects *can be in flight concurrently*. Consider what happens when a user opens a file:
+However, multiple `Cmd` effects _can be in flight concurrently_. Consider what happens when a user opens a file:
 
 ```mermaid
 sequenceDiagram
@@ -486,8 +486,8 @@ When the result arrives, the update handler checks:
 ```typescript
 function updateGraftInfoMessage(msg, model): WorkspaceRuntimeResult {
   return msg.requestId === model.graftRequestId
-    ? [applyGraftInfo(model, msg.info), []]  // fresh — apply it
-    : [model, []];                            // stale — drop it
+    ? [applyGraftInfo(model, msg.info), []] // fresh — apply it
+    : [model, []]; // stale — drop it
 }
 ```
 
@@ -538,7 +538,7 @@ graph LR
 
 **`src/ports`** — Interface definitions only. A port describes a typed runtime contract; it never decodes raw payloads. Examples: `HotTextRuntimePort`, `TextBufferSessionPort`, `FileSystemPort`, `GraftSessionPort`, `SourceHighlighter`.
 
-**`src/adapters`** — Concrete implementations. Raw strings, JSON bytes, and Graft API payloads are decoded *here* and *only here*. Contains: the installed jedit contract transport, the fake transport used by focused tests, the real Echo WASM witness client, the filesystem adapter, Graft direct API session, source highlighter.
+**`src/adapters`** — Concrete implementations. Raw strings, JSON bytes, and Graft API payloads are decoded _here_ and _only here_. Contains: the installed jedit contract transport, the fake transport used by focused tests, the real Echo WASM witness client, the filesystem adapter, Graft direct API session, source highlighter.
 
 **`src/ui`** — Presentation and input mapping. UI translates Bijou events into app commands and renders app state into `Surface` cells. It does not own business rules.
 
@@ -617,6 +617,7 @@ runtime causality.
 **Where**: `src/adapters/filesystem.ts` (directory listing) and `src/adapters/editor-file.ts` (file read/write).
 
 **What crosses the border**: Raw `Buffer` bytes for file content. The adapter is responsible for:
+
 - Detecting binary files (null byte presence)
 - UTF-8 decoding
 - Line ending normalization (`\r\n` → `\n`)
@@ -763,12 +764,12 @@ This is O(n) over ~25 entries but keeps the command table declarative. An exampl
 
 ```typescript
 const NORMAL_COMMANDS: readonly NormalCommandDefinition[] = [
-  { key: 'i', run: (e) => ({ ...e, mode: 'insert' }) },
-  { key: 'a', run: (e) => enterInsertAfterCursor(e) },
-  { key: 'A', shift: true, run: (e) => enterInsertAtLineEnd(e) },
-  { key: 'w', run: (e) => moveCursorToNextWordStart(e) },
-  { key: 'u', run: (e) => undo(e) },
-  { key: 'r', ctrl: true, run: (e) => redo(e) },
+  { key: "i", run: (e) => ({ ...e, mode: "insert" }) },
+  { key: "a", run: (e) => enterInsertAfterCursor(e) },
+  { key: "A", shift: true, run: (e) => enterInsertAtLineEnd(e) },
+  { key: "w", run: (e) => moveCursorToNextWordStart(e) },
+  { key: "u", run: (e) => undo(e) },
+  { key: "r", ctrl: true, run: (e) => redo(e) },
   // ...
 ];
 ```
@@ -1202,7 +1203,7 @@ public resolveWorldlineId(session: JeditWorldlineSession, handle: ReadBasisHandl
 }
 ```
 
-**Why `WeakMap`**: A `WeakMap` is keyed on *object identity* — the exact same JavaScript object reference, not a value that equals it. You cannot forge a handle by constructing `{ kind: "read-basis-handle", id: "read-basis:0" }` — that is a *different object* and will not exist in the map. The handle is unforgeable and unclonable by construction. This is a rare case where JavaScript's reference semantics are used as an access-control mechanism.
+**Why `WeakMap`**: A `WeakMap` is keyed on _object identity_ — the exact same JavaScript object reference, not a value that equals it. You cannot forge a handle by constructing `{ kind: "read-basis-handle", id: "read-basis:0" }` — that is a _different object_ and will not exist in the map. The handle is unforgeable and unclonable by construction. This is a rare case where JavaScript's reference semantics are used as an access-control mechanism.
 
 **Why `Object.freeze`**: The handle is frozen so it cannot be mutated after creation. App code cannot write to `handle.id = 'something-else'` to try to match a different binding.
 
@@ -1211,11 +1212,11 @@ public resolveWorldlineId(session: JeditWorldlineSession, handle: ReadBasisHandl
 The Echo integration enforces a hard separation between **application authority** and **trusted host authority**:
 
 | Application code (`jedit` app layer) | Trusted host code (lifecycle adapter) |
-|---------------------------------------|----------------------------------------|
-| Submit edit intents | Install Echo packages |
-| Observe text windows | Start/stop the Echo runtime |
-| Create checkpoints | Control the scheduler |
-| Hold `ReadBasisHandle` | Fault recovery |
+| ------------------------------------ | ------------------------------------- |
+| Submit edit intents                  | Install Echo packages                 |
+| Observe text windows                 | Start/stop the Echo runtime           |
+| Create checkpoints                   | Control the scheduler                 |
+| Hold `ReadBasisHandle`               | Fault recovery                        |
 
 Application code can call `submitIntentBytes` and `observeBytes`. It cannot call lifecycle methods that control the scheduler or runtime. The lifecycle adapter lives in `src/adapters/echo-runtime-lifecycle.ts` and is wired by `workspace-production-text-session.ts` at app construction time — not accessible through any port that application code holds.
 
@@ -1334,7 +1335,7 @@ The system defines failure at four distinct levels. Here is what happens at each
 
 ### Level 1: Domain Contract Violation
 
-A domain contract error is a *programming error* — it means a caller passed invalid arguments (e.g., a non-contiguous tick ID, a byte range that splits a UTF-8 sequence). These throw typed errors:
+A domain contract error is a _programming error_ — it means a caller passed invalid arguments (e.g., a non-contiguous tick ID, a byte range that splits a UTF-8 sequence). These throw typed errors:
 
 - `TextEditContractError(code, message)` — invalid range, out of bounds, invalid UTF-8 boundary
 - `TickAdmissionContractError(code, message)` — non-contiguous tick IDs, root mismatch
@@ -1429,23 +1430,23 @@ replaceRangeAsTick(input: ReplaceRangeAsTickInput!): ReplaceRangeAsTickResult!
     )
 ```
 
-What makes this remarkable is the `forbids` list. This is **negative capability declaration**: the mutation explicitly states which entity kinds it is *not allowed to touch*. A `replaceRangeAsTick` must not touch AST state, diagnostics, Git history, or UI state. If someone adds a side effect that reads diagnostics while applying a text edit, the footprint guard will catch it.
+What makes this remarkable is the `forbids` list. This is **negative capability declaration**: the mutation explicitly states which entity kinds it is _not allowed to touch_. A `replaceRangeAsTick` must not touch AST state, diagnostics, Git history, or UI state. If someone adds a side effect that reads diagnostics while applying a text edit, the footprint guard will catch it.
 
 The `closures` section is equally interesting. The `touchedRope` closure says: "starting from the `baseHead` slot, walk the rope DAG using the `ropeRangeClosure` operator, bounded by `[startByte, endByte]`, and collect all `RopeBranch`, `RopeLeaf`, and `TextBlob` nodes you touch." This is a **declarative traversal specification** — Wesley uses it to generate the exact minimal read set for the operation, enabling Echo's scheduler to reason about conflicts without needing to understand rope tree internals.
 
 ### Generated Artifacts
 
-| File | Contents |
-|------|----------|
-| `rope.types.generated.ts` | TypeScript interfaces and operation maps |
-| `rope.zod.generated.ts` | Zod schemas for every type + operation result validation |
+| File                       | Contents                                                                |
+| -------------------------- | ----------------------------------------------------------------------- |
+| `rope.types.generated.ts`  | TypeScript interfaces and operation maps                                |
+| `rope.zod.generated.ts`    | Zod schemas for every type + operation result validation                |
 | `rope.wesley.generated.ts` | Operation metadata objects (field names, operation IDs, request shapes) |
 
 ---
 
 ## 23. The Structural History Path
 
-The structural history path is a second, parallel contract surface for the editor's history model — a complement to the rope schema, modeling the *history taxonomy* rather than the raw substrate.
+The structural history path is a second, parallel contract surface for the editor's history model — a complement to the rope schema, modeling the _history taxonomy_ rather than the raw substrate.
 
 ```text
 contracts/jedit/structural-history.graphql
@@ -1473,11 +1474,11 @@ jedit-owned path and UI policy
 
 The important files in the current path are:
 
-| File | Responsibility |
-|------|----------------|
-| `src/ports/jedit-wsc-workspace-store.ts` | App-facing port for generic WSC envelope write/read/list operations. |
-| `src/adapters/jedit-wsc-workspace-store.ts` | Node workspace placement policy under `.jedit/echo-wsc/envelopes/`. |
-| `src/app/jedit-wsc-history-basis.ts` | Read-only listing and selection of retained historical basis evidence. |
+| File                                          | Responsibility                                                            |
+| --------------------------------------------- | ------------------------------------------------------------------------- |
+| `src/ports/jedit-wsc-workspace-store.ts`      | App-facing port for generic WSC envelope write/read/list operations.      |
+| `src/adapters/jedit-wsc-workspace-store.ts`   | Node workspace placement policy under `.jedit/echo-wsc/envelopes/`.       |
+| `src/app/jedit-wsc-history-basis.ts`          | Read-only listing and selection of retained historical basis evidence.    |
 | `src/app/jedit-wsc-current-history-export.ts` | Materializes current retained history through an explicit export adapter. |
 
 This is not a jedit-owned causal ledger. The adapter owns where generic
@@ -1850,4 +1851,4 @@ truth. The codebase should keep those roles separate until Echo's file aperture
 can make arbitrary host-file observation, drift, and materialization a standard
 runtime surface.
 
-The deepest insight: `jedit` treats *product pressure as a test suite for the underlying stack*. The Echo stack does not advance based on protocol theory — it advances when a real editor use case forces a seam to become honest. The `@wes_footprint` directive, the `ReadBasisHandle` capability, the intent/observe split, the receipt evidence in `Observed<T>` — none of these were designed in isolation. Each was forced into existence by the requirements of a working editor that needed provenance, authority separation, and replayable history to function correctly.
+The deepest insight: `jedit` treats _product pressure as a test suite for the underlying stack_. The Echo stack does not advance based on protocol theory — it advances when a real editor use case forces a seam to become honest. The `@wes_footprint` directive, the `ReadBasisHandle` capability, the intent/observe split, the receipt evidence in `Observed<T>` — none of these were designed in isolation. Each was forced into existence by the requirements of a working editor that needed provenance, authority separation, and replayable history to function correctly.
