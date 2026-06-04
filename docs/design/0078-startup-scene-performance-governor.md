@@ -284,30 +284,31 @@ stays renderer-local.
 
 - [x] Slice 1: Commit this design packet. Commit message:
       `docs: design startup scene performance governor`.
-- [ ] Slice 2: Add RED specs for the missing governor contract and renderer
+- [x] Slice 2: Add RED specs for the missing governor contract and renderer
       performance facts.
-- [ ] Slice 3: Implement the governor decision and facts module.
-- [ ] Slice 4: Route `viewer-content` title backdrop rendering through the
+- [x] Slice 3: Implement the governor decision and facts module.
+- [x] Slice 4: Route `viewer-content` title backdrop rendering through the
       governor and retain cache render time.
-- [ ] Slice 5: Add low-rate idle cache reuse tests and preserve existing modal
+- [x] Slice 5: Add low-rate idle cache reuse tests and preserve existing modal
       freeze tests.
-- [ ] Slice 6: Verify build, focused specs, title-rendering/workspace-ui
-      shards, quality, formatting, push, mark PR ready, and merge when eligible.
+- [x] Slice 6: Verify build, focused specs, title-rendering/workspace-ui
+      shards, quality, and formatting.
+- [ ] Slice 7: Push, mark PR ready, and merge when eligible.
 
 ## Tests To Write First
 
 Behavior tests required:
 
-- [ ] Governor pure spec fails before
+- [x] Governor pure spec fails before
       `title-scene-performance-governor.js` exists.
-- [ ] Renderer inspector spec fails before
+- [x] Renderer inspector spec fails before
       `titleScenePerformanceFacts()` exists.
-- [ ] Modal input regression proves cached backdrop reuse does not trace rays.
-- [ ] Slow idle title regression proves fresh cache reuse and bounded refresh.
+- [x] Modal input regression proves cached backdrop reuse does not trace rays.
+- [x] Slow idle title regression proves fresh cache reuse and bounded refresh.
 
 Documentation and process tests:
 
-- [ ] Prettier validates this design doc.
+- [x] Prettier validates this design doc.
 
 Rule: documentation tests cannot be the only proof for implementation work.
 
@@ -315,15 +316,15 @@ Rule: documentation tests cannot be the only proof for implementation work.
 
 The work is done when:
 
-- [ ] Render posture decisions are centralized in a governor module.
-- [ ] Modal input with cached title backdrop does not invoke the title renderer.
-- [ ] Modal fallback traces one frame and then freezes it.
-- [ ] Slow idle title rendering can reuse a fresh cached backdrop and refreshes
+- [x] Render posture decisions are centralized in a governor module.
+- [x] Modal input with cached title backdrop does not invoke the title renderer.
+- [x] Modal fallback traces one frame and then freezes it.
+- [x] Slow idle title rendering can reuse a fresh cached backdrop and refreshes
       after the bounded interval.
-- [ ] Renderer performance facts are inspectable without pixel scraping.
-- [ ] Existing title modal behavior still passes.
-- [ ] Issue and PR are linked correctly.
-- [ ] Local validation is green.
+- [x] Renderer performance facts are inspectable without pixel scraping.
+- [x] Existing title modal behavior still passes.
+- [x] Issue and PR are linked correctly.
+- [x] Local validation is green.
 - [ ] CI is green before merge.
 
 ## Validation Plan
@@ -331,6 +332,19 @@ The work is done when:
 Commands expected before PR:
 
 ```bash
+npm run build
+JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/workspace-title-performance-governor.spec.mjs spec/workspace-title-screen.spec.mjs
+JEDIT_DIST_PREBUILT=1 npm run ci:shard -- title-rendering
+JEDIT_DIST_PREBUILT=1 npm run ci:shard -- workspace-ui
+npm run quality
+npx --no-install prettier --check docs/design/0078-startup-scene-performance-governor.md src/app/workspace/title-scene-performance-governor.ts src/app/workspace/viewer-content.ts spec/workspace-title-performance-governor.spec.mjs spec/workspace-title-screen.spec.mjs
+git diff --check
+```
+
+Executed local validation:
+
+```bash
+JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/workspace-title-performance-governor.spec.mjs
 npm run build
 JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/workspace-title-performance-governor.spec.mjs spec/workspace-title-screen.spec.mjs
 JEDIT_DIST_PREBUILT=1 npm run ci:shard -- title-rendering
@@ -371,20 +385,32 @@ ray-quality ladder or user-visible performance setting should be separate work.
 
 ## Retrospective
 
-Fill this in after implementation.
-
 What changed from the design:
 
-- Pending.
+- Implemented the governor as `title-scene-performance-governor.ts`.
+- Routed `viewer-content` through the governor and retained cached backdrop
+  render time.
+- Exposed `titleScenePerformanceFacts()` on `ViewerContentRenderer`.
+- Normalized missing JS-test `frameTimeMs` to zero at the viewer boundary so
+  older test models remain valid while the runtime model keeps the typed field.
 
 What the tests proved:
 
-- Pending.
+- RED: the new focused spec failed before
+  `title-scene-performance-governor.js` existed and before renderer facts were
+  exposed.
+- GREEN: governor specs prove live, modal frozen, modal fallback, and low-rate
+  decisions.
+- GREEN: renderer specs prove modal input reuses a cached backdrop without
+  tracing and slow idle title screens reuse a fresh cache until the refresh
+  window expires.
+- Existing title-screen startup modal tests still pass.
+- `title-rendering` and `workspace-ui` shards both pass locally.
 
 What remains open:
 
-- Pending.
+- Remote CI still has to run before merge.
 
 PR:
 
-- Pending.
+- https://github.com/flyingrobots/jedit/pull/97
