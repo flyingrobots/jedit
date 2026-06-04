@@ -232,27 +232,27 @@ Choose Option A. Add a compact JSON visual witness and focused spec.
 
 ## Implementation Slices
 
-- [ ] Slice 1: Commit this design packet. Commit message:
+- [x] Slice 1: Commit this design packet. Commit message:
       `docs: design title scene visual regression`.
-- [ ] Slice 2: Add the title visual witness spec and make it fail because the
+- [x] Slice 2: Add the title visual witness spec and make it fail because the
       fixture is missing.
-- [ ] Slice 3: Add the committed fixture generated from deterministic renders.
-- [ ] Slice 4: Verify focused witness spec, existing title render spec, build,
+- [x] Slice 3: Add the committed fixture generated from deterministic renders.
+- [x] Slice 4: Verify focused witness spec, existing title render spec, build,
       quality, and formatting.
-- [ ] Slice 5: Fill retrospective, push, mark PR ready, and merge when eligible.
+- [x] Slice 5: Fill retrospective, push, mark PR ready, and merge when eligible.
 
 ## Tests To Write First
 
 Behavior tests required:
 
-- [ ] `spec/title-scene-visual-witness.spec.mjs` fails before the fixture
+- [x] `spec/title-scene-visual-witness.spec.mjs` fails before the fixture
       exists and passes after the fixture is committed.
-- [ ] `spec/title-scene-render.spec.mjs` still passes.
-- [ ] `npm run quality` stays green.
+- [x] `spec/title-scene-render.spec.mjs` still passes.
+- [x] `npm run quality` stays green.
 
 Documentation and process tests:
 
-- [ ] Prettier validates this design doc and fixture formatting.
+- [x] Prettier validates this design doc and fixture formatting.
 
 Rule: documentation tests cannot be the only proof for implementation work.
 
@@ -260,12 +260,12 @@ Rule: documentation tests cannot be the only proof for implementation work.
 
 The work is done when:
 
-- [ ] A compact title-scene visual witness fixture is committed.
-- [ ] The witness covers Braille, ASCII, logo-visible, and logo-faded cases.
-- [ ] The spec compares glyph rows separately from foreground/background color
+- [x] A compact title-scene visual witness fixture is committed.
+- [x] The witness covers Braille, ASCII, logo-visible, and logo-faded cases.
+- [x] The spec compares glyph rows separately from foreground/background color
       digests.
-- [ ] The fixture is deterministic under fixed render inputs.
-- [ ] Issue and PR are linked correctly.
+- [x] The fixture is deterministic under fixed render inputs.
+- [x] Issue and PR are linked correctly.
 - [ ] Local validation is green; CI is green before merge.
 
 ## Validation Plan
@@ -313,20 +313,28 @@ No follow-on debt is introduced by this cycle.
 
 ## Retrospective
 
-Fill this in after implementation.
-
 What changed from the design:
 
-- Pending.
+- The compact JSON witness landed as
+  `spec/fixtures/title-scene-visual-witness.json`.
+- The focused spec landed as `spec/title-scene-visual-witness.spec.mjs`.
+- The witness uses four 42x14 cases covering Braille logo-visible, Braille
+  logo-faded, ASCII logo-faded, and a later Braille orbit frame.
 
 What the tests proved:
 
-- Pending.
+- RED: `JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/title-scene-visual-witness.spec.mjs`
+  failed before the fixture existed.
+- GREEN: `JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/title-scene-visual-witness.spec.mjs spec/title-scene-render.spec.mjs`
+  proved the fixture matches deterministic renders and existing render coverage
+  still passes.
+- GREEN: `npm run build`, `npm run quality`, Prettier, and `git diff --check`
+  passed.
 
 What remains open:
 
-- Pending.
+- CI must pass on the PR branch before merge.
 
 PR:
 
-- Pending.
+- https://github.com/flyingrobots/jedit/pull/92
