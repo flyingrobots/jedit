@@ -28,9 +28,10 @@ const TITLE_LOGO_MOTION_TIME = 0.7;
 const TITLE_SEQUENCE_START_TIME = 0;
 const TITLE_LOGO_BEFORE_TIME = 1;
 const TITLE_LOGO_VISIBLE_TIME = 2;
-const TITLE_LOGO_SHEEN_EARLY_TIME = 3.25;
-const INTRO_LOGOS_STILL_VISIBLE_TIME = 6.5;
-const INTRO_LOGOS_GONE_TIME = 7.25;
+const TITLE_LOGO_SHEEN_EARLY_TIME = 2.25;
+const SPONSOR_LOGO_FADE_COMPLETE_TIME = 4.25;
+const TITLE_LOGO_FADE_COMPLETE_TIME = 6.25;
+const INTRO_LOGOS_GONE_TIME = 6.75;
 const POST_INTRO_SCENE_TIME = INTRO_LOGOS_GONE_TIME;
 const TITLE_LOGO_SMOOTH_FRAME_TIME = 0.74;
 const TITLE_LOGO_NEXT_FRAME_TIME = TITLE_LOGO_SMOOTH_FRAME_TIME + (1 / 60);
@@ -250,7 +251,8 @@ test('title presentation sequence gates both logo layers on the requested timeli
   const start = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, TITLE_SEQUENCE_START_TIME, theme, fixedTitleRenderOptions());
   const beforeTitle = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, TITLE_LOGO_BEFORE_TIME, theme, fixedTitleRenderOptions());
   const titleVisible = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, TITLE_LOGO_VISIBLE_TIME, theme, fixedTitleRenderOptions());
-  const stillVisible = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, INTRO_LOGOS_STILL_VISIBLE_TIME, theme, fixedTitleRenderOptions());
+  const sponsorGone = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, SPONSOR_LOGO_FADE_COMPLETE_TIME, theme, fixedTitleRenderOptions());
+  const titleGone = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, TITLE_LOGO_FADE_COMPLETE_TIME, theme, fixedTitleRenderOptions());
   const gone = title.renderTitleScreen(TITLE_WIDTH, TITLE_HEIGHT, INTRO_LOGOS_GONE_TIME, theme, fixedTitleRenderOptions());
 
   assert.ok(flyingRobotsLogoCells(start, title, style).length > FLYINGROBOTS_LOGO_MIN_VISIBLE_CELLS);
@@ -260,8 +262,10 @@ test('title presentation sequence gates both logo layers on the requested timeli
   assert.ok(flyingRobotsLogoCells(beforeTitle, title, style).length > FLYINGROBOTS_LOGO_MIN_VISIBLE_CELLS);
   assert.ok(titleLogoCells(titleVisible, style).length > 12);
   assert.ok(flyingRobotsLogoCells(titleVisible, title, style).length > FLYINGROBOTS_LOGO_MIN_VISIBLE_CELLS);
-  assert.ok(titleLogoCells(stillVisible, style).length > 12);
-  assert.ok(flyingRobotsLogoCells(stillVisible, title, style).length > FLYINGROBOTS_LOGO_MIN_VISIBLE_CELLS);
+  assert.ok(titleLogoCells(sponsorGone, style).length > 12);
+  assert.equal(flyingRobotsLogoCells(sponsorGone, title, style).length, 0);
+  assert.equal(surfaceContainsText(sponsorGone, PRESENTS_TEXT), false);
+  assert.equal(titleLogoCells(titleGone, style).length, 0);
   assert.equal(flyingRobotsLogoCells(gone, title, style).length, 0);
   assert.equal(surfaceContainsText(gone, PRESENTS_TEXT), false);
   assert.equal(titleLogoCells(gone, style).length, 0);

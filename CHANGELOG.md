@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Fixed the title intro timeline so `FLYINGROBOTS PRESENTS` fades before the
+  `jedit` logo, the `jedit` logo fades before the startup file browser appears,
+  and the modal still opens at the 7 second boundary.
 - Split the CI contract shard into `contract-api` and `cycle-proofs`, and added
   a Bijou-only package dependency fast path that runs `contract-api`,
   `echo-authority`, `title-rendering`, `workspace-ui`, and the Echo release gate

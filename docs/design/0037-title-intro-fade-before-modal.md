@@ -258,26 +258,26 @@ boundary at 7 seconds.
 
 ## Implementation Slices
 
-- [ ] Slice 1: Commit this design packet. Commit message: `docs: design title intro fade before modal`.
-- [ ] Slice 2: Add a failing rendered title regression test for the 3s, 5s,
+- [x] Slice 1: Commit this design packet. Commit message: `docs: design title intro fade before modal`.
+- [x] Slice 2: Add a failing rendered title regression test for the 3s, 5s,
       and 7s fade contract.
-- [ ] Slice 3: Retiming `titlePresentationSequence` with independent fade
+- [x] Slice 3: Retiming `titlePresentationSequence` with independent fade
       windows while preserving sheen direction.
-- [ ] Slice 4: Verify focused title and workspace startup tests.
-- [ ] Slice 5: Fill in the retrospective, push, and mark the PR ready.
+- [x] Slice 4: Verify focused title and workspace startup tests.
+- [x] Slice 5: Fill in the retrospective, push, and mark the PR ready.
 
 ## Tests To Write First
 
 Behavior tests required:
 
-- [ ] `spec/title-screen.spec.mjs` proves sponsor fade after 3 seconds, title
+- [x] `spec/title-screen.spec.mjs` proves sponsor fade after 3 seconds, title
       fade after 5 seconds, and no logo cells before the modal opens at 7 seconds.
-- [ ] `spec/workspace-title-screen.spec.mjs` continues proving Enter and Escape
+- [x] `spec/workspace-title-screen.spec.mjs` continues proving Enter and Escape
       skip directly to the startup modal.
 
 Documentation and process tests:
 
-- [ ] Prettier validates this design doc.
+- [x] Prettier validates this design doc.
 
 Rule: documentation tests cannot be the only proof for implementation work.
 
@@ -285,13 +285,13 @@ Rule: documentation tests cannot be the only proof for implementation work.
 
 The work is done when:
 
-- [ ] Rendered title output proves `FLYINGROBOTS PRESENTS` is absent before the
+- [x] Rendered title output proves `FLYINGROBOTS PRESENTS` is absent before the
       modal opens.
-- [ ] Rendered title output proves `jedit` is absent before the modal opens.
-- [ ] Direction-aware sheen behavior still passes.
-- [ ] Startup modal still opens at 7 seconds and still supports Enter/Escape
+- [x] Rendered title output proves `jedit` is absent before the modal opens.
+- [x] Direction-aware sheen behavior still passes.
+- [x] Startup modal still opens at 7 seconds and still supports Enter/Escape
       skip.
-- [ ] Issue and PR are linked correctly.
+- [x] Issue and PR are linked correctly.
 - [ ] CI and local validation are green.
 
 ## Validation Plan
@@ -356,20 +356,26 @@ remain tracked separately:
 
 ## Retrospective
 
-Fill this in after implementation.
-
 What changed from the design:
 
-- Pending.
+- Implemented the independent fade-window option from the decision section.
+- Started the title logo sheen at the title logo appearance time so the
+  highlight is active when `jedit` appears.
+- Preserved the startup modal open boundary at 7 seconds.
 
 What the tests proved:
 
-- Pending.
+- RED: the updated rendered title spec failed because 289 sponsor logo cells
+  were still visible at the new sponsor fade-complete point.
+- GREEN:
+  `JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/title-screen.spec.mjs spec/workspace-title-screen.spec.mjs`
+  passed after the sequence retiming.
 
 What remains open:
 
-- Pending.
+- GitHub CI has not run yet at the time of this implementation commit.
+- Other title-screen issues remain tracked as separate cycles.
 
 PR:
 
-- Pending.
+- https://github.com/flyingrobots/jedit/pull/88
