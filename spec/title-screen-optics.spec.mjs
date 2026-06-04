@@ -60,42 +60,37 @@ test("title scene spotlight targets a point between the camera start and sphere"
 });
 
 test("title scene spotlight stays anchored to scene camera when render camera changes", async () => {
-  const { title, titleOptics, themes } = await loadTitleModules();
+  const { titleOptics, themes } = await loadTitleModules();
   const theme = themes.availableJeditThemes()[0];
-  const colors = title.titleSceneMaterialColors(theme);
+  const color = theme.variables.get(THEME_VARIABLE_ACCENT).rgb;
   const spotlightCamera = {
     angle: SPOTLIGHT_CAMERA_ANGLE,
     radius: SPOTLIGHT_CAMERA_RADIUS,
   };
-  const first = title.titleSceneRayContext(
-    sampleOptions([], colors, undefined, {
-      camAngle: SPOTLIGHT_CAMERA_ANGLE,
-      camRadius: SPOTLIGHT_CAMERA_RADIUS,
-      spotlightCamera,
-    }),
-  );
-  const second = title.titleSceneRayContext(
-    sampleOptions([], colors, undefined, {
-      camAngle: SECOND_RENDER_CAMERA_ANGLE,
-      camRadius: SECOND_RENDER_CAMERA_RADIUS,
-      spotlightCamera,
-    }),
-  );
-  const sceneCameraSpotlight = titleOptics.titleSceneSpotlightAt(
-    titleCameraStart(spotlightCamera.angle, spotlightCamera.radius),
+  const first = titleOptics.titleSceneSpotlightForCameraPlacement(
+    spotlightCamera,
     SPOTLIGHT_SPHERE_CENTER,
-    colors.spotlight,
+    color,
+  );
+  const second = titleOptics.titleSceneSpotlightForCameraPlacement(
+    spotlightCamera,
+    SPOTLIGHT_SPHERE_CENTER,
+    color,
   );
   const renderCameraSpotlight = titleOptics.titleSceneSpotlightAt(
     titleCameraStart(SECOND_RENDER_CAMERA_ANGLE, SECOND_RENDER_CAMERA_RADIUS),
     SPOTLIGHT_SPHERE_CENTER,
-    colors.spotlight,
+    color,
   );
 
-  assert.notDeepEqual(first.origin, second.origin);
-  assert.deepEqual(first.spotlight.target, second.spotlight.target);
-  assert.deepEqual(first.spotlight.target, sceneCameraSpotlight.target);
-  assert.notDeepEqual(first.spotlight.target, renderCameraSpotlight.target);
+  assert.deepEqual(first.target, second.target);
+  assert.notDeepEqual(first.target, renderCameraSpotlight.target);
+});
+
+test("title screen keeps ray context construction private to the renderer", async () => {
+  const { title } = await loadTitleModules();
+
+  assert.equal(Object.hasOwn(title, "titleSceneRayContext"), false);
 });
 
 test("title floor light effects expose sphere shadows and caustics", async () => {
