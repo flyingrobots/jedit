@@ -81,6 +81,8 @@ This cycle includes:
 - Updating `titleSceneRayContext` to use the new optics helper internally.
 - Removing the public export from `titleSceneRayContext`.
 - Updating focused optics specs to assert through the new helper.
+- Extracting directly related helper code if the quality ratchet requires the
+  touched files to stay under size and function limits.
 
 ## Non-Goals
 
@@ -229,27 +231,28 @@ context private again.
 
 ## Implementation Slices
 
-- [ ] Slice 1: Commit this design packet. Commit message:
+- [x] Slice 1: Commit this design packet. Commit message:
       `docs: design title scene optics hook`.
-- [ ] Slice 2: Add the spotlight camera placement helper in title optics.
-- [ ] Slice 3: Update title-screen renderer internals to use the helper.
-- [ ] Slice 4: Update optics specs to remove `titleSceneRayContext` usage.
-- [ ] Slice 5: Verify focused specs, build, quality, and formatting.
-- [ ] Slice 6: Fill retrospective, push, mark PR ready, and merge when eligible.
+- [x] Slice 2: Add the spotlight camera placement helper in title optics.
+- [x] Slice 3: Update title-screen renderer internals to use the helper.
+- [x] Slice 4: Update optics specs to remove `titleSceneRayContext` usage.
+- [x] Slice 5: Keep touched optics/rendering files within quality limits.
+- [x] Slice 6: Verify focused specs, build, quality, and formatting.
+- [x] Slice 7: Fill retrospective, push, mark PR ready, and merge when eligible.
 
 ## Tests To Write First
 
 Behavior tests required:
 
-- [ ] `spec/title-screen-optics.spec.mjs` fails while it still depends on
+- [x] `spec/title-screen-optics.spec.mjs` fails while it still depends on
       `titleSceneRayContext`, then passes through the narrower helper.
-- [ ] `npm run build` proves the removed export does not leak through public
+- [x] `npm run build` proves the removed export does not leak through public
       consumers.
-- [ ] `npm run quality` stays green.
+- [x] `npm run quality` stays green.
 
 Documentation and process tests:
 
-- [ ] Prettier validates this design doc.
+- [x] Prettier validates this design doc.
 
 Rule: documentation tests cannot be the only proof for implementation work.
 
@@ -257,12 +260,12 @@ Rule: documentation tests cannot be the only proof for implementation work.
 
 The work is done when:
 
-- [ ] The spotlight anchoring regression asserts through a spotlight-named
+- [x] The spotlight anchoring regression asserts through a spotlight-named
       optics helper.
-- [ ] `titleSceneRayContext` is no longer exported from `title-screen.ts`.
-- [ ] The new seam is narrower than full ray-context construction.
-- [ ] No title-scene visual behavior changes.
-- [ ] Issue and PR are linked correctly.
+- [x] `titleSceneRayContext` is no longer exported from `title-screen.ts`.
+- [x] The new seam is narrower than full ray-context construction.
+- [x] No title-scene visual behavior changes.
+- [x] Issue and PR are linked correctly.
 - [ ] Local validation is green; CI is green before merge.
 
 ## Validation Plan
@@ -273,7 +276,7 @@ Commands expected before PR:
 npm run build
 JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/title-screen-optics.spec.mjs
 npm run quality
-npx --no-install prettier --check docs/design/0040-title-scene-optics-hook.md src/ui/title-screen.ts src/ui/title-screen-optics.ts spec/title-screen-optics.spec.mjs
+npx --no-install prettier --check docs/design/0040-title-scene-optics-hook.md src/ui/title-screen.ts src/ui/title-screen-optics.ts src/ui/title-floor-light-effects.ts src/ui/title-scene-math.ts spec/title-screen-optics.spec.mjs
 ```
 
 ## Playback / Witness
@@ -304,20 +307,30 @@ No follow-on debt is introduced by this cycle.
 
 ## Retrospective
 
-Fill this in after implementation.
-
 What changed from the design:
 
-- Pending.
+- The spotlight-specific helper landed as
+  `titleSceneSpotlightForCameraPlacement`.
+- `titleSceneRayContext` became private to `src/ui/title-screen.ts`.
+- The quality ratchet required two directly related extractions:
+  `src/ui/title-floor-light-effects.ts` for floor light effects and
+  `src/ui/title-scene-math.ts` for shared title-scene vector/color math.
 
 What the tests proved:
 
-- Pending.
+- RED: `JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/title-screen-optics.spec.mjs`
+  failed before implementation because the new helper was missing and
+  `titleSceneRayContext` was still exported.
+- GREEN: `npm run build` proved the TypeScript public surface no longer leaks
+  the ray-context export.
+- GREEN: `JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/title-screen-optics.spec.mjs`
+  proved spotlight anchoring through the narrower optics helper.
+- GREEN: `npm run quality`, Prettier, and `git diff --check` passed.
 
 What remains open:
 
-- Pending.
+- CI must pass on the PR branch before merge.
 
 PR:
 
-- Pending.
+- https://github.com/flyingrobots/jedit/pull/91
