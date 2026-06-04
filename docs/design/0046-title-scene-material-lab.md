@@ -324,8 +324,9 @@ Commands expected before PR:
 npm run build
 JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/title-scene-material-lab.spec.mjs spec/title-scene-loader.spec.mjs spec/title-scene-preview-session.spec.mjs
 JEDIT_DIST_PREBUILT=1 npm run ci:shard -- title-rendering
+JEDIT_DIST_PREBUILT=1 npm run ci:shard -- workspace-ui
 npm run quality
-npx --no-install prettier --check docs/design/0046-title-scene-material-lab.md src/ports/title-scene-loader.ts src/adapters/title-scene-loader.ts src/adapters/title-scene-json-decoder.ts src/adapters/title-scene-environment-decoder.ts src/ui/title-scene.ts src/ui/title-scene-hit.ts src/app/title-scene-preview-session.ts spec/title-scene-material-lab.spec.mjs
+npx --no-install prettier --check docs/design/0046-title-scene-material-lab.md src/ports/title-scene-loader.ts src/adapters/title-scene-loader.ts src/adapters/title-scene-json-decoder.ts src/adapters/title-scene-environment-decoder.ts src/ui/title-scene.ts src/ui/title-scene-hit.ts src/app/title-scene-preview-session.ts spec/title-scene-material-lab.spec.mjs spec/workspace-runtime.spec.mjs
 npx --no-install prettier --parser json --check scenes/material-lab.jedit-scene
 git diff --check
 ```
@@ -337,8 +338,9 @@ JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/title-scene-material
 npm run build
 JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/title-scene-material-lab.spec.mjs spec/title-scene-loader.spec.mjs spec/title-scene-preview-session.spec.mjs
 JEDIT_DIST_PREBUILT=1 npm run ci:shard -- title-rendering
+JEDIT_DIST_PREBUILT=1 npm run ci:shard -- workspace-ui
 npm run quality
-npx --no-install prettier --check docs/design/0046-title-scene-material-lab.md src/ports/title-scene-loader.ts src/adapters/title-scene-loader.ts src/adapters/title-scene-json-decoder.ts src/adapters/title-scene-environment-decoder.ts src/ui/title-scene.ts src/ui/title-scene-hit.ts src/app/title-scene-preview-session.ts spec/title-scene-material-lab.spec.mjs
+npx --no-install prettier --check docs/design/0046-title-scene-material-lab.md src/ports/title-scene-loader.ts src/adapters/title-scene-loader.ts src/adapters/title-scene-json-decoder.ts src/adapters/title-scene-environment-decoder.ts src/ui/title-scene.ts src/ui/title-scene-hit.ts src/app/title-scene-preview-session.ts spec/title-scene-material-lab.spec.mjs spec/workspace-runtime.spec.mjs
 npx --no-install prettier --parser json --check scenes/material-lab.jedit-scene
 git diff --check
 ```
@@ -391,6 +393,9 @@ What the tests proved:
   fields, inspector facts, and floor/light behavior.
 - The `title-rendering` shard passed with the new scene included in built-in
   coverage.
+- CI RED: `workspace-ui` initially failed because the workspace scene-picker
+  registry fixture did not include the new authored scene.
+- CI GREEN: `workspace-ui` passed after the scene-picker witness was updated.
 
 What remains open:
 
