@@ -207,6 +207,7 @@ test("initial workspace scene picker lists authored scene assets that exist on d
   });
 
   assert.deepEqual(model.availableScenes, [
+    "neon-dispersion.jedit-scene",
     "teapot-cornell.jedit-scene",
     "teapot-gallery.jedit-scene",
     "bunny.jedit-scene",

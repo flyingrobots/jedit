@@ -1,10 +1,14 @@
-import type { TitleMeshSource, TitleMeshTriangle, TitleMeshVector3 } from '../ports/title-mesh.js';
+import type {
+  TitleMeshSource,
+  TitleMeshTriangle,
+  TitleMeshVector3,
+} from "../ports/title-mesh.js";
 import {
   EmptyMeshError,
   InvalidMeshHeightError,
   MeshTriangleIndexOutOfRangeError,
   MeshVertexIndexOutOfRangeError,
-} from '../domain/errors.js';
+} from "../domain/errors.js";
 
 export type { TitleMeshSource, TitleMeshTriangle, TitleMeshVector3 };
 
@@ -27,7 +31,7 @@ export interface TitleMeshHit {
   readonly normal: TitleMeshVector3;
 }
 
-interface TitleMeshPlacement {
+export interface TitleMeshPlacement {
   readonly height: number;
   readonly pitchRadians: number;
   readonly yawRadians: number;
@@ -55,56 +59,9 @@ const AXIS_X = 0;
 const AXIS_Y = 1;
 const AXIS_Z = 2;
 const ZERO_RADIANS = 0;
-const RIGHT_ANGLE_RADIANS = Math.PI / 2;
-const TITLE_BUNNY_HEIGHT = 2.35;
-const TITLE_BUNNY_PITCH_RADIANS = ZERO_RADIANS;
-const TITLE_BUNNY_YAW_RADIANS = Math.PI * 0.18;
-const TITLE_BUNNY_CENTER_X = -0.85;
-const TITLE_BUNNY_FLOOR_Y = 0;
-const TITLE_BUNNY_CENTER_Z = -0.15;
-const TITLE_TEAPOT_HEIGHT = 2.2;
-const TITLE_TEAPOT_PITCH_RADIANS = -RIGHT_ANGLE_RADIANS;
-const TITLE_TEAPOT_YAW_RADIANS = -Math.PI * 0.1;
-const TITLE_TEAPOT_CENTER_X = 0;
-const TITLE_TEAPOT_FLOOR_Y = 0;
-const TITLE_TEAPOT_CENTER_Z = 0;
 const BVH_LEAF_TRIANGLE_COUNT = 8;
 const INTERSECTION_EPSILON = 0.000001;
 const EMPTY_TRIANGLE_INDICES: readonly number[] = [];
-
-export const TITLE_MESH_ID = {
-  Bunny: 'bunny',
-  Teapot: 'teapot',
-} as const;
-
-export type TitleMeshId = typeof TITLE_MESH_ID[keyof typeof TITLE_MESH_ID];
-
-export interface TitleMeshLibrary {
-  readonly bunny?: TitleMesh;
-  readonly teapot?: TitleMesh;
-}
-
-export function createTitleBunnyMesh(source: TitleMeshSource): TitleMesh {
-  return createTitleMesh(source, {
-    height: TITLE_BUNNY_HEIGHT,
-    pitchRadians: TITLE_BUNNY_PITCH_RADIANS,
-    yawRadians: TITLE_BUNNY_YAW_RADIANS,
-    centerX: TITLE_BUNNY_CENTER_X,
-    floorY: TITLE_BUNNY_FLOOR_Y,
-    centerZ: TITLE_BUNNY_CENTER_Z,
-  });
-}
-
-export function createTitleTeapotMesh(source: TitleMeshSource): TitleMesh {
-  return createTitleMesh(source, {
-    height: TITLE_TEAPOT_HEIGHT,
-    pitchRadians: TITLE_TEAPOT_PITCH_RADIANS,
-    yawRadians: TITLE_TEAPOT_YAW_RADIANS,
-    centerX: TITLE_TEAPOT_CENTER_X,
-    floorY: TITLE_TEAPOT_FLOOR_Y,
-    centerZ: TITLE_TEAPOT_CENTER_Z,
-  });
-}
 
 export function nearestTitleMeshHit(
   origin: TitleMeshVector3,
@@ -116,12 +73,25 @@ export function nearestTitleMeshHit(
   return nearest;
 
   function visitMeshNode(node: TitleMeshBvhNode): void {
-    if (!rayIntersectsBounds(origin, ray, node.bounds, nearest?.distance ?? Infinity)) {
+    if (
+      !rayIntersectsBounds(
+        origin,
+        ray,
+        node.bounds,
+        nearest?.distance ?? Infinity,
+      )
+    ) {
       return;
     }
 
     if (node.triangleIndices.length > 0) {
-      nearest = nearestMeshTriangleHit(origin, ray, mesh, node.triangleIndices, nearest);
+      nearest = nearestMeshTriangleHit(
+        origin,
+        ray,
+        mesh,
+        node.triangleIndices,
+        nearest,
+      );
       return;
     }
 
@@ -146,20 +116,32 @@ function nearestMeshTriangleHit(
   let candidate = nearest;
   for (const triangleIndex of triangleIndices) {
     const hit = intersectTitleMeshTriangle(origin, ray, mesh, triangleIndex);
-    if (hit != null && (candidate == null || hit.distance < candidate.distance)) {
+    if (
+      hit != null &&
+      (candidate == null || hit.distance < candidate.distance)
+    ) {
       candidate = hit;
     }
   }
   return candidate;
 }
 
-function createTitleMesh(source: TitleMeshSource, placement: TitleMeshPlacement): TitleMesh {
-  const orientedVertices = source.vertices.map((vertex) => pitchVertex(vertex, placement.pitchRadians));
+export function createTitleMesh(
+  source: TitleMeshSource,
+  placement: TitleMeshPlacement,
+): TitleMesh {
+  const orientedVertices = source.vertices.map((vertex) =>
+    pitchVertex(vertex, placement.pitchRadians),
+  );
   const sourceBounds = boundsForVertices(orientedVertices);
-  const vertices = orientedVertices.map((vertex) => transformVertex(vertex, sourceBounds, placement));
-  const triangles = source.triangles.map((indices) => triangleData(vertices, indices));
+  const vertices = orientedVertices.map((vertex) =>
+    transformVertex(vertex, sourceBounds, placement),
+  );
+  const triangles = source.triangles.map((indices) =>
+    triangleData(vertices, indices),
+  );
   if (triangles.length === 0) {
-    throw new EmptyMeshError('Title mesh must contain at least one triangle.');
+    throw new EmptyMeshError("Title mesh must contain at least one triangle.");
   }
 
   const triangleIndices = triangles.map((_, index) => index);
@@ -169,12 +151,19 @@ function createTitleMesh(source: TitleMeshSource, placement: TitleMeshPlacement)
     triangles: triangles.map((triangle) => triangle.indices),
     bounds,
     height: bounds.max[AXIS_Y] - bounds.min[AXIS_Y],
-    footprintRadius: footprintRadiusForVertices(vertices, placement.centerX, placement.centerZ),
+    footprintRadius: footprintRadiusForVertices(
+      vertices,
+      placement.centerX,
+      placement.centerZ,
+    ),
     root: buildBvhNode(triangles, triangleIndices),
   };
 }
 
-function pitchVertex(vertex: TitleMeshVector3, radians: number): TitleMeshVector3 {
+function pitchVertex(
+  vertex: TitleMeshVector3,
+  radians: number,
+): TitleMeshVector3 {
   if (radians === ZERO_RADIANS) {
     return vertex;
   }
@@ -182,43 +171,54 @@ function pitchVertex(vertex: TitleMeshVector3, radians: number): TitleMeshVector
   const sin = Math.sin(radians);
   return [
     vertex[AXIS_X],
-    (vertex[AXIS_Y] * cos) - (vertex[AXIS_Z] * sin),
-    (vertex[AXIS_Y] * sin) + (vertex[AXIS_Z] * cos),
+    vertex[AXIS_Y] * cos - vertex[AXIS_Z] * sin,
+    vertex[AXIS_Y] * sin + vertex[AXIS_Z] * cos,
   ];
 }
 
-function transformVertex(vertex: TitleMeshVector3, bounds: TitleMeshBounds, placement: TitleMeshPlacement): TitleMeshVector3 {
+function transformVertex(
+  vertex: TitleMeshVector3,
+  bounds: TitleMeshBounds,
+  placement: TitleMeshPlacement,
+): TitleMeshVector3 {
   const sourceHeight = bounds.max[AXIS_Y] - bounds.min[AXIS_Y];
   if (sourceHeight <= 0) {
-    throw new InvalidMeshHeightError('Title mesh source height must be greater than zero.');
+    throw new InvalidMeshHeightError(
+      "Title mesh source height must be greater than zero.",
+    );
   }
 
   const sourceCenterX = (bounds.min[AXIS_X] + bounds.max[AXIS_X]) / 2;
   const sourceCenterZ = (bounds.min[AXIS_Z] + bounds.max[AXIS_Z]) / 2;
   const scale = placement.height / sourceHeight;
   const x = (vertex[AXIS_X] - sourceCenterX) * scale;
-  const y = ((vertex[AXIS_Y] - bounds.min[AXIS_Y]) * scale) + placement.floorY;
+  const y = (vertex[AXIS_Y] - bounds.min[AXIS_Y]) * scale + placement.floorY;
   const z = (vertex[AXIS_Z] - sourceCenterZ) * scale;
   const cos = Math.cos(placement.yawRadians);
   const sin = Math.sin(placement.yawRadians);
 
   return [
-    placement.centerX + ((x * cos) - (z * sin)),
+    placement.centerX + (x * cos - z * sin),
     y,
-    placement.centerZ + ((x * sin) + (z * cos)),
+    placement.centerZ + (x * sin + z * cos),
   ];
 }
 
-function buildBvhNode(triangles: readonly TitleMeshTriangleData[], triangleIndices: readonly number[]): TitleMeshBvhNode {
+function buildBvhNode(
+  triangles: readonly TitleMeshTriangleData[],
+  triangleIndices: readonly number[],
+): TitleMeshBvhNode {
   const bounds = boundsForTriangles(triangles, triangleIndices);
   if (triangleIndices.length <= BVH_LEAF_TRIANGLE_COUNT) {
     return { bounds, triangleIndices };
   }
 
   const axis = widestAxis(bounds);
-  const sorted = [...triangleIndices].sort((left, right) => (
-    triangleAt(triangles, left).center[axis] - triangleAt(triangles, right).center[axis]
-  ));
+  const sorted = [...triangleIndices].sort(
+    (left, right) =>
+      triangleAt(triangles, left).center[axis] -
+      triangleAt(triangles, right).center[axis],
+  );
   const split = Math.floor(sorted.length / 2);
   const leftIndices = sorted.slice(0, split);
   const rightIndices = sorted.slice(split);
@@ -257,16 +257,32 @@ function intersectTitleMeshTriangle(
 
   const inverseDeterminant = 1 / determinant;
   const originToA = sub(origin, a);
-  const barycentric = titleMeshTriangleBarycentric(ray, edgeA, originToA, rayCrossEdgeB, inverseDeterminant);
+  const barycentric = titleMeshTriangleBarycentric(
+    ray,
+    edgeA,
+    originToA,
+    rayCrossEdgeB,
+    inverseDeterminant,
+  );
   if (barycentric == null) {
     return undefined;
   }
 
-  const distance = dot(edgeB, barycentric.originCrossEdgeA) * inverseDeterminant;
+  const distance =
+    dot(edgeB, barycentric.originCrossEdgeA) * inverseDeterminant;
   if (distance <= INTERSECTION_EPSILON) {
     return undefined;
   }
 
+  return titleMeshTriangleHit(distance, ray, edgeA, edgeB);
+}
+
+function titleMeshTriangleHit(
+  distance: number,
+  ray: TitleMeshVector3,
+  edgeA: TitleMeshVector3,
+  edgeB: TitleMeshVector3,
+): TitleMeshHit {
   const normal = normalize(cross(edgeA, edgeB));
   return {
     distance,
@@ -321,7 +337,10 @@ function rayIntersectsBounds(
   return farDistance > 0;
 }
 
-function triangleData(vertices: readonly TitleMeshVector3[], indices: TitleMeshTriangle): TitleMeshTriangleData {
+function triangleData(
+  vertices: readonly TitleMeshVector3[],
+  indices: TitleMeshTriangle,
+): TitleMeshTriangleData {
   const a = vertexAt(vertices, indices[0]);
   const b = vertexAt(vertices, indices[1]);
   const c = vertexAt(vertices, indices[2]);
@@ -337,7 +356,10 @@ function triangleData(vertices: readonly TitleMeshVector3[], indices: TitleMeshT
   };
 }
 
-function boundsForTriangles(triangles: readonly TitleMeshTriangleData[], indices: readonly number[]): TitleMeshBounds {
+function boundsForTriangles(
+  triangles: readonly TitleMeshTriangleData[],
+  indices: readonly number[],
+): TitleMeshBounds {
   const first = triangleAt(triangles, indices[0] ?? -1).bounds;
   let min = first.min;
   let max = first.max;
@@ -349,10 +371,12 @@ function boundsForTriangles(triangles: readonly TitleMeshTriangleData[], indices
   return { min, max };
 }
 
-function boundsForVertices(vertices: readonly TitleMeshVector3[]): TitleMeshBounds {
+function boundsForVertices(
+  vertices: readonly TitleMeshVector3[],
+): TitleMeshBounds {
   const first = vertices[0];
   if (first == null) {
-    throw new EmptyMeshError('Title mesh must contain at least one vertex.');
+    throw new EmptyMeshError("Title mesh must contain at least one vertex.");
   }
 
   let min = first;
@@ -364,12 +388,16 @@ function boundsForVertices(vertices: readonly TitleMeshVector3[]): TitleMeshBoun
   return { min, max };
 }
 
-function footprintRadiusForVertices(vertices: readonly TitleMeshVector3[], centerX: number, centerZ: number): number {
+function footprintRadiusForVertices(
+  vertices: readonly TitleMeshVector3[],
+  centerX: number,
+  centerZ: number,
+): number {
   let radius = 0;
   for (const vertex of vertices) {
     const x = vertex[AXIS_X] - centerX;
     const z = vertex[AXIS_Z] - centerZ;
-    radius = Math.max(radius, Math.sqrt((x * x) + (z * z)));
+    radius = Math.max(radius, Math.sqrt(x * x + z * z));
   }
   return radius;
 }
@@ -384,28 +412,46 @@ function widestAxis(bounds: TitleMeshBounds): Axis {
   return depth >= width ? AXIS_Z : AXIS_X;
 }
 
-function triangleAt(triangles: readonly TitleMeshTriangleData[], index: number): TitleMeshTriangleData {
+function triangleAt(
+  triangles: readonly TitleMeshTriangleData[],
+  index: number,
+): TitleMeshTriangleData {
   const triangle = triangles[index];
   if (triangle == null) {
-    throw new MeshTriangleIndexOutOfRangeError('Title mesh triangle index is out of range.');
+    throw new MeshTriangleIndexOutOfRangeError(
+      "Title mesh triangle index is out of range.",
+    );
   }
   return triangle;
 }
 
-function vertexAt(vertices: readonly TitleMeshVector3[], index: number): TitleMeshVector3 {
+function vertexAt(
+  vertices: readonly TitleMeshVector3[],
+  index: number,
+): TitleMeshVector3 {
   const vertex = vertices[index];
   if (vertex == null) {
-    throw new MeshVertexIndexOutOfRangeError('Title mesh vertex index is out of range.');
+    throw new MeshVertexIndexOutOfRangeError(
+      "Title mesh vertex index is out of range.",
+    );
   }
   return vertex;
 }
 
 function minVector(a: TitleMeshVector3, b: TitleMeshVector3): TitleMeshVector3 {
-  return [Math.min(a[AXIS_X], b[AXIS_X]), Math.min(a[AXIS_Y], b[AXIS_Y]), Math.min(a[AXIS_Z], b[AXIS_Z])];
+  return [
+    Math.min(a[AXIS_X], b[AXIS_X]),
+    Math.min(a[AXIS_Y], b[AXIS_Y]),
+    Math.min(a[AXIS_Z], b[AXIS_Z]),
+  ];
 }
 
 function maxVector(a: TitleMeshVector3, b: TitleMeshVector3): TitleMeshVector3 {
-  return [Math.max(a[AXIS_X], b[AXIS_X]), Math.max(a[AXIS_Y], b[AXIS_Y]), Math.max(a[AXIS_Z], b[AXIS_Z])];
+  return [
+    Math.max(a[AXIS_X], b[AXIS_X]),
+    Math.max(a[AXIS_Y], b[AXIS_Y]),
+    Math.max(a[AXIS_Z], b[AXIS_Z]),
+  ];
 }
 
 function normalize(vector: TitleMeshVector3): TitleMeshVector3 {
@@ -414,14 +460,14 @@ function normalize(vector: TitleMeshVector3): TitleMeshVector3 {
 }
 
 function dot(a: TitleMeshVector3, b: TitleMeshVector3): number {
-  return (a[AXIS_X] * b[AXIS_X]) + (a[AXIS_Y] * b[AXIS_Y]) + (a[AXIS_Z] * b[AXIS_Z]);
+  return a[AXIS_X] * b[AXIS_X] + a[AXIS_Y] * b[AXIS_Y] + a[AXIS_Z] * b[AXIS_Z];
 }
 
 function cross(a: TitleMeshVector3, b: TitleMeshVector3): TitleMeshVector3 {
   return [
-    (a[AXIS_Y] * b[AXIS_Z]) - (a[AXIS_Z] * b[AXIS_Y]),
-    (a[AXIS_Z] * b[AXIS_X]) - (a[AXIS_X] * b[AXIS_Z]),
-    (a[AXIS_X] * b[AXIS_Y]) - (a[AXIS_Y] * b[AXIS_X]),
+    a[AXIS_Y] * b[AXIS_Z] - a[AXIS_Z] * b[AXIS_Y],
+    a[AXIS_Z] * b[AXIS_X] - a[AXIS_X] * b[AXIS_Z],
+    a[AXIS_X] * b[AXIS_Y] - a[AXIS_Y] * b[AXIS_X],
   ];
 }
 
@@ -430,5 +476,9 @@ function sub(a: TitleMeshVector3, b: TitleMeshVector3): TitleMeshVector3 {
 }
 
 function scale(vector: TitleMeshVector3, scalar: number): TitleMeshVector3 {
-  return [vector[AXIS_X] * scalar, vector[AXIS_Y] * scalar, vector[AXIS_Z] * scalar];
+  return [
+    vector[AXIS_X] * scalar,
+    vector[AXIS_Y] * scalar,
+    vector[AXIS_Z] * scalar,
+  ];
 }

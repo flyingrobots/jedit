@@ -1,5 +1,5 @@
 import type { TitleScene } from "../ui/title-scene.js";
-import type { TitleMeshLibrary } from "../ui/title-mesh.js";
+import type { TitleMeshLibrary } from "../ui/title-mesh-library.js";
 
 /**
  * Authoritative registry of product-visible built-in title scenes.
@@ -8,6 +8,7 @@ import type { TitleMeshLibrary } from "../ui/title-mesh.js";
  * register it here as well. This order controls the scene picker display order.
  */
 export const BUILT_IN_TITLE_SCENE_NAMES = [
+  "neon-dispersion.jedit-scene",
   "teapot-cornell.jedit-scene",
   "teapot-gallery.jedit-scene",
   "bunny.jedit-scene",
@@ -24,6 +25,7 @@ export const BUILT_IN_TITLE_SCENE_NAMES = [
 ] as const;
 
 export type BuiltInTitleSceneName = (typeof BUILT_IN_TITLE_SCENE_NAMES)[number];
+export const DEFAULT_BUILT_IN_TITLE_SCENE_NAME = BUILT_IN_TITLE_SCENE_NAMES[0];
 
 export interface TitleSceneLoaderPort {
   loadTitleSceneFromFile(
