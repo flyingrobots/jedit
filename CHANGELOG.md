@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Rendered the startup file selector rows through Bijou's browsable list
+  surface, added themed scrollbar affordance for overflowing directories, and
+  made Escape dismissal recoverable from the title screen with Enter or `o`.
 - Fixed the title intro timeline so `FLYINGROBOTS PRESENTS` fades before the
   `jedit` logo, the `jedit` logo fades before the startup file browser appears,
   and the modal still opens at the 7 second boundary.

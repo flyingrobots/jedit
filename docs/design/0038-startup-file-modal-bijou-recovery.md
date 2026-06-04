@@ -292,32 +292,32 @@ Bijou owns the list viewport and scrollbar primitive used by the selector.
 
 ## Implementation Slices
 
-- [ ] Slice 1: Commit this design packet. Commit message:
+- [x] Slice 1: Commit this design packet. Commit message:
       `docs: design startup file modal Bijou recovery`.
-- [ ] Slice 2: Add failing specs for overflow scrollbar, scrollbar token use,
+- [x] Slice 2: Add failing specs for overflow scrollbar, scrollbar token use,
       and Esc-to-reopen recovery.
-- [ ] Slice 3: Render file rows through Bijou `browsableListSurface` with
+- [x] Slice 3: Render file rows through Bijou `browsableListSurface` with
       jedit theme-token styling.
-- [ ] Slice 4: Add title-screen reopen key handling after Escape.
-- [ ] Slice 5: Verify focused tests, quality, and docs formatting.
-- [ ] Slice 6: Fill retrospective, push, mark PR ready, and merge when eligible.
+- [x] Slice 4: Add title-screen reopen key handling after Escape.
+- [x] Slice 5: Verify focused tests, quality, and docs formatting.
+- [x] Slice 6: Fill retrospective, push, mark PR ready, and merge when eligible.
 
 ## Tests To Write First
 
 Behavior tests required:
 
-- [ ] `spec/workspace-title-screen.spec.mjs` proves overflowing startup modal
+- [x] `spec/workspace-title-screen.spec.mjs` proves overflowing startup modal
       rows render a scrollbar.
-- [ ] `spec/workspace-title-screen.spec.mjs` proves scrollbar cells use jedit
+- [x] `spec/workspace-title-screen.spec.mjs` proves scrollbar cells use jedit
       theme token colors.
-- [ ] `spec/workspace-title-screen.spec.mjs` proves Escape followed by Enter or
+- [x] `spec/workspace-title-screen.spec.mjs` proves Escape followed by Enter or
       `o` reopens the startup selector from the title screen.
-- [ ] Existing workspace startup specs continue to prove filtering, opening,
+- [x] Existing workspace startup specs continue to prove filtering, opening,
       directory navigation, and small-terminal behavior.
 
 Documentation and process tests:
 
-- [ ] Prettier validates this design doc.
+- [x] Prettier validates this design doc.
 
 Rule: documentation tests cannot be the only proof for implementation work.
 
@@ -325,12 +325,12 @@ Rule: documentation tests cannot be the only proof for implementation work.
 
 The work is done when:
 
-- [ ] Overflowing startup selector rows visibly expose a scrollbar.
-- [ ] The scrollbar and selected row use theme-token-derived cell styles.
-- [ ] Escape dismissal is recoverable with Enter or `o`.
-- [ ] Existing startup modal filtering and open behavior still pass.
-- [ ] New strings have supported translations, if relevant.
-- [ ] Issue and PR are linked correctly.
+- [x] Overflowing startup selector rows visibly expose a scrollbar.
+- [x] The scrollbar and selected row use theme-token-derived cell styles.
+- [x] Escape dismissal is recoverable with Enter or `o`.
+- [x] Existing startup modal filtering and open behavior still pass.
+- [x] New strings have supported translations, if relevant.
+- [x] Issue and PR are linked correctly.
 - [ ] CI and local validation are green.
 
 ## Validation Plan
@@ -383,20 +383,29 @@ tooling remains tracked by separate issues.
 
 ## Retrospective
 
-Fill this in after implementation.
-
 What changed from the design:
 
-- Pending.
+- Implemented the planned Bijou `browsableListSurface` row viewport while
+  preserving Jedit-owned file rows and open behavior.
+- Painted selected row and scrollbar cells with jedit theme tokens after Bijou
+  renders the viewport.
+- Added title-screen reopen handling for Enter and `o` after Escape dismissal.
 
 What the tests proved:
 
-- Pending.
+- RED: the new overflow test failed because no startup selector scrollbar thumb
+  existed, and the new recovery test failed because Enter after Escape left the
+  modal closed.
+- GREEN:
+  `JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/workspace-title-screen.spec.mjs`
+  passed after the renderer and key-binding changes.
+- `npm run quality` and Prettier checks passed locally.
 
 What remains open:
 
-- Pending.
+- GitHub CI has not run yet at the time of this implementation commit.
+- Other title-screen issues remain tracked as separate cycles.
 
 PR:
 
-- Pending.
+- https://github.com/flyingrobots/jedit/pull/89
