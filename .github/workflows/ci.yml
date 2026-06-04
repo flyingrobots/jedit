@@ -64,11 +64,13 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Upload dist
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: jedit-dist
-          path: dist
+          path: |
+            dist
+            src/generated/jedit/structural-history-replace-text-range.wesley.generated.ts
           if-no-files-found: error
 
   test-shards:
@@ -93,11 +95,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Download dist
+      - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
           name: jedit-dist
-          path: dist
+          path: .
 
       - name: Run shard
         env:

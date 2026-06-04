@@ -23,13 +23,25 @@ const HEAD_FLAG = '--head';
 const DEFAULT_BASE_REF = 'origin/main';
 const DEFAULT_HEAD_REF = 'HEAD';
 const SPEC_PATH_PATTERN = /\.spec\.mjs$/;
+const PACKAGE_JSON_PATH = 'package.json';
+const PACKAGE_LOCK_PATH = 'package-lock.json';
+const BIJOU_DEPENDENCY_REASON = 'bijou-dependency-change';
+export const PACKAGE_CHANGE_KINDS = Object.freeze({
+  BijouOnly: 'bijou-only',
+  Full: 'full',
+});
+const BIJOU_PACKAGE_PREFIX = '@flyingrobots/bijou';
+const DEPENDENCY_MAP_NAMES = Object.freeze([
+  'dependencies',
+  'devDependencies',
+  'optionalDependencies',
+  'peerDependencies',
+]);
 const FULL_CI_PATH_PREFIXES = Object.freeze([
   '.github/',
   'scripts/ci/',
 ]);
 const FULL_CI_PATHS = Object.freeze([
-  'package-lock.json',
-  'package.json',
   'tsconfig.json',
 ]);
 const FULL_CI_PATH_PATTERNS = Object.freeze([
@@ -76,7 +88,7 @@ if (isMainModule()) {
   main();
 }
 
-export function planChangedShards(paths) {
+export function planChangedShards(paths, options = {}) {
   if (paths.length === 0) {
     return fullPlan(['no-changed-paths']);
   }
@@ -84,9 +96,10 @@ export function planChangedShards(paths) {
   const shardSet = new Set();
   const reasons = [];
   let releaseGate = false;
+  const packageChangeKind = options.packageChangeKind ?? PACKAGE_CHANGE_KINDS.Full;
 
   for (const pathName of paths.map(normalizeRepoPath)) {
-    const impact = impactForPath(pathName);
+    const impact = impactForPath(pathName, packageChangeKind);
     reasons.push({ path: pathName, reason: impact.reason, shards: impact.shards });
     if (impact.full) {
       return fullPlan([impact.reason], paths);
@@ -106,7 +119,15 @@ export function planChangedShards(paths) {
   };
 }
 
-export function impactForPath(pathName) {
+export function impactForPath(pathName, packageChangeKind = PACKAGE_CHANGE_KINDS.Full) {
+  if (isPackagePath(pathName) && packageChangeKind === PACKAGE_CHANGE_KINDS.BijouOnly) {
+    return shardImpact(BIJOU_DEPENDENCY_REASON, [
+      TEST_SHARDS.ContractApi,
+      TEST_SHARDS.EchoAuthority,
+      TEST_SHARDS.TitleRendering,
+      TEST_SHARDS.WorkspaceUi,
+    ], true);
+  }
   if (isFullCiPath(pathName)) {
     return fullImpact('ci-or-package-change');
   }
@@ -114,7 +135,7 @@ export function impactForPath(pathName) {
     return shardImpact('changed-spec', [testShardForSpec(pathName)], false);
   }
   if (isContractPath(pathName)) {
-    return shardImpact('contract-or-codegen-change', [TEST_SHARDS.Contracts, TEST_SHARDS.EchoAuthority], true);
+    return shardImpact('contract-or-codegen-change', [TEST_SHARDS.ContractApi, TEST_SHARDS.EchoAuthority], true);
   }
   if (matchesAny(pathName, ECHO_PATH_PATTERNS)) {
     return shardImpact('echo-authority-change', [TEST_SHARDS.EchoAuthority, TEST_SHARDS.WorkspaceUi], true);
@@ -168,9 +189,10 @@ function parseArgs(args) {
 
 function main() {
   const options = parseArgs(process.argv.slice(2));
+  const paths = changedPaths(options.baseRef, options.headRef);
   const plan = options.full
     ? fullPlan([FULL_REASON])
-    : planChangedShards(changedPaths(options.baseRef, options.headRef));
+    : planChangedShards(paths, { packageChangeKind: classifyPackageChange(options.baseRef, options.headRef, paths) });
 
   if (options.githubOutput) {
     writeGithubOutput(plan);
@@ -210,6 +232,103 @@ function changedPaths(baseRef, headRef) {
   return result.stdout.split('\n').map((line) => line.trim()).filter(Boolean);
 }
 
+function classifyPackageChange(baseRef, headRef, paths) {
+  const packagePaths = paths.map(normalizeRepoPath).filter(isPackagePath);
+  if (packagePaths.length === 0) {
+    return PACKAGE_CHANGE_KINDS.Full;
+  }
+
+  return packagePaths.every((pathName) => isBijouOnlyJsonChange(baseRef, headRef, pathName))
+    ? PACKAGE_CHANGE_KINDS.BijouOnly
+    : PACKAGE_CHANGE_KINDS.Full;
+}
+
+function isBijouOnlyJsonChange(baseRef, headRef, pathName) {
+  const baseJson = readJsonAtRef(baseRef, pathName);
+  const headJson = readJsonAtRef(headRef, pathName);
+  if (baseJson == null || headJson == null) {
+    return false;
+  }
+
+  if (pathName === PACKAGE_JSON_PATH) {
+    return jsonEqual(normalizeManifestObject(baseJson), normalizeManifestObject(headJson));
+  }
+  if (pathName === PACKAGE_LOCK_PATH) {
+    return jsonEqual(normalizeLockObject(baseJson), normalizeLockObject(headJson));
+  }
+  return false;
+}
+
+function readJsonAtRef(refName, pathName) {
+  const result = spawnSync('git', ['show', `${refName}:${pathName}`], {
+    cwd: process.cwd(),
+    encoding: 'utf8',
+  });
+  if (result.status !== 0) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(result.stdout);
+  } catch {
+    return null;
+  }
+}
+
+function normalizeManifestObject(value) {
+  const clone = cloneJson(value);
+  normalizeDependencyMaps(clone);
+  return clone;
+}
+
+function normalizeLockObject(value) {
+  const clone = cloneJson(value);
+  normalizeDependencyMaps(clone);
+  normalizePackageEntries(clone.packages, isBijouLockPackagePath);
+  normalizePackageEntries(clone.dependencies, isBijouPackageName);
+  return clone;
+}
+
+function normalizePackageEntries(entries, isBijouEntry) {
+  if (!isRecord(entries)) {
+    return;
+  }
+  for (const [entryName, entry] of Object.entries(entries)) {
+    if (!isRecord(entry)) {
+      continue;
+    }
+    normalizeDependencyMaps(entry);
+    if (isBijouEntry(entryName)) {
+      normalizePackageIdentity(entry);
+    }
+  }
+}
+
+function normalizePackageIdentity(entry) {
+  for (const key of ['version', 'resolved', 'integrity']) {
+    if (key in entry) {
+      entry[key] = '__BIJOU_VERSIONED_FIELD__';
+    }
+  }
+}
+
+function normalizeDependencyMaps(value) {
+  if (!isRecord(value)) {
+    return;
+  }
+  for (const mapName of DEPENDENCY_MAP_NAMES) {
+    const dependencyMap = value[mapName];
+    if (!isRecord(dependencyMap)) {
+      continue;
+    }
+    for (const dependencyName of Object.keys(dependencyMap)) {
+      if (isBijouPackageName(dependencyName)) {
+        dependencyMap[dependencyName] = '__BIJOU_DEPENDENCY__';
+      }
+    }
+  }
+}
+
 function fullPlan(reasons, paths = []) {
   return {
     full: true,
@@ -239,9 +358,14 @@ function shardImpact(reason, shards, releaseGate) {
 }
 
 function isFullCiPath(pathName) {
-  return FULL_CI_PATHS.includes(pathName)
+  return isPackagePath(pathName)
+    || FULL_CI_PATHS.includes(pathName)
     || FULL_CI_PATH_PREFIXES.some((prefix) => pathName.startsWith(prefix))
     || matchesAny(pathName, FULL_CI_PATH_PATTERNS);
+}
+
+function isPackagePath(pathName) {
+  return pathName === PACKAGE_JSON_PATH || pathName === PACKAGE_LOCK_PATH;
 }
 
 function isContractPath(pathName) {
@@ -256,6 +380,26 @@ function isDocsPath(pathName) {
 
 function matchesAny(pathName, patterns) {
   return patterns.some((pattern) => pattern.test(pathName));
+}
+
+function isBijouLockPackagePath(pathName) {
+  return pathName.startsWith(`node_modules/${BIJOU_PACKAGE_PREFIX}`);
+}
+
+function isBijouPackageName(packageName) {
+  return packageName === BIJOU_PACKAGE_PREFIX || packageName.startsWith(`${BIJOU_PACKAGE_PREFIX}-`);
+}
+
+function cloneJson(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function jsonEqual(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function isRecord(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
 function sortedShards(shards) {
