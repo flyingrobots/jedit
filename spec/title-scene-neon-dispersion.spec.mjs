@@ -19,6 +19,16 @@ const MIN_ORBIT_RENDER_COLOR_VARIETY = 20;
 const CHECKER_FLOOR_DARK = [3, 4, 7];
 const CHECKER_FLOOR_LIGHT = [58, 68, 76];
 const CHECKER_FLOOR_GRID_SCALE = 0.95;
+const THEME_STABILITY_VARIABLE_NAMES = [
+  "accent",
+  "info",
+  "success",
+  "ink",
+  "muted",
+  "surface",
+];
+const THEME_STABILITY_RGB = [244, 246, 248];
+const THEME_STABILITY_HEX = "#f4f6f8";
 
 test("neon dispersion is the registered default title scene", async () => {
   const modules = await loadNeonDispersionModules();
@@ -96,6 +106,38 @@ test("neon dispersion renders neon glass against the authored light stage", asyn
   assert.ok(floorEffects.causticStrength > 0);
 });
 
+test("neon dispersion authored colors remain stable across general themes", async () => {
+  const modules = await loadNeonDispersionModules();
+  const scene = await loadNeonDispersionScene(modules);
+  const theme = modules.themes.resolveInitialJeditTheme("graphite");
+  const washedTheme = themeWithWashedGeneralColors(theme);
+  const renderOptions = fixedTitleRenderOptions({
+    camAngle: scene.camera.angle,
+    camRadius: scene.camera.radius,
+    sceneOverride: scene,
+  });
+
+  const baseSurface = modules.title.renderTitleScreen(
+    TITLE_WIDTH,
+    TITLE_HEIGHT,
+    TITLE_TIME,
+    theme,
+    renderOptions,
+  );
+  const washedSurface = modules.title.renderTitleScreen(
+    TITLE_WIDTH,
+    TITLE_HEIGHT,
+    TITLE_TIME,
+    washedTheme,
+    renderOptions,
+  );
+
+  assert.equal(
+    sceneCellSignature(washedSurface),
+    sceneCellSignature(baseSurface),
+  );
+});
+
 test("neon dispersion keeps visible detail around the camera orbit", async () => {
   const modules = await loadNeonDispersionModules();
   const scene = await loadNeonDispersionScene(modules);
@@ -146,4 +188,31 @@ function visibleColorKeys(surface) {
       .filter((cell) => cell.char !== " ")
       .map((cell) => `${cell.fgRGB.join(",")}:${cell.bgRGB.join(",")}`),
   );
+}
+
+function sceneCellSignature(surface) {
+  return cells(surface)
+    .map((cell) =>
+      [cell.char, cell.fgRGB.join(","), cell.bgRGB.join(",")].join("|"),
+    )
+    .join("\n");
+}
+
+function themeWithWashedGeneralColors(theme) {
+  const variables = new Map(theme.variables);
+  for (const variableName of THEME_STABILITY_VARIABLE_NAMES) {
+    variables.set(variableName, {
+      red: THEME_STABILITY_RGB[0],
+      green: THEME_STABILITY_RGB[1],
+      blue: THEME_STABILITY_RGB[2],
+      hex: THEME_STABILITY_HEX,
+      rgb: THEME_STABILITY_RGB,
+      variableName,
+    });
+  }
+
+  return {
+    ...theme,
+    variables,
+  };
 }

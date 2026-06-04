@@ -45,6 +45,19 @@ export function titleSceneMaterialColors(
   };
 }
 
+export function titleSceneRenderMaterialColors(
+  theme: JeditTheme,
+): TitleSceneMaterialColors {
+  const baseColors = titleSceneAuthoredBaseColors(theme);
+  const floorColors = titleSceneFloorMaterialColors(theme, baseColors);
+
+  return {
+    ...baseColors,
+    floorDark: floorColors.dark,
+    floorLight: floorColors.light,
+  };
+}
+
 function titleSceneBaseColors(
   theme: JeditTheme,
 ): Omit<TitleSceneMaterialColors, "floorDark" | "floorLight"> {
@@ -93,6 +106,24 @@ function titleSceneBasePalette(
       theme,
       TITLE_SCENE_SURFACE_VARIABLE,
       TITLE_SCENE_SURFACE_COLOR,
+    ),
+  };
+}
+
+function titleSceneAuthoredBaseColors(
+  theme: JeditTheme,
+): Omit<TitleSceneMaterialColors, "floorDark" | "floorLight"> {
+  return {
+    accent: TITLE_SCENE_ACCENT_COLOR,
+    info: TITLE_SCENE_INFO_COLOR,
+    success: TITLE_SCENE_SUCCESS_COLOR,
+    ink: TITLE_SCENE_INK_COLOR,
+    muted: TITLE_SCENE_MUTED_COLOR,
+    surface: TITLE_SCENE_SURFACE_COLOR,
+    spotlight: titleSceneThemeColor(
+      theme,
+      TITLE_SCENE_LIGHTING_VARIABLE.Spotlight,
+      TITLE_SCENE_ACCENT_COLOR,
     ),
   };
 }

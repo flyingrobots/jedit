@@ -38,6 +38,7 @@ import {
 import {
   titleColorLuminance,
   titleSceneMaterialColors,
+  titleSceneRenderMaterialColors,
   type TitleSceneMaterialColors,
 } from "./title-scene-material-colors.js";
 import {
@@ -66,6 +67,7 @@ export type TitleSceneSphere = TitleSceneObject;
 export { flyingRobotsLogoCellBounds } from "./flyingrobots-logo.js";
 export {
   titleSceneMaterialColors,
+  titleSceneRenderMaterialColors,
   type TitleSceneMaterialColors,
 } from "./title-scene-material-colors.js";
 export { titleLogoCellBounds } from "./title-logo.js";
@@ -152,8 +154,8 @@ export function renderTitleScreen(
     asciiPalette = TITLE_ASCII_PALETTE.Dense,
     textDirection = TITLE_SCREEN_TEXT_DIRECTION.LeftToRight,
   } = options;
-  const colors = titleSceneMaterialColors(theme);
-  const scene = sceneOverride ?? generateTitleScene(sceneSeed, colors, mesh);
+  const sceneColors = titleSceneRenderMaterialColors(theme);
+  const scene = sceneOverride ?? generateTitleScene(sceneSeed, sceneColors, mesh);
   const sequence = titlePresentationSequence(time, textDirection);
   const shader = titleSceneShader({
     cols,
@@ -161,7 +163,7 @@ export function renderTitleScreen(
     camAngle,
     camRadius,
     scene,
-    colors,
+    colors: sceneColors,
   });
 
   const surface =
@@ -170,7 +172,13 @@ export function renderTitleScreen(
           palette: asciiPalette,
         })
       : averagingBrailleCanvas(cols, rows, shader, time);
-  paintTitlePresentationLogos(surface, { cols, rows, time, colors, sequence });
+  paintTitlePresentationLogos(surface, {
+    cols,
+    rows,
+    time,
+    colors: titleSceneMaterialColors(theme),
+    sequence,
+  });
   return surface;
 }
 

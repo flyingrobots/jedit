@@ -4,7 +4,7 @@ import {
   generateTitleScene,
 } from "../../ui/title-scene.js";
 import type { TitleScene, TitleSceneObject } from "../../ui/title-scene.js";
-import { titleSceneMaterialColors } from "../../ui/title-screen.js";
+import { titleSceneRenderMaterialColors } from "../../ui/title-screen.js";
 import { TITLE_RENDER_MODE } from "../../ui/title-screen.js";
 import { ASCII_SAMPLE_COUNT } from "../../ui/averaging-ascii-canvas.js";
 import { BRAILLE_SAMPLE_COUNT } from "../../ui/averaging-braille-canvas.js";
@@ -47,7 +47,7 @@ function titleSceneForModel(model: WorkspaceModel): TitleScene {
     model.sceneOverride ??
     generateTitleScene(
       model.titleSceneSeed,
-      titleSceneMaterialColors(model.jeditTheme),
+      titleSceneRenderMaterialColors(model.jeditTheme),
       model.titleMeshes.bunny,
     )
   );
