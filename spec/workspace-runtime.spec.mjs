@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
+import { stringToSurface } from "@flyingrobots/bijou";
 import {
   importDist,
   mockI18n,
@@ -130,6 +131,26 @@ test("workspace app renders perf overlay after toggle when perf starts disabled"
   assert.match(text, /frame\s+20\.00 ms/);
   assert.match(text, /heap\s+\d+\.\d MB/);
   assert.match(text, /rss\s+\d+\.\d MB/);
+});
+
+test("workspace perf overlay adds title-scene facts only on title screen", async () => {
+  const [workspacePerfApp, titleScreen] = await Promise.all([
+    importDist("adapters", "workspace-perf-app.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const model = mockPerfTitleModel(titleScreen);
+  const app = workspacePerfApp.createPerfApp(surfaceOnlyApp(), {
+    initialPerfVisible: true,
+  });
+  const titleText = surfaceText(app.view(model));
+  const editorText = surfaceText(app.view({ ...model, editor: { path: "x" } }));
+
+  assert.match(titleText, /title scene/);
+  assert.match(titleText, /scene\s+default-scene/);
+  assert.match(titleText, /objects\s+1/);
+  assert.match(titleText, /triangles\s+3/);
+  assert.match(titleText, /rays\s+5120/);
+  assert.doesNotMatch(editorText, /title scene/);
 });
 
 test("workspace app rejects stale non-Echo seeded text runtime profile", async () => {
@@ -302,3 +323,59 @@ test("stopping a failed profile trace emits only the close failure issue", async
   assert.equal(message.issue.source, "command");
   assert.equal(message.issue.atMs, 123);
 });
+
+function surfaceOnlyApp() {
+  return {
+    init: () => [mockPerfTitleModel(), []],
+    update: (_, model) => [model, []],
+    view: (model) => stringToSurface("workspace", model.columns, model.rows),
+    routeRuntimeIssue: (issue) => issue,
+  };
+}
+
+function mockPerfTitleModel(titleScreen = titleScreenFallback()) {
+  return {
+    editor: undefined,
+    columns: 40,
+    rows: 20,
+    footerVisible: true,
+    fileDrawerProgress: 0,
+    graftDrawerProgress: 0,
+    historyDrawerProgress: 0,
+    perfVisible: true,
+    frameTimeMs: 20,
+    frameTimeHistory: [16, 20],
+    titleSceneSeed: 0.5,
+    titleSceneName: "default-scene",
+    titleRenderMode: titleScreen.TITLE_RENDER_MODE.Braille,
+    titleMeshes: {},
+    sceneOverride: {
+      camera: { angle: 0, radius: 8 },
+      objects: [
+        {
+          kind: "mesh",
+          mesh: {
+            triangles: [
+              [0, 1, 2],
+              [0, 2, 3],
+              [0, 3, 1],
+            ],
+          },
+          radius: 1,
+          footprintRadius: 1,
+          height: 1,
+          color: [255, 255, 255],
+          reflectivity: 0,
+        },
+      ],
+    },
+  };
+}
+
+function titleScreenFallback() {
+  return {
+    TITLE_RENDER_MODE: {
+      Braille: "braille",
+    },
+  };
+}

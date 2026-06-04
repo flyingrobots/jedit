@@ -16,6 +16,9 @@ const MIN_DRAGON_TRIANGLES = 11000;
 const CAMERA_ORBIT_SAMPLE_COUNT = 16;
 const FULL_CAMERA_ORBIT_RADIANS = Math.PI * 2;
 const MIN_ORBIT_RENDER_COLOR_VARIETY = 20;
+const CHECKER_FLOOR_DARK = [3, 4, 7];
+const CHECKER_FLOOR_LIGHT = [58, 68, 76];
+const CHECKER_FLOOR_GRID_SCALE = 0.95;
 
 test("neon dispersion is the registered default title scene", async () => {
   const modules = await loadNeonDispersionModules();
@@ -34,6 +37,10 @@ test("neon dispersion is the registered default title scene", async () => {
   assert.equal(dragon.label, DRAGON_OBJECT_LABEL);
   assert.equal(dragon.kind, "mesh");
   assert.ok(scene.environment?.floor != null);
+  assert.equal(scene.environment?.floor?.kind, "grid");
+  assert.deepEqual(scene.environment?.floor?.dark, CHECKER_FLOOR_DARK);
+  assert.deepEqual(scene.environment?.floor?.light, CHECKER_FLOOR_LIGHT);
+  assert.equal(scene.environment?.floor?.gridScale, CHECKER_FLOOR_GRID_SCALE);
   assert.ok(scene.environment?.light != null);
   assert.equal(scene.environment?.walls, undefined);
   assert.ok(dragon.mesh.triangles.length >= MIN_DRAGON_TRIANGLES);

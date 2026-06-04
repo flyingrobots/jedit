@@ -1,4 +1,4 @@
-import { createSurface, type Cell, type Surface } from '@flyingrobots/bijou';
+import { createSurface, type Cell, type Surface } from "@flyingrobots/bijou";
 
 export type RGB = readonly [number, number, number];
 
@@ -15,7 +15,9 @@ export interface BrailleShaderSample {
   readonly modifiers?: readonly string[];
 }
 
-export type BrailleShaderFn = (params: BrailleShaderParams) => BrailleShaderSample;
+export type BrailleShaderFn = (
+  params: BrailleShaderParams,
+) => BrailleShaderSample;
 
 interface CollapseBrailleCellOptions {
   readonly x: number;
@@ -39,7 +41,8 @@ interface CollapseBrailleAccumulator {
 
 const BRAILLE_COLUMNS_PER_CELL = 2;
 const BRAILLE_ROWS_PER_CELL = 4;
-const BRAILLE_SAMPLE_COUNT = BRAILLE_COLUMNS_PER_CELL * BRAILLE_ROWS_PER_CELL;
+export const BRAILLE_SAMPLE_COUNT =
+  BRAILLE_COLUMNS_PER_CELL * BRAILLE_ROWS_PER_CELL;
 const BRAILLE_BASE_CODE_POINT = 0x2800;
 const BRAILLE_DOT_MAP: readonly (readonly number[])[] = [
   [0x01, 0x08],
@@ -67,14 +70,18 @@ export function averagingBrailleCanvas(
 
   for (let y = 0; y < rows; y += 1) {
     for (let x = 0; x < cols; x += 1) {
-      surface.set(x, y, collapseBrailleCell({
+      surface.set(
         x,
         y,
-        subpixelWidth,
-        subpixelHeight,
-        time,
-        shader,
-      }));
+        collapseBrailleCell({
+          x,
+          y,
+          subpixelWidth,
+          subpixelHeight,
+          time,
+          shader,
+        }),
+      );
     }
   }
 
@@ -92,9 +99,19 @@ function collapseBrailleCell(options: CollapseBrailleCellOptions): Cell {
 
   return {
     char: String.fromCodePoint(BRAILLE_BASE_CODE_POINT + accumulator.code),
-    fgRGB: averageRgb(accumulator.fgRed, accumulator.fgGreen, accumulator.fgBlue),
-    bgRGB: averageRgb(accumulator.bgRed, accumulator.bgGreen, accumulator.bgBlue),
-    ...(accumulator.modifiers.length > 0 ? { modifiers: accumulator.modifiers } : {}),
+    fgRGB: averageRgb(
+      accumulator.fgRed,
+      accumulator.fgGreen,
+      accumulator.fgBlue,
+    ),
+    bgRGB: averageRgb(
+      accumulator.bgRed,
+      accumulator.bgGreen,
+      accumulator.bgBlue,
+    ),
+    ...(accumulator.modifiers.length > 0
+      ? { modifiers: accumulator.modifiers }
+      : {}),
   };
 }
 
@@ -118,8 +135,12 @@ function accumulateBrailleSample(
   sampleY: number,
 ): void {
   const sample = options.shader({
-    u: ((options.x * BRAILLE_COLUMNS_PER_CELL) + sampleX) / (options.subpixelWidth - 1 || 1),
-    v: ((options.y * BRAILLE_ROWS_PER_CELL) + sampleY) / (options.subpixelHeight - 1 || 1),
+    u:
+      (options.x * BRAILLE_COLUMNS_PER_CELL + sampleX) /
+      (options.subpixelWidth - 1 || 1),
+    v:
+      (options.y * BRAILLE_ROWS_PER_CELL + sampleY) /
+      (options.subpixelHeight - 1 || 1),
     time: options.time,
   });
   accumulator.code = sample.on
@@ -134,7 +155,10 @@ function accumulateBrailleSample(
   appendUniqueModifiers(accumulator.modifiers, sample.modifiers);
 }
 
-function appendUniqueModifiers(modifiers: string[], nextModifiers: readonly string[] | undefined): void {
+function appendUniqueModifiers(
+  modifiers: string[],
+  nextModifiers: readonly string[] | undefined,
+): void {
   for (const modifier of nextModifiers ?? []) {
     if (!modifiers.includes(modifier)) {
       modifiers.push(modifier);

@@ -63,6 +63,7 @@ export interface WorkspaceModel extends StartupFileModalState {
   readonly scenePickerOpen: boolean;
   readonly scenePickerFocusIndex: number;
   readonly availableScenes: readonly BuiltInTitleSceneName[];
+  readonly titleSceneName?: BuiltInTitleSceneName;
   readonly sceneOverride?: TitleScene;
   readonly columns: number;
   readonly rows: number;

@@ -4,9 +4,9 @@
     "background": [2, 3, 7],
     "floor": {
       "kind": "grid",
-      "dark": [4, 7, 11],
-      "light": [28, 35, 44],
-      "gridScale": 1.35,
+      "dark": [3, 4, 7],
+      "light": [58, 68, 76],
+      "gridScale": 0.95,
       "fadeDistance": 25
     },
     "light": {
