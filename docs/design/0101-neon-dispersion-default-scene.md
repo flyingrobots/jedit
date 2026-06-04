@@ -21,8 +21,8 @@ updated: "2026-06-04"
 Jedit will add `neon-dispersion.jedit-scene` as the first built-in title scene
 and make it the production startup default by loading it into the initial
 workspace snapshot. The scene will use the renderer's real current primitives:
-transparent/refractive objects, high-reflectivity chrome objects, dark
-enclosed walls, floor reflection/caustic posture, and hot-pink/cyan
+transparent/refractive objects, high-reflectivity chrome objects, a dark
+background, floor reflection/caustic posture, and hot-pink/cyan
 neon-colored geometry. Unsupported cinematic requests such as true emissive
 tube lights, wavelength dispersion, roughness maps, torus primitives, and depth
 of field will be tracked as follow-on renderer work instead of implied by the
@@ -110,9 +110,10 @@ This cycle does not include:
 ## User Experience / Product Shape
 
 On startup, before any editor is open, the title screen shows Neon Dispersion by
-default: a refractive central crystal cluster in a dark enclosed room, neon
-pink/cyan tubes represented by luminous thin columns, a dark reflective floor,
-and floating chrome/matte spheres for depth. The user does not need to press
+default: a refractive central crystal cluster on a dark ray-traced light
+stage, neon pink/cyan tubes represented by luminous thin columns, a dark
+reflective floor, and floating chrome/matte spheres for depth. The user does
+not need to press
 `ctrl+l` or use the scene picker. The scene picker still works and lists Neon
 Dispersion first.
 
@@ -309,8 +310,8 @@ The work is done when:
 - [x] Production startup initial model has `sceneOverride` set to Neon
       Dispersion.
 - [x] The initial title camera uses the default scene camera.
-- [x] The scene includes refractive, reflective, neon-colored, dark-room, floor,
-      and floating-depth object facts.
+- [x] The scene includes refractive, reflective, neon-colored, dark-stage,
+      floor, and floating-depth object facts.
 - [x] Focused tests fail before implementation and pass after.
 - [x] Follow-on renderer debt is tracked.
 - [x] Issue and PR are linked correctly.
@@ -379,6 +380,11 @@ What changed from the design:
 - The default scene uses current renderer primitives rather than pretending to
   have physical emissive tubes, spectral dispersion, roughness maps, torus
   geometry, or depth of field.
+- The initial dark-room approximation used authored wall planes, but those
+  planes are infinite in the current renderer and could occlude the whole
+  camera view from some orbit angles. The landed scene removes those walls and
+  treats the scene as a dark light stage until finite or one-sided room
+  geometry exists.
 
 What the tests proved:
 
@@ -395,6 +401,8 @@ What the tests proved:
   `JEDIT_DIST_PREBUILT=1 npm run ci:shard -- workspace-ui`,
   `npm run title:preview -- --scene neon-dispersion.jedit-scene --json --no-frame`,
   `npm run quality`, and `git diff --check`.
+- A follow-up RED/GREEN regression proved Neon Dispersion no longer collapses
+  to a flat wall/background around the camera orbit.
 
 What remains open:
 

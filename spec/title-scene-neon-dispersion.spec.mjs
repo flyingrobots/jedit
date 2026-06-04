@@ -27,6 +27,9 @@ const MIN_TRANSPARENCY = 0.65;
 const MIN_NEON_REFLECTIVITY = 0.5;
 const MIN_CHROME_REFLECTIVITY = 0.9;
 const MAX_MATTE_REFLECTIVITY = 0.08;
+const CAMERA_ORBIT_SAMPLE_COUNT = 16;
+const FULL_CAMERA_ORBIT_RADIANS = Math.PI * 2;
+const MIN_ORBIT_RENDER_COLOR_VARIETY = 20;
 
 test("neon dispersion is the registered default title scene", async () => {
   const { adapter, port } = await loadNeonDispersionModules();
@@ -38,7 +41,7 @@ test("neon dispersion is the registered default title scene", async () => {
   assert.deepEqual([...labeledObjects.keys()], EXPECTED_SCENE_LABELS);
   assert.ok(scene.environment?.floor != null);
   assert.ok(scene.environment?.light != null);
-  assert.ok((scene.environment?.walls ?? []).length >= 3);
+  assert.equal(scene.environment?.walls, undefined);
   assert.equal(
     labeledObjects.get("dispersion-core").refractiveIndex >=
       MIN_REFRACTIVE_INDEX,
@@ -95,7 +98,7 @@ test("startup snapshot preloads neon dispersion as the initial scene", async () 
   assert.equal(model.titleCamera.radius, snapshot.sceneOverride.camera.radius);
 });
 
-test("neon dispersion renders neon glass against the authored room", async () => {
+test("neon dispersion renders neon glass against the authored light stage", async () => {
   const { adapter, themes, title } = await loadNeonDispersionModules();
   const scene = await adapter.loadBuiltInTitleScene(NEON_DISPERSION_SCENE, {});
   const floorEffects = title.titleFloorLightEffectsAt(
@@ -118,6 +121,33 @@ test("neon dispersion renders neon glass against the authored room", async () =>
   assert.ok(visibleColorKeys(surface).size >= MIN_RENDER_COLOR_VARIETY);
   assert.ok(floorEffects.shadowMultiplier < 1);
   assert.ok(floorEffects.causticStrength > 0);
+});
+
+test("neon dispersion keeps visible detail around the camera orbit", async () => {
+  const { adapter, themes, title } = await loadNeonDispersionModules();
+  const scene = await adapter.loadBuiltInTitleScene(NEON_DISPERSION_SCENE, {});
+  const theme = themes.resolveInitialJeditTheme("graphite");
+
+  for (let index = 0; index < CAMERA_ORBIT_SAMPLE_COUNT; index += 1) {
+    const angle =
+      (index / CAMERA_ORBIT_SAMPLE_COUNT) * FULL_CAMERA_ORBIT_RADIANS;
+    const surface = title.renderTitleScreen(
+      TITLE_WIDTH,
+      TITLE_HEIGHT,
+      TITLE_TIME,
+      theme,
+      fixedTitleRenderOptions({
+        camAngle: angle,
+        camRadius: scene.camera.radius,
+        sceneOverride: scene,
+      }),
+    );
+
+    assert.ok(
+      visibleColorKeys(surface).size >= MIN_ORBIT_RENDER_COLOR_VARIETY,
+      `camera sample ${index} collapsed to a flat wall/background`,
+    );
+  }
 });
 
 async function loadNeonDispersionModules() {
