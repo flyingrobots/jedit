@@ -235,27 +235,27 @@ those cells carry a theme-owned background.
 ## Implementation Slices
 
 - [x] Slice 1: File issue #99 and write this design document.
-- [ ] Slice 2: Add failing source-highlight regression assertions for
+- [x] Slice 2: Add failing source-highlight regression assertions for
       background style.
-- [ ] Slice 3: Update the source highlight painter to apply workspace
+- [x] Slice 3: Update the source highlight painter to apply workspace
       background fallback.
-- [ ] Slice 4: Run focused and quality validation, update this retrospective,
+- [x] Slice 4: Run focused and quality validation, update this retrospective,
       and open the PR.
 
 ## Tests To Write First
 
 Behavior tests required:
 
-- [ ] `spec/source-highlight.spec.mjs` proves unhighlighted text cells carry the
+- [x] `spec/source-highlight.spec.mjs` proves unhighlighted text cells carry the
       workspace background.
-- [ ] `spec/source-highlight.spec.mjs` proves trailing whitespace and blank rows
+- [x] `spec/source-highlight.spec.mjs` proves trailing whitespace and blank rows
       carry the workspace background.
-- [ ] `spec/source-highlight.spec.mjs` proves highlighted cells keep token
+- [x] `spec/source-highlight.spec.mjs` proves highlighted cells keep token
       foreground/modifiers and receive a background.
 
 Documentation and process tests:
 
-- [ ] Prettier checks this design doc.
+- [x] Prettier checks this design doc.
 
 Rule: documentation tests cannot be the only proof for implementation work.
 
@@ -263,11 +263,11 @@ Rule: documentation tests cannot be the only proof for implementation work.
 
 The work is done when:
 
-- [ ] Source editor body cells do not erase the theme background.
-- [ ] Highlighted cells keep existing source token behavior.
-- [ ] Focused regression tests fail before the implementation and pass after.
-- [ ] Issue and PR are linked correctly.
-- [ ] CI and local validation are green.
+- [x] Source editor body cells do not erase the theme background.
+- [x] Highlighted cells keep existing source token behavior.
+- [x] Focused regression tests fail before the implementation and pass after.
+- [x] Issue and PR are linked correctly.
+- [x] Local validation is green; remote CI remains the PR merge gate.
 
 ## Validation Plan
 
@@ -312,20 +312,30 @@ separate issues with the failing view and paint path.
 
 ## Retrospective
 
-Fill this in after implementation.
-
 What changed from the design:
 
-- Pending.
+- The implementation matched the design. `paintHighlightedSourceWindow` now
+  builds a workspace-surface base style for every source body cell and merges
+  defined syntax-token fields over that base.
 
 What the tests proved:
 
-- Pending.
+- RED:
+  `JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/source-highlight.spec.mjs`
+  failed because unhighlighted and blank source cells had `bg: undefined`.
+- GREEN:
+  `JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/source-highlight.spec.mjs`
+  passed with 2 tests after the painter change.
+- `JEDIT_DIST_PREBUILT=1 npm run ci:shard -- workspace-ui` passed with 103
+  tests.
+- `npm run build`, `npm run quality`, Prettier, and `git diff --check` passed.
 
 What remains open:
 
-- Pending.
+- Remote CI and review gates are handled by PR #100.
+- Other non-source views with background holes should get separate issues with
+  their failing paint paths.
 
 PR:
 
-- Pending.
+- https://github.com/flyingrobots/jedit/pull/100
