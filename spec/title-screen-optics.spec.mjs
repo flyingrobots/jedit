@@ -1,15 +1,8 @@
-import assert from 'node:assert/strict';
-import path from 'node:path';
-import test from 'node:test';
-import { pathToFileURL } from 'node:url';
-import { REPO_ROOT, ensureDistBuilt } from './dist-helpers.mjs';
+import assert from "node:assert/strict";
+import test from "node:test";
+import { loadTitleModules } from "./title-screen-helpers.mjs";
 
-const TITLE_SCREEN_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-screen.js');
-const TITLE_SCENE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-scene.js');
-const TITLE_SCENE_ENVIRONMENT_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-scene-environment.js');
-const TITLE_SCREEN_OPTICS_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'title-screen-optics.js');
-const THEMES_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'jedit-themes.js');
-const THEME_VARIABLE_ACCENT = 'accent';
+const THEME_VARIABLE_ACCENT = "accent";
 const SPOTLIGHT_CAMERA_ANGLE = 0.14;
 const SPOTLIGHT_CAMERA_RADIUS = 6.4;
 const SPOTLIGHT_CAMERA_HEIGHT = 2.65;
@@ -17,50 +10,56 @@ const SPOTLIGHT_SPHERE_CENTER = [0, 0.78, 0];
 const SPOTLIGHT_COLOR_DELTA = 80;
 const SECOND_RENDER_CAMERA_ANGLE = 1.7;
 const SECOND_RENDER_CAMERA_RADIUS = 8.9;
-let titleModulesPromise;
 
-async function loadTitleModules() {
-  if (titleModulesPromise != null) {
-    return titleModulesPromise;
-  }
-
-  await ensureDistBuilt();
-
-  titleModulesPromise = Promise.resolve({
-    title: await import(pathToFileURL(TITLE_SCREEN_PATH).href),
-    titleScene: await import(pathToFileURL(TITLE_SCENE_PATH).href),
-    titleSceneEnvironment: await import(pathToFileURL(TITLE_SCENE_ENVIRONMENT_PATH).href),
-    titleOptics: await import(pathToFileURL(TITLE_SCREEN_OPTICS_PATH).href),
-    themes: await import(pathToFileURL(THEMES_PATH).href),
-  });
-  return titleModulesPromise;
-}
-
-test('title scene spotlight uses the current theme accent token', async () => {
+test("title scene spotlight uses the current theme accent token", async () => {
   const { title, themes } = await loadTitleModules();
 
   for (const theme of themes.availableJeditThemes()) {
     const colors = title.titleSceneMaterialColors(theme);
 
-    assert.deepEqual(colors.spotlight, theme.variables.get(THEME_VARIABLE_ACCENT).rgb);
+    assert.deepEqual(
+      colors.spotlight,
+      theme.variables.get(THEME_VARIABLE_ACCENT).rgb,
+    );
   }
 });
 
-test('title scene spotlight targets a point between the camera start and sphere', async () => {
+test("title scene spotlight targets a point between the camera start and sphere", async () => {
   const { titleOptics, themes } = await loadTitleModules();
   const theme = themes.availableJeditThemes()[0];
   const color = theme.variables.get(THEME_VARIABLE_ACCENT).rgb;
-  const cameraStart = titleCameraStart(SPOTLIGHT_CAMERA_ANGLE, SPOTLIGHT_CAMERA_RADIUS);
-  const spotlight = titleOptics.titleSceneSpotlightAt(cameraStart, SPOTLIGHT_SPHERE_CENTER, color);
+  const cameraStart = titleCameraStart(
+    SPOTLIGHT_CAMERA_ANGLE,
+    SPOTLIGHT_CAMERA_RADIUS,
+  );
+  const spotlight = titleOptics.titleSceneSpotlightAt(
+    cameraStart,
+    SPOTLIGHT_SPHERE_CENTER,
+    color,
+  );
 
   assert.deepEqual(spotlight.color, color);
-  assert.ok(distance(spotlight.target, cameraStart) < distance(SPOTLIGHT_SPHERE_CENTER, cameraStart));
-  assert.ok(distance(spotlight.target, SPOTLIGHT_SPHERE_CENTER) < distance(SPOTLIGHT_SPHERE_CENTER, cameraStart));
-  assert.ok(titleOptics.titleSceneSpotlightStrengthAt(spotlight.target, spotlight) > 0);
-  assert.equal(titleOptics.titleSceneSpotlightStrengthAt(add(spotlight.target, [4, 0, 0]), spotlight), 0);
+  assert.ok(
+    distance(spotlight.target, cameraStart) <
+      distance(SPOTLIGHT_SPHERE_CENTER, cameraStart),
+  );
+  assert.ok(
+    distance(spotlight.target, SPOTLIGHT_SPHERE_CENTER) <
+      distance(SPOTLIGHT_SPHERE_CENTER, cameraStart),
+  );
+  assert.ok(
+    titleOptics.titleSceneSpotlightStrengthAt(spotlight.target, spotlight) > 0,
+  );
+  assert.equal(
+    titleOptics.titleSceneSpotlightStrengthAt(
+      add(spotlight.target, [4, 0, 0]),
+      spotlight,
+    ),
+    0,
+  );
 });
 
-test('title scene spotlight stays anchored to scene camera when render camera changes', async () => {
+test("title scene spotlight stays anchored to scene camera when render camera changes", async () => {
   const { title, titleOptics, themes } = await loadTitleModules();
   const theme = themes.availableJeditThemes()[0];
   const colors = title.titleSceneMaterialColors(theme);
@@ -68,16 +67,20 @@ test('title scene spotlight stays anchored to scene camera when render camera ch
     angle: SPOTLIGHT_CAMERA_ANGLE,
     radius: SPOTLIGHT_CAMERA_RADIUS,
   };
-  const first = title.titleSceneRayContext(sampleOptions([], colors, undefined, {
-    camAngle: SPOTLIGHT_CAMERA_ANGLE,
-    camRadius: SPOTLIGHT_CAMERA_RADIUS,
-    spotlightCamera,
-  }));
-  const second = title.titleSceneRayContext(sampleOptions([], colors, undefined, {
-    camAngle: SECOND_RENDER_CAMERA_ANGLE,
-    camRadius: SECOND_RENDER_CAMERA_RADIUS,
-    spotlightCamera,
-  }));
+  const first = title.titleSceneRayContext(
+    sampleOptions([], colors, undefined, {
+      camAngle: SPOTLIGHT_CAMERA_ANGLE,
+      camRadius: SPOTLIGHT_CAMERA_RADIUS,
+      spotlightCamera,
+    }),
+  );
+  const second = title.titleSceneRayContext(
+    sampleOptions([], colors, undefined, {
+      camAngle: SECOND_RENDER_CAMERA_ANGLE,
+      camRadius: SECOND_RENDER_CAMERA_RADIUS,
+      spotlightCamera,
+    }),
+  );
   const sceneCameraSpotlight = titleOptics.titleSceneSpotlightAt(
     titleCameraStart(spotlightCamera.angle, spotlightCamera.radius),
     SPOTLIGHT_SPHERE_CENTER,
@@ -95,7 +98,7 @@ test('title scene spotlight stays anchored to scene camera when render camera ch
   assert.notDeepEqual(first.spotlight.target, renderCameraSpotlight.target);
 });
 
-test('title floor light effects expose sphere shadows and caustics', async () => {
+test("title floor light effects expose sphere shadows and caustics", async () => {
   const { title, titleScene } = await loadTitleModules();
   const spheres = [
     {
@@ -119,13 +122,20 @@ test('title floor light effects expose sphere shadows and caustics', async () =>
   assert.equal(farAway.contactShadowMultiplier, 1);
   assert.equal(farAway.causticStrength, 0);
 
-  const transparentSphere = [{ ...spheres[0], reflectivity: 0, transparency: 0.7 }];
-  const underTransparentSphere = title.titleFloorLightEffectsAt([0, 0, 0], transparentSphere, 0);
+  const transparentSphere = [
+    { ...spheres[0], reflectivity: 0, transparency: 0.7 },
+  ];
+  const underTransparentSphere = title.titleFloorLightEffectsAt(
+    [0, 0, 0],
+    transparentSphere,
+    0,
+  );
   assert.ok(underTransparentSphere.causticStrength > 0);
 });
 
-test('title object optics refract transmitted color by material index', async () => {
-  const { titleOptics, titleScene, titleSceneEnvironment } = await loadTitleModules();
+test("title object optics refract transmitted color by material index", async () => {
+  const { titleOptics, titleScene, titleSceneEnvironment } =
+    await loadTitleModules();
   const colors = emptyMaterialColors();
   const environment = {
     floor: { kind: titleSceneEnvironment.TITLE_SCENE_FLOOR_KIND.None },
@@ -139,7 +149,11 @@ test('title object optics refract transmitted color by material index', async ()
     origin: [0, 0, 0],
     ray: normalize([0.45, 0, -1]),
     lightDirection: [0, 1, 0],
-    spotlight: titleOptics.titleSceneSpotlightAt([0, 4, 2], [0, 0, 0], colors.spotlight),
+    spotlight: titleOptics.titleSceneSpotlightAt(
+      [0, 4, 2],
+      [0, 0, 0],
+      colors.spotlight,
+    ),
   };
   const straightGlass = glassSphere(titleScene, 1);
   const bentGlass = glassSphere(titleScene, 1.6);
@@ -158,7 +172,7 @@ test('title object optics refract transmitted color by material index', async ()
   assert.ok(bentColor[0] > bentColor[2] + 40);
 });
 
-test('title scene spotlight visibly tints an object under the beam', async () => {
+test("title scene spotlight visibly tints an object under the beam", async () => {
   const { titleOptics, titleScene, themes } = await loadTitleModules();
   const theme = themes.availableJeditThemes()[0];
   const color = theme.variables.get(THEME_VARIABLE_ACCENT).rgb;
@@ -180,7 +194,9 @@ test('title scene spotlight visibly tints an object under the beam', async () =>
     color: [0, 0, 0],
     reflectivity: 0,
   };
-  const environment = { light: { ambient: 0, diffuse: 0, specularStrength: 0, rimStrength: 0 } };
+  const environment = {
+    light: { ambient: 0, diffuse: 0, specularStrength: 0, rimStrength: 0 },
+  };
   const underColor = titleOptics.titleObjectSurfaceColor(
     sampleOptions([object], colors, environment),
     spotlightTestContext(spotlight.target, spotlight),
@@ -196,7 +212,7 @@ test('title scene spotlight visibly tints an object under the beam', async () =>
   assert.ok(underColor[2] > awayColor[2] + SPOTLIGHT_COLOR_DELTA);
 });
 
-test('title environment does not report floor hits once floor fade reaches zero', async () => {
+test("title environment does not report floor hits once floor fade reaches zero", async () => {
   const { titleSceneEnvironment } = await loadTitleModules();
   const colors = {
     surface: [5, 7, 12],
@@ -290,7 +306,9 @@ function spotlightTestContext(point, spotlight) {
 }
 
 function normalize(vector) {
-  const length = Math.sqrt(vector.reduce((sum, component) => sum + (component * component), 0));
+  const length = Math.sqrt(
+    vector.reduce((sum, component) => sum + component * component, 0),
+  );
   return vector.map((component) => component / length);
 }
 
@@ -299,5 +317,7 @@ function add(a, b) {
 }
 
 function distance(a, b) {
-  return Math.sqrt(a.reduce((sum, component, index) => sum + ((component - b[index]) ** 2), 0));
+  return Math.sqrt(
+    a.reduce((sum, component, index) => sum + (component - b[index]) ** 2, 0),
+  );
 }
