@@ -32,18 +32,31 @@ export function updateStartupFileModalKey(
   context: WorkspaceKeyBindingContext,
 ): KeyBindingResult | undefined {
   if (isStartupIntroSkipKey(msg) && isStartupIntroSkipCandidate(model)) {
-    return [openStartupFileModal(model), []];
+    return openStartupFileModalWithAnimation(model, context);
   }
   if (
     isStartupFileModalReopenKey(msg) &&
     isStartupFileModalReopenCandidate(model)
   ) {
-    return [openStartupFileModal(model), []];
+    return openStartupFileModalWithAnimation(model, context);
   }
   if (!model.startupFileModalOpen || model.editor != null) {
     return undefined;
   }
   return updateOpenStartupFileModalKey(msg, model, context);
+}
+
+function openStartupFileModalWithAnimation(
+  model: WorkspaceModel,
+  context: WorkspaceKeyBindingContext,
+): KeyBindingResult {
+  return [
+    openStartupFileModal(model),
+    context.createStartupFileDrawerAnimationCmd(
+      model.startupFileDrawerProgress,
+      1,
+    ),
+  ];
 }
 
 function updateOpenStartupFileModalKey(
@@ -93,7 +106,7 @@ function acceptStartupFileModalSelection(
     deps,
   );
   return row.entry.kind === FileEntryKinds.File
-    ? [{ ...opened, startupFileModalOpen: false }, commands]
+    ? [closeStartupFileModal(opened), commands]
     : [updateStartupFileModalInput(opened, ""), commands];
 }
 

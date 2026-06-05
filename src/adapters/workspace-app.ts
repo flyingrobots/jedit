@@ -13,6 +13,7 @@ import { createNodeJeditWscWorkspaceStore } from './jedit-wsc-workspace-store.js
 import { createPerfApp } from './workspace-perf-app.js';
 import { createWorkspaceProductionTextSession } from './workspace-production-text-session.js';
 import {
+  createStartupFileDrawerAnimationCmd,
   createWorkspaceDrawerAnimationCmd,
   createWorkspaceNotificationTickCmd,
   createWorkspaceTimeTickCmd,
@@ -63,6 +64,7 @@ function workspaceRuntimeDependencies(
     createTimeTickCmd: createWorkspaceTimeTickCmd,
     createNotificationTickCmd: createWorkspaceNotificationTickCmd,
     createDrawerAnimationCmd: createWorkspaceDrawerAnimationCmd,
+    createStartupFileDrawerAnimationCmd,
   };
 }
 

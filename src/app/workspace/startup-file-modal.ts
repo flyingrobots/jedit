@@ -6,6 +6,7 @@ import { clampIndex } from "./viewport.js";
 export interface StartupFileModalState {
   readonly startupIntroComplete: boolean;
   readonly startupFileModalOpen: boolean;
+  readonly startupFileDrawerProgress: number;
   readonly startupFileModalInput: string;
   readonly startupFileModalSelectedIndex: number;
 }
@@ -22,6 +23,7 @@ export function initialStartupFileModalState(): StartupFileModalState {
   return {
     startupIntroComplete: false,
     startupFileModalOpen: false,
+    startupFileDrawerProgress: 0,
     startupFileModalInput: "",
     startupFileModalSelectedIndex: STARTUP_FILE_MODAL_MIN_SELECTION,
   };
@@ -71,6 +73,7 @@ export function closeStartupFileModal(model: WorkspaceModel): WorkspaceModel {
   return {
     ...model,
     startupFileModalOpen: false,
+    startupFileDrawerProgress: 0,
   };
 }
 

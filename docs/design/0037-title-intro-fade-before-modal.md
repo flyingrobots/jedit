@@ -1,5 +1,5 @@
 ---
-title: "WF-0037 - Title Intro Fade Before Modal"
+title: "WF-0037 - Title Intro Fade Before Drawer"
 legend: "WF"
 lane: "design"
 issue: "https://github.com/flyingrobots/jedit/issues/63"
@@ -7,10 +7,10 @@ status: "active"
 owners:
   - "@flyingrobots"
 created: "2026-06-04"
-updated: "2026-06-04"
+updated: "2026-06-05"
 ---
 
-# WF-0037 - Title Intro Fade Before Modal
+# WF-0037 - Title Intro Fade Before Drawer
 
 ## Linked Issue
 
@@ -19,21 +19,21 @@ updated: "2026-06-04"
 ## Decision Summary
 
 The title presentation sequence will fade `FLYINGROBOTS PRESENTS` out before
-the startup file browser opens, then fade the `jedit` logo out before the modal
-appears. The startup modal remains responsible only for opening at the completed
-intro boundary; the title presentation owns logo opacity, sheen timing, and
-direction-aware highlight motion.
+the startup file browser opens, then fade the `jedit` logo out before the
+startup file drawer appears. The startup selector remains responsible only for
+opening at the completed intro boundary; the title presentation owns logo
+opacity, sheen timing, and direction-aware highlight motion.
 
 ## Sponsored Human
 
 A person starting jedit without a file wants the title sequence to finish cleanly
-before the file browser appears so that startup feels deliberate, without
-having title logos visually collide with the first actionable modal.
+before the file browser appears so that startup feels deliberate, without having
+title logos visually collide with the first actionable drawer.
 
 ## Sponsored Agent
 
 An agent needs a deterministic title-presentation contract so it can assert the
-logo opacity and modal-open boundary from rendered output, without inferring
+logo opacity and drawer-open boundary from rendered output, without inferring
 animation state from visual overlap in terminal screenshots.
 
 ## Hill
@@ -70,7 +70,7 @@ Current anchors:
 
 The title sequence currently treats the file browser open time as the same
 moment as logo disappearance. Because fade duration is 0, the logos stay fully
-visible through the intro and then disappear abruptly at the modal boundary,
+visible through the intro and then disappear abruptly at the drawer boundary,
 which regresses the requested product startup rhythm.
 
 ## Scope
@@ -78,17 +78,17 @@ which regresses the requested product startup rhythm.
 This cycle includes:
 
 - Retiming the pure title presentation sequence.
-- Preserving the 7 second startup modal open boundary.
+- Preserving the 7 second startup selector open boundary.
 - Preserving Enter and Escape as intentional intro skips.
 - Adding regression coverage that fails when the logos are still visible near
-  the modal-open boundary.
+  the drawer-open boundary.
 - Filling in this design doc retrospective before the PR is marked ready.
 
 ## Non-Goals
 
 This cycle does not include:
 
-- Replacing the startup file modal with Bijou components.
+- Replacing the startup file drawer with a full app-frame picker.
 - Changing the file browser Esc behavior.
 - Adding a new title-scene director timeline authoring tool.
 - Adding screenshot or pixel-baseline infrastructure beyond focused rendered
@@ -104,10 +104,10 @@ can sweep across the logo in the local text direction. At 3 seconds, the
 layer begins fading away. At 7 seconds, neither logo is visible and the startup
 file browser can appear over the frozen title backdrop.
 
-Success is communicated by the modal appearing only after the title layers have
-cleared. Failure is the old behavior: any title logo still visible at the modal
+Success is communicated by the drawer appearing only after the title layers have
+cleared. Failure is the old behavior: any title logo still visible at the drawer
 open boundary. The user can skip the sequence with Enter or Escape before the
-modal opens; a skip intentionally jumps to the modal without playing the fade.
+drawer opens; a skip intentionally jumps to the drawer without playing the fade.
 
 ### User Journey
 
@@ -117,9 +117,9 @@ flowchart TD
   Present --> Logo[2s shows jedit and starts sheen window]
   Logo --> SponsorFade[3s fades FLYINGROBOTS PRESENTS]
   SponsorFade --> TitleFade[5s fades jedit]
-  TitleFade --> Modal[7s opens file browser]
+  TitleFade --> Drawer[7s opens file browser]
   Present --> Skip[Enter or Escape skips intro]
-  Skip --> Modal
+  Skip --> Drawer
 ```
 
 ### Wide UI Mockup
@@ -127,24 +127,24 @@ flowchart TD
 Static layout does not change in this cycle. The wide product shape is the
 existing full-width title scene with the following timeline:
 
-| Time | Wide terminal state                                      |
-| ---- | -------------------------------------------------------- |
-| 0s   | `FLYINGROBOTS PRESENTS` visible above the scene.         |
-| 2s   | `jedit` logo visible below the sponsor layer.            |
-| 3s   | Sponsor layer fades.                                     |
-| 5s   | `jedit` layer fades.                                     |
-| 7s   | Startup file browser appears with no title logo overlap. |
+| Time | Wide terminal state                                     |
+| ---- | ------------------------------------------------------- |
+| 0s   | `FLYINGROBOTS PRESENTS` visible above the scene.        |
+| 2s   | `jedit` logo visible below the sponsor layer.           |
+| 3s   | Sponsor layer fades.                                    |
+| 5s   | `jedit` layer fades.                                    |
+| 7s   | Startup file drawer appears with no title logo overlap. |
 
 ### Narrow UI Mockup
 
 Static layout does not change in this cycle. Narrow terminals use the same
-timeline and the same existing modal breakpoint behavior; this cycle only
-changes layer opacity before the modal appears.
+timeline and the same existing drawer breakpoint behavior; this cycle only
+changes layer opacity before the drawer appears.
 
 ### Accessibility Considerations
 
 The intro remains keyboard-skippable with Enter and Escape. The sequence does
-not add hidden state that must be narrated. The modal retains existing focus
+not add hidden state that must be narrated. The drawer retains existing focus
 ownership once it opens.
 
 ## Runtime / API Contract
@@ -158,11 +158,11 @@ Relevant behavior:
 - `titleSheen` is present only while the title logo is visible and inside the
   sheen window.
 - `flyingRobotsOpacity` fades after 3 seconds and reaches 0 before the 7 second
-  modal boundary.
-- `titleOpacity` fades after 5 seconds and reaches 0 before the 7 second modal
+  drawer boundary.
+- `titleOpacity` fades after 5 seconds and reaches 0 before the 7 second drawer
   boundary.
 - Right-to-left text direction keeps the sheen direction right-to-left.
-- Startup modal auto-open remains keyed to 7 seconds in
+- Startup selector auto-open remains keyed to 7 seconds in
   `applyStartupIntroTime`.
 
 ## Lower Modes
@@ -173,14 +173,14 @@ keyboard-only skip behavior remains covered by workspace specs.
 
 ## Data / State Model
 
-| Category                  | Description                                                                 |
-| ------------------------- | --------------------------------------------------------------------------- |
-| Source of truth           | `titlePresentationSequence` owns logo opacity and sheen timing.             |
-| Derived state             | Rendered title cells derive from opacity values.                            |
-| Invalid states            | The startup modal opens at 7 seconds while any title logo layer is visible. |
-| Reset behavior            | A new process starts from title time 0.                                     |
-| Serialization             | No serialized state changes.                                                |
-| Deterministic assumptions | Tests pass fixed times into deterministic render functions.                 |
+| Category                  | Description                                                                  |
+| ------------------------- | ---------------------------------------------------------------------------- |
+| Source of truth           | `titlePresentationSequence` owns logo opacity and sheen timing.              |
+| Derived state             | Rendered title cells derive from opacity values.                             |
+| Invalid states            | The startup drawer opens at 7 seconds while any title logo layer is visible. |
+| Reset behavior            | A new process starts from title time 0.                                      |
+| Serialization             | No serialized state changes.                                                 |
+| Deterministic assumptions | Tests pass fixed times into deterministic render functions.                  |
 
 ```mermaid
 stateDiagram-v2
@@ -188,18 +188,18 @@ stateDiagram-v2
   SponsorVisible --> TitleVisible: 2s
   TitleVisible --> SponsorFading: 3s
   SponsorFading --> TitleFading: 5s
-  TitleFading --> ModalReady: 7s
+  TitleFading --> DrawerReady: 7s
 ```
 
 ## Accessibility Posture
 
-| Concern                           | Posture                                                                                         |
-| --------------------------------- | ----------------------------------------------------------------------------------------------- |
-| Semantic labels or facts          | No new copy or semantic labels.                                                                 |
-| Focus order or ownership          | Focus remains in title startup flow until modal open; modal owns focus after 7 seconds or skip. |
-| Hidden or visual-only information | No required action depends on observing the fade.                                               |
-| Keyboard behavior                 | Enter and Escape still skip the intro before the modal opens.                                   |
-| Secret or redaction behavior      | Not applicable.                                                                                 |
+| Concern                           | Posture                                                                                           |
+| --------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Semantic labels or facts          | No new copy or semantic labels.                                                                   |
+| Focus order or ownership          | Focus remains in title startup flow until drawer open; drawer owns focus after 7 seconds or skip. |
+| Hidden or visual-only information | No required action depends on observing the fade.                                                 |
+| Keyboard behavior                 | Enter and Escape still skip the intro before the drawer opens.                                    |
+| Secret or redaction behavior      | Not applicable.                                                                                   |
 
 ## Localization / Directionality Posture
 
@@ -231,14 +231,14 @@ Agents can inspect:
 Pros:
 
 - Matches the reported timing exactly.
-- Keeps modal open time stable at 7 seconds.
+- Keeps drawer open time stable at 7 seconds.
 - Keeps animation state local to the title presentation sequence.
 
 Cons:
 
 - Adds two fade constants instead of one shared complete boundary.
 
-### Option B: Delay Modal Until Existing Logos Disappear
+### Option B: Delay Drawer Until Existing Logos Disappear
 
 Pros:
 
@@ -248,17 +248,18 @@ Cons:
 
 - Changes startup interaction latency.
 - Does not match the issue's requested timing.
-- Keeps the title sequence coupled to modal timing.
+- Keeps the title sequence coupled to drawer timing.
 
 ## Decision
 
 Choose Option A. The title presentation will own separate fade start times for
-the sponsor layer and title layer while the startup flow keeps the modal open
+the sponsor layer and title layer while the startup flow keeps the drawer open
 boundary at 7 seconds.
 
 ## Implementation Slices
 
-- [x] Slice 1: Commit this design packet. Commit message: `docs: design title intro fade before modal`.
+- [x] Slice 1: Commit this design packet. Commit message:
+      `docs: design title intro fade before drawer`.
 - [x] Slice 2: Add a failing rendered title regression test for the 3s, 5s,
       and 7s fade contract.
 - [x] Slice 3: Retiming `titlePresentationSequence` with independent fade
@@ -271,9 +272,9 @@ boundary at 7 seconds.
 Behavior tests required:
 
 - [x] `spec/title-screen.spec.mjs` proves sponsor fade after 3 seconds, title
-      fade after 5 seconds, and no logo cells before the modal opens at 7 seconds.
+      fade after 5 seconds, and no logo cells before the drawer opens at 7 seconds.
 - [x] `spec/workspace-title-screen.spec.mjs` continues proving Enter and Escape
-      skip directly to the startup modal.
+      skip directly to the startup drawer.
 
 Documentation and process tests:
 
@@ -286,10 +287,10 @@ Rule: documentation tests cannot be the only proof for implementation work.
 The work is done when:
 
 - [x] Rendered title output proves `FLYINGROBOTS PRESENTS` is absent before the
-      modal opens.
-- [x] Rendered title output proves `jedit` is absent before the modal opens.
+      drawer opens.
+- [x] Rendered title output proves `jedit` is absent before the drawer opens.
 - [x] Direction-aware sheen behavior still passes.
-- [x] Startup modal still opens at 7 seconds and still supports Enter/Escape
+- [x] Startup drawer still opens at 7 seconds and still supports Enter/Escape
       skip.
 - [x] Issue and PR are linked correctly.
 - [ ] CI and local validation are green.
@@ -322,7 +323,7 @@ Visual reproduction:
   fade after 3 seconds, title fade after 5 seconds, and file browser at 7
   seconds.
 - Repeat with Enter or Escape before 7 seconds to confirm skip still opens the
-  modal immediately.
+  drawer immediately.
 
 ## Risks
 
@@ -337,7 +338,7 @@ Mitigations:
 - Reuse existing logo cell predicates that already distinguish bold logo
   overlays from scene cells.
 - Keep fade windows long enough to be visible while still complete before the
-  modal opens.
+  drawer opens.
 
 ## Follow-On Debt
 
@@ -361,7 +362,7 @@ What changed from the design:
 - Implemented the independent fade-window option from the decision section.
 - Started the title logo sheen at the title logo appearance time so the
   highlight is active when `jedit` appears.
-- Preserved the startup modal open boundary at 7 seconds.
+- Preserved the startup drawer open boundary at 7 seconds.
 
 What the tests proved:
 

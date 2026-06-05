@@ -25,6 +25,11 @@ title backdrop rendering through this governor and expose the last render
 posture as inspectable runtime facts so tests and agents can prove modal input
 does not compete with the ray tracer.
 
+Compatibility note: the current visible startup selector is a left drawer, but
+the performance posture ids remain `modal-frozen-backdrop` and
+`modal-fallback-trace` until a dedicated naming migration lands. In this design,
+"modal input" means "startup selector input owns focus."
+
 ## Sponsored Human
 
 A user typing into the startup file modal wants immediate input feedback so

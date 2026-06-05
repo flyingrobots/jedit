@@ -34,6 +34,7 @@ import {
 import {
   applyDrawerProgress,
   applyGraftInfo,
+  applyStartupFileDrawerProgress,
   applyStartupIntroTime,
   applyWorkspaceTextMessage,
 } from "./workspace-state-reducers.js";
@@ -146,8 +147,9 @@ function updateWorkspaceStateMessage(
   msg: WorkspaceRuntimeMsg,
   model: WorkspaceModel,
 ): WorkspaceRuntimeResult | undefined {
-  if (msg.type === WorkspaceMessageTypes.DrawerProgress) {
-    return [applyDrawerProgress(model, msg.kind, msg.value), []];
+  const animation = updateAnimationStateMessage(msg, model);
+  if (animation != null) {
+    return animation;
   }
   if (msg.type === WorkspaceMessageTypes.GraftInfo) {
     return updateGraftInfoMessage(msg, model);
@@ -172,6 +174,18 @@ function updateWorkspaceStateMessage(
         },
         [],
       ]
+    : undefined;
+}
+
+function updateAnimationStateMessage(
+  msg: WorkspaceRuntimeMsg,
+  model: WorkspaceModel,
+): WorkspaceRuntimeResult | undefined {
+  if (msg.type === WorkspaceMessageTypes.DrawerProgress) {
+    return [applyDrawerProgress(model, msg.kind, msg.value), []];
+  }
+  return msg.type === WorkspaceMessageTypes.StartupFileDrawerProgress
+    ? [applyStartupFileDrawerProgress(model, msg.value), []]
     : undefined;
 }
 
@@ -247,6 +261,11 @@ function updateTimeTickMessage(
       -FRAME_TIME_HISTORY_SIZE,
     ),
   });
+  const startupDrawerCommands = startupFileDrawerIntroCommands(
+    deps,
+    model,
+    nextModel,
+  );
   const profilerStream = streamProfilerFrame(
     nextModel.profiler,
     {
@@ -257,7 +276,26 @@ function updateTimeTickMessage(
     },
     deps.profiler,
   );
-  return [nextModel, profilerStream == null ? [] : [profilerStream]];
+  return [
+    nextModel,
+    [
+      ...startupDrawerCommands,
+      ...(profilerStream == null ? [] : [profilerStream]),
+    ],
+  ];
+}
+
+function startupFileDrawerIntroCommands(
+  deps: WorkspaceRuntimeDependencies,
+  previous: WorkspaceModel,
+  next: WorkspaceModel,
+): WorkspaceRuntimeResult[1] {
+  return !previous.startupFileModalOpen && next.startupFileModalOpen
+    ? deps.createStartupFileDrawerAnimationCmd(
+        previous.startupFileDrawerProgress,
+        1,
+      )
+    : [];
 }
 
 function updateProfilerOrIssueMessage(
@@ -302,6 +340,8 @@ function workspaceKeyDeps(deps: WorkspaceRuntimeDependencies) {
   return {
     nowMs: deps.nowMs,
     createDrawerAnimationCmd: deps.createDrawerAnimationCmd,
+    createStartupFileDrawerAnimationCmd:
+      deps.createStartupFileDrawerAnimationCmd,
     createNotificationTickCmd: deps.createNotificationTickCmd,
     deps: {
       fileSystem: deps.fileSystem,

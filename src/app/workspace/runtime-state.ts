@@ -23,6 +23,13 @@ export function applyDrawerProgress(model: WorkspaceModel, kind: DrawerKind, val
   return unreachableDrawerKind(kind);
 }
 
+export function applyStartupFileDrawerProgress(
+  model: WorkspaceModel,
+  value: number,
+): WorkspaceModel {
+  return { ...model, startupFileDrawerProgress: clamp01(value) };
+}
+
 function unreachableDrawerKind(kind: never): never {
   throw new UnsupportedDrawerKindError(kind);
 }

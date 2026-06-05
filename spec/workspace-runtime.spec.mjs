@@ -272,9 +272,14 @@ test("runtime trims frame history to the configured window", async () => {
 });
 
 test("runtime opens the startup file modal when the title intro completes", async () => {
+  const drawerCommands = ["drawer-animation"];
   const runtimeModule = await importDist("app", "workspace", "runtime.js");
   const runtime = runtimeModule.createWorkspaceRuntime({
     ...mockRuntime(),
+    createStartupFileDrawerAnimationCmd: (from, to) => {
+      drawerCommands.push(`${from}:${to}`);
+      return [() => ({ type: "startup-file-drawer-progress", value: to })];
+    },
     nowMs: () => 7000,
   });
   const [initialModel] = runtime.init();
@@ -288,7 +293,24 @@ test("runtime opens the startup file modal when the title intro completes", asyn
 
   assert.equal(nextModel.startupIntroComplete, true);
   assert.equal(nextModel.startupFileModalOpen, true);
-  assert.deepEqual(commands, []);
+  assert.deepEqual(drawerCommands, ["drawer-animation", "0:1"]);
+  assert.equal(commands.length, 1);
+});
+
+test("startup file drawer animation uses a critically damped Bijou spring", async () => {
+  const animation = await importDist(
+    "adapters",
+    "workspace-animation-commands.js",
+  );
+
+  assert.equal(
+    animation.STARTUP_FILE_DRAWER_SPRING.damping,
+    2 *
+      Math.sqrt(
+        animation.STARTUP_FILE_DRAWER_SPRING.stiffness *
+          animation.STARTUP_FILE_DRAWER_SPRING.mass,
+      ),
+  );
 });
 
 test("stopping a failed profile trace emits only the close failure issue", async () => {

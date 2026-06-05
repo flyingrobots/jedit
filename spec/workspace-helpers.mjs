@@ -101,6 +101,7 @@ export function mockKeyBindingContext(overrides = {}) {
   return {
     nowMs: () => 0,
     createDrawerAnimationCmd: () => [],
+    createStartupFileDrawerAnimationCmd: () => [],
     createNotificationTickCmd: noopNotificationTickCmd,
     deps: mockDeps(depsOverride ?? {}),
     ...contextOverrides,
@@ -150,6 +151,7 @@ export function mockRuntime(overrides = {}) {
     createTimeTickCmd: () => () => undefined,
     createNotificationTickCmd: () => () => undefined,
     createDrawerAnimationCmd: () => [],
+    createStartupFileDrawerAnimationCmd: () => [],
     initialModel: {
       titleSceneSeed: 0.5,
       jeditTheme: {
@@ -222,6 +224,7 @@ export function mockTitleScreenModel(titleScreen, overrides = {}) {
     quitConfirmOpen: false,
     startupIntroComplete: false,
     startupFileModalOpen: false,
+    startupFileDrawerProgress: 0,
     startupFileModalInput: '',
     startupFileModalSelectedIndex: 0,
     jeditTheme: mockJeditTheme(),

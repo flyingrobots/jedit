@@ -157,8 +157,8 @@ These terms appear throughout the codebase with precise meanings that differ fro
   (Graft)
 - A two-line footer with mode hints and workspace truth
 - A Markdown preview lens over the active buffer
-- A deterministic no-file title flow that opens a current-directory startup
-  file modal after the intro sequence
+- A deterministic no-file title flow that opens an animated current-directory
+  startup file drawer after the intro sequence
 
 That description makes it sound like a standard terminal editor. What makes `jedit` architecturally interesting is its _purpose_: it is the **release gate** for a broader distributed runtime stack called **Echo**. The README states this philosophy plainly:
 

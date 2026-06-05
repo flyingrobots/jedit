@@ -165,20 +165,20 @@ test("enter and escape skip title intro into the startup file modal", async () =
   const [entered, enterCommands] = keyBindings.updateFromKey(
     { key: "enter", ctrl: false, alt: false, shift: false },
     base,
-    mockKeyBindingContext(),
+    startupFileDrawerAnimationContext(),
   );
   const [escaped, escapeCommands] = keyBindings.updateFromKey(
     { key: "escape", ctrl: false, alt: false, shift: false },
     base,
-    mockKeyBindingContext(),
+    startupFileDrawerAnimationContext(),
   );
 
   assert.equal(entered.startupIntroComplete, true);
   assert.equal(entered.startupFileModalOpen, true);
   assert.equal(escaped.startupIntroComplete, true);
   assert.equal(escaped.startupFileModalOpen, true);
-  assert.deepEqual(enterCommands, []);
-  assert.deepEqual(escapeCommands, []);
+  assert.equal(enterCommands.length, 1);
+  assert.equal(escapeCommands.length, 1);
 });
 
 test("startup file modal reuses the frozen title backdrop while input changes", async () => {
@@ -338,12 +338,15 @@ test("startup file modal renders current directory files over the title screen",
     importDist("ports", "file-system.js"),
   ]);
   const model = mockTitleScreenModel(titleScreen, {
+    columns: 80,
+    rows: 12,
     i18n: mockI18n(),
     cwd: "/repo",
     workspaceRoot: "/repo",
     jeditTheme: themes.availableJeditThemes()[0],
     startupIntroComplete: true,
     startupFileModalOpen: true,
+    startupFileDrawerProgress: 1,
     startupFileModalInput: "",
     startupFileModalSelectedIndex: 0,
     entries: [
@@ -367,30 +370,103 @@ test("startup file modal renders current directory files over the title screen",
   assert.match(text, /README\.md/);
 });
 
+test("startup file selector renders as a left drawer over the title screen", async () => {
+  const [viewer, titleScreen, themes, fileSystem] = await Promise.all([
+    importDist("app", "workspace", "viewer.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("ui", "jedit-themes.js"),
+    importDist("ports", "file-system.js"),
+  ]);
+  const model = mockTitleScreenModel(titleScreen, {
+    i18n: mockI18n(),
+    cwd: "/repo",
+    workspaceRoot: "/repo",
+    jeditTheme: themes.availableJeditThemes()[0],
+    startupIntroComplete: true,
+    startupFileModalOpen: true,
+    startupFileDrawerProgress: 1,
+    entries: [
+      {
+        kind: fileSystem.FileEntryKinds.File,
+        name: "README.md",
+        path: "/repo/README.md",
+      },
+    ],
+  });
+  const surface = viewer.renderWorkspace(model);
+  const text = surfaceText(surface);
+
+  assert.equal(surface.get(0, 2).char, "┌");
+  assert.match(text, /Open file/);
+  assert.match(text, /README\.md/);
+});
+
+test("startup file selector drawer width follows spring progress", async () => {
+  const [viewer, titleScreen, themes, fileSystem] = await Promise.all([
+    importDist("app", "workspace", "viewer.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("ui", "jedit-themes.js"),
+    importDist("ports", "file-system.js"),
+  ]);
+  const base = {
+    i18n: mockI18n(),
+    cwd: "/repo",
+    workspaceRoot: "/repo",
+    jeditTheme: themes.availableJeditThemes()[0],
+    startupIntroComplete: true,
+    startupFileModalOpen: true,
+    entries: [
+      {
+        kind: fileSystem.FileEntryKinds.File,
+        name: "README.md",
+        path: "/repo/README.md",
+      },
+    ],
+  };
+  const closed = viewer.renderWorkspace(
+    mockTitleScreenModel(titleScreen, {
+      ...base,
+      startupFileDrawerProgress: 0,
+    }),
+  );
+  const opening = viewer.renderWorkspace(
+    mockTitleScreenModel(titleScreen, {
+      ...base,
+      startupFileDrawerProgress: 0.5,
+    }),
+  );
+
+  assert.notEqual(closed.get(0, 2).char, "┌");
+  assert.equal(opening.get(0, 2).char, "┌");
+  assert.notEqual(opening.get(71, 2).char, "┐");
+});
+
 test("startup file modal renders a themed Bijou scrollbar when file rows overflow", async () => {
-  const [viewerOverlays, titleScreen, themes, fileSystem] = await Promise.all([
-    importDist("app", "workspace", "viewer-overlays.js"),
+  const [viewer, titleScreen, themes, fileSystem] = await Promise.all([
+    importDist("app", "workspace", "viewer.js"),
     importDist("ui", "title-screen.js"),
     importDist("ui", "jedit-themes.js"),
     importDist("ports", "file-system.js"),
   ]);
   const theme = themes.availableJeditThemes()[0];
   const model = mockTitleScreenModel(titleScreen, {
+    columns: 80,
+    rows: 12,
     i18n: mockI18n(),
     cwd: "/repo",
     workspaceRoot: "/repo",
     jeditTheme: theme,
     startupIntroComplete: true,
     startupFileModalOpen: true,
+    startupFileDrawerProgress: 1,
     startupFileModalInput: "",
     startupFileModalSelectedIndex: STARTUP_MODAL_SCROLL_SELECTED_INDEX,
     entries: startupModalOverflowEntries(fileSystem),
   });
-  const overlay = viewerOverlays.workspaceFeedbackOverlay(model);
-  assert.ok(overlay != null);
+  const rendered = viewer.renderWorkspace(model);
 
-  const scrollbarCells = startupModalScrollbarCells(overlay.surface);
-  const selectedRowCells = startupModalRowCells(overlay.surface, /file-08\.md/);
+  const scrollbarCells = startupModalScrollbarCells(rendered);
+  const selectedRowCells = startupModalRowCells(rendered, /file-08\.md/);
 
   assert.ok(scrollbarCells.length > 0);
   assert.ok(
@@ -425,6 +501,7 @@ test("startup file modal input filters current directory rows", async () => {
     jeditTheme: themes.availableJeditThemes()[0],
     startupIntroComplete: true,
     startupFileModalOpen: true,
+    startupFileDrawerProgress: 1,
     startupFileModalInput: "",
     startupFileModalSelectedIndex: 0,
     entries: [
@@ -471,7 +548,7 @@ test("startup file modal can be reopened from the title screen after Escape dism
   const [reopenedByEnter, enterCommands] = keyBindings.updateFromKey(
     { key: "enter", ctrl: false, alt: false, shift: false },
     closed,
-    mockKeyBindingContext(),
+    startupFileDrawerAnimationContext(),
   );
   const [closedAgain] = keyBindings.updateFromKey(
     { key: "escape", ctrl: false, alt: false, shift: false },
@@ -481,15 +558,15 @@ test("startup file modal can be reopened from the title screen after Escape dism
   const [reopenedByOpen, openCommands] = keyBindings.updateFromKey(
     { key: "o", ctrl: false, alt: false, shift: false },
     closedAgain,
-    mockKeyBindingContext(),
+    startupFileDrawerAnimationContext(),
   );
 
   assert.equal(closed.startupFileModalOpen, false);
   assert.equal(reopenedByEnter.startupFileModalOpen, true);
   assert.equal(reopenedByOpen.startupFileModalOpen, true);
   assert.deepEqual(closeCommands, []);
-  assert.deepEqual(enterCommands, []);
-  assert.deepEqual(openCommands, []);
+  assert.equal(enterCommands.length, 1);
+  assert.equal(openCommands.length, 1);
 });
 
 test("startup file modal enter opens the selected file through production text authority", async () => {
@@ -502,6 +579,7 @@ test("startup file modal enter opens the selected file through production text a
     cwd: "/repo",
     startupIntroComplete: true,
     startupFileModalOpen: true,
+    startupFileDrawerProgress: 1,
     startupFileModalInput: "",
     startupFileModalSelectedIndex: 0,
     textRequestId: 0,
@@ -586,6 +664,7 @@ test("startup file modal opens directories without dismissing the modal", async 
     cwd: "/repo",
     startupIntroComplete: true,
     startupFileModalOpen: true,
+    startupFileDrawerProgress: 1,
     startupFileModalInput: "src",
     entries: [
       {
@@ -633,6 +712,7 @@ test("startup file modal renders empty and no-match states", async () => {
     jeditTheme: themes.availableJeditThemes()[0],
     startupIntroComplete: true,
     startupFileModalOpen: true,
+    startupFileDrawerProgress: 1,
   };
   const emptyText = surfaceText(
     viewer.renderWorkspace(
@@ -676,6 +756,7 @@ test("startup file modal does not override the small-terminal notice", async () 
     jeditTheme: themes.availableJeditThemes()[0],
     startupIntroComplete: true,
     startupFileModalOpen: true,
+    startupFileDrawerProgress: 1,
     entries: [
       {
         kind: fileSystem.FileEntryKinds.File,
@@ -732,4 +813,12 @@ function positionedCells(surface) {
       cell: surface.get(x, y),
     })),
   ).flat();
+}
+
+function startupFileDrawerAnimationContext() {
+  return mockKeyBindingContext({
+    createStartupFileDrawerAnimationCmd: (_from, to) => [
+      () => ({ type: "startup-file-drawer-progress", value: to }),
+    ],
+  });
 }

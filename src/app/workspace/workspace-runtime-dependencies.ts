@@ -7,6 +7,7 @@ import type { JeditWscWorkspaceStorePort } from '../../ports/jedit-wsc-workspace
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import type { TitleSceneLoaderPort } from '../../ports/title-scene-loader.js';
 import type { WorkspaceInitialModelSnapshot } from './init.js';
+import type { CreateStartupFileDrawerAnimationCmd } from './key-binding-context.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 import type { ProductionTextSession } from './production-text-session.js';
@@ -32,6 +33,7 @@ export interface WorkspaceRuntimeDependencies {
   readonly createTimeTickCmd: () => Cmd<WorkspaceMsg>;
   readonly createNotificationTickCmd: () => Cmd<WorkspaceMsg>;
   readonly createDrawerAnimationCmd: (kind: DrawerKind, from: number, to: number) => Cmd<WorkspaceMsg>[];
+  readonly createStartupFileDrawerAnimationCmd: CreateStartupFileDrawerAnimationCmd;
   readonly initialModel: WorkspaceInitialModelSnapshot;
   readonly nowMs: () => number;
 }

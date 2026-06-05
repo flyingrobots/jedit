@@ -21,6 +21,8 @@ const WORKSPACE_MESSAGE_TOGGLE_PROFILER = "toggle-profiler";
 const WORKSPACE_MESSAGE_NOTIFICATION_TICK = "notification-tick";
 const WORKSPACE_MESSAGE_TIME_TICK = "time-tick";
 const WORKSPACE_MESSAGE_TOGGLE_PERF = "toggle-perf";
+const WORKSPACE_MESSAGE_STARTUP_FILE_DRAWER_PROGRESS =
+  "startup-file-drawer-progress";
 const WORKSPACE_MESSAGE_RUNTIME_ISSUE = "runtime-issue";
 const WORKSPACE_MESSAGE_TEXT_OPEN_RESULT = "text-open-result";
 const WORKSPACE_MESSAGE_TEXT_EDIT_RESULT = "text-edit-result";
@@ -39,6 +41,7 @@ export const WorkspaceMessageTypes = Object.freeze({
   NotificationTick: WORKSPACE_MESSAGE_NOTIFICATION_TICK,
   TimeTick: WORKSPACE_MESSAGE_TIME_TICK,
   TogglePerf: WORKSPACE_MESSAGE_TOGGLE_PERF,
+  StartupFileDrawerProgress: WORKSPACE_MESSAGE_STARTUP_FILE_DRAWER_PROGRESS,
   RuntimeIssue: WORKSPACE_MESSAGE_RUNTIME_ISSUE,
   TextOpenResult: WORKSPACE_MESSAGE_TEXT_OPEN_RESULT,
   TextEditResult: WORKSPACE_MESSAGE_TEXT_EDIT_RESULT,
@@ -76,6 +79,10 @@ export type WorkspaceMsg =
   | { type: typeof WorkspaceMessageTypes.NotificationTick; atMs: number }
   | { type: typeof WorkspaceMessageTypes.TimeTick; time: number }
   | { type: typeof WorkspaceMessageTypes.TogglePerf }
+  | {
+      type: typeof WorkspaceMessageTypes.StartupFileDrawerProgress;
+      value: number;
+    }
   | { type: typeof WorkspaceMessageTypes.RuntimeIssue; issue: RuntimeIssue }
   | {
       type: typeof WorkspaceMessageTypes.TextOpenResult;
