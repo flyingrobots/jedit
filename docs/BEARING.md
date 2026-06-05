@@ -78,6 +78,16 @@ post-intro startup modal with input and current-directory files. This is jedit
 UI state only; it does not create Echo work, add a recent-workspace database, or
 reopen non-Echo runtime modes.
 
+## Active Plan: Vim Command-Line Completion Surface
+
+The next file-selection consolidation plan is
+[`docs/design/0102-vim-command-line-completion-surface.md`](design/0102-vim-command-line-completion-surface.md).
+The goal is to make `:` in Normal mode enter a Vim-shaped command-line context,
+render provider-backed inline completions as Bijou-shaped components, open files
+through `:edit <path>`, and reuse the same completion component for later
+Graft-backed editor symbol, documentation, source-definition, and causal-history
+previews.
+
 ## Active Plan: Executable Design Cycle Template
 
 The current branch advances
