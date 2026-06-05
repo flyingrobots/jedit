@@ -125,7 +125,7 @@ While intro is active:
 - `enter`: skip intro and open startup file drawer.
 - `tab`: skip intro and open startup file drawer.
 - `esc`: open the standard quit confirmation.
-- `m`, `M`: cycle the Dragon material preset and show a toast with its name.
+- `m`, `M`: cycle the title mesh material preset and show a toast with its name.
 
 While the startup file drawer is open:
 
@@ -143,7 +143,7 @@ After the intro is complete and the drawer is closed:
 
 - `tab`, `enter`, `o`: reopen the startup file drawer.
 - `esc`: open the standard quit confirmation.
-- `m`, `M`: cycle the Dragon material preset and show a toast with its name.
+- `m`, `M`: cycle the title mesh material preset and show a toast with its name.
 
 ## Evidence
 
@@ -164,7 +164,7 @@ Focused witnesses:
 - workspace key spec for input editing and animated Escape close;
 - workspace key spec for selected file open and selected directory traversal;
 - workspace render spec proving drawer input keeps the title renderer live;
-- workspace key spec proving `m` and `M` cycle Dragon material presets;
+- workspace key spec proving `m` and `M` cycle title mesh material presets;
 - small-screen spec proving the drawer does not override the minimum-terminal
   notice.
 

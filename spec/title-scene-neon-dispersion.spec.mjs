@@ -5,21 +5,21 @@ import { cells, fixedTitleRenderOptions } from "./title-screen-helpers.mjs";
 import { mockI18n, mockJeditTheme, REPO_ROOT } from "./workspace-helpers.mjs";
 
 const NEON_DISPERSION_SCENE = "neon-dispersion.jedit-scene";
-const DRAGON_OBJECT_LABEL = "stanford-dragon";
+const TEAPOT_OBJECT_LABEL = "utah-teapot";
 const TITLE_WIDTH = 92;
 const TITLE_HEIGHT = 28;
 const TITLE_TIME = 6.75;
 const MIN_RENDER_COLOR_VARIETY = 6;
-const MIN_DRAGON_REFRACTIVE_INDEX = 1.5;
-const MIN_DRAGON_TRANSPARENCY = 0.55;
-const MIN_DRAGON_TRIANGLES = 11000;
+const MIN_TEAPOT_REFRACTIVE_INDEX = 1.5;
+const MIN_TEAPOT_TRANSPARENCY = 0.55;
+const MIN_TEAPOT_TRIANGLES = 14000;
 const CAMERA_ORBIT_SAMPLE_COUNT = 16;
 const FULL_CAMERA_ORBIT_RADIANS = Math.PI * 2;
 const MIN_ORBIT_RENDER_COLOR_VARIETY = 20;
 const CHECKER_FLOOR_DARK = [3, 4, 7];
 const CHECKER_FLOOR_LIGHT = [58, 68, 76];
 const CHECKER_FLOOR_GRID_SCALE = 0.95;
-const MAX_DEFAULT_DRAGON_CAMERA_RADIUS = 3.2;
+const MAX_DEFAULT_TEAPOT_CAMERA_RADIUS = 3.2;
 const THEME_STABILITY_VARIABLE_NAMES = [
   "accent",
   "info",
@@ -34,7 +34,7 @@ const THEME_STABILITY_HEX = "#f4f6f8";
 test("neon dispersion is the registered default title scene", async () => {
   const modules = await loadNeonDispersionModules();
   const scene = await loadNeonDispersionScene(modules);
-  const dragon = scene.objects[0];
+  const teapot = scene.objects[0];
 
   assert.equal(
     modules.port.DEFAULT_BUILT_IN_TITLE_SCENE_NAME,
@@ -45,9 +45,9 @@ test("neon dispersion is the registered default title scene", async () => {
     NEON_DISPERSION_SCENE,
   );
   assert.equal(scene.objects.length, 1);
-  assert.ok(scene.camera.radius <= MAX_DEFAULT_DRAGON_CAMERA_RADIUS);
-  assert.equal(dragon.label, DRAGON_OBJECT_LABEL);
-  assert.equal(dragon.kind, "mesh");
+  assert.ok(scene.camera.radius <= MAX_DEFAULT_TEAPOT_CAMERA_RADIUS);
+  assert.equal(teapot.label, TEAPOT_OBJECT_LABEL);
+  assert.equal(teapot.kind, "mesh");
   assert.ok(scene.environment?.floor != null);
   assert.equal(scene.environment?.floor?.kind, "grid");
   assert.deepEqual(scene.environment?.floor?.dark, CHECKER_FLOOR_DARK);
@@ -55,9 +55,9 @@ test("neon dispersion is the registered default title scene", async () => {
   assert.equal(scene.environment?.floor?.gridScale, CHECKER_FLOOR_GRID_SCALE);
   assert.ok(scene.environment?.light != null);
   assert.equal(scene.environment?.walls, undefined);
-  assert.ok(dragon.mesh.triangles.length >= MIN_DRAGON_TRIANGLES);
-  assert.ok(dragon.transparency >= MIN_DRAGON_TRANSPARENCY);
-  assert.ok(dragon.refractiveIndex >= MIN_DRAGON_REFRACTIVE_INDEX);
+  assert.ok(teapot.mesh.triangles.length >= MIN_TEAPOT_TRIANGLES);
+  assert.ok(teapot.transparency >= MIN_TEAPOT_TRANSPARENCY);
+  assert.ok(teapot.refractiveIndex >= MIN_TEAPOT_REFRACTIVE_INDEX);
 });
 
 test("startup snapshot preloads neon dispersion as the initial scene", async () => {
@@ -74,7 +74,7 @@ test("startup snapshot preloads neon dispersion as the initial scene", async () 
   });
 
   assert.ok(snapshot.sceneOverride != null);
-  assert.equal(snapshot.sceneOverride.objects[0].label, DRAGON_OBJECT_LABEL);
+  assert.equal(snapshot.sceneOverride.objects[0].label, TEAPOT_OBJECT_LABEL);
   assert.equal(
     model.availableScenes[0],
     port.DEFAULT_BUILT_IN_TITLE_SCENE_NAME,

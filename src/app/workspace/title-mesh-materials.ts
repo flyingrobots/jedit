@@ -6,7 +6,7 @@ import {
   type TitleSceneObject,
 } from "../../ui/title-scene.js";
 
-export interface TitleDragonMaterialPreset {
+export interface TitleMeshMaterialPreset {
   readonly name: string;
   readonly color: TitleSceneColor;
   readonly reflectivity: number;
@@ -14,19 +14,19 @@ export interface TitleDragonMaterialPreset {
   readonly refractiveIndex: number;
 }
 
-const TITLE_DRAGON_OBJECT_LABEL = "stanford-dragon";
-const FIRST_TITLE_DRAGON_MATERIAL_INDEX = 0;
-const NEXT_TITLE_DRAGON_MATERIAL_STEP = 1;
-const DEFAULT_TITLE_DRAGON_MATERIAL_PRESET = {
+const TITLE_MESH_MATERIAL_OBJECT_LABEL = "utah-teapot";
+const FIRST_TITLE_MESH_MATERIAL_INDEX = 0;
+const NEXT_TITLE_MESH_MATERIAL_STEP = 1;
+const DEFAULT_TITLE_MESH_MATERIAL_PRESET = {
   name: "Prismatic Ice",
   color: [194, 236, 255],
   reflectivity: 0.24,
   transparency: 0.62,
   refractiveIndex: 1.65,
-} satisfies TitleDragonMaterialPreset;
+} satisfies TitleMeshMaterialPreset;
 
-export const TITLE_DRAGON_MATERIAL_PRESETS = [
-  DEFAULT_TITLE_DRAGON_MATERIAL_PRESET,
+export const TITLE_MESH_MATERIAL_PRESETS = [
+  DEFAULT_TITLE_MESH_MATERIAL_PRESET,
   {
     name: "Chrome Mirror",
     color: [230, 236, 244],
@@ -62,55 +62,55 @@ export const TITLE_DRAGON_MATERIAL_PRESETS = [
     transparency: 0.72,
     refractiveIndex: 1.82,
   },
-] satisfies readonly TitleDragonMaterialPreset[];
+] satisfies readonly TitleMeshMaterialPreset[];
 
-export function titleDragonMaterialPresetAt(
+export function titleMeshMaterialPresetAt(
   index: number,
-): TitleDragonMaterialPreset {
+): TitleMeshMaterialPreset {
   return (
-    TITLE_DRAGON_MATERIAL_PRESETS[titleDragonMaterialIndex(index)] ??
-    DEFAULT_TITLE_DRAGON_MATERIAL_PRESET
+    TITLE_MESH_MATERIAL_PRESETS[titleMeshMaterialIndex(index)] ??
+    DEFAULT_TITLE_MESH_MATERIAL_PRESET
   );
 }
 
-export function nextTitleDragonMaterialIndex(index: number): number {
-  return titleDragonMaterialIndex(index + NEXT_TITLE_DRAGON_MATERIAL_STEP);
+export function nextTitleMeshMaterialIndex(index: number): number {
+  return titleMeshMaterialIndex(index + NEXT_TITLE_MESH_MATERIAL_STEP);
 }
 
-export function applyTitleDragonMaterial(
+export function applyTitleMeshMaterial(
   scene: TitleScene,
-  preset: TitleDragonMaterialPreset,
+  preset: TitleMeshMaterialPreset,
 ): TitleScene {
   return {
     ...scene,
     objects: scene.objects.map((object) =>
-      isTitleDragonObject(object)
-        ? titleDragonObjectWithMaterial(object, preset)
+      isTitleMeshMaterialObject(object)
+        ? titleMeshObjectWithMaterial(object, preset)
         : object,
     ),
   };
 }
 
-function titleDragonMaterialIndex(index: number): number {
-  const count = TITLE_DRAGON_MATERIAL_PRESETS.length;
+function titleMeshMaterialIndex(index: number): number {
+  const count = TITLE_MESH_MATERIAL_PRESETS.length;
   if (!Number.isFinite(index) || count === 0) {
-    return FIRST_TITLE_DRAGON_MATERIAL_INDEX;
+    return FIRST_TITLE_MESH_MATERIAL_INDEX;
   }
   return ((Math.trunc(index) % count) + count) % count;
 }
 
-function isTitleDragonObject(
+function isTitleMeshMaterialObject(
   object: TitleSceneObject,
 ): object is TitleSceneMeshObject {
   return (
     object.kind === TITLE_SCENE_SHAPE_KIND.Mesh &&
-    object.label === TITLE_DRAGON_OBJECT_LABEL
+    object.label === TITLE_MESH_MATERIAL_OBJECT_LABEL
   );
 }
 
-function titleDragonObjectWithMaterial(
+function titleMeshObjectWithMaterial(
   object: TitleSceneMeshObject,
-  preset: TitleDragonMaterialPreset,
+  preset: TitleMeshMaterialPreset,
 ): TitleSceneMeshObject {
   return {
     ...object,

@@ -8,7 +8,7 @@ Evidence from `title/perf-scene-facts` after primary front-face culling:
 ```bash
 node --cpu-prof \
   --cpu-prof-dir /tmp/jedit-title-profile-frontface \
-  --cpu-prof-name title-dragon-frontface.cpuprofile \
+  --cpu-prof-name title-mesh-frontface.cpuprofile \
   scripts/title-scene-profile.mjs \
   --scene neon-dispersion.jedit-scene \
   --theme graphite \
@@ -37,9 +37,9 @@ Potential next cuts:
   posture.
 - Consider a coarser screen-space silhouette/depth prepass for one-mesh title
   scenes before expensive optical shading.
-- Add an offline mesh LOD build step for dense title meshes. The Stanford
-  Dragon could ship with close, medium, and far mesh variants selected from the
-  camera radius or projected screen coverage.
+- Add an offline mesh LOD build step for dense title meshes. The default title
+  mesh could ship with close, medium, and far variants selected from the camera
+  radius or projected screen coverage.
 - Explore a quantized temporal ray-hit cache keyed by scene id, mesh identity,
   transform version, camera bucket, sample coordinate, and ray depth. Exact
   ray keys are unlikely to repeat during camera motion, so this should behave
@@ -53,7 +53,7 @@ Implemented cut on `title/perf-scene-facts`:
   frame had high screen activity, live title frames trace half or quarter of
   the Braille subpixels and reuse cached samples for the rest.
 - The adaptive policy keeps the last reduced phase count while screen activity
-  stays high, so close-camera dragon frames do not bounce between slow full
+  stays high, so close-camera mesh frames do not bounce between slow full
   traces and fast reduced traces.
 - The pressure signal is ray-work based when the shader provides it:
   intersection count divided by rays shot. Braille glyph activity is only the

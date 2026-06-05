@@ -100,12 +100,12 @@ test("tab opens startup file browser and suppresses title logos", async () => {
   assert.equal(renderOptions[0].suppressPresentation, true);
 });
 
-test("title screen m cycles Dragon materials and reports the material name", async () => {
+test("title screen m cycles teapot materials and reports the material name", async () => {
   const [keyBindings, titleScreen, material, sceneLoader, meshes] =
     await Promise.all([
       importDist("app", "workspace", "key-bindings.js"),
       importDist("ui", "title-screen.js"),
-      importDist("app", "workspace", "title-dragon-materials.js"),
+      importDist("app", "workspace", "title-mesh-materials.js"),
       importDist("adapters", "title-scene-loader.js"),
       importDist("adapters", "workspace-title-meshes.js"),
     ]);
@@ -123,19 +123,19 @@ test("title screen m cycles Dragon materials and reports the material name", asy
     first,
     mockKeyBindingContext(),
   );
-  const firstPreset = material.titleDragonMaterialPresetAt(1);
-  const secondPreset = material.titleDragonMaterialPresetAt(2);
+  const firstPreset = material.titleMeshMaterialPresetAt(1);
+  const secondPreset = material.titleMeshMaterialPresetAt(2);
 
-  assert.equal(first.titleDragonMaterialIndex, 1);
+  assert.equal(first.titleMeshMaterialIndex, 1);
   assert.deepEqual(first.sceneOverride.objects[0].color, firstPreset.color);
   assert.equal(
-    hasNotification(first, "Dragon material", firstPreset.name),
+    hasNotification(first, "Teapot material", firstPreset.name),
     true,
   );
-  assert.equal(second.titleDragonMaterialIndex, 2);
+  assert.equal(second.titleMeshMaterialIndex, 2);
   assert.deepEqual(second.sceneOverride.objects[0].color, secondPreset.color);
   assert.equal(
-    hasNotification(second, "Dragon material", secondPreset.name),
+    hasNotification(second, "Teapot material", secondPreset.name),
     true,
   );
 });

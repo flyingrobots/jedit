@@ -175,6 +175,6 @@ function initialSceneState(
     titleCamera: createTitleCameraState(cameraPlacement),
     titleRenderMode: TITLE_RENDER_MODE.Braille,
     titleAsciiPalette: TITLE_ASCII_PALETTE.Dense,
-    titleDragonMaterialIndex: 0,
+    titleMeshMaterialIndex: 0,
   };
 }
