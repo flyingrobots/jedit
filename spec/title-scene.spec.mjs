@@ -540,6 +540,27 @@ test("title scene mesh side mode stays double-sided unless requested", async () 
   );
 });
 
+test("title mesh traverses nearer BVH children before pruning farther children", async () => {
+  const { titleMesh } = await loadTitleSceneModules();
+  const mesh = titleMesh.createTitleMesh(
+    repeatedPlaneMeshSource({
+      farZ: 1,
+      nearZ: 10,
+      trianglesPerCluster: 8,
+    }),
+    UNIT_MESH_PLACEMENT,
+  );
+  const report = titleMesh.nearestTitleMeshHitReport(
+    [0, 0.25, 8],
+    [0, 0, -1],
+    mesh,
+  );
+
+  assert.ok(report.hit != null);
+  assert.equal(report.stats.triangleTests, 8);
+  assert.equal(report.stats.prunedChildNodes, 1);
+});
+
 test("title mesh source loader fails fast when no candidate asset is available", async () => {
   const { titleBunnyMesh, domainErrors } = await loadTitleSceneModules();
   const hiddenPaths = [
@@ -689,6 +710,19 @@ function meshFrontRay() {
 
 function meshBackRay() {
   return [0, 0, -1];
+}
+
+function repeatedPlaneMeshSource(options) {
+  const vertices = [];
+  const triangles = [];
+  for (const z of [options.farZ, options.nearZ]) {
+    for (let index = 0; index < options.trianglesPerCluster; index += 1) {
+      const start = vertices.length;
+      vertices.push([-0.5, 0, z], [0.5, 0, z], [0, 1, z]);
+      triangles.push([start, start + 1, start + 2]);
+    }
+  }
+  return { vertices, triangles };
 }
 
 function hideExistingFile(filePath) {
