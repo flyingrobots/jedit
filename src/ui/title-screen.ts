@@ -100,6 +100,7 @@ export interface TitleScreenRenderOptions {
   readonly asciiPalette?: TitleAsciiPalette;
   readonly textDirection?: TitleScreenTextDirection;
   readonly brailleSampling?: AveragingBrailleCanvasOptions;
+  readonly suppressPresentation?: boolean;
 }
 
 interface TitleSceneShaderOptions {
@@ -147,10 +148,12 @@ export function renderTitleScreen(
   const surface = renderTitleSceneSurface(
     titleSceneSurfaceOptions(cols, rows, time, theme, options),
   );
-  paintTitleScreenPresentation(
-    surface,
-    { cols, rows, time, theme, textDirection: options.textDirection },
-  );
+  if (options.suppressPresentation !== true) {
+    paintTitleScreenPresentation(
+      surface,
+      { cols, rows, time, theme, textDirection: options.textDirection },
+    );
+  }
   return surface;
 }
 

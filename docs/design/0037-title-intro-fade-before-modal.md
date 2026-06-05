@@ -57,7 +57,7 @@ Current anchors:
 - The same sequence keeps any visible layer fully opaque until its fade boundary
   when fade duration is 0:
   [src/ui/title-presentation-sequence.ts#L65:2fd89d253046b1dd2b4122426dc0a3dd2f8ed7f6](https://github.com/flyingrobots/jedit/blob/2fd89d253046b1dd2b4122426dc0a3dd2f8ed7f6/src/ui/title-presentation-sequence.ts#L65).
-- `src/app/workspace/startup-file-modal.ts` opens the startup modal at 7
+- `src/app/workspace/startup-file-modal.ts` opens the startup browser at 7
   seconds:
   [src/app/workspace/startup-file-modal.ts#L17:2fd89d253046b1dd2b4122426dc0a3dd2f8ed7f6](https://github.com/flyingrobots/jedit/blob/2fd89d253046b1dd2b4122426dc0a3dd2f8ed7f6/src/app/workspace/startup-file-modal.ts#L17).
 - The existing title spec asserts both logos are still visible at 6.5 seconds
@@ -89,7 +89,7 @@ This cycle includes:
 This cycle does not include:
 
 - Replacing the startup file drawer with a full app-frame picker.
-- Changing the file browser Esc behavior.
+- Changing the file browser drawer layout.
 - Adding a new title-scene director timeline authoring tool.
 - Adding screenshot or pixel-baseline infrastructure beyond focused rendered
   surface assertions.
@@ -102,12 +102,13 @@ The user starts jedit without a file. The title scene appears immediately with
 can sweep across the logo in the local text direction. At 3 seconds, the
 `FLYINGROBOTS PRESENTS` layer begins fading away. At 5 seconds, the `jedit`
 layer begins fading away. At 7 seconds, neither logo is visible and the startup
-file browser can appear over the frozen title backdrop.
+file browser can appear over the live title scene.
 
 Success is communicated by the drawer appearing only after the title layers have
 cleared. Failure is the old behavior: any title logo still visible at the drawer
-open boundary. The user can skip the sequence with Enter or Escape before the
+open boundary. The user can skip the sequence with Enter or Tab before the
 drawer opens; a skip intentionally jumps to the drawer without playing the fade.
+Escape opens the standard quit confirmation when the browser is closed.
 
 ### User Journey
 
@@ -118,7 +119,7 @@ flowchart TD
   Logo --> SponsorFade[3s fades FLYINGROBOTS PRESENTS]
   SponsorFade --> TitleFade[5s fades jedit]
   TitleFade --> Drawer[7s opens file browser]
-  Present --> Skip[Enter or Escape skips intro]
+  Present --> Skip[Enter or Tab skips intro]
   Skip --> Drawer
 ```
 
@@ -290,7 +291,7 @@ The work is done when:
       drawer opens.
 - [x] Rendered title output proves `jedit` is absent before the drawer opens.
 - [x] Direction-aware sheen behavior still passes.
-- [x] Startup drawer still opens at 7 seconds and still supports Enter/Escape
+- [x] Startup drawer still opens at 7 seconds and still supports Enter/Tab
       skip.
 - [x] Issue and PR are linked correctly.
 - [ ] CI and local validation are green.
@@ -322,7 +323,7 @@ Visual reproduction:
 - Watch `FLYINGROBOTS PRESENTS` immediately, `jedit` at 2 seconds, sponsor
   fade after 3 seconds, title fade after 5 seconds, and file browser at 7
   seconds.
-- Repeat with Enter or Escape before 7 seconds to confirm skip still opens the
+- Repeat with Enter or Tab before 7 seconds to confirm skip still opens the
   drawer immediately.
 
 ## Risks

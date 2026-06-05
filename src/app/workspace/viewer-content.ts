@@ -212,7 +212,6 @@ function titleSceneGovernorInput(
 ) {
   return {
     introActive: model.editor == null && !model.startupIntroComplete,
-    startupFileModalOpen: model.startupFileModalOpen,
     idleTitleScreen:
       model.editor == null &&
       model.startupIntroComplete &&
@@ -249,6 +248,7 @@ function renderLiveTitleBackdrop(
     asciiPalette: model.titleAsciiPalette,
     textDirection: model.i18n.direction,
     brailleSampling: sampling.options,
+    suppressPresentation: model.startupIntroComplete,
   });
   recordTitleBrailleSamplingStats(state, sampling);
   return rendered;

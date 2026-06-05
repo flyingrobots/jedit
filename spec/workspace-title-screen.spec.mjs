@@ -67,6 +67,79 @@ test("title screen number keys switch render modes without an editor", async () 
   );
 });
 
+test("tab opens startup file browser and suppresses title logos", async () => {
+  const [keyBindings, titleScreen, viewerContent] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "viewer-content.js"),
+  ]);
+  const base = mockTitleScreenModel(titleScreen, {
+    startupIntroComplete: false,
+    startupFileModalOpen: false,
+  });
+  const [opened, commands] = keyBindings.updateFromKey(
+    { key: "tab", ctrl: false, alt: false, shift: false },
+    base,
+    startupFileDrawerAnimationContext(),
+  );
+  const renderOptions = [];
+
+  viewerContent.renderViewerWithTitleRenderer(
+    opened,
+    44,
+    8,
+    (width, height, _time, _theme, options) => {
+      renderOptions.push(options);
+      return stringToSurface("title trace", width, height);
+    },
+  );
+
+  assert.equal(opened.startupIntroComplete, true);
+  assert.equal(opened.startupFileModalOpen, true);
+  assert.equal(commands.length, 1);
+  assert.equal(renderOptions[0].suppressPresentation, true);
+});
+
+test("title screen m cycles Dragon materials and reports the material name", async () => {
+  const [keyBindings, titleScreen, material, sceneLoader, meshes] =
+    await Promise.all([
+      importDist("app", "workspace", "key-bindings.js"),
+      importDist("ui", "title-screen.js"),
+      importDist("app", "workspace", "title-dragon-materials.js"),
+      importDist("adapters", "title-scene-loader.js"),
+      importDist("adapters", "workspace-title-meshes.js"),
+    ]);
+  const scene = await sceneLoader.loadBuiltInTitleScene(
+    "neon-dispersion.jedit-scene",
+    meshes.loadStartupTitleMeshes(),
+  );
+  const [first] = keyBindings.updateFromKey(
+    { key: "m", ctrl: false, alt: false, shift: false },
+    mockTitleScreenModel(titleScreen, { sceneOverride: scene }),
+    mockKeyBindingContext(),
+  );
+  const [second] = keyBindings.updateFromKey(
+    { key: "M", ctrl: false, alt: false, shift: true },
+    first,
+    mockKeyBindingContext(),
+  );
+  const firstPreset = material.titleDragonMaterialPresetAt(1);
+  const secondPreset = material.titleDragonMaterialPresetAt(2);
+
+  assert.equal(first.titleDragonMaterialIndex, 1);
+  assert.deepEqual(first.sceneOverride.objects[0].color, firstPreset.color);
+  assert.equal(
+    hasNotification(first, "Dragon material", firstPreset.name),
+    true,
+  );
+  assert.equal(second.titleDragonMaterialIndex, 2);
+  assert.deepEqual(second.sceneOverride.objects[0].color, secondPreset.color);
+  assert.equal(
+    hasNotification(second, "Dragon material", secondPreset.name),
+    true,
+  );
+});
+
 test("feedback module exposes notification presentation tokens", async () => {
   const feedback = await importDist("ui", "feedback.js");
 
@@ -152,7 +225,7 @@ test("period cycles title screen ASCII palettes only when ASCII mode is active w
   );
 });
 
-test("enter and escape skip title intro into the startup file modal", async () => {
+test("enter skips title intro into the startup file browser", async () => {
   const [keyBindings, titleScreen] = await Promise.all([
     importDist("app", "workspace", "key-bindings.js"),
     importDist("ui", "title-screen.js"),
@@ -167,21 +240,54 @@ test("enter and escape skip title intro into the startup file modal", async () =
     base,
     startupFileDrawerAnimationContext(),
   );
-  const [escaped, escapeCommands] = keyBindings.updateFromKey(
-    { key: "escape", ctrl: false, alt: false, shift: false },
-    base,
-    startupFileDrawerAnimationContext(),
-  );
 
   assert.equal(entered.startupIntroComplete, true);
   assert.equal(entered.startupFileModalOpen, true);
-  assert.equal(escaped.startupIntroComplete, true);
-  assert.equal(escaped.startupFileModalOpen, true);
   assert.equal(enterCommands.length, 1);
-  assert.equal(escapeCommands.length, 1);
 });
 
-test("startup file modal reuses the frozen title backdrop while input changes", async () => {
+test("escape opens quit confirmation when startup file browser is closed", async () => {
+  const [keyBindings, titleScreen] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const [nextModel, commands] = keyBindings.updateFromKey(
+    { key: "escape", ctrl: false, alt: false, shift: false },
+    mockTitleScreenModel(titleScreen, {
+      startupIntroComplete: false,
+      startupFileModalOpen: false,
+    }),
+    startupFileDrawerAnimationContext(),
+  );
+
+  assert.equal(nextModel.quitConfirmOpen, true);
+  assert.equal(nextModel.startupIntroComplete, false);
+  assert.equal(nextModel.startupFileModalOpen, false);
+  assert.equal(commands.length, 0);
+});
+
+test("escape dismisses open startup file browser with a drawer animation", async () => {
+  const [keyBindings, titleScreen] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const [closed, commands] = keyBindings.updateFromKey(
+    { key: "escape", ctrl: false, alt: false, shift: false },
+    mockTitleScreenModel(titleScreen, {
+      startupIntroComplete: true,
+      startupFileModalOpen: true,
+      startupFileDrawerProgress: 1,
+    }),
+    startupFileDrawerAnimationContext(),
+  );
+
+  assert.equal(closed.startupFileModalOpen, false);
+  assert.equal(closed.startupFileDrawerProgress, 1);
+  assert.equal(closed.quitConfirmOpen, false);
+  assert.equal(commands.length, 1);
+});
+
+test("startup file browser keeps tracing the title scene while input changes", async () => {
   const [viewerContent, titleScreen] = await Promise.all([
     importDist("app", "workspace", "viewer-content.js"),
     importDist("ui", "title-screen.js"),
@@ -225,12 +331,12 @@ test("startup file modal reuses the frozen title backdrop while input changes", 
     6,
   );
 
-  assert.deepEqual(tracedTimes, [1]);
-  assert.equal(surfaceText(openModal), surfaceText(live));
-  assert.equal(surfaceText(typed), surfaceText(live));
+  assert.deepEqual(tracedTimes, [1, 7, 8]);
+  assert.notEqual(surfaceText(openModal), surfaceText(live));
+  assert.notEqual(surfaceText(typed), surfaceText(openModal));
 });
 
-test("startup file modal traces one fallback backdrop frame when no title cache exists", async () => {
+test("startup file browser traces every frame when no title cache exists", async () => {
   const [viewerContent, titleScreen] = await Promise.all([
     importDist("app", "workspace", "viewer-content.js"),
     importDist("ui", "title-screen.js"),
@@ -262,11 +368,11 @@ test("startup file modal traces one fallback backdrop frame when no title cache 
     6,
   );
 
-  assert.deepEqual(tracedTimes, [7]);
-  assert.equal(surfaceText(second), surfaceText(first));
+  assert.deepEqual(tracedTimes, [7, 8]);
+  assert.notEqual(surfaceText(second), surfaceText(first));
 });
 
-test("startup file modal title backdrop cache is isolated per renderer instance", async () => {
+test("startup file browser title renderer state is isolated per renderer instance", async () => {
   const [viewerContent, titleScreen] = await Promise.all([
     importDist("app", "workspace", "viewer-content.js"),
     importDist("ui", "title-screen.js"),
@@ -435,9 +541,17 @@ test("startup file selector drawer width follows spring progress", async () => {
       startupFileDrawerProgress: 0.5,
     }),
   );
+  const closing = viewer.renderWorkspace(
+    mockTitleScreenModel(titleScreen, {
+      ...base,
+      startupFileModalOpen: false,
+      startupFileDrawerProgress: 0.5,
+    }),
+  );
 
   assert.notEqual(closed.get(0, 2).char, "┌");
   assert.equal(opening.get(0, 2).char, "┌");
+  assert.equal(closing.get(0, 2).char, "┌");
   assert.notEqual(opening.get(71, 2).char, "┐");
 });
 
@@ -538,12 +652,13 @@ test("startup file modal can be reopened from the title screen after Escape dism
   const open = mockTitleScreenModel(titleScreen, {
     startupIntroComplete: true,
     startupFileModalOpen: true,
+    startupFileDrawerProgress: 1,
   });
 
   const [closed, closeCommands] = keyBindings.updateFromKey(
     { key: "escape", ctrl: false, alt: false, shift: false },
     open,
-    mockKeyBindingContext(),
+    startupFileDrawerAnimationContext(),
   );
   const [reopenedByEnter, enterCommands] = keyBindings.updateFromKey(
     { key: "enter", ctrl: false, alt: false, shift: false },
@@ -560,13 +675,26 @@ test("startup file modal can be reopened from the title screen after Escape dism
     closedAgain,
     startupFileDrawerAnimationContext(),
   );
+  const [closedAfterOpen] = keyBindings.updateFromKey(
+    { key: "escape", ctrl: false, alt: false, shift: false },
+    reopenedByOpen,
+    startupFileDrawerAnimationContext(),
+  );
+  const [reopenedByTab, tabCommands] = keyBindings.updateFromKey(
+    { key: "tab", ctrl: false, alt: false, shift: false },
+    closedAfterOpen,
+    startupFileDrawerAnimationContext(),
+  );
 
   assert.equal(closed.startupFileModalOpen, false);
+  assert.equal(closed.startupFileDrawerProgress, 1);
   assert.equal(reopenedByEnter.startupFileModalOpen, true);
   assert.equal(reopenedByOpen.startupFileModalOpen, true);
-  assert.deepEqual(closeCommands, []);
+  assert.equal(reopenedByTab.startupFileModalOpen, true);
+  assert.equal(closeCommands.length, 1);
   assert.equal(enterCommands.length, 1);
   assert.equal(openCommands.length, 1);
+  assert.equal(tabCommands.length, 1);
 });
 
 test("startup file modal enter opens the selected file through production text authority", async () => {

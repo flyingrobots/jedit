@@ -12,7 +12,7 @@ const TITLE_HEIGHT = 6;
 const SLOW_FRAME_MS = 90;
 const FAST_FRAME_MS = 12;
 
-test("title scene performance governor names trace and frozen backdrop decisions", async () => {
+test("title scene performance governor keeps startup browser ray tracing live", async () => {
   const governor = await importDist(
     "app",
     "workspace",
@@ -22,7 +22,6 @@ test("title scene performance governor names trace and frozen backdrop decisions
   assert.deepEqual(
     governor.governTitleSceneRender({
       introActive: true,
-      startupFileModalOpen: false,
       idleTitleScreen: false,
       frozenBackdropAvailable: true,
       cacheAgeSeconds: 0,
@@ -41,18 +40,17 @@ test("title scene performance governor names trace and frozen backdrop decisions
   assert.deepEqual(
     governor.governTitleSceneRender({
       introActive: false,
-      startupFileModalOpen: true,
       idleTitleScreen: false,
       frozenBackdropAvailable: true,
       cacheAgeSeconds: 0.2,
       frameTimeMs: SLOW_FRAME_MS,
     }),
     {
-      posture: governor.TITLE_SCENE_RENDER_POSTURE.ModalFrozenBackdrop,
-      shouldTraceRays: false,
-      shouldUseFrozenBackdrop: true,
-      shouldRetainRenderedBackdrop: false,
-      inputLatencyPosture: "hot-input",
+      posture: governor.TITLE_SCENE_RENDER_POSTURE.LiveTrace,
+      shouldTraceRays: true,
+      shouldUseFrozenBackdrop: false,
+      shouldRetainRenderedBackdrop: true,
+      inputLatencyPosture: "animated-title",
       frameBudgetPosture: "over-budget",
     },
   );
@@ -60,17 +58,16 @@ test("title scene performance governor names trace and frozen backdrop decisions
   assert.deepEqual(
     governor.governTitleSceneRender({
       introActive: false,
-      startupFileModalOpen: true,
       idleTitleScreen: false,
       frozenBackdropAvailable: false,
       frameTimeMs: FAST_FRAME_MS,
     }),
     {
-      posture: governor.TITLE_SCENE_RENDER_POSTURE.ModalFallbackTrace,
+      posture: governor.TITLE_SCENE_RENDER_POSTURE.LiveTrace,
       shouldTraceRays: true,
       shouldUseFrozenBackdrop: false,
       shouldRetainRenderedBackdrop: true,
-      inputLatencyPosture: "hot-input",
+      inputLatencyPosture: "animated-title",
       frameBudgetPosture: "within-budget",
     },
   );
@@ -78,7 +75,6 @@ test("title scene performance governor names trace and frozen backdrop decisions
   assert.deepEqual(
     governor.governTitleSceneRender({
       introActive: false,
-      startupFileModalOpen: false,
       idleTitleScreen: true,
       frozenBackdropAvailable: true,
       cacheAgeSeconds: 0.1,
@@ -88,7 +84,7 @@ test("title scene performance governor names trace and frozen backdrop decisions
   );
 });
 
-test("viewer renderer exposes modal frozen and fallback performance facts", async () => {
+test("viewer renderer continues tracing while startup browser is open", async () => {
   const [viewerContent, titleScreen] = await Promise.all([
     importDist("app", "workspace", "viewer-content.js"),
     importDist("ui", "title-screen.js"),
@@ -101,7 +97,6 @@ test("viewer renderer exposes modal frozen and fallback performance facts", asyn
     time: 1,
     frameTimeMs: FAST_FRAME_MS,
     startupIntroComplete: false,
-    startupFileModalOpen: false,
   });
 
   const live = renderer.renderViewer(base, TITLE_WIDTH, TITLE_HEIGHT);
@@ -127,39 +122,17 @@ test("viewer renderer exposes modal frozen and fallback performance facts", asyn
     TITLE_HEIGHT,
   );
 
-  assert.deepEqual(tracedTimes, [1]);
-  assert.equal(surfaceText(openModal), surfaceText(live));
-  assert.equal(surfaceText(typed), surfaceText(live));
+  assert.deepEqual(tracedTimes, [1, 7, 8]);
+  assert.notEqual(surfaceText(openModal), surfaceText(live));
+  assert.notEqual(surfaceText(typed), surfaceText(openModal));
   assert.deepEqual(renderer.titleScenePerformanceFacts(), {
-    posture: "modal-frozen-backdrop",
-    tracesRays: false,
-    usesFrozenBackdrop: true,
-    retainsBackdrop: false,
-    inputLatencyPosture: "hot-input",
+    posture: "live-trace",
+    tracesRays: true,
+    usesFrozenBackdrop: false,
+    retainsBackdrop: true,
+    inputLatencyPosture: "animated-title",
     frameBudgetPosture: "within-budget",
   });
-
-  const fallbackTimes = [];
-  const fallbackRenderer = viewerContent.createViewerContentRenderer(
-    tracingTitleRenderer(fallbackTimes, "fallback"),
-  );
-  const fallback = fallbackRenderer.renderViewer(
-    {
-      ...base,
-      time: 7,
-      startupIntroComplete: true,
-      startupFileModalOpen: true,
-    },
-    TITLE_WIDTH,
-    TITLE_HEIGHT,
-  );
-
-  assert.deepEqual(fallbackTimes, [7]);
-  assert.match(surfaceText(fallback), /fallback trace 1 time 7/);
-  assert.equal(
-    fallbackRenderer.titleScenePerformanceFacts().posture,
-    "modal-fallback-trace",
-  );
 });
 
 test("viewer renderer low-rate reuses slow idle title backdrop until refresh window expires", async () => {

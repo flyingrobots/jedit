@@ -9,7 +9,7 @@ Status: design-first slice for the title screen startup flow.
 
 jedit's no-editor startup screen should feel like a product entry flow, not only
 an ambient title render. The title sequence introduces FLYINGROBOTS and jedit on
-a deterministic timeline, allows immediate skip with Enter or Escape, and then
+a deterministic timeline, allows immediate skip with Enter or Tab, and then
 opens a focused startup file drawer where the user can type a target and inspect
 files from the current working directory.
 
@@ -35,7 +35,7 @@ removed from the product startup path.
 
 ## Skip Semantics
 
-Enter and Escape skip the intro only while the title startup flow is active and
+Enter and Tab skip the intro only while the title startup flow is active and
 no editor is open. Skipping marks the intro complete and opens the startup file
 drawer immediately.
 
@@ -47,8 +47,9 @@ Skip must not:
 - activate scene-picker or settings behavior;
 - leave an armed normal-mode motion behind.
 
-After the startup file drawer is open, Enter and Escape are drawer keys, not
-title intro skip keys.
+Escape is not a startup skip key. When the drawer is closed, Escape opens the
+standard quit confirmation. After the startup file drawer is open, Enter and
+Escape are drawer keys, not title intro skip keys.
 
 ## Startup File Drawer
 
@@ -73,19 +74,19 @@ current-directory rows, and opens selected file rows through the existing
 production file-open command path. Directory rows reuse the existing file-tree
 directory transition path and keep the drawer open in the new directory.
 
-## Frozen Title Backdrop
+## Live Title Backdrop
 
-While the startup file drawer is open, the title scene is a frozen backdrop. The
-renderer should keep the last rendered title surface and reuse it under the
-drawer instead of retracing the ray scene for every drawer input update.
+While the startup file drawer is open, the title scene keeps ray tracing and
+camera motion live until the app has a file open. The drawer is an overlay over
+the current title scene, not a modal that disables the renderer.
 
 This is a render-performance posture only:
 
-- the retained backdrop is not workspace state or Echo state;
 - time ticks may continue updating runtime timing fields;
-- closing the drawer resumes normal title rendering from the current model;
-- if there is no retained backdrop for the current viewport, the renderer may
-  trace one frame and then freeze that frame for subsequent drawer redraws.
+- drawer input must stay responsive through normal Bijou message handling;
+- opening a file stops the title scene because the editor becomes the active
+  rendered surface;
+- slow idle title-screen caching remains a separate non-browser posture.
 
 ## Small Screens
 
@@ -122,7 +123,9 @@ adapt to width and theme tokens.
 While intro is active:
 
 - `enter`: skip intro and open startup file drawer.
-- `esc`: skip intro and open startup file drawer.
+- `tab`: skip intro and open startup file drawer.
+- `esc`: open the standard quit confirmation.
+- `m`, `M`: cycle the Dragon material preset and show a toast with its name.
 
 While the startup file drawer is open:
 
@@ -132,13 +135,15 @@ While the startup file drawer is open:
   in list navigation posture.
 - `k`, `up`: move file selection up when the input is empty or the drawer is in
   list navigation posture.
-- `esc`: close the drawer.
+- `esc`: dismiss the drawer with the close spring animation.
 - `enter`: opens the selected file through the existing production open path,
   or enters the selected directory while keeping the drawer open.
 
 After the intro is complete and the drawer is closed:
 
-- `enter`, `o`: reopen the startup file drawer.
+- `tab`, `enter`, `o`: reopen the startup file drawer.
+- `esc`: open the standard quit confirmation.
+- `m`, `M`: cycle the Dragon material preset and show a toast with its name.
 
 ## Evidence
 
@@ -146,7 +151,7 @@ The first executable claim is:
 
 ```text
 At title time 0 FLYINGROBOTS is visible, at title time 2 jedit is visible, at
-title time 7 the workspace considers the intro complete, and Enter/Escape
+title time 7 the workspace considers the intro complete, and Enter/Tab
 complete it immediately by opening a startup drawer whose input filters current
 directory file rows.
 ```
@@ -154,11 +159,12 @@ directory file rows.
 Focused witnesses:
 
 - title presentation sequence spec for the new timing;
-- workspace key spec for Enter/Escape skip before drawer;
+- workspace key spec for Enter/Tab skip before drawer;
 - workspace render spec for drawer input and current-directory files;
-- workspace key spec for input editing and Escape close;
+- workspace key spec for input editing and animated Escape close;
 - workspace key spec for selected file open and selected directory traversal;
-- workspace render spec proving drawer input reuses the frozen title backdrop;
+- workspace render spec proving drawer input keeps the title renderer live;
+- workspace key spec proving `m` and `M` cycle Dragon material presets;
 - small-screen spec proving the drawer does not override the minimum-terminal
   notice.
 
@@ -171,7 +177,7 @@ Focused witnesses:
 - [x] Slice 5: render the startup drawer shell with input and file rows.
 - [x] Slice 6: integrate the drawer as a workspace overlay above the title scene.
 - [x] Slice 7: preserve the small-terminal notice as the highest-priority view.
-- [x] Slice 8: skip the intro with Enter or Escape before other title keys.
+- [x] Slice 8: skip the intro with Enter or Tab before other title keys.
 - [x] Slice 9: auto-complete the intro and open the drawer at the timeline end.
 - [x] Slice 10: edit drawer input with printable keys and Backspace.
 - [x] Slice 11: filter file rows from the drawer input.

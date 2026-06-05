@@ -11,6 +11,7 @@ import {
   appendStartupFileModalInput,
   backspaceStartupFileModalInput,
   closeStartupFileModal,
+  dismissStartupFileModal,
   isStartupFileModalReopenCandidate,
   isStartupIntroSkipCandidate,
   moveStartupFileModalSelection,
@@ -65,7 +66,13 @@ function updateOpenStartupFileModalKey(
   context: WorkspaceKeyBindingContext,
 ): KeyBindingResult {
   if (msg.key === WorkspaceKeys.Escape) {
-    return [closeStartupFileModal(model), []];
+    return [
+      dismissStartupFileModal(model),
+      context.createStartupFileDrawerAnimationCmd(
+        model.startupFileDrawerProgress,
+        0,
+      ),
+    ];
   }
   if (msg.key === WorkspaceKeys.Backspace) {
     return [backspaceStartupFileModalInput(model), []];
@@ -116,7 +123,7 @@ function isStartupIntroSkipKey(msg: KeyMsg): boolean {
     !msg.alt &&
     (msg.key === WorkspaceKeys.Enter ||
       msg.key === WorkspaceKeys.Return ||
-      msg.key === WorkspaceKeys.Escape)
+      msg.key === WorkspaceKeys.Tab)
   );
 }
 
@@ -126,6 +133,7 @@ function isStartupFileModalReopenKey(msg: KeyMsg): boolean {
     !msg.alt &&
     (msg.key === WorkspaceKeys.Enter ||
       msg.key === WorkspaceKeys.Return ||
+      msg.key === WorkspaceKeys.Tab ||
       msg.key === WorkspaceKeys.O)
   );
 }

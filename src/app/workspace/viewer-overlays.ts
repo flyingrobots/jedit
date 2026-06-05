@@ -99,7 +99,6 @@ function startupFileModalCopy(model: WorkspaceModel) {
 
 function shouldRenderStartupFileDrawer(model: WorkspaceModel): boolean {
   return (
-    model.startupFileModalOpen &&
     model.startupFileDrawerProgress > 0 &&
     model.editor == null &&
     model.columns >= MIN_COLUMNS &&

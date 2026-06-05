@@ -1,5 +1,5 @@
 {
-  "camera": { "angle": -0.42, "radius": 7.6 },
+  "camera": { "angle": -0.42, "radius": 2.8 },
   "environment": {
     "background": [2, 3, 7],
     "floor": {

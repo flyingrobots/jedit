@@ -19,6 +19,7 @@ const MIN_ORBIT_RENDER_COLOR_VARIETY = 20;
 const CHECKER_FLOOR_DARK = [3, 4, 7];
 const CHECKER_FLOOR_LIGHT = [58, 68, 76];
 const CHECKER_FLOOR_GRID_SCALE = 0.95;
+const MAX_DEFAULT_DRAGON_CAMERA_RADIUS = 3.2;
 const THEME_STABILITY_VARIABLE_NAMES = [
   "accent",
   "info",
@@ -44,6 +45,7 @@ test("neon dispersion is the registered default title scene", async () => {
     NEON_DISPERSION_SCENE,
   );
   assert.equal(scene.objects.length, 1);
+  assert.ok(scene.camera.radius <= MAX_DEFAULT_DRAGON_CAMERA_RADIUS);
   assert.equal(dragon.label, DRAGON_OBJECT_LABEL);
   assert.equal(dragon.kind, "mesh");
   assert.ok(scene.environment?.floor != null);

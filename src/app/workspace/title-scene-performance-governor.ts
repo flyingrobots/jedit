@@ -1,9 +1,6 @@
 const LIVE_TRACE = "live-trace";
-const MODAL_FROZEN_BACKDROP = "modal-frozen-backdrop";
-const MODAL_FALLBACK_TRACE = "modal-fallback-trace";
 const LOW_RATE_FROZEN_BACKDROP = "low-rate-frozen-backdrop";
 const ANIMATED_TITLE_INPUT = "animated-title";
-const HOT_INPUT = "hot-input";
 const LOW_RATE_INPUT = "low-rate-title";
 const WITHIN_BUDGET = "within-budget";
 const OVER_BUDGET = "over-budget";
@@ -13,20 +10,15 @@ export const TITLE_SCENE_LOW_RATE_REFRESH_SECONDS = 0.5;
 
 export const TITLE_SCENE_RENDER_POSTURE = Object.freeze({
   LiveTrace: LIVE_TRACE,
-  ModalFrozenBackdrop: MODAL_FROZEN_BACKDROP,
-  ModalFallbackTrace: MODAL_FALLBACK_TRACE,
   LowRateFrozenBackdrop: LOW_RATE_FROZEN_BACKDROP,
 });
 
 export type TitleSceneRenderPosture =
   | typeof LIVE_TRACE
-  | typeof MODAL_FROZEN_BACKDROP
-  | typeof MODAL_FALLBACK_TRACE
   | typeof LOW_RATE_FROZEN_BACKDROP;
 
 export type TitleSceneInputLatencyPosture =
   | typeof ANIMATED_TITLE_INPUT
-  | typeof HOT_INPUT
   | typeof LOW_RATE_INPUT;
 
 export type TitleSceneFrameBudgetPosture =
@@ -35,7 +27,6 @@ export type TitleSceneFrameBudgetPosture =
 
 export interface TitleScenePerformanceGovernorInput {
   readonly introActive: boolean;
-  readonly startupFileModalOpen: boolean;
   readonly idleTitleScreen: boolean;
   readonly frozenBackdropAvailable: boolean;
   readonly cacheAgeSeconds?: number;
@@ -60,11 +51,6 @@ export interface TitleScenePerformanceFacts {
   readonly frameBudgetPosture: TitleSceneFrameBudgetPosture;
 }
 
-interface ModalDecisionInput {
-  readonly frozenBackdropAvailable: boolean;
-  readonly frameBudgetPosture: TitleSceneFrameBudgetPosture;
-}
-
 export function governTitleSceneRender(
   input: TitleScenePerformanceGovernorInput,
 ): TitleSceneRenderDecision {
@@ -72,12 +58,6 @@ export function governTitleSceneRender(
   const frameBudgetPosture = frameBudgetPostureFor(input.frameTimeMs);
   if (input.introActive) {
     return liveTraceDecision(frameBudgetPosture);
-  }
-  if (input.startupFileModalOpen) {
-    return modalDecision({
-      frozenBackdropAvailable: input.frozenBackdropAvailable,
-      frameBudgetPosture,
-    });
   }
   if (shouldReuseLowRateBackdrop(input, frameBudgetPosture)) {
     return frozenBackdropDecision(
@@ -100,23 +80,6 @@ export function titleScenePerformanceFacts(
     inputLatencyPosture: decision.inputLatencyPosture,
     frameBudgetPosture: decision.frameBudgetPosture,
   };
-}
-
-function modalDecision(input: ModalDecisionInput): TitleSceneRenderDecision {
-  return input.frozenBackdropAvailable
-    ? frozenBackdropDecision(
-        TITLE_SCENE_RENDER_POSTURE.ModalFrozenBackdrop,
-        HOT_INPUT,
-        input.frameBudgetPosture,
-      )
-    : {
-        posture: TITLE_SCENE_RENDER_POSTURE.ModalFallbackTrace,
-        shouldTraceRays: true,
-        shouldUseFrozenBackdrop: false,
-        shouldRetainRenderedBackdrop: true,
-        inputLatencyPosture: HOT_INPUT,
-        frameBudgetPosture: input.frameBudgetPosture,
-      };
 }
 
 function liveTraceDecision(

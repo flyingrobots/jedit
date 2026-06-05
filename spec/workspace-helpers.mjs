@@ -242,6 +242,7 @@ export function mockTitleScreenModel(titleScreen, overrides = {}) {
     },
     titleRenderMode: titleScreen.TITLE_RENDER_MODE.Braille,
     titleAsciiPalette: titleScreen.TITLE_ASCII_PALETTE.Dense,
+    titleDragonMaterialIndex: 0,
     ...overrides,
   };
 }

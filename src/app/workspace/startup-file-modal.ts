@@ -77,6 +77,13 @@ export function closeStartupFileModal(model: WorkspaceModel): WorkspaceModel {
   };
 }
 
+export function dismissStartupFileModal(model: WorkspaceModel): WorkspaceModel {
+  return {
+    ...model,
+    startupFileModalOpen: false,
+  };
+}
+
 export function startupFileModalRows(
   entries: readonly FileEntry[],
   input: string,

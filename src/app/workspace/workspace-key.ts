@@ -14,6 +14,8 @@ export const WorkspaceKeys = Object.freeze({
   J: "j",
   K: "k",
   L: "l",
+  M: "m",
+  UpperM: "M",
   O: "o",
   R: "r",
   Escape: "escape",

@@ -75,5 +75,6 @@ export interface WorkspaceModel extends StartupFileModalState {
   readonly titleCamera: TitleCameraState;
   readonly titleRenderMode: TitleRenderMode;
   readonly titleAsciiPalette: TitleAsciiPalette;
+  readonly titleDragonMaterialIndex: number;
   readonly profiler: ProfilerState;
 }

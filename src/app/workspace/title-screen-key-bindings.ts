@@ -13,6 +13,11 @@ import {
   type TitleAsciiPalette,
 } from '../../ui/title-screen.js';
 import { updateTitleCameraFromKey } from '../title-camera-session.js';
+import {
+  applyTitleDragonMaterial,
+  nextTitleDragonMaterialIndex,
+  titleDragonMaterialPresetAt,
+} from './title-dragon-materials.js';
 import type { WorkspaceKeyBindingContext } from './key-binding-context.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
@@ -20,6 +25,7 @@ import { WorkspaceKeys } from './workspace-key.js';
 
 const TITLE_SHADER_TOAST_TITLE = 'Title shader';
 const TITLE_ASCII_PALETTE_TOAST_TITLE = 'ASCII palette';
+const TITLE_DRAGON_MATERIAL_TOAST_TITLE = 'Dragon material';
 const TITLE_SHADER_BRAILLE_LABEL = 'Braille';
 const TITLE_SHADER_ASCII_LABEL = 'ASCII';
 const TITLE_ASCII_PALETTE_DENSE_LABEL = 'Dense';
@@ -53,7 +59,10 @@ export function updateTitleScreenKey(
     return undefined;
   }
 
-  return updateTitleRenderKey(msg, model, context) ?? updateTitleCameraKey(msg, model);
+  return updateTitleRenderKey(msg, model, context)
+    ?? updateTitleDragonMaterialKey(msg, model, context)
+    ?? updateTitleEscapeKey(msg, model)
+    ?? updateTitleCameraKey(msg, model);
 }
 
 function updateTitleRenderKey(
@@ -75,6 +84,38 @@ function updateTitleRenderKey(
   return pushAsciiPaletteToast({ ...model, titleAsciiPalette }, titleAsciiPalette, context);
 }
 
+function updateTitleDragonMaterialKey(
+  msg: KeyMsg,
+  model: WorkspaceModel,
+  context: WorkspaceKeyBindingContext,
+): KeyBindingResult | undefined {
+  if (!isTitleDragonMaterialKey(msg)) {
+    return undefined;
+  }
+  const titleDragonMaterialIndex = nextTitleDragonMaterialIndex(
+    model.titleDragonMaterialIndex,
+  );
+  const preset = titleDragonMaterialPresetAt(titleDragonMaterialIndex);
+  const sceneOverride =
+    model.sceneOverride == null
+      ? undefined
+      : applyTitleDragonMaterial(model.sceneOverride, preset);
+  return pushDragonMaterialToast({
+    ...model,
+    titleDragonMaterialIndex,
+    ...(sceneOverride == null ? {} : { sceneOverride }),
+  }, preset.name, context);
+}
+
+function updateTitleEscapeKey(
+  msg: KeyMsg,
+  model: WorkspaceModel,
+): KeyBindingResult | undefined {
+  return msg.key === WorkspaceKeys.Escape
+    ? [{ ...model, quitConfirmOpen: true }, []]
+    : undefined;
+}
+
 function updateTitleCameraKey(msg: KeyMsg, model: WorkspaceModel): KeyBindingResult | undefined {
   const update = updateTitleCameraFromKey(msg.key, model.titleCamera);
   return update == null ? undefined : [{ ...model, titleCamera: update.state }, update.commands];
@@ -86,6 +127,14 @@ function pushTitleScreenToast(
   context: WorkspaceKeyBindingContext,
 ): KeyBindingResult {
   return pushToast(model, TITLE_SHADER_TOAST_TITLE, message, context);
+}
+
+function pushDragonMaterialToast(
+  model: WorkspaceModel,
+  message: string,
+  context: WorkspaceKeyBindingContext,
+): KeyBindingResult {
+  return pushToast(model, TITLE_DRAGON_MATERIAL_TOAST_TITLE, message, context);
 }
 
 function pushAsciiPaletteToast(
@@ -115,6 +164,14 @@ function pushToast(
 
 function asciiShaderLabel(model: WorkspaceModel): string {
   return `${TITLE_SHADER_ASCII_LABEL} · ${titleAsciiPaletteLabel(model.titleAsciiPalette)}`;
+}
+
+function isTitleDragonMaterialKey(msg: KeyMsg): boolean {
+  return (
+    !msg.ctrl &&
+    !msg.alt &&
+    (msg.key === WorkspaceKeys.M || msg.key === WorkspaceKeys.UpperM)
+  );
 }
 
 function titleToastBackgroundToken(model: WorkspaceModel): TokenValue {
