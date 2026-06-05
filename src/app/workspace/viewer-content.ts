@@ -2,10 +2,20 @@ import { createSurface, type Surface } from "@flyingrobots/bijou";
 import { paintMarkdownPreview } from "../../ui/markdown-preview.js";
 import { renderSourceViewer } from "../../ui/source-viewer.js";
 import {
+  TITLE_RENDER_MODE,
   renderTitleScreen,
   type TitleScreenRenderOptions,
 } from "../../ui/title-screen.js";
 import type { JeditTheme } from "../../ui/jedit-theme.js";
+import {
+  createBrailleSampleCache,
+  createBrailleSampleFrameStats,
+  type AveragingBrailleCanvasOptions,
+  type BrailleSampleCache,
+  type BrailleSampleFrameStats,
+} from "../../ui/averaging-braille-canvas.js";
+import type { TitleMesh } from "../../ui/title-mesh.js";
+import type { TitleScene } from "../../ui/title-scene.js";
 import type { WorkspaceModel } from "./model.js";
 import { isWorkspaceMarkdownFile } from "./editor-session.js";
 import { ViewModes } from "./view-mode.js";
@@ -21,6 +31,7 @@ import {
   TITLE_SCENE_RENDER_POSTURE,
   type TitleScenePerformanceFacts,
 } from "./title-scene-performance-governor.js";
+import { titleBrailleTraceBudget } from "./title-braille-sampling.js";
 
 const MIN_VIEWPORT_DIMENSION = 1;
 const VIEWER_PAD_MULTIPLIER = 2;
@@ -43,6 +54,26 @@ interface FrozenTitleBackdrop {
 interface ViewerContentRendererState {
   frozenTitleBackdrop?: FrozenTitleBackdrop;
   lastTitleScenePerformance?: TitleScenePerformanceFacts;
+  titleBrailleSampleCache?: BrailleSampleCache;
+  titleBrailleSampleCacheIdentity?: TitleBrailleSampleCacheIdentity;
+  titleBrailleFrameIndex?: number;
+  lastBrailleSampleStats?: BrailleSampleFrameStats;
+}
+
+interface TitleBrailleSampleCacheIdentity {
+  readonly width: number;
+  readonly height: number;
+  readonly themeName: string;
+  readonly titleRenderMode: WorkspaceModel["titleRenderMode"];
+  readonly titleSceneSeed: number;
+  readonly titleSceneName?: WorkspaceModel["titleSceneName"];
+  readonly sceneOverride?: TitleScene;
+  readonly mesh?: TitleMesh;
+}
+
+interface TitleBrailleSamplingRenderContext {
+  readonly options?: AveragingBrailleCanvasOptions;
+  readonly stats?: BrailleSampleFrameStats;
 }
 
 export type TitleScreenRenderer = (
@@ -153,7 +184,13 @@ function renderTitleBackdrop(
     return copySurface(frozen.surface);
   }
 
-  const rendered = renderLiveTitleBackdrop(model, width, height, titleRenderer);
+  const rendered = renderLiveTitleBackdrop(
+    model,
+    width,
+    height,
+    titleRenderer,
+    state,
+  );
   if (decision.shouldRetainRenderedBackdrop) {
     state.frozenTitleBackdrop = {
       width,
@@ -190,8 +227,15 @@ function renderLiveTitleBackdrop(
   width: number,
   height: number,
   titleRenderer: TitleScreenRenderer,
+  state: ViewerContentRendererState,
 ): Surface {
-  return titleRenderer(width, height, model.time, model.jeditTheme, {
+  const sampling = titleBrailleSamplingRenderContext(
+    model,
+    width,
+    height,
+    state,
+  );
+  const rendered = titleRenderer(width, height, model.time, model.jeditTheme, {
     camAngle: model.titleCamera.angle,
     camRadius: model.titleCamera.radius,
     sceneSeed: model.titleSceneSeed,
@@ -200,7 +244,102 @@ function renderLiveTitleBackdrop(
     renderMode: model.titleRenderMode,
     asciiPalette: model.titleAsciiPalette,
     textDirection: model.i18n.direction,
+    brailleSampling: sampling.options,
   });
+  recordTitleBrailleSamplingStats(state, sampling);
+  return rendered;
+}
+
+function titleBrailleSamplingRenderContext(
+  model: WorkspaceModel,
+  width: number,
+  height: number,
+  state: ViewerContentRendererState,
+): TitleBrailleSamplingRenderContext {
+  if (model.titleRenderMode !== TITLE_RENDER_MODE.Braille) {
+    return {};
+  }
+  const stats = createBrailleSampleFrameStats();
+  const cache = titleBrailleSampleCacheFor(model, width, height, state);
+  const frameIndex = state.titleBrailleFrameIndex ?? 0;
+  state.titleBrailleFrameIndex = frameIndex + 1;
+  return {
+    stats,
+    options: {
+      sampleCache: cache,
+      stats,
+      traceBudget: titleBrailleTraceBudget({
+        frameIndex,
+        frameTimeMs: model.frameTimeMs,
+        previousStats: state.lastBrailleSampleStats,
+      }),
+    },
+  };
+}
+
+function titleBrailleSampleCacheFor(
+  model: WorkspaceModel,
+  width: number,
+  height: number,
+  state: ViewerContentRendererState,
+): BrailleSampleCache {
+  const identity = titleBrailleSampleCacheIdentity(model, width, height);
+  if (
+    state.titleBrailleSampleCache == null ||
+    state.titleBrailleSampleCacheIdentity == null ||
+    !sameTitleBrailleSampleCacheIdentity(
+      state.titleBrailleSampleCacheIdentity,
+      identity,
+    )
+  ) {
+    state.titleBrailleSampleCache = createBrailleSampleCache(width, height);
+    state.titleBrailleSampleCacheIdentity = identity;
+    state.titleBrailleFrameIndex = 0;
+    state.lastBrailleSampleStats = undefined;
+  }
+  return state.titleBrailleSampleCache;
+}
+
+function titleBrailleSampleCacheIdentity(
+  model: WorkspaceModel,
+  width: number,
+  height: number,
+): TitleBrailleSampleCacheIdentity {
+  return {
+    width,
+    height,
+    themeName: model.jeditTheme.name,
+    titleRenderMode: model.titleRenderMode,
+    titleSceneSeed: model.titleSceneSeed,
+    titleSceneName: model.titleSceneName,
+    sceneOverride: model.sceneOverride,
+    mesh: model.titleMeshes.bunny,
+  };
+}
+
+function sameTitleBrailleSampleCacheIdentity(
+  left: TitleBrailleSampleCacheIdentity,
+  right: TitleBrailleSampleCacheIdentity,
+): boolean {
+  return (
+    left.width === right.width &&
+    left.height === right.height &&
+    left.themeName === right.themeName &&
+    left.titleRenderMode === right.titleRenderMode &&
+    left.titleSceneSeed === right.titleSceneSeed &&
+    left.titleSceneName === right.titleSceneName &&
+    left.sceneOverride === right.sceneOverride &&
+    left.mesh === right.mesh
+  );
+}
+
+function recordTitleBrailleSamplingStats(
+  state: ViewerContentRendererState,
+  context: TitleBrailleSamplingRenderContext,
+): void {
+  if (context.stats != null && context.stats.totalSamples > 0) {
+    state.lastBrailleSampleStats = context.stats;
+  }
 }
 
 function frozenTitleBackdropFor(

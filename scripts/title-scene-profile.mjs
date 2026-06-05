@@ -11,7 +11,11 @@ import {
 } from "../dist/app/title-scene-preview-session.js";
 import { BUILT_IN_TITLE_SCENE_NAMES } from "../dist/ports/title-scene-loader.js";
 import { ASCII_SAMPLE_COUNT } from "../dist/ui/averaging-ascii-canvas.js";
-import { BRAILLE_SAMPLE_COUNT } from "../dist/ui/averaging-braille-canvas.js";
+import {
+  BRAILLE_SAMPLE_COUNT,
+  createBrailleSampleCache,
+  createBrailleSampleFrameStats,
+} from "../dist/ui/averaging-braille-canvas.js";
 import { availableJeditThemes } from "../dist/ui/jedit-themes.js";
 import {
   TITLE_RENDER_MODE,
@@ -31,6 +35,7 @@ const EXIT_USAGE = 2;
 const JSON_INDENT = 2;
 const PERCENTILE_HALF = 0.5;
 const PERCENTILE_NINETY_FIVE = 0.95;
+const BRAILLE_PHASE_COUNTS = Object.freeze([1, 2, 4]);
 
 main().catch((error) => {
   process.stderr.write(
@@ -89,6 +94,10 @@ function parseArgs(args) {
       );
     } else if (arg === "--camera-step") {
       options.cameraStep = finiteNumber(requiredValue(args, (index += 1), arg));
+    } else if (arg === "--braille-phase-count") {
+      options.braillePhaseCount = braillePhaseCount(
+        requiredValue(args, (index += 1), arg),
+      );
     } else {
       usage(`Unknown option: ${arg}`);
     }
@@ -111,6 +120,7 @@ function defaultOptions() {
     cameraAngle: undefined,
     cameraRadius: undefined,
     cameraStep: DEFAULT_CAMERA_STEP_RADIANS,
+    braillePhaseCount: undefined,
   };
 }
 
@@ -118,8 +128,9 @@ async function profileTitleScene(options) {
   const scene = await loadProfileScene(options.sceneName);
   const theme = themeByName(options.themeName);
   const model = createProfilePreviewModel(options, scene);
-  warmupTitleScene(options, scene, theme, model);
-  return profileFrames(options, scene, theme, model);
+  const sampling = createProfileBrailleSampling(options);
+  warmupTitleScene(options, scene, theme, model, sampling);
+  return profileFrames(options, scene, theme, model, sampling);
 }
 
 async function loadProfileScene(sceneName) {
@@ -145,27 +156,38 @@ function createProfilePreviewModel(options, scene) {
   });
 }
 
-function warmupTitleScene(options, scene, theme, model) {
+function warmupTitleScene(options, scene, theme, model, sampling) {
   for (let index = 0; index < options.warmupFrames; index += 1) {
-    renderProfileFrame(options, scene, theme, model, index);
+    renderProfileFrame(options, scene, theme, model, sampling, index);
   }
 }
 
-function profileFrames(options, scene, theme, model) {
+function profileFrames(options, scene, theme, model, sampling) {
   const timings = [];
+  const sampleStats = createProfileSampleStats();
   let checksum = 0;
   for (let index = 0; index < options.frames; index += 1) {
     const started = performance.now();
-    const surface = renderProfileFrame(options, scene, theme, model, index);
+    const frame = renderProfileFrame(
+      options,
+      scene,
+      theme,
+      model,
+      sampling,
+      index,
+    );
     const elapsed = performance.now() - started;
     timings.push(elapsed);
-    checksum += profileFrameChecksum(surface, index);
+    checksum += profileFrameChecksum(frame.surface, index);
+    recordProfileSampleStats(sampleStats, frame.sampleStats);
   }
-  return profileReport(options, scene, timings, checksum);
+  return profileReport(options, scene, timings, checksum, sampleStats);
 }
 
-function renderProfileFrame(options, scene, theme, model, index) {
-  return renderTitleScreen(
+function renderProfileFrame(options, scene, theme, model, sampling, index) {
+  const sampleStats =
+    sampling == null ? undefined : createBrailleSampleFrameStats();
+  const surface = renderTitleScreen(
     options.width,
     options.height,
     frameTime(options, index),
@@ -175,11 +197,23 @@ function renderProfileFrame(options, scene, theme, model, index) {
       camAngle: model.cameraAngle + index * options.cameraStep,
       camRadius: model.cameraRadius,
       sceneOverride: scene,
+      brailleSampling:
+        sampling == null
+          ? undefined
+          : {
+              sampleCache: sampling.cache,
+              stats: sampleStats,
+              traceBudget: {
+                phase: index,
+                phaseCount: sampling.phaseCount,
+              },
+            },
     },
   );
+  return { surface, sampleStats };
 }
 
-function profileReport(options, scene, timings, checksum) {
+function profileReport(options, scene, timings, checksum, sampleStats) {
   const sortedTimings = [...timings].sort((left, right) => left - right);
   return {
     scene: {
@@ -196,6 +230,10 @@ function profileReport(options, scene, timings, checksum) {
       primarySamplesPerFrame: primarySamplesPerFrame(options),
       totalPrimarySamples: primarySamplesPerFrame(options) * options.frames,
     },
+    sampling:
+      sampleStats.totalSamples <= 0
+        ? undefined
+        : profileSampleStatsReport(options, sampleStats),
     timing: {
       avgMs: average(sortedTimings),
       minMs: sortedTimings[0],
@@ -204,6 +242,50 @@ function profileReport(options, scene, timings, checksum) {
       maxMs: sortedTimings[sortedTimings.length - 1],
     },
     checksum,
+  };
+}
+
+function createProfileBrailleSampling(options) {
+  return options.renderMode === TITLE_RENDER_MODE.Braille &&
+    options.braillePhaseCount != null
+    ? {
+        cache: createBrailleSampleCache(options.width, options.height),
+        phaseCount: options.braillePhaseCount,
+      }
+    : undefined;
+}
+
+function createProfileSampleStats() {
+  return {
+    totalSamples: 0,
+    tracedSamples: 0,
+    reusedSamples: 0,
+    activeSamples: 0,
+    coldMissSamples: 0,
+  };
+}
+
+function recordProfileSampleStats(total, frameStats) {
+  if (frameStats == null) {
+    return;
+  }
+  total.totalSamples += frameStats.totalSamples;
+  total.tracedSamples += frameStats.tracedSamples;
+  total.reusedSamples += frameStats.reusedSamples;
+  total.activeSamples += frameStats.activeSamples;
+  total.coldMissSamples += frameStats.coldMissSamples;
+}
+
+function profileSampleStatsReport(options, stats) {
+  return {
+    braillePhaseCount: options.braillePhaseCount,
+    tracedSamples: stats.tracedSamples,
+    reusedSamples: stats.reusedSamples,
+    coldMissSamples: stats.coldMissSamples,
+    activeSampleRatio:
+      stats.totalSamples <= 0 ? 0 : stats.activeSamples / stats.totalSamples,
+    tracedSamplesPerFrame: stats.tracedSamples / options.frames,
+    reusedSamplesPerFrame: stats.reusedSamples / options.frames,
   };
 }
 
@@ -271,7 +353,7 @@ function percentile(values, rank) {
 }
 
 function plainReportLines(report) {
-  return [
+  const lines = [
     "jedit title scene profile",
     `scene ${report.scene.name}  objects ${report.scene.objects}  triangles ${report.scene.triangles}`,
     `render ${report.render.mode}  size ${report.render.width}x${report.render.height}  frames ${report.render.frames}`,
@@ -279,10 +361,26 @@ function plainReportLines(report) {
     `avg ${formatMs(report.timing.avgMs)}  p50 ${formatMs(report.timing.p50Ms)}  p95 ${formatMs(report.timing.p95Ms)}  max ${formatMs(report.timing.maxMs)}`,
     `checksum ${report.checksum}`,
   ];
+  if (report.sampling != null) {
+    lines.splice(
+      4,
+      0,
+      `braille phase ${report.sampling.braillePhaseCount}  traced/frame ${formatSampleCount(report.sampling.tracedSamplesPerFrame)}  reused/frame ${formatSampleCount(report.sampling.reusedSamplesPerFrame)}  active ${formatPercent(report.sampling.activeSampleRatio)}`,
+    );
+  }
+  return lines;
 }
 
 function formatMs(value) {
   return `${value.toFixed(2)} ms`;
+}
+
+function formatSampleCount(value) {
+  return value.toFixed(0);
+}
+
+function formatPercent(value) {
+  return `${(value * 100).toFixed(1)}%`;
 }
 
 function requiredValue(args, index, option) {
@@ -317,10 +415,18 @@ function finiteNumber(rawValue) {
   return value;
 }
 
+function braillePhaseCount(rawValue) {
+  const value = positiveInteger(rawValue);
+  if (!BRAILLE_PHASE_COUNTS.includes(value)) {
+    usage(`Expected Braille phase count 1, 2, or 4, got: ${rawValue}`);
+  }
+  return value;
+}
+
 function usage(message) {
   process.stderr.write(`${message}\n`);
   process.stderr.write(
-    "Usage: title-scene-profile [--json] [--scene name] [--theme name] [--render-mode braille|ascii] [--width n] [--height n] [--frames n] [--warmup n] [--start seconds] [--step seconds] [--camera-angle radians] [--camera-radius n] [--camera-step radians]\n",
+    "Usage: title-scene-profile [--json] [--scene name] [--theme name] [--render-mode braille|ascii] [--width n] [--height n] [--frames n] [--warmup n] [--start seconds] [--step seconds] [--camera-angle radians] [--camera-radius n] [--camera-step radians] [--braille-phase-count 1|2|4]\n",
   );
   process.exit(EXIT_USAGE);
 }

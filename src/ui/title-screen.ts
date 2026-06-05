@@ -6,6 +6,7 @@ import {
 } from "./averaging-ascii-canvas.js";
 import {
   averagingBrailleCanvas,
+  type AveragingBrailleCanvasOptions,
   type BrailleShaderFn,
   type BrailleShaderSample,
   type RGB,
@@ -103,6 +104,7 @@ export interface TitleScreenRenderOptions {
   readonly renderMode?: TitleRenderMode;
   readonly asciiPalette?: TitleAsciiPalette;
   readonly textDirection?: TitleScreenTextDirection;
+  readonly brailleSampling?: AveragingBrailleCanvasOptions;
 }
 
 interface TitlePresentationLogoPaintOptions {
@@ -120,6 +122,16 @@ interface TitleSceneShaderOptions {
   readonly camRadius: number;
   readonly scene: TitleScene;
   readonly colors: TitleSceneMaterialColors;
+}
+
+interface TitleSceneSurfaceOptions {
+  readonly cols: number;
+  readonly rows: number;
+  readonly time: number;
+  readonly renderMode: TitleRenderMode;
+  readonly shader: BrailleShaderFn;
+  readonly asciiPalette: TitleAsciiPalette;
+  readonly brailleSampling?: AveragingBrailleCanvasOptions;
 }
 
 const DEFAULT_CAMERA_RADIUS = 8.5;
@@ -145,42 +157,81 @@ export function renderTitleScreen(
   theme: JeditTheme,
   options: TitleScreenRenderOptions,
 ): Surface {
-  const {
-    camAngle,
-    camRadius = DEFAULT_CAMERA_RADIUS,
-    sceneSeed = DEFAULT_TITLE_SCENE_SEED,
-    mesh,
-    sceneOverride,
-    renderMode = TITLE_RENDER_MODE.Braille,
-    asciiPalette = TITLE_ASCII_PALETTE.Dense,
-    textDirection = TITLE_SCREEN_TEXT_DIRECTION.LeftToRight,
-  } = options;
+  const surface = renderTitleSceneSurface(
+    titleSceneSurfaceOptions(cols, rows, time, theme, options),
+  );
+  paintTitlePresentationLogos(
+    surface,
+    titlePresentationLogoOptions(cols, rows, time, theme, options),
+  );
+  return surface;
+}
+
+function titleSceneSurfaceOptions(
+  cols: number,
+  rows: number,
+  time: number,
+  theme: JeditTheme,
+  options: TitleScreenRenderOptions,
+): TitleSceneSurfaceOptions {
   const sceneColors = titleSceneRenderMaterialColors(theme);
-  const scene = sceneOverride ?? generateTitleScene(sceneSeed, sceneColors, mesh);
-  const sequence = titlePresentationSequence(time, textDirection);
+  const scene =
+    options.sceneOverride ??
+    generateTitleScene(
+      options.sceneSeed ?? DEFAULT_TITLE_SCENE_SEED,
+      sceneColors,
+      options.mesh,
+    );
   const shader = titleSceneShader({
     cols,
     rows,
-    camAngle,
-    camRadius,
+    camAngle: options.camAngle,
+    camRadius: options.camRadius ?? DEFAULT_CAMERA_RADIUS,
     scene,
     colors: sceneColors,
   });
+  return {
+    cols,
+    rows,
+    time,
+    renderMode: options.renderMode ?? TITLE_RENDER_MODE.Braille,
+    shader,
+    asciiPalette: options.asciiPalette ?? TITLE_ASCII_PALETTE.Dense,
+    brailleSampling: options.brailleSampling,
+  };
+}
 
-  const surface =
-    renderMode === TITLE_RENDER_MODE.Ascii
-      ? averagingAsciiCanvas(cols, rows, shader, time, {
-          palette: asciiPalette,
-        })
-      : averagingBrailleCanvas(cols, rows, shader, time);
-  paintTitlePresentationLogos(surface, {
+function titlePresentationLogoOptions(
+  cols: number,
+  rows: number,
+  time: number,
+  theme: JeditTheme,
+  options: TitleScreenRenderOptions,
+): TitlePresentationLogoPaintOptions {
+  return {
     cols,
     rows,
     time,
     colors: titleSceneMaterialColors(theme),
-    sequence,
-  });
-  return surface;
+    sequence: titlePresentationSequence(
+      time,
+      options.textDirection ?? TITLE_SCREEN_TEXT_DIRECTION.LeftToRight,
+    ),
+  };
+}
+
+function renderTitleSceneSurface(options: TitleSceneSurfaceOptions): Surface {
+  return options.renderMode === TITLE_RENDER_MODE.Ascii
+    ? averagingAsciiCanvas(options.cols, options.rows, options.shader, options.time, {
+        palette: options.asciiPalette,
+      })
+    : averagingBrailleCanvas(
+        options.cols,
+        options.rows,
+        options.shader,
+        options.time,
+        options.brailleSampling,
+      );
 }
 
 function titleSceneShader(options: TitleSceneShaderOptions): BrailleShaderFn {

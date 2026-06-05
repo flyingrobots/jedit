@@ -68,6 +68,37 @@ test("title-scene profile CLI emits a plain report", () => {
   assert.match(result.stdout, /samples\/frame/);
 });
 
+test("title-scene profile CLI reports temporal Braille sampling facts", () => {
+  ensureDistBuiltSync();
+  const result = runProfile([
+    "--json",
+    "--scene",
+    SPHERE_SCENE,
+    "--theme",
+    "graphite",
+    "--render-mode",
+    "braille",
+    "--width",
+    PROFILE_WIDTH,
+    "--height",
+    PROFILE_HEIGHT,
+    "--frames",
+    PROFILE_FRAMES,
+    "--warmup",
+    "1",
+    "--braille-phase-count",
+    "4",
+  ]);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const report = JSON.parse(result.stdout);
+
+  assert.equal(report.sampling.braillePhaseCount, 4);
+  assert.equal(report.sampling.tracedSamplesPerFrame, 480);
+  assert.equal(report.sampling.reusedSamplesPerFrame, 1440);
+  assert.equal(report.sampling.coldMissSamples, 0);
+});
+
 function runProfile(args) {
   return spawnSync(process.execPath, [PROFILE_SCRIPT, ...args], {
     cwd: REPO_ROOT,
