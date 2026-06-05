@@ -224,8 +224,7 @@ export function reflectedEnvironmentColor(
     options.point,
     options.ray,
     options.objects,
-    options.ignoredObject,
-    options.time,
+    { ignoredObject: options.ignoredObject, time: options.time },
   );
   if (objectHit != null) {
     return reflectedObjectColor(options, objectHit);

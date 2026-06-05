@@ -287,8 +287,7 @@ test("title scene builds a mirror sphere with orbiting bunny and cube", async ()
     origin,
     ray,
     scene.objects,
-    undefined,
-    0,
+    { time: 0 },
   );
 
   assert.ok(hit != null);
@@ -312,8 +311,7 @@ test("title scene builds a mirror sphere with orbiting bunny and cube", async ()
     add(cubeLaterCenter, [0, 0, 3]),
     [0, 0, -1],
     [cube],
-    undefined,
-    LOCAL_YAW_LATER_TIME,
+    { time: LOCAL_YAW_LATER_TIME },
   );
   assert.ok(cubeLaterHit != null);
   assert.notDeepEqual(
@@ -354,8 +352,7 @@ test("title scene builds a mirror sphere with orbiting bunny and cube", async ()
     add(stillRabbitCenter, [0, 0.2, 4]),
     rabbitRay,
     [stillRabbit],
-    undefined,
-    LOCAL_YAW_LATER_TIME,
+    { time: LOCAL_YAW_LATER_TIME },
   );
   assert.ok(rabbitHit != null);
   assert.ok(rabbitLaterHit != null);
@@ -458,6 +455,91 @@ test("title mesh accepts closed meshes with outward winding", async () => {
   assert.equal(mesh.triangles.length, OUTWARD_TETRAHEDRON_TRIANGLES.length);
 });
 
+test("title mesh culls back faces only when the caller requests it", async () => {
+  const { titleMesh } = await loadTitleSceneModules();
+  const mesh = titleMesh.createTitleMesh(
+    {
+      vertices: [
+        [0, 0, 0],
+        [1, 0, 0],
+        [0, 1, 0],
+      ],
+      triangles: [[0, 1, 2]],
+    },
+    UNIT_MESH_PLACEMENT,
+  );
+
+  assert.ok(
+    titleMesh.nearestTitleMeshHit(meshBackOrigin(), meshFrontRay(), mesh),
+  );
+  assert.ok(
+    titleMesh.nearestTitleMeshHit(
+      meshBackOrigin(),
+      meshFrontRay(),
+      mesh,
+      titleMesh.TITLE_MESH_SIDE_MODE.DoubleSided,
+    ),
+  );
+  assert.ok(
+    titleMesh.nearestTitleMeshHit(
+      meshFrontOrigin(),
+      meshBackRay(),
+      mesh,
+      titleMesh.TITLE_MESH_SIDE_MODE.FrontFacing,
+    ),
+  );
+  assert.equal(
+    titleMesh.nearestTitleMeshHit(
+      meshBackOrigin(),
+      meshFrontRay(),
+      mesh,
+      titleMesh.TITLE_MESH_SIDE_MODE.FrontFacing,
+    ),
+    undefined,
+  );
+});
+
+test("title scene mesh side mode stays double-sided unless requested", async () => {
+  const { titleScene, titleMesh } = await loadTitleSceneModules();
+  const mesh = titleMesh.createTitleMesh(
+    {
+      vertices: [
+        [0, 0, 0],
+        [1, 0, 0],
+        [0, 1, 0],
+      ],
+      triangles: [[0, 1, 2]],
+    },
+    UNIT_MESH_PLACEMENT,
+  );
+  const object = {
+    kind: titleScene.TITLE_SCENE_SHAPE_KIND.Mesh,
+    mesh,
+    radius: 1,
+    footprintRadius: 1,
+    height: 1,
+    color: [255, 255, 255],
+    reflectivity: 0,
+  };
+
+  assert.ok(
+    titleScene.nearestTitleSceneObjectHit(
+      meshBackOrigin(),
+      meshFrontRay(),
+      [object],
+    ),
+  );
+  assert.equal(
+    titleScene.nearestTitleSceneObjectHit(
+      meshBackOrigin(),
+      meshFrontRay(),
+      [object],
+      { sideMode: titleMesh.TITLE_MESH_SIDE_MODE.FrontFacing },
+    ),
+    undefined,
+  );
+});
+
 test("title mesh source loader fails fast when no candidate asset is available", async () => {
   const { titleBunnyMesh, domainErrors } = await loadTitleSceneModules();
   const hiddenPaths = [
@@ -535,7 +617,7 @@ test("title mirror sphere reflects the loaded bunny mesh from the title camera",
     reflectionOrigin,
     reflectionRay,
     scene.objects,
-    mirrorHit.object,
+    { ignoredObject: mirrorHit.object },
   );
 
   assert.ok(reflectedHit != null);
@@ -591,6 +673,22 @@ function planarCenter(center) {
 
 function normalKey(normal) {
   return normal.map((component) => component.toFixed(3));
+}
+
+function meshFrontOrigin() {
+  return [0, 0.25, 1];
+}
+
+function meshBackOrigin() {
+  return [0, 0.25, -1];
+}
+
+function meshFrontRay() {
+  return [0, 0, 1];
+}
+
+function meshBackRay() {
+  return [0, 0, -1];
 }
 
 function hideExistingFile(filePath) {

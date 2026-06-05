@@ -17,9 +17,10 @@ import {
 } from "./flyingrobots-logo.js";
 import {
   generateTitleScene,
-  nearestTitleSceneObjectHit,
+  nearestTitleScenePrimaryObjectHit,
   type TitleScene,
   type TitleSceneObject,
+  type TitleSceneObjectHit,
   type TitleSceneVector3,
 } from "./title-scene.js";
 import {
@@ -226,11 +227,10 @@ function paintTitlePresentationLogos(
 
 function sceneSampleAt(options: TitleSceneSampleOptions): BrailleShaderSample {
   const context = titleSceneRayContext(options);
-  const objectHit = nearestTitleSceneObjectHit(
+  const objectHit = nearestTitleScenePrimaryObjectHit(
     context.origin,
     context.ray,
     options.objects,
-    undefined,
     options.time,
   );
   const environmentHit = nearestTitleEnvironmentSurfaceHit(
@@ -302,7 +302,7 @@ function titleSceneRayContext(
 function objectSceneSample(
   options: TitleSceneSampleOptions,
   context: TitleSceneRayContext,
-  objectHit: NonNullable<ReturnType<typeof nearestTitleSceneObjectHit>>,
+  objectHit: TitleSceneObjectHit,
 ): BrailleShaderSample {
   return {
     on: true,

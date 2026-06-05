@@ -5,8 +5,12 @@ import {
   titleBunnySceneCameraPlacement,
 } from "./title-bunny-scene.js";
 import type { TitleMesh } from "./title-mesh.js";
+import { TITLE_MESH_SIDE_MODE } from "./title-mesh-side-mode.js";
 import { titleSceneObjectFootprintCenterAt } from "./title-scene-transform.js";
-import { titleSceneObjectHit } from "./title-scene-hit.js";
+import {
+  titleSceneObjectHit,
+  type TitleSceneObjectHitOptions,
+} from "./title-scene-hit.js";
 import {
   TITLE_SCENE_SHAPE_KIND,
   type TitleScenePrimitiveShapeKind,
@@ -86,6 +90,10 @@ export interface TitleSceneObjectHit {
   readonly normal: TitleSceneVector3;
 }
 
+export interface TitleSceneHitOptions extends TitleSceneObjectHitOptions {
+  readonly ignoredObject?: TitleSceneObject;
+}
+
 const CAMERA_MIN_RADIUS = 7.2;
 const CAMERA_RADIUS_SPAN = 3;
 const FULL_TURN_RADIANS = Math.PI * 2;
@@ -102,6 +110,7 @@ const PLACEMENT_ATTEMPTS = 18;
 const PRNG_SEED_SCALE = 0xffffffff;
 const PRNG_STEP = 0x6d2b79f5;
 const PRNG_DIVISOR = 4294967296;
+const TITLE_SCENE_HIT_DEFAULT_OPTIONS: TitleSceneHitOptions = {};
 export const TITLE_SCENE_OBJECT_MARGIN = 0.28;
 
 const POSITION_TEMPLATES: readonly (readonly [number, number])[] = [
@@ -151,15 +160,14 @@ export function nearestTitleSceneObjectHit(
   origin: TitleSceneVector3,
   ray: TitleSceneVector3,
   objects: readonly TitleSceneObject[],
-  ignoredObject?: TitleSceneObject,
-  time?: number,
+  options: TitleSceneHitOptions = TITLE_SCENE_HIT_DEFAULT_OPTIONS,
 ): TitleSceneObjectHit | undefined {
   let nearest: TitleSceneObjectHit | undefined;
   for (const object of objects) {
-    if (object === ignoredObject) {
+    if (object === options.ignoredObject) {
       continue;
     }
-    const hit = titleSceneObjectHit(origin, ray, object, time);
+    const hit = titleSceneObjectHit(origin, ray, object, options);
     if (
       hit != null &&
       hit.distance > 0 &&
@@ -171,13 +179,25 @@ export function nearestTitleSceneObjectHit(
   return nearest;
 }
 
+export function nearestTitleScenePrimaryObjectHit(
+  origin: TitleSceneVector3,
+  ray: TitleSceneVector3,
+  objects: readonly TitleSceneObject[],
+  time: number,
+): TitleSceneObjectHit | undefined {
+  return nearestTitleSceneObjectHit(origin, ray, objects, {
+    time,
+    sideMode: TITLE_MESH_SIDE_MODE.FrontFacing,
+  });
+}
+
 export function intersectsTitleSceneObjectAlongRay(
   origin: TitleSceneVector3,
   ray: TitleSceneVector3,
   object: TitleSceneObject,
   time?: number,
 ): boolean {
-  const hit = titleSceneObjectHit(origin, ray, object, time);
+  const hit = titleSceneObjectHit(origin, ray, object, { time });
   return hit != null && hit.distance > 0;
 }
 

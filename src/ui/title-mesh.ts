@@ -9,9 +9,15 @@ import {
   MeshTriangleIndexOutOfRangeError,
   MeshVertexIndexOutOfRangeError,
 } from "../domain/errors.js";
+import {
+  TITLE_MESH_SIDE_MODE,
+  titleMeshSideModeAcceptsDeterminant,
+  type TitleMeshSideMode,
+} from "./title-mesh-side-mode.js";
 import { validateTitleMeshWinding } from "./title-mesh-winding.js";
 
 export type { TitleMeshSource, TitleMeshTriangle, TitleMeshVector3 };
+export { TITLE_MESH_SIDE_MODE, type TitleMeshSideMode };
 
 export interface TitleMeshBounds {
   readonly min: TitleMeshVector3;
@@ -54,6 +60,12 @@ interface TitleMeshBvhNode {
   readonly right?: TitleMeshBvhNode;
 }
 
+interface MeshTriangleHitOptions {
+  readonly triangleIndices: readonly number[];
+  readonly nearest: TitleMeshHit | undefined;
+  readonly sideMode: TitleMeshSideMode;
+}
+
 type Axis = typeof AXIS_X | typeof AXIS_Y | typeof AXIS_Z;
 
 const AXIS_X = 0;
@@ -68,6 +80,7 @@ export function nearestTitleMeshHit(
   origin: TitleMeshVector3,
   ray: TitleMeshVector3,
   mesh: TitleMesh,
+  sideMode: TitleMeshSideMode = TITLE_MESH_SIDE_MODE.DoubleSided,
 ): TitleMeshHit | undefined {
   let nearest: TitleMeshHit | undefined;
   visitMeshNode(mesh.root);
@@ -90,8 +103,7 @@ export function nearestTitleMeshHit(
         origin,
         ray,
         mesh,
-        node.triangleIndices,
-        nearest,
+        { triangleIndices: node.triangleIndices, nearest, sideMode },
       );
       return;
     }
@@ -101,9 +113,7 @@ export function nearestTitleMeshHit(
   }
 
   function visitMeshChild(node: TitleMeshBvhNode | undefined): void {
-    if (node != null) {
-      visitMeshNode(node);
-    }
+    if (node != null) visitMeshNode(node);
   }
 }
 
@@ -111,12 +121,11 @@ function nearestMeshTriangleHit(
   origin: TitleMeshVector3,
   ray: TitleMeshVector3,
   mesh: TitleMesh,
-  triangleIndices: readonly number[],
-  nearest: TitleMeshHit | undefined,
+  options: MeshTriangleHitOptions,
 ): TitleMeshHit | undefined {
-  let candidate = nearest;
-  for (const triangleIndex of triangleIndices) {
-    const hit = intersectTitleMeshTriangle(origin, ray, mesh, triangleIndex);
+  let candidate = options.nearest;
+  for (const triangleIndex of options.triangleIndices) {
+    const hit = intersectTitleMeshTriangle(origin, ray, mesh, triangleIndex, options.sideMode);
     if (
       hit != null &&
       (candidate == null || hit.distance < candidate.distance)
@@ -242,6 +251,7 @@ function intersectTitleMeshTriangle(
   ray: TitleMeshVector3,
   mesh: TitleMesh,
   triangleIndex: number,
+  sideMode: TitleMeshSideMode,
 ): TitleMeshHit | undefined {
   const indices = mesh.triangles[triangleIndex];
   if (indices == null) {
@@ -254,7 +264,7 @@ function intersectTitleMeshTriangle(
   const edgeB = sub(c, a);
   const rayCrossEdgeB = cross(ray, edgeB);
   const determinant = dot(edgeA, rayCrossEdgeB);
-  if (Math.abs(determinant) <= INTERSECTION_EPSILON) {
+  if (!titleMeshSideModeAcceptsDeterminant(determinant, INTERSECTION_EPSILON, sideMode)) {
     return undefined;
   }
 
