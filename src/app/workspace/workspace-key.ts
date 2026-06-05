@@ -4,6 +4,7 @@ export const WorkspaceKeys = Object.freeze({
   Backtick: "`",
   One: "1",
   Two: "2",
+  Colon: ":",
   Period: ".",
   C: "c",
   Q: "q",

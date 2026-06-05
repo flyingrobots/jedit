@@ -22,6 +22,7 @@ import type { ViewMode } from "./view-mode.js";
 import type { WorkspaceTextAuthority } from "./workspace-text-authority.js";
 import type { EchoHistoryEntry } from "./echo-history.js";
 import type { StartupFileModalState } from "./startup-file-modal.js";
+import type { WorkspaceCommandLineState } from "./command-line.js";
 
 export interface WorkspaceModel extends StartupFileModalState {
   readonly i18n: I18nPort;
@@ -77,4 +78,5 @@ export interface WorkspaceModel extends StartupFileModalState {
   readonly titleAsciiPalette: TitleAsciiPalette;
   readonly titleDragonMaterialIndex: number;
   readonly profiler: ProfilerState;
+  readonly commandLine: WorkspaceCommandLineState;
 }

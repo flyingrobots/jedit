@@ -222,6 +222,12 @@ export function mockTitleScreenModel(titleScreen, overrides = {}) {
     notifications: createNotificationState(),
     notificationLoopActive: false,
     quitConfirmOpen: false,
+    commandLine: {
+      active: false,
+      input: '',
+      cursorIndex: 0,
+      selectedCompletionIndex: 0,
+    },
     startupIntroComplete: false,
     startupFileModalOpen: false,
     startupFileDrawerProgress: 0,

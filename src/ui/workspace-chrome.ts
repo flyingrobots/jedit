@@ -118,6 +118,7 @@ export interface WorkspaceFooterState {
     readonly name: string;
     readonly startLine: number;
   };
+  readonly commandLine?: { readonly active: boolean; readonly input: string };
 }
 
 export function activeWorkspaceTitle(state: WorkspaceTitleState): string {
@@ -166,10 +167,13 @@ export function workspaceFooterLine(state: WorkspaceFooterState): string {
 }
 
 export function workspaceFooterLines(state: WorkspaceFooterState): readonly [string, string] {
+  if (state.commandLine?.active === true) {
+    return [`:${state.commandLine.input}`, footerContextLine(state)];
+  }
   const modeKey = interactionModeKey(state);
   const modeLabel = state.i18n.t(`footer.mode.${modeKey}`).toUpperCase();
   const detail = footerDetail(state);
-  
+
   const primary = detail.length > 0 ? `${modeLabel} ${detail}` : modeLabel;
   const secondary = footerContextLine(state);
 

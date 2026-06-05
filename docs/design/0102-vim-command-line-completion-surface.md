@@ -416,13 +416,13 @@ Witnesses:
 
 Slices:
 
-- [ ] Slice 1: Add `WorkspaceKeys.Colon` and command-line state.
+- [x] Slice 1: Add `WorkspaceKeys.Colon` and command-line state.
       Commit: `UX: add command-line workspace state`.
-- [ ] Slice 2: Add command-line key-binding priority and Escape cancel.
+- [x] Slice 2: Add command-line key-binding priority and Escape cancel.
       Commit: `UX: enter and cancel command mode`.
-- [ ] Slice 3: Add command input editing and cursor movement.
+- [x] Slice 3: Add command input editing and cursor movement.
       Commit: `UX: edit command-line input`.
-- [ ] Slice 4: Add command parser and invalid-command obstruction.
+- [x] Slice 4: Add command parser and invalid-command obstruction.
       Commit: `UX: parse command-line commands`.
 
 ### Goalpost 2: Bijou Inline Completion Component

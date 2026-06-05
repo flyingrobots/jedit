@@ -26,6 +26,7 @@ import type { JeditWscStartupRecoveryResult } from "../../ports/jedit-wsc-startu
 import { unrecoveredJeditWscStartupRecovery } from "../jedit-wsc-startup-recovery.js";
 import { createWorkspaceTextAuthority } from "./workspace-text-authority.js";
 import { initialStartupFileModalState } from "./startup-file-modal.js";
+import { initialWorkspaceCommandLineState } from "./command-line.js";
 
 export { recoverJeditWorkspaceFromWsc } from "../jedit-wsc-startup-recovery.js";
 
@@ -69,6 +70,7 @@ export function createInitialModel(
     focusPane: INITIAL_FOCUS_PANE,
     ...initialDrawerState(),
     ...initialStartupFileModalState(),
+    commandLine: initialWorkspaceCommandLineState(),
     ...createFeedbackState<WorkspaceMsg>(),
     ...initialShellState(),
     ...initialSettingsState(),

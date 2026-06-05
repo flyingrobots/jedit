@@ -1,4 +1,5 @@
 import type { KeyMsg } from '@flyingrobots/bijou-tui';
+import { updateCommandLineKey } from './command-line-key-bindings.js';
 import { updateFocusedPaneKey } from './focused-pane-key-bindings.js';
 import {
   updateGlobalWorkspaceKey,
@@ -21,10 +22,19 @@ export function updateFromKey(
 ) {
   return updateQuitConfirmationKey(msg, model)
     ?? updateHardGlobalWorkspaceKey(msg, model)
-    ?? updateStartupFileModalKey(msg, model, context)
-    ?? updateSettingsKey(msg, model)
-    ?? updateScenePickerKey(msg, model, context)
-    ?? updateTitleScreenKey(msg, model, context)
+    ?? updateWorkspaceOverlayKey(msg, model, context)
     ?? updateGlobalWorkspaceKey(msg, model, context)
     ?? updateFocusedPaneKey(msg, model, context);
+}
+
+function updateWorkspaceOverlayKey(
+  msg: KeyMsg,
+  model: WorkspaceModel,
+  context: WorkspaceKeyBindingContext,
+) {
+  return updateStartupFileModalKey(msg, model, context)
+    ?? updateSettingsKey(msg, model)
+    ?? updateScenePickerKey(msg, model, context)
+    ?? updateCommandLineKey(msg, model)
+    ?? updateTitleScreenKey(msg, model, context);
 }
