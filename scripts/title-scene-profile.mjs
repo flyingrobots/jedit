@@ -36,7 +36,7 @@ const EXIT_USAGE = 2;
 const JSON_INDENT = 2;
 const PERCENTILE_HALF = 0.5;
 const PERCENTILE_NINETY_FIVE = 0.95;
-const BRAILLE_PHASE_COUNTS = Object.freeze([1, 2, 4]);
+const BRAILLE_PHASE_COUNTS = Object.freeze([1, 2, 4, 8]);
 
 main().catch((error) => {
   process.stderr.write(
@@ -426,7 +426,7 @@ function finiteNumber(rawValue) {
 function braillePhaseCount(rawValue) {
   const value = positiveInteger(rawValue);
   if (!BRAILLE_PHASE_COUNTS.includes(value)) {
-    usage(`Expected Braille phase count 1, 2, or 4, got: ${rawValue}`);
+    usage(`Expected Braille phase count 1, 2, 4, or 8, got: ${rawValue}`);
   }
   return value;
 }
@@ -434,7 +434,7 @@ function braillePhaseCount(rawValue) {
 function usage(message) {
   process.stderr.write(`${message}\n`);
   process.stderr.write(
-    "Usage: title-scene-profile [--json] [--scene name] [--theme name] [--render-mode braille|ascii] [--width n] [--height n] [--frames n] [--warmup n] [--start seconds] [--step seconds] [--camera-angle radians] [--camera-radius n] [--camera-step radians] [--braille-phase-count 1|2|4]\n",
+    "Usage: title-scene-profile [--json] [--scene name] [--theme name] [--render-mode braille|ascii] [--width n] [--height n] [--frames n] [--warmup n] [--start seconds] [--step seconds] [--camera-angle radians] [--camera-radius n] [--camera-step radians] [--braille-phase-count 1|2|4|8]\n",
   );
   process.exit(EXIT_USAGE);
 }

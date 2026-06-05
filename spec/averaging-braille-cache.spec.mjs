@@ -71,6 +71,39 @@ test("Braille temporal phase count four traces two dots after cache warmup", asy
   assert.equal(stats.reusedSamples, 6);
 });
 
+test("Braille temporal phase count eight traces one dot after cache warmup", async () => {
+  const brailleCanvas = await importDist("ui", "averaging-braille-canvas.js");
+  const cache = brailleCanvas.createBrailleSampleCache(1, 1);
+
+  brailleCanvas.averagingBrailleCanvas(1, 1, litSample, 0, {
+    sampleCache: cache,
+  });
+
+  const stats = brailleCanvas.createBrailleSampleFrameStats();
+  const shaderCalls = { count: 0 };
+  brailleCanvas.averagingBrailleCanvas(
+    1,
+    1,
+    () => {
+      shaderCalls.count += 1;
+      return litSample();
+    },
+    0,
+    {
+      sampleCache: cache,
+      stats,
+      traceBudget: {
+        phase: 1,
+        phaseCount: 8,
+      },
+    },
+  );
+
+  assert.equal(shaderCalls.count, 1);
+  assert.equal(stats.tracedSamples, 1);
+  assert.equal(stats.reusedSamples, 7);
+});
+
 test("Braille sample cache resets when render dimensions change", async () => {
   const brailleCanvas = await importDist("ui", "averaging-braille-canvas.js");
   const cache = brailleCanvas.createBrailleSampleCache(1, 1);

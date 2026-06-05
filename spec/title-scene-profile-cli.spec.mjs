@@ -87,15 +87,15 @@ test("title-scene profile CLI reports temporal Braille sampling facts", () => {
     "--warmup",
     "1",
     "--braille-phase-count",
-    "4",
+    "8",
   ]);
 
   assert.equal(result.status, 0, result.stderr || result.stdout);
   const report = JSON.parse(result.stdout);
 
-  assert.equal(report.sampling.braillePhaseCount, 4);
-  assert.equal(report.sampling.tracedSamplesPerFrame, 480);
-  assert.equal(report.sampling.reusedSamplesPerFrame, 1440);
+  assert.equal(report.sampling.braillePhaseCount, 8);
+  assert.equal(report.sampling.tracedSamplesPerFrame, 240);
+  assert.equal(report.sampling.reusedSamplesPerFrame, 1680);
   assert.equal(report.sampling.coldMissSamples, 0);
   assert.ok(report.sampling.rayCount > 0);
   assert.ok(report.sampling.rayIntersectionCount >= 0);

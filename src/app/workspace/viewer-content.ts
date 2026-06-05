@@ -36,6 +36,7 @@ import { titleBrailleTraceBudget } from "./title-braille-sampling.js";
 
 const MIN_VIEWPORT_DIMENSION = 1;
 const VIEWER_PAD_MULTIPLIER = 2;
+const TITLE_CAMERA_MOTION_EPSILON = 0.001;
 const INITIAL_TITLE_SCENE_PERFORMANCE_FACTS: TitleScenePerformanceFacts = {
   posture: TITLE_SCENE_RENDER_POSTURE.LiveTrace,
   tracesRays: true,
@@ -271,6 +272,7 @@ function titleBrailleSamplingRenderContext(
     frameTimeMs: model.frameTimeMs,
     previousStats: state.lastBrailleSampleStats,
     previousPhaseCount: state.lastBrailleTraceBudget?.phaseCount,
+    cameraMoving: titleCameraIsMoving(model.titleCamera),
   });
   state.titleBrailleFrameIndex = frameIndex + 1;
   return {
@@ -312,6 +314,17 @@ function clearTitleBrailleSamplingState(
   state.titleBrailleFrameIndex = 0;
   state.lastBrailleSampleStats = undefined;
   state.lastBrailleTraceBudget = undefined;
+}
+
+function titleCameraIsMoving(camera: WorkspaceModel["titleCamera"]): boolean {
+  return (
+    titleCameraAxisIsMoving(camera.angle, camera.angleTarget) ||
+    titleCameraAxisIsMoving(camera.radius, camera.radiusTarget)
+  );
+}
+
+function titleCameraAxisIsMoving(current: number, target: number): boolean {
+  return Math.abs(current - target) > TITLE_CAMERA_MOTION_EPSILON;
 }
 
 function titleBrailleSampleCacheIdentity(

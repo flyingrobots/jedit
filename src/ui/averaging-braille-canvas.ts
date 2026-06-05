@@ -84,6 +84,7 @@ const BRAILLE_BASE_CODE_POINT = 0x2800;
 const BRAILLE_FULL_PHASE_COUNT = 1;
 const BRAILLE_HALF_PHASE_COUNT = 2;
 const BRAILLE_QUARTER_PHASE_COUNT = 4;
+const BRAILLE_MOTION_PHASE_COUNT = 8;
 const BRAILLE_TEMPORAL_CELL_X_FACTOR = 3;
 const BRAILLE_TEMPORAL_CELL_Y_FACTOR = 5;
 const BRAILLE_DOT_MAP: readonly (readonly number[])[] = [
@@ -94,6 +95,9 @@ const BRAILLE_DOT_MAP: readonly (readonly number[])[] = [
 ];
 const BRAILLE_TEMPORAL_PHASE_BY_SAMPLE: readonly number[] = [
   0, 2, 3, 1, 2, 0, 1, 3,
+];
+const BRAILLE_MOTION_PHASE_BY_SAMPLE: readonly number[] = [
+  0, 4, 6, 2, 5, 1, 3, 7,
 ];
 const RED_INDEX = 0;
 const GREEN_INDEX = 1;
@@ -293,10 +297,18 @@ function shouldTraceBrailleSample(
     options.sampling.budget,
   );
   return (
-    BRAILLE_TEMPORAL_PHASE_BY_SAMPLE[sampleIndex]! %
-      options.sampling.budget.phaseCount ===
+    brailleSampleTemporalPhase(sampleIndex, options.sampling.budget) ===
     phase
   );
+}
+
+function brailleSampleTemporalPhase(
+  sampleIndex: number,
+  budget: BrailleTraceBudget,
+): number {
+  return budget.phaseCount === BRAILLE_MOTION_PHASE_COUNT
+    ? BRAILLE_MOTION_PHASE_BY_SAMPLE[sampleIndex]!
+    : BRAILLE_TEMPORAL_PHASE_BY_SAMPLE[sampleIndex]! % budget.phaseCount;
 }
 
 function temporalBrailleCellPhase(
@@ -385,9 +397,10 @@ function validateBrailleTraceBudget(budget: BrailleTraceBudget): void {
   if (
     budget.phaseCount !== BRAILLE_FULL_PHASE_COUNT &&
     budget.phaseCount !== BRAILLE_HALF_PHASE_COUNT &&
-    budget.phaseCount !== BRAILLE_QUARTER_PHASE_COUNT
+    budget.phaseCount !== BRAILLE_QUARTER_PHASE_COUNT &&
+    budget.phaseCount !== BRAILLE_MOTION_PHASE_COUNT
   ) {
-    throw new RangeError("Braille trace phase count must be 1, 2, or 4.");
+    throw new RangeError("Braille trace phase count must be 1, 2, 4, or 8.");
   }
   if (!Number.isInteger(budget.phase)) {
     throw new RangeError("Braille trace phase must be an integer.");

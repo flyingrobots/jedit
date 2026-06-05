@@ -153,6 +153,45 @@ test("viewer renderer resets adaptive Braille history after ASCII title frames",
   ]);
 });
 
+test("viewer renderer uses motion LOD while the title camera settles", async () => {
+  const [viewerContent, titleScreen] = await Promise.all([
+    importDist("app", "workspace", "viewer-content.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const budgets = [];
+  const renderer = viewerContent.createViewerContentRenderer(
+    (width, height, _time, _theme, options) => {
+      budgets.push(options.brailleSampling?.traceBudget);
+      markHighActivity(options.brailleSampling?.stats);
+      return stringToSurface("frame", width, height);
+    },
+  );
+  const base = mockTitleScreenModel(titleScreen, {
+    frameTimeMs: FAST_FRAME_MS,
+    startupIntroComplete: false,
+    startupFileModalOpen: false,
+  });
+
+  renderer.renderViewer(base, TITLE_WIDTH, TITLE_HEIGHT);
+  renderer.renderViewer(
+    {
+      ...base,
+      time: 1,
+      titleCamera: {
+        ...base.titleCamera,
+        angleTarget: 0.2,
+      },
+    },
+    TITLE_WIDTH,
+    TITLE_HEIGHT,
+  );
+
+  assert.deepEqual(budgets, [
+    { phase: 0, phaseCount: 1 },
+    { phase: 1, phaseCount: 8 },
+  ]);
+});
+
 function markHighActivity(stats) {
   if (stats == null) {
     return;

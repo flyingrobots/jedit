@@ -37,6 +37,14 @@ Potential next cuts:
   posture.
 - Consider a coarser screen-space silhouette/depth prepass for one-mesh title
   scenes before expensive optical shading.
+- Add an offline mesh LOD build step for dense title meshes. The Stanford
+  Dragon could ship with close, medium, and far mesh variants selected from the
+  camera radius or projected screen coverage.
+- Explore a quantized temporal ray-hit cache keyed by scene id, mesh identity,
+  transform version, camera bucket, sample coordinate, and ray depth. Exact
+  ray keys are unlikely to repeat during camera motion, so this should behave
+  like temporal reprojection with explicit invalidation rather than a naive
+  `(origin, direction)` memo table.
 
 Implemented cut on `title/perf-scene-facts`:
 
@@ -50,6 +58,9 @@ Implemented cut on `title/perf-scene-facts`:
 - The pressure signal is ray-work based when the shader provides it:
   intersection count divided by rays shot. Braille glyph activity is only the
   fallback for shaders that do not expose ray pressure metadata.
+- When that pressure stays high and the title camera is actively settling, the
+  renderer drops to one traced subpixel per Braille cell for motion LOD, then
+  refines through the normal reduced phase policy after motion settles.
 - `scripts/title-scene-profile.mjs --braille-phase-count 4` reports traced,
   reused, cold-miss, ray-pressure, and active sample facts so performance
   claims can be measured instead of inferred from FPS alone.

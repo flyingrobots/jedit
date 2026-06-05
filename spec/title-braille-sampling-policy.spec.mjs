@@ -174,6 +174,28 @@ test("title Braille sampling holds reduced quality while screen activity remains
   );
 });
 
+test("title Braille sampling traces one dot while the camera moves under pressure", async () => {
+  const sampling = await importDist(
+    "app",
+    "workspace",
+    "title-braille-sampling.js",
+  );
+
+  assert.deepEqual(
+    sampling.titleBrailleTraceBudget({
+      frameIndex: 10,
+      frameTimeMs: FAST_FRAME_MS,
+      previousStats: activeStats(8, 8),
+      previousPhaseCount: 4,
+      cameraMoving: true,
+    }),
+    {
+      phase: 2,
+      phaseCount: 8,
+    },
+  );
+});
+
 test("title Braille sampling restores full quality when screen activity drops", async () => {
   const sampling = await importDist(
     "app",
