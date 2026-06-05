@@ -12,6 +12,8 @@ export interface BrailleShaderSample {
   readonly on: boolean;
   readonly fgRGB: RGB;
   readonly bgRGB: RGB;
+  readonly rayCount?: number;
+  readonly rayIntersectionCount?: number;
   readonly modifiers?: readonly string[];
 }
 
@@ -36,6 +38,8 @@ export interface BrailleSampleFrameStats {
   reusedSamples: number;
   activeSamples: number;
   coldMissSamples: number;
+  rayCount: number;
+  rayIntersectionCount: number;
 }
 
 export interface AveragingBrailleCanvasOptions {
@@ -151,6 +155,8 @@ export function createBrailleSampleFrameStats(): BrailleSampleFrameStats {
     reusedSamples: 0,
     activeSamples: 0,
     coldMissSamples: 0,
+    rayCount: 0,
+    rayIntersectionCount: 0,
   };
 }
 
@@ -158,6 +164,14 @@ export function brailleSampleActivityRatio(
   stats: BrailleSampleFrameStats,
 ): number {
   return stats.totalSamples <= 0 ? 0 : stats.activeSamples / stats.totalSamples;
+}
+
+export function brailleSampleRayPressureRatio(
+  stats: BrailleSampleFrameStats,
+): number | undefined {
+  return stats.rayCount <= 0
+    ? undefined
+    : stats.rayIntersectionCount / stats.rayCount;
 }
 
 function collapseBrailleCell(options: CollapseBrailleCellOptions): Cell {
@@ -332,6 +346,8 @@ function recordResolvedBrailleSample(
   }
   sampling.stats.totalSamples += 1;
   sampling.stats.activeSamples += sample.on ? 1 : 0;
+  sampling.stats.rayCount += sample.rayCount ?? 0;
+  sampling.stats.rayIntersectionCount += sample.rayIntersectionCount ?? 0;
 }
 
 function recordTracedBrailleSample(sampling: BrailleSamplingContext): void {

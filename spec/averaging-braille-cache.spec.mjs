@@ -105,10 +105,41 @@ test("Braille sample cache resets when render dimensions change", async () => {
   assert.equal(stats.reusedSamples, 0);
 });
 
+test("Braille sample stats include ray pressure from traced and reused samples", async () => {
+  const brailleCanvas = await importDist("ui", "averaging-braille-canvas.js");
+  const cache = brailleCanvas.createBrailleSampleCache(1, 1);
+
+  brailleCanvas.averagingBrailleCanvas(1, 1, pressureSample, 0, {
+    sampleCache: cache,
+  });
+
+  const stats = brailleCanvas.createBrailleSampleFrameStats();
+  brailleCanvas.averagingBrailleCanvas(1, 1, pressureSample, 0, {
+    sampleCache: cache,
+    stats,
+    traceBudget: {
+      phase: 0,
+      phaseCount: 2,
+    },
+  });
+
+  assert.equal(stats.rayCount, 16);
+  assert.equal(stats.rayIntersectionCount, 8);
+  assert.equal(brailleCanvas.brailleSampleRayPressureRatio(stats), 0.5);
+});
+
 function litSample() {
   return {
     on: true,
     fgRGB: [200, 210, 220],
     bgRGB: [0, 0, 0],
+  };
+}
+
+function pressureSample() {
+  return {
+    ...litSample(),
+    rayCount: 2,
+    rayIntersectionCount: 1,
   };
 }

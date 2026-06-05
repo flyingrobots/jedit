@@ -105,7 +105,55 @@ test("title Braille sampling stays full quality when screen activity is low", as
   );
 });
 
-test("title Braille sampling restores full quality after frame time recovers", async () => {
+test("title Braille sampling uses ray pressure even when glyph activity is low", async () => {
+  const sampling = await importDist(
+    "app",
+    "workspace",
+    "title-braille-sampling.js",
+  );
+
+  assert.deepEqual(
+    sampling.titleBrailleTraceBudget({
+      frameIndex: 8,
+      frameTimeMs: SLOW_FRAME_MS,
+      previousStats: rayStats({
+        activeSamples: 0,
+        rayCount: 8,
+        rayIntersectionCount: 3,
+      }),
+    }),
+    {
+      phase: 0,
+      phaseCount: 4,
+    },
+  );
+});
+
+test("title Braille sampling ignores glyph activity when measured ray pressure is low", async () => {
+  const sampling = await importDist(
+    "app",
+    "workspace",
+    "title-braille-sampling.js",
+  );
+
+  assert.deepEqual(
+    sampling.titleBrailleTraceBudget({
+      frameIndex: 8,
+      frameTimeMs: SLOW_FRAME_MS,
+      previousStats: rayStats({
+        activeSamples: 8,
+        rayCount: 8,
+        rayIntersectionCount: 0,
+      }),
+    }),
+    {
+      phase: 0,
+      phaseCount: 1,
+    },
+  );
+});
+
+test("title Braille sampling holds reduced quality while screen activity remains high", async () => {
   const sampling = await importDist(
     "app",
     "workspace",
@@ -117,6 +165,28 @@ test("title Braille sampling restores full quality after frame time recovers", a
       frameIndex: 5,
       frameTimeMs: FAST_FRAME_MS,
       previousStats: activeStats(8, 8),
+      previousPhaseCount: 4,
+    }),
+    {
+      phase: 1,
+      phaseCount: 4,
+    },
+  );
+});
+
+test("title Braille sampling restores full quality when screen activity drops", async () => {
+  const sampling = await importDist(
+    "app",
+    "workspace",
+    "title-braille-sampling.js",
+  );
+
+  assert.deepEqual(
+    sampling.titleBrailleTraceBudget({
+      frameIndex: 5,
+      frameTimeMs: FAST_FRAME_MS,
+      previousStats: activeStats(1, 8),
+      previousPhaseCount: 4,
     }),
     {
       phase: 0,
@@ -132,5 +202,19 @@ function activeStats(activeSamples, totalSamples) {
     reusedSamples: 0,
     activeSamples,
     coldMissSamples: 0,
+    rayCount: 0,
+    rayIntersectionCount: 0,
+  };
+}
+
+function rayStats(options) {
+  return {
+    totalSamples: 8,
+    tracedSamples: 8,
+    reusedSamples: 0,
+    activeSamples: options.activeSamples,
+    coldMissSamples: 0,
+    rayCount: options.rayCount,
+    rayIntersectionCount: options.rayIntersectionCount,
   };
 }

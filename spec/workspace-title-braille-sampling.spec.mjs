@@ -43,9 +43,19 @@ test("viewer renderer passes adaptive Braille sampling state to live title frame
     TITLE_WIDTH,
     TITLE_HEIGHT,
   );
+  const third = renderer.renderViewer(
+    {
+      ...base,
+      frameTimeMs: FAST_FRAME_MS,
+      time: 2,
+    },
+    TITLE_WIDTH,
+    TITLE_HEIGHT,
+  );
 
   assert.equal(surfaceText(first).includes("frame 1"), true);
   assert.equal(surfaceText(second).includes("frame 2"), true);
+  assert.equal(surfaceText(third).includes("frame 3"), true);
   assert.deepEqual(budgets, [
     {
       phase: 0,
@@ -55,8 +65,13 @@ test("viewer renderer passes adaptive Braille sampling state to live title frame
       phase: 1,
       phaseCount: 4,
     },
+    {
+      phase: 2,
+      phaseCount: 4,
+    },
   ]);
   assert.equal(cacheObjects[0], cacheObjects[1]);
+  assert.equal(cacheObjects[1], cacheObjects[2]);
 });
 
 test("viewer renderer does not allocate Braille sampling for ASCII title frames", async () => {
@@ -81,6 +96,61 @@ test("viewer renderer does not allocate Braille sampling for ASCII title frames"
   );
 
   assert.deepEqual(samplingOptions, [undefined]);
+});
+
+test("viewer renderer resets adaptive Braille history after ASCII title frames", async () => {
+  const [viewerContent, titleScreen] = await Promise.all([
+    importDist("app", "workspace", "viewer-content.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const budgets = [];
+  const renderer = viewerContent.createViewerContentRenderer(
+    (width, height, _time, _theme, options) => {
+      budgets.push(options.brailleSampling?.traceBudget);
+      markHighActivity(options.brailleSampling?.stats);
+      return stringToSurface("frame", width, height);
+    },
+  );
+  const base = mockTitleScreenModel(titleScreen, {
+    frameTimeMs: FAST_FRAME_MS,
+    startupIntroComplete: false,
+    startupFileModalOpen: false,
+  });
+
+  renderer.renderViewer(base, TITLE_WIDTH, TITLE_HEIGHT);
+  renderer.renderViewer(
+    {
+      ...base,
+      frameTimeMs: SLOW_FRAME_MS,
+      time: 1,
+    },
+    TITLE_WIDTH,
+    TITLE_HEIGHT,
+  );
+  renderer.renderViewer(
+    {
+      ...base,
+      titleRenderMode: titleScreen.TITLE_RENDER_MODE.Ascii,
+      time: 2,
+    },
+    TITLE_WIDTH,
+    TITLE_HEIGHT,
+  );
+  renderer.renderViewer(
+    {
+      ...base,
+      time: 3,
+    },
+    TITLE_WIDTH,
+    TITLE_HEIGHT,
+  );
+
+  assert.deepEqual(budgets, [
+    { phase: 0, phaseCount: 1 },
+    { phase: 1, phaseCount: 4 },
+    undefined,
+    { phase: 0, phaseCount: 1 },
+  ]);
 });
 
 function markHighActivity(stats) {

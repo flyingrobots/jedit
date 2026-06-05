@@ -13,6 +13,7 @@ import {
   type AveragingBrailleCanvasOptions,
   type BrailleSampleCache,
   type BrailleSampleFrameStats,
+  type BrailleTraceBudget,
 } from "../../ui/averaging-braille-canvas.js";
 import type { TitleMesh } from "../../ui/title-mesh.js";
 import type { TitleScene } from "../../ui/title-scene.js";
@@ -58,6 +59,7 @@ interface ViewerContentRendererState {
   titleBrailleSampleCacheIdentity?: TitleBrailleSampleCacheIdentity;
   titleBrailleFrameIndex?: number;
   lastBrailleSampleStats?: BrailleSampleFrameStats;
+  lastBrailleTraceBudget?: BrailleTraceBudget;
 }
 
 interface TitleBrailleSampleCacheIdentity {
@@ -74,6 +76,7 @@ interface TitleBrailleSampleCacheIdentity {
 interface TitleBrailleSamplingRenderContext {
   readonly options?: AveragingBrailleCanvasOptions;
   readonly stats?: BrailleSampleFrameStats;
+  readonly budget?: BrailleTraceBudget;
 }
 
 export type TitleScreenRenderer = (
@@ -257,22 +260,26 @@ function titleBrailleSamplingRenderContext(
   state: ViewerContentRendererState,
 ): TitleBrailleSamplingRenderContext {
   if (model.titleRenderMode !== TITLE_RENDER_MODE.Braille) {
+    clearTitleBrailleSamplingState(state);
     return {};
   }
   const stats = createBrailleSampleFrameStats();
   const cache = titleBrailleSampleCacheFor(model, width, height, state);
   const frameIndex = state.titleBrailleFrameIndex ?? 0;
+  const budget = titleBrailleTraceBudget({
+    frameIndex,
+    frameTimeMs: model.frameTimeMs,
+    previousStats: state.lastBrailleSampleStats,
+    previousPhaseCount: state.lastBrailleTraceBudget?.phaseCount,
+  });
   state.titleBrailleFrameIndex = frameIndex + 1;
   return {
     stats,
+    budget,
     options: {
       sampleCache: cache,
       stats,
-      traceBudget: titleBrailleTraceBudget({
-        frameIndex,
-        frameTimeMs: model.frameTimeMs,
-        previousStats: state.lastBrailleSampleStats,
-      }),
+      traceBudget: budget,
     },
   };
 }
@@ -294,10 +301,17 @@ function titleBrailleSampleCacheFor(
   ) {
     state.titleBrailleSampleCache = createBrailleSampleCache(width, height);
     state.titleBrailleSampleCacheIdentity = identity;
-    state.titleBrailleFrameIndex = 0;
-    state.lastBrailleSampleStats = undefined;
+    clearTitleBrailleSamplingState(state);
   }
   return state.titleBrailleSampleCache;
+}
+
+function clearTitleBrailleSamplingState(
+  state: ViewerContentRendererState,
+): void {
+  state.titleBrailleFrameIndex = 0;
+  state.lastBrailleSampleStats = undefined;
+  state.lastBrailleTraceBudget = undefined;
 }
 
 function titleBrailleSampleCacheIdentity(
@@ -339,6 +353,9 @@ function recordTitleBrailleSamplingStats(
 ): void {
   if (context.stats != null && context.stats.totalSamples > 0) {
     state.lastBrailleSampleStats = context.stats;
+  }
+  if (context.budget != null) {
+    state.lastBrailleTraceBudget = context.budget;
   }
 }
 

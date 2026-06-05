@@ -13,36 +13,28 @@ import {
 } from "./averaging-braille-canvas.js";
 import { type JeditTheme } from "./jedit-theme.js";
 import {
-  flyingRobotsLogoCellBounds,
-  paintFlyingRobotsLogo,
-} from "./flyingrobots-logo.js";
-import {
   generateTitleScene,
   nearestTitleScenePrimaryObjectHit,
   type TitleScene,
   type TitleSceneObject,
   type TitleSceneObjectHit,
   type TitleSceneVector3,
+  type TitleMesh,
 } from "./title-scene.js";
 import {
   nearestTitleEnvironmentSurfaceHit,
   titleSceneBackgroundColor,
   titleSceneLightDirection,
 } from "./title-scene-environment.js";
-import { paintTitleLogo, titleLogoCellBounds } from "./title-logo.js";
-import type { TitleMesh } from "./title-mesh.js";
-import {
-  TITLE_SCREEN_TEXT_DIRECTION,
-  titlePresentationSequence,
-  type TitlePresentationSequence,
-  type TitleScreenTextDirection,
-} from "./title-presentation-sequence.js";
 import {
   titleColorLuminance,
-  titleSceneMaterialColors,
   titleSceneRenderMaterialColors,
   type TitleSceneMaterialColors,
 } from "./title-scene-material-colors.js";
+import {
+  paintTitleScreenPresentation,
+  type TitleScreenTextDirection,
+} from "./title-screen-presentation.js";
 import {
   TITLE_KEY_LIGHT_DIRECTION,
   TITLE_SCENE_CAMERA_HEIGHT,
@@ -55,9 +47,12 @@ import {
   TITLE_SCENE_DEFAULT_DIRECTOR_TIMELINE,
   titleSceneCameraAngleAt,
 } from "./title-scene-director.js";
-import type {
-  TitleSceneRayContext,
-  TitleSceneSampleOptions,
+import {
+  type TitleSceneRayContext,
+  type TitleSceneSampleOptions,
+  titleBackgroundRayStats,
+  titleEnvironmentRayStats,
+  titleObjectRayStats,
 } from "./title-screen-sample.js";
 
 type Vector3 = TitleSceneVector3;
@@ -107,14 +102,6 @@ export interface TitleScreenRenderOptions {
   readonly brailleSampling?: AveragingBrailleCanvasOptions;
 }
 
-interface TitlePresentationLogoPaintOptions {
-  readonly cols: number;
-  readonly rows: number;
-  readonly time: number;
-  readonly colors: TitleSceneMaterialColors;
-  readonly sequence: TitlePresentationSequence;
-}
-
 interface TitleSceneShaderOptions {
   readonly cols: number;
   readonly rows: number;
@@ -160,9 +147,9 @@ export function renderTitleScreen(
   const surface = renderTitleSceneSurface(
     titleSceneSurfaceOptions(cols, rows, time, theme, options),
   );
-  paintTitlePresentationLogos(
+  paintTitleScreenPresentation(
     surface,
-    titlePresentationLogoOptions(cols, rows, time, theme, options),
+    { cols, rows, time, theme, textDirection: options.textDirection },
   );
   return surface;
 }
@@ -201,25 +188,6 @@ function titleSceneSurfaceOptions(
   };
 }
 
-function titlePresentationLogoOptions(
-  cols: number,
-  rows: number,
-  time: number,
-  theme: JeditTheme,
-  options: TitleScreenRenderOptions,
-): TitlePresentationLogoPaintOptions {
-  return {
-    cols,
-    rows,
-    time,
-    colors: titleSceneMaterialColors(theme),
-    sequence: titlePresentationSequence(
-      time,
-      options.textDirection ?? TITLE_SCREEN_TEXT_DIRECTION.LeftToRight,
-    ),
-  };
-}
-
 function renderTitleSceneSurface(options: TitleSceneSurfaceOptions): Surface {
   return options.renderMode === TITLE_RENDER_MODE.Ascii
     ? averagingAsciiCanvas(options.cols, options.rows, options.shader, options.time, {
@@ -249,31 +217,6 @@ function titleSceneShader(options: TitleSceneShaderOptions): BrailleShaderFn {
       colors: options.colors,
       environment: options.scene.environment,
     });
-}
-
-function paintTitlePresentationLogos(
-  surface: Surface,
-  options: TitlePresentationLogoPaintOptions,
-): void {
-  paintFlyingRobotsLogo(
-    surface,
-    flyingRobotsLogoCellBounds(options.cols, options.rows),
-    options.colors,
-    options.time,
-    {
-      opacity: options.sequence.flyingRobotsOpacity,
-    },
-  );
-  paintTitleLogo(
-    surface,
-    titleLogoCellBounds(options.cols, options.rows),
-    options.colors,
-    options.time,
-    {
-      opacity: options.sequence.titleOpacity,
-      sheen: options.sequence.titleSheen,
-    },
-  );
 }
 
 function sceneSampleAt(options: TitleSceneSampleOptions): BrailleShaderSample {
@@ -316,6 +259,7 @@ function backgroundSceneSample(
     on: false,
     fgRGB: background,
     bgRGB: background,
+    ...titleBackgroundRayStats(),
   };
 }
 
@@ -359,6 +303,7 @@ function objectSceneSample(
     on: true,
     fgRGB: titleObjectSurfaceColor(options, context, objectHit),
     bgRGB: options.colors.surface,
+    ...titleObjectRayStats(objectHit.object),
   };
 }
 
@@ -383,6 +328,7 @@ function environmentSceneSample(
     ),
     fgRGB,
     bgRGB: options.colors.surface,
+    ...titleEnvironmentRayStats(environmentHit, effects, options.objects.length),
   };
 }
 

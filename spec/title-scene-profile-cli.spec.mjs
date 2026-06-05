@@ -97,6 +97,9 @@ test("title-scene profile CLI reports temporal Braille sampling facts", () => {
   assert.equal(report.sampling.tracedSamplesPerFrame, 480);
   assert.equal(report.sampling.reusedSamplesPerFrame, 1440);
   assert.equal(report.sampling.coldMissSamples, 0);
+  assert.ok(report.sampling.rayCount > 0);
+  assert.ok(report.sampling.rayIntersectionCount >= 0);
+  assert.ok(report.sampling.rayPressureRatio >= 0);
 });
 
 function runProfile(args) {

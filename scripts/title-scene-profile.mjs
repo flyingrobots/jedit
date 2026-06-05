@@ -13,6 +13,7 @@ import { BUILT_IN_TITLE_SCENE_NAMES } from "../dist/ports/title-scene-loader.js"
 import { ASCII_SAMPLE_COUNT } from "../dist/ui/averaging-ascii-canvas.js";
 import {
   BRAILLE_SAMPLE_COUNT,
+  brailleSampleRayPressureRatio,
   createBrailleSampleCache,
   createBrailleSampleFrameStats,
 } from "../dist/ui/averaging-braille-canvas.js";
@@ -262,6 +263,8 @@ function createProfileSampleStats() {
     reusedSamples: 0,
     activeSamples: 0,
     coldMissSamples: 0,
+    rayCount: 0,
+    rayIntersectionCount: 0,
   };
 }
 
@@ -274,6 +277,8 @@ function recordProfileSampleStats(total, frameStats) {
   total.reusedSamples += frameStats.reusedSamples;
   total.activeSamples += frameStats.activeSamples;
   total.coldMissSamples += frameStats.coldMissSamples;
+  total.rayCount += frameStats.rayCount;
+  total.rayIntersectionCount += frameStats.rayIntersectionCount;
 }
 
 function profileSampleStatsReport(options, stats) {
@@ -284,6 +289,9 @@ function profileSampleStatsReport(options, stats) {
     coldMissSamples: stats.coldMissSamples,
     activeSampleRatio:
       stats.totalSamples <= 0 ? 0 : stats.activeSamples / stats.totalSamples,
+    rayCount: stats.rayCount,
+    rayIntersectionCount: stats.rayIntersectionCount,
+    rayPressureRatio: brailleSampleRayPressureRatio(stats) ?? 0,
     tracedSamplesPerFrame: stats.tracedSamples / options.frames,
     reusedSamplesPerFrame: stats.reusedSamples / options.frames,
   };
@@ -365,7 +373,7 @@ function plainReportLines(report) {
     lines.splice(
       4,
       0,
-      `braille phase ${report.sampling.braillePhaseCount}  traced/frame ${formatSampleCount(report.sampling.tracedSamplesPerFrame)}  reused/frame ${formatSampleCount(report.sampling.reusedSamplesPerFrame)}  active ${formatPercent(report.sampling.activeSampleRatio)}`,
+      `braille phase ${report.sampling.braillePhaseCount}  traced/frame ${formatSampleCount(report.sampling.tracedSamplesPerFrame)}  reused/frame ${formatSampleCount(report.sampling.reusedSamplesPerFrame)}  pressure ${formatPercent(report.sampling.rayPressureRatio)}  active ${formatPercent(report.sampling.activeSampleRatio)}`,
     );
   }
   return lines;

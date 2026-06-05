@@ -44,6 +44,12 @@ Implemented cut on `title/perf-scene-facts`:
   phase-based tracing. When the title scene is slow and the previous Braille
   frame had high screen activity, live title frames trace half or quarter of
   the Braille subpixels and reuse cached samples for the rest.
+- The adaptive policy keeps the last reduced phase count while screen activity
+  stays high, so close-camera dragon frames do not bounce between slow full
+  traces and fast reduced traces.
+- The pressure signal is ray-work based when the shader provides it:
+  intersection count divided by rays shot. Braille glyph activity is only the
+  fallback for shaders that do not expose ray pressure metadata.
 - `scripts/title-scene-profile.mjs --braille-phase-count 4` reports traced,
-  reused, cold-miss, and active sample facts so performance claims can be
-  measured instead of inferred from FPS alone.
+  reused, cold-miss, ray-pressure, and active sample facts so performance
+  claims can be measured instead of inferred from FPS alone.

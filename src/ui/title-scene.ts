@@ -19,6 +19,7 @@ import {
 export { titleBunnySceneCameraPlacement } from "./title-bunny-scene.js";
 export { titleSceneObjectFootprintCenterAt as titleSceneObjectFootprintCenter } from "./title-scene-transform.js";
 export { TITLE_SCENE_SHAPE_KIND } from "./title-scene-shape-kind.js";
+export type { TitleMesh } from "./title-mesh.js";
 export type {
   TitleScenePrimitiveShapeKind,
   TitleSceneShapeKind,
