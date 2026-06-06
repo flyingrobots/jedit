@@ -7,7 +7,7 @@ import {
 import { resolveScenePickerDrawerWidth, renderScenePickerDrawer } from '../../ui/scene-picker-drawer.js';
 import { resolveSettingsDrawerWidth, renderSettingsDrawer } from '../../ui/settings-drawer.js';
 import { renderStartupFileDrawer } from '../../ui/startup-file-modal.js';
-import { workspaceCommandCompletionItems } from './command-completion.js';
+import { workspaceCommandLineCompletionItems } from './command-completion.js';
 import type { WorkspaceModel } from './model.js';
 import { settingsRows } from './settings.js';
 import { startupFileModalRows } from './startup-file-modal.js';
@@ -98,7 +98,10 @@ function paintCommandLineCompletionPopup(
     return;
   }
 
-  const items = workspaceCommandCompletionItems(model.commandLine);
+  const items = workspaceCommandLineCompletionItems({
+    commandLine: model.commandLine,
+    entries: model.entries,
+  });
   if (items.length === 0) {
     return;
   }

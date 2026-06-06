@@ -470,7 +470,7 @@ Slices:
 
 - [x] Slice 9: Add command registry and command completion provider.
       Commit: `UX: complete command names`.
-- [ ] Slice 10: Add file completion provider for `:edit`.
+- [x] Slice 10: Add file completion provider for `:edit`.
       Commit: `UX: complete edit paths`.
 - [ ] Slice 11: Add bounded file preview provider.
       Commit: `UX: preview edit path completions`.

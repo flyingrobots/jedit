@@ -54,6 +54,51 @@ test("workspace command completion provider leaves argument text to later provid
   assert.deepEqual(items, []);
 });
 
+test("workspace command line completion provider filters :edit files and directories", async () => {
+  const [completion, fileSystem] = await Promise.all([
+    importDist("app", "workspace", "command-completion.js"),
+    importDist("ports", "file-system.js"),
+  ]);
+
+  const readme = completion.workspaceCommandLineCompletionItems({
+    commandLine: {
+      input: "edit R",
+      cursorIndex: 6,
+    },
+    entries: editEntries(fileSystem),
+  });
+  const src = completion.workspaceCommandLineCompletionItems({
+    commandLine: {
+      input: "e s",
+      cursorIndex: 3,
+    },
+    entries: editEntries(fileSystem),
+  });
+
+  assert.deepEqual(
+    readme.map((item) => item.label),
+    ["README.md"],
+  );
+  assert.equal(readme[0].detail, "File");
+  assert.equal(readme[0].kind, "file");
+  assert.deepEqual(readme[0].replacement, {
+    start: 5,
+    end: 6,
+    text: "README.md",
+  });
+  assert.deepEqual(
+    src.map((item) => item.label),
+    ["src/"],
+  );
+  assert.equal(src[0].detail, "Directory");
+  assert.equal(src[0].kind, "directory");
+  assert.deepEqual(src[0].replacement, {
+    start: 2,
+    end: 3,
+    text: "src/",
+  });
+});
+
 test("command-line mode moves and accepts command completions", async () => {
   const [keyBindings, titleScreen, editorMode] = await Promise.all([
     importDist("app", "workspace", "key-bindings.js"),
@@ -104,6 +149,37 @@ test("command-line mode moves and accepts command completions", async () => {
   assert.deepEqual(commands, []);
 });
 
+test("command-line mode accepts edit file completions", async () => {
+  const [keyBindings, titleScreen, editorMode, fileSystem] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("ports", "file-system.js"),
+  ]);
+  const model = mockTitleScreenModel(titleScreen, {
+    editor: mockEditor(editorMode),
+    focusPane: "editor",
+    entries: editEntries(fileSystem),
+    commandLine: {
+      active: true,
+      input: "edit R",
+      cursorIndex: 6,
+      selectedCompletionIndex: 0,
+    },
+  });
+
+  const [accepted, commands] = keyBindings.updateFromKey(
+    { type: "key", key: "tab", ctrl: false, alt: false, shift: false },
+    model,
+    mockKeyBindingContext(),
+  );
+
+  assert.equal(accepted.commandLine.input, "edit README.md");
+  assert.equal(accepted.commandLine.cursorIndex, 14);
+  assert.equal(accepted.commandLine.selectedCompletionIndex, 0);
+  assert.deepEqual(commands, []);
+});
+
 test("workspace render paints command completions above the Vim command line", async () => {
   const [viewer, titleScreen, editorMode] = await Promise.all([
     importDist("app", "workspace", "viewer.js"),
@@ -130,6 +206,60 @@ test("workspace render paints command completions above the Vim command line", a
   assert.match(lines[15], /› edit\s+C\s+Open a file/);
   assert.match(lines[16], /^:e\s*$/);
 });
+
+test("workspace render paints edit file completions above the Vim command line", async () => {
+  const [viewer, titleScreen, editorMode, fileSystem] = await Promise.all([
+    importDist("app", "workspace", "viewer.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("ports", "file-system.js"),
+  ]);
+  const model = mockTitleScreenModel(titleScreen, {
+    columns: 80,
+    rows: 18,
+    editor: mockEditor(editorMode, { lines: ["hello world"] }),
+    focusPane: "editor",
+    footerVisible: true,
+    entries: editEntries(fileSystem),
+    jeditTheme: workspaceRenderTheme(),
+    commandLine: {
+      active: true,
+      input: "edit R",
+      cursorIndex: 6,
+      selectedCompletionIndex: 0,
+    },
+  });
+
+  const lines = surfaceText(viewer.renderWorkspace(model)).split("\n");
+
+  assert.match(lines[15], /› README\.md\s+F\s+File/);
+  assert.match(lines[16], /^:edit R\s*$/);
+});
+
+function editEntries(fileSystem) {
+  return [
+    {
+      kind: fileSystem.FileEntryKinds.Parent,
+      name: "..",
+      path: "/repo/..",
+    },
+    {
+      kind: fileSystem.FileEntryKinds.Directory,
+      name: "src",
+      path: "/repo/src",
+    },
+    {
+      kind: fileSystem.FileEntryKinds.File,
+      name: "README.md",
+      path: "/repo/README.md",
+    },
+    {
+      kind: fileSystem.FileEntryKinds.File,
+      name: "package.json",
+      path: "/repo/package.json",
+    },
+  ];
+}
 
 function workspaceRenderTheme() {
   const workspace = token("#f0f6fc", "#0d1117");

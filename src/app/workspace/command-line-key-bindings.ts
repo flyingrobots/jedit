@@ -11,8 +11,8 @@ import {
   replaceWorkspaceCommandLineInput,
 } from "./command-line.js";
 import {
-  selectedWorkspaceCommandCompletionItem,
-  workspaceCommandCompletionItems,
+  selectedWorkspaceCommandLineCompletionItem,
+  workspaceCommandLineCompletionItems,
 } from "./command-completion.js";
 import type { WorkspaceModel } from "./model.js";
 import type { WorkspaceMsg } from "./msg.js";
@@ -92,7 +92,10 @@ function updateCommandLineCompletionKey(
   msg: KeyMsg,
   model: WorkspaceModel,
 ): KeyBindingResult | undefined {
-  const completions = workspaceCommandCompletionItems(model.commandLine);
+  const completions = workspaceCommandLineCompletionItems({
+    commandLine: model.commandLine,
+    entries: model.entries,
+  });
   if (isCommandLineCompletionPreviousKey(msg)) {
     return [
       moveWorkspaceCommandLineCompletion(
@@ -116,7 +119,10 @@ function updateCommandLineCompletionKey(
   }
 
   if (isCommandLineCompletionAcceptKey(msg)) {
-    const selected = selectedWorkspaceCommandCompletionItem(model.commandLine);
+    const selected = selectedWorkspaceCommandLineCompletionItem({
+      commandLine: model.commandLine,
+      entries: model.entries,
+    });
     return selected == null
       ? [model, []]
       : [replaceWorkspaceCommandLineInput(model, selected.replacement), []];
