@@ -13,6 +13,8 @@ const MIN_RENDER_COLOR_VARIETY = 6;
 const MIN_BUNNY_REFRACTIVE_INDEX = 1.5;
 const MIN_BUNNY_TRANSPARENCY = 0.5;
 const MIN_BUNNY_TRIANGLES = 1000;
+const MIN_DRESSING_OBJECT_COUNT = 7;
+const MIN_DRESSING_MATERIAL_COUNT = 6;
 const CAMERA_ORBIT_SAMPLE_COUNT = 16;
 const FULL_CAMERA_ORBIT_RADIANS = Math.PI * 2;
 const MIN_ORBIT_RENDER_COLOR_VARIETY = 20;
@@ -42,7 +44,7 @@ test("bunny is the registered default title scene", async () => {
     DEFAULT_BUNNY_SCENE,
   );
   assert.equal(modules.port.BUILT_IN_TITLE_SCENE_NAMES[0], DEFAULT_BUNNY_SCENE);
-  assert.equal(scene.objects.length, 1);
+  assert.ok(scene.objects.length >= MIN_DRESSING_OBJECT_COUNT);
   assert.ok(scene.camera.radius <= MAX_DEFAULT_BUNNY_CAMERA_RADIUS);
   assert.ok(scene.camera.position[1] <= MAX_DEFAULT_BUNNY_CAMERA_Y);
   assert.deepEqual(
@@ -51,6 +53,14 @@ test("bunny is the registered default title scene", async () => {
   );
   assert.equal(bunny.label, BUNNY_OBJECT_LABEL);
   assert.equal(bunny.kind, "mesh");
+  assert.ok(scene.objects.some((object) => object.kind === "sphere"));
+  assert.ok(scene.objects.some((object) => object.kind === "cube"));
+  assert.ok(
+    new Set(scene.objects.map((object) => object.color.join(","))).size >=
+      MIN_DRESSING_MATERIAL_COUNT,
+  );
+  assert.ok(scene.objects.some((object) => object.reflectivity > 0.5));
+  assert.ok(scene.objects.some((object) => object.transparency > 0.2));
   assert.ok(scene.environment?.floor != null);
   assert.equal(scene.environment?.floor?.kind, "grid");
   assert.deepEqual(scene.environment?.floor?.dark, CHECKER_FLOOR_DARK);

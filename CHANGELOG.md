@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Populated the default bunny title scene with varied surrounding spheres and
+  boxes using mixed colors, reflectivity, transparency, and refractive indices.
 - Rendered the startup file selector rows through Bijou's browsable list
   surface, added themed scrollbar affordance for overflowing directories, and
   made Escape dismissal recoverable from the title screen with Enter or `o`.
