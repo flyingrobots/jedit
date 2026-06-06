@@ -103,3 +103,30 @@ enforceable quality ratchet is currently clean.
 - Make invalid states unrepresentable at runtime where possible.
 - Move stringly external data into runtime objects at the boundary immediately.
 - Prefer constructor or factory injection over ambient singletons for new code.
+
+## Progress Footer
+
+- End every turn with the compact progress footer:
+
+  ```text
+  === ⋆★⋆ Progress Report ⋆★⋆ ===
+
+  <goalpost name>
+  <progress bar> <percent> (<done>/<total> slices)
+
+  - [x] <completed slice>
+  - [ ] <open slice>
+
+  ⎇ <branch> +<ahead>/-<behind>
+  <pr-icon> <pr-status>
+  ```
+
+- Compute `+<ahead>/-<behind>` against the active merge target, normally
+  `origin/main`, using local refs unless the turn already fetched.
+- Keep the PR line compact:
+  - `🚫 none` when no PR exists.
+  - `📤 [#N](url)` when a PR is open.
+  - `📝 [#N](url)` when a PR is draft.
+  - `🏁 [#N](url)` when a PR was merged.
+  - `🐇 [#N](url)` when waiting for Code Rabbit.
+  - `🧪 [#N](url)` when CI is not finished yet.
