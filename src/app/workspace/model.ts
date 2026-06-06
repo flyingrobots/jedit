@@ -13,7 +13,10 @@ import type {
   TitleRenderMode,
 } from "../../ui/title-screen.js";
 import type { ProfilerState } from "../raytracer-profiler.js";
-import type { TitleCameraState } from "../title-camera-session.js";
+import type {
+  TitleCameraMouseLookPointer,
+  TitleCameraState,
+} from "../title-camera-session.js";
 import type { TextRuntimeProfile } from "../text-runtime-profile.js";
 import type { JeditWscStartupRecoveryResult } from "../../ports/jedit-wsc-startup-recovery.js";
 import type { EditorState } from "./editor/model.js";
@@ -74,6 +77,7 @@ export interface WorkspaceModel extends StartupFileModalState {
   readonly frameTimeMs: number;
   readonly frameTimeHistory: readonly number[];
   readonly titleCamera: TitleCameraState;
+  readonly titleMouseLook?: TitleCameraMouseLookPointer;
   readonly titleRenderMode: TitleRenderMode;
   readonly titleAsciiPalette: TitleAsciiPalette;
   readonly titleMeshMaterialIndex: number;

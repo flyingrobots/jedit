@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added FPS-style title-screen camera controls: `w` and `s` move along the
+  camera view vector, `a` and `d` strafe, mouse movement rotates the look
+  vector, Space jumps, and Shift crouches with slower movement.
 - Populated the default bunny title scene with varied surrounding spheres and
   boxes using mixed colors, reflectivity, transparency, and refractive indices.
 - Rendered the startup file selector rows through Bijou's browsable list

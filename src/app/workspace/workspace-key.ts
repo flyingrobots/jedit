@@ -6,7 +6,10 @@ export const WorkspaceKeys = Object.freeze({
   Two: "2",
   Colon: ":",
   Period: ".",
+  W: "w",
+  A: "a",
   C: "c",
+  D: "d",
   Q: "q",
   S: "s",
   B: "b",
@@ -31,6 +34,7 @@ export const WorkspaceKeys = Object.freeze({
   PageDown: "pagedown",
   Enter: "enter",
   Return: "return",
+  Shift: "shift",
 } as const);
 
 export type WorkspaceKey = (typeof WorkspaceKeys)[keyof typeof WorkspaceKeys];
