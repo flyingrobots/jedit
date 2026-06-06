@@ -8,8 +8,8 @@ import { DrawerKinds, type DrawerKind } from './drawer-layout.js';
 import { FocusPanes, hasFocusablePeers, type FocusPane } from './panel-focus.js';
 import { ViewModes, type ViewMode } from '../app/workspace/view-mode.js';
 import { EditorModes, PendingNormals, type EditorMode, type PendingNormal } from '../app/workspace/editor/mode.js';
-import { renderWorkspaceCommandLineFooter, type WorkspaceCommandLineFooterState } from './workspace-command-line-footer.js';
-
+import { renderWorkspaceCommandLineFooter, workspaceCommandLineFooterHintLine as commandLineHints } from './workspace-command-line-footer.js';
+import type { WorkspaceCommandLineFooterState } from './workspace-command-line-footer.js';
 const FOOTER_ROWS = 2;
 const FOOTER_LINE_HEIGHT = 1;
 const FOOTER_PRIMARY_ROW = 0;
@@ -151,7 +151,7 @@ export function renderWorkspaceFooter(state: WorkspaceFooterState, width: number
   }
   if (state.commandLine?.active === true) {
     return renderWorkspaceCommandLineFooter(
-      { i18n: state.i18n, commandLine: state.commandLine, contextLine: footerContextLine(state), commandLineError: state.commandLineError },
+      { i18n: state.i18n, commandLine: state.commandLine, contextLine: commandLineHints(state.i18n), commandLineError: state.commandLineError },
       width,
       background,
     );
@@ -168,7 +168,7 @@ export function renderWorkspaceFooter(state: WorkspaceFooterState, width: number
 
 export function workspaceFooterLines(state: WorkspaceFooterState): readonly [string, string] {
   if (state.commandLine?.active === true) {
-    return [`:${state.commandLine.input}`, footerContextLine(state)];
+    return [`:${state.commandLine.input}`, commandLineHints(state.i18n)];
   }
   const modeKey = interactionModeKey(state);
   const modeLabel = state.i18n.t(`footer.mode.${modeKey}`).toUpperCase();

@@ -3,6 +3,7 @@ import {
   type InlineCompletionItem,
 } from "../../ui/inline-completion-popup.js";
 import { FileEntryKinds, type FileEntry } from "../../ports/file-system.js";
+import type { I18nPort } from "../../ports/i18n.js";
 import type { WorkspaceCommandLineState } from "./command-line.js";
 
 export interface WorkspaceCommandDescriptor {
@@ -10,6 +11,7 @@ export interface WorkspaceCommandDescriptor {
   readonly name: string;
   readonly aliases: readonly string[];
   readonly detail: string;
+  readonly detailKey: string;
 }
 
 export interface WorkspaceCommandLineCompletionContext {
@@ -18,6 +20,7 @@ export interface WorkspaceCommandLineCompletionContext {
     "input" | "cursorIndex"
   >;
   readonly entries: readonly FileEntry[];
+  readonly i18n?: WorkspaceCommandCompletionI18n;
 }
 
 export interface WorkspaceSelectedCommandLineCompletionContext {
@@ -26,6 +29,7 @@ export interface WorkspaceSelectedCommandLineCompletionContext {
     "input" | "cursorIndex" | "selectedCompletionIndex"
   >;
   readonly entries: readonly FileEntry[];
+  readonly i18n?: WorkspaceCommandCompletionI18n;
 }
 
 interface CommandNameCompletionContext {
@@ -39,6 +43,8 @@ interface EditFileCompletionContext {
   readonly replacementStart: number;
   readonly replacementEnd: number;
 }
+
+type WorkspaceCommandCompletionI18n = Pick<I18nPort, "t">;
 
 export const VIM_COMMAND_PROVIDER_ID = "vim-command";
 export const WORKSPACE_FILE_PROVIDER_ID = "workspace-file";
@@ -54,30 +60,40 @@ const FILE_COMPLETION_DIRECTORY_SUFFIX = "/";
 const FILE_COMPLETION_FILE_DETAIL = "File";
 const FILE_COMPLETION_DIRECTORY_DETAIL = "Directory";
 const FILE_COMPLETION_PARENT_DETAIL = "Parent directory";
+const COMMAND_DETAIL_KEYS = Object.freeze({
+  Edit: "footer.command.details.edit",
+  Write: "footer.command.details.write",
+  Quit: "footer.command.details.quit",
+  WriteQuit: "footer.command.details.wq",
+});
 const WORKSPACE_COMMAND_DESCRIPTORS = [
   {
     id: "command:edit",
     name: EDIT_COMMAND_NAME,
     aliases: [EDIT_COMMAND_ALIAS],
     detail: "Open a file",
+    detailKey: COMMAND_DETAIL_KEYS.Edit,
   },
   {
     id: "command:write",
     name: "write",
     aliases: ["w"],
     detail: "Write the current file",
+    detailKey: COMMAND_DETAIL_KEYS.Write,
   },
   {
     id: "command:quit",
     name: "quit",
     aliases: ["q"],
     detail: "Quit jedit",
+    detailKey: COMMAND_DETAIL_KEYS.Quit,
   },
   {
     id: "command:wq",
     name: "wq",
     aliases: ["x"],
     detail: "Write and quit",
+    detailKey: COMMAND_DETAIL_KEYS.WriteQuit,
   },
 ] satisfies readonly WorkspaceCommandDescriptor[];
 
@@ -87,6 +103,7 @@ export function workspaceCommandDescriptors(): readonly WorkspaceCommandDescript
 
 export function workspaceCommandCompletionItems(
   commandLine: Pick<WorkspaceCommandLineState, "input" | "cursorIndex">,
+  i18n?: WorkspaceCommandCompletionI18n,
 ): readonly InlineCompletionItem[] {
   const context = commandNameCompletionContext(commandLine);
   if (context == null) {
@@ -95,7 +112,7 @@ export function workspaceCommandCompletionItems(
 
   return WORKSPACE_COMMAND_DESCRIPTORS.filter((descriptor) =>
     descriptorMatchesQuery(descriptor, context.query),
-  ).map((descriptor) => commandCompletionItem(descriptor, context));
+  ).map((descriptor) => commandCompletionItem(descriptor, context, i18n));
 }
 
 export function workspaceCommandLineCompletionItems(
@@ -103,7 +120,7 @@ export function workspaceCommandLineCompletionItems(
 ): readonly InlineCompletionItem[] {
   const fileContext = editFileCompletionContext(context.commandLine);
   return fileContext == null
-    ? workspaceCommandCompletionItems(context.commandLine)
+    ? workspaceCommandCompletionItems(context.commandLine, context.i18n)
     : workspaceFileCompletionItems(context.entries, fileContext);
 }
 
@@ -111,7 +128,7 @@ export function selectedWorkspaceCommandCompletionItem(
   commandLine: Pick<
     WorkspaceCommandLineState,
     "input" | "cursorIndex" | "selectedCompletionIndex"
-  >,
+>,
 ): InlineCompletionItem | undefined {
   const items = workspaceCommandCompletionItems(commandLine);
   return items[selectedWorkspaceCommandCompletionIndex(commandLine, items.length)];
@@ -145,11 +162,12 @@ export function selectedWorkspaceCommandCompletionIndex(
 function commandCompletionItem(
   descriptor: WorkspaceCommandDescriptor,
   context: CommandNameCompletionContext,
+  i18n: WorkspaceCommandCompletionI18n | undefined,
 ): InlineCompletionItem {
   return {
     id: descriptor.id,
     label: descriptor.name,
-    detail: commandCompletionDetail(descriptor),
+    detail: commandCompletionDetail(descriptor, i18n),
     kind: INLINE_COMPLETION_ITEM_KIND.Command,
     providerId: VIM_COMMAND_PROVIDER_ID,
     replacement: {
@@ -190,10 +208,19 @@ function fileCompletionItem(
 
 function commandCompletionDetail(
   descriptor: WorkspaceCommandDescriptor,
+  i18n: WorkspaceCommandCompletionI18n | undefined,
 ): string {
+  const detail = localizedCommandDetail(descriptor, i18n);
   return descriptor.aliases.length === 0
-    ? descriptor.detail
-    : `${descriptor.detail} (${descriptor.aliases.join(", ")})`;
+    ? detail
+    : `${detail} (${descriptor.aliases.join(", ")})`;
+}
+
+function localizedCommandDetail(
+  descriptor: WorkspaceCommandDescriptor,
+  i18n: WorkspaceCommandCompletionI18n | undefined,
+): string {
+  return i18n?.t(descriptor.detailKey) ?? descriptor.detail;
 }
 
 function commandCompletionReplacementText(

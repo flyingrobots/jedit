@@ -18,7 +18,6 @@ import { FOOTER_ROWS, MIN_COLUMNS, MIN_ROWS } from './viewport.js';
 
 const STARTUP_FILE_MODAL_I18N_KEYS = Object.freeze({
   Title: 'startupFileModal.title',
-  Hint: 'startupFileModal.hint',
   CurrentDirectory: 'startupFileModal.current_directory',
   Empty: 'startupFileModal.empty',
 } as const);
@@ -130,6 +129,7 @@ function commandLineCompletionPopupContext(model: WorkspaceModel) {
   const items = workspaceCommandLineCompletionItems({
     commandLine: model.commandLine,
     entries: model.entries,
+    i18n: model.i18n,
   });
   if (items.length === 0) {
     return undefined;
@@ -191,7 +191,6 @@ export function workspaceFeedbackOverlay(model: WorkspaceModel): Overlay | undef
 function startupFileModalCopy(model: WorkspaceModel) {
   return {
     title: model.i18n.t(STARTUP_FILE_MODAL_I18N_KEYS.Title),
-    hint: model.i18n.t(STARTUP_FILE_MODAL_I18N_KEYS.Hint),
     currentDirectory: model.i18n.t(STARTUP_FILE_MODAL_I18N_KEYS.CurrentDirectory),
     empty: model.i18n.t(STARTUP_FILE_MODAL_I18N_KEYS.Empty),
   };

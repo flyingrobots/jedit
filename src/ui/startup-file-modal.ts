@@ -25,7 +25,6 @@ export interface StartupFileModalRenderRow {
 
 export interface StartupFileModalCopy {
   readonly title: string;
-  readonly hint: string;
   readonly currentDirectory: string;
   readonly empty: string;
 }

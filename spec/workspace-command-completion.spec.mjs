@@ -43,6 +43,37 @@ test("workspace command completion provider matches Vim command names and aliase
   });
 });
 
+test("workspace command completion provider localizes command copy", async () => {
+  const completion = await importDist("app", "workspace", "command-completion.js");
+  const requestedKeys = [];
+  const i18n = {
+    t(path) {
+      requestedKeys.push(path);
+      return `copy:${path}`;
+    },
+  };
+
+  const items = completion.workspaceCommandCompletionItems(
+    {
+      input: "w",
+      cursorIndex: 1,
+    },
+    i18n,
+  );
+
+  assert.deepEqual(
+    items.map((item) => item.detail),
+    [
+      "copy:footer.command.details.write (w)",
+      "copy:footer.command.details.wq (x)",
+    ],
+  );
+  assert.deepEqual(requestedKeys, [
+    "footer.command.details.write",
+    "footer.command.details.wq",
+  ]);
+});
+
 test("workspace command completion provider leaves argument text to later providers", async () => {
   const completion = await importDist("app", "workspace", "command-completion.js");
 

@@ -21,6 +21,15 @@ export function createI18nMock(overrides = {}) {
     ye_word_end: 'ye word-end',
     y_end: 'y$ end',
   };
+  const commands = {
+    'footer.command.details.edit': 'Open a file',
+    'footer.command.details.write': 'Write the current file',
+    'footer.command.details.quit': 'Quit jedit',
+    'footer.command.details.wq': 'Write and quit',
+    'footer.command.hints.tab_accept': 'tab accept',
+    'footer.command.hints.enter_run': 'enter run',
+    'footer.command.hints.esc_cancel': 'esc cancel',
+  };
   return {
     locale: 'en',
     localeLabel: 'English',
@@ -41,6 +50,7 @@ export function createI18nMock(overrides = {}) {
       }
       const parts = path.split('.');
       const id = parts[parts.length - 1];
+      if (commands[path] != null) return commands[path];
       if (hints[id] != null) return hints[id];
       return id.replace(/_/g, ' ');
     },

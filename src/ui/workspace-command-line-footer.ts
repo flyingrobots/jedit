@@ -5,8 +5,12 @@ import { JEDIT_TEXT_MODIFIER, type JeditStyleToken } from "./jedit-theme.js";
 
 const COMMAND_LINE_INVALID_KIND = "invalid";
 const COMMAND_LINE_INVALID_MESSAGE_KEY = "footer.command.invalid";
+const COMMAND_LINE_HINT_TAB_ACCEPT_KEY = "footer.command.hints.tab_accept";
+const COMMAND_LINE_HINT_ENTER_RUN_KEY = "footer.command.hints.enter_run";
+const COMMAND_LINE_HINT_ESC_CANCEL_KEY = "footer.command.hints.esc_cancel";
 const COMMAND_LINE_PREFIX = ":";
 const COMMAND_LINE_INVALID_SEPARATOR = "  ";
+const FOOTER_HINT_SEPARATOR = " · ";
 const FOOTER_LINE_HEIGHT = 1;
 const FOOTER_ORIGIN = 0;
 const FOOTER_PRIMARY_ROW = 0;
@@ -66,6 +70,14 @@ export function renderWorkspaceCommandLineFooter(
   surface.blit(primary.surface, primary.x, FOOTER_PRIMARY_ROW);
   surface.blit(secondary.surface, secondary.x, FOOTER_SECONDARY_ROW);
   return surface;
+}
+
+export function workspaceCommandLineFooterHintLine(i18n: I18nPort): string {
+  return `[${[
+    i18n.t(COMMAND_LINE_HINT_TAB_ACCEPT_KEY),
+    i18n.t(COMMAND_LINE_HINT_ENTER_RUN_KEY),
+    i18n.t(COMMAND_LINE_HINT_ESC_CANCEL_KEY),
+  ].join(FOOTER_HINT_SEPARATOR)}]`;
 }
 
 function commandLinePrimaryLine(

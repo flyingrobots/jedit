@@ -58,8 +58,64 @@ test('workspace footer renders active command-line input like Vim', async () => 
         selectedCompletionIndex: 0,
       },
     }),
-    [':edit src/app', '/repo/notes/todo.md'],
+    [
+      ':edit src/app',
+      '[tab accept · enter run · esc cancel]',
+    ],
   );
+});
+
+test('workspace footer obtains command-line hints from i18n', async () => {
+  const footer = await loadFooterModule();
+  const requestedKeys = [];
+  const i18n = {
+    locale: 'en',
+    direction: 'ltr',
+    t: (path) => {
+      requestedKeys.push(path);
+      if (path === 'footer.command.hints.tab_accept') return 'tab choose';
+      if (path === 'footer.command.hints.enter_run') return 'enter run';
+      if (path === 'footer.command.hints.esc_cancel') return 'esc close';
+      if (path.startsWith('footer.mode.')) return path.slice('footer.mode.'.length);
+      return path;
+    },
+    setLocale: () => undefined,
+  };
+
+  assert.deepEqual(
+    footer.workspaceFooterLines({
+      ...idleNormalState(),
+      i18n,
+      commandLine: {
+        active: true,
+        input: 'w',
+        cursorIndex: 1,
+        selectedCompletionIndex: 0,
+      },
+    }),
+    [
+      ':w',
+      '[tab choose · enter run · esc close]',
+    ],
+  );
+  assert.equal(requestedKeys.includes('footer.command.hints.tab_accept'), true);
+  assert.equal(requestedKeys.includes('footer.command.hints.enter_run'), true);
+  assert.equal(requestedKeys.includes('footer.command.hints.esc_cancel'), true);
+});
+
+test('workspace footer renders command-line hints on the painted secondary row', async () => {
+  const footer = await loadFooterModule();
+  const surface = footer.renderWorkspaceFooter({
+    ...idleNormalState(),
+    commandLine: {
+      active: true,
+      input: 'e',
+      cursorIndex: 1,
+      selectedCompletionIndex: 0,
+    },
+  }, 44, {});
+
+  assert.equal(rowText(surface, 1).trim(), '[tab accept · enter run · esc cancel]');
 });
 
 test('workspace footer shows pending change-operator continuations', async () => {
@@ -366,3 +422,11 @@ test('workspace footer obtains context labels from i18n', async () => {
   assert.equal(requestedKeys.includes('footer.context.history_empty'), true);
   assert.equal(requestedKeys.includes('footer.context.history_count'), true);
 });
+
+function rowText(surface, row) {
+  let text = '';
+  for (let col = 0; col < surface.width; col += 1) {
+    text += surface.get(col, row).char;
+  }
+  return text;
+}

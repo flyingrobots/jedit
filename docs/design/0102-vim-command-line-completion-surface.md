@@ -526,7 +526,7 @@ Slices:
 - [x] Slice 18: Remove duplicate startup type-to-search code that command mode
       replaces.
       Commit: `UX: retire duplicate startup search`.
-- [ ] Slice 19: Update footer hints and localized command copy.
+- [x] Slice 19: Update footer hints and localized command copy.
       Commit: `Docs: update command-line copy`.
 - [ ] Slice 20: Update technical teardown, retrospective, and playback witness.
       Commit: `Docs: document vim command completion`.
