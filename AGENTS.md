@@ -109,10 +109,8 @@ enforceable quality ratchet is currently clean.
 - End every turn with the compact progress footer:
 
   ```text
-  === ⋆★⋆ Progress Report ⋆★⋆ ===
-
-  <goalpost name>
   <progress bar> <percent> (<done>/<total> slices)
+  WIP: <goalpost name>
 
   - [x] <completed slice>
   - [ ] <open slice>
