@@ -21,6 +21,9 @@
             "history_empty": "no Echo evidence yet",
             "history_count": "Echo evidence: {count}"
           },
+          "command": {
+            "invalid": "Command not recognized; type :help for help"
+          },
           "hints": {
             "j_k_move": "j/k move",
             "enter_change": "enter change",
@@ -103,6 +106,9 @@
             "graft_empty": "ouvrez un fichier pour l'inspecter",
             "history_empty": "pas encore de preuve Echo",
             "history_count": "Preuves Echo : {count}"
+          },
+          "command": {
+            "invalid": "Command not recognized; type :help for help"
           },
           "hints": {
             "j_k_move": "j/k déplacer",
@@ -187,6 +193,9 @@
             "history_empty": "nessuna prova Echo ancora",
             "history_count": "Prove Echo: {count}"
           },
+          "command": {
+            "invalid": "Command not recognized; type :help for help"
+          },
           "hints": {
             "j_k_move": "j/k muovi",
             "enter_change": "enter cambia",
@@ -269,6 +278,9 @@
             "graft_empty": "datei öffnen zum prüfen",
             "history_empty": "noch keine Echo-Nachweise",
             "history_count": "Echo-Nachweise: {count}"
+          },
+          "command": {
+            "invalid": "Command not recognized; type :help for help"
           },
           "hints": {
             "j_k_move": "j/k bewegen",
@@ -353,6 +365,9 @@
             "history_empty": "sin evidencia Echo todavía",
             "history_count": "Evidencia Echo: {count}"
           },
+          "command": {
+            "invalid": "Command not recognized; type :help for help"
+          },
           "hints": {
             "j_k_move": "j/k mover",
             "enter_change": "enter cambiar",
@@ -435,6 +450,9 @@
             "graft_empty": "검사할 파일을 여세요",
             "history_empty": "아직 Echo 증거 없음",
             "history_count": "Echo 증거: {count}"
+          },
+          "command": {
+            "invalid": "Command not recognized; type :help for help"
           },
           "hints": {
             "j_k_move": "j/k 이동",
@@ -519,6 +537,9 @@
             "history_empty": "Echo 証拠はまだありません",
             "history_count": "Echo 証拠: {count}"
           },
+          "command": {
+            "invalid": "Command not recognized; type :help for help"
+          },
           "hints": {
             "j_k_move": "j/k 移動",
             "enter_change": "enter 変更",
@@ -601,6 +622,9 @@
             "graft_empty": "打开文件以检查",
             "history_empty": "还没有 Echo 证据",
             "history_count": "Echo 证据: {count}"
+          },
+          "command": {
+            "invalid": "Command not recognized; type :help for help"
           },
           "hints": {
             "j_k_move": "j/k 移动",
@@ -685,6 +709,9 @@
             "history_empty": "nenhuma evidência Echo ainda",
             "history_count": "Evidências Echo: {count}"
           },
+          "command": {
+            "invalid": "Command not recognized; type :help for help"
+          },
           "hints": {
             "j_k_move": "j/k mover",
             "enter_change": "enter alterar",
@@ -767,6 +794,9 @@
             "graft_empty": "откройте файл для проверки",
             "history_empty": "пока нет доказательств Echo",
             "history_count": "Доказательства Echo: {count}"
+          },
+          "command": {
+            "invalid": "Command not recognized; type :help for help"
           },
           "hints": {
             "j_k_move": "j/k переместить",
@@ -851,6 +881,9 @@
             "history_empty": "لا توجد أدلة Echo بعد",
             "history_count": "أدلة Echo: {count}"
           },
+          "command": {
+            "invalid": "Command not recognized; type :help for help"
+          },
           "hints": {
             "j_k_move": "j/k تحريك",
             "enter_change": "enter تغيير",
@@ -933,6 +966,9 @@
             "graft_empty": "buka berkas untuk diperiksa",
             "history_empty": "belum ada bukti Echo",
             "history_count": "Bukti Echo: {count}"
+          },
+          "command": {
+            "invalid": "Command not recognized; type :help for help"
           },
           "hints": {
             "j_k_move": "j/k pindah",
@@ -1017,6 +1053,9 @@
             "history_empty": "henüz Echo kanıtı yok",
             "history_count": "Echo kanıtı: {count}"
           },
+          "command": {
+            "invalid": "Command not recognized; type :help for help"
+          },
           "hints": {
             "j_k_move": "j/k taşı",
             "enter_change": "enter değiştir",
@@ -1099,6 +1138,9 @@
             "graft_empty": "जांचने के लिए फाइल खोलें",
             "history_empty": "अभी कोई Echo प्रमाण नहीं",
             "history_count": "Echo प्रमाण: {count}"
+          },
+          "command": {
+            "invalid": "Command not recognized; type :help for help"
           },
           "hints": {
             "j_k_move": "j/k चलें",
@@ -1183,6 +1225,9 @@
             "history_empty": "nog geen Echo-bewijs",
             "history_count": "Echo-bewijs: {count}"
           },
+          "command": {
+            "invalid": "Command not recognized; type :help for help"
+          },
           "hints": {
             "j_k_move": "j/k bewegen",
             "enter_change": "enter wijzigen",
@@ -1265,6 +1310,9 @@
             "graft_empty": "otwórz plik do sprawdzenia",
             "history_empty": "brak jeszcze dowodów Echo",
             "history_count": "Dowody Echo: {count}"
+          },
+          "command": {
+            "invalid": "Command not recognized; type :help for help"
           },
           "hints": {
             "j_k_move": "j/k przesuń",
@@ -1349,6 +1397,9 @@
             "history_empty": "chưa có bằng chứng Echo",
             "history_count": "Bằng chứng Echo: {count}"
           },
+          "command": {
+            "invalid": "Command not recognized; type :help for help"
+          },
           "hints": {
             "j_k_move": "j/k di chuyển",
             "enter_change": "enter đổi",
@@ -1431,6 +1482,9 @@
             "graft_empty": "เปิดไฟล์เพื่อตรวจสอบ",
             "history_empty": "ยังไม่มีหลักฐาน Echo",
             "history_count": "หลักฐาน Echo: {count}"
+          },
+          "command": {
+            "invalid": "Command not recognized; type :help for help"
           },
           "hints": {
             "j_k_move": "j/k ย้าย",
@@ -1515,6 +1569,9 @@
             "history_empty": "هنوز مدرک Echo وجود ندارد",
             "history_count": "مدارک Echo: {count}"
           },
+          "command": {
+            "invalid": "Command not recognized; type :help for help"
+          },
           "hints": {
             "j_k_move": "j/k حرکت",
             "enter_change": "enter تغییر",
@@ -1597,6 +1654,9 @@
             "graft_empty": "פתח קובץ לבדיקה",
             "history_empty": "עדיין אין ראיות Echo",
             "history_count": "ראיות Echo: {count}"
+          },
+          "command": {
+            "invalid": "Command not recognized; type :help for help"
           },
           "hints": {
             "j_k_move": "j/k הזז",

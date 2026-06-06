@@ -1,7 +1,6 @@
 import { createSurface, stringToSurface, type Surface } from '@flyingrobots/bijou';
 import { clipToWidth } from '@flyingrobots/bijou-tui';
 import { basename } from 'node:path';
-
 import { FileEntryKinds, type FileEntry } from '../ports/file-system.js';
 import type { I18nPort } from '../ports/i18n.js';
 import type { JeditStyleToken } from './jedit-theme.js';
@@ -9,6 +8,7 @@ import { DrawerKinds, type DrawerKind } from './drawer-layout.js';
 import { FocusPanes, hasFocusablePeers, type FocusPane } from './panel-focus.js';
 import { ViewModes, type ViewMode } from '../app/workspace/view-mode.js';
 import { EditorModes, PendingNormals, type EditorMode, type PendingNormal } from '../app/workspace/editor/mode.js';
+import { renderWorkspaceCommandLineFooter, type WorkspaceCommandLineFooterState } from './workspace-command-line-footer.js';
 
 const FOOTER_ROWS = 2;
 const FOOTER_LINE_HEIGHT = 1;
@@ -113,12 +113,9 @@ export interface WorkspaceFooterState {
   readonly textPosture?: string;
   readonly echoHistoryCount?: number;
   readonly graftPath?: string;
-  readonly graftSelection?: {
-    readonly kind: string;
-    readonly name: string;
-    readonly startLine: number;
-  };
-  readonly commandLine?: { readonly active: boolean; readonly input: string };
+  readonly graftSelection?: { readonly kind: string; readonly name: string; readonly startLine: number };
+  readonly commandLine?: WorkspaceCommandLineFooterState;
+  readonly commandLineError?: JeditStyleToken;
 }
 
 export function activeWorkspaceTitle(state: WorkspaceTitleState): string {
@@ -152,6 +149,13 @@ export function renderWorkspaceFooter(state: WorkspaceFooterState, width: number
   if (width <= FOOTER_ORIGIN) {
     return surface;
   }
+  if (state.commandLine?.active === true) {
+    return renderWorkspaceCommandLineFooter(
+      { i18n: state.i18n, commandLine: state.commandLine, contextLine: footerContextLine(state), commandLineError: state.commandLineError },
+      width,
+      background,
+    );
+  }
 
   const [primary, secondary] = workspaceFooterLines(state);
   const primaryLine = footerLineSurface(primary, width, background, state.i18n.direction);
@@ -160,10 +164,6 @@ export function renderWorkspaceFooter(state: WorkspaceFooterState, width: number
   surface.blit(primaryLine.surface, primaryLine.x, FOOTER_PRIMARY_ROW);
   surface.blit(secondaryLine.surface, secondaryLine.x, FOOTER_SECONDARY_ROW);
   return surface;
-}
-
-export function workspaceFooterLine(state: WorkspaceFooterState): string {
-  return workspaceFooterLines(state)[0];
 }
 
 export function workspaceFooterLines(state: WorkspaceFooterState): readonly [string, string] {

@@ -6,6 +6,7 @@ import {
   mockEditor,
   mockKeyBindingContext,
   mockTitleScreenModel,
+  surfaceText,
 } from "./workspace-helpers.mjs";
 
 test("colon in normal editor mode enters command-line mode", async () => {
@@ -203,6 +204,38 @@ test("enter records invalid command posture for unknown commands", async () => {
   assert.equal(nextModel.commandLine.dispatchPosture.kind, "invalid");
   assert.equal(nextModel.commandLine.dispatchPosture.input, "bogus");
   assert.deepEqual(commands, []);
+});
+
+test("workspace render highlights invalid Vim commands with help text", async () => {
+  const [viewer, titleScreen, editorMode] = await Promise.all([
+    importDist("app", "workspace", "viewer.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+  ]);
+  const model = mockTitleScreenModel(titleScreen, {
+    columns: 80,
+    rows: 12,
+    editor: mockEditor(editorMode),
+    focusPane: "editor",
+    footerVisible: true,
+    i18n: commandLineRenderI18n(),
+    jeditTheme: commandLineRenderTheme(),
+    commandLine: {
+      ...activeCommandLine("foo"),
+      dispatchPosture: {
+        kind: "invalid",
+        input: "foo",
+      },
+    },
+  });
+  const surface = viewer.renderWorkspace(model);
+  const commandLineRow = model.rows - 2;
+  const line = surfaceText(surface).split("\n")[commandLineRow];
+
+  assert.match(line, /^:foo  Command not recognized; type :help for help/);
+  assert.equal(surface.get(1, commandLineRow).bg, "#ff5555");
+  assert.equal(surface.get(3, commandLineRow).bg, "#ff5555");
+  assert.deepEqual(surface.get(6, commandLineRow).modifiers, ["dim"]);
 });
 
 test("enter dispatches edit commands through production file open", async () => {
@@ -449,4 +482,55 @@ function editEntries(fileSystem) {
       path: "/repo/README.md",
     },
   ];
+}
+
+function commandLineRenderI18n() {
+  return {
+    locale: "en",
+    localeLabel: "English",
+    direction: "ltr",
+    locales: [],
+    t: (path) =>
+      path === "footer.command.invalid"
+        ? "Command not recognized; type :help for help"
+        : path,
+    setLocale: () => undefined,
+    withLocale: () => commandLineRenderI18n(),
+  };
+}
+
+function commandLineRenderTheme() {
+  const workspace = token("#f0f6fc", "#0d1117");
+  const footer = token("#c9d1d9", "#0b1016");
+  const edge = { ...token("#58a6ff", "#0d1117"), char: "│" };
+  return {
+    name: "test",
+    mode: "dark",
+    familyName: "test",
+    variantSource: "authored",
+    variables: new Map([
+      ["warning", { hex: "#ff5555", rgb: [255, 85, 85] }],
+    ]),
+    source: new Map(),
+    sourceRoleMap: new Map(),
+    markdown: new Map(),
+    surface: { workspace, drawer: footer, footer },
+    cursor: { normal: workspace, insert: workspace },
+    chrome: {
+      activeEdge: edge,
+      titleLogo: workspace,
+      titleLogoShadow: workspace,
+      titleSceneNear: workspace,
+      titleSceneFar: workspace,
+    },
+  };
+}
+
+function token(fg, bg) {
+  return {
+    fg,
+    bg,
+    foregroundVariables: [],
+    backgroundVariables: [],
+  };
 }

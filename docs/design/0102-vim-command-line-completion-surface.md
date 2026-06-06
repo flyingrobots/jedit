@@ -542,8 +542,8 @@ Behavior tests required:
 - [x] Inline completion popup flips above when the command line is near the
       bottom of the terminal.
 - [x] Inline completion preview is omitted on narrow terminals.
-- [ ] `:edit <path>` opens through `createWorkspaceTextOpenCmd`.
-- [ ] Invalid commands produce an obstruction or toast without mutating editor
+- [x] `:edit <path>` opens through `createWorkspaceTextOpenCmd`.
+- [x] Invalid commands produce an obstruction or toast without mutating editor
       state.
 - [ ] A fake Graft provider can render symbol documentation/source/history
       previews through the same component.
@@ -560,14 +560,14 @@ Rule: documentation tests cannot be the only proof for implementation work.
 
 The work is done when:
 
-- [ ] Behavior tests prove command-line state, input, completion, preview, and
+- [x] Behavior tests prove command-line state, input, completion, preview, and
       dispatch.
 - [x] Render tests prove inline popup geometry and theme-token posture.
-- [ ] `:edit <file>` opens a file through production text authority.
-- [ ] `:write`, `:quit`, `:wq`, and aliases use existing save/quit postures.
+- [x] `:edit <file>` opens a file through production text authority.
+- [x] `:write`, `:quit`, `:wq`, and aliases use existing save/quit postures.
 - [ ] The same popup component renders fake Graft-backed editor completions.
 - [ ] Lower modes cover small terminals and unavailable providers.
-- [ ] New strings have supported translations or tracked localization follow-up
+- [x] New strings have supported translations or tracked localization follow-up
       if the CSV localization migration lands first.
 - [ ] Docs and technical teardown are updated.
 - [ ] Issue and PR are linked correctly.
