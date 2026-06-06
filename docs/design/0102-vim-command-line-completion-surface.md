@@ -442,9 +442,9 @@ Witnesses:
 
 Slices:
 
-- [ ] Slice 5: Define provider-neutral completion item and preview types.
+- [x] Slice 5: Define provider-neutral completion item and preview types.
       Commit: `UI: define inline completion contracts`.
-- [ ] Slice 6: Render completion list as a Bijou-shaped component.
+- [x] Slice 6: Render completion list as a Bijou-shaped component.
       Commit: `UI: render inline completion list`.
 - [ ] Slice 7: Add preview pane geometry and narrow fallback.
       Commit: `UI: add inline completion preview`.
