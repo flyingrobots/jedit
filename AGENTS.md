@@ -139,3 +139,33 @@ enforceable quality ratchet is currently clean.
   - `🏁 [#N](url)` when a PR was merged.
   - `🐇 [#N](url)` when waiting for Code Rabbit.
   - `🧪 [#N](url)` when CI is not finished yet.
+
+## Goalpost, Merge, And Release Prompts
+
+- When the final slice of a goalpost is complete, ask:
+
+  ```text
+  ■ 🙌 Goalpost Reached
+  ░
+  ■ 🙋 Do you want me to open a PR to <target>?
+  ```
+
+- When an open PR is merge-ready, ask:
+
+  ```text
+  ■ 👍 Merge Ready
+  ░
+  ✪ 🟢 Do you want to merge this to <target>?
+  ```
+
+- Treat a PR as merge-ready only when CI is green, there are zero unresolved
+  issues in the open PR thread, and Code Rabbit has approved, is rate limited,
+  or has run out of credits.
+- After a successful merge, when it is possibly time to cut the next release,
+  ask:
+
+  ```text
+  ■ 🚢 Ship It
+  ░
+  ■ 🚀 Do you want to release version <version>?
+  ```
