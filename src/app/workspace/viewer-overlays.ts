@@ -1,12 +1,17 @@
 import type { Surface } from '@flyingrobots/bijou';
 import { renderShellQuitOverlay, type Overlay } from '@flyingrobots/bijou-tui';
+import {
+  renderInlineCompletionPopup,
+  resolveInlineCompletionPopupGeometry,
+} from '../../ui/inline-completion-popup.js';
 import { resolveScenePickerDrawerWidth, renderScenePickerDrawer } from '../../ui/scene-picker-drawer.js';
 import { resolveSettingsDrawerWidth, renderSettingsDrawer } from '../../ui/settings-drawer.js';
 import { renderStartupFileDrawer } from '../../ui/startup-file-modal.js';
+import { workspaceCommandCompletionItems } from './command-completion.js';
 import type { WorkspaceModel } from './model.js';
 import { settingsRows } from './settings.js';
 import { startupFileModalRows } from './startup-file-modal.js';
-import { MIN_COLUMNS, MIN_ROWS } from './viewport.js';
+import { FOOTER_ROWS, MIN_COLUMNS, MIN_ROWS } from './viewport.js';
 
 const STARTUP_FILE_MODAL_I18N_KEYS = Object.freeze({
   Title: 'startupFileModal.title',
@@ -16,6 +21,11 @@ const STARTUP_FILE_MODAL_I18N_KEYS = Object.freeze({
   Empty: 'startupFileModal.empty',
   NoMatch: 'startupFileModal.no_match',
 } as const);
+const COMMAND_COMPLETION_POPUP_MAX_WIDTH = 64;
+const COMMAND_COMPLETION_POPUP_EDGE_INSET = 1;
+const COMMAND_COMPLETION_POPUP_MAX_HEIGHT = 8;
+const COMMAND_COMPLETION_CURSOR_PREFIX_WIDTH = 1;
+const COMMAND_COMPLETION_COMMAND_LINE_ROWS = 1;
 
 export function paintWorkspaceOverlays(
   screen: Surface,
@@ -52,6 +62,7 @@ export function paintWorkspaceOverlays(
   }
 
   paintStartupFileDrawer(screen, model, bodyTop, bodyHeight);
+  paintCommandLineCompletionPopup(screen, model);
 }
 
 function paintStartupFileDrawer(
@@ -77,6 +88,65 @@ function paintStartupFileDrawer(
       bodyTop,
     );
   }
+}
+
+function paintCommandLineCompletionPopup(
+  screen: Surface,
+  model: WorkspaceModel,
+): void {
+  if (!shouldRenderCommandLineCompletionPopup(model)) {
+    return;
+  }
+
+  const items = workspaceCommandCompletionItems(model.commandLine);
+  if (items.length === 0) {
+    return;
+  }
+
+  const width = commandCompletionPopupWidth(model.columns);
+  const anchor = {
+    x: model.commandLine.cursorIndex + COMMAND_COMPLETION_CURSOR_PREFIX_WIDTH,
+    y: model.rows - FOOTER_ROWS,
+    screenWidth: model.columns,
+    screenHeight: model.rows - FOOTER_ROWS + COMMAND_COMPLETION_COMMAND_LINE_ROWS,
+  };
+  const geometry = resolveInlineCompletionPopupGeometry({
+    items,
+    width,
+    maxHeight: COMMAND_COMPLETION_POPUP_MAX_HEIGHT,
+    anchor,
+  });
+  screen.blit(
+    renderInlineCompletionPopup({
+      items,
+      selectedIndex: model.commandLine.selectedCompletionIndex,
+      theme: model.jeditTheme,
+      width,
+      maxHeight: COMMAND_COMPLETION_POPUP_MAX_HEIGHT,
+      anchor,
+    }),
+    geometry.x,
+    geometry.y,
+  );
+}
+
+function shouldRenderCommandLineCompletionPopup(model: WorkspaceModel): boolean {
+  return (
+    model.commandLine.active &&
+    model.footerVisible &&
+    model.columns >= MIN_COLUMNS &&
+    model.rows >= MIN_ROWS
+  );
+}
+
+function commandCompletionPopupWidth(columns: number): number {
+  return Math.max(
+    1,
+    Math.min(
+      COMMAND_COMPLETION_POPUP_MAX_WIDTH,
+      columns - (COMMAND_COMPLETION_POPUP_EDGE_INSET * 2),
+    ),
+  );
 }
 
 export function workspaceFeedbackOverlay(model: WorkspaceModel): Overlay | undefined {

@@ -1,3 +1,4 @@
+import type { InlineCompletionReplacement } from "../../ui/inline-completion-popup.js";
 import { FocusPanes } from "../../ui/panel-focus.js";
 import type { WorkspaceModel } from "./model.js";
 import { EditorModes } from "./editor/mode.js";
@@ -28,6 +29,7 @@ export interface WorkspaceCommandLineState {
 const COMMAND_LINE_INITIAL_CURSOR_INDEX = 0;
 const COMMAND_LINE_INITIAL_COMPLETION_INDEX = 0;
 const COMMAND_LINE_BACKSPACE_DELETE_COUNT = 1;
+const COMMAND_LINE_COMPLETION_MIN_COUNT = 1;
 
 export function initialWorkspaceCommandLineState(): WorkspaceCommandLineState {
   return inactiveWorkspaceCommandLineState();
@@ -102,6 +104,48 @@ export function moveWorkspaceCommandLineCursor(
       ),
     },
   };
+}
+
+export function moveWorkspaceCommandLineCompletion(
+  model: WorkspaceModel,
+  delta: number,
+  completionCount: number,
+): WorkspaceModel {
+  if (completionCount < COMMAND_LINE_COMPLETION_MIN_COUNT) {
+    return model;
+  }
+
+  return {
+    ...model,
+    commandLine: {
+      ...model.commandLine,
+      selectedCompletionIndex: Math.max(
+        COMMAND_LINE_INITIAL_COMPLETION_INDEX,
+        Math.min(
+          completionCount - COMMAND_LINE_COMPLETION_MIN_COUNT,
+          model.commandLine.selectedCompletionIndex + delta,
+        ),
+      ),
+    },
+  };
+}
+
+export function replaceWorkspaceCommandLineInput(
+  model: WorkspaceModel,
+  replacement: InlineCompletionReplacement,
+): WorkspaceModel {
+  const input = model.commandLine.input;
+  const start = Math.max(
+    COMMAND_LINE_INITIAL_CURSOR_INDEX,
+    Math.min(input.length, replacement.start),
+  );
+  const end = Math.max(start, Math.min(input.length, replacement.end));
+  const nextInput = `${input.slice(0, start)}${replacement.text}${input.slice(end)}`;
+  return updateWorkspaceCommandLineInput(
+    model,
+    nextInput,
+    start + replacement.text.length,
+  );
 }
 
 export function invalidateWorkspaceCommandLine(

@@ -3,8 +3,27 @@ import {
   stringToSurface,
   type Surface,
 } from "@flyingrobots/bijou";
+import {
+  INLINE_COMPLETION_PREVIEW_RULE_WIDTH,
+  resolveInlineCompletionPopupGeometry,
+} from "./inline-completion-popup-geometry.js";
+import type {
+  InlineCompletionPopupAnchor,
+  InlineCompletionPopupGeometry,
+} from "./inline-completion-popup-geometry.js";
 import type { JeditStyleToken, JeditTheme } from "./jedit-theme.js";
 import { fitLine } from "./workspace-render.js";
+
+export {
+  INLINE_COMPLETION_POPUP_PLACEMENT,
+  resolveInlineCompletionPopupGeometry,
+} from "./inline-completion-popup-geometry.js";
+export type {
+  InlineCompletionPopupAnchor,
+  InlineCompletionPopupGeometry,
+  InlineCompletionPopupPlacement,
+  ResolveInlineCompletionPopupGeometryOptions,
+} from "./inline-completion-popup-geometry.js";
 
 export const INLINE_COMPLETION_ITEM_KIND = Object.freeze({
   Command: "command",
@@ -61,11 +80,16 @@ export interface RenderInlineCompletionPopupOptions {
   readonly theme: JeditTheme;
   readonly width: number;
   readonly maxHeight: number;
+  readonly preview?: InlineCompletionPreview;
+  readonly anchor?: InlineCompletionPopupAnchor;
 }
 
 const INLINE_COMPLETION_SELECTED_MARK = "›";
 const INLINE_COMPLETION_UNSELECTED_MARK = " ";
 const INLINE_COMPLETION_COLUMN_GAP = "  ";
+const INLINE_COMPLETION_PREVIEW_RULE = "│";
+const INLINE_COMPLETION_PREVIEW_EVIDENCE_PREFIX = "Evidence:";
+const INLINE_COMPLETION_NO_PREVIEW_TEXT = "No preview";
 const INLINE_COMPLETION_KIND_LABELS = {
   [INLINE_COMPLETION_ITEM_KIND.Command]: "C",
   [INLINE_COMPLETION_ITEM_KIND.File]: "F",
@@ -75,8 +99,13 @@ const INLINE_COMPLETION_KIND_LABELS = {
   [INLINE_COMPLETION_ITEM_KIND.SourceDefinition]: "→",
   [INLINE_COMPLETION_ITEM_KIND.CausalHistory]: "H",
 } satisfies Record<InlineCompletionItemKind, string>;
-const INLINE_COMPLETION_MIN_WIDTH = 1;
-const INLINE_COMPLETION_MIN_HEIGHT = 0;
+const INLINE_COMPLETION_PREVIEW_KIND_LABELS = {
+  [INLINE_COMPLETION_PREVIEW_KIND.File]: "FILE",
+  [INLINE_COMPLETION_PREVIEW_KIND.Documentation]: "DOCS",
+  [INLINE_COMPLETION_PREVIEW_KIND.SourceDefinition]: "SRC",
+  [INLINE_COMPLETION_PREVIEW_KIND.CausalHistory]: "HIST",
+  [INLINE_COMPLETION_PREVIEW_KIND.Unavailable]: "NONE",
+} satisfies Record<InlineCompletionPreviewKind, string>;
 const INLINE_COMPLETION_FIRST_INDEX = 0;
 const INLINE_COMPLETION_ITEM_STEP = 1;
 
@@ -85,16 +114,24 @@ interface InlineCompletionRow {
   readonly selected: boolean;
 }
 
+interface InlineCompletionTextBounds {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+}
+
 export function renderInlineCompletionPopup(
   options: RenderInlineCompletionPopupOptions,
 ): Surface {
-  const width = Math.max(INLINE_COMPLETION_MIN_WIDTH, options.width);
-  const height = inlineCompletionSurfaceHeight(options);
-  const surface = createSurface(width, height);
+  const geometry = resolveInlineCompletionPopupGeometry(options);
+  const surface = createSurface(geometry.width, geometry.height);
   fillSurface(surface, options.theme.surface.drawer);
 
-  const firstItemIndex = firstVisibleCompletionIndex(options, height);
-  for (let row = 0; row < height; row += INLINE_COMPLETION_ITEM_STEP) {
+  const firstItemIndex = firstVisibleCompletionIndex(
+    options,
+    geometry.visibleItemCount,
+  );
+  for (let row = 0; row < geometry.height; row += INLINE_COMPLETION_ITEM_STEP) {
     const item = options.items[firstItemIndex + row];
     if (item != null) {
       paintCompletionRow(
@@ -104,27 +141,26 @@ export function renderInlineCompletionPopup(
           selected: firstItemIndex + row === selectedCompletionIndex(options),
         },
         row,
+        geometry.listWidth,
         options.theme,
       );
     }
   }
 
-  return surface;
-}
+  if (geometry.previewVisible && options.preview != null) {
+    paintInlineCompletionPreview(surface, geometry, options.preview, options.theme);
+  }
 
-function inlineCompletionSurfaceHeight(
-  options: Pick<RenderInlineCompletionPopupOptions, "items" | "maxHeight">,
-): number {
-  return Math.max(
-    INLINE_COMPLETION_MIN_HEIGHT,
-    Math.min(options.items.length, options.maxHeight),
-  );
+  return surface;
 }
 
 function firstVisibleCompletionIndex(
   options: Pick<RenderInlineCompletionPopupOptions, "items" | "selectedIndex">,
   height: number,
 ): number {
+  if (height <= 0) {
+    return INLINE_COMPLETION_FIRST_INDEX;
+  }
   const selected = selectedCompletionIndex(options);
   const overflow = selected - height + INLINE_COMPLETION_ITEM_STEP;
   return Math.max(
@@ -146,10 +182,11 @@ function paintCompletionRow(
   surface: Surface,
   row: InlineCompletionRow,
   y: number,
+  width: number,
   theme: JeditTheme,
 ): void {
   const token = row.selected ? theme.cursor.normal : theme.surface.drawer;
-  paintText(surface, completionRowText(row), y, token);
+  paintText(surface, completionRowText(row), { x: 0, y, width }, token);
 }
 
 function completionRowText(row: InlineCompletionRow): string {
@@ -163,15 +200,80 @@ function kindLabel(kind: InlineCompletionItemKind): string {
   return INLINE_COMPLETION_KIND_LABELS[kind];
 }
 
+function paintInlineCompletionPreview(
+  surface: Surface,
+  geometry: InlineCompletionPopupGeometry,
+  preview: InlineCompletionPreview,
+  theme: JeditTheme,
+): void {
+  const ruleX = geometry.listWidth;
+  const previewX = ruleX + INLINE_COMPLETION_PREVIEW_RULE_WIDTH;
+  paintVerticalRule(surface, ruleX, theme.surface.drawer);
+  const rows = previewRows(preview);
+  for (let y = 0; y < surface.height; y += 1) {
+    paintText(
+      surface,
+      rows[y] ?? "",
+      { x: previewX, y, width: geometry.previewWidth },
+      theme.surface.drawer,
+    );
+  }
+}
+
+function paintVerticalRule(
+  surface: Surface,
+  x: number,
+  token: JeditStyleToken,
+): void {
+  for (let y = 0; y < surface.height; y += 1) {
+    const cell = surface.get(x, y);
+    surface.set(x, y, {
+      ...cell,
+      char: INLINE_COMPLETION_PREVIEW_RULE,
+      fg: token.fg,
+      fgRGB: token.fgRGB,
+      bg: token.bg,
+      bgRGB: token.bgRGB,
+      modifiers: token.modifiers == null ? undefined : [...token.modifiers],
+      empty: false,
+    });
+  }
+}
+
+function previewRows(preview: InlineCompletionPreview): readonly string[] {
+  const rows = [
+    `${previewKindLabel(preview.kind)} ${preview.title}`.trim(),
+  ];
+  if (preview.evidencePosture != null && preview.evidencePosture.length > 0) {
+    rows.push(
+      `${INLINE_COMPLETION_PREVIEW_EVIDENCE_PREFIX} ${preview.evidencePosture}`,
+    );
+  }
+
+  rows.push(
+    ...(preview.lines.length === 0
+      ? [INLINE_COMPLETION_NO_PREVIEW_TEXT]
+      : preview.lines),
+  );
+  return rows;
+}
+
+function previewKindLabel(kind: InlineCompletionPreviewKind): string {
+  return INLINE_COMPLETION_PREVIEW_KIND_LABELS[kind];
+}
+
 function paintText(
   surface: Surface,
   text: string,
-  y: number,
+  bounds: InlineCompletionTextBounds,
   token: JeditStyleToken,
 ): void {
-  const line = stringToSurface(fitLine(text, surface.width), surface.width, 1);
+  if (bounds.width <= 0 || bounds.y < 0 || bounds.y >= surface.height) {
+    return;
+  }
+  const line = stringToSurface(fitLine(text, bounds.width), bounds.width, 1);
   applyToken(line, token);
-  surface.blit(line, 0, y);
+  surface.blit(line, bounds.x, bounds.y);
 }
 
 function fillSurface(surface: Surface, token: JeditStyleToken): void {

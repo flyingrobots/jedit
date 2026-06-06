@@ -446,9 +446,9 @@ Slices:
       Commit: `UI: define inline completion contracts`.
 - [x] Slice 6: Render completion list as a Bijou-shaped component.
       Commit: `UI: render inline completion list`.
-- [ ] Slice 7: Add preview pane geometry and narrow fallback.
+- [x] Slice 7: Add preview pane geometry and narrow fallback.
       Commit: `UI: add inline completion preview`.
-- [ ] Slice 8: Integrate completion popup into workspace overlays.
+- [x] Slice 8: Integrate completion popup into workspace overlays.
       Commit: `UI: show command-line completions`.
 
 ### Goalpost 3: Command And File Providers
@@ -468,7 +468,7 @@ Witnesses:
 
 Slices:
 
-- [ ] Slice 9: Add command registry and command completion provider.
+- [x] Slice 9: Add command registry and command completion provider.
       Commit: `UX: complete command names`.
 - [ ] Slice 10: Add file completion provider for `:edit`.
       Commit: `UX: complete edit paths`.
@@ -535,13 +535,13 @@ Slices:
 
 Behavior tests required:
 
-- [ ] `:` in Normal mode enters command-line mode and owns focus.
-- [ ] Escape cancels command mode without dispatching.
-- [ ] Printable input, Backspace, selected completion movement, and Tab accept
+- [x] `:` in Normal mode enters command-line mode and owns focus.
+- [x] Escape cancels command mode without dispatching.
+- [x] Printable input, Backspace, selected completion movement, and Tab accept
       behave deterministically.
-- [ ] Inline completion popup flips above when the command line is near the
+- [x] Inline completion popup flips above when the command line is near the
       bottom of the terminal.
-- [ ] Inline completion preview is omitted on narrow terminals.
+- [x] Inline completion preview is omitted on narrow terminals.
 - [ ] `:edit <path>` opens through `createWorkspaceTextOpenCmd`.
 - [ ] Invalid commands produce an obstruction or toast without mutating editor
       state.
@@ -562,7 +562,7 @@ The work is done when:
 
 - [ ] Behavior tests prove command-line state, input, completion, preview, and
       dispatch.
-- [ ] Render tests prove inline popup geometry and theme-token posture.
+- [x] Render tests prove inline popup geometry and theme-token posture.
 - [ ] `:edit <file>` opens a file through production text authority.
 - [ ] `:write`, `:quit`, `:wq`, and aliases use existing save/quit postures.
 - [ ] The same popup component renders fake Graft-backed editor completions.
