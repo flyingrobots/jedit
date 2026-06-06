@@ -63,7 +63,6 @@ import {
 } from "./title-screen-sample.js";
 
 type Vector3 = TitleSceneVector3;
-type Color3 = RGB;
 type TitleEnvironmentSurfaceHit = NonNullable<
   ReturnType<typeof nearestTitleEnvironmentSurfaceHit>
 >;
@@ -135,8 +134,7 @@ const DEFAULT_TITLE_SCENE_SEED = 0.5;
 export const TITLE_CAMERA_DRIFT_RATE =
   TITLE_SCENE_DEFAULT_DIRECTOR_TIMELINE.camera.driftRate;
 const BRAILLE_DITHER_MATRIX_SIZE = 4;
-const BRAILLE_DITHER_DENOMINATOR =
-  BRAILLE_DITHER_MATRIX_SIZE * BRAILLE_DITHER_MATRIX_SIZE;
+const BRAILLE_DITHER_DENOMINATOR = BRAILLE_DITHER_MATRIX_SIZE * BRAILLE_DITHER_MATRIX_SIZE;
 const RGB_CHANNEL_MAX = 255;
 const MIN_ENVIRONMENT_VISIBILITY = 0.06;
 const BRAILLE_DITHER_MATRIX: readonly (readonly number[])[] = [
@@ -374,7 +372,7 @@ function environmentSceneForeground(
   options: TitleSceneSampleOptions,
   environmentHit: TitleEnvironmentSurfaceHit,
   effects: TitleFloorLightEffects,
-): Color3 {
+): RGB {
   const causticColor = scaleColor(options.colors.info, effects.causticStrength);
   const litColor = addColor(
     scaleColor(
@@ -393,7 +391,7 @@ function environmentSceneForeground(
 function environmentSceneBackground(
   options: TitleSceneSampleOptions,
   environmentHit: TitleEnvironmentSurfaceHit,
-): Color3 {
+): RGB {
   return mixColor(
     titleSceneBackgroundColor(options.environment, options.colors),
     options.colors.surface,
@@ -421,7 +419,7 @@ function brailleSubpixelVisible(
   v: number,
   cols: number,
   rows: number,
-  color: Color3,
+  color: RGB,
 ): boolean {
   const x = Math.floor(u * cols * 2) % BRAILLE_DITHER_MATRIX_SIZE;
   const y = Math.floor(v * rows * 4) % BRAILLE_DITHER_MATRIX_SIZE;
@@ -430,7 +428,7 @@ function brailleSubpixelVisible(
   return titleColorLuminance(color) / RGB_CHANNEL_MAX >= threshold;
 }
 
-function scaleColor(color: Color3, scalar: number): Color3 {
+function scaleColor(color: RGB, scalar: number): RGB {
   return [
     Math.max(0, Math.min(255, Math.round(color[0] * scalar))),
     Math.max(0, Math.min(255, Math.round(color[1] * scalar))),
@@ -438,7 +436,7 @@ function scaleColor(color: Color3, scalar: number): Color3 {
   ];
 }
 
-function addColor(a: Color3, b: Color3): Color3 {
+function addColor(a: RGB, b: RGB): RGB {
   return [
     Math.min(255, a[0] + b[0]),
     Math.min(255, a[1] + b[1]),
@@ -446,7 +444,7 @@ function addColor(a: Color3, b: Color3): Color3 {
   ];
 }
 
-function mixColor(from: Color3, to: Color3, ratio: number): Color3 {
+function mixColor(from: RGB, to: RGB, ratio: number): RGB {
   const clamped = Math.max(0, Math.min(1, ratio));
   return [
     Math.round(from[0] + (to[0] - from[0]) * clamped),
