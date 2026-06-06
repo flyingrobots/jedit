@@ -397,7 +397,7 @@ deterministic Braille bunny workload.
 
 Slices:
 
-- [ ] Slice 1: Add title allocation facts contract.
+- [x] Slice 1: Add title allocation facts contract.
       Commit: `Perf: define title allocation facts`.
 - [ ] Slice 2: Add allocation witness command or spec.
       Commit: `Perf: witness title allocation posture`.
@@ -470,7 +470,7 @@ Slices:
 
 ## Tests To Write First
 
-- [ ] Allocation facts contract rejects impossible dimensions and frame counts.
+- [x] Allocation facts contract rejects impossible dimensions and frame counts.
 - [ ] Allocation witness reports `unmeasured` when instrumentation is absent.
 - [ ] Allocation witness records a deterministic title Braille bunny workload.
 - [ ] Braille cell rendering keeps existing visual fixture output.
