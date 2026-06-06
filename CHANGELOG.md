@@ -4,6 +4,8 @@
 
 - Added a title ray allocation facts contract for the zero-allocation title
   rendering roadmap.
+- Added title-scene profile allocation witness facts for deterministic Braille
+  bunny workloads.
 - Rendered the startup file selector rows through Bijou's browsable list
   surface, added themed scrollbar affordance for overflowing directories, and
   made Escape dismissal recoverable from the title screen with Enter or `o`.

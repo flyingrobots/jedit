@@ -100,10 +100,51 @@ test("title-scene profile CLI reports temporal Braille sampling facts", () => {
   assert.ok(report.sampling.rayCount > 0);
   assert.ok(report.sampling.rayIntersectionCount >= 0);
   assert.ok(report.sampling.rayPressureRatio >= 0);
+  assert.equal(report.allocation.posture, "unmeasured");
+  assert.match(report.allocation.notes.join("\n"), /--expose-gc/);
 });
 
-function runProfile(args) {
-  return spawnSync(process.execPath, [PROFILE_SCRIPT, ...args], {
+test("title-scene profile CLI witnesses allocation posture with exposed GC", () => {
+  ensureDistBuiltSync();
+  const result = runProfile([
+    "--json",
+    "--theme",
+    "graphite",
+    "--render-mode",
+    "braille",
+    "--width",
+    "16",
+    "--height",
+    "6",
+    "--frames",
+    "1",
+    "--warmup",
+    "1",
+  ], { exposeGc: true });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const report = JSON.parse(result.stdout);
+
+  assert.equal(report.scene.name, "bunny.jedit-scene");
+  assert.equal(report.allocation.renderer, "title-braille-bunny");
+  assert.equal(report.allocation.width, 16);
+  assert.equal(report.allocation.height, 6);
+  assert.equal(report.allocation.renderMode, "braille");
+  assert.equal(report.allocation.warmupFrames, 1);
+  assert.equal(report.allocation.measuredFrames, 1);
+  assert.ok(["allocating", "bounded-after-warmup"].includes(
+    report.allocation.posture,
+  ));
+  assert.equal(typeof report.allocation.allocatedBytes, "number");
+  assert.equal(typeof report.allocation.allocationEvents, "number");
+  assert.match(report.allocation.notes.join("\n"), /forced GC/);
+});
+
+function runProfile(args, options = {}) {
+  const nodeArgs = options.exposeGc
+    ? ["--expose-gc", PROFILE_SCRIPT, ...args]
+    : [PROFILE_SCRIPT, ...args];
+  return spawnSync(process.execPath, nodeArgs, {
     cwd: REPO_ROOT,
     encoding: "utf8",
     env: {

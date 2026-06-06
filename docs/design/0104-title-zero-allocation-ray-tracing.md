@@ -399,7 +399,7 @@ Slices:
 
 - [x] Slice 1: Add title allocation facts contract.
       Commit: `Perf: define title allocation facts`.
-- [ ] Slice 2: Add allocation witness command or spec.
+- [x] Slice 2: Add allocation witness command or spec.
       Commit: `Perf: witness title allocation posture`.
 
 ### Goalpost 2: Braille Cell And Sample Scratch
@@ -471,8 +471,8 @@ Slices:
 ## Tests To Write First
 
 - [x] Allocation facts contract rejects impossible dimensions and frame counts.
-- [ ] Allocation witness reports `unmeasured` when instrumentation is absent.
-- [ ] Allocation witness records a deterministic title Braille bunny workload.
+- [x] Allocation witness reports `unmeasured` when instrumentation is absent.
+- [x] Allocation witness records a deterministic title Braille bunny workload.
 - [ ] Braille cell rendering keeps existing visual fixture output.
 - [ ] Shader scratch path preserves ray stats and sample cache behavior.
 - [ ] Ray scratch path preserves camera ray direction facts.
@@ -482,7 +482,7 @@ Slices:
 
 ## Acceptance Criteria
 
-- [ ] The title allocation witness exists and emits structured facts.
+- [x] The title allocation witness exists and emits structured facts.
 - [ ] The Braille ray hot path does not allocate per-cell options objects.
 - [ ] The Braille ray hot path does not allocate per-subpixel shader params.
 - [ ] Title ray context math uses reusable scratch state.
