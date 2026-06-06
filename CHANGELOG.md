@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added render witnesses for editor completion documentation, source-definition,
+  and causal-history preview kinds.
 - Added a Graft outline-backed editor symbol completion provider witness that
   renders through the shared inline completion popup.
 - Added an editor-context completion registry seam that can return the same

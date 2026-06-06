@@ -497,7 +497,7 @@ Slices:
       Commit: `UX: add editor completion provider seam`.
 - [x] Slice 14: Add fake Graft symbol provider witness.
       Commit: `UX: witness graft completion provider`.
-- [ ] Slice 15: Render documentation, source-definition, and causal-history
+- [x] Slice 15: Render documentation, source-definition, and causal-history
       preview kinds through the same component.
       Commit: `UI: render completion preview kinds`.
 - [ ] Slice 16: Add unavailable-adapter lower-mode posture.
