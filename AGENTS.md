@@ -35,6 +35,8 @@ These are hard repo rules, not suggestions:
 - `ARCHITECTURE.md` is the canonical repo architecture doctrine.
 - `docs/BEARING.md` records the current execution gravity.
 - `docs/method/process.md` is the canonical cycle workflow.
+- `docs/method/roadmap-planning.md` defines release-gate, roadmap, slice, and
+  proof policy for multi-cycle planning.
 - `docs/design/TEMPLATE.md` is the required template for full cycle designs.
 - `docs/design/0034-design-cycle-template-and-lifecycle.md` records the policy
   decision that made executable design docs official.

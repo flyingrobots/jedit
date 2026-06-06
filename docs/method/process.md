@@ -33,6 +33,18 @@ Use the smallest design class that still produces executable proof.
 If an agent cannot name the RED test from the issue or design, the design is not
 specific enough.
 
+## Roadmap And Release-Gate Work
+
+Use `docs/method/roadmap-planning.md` when work spans multiple cycles, defines
+a release-gate batch, claims versioned-release readiness, or coordinates a set
+of user stories and slices.
+
+The roadmap policy does not replace this process. It explains how `BEARING.md`,
+release-gate docs, full-cycle design docs, GitHub issues, slices, PRs, and
+witnesses relate. The same proof rule still applies: roadmap and design docs
+define intent, while tests, release gates, generated artifacts, model facts, and
+runtime witnesses prove implementation.
+
 ## Starting A Full Cycle
 
 1. Fetch refs from the merge target remote.
