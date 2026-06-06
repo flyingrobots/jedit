@@ -36,6 +36,12 @@
   admitted replace events, edit groups, checkpoints, provenance, command
   status, and evidence-bearing readings, plus readiness coverage and an
   authority note that keeps the in-memory TypeScript model transitional.
+- Fixed docs file-size witness line counting so a trailing LF or CRLF does not
+  add a phantom line.
+- Documented and named the quality-gate catch-depth convention: catch bodies
+  continue the surrounding `try` nesting level rather than adding a new level.
+- Fixed `max-statements-25` accounting so nested executable statements count
+  toward the function statement limit instead of only top-level body entries.
 - Split quality-gate ratchet fixtures into a dedicated spec file so the legacy
   gate spec stays within the 500-line file-size doctrine.
 - Split quality-gate syntax counting into a dedicated module so the executable
