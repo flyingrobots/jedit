@@ -67,6 +67,79 @@ test("title screen number keys switch render modes without an editor", async () 
   );
 });
 
+test("tab opens startup file browser and suppresses title logos", async () => {
+  const [keyBindings, titleScreen, viewerContent] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "viewer-content.js"),
+  ]);
+  const base = mockTitleScreenModel(titleScreen, {
+    startupIntroComplete: false,
+    startupFileModalOpen: false,
+  });
+  const [opened, commands] = keyBindings.updateFromKey(
+    { key: "tab", ctrl: false, alt: false, shift: false },
+    base,
+    startupFileDrawerAnimationContext(),
+  );
+  const renderOptions = [];
+
+  viewerContent.renderViewerWithTitleRenderer(
+    opened,
+    44,
+    8,
+    (width, height, _time, _theme, options) => {
+      renderOptions.push(options);
+      return stringToSurface("title trace", width, height);
+    },
+  );
+
+  assert.equal(opened.startupIntroComplete, true);
+  assert.equal(opened.startupFileModalOpen, true);
+  assert.equal(commands.length, 1);
+  assert.equal(renderOptions[0].suppressPresentation, true);
+});
+
+test("title screen m cycles title mesh materials and reports the material name", async () => {
+  const [keyBindings, titleScreen, material, sceneLoader, meshes] =
+    await Promise.all([
+      importDist("app", "workspace", "key-bindings.js"),
+      importDist("ui", "title-screen.js"),
+      importDist("app", "workspace", "title-mesh-materials.js"),
+      importDist("adapters", "title-scene-loader.js"),
+      importDist("adapters", "workspace-title-meshes.js"),
+    ]);
+  const scene = await sceneLoader.loadBuiltInTitleScene(
+    "bunny.jedit-scene",
+    meshes.loadStartupTitleMeshes(),
+  );
+  const [first] = keyBindings.updateFromKey(
+    { key: "m", ctrl: false, alt: false, shift: false },
+    mockTitleScreenModel(titleScreen, { sceneOverride: scene }),
+    mockKeyBindingContext(),
+  );
+  const [second] = keyBindings.updateFromKey(
+    { key: "M", ctrl: false, alt: false, shift: true },
+    first,
+    mockKeyBindingContext(),
+  );
+  const firstPreset = material.titleMeshMaterialPresetAt(1);
+  const secondPreset = material.titleMeshMaterialPresetAt(2);
+
+  assert.equal(first.titleMeshMaterialIndex, 1);
+  assert.deepEqual(first.sceneOverride.objects[0].color, firstPreset.color);
+  assert.equal(
+    hasNotification(first, "Title material", firstPreset.name),
+    true,
+  );
+  assert.equal(second.titleMeshMaterialIndex, 2);
+  assert.deepEqual(second.sceneOverride.objects[0].color, secondPreset.color);
+  assert.equal(
+    hasNotification(second, "Title material", secondPreset.name),
+    true,
+  );
+});
+
 test("feedback module exposes notification presentation tokens", async () => {
   const feedback = await importDist("ui", "feedback.js");
 
@@ -152,7 +225,7 @@ test("period cycles title screen ASCII palettes only when ASCII mode is active w
   );
 });
 
-test("enter and escape skip title intro into the startup file modal", async () => {
+test("enter skips title intro into the startup file browser", async () => {
   const [keyBindings, titleScreen] = await Promise.all([
     importDist("app", "workspace", "key-bindings.js"),
     importDist("ui", "title-screen.js"),
@@ -165,23 +238,56 @@ test("enter and escape skip title intro into the startup file modal", async () =
   const [entered, enterCommands] = keyBindings.updateFromKey(
     { key: "enter", ctrl: false, alt: false, shift: false },
     base,
-    mockKeyBindingContext(),
-  );
-  const [escaped, escapeCommands] = keyBindings.updateFromKey(
-    { key: "escape", ctrl: false, alt: false, shift: false },
-    base,
-    mockKeyBindingContext(),
+    startupFileDrawerAnimationContext(),
   );
 
   assert.equal(entered.startupIntroComplete, true);
   assert.equal(entered.startupFileModalOpen, true);
-  assert.equal(escaped.startupIntroComplete, true);
-  assert.equal(escaped.startupFileModalOpen, true);
-  assert.deepEqual(enterCommands, []);
-  assert.deepEqual(escapeCommands, []);
+  assert.equal(enterCommands.length, 1);
 });
 
-test("startup file modal reuses the frozen title backdrop while input changes", async () => {
+test("escape opens quit confirmation when startup file browser is closed", async () => {
+  const [keyBindings, titleScreen] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const [nextModel, commands] = keyBindings.updateFromKey(
+    { key: "escape", ctrl: false, alt: false, shift: false },
+    mockTitleScreenModel(titleScreen, {
+      startupIntroComplete: false,
+      startupFileModalOpen: false,
+    }),
+    startupFileDrawerAnimationContext(),
+  );
+
+  assert.equal(nextModel.quitConfirmOpen, true);
+  assert.equal(nextModel.startupIntroComplete, false);
+  assert.equal(nextModel.startupFileModalOpen, false);
+  assert.equal(commands.length, 0);
+});
+
+test("escape dismisses open startup file browser with a drawer animation", async () => {
+  const [keyBindings, titleScreen] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const [closed, commands] = keyBindings.updateFromKey(
+    { key: "escape", ctrl: false, alt: false, shift: false },
+    mockTitleScreenModel(titleScreen, {
+      startupIntroComplete: true,
+      startupFileModalOpen: true,
+      startupFileDrawerProgress: 1,
+    }),
+    startupFileDrawerAnimationContext(),
+  );
+
+  assert.equal(closed.startupFileModalOpen, false);
+  assert.equal(closed.startupFileDrawerProgress, 1);
+  assert.equal(closed.quitConfirmOpen, false);
+  assert.equal(commands.length, 1);
+});
+
+test("startup file browser keeps tracing the title scene while input changes", async () => {
   const [viewerContent, titleScreen] = await Promise.all([
     importDist("app", "workspace", "viewer-content.js"),
     importDist("ui", "title-screen.js"),
@@ -225,12 +331,12 @@ test("startup file modal reuses the frozen title backdrop while input changes", 
     6,
   );
 
-  assert.deepEqual(tracedTimes, [1]);
-  assert.equal(surfaceText(openModal), surfaceText(live));
-  assert.equal(surfaceText(typed), surfaceText(live));
+  assert.deepEqual(tracedTimes, [1, 7, 8]);
+  assert.notEqual(surfaceText(openModal), surfaceText(live));
+  assert.notEqual(surfaceText(typed), surfaceText(openModal));
 });
 
-test("startup file modal traces one fallback backdrop frame when no title cache exists", async () => {
+test("startup file browser traces every frame when no title cache exists", async () => {
   const [viewerContent, titleScreen] = await Promise.all([
     importDist("app", "workspace", "viewer-content.js"),
     importDist("ui", "title-screen.js"),
@@ -262,11 +368,11 @@ test("startup file modal traces one fallback backdrop frame when no title cache 
     6,
   );
 
-  assert.deepEqual(tracedTimes, [7]);
-  assert.equal(surfaceText(second), surfaceText(first));
+  assert.deepEqual(tracedTimes, [7, 8]);
+  assert.notEqual(surfaceText(second), surfaceText(first));
 });
 
-test("startup file modal title backdrop cache is isolated per renderer instance", async () => {
+test("startup file browser title renderer state is isolated per renderer instance", async () => {
   const [viewerContent, titleScreen] = await Promise.all([
     importDist("app", "workspace", "viewer-content.js"),
     importDist("ui", "title-screen.js"),
@@ -338,12 +444,15 @@ test("startup file modal renders current directory files over the title screen",
     importDist("ports", "file-system.js"),
   ]);
   const model = mockTitleScreenModel(titleScreen, {
+    columns: 80,
+    rows: 12,
     i18n: mockI18n(),
     cwd: "/repo",
     workspaceRoot: "/repo",
     jeditTheme: themes.availableJeditThemes()[0],
     startupIntroComplete: true,
     startupFileModalOpen: true,
+    startupFileDrawerProgress: 1,
     startupFileModalInput: "",
     startupFileModalSelectedIndex: 0,
     entries: [
@@ -367,30 +476,111 @@ test("startup file modal renders current directory files over the title screen",
   assert.match(text, /README\.md/);
 });
 
+test("startup file selector renders as a left drawer over the title screen", async () => {
+  const [viewer, titleScreen, themes, fileSystem] = await Promise.all([
+    importDist("app", "workspace", "viewer.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("ui", "jedit-themes.js"),
+    importDist("ports", "file-system.js"),
+  ]);
+  const model = mockTitleScreenModel(titleScreen, {
+    i18n: mockI18n(),
+    cwd: "/repo",
+    workspaceRoot: "/repo",
+    jeditTheme: themes.availableJeditThemes()[0],
+    startupIntroComplete: true,
+    startupFileModalOpen: true,
+    startupFileDrawerProgress: 1,
+    entries: [
+      {
+        kind: fileSystem.FileEntryKinds.File,
+        name: "README.md",
+        path: "/repo/README.md",
+      },
+    ],
+  });
+  const surface = viewer.renderWorkspace(model);
+  const text = surfaceText(surface);
+
+  assert.equal(surface.get(0, 2).char, "┌");
+  assert.match(text, /Open file/);
+  assert.match(text, /README\.md/);
+});
+
+test("startup file selector drawer width follows spring progress", async () => {
+  const [viewer, titleScreen, themes, fileSystem] = await Promise.all([
+    importDist("app", "workspace", "viewer.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("ui", "jedit-themes.js"),
+    importDist("ports", "file-system.js"),
+  ]);
+  const base = {
+    i18n: mockI18n(),
+    cwd: "/repo",
+    workspaceRoot: "/repo",
+    jeditTheme: themes.availableJeditThemes()[0],
+    startupIntroComplete: true,
+    startupFileModalOpen: true,
+    entries: [
+      {
+        kind: fileSystem.FileEntryKinds.File,
+        name: "README.md",
+        path: "/repo/README.md",
+      },
+    ],
+  };
+  const closed = viewer.renderWorkspace(
+    mockTitleScreenModel(titleScreen, {
+      ...base,
+      startupFileDrawerProgress: 0,
+    }),
+  );
+  const opening = viewer.renderWorkspace(
+    mockTitleScreenModel(titleScreen, {
+      ...base,
+      startupFileDrawerProgress: 0.5,
+    }),
+  );
+  const closing = viewer.renderWorkspace(
+    mockTitleScreenModel(titleScreen, {
+      ...base,
+      startupFileModalOpen: false,
+      startupFileDrawerProgress: 0.5,
+    }),
+  );
+
+  assert.notEqual(closed.get(0, 2).char, "┌");
+  assert.equal(opening.get(0, 2).char, "┌");
+  assert.equal(closing.get(0, 2).char, "┌");
+  assert.notEqual(opening.get(71, 2).char, "┐");
+});
+
 test("startup file modal renders a themed Bijou scrollbar when file rows overflow", async () => {
-  const [viewerOverlays, titleScreen, themes, fileSystem] = await Promise.all([
-    importDist("app", "workspace", "viewer-overlays.js"),
+  const [viewer, titleScreen, themes, fileSystem] = await Promise.all([
+    importDist("app", "workspace", "viewer.js"),
     importDist("ui", "title-screen.js"),
     importDist("ui", "jedit-themes.js"),
     importDist("ports", "file-system.js"),
   ]);
   const theme = themes.availableJeditThemes()[0];
   const model = mockTitleScreenModel(titleScreen, {
+    columns: 80,
+    rows: 12,
     i18n: mockI18n(),
     cwd: "/repo",
     workspaceRoot: "/repo",
     jeditTheme: theme,
     startupIntroComplete: true,
     startupFileModalOpen: true,
+    startupFileDrawerProgress: 1,
     startupFileModalInput: "",
     startupFileModalSelectedIndex: STARTUP_MODAL_SCROLL_SELECTED_INDEX,
     entries: startupModalOverflowEntries(fileSystem),
   });
-  const overlay = viewerOverlays.workspaceFeedbackOverlay(model);
-  assert.ok(overlay != null);
+  const rendered = viewer.renderWorkspace(model);
 
-  const scrollbarCells = startupModalScrollbarCells(overlay.surface);
-  const selectedRowCells = startupModalRowCells(overlay.surface, /file-08\.md/);
+  const scrollbarCells = startupModalScrollbarCells(rendered);
+  const selectedRowCells = startupModalRowCells(rendered, /file-08\.md/);
 
   assert.ok(scrollbarCells.length > 0);
   assert.ok(
@@ -425,6 +615,7 @@ test("startup file modal input filters current directory rows", async () => {
     jeditTheme: themes.availableJeditThemes()[0],
     startupIntroComplete: true,
     startupFileModalOpen: true,
+    startupFileDrawerProgress: 1,
     startupFileModalInput: "",
     startupFileModalSelectedIndex: 0,
     entries: [
@@ -461,17 +652,18 @@ test("startup file modal can be reopened from the title screen after Escape dism
   const open = mockTitleScreenModel(titleScreen, {
     startupIntroComplete: true,
     startupFileModalOpen: true,
+    startupFileDrawerProgress: 1,
   });
 
   const [closed, closeCommands] = keyBindings.updateFromKey(
     { key: "escape", ctrl: false, alt: false, shift: false },
     open,
-    mockKeyBindingContext(),
+    startupFileDrawerAnimationContext(),
   );
   const [reopenedByEnter, enterCommands] = keyBindings.updateFromKey(
     { key: "enter", ctrl: false, alt: false, shift: false },
     closed,
-    mockKeyBindingContext(),
+    startupFileDrawerAnimationContext(),
   );
   const [closedAgain] = keyBindings.updateFromKey(
     { key: "escape", ctrl: false, alt: false, shift: false },
@@ -481,15 +673,28 @@ test("startup file modal can be reopened from the title screen after Escape dism
   const [reopenedByOpen, openCommands] = keyBindings.updateFromKey(
     { key: "o", ctrl: false, alt: false, shift: false },
     closedAgain,
-    mockKeyBindingContext(),
+    startupFileDrawerAnimationContext(),
+  );
+  const [closedAfterOpen] = keyBindings.updateFromKey(
+    { key: "escape", ctrl: false, alt: false, shift: false },
+    reopenedByOpen,
+    startupFileDrawerAnimationContext(),
+  );
+  const [reopenedByTab, tabCommands] = keyBindings.updateFromKey(
+    { key: "tab", ctrl: false, alt: false, shift: false },
+    closedAfterOpen,
+    startupFileDrawerAnimationContext(),
   );
 
   assert.equal(closed.startupFileModalOpen, false);
+  assert.equal(closed.startupFileDrawerProgress, 1);
   assert.equal(reopenedByEnter.startupFileModalOpen, true);
   assert.equal(reopenedByOpen.startupFileModalOpen, true);
-  assert.deepEqual(closeCommands, []);
-  assert.deepEqual(enterCommands, []);
-  assert.deepEqual(openCommands, []);
+  assert.equal(reopenedByTab.startupFileModalOpen, true);
+  assert.equal(closeCommands.length, 1);
+  assert.equal(enterCommands.length, 1);
+  assert.equal(openCommands.length, 1);
+  assert.equal(tabCommands.length, 1);
 });
 
 test("startup file modal enter opens the selected file through production text authority", async () => {
@@ -502,6 +707,7 @@ test("startup file modal enter opens the selected file through production text a
     cwd: "/repo",
     startupIntroComplete: true,
     startupFileModalOpen: true,
+    startupFileDrawerProgress: 1,
     startupFileModalInput: "",
     startupFileModalSelectedIndex: 0,
     textRequestId: 0,
@@ -586,6 +792,7 @@ test("startup file modal opens directories without dismissing the modal", async 
     cwd: "/repo",
     startupIntroComplete: true,
     startupFileModalOpen: true,
+    startupFileDrawerProgress: 1,
     startupFileModalInput: "src",
     entries: [
       {
@@ -633,6 +840,7 @@ test("startup file modal renders empty and no-match states", async () => {
     jeditTheme: themes.availableJeditThemes()[0],
     startupIntroComplete: true,
     startupFileModalOpen: true,
+    startupFileDrawerProgress: 1,
   };
   const emptyText = surfaceText(
     viewer.renderWorkspace(
@@ -676,6 +884,7 @@ test("startup file modal does not override the small-terminal notice", async () 
     jeditTheme: themes.availableJeditThemes()[0],
     startupIntroComplete: true,
     startupFileModalOpen: true,
+    startupFileDrawerProgress: 1,
     entries: [
       {
         kind: fileSystem.FileEntryKinds.File,
@@ -732,4 +941,12 @@ function positionedCells(surface) {
       cell: surface.get(x, y),
     })),
   ).flat();
+}
+
+function startupFileDrawerAnimationContext() {
+  return mockKeyBindingContext({
+    createStartupFileDrawerAnimationCmd: (_from, to) => [
+      () => ({ type: "startup-file-drawer-progress", value: to }),
+    ],
+  });
 }

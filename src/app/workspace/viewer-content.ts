@@ -2,10 +2,21 @@ import { createSurface, type Surface } from "@flyingrobots/bijou";
 import { paintMarkdownPreview } from "../../ui/markdown-preview.js";
 import { renderSourceViewer } from "../../ui/source-viewer.js";
 import {
+  TITLE_RENDER_MODE,
   renderTitleScreen,
   type TitleScreenRenderOptions,
 } from "../../ui/title-screen.js";
 import type { JeditTheme } from "../../ui/jedit-theme.js";
+import {
+  createBrailleSampleCache,
+  createBrailleSampleFrameStats,
+  type AveragingBrailleCanvasOptions,
+  type BrailleSampleCache,
+  type BrailleSampleFrameStats,
+  type BrailleTraceBudget,
+} from "../../ui/averaging-braille-canvas.js";
+import type { TitleMesh } from "../../ui/title-mesh.js";
+import type { TitleScene } from "../../ui/title-scene.js";
 import type { WorkspaceModel } from "./model.js";
 import { isWorkspaceMarkdownFile } from "./editor-session.js";
 import { ViewModes } from "./view-mode.js";
@@ -21,9 +32,11 @@ import {
   TITLE_SCENE_RENDER_POSTURE,
   type TitleScenePerformanceFacts,
 } from "./title-scene-performance-governor.js";
+import { titleBrailleTraceBudget } from "./title-braille-sampling.js";
 
 const MIN_VIEWPORT_DIMENSION = 1;
 const VIEWER_PAD_MULTIPLIER = 2;
+const TITLE_CAMERA_MOTION_EPSILON = 0.001;
 const INITIAL_TITLE_SCENE_PERFORMANCE_FACTS: TitleScenePerformanceFacts = {
   posture: TITLE_SCENE_RENDER_POSTURE.LiveTrace,
   tracesRays: true,
@@ -43,6 +56,28 @@ interface FrozenTitleBackdrop {
 interface ViewerContentRendererState {
   frozenTitleBackdrop?: FrozenTitleBackdrop;
   lastTitleScenePerformance?: TitleScenePerformanceFacts;
+  titleBrailleSampleCache?: BrailleSampleCache;
+  titleBrailleSampleCacheIdentity?: TitleBrailleSampleCacheIdentity;
+  titleBrailleFrameIndex?: number;
+  lastBrailleSampleStats?: BrailleSampleFrameStats;
+  lastBrailleTraceBudget?: BrailleTraceBudget;
+}
+
+interface TitleBrailleSampleCacheIdentity {
+  readonly width: number;
+  readonly height: number;
+  readonly themeName: string;
+  readonly titleRenderMode: WorkspaceModel["titleRenderMode"];
+  readonly titleSceneSeed: number;
+  readonly titleSceneName?: WorkspaceModel["titleSceneName"];
+  readonly sceneOverride?: TitleScene;
+  readonly mesh?: TitleMesh;
+}
+
+interface TitleBrailleSamplingRenderContext {
+  readonly options?: AveragingBrailleCanvasOptions;
+  readonly stats?: BrailleSampleFrameStats;
+  readonly budget?: BrailleTraceBudget;
 }
 
 export type TitleScreenRenderer = (
@@ -153,7 +188,13 @@ function renderTitleBackdrop(
     return copySurface(frozen.surface);
   }
 
-  const rendered = renderLiveTitleBackdrop(model, width, height, titleRenderer);
+  const rendered = renderLiveTitleBackdrop(
+    model,
+    width,
+    height,
+    titleRenderer,
+    state,
+  );
   if (decision.shouldRetainRenderedBackdrop) {
     state.frozenTitleBackdrop = {
       width,
@@ -171,7 +212,6 @@ function titleSceneGovernorInput(
 ) {
   return {
     introActive: model.editor == null && !model.startupIntroComplete,
-    startupFileModalOpen: model.startupFileModalOpen,
     idleTitleScreen:
       model.editor == null &&
       model.startupIntroComplete &&
@@ -190,10 +230,18 @@ function renderLiveTitleBackdrop(
   width: number,
   height: number,
   titleRenderer: TitleScreenRenderer,
+  state: ViewerContentRendererState,
 ): Surface {
-  return titleRenderer(width, height, model.time, model.jeditTheme, {
+  const sampling = titleBrailleSamplingRenderContext(
+    model,
+    width,
+    height,
+    state,
+  );
+  const rendered = titleRenderer(width, height, model.time, model.jeditTheme, {
     camAngle: model.titleCamera.angle,
     camRadius: model.titleCamera.radius,
+    camera: model.titleCamera,
     sceneSeed: model.titleSceneSeed,
     wallClockMs: model.lastFrameMs,
     mesh: model.titleMeshes.bunny,
@@ -201,7 +249,129 @@ function renderLiveTitleBackdrop(
     renderMode: model.titleRenderMode,
     asciiPalette: model.titleAsciiPalette,
     textDirection: model.i18n.direction,
+    brailleSampling: sampling.options,
+    suppressPresentation: model.startupIntroComplete,
   });
+  recordTitleBrailleSamplingStats(state, sampling);
+  return rendered;
+}
+
+function titleBrailleSamplingRenderContext(
+  model: WorkspaceModel,
+  width: number,
+  height: number,
+  state: ViewerContentRendererState,
+): TitleBrailleSamplingRenderContext {
+  if (model.titleRenderMode !== TITLE_RENDER_MODE.Braille) {
+    clearTitleBrailleSamplingState(state);
+    return {};
+  }
+  const stats = createBrailleSampleFrameStats();
+  const cache = titleBrailleSampleCacheFor(model, width, height, state);
+  const frameIndex = state.titleBrailleFrameIndex ?? 0;
+  const budget = titleBrailleTraceBudget({
+    frameIndex,
+    frameTimeMs: model.frameTimeMs,
+    previousStats: state.lastBrailleSampleStats,
+    previousPhaseCount: state.lastBrailleTraceBudget?.phaseCount,
+    cameraMoving: titleCameraIsMoving(model.titleCamera),
+  });
+  state.titleBrailleFrameIndex = frameIndex + 1;
+  return {
+    stats,
+    budget,
+    options: {
+      sampleCache: cache,
+      stats,
+      traceBudget: budget,
+    },
+  };
+}
+
+function titleBrailleSampleCacheFor(
+  model: WorkspaceModel,
+  width: number,
+  height: number,
+  state: ViewerContentRendererState,
+): BrailleSampleCache {
+  const identity = titleBrailleSampleCacheIdentity(model, width, height);
+  if (
+    state.titleBrailleSampleCache == null ||
+    state.titleBrailleSampleCacheIdentity == null ||
+    !sameTitleBrailleSampleCacheIdentity(
+      state.titleBrailleSampleCacheIdentity,
+      identity,
+    )
+  ) {
+    state.titleBrailleSampleCache = createBrailleSampleCache(width, height);
+    state.titleBrailleSampleCacheIdentity = identity;
+    clearTitleBrailleSamplingState(state);
+  }
+  return state.titleBrailleSampleCache;
+}
+
+function clearTitleBrailleSamplingState(
+  state: ViewerContentRendererState,
+): void {
+  state.titleBrailleFrameIndex = 0;
+  state.lastBrailleSampleStats = undefined;
+  state.lastBrailleTraceBudget = undefined;
+}
+
+function titleCameraIsMoving(camera: WorkspaceModel["titleCamera"]): boolean {
+  return (
+    titleCameraAxisIsMoving(camera.angle, camera.angleTarget) ||
+    titleCameraAxisIsMoving(camera.radius, camera.radiusTarget)
+  );
+}
+
+function titleCameraAxisIsMoving(current: number, target: number): boolean {
+  return Math.abs(current - target) > TITLE_CAMERA_MOTION_EPSILON;
+}
+
+function titleBrailleSampleCacheIdentity(
+  model: WorkspaceModel,
+  width: number,
+  height: number,
+): TitleBrailleSampleCacheIdentity {
+  return {
+    width,
+    height,
+    themeName: model.jeditTheme.name,
+    titleRenderMode: model.titleRenderMode,
+    titleSceneSeed: model.titleSceneSeed,
+    titleSceneName: model.titleSceneName,
+    sceneOverride: model.sceneOverride,
+    mesh: model.titleMeshes.bunny,
+  };
+}
+
+function sameTitleBrailleSampleCacheIdentity(
+  left: TitleBrailleSampleCacheIdentity,
+  right: TitleBrailleSampleCacheIdentity,
+): boolean {
+  return (
+    left.width === right.width &&
+    left.height === right.height &&
+    left.themeName === right.themeName &&
+    left.titleRenderMode === right.titleRenderMode &&
+    left.titleSceneSeed === right.titleSceneSeed &&
+    left.titleSceneName === right.titleSceneName &&
+    left.sceneOverride === right.sceneOverride &&
+    left.mesh === right.mesh
+  );
+}
+
+function recordTitleBrailleSamplingStats(
+  state: ViewerContentRendererState,
+  context: TitleBrailleSamplingRenderContext,
+): void {
+  if (context.stats != null && context.stats.totalSamples > 0) {
+    state.lastBrailleSampleStats = context.stats;
+  }
+  if (context.budget != null) {
+    state.lastBrailleTraceBudget = context.budget;
+  }
 }
 
 function frozenTitleBackdropFor(

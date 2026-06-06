@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
+import { stringToSurface } from "@flyingrobots/bijou";
 import {
   importDist,
   mockI18n,
@@ -68,6 +69,8 @@ test("runtime load-scene-result applies the loaded scene camera to title camera 
     camera: {
       angle: 1.25,
       radius: 6.75,
+      position: [0.8, 1.05, 2.5],
+      target: [0, 0.8, 0],
     },
     objects: [],
   };
@@ -83,6 +86,9 @@ test("runtime load-scene-result applies the loaded scene camera to title camera 
         radius: 9,
         radiusTarget: 9,
         radiusMotionId: 4,
+        position: [0, 2.65, 9],
+        target: [0, 0.78, 0],
+        eyeY: 2.65,
       },
     },
   );
@@ -92,6 +98,9 @@ test("runtime load-scene-result applies the loaded scene camera to title camera 
   assert.equal(nextModel.titleCamera.angleTarget, scene.camera.angle);
   assert.equal(nextModel.titleCamera.radius, scene.camera.radius);
   assert.equal(nextModel.titleCamera.radiusTarget, scene.camera.radius);
+  assert.deepEqual(nextModel.titleCamera.position, scene.camera.position);
+  assert.deepEqual(nextModel.titleCamera.target, scene.camera.target);
+  assert.equal(nextModel.titleCamera.eyeY, scene.camera.position[1]);
 });
 
 test("workspace app renders perf overlay after toggle when perf starts disabled", async () => {
@@ -130,6 +139,26 @@ test("workspace app renders perf overlay after toggle when perf starts disabled"
   assert.match(text, /frame\s+20\.00 ms/);
   assert.match(text, /heap\s+\d+\.\d MB/);
   assert.match(text, /rss\s+\d+\.\d MB/);
+});
+
+test("workspace perf overlay adds title-scene facts only on title screen", async () => {
+  const [workspacePerfApp, titleScreen] = await Promise.all([
+    importDist("adapters", "workspace-perf-app.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const model = mockPerfTitleModel(titleScreen);
+  const app = workspacePerfApp.createPerfApp(surfaceOnlyApp(), {
+    initialPerfVisible: true,
+  });
+  const titleText = surfaceText(app.view(model));
+  const editorText = surfaceText(app.view({ ...model, editor: { path: "x" } }));
+
+  assert.match(titleText, /title scene/);
+  assert.match(titleText, /scene\s+default-scene/);
+  assert.match(titleText, /objects\s+1/);
+  assert.match(titleText, /triangles\s+3/);
+  assert.match(titleText, /rays\s+5120/);
+  assert.doesNotMatch(editorText, /title scene/);
 });
 
 test("workspace app rejects stale non-Echo seeded text runtime profile", async () => {
@@ -207,10 +236,10 @@ test("initial workspace scene picker lists authored scene assets that exist on d
   });
 
   assert.deepEqual(model.availableScenes, [
+    "bunny.jedit-scene",
     "neon-dispersion.jedit-scene",
     "teapot-cornell.jedit-scene",
     "teapot-gallery.jedit-scene",
-    "bunny.jedit-scene",
     "neon-orbit.jedit-scene",
     "mirror-hall.jedit-scene",
     "eclipse-gate.jedit-scene",
@@ -251,9 +280,14 @@ test("runtime trims frame history to the configured window", async () => {
 });
 
 test("runtime opens the startup file modal when the title intro completes", async () => {
+  const drawerCommands = ["drawer-animation"];
   const runtimeModule = await importDist("app", "workspace", "runtime.js");
   const runtime = runtimeModule.createWorkspaceRuntime({
     ...mockRuntime(),
+    createStartupFileDrawerAnimationCmd: (from, to) => {
+      drawerCommands.push(`${from}:${to}`);
+      return [() => ({ type: "startup-file-drawer-progress", value: to })];
+    },
     nowMs: () => 7000,
   });
   const [initialModel] = runtime.init();
@@ -267,7 +301,24 @@ test("runtime opens the startup file modal when the title intro completes", asyn
 
   assert.equal(nextModel.startupIntroComplete, true);
   assert.equal(nextModel.startupFileModalOpen, true);
-  assert.deepEqual(commands, []);
+  assert.deepEqual(drawerCommands, ["drawer-animation", "0:1"]);
+  assert.equal(commands.length, 1);
+});
+
+test("startup file drawer animation uses a critically damped Bijou spring", async () => {
+  const animation = await importDist(
+    "adapters",
+    "workspace-animation-commands.js",
+  );
+
+  assert.equal(
+    animation.STARTUP_FILE_DRAWER_SPRING.damping,
+    2 *
+      Math.sqrt(
+        animation.STARTUP_FILE_DRAWER_SPRING.stiffness *
+          animation.STARTUP_FILE_DRAWER_SPRING.mass,
+      ),
+  );
 });
 
 test("stopping a failed profile trace emits only the close failure issue", async () => {
@@ -302,3 +353,59 @@ test("stopping a failed profile trace emits only the close failure issue", async
   assert.equal(message.issue.source, "command");
   assert.equal(message.issue.atMs, 123);
 });
+
+function surfaceOnlyApp() {
+  return {
+    init: () => [mockPerfTitleModel(), []],
+    update: (_, model) => [model, []],
+    view: (model) => stringToSurface("workspace", model.columns, model.rows),
+    routeRuntimeIssue: (issue) => issue,
+  };
+}
+
+function mockPerfTitleModel(titleScreen = titleScreenFallback()) {
+  return {
+    editor: undefined,
+    columns: 40,
+    rows: 20,
+    footerVisible: true,
+    fileDrawerProgress: 0,
+    graftDrawerProgress: 0,
+    historyDrawerProgress: 0,
+    perfVisible: true,
+    frameTimeMs: 20,
+    frameTimeHistory: [16, 20],
+    titleSceneSeed: 0.5,
+    titleSceneName: "default-scene",
+    titleRenderMode: titleScreen.TITLE_RENDER_MODE.Braille,
+    titleMeshes: {},
+    sceneOverride: {
+      camera: { angle: 0, radius: 8 },
+      objects: [
+        {
+          kind: "mesh",
+          mesh: {
+            triangles: [
+              [0, 1, 2],
+              [0, 2, 3],
+              [0, 3, 1],
+            ],
+          },
+          radius: 1,
+          footprintRadius: 1,
+          height: 1,
+          color: [255, 255, 255],
+          reflectivity: 0,
+        },
+      ],
+    },
+  };
+}
+
+function titleScreenFallback() {
+  return {
+    TITLE_RENDER_MODE: {
+      Braille: "braille",
+    },
+  };
+}

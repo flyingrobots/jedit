@@ -9,8 +9,16 @@ import {
   MeshTriangleIndexOutOfRangeError,
   MeshVertexIndexOutOfRangeError,
 } from "../domain/errors.js";
+import { validateTitleMeshWinding } from "./title-mesh-winding.js";
 
 export type { TitleMeshSource, TitleMeshTriangle, TitleMeshVector3 };
+export {
+  nearestTitleMeshHit,
+  nearestTitleMeshHitReport,
+  type TitleMeshHitReport,
+  type TitleMeshHitStats,
+} from "./title-mesh-ray-hit.js";
+export { TITLE_MESH_SIDE_MODE, type TitleMeshSideMode } from "./title-mesh-side-mode.js";
 
 export interface TitleMeshBounds {
   readonly min: TitleMeshVector3;
@@ -46,7 +54,7 @@ interface TitleMeshTriangleData {
   readonly center: TitleMeshVector3;
 }
 
-interface TitleMeshBvhNode {
+export interface TitleMeshBvhNode {
   readonly bounds: TitleMeshBounds;
   readonly triangleIndices: readonly number[];
   readonly left?: TitleMeshBvhNode;
@@ -60,71 +68,7 @@ const AXIS_Y = 1;
 const AXIS_Z = 2;
 const ZERO_RADIANS = 0;
 const BVH_LEAF_TRIANGLE_COUNT = 8;
-const INTERSECTION_EPSILON = 0.000001;
 const EMPTY_TRIANGLE_INDICES: readonly number[] = [];
-
-export function nearestTitleMeshHit(
-  origin: TitleMeshVector3,
-  ray: TitleMeshVector3,
-  mesh: TitleMesh,
-): TitleMeshHit | undefined {
-  let nearest: TitleMeshHit | undefined;
-  visitMeshNode(mesh.root);
-  return nearest;
-
-  function visitMeshNode(node: TitleMeshBvhNode): void {
-    if (
-      !rayIntersectsBounds(
-        origin,
-        ray,
-        node.bounds,
-        nearest?.distance ?? Infinity,
-      )
-    ) {
-      return;
-    }
-
-    if (node.triangleIndices.length > 0) {
-      nearest = nearestMeshTriangleHit(
-        origin,
-        ray,
-        mesh,
-        node.triangleIndices,
-        nearest,
-      );
-      return;
-    }
-
-    visitMeshChild(node.left);
-    visitMeshChild(node.right);
-  }
-
-  function visitMeshChild(node: TitleMeshBvhNode | undefined): void {
-    if (node != null) {
-      visitMeshNode(node);
-    }
-  }
-}
-
-function nearestMeshTriangleHit(
-  origin: TitleMeshVector3,
-  ray: TitleMeshVector3,
-  mesh: TitleMesh,
-  triangleIndices: readonly number[],
-  nearest: TitleMeshHit | undefined,
-): TitleMeshHit | undefined {
-  let candidate = nearest;
-  for (const triangleIndex of triangleIndices) {
-    const hit = intersectTitleMeshTriangle(origin, ray, mesh, triangleIndex);
-    if (
-      hit != null &&
-      (candidate == null || hit.distance < candidate.distance)
-    ) {
-      candidate = hit;
-    }
-  }
-  return candidate;
-}
 
 export function createTitleMesh(
   source: TitleMeshSource,
@@ -140,6 +84,8 @@ export function createTitleMesh(
   const triangles = source.triangles.map((indices) =>
     triangleData(vertices, indices),
   );
+  const meshTriangles = triangles.map((triangle) => triangle.indices);
+  validateTitleMeshWinding(vertices, meshTriangles);
   if (triangles.length === 0) {
     throw new EmptyMeshError("Title mesh must contain at least one triangle.");
   }
@@ -148,7 +94,7 @@ export function createTitleMesh(
   const bounds = boundsForVertices(vertices);
   return {
     vertices,
-    triangles: triangles.map((triangle) => triangle.indices),
+    triangles: meshTriangles,
     bounds,
     height: bounds.max[AXIS_Y] - bounds.min[AXIS_Y],
     footprintRadius: footprintRadiusForVertices(
@@ -232,109 +178,6 @@ function buildBvhNode(
     left: buildBvhNode(triangles, leftIndices),
     right: buildBvhNode(triangles, rightIndices),
   };
-}
-
-function intersectTitleMeshTriangle(
-  origin: TitleMeshVector3,
-  ray: TitleMeshVector3,
-  mesh: TitleMesh,
-  triangleIndex: number,
-): TitleMeshHit | undefined {
-  const indices = mesh.triangles[triangleIndex];
-  if (indices == null) {
-    return undefined;
-  }
-  const a = vertexAt(mesh.vertices, indices[0]);
-  const b = vertexAt(mesh.vertices, indices[1]);
-  const c = vertexAt(mesh.vertices, indices[2]);
-  const edgeA = sub(b, a);
-  const edgeB = sub(c, a);
-  const rayCrossEdgeB = cross(ray, edgeB);
-  const determinant = dot(edgeA, rayCrossEdgeB);
-  if (Math.abs(determinant) <= INTERSECTION_EPSILON) {
-    return undefined;
-  }
-
-  const inverseDeterminant = 1 / determinant;
-  const originToA = sub(origin, a);
-  const barycentric = titleMeshTriangleBarycentric(
-    ray,
-    edgeA,
-    originToA,
-    rayCrossEdgeB,
-    inverseDeterminant,
-  );
-  if (barycentric == null) {
-    return undefined;
-  }
-
-  const distance =
-    dot(edgeB, barycentric.originCrossEdgeA) * inverseDeterminant;
-  if (distance <= INTERSECTION_EPSILON) {
-    return undefined;
-  }
-
-  return titleMeshTriangleHit(distance, ray, edgeA, edgeB);
-}
-
-function titleMeshTriangleHit(
-  distance: number,
-  ray: TitleMeshVector3,
-  edgeA: TitleMeshVector3,
-  edgeB: TitleMeshVector3,
-): TitleMeshHit {
-  const normal = normalize(cross(edgeA, edgeB));
-  return {
-    distance,
-    normal: dot(normal, ray) > 0 ? scale(normal, -1) : normal,
-  };
-}
-
-function titleMeshTriangleBarycentric(
-  ray: TitleMeshVector3,
-  edgeA: TitleMeshVector3,
-  originToA: TitleMeshVector3,
-  rayCrossEdgeB: TitleMeshVector3,
-  inverseDeterminant: number,
-): { readonly originCrossEdgeA: TitleMeshVector3 } | undefined {
-  const u = dot(originToA, rayCrossEdgeB) * inverseDeterminant;
-  if (u < 0 || u > 1) {
-    return undefined;
-  }
-  const originCrossEdgeA = cross(originToA, edgeA);
-  const v = dot(ray, originCrossEdgeA) * inverseDeterminant;
-  return v < 0 || u + v > 1 ? undefined : { originCrossEdgeA };
-}
-
-function rayIntersectsBounds(
-  origin: TitleMeshVector3,
-  ray: TitleMeshVector3,
-  bounds: TitleMeshBounds,
-  maxDistance: number,
-): boolean {
-  let nearDistance = 0;
-  let farDistance = maxDistance;
-
-  for (const axis of [AXIS_X, AXIS_Y, AXIS_Z] as const) {
-    const direction = ray[axis];
-    if (Math.abs(direction) <= INTERSECTION_EPSILON) {
-      if (origin[axis] < bounds.min[axis] || origin[axis] > bounds.max[axis]) {
-        return false;
-      }
-      continue;
-    }
-
-    const inverseDirection = 1 / direction;
-    const first = (bounds.min[axis] - origin[axis]) * inverseDirection;
-    const second = (bounds.max[axis] - origin[axis]) * inverseDirection;
-    nearDistance = Math.max(nearDistance, Math.min(first, second));
-    farDistance = Math.min(farDistance, Math.max(first, second));
-    if (farDistance < nearDistance) {
-      return false;
-    }
-  }
-
-  return farDistance > 0;
 }
 
 function triangleData(
@@ -451,34 +294,5 @@ function maxVector(a: TitleMeshVector3, b: TitleMeshVector3): TitleMeshVector3 {
     Math.max(a[AXIS_X], b[AXIS_X]),
     Math.max(a[AXIS_Y], b[AXIS_Y]),
     Math.max(a[AXIS_Z], b[AXIS_Z]),
-  ];
-}
-
-function normalize(vector: TitleMeshVector3): TitleMeshVector3 {
-  const length = Math.sqrt(dot(vector, vector));
-  return length === 0 ? [0, 0, 0] : scale(vector, 1 / length);
-}
-
-function dot(a: TitleMeshVector3, b: TitleMeshVector3): number {
-  return a[AXIS_X] * b[AXIS_X] + a[AXIS_Y] * b[AXIS_Y] + a[AXIS_Z] * b[AXIS_Z];
-}
-
-function cross(a: TitleMeshVector3, b: TitleMeshVector3): TitleMeshVector3 {
-  return [
-    a[AXIS_Y] * b[AXIS_Z] - a[AXIS_Z] * b[AXIS_Y],
-    a[AXIS_Z] * b[AXIS_X] - a[AXIS_X] * b[AXIS_Z],
-    a[AXIS_X] * b[AXIS_Y] - a[AXIS_Y] * b[AXIS_X],
-  ];
-}
-
-function sub(a: TitleMeshVector3, b: TitleMeshVector3): TitleMeshVector3 {
-  return [a[AXIS_X] - b[AXIS_X], a[AXIS_Y] - b[AXIS_Y], a[AXIS_Z] - b[AXIS_Z]];
-}
-
-function scale(vector: TitleMeshVector3, scalar: number): TitleMeshVector3 {
-  return [
-    vector[AXIS_X] * scalar,
-    vector[AXIS_Y] * scalar,
-    vector[AXIS_Z] * scalar,
   ];
 }

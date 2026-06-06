@@ -45,7 +45,22 @@ test('workspace footer shows compact uppercase normal-mode guidance', async () =
   );
 });
 
+test('workspace footer renders active command-line input like Vim', async () => {
+  const footer = await loadFooterModule();
 
+  assert.deepEqual(
+    footer.workspaceFooterLines({
+      ...idleNormalState(),
+      commandLine: {
+        active: true,
+        input: 'edit src/app',
+        cursorIndex: 12,
+        selectedCompletionIndex: 0,
+      },
+    }),
+    [':edit src/app', '/repo/notes/todo.md'],
+  );
+});
 
 test('workspace footer shows pending change-operator continuations', async () => {
   const footer = await loadFooterModule();

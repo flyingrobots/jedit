@@ -2,12 +2,18 @@ import { titleSceneCubeHit } from "./title-scene-cube.js";
 import { titleSceneMeshHit } from "./title-scene-mesh-hit.js";
 import { titleScenePrimitivePositionAt } from "./title-scene-transform.js";
 import { TITLE_SCENE_SHAPE_KIND } from "./title-scene-shape-kind.js";
+import { type TitleMeshSideMode } from "./title-mesh-side-mode.js";
 import type {
   TitleSceneObject,
   TitleSceneObjectHit,
   TitleScenePrimitiveObject,
   TitleSceneVector3,
 } from "./title-scene.js";
+
+export interface TitleSceneObjectHitOptions {
+  readonly time?: number;
+  readonly sideMode?: TitleMeshSideMode;
+}
 
 type ColumnHitCandidate = {
   readonly distance: number;
@@ -18,22 +24,23 @@ const COLUMN_RAY_EPSILON = 0.000001;
 const COLUMN_HALF_HEIGHT_DIVISOR = 2;
 const COLUMN_TOP_NORMAL: TitleSceneVector3 = [0, 1, 0];
 const COLUMN_BOTTOM_NORMAL: TitleSceneVector3 = [0, -1, 0];
+const TITLE_SCENE_OBJECT_HIT_DEFAULT_OPTIONS: TitleSceneObjectHitOptions = {};
 
 export function titleSceneObjectHit(
   origin: TitleSceneVector3,
   ray: TitleSceneVector3,
   object: TitleSceneObject,
-  time?: number,
+  options: TitleSceneObjectHitOptions = TITLE_SCENE_OBJECT_HIT_DEFAULT_OPTIONS,
 ): TitleSceneObjectHit | undefined {
   switch (object.kind) {
     case TITLE_SCENE_SHAPE_KIND.Column:
-      return columnHit(origin, ray, object, time);
+      return columnHit(origin, ray, object, options.time);
     case TITLE_SCENE_SHAPE_KIND.Cube:
-      return titleSceneCubeHit(origin, ray, object, time);
+      return titleSceneCubeHit(origin, ray, object, options.time);
     case TITLE_SCENE_SHAPE_KIND.Mesh:
-      return titleSceneMeshHit(origin, ray, object, time);
+      return titleSceneMeshHit(origin, ray, object, options.time, options.sideMode);
     case TITLE_SCENE_SHAPE_KIND.Sphere:
-      return sphereHit(origin, ray, object, time);
+      return sphereHit(origin, ray, object, options.time);
   }
 }
 

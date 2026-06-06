@@ -22,6 +22,7 @@ import type { ViewMode } from "./view-mode.js";
 import type { WorkspaceTextAuthority } from "./workspace-text-authority.js";
 import type { EchoHistoryEntry } from "./echo-history.js";
 import type { StartupFileModalState } from "./startup-file-modal.js";
+import type { WorkspaceCommandLineState } from "./command-line.js";
 
 export interface WorkspaceModel extends StartupFileModalState {
   readonly i18n: I18nPort;
@@ -63,6 +64,7 @@ export interface WorkspaceModel extends StartupFileModalState {
   readonly scenePickerOpen: boolean;
   readonly scenePickerFocusIndex: number;
   readonly availableScenes: readonly BuiltInTitleSceneName[];
+  readonly titleSceneName?: BuiltInTitleSceneName;
   readonly sceneOverride?: TitleScene;
   readonly columns: number;
   readonly rows: number;
@@ -74,5 +76,7 @@ export interface WorkspaceModel extends StartupFileModalState {
   readonly titleCamera: TitleCameraState;
   readonly titleRenderMode: TitleRenderMode;
   readonly titleAsciiPalette: TitleAsciiPalette;
+  readonly titleMeshMaterialIndex: number;
   readonly profiler: ProfilerState;
+  readonly commandLine: WorkspaceCommandLineState;
 }

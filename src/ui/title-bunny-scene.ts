@@ -1,7 +1,7 @@
-import type { TitleMesh } from './title-mesh.js';
-import { TITLE_SCENE_SHAPE_KIND } from './title-scene-shape-kind.js';
+import type { TitleMesh } from "./title-mesh.js";
+import type { TitleSceneCameraPlacement } from "./title-scene-camera.js";
+import { TITLE_SCENE_SHAPE_KIND } from "./title-scene-shape-kind.js";
 import type {
-  TitleSceneCameraPlacement,
   TitleSceneColor,
   TitleSceneColorSet,
   TitleSceneLocalYaw,
@@ -10,7 +10,7 @@ import type {
   TitleSceneOrbit,
   TitleScenePrimitiveObject,
   TitleSceneVector3,
-} from './title-scene.js';
+} from "./title-scene.js";
 
 interface BunnyMeshMaterial {
   readonly color: TitleSceneColor;
@@ -34,14 +34,24 @@ const BUNNY_SCENE_CUBE_YAW_PHASE = -0.34;
 const BUNNY_SCENE_MESH_REFLECTIVITY = 0.16;
 const BUNNY_SCENE_MIRROR_SPHERE_RADIUS = 1.08;
 const BUNNY_SCENE_MIRROR_SPHERE_HEIGHT = BUNNY_SCENE_MIRROR_SPHERE_RADIUS * 2;
-const BUNNY_SCENE_MIRROR_SPHERE_FOOTPRINT_RADIUS = BUNNY_SCENE_MIRROR_SPHERE_RADIUS;
+const BUNNY_SCENE_MIRROR_SPHERE_FOOTPRINT_RADIUS =
+  BUNNY_SCENE_MIRROR_SPHERE_RADIUS;
 const BUNNY_SCENE_MIRROR_SPHERE_REFLECTIVITY = 1;
-const BUNNY_SCENE_MIRROR_SPHERE_POSITION: TitleSceneVector3 = [0, BUNNY_SCENE_MIRROR_SPHERE_RADIUS, 0];
+const BUNNY_SCENE_MIRROR_SPHERE_POSITION: TitleSceneVector3 = [
+  0,
+  BUNNY_SCENE_MIRROR_SPHERE_RADIUS,
+  0,
+];
 const BUNNY_SCENE_CUBE_HALF_SIZE = 0.52;
 const BUNNY_SCENE_CUBE_HEIGHT = BUNNY_SCENE_CUBE_HALF_SIZE * 2;
-const BUNNY_SCENE_CUBE_FOOTPRINT_RADIUS = BUNNY_SCENE_CUBE_HALF_SIZE * Math.SQRT2;
+const BUNNY_SCENE_CUBE_FOOTPRINT_RADIUS =
+  BUNNY_SCENE_CUBE_HALF_SIZE * Math.SQRT2;
 const BUNNY_SCENE_CUBE_REFLECTIVITY = 0.22;
-const BUNNY_SCENE_CUBE_POSITION: TitleSceneVector3 = [0, BUNNY_SCENE_CUBE_HALF_SIZE, 0];
+const BUNNY_SCENE_CUBE_POSITION: TitleSceneVector3 = [
+  0,
+  BUNNY_SCENE_CUBE_HALF_SIZE,
+  0,
+];
 
 export function titleBunnySceneCameraPlacement(): TitleSceneCameraPlacement {
   return {
@@ -50,7 +60,10 @@ export function titleBunnySceneCameraPlacement(): TitleSceneCameraPlacement {
   };
 }
 
-export function createBunnySceneObjects(colors: TitleSceneColorSet, mesh: TitleMesh): readonly TitleSceneObject[] {
+export function createBunnySceneObjects(
+  colors: TitleSceneColorSet,
+  mesh: TitleMesh,
+): readonly TitleSceneObject[] {
   return [
     createMirrorSphere(colors),
     createBunnyMeshObject(mesh, {
@@ -58,13 +71,19 @@ export function createBunnySceneObjects(colors: TitleSceneColorSet, mesh: TitleM
       reflectivity: BUNNY_SCENE_MESH_REFLECTIVITY,
       offset: centeredBunnyMeshOffset(mesh),
       orbit: bunnySceneOrbit(BUNNY_SCENE_RABBIT_PHASE),
-      localYaw: bunnySceneLocalYaw(BUNNY_SCENE_RABBIT_YAW_PHASE, BUNNY_SCENE_RABBIT_YAW_SPEED),
+      localYaw: bunnySceneLocalYaw(
+        BUNNY_SCENE_RABBIT_YAW_PHASE,
+        BUNNY_SCENE_RABBIT_YAW_SPEED,
+      ),
     }),
     createOrbitingCube(colors),
   ];
 }
 
-function createBunnyMeshObject(mesh: TitleMesh, material: BunnyMeshMaterial): TitleSceneMeshObject {
+function createBunnyMeshObject(
+  mesh: TitleMesh,
+  material: BunnyMeshMaterial,
+): TitleSceneMeshObject {
   return {
     kind: TITLE_SCENE_SHAPE_KIND.Mesh,
     mesh,
@@ -79,7 +98,9 @@ function createBunnyMeshObject(mesh: TitleMesh, material: BunnyMeshMaterial): Ti
   };
 }
 
-function createMirrorSphere(colors: TitleSceneColorSet): TitleScenePrimitiveObject {
+function createMirrorSphere(
+  colors: TitleSceneColorSet,
+): TitleScenePrimitiveObject {
   return {
     kind: TITLE_SCENE_SHAPE_KIND.Sphere,
     position: BUNNY_SCENE_MIRROR_SPHERE_POSITION,
@@ -91,7 +112,9 @@ function createMirrorSphere(colors: TitleSceneColorSet): TitleScenePrimitiveObje
   };
 }
 
-function createOrbitingCube(colors: TitleSceneColorSet): TitleScenePrimitiveObject {
+function createOrbitingCube(
+  colors: TitleSceneColorSet,
+): TitleScenePrimitiveObject {
   return {
     kind: TITLE_SCENE_SHAPE_KIND.Cube,
     position: BUNNY_SCENE_CUBE_POSITION,
@@ -101,7 +124,10 @@ function createOrbitingCube(colors: TitleSceneColorSet): TitleScenePrimitiveObje
     color: colors.success,
     reflectivity: BUNNY_SCENE_CUBE_REFLECTIVITY,
     orbit: bunnySceneOrbit(BUNNY_SCENE_CUBE_PHASE),
-    localYaw: bunnySceneLocalYaw(BUNNY_SCENE_CUBE_YAW_PHASE, BUNNY_SCENE_CUBE_YAW_SPEED),
+    localYaw: bunnySceneLocalYaw(
+      BUNNY_SCENE_CUBE_YAW_PHASE,
+      BUNNY_SCENE_CUBE_YAW_SPEED,
+    ),
   };
 }
 
@@ -114,7 +140,10 @@ function bunnySceneOrbit(phase: number): TitleSceneOrbit {
   };
 }
 
-function bunnySceneLocalYaw(phase: number, angularSpeed: number): TitleSceneLocalYaw {
+function bunnySceneLocalYaw(
+  phase: number,
+  angularSpeed: number,
+): TitleSceneLocalYaw {
   return {
     phase,
     angularSpeed,

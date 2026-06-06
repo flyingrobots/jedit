@@ -8,10 +8,10 @@ import type { TitleMeshLibrary } from "../ui/title-mesh-library.js";
  * register it here as well. This order controls the scene picker display order.
  */
 export const BUILT_IN_TITLE_SCENE_NAMES = [
+  "bunny.jedit-scene",
   "neon-dispersion.jedit-scene",
   "teapot-cornell.jedit-scene",
   "teapot-gallery.jedit-scene",
-  "bunny.jedit-scene",
   "neon-orbit.jedit-scene",
   "mirror-hall.jedit-scene",
   "eclipse-gate.jedit-scene",

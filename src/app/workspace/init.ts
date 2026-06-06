@@ -14,7 +14,10 @@ import type { TitleMeshLibrary } from "../../ui/title-mesh-library.js";
 import type { WorkspaceModel } from "./model.js";
 import type { WorkspaceMsg } from "./msg.js";
 import type { I18nPort } from "../../ports/i18n.js";
-import { BUILT_IN_TITLE_SCENE_NAMES } from "../../ports/title-scene-loader.js";
+import {
+  BUILT_IN_TITLE_SCENE_NAMES,
+  type BuiltInTitleSceneName,
+} from "../../ports/title-scene-loader.js";
 import type { JeditTheme } from "../../ui/jedit-theme.js";
 import type { FileEntry } from "../../ports/file-system.js";
 import { ViewModes } from "./view-mode.js";
@@ -23,6 +26,7 @@ import type { JeditWscStartupRecoveryResult } from "../../ports/jedit-wsc-startu
 import { unrecoveredJeditWscStartupRecovery } from "../jedit-wsc-startup-recovery.js";
 import { createWorkspaceTextAuthority } from "./workspace-text-authority.js";
 import { initialStartupFileModalState } from "./startup-file-modal.js";
+import { initialWorkspaceCommandLineState } from "./command-line.js";
 
 export { recoverJeditWorkspaceFromWsc } from "../jedit-wsc-startup-recovery.js";
 
@@ -36,6 +40,7 @@ export interface WorkspaceInitialModelSnapshot {
   readonly entries: readonly FileEntry[];
   readonly titleMeshes?: TitleMeshLibrary;
   readonly sceneOverride?: TitleScene;
+  readonly sceneOverrideName?: BuiltInTitleSceneName;
   readonly nowMs: number;
   readonly wscStartupRecovery?: JeditWscStartupRecoveryResult;
 }
@@ -65,6 +70,7 @@ export function createInitialModel(
     focusPane: INITIAL_FOCUS_PANE,
     ...initialDrawerState(),
     ...initialStartupFileModalState(),
+    commandLine: initialWorkspaceCommandLineState(),
     ...createFeedbackState<WorkspaceMsg>(),
     ...initialShellState(),
     ...initialSettingsState(),
@@ -75,7 +81,7 @@ export function createInitialModel(
     titleMeshes,
     columns,
     rows,
-    ...initialSceneState(titleSceneSeed, titleMeshes, snapshot.sceneOverride),
+    ...initialSceneStateFromSnapshot(titleSceneSeed, titleMeshes, snapshot),
     ...initialRuntimeState(nowMs),
   };
 }
@@ -136,10 +142,24 @@ function initialRuntimeState(nowMs: number) {
   };
 }
 
+function initialSceneStateFromSnapshot(
+  titleSceneSeed: number,
+  titleMeshes: TitleMeshLibrary,
+  snapshot: WorkspaceInitialModelSnapshot,
+) {
+  return initialSceneState(
+    titleSceneSeed,
+    titleMeshes,
+    snapshot.sceneOverride,
+    snapshot.sceneOverrideName,
+  );
+}
+
 function initialSceneState(
   titleSceneSeed: number,
   titleMeshes: TitleMeshLibrary,
   sceneOverride?: TitleScene,
+  sceneOverrideName?: BuiltInTitleSceneName,
 ) {
   const cameraPlacement =
     sceneOverride?.camera ??
@@ -150,9 +170,11 @@ function initialSceneState(
     scenePickerOpen: false,
     scenePickerFocusIndex: 0,
     availableScenes: BUILT_IN_TITLE_SCENE_NAMES,
+    ...(sceneOverrideName == null ? {} : { titleSceneName: sceneOverrideName }),
     ...(sceneOverride == null ? {} : { sceneOverride }),
     titleCamera: createTitleCameraState(cameraPlacement),
     titleRenderMode: TITLE_RENDER_MODE.Braille,
     titleAsciiPalette: TITLE_ASCII_PALETTE.Dense,
+    titleMeshMaterialIndex: 0,
   };
 }

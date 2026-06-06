@@ -46,6 +46,7 @@ Press `?` inside the editor for the key binding reference.
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Layer rules, dependency graph, editor vocabulary, testing rules |
 | [VISION.md](VISION.md) | Long-term product direction |
 | [AGENTS.md](AGENTS.md) | Agent-specific guidance and witness commands |
+| [docs/method/roadmap-planning.md](docs/method/roadmap-planning.md) | Roadmap, release-gate, slice, and proof policy |
 | [docs/technical-teardown.md](docs/technical-teardown.md) | **Deep technical reference** — domain dictionary, golden paths, payload anatomy, trade-offs, security boundaries, async model |
 | [docs/jedit-echo-end-to-end.md](docs/jedit-echo-end-to-end.md) | The full jedit + Echo process-level path |
 | [docs/design/](docs/design/) | Design notes: project invariants, runtime temperatures, text-edit algebra, causal event model, structural history |

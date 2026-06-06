@@ -79,6 +79,16 @@ export class InvalidMeshHeightError extends JeditDomainError {}
 export class MeshTriangleIndexOutOfRangeError extends JeditDomainError {}
 
 /**
+ * Thrown when adjacent mesh triangles disagree about shared-edge direction.
+ */
+export class MeshInconsistentWindingError extends JeditDomainError {}
+
+/**
+ * Thrown when a closed mesh has globally inward-facing triangles.
+ */
+export class MeshInvertedWindingError extends JeditDomainError {}
+
+/**
  * Thrown when a mesh vertex index is out of bounds.
  */
 export class MeshVertexIndexOutOfRangeError extends JeditDomainError {}

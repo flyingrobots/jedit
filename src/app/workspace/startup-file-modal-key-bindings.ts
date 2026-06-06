@@ -11,6 +11,7 @@ import {
   appendStartupFileModalInput,
   backspaceStartupFileModalInput,
   closeStartupFileModal,
+  dismissStartupFileModal,
   isStartupFileModalReopenCandidate,
   isStartupIntroSkipCandidate,
   moveStartupFileModalSelection,
@@ -32,18 +33,31 @@ export function updateStartupFileModalKey(
   context: WorkspaceKeyBindingContext,
 ): KeyBindingResult | undefined {
   if (isStartupIntroSkipKey(msg) && isStartupIntroSkipCandidate(model)) {
-    return [openStartupFileModal(model), []];
+    return openStartupFileModalWithAnimation(model, context);
   }
   if (
     isStartupFileModalReopenKey(msg) &&
     isStartupFileModalReopenCandidate(model)
   ) {
-    return [openStartupFileModal(model), []];
+    return openStartupFileModalWithAnimation(model, context);
   }
   if (!model.startupFileModalOpen || model.editor != null) {
     return undefined;
   }
   return updateOpenStartupFileModalKey(msg, model, context);
+}
+
+function openStartupFileModalWithAnimation(
+  model: WorkspaceModel,
+  context: WorkspaceKeyBindingContext,
+): KeyBindingResult {
+  return [
+    openStartupFileModal(model),
+    context.createStartupFileDrawerAnimationCmd(
+      model.startupFileDrawerProgress,
+      1,
+    ),
+  ];
 }
 
 function updateOpenStartupFileModalKey(
@@ -52,7 +66,13 @@ function updateOpenStartupFileModalKey(
   context: WorkspaceKeyBindingContext,
 ): KeyBindingResult {
   if (msg.key === WorkspaceKeys.Escape) {
-    return [closeStartupFileModal(model), []];
+    return [
+      dismissStartupFileModal(model),
+      context.createStartupFileDrawerAnimationCmd(
+        model.startupFileDrawerProgress,
+        0,
+      ),
+    ];
   }
   if (msg.key === WorkspaceKeys.Backspace) {
     return [backspaceStartupFileModalInput(model), []];
@@ -93,7 +113,7 @@ function acceptStartupFileModalSelection(
     deps,
   );
   return row.entry.kind === FileEntryKinds.File
-    ? [{ ...opened, startupFileModalOpen: false }, commands]
+    ? [closeStartupFileModal(opened), commands]
     : [updateStartupFileModalInput(opened, ""), commands];
 }
 
@@ -103,7 +123,7 @@ function isStartupIntroSkipKey(msg: KeyMsg): boolean {
     !msg.alt &&
     (msg.key === WorkspaceKeys.Enter ||
       msg.key === WorkspaceKeys.Return ||
-      msg.key === WorkspaceKeys.Escape)
+      msg.key === WorkspaceKeys.Tab)
   );
 }
 
@@ -113,6 +133,7 @@ function isStartupFileModalReopenKey(msg: KeyMsg): boolean {
     !msg.alt &&
     (msg.key === WorkspaceKeys.Enter ||
       msg.key === WorkspaceKeys.Return ||
+      msg.key === WorkspaceKeys.Tab ||
       msg.key === WorkspaceKeys.O)
   );
 }

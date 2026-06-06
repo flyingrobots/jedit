@@ -1,4 +1,5 @@
 import { nearestTitleMeshHit, type TitleMeshVector3 } from './title-mesh.js';
+import { type TitleMeshSideMode } from './title-mesh-side-mode.js';
 import {
   inverseRotateTitleScenePointAroundY,
   inverseRotateTitleSceneVectorY,
@@ -17,11 +18,17 @@ export function titleSceneMeshHit(
   ray: TitleSceneVector3,
   object: TitleSceneMeshObject,
   time: number | undefined,
+  sideMode?: TitleMeshSideMode,
 ): TitleSceneObjectHit | undefined {
   const yaw = titleSceneLocalYawAt(object, time);
   const center = titleSceneObjectFootprintCenterAt(object, time);
   const localOrigin = meshLocalOrigin(origin, center, object, yaw);
-  const hit = nearestTitleMeshHit(localOrigin, inverseRotateTitleSceneVectorY(ray, yaw), object.mesh);
+  const hit = nearestTitleMeshHit(
+    localOrigin,
+    inverseRotateTitleSceneVectorY(ray, yaw),
+    object.mesh,
+    sideMode,
+  );
   return hit == null
     ? undefined
     : {

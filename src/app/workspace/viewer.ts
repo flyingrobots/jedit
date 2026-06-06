@@ -142,6 +142,7 @@ function paintWorkspaceFooter(screen: Surface, model: WorkspaceModel): void {
         echoHistoryCount: model.echoHistory.length,
         graftPath: model.graftInfo?.path,
         graftSelection: selectedGraftSelection(model),
+        commandLine: model.commandLine,
       }, model.columns, model.jeditTheme.surface.footer),
       0,
       model.rows - FOOTER_ROWS,

@@ -7,9 +7,8 @@ import {
 } from "@flyingrobots/bijou";
 import {
   browsableListSurface,
-  modal,
+  drawer,
   type BrowsableListState,
-  type Overlay,
 } from "@flyingrobots/bijou-tui";
 import type { FileEntry } from "../ports/file-system.js";
 import {
@@ -42,6 +41,7 @@ export interface RenderStartupFileModalOptions {
   readonly theme: JeditTheme;
   readonly screenWidth: number;
   readonly screenHeight: number;
+  readonly progress: number;
 }
 
 const STARTUP_MODAL_FALLBACK_FOREGROUND = "#e2e7ec";
@@ -51,40 +51,54 @@ const STARTUP_MODAL_MIN_WIDTH = 36;
 const STARTUP_MODAL_WIDTH_RATIO = 0.62;
 const STARTUP_MODAL_BODY_MIN_WIDTH = 1;
 const STARTUP_MODAL_BODY_HORIZONTAL_BORDER = 4;
-const STARTUP_MODAL_BODY_HEIGHT = 10;
 const STARTUP_MODAL_CWD_ROW = 0;
 const STARTUP_MODAL_INPUT_ROW = 1;
 const STARTUP_MODAL_LIST_LABEL_ROW = 3;
 const STARTUP_MODAL_FIRST_FILE_ROW = 4;
-const STARTUP_MODAL_VISIBLE_ROW_COUNT =
-  STARTUP_MODAL_BODY_HEIGHT - STARTUP_MODAL_FIRST_FILE_ROW;
 const STARTUP_MODAL_SCROLLBAR_TRACK_CHAR = "│";
 const STARTUP_MODAL_SCROLLBAR_THUMB_CHAR = "█";
 
-export function renderStartupFileModal(
+export function renderStartupFileDrawer(
   options: RenderStartupFileModalOptions,
-): Overlay {
-  const width = resolveStartupFileModalWidth(options.screenWidth);
+): Surface {
+  const width = resolveStartupFileDrawerWidth(
+    options.screenWidth,
+    options.progress,
+  );
+  if (width <= 0 || options.screenHeight <= 0) {
+    return createSurface(width, Math.max(0, options.screenHeight));
+  }
   const body = createStartupFileModalBody({
     ...options,
     width: Math.max(
       STARTUP_MODAL_BODY_MIN_WIDTH,
       width - STARTUP_MODAL_BODY_HORIZONTAL_BORDER,
     ),
+    height: Math.max(0, options.screenHeight - 2),
   });
-  return modal({
+  const overlay = drawer({
+    anchor: "left",
     title: options.copy.title,
-    body,
-    hint: options.copy.hint,
+    content: body,
     screenWidth: options.screenWidth,
     screenHeight: options.screenHeight,
     width,
     borderToken: tokenValue(options.theme.chrome.activeEdge),
     bgToken: tokenValue(options.theme.surface.drawer),
   });
+  return overlay.surface ?? createSurface(width, options.screenHeight);
 }
 
-function resolveStartupFileModalWidth(screenWidth: number): number {
+function resolveStartupFileDrawerWidth(
+  screenWidth: number,
+  progress: number,
+): number {
+  return Math.round(
+    resolveStartupFileDrawerMaxWidth(screenWidth) * clamp01(progress),
+  );
+}
+
+function resolveStartupFileDrawerMaxWidth(screenWidth: number): number {
   const ratioWidth = Math.floor(screenWidth * STARTUP_MODAL_WIDTH_RATIO);
   return Math.min(
     STARTUP_MODAL_MAX_WIDTH,
@@ -93,9 +107,12 @@ function resolveStartupFileModalWidth(screenWidth: number): number {
 }
 
 function createStartupFileModalBody(
-  options: RenderStartupFileModalOptions & { readonly width: number },
+  options: RenderStartupFileModalOptions & {
+    readonly width: number;
+    readonly height: number;
+  },
 ): Surface {
-  const surface = createSurface(options.width, STARTUP_MODAL_BODY_HEIGHT);
+  const surface = createSurface(options.width, options.height);
   fillSurface(surface, options.theme.surface.drawer);
   paintText(
     surface,
@@ -125,6 +142,7 @@ function paintRows(
   surface: Surface,
   options: RenderStartupFileModalOptions,
 ): void {
+  const visibleRowCount = startupFileVisibleRowCount(surface.height);
   if (options.rows.length === 0) {
     paintText(
       surface,
@@ -135,12 +153,15 @@ function paintRows(
     );
     return;
   }
-  const firstRow = firstVisibleRow(options);
+  if (visibleRowCount === 0) {
+    return;
+  }
+  const firstRow = firstVisibleRow(options, visibleRowCount);
   const listSurface = browsableListSurface(
-    startupFileListState(options, firstRow),
+    startupFileListState(options, firstRow, visibleRowCount),
     {
       width: surface.width,
-      showScrollbar: options.rows.length > STARTUP_MODAL_VISIBLE_ROW_COUNT,
+      showScrollbar: options.rows.length > visibleRowCount,
       renderItem: ({ item, focused }) =>
         formatTreeLine(item.value.entry, { selected: focused }),
     },
@@ -161,28 +182,30 @@ function emptyText(input: string, copy: StartupFileModalCopy): string {
 
 function firstVisibleRow(
   options: Pick<RenderStartupFileModalOptions, "rows" | "selectedIndex">,
+  visibleRowCount: number,
 ): number {
-  const overflow =
-    selectedStartupFileRowIndex(options) - STARTUP_MODAL_VISIBLE_ROW_COUNT + 1;
+  const overflow = selectedStartupFileRowIndex(options) - visibleRowCount + 1;
   return Math.max(
     0,
-    Math.min(
-      Math.max(0, options.rows.length - STARTUP_MODAL_VISIBLE_ROW_COUNT),
-      overflow,
-    ),
+    Math.min(Math.max(0, options.rows.length - visibleRowCount), overflow),
   );
 }
 
 function startupFileListState(
   options: Pick<RenderStartupFileModalOptions, "rows" | "selectedIndex">,
   firstRow: number,
+  visibleRowCount: number,
 ): BrowsableListState<StartupFileModalRenderRow> {
   return {
     items: options.rows.map((row) => ({ label: row.entry.name, value: row })),
     focusIndex: selectedStartupFileRowIndex(options),
     scrollY: firstRow,
-    height: STARTUP_MODAL_VISIBLE_ROW_COUNT,
+    height: visibleRowCount,
   };
+}
+
+function startupFileVisibleRowCount(height: number): number {
+  return Math.max(0, height - STARTUP_MODAL_FIRST_FILE_ROW);
 }
 
 function selectedStartupFileRowIndex(
@@ -266,6 +289,9 @@ function paintText(
   y: number,
   token: JeditStyleToken,
 ): void {
+  if (y < 0 || y >= surface.height) {
+    return;
+  }
   const line = stringToSurface(fitLine(text, surface.width), surface.width, 1);
   applyToken(line, token);
   surface.blit(line, 0, y);
@@ -305,4 +331,8 @@ function tokenValue(token: JeditStyleToken): TokenValue {
     hex: colorHex(token.fg) ?? token.hex ?? STARTUP_MODAL_FALLBACK_FOREGROUND,
     bg: colorHex(token.bg) ?? STARTUP_MODAL_FALLBACK_BACKGROUND,
   };
+}
+
+function clamp01(value: number): number {
+  return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0;
 }

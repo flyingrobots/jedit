@@ -1,0 +1,204 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { stringToSurface } from "@flyingrobots/bijou";
+import {
+  importDist,
+  mockTitleScreenModel,
+  surfaceText,
+} from "./workspace-helpers.mjs";
+
+const TITLE_WIDTH = 44;
+const TITLE_HEIGHT = 6;
+const FAST_FRAME_MS = 12;
+const SLOW_FRAME_MS = 92;
+
+test("viewer renderer passes adaptive Braille sampling state to live title frames", async () => {
+  const [viewerContent, titleScreen] = await Promise.all([
+    importDist("app", "workspace", "viewer-content.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const budgets = [];
+  const cacheObjects = [];
+  const renderer = viewerContent.createViewerContentRenderer(
+    (width, height, _time, _theme, options) => {
+      budgets.push(options.brailleSampling?.traceBudget);
+      cacheObjects.push(options.brailleSampling?.sampleCache);
+      markHighActivity(options.brailleSampling?.stats);
+      return stringToSurface(`frame ${budgets.length}`, width, height);
+    },
+  );
+  const base = mockTitleScreenModel(titleScreen, {
+    frameTimeMs: FAST_FRAME_MS,
+    startupIntroComplete: false,
+    startupFileModalOpen: false,
+  });
+
+  const first = renderer.renderViewer(base, TITLE_WIDTH, TITLE_HEIGHT);
+  const second = renderer.renderViewer(
+    {
+      ...base,
+      frameTimeMs: SLOW_FRAME_MS,
+      time: 1,
+    },
+    TITLE_WIDTH,
+    TITLE_HEIGHT,
+  );
+  const third = renderer.renderViewer(
+    {
+      ...base,
+      frameTimeMs: FAST_FRAME_MS,
+      time: 2,
+    },
+    TITLE_WIDTH,
+    TITLE_HEIGHT,
+  );
+
+  assert.equal(surfaceText(first).includes("frame 1"), true);
+  assert.equal(surfaceText(second).includes("frame 2"), true);
+  assert.equal(surfaceText(third).includes("frame 3"), true);
+  assert.deepEqual(budgets, [
+    {
+      phase: 0,
+      phaseCount: 1,
+    },
+    {
+      phase: 1,
+      phaseCount: 4,
+    },
+    {
+      phase: 2,
+      phaseCount: 4,
+    },
+  ]);
+  assert.equal(cacheObjects[0], cacheObjects[1]);
+  assert.equal(cacheObjects[1], cacheObjects[2]);
+});
+
+test("viewer renderer does not allocate Braille sampling for ASCII title frames", async () => {
+  const [viewerContent, titleScreen] = await Promise.all([
+    importDist("app", "workspace", "viewer-content.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const samplingOptions = [];
+  const renderer = viewerContent.createViewerContentRenderer(
+    (width, height, _time, _theme, options) => {
+      samplingOptions.push(options.brailleSampling);
+      return stringToSurface("ascii frame", width, height);
+    },
+  );
+
+  renderer.renderViewer(
+    mockTitleScreenModel(titleScreen, {
+      titleRenderMode: titleScreen.TITLE_RENDER_MODE.Ascii,
+    }),
+    TITLE_WIDTH,
+    TITLE_HEIGHT,
+  );
+
+  assert.deepEqual(samplingOptions, [undefined]);
+});
+
+test("viewer renderer resets adaptive Braille history after ASCII title frames", async () => {
+  const [viewerContent, titleScreen] = await Promise.all([
+    importDist("app", "workspace", "viewer-content.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const budgets = [];
+  const renderer = viewerContent.createViewerContentRenderer(
+    (width, height, _time, _theme, options) => {
+      budgets.push(options.brailleSampling?.traceBudget);
+      markHighActivity(options.brailleSampling?.stats);
+      return stringToSurface("frame", width, height);
+    },
+  );
+  const base = mockTitleScreenModel(titleScreen, {
+    frameTimeMs: FAST_FRAME_MS,
+    startupIntroComplete: false,
+    startupFileModalOpen: false,
+  });
+
+  renderer.renderViewer(base, TITLE_WIDTH, TITLE_HEIGHT);
+  renderer.renderViewer(
+    {
+      ...base,
+      frameTimeMs: SLOW_FRAME_MS,
+      time: 1,
+    },
+    TITLE_WIDTH,
+    TITLE_HEIGHT,
+  );
+  renderer.renderViewer(
+    {
+      ...base,
+      titleRenderMode: titleScreen.TITLE_RENDER_MODE.Ascii,
+      time: 2,
+    },
+    TITLE_WIDTH,
+    TITLE_HEIGHT,
+  );
+  renderer.renderViewer(
+    {
+      ...base,
+      time: 3,
+    },
+    TITLE_WIDTH,
+    TITLE_HEIGHT,
+  );
+
+  assert.deepEqual(budgets, [
+    { phase: 0, phaseCount: 1 },
+    { phase: 1, phaseCount: 4 },
+    undefined,
+    { phase: 0, phaseCount: 1 },
+  ]);
+});
+
+test("viewer renderer uses motion LOD while the title camera settles", async () => {
+  const [viewerContent, titleScreen] = await Promise.all([
+    importDist("app", "workspace", "viewer-content.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const budgets = [];
+  const renderer = viewerContent.createViewerContentRenderer(
+    (width, height, _time, _theme, options) => {
+      budgets.push(options.brailleSampling?.traceBudget);
+      markHighActivity(options.brailleSampling?.stats);
+      return stringToSurface("frame", width, height);
+    },
+  );
+  const base = mockTitleScreenModel(titleScreen, {
+    frameTimeMs: FAST_FRAME_MS,
+    startupIntroComplete: false,
+    startupFileModalOpen: false,
+  });
+
+  renderer.renderViewer(base, TITLE_WIDTH, TITLE_HEIGHT);
+  renderer.renderViewer(
+    {
+      ...base,
+      time: 1,
+      titleCamera: {
+        ...base.titleCamera,
+        angleTarget: 0.2,
+      },
+    },
+    TITLE_WIDTH,
+    TITLE_HEIGHT,
+  );
+
+  assert.deepEqual(budgets, [
+    { phase: 0, phaseCount: 1 },
+    { phase: 1, phaseCount: 8 },
+  ]);
+});
+
+function markHighActivity(stats) {
+  if (stats == null) {
+    return;
+  }
+  stats.totalSamples = 8;
+  stats.tracedSamples = 8;
+  stats.reusedSamples = 0;
+  stats.activeSamples = 8;
+  stats.coldMissSamples = 0;
+}

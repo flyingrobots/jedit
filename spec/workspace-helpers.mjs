@@ -1,14 +1,14 @@
-import path from 'node:path';
-import { createNotificationState } from '@flyingrobots/bijou-tui';
-import { REPO_ROOT, ensureDistBuilt, importDist } from './dist-helpers.mjs';
+import path from "node:path";
+import { createNotificationState } from "@flyingrobots/bijou-tui";
+import { REPO_ROOT, ensureDistBuilt, importDist } from "./dist-helpers.mjs";
 
 const MOCK_I18N_TRANSLATIONS = Object.freeze({
-  'startupFileModal.title': 'Open file',
-  'startupFileModal.hint': 'Type filter · Enter open · Esc close',
-  'startupFileModal.input_label': 'Filter',
-  'startupFileModal.current_directory': 'Current directory',
-  'startupFileModal.empty': 'No files in this directory',
-  'startupFileModal.no_match': 'No files match',
+  "startupFileModal.title": "Open file",
+  "startupFileModal.hint": "Type filter · Enter open · Esc close",
+  "startupFileModal.input_label": "Filter",
+  "startupFileModal.current_directory": "Current directory",
+  "startupFileModal.empty": "No files in this directory",
+  "startupFileModal.no_match": "No files match",
 });
 
 export { REPO_ROOT, ensureDistBuilt, importDist };
@@ -17,8 +17,11 @@ export function mockDeps(overrides = {}) {
   return {
     fileSystem: {
       loadEntries: () => [],
-      describeDirectoryIssue: () => ({ title: 'test', message: 'not implemented' }),
-      dirname: () => '',
+      describeDirectoryIssue: () => ({
+        title: "test",
+        message: "not implemented",
+      }),
+      dirname: () => "",
       join: (...parts) => parts.join(path.sep),
     },
     editorFile: {
@@ -26,19 +29,19 @@ export function mockDeps(overrides = {}) {
       saveEditorFile: () => undefined,
     },
     sourceHighlighter: {
-      highlight: async () => ({ path: '', partial: false, spans: [] }),
+      highlight: async () => ({ path: "", partial: false, spans: [] }),
     },
     graftSession: {
       loadGraftInfo: async () => ({
-        path: '/repo/main.md',
-        relativePath: 'main.md',
+        path: "/repo/main.md",
+        relativePath: "main.md",
         dirty: false,
         outlineItems: [],
         changeLines: [],
       }),
       failedGraftInfo: () => ({
-        path: '/repo/main.md',
-        relativePath: 'main.md',
+        path: "/repo/main.md",
+        relativePath: "main.md",
         dirty: false,
         outlineItems: [],
         changeLines: [],
@@ -57,27 +60,51 @@ export function mockDeps(overrides = {}) {
 
 export function fakeProductionTextSession(overrides = {}) {
   return {
-    openBuffer: async () => ({ kind: 'obstructed', obstruction: fakeProductionTextObstruction() }),
-    insertText: async () => ({ kind: 'obstructed', obstruction: fakeProductionTextObstruction() }),
-    replaceRange: async () => ({ kind: 'obstructed', obstruction: fakeProductionTextObstruction() }),
-    deleteRange: async () => ({ kind: 'obstructed', obstruction: fakeProductionTextObstruction() }),
-    multiRangeEdit: async () => ({ kind: 'obstructed', obstruction: fakeProductionTextObstruction() }),
-    checkpointBuffer: async () => ({ kind: 'obstructed', obstruction: fakeProductionTextObstruction() }),
-    observeWindow: async () => ({ kind: 'obstructed', obstruction: fakeProductionTextObstruction() }),
-    exportWindow: async () => ({ kind: 'obstructed', obstruction: fakeProductionTextObstruction() }),
+    openBuffer: async () => ({
+      kind: "obstructed",
+      obstruction: fakeProductionTextObstruction(),
+    }),
+    insertText: async () => ({
+      kind: "obstructed",
+      obstruction: fakeProductionTextObstruction(),
+    }),
+    replaceRange: async () => ({
+      kind: "obstructed",
+      obstruction: fakeProductionTextObstruction(),
+    }),
+    deleteRange: async () => ({
+      kind: "obstructed",
+      obstruction: fakeProductionTextObstruction(),
+    }),
+    multiRangeEdit: async () => ({
+      kind: "obstructed",
+      obstruction: fakeProductionTextObstruction(),
+    }),
+    checkpointBuffer: async () => ({
+      kind: "obstructed",
+      obstruction: fakeProductionTextObstruction(),
+    }),
+    observeWindow: async () => ({
+      kind: "obstructed",
+      obstruction: fakeProductionTextObstruction(),
+    }),
+    exportWindow: async () => ({
+      kind: "obstructed",
+      obstruction: fakeProductionTextObstruction(),
+    }),
     ...overrides,
   };
 }
 
 export function fakeProductionTextObstruction() {
   return {
-    code: 'test-obstruction',
+    code: "test-obstruction",
     issue: {
-      name: 'TestProductionTextIssue',
-      title: 'test production text issue',
-      message: 'test production text issue',
-      level: 'error',
-      source: 'command',
+      name: "TestProductionTextIssue",
+      title: "test production text issue",
+      message: "test production text issue",
+      level: "error",
+      source: "command",
       atMs: 0,
     },
   };
@@ -86,13 +113,16 @@ export function fakeProductionTextObstruction() {
 export function fakeWscWorkspaceStore() {
   return {
     writeEnvelope: (envelope) => ({
-      status: 'JEDIT_WSC_WORKSPACE_STORE_WRITTEN',
+      status: "JEDIT_WSC_WORKSPACE_STORE_WRITTEN",
       envelopeId: envelope.envelopeId,
       byteLength: envelope.bytes.byteLength,
-      workspacePath: '/repo/.jedit/echo-wsc/envelopes',
+      workspacePath: "/repo/.jedit/echo-wsc/envelopes",
     }),
-    readEnvelope: () => ({ status: 'JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED' }),
-    listEnvelopes: () => ({ status: 'JEDIT_WSC_WORKSPACE_STORE_LISTED', envelopeIds: [] }),
+    readEnvelope: () => ({ status: "JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED" }),
+    listEnvelopes: () => ({
+      status: "JEDIT_WSC_WORKSPACE_STORE_LISTED",
+      envelopeIds: [],
+    }),
   };
 }
 
@@ -101,6 +131,7 @@ export function mockKeyBindingContext(overrides = {}) {
   return {
     nowMs: () => 0,
     createDrawerAnimationCmd: () => [],
+    createStartupFileDrawerAnimationCmd: () => [],
     createNotificationTickCmd: noopNotificationTickCmd,
     deps: mockDeps(depsOverride ?? {}),
     ...contextOverrides,
@@ -109,18 +140,21 @@ export function mockKeyBindingContext(overrides = {}) {
 
 export function mockI18n(overrides = {}) {
   return {
-    locale: 'en',
-    localeLabel: 'English',
-    direction: 'ltr',
-    locales: [{
-      locale: 'en',
-      label: 'English',
-      direction: 'ltr',
-    }],
-    t: (key, values) => applyMockTranslationValues(
-      overrides.translations?.[key] ?? MOCK_I18N_TRANSLATIONS[key] ?? '',
-      values,
-    ),
+    locale: "en",
+    localeLabel: "English",
+    direction: "ltr",
+    locales: [
+      {
+        locale: "en",
+        label: "English",
+        direction: "ltr",
+      },
+    ],
+    t: (key, values) =>
+      applyMockTranslationValues(
+        overrides.translations?.[key] ?? MOCK_I18N_TRANSLATIONS[key] ?? "",
+        values,
+      ),
     setLocale: () => undefined,
     withLocale: (locale) => mockI18n({ ...overrides, locale }),
     ...overrides,
@@ -139,23 +173,28 @@ export function mockRuntime(overrides = {}) {
   return {
     initialColumns: 120,
     initialRows: 24,
-    initialWorkingDirectory: '/repo',
+    initialWorkingDirectory: "/repo",
     ...mockDeps(),
     profiler: {
       nowMs: () => 0,
-      beginTrace: async () => ({ filePath: '/tmp/profile.json', append: async () => undefined, close: async () => undefined }),
+      beginTrace: async () => ({
+        filePath: "/tmp/profile.json",
+        append: async () => undefined,
+        close: async () => undefined,
+      }),
       appendTraceFrame: async () => undefined,
       endTrace: async () => undefined,
     },
     createTimeTickCmd: () => () => undefined,
     createNotificationTickCmd: () => () => undefined,
     createDrawerAnimationCmd: () => [],
+    createStartupFileDrawerAnimationCmd: () => [],
     initialModel: {
       titleSceneSeed: 0.5,
       jeditTheme: {
         perf: {
-          foreground: 'white',
-          background: 'black',
+          foreground: "white",
+          background: "black",
         },
       },
       i18n: mockI18n(),
@@ -175,13 +214,13 @@ export function mockJeditTheme() {
   return {
     surface: {
       workspace: {
-        fg: '#f0f6fc',
-        bg: '#0d1117',
+        fg: "#f0f6fc",
+        bg: "#0d1117",
       },
     },
     cursor: {
       normal: {
-        bg: '#58a6ff',
+        bg: "#58a6ff",
       },
     },
   };
@@ -190,18 +229,18 @@ export function mockJeditTheme() {
 export function mockTitleScreenModel(titleScreen, overrides = {}) {
   return {
     editor: undefined,
-    workspaceRoot: '/repo',
-    cwd: '/repo',
+    workspaceRoot: "/repo",
+    cwd: "/repo",
     entries: [],
     selectedIndex: 0,
-    textRuntimeProfile: 'echoHosted',
+    textRuntimeProfile: "echoHosted",
     textAuthority: {
-      kind: 'none',
-      profile: 'echoHosted',
+      kind: "none",
+      profile: "echoHosted",
     },
     textRequestId: 0,
-    viewMode: 'source',
-    focusPane: 'editor',
+    viewMode: "source",
+    focusPane: "editor",
     fileDrawerOpen: false,
     fileDrawerProgress: 0,
     graftDrawerOpen: false,
@@ -220,9 +259,16 @@ export function mockTitleScreenModel(titleScreen, overrides = {}) {
     notifications: createNotificationState(),
     notificationLoopActive: false,
     quitConfirmOpen: false,
+    commandLine: {
+      active: false,
+      input: "",
+      cursorIndex: 0,
+      selectedCompletionIndex: 0,
+    },
     startupIntroComplete: false,
     startupFileModalOpen: false,
-    startupFileModalInput: '',
+    startupFileDrawerProgress: 0,
+    startupFileModalInput: "",
     startupFileModalSelectedIndex: 0,
     jeditTheme: mockJeditTheme(),
     i18n: mockI18n(),
@@ -236,17 +282,21 @@ export function mockTitleScreenModel(titleScreen, overrides = {}) {
       radius: 8.5,
       radiusTarget: 8.5,
       radiusMotionId: 0,
+      position: [0, 2.65, 8.5],
+      target: [0, 0.78, 0],
+      eyeY: 2.65,
     },
     titleRenderMode: titleScreen.TITLE_RENDER_MODE.Braille,
     titleAsciiPalette: titleScreen.TITLE_ASCII_PALETTE.Dense,
+    titleMeshMaterialIndex: 0,
     ...overrides,
   };
 }
 
 export function mockEditor(modeModule, overrides = {}) {
   return {
-    path: '/repo/notes.md',
-    lines: ['hello world'],
+    path: "/repo/notes.md",
+    lines: ["hello world"],
     cursorRow: 0,
     cursorCol: 0,
     scrollRow: 0,
@@ -261,21 +311,25 @@ export function mockEditor(modeModule, overrides = {}) {
 }
 
 export function hasNotification(model, title, message) {
-  return model.notifications.items.some((item) => item.title === title && item.message === message);
+  return model.notifications.items.some(
+    (item) => item.title === title && item.message === message,
+  );
 }
 
 export function notification(model, title, message) {
-  return model.notifications.items.find((item) => item.title === title && item.message === message);
+  return model.notifications.items.find(
+    (item) => item.title === title && item.message === message,
+  );
 }
 
 export function surfaceText(surface) {
   const lines = [];
   for (let row = 0; row < surface.height; row += 1) {
-    let line = '';
+    let line = "";
     for (let col = 0; col < surface.width; col += 1) {
       line += surface.get(col, row).char;
     }
     lines.push(line);
   }
-  return lines.join('\n');
+  return lines.join("\n");
 }

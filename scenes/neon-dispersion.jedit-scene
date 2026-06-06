@@ -1,12 +1,12 @@
 {
-  "camera": { "angle": -0.42, "radius": 7.6 },
+  "camera": { "angle": -0.42, "radius": 2.8 },
   "environment": {
     "background": [2, 3, 7],
     "floor": {
       "kind": "grid",
-      "dark": [4, 7, 11],
-      "light": [28, 35, 44],
-      "gridScale": 1.35,
+      "dark": [3, 4, 7],
+      "light": [58, 68, 76],
+      "gridScale": 0.95,
       "fadeDistance": 25
     },
     "light": {
@@ -19,12 +19,12 @@
   },
   "objects": [
     {
-      "label": "stanford-dragon",
+      "label": "utah-teapot",
       "kind": "mesh",
-      "mesh": "dragon",
-      "radius": 1.18,
-      "height": 2.25,
-      "footprintRadius": 1.28,
+      "mesh": "teapot",
+      "radius": 1.45,
+      "height": 2.2,
+      "footprintRadius": 1.45,
       "color": [194, 236, 255],
       "reflectivity": 0.24,
       "transparency": 0.62,

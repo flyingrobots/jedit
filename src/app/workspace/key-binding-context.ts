@@ -8,6 +8,11 @@ import type { CreateDrawerAnimationCmd } from './drawer.js';
 import type { WorkspaceMsg } from './msg.js';
 import type { ProductionTextSession } from './production-text-session.js';
 
+export type CreateStartupFileDrawerAnimationCmd = (
+  from: number,
+  to: number,
+) => Cmd<WorkspaceMsg>[];
+
 export interface UpdateFromKeyDeps {
   readonly fileSystem: FileSystemPort;
   readonly editorFile: EditorFilePort;
@@ -20,6 +25,7 @@ export interface UpdateFromKeyDeps {
 export interface WorkspaceKeyBindingContext {
   readonly nowMs: () => number;
   readonly createDrawerAnimationCmd: CreateDrawerAnimationCmd;
+  readonly createStartupFileDrawerAnimationCmd: CreateStartupFileDrawerAnimationCmd;
   readonly createNotificationTickCmd: () => Cmd<WorkspaceMsg>;
   readonly deps: UpdateFromKeyDeps;
 }
