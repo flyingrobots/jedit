@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added an unavailable-preview lower mode for Graft-backed editor completions
+  so adapter failures can render honestly through the shared popup.
 - Added render witnesses for editor completion documentation, source-definition,
   and causal-history preview kinds.
 - Added a Graft outline-backed editor symbol completion provider witness that

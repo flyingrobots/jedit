@@ -120,6 +120,37 @@ test("graft symbol completion provider ignores stale Graft info", async () => {
   assert.deepEqual(items, []);
 });
 
+test("graft symbol unavailable preview renders honest lower-mode posture", async () => {
+  const [graftCompletion, popup] = await Promise.all([
+    importDist("app", "workspace", "graft-symbol-completion.js"),
+    importDist("ui", "inline-completion-popup.js"),
+  ]);
+
+  const preview = graftCompletion.workspaceGraftSymbolUnavailablePreview({
+    reason: "Graft outline adapter is not installed",
+  });
+  const surface = popup.renderInlineCompletionPopup({
+    items: [],
+    selectedIndex: 0,
+    theme: popupTheme(),
+    width: 96,
+    maxHeight: 4,
+    preview,
+  });
+
+  assert.deepEqual(preview, {
+    id: "preview:graft-symbol:unavailable",
+    kind: popup.INLINE_COMPLETION_PREVIEW_KIND.Unavailable,
+    title: "Graft symbols",
+    lines: ["Graft outline adapter is not installed"],
+    providerId: graftCompletion.WORKSPACE_GRAFT_SYMBOL_PROVIDER_ID,
+    evidencePosture: "unavailable",
+  });
+  assert.match(rowText(surface, 0), /NONE Graft symbols/);
+  assert.match(rowText(surface, 1), /Evidence: unavailable/);
+  assert.match(rowText(surface, 2), /Graft outline adapter is not installed/);
+});
+
 function fakeGraftInfo() {
   return {
     path: "/repo/src/render.ts",

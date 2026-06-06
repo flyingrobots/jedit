@@ -1,6 +1,8 @@
 import {
   INLINE_COMPLETION_ITEM_KIND,
+  INLINE_COMPLETION_PREVIEW_KIND,
   type InlineCompletionItem,
+  type InlineCompletionPreview,
 } from "../../ui/inline-completion-popup.js";
 import type { GraftInfo } from "../../ports/graft-session.js";
 import type {
@@ -15,9 +17,18 @@ export interface WorkspaceGraftSymbolCompletionProviderOptions {
   readonly maxItems?: number;
 }
 
+export interface WorkspaceGraftSymbolUnavailablePreviewOptions {
+  readonly reason?: string;
+  readonly evidencePosture?: string;
+}
+
 const GRAFT_SYMBOL_FIRST_INDEX = 0;
 const GRAFT_SYMBOL_DEFAULT_MAX_ITEMS = 20;
 const GRAFT_SYMBOL_EMPTY_PREFIX = "";
+const GRAFT_SYMBOL_UNAVAILABLE_PREVIEW_ID = "preview:graft-symbol:unavailable";
+const GRAFT_SYMBOL_UNAVAILABLE_PREVIEW_TITLE = "Graft symbols";
+const GRAFT_SYMBOL_UNAVAILABLE_REASON = "Graft adapter unavailable";
+const GRAFT_SYMBOL_UNAVAILABLE_POSTURE = "unavailable";
 
 export function workspaceGraftSymbolCompletionProvider(
   options: WorkspaceGraftSymbolCompletionProviderOptions,
@@ -53,6 +64,20 @@ export function workspaceGraftSymbolCompletionItems(
         text: item.name,
       },
     }));
+}
+
+export function workspaceGraftSymbolUnavailablePreview(
+  options: WorkspaceGraftSymbolUnavailablePreviewOptions = {},
+): InlineCompletionPreview {
+  return {
+    id: GRAFT_SYMBOL_UNAVAILABLE_PREVIEW_ID,
+    kind: INLINE_COMPLETION_PREVIEW_KIND.Unavailable,
+    title: GRAFT_SYMBOL_UNAVAILABLE_PREVIEW_TITLE,
+    lines: [options.reason ?? GRAFT_SYMBOL_UNAVAILABLE_REASON],
+    providerId: WORKSPACE_GRAFT_SYMBOL_PROVIDER_ID,
+    evidencePosture:
+      options.evidencePosture ?? GRAFT_SYMBOL_UNAVAILABLE_POSTURE,
+  };
 }
 
 function symbolMatchesPrefix(symbolName: string, prefix: string): boolean {

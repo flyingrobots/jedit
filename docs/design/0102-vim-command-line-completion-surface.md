@@ -500,7 +500,7 @@ Slices:
 - [x] Slice 15: Render documentation, source-definition, and causal-history
       preview kinds through the same component.
       Commit: `UI: render completion preview kinds`.
-- [ ] Slice 16: Add unavailable-adapter lower-mode posture.
+- [x] Slice 16: Add unavailable-adapter lower-mode posture.
       Commit: `UX: handle unavailable completion providers`.
 
 ### Goalpost 5: Surface Consolidation
@@ -545,7 +545,7 @@ Behavior tests required:
 - [x] `:edit <path>` opens through `createWorkspaceTextOpenCmd`.
 - [x] Invalid commands produce an obstruction or toast without mutating editor
       state.
-- [ ] A fake Graft provider can render symbol documentation/source/history
+- [x] A fake Graft provider can render symbol documentation/source/history
       previews through the same component.
 
 Documentation and process tests:
@@ -565,8 +565,8 @@ The work is done when:
 - [x] Render tests prove inline popup geometry and theme-token posture.
 - [x] `:edit <file>` opens a file through production text authority.
 - [x] `:write`, `:quit`, `:wq`, and aliases use existing save/quit postures.
-- [ ] The same popup component renders fake Graft-backed editor completions.
-- [ ] Lower modes cover small terminals and unavailable providers.
+- [x] The same popup component renders fake Graft-backed editor completions.
+- [x] Lower modes cover small terminals and unavailable providers.
 - [x] New strings have supported translations or tracked localization follow-up
       if the CSV localization migration lands first.
 - [ ] Docs and technical teardown are updated.
