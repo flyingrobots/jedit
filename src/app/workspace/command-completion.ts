@@ -1,8 +1,6 @@
 import {
   INLINE_COMPLETION_ITEM_KIND,
-  INLINE_COMPLETION_PREVIEW_KIND,
   type InlineCompletionItem,
-  type InlineCompletionPreview,
 } from "../../ui/inline-completion-popup.js";
 import { FileEntryKinds, type FileEntry } from "../../ports/file-system.js";
 import type { WorkspaceCommandLineState } from "./command-line.js";
@@ -30,40 +28,6 @@ export interface WorkspaceSelectedCommandLineCompletionContext {
   readonly entries: readonly FileEntry[];
 }
 
-export const WORKSPACE_FILE_PREVIEW_RESULT_KIND = Object.freeze({
-  Loaded: "loaded",
-  Unavailable: "unavailable",
-} as const);
-
-export type WorkspaceFilePreviewResultKind =
-  (typeof WORKSPACE_FILE_PREVIEW_RESULT_KIND)[keyof typeof WORKSPACE_FILE_PREVIEW_RESULT_KIND];
-
-export interface WorkspaceLoadedFilePreviewResult {
-  readonly kind: typeof WORKSPACE_FILE_PREVIEW_RESULT_KIND.Loaded;
-  readonly lines: readonly string[];
-  readonly evidencePosture?: string;
-}
-
-export interface WorkspaceUnavailableFilePreviewResult {
-  readonly kind: typeof WORKSPACE_FILE_PREVIEW_RESULT_KIND.Unavailable;
-  readonly reason: string;
-  readonly evidencePosture?: string;
-}
-
-export type WorkspaceFilePreviewResult =
-  | WorkspaceLoadedFilePreviewResult
-  | WorkspaceUnavailableFilePreviewResult;
-
-export interface WorkspaceFilePreviewSource {
-  loadFilePreview(filePath: string): WorkspaceFilePreviewResult;
-}
-
-export interface WorkspaceCommandLineCompletionPreviewContext
-  extends WorkspaceSelectedCommandLineCompletionContext {
-  readonly previewSource?: WorkspaceFilePreviewSource;
-  readonly maxPreviewLines?: number;
-}
-
 interface CommandNameCompletionContext {
   readonly query: string;
   readonly replacementStart: number;
@@ -76,27 +40,20 @@ interface EditFileCompletionContext {
   readonly replacementEnd: number;
 }
 
-const VIM_COMMAND_PROVIDER_ID = "vim-command";
-const WORKSPACE_FILE_PROVIDER_ID = "workspace-file";
+export const VIM_COMMAND_PROVIDER_ID = "vim-command";
+export const WORKSPACE_FILE_PROVIDER_ID = "workspace-file";
 const COMMAND_COMPLETION_EMPTY_QUERY = "";
 const COMMAND_COMPLETION_FIRST_INDEX = 0;
 const COMMAND_ARGUMENT_STEP = 1;
+const FILE_COMPLETION_FUZZY_MIN_QUERY_LENGTH = 2;
 const EDIT_COMMAND_NAME = "edit";
 const EDIT_COMMAND_ALIAS = "e";
+const EDIT_COMMAND_COMPLETION_REPLACEMENT = "edit ";
 const FILE_COMPLETION_PARENT_LABEL = "../";
 const FILE_COMPLETION_DIRECTORY_SUFFIX = "/";
 const FILE_COMPLETION_FILE_DETAIL = "File";
 const FILE_COMPLETION_DIRECTORY_DETAIL = "Directory";
 const FILE_COMPLETION_PARENT_DETAIL = "Parent directory";
-const FILE_COMPLETION_PREVIEW_DEFAULT_MAX_LINES = 5;
-const FILE_COMPLETION_PREVIEW_SOURCE_UNAVAILABLE = "Preview unavailable";
-const FILE_COMPLETION_PREVIEW_DIRECTORY_UNAVAILABLE = "Directory preview unavailable";
-const FILE_COMPLETION_PREVIEW_PARENT_UNAVAILABLE =
-  "Parent directory preview unavailable";
-const FILE_COMPLETION_PREVIEW_ENTRY_UNAVAILABLE =
-  "Completion entry unavailable";
-const FILE_COMPLETION_PREVIEW_UNAVAILABLE_POSTURE = "unavailable";
-
 const WORKSPACE_COMMAND_DESCRIPTORS = [
   {
     id: "command:edit",
@@ -172,40 +129,6 @@ export function selectedWorkspaceCommandLineCompletionItem(
   ];
 }
 
-export function workspaceCommandLineCompletionPreview(
-  context: WorkspaceCommandLineCompletionPreviewContext,
-): InlineCompletionPreview | undefined {
-  const item = selectedWorkspaceCommandLineCompletionItem(context);
-  if (item == null || item.providerId !== WORKSPACE_FILE_PROVIDER_ID) {
-    return undefined;
-  }
-
-  const entry = fileEntryForCompletionItem(context.entries, item);
-  if (entry == null) {
-    return unavailableFileCompletionPreview(
-      item,
-      FILE_COMPLETION_PREVIEW_ENTRY_UNAVAILABLE,
-    );
-  }
-  if (entry.kind !== FileEntryKinds.File) {
-    return unavailableFileCompletionPreview(
-      item,
-      unavailableFileCompletionReason(entry),
-    );
-  }
-
-  const result = loadFilePreviewResult(context.previewSource, entry.path);
-  if (result.kind === WORKSPACE_FILE_PREVIEW_RESULT_KIND.Unavailable) {
-    return unavailableFileCompletionPreview(
-      item,
-      result.reason,
-      result.evidencePosture,
-    );
-  }
-
-  return loadedFileCompletionPreview(item, result, context.maxPreviewLines);
-}
-
 export function selectedWorkspaceCommandCompletionIndex(
   commandLine: Pick<WorkspaceCommandLineState, "selectedCompletionIndex">,
   completionCount: number,
@@ -232,7 +155,7 @@ function commandCompletionItem(
     replacement: {
       start: context.replacementStart,
       end: context.replacementEnd,
-      text: descriptor.name,
+      text: commandCompletionReplacementText(descriptor),
     },
   };
 }
@@ -273,81 +196,12 @@ function commandCompletionDetail(
     : `${descriptor.detail} (${descriptor.aliases.join(", ")})`;
 }
 
-function fileEntryForCompletionItem(
-  entries: readonly FileEntry[],
-  item: InlineCompletionItem,
-): FileEntry | undefined {
-  return entries.find((entry) => entry.path === item.previewRequestId);
-}
-
-function loadFilePreviewResult(
-  source: WorkspaceFilePreviewSource | undefined,
-  filePath: string,
-): WorkspaceFilePreviewResult {
-  if (source == null) {
-    return unavailableFilePreviewResult();
-  }
-
-  try {
-    return source.loadFilePreview(filePath);
-  } catch {
-    return unavailableFilePreviewResult();
-  }
-}
-
-function unavailableFilePreviewResult(): WorkspaceUnavailableFilePreviewResult {
-  return {
-    kind: WORKSPACE_FILE_PREVIEW_RESULT_KIND.Unavailable,
-    reason: FILE_COMPLETION_PREVIEW_SOURCE_UNAVAILABLE,
-    evidencePosture: FILE_COMPLETION_PREVIEW_UNAVAILABLE_POSTURE,
-  };
-}
-
-function loadedFileCompletionPreview(
-  item: InlineCompletionItem,
-  result: WorkspaceLoadedFilePreviewResult,
-  maxLines: number | undefined,
-): InlineCompletionPreview {
-  return {
-    id: `preview:${item.id}`,
-    kind: INLINE_COMPLETION_PREVIEW_KIND.File,
-    title: item.label,
-    lines: boundedFilePreviewLines(result.lines, maxLines),
-    providerId: WORKSPACE_FILE_PROVIDER_ID,
-    evidencePosture: result.evidencePosture,
-  };
-}
-
-function unavailableFileCompletionPreview(
-  item: InlineCompletionItem,
-  reason: string,
-  evidencePosture = FILE_COMPLETION_PREVIEW_UNAVAILABLE_POSTURE,
-): InlineCompletionPreview {
-  return {
-    id: `preview:${item.id}`,
-    kind: INLINE_COMPLETION_PREVIEW_KIND.Unavailable,
-    title: item.label,
-    lines: [reason],
-    providerId: WORKSPACE_FILE_PROVIDER_ID,
-    evidencePosture,
-  };
-}
-
-function unavailableFileCompletionReason(entry: FileEntry): string {
-  return entry.kind === FileEntryKinds.Parent
-    ? FILE_COMPLETION_PREVIEW_PARENT_UNAVAILABLE
-    : FILE_COMPLETION_PREVIEW_DIRECTORY_UNAVAILABLE;
-}
-
-function boundedFilePreviewLines(
-  lines: readonly string[],
-  maxLines: number | undefined,
-): readonly string[] {
-  const resolvedMaxLines = Math.max(
-    0,
-    Math.floor(maxLines ?? FILE_COMPLETION_PREVIEW_DEFAULT_MAX_LINES),
-  );
-  return lines.slice(0, resolvedMaxLines);
+function commandCompletionReplacementText(
+  descriptor: WorkspaceCommandDescriptor,
+): string {
+  return descriptor.name === EDIT_COMMAND_NAME
+    ? EDIT_COMMAND_COMPLETION_REPLACEMENT
+    : descriptor.name;
 }
 
 function descriptorMatchesQuery(
@@ -418,10 +272,27 @@ function fileEntryMatchesQuery(entry: FileEntry, query: string): boolean {
   const normalizedQuery = normalizeFileCompletionText(query);
   return (
     normalizedQuery.length === 0 ||
-    normalizeFileCompletionText(fileCompletionLabel(entry)).startsWith(
+    fuzzyFileCompletionMatch(
+      normalizeFileCompletionText(fileCompletionLabel(entry)),
       normalizedQuery,
     )
   );
+}
+
+function fuzzyFileCompletionMatch(label: string, query: string): boolean {
+  if (query.length < FILE_COMPLETION_FUZZY_MIN_QUERY_LENGTH) {
+    return label.startsWith(query);
+  }
+
+  let labelIndex = 0;
+  for (const character of query) {
+    const nextIndex = label.indexOf(character, labelIndex);
+    if (nextIndex < 0) {
+      return false;
+    }
+    labelIndex = nextIndex + COMMAND_ARGUMENT_STEP;
+  }
+  return true;
 }
 
 function fileCompletionLabel(entry: FileEntry): string {

@@ -22,6 +22,7 @@ export interface WorkspaceCommandLineState {
   readonly active: boolean;
   readonly input: string;
   readonly cursorIndex: number;
+  readonly anchorCursorIndex?: number;
   readonly selectedCompletionIndex: number;
   readonly dispatchPosture?: CommandLineDispatchPosture;
 }
@@ -30,6 +31,7 @@ const COMMAND_LINE_INITIAL_CURSOR_INDEX = 0;
 const COMMAND_LINE_INITIAL_COMPLETION_INDEX = 0;
 const COMMAND_LINE_BACKSPACE_DELETE_COUNT = 1;
 const COMMAND_LINE_COMPLETION_MIN_COUNT = 1;
+const COMMAND_LINE_TITLE_SCREEN_OPEN = true;
 
 export function initialWorkspaceCommandLineState(): WorkspaceCommandLineState {
   return inactiveWorkspaceCommandLineState();
@@ -43,6 +45,7 @@ export function openWorkspaceCommandLine(
     commandLine: {
       ...inactiveWorkspaceCommandLineState(),
       active: true,
+      anchorCursorIndex: COMMAND_LINE_INITIAL_CURSOR_INDEX,
     },
   };
 }
@@ -134,17 +137,26 @@ export function replaceWorkspaceCommandLineInput(
   model: WorkspaceModel,
   replacement: InlineCompletionReplacement,
 ): WorkspaceModel {
-  const input = model.commandLine.input;
-  const start = Math.max(
-    COMMAND_LINE_INITIAL_CURSOR_INDEX,
-    Math.min(input.length, replacement.start),
+  const next = replacedWorkspaceCommandLineInput(
+    model.commandLine.input,
+    replacement,
   );
-  const end = Math.max(start, Math.min(input.length, replacement.end));
-  const nextInput = `${input.slice(0, start)}${replacement.text}${input.slice(end)}`;
   return updateWorkspaceCommandLineInput(
     model,
-    nextInput,
-    start + replacement.text.length,
+    next.input,
+    next.cursorIndex,
+  );
+}
+
+export function workspaceCommandLineReplacementChangesInput(
+  model: WorkspaceModel,
+  replacement: InlineCompletionReplacement,
+): boolean {
+  const current = model.commandLine.input;
+  const next = replacedWorkspaceCommandLineInput(current, replacement);
+  return (
+    next.input !== current ||
+    next.cursorIndex !== model.commandLine.cursorIndex
   );
 }
 
@@ -165,7 +177,7 @@ export function invalidateWorkspaceCommandLine(
 
 export function canOpenWorkspaceCommandLine(model: WorkspaceModel): boolean {
   return (
-    model.editor?.mode === EditorModes.Normal &&
+    canOpenWorkspaceCommandLineSurface(model) &&
     model.focusPane === FocusPanes.Editor &&
     model.viewMode === ViewModes.Source &&
     model.commandLine?.active !== true &&
@@ -174,6 +186,12 @@ export function canOpenWorkspaceCommandLine(model: WorkspaceModel): boolean {
     !model.scenePickerOpen &&
     !model.startupFileModalOpen
   );
+}
+
+function canOpenWorkspaceCommandLineSurface(model: WorkspaceModel): boolean {
+  return model.editor == null
+    ? COMMAND_LINE_TITLE_SCREEN_OPEN
+    : model.editor.mode === EditorModes.Normal;
 }
 
 function updateWorkspaceCommandLineInput(
@@ -187,8 +205,26 @@ function updateWorkspaceCommandLineInput(
       active: true,
       input,
       cursorIndex,
+      anchorCursorIndex:
+        model.commandLine.anchorCursorIndex ?? COMMAND_LINE_INITIAL_CURSOR_INDEX,
       selectedCompletionIndex: COMMAND_LINE_INITIAL_COMPLETION_INDEX,
     },
+  };
+}
+
+function replacedWorkspaceCommandLineInput(
+  input: string,
+  replacement: InlineCompletionReplacement,
+) {
+  const start = Math.max(
+    COMMAND_LINE_INITIAL_CURSOR_INDEX,
+    Math.min(input.length, replacement.start),
+  );
+  const end = Math.max(start, Math.min(input.length, replacement.end));
+  const nextInput = `${input.slice(0, start)}${replacement.text}${input.slice(end)}`;
+  return {
+    input: nextInput,
+    cursorIndex: start + replacement.text.length,
   };
 }
 

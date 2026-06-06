@@ -263,6 +263,7 @@ export function mockTitleScreenModel(titleScreen, overrides = {}) {
       active: false,
       input: "",
       cursorIndex: 0,
+      anchorCursorIndex: 0,
       selectedCompletionIndex: 0,
     },
     startupIntroComplete: false,

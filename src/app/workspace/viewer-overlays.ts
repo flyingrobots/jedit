@@ -9,8 +9,8 @@ import { resolveSettingsDrawerWidth, renderSettingsDrawer } from '../../ui/setti
 import { renderStartupFileDrawer } from '../../ui/startup-file-modal.js';
 import {
   workspaceCommandLineCompletionItems,
-  workspaceCommandLineCompletionPreview,
 } from './command-completion.js';
+import { workspaceCommandLineCompletionPreview } from './command-completion-preview.js';
 import type { WorkspaceModel } from './model.js';
 import { settingsRows } from './settings.js';
 import { startupFileModalRows } from './startup-file-modal.js';
@@ -28,6 +28,7 @@ const COMMAND_COMPLETION_POPUP_MAX_WIDTH = 64;
 const COMMAND_COMPLETION_POPUP_EDGE_INSET = 1;
 const COMMAND_COMPLETION_POPUP_MAX_HEIGHT = 8;
 const COMMAND_COMPLETION_CURSOR_PREFIX_WIDTH = 1;
+const COMMAND_COMPLETION_DEFAULT_ANCHOR_INDEX = 0;
 const COMMAND_COMPLETION_COMMAND_LINE_ROWS = 1;
 
 export function paintWorkspaceOverlays(
@@ -150,11 +151,18 @@ function commandLineCompletionPopupContext(model: WorkspaceModel) {
 
 function commandLineCompletionPopupAnchor(model: WorkspaceModel) {
   return {
-    x: model.commandLine.cursorIndex + COMMAND_COMPLETION_CURSOR_PREFIX_WIDTH,
+    x: commandLineCompletionAnchorIndex(model) +
+      COMMAND_COMPLETION_CURSOR_PREFIX_WIDTH,
     y: model.rows - FOOTER_ROWS,
     screenWidth: model.columns,
     screenHeight: model.rows - FOOTER_ROWS + COMMAND_COMPLETION_COMMAND_LINE_ROWS,
   };
+}
+
+function commandLineCompletionAnchorIndex(model: WorkspaceModel): number {
+  return (
+    model.commandLine.anchorCursorIndex ?? COMMAND_COMPLETION_DEFAULT_ANCHOR_INDEX
+  );
 }
 
 function shouldRenderCommandLineCompletionPopup(model: WorkspaceModel): boolean {

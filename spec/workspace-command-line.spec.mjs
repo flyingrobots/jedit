@@ -28,8 +28,32 @@ test("colon in normal editor mode enters command-line mode", async () => {
   assert.equal(nextModel.commandLine.active, true);
   assert.equal(nextModel.commandLine.input, "");
   assert.equal(nextModel.commandLine.cursorIndex, 0);
+  assert.equal(nextModel.commandLine.anchorCursorIndex, 0);
   assert.equal(nextModel.commandLine.selectedCompletionIndex, 0);
   assert.equal(nextModel.editor.mode, editorMode.EditorModes.Normal);
+  assert.deepEqual(commands, []);
+});
+
+test("colon in title browse mode enters command-line mode", async () => {
+  const [keyBindings, titleScreen] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const model = mockTitleScreenModel(titleScreen, {
+    editor: undefined,
+    focusPane: "editor",
+    startupIntroComplete: true,
+  });
+
+  const [nextModel, commands] = keyBindings.updateFromKey(
+    { type: "key", key: ":", ctrl: false, alt: false, shift: false },
+    model,
+    mockKeyBindingContext(),
+  );
+
+  assert.equal(nextModel.commandLine.active, true);
+  assert.equal(nextModel.commandLine.input, "");
+  assert.equal(nextModel.commandLine.anchorCursorIndex, 0);
   assert.deepEqual(commands, []);
 });
 
@@ -61,9 +85,14 @@ test("command-line mode edits printable input and backspace", async () => {
     withE,
     context,
   );
+  const [withSpace] = keyBindings.updateFromKey(
+    { type: "key", key: "space", ctrl: false, alt: false, shift: false },
+    withEd,
+    context,
+  );
   const [backspaced, commands] = keyBindings.updateFromKey(
     { type: "key", key: "backspace", ctrl: false, alt: false, shift: false },
-    withEd,
+    withSpace,
     context,
   );
 
@@ -71,8 +100,10 @@ test("command-line mode edits printable input and backspace", async () => {
   assert.equal(withE.commandLine.cursorIndex, 1);
   assert.equal(withEd.commandLine.input, "ed");
   assert.equal(withEd.commandLine.cursorIndex, 2);
-  assert.equal(backspaced.commandLine.input, "e");
-  assert.equal(backspaced.commandLine.cursorIndex, 1);
+  assert.equal(withSpace.commandLine.input, "ed ");
+  assert.equal(withSpace.commandLine.cursorIndex, 3);
+  assert.equal(backspaced.commandLine.input, "ed");
+  assert.equal(backspaced.commandLine.cursorIndex, 2);
   assert.deepEqual(commands, []);
 });
 
@@ -387,6 +418,7 @@ function activeCommandLine(input) {
     active: true,
     input,
     cursorIndex: input.length,
+    anchorCursorIndex: 0,
     selectedCompletionIndex: 0,
   };
 }
