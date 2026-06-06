@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added an editor-context completion registry seam that can return the same
+  provider-neutral inline completion items used by Vim command completions.
 - Highlighted invalid Vim command-line input in the footer and added a
   localized help message for unrecognized commands.
 - Rendered the startup file selector rows through Bijou's browsable list

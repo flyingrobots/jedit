@@ -493,7 +493,7 @@ Witnesses:
 
 Slices:
 
-- [ ] Slice 13: Add editor completion context and provider registry seam.
+- [x] Slice 13: Add editor completion context and provider registry seam.
       Commit: `UX: add editor completion provider seam`.
 - [ ] Slice 14: Add fake Graft symbol provider witness.
       Commit: `UX: witness graft completion provider`.
