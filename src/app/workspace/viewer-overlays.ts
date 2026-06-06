@@ -7,7 +7,10 @@ import {
 import { resolveScenePickerDrawerWidth, renderScenePickerDrawer } from '../../ui/scene-picker-drawer.js';
 import { resolveSettingsDrawerWidth, renderSettingsDrawer } from '../../ui/settings-drawer.js';
 import { renderStartupFileDrawer } from '../../ui/startup-file-modal.js';
-import { workspaceCommandLineCompletionItems } from './command-completion.js';
+import {
+  workspaceCommandLineCompletionItems,
+} from './command-completion.js';
+import { workspaceCommandLineCompletionPreview } from './command-completion-preview.js';
 import type { WorkspaceModel } from './model.js';
 import { settingsRows } from './settings.js';
 import { startupFileModalRows } from './startup-file-modal.js';
@@ -25,6 +28,7 @@ const COMMAND_COMPLETION_POPUP_MAX_WIDTH = 64;
 const COMMAND_COMPLETION_POPUP_EDGE_INSET = 1;
 const COMMAND_COMPLETION_POPUP_MAX_HEIGHT = 8;
 const COMMAND_COMPLETION_CURSOR_PREFIX_WIDTH = 1;
+const COMMAND_COMPLETION_DEFAULT_ANCHOR_INDEX = 0;
 const COMMAND_COMPLETION_COMMAND_LINE_ROWS = 1;
 
 export function paintWorkspaceOverlays(
@@ -98,38 +102,66 @@ function paintCommandLineCompletionPopup(
     return;
   }
 
+  const popup = commandLineCompletionPopupContext(model);
+  if (popup == null) {
+    return;
+  }
+
+  const geometry = resolveInlineCompletionPopupGeometry({
+    items: popup.items,
+    width: popup.width,
+    maxHeight: COMMAND_COMPLETION_POPUP_MAX_HEIGHT,
+    preview: popup.preview,
+    anchor: popup.anchor,
+  });
+  screen.blit(
+    renderInlineCompletionPopup({
+      items: popup.items,
+      selectedIndex: model.commandLine.selectedCompletionIndex,
+      theme: model.jeditTheme,
+      width: popup.width,
+      maxHeight: COMMAND_COMPLETION_POPUP_MAX_HEIGHT,
+      preview: popup.preview,
+      anchor: popup.anchor,
+    }),
+    geometry.x,
+    geometry.y,
+  );
+}
+
+function commandLineCompletionPopupContext(model: WorkspaceModel) {
   const items = workspaceCommandLineCompletionItems({
     commandLine: model.commandLine,
     entries: model.entries,
   });
   if (items.length === 0) {
-    return;
+    return undefined;
   }
 
-  const width = commandCompletionPopupWidth(model.columns);
-  const anchor = {
-    x: model.commandLine.cursorIndex + COMMAND_COMPLETION_CURSOR_PREFIX_WIDTH,
+  return {
+    items,
+    preview: workspaceCommandLineCompletionPreview({
+      commandLine: model.commandLine,
+      entries: model.entries,
+    }),
+    width: commandCompletionPopupWidth(model.columns),
+    anchor: commandLineCompletionPopupAnchor(model),
+  };
+}
+
+function commandLineCompletionPopupAnchor(model: WorkspaceModel) {
+  return {
+    x: commandLineCompletionAnchorIndex(model) +
+      COMMAND_COMPLETION_CURSOR_PREFIX_WIDTH,
     y: model.rows - FOOTER_ROWS,
     screenWidth: model.columns,
     screenHeight: model.rows - FOOTER_ROWS + COMMAND_COMPLETION_COMMAND_LINE_ROWS,
   };
-  const geometry = resolveInlineCompletionPopupGeometry({
-    items,
-    width,
-    maxHeight: COMMAND_COMPLETION_POPUP_MAX_HEIGHT,
-    anchor,
-  });
-  screen.blit(
-    renderInlineCompletionPopup({
-      items,
-      selectedIndex: model.commandLine.selectedCompletionIndex,
-      theme: model.jeditTheme,
-      width,
-      maxHeight: COMMAND_COMPLETION_POPUP_MAX_HEIGHT,
-      anchor,
-    }),
-    geometry.x,
-    geometry.y,
+}
+
+function commandLineCompletionAnchorIndex(model: WorkspaceModel): number {
+  return (
+    model.commandLine.anchorCursorIndex ?? COMMAND_COMPLETION_DEFAULT_ANCHOR_INDEX
   );
 }
 

@@ -18,8 +18,18 @@ export function updateSaveKey(
   model: WorkspaceModel,
   context: WorkspaceKeyBindingContext,
 ): KeyBindingResult | undefined {
-  if (!msg.ctrl || msg.alt || msg.key !== WorkspaceKeys.S || model.editor == null) {
+  if (!msg.ctrl || msg.alt || msg.key !== WorkspaceKeys.S) {
     return undefined;
+  }
+  return saveWorkspace(model, context);
+}
+
+export function saveWorkspace(
+  model: WorkspaceModel,
+  context: WorkspaceKeyBindingContext,
+): KeyBindingResult {
+  if (model.editor == null) {
+    return [model, []];
   }
   if (model.textAuthority.kind === WorkspaceTextAuthorityKinds.Opened) {
     return saveProductionText(model, context);

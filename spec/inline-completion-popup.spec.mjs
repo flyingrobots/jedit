@@ -33,8 +33,8 @@ test("inline completion popup renders selected provider-neutral items with theme
 
   assert.equal(surface.width, 24);
   assert.equal(surface.height, 2);
-  assert.match(rowText(surface, 0), /^  edit\s+C\s+Open a file/);
-  assert.match(rowText(surface, 1), /^› write\s+C\s+Write/);
+  assert.match(rowText(surface, 0), /^  edit\s+cmd\s+Open a file/);
+  assert.match(rowText(surface, 1), /^› write\s+cmd\s+Write/);
   assert.equal(surface.get(0, 1).bg, theme.cursor.normal.bg);
   assert.equal(surface.get(0, 0).bg, theme.surface.drawer.bg);
   assert.equal(popup.INLINE_COMPLETION_PREVIEW_KIND.File, "file");

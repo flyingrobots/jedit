@@ -20,6 +20,14 @@ export interface WorkspaceCommandLineCompletionContext {
   readonly entries: readonly FileEntry[];
 }
 
+export interface WorkspaceSelectedCommandLineCompletionContext {
+  readonly commandLine: Pick<
+    WorkspaceCommandLineState,
+    "input" | "cursorIndex" | "selectedCompletionIndex"
+  >;
+  readonly entries: readonly FileEntry[];
+}
+
 interface CommandNameCompletionContext {
   readonly query: string;
   readonly replacementStart: number;
@@ -32,19 +40,20 @@ interface EditFileCompletionContext {
   readonly replacementEnd: number;
 }
 
-const VIM_COMMAND_PROVIDER_ID = "vim-command";
-const WORKSPACE_FILE_PROVIDER_ID = "workspace-file";
+export const VIM_COMMAND_PROVIDER_ID = "vim-command";
+export const WORKSPACE_FILE_PROVIDER_ID = "workspace-file";
 const COMMAND_COMPLETION_EMPTY_QUERY = "";
 const COMMAND_COMPLETION_FIRST_INDEX = 0;
 const COMMAND_ARGUMENT_STEP = 1;
+const FILE_COMPLETION_FUZZY_MIN_QUERY_LENGTH = 2;
 const EDIT_COMMAND_NAME = "edit";
 const EDIT_COMMAND_ALIAS = "e";
+const EDIT_COMMAND_COMPLETION_REPLACEMENT = "edit ";
 const FILE_COMPLETION_PARENT_LABEL = "../";
 const FILE_COMPLETION_DIRECTORY_SUFFIX = "/";
 const FILE_COMPLETION_FILE_DETAIL = "File";
 const FILE_COMPLETION_DIRECTORY_DETAIL = "Directory";
 const FILE_COMPLETION_PARENT_DETAIL = "Parent directory";
-
 const WORKSPACE_COMMAND_DESCRIPTORS = [
   {
     id: "command:edit",
@@ -109,12 +118,7 @@ export function selectedWorkspaceCommandCompletionItem(
 }
 
 export function selectedWorkspaceCommandLineCompletionItem(
-  context: WorkspaceCommandLineCompletionContext & {
-    readonly commandLine: Pick<
-      WorkspaceCommandLineState,
-      "input" | "cursorIndex" | "selectedCompletionIndex"
-    >;
-  },
+  context: WorkspaceSelectedCommandLineCompletionContext,
 ): InlineCompletionItem | undefined {
   const items = workspaceCommandLineCompletionItems(context);
   return items[
@@ -151,7 +155,7 @@ function commandCompletionItem(
     replacement: {
       start: context.replacementStart,
       end: context.replacementEnd,
-      text: descriptor.name,
+      text: commandCompletionReplacementText(descriptor),
     },
   };
 }
@@ -175,6 +179,7 @@ function fileCompletionItem(
     detail: fileCompletionDetail(entry),
     kind: fileCompletionKind(entry),
     providerId: WORKSPACE_FILE_PROVIDER_ID,
+    previewRequestId: entry.path,
     replacement: {
       start: context.replacementStart,
       end: context.replacementEnd,
@@ -189,6 +194,14 @@ function commandCompletionDetail(
   return descriptor.aliases.length === 0
     ? descriptor.detail
     : `${descriptor.detail} (${descriptor.aliases.join(", ")})`;
+}
+
+function commandCompletionReplacementText(
+  descriptor: WorkspaceCommandDescriptor,
+): string {
+  return descriptor.name === EDIT_COMMAND_NAME
+    ? EDIT_COMMAND_COMPLETION_REPLACEMENT
+    : descriptor.name;
 }
 
 function descriptorMatchesQuery(
@@ -259,10 +272,27 @@ function fileEntryMatchesQuery(entry: FileEntry, query: string): boolean {
   const normalizedQuery = normalizeFileCompletionText(query);
   return (
     normalizedQuery.length === 0 ||
-    normalizeFileCompletionText(fileCompletionLabel(entry)).startsWith(
+    fuzzyFileCompletionMatch(
+      normalizeFileCompletionText(fileCompletionLabel(entry)),
       normalizedQuery,
     )
   );
+}
+
+function fuzzyFileCompletionMatch(label: string, query: string): boolean {
+  if (query.length < FILE_COMPLETION_FUZZY_MIN_QUERY_LENGTH) {
+    return label.startsWith(query);
+  }
+
+  let labelIndex = 0;
+  for (const character of query) {
+    const nextIndex = label.indexOf(character, labelIndex);
+    if (nextIndex < 0) {
+      return false;
+    }
+    labelIndex = nextIndex + COMMAND_ARGUMENT_STEP;
+  }
+  return true;
 }
 
 function fileCompletionLabel(entry: FileEntry): string {

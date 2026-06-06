@@ -74,6 +74,20 @@ test("workspace command line completion provider filters :edit files and directo
     },
     entries: editEntries(fileSystem),
   });
+  const allEditEntries = completion.workspaceCommandLineCompletionItems({
+    commandLine: {
+      input: "edit ",
+      cursorIndex: 5,
+    },
+    entries: editEntries(fileSystem),
+  });
+  const fuzzyReadme = completion.workspaceCommandLineCompletionItems({
+    commandLine: {
+      input: "edit rme",
+      cursorIndex: 8,
+    },
+    entries: editEntries(fileSystem),
+  });
 
   assert.deepEqual(
     readme.map((item) => item.label),
@@ -97,6 +111,88 @@ test("workspace command line completion provider filters :edit files and directo
     end: 3,
     text: "src/",
   });
+  assert.deepEqual(
+    allEditEntries.map((item) => item.label),
+    ["../", "src/", "README.md", "package.json"],
+  );
+  assert.deepEqual(
+    fuzzyReadme.map((item) => item.label),
+    ["README.md"],
+  );
+});
+
+test("workspace command line completion provider returns bounded edit file previews", async () => {
+  const [previewModule, fileSystem] = await Promise.all([
+    importDist("app", "workspace", "command-completion-preview.js"),
+    importDist("ports", "file-system.js"),
+  ]);
+  const previewCalls = [];
+
+  const preview = previewModule.workspaceCommandLineCompletionPreview({
+    commandLine: {
+      input: "edit R",
+      cursorIndex: 6,
+      selectedCompletionIndex: 0,
+    },
+    entries: editEntries(fileSystem),
+    maxPreviewLines: 2,
+    previewSource: {
+      loadFilePreview(filePath) {
+        previewCalls.push(filePath);
+        return {
+          kind: previewModule.WORKSPACE_FILE_PREVIEW_RESULT_KIND.Loaded,
+          lines: ["alpha", "beta", "gamma"],
+          evidencePosture: "fixture",
+        };
+      },
+    },
+  });
+
+  assert.deepEqual(previewCalls, ["/repo/README.md"]);
+  assert.equal(preview.kind, "file");
+  assert.equal(preview.title, "README.md");
+  assert.deepEqual(preview.lines, ["alpha", "beta"]);
+  assert.equal(preview.evidencePosture, "fixture");
+});
+
+test("workspace command line completion provider reports unavailable edit previews", async () => {
+  const [previewModule, fileSystem] = await Promise.all([
+    importDist("app", "workspace", "command-completion-preview.js"),
+    importDist("ports", "file-system.js"),
+  ]);
+
+  const unreadablePreview = previewModule.workspaceCommandLineCompletionPreview({
+    commandLine: {
+      input: "edit R",
+      cursorIndex: 6,
+      selectedCompletionIndex: 0,
+    },
+    entries: editEntries(fileSystem),
+    previewSource: {
+      loadFilePreview() {
+        return {
+          kind: previewModule.WORKSPACE_FILE_PREVIEW_RESULT_KIND.Unavailable,
+          reason: "Unreadable file",
+          evidencePosture: "fixture-unavailable",
+        };
+      },
+    },
+  });
+  const directoryPreview = previewModule.workspaceCommandLineCompletionPreview({
+    commandLine: {
+      input: "e ",
+      cursorIndex: 2,
+      selectedCompletionIndex: 1,
+    },
+    entries: editEntries(fileSystem),
+  });
+
+  assert.equal(unreadablePreview.kind, "unavailable");
+  assert.deepEqual(unreadablePreview.lines, ["Unreadable file"]);
+  assert.equal(unreadablePreview.evidencePosture, "fixture-unavailable");
+  assert.equal(directoryPreview.kind, "unavailable");
+  assert.deepEqual(directoryPreview.lines, ["Directory preview unavailable"]);
+  assert.equal(directoryPreview.evidencePosture, "unavailable");
 });
 
 test("command-line mode moves and accepts command completions", async () => {
@@ -143,10 +239,56 @@ test("command-line mode moves and accepts command completions", async () => {
 
   assert.equal(down.commandLine.selectedCompletionIndex, 1);
   assert.equal(up.commandLine.selectedCompletionIndex, 0);
-  assert.equal(accepted.commandLine.input, "edit");
-  assert.equal(accepted.commandLine.cursorIndex, 4);
+  assert.equal(accepted.commandLine.input, "edit ");
+  assert.equal(accepted.commandLine.cursorIndex, 5);
   assert.equal(accepted.commandLine.selectedCompletionIndex, 0);
   assert.deepEqual(commands, []);
+});
+
+test("command-line mode accepts changing completions with enter before dispatch", async () => {
+  const [keyBindings, titleScreen, editorMode, fileSystem] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("ports", "file-system.js"),
+  ]);
+  const context = mockKeyBindingContext();
+  const model = mockTitleScreenModel(titleScreen, {
+    editor: mockEditor(editorMode),
+    focusPane: "editor",
+    entries: editEntries(fileSystem),
+    commandLine: {
+      active: true,
+      input: "e",
+      cursorIndex: 1,
+      selectedCompletionIndex: 0,
+    },
+  });
+
+  const [acceptedCommand, commandCommands] = keyBindings.updateFromKey(
+    { type: "key", key: "enter", ctrl: false, alt: false, shift: false },
+    model,
+    context,
+  );
+  const [acceptedFile, fileCommands] = keyBindings.updateFromKey(
+    { type: "key", key: "enter", ctrl: false, alt: false, shift: false },
+    {
+      ...acceptedCommand,
+      commandLine: {
+        ...acceptedCommand.commandLine,
+        input: "edit R",
+        cursorIndex: 6,
+      },
+    },
+    context,
+  );
+
+  assert.equal(acceptedCommand.commandLine.input, "edit ");
+  assert.equal(acceptedCommand.commandLine.cursorIndex, 5);
+  assert.deepEqual(commandCommands, []);
+  assert.equal(acceptedFile.commandLine.input, "edit README.md");
+  assert.equal(acceptedFile.commandLine.cursorIndex, 14);
+  assert.deepEqual(fileCommands, []);
 });
 
 test("command-line mode accepts edit file completions", async () => {
@@ -203,8 +345,37 @@ test("workspace render paints command completions above the Vim command line", a
 
   const lines = surfaceText(viewer.renderWorkspace(model)).split("\n");
 
-  assert.match(lines[15], /› edit\s+C\s+Open a file/);
+  assert.equal(viewer.renderWorkspace(model).get(1, 15).char, "›");
+  assert.match(lines[15], /› edit\s+cmd\s+Open a file/);
   assert.match(lines[16], /^:e\s*$/);
+});
+
+test("workspace render pins command completions to the original command anchor", async () => {
+  const [viewer, titleScreen, editorMode] = await Promise.all([
+    importDist("app", "workspace", "viewer.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+  ]);
+  const model = mockTitleScreenModel(titleScreen, {
+    columns: 80,
+    rows: 18,
+    editor: mockEditor(editorMode, { lines: ["hello world"] }),
+    focusPane: "editor",
+    footerVisible: true,
+    jeditTheme: workspaceRenderTheme(),
+    commandLine: {
+      active: true,
+      input: "edi",
+      cursorIndex: 3,
+      anchorCursorIndex: 0,
+      selectedCompletionIndex: 0,
+    },
+  });
+
+  const surface = viewer.renderWorkspace(model);
+
+  assert.equal(surface.get(1, 15).char, "›");
+  assert.notEqual(surface.get(4, 15).char, "›");
 });
 
 test("workspace render paints edit file completions above the Vim command line", async () => {
@@ -232,7 +403,9 @@ test("workspace render paints edit file completions above the Vim command line",
 
   const lines = surfaceText(viewer.renderWorkspace(model)).split("\n");
 
-  assert.match(lines[15], /› README\.md\s+F\s+File/);
+  assert.match(lines[13], /› README\.md\s+file\s+File/);
+  assert.match(lines[13], /NONE README\.md/);
+  assert.match(lines[14], /Evidence: unavailable/);
   assert.match(lines[16], /^:edit R\s*$/);
 });
 

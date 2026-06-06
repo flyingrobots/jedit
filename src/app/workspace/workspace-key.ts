@@ -21,6 +21,7 @@ export const WorkspaceKeys = Object.freeze({
   R: "r",
   Escape: "escape",
   Tab: "tab",
+  Space: "space",
   Backspace: "backspace",
   ArrowLeft: "left",
   ArrowRight: "right",

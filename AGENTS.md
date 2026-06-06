@@ -103,3 +103,67 @@ enforceable quality ratchet is currently clean.
 - Make invalid states unrepresentable at runtime where possible.
 - Move stringly external data into runtime objects at the boundary immediately.
 - Prefer constructor or factory injection over ambient singletons for new code.
+
+## Progress Footer
+
+- End every turn with the compact progress footer:
+
+  ```text
+  <progress bar> <percent> (<done>/<total> slices)
+  WIP: <goalpost name>
+
+  - [x] <completed slice>
+  - [ ] <open slice>
+
+  <roadmap-next>
+
+  ⎇ <branch> +<ahead>/-<behind>
+  <pr-icon> <pr-status>
+  ```
+
+- After the slice checklist, include a compact roadmap "what's next" summary:
+  - `🚏 Goalpost <next number>: <next goalpost title>` when the next roadmap
+    item is another goalpost.
+  - `📦 X.Y.Z` when the next roadmap item is a version release rather than a
+    goalpost.
+  - `🙈 OFF-ROADMAP` when there is no known next goalpost or upcoming version
+    release.
+- Compute `+<ahead>/-<behind>` against the active merge target, normally
+  `origin/main`, using local refs unless the turn already fetched.
+- Keep the PR line compact:
+  - `🚫 none` when no PR exists.
+  - `📤 [#N](url)` when a PR is open.
+  - `📝 [#N](url)` when a PR is draft.
+  - `🏁 [#N](url)` when a PR was merged.
+  - `🐇 [#N](url)` when waiting for Code Rabbit.
+  - `🧪 [#N](url)` when CI is not finished yet.
+
+## Goalpost, Merge, And Release Prompts
+
+- When the final slice of a goalpost is complete, ask:
+
+  ```text
+  ■ 🙌 Goalpost Reached
+  ░
+  ■ 🙋 Do you want me to open a PR to <target>?
+  ```
+
+- When an open PR is merge-ready, ask:
+
+  ```text
+  ■ 👍 Merge Ready
+  ░
+  ✪ 🟢 Do you want to merge this to <target>?
+  ```
+
+- Treat a PR as merge-ready only when CI is green, there are zero unresolved
+  issues in the open PR thread, and Code Rabbit has approved, is rate limited,
+  or has run out of credits.
+- After a successful merge, when it is possibly time to cut the next release,
+  ask:
+
+  ```text
+  ■ 🚢 Ship It
+  ░
+  ■ 🚀 Do you want to release version <version>?
+  ```
