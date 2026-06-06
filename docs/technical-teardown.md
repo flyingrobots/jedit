@@ -778,6 +778,51 @@ const NORMAL_COMMANDS: readonly NormalCommandDefinition[] = [
 
 The `run` functions are pure: `(EditorState, viewport) → EditorState`. They never cause side effects.
 
+### Vim Command-Line And Completion Surface
+
+Vim command-line mode is workspace state, not editor-buffer state. Pressing `:`
+in Normal mode opens `WorkspaceModel.commandLine`, captures printable input,
+Escape cancellation, arrow selection, Tab acceptance, and Enter dispatch before
+focused-pane editor keys can interpret those events. Title-screen Browse mode is
+also allowed to enter this command line so no-file startup has the same command
+surface as an opened buffer.
+
+The command registry lives in `src/app/workspace/command-completion.ts` and is
+the source of command completion labels for `edit`, `write`, `quit`, and `wq`
+plus their aliases. Details are catalog-backed through the i18n port, so the
+footer and popup copy do not keep hardcoded UI strings beside dispatch logic.
+Unknown command fragments are validated by
+`src/app/workspace/command-line-validation.ts`; invalid text is rendered by
+`src/ui/workspace-command-line-footer.ts` with the theme error posture and the
+localized "type :help" guidance.
+
+Dispatch is separate from suggestion. `src/app/workspace/command-line-dispatch.ts`
+translates accepted command text into existing workspace behavior:
+
+- `:edit <path>` opens through `createWorkspaceTextOpenCmd`, the same
+  Echo-backed production text authority used by the file drawer.
+- `:write` and `:w` call the existing save path, preserving dirty-state and
+  text-authority posture.
+- `:quit` and `:q` route through normal quit confirmation instead of bypassing
+  unsaved-change checks.
+- `:wq` and `:x` write first and then request the same quit posture.
+
+Completion providers produce provider-neutral inline completion items. Command
+completion is one provider; `:edit <prefix>` swaps to file completions from the
+workspace directory; `src/app/workspace/editor-completion.ts` defines the editor
+completion registry seam; and `src/app/workspace/graft-symbol-completion.ts`
+proves Graft-backed symbol suggestions can use the same
+`src/ui/inline-completion-popup.ts` renderer. The renderer understands command,
+file, directory, documentation, source-definition, causal-history, and
+unavailable preview postures without importing Graft or filesystem details.
+
+This leaves three intentionally distinct file-opening surfaces:
+
+- Vim command mode is the primary type-to-open surface.
+- `ctrl+b` remains the standard browsable file drawer for explicit navigation.
+- The startup title drawer remains a non-filtering current-directory affordance,
+  but it no longer owns printable type-to-search input.
+
 ### Undo/Redo
 
 Undo and redo currently have two different postures:

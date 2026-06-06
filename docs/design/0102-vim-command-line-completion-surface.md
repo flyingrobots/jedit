@@ -528,7 +528,7 @@ Slices:
       Commit: `UX: retire duplicate startup search`.
 - [x] Slice 19: Update footer hints and localized command copy.
       Commit: `Docs: update command-line copy`.
-- [ ] Slice 20: Update technical teardown, retrospective, and playback witness.
+- [x] Slice 20: Update technical teardown, retrospective, and playback witness.
       Commit: `Docs: document vim command completion`.
 
 ## Tests To Write First
@@ -550,9 +550,9 @@ Behavior tests required:
 
 Documentation and process tests:
 
-- [ ] Technical teardown explains command-line mode, `:edit`, `:write`, `:quit`,
+- [x] Technical teardown explains command-line mode, `:edit`, `:write`, `:quit`,
       and provider-backed completion reuse.
-- [ ] Design retrospective records which startup/browser surfaces remain.
+- [x] Design retrospective records which startup/browser surfaces remain.
 
 Rule: documentation tests cannot be the only proof for implementation work.
 
@@ -569,9 +569,9 @@ The work is done when:
 - [x] Lower modes cover small terminals and unavailable providers.
 - [x] New strings have supported translations or tracked localization follow-up
       if the CSV localization migration lands first.
-- [ ] Docs and technical teardown are updated.
-- [ ] Issue and PR are linked correctly.
-- [ ] CI and local validation are green.
+- [x] Docs and technical teardown are updated.
+- [x] Issue and PR are linked correctly.
+- [x] CI and local validation are green.
 
 ## Validation Plan
 
@@ -619,6 +619,28 @@ Editor-provider playback after Goalpost 4:
 - verify selected symbol previews can show documentation, source definition, or
   causal-history posture without a separate panel implementation.
 
+Automated closeout playback:
+
+```bash
+npm run build
+JEDIT_DIST_PREBUILT=1 node --test \
+  spec/workspace-command-line.spec.mjs \
+  spec/workspace-command-completion.spec.mjs \
+  spec/inline-completion-popup.spec.mjs \
+  spec/workspace-title-screen.spec.mjs \
+  spec/wf-0102-docs-closeout.spec.mjs
+JEDIT_DIST_PREBUILT=1 npm run ci:shard -- workspace-ui
+JEDIT_DIST_PREBUILT=1 npm run ci:shard -- docs-release
+npm run quality
+git diff --check
+```
+
+This playback proves the command line can be entered from a file buffer and the
+title screen, accepts Enter and Tab completion, preserves the original command
+anchor while typing, dispatches file opens through production text authority,
+renders invalid command feedback, keeps Graft-backed provider preview reuse, and
+records the teardown/retrospective closeout text.
+
 ## Risks
 
 Known risks:
@@ -652,20 +674,48 @@ Create GitHub issues for anything deferred:
 
 ## Retrospective
 
-Fill this in after implementation.
-
 What changed from the design:
 
-- Pending.
+- The popup component stayed provider-neutral, but the implementation needed a
+  stricter command-line validation path so `:exi`-style fragments show live
+  feedback instead of only failing after Enter.
+- Enter now accepts the selected completion before dispatching, matching the Tab
+  acceptance path.
+- Command completions pin to the command line's original anchor instead of
+  moving as the user types.
+- `:edit` acceptance inserts a trailing space and immediately repopulates with
+  file completions.
+- The startup file selector remains available as a title/current-directory
+  affordance, but its duplicate type-to-search input was retired. The standard
+  `ctrl+b` files drawer remains the explicit browsable file surface.
+- Graft-backed editor completion work landed as a fake-provider proof and
+  unavailable-adapter lower mode, not a full language-completion feature.
 
 What the tests proved:
 
-- Pending.
+- Command mode owns `:`, printable input, Escape, arrows, Tab, Enter, space
+  insertion, invalid command feedback, and title-screen entry.
+- `:edit <path>` opens through the existing production text open command path,
+  and `:write`, `:quit`, and `:wq` reuse existing save/quit postures.
+- The inline completion popup flips above the command line, pins to the opening
+  anchor, omits previews on narrow terminals, and renders command, file,
+  directory, documentation, source-definition, causal-history, and unavailable
+  preview postures.
+- The startup selector no longer owns printable type-to-search input.
+- Documentation closeout is covered by a docs-release spec that asserts the
+  technical teardown and this retrospective name the final command/file surfaces.
 
 What remains open:
 
-- Pending.
+- Real Graft language completion and causal-history preview providers remain
+  follow-on work.
+- The startup drawer can be removed or redesigned later, but it no longer
+  competes with command-line type-to-open behavior.
+- Path completion uses bounded, pragmatic fuzzy matching; richer scoring belongs
+  in a future slice if users need it.
+- `:help` copy is referenced by invalid-command guidance but does not yet open a
+  command-help surface.
 
 PR:
 
-- Pending.
+- PR #111: https://github.com/flyingrobots/jedit/pull/111
