@@ -2,8 +2,8 @@
 title: "WF-0104 - Title Zero Allocation Ray Tracing"
 legend: "WF"
 lane: "design"
-issue: "TBD"
-status: "draft"
+issue: "https://github.com/flyingrobots/jedit/issues/112"
+status: "active"
 owners:
   - "@flyingrobots"
 created: "2026-06-06"
@@ -14,7 +14,7 @@ updated: "2026-06-06"
 
 ## Linked Issue
 
-- TBD
+- https://github.com/flyingrobots/jedit/issues/112
 
 ## Decision Summary
 
