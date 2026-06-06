@@ -39,6 +39,7 @@ export function isStartupIntroSkipCandidate(model: WorkspaceModel): boolean {
   return (
     model.editor == null &&
     model.focusPane === FocusPanes.Editor &&
+    model.commandLine?.active !== true &&
     !model.scenePickerOpen &&
     !model.settingsOpen &&
     !model.startupIntroComplete &&
@@ -52,6 +53,7 @@ export function isStartupFileModalReopenCandidate(
   return (
     model.editor == null &&
     model.focusPane === FocusPanes.Editor &&
+    model.commandLine?.active !== true &&
     !model.scenePickerOpen &&
     !model.settingsOpen &&
     !model.quitConfirmOpen &&

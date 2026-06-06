@@ -100,6 +100,43 @@ test("tab skips startup intro without opening the file browser", async () => {
   assert.equal(renderOptions[0].suppressPresentation, true);
 });
 
+test("startup file modal shortcuts defer to the active title command line", async () => {
+  const [keyBindings, titleScreen] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const introModel = mockTitleScreenModel(titleScreen, {
+    startupIntroComplete: false,
+    startupFileModalOpen: false,
+    commandLine: activeTitleCommandLine("e"),
+  });
+  const reopenedModel = mockTitleScreenModel(titleScreen, {
+    startupIntroComplete: true,
+    startupFileModalOpen: false,
+    commandLine: activeTitleCommandLine("e"),
+  });
+
+  const [tabbed, tabCommands] = keyBindings.updateFromKey(
+    { key: "tab", ctrl: false, alt: false, shift: false },
+    introModel,
+    startupFileDrawerAnimationContext(),
+  );
+  const [entered, enterCommands] = keyBindings.updateFromKey(
+    { key: "enter", ctrl: false, alt: false, shift: false },
+    reopenedModel,
+    startupFileDrawerAnimationContext(),
+  );
+
+  assert.equal(tabbed.startupIntroComplete, false);
+  assert.equal(tabbed.startupFileModalOpen, false);
+  assert.equal(tabbed.commandLine.input, "edit ");
+  assert.deepEqual(tabCommands, []);
+  assert.equal(entered.startupIntroComplete, true);
+  assert.equal(entered.startupFileModalOpen, false);
+  assert.equal(entered.commandLine.input, "edit ");
+  assert.deepEqual(enterCommands, []);
+});
+
 test("title screen m cycles title mesh materials and reports the material name", async () => {
   const [keyBindings, titleScreen, material, sceneLoader, meshes] =
     await Promise.all([
@@ -964,4 +1001,14 @@ function startupFileDrawerAnimationContext() {
       () => ({ type: "startup-file-drawer-progress", value: to }),
     ],
   });
+}
+
+function activeTitleCommandLine(input) {
+  return {
+    active: true,
+    input,
+    cursorIndex: input.length,
+    anchorCursorIndex: 0,
+    selectedCompletionIndex: 0,
+  };
 }
