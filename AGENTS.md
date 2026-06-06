@@ -117,10 +117,19 @@ enforceable quality ratchet is currently clean.
   - [x] <completed slice>
   - [ ] <open slice>
 
+  <roadmap-next>
+
   ⎇ <branch> +<ahead>/-<behind>
   <pr-icon> <pr-status>
   ```
 
+- After the slice checklist, include a compact roadmap "what's next" summary:
+  - `🚏 Goalpost <next number>: <next goalpost title>` when the next roadmap
+    item is another goalpost.
+  - `📦 X.Y.Z` when the next roadmap item is a version release rather than a
+    goalpost.
+  - `🙈 OFF-ROADMAP` when there is no known next goalpost or upcoming version
+    release.
 - Compute `+<ahead>/-<behind>` against the active merge target, normally
   `origin/main`, using local refs unless the turn already fetched.
 - Keep the PR line compact:
