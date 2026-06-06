@@ -35,6 +35,6 @@ function updateWorkspaceOverlayKey(
   return updateStartupFileModalKey(msg, model, context)
     ?? updateSettingsKey(msg, model)
     ?? updateScenePickerKey(msg, model, context)
-    ?? updateCommandLineKey(msg, model)
+    ?? updateCommandLineKey(msg, model, context)
     ?? updateTitleScreenKey(msg, model, context);
 }

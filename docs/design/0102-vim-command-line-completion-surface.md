@@ -474,7 +474,7 @@ Slices:
       Commit: `UX: complete edit paths`.
 - [x] Slice 11: Add bounded file preview provider.
       Commit: `UX: preview edit path completions`.
-- [ ] Slice 12: Dispatch `:edit`, `:write`, `:quit`, `:wq`, and aliases.
+- [x] Slice 12: Dispatch `:edit`, `:write`, `:quit`, `:wq`, and aliases.
       Commit: `UX: dispatch vim command-line commands`.
 
 ### Goalpost 4: Graft-Backed Editor Provider Seam

@@ -4,16 +4,17 @@ import {
   backspaceWorkspaceCommandLineInput,
   canOpenWorkspaceCommandLine,
   closeWorkspaceCommandLine,
-  invalidateWorkspaceCommandLine,
   moveWorkspaceCommandLineCompletion,
   moveWorkspaceCommandLineCursor,
   openWorkspaceCommandLine,
   replaceWorkspaceCommandLineInput,
 } from "./command-line.js";
+import { dispatchWorkspaceCommandLine } from "./command-line-dispatch.js";
 import {
   selectedWorkspaceCommandLineCompletionItem,
   workspaceCommandLineCompletionItems,
 } from "./command-completion.js";
+import type { WorkspaceKeyBindingContext } from "./key-binding-context.js";
 import type { WorkspaceModel } from "./model.js";
 import type { WorkspaceMsg } from "./msg.js";
 import { WorkspaceKeys } from "./workspace-key.js";
@@ -29,9 +30,10 @@ const COMMAND_LINE_COMPLETION_NEXT_DELTA = 1;
 export function updateCommandLineKey(
   msg: KeyMsg,
   model: WorkspaceModel,
+  context: WorkspaceKeyBindingContext,
 ): KeyBindingResult | undefined {
   return updateCommandLineOpenKey(msg, model)
-    ?? updateActiveCommandLineKey(msg, model);
+    ?? updateActiveCommandLineKey(msg, model, context);
 }
 
 function updateCommandLineOpenKey(
@@ -47,13 +49,14 @@ function updateCommandLineOpenKey(
 function updateActiveCommandLineKey(
   msg: KeyMsg,
   model: WorkspaceModel,
+  context: WorkspaceKeyBindingContext,
 ): KeyBindingResult | undefined {
   return model.commandLine?.active === true
     ? updateCommandLineCloseKey(msg, model)
       ?? updateCommandLineBackspaceKey(msg, model)
       ?? updateCommandLineCursorKey(msg, model)
       ?? updateCommandLineCompletionKey(msg, model)
-      ?? updateCommandLineDispatchKey(msg, model)
+      ?? updateCommandLineDispatchKey(msg, model, context)
       ?? updateCommandLineTextKey(msg, model)
     : undefined;
 }
@@ -134,9 +137,10 @@ function updateCommandLineCompletionKey(
 function updateCommandLineDispatchKey(
   msg: KeyMsg,
   model: WorkspaceModel,
+  context: WorkspaceKeyBindingContext,
 ): KeyBindingResult | undefined {
   return isCommandLineDispatchKey(msg)
-    ? [invalidateWorkspaceCommandLine(model), []]
+    ? dispatchWorkspaceCommandLine(model, context)
     : undefined;
 }
 
