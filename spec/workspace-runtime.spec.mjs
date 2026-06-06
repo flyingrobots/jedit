@@ -279,7 +279,7 @@ test("runtime trims frame history to the configured window", async () => {
   assert.deepEqual(nextModel.frameTimeHistory.slice(-1), [100]);
 });
 
-test("runtime opens the startup file modal when the title intro completes", async () => {
+test("runtime completes the title intro without opening the startup file modal", async () => {
   const drawerCommands = ["drawer-animation"];
   const runtimeModule = await importDist("app", "workspace", "runtime.js");
   const runtime = runtimeModule.createWorkspaceRuntime({
@@ -300,9 +300,9 @@ test("runtime opens the startup file modal when the title intro completes", asyn
   );
 
   assert.equal(nextModel.startupIntroComplete, true);
-  assert.equal(nextModel.startupFileModalOpen, true);
-  assert.deepEqual(drawerCommands, ["drawer-animation", "0:1"]);
-  assert.equal(commands.length, 1);
+  assert.equal(nextModel.startupFileModalOpen, false);
+  assert.deepEqual(drawerCommands, ["drawer-animation"]);
+  assert.equal(commands.length, 0);
 });
 
 test("startup file drawer animation uses a critically damped Bijou spring", async () => {

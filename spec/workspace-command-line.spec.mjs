@@ -108,6 +108,66 @@ test("command-line mode edits printable input and backspace", async () => {
   assert.deepEqual(commands, []);
 });
 
+test("command-line mode marks unknown command fragments while typing", async () => {
+  const [keyBindings, viewer, titleScreen, editorMode] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("app", "workspace", "viewer.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+  ]);
+  const context = mockKeyBindingContext();
+  const base = mockTitleScreenModel(titleScreen, {
+    columns: 80,
+    rows: 12,
+    editor: mockEditor(editorMode),
+    focusPane: "editor",
+    footerVisible: true,
+    i18n: commandLineRenderI18n(),
+    jeditTheme: commandLineRenderTheme(),
+    commandLine: activeCommandLine(""),
+  });
+
+  const [withE] = keyBindings.updateFromKey(
+    { type: "key", key: "e", ctrl: false, alt: false, shift: false },
+    base,
+    context,
+  );
+  const [withEx] = keyBindings.updateFromKey(
+    { type: "key", key: "x", ctrl: false, alt: false, shift: false },
+    withE,
+    context,
+  );
+  const [withExi] = keyBindings.updateFromKey(
+    { type: "key", key: "i", ctrl: false, alt: false, shift: false },
+    withEx,
+    context,
+  );
+  const [withExAgain] = keyBindings.updateFromKey(
+    { type: "key", key: "backspace", ctrl: false, alt: false, shift: false },
+    withExi,
+    context,
+  );
+  const [backToE] = keyBindings.updateFromKey(
+    { type: "key", key: "backspace", ctrl: false, alt: false, shift: false },
+    withExAgain,
+    context,
+  );
+  const surface = viewer.renderWorkspace(withExi);
+  const commandLineRow = withExi.rows - 2;
+  const line = surfaceText(surface).split("\n")[commandLineRow];
+
+  assert.equal(withE.commandLine.dispatchPosture, undefined);
+  assert.equal(withEx.commandLine.dispatchPosture.kind, "invalid");
+  assert.equal(withEx.commandLine.dispatchPosture.input, "ex");
+  assert.equal(withExi.commandLine.dispatchPosture.kind, "invalid");
+  assert.equal(withExi.commandLine.dispatchPosture.input, "exi");
+  assert.equal(withExAgain.commandLine.dispatchPosture.kind, "invalid");
+  assert.equal(backToE.commandLine.dispatchPosture, undefined);
+  assert.match(line, /^:exi  Command not recognized; type :help for help/);
+  assert.equal(surface.get(1, commandLineRow).bg, "#ff5555");
+  assert.equal(surface.get(3, commandLineRow).bg, "#ff5555");
+});
+
 test("command-line mode moves the cursor and inserts at the cursor", async () => {
   const [keyBindings, titleScreen, editorMode] = await Promise.all([
     importDist("app", "workspace", "key-bindings.js"),

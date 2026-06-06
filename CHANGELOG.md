@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Restored the default bunny title scene's surrounding authored geometry and
+  raised camera, and kept the scene renderer wired to wall-clock day/night
+  lighting.
+- Stopped the startup file selector from auto-opening or reopening from the
+  title screen so it cannot steal Vim command-completion Tab or Enter keys.
+- Added live invalid-command footer feedback while typing unknown Vim command
+  fragments such as `:exi`.
 - Added an unavailable-preview lower mode for Graft-backed editor completions
   so adapter failures can render honestly through the shared popup.
 - Added render witnesses for editor completion documentation, source-definition,

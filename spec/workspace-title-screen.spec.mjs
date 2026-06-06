@@ -67,7 +67,7 @@ test("title screen number keys switch render modes without an editor", async () 
   );
 });
 
-test("tab opens startup file browser and suppresses title logos", async () => {
+test("tab skips startup intro without opening the file browser", async () => {
   const [keyBindings, titleScreen, viewerContent] = await Promise.all([
     importDist("app", "workspace", "key-bindings.js"),
     importDist("ui", "title-screen.js"),
@@ -95,8 +95,8 @@ test("tab opens startup file browser and suppresses title logos", async () => {
   );
 
   assert.equal(opened.startupIntroComplete, true);
-  assert.equal(opened.startupFileModalOpen, true);
-  assert.equal(commands.length, 1);
+  assert.equal(opened.startupFileModalOpen, false);
+  assert.equal(commands.length, 0);
   assert.equal(renderOptions[0].suppressPresentation, true);
 });
 
@@ -225,7 +225,7 @@ test("period cycles title screen ASCII palettes only when ASCII mode is active w
   );
 });
 
-test("enter skips title intro into the startup file browser", async () => {
+test("enter skips title intro without opening the startup file browser", async () => {
   const [keyBindings, titleScreen] = await Promise.all([
     importDist("app", "workspace", "key-bindings.js"),
     importDist("ui", "title-screen.js"),
@@ -242,8 +242,8 @@ test("enter skips title intro into the startup file browser", async () => {
   );
 
   assert.equal(entered.startupIntroComplete, true);
-  assert.equal(entered.startupFileModalOpen, true);
-  assert.equal(enterCommands.length, 1);
+  assert.equal(entered.startupFileModalOpen, false);
+  assert.equal(enterCommands.length, 0);
 });
 
 test("escape opens quit confirmation when startup file browser is closed", async () => {
@@ -403,6 +403,31 @@ test("startup file browser title renderer state is isolated per renderer instanc
 
   assert.match(surfaceText(second), /session two/);
   assert.doesNotMatch(surfaceText(second), /session one/);
+});
+
+test("title renderer receives wall-clock time for day-night sky", async () => {
+  const [viewerContent, titleScreen] = await Promise.all([
+    importDist("app", "workspace", "viewer-content.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const renderOptions = [];
+  const titleRenderer = (width, height, _time, _theme, options) => {
+    renderOptions.push(options);
+    return stringToSurface("wall clock", width, height);
+  };
+  const renderer = viewerContent.createViewerContentRenderer(titleRenderer);
+
+  renderer.renderViewer(
+    mockTitleScreenModel(titleScreen, {
+      lastFrameMs: 123456789,
+      startupIntroComplete: false,
+      startupFileModalOpen: false,
+    }),
+    44,
+    6,
+  );
+
+  assert.equal(renderOptions[0].wallClockMs, 123456789);
 });
 
 test("startup intro skip does not interrupt focused file drawer open", async () => {
@@ -644,7 +669,7 @@ test("startup file modal input filters current directory rows", async () => {
   assert.doesNotMatch(text, /alpha\.tmp/);
 });
 
-test("startup file modal can be reopened from the title screen after Escape dismissal", async () => {
+test("startup file modal stays closed after Escape dismissal", async () => {
   const [keyBindings, titleScreen] = await Promise.all([
     importDist("app", "workspace", "key-bindings.js"),
     importDist("ui", "title-screen.js"),
@@ -660,41 +685,31 @@ test("startup file modal can be reopened from the title screen after Escape dism
     open,
     startupFileDrawerAnimationContext(),
   );
-  const [reopenedByEnter, enterCommands] = keyBindings.updateFromKey(
+  const [enterIgnored, enterCommands] = keyBindings.updateFromKey(
     { key: "enter", ctrl: false, alt: false, shift: false },
     closed,
     startupFileDrawerAnimationContext(),
   );
-  const [closedAgain] = keyBindings.updateFromKey(
-    { key: "escape", ctrl: false, alt: false, shift: false },
-    reopenedByEnter,
-    mockKeyBindingContext(),
-  );
-  const [reopenedByOpen, openCommands] = keyBindings.updateFromKey(
+  const [openIgnored, openCommands] = keyBindings.updateFromKey(
     { key: "o", ctrl: false, alt: false, shift: false },
-    closedAgain,
+    enterIgnored,
     startupFileDrawerAnimationContext(),
   );
-  const [closedAfterOpen] = keyBindings.updateFromKey(
-    { key: "escape", ctrl: false, alt: false, shift: false },
-    reopenedByOpen,
-    startupFileDrawerAnimationContext(),
-  );
-  const [reopenedByTab, tabCommands] = keyBindings.updateFromKey(
+  const [tabIgnored, tabCommands] = keyBindings.updateFromKey(
     { key: "tab", ctrl: false, alt: false, shift: false },
-    closedAfterOpen,
+    openIgnored,
     startupFileDrawerAnimationContext(),
   );
 
   assert.equal(closed.startupFileModalOpen, false);
   assert.equal(closed.startupFileDrawerProgress, 1);
-  assert.equal(reopenedByEnter.startupFileModalOpen, true);
-  assert.equal(reopenedByOpen.startupFileModalOpen, true);
-  assert.equal(reopenedByTab.startupFileModalOpen, true);
+  assert.equal(enterIgnored.startupFileModalOpen, false);
+  assert.equal(openIgnored.startupFileModalOpen, false);
+  assert.equal(tabIgnored.startupFileModalOpen, false);
   assert.equal(closeCommands.length, 1);
-  assert.equal(enterCommands.length, 1);
-  assert.equal(openCommands.length, 1);
-  assert.equal(tabCommands.length, 1);
+  assert.equal(enterCommands.length, 0);
+  assert.equal(openCommands.length, 0);
+  assert.equal(tabCommands.length, 0);
 });
 
 test("startup file modal enter opens the selected file through production text authority", async () => {

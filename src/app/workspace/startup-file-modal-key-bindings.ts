@@ -11,11 +11,11 @@ import {
   appendStartupFileModalInput,
   backspaceStartupFileModalInput,
   closeStartupFileModal,
+  completeStartupIntro,
   dismissStartupFileModal,
   isStartupFileModalReopenCandidate,
   isStartupIntroSkipCandidate,
   moveStartupFileModalSelection,
-  openStartupFileModal,
   startupFileModalSelectedRow,
   updateStartupFileModalInput,
 } from "./startup-file-modal.js";
@@ -33,31 +33,18 @@ export function updateStartupFileModalKey(
   context: WorkspaceKeyBindingContext,
 ): KeyBindingResult | undefined {
   if (isStartupIntroSkipKey(msg) && isStartupIntroSkipCandidate(model)) {
-    return openStartupFileModalWithAnimation(model, context);
+    return [completeStartupIntro(model), []];
   }
   if (
     isStartupFileModalReopenKey(msg) &&
     isStartupFileModalReopenCandidate(model)
   ) {
-    return openStartupFileModalWithAnimation(model, context);
+    return [model, []];
   }
   if (!model.startupFileModalOpen || model.editor != null) {
     return undefined;
   }
   return updateOpenStartupFileModalKey(msg, model, context);
-}
-
-function openStartupFileModalWithAnimation(
-  model: WorkspaceModel,
-  context: WorkspaceKeyBindingContext,
-): KeyBindingResult {
-  return [
-    openStartupFileModal(model),
-    context.createStartupFileDrawerAnimationCmd(
-      model.startupFileDrawerProgress,
-      1,
-    ),
-  ];
 }
 
 function updateOpenStartupFileModalKey(

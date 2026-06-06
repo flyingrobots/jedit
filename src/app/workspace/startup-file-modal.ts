@@ -30,8 +30,8 @@ export function initialStartupFileModalState(): StartupFileModalState {
 }
 
 export function applyStartupIntroTime(model: WorkspaceModel): WorkspaceModel {
-  return shouldAutoOpenStartupFileModal(model)
-    ? openStartupFileModal(model)
+  return shouldCompleteStartupIntro(model)
+    ? completeStartupIntro(model)
     : model;
 }
 
@@ -66,6 +66,14 @@ export function openStartupFileModal(model: WorkspaceModel): WorkspaceModel {
     startupIntroComplete: true,
     startupFileModalOpen: true,
     startupFileModalSelectedIndex: STARTUP_FILE_MODAL_MIN_SELECTION,
+  };
+}
+
+export function completeStartupIntro(model: WorkspaceModel): WorkspaceModel {
+  return {
+    ...model,
+    startupIntroComplete: true,
+    startupFileModalOpen: false,
   };
 }
 
@@ -153,7 +161,7 @@ export function moveStartupFileModalSelection(
   };
 }
 
-function shouldAutoOpenStartupFileModal(model: WorkspaceModel): boolean {
+function shouldCompleteStartupIntro(model: WorkspaceModel): boolean {
   return (
     isStartupIntroSkipCandidate(model) &&
     model.time >= STARTUP_INTRO_COMPLETE_SECONDS
