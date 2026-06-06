@@ -132,6 +132,7 @@ const BRAILLE_DITHER_MATRIX_SIZE = 4;
 const BRAILLE_DITHER_DENOMINATOR =
   BRAILLE_DITHER_MATRIX_SIZE * BRAILLE_DITHER_MATRIX_SIZE;
 const RGB_CHANNEL_MAX = 255;
+const MIN_ENVIRONMENT_VISIBILITY = 0.06;
 const BRAILLE_DITHER_MATRIX: readonly (readonly number[])[] = [
   [0, 8, 2, 10],
   [12, 4, 14, 6],
@@ -321,16 +322,18 @@ function environmentSceneSample(
     environmentHit,
   );
   const fgRGB = environmentSceneForeground(options, environmentHit, effects);
+  const bgRGB = environmentSceneBackground(options, environmentHit);
   return {
-    on: brailleSubpixelVisible(
-      options.u,
-      options.v,
-      options.cols,
-      options.rows,
-      fgRGB,
-    ),
+    on: environmentHit.visibility >= MIN_ENVIRONMENT_VISIBILITY &&
+      brailleSubpixelVisible(
+        options.u,
+        options.v,
+        options.cols,
+        options.rows,
+        fgRGB,
+      ),
     fgRGB,
-    bgRGB: options.colors.surface,
+    bgRGB,
   };
 }
 
@@ -340,12 +343,28 @@ function environmentSceneForeground(
   effects: TitleFloorLightEffects,
 ): Color3 {
   const causticColor = scaleColor(options.colors.info, effects.causticStrength);
-  return addColor(
+  const litColor = addColor(
     scaleColor(
       environmentHit.color,
       effects.shadowMultiplier * effects.contactShadowMultiplier,
     ),
     causticColor,
+  );
+  return mixColor(
+    titleSceneBackgroundColor(options.environment, options.colors),
+    litColor,
+    environmentHit.visibility,
+  );
+}
+
+function environmentSceneBackground(
+  options: TitleSceneSampleOptions,
+  environmentHit: TitleEnvironmentSurfaceHit,
+): Color3 {
+  return mixColor(
+    titleSceneBackgroundColor(options.environment, options.colors),
+    options.colors.surface,
+    environmentHit.visibility,
   );
 }
 
@@ -391,6 +410,15 @@ function addColor(a: Color3, b: Color3): Color3 {
     Math.min(255, a[0] + b[0]),
     Math.min(255, a[1] + b[1]),
     Math.min(255, a[2] + b[2]),
+  ];
+}
+
+function mixColor(from: Color3, to: Color3, ratio: number): Color3 {
+  const clamped = Math.max(0, Math.min(1, ratio));
+  return [
+    Math.round(from[0] + (to[0] - from[0]) * clamped),
+    Math.round(from[1] + (to[1] - from[1]) * clamped),
+    Math.round(from[2] + (to[2] - from[2]) * clamped),
   ];
 }
 

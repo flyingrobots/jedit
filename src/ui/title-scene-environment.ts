@@ -45,6 +45,7 @@ export interface TitleEnvironmentSurfaceHit {
   readonly normal: TitleSceneVector3;
   readonly color: TitleSceneEnvironmentColor;
   readonly receivesFloorEffects: boolean;
+  readonly visibility: number;
 }
 
 export interface TitleEnvironmentDefaultColors {
@@ -148,8 +149,9 @@ export function nearestTitleEnvironmentSurfaceHit(
   environment: TitleSceneEnvironment | undefined,
   colors: TitleEnvironmentDefaultColors,
 ): TitleEnvironmentSurfaceHit | undefined {
+  const background = titleSceneBackgroundColor(environment, colors);
   const hits = [
-    floorHit(origin, ray, environment?.floor, colors),
+    floorHit(origin, ray, environment?.floor, colors, background),
     ...(environment?.walls ?? []).map((wall) => wallHit(origin, ray, wall)),
   ].filter(isTitleEnvironmentSurfaceHit);
 
@@ -167,6 +169,7 @@ function floorHit(
   ray: TitleSceneVector3,
   floor: TitleSceneFloorEnvironment | undefined,
   colors: TitleEnvironmentDefaultColors,
+  background: TitleSceneEnvironmentColor,
 ): TitleEnvironmentSurfaceHit | undefined {
   if (!floorCanBeHit(floor, ray)) {
     return undefined;
@@ -177,23 +180,26 @@ function floorHit(
   }
   const point = add(origin, scale(ray, distance));
   const fadeDistance = floor?.fadeDistance ?? DEFAULT_FLOOR_FADE_DISTANCE;
-  const fade = Math.max(0, 1 - (distance / fadeDistance));
-  if (fade <= FLOOR_VISIBILITY_EPSILON) {
-    return undefined;
-  }
+  const visibility = floorVisibility(distance, fadeDistance);
   const color = floorColorAt(point, floor, colors);
 
   return {
     distance,
     point,
     normal: [0, 1, 0],
-    color: mixColor(colors.surface, color, fade),
-    receivesFloorEffects: true,
+    color: mixColor(background, color, visibility),
+    receivesFloorEffects: visibility > FLOOR_VISIBILITY_EPSILON,
+    visibility,
   };
 }
 
 function floorCanBeHit(floor: TitleSceneFloorEnvironment | undefined, ray: TitleSceneVector3): boolean {
   return floor?.kind !== TITLE_SCENE_FLOOR_KIND.None && Math.abs(ray[1]) > PLANE_EPSILON;
+}
+
+function floorVisibility(distance: number, fadeDistance: number): number {
+  const linear = Math.max(0, 1 - (distance / fadeDistance));
+  return linear * linear;
 }
 
 function titleSceneCheckerFloor(
@@ -345,6 +351,7 @@ function wallHit(
         normal,
         color: wall.color,
         receivesFloorEffects: false,
+        visibility: 1,
       };
 }
 
