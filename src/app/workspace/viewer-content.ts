@@ -241,6 +241,7 @@ function renderLiveTitleBackdrop(
   const rendered = titleRenderer(width, height, model.time, model.jeditTheme, {
     camAngle: model.titleCamera.angle,
     camRadius: model.titleCamera.radius,
+    camera: model.titleCamera,
     sceneSeed: model.titleSceneSeed,
     mesh: model.titleMeshes.bunny,
     sceneOverride: model.sceneOverride,

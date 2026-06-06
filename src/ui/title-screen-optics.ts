@@ -4,6 +4,10 @@ import {
   type TitleSceneObject,
   type TitleSceneVector3,
 } from "./title-scene.js";
+import {
+  TITLE_SCENE_DEFAULT_CAMERA_EYE_Y,
+  titleSceneCameraPosition,
+} from "./title-scene-camera.js";
 import { titleFloorLightEffectsAtWithLight } from "./title-floor-light-effects.js";
 export { titleFloorLightEffectsAtWithLight } from "./title-floor-light-effects.js";
 import {
@@ -85,7 +89,7 @@ const REFRACTION_TINT = 1.08;
 const AIR_REFRACTIVE_INDEX = 1;
 const SHADOW_RAY_BIAS = 0.03;
 const NO_LIGHT: Color3 = [0, 0, 0];
-export const TITLE_SCENE_CAMERA_HEIGHT = 2.65;
+export const TITLE_SCENE_CAMERA_HEIGHT = TITLE_SCENE_DEFAULT_CAMERA_EYE_Y;
 
 export function titleSceneSpotlightAt(
   cameraStart: Vector3,
@@ -138,14 +142,6 @@ export function titleSceneSpotlightStrengthAt(
     Math.min(1, (coneAlignment - spotlight.outerConeCosine) / range),
   );
   return Math.pow(coneFade, SPOTLIGHT_EDGE_POWER);
-}
-
-function titleSceneCameraPosition(camera: TitleSceneCameraPlacement): Vector3 {
-  return [
-    Math.sin(camera.angle) * camera.radius,
-    TITLE_SCENE_CAMERA_HEIGHT,
-    Math.cos(camera.angle) * camera.radius,
-  ];
 }
 
 export function titleObjectSurfaceColor(

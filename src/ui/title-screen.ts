@@ -16,6 +16,7 @@ import {
   generateTitleScene,
   nearestTitleScenePrimaryObjectHit,
   type TitleScene,
+  type TitleSceneCameraPlacement,
   type TitleSceneObject,
   type TitleSceneObjectHit,
   type TitleSceneVector3,
@@ -37,7 +38,6 @@ import {
 } from "./title-screen-presentation.js";
 import {
   TITLE_KEY_LIGHT_DIRECTION,
-  TITLE_SCENE_CAMERA_HEIGHT,
   TITLE_SKY_TINT,
   titleFloorLightEffectsAtWithLight,
   titleObjectSurfaceColor,
@@ -47,6 +47,11 @@ import {
   TITLE_SCENE_DEFAULT_DIRECTOR_TIMELINE,
   titleSceneCameraAngleAt,
 } from "./title-scene-director.js";
+import {
+  TITLE_SCENE_DEFAULT_CAMERA_RADIUS,
+  titleSceneCameraPosition,
+  titleSceneCameraTarget,
+} from "./title-scene-camera.js";
 import {
   type TitleSceneRayContext,
   type TitleSceneSampleOptions,
@@ -93,6 +98,7 @@ export interface TitleFloorLightEffects {
 export interface TitleScreenRenderOptions {
   readonly camAngle: number;
   readonly camRadius?: number;
+  readonly camera?: TitleSceneCameraPlacement;
   readonly sceneSeed?: number;
   readonly mesh?: TitleMesh;
   readonly sceneOverride?: TitleScene;
@@ -106,8 +112,7 @@ export interface TitleScreenRenderOptions {
 interface TitleSceneShaderOptions {
   readonly cols: number;
   readonly rows: number;
-  readonly camAngle: number;
-  readonly camRadius: number;
+  readonly camera: TitleSceneCameraPlacement;
   readonly scene: TitleScene;
   readonly colors: TitleSceneMaterialColors;
 }
@@ -122,11 +127,9 @@ interface TitleSceneSurfaceOptions {
   readonly brailleSampling?: AveragingBrailleCanvasOptions;
 }
 
-const DEFAULT_CAMERA_RADIUS = 8.5;
 const DEFAULT_TITLE_SCENE_SEED = 0.5;
 export const TITLE_CAMERA_DRIFT_RATE =
   TITLE_SCENE_DEFAULT_DIRECTOR_TIMELINE.camera.driftRate;
-const CAMERA_TARGET_Y = 0.78;
 const BRAILLE_DITHER_MATRIX_SIZE = 4;
 const BRAILLE_DITHER_DENOMINATOR =
   BRAILLE_DITHER_MATRIX_SIZE * BRAILLE_DITHER_MATRIX_SIZE;
@@ -149,10 +152,13 @@ export function renderTitleScreen(
     titleSceneSurfaceOptions(cols, rows, time, theme, options),
   );
   if (options.suppressPresentation !== true) {
-    paintTitleScreenPresentation(
-      surface,
-      { cols, rows, time, theme, textDirection: options.textDirection },
-    );
+    paintTitleScreenPresentation(surface, {
+      cols,
+      rows,
+      time,
+      theme,
+      textDirection: options.textDirection,
+    });
   }
   return surface;
 }
@@ -175,8 +181,7 @@ function titleSceneSurfaceOptions(
   const shader = titleSceneShader({
     cols,
     rows,
-    camAngle: options.camAngle,
-    camRadius: options.camRadius ?? DEFAULT_CAMERA_RADIUS,
+    camera: titleSceneRenderCamera(options),
     scene,
     colors: sceneColors,
   });
@@ -193,9 +198,15 @@ function titleSceneSurfaceOptions(
 
 function renderTitleSceneSurface(options: TitleSceneSurfaceOptions): Surface {
   return options.renderMode === TITLE_RENDER_MODE.Ascii
-    ? averagingAsciiCanvas(options.cols, options.rows, options.shader, options.time, {
-        palette: options.asciiPalette,
-      })
+    ? averagingAsciiCanvas(
+        options.cols,
+        options.rows,
+        options.shader,
+        options.time,
+        {
+          palette: options.asciiPalette,
+        },
+      )
     : averagingBrailleCanvas(
         options.cols,
         options.rows,
@@ -213,13 +224,23 @@ function titleSceneShader(options: TitleSceneShaderOptions): BrailleShaderFn {
       cols: options.cols,
       rows: options.rows,
       time: frameTime,
-      camAngle: options.camAngle,
-      camRadius: options.camRadius,
+      camera: options.camera,
       spotlightCamera: options.scene.camera,
       objects: options.scene.objects,
       colors: options.colors,
       environment: options.scene.environment,
     });
+}
+
+function titleSceneRenderCamera(
+  options: TitleScreenRenderOptions,
+): TitleSceneCameraPlacement {
+  return (
+    options.camera ?? {
+      angle: options.camAngle,
+      radius: options.camRadius ?? TITLE_SCENE_DEFAULT_CAMERA_RADIUS,
+    }
+  );
 }
 
 function sceneSampleAt(options: TitleSceneSampleOptions): BrailleShaderSample {
@@ -274,24 +295,21 @@ function titleSceneRayContext(
   const ry = options.v * 2 - 1;
   const finalAngle = titleSceneCameraAngleAt(
     TITLE_SCENE_DEFAULT_DIRECTOR_TIMELINE,
-    options.camAngle,
+    options.camera.angle,
     options.time,
   );
-  const origin: Vector3 = [
-    Math.sin(finalAngle) * options.camRadius,
-    TITLE_SCENE_CAMERA_HEIGHT,
-    Math.cos(finalAngle) * options.camRadius,
-  ];
-  const sphereCenter: Vector3 = [0, CAMERA_TARGET_Y, 0];
+  const renderCamera = { ...options.camera, angle: finalAngle };
+  const origin = titleSceneCameraPosition(renderCamera);
+  const target = titleSceneCameraTarget(renderCamera);
   return {
     origin,
-    ray: getRayDir(origin, [0, CAMERA_TARGET_Y, 0], [rx, -ry - 0.2, 2.7]),
+    ray: getRayDir(origin, target, [rx, -ry - 0.2, 2.7]),
     lightDirection:
       titleSceneLightDirection(options.environment) ??
       TITLE_KEY_LIGHT_DIRECTION,
     spotlight: titleSceneSpotlightForCameraPlacement(
       options.spotlightCamera,
-      sphereCenter,
+      target,
       options.colors.spotlight,
     ),
   };
@@ -331,7 +349,11 @@ function environmentSceneSample(
     ),
     fgRGB,
     bgRGB: options.colors.surface,
-    ...titleEnvironmentRayStats(environmentHit, effects, options.objects.length),
+    ...titleEnvironmentRayStats(
+      environmentHit,
+      effects,
+      options.objects.length,
+    ),
   };
 }
 

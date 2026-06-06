@@ -159,7 +159,7 @@ These terms appear throughout the codebase with precise meanings that differ fro
 - A Markdown preview lens over the active buffer
 - A deterministic no-file title flow where Tab opens an animated
   current-directory startup file drawer, Escape opens quit confirmation when the
-  drawer is closed, and `m`/`M` cycles named Teapot material presets on the live
+  drawer is closed, and `m`/`M` cycles named title material presets on the live
   ray-traced title scene
 
 That description makes it sound like a standard terminal editor. What makes `jedit` architecturally interesting is its _purpose_: it is the **release gate** for a broader distributed runtime stack called **Echo**. The README states this philosophy plainly:

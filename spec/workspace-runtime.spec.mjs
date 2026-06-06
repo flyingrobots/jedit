@@ -69,6 +69,8 @@ test("runtime load-scene-result applies the loaded scene camera to title camera 
     camera: {
       angle: 1.25,
       radius: 6.75,
+      position: [0.8, 1.05, 2.5],
+      target: [0, 0.8, 0],
     },
     objects: [],
   };
@@ -84,6 +86,9 @@ test("runtime load-scene-result applies the loaded scene camera to title camera 
         radius: 9,
         radiusTarget: 9,
         radiusMotionId: 4,
+        position: [0, 2.65, 9],
+        target: [0, 0.78, 0],
+        eyeY: 2.65,
       },
     },
   );
@@ -93,6 +98,9 @@ test("runtime load-scene-result applies the loaded scene camera to title camera 
   assert.equal(nextModel.titleCamera.angleTarget, scene.camera.angle);
   assert.equal(nextModel.titleCamera.radius, scene.camera.radius);
   assert.equal(nextModel.titleCamera.radiusTarget, scene.camera.radius);
+  assert.deepEqual(nextModel.titleCamera.position, scene.camera.position);
+  assert.deepEqual(nextModel.titleCamera.target, scene.camera.target);
+  assert.equal(nextModel.titleCamera.eyeY, scene.camera.position[1]);
 });
 
 test("workspace app renders perf overlay after toggle when perf starts disabled", async () => {
@@ -228,10 +236,10 @@ test("initial workspace scene picker lists authored scene assets that exist on d
   });
 
   assert.deepEqual(model.availableScenes, [
+    "bunny.jedit-scene",
     "neon-dispersion.jedit-scene",
     "teapot-cornell.jedit-scene",
     "teapot-gallery.jedit-scene",
-    "bunny.jedit-scene",
     "neon-orbit.jedit-scene",
     "mirror-hall.jedit-scene",
     "eclipse-gate.jedit-scene",

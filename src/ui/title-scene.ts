@@ -4,6 +4,7 @@ import {
   createBunnySceneObjects,
   titleBunnySceneCameraPlacement,
 } from "./title-bunny-scene.js";
+import type { TitleSceneCameraPlacement } from "./title-scene-camera.js";
 import type { TitleMesh } from "./title-mesh.js";
 import { TITLE_MESH_SIDE_MODE } from "./title-mesh-side-mode.js";
 import { titleSceneObjectFootprintCenterAt } from "./title-scene-transform.js";
@@ -17,6 +18,7 @@ import {
 } from "./title-scene-shape-kind.js";
 
 export { titleBunnySceneCameraPlacement } from "./title-bunny-scene.js";
+export type { TitleSceneCameraPlacement } from "./title-scene-camera.js";
 export { titleSceneObjectFootprintCenterAt as titleSceneObjectFootprintCenter } from "./title-scene-transform.js";
 export { TITLE_SCENE_SHAPE_KIND } from "./title-scene-shape-kind.js";
 export type { TitleMesh } from "./title-mesh.js";
@@ -73,11 +75,6 @@ export interface TitleSceneMeshObject extends TitleSceneBaseObject {
 }
 
 export type TitleSceneObject = TitleScenePrimitiveObject | TitleSceneMeshObject;
-
-export interface TitleSceneCameraPlacement {
-  readonly angle: number;
-  readonly radius: number;
-}
 
 export interface TitleScene {
   readonly camera: TitleSceneCameraPlacement;

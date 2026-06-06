@@ -1,13 +1,17 @@
-import type { BrailleShaderSample } from './averaging-braille-canvas.js';
-import type { TitleEnvironmentSurfaceHit } from './title-scene-environment.js';
-import type { TitleSceneEnvironment } from './title-scene-environment.js';
-import type { TitleSceneMaterialColors } from './title-scene-material-colors.js';
-import type { TitleSceneCameraPlacement, TitleSceneObject, TitleSceneVector3 } from './title-scene.js';
-import type { TitleFloorLightEffects } from './title-screen.js';
+import type { BrailleShaderSample } from "./averaging-braille-canvas.js";
+import type { TitleEnvironmentSurfaceHit } from "./title-scene-environment.js";
+import type { TitleSceneEnvironment } from "./title-scene-environment.js";
+import type { TitleSceneMaterialColors } from "./title-scene-material-colors.js";
+import type {
+  TitleSceneCameraPlacement,
+  TitleSceneObject,
+  TitleSceneVector3,
+} from "./title-scene.js";
+import type { TitleFloorLightEffects } from "./title-screen.js";
 
 type TitleSampleRayStats = Pick<
   BrailleShaderSample,
-  'rayCount' | 'rayIntersectionCount'
+  "rayCount" | "rayIntersectionCount"
 >;
 
 const TITLE_PRIMARY_SAMPLE_RAY_COUNT = 1;
@@ -66,8 +70,7 @@ export interface TitleSceneSampleOptions {
   readonly cols: number;
   readonly rows: number;
   readonly time: number;
-  readonly camAngle: number;
-  readonly camRadius: number;
+  readonly camera: TitleSceneCameraPlacement;
   readonly spotlightCamera: TitleSceneCameraPlacement;
   readonly objects: readonly TitleSceneObject[];
   readonly colors: TitleSceneMaterialColors;

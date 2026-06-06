@@ -4,22 +4,23 @@ import { importDist } from "./dist-helpers.mjs";
 import { cells, fixedTitleRenderOptions } from "./title-screen-helpers.mjs";
 import { mockI18n, mockJeditTheme, REPO_ROOT } from "./workspace-helpers.mjs";
 
-const NEON_DISPERSION_SCENE = "neon-dispersion.jedit-scene";
-const TEAPOT_OBJECT_LABEL = "utah-teapot";
+const DEFAULT_BUNNY_SCENE = "bunny.jedit-scene";
+const BUNNY_OBJECT_LABEL = "stanford-bunny";
 const TITLE_WIDTH = 92;
 const TITLE_HEIGHT = 28;
 const TITLE_TIME = 6.75;
 const MIN_RENDER_COLOR_VARIETY = 6;
-const MIN_TEAPOT_REFRACTIVE_INDEX = 1.5;
-const MIN_TEAPOT_TRANSPARENCY = 0.55;
-const MIN_TEAPOT_TRIANGLES = 14000;
+const MIN_BUNNY_REFRACTIVE_INDEX = 1.5;
+const MIN_BUNNY_TRANSPARENCY = 0.5;
+const MIN_BUNNY_TRIANGLES = 1000;
 const CAMERA_ORBIT_SAMPLE_COUNT = 16;
 const FULL_CAMERA_ORBIT_RADIANS = Math.PI * 2;
 const MIN_ORBIT_RENDER_COLOR_VARIETY = 20;
 const CHECKER_FLOOR_DARK = [3, 4, 7];
 const CHECKER_FLOOR_LIGHT = [58, 68, 76];
 const CHECKER_FLOOR_GRID_SCALE = 0.95;
-const MAX_DEFAULT_TEAPOT_CAMERA_RADIUS = 3.2;
+const MAX_DEFAULT_BUNNY_CAMERA_RADIUS = 2.8;
+const MAX_DEFAULT_BUNNY_CAMERA_Y = 1.45;
 const THEME_STABILITY_VARIABLE_NAMES = [
   "accent",
   "info",
@@ -31,23 +32,25 @@ const THEME_STABILITY_VARIABLE_NAMES = [
 const THEME_STABILITY_RGB = [244, 246, 248];
 const THEME_STABILITY_HEX = "#f4f6f8";
 
-test("neon dispersion is the registered default title scene", async () => {
-  const modules = await loadNeonDispersionModules();
-  const scene = await loadNeonDispersionScene(modules);
-  const teapot = scene.objects[0];
+test("bunny is the registered default title scene", async () => {
+  const modules = await loadDefaultBunnyModules();
+  const scene = await loadDefaultBunnyScene(modules);
+  const bunny = scene.objects[0];
 
   assert.equal(
     modules.port.DEFAULT_BUILT_IN_TITLE_SCENE_NAME,
-    NEON_DISPERSION_SCENE,
+    DEFAULT_BUNNY_SCENE,
   );
-  assert.equal(
-    modules.port.BUILT_IN_TITLE_SCENE_NAMES[0],
-    NEON_DISPERSION_SCENE,
-  );
+  assert.equal(modules.port.BUILT_IN_TITLE_SCENE_NAMES[0], DEFAULT_BUNNY_SCENE);
   assert.equal(scene.objects.length, 1);
-  assert.ok(scene.camera.radius <= MAX_DEFAULT_TEAPOT_CAMERA_RADIUS);
-  assert.equal(teapot.label, TEAPOT_OBJECT_LABEL);
-  assert.equal(teapot.kind, "mesh");
+  assert.ok(scene.camera.radius <= MAX_DEFAULT_BUNNY_CAMERA_RADIUS);
+  assert.ok(scene.camera.position[1] <= MAX_DEFAULT_BUNNY_CAMERA_Y);
+  assert.deepEqual(
+    scene.camera.target,
+    modules.titleScene.titleSceneObjectFootprintCenter(bunny),
+  );
+  assert.equal(bunny.label, BUNNY_OBJECT_LABEL);
+  assert.equal(bunny.kind, "mesh");
   assert.ok(scene.environment?.floor != null);
   assert.equal(scene.environment?.floor?.kind, "grid");
   assert.deepEqual(scene.environment?.floor?.dark, CHECKER_FLOOR_DARK);
@@ -55,12 +58,12 @@ test("neon dispersion is the registered default title scene", async () => {
   assert.equal(scene.environment?.floor?.gridScale, CHECKER_FLOOR_GRID_SCALE);
   assert.ok(scene.environment?.light != null);
   assert.equal(scene.environment?.walls, undefined);
-  assert.ok(teapot.mesh.triangles.length >= MIN_TEAPOT_TRIANGLES);
-  assert.ok(teapot.transparency >= MIN_TEAPOT_TRANSPARENCY);
-  assert.ok(teapot.refractiveIndex >= MIN_TEAPOT_REFRACTIVE_INDEX);
+  assert.ok(bunny.mesh.triangles.length >= MIN_BUNNY_TRIANGLES);
+  assert.ok(bunny.transparency >= MIN_BUNNY_TRANSPARENCY);
+  assert.ok(bunny.refractiveIndex >= MIN_BUNNY_REFRACTIVE_INDEX);
 });
 
-test("startup snapshot preloads neon dispersion as the initial scene", async () => {
+test("startup snapshot preloads the default bunny as the initial scene", async () => {
   const [adapter, init, port] = await Promise.all([
     importDist("adapters", "workspace-initial-model-snapshot.js"),
     importDist("app", "workspace", "init.js"),
@@ -74,7 +77,7 @@ test("startup snapshot preloads neon dispersion as the initial scene", async () 
   });
 
   assert.ok(snapshot.sceneOverride != null);
-  assert.equal(snapshot.sceneOverride.objects[0].label, TEAPOT_OBJECT_LABEL);
+  assert.equal(snapshot.sceneOverride.objects[0].label, BUNNY_OBJECT_LABEL);
   assert.equal(
     model.availableScenes[0],
     port.DEFAULT_BUILT_IN_TITLE_SCENE_NAME,
@@ -82,11 +85,19 @@ test("startup snapshot preloads neon dispersion as the initial scene", async () 
   assert.equal(model.sceneOverride, snapshot.sceneOverride);
   assert.equal(model.titleCamera.angle, snapshot.sceneOverride.camera.angle);
   assert.equal(model.titleCamera.radius, snapshot.sceneOverride.camera.radius);
+  assert.deepEqual(
+    model.titleCamera.position,
+    snapshot.sceneOverride.camera.position,
+  );
+  assert.deepEqual(
+    model.titleCamera.target,
+    snapshot.sceneOverride.camera.target,
+  );
 });
 
-test("neon dispersion renders neon glass against the authored light stage", async () => {
-  const modules = await loadNeonDispersionModules();
-  const scene = await loadNeonDispersionScene(modules);
+test("default bunny renders glass against the authored light stage", async () => {
+  const modules = await loadDefaultBunnyModules();
+  const scene = await loadDefaultBunnyScene(modules);
   const floorEffects = modules.title.titleFloorLightEffectsAt(
     [0, 0, 0],
     scene.objects,
@@ -108,9 +119,9 @@ test("neon dispersion renders neon glass against the authored light stage", asyn
   assert.ok(floorEffects.causticStrength > 0);
 });
 
-test("neon dispersion authored colors remain stable across general themes", async () => {
-  const modules = await loadNeonDispersionModules();
-  const scene = await loadNeonDispersionScene(modules);
+test("default bunny authored colors remain stable across general themes", async () => {
+  const modules = await loadDefaultBunnyModules();
+  const scene = await loadDefaultBunnyScene(modules);
   const theme = modules.themes.resolveInitialJeditTheme("graphite");
   const washedTheme = themeWithWashedGeneralColors(theme);
   const renderOptions = fixedTitleRenderOptions({
@@ -140,9 +151,9 @@ test("neon dispersion authored colors remain stable across general themes", asyn
   );
 });
 
-test("neon dispersion keeps visible detail around the camera orbit", async () => {
-  const modules = await loadNeonDispersionModules();
-  const scene = await loadNeonDispersionScene(modules);
+test("default bunny keeps visible detail around the camera orbit", async () => {
+  const modules = await loadDefaultBunnyModules();
+  const scene = await loadDefaultBunnyScene(modules);
   const theme = modules.themes.resolveInitialJeditTheme("graphite");
 
   for (let index = 0; index < CAMERA_ORBIT_SAMPLE_COUNT; index += 1) {
@@ -167,19 +178,20 @@ test("neon dispersion keeps visible detail around the camera orbit", async () =>
   }
 });
 
-async function loadNeonDispersionModules() {
+async function loadDefaultBunnyModules() {
   return {
     adapter: await importDist("adapters", "title-scene-loader.js"),
     meshes: await importDist("adapters", "workspace-title-meshes.js"),
     port: await importDist("ports", "title-scene-loader.js"),
+    titleScene: await importDist("ui", "title-scene.js"),
     themes: await importDist("ui", "jedit-themes.js"),
     title: await importDist("ui", "title-screen.js"),
   };
 }
 
-function loadNeonDispersionScene(modules) {
+function loadDefaultBunnyScene(modules) {
   return modules.adapter.loadBuiltInTitleScene(
-    NEON_DISPERSION_SCENE,
+    DEFAULT_BUNNY_SCENE,
     modules.meshes.loadStartupTitleMeshes(),
   );
 }

@@ -26,6 +26,10 @@ const TITLE_BUNNY_MESH_PATH = path.join(
   "adapters",
   "title-bunny-mesh.js",
 );
+const CAMERA_POSITION = [0, 1.12, 2.35];
+const CAMERA_DIRECTION_TARGET = [0, 1.12, 1.35];
+const CAMERA_TARGET_OBJECT_LABEL = "camera-subject";
+const CAMERA_TARGET_OBJECT_POSITION = [0.2, 0.72, -0.15];
 let titleSceneLoaderModulesPromise;
 
 async function loadTitleSceneLoaderModules() {
@@ -129,6 +133,49 @@ test("scene loader decodes bounded optical material fields", async () => {
       error?.name === "SceneDecodeError" &&
       String(error.message).includes("transparency"),
   );
+});
+
+test("scene loader resolves world-space camera target objects", async () => {
+  const { loader, titleScene } = await loadTitleSceneLoaderModules();
+  const scene = loader.parseTitleSceneJson(
+    {
+      camera: {
+        position: CAMERA_POSITION,
+        targetObject: CAMERA_TARGET_OBJECT_LABEL,
+      },
+      objects: [
+        {
+          label: CAMERA_TARGET_OBJECT_LABEL,
+          kind: titleScene.TITLE_SCENE_SHAPE_KIND.Sphere,
+          position: CAMERA_TARGET_OBJECT_POSITION,
+          radius: 0.5,
+          color: [120, 220, 255],
+          reflectivity: 0.12,
+        },
+      ],
+    },
+    {},
+  );
+
+  assert.deepEqual(scene.camera.position, CAMERA_POSITION);
+  assert.deepEqual(scene.camera.target, CAMERA_TARGET_OBJECT_POSITION);
+});
+
+test("scene loader resolves world-space camera direction vectors", async () => {
+  const { loader } = await loadTitleSceneLoaderModules();
+  const scene = loader.parseTitleSceneJson(
+    {
+      camera: {
+        position: CAMERA_POSITION,
+        direction: [0, 0, -1],
+      },
+      objects: [],
+    },
+    {},
+  );
+
+  assert.deepEqual(scene.camera.position, CAMERA_POSITION);
+  assert.deepEqual(scene.camera.target, CAMERA_DIRECTION_TARGET);
 });
 
 test("built-in scene loader accepts an injected scene directory without mutating dist scenes", async () => {

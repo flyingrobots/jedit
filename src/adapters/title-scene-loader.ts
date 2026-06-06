@@ -9,13 +9,21 @@ import {
   type TitleSceneCameraPlacement,
   type TitleSceneObject,
   type TitleScenePrimitiveShapeKind,
+  type TitleSceneVector3,
 } from "../ui/title-scene.js";
+import {
+  TITLE_SCENE_DEFAULT_CAMERA_ANGLE,
+  TITLE_SCENE_DEFAULT_CAMERA_RADIUS,
+  TITLE_SCENE_DEFAULT_CAMERA_TARGET,
+  titleSceneCameraPlacementFromPosition,
+} from "../ui/title-scene-camera.js";
 import {
   TITLE_MESH_ID,
   type TitleMeshId,
   type TitleMeshLibrary,
 } from "../ui/title-mesh-library.js";
 import type { TitleMesh } from "../ui/title-mesh.js";
+import { titleSceneObjectFootprintCenterAt } from "../ui/title-scene-transform.js";
 import {
   BUILT_IN_TITLE_SCENE_NAMES,
   type BuiltInTitleSceneName,
@@ -44,16 +52,18 @@ interface DecodedOpticalMaterial {
 interface DecodedSceneObjectMetadata {
   readonly label?: string;
 }
+interface DecodedCameraTarget {
+  readonly target?: TitleSceneVector3;
+}
 
 export interface TitleSceneLoaderOptions {
   readonly builtInSceneDirectories?: readonly string[];
 }
 
-const DEFAULT_CAMERA_ANGLE = 0;
-const DEFAULT_CAMERA_RADIUS = 8.5;
 const MATERIAL_RATIO_MIN = 0;
 const MATERIAL_RATIO_MAX = 1;
 const REFRACTIVE_INDEX_MIN = 1;
+const EMPTY_DIRECTION_LENGTH = 0;
 const BUILT_IN_TITLE_SCENE_SET = new Set<string>(BUILT_IN_TITLE_SCENE_NAMES);
 const BUILT_IN_SCENE_CANDIDATE_URLS = [
   (name: BuiltInTitleSceneName): URL =>
@@ -116,12 +126,12 @@ export function parseTitleSceneJson(
   meshes: TitleMeshLibrary,
 ): TitleScene {
   const root = objectAt(json, "scene");
-  const camera = decodeCamera(root["camera"]);
   const environment = decodeTitleSceneEnvironment(root["environment"]);
   const objects = arrayAt(root["objects"] ?? [], "scene.objects").map(
     (objectJson, index) =>
       decodeSceneObject(objectJson, meshes, `scene.objects[${index}]`),
   );
+  const camera = decodeCamera(root["camera"], objects);
 
   return { camera, objects, environment };
 }
@@ -143,19 +153,131 @@ export function createTitleSceneLoaderPort(
   };
 }
 
-function decodeCamera(value: JsonValue | undefined): TitleSceneCameraPlacement {
+function decodeCamera(
+  value: JsonValue | undefined,
+  objects: readonly TitleSceneObject[],
+): TitleSceneCameraPlacement {
   if (value == null) {
-    return { angle: DEFAULT_CAMERA_ANGLE, radius: DEFAULT_CAMERA_RADIUS };
+    return {
+      angle: TITLE_SCENE_DEFAULT_CAMERA_ANGLE,
+      radius: TITLE_SCENE_DEFAULT_CAMERA_RADIUS,
+    };
   }
   const camera = objectAt(value, "scene.camera");
+  const position = optionalVector(camera["position"], "scene.camera.position");
+  const target = decodeCameraTarget(camera, position, objects).target;
+  if (position != null) {
+    return titleSceneCameraPlacementFromPosition(
+      position,
+      target ?? TITLE_SCENE_DEFAULT_CAMERA_TARGET,
+    );
+  }
   return {
     angle:
       optionalFiniteNumber(camera["angle"], "scene.camera.angle") ??
-      DEFAULT_CAMERA_ANGLE,
+      TITLE_SCENE_DEFAULT_CAMERA_ANGLE,
     radius:
       optionalNonNegativeNumber(camera["radius"], "scene.camera.radius") ??
-      DEFAULT_CAMERA_RADIUS,
+      TITLE_SCENE_DEFAULT_CAMERA_RADIUS,
+    ...(target == null ? {} : { target }),
   };
+}
+
+function decodeCameraTarget(
+  camera: JsonObject,
+  position: TitleSceneVector3 | undefined,
+  objects: readonly TitleSceneObject[],
+): DecodedCameraTarget {
+  const target = optionalVector(camera["target"], "scene.camera.target");
+  const direction = optionalVector(
+    camera["direction"],
+    "scene.camera.direction",
+  );
+  const targetObject = optionalString(
+    camera["targetObject"],
+    "scene.camera.targetObject",
+  );
+  const sourceCount = cameraTargetSourceCount(target, direction, targetObject);
+  if (sourceCount > 1) {
+    throw new SceneDecodeError(
+      "scene.camera must define only one of target, direction, or targetObject.",
+    );
+  }
+  if (target != null) {
+    return { target };
+  }
+  if (direction != null) {
+    return { target: cameraDirectionTarget(position, direction) };
+  }
+  if (targetObject != null) {
+    return { target: cameraTargetObjectCenter(objects, targetObject) };
+  }
+  return {};
+}
+
+function cameraTargetSourceCount(
+  target: TitleSceneVector3 | undefined,
+  direction: TitleSceneVector3 | undefined,
+  targetObject: string | undefined,
+): number {
+  return (
+    (target == null ? 0 : 1) +
+    (direction == null ? 0 : 1) +
+    (targetObject == null ? 0 : 1)
+  );
+}
+
+function cameraDirectionTarget(
+  position: TitleSceneVector3 | undefined,
+  direction: TitleSceneVector3,
+): TitleSceneVector3 {
+  if (position == null) {
+    throw new SceneDecodeError(
+      "scene.camera.direction requires scene.camera.position.",
+    );
+  }
+  if (vectorLength(direction) === EMPTY_DIRECTION_LENGTH) {
+    throw new SceneDecodeError("scene.camera.direction must not be zero.");
+  }
+  return addNormalizedDirection(position, direction);
+}
+
+function cameraTargetObjectCenter(
+  objects: readonly TitleSceneObject[],
+  label: string,
+): TitleSceneVector3 {
+  const matches = objects.filter((object) => object.label === label);
+  if (matches.length !== 1) {
+    throw new SceneDecodeError(
+      `scene.camera.targetObject must match exactly one object label: ${label}.`,
+    );
+  }
+  return titleSceneObjectFootprintCenterAt(matches[0]!);
+}
+
+function optionalVector(
+  value: JsonValue | undefined,
+  path: string,
+): TitleSceneVector3 | undefined {
+  return value == null ? undefined : vectorAt(value, path);
+}
+
+function vectorLength(vector: TitleSceneVector3): number {
+  return Math.sqrt(
+    vector[0] * vector[0] + vector[1] * vector[1] + vector[2] * vector[2],
+  );
+}
+
+function addNormalizedDirection(
+  position: TitleSceneVector3,
+  direction: TitleSceneVector3,
+): TitleSceneVector3 {
+  const length = vectorLength(direction);
+  return [
+    position[0] + direction[0] / length,
+    position[1] + direction[1] / length,
+    position[2] + direction[2] / length,
+  ];
 }
 
 function decodeSceneObject(

@@ -9,7 +9,10 @@ import {
   createTitleScenePreviewModel,
   titleScenePreviewRenderOptions,
 } from "../dist/app/title-scene-preview-session.js";
-import { BUILT_IN_TITLE_SCENE_NAMES } from "../dist/ports/title-scene-loader.js";
+import {
+  BUILT_IN_TITLE_SCENE_NAMES,
+  DEFAULT_BUILT_IN_TITLE_SCENE_NAME,
+} from "../dist/ports/title-scene-loader.js";
 import { ASCII_SAMPLE_COUNT } from "../dist/ui/averaging-ascii-canvas.js";
 import {
   BRAILLE_SAMPLE_COUNT,
@@ -23,7 +26,7 @@ import {
   renderTitleScreen,
 } from "../dist/ui/title-screen.js";
 
-const DEFAULT_SCENE = "neon-dispersion.jedit-scene";
+const DEFAULT_SCENE = DEFAULT_BUILT_IN_TITLE_SCENE_NAME;
 const DEFAULT_THEME = "graphite";
 const DEFAULT_WIDTH = 150;
 const DEFAULT_HEIGHT = 43;

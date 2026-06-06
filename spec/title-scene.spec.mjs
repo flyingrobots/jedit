@@ -233,6 +233,8 @@ test("initial title camera state can use a seeded scene placement", async () => 
   assert.equal(camera.angleTarget, placement.angle);
   assert.equal(camera.radius, placement.radius);
   assert.equal(camera.radiusTarget, placement.radius);
+  assert.deepEqual(camera.target, [0, 0.78, 0]);
+  assert.equal(camera.position[1], BUNNY_TITLE_CAMERA_HEIGHT);
 });
 
 test("title scene builds a mirror sphere with orbiting bunny and cube", async () => {
@@ -523,11 +525,9 @@ test("title scene mesh side mode stays double-sided unless requested", async () 
   };
 
   assert.ok(
-    titleScene.nearestTitleSceneObjectHit(
-      meshBackOrigin(),
-      meshFrontRay(),
-      [object],
-    ),
+    titleScene.nearestTitleSceneObjectHit(meshBackOrigin(), meshFrontRay(), [
+      object,
+    ]),
   );
   assert.equal(
     titleScene.nearestTitleSceneObjectHit(

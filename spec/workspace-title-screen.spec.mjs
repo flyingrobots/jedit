@@ -100,7 +100,7 @@ test("tab opens startup file browser and suppresses title logos", async () => {
   assert.equal(renderOptions[0].suppressPresentation, true);
 });
 
-test("title screen m cycles teapot materials and reports the material name", async () => {
+test("title screen m cycles title mesh materials and reports the material name", async () => {
   const [keyBindings, titleScreen, material, sceneLoader, meshes] =
     await Promise.all([
       importDist("app", "workspace", "key-bindings.js"),
@@ -110,7 +110,7 @@ test("title screen m cycles teapot materials and reports the material name", asy
       importDist("adapters", "workspace-title-meshes.js"),
     ]);
   const scene = await sceneLoader.loadBuiltInTitleScene(
-    "neon-dispersion.jedit-scene",
+    "bunny.jedit-scene",
     meshes.loadStartupTitleMeshes(),
   );
   const [first] = keyBindings.updateFromKey(
@@ -129,13 +129,13 @@ test("title screen m cycles teapot materials and reports the material name", asy
   assert.equal(first.titleMeshMaterialIndex, 1);
   assert.deepEqual(first.sceneOverride.objects[0].color, firstPreset.color);
   assert.equal(
-    hasNotification(first, "Teapot material", firstPreset.name),
+    hasNotification(first, "Title material", firstPreset.name),
     true,
   );
   assert.equal(second.titleMeshMaterialIndex, 2);
   assert.deepEqual(second.sceneOverride.objects[0].color, secondPreset.color);
   assert.equal(
-    hasNotification(second, "Teapot material", secondPreset.name),
+    hasNotification(second, "Title material", secondPreset.name),
     true,
   );
 });
