@@ -17,7 +17,6 @@ export interface StartupFileModalRow {
 
 const STARTUP_INTRO_COMPLETE_SECONDS = 7;
 const STARTUP_FILE_MODAL_MIN_SELECTION = 0;
-const STARTUP_FILE_MODAL_BACKSPACE_DELETE_COUNT = 1;
 
 export function initialStartupFileModalState(): StartupFileModalState {
   return {
@@ -96,64 +95,24 @@ export function dismissStartupFileModal(model: WorkspaceModel): WorkspaceModel {
 
 export function startupFileModalRows(
   entries: readonly FileEntry[],
-  input: string,
 ): readonly StartupFileModalRow[] {
-  const normalizedInput = normalizeStartupFileFilter(input);
   return entries
     .filter((entry) => entry.kind !== FileEntryKinds.Parent)
-    .filter(
-      (entry) =>
-        normalizedInput.length === 0 ||
-        normalizeStartupFileFilter(entry.name).includes(normalizedInput),
-    )
     .map((entry) => ({ entry }));
 }
 
 export function startupFileModalSelectedRow(
   model: WorkspaceModel,
 ): StartupFileModalRow | undefined {
-  const rows = startupFileModalRows(model.entries, model.startupFileModalInput);
+  const rows = startupFileModalRows(model.entries);
   return rows[clampIndex(model.startupFileModalSelectedIndex, rows.length)];
-}
-
-export function updateStartupFileModalInput(
-  model: WorkspaceModel,
-  input: string,
-): WorkspaceModel {
-  return {
-    ...model,
-    startupFileModalInput: input,
-    startupFileModalSelectedIndex: STARTUP_FILE_MODAL_MIN_SELECTION,
-  };
-}
-
-export function appendStartupFileModalInput(
-  model: WorkspaceModel,
-  text: string,
-): WorkspaceModel {
-  return updateStartupFileModalInput(
-    model,
-    `${model.startupFileModalInput}${text}`,
-  );
-}
-
-export function backspaceStartupFileModalInput(
-  model: WorkspaceModel,
-): WorkspaceModel {
-  return updateStartupFileModalInput(
-    model,
-    model.startupFileModalInput.slice(
-      0,
-      -STARTUP_FILE_MODAL_BACKSPACE_DELETE_COUNT,
-    ),
-  );
 }
 
 export function moveStartupFileModalSelection(
   model: WorkspaceModel,
   delta: number,
 ): WorkspaceModel {
-  const rows = startupFileModalRows(model.entries, model.startupFileModalInput);
+  const rows = startupFileModalRows(model.entries);
   return {
     ...model,
     startupFileModalSelectedIndex: clampIndex(
@@ -168,8 +127,4 @@ function shouldCompleteStartupIntro(model: WorkspaceModel): boolean {
     isStartupIntroSkipCandidate(model) &&
     model.time >= STARTUP_INTRO_COMPLETE_SECONDS
   );
-}
-
-function normalizeStartupFileFilter(value: string): string {
-  return value.toLowerCase();
 }

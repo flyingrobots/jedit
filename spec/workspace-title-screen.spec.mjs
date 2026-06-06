@@ -661,7 +661,7 @@ test("startup file modal renders a themed Bijou scrollbar when file rows overflo
   );
 });
 
-test("startup file modal input filters current directory rows", async () => {
+test("startup file modal no longer owns printable type-to-search input", async () => {
   const [keyBindings, viewer, titleScreen, themes, fileSystem] =
     await Promise.all([
       importDist("app", "workspace", "key-bindings.js"),
@@ -694,16 +694,16 @@ test("startup file modal input filters current directory rows", async () => {
     ],
   });
 
-  const [filtered] = keyBindings.updateFromKey(
+  const [ignored] = keyBindings.updateFromKey(
     { key: "n", ctrl: false, alt: false, shift: false },
     model,
     mockKeyBindingContext(),
   );
-  const text = surfaceText(viewer.renderWorkspace(filtered));
+  const text = surfaceText(viewer.renderWorkspace(ignored));
 
-  assert.equal(filtered.startupFileModalInput, "n");
+  assert.equal(ignored.startupFileModalInput, "");
   assert.match(text, /notes\.txt/);
-  assert.doesNotMatch(text, /alpha\.tmp/);
+  assert.match(text, /alpha\.tmp/);
 });
 
 test("startup file modal stays closed after Escape dismissal", async () => {
@@ -876,11 +876,11 @@ test("startup file modal opens directories without dismissing the modal", async 
   assert.equal(opened.cwd, "/repo/src");
   assert.deepEqual(opened.entries, [childEntry]);
   assert.equal(opened.startupFileModalOpen, true);
-  assert.equal(opened.startupFileModalInput, "");
+  assert.equal(opened.startupFileModalInput, "src");
   assert.deepEqual(commands, []);
 });
 
-test("startup file modal renders empty and no-match states", async () => {
+test("startup file modal renders empty state without search no-match posture", async () => {
   const [viewer, titleScreen, themes, fileSystem] = await Promise.all([
     importDist("app", "workspace", "viewer.js"),
     importDist("ui", "title-screen.js"),
@@ -902,7 +902,7 @@ test("startup file modal renders empty and no-match states", async () => {
       }),
     ),
   );
-  const noMatchText = surfaceText(
+  const seededInputText = surfaceText(
     viewer.renderWorkspace(
       mockTitleScreenModel(titleScreen, {
         ...base,
@@ -919,7 +919,8 @@ test("startup file modal renders empty and no-match states", async () => {
   );
 
   assert.match(emptyText, /No files in this directory/);
-  assert.match(noMatchText, /No files match/);
+  assert.doesNotMatch(seededInputText, /No files match/);
+  assert.match(seededInputText, /notes\.md/);
 });
 
 test("startup file modal does not override the small-terminal notice", async () => {

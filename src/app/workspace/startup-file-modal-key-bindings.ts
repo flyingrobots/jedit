@@ -8,8 +8,6 @@ import type { WorkspaceKeyBindingContext } from "./key-binding-context.js";
 import type { WorkspaceModel } from "./model.js";
 import type { WorkspaceMsg } from "./msg.js";
 import {
-  appendStartupFileModalInput,
-  backspaceStartupFileModalInput,
   closeStartupFileModal,
   completeStartupIntro,
   dismissStartupFileModal,
@@ -17,15 +15,12 @@ import {
   isStartupIntroSkipCandidate,
   moveStartupFileModalSelection,
   startupFileModalSelectedRow,
-  updateStartupFileModalInput,
 } from "./startup-file-modal.js";
 import { WorkspaceKeys } from "./workspace-key.js";
 
 type KeyBindingResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 
 const STARTUP_FILE_MODAL_SELECTION_STEP = 1;
-const STARTUP_FILE_MODAL_EMPTY_INPUT_LENGTH = 0;
-const STARTUP_FILE_MODAL_SINGLE_CHAR_LENGTH = 1;
 
 export function updateStartupFileModalKey(
   msg: KeyMsg,
@@ -61,16 +56,13 @@ function updateOpenStartupFileModalKey(
       ),
     ];
   }
-  if (msg.key === WorkspaceKeys.Backspace) {
-    return [backspaceStartupFileModalInput(model), []];
-  }
-  if (isStartupFileModalNextKey(msg, model)) {
+  if (isStartupFileModalNextKey(msg)) {
     return [
       moveStartupFileModalSelection(model, STARTUP_FILE_MODAL_SELECTION_STEP),
       [],
     ];
   }
-  if (isStartupFileModalPreviousKey(msg, model)) {
+  if (isStartupFileModalPreviousKey(msg)) {
     return [
       moveStartupFileModalSelection(model, -STARTUP_FILE_MODAL_SELECTION_STEP),
       [],
@@ -79,10 +71,7 @@ function updateOpenStartupFileModalKey(
   if (isStartupFileModalAcceptKey(msg)) {
     return acceptStartupFileModalSelection(model, context.deps);
   }
-  const inputText = appendableStartupFileModalText(msg);
-  return inputText == null
-    ? [model, []]
-    : [appendStartupFileModalInput(model, inputText), []];
+  return [model, []];
 }
 
 function acceptStartupFileModalSelection(
@@ -101,7 +90,7 @@ function acceptStartupFileModalSelection(
   );
   return row.entry.kind === FileEntryKinds.File
     ? [closeStartupFileModal(opened), commands]
-    : [updateStartupFileModalInput(opened, ""), commands];
+    : [opened, commands];
 }
 
 function isStartupIntroSkipKey(msg: KeyMsg): boolean {
@@ -135,38 +124,22 @@ function isStartupFileModalAcceptKey(msg: KeyMsg): boolean {
 
 function isStartupFileModalNextKey(
   msg: KeyMsg,
-  model: WorkspaceModel,
 ): boolean {
   return (
     !msg.ctrl &&
     !msg.alt &&
     (msg.key === WorkspaceKeys.ArrowDown ||
-      (msg.key === WorkspaceKeys.J && modalInputEmpty(model)))
+      msg.key === WorkspaceKeys.J)
   );
 }
 
 function isStartupFileModalPreviousKey(
   msg: KeyMsg,
-  model: WorkspaceModel,
 ): boolean {
   return (
     !msg.ctrl &&
     !msg.alt &&
     (msg.key === WorkspaceKeys.ArrowUp ||
-      (msg.key === WorkspaceKeys.K && modalInputEmpty(model)))
+      msg.key === WorkspaceKeys.K)
   );
-}
-
-function modalInputEmpty(model: WorkspaceModel): boolean {
-  return (
-    model.startupFileModalInput.length === STARTUP_FILE_MODAL_EMPTY_INPUT_LENGTH
-  );
-}
-
-function appendableStartupFileModalText(msg: KeyMsg): string | undefined {
-  return msg.ctrl ||
-    msg.alt ||
-    msg.key.length !== STARTUP_FILE_MODAL_SINGLE_CHAR_LENGTH
-    ? undefined
-    : msg.key;
 }

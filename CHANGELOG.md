@@ -9,6 +9,8 @@
   title screen so it cannot steal Vim command-completion Tab or Enter keys.
 - Added live invalid-command footer feedback while typing unknown Vim command
   fragments such as `:exi`.
+- Retired the retained startup file drawer's duplicate type-to-search input so
+  command mode is the only type-to-open surface.
 - Added an unavailable-preview lower mode for Graft-backed editor completions
   so adapter failures can render honestly through the shared popup.
 - Added render witnesses for editor completion documentation, source-definition,

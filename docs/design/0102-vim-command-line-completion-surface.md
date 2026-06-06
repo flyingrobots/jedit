@@ -523,7 +523,7 @@ Slices:
 - [x] Slice 17: Route startup post-intro open affordance toward command mode or
       the standard files drawer.
       Commit: `UX: consolidate startup file opening`.
-- [ ] Slice 18: Remove duplicate startup type-to-search code that command mode
+- [x] Slice 18: Remove duplicate startup type-to-search code that command mode
       replaces.
       Commit: `UX: retire duplicate startup search`.
 - [ ] Slice 19: Update footer hints and localized command copy.
