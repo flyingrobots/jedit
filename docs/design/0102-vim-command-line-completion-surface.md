@@ -495,7 +495,7 @@ Slices:
 
 - [x] Slice 13: Add editor completion context and provider registry seam.
       Commit: `UX: add editor completion provider seam`.
-- [ ] Slice 14: Add fake Graft symbol provider witness.
+- [x] Slice 14: Add fake Graft symbol provider witness.
       Commit: `UX: witness graft completion provider`.
 - [ ] Slice 15: Render documentation, source-definition, and causal-history
       preview kinds through the same component.

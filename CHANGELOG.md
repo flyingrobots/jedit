@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added a Graft outline-backed editor symbol completion provider witness that
+  renders through the shared inline completion popup.
 - Added an editor-context completion registry seam that can return the same
   provider-neutral inline completion items used by Vim command completions.
 - Highlighted invalid Vim command-line input in the footer and added a
