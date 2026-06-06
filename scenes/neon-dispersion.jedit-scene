@@ -29,6 +29,70 @@
       "reflectivity": 0.24,
       "transparency": 0.62,
       "refractiveIndex": 1.65
+    },
+    {
+      "label": "cyan-glass-sphere",
+      "kind": "sphere",
+      "position": [2.7, 0.55, 1.55],
+      "radius": 0.55,
+      "height": 1.1,
+      "footprintRadius": 0.55,
+      "color": [96, 220, 255],
+      "reflectivity": 0.38,
+      "transparency": 0.32,
+      "refractiveIndex": 1.35
+    },
+    {
+      "label": "rose-metal-box",
+      "kind": "cube",
+      "position": [-2.5, 0.45, 1.9],
+      "radius": 0.45,
+      "height": 0.9,
+      "footprintRadius": 0.64,
+      "color": [255, 124, 164],
+      "reflectivity": 0.45
+    },
+    {
+      "label": "lime-matte-sphere",
+      "kind": "sphere",
+      "position": [-2.9, 0.35, -1.2],
+      "radius": 0.35,
+      "height": 0.7,
+      "footprintRadius": 0.35,
+      "color": [154, 235, 132],
+      "reflectivity": 0.16
+    },
+    {
+      "label": "amber-glass-box",
+      "kind": "cube",
+      "position": [2.85, 0.7, -1.7],
+      "radius": 0.62,
+      "height": 1.4,
+      "footprintRadius": 0.88,
+      "color": [255, 184, 92],
+      "reflectivity": 0.28,
+      "transparency": 0.18,
+      "refractiveIndex": 1.18
+    },
+    {
+      "label": "violet-orb",
+      "kind": "sphere",
+      "position": [0.15, 0.42, -3.1],
+      "radius": 0.42,
+      "height": 0.84,
+      "footprintRadius": 0.42,
+      "color": [184, 128, 255],
+      "reflectivity": 0.22
+    },
+    {
+      "label": "pearl-low-box",
+      "kind": "cube",
+      "position": [1.15, 0.25, 3.0],
+      "radius": 0.35,
+      "height": 0.5,
+      "footprintRadius": 0.5,
+      "color": [228, 240, 238],
+      "reflectivity": 0.58
     }
   ]
 }

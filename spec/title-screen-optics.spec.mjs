@@ -6,7 +6,7 @@ import { loadTitleModules } from "./title-screen-helpers.mjs";
 const THEME_VARIABLE_ACCENT = "accent";
 const SPOTLIGHT_CAMERA_ANGLE = 0.14;
 const SPOTLIGHT_CAMERA_RADIUS = 6.4;
-const SPOTLIGHT_CAMERA_HEIGHT = 2.65;
+const SPOTLIGHT_CAMERA_HEIGHT = 3.35;
 const SPOTLIGHT_SPHERE_CENTER = [0, 0.78, 0];
 const SPOTLIGHT_COLOR_DELTA = 80;
 const SECOND_RENDER_CAMERA_ANGLE = 1.7;

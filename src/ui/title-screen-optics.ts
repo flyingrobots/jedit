@@ -85,7 +85,7 @@ const REFRACTION_TINT = 1.08;
 const AIR_REFRACTIVE_INDEX = 1;
 const SHADOW_RAY_BIAS = 0.03;
 const NO_LIGHT: Color3 = [0, 0, 0];
-export const TITLE_SCENE_CAMERA_HEIGHT = 2.65;
+export const TITLE_SCENE_CAMERA_HEIGHT = 3.35;
 
 export function titleSceneSpotlightAt(
   cameraStart: Vector3,

@@ -6,6 +6,8 @@ import { mockI18n, mockJeditTheme, REPO_ROOT } from "./workspace-helpers.mjs";
 
 const NEON_DISPERSION_SCENE = "neon-dispersion.jedit-scene";
 const DRAGON_OBJECT_LABEL = "stanford-dragon";
+const MIN_DRESSING_OBJECT_COUNT = 7;
+const MIN_DRESSING_MATERIAL_COUNT = 6;
 const TITLE_WIDTH = 92;
 const TITLE_HEIGHT = 28;
 const TITLE_TIME = 6.75;
@@ -20,7 +22,9 @@ const MIN_ORBIT_RENDER_COLOR_VARIETY = 20;
 test("neon dispersion is the registered default title scene", async () => {
   const modules = await loadNeonDispersionModules();
   const scene = await loadNeonDispersionScene(modules);
-  const dragon = scene.objects[0];
+  const dragon = scene.objects.find(
+    (object) => object.label === DRAGON_OBJECT_LABEL,
+  );
 
   assert.equal(
     modules.port.DEFAULT_BUILT_IN_TITLE_SCENE_NAME,
@@ -30,9 +34,15 @@ test("neon dispersion is the registered default title scene", async () => {
     modules.port.BUILT_IN_TITLE_SCENE_NAMES[0],
     NEON_DISPERSION_SCENE,
   );
-  assert.equal(scene.objects.length, 1);
-  assert.equal(dragon.label, DRAGON_OBJECT_LABEL);
+  assert.ok(scene.objects.length >= MIN_DRESSING_OBJECT_COUNT);
+  assert.ok(dragon != null);
   assert.equal(dragon.kind, "mesh");
+  assert.ok(scene.objects.some((object) => object.kind === "sphere"));
+  assert.ok(scene.objects.some((object) => object.kind === "cube"));
+  assert.ok(
+    new Set(scene.objects.map((object) => object.color.join(","))).size >=
+      MIN_DRESSING_MATERIAL_COUNT,
+  );
   assert.ok(scene.environment?.floor != null);
   assert.ok(scene.environment?.light != null);
   assert.equal(scene.environment?.walls, undefined);
@@ -55,7 +65,11 @@ test("startup snapshot preloads neon dispersion as the initial scene", async () 
   });
 
   assert.ok(snapshot.sceneOverride != null);
-  assert.equal(snapshot.sceneOverride.objects[0].label, DRAGON_OBJECT_LABEL);
+  assert.ok(
+    snapshot.sceneOverride.objects.some(
+      (object) => object.label === DRAGON_OBJECT_LABEL,
+    ),
+  );
   assert.equal(
     model.availableScenes[0],
     port.DEFAULT_BUILT_IN_TITLE_SCENE_NAME,

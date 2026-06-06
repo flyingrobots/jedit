@@ -25,7 +25,9 @@ import {
 import {
   nearestTitleEnvironmentSurfaceHit,
   titleSceneBackgroundColor,
+  titleSceneDayNightEnvironment,
   titleSceneLightDirection,
+  type TitleSceneEnvironment,
 } from "./title-scene-environment.js";
 import { paintTitleLogo, titleLogoCellBounds } from "./title-logo.js";
 import type { TitleMesh } from "./title-mesh.js";
@@ -95,6 +97,7 @@ export interface TitleScreenRenderOptions {
   readonly camAngle: number;
   readonly camRadius?: number;
   readonly sceneSeed?: number;
+  readonly wallClockMs?: number;
   readonly mesh?: TitleMesh;
   readonly sceneOverride?: TitleScene;
   readonly renderMode?: TitleRenderMode;
@@ -116,6 +119,7 @@ interface TitleSceneShaderOptions {
   readonly camAngle: number;
   readonly camRadius: number;
   readonly scene: TitleScene;
+  readonly environment: TitleSceneEnvironment | undefined;
   readonly colors: TitleSceneMaterialColors;
 }
 
@@ -146,6 +150,7 @@ export function renderTitleScreen(
     camAngle,
     camRadius = DEFAULT_CAMERA_RADIUS,
     sceneSeed = DEFAULT_TITLE_SCENE_SEED,
+    wallClockMs,
     mesh,
     sceneOverride,
     renderMode = TITLE_RENDER_MODE.Braille,
@@ -154,6 +159,7 @@ export function renderTitleScreen(
   } = options;
   const colors = titleSceneMaterialColors(theme);
   const scene = sceneOverride ?? generateTitleScene(sceneSeed, colors, mesh);
+  const environment = titleSceneDayNightEnvironment(scene.environment, sceneSeed, wallClockMs);
   const sequence = titlePresentationSequence(time, textDirection);
   const shader = titleSceneShader({
     cols,
@@ -161,6 +167,7 @@ export function renderTitleScreen(
     camAngle,
     camRadius,
     scene,
+    environment,
     colors,
   });
 
@@ -187,7 +194,7 @@ function titleSceneShader(options: TitleSceneShaderOptions): BrailleShaderFn {
       spotlightCamera: options.scene.camera,
       objects: options.scene.objects,
       colors: options.colors,
-      environment: options.scene.environment,
+      environment: options.environment,
     });
 }
 
