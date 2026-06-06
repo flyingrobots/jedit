@@ -195,6 +195,7 @@ function renderLiveTitleBackdrop(
     camAngle: model.titleCamera.angle,
     camRadius: model.titleCamera.radius,
     sceneSeed: model.titleSceneSeed,
+    wallClockMs: model.lastFrameMs,
     mesh: model.titleMeshes.bunny,
     sceneOverride: model.sceneOverride,
     renderMode: model.titleRenderMode,

@@ -12,6 +12,10 @@ const TITLE_HEIGHT = 28;
 const POST_INTRO_SCENE_TIME = 6.75;
 const MIN_READABLE_CAMERA_DRIFT_RATE = 0.02;
 const REFLECTIVE_HIGHLIGHT_LUMINANCE = 190;
+const NOON_HOUR = 12;
+const MIDNIGHT_HOUR = 0;
+const FIRST_CHECKER_SEED = 0.12;
+const SECOND_CHECKER_SEED = 0.82;
 
 test("title camera ambient drift is fast enough to read as orbiting", async () => {
   const { title } = await loadTitleModules();
@@ -216,6 +220,45 @@ test("title screen render options keep scene seed separate from camera angle", a
 
   assert.deepEqual(cells(sameSeed), cells(sameSeedAgain));
   assert.notDeepEqual(cells(otherSeed), cells(sameSeed));
+});
+
+test("title scene day/night environment follows wall clock and scene seed", async () => {
+  const { titleSceneEnvironment } = await loadTitleModules();
+  const baseEnvironment = {
+    background: [2, 3, 7],
+    floor: {
+      kind: "grid",
+      dark: [4, 7, 11],
+      light: [28, 35, 44],
+      gridScale: 1.35,
+    },
+    light: {
+      direction: [-0.95, 2.85, -1.25],
+      ambient: 0.08,
+      diffuse: 0.92,
+    },
+  };
+  const noon = titleSceneEnvironment.titleSceneDayNightEnvironmentAtHour(
+    baseEnvironment,
+    FIRST_CHECKER_SEED,
+    NOON_HOUR,
+  );
+  const midnight = titleSceneEnvironment.titleSceneDayNightEnvironmentAtHour(
+    baseEnvironment,
+    FIRST_CHECKER_SEED,
+    MIDNIGHT_HOUR,
+  );
+  const alternateSeed = titleSceneEnvironment.titleSceneDayNightEnvironmentAtHour(
+    baseEnvironment,
+    SECOND_CHECKER_SEED,
+    NOON_HOUR,
+  );
+
+  assert.ok(luminance(noon.background) > luminance(midnight.background));
+  assert.ok(noon.light.diffuse > midnight.light.diffuse);
+  assert.notDeepEqual(noon.floor.dark, alternateSeed.floor.dark);
+  assert.notDeepEqual(noon.floor.light, alternateSeed.floor.light);
+  assert.ok(luminance(noon.floor.light) > luminance(noon.floor.dark));
 });
 
 function cellColorKey(cell) {

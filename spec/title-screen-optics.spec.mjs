@@ -6,7 +6,7 @@ import { loadTitleModules } from "./title-screen-helpers.mjs";
 const THEME_VARIABLE_ACCENT = "accent";
 const SPOTLIGHT_CAMERA_ANGLE = 0.14;
 const SPOTLIGHT_CAMERA_RADIUS = 6.4;
-const SPOTLIGHT_CAMERA_HEIGHT = 2.65;
+const SPOTLIGHT_CAMERA_HEIGHT = 3.35;
 const SPOTLIGHT_SPHERE_CENTER = [0, 0.78, 0];
 const SPOTLIGHT_COLOR_DELTA = 80;
 const SECOND_RENDER_CAMERA_ANGLE = 1.7;
@@ -212,7 +212,43 @@ test("title scene spotlight visibly tints an object under the beam", async () =>
   assert.ok(underColor[2] > awayColor[2] + SPOTLIGHT_COLOR_DELTA);
 });
 
-test("title environment does not report floor hits once floor fade reaches zero", async () => {
+test("title environment fogs infinite floor hits into the background", async () => {
+  const { titleSceneEnvironment } = await loadTitleModules();
+  const colors = {
+    surface: [5, 7, 12],
+    floorDark: [55, 75, 88],
+    floorLight: [222, 232, 232],
+  };
+  const environment = {
+    background: [12, 34, 56],
+    floor: {
+      kind: titleSceneEnvironment.TITLE_SCENE_FLOOR_KIND.Solid,
+      fadeDistance: 2,
+    },
+  };
+  const visibleHit = titleSceneEnvironment.nearestTitleEnvironmentSurfaceHit(
+    [0, 1, 0],
+    [0, -1, 0],
+    environment,
+    colors,
+  );
+  const fadedHit = titleSceneEnvironment.nearestTitleEnvironmentSurfaceHit(
+    [0, 3, 0],
+    [0, -1, 0],
+    environment,
+    colors,
+  );
+
+  assert.ok(visibleHit != null);
+  assert.ok(visibleHit.visibility > 0);
+  assert.equal(visibleHit.receivesFloorEffects, true);
+  assert.ok(fadedHit != null);
+  assert.equal(fadedHit.visibility, 0);
+  assert.equal(fadedHit.receivesFloorEffects, false);
+  assert.deepEqual(fadedHit.color, environment.background);
+});
+
+test("title environment still disables explicit none floors", async () => {
   const { titleSceneEnvironment } = await loadTitleModules();
   const colors = {
     surface: [5, 7, 12],
@@ -221,23 +257,16 @@ test("title environment does not report floor hits once floor fade reaches zero"
   };
   const floor = {
     kind: titleSceneEnvironment.TITLE_SCENE_FLOOR_KIND.Solid,
-    fadeDistance: 2,
+    fadeDistance: 0,
   };
-  const visibleHit = titleSceneEnvironment.nearestTitleEnvironmentSurfaceHit(
+  const noFloorHit = titleSceneEnvironment.nearestTitleEnvironmentSurfaceHit(
     [0, 1, 0],
     [0, -1, 0],
-    { floor },
-    colors,
-  );
-  const fadedHit = titleSceneEnvironment.nearestTitleEnvironmentSurfaceHit(
-    [0, 3, 0],
-    [0, -1, 0],
-    { floor },
+    { floor: { ...floor, kind: titleSceneEnvironment.TITLE_SCENE_FLOOR_KIND.None } },
     colors,
   );
 
-  assert.ok(visibleHit != null);
-  assert.equal(fadedHit, undefined);
+  assert.equal(noFloorHit, undefined);
 });
 
 function emptyMaterialColors() {
