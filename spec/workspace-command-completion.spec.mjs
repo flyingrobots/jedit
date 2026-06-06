@@ -99,6 +99,80 @@ test("workspace command line completion provider filters :edit files and directo
   });
 });
 
+test("workspace command line completion provider returns bounded edit file previews", async () => {
+  const [completion, fileSystem] = await Promise.all([
+    importDist("app", "workspace", "command-completion.js"),
+    importDist("ports", "file-system.js"),
+  ]);
+  const previewCalls = [];
+
+  const preview = completion.workspaceCommandLineCompletionPreview({
+    commandLine: {
+      input: "edit R",
+      cursorIndex: 6,
+      selectedCompletionIndex: 0,
+    },
+    entries: editEntries(fileSystem),
+    maxPreviewLines: 2,
+    previewSource: {
+      loadFilePreview(filePath) {
+        previewCalls.push(filePath);
+        return {
+          kind: completion.WORKSPACE_FILE_PREVIEW_RESULT_KIND.Loaded,
+          lines: ["alpha", "beta", "gamma"],
+          evidencePosture: "fixture",
+        };
+      },
+    },
+  });
+
+  assert.deepEqual(previewCalls, ["/repo/README.md"]);
+  assert.equal(preview.kind, "file");
+  assert.equal(preview.title, "README.md");
+  assert.deepEqual(preview.lines, ["alpha", "beta"]);
+  assert.equal(preview.evidencePosture, "fixture");
+});
+
+test("workspace command line completion provider reports unavailable edit previews", async () => {
+  const [completion, fileSystem] = await Promise.all([
+    importDist("app", "workspace", "command-completion.js"),
+    importDist("ports", "file-system.js"),
+  ]);
+
+  const unreadablePreview = completion.workspaceCommandLineCompletionPreview({
+    commandLine: {
+      input: "edit R",
+      cursorIndex: 6,
+      selectedCompletionIndex: 0,
+    },
+    entries: editEntries(fileSystem),
+    previewSource: {
+      loadFilePreview() {
+        return {
+          kind: completion.WORKSPACE_FILE_PREVIEW_RESULT_KIND.Unavailable,
+          reason: "Unreadable file",
+          evidencePosture: "fixture-unavailable",
+        };
+      },
+    },
+  });
+  const directoryPreview = completion.workspaceCommandLineCompletionPreview({
+    commandLine: {
+      input: "e ",
+      cursorIndex: 2,
+      selectedCompletionIndex: 1,
+    },
+    entries: editEntries(fileSystem),
+  });
+
+  assert.equal(unreadablePreview.kind, "unavailable");
+  assert.deepEqual(unreadablePreview.lines, ["Unreadable file"]);
+  assert.equal(unreadablePreview.evidencePosture, "fixture-unavailable");
+  assert.equal(directoryPreview.kind, "unavailable");
+  assert.deepEqual(directoryPreview.lines, ["Directory preview unavailable"]);
+  assert.equal(directoryPreview.evidencePosture, "unavailable");
+});
+
 test("command-line mode moves and accepts command completions", async () => {
   const [keyBindings, titleScreen, editorMode] = await Promise.all([
     importDist("app", "workspace", "key-bindings.js"),
@@ -232,7 +306,9 @@ test("workspace render paints edit file completions above the Vim command line",
 
   const lines = surfaceText(viewer.renderWorkspace(model)).split("\n");
 
-  assert.match(lines[15], /› README\.md\s+F\s+File/);
+  assert.match(lines[13], /› README\.md\s+F\s+File/);
+  assert.match(lines[13], /NONE README\.md/);
+  assert.match(lines[14], /Evidence: unavailable/);
   assert.match(lines[16], /^:edit R\s*$/);
 });
 

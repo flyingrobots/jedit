@@ -7,7 +7,7 @@ status: "active"
 owners:
   - "@flyingrobots"
 created: "2026-06-05"
-updated: "2026-06-05"
+updated: "2026-06-06"
 ---
 
 # WF-0102 - Vim Command-Line Completion Surface
@@ -472,7 +472,7 @@ Slices:
       Commit: `UX: complete command names`.
 - [x] Slice 10: Add file completion provider for `:edit`.
       Commit: `UX: complete edit paths`.
-- [ ] Slice 11: Add bounded file preview provider.
+- [x] Slice 11: Add bounded file preview provider.
       Commit: `UX: preview edit path completions`.
 - [ ] Slice 12: Dispatch `:edit`, `:write`, `:quit`, `:wq`, and aliases.
       Commit: `UX: dispatch vim command-line commands`.
