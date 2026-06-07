@@ -25,6 +25,10 @@ import {
   TITLE_RENDER_MODE,
   renderTitleScreen,
 } from "../dist/ui/title-screen.js";
+import {
+  finishTitleAllocationMeasurement,
+  startTitleAllocationMeasurement,
+} from "./title-scene-allocation-witness.mjs";
 
 const DEFAULT_SCENE = DEFAULT_BUILT_IN_TITLE_SCENE_NAME;
 const DEFAULT_THEME = "graphite";
@@ -134,7 +138,17 @@ async function profileTitleScene(options) {
   const model = createProfilePreviewModel(options, scene);
   const sampling = createProfileBrailleSampling(options);
   warmupTitleScene(options, scene, theme, model, sampling);
-  return profileFrames(options, scene, theme, model, sampling);
+  const allocationMeasurement = startProfileAllocationMeasurement(options);
+  const report = profileFrames(options, scene, theme, model, sampling);
+  return allocationMeasurement == null
+    ? report
+    : {
+        ...report,
+        allocation: finishTitleAllocationMeasurement(
+          options,
+          allocationMeasurement,
+        ),
+      };
 }
 
 async function loadProfileScene(sceneName) {
@@ -259,6 +273,12 @@ function createProfileBrailleSampling(options) {
     : undefined;
 }
 
+function startProfileAllocationMeasurement(options) {
+  return options.renderMode === TITLE_RENDER_MODE.Braille
+    ? startTitleAllocationMeasurement()
+    : undefined;
+}
+
 function createProfileSampleStats() {
   return {
     totalSamples: 0,
@@ -379,7 +399,19 @@ function plainReportLines(report) {
       `braille phase ${report.sampling.braillePhaseCount}  traced/frame ${formatSampleCount(report.sampling.tracedSamplesPerFrame)}  reused/frame ${formatSampleCount(report.sampling.reusedSamplesPerFrame)}  pressure ${formatPercent(report.sampling.rayPressureRatio)}  active ${formatPercent(report.sampling.activeSampleRatio)}`,
     );
   }
+  if (report.allocation != null) {
+    lines.splice(lines.length - 1, 0, allocationReportLine(report.allocation));
+  }
   return lines;
+}
+
+function allocationReportLine(facts) {
+  if (facts.allocatedBytes != null) {
+    return `allocation ${facts.posture}  allocated ${formatBytes(facts.allocatedBytes)}`;
+  }
+  return facts.retainedHeapDeltaBytes == null
+    ? `allocation ${facts.posture}`
+    : `allocation ${facts.posture}  retained heap delta ${formatBytes(facts.retainedHeapDeltaBytes)}`;
 }
 
 function formatMs(value) {
@@ -392,6 +424,10 @@ function formatSampleCount(value) {
 
 function formatPercent(value) {
   return `${(value * 100).toFixed(1)}%`;
+}
+
+function formatBytes(value) {
+  return `${value} bytes`;
 }
 
 function requiredValue(args, index, option) {

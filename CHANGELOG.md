@@ -28,6 +28,10 @@
   provider-neutral inline completion items used by Vim command completions.
 - Highlighted invalid Vim command-line input in the footer and added a
   localized help message for unrecognized commands.
+- Added a title ray allocation facts contract for the zero-allocation title
+  rendering roadmap.
+- Added honest title-scene profile allocation witness facts for deterministic
+  Braille bunny workloads, including retained-heap lower-mode evidence.
 - Rendered the startup file selector rows through Bijou's browsable list
   surface, added themed scrollbar affordance for overflowing directories, and
   made Escape dismissal recoverable from the title screen with Enter or `o`.

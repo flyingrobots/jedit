@@ -2,8 +2,8 @@
 title: "WF-0104 - Title Zero Allocation Ray Tracing"
 legend: "WF"
 lane: "design"
-issue: "TBD"
-status: "draft"
+issue: "https://github.com/flyingrobots/jedit/issues/112"
+status: "active"
 owners:
   - "@flyingrobots"
 created: "2026-06-06"
@@ -14,7 +14,7 @@ updated: "2026-06-06"
 
 ## Linked Issue
 
-- TBD
+- https://github.com/flyingrobots/jedit/issues/112
 
 ## Decision Summary
 
@@ -182,7 +182,8 @@ Relevant exported or inspectable shapes:
   - render mode
   - warmup frame count
   - measured frame count
-  - total allocated bytes or allocation sample count when available
+  - retained heap delta when forced-GC measurement is the only available signal
+  - total allocated bytes or allocation event count when available
   - posture
 - title profiling CLI JSON facts
 - focused allocation witness spec
@@ -311,6 +312,7 @@ TitleRayAllocationFacts = {
     | "allocating"
     | "bounded-after-warmup"
     | "zero-hot-loop",
+  retainedHeapDeltaBytes?: NonNegativeInteger,
   allocatedBytes?: NonNegativeInteger,
   allocationEvents?: NonNegativeInteger,
   notes: string[]
@@ -397,9 +399,9 @@ deterministic Braille bunny workload.
 
 Slices:
 
-- [ ] Slice 1: Add title allocation facts contract.
+- [x] Slice 1: Add title allocation facts contract.
       Commit: `Perf: define title allocation facts`.
-- [ ] Slice 2: Add allocation witness command or spec.
+- [x] Slice 2: Add allocation witness command or spec.
       Commit: `Perf: witness title allocation posture`.
 
 ### Goalpost 2: Braille Cell And Sample Scratch
@@ -470,9 +472,9 @@ Slices:
 
 ## Tests To Write First
 
-- [ ] Allocation facts contract rejects impossible dimensions and frame counts.
-- [ ] Allocation witness reports `unmeasured` when instrumentation is absent.
-- [ ] Allocation witness records a deterministic title Braille bunny workload.
+- [x] Allocation facts contract rejects impossible dimensions and frame counts.
+- [x] Allocation witness reports `unmeasured` when instrumentation is absent.
+- [x] Allocation witness records a deterministic title Braille bunny workload.
 - [ ] Braille cell rendering keeps existing visual fixture output.
 - [ ] Shader scratch path preserves ray stats and sample cache behavior.
 - [ ] Ray scratch path preserves camera ray direction facts.
@@ -482,7 +484,7 @@ Slices:
 
 ## Acceptance Criteria
 
-- [ ] The title allocation witness exists and emits structured facts.
+- [x] The title allocation witness exists and emits structured facts.
 - [ ] The Braille ray hot path does not allocate per-cell options objects.
 - [ ] The Braille ray hot path does not allocate per-subpixel shader params.
 - [ ] Title ray context math uses reusable scratch state.
