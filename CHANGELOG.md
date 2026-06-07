@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Fixed the idle title-scene performance governor so slow ray-traced frames
+  stay in low-rate cached rendering until the refresh window expires instead
+  of bouncing between slow traced frames and fast cached frames.
 - Added FPS-style title-screen camera controls: `w` and `s` move along the
   camera view vector, `a` and `d` strafe, mouse movement rotates the look
   vector, Space jumps, and Shift crouches with slower movement.

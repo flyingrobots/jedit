@@ -29,6 +29,7 @@ export interface TitleScenePerformanceGovernorInput {
   readonly introActive: boolean;
   readonly idleTitleScreen: boolean;
   readonly frozenBackdropAvailable: boolean;
+  readonly lowRateFrozenBackdropActive?: boolean;
   readonly cacheAgeSeconds?: number;
   readonly frameTimeMs: number;
 }
@@ -119,7 +120,8 @@ function shouldReuseLowRateBackdrop(
     input.frozenBackdropAvailable &&
     input.cacheAgeSeconds != null &&
     input.cacheAgeSeconds < TITLE_SCENE_LOW_RATE_REFRESH_SECONDS &&
-    frameBudgetPosture === OVER_BUDGET
+    (input.lowRateFrozenBackdropActive === true ||
+      frameBudgetPosture === OVER_BUDGET)
   );
 }
 

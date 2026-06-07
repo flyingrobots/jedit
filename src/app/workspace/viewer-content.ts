@@ -37,6 +37,7 @@ import { titleBrailleTraceBudget } from "./title-braille-sampling.js";
 const MIN_VIEWPORT_DIMENSION = 1;
 const VIEWER_PAD_MULTIPLIER = 2;
 const TITLE_CAMERA_MOTION_EPSILON = 0.001;
+const TITLE_FRAME_BUDGET_OVER = "over-budget";
 const INITIAL_TITLE_SCENE_PERFORMANCE_FACTS: TitleScenePerformanceFacts = {
   posture: TITLE_SCENE_RENDER_POSTURE.LiveTrace,
   tracesRays: true,
@@ -50,6 +51,10 @@ interface FrozenTitleBackdrop {
   readonly width: number;
   readonly height: number;
   readonly time: number;
+  readonly identity: TitleBrailleSampleCacheIdentity;
+  readonly camera: WorkspaceModel["titleCamera"];
+  readonly asciiPalette: WorkspaceModel["titleAsciiPalette"];
+  readonly lowRateActive: boolean;
   readonly surface: Surface;
 }
 
@@ -179,12 +184,13 @@ function renderTitleBackdrop(
   titleRenderer: TitleScreenRenderer,
   state: ViewerContentRendererState,
 ): Surface {
-  const frozen = frozenTitleBackdropFor(state, width, height);
+  const frozen = frozenTitleBackdropFor(state, model, width, height);
   const decision = governTitleSceneRender(
     titleSceneGovernorInput(model, frozen),
   );
   state.lastTitleScenePerformance = titleScenePerformanceFacts(decision);
   if (decision.shouldUseFrozenBackdrop && frozen != null) {
+    state.frozenTitleBackdrop = activateLowRateBackdrop(frozen, decision);
     return copySurface(frozen.surface);
   }
 
@@ -200,6 +206,10 @@ function renderTitleBackdrop(
       width,
       height,
       time: model.time,
+      identity: titleBrailleSampleCacheIdentity(model, width, height),
+      camera: model.titleCamera,
+      asciiPalette: model.titleAsciiPalette,
+      lowRateActive: shouldActivateLowRateBackdrop(model, decision),
       surface: rendered,
     };
   }
@@ -217,6 +227,7 @@ function titleSceneGovernorInput(
       model.startupIntroComplete &&
       !model.startupFileModalOpen,
     frozenBackdropAvailable: frozen != null,
+    lowRateFrozenBackdropActive: frozen?.lowRateActive,
     cacheAgeSeconds:
       frozen == null
         ? undefined
@@ -376,13 +387,45 @@ function recordTitleBrailleSamplingStats(
 
 function frozenTitleBackdropFor(
   state: ViewerContentRendererState,
+  model: WorkspaceModel,
   width: number,
   height: number,
 ): FrozenTitleBackdrop | undefined {
   return state.frozenTitleBackdrop?.width === width &&
-    state.frozenTitleBackdrop.height === height
+    state.frozenTitleBackdrop.height === height &&
+    state.frozenTitleBackdrop.camera === model.titleCamera &&
+    state.frozenTitleBackdrop.asciiPalette === model.titleAsciiPalette &&
+    sameTitleBrailleSampleCacheIdentity(
+      state.frozenTitleBackdrop.identity,
+      titleBrailleSampleCacheIdentity(model, width, height),
+    )
     ? state.frozenTitleBackdrop
     : undefined;
+}
+
+function activateLowRateBackdrop(
+  frozen: FrozenTitleBackdrop,
+  decision: FrameBudgetDecision,
+): FrozenTitleBackdrop {
+  return decision.frameBudgetPosture === TITLE_FRAME_BUDGET_OVER
+    ? { ...frozen, lowRateActive: true }
+    : frozen;
+}
+
+function shouldActivateLowRateBackdrop(
+  model: WorkspaceModel,
+  decision: FrameBudgetDecision,
+): boolean {
+  return (
+    model.editor == null &&
+    model.startupIntroComplete &&
+    !model.startupFileModalOpen &&
+    decision.frameBudgetPosture === TITLE_FRAME_BUDGET_OVER
+  );
+}
+
+interface FrameBudgetDecision {
+  readonly frameBudgetPosture: TitleScenePerformanceFacts["frameBudgetPosture"];
 }
 
 function titleBackdropAgeSeconds(

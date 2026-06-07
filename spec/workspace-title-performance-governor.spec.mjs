@@ -78,6 +78,18 @@ test("title scene performance governor keeps startup browser ray tracing live", 
       idleTitleScreen: true,
       frozenBackdropAvailable: true,
       cacheAgeSeconds: 0.1,
+      lowRateFrozenBackdropActive: true,
+      frameTimeMs: FAST_FRAME_MS,
+    }).posture,
+    governor.TITLE_SCENE_RENDER_POSTURE.LowRateFrozenBackdrop,
+  );
+
+  assert.deepEqual(
+    governor.governTitleSceneRender({
+      introActive: false,
+      idleTitleScreen: true,
+      frozenBackdropAvailable: true,
+      cacheAgeSeconds: 0.1,
       frameTimeMs: SLOW_FRAME_MS,
     }).posture,
     governor.TITLE_SCENE_RENDER_POSTURE.LowRateFrozenBackdrop,
@@ -156,7 +168,17 @@ test("viewer renderer low-rate reuses slow idle title backdrop until refresh win
   const reused = renderer.renderViewer(
     {
       ...base,
+      time: 10 + governor.TITLE_SCENE_LOW_RATE_REFRESH_SECONDS / 4,
+      frameTimeMs: FAST_FRAME_MS,
+    },
+    TITLE_WIDTH,
+    TITLE_HEIGHT,
+  );
+  const stillReused = renderer.renderViewer(
+    {
+      ...base,
       time: 10 + governor.TITLE_SCENE_LOW_RATE_REFRESH_SECONDS / 2,
+      frameTimeMs: FAST_FRAME_MS,
     },
     TITLE_WIDTH,
     TITLE_HEIGHT,
@@ -175,6 +197,7 @@ test("viewer renderer low-rate reuses slow idle title backdrop until refresh win
     10 + governor.TITLE_SCENE_LOW_RATE_REFRESH_SECONDS + 0.01,
   ]);
   assert.equal(surfaceText(reused), surfaceText(initial));
+  assert.equal(surfaceText(stillReused), surfaceText(initial));
   assert.notEqual(surfaceText(refreshed), surfaceText(initial));
   assert.deepEqual(renderer.titleScenePerformanceFacts(), {
     posture: "live-trace",
@@ -184,6 +207,41 @@ test("viewer renderer low-rate reuses slow idle title backdrop until refresh win
     inputLatencyPosture: "animated-title",
     frameBudgetPosture: "over-budget",
   });
+});
+
+test("viewer renderer does not reuse a frozen title backdrop after camera input", async () => {
+  const [viewerContent, titleScreen] = await Promise.all([
+    importDist("app", "workspace", "viewer-content.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const tracedTimes = [];
+  const renderer = viewerContent.createViewerContentRenderer(
+    tracingTitleRenderer(tracedTimes, "camera"),
+  );
+  const base = mockTitleScreenModel(titleScreen, {
+    time: 12,
+    frameTimeMs: SLOW_FRAME_MS,
+    startupIntroComplete: true,
+    startupFileModalOpen: false,
+  });
+
+  const initial = renderer.renderViewer(base, TITLE_WIDTH, TITLE_HEIGHT);
+  const moved = renderer.renderViewer(
+    {
+      ...base,
+      time: 12.1,
+      titleCamera: {
+        ...base.titleCamera,
+        position: [1, 2.65, 8.5],
+        target: [1, 0.78, 0],
+      },
+    },
+    TITLE_WIDTH,
+    TITLE_HEIGHT,
+  );
+
+  assert.deepEqual(tracedTimes, [12, 12.1]);
+  assert.notEqual(surfaceText(moved), surfaceText(initial));
 });
 
 function tracingTitleRenderer(tracedTimes, label) {
