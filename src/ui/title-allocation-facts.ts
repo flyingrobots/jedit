@@ -1,5 +1,3 @@
-import { TITLE_RENDER_MODE, type TitleRenderMode } from "./title-screen.js";
-
 export const TITLE_RAY_ALLOCATION_POSTURE = {
   Unmeasured: "unmeasured",
   Allocating: "allocating",
@@ -11,15 +9,20 @@ export type TitleRayAllocationPosture =
   (typeof TITLE_RAY_ALLOCATION_POSTURE)[keyof typeof TITLE_RAY_ALLOCATION_POSTURE];
 
 export const TITLE_RAY_ALLOCATION_RENDERER = "title-braille-bunny";
+export const TITLE_RAY_ALLOCATION_RENDER_MODE = "braille";
+
+export type TitleRayAllocationRenderMode =
+  typeof TITLE_RAY_ALLOCATION_RENDER_MODE;
 
 export interface TitleRayAllocationFacts {
   readonly renderer: typeof TITLE_RAY_ALLOCATION_RENDERER;
   readonly width: number;
   readonly height: number;
-  readonly renderMode: typeof TITLE_RENDER_MODE.Braille;
+  readonly renderMode: TitleRayAllocationRenderMode;
   readonly warmupFrames: number;
   readonly measuredFrames: number;
   readonly posture: TitleRayAllocationPosture;
+  readonly retainedHeapDeltaBytes?: number;
   readonly allocatedBytes?: number;
   readonly allocationEvents?: number;
   readonly notes: readonly string[];
@@ -28,10 +31,11 @@ export interface TitleRayAllocationFacts {
 export interface TitleRayAllocationFactsInput {
   readonly width: number;
   readonly height: number;
-  readonly renderMode: TitleRenderMode;
+  readonly renderMode: string;
   readonly warmupFrames: number;
   readonly measuredFrames: number;
   readonly posture: TitleRayAllocationPosture;
+  readonly retainedHeapDeltaBytes?: number;
   readonly allocatedBytes?: number;
   readonly allocationEvents?: number;
   readonly notes?: readonly string[];
@@ -49,6 +53,10 @@ export function createTitleRayAllocationFacts(
   assertNonNegativeInteger(input.warmupFrames, "warmupFrames");
   assertPositiveInteger(input.measuredFrames, "measuredFrames");
   assertTitleRayAllocationPosture(input.posture);
+  const retainedHeapDeltaBytes = optionalNonNegativeInteger(
+    input.retainedHeapDeltaBytes,
+    "retainedHeapDeltaBytes",
+  );
   const allocatedBytes = optionalNonNegativeInteger(
     input.allocatedBytes,
     "allocatedBytes",
@@ -61,10 +69,11 @@ export function createTitleRayAllocationFacts(
     renderer: TITLE_RAY_ALLOCATION_RENDERER,
     width: input.width,
     height: input.height,
-    renderMode: TITLE_RENDER_MODE.Braille,
+    renderMode: TITLE_RAY_ALLOCATION_RENDER_MODE,
     warmupFrames: input.warmupFrames,
     measuredFrames: input.measuredFrames,
     posture: input.posture,
+    ...(retainedHeapDeltaBytes == null ? {} : { retainedHeapDeltaBytes }),
     ...(allocatedBytes == null ? {} : { allocatedBytes }),
     ...(allocationEvents == null ? {} : { allocationEvents }),
     notes: [...(input.notes ?? [])],
@@ -94,8 +103,8 @@ function optionalNonNegativeInteger(
   return value;
 }
 
-function assertBrailleRenderMode(renderMode: TitleRenderMode): void {
-  if (renderMode !== TITLE_RENDER_MODE.Braille) {
+function assertBrailleRenderMode(renderMode: string): void {
+  if (renderMode !== TITLE_RAY_ALLOCATION_RENDER_MODE) {
     throw new RangeError("title allocation facts only support Braille mode.");
   }
 }

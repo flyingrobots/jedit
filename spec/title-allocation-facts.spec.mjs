@@ -13,6 +13,7 @@ test("title allocation facts contract accepts a Braille posture report", async (
     warmupFrames: 2,
     measuredFrames: 4,
     posture: factsModule.TITLE_RAY_ALLOCATION_POSTURE.Unmeasured,
+    retainedHeapDeltaBytes: 0,
     notes: ["instrumentation unavailable"],
   });
 
@@ -24,6 +25,7 @@ test("title allocation facts contract accepts a Braille posture report", async (
     warmupFrames: 2,
     measuredFrames: 4,
     posture: factsModule.TITLE_RAY_ALLOCATION_POSTURE.Unmeasured,
+    retainedHeapDeltaBytes: 0,
     notes: ["instrumentation unavailable"],
   });
 });

@@ -132,12 +132,51 @@ test("title-scene profile CLI witnesses allocation posture with exposed GC", () 
   assert.equal(report.allocation.renderMode, "braille");
   assert.equal(report.allocation.warmupFrames, 1);
   assert.equal(report.allocation.measuredFrames, 1);
-  assert.ok(["allocating", "bounded-after-warmup"].includes(
+  assert.ok(["allocating", "unmeasured"].includes(
     report.allocation.posture,
   ));
-  assert.equal(typeof report.allocation.allocatedBytes, "number");
-  assert.equal(typeof report.allocation.allocationEvents, "number");
+  assert.notEqual(report.allocation.posture, "bounded-after-warmup");
+  assert.equal(typeof report.allocation.retainedHeapDeltaBytes, "number");
+  assert.equal(report.allocation.allocatedBytes, undefined);
+  assert.equal(report.allocation.allocationEvents, undefined);
   assert.match(report.allocation.notes.join("\n"), /forced GC/);
+});
+
+test("title allocation witness does not promote zero retained heap delta", async () => {
+  ensureDistBuiltSync();
+  const witness = await import("../scripts/title-scene-allocation-witness.mjs");
+
+  const runtime = fakeAllocationRuntime([1000, 1000]);
+  const measurement = witness.startTitleAllocationMeasurement(runtime);
+  const facts = witness.finishTitleAllocationMeasurement(
+    allocationWitnessOptions(),
+    measurement,
+    runtime,
+  );
+
+  assert.equal(facts.posture, "unmeasured");
+  assert.equal(facts.retainedHeapDeltaBytes, 0);
+  assert.equal(facts.allocatedBytes, undefined);
+  assert.equal(facts.allocationEvents, undefined);
+  assert.match(facts.notes.join("\n"), /allocation events remain unmeasured/);
+});
+
+test("title allocation witness reports retained heap growth as allocating", async () => {
+  ensureDistBuiltSync();
+  const witness = await import("../scripts/title-scene-allocation-witness.mjs");
+
+  const runtime = fakeAllocationRuntime([1000, 1250]);
+  const measurement = witness.startTitleAllocationMeasurement(runtime);
+  const facts = witness.finishTitleAllocationMeasurement(
+    allocationWitnessOptions(),
+    measurement,
+    runtime,
+  );
+
+  assert.equal(facts.posture, "allocating");
+  assert.equal(facts.retainedHeapDeltaBytes, 250);
+  assert.equal(facts.allocatedBytes, undefined);
+  assert.equal(facts.allocationEvents, undefined);
 });
 
 function runProfile(args, options = {}) {
@@ -152,4 +191,26 @@ function runProfile(args, options = {}) {
       [PREBUILT_DIST_ENV]: PREBUILT_DIST_ENABLED,
     },
   });
+}
+
+function allocationWitnessOptions() {
+  return {
+    width: 16,
+    height: 6,
+    renderMode: "braille",
+    warmupFrames: 1,
+    frames: 1,
+  };
+}
+
+function fakeAllocationRuntime(heapValues) {
+  let heapIndex = 0;
+  return {
+    collectGarbage() {},
+    heapUsed() {
+      const value = heapValues[heapIndex] ?? heapValues.at(-1);
+      heapIndex += 1;
+      return value;
+    },
+  };
 }

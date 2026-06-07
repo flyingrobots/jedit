@@ -406,9 +406,12 @@ function plainReportLines(report) {
 }
 
 function allocationReportLine(facts) {
-  return facts.allocatedBytes == null
+  if (facts.allocatedBytes != null) {
+    return `allocation ${facts.posture}  allocated ${formatBytes(facts.allocatedBytes)}`;
+  }
+  return facts.retainedHeapDeltaBytes == null
     ? `allocation ${facts.posture}`
-    : `allocation ${facts.posture}  heap delta ${formatBytes(facts.allocatedBytes)}`;
+    : `allocation ${facts.posture}  retained heap delta ${formatBytes(facts.retainedHeapDeltaBytes)}`;
 }
 
 function formatMs(value) {

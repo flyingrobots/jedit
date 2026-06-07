@@ -182,7 +182,8 @@ Relevant exported or inspectable shapes:
   - render mode
   - warmup frame count
   - measured frame count
-  - total allocated bytes or allocation sample count when available
+  - retained heap delta when forced-GC measurement is the only available signal
+  - total allocated bytes or allocation event count when available
   - posture
 - title profiling CLI JSON facts
 - focused allocation witness spec
@@ -311,6 +312,7 @@ TitleRayAllocationFacts = {
     | "allocating"
     | "bounded-after-warmup"
     | "zero-hot-loop",
+  retainedHeapDeltaBytes?: NonNegativeInteger,
   allocatedBytes?: NonNegativeInteger,
   allocationEvents?: NonNegativeInteger,
   notes: string[]
