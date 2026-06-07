@@ -141,7 +141,9 @@ function updateTitleCameraKey(
   msg: KeyMsg,
   model: WorkspaceModel,
 ): KeyBindingResult | undefined {
-  const update = updateTitleCameraFromKey(msg.key, model.titleCamera);
+  const update = updateTitleCameraFromKey(msg.key, model.titleCamera, {
+    shift: msg.shift,
+  });
   return update == null
     ? undefined
     : [{ ...model, titleCamera: update.state }, update.commands];

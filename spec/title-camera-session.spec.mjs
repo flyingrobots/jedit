@@ -68,6 +68,80 @@ test("title camera state preserves authored world-space placement", async () => 
   assert.equal(initial.eyeY, WORLD_CAMERA_POSITION[1]);
 });
 
+test("title camera WASD translates through FPS view axes", async () => {
+  const camera = await loadTitleCameraSession();
+  const initial = camera.createTitleCameraState({
+    angle: 0,
+    radius: 2,
+    position: [0, 1, 0],
+    target: [0, 1, -2],
+  });
+  const forward = camera.updateTitleCameraFromKey("w", initial).state;
+  const backward = camera.updateTitleCameraFromKey("s", initial).state;
+  const left = camera.updateTitleCameraFromKey("a", initial).state;
+  const right = camera.updateTitleCameraFromKey("d", initial).state;
+
+  assert.ok(forward.position[2] < initial.position[2]);
+  assert.ok(forward.target[2] < initial.target[2]);
+  assert.ok(backward.position[2] > initial.position[2]);
+  assert.ok(left.position[0] < initial.position[0]);
+  assert.ok(right.position[0] > initial.position[0]);
+  assert.equal(distance(forward.position, forward.target), 2);
+});
+
+test("title camera space jumps and shift toggles slower crouch movement", async () => {
+  const camera = await loadTitleCameraSession();
+  const initial = camera.createTitleCameraState({
+    angle: 0,
+    radius: 2,
+    position: [0, 1, 0],
+    target: [0, 1, -2],
+  });
+  const jumped = camera.updateTitleCameraFromKey("space", initial).state;
+  const crouched = camera.updateTitleCameraFromKey("shift", initial).state;
+  const walked = camera.updateTitleCameraFromKey("w", initial).state;
+  const crouchWalked = camera.updateTitleCameraFromKey("w", crouched).state;
+  const shiftWalked = camera.updateTitleCameraFromKey(
+    "w",
+    initial,
+    { shift: true },
+  ).state;
+
+  assert.ok(jumped.position[1] > initial.position[1]);
+  assert.equal(crouched.crouching, true);
+  assert.equal(shiftWalked.crouching, true);
+  assert.ok(crouched.position[1] < initial.position[1]);
+  assert.ok(shiftWalked.position[1] < initial.position[1]);
+  assert.ok(
+    Math.abs(crouchWalked.position[2] - crouched.position[2]) <
+      Math.abs(walked.position[2] - initial.position[2]),
+  );
+});
+
+test("title camera mouse look rotates target while keeping eye fixed", async () => {
+  const camera = await loadTitleCameraSession();
+  const initial = camera.createTitleCameraState({
+    angle: 0,
+    radius: 2,
+    position: [0, 1, 0],
+    target: [0, 1, -2],
+  });
+  const anchored = camera.updateTitleCameraFromMouseLook(
+    { col: 10, row: 10 },
+    initial,
+  );
+  const rotated = camera.updateTitleCameraFromMouseLook(
+    { col: 14, row: 12 },
+    anchored.state,
+    anchored.pointer,
+  );
+
+  assert.deepEqual(anchored.state, initial);
+  assert.deepEqual(rotated.state.position, initial.position);
+  assert.ok(rotated.state.target[0] > initial.target[0]);
+  assert.ok(rotated.state.target[1] < initial.target[1]);
+});
+
 test("title camera spring config is critically damped", async () => {
   const camera = await loadTitleCameraSession();
   const expectedDamping =
@@ -163,4 +237,8 @@ async function runSpringCommand(command, dt = SPRING_FRAME_DT) {
   assert.equal(disposed, true);
   await result;
   return frames;
+}
+
+function distance(a, b) {
+  return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 }

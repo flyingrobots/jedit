@@ -14,6 +14,30 @@ import {
   type TitleSceneCameraPlacement,
 } from "../ui/title-scene-camera.js";
 import type { TitleSceneVector3 } from "../ui/title-scene.js";
+import {
+  titleCameraJumped,
+  titleCameraLookDelta,
+  titleCameraMovedBackward,
+  titleCameraMovedForward,
+  titleCameraStrafedLeft,
+  titleCameraStrafedRight,
+  titleCameraToggledCrouch,
+  type TitleCameraKeyModifiers,
+  type TitleCameraMouseLookPointer,
+} from "./title-camera-fps.js";
+
+export {
+  TITLE_CAMERA_CROUCH_HEIGHT,
+  TITLE_CAMERA_CROUCH_STEP,
+  TITLE_CAMERA_FPS_STEP,
+  TITLE_CAMERA_JUMP_STEP,
+  TITLE_CAMERA_MOUSE_LOOK_RADIANS_PER_CELL,
+} from "./title-camera-fps.js";
+
+export type {
+  TitleCameraKeyModifiers,
+  TitleCameraMouseLookPointer,
+} from "./title-camera-fps.js";
 
 export const TITLE_CAMERA_AXIS = {
   Angle: "angle",
@@ -25,10 +49,16 @@ export const TITLE_CAMERA_MESSAGE = {
 } as const;
 
 const TITLE_CAMERA_KEY = {
+  W: "w",
+  A: "a",
+  S: "s",
+  D: "d",
   Left: "left",
   Right: "right",
   Up: "up",
   Down: "down",
+  Space: "space",
+  Shift: "shift",
 } as const;
 
 const TITLE_CAMERA_MIN_RADIUS = 2;
@@ -61,6 +91,7 @@ export interface TitleCameraState {
   readonly position: TitleSceneVector3;
   readonly target: TitleSceneVector3;
   readonly eyeY: number;
+  readonly crouching: boolean;
 }
 
 export interface TitleCameraInitialPlacement {
@@ -75,6 +106,11 @@ export interface TitleCameraMotionMsg {
   readonly axis: TitleCameraAxis;
   readonly motionId: number;
   readonly value: number;
+}
+
+export interface TitleCameraMouseLookResult {
+  readonly state: TitleCameraState;
+  readonly pointer: TitleCameraMouseLookPointer;
 }
 
 export interface TitleCameraUpdate {
@@ -100,10 +136,53 @@ export function createTitleCameraState(
     position: titleSceneCameraPosition(camera),
     target: titleSceneCameraTarget(camera),
     eyeY: titleSceneCameraPosition(camera)[1],
+    crouching: false,
   };
 }
 
 export function updateTitleCameraFromKey(
+  key: string,
+  camera: TitleCameraState,
+  modifiers: TitleCameraKeyModifiers = {},
+): TitleCameraUpdate | undefined {
+  return (
+    titleCameraFpsKeyUpdate(key, camera, modifiers) ??
+    titleCameraOrbitKeyUpdate(key, camera)
+  );
+}
+
+function titleCameraFpsKeyUpdate(
+  key: string,
+  camera: TitleCameraState,
+  modifiers: TitleCameraKeyModifiers,
+): TitleCameraUpdate | undefined {
+  switch (key) {
+    case TITLE_CAMERA_KEY.W:
+      return titleCameraImmediateUpdate(
+        titleCameraMovedForward(camera, modifiers),
+      );
+    case TITLE_CAMERA_KEY.S:
+      return titleCameraImmediateUpdate(
+        titleCameraMovedBackward(camera, modifiers),
+      );
+    case TITLE_CAMERA_KEY.A:
+      return titleCameraImmediateUpdate(
+        titleCameraStrafedLeft(camera, modifiers),
+      );
+    case TITLE_CAMERA_KEY.D:
+      return titleCameraImmediateUpdate(
+        titleCameraStrafedRight(camera, modifiers),
+      );
+    case TITLE_CAMERA_KEY.Space:
+      return titleCameraImmediateUpdate(titleCameraJumped(camera));
+    case TITLE_CAMERA_KEY.Shift:
+      return titleCameraImmediateUpdate(titleCameraToggledCrouch(camera));
+    default:
+      return undefined;
+  }
+}
+
+function titleCameraOrbitKeyUpdate(
   key: string,
   camera: TitleCameraState,
 ): TitleCameraUpdate | undefined {
@@ -134,6 +213,25 @@ export function updateTitleCameraFromKey(
     default:
       return undefined;
   }
+}
+
+export function updateTitleCameraFromMouseLook(
+  pointer: TitleCameraMouseLookPointer,
+  camera: TitleCameraState,
+  previous?: TitleCameraMouseLookPointer,
+): TitleCameraMouseLookResult {
+  if (previous == null) {
+    return { state: camera, pointer };
+  }
+  const dx = pointer.col - previous.col;
+  const dy = pointer.row - previous.row;
+  if (dx === 0 && dy === 0) {
+    return { state: camera, pointer };
+  }
+  return {
+    state: titleCameraLookDelta(camera, dx, dy),
+    pointer,
+  };
 }
 
 export function reduceTitleCameraMotion(
@@ -206,6 +304,10 @@ function resolvedInitialCameraPlacement(
     ...(placement.position == null ? {} : { position: placement.position }),
     ...(placement.target == null ? {} : { target: placement.target }),
   };
+}
+
+function titleCameraImmediateUpdate(camera: TitleCameraState): TitleCameraUpdate {
+  return { state: camera, commands: [] };
 }
 
 function titleCameraWithAngle(

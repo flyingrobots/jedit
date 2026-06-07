@@ -4,6 +4,7 @@ import {
   scrollIndexByRows,
   scrollTextViewport,
 } from '../../ui/mouse-scroll.js';
+import { updateTitleCameraFromMouseLook } from '../title-camera-session.js';
 import { beginSourceHighlightRefresh } from '../source-highlight-session.js';
 import { moveSettingsFocusIndex } from '../settings-session.js';
 import type { WorkspaceModel } from './model.js';
@@ -21,13 +22,46 @@ export function updateFromMouse(
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   const deltaRows = mouseScrollDeltaRows(msg);
   if (deltaRows === 0) {
-    return [model, []];
+    return updateTitleCameraFromMouse(msg, model);
   }
   const drawer = updateScrollableDrawerFromMouse(model, deltaRows);
   if (drawer != null) {
     return [drawer, []];
   }
   return updateEditorFromMouse(model, deltaRows, sourceHighlighter);
+}
+
+function updateTitleCameraFromMouse(
+  msg: MouseMsg,
+  model: WorkspaceModel,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
+  if (!titleMouseLookEnabled(model)) {
+    return [model, []];
+  }
+  const result = updateTitleCameraFromMouseLook(
+    { col: msg.col, row: msg.row },
+    model.titleCamera,
+    model.titleMouseLook,
+  );
+  return [
+    {
+      ...model,
+      titleCamera: result.state,
+      titleMouseLook: result.pointer,
+    },
+    [],
+  ];
+}
+
+function titleMouseLookEnabled(model: WorkspaceModel): boolean {
+  return (
+    model.editor == null &&
+    !model.settingsOpen &&
+    !model.scenePickerOpen &&
+    !model.startupFileModalOpen &&
+    !model.quitConfirmOpen &&
+    !model.commandLine.active
+  );
 }
 
 function updateScrollableDrawerFromMouse(model: WorkspaceModel, deltaRows: number): WorkspaceModel | undefined {

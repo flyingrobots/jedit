@@ -140,6 +140,66 @@ test("title screen m cycles title mesh materials and reports the material name",
   );
 });
 
+test("title screen uses FPS-style camera keys without an editor", async () => {
+  const [keyBindings, titleScreen] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const base = mockTitleScreenModel(titleScreen, {
+    titleCamera: fpsTestCamera(),
+  });
+  const [forward] = keyBindings.updateFromKey(
+    { key: "w", ctrl: false, alt: false, shift: false },
+    base,
+    mockKeyBindingContext(),
+  );
+  const [left] = keyBindings.updateFromKey(
+    { key: "a", ctrl: false, alt: false, shift: false },
+    base,
+    mockKeyBindingContext(),
+  );
+  const [jumped] = keyBindings.updateFromKey(
+    { key: "space", ctrl: false, alt: false, shift: false },
+    base,
+    mockKeyBindingContext(),
+  );
+  const [crouched] = keyBindings.updateFromKey(
+    { key: "shift", ctrl: false, alt: false, shift: false },
+    base,
+    mockKeyBindingContext(),
+  );
+
+  assert.ok(forward.titleCamera.position[2] < base.titleCamera.position[2]);
+  assert.ok(left.titleCamera.position[0] < base.titleCamera.position[0]);
+  assert.ok(jumped.titleCamera.position[1] > base.titleCamera.position[1]);
+  assert.equal(crouched.titleCamera.crouching, true);
+});
+
+test("title screen mouse movement drags the camera look vector", async () => {
+  const [mouse, titleScreen] = await Promise.all([
+    importDist("app", "workspace", "mouse.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const base = mockTitleScreenModel(titleScreen, {
+    titleCamera: fpsTestCamera(),
+  });
+  const [anchored] = mouse.updateFromMouse(
+    titleMouse("press", 10, 10),
+    base,
+    mockDeps().sourceHighlighter,
+  );
+  const [rotated] = mouse.updateFromMouse(
+    titleMouse("drag", 14, 12),
+    anchored,
+    mockDeps().sourceHighlighter,
+  );
+
+  assert.deepEqual(anchored.titleCamera.position, base.titleCamera.position);
+  assert.deepEqual(rotated.titleCamera.position, base.titleCamera.position);
+  assert.ok(rotated.titleCamera.target[0] > base.titleCamera.target[0]);
+  assert.ok(rotated.titleCamera.target[1] < base.titleCamera.target[1]);
+});
+
 test("feedback module exposes notification presentation tokens", async () => {
   const feedback = await importDist("ui", "feedback.js");
 
@@ -908,6 +968,34 @@ function startupModalOverflowEntries(fileSystem) {
       path: `/repo/file-${String(index).padStart(2, "0")}.md`,
     }),
   );
+}
+
+function fpsTestCamera() {
+  return {
+    angle: 0,
+    angleTarget: 0,
+    angleMotionId: 0,
+    radius: 2,
+    radiusTarget: 2,
+    radiusMotionId: 0,
+    position: [0, 1, 0],
+    target: [0, 1, -2],
+    eyeY: 1,
+    crouching: false,
+  };
+}
+
+function titleMouse(action, col, row) {
+  return {
+    type: "mouse",
+    action,
+    button: "none",
+    col,
+    row,
+    shift: false,
+    alt: false,
+    ctrl: false,
+  };
 }
 
 function startupModalScrollbarCells(surface) {

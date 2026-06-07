@@ -173,6 +173,7 @@ function initialSceneState(
     ...(sceneOverrideName == null ? {} : { titleSceneName: sceneOverrideName }),
     ...(sceneOverride == null ? {} : { sceneOverride }),
     titleCamera: createTitleCameraState(cameraPlacement),
+    titleMouseLook: undefined,
     titleRenderMode: TITLE_RENDER_MODE.Braille,
     titleAsciiPalette: TITLE_ASCII_PALETTE.Dense,
     titleMeshMaterialIndex: 0,
