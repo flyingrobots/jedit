@@ -540,6 +540,64 @@ test("title scene mesh side mode stays double-sided unless requested", async () 
   );
 });
 
+test("title scene ray acceleration rejects rays aimed away from geometry", async () => {
+  const { titleScene, titleMesh } = await loadTitleSceneModules();
+  const mesh = titleMesh.createTitleMesh(
+    {
+      vertices: [
+        [0, 0, 0],
+        [1, 0, 0],
+        [0, 1, 0],
+      ],
+      triangles: [[0, 1, 2]],
+    },
+    UNIT_MESH_PLACEMENT,
+  );
+  const object = {
+    kind: titleScene.TITLE_SCENE_SHAPE_KIND.Mesh,
+    mesh,
+    radius: 1,
+    footprintRadius: 1,
+    height: 1,
+    color: [255, 255, 255],
+    reflectivity: 0,
+  };
+  const objects = [object];
+  const acceleration = titleScene.createTitleSceneRayAcceleration(objects, 0);
+  const origin = [0.5, 0.25, 4];
+  const awayRay = [0, 0, 1];
+  const towardRay = normalize(
+    sub(titleScene.titleSceneObjectFootprintCenter(object), origin),
+  );
+
+  assert.equal(
+    titleScene.titleSceneRayMayHitAnyObject(origin, awayRay, acceleration),
+    false,
+  );
+  assert.equal(
+    titleScene.nearestTitleSceneObjectHit(origin, awayRay, objects, {
+      rayAcceleration: acceleration,
+    }),
+    undefined,
+  );
+
+  const exactHit = titleScene.nearestTitleSceneObjectHit(
+    origin,
+    towardRay,
+    objects,
+  );
+  const acceleratedHit = titleScene.nearestTitleSceneObjectHit(
+    origin,
+    towardRay,
+    objects,
+    { rayAcceleration: acceleration },
+  );
+  assert.ok(exactHit != null);
+  assert.ok(acceleratedHit != null);
+  assert.equal(acceleratedHit.object, exactHit.object);
+  assert.equal(acceleratedHit.distance, exactHit.distance);
+});
+
 test("title mesh traverses nearer BVH children before pruning farther children", async () => {
   const { titleMesh } = await loadTitleSceneModules();
   const mesh = titleMesh.createTitleMesh(

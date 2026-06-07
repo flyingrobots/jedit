@@ -1,7 +1,10 @@
 import {
   intersectsTitleSceneObjectAlongRay,
+  titleSceneObjectRayBoundAt,
+  titleSceneRayMayHitBound,
   titleSceneObjectFootprintCenter,
   type TitleSceneObject,
+  type TitleSceneRayAcceleration,
   type TitleSceneVector3,
 } from "./title-scene.js";
 import type { TitleFloorLightEffects } from "./title-screen.js";
@@ -26,6 +29,7 @@ export function titleFloorLightEffectsAtWithLight(
   objects: readonly TitleSceneObject[],
   time: number,
   lightDirection: Vector3,
+  rayAcceleration?: TitleSceneRayAcceleration,
 ): TitleFloorLightEffects {
   return {
     shadowMultiplier: titleFloorPointInShadow(
@@ -33,6 +37,7 @@ export function titleFloorLightEffectsAtWithLight(
       objects,
       lightDirection,
       time,
+      rayAcceleration,
     )
       ? FLOOR_SHADOW_MULTIPLIER
       : 1,
@@ -50,20 +55,34 @@ function titleFloorPointInShadow(
   objects: readonly TitleSceneObject[],
   lightDirection: Vector3,
   time: number,
+  rayAcceleration: TitleSceneRayAcceleration | undefined,
 ): boolean {
   const shadowOrigin: Vector3 = [
     point[0],
     point[1] + SHADOW_RAY_BIAS,
     point[2],
   ];
-  return objects.some((object) =>
-    intersectsTitleSceneObjectAlongRay(
-      shadowOrigin,
-      lightDirection,
-      object,
-      time,
-    ),
-  );
+  for (let index = 0; index < objects.length; index += 1) {
+    const object = objects[index]!;
+    const bound = titleSceneObjectRayBoundAt(rayAcceleration, object, index);
+    if (
+      bound != null &&
+      !titleSceneRayMayHitBound(shadowOrigin, lightDirection, bound)
+    ) {
+      continue;
+    }
+    if (
+      intersectsTitleSceneObjectAlongRay(
+        shadowOrigin,
+        lightDirection,
+        object,
+        time,
+      )
+    ) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function titleFloorCausticStrengthAt(

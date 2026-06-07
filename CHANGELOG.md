@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Reduced empty-view title-scene ray tracing cost by reusing per-frame scene
+  bounds to skip object and shadow intersections for rays aimed away from
+  authored geometry and letting high-activity floor views enter adaptive
+  cached Braille tracing even when measured ray pressure is low.
 - Fixed title-screen FPS controls so `w`/`a`/`s`/`d` feed frame-driven movement
   leases, combine forward and strafe directions, make jumps fall back under
   gravity, and enable button-free terminal mouse-look motion.

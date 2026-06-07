@@ -13,12 +13,13 @@ import {
 } from "./averaging-braille-canvas.js";
 import { type JeditTheme } from "./jedit-theme.js";
 import {
+  createTitleSceneRayAcceleration,
   generateTitleScene,
   nearestTitleScenePrimaryObjectHit,
   type TitleScene,
   type TitleSceneCameraPlacement,
-  type TitleSceneObject,
   type TitleSceneObjectHit,
+  type TitleSceneRayAcceleration,
   type TitleSceneVector3,
   type TitleMesh,
 } from "./title-scene.js";
@@ -66,7 +67,6 @@ type Vector3 = TitleSceneVector3;
 type TitleEnvironmentSurfaceHit = NonNullable<
   ReturnType<typeof nearestTitleEnvironmentSurfaceHit>
 >;
-export type TitleSceneSphere = TitleSceneObject;
 export { flyingRobotsLogoCellBounds } from "./flyingrobots-logo.js";
 export {
   titleSceneMaterialColors,
@@ -118,6 +118,7 @@ interface TitleSceneShaderOptions {
   readonly scene: TitleScene;
   readonly environment: TitleSceneEnvironment | undefined;
   readonly colors: TitleSceneMaterialColors;
+  readonly rayAcceleration: TitleSceneRayAcceleration;
 }
 
 interface TitleSceneSurfaceOptions {
@@ -151,9 +152,7 @@ export function renderTitleScreen(
   theme: JeditTheme,
   options: TitleScreenRenderOptions,
 ): Surface {
-  const surface = renderTitleSceneSurface(
-    titleSceneSurfaceOptions(cols, rows, time, theme, options),
-  );
+  const surface = renderTitleSceneSurface(titleSceneSurfaceOptions(cols, rows, time, theme, options));
   if (options.suppressPresentation !== true) {
     paintTitleScreenPresentation(surface, {
       cols,
@@ -176,11 +175,7 @@ function titleSceneSurfaceOptions(
   const sceneColors = titleSceneRenderMaterialColors(theme);
   const scene =
     options.sceneOverride ??
-    generateTitleScene(
-      options.sceneSeed ?? DEFAULT_TITLE_SCENE_SEED,
-      sceneColors,
-      options.mesh,
-    );
+    generateTitleScene(options.sceneSeed ?? DEFAULT_TITLE_SCENE_SEED, sceneColors, options.mesh);
   const environment = titleSceneDayNightEnvironment(
     scene.environment,
     options.sceneSeed ?? DEFAULT_TITLE_SCENE_SEED,
@@ -193,6 +188,7 @@ function titleSceneSurfaceOptions(
     scene,
     environment,
     colors: sceneColors,
+    rayAcceleration: createTitleSceneRayAcceleration(scene.objects, time),
   });
   return {
     cols,
@@ -238,6 +234,7 @@ function titleSceneShader(options: TitleSceneShaderOptions): BrailleShaderFn {
       objects: options.scene.objects,
       colors: options.colors,
       environment: options.environment,
+      rayAcceleration: options.rayAcceleration,
     });
 }
 
@@ -259,6 +256,7 @@ function sceneSampleAt(options: TitleSceneSampleOptions): BrailleShaderSample {
     context.ray,
     options.objects,
     options.time,
+    options.rayAcceleration,
   );
   const environmentHit = nearestTitleEnvironmentSurfaceHit(
     context.origin,
@@ -410,6 +408,7 @@ function environmentSceneLightEffects(
         options.objects,
         options.time,
         context.lightDirection,
+        options.rayAcceleration,
       )
     : { shadowMultiplier: 1, contactShadowMultiplier: 1, causticStrength: 0 };
 }

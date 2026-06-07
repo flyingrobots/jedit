@@ -45,13 +45,23 @@ function titleBrailleTracePhaseCount(
     return TITLE_BRAILLE_MOTION_PHASE_COUNT;
   }
   if (isTitleBraillePressureFrame(input)) {
-    return input.frameTimeMs > TITLE_BRAILLE_HEAVY_FRAME_MS
-      ? TITLE_BRAILLE_QUARTER_PHASE_COUNT
-      : TITLE_BRAILLE_HALF_PHASE_COUNT;
+    return titleBraillePressurePhaseCount(input);
   }
   return isReducedTitleBraillePhaseCount(input.previousPhaseCount)
     ? input.previousPhaseCount
     : TITLE_BRAILLE_FULL_PHASE_COUNT;
+}
+
+function titleBraillePressurePhaseCount(
+  input: TitleBrailleTraceBudgetInput,
+): number {
+  const targetPhaseCount =
+    input.frameTimeMs > TITLE_BRAILLE_HEAVY_FRAME_MS
+      ? TITLE_BRAILLE_QUARTER_PHASE_COUNT
+      : TITLE_BRAILLE_HALF_PHASE_COUNT;
+  return isReducedTitleBraillePhaseCount(input.previousPhaseCount)
+    ? Math.max(input.previousPhaseCount, targetPhaseCount)
+    : targetPhaseCount;
 }
 
 function isTitleBraillePressureFrame(
@@ -63,14 +73,11 @@ function isTitleBraillePressureFrame(
 function isTitleBraillePressureScreen(
   stats: BrailleSampleFrameStats | undefined,
 ): boolean {
-  const rayPressureRatio =
-    stats == null ? undefined : brailleSampleRayPressureRatio(stats);
-  if (rayPressureRatio != null) {
-    return rayPressureRatio >= TITLE_BRAILLE_RAY_PRESSURE_RATIO;
-  }
   return (
     stats != null &&
-    brailleSampleActivityRatio(stats) >= TITLE_BRAILLE_ACTIVE_SCREEN_RATIO
+    (brailleSampleActivityRatio(stats) >= TITLE_BRAILLE_ACTIVE_SCREEN_RATIO ||
+      (brailleSampleRayPressureRatio(stats) ?? 0) >=
+        TITLE_BRAILLE_RAY_PRESSURE_RATIO)
   );
 }
 

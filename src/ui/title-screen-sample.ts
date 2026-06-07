@@ -5,6 +5,7 @@ import type { TitleSceneMaterialColors } from "./title-scene-material-colors.js"
 import type {
   TitleSceneCameraPlacement,
   TitleSceneObject,
+  TitleSceneRayAcceleration,
   TitleSceneVector3,
 } from "./title-scene.js";
 import type { TitleFloorLightEffects } from "./title-screen.js";
@@ -75,6 +76,7 @@ export interface TitleSceneSampleOptions {
   readonly objects: readonly TitleSceneObject[];
   readonly colors: TitleSceneMaterialColors;
   readonly environment: TitleSceneEnvironment | undefined;
+  readonly rayAcceleration?: TitleSceneRayAcceleration;
 }
 
 export interface TitleSceneRayContext {
@@ -94,6 +96,7 @@ export interface ReflectedEnvironmentColorOptions {
   readonly environment: TitleSceneEnvironment | undefined;
   readonly lightDirection: TitleSceneVector3;
   readonly spotlight: TitleSceneSpotlight;
+  readonly rayAcceleration?: TitleSceneRayAcceleration;
 }
 
 export interface TitleSceneSpotlight {

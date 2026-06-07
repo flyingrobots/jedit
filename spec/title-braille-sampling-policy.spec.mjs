@@ -85,6 +85,27 @@ test("title Braille sampling only halves work for moderate pressure", async () =
   );
 });
 
+test("title Braille sampling keeps quarter work when reduced frames remain over budget", async () => {
+  const sampling = await importDist(
+    "app",
+    "workspace",
+    "title-braille-sampling.js",
+  );
+
+  assert.deepEqual(
+    sampling.titleBrailleTraceBudget({
+      frameIndex: 7,
+      frameTimeMs: MODERATE_FRAME_MS,
+      previousStats: activeStats(8, 8),
+      previousPhaseCount: 4,
+    }),
+    {
+      phase: 3,
+      phaseCount: 4,
+    },
+  );
+});
+
 test("title Braille sampling stays full quality when screen activity is low", async () => {
   const sampling = await importDist(
     "app",
@@ -129,7 +150,7 @@ test("title Braille sampling uses ray pressure even when glyph activity is low",
   );
 });
 
-test("title Braille sampling ignores glyph activity when measured ray pressure is low", async () => {
+test("title Braille sampling uses glyph activity when measured ray pressure is low", async () => {
   const sampling = await importDist(
     "app",
     "workspace",
@@ -148,7 +169,7 @@ test("title Braille sampling ignores glyph activity when measured ray pressure i
     }),
     {
       phase: 0,
-      phaseCount: 1,
+      phaseCount: 4,
     },
   );
 });
