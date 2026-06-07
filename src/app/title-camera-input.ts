@@ -71,10 +71,12 @@ function refreshForwardInput(
   input: TitleCameraInputState,
   atMs: number,
 ): TitleCameraInputState {
+  const active = activeTitleCameraInput(input, atMs);
   return {
-    ...input,
     forwardUntilMs: activeInputUntilMs(atMs),
     backwardUntilMs: undefined,
+    leftUntilMs: refreshedActiveInputUntilMs(active.leftUntilMs, atMs),
+    rightUntilMs: refreshedActiveInputUntilMs(active.rightUntilMs, atMs),
   };
 }
 
@@ -82,10 +84,12 @@ function refreshBackwardInput(
   input: TitleCameraInputState,
   atMs: number,
 ): TitleCameraInputState {
+  const active = activeTitleCameraInput(input, atMs);
   return {
-    ...input,
     forwardUntilMs: undefined,
     backwardUntilMs: activeInputUntilMs(atMs),
+    leftUntilMs: refreshedActiveInputUntilMs(active.leftUntilMs, atMs),
+    rightUntilMs: refreshedActiveInputUntilMs(active.rightUntilMs, atMs),
   };
 }
 
@@ -93,8 +97,10 @@ function refreshLeftInput(
   input: TitleCameraInputState,
   atMs: number,
 ): TitleCameraInputState {
+  const active = activeTitleCameraInput(input, atMs);
   return {
-    ...input,
+    forwardUntilMs: refreshedActiveInputUntilMs(active.forwardUntilMs, atMs),
+    backwardUntilMs: refreshedActiveInputUntilMs(active.backwardUntilMs, atMs),
     leftUntilMs: activeInputUntilMs(atMs),
     rightUntilMs: undefined,
   };
@@ -104,8 +110,10 @@ function refreshRightInput(
   input: TitleCameraInputState,
   atMs: number,
 ): TitleCameraInputState {
+  const active = activeTitleCameraInput(input, atMs);
   return {
-    ...input,
+    forwardUntilMs: refreshedActiveInputUntilMs(active.forwardUntilMs, atMs),
+    backwardUntilMs: refreshedActiveInputUntilMs(active.backwardUntilMs, atMs),
     leftUntilMs: undefined,
     rightUntilMs: activeInputUntilMs(atMs),
   };
@@ -148,4 +156,11 @@ function activeUntilMs(
 
 function activeInputUntilMs(atMs: number): number {
   return atMs + TITLE_CAMERA_INPUT_LEASE_MS;
+}
+
+function refreshedActiveInputUntilMs(
+  candidateUntilMs: number | undefined,
+  atMs: number,
+): number | undefined {
+  return candidateUntilMs == null ? undefined : activeInputUntilMs(atMs);
 }

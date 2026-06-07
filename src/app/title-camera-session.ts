@@ -32,6 +32,9 @@ export {
   TITLE_CAMERA_FPS_STEP,
   TITLE_CAMERA_FPS_SPEED,
   TITLE_CAMERA_CROUCH_SPEED,
+  TITLE_CAMERA_FPS_ACCELERATION,
+  TITLE_CAMERA_CROUCH_ACCELERATION,
+  TITLE_CAMERA_INPUT_IMPULSE,
   TITLE_CAMERA_GRAVITY,
   TITLE_CAMERA_JUMP_STEP,
   TITLE_CAMERA_JUMP_VELOCITY,
@@ -101,6 +104,9 @@ export interface TitleCameraState {
   readonly target: TitleSceneVector3;
   readonly eyeY: number;
   readonly crouching: boolean;
+  readonly velocity?: TitleSceneVector3;
+  readonly verticalVelocity?: number;
+  readonly groundEyeY?: number;
 }
 
 export interface TitleCameraInitialPlacement {

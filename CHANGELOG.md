@@ -6,6 +6,9 @@
   bounds to skip object and shadow intersections for rays aimed away from
   authored geometry and letting high-activity floor views enter adaptive
   cached Braille tracing even when measured ray pressure is low.
+- Fixed title-screen FPS movement so WASD applies velocity impulses, frame
+  ticks integrate acceleration and drag, repeated lateral keys preserve active
+  forward/backward contribution, and jumping preserves horizontal momentum.
 - Fixed title-screen FPS controls so `w`/`a`/`s`/`d` feed frame-driven movement
   leases, combine forward and strafe directions, make jumps fall back under
   gravity, and enable button-free terminal mouse-look motion.

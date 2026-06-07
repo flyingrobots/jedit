@@ -10,6 +10,12 @@ const TITLE_CAMERA_PATH = path.join(
   "app",
   "title-camera-session.js",
 );
+const TITLE_CAMERA_INPUT_PATH = path.join(
+  REPO_ROOT,
+  "dist",
+  "app",
+  "title-camera-input.js",
+);
 const SPRING_FRAME_DT = 1 / 60;
 const SLOW_FRAME_DT = 1;
 const SPRING_FRAME_LIMIT = 160;
@@ -20,6 +26,7 @@ const WORLD_CAMERA_POSITION = [0, 0.92, 2.25];
 const WORLD_CAMERA_TARGET = [0, 0.8, 0];
 
 let titleCameraSessionPromise;
+let titleCameraInputPromise;
 
 async function loadTitleCameraSession() {
   if (titleCameraSessionPromise) {
@@ -32,6 +39,19 @@ async function loadTitleCameraSession() {
   })();
 
   return titleCameraSessionPromise;
+}
+
+async function loadTitleCameraInput() {
+  if (titleCameraInputPromise) {
+    return titleCameraInputPromise;
+  }
+
+  titleCameraInputPromise = (async () => {
+    await ensureDistBuilt();
+    return import(pathToFileURL(TITLE_CAMERA_INPUT_PATH).href);
+  })();
+
+  return titleCameraInputPromise;
 }
 
 test("title camera arrow keys move targets through spring commands", async () => {
@@ -84,11 +104,11 @@ test("title camera WASD translates through FPS view axes", async () => {
   const left = camera.updateTitleCameraFromKey("a", initial).state;
   const right = camera.updateTitleCameraFromKey("d", initial).state;
 
-  assert.ok(forward.position[2] < initial.position[2]);
-  assert.ok(forward.target[2] < initial.target[2]);
-  assert.ok(backward.position[2] > initial.position[2]);
-  assert.ok(left.position[0] < initial.position[0]);
-  assert.ok(right.position[0] > initial.position[0]);
+  assert.ok(forward.velocity[2] < 0);
+  assert.ok(backward.velocity[2] > 0);
+  assert.ok(left.velocity[0] < 0);
+  assert.ok(right.velocity[0] > 0);
+  assert.deepEqual(forward.position, initial.position);
   assert.equal(distance(forward.position, forward.target), 2);
 });
 
@@ -117,6 +137,61 @@ test("title camera frame advance combines FPS input directions", async () => {
   assert.equal(advanced.input.leftUntilMs, ACTIVE_INPUT_MS);
 });
 
+test("title camera frame advance combines backward and left input directions", async () => {
+  const camera = await loadTitleCameraSession();
+  const initial = camera.createTitleCameraState({
+    angle: 0,
+    radius: 2,
+    position: [0, 1, 0],
+    target: [0, 1, -2],
+  });
+  const advanced = camera.advanceTitleCameraFrame(
+    initial,
+    {
+      backwardUntilMs: ACTIVE_INPUT_MS,
+      leftUntilMs: ACTIVE_INPUT_MS,
+    },
+    FRAME_MS,
+    FRAME_MS,
+  );
+
+  assert.ok(advanced.state.position[2] > initial.position[2]);
+  assert.ok(advanced.state.position[0] < initial.position[0]);
+  assert.equal(advanced.input.backwardUntilMs, ACTIVE_INPUT_MS);
+  assert.equal(advanced.input.leftUntilMs, ACTIVE_INPUT_MS);
+});
+
+test("title camera keeps forward contribution while lateral key repeats", async () => {
+  const [camera, input] = await Promise.all([
+    loadTitleCameraSession(),
+    loadTitleCameraInput(),
+  ]);
+  const initial = camera.createTitleCameraState({
+    angle: 0,
+    radius: 2,
+    position: [0, 1, 0],
+    target: [0, 1, -2],
+  });
+  let held = input.refreshTitleCameraInputFromKey(
+    "w",
+    input.createTitleCameraInputState(),
+    0,
+  );
+  held = input.refreshTitleCameraInputFromKey("a", held, 100);
+  held = input.refreshTitleCameraInputFromKey("a", held, 300);
+  const advanced = camera.advanceTitleCameraFrame(
+    initial,
+    held,
+    500,
+    FRAME_MS,
+  );
+
+  assert.ok(advanced.state.position[2] < initial.position[2]);
+  assert.ok(advanced.state.position[0] < initial.position[0]);
+  assert.ok(advanced.input.forwardUntilMs >= 500);
+  assert.ok(advanced.input.leftUntilMs >= 500);
+});
+
 test("title camera space jumps and shift toggles slower crouch movement", async () => {
   const camera = await loadTitleCameraSession();
   const initial = camera.createTitleCameraState({
@@ -135,15 +210,42 @@ test("title camera space jumps and shift toggles slower crouch movement", async 
     { shift: true },
   ).state;
 
-  assert.ok(jumped.position[1] > initial.position[1]);
+  assert.ok(jumped.velocity[1] > 0);
   assert.equal(crouched.crouching, true);
   assert.equal(shiftWalked.crouching, true);
   assert.ok(crouched.position[1] < initial.position[1]);
   assert.ok(shiftWalked.position[1] < initial.position[1]);
   assert.ok(
-    Math.abs(crouchWalked.position[2] - crouched.position[2]) <
-      Math.abs(walked.position[2] - initial.position[2]),
+    Math.abs(crouchWalked.velocity[2]) < Math.abs(walked.velocity[2]),
   );
+});
+
+test("title camera jump preserves horizontal velocity", async () => {
+  const camera = await loadTitleCameraSession();
+  const initial = camera.createTitleCameraState({
+    angle: 0,
+    radius: 2,
+    position: [0, 1, 0],
+    target: [0, 1, -2],
+  });
+  const moving = camera.advanceTitleCameraFrame(
+    initial,
+    { forwardUntilMs: ACTIVE_INPUT_MS },
+    FRAME_MS,
+    FRAME_MS,
+  ).state;
+  const jumped = camera.updateTitleCameraFromKey("space", moving).state;
+  const airborne = camera.advanceTitleCameraFrame(
+    jumped,
+    {},
+    FRAME_MS * 2,
+    FRAME_MS,
+  ).state;
+
+  assert.ok(jumped.velocity[2] < 0);
+  assert.ok(jumped.velocity[1] > 0);
+  assert.ok(airborne.position[2] < jumped.position[2]);
+  assert.ok(airborne.position[1] > jumped.position[1]);
 });
 
 test("title camera gravity lands after a jump", async () => {
@@ -156,7 +258,7 @@ test("title camera gravity lands after a jump", async () => {
   });
   let jumped = camera.updateTitleCameraFromKey("space", initial).state;
 
-  assert.ok(jumped.position[1] > initial.position[1]);
+  assert.ok(jumped.velocity[1] > 0);
 
   for (let frame = 0; frame < FRAME_COUNT; frame += 1) {
     jumped = camera.advanceTitleCameraFrame(

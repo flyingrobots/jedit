@@ -1,11 +1,24 @@
 import type { TitleSceneVector3 } from "../ui/title-scene.js";
 import { titleSceneCameraOrbitFromPosition } from "../ui/title-scene-camera.js";
+import {
+  add,
+  clamp,
+  cross,
+  dot,
+  length,
+  normalize,
+  scale,
+  sub,
+} from "./title-camera-vector.js";
 
 export const TITLE_CAMERA_FPS_STEP = 0.48;
 export const TITLE_CAMERA_CROUCH_STEP = 0.2;
 export const TITLE_CAMERA_JUMP_STEP = 0.6;
 export const TITLE_CAMERA_FPS_SPEED = 3.2;
 export const TITLE_CAMERA_CROUCH_SPEED = 1.4;
+export const TITLE_CAMERA_FPS_ACCELERATION = 18;
+export const TITLE_CAMERA_CROUCH_ACCELERATION = 9;
+export const TITLE_CAMERA_INPUT_IMPULSE = 0.9;
 export const TITLE_CAMERA_JUMP_VELOCITY = 3.6;
 export const TITLE_CAMERA_GRAVITY = 9.2;
 export const TITLE_CAMERA_CROUCH_HEIGHT = 0.44;
@@ -14,6 +27,8 @@ export const TITLE_CAMERA_MOUSE_LOOK_RADIANS_PER_CELL = 0.045;
 const TITLE_CAMERA_MAX_PITCH_SIN = 0.94;
 const TITLE_CAMERA_MAX_ADVANCE_SECONDS = 1 / 20;
 const VECTOR_ZERO_EPSILON = 0.000001;
+const TITLE_CAMERA_GROUND_DRAG = 8;
+const TITLE_CAMERA_AIR_DRAG = 1.2;
 const ZERO_VECTOR: TitleSceneVector3 = [0, 0, 0];
 const REVERSE_DIRECTION = -1;
 const WORLD_UP: TitleSceneVector3 = [0, 1, 0];
@@ -36,6 +51,7 @@ export interface TitleCameraFpsState {
   readonly target: TitleSceneVector3;
   readonly eyeY: number;
   readonly crouching: boolean;
+  readonly velocity?: TitleSceneVector3;
   readonly verticalVelocity?: number;
   readonly groundEyeY?: number;
 }
@@ -61,28 +77,28 @@ export function titleCameraMovedForward(
   camera: TitleCameraFpsState,
   modifiers: TitleCameraKeyModifiers,
 ): TitleCameraFpsState {
-  return titleCameraTranslated(camera, titleCameraForward(camera), modifiers);
+  return titleCameraImpulsed(camera, titleCameraForward(camera), modifiers);
 }
 
 export function titleCameraMovedBackward(
   camera: TitleCameraFpsState,
   modifiers: TitleCameraKeyModifiers,
 ): TitleCameraFpsState {
-  return titleCameraTranslated(camera, titleCameraBackward(camera), modifiers);
+  return titleCameraImpulsed(camera, titleCameraBackward(camera), modifiers);
 }
 
 export function titleCameraStrafedLeft(
   camera: TitleCameraFpsState,
   modifiers: TitleCameraKeyModifiers,
 ): TitleCameraFpsState {
-  return titleCameraTranslated(camera, titleCameraLeft(camera), modifiers);
+  return titleCameraImpulsed(camera, titleCameraLeft(camera), modifiers);
 }
 
 export function titleCameraStrafedRight(
   camera: TitleCameraFpsState,
   modifiers: TitleCameraKeyModifiers,
 ): TitleCameraFpsState {
-  return titleCameraTranslated(camera, titleCameraRight(camera), modifiers);
+  return titleCameraImpulsed(camera, titleCameraRight(camera), modifiers);
 }
 
 export function titleCameraJumped(
@@ -91,16 +107,17 @@ export function titleCameraJumped(
   if (titleCameraIsAirborne(camera)) {
     return camera;
   }
-  const jumped = titleCameraVerticalShift(
-    camera,
-    TITLE_CAMERA_JUMP_STEP,
-    TITLE_CAMERA_CROUCH_STATE.Standing,
+  const base = camera.crouching
+    ? titleCameraGroundedShift(
+        camera,
+        TITLE_CAMERA_CROUCH_HEIGHT,
+        TITLE_CAMERA_CROUCH_STATE.Standing,
+      )
+    : camera;
+  return titleCameraWithVelocity(
+    { ...base, groundEyeY: titleCameraGroundEyeY(base) },
+    velocityWithY(titleCameraVelocity(base), TITLE_CAMERA_JUMP_VELOCITY),
   );
-  return {
-    ...jumped,
-    verticalVelocity: TITLE_CAMERA_JUMP_VELOCITY,
-    groundEyeY: titleCameraGroundEyeY(camera),
-  };
 }
 
 export function titleCameraToggledCrouch(
@@ -152,29 +169,61 @@ export function titleCameraAdvanced(
   input: TitleCameraMovementInput,
 ): TitleCameraFpsState {
   const dtSeconds = boundedAdvanceSeconds(input.dtSeconds);
-  const moved = titleCameraMovementAdvanced(camera, input, dtSeconds);
-  return titleCameraGravityAdvanced(moved, dtSeconds);
+  const velocity = titleCameraFrameVelocity(camera, input, dtSeconds);
+  return titleCameraPositionAdvanced(camera, velocity, dtSeconds);
 }
 
-function titleCameraMovementAdvanced(
+function titleCameraFrameVelocity(
   camera: TitleCameraFpsState,
   input: TitleCameraMovementInput,
   dtSeconds: number,
-): TitleCameraFpsState {
+): TitleSceneVector3 {
+  const movement = titleCameraMovementVelocity(camera, input, dtSeconds);
+  return titleCameraGravityVelocity(camera, movement, dtSeconds);
+}
+
+function titleCameraMovementVelocity(
+  camera: TitleCameraFpsState,
+  input: TitleCameraMovementInput,
+  dtSeconds: number,
+): TitleSceneVector3 {
+  const velocity = titleCameraVelocity(camera);
   const direction = titleCameraMovementDirection(camera, input);
   if (direction == null || dtSeconds === 0) {
-    return camera;
+    return dampTitleCameraHorizontalVelocity(camera, velocity, dtSeconds);
   }
-  const movement = scale(
-    direction,
-    titleCameraMovementSpeed(camera) * dtSeconds,
+  return clampTitleCameraHorizontalSpeed(
+    add(velocity, scale(direction, titleCameraAcceleration(camera) * dtSeconds)),
+    titleCameraMovementSpeed(camera),
   );
-  return titleCameraWithPositionAndTarget(
+}
+
+function titleCameraGravityVelocity(
+  camera: TitleCameraFpsState,
+  velocity: TitleSceneVector3,
+  dtSeconds: number,
+): TitleSceneVector3 {
+  const nextY = titleCameraIsAirborne(camera) || velocity[1] !== 0
+    ? velocity[1] - TITLE_CAMERA_GRAVITY * dtSeconds
+    : 0;
+  return velocityWithY(velocity, nextY);
+}
+
+function titleCameraPositionAdvanced(
+  camera: TitleCameraFpsState,
+  velocity: TitleSceneVector3,
+  dtSeconds: number,
+): TitleCameraFpsState {
+  const moved = titleCameraWithPositionAndTarget(
     camera,
-    add(camera.position, movement),
-    add(camera.target, movement),
+    add(camera.position, scale(velocity, dtSeconds)),
+    add(camera.target, scale(velocity, dtSeconds)),
     titleCameraCrouchState(camera),
   );
+  const withVelocity = titleCameraWithVelocity(moved, velocity);
+  return withVelocity.position[1] <= titleCameraGroundEyeY(camera)
+    ? titleCameraLanded(withVelocity, titleCameraGroundEyeY(camera))
+    : withVelocity;
 }
 
 function titleCameraMovementDirection(
@@ -211,44 +260,32 @@ function titleCameraMovementSpeed(camera: TitleCameraFpsState): number {
   return camera.crouching ? TITLE_CAMERA_CROUCH_SPEED : TITLE_CAMERA_FPS_SPEED;
 }
 
-function titleCameraGravityAdvanced(
-  camera: TitleCameraFpsState,
-  dtSeconds: number,
-): TitleCameraFpsState {
-  const groundEyeY = titleCameraGroundEyeY(camera);
-  const velocity = camera.verticalVelocity ?? 0;
-  if (velocity === 0 && camera.position[1] <= groundEyeY) {
-    return titleCameraLanded(camera, groundEyeY);
-  }
-  const nextVelocity = velocity - TITLE_CAMERA_GRAVITY * dtSeconds;
-  const dy =
-    velocity * dtSeconds -
-    (TITLE_CAMERA_GRAVITY * dtSeconds * dtSeconds) / 2;
-  const shifted = titleCameraVerticalPositionShift(camera, dy);
-  return shifted.position[1] <= groundEyeY
-    ? titleCameraLanded(shifted, groundEyeY)
-    : {
-        ...shifted,
-        verticalVelocity: nextVelocity,
-        groundEyeY,
-      };
+function titleCameraImpulse(camera: TitleCameraFpsState): number {
+  return camera.crouching
+    ? TITLE_CAMERA_INPUT_IMPULSE *
+        (TITLE_CAMERA_CROUCH_SPEED / TITLE_CAMERA_FPS_SPEED)
+    : TITLE_CAMERA_INPUT_IMPULSE;
 }
 
-function titleCameraTranslated(
+function titleCameraAcceleration(camera: TitleCameraFpsState): number {
+  return camera.crouching
+    ? TITLE_CAMERA_CROUCH_ACCELERATION
+    : TITLE_CAMERA_FPS_ACCELERATION;
+}
+
+function titleCameraImpulsed(
   camera: TitleCameraFpsState,
   direction: TitleSceneVector3,
   modifiers: TitleCameraKeyModifiers,
 ): TitleCameraFpsState {
   const base = titleCameraMovementBase(camera, modifiers);
-  const distance = base.crouching
-    ? TITLE_CAMERA_CROUCH_STEP
-    : TITLE_CAMERA_FPS_STEP;
-  const movement = scale(normalize(direction), distance);
-  return titleCameraWithPositionAndTarget(
+  const velocity = add(
+    titleCameraVelocity(base),
+    scale(normalize(direction), titleCameraImpulse(base)),
+  );
+  return titleCameraWithVelocity(
     base,
-    add(base.position, movement),
-    add(base.target, movement),
-    titleCameraCrouchState(base),
+    clampTitleCameraHorizontalSpeed(velocity, titleCameraMovementSpeed(base)),
   );
 }
 
@@ -311,6 +348,7 @@ function titleCameraLanded(
       : titleCameraVerticalPositionShift(camera, correction);
   return {
     ...grounded,
+    velocity: velocityWithY(titleCameraVelocity(grounded), 0),
     verticalVelocity: 0,
     groundEyeY,
   };
@@ -323,8 +361,54 @@ function titleCameraGroundEyeY(camera: TitleCameraFpsState): number {
 function titleCameraIsAirborne(camera: TitleCameraFpsState): boolean {
   return (
     Math.abs(camera.position[1] - titleCameraGroundEyeY(camera)) >
-      VECTOR_ZERO_EPSILON || (camera.verticalVelocity ?? 0) !== 0
+      VECTOR_ZERO_EPSILON || titleCameraVelocity(camera)[1] !== 0
   );
+}
+
+function titleCameraVelocity(camera: TitleCameraFpsState): TitleSceneVector3 {
+  return camera.velocity ?? [0, camera.verticalVelocity ?? 0, 0];
+}
+
+function titleCameraWithVelocity(
+  camera: TitleCameraFpsState,
+  velocity: TitleSceneVector3,
+): TitleCameraFpsState {
+  return {
+    ...camera,
+    velocity,
+    verticalVelocity: velocity[1],
+  };
+}
+
+function velocityWithY(
+  velocity: TitleSceneVector3,
+  y: number,
+): TitleSceneVector3 {
+  return [velocity[0], y, velocity[2]];
+}
+
+function dampTitleCameraHorizontalVelocity(
+  camera: TitleCameraFpsState,
+  velocity: TitleSceneVector3,
+  dtSeconds: number,
+): TitleSceneVector3 {
+  const factor = Math.max(
+    0,
+    1 - (titleCameraIsAirborne(camera) ? TITLE_CAMERA_AIR_DRAG : TITLE_CAMERA_GROUND_DRAG) * dtSeconds,
+  );
+  return [velocity[0] * factor, velocity[1], velocity[2] * factor];
+}
+
+function clampTitleCameraHorizontalSpeed(
+  velocity: TitleSceneVector3,
+  maxSpeed: number,
+): TitleSceneVector3 {
+  const speed = Math.hypot(velocity[0], velocity[2]);
+  if (speed <= maxSpeed || speed <= VECTOR_ZERO_EPSILON) {
+    return velocity;
+  }
+  const scaleFactor = maxSpeed / speed;
+  return [velocity[0] * scaleFactor, velocity[1], velocity[2] * scaleFactor];
 }
 
 function boundedAdvanceSeconds(dtSeconds: number): number {
@@ -360,7 +444,8 @@ function titleCameraCrouchState(
 }
 
 function titleCameraForward(camera: TitleCameraFpsState): TitleSceneVector3 {
-  return normalize(sub(camera.target, camera.position));
+  const view = sub(camera.target, camera.position);
+  return normalize([view[0], 0, view[2]]);
 }
 
 function titleCameraBackward(camera: TitleCameraFpsState): TitleSceneVector3 {
@@ -408,46 +493,4 @@ function rotateAroundAxis(
     add(scale(vector, cos), scale(cross(normalizedAxis, vector), sin)),
     scale(normalizedAxis, dot(normalizedAxis, vector) * (1 - cos)),
   );
-}
-
-function length(vector: TitleSceneVector3): number {
-  return Math.hypot(vector[0], vector[1], vector[2]);
-}
-
-function normalize(vector: TitleSceneVector3): TitleSceneVector3 {
-  const magnitude = length(vector);
-  return magnitude <= VECTOR_ZERO_EPSILON
-    ? [0, 0, -1]
-    : scale(vector, 1 / magnitude);
-}
-
-function add(a: TitleSceneVector3, b: TitleSceneVector3): TitleSceneVector3 {
-  return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
-}
-
-function sub(a: TitleSceneVector3, b: TitleSceneVector3): TitleSceneVector3 {
-  return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-}
-
-function scale(
-  vector: TitleSceneVector3,
-  scalar: number,
-): TitleSceneVector3 {
-  return [vector[0] * scalar, vector[1] * scalar, vector[2] * scalar];
-}
-
-function cross(a: TitleSceneVector3, b: TitleSceneVector3): TitleSceneVector3 {
-  return [
-    a[1] * b[2] - a[2] * b[1],
-    a[2] * b[0] - a[0] * b[2],
-    a[0] * b[1] - a[1] * b[0],
-  ];
-}
-
-function dot(a: TitleSceneVector3, b: TitleSceneVector3): number {
-  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-}
-
-function clamp(value: number, minimum: number, maximum: number): number {
-  return Math.max(minimum, Math.min(value, maximum));
 }

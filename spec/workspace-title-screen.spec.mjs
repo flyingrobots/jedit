@@ -207,10 +207,11 @@ test("title screen uses FPS-style camera keys without an editor", async () => {
   );
 
   assert.deepEqual(forward.titleCamera.position, base.titleCamera.position);
+  assert.ok(forward.titleCamera.velocity[2] < 0);
   assert.equal(typeof forward.titleCameraInput.forwardUntilMs, "number");
   assert.equal(typeof forwardLeft.titleCameraInput.forwardUntilMs, "number");
   assert.equal(typeof forwardLeft.titleCameraInput.leftUntilMs, "number");
-  assert.ok(jumped.titleCamera.position[1] > base.titleCamera.position[1]);
+  assert.ok(jumped.titleCamera.velocity[1] > 0);
   assert.equal(crouched.titleCamera.crouching, true);
 });
 

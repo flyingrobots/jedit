@@ -161,9 +161,19 @@ function updateTitleCameraInputKey(
     model.titleCameraInput,
     context.nowMs(),
   );
+  const update = updateTitleCameraFromKey(msg.key, model.titleCamera, {
+    shift: msg.shift,
+  });
   return titleCameraInput == null
     ? undefined
-    : [{ ...model, titleCameraInput }, []];
+    : [
+        {
+          ...model,
+          titleCamera: update?.state ?? model.titleCamera,
+          titleCameraInput,
+        },
+        update?.commands ?? [],
+      ];
 }
 
 function pushTitleScreenToast(
