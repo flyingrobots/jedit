@@ -22,8 +22,43 @@ const SPRING_FRAME_LIMIT = 160;
 const FRAME_MS = 16;
 const FRAME_COUNT = 80;
 const ACTIVE_INPUT_MS = 1000;
+const DIAGONAL_FIRST_KEY_MS = 0;
+const DIAGONAL_IDLE_MS = 400;
+const DIAGONAL_SECOND_KEY_MS = 500;
+const DIAGONAL_ADVANCE_MS = 700;
 const WORLD_CAMERA_POSITION = [0, 0.92, 2.25];
 const WORLD_CAMERA_TARGET = [0, 0.8, 0];
+
+const DIAGONAL_CHORD_CASES = [
+  {
+    name: "w+a",
+    firstKey: "w",
+    secondKey: "a",
+    expectedX: "negative",
+    expectedZ: "negative",
+  },
+  {
+    name: "w+d",
+    firstKey: "w",
+    secondKey: "d",
+    expectedX: "positive",
+    expectedZ: "negative",
+  },
+  {
+    name: "s+d",
+    firstKey: "s",
+    secondKey: "d",
+    expectedX: "positive",
+    expectedZ: "positive",
+  },
+  {
+    name: "s+a",
+    firstKey: "s",
+    secondKey: "a",
+    expectedX: "negative",
+    expectedZ: "positive",
+  },
+];
 
 let titleCameraSessionPromise;
 let titleCameraInputPromise;
@@ -190,6 +225,55 @@ test("title camera keeps forward contribution while lateral key repeats", async 
   assert.ok(advanced.state.position[0] < initial.position[0]);
   assert.ok(advanced.input.forwardUntilMs >= 500);
   assert.ok(advanced.input.leftUntilMs >= 500);
+});
+
+test("title camera preserves delayed WASD diagonal chords", async () => {
+  const [camera, input] = await Promise.all([
+    loadTitleCameraSession(),
+    loadTitleCameraInput(),
+  ]);
+
+  for (const diagonal of DIAGONAL_CHORD_CASES) {
+    const initial = camera.createTitleCameraState({
+      angle: 0,
+      radius: 2,
+      position: [0, 1, 0],
+      target: [0, 1, -2],
+    });
+    const first = input.refreshTitleCameraInputFromKey(
+      diagonal.firstKey,
+      input.createTitleCameraInputState(),
+      DIAGONAL_FIRST_KEY_MS,
+    );
+    const idle = camera.advanceTitleCameraFrame(
+      initial,
+      first,
+      DIAGONAL_IDLE_MS,
+      FRAME_MS,
+    );
+    const chord = input.refreshTitleCameraInputFromKey(
+      diagonal.secondKey,
+      idle.input,
+      DIAGONAL_SECOND_KEY_MS,
+    );
+    const advanced = camera.advanceTitleCameraFrame(
+      initial,
+      chord,
+      DIAGONAL_ADVANCE_MS,
+      FRAME_MS,
+    );
+
+    assertAxisDirection(
+      advanced.state.position[0] - initial.position[0],
+      diagonal.expectedX,
+      `${diagonal.name} x`,
+    );
+    assertAxisDirection(
+      advanced.state.position[2] - initial.position[2],
+      diagonal.expectedZ,
+      `${diagonal.name} z`,
+    );
+  }
 });
 
 test("title camera space jumps and shift toggles slower crouch movement", async () => {
@@ -397,4 +481,12 @@ async function runSpringCommand(command, dt = SPRING_FRAME_DT) {
 
 function distance(a, b) {
   return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+}
+
+function assertAxisDirection(delta, expected, label) {
+  if (expected === "positive") {
+    assert.ok(delta > 0, label);
+    return;
+  }
+  assert.ok(delta < 0, label);
 }

@@ -4,6 +4,7 @@ import {
 } from "./title-camera-fps.js";
 
 const TITLE_CAMERA_INPUT_LEASE_MS = 320;
+const TITLE_CAMERA_INPUT_CHORD_MEMORY_MS = 1200;
 const MILLISECONDS_PER_SECOND = 1000;
 
 const TITLE_CAMERA_INPUT_KEY = {
@@ -18,6 +19,10 @@ export interface TitleCameraInputState {
   readonly backwardUntilMs?: number;
   readonly leftUntilMs?: number;
   readonly rightUntilMs?: number;
+  readonly forwardChordUntilMs?: number;
+  readonly backwardChordUntilMs?: number;
+  readonly leftChordUntilMs?: number;
+  readonly rightChordUntilMs?: number;
 }
 
 export interface TitleCameraFrameAdvance {
@@ -55,13 +60,14 @@ export function advanceTitleCameraFrame(
   dtMs: number,
 ): TitleCameraFrameAdvance {
   const active = activeTitleCameraInput(input, atMs);
+  const activeLease = titleCameraInputHasActiveLease(active);
   return {
     state: titleCameraAdvanced(camera, {
       dtSeconds: Math.max(0, dtMs) / MILLISECONDS_PER_SECOND,
-      forward: active.forwardUntilMs != null,
-      backward: active.backwardUntilMs != null,
-      left: active.leftUntilMs != null,
-      right: active.rightUntilMs != null,
+      forward: activeLease && titleCameraInputForward(active),
+      backward: activeLease && titleCameraInputBackward(active),
+      left: activeLease && titleCameraInputLeft(active),
+      right: activeLease && titleCameraInputRight(active),
     }),
     input: active,
   };
@@ -74,9 +80,13 @@ function refreshForwardInput(
   const active = activeTitleCameraInput(input, atMs);
   return {
     forwardUntilMs: activeInputUntilMs(atMs),
+    forwardChordUntilMs: chordMemoryUntilMs(atMs),
     backwardUntilMs: undefined,
+    backwardChordUntilMs: undefined,
     leftUntilMs: refreshedActiveInputUntilMs(active.leftUntilMs, atMs),
     rightUntilMs: refreshedActiveInputUntilMs(active.rightUntilMs, atMs),
+    leftChordUntilMs: refreshedChordMemoryUntilMs(active.leftChordUntilMs, atMs),
+    rightChordUntilMs: refreshedChordMemoryUntilMs(active.rightChordUntilMs, atMs),
   };
 }
 
@@ -87,9 +97,13 @@ function refreshBackwardInput(
   const active = activeTitleCameraInput(input, atMs);
   return {
     forwardUntilMs: undefined,
+    forwardChordUntilMs: undefined,
     backwardUntilMs: activeInputUntilMs(atMs),
+    backwardChordUntilMs: chordMemoryUntilMs(atMs),
     leftUntilMs: refreshedActiveInputUntilMs(active.leftUntilMs, atMs),
     rightUntilMs: refreshedActiveInputUntilMs(active.rightUntilMs, atMs),
+    leftChordUntilMs: refreshedChordMemoryUntilMs(active.leftChordUntilMs, atMs),
+    rightChordUntilMs: refreshedChordMemoryUntilMs(active.rightChordUntilMs, atMs),
   };
 }
 
@@ -101,8 +115,12 @@ function refreshLeftInput(
   return {
     forwardUntilMs: refreshedActiveInputUntilMs(active.forwardUntilMs, atMs),
     backwardUntilMs: refreshedActiveInputUntilMs(active.backwardUntilMs, atMs),
+    forwardChordUntilMs: refreshedChordMemoryUntilMs(active.forwardChordUntilMs, atMs),
+    backwardChordUntilMs: refreshedChordMemoryUntilMs(active.backwardChordUntilMs, atMs),
     leftUntilMs: activeInputUntilMs(atMs),
+    leftChordUntilMs: chordMemoryUntilMs(atMs),
     rightUntilMs: undefined,
+    rightChordUntilMs: undefined,
   };
 }
 
@@ -114,8 +132,12 @@ function refreshRightInput(
   return {
     forwardUntilMs: refreshedActiveInputUntilMs(active.forwardUntilMs, atMs),
     backwardUntilMs: refreshedActiveInputUntilMs(active.backwardUntilMs, atMs),
+    forwardChordUntilMs: refreshedChordMemoryUntilMs(active.forwardChordUntilMs, atMs),
+    backwardChordUntilMs: refreshedChordMemoryUntilMs(active.backwardChordUntilMs, atMs),
     leftUntilMs: undefined,
+    leftChordUntilMs: undefined,
     rightUntilMs: activeInputUntilMs(atMs),
+    rightChordUntilMs: chordMemoryUntilMs(atMs),
   };
 }
 
@@ -123,26 +145,79 @@ function activeTitleCameraInput(
   input: TitleCameraInputState,
   atMs: number,
 ): TitleCameraInputState {
-  return titleCameraInputState(
-    activeUntilMs(input.forwardUntilMs, atMs),
-    activeUntilMs(input.backwardUntilMs, atMs),
-    activeUntilMs(input.leftUntilMs, atMs),
-    activeUntilMs(input.rightUntilMs, atMs),
-  );
+  return titleCameraInputState({
+    forwardUntilMs: activeUntilMs(input.forwardUntilMs, atMs),
+    backwardUntilMs: activeUntilMs(input.backwardUntilMs, atMs),
+    leftUntilMs: activeUntilMs(input.leftUntilMs, atMs),
+    rightUntilMs: activeUntilMs(input.rightUntilMs, atMs),
+    forwardChordUntilMs: activeUntilMs(input.forwardChordUntilMs, atMs),
+    backwardChordUntilMs: activeUntilMs(input.backwardChordUntilMs, atMs),
+    leftChordUntilMs: activeUntilMs(input.leftChordUntilMs, atMs),
+    rightChordUntilMs: activeUntilMs(input.rightChordUntilMs, atMs),
+  });
 }
 
-function titleCameraInputState(
-  forwardUntilMs: number | undefined,
-  backwardUntilMs: number | undefined,
-  leftUntilMs: number | undefined,
-  rightUntilMs: number | undefined,
-): TitleCameraInputState {
+function titleCameraInputState(input: TitleCameraInputState): TitleCameraInputState {
   return {
-    ...(forwardUntilMs == null ? {} : { forwardUntilMs }),
-    ...(backwardUntilMs == null ? {} : { backwardUntilMs }),
-    ...(leftUntilMs == null ? {} : { leftUntilMs }),
-    ...(rightUntilMs == null ? {} : { rightUntilMs }),
+    ...forwardUntilField(input),
+    ...backwardUntilField(input),
+    ...leftUntilField(input),
+    ...rightUntilField(input),
+    ...forwardChordUntilField(input),
+    ...backwardChordUntilField(input),
+    ...leftChordUntilField(input),
+    ...rightChordUntilField(input),
   };
+}
+
+function forwardUntilField(input: TitleCameraInputState): TitleCameraInputState {
+  return input.forwardUntilMs == null
+    ? {}
+    : { forwardUntilMs: input.forwardUntilMs };
+}
+
+function backwardUntilField(input: TitleCameraInputState): TitleCameraInputState {
+  return input.backwardUntilMs == null
+    ? {}
+    : { backwardUntilMs: input.backwardUntilMs };
+}
+
+function leftUntilField(input: TitleCameraInputState): TitleCameraInputState {
+  return input.leftUntilMs == null ? {} : { leftUntilMs: input.leftUntilMs };
+}
+
+function rightUntilField(input: TitleCameraInputState): TitleCameraInputState {
+  return input.rightUntilMs == null ? {} : { rightUntilMs: input.rightUntilMs };
+}
+
+function forwardChordUntilField(
+  input: TitleCameraInputState,
+): TitleCameraInputState {
+  return input.forwardChordUntilMs == null
+    ? {}
+    : { forwardChordUntilMs: input.forwardChordUntilMs };
+}
+
+function backwardChordUntilField(
+  input: TitleCameraInputState,
+): TitleCameraInputState {
+  return input.backwardChordUntilMs == null
+    ? {}
+    : { backwardChordUntilMs: input.backwardChordUntilMs };
+}
+
+function leftChordUntilField(input: TitleCameraInputState): TitleCameraInputState {
+  return input.leftChordUntilMs == null
+    ? {}
+    : { leftChordUntilMs: input.leftChordUntilMs };
+}
+
+function rightChordUntilField(
+  input: TitleCameraInputState,
+): TitleCameraInputState {
+  return input.rightChordUntilMs == null
+    ? {}
+    : { rightChordUntilMs: input.rightChordUntilMs };
 }
 
 function activeUntilMs(
@@ -158,9 +233,45 @@ function activeInputUntilMs(atMs: number): number {
   return atMs + TITLE_CAMERA_INPUT_LEASE_MS;
 }
 
+function chordMemoryUntilMs(atMs: number): number {
+  return atMs + TITLE_CAMERA_INPUT_CHORD_MEMORY_MS;
+}
+
 function refreshedActiveInputUntilMs(
   candidateUntilMs: number | undefined,
   atMs: number,
 ): number | undefined {
   return candidateUntilMs == null ? undefined : activeInputUntilMs(atMs);
+}
+
+function refreshedChordMemoryUntilMs(
+  candidateUntilMs: number | undefined,
+  atMs: number,
+): number | undefined {
+  return candidateUntilMs == null ? undefined : chordMemoryUntilMs(atMs);
+}
+
+function titleCameraInputHasActiveLease(input: TitleCameraInputState): boolean {
+  return (
+    input.forwardUntilMs != null ||
+    input.backwardUntilMs != null ||
+    input.leftUntilMs != null ||
+    input.rightUntilMs != null
+  );
+}
+
+function titleCameraInputForward(input: TitleCameraInputState): boolean {
+  return input.forwardUntilMs != null || input.forwardChordUntilMs != null;
+}
+
+function titleCameraInputBackward(input: TitleCameraInputState): boolean {
+  return input.backwardUntilMs != null || input.backwardChordUntilMs != null;
+}
+
+function titleCameraInputLeft(input: TitleCameraInputState): boolean {
+  return input.leftUntilMs != null || input.leftChordUntilMs != null;
+}
+
+function titleCameraInputRight(input: TitleCameraInputState): boolean {
+  return input.rightUntilMs != null || input.rightChordUntilMs != null;
 }
