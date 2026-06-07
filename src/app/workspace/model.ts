@@ -17,6 +17,7 @@ import type {
   TitleCameraMouseLookPointer,
   TitleCameraState,
 } from "../title-camera-session.js";
+import type { TitleCameraInputState } from "../title-camera-input.js";
 import type { TextRuntimeProfile } from "../text-runtime-profile.js";
 import type { JeditWscStartupRecoveryResult } from "../../ports/jedit-wsc-startup-recovery.js";
 import type { EditorState } from "./editor/model.js";
@@ -77,6 +78,7 @@ export interface WorkspaceModel extends StartupFileModalState {
   readonly frameTimeMs: number;
   readonly frameTimeHistory: readonly number[];
   readonly titleCamera: TitleCameraState;
+  readonly titleCameraInput: TitleCameraInputState;
   readonly titleMouseLook?: TitleCameraMouseLookPointer;
   readonly titleRenderMode: TitleRenderMode;
   readonly titleAsciiPalette: TitleAsciiPalette;

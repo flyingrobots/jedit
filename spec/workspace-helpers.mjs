@@ -292,6 +292,7 @@ export function mockTitleScreenModel(titleScreen, overrides = {}) {
       eyeY: 2.65,
       crouching: false,
     },
+    titleCameraInput: {},
     titleMouseLook: undefined,
     titleRenderMode: titleScreen.TITLE_RENDER_MODE.Braille,
     titleAsciiPalette: titleScreen.TITLE_ASCII_PALETTE.Dense,

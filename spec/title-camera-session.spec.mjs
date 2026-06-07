@@ -13,6 +13,9 @@ const TITLE_CAMERA_PATH = path.join(
 const SPRING_FRAME_DT = 1 / 60;
 const SLOW_FRAME_DT = 1;
 const SPRING_FRAME_LIMIT = 160;
+const FRAME_MS = 16;
+const FRAME_COUNT = 80;
+const ACTIVE_INPUT_MS = 1000;
 const WORLD_CAMERA_POSITION = [0, 0.92, 2.25];
 const WORLD_CAMERA_TARGET = [0, 0.8, 0];
 
@@ -89,6 +92,31 @@ test("title camera WASD translates through FPS view axes", async () => {
   assert.equal(distance(forward.position, forward.target), 2);
 });
 
+test("title camera frame advance combines FPS input directions", async () => {
+  const camera = await loadTitleCameraSession();
+  const initial = camera.createTitleCameraState({
+    angle: 0,
+    radius: 2,
+    position: [0, 1, 0],
+    target: [0, 1, -2],
+  });
+  const advanced = camera.advanceTitleCameraFrame(
+    initial,
+    {
+      forwardUntilMs: ACTIVE_INPUT_MS,
+      leftUntilMs: ACTIVE_INPUT_MS,
+    },
+    FRAME_MS,
+    FRAME_MS,
+  );
+
+  assert.ok(advanced.state.position[2] < initial.position[2]);
+  assert.ok(advanced.state.position[0] < initial.position[0]);
+  assert.equal(distance(advanced.state.position, advanced.state.target), 2);
+  assert.equal(advanced.input.forwardUntilMs, ACTIVE_INPUT_MS);
+  assert.equal(advanced.input.leftUntilMs, ACTIVE_INPUT_MS);
+});
+
 test("title camera space jumps and shift toggles slower crouch movement", async () => {
   const camera = await loadTitleCameraSession();
   const initial = camera.createTitleCameraState({
@@ -116,6 +144,32 @@ test("title camera space jumps and shift toggles slower crouch movement", async 
     Math.abs(crouchWalked.position[2] - crouched.position[2]) <
       Math.abs(walked.position[2] - initial.position[2]),
   );
+});
+
+test("title camera gravity lands after a jump", async () => {
+  const camera = await loadTitleCameraSession();
+  const initial = camera.createTitleCameraState({
+    angle: 0,
+    radius: 2,
+    position: [0, 1, 0],
+    target: [0, 1, -2],
+  });
+  let jumped = camera.updateTitleCameraFromKey("space", initial).state;
+
+  assert.ok(jumped.position[1] > initial.position[1]);
+
+  for (let frame = 0; frame < FRAME_COUNT; frame += 1) {
+    jumped = camera.advanceTitleCameraFrame(
+      jumped,
+      {},
+      (frame + 1) * FRAME_MS,
+      FRAME_MS,
+    ).state;
+  }
+
+  assert.equal(jumped.position[1], initial.position[1]);
+  assert.equal(jumped.target[1], initial.target[1]);
+  assert.equal(jumped.verticalVelocity, 0);
 });
 
 test("title camera mouse look rotates target while keeping eye fixed", async () => {

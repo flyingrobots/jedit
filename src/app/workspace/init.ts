@@ -1,4 +1,7 @@
-import { createTitleCameraState } from "../title-camera-session.js";
+import {
+  createTitleCameraInputState,
+  createTitleCameraState,
+} from "../title-camera-session.js";
 import { createFeedbackState } from "../../ui/feedback.js";
 import {
   titleBunnySceneCameraPlacement,
@@ -173,6 +176,7 @@ function initialSceneState(
     ...(sceneOverrideName == null ? {} : { titleSceneName: sceneOverrideName }),
     ...(sceneOverride == null ? {} : { sceneOverride }),
     titleCamera: createTitleCameraState(cameraPlacement),
+    titleCameraInput: createTitleCameraInputState(),
     titleMouseLook: undefined,
     titleRenderMode: TITLE_RENDER_MODE.Braille,
     titleAsciiPalette: TITLE_ASCII_PALETTE.Dense,

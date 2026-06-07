@@ -30,7 +30,11 @@ export {
   TITLE_CAMERA_CROUCH_HEIGHT,
   TITLE_CAMERA_CROUCH_STEP,
   TITLE_CAMERA_FPS_STEP,
+  TITLE_CAMERA_FPS_SPEED,
+  TITLE_CAMERA_CROUCH_SPEED,
+  TITLE_CAMERA_GRAVITY,
   TITLE_CAMERA_JUMP_STEP,
+  TITLE_CAMERA_JUMP_VELOCITY,
   TITLE_CAMERA_MOUSE_LOOK_RADIANS_PER_CELL,
 } from "./title-camera-fps.js";
 
@@ -38,6 +42,11 @@ export type {
   TitleCameraKeyModifiers,
   TitleCameraMouseLookPointer,
 } from "./title-camera-fps.js";
+
+export {
+  advanceTitleCameraFrame,
+  createTitleCameraInputState,
+} from "./title-camera-input.js";
 
 export const TITLE_CAMERA_AXIS = {
   Angle: "angle",

@@ -8,6 +8,7 @@ import {
   mockI18n,
   mockJeditTheme,
   mockRuntime,
+  mockTitleScreenModel,
   REPO_ROOT,
   surfaceText,
 } from "./workspace-helpers.mjs";
@@ -101,6 +102,45 @@ test("runtime load-scene-result applies the loaded scene camera to title camera 
   assert.deepEqual(nextModel.titleCamera.position, scene.camera.position);
   assert.deepEqual(nextModel.titleCamera.target, scene.camera.target);
   assert.equal(nextModel.titleCamera.eyeY, scene.camera.position[1]);
+  assert.deepEqual(nextModel.titleCameraInput, {});
+});
+
+test("runtime advances held title FPS input on time ticks", async () => {
+  const [runtimeModule, titleScreen] = await Promise.all([
+    importDist("app", "workspace", "runtime.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  let nowMs = 0;
+  const runtime = runtimeModule.createWorkspaceRuntime(
+    mockRuntime({ nowMs: () => nowMs }),
+  );
+  const base = mockTitleScreenModel(titleScreen, {
+    profiler: { active: false },
+    lastFrameMs: 0,
+    frameTimeMs: 0,
+    frameTimeHistory: [],
+    titleCamera: fpsTestCamera(),
+    titleCameraInput: {
+      forwardUntilMs: 1000,
+      leftUntilMs: 1000,
+    },
+  });
+
+  nowMs = 16;
+  const [advanced] = runtime.update({ type: "time-tick", time: 0.016 }, base);
+
+  assert.ok(advanced.titleCamera.position[2] < base.titleCamera.position[2]);
+  assert.ok(advanced.titleCamera.position[0] < base.titleCamera.position[0]);
+  assert.equal(typeof advanced.titleCameraInput.forwardUntilMs, "number");
+  assert.equal(typeof advanced.titleCameraInput.leftUntilMs, "number");
+
+  nowMs = 1200;
+  const [expired] = runtime.update(
+    { type: "time-tick", time: 1.2 },
+    advanced,
+  );
+
+  assert.deepEqual(expired.titleCameraInput, {});
 });
 
 test("workspace app renders perf overlay after toggle when perf starts disabled", async () => {
@@ -399,6 +439,21 @@ function mockPerfTitleModel(titleScreen = titleScreenFallback()) {
         },
       ],
     },
+  };
+}
+
+function fpsTestCamera() {
+  return {
+    angle: 0,
+    angleTarget: 0,
+    angleMotionId: 0,
+    radius: 2,
+    radiusTarget: 2,
+    radiusMotionId: 0,
+    position: [0, 1, 0],
+    target: [0, 1, -2],
+    eyeY: 1,
+    crouching: false,
   };
 }
 

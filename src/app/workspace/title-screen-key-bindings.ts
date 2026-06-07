@@ -12,6 +12,7 @@ import {
   TITLE_RENDER_MODE,
   type TitleAsciiPalette,
 } from "../../ui/title-screen.js";
+import { refreshTitleCameraInputFromKey } from "../title-camera-input.js";
 import { updateTitleCameraFromKey } from "../title-camera-session.js";
 import {
   applyTitleMeshMaterial,
@@ -63,6 +64,7 @@ export function updateTitleScreenKey(
     updateTitleRenderKey(msg, model, context) ??
     updateTitleMeshMaterialKey(msg, model, context) ??
     updateTitleEscapeKey(msg, model) ??
+    updateTitleCameraInputKey(msg, model, context) ??
     updateTitleCameraKey(msg, model)
   );
 }
@@ -147,6 +149,21 @@ function updateTitleCameraKey(
   return update == null
     ? undefined
     : [{ ...model, titleCamera: update.state }, update.commands];
+}
+
+function updateTitleCameraInputKey(
+  msg: KeyMsg,
+  model: WorkspaceModel,
+  context: WorkspaceKeyBindingContext,
+): KeyBindingResult | undefined {
+  const titleCameraInput = refreshTitleCameraInputFromKey(
+    msg.key,
+    model.titleCameraInput,
+    context.nowMs(),
+  );
+  return titleCameraInput == null
+    ? undefined
+    : [{ ...model, titleCameraInput }, []];
 }
 
 function pushTitleScreenToast(

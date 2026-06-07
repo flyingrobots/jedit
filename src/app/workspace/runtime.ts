@@ -14,6 +14,7 @@ import {
   reduceTitleCameraMotion,
   TITLE_CAMERA_MESSAGE,
 } from "../title-camera-session.js";
+import { advanceTitleCameraFrame } from "../title-camera-input.js";
 import { ensureEditorVisible, editorViewport } from "./editor-session.js";
 import { updateFromKey } from "./key-bindings.js";
 import { updateFromMouse } from "./mouse.js";
@@ -221,6 +222,7 @@ function applySceneLoadResult(
       msg.scene == null
         ? model.titleCamera
         : createTitleCameraState(msg.scene.camera),
+    titleCameraInput: {},
   };
 }
 
@@ -252,15 +254,11 @@ function updateTimeTickMessage(
 ): WorkspaceRuntimeResult {
   const now = deps.nowMs();
   const frameTime = now - model.lastFrameMs;
-  const nextModel = applyStartupIntroTime({
-    ...model,
-    time,
-    lastFrameMs: now,
-    frameTimeMs: frameTime,
-    frameTimeHistory: [...model.frameTimeHistory, frameTime].slice(
-      -FRAME_TIME_HISTORY_SIZE,
-    ),
-  });
+  const nextModel = advanceTitleCameraFromFrame(
+    applyStartupIntroTime(runtimeFrameModel(model, time, now, frameTime)),
+    now,
+    frameTime,
+  );
   const startupDrawerCommands = startupFileDrawerIntroCommands(
     deps,
     model,
@@ -283,6 +281,55 @@ function updateTimeTickMessage(
       ...(profilerStream == null ? [] : [profilerStream]),
     ],
   ];
+}
+
+function runtimeFrameModel(
+  model: WorkspaceModel,
+  time: number,
+  now: number,
+  frameTime: number,
+): WorkspaceModel {
+  return {
+    ...model,
+    time,
+    lastFrameMs: now,
+    frameTimeMs: frameTime,
+    frameTimeHistory: [...model.frameTimeHistory, frameTime].slice(
+      -FRAME_TIME_HISTORY_SIZE,
+    ),
+  };
+}
+
+function advanceTitleCameraFromFrame(
+  model: WorkspaceModel,
+  nowMs: number,
+  frameTimeMs: number,
+): WorkspaceModel {
+  if (!titleCameraFrameInputEnabled(model)) {
+    return { ...model, titleCameraInput: {} };
+  }
+  const advanced = advanceTitleCameraFrame(
+    model.titleCamera,
+    model.titleCameraInput,
+    nowMs,
+    frameTimeMs,
+  );
+  return {
+    ...model,
+    titleCamera: advanced.state,
+    titleCameraInput: advanced.input,
+  };
+}
+
+function titleCameraFrameInputEnabled(model: WorkspaceModel): boolean {
+  return (
+    model.editor == null &&
+    !model.settingsOpen &&
+    !model.scenePickerOpen &&
+    !model.startupFileModalOpen &&
+    !model.quitConfirmOpen &&
+    !model.commandLine.active
+  );
 }
 
 function startupFileDrawerIntroCommands(

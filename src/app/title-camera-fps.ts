@@ -4,11 +4,17 @@ import { titleSceneCameraOrbitFromPosition } from "../ui/title-scene-camera.js";
 export const TITLE_CAMERA_FPS_STEP = 0.48;
 export const TITLE_CAMERA_CROUCH_STEP = 0.2;
 export const TITLE_CAMERA_JUMP_STEP = 0.6;
+export const TITLE_CAMERA_FPS_SPEED = 3.2;
+export const TITLE_CAMERA_CROUCH_SPEED = 1.4;
+export const TITLE_CAMERA_JUMP_VELOCITY = 3.6;
+export const TITLE_CAMERA_GRAVITY = 9.2;
 export const TITLE_CAMERA_CROUCH_HEIGHT = 0.44;
 export const TITLE_CAMERA_MOUSE_LOOK_RADIANS_PER_CELL = 0.045;
 
 const TITLE_CAMERA_MAX_PITCH_SIN = 0.94;
+const TITLE_CAMERA_MAX_ADVANCE_SECONDS = 1 / 20;
 const VECTOR_ZERO_EPSILON = 0.000001;
+const ZERO_VECTOR: TitleSceneVector3 = [0, 0, 0];
 const REVERSE_DIRECTION = -1;
 const WORLD_UP: TitleSceneVector3 = [0, 1, 0];
 const TITLE_CAMERA_CROUCH_STATE = {
@@ -30,10 +36,20 @@ export interface TitleCameraFpsState {
   readonly target: TitleSceneVector3;
   readonly eyeY: number;
   readonly crouching: boolean;
+  readonly verticalVelocity?: number;
+  readonly groundEyeY?: number;
 }
 
 export interface TitleCameraKeyModifiers {
   readonly shift?: boolean;
+}
+
+export interface TitleCameraMovementInput {
+  readonly dtSeconds: number;
+  readonly forward?: boolean;
+  readonly backward?: boolean;
+  readonly left?: boolean;
+  readonly right?: boolean;
 }
 
 export interface TitleCameraMouseLookPointer {
@@ -72,23 +88,34 @@ export function titleCameraStrafedRight(
 export function titleCameraJumped(
   camera: TitleCameraFpsState,
 ): TitleCameraFpsState {
-  return titleCameraVerticalShift(
+  if (titleCameraIsAirborne(camera)) {
+    return camera;
+  }
+  const jumped = titleCameraVerticalShift(
     camera,
     TITLE_CAMERA_JUMP_STEP,
     TITLE_CAMERA_CROUCH_STATE.Standing,
   );
+  return {
+    ...jumped,
+    verticalVelocity: TITLE_CAMERA_JUMP_VELOCITY,
+    groundEyeY: titleCameraGroundEyeY(camera),
+  };
 }
 
 export function titleCameraToggledCrouch(
   camera: TitleCameraFpsState,
 ): TitleCameraFpsState {
+  if (titleCameraIsAirborne(camera)) {
+    return camera;
+  }
   return camera.crouching
-    ? titleCameraVerticalShift(
+    ? titleCameraGroundedShift(
         camera,
         TITLE_CAMERA_CROUCH_HEIGHT,
         TITLE_CAMERA_CROUCH_STATE.Standing,
       )
-    : titleCameraVerticalShift(
+    : titleCameraGroundedShift(
         camera,
         -TITLE_CAMERA_CROUCH_HEIGHT,
         TITLE_CAMERA_CROUCH_STATE.Crouching,
@@ -120,6 +147,93 @@ export function titleCameraLookDelta(
   );
 }
 
+export function titleCameraAdvanced(
+  camera: TitleCameraFpsState,
+  input: TitleCameraMovementInput,
+): TitleCameraFpsState {
+  const dtSeconds = boundedAdvanceSeconds(input.dtSeconds);
+  const moved = titleCameraMovementAdvanced(camera, input, dtSeconds);
+  return titleCameraGravityAdvanced(moved, dtSeconds);
+}
+
+function titleCameraMovementAdvanced(
+  camera: TitleCameraFpsState,
+  input: TitleCameraMovementInput,
+  dtSeconds: number,
+): TitleCameraFpsState {
+  const direction = titleCameraMovementDirection(camera, input);
+  if (direction == null || dtSeconds === 0) {
+    return camera;
+  }
+  const movement = scale(
+    direction,
+    titleCameraMovementSpeed(camera) * dtSeconds,
+  );
+  return titleCameraWithPositionAndTarget(
+    camera,
+    add(camera.position, movement),
+    add(camera.target, movement),
+    titleCameraCrouchState(camera),
+  );
+}
+
+function titleCameraMovementDirection(
+  camera: TitleCameraFpsState,
+  input: TitleCameraMovementInput,
+): TitleSceneVector3 | undefined {
+  const direction = titleCameraMovementVector(camera, input);
+  return length(direction) <= VECTOR_ZERO_EPSILON
+    ? undefined
+    : normalize(direction);
+}
+
+function titleCameraMovementVector(
+  camera: TitleCameraFpsState,
+  input: TitleCameraMovementInput,
+): TitleSceneVector3 {
+  let direction = ZERO_VECTOR;
+  if (input.forward === true) {
+    direction = add(direction, titleCameraForward(camera));
+  }
+  if (input.backward === true) {
+    direction = add(direction, titleCameraBackward(camera));
+  }
+  if (input.left === true) {
+    direction = add(direction, titleCameraLeft(camera));
+  }
+  if (input.right === true) {
+    direction = add(direction, titleCameraRight(camera));
+  }
+  return direction;
+}
+
+function titleCameraMovementSpeed(camera: TitleCameraFpsState): number {
+  return camera.crouching ? TITLE_CAMERA_CROUCH_SPEED : TITLE_CAMERA_FPS_SPEED;
+}
+
+function titleCameraGravityAdvanced(
+  camera: TitleCameraFpsState,
+  dtSeconds: number,
+): TitleCameraFpsState {
+  const groundEyeY = titleCameraGroundEyeY(camera);
+  const velocity = camera.verticalVelocity ?? 0;
+  if (velocity === 0 && camera.position[1] <= groundEyeY) {
+    return titleCameraLanded(camera, groundEyeY);
+  }
+  const nextVelocity = velocity - TITLE_CAMERA_GRAVITY * dtSeconds;
+  const dy =
+    velocity * dtSeconds -
+    (TITLE_CAMERA_GRAVITY * dtSeconds * dtSeconds) / 2;
+  const shifted = titleCameraVerticalPositionShift(camera, dy);
+  return shifted.position[1] <= groundEyeY
+    ? titleCameraLanded(shifted, groundEyeY)
+    : {
+        ...shifted,
+        verticalVelocity: nextVelocity,
+        groundEyeY,
+      };
+}
+
 function titleCameraTranslated(
   camera: TitleCameraFpsState,
   direction: TitleSceneVector3,
@@ -143,12 +257,21 @@ function titleCameraMovementBase(
   modifiers: TitleCameraKeyModifiers,
 ): TitleCameraFpsState {
   return modifiers.shift && !camera.crouching
-    ? titleCameraVerticalShift(
+    ? titleCameraGroundedShift(
         camera,
         -TITLE_CAMERA_CROUCH_HEIGHT,
         TITLE_CAMERA_CROUCH_STATE.Crouching,
       )
     : camera;
+}
+
+function titleCameraGroundedShift(
+  camera: TitleCameraFpsState,
+  amount: number,
+  crouchState: TitleCameraCrouchState,
+): TitleCameraFpsState {
+  const shifted = titleCameraVerticalShift(camera, amount, crouchState);
+  return titleCameraLanded(shifted, shifted.eyeY);
 }
 
 function titleCameraVerticalShift(
@@ -163,6 +286,49 @@ function titleCameraVerticalShift(
     add(camera.target, movement),
     crouchState,
   );
+}
+
+function titleCameraVerticalPositionShift(
+  camera: TitleCameraFpsState,
+  amount: number,
+): TitleCameraFpsState {
+  return titleCameraWithPositionAndTarget(
+    camera,
+    add(camera.position, [0, amount, 0]),
+    add(camera.target, [0, amount, 0]),
+    titleCameraCrouchState(camera),
+  );
+}
+
+function titleCameraLanded(
+  camera: TitleCameraFpsState,
+  groundEyeY: number,
+): TitleCameraFpsState {
+  const correction = groundEyeY - camera.position[1];
+  const grounded =
+    correction === 0
+      ? camera
+      : titleCameraVerticalPositionShift(camera, correction);
+  return {
+    ...grounded,
+    verticalVelocity: 0,
+    groundEyeY,
+  };
+}
+
+function titleCameraGroundEyeY(camera: TitleCameraFpsState): number {
+  return camera.groundEyeY ?? camera.eyeY;
+}
+
+function titleCameraIsAirborne(camera: TitleCameraFpsState): boolean {
+  return (
+    Math.abs(camera.position[1] - titleCameraGroundEyeY(camera)) >
+      VECTOR_ZERO_EPSILON || (camera.verticalVelocity ?? 0) !== 0
+  );
+}
+
+function boundedAdvanceSeconds(dtSeconds: number): number {
+  return Math.max(0, Math.min(dtSeconds, TITLE_CAMERA_MAX_ADVANCE_SECONDS));
 }
 
 function titleCameraWithPositionAndTarget(

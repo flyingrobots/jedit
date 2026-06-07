@@ -1,6 +1,10 @@
 import { initDefaultContext } from '@flyingrobots/bijou-node';
 import { run } from '@flyingrobots/bijou-tui';
-import { JEDIT_TERMINAL_MOUSE_OPTIONS } from './ui/terminal-mouse.js';
+import {
+  JEDIT_TERMINAL_MOUSE_OPTIONS,
+  disableJeditTerminalMouseAllMotion,
+  enableJeditTerminalMouseAllMotion,
+} from './ui/terminal-mouse.js';
 import { createWorkspaceApp } from './adapters/workspace-app.js';
 import { parseTextRuntimeProfile, requireTextRuntimeProfile } from './app/text-runtime-profile.js';
 
@@ -33,8 +37,22 @@ const app = createWorkspaceApp({
   perfEnabled: envBoolean(process.env[ENV_KEYS.Perf]),
 });
 
-run(app, { mouse: JEDIT_TERMINAL_MOUSE_OPTIONS.mouse });
+if (JEDIT_TERMINAL_MOUSE_OPTIONS.allMotion) {
+  enableJeditTerminalMouseAllMotion(writeTerminalSequence);
+}
+
+try {
+  await run(app, { mouse: JEDIT_TERMINAL_MOUSE_OPTIONS.mouse });
+} finally {
+  if (JEDIT_TERMINAL_MOUSE_OPTIONS.allMotion) {
+    disableJeditTerminalMouseAllMotion(writeTerminalSequence);
+  }
+}
 
 function envBoolean(value: string | undefined): boolean {
   return BOOLEAN_BY_ENV_VALUE[value ?? ENV_BOOLEAN.Disabled] ?? false;
+}
+
+function writeTerminalSequence(sequence: string): void {
+  process.stdout.write(sequence);
 }

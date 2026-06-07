@@ -31,8 +31,19 @@ function mouse(action) {
 
 test('jedit enables terminal mouse reporting so scrollback does not consume the wheel', async () => {
   const { terminalMouse } = await loadMouseModules();
+  const sequences = [];
 
   assert.equal(terminalMouse.JEDIT_TERMINAL_MOUSE_OPTIONS.mouse, true);
+  assert.equal(terminalMouse.JEDIT_TERMINAL_MOUSE_OPTIONS.allMotion, true);
+
+  terminalMouse.enableJeditTerminalMouseAllMotion((sequence) => {
+    sequences.push(sequence);
+  });
+  terminalMouse.disableJeditTerminalMouseAllMotion((sequence) => {
+    sequences.push(sequence);
+  });
+
+  assert.deepEqual(sequences, ['\u001b[?1003h', '\u001b[?1003l']);
 });
 
 test('mouse wheel events become stable jedit scroll deltas', async () => {

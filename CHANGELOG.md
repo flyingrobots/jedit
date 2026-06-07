@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Fixed title-screen FPS controls so `w`/`a`/`s`/`d` feed frame-driven movement
+  leases, combine forward and strafe directions, make jumps fall back under
+  gravity, and enable button-free terminal mouse-look motion.
 - Fixed the idle title-scene performance governor so slow ray-traced frames
   stay in low-rate cached rendering until the refresh window expires instead
   of bouncing between slow traced frames and fast cached frames.

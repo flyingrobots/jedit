@@ -190,9 +190,9 @@ test("title screen uses FPS-style camera keys without an editor", async () => {
     base,
     mockKeyBindingContext(),
   );
-  const [left] = keyBindings.updateFromKey(
+  const [forwardLeft] = keyBindings.updateFromKey(
     { key: "a", ctrl: false, alt: false, shift: false },
-    base,
+    forward,
     mockKeyBindingContext(),
   );
   const [jumped] = keyBindings.updateFromKey(
@@ -206,13 +206,15 @@ test("title screen uses FPS-style camera keys without an editor", async () => {
     mockKeyBindingContext(),
   );
 
-  assert.ok(forward.titleCamera.position[2] < base.titleCamera.position[2]);
-  assert.ok(left.titleCamera.position[0] < base.titleCamera.position[0]);
+  assert.deepEqual(forward.titleCamera.position, base.titleCamera.position);
+  assert.equal(typeof forward.titleCameraInput.forwardUntilMs, "number");
+  assert.equal(typeof forwardLeft.titleCameraInput.forwardUntilMs, "number");
+  assert.equal(typeof forwardLeft.titleCameraInput.leftUntilMs, "number");
   assert.ok(jumped.titleCamera.position[1] > base.titleCamera.position[1]);
   assert.equal(crouched.titleCamera.crouching, true);
 });
 
-test("title screen mouse movement drags the camera look vector", async () => {
+test("title screen mouse movement rotates the camera look vector", async () => {
   const [mouse, titleScreen] = await Promise.all([
     importDist("app", "workspace", "mouse.js"),
     importDist("ui", "title-screen.js"),
@@ -221,12 +223,12 @@ test("title screen mouse movement drags the camera look vector", async () => {
     titleCamera: fpsTestCamera(),
   });
   const [anchored] = mouse.updateFromMouse(
-    titleMouse("press", 10, 10),
+    titleMouse("move", 10, 10),
     base,
     mockDeps().sourceHighlighter,
   );
   const [rotated] = mouse.updateFromMouse(
-    titleMouse("drag", 14, 12),
+    titleMouse("move", 14, 12),
     anchored,
     mockDeps().sourceHighlighter,
   );
