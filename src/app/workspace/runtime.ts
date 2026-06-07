@@ -376,7 +376,7 @@ function updateWorkspaceInputMessage(
   model: WorkspaceModel,
 ): WorkspaceRuntimeResult {
   if (msg.type === WorkspaceInputMessageTypes.Mouse) {
-    return updateFromMouse(msg, model, deps.sourceHighlighter);
+    return updateFromMouse(msg, model, deps.sourceHighlighter, deps.nowMs());
   }
   return msg.type === WorkspaceInputMessageTypes.Key
     ? updateFromKey(msg, model, workspaceKeyDeps(deps))

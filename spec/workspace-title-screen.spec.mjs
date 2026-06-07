@@ -224,12 +224,12 @@ test("title screen mouse movement rotates the camera look vector", async () => {
     titleCamera: fpsTestCamera(),
   });
   const [anchored] = mouse.updateFromMouse(
-    titleMouse("move", 10, 10),
+    titleMouse("press", 10, 10, "left"),
     base,
     mockDeps().sourceHighlighter,
   );
   const [rotated] = mouse.updateFromMouse(
-    titleMouse("move", 14, 12),
+    titleMouse("move", 14, 12, "left"),
     anchored,
     mockDeps().sourceHighlighter,
   );
@@ -238,6 +238,45 @@ test("title screen mouse movement rotates the camera look vector", async () => {
   assert.deepEqual(rotated.titleCamera.position, base.titleCamera.position);
   assert.ok(rotated.titleCamera.target[0] > base.titleCamera.target[0]);
   assert.ok(rotated.titleCamera.target[1] < base.titleCamera.target[1]);
+});
+
+test("title screen mouse look preserves active movement input", async () => {
+  const [input, keyBindings, mouse, titleScreen] = await Promise.all([
+    importDist("app", "title-camera-input.js"),
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("app", "workspace", "mouse.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const base = mockTitleScreenModel(titleScreen, {
+    titleCamera: fpsTestCamera(),
+  });
+  const [moving] = keyBindings.updateFromKey(
+    { key: "w", ctrl: false, alt: false, shift: false },
+    base,
+    mockKeyBindingContext({ nowMs: () => 1000 }),
+  );
+  const [anchored] = mouse.updateFromMouse(
+    titleMouse("press", 10, 10, "left"),
+    moving,
+    mockDeps().sourceHighlighter,
+    1280,
+  );
+  const [dragging] = mouse.updateFromMouse(
+    titleMouse("move", 14, 12, "left"),
+    anchored,
+    mockDeps().sourceHighlighter,
+    1480,
+  );
+  const advanced = input.advanceTitleCameraFrame(
+    dragging.titleCamera,
+    dragging.titleCameraInput,
+    1500,
+    16,
+  );
+
+  assert.ok(advanced.state.position[2] < dragging.titleCamera.position[2]);
+  assert.equal(typeof dragging.titleCameraInput.forwardUntilMs, "number");
+  assert.ok(dragging.titleCameraInput.forwardUntilMs >= 1800);
 });
 
 test("feedback module exposes notification presentation tokens", async () => {
@@ -1041,11 +1080,11 @@ function fpsTestCamera() {
   };
 }
 
-function titleMouse(action, col, row) {
+function titleMouse(action, col, row, button = "none") {
   return {
     type: "mouse",
     action,
-    button: "none",
+    button,
     col,
     row,
     shift: false,

@@ -53,6 +53,35 @@ export function refreshTitleCameraInputFromKey(
   }
 }
 
+export function refreshTitleCameraInputFromMouseLook(
+  input: TitleCameraInputState,
+  atMs: number,
+): TitleCameraInputState {
+  const active = activeTitleCameraInput(input, atMs);
+  return titleCameraInputState({
+    forwardUntilMs: refreshedActiveInputUntilMs(active.forwardUntilMs, atMs),
+    backwardUntilMs: refreshedActiveInputUntilMs(active.backwardUntilMs, atMs),
+    leftUntilMs: refreshedActiveInputUntilMs(active.leftUntilMs, atMs),
+    rightUntilMs: refreshedActiveInputUntilMs(active.rightUntilMs, atMs),
+    forwardChordUntilMs: refreshedChordMemoryUntilMs(
+      active.forwardChordUntilMs,
+      atMs,
+    ),
+    backwardChordUntilMs: refreshedChordMemoryUntilMs(
+      active.backwardChordUntilMs,
+      atMs,
+    ),
+    leftChordUntilMs: refreshedChordMemoryUntilMs(
+      active.leftChordUntilMs,
+      atMs,
+    ),
+    rightChordUntilMs: refreshedChordMemoryUntilMs(
+      active.rightChordUntilMs,
+      atMs,
+    ),
+  });
+}
+
 export function advanceTitleCameraFrame(
   camera: TitleCameraFpsState,
   input: TitleCameraInputState,

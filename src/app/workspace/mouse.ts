@@ -5,6 +5,7 @@ import {
   scrollTextViewport,
 } from '../../ui/mouse-scroll.js';
 import { updateTitleCameraFromMouseLook } from '../title-camera-session.js';
+import { refreshTitleCameraInputFromMouseLook } from '../title-camera-input.js';
 import { beginSourceHighlightRefresh } from '../source-highlight-session.js';
 import { moveSettingsFocusIndex } from '../settings-session.js';
 import type { WorkspaceModel } from './model.js';
@@ -15,14 +16,20 @@ import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import { ViewModes } from './view-mode.js';
 import { FocusPanes } from '../../ui/panel-focus.js';
 
+const TITLE_MOUSE_LOOK_BUTTON = 'left';
+const MOUSE_ACTION_PRESS = 'press';
+const MOUSE_ACTION_RELEASE = 'release';
+const MOUSE_ACTION_MOVE = 'move';
+
 export function updateFromMouse(
   msg: MouseMsg,
   model: WorkspaceModel,
   sourceHighlighter: SourceHighlighter,
+  atMs: number = model.lastFrameMs,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   const deltaRows = mouseScrollDeltaRows(msg);
   if (deltaRows === 0) {
-    return updateTitleCameraFromMouse(msg, model);
+    return updateTitleCameraFromMouse(msg, model, atMs);
   }
   const drawer = updateScrollableDrawerFromMouse(model, deltaRows);
   if (drawer != null) {
@@ -34,8 +41,15 @@ export function updateFromMouse(
 function updateTitleCameraFromMouse(
   msg: MouseMsg,
   model: WorkspaceModel,
+  atMs: number,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (!titleMouseLookEnabled(model)) {
+    return [model, []];
+  }
+  if (msg.action === MOUSE_ACTION_RELEASE) {
+    return [{ ...model, titleMouseLook: undefined }, []];
+  }
+  if (!titleMouseLookActive(msg)) {
     return [model, []];
   }
   const result = updateTitleCameraFromMouseLook(
@@ -47,10 +61,21 @@ function updateTitleCameraFromMouse(
     {
       ...model,
       titleCamera: result.state,
+      titleCameraInput: refreshTitleCameraInputFromMouseLook(
+        model.titleCameraInput,
+        atMs,
+      ),
       titleMouseLook: result.pointer,
     },
     [],
   ];
+}
+
+function titleMouseLookActive(msg: MouseMsg): boolean {
+  return (
+    msg.button === TITLE_MOUSE_LOOK_BUTTON &&
+    (msg.action === MOUSE_ACTION_PRESS || msg.action === MOUSE_ACTION_MOVE)
+  );
 }
 
 function titleMouseLookEnabled(model: WorkspaceModel): boolean {
