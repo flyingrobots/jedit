@@ -5,8 +5,29 @@
 - Added FPS-style title-screen camera controls: `w` and `s` move along the
   camera view vector, `a` and `d` strafe, mouse movement rotates the look
   vector, Space jumps, and Shift crouches with slower movement.
-- Populated the default bunny title scene with varied surrounding spheres and
-  boxes using mixed colors, reflectivity, transparency, and refractive indices.
+- Restored and populated the default bunny title scene's surrounding authored
+  geometry with varied spheres and boxes, a raised camera, mixed materials, and
+  wall-clock day/night lighting.
+- Stopped the startup file selector from auto-opening or reopening from the
+  title screen so it cannot steal Vim command-completion Tab or Enter keys.
+- Added live invalid-command footer feedback while typing unknown Vim command
+  fragments such as `:exi`.
+- Retired the retained startup file drawer's duplicate type-to-search input so
+  command mode is the only type-to-open surface.
+- Added localized command-mode footer hints and catalog-backed Vim command
+  completion copy.
+- Documented the completed Vim command-line completion surface in the technical
+  teardown, design retrospective, and docs-release closeout witness.
+- Added an unavailable-preview lower mode for Graft-backed editor completions
+  so adapter failures can render honestly through the shared popup.
+- Added render witnesses for editor completion documentation, source-definition,
+  and causal-history preview kinds.
+- Added a Graft outline-backed editor symbol completion provider witness that
+  renders through the shared inline completion popup.
+- Added an editor-context completion registry seam that can return the same
+  provider-neutral inline completion items used by Vim command completions.
+- Highlighted invalid Vim command-line input in the footer and added a
+  localized help message for unrecognized commands.
 - Rendered the startup file selector rows through Bijou's browsable list
   surface, added themed scrollbar affordance for overflowing directories, and
   made Escape dismissal recoverable from the title screen with Enter or `o`.

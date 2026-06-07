@@ -19,6 +19,7 @@ import {
   selectedWorkspaceCommandLineCompletionItem,
   workspaceCommandLineCompletionItems,
 } from "./command-completion.js";
+import { validateWorkspaceCommandLineInput } from "./command-line-validation.js";
 import type { WorkspaceKeyBindingContext } from "./key-binding-context.js";
 import type { WorkspaceModel } from "./model.js";
 import type { WorkspaceMsg } from "./msg.js";
@@ -81,7 +82,12 @@ function updateCommandLineBackspaceKey(
   model: WorkspaceModel,
 ): KeyBindingResult | undefined {
   return msg.key === WorkspaceKeys.Backspace
-    ? [backspaceWorkspaceCommandLineInput(model), []]
+    ? [
+        validateWorkspaceCommandLineInput(
+          backspaceWorkspaceCommandLineInput(model),
+        ),
+        [],
+      ]
     : undefined;
 }
 
@@ -199,7 +205,12 @@ function updateCommandLineTextKey(
   const text = commandLineInputText(msg);
   return text == null
     ? [model, []]
-    : [appendWorkspaceCommandLineInput(model, text), []];
+    : [
+        validateWorkspaceCommandLineInput(
+          appendWorkspaceCommandLineInput(model, text),
+        ),
+        [],
+      ];
 }
 
 function isCommandLineOpenKey(msg: KeyMsg): boolean {

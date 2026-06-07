@@ -146,6 +146,28 @@ test("inline completion popup omits preview on narrow terminals", async () => {
   assert.doesNotMatch(rowText(surface, 0), /export function/);
 });
 
+test("inline completion popup renders editor preview kinds", async () => {
+  const popup = await importDist("ui", "inline-completion-popup.js");
+
+  for (const previewCase of editorPreviewCases(popup)) {
+    const surface = popup.renderInlineCompletionPopup({
+      items: [symbolItem(popup)],
+      selectedIndex: 0,
+      theme: popupTheme(),
+      width: 72,
+      maxHeight: 4,
+      preview: previewCase.preview,
+    });
+
+    assert.match(
+      rowText(surface, 0),
+      previewCase.headingPattern,
+    );
+    assert.match(rowText(surface, 1), /Evidence: graft-fixture/);
+    assert.match(rowText(surface, 2), previewCase.bodyPattern);
+  }
+});
+
 function item(popup, label) {
   return {
     id: `command:${label}`,
@@ -154,6 +176,17 @@ function item(popup, label) {
     kind: popup.INLINE_COMPLETION_ITEM_KIND.Command,
     providerId: "vim-command",
     replacement: { start: 0, end: label.length, text: label },
+  };
+}
+
+function symbolItem(popup) {
+  return {
+    id: "graft-symbol:src/render.ts:renderScene:4:12",
+    label: "renderScene",
+    detail: "function src/render.ts:4",
+    kind: popup.INLINE_COMPLETION_ITEM_KIND.Symbol,
+    providerId: "graft-symbol",
+    replacement: { start: 0, end: 3, text: "renderScene" },
   };
 }
 
@@ -169,6 +202,52 @@ function preview(popup) {
     ],
     providerId: "vim-command",
     evidencePosture: "runtime-backed",
+  };
+}
+
+function editorPreviewCases(popup) {
+  return [
+    {
+      preview: editorPreview(
+        popup,
+        popup.INLINE_COMPLETION_PREVIEW_KIND.Documentation,
+        "renderScene docs",
+        ["Draws the active title scene."],
+      ),
+      headingPattern: /DOCS renderScene docs/,
+      bodyPattern: /Draws the active title scene/,
+    },
+    {
+      preview: editorPreview(
+        popup,
+        popup.INLINE_COMPLETION_PREVIEW_KIND.SourceDefinition,
+        "renderScene definition",
+        ["export function renderScene"],
+      ),
+      headingPattern: /SRC renderScene definition/,
+      bodyPattern: /export function renderScene/,
+    },
+    {
+      preview: editorPreview(
+        popup,
+        popup.INLINE_COMPLETION_PREVIEW_KIND.CausalHistory,
+        "renderScene history",
+        ["changed by title renderer goalpost"],
+      ),
+      headingPattern: /HIST renderScene history/,
+      bodyPattern: /changed by title renderer goal/,
+    },
+  ];
+}
+
+function editorPreview(popup, kind, title, lines) {
+  return {
+    id: `preview:${kind}:renderScene`,
+    kind,
+    title,
+    lines,
+    providerId: "graft-symbol",
+    evidencePosture: "graft-fixture",
   };
 }
 

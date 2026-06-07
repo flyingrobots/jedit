@@ -1,6 +1,6 @@
 {
   "camera": {
-    "position": [0, 0.92, 2.25],
+    "position": [0, 1.45, 2.55],
     "targetObject": "stanford-bunny"
   },
   "environment": {

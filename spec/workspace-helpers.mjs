@@ -3,12 +3,16 @@ import { createNotificationState } from "@flyingrobots/bijou-tui";
 import { REPO_ROOT, ensureDistBuilt, importDist } from "./dist-helpers.mjs";
 
 const MOCK_I18N_TRANSLATIONS = Object.freeze({
+  "footer.command.details.edit": "Open a file",
+  "footer.command.details.write": "Write the current file",
+  "footer.command.details.quit": "Quit jedit",
+  "footer.command.details.wq": "Write and quit",
+  "footer.command.hints.tab_accept": "tab accept",
+  "footer.command.hints.enter_run": "enter run",
+  "footer.command.hints.esc_cancel": "esc cancel",
   "startupFileModal.title": "Open file",
-  "startupFileModal.hint": "Type filter · Enter open · Esc close",
-  "startupFileModal.input_label": "Filter",
   "startupFileModal.current_directory": "Current directory",
   "startupFileModal.empty": "No files in this directory",
-  "startupFileModal.no_match": "No files match",
 });
 
 export { REPO_ROOT, ensureDistBuilt, importDist };

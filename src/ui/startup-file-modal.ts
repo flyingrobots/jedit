@@ -25,16 +25,12 @@ export interface StartupFileModalRenderRow {
 
 export interface StartupFileModalCopy {
   readonly title: string;
-  readonly hint: string;
-  readonly inputLabel: string;
   readonly currentDirectory: string;
   readonly empty: string;
-  readonly noMatch: string;
 }
 
 export interface RenderStartupFileModalOptions {
   readonly cwd: string;
-  readonly input: string;
   readonly rows: readonly StartupFileModalRenderRow[];
   readonly selectedIndex: number;
   readonly copy: StartupFileModalCopy;
@@ -52,9 +48,8 @@ const STARTUP_MODAL_WIDTH_RATIO = 0.62;
 const STARTUP_MODAL_BODY_MIN_WIDTH = 1;
 const STARTUP_MODAL_BODY_HORIZONTAL_BORDER = 4;
 const STARTUP_MODAL_CWD_ROW = 0;
-const STARTUP_MODAL_INPUT_ROW = 1;
-const STARTUP_MODAL_LIST_LABEL_ROW = 3;
-const STARTUP_MODAL_FIRST_FILE_ROW = 4;
+const STARTUP_MODAL_LIST_LABEL_ROW = 2;
+const STARTUP_MODAL_FIRST_FILE_ROW = 3;
 const STARTUP_MODAL_SCROLLBAR_TRACK_CHAR = "│";
 const STARTUP_MODAL_SCROLLBAR_THUMB_CHAR = "█";
 
@@ -123,12 +118,6 @@ function createStartupFileModalBody(
   );
   paintText(
     surface,
-    inputLine(options.input, options.copy),
-    STARTUP_MODAL_INPUT_ROW,
-    options.theme.cursor.insert,
-  );
-  paintText(
-    surface,
     options.copy.currentDirectory,
     STARTUP_MODAL_LIST_LABEL_ROW,
     options.theme.markdown.get(JEDIT_MARKDOWN_TOKEN.HeadingSoft) ??
@@ -146,7 +135,7 @@ function paintRows(
   if (options.rows.length === 0) {
     paintText(
       surface,
-      emptyText(options.input, options.copy),
+      options.copy.empty,
       STARTUP_MODAL_FIRST_FILE_ROW,
       options.theme.source.get(JEDIT_SOURCE_TOKEN.Comment) ??
         options.theme.surface.drawer,
@@ -170,14 +159,6 @@ function paintRows(
   applySelectedStartupFileRowToken(listSurface, options, firstRow);
   applyStartupFileScrollbarTokens(listSurface, options.theme);
   surface.blit(listSurface, 0, STARTUP_MODAL_FIRST_FILE_ROW);
-}
-
-function inputLine(input: string, copy: StartupFileModalCopy): string {
-  return `${copy.inputLabel}: ${input}`;
-}
-
-function emptyText(input: string, copy: StartupFileModalCopy): string {
-  return input.length === 0 ? copy.empty : copy.noMatch;
 }
 
 function firstVisibleRow(

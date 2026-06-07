@@ -24,8 +24,13 @@ import { fillSurface } from './surface-fill.js';
 import { renderSmallTerminalNotice } from './small-terminal-view.js';
 import { paintWorkspaceOverlays, workspaceFeedbackOverlay } from './viewer-overlays.js';
 import { workspaceTextAuthorityPosture } from './workspace-text-authority.js';
+import type { JeditColorStop, JeditStyleToken } from '../../ui/jedit-theme.js';
 
 const WORKSPACE_BODY_TOP_OFFSET = 2;
+const COMMAND_LINE_WARNING_VARIABLE = 'warning';
+const COMMAND_LINE_ERROR_FALLBACK_BACKGROUND = '#6f1d1b';
+const COMMAND_LINE_ERROR_FALLBACK_FOREGROUND = '#ffeef0';
+const COMMAND_LINE_ERROR_FALLBACK_BACKGROUND_RGB: readonly [number, number, number] = [111, 29, 27];
 
 export { updateViewerFromKey } from './viewer-key.js';
 
@@ -143,6 +148,7 @@ function paintWorkspaceFooter(screen: Surface, model: WorkspaceModel): void {
         graftPath: model.graftInfo?.path,
         graftSelection: selectedGraftSelection(model),
         commandLine: model.commandLine,
+        commandLineError: commandLineErrorToken(model),
       }, model.columns, model.jeditTheme.surface.footer),
       0,
       model.rows - FOOTER_ROWS,
@@ -159,6 +165,39 @@ function selectedGraftSelection(model: WorkspaceModel): { kind: string; name: st
     kind: selected.kind,
     name: selected.name,
     startLine: selected.startLine,
+  };
+}
+
+function commandLineErrorToken(model: WorkspaceModel): JeditStyleToken {
+  const warning = model.jeditTheme.variables.get(COMMAND_LINE_WARNING_VARIABLE);
+  return warning == null
+    ? fallbackCommandLineErrorToken()
+    : warningCommandLineErrorToken(model, warning);
+}
+
+function fallbackCommandLineErrorToken(): JeditStyleToken {
+  return {
+    fg: COMMAND_LINE_ERROR_FALLBACK_FOREGROUND,
+    bg: COMMAND_LINE_ERROR_FALLBACK_BACKGROUND,
+    bgRGB: COMMAND_LINE_ERROR_FALLBACK_BACKGROUND_RGB,
+    foregroundVariables: [],
+    backgroundVariables: [],
+  };
+}
+
+function warningCommandLineErrorToken(
+  model: WorkspaceModel,
+  warning: JeditColorStop,
+): JeditStyleToken {
+  return {
+    ...model.jeditTheme.surface.footer,
+    fg:
+      model.jeditTheme.surface.workspace.bg ??
+      COMMAND_LINE_ERROR_FALLBACK_BACKGROUND,
+    bg: warning.hex,
+    bgRGB: warning.rgb,
+    foregroundVariables: [],
+    backgroundVariables: [COMMAND_LINE_WARNING_VARIABLE],
   };
 }
 

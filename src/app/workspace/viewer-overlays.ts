@@ -18,11 +18,8 @@ import { FOOTER_ROWS, MIN_COLUMNS, MIN_ROWS } from './viewport.js';
 
 const STARTUP_FILE_MODAL_I18N_KEYS = Object.freeze({
   Title: 'startupFileModal.title',
-  Hint: 'startupFileModal.hint',
-  InputLabel: 'startupFileModal.input_label',
   CurrentDirectory: 'startupFileModal.current_directory',
   Empty: 'startupFileModal.empty',
-  NoMatch: 'startupFileModal.no_match',
 } as const);
 const COMMAND_COMPLETION_POPUP_MAX_WIDTH = 64;
 const COMMAND_COMPLETION_POPUP_EDGE_INSET = 1;
@@ -79,8 +76,7 @@ function paintStartupFileDrawer(
     screen.blit(
       renderStartupFileDrawer({
         cwd: model.cwd,
-        input: model.startupFileModalInput,
-        rows: startupFileModalRows(model.entries, model.startupFileModalInput),
+        rows: startupFileModalRows(model.entries),
         selectedIndex: model.startupFileModalSelectedIndex,
         copy: startupFileModalCopy(model),
         theme: model.jeditTheme,
@@ -133,6 +129,7 @@ function commandLineCompletionPopupContext(model: WorkspaceModel) {
   const items = workspaceCommandLineCompletionItems({
     commandLine: model.commandLine,
     entries: model.entries,
+    i18n: model.i18n,
   });
   if (items.length === 0) {
     return undefined;
@@ -194,11 +191,8 @@ export function workspaceFeedbackOverlay(model: WorkspaceModel): Overlay | undef
 function startupFileModalCopy(model: WorkspaceModel) {
   return {
     title: model.i18n.t(STARTUP_FILE_MODAL_I18N_KEYS.Title),
-    hint: model.i18n.t(STARTUP_FILE_MODAL_I18N_KEYS.Hint),
-    inputLabel: model.i18n.t(STARTUP_FILE_MODAL_I18N_KEYS.InputLabel),
     currentDirectory: model.i18n.t(STARTUP_FILE_MODAL_I18N_KEYS.CurrentDirectory),
     empty: model.i18n.t(STARTUP_FILE_MODAL_I18N_KEYS.Empty),
-    noMatch: model.i18n.t(STARTUP_FILE_MODAL_I18N_KEYS.NoMatch),
   };
 }
 

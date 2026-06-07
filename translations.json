@@ -21,6 +21,20 @@
             "history_empty": "no Echo evidence yet",
             "history_count": "Echo evidence: {count}"
           },
+          "command": {
+            "invalid": "Command not recognized; type :help for help",
+            "hints": {
+              "tab_accept": "tab accept",
+              "enter_run": "enter run",
+              "esc_cancel": "esc cancel"
+            },
+            "details": {
+              "edit": "Open a file",
+              "write": "Write the current file",
+              "quit": "Quit jedit",
+              "wq": "Write and quit"
+            }
+          },
           "hints": {
             "j_k_move": "j/k move",
             "enter_change": "enter change",
@@ -75,11 +89,8 @@
         },
         "startupFileModal": {
           "title": "Open file",
-          "hint": "Type filter · Enter open · Esc close",
-          "input_label": "Filter",
           "current_directory": "Current directory",
-          "empty": "No files in this directory",
-          "no_match": "No files match"
+          "empty": "No files in this directory"
         }
       }
     },
@@ -103,6 +114,20 @@
             "graft_empty": "ouvrez un fichier pour l'inspecter",
             "history_empty": "pas encore de preuve Echo",
             "history_count": "Preuves Echo : {count}"
+          },
+          "command": {
+            "invalid": "Command not recognized; type :help for help",
+            "hints": {
+              "tab_accept": "tab accept",
+              "enter_run": "enter run",
+              "esc_cancel": "esc cancel"
+            },
+            "details": {
+              "edit": "Open a file",
+              "write": "Write the current file",
+              "quit": "Quit jedit",
+              "wq": "Write and quit"
+            }
           },
           "hints": {
             "j_k_move": "j/k déplacer",
@@ -158,11 +183,8 @@
         },
         "startupFileModal": {
           "title": "Open file",
-          "hint": "Type filter · Enter open · Esc close",
-          "input_label": "Filter",
           "current_directory": "Current directory",
-          "empty": "No files in this directory",
-          "no_match": "No files match"
+          "empty": "No files in this directory"
         }
       }
     },
@@ -186,6 +208,20 @@
             "graft_empty": "apri un file per ispezionarlo",
             "history_empty": "nessuna prova Echo ancora",
             "history_count": "Prove Echo: {count}"
+          },
+          "command": {
+            "invalid": "Command not recognized; type :help for help",
+            "hints": {
+              "tab_accept": "tab accept",
+              "enter_run": "enter run",
+              "esc_cancel": "esc cancel"
+            },
+            "details": {
+              "edit": "Open a file",
+              "write": "Write the current file",
+              "quit": "Quit jedit",
+              "wq": "Write and quit"
+            }
           },
           "hints": {
             "j_k_move": "j/k muovi",
@@ -241,11 +277,8 @@
         },
         "startupFileModal": {
           "title": "Open file",
-          "hint": "Type filter · Enter open · Esc close",
-          "input_label": "Filter",
           "current_directory": "Current directory",
-          "empty": "No files in this directory",
-          "no_match": "No files match"
+          "empty": "No files in this directory"
         }
       }
     },
@@ -269,6 +302,20 @@
             "graft_empty": "datei öffnen zum prüfen",
             "history_empty": "noch keine Echo-Nachweise",
             "history_count": "Echo-Nachweise: {count}"
+          },
+          "command": {
+            "invalid": "Command not recognized; type :help for help",
+            "hints": {
+              "tab_accept": "tab accept",
+              "enter_run": "enter run",
+              "esc_cancel": "esc cancel"
+            },
+            "details": {
+              "edit": "Open a file",
+              "write": "Write the current file",
+              "quit": "Quit jedit",
+              "wq": "Write and quit"
+            }
           },
           "hints": {
             "j_k_move": "j/k bewegen",
@@ -324,11 +371,8 @@
         },
         "startupFileModal": {
           "title": "Open file",
-          "hint": "Type filter · Enter open · Esc close",
-          "input_label": "Filter",
           "current_directory": "Current directory",
-          "empty": "No files in this directory",
-          "no_match": "No files match"
+          "empty": "No files in this directory"
         }
       }
     },
@@ -352,6 +396,20 @@
             "graft_empty": "abre un archivo para inspeccionarlo",
             "history_empty": "sin evidencia Echo todavía",
             "history_count": "Evidencia Echo: {count}"
+          },
+          "command": {
+            "invalid": "Command not recognized; type :help for help",
+            "hints": {
+              "tab_accept": "tab accept",
+              "enter_run": "enter run",
+              "esc_cancel": "esc cancel"
+            },
+            "details": {
+              "edit": "Open a file",
+              "write": "Write the current file",
+              "quit": "Quit jedit",
+              "wq": "Write and quit"
+            }
           },
           "hints": {
             "j_k_move": "j/k mover",
@@ -407,11 +465,8 @@
         },
         "startupFileModal": {
           "title": "Open file",
-          "hint": "Type filter · Enter open · Esc close",
-          "input_label": "Filter",
           "current_directory": "Current directory",
-          "empty": "No files in this directory",
-          "no_match": "No files match"
+          "empty": "No files in this directory"
         }
       }
     },
@@ -435,6 +490,20 @@
             "graft_empty": "검사할 파일을 여세요",
             "history_empty": "아직 Echo 증거 없음",
             "history_count": "Echo 증거: {count}"
+          },
+          "command": {
+            "invalid": "Command not recognized; type :help for help",
+            "hints": {
+              "tab_accept": "tab accept",
+              "enter_run": "enter run",
+              "esc_cancel": "esc cancel"
+            },
+            "details": {
+              "edit": "Open a file",
+              "write": "Write the current file",
+              "quit": "Quit jedit",
+              "wq": "Write and quit"
+            }
           },
           "hints": {
             "j_k_move": "j/k 이동",
@@ -490,11 +559,8 @@
         },
         "startupFileModal": {
           "title": "Open file",
-          "hint": "Type filter · Enter open · Esc close",
-          "input_label": "Filter",
           "current_directory": "Current directory",
-          "empty": "No files in this directory",
-          "no_match": "No files match"
+          "empty": "No files in this directory"
         }
       }
     },
@@ -518,6 +584,20 @@
             "graft_empty": "検査するファイルを開く",
             "history_empty": "Echo 証拠はまだありません",
             "history_count": "Echo 証拠: {count}"
+          },
+          "command": {
+            "invalid": "Command not recognized; type :help for help",
+            "hints": {
+              "tab_accept": "tab accept",
+              "enter_run": "enter run",
+              "esc_cancel": "esc cancel"
+            },
+            "details": {
+              "edit": "Open a file",
+              "write": "Write the current file",
+              "quit": "Quit jedit",
+              "wq": "Write and quit"
+            }
           },
           "hints": {
             "j_k_move": "j/k 移動",
@@ -573,11 +653,8 @@
         },
         "startupFileModal": {
           "title": "Open file",
-          "hint": "Type filter · Enter open · Esc close",
-          "input_label": "Filter",
           "current_directory": "Current directory",
-          "empty": "No files in this directory",
-          "no_match": "No files match"
+          "empty": "No files in this directory"
         }
       }
     },
@@ -601,6 +678,20 @@
             "graft_empty": "打开文件以检查",
             "history_empty": "还没有 Echo 证据",
             "history_count": "Echo 证据: {count}"
+          },
+          "command": {
+            "invalid": "Command not recognized; type :help for help",
+            "hints": {
+              "tab_accept": "tab accept",
+              "enter_run": "enter run",
+              "esc_cancel": "esc cancel"
+            },
+            "details": {
+              "edit": "Open a file",
+              "write": "Write the current file",
+              "quit": "Quit jedit",
+              "wq": "Write and quit"
+            }
           },
           "hints": {
             "j_k_move": "j/k 移动",
@@ -656,11 +747,8 @@
         },
         "startupFileModal": {
           "title": "Open file",
-          "hint": "Type filter · Enter open · Esc close",
-          "input_label": "Filter",
           "current_directory": "Current directory",
-          "empty": "No files in this directory",
-          "no_match": "No files match"
+          "empty": "No files in this directory"
         }
       }
     },
@@ -684,6 +772,20 @@
             "graft_empty": "abra um arquivo para inspecionar",
             "history_empty": "nenhuma evidência Echo ainda",
             "history_count": "Evidências Echo: {count}"
+          },
+          "command": {
+            "invalid": "Command not recognized; type :help for help",
+            "hints": {
+              "tab_accept": "tab accept",
+              "enter_run": "enter run",
+              "esc_cancel": "esc cancel"
+            },
+            "details": {
+              "edit": "Open a file",
+              "write": "Write the current file",
+              "quit": "Quit jedit",
+              "wq": "Write and quit"
+            }
           },
           "hints": {
             "j_k_move": "j/k mover",
@@ -739,11 +841,8 @@
         },
         "startupFileModal": {
           "title": "Open file",
-          "hint": "Type filter · Enter open · Esc close",
-          "input_label": "Filter",
           "current_directory": "Current directory",
-          "empty": "No files in this directory",
-          "no_match": "No files match"
+          "empty": "No files in this directory"
         }
       }
     },
@@ -767,6 +866,20 @@
             "graft_empty": "откройте файл для проверки",
             "history_empty": "пока нет доказательств Echo",
             "history_count": "Доказательства Echo: {count}"
+          },
+          "command": {
+            "invalid": "Command not recognized; type :help for help",
+            "hints": {
+              "tab_accept": "tab accept",
+              "enter_run": "enter run",
+              "esc_cancel": "esc cancel"
+            },
+            "details": {
+              "edit": "Open a file",
+              "write": "Write the current file",
+              "quit": "Quit jedit",
+              "wq": "Write and quit"
+            }
           },
           "hints": {
             "j_k_move": "j/k переместить",
@@ -822,11 +935,8 @@
         },
         "startupFileModal": {
           "title": "Open file",
-          "hint": "Type filter · Enter open · Esc close",
-          "input_label": "Filter",
           "current_directory": "Current directory",
-          "empty": "No files in this directory",
-          "no_match": "No files match"
+          "empty": "No files in this directory"
         }
       }
     },
@@ -850,6 +960,20 @@
             "graft_empty": "افتح ملفا لفحصه",
             "history_empty": "لا توجد أدلة Echo بعد",
             "history_count": "أدلة Echo: {count}"
+          },
+          "command": {
+            "invalid": "Command not recognized; type :help for help",
+            "hints": {
+              "tab_accept": "tab accept",
+              "enter_run": "enter run",
+              "esc_cancel": "esc cancel"
+            },
+            "details": {
+              "edit": "Open a file",
+              "write": "Write the current file",
+              "quit": "Quit jedit",
+              "wq": "Write and quit"
+            }
           },
           "hints": {
             "j_k_move": "j/k تحريك",
@@ -905,11 +1029,8 @@
         },
         "startupFileModal": {
           "title": "Open file",
-          "hint": "Type filter · Enter open · Esc close",
-          "input_label": "Filter",
           "current_directory": "Current directory",
-          "empty": "No files in this directory",
-          "no_match": "No files match"
+          "empty": "No files in this directory"
         }
       }
     },
@@ -933,6 +1054,20 @@
             "graft_empty": "buka berkas untuk diperiksa",
             "history_empty": "belum ada bukti Echo",
             "history_count": "Bukti Echo: {count}"
+          },
+          "command": {
+            "invalid": "Command not recognized; type :help for help",
+            "hints": {
+              "tab_accept": "tab accept",
+              "enter_run": "enter run",
+              "esc_cancel": "esc cancel"
+            },
+            "details": {
+              "edit": "Open a file",
+              "write": "Write the current file",
+              "quit": "Quit jedit",
+              "wq": "Write and quit"
+            }
           },
           "hints": {
             "j_k_move": "j/k pindah",
@@ -988,11 +1123,8 @@
         },
         "startupFileModal": {
           "title": "Open file",
-          "hint": "Type filter · Enter open · Esc close",
-          "input_label": "Filter",
           "current_directory": "Current directory",
-          "empty": "No files in this directory",
-          "no_match": "No files match"
+          "empty": "No files in this directory"
         }
       }
     },
@@ -1016,6 +1148,20 @@
             "graft_empty": "incelemek için dosya aç",
             "history_empty": "henüz Echo kanıtı yok",
             "history_count": "Echo kanıtı: {count}"
+          },
+          "command": {
+            "invalid": "Command not recognized; type :help for help",
+            "hints": {
+              "tab_accept": "tab accept",
+              "enter_run": "enter run",
+              "esc_cancel": "esc cancel"
+            },
+            "details": {
+              "edit": "Open a file",
+              "write": "Write the current file",
+              "quit": "Quit jedit",
+              "wq": "Write and quit"
+            }
           },
           "hints": {
             "j_k_move": "j/k taşı",
@@ -1071,11 +1217,8 @@
         },
         "startupFileModal": {
           "title": "Open file",
-          "hint": "Type filter · Enter open · Esc close",
-          "input_label": "Filter",
           "current_directory": "Current directory",
-          "empty": "No files in this directory",
-          "no_match": "No files match"
+          "empty": "No files in this directory"
         }
       }
     },
@@ -1099,6 +1242,20 @@
             "graft_empty": "जांचने के लिए फाइल खोलें",
             "history_empty": "अभी कोई Echo प्रमाण नहीं",
             "history_count": "Echo प्रमाण: {count}"
+          },
+          "command": {
+            "invalid": "Command not recognized; type :help for help",
+            "hints": {
+              "tab_accept": "tab accept",
+              "enter_run": "enter run",
+              "esc_cancel": "esc cancel"
+            },
+            "details": {
+              "edit": "Open a file",
+              "write": "Write the current file",
+              "quit": "Quit jedit",
+              "wq": "Write and quit"
+            }
           },
           "hints": {
             "j_k_move": "j/k चलें",
@@ -1154,11 +1311,8 @@
         },
         "startupFileModal": {
           "title": "Open file",
-          "hint": "Type filter · Enter open · Esc close",
-          "input_label": "Filter",
           "current_directory": "Current directory",
-          "empty": "No files in this directory",
-          "no_match": "No files match"
+          "empty": "No files in this directory"
         }
       }
     },
@@ -1182,6 +1336,20 @@
             "graft_empty": "open een bestand om te inspecteren",
             "history_empty": "nog geen Echo-bewijs",
             "history_count": "Echo-bewijs: {count}"
+          },
+          "command": {
+            "invalid": "Command not recognized; type :help for help",
+            "hints": {
+              "tab_accept": "tab accept",
+              "enter_run": "enter run",
+              "esc_cancel": "esc cancel"
+            },
+            "details": {
+              "edit": "Open a file",
+              "write": "Write the current file",
+              "quit": "Quit jedit",
+              "wq": "Write and quit"
+            }
           },
           "hints": {
             "j_k_move": "j/k bewegen",
@@ -1237,11 +1405,8 @@
         },
         "startupFileModal": {
           "title": "Open file",
-          "hint": "Type filter · Enter open · Esc close",
-          "input_label": "Filter",
           "current_directory": "Current directory",
-          "empty": "No files in this directory",
-          "no_match": "No files match"
+          "empty": "No files in this directory"
         }
       }
     },
@@ -1265,6 +1430,20 @@
             "graft_empty": "otwórz plik do sprawdzenia",
             "history_empty": "brak jeszcze dowodów Echo",
             "history_count": "Dowody Echo: {count}"
+          },
+          "command": {
+            "invalid": "Command not recognized; type :help for help",
+            "hints": {
+              "tab_accept": "tab accept",
+              "enter_run": "enter run",
+              "esc_cancel": "esc cancel"
+            },
+            "details": {
+              "edit": "Open a file",
+              "write": "Write the current file",
+              "quit": "Quit jedit",
+              "wq": "Write and quit"
+            }
           },
           "hints": {
             "j_k_move": "j/k przesuń",
@@ -1320,11 +1499,8 @@
         },
         "startupFileModal": {
           "title": "Open file",
-          "hint": "Type filter · Enter open · Esc close",
-          "input_label": "Filter",
           "current_directory": "Current directory",
-          "empty": "No files in this directory",
-          "no_match": "No files match"
+          "empty": "No files in this directory"
         }
       }
     },
@@ -1348,6 +1524,20 @@
             "graft_empty": "mở tệp để kiểm tra",
             "history_empty": "chưa có bằng chứng Echo",
             "history_count": "Bằng chứng Echo: {count}"
+          },
+          "command": {
+            "invalid": "Command not recognized; type :help for help",
+            "hints": {
+              "tab_accept": "tab accept",
+              "enter_run": "enter run",
+              "esc_cancel": "esc cancel"
+            },
+            "details": {
+              "edit": "Open a file",
+              "write": "Write the current file",
+              "quit": "Quit jedit",
+              "wq": "Write and quit"
+            }
           },
           "hints": {
             "j_k_move": "j/k di chuyển",
@@ -1403,11 +1593,8 @@
         },
         "startupFileModal": {
           "title": "Open file",
-          "hint": "Type filter · Enter open · Esc close",
-          "input_label": "Filter",
           "current_directory": "Current directory",
-          "empty": "No files in this directory",
-          "no_match": "No files match"
+          "empty": "No files in this directory"
         }
       }
     },
@@ -1431,6 +1618,20 @@
             "graft_empty": "เปิดไฟล์เพื่อตรวจสอบ",
             "history_empty": "ยังไม่มีหลักฐาน Echo",
             "history_count": "หลักฐาน Echo: {count}"
+          },
+          "command": {
+            "invalid": "Command not recognized; type :help for help",
+            "hints": {
+              "tab_accept": "tab accept",
+              "enter_run": "enter run",
+              "esc_cancel": "esc cancel"
+            },
+            "details": {
+              "edit": "Open a file",
+              "write": "Write the current file",
+              "quit": "Quit jedit",
+              "wq": "Write and quit"
+            }
           },
           "hints": {
             "j_k_move": "j/k ย้าย",
@@ -1486,11 +1687,8 @@
         },
         "startupFileModal": {
           "title": "Open file",
-          "hint": "Type filter · Enter open · Esc close",
-          "input_label": "Filter",
           "current_directory": "Current directory",
-          "empty": "No files in this directory",
-          "no_match": "No files match"
+          "empty": "No files in this directory"
         }
       }
     },
@@ -1514,6 +1712,20 @@
             "graft_empty": "برای بررسی یک فایل باز کنید",
             "history_empty": "هنوز مدرک Echo وجود ندارد",
             "history_count": "مدارک Echo: {count}"
+          },
+          "command": {
+            "invalid": "Command not recognized; type :help for help",
+            "hints": {
+              "tab_accept": "tab accept",
+              "enter_run": "enter run",
+              "esc_cancel": "esc cancel"
+            },
+            "details": {
+              "edit": "Open a file",
+              "write": "Write the current file",
+              "quit": "Quit jedit",
+              "wq": "Write and quit"
+            }
           },
           "hints": {
             "j_k_move": "j/k حرکت",
@@ -1569,11 +1781,8 @@
         },
         "startupFileModal": {
           "title": "Open file",
-          "hint": "Type filter · Enter open · Esc close",
-          "input_label": "Filter",
           "current_directory": "Current directory",
-          "empty": "No files in this directory",
-          "no_match": "No files match"
+          "empty": "No files in this directory"
         }
       }
     },
@@ -1597,6 +1806,20 @@
             "graft_empty": "פתח קובץ לבדיקה",
             "history_empty": "עדיין אין ראיות Echo",
             "history_count": "ראיות Echo: {count}"
+          },
+          "command": {
+            "invalid": "Command not recognized; type :help for help",
+            "hints": {
+              "tab_accept": "tab accept",
+              "enter_run": "enter run",
+              "esc_cancel": "esc cancel"
+            },
+            "details": {
+              "edit": "Open a file",
+              "write": "Write the current file",
+              "quit": "Quit jedit",
+              "wq": "Write and quit"
+            }
           },
           "hints": {
             "j_k_move": "j/k הזז",
@@ -1652,11 +1875,8 @@
         },
         "startupFileModal": {
           "title": "Open file",
-          "hint": "Type filter · Enter open · Esc close",
-          "input_label": "Filter",
           "current_directory": "Current directory",
-          "empty": "No files in this directory",
-          "no_match": "No files match"
+          "empty": "No files in this directory"
         }
       }
     }
