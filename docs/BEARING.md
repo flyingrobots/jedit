@@ -584,7 +584,7 @@ Progress ledger:
 - [x] 124 - Historical Basis Selection.
 - [x] 125 - Current History Export.
 - [x] 126 - Point-In-Time Export.
-- [ ] 127 - History Listing And Evidence View.
+- [x] 127 - History Listing And Evidence View.
 - [ ] 128 - Replay Same Edits Same Evidence.
 - [ ] 129 - Host Timing Permutation Proof.
 - [ ] 130 - Conflict And Rejection Retention.
@@ -1693,10 +1693,22 @@ Test plan:
 
 Checklist:
 
-- [ ] Add history listing model.
-- [ ] Add CLI/UI/port output.
-- [ ] Keep output app-safe.
-- [ ] Cover deterministic ordering.
+- [x] Add history listing model.
+- [x] Add CLI/UI/port output.
+- [x] Keep output app-safe.
+- [x] Cover deterministic ordering.
+
+Proof note:
+
+- `src/app/jedit-wsc-history-listing.ts` now lists WSC-backed editing history
+  through the workspace WSC store port, reduces edit-settlement envelopes into
+  app-safe history entries, marks missing submission/outcome/receipt/reading/
+  checkpoint/export evidence explicitly, and renders deterministic text output
+  for UI or CLI consumption. `scripts/jedit-wsc-history-listing.mjs` exposes
+  text and JSON output over the same app model. `spec/jedit-wsc-history-listing.spec.mjs`
+  covers multiple-edit ordering, same-time tie-breaks, missing evidence,
+  retained checkpoint/export refs, unsupported envelopes, deterministic render
+  output, and missing retained material obstruction.
 
 ### Slice 128 - Replay Same Edits Same Evidence
 
