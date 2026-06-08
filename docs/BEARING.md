@@ -585,7 +585,7 @@ Progress ledger:
 - [x] 125 - Current History Export.
 - [x] 126 - Point-In-Time Export.
 - [x] 127 - History Listing And Evidence View.
-- [ ] 128 - Replay Same Edits Same Evidence.
+- [x] 128 - Replay Same Edits Same Evidence.
 - [ ] 129 - Host Timing Permutation Proof.
 - [ ] 130 - Conflict And Rejection Retention.
 - [ ] 131 - Multi-File History Recovery.
@@ -1733,10 +1733,23 @@ Test plan:
 
 Checklist:
 
-- [ ] Build replay fixture.
-- [ ] Compare semantic evidence identity.
-- [ ] Exclude non-semantic diagnostics.
-- [ ] Cover mismatch report.
+- [x] Build replay fixture.
+- [x] Compare semantic evidence identity.
+- [x] Exclude non-semantic diagnostics.
+- [x] Cover mismatch report.
+
+Proof note:
+
+- `src/app/jedit-wsc-history-replay.ts` now compares two WSC-backed edit
+  histories through the workspace WSC store port. It normalizes edit-settlement
+  envelopes into semantic replay entries that include command, range, receipt,
+  reading, materialized lines, and aperture evidence while excluding retained
+  envelope ids, submitted wall-clock time, and diagnostic prose from identity.
+  `spec/jedit-wsc-history-replay.spec.mjs` proves matching replay despite
+  timing/diagnostic drift, deterministic entry sorting, typed receipt and
+  reading mismatches, entry-count mismatch, malformed retained material
+  obstruction, and missing-envelope obstruction. `npm run replay:wsc` is the
+  focused local replay command.
 
 ### Slice 129 - Host Timing Permutation Proof
 
