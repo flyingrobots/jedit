@@ -1997,6 +1997,12 @@ Checklist:
 
 ### Slice 139 - Authority And Security Audit
 
+Local note:
+
+- [`docs/design/0139-powered-by-echo-authority-audit.md`](design/0139-powered-by-echo-authority-audit.md)
+  records the current audit posture, the fixture-only seams, and the completion
+  contract for honestly claiming "powered by Echo."
+
 User story:
 
 As a maintainer, I want a final authority audit proving app code cannot bypass
