@@ -279,6 +279,51 @@ test("title screen mouse look preserves active movement input", async () => {
   assert.ok(dragging.titleCameraInput.forwardUntilMs >= 1800);
 });
 
+test("title screen jump and crouch actions preserve movement input", async () => {
+  const [input, keyBindings, titleScreen] = await Promise.all([
+    importDist("app", "title-camera-input.js"),
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const base = mockTitleScreenModel(titleScreen, {
+    titleCamera: fpsTestCamera(),
+  });
+  const [moving] = keyBindings.updateFromKey(
+    { key: "w", ctrl: false, alt: false, shift: false },
+    base,
+    mockKeyBindingContext({ nowMs: () => 1000 }),
+  );
+  const [jumped] = keyBindings.updateFromKey(
+    { key: "space", ctrl: false, alt: false, shift: false },
+    moving,
+    mockKeyBindingContext({ nowMs: () => 1400 }),
+  );
+  const [crouched] = keyBindings.updateFromKey(
+    { key: "shift", ctrl: false, alt: false, shift: false },
+    moving,
+    mockKeyBindingContext({ nowMs: () => 1400 }),
+  );
+  const jumpedAdvanced = input.advanceTitleCameraFrame(
+    jumped.titleCamera,
+    jumped.titleCameraInput,
+    1500,
+    16,
+  );
+  const crouchedAdvanced = input.advanceTitleCameraFrame(
+    crouched.titleCamera,
+    crouched.titleCameraInput,
+    1500,
+    16,
+  );
+
+  assert.ok(jumped.titleCamera.velocity[2] < 0);
+  assert.ok(crouched.titleCamera.velocity[2] < 0);
+  assert.ok(jumped.titleCameraInput.forwardUntilMs >= 1720);
+  assert.ok(crouched.titleCameraInput.forwardUntilMs >= 1720);
+  assert.ok(jumpedAdvanced.state.position[2] < jumped.titleCamera.position[2]);
+  assert.ok(crouchedAdvanced.state.position[2] < crouched.titleCamera.position[2]);
+});
+
 test("feedback module exposes notification presentation tokens", async () => {
   const feedback = await importDist("ui", "feedback.js");
 

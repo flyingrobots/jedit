@@ -63,6 +63,45 @@ export function refreshTitleCameraInputFromMouseLook(
     backwardUntilMs: refreshedActiveInputUntilMs(active.backwardUntilMs, atMs),
     leftUntilMs: refreshedActiveInputUntilMs(active.leftUntilMs, atMs),
     rightUntilMs: refreshedActiveInputUntilMs(active.rightUntilMs, atMs),
+    ...refreshedChordMemoryFields(active, atMs),
+  });
+}
+
+export function refreshTitleCameraInputFromAction(
+  input: TitleCameraInputState,
+  atMs: number,
+): TitleCameraInputState {
+  const active = activeTitleCameraInput(input, atMs);
+  return titleCameraInputState({
+    forwardUntilMs: refreshedActionInputUntilMs(
+      active.forwardUntilMs,
+      active.forwardChordUntilMs,
+      atMs,
+    ),
+    backwardUntilMs: refreshedActionInputUntilMs(
+      active.backwardUntilMs,
+      active.backwardChordUntilMs,
+      atMs,
+    ),
+    leftUntilMs: refreshedActionInputUntilMs(
+      active.leftUntilMs,
+      active.leftChordUntilMs,
+      atMs,
+    ),
+    rightUntilMs: refreshedActionInputUntilMs(
+      active.rightUntilMs,
+      active.rightChordUntilMs,
+      atMs,
+    ),
+    ...refreshedChordMemoryFields(active, atMs),
+  });
+}
+
+function refreshedChordMemoryFields(
+  active: TitleCameraInputState,
+  atMs: number,
+): TitleCameraInputState {
+  return {
     forwardChordUntilMs: refreshedChordMemoryUntilMs(
       active.forwardChordUntilMs,
       atMs,
@@ -79,7 +118,7 @@ export function refreshTitleCameraInputFromMouseLook(
       active.rightChordUntilMs,
       atMs,
     ),
-  });
+  };
 }
 
 export function advanceTitleCameraFrame(
@@ -271,6 +310,16 @@ function refreshedActiveInputUntilMs(
   atMs: number,
 ): number | undefined {
   return candidateUntilMs == null ? undefined : activeInputUntilMs(atMs);
+}
+
+function refreshedActionInputUntilMs(
+  candidateUntilMs: number | undefined,
+  candidateChordUntilMs: number | undefined,
+  atMs: number,
+): number | undefined {
+  return candidateUntilMs == null && candidateChordUntilMs == null
+    ? undefined
+    : activeInputUntilMs(atMs);
 }
 
 function refreshedChordMemoryUntilMs(

@@ -12,7 +12,11 @@ import {
   TITLE_RENDER_MODE,
   type TitleAsciiPalette,
 } from "../../ui/title-screen.js";
-import { refreshTitleCameraInputFromKey } from "../title-camera-input.js";
+import {
+  refreshTitleCameraInputFromAction,
+  refreshTitleCameraInputFromKey,
+  type TitleCameraInputState,
+} from "../title-camera-input.js";
 import { updateTitleCameraFromKey } from "../title-camera-session.js";
 import {
   applyTitleMeshMaterial,
@@ -65,7 +69,7 @@ export function updateTitleScreenKey(
     updateTitleMeshMaterialKey(msg, model, context) ??
     updateTitleEscapeKey(msg, model) ??
     updateTitleCameraInputKey(msg, model, context) ??
-    updateTitleCameraKey(msg, model)
+    updateTitleCameraKey(msg, model, context)
   );
 }
 
@@ -142,13 +146,25 @@ function updateTitleEscapeKey(
 function updateTitleCameraKey(
   msg: KeyMsg,
   model: WorkspaceModel,
+  context: WorkspaceKeyBindingContext,
 ): KeyBindingResult | undefined {
   const update = updateTitleCameraFromKey(msg.key, model.titleCamera, {
     shift: msg.shift,
   });
   return update == null
     ? undefined
-    : [{ ...model, titleCamera: update.state }, update.commands];
+    : [
+        {
+          ...model,
+          titleCamera: update.state,
+          titleCameraInput: titleCameraActionInput(
+            msg.key,
+            model.titleCameraInput,
+            context.nowMs(),
+          ),
+        },
+        update.commands,
+      ];
 }
 
 function updateTitleCameraInputKey(
@@ -174,6 +190,20 @@ function updateTitleCameraInputKey(
         },
         update?.commands ?? [],
       ];
+}
+
+function titleCameraActionInput(
+  key: string,
+  input: TitleCameraInputState,
+  atMs: number,
+): TitleCameraInputState {
+  return titleCameraActionPreservesInput(key)
+    ? refreshTitleCameraInputFromAction(input, atMs)
+    : input;
+}
+
+function titleCameraActionPreservesInput(key: string): boolean {
+  return key === WorkspaceKeys.Space || key === WorkspaceKeys.Shift;
 }
 
 function pushTitleScreenToast(

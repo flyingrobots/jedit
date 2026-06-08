@@ -28,6 +28,7 @@ const DIAGONAL_SECOND_KEY_MS = 500;
 const DIAGONAL_ADVANCE_MS = 700;
 const WORLD_CAMERA_POSITION = [0, 0.92, 2.25];
 const WORLD_CAMERA_TARGET = [0, 0.8, 0];
+const VECTOR_EPSILON = 0.000001;
 
 const DIAGONAL_CHORD_CASES = [
   {
@@ -301,6 +302,31 @@ test("title camera space jumps and shift toggles slower crouch movement", async 
   assert.ok(shiftWalked.position[1] < initial.position[1]);
   assert.ok(
     Math.abs(crouchWalked.velocity[2]) < Math.abs(walked.velocity[2]),
+  );
+});
+
+test("title camera crouch preserves existing horizontal momentum", async () => {
+  const camera = await loadTitleCameraSession();
+  const initial = camera.createTitleCameraState({
+    angle: 0,
+    radius: 2,
+    position: [0, 1, 0],
+    target: [0, 1, -2],
+  });
+  const running = {
+    ...initial,
+    velocity: [0, 0, -camera.TITLE_CAMERA_FPS_SPEED],
+  };
+  const crouchWalked = camera.updateTitleCameraFromKey(
+    "w",
+    running,
+    { shift: true },
+  ).state;
+
+  assert.equal(crouchWalked.crouching, true);
+  assert.ok(
+    Math.abs(crouchWalked.velocity[2]) >=
+      Math.abs(running.velocity[2]) - VECTOR_EPSILON,
   );
 });
 

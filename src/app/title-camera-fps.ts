@@ -194,7 +194,7 @@ function titleCameraMovementVelocity(
   }
   return clampTitleCameraHorizontalSpeed(
     add(velocity, scale(direction, titleCameraAcceleration(camera) * dtSeconds)),
-    titleCameraMovementSpeed(camera),
+    titleCameraMomentumLimit(camera, velocity),
   );
 }
 
@@ -203,9 +203,8 @@ function titleCameraGravityVelocity(
   velocity: TitleSceneVector3,
   dtSeconds: number,
 ): TitleSceneVector3 {
-  const nextY = titleCameraIsAirborne(camera) || velocity[1] !== 0
-    ? velocity[1] - TITLE_CAMERA_GRAVITY * dtSeconds
-    : 0;
+  const falling = titleCameraIsAirborne(camera) || velocity[1] !== 0;
+  const nextY = falling ? velocity[1] - TITLE_CAMERA_GRAVITY * dtSeconds : 0;
   return velocityWithY(velocity, nextY);
 }
 
@@ -231,9 +230,7 @@ function titleCameraMovementDirection(
   input: TitleCameraMovementInput,
 ): TitleSceneVector3 | undefined {
   const direction = titleCameraMovementVector(camera, input);
-  return length(direction) <= VECTOR_ZERO_EPSILON
-    ? undefined
-    : normalize(direction);
+  return length(direction) <= VECTOR_ZERO_EPSILON ? undefined : normalize(direction);
 }
 
 function titleCameraMovementVector(
@@ -261,16 +258,12 @@ function titleCameraMovementSpeed(camera: TitleCameraFpsState): number {
 }
 
 function titleCameraImpulse(camera: TitleCameraFpsState): number {
-  return camera.crouching
-    ? TITLE_CAMERA_INPUT_IMPULSE *
-        (TITLE_CAMERA_CROUCH_SPEED / TITLE_CAMERA_FPS_SPEED)
-    : TITLE_CAMERA_INPUT_IMPULSE;
+  const crouchFactor = TITLE_CAMERA_CROUCH_SPEED / TITLE_CAMERA_FPS_SPEED;
+  return TITLE_CAMERA_INPUT_IMPULSE * (camera.crouching ? crouchFactor : 1);
 }
 
 function titleCameraAcceleration(camera: TitleCameraFpsState): number {
-  return camera.crouching
-    ? TITLE_CAMERA_CROUCH_ACCELERATION
-    : TITLE_CAMERA_FPS_ACCELERATION;
+  return camera.crouching ? TITLE_CAMERA_CROUCH_ACCELERATION : TITLE_CAMERA_FPS_ACCELERATION;
 }
 
 function titleCameraImpulsed(
@@ -285,7 +278,10 @@ function titleCameraImpulsed(
   );
   return titleCameraWithVelocity(
     base,
-    clampTitleCameraHorizontalSpeed(velocity, titleCameraMovementSpeed(base)),
+    clampTitleCameraHorizontalSpeed(
+      velocity,
+      titleCameraMomentumLimit(base, titleCameraVelocity(base)),
+    ),
   );
 }
 
@@ -367,6 +363,13 @@ function titleCameraIsAirborne(camera: TitleCameraFpsState): boolean {
 
 function titleCameraVelocity(camera: TitleCameraFpsState): TitleSceneVector3 {
   return camera.velocity ?? [0, camera.verticalVelocity ?? 0, 0];
+}
+
+function titleCameraMomentumLimit(
+  camera: TitleCameraFpsState,
+  velocity: TitleSceneVector3,
+): number {
+  return Math.max(titleCameraMovementSpeed(camera), Math.hypot(velocity[0], velocity[2]));
 }
 
 function titleCameraWithVelocity(
