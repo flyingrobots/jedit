@@ -4,6 +4,7 @@ import {
 } from "./title-camera-fps.js";
 
 const TITLE_CAMERA_INPUT_LEASE_MS = 320;
+const TITLE_CAMERA_ACTION_INPUT_LEASE_MS = 1200;
 const TITLE_CAMERA_INPUT_CHORD_MEMORY_MS = 1200;
 const MILLISECONDS_PER_SECOND = 1000;
 
@@ -301,6 +302,10 @@ function activeInputUntilMs(atMs: number): number {
   return atMs + TITLE_CAMERA_INPUT_LEASE_MS;
 }
 
+function actionInputUntilMs(atMs: number): number {
+  return atMs + TITLE_CAMERA_ACTION_INPUT_LEASE_MS;
+}
+
 function chordMemoryUntilMs(atMs: number): number {
   return atMs + TITLE_CAMERA_INPUT_CHORD_MEMORY_MS;
 }
@@ -319,7 +324,7 @@ function refreshedActionInputUntilMs(
 ): number | undefined {
   return candidateUntilMs == null && candidateChordUntilMs == null
     ? undefined
-    : activeInputUntilMs(atMs);
+    : actionInputUntilMs(atMs);
 }
 
 function refreshedChordMemoryUntilMs(

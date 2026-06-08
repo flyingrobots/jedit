@@ -324,6 +324,43 @@ test("title screen jump and crouch actions preserve movement input", async () =>
   assert.ok(crouchedAdvanced.state.position[2] < crouched.titleCamera.position[2]);
 });
 
+test("title screen backward input survives jump landing without repeat events", async () => {
+  const [input, keyBindings, titleScreen] = await Promise.all([
+    importDist("app", "title-camera-input.js"),
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const base = mockTitleScreenModel(titleScreen, {
+    titleCamera: fpsTestCamera(),
+  });
+  const [moving] = keyBindings.updateFromKey(
+    { key: "s", ctrl: false, alt: false, shift: false },
+    base,
+    mockKeyBindingContext({ nowMs: () => 1000 }),
+  );
+  const [jumped] = keyBindings.updateFromKey(
+    { key: "space", ctrl: false, alt: false, shift: false },
+    moving,
+    mockKeyBindingContext({ nowMs: () => 1400 }),
+  );
+  const landed = advanceTitleCameraUntilGrounded(
+    input,
+    jumped.titleCamera,
+    jumped.titleCameraInput,
+    1400,
+  );
+  const continued = input.advanceTitleCameraFrame(
+    landed.state,
+    landed.input,
+    landed.atMs + 16,
+    16,
+  );
+
+  assert.ok(landed.state.position[2] > jumped.titleCamera.position[2]);
+  assert.ok(continued.state.position[2] > landed.state.position[2]);
+  assert.equal(typeof landed.input.backwardUntilMs, "number");
+});
+
 test("feedback module exposes notification presentation tokens", async () => {
   const feedback = await importDist("ui", "feedback.js");
 
@@ -1123,6 +1160,19 @@ function fpsTestCamera() {
     eyeY: 1,
     crouching: false,
   };
+}
+
+function advanceTitleCameraUntilGrounded(input, state, inputState, startMs) {
+  let atMs = startMs;
+  let next = { state, input: inputState };
+  for (let frame = 0; frame < 80; frame += 1) {
+    atMs += 16;
+    next = input.advanceTitleCameraFrame(next.state, next.input, atMs, 16);
+    if (next.state.position[1] <= 1 && next.state.velocity?.[1] === 0) {
+      return { ...next, atMs };
+    }
+  }
+  return { ...next, atMs };
 }
 
 function titleMouse(action, col, row, button = "none") {
