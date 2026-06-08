@@ -98,33 +98,47 @@ Task:
 2. Arrive at the Jedit title screen for the current working directory.
 3. Press `:` and see the Vim command-line completion UX appear.
 4. Type `edit`.
-5. Select `example.txt` from file completions.
-6. Observe that Jedit opens the file and displays its contents.
-7. Use Normal-mode Vim navigation commands to move through the document.
-8. Press `i` to enter Insert mode.
-9. Type the payload below and see every character appear in the document:
+5. Press Enter or Tab to accept the highlighted `edit` command completion.
+6. Observe that command mode remains active with `:edit` followed by a space in
+   the command line and file completions visible.
+7. Type or select `example.txt` from file completions.
+8. Press Enter or Tab to accept `example.txt`.
+9. Observe that Jedit opens the file and displays its contents.
+10. Use Normal-mode Vim navigation commands such as `G`, `gg`, and `0`, ending
+    with the cursor on the first byte of the file.
+11. Press `i` to enter Insert mode at the first byte.
+12. Type the payload below and see every character appear in the document:
 
-   ```text
-   abcdefghijklmnopqrwstuvwxyz12343567890!@#$%^&*()_+-=[]'/\.,
-   ```
+    ```text
+    abcdefghijklmnopqrwstuvwxyz12343567890!@#$%^&*()_+-=[]'/\.,
+    ```
 
-10. Press Escape to return to Normal mode.
-11. Press `:` to open the Vim command-line surface again.
-12. Type `wq` and press Enter.
-13. Observe that Jedit saves the file and exits cleanly.
-14. Run `cat example.txt`.
+13. Press Escape to return to Normal mode.
+14. Press `:` to open the Vim command-line surface again.
+15. Type `wq` and press Enter.
+16. Observe that Jedit saves the file and exits cleanly.
+17. Run `cat example.txt`.
 
 Expected result:
 
 - The title screen accepts `:` even when no file is open.
 - The completion popup stays anchored to the original command-line cursor
   position while the user types.
+- Accepting the `edit` command completion inserts `edit`, appends one command
+  separator space, and switches the provider phase to file completions without
+  leaving command mode.
 - Enter and Tab can accept the highlighted completion.
 - `:edit example.txt` opens the file through the production text path.
 - Insert mode accepts the full punctuation-heavy payload.
 - Escape leaves Insert mode without losing the typed payload.
 - `:wq` saves through the production save path and exits.
-- `cat example.txt` includes the inserted payload exactly once.
+- `cat example.txt` exactly matches:
+
+  ```text
+  abcdefghijklmnopqrwstuvwxyz12343567890!@#$%^&*()_+-=[]'/\.,before
+  ```
+
+  The final byte is the newline from the original file.
 
 Required proof:
 
@@ -134,7 +148,8 @@ Required proof:
 - Echo-hosted production text evidence for open, insert, read, save, and
   checkpoint or explicit obstruction when checkpoint evidence is not yet
   available.
-- Filesystem read after exit showing the saved payload.
+- Filesystem read after exit showing byte-for-byte equality with the expected
+  final file.
 
 Current status:
 
@@ -253,14 +268,18 @@ Task:
 2. Open `edit.txt` with `:edit`.
 3. Use Normal-mode navigation to reach `second word`.
 4. Use a Vim-shaped edit command to change text, such as `cwreplacement`.
-5. Use a line edit command such as `dd` on a different line.
-6. Save with `:w`.
-7. Quit with `:q`.
+5. Press Escape to leave Insert mode after the replacement.
+6. Navigate to a different line with Normal-mode movement.
+7. Use a line edit command such as `dd`.
+8. Save with `:w`.
+9. Quit with `:q`.
 
 Expected result:
 
 - Vim-shaped text commands mutate production text through Jedit's command
   planner and Echo-hosted session.
+- The mode sequence is Normal, pending/change command, Insert, Normal, line
+  delete, command line.
 - Cursor, selection, and pending command state remain Jedit-owned UI policy.
 - Save materializes the edited state to disk.
 - Deleted or changed text is absent from the final file.
