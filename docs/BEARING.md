@@ -623,16 +623,16 @@ Progress ledger:
 - [x] 124 - Historical Basis Selection.
 - [x] 125 - Current History Export.
 - [x] 126 - Point-In-Time Export.
-- [ ] 127 - History Listing And Evidence View.
-- [ ] 128 - Replay Same Edits Same Evidence.
-- [ ] 129 - Host Timing Permutation Proof.
-- [ ] 130 - Conflict And Rejection Retention.
-- [ ] 131 - Multi-File History Recovery.
-- [ ] 132 - Agent Historical Export.
-- [ ] 133 - WSC Release Gate Integration.
-- [ ] 134 - DIND Replay Closeout.
-- [ ] 135 - Portability Template Update.
-- [ ] 136 - Graft/Think Readiness Checklist.
+- [x] 127 - History Listing And Evidence View.
+- [x] 128 - Replay Same Edits Same Evidence.
+- [x] 129 - Host Timing Permutation Proof.
+- [x] 130 - Conflict And Rejection Retention.
+- [x] 131 - Multi-File History Recovery.
+- [x] 132 - Agent Historical Export.
+- [x] 133 - WSC Release Gate Integration.
+- [x] 134 - DIND Replay Closeout.
+- [x] 135 - Portability Template Update.
+- [x] 136 - Graft/Think Readiness Checklist.
 - [ ] 137 - End-To-End Guide Refresh.
 - [ ] 138 - Version And Compatibility Audit.
 - [ ] 139 - Authority And Security Audit.

@@ -63,10 +63,10 @@ function runCommand(options, modules) {
 
 function exportHistoryBasis(options, modules, store) {
   if (options.basisId == null) {
-    return obstruction('missing_basis_id', 'export requires --basis');
+    return obstruction(modules.ports, 'missing_basis_id', 'export requires --basis');
   }
   if (options.outputPath == null) {
-    return obstruction('missing_output_path', 'export requires --output');
+    return obstruction(modules.ports, 'missing_output_path', 'export requires --output');
   }
   const materializer = createSettlementMaterializer(options.outputPath, modules.ports);
   const result = modules.currentExport.exportJeditWscHistoryAtBasis({
@@ -126,11 +126,11 @@ function exportedBody(result, materializer) {
   };
 }
 
-function obstruction(code, message) {
+function obstruction(ports, code, message) {
   return {
     exitCode: 1,
     body: {
-      status: 'JEDIT_WSC_CURRENT_HISTORY_EXPORT_OBSTRUCTED',
+      status: ports.JEDIT_WSC_CURRENT_HISTORY_EXPORT_OBSTRUCTED,
       obstruction: { code, message },
     },
   };

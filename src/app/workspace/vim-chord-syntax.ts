@@ -19,6 +19,10 @@ import {
   type VimVisualModeName,
   type VimVisualPrefixToken,
 } from './vim-grammar.js';
+import {
+  TEXT_OBJECT_AROUND_PREFIX,
+  TEXT_OBJECT_INNER_PREFIX,
+} from './vim-grammar-vocabulary.js';
 
 export type VimChordSyntaxKind = 'complete' | 'invalid' | 'pending';
 
@@ -174,8 +178,6 @@ const TOKEN_VISUAL_PREFIX: 'visualPrefix' = 'visualPrefix';
 
 const OPERATOR_PUT_AFTER: VimOperatorName = 'putAfter';
 const OPERATOR_PUT_BEFORE: VimOperatorName = 'putBefore';
-const TEXT_OBJECT_AROUND_PREFIX_KEY = 'a';
-const TEXT_OBJECT_INNER_PREFIX_KEY = 'i';
 const STANDALONE_OPERATORS: ReadonlySet<VimOperatorName> = new Set([
   'changeToLineEnd', 'deleteChar', 'deleteToLineEnd', 'joinNoSpace', 'putAfter', 'putBefore', 'yankLine',
 ]);
@@ -458,7 +460,7 @@ function isPutOperator(operator: VimOperatorName): boolean {
 }
 
 function isPendingTextObjectScopeToken(token: VimGrammarToken | undefined): boolean {
-  return token?.raw[0] === TEXT_OBJECT_AROUND_PREFIX_KEY || token?.raw[0] === TEXT_OBJECT_INNER_PREFIX_KEY;
+  return token?.raw[0] === TEXT_OBJECT_AROUND_PREFIX || token?.raw[0] === TEXT_OBJECT_INNER_PREFIX;
 }
 
 function macroSyntax(token: VimMacroControlToken): VimMacroSyntax {
