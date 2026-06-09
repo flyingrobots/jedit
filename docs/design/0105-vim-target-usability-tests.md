@@ -321,9 +321,9 @@ Task:
 2. Press `:`.
 3. Type `edit`.
 4. Accept the command completion.
-5. Continue typing a partial path or fuzzy query such as `comp`.
-6. Observe the file-completion list narrow to matching files.
-7. Press Enter to accept `src/app/component.ts`.
+5. Type the path prefix `src/app/comp`.
+6. Observe the file-completion list narrow to `src/app/component.ts`.
+7. Press Tab to accept the highlighted `src/app/component.ts` completion.
 
 Expected result:
 
