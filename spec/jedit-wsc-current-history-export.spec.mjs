@@ -122,6 +122,31 @@ test('current WSC history export ignores retained rejection envelopes for applie
   assert.deepEqual(saved, [{ filePath: '/repo/notes.txt', lines: ['t=10'] }]);
 });
 
+test('current WSC history export obstructs malformed retained evidence instead of exporting stale text', async () => {
+  const [currentExport, ports] = await exportModules();
+  const saved = [];
+  const result = currentExport.exportCurrentJeditWscHistory({
+    store: fakeStore({
+      envelopeIds: [BASIS_A, BASIS_B],
+      readEnvelope: (basisId) => ({
+        status: 'JEDIT_WSC_WORKSPACE_STORE_READ',
+        envelope: {
+          envelopeId: basisId,
+          bytes: basisId === BASIS_A ? settlementBytes(10) : malformedBytes(),
+        },
+        workspacePath: '/repo/.jedit/echo-wsc/envelopes',
+      }),
+    }),
+    editorFile: fakeEditorFile(saved),
+    materializer: envelopeMaterializer(),
+  });
+
+  assert.equal(result.status, ports.JEDIT_WSC_CURRENT_HISTORY_EXPORT_OBSTRUCTED);
+  assert.equal(result.obstruction.code, ports.JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_FAILED);
+  assert.equal(result.obstruction.basisId, BASIS_B);
+  assert.deepEqual(saved, []);
+});
+
 test('point-in-time WSC history export materializes the requested historical basis', async () => {
   const [currentExport, ports] = await exportModules();
   const saved = [];
@@ -431,4 +456,8 @@ function rejectionBytes(submittedAtMs) {
     submittedAtMs,
     rejectionReason: 'stale causal basis',
   }));
+}
+
+function malformedBytes() {
+  return new TextEncoder().encode('not json');
 }
