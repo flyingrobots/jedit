@@ -131,6 +131,14 @@ That matrix is current-state truth for the power-move surface. It names what is
 supported, partial, unsupported, or intentionally causally enhanced, and it
 records the proof gaps that later slices must close.
 
+Slice 3 adds the target workflow fixture set:
+
+- [0105 Vim Power Target Usability Fixtures](0105-vim-power-target-usability-fixtures.json)
+
+Those fixtures keep human workflow descriptions separate from future executable
+witness inputs. Each workflow references parity matrix row ids so target tests
+stay connected to the inventory.
+
 ## Problem
 
 Vim's power comes from composition:
@@ -798,6 +806,7 @@ shipping a shallow compatibility checklist.
 - Separate human workflow descriptions from executable witness fixtures.
 - Include open/edit/save, text-object surgery, search/substitute, macro/repeat,
   marks/jumps, and causal strand preview.
+- Gate each workflow against the parity matrix row ids it exercises.
 
 ### Slice 4: Vim Grammar Token Model
 
@@ -1029,6 +1038,7 @@ node --test --test-concurrency=1 spec/vim-power-registers.spec.mjs
 node --test --test-concurrency=1 spec/vim-power-repeat-macro.spec.mjs
 node --test --test-concurrency=1 spec/vim-power-search-substitute.spec.mjs
 node --test --test-concurrency=1 spec/vim-power-parity-matrix.spec.mjs
+node --test --test-concurrency=1 spec/vim-power-target-usability-fixtures.spec.mjs
 node scripts/jedit-vim-power-witness.mjs --json --workflow open-edit-save
 npm run --silent quality
 ```
@@ -1049,6 +1059,8 @@ Current machine-readable planning witness:
 
 - [0105 Vim Power Moves Parity Matrix](0105-vim-power-moves-parity-matrix.json)
 - `spec/vim-power-parity-matrix.spec.mjs`
+- [0105 Vim Power Target Usability Fixtures](0105-vim-power-target-usability-fixtures.json)
+- `spec/vim-power-target-usability-fixtures.spec.mjs`
 
 Target usability witnesses:
 
@@ -1093,8 +1105,8 @@ Target usability witnesses:
 
 ## Retrospective
 
-Roadmap implementation is not complete. Slice 2 now has an inspectable planning
-artifact.
+Roadmap implementation is not complete. Slices 2 and 3 now have inspectable
+planning artifacts.
 
 What the tests proved:
 
@@ -1102,13 +1114,18 @@ What the tests proved:
   metadata, covers the required WF-0105 categories, carries proof/boundary
   fields for every row, and does not claim unsupported or causally enhanced work
   as currently proven.
+- `spec/vim-power-target-usability-fixtures.spec.mjs` proves the target
+  workflows have stable metadata, separate human prose from structured witness
+  inputs, reference real parity matrix rows, and do not claim runtime proof
+  before implementation exists.
 
 What changed from the design:
 
 - The parity inventory now lives as a separate JSON document so later release
   gates can consume it without scraping Markdown prose.
+- The target usability workflows now live as a separate JSON fixture document so
+  future witness scripts can consume workflow steps directly.
 
 Follow-up work:
 
-- Slice 3 should add target usability witness fixtures that reference matrix
-  rows by id.
+- Slice 4 should define the Vim grammar token model used by the fixture inputs.

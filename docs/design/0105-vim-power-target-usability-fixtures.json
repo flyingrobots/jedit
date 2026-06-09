@@ -1,0 +1,379 @@
+{
+  "schemaVersion": 1,
+  "id": "wf-0105-vim-power-target-usability-fixtures",
+  "designDoc": "docs/design/0105-vim-power-moves-causal-parity.md",
+  "parityMatrix": "docs/design/0105-vim-power-moves-parity-matrix.json",
+  "owner": "jedit",
+  "futureCommandName": "jim",
+  "currentExecutionPosture": "target-fixtures-not-runtime-proof",
+  "fixtureSemantics": {
+    "humanTask": "Plain-language workflow the user should eventually be able to perform.",
+    "witness": "Structured target for a future deterministic agent-facing JSON witness.",
+    "matrixRows": "Parity matrix row ids exercised by the workflow.",
+    "expectedCurrentOutcome": "Honest current result before implementation catches up."
+  },
+  "workflows": [
+    {
+      "id": "open-edit-save-reopen",
+      "title": "Open, Edit, Save, Reopen",
+      "actor": "developer",
+      "humanTask": "Open jedit in a project, select a file through Vim command UX, edit text, save, quit, and verify the file on disk.",
+      "matrixRows": [
+        "ex.edit",
+        "ex.write-quit",
+        "motion.character",
+        "motion.line-boundary",
+        "motion.file-boundary"
+      ],
+      "expectedCurrentOutcome": "partially-supported",
+      "witness": {
+        "command": "node scripts/jedit-vim-power-witness.mjs --json --workflow open-edit-save-reopen",
+        "workspace": {
+          "cwd": "/tmp/jedit-vim-power/open-edit-save-reopen",
+          "files": [
+            {
+              "path": "main.txt",
+              "contents": "alpha\nbeta\n"
+            }
+          ]
+        },
+        "steps": [
+          {
+            "id": "launch",
+            "input": "jedit",
+            "expect": "title screen opens in the current working directory"
+          },
+          {
+            "id": "open-file",
+            "input": ":edit main.txt<Enter>",
+            "expect": "main.txt opens and command completion can explain the selected path"
+          },
+          {
+            "id": "insert-text",
+            "input": "G0iabcdefghijklmnopqrstuvwxyz12343567890!@#$%^&*()_+-=[]'/\\\\.,<Esc>",
+            "expect": "all inserted ASCII punctuation and numbers appear in the file buffer"
+          },
+          {
+            "id": "save-and-quit",
+            "input": ":wq<Enter>",
+            "expect": "jedit saves the production text session to disk and exits cleanly"
+          },
+          {
+            "id": "verify-disk",
+            "input": "cat main.txt",
+            "expect": "the file contains the inserted text and original trailing content"
+          }
+        ],
+        "requiredFacts": [
+          "workflowId",
+          "openedPath",
+          "insertedTextDigest",
+          "saveReceiptId",
+          "finalDiskDigest"
+        ]
+      }
+    },
+    {
+      "id": "text-object-surgery",
+      "title": "Text Object Surgery",
+      "actor": "developer",
+      "humanTask": "Use familiar text-object edits like ci\", da(, gqap, >ip, yif, and p against source-shaped text.",
+      "matrixRows": [
+        "operator.delete-change-yank",
+        "operator.put",
+        "operator.indent-format",
+        "text-object.quotes",
+        "text-object.brackets",
+        "text-object.sentence-paragraph",
+        "text-object.function-class"
+      ],
+      "expectedCurrentOutcome": "not-yet-supported",
+      "witness": {
+        "command": "node scripts/jedit-vim-power-witness.mjs --json --workflow text-object-surgery",
+        "workspace": {
+          "cwd": "/tmp/jedit-vim-power/text-object-surgery",
+          "files": [
+            {
+              "path": "sample.ts",
+              "contents": "function demo() {\n  const value = \"old\";\n  call(alpha, beta);\n}\n"
+            }
+          ]
+        },
+        "steps": [
+          {
+            "id": "change-quoted-string",
+            "input": "/old<Enter>ci\"new<Esc>",
+            "expect": "inside-quote range resolves and only the quoted payload changes"
+          },
+          {
+            "id": "delete-paren-call",
+            "input": "/call<Enter>da(",
+            "expect": "around-parentheses range resolves with delimiters"
+          },
+          {
+            "id": "format-paragraph",
+            "input": "gqap",
+            "expect": "paragraph format either applies through provider proof or obstructs honestly"
+          },
+          {
+            "id": "indent-block",
+            "input": ">ip",
+            "expect": "paragraph or indentation range resolves as a linewise target"
+          },
+          {
+            "id": "yank-function-put",
+            "input": "yifGp",
+            "expect": "function object yanks with provenance and put inserts register material"
+          }
+        ],
+        "requiredFacts": [
+          "textObjectId",
+          "basisId",
+          "resolvedRange",
+          "operatorId",
+          "registerDigest",
+          "receiptIdOrObstruction"
+        ]
+      }
+    },
+    {
+      "id": "search-substitute-confirm",
+      "title": "Search, Substitute, Confirm",
+      "actor": "developer",
+      "humanTask": "Search through a file, repeat matches, and run a confirmed file-wide substitute that records accepted and rejected replacements.",
+      "matrixRows": [
+        "motion.search",
+        "search.pattern-history",
+        "search.repeat-word",
+        "substitute.single-range",
+        "substitute.file-confirm",
+        "ex.substitute-global"
+      ],
+      "expectedCurrentOutcome": "not-yet-supported",
+      "witness": {
+        "command": "node scripts/jedit-vim-power-witness.mjs --json --workflow search-substitute-confirm",
+        "workspace": {
+          "cwd": "/tmp/jedit-vim-power/search-substitute-confirm",
+          "files": [
+            {
+              "path": "story.txt",
+              "contents": "old one\nkeep old two\nold three\n"
+            }
+          ]
+        },
+        "steps": [
+          {
+            "id": "forward-search",
+            "input": "/old<Enter>",
+            "expect": "first match gains a stable match id"
+          },
+          {
+            "id": "repeat-search",
+            "input": "nN",
+            "expect": "forward and backward repeats preserve search direction facts"
+          },
+          {
+            "id": "word-search",
+            "input": "*#",
+            "expect": "word-under-cursor search records token basis"
+          },
+          {
+            "id": "confirmed-substitute",
+            "input": ":%s/old/new/gc<Enter>yny",
+            "expect": "accepted and rejected replacements are recorded deterministically"
+          }
+        ],
+        "requiredFacts": [
+          "searchPattern",
+          "matchIds",
+          "rangeSet",
+          "acceptedReplacementIds",
+          "rejectedReplacementIds",
+          "finalReadingId"
+        ]
+      }
+    },
+    {
+      "id": "macro-repeat-transform",
+      "title": "Macro And Dot Repeat Transform",
+      "actor": "developer",
+      "humanTask": "Record a macro, replay it on similar text, then use dot repeat as transformed semantic intent rather than raw key timing.",
+      "matrixRows": [
+        "macro.record",
+        "macro.replay",
+        "repeat.identity",
+        "repeat.transformed-replay",
+        "operator.delete-change-yank",
+        "text-object.quotes"
+      ],
+      "expectedCurrentOutcome": "not-yet-supported",
+      "witness": {
+        "command": "node scripts/jedit-vim-power-witness.mjs --json --workflow macro-repeat-transform",
+        "workspace": {
+          "cwd": "/tmp/jedit-vim-power/macro-repeat-transform",
+          "files": [
+            {
+              "path": "config.txt",
+              "contents": "name = \"alpha\"\nname = \"beta\"\nname = \"gamma\"\n"
+            }
+          ]
+        },
+        "steps": [
+          {
+            "id": "record-macro",
+            "input": "qa/name<Enter>ci\"delta<Esc>q",
+            "expect": "macro register a records parsed search and change intents"
+          },
+          {
+            "id": "replay-macro",
+            "input": "@a",
+            "expect": "macro replay applies through the production command path"
+          },
+          {
+            "id": "dot-repeat",
+            "input": "j.",
+            "expect": "dot repeat resolves the same inside-quote edit on a new basis"
+          },
+          {
+            "id": "obstruction-check",
+            "input": "j.",
+            "expect": "if no compatible target exists, replay stops with typed obstruction"
+          }
+        ],
+        "requiredFacts": [
+          "macroId",
+          "macroEntries",
+          "repeatIdentity",
+          "basisTransform",
+          "receiptIds",
+          "obstructedEntry"
+        ]
+      }
+    },
+    {
+      "id": "marks-jumps-causal-anchors",
+      "title": "Marks, Jumps, Causal Anchors",
+      "actor": "developer",
+      "humanTask": "Set marks, edit around them, jump back through marks and jump history, and inspect whether anchors moved or degraded honestly.",
+      "matrixRows": [
+        "marks.local-global",
+        "marks.jump",
+        "jumps.list",
+        "jumps.change-list",
+        "motion.file-boundary",
+        "operator.delete-change-yank"
+      ],
+      "expectedCurrentOutcome": "not-yet-supported",
+      "witness": {
+        "command": "node scripts/jedit-vim-power-witness.mjs --json --workflow marks-jumps-causal-anchors",
+        "workspace": {
+          "cwd": "/tmp/jedit-vim-power/marks-jumps-causal-anchors",
+          "files": [
+            {
+              "path": "anchors.txt",
+              "contents": "first\nanchor\nmiddle\nlast\n"
+            }
+          ]
+        },
+        "steps": [
+          {
+            "id": "set-mark",
+            "input": "/anchor<Enter>ma",
+            "expect": "mark a stores a transformable anchor at the match"
+          },
+          {
+            "id": "edit-before-mark",
+            "input": "ggOinserted<Esc>",
+            "expect": "insert before the mark produces an edit receipt"
+          },
+          {
+            "id": "exact-jump",
+            "input": "`a",
+            "expect": "jump resolves to the transformed exact anchor"
+          },
+          {
+            "id": "jump-list",
+            "input": "GCtrl-oCtrl-i",
+            "expect": "jump list traversal exposes navigation facts"
+          },
+          {
+            "id": "change-list",
+            "input": "g;g,",
+            "expect": "change traversal uses edit receipt anchors or reports unavailable"
+          }
+        ],
+        "requiredFacts": [
+          "markId",
+          "anchorBias",
+          "sourceReceiptId",
+          "transformedCoordinate",
+          "jumpListState",
+          "degradedReason"
+        ]
+      }
+    },
+    {
+      "id": "causal-strand-preview",
+      "title": "Causal Strand Preview",
+      "actor": "developer",
+      "humanTask": "Preview a broad edit as a causal strand, compare alternatives as a braid, admit selected slices, and verify the final reading.",
+      "matrixRows": [
+        "operator.indent-format",
+        "operator.filter-range-command",
+        "substitute.file-confirm",
+        "global.vglobal",
+        "ex.ranges",
+        "ex.substitute-global"
+      ],
+      "expectedCurrentOutcome": "not-yet-supported",
+      "witness": {
+        "command": "node scripts/jedit-vim-power-witness.mjs --json --workflow causal-strand-preview",
+        "workspace": {
+          "cwd": "/tmp/jedit-vim-power/causal-strand-preview",
+          "files": [
+            {
+              "path": "preview.txt",
+              "contents": "alpha old\nbeta old\ngamma old\n"
+            }
+          ]
+        },
+        "steps": [
+          {
+            "id": "build-range-set",
+            "input": ":%s/old/new/gc",
+            "expect": "candidate replacements become a preview range set"
+          },
+          {
+            "id": "show-strand",
+            "input": "<Preview>",
+            "expect": "preview reports strand id, basis id, and proposed head digest"
+          },
+          {
+            "id": "compare-braid",
+            "input": "<CompareAlternative>",
+            "expect": "alternate proposal appears as a braid fact, not as applied text"
+          },
+          {
+            "id": "admit-slices",
+            "input": "<Admit 1,3>",
+            "expect": "selected slices admit through the production text session"
+          },
+          {
+            "id": "verify-final-reading",
+            "input": "<ExportReading>",
+            "expect": "final reading contains only admitted replacements"
+          }
+        ],
+        "requiredFacts": [
+          "strandId",
+          "braidId",
+          "basisId",
+          "candidateRangeSet",
+          "admittedSliceIds",
+          "receiptIds",
+          "finalReadingDigest"
+        ]
+      }
+    }
+  ]
+}

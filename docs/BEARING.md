@@ -114,13 +114,19 @@ compatibility plan make the rename safe. The arc is intentionally 30 slices,
 doubling the first draft so each Vim parity step has a focused proof surface
 instead of becoming a broad compatibility bucket.
 
-The current branch advances Slice 2 by adding
+The stacked power-moves branches advance Slice 2 by adding
 [`docs/design/0105-vim-power-moves-parity-matrix.json`](design/0105-vim-power-moves-parity-matrix.json)
 and `spec/vim-power-parity-matrix.spec.mjs`. The matrix is the current-state
 inventory for motions, operators, text objects, visual modes, registers, marks,
 macros, repeat, search/substitute, and ex commands. It records supported,
 partial, unsupported, and causally enhanced rows without turning planned work
 into fake proof.
+
+The current branch advances Slice 3 by adding
+[`docs/design/0105-vim-power-target-usability-fixtures.json`](design/0105-vim-power-target-usability-fixtures.json)
+and `spec/vim-power-target-usability-fixtures.spec.mjs`. Those fixtures turn
+the target workflows into structured witness inputs tied back to matrix row ids,
+while still marking them as target fixtures rather than runtime proof.
 
 ## Active Plan: Executable Design Cycle Template
 
