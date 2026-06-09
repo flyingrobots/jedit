@@ -1,0 +1,110 @@
+[
+  {
+    "name": "counted delete word",
+    "keys": ["2", "d", "w"],
+    "tokens": [
+      { "kind": "count", "raw": ["2"], "at": 0, "value": 2 },
+      { "kind": "operator", "raw": ["d"], "at": 1, "operator": "delete" },
+      { "kind": "motion", "raw": ["w"], "at": 2, "motion": "wordForward" }
+    ]
+  },
+  {
+    "name": "register yank line",
+    "keys": ["\"", "a", "y", "y"],
+    "tokens": [
+      { "kind": "register", "raw": ["\"", "a"], "at": 0, "register": "a" },
+      { "kind": "operator", "raw": ["y"], "at": 2, "operator": "yank" },
+      { "kind": "motion", "raw": ["y"], "at": 3, "motion": "lineCurrent" }
+    ]
+  },
+  {
+    "name": "delete inner quotes",
+    "keys": ["d", "i", "\""],
+    "tokens": [
+      { "kind": "operator", "raw": ["d"], "at": 0, "operator": "delete" },
+      { "kind": "textObject", "raw": ["i", "\""], "at": 1, "scope": "inner", "target": "doubleQuote" }
+    ]
+  },
+  {
+    "name": "change around parens with count",
+    "keys": ["3", "c", "a", ")"],
+    "tokens": [
+      { "kind": "count", "raw": ["3"], "at": 0, "value": 3 },
+      { "kind": "operator", "raw": ["c"], "at": 1, "operator": "change" },
+      { "kind": "textObject", "raw": ["a", ")"], "at": 2, "scope": "around", "target": "paren" }
+    ]
+  },
+  {
+    "name": "go to file top",
+    "keys": ["g", "g"],
+    "tokens": [
+      { "kind": "motion", "raw": ["g", "g"], "at": 0, "motion": "fileTop" }
+    ]
+  },
+  {
+    "name": "format around paragraph",
+    "keys": ["g", "q", "a", "p"],
+    "tokens": [
+      { "kind": "operator", "raw": ["g", "q"], "at": 0, "operator": "format" },
+      { "kind": "textObject", "raw": ["a", "p"], "at": 2, "scope": "around", "target": "paragraph" }
+    ]
+  },
+  {
+    "name": "visual block prefix",
+    "keys": ["ctrl-v"],
+    "tokens": [
+      { "kind": "visualPrefix", "raw": ["ctrl-v"], "at": 0, "visualMode": "block" }
+    ]
+  },
+  {
+    "name": "command line write quit",
+    "keys": [":", "w", "q"],
+    "tokens": [
+      { "kind": "commandLineInvocation", "raw": [":"], "at": 0 },
+      { "kind": "commandLineText", "raw": ["w", "q"], "at": 1, "text": "wq" }
+    ]
+  },
+  {
+    "name": "macro record into register",
+    "keys": ["q", "a"],
+    "tokens": [
+      { "kind": "macroControl", "raw": ["q", "a"], "at": 0, "control": "record", "register": "a" }
+    ]
+  },
+  {
+    "name": "macro replay last",
+    "keys": ["@", "@"],
+    "tokens": [
+      { "kind": "macroControl", "raw": ["@", "@"], "at": 0, "control": "replayLast" }
+    ]
+  },
+  {
+    "name": "register put after",
+    "keys": ["\"", "+", "p"],
+    "tokens": [
+      { "kind": "register", "raw": ["\"", "+"], "at": 0, "register": "+" },
+      { "kind": "operator", "raw": ["p"], "at": 2, "operator": "putAfter" }
+    ]
+  },
+  {
+    "name": "insert line end",
+    "keys": ["A"],
+    "tokens": [
+      { "kind": "modeSwitch", "raw": ["A"], "at": 0, "modeSwitch": "insertLineEnd" }
+    ]
+  },
+  {
+    "name": "incomplete goto prefix",
+    "keys": ["g"],
+    "tokens": [
+      { "kind": "prefix", "raw": ["g"], "at": 0, "prefix": "g" }
+    ]
+  },
+  {
+    "name": "unknown function key",
+    "keys": ["f2"],
+    "tokens": [
+      { "kind": "unknown", "raw": ["f2"], "at": 0 }
+    ]
+  }
+]

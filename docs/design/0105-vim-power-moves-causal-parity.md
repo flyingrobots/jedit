@@ -1202,8 +1202,8 @@ Target usability witnesses:
 
 ## Retrospective
 
-Roadmap implementation is not complete. Slices 2 and 3 now have inspectable
-planning artifacts.
+Roadmap implementation is not complete. Slices 2, 3, and 4 now have inspectable
+planning and syntax artifacts.
 
 What the tests proved:
 
@@ -1215,6 +1215,10 @@ What the tests proved:
   workflows have stable metadata, separate human prose from structured witness
   inputs, reference real parity matrix rows, and do not claim runtime proof
   before implementation exists.
+- `spec/vim-power-grammar.spec.mjs` proves the runtime-independent token model
+  for counts, registers, operators, motions, text objects, mode switches, visual
+  prefixes, command-line invocations, macro controls, incomplete prefixes, and
+  unknown keys.
 
 What changed from the design:
 
@@ -1222,7 +1226,11 @@ What changed from the design:
   gates can consume it without scraping Markdown prose.
 - The target usability workflows now live as a separate JSON fixture document so
   future witness scripts can consume workflow steps directly.
+- The Slice 4 token model lives in `src/app/workspace/vim-grammar.ts`, with the
+  stable vocabulary in `src/app/workspace/vim-grammar-vocabulary.ts` and syntax
+  snapshots in `spec/fixtures/vim-power-grammar-snapshots.json`.
 
 Follow-up work:
 
-- Slice 4 should define the Vim grammar token model used by the fixture inputs.
+- Slice 5 should parse the token stream into `VimChordSyntax` and keep raw key
+  handling behind the grammar boundary.
