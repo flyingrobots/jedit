@@ -25,14 +25,15 @@ test("title scene performance governor keeps startup browser ray tracing live", 
       idleTitleScreen: false,
       frozenBackdropAvailable: true,
       cacheAgeSeconds: 0,
+      lowRateFrozenBackdropActive: true,
       frameTimeMs: SLOW_FRAME_MS,
     }),
     {
-      posture: governor.TITLE_SCENE_RENDER_POSTURE.LiveTrace,
-      shouldTraceRays: true,
-      shouldUseFrozenBackdrop: false,
-      shouldRetainRenderedBackdrop: true,
-      inputLatencyPosture: "animated-title",
+      posture: governor.TITLE_SCENE_RENDER_POSTURE.LowRateFrozenBackdrop,
+      shouldTraceRays: false,
+      shouldUseFrozenBackdrop: true,
+      shouldRetainRenderedBackdrop: false,
+      inputLatencyPosture: "low-rate-title",
       frameBudgetPosture: "over-budget",
     },
   );
@@ -94,6 +95,61 @@ test("title scene performance governor keeps startup browser ray tracing live", 
     }).posture,
     governor.TITLE_SCENE_RENDER_POSTURE.LowRateFrozenBackdrop,
   );
+});
+
+test("viewer renderer composites startup intro logos without retracing backdrop", async () => {
+  const [viewerContent, titleScreen, governor] = await Promise.all([
+    importDist("app", "workspace", "viewer-content.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "title-scene-performance-governor.js"),
+  ]);
+  const tracedTimes = [];
+  const renderedBackdrops = [];
+  const renderer = viewerContent.createViewerContentRenderer(
+    (width, height, time, theme, options) => {
+      assert.equal(options.suppressPresentation, true);
+      tracedTimes.push(time);
+      const backdrop = stringToSurface(
+        `backdrop trace ${tracedTimes.length} time ${time}`,
+        width,
+        height,
+      );
+      renderedBackdrops.push(backdrop);
+      return backdrop;
+    },
+  );
+  const base = mockTitleScreenModel(titleScreen, {
+    time: 2,
+    frameTimeMs: SLOW_FRAME_MS,
+    startupIntroComplete: false,
+    startupFileModalOpen: false,
+  });
+
+  const first = renderer.renderViewer(base, 96, 28);
+  const backdropText = surfaceText(renderedBackdrops[0]);
+  const second = renderer.renderViewer(
+    {
+      ...base,
+      time: 2 + governor.TITLE_SCENE_LOW_RATE_REFRESH_SECONDS * 2,
+      frameTimeMs: FAST_FRAME_MS,
+    },
+    96,
+    28,
+  );
+
+  assert.deepEqual(tracedTimes, [2]);
+  assert.notEqual(first, renderedBackdrops[0]);
+  assert.notEqual(second, renderedBackdrops[0]);
+  assert.equal(surfaceText(renderedBackdrops[0]), backdropText);
+  assert.notEqual(surfaceText(second), backdropText);
+  assert.deepEqual(renderer.titleScenePerformanceFacts(), {
+    posture: "low-rate-frozen-backdrop",
+    tracesRays: false,
+    usesFrozenBackdrop: true,
+    retainsBackdrop: false,
+    inputLatencyPosture: "low-rate-title",
+    frameBudgetPosture: "within-budget",
+  });
 });
 
 test("viewer renderer continues tracing while startup browser is open", async () => {

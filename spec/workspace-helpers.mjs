@@ -216,6 +216,7 @@ export function noopNotificationTickCmd() {
 
 export function mockJeditTheme() {
   return {
+    variables: new Map(),
     surface: {
       workspace: {
         fg: "#f0f6fc",
