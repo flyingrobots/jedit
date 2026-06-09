@@ -118,8 +118,6 @@ function shouldReuseLowRateBackdrop(
   return (
     input.idleTitleScreen &&
     input.frozenBackdropAvailable &&
-    input.cacheAgeSeconds != null &&
-    input.cacheAgeSeconds < TITLE_SCENE_LOW_RATE_REFRESH_SECONDS &&
     (input.lowRateFrozenBackdropActive === true ||
       frameBudgetPosture === OVER_BUDGET)
   );

@@ -52,6 +52,7 @@ test("bunny is the registered default title scene", async () => {
   assert.ok(scene.camera.radius <= MAX_DEFAULT_BUNNY_CAMERA_RADIUS);
   assert.ok(scene.camera.position[1] >= MIN_DEFAULT_BUNNY_CAMERA_Y);
   assert.ok(scene.camera.position[1] <= MAX_DEFAULT_BUNNY_CAMERA_Y);
+  assert.ok(scene.camera.position[2] < scene.camera.target[2]);
   assert.deepEqual(
     scene.camera.target,
     modules.titleScene.titleSceneObjectFootprintCenter(bunny),

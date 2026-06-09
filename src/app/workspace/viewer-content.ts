@@ -191,7 +191,7 @@ function renderTitleBackdrop(
   state.lastTitleScenePerformance = titleScenePerformanceFacts(decision);
   if (decision.shouldUseFrozenBackdrop && frozen != null) {
     state.frozenTitleBackdrop = activateLowRateBackdrop(frozen, decision);
-    return copySurface(frozen.surface);
+    return frozen.surface;
   }
 
   const rendered = renderLiveTitleBackdrop(
@@ -433,12 +433,6 @@ function titleBackdropAgeSeconds(
   frozenTime: number,
 ): number {
   return Math.max(0, currentTime - frozenTime);
-}
-
-function copySurface(source: Surface): Surface {
-  const copy = createSurface(source.width, source.height);
-  copy.blit(source, 0, 0);
-  return copy;
 }
 
 export function isWorkspaceMarkdownPreviewAvailable(

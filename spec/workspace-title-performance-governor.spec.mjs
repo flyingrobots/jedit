@@ -147,7 +147,7 @@ test("viewer renderer continues tracing while startup browser is open", async ()
   });
 });
 
-test("viewer renderer low-rate reuses slow idle title backdrop until refresh window expires", async () => {
+test("viewer renderer keeps slow idle title backdrop frozen until state changes", async () => {
   const [viewerContent, titleScreen, governor] = await Promise.all([
     importDist("app", "workspace", "viewer-content.js"),
     importDist("ui", "title-screen.js"),
@@ -177,35 +177,25 @@ test("viewer renderer low-rate reuses slow idle title backdrop until refresh win
   const stillReused = renderer.renderViewer(
     {
       ...base,
-      time: 10 + governor.TITLE_SCENE_LOW_RATE_REFRESH_SECONDS / 2,
+      time: 10 + governor.TITLE_SCENE_LOW_RATE_REFRESH_SECONDS * 2,
       frameTimeMs: FAST_FRAME_MS,
     },
     TITLE_WIDTH,
     TITLE_HEIGHT,
   );
-  const refreshed = renderer.renderViewer(
-    {
-      ...base,
-      time: 10 + governor.TITLE_SCENE_LOW_RATE_REFRESH_SECONDS + 0.01,
-    },
-    TITLE_WIDTH,
-    TITLE_HEIGHT,
-  );
 
-  assert.deepEqual(tracedTimes, [
-    10,
-    10 + governor.TITLE_SCENE_LOW_RATE_REFRESH_SECONDS + 0.01,
-  ]);
+  assert.deepEqual(tracedTimes, [10]);
+  assert.equal(reused, initial);
+  assert.equal(stillReused, initial);
   assert.equal(surfaceText(reused), surfaceText(initial));
   assert.equal(surfaceText(stillReused), surfaceText(initial));
-  assert.notEqual(surfaceText(refreshed), surfaceText(initial));
   assert.deepEqual(renderer.titleScenePerformanceFacts(), {
-    posture: "live-trace",
-    tracesRays: true,
-    usesFrozenBackdrop: false,
-    retainsBackdrop: true,
-    inputLatencyPosture: "animated-title",
-    frameBudgetPosture: "over-budget",
+    posture: "low-rate-frozen-backdrop",
+    tracesRays: false,
+    usesFrozenBackdrop: true,
+    retainsBackdrop: false,
+    inputLatencyPosture: "low-rate-title",
+    frameBudgetPosture: "within-budget",
   });
 });
 
