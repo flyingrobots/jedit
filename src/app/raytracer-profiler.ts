@@ -6,6 +6,15 @@ export interface ProfilerFrame {
   readonly frameTimeMs: number;
   readonly columns: number;
   readonly rows: number;
+  readonly memory: ProfilerMemorySample;
+}
+
+export interface ProfilerMemorySample {
+  readonly heapUsedBytes: number;
+  readonly heapTotalBytes: number;
+  readonly rssBytes: number;
+  readonly externalBytes: number;
+  readonly arrayBuffersBytes: number;
 }
 
 export interface ProfilerState {
@@ -22,8 +31,12 @@ export interface ProfilerHandle {
 
 export interface ProfilerTracePort {
   readonly nowMs: () => number;
+  readonly memoryUsage: () => ProfilerMemorySample;
   readonly beginTrace: (workspaceRoot: string) => Promise<ProfilerHandle>;
-  readonly appendTraceFrame: (handle: ProfilerHandle, frame: ProfilerFrame) => Promise<void>;
+  readonly appendTraceFrame: (
+    handle: ProfilerHandle,
+    frame: ProfilerFrame,
+  ) => Promise<void>;
   readonly endTrace: (handle: ProfilerHandle) => Promise<void>;
 }
 

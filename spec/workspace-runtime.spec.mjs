@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { stringToSurface } from "@flyingrobots/bijou";
@@ -141,6 +143,70 @@ test("workspace app renders perf overlay after toggle when perf starts disabled"
   assert.match(text, /rss\s+\d+\.\d MB/);
 });
 
+test("workspace app can start with perf overlay already visible", async () => {
+  const [workspaceApp, themes] = await Promise.all([
+    importDist("adapters", "workspace-app.js"),
+    importDist("ui", "jedit-themes.js"),
+  ]);
+  const app = workspaceApp.createWorkspaceApp({
+    initialColumns: 120,
+    initialRows: 24,
+    initialWorkingDirectory: "/repo",
+    perfEnabled: true,
+    nowMs: () => 0,
+    random: () => 0.5,
+    seed: {
+      titleSceneSeed: 0.5,
+      jeditTheme: themes.resolveInitialJeditTheme(undefined),
+      i18n: mockI18n(),
+      entries: [],
+      nowMs: 0,
+    },
+  });
+
+  const [initialModel] = app.init();
+  const surface = app.view({
+    ...initialModel,
+    frameTimeMs: 20,
+    frameTimeHistory: [16, 20],
+  });
+
+  assert.match(surfaceText(surface), /jedit perf/);
+});
+
+test("workspace runtime starts the profile session on init when requested", async () => {
+  const runtimeModule = await importDist("app", "workspace", "runtime.js");
+  const startedPaths = [];
+  const runtime = runtimeModule.createWorkspaceRuntime(
+    mockRuntime({
+      profileOnStartup: true,
+      profiler: {
+        nowMs: () => 123,
+        memoryUsage: () => mockProfileMemory(),
+        beginTrace: async () => {
+          startedPaths.push("/repo/.jedit/perf-session.jsonl");
+          return {
+            filePath: "/repo/.jedit/perf-session.jsonl",
+            append: async () => undefined,
+            close: async () => undefined,
+          };
+        },
+        appendTraceFrame: async () => undefined,
+        endTrace: async () => undefined,
+      },
+    }),
+  );
+
+  const [model, commands] = runtime.init();
+  const messages = await Promise.all(commands.map((command) => command()));
+  const started = messages.find((message) => message?.type === "profiler-started");
+  const [profiledModel] = runtime.update(started, model);
+
+  assert.deepEqual(startedPaths, ["/repo/.jedit/perf-session.jsonl"]);
+  assert.equal(profiledModel.profiler.active, true);
+  assert.equal(profiledModel.profiler.filePath, "/repo/.jedit/perf-session.jsonl");
+});
+
 test("workspace perf overlay adds title-scene facts only on title screen", async () => {
   const [workspacePerfApp, titleScreen] = await Promise.all([
     importDist("adapters", "workspace-perf-app.js"),
@@ -279,6 +345,95 @@ test("runtime trims frame history to the configured window", async () => {
   assert.deepEqual(nextModel.frameTimeHistory.slice(-1), [100]);
 });
 
+test("runtime profile frames include frame time and memory facts", async () => {
+  const activeHandle = {
+    filePath: "/repo/.jedit/perf-session.jsonl",
+    append: async () => undefined,
+    close: async () => undefined,
+  };
+  const frames = [];
+  const runtimeModule = await importDist("app", "workspace", "runtime.js");
+  const runtime = runtimeModule.createWorkspaceRuntime(
+    mockRuntime({
+      nowMs: () => 200,
+      profiler: {
+        nowMs: () => 200,
+        memoryUsage: () => mockProfileMemory(),
+        beginTrace: async () => activeHandle,
+        appendTraceFrame: async (_, frame) => {
+          frames.push(frame);
+        },
+        endTrace: async () => undefined,
+      },
+    }),
+  );
+  const [initialModel] = runtime.init();
+  const [, commands] = runtime.update(
+    { type: "time-tick", time: 2 },
+    {
+      ...initialModel,
+      profiler: {
+        active: true,
+        filePath: activeHandle.filePath,
+        fileHandle: activeHandle,
+      },
+      lastFrameMs: 100,
+    },
+  );
+
+  await commands[0]();
+
+  assert.deepEqual(frames, [
+    {
+      time: 2,
+      frameTimeMs: 100,
+      columns: 120,
+      rows: 24,
+      memory: mockProfileMemory(),
+    },
+  ]);
+});
+
+test("raytracer profiler writes a stable session JSONL file", async (t) => {
+  const tempDir = await mkdtemp(path.join(tmpdir(), "jedit-profile-"));
+  t.after(() => rm(tempDir, { recursive: true, force: true }));
+  const profiler = await importDist("adapters", "raytracer-profiler.js");
+  const port = profiler.createRaytracerProfilerPort(() => 123);
+  const handle = await port.beginTrace(tempDir);
+
+  await port.appendTraceFrame(handle, {
+    time: 1,
+    frameTimeMs: 16,
+    columns: 80,
+    rows: 24,
+    memory: mockProfileMemory(),
+  });
+  await port.endTrace(handle);
+
+  const expectedPath = path.join(tempDir, ".jedit", "perf-session.jsonl");
+  const lines = (await readFile(expectedPath, "utf8"))
+    .trim()
+    .split("\n")
+    .map((line) => JSON.parse(line));
+
+  assert.equal(handle.filePath, expectedPath);
+  assert.deepEqual(lines, [
+    {
+      kind: "session",
+      startedAtMs: 123,
+      workspaceRoot: tempDir,
+    },
+    {
+      kind: "frame",
+      time: 1,
+      frameTimeMs: 16,
+      columns: 80,
+      rows: 24,
+      memory: mockProfileMemory(),
+    },
+  ]);
+});
+
 test("runtime completes the title intro without opening the startup file modal", async () => {
   const drawerCommands = ["drawer-animation"];
   const runtimeModule = await importDist("app", "workspace", "runtime.js");
@@ -407,5 +562,15 @@ function titleScreenFallback() {
     TITLE_RENDER_MODE: {
       Braille: "braille",
     },
+  };
+}
+
+function mockProfileMemory() {
+  return {
+    heapUsedBytes: 10,
+    heapTotalBytes: 20,
+    rssBytes: 30,
+    externalBytes: 40,
+    arrayBuffersBytes: 50,
   };
 }

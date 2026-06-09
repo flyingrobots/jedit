@@ -181,6 +181,13 @@ export function mockRuntime(overrides = {}) {
     ...mockDeps(),
     profiler: {
       nowMs: () => 0,
+      memoryUsage: () => ({
+        heapUsedBytes: 10,
+        heapTotalBytes: 20,
+        rssBytes: 30,
+        externalBytes: 40,
+        arrayBuffersBytes: 50,
+      }),
       beginTrace: async () => ({
         filePath: "/tmp/profile.json",
         append: async () => undefined,
@@ -189,6 +196,7 @@ export function mockRuntime(overrides = {}) {
       appendTraceFrame: async () => undefined,
       endTrace: async () => undefined,
     },
+    profileOnStartup: false,
     createTimeTickCmd: () => () => undefined,
     createNotificationTickCmd: () => () => undefined,
     createDrawerAnimationCmd: () => [],

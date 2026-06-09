@@ -10,6 +10,7 @@ const DEFAULT_WORKING_DIRECTORY = process.cwd();
 const ENV_KEYS = Object.freeze({
   TextRuntime: 'JEDIT_TEXT_RUNTIME',
   Perf: 'JEDIT_PERF',
+  Profile: 'JEDIT_PROFILE',
 } as const);
 const ENV_BOOLEAN = Object.freeze({
   Enabled: '1',
@@ -19,6 +20,9 @@ const BOOLEAN_BY_ENV_VALUE: Readonly<Record<string, boolean>> = Object.freeze({
   [ENV_BOOLEAN.Enabled]: true,
   [ENV_BOOLEAN.Disabled]: false,
 });
+interface EnvBooleanOptions {
+  readonly defaultValue: boolean;
+}
 
 requireTextRuntimeProfile(parseTextRuntimeProfile(
   process.env[ENV_KEYS.TextRuntime],
@@ -30,11 +34,17 @@ const app = createWorkspaceApp({
   initialColumns: process.stdout.columns ?? DEFAULT_TERMINAL_COLUMNS,
   initialRows: process.stdout.rows ?? DEFAULT_TERMINAL_ROWS,
   initialWorkingDirectory: DEFAULT_WORKING_DIRECTORY,
-  perfEnabled: envBoolean(process.env[ENV_KEYS.Perf]),
+  perfEnabled: envBoolean(process.env[ENV_KEYS.Perf], { defaultValue: true }),
+  profileEnabled: envBoolean(process.env[ENV_KEYS.Profile], {
+    defaultValue: true,
+  }),
 });
 
 run(app, { mouse: JEDIT_TERMINAL_MOUSE_OPTIONS.mouse });
 
-function envBoolean(value: string | undefined): boolean {
-  return BOOLEAN_BY_ENV_VALUE[value ?? ENV_BOOLEAN.Disabled] ?? false;
+function envBoolean(
+  value: string | undefined,
+  options: EnvBooleanOptions,
+): boolean {
+  return BOOLEAN_BY_ENV_VALUE[value ?? ''] ?? options.defaultValue;
 }

@@ -24,6 +24,7 @@ export interface WorkspaceAppOptions {
   initialRows: number;
   initialWorkingDirectory: string;
   perfEnabled: boolean;
+  profileEnabled?: boolean;
   nowMs?: () => number;
   random?: () => number;
   seed?: ReturnType<typeof createInitialModelSnapshot>;
@@ -59,6 +60,7 @@ function workspaceRuntimeDependencies(
     sourceHighlighter,
     titleSceneLoader,
     profiler: createRaytracerProfilerPort(nowMs),
+    profileOnStartup: options.profileEnabled ?? false,
     initialModel: options.seed ?? createInitialModelSnapshot(nowMs(), options.initialWorkingDirectory, random),
     nowMs,
     createTimeTickCmd: createWorkspaceTimeTickCmd,
