@@ -324,6 +324,9 @@ Task:
 5. Type the path prefix `src/app/comp`.
 6. Observe the file-completion list narrow to `src/app/component.ts`.
 7. Press Tab to accept the highlighted `src/app/component.ts` completion.
+8. Observe that the command line contains `:edit src/app/component.ts`.
+9. Press Enter to dispatch `:edit src/app/component.ts`.
+10. Observe that Jedit opens `src/app/component.ts`.
 
 Expected result:
 
@@ -332,6 +335,8 @@ Expected result:
   one space.
 - File completions repopulate after the command is accepted.
 - Enter and Tab both accept the highlighted completion.
+- Accepting a file completion completes command input; the following Enter
+  dispatches `:edit src/app/component.ts`.
 - The suggestion list remains pinned to the original command-line anchor while
   the user types.
 - The startup file picker or drawer does not consume Tab or Enter while command
@@ -342,6 +347,7 @@ Required proof:
 - Completion provider facts for command and file provider phases.
 - Anchor coordinate evidence before and after typing.
 - Accepted completion evidence for command and file items.
+- Command-dispatch evidence after file-completion acceptance.
 - Opened-file evidence for `src/app/component.ts`.
 
 Current status:
