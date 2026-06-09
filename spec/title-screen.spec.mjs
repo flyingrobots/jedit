@@ -92,6 +92,14 @@ test("averaging Braille canvas keeps active dot backgrounds out of inactive cell
   assert.equal(cell.char, String.fromCodePoint(0x2800 + 0x01));
   assert.deepEqual(cell.fgRGB, [255, 0, 0]);
   assert.deepEqual(cell.bgRGB, [80, 90, 100]);
+
+  const solid = brailleCanvas.averagingBrailleCanvas(1, 1, () => ({
+    on: true,
+    fgRGB: [255, 0, 0],
+    bgRGB: [11, 12, 13],
+  }));
+
+  assert.deepEqual(solid.get(0, 0).bgRGB, [11, 12, 13]);
 });
 
 test("title logo bounds prefer a readable logo before compressing for side panels", async () => {

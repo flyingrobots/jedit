@@ -67,6 +67,9 @@ interface CollapseBrailleAccumulator {
   bgRed: number;
   bgGreen: number;
   bgBlue: number;
+  activeBgRed: number;
+  activeBgGreen: number;
+  activeBgBlue: number;
   activeCount: number;
   inactiveCount: number;
   readonly modifiers: string[];
@@ -209,6 +212,9 @@ function createBrailleAccumulator(): CollapseBrailleAccumulator {
     bgRed: 0,
     bgGreen: 0,
     bgBlue: 0,
+    activeBgRed: 0,
+    activeBgGreen: 0,
+    activeBgBlue: 0,
     activeCount: 0,
     inactiveCount: 0,
     modifiers: [],
@@ -229,6 +235,9 @@ function accumulateBrailleSample(
     accumulator.fgRed += sample.fgRGB[RED_INDEX];
     accumulator.fgGreen += sample.fgRGB[GREEN_INDEX];
     accumulator.fgBlue += sample.fgRGB[BLUE_INDEX];
+    accumulator.activeBgRed += sample.bgRGB[RED_INDEX];
+    accumulator.activeBgGreen += sample.bgRGB[GREEN_INDEX];
+    accumulator.activeBgBlue += sample.bgRGB[BLUE_INDEX];
     accumulator.activeCount += 1;
   } else {
     accumulator.bgRed += sample.bgRGB[RED_INDEX];
@@ -256,9 +265,9 @@ function brailleCellForeground(
 function brailleCellBackground(accumulator: CollapseBrailleAccumulator): RGB {
   return accumulator.inactiveCount <= 0
     ? averageRgb(
-        accumulator.fgRed,
-        accumulator.fgGreen,
-        accumulator.fgBlue,
+        accumulator.activeBgRed,
+        accumulator.activeBgGreen,
+        accumulator.activeBgBlue,
         accumulator.activeCount,
       )
     : averageRgb(
