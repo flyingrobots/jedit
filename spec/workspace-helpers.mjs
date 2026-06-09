@@ -14,6 +14,11 @@ const MOCK_I18N_TRANSLATIONS = Object.freeze({
   "startupFileModal.current_directory": "Current directory",
   "startupFileModal.empty": "No files in this directory",
 });
+const MOCK_HEAP_USED_BYTES = 10;
+const MOCK_HEAP_TOTAL_BYTES = 20;
+const MOCK_RSS_BYTES = 30;
+const MOCK_EXTERNAL_BYTES = 40;
+const MOCK_ARRAY_BUFFERS_BYTES = 50;
 
 export { REPO_ROOT, ensureDistBuilt, importDist };
 
@@ -182,11 +187,11 @@ export function mockRuntime(overrides = {}) {
     profiler: {
       nowMs: () => 0,
       memoryUsage: () => ({
-        heapUsedBytes: 10,
-        heapTotalBytes: 20,
-        rssBytes: 30,
-        externalBytes: 40,
-        arrayBuffersBytes: 50,
+        heapUsedBytes: MOCK_HEAP_USED_BYTES,
+        heapTotalBytes: MOCK_HEAP_TOTAL_BYTES,
+        rssBytes: MOCK_RSS_BYTES,
+        externalBytes: MOCK_EXTERNAL_BYTES,
+        arrayBuffersBytes: MOCK_ARRAY_BUFFERS_BYTES,
       }),
       beginTrace: async () => ({
         filePath: "/tmp/profile.json",

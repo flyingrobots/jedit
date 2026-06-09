@@ -286,16 +286,11 @@ function updateTimeTickMessage(
     model,
     nextModel,
   );
-  const profilerStream = streamProfilerFrame(
-    nextModel.profiler,
-    {
-      time,
-      frameTimeMs: frameTime,
-      columns: nextModel.columns,
-      rows: nextModel.rows,
-      memory: deps.profiler.memoryUsage(),
-    },
-    deps.profiler,
+  const profilerStream = activeProfilerStreamCommand(
+    deps,
+    time,
+    frameTime,
+    nextModel,
   );
   return [
     nextModel,
@@ -304,6 +299,28 @@ function updateTimeTickMessage(
       ...(profilerStream == null ? [] : [profilerStream]),
     ],
   ];
+}
+
+function activeProfilerStreamCommand(
+  deps: WorkspaceRuntimeDependencies,
+  time: number,
+  frameTime: number,
+  model: WorkspaceModel,
+) {
+  if (!model.profiler.active || model.profiler.fileHandle == null) {
+    return undefined;
+  }
+  return streamProfilerFrame(
+    model.profiler,
+    {
+      time,
+      frameTimeMs: frameTime,
+      columns: model.columns,
+      rows: model.rows,
+      memory: deps.profiler.memoryUsage(),
+    },
+    deps.profiler,
+  );
 }
 
 function startupFileDrawerIntroCommands(

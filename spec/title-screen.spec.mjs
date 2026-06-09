@@ -36,6 +36,14 @@ const FLYINGROBOTS_LOGO_MIN_VISIBLE_CELLS = 24;
 const FLYINGROBOTS_LOGO_MIN_SURFACE_CONTRAST = 24;
 const FLYINGROBOTS_LOGO_MAX_VERTICAL_RATIO = 0.5;
 const BRAILLE_BLANK = "⠀";
+const BRAILLE_DOT_1_CODE = 0x2800 + 0x01;
+const FIRST_BRAILLE_SAMPLE_INDEX = 0;
+const SINGLE_CELL_SIZE = 1;
+const ACTIVE_DOT_FG_RGB = [255, 0, 0];
+const ACTIVE_DOT_BG_RGB = [0, 0, 0];
+const INACTIVE_DOT_FG_RGB = [0, 0, 0];
+const INACTIVE_DOT_BG_RGB = [80, 90, 100];
+const SOLID_DOT_BG_RGB = [11, 12, 13];
 const PRESENTS_TEXT = "PRESENTS";
 
 test("averaging Braille canvas resamples all eight subpixel colors into the cell style", async () => {
@@ -72,34 +80,38 @@ test("averaging Braille canvas keeps active dot backgrounds out of inactive cell
   const { brailleCanvas } = await loadTitleModules();
   let index = 0;
 
-  const surface = brailleCanvas.averagingBrailleCanvas(1, 1, () => {
-    const sampleIndex = index;
-    index += 1;
-    return sampleIndex === 0
-      ? {
-          on: true,
-          fgRGB: [255, 0, 0],
-          bgRGB: [0, 0, 0],
-        }
-      : {
-          on: false,
-          fgRGB: [0, 0, 0],
-          bgRGB: [80, 90, 100],
-        };
-  });
+  const surface = brailleCanvas.averagingBrailleCanvas(
+    SINGLE_CELL_SIZE,
+    SINGLE_CELL_SIZE,
+    () => {
+      const sampleIndex = index;
+      index += 1;
+      return sampleIndex === FIRST_BRAILLE_SAMPLE_INDEX
+        ? {
+            on: true,
+            fgRGB: ACTIVE_DOT_FG_RGB,
+            bgRGB: ACTIVE_DOT_BG_RGB,
+          }
+        : {
+            on: false,
+            fgRGB: INACTIVE_DOT_FG_RGB,
+            bgRGB: INACTIVE_DOT_BG_RGB,
+          };
+    },
+  );
   const cell = surface.get(0, 0);
 
-  assert.equal(cell.char, String.fromCodePoint(0x2800 + 0x01));
-  assert.deepEqual(cell.fgRGB, [255, 0, 0]);
-  assert.deepEqual(cell.bgRGB, [80, 90, 100]);
+  assert.equal(cell.char, String.fromCodePoint(BRAILLE_DOT_1_CODE));
+  assert.deepEqual(cell.fgRGB, ACTIVE_DOT_FG_RGB);
+  assert.deepEqual(cell.bgRGB, INACTIVE_DOT_BG_RGB);
 
-  const solid = brailleCanvas.averagingBrailleCanvas(1, 1, () => ({
+  const solid = brailleCanvas.averagingBrailleCanvas(SINGLE_CELL_SIZE, SINGLE_CELL_SIZE, () => ({
     on: true,
-    fgRGB: [255, 0, 0],
-    bgRGB: [11, 12, 13],
+    fgRGB: ACTIVE_DOT_FG_RGB,
+    bgRGB: SOLID_DOT_BG_RGB,
   }));
 
-  assert.deepEqual(solid.get(0, 0).bgRGB, [11, 12, 13]);
+  assert.deepEqual(solid.get(0, 0).bgRGB, SOLID_DOT_BG_RGB);
 });
 
 test("title logo bounds prefer a readable logo before compressing for side panels", async () => {

@@ -345,6 +345,41 @@ test("runtime trims frame history to the configured window", async () => {
   assert.deepEqual(nextModel.frameTimeHistory.slice(-1), [100]);
 });
 
+test("runtime inactive profile ticks do not sample memory", async () => {
+  let memorySampleCount = 0;
+  const runtimeModule = await importDist("app", "workspace", "runtime.js");
+  const runtime = runtimeModule.createWorkspaceRuntime(
+    mockRuntime({
+      nowMs: () => 200,
+      profiler: {
+        nowMs: () => 200,
+        memoryUsage: () => {
+          memorySampleCount += 1;
+          return mockProfileMemory();
+        },
+        beginTrace: async () => ({
+          filePath: "/repo/.jedit/perf-session.jsonl",
+          append: async () => undefined,
+          close: async () => undefined,
+        }),
+        appendTraceFrame: async () => undefined,
+        endTrace: async () => undefined,
+      },
+    }),
+  );
+  const [initialModel] = runtime.init();
+
+  runtime.update(
+    { type: "time-tick", time: 2 },
+    {
+      ...initialModel,
+      lastFrameMs: 100,
+    },
+  );
+
+  assert.equal(memorySampleCount, 0);
+});
+
 test("runtime profile frames include frame time and memory facts", async () => {
   const activeHandle = {
     filePath: "/repo/.jedit/perf-session.jsonl",

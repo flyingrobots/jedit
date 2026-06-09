@@ -12,7 +12,7 @@ const TITLE_HEIGHT = 6;
 const SLOW_FRAME_MS = 90;
 const FAST_FRAME_MS = 12;
 
-test("title scene performance governor keeps startup browser ray tracing live", async () => {
+test("title scene performance governor selects low-rate frozen backdrop with ray tracing disabled", async () => {
   const governor = await importDist(
     "app",
     "workspace",

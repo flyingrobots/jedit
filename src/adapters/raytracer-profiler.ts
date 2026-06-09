@@ -23,10 +23,15 @@ export function createRaytracerProfilerPort(nowMs: () => number): ProfilerTraceP
       const filePath = join(workspaceRoot, JEDIT_PERF_SESSION_RELATIVE_PATH);
       await mkdir(dirname(filePath), { recursive: true });
       const handle = await open(filePath, PROFILE_FILE_OPEN_MODE);
-      await handle.appendFile(
-        `${JSON.stringify(sessionRecord(workspaceRoot, nowMs()))}${PROFILE_FRAME_LINE_SUFFIX}`,
-        PROFILE_FILE_ENCODING,
-      );
+      try {
+        await handle.appendFile(
+          `${JSON.stringify(sessionRecord(workspaceRoot, nowMs()))}${PROFILE_FRAME_LINE_SUFFIX}`,
+          PROFILE_FILE_ENCODING,
+        );
+      } catch (err) {
+        await closeAfterWriteFailure(handle);
+        throw err;
+      }
       return toProfilerHandle(filePath, handle);
     },
     appendTraceFrame: async (traceHandle, frame) => {
@@ -60,15 +65,28 @@ function toProfilerHandle(filePath: string, fileHandle: FileHandle): ProfilerHan
   return {
     filePath,
     append: async (frame: ProfilerFrame) => {
-      await fileHandle.appendFile(
-        `${JSON.stringify(frameRecord(frame))}${PROFILE_FRAME_LINE_SUFFIX}`,
-        PROFILE_FILE_ENCODING,
-      );
+      try {
+        await fileHandle.appendFile(
+          `${JSON.stringify(frameRecord(frame))}${PROFILE_FRAME_LINE_SUFFIX}`,
+          PROFILE_FILE_ENCODING,
+        );
+      } catch (err) {
+        await closeAfterWriteFailure(fileHandle);
+        throw err;
+      }
     },
     close: async () => {
       await fileHandle.close();
     },
   };
+}
+
+async function closeAfterWriteFailure(fileHandle: FileHandle): Promise<void> {
+  try {
+    await fileHandle.close();
+  } catch {
+    return;
+  }
 }
 
 function frameRecord(frame: ProfilerFrame) {
