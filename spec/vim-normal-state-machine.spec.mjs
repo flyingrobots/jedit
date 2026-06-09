@@ -127,6 +127,34 @@ test('Registers remain syntax-only until the command completes', async () => {
   assert.equal(complete.syntax.operator, 'yank');
 });
 
+test('Command-line input remains pending until Enter accepts it', async () => {
+  const normal = await importDist('app', 'workspace', 'vim-normal-state.js');
+  const invocation = normal.updateVimNormalAccumulator(
+    normal.createVimNormalAccumulator(),
+    { owner: normal.VimNormalInputOwners.Normal, key: ':' },
+  );
+  const write = normal.updateVimNormalAccumulator(
+    invocation.state,
+    { owner: normal.VimNormalInputOwners.Normal, key: 'w' },
+  );
+  const quit = normal.updateVimNormalAccumulator(
+    write.state,
+    { owner: normal.VimNormalInputOwners.Normal, key: 'q' },
+  );
+  const accepted = normal.updateVimNormalAccumulator(
+    quit.state,
+    { owner: normal.VimNormalInputOwners.Normal, key: 'enter' },
+  );
+
+  assert.equal(write.effect, normal.VimNormalTransitionEffects.Pending);
+  assert.equal(write.syntax.commandLine.text, 'w');
+  assert.equal(quit.effect, normal.VimNormalTransitionEffects.Pending);
+  assert.equal(quit.syntax.commandLine.text, 'wq');
+  assert.equal(accepted.effect, normal.VimNormalTransitionEffects.Complete);
+  assert.equal(accepted.readyForExecution, true);
+  assert.deepEqual(accepted.syntax.commandLine, { text: 'wq' });
+});
+
 test('Invalid continuations reset pending state without execution readiness', async () => {
   const normal = await importDist('app', 'workspace', 'vim-normal-state.js');
   const pending = normal.updateVimNormalAccumulator(

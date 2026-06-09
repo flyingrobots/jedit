@@ -1,4 +1,5 @@
 import {
+  COMMAND_LINE_ACCEPT_KEY,
   tokenizeVimKeys,
   type VimCommandLineTextToken,
   type VimCountToken,
@@ -21,28 +22,11 @@ import {
 
 export type VimChordSyntaxKind = 'complete' | 'invalid' | 'pending';
 
-export type VimChordSyntaxFamily =
-  | 'commandLine'
-  | 'macro'
-  | 'modeSwitch'
-  | 'modifier'
-  | 'motion'
-  | 'operatorCommand'
-  | 'operatorMotion'
-  | 'operatorTextObject'
-  | 'prefix'
-  | 'put'
-  | 'textObject'
-  | 'unknown'
-  | 'visualPrefix';
+export type VimChordSyntaxFamily = 'commandLine' | 'macro' | 'modeSwitch' | 'modifier' | 'motion' | 'operatorCommand'
+  | 'operatorMotion' | 'operatorTextObject' | 'prefix' | 'put' | 'textObject' | 'unknown' | 'visualPrefix';
 
-export type VimChordObstruction =
-  | 'empty'
-  | 'strayTextObject'
-  | 'trailingTokens'
-  | 'unexpectedCommandLineToken'
-  | 'unexpectedOperatorTarget'
-  | 'unknownToken';
+export type VimChordObstruction = 'empty' | 'strayTextObject' | 'trailingTokens' | 'unexpectedCommandLineToken'
+  | 'unexpectedOperatorTarget' | 'unknownToken';
 
 export interface VimTextObjectSyntax {
   readonly scope: VimTextObjectScope;
@@ -198,6 +182,7 @@ const STANDALONE_OPERATORS: ReadonlySet<VimOperatorName> = new Set([
 
 const COMMAND_LINE_TEXT_INDEX = 1;
 const COMMAND_LINE_COMPLETE_TOKEN_COUNT = 2;
+const COMMAND_LINE_ACCEPT_MISSING = -1;
 const EMPTY_MODIFIER_FIELDS: ModifierFields = Object.freeze({});
 const EMPTY_PAYLOAD_FIELDS: PayloadFields = Object.freeze({});
 
@@ -335,6 +320,13 @@ function parseCommandLineSyntax(keys: readonly string[], tokens: readonly VimGra
   if (!isCommandLineTextToken(textToken) || tokens.length !== COMMAND_LINE_COMPLETE_TOKEN_COUNT) {
     return invalidSyntax({ ...draft, obstruction: OBSTRUCTION_UNEXPECTED_COMMAND_LINE });
   }
+  const acceptIndex = commandLineAcceptIndex(textToken.raw);
+  if (acceptIndex === COMMAND_LINE_ACCEPT_MISSING) {
+    return pendingSyntax({ ...draft, commandLine: { text: textToken.text } });
+  }
+  if (acceptIndex < textToken.raw.length - 1) {
+    return invalidSyntax({ ...draft, obstruction: OBSTRUCTION_UNEXPECTED_COMMAND_LINE });
+  }
   return completeSyntax({ ...draft, commandLine: { text: textToken.text } });
 }
 
@@ -447,6 +439,10 @@ function optionalField<K extends keyof PayloadFields>(
   value: PayloadFields[K] | undefined,
 ): Pick<PayloadFields, K> | PayloadFields {
   return value == null ? EMPTY_PAYLOAD_FIELDS : { [key]: value };
+}
+
+function commandLineAcceptIndex(raw: readonly string[]): number {
+  return raw.indexOf(COMMAND_LINE_ACCEPT_KEY);
 }
 
 function operatorFamily(operator: VimOperatorToken): VimChordSyntaxFamily {

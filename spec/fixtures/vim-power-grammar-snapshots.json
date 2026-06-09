@@ -65,6 +65,14 @@
     ]
   },
   {
+    "name": "command line write quit accepted",
+    "keys": [":", "w", "q", "enter"],
+    "tokens": [
+      { "kind": "commandLineInvocation", "raw": [":"], "at": 0 },
+      { "kind": "commandLineText", "raw": ["w", "q", "enter"], "at": 1, "text": "wq" }
+    ]
+  },
+  {
     "name": "macro record into register",
     "keys": ["q", "a"],
     "tokens": [

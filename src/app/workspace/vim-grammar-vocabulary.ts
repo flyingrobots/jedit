@@ -181,6 +181,7 @@ export type VimGrammarToken =
 
 export const REGISTER_PREFIX = '"';
 export const COMMAND_LINE_PREFIX = ':';
+export const COMMAND_LINE_ACCEPT_KEY = 'enter';
 export const MACRO_RECORD_KEY = 'q';
 export const MACRO_REPLAY_KEY = '@';
 export const CTRL_V_KEY = 'ctrl-v';

@@ -107,15 +107,29 @@
     }
   },
   {
-    "name": "command line write quit",
+    "name": "command line write quit pending",
     "keys": [":", "w", "q"],
     "syntax": {
-      "kind": "complete",
+      "kind": "pending",
       "family": "commandLine",
       "keys": [":", "w", "q"],
       "tokens": [
         { "kind": "commandLineInvocation", "raw": [":"], "at": 0 },
         { "kind": "commandLineText", "raw": ["w", "q"], "at": 1, "text": "wq" }
+      ],
+      "commandLine": { "text": "wq" }
+    }
+  },
+  {
+    "name": "command line write quit accepted",
+    "keys": [":", "w", "q", "enter"],
+    "syntax": {
+      "kind": "complete",
+      "family": "commandLine",
+      "keys": [":", "w", "q", "enter"],
+      "tokens": [
+        { "kind": "commandLineInvocation", "raw": [":"], "at": 0 },
+        { "kind": "commandLineText", "raw": ["w", "q", "enter"], "at": 1, "text": "wq" }
       ],
       "commandLine": { "text": "wq" }
     }

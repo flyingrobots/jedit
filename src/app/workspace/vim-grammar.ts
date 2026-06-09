@@ -1,4 +1,5 @@
 import {
+  COMMAND_LINE_ACCEPT_KEY,
   COMMAND_LINE_PREFIX,
   COUNT_MAX,
   COUNT_MIN,
@@ -43,6 +44,7 @@ import {
 } from './vim-grammar-vocabulary.js';
 
 export {
+  COMMAND_LINE_ACCEPT_KEY,
   VimGrammarTokenKinds,
   type VimCommandLineInvocationToken,
   type VimCommandLineTextToken,
@@ -303,7 +305,11 @@ function commandLineInvocationToken(at: number): VimCommandLineInvocationToken {
 }
 
 function commandLineTextToken(raw: readonly string[], at: number): VimCommandLineTextToken {
-  return { kind: 'commandLineText', raw, at, text: raw.join('') };
+  return { kind: 'commandLineText', raw, at, text: commandLineText(raw) };
+}
+
+function commandLineText(raw: readonly string[]): string {
+  return raw[raw.length - 1] === COMMAND_LINE_ACCEPT_KEY ? raw.slice(0, -1).join('') : raw.join('');
 }
 
 function macroToken(
