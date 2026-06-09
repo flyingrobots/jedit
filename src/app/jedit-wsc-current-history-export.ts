@@ -10,7 +10,6 @@ import {
   JEDIT_WSC_CURRENT_HISTORY_EXPORT_EVIDENCE_PREFIX,
   JEDIT_WSC_CURRENT_HISTORY_EXPORT_OBSTRUCTED,
   JEDIT_WSC_CURRENT_HISTORY_HOST_ARTIFACT_WRITE_FAILED,
-  JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_FAILED,
   JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_OBSTRUCTED,
   JEDIT_WSC_CURRENT_HISTORY_MISSING_CURRENT_BASIS,
   JEDIT_WSC_CURRENT_HISTORY_WSC_STORE_OBSTRUCTED,
@@ -40,6 +39,11 @@ interface CurrentWscHistoryCandidate {
 
 interface CurrentWscHistoryCandidates {
   readonly candidates: readonly CurrentWscHistoryCandidate[];
+}
+
+interface CurrentWscSettlementPayload {
+  readonly schemaVersion?: string;
+  readonly submittedAtMs?: number;
 }
 
 export interface ExportCurrentJeditWscHistoryInput {
@@ -182,11 +186,7 @@ function currentHistoryCandidates(
     }
     const submittedAtMs = submittedAtMsFromEnvelope(read.envelope);
     if (submittedAtMs == null) {
-      return exportObstructed(
-        JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_FAILED,
-        `WSC envelope lacks current-basis metadata: ${read.envelope.envelopeId}`,
-        read.envelope.envelopeId,
-      );
+      continue;
     }
     candidates.push({
       envelopeId: read.envelope.envelopeId,
@@ -199,7 +199,7 @@ function currentHistoryCandidates(
 
 function submittedAtMsFromEnvelope(envelope: JeditWscWorkspaceEnvelope): number | undefined {
   try {
-    const payload = JSON.parse(Buffer.from(envelope.bytes).toString(UTF8_ENCODING));
+    const payload: CurrentWscSettlementPayload = JSON.parse(Buffer.from(envelope.bytes).toString(UTF8_ENCODING));
     return payload?.schemaVersion === WSC_EDIT_SETTLEMENT_SCHEMA_VERSION
       && Number.isFinite(payload.submittedAtMs)
       ? payload.submittedAtMs

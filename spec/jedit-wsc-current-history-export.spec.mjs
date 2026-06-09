@@ -98,6 +98,30 @@ test('current WSC history export tie-breaks same-time envelopes by bytewise id o
   }
 });
 
+test('current WSC history export ignores retained rejection envelopes for applied text export', async () => {
+  const [currentExport, ports] = await exportModules();
+  const saved = [];
+  const result = currentExport.exportCurrentJeditWscHistory({
+    store: fakeStore({
+      envelopeIds: [BASIS_A, BASIS_B],
+      readEnvelope: (basisId) => ({
+        status: 'JEDIT_WSC_WORKSPACE_STORE_READ',
+        envelope: {
+          envelopeId: basisId,
+          bytes: basisId === BASIS_A ? settlementBytes(10) : rejectionBytes(20),
+        },
+        workspacePath: '/repo/.jedit/echo-wsc/envelopes',
+      }),
+    }),
+    editorFile: fakeEditorFile(saved),
+    materializer: envelopeMaterializer(),
+  });
+
+  assert.equal(result.status, ports.JEDIT_WSC_CURRENT_HISTORY_EXPORTED);
+  assert.equal(result.basisId, BASIS_A);
+  assert.deepEqual(saved, [{ filePath: '/repo/notes.txt', lines: ['t=10'] }]);
+});
+
 test('point-in-time WSC history export materializes the requested historical basis', async () => {
   const [currentExport, ports] = await exportModules();
   const saved = [];
@@ -398,5 +422,13 @@ function settlementBytes(submittedAtMs) {
   return new TextEncoder().encode(JSON.stringify({
     schemaVersion: 'jedit.workspace_text_edit_settlement.v1',
     submittedAtMs,
+  }));
+}
+
+function rejectionBytes(submittedAtMs) {
+  return new TextEncoder().encode(JSON.stringify({
+    schemaVersion: 'jedit.workspace_text_edit_rejection.v1',
+    submittedAtMs,
+    rejectionReason: 'stale causal basis',
   }));
 }

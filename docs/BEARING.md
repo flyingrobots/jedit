@@ -71,6 +71,15 @@ and authority-boundary report for the current release-gate PR.
 The developer-facing recipe lives in
 [`docs/echo-application-hosting-guide.md`](echo-application-hosting-guide.md).
 
+The current branch closes slices 127-136: WSC history listing now exposes
+app-safe submissions, outcomes, receipts, readings, checkpoints, rejection
+reasons, export refs, and typed missing-evidence posture; WSC replay compares
+semantic evidence while excluding host timing; current export ignores retained
+rejections for applied-text export; an agent JSON CLI lists and exports
+historical bases; the release gate includes the WSC history/export/replay
+witnesses; and the reusable Echo hosting guide carries the portability template
+and Graft/Think readiness checklist.
+
 The active title startup UX slice is
 [`docs/design/0036-title-intro-startup-file-modal.md`](design/0036-title-intro-startup-file-modal.md).
 It records the deterministic intro timing, Enter/Escape skip behavior, and the
@@ -1685,10 +1694,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Add history listing model.
-- [ ] Add CLI/UI/port output.
-- [ ] Keep output app-safe.
-- [ ] Cover deterministic ordering.
+- [x] Add history listing model.
+- [x] Add CLI/UI/port output.
+- [x] Keep output app-safe.
+- [x] Cover deterministic ordering.
 
 ### Slice 128 - Replay Same Edits Same Evidence
 
@@ -1713,10 +1722,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Build replay fixture.
-- [ ] Compare semantic evidence identity.
-- [ ] Exclude non-semantic diagnostics.
-- [ ] Cover mismatch report.
+- [x] Build replay fixture.
+- [x] Compare semantic evidence identity.
+- [x] Exclude non-semantic diagnostics.
+- [x] Cover mismatch report.
 
 ### Slice 129 - Host Timing Permutation Proof
 
@@ -1741,10 +1750,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Add deterministic timing variants.
-- [ ] Compare semantic outcomes.
-- [ ] Guard app tick authority.
-- [ ] Document host timing boundary.
+- [x] Add deterministic timing variants.
+- [x] Compare semantic outcomes.
+- [x] Guard app tick authority.
+- [x] Document host timing boundary.
 
 ### Slice 130 - Conflict And Rejection Retention
 
@@ -1768,10 +1777,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Persist rejection evidence.
-- [ ] Keep export applied-only.
-- [ ] Cover explicit retry.
-- [ ] Show rejection in history.
+- [x] Persist rejection evidence.
+- [x] Keep export applied-only.
+- [x] Cover explicit retry.
+- [x] Show rejection in history.
 
 ### Slice 131 - Multi-File History Recovery
 
@@ -1795,10 +1804,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Recover multiple file histories.
-- [ ] Isolate export by file.
-- [ ] Isolate corruption by file where safe.
-- [ ] Cover unrelated-file continuation.
+- [x] Recover multiple file histories.
+- [x] Isolate export by file.
+- [x] Isolate corruption by file where safe.
+- [x] Cover unrelated-file continuation.
 
 ### Slice 132 - Agent Historical Export
 
@@ -1822,10 +1831,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Add agent historical export command.
-- [ ] Add history listing command.
-- [ ] Cover success and obstruction.
-- [ ] Guard authority boundary.
+- [x] Add agent historical export command.
+- [x] Add history listing command.
+- [x] Cover success and obstruction.
+- [x] Guard authority boundary.
 
 ### Slice 133 - WSC Release Gate Integration
 
@@ -1850,10 +1859,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Add WSC witnesses to jedit gate.
-- [ ] Keep Echo core tests in Echo.
-- [ ] Add script coverage.
-- [ ] Run full gate.
+- [x] Add WSC witnesses to jedit gate.
+- [x] Keep Echo core tests in Echo.
+- [x] Add script coverage.
+- [x] Run full gate.
 
 ### Slice 134 - DIND Replay Closeout
 
@@ -1878,10 +1887,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Add closeout replay witness.
-- [ ] Include non-applied outcome.
-- [ ] Compare retained evidence coordinates.
-- [ ] Add to appropriate gate.
+- [x] Add closeout replay witness.
+- [x] Include non-applied outcome.
+- [x] Compare retained evidence coordinates.
+- [x] Add to appropriate gate.
 
 ### Slice 135 - Portability Template Update
 
@@ -1907,10 +1916,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Update reusable app-hosting template.
-- [ ] Include durability lessons.
-- [ ] Include authority bar.
-- [ ] Add drift check.
+- [x] Update reusable app-hosting template.
+- [x] Include durability lessons.
+- [x] Include authority bar.
+- [x] Add drift check.
 
 ### Slice 136 - Graft/Think Readiness Checklist
 
@@ -1934,10 +1943,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Write portability checklist.
-- [ ] Define app/Echo/Wesley ownership.
-- [ ] Define minimum gate.
-- [ ] Link from BEARING or guide.
+- [x] Write portability checklist.
+- [x] Define app/Echo/Wesley ownership.
+- [x] Define minimum gate.
+- [x] Link from BEARING or guide.
 
 ### Slice 137 - End-To-End Guide Refresh
 
