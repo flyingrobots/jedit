@@ -15,6 +15,12 @@ test('Echo application hosting guide names current ports and no app tick authori
   assert.match(source, /EchoContractPackageHostPort/);
   assert.match(source, /JeditRestartRecoveryPort/);
   assert.match(source, /Query observers do not receive mutable runtime/);
+  assert.match(source, /Durability And Historical Export Template/);
+  assert.match(source, /Graft\/Think Readiness Checklist/);
+  assert.match(source, /semantic replay comparison that excludes wall-clock cadence/);
+  assert.match(source, /Fake-port fixtures are allowed only/);
+  assert.match(source, /Wesley owns: generated helper material/);
+  assert.match(source, /minimum release gate covering package identity/);
   assert.doesNotMatch(source, /\+tick\(\)/);
   assert.doesNotMatch(source, /application-controlled ticking/i);
 });

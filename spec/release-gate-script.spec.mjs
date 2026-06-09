@@ -74,6 +74,11 @@ test('release-gate script includes hosting replay and static guard witnesses', (
   assert.match(source, /spec\/workspace-text-boundaries\.spec\.mjs/);
   assert.match(source, /spec\/workspace-echo-witness-cli\.spec\.mjs/);
   assert.match(source, /spec\/jedit-wsc-restart-round-trip\.spec\.mjs/);
+  assert.match(source, /spec\/jedit-wsc-history-basis\.spec\.mjs/);
+  assert.match(source, /spec\/jedit-wsc-current-history-export\.spec\.mjs/);
+  assert.match(source, /spec\/jedit-wsc-history-listing\.spec\.mjs/);
+  assert.match(source, /spec\/jedit-wsc-replay-proof\.spec\.mjs/);
+  assert.match(source, /spec\/jedit-wsc-agent-history-cli\.spec\.mjs/);
   assert.match(source, /spec\/production-cutover-guard\.spec\.mjs/);
   assert.match(source, /jedit-production-cutover-guard\.mjs/);
   assert.match(source, /npm', \['run', '--silent', 'quality'\]/);

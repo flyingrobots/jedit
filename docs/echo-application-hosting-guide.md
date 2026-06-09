@@ -231,6 +231,67 @@ Every new Echo-hosted app should provide focused tests for:
 - app-facing API has no tick, lifecycle, package install, handler, or state-port
   authority.
 
+## Durability And Historical Export Template
+
+The `jedit` WSC work adds the durable-history half of the hosting pattern. The
+portable lesson is not "make Echo know files." The portable lesson is to keep
+the app's semantic history app-owned while retaining Echo-shaped evidence
+coordinates that agents can inspect.
+
+For a production app, add these boundaries:
+
+- an app-owned settlement or rejection envelope schema for semantic outcomes;
+- a retained-envelope store hidden behind an app port;
+- an app-safe history listing that exposes submissions, outcomes, receipts,
+  readings, checkpoints, rejection reasons, and export refs when available;
+- point-in-time export by retained basis id;
+- semantic replay comparison that excludes wall-clock cadence and diagnostic
+  prose;
+- missing, malformed, unsupported, or rejected evidence as typed obstruction,
+  not silent fallback;
+- a release-gate witness for restart, current export, historical export,
+  replay, and non-applied outcome retention.
+
+The authority bar is:
+
+```text
+App owns: domain schema, settlement/rejection nouns, file or object naming,
+          reading cache shape, export materialization, CLI/MCP affordances.
+
+Echo owns: admission, scheduler authority, ticketed execution, receipt
+           posture, retained evidence coordinates, and recovery facts.
+
+Wesley owns: generated helper material for contract-shaped requests and
+             responses, never product policy.
+```
+
+Fake-port fixtures are allowed only when they prove an app-facing contract or
+obstruction posture. They must not reopen alternate runtime modes, hide missing
+Echo evidence, or become a second production authority path.
+
+## Graft/Think Readiness Checklist
+
+Before applying the hosting pattern to Graft, Think, or another app, require:
+
+- app-owned contract schema and package descriptor;
+- generated Wesley helper path with a drift witness;
+- app-safe capability port with no lifecycle or tick authority;
+- trusted adapter that installs packages and invokes handlers;
+- mutation handler witness over ticketed scheduler authority;
+- read-only query observer witness;
+- state port and accepted-submission ledger;
+- retained-evidence lookup and restart/recovery witness;
+- historical listing and point-in-time export surface if the app has durable
+  user-visible history;
+- semantic replay proof with timing permutations excluded from identity;
+- static guard that prevents app nouns from entering Echo core;
+- minimum release gate covering package identity, mutation/query happy path,
+  unsupported path, retention, restart, replay, and docs drift.
+
+Reference `jedit` examples when useful, but do not copy `jedit` nouns into the
+next app's Echo boundary. The new app must name its own semantics and keep Echo
+generic.
+
 ## Current Evidence Commands
 
 From a clean checkout:
@@ -240,6 +301,9 @@ npm run build
 npm run --silent quality
 npm run --silent release-gate:jedit-echo
 node --test --test-concurrency=1 spec/echo-hosting-counter-template.spec.mjs
+node --test --test-concurrency=1 spec/jedit-wsc-history-listing.spec.mjs
+node --test --test-concurrency=1 spec/jedit-wsc-replay-proof.spec.mjs
+node scripts/jedit-wsc-history.mjs list --json
 node scripts/jedit-echo-powered-session.mjs --json --dry-run
 node scripts/jedit-echo-powered-session.mjs --json
 node scripts/jedit-echo-powered-session.mjs --json --replay-local
