@@ -461,20 +461,26 @@ Task:
 1. Run `jedit`.
 2. Use `:edit blob.bin`.
 3. Observe an honest unsupported or read-only posture.
-4. Try to type into the buffer.
-5. Quit.
-6. Read `blob.bin` from disk.
+4. Press `i` to attempt Insert mode.
+5. Type `abc`.
+6. Observe that Jedit refuses mutation through a read-only or unsupported-file
+   obstruction.
+7. Press Escape if the command surface requires an explicit return to Normal
+   mode.
+8. Quit.
+9. Read `blob.bin` from disk.
 
 Expected result:
 
 - Jedit does not pretend binary bytes are safely editable text.
 - Unsupported text materialization is surfaced as an obstruction.
-- Typing cannot corrupt the file.
+- The explicit Insert-mode typing attempt cannot corrupt the file.
 - The original bytes remain unchanged after quit.
 
 Required proof:
 
 - File-open obstruction or read-only posture.
+- Input transcript for the `iabc` typing attempt and the resulting obstruction.
 - No production text mutation receipts for the unsupported file.
 - Byte-for-byte filesystem comparison after exit.
 
