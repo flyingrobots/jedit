@@ -200,6 +200,60 @@
       ]
     },
     {
+      "id": "transactionSemantics",
+      "title": "Transaction Semantics",
+      "items": [
+        {
+          "id": "transaction.read-resolve-write",
+          "keys": ["di\"", "ci\"", "daw", "gqap"],
+          "status": "causally-enhanced",
+          "targetSlices": [4, 10, 11, 13, 14],
+          "targetParity": "Read to resolve a target and write the resulting mutation without basis drift.",
+          "currentJedit": "Text-object operators are not implemented as atomic semantic transactions.",
+          "currentProof": [],
+          "proofGap": "Needs a basis-bound operation that resolves target and mutation together or obstructs stale basis.",
+          "causalOpportunity": "Read, resolution, register update, mutation, and receipt can share one causal boundary.",
+          "echoBoundary": "Echo owns transaction atomicity and stale-basis obstruction; jedit owns Vim semantics."
+        },
+        {
+          "id": "transaction.register-atomicity",
+          "keys": ["d", "c", "y", "p", "\"", "_"],
+          "status": "causally-enhanced",
+          "targetSlices": [4, 18, 19],
+          "targetParity": "Keep register writes and text mutations consistent for each semantic command.",
+          "currentJedit": "Full register provenance and atomic register/text grouping are not implemented.",
+          "currentProof": [],
+          "proofGap": "Needs register state with source basis, material digest, shape, receipt, and obstruction policy.",
+          "causalOpportunity": "Registers can be app-owned projections backed by Echo retained evidence.",
+          "echoBoundary": "Echo does not learn register names; it stores text evidence and receipts."
+        },
+        {
+          "id": "transaction.macro-script",
+          "keys": ["q{register}", "@{register}", "@@"],
+          "status": "causally-enhanced",
+          "targetSlices": [4, 22, 23],
+          "targetParity": "Replay macros as causal scripts with explicit obstruction instead of hidden key timing.",
+          "currentJedit": "Macro recording and replay are not implemented.",
+          "currentProof": [],
+          "proofGap": "Needs semantic macro entries, bounded raw insert spans, edit-group posture, and replay report.",
+          "causalOpportunity": "Macro replay can emit applied count, receipt ids, final reading, and obstructed entry.",
+          "echoBoundary": "Echo admits the resulting text operations; jedit owns macro language and grouping."
+        },
+        {
+          "id": "transaction.undo-redo",
+          "keys": ["u", "Ctrl-r"],
+          "status": "causally-enhanced",
+          "targetSlices": [4, 30],
+          "targetParity": "Undo and redo become explicit inverse causal inputs, not hidden snapshot rollback.",
+          "currentJedit": "Production undo and redo remain unsupported until modeled as causal input.",
+          "currentProof": [],
+          "proofGap": "Needs inverse intent derivation from receipts and a visible unsupported posture until then.",
+          "causalOpportunity": "Original edit, undo, and redo can all remain explainable causal history.",
+          "echoBoundary": "Echo owns receipts and inverse admission; jedit owns Vim undo command policy."
+        }
+      ]
+    },
+    {
       "id": "textObjects",
       "title": "Text Objects",
       "items": [

@@ -20,10 +20,10 @@ const REQUIRED_WORKFLOWS = Object.freeze([
 
 const REQUIRED_ROW_REFERENCES = Object.freeze({
   'open-edit-save-reopen': ['ex.edit', 'ex.write-quit'],
-  'text-object-surgery': ['text-object.quotes', 'text-object.brackets', 'operator.delete-change-yank'],
+  'text-object-surgery': ['text-object.quotes', 'text-object.brackets', 'operator.delete-change-yank', 'transaction.read-resolve-write'],
   'search-substitute-confirm': ['search.pattern-history', 'substitute.file-confirm'],
-  'macro-repeat-transform': ['macro.record', 'macro.replay', 'repeat.transformed-replay'],
-  'marks-jumps-causal-anchors': ['marks.local-global', 'marks.jump', 'jumps.list'],
+  'macro-repeat-transform': ['macro.record', 'macro.replay', 'repeat.transformed-replay', 'transaction.macro-script'],
+  'marks-jumps-causal-anchors': ['marks.local-global', 'marks.jump', 'jumps.list', 'transaction.undo-redo'],
   'causal-strand-preview': ['substitute.file-confirm', 'global.vglobal', 'ex.ranges'],
 });
 

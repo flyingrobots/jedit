@@ -122,11 +122,18 @@ macros, repeat, search/substitute, and ex commands. It records supported,
 partial, unsupported, and causally enhanced rows without turning planned work
 into fake proof.
 
-The current branch advances Slice 3 by adding
+The stacked power-moves branches also advance Slice 3 by adding
 [`docs/design/0105-vim-power-target-usability-fixtures.json`](design/0105-vim-power-target-usability-fixtures.json)
 and `spec/vim-power-target-usability-fixtures.spec.mjs`. Those fixtures turn
 the target workflows into structured witness inputs tied back to matrix row ids,
 while still marking them as target fixtures rather than runtime proof.
+
+The current branch advances Slice 4 by making register and transaction doctrine
+the first part of the grammar-token goalpost. Registers remain required
+user-facing Vim language state, backed by Echo evidence but owned by jedit.
+Read-resolve-write commands such as `di"` are transaction-optic candidates:
+they must resolve and mutate on one basis, obstruct stale basis, or explicitly
+transform to a newer basis. Silent read-then-later-write is forbidden.
 
 ## Active Plan: Executable Design Cycle Template
 

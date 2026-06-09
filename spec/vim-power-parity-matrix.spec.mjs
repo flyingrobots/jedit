@@ -10,6 +10,7 @@ const DESIGN_PATH = 'docs/design/0105-vim-power-moves-causal-parity.md';
 const REQUIRED_CATEGORIES = Object.freeze([
   'motions',
   'operators',
+  'transactionSemantics',
   'textObjects',
   'visualModes',
   'registers',
@@ -23,6 +24,7 @@ const REQUIRED_CATEGORIES = Object.freeze([
 const REQUIRED_KEYS = Object.freeze({
   motions: ['h', 'j', 'k', 'l', '0', '^', '$', 'gg', 'G', 'w', 'b', 'e', 'W', 'B', 'E', '/', '?', 'n', 'N', '%', '{', '}', '[[', ']]'],
   operators: ['d', 'c', 'y', 'p', 'P', 'r', 'R', '>', '<', '=', 'gq', 'gu', 'gU', 'g~', 'J', 'gJ', '!', ':'],
+  transactionSemantics: ['di"', 'ci"', 'daw', 'gqap', 'd', 'c', 'y', 'p', '"', '_', 'q{register}', '@{register}', '@@', 'u', 'Ctrl-r'],
   textObjects: ['iw', 'aw', 'iW', 'aW', 'is', 'as', 'ip', 'ap', 'i"', 'a"', "i'", "a'", 'i`', 'a`', 'i(', 'a(', 'i[', 'a[', 'i{', 'a{'],
   visualModes: ['v', 'V', 'Ctrl-v', 'o'],
   registers: ['"', '0', '1', '9', '-', 'a-z', 'A-Z', '_', '+', '*', '='],

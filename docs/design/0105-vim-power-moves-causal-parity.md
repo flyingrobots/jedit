@@ -383,6 +383,96 @@ VimPowerMoveResult = {
 }
 ```
 
+### Register And Transaction Doctrine
+
+Classic Vim registers are user-addressable editing state, not the undo stack.
+They are closer to named clipboards plus macro storage than to Git refs. Jim
+still needs registers because Vim workflows depend on explicit register
+selection:
+
+- `"` chooses a register for the next operator.
+- `y`, `d`, and `c` write deleted or yanked material into registers.
+- `p` and `P` read register material back into the buffer.
+- `_` discards without overwriting the unnamed register.
+- `+` and `*` bridge optional host clipboard state.
+- `q{register}` records macros into register-like storage.
+- `@{register}` replays macro material by name.
+
+Echo's retained evidence and causal history can back register provenance, but
+they do not replace registers as a user-facing Vim language feature. The product
+contract is:
+
+```text
+RegisterState = app-owned causal projection over Echo-backed text evidence
+```
+
+Register entries should carry:
+
+- register name;
+- source basis;
+- source range or range set;
+- material digest;
+- optional retained material reference;
+- linewise, charwise, or blockwise shape;
+- producing command id;
+- producing receipt id when the source came from an admitted mutation.
+
+Commands that read editor state to choose a mutation target must be
+transactional. `di"` is the canonical example:
+
+```text
+Raw keys: d i "
+Parse: delete + innerQuote
+Read: locate quote pair on basis A
+Resolve: range inside that pair on basis A
+Write: delete range and update registers
+```
+
+The forbidden implementation is:
+
+```text
+read basis A -> resolve byte range -> later write that range on basis B
+```
+
+The required implementation is one of:
+
+```text
+resolve and apply inside one atomic transaction optic
+resolve on basis A and submit a basis-bound intent that obstructs if stale
+resolve on basis A and intentionally transform/re-resolve onto basis B
+```
+
+For first implementation, a basis-bound compiled `replaceRange` intent is
+acceptable only if stale basis produces a typed obstruction and no register,
+repeat, jump, or text mutation state is half-applied. The target architecture is
+an Echo `TransactionOptic`-shaped operation:
+
+```text
+VimSemanticIntent
+  -> atomic evaluation over one basis
+  -> resolve motion/text object
+  -> update app-owned register/repeat/jump facts
+  -> admit text mutation if needed
+  -> one receipt or obstruction bundle
+```
+
+Macro replay should not be assumed atomic in the classic Vim sense. Jim can do
+better by treating macro replay as a causal script made of semantic entries.
+The default macro posture should be:
+
+- record parsed commands where known;
+- record bounded raw insert spans only when necessary;
+- replay entries through the same production command path;
+- stop at first obstruction;
+- emit a macro replay report with applied count, receipt ids, and obstructed
+  entry;
+- group replay as one user-facing edit group when safe, without hiding
+  per-command receipts.
+
+Full all-or-nothing macro transactions are powerful, but they should follow the
+operator/text-object transaction gate. They are a later hardening target, not a
+shortcut around atomic operator semantics.
+
 ### Grammar Boundary
 
 The key grammar owns:
@@ -808,10 +898,16 @@ shipping a shallow compatibility checklist.
   marks/jumps, and causal strand preview.
 - Gate each workflow against the parity matrix row ids it exercises.
 
-### Slice 4: Vim Grammar Token Model
+### Slice 4: Transactional Register Doctrine And Token Model
 
 - Define tokens for counts, registers, operators, motions, text objects, mode
   switches, visual prefixes, command-line invocations, and macro controls.
+- Define register state as a jedit-owned causal projection backed by Echo
+  evidence.
+- Define read-resolve-write commands such as `di"` as transaction-optic
+  candidates, with basis-bound obstruction as the minimum safe implementation.
+- Define macro replay as a causal script with edit-group posture, not as a
+  hidden all-or-nothing text mutation.
 - Keep tokens independent from runtime execution.
 - Add syntax fixture snapshots.
 

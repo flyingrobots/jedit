@@ -82,6 +82,8 @@
         "operator.delete-change-yank",
         "operator.put",
         "operator.indent-format",
+        "transaction.read-resolve-write",
+        "transaction.register-atomicity",
         "text-object.quotes",
         "text-object.brackets",
         "text-object.sentence-paragraph",
@@ -203,6 +205,8 @@
         "macro.replay",
         "repeat.identity",
         "repeat.transformed-replay",
+        "transaction.macro-script",
+        "transaction.read-resolve-write",
         "operator.delete-change-yank",
         "text-object.quotes"
       ],
@@ -260,6 +264,7 @@
         "marks.jump",
         "jumps.list",
         "jumps.change-list",
+        "transaction.undo-redo",
         "motion.file-boundary",
         "operator.delete-change-yank"
       ],
