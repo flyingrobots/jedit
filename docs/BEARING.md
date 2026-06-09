@@ -97,6 +97,16 @@ through `:edit <path>`, and reuse the same completion component for later
 Graft-backed editor symbol, documentation, source-definition, and causal-history
 previews.
 
+## Active Plan: Vim Power Moves Causal Parity
+
+The Vim parity expansion plan is
+[`docs/design/0105-vim-power-moves-causal-parity.md`](design/0105-vim-power-moves-causal-parity.md).
+The goal is comprehensive Vim power-move parity through a jedit-owned grammar,
+motion algebra, text-object resolver, operator compiler, registers, macros,
+repeat, search/substitute, marks, visual mode, and causal strand/braid
+extensions, while preserving Echo as generic causal authority rather than
+teaching Echo Vim or editor nouns.
+
 ## Active Plan: Executable Design Cycle Template
 
 The current branch advances
