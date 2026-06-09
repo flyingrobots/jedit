@@ -115,7 +115,6 @@ const SYNTAX_PENDING: 'pending' = 'pending';
 const FAMILY_COMMAND_LINE: 'commandLine' = 'commandLine';
 const FAMILY_MODIFIER: 'modifier' = 'modifier';
 const FAMILY_OPERATOR_COMMAND: 'operatorCommand' = 'operatorCommand';
-const FAMILY_PREFIX: 'prefix' = 'prefix';
 const ESCAPE_KEY = 'escape';
 
 const EMPTY_KEYS: readonly string[] = Object.freeze([]);
@@ -226,5 +225,5 @@ function pendingNonOperatorPhase(family: VimChordSyntaxFamily): VimNormalPhase {
   if (family === FAMILY_COMMAND_LINE) {
     return PHASE_COMMAND_LINE_PENDING;
   }
-  return family === FAMILY_PREFIX ? PHASE_PREFIX_PENDING : PHASE_PREFIX_PENDING;
+  return PHASE_PREFIX_PENDING;
 }
