@@ -152,6 +152,50 @@ test("viewer renderer composites startup intro logos without retracing backdrop"
   });
 });
 
+test("viewer renderer reuses pure intro backdrop after intro without preserving presentation", async () => {
+  const [viewerContent, titleScreen] = await Promise.all([
+    importDist("app", "workspace", "viewer-content.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const tracedTimes = [];
+  const renderedBackdrops = [];
+  const renderer = viewerContent.createViewerContentRenderer(
+    (width, height, time, theme, options) => {
+      assert.equal(options.suppressPresentation, true);
+      tracedTimes.push(time);
+      const backdrop = stringToSurface(
+        `pure backdrop trace ${tracedTimes.length}`,
+        width,
+        height,
+      );
+      renderedBackdrops.push(backdrop);
+      return backdrop;
+    },
+  );
+  const intro = mockTitleScreenModel(titleScreen, {
+    time: 2,
+    frameTimeMs: SLOW_FRAME_MS,
+    startupIntroComplete: false,
+    startupFileModalOpen: false,
+  });
+
+  const introSurface = renderer.renderViewer(intro, 96, 28);
+  const backdropText = surfaceText(renderedBackdrops[0]);
+  const idleSurface = renderer.renderViewer(
+    {
+      ...intro,
+      startupIntroComplete: true,
+      frameTimeMs: SLOW_FRAME_MS,
+    },
+    96,
+    28,
+  );
+
+  assert.deepEqual(tracedTimes, [2]);
+  assert.notEqual(surfaceText(introSurface), backdropText);
+  assert.equal(surfaceText(idleSurface), backdropText);
+});
+
 test("viewer renderer continues tracing while startup browser is open", async () => {
   const [viewerContent, titleScreen] = await Promise.all([
     importDist("app", "workspace", "viewer-content.js"),
