@@ -107,6 +107,13 @@ repeat, search/substitute, marks, visual mode, and causal strand/braid
 extensions, while preserving Echo as generic causal authority rather than
 teaching Echo Vim or editor nouns.
 
+This arc locks `jim` as the future user-facing command and editor name:
+`JIM = Jedit Is Modal`. The repository, packages, internal contracts, WSC
+directories, and release gates stay `jedit` until the Echo-powered proof and
+compatibility plan make the rename safe. The arc is intentionally 30 slices,
+doubling the first draft so each Vim parity step has a focused proof surface
+instead of becoming a broad compatibility bucket.
+
 ## Active Plan: Executable Design Cycle Template
 
 The current branch advances

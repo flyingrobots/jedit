@@ -31,6 +31,34 @@ undo can become inverse causal input, search/replace can preview as a strand,
 and macros can replay as a receipt-bearing causal script rather than raw key
 sleep.
 
+This document also locks the product naming direction: `jim` is the intended
+future user-facing command and editor name for the Vim-shaped application,
+while `jedit` remains the repository, package, and internal migration name until
+the Echo-powered proof and compatibility plan make the rename safe.
+
+## Naming Lock
+
+`jim` is the product name for the modal editor that grows out of `jedit`.
+
+The name works because:
+
+- `jedit` started as "James + edit";
+- the modal/Vim-shaped product can be shortened to `jim`;
+- `jim` is a good terminal command: `jim .`, `jim README.md`, `jim src/main.ts`;
+- `JIM = Jedit Is Modal` is the standing backronym.
+
+Transition policy:
+
+- Do not rename the repository in this arc.
+- Do not rename internal jedit contracts, package descriptors, WSC directories,
+  or release gates until the powered-by-Echo closeout is complete.
+- Add `jim` first as a user-facing binary/command alias when implementation
+  starts.
+- Keep `jedit` as a compatibility command during migration.
+- Documentation may say "jim, formerly jedit" only after the alias exists.
+- Echo must not learn either name as product semantics; Echo still sees generic
+  package, operation, receipt, retention, and WSC facts.
+
 ## Sponsored Human
 
 A developer wants Vim's composable power moves in jedit so that text editing
@@ -738,101 +766,208 @@ Decision: choose Option C.
 
 ## Implementation Slices
 
-### Slice 1: Parity Inventory And Witness Fixtures
+This arc intentionally uses 30 slices. The original shape was 15 broad slices;
+doubling it keeps each implementation step reviewable, gives every risky Vim
+feature a focused RED test, and leaves room for causal proof rather than
+shipping a shallow compatibility checklist.
+
+### Slice 1: Jim Naming And Command Alias Design Lock
+
+- Preserve `jedit` as the repo/package/internal name.
+- Define `jim` as the future user-facing binary and editor name.
+- Add migration acceptance criteria for command aliases and docs.
+
+### Slice 2: Parity Inventory Matrix
 
 - Build a machine-readable parity matrix for motions, operators, text objects,
   visual modes, registers, marks, macros, repeat, search, and ex commands.
-- Add representative user workflows as target usability tests.
 - Mark each item as supported, partial, unsupported, or causally enhanced.
 
-### Slice 2: Vim Grammar Parser
+### Slice 3: Target Usability Witness Fixtures
+
+- Add representative user workflows as target usability tests.
+- Separate human workflow descriptions from executable witness fixtures.
+- Include open/edit/save, text-object surgery, search/substitute, macro/repeat,
+  marks/jumps, and causal strand preview.
+
+### Slice 4: Vim Grammar Token Model
+
+- Define tokens for counts, registers, operators, motions, text objects, mode
+  switches, visual prefixes, command-line invocations, and macro controls.
+- Keep tokens independent from runtime execution.
+- Add syntax fixture snapshots.
+
+### Slice 5: Vim Grammar Parser
 
 - Parse counts, registers, operators, motions, text objects, and mode-specific
   key sequences into `VimChordSyntax`.
 - Keep raw key handling behind the grammar boundary.
 - Add syntax-only tests.
 
-### Slice 3: Motion Resolver
+### Slice 6: Normal/Operator-Pending State Machine
+
+- Make Normal and Operator-pending command accumulation explicit.
+- Preserve Escape, focus transfer, drawer, modal, and command-line ownership
+  rules.
+- Prove incomplete chords never mutate production text.
+
+### Slice 7: Reading-Basis Motion Resolver
 
 - Implement pure motion resolution over a reading basis.
-- Cover word, WORD, line, file, paragraph, sentence, delimiter, and search
-  motions.
+- Return `ResolvedMotion` with basis, cursor before/after, range shape, and
+  obstruction posture.
 - Return typed obstruction when the reading is too narrow.
 
-### Slice 4: Text Object Resolver
+### Slice 8: Core Motion Parity
+
+- Cover `h`, `j`, `k`, `l`, `0`, `^`, `$`, `gg`, `G`, `w`, `b`, `e`, `W`,
+  `B`, and `E`.
+- Preserve byte/grapheme policy in target facts.
+- Prove UI-only movement does not mutate Echo history.
+
+### Slice 9: Search And Structural Motion Parity
+
+- Cover `/`, `?`, `n`, `N`, `%`, `{`, `}`, `[[`, `]]`, and related motions.
+- Use Graft-backed structural providers where available.
+- Return honest unavailable posture when providers are absent.
+
+### Slice 10: Text Object Resolver Spine
 
 - Implement text objects for words, quotes, brackets, braces, paragraphs, and
   indentation.
-- Add provider seam for Graft-backed structural objects.
 - Prove fallback and unavailable postures.
 
-### Slice 5: Operator Compiler
+### Slice 11: Core Text Object Parity
+
+- Cover `iw`, `aw`, `iW`, `aW`, `is`, `as`, `ip`, `ap`, quotes, brackets,
+  braces, parentheses, and backticks.
+- Add nesting and delimiter fixture tables.
+- Preserve inner/around inclusivity facts.
+
+### Slice 12: Graft-Backed Structural Text Objects
+
+- Add provider seam for functions, classes, tags, comments, and indentation
+  scopes.
+- Keep Graft as structural reader, not text authority.
+- Prove provider-unavailable lower mode.
+
+### Slice 13: Operator Compiler Spine
 
 - Compile operator plus resolved target into production text session commands.
-- Cover delete, change, yank, put, replace, indent, case, join, and format
-  postures.
+- Keep operator compilation separate from key parsing and target resolution.
 - Preserve register write/read evidence.
 
-### Slice 6: Visual And Block Selection
+### Slice 14: Delete, Change, Yank, Put
+
+- Cover `d`, `c`, `y`, `p`, and `P` over motions and text objects.
+- Route text mutations through `TextBufferSessionPort`.
+- Prove yank/register writes do not mutate text authority.
+
+### Slice 15: Replace, Join, Indent, Case, Format
+
+- Cover `r`, `R`, `J`, `gJ`, `>`, `<`, `=`, `gu`, `gU`, `g~`, `gq`, and
+  formatter obstruction posture.
+- Preserve linewise/charwise target semantics.
+- Add operator-result witness rows.
+
+### Slice 16: Visual Selection State
 
 - Model visual selections as range apertures.
 - Add charwise, linewise, and blockwise target resolution.
-- Compile visual operators through the same operator compiler.
+- Preserve `o` anchor swapping and mode exits.
 
-### Slice 7: Registers And Clipboard
+### Slice 17: Visual Operators
 
-- Add app-owned register state with provenance.
-- Cover unnamed, numbered, named, append, black-hole, and optional system
-  clipboard registers.
-- Add redacted agent facts.
+- Compile visual charwise, linewise, and blockwise selections through the same
+  operator compiler.
+- Cover block insert/append lower mode.
+- Prove range-set facts for block operations.
 
-### Slice 8: Dot Repeat
+### Slice 18: Register State Model
+
+- Add app-owned register state with source basis, range, shape, content digest,
+  and receipt provenance.
+- Cover unnamed, numbered, named, append, black-hole, small-delete, and optional
+  system registers.
+- Support redacted agent facts.
+
+### Slice 19: Register Operations And Clipboard Boundary
+
+- Wire register prefixes into operators and put commands.
+- Add optional host clipboard adapter for `+` and `*`.
+- Return typed obstruction when clipboard is unavailable.
+
+### Slice 20: Dot Repeat Identity
 
 - Capture semantic repeat identity from applied operations.
-- Replay against current basis with transformed target resolution.
+- Exclude diagnostic prose, wall-clock timing, and raw key delay from repeat
+  identity.
+- Add first replay fixture rows.
+
+### Slice 21: Dot Repeat Transformed Replay
+
+- Replay semantic intent against the current reading basis.
+- Transform object/motion targets rather than replaying raw keys blindly.
 - Report typed obstruction when repeat cannot be safely transformed.
 
-### Slice 9: Macros
+### Slice 22: Macro Recording Model
 
 - Record macro entries as parsed intents plus fallback raw spans.
+- Track register target, recording status, entry summaries, and redacted text.
+- Keep Insert text spans bounded and explicit.
+
+### Slice 23: Macro Replay And Obstruction
+
 - Replay macros through the production command path.
 - Stop and report at first obstruction.
+- Emit causal script facts: macro id, entries, applied count, receipt ids, and
+  final reading id.
 
-### Slice 10: Marks, Jumps, And Causal Anchors
+### Slice 24: Marks As Causal Anchors
 
 - Model marks as transformable anchors.
+- Cover local marks, exact jumps, line jumps, and degraded stale mark posture.
+- Prove marks transform through edit receipts.
+
+### Slice 25: Jump List And Change List
+
 - Add jump list and change list posture.
-- Prove marks move or degrade honestly across edits.
+- Cover `''`, exact-mark jumps, line-mark jumps, `ctrl-o`, `ctrl-i`, and
+  change-list traversal where feasible.
+- Emit navigation receipt facts without mutating Echo text history.
 
-### Slice 11: Search, Substitute, Global
+### Slice 26: Search History And Match Identity
 
-- Add search history, match ids, substitute range sets, and global/vglobal
-  command execution.
-- Preview broad substitutions as strands before admission where useful.
-- Cover confirmation flows.
+- Cover `/`, `?`, `n`, `N`, `*`, `#`, `g*`, and `g#`.
+- Record search history, match ids, basis ids, and obstruction posture.
+- Keep search movement separate from text mutation.
 
-### Slice 12: Causal Strand And Braid Preview
+### Slice 27: Substitute And Confirmation
+
+- Cover `:s`, `:%s`, flags, replacement escaping, and confirmation flow.
+- Emit range-set facts and admitted replacement rows.
+- Cover typed obstruction for partial or invalid substitutions.
+
+### Slice 28: Global, Vglobal, And Range Commands
+
+- Cover `:g`, `:v`, ex ranges, and command execution over match sets.
+- Add typed obstruction for unsupported nested commands.
+- Preserve deterministic range ordering.
+
+### Slice 29: Causal Strand And Braid Preview
 
 - Add preview posture for broad edits and suggestion-like transformations.
 - Compare alternatives as braid facts.
 - Admit selected strand slices into the target worldline.
 
-### Slice 13: Agent/MCP Witness Surface
+### Slice 30: Agent/MCP Witness And Parity Release Gate
 
 - Add JSON witness command for power workflows.
 - Wrap stable commands in MCP only after CLI witnesses are green.
 - Guard against trusted lifecycle/tick authority exposure.
-
-### Slice 14: Documentation, Help, And Lower Modes
-
-- Update help, technical teardown, and user workflow docs.
-- Add no-color and narrow-terminal posture.
-- Add i18n keys for visible command and obstruction messages.
-
-### Slice 15: Parity Release Gate
-
 - Compose focused specs and witnesses into a Vim power-move gate.
 - Keep it separate from the Echo release gate until stable.
+- Update help, technical teardown, lower modes, and i18n posture.
 - Add final Code Lawyer review before declaring parity.
 
 ## Tests To Write First
