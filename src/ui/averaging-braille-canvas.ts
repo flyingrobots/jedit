@@ -67,6 +67,8 @@ interface CollapseBrailleAccumulator {
   bgRed: number;
   bgGreen: number;
   bgBlue: number;
+  activeCount: number;
+  inactiveCount: number;
   readonly modifiers: string[];
 }
 
@@ -187,18 +189,11 @@ function collapseBrailleCell(options: CollapseBrailleCellOptions): Cell {
     }
   }
 
+  const bgRGB = brailleCellBackground(accumulator);
   return {
     char: String.fromCodePoint(BRAILLE_BASE_CODE_POINT + accumulator.code),
-    fgRGB: averageRgb(
-      accumulator.fgRed,
-      accumulator.fgGreen,
-      accumulator.fgBlue,
-    ),
-    bgRGB: averageRgb(
-      accumulator.bgRed,
-      accumulator.bgGreen,
-      accumulator.bgBlue,
-    ),
+    fgRGB: brailleCellForeground(accumulator, bgRGB),
+    bgRGB,
     ...(accumulator.modifiers.length > 0
       ? { modifiers: accumulator.modifiers }
       : {}),
@@ -214,6 +209,8 @@ function createBrailleAccumulator(): CollapseBrailleAccumulator {
     bgRed: 0,
     bgGreen: 0,
     bgBlue: 0,
+    activeCount: 0,
+    inactiveCount: 0,
     modifiers: [],
   };
 }
@@ -227,16 +224,49 @@ function accumulateBrailleSample(
   const sampleIndex = brailleSampleIndex(sampleX, sampleY);
   const sample = brailleSampleAt(options, sampleX, sampleY, sampleIndex);
   recordResolvedBrailleSample(options.sampling, sample);
-  accumulator.code = sample.on
-    ? accumulator.code | BRAILLE_DOT_MAP[sampleY]![sampleX]!
-    : accumulator.code;
-  accumulator.fgRed += sample.fgRGB[RED_INDEX];
-  accumulator.fgGreen += sample.fgRGB[GREEN_INDEX];
-  accumulator.fgBlue += sample.fgRGB[BLUE_INDEX];
-  accumulator.bgRed += sample.bgRGB[RED_INDEX];
-  accumulator.bgGreen += sample.bgRGB[GREEN_INDEX];
-  accumulator.bgBlue += sample.bgRGB[BLUE_INDEX];
+  if (sample.on) {
+    accumulator.code |= BRAILLE_DOT_MAP[sampleY]![sampleX]!;
+    accumulator.fgRed += sample.fgRGB[RED_INDEX];
+    accumulator.fgGreen += sample.fgRGB[GREEN_INDEX];
+    accumulator.fgBlue += sample.fgRGB[BLUE_INDEX];
+    accumulator.activeCount += 1;
+  } else {
+    accumulator.bgRed += sample.bgRGB[RED_INDEX];
+    accumulator.bgGreen += sample.bgRGB[GREEN_INDEX];
+    accumulator.bgBlue += sample.bgRGB[BLUE_INDEX];
+    accumulator.inactiveCount += 1;
+  }
   appendUniqueModifiers(accumulator.modifiers, sample.modifiers);
+}
+
+function brailleCellForeground(
+  accumulator: CollapseBrailleAccumulator,
+  fallback: RGB,
+): RGB {
+  return accumulator.activeCount <= 0
+    ? fallback
+    : averageRgb(
+        accumulator.fgRed,
+        accumulator.fgGreen,
+        accumulator.fgBlue,
+        accumulator.activeCount,
+      );
+}
+
+function brailleCellBackground(accumulator: CollapseBrailleAccumulator): RGB {
+  return accumulator.inactiveCount <= 0
+    ? averageRgb(
+        accumulator.fgRed,
+        accumulator.fgGreen,
+        accumulator.fgBlue,
+        accumulator.activeCount,
+      )
+    : averageRgb(
+        accumulator.bgRed,
+        accumulator.bgGreen,
+        accumulator.bgBlue,
+        accumulator.inactiveCount,
+      );
 }
 
 function brailleSampleAt(
@@ -435,10 +465,15 @@ function appendUniqueModifiers(
   }
 }
 
-function averageRgb(red: number, green: number, blue: number): RGB {
+function averageRgb(
+  red: number,
+  green: number,
+  blue: number,
+  count: number,
+): RGB {
   return [
-    Math.round(red / BRAILLE_SAMPLE_COUNT),
-    Math.round(green / BRAILLE_SAMPLE_COUNT),
-    Math.round(blue / BRAILLE_SAMPLE_COUNT),
+    Math.round(red / count),
+    Math.round(green / count),
+    Math.round(blue / count),
   ];
 }

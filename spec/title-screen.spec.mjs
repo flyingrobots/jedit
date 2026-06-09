@@ -68,6 +68,32 @@ test("averaging Braille canvas resamples all eight subpixel colors into the cell
   assert.deepEqual(cell.bgRGB, [10, 20, 30]);
 });
 
+test("averaging Braille canvas keeps active dot backgrounds out of inactive cell background", async () => {
+  const { brailleCanvas } = await loadTitleModules();
+  let index = 0;
+
+  const surface = brailleCanvas.averagingBrailleCanvas(1, 1, () => {
+    const sampleIndex = index;
+    index += 1;
+    return sampleIndex === 0
+      ? {
+          on: true,
+          fgRGB: [255, 0, 0],
+          bgRGB: [0, 0, 0],
+        }
+      : {
+          on: false,
+          fgRGB: [0, 0, 0],
+          bgRGB: [80, 90, 100],
+        };
+  });
+  const cell = surface.get(0, 0);
+
+  assert.equal(cell.char, String.fromCodePoint(0x2800 + 0x01));
+  assert.deepEqual(cell.fgRGB, [255, 0, 0]);
+  assert.deepEqual(cell.bgRGB, [80, 90, 100]);
+});
+
 test("title logo bounds prefer a readable logo before compressing for side panels", async () => {
   const { title, titleLogo } = await loadTitleModules();
   const bounds = title.titleLogoCellBounds(TITLE_WIDTH, TITLE_HEIGHT);

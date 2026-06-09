@@ -29,8 +29,8 @@ test("viewer renderer passes adaptive Braille sampling state to live title frame
   );
   const base = mockTitleScreenModel(titleScreen, {
     frameTimeMs: FAST_FRAME_MS,
-    startupIntroComplete: false,
-    startupFileModalOpen: false,
+    startupIntroComplete: true,
+    startupFileModalOpen: true,
   });
 
   const first = renderer.renderViewer(base, TITLE_WIDTH, TITLE_HEIGHT);
@@ -113,8 +113,8 @@ test("viewer renderer resets adaptive Braille history after ASCII title frames",
   );
   const base = mockTitleScreenModel(titleScreen, {
     frameTimeMs: FAST_FRAME_MS,
-    startupIntroComplete: false,
-    startupFileModalOpen: false,
+    startupIntroComplete: true,
+    startupFileModalOpen: true,
   });
 
   renderer.renderViewer(base, TITLE_WIDTH, TITLE_HEIGHT);
