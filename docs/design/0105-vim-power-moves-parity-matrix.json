@@ -1,0 +1,690 @@
+{
+  "schemaVersion": 1,
+  "id": "wf-0105-vim-power-moves-parity-matrix",
+  "designDoc": "docs/design/0105-vim-power-moves-causal-parity.md",
+  "owner": "jedit",
+  "futureCommandName": "jim",
+  "statusVocabulary": [
+    "supported",
+    "partial",
+    "unsupported",
+    "causally-enhanced"
+  ],
+  "statusSemantics": {
+    "supported": "Current jedit behavior has executable or inspectable proof.",
+    "partial": "Current jedit behavior covers part of Vim's expected behavior but needs more grammar, target, or witness work.",
+    "unsupported": "Current jedit behavior should not be claimed as available.",
+    "causally-enhanced": "The target intentionally exceeds Vim baseline and remains planned until executable proof lands."
+  },
+  "echoBoundary": "Echo remains generic; Vim keys, motions, text objects, registers, macros, buffers, and editor names stay in jedit.",
+  "graftBoundary": "Graft may provide structural readings, but it is not editable text authority.",
+  "categories": [
+    {
+      "id": "motions",
+      "title": "Motions",
+      "items": [
+        {
+          "id": "motion.character",
+          "keys": ["h", "j", "k", "l"],
+          "status": "partial",
+          "targetSlices": [7, 8],
+          "targetParity": "Move by character and screen line in Normal and operator-pending contexts.",
+          "currentJedit": "Basic cursor movement exists, but it is not yet a first-class motion algebra.",
+          "currentProof": ["docs/design/0105-vim-power-moves-causal-parity.md#current-truth"],
+          "proofGap": "Needs ResolvedMotion facts with basis and obstruction posture.",
+          "causalOpportunity": "Non-mutating navigation can emit optional navigation facts without mutating Echo history.",
+          "echoBoundary": "Echo receives no admission for pure cursor movement."
+        },
+        {
+          "id": "motion.line-boundary",
+          "keys": ["0", "^", "$"],
+          "status": "partial",
+          "targetSlices": [7, 8],
+          "targetParity": "Move to line start, first non-blank, and line end.",
+          "currentJedit": "Line-shaped navigation exists in the UI path.",
+          "currentProof": ["docs/design/0105-vim-power-moves-causal-parity.md#current-truth"],
+          "proofGap": "Needs byte/grapheme policy facts and operator-pending range proof.",
+          "causalOpportunity": "Resolved ranges can preserve reading basis and affinity.",
+          "echoBoundary": "Echo sees only later edit intents that consume these ranges."
+        },
+        {
+          "id": "motion.file-boundary",
+          "keys": ["gg", "G"],
+          "status": "partial",
+          "targetSlices": [7, 8],
+          "targetParity": "Move to file start and file end, with count-aware line targeting.",
+          "currentJedit": "Goto-shaped behavior exists, but full Vim count semantics are not proven.",
+          "currentProof": ["docs/design/0105-vim-power-moves-causal-parity.md#current-truth"],
+          "proofGap": "Needs bounded-reading obstruction and full-reading expansion posture.",
+          "causalOpportunity": "File-scope commands can record the reading aperture used.",
+          "echoBoundary": "Echo remains unaware of cursor or viewport nouns."
+        },
+        {
+          "id": "motion.word",
+          "keys": ["w", "b", "e", "W", "B", "E"],
+          "status": "partial",
+          "targetSlices": [7, 8],
+          "targetParity": "Resolve word and WORD movement with counts and operator ranges.",
+          "currentJedit": "Word-shaped movement exists for some focused behavior.",
+          "currentProof": ["docs/design/0105-vim-power-moves-causal-parity.md#current-truth"],
+          "proofGap": "Needs table-driven tokenization policy for words, WORDs, and punctuation.",
+          "causalOpportunity": "Word ranges can carry token policy evidence in JSON witnesses.",
+          "echoBoundary": "Echo receives only the compiled mutation when a motion is paired with an operator."
+        },
+        {
+          "id": "motion.search",
+          "keys": ["/", "?", "n", "N"],
+          "status": "unsupported",
+          "targetSlices": [9, 26],
+          "targetParity": "Move by forward/backward search and repeat search direction.",
+          "currentJedit": "Search motion parity is not complete.",
+          "currentProof": [],
+          "proofGap": "Needs search history, match identity, basis facts, and UI command integration.",
+          "causalOpportunity": "Search results can become stable match ids for later range commands.",
+          "echoBoundary": "Echo does not parse patterns; jedit submits only chosen edit intents."
+        },
+        {
+          "id": "motion.matching-delimiter",
+          "keys": ["%"],
+          "status": "causally-enhanced",
+          "targetSlices": [9, 12],
+          "targetParity": "Jump to matching delimiter, tag, or language pair where supported.",
+          "currentJedit": "Delimiter matching is not parity-complete.",
+          "currentProof": [],
+          "proofGap": "Planned via text fallback first, then optional Graft structural readings.",
+          "causalOpportunity": "The match provider and pair identity can be recorded beside the resolved range.",
+          "echoBoundary": "Echo remains generic; Graft and jedit own structure facts."
+        },
+        {
+          "id": "motion.paragraph-section",
+          "keys": ["{", "}", "[[", "]]"],
+          "status": "unsupported",
+          "targetSlices": [9],
+          "targetParity": "Move by paragraph and section boundaries.",
+          "currentJedit": "Paragraph and section movement are not implemented as Vim motions.",
+          "currentProof": [],
+          "proofGap": "Needs blank-line and structural-section fixture tables.",
+          "causalOpportunity": "Section movement can degrade honestly when structural providers are absent.",
+          "echoBoundary": "Echo receives no structural nouns."
+        }
+      ]
+    },
+    {
+      "id": "operators",
+      "title": "Operators",
+      "items": [
+        {
+          "id": "operator.delete-change-yank",
+          "keys": ["d", "c", "y"],
+          "status": "partial",
+          "targetSlices": [13, 14],
+          "targetParity": "Compile delete, change, and yank over motions and text objects.",
+          "currentJedit": "Pending operators exist for delete, change, and yank in focused paths.",
+          "currentProof": ["docs/design/0105-vim-power-moves-causal-parity.md#current-truth"],
+          "proofGap": "Needs shared operator compiler and register provenance.",
+          "causalOpportunity": "Mutating operators can produce receipt and reading facts; yank stays non-mutating.",
+          "echoBoundary": "Echo admits only mutation intents, never raw Vim operators."
+        },
+        {
+          "id": "operator.put",
+          "keys": ["p", "P"],
+          "status": "unsupported",
+          "targetSlices": [14, 19],
+          "targetParity": "Put register material after or before the target position.",
+          "currentJedit": "Register-backed put parity is not complete.",
+          "currentProof": [],
+          "proofGap": "Needs register material shape and insertion target semantics.",
+          "causalOpportunity": "Put can preserve source register provenance in the emitted edit group.",
+          "echoBoundary": "Echo sees inserted material and receipt facts, not register names."
+        },
+        {
+          "id": "operator.replace",
+          "keys": ["r", "R"],
+          "status": "unsupported",
+          "targetSlices": [15],
+          "targetParity": "Replace one character or stream replacement text in Replace mode.",
+          "currentJedit": "Replace-mode parity is not complete.",
+          "currentProof": [],
+          "proofGap": "Needs grapheme/byte policy and repeated replacement intent.",
+          "causalOpportunity": "Replacement streams can be grouped as one causal edit.",
+          "echoBoundary": "Echo admits explicit replace ranges only."
+        },
+        {
+          "id": "operator.indent-format",
+          "keys": [">", "<", "=", "gq"],
+          "status": "unsupported",
+          "targetSlices": [15],
+          "targetParity": "Indent, outdent, reindent, and format resolved line ranges.",
+          "currentJedit": "Formatter-backed Vim operators are not production-complete.",
+          "currentProof": [],
+          "proofGap": "Needs provider boundary, linewise transform facts, and obstruction posture.",
+          "causalOpportunity": "Broad formatting can preview as a causal strand before admission.",
+          "echoBoundary": "Echo does not run formatters; jedit submits admitted text transforms."
+        },
+        {
+          "id": "operator.case",
+          "keys": ["gu", "gU", "g~"],
+          "status": "unsupported",
+          "targetSlices": [15],
+          "targetParity": "Lowercase, uppercase, or toggle case over resolved targets.",
+          "currentJedit": "Case-transform operators are not implemented.",
+          "currentProof": [],
+          "proofGap": "Needs deterministic transform tables and locale posture.",
+          "causalOpportunity": "Case transforms can produce compact before/after digests.",
+          "echoBoundary": "Echo admits the final transform intent without knowing Vim syntax."
+        },
+        {
+          "id": "operator.join",
+          "keys": ["J", "gJ"],
+          "status": "unsupported",
+          "targetSlices": [15],
+          "targetParity": "Join lines with or without Vim's whitespace normalization.",
+          "currentJedit": "Join operators are not parity-complete.",
+          "currentProof": [],
+          "proofGap": "Needs linewise target resolution and whitespace policy fixtures.",
+          "causalOpportunity": "Join can report exact affected line ids and resulting digest.",
+          "echoBoundary": "Echo receives a text replacement intent."
+        },
+        {
+          "id": "operator.filter-range-command",
+          "keys": ["!", ":"],
+          "status": "causally-enhanced",
+          "targetSlices": [28, 29],
+          "targetParity": "Apply external filters or ex range commands over resolved ranges.",
+          "currentJedit": "Host filter and range-command operators are not implemented.",
+          "currentProof": [],
+          "proofGap": "Planned as explicit host-boundary work with strand preview for broad edits.",
+          "causalOpportunity": "External effects can be represented as reviewed strands before admission.",
+          "echoBoundary": "Echo never executes host commands; jedit owns the adapter boundary."
+        }
+      ]
+    },
+    {
+      "id": "textObjects",
+      "title": "Text Objects",
+      "items": [
+        {
+          "id": "text-object.word",
+          "keys": ["iw", "aw", "iW", "aW"],
+          "status": "unsupported",
+          "targetSlices": [10, 11],
+          "targetParity": "Resolve inner and around word or WORD objects.",
+          "currentJedit": "Text-object grammar is not complete.",
+          "currentProof": [],
+          "proofGap": "Needs resolver spine plus tokenization fixtures.",
+          "causalOpportunity": "Token ranges can include basis and tokenizer evidence.",
+          "echoBoundary": "Echo receives only the compiled edit range."
+        },
+        {
+          "id": "text-object.sentence-paragraph",
+          "keys": ["is", "as", "ip", "ap"],
+          "status": "unsupported",
+          "targetSlices": [10, 11],
+          "targetParity": "Resolve sentence and paragraph text objects.",
+          "currentJedit": "Sentence and paragraph objects are not implemented.",
+          "currentProof": [],
+          "proofGap": "Needs boundary fixture tables and inclusive around policy.",
+          "causalOpportunity": "Paragraph edits can preview as broad causal changes.",
+          "echoBoundary": "Echo stays unaware of sentence or paragraph nouns."
+        },
+        {
+          "id": "text-object.quotes",
+          "keys": ["i\"", "a\"", "i'", "a'", "i`", "a`"],
+          "status": "unsupported",
+          "targetSlices": [10, 11],
+          "targetParity": "Resolve inner and around quote objects.",
+          "currentJedit": "Quote text objects such as ci\" are target workflows, not complete runtime truth.",
+          "currentProof": [],
+          "proofGap": "Needs delimiter-pair evidence and escape handling.",
+          "causalOpportunity": "Quote-pair identity can support transformed dot repeat.",
+          "echoBoundary": "Echo admits only the final text replacement."
+        },
+        {
+          "id": "text-object.brackets",
+          "keys": ["i(", "a(", "i[", "a[", "i{", "a{"],
+          "status": "unsupported",
+          "targetSlices": [10, 11],
+          "targetParity": "Resolve balanced pair objects for parentheses, brackets, and braces.",
+          "currentJedit": "Balanced pair text objects are not parity-complete.",
+          "currentProof": [],
+          "proofGap": "Needs nesting, imbalance, and cursor-position fixture tables.",
+          "causalOpportunity": "Balanced ranges can degrade honestly when malformed.",
+          "echoBoundary": "Echo does not own delimiter matching."
+        },
+        {
+          "id": "text-object.tags",
+          "keys": ["it", "at"],
+          "status": "causally-enhanced",
+          "targetSlices": [12],
+          "targetParity": "Resolve tag-like structural objects when language structure is available.",
+          "currentJedit": "Tag objects are not implemented.",
+          "currentProof": [],
+          "proofGap": "Planned through optional Graft structure provider.",
+          "causalOpportunity": "Provider identity and structural node ids can be included in witnesses.",
+          "echoBoundary": "Echo never stores tag semantics."
+        },
+        {
+          "id": "text-object.function-class",
+          "keys": ["if", "af", "ic", "ac"],
+          "status": "causally-enhanced",
+          "targetSlices": [12],
+          "targetParity": "Resolve functions and classes as structural objects.",
+          "currentJedit": "Function and class text objects are not implemented.",
+          "currentProof": [],
+          "proofGap": "Planned through optional Graft structure provider with unavailable lower mode.",
+          "causalOpportunity": "Structural object ids can support history-aware edits.",
+          "echoBoundary": "Echo receives no language-specific nouns."
+        },
+        {
+          "id": "text-object.comment-indent",
+          "keys": ["i/", "a/", "ii", "ai"],
+          "status": "causally-enhanced",
+          "targetSlices": [12],
+          "targetParity": "Resolve comments and indentation blocks.",
+          "currentJedit": "Comment and indentation text objects are not implemented.",
+          "currentProof": [],
+          "proofGap": "Planned as text fallback plus optional structural provider.",
+          "causalOpportunity": "Indent scopes can become causally stable range apertures.",
+          "echoBoundary": "Echo remains generic."
+        }
+      ]
+    },
+    {
+      "id": "visualModes",
+      "title": "Visual Modes",
+      "items": [
+        {
+          "id": "visual.charwise",
+          "keys": ["v"],
+          "status": "unsupported",
+          "targetSlices": [16, 17],
+          "targetParity": "Select charwise ranges and apply operators.",
+          "currentJedit": "Visual charwise mode is not production-complete.",
+          "currentProof": [],
+          "proofGap": "Needs explicit range aperture state and operator compilation.",
+          "causalOpportunity": "Selection can be a reading-basis range aperture.",
+          "echoBoundary": "Echo sees only admitted mutation intents."
+        },
+        {
+          "id": "visual.linewise",
+          "keys": ["V"],
+          "status": "unsupported",
+          "targetSlices": [16, 17],
+          "targetParity": "Select linewise ranges and apply operators.",
+          "currentJedit": "Visual linewise mode is not production-complete.",
+          "currentProof": [],
+          "proofGap": "Needs linewise target facts and mode exits.",
+          "causalOpportunity": "Linewise range sets can be emitted as witness facts.",
+          "echoBoundary": "Echo does not own selection state."
+        },
+        {
+          "id": "visual.blockwise",
+          "keys": ["Ctrl-v"],
+          "status": "unsupported",
+          "targetSlices": [16, 17],
+          "targetParity": "Select rectangular block ranges and apply operators.",
+          "currentJedit": "Blockwise visual mode is not implemented.",
+          "currentProof": [],
+          "proofGap": "Needs block range-set representation and lower-mode posture.",
+          "causalOpportunity": "Block edits can be grouped as one causal range-set intent.",
+          "echoBoundary": "Echo admits the resulting range-set operation."
+        },
+        {
+          "id": "visual.anchor-swap",
+          "keys": ["o"],
+          "status": "unsupported",
+          "targetSlices": [16],
+          "targetParity": "Swap the active end of a visual selection.",
+          "currentJedit": "Visual anchor swapping is not implemented.",
+          "currentProof": [],
+          "proofGap": "Needs selection anchor and focus state.",
+          "causalOpportunity": "Anchor facts can explain selection changes without pixels.",
+          "echoBoundary": "Echo is not involved."
+        }
+      ]
+    },
+    {
+      "id": "registers",
+      "title": "Registers",
+      "items": [
+        {
+          "id": "register.unnamed-numbered-small-delete",
+          "keys": ["\"", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "-"],
+          "status": "partial",
+          "targetSlices": [18, 19],
+          "targetParity": "Track unnamed, numbered, and small-delete registers.",
+          "currentJedit": "Yank/delete flows exist, but full register provenance is not complete.",
+          "currentProof": ["docs/design/0105-vim-power-moves-causal-parity.md#current-truth"],
+          "proofGap": "Needs app-owned register state with content digest and source basis.",
+          "causalOpportunity": "Register material can cite source basis and receipt provenance.",
+          "echoBoundary": "Echo does not store register names."
+        },
+        {
+          "id": "register.named",
+          "keys": ["a-z"],
+          "status": "unsupported",
+          "targetSlices": [18, 19],
+          "targetParity": "Read and write named registers.",
+          "currentJedit": "Named registers are not parity-complete.",
+          "currentProof": [],
+          "proofGap": "Needs register prefix grammar and storage.",
+          "causalOpportunity": "Named register facts can be redacted for agents.",
+          "echoBoundary": "Echo sees only text material in admitted operations."
+        },
+        {
+          "id": "register.append",
+          "keys": ["A-Z"],
+          "status": "unsupported",
+          "targetSlices": [18, 19],
+          "targetParity": "Append to named registers.",
+          "currentJedit": "Append registers are not implemented.",
+          "currentProof": [],
+          "proofGap": "Needs append semantics and linewise/charwise preservation.",
+          "causalOpportunity": "Append history can cite multiple source ranges.",
+          "echoBoundary": "Echo remains generic."
+        },
+        {
+          "id": "register.black-hole",
+          "keys": ["_"],
+          "status": "unsupported",
+          "targetSlices": [18, 19],
+          "targetParity": "Discard operator output without changing unnamed register.",
+          "currentJedit": "Black-hole register is not implemented.",
+          "currentProof": [],
+          "proofGap": "Needs register write suppression proof.",
+          "causalOpportunity": "Discard can still emit non-secret operation facts.",
+          "echoBoundary": "Echo sees only the text mutation, not discarded register policy."
+        },
+        {
+          "id": "register.system-clipboard",
+          "keys": ["+", "*"],
+          "status": "unsupported",
+          "targetSlices": [19],
+          "targetParity": "Bridge optional system clipboard registers.",
+          "currentJedit": "System clipboard register posture is not complete.",
+          "currentProof": [],
+          "proofGap": "Needs host clipboard adapter and unavailable posture.",
+          "causalOpportunity": "Clipboard import/export can carry redacted provenance.",
+          "echoBoundary": "Echo never talks to the host clipboard."
+        },
+        {
+          "id": "register.expression",
+          "keys": ["="],
+          "status": "unsupported",
+          "targetSlices": [18],
+          "targetParity": "Expression register remains unsupported until evaluator policy exists.",
+          "currentJedit": "Expression register is not implemented.",
+          "currentProof": [],
+          "proofGap": "Needs explicit non-goal or evaluator design before implementation.",
+          "causalOpportunity": "Unsupported posture can prevent fake expression support.",
+          "echoBoundary": "Echo does not evaluate expressions."
+        }
+      ]
+    },
+    {
+      "id": "repeat",
+      "title": "Dot Repeat",
+      "items": [
+        {
+          "id": "repeat.identity",
+          "keys": ["."],
+          "status": "causally-enhanced",
+          "targetSlices": [20],
+          "targetParity": "Capture the last meaningful edit as semantic repeat identity.",
+          "currentJedit": "Dot repeat is not complete as semantic intent.",
+          "currentProof": [],
+          "proofGap": "Planned identity must exclude raw timing and diagnostic prose.",
+          "causalOpportunity": "Repeat can store command intent, basis, target kind, and inserted material digest.",
+          "echoBoundary": "Echo replays admitted jedit intents, not raw key delays."
+        },
+        {
+          "id": "repeat.transformed-replay",
+          "keys": ["."],
+          "status": "causally-enhanced",
+          "targetSlices": [21],
+          "targetParity": "Replay prior edit intent against the current reading basis.",
+          "currentJedit": "Transformed dot repeat is not implemented.",
+          "currentProof": [],
+          "proofGap": "Planned resolver must obstruct when the target cannot be transformed safely.",
+          "causalOpportunity": "This is a primary causal movement: same intent, new basis.",
+          "echoBoundary": "Echo only admits the newly compiled operation."
+        }
+      ]
+    },
+    {
+      "id": "macros",
+      "title": "Macros",
+      "items": [
+        {
+          "id": "macro.record",
+          "keys": ["q{register}", "q"],
+          "status": "unsupported",
+          "targetSlices": [22],
+          "targetParity": "Record macro entries into a named register.",
+          "currentJedit": "Macro recording is not implemented.",
+          "currentProof": [],
+          "proofGap": "Needs parsed intent entries plus bounded raw insert spans.",
+          "causalOpportunity": "Macro entries can retain semantic intent instead of sleeps.",
+          "echoBoundary": "Echo does not know macro registers."
+        },
+        {
+          "id": "macro.replay",
+          "keys": ["@{register}", "@@"],
+          "status": "causally-enhanced",
+          "targetSlices": [23],
+          "targetParity": "Replay macros through the production command path.",
+          "currentJedit": "Macro replay is not implemented.",
+          "currentProof": [],
+          "proofGap": "Planned replay must stop at first obstruction and report applied count.",
+          "causalOpportunity": "Macro replay can emit a receipt-bearing causal script report.",
+          "echoBoundary": "Echo admits each resulting operation through normal ports."
+        }
+      ]
+    },
+    {
+      "id": "marksJumps",
+      "title": "Marks And Jumps",
+      "items": [
+        {
+          "id": "marks.local-global",
+          "keys": ["m{mark}"],
+          "status": "causally-enhanced",
+          "targetSlices": [24],
+          "targetParity": "Set local and global marks.",
+          "currentJedit": "Marks are not parity-complete.",
+          "currentProof": [],
+          "proofGap": "Planned marks need transformable anchor storage.",
+          "causalOpportunity": "Marks can move through edit receipts with anchor bias.",
+          "echoBoundary": "Echo stores receipts; jedit owns mark anchors."
+        },
+        {
+          "id": "marks.jump",
+          "keys": ["`{mark}", "'{mark}", "''"],
+          "status": "unsupported",
+          "targetSlices": [24, 25],
+          "targetParity": "Jump to exact mark, mark line, or previous jump.",
+          "currentJedit": "Mark jumps are not implemented.",
+          "currentProof": [],
+          "proofGap": "Needs exact/line jump facts and stale mark posture.",
+          "causalOpportunity": "Jump facts can explain transformed or degraded marks.",
+          "echoBoundary": "Echo is not cursor authority."
+        },
+        {
+          "id": "jumps.list",
+          "keys": ["Ctrl-o", "Ctrl-i"],
+          "status": "unsupported",
+          "targetSlices": [25],
+          "targetParity": "Traverse the jump list backward and forward.",
+          "currentJedit": "Jump list traversal is not implemented.",
+          "currentProof": [],
+          "proofGap": "Needs navigation receipt facts and stack policy.",
+          "causalOpportunity": "Navigation history can be inspectable without text mutation.",
+          "echoBoundary": "Echo receives no edit admission."
+        },
+        {
+          "id": "jumps.change-list",
+          "keys": ["g;", "g,"],
+          "status": "unsupported",
+          "targetSlices": [25],
+          "targetParity": "Traverse changes where feasible.",
+          "currentJedit": "Change-list traversal is not implemented.",
+          "currentProof": [],
+          "proofGap": "Needs mapping from edit receipts to cursor-return anchors.",
+          "causalOpportunity": "Change list can be derived from causal edit receipts.",
+          "echoBoundary": "Echo facts are generic receipts; jedit projects editor navigation."
+        }
+      ]
+    },
+    {
+      "id": "searchSubstitute",
+      "title": "Search And Substitute",
+      "items": [
+        {
+          "id": "search.pattern-history",
+          "keys": ["/", "?"],
+          "status": "unsupported",
+          "targetSlices": [26],
+          "targetParity": "Record forward and backward search history.",
+          "currentJedit": "Vim search history is not complete.",
+          "currentProof": [],
+          "proofGap": "Needs pattern parsing, history storage, and match witness facts.",
+          "causalOpportunity": "Search history can cite reading basis and match ids.",
+          "echoBoundary": "Echo does not parse search patterns."
+        },
+        {
+          "id": "search.repeat-word",
+          "keys": ["n", "N", "*", "#", "g*", "g#"],
+          "status": "unsupported",
+          "targetSlices": [26],
+          "targetParity": "Repeat searches and search for word under cursor.",
+          "currentJedit": "Repeat and word-under-cursor search are not implemented.",
+          "currentProof": [],
+          "proofGap": "Needs direction, token, and match identity rules.",
+          "causalOpportunity": "Search matches can feed later range commands.",
+          "echoBoundary": "Echo remains generic."
+        },
+        {
+          "id": "substitute.single-range",
+          "keys": [":s"],
+          "status": "unsupported",
+          "targetSlices": [27],
+          "targetParity": "Substitute within the current or specified range.",
+          "currentJedit": "Substitute command parity is not implemented.",
+          "currentProof": [],
+          "proofGap": "Needs pattern/replacement parsing, flags, and escaping.",
+          "causalOpportunity": "Substitution can emit deterministic range-set facts.",
+          "echoBoundary": "Echo admits final replacement operations only."
+        },
+        {
+          "id": "substitute.file-confirm",
+          "keys": [":%s", "c"],
+          "status": "causally-enhanced",
+          "targetSlices": [27, 29],
+          "targetParity": "Run file-scope substitute with confirmation flow.",
+          "currentJedit": "File-scope confirmed substitute is not implemented.",
+          "currentProof": [],
+          "proofGap": "Planned as strand preview with selected admission.",
+          "causalOpportunity": "Each accepted replacement can be a strand slice.",
+          "echoBoundary": "Echo receives only admitted replacements."
+        },
+        {
+          "id": "global.vglobal",
+          "keys": [":g", ":v"],
+          "status": "causally-enhanced",
+          "targetSlices": [28, 29],
+          "targetParity": "Run commands over matching or non-matching line sets.",
+          "currentJedit": "Global and vglobal are not implemented.",
+          "currentProof": [],
+          "proofGap": "Planned range-set execution with unsupported nested-command obstruction.",
+          "causalOpportunity": "Global commands can preview a braid of affected ranges.",
+          "echoBoundary": "Echo does not evaluate ex syntax."
+        }
+      ]
+    },
+    {
+      "id": "exCommands",
+      "title": "Ex Commands",
+      "items": [
+        {
+          "id": "ex.edit",
+          "keys": [":edit", ":e"],
+          "status": "supported",
+          "targetSlices": [2],
+          "targetParity": "Open a path through command-line completion and dispatch.",
+          "currentJedit": "Command-line edit dispatch and file completion exist.",
+          "currentProof": [
+            "docs/design/0102-vim-command-line-completion-surface.md",
+            "spec/workspace-command-line.spec.mjs",
+            "spec/workspace-command-completion.spec.mjs"
+          ],
+          "proofGap": "",
+          "causalOpportunity": "Open can seed later workflow witnesses with basis facts.",
+          "echoBoundary": "Echo remains text authority after file material is opened."
+        },
+        {
+          "id": "ex.write-quit",
+          "keys": [":write", ":w", ":quit", ":q", ":wq", ":x"],
+          "status": "supported",
+          "targetSlices": [2],
+          "targetParity": "Save, quit, and save-then-quit from the Vim command line.",
+          "currentJedit": "Write, quit, wq, and aliases dispatch through existing workspace flows.",
+          "currentProof": [
+            "docs/design/0102-vim-command-line-completion-surface.md",
+            "spec/workspace-command-line.spec.mjs"
+          ],
+          "proofGap": "",
+          "causalOpportunity": "Save witnesses can cite final materialized text digest.",
+          "echoBoundary": "Filesystem save remains app/adapter policy, not Echo semantics."
+        },
+        {
+          "id": "ex.ranges",
+          "keys": [":1,10", ":%", ":.", ":'<,'>"],
+          "status": "unsupported",
+          "targetSlices": [28],
+          "targetParity": "Resolve ex ranges for later commands.",
+          "currentJedit": "General ex range grammar is not implemented.",
+          "currentProof": [],
+          "proofGap": "Needs range parser and resolver over reading basis.",
+          "causalOpportunity": "Range resolution can feed strands and range-set witnesses.",
+          "echoBoundary": "Echo receives only admitted text operations."
+        },
+        {
+          "id": "ex.substitute-global",
+          "keys": [":s", ":%s", ":g", ":v"],
+          "status": "unsupported",
+          "targetSlices": [27, 28],
+          "targetParity": "Support substitute, global, and vglobal commands.",
+          "currentJedit": "These ex commands are not implemented.",
+          "currentProof": [],
+          "proofGap": "Needs command parser, range-set executor, confirmation, and obstruction posture.",
+          "causalOpportunity": "Broad edits can be previewed and admitted as causal strands.",
+          "echoBoundary": "Echo does not parse ex commands."
+        },
+        {
+          "id": "ex.help-feedback",
+          "keys": [":help", "unknown-command"],
+          "status": "partial",
+          "targetSlices": [30],
+          "targetParity": "Expose command help and visible invalid-command feedback.",
+          "currentJedit": "Unknown command feedback exists; full help parity remains open.",
+          "currentProof": ["docs/design/0105-vim-power-moves-causal-parity.md#current-truth"],
+          "proofGap": "Needs complete help surface after commands stabilize.",
+          "causalOpportunity": "Help can expose proof status from this matrix.",
+          "echoBoundary": "Echo is not involved."
+        },
+        {
+          "id": "ex.shell-sort-filter",
+          "keys": [":!", ":r !", ":sort"],
+          "status": "unsupported",
+          "targetSlices": [28, 30],
+          "targetParity": "Handle shell, read-filter, and sort posture honestly.",
+          "currentJedit": "Shell/filter/sort ex commands are not implemented.",
+          "currentProof": [],
+          "proofGap": "Needs host-boundary policy and deterministic lower modes.",
+          "causalOpportunity": "Host effects should be isolated and reviewable before admission.",
+          "echoBoundary": "Echo never executes shell commands."
+        }
+      ]
+    }
+  ]
+}

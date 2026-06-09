@@ -123,6 +123,14 @@ Relevant existing design anchors:
 - [Causal Event Model](causal-event-model.md)
 - [Technical Teardown: The Vim Editor Layer](../technical-teardown.md#12-the-vim-editor-layer)
 
+Slice 2 adds the first machine-readable inventory:
+
+- [0105 Vim Power Moves Parity Matrix](0105-vim-power-moves-parity-matrix.json)
+
+That matrix is current-state truth for the power-move surface. It names what is
+supported, partial, unsupported, or intentionally causally enhanced, and it
+records the proof gaps that later slices must close.
+
 ## Problem
 
 Vim's power comes from composition:
@@ -782,6 +790,7 @@ shipping a shallow compatibility checklist.
 - Build a machine-readable parity matrix for motions, operators, text objects,
   visual modes, registers, marks, macros, repeat, search, and ex commands.
 - Mark each item as supported, partial, unsupported, or causally enhanced.
+- Gate the matrix with a focused schema and coverage spec.
 
 ### Slice 3: Target Usability Witness Fixtures
 
@@ -1019,6 +1028,7 @@ node --test --test-concurrency=1 spec/vim-power-operators.spec.mjs
 node --test --test-concurrency=1 spec/vim-power-registers.spec.mjs
 node --test --test-concurrency=1 spec/vim-power-repeat-macro.spec.mjs
 node --test --test-concurrency=1 spec/vim-power-search-substitute.spec.mjs
+node --test --test-concurrency=1 spec/vim-power-parity-matrix.spec.mjs
 node scripts/jedit-vim-power-witness.mjs --json --workflow open-edit-save
 npm run --silent quality
 ```
@@ -1034,6 +1044,11 @@ The second command does not exist yet. It is the intended parity gate once the
 witnesses are real.
 
 ## Playback / Witness
+
+Current machine-readable planning witness:
+
+- [0105 Vim Power Moves Parity Matrix](0105-vim-power-moves-parity-matrix.json)
+- `spec/vim-power-parity-matrix.spec.mjs`
 
 Target usability witnesses:
 
@@ -1078,16 +1093,22 @@ Target usability witnesses:
 
 ## Retrospective
 
-Not started.
+Roadmap implementation is not complete. Slice 2 now has an inspectable planning
+artifact.
 
 What the tests proved:
 
-- TBD.
+- `spec/vim-power-parity-matrix.spec.mjs` proves the matrix has stable
+  metadata, covers the required WF-0105 categories, carries proof/boundary
+  fields for every row, and does not claim unsupported or causally enhanced work
+  as currently proven.
 
 What changed from the design:
 
-- TBD.
+- The parity inventory now lives as a separate JSON document so later release
+  gates can consume it without scraping Markdown prose.
 
 Follow-up work:
 
-- TBD.
+- Slice 3 should add target usability witness fixtures that reference matrix
+  rows by id.
