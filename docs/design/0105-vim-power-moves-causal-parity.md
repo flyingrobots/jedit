@@ -1129,6 +1129,7 @@ Local validation for implementation branches:
 npm run build
 node --test --test-concurrency=1 spec/vim-power-grammar.spec.mjs
 node --test --test-concurrency=1 spec/vim-power-chord-syntax.spec.mjs
+node --test --test-concurrency=1 spec/vim-normal-state-machine.spec.mjs
 node --test --test-concurrency=1 spec/vim-power-motion-resolver.spec.mjs
 node --test --test-concurrency=1 spec/vim-power-text-objects.spec.mjs
 node --test --test-concurrency=1 spec/vim-power-operators.spec.mjs
@@ -1203,8 +1204,8 @@ Target usability witnesses:
 
 ## Retrospective
 
-Roadmap implementation is not complete. Slices 2, 3, 4, and 5 now have
-inspectable planning and syntax artifacts.
+Roadmap implementation is not complete. Slices 2, 3, 4, 5, and 6 now have
+inspectable planning, syntax, and state-machine artifacts.
 
 What the tests proved:
 
@@ -1224,6 +1225,11 @@ What the tests proved:
   `VimChordSyntax` for complete chords, pending command fragments, pending
   modifiers, command-line input, macro controls, standalone put commands,
   invalid unknown keys, stray text objects, and trailing-token obstructions.
+- `spec/vim-normal-state-machine.spec.mjs` proves Normal and Operator-pending
+  command accumulation is explicit, Escape resets pending state, counts and
+  registers remain syntax-only until a command completes, invalid continuations
+  reset without execution readiness, and command-line, modal, drawer, insert,
+  and focus-transfer owners keep pending state inert.
 
 What changed from the design:
 
@@ -1237,9 +1243,11 @@ What changed from the design:
 - The Slice 5 parser lives in `src/app/workspace/vim-chord-syntax.ts`, with
   syntax snapshots in
   `spec/fixtures/vim-power-chord-syntax-snapshots.json`.
+- The Slice 6 state machine lives in
+  `src/app/workspace/vim-normal-state.ts`. It is intentionally pure and not yet
+  wired into production text execution.
 
 Follow-up work:
 
-- Slice 6 should make Normal and Operator-pending command accumulation
-  explicit, using `VimChordSyntax` as the boundary between raw keys and runtime
-  state.
+- Slice 7 should resolve motions against a reading basis, using
+  `VimChordSyntax` and the Normal accumulator as the syntax boundary.
