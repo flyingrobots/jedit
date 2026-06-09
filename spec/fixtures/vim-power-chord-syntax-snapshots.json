@@ -1,0 +1,296 @@
+[
+  {
+    "name": "counted delete word",
+    "keys": ["2", "d", "w"],
+    "syntax": {
+      "kind": "complete",
+      "family": "operatorMotion",
+      "keys": ["2", "d", "w"],
+      "tokens": [
+        { "kind": "count", "raw": ["2"], "at": 0, "value": 2 },
+        { "kind": "operator", "raw": ["d"], "at": 1, "operator": "delete" },
+        { "kind": "motion", "raw": ["w"], "at": 2, "motion": "wordForward" }
+      ],
+      "count": 2,
+      "operator": "delete",
+      "motion": "wordForward"
+    }
+  },
+  {
+    "name": "register yank line",
+    "keys": ["\"", "a", "y", "y"],
+    "syntax": {
+      "kind": "complete",
+      "family": "operatorMotion",
+      "keys": ["\"", "a", "y", "y"],
+      "tokens": [
+        { "kind": "register", "raw": ["\"", "a"], "at": 0, "register": "a" },
+        { "kind": "operator", "raw": ["y"], "at": 2, "operator": "yank" },
+        { "kind": "motion", "raw": ["y"], "at": 3, "motion": "lineCurrent" }
+      ],
+      "register": "a",
+      "operator": "yank",
+      "motion": "lineCurrent"
+    }
+  },
+  {
+    "name": "delete inner quotes",
+    "keys": ["d", "i", "\""],
+    "syntax": {
+      "kind": "complete",
+      "family": "operatorTextObject",
+      "keys": ["d", "i", "\""],
+      "tokens": [
+        { "kind": "operator", "raw": ["d"], "at": 0, "operator": "delete" },
+        { "kind": "textObject", "raw": ["i", "\""], "at": 1, "scope": "inner", "target": "doubleQuote" }
+      ],
+      "operator": "delete",
+      "textObject": { "scope": "inner", "target": "doubleQuote" }
+    }
+  },
+  {
+    "name": "change around parens with count",
+    "keys": ["3", "c", "a", ")"],
+    "syntax": {
+      "kind": "complete",
+      "family": "operatorTextObject",
+      "keys": ["3", "c", "a", ")"],
+      "tokens": [
+        { "kind": "count", "raw": ["3"], "at": 0, "value": 3 },
+        { "kind": "operator", "raw": ["c"], "at": 1, "operator": "change" },
+        { "kind": "textObject", "raw": ["a", ")"], "at": 2, "scope": "around", "target": "paren" }
+      ],
+      "count": 3,
+      "operator": "change",
+      "textObject": { "scope": "around", "target": "paren" }
+    }
+  },
+  {
+    "name": "go to file top",
+    "keys": ["g", "g"],
+    "syntax": {
+      "kind": "complete",
+      "family": "motion",
+      "keys": ["g", "g"],
+      "tokens": [
+        { "kind": "motion", "raw": ["g", "g"], "at": 0, "motion": "fileTop" }
+      ],
+      "motion": "fileTop"
+    }
+  },
+  {
+    "name": "format around paragraph",
+    "keys": ["g", "q", "a", "p"],
+    "syntax": {
+      "kind": "complete",
+      "family": "operatorTextObject",
+      "keys": ["g", "q", "a", "p"],
+      "tokens": [
+        { "kind": "operator", "raw": ["g", "q"], "at": 0, "operator": "format" },
+        { "kind": "textObject", "raw": ["a", "p"], "at": 2, "scope": "around", "target": "paragraph" }
+      ],
+      "operator": "format",
+      "textObject": { "scope": "around", "target": "paragraph" }
+    }
+  },
+  {
+    "name": "visual block prefix",
+    "keys": ["ctrl-v"],
+    "syntax": {
+      "kind": "complete",
+      "family": "visualPrefix",
+      "keys": ["ctrl-v"],
+      "tokens": [
+        { "kind": "visualPrefix", "raw": ["ctrl-v"], "at": 0, "visualMode": "block" }
+      ],
+      "visualMode": "block"
+    }
+  },
+  {
+    "name": "command line write quit pending",
+    "keys": [":", "w", "q"],
+    "syntax": {
+      "kind": "pending",
+      "family": "commandLine",
+      "keys": [":", "w", "q"],
+      "tokens": [
+        { "kind": "commandLineInvocation", "raw": [":"], "at": 0 },
+        { "kind": "commandLineText", "raw": ["w", "q"], "at": 1, "text": "wq" }
+      ],
+      "commandLine": { "text": "wq" }
+    }
+  },
+  {
+    "name": "command line write quit accepted",
+    "keys": [":", "w", "q", "enter"],
+    "syntax": {
+      "kind": "complete",
+      "family": "commandLine",
+      "keys": [":", "w", "q", "enter"],
+      "tokens": [
+        { "kind": "commandLineInvocation", "raw": [":"], "at": 0 },
+        { "kind": "commandLineText", "raw": ["w", "q", "enter"], "at": 1, "text": "wq" }
+      ],
+      "commandLine": { "text": "wq" }
+    }
+  },
+  {
+    "name": "command line invocation pending",
+    "keys": [":"],
+    "syntax": {
+      "kind": "pending",
+      "family": "commandLine",
+      "keys": [":"],
+      "tokens": [
+        { "kind": "commandLineInvocation", "raw": [":"], "at": 0 }
+      ]
+    }
+  },
+  {
+    "name": "macro record into register",
+    "keys": ["q", "a"],
+    "syntax": {
+      "kind": "complete",
+      "family": "macro",
+      "keys": ["q", "a"],
+      "tokens": [
+        { "kind": "macroControl", "raw": ["q", "a"], "at": 0, "control": "record", "register": "a" }
+      ],
+      "macro": { "control": "record", "register": "a" }
+    }
+  },
+  {
+    "name": "macro replay last",
+    "keys": ["@", "@"],
+    "syntax": {
+      "kind": "complete",
+      "family": "macro",
+      "keys": ["@", "@"],
+      "tokens": [
+        { "kind": "macroControl", "raw": ["@", "@"], "at": 0, "control": "replayLast" }
+      ],
+      "macro": { "control": "replayLast" }
+    }
+  },
+  {
+    "name": "register put after",
+    "keys": ["\"", "+", "p"],
+    "syntax": {
+      "kind": "complete",
+      "family": "put",
+      "keys": ["\"", "+", "p"],
+      "tokens": [
+        { "kind": "register", "raw": ["\"", "+"], "at": 0, "register": "+" },
+        { "kind": "operator", "raw": ["p"], "at": 2, "operator": "putAfter" }
+      ],
+      "register": "+",
+      "operator": "putAfter"
+    }
+  },
+  {
+    "name": "insert line end",
+    "keys": ["A"],
+    "syntax": {
+      "kind": "complete",
+      "family": "modeSwitch",
+      "keys": ["A"],
+      "tokens": [
+        { "kind": "modeSwitch", "raw": ["A"], "at": 0, "modeSwitch": "insertLineEnd" }
+      ],
+      "modeSwitch": "insertLineEnd"
+    }
+  },
+  {
+    "name": "incomplete goto prefix",
+    "keys": ["g"],
+    "syntax": {
+      "kind": "pending",
+      "family": "prefix",
+      "keys": ["g"],
+      "tokens": [
+        { "kind": "prefix", "raw": ["g"], "at": 0, "prefix": "g" }
+      ]
+    }
+  },
+  {
+    "name": "pending delete operator",
+    "keys": ["d"],
+    "syntax": {
+      "kind": "pending",
+      "family": "operatorCommand",
+      "keys": ["d"],
+      "tokens": [
+        { "kind": "operator", "raw": ["d"], "at": 0, "operator": "delete" }
+      ],
+      "operator": "delete"
+    }
+  },
+  {
+    "name": "pending register",
+    "keys": ["\"", "a"],
+    "syntax": {
+      "kind": "pending",
+      "family": "modifier",
+      "keys": ["\"", "a"],
+      "tokens": [
+        { "kind": "register", "raw": ["\"", "a"], "at": 0, "register": "a" }
+      ],
+      "register": "a"
+    }
+  },
+  {
+    "name": "pending count",
+    "keys": ["2"],
+    "syntax": {
+      "kind": "pending",
+      "family": "modifier",
+      "keys": ["2"],
+      "tokens": [
+        { "kind": "count", "raw": ["2"], "at": 0, "value": 2 }
+      ],
+      "count": 2
+    }
+  },
+  {
+    "name": "unknown function key",
+    "keys": ["f2"],
+    "syntax": {
+      "kind": "invalid",
+      "family": "unknown",
+      "keys": ["f2"],
+      "tokens": [
+        { "kind": "unknown", "raw": ["f2"], "at": 0 }
+      ],
+      "obstruction": "unknownToken"
+    }
+  },
+  {
+    "name": "stray text object",
+    "keys": ["i", "\""],
+    "syntax": {
+      "kind": "invalid",
+      "family": "textObject",
+      "keys": ["i", "\""],
+      "tokens": [
+        { "kind": "textObject", "raw": ["i", "\""], "at": 0, "scope": "inner", "target": "doubleQuote" }
+      ],
+      "textObject": { "scope": "inner", "target": "doubleQuote" },
+      "obstruction": "strayTextObject"
+    }
+  },
+  {
+    "name": "trailing tokens",
+    "keys": ["w", "w"],
+    "syntax": {
+      "kind": "invalid",
+      "family": "motion",
+      "keys": ["w", "w"],
+      "tokens": [
+        { "kind": "motion", "raw": ["w"], "at": 0, "motion": "wordForward" },
+        { "kind": "motion", "raw": ["w"], "at": 1, "motion": "wordForward" }
+      ],
+      "motion": "wordForward",
+      "obstruction": "trailingTokens"
+    }
+  }
+]

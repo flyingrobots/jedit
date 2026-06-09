@@ -71,6 +71,15 @@ and authority-boundary report for the current release-gate PR.
 The developer-facing recipe lives in
 [`docs/echo-application-hosting-guide.md`](echo-application-hosting-guide.md).
 
+The current branch closes slices 127-136: WSC history listing now exposes
+app-safe submissions, outcomes, receipts, readings, checkpoints, rejection
+reasons, export refs, and typed missing-evidence posture; WSC replay compares
+semantic evidence while excluding host timing; current export ignores retained
+rejections for applied-text export; an agent JSON CLI lists and exports
+historical bases; the release gate includes the WSC history/export/replay
+witnesses; and the reusable Echo hosting guide carries the portability template
+and Graft/Think readiness checklist.
+
 The active title startup UX slice is
 [`docs/design/0036-title-intro-startup-file-modal.md`](design/0036-title-intro-startup-file-modal.md).
 It records the deterministic intro timing, Enter/Escape skip behavior, and the
@@ -95,6 +104,44 @@ quit, invalid command recovery, dirty quit obstruction, unsupported files,
 restart recovery, and multi-file editing. These workflows are target contracts
 until the production TUI harness can drive them and verify filesystem and
 Echo-hosted text evidence.
+
+## Active Plan: Vim Power Moves Causal Parity
+
+The Vim parity expansion plan is
+[`docs/design/0105-vim-power-moves-causal-parity.md`](design/0105-vim-power-moves-causal-parity.md).
+The goal is comprehensive Vim power-move parity through a jedit-owned grammar,
+motion algebra, text-object resolver, operator compiler, registers, macros,
+repeat, search/substitute, marks, visual mode, and causal strand/braid
+extensions, while preserving Echo as generic causal authority rather than
+teaching Echo Vim or editor nouns.
+
+This arc locks `jim` as the future user-facing command and editor name:
+`JIM = Jedit Is Modal`. The repository, packages, internal contracts, WSC
+directories, and release gates stay `jedit` until the Echo-powered proof and
+compatibility plan make the rename safe. The arc is intentionally 30 slices,
+doubling the first draft so each Vim parity step has a focused proof surface
+instead of becoming a broad compatibility bucket.
+
+The stacked power-moves branches advance Slice 2 by adding
+[`docs/design/0105-vim-power-moves-parity-matrix.json`](design/0105-vim-power-moves-parity-matrix.json)
+and `spec/vim-power-parity-matrix.spec.mjs`. The matrix is the current-state
+inventory for motions, operators, text objects, visual modes, registers, marks,
+macros, repeat, search/substitute, and ex commands. It records supported,
+partial, unsupported, and causally enhanced rows without turning planned work
+into fake proof.
+
+The stacked power-moves branches also advance Slice 3 by adding
+[`docs/design/0105-vim-power-target-usability-fixtures.json`](design/0105-vim-power-target-usability-fixtures.json)
+and `spec/vim-power-target-usability-fixtures.spec.mjs`. Those fixtures turn
+the target workflows into structured witness inputs tied back to matrix row ids,
+while still marking them as target fixtures rather than runtime proof.
+
+The current branch advances Slice 4 by making register and transaction doctrine
+the first part of the grammar-token goalpost. Registers remain required
+user-facing Vim language state, backed by Echo evidence but owned by jedit.
+Read-resolve-write commands such as `di"` are transaction-optic candidates:
+they must resolve and mutate on one basis, obstruct stale basis, or explicitly
+transform to a newer basis. Silent read-then-later-write is forbidden.
 
 ## Active Plan: Executable Design Cycle Template
 
@@ -584,16 +631,16 @@ Progress ledger:
 - [x] 124 - Historical Basis Selection.
 - [x] 125 - Current History Export.
 - [x] 126 - Point-In-Time Export.
-- [ ] 127 - History Listing And Evidence View.
-- [ ] 128 - Replay Same Edits Same Evidence.
-- [ ] 129 - Host Timing Permutation Proof.
-- [ ] 130 - Conflict And Rejection Retention.
-- [ ] 131 - Multi-File History Recovery.
-- [ ] 132 - Agent Historical Export.
-- [ ] 133 - WSC Release Gate Integration.
-- [ ] 134 - DIND Replay Closeout.
-- [ ] 135 - Portability Template Update.
-- [ ] 136 - Graft/Think Readiness Checklist.
+- [x] 127 - History Listing And Evidence View.
+- [x] 128 - Replay Same Edits Same Evidence.
+- [x] 129 - Host Timing Permutation Proof.
+- [x] 130 - Conflict And Rejection Retention.
+- [x] 131 - Multi-File History Recovery.
+- [x] 132 - Agent Historical Export.
+- [x] 133 - WSC Release Gate Integration.
+- [x] 134 - DIND Replay Closeout.
+- [x] 135 - Portability Template Update.
+- [x] 136 - Graft/Think Readiness Checklist.
 - [ ] 137 - End-To-End Guide Refresh.
 - [ ] 138 - Version And Compatibility Audit.
 - [ ] 139 - Authority And Security Audit.
@@ -1693,10 +1740,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Add history listing model.
-- [ ] Add CLI/UI/port output.
-- [ ] Keep output app-safe.
-- [ ] Cover deterministic ordering.
+- [x] Add history listing model.
+- [x] Add CLI/UI/port output.
+- [x] Keep output app-safe.
+- [x] Cover deterministic ordering.
 
 ### Slice 128 - Replay Same Edits Same Evidence
 
@@ -1721,10 +1768,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Build replay fixture.
-- [ ] Compare semantic evidence identity.
-- [ ] Exclude non-semantic diagnostics.
-- [ ] Cover mismatch report.
+- [x] Build replay fixture.
+- [x] Compare semantic evidence identity.
+- [x] Exclude non-semantic diagnostics.
+- [x] Cover mismatch report.
 
 ### Slice 129 - Host Timing Permutation Proof
 
@@ -1749,10 +1796,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Add deterministic timing variants.
-- [ ] Compare semantic outcomes.
-- [ ] Guard app tick authority.
-- [ ] Document host timing boundary.
+- [x] Add deterministic timing variants.
+- [x] Compare semantic outcomes.
+- [x] Guard app tick authority.
+- [x] Document host timing boundary.
 
 ### Slice 130 - Conflict And Rejection Retention
 
@@ -1776,10 +1823,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Persist rejection evidence.
-- [ ] Keep export applied-only.
-- [ ] Cover explicit retry.
-- [ ] Show rejection in history.
+- [x] Persist rejection evidence.
+- [x] Keep export applied-only.
+- [x] Cover explicit retry.
+- [x] Show rejection in history.
 
 ### Slice 131 - Multi-File History Recovery
 
@@ -1803,10 +1850,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Recover multiple file histories.
-- [ ] Isolate export by file.
-- [ ] Isolate corruption by file where safe.
-- [ ] Cover unrelated-file continuation.
+- [x] Recover multiple file histories.
+- [x] Isolate export by file.
+- [x] Isolate corruption by file where safe.
+- [x] Cover unrelated-file continuation.
 
 ### Slice 132 - Agent Historical Export
 
@@ -1830,10 +1877,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Add agent historical export command.
-- [ ] Add history listing command.
-- [ ] Cover success and obstruction.
-- [ ] Guard authority boundary.
+- [x] Add agent historical export command.
+- [x] Add history listing command.
+- [x] Cover success and obstruction.
+- [x] Guard authority boundary.
 
 ### Slice 133 - WSC Release Gate Integration
 
@@ -1858,10 +1905,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Add WSC witnesses to jedit gate.
-- [ ] Keep Echo core tests in Echo.
-- [ ] Add script coverage.
-- [ ] Run full gate.
+- [x] Add WSC witnesses to jedit gate.
+- [x] Keep Echo core tests in Echo.
+- [x] Add script coverage.
+- [x] Run full gate.
 
 ### Slice 134 - DIND Replay Closeout
 
@@ -1886,10 +1933,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Add closeout replay witness.
-- [ ] Include non-applied outcome.
-- [ ] Compare retained evidence coordinates.
-- [ ] Add to appropriate gate.
+- [x] Add closeout replay witness.
+- [x] Include non-applied outcome.
+- [x] Compare retained evidence coordinates.
+- [x] Add to appropriate gate.
 
 ### Slice 135 - Portability Template Update
 
@@ -1915,10 +1962,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Update reusable app-hosting template.
-- [ ] Include durability lessons.
-- [ ] Include authority bar.
-- [ ] Add drift check.
+- [x] Update reusable app-hosting template.
+- [x] Include durability lessons.
+- [x] Include authority bar.
+- [x] Add drift check.
 
 ### Slice 136 - Graft/Think Readiness Checklist
 
@@ -1942,10 +1989,10 @@ Test plan:
 
 Checklist:
 
-- [ ] Write portability checklist.
-- [ ] Define app/Echo/Wesley ownership.
-- [ ] Define minimum gate.
-- [ ] Link from BEARING or guide.
+- [x] Write portability checklist.
+- [x] Define app/Echo/Wesley ownership.
+- [x] Define minimum gate.
+- [x] Link from BEARING or guide.
 
 ### Slice 137 - End-To-End Guide Refresh
 

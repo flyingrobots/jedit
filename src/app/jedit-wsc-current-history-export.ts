@@ -6,12 +6,15 @@ import {
   type JeditWscWorkspaceStorePort,
 } from '../ports/jedit-wsc-workspace-store.js';
 import {
+  JEDIT_WSC_HISTORY_REJECTION_SCHEMA_VERSION,
+} from '../ports/jedit-wsc-history-listing.js';
+import {
   JEDIT_WSC_CURRENT_HISTORY_EXPORTED,
   JEDIT_WSC_CURRENT_HISTORY_EXPORT_EVIDENCE_PREFIX,
   JEDIT_WSC_CURRENT_HISTORY_EXPORT_OBSTRUCTED,
   JEDIT_WSC_CURRENT_HISTORY_HOST_ARTIFACT_WRITE_FAILED,
-  JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_FAILED,
   JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_OBSTRUCTED,
+  JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_FAILED,
   JEDIT_WSC_CURRENT_HISTORY_MISSING_CURRENT_BASIS,
   JEDIT_WSC_CURRENT_HISTORY_WSC_STORE_OBSTRUCTED,
   type JeditWscCurrentHistoryExportObstructed,
@@ -41,6 +44,20 @@ interface CurrentWscHistoryCandidate {
 interface CurrentWscHistoryCandidates {
   readonly candidates: readonly CurrentWscHistoryCandidate[];
 }
+
+type CurrentWscHistoryEnvelopeMetadata =
+  | { readonly status: 'candidate'; readonly submittedAtMs: number }
+  | { readonly status: 'ignored' }
+  | { readonly status: 'obstructed'; readonly message: string };
+
+interface CurrentWscSettlementPayload {
+  readonly schemaVersion?: string;
+  readonly submittedAtMs?: number;
+}
+
+const METADATA_CANDIDATE: 'candidate' = 'candidate';
+const METADATA_IGNORED: 'ignored' = 'ignored';
+const METADATA_OBSTRUCTED: 'obstructed' = 'obstructed';
 
 export interface ExportCurrentJeditWscHistoryInput {
   readonly store: JeditWscWorkspaceStorePort;
@@ -180,33 +197,43 @@ function currentHistoryCandidates(
     if (read.status === JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED) {
       return storeObstructed(read.obstruction);
     }
-    const submittedAtMs = submittedAtMsFromEnvelope(read.envelope);
-    if (submittedAtMs == null) {
-      return exportObstructed(
-        JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_FAILED,
-        `WSC envelope lacks current-basis metadata: ${read.envelope.envelopeId}`,
-        read.envelope.envelopeId,
-      );
+    const metadata = currentHistoryMetadataFromEnvelope(read.envelope);
+    if (metadata.status === METADATA_OBSTRUCTED) {
+      return exportObstructed(JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_FAILED, metadata.message, read.envelope.envelopeId);
+    }
+    if (metadata.status === METADATA_IGNORED) {
+      continue;
     }
     candidates.push({
       envelopeId: read.envelope.envelopeId,
       envelope: read.envelope,
-      submittedAtMs,
+      submittedAtMs: metadata.submittedAtMs,
     });
   }
   return { candidates };
 }
 
-function submittedAtMsFromEnvelope(envelope: JeditWscWorkspaceEnvelope): number | undefined {
+function currentHistoryMetadataFromEnvelope(envelope: JeditWscWorkspaceEnvelope): CurrentWscHistoryEnvelopeMetadata {
+  let payload: CurrentWscSettlementPayload;
   try {
-    const payload = JSON.parse(Buffer.from(envelope.bytes).toString(UTF8_ENCODING));
-    return payload?.schemaVersion === WSC_EDIT_SETTLEMENT_SCHEMA_VERSION
-      && Number.isFinite(payload.submittedAtMs)
-      ? payload.submittedAtMs
-      : undefined;
+    payload = JSON.parse(Buffer.from(envelope.bytes).toString(UTF8_ENCODING));
   } catch {
-    return undefined;
+    return { status: METADATA_OBSTRUCTED, message: `WSC envelope is not valid JSON: ${envelope.envelopeId}` };
   }
+  if (payload.schemaVersion === JEDIT_WSC_HISTORY_REJECTION_SCHEMA_VERSION) {
+    return { status: METADATA_IGNORED };
+  }
+  if (payload.schemaVersion !== WSC_EDIT_SETTLEMENT_SCHEMA_VERSION) {
+    return { status: METADATA_OBSTRUCTED, message: `WSC envelope has unsupported schema: ${envelope.envelopeId}` };
+  }
+  const submittedAtMs = payload.submittedAtMs;
+  return isFiniteNumber(submittedAtMs)
+    ? { status: METADATA_CANDIDATE, submittedAtMs }
+    : { status: METADATA_OBSTRUCTED, message: `WSC envelope lacks current-basis metadata: ${envelope.envelopeId}` };
+}
+
+function isFiniteNumber(value: number | undefined): value is number {
+  return value != null && Number.isFinite(value);
 }
 
 function compareCurrentHistoryCandidates(

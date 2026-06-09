@@ -7,7 +7,7 @@ status: "target"
 owners:
   - "@flyingrobots"
 created: "2026-06-08"
-updated: "2026-06-08"
+updated: "2026-06-09"
 ---
 
 # WF-0105 - Vim Target Usability Tests
@@ -113,7 +113,7 @@ Task:
 14. Type the payload below and see every character appear in the document:
 
     ```text
-    abcdefghijklmnopqrwstuvwxyz12343567890!@#$%^&*()_+-=[]'/\.,
+    abcdefghijklmnopqrstuvwxyz1234567890!@#$%^&*()_+-=[]'/\.,
     ```
 
 15. Press Escape to return to Normal mode.
@@ -138,7 +138,7 @@ Expected result:
 - `cat example.txt` exactly matches:
 
   ```text
-  abcdefghijklmnopqrwstuvwxyz12343567890!@#$%^&*()_+-=[]'/\.,before
+  abcdefghijklmnopqrstuvwxyz1234567890!@#$%^&*()_+-=[]'/\.,before
   ```
 
   The final byte is the newline from the original file.
