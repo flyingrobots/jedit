@@ -84,15 +84,14 @@ function createSettlementMaterializer(outputPath, ports) {
   return {
     artifact: undefined,
     materialize(envelope) {
-      const payload = JSON.parse(Buffer.from(envelope.bytes).toString(UTF8_ENCODING));
+      let payload;
+      try {
+        payload = JSON.parse(Buffer.from(envelope.bytes).toString(UTF8_ENCODING));
+      } catch {
+        return materializationObstructed(ports, 'basis bytes are not JSON');
+      }
       if (payload?.schemaVersion !== SETTLEMENT_SCHEMA_VERSION || !Array.isArray(payload.reading?.lines)) {
-        return {
-          status: ports.JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_OBSTRUCTED,
-          obstruction: {
-            code: ports.JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_FAILED,
-            message: 'basis is not an applied WSC settlement envelope',
-          },
-        };
+        return materializationObstructed(ports, 'basis is not an applied WSC settlement envelope');
       }
       this.artifact = {
         filePath: path.resolve(outputPath),
@@ -103,6 +102,16 @@ function createSettlementMaterializer(outputPath, ports) {
         status: ports.JEDIT_WSC_CURRENT_HISTORY_MATERIALIZED,
         artifact: this.artifact,
       };
+    },
+  };
+}
+
+function materializationObstructed(ports, message) {
+  return {
+    status: ports.JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_OBSTRUCTED,
+    obstruction: {
+      code: ports.JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_FAILED,
+      message,
     },
   };
 }

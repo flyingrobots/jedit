@@ -66,6 +66,28 @@ test('WSC agent history CLI reports typed obstruction for non-applied export bas
   assert.equal(body.obstruction.code, 'materialization_failed');
 });
 
+test('WSC agent history CLI reports typed obstruction for malformed export basis', (t) => {
+  ensureDistBuiltSync();
+  const workspace = mkdtempSync(path.join(os.tmpdir(), 'jedit-wsc-malformed-'));
+  t.after(() => rmSync(workspace, { recursive: true, force: true }));
+  const basisId = writeMalformedEnvelope(workspace);
+  const result = runCli([
+    'export',
+    '--json',
+    '--workspace',
+    workspace,
+    '--basis',
+    basisId,
+    '--output',
+    path.join(workspace, 'malformed.txt'),
+  ]);
+
+  assert.notEqual(result.status, 0);
+  const body = JSON.parse(result.stdout);
+  assert.equal(body.status, 'JEDIT_WSC_CURRENT_HISTORY_EXPORT_OBSTRUCTED');
+  assert.equal(body.obstruction.code, 'materialization_failed');
+});
+
 test('WSC agent history CLI does not expose trusted runtime controls', () => {
   const source = readFileSync(SCRIPT_PATH, UTF8_ENCODING);
 
@@ -84,6 +106,15 @@ function runCli(args) {
 function writeEnvelope(workspace, payload) {
   const directory = path.join(workspace, '.jedit', 'echo-wsc', 'envelopes');
   const bytes = Buffer.from(JSON.stringify(payload), UTF8_ENCODING);
+  const envelopeId = createHash('sha256').update(bytes).digest('hex');
+  mkdirSync(directory, { recursive: true });
+  writeFileSync(path.join(directory, `${envelopeId}.wsc-envelope`), bytes);
+  return envelopeId;
+}
+
+function writeMalformedEnvelope(workspace) {
+  const directory = path.join(workspace, '.jedit', 'echo-wsc', 'envelopes');
+  const bytes = Buffer.from('not json', UTF8_ENCODING);
   const envelopeId = createHash('sha256').update(bytes).digest('hex');
   mkdirSync(directory, { recursive: true });
   writeFileSync(path.join(directory, `${envelopeId}.wsc-envelope`), bytes);
