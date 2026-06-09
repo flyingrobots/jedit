@@ -36,6 +36,30 @@ test('Operator-pending state completes when a motion arrives', async () => {
   assert.equal(complete.syntax.motion, 'wordForward');
 });
 
+test('Operator-pending state keeps text-object scopes pending', async () => {
+  const normal = await importDist('app', 'workspace', 'vim-normal-state.js');
+  const pending = normal.updateVimNormalAccumulator(
+    normal.createVimNormalAccumulator(),
+    { owner: normal.VimNormalInputOwners.Normal, key: 'd' },
+  );
+  const scope = normal.updateVimNormalAccumulator(
+    pending.state,
+    { owner: normal.VimNormalInputOwners.Normal, key: 'a' },
+  );
+  const complete = normal.updateVimNormalAccumulator(
+    scope.state,
+    { owner: normal.VimNormalInputOwners.Normal, key: 'w' },
+  );
+
+  assert.equal(scope.effect, normal.VimNormalTransitionEffects.Pending);
+  assert.equal(scope.readyForExecution, false);
+  assert.equal(scope.state.phase, normal.VimNormalPhases.OperatorPending);
+  assert.deepEqual(scope.state.pendingKeys, ['d', 'a']);
+  assert.equal(complete.effect, normal.VimNormalTransitionEffects.Complete);
+  assert.equal(complete.syntax.family, 'operatorTextObject');
+  assert.deepEqual(complete.syntax.textObject, { scope: 'around', target: 'word' });
+});
+
 test('Escape resets pending Normal state without execution readiness', async () => {
   const normal = await importDist('app', 'workspace', 'vim-normal-state.js');
   const pending = normal.updateVimNormalAccumulator(

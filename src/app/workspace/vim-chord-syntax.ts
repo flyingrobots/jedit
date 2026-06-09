@@ -190,14 +190,10 @@ const TOKEN_VISUAL_PREFIX: 'visualPrefix' = 'visualPrefix';
 
 const OPERATOR_PUT_AFTER: VimOperatorName = 'putAfter';
 const OPERATOR_PUT_BEFORE: VimOperatorName = 'putBefore';
+const TEXT_OBJECT_AROUND_PREFIX_KEY = 'a';
+const TEXT_OBJECT_INNER_PREFIX_KEY = 'i';
 const STANDALONE_OPERATORS: ReadonlySet<VimOperatorName> = new Set([
-  'changeToLineEnd',
-  'deleteChar',
-  'deleteToLineEnd',
-  'joinNoSpace',
-  'putAfter',
-  'putBefore',
-  'yankLine',
+  'changeToLineEnd', 'deleteChar', 'deleteToLineEnd', 'joinNoSpace', 'putAfter', 'putBefore', 'yankLine',
 ]);
 
 const COMMAND_LINE_TEXT_INDEX = 1;
@@ -276,6 +272,9 @@ function parseOperatorSyntax(context: ParserContext, operator: VimOperatorToken)
   }
   if (isTextObjectToken(target)) {
     return completeOperatorTextObject(context, operator, target);
+  }
+  if (!isStandaloneOperator(operator.operator) && isPendingTextObjectScopeToken(target)) {
+    return pendingSyntax(operatorDraft(context, operator, FAMILY_OPERATOR_COMMAND));
   }
   if (isStandaloneOperator(operator.operator)) {
     return completeOperatorCommand(context, operator);
@@ -460,6 +459,10 @@ function isStandaloneOperator(operator: VimOperatorName): boolean {
 
 function isPutOperator(operator: VimOperatorName): boolean {
   return operator === OPERATOR_PUT_AFTER || operator === OPERATOR_PUT_BEFORE;
+}
+
+function isPendingTextObjectScopeToken(token: VimGrammarToken | undefined): boolean {
+  return token?.raw[0] === TEXT_OBJECT_AROUND_PREFIX_KEY || token?.raw[0] === TEXT_OBJECT_INNER_PREFIX_KEY;
 }
 
 function macroSyntax(token: VimMacroControlToken): VimMacroSyntax {
