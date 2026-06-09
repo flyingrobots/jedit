@@ -1128,6 +1128,7 @@ Local validation for implementation branches:
 ```bash
 npm run build
 node --test --test-concurrency=1 spec/vim-power-grammar.spec.mjs
+node --test --test-concurrency=1 spec/vim-power-chord-syntax.spec.mjs
 node --test --test-concurrency=1 spec/vim-power-motion-resolver.spec.mjs
 node --test --test-concurrency=1 spec/vim-power-text-objects.spec.mjs
 node --test --test-concurrency=1 spec/vim-power-operators.spec.mjs
@@ -1202,8 +1203,8 @@ Target usability witnesses:
 
 ## Retrospective
 
-Roadmap implementation is not complete. Slices 2, 3, and 4 now have inspectable
-planning and syntax artifacts.
+Roadmap implementation is not complete. Slices 2, 3, 4, and 5 now have
+inspectable planning and syntax artifacts.
 
 What the tests proved:
 
@@ -1219,6 +1220,10 @@ What the tests proved:
   for counts, registers, operators, motions, text objects, mode switches, visual
   prefixes, command-line invocations, macro controls, incomplete prefixes, and
   unknown keys.
+- `spec/vim-power-chord-syntax.spec.mjs` proves tokens parse into
+  `VimChordSyntax` for complete chords, pending command fragments, pending
+  modifiers, command-line input, macro controls, standalone put commands,
+  invalid unknown keys, stray text objects, and trailing-token obstructions.
 
 What changed from the design:
 
@@ -1229,8 +1234,12 @@ What changed from the design:
 - The Slice 4 token model lives in `src/app/workspace/vim-grammar.ts`, with the
   stable vocabulary in `src/app/workspace/vim-grammar-vocabulary.ts` and syntax
   snapshots in `spec/fixtures/vim-power-grammar-snapshots.json`.
+- The Slice 5 parser lives in `src/app/workspace/vim-chord-syntax.ts`, with
+  syntax snapshots in
+  `spec/fixtures/vim-power-chord-syntax-snapshots.json`.
 
 Follow-up work:
 
-- Slice 5 should parse the token stream into `VimChordSyntax` and keep raw key
-  handling behind the grammar boundary.
+- Slice 6 should make Normal and Operator-pending command accumulation
+  explicit, using `VimChordSyntax` as the boundary between raw keys and runtime
+  state.
