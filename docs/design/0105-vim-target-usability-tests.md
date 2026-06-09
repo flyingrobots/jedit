@@ -101,23 +101,26 @@ Task:
 5. Press Enter or Tab to accept the highlighted `edit` command completion.
 6. Observe that command mode remains active with `:edit` followed by a space in
    the command line and file completions visible.
-7. Type or select `example.txt` from file completions.
-8. Press Enter or Tab to accept `example.txt`.
-9. Observe that Jedit opens the file and displays its contents.
-10. Use Normal-mode Vim navigation commands such as `G`, `gg`, and `0`, ending
+7. Type `exam`.
+8. Observe the file-completion list narrow to `example.txt`.
+9. Press Tab to accept the highlighted `example.txt` completion, leaving
+   `:edit example.txt` in the command line.
+10. Press Enter to dispatch `:edit example.txt`.
+11. Observe that Jedit opens the file and displays its contents.
+12. Use Normal-mode Vim navigation commands such as `G`, `gg`, and `0`, ending
     with the cursor on the first byte of the file.
-11. Press `i` to enter Insert mode at the first byte.
-12. Type the payload below and see every character appear in the document:
+13. Press `i` to enter Insert mode at the first byte.
+14. Type the payload below and see every character appear in the document:
 
     ```text
     abcdefghijklmnopqrwstuvwxyz12343567890!@#$%^&*()_+-=[]'/\.,
     ```
 
-13. Press Escape to return to Normal mode.
-14. Press `:` to open the Vim command-line surface again.
-15. Type `wq` and press Enter.
-16. Observe that Jedit saves the file and exits cleanly.
-17. Run `cat example.txt`.
+15. Press Escape to return to Normal mode.
+16. Press `:` to open the Vim command-line surface again.
+17. Type `wq` and press Enter.
+18. Observe that Jedit saves the file and exits cleanly.
+19. Run `cat example.txt`.
 
 Expected result:
 
