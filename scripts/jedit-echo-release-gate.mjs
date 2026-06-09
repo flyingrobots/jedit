@@ -40,6 +40,11 @@ const FOCUSED_TESTS = Object.freeze([
   'spec/workspace-text-boundaries.spec.mjs',
   'spec/workspace-echo-witness-cli.spec.mjs',
   'spec/jedit-wsc-restart-round-trip.spec.mjs',
+  'spec/jedit-wsc-history-basis.spec.mjs',
+  'spec/jedit-wsc-current-history-export.spec.mjs',
+  'spec/jedit-wsc-history-listing.spec.mjs',
+  'spec/jedit-wsc-replay-proof.spec.mjs',
+  'spec/jedit-wsc-agent-history-cli.spec.mjs',
   'spec/production-cutover-guard.spec.mjs',
   'spec/release-quickstart.spec.mjs',
 ]);
