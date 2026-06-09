@@ -121,6 +121,7 @@ Relevant existing design anchors:
 - [Text Edit Algebra](text-edit-algebra.md)
 - [Why Echo](why-echo.md)
 - [Causal Event Model](causal-event-model.md)
+- [0106 Emacs Ideas To Steal Causally](0106-emacs-ideas-to-steal-causally.md)
 - [Technical Teardown: The Vim Editor Layer](../technical-teardown.md#12-the-vim-editor-layer)
 
 Slice 2 adds the first machine-readable inventory:
