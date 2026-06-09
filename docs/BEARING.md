@@ -97,6 +97,14 @@ through `:edit <path>`, and reuse the same completion component for later
 Graft-backed editor symbol, documentation, source-definition, and causal-history
 previews.
 
+The target workflow ledger is
+[`docs/design/0105-vim-target-usability-tests.md`](design/0105-vim-target-usability-tests.md).
+It records common Vim-shaped end-to-end usability tests for open, edit, save,
+quit, invalid command recovery, dirty quit obstruction, unsupported files,
+restart recovery, and multi-file editing. These workflows are target contracts
+until the production TUI harness can drive them and verify filesystem and
+Echo-hosted text evidence.
+
 ## Active Plan: Vim Power Moves Causal Parity
 
 The Vim parity expansion plan is
