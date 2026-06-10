@@ -29,8 +29,8 @@ screen.
 
 Jedit owns this design because jedit currently drives the user-visible problem:
 the title screen needs smooth terminal rendering, performance evidence,
-pre-Braille visual debugging, and eventual image/video/GIF capture without
-turning the editor into a graphics-engine dumping ground.
+pre-Braille visual debugging, and eventual image/video capture without turning
+the editor into a graphics-engine dumping ground.
 
 ## Sponsored Human
 
@@ -134,15 +134,15 @@ second inspectable surface: pre-Braille image frames.
 The expected developer flow is:
 
 ```bash
-npm run title:render-image -- --scene bunny.jedit-scene --frame 120 --output frame.png
-npm run title:render-video -- --scene bunny.jedit-scene --frames 180 --output title.gif
-npm run title:preview -- --scene bunny.jedit-scene --render braille
+npm run title:render-image -- --scene title.jedit-scene --frame 120 --output frame.png
+npm run title:render-video -- --scene title.jedit-scene --frames 180 --output title.mp4
+npm run title:preview -- --scene title.jedit-scene --render braille
 ```
 
 The exact commands may change, but the product shape should remain:
 
 - image output shows ray-traced color before Braille quantization;
-- video/GIF output captures the same pre-Braille render target over time;
+- video output captures the same pre-Braille render target over time;
 - terminal preview shows the packed Bijou-cell target;
 - JSON facts connect all outputs to the same scene id, camera, time, renderer
   profile, and frame slot policy.
@@ -184,11 +184,19 @@ Contract: `GeordiRayTracedTitleFrame`.
 The renderer contract should separate scene compilation from frame rendering:
 
 ```text
-compile(sceneArtifact, assets, rendererProfile) -> CompiledScene
-beginFrame(compiledScene, uniforms) -> FrameSlot
-renderFrame(frameSlot, target) -> RenderResult
-present(renderResult) -> Bijou Surface or export artifact
+Geordi:
+compile(sceneArtifact, assets, rendererProfile) -> CompiledSceneReceipt
+acquireFrameSlot(compiledSceneReceipt, targetSpec, uniforms) -> FrameLease
+renderFrame(frameLease) -> RenderResult
+resolveTarget(renderResult, targetSpec) -> Rgba8Frame | PackedBijouCells
+exportWitness(resolvedTarget, witnessPolicy) -> ArtifactReceipt
+
+Bijou/jedit:
+presentCells(packedCells) -> BijouSurface
 ```
+
+Geordi should not own presentation. Geordi compiles, renders, resolves, exports,
+and proves. Bijou and jedit present.
 
 ### Scene Boundary
 
@@ -206,11 +214,12 @@ The scene boundary should describe:
 - supported render targets.
 
 The first jedit source format may remain `*.jedit-scene`, but the durable
-authoring direction should be GraphQL. The compiled runtime form should be
-Geordi-owned.
+authoring direction should be GraphQL. Authored Scene3D authority belongs to
+Geordi, not Bunny. Bunny supplies imported primitive graphics contracts.
 
-If Bunny later owns a reusable `bunny-scene3d` GraphQL schema, Geordi can compile
-or consume that profile without changing jedit's live rendering boundary.
+The compiled runtime form should be Geordi-owned. If Geordi later owns a
+reusable `geordi-scene3d.graphql` profile, it can import or reference
+Bunny-owned primitive schemas without changing jedit's live rendering boundary.
 
 ### GraphQL Authoring Profiles
 
@@ -221,7 +230,7 @@ Two profiles should be planned:
 
 ```text
 bijou-ui.graphql
-bunny-scene3d.graphql
+geordi-scene3d.graphql
 ```
 
 `bijou-ui.graphql` should describe terminal UI blocks and components:
@@ -243,7 +252,7 @@ GraphQL UI contract
   -> Bijou Surface or packed cell buffer
 ```
 
-`bunny-scene3d.graphql` should describe reusable 3D scene content:
+`geordi-scene3d.graphql` should describe reusable 3D scene content:
 
 - vectors, transforms, cameras, and projection settings;
 - primitive shapes and meshes;
@@ -251,6 +260,19 @@ GraphQL UI contract
 - asset identities and hashes;
 - renderer feature requirements;
 - deterministic numeric and geometry profiles.
+
+It may import or reference Bunny primitive schemas such as:
+
+```text
+schemas/bunny/v0/graphics.graphql
+schemas/bunny/v0/optics.graphql
+```
+
+Those Bunny schemas should define renderer-neutral primitives such as `Vector3`,
+`Quaternion`, `Matrix4x4`, `Aabb3`, `Ray3`, `Sphere3`, `RayHit3`, camera math
+helpers, projection parameters, and color/vector helper types. Bunny should not
+own scene objects, materials, lights, animation tracks, renderer feature
+requirements, render targets, Geordi receipts, or jedit title-screen behavior.
 
 The expected path is:
 
@@ -267,8 +289,8 @@ The split matters:
 - GraphQL is the authoring and schema authority.
 - Wesley provides generated source and drift checks.
 - Geordi owns lowered IR, renderer profiles, receipts, and render targets.
-- Bunny owns reusable numeric, geometry, collision, and optics types used by the
-  scene profile.
+- Bunny owns reusable numeric, geometry, collision, and optics primitives used by
+  the scene profile.
 - Bijou owns the terminal component and cell semantics used by the UI profile.
 - jedit owns app-specific screens, title-scene product behavior, and wiring.
 
@@ -288,7 +310,8 @@ bijou-braille-cells
 `rgba8-image` exists for:
 
 - PNG frame export;
-- GIF/video capture;
+- raw RGBA frame hashes;
+- later GIF/video capture;
 - visual debugging before Braille;
 - renderer cross-checks;
 - pixel-level witness probes.
@@ -304,6 +327,42 @@ The live jedit path should prefer `bijou-braille-cells`. Rendering an RGBA image
 reading it back, then CPU-sampling it into Braille is acceptable as an early
 proof, but it should not be the final hot path.
 
+### Target Equivalence
+
+Image and cell targets must prove they describe the same scene. The first proof
+should be small and explicit:
+
+```text
+sceneId: title-default
+frameIndex: 0
+timeSeconds: 0
+target A: rgba8-image
+target B: bijou-braille-cells
+proof:
+  rgba raw hash
+  reference rgba-to-braille hash
+  native packed-cell hash
+  facts hash
+```
+
+The reference path is:
+
+```text
+RGBA target at sample-grid resolution
+  -> reference Braille resolver
+  -> expected PackedBijouCells
+```
+
+A native packed-cell renderer then proves:
+
+```text
+native PackedBijouCells == reference PackedBijouCells
+```
+
+The equivalence policy must name thresholding, gamma, color-space conversion,
+dithering, background alpha, dot ordering, terminal cell dimensions, and sample
+grid layout. Without those fields, "same scene" is not an inspectable claim.
+
 ### Frame Slot
 
 Frame slots should be reusable, mutable storage:
@@ -311,7 +370,11 @@ Frame slots should be reusable, mutable storage:
 ```text
 FrameSlot = {
   id: PositiveInteger,
+  generation: PositiveInteger,
+  leaseId: string,
   state: "free" | "rendering" | "rendered" | "resolving" | "ready" | "presenting",
+  targetSpecHash: string,
+  bufferPolicy: "double-buffer" | "triple-buffer" | "ring-buffer",
   rgbaTarget?: Rgba8Target,
   cellTarget?: PackedBijouCellTarget,
   facts: RenderFrameFacts
@@ -321,6 +384,9 @@ FrameSlot = {
 The implementation must not allocate a new object graph for every rendered
 frame. Slots own reusable buffers, and frame rendering mutates those buffers.
 
+`slotId` alone is not enough to prevent stale-frame bugs. Any consumer holding a
+slot must also validate the slot generation and lease id.
+
 ### Frame Facts
 
 Each frame should report:
@@ -329,16 +395,34 @@ Each frame should report:
 RenderFrameFacts = {
   sceneId: string,
   sceneHash: string,
+  compiledSceneHash: string,
+  assetBundleHash: string,
+  uniformsHash: string,
+  cameraHash: string,
   rendererName: string,
   rendererProfile: string,
+  geordiProfileHash: string,
+  bunnySchemaHash?: string,
+  rendererBuildHash: string,
   target: "rgba8-image" | "bijou-braille-cells",
+  targetSpecHash: string,
   frameIndex: NonNegativeInteger,
   timeSeconds: number,
   width: PositiveInteger,
   height: PositiveInteger,
   slotId: PositiveInteger,
+  slotGeneration: PositiveInteger,
   bufferPolicy: "double-buffer" | "triple-buffer" | "ring-buffer",
   backend: "typescript-cpu" | "rust-wasm-cpu" | "webgpu" | "webgl" | "native-gpu",
+  accelerationPolicyId?: string,
+  accelerationStructureHash?: string,
+  brailleResolvePolicyId?: string,
+  sampleGridHash?: string,
+  colorSpace: string,
+  toneMapPolicyId?: string,
+  cellFormatId?: string,
+  rawBufferHash: string,
+  artifactHash?: string,
   rayCount?: NonNegativeInteger,
   intersectionCount?: NonNegativeInteger,
   readbackWaitMs?: NonNegativeNumber,
@@ -418,7 +502,7 @@ the win. The contract should make late readback observable and non-fatal.
 | Derived state | Compiled scene buffers, acceleration structures, frame slots, image targets, packed cell targets. |
 | Invalid states | Rendering from stale assets, presenting an incomplete slot, parsing scene IR inside the frame loop. |
 | Reset behavior | Scene, asset, renderer profile, target size, or backend changes invalidate compiled buffers and frame slots. |
-| Serialization | Scene artifacts, frame facts, PNG/GIF/video exports, terminal-cell recordings, visual witnesses. |
+| Serialization | Scene artifacts, frame facts, raw RGBA hashes, PNG exports, terminal-cell recordings, visual witnesses, later video exports. |
 | Deterministic assumptions | Fixed scene, time, camera, target size, renderer profile, and asset hashes produce stable facts and bounded visual deltas. |
 
 ```mermaid
@@ -429,7 +513,7 @@ flowchart LR
   BunnyMath --> Renderer[Geordi-RayTracer backend]
   Renderer --> ImageTarget[RGBA image target]
   Renderer --> CellTarget[Packed Bijou cell target]
-  ImageTarget --> DebugExport[PNG GIF video witnesses]
+  ImageTarget --> DebugExport[Raw PNG and later video witnesses]
   CellTarget --> Bijou[Bijou Surface or packed surface]
   Bijou --> Terminal[Terminal presentation]
 ```
@@ -439,8 +523,8 @@ flowchart LR
 | Project | Owns | Does Not Own |
 | --- | --- | --- |
 | jedit | App-specific screens, title-screen product behavior, frame scheduling policy, CLI/debug commands, scene selection, terminal integration. | General graphics math, reusable renderer engine, terminal framework internals. |
-| Geordi | Scene/UI IR, compiled render artifacts, renderer profiles, render targets, frame facts, backend dispatch, visual witnesses. | jedit editor behavior, Echo text authority, Bijou terminal output. |
-| Bunny | Deterministic math, vectors, matrices, rays, shapes, intersections, bounds, acceleration primitives, optics math, reusable Scene3D schema primitives. | Scene scheduling, renderer receipts, title-screen UI, terminal cells. |
+| Geordi | Scene/UI IR, Scene3D authoring profile, compiled render artifacts, renderer profiles, render targets, frame facts, backend dispatch, visual witnesses. | jedit editor behavior, Echo text authority, Bijou terminal output, Bunny primitive definitions. |
+| Bunny | Deterministic math, vectors, matrices, rays, shapes, intersections, bounds, acceleration primitives, optics math, reusable primitive graphics schemas. | Authored scenes, scene scheduling, renderer profiles, render receipts, title-screen UI, terminal cells. |
 | Bijou | Surface/cell model, packed cell presentation, frame diffing, terminal output, TUI composition, reusable terminal UI component schema primitives. | Rays, meshes, Scene3D IR, graphics acceleration. |
 
 ## Accessibility Posture
@@ -523,8 +607,9 @@ Choose Option C.
 
 The Geordi-RayTracer direction should support both pre-Braille image targets and
 packed Bijou cell targets. Jedit should use image targets for debugging,
-fixtures, PNG/GIF/video capture, and visual witnesses. Jedit should use packed
-cell targets for live title rendering whenever the backend supports them.
+fixtures, raw RGBA hashes, PNG capture, later video export, and visual witnesses.
+Jedit should use packed cell targets for live title rendering whenever the
+backend supports them.
 
 The first implementation may use CPU rendering and may internally resolve image
 samples into cells, but the public contract should not bake in "image first" as
@@ -536,16 +621,19 @@ the only live path.
 
 Define the jedit-facing renderer interface and evidence formats.
 
-- [ ] Slice 1: Add this design and create tracking issues.
-- [ ] Slice 2: Define frame facts and target names in jedit docs/tests.
-- [ ] Slice 3: Add a fixture that describes expected image and cell targets for
-      one deterministic title frame.
+- [ ] Slice 1: Land WF-0107 with ownership, lease, target, and witness
+      amendments.
+- [ ] Slice 2: Define TypeScript-only target specs, frame leases, frame slots,
+      and frame facts.
+- [ ] Slice 3: Add a deterministic frame-0 fixture with RGBA raw hash, reference
+      RGBA-to-Braille hash, native packed-cell hash, and facts hash.
 
 ### Goalpost 2: CPU Frame Slots
 
 Make the current title renderer compatible with reusable frame slots.
 
-- [ ] Slice 4: Introduce reusable frame slot objects or typed buffers.
+- [ ] Slice 4: Introduce reusable frame slot objects or typed buffers with
+      generation and lease ids.
 - [ ] Slice 5: Render title frames into a caller-owned or renderer-owned slot.
 - [ ] Slice 6: Prove no per-frame surface/sample object graph is required after
       warmup.
@@ -554,9 +642,11 @@ Make the current title renderer compatible with reusable frame slots.
 
 Expose image debug artifacts before Braille collapse.
 
-- [ ] Slice 7: Add an RGBA frame target for the current title scene.
-- [ ] Slice 8: Export deterministic PNG frames from the title renderer.
-- [ ] Slice 9: Export deterministic frame sequences suitable for GIF or video.
+- [ ] Slice 7: Add an RGBA8 frame target for the current title scene.
+- [ ] Slice 8: Export deterministic raw RGBA hashes and PNG frames from the title
+      renderer.
+- [ ] Slice 9: Keep GIF/video export as a later convenience artifact, not the
+      first proof gate.
 
 ### Goalpost 4: Geordi/Bunny Extraction
 
@@ -572,7 +662,8 @@ Move reusable rendering substrate out of jedit.
 
 Make terminal cells a first-class render target.
 
-- [ ] Slice 13: Define packed Bijou cell buffer layout.
+- [ ] Slice 13: Define packed Bijou cell buffer layout with `cellFormatId`,
+      `sampleGridHash`, and `brailleResolvePolicyId`.
 - [ ] Slice 14: Add adapter from packed cells to Bijou `Surface`.
 - [ ] Slice 15: Prove live title rendering can present from a completed cell
       slot.
@@ -585,15 +676,22 @@ Prepare for asynchronous GPU rendering without making it mandatory.
 - [ ] Slice 17: Add late-readback behavior that reuses the last ready frame.
 - [ ] Slice 18: Add backend capability facts for CPU, WASM, and GPU renderers.
 
-### Goalpost 7: GraphQL Authoring Profiles
+## Follow-Up Design Arcs
 
-Make the reusable authoring boundary explicit before jedit grows more local
-rendering dialects.
+GraphQL authoring profiles are important, but they should not block WF-0107.
+They should move into separate design arcs:
 
-- [ ] Slice 19: Sketch `bijou-ui.graphql` ownership and component primitives.
-- [ ] Slice 20: Sketch `bunny-scene3d.graphql` ownership and Scene3D primitives.
-- [ ] Slice 21: Prove jedit can reference generated profile DTOs without parsing
-      schema text during frame rendering.
+```text
+WF-0108 - Bijou UI GraphQL Profile
+WF-0109 - Geordi Scene3D Authoring Profile
+```
+
+WF-0108 should define `bijou-ui.graphql`, terminal component primitives,
+accessibility fields, and the Geordi-Bijou lowering bridge.
+
+WF-0109 should define `geordi-scene3d.graphql`, authored scene objects,
+materials, lights, animation tracks, renderer features, target capabilities, and
+imports from Bunny primitive graphics schemas.
 
 ## Acceptance Criteria
 
@@ -603,11 +701,12 @@ rendering dialects.
       output.
 - [ ] The renderer contract supports reusable frame slots.
 - [ ] The live path can avoid blocking on an incomplete render slot.
-- [ ] Image/video/GIF debug capture is planned before Braille collapse.
+- [ ] Raw RGBA and PNG debug capture are planned before Braille collapse.
 - [ ] Packed Bijou cells are planned as the preferred live render target.
 - [ ] Bunny, Geordi, Bijou, and jedit ownership boundaries are explicit.
 - [ ] GraphQL authoring profiles are distinguished from compiled runtime render
       artifacts.
+- [ ] The image target to packed-cell target equivalence policy is explicit.
 
 ## Validation Plan
 
@@ -626,7 +725,7 @@ JEDIT_DIST_PREBUILT=1 node --test spec/title-scene-render.spec.mjs
 JEDIT_DIST_PREBUILT=1 node --test spec/title-scene-record-cli.spec.mjs
 JEDIT_DIST_PREBUILT=1 node --test spec/title-allocation-facts.spec.mjs
 npm run title:render-image -- --frame 0 --json
-npm run title:render-video -- --frames 2 --json
+npm run title:render-image -- --frame 0 --output frame.png
 ```
 
 ## Risks
@@ -642,20 +741,36 @@ npm run title:render-video -- --frames 2 --json
   participates in the contract.
 - A GraphQL UI profile can turn into a second UI framework unless Bijou owns the
   reusable component semantics.
+- A Scene3D schema can become misplaced graphics authority if scene objects,
+  materials, lights, animation, renderer features, or targets are smuggled into
+  Bunny.
 
-## Open Questions
+## Initial Answers And Remaining Questions
 
-- Should `bunny-scene3d.graphql` live in Bunny, Geordi, or a small shared schema
-  package generated by Bunny/Wesley tooling?
-- Should `bijou-ui.graphql` live in Bijou, Geordi, or a Geordi-Bijou bridge
-  package?
-- Should the packed Bijou cell target live in Geordi, Bijou, or the same bridge
-  package as the UI profile?
-- Should GIF/video encoding live in jedit CLI tooling or Geordi witness tooling?
-- Which backend should be the first non-TypeScript proof: Rust/WASM CPU, WebGPU,
-  or native Rust?
-- What is the smallest stable pixel format needed for pre-Braille debugging:
-  RGBA8, linear float, or both?
+- Scene3D profile ownership: not Bunny. If the schema includes authored scene
+  objects, materials, lights, animation, renderer features, or targets, it should
+  be `geordi-scene3d.graphql`. It may import Bunny primitive schemas.
+- Bunny schema ownership: Bunny owns primitive graphics contracts such as
+  `schemas/bunny/v0/graphics.graphql` and possibly
+  `schemas/bunny/v0/optics.graphql`.
+- Bijou UI profile ownership: Bijou should own terminal UI semantics. A
+  Geordi-Bijou bridge can own lowering and adapters.
+- Packed cell target ownership: cell layout semantics should be Bijou or
+  Geordi-Bijou. Geordi may support the render target, but should not silently
+  define Bijou internals.
+- GIF/video ownership: Geordi witness tooling should own canonical raw frame,
+  packed-cell, and frame-fact evidence. jedit CLI tooling may own convenient
+  product export commands. GIF/video files are convenience products, not first
+  proof artifacts.
+- First non-TypeScript backend: Rust/WASM CPU should precede WebGPU. GPU backend
+  work needs explicit precision, readback, and equivalence receipts.
+- First pixel format: RGBA8 with explicit `colorSpace` and `toneMapPolicyId`.
+  Linear float targets can come later if lighting debug work needs them.
+
+Remaining open question:
+
+- Which exact package owns the Geordi-Bijou bridge: Geordi, Bijou, or a separate
+  shared workspace package?
 
 ## Retrospective
 
