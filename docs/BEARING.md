@@ -152,6 +152,13 @@ pending Vim keys, and dot repeat. The proof surface is
 registers, transformed repeat, macros, marks, visual mode, substitute, and
 causal strand previews remain open.
 
+The presentation follow-on idea is
+[`docs/design/0108-jim-presentation-effect-offers.md`](design/0108-jim-presentation-effect-offers.md).
+It keeps power-move ripples, highlights, diagnostics, yank/put feedback, and
+full-buffer open/switch transitions as presentation effect offers. Effects may
+animate, downgrade, or suppress based on policy; they never mutate text truth or
+prove that playback occurred.
+
 ## Active Plan: Executable Design Cycle Template
 
 The current branch advances
