@@ -102,6 +102,8 @@ The renderer needs a better boundary:
 This arc includes:
 
 - Defining the jedit-to-Geordi title render boundary.
+- Recording GraphQL as the preferred authoring contract for reusable UI and
+  Scene3D profiles.
 - Defining a Geordi-RayTracer frame slot and render target model.
 - Treating pre-Braille RGBA output as a first-class debug/export target.
 - Treating packed Bijou cells as the preferred live jedit target.
@@ -203,10 +205,76 @@ The scene boundary should describe:
 - required Bunny math/geometry profile;
 - supported render targets.
 
-The first jedit source format may remain `*.jedit-scene`, but the compiled
-runtime form should be Geordi-owned. If Bunny later owns a reusable
-`bunny-scene3d` schema, Geordi can compile or consume that profile without
-changing jedit's live rendering boundary.
+The first jedit source format may remain `*.jedit-scene`, but the durable
+authoring direction should be GraphQL. The compiled runtime form should be
+Geordi-owned.
+
+If Bunny later owns a reusable `bunny-scene3d` GraphQL schema, Geordi can compile
+or consume that profile without changing jedit's live rendering boundary.
+
+### GraphQL Authoring Profiles
+
+GraphQL should describe reusable contracts and authoring surfaces. It should not
+be parsed or lowered inside the title-frame loop.
+
+Two profiles should be planned:
+
+```text
+bijou-ui.graphql
+bunny-scene3d.graphql
+```
+
+`bijou-ui.graphql` should describe terminal UI blocks and components:
+
+- layout blocks;
+- panes, drawers, overlays, menus, command surfaces, and status rows;
+- text, borders, spacing, focus rings, and accessibility labels;
+- theme token references;
+- event/action ids;
+- component-level facts needed by agents and tests.
+
+The expected path is:
+
+```text
+GraphQL UI contract
+  -> Wesley-generated DTOs and validators
+  -> Geordi UI IR
+  -> Geordi-Bijou renderer
+  -> Bijou Surface or packed cell buffer
+```
+
+`bunny-scene3d.graphql` should describe reusable 3D scene content:
+
+- vectors, transforms, cameras, and projection settings;
+- primitive shapes and meshes;
+- materials, lights, environment, and animation tracks;
+- asset identities and hashes;
+- renderer feature requirements;
+- deterministic numeric and geometry profiles.
+
+The expected path is:
+
+```text
+GraphQL Scene3D contract
+  -> Wesley-generated DTOs and validators
+  -> Geordi Scene3D IR or compiled scene artifact
+  -> Geordi-RayTracer backend
+  -> rgba8-image or bijou-braille-cells
+```
+
+The split matters:
+
+- GraphQL is the authoring and schema authority.
+- Wesley provides generated source and drift checks.
+- Geordi owns lowered IR, renderer profiles, receipts, and render targets.
+- Bunny owns reusable numeric, geometry, collision, and optics types used by the
+  scene profile.
+- Bijou owns the terminal component and cell semantics used by the UI profile.
+- jedit owns app-specific screens, title-scene product behavior, and wiring.
+
+The rest of jedit's UI can eventually become "Geordi -> Bijou-ized" through the
+UI profile. That should be a Bijou/Geordi feature, not a pile of jedit-only
+layout conventions.
 
 ### Render Targets
 
@@ -370,10 +438,10 @@ flowchart LR
 
 | Project | Owns | Does Not Own |
 | --- | --- | --- |
-| jedit | Title-screen product behavior, frame scheduling policy, CLI/debug commands, scene selection, terminal integration. | General graphics math, reusable renderer engine, terminal framework internals. |
-| Geordi | Scene IR, compiled render artifacts, renderer profiles, render targets, frame facts, backend dispatch, visual witnesses. | jedit editor behavior, Echo text authority, Bijou terminal output. |
-| Bunny | Deterministic math, vectors, matrices, rays, shapes, intersections, bounds, acceleration primitives, optics math. | Scene scheduling, renderer receipts, title-screen UI, terminal cells. |
-| Bijou | Surface/cell model, packed cell presentation, frame diffing, terminal output, TUI composition. | Rays, meshes, scene IR, graphics acceleration. |
+| jedit | App-specific screens, title-screen product behavior, frame scheduling policy, CLI/debug commands, scene selection, terminal integration. | General graphics math, reusable renderer engine, terminal framework internals. |
+| Geordi | Scene/UI IR, compiled render artifacts, renderer profiles, render targets, frame facts, backend dispatch, visual witnesses. | jedit editor behavior, Echo text authority, Bijou terminal output. |
+| Bunny | Deterministic math, vectors, matrices, rays, shapes, intersections, bounds, acceleration primitives, optics math, reusable Scene3D schema primitives. | Scene scheduling, renderer receipts, title-screen UI, terminal cells. |
+| Bijou | Surface/cell model, packed cell presentation, frame diffing, terminal output, TUI composition, reusable terminal UI component schema primitives. | Rays, meshes, Scene3D IR, graphics acceleration. |
 
 ## Accessibility Posture
 
@@ -517,6 +585,16 @@ Prepare for asynchronous GPU rendering without making it mandatory.
 - [ ] Slice 17: Add late-readback behavior that reuses the last ready frame.
 - [ ] Slice 18: Add backend capability facts for CPU, WASM, and GPU renderers.
 
+### Goalpost 7: GraphQL Authoring Profiles
+
+Make the reusable authoring boundary explicit before jedit grows more local
+rendering dialects.
+
+- [ ] Slice 19: Sketch `bijou-ui.graphql` ownership and component primitives.
+- [ ] Slice 20: Sketch `bunny-scene3d.graphql` ownership and Scene3D primitives.
+- [ ] Slice 21: Prove jedit can reference generated profile DTOs without parsing
+      schema text during frame rendering.
+
 ## Acceptance Criteria
 
 - [ ] jedit has a documented renderer boundary that does not make jedit the
@@ -528,6 +606,8 @@ Prepare for asynchronous GPU rendering without making it mandatory.
 - [ ] Image/video/GIF debug capture is planned before Braille collapse.
 - [ ] Packed Bijou cells are planned as the preferred live render target.
 - [ ] Bunny, Geordi, Bijou, and jedit ownership boundaries are explicit.
+- [ ] GraphQL authoring profiles are distinguished from compiled runtime render
+      artifacts.
 
 ## Validation Plan
 
@@ -560,13 +640,17 @@ npm run title:render-video -- --frames 2 --json
   crates.
 - Packed-cell formats can accidentally duplicate Bijou internals unless Bijou
   participates in the contract.
+- A GraphQL UI profile can turn into a second UI framework unless Bijou owns the
+  reusable component semantics.
 
 ## Open Questions
 
-- Should the first shared scene profile be Geordi-owned, Bunny-owned, or a jedit
-  adapter compiled into Geordi IR?
-- Should the packed Bijou cell target live in Geordi, Bijou, or a small bridge
+- Should `bunny-scene3d.graphql` live in Bunny, Geordi, or a small shared schema
+  package generated by Bunny/Wesley tooling?
+- Should `bijou-ui.graphql` live in Bijou, Geordi, or a Geordi-Bijou bridge
   package?
+- Should the packed Bijou cell target live in Geordi, Bijou, or the same bridge
+  package as the UI profile?
 - Should GIF/video encoding live in jedit CLI tooling or Geordi witness tooling?
 - Which backend should be the first non-TypeScript proof: Rust/WASM CPU, WebGPU,
   or native Rust?
