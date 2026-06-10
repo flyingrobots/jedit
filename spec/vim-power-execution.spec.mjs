@@ -488,6 +488,53 @@ test("vim marks store exact and line jump targets", async () => {
   );
 });
 
+test("normal mode accepts interactive vim mark prefixes", async () => {
+  const [mode, editing, syntax] = await Promise.all([
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "editor-editing.js"),
+    importDist("app", "workspace", "vim-chord-syntax.js"),
+  ]);
+  const editor = mockEditor(mode, {
+    lines: ["first", "  second"],
+    cursorRow: 1,
+    cursorCol: 4,
+  });
+
+  const pendingSet = editing.updateNormalMode(editor, { key: "m" }, 80, 24);
+  const marked = editing.updateNormalMode(pendingSet, { key: "a" }, 80, 24);
+  const pendingExact = editing.updateNormalMode(
+    { ...marked, cursorRow: 0, cursorCol: 0 },
+    { key: "`" },
+    80,
+    24,
+  );
+  const exactJump = editing.updateNormalMode(pendingExact, { key: "a" }, 80, 24);
+  const pendingLine = editing.updateNormalMode(
+    { ...marked, cursorRow: 0, cursorCol: 0 },
+    { key: "'" },
+    80,
+    24,
+  );
+  const lineJump = editing.updateNormalMode(pendingLine, { key: "a" }, 80, 24);
+
+  assert.equal(syntax.parseVimChordSyntax(["m"]).kind, "pending");
+  assert.equal(syntax.parseVimChordSyntax(["`"]).kind, "pending");
+  assert.equal(syntax.parseVimChordSyntax(["'"]).kind, "pending");
+  assert.deepEqual(pendingSet.pendingVimKeys, ["m"]);
+  assert.deepEqual(pendingExact.pendingVimKeys, ["`"]);
+  assert.deepEqual(pendingLine.pendingVimKeys, ["'"]);
+  assert.equal(marked.marks.a.row, 1);
+  assert.equal(marked.marks.a.column, 4);
+  assert.deepEqual(
+    { row: exactJump.cursorRow, column: exactJump.cursorCol },
+    { row: 1, column: 4 },
+  );
+  assert.deepEqual(
+    { row: lineJump.cursorRow, column: lineJump.cursorCol },
+    { row: 1, column: 2 },
+  );
+});
+
 test("normal mode preserves legacy pending operators without vim key state", async () => {
   const [mode, editing] = await Promise.all([
     importDist("app", "workspace", "editor", "mode.js"),

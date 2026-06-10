@@ -183,7 +183,13 @@ function readMacro(keys: readonly string[], index: number): TokenRead | undefine
 function readMark(keys: readonly string[], index: number): TokenRead | undefined {
   const key = keys[index] ?? '';
   const next = keys[index + 1];
-  if (!isMarkPrefix(key) || next == null || !MARK_NAMES.has(next)) {
+  if (!isMarkPrefix(key)) {
+    return undefined;
+  }
+  if (next == null) {
+    return singleToken(prefixToken(key, index), index + 1);
+  }
+  if (!MARK_NAMES.has(next)) {
     return undefined;
   }
   return singleToken(markToken(markAction(key), [key, next], index, next), index + 2);
