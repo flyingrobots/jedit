@@ -18,6 +18,7 @@ import {
 export type VimTextObjectObstruction =
   | 'empty-buffer'
   | 'missing-delimiter'
+  | 'unsupported-count'
   | 'unsupported-text-object';
 
 export interface VimTextObjectRequest {
@@ -89,7 +90,11 @@ export function resolveVimTextObject(
   }
 
   const count = Math.max(DEFAULT_COUNT, request.count ?? DEFAULT_COUNT);
-  const range = textObjectRange(request.editor, request.scope, request.target);
+  if (!supportsCount(request.target, count)) {
+    return obstructedTextObject(request, basisDigest, 'unsupported-count');
+  }
+
+  const range = textObjectRange(request.editor, request.scope, request.target, count);
   if (range == null) {
     return textObjectObstruction(request, basisDigest);
   }
@@ -108,12 +113,13 @@ function textObjectRange(
   editor: EditorState,
   scope: VimTextObjectScope,
   target: VimTextObjectTarget,
+  count: number,
 ): VimTextRange | undefined {
   if (target === WORD_TARGET || target === WORD_BIG_TARGET) {
-    return wordObjectRange(editor, scope, target);
+    return wordObjectRange(editor, scope, target, count);
   }
   if (target === PARAGRAPH_TARGET) {
-    return paragraphRange(editor, scope);
+    return paragraphRange(editor, scope, count);
   }
   return delimiterRange(editor, scope, target);
 }
@@ -122,6 +128,7 @@ function wordObjectRange(
   editor: EditorState,
   scope: VimTextObjectScope,
   target: VimTextObjectTarget,
+  count: number,
 ): VimTextRange | undefined {
   const text = editorText(editor);
   const cursor = cursorIndex(editor);
@@ -129,7 +136,7 @@ function wordObjectRange(
   if (at == null) {
     return undefined;
   }
-  const base = contiguousWordRange(text, at, target);
+  const base = countedWordRange(text, at, target, count);
   return scope === SCOPE_AROUND ? aroundWordRange(text, base) : base;
 }
 
@@ -166,6 +173,26 @@ function contiguousWordRange(
     end += INNER_OFFSET;
   }
   return { start, end };
+}
+
+function countedWordRange(
+  text: string,
+  index: number,
+  target: VimTextObjectTarget,
+  count: number,
+): VimTextRange {
+  let range = contiguousWordRange(text, index, target);
+  for (let step = DEFAULT_COUNT; step < count; step += INNER_OFFSET) {
+    const next = nearestWordIndex(text, range.end, target);
+    if (next == null) {
+      return range;
+    }
+    range = {
+      start: range.start,
+      end: contiguousWordRange(text, next, target).end,
+    };
+  }
+  return range;
 }
 
 function aroundWordRange(text: string, base: VimTextRange): VimTextRange {
@@ -210,57 +237,65 @@ function enclosingDelimiterRange(
   cursor: number,
   pair: DelimiterPair,
 ): CandidateRange | undefined {
+  return pair.open === pair.close
+    ? enclosingSymmetricDelimiterRange(text, cursor, pair.open)
+    : enclosingPairedDelimiterRange(text, cursor, pair);
+}
+
+function enclosingPairedDelimiterRange(
+  text: string,
+  cursor: number,
+  pair: DelimiterPair,
+): CandidateRange | undefined {
+  const stack: number[] = [];
   let best: CandidateRange | undefined;
-  for (let start = FIRST_INDEX; start <= cursor; start += 1) {
-    if (text[start] !== pair.open) {
-      continue;
-    }
-    const end = matchingCloseIndex(text, start, pair);
-    if (end != null && start < cursor + INNER_OFFSET && cursor < end) {
-      best = narrowerRange(best, { start, end: end + INNER_OFFSET });
+  for (let index = FIRST_INDEX; index < text.length; index += INNER_OFFSET) {
+    if (text[index] === pair.open) {
+      stack.push(index);
+    } else if (text[index] === pair.close) {
+      const start = stack.pop();
+      if (start != null && delimiterContainsCursor(start, index, cursor)) {
+        best = narrowerRange(best, { start, end: index + INNER_OFFSET });
+      }
     }
   }
   return best;
 }
 
-function matchingCloseIndex(
+function enclosingSymmetricDelimiterRange(
   text: string,
-  start: number,
-  pair: DelimiterPair,
-): number | undefined {
-  if (pair.open === pair.close) {
-    return matchingSymmetricDelimiterIndex(text, start, pair.open);
-  }
-  let depth = EMPTY_LENGTH;
-  for (let index = start; index < text.length; index += 1) {
-    if (text[index] === pair.open) {
-      depth += INNER_OFFSET;
-    } else if (text[index] === pair.close) {
-      depth -= INNER_OFFSET;
-      if (depth === EMPTY_LENGTH) {
-        return index;
+  cursor: number,
+  delimiter: string,
+): CandidateRange | undefined {
+  let start: number | undefined;
+  for (let index = FIRST_INDEX; index < text.length; index += INNER_OFFSET) {
+    if (text[index] !== delimiter) {
+      continue;
+    }
+    if (start == null) {
+      start = index;
+    } else {
+      if (delimiterContainsCursor(start, index, cursor)) {
+        return { start, end: index + INNER_OFFSET };
       }
+      start = undefined;
     }
   }
   return undefined;
 }
 
-function matchingSymmetricDelimiterIndex(
-  text: string,
+function delimiterContainsCursor(
   start: number,
-  delimiter: string,
-): number | undefined {
-  for (let index = start + INNER_OFFSET; index < text.length; index += 1) {
-    if (text[index] === delimiter) {
-      return index;
-    }
-  }
-  return undefined;
+  end: number,
+  cursor: number,
+): boolean {
+  return start < cursor + INNER_OFFSET && cursor < end;
 }
 
 function paragraphRange(
   editor: EditorState,
   scope: VimTextObjectScope,
+  count: number,
 ): VimTextRange {
   const row = editor.cursorRow;
   let startRow = row;
@@ -271,6 +306,7 @@ function paragraphRange(
   while (endRow < editor.lines.length && !blankLine(editor.lines[endRow])) {
     endRow += INNER_OFFSET;
   }
+  endRow = countedParagraphEndRow(editor.lines, endRow, count);
   const includeBlank = scope === SCOPE_AROUND && endRow < editor.lines.length;
   return {
     start: lineStartTextIndex(editor.lines, startRow),
@@ -279,6 +315,23 @@ function paragraphRange(
       includeBlankLine: includeBlank,
     }),
   };
+}
+
+function countedParagraphEndRow(
+  lines: readonly string[],
+  firstEndRow: number,
+  count: number,
+): number {
+  let endRow = firstEndRow;
+  for (let step = DEFAULT_COUNT; step < count; step += INNER_OFFSET) {
+    while (endRow < lines.length && blankLine(lines[endRow])) {
+      endRow += INNER_OFFSET;
+    }
+    while (endRow < lines.length && !blankLine(lines[endRow])) {
+      endRow += INNER_OFFSET;
+    }
+  }
+  return endRow;
 }
 
 function paragraphEndIndex(
@@ -376,4 +429,11 @@ function isInlineWhitespace(char: string | undefined): boolean {
 
 function blankLine(line: string | undefined): boolean {
   return line == null || line.trim().length === EMPTY_LENGTH;
+}
+
+function supportsCount(target: VimTextObjectTarget, count: number): boolean {
+  return count === DEFAULT_COUNT ||
+    target === WORD_TARGET ||
+    target === WORD_BIG_TARGET ||
+    target === PARAGRAPH_TARGET;
 }

@@ -78,6 +78,8 @@ const MOTION_WORD_FORWARD: VimMotionName = 'wordForward';
 const MOTION_WORD_BIG_BACKWARD: VimMotionName = 'WORDBackward';
 const MOTION_WORD_BIG_END: VimMotionName = 'WORDEnd';
 const MOTION_WORD_BIG_FORWARD: VimMotionName = 'WORDForward';
+const TARGET_SHAPE_CHARWISE: VimResolvedTargetShape = 'charwise';
+const TARGET_SHAPE_LINEWISE: VimResolvedTargetShape = 'linewise';
 
 export function resolveVimMotion(request: VimMotionRequest): VimMotionResolution {
   const editor = request.editor;
@@ -215,14 +217,31 @@ function nextWordMotionIndex(
   index: number,
   motion: VimMotionName,
 ): number | undefined {
-  if (motion === MOTION_WORD_FORWARD || motion === MOTION_WORD_BIG_FORWARD) {
+  if (motion === MOTION_WORD_FORWARD) {
     return nextWordStartIndex(text, index);
   }
-  if (motion === MOTION_WORD_BACKWARD || motion === MOTION_WORD_BIG_BACKWARD) {
+  if (motion === MOTION_WORD_BACKWARD) {
     return previousWordStartIndex(text, index);
   }
-  if (motion === MOTION_WORD_END || motion === MOTION_WORD_BIG_END) {
+  if (motion === MOTION_WORD_END) {
     return wordEndIndex(text, index);
+  }
+  return nextBigWordMotionIndex(text, index, motion);
+}
+
+function nextBigWordMotionIndex(
+  text: string,
+  index: number,
+  motion: VimMotionName,
+): number | undefined {
+  if (motion === MOTION_WORD_BIG_FORWARD) {
+    return nextBigWordStartIndex(text, index);
+  }
+  if (motion === MOTION_WORD_BIG_BACKWARD) {
+    return previousBigWordStartIndex(text, index);
+  }
+  if (motion === MOTION_WORD_BIG_END) {
+    return bigWordEndIndex(text, index);
   }
   return undefined;
 }
@@ -247,8 +266,14 @@ function motionTargetRange(
   if (motion === LINE_CURRENT_MOTION) {
     return currentLineRange(editor, count);
   }
+  if (targetShape(motion) === TARGET_SHAPE_LINEWISE) {
+    return linewiseMotionRange(editor, destination);
+  }
   const cursor = normalTextIndex(editor);
-  return sortedRange(cursor, rangeEndForMotion(editor, motion, destination));
+  return charwiseMotionRange(
+    cursor,
+    rangeEndForMotion(editor, motion, destination),
+  );
 }
 
 function rangeEndForMotion(
@@ -264,28 +289,52 @@ function rangeEndForMotion(
 
 function currentLineRange(editor: EditorState, count: number): VimTextRange {
   const row = boundedRow(editor.lines, editor.cursorRow);
-  const start = lineStartTextIndex(editor.lines, row);
   const lastRow = boundedRow(editor.lines, row + count - LINE_BREAK_LENGTH);
-  const line = editor.lines[lastRow] ?? '';
-  const includesBreak = lastRow < editor.lines.length - LINE_BREAK_LENGTH;
+  return rowsRange(editor, row, lastRow);
+}
+
+function linewiseMotionRange(editor: EditorState, destination: number): VimTextRange {
+  const cursorRow = boundedRow(editor.lines, editor.cursorRow);
+  const destinationRow = cursorAtTextIndex(editor.lines, destination).row;
+  return rowsRange(
+    editor,
+    Math.min(cursorRow, destinationRow),
+    Math.max(cursorRow, destinationRow),
+  );
+}
+
+function rowsRange(
+  editor: EditorState,
+  firstRow: number,
+  lastRow: number,
+): VimTextRange {
+  const row = boundedRow(editor.lines, firstRow);
+  const endRow = boundedRow(editor.lines, lastRow);
+  const start = lineStartTextIndex(editor.lines, row);
+  const line = editor.lines[endRow] ?? '';
+  const includesBreak = endRow < editor.lines.length - LINE_BREAK_LENGTH;
   return {
     start,
-    end: lineStartTextIndex(editor.lines, lastRow) +
+    end: lineStartTextIndex(editor.lines, endRow) +
       line.length +
       (includesBreak ? LINE_BREAK_LENGTH : EMPTY_LENGTH),
   };
 }
 
-function sortedRange(start: number, end: number): VimTextRange {
+function charwiseMotionRange(start: number, end: number): VimTextRange {
   return start <= end
     ? { start, end }
-    : { start: end, end: start + LINE_BREAK_LENGTH };
+    : { start: end, end: start };
 }
 
 function targetShape(motion: VimMotionName): VimResolvedTargetShape {
-  return motion === LINE_CURRENT_MOTION || motion === FILE_TOP_MOTION || motion === FILE_BOTTOM_MOTION
-    ? 'linewise'
-    : 'charwise';
+  return motion === LINE_CURRENT_MOTION ||
+    motion === FILE_TOP_MOTION ||
+    motion === FILE_BOTTOM_MOTION ||
+    motion === MOTION_LINE_DOWN ||
+    motion === MOTION_LINE_UP
+    ? TARGET_SHAPE_LINEWISE
+    : TARGET_SHAPE_CHARWISE;
 }
 
 function firstNonWhitespaceIndex(editor: EditorState): number {
@@ -306,6 +355,84 @@ function fileBottomRow(editor: EditorState, count: number): number {
 
 function boundedRow(lines: readonly string[], row: number): number {
   return Math.max(FIRST_INDEX, Math.min(row, Math.max(FIRST_INDEX, lines.length - LINE_BREAK_LENGTH)));
+}
+
+function nextBigWordStartIndex(text: string, index: number): number {
+  if (text.length === EMPTY_LENGTH) {
+    return FIRST_INDEX;
+  }
+
+  let cursor = boundedTextIndex(text, index);
+  cursor = isWhitespaceTextChar(text[cursor])
+    ? skipWhitespaceForward(text, cursor)
+    : skipWhitespaceForward(text, skipNonWhitespaceForward(text, cursor));
+  return boundedTextIndex(text, cursor);
+}
+
+function previousBigWordStartIndex(text: string, index: number): number {
+  if (text.length === EMPTY_LENGTH) {
+    return FIRST_INDEX;
+  }
+
+  let cursor = boundedTextIndex(text, index);
+  if (cursor === FIRST_INDEX) {
+    return FIRST_INDEX;
+  }
+
+  cursor -= LINE_BREAK_LENGTH;
+  while (cursor > FIRST_INDEX && isWhitespaceTextChar(text[cursor])) {
+    cursor -= LINE_BREAK_LENGTH;
+  }
+  while (cursor > FIRST_INDEX && !isWhitespaceTextChar(text[cursor - LINE_BREAK_LENGTH])) {
+    cursor -= LINE_BREAK_LENGTH;
+  }
+  return cursor;
+}
+
+function bigWordEndIndex(text: string, index: number): number {
+  if (text.length === EMPTY_LENGTH) {
+    return FIRST_INDEX;
+  }
+
+  let cursor = boundedTextIndex(text, index);
+  while (cursor < text.length && isWhitespaceTextChar(text[cursor])) {
+    cursor += LINE_BREAK_LENGTH;
+  }
+  if (cursor >= text.length) {
+    return text.length - LINE_BREAK_LENGTH;
+  }
+
+  while (
+    cursor < text.length - LINE_BREAK_LENGTH &&
+    !isWhitespaceTextChar(text[cursor + LINE_BREAK_LENGTH])
+  ) {
+    cursor += LINE_BREAK_LENGTH;
+  }
+  return cursor;
+}
+
+function skipWhitespaceForward(text: string, start: number): number {
+  let cursor = start;
+  while (cursor < text.length && isWhitespaceTextChar(text[cursor])) {
+    cursor += LINE_BREAK_LENGTH;
+  }
+  return cursor;
+}
+
+function skipNonWhitespaceForward(text: string, start: number): number {
+  let cursor = start;
+  while (cursor < text.length && !isWhitespaceTextChar(text[cursor])) {
+    cursor += LINE_BREAK_LENGTH;
+  }
+  return cursor;
+}
+
+function boundedTextIndex(text: string, index: number): number {
+  return Math.max(FIRST_INDEX, Math.min(index, text.length - LINE_BREAK_LENGTH));
+}
+
+function isWhitespaceTextChar(char: string | undefined): boolean {
+  return char == null || /\s/.test(char);
 }
 
 function fnv1a32Hex(text: string): string {

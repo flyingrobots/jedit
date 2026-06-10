@@ -5,6 +5,7 @@ import { PastePlacements } from './editor/key.js';
 import {
   deleteTextRange,
   editorText,
+  lineStartTextIndex,
   pasteRegister,
   yankTextRange,
 } from './editor-editing-core.js';
@@ -241,7 +242,8 @@ function applyDeleteRange(
   target: VimOperatorTarget,
 ): EditorState {
   const register = registerFromRange(editor, target, OPERATION_DELETE);
-  const next = deleteTextRange(editor, target.range.start, target.range.end, {
+  const mutationRange = mutationRangeForTarget(editor, target);
+  const next = deleteTextRange(editor, mutationRange.start, mutationRange.end, {
     mode: NORMAL_MODE,
     register: register.kind,
   });
@@ -254,7 +256,8 @@ function applyChangeRange(
   target: VimOperatorTarget,
 ): EditorState {
   const register = registerFromRange(editor, target, OPERATION_CHANGE);
-  const next = deleteTextRange(editor, target.range.start, target.range.end, {
+  const mutationRange = mutationRangeForTarget(editor, target);
+  const next = deleteTextRange(editor, mutationRange.start, mutationRange.end, {
     mode: INSERT_MODE,
     register: register.kind,
   });
@@ -375,7 +378,7 @@ function selectedRegister(
   editor: EditorState,
   name: string | undefined,
 ): RegisterState | undefined {
-  return name == null ? editor.register : editor.registers?.[name] ?? editor.register;
+  return name == null ? editor.register : editor.registers?.[name];
 }
 
 function withRepeat(
@@ -417,12 +420,21 @@ function rangeText(editor: EditorState, range: VimTextRange): string {
   return text.slice(start, end);
 }
 
-function cursorIndex(editor: EditorState): number {
-  let index = 0;
-  for (let row = 0; row < editor.cursorRow; row += 1) {
-    index += (editor.lines[row] ?? '').length + 1;
+function mutationRangeForTarget(
+  editor: EditorState,
+  target: VimOperatorTarget,
+): VimTextRange {
+  if (target.shape !== TARGET_SHAPE_LINEWISE) {
+    return target.range;
   }
-  return index + editor.cursorCol;
+  const text = editorText(editor);
+  return target.range.end >= text.length && target.range.start > 0
+    ? { start: target.range.start - LINE_BREAK_LENGTH, end: target.range.end }
+    : target.range;
+}
+
+function cursorIndex(editor: EditorState): number {
+  return lineStartTextIndex(editor.lines, editor.cursorRow) + editor.cursorCol;
 }
 
 function basisDigest(editor: EditorState): string {
