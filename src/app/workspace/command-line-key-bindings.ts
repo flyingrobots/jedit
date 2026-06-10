@@ -110,6 +110,7 @@ function updateCommandLineCompletionKey(
   const completions = workspaceCommandLineCompletionItems({
     commandLine: model.commandLine,
     entries: model.entries,
+    hasOpenFile: workspaceHasOpenFile(model),
   });
   if (isCommandLineCompletionPreviousKey(msg)) {
     return [
@@ -150,6 +151,7 @@ function acceptCommandLineCompletion(
   const selected = selectedWorkspaceCommandLineCompletionItem({
     commandLine: model.commandLine,
     entries: model.entries,
+    hasOpenFile: workspaceHasOpenFile(model),
   });
   return selected == null
     ? [model, []]
@@ -162,6 +164,7 @@ function acceptChangingCommandLineCompletion(
   const selected = selectedWorkspaceCommandLineCompletionItem({
     commandLine: model.commandLine,
     entries: model.entries,
+    hasOpenFile: workspaceHasOpenFile(model),
   });
   return selected != null &&
     shouldAcceptChangingCommandLineCompletion(model, selected)
@@ -215,6 +218,10 @@ function updateCommandLineTextKey(
 
 function isCommandLineOpenKey(msg: KeyMsg): boolean {
   return !msg.ctrl && !msg.alt && msg.key === WorkspaceKeys.Colon;
+}
+
+function workspaceHasOpenFile(model: WorkspaceModel): boolean {
+  return model.editor != null;
 }
 
 function isCommandLineDispatchKey(msg: KeyMsg): boolean {

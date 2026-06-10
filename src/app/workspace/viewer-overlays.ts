@@ -130,6 +130,7 @@ function commandLineCompletionPopupContext(model: WorkspaceModel) {
     commandLine: model.commandLine,
     entries: model.entries,
     i18n: model.i18n,
+    hasOpenFile: workspaceHasOpenFile(model),
   });
   if (items.length === 0) {
     return undefined;
@@ -140,6 +141,7 @@ function commandLineCompletionPopupContext(model: WorkspaceModel) {
     preview: workspaceCommandLineCompletionPreview({
       commandLine: model.commandLine,
       entries: model.entries,
+      hasOpenFile: workspaceHasOpenFile(model),
     }),
     width: commandCompletionPopupWidth(model.columns),
     anchor: commandLineCompletionPopupAnchor(model),
@@ -169,6 +171,10 @@ function shouldRenderCommandLineCompletionPopup(model: WorkspaceModel): boolean 
     model.columns >= MIN_COLUMNS &&
     model.rows >= MIN_ROWS
   );
+}
+
+function workspaceHasOpenFile(model: WorkspaceModel): boolean {
+  return model.editor != null;
 }
 
 function commandCompletionPopupWidth(columns: number): number {
