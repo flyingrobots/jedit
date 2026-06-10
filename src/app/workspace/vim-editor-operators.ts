@@ -8,6 +8,14 @@ import {
   leadingWhitespace,
   normalPositionAtOrBeforeIndex,
 } from './editor-editing-core.js';
+import {
+  enterInsertAfterCursor,
+  enterInsertAtFirstNonWhitespace,
+  enterInsertAtLineEnd,
+  openLineAbove,
+  openLineBelow,
+} from './editor-editing-helpers.js';
+import type { VimMarkActionName, VimModeSwitchName } from './vim-grammar-vocabulary.js';
 import type { VimTextRange } from './vim-motion-resolver.js';
 
 export type VimCaseTransform = 'lowercase' | 'swapCase' | 'uppercase';
@@ -15,12 +23,27 @@ export type VimCaseTransformOperator = 'lowercase' | 'swapCase' | 'uppercase';
 export type VimJoinSpacing = 'compact' | 'spaced';
 export type VimMarkJumpMode = 'exact' | 'line';
 
+interface VimMarkCommand {
+  readonly action: VimMarkActionName;
+  readonly mark: string;
+}
+
 const EMPTY_TEXT = '';
 const FIRST_INDEX = 0;
 const LINE_BREAK_LENGTH = 1;
 const JOINED_LINE_SKIP = 2;
 const NORMAL_MODE = EditorModes.Normal;
+const INSERT_MODE = EditorModes.Insert;
 const SINGLE_SPACE = ' ';
+const MARK_ACTION_EXACT_JUMP = 'jumpExact';
+const MARK_ACTION_LINE_JUMP = 'jumpLine';
+const MARK_ACTION_SET = 'set';
+const MODE_SWITCH_INSERT_AFTER = 'insertAfter';
+const MODE_SWITCH_INSERT_BEFORE = 'insertBefore';
+const MODE_SWITCH_INSERT_LINE_END = 'insertLineEnd';
+const MODE_SWITCH_INSERT_FIRST_NON_WHITESPACE = 'insertFirstNonWhitespace';
+const MODE_SWITCH_OPEN_LINE_ABOVE = 'openLineAbove';
+const MODE_SWITCH_OPEN_LINE_BELOW = 'openLineBelow';
 const VIM_CASE_LOWERCASE: VimCaseTransform = 'lowercase';
 const VIM_CASE_SWAP: VimCaseTransform = 'swapCase';
 const VIM_CASE_UPPERCASE: VimCaseTransform = 'uppercase';
@@ -39,7 +62,11 @@ export function applyVimCaseTransform(
     return editor;
   }
 
-  const replacement = transformText(text.slice(from, to), transform);
+  const original = text.slice(from, to);
+  const replacement = transformText(original, transform);
+  if (replacement === original) {
+    return editor;
+  }
   const nextText = `${text.slice(FIRST_INDEX, from)}${replacement}${text.slice(to)}`;
   const nextLines = normalizeLines(nextText);
   const position = normalPositionAtOrBeforeIndex(nextLines, from);
@@ -60,6 +87,47 @@ export function vimCaseTransformForOperator(operator: VimCaseTransformOperator):
     return VIM_CASE_UPPERCASE;
   }
   return operator === VIM_CASE_LOWERCASE ? VIM_CASE_LOWERCASE : VIM_CASE_SWAP;
+}
+
+export function applyVimMarkCommand(
+  editor: EditorState,
+  mark: VimMarkCommand | undefined,
+  basisDigest: string,
+): EditorState {
+  if (mark == null) {
+    return editor;
+  }
+  if (mark.action === MARK_ACTION_SET) {
+    return setVimMark(editor, mark.mark, basisDigest);
+  }
+  if (mark.action === MARK_ACTION_EXACT_JUMP) {
+    return jumpToVimMark(editor, mark.mark, VIM_MARK_JUMP_EXACT);
+  }
+  return mark.action === MARK_ACTION_LINE_JUMP
+    ? jumpToVimMark(editor, mark.mark, 'line')
+    : editor;
+}
+
+export function applyVimModeSwitch(
+  editor: EditorState,
+  modeSwitch: VimModeSwitchName,
+): EditorState {
+  if (modeSwitch === MODE_SWITCH_INSERT_BEFORE) {
+    return { ...editor, mode: INSERT_MODE, pendingNormal: undefined };
+  }
+  if (modeSwitch === MODE_SWITCH_INSERT_AFTER) {
+    return enterInsertAfterCursor(editor);
+  }
+  if (modeSwitch === MODE_SWITCH_INSERT_LINE_END) {
+    return enterInsertAtLineEnd(editor);
+  }
+  if (modeSwitch === MODE_SWITCH_INSERT_FIRST_NON_WHITESPACE) {
+    return enterInsertAtFirstNonWhitespace(editor);
+  }
+  if (modeSwitch === MODE_SWITCH_OPEN_LINE_ABOVE) {
+    return openLineAbove(editor);
+  }
+  return modeSwitch === MODE_SWITCH_OPEN_LINE_BELOW ? openLineBelow(editor) : editor;
 }
 
 export function applyVimJoinCurrentLine(

@@ -9,24 +9,14 @@ import {
   pasteRegister,
   yankTextRange,
 } from './editor-editing-core.js';
-import {
-  changeToLineEnd,
-  deleteToLineEnd,
-  enterInsertAfterCursor,
-  enterInsertAtFirstNonWhitespace,
-  enterInsertAtLineEnd,
-  openLineAbove,
-  openLineBelow,
-  yankCurrentLine,
-} from './editor-editing-helpers.js';
 import { parseVimChordSyntax, type VimChordSyntax, type VimTextObjectSyntax } from './vim-chord-syntax.js';
 import type { VimMotionName } from './vim-grammar-vocabulary.js';
 import {
   applyVimCaseTransform,
   applyVimJoinCurrentLine,
+  applyVimMarkCommand,
+  applyVimModeSwitch,
   isVimCaseTransformOperator,
-  jumpToVimMark,
-  setVimMark,
   vimCaseTransformForOperator,
 } from './vim-editor-operators.js';
 import {
@@ -65,12 +55,6 @@ const REGISTER_UNNAMED = '"';
 const REGISTER_TEXT_EMPTY = '';
 const LINE_BREAK_TEXT = '\n';
 const LINE_BREAK_LENGTH = 1;
-const MODE_SWITCH_INSERT_AFTER = 'insertAfter';
-const MODE_SWITCH_INSERT_BEFORE = 'insertBefore';
-const MODE_SWITCH_INSERT_LINE_END = 'insertLineEnd';
-const MODE_SWITCH_INSERT_FIRST_NON_WHITESPACE = 'insertFirstNonWhitespace';
-const MODE_SWITCH_OPEN_LINE_ABOVE = 'openLineAbove';
-const MODE_SWITCH_OPEN_LINE_BELOW = 'openLineBelow';
 const OPERATOR_CHANGE = 'change';
 const OPERATOR_CHANGE_TO_LINE_END = 'changeToLineEnd';
 const OPERATOR_DELETE = 'delete';
@@ -86,9 +70,6 @@ const OPERATION_DELETE = 'delete';
 const OPERATION_YANK = 'yank';
 const TARGET_SHAPE_LINEWISE = 'linewise';
 const TARGET_SHAPE_CHARWISE = 'charwise';
-const MARK_ACTION_EXACT_JUMP = 'jumpExact';
-const MARK_ACTION_LINE_JUMP = 'jumpLine';
-const MARK_ACTION_SET = 'set';
 
 export function applyVimChordSyntaxToEditor(
   editor: EditorState,
@@ -103,10 +84,10 @@ export function applyVimChordSyntaxToEditor(
     return applyResolvedMotion(cleanEditor, syntax.motion, syntax.count);
   }
   if (syntax.family === FAMILY_MODE_SWITCH && syntax.modeSwitch != null) {
-    return applyModeSwitch(cleanEditor, syntax.modeSwitch);
+    return applyVimModeSwitch(cleanEditor, syntax.modeSwitch);
   }
   if (syntax.family === FAMILY_MARK && syntax.mark != null) {
-    return applyMarkCommand(cleanEditor, syntax);
+    return applyVimMarkCommand(cleanEditor, syntax.mark, basisDigest(cleanEditor));
   }
   return applyCompleteCommand(cleanEditor, syntax, options);
 }
@@ -136,22 +117,6 @@ function applyCompleteCommand(
     return applyPutOperator(editor, syntax, options);
   }
   return syntax.operator == null ? editor : applyStandaloneOperator(editor, syntax, options);
-}
-
-function applyMarkCommand(editor: EditorState, syntax: VimChordSyntax): EditorState {
-  const mark = syntax.mark;
-  if (mark == null) {
-    return editor;
-  }
-  if (mark.action === MARK_ACTION_SET) {
-    return setVimMark(editor, mark.mark, basisDigest(editor));
-  }
-  if (mark.action === MARK_ACTION_EXACT_JUMP) {
-    return jumpToVimMark(editor, mark.mark, 'exact');
-  }
-  return mark.action === MARK_ACTION_LINE_JUMP
-    ? jumpToVimMark(editor, mark.mark, 'line')
-    : editor;
 }
 
 function applyResolvedMotion(
@@ -222,13 +187,23 @@ function applyStandaloneOperator(
   options: VimExecutionOptions,
 ): EditorState {
   if (syntax.operator === OPERATOR_DELETE_TO_LINE_END) {
-    return withRepeat(deleteToLineEnd(editor), syntax, options);
+    return withRepeat(
+      applyDeleteRange(editor, syntax, lineEndTarget(editor)),
+      syntax,
+      options,
+      basisDigest(editor),
+    );
   }
   if (syntax.operator === OPERATOR_CHANGE_TO_LINE_END) {
-    return withRepeat(changeToLineEnd(editor), syntax, options);
+    return withRepeat(
+      applyChangeRange(editor, syntax, lineEndTarget(editor)),
+      syntax,
+      options,
+      basisDigest(editor),
+    );
   }
   if (syntax.operator === OPERATOR_YANK_LINE) {
-    return yankCurrentLine(editor);
+    return applyYankRange(editor, syntax, currentLineTarget(editor));
   }
   if (syntax.operator === OPERATOR_JOIN_WITH_SPACE || syntax.operator === OPERATOR_JOIN_NO_SPACE) {
     return withRepeat(
@@ -339,28 +314,6 @@ function applyPutOperator(
   return withRepeat(next, syntax, options, basisDigest(editor));
 }
 
-function applyModeSwitch(
-  editor: EditorState,
-  modeSwitch: NonNullable<VimChordSyntax['modeSwitch']>,
-): EditorState {
-  if (modeSwitch === MODE_SWITCH_INSERT_BEFORE) {
-    return { ...editor, mode: INSERT_MODE, pendingNormal: undefined };
-  }
-  if (modeSwitch === MODE_SWITCH_INSERT_AFTER) {
-    return enterInsertAfterCursor(editor);
-  }
-  if (modeSwitch === MODE_SWITCH_INSERT_LINE_END) {
-    return enterInsertAtLineEnd(editor);
-  }
-  if (modeSwitch === MODE_SWITCH_INSERT_FIRST_NON_WHITESPACE) {
-    return enterInsertAtFirstNonWhitespace(editor);
-  }
-  if (modeSwitch === MODE_SWITCH_OPEN_LINE_ABOVE) {
-    return openLineAbove(editor);
-  }
-  return modeSwitch === MODE_SWITCH_OPEN_LINE_BELOW ? openLineBelow(editor) : editor;
-}
-
 function targetFromMotion(resolved: VimResolvedMotion): VimOperatorTarget {
   return {
     basisDigest: resolved.basisDigest,
@@ -374,6 +327,25 @@ function targetFromTextObject(resolved: VimResolvedTextObject): VimOperatorTarge
     basisDigest: resolved.basisDigest,
     range: resolved.targetRange,
     shape: resolved.targetShape,
+  };
+}
+
+function currentLineTarget(editor: EditorState): VimOperatorTarget {
+  return {
+    basisDigest: basisDigest(editor),
+    range: currentLineRange(editor),
+    shape: TARGET_SHAPE_LINEWISE,
+  };
+}
+
+function lineEndTarget(editor: EditorState): VimOperatorTarget {
+  return {
+    basisDigest: basisDigest(editor),
+    range: {
+      start: cursorIndex(editor),
+      end: currentLineEndIndex(editor),
+    },
+    shape: TARGET_SHAPE_CHARWISE,
   };
 }
 
@@ -487,6 +459,16 @@ function mutationRangeForTarget(
 
 function cursorIndex(editor: EditorState): number {
   return lineStartTextIndex(editor.lines, editor.cursorRow) + editor.cursorCol;
+}
+
+function currentLineRange(editor: EditorState): VimTextRange {
+  const start = lineStartTextIndex(editor.lines, editor.cursorRow);
+  const end = start + (editor.lines[editor.cursorRow] ?? REGISTER_TEXT_EMPTY).length;
+  return { start, end };
+}
+
+function currentLineEndIndex(editor: EditorState): number {
+  return lineStartTextIndex(editor.lines, editor.cursorRow) + (editor.lines[editor.cursorRow] ?? REGISTER_TEXT_EMPTY).length;
 }
 
 function basisDigest(editor: EditorState): string {

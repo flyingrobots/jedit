@@ -242,6 +242,51 @@ test("vim named line registers put without creating phantom blank lines", async 
   assert.equal(pasted.cursorRow, 2);
 });
 
+test("vim standalone line operators honor named registers", async () => {
+  const [mode, syntax, executor, model] = await Promise.all([
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "vim-chord-syntax.js"),
+    importDist("app", "workspace", "vim-command-executor.js"),
+    importDist("app", "workspace", "editor", "model.js"),
+  ]);
+  const yEditor = mockEditor(mode, {
+    lines: ["first", "second"],
+    cursorRow: 0,
+    cursorCol: 0,
+  });
+  const dEditor = mockEditor(mode, {
+    lines: ["alpha beta"],
+    cursorRow: 0,
+    cursorCol: 6,
+  });
+  const cEditor = mockEditor(mode, {
+    lines: ["alpha beta"],
+    cursorRow: 0,
+    cursorCol: 6,
+  });
+
+  const yanked = executor.applyVimChordSyntaxToEditor(
+    yEditor,
+    syntax.parseVimChordSyntax(['"', "a", "Y"]),
+  );
+  const deleted = executor.applyVimChordSyntaxToEditor(
+    dEditor,
+    syntax.parseVimChordSyntax(['"', "b", "D"]),
+  );
+  const changed = executor.applyVimChordSyntaxToEditor(
+    cEditor,
+    syntax.parseVimChordSyntax(['"', "c", "C"]),
+  );
+
+  assert.equal(yanked.register.kind, model.RegisterKinds.Line);
+  assert.equal(yanked.registers.a.text, "first");
+  assert.deepEqual(deleted.lines, ["alpha "]);
+  assert.equal(deleted.registers.b.text, "beta");
+  assert.deepEqual(changed.lines, ["alpha "]);
+  assert.equal(changed.registers.c.text, "beta");
+  assert.equal(changed.mode, mode.EditorModes.Insert);
+});
+
 test("vim explicit missing named register put does not fall back to unnamed", async () => {
   const [mode, syntax, executor] = await Promise.all([
     importDist("app", "workspace", "editor", "mode.js"),
@@ -343,6 +388,31 @@ test("vim case operators transform motion and text object ranges", async () => {
   assert.deepEqual(lower.lines, ["ALPHA beta", "gamma"]);
   assert.deepEqual(swapped.lines, ["ALPHA beta", "GAMMA"]);
   assert.deepEqual(swapped.lastVimEdit.keys, ["g", "~", "G"]);
+});
+
+test("vim case operators do not dirty history for logical no-ops", async () => {
+  const [mode, syntax, executor] = await Promise.all([
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "vim-chord-syntax.js"),
+    importDist("app", "workspace", "vim-command-executor.js"),
+  ]);
+  const editor = mockEditor(mode, {
+    lines: ["alpha"],
+    cursorRow: 0,
+    cursorCol: 0,
+    dirty: false,
+    undoStack: [],
+    redoStack: [],
+  });
+
+  const nextEditor = executor.applyVimChordSyntaxToEditor(
+    editor,
+    syntax.parseVimChordSyntax(["g", "u", "i", "w"]),
+  );
+
+  assert.deepEqual(nextEditor.lines, ["alpha"]);
+  assert.equal(nextEditor.dirty, false);
+  assert.equal(nextEditor.undoStack.length, 0);
 });
 
 test("vim join operators merge the current line with and without spacing", async () => {
