@@ -25,6 +25,7 @@ import {
   type VimResolvedMotion,
   type VimResolvedTargetShape,
   type VimTextRange,
+  vimMotionBasisDigest,
 } from './vim-motion-resolver.js';
 import {
   resolveVimTextObject,
@@ -425,5 +426,5 @@ function cursorIndex(editor: EditorState): number {
 }
 
 function basisDigest(editor: EditorState): string {
-  return `${editor.lines.length}:${editorText(editor).length}`;
+  return vimMotionBasisDigest(editor.lines);
 }

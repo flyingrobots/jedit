@@ -314,6 +314,9 @@ function updateVimNormalCommand(
   msg: KeyMsg,
   viewport: EditorViewport,
 ): EditorState | undefined {
+  if (editor.pendingVimKeys == null && editor.pendingNormal != null) {
+    return undefined;
+  }
   const key = keyToText(msg);
   if (key == null) {
     return editor.pendingVimKeys == null

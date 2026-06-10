@@ -31,6 +31,7 @@ test("vim motion resolver resolves counted reading-basis motions", async () => {
   assert.equal("obstruction" in currentLines, false);
   assert.deepEqual(countedWord.cursorAfter, { row: 0, column: 11 });
   assert.deepEqual(countedWord.target, { start: 0, end: 11 });
+  assert.doesNotMatch(countedWord.basisDigest, /alpha/);
   assert.equal(currentLines.targetShape, "linewise");
   assert.deepEqual(currentLines.target, { start: 0, end: 27 });
 });
@@ -163,4 +164,22 @@ test("normal mode stores pending vim keys and dot repeats the last edit", async 
   assert.deepEqual(deleted.lines, ["beta gamma"]);
   assert.deepEqual(deleted.lastVimEdit.keys, ["d", "w"]);
   assert.deepEqual(repeated.lines, ["gamma"]);
+});
+
+test("normal mode preserves legacy pending operators without vim key state", async () => {
+  const [mode, editing] = await Promise.all([
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "editor-editing.js"),
+  ]);
+  const editor = mockEditor(mode, {
+    lines: ["alpha beta"],
+    cursorRow: 0,
+    cursorCol: 0,
+    pendingNormal: mode.PendingNormals.Delete,
+  });
+
+  const nextEditor = editing.updateNormalMode(editor, { key: "w" }, 80, 24);
+
+  assert.deepEqual(nextEditor.lines, ["beta"]);
+  assert.equal(nextEditor.pendingNormal, undefined);
 });

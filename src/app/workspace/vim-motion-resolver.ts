@@ -54,7 +54,14 @@ export type VimMotionResolution = VimMotionObstructed | VimResolvedMotion;
 const DEFAULT_COUNT = 1;
 const EMPTY_LENGTH = 0;
 const FIRST_INDEX = 0;
+const FNV_OFFSET_BASIS = 2166136261;
+const FNV_PRIME = 16777619;
+const HASH_RADIX = 16;
+const HASH_TEXT_WIDTH = 8;
 const LINE_BREAK_LENGTH = 1;
+const LINE_BREAK_TEXT = '\n';
+const BASIS_DIGEST_PREFIX = 'vim-basis';
+const HASH_PAD_TEXT = '0';
 const LINE_CURRENT_MOTION: VimMotionName = 'lineCurrent';
 const FILE_BOTTOM_MOTION: VimMotionName = 'fileBottom';
 const FILE_TOP_MOTION: VimMotionName = 'fileTop';
@@ -99,7 +106,8 @@ export function resolveVimMotion(request: VimMotionRequest): VimMotionResolution
 }
 
 export function vimMotionBasisDigest(lines: readonly string[]): string {
-  return `${lines.length}:${lines.join('\n').length}:${lines.join('\n')}`;
+  const text = lines.join(LINE_BREAK_TEXT);
+  return `${BASIS_DIGEST_PREFIX}:${lines.length}:${text.length}:${fnv1a32Hex(text)}`;
 }
 
 export function cursorAtTextIndex(
@@ -298,6 +306,14 @@ function fileBottomRow(editor: EditorState, count: number): number {
 
 function boundedRow(lines: readonly string[], row: number): number {
   return Math.max(FIRST_INDEX, Math.min(row, Math.max(FIRST_INDEX, lines.length - LINE_BREAK_LENGTH)));
+}
+
+function fnv1a32Hex(text: string): string {
+  let hash = FNV_OFFSET_BASIS;
+  for (let index = FIRST_INDEX; index < text.length; index += 1) {
+    hash = Math.imul(hash ^ text.charCodeAt(index), FNV_PRIME);
+  }
+  return (hash >>> FIRST_INDEX).toString(HASH_RADIX).padStart(HASH_TEXT_WIDTH, HASH_PAD_TEXT);
 }
 
 function editorCursor(editor: EditorState): VimTextCursor {
