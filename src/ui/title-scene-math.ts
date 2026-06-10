@@ -91,3 +91,14 @@ export function reflect(
 ): TitleSceneVector3 {
   return sub(ray, scale(normal, 2 * dot(ray, normal)));
 }
+
+export function cross(
+  a: TitleSceneVector3,
+  b: TitleSceneVector3,
+): TitleSceneVector3 {
+  return [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0],
+  ];
+}

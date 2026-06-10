@@ -16,10 +16,25 @@ import {
   TITLE_SCENE_SHAPE_KIND,
   type TitleScenePrimitiveShapeKind,
 } from "./title-scene-shape-kind.js";
+import {
+  titleSceneObjectRayBoundAt,
+  titleSceneRayMayHitAnyObject,
+  titleSceneRayMayHitBound,
+  type TitleSceneRayAcceleration,
+} from "./title-scene-ray-acceleration.js";
 
 export { titleBunnySceneCameraPlacement } from "./title-bunny-scene.js";
 export type { TitleSceneCameraPlacement } from "./title-scene-camera.js";
 export { titleSceneObjectFootprintCenterAt as titleSceneObjectFootprintCenter } from "./title-scene-transform.js";
+export {
+  createTitleSceneRayAcceleration,
+  titleSceneObjectRayBoundAt,
+  titleSceneRayMayHitAnyObject,
+  titleSceneRayMayHitBound,
+  type TitleSceneObjectRayBound,
+  type TitleSceneRayAcceleration,
+  type TitleSceneRayBound,
+} from "./title-scene-ray-acceleration.js";
 export { TITLE_SCENE_SHAPE_KIND } from "./title-scene-shape-kind.js";
 export type { TitleMesh } from "./title-mesh.js";
 export type {
@@ -90,6 +105,7 @@ export interface TitleSceneObjectHit {
 
 export interface TitleSceneHitOptions extends TitleSceneObjectHitOptions {
   readonly ignoredObject?: TitleSceneObject;
+  readonly rayAcceleration?: TitleSceneRayAcceleration;
 }
 
 const CAMERA_MIN_RADIUS = 7.2;
@@ -160,19 +176,16 @@ export function nearestTitleSceneObjectHit(
   objects: readonly TitleSceneObject[],
   options: TitleSceneHitOptions = TITLE_SCENE_HIT_DEFAULT_OPTIONS,
 ): TitleSceneObjectHit | undefined {
+  if (!titleSceneRayMayHitAnyObject(origin, ray, options.rayAcceleration)) {
+    return undefined;
+  }
+
   let nearest: TitleSceneObjectHit | undefined;
-  for (const object of objects) {
-    if (object === options.ignoredObject) {
-      continue;
-    }
-    const hit = titleSceneObjectHit(origin, ray, object, options);
-    if (
-      hit != null &&
-      hit.distance > 0 &&
-      (nearest == null || hit.distance < nearest.distance)
-    ) {
-      nearest = hit;
-    }
+  for (let index = 0; index < objects.length; index += 1) {
+    nearest = nearestTitleSceneCandidateHit(
+      nearest,
+      titleSceneObjectHitCandidate(origin, ray, objects, index, options),
+    );
   }
   return nearest;
 }
@@ -182,10 +195,12 @@ export function nearestTitleScenePrimaryObjectHit(
   ray: TitleSceneVector3,
   objects: readonly TitleSceneObject[],
   time: number,
+  rayAcceleration?: TitleSceneRayAcceleration,
 ): TitleSceneObjectHit | undefined {
   return nearestTitleSceneObjectHit(origin, ray, objects, {
     time,
     sideMode: TITLE_MESH_SIDE_MODE.FrontFacing,
+    rayAcceleration,
   });
 }
 
@@ -197,6 +212,47 @@ export function intersectsTitleSceneObjectAlongRay(
 ): boolean {
   const hit = titleSceneObjectHit(origin, ray, object, { time });
   return hit != null && hit.distance > 0;
+}
+
+function titleSceneRayMayHitObject(
+  origin: TitleSceneVector3,
+  ray: TitleSceneVector3,
+  object: TitleSceneObject,
+  index: number,
+  options: TitleSceneHitOptions,
+): boolean {
+  const bound = titleSceneObjectRayBoundAt(
+    options.rayAcceleration,
+    object,
+    index,
+  );
+  return bound == null ? true : titleSceneRayMayHitBound(origin, ray, bound);
+}
+
+function titleSceneObjectHitCandidate(
+  origin: TitleSceneVector3,
+  ray: TitleSceneVector3,
+  objects: readonly TitleSceneObject[],
+  index: number,
+  options: TitleSceneHitOptions,
+): TitleSceneObjectHit | undefined {
+  const object = objects[index]!;
+  return object === options.ignoredObject ||
+    !titleSceneRayMayHitObject(origin, ray, object, index, options)
+    ? undefined
+    : titleSceneObjectHit(origin, ray, object, options);
+}
+
+function nearestTitleSceneCandidateHit(
+  nearest: TitleSceneObjectHit | undefined,
+  candidate: TitleSceneObjectHit | undefined,
+): TitleSceneObjectHit | undefined {
+  if (candidate == null || candidate.distance <= 0) {
+    return nearest;
+  }
+  return nearest == null || candidate.distance < nearest.distance
+    ? candidate
+    : nearest;
 }
 
 function placeSceneObject(

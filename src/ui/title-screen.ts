@@ -1,4 +1,3 @@
-import { type Surface } from "@flyingrobots/bijou";
 import {
   averagingAsciiCanvas,
   TITLE_ASCII_PALETTE,
@@ -13,6 +12,7 @@ import {
 } from "./averaging-braille-canvas.js";
 import { type JeditTheme } from "./jedit-theme.js";
 import {
+  createTitleSceneRayAcceleration,
   generateTitleScene,
   nearestTitleScenePrimaryObjectHit,
   type TitleScene,
@@ -34,6 +34,16 @@ import {
   titleSceneRenderMaterialColors,
   type TitleSceneMaterialColors,
 } from "./title-scene-material-colors.js";
+import {
+  add,
+  addColor,
+  cross,
+  mixColor,
+  normalize,
+  scale,
+  scaleColor,
+  sub,
+} from "./title-scene-math.js";
 import {
   paintTitleScreenPresentation,
   type TitleScreenTextDirection,
@@ -118,6 +128,7 @@ interface TitleSceneShaderOptions {
   readonly scene: TitleScene;
   readonly environment: TitleSceneEnvironment | undefined;
   readonly colors: TitleSceneMaterialColors;
+  readonly rayAcceleration: ReturnType<typeof createTitleSceneRayAcceleration>;
 }
 
 interface TitleSceneSurfaceOptions {
@@ -134,7 +145,8 @@ const DEFAULT_TITLE_SCENE_SEED = 0.5;
 export const TITLE_CAMERA_DRIFT_RATE =
   TITLE_SCENE_DEFAULT_DIRECTOR_TIMELINE.camera.driftRate;
 const BRAILLE_DITHER_MATRIX_SIZE = 4;
-const BRAILLE_DITHER_DENOMINATOR = BRAILLE_DITHER_MATRIX_SIZE * BRAILLE_DITHER_MATRIX_SIZE;
+const BRAILLE_DITHER_DENOMINATOR =
+  BRAILLE_DITHER_MATRIX_SIZE * BRAILLE_DITHER_MATRIX_SIZE;
 const RGB_CHANNEL_MAX = 255;
 const MIN_ENVIRONMENT_VISIBILITY = 0.06;
 const BRAILLE_DITHER_MATRIX: readonly (readonly number[])[] = [
@@ -150,7 +162,7 @@ export function renderTitleScreen(
   time: number,
   theme: JeditTheme,
   options: TitleScreenRenderOptions,
-): Surface {
+) {
   const surface = renderTitleSceneSurface(
     titleSceneSurfaceOptions(cols, rows, time, theme, options),
   );
@@ -186,6 +198,7 @@ function titleSceneSurfaceOptions(
     options.sceneSeed ?? DEFAULT_TITLE_SCENE_SEED,
     options.wallClockMs,
   );
+  const rayAcceleration = createTitleSceneRayAcceleration(scene.objects, time);
   const shader = titleSceneShader({
     cols,
     rows,
@@ -193,6 +206,7 @@ function titleSceneSurfaceOptions(
     scene,
     environment,
     colors: sceneColors,
+    rayAcceleration,
   });
   return {
     cols,
@@ -205,7 +219,7 @@ function titleSceneSurfaceOptions(
   };
 }
 
-function renderTitleSceneSurface(options: TitleSceneSurfaceOptions): Surface {
+function renderTitleSceneSurface(options: TitleSceneSurfaceOptions) {
   return options.renderMode === TITLE_RENDER_MODE.Ascii
     ? averagingAsciiCanvas(
         options.cols,
@@ -236,6 +250,7 @@ function titleSceneShader(options: TitleSceneShaderOptions): BrailleShaderFn {
       camera: options.camera,
       spotlightCamera: options.scene.camera,
       objects: options.scene.objects,
+      rayAcceleration: options.rayAcceleration,
       colors: options.colors,
       environment: options.environment,
     });
@@ -259,6 +274,7 @@ function sceneSampleAt(options: TitleSceneSampleOptions): BrailleShaderSample {
     context.ray,
     options.objects,
     options.time,
+    options.rayAcceleration,
   );
   const environmentHit = nearestTitleEnvironmentSurfaceHit(
     context.origin,
@@ -350,14 +366,15 @@ function environmentSceneSample(
   const fgRGB = environmentSceneForeground(options, environmentHit, effects);
   const bgRGB = environmentSceneBackground(options, environmentHit);
   return {
-    on: environmentHit.visibility >= MIN_ENVIRONMENT_VISIBILITY &&
+    on:
+      environmentHit.visibility >= MIN_ENVIRONMENT_VISIBILITY &&
       brailleSubpixelVisible(
         options.u,
         options.v,
         options.cols,
         options.rows,
         fgRGB,
-    ),
+      ),
     fgRGB,
     bgRGB,
     ...titleEnvironmentRayStats(
@@ -410,6 +427,7 @@ function environmentSceneLightEffects(
         options.objects,
         options.time,
         context.lightDirection,
+        options.rayAcceleration,
       )
     : { shadowMultiplier: 1, contactShadowMultiplier: 1, causticStrength: 0 };
 }
@@ -428,31 +446,6 @@ function brailleSubpixelVisible(
   return titleColorLuminance(color) / RGB_CHANNEL_MAX >= threshold;
 }
 
-function scaleColor(color: RGB, scalar: number): RGB {
-  return [
-    Math.max(0, Math.min(255, Math.round(color[0] * scalar))),
-    Math.max(0, Math.min(255, Math.round(color[1] * scalar))),
-    Math.max(0, Math.min(255, Math.round(color[2] * scalar))),
-  ];
-}
-
-function addColor(a: RGB, b: RGB): RGB {
-  return [
-    Math.min(255, a[0] + b[0]),
-    Math.min(255, a[1] + b[1]),
-    Math.min(255, a[2] + b[2]),
-  ];
-}
-
-function mixColor(from: RGB, to: RGB, ratio: number): RGB {
-  const clamped = Math.max(0, Math.min(1, ratio));
-  return [
-    Math.round(from[0] + (to[0] - from[0]) * clamped),
-    Math.round(from[1] + (to[1] - from[1]) * clamped),
-    Math.round(from[2] + (to[2] - from[2]) * clamped),
-  ];
-}
-
 function getRayDir(
   origin: Vector3,
   target: Vector3,
@@ -467,33 +460,4 @@ function getRayDir(
       scale(forward, screenCoords[2]),
     ),
   );
-}
-
-function cross(a: Vector3, b: Vector3): Vector3 {
-  return [
-    a[1] * b[2] - a[2] * b[1],
-    a[2] * b[0] - a[0] * b[2],
-    a[0] * b[1] - a[1] * b[0],
-  ];
-}
-
-function normalize(vector: Vector3): Vector3 {
-  const length = Math.sqrt(
-    vector[0] * vector[0] + vector[1] * vector[1] + vector[2] * vector[2],
-  );
-  return length === 0
-    ? [0, 0, 0]
-    : [vector[0] / length, vector[1] / length, vector[2] / length];
-}
-
-function add(a: Vector3, b: Vector3): Vector3 {
-  return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
-}
-
-function sub(a: Vector3, b: Vector3): Vector3 {
-  return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-}
-
-function scale(vector: Vector3, scalar: number): Vector3 {
-  return [vector[0] * scalar, vector[1] * scalar, vector[2] * scalar];
 }
