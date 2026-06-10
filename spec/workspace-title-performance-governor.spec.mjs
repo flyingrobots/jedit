@@ -12,7 +12,7 @@ const TITLE_HEIGHT = 6;
 const SLOW_FRAME_MS = 90;
 const FAST_FRAME_MS = 12;
 
-test("title scene performance governor keeps startup browser ray tracing live", async () => {
+test("title scene performance governor selects low-rate frozen backdrop with ray tracing disabled", async () => {
   const governor = await importDist(
     "app",
     "workspace",
@@ -25,14 +25,15 @@ test("title scene performance governor keeps startup browser ray tracing live", 
       idleTitleScreen: false,
       frozenBackdropAvailable: true,
       cacheAgeSeconds: 0,
+      lowRateFrozenBackdropActive: true,
       frameTimeMs: SLOW_FRAME_MS,
     }),
     {
-      posture: governor.TITLE_SCENE_RENDER_POSTURE.LiveTrace,
-      shouldTraceRays: true,
-      shouldUseFrozenBackdrop: false,
-      shouldRetainRenderedBackdrop: true,
-      inputLatencyPosture: "animated-title",
+      posture: governor.TITLE_SCENE_RENDER_POSTURE.LowRateFrozenBackdrop,
+      shouldTraceRays: false,
+      shouldUseFrozenBackdrop: true,
+      shouldRetainRenderedBackdrop: false,
+      inputLatencyPosture: "low-rate-title",
       frameBudgetPosture: "over-budget",
     },
   );
@@ -96,6 +97,105 @@ test("title scene performance governor keeps startup browser ray tracing live", 
   );
 });
 
+test("viewer renderer composites startup intro logos without retracing backdrop", async () => {
+  const [viewerContent, titleScreen, governor] = await Promise.all([
+    importDist("app", "workspace", "viewer-content.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "title-scene-performance-governor.js"),
+  ]);
+  const tracedTimes = [];
+  const renderedBackdrops = [];
+  const renderer = viewerContent.createViewerContentRenderer(
+    (width, height, time, theme, options) => {
+      assert.equal(options.suppressPresentation, true);
+      tracedTimes.push(time);
+      const backdrop = stringToSurface(
+        `backdrop trace ${tracedTimes.length} time ${time}`,
+        width,
+        height,
+      );
+      renderedBackdrops.push(backdrop);
+      return backdrop;
+    },
+  );
+  const base = mockTitleScreenModel(titleScreen, {
+    time: 2,
+    frameTimeMs: SLOW_FRAME_MS,
+    startupIntroComplete: false,
+    startupFileModalOpen: false,
+  });
+
+  const first = renderer.renderViewer(base, 96, 28);
+  const backdropText = surfaceText(renderedBackdrops[0]);
+  const second = renderer.renderViewer(
+    {
+      ...base,
+      time: 2 + governor.TITLE_SCENE_LOW_RATE_REFRESH_SECONDS * 2,
+      frameTimeMs: FAST_FRAME_MS,
+    },
+    96,
+    28,
+  );
+
+  assert.deepEqual(tracedTimes, [2]);
+  assert.notEqual(first, renderedBackdrops[0]);
+  assert.notEqual(second, renderedBackdrops[0]);
+  assert.equal(surfaceText(renderedBackdrops[0]), backdropText);
+  assert.notEqual(surfaceText(second), backdropText);
+  assert.deepEqual(renderer.titleScenePerformanceFacts(), {
+    posture: "low-rate-frozen-backdrop",
+    tracesRays: false,
+    usesFrozenBackdrop: true,
+    retainsBackdrop: false,
+    inputLatencyPosture: "low-rate-title",
+    frameBudgetPosture: "within-budget",
+  });
+});
+
+test("viewer renderer reuses pure intro backdrop after intro without preserving presentation", async () => {
+  const [viewerContent, titleScreen] = await Promise.all([
+    importDist("app", "workspace", "viewer-content.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const tracedTimes = [];
+  const renderedBackdrops = [];
+  const renderer = viewerContent.createViewerContentRenderer(
+    (width, height, time, theme, options) => {
+      assert.equal(options.suppressPresentation, true);
+      tracedTimes.push(time);
+      const backdrop = stringToSurface(
+        `pure backdrop trace ${tracedTimes.length}`,
+        width,
+        height,
+      );
+      renderedBackdrops.push(backdrop);
+      return backdrop;
+    },
+  );
+  const intro = mockTitleScreenModel(titleScreen, {
+    time: 2,
+    frameTimeMs: SLOW_FRAME_MS,
+    startupIntroComplete: false,
+    startupFileModalOpen: false,
+  });
+
+  const introSurface = renderer.renderViewer(intro, 96, 28);
+  const backdropText = surfaceText(renderedBackdrops[0]);
+  const idleSurface = renderer.renderViewer(
+    {
+      ...intro,
+      startupIntroComplete: true,
+      frameTimeMs: SLOW_FRAME_MS,
+    },
+    96,
+    28,
+  );
+
+  assert.deepEqual(tracedTimes, [2]);
+  assert.notEqual(surfaceText(introSurface), backdropText);
+  assert.equal(surfaceText(idleSurface), backdropText);
+});
+
 test("viewer renderer continues tracing while startup browser is open", async () => {
   const [viewerContent, titleScreen] = await Promise.all([
     importDist("app", "workspace", "viewer-content.js"),
@@ -147,7 +247,7 @@ test("viewer renderer continues tracing while startup browser is open", async ()
   });
 });
 
-test("viewer renderer low-rate reuses slow idle title backdrop until refresh window expires", async () => {
+test("viewer renderer keeps slow idle title backdrop frozen until state changes", async () => {
   const [viewerContent, titleScreen, governor] = await Promise.all([
     importDist("app", "workspace", "viewer-content.js"),
     importDist("ui", "title-screen.js"),
@@ -177,35 +277,25 @@ test("viewer renderer low-rate reuses slow idle title backdrop until refresh win
   const stillReused = renderer.renderViewer(
     {
       ...base,
-      time: 10 + governor.TITLE_SCENE_LOW_RATE_REFRESH_SECONDS / 2,
+      time: 10 + governor.TITLE_SCENE_LOW_RATE_REFRESH_SECONDS * 2,
       frameTimeMs: FAST_FRAME_MS,
     },
     TITLE_WIDTH,
     TITLE_HEIGHT,
   );
-  const refreshed = renderer.renderViewer(
-    {
-      ...base,
-      time: 10 + governor.TITLE_SCENE_LOW_RATE_REFRESH_SECONDS + 0.01,
-    },
-    TITLE_WIDTH,
-    TITLE_HEIGHT,
-  );
 
-  assert.deepEqual(tracedTimes, [
-    10,
-    10 + governor.TITLE_SCENE_LOW_RATE_REFRESH_SECONDS + 0.01,
-  ]);
+  assert.deepEqual(tracedTimes, [10]);
+  assert.equal(reused, initial);
+  assert.equal(stillReused, initial);
   assert.equal(surfaceText(reused), surfaceText(initial));
   assert.equal(surfaceText(stillReused), surfaceText(initial));
-  assert.notEqual(surfaceText(refreshed), surfaceText(initial));
   assert.deepEqual(renderer.titleScenePerformanceFacts(), {
-    posture: "live-trace",
-    tracesRays: true,
-    usesFrozenBackdrop: false,
-    retainsBackdrop: true,
-    inputLatencyPosture: "animated-title",
-    frameBudgetPosture: "over-budget",
+    posture: "low-rate-frozen-backdrop",
+    tracesRays: false,
+    usesFrozenBackdrop: true,
+    retainsBackdrop: false,
+    inputLatencyPosture: "low-rate-title",
+    frameBudgetPosture: "within-budget",
   });
 });
 

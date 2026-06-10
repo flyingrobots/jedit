@@ -14,6 +14,11 @@ const MOCK_I18N_TRANSLATIONS = Object.freeze({
   "startupFileModal.current_directory": "Current directory",
   "startupFileModal.empty": "No files in this directory",
 });
+const MOCK_HEAP_USED_BYTES = 10;
+const MOCK_HEAP_TOTAL_BYTES = 20;
+const MOCK_RSS_BYTES = 30;
+const MOCK_EXTERNAL_BYTES = 40;
+const MOCK_ARRAY_BUFFERS_BYTES = 50;
 
 export { REPO_ROOT, ensureDistBuilt, importDist };
 
@@ -181,6 +186,13 @@ export function mockRuntime(overrides = {}) {
     ...mockDeps(),
     profiler: {
       nowMs: () => 0,
+      memoryUsage: () => ({
+        heapUsedBytes: MOCK_HEAP_USED_BYTES,
+        heapTotalBytes: MOCK_HEAP_TOTAL_BYTES,
+        rssBytes: MOCK_RSS_BYTES,
+        externalBytes: MOCK_EXTERNAL_BYTES,
+        arrayBuffersBytes: MOCK_ARRAY_BUFFERS_BYTES,
+      }),
       beginTrace: async () => ({
         filePath: "/tmp/profile.json",
         append: async () => undefined,
@@ -189,6 +201,7 @@ export function mockRuntime(overrides = {}) {
       appendTraceFrame: async () => undefined,
       endTrace: async () => undefined,
     },
+    profileOnStartup: false,
     createTimeTickCmd: () => () => undefined,
     createNotificationTickCmd: () => () => undefined,
     createDrawerAnimationCmd: () => [],
@@ -216,6 +229,7 @@ export function noopNotificationTickCmd() {
 
 export function mockJeditTheme() {
   return {
+    variables: new Map(),
     surface: {
       workspace: {
         fg: "#f0f6fc",

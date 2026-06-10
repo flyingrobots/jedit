@@ -61,7 +61,6 @@ import {
   titleEnvironmentRayStats,
   titleObjectRayStats,
 } from "./title-screen-sample.js";
-
 type Vector3 = TitleSceneVector3;
 type TitleEnvironmentSurfaceHit = NonNullable<
   ReturnType<typeof nearestTitleEnvironmentSurfaceHit>
@@ -74,6 +73,7 @@ export {
   type TitleSceneMaterialColors,
 } from "./title-scene-material-colors.js";
 export { titleLogoCellBounds } from "./title-logo.js";
+export { paintTitleScreenPresentation } from "./title-screen-presentation.js";
 export { titleFloorLightEffectsAt } from "./title-screen-optics.js";
 
 export const TITLE_RENDER_MODE = {

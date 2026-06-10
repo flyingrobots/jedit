@@ -19,8 +19,8 @@
       "⢕⢵⢝⢵░▓█▒⠕⢅⢕⢵⢝⢽⢕⢥⠝⢽⢝⢽⢝⢝⠕⢅⠕⢅⠕⢽⢝⢽⢝⢵⠝⢕⠝⢵⢝⢵⠕⢅⠕⠭",
       "⡕⡅⡝⡕██▓░⡕⣥⣝⣽⣝⣽⣝⡍⡕⡅⡕⡍⡝⣅⡕⡅⡕⡅⡕⣽⣝⣽⣝⣽⣝⡅⡕⡅⡕⡅⡕⡥⣕⣭"
     ],
-    "foregroundDigest": "e7b19be044e84801",
-    "backgroundDigest": "4c0c3dc1e0bd468c"
+    "foregroundDigest": "cf49e7a0fdb9d729",
+    "backgroundDigest": "65a24ea998becce0"
   },
   {
     "name": "graphite-braille-logo-faded",
@@ -42,8 +42,8 @@
       "⠕⢅⢝⢅⠕⢅⠕⢅⢕⢵⢝⢵⢝⢽⠝⢝⠝⢽⢝⢽⠕⢅⠕⢅⠕⢅⢝⢵⢕⢅⠕⢵⢝⢵⢝⢵⢝⢅⠕⢅⠝⠭",
       "⣕⡵⣝⡵⣕⡅⣕⣵⣝⣽⣝⣽⣝⡍⡕⡅⡕⡅⡝⣅⡕⡅⡕⡅⡕⣽⣝⣽⣝⣽⣝⡍⡝⡵⣝⡵⣝⡅⡕⡅⡕⣭"
     ],
-    "foregroundDigest": "42fcd19a6ad73e8b",
-    "backgroundDigest": "1f18c3a840f8c198"
+    "foregroundDigest": "6b666ae8f7c6f251",
+    "backgroundDigest": "d56a3f804cc5b610"
   },
   {
     "name": "morning-ascii-logo-faded",
@@ -88,7 +88,7 @@
       "⠕⢅⢕⢵⢕⢅⠕⢅⢕⢵⢝⢵⢝⢽⠕⢝⠝⢽⢝⢝⠕⢅⠕⢅⠕⢽⢕⢥⢕⢅⠕⢵⢝⢵⢝⢵⢕⢅⠝⢕⠝⠭",
       "⣕⡵⣝⡵⣝⡵⣕⣵⣝⣽⣝⣽⡝⡅⡕⡅⡕⡍⣝⣅⡕⡅⡕⡅⡕⣽⣝⣽⣝⣽⣕⡝⡝⣵⣝⡵⣝⡅⡕⡅⡕⣭"
     ],
-    "foregroundDigest": "eee8d946c8f6c8e3",
-    "backgroundDigest": "9b7067a0f40ed02b"
+    "foregroundDigest": "fd4770907df4d58d",
+    "backgroundDigest": "7e30be255634420e"
   }
 ]

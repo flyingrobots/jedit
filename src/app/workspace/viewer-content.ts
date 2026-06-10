@@ -3,6 +3,7 @@ import { paintMarkdownPreview } from "../../ui/markdown-preview.js";
 import { renderSourceViewer } from "../../ui/source-viewer.js";
 import {
   TITLE_RENDER_MODE,
+  paintTitleScreenPresentation,
   renderTitleScreen,
   type TitleScreenRenderOptions,
 } from "../../ui/title-screen.js";
@@ -60,6 +61,7 @@ interface FrozenTitleBackdrop {
 
 interface ViewerContentRendererState {
   frozenTitleBackdrop?: FrozenTitleBackdrop;
+  titlePresentationSurface?: Surface;
   lastTitleScenePerformance?: TitleScenePerformanceFacts;
   titleBrailleSampleCache?: BrailleSampleCache;
   titleBrailleSampleCacheIdentity?: TitleBrailleSampleCacheIdentity;
@@ -191,7 +193,7 @@ function renderTitleBackdrop(
   state.lastTitleScenePerformance = titleScenePerformanceFacts(decision);
   if (decision.shouldUseFrozenBackdrop && frozen != null) {
     state.frozenTitleBackdrop = activateLowRateBackdrop(frozen, decision);
-    return copySurface(frozen.surface);
+    return titleFrameSurface(frozen.surface, model, width, height, state);
   }
 
   const rendered = renderLiveTitleBackdrop(
@@ -213,7 +215,7 @@ function renderTitleBackdrop(
       surface: rendered,
     };
   }
-  return rendered;
+  return titleFrameSurface(rendered, model, width, height, state);
 }
 
 function titleSceneGovernorInput(
@@ -228,10 +230,6 @@ function titleSceneGovernorInput(
       !model.startupFileModalOpen,
     frozenBackdropAvailable: frozen != null,
     lowRateFrozenBackdropActive: frozen?.lowRateActive,
-    cacheAgeSeconds:
-      frozen == null
-        ? undefined
-        : titleBackdropAgeSeconds(model.time, frozen.time),
     frameTimeMs: model.frameTimeMs ?? 0,
   };
 }
@@ -261,10 +259,37 @@ function renderLiveTitleBackdrop(
     asciiPalette: model.titleAsciiPalette,
     textDirection: model.i18n.direction,
     brailleSampling: sampling.options,
-    suppressPresentation: model.startupIntroComplete,
+    suppressPresentation: true,
   });
   recordTitleBrailleSamplingStats(state, sampling);
   return rendered;
+}
+
+function titleFrameSurface(
+  backdrop: Surface,
+  model: WorkspaceModel,
+  width: number,
+  height: number,
+  state: ViewerContentRendererState,
+): Surface {
+  if (model.editor != null || model.startupIntroComplete) {
+    return backdrop;
+  }
+  const surface =
+    state.titlePresentationSurface?.width === width &&
+    state.titlePresentationSurface.height === height
+      ? state.titlePresentationSurface
+      : createSurface(width, height);
+  state.titlePresentationSurface = surface;
+  surface.blit(backdrop, 0, 0);
+  paintTitleScreenPresentation(surface, {
+    cols: width,
+    rows: height,
+    time: model.time,
+    theme: model.jeditTheme,
+    textDirection: model.i18n.direction,
+  });
+  return surface;
 }
 
 function titleBrailleSamplingRenderContext(
@@ -418,7 +443,6 @@ function shouldActivateLowRateBackdrop(
 ): boolean {
   return (
     model.editor == null &&
-    model.startupIntroComplete &&
     !model.startupFileModalOpen &&
     decision.frameBudgetPosture === TITLE_FRAME_BUDGET_OVER
   );
@@ -426,19 +450,6 @@ function shouldActivateLowRateBackdrop(
 
 interface FrameBudgetDecision {
   readonly frameBudgetPosture: TitleScenePerformanceFacts["frameBudgetPosture"];
-}
-
-function titleBackdropAgeSeconds(
-  currentTime: number,
-  frozenTime: number,
-): number {
-  return Math.max(0, currentTime - frozenTime);
-}
-
-function copySurface(source: Surface): Surface {
-  const copy = createSurface(source.width, source.height);
-  copy.blit(source, 0, 0);
-  return copy;
 }
 
 export function isWorkspaceMarkdownPreviewAvailable(
@@ -480,13 +491,7 @@ function viewerViewport(
   height: number,
 ): { width: number; height: number } {
   return {
-    width: Math.max(
-      MIN_VIEWPORT_DIMENSION,
-      width - VIEWER_LEFT_PAD * VIEWER_PAD_MULTIPLIER,
-    ),
-    height: Math.max(
-      MIN_VIEWPORT_DIMENSION,
-      height - VIEWER_TOP_PAD * VIEWER_PAD_MULTIPLIER,
-    ),
+    width: Math.max(MIN_VIEWPORT_DIMENSION, width - VIEWER_LEFT_PAD * VIEWER_PAD_MULTIPLIER),
+    height: Math.max(MIN_VIEWPORT_DIMENSION, height - VIEWER_TOP_PAD * VIEWER_PAD_MULTIPLIER),
   };
 }

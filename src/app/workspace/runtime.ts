@@ -59,22 +59,20 @@ export const createWorkspaceRuntime = (
       const wscStartupRecovery = recoverJeditWorkspaceFromWsc(
         deps.wscWorkspaceStore,
       );
-      return [
-        {
-          ...createInitialModel(
-            deps.initialWorkingDirectory,
-            deps.initialColumns,
-            deps.initialRows,
-            {
-              ...deps.initialModel,
-              nowMs: deps.initialModel.nowMs ?? deps.nowMs(),
-              wscStartupRecovery,
-            },
-          ),
-          profiler: createInitialProfilerState(),
-        },
-        [deps.createTimeTickCmd()],
-      ];
+      const model = {
+        ...createInitialModel(
+          deps.initialWorkingDirectory,
+          deps.initialColumns,
+          deps.initialRows,
+          {
+            ...deps.initialModel,
+            nowMs: deps.initialModel.nowMs ?? deps.nowMs(),
+            wscStartupRecovery,
+          },
+        ),
+        profiler: createInitialProfilerState(),
+      };
+      return [model, initialRuntimeCommands(deps, model)];
     },
     update: (msg, model) => updateWorkspaceRuntime(deps, msg, model),
     view: (model) => renderWorkspace(model),
@@ -103,6 +101,28 @@ function updateWorkspaceRuntime(
     return effects;
   }
   return updateWorkspaceInputMessage(deps, msg, model);
+}
+
+function initialRuntimeCommands(
+  deps: WorkspaceRuntimeDependencies,
+  model: WorkspaceModel,
+): WorkspaceRuntimeResult[1] {
+  return [...startupProfilerCommands(deps, model), deps.createTimeTickCmd()];
+}
+
+function startupProfilerCommands(
+  deps: WorkspaceRuntimeDependencies,
+  model: WorkspaceModel,
+): WorkspaceRuntimeResult[1] {
+  if (!deps.profileOnStartup) {
+    return [];
+  }
+  const [, commands] = toggleProfiler(
+    model.profiler,
+    model.workspaceRoot,
+    deps.profiler,
+  );
+  return commands;
 }
 
 function updateResizeMessage(
@@ -266,15 +286,11 @@ function updateTimeTickMessage(
     model,
     nextModel,
   );
-  const profilerStream = streamProfilerFrame(
-    nextModel.profiler,
-    {
-      time,
-      frameTimeMs: frameTime,
-      columns: nextModel.columns,
-      rows: nextModel.rows,
-    },
-    deps.profiler,
+  const profilerStream = activeProfilerStreamCommand(
+    deps,
+    time,
+    frameTime,
+    nextModel,
   );
   return [
     nextModel,
@@ -283,6 +299,28 @@ function updateTimeTickMessage(
       ...(profilerStream == null ? [] : [profilerStream]),
     ],
   ];
+}
+
+function activeProfilerStreamCommand(
+  deps: WorkspaceRuntimeDependencies,
+  time: number,
+  frameTime: number,
+  model: WorkspaceModel,
+) {
+  if (!model.profiler.active || model.profiler.fileHandle == null) {
+    return undefined;
+  }
+  return streamProfilerFrame(
+    model.profiler,
+    {
+      time,
+      frameTimeMs: frameTime,
+      columns: model.columns,
+      rows: model.rows,
+      memory: deps.profiler.memoryUsage(),
+    },
+    deps.profiler,
+  );
 }
 
 function startupFileDrawerIntroCommands(

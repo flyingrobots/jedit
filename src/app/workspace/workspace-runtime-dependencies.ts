@@ -30,6 +30,7 @@ export interface WorkspaceRuntimeDependencies {
   readonly productionTextSession: ProductionTextSession;
   readonly wscWorkspaceStore: JeditWscWorkspaceStorePort;
   readonly profiler: ProfilerTracePort;
+  readonly profileOnStartup: boolean;
   readonly createTimeTickCmd: () => Cmd<WorkspaceMsg>;
   readonly createNotificationTickCmd: () => Cmd<WorkspaceMsg>;
   readonly createDrawerAnimationCmd: (kind: DrawerKind, from: number, to: number) => Cmd<WorkspaceMsg>[];

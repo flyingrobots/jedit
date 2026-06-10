@@ -57,9 +57,6 @@ export function governTitleSceneRender(
 ): TitleSceneRenderDecision {
   validateGovernorInput(input);
   const frameBudgetPosture = frameBudgetPostureFor(input.frameTimeMs);
-  if (input.introActive) {
-    return liveTraceDecision(frameBudgetPosture);
-  }
   if (shouldReuseLowRateBackdrop(input, frameBudgetPosture)) {
     return frozenBackdropDecision(
       TITLE_SCENE_RENDER_POSTURE.LowRateFrozenBackdrop,
@@ -116,10 +113,8 @@ function shouldReuseLowRateBackdrop(
   frameBudgetPosture: TitleSceneFrameBudgetPosture,
 ): boolean {
   return (
-    input.idleTitleScreen &&
+    (input.idleTitleScreen || input.introActive) &&
     input.frozenBackdropAvailable &&
-    input.cacheAgeSeconds != null &&
-    input.cacheAgeSeconds < TITLE_SCENE_LOW_RATE_REFRESH_SECONDS &&
     (input.lowRateFrozenBackdropActive === true ||
       frameBudgetPosture === OVER_BUDGET)
   );
