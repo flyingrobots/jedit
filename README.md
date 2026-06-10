@@ -10,6 +10,10 @@ the lower layers to prove the seams that matter: contract-shaped edits, bounded
 reads, provenance, replayable observations, and eventual undo-as-counter-history.
 If Echo can't serve a working editor, it doesn't ship.
 
+The active product direction is **JIM: Jedit Is Modal**. The repository,
+packages, release gates, contracts, and WSC directories remain `jedit` until the
+Echo-powered proof and compatibility plan make a user-facing `jim` command safe.
+
 ---
 
 ## Quick start
@@ -33,6 +37,11 @@ Press `?` inside the editor for the key binding reference.
 - **Echo-hosted text session** — every edit submits a contract intent through
   `TextBufferOptic`; the production TUI has no non-Echo text runtime mode
 - **Structural-history contract** — `replaceTextRange` operation identity comes from Wesley-generated metadata, not hardcoded strings
+- **WSC history surfaces** — JSON witnesses can list, export, and replay current
+  and historical editing evidence
+- **Jim/Vim roadmap** — command-line completion exists; the active roadmap is
+  first-class Vim grammar, basis-bound motions, text objects, registers, macros,
+  repeat, and causal proof
 - **Witness scripts** — JSON-reporting evidence tools for CI and agents (see [Witnesses](#witnesses))
 
 ---
@@ -46,6 +55,8 @@ Press `?` inside the editor for the key binding reference.
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Layer rules, dependency graph, editor vocabulary, testing rules |
 | [VISION.md](VISION.md) | Long-term product direction |
 | [AGENTS.md](AGENTS.md) | Agent-specific guidance and witness commands |
+| [docs/BEARING.md](docs/BEARING.md) | Compact current state, active roadmap anchors, and non-negotiables |
+| [docs/stack-map.md](docs/stack-map.md) | Current jedit/Echo/Wesley/Graft/Bijou layer map |
 | [docs/method/roadmap-planning.md](docs/method/roadmap-planning.md) | Roadmap, release-gate, slice, and proof policy |
 | [docs/technical-teardown.md](docs/technical-teardown.md) | **Deep technical reference** — domain dictionary, golden paths, payload anatomy, trade-offs, security boundaries, async model |
 | [docs/jedit-echo-end-to-end.md](docs/jedit-echo-end-to-end.md) | The full jedit + Echo process-level path |
@@ -55,6 +66,8 @@ The teardown is the right starting point if you want to understand how the
 codebase actually works — it covers the Bijou TEA loop, the hexagonal layer
 rules, the three pure domain contracts, the dual-transport design, the
 `ReadBasisHandle` capability pattern, and all major architectural trade-offs.
+It is a deep reference, not the current roadmap. Use `docs/BEARING.md` and the
+design docs above for the active goalpost trail.
 
 ---
 
@@ -177,16 +190,17 @@ automatically before TypeScript compilation.
 
 ## Next steps
 
-- Replace `missing_retention` / `durable_replay_unavailable` with real Echo
-  retained refs and a durable replay proof
-- Graduate `TextBufferOptic` and `ReadBasisHandle` from witness scaffolding into
-  a real optic/session bootstrap contract
-- Route more structural-history operations through generated Wesley metadata
-- Make jedit consume an Echo-owned versioned WASM package artifact (remove
-  sibling-repo witness dependency)
-- Implement undo as authored inverse tick history below the product boundary,
-  while preserving ordinary undo UX above it
-- Strengthen the Vim layer: counts, more text objects, visual mode
-- Deepen the Graft drawer beyond outline + diff summary
-- Handle unsaved-buffer flows when switching files
-- Persist layout and workspace state
+The immediate roadmap is not a broad docs rewrite. Keep signposts accurate, then
+continue the Echo/Jim proof work.
+
+- Continue [WF-0105 Vim Power Moves Causal Parity](docs/design/0105-vim-power-moves-causal-parity.md)
+  with the next known goalpost: Reading-Basis Motion Resolver.
+- Resolve motions and operator ranges against explicit reading bases so Vim
+  commands can become auditable causal intents instead of ad hoc cursor moves.
+- Grow text objects, registers, dot repeat, macros, marks, visual mode, and ex
+  workflows through the same grammar and proof surface.
+- Replace remaining `missing_retention` / `durable_replay_unavailable` posture
+  with real Echo retained refs and durable replay proof.
+- Keep `README.md`, `docs/technical-teardown.md`, and signpost docs truthful in
+  compact passes; do the full rewrite after a few more Echo/Jim goalposts prove
+  the final shape.
