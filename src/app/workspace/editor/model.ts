@@ -21,6 +21,13 @@ export interface RegisterSourceState {
 export interface VimRepeatState {
   readonly description: string;
   readonly keys: readonly string[];
+  readonly replayPolicy?: 'resolve-current-basis';
+  readonly sourceBasisDigest?: string;
+}
+export interface VimMarkState {
+  readonly basisDigest: string;
+  readonly column: number;
+  readonly row: number;
 }
 export interface HistoryEntry {
   readonly lines: readonly string[];
@@ -45,6 +52,7 @@ export interface EditorState {
   readonly register?: RegisterState;
   readonly registers?: Readonly<Record<string, RegisterState>>;
   readonly lastVimEdit?: VimRepeatState;
+  readonly marks?: Readonly<Record<string, VimMarkState>>;
   readonly undoStack: readonly HistoryEntry[];
   readonly redoStack: readonly HistoryEntry[];
 }

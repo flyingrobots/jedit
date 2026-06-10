@@ -22,6 +22,14 @@ import {
 import { parseVimChordSyntax, type VimChordSyntax, type VimTextObjectSyntax } from './vim-chord-syntax.js';
 import type { VimMotionName } from './vim-grammar-vocabulary.js';
 import {
+  applyVimCaseTransform,
+  applyVimJoinCurrentLine,
+  isVimCaseTransformOperator,
+  jumpToVimMark,
+  setVimMark,
+  vimCaseTransformForOperator,
+} from './vim-editor-operators.js';
+import {
   resolveVimMotion,
   type VimResolvedMotion,
   type VimResolvedTargetShape,
@@ -44,6 +52,7 @@ interface VimOperatorTarget {
 }
 
 const FAMILY_MODE_SWITCH = 'modeSwitch';
+const FAMILY_MARK = 'mark';
 const FAMILY_MOTION = 'motion';
 const FAMILY_OPERATOR_MOTION = 'operatorMotion';
 const FAMILY_OPERATOR_TEXT_OBJECT = 'operatorTextObject';
@@ -67,6 +76,8 @@ const OPERATOR_CHANGE_TO_LINE_END = 'changeToLineEnd';
 const OPERATOR_DELETE = 'delete';
 const OPERATOR_DELETE_CHAR = 'deleteChar';
 const OPERATOR_DELETE_TO_LINE_END = 'deleteToLineEnd';
+const OPERATOR_JOIN_NO_SPACE = 'joinNoSpace';
+const OPERATOR_JOIN_WITH_SPACE = 'joinWithSpace';
 const OPERATOR_PUT_BEFORE = 'putBefore';
 const OPERATOR_YANK = 'yank';
 const OPERATOR_YANK_LINE = 'yankLine';
@@ -75,6 +86,9 @@ const OPERATION_DELETE = 'delete';
 const OPERATION_YANK = 'yank';
 const TARGET_SHAPE_LINEWISE = 'linewise';
 const TARGET_SHAPE_CHARWISE = 'charwise';
+const MARK_ACTION_EXACT_JUMP = 'jumpExact';
+const MARK_ACTION_LINE_JUMP = 'jumpLine';
+const MARK_ACTION_SET = 'set';
 
 export function applyVimChordSyntaxToEditor(
   editor: EditorState,
@@ -90,6 +104,9 @@ export function applyVimChordSyntaxToEditor(
   }
   if (syntax.family === FAMILY_MODE_SWITCH && syntax.modeSwitch != null) {
     return applyModeSwitch(cleanEditor, syntax.modeSwitch);
+  }
+  if (syntax.family === FAMILY_MARK && syntax.mark != null) {
+    return applyMarkCommand(cleanEditor, syntax);
   }
   return applyCompleteCommand(cleanEditor, syntax, options);
 }
@@ -119,6 +136,22 @@ function applyCompleteCommand(
     return applyPutOperator(editor, syntax, options);
   }
   return syntax.operator == null ? editor : applyStandaloneOperator(editor, syntax, options);
+}
+
+function applyMarkCommand(editor: EditorState, syntax: VimChordSyntax): EditorState {
+  const mark = syntax.mark;
+  if (mark == null) {
+    return editor;
+  }
+  if (mark.action === MARK_ACTION_SET) {
+    return setVimMark(editor, mark.mark, basisDigest(editor));
+  }
+  if (mark.action === MARK_ACTION_EXACT_JUMP) {
+    return jumpToVimMark(editor, mark.mark, 'exact');
+  }
+  return mark.action === MARK_ACTION_LINE_JUMP
+    ? jumpToVimMark(editor, mark.mark, 'line')
+    : editor;
 }
 
 function applyResolvedMotion(
@@ -197,6 +230,14 @@ function applyStandaloneOperator(
   if (syntax.operator === OPERATOR_YANK_LINE) {
     return yankCurrentLine(editor);
   }
+  if (syntax.operator === OPERATOR_JOIN_WITH_SPACE || syntax.operator === OPERATOR_JOIN_NO_SPACE) {
+    return withRepeat(
+      applyVimJoinCurrentLine(editor, syntax.operator === OPERATOR_JOIN_WITH_SPACE ? 'spaced' : 'compact'),
+      syntax,
+      options,
+      basisDigest(editor),
+    );
+  }
   if (syntax.operator === OPERATOR_DELETE_CHAR) {
     return applyDeleteChar(editor, syntax, options);
   }
@@ -215,7 +256,7 @@ function applyDeleteChar(
     range: { start, end: start + count },
     shape: TARGET_SHAPE_CHARWISE,
   });
-  return withRepeat(next, syntax, options);
+  return withRepeat(next, syntax, options, basisDigest(editor));
 }
 
 function applyOperatorTarget(
@@ -225,13 +266,21 @@ function applyOperatorTarget(
   options: VimExecutionOptions,
 ): EditorState {
   if (syntax.operator === OPERATOR_DELETE) {
-    return withRepeat(applyDeleteRange(editor, syntax, target), syntax, options);
+    return withRepeat(applyDeleteRange(editor, syntax, target), syntax, options, target.basisDigest);
   }
   if (syntax.operator === OPERATOR_CHANGE) {
-    return withRepeat(applyChangeRange(editor, syntax, target), syntax, options);
+    return withRepeat(applyChangeRange(editor, syntax, target), syntax, options, target.basisDigest);
   }
   if (syntax.operator === OPERATOR_YANK) {
     return applyYankRange(editor, syntax, target);
+  }
+  if (isVimCaseTransformOperator(syntax.operator)) {
+    return withRepeat(
+      applyVimCaseTransform(editor, mutationRangeForTarget(editor, target), vimCaseTransformForOperator(syntax.operator)),
+      syntax,
+      options,
+      target.basisDigest,
+    );
   }
   return editor;
 }
@@ -287,7 +336,7 @@ function applyPutOperator(
     ? PastePlacements.Before
     : PastePlacements.After;
   const next = pasteRegister({ ...editor, register }, placement);
-  return withRepeat(next, syntax, options);
+  return withRepeat(next, syntax, options, basisDigest(editor));
 }
 
 function applyModeSwitch(
@@ -385,6 +434,7 @@ function withRepeat(
   editor: EditorState,
   syntax: VimChordSyntax,
   options: VimExecutionOptions,
+  sourceBasisDigest?: string,
 ): EditorState {
   return options.recordRepeat ?? RECORD_REPEAT_DEFAULT
     ? {
@@ -392,6 +442,8 @@ function withRepeat(
       lastVimEdit: {
         keys: syntax.keys,
         description: repeatDescription(syntax),
+        replayPolicy: 'resolve-current-basis',
+        ...(sourceBasisDigest == null ? {} : { sourceBasisDigest }),
       },
     }
     : editor;

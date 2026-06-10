@@ -9,6 +9,10 @@ import {
   LINEWISE_OPERATOR_KEYS,
   MACRO_RECORD_KEY,
   MACRO_REPLAY_KEY,
+  MARK_EXACT_JUMP_KEY,
+  MARK_LINE_JUMP_KEY,
+  MARK_NAMES,
+  MARK_SET_KEY,
   MODE_SWITCHES,
   REGISTER_NAMES,
   REGISTER_PREFIX,
@@ -27,6 +31,8 @@ import {
   type VimGrammarToken,
   type VimMacroControlName,
   type VimMacroControlToken,
+  type VimMarkActionName,
+  type VimMarkToken,
   type VimModeSwitchName,
   type VimModeSwitchToken,
   type VimMotionName,
@@ -52,6 +58,8 @@ export {
   type VimGrammarToken,
   type VimMacroControlName,
   type VimMacroControlToken,
+  type VimMarkActionName,
+  type VimMarkToken,
   type VimModeSwitchName,
   type VimModeSwitchToken,
   type VimMotionName,
@@ -82,6 +90,7 @@ const TOKEN_READERS: readonly TokenReader[] = [
   readRegister,
   readTextObject,
   readMacro,
+  readMark,
   readDoubleMotion,
   readGOperator,
   readLineOperator,
@@ -169,6 +178,15 @@ function readMacro(keys: readonly string[], index: number): TokenRead | undefine
   return next != null && REGISTER_NAMES.has(next)
     ? singleToken(macroToken('record', [key, next], index, next), index + 2)
     : singleToken(prefixToken(key, index), index + 1);
+}
+
+function readMark(keys: readonly string[], index: number): TokenRead | undefined {
+  const key = keys[index] ?? '';
+  const next = keys[index + 1];
+  if (!isMarkPrefix(key) || next == null || !MARK_NAMES.has(next)) {
+    return undefined;
+  }
+  return singleToken(markToken(markAction(key), [key, next], index, next), index + 2);
 }
 
 function readMacroReplay(next: string | undefined, index: number): TokenRead {
@@ -267,6 +285,17 @@ function textObjectScope(key: string | undefined): VimTextObjectScope | undefine
   return key === TEXT_OBJECT_INNER_PREFIX ? TEXT_OBJECT_INNER_SCOPE : undefined;
 }
 
+function isMarkPrefix(key: string): boolean {
+  return key === MARK_SET_KEY || key === MARK_EXACT_JUMP_KEY || key === MARK_LINE_JUMP_KEY;
+}
+
+function markAction(key: string): VimMarkActionName {
+  if (key === MARK_EXACT_JUMP_KEY) {
+    return 'jumpExact';
+  }
+  return key === MARK_LINE_JUMP_KEY ? 'jumpLine' : 'set';
+}
+
 function countToken(raw: readonly string[], at: number): VimCountToken {
   return { kind: 'count', raw, at, value: Number(raw.join('')) };
 }
@@ -319,6 +348,15 @@ function macroToken(
   register?: string,
 ): VimMacroControlToken {
   return register == null ? { kind: 'macroControl', raw, at, control } : { kind: 'macroControl', raw, at, control, register };
+}
+
+function markToken(
+  action: VimMarkActionName,
+  raw: readonly string[],
+  at: number,
+  mark: string,
+): VimMarkToken {
+  return { kind: 'mark', raw, at, action, mark };
 }
 
 function prefixToken(prefix: string, at: number): VimPrefixToken {

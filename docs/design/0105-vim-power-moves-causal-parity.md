@@ -1241,7 +1241,11 @@ What the tests proved:
 - `spec/vim-power-execution.spec.mjs` proves the runtime execution package:
   counted motion targets, delimiter text objects, operator-motion deletes,
   text-object changes, named line registers, put without phantom blank lines,
-  pending Vim keys in Normal mode, and dot repeat of the last edit.
+  pending Vim keys in Normal mode, dot repeat of the last edit, transformed
+  text-object repeat metadata, case-transform operators, joins, and local marks
+  with exact and line jumps.
+- `spec/workspace-command-line.spec.mjs` proves `:q!` and `:quit!` dispatch
+  forced quit commands without opening the dirty-file confirmation posture.
 
 What changed from the design:
 
@@ -1263,6 +1267,10 @@ What changed from the design:
   `src/app/workspace/vim-text-object-resolver.ts`, and
   `src/app/workspace/vim-command-executor.ts`. `updateNormalMode` now tries the
   Vim chord executor before falling back to legacy single-key commands.
+- The next runtime batch adds `src/app/workspace/vim-editor-operators.ts` for
+  reusable case-transform, join, and mark helpers. Repeat records
+  `sourceBasisDigest` and a `resolve-current-basis` replay policy so text-object
+  repeat is explicit instead of an unlabelled key replay.
 
 Follow-up work:
 
@@ -1271,5 +1279,8 @@ Follow-up work:
   Graft-backed objects remain future work.
 - Register append, black-hole, system clipboard, numbered registers, and
   expression register policy remain future work.
-- Dot repeat currently replays the stored edit key sequence; transformed
-  text-object repeat across a new basis remains future work.
+- Dot repeat now resolves stored semantic keys against the current basis for
+  supported motions and text objects; stale-basis obstruction and richer
+  transformed insertion payloads remain future work.
+- Marks now support local set, exact jump, and line jump; anchor transformation
+  through later edit receipts remains future work.

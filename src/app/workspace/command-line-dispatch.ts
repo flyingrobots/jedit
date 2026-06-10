@@ -1,4 +1,4 @@
-import type { Cmd } from "@flyingrobots/bijou-tui";
+import { quit, type Cmd } from "@flyingrobots/bijou-tui";
 import { FileEntryKinds, type FileEntry } from "../../ports/file-system.js";
 import {
   closeWorkspaceCommandLine,
@@ -24,6 +24,8 @@ const WORKSPACE_COMMAND_NAMES = Object.freeze({
   WriteAlias: "w",
   Quit: "quit",
   QuitAlias: "q",
+  QuitBang: "quit!",
+  QuitBangAlias: "q!",
   WriteQuit: "wq",
   WriteQuitAlias: "x",
 } as const);
@@ -53,6 +55,9 @@ export function dispatchWorkspaceCommandLine(
   }
   if (isQuitCommand(command.name)) {
     return dispatchQuitCommand(model);
+  }
+  if (isForceQuitCommand(command.name)) {
+    return [closeWorkspaceCommandLine(model), [quit<WorkspaceMsg>()]];
   }
   return isWriteQuitCommand(command.name)
     ? dispatchWriteQuitCommand(model, context)
@@ -188,6 +193,13 @@ function isQuitCommand(name: string): boolean {
   return (
     name === WORKSPACE_COMMAND_NAMES.Quit ||
     name === WORKSPACE_COMMAND_NAMES.QuitAlias
+  );
+}
+
+function isForceQuitCommand(name: string): boolean {
+  return (
+    name === WORKSPACE_COMMAND_NAMES.QuitBang ||
+    name === WORKSPACE_COMMAND_NAMES.QuitBangAlias
   );
 }
 

@@ -152,6 +152,13 @@ pending Vim keys, and dot repeat. The proof surface is
 registers, transformed repeat, macros, marks, visual mode, substitute, and
 causal strand previews remain open.
 
+The `vim/power-moves-next-five` branch extends that runtime package with
+explicit transformed-repeat metadata, `gu`/`gU`/`g~` case operators, `J` and
+`gJ` joins, local `m{mark}`/`` `{mark}``/`'{mark}` marks and jumps, and
+`:q!`/`:quit!` force-quit dispatch. Search history, structural motions,
+advanced registers, macros, visual mode, substitute, and causal strand previews
+remain open.
+
 ## Active Plan: Executable Design Cycle Template
 
 The current branch advances

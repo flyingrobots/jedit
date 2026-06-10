@@ -15,6 +15,7 @@ const COMMAND_LINE_VALIDATION_EMPTY = "";
 const COMMAND_LINE_VALIDATION_NO_WHITESPACE = -1;
 const EDIT_COMMAND_NAME = "edit";
 const EDIT_COMMAND_ALIAS = "e";
+const FORCE_QUIT_COMMAND_NAMES = Object.freeze(["quit!", "q!"] as const);
 
 export function validateWorkspaceCommandLineInput(
   model: WorkspaceModel,
@@ -65,9 +66,21 @@ function commandTokenHasKnownPrefix(
   token: CommandLineToken,
   descriptors: readonly WorkspaceCommandDescriptor[],
 ): boolean {
+  return commandTokenMatchesVisibleDescriptor(token, descriptors) ||
+    commandTokenMatchesHiddenCommand(token);
+}
+
+function commandTokenMatchesVisibleDescriptor(
+  token: CommandLineToken,
+  descriptors: readonly WorkspaceCommandDescriptor[],
+): boolean {
   return descriptors.some((descriptor) =>
     commandDescriptorMatchesTokenPrefix(descriptor, token.name),
   );
+}
+
+function commandTokenMatchesHiddenCommand(token: CommandLineToken): boolean {
+  return FORCE_QUIT_COMMAND_NAMES.some((name) => name.startsWith(token.name));
 }
 
 function commandDescriptorMatchesTokenPrefix(

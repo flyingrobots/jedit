@@ -3,6 +3,7 @@ export type VimGrammarTokenKind =
   | 'commandLineText'
   | 'count'
   | 'macroControl'
+  | 'mark'
   | 'modeSwitch'
   | 'motion'
   | 'operator'
@@ -17,6 +18,7 @@ export const VimGrammarTokenKinds: Record<string, VimGrammarTokenKind> = Object.
   CommandLineText: 'commandLineText',
   Count: 'count',
   MacroControl: 'macroControl',
+  Mark: 'mark',
   ModeSwitch: 'modeSwitch',
   Motion: 'motion',
   Operator: 'operator',
@@ -37,6 +39,7 @@ export type VimOperatorName =
   | 'format'
   | 'indent'
   | 'joinNoSpace'
+  | 'joinWithSpace'
   | 'lowercase'
   | 'outdent'
   | 'putAfter'
@@ -98,6 +101,7 @@ export type VimModeSwitchName =
 
 export type VimVisualModeName = 'block' | 'char' | 'line';
 export type VimMacroControlName = 'record' | 'replay' | 'replayLast';
+export type VimMarkActionName = 'jumpExact' | 'jumpLine' | 'set';
 
 interface VimTokenBase {
   readonly at: number;
@@ -156,6 +160,12 @@ export interface VimMacroControlToken extends VimTokenBase {
   readonly register?: string;
 }
 
+export interface VimMarkToken extends VimTokenBase {
+  readonly action: VimMarkActionName;
+  readonly kind: 'mark';
+  readonly mark: string;
+}
+
 export interface VimPrefixToken extends VimTokenBase {
   readonly kind: 'prefix';
   readonly prefix: string;
@@ -170,6 +180,7 @@ export type VimGrammarToken =
   | VimCommandLineTextToken
   | VimCountToken
   | VimMacroControlToken
+  | VimMarkToken
   | VimModeSwitchToken
   | VimMotionToken
   | VimOperatorToken
@@ -184,6 +195,9 @@ export const COMMAND_LINE_PREFIX = ':';
 export const COMMAND_LINE_ACCEPT_KEY = 'enter';
 export const MACRO_RECORD_KEY = 'q';
 export const MACRO_REPLAY_KEY = '@';
+export const MARK_EXACT_JUMP_KEY = '`';
+export const MARK_LINE_JUMP_KEY = "'";
+export const MARK_SET_KEY = 'm';
 export const CTRL_V_KEY = 'ctrl-v';
 export const ZERO_KEY = '0';
 export const COUNT_MIN = '1';
@@ -197,6 +211,7 @@ export const TEXT_OBJECT_AROUND_SCOPE: VimTextObjectScope = 'around';
 export const TEXT_OBJECT_INNER_SCOPE: VimTextObjectScope = 'inner';
 
 export const REGISTER_NAMES = new Set('"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-+*='.split(''));
+export const MARK_NAMES = new Set('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''));
 export const LINEWISE_OPERATOR_KEYS = new Set(['c', 'd', 'y']);
 export const INCOMPLETE_PREFIX_KEYS = new Set([G_PREFIX, SECTION_BACKWARD_PREFIX, SECTION_FORWARD_PREFIX]);
 
@@ -207,6 +222,7 @@ export const SINGLE_OPERATORS: ReadonlyMap<string, VimOperatorName> = new Map([
   ['>', 'indent'],
   ['C', 'changeToLineEnd'],
   ['D', 'deleteToLineEnd'],
+  ['J', 'joinWithSpace'],
   ['P', 'putBefore'],
   ['Y', 'yankLine'],
   ['c', 'change'],
