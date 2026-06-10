@@ -1,0 +1,429 @@
+import type { EditorState, RegisterKind, RegisterState } from './editor/model.js';
+import { RegisterKinds } from './editor/model.js';
+import { EditorModes } from './editor/mode.js';
+import { PastePlacements } from './editor/key.js';
+import {
+  deleteTextRange,
+  editorText,
+  pasteRegister,
+  yankTextRange,
+} from './editor-editing-core.js';
+import {
+  changeToLineEnd,
+  deleteToLineEnd,
+  enterInsertAfterCursor,
+  enterInsertAtFirstNonWhitespace,
+  enterInsertAtLineEnd,
+  openLineAbove,
+  openLineBelow,
+  yankCurrentLine,
+} from './editor-editing-helpers.js';
+import { parseVimChordSyntax, type VimChordSyntax, type VimTextObjectSyntax } from './vim-chord-syntax.js';
+import type { VimMotionName } from './vim-grammar-vocabulary.js';
+import {
+  resolveVimMotion,
+  type VimResolvedMotion,
+  type VimResolvedTargetShape,
+  type VimTextRange,
+} from './vim-motion-resolver.js';
+import {
+  resolveVimTextObject,
+  type VimResolvedTextObject,
+} from './vim-text-object-resolver.js';
+
+export interface VimExecutionOptions {
+  readonly recordRepeat?: boolean;
+}
+
+interface VimOperatorTarget {
+  readonly basisDigest: string;
+  readonly range: VimTextRange;
+  readonly shape: VimResolvedTargetShape;
+}
+
+const FAMILY_MODE_SWITCH = 'modeSwitch';
+const FAMILY_MOTION = 'motion';
+const FAMILY_OPERATOR_MOTION = 'operatorMotion';
+const FAMILY_OPERATOR_TEXT_OBJECT = 'operatorTextObject';
+const FAMILY_PUT = 'put';
+const SYNTAX_KIND_COMPLETE = 'complete';
+const NORMAL_MODE = EditorModes.Normal;
+const INSERT_MODE = EditorModes.Insert;
+const RECORD_REPEAT_DEFAULT = true;
+const REGISTER_UNNAMED = '"';
+const REGISTER_TEXT_EMPTY = '';
+const LINE_BREAK_TEXT = '\n';
+const LINE_BREAK_LENGTH = 1;
+const MODE_SWITCH_INSERT_AFTER = 'insertAfter';
+const MODE_SWITCH_INSERT_BEFORE = 'insertBefore';
+const MODE_SWITCH_INSERT_LINE_END = 'insertLineEnd';
+const MODE_SWITCH_INSERT_FIRST_NON_WHITESPACE = 'insertFirstNonWhitespace';
+const MODE_SWITCH_OPEN_LINE_ABOVE = 'openLineAbove';
+const MODE_SWITCH_OPEN_LINE_BELOW = 'openLineBelow';
+const OPERATOR_CHANGE = 'change';
+const OPERATOR_CHANGE_TO_LINE_END = 'changeToLineEnd';
+const OPERATOR_DELETE = 'delete';
+const OPERATOR_DELETE_CHAR = 'deleteChar';
+const OPERATOR_DELETE_TO_LINE_END = 'deleteToLineEnd';
+const OPERATOR_PUT_BEFORE = 'putBefore';
+const OPERATOR_YANK = 'yank';
+const OPERATOR_YANK_LINE = 'yankLine';
+const OPERATION_CHANGE = 'change';
+const OPERATION_DELETE = 'delete';
+const OPERATION_YANK = 'yank';
+const TARGET_SHAPE_LINEWISE = 'linewise';
+const TARGET_SHAPE_CHARWISE = 'charwise';
+
+export function applyVimChordSyntaxToEditor(
+  editor: EditorState,
+  syntax: VimChordSyntax,
+  options: VimExecutionOptions = {},
+): EditorState {
+  const cleanEditor = clearVimPending(editor);
+  if (syntax.kind !== SYNTAX_KIND_COMPLETE) {
+    return cleanEditor;
+  }
+  if (syntax.family === FAMILY_MOTION && syntax.motion != null) {
+    return applyResolvedMotion(cleanEditor, syntax.motion, syntax.count);
+  }
+  if (syntax.family === FAMILY_MODE_SWITCH && syntax.modeSwitch != null) {
+    return applyModeSwitch(cleanEditor, syntax.modeSwitch);
+  }
+  return applyCompleteCommand(cleanEditor, syntax, options);
+}
+
+export function repeatLastVimEdit(editor: EditorState): EditorState {
+  const repeat = editor.lastVimEdit;
+  if (repeat == null) {
+    return clearVimPending(editor);
+  }
+  return applyVimChordSyntaxToEditor(editor, parseVimChordSyntax(repeat.keys), {
+    recordRepeat: false,
+  });
+}
+
+function applyCompleteCommand(
+  editor: EditorState,
+  syntax: VimChordSyntax,
+  options: VimExecutionOptions,
+): EditorState {
+  if (syntax.family === FAMILY_OPERATOR_MOTION) {
+    return applyOperatorMotion(editor, syntax, options);
+  }
+  if (syntax.family === FAMILY_OPERATOR_TEXT_OBJECT) {
+    return applyOperatorTextObject(editor, syntax, options);
+  }
+  if (syntax.family === FAMILY_PUT && syntax.operator != null) {
+    return applyPutOperator(editor, syntax, options);
+  }
+  return syntax.operator == null ? editor : applyStandaloneOperator(editor, syntax, options);
+}
+
+function applyResolvedMotion(
+  editor: EditorState,
+  motion: VimMotionName,
+  count: number | undefined,
+): EditorState {
+  const resolved = resolveVimMotion({ editor, motion, count });
+  if ('obstruction' in resolved) {
+    return editor;
+  }
+  return {
+    ...editor,
+    cursorRow: resolved.cursorAfter.row,
+    cursorCol: resolved.cursorAfter.column,
+  };
+}
+
+function applyOperatorMotion(
+  editor: EditorState,
+  syntax: VimChordSyntax,
+  options: VimExecutionOptions,
+): EditorState {
+  if (syntax.motion == null || syntax.operator == null) {
+    return editor;
+  }
+  const resolved = resolveVimMotion({
+    editor,
+    motion: syntax.motion,
+    count: syntax.count,
+  });
+  return 'obstruction' in resolved
+    ? editor
+    : applyOperatorTarget(editor, syntax, targetFromMotion(resolved), options);
+}
+
+function applyOperatorTextObject(
+  editor: EditorState,
+  syntax: VimChordSyntax,
+  options: VimExecutionOptions,
+): EditorState {
+  if (syntax.operator == null || syntax.textObject == null) {
+    return editor;
+  }
+  const resolved = resolveTextObjectTarget(editor, syntax.textObject, syntax.count);
+  return resolved == null
+    ? editor
+    : applyOperatorTarget(editor, syntax, targetFromTextObject(resolved), options);
+}
+
+function resolveTextObjectTarget(
+  editor: EditorState,
+  textObject: VimTextObjectSyntax,
+  count: number | undefined,
+): VimResolvedTextObject | undefined {
+  const resolved = resolveVimTextObject({
+    editor,
+    count,
+    scope: textObject.scope,
+    target: textObject.target,
+  });
+  return 'obstruction' in resolved ? undefined : resolved;
+}
+
+function applyStandaloneOperator(
+  editor: EditorState,
+  syntax: VimChordSyntax,
+  options: VimExecutionOptions,
+): EditorState {
+  if (syntax.operator === OPERATOR_DELETE_TO_LINE_END) {
+    return withRepeat(deleteToLineEnd(editor), syntax, options);
+  }
+  if (syntax.operator === OPERATOR_CHANGE_TO_LINE_END) {
+    return withRepeat(changeToLineEnd(editor), syntax, options);
+  }
+  if (syntax.operator === OPERATOR_YANK_LINE) {
+    return yankCurrentLine(editor);
+  }
+  if (syntax.operator === OPERATOR_DELETE_CHAR) {
+    return applyDeleteChar(editor, syntax, options);
+  }
+  return editor;
+}
+
+function applyDeleteChar(
+  editor: EditorState,
+  syntax: VimChordSyntax,
+  options: VimExecutionOptions,
+): EditorState {
+  const start = cursorIndex(editor);
+  const count = Math.max(1, syntax.count ?? 1);
+  const next = applyDeleteRange(editor, syntax, {
+    basisDigest: basisDigest(editor),
+    range: { start, end: start + count },
+    shape: TARGET_SHAPE_CHARWISE,
+  });
+  return withRepeat(next, syntax, options);
+}
+
+function applyOperatorTarget(
+  editor: EditorState,
+  syntax: VimChordSyntax,
+  target: VimOperatorTarget,
+  options: VimExecutionOptions,
+): EditorState {
+  if (syntax.operator === OPERATOR_DELETE) {
+    return withRepeat(applyDeleteRange(editor, syntax, target), syntax, options);
+  }
+  if (syntax.operator === OPERATOR_CHANGE) {
+    return withRepeat(applyChangeRange(editor, syntax, target), syntax, options);
+  }
+  if (syntax.operator === OPERATOR_YANK) {
+    return applyYankRange(editor, syntax, target);
+  }
+  return editor;
+}
+
+function applyDeleteRange(
+  editor: EditorState,
+  syntax: VimChordSyntax,
+  target: VimOperatorTarget,
+): EditorState {
+  const register = registerFromRange(editor, target, OPERATION_DELETE);
+  const next = deleteTextRange(editor, target.range.start, target.range.end, {
+    mode: NORMAL_MODE,
+    register: register.kind,
+  });
+  return withRegisters(next, syntax.register, register);
+}
+
+function applyChangeRange(
+  editor: EditorState,
+  syntax: VimChordSyntax,
+  target: VimOperatorTarget,
+): EditorState {
+  const register = registerFromRange(editor, target, OPERATION_CHANGE);
+  const next = deleteTextRange(editor, target.range.start, target.range.end, {
+    mode: INSERT_MODE,
+    register: register.kind,
+  });
+  return withRegisters(next, syntax.register, register);
+}
+
+function applyYankRange(
+  editor: EditorState,
+  syntax: VimChordSyntax,
+  target: VimOperatorTarget,
+): EditorState {
+  const register = registerFromRange(editor, target, OPERATION_YANK);
+  const next = yankTextRange(editor, target.range.start, target.range.end, register.kind);
+  return withRegisters(next, syntax.register, register);
+}
+
+function applyPutOperator(
+  editor: EditorState,
+  syntax: VimChordSyntax,
+  options: VimExecutionOptions,
+): EditorState {
+  const register = selectedRegister(editor, syntax.register);
+  if (register == null) {
+    return editor;
+  }
+  const placement = syntax.operator === OPERATOR_PUT_BEFORE
+    ? PastePlacements.Before
+    : PastePlacements.After;
+  const next = pasteRegister({ ...editor, register }, placement);
+  return withRepeat(next, syntax, options);
+}
+
+function applyModeSwitch(
+  editor: EditorState,
+  modeSwitch: NonNullable<VimChordSyntax['modeSwitch']>,
+): EditorState {
+  if (modeSwitch === MODE_SWITCH_INSERT_BEFORE) {
+    return { ...editor, mode: INSERT_MODE, pendingNormal: undefined };
+  }
+  if (modeSwitch === MODE_SWITCH_INSERT_AFTER) {
+    return enterInsertAfterCursor(editor);
+  }
+  if (modeSwitch === MODE_SWITCH_INSERT_LINE_END) {
+    return enterInsertAtLineEnd(editor);
+  }
+  if (modeSwitch === MODE_SWITCH_INSERT_FIRST_NON_WHITESPACE) {
+    return enterInsertAtFirstNonWhitespace(editor);
+  }
+  if (modeSwitch === MODE_SWITCH_OPEN_LINE_ABOVE) {
+    return openLineAbove(editor);
+  }
+  return modeSwitch === MODE_SWITCH_OPEN_LINE_BELOW ? openLineBelow(editor) : editor;
+}
+
+function targetFromMotion(resolved: VimResolvedMotion): VimOperatorTarget {
+  return {
+    basisDigest: resolved.basisDigest,
+    range: resolved.target,
+    shape: resolved.targetShape,
+  };
+}
+
+function targetFromTextObject(resolved: VimResolvedTextObject): VimOperatorTarget {
+  return {
+    basisDigest: resolved.basisDigest,
+    range: resolved.targetRange,
+    shape: resolved.targetShape,
+  };
+}
+
+function registerFromRange(
+  editor: EditorState,
+  target: VimOperatorTarget,
+  operation: string,
+): RegisterState {
+  const kind = registerKind(target.shape);
+  return {
+    kind,
+    text: registerText(editor, target.range, target.shape),
+    source: {
+      basisDigest: target.basisDigest,
+      operation,
+      rangeStart: target.range.start,
+      rangeEnd: target.range.end,
+    },
+  };
+}
+
+function registerText(
+  editor: EditorState,
+  range: VimTextRange,
+  shape: VimResolvedTargetShape,
+): string {
+  const text = rangeText(editor, range);
+  return shape === TARGET_SHAPE_LINEWISE && text.endsWith(LINE_BREAK_TEXT)
+    ? text.slice(0, -LINE_BREAK_LENGTH)
+    : text;
+}
+
+function withRegisters(
+  editor: EditorState,
+  name: string | undefined,
+  register: RegisterState,
+): EditorState {
+  const registers = {
+    ...(editor.registers ?? {}),
+    [REGISTER_UNNAMED]: register,
+    ...(name == null ? {} : { [name]: register }),
+  };
+  return {
+    ...editor,
+    register,
+    registers,
+  };
+}
+
+function selectedRegister(
+  editor: EditorState,
+  name: string | undefined,
+): RegisterState | undefined {
+  return name == null ? editor.register : editor.registers?.[name] ?? editor.register;
+}
+
+function withRepeat(
+  editor: EditorState,
+  syntax: VimChordSyntax,
+  options: VimExecutionOptions,
+): EditorState {
+  return options.recordRepeat ?? RECORD_REPEAT_DEFAULT
+    ? {
+      ...editor,
+      lastVimEdit: {
+        keys: syntax.keys,
+        description: repeatDescription(syntax),
+      },
+    }
+    : editor;
+}
+
+function repeatDescription(syntax: VimChordSyntax): string {
+  return `${syntax.family}:${syntax.operator ?? REGISTER_TEXT_EMPTY}:${syntax.motion ?? REGISTER_TEXT_EMPTY}`;
+}
+
+function clearVimPending(editor: EditorState): EditorState {
+  return {
+    ...editor,
+    pendingVimKeys: undefined,
+    pendingNormal: undefined,
+  };
+}
+
+function registerKind(shape: VimResolvedTargetShape): RegisterKind {
+  return shape === TARGET_SHAPE_LINEWISE ? RegisterKinds.Line : RegisterKinds.Char;
+}
+
+function rangeText(editor: EditorState, range: VimTextRange): string {
+  const text = editorText(editor);
+  const start = Math.max(0, Math.min(range.start, range.end));
+  const end = Math.max(start, Math.min(text.length, Math.max(range.start, range.end)));
+  return text.slice(start, end);
+}
+
+function cursorIndex(editor: EditorState): number {
+  let index = 0;
+  for (let row = 0; row < editor.cursorRow; row += 1) {
+    index += (editor.lines[row] ?? '').length + 1;
+  }
+  return index + editor.cursorCol;
+}
+
+function basisDigest(editor: EditorState): string {
+  return `${editor.lines.length}:${editorText(editor).length}`;
+}

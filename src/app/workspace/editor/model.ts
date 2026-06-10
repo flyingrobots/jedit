@@ -10,6 +10,17 @@ export type RegisterKind = typeof RegisterKinds[keyof typeof RegisterKinds];
 export interface RegisterState {
   readonly kind: RegisterKind;
   readonly text: string;
+  readonly source?: RegisterSourceState;
+}
+export interface RegisterSourceState {
+  readonly basisDigest: string;
+  readonly operation: string;
+  readonly rangeEnd: number;
+  readonly rangeStart: number;
+}
+export interface VimRepeatState {
+  readonly description: string;
+  readonly keys: readonly string[];
 }
 export interface HistoryEntry {
   readonly lines: readonly string[];
@@ -30,7 +41,10 @@ export interface EditorState {
   readonly readOnly: boolean;
   readonly mode: EditorMode;
   readonly pendingNormal?: PendingNormal;
+  readonly pendingVimKeys?: readonly string[];
   readonly register?: RegisterState;
+  readonly registers?: Readonly<Record<string, RegisterState>>;
+  readonly lastVimEdit?: VimRepeatState;
   readonly undoStack: readonly HistoryEntry[];
   readonly redoStack: readonly HistoryEntry[];
 }

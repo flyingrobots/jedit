@@ -1205,7 +1205,15 @@ Target usability witnesses:
 ## Retrospective
 
 Roadmap implementation is not complete. Slices 2, 3, 4, 5, and 6 now have
-inspectable planning, syntax, and state-machine artifacts.
+inspectable planning, syntax, and state-machine artifacts. This branch adds the
+first runtime execution package for the next power-move slice window:
+
+- reading-basis motion resolution;
+- core word, line, file, and character motion parity;
+- operator-pending execution through the Vim chord syntax boundary;
+- word, paragraph, quote, and bracket text-object resolution;
+- delete, change, yank, put, named-register, and dot-repeat execution;
+- register provenance facts carrying basis, operation, and source range.
 
 What the tests proved:
 
@@ -1230,6 +1238,10 @@ What the tests proved:
   registers remain syntax-only until a command completes, invalid continuations
   reset without execution readiness, and command-line, modal, drawer, insert,
   and focus-transfer owners keep pending state inert.
+- `spec/vim-power-execution.spec.mjs` proves the runtime execution package:
+  counted motion targets, delimiter text objects, operator-motion deletes,
+  text-object changes, named line registers, put without phantom blank lines,
+  pending Vim keys in Normal mode, and dot repeat of the last edit.
 
 What changed from the design:
 
@@ -1246,8 +1258,18 @@ What changed from the design:
 - The Slice 6 state machine lives in
   `src/app/workspace/vim-normal-state.ts`. It is intentionally pure and not yet
   wired into production text execution.
+- The first runtime execution package lives in
+  `src/app/workspace/vim-motion-resolver.ts`,
+  `src/app/workspace/vim-text-object-resolver.ts`, and
+  `src/app/workspace/vim-command-executor.ts`. `updateNormalMode` now tries the
+  Vim chord executor before falling back to legacy single-key commands.
 
 Follow-up work:
 
-- Slice 7 should resolve motions against a reading basis, using
-  `VimChordSyntax` and the Normal accumulator as the syntax boundary.
+- Search and structural motions remain future work.
+- Full structural text objects such as functions, classes, comments, tags, and
+  Graft-backed objects remain future work.
+- Register append, black-hole, system clipboard, numbered registers, and
+  expression register policy remain future work.
+- Dot repeat currently replays the stored edit key sequence; transformed
+  text-object repeat across a new basis remains future work.

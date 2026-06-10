@@ -69,7 +69,10 @@ export function editorFromWorkspaceTextReadingCache(
     readOnly: projection.readOnly,
     mode: projection.existing?.mode ?? EditorModes.Normal,
     pendingNormal: projection.existing?.pendingNormal,
+    pendingVimKeys: projection.existing?.pendingVimKeys,
     register: projection.existing?.register,
+    registers: projection.existing?.registers,
+    lastVimEdit: projection.existing?.lastVimEdit,
     undoStack: projection.existing?.undoStack ?? EMPTY_STACK,
     redoStack: projection.existing?.redoStack ?? EMPTY_STACK,
   };
