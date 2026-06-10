@@ -327,6 +327,68 @@ The live jedit path should prefer `bijou-braille-cells`. Rendering an RGBA image
 reading it back, then CPU-sampling it into Braille is acceptable as an early
 proof, but it should not be the final hot path.
 
+The live-path rule is:
+
+```text
+Do not render pixels unless the user asked for pixels.
+The terminal asked for cells.
+```
+
+The GPU version of the live path should therefore be:
+
+```text
+Geordi-RayTracer
+  -> WebGPU or native GPU backend
+  -> packed Bijou cell buffer
+  -> Bijou Surface adapter
+  -> terminal
+```
+
+The GPU should compute rays, shading, and Braille resolve, then write
+terminal-native packed cells. The CPU should read back cells, not a full RGBA
+frame, for the live title path.
+
+### Packed Cell Target
+
+Contract: `PackedBijouCellTarget`.
+
+```text
+PackedBijouCellTarget = {
+  widthCells: PositiveInteger,
+  heightCells: PositiveInteger,
+  cellFormatId: string,
+  sampleGrid: "2x4",
+  sampleGridHash: string,
+  colorPolicyId: string,
+  brailleResolvePolicyId: string,
+  cells: PackedBijouCell[]
+}
+```
+
+The preferred GPU work distribution is one work item per terminal cell, or one
+small tile per workgroup:
+
+```text
+for each terminal cell:
+  cast or sample 2x4 rays
+  shade samples
+  compute Braille dot mask
+  choose foreground, background, and cell attributes
+  write one packed cell
+```
+
+The live readback target is:
+
+```text
+cellCount * packedCellSize
+```
+
+not:
+
+```text
+pixelWidth * pixelHeight * 4
+```
+
 ### Target Equivalence
 
 Image and cell targets must prove they describe the same scene. The first proof
@@ -404,6 +466,8 @@ RenderFrameFacts = {
   geordiProfileHash: string,
   bunnySchemaHash?: string,
   rendererBuildHash: string,
+  shaderKernelDigest?: string,
+  precisionPolicyId?: string,
   target: "rgba8-image" | "bijou-braille-cells",
   targetSpecHash: string,
   frameIndex: NonNegativeInteger,
@@ -423,6 +487,7 @@ RenderFrameFacts = {
   cellFormatId?: string,
   rawBufferHash: string,
   artifactHash?: string,
+  readbackByteCount?: NonNegativeInteger,
   rayCount?: NonNegativeInteger,
   intersectionCount?: NonNegativeInteger,
   readbackWaitMs?: NonNegativeNumber,
@@ -485,14 +550,47 @@ CPU path:
 GPU path:
 
 - upload compiled scene and acceleration data to GPU resources;
-- render into a texture or storage buffer;
-- resolve Braille cells on GPU when practical;
+- render into a texture only for image targets;
+- render into packed cell storage for the live terminal target;
+- resolve Braille cells on GPU for `bijou-braille-cells`;
 - read back packed cells rather than full images for the live jedit path;
 - avoid mandatory per-frame CPU/GPU synchronization;
-- reuse the last ready frame when readback is late.
+- reuse the last ready frame when readback is late;
+- report backend identity, shader/kernel digest, precision policy, target hash,
+  and readback timing.
 
 The GPU can be much faster at ray/sample work, but synchronous readback can erase
 the win. The contract should make late readback observable and non-fatal.
+
+CPU reference remains truth. GPU is acceleration. GPU must emit facts. GPU must
+not silently define semantics.
+
+```text
+CPU reference:
+  proves Ray -> Sample -> BrailleCell semantics
+
+GPU backend:
+  proves it matches the reference under a named tolerance and precision policy
+
+Geordi receipt:
+  records backend, shader digest, target hash, readback timing, and policy ids
+
+Bijou:
+  presents cells and does not learn rays
+```
+
+The first GPU proof should be intentionally small:
+
+```text
+frameIndex: 0
+target: bijou-braille-cells
+backend: webgpu
+same sceneHash as CPU
+same uniformsHash as CPU
+same brailleResolvePolicyId
+same cellFormatId
+gpuCellBufferHash == cpuReferenceCellBufferHash
+```
 
 ## Data / State Model
 
@@ -674,7 +772,10 @@ Prepare for asynchronous GPU rendering without making it mandatory.
 
 - [ ] Slice 16: Add double-buffer and ring-buffer scheduler tests.
 - [ ] Slice 17: Add late-readback behavior that reuses the last ready frame.
-- [ ] Slice 18: Add backend capability facts for CPU, WASM, and GPU renderers.
+- [ ] Slice 18: Add backend capability facts for CPU, WASM, and GPU renderers,
+      including shader/kernel digest and precision policy.
+- [ ] Slice 19: Add a future WebGPU packed-cell equivalence fixture plan that
+      compares GPU cell-buffer hash to CPU reference cell-buffer hash.
 
 ## Follow-Up Design Arcs
 
@@ -707,6 +808,9 @@ imports from Bunny primitive graphics schemas.
 - [ ] GraphQL authoring profiles are distinguished from compiled runtime render
       artifacts.
 - [ ] The image target to packed-cell target equivalence policy is explicit.
+- [ ] GPU backends are specified as accelerators over CPU reference semantics.
+- [ ] The preferred GPU live path writes packed Bijou cells rather than forcing a
+      full RGBA image readback.
 
 ## Validation Plan
 
@@ -744,6 +848,8 @@ npm run title:render-image -- --frame 0 --output frame.png
 - A Scene3D schema can become misplaced graphics authority if scene objects,
   materials, lights, animation, renderer features, or targets are smuggled into
   Bunny.
+- A GPU backend can accidentally become the semantic source of truth unless
+  reference CPU equivalence remains mandatory.
 
 ## Initial Answers And Remaining Questions
 
