@@ -1245,12 +1245,15 @@ What the tests proved:
   registers remain syntax-only until a command completes, invalid continuations
   reset without execution readiness, and command-line, modal, drawer, insert,
   and focus-transfer owners keep pending state inert.
-- `spec/vim-power-execution.spec.mjs` proves the runtime execution package:
-  counted motion targets, delimiter text objects, operator-motion deletes,
-  text-object changes, named line registers, put without phantom blank lines,
-  pending Vim keys in Normal mode, dot repeat of the last edit, transformed
-  text-object repeat metadata, case-transform operators, joins, and local marks
-  with exact and line jumps.
+- `spec/vim-power-motion-text-object.spec.mjs`,
+  `spec/vim-power-operators-registers.spec.mjs`,
+  `spec/vim-power-normal-mode-integration.spec.mjs`, and
+  `spec/vim-power-transforms-marks.spec.mjs` prove the runtime execution
+  package: counted motion targets, delimiter text objects, operator-motion
+  deletes, text-object changes, named line registers, put without phantom blank
+  lines, pending Vim keys in Normal mode, dot repeat of the last edit,
+  transformed text-object repeat metadata, case-transform operators, joins, and
+  local marks with exact and line jumps.
 - `spec/workspace-command-line.spec.mjs` proves `:q!` and `:quit!` dispatch
   forced quit commands without opening the dirty-file confirmation posture.
 

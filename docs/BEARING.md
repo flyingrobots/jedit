@@ -147,10 +147,12 @@ The `vim/power-moves-execution` branch adds the first runtime execution package
 after the grammar/state-machine scaffolding: reading-basis motion resolution,
 core motion parity, text-object resolution, operator execution, delete, change,
 yank, put, named register storage, register provenance facts, Normal-mode
-pending Vim keys, and basic dot repeat. The proof surface is
-`spec/vim-power-execution.spec.mjs`; full search, structural motions, advanced
-registers, macros, marks, visual mode, substitute, and causal strand previews
-remain open.
+pending Vim keys, and basic dot repeat. The proof surfaces are
+`spec/vim-power-motion-text-object.spec.mjs`,
+`spec/vim-power-operators-registers.spec.mjs`, and
+`spec/vim-power-normal-mode-integration.spec.mjs`; full search, structural
+motions, advanced registers, macros, marks, visual mode, substitute, and causal
+strand previews remain open.
 
 The `vim/power-moves-next-five` branch extends that runtime package with
 explicit transformed-repeat metadata through `sourceBasisDigest` and
