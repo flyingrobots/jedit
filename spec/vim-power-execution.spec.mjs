@@ -214,6 +214,30 @@ test("vim text-object change clears the target and enters insert mode", async ()
   assert.equal(nextEditor.register.text, "hello");
 });
 
+test("vim EOF linewise change keeps insert on the target line", async () => {
+  const [mode, syntax, executor] = await Promise.all([
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "vim-chord-syntax.js"),
+    importDist("app", "workspace", "vim-command-executor.js"),
+  ]);
+  const editor = mockEditor(mode, {
+    lines: ["one", "two"],
+    cursorRow: 1,
+    cursorCol: 0,
+  });
+
+  const changed = executor.applyVimChordSyntaxToEditor(
+    editor,
+    syntax.parseVimChordSyntax(["c", "G"]),
+  );
+
+  assert.deepEqual(changed.lines, ["one", ""]);
+  assert.equal(changed.cursorRow, 1);
+  assert.equal(changed.cursorCol, 0);
+  assert.equal(changed.mode, mode.EditorModes.Insert);
+  assert.equal(changed.register.text, "two");
+});
+
 test("vim counted word text objects expand over multiple words", async () => {
   const [mode, syntax, executor] = await Promise.all([
     importDist("app", "workspace", "editor", "mode.js"),

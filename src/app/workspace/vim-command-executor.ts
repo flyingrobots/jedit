@@ -280,7 +280,7 @@ function applyChangeRange(
   target: VimOperatorTarget,
 ): EditorState {
   const register = registerFromRange(editor, target, OPERATION_CHANGE);
-  const mutationRange = mutationRangeForTarget(editor, target);
+  const mutationRange = changeMutationRangeForTarget(editor, target);
   const next = deleteTextRange(editor, mutationRange.start, mutationRange.end, {
     mode: INSERT_MODE,
     register: register.kind,
@@ -455,6 +455,16 @@ function mutationRangeForTarget(
   return target.range.end >= text.length && target.range.start > 0
     ? { start: target.range.start - LINE_BREAK_LENGTH, end: target.range.end }
     : target.range;
+}
+
+function changeMutationRangeForTarget(
+  editor: EditorState,
+  target: VimOperatorTarget,
+): VimTextRange {
+  if (target.shape === TARGET_SHAPE_LINEWISE && target.range.end >= editorText(editor).length) {
+    return target.range;
+  }
+  return mutationRangeForTarget(editor, target);
 }
 
 function cursorIndex(editor: EditorState): number {
