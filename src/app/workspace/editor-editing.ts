@@ -6,6 +6,7 @@ import type { EditorState } from './editor/model.js';
 import * as editingHelpers from './editor-editing-helpers.js';
 import { parseVimChordSyntax, VimChordSyntaxKinds, type VimChordSyntax } from './vim-chord-syntax.js';
 import { applyVimChordSyntaxToEditor, repeatLastVimEdit } from './vim-command-executor.js';
+import { VimOperatorNames, VimRepeatKey } from './vim-grammar-vocabulary.js';
 
 const {
   applyPendingOperator,
@@ -53,10 +54,6 @@ const MODIFIER_INACTIVE = '0';
 const PREVIEW_MIN_SCROLL_ROW = 0;
 const PREVIEW_SCROLL_STEP = 1;
 const NORMAL_CURSOR_CLAMP_SENTINEL = Number.MAX_SAFE_INTEGER;
-const VIM_REPEAT_KEY = '.';
-const VIM_OPERATOR_CHANGE = 'change';
-const VIM_OPERATOR_DELETE = 'delete';
-const VIM_OPERATOR_YANK = 'yank';
 const VIM_PENDING_KIND = VimChordSyntaxKinds['Pending'];
 const VIM_COMPLETE_KIND = VimChordSyntaxKinds['Complete'];
 
@@ -323,7 +320,7 @@ function updateVimNormalCommand(
       ? undefined
       : ensureEditorVisible(clearNormalPending(editor), viewport.width, viewport.height);
   }
-  if (key === VIM_REPEAT_KEY && editor.pendingVimKeys == null) {
+  if (key === VimRepeatKey && editor.pendingVimKeys == null) {
     return ensureEditorVisible(repeatLastVimEdit(editor), viewport.width, viewport.height);
   }
   return applyVimSyntaxResult(editor, parseVimChordSyntax(nextVimKeys(editor, key)), viewport);
@@ -354,13 +351,13 @@ function pendingVimEditor(editor: EditorState, syntax: VimChordSyntax): EditorSt
 }
 
 function pendingNormalFromVimSyntax(syntax: VimChordSyntax): PendingNormal | undefined {
-  if (syntax.operator === VIM_OPERATOR_DELETE) {
+  if (syntax.operator === VimOperatorNames.Delete) {
     return PendingNormals.Delete;
   }
-  if (syntax.operator === VIM_OPERATOR_CHANGE) {
+  if (syntax.operator === VimOperatorNames.Change) {
     return PendingNormals.Change;
   }
-  if (syntax.operator === VIM_OPERATOR_YANK) {
+  if (syntax.operator === VimOperatorNames.Yank) {
     return PendingNormals.Yank;
   }
   return syntax.keys.at(-1) === EDITOR_KEY.G ? PendingNormals.GoTo : undefined;

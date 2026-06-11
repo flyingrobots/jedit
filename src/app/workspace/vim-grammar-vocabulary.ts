@@ -49,6 +49,29 @@ export type VimOperatorName =
   | 'yank'
   | 'yankLine';
 
+export const VimOperatorNames = Object.freeze({
+  Change: 'change',
+  ChangeToLineEnd: 'changeToLineEnd',
+  Delete: 'delete',
+  DeleteChar: 'deleteChar',
+  DeleteToLineEnd: 'deleteToLineEnd',
+  Filter: 'filter',
+  Format: 'format',
+  Indent: 'indent',
+  JoinNoSpace: 'joinNoSpace',
+  JoinWithSpace: 'joinWithSpace',
+  Lowercase: 'lowercase',
+  Outdent: 'outdent',
+  PutAfter: 'putAfter',
+  PutBefore: 'putBefore',
+  SwapCase: 'swapCase',
+  Uppercase: 'uppercase',
+  Yank: 'yank',
+  YankLine: 'yankLine',
+} as const satisfies Record<string, VimOperatorName>);
+
+export const VimRepeatKey = '.';
+
 export type VimMotionName =
   | 'WORDBackward'
   | 'WORDEnd'
