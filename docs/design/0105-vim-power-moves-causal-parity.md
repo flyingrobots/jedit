@@ -1274,7 +1274,7 @@ What changed from the design:
   `src/app/workspace/vim-text-object-resolver.ts`, and
   `src/app/workspace/vim-command-executor.ts`. `updateNormalMode` now tries the
   Vim chord executor before falling back to legacy single-key commands.
-- The next runtime batch adds `src/app/workspace/vim-editor-operators.ts` for
+- The current runtime batch adds `src/app/workspace/vim-editor-operators.ts` for
   reusable case-transform, join, and mark helpers. Repeat records
   `sourceBasisDigest` and a `resolve-current-basis` replay policy so text-object
   repeat is explicit instead of an unlabelled key replay.
