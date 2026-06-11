@@ -161,10 +161,16 @@ function rowOrCharacterDestination(
   text: string,
 ): number | undefined {
   if (motion === MOTION_CHAR_LEFT) {
-    return normalTextIndex(editor) - count;
+    return Math.max(
+      lineStartTextIndex(editor.lines, editor.cursorRow),
+      normalTextIndex(editor) - count,
+    );
   }
   if (motion === MOTION_CHAR_RIGHT) {
-    return normalTextIndex(editor) + count;
+    return Math.min(
+      lineEndTextIndex(editor),
+      normalTextIndex(editor) + count,
+    );
   }
   return lineOrWordDestination(editor, motion, count, text);
 }

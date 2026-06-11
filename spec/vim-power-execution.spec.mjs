@@ -169,6 +169,27 @@ test("vim word-forward operator consumes final character", async () => {
   assert.equal(deleted.register.text, "a");
 });
 
+test("vim horizontal operators stay within the current line", async () => {
+  const [mode, syntax, executor] = await Promise.all([
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "vim-chord-syntax.js"),
+    importDist("app", "workspace", "vim-command-executor.js"),
+  ]);
+  const editor = mockEditor(mode, {
+    lines: ["one", "two"],
+    cursorRow: 0,
+    cursorCol: 2,
+  });
+
+  const deleted = executor.applyVimChordSyntaxToEditor(
+    editor,
+    syntax.parseVimChordSyntax(["d", "l"]),
+  );
+
+  assert.deepEqual(deleted.lines, ["one", "two"]);
+  assert.equal(deleted.register.text, "");
+});
+
 test("vim linewise operator motions expand to full line ranges", async () => {
   const [mode, syntax, executor, model] = await Promise.all([
     importDist("app", "workspace", "editor", "mode.js"),
