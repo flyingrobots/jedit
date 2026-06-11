@@ -53,6 +53,7 @@ test('reading cache projection preserves Vim marks across production refresh', a
     lines: cache.lines,
     cursorRow: 1,
     cursorCol: 4,
+    pendingVimKeys: ['d'],
     marks: {
       a: {
         basisDigest: 'vim-basis:test',
@@ -79,6 +80,7 @@ test('reading cache projection preserves Vim marks across production refresh', a
   );
 
   assert.deepEqual(projected.marks, existing.marks);
+  assert.equal(projected.pendingVimKeys, undefined);
   assert.deepEqual(
     { row: exactJump.cursorRow, column: exactJump.cursorCol },
     { row: 1, column: 4 },
