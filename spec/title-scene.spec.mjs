@@ -364,6 +364,52 @@ test("title scene builds a mirror sphere with orbiting bunny and cube", async ()
   );
 });
 
+test("title scene ray acceleration preserves hits and rejects off-scene rays", async () => {
+  const { titleScene } = await loadTitleSceneModules();
+  const object = {
+    kind: titleScene.TITLE_SCENE_SHAPE_KIND.Sphere,
+    position: [0, 1, 0],
+    radius: 1,
+    footprintRadius: 1,
+    height: 2,
+    color: SCENE_COLORS.info,
+    reflectivity: 0,
+  };
+  const objects = [object];
+  const acceleration = titleScene.createTitleSceneRayAcceleration(objects, 0);
+  const hitOrigin = [0, 1, 5];
+  const hitRay = [0, 0, -1];
+  const acceleratedHit = titleScene.nearestTitleSceneObjectHit(
+    hitOrigin,
+    hitRay,
+    objects,
+    { rayAcceleration: acceleration },
+  );
+  const unacceleratedHit = titleScene.nearestTitleSceneObjectHit(
+    hitOrigin,
+    hitRay,
+    objects,
+  );
+
+  assert.equal(
+    titleScene.titleSceneRayMayHitAnyObject(hitOrigin, hitRay, acceleration),
+    true,
+  );
+  assert.ok(acceleratedHit != null);
+  assert.equal(acceleratedHit.object, object);
+  assert.equal(acceleratedHit.distance, unacceleratedHit.distance);
+  assert.equal(
+    titleScene.titleSceneRayMayHitAnyObject(hitOrigin, [1, 0, 0], acceleration),
+    false,
+  );
+  assert.equal(
+    titleScene.nearestTitleSceneObjectHit(hitOrigin, [1, 0, 0], objects, {
+      rayAcceleration: acceleration,
+    }),
+    undefined,
+  );
+});
+
 test("title scene can construct the Utah teapot mesh from the source asset", async () => {
   const { titleMeshLibrary, titleBunnyMesh } = await loadTitleSceneModules();
   const meshSource = titleBunnyMesh.loadTitleTeapotMeshSource();

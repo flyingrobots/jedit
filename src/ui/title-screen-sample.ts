@@ -7,6 +7,7 @@ import type {
   TitleSceneObject,
   TitleSceneVector3,
 } from "./title-scene.js";
+import type { TitleSceneRayAcceleration } from "./title-scene-ray-acceleration.js";
 import type { TitleFloorLightEffects } from "./title-screen.js";
 
 type TitleSampleRayStats = Pick<
@@ -73,6 +74,7 @@ export interface TitleSceneSampleOptions {
   readonly camera: TitleSceneCameraPlacement;
   readonly spotlightCamera: TitleSceneCameraPlacement;
   readonly objects: readonly TitleSceneObject[];
+  readonly rayAcceleration?: TitleSceneRayAcceleration;
   readonly colors: TitleSceneMaterialColors;
   readonly environment: TitleSceneEnvironment | undefined;
 }
@@ -89,6 +91,7 @@ export interface ReflectedEnvironmentColorOptions {
   readonly ray: TitleSceneVector3;
   readonly colors: TitleSceneMaterialColors;
   readonly objects: readonly TitleSceneObject[];
+  readonly rayAcceleration?: TitleSceneRayAcceleration;
   readonly time: number;
   readonly ignoredObject: TitleSceneObject;
   readonly environment: TitleSceneEnvironment | undefined;
