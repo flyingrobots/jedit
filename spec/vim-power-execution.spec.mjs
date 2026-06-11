@@ -148,6 +148,27 @@ test("vim backward operator motions leave the cursor character intact", async ()
   assert.equal(charDeleted.register.text, "a");
 });
 
+test("vim word-forward operator consumes final character", async () => {
+  const [mode, syntax, executor] = await Promise.all([
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "vim-chord-syntax.js"),
+    importDist("app", "workspace", "vim-command-executor.js"),
+  ]);
+  const editor = mockEditor(mode, {
+    lines: ["alpha"],
+    cursorRow: 0,
+    cursorCol: 4,
+  });
+
+  const deleted = executor.applyVimChordSyntaxToEditor(
+    editor,
+    syntax.parseVimChordSyntax(["d", "w"]),
+  );
+
+  assert.deepEqual(deleted.lines, ["alph"]);
+  assert.equal(deleted.register.text, "a");
+});
+
 test("vim linewise operator motions expand to full line ranges", async () => {
   const [mode, syntax, executor, model] = await Promise.all([
     importDist("app", "workspace", "editor", "mode.js"),

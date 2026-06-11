@@ -218,7 +218,7 @@ function nextWordMotionIndex(
   motion: VimMotionName,
 ): number | undefined {
   if (motion === MOTION_WORD_FORWARD) {
-    return nextWordStartIndex(text, index);
+    return nextWordStartIndex(text, index, true);
   }
   if (motion === MOTION_WORD_BACKWARD) {
     return previousWordStartIndex(text, index);
