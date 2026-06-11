@@ -20,7 +20,6 @@ interface ParsedWorkspaceCommandLine {
 
 const EMPTY_COMMAND_ARGUMENT = "";
 const NO_WHITESPACE_INDEX = -1;
-const ABSOLUTE_PATH_PREFIX = "/";
 const DIRECTORY_LABEL_SUFFIX = "/";
 const PARENT_DIRECTORY_LABEL = "../";
 
@@ -133,9 +132,7 @@ function editCommandFilePath(
   argument: string,
   context: WorkspaceKeyBindingContext,
 ): string {
-  return argument.startsWith(ABSOLUTE_PATH_PREFIX)
-    ? argument
-    : context.deps.fileSystem.join(cwd, argument);
+  return context.deps.fileSystem.resolve(cwd, argument);
 }
 
 function parseWorkspaceCommandLine(

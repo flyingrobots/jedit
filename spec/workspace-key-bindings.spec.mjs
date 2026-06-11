@@ -188,6 +188,7 @@ test("scene picker loads built-in scenes by name without using workspace root pa
   const deps = {
     ...mockDeps(),
     fileSystem: {
+      ...mockDeps().fileSystem,
       join: () => {
         throw new Error(
           "workspaceRoot path should not be used for built-in scenes",

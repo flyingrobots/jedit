@@ -1,5 +1,5 @@
 import { readdirSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import {
   type DirectoryAction,
   type DirectoryIssue,
@@ -83,6 +83,7 @@ export const FileSystemPortAdapter: FileSystemPort = {
   describeDirectoryIssue,
   dirname,
   join,
+  resolve,
 };
 
 function compareEntries(a: FileEntry, b: FileEntry): number {
