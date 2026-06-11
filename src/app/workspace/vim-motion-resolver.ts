@@ -13,6 +13,10 @@ import {
 import type { EditorState } from './editor/model.js';
 
 export type VimResolvedTargetShape = 'charwise' | 'linewise';
+export const VimResolvedTargetShapes = Object.freeze({
+  Charwise: 'charwise',
+  Linewise: 'linewise',
+} as const satisfies Record<string, VimResolvedTargetShape>);
 export type VimMotionObstruction =
   | 'empty-buffer'
   | 'unsupported-motion';
@@ -78,8 +82,8 @@ const MOTION_WORD_FORWARD: VimMotionName = 'wordForward';
 const MOTION_WORD_BIG_BACKWARD: VimMotionName = 'WORDBackward';
 const MOTION_WORD_BIG_END: VimMotionName = 'WORDEnd';
 const MOTION_WORD_BIG_FORWARD: VimMotionName = 'WORDForward';
-const TARGET_SHAPE_CHARWISE: VimResolvedTargetShape = 'charwise';
-const TARGET_SHAPE_LINEWISE: VimResolvedTargetShape = 'linewise';
+const TARGET_SHAPE_CHARWISE = VimResolvedTargetShapes.Charwise;
+const TARGET_SHAPE_LINEWISE = VimResolvedTargetShapes.Linewise;
 
 export function resolveVimMotion(request: VimMotionRequest): VimMotionResolution {
   const editor = request.editor;

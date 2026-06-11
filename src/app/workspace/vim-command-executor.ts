@@ -9,8 +9,14 @@ import {
   pasteRegister,
   yankTextRange,
 } from './editor-editing-core.js';
-import { parseVimChordSyntax, type VimChordSyntax, type VimTextObjectSyntax } from './vim-chord-syntax.js';
-import type { VimMotionName } from './vim-grammar-vocabulary.js';
+import {
+  parseVimChordSyntax,
+  VimChordSyntaxFamilies,
+  VimChordSyntaxKinds,
+  type VimChordSyntax,
+  type VimTextObjectSyntax,
+} from './vim-chord-syntax.js';
+import { VimOperatorNames, type VimMotionName } from './vim-grammar-vocabulary.js';
 import {
   applyVimCaseTransform,
   applyVimJoinCurrentLine,
@@ -23,6 +29,7 @@ import {
   resolveVimMotion,
   type VimResolvedMotion,
   type VimResolvedTargetShape,
+  VimResolvedTargetShapes,
   type VimTextRange,
   vimMotionBasisDigest,
 } from './vim-motion-resolver.js';
@@ -41,13 +48,6 @@ interface VimOperatorTarget {
   readonly shape: VimResolvedTargetShape;
 }
 
-const FAMILY_MODE_SWITCH = 'modeSwitch';
-const FAMILY_MARK = 'mark';
-const FAMILY_MOTION = 'motion';
-const FAMILY_OPERATOR_MOTION = 'operatorMotion';
-const FAMILY_OPERATOR_TEXT_OBJECT = 'operatorTextObject';
-const FAMILY_PUT = 'put';
-const SYNTAX_KIND_COMPLETE = 'complete';
 const NORMAL_MODE = EditorModes.Normal;
 const INSERT_MODE = EditorModes.Insert;
 const RECORD_REPEAT_DEFAULT = true;
@@ -55,38 +55,22 @@ const REGISTER_UNNAMED = '"';
 const REGISTER_TEXT_EMPTY = '';
 const LINE_BREAK_TEXT = '\n';
 const LINE_BREAK_LENGTH = 1;
-const OPERATOR_CHANGE = 'change';
-const OPERATOR_CHANGE_TO_LINE_END = 'changeToLineEnd';
-const OPERATOR_DELETE = 'delete';
-const OPERATOR_DELETE_CHAR = 'deleteChar';
-const OPERATOR_DELETE_TO_LINE_END = 'deleteToLineEnd';
-const OPERATOR_JOIN_NO_SPACE = 'joinNoSpace';
-const OPERATOR_JOIN_WITH_SPACE = 'joinWithSpace';
-const OPERATOR_PUT_BEFORE = 'putBefore';
-const OPERATOR_YANK = 'yank';
-const OPERATOR_YANK_LINE = 'yankLine';
-const OPERATION_CHANGE = 'change';
-const OPERATION_DELETE = 'delete';
-const OPERATION_YANK = 'yank';
-const TARGET_SHAPE_LINEWISE = 'linewise';
-const TARGET_SHAPE_CHARWISE = 'charwise';
-
 export function applyVimChordSyntaxToEditor(
   editor: EditorState,
   syntax: VimChordSyntax,
   options: VimExecutionOptions = {},
 ): EditorState {
   const cleanEditor = clearVimPending(editor);
-  if (syntax.kind !== SYNTAX_KIND_COMPLETE) {
+  if (syntax.kind !== VimChordSyntaxKinds.Complete) {
     return cleanEditor;
   }
-  if (syntax.family === FAMILY_MOTION && syntax.motion != null) {
+  if (syntax.family === VimChordSyntaxFamilies.Motion && syntax.motion != null) {
     return applyResolvedMotion(cleanEditor, syntax.motion, syntax.count);
   }
-  if (syntax.family === FAMILY_MODE_SWITCH && syntax.modeSwitch != null) {
+  if (syntax.family === VimChordSyntaxFamilies.ModeSwitch && syntax.modeSwitch != null) {
     return applyVimModeSwitch(cleanEditor, syntax.modeSwitch);
   }
-  if (syntax.family === FAMILY_MARK && syntax.mark != null) {
+  if (syntax.family === VimChordSyntaxFamilies.Mark && syntax.mark != null) {
     return applyVimMarkCommand(cleanEditor, syntax.mark, basisDigest(cleanEditor));
   }
   return applyCompleteCommand(cleanEditor, syntax, options);
@@ -107,13 +91,13 @@ function applyCompleteCommand(
   syntax: VimChordSyntax,
   options: VimExecutionOptions,
 ): EditorState {
-  if (syntax.family === FAMILY_OPERATOR_MOTION) {
+  if (syntax.family === VimChordSyntaxFamilies.OperatorMotion) {
     return applyOperatorMotion(editor, syntax, options);
   }
-  if (syntax.family === FAMILY_OPERATOR_TEXT_OBJECT) {
+  if (syntax.family === VimChordSyntaxFamilies.OperatorTextObject) {
     return applyOperatorTextObject(editor, syntax, options);
   }
-  if (syntax.family === FAMILY_PUT && syntax.operator != null) {
+  if (syntax.family === VimChordSyntaxFamilies.Put && syntax.operator != null) {
     return applyPutOperator(editor, syntax, options);
   }
   return syntax.operator == null ? editor : applyStandaloneOperator(editor, syntax, options);
@@ -186,7 +170,7 @@ function applyStandaloneOperator(
   syntax: VimChordSyntax,
   options: VimExecutionOptions,
 ): EditorState {
-  if (syntax.operator === OPERATOR_DELETE_TO_LINE_END) {
+  if (syntax.operator === VimOperatorNames.DeleteToLineEnd) {
     return withRepeat(
       applyDeleteRange(editor, syntax, lineEndTarget(editor)),
       syntax,
@@ -194,7 +178,7 @@ function applyStandaloneOperator(
       basisDigest(editor),
     );
   }
-  if (syntax.operator === OPERATOR_CHANGE_TO_LINE_END) {
+  if (syntax.operator === VimOperatorNames.ChangeToLineEnd) {
     return withRepeat(
       applyChangeRange(editor, syntax, lineEndTarget(editor)),
       syntax,
@@ -202,18 +186,18 @@ function applyStandaloneOperator(
       basisDigest(editor),
     );
   }
-  if (syntax.operator === OPERATOR_YANK_LINE) {
+  if (syntax.operator === VimOperatorNames.YankLine) {
     return applyYankRange(editor, syntax, currentLineTarget(editor));
   }
-  if (syntax.operator === OPERATOR_JOIN_WITH_SPACE || syntax.operator === OPERATOR_JOIN_NO_SPACE) {
+  if (syntax.operator === VimOperatorNames.JoinWithSpace || syntax.operator === VimOperatorNames.JoinNoSpace) {
     return withRepeat(
-      applyVimJoinCurrentLine(editor, syntax.operator === OPERATOR_JOIN_WITH_SPACE ? 'spaced' : 'compact'),
+      applyVimJoinCurrentLine(editor, syntax.operator === VimOperatorNames.JoinWithSpace ? 'spaced' : 'compact'),
       syntax,
       options,
       basisDigest(editor),
     );
   }
-  if (syntax.operator === OPERATOR_DELETE_CHAR) {
+  if (syntax.operator === VimOperatorNames.DeleteChar) {
     return applyDeleteChar(editor, syntax, options);
   }
   return editor;
@@ -229,7 +213,7 @@ function applyDeleteChar(
   const next = applyDeleteRange(editor, syntax, {
     basisDigest: basisDigest(editor),
     range: { start, end: start + count },
-    shape: TARGET_SHAPE_CHARWISE,
+    shape: VimResolvedTargetShapes.Charwise,
   });
   return withRepeat(next, syntax, options, basisDigest(editor));
 }
@@ -240,13 +224,13 @@ function applyOperatorTarget(
   target: VimOperatorTarget,
   options: VimExecutionOptions,
 ): EditorState {
-  if (syntax.operator === OPERATOR_DELETE) {
+  if (syntax.operator === VimOperatorNames.Delete) {
     return withRepeat(applyDeleteRange(editor, syntax, target), syntax, options, target.basisDigest);
   }
-  if (syntax.operator === OPERATOR_CHANGE) {
+  if (syntax.operator === VimOperatorNames.Change) {
     return withRepeat(applyChangeRange(editor, syntax, target), syntax, options, target.basisDigest);
   }
-  if (syntax.operator === OPERATOR_YANK) {
+  if (syntax.operator === VimOperatorNames.Yank) {
     return applyYankRange(editor, syntax, target);
   }
   if (isVimCaseTransformOperator(syntax.operator)) {
@@ -265,7 +249,7 @@ function applyDeleteRange(
   syntax: VimChordSyntax,
   target: VimOperatorTarget,
 ): EditorState {
-  const register = registerFromRange(editor, target, OPERATION_DELETE);
+  const register = registerFromRange(editor, target, VimOperatorNames.Delete);
   const mutationRange = mutationRangeForTarget(editor, target);
   const next = deleteTextRange(editor, mutationRange.start, mutationRange.end, {
     mode: NORMAL_MODE,
@@ -279,7 +263,7 @@ function applyChangeRange(
   syntax: VimChordSyntax,
   target: VimOperatorTarget,
 ): EditorState {
-  const register = registerFromRange(editor, target, OPERATION_CHANGE);
+  const register = registerFromRange(editor, target, VimOperatorNames.Change);
   const mutationRange = changeMutationRangeForTarget(editor, target);
   const next = deleteTextRange(editor, mutationRange.start, mutationRange.end, {
     mode: INSERT_MODE,
@@ -293,7 +277,7 @@ function applyYankRange(
   syntax: VimChordSyntax,
   target: VimOperatorTarget,
 ): EditorState {
-  const register = registerFromRange(editor, target, OPERATION_YANK);
+  const register = registerFromRange(editor, target, VimOperatorNames.Yank);
   const next = yankTextRange(editor, target.range.start, target.range.end, register.kind);
   return withRegisters(next, syntax.register, register);
 }
@@ -307,7 +291,7 @@ function applyPutOperator(
   if (register == null) {
     return editor;
   }
-  const placement = syntax.operator === OPERATOR_PUT_BEFORE
+  const placement = syntax.operator === VimOperatorNames.PutBefore
     ? PastePlacements.Before
     : PastePlacements.After;
   const next = pasteRegister({ ...editor, register }, placement);
@@ -334,7 +318,7 @@ function currentLineTarget(editor: EditorState): VimOperatorTarget {
   return {
     basisDigest: basisDigest(editor),
     range: currentLineRange(editor),
-    shape: TARGET_SHAPE_LINEWISE,
+    shape: VimResolvedTargetShapes.Linewise,
   };
 }
 
@@ -345,7 +329,7 @@ function lineEndTarget(editor: EditorState): VimOperatorTarget {
       start: cursorIndex(editor),
       end: currentLineEndIndex(editor),
     },
-    shape: TARGET_SHAPE_CHARWISE,
+    shape: VimResolvedTargetShapes.Charwise,
   };
 }
 
@@ -373,7 +357,7 @@ function registerText(
   shape: VimResolvedTargetShape,
 ): string {
   const text = rangeText(editor, range);
-  return shape === TARGET_SHAPE_LINEWISE && text.endsWith(LINE_BREAK_TEXT)
+  return shape === VimResolvedTargetShapes.Linewise && text.endsWith(LINE_BREAK_TEXT)
     ? text.slice(0, -LINE_BREAK_LENGTH)
     : text;
 }
@@ -434,7 +418,7 @@ function clearVimPending(editor: EditorState): EditorState {
 }
 
 function registerKind(shape: VimResolvedTargetShape): RegisterKind {
-  return shape === TARGET_SHAPE_LINEWISE ? RegisterKinds.Line : RegisterKinds.Char;
+  return shape === VimResolvedTargetShapes.Linewise ? RegisterKinds.Line : RegisterKinds.Char;
 }
 
 function rangeText(editor: EditorState, range: VimTextRange): string {
@@ -448,7 +432,7 @@ function mutationRangeForTarget(
   editor: EditorState,
   target: VimOperatorTarget,
 ): VimTextRange {
-  if (target.shape !== TARGET_SHAPE_LINEWISE) {
+  if (target.shape !== VimResolvedTargetShapes.Linewise) {
     return target.range;
   }
   const text = editorText(editor);
@@ -461,7 +445,7 @@ function changeMutationRangeForTarget(
   editor: EditorState,
   target: VimOperatorTarget,
 ): VimTextRange {
-  if (target.shape === TARGET_SHAPE_LINEWISE && target.range.end >= editorText(editor).length) {
+  if (target.shape === VimResolvedTargetShapes.Linewise && target.range.end >= editorText(editor).length) {
     return target.range;
   }
   return mutationRangeForTarget(editor, target);

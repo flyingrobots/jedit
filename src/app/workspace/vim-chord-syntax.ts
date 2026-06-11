@@ -77,13 +77,13 @@ export interface VimChordSyntax {
   readonly visualMode?: VimVisualModeName;
 }
 
-export const VimChordSyntaxKinds: Record<string, VimChordSyntaxKind> = Object.freeze({
+export const VimChordSyntaxKinds = Object.freeze({
   Complete: 'complete',
   Invalid: 'invalid',
   Pending: 'pending',
-});
+} as const satisfies Record<string, VimChordSyntaxKind>);
 
-export const VimChordSyntaxFamilies: Record<string, VimChordSyntaxFamily> = Object.freeze({
+export const VimChordSyntaxFamilies = Object.freeze({
   CommandLine: 'commandLine',
   Macro: 'macro',
   Mark: 'mark',
@@ -98,7 +98,7 @@ export const VimChordSyntaxFamilies: Record<string, VimChordSyntaxFamily> = Obje
   TextObject: 'textObject',
   Unknown: 'unknown',
   VisualPrefix: 'visualPrefix',
-});
+} as const satisfies Record<string, VimChordSyntaxFamily>);
 
 export const VimChordObstructions: Record<string, VimChordObstruction> = Object.freeze({
   Empty: 'empty',
