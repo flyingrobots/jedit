@@ -79,6 +79,7 @@ const TARGET_BRACKET: VimTextObjectTarget = 'bracket';
 const TARGET_BRACE: VimTextObjectTarget = 'brace';
 const TARGET_ANGLE: VimTextObjectTarget = 'angle';
 const LINE_BREAK_TEXT = '\n';
+const ESCAPE_CHARACTER = '\\';
 
 export function resolveVimTextObject(
   request: VimTextObjectRequest,
@@ -269,7 +270,7 @@ function enclosingSymmetricDelimiterRange(
 ): CandidateRange | undefined {
   let start: number | undefined;
   for (let index = FIRST_INDEX; index < text.length; index += INNER_OFFSET) {
-    if (text[index] !== delimiter) {
+    if (text[index] !== delimiter || isEscapedDelimiter(text, index)) {
       continue;
     }
     if (start == null) {
@@ -282,6 +283,18 @@ function enclosingSymmetricDelimiterRange(
     }
   }
   return undefined;
+}
+
+function isEscapedDelimiter(text: string, index: number): boolean {
+  let backslashes = EMPTY_LENGTH;
+  for (
+    let cursor = index - INNER_OFFSET;
+    cursor >= FIRST_INDEX && text[cursor] === ESCAPE_CHARACTER;
+    cursor -= INNER_OFFSET
+  ) {
+    backslashes += INNER_OFFSET;
+  }
+  return backslashes % 2 === INNER_OFFSET;
 }
 
 function delimiterContainsCursor(

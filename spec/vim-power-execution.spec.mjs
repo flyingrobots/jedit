@@ -91,6 +91,27 @@ test("vim text object resolver targets words and delimiter interiors", async () 
   assert.deepEqual(aroundParen.targetRange, { start: 4, end: 17 });
 });
 
+test("vim quoted text objects ignore escaped delimiters", async () => {
+  const [mode, textObjects] = await Promise.all([
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "vim-text-object-resolver.js"),
+  ]);
+  const editor = mockEditor(mode, {
+    lines: ['const value = "he\\"llo";'],
+    cursorRow: 0,
+    cursorCol: 19,
+  });
+
+  const innerQuote = textObjects.resolveVimTextObject({
+    editor,
+    scope: "inner",
+    target: "doubleQuote",
+  });
+
+  assert.equal("obstruction" in innerQuote, false);
+  assert.deepEqual(innerQuote.targetRange, { start: 15, end: 22 });
+});
+
 test("vim operator compiler deletes motion ranges with register provenance", async () => {
   const [mode, syntax, executor, model] = await Promise.all([
     importDist("app", "workspace", "editor", "mode.js"),
