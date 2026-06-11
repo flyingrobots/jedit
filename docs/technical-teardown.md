@@ -4,10 +4,32 @@
 
 This document is a progressive, end-to-end technical explanation of `jedit` aimed at a reader with no prior knowledge of this codebase, its domain vocabulary, or the surrounding runtime stack. Each section builds on the last.
 
+## Maintenance Posture
+
+This teardown is a deep reference for how the codebase is shaped. It is not the
+active roadmap and should not be treated as the freshest status ledger.
+
+Use these documents for current planning posture:
+
+- [`docs/BEARING.md`](BEARING.md) for compact current truth and next goalpost.
+- [`docs/stack-map.md`](stack-map.md) for the layer map.
+- [`docs/method/roadmap-planning.md`](method/roadmap-planning.md) for roadmap
+  process.
+- [`docs/design/0105-vim-power-moves-causal-parity.md`](design/0105-vim-power-moves-causal-parity.md)
+  for the active Jim/Vim power-move roadmap.
+- [`docs/jedit-echo-end-to-end.md`](jedit-echo-end-to-end.md) for the current
+  jedit plus Echo proof path.
+
+Keep this file accurate with compact truth passes when architectural claims
+become misleading. Defer a full rewrite until more Echo/Jim goalposts have
+executable proof, especially basis-bound motion, causal operators, WSC recovery,
+and open/edit/save usability witnesses.
+
 ---
 
 ## Table of Contents
 
+- [Maintenance Posture](#maintenance-posture)
 0. [Domain Dictionary](#0-domain-dictionary)
 1. [What is jedit?](#1-what-is-jedit)
 2. [The Ecosystem — Bijou, Echo, Graft, Wesley](#2-the-ecosystem--bijou-echo-graft-wesley)
@@ -1127,7 +1149,11 @@ After a `textWindow` observe call, the envelope returned:
 }
 ```
 
-**Notable**: The `posture: "missing_retention"` field is an explicit statement that durable replay evidence is not yet wired. The system knows what it does not yet prove — this is an architectural honesty invariant, not a TODO comment.
+**Notable**: The `posture: "missing_retention"` field is an explicit statement
+that this particular observation did not carry retained refs. Current WSC
+history, export, and replay witnesses cover durable evidence where those
+surfaces are installed. The important invariant is honesty: absence of retained
+material must be explicit rather than implied by missing fields.
 
 ---
 
