@@ -1204,16 +1204,23 @@ Target usability witnesses:
 
 ## Retrospective
 
-Roadmap implementation is not complete. Slices 2, 3, 4, 5, and 6 now have
-inspectable planning, syntax, and state-machine artifacts. This branch adds the
-first runtime execution package for the next power-move slice window:
+Roadmap implementation is not complete. The planning and grammar window now has
+inspectable artifacts for Slice 2 Parity Inventory Matrix, Slice 3 Target
+Usability Witness Fixtures, Slice 4 Transactional Register Doctrine And Token
+Model, Slice 5 Vim Grammar Parser, and Slice 6 Normal/Operator-Pending State
+Machine.
 
-- reading-basis motion resolution;
-- core word, line, file, and character motion parity;
-- operator-pending execution through the Vim chord syntax boundary;
-- word, paragraph, quote, and bracket text-object resolution;
-- delete, change, yank, put, named-register, and dot-repeat execution;
-- register provenance facts carrying basis, operation, and source range.
+This branch also closes the first runtime execution package across the later
+power-move slices:
+
+- Slices 7 and 8: reading-basis motion resolution plus core word, line, file,
+  and character motion parity.
+- Slices 10 and 11: word, paragraph, quote, and bracket text-object resolution.
+- Slices 13 and 14: operator-pending execution through the Vim chord syntax
+  boundary plus delete, change, yank, and put execution.
+- Slice 15: `gu`/`gU`/`g~` case transforms and `J`/`gJ` joins.
+- Slices 20 and 21: basic dot repeat plus transformed-repeat metadata.
+- Slice 24: local marks with exact and line jumps.
 
 What the tests proved:
 
