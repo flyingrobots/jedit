@@ -23,6 +23,7 @@ import {
   TEXT_OBJECT_INNER_PREFIX,
   TEXT_OBJECT_INNER_SCOPE,
   TEXT_OBJECTS,
+  VimMarkActionNames,
   VISUAL_PREFIXES,
   ZERO_KEY,
   type VimCommandLineInvocationToken,
@@ -297,9 +298,9 @@ function isMarkPrefix(key: string): boolean {
 
 function markAction(key: string): VimMarkActionName {
   if (key === MARK_EXACT_JUMP_KEY) {
-    return 'jumpExact';
+    return VimMarkActionNames.JumpExact;
   }
-  return key === MARK_LINE_JUMP_KEY ? 'jumpLine' : 'set';
+  return key === MARK_LINE_JUMP_KEY ? VimMarkActionNames.JumpLine : VimMarkActionNames.Set;
 }
 
 function countToken(raw: readonly string[], at: number): VimCountToken {
