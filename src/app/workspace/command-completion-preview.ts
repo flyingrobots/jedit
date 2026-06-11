@@ -3,6 +3,7 @@ import {
   type InlineCompletionItem,
   type InlineCompletionPreview,
 } from "../../ui/inline-completion-popup.js";
+import type { EditorFilePort } from "../../ports/editor-file.js";
 import { FileEntryKinds, type FileEntry } from "../../ports/file-system.js";
 import {
   selectedWorkspaceCommandLineCompletionItem,
@@ -53,6 +54,7 @@ const FILE_COMPLETION_PREVIEW_PARENT_UNAVAILABLE =
 const FILE_COMPLETION_PREVIEW_ENTRY_UNAVAILABLE =
   "Completion entry unavailable";
 const FILE_COMPLETION_PREVIEW_UNAVAILABLE_POSTURE = "unavailable";
+const FILE_COMPLETION_PREVIEW_LOADED_POSTURE = "loaded";
 
 export function workspaceCommandLineCompletionPreview(
   context: WorkspaceCommandLineCompletionPreviewContext,
@@ -86,6 +88,21 @@ export function workspaceCommandLineCompletionPreview(
   }
 
   return loadedFileCompletionPreview(item, result, context.maxPreviewLines);
+}
+
+export function workspaceEditorFilePreviewSource(
+  editorFile: Pick<EditorFilePort, "loadEditorFile">,
+): WorkspaceFilePreviewSource {
+  return {
+    loadFilePreview(filePath) {
+      const file = editorFile.loadEditorFile(filePath);
+      return {
+        kind: WORKSPACE_FILE_PREVIEW_RESULT_KIND.Loaded,
+        lines: file.lines,
+        evidencePosture: FILE_COMPLETION_PREVIEW_LOADED_POSTURE,
+      };
+    },
+  };
 }
 
 function fileEntryForCompletionItem(

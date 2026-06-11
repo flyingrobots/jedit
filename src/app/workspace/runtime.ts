@@ -18,6 +18,7 @@ import { ensureEditorVisible, editorViewport } from "./editor-session.js";
 import { updateFromKey } from "./key-bindings.js";
 import { updateFromMouse } from "./mouse.js";
 import { createWorkspaceRenderer } from "./viewer.js";
+import { workspaceEditorFilePreviewSource } from "./command-completion-preview.js";
 import {
   createInitialProfilerState,
   ProfilerMessageTypes,
@@ -53,7 +54,11 @@ const FRAME_TIME_HISTORY_SIZE = 50;
 export const createWorkspaceRuntime = (
   deps: WorkspaceRuntimeDependencies,
 ): WorkspaceRuntime => {
-  const renderWorkspace = createWorkspaceRenderer();
+  const renderWorkspace = createWorkspaceRenderer({
+    commandLineFilePreviewSource: workspaceEditorFilePreviewSource(
+      deps.editorFile,
+    ),
+  });
   return {
     init: () => {
       const wscStartupRecovery = recoverJeditWorkspaceFromWsc(

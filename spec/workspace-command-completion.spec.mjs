@@ -465,12 +465,27 @@ test("workspace render pins command completions to the original command anchor",
 });
 
 test("workspace render paints edit file completions above the Vim command line", async () => {
-  const [viewer, titleScreen, editorMode, fileSystem] = await Promise.all([
+  const [viewer, previewModule, titleScreen, editorMode, fileSystem] =
+    await Promise.all([
     importDist("app", "workspace", "viewer.js"),
+    importDist("app", "workspace", "command-completion-preview.js"),
     importDist("ui", "title-screen.js"),
     importDist("app", "workspace", "editor", "mode.js"),
     importDist("ports", "file-system.js"),
   ]);
+  const previewCalls = [];
+  const renderWorkspace = viewer.createWorkspaceRenderer({
+    commandLineFilePreviewSource: {
+      loadFilePreview(filePath) {
+        previewCalls.push(filePath);
+        return {
+          kind: previewModule.WORKSPACE_FILE_PREVIEW_RESULT_KIND.Loaded,
+          lines: ["# README", "Project notes"],
+          evidencePosture: "fixture-file",
+        };
+      },
+    },
+  });
   const model = mockTitleScreenModel(titleScreen, {
     columns: 80,
     rows: 18,
@@ -487,11 +502,14 @@ test("workspace render paints edit file completions above the Vim command line",
     },
   });
 
-  const lines = surfaceText(viewer.renderWorkspace(model)).split("\n");
+  const lines = surfaceText(renderWorkspace(model)).split("\n");
 
-  assert.match(lines[13], /› README\.md\s+file\s+File/);
-  assert.match(lines[13], /NONE README\.md/);
-  assert.match(lines[14], /Evidence: unavailable/);
+  assert.deepEqual(previewCalls, ["/repo/README.md"]);
+  assert.match(lines[12], /› README\.md\s+file\s+File/);
+  assert.match(lines[12], /FILE README\.md/);
+  assert.match(lines[13], /Evidence: fixture-file/);
+  assert.match(lines[14], /# README/);
+  assert.match(lines[15], /Project notes/);
   assert.match(lines[16], /^:edit R\s*$/);
 });
 
