@@ -8,6 +8,7 @@ import { openWorkspaceFileEntry } from "./file-tree.js";
 import type { WorkspaceKeyBindingContext } from "./key-binding-context.js";
 import type { WorkspaceModel } from "./model.js";
 import type { WorkspaceMsg } from "./msg.js";
+import { WorkspaceCommandNames } from "./workspace-command-names.js";
 import { saveWorkspace } from "./workspace-save-key.js";
 
 type KeyBindingResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
@@ -16,19 +17,6 @@ interface ParsedWorkspaceCommandLine {
   readonly name: string;
   readonly argument: string;
 }
-
-const WORKSPACE_COMMAND_NAMES = Object.freeze({
-  Edit: "edit",
-  EditAlias: "e",
-  Write: "write",
-  WriteAlias: "w",
-  Quit: "quit",
-  QuitAlias: "q",
-  QuitBang: "quit!",
-  QuitBangAlias: "q!",
-  WriteQuit: "wq",
-  WriteQuitAlias: "x",
-} as const);
 
 const EMPTY_COMMAND_ARGUMENT = "";
 const NO_WHITESPACE_INDEX = -1;
@@ -177,35 +165,35 @@ function hasNoArgument(command: ParsedWorkspaceCommandLine): boolean {
 
 function isEditCommand(name: string): boolean {
   return (
-    name === WORKSPACE_COMMAND_NAMES.Edit ||
-    name === WORKSPACE_COMMAND_NAMES.EditAlias
+    name === WorkspaceCommandNames.Edit ||
+    name === WorkspaceCommandNames.EditAlias
   );
 }
 
 function isWriteCommand(name: string): boolean {
   return (
-    name === WORKSPACE_COMMAND_NAMES.Write ||
-    name === WORKSPACE_COMMAND_NAMES.WriteAlias
+    name === WorkspaceCommandNames.Write ||
+    name === WorkspaceCommandNames.WriteAlias
   );
 }
 
 function isQuitCommand(name: string): boolean {
   return (
-    name === WORKSPACE_COMMAND_NAMES.Quit ||
-    name === WORKSPACE_COMMAND_NAMES.QuitAlias
+    name === WorkspaceCommandNames.Quit ||
+    name === WorkspaceCommandNames.QuitAlias
   );
 }
 
 function isForceQuitCommand(name: string): boolean {
   return (
-    name === WORKSPACE_COMMAND_NAMES.QuitBang ||
-    name === WORKSPACE_COMMAND_NAMES.QuitBangAlias
+    name === WorkspaceCommandNames.QuitBang ||
+    name === WorkspaceCommandNames.QuitBangAlias
   );
 }
 
 function isWriteQuitCommand(name: string): boolean {
   return (
-    name === WORKSPACE_COMMAND_NAMES.WriteQuit ||
-    name === WORKSPACE_COMMAND_NAMES.WriteQuitAlias
+    name === WorkspaceCommandNames.WriteQuit ||
+    name === WorkspaceCommandNames.WriteQuitAlias
   );
 }
