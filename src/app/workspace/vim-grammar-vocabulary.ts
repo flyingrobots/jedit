@@ -13,7 +13,7 @@ export type VimGrammarTokenKind =
   | 'unknown'
   | 'visualPrefix';
 
-export const VimGrammarTokenKinds: Record<string, VimGrammarTokenKind> = Object.freeze({
+export const VimGrammarTokenKinds = Object.freeze({
   CommandLineInvocation: 'commandLineInvocation',
   CommandLineText: 'commandLineText',
   Count: 'count',
@@ -27,7 +27,7 @@ export const VimGrammarTokenKinds: Record<string, VimGrammarTokenKind> = Object.
   TextObject: 'textObject',
   Unknown: 'unknown',
   VisualPrefix: 'visualPrefix',
-});
+} as const satisfies Record<string, VimGrammarTokenKind>);
 
 export type VimOperatorName =
   | 'change'

@@ -11,69 +11,56 @@ import type {
   VimTextObjectToken,
   VimVisualPrefixToken,
 } from './vim-grammar.js';
-
-const TOKEN_COMMAND_LINE_INVOCATION = 'commandLineInvocation';
-const TOKEN_COMMAND_LINE_TEXT = 'commandLineText';
-const TOKEN_COUNT = 'count';
-const TOKEN_MACRO_CONTROL = 'macroControl';
-const TOKEN_MARK = 'mark';
-const TOKEN_MODE_SWITCH = 'modeSwitch';
-const TOKEN_MOTION = 'motion';
-const TOKEN_OPERATOR = 'operator';
-const TOKEN_PREFIX = 'prefix';
-const TOKEN_REGISTER = 'register';
-const TOKEN_TEXT_OBJECT = 'textObject';
-const TOKEN_UNKNOWN = 'unknown';
-const TOKEN_VISUAL_PREFIX = 'visualPrefix';
+import { VimGrammarTokenKinds } from './vim-grammar-vocabulary.js';
 
 export function isCommandLineInvocationToken(token: VimGrammarToken | undefined): boolean {
-  return token?.kind === TOKEN_COMMAND_LINE_INVOCATION;
+  return token?.kind === VimGrammarTokenKinds.CommandLineInvocation;
 }
 
 export function isCommandLineTextToken(token: VimGrammarToken | undefined): token is VimCommandLineTextToken {
-  return token?.kind === TOKEN_COMMAND_LINE_TEXT;
+  return token?.kind === VimGrammarTokenKinds.CommandLineText;
 }
 
 export function isCountToken(token: VimGrammarToken | undefined): token is VimCountToken {
-  return token?.kind === TOKEN_COUNT;
+  return token?.kind === VimGrammarTokenKinds.Count;
 }
 
 export function isRegisterToken(token: VimGrammarToken | undefined): token is VimRegisterToken {
-  return token?.kind === TOKEN_REGISTER;
+  return token?.kind === VimGrammarTokenKinds.Register;
 }
 
 export function isOperatorToken(token: VimGrammarToken | undefined): token is VimOperatorToken {
-  return token?.kind === TOKEN_OPERATOR;
+  return token?.kind === VimGrammarTokenKinds.Operator;
 }
 
 export function isMotionToken(token: VimGrammarToken | undefined): token is VimMotionToken {
-  return token?.kind === TOKEN_MOTION;
+  return token?.kind === VimGrammarTokenKinds.Motion;
 }
 
 export function isTextObjectToken(token: VimGrammarToken | undefined): token is VimTextObjectToken {
-  return token?.kind === TOKEN_TEXT_OBJECT;
+  return token?.kind === VimGrammarTokenKinds.TextObject;
 }
 
 export function isModeSwitchToken(token: VimGrammarToken | undefined): token is VimModeSwitchToken {
-  return token?.kind === TOKEN_MODE_SWITCH;
+  return token?.kind === VimGrammarTokenKinds.ModeSwitch;
 }
 
 export function isVisualPrefixToken(token: VimGrammarToken | undefined): token is VimVisualPrefixToken {
-  return token?.kind === TOKEN_VISUAL_PREFIX;
+  return token?.kind === VimGrammarTokenKinds.VisualPrefix;
 }
 
 export function isMacroControlToken(token: VimGrammarToken | undefined): token is VimMacroControlToken {
-  return token?.kind === TOKEN_MACRO_CONTROL;
+  return token?.kind === VimGrammarTokenKinds.MacroControl;
 }
 
 export function isMarkToken(token: VimGrammarToken | undefined): token is VimMarkToken {
-  return token?.kind === TOKEN_MARK;
+  return token?.kind === VimGrammarTokenKinds.Mark;
 }
 
 export function isPrefixToken(token: VimGrammarToken | undefined): boolean {
-  return token?.kind === TOKEN_PREFIX;
+  return token?.kind === VimGrammarTokenKinds.Prefix;
 }
 
 export function isUnknownToken(token: VimGrammarToken | undefined): boolean {
-  return token?.kind === TOKEN_UNKNOWN;
+  return token?.kind === VimGrammarTokenKinds.Unknown;
 }
