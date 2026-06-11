@@ -194,13 +194,15 @@ The immediate roadmap is not a broad docs rewrite. Keep signposts accurate, then
 continue the Echo/Jim proof work.
 
 - Continue [WF-0105 Vim Power Moves Causal Parity](docs/design/0105-vim-power-moves-causal-parity.md)
-  with the next known goalpost: Reading-Basis Motion Resolver.
-- Resolve motions and operator ranges against explicit reading bases so Vim
-  commands can become auditable causal intents instead of ad hoc cursor moves.
-- Grow text objects, registers, dot repeat, macros, marks, visual mode, and ex
-  workflows through the same grammar and proof surface.
-- Replace remaining `missing_retention` / `durable_replay_unavailable` posture
-  with real Echo retained refs and durable replay proof.
+  with search and structural motion parity.
+- Resolve `/`, `?`, `n`, `N`, `%`, section, paragraph, and structure-aware
+  motions against explicit reading-basis facts.
+- Grow Graft-backed text objects, visual selections, registers, macros,
+  substitute/global commands, and causal strand previews through the same
+  grammar and proof surface.
+- Keep title-rendering work on the separate
+  [WF-0107 Geordi title-render lane](docs/design/0107-geordi-raytraced-title-render-pipeline.md)
+  until rendering is the explicit objective.
 - Keep `README.md`, `docs/technical-teardown.md`, and signpost docs truthful in
   compact passes; do the full rewrite after a few more Echo/Jim goalposts prove
   the final shape.

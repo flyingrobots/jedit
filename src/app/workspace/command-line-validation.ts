@@ -5,6 +5,7 @@ import {
   type WorkspaceCommandDescriptor,
 } from "./command-completion.js";
 import type { WorkspaceModel } from "./model.js";
+import { WorkspaceCommandNames } from "./workspace-command-names.js";
 
 interface CommandLineToken {
   readonly name: string;
@@ -13,8 +14,10 @@ interface CommandLineToken {
 
 const COMMAND_LINE_VALIDATION_EMPTY = "";
 const COMMAND_LINE_VALIDATION_NO_WHITESPACE = -1;
-const EDIT_COMMAND_NAME = "edit";
-const EDIT_COMMAND_ALIAS = "e";
+const FORCE_QUIT_COMMAND_NAMES = Object.freeze([
+  WorkspaceCommandNames.QuitBang,
+  WorkspaceCommandNames.QuitBangAlias,
+] as const);
 
 export function validateWorkspaceCommandLineInput(
   model: WorkspaceModel,
@@ -65,9 +68,21 @@ function commandTokenHasKnownPrefix(
   token: CommandLineToken,
   descriptors: readonly WorkspaceCommandDescriptor[],
 ): boolean {
+  return commandTokenMatchesVisibleDescriptor(token, descriptors) ||
+    commandTokenMatchesHiddenCommand(token);
+}
+
+function commandTokenMatchesVisibleDescriptor(
+  token: CommandLineToken,
+  descriptors: readonly WorkspaceCommandDescriptor[],
+): boolean {
   return descriptors.some((descriptor) =>
     commandDescriptorMatchesTokenPrefix(descriptor, token.name),
   );
+}
+
+function commandTokenMatchesHiddenCommand(token: CommandLineToken): boolean {
+  return FORCE_QUIT_COMMAND_NAMES.some((name) => name.startsWith(token.name));
 }
 
 function commandDescriptorMatchesTokenPrefix(
@@ -83,5 +98,5 @@ function commandTokenHasInvalidArgument(token: CommandLineToken): boolean {
 }
 
 function commandTokenAcceptsArgument(name: string): boolean {
-  return name === EDIT_COMMAND_NAME || name === EDIT_COMMAND_ALIAS;
+  return name === WorkspaceCommandNames.Edit || name === WorkspaceCommandNames.EditAlias;
 }

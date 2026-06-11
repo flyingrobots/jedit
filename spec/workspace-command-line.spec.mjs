@@ -372,6 +372,78 @@ test("enter dispatches edit commands through production file open", async () => 
   assert.equal(message.result.kind, "opened");
 });
 
+test("enter dispatches edit commands outside the cwd hierarchy", async () => {
+  const [keyBindings, titleScreen, editorMode] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+  ]);
+  const loadedFiles = [];
+  const openCalls = [];
+  const context = mockKeyBindingContext({
+    nowMs: () => 79,
+    deps: {
+      editorFile: {
+        loadEditorFile(filePath) {
+          loadedFiles.push(filePath);
+          return { lines: ["shared"], readOnly: false };
+        },
+        saveEditorFile: () => undefined,
+      },
+      productionTextSession: fakeProductionTextSession({
+        openBuffer: async (request) => {
+          openCalls.push(request);
+          return {
+            kind: "opened",
+            optic: { buffer: { bufferId: "buffer:shared" } },
+          };
+        },
+        observeWindow: async () => ({
+          kind: "observed",
+          observed: {
+            value: {
+              readingId: "reading:shared",
+              lines: [{ text: "shared" }],
+              lineCount: 1,
+              cursorLine: 0,
+              viewportLineCount: 24,
+              truncated: false,
+            },
+          },
+        }),
+      }),
+    },
+  });
+  const model = mockTitleScreenModel(titleScreen, {
+    cwd: "/repo/project",
+    editor: mockEditor(editorMode),
+    focusPane: "editor",
+    commandLine: activeCommandLine("edit ../shared.md"),
+  });
+
+  const [pendingOpen, commands] = keyBindings.updateFromKey(
+    { type: "key", key: "enter", ctrl: false, alt: false, shift: false },
+    model,
+    context,
+  );
+  const message = await commands[0]();
+
+  assert.equal(pendingOpen.commandLine.active, false);
+  assert.equal(pendingOpen.textAuthority.kind, "pending-open");
+  assert.equal(pendingOpen.textAuthority.filePath, "/repo/shared.md");
+  assert.deepEqual(loadedFiles, ["/repo/shared.md"]);
+  assert.deepEqual(openCalls, [
+    {
+      bufferKey: "/repo/shared.md",
+      initialText: "shared",
+      projectionPath: "/repo/shared.md",
+      atMs: 79,
+    },
+  ]);
+  assert.equal(message.type, "text-open-result");
+  assert.equal(message.result.kind, "opened");
+});
+
 test("enter dispatches write and wq commands through production save", async () => {
   const [keyBindings, titleScreen, editorMode, authority] = await Promise.all([
     importDist("app", "workspace", "key-bindings.js"),
@@ -463,6 +535,54 @@ test("enter dispatches quit commands through the quit confirmation posture", asy
     assert.equal(nextModel.quitConfirmOpen, true);
     assert.deepEqual(commands, []);
   }
+});
+
+test("enter dispatches forced quit commands without confirmation", async () => {
+  const [keyBindings, titleScreen, editorMode] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+  ]);
+  const inputs = ["q!", "quit!"];
+
+  for (const input of inputs) {
+    const [nextModel, commands] = keyBindings.updateFromKey(
+      { type: "key", key: "enter", ctrl: false, alt: false, shift: false },
+      mockTitleScreenModel(titleScreen, {
+        editor: mockEditor(editorMode, { dirty: true }),
+        focusPane: "editor",
+        commandLine: activeCommandLine(input),
+      }),
+      mockKeyBindingContext(),
+    );
+
+    assert.equal(nextModel.commandLine.active, false);
+    assert.equal(nextModel.quitConfirmOpen, false);
+    assert.equal(commands.length, 1);
+  }
+});
+
+test("forced quit commands are valid command-line input without visible completions", async () => {
+  const [completion, validation] = await Promise.all([
+    importDist("app", "workspace", "command-completion.js"),
+    importDist("app", "workspace", "command-line-validation.js"),
+  ]);
+
+  assert.equal(
+    validation.commandLineInputInvalid(activeCommandLine("q!")),
+    false,
+  );
+  assert.equal(
+    validation.commandLineInputInvalid(activeCommandLine("quit!")),
+    false,
+  );
+  assert.deepEqual(
+    completion.workspaceCommandCompletionItems({
+      input: "q!",
+      cursorIndex: 2,
+    }),
+    [],
+  );
 });
 
 test("colon does not enter command mode while higher-priority overlays own focus", async () => {

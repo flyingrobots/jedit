@@ -1,32 +1,44 @@
 import {
   COMMAND_LINE_ACCEPT_KEY,
   tokenizeVimKeys,
-  type VimCommandLineTextToken,
-  type VimCountToken,
   type VimGrammarToken,
   type VimMacroControlName,
   type VimMacroControlToken,
+  type VimMarkToken,
   type VimModeSwitchName,
-  type VimModeSwitchToken,
   type VimMotionName,
   type VimMotionToken,
   type VimOperatorName,
   type VimOperatorToken,
-  type VimRegisterToken,
   type VimTextObjectScope,
   type VimTextObjectTarget,
   type VimTextObjectToken,
   type VimVisualModeName,
-  type VimVisualPrefixToken,
 } from './vim-grammar.js';
+import {
+  isCommandLineInvocationToken,
+  isCommandLineTextToken,
+  isCountToken,
+  isMacroControlToken,
+  isMarkToken,
+  isModeSwitchToken,
+  isMotionToken,
+  isOperatorToken,
+  isPrefixToken,
+  isRegisterToken,
+  isTextObjectToken,
+  isUnknownToken,
+  isVisualPrefixToken,
+} from './vim-chord-token-guards.js';
 import {
   TEXT_OBJECT_AROUND_PREFIX,
   TEXT_OBJECT_INNER_PREFIX,
+  VimOperatorNames,
 } from './vim-grammar-vocabulary.js';
 
 export type VimChordSyntaxKind = 'complete' | 'invalid' | 'pending';
 
-export type VimChordSyntaxFamily = 'commandLine' | 'macro' | 'modeSwitch' | 'modifier' | 'motion' | 'operatorCommand'
+export type VimChordSyntaxFamily = 'commandLine' | 'macro' | 'mark' | 'modeSwitch' | 'modifier' | 'motion' | 'operatorCommand'
   | 'operatorMotion' | 'operatorTextObject' | 'prefix' | 'put' | 'textObject' | 'unknown' | 'visualPrefix';
 
 export type VimChordObstruction = 'empty' | 'strayTextObject' | 'trailingTokens' | 'unexpectedCommandLineToken'
@@ -46,6 +58,8 @@ export interface VimMacroSyntax {
   readonly register?: string;
 }
 
+export type VimMarkSyntax = Pick<VimMarkToken, 'action' | 'mark'>;
+
 export interface VimChordSyntax {
   readonly commandLine?: VimCommandLineSyntax;
   readonly count?: number;
@@ -53,6 +67,7 @@ export interface VimChordSyntax {
   readonly kind: VimChordSyntaxKind;
   readonly keys: readonly string[];
   readonly macro?: VimMacroSyntax;
+  readonly mark?: VimMarkSyntax;
   readonly modeSwitch?: VimModeSwitchName;
   readonly motion?: VimMotionName;
   readonly obstruction?: VimChordObstruction;
@@ -63,15 +78,16 @@ export interface VimChordSyntax {
   readonly visualMode?: VimVisualModeName;
 }
 
-export const VimChordSyntaxKinds: Record<string, VimChordSyntaxKind> = Object.freeze({
+export const VimChordSyntaxKinds = Object.freeze({
   Complete: 'complete',
   Invalid: 'invalid',
   Pending: 'pending',
-});
+} as const satisfies Record<string, VimChordSyntaxKind>);
 
-export const VimChordSyntaxFamilies: Record<string, VimChordSyntaxFamily> = Object.freeze({
+export const VimChordSyntaxFamilies = Object.freeze({
   CommandLine: 'commandLine',
   Macro: 'macro',
+  Mark: 'mark',
   ModeSwitch: 'modeSwitch',
   Modifier: 'modifier',
   Motion: 'motion',
@@ -83,16 +99,16 @@ export const VimChordSyntaxFamilies: Record<string, VimChordSyntaxFamily> = Obje
   TextObject: 'textObject',
   Unknown: 'unknown',
   VisualPrefix: 'visualPrefix',
-});
+} as const satisfies Record<string, VimChordSyntaxFamily>);
 
-export const VimChordObstructions: Record<string, VimChordObstruction> = Object.freeze({
+export const VimChordObstructions = Object.freeze({
   Empty: 'empty',
   StrayTextObject: 'strayTextObject',
   TrailingTokens: 'trailingTokens',
   UnexpectedCommandLineToken: 'unexpectedCommandLineToken',
   UnexpectedOperatorTarget: 'unexpectedOperatorTarget',
   UnknownToken: 'unknownToken',
-});
+} as const satisfies Record<string, VimChordObstruction>);
 
 interface ParserContext {
   readonly keys: readonly string[];
@@ -112,6 +128,7 @@ interface SyntaxDraft {
   readonly family: VimChordSyntaxFamily;
   readonly keys: readonly string[];
   readonly macro?: VimMacroSyntax;
+  readonly mark?: VimMarkSyntax;
   readonly modeSwitch?: VimModeSwitchName;
   readonly modifiers: ParsedModifiers;
   readonly motion?: VimMotionName;
@@ -130,6 +147,7 @@ interface ModifierFields {
 interface PayloadFields {
   readonly commandLine?: VimCommandLineSyntax;
   readonly macro?: VimMacroSyntax;
+  readonly mark?: VimMarkSyntax;
   readonly modeSwitch?: VimModeSwitchName;
   readonly motion?: VimMotionName;
   readonly obstruction?: VimChordObstruction;
@@ -138,48 +156,37 @@ interface PayloadFields {
   readonly visualMode?: VimVisualModeName;
 }
 
-const KIND_COMPLETE: 'complete' = 'complete';
-const KIND_INVALID: 'invalid' = 'invalid';
-const KIND_PENDING: 'pending' = 'pending';
+const KIND_COMPLETE = VimChordSyntaxKinds.Complete;
+const KIND_INVALID = VimChordSyntaxKinds.Invalid;
+const KIND_PENDING = VimChordSyntaxKinds.Pending;
 
-const FAMILY_COMMAND_LINE: 'commandLine' = 'commandLine';
-const FAMILY_MACRO: 'macro' = 'macro';
-const FAMILY_MODE_SWITCH: 'modeSwitch' = 'modeSwitch';
-const FAMILY_MODIFIER: 'modifier' = 'modifier';
-const FAMILY_MOTION: 'motion' = 'motion';
-const FAMILY_OPERATOR_COMMAND: 'operatorCommand' = 'operatorCommand';
-const FAMILY_OPERATOR_MOTION: 'operatorMotion' = 'operatorMotion';
-const FAMILY_OPERATOR_TEXT_OBJECT: 'operatorTextObject' = 'operatorTextObject';
-const FAMILY_PREFIX: 'prefix' = 'prefix';
-const FAMILY_PUT: 'put' = 'put';
-const FAMILY_TEXT_OBJECT: 'textObject' = 'textObject';
-const FAMILY_UNKNOWN: 'unknown' = 'unknown';
-const FAMILY_VISUAL_PREFIX: 'visualPrefix' = 'visualPrefix';
+const FAMILY_COMMAND_LINE = VimChordSyntaxFamilies.CommandLine;
+const FAMILY_MACRO = VimChordSyntaxFamilies.Macro;
+const FAMILY_MARK = VimChordSyntaxFamilies.Mark;
+const FAMILY_MODE_SWITCH = VimChordSyntaxFamilies.ModeSwitch;
+const FAMILY_MODIFIER = VimChordSyntaxFamilies.Modifier;
+const FAMILY_MOTION = VimChordSyntaxFamilies.Motion;
+const FAMILY_OPERATOR_COMMAND = VimChordSyntaxFamilies.OperatorCommand;
+const FAMILY_OPERATOR_MOTION = VimChordSyntaxFamilies.OperatorMotion;
+const FAMILY_OPERATOR_TEXT_OBJECT = VimChordSyntaxFamilies.OperatorTextObject;
+const FAMILY_PREFIX = VimChordSyntaxFamilies.Prefix;
+const FAMILY_PUT = VimChordSyntaxFamilies.Put;
+const FAMILY_TEXT_OBJECT = VimChordSyntaxFamilies.TextObject;
+const FAMILY_UNKNOWN = VimChordSyntaxFamilies.Unknown;
+const FAMILY_VISUAL_PREFIX = VimChordSyntaxFamilies.VisualPrefix;
 
-const OBSTRUCTION_EMPTY: 'empty' = 'empty';
-const OBSTRUCTION_STRAY_TEXT_OBJECT: 'strayTextObject' = 'strayTextObject';
-const OBSTRUCTION_TRAILING_TOKENS: 'trailingTokens' = 'trailingTokens';
-const OBSTRUCTION_UNEXPECTED_COMMAND_LINE: 'unexpectedCommandLineToken' = 'unexpectedCommandLineToken';
-const OBSTRUCTION_UNEXPECTED_OPERATOR_TARGET: 'unexpectedOperatorTarget' = 'unexpectedOperatorTarget';
-const OBSTRUCTION_UNKNOWN_TOKEN: 'unknownToken' = 'unknownToken';
+const OBSTRUCTION_EMPTY = VimChordObstructions.Empty;
+const OBSTRUCTION_STRAY_TEXT_OBJECT = VimChordObstructions.StrayTextObject;
+const OBSTRUCTION_TRAILING_TOKENS = VimChordObstructions.TrailingTokens;
+const OBSTRUCTION_UNEXPECTED_COMMAND_LINE = VimChordObstructions.UnexpectedCommandLineToken;
+const OBSTRUCTION_UNEXPECTED_OPERATOR_TARGET = VimChordObstructions.UnexpectedOperatorTarget;
+const OBSTRUCTION_UNKNOWN_TOKEN = VimChordObstructions.UnknownToken;
 
-const TOKEN_COMMAND_LINE_INVOCATION: 'commandLineInvocation' = 'commandLineInvocation';
-const TOKEN_COMMAND_LINE_TEXT: 'commandLineText' = 'commandLineText';
-const TOKEN_COUNT: 'count' = 'count';
-const TOKEN_MACRO_CONTROL: 'macroControl' = 'macroControl';
-const TOKEN_MODE_SWITCH: 'modeSwitch' = 'modeSwitch';
-const TOKEN_MOTION: 'motion' = 'motion';
-const TOKEN_OPERATOR: 'operator' = 'operator';
-const TOKEN_PREFIX: 'prefix' = 'prefix';
-const TOKEN_REGISTER: 'register' = 'register';
-const TOKEN_TEXT_OBJECT: 'textObject' = 'textObject';
-const TOKEN_UNKNOWN: 'unknown' = 'unknown';
-const TOKEN_VISUAL_PREFIX: 'visualPrefix' = 'visualPrefix';
-
-const OPERATOR_PUT_AFTER: VimOperatorName = 'putAfter';
-const OPERATOR_PUT_BEFORE: VimOperatorName = 'putBefore';
+const OPERATOR_PUT_AFTER = VimOperatorNames.PutAfter;
+const OPERATOR_PUT_BEFORE = VimOperatorNames.PutBefore;
 const STANDALONE_OPERATORS: ReadonlySet<VimOperatorName> = new Set([
-  'changeToLineEnd', 'deleteChar', 'deleteToLineEnd', 'joinNoSpace', 'putAfter', 'putBefore', 'yankLine',
+  VimOperatorNames.ChangeToLineEnd, VimOperatorNames.DeleteChar, VimOperatorNames.DeleteToLineEnd, VimOperatorNames.JoinNoSpace,
+  VimOperatorNames.JoinWithSpace, VimOperatorNames.PutAfter, VimOperatorNames.PutBefore, VimOperatorNames.YankLine,
 ]);
 
 const COMMAND_LINE_TEXT_INDEX = 1;
@@ -233,6 +240,9 @@ function parseNonOperatorSyntax(context: ParserContext, token: VimGrammarToken):
   }
   if (isMacroControlToken(token)) {
     return completeLeaf(context, FAMILY_MACRO, { macro: macroSyntax(token) });
+  }
+  if (isMarkToken(token)) {
+    return completeLeaf(context, FAMILY_MARK, { mark: markSyntax(token) });
   }
   return parseNonActionSyntax(context, token);
 }
@@ -432,6 +442,7 @@ function payloadFields(draft: SyntaxDraft): PayloadFields {
     ...optionalField('visualMode', draft.visualMode),
     ...optionalField('commandLine', draft.commandLine),
     ...optionalField('macro', draft.macro),
+    ...optionalField('mark', draft.mark),
     ...optionalField('obstruction', draft.obstruction),
   };
 }
@@ -467,6 +478,10 @@ function macroSyntax(token: VimMacroControlToken): VimMacroSyntax {
   return token.register == null ? { control: token.control } : { control: token.control, register: token.register };
 }
 
+function markSyntax(token: VimMarkToken): VimMarkSyntax {
+  return { action: token.action, mark: token.mark };
+}
+
 function textObjectSyntax(token: VimTextObjectToken): VimTextObjectSyntax {
   return { scope: token.scope, target: token.target };
 }
@@ -478,18 +493,3 @@ function keysFromTokens(tokens: readonly VimGrammarToken[]): readonly string[] {
   }
   return keys;
 }
-
-function isCommandLineInvocationToken(token: VimGrammarToken | undefined): boolean { return token?.kind === TOKEN_COMMAND_LINE_INVOCATION; }
-function isCommandLineTextToken(token: VimGrammarToken | undefined): token is VimCommandLineTextToken {
-  return token?.kind === TOKEN_COMMAND_LINE_TEXT;
-}
-function isCountToken(token: VimGrammarToken | undefined): token is VimCountToken { return token?.kind === TOKEN_COUNT; }
-function isRegisterToken(token: VimGrammarToken | undefined): token is VimRegisterToken { return token?.kind === TOKEN_REGISTER; }
-function isOperatorToken(token: VimGrammarToken | undefined): token is VimOperatorToken { return token?.kind === TOKEN_OPERATOR; }
-function isMotionToken(token: VimGrammarToken | undefined): token is VimMotionToken { return token?.kind === TOKEN_MOTION; }
-function isTextObjectToken(token: VimGrammarToken | undefined): token is VimTextObjectToken { return token?.kind === TOKEN_TEXT_OBJECT; }
-function isModeSwitchToken(token: VimGrammarToken | undefined): token is VimModeSwitchToken { return token?.kind === TOKEN_MODE_SWITCH; }
-function isVisualPrefixToken(token: VimGrammarToken | undefined): token is VimVisualPrefixToken { return token?.kind === TOKEN_VISUAL_PREFIX; }
-function isMacroControlToken(token: VimGrammarToken | undefined): token is VimMacroControlToken { return token?.kind === TOKEN_MACRO_CONTROL; }
-function isPrefixToken(token: VimGrammarToken | undefined): boolean { return token?.kind === TOKEN_PREFIX; }
-function isUnknownToken(token: VimGrammarToken | undefined): boolean { return token?.kind === TOKEN_UNKNOWN; }

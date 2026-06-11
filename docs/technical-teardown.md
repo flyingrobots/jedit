@@ -59,6 +59,7 @@ M. [Maintenance Posture](#maintenance-posture)
 26. [Golden Path: A Keystroke to Terminal Pixels](#26-golden-path-a-keystroke-to-terminal-pixels)
 27. [Architectural Trade-offs](#27-architectural-trade-offs)
 28. [Architecture Summary](#28-architecture-summary)
+29. [Title Screen 3D Ray-Tracer and Bounding Volume Acceleration](#29-title-screen-3d-ray-tracer-and-bounding-volume-acceleration)
 
 ---
 
@@ -1148,7 +1149,11 @@ After a `textWindow` observe call, the envelope returned:
 }
 ```
 
-**Notable**: The `posture: "missing_retention"` field is an explicit statement that durable replay evidence is not yet wired. The system knows what it does not yet prove — this is an architectural honesty invariant, not a TODO comment.
+**Notable**: The `posture: "missing_retention"` field is an explicit statement
+that this particular observation did not carry retained refs. Current WSC
+history, export, and replay witnesses cover durable evidence where those
+surfaces are installed. The important invariant is honesty: absence of retained
+material must be explicit rather than implied by missing fields.
 
 ---
 
@@ -1919,5 +1924,54 @@ retained readings, receipts, and WSC recovery/export are the correct production
 truth. The codebase should keep those roles separate until Echo's file aperture
 can make arbitrary host-file observation, drift, and materialization a standard
 runtime surface.
+
+---
+
+## 29. Title Screen 3D Ray-Tracer and Bounding Volume Acceleration
+
+The `jedit` startup screen renders an interactive, real-time 3D ray-traced scene in the terminal using Braille subpixels or ASCII characters. When `WorkspaceModel.editor` is `undefined`, the Elm Architecture view loop delegates rendering to `renderTitleScreen` (in `src/ui/title-screen.ts`).
+
+### The 3D Ray-Traced Title Screen Engine
+The 3D engine simulates:
+1. **Camera Placement & Drift**: Generates camera coordinates and angles that slowly drift over time using `titleSceneCameraAngleAt` and `titleSceneCameraPosition`.
+2. **Object Geometry**: Models spheres, boxes, cylinders, and complex 3D meshes (Utah teapot, bunny, Stanford dragon) loaded via `title-mesh.ts` and `title-bunny-mesh.ts`.
+3. **Lighting & Shadows**: Computes spotlights, ambient day-night cycles, contact shadows, reflection/refraction tints, and floor caustics using math libraries in `src/ui/title-scene-math.ts`.
+4. **Braille Canvas**: Sub-pixel dithering and sampling are managed by `averagingBrailleCanvas` which groups sub-pixels into 2x4 Braille cells, creating high-density terminal graphics.
+
+### The Performance Bottleneck: Ray-Tracing in Single-Threaded JavaScript
+Since the entire application runs in a single-threaded Node.js event loop (under the Bijou TEA loop), rendering a high-density 3D scene cell-by-cell is extremely CPU-bound. If every ray (1 ray per sub-pixel, which is 8 sub-pixels per Braille character) has to intersect with every 3D mesh triangle and primitive in the scene, frame rates drop below usable levels.
+
+### The Optimization: Bounding Volume Hierarchies (`TitleSceneRayAcceleration`)
+The `title/ray-acceleration` feature optimizes this via bounding volume checks implemented in `src/ui/title-scene-ray-acceleration.ts`:
+
+```mermaid
+flowchart TD
+    Ray[Cast Ray] --> SceneBound{Intersects Scene Sphere?}
+    SceneBound -- No --> Abort[Immediately Abort: Return Background/Sky]
+    SceneBound -- Yes --> Loop[Loop through Objects]
+    Loop --> ObjBound{Intersects Object Sphere?}
+    ObjBound -- No --> Skip[Skip Expensive Geometry Check]
+    ObjBound -- Yes --> GeomCheck[Perform Ray-Triangle or Ray-Primitive Intersection]
+```
+
+1. **Bounding Spheres for Objects**:
+   Each object is mapped to a `TitleSceneObjectRayBound` which contains the object's dynamic center (accounting for physics/time) and a calculated bounding radius:
+   $$\text{Radius} = \sqrt{\text{FootprintRadius}^2 + \left(\frac{\text{Height}}{2}\right)^2}$$
+   This is computed dynamically in `titleSceneObjectBoundingRadius`.
+2. **Global Scene Bounding Sphere**:
+   `titleSceneBound` computes a bounding box (`TitleSceneRayBoundExtents`) around all objects' bounding spheres, finds the center, and determines a global bounding radius that encapsulates every object in the scene.
+3. **Ray-Sphere Projection Check (`titleSceneRayMayHitBound`)**:
+   Instead of expensive ray-object intersection, the engine performs a fast projection test:
+   - Computes vector $\vec{d}$ from ray origin to sphere center.
+   - Computes projection of $\vec{d}$ onto the normalized ray direction.
+   - If the closest distance from the ray line to the sphere center is greater than the radius, it is mathematically guaranteed that the ray misses. The intersection test aborts immediately.
+4. **Pruning Primary Hit Tests**:
+   Before looping over all objects to find the nearest hit, `nearestTitleSceneObjectHit` checks if the ray intersects the global scene sphere. If not, the entire hit test returns `undefined` immediately, skipping all objects.
+5. **Pruning Shadow Ray Tests**:
+   When computing floor shadow multiplier at a point, the engine casts a shadow ray toward the light source. In `titleFloorPointInShadow`, for each object in the scene, the engine first runs a bounding sphere intersection test for the shadow ray. If it misses the object's sphere, it skips the expensive primitive/mesh intersection checks.
+
+This optimization yields a massive reduction in ray-primitive intersection checks, allowing the TUI's animated 3D backdrop to render smoothly even on lower-performance systems.
+
+---
 
 The deepest insight: `jedit` treats _product pressure as a test suite for the underlying stack_. The Echo stack does not advance based on protocol theory — it advances when a real editor use case forces a seam to become honest. The `@wes_footprint` directive, the `ReadBasisHandle` capability, the intent/observe split, the receipt evidence in `Observed<T>` — none of these were designed in isolation. Each was forced into existence by the requirements of a working editor that needed provenance, authority separation, and replayable history to function correctly.

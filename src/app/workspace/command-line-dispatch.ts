@@ -1,4 +1,4 @@
-import type { Cmd } from "@flyingrobots/bijou-tui";
+import { quit, type Cmd } from "@flyingrobots/bijou-tui";
 import { FileEntryKinds, type FileEntry } from "../../ports/file-system.js";
 import {
   closeWorkspaceCommandLine,
@@ -8,6 +8,7 @@ import { openWorkspaceFileEntry } from "./file-tree.js";
 import type { WorkspaceKeyBindingContext } from "./key-binding-context.js";
 import type { WorkspaceModel } from "./model.js";
 import type { WorkspaceMsg } from "./msg.js";
+import { WorkspaceCommandNames } from "./workspace-command-names.js";
 import { saveWorkspace } from "./workspace-save-key.js";
 
 type KeyBindingResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
@@ -17,20 +18,8 @@ interface ParsedWorkspaceCommandLine {
   readonly argument: string;
 }
 
-const WORKSPACE_COMMAND_NAMES = Object.freeze({
-  Edit: "edit",
-  EditAlias: "e",
-  Write: "write",
-  WriteAlias: "w",
-  Quit: "quit",
-  QuitAlias: "q",
-  WriteQuit: "wq",
-  WriteQuitAlias: "x",
-} as const);
-
 const EMPTY_COMMAND_ARGUMENT = "";
 const NO_WHITESPACE_INDEX = -1;
-const ABSOLUTE_PATH_PREFIX = "/";
 const DIRECTORY_LABEL_SUFFIX = "/";
 const PARENT_DIRECTORY_LABEL = "../";
 
@@ -53,6 +42,9 @@ export function dispatchWorkspaceCommandLine(
   }
   if (isQuitCommand(command.name)) {
     return dispatchQuitCommand(model);
+  }
+  if (isForceQuitCommand(command.name)) {
+    return [closeWorkspaceCommandLine(model), [quit<WorkspaceMsg>()]];
   }
   return isWriteQuitCommand(command.name)
     ? dispatchWriteQuitCommand(model, context)
@@ -140,9 +132,7 @@ function editCommandFilePath(
   argument: string,
   context: WorkspaceKeyBindingContext,
 ): string {
-  return argument.startsWith(ABSOLUTE_PATH_PREFIX)
-    ? argument
-    : context.deps.fileSystem.join(cwd, argument);
+  return context.deps.fileSystem.resolve(cwd, argument);
 }
 
 function parseWorkspaceCommandLine(
@@ -172,28 +162,35 @@ function hasNoArgument(command: ParsedWorkspaceCommandLine): boolean {
 
 function isEditCommand(name: string): boolean {
   return (
-    name === WORKSPACE_COMMAND_NAMES.Edit ||
-    name === WORKSPACE_COMMAND_NAMES.EditAlias
+    name === WorkspaceCommandNames.Edit ||
+    name === WorkspaceCommandNames.EditAlias
   );
 }
 
 function isWriteCommand(name: string): boolean {
   return (
-    name === WORKSPACE_COMMAND_NAMES.Write ||
-    name === WORKSPACE_COMMAND_NAMES.WriteAlias
+    name === WorkspaceCommandNames.Write ||
+    name === WorkspaceCommandNames.WriteAlias
   );
 }
 
 function isQuitCommand(name: string): boolean {
   return (
-    name === WORKSPACE_COMMAND_NAMES.Quit ||
-    name === WORKSPACE_COMMAND_NAMES.QuitAlias
+    name === WorkspaceCommandNames.Quit ||
+    name === WorkspaceCommandNames.QuitAlias
+  );
+}
+
+function isForceQuitCommand(name: string): boolean {
+  return (
+    name === WorkspaceCommandNames.QuitBang ||
+    name === WorkspaceCommandNames.QuitBangAlias
   );
 }
 
 function isWriteQuitCommand(name: string): boolean {
   return (
-    name === WORKSPACE_COMMAND_NAMES.WriteQuit ||
-    name === WORKSPACE_COMMAND_NAMES.WriteQuitAlias
+    name === WorkspaceCommandNames.WriteQuit ||
+    name === WorkspaceCommandNames.WriteQuitAlias
   );
 }

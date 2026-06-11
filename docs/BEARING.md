@@ -5,10 +5,12 @@ correct Echo-hosted application without moving `jedit` nouns into Echo.
 
 This document is intentionally compact. It records where the repo is now and
 where the next work should start. Historical activity ledgers belong in git
-history, merged PRs, release notes, and design docs.
+history, merged pull requests, release notes, and design docs.
 
 ## Current Truth
 
+- `main` includes the recent Vim power-move runtime work, the outside-CWD
+  `:edit` path fix, and the title-scene ray acceleration work.
 - The production TUI has no supported non-Echo text runtime mode.
 - `TextBufferSessionPort` and `TextBufferOptic` are jedit app capabilities.
 - Interactive workspace open, edit, read, render, save, export, and checkpoint
@@ -19,10 +21,11 @@ history, merged PRs, release notes, and design docs.
   explicit causal input.
 - WSC history listing, current export, historical export, and replay closeout
   exist as agent-facing JSON surfaces.
-- The Vim command-line completion surface exists for command and file
-  completion, including invalid-command feedback.
-- The active Vim/Jim expansion now needs a first-class grammar, motion algebra,
-  text-object resolution, registers, repeat, macros, and causal proof.
+- Vim command-line completion exists for command and file completion, including
+  invalid-command feedback and forced quit dispatch.
+- The Vim/Jim runtime now has parser, normal/operator-pending state, basis-bound
+  core motions, core text objects, delete/change/yank/put execution, basic dot
+  repeat, transformed-repeat metadata, case operators, joins, and local marks.
 
 ## Source Of Truth
 
@@ -37,6 +40,57 @@ Authority flows in this order:
 
 Memory and this file are coordination aids. They do not override source,
 commands, generated output, tests, GitHub state, or committed artifacts.
+
+## Roadmap Pin
+
+Do not cut a release just because recent cleanup PRs landed. The next release
+decision needs an explicit release-readiness audit, version policy check,
+changelog check, and release gate run.
+
+Immediate order:
+
+1. Land the signpost truth pass so the repo stops pointing agents at stale
+   ledgers.
+2. Clean local workspace debris after the signpost PR lands: the merged
+   `fix/open-files-outside-cwd` worktree, merged local branches, and the
+   scratch bug note for the already-fixed outside-CWD `:edit` issue.
+3. Triage the live command-surface bug:
+   [#123 Preview panel stays empty for command/file completions](https://github.com/flyingrobots/jedit/issues/123).
+4. Resume the Jim/Vim roadmap from
+   [`WF-0105 - Vim Power Moves Causal Parity`](design/0105-vim-power-moves-causal-parity.md).
+
+The next implementation lane is **search and structural motion parity**:
+
+- `/`, `?`, `n`, and `N` should resolve against explicit reading-basis match
+  facts instead of hidden UI state.
+- `%`, section, paragraph, and structure-aware motions should become explicit
+  motion results with typed unsupported posture where structure is unavailable.
+- Search history and match identity should be visible to tests and agents.
+- Operator integration must keep the same basis-bound execution discipline as
+  the landed core motion and text-object work.
+
+After that lane, continue WF-0105 through:
+
+- Graft-backed structural text objects for functions, classes, comments, tags,
+  and language blocks.
+- Visual selection state and visual operators.
+- Register hardening: append, black-hole, numbered, expression, and clipboard
+  policy.
+- Macro recording/replay as causal scripts with obstruction reports.
+- Substitute/global/range commands with previewable causal strand posture.
+- Agent/MCP Vim power witnesses and a parity release gate.
+
+## Parked Lanes
+
+- [`WF-0107 - Geordi Ray-Traced Title Render Pipeline`](design/0107-geordi-raytraced-title-render-pipeline.md)
+  is a valid title-rendering lane, but it is not the current editor-product
+  roadmap. Return to it when title-render debug output, frame targets, packed
+  cells, or GPU-ready scheduling are the objective.
+- Title FPS real key-state input remains tracked by
+  [#114](https://github.com/flyingrobots/jedit/issues/114), with the transport
+  dependency tracked outside this repo.
+- Cool-ideas issues are backlog, not roadmap. Promote one only when it has a
+  design anchor, proof surface, and clear release-gate relationship.
 
 ## Roadmap Anchors
 
@@ -55,6 +109,7 @@ commands, generated output, tests, GitHub state, or committed artifacts.
 | Vim target workflows | [`docs/design/0105-vim-target-usability-tests.md`](design/0105-vim-target-usability-tests.md) |
 | Vim/Jim power moves | [`docs/design/0105-vim-power-moves-causal-parity.md`](design/0105-vim-power-moves-causal-parity.md) |
 | Emacs ideas to steal causally | [`docs/design/0106-emacs-ideas-to-steal-causally.md`](design/0106-emacs-ideas-to-steal-causally.md) |
+| Title render pipeline | [`docs/design/0107-geordi-raytraced-title-render-pipeline.md`](design/0107-geordi-raytraced-title-render-pipeline.md) |
 
 ## Active Work
 
@@ -65,17 +120,9 @@ internal APIs remain `jedit` until the Echo-powered proof and compatibility plan
 make a user-facing rename safe. `jim` is the future command/product name for the
 modal editor that grows out of this repo.
 
-The immediate roadmap should continue from
-[`WF-0105 - Vim Power Moves Causal Parity`](design/0105-vim-power-moves-causal-parity.md).
-The next known goalpost is:
-
-```text
-Goalpost 7: Reading-Basis Motion Resolver
-```
-
-The work should convert motion/range interpretation from imperative cursor
-helpers into explicit, basis-bound facts that can feed operator intents,
-text-object resolution, repeat, macros, witnesses, and Echo-backed proof.
+The active editing roadmap is WF-0105. The currently pinned lane is search and
+structural motion parity, with command-surface bug #123 as the nearest
+user-visible bug to triage.
 
 ## Deferred Full Rewrite
 
@@ -86,8 +133,8 @@ Do compact truth passes when signposts become misleading. Save the full rewrite
 for after the repo has executable proof for:
 
 - Echo-backed text/edit authority in the interactive TUI;
-- basis-bound Vim motion and operator ranges;
-- causal or transactional edit operations;
+- basis-bound Vim search and structural motions;
+- causal or transactional edit operations beyond the landed core operators;
 - at least one open/edit/save/quit usability witness;
 - durable WSC evidence that can recover and export a historical basis.
 
@@ -101,4 +148,4 @@ for after the repo has executable proof for:
 - Retry is explicit new causal input.
 - Unsupported or rejected work is final for that attempt.
 - Echo remains generic and must not learn jedit, Vim, Jim, text, buffer, pane,
-  cursor, or editor semantics as core runtime concepts.
+  cursor, register, macro, or editor semantics as core runtime concepts.

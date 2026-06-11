@@ -4,6 +4,7 @@ import {
   type TitleSceneObject,
   type TitleSceneVector3,
 } from "./title-scene.js";
+import type { TitleSceneRayAcceleration } from "./title-scene-ray-acceleration.js";
 import {
   TITLE_SCENE_DEFAULT_CAMERA_EYE_Y,
   titleSceneCameraPosition,
@@ -204,12 +205,14 @@ export function titleFloorLightEffectsAt(
   point: Vector3,
   objects: readonly TitleSceneObject[],
   time: number,
+  rayAcceleration?: TitleSceneRayAcceleration,
 ): TitleFloorLightEffects {
   return titleFloorLightEffectsAtWithLight(
     point,
     objects,
     time,
     TITLE_KEY_LIGHT_DIRECTION,
+    rayAcceleration,
   );
 }
 
@@ -220,7 +223,11 @@ export function reflectedEnvironmentColor(
     options.point,
     options.ray,
     options.objects,
-    { ignoredObject: options.ignoredObject, time: options.time },
+    {
+      ignoredObject: options.ignoredObject,
+      time: options.time,
+      rayAcceleration: options.rayAcceleration,
+    },
   );
   if (objectHit != null) {
     return reflectedObjectColor(options, objectHit);
@@ -267,6 +274,7 @@ function reflectedSurfaceColor(
         options.objects,
         options.time,
         options.lightDirection,
+        options.rayAcceleration,
       )
     : { shadowMultiplier: 1, contactShadowMultiplier: 1, causticStrength: 0 };
   const causticColor = scaleColor(options.colors.info, effects.causticStrength);
@@ -309,6 +317,7 @@ function objectReflectionColor(
     environment: options.environment,
     lightDirection: context.lightDirection,
     spotlight: context.spotlight,
+    rayAcceleration: options.rayAcceleration,
   });
 }
 
@@ -338,6 +347,7 @@ function objectRefractionColor(
       environment: options.environment,
       lightDirection: context.lightDirection,
       spotlight: context.spotlight,
+      rayAcceleration: options.rayAcceleration,
     }),
     REFRACTION_TINT,
   );

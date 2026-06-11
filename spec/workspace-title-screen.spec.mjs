@@ -928,6 +928,7 @@ test("startup file modal opens directories without dismissing the modal", async 
           }),
           dirname: () => "/repo",
           join: (...parts) => parts.join("/"),
+          resolve: (...parts) => parts.join("/"),
         },
       }),
     }),

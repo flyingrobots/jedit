@@ -15,6 +15,7 @@ import type { WorkspaceModel } from './model.js';
 import { settingsRows } from './settings.js';
 import { startupFileModalRows } from './startup-file-modal.js';
 import { FOOTER_ROWS, MIN_COLUMNS, MIN_ROWS } from './viewport.js';
+import { workspaceHasOpenFile } from './workspace-model-query.js';
 
 const STARTUP_FILE_MODAL_I18N_KEYS = Object.freeze({
   Title: 'startupFileModal.title',
@@ -130,6 +131,7 @@ function commandLineCompletionPopupContext(model: WorkspaceModel) {
     commandLine: model.commandLine,
     entries: model.entries,
     i18n: model.i18n,
+    hasOpenFile: workspaceHasOpenFile(model),
   });
   if (items.length === 0) {
     return undefined;
@@ -140,6 +142,7 @@ function commandLineCompletionPopupContext(model: WorkspaceModel) {
     preview: workspaceCommandLineCompletionPreview({
       commandLine: model.commandLine,
       entries: model.entries,
+      hasOpenFile: workspaceHasOpenFile(model),
     }),
     width: commandCompletionPopupWidth(model.columns),
     anchor: commandLineCompletionPopupAnchor(model),
