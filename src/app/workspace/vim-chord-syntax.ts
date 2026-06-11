@@ -185,14 +185,8 @@ const OBSTRUCTION_UNKNOWN_TOKEN = VimChordObstructions.UnknownToken;
 const OPERATOR_PUT_AFTER = VimOperatorNames.PutAfter;
 const OPERATOR_PUT_BEFORE = VimOperatorNames.PutBefore;
 const STANDALONE_OPERATORS: ReadonlySet<VimOperatorName> = new Set([
-  VimOperatorNames.ChangeToLineEnd,
-  VimOperatorNames.DeleteChar,
-  VimOperatorNames.DeleteToLineEnd,
-  VimOperatorNames.JoinNoSpace,
-  VimOperatorNames.JoinWithSpace,
-  VimOperatorNames.PutAfter,
-  VimOperatorNames.PutBefore,
-  VimOperatorNames.YankLine,
+  VimOperatorNames.ChangeToLineEnd, VimOperatorNames.DeleteChar, VimOperatorNames.DeleteToLineEnd, VimOperatorNames.JoinNoSpace,
+  VimOperatorNames.JoinWithSpace, VimOperatorNames.PutAfter, VimOperatorNames.PutBefore, VimOperatorNames.YankLine,
 ]);
 
 const COMMAND_LINE_TEXT_INDEX = 1;
