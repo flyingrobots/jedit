@@ -19,8 +19,9 @@ history, merged pull requests, release notes, and design docs.
   production. It is not the text authority.
 - Production undo/redo remains intentionally unsupported until modeled as
   explicit causal input.
-- WSC history listing, current export, historical export, and replay closeout
-  exist as agent-facing JSON surfaces.
+- WSC history listing, current export, and historical export exist as
+  agent-facing JSON surfaces. Replay closeout exists as app/spec proof, not yet
+  as a standalone agent CLI.
 - Vim command-line completion exists for command and file completion, including
   invalid-command feedback and forced quit dispatch.
 - The Vim/Jim runtime now has parser, normal/operator-pending state, basis-bound
@@ -58,6 +59,16 @@ Immediate order:
    [#123 Preview panel stays empty for command/file completions](https://github.com/flyingrobots/jedit/issues/123).
 4. Resume the Jim/Vim roadmap from
    [`WF-0105 - Vim Power Moves Causal Parity`](design/0105-vim-power-moves-causal-parity.md).
+
+Active checklist:
+
+- [x] Merge the outside-CWD `:edit` path fix.
+- [x] Merge title-scene ray acceleration.
+- [x] Update the signpost PR with current roadmap truth.
+- [ ] Land the signpost truth pass.
+- [ ] Remove the merged outside-CWD worktree and scratch bug note.
+- [ ] Triage issue #123.
+- [ ] Start WF-0105 search and structural motion parity.
 
 The next implementation lane is **search and structural motion parity**:
 
