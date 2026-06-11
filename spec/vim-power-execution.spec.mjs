@@ -36,6 +36,28 @@ test("vim motion resolver resolves counted reading-basis motions", async () => {
   assert.deepEqual(currentLines.target, { start: 0, end: 27 });
 });
 
+test("vim file-top motion honors explicit counts", async () => {
+  const [mode, motion] = await Promise.all([
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "vim-motion-resolver.js"),
+  ]);
+  const editor = mockEditor(mode, {
+    lines: ["one", "two", "three", "four"],
+    cursorRow: 3,
+    cursorCol: 0,
+  });
+
+  const countedTop = motion.resolveVimMotion({
+    editor,
+    motion: "fileTop",
+    count: 3,
+  });
+
+  assert.equal("obstruction" in countedTop, false);
+  assert.deepEqual(countedTop.cursorAfter, { row: 2, column: 0 });
+  assert.deepEqual(countedTop.target, { start: 8, end: 18 });
+});
+
 test("vim text object resolver targets words and delimiter interiors", async () => {
   const [mode, textObjects] = await Promise.all([
     importDist("app", "workspace", "editor", "mode.js"),

@@ -142,7 +142,7 @@ function destinationByMotion(
 ): number | undefined {
   const text = editorText(editor);
   if (motion === FILE_TOP_MOTION) {
-    return FIRST_INDEX;
+    return lineStartTextIndex(editor.lines, boundedRow(editor.lines, count - LINE_BREAK_LENGTH));
   }
   if (motion === FILE_BOTTOM_MOTION) {
     return lineStartTextIndex(editor.lines, fileBottomRow(editor, count));
