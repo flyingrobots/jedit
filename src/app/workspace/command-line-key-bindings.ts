@@ -24,6 +24,7 @@ import type { WorkspaceKeyBindingContext } from "./key-binding-context.js";
 import type { WorkspaceModel } from "./model.js";
 import type { WorkspaceMsg } from "./msg.js";
 import { WorkspaceKeys } from "./workspace-key.js";
+import { workspaceHasOpenFile } from "./workspace-model-query.js";
 
 type KeyBindingResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 
@@ -110,6 +111,7 @@ function updateCommandLineCompletionKey(
   const completions = workspaceCommandLineCompletionItems({
     commandLine: model.commandLine,
     entries: model.entries,
+    hasOpenFile: workspaceHasOpenFile(model),
   });
   if (isCommandLineCompletionPreviousKey(msg)) {
     return [
@@ -150,6 +152,7 @@ function acceptCommandLineCompletion(
   const selected = selectedWorkspaceCommandLineCompletionItem({
     commandLine: model.commandLine,
     entries: model.entries,
+    hasOpenFile: workspaceHasOpenFile(model),
   });
   return selected == null
     ? [model, []]
@@ -162,6 +165,7 @@ function acceptChangingCommandLineCompletion(
   const selected = selectedWorkspaceCommandLineCompletionItem({
     commandLine: model.commandLine,
     entries: model.entries,
+    hasOpenFile: workspaceHasOpenFile(model),
   });
   return selected != null &&
     shouldAcceptChangingCommandLineCompletion(model, selected)

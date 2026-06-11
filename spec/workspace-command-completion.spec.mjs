@@ -43,6 +43,33 @@ test("workspace command completion provider matches Vim command names and aliase
   });
 });
 
+test("workspace command completion provider hides file commands with no open file", async () => {
+  const completion = await importDist("app", "workspace", "command-completion.js");
+
+  const titleScreenItems = completion.workspaceCommandLineCompletionItems({
+    commandLine: {
+      input: "",
+      cursorIndex: 0,
+    },
+    entries: [],
+    hasOpenFile: false,
+  });
+  const writeQuery = completion.workspaceCommandLineCompletionItems({
+    commandLine: {
+      input: "w",
+      cursorIndex: 1,
+    },
+    entries: [],
+    hasOpenFile: false,
+  });
+
+  assert.deepEqual(
+    titleScreenItems.map((item) => item.label),
+    ["edit", "quit"],
+  );
+  assert.deepEqual(writeQuery, []);
+});
+
 test("workspace command completion provider localizes command copy", async () => {
   const completion = await importDist("app", "workspace", "command-completion.js");
   const requestedKeys = [];
@@ -379,6 +406,34 @@ test("workspace render paints command completions above the Vim command line", a
   assert.equal(viewer.renderWorkspace(model).get(1, 15).char, "›");
   assert.match(lines[15], /› edit\s+cmd\s+Open a file/);
   assert.match(lines[16], /^:e\s*$/);
+});
+
+test("workspace render omits write completions on the title screen", async () => {
+  const [viewer, titleScreen] = await Promise.all([
+    importDist("app", "workspace", "viewer.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const model = mockTitleScreenModel(titleScreen, {
+    columns: 80,
+    rows: 18,
+    editor: undefined,
+    footerVisible: true,
+    jeditTheme: workspaceRenderTheme(),
+    commandLine: {
+      active: true,
+      input: "",
+      cursorIndex: 0,
+      selectedCompletionIndex: 0,
+    },
+  });
+
+  const lines = surfaceText(viewer.renderWorkspace(model)).split("\n");
+  const completionText = lines.slice(12, 16).join("\n");
+
+  assert.match(completionText, /› edit\s+cmd\s+Open a file/);
+  assert.match(completionText, /quit\s+cmd\s+Quit jedit/);
+  assert.doesNotMatch(completionText, /write\s+cmd\s+Write the current file/);
+  assert.doesNotMatch(completionText, /wq\s+cmd\s+Write and quit/);
 });
 
 test("workspace render pins command completions to the original command anchor", async () => {
