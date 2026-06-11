@@ -33,6 +33,7 @@ import {
 import {
   TEXT_OBJECT_AROUND_PREFIX,
   TEXT_OBJECT_INNER_PREFIX,
+  VimOperatorNames,
 } from './vim-grammar-vocabulary.js';
 
 export type VimChordSyntaxKind = 'complete' | 'invalid' | 'pending';
@@ -100,14 +101,14 @@ export const VimChordSyntaxFamilies = Object.freeze({
   VisualPrefix: 'visualPrefix',
 } as const satisfies Record<string, VimChordSyntaxFamily>);
 
-export const VimChordObstructions: Record<string, VimChordObstruction> = Object.freeze({
+export const VimChordObstructions = Object.freeze({
   Empty: 'empty',
   StrayTextObject: 'strayTextObject',
   TrailingTokens: 'trailingTokens',
   UnexpectedCommandLineToken: 'unexpectedCommandLineToken',
   UnexpectedOperatorTarget: 'unexpectedOperatorTarget',
   UnknownToken: 'unknownToken',
-});
+} as const satisfies Record<string, VimChordObstruction>);
 
 interface ParserContext {
   readonly keys: readonly string[];
@@ -155,36 +156,43 @@ interface PayloadFields {
   readonly visualMode?: VimVisualModeName;
 }
 
-const KIND_COMPLETE: 'complete' = 'complete';
-const KIND_INVALID: 'invalid' = 'invalid';
-const KIND_PENDING: 'pending' = 'pending';
+const KIND_COMPLETE = VimChordSyntaxKinds.Complete;
+const KIND_INVALID = VimChordSyntaxKinds.Invalid;
+const KIND_PENDING = VimChordSyntaxKinds.Pending;
 
-const FAMILY_COMMAND_LINE: 'commandLine' = 'commandLine';
-const FAMILY_MACRO: 'macro' = 'macro';
-const FAMILY_MARK: 'mark' = 'mark';
-const FAMILY_MODE_SWITCH: 'modeSwitch' = 'modeSwitch';
-const FAMILY_MODIFIER: 'modifier' = 'modifier';
-const FAMILY_MOTION: 'motion' = 'motion';
-const FAMILY_OPERATOR_COMMAND: 'operatorCommand' = 'operatorCommand';
-const FAMILY_OPERATOR_MOTION: 'operatorMotion' = 'operatorMotion';
-const FAMILY_OPERATOR_TEXT_OBJECT: 'operatorTextObject' = 'operatorTextObject';
-const FAMILY_PREFIX: 'prefix' = 'prefix';
-const FAMILY_PUT: 'put' = 'put';
-const FAMILY_TEXT_OBJECT: 'textObject' = 'textObject';
-const FAMILY_UNKNOWN: 'unknown' = 'unknown';
-const FAMILY_VISUAL_PREFIX: 'visualPrefix' = 'visualPrefix';
+const FAMILY_COMMAND_LINE = VimChordSyntaxFamilies.CommandLine;
+const FAMILY_MACRO = VimChordSyntaxFamilies.Macro;
+const FAMILY_MARK = VimChordSyntaxFamilies.Mark;
+const FAMILY_MODE_SWITCH = VimChordSyntaxFamilies.ModeSwitch;
+const FAMILY_MODIFIER = VimChordSyntaxFamilies.Modifier;
+const FAMILY_MOTION = VimChordSyntaxFamilies.Motion;
+const FAMILY_OPERATOR_COMMAND = VimChordSyntaxFamilies.OperatorCommand;
+const FAMILY_OPERATOR_MOTION = VimChordSyntaxFamilies.OperatorMotion;
+const FAMILY_OPERATOR_TEXT_OBJECT = VimChordSyntaxFamilies.OperatorTextObject;
+const FAMILY_PREFIX = VimChordSyntaxFamilies.Prefix;
+const FAMILY_PUT = VimChordSyntaxFamilies.Put;
+const FAMILY_TEXT_OBJECT = VimChordSyntaxFamilies.TextObject;
+const FAMILY_UNKNOWN = VimChordSyntaxFamilies.Unknown;
+const FAMILY_VISUAL_PREFIX = VimChordSyntaxFamilies.VisualPrefix;
 
-const OBSTRUCTION_EMPTY: 'empty' = 'empty';
-const OBSTRUCTION_STRAY_TEXT_OBJECT: 'strayTextObject' = 'strayTextObject';
-const OBSTRUCTION_TRAILING_TOKENS: 'trailingTokens' = 'trailingTokens';
-const OBSTRUCTION_UNEXPECTED_COMMAND_LINE: 'unexpectedCommandLineToken' = 'unexpectedCommandLineToken';
-const OBSTRUCTION_UNEXPECTED_OPERATOR_TARGET: 'unexpectedOperatorTarget' = 'unexpectedOperatorTarget';
-const OBSTRUCTION_UNKNOWN_TOKEN: 'unknownToken' = 'unknownToken';
+const OBSTRUCTION_EMPTY = VimChordObstructions.Empty;
+const OBSTRUCTION_STRAY_TEXT_OBJECT = VimChordObstructions.StrayTextObject;
+const OBSTRUCTION_TRAILING_TOKENS = VimChordObstructions.TrailingTokens;
+const OBSTRUCTION_UNEXPECTED_COMMAND_LINE = VimChordObstructions.UnexpectedCommandLineToken;
+const OBSTRUCTION_UNEXPECTED_OPERATOR_TARGET = VimChordObstructions.UnexpectedOperatorTarget;
+const OBSTRUCTION_UNKNOWN_TOKEN = VimChordObstructions.UnknownToken;
 
-const OPERATOR_PUT_AFTER: VimOperatorName = 'putAfter';
-const OPERATOR_PUT_BEFORE: VimOperatorName = 'putBefore';
+const OPERATOR_PUT_AFTER = VimOperatorNames.PutAfter;
+const OPERATOR_PUT_BEFORE = VimOperatorNames.PutBefore;
 const STANDALONE_OPERATORS: ReadonlySet<VimOperatorName> = new Set([
-  'changeToLineEnd', 'deleteChar', 'deleteToLineEnd', 'joinNoSpace', 'joinWithSpace', 'putAfter', 'putBefore', 'yankLine',
+  VimOperatorNames.ChangeToLineEnd,
+  VimOperatorNames.DeleteChar,
+  VimOperatorNames.DeleteToLineEnd,
+  VimOperatorNames.JoinNoSpace,
+  VimOperatorNames.JoinWithSpace,
+  VimOperatorNames.PutAfter,
+  VimOperatorNames.PutBefore,
+  VimOperatorNames.YankLine,
 ]);
 
 const COMMAND_LINE_TEXT_INDEX = 1;
