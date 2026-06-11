@@ -15,7 +15,12 @@ import {
   openLineAbove,
   openLineBelow,
 } from './editor-editing-helpers.js';
-import type { VimMarkActionName, VimModeSwitchName } from './vim-grammar-vocabulary.js';
+import {
+  VimMarkActionNames,
+  type VimMarkActionName,
+  VimModeSwitchNames,
+  type VimModeSwitchName,
+} from './vim-grammar-vocabulary.js';
 import type { VimTextRange } from './vim-motion-resolver.js';
 
 export type VimCaseTransform = 'lowercase' | 'swapCase' | 'uppercase';
@@ -35,15 +40,6 @@ const JOINED_LINE_SKIP = 2;
 const NORMAL_MODE = EditorModes.Normal;
 const INSERT_MODE = EditorModes.Insert;
 const SINGLE_SPACE = ' ';
-const MARK_ACTION_EXACT_JUMP = 'jumpExact';
-const MARK_ACTION_LINE_JUMP = 'jumpLine';
-const MARK_ACTION_SET = 'set';
-const MODE_SWITCH_INSERT_AFTER = 'insertAfter';
-const MODE_SWITCH_INSERT_BEFORE = 'insertBefore';
-const MODE_SWITCH_INSERT_LINE_END = 'insertLineEnd';
-const MODE_SWITCH_INSERT_FIRST_NON_WHITESPACE = 'insertFirstNonWhitespace';
-const MODE_SWITCH_OPEN_LINE_ABOVE = 'openLineAbove';
-const MODE_SWITCH_OPEN_LINE_BELOW = 'openLineBelow';
 const VIM_CASE_LOWERCASE: VimCaseTransform = 'lowercase';
 const VIM_CASE_SWAP: VimCaseTransform = 'swapCase';
 const VIM_CASE_UPPERCASE: VimCaseTransform = 'uppercase';
@@ -97,13 +93,13 @@ export function applyVimMarkCommand(
   if (mark == null) {
     return editor;
   }
-  if (mark.action === MARK_ACTION_SET) {
+  if (mark.action === VimMarkActionNames.Set) {
     return setVimMark(editor, mark.mark, basisDigest);
   }
-  if (mark.action === MARK_ACTION_EXACT_JUMP) {
+  if (mark.action === VimMarkActionNames.JumpExact) {
     return jumpToVimMark(editor, mark.mark, VIM_MARK_JUMP_EXACT);
   }
-  return mark.action === MARK_ACTION_LINE_JUMP
+  return mark.action === VimMarkActionNames.JumpLine
     ? jumpToVimMark(editor, mark.mark, 'line')
     : editor;
 }
@@ -112,22 +108,22 @@ export function applyVimModeSwitch(
   editor: EditorState,
   modeSwitch: VimModeSwitchName,
 ): EditorState {
-  if (modeSwitch === MODE_SWITCH_INSERT_BEFORE) {
+  if (modeSwitch === VimModeSwitchNames.InsertBefore) {
     return { ...editor, mode: INSERT_MODE, pendingNormal: undefined };
   }
-  if (modeSwitch === MODE_SWITCH_INSERT_AFTER) {
+  if (modeSwitch === VimModeSwitchNames.InsertAfter) {
     return enterInsertAfterCursor(editor);
   }
-  if (modeSwitch === MODE_SWITCH_INSERT_LINE_END) {
+  if (modeSwitch === VimModeSwitchNames.InsertLineEnd) {
     return enterInsertAtLineEnd(editor);
   }
-  if (modeSwitch === MODE_SWITCH_INSERT_FIRST_NON_WHITESPACE) {
+  if (modeSwitch === VimModeSwitchNames.InsertFirstNonWhitespace) {
     return enterInsertAtFirstNonWhitespace(editor);
   }
-  if (modeSwitch === MODE_SWITCH_OPEN_LINE_ABOVE) {
+  if (modeSwitch === VimModeSwitchNames.OpenLineAbove) {
     return openLineAbove(editor);
   }
-  return modeSwitch === MODE_SWITCH_OPEN_LINE_BELOW ? openLineBelow(editor) : editor;
+  return modeSwitch === VimModeSwitchNames.OpenLineBelow ? openLineBelow(editor) : editor;
 }
 
 export function applyVimJoinCurrentLine(

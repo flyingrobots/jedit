@@ -122,9 +122,24 @@ export type VimModeSwitchName =
   | 'openLineBelow'
   | 'replace';
 
+export const VimModeSwitchNames = Object.freeze({
+  InsertAfter: 'insertAfter',
+  InsertBefore: 'insertBefore',
+  InsertFirstNonWhitespace: 'insertFirstNonWhitespace',
+  InsertLineEnd: 'insertLineEnd',
+  OpenLineAbove: 'openLineAbove',
+  OpenLineBelow: 'openLineBelow',
+  Replace: 'replace',
+} as const satisfies Record<string, VimModeSwitchName>);
+
 export type VimVisualModeName = 'block' | 'char' | 'line';
 export type VimMacroControlName = 'record' | 'replay' | 'replayLast';
 export type VimMarkActionName = 'jumpExact' | 'jumpLine' | 'set';
+export const VimMarkActionNames = Object.freeze({
+  JumpExact: 'jumpExact',
+  JumpLine: 'jumpLine',
+  Set: 'set',
+} as const satisfies Record<string, VimMarkActionName>);
 
 interface VimTokenBase {
   readonly at: number;
