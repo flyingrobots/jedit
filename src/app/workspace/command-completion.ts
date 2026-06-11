@@ -12,6 +12,11 @@ export interface WorkspaceCommandDescriptor {
   readonly aliases: readonly string[];
   readonly detail: string;
   readonly detailKey: string;
+  readonly requiresOpenFile?: boolean;
+}
+
+export interface WorkspaceCommandCompletionAvailability {
+  readonly hasOpenFile?: boolean;
 }
 
 export interface WorkspaceCommandLineCompletionContext {
@@ -21,6 +26,7 @@ export interface WorkspaceCommandLineCompletionContext {
   >;
   readonly entries: readonly FileEntry[];
   readonly i18n?: WorkspaceCommandCompletionI18n;
+  readonly hasOpenFile?: boolean;
 }
 
 export interface WorkspaceSelectedCommandLineCompletionContext {
@@ -30,6 +36,7 @@ export interface WorkspaceSelectedCommandLineCompletionContext {
   >;
   readonly entries: readonly FileEntry[];
   readonly i18n?: WorkspaceCommandCompletionI18n;
+  readonly hasOpenFile?: boolean;
 }
 
 interface CommandNameCompletionContext {
@@ -80,6 +87,7 @@ const WORKSPACE_COMMAND_DESCRIPTORS = [
     aliases: ["w"],
     detail: "Write the current file",
     detailKey: COMMAND_DETAIL_KEYS.Write,
+    requiresOpenFile: true,
   },
   {
     id: "command:quit",
@@ -94,6 +102,7 @@ const WORKSPACE_COMMAND_DESCRIPTORS = [
     aliases: ["x"],
     detail: "Write and quit",
     detailKey: COMMAND_DETAIL_KEYS.WriteQuit,
+    requiresOpenFile: true,
   },
 ] satisfies readonly WorkspaceCommandDescriptor[];
 
@@ -104,6 +113,7 @@ export function workspaceCommandDescriptors(): readonly WorkspaceCommandDescript
 export function workspaceCommandCompletionItems(
   commandLine: Pick<WorkspaceCommandLineState, "input" | "cursorIndex">,
   i18n?: WorkspaceCommandCompletionI18n,
+  availability?: WorkspaceCommandCompletionAvailability,
 ): readonly InlineCompletionItem[] {
   const context = commandNameCompletionContext(commandLine);
   if (context == null) {
@@ -111,7 +121,8 @@ export function workspaceCommandCompletionItems(
   }
 
   return WORKSPACE_COMMAND_DESCRIPTORS.filter((descriptor) =>
-    descriptorMatchesQuery(descriptor, context.query),
+    commandDescriptorAvailable(descriptor, availability) &&
+      descriptorMatchesQuery(descriptor, context.query),
   ).map((descriptor) => commandCompletionItem(descriptor, context, i18n));
 }
 
@@ -120,7 +131,7 @@ export function workspaceCommandLineCompletionItems(
 ): readonly InlineCompletionItem[] {
   const fileContext = editFileCompletionContext(context.commandLine);
   return fileContext == null
-    ? workspaceCommandCompletionItems(context.commandLine, context.i18n)
+    ? workspaceCommandCompletionItems(context.commandLine, context.i18n, context)
     : workspaceFileCompletionItems(context.entries, fileContext);
 }
 
@@ -128,9 +139,14 @@ export function selectedWorkspaceCommandCompletionItem(
   commandLine: Pick<
     WorkspaceCommandLineState,
     "input" | "cursorIndex" | "selectedCompletionIndex"
->,
+  >,
+  availability?: WorkspaceCommandCompletionAvailability,
 ): InlineCompletionItem | undefined {
-  const items = workspaceCommandCompletionItems(commandLine);
+  const items = workspaceCommandCompletionItems(
+    commandLine,
+    undefined,
+    availability,
+  );
   return items[selectedWorkspaceCommandCompletionIndex(commandLine, items.length)];
 }
 
@@ -229,6 +245,16 @@ function commandCompletionReplacementText(
   return descriptor.name === EDIT_COMMAND_NAME
     ? EDIT_COMMAND_COMPLETION_REPLACEMENT
     : descriptor.name;
+}
+
+function commandDescriptorAvailable(
+  descriptor: WorkspaceCommandDescriptor,
+  availability: WorkspaceCommandCompletionAvailability | undefined,
+): boolean {
+  return (
+    descriptor.requiresOpenFile !== true ||
+    availability?.hasOpenFile !== false
+  );
 }
 
 function descriptorMatchesQuery(

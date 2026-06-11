@@ -465,6 +465,54 @@ test("enter dispatches quit commands through the quit confirmation posture", asy
   }
 });
 
+test("enter dispatches forced quit commands without confirmation", async () => {
+  const [keyBindings, titleScreen, editorMode] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+  ]);
+  const inputs = ["q!", "quit!"];
+
+  for (const input of inputs) {
+    const [nextModel, commands] = keyBindings.updateFromKey(
+      { type: "key", key: "enter", ctrl: false, alt: false, shift: false },
+      mockTitleScreenModel(titleScreen, {
+        editor: mockEditor(editorMode, { dirty: true }),
+        focusPane: "editor",
+        commandLine: activeCommandLine(input),
+      }),
+      mockKeyBindingContext(),
+    );
+
+    assert.equal(nextModel.commandLine.active, false);
+    assert.equal(nextModel.quitConfirmOpen, false);
+    assert.equal(commands.length, 1);
+  }
+});
+
+test("forced quit commands are valid command-line input without visible completions", async () => {
+  const [completion, validation] = await Promise.all([
+    importDist("app", "workspace", "command-completion.js"),
+    importDist("app", "workspace", "command-line-validation.js"),
+  ]);
+
+  assert.equal(
+    validation.commandLineInputInvalid(activeCommandLine("q!")),
+    false,
+  );
+  assert.equal(
+    validation.commandLineInputInvalid(activeCommandLine("quit!")),
+    false,
+  );
+  assert.deepEqual(
+    completion.workspaceCommandCompletionItems({
+      input: "q!",
+      cursorIndex: 2,
+    }),
+    [],
+  );
+});
+
 test("colon does not enter command mode while higher-priority overlays own focus", async () => {
   const [keyBindings, titleScreen, editorMode] = await Promise.all([
     importDist("app", "workspace", "key-bindings.js"),

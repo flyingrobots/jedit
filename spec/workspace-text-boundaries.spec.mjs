@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createWorkspaceEchoAppHarness } from './workspace-echo-app-harness.mjs';
-import { importDist } from './workspace-helpers.mjs';
+import { importDist, mockEditor } from './workspace-helpers.mjs';
 
 test('reading cache materializes text and reports explicit postures', async () => {
   const [cacheModule, authorityModule, profile] = await Promise.all([
@@ -31,6 +31,64 @@ test('reading cache materializes text and reports explicit postures', async () =
   assert.equal(cacheModule.materializeWorkspaceTextReadingCache(cache), 'a\nb');
   assert.equal(authorityModule.workspaceTextAuthorityPosture(opened), cacheModule.WorkspaceTextReadingPostures.Clean);
   assert.equal(authorityModule.workspaceTextAuthorityPosture(dirty), cacheModule.WorkspaceTextReadingPostures.Dirty);
+});
+
+test('reading cache projection preserves Vim marks across production refresh', async () => {
+  const [cacheModule, mode, syntax, executor] = await Promise.all([
+    importDist('app', 'workspace', 'workspace-text-reading-cache.js'),
+    importDist('app', 'workspace', 'editor', 'mode.js'),
+    importDist('app', 'workspace', 'vim-chord-syntax.js'),
+    importDist('app', 'workspace', 'vim-command-executor.js'),
+  ]);
+  const cache = {
+    bufferId: 'buffer:notes',
+    readingId: 'reading:notes',
+    lines: ['one', '  two'],
+    lineCount: 2,
+    cursorLine: 0,
+    viewportLineCount: 24,
+    truncated: false,
+  };
+  const existing = mockEditor(mode, {
+    lines: cache.lines,
+    cursorRow: 1,
+    cursorCol: 4,
+    pendingVimKeys: ['d'],
+    marks: {
+      a: {
+        basisDigest: 'vim-basis:test',
+        column: 4,
+        row: 1,
+      },
+    },
+  });
+
+  const projected = cacheModule.editorFromWorkspaceTextReadingCache({
+    filePath: '/repo/notes.md',
+    readOnly: false,
+    dirty: false,
+    cache,
+    existing,
+  });
+  const exactJump = executor.applyVimChordSyntaxToEditor(
+    { ...projected, cursorRow: 0, cursorCol: 0 },
+    syntax.parseVimChordSyntax(['`', 'a']),
+  );
+  const lineJump = executor.applyVimChordSyntaxToEditor(
+    { ...projected, cursorRow: 0, cursorCol: 0 },
+    syntax.parseVimChordSyntax(["'", 'a']),
+  );
+
+  assert.deepEqual(projected.marks, existing.marks);
+  assert.equal(projected.pendingVimKeys, undefined);
+  assert.deepEqual(
+    { row: exactJump.cursorRow, column: exactJump.cursorCol },
+    { row: 1, column: 4 },
+  );
+  assert.deepEqual(
+    { row: lineJump.cursorRow, column: lineJump.cursorCol },
+    { row: 1, column: 2 },
+  );
 });
 
 test('text edit planner owns cursor selection and unsupported range posture', async () => {

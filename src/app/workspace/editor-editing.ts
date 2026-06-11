@@ -4,6 +4,9 @@ import { EditorModes, PendingNormals, PendingOperators as PENDING_OPERATOR, type
 import { EditorKeys as EDITOR_KEY, PastePlacements as PASTE_PLACEMENT } from './editor/key.js';
 import type { EditorState } from './editor/model.js';
 import * as editingHelpers from './editor-editing-helpers.js';
+import { parseVimChordSyntax, VimChordSyntaxKinds, type VimChordSyntax } from './vim-chord-syntax.js';
+import { applyVimChordSyntaxToEditor, repeatLastVimEdit } from './vim-command-executor.js';
+import { VimOperatorNames, VimRepeatKey } from './vim-grammar-vocabulary.js';
 
 const {
   applyPendingOperator,
@@ -51,6 +54,8 @@ const MODIFIER_INACTIVE = '0';
 const PREVIEW_MIN_SCROLL_ROW = 0;
 const PREVIEW_SCROLL_STEP = 1;
 const NORMAL_CURSOR_CLAMP_SENTINEL = Number.MAX_SAFE_INTEGER;
+const VIM_PENDING_KIND = VimChordSyntaxKinds['Pending'];
+const VIM_COMPLETE_KIND = VimChordSyntaxKinds['Complete'];
 
 interface EditorViewport {
   readonly width: number;
@@ -276,11 +281,16 @@ export function updateNormalMode(
   };
 
   if (msg.key === EDITOR_KEY.Escape) {
-    return ensureEditorVisible({ ...editor, pendingNormal: undefined }, viewport.width, viewport.height);
+    return ensureEditorVisible(clearNormalPending(editor), viewport.width, viewport.height);
   }
 
   if (editor.readOnly) {
     return ensureEditorVisible(editor, viewport.width, viewport.height);
+  }
+
+  const vimResult = updateVimNormalCommand(editor, msg, viewport);
+  if (vimResult != null) {
+    return vimResult;
   }
 
   const pendingResult = applyPendingNormal(editor, msg, viewport);
@@ -294,6 +304,75 @@ export function updateNormalMode(
   }
 
   return ensureEditorVisible(editor, viewport.width, viewport.height);
+}
+
+function updateVimNormalCommand(
+  editor: EditorState,
+  msg: KeyMsg,
+  viewport: EditorViewport,
+): EditorState | undefined {
+  if (editor.pendingVimKeys == null && editor.pendingNormal != null) {
+    return undefined;
+  }
+  const key = keyToText(msg);
+  if (key == null) {
+    return editor.pendingVimKeys == null
+      ? undefined
+      : ensureEditorVisible(clearNormalPending(editor), viewport.width, viewport.height);
+  }
+  if (key === VimRepeatKey && editor.pendingVimKeys == null) {
+    return ensureEditorVisible(repeatLastVimEdit(editor), viewport.width, viewport.height);
+  }
+  return applyVimSyntaxResult(editor, parseVimChordSyntax(nextVimKeys(editor, key)), viewport);
+}
+
+function applyVimSyntaxResult(
+  editor: EditorState,
+  syntax: VimChordSyntax,
+  viewport: EditorViewport,
+): EditorState | undefined {
+  if (syntax.kind === VIM_PENDING_KIND) {
+    return ensureEditorVisible(pendingVimEditor(editor, syntax), viewport.width, viewport.height);
+  }
+  if (syntax.kind === VIM_COMPLETE_KIND) {
+    return ensureEditorVisible(applyVimChordSyntaxToEditor(editor, syntax), viewport.width, viewport.height);
+  }
+  return editor.pendingVimKeys == null
+    ? undefined
+    : ensureEditorVisible(clearNormalPending(editor), viewport.width, viewport.height);
+}
+
+function pendingVimEditor(editor: EditorState, syntax: VimChordSyntax): EditorState {
+  return {
+    ...editor,
+    pendingVimKeys: syntax.keys,
+    pendingNormal: pendingNormalFromVimSyntax(syntax),
+  };
+}
+
+function pendingNormalFromVimSyntax(syntax: VimChordSyntax): PendingNormal | undefined {
+  if (syntax.operator === VimOperatorNames.Delete) {
+    return PendingNormals.Delete;
+  }
+  if (syntax.operator === VimOperatorNames.Change) {
+    return PendingNormals.Change;
+  }
+  if (syntax.operator === VimOperatorNames.Yank) {
+    return PendingNormals.Yank;
+  }
+  return syntax.keys.at(-1) === EDITOR_KEY.G ? PendingNormals.GoTo : undefined;
+}
+
+function nextVimKeys(editor: EditorState, key: string): readonly string[] {
+  return [...(editor.pendingVimKeys ?? []), key];
+}
+
+function clearNormalPending(editor: EditorState): EditorState {
+  return {
+    ...editor,
+    pendingNormal: undefined,
+    pendingVimKeys: undefined,
+  };
 }
 
 function applyPendingNormal(

@@ -1204,8 +1204,23 @@ Target usability witnesses:
 
 ## Retrospective
 
-Roadmap implementation is not complete. Slices 2, 3, 4, 5, and 6 now have
-inspectable planning, syntax, and state-machine artifacts.
+Roadmap implementation is not complete. The planning and grammar window now has
+inspectable artifacts for Slice 2 Parity Inventory Matrix, Slice 3 Target
+Usability Witness Fixtures, Slice 4 Transactional Register Doctrine And Token
+Model, Slice 5 Vim Grammar Parser, and Slice 6 Normal/Operator-Pending State
+Machine.
+
+This branch also closes the first runtime execution package across the later
+power-move slices:
+
+- Slices 7 and 8: reading-basis motion resolution plus core word, line, file,
+  and character motion parity.
+- Slices 10 and 11: word, paragraph, quote, and bracket text-object resolution.
+- Slices 13 and 14: operator-pending execution through the Vim chord syntax
+  boundary plus delete, change, yank, and put execution.
+- Slice 15: `gu`/`gU`/`g~` case transforms and `J`/`gJ` joins.
+- Slices 20 and 21: basic dot repeat plus transformed-repeat metadata.
+- Slice 24: local marks with exact and line jumps.
 
 What the tests proved:
 
@@ -1230,6 +1245,17 @@ What the tests proved:
   registers remain syntax-only until a command completes, invalid continuations
   reset without execution readiness, and command-line, modal, drawer, insert,
   and focus-transfer owners keep pending state inert.
+- `spec/vim-power-motion-text-object.spec.mjs`,
+  `spec/vim-power-operators-registers.spec.mjs`,
+  `spec/vim-power-normal-mode-integration.spec.mjs`, and
+  `spec/vim-power-transforms-marks.spec.mjs` prove the runtime execution
+  package: counted motion targets, delimiter text objects, operator-motion
+  deletes, text-object changes, named line registers, put without phantom blank
+  lines, pending Vim keys in Normal mode, dot repeat of the last edit,
+  transformed text-object repeat metadata, case-transform operators, joins, and
+  local marks with exact and line jumps.
+- `spec/workspace-command-line.spec.mjs` proves `:q!` and `:quit!` dispatch
+  forced quit commands without opening the dirty-file confirmation posture.
 
 What changed from the design:
 
@@ -1246,8 +1272,25 @@ What changed from the design:
 - The Slice 6 state machine lives in
   `src/app/workspace/vim-normal-state.ts`. It is intentionally pure and not yet
   wired into production text execution.
+- The first runtime execution package lives in
+  `src/app/workspace/vim-motion-resolver.ts`,
+  `src/app/workspace/vim-text-object-resolver.ts`, and
+  `src/app/workspace/vim-command-executor.ts`. `updateNormalMode` now tries the
+  Vim chord executor before falling back to legacy single-key commands.
+- The current runtime batch adds `src/app/workspace/vim-editor-operators.ts` for
+  reusable case-transform, join, and mark helpers. Repeat records
+  `sourceBasisDigest` and a `resolve-current-basis` replay policy so text-object
+  repeat is explicit instead of an unlabelled key replay.
 
 Follow-up work:
 
-- Slice 7 should resolve motions against a reading basis, using
-  `VimChordSyntax` and the Normal accumulator as the syntax boundary.
+- Search and structural motions remain future work.
+- Full structural text objects such as functions, classes, comments, tags, and
+  Graft-backed objects remain future work.
+- Register append, black-hole, system clipboard, numbered registers, and
+  expression register policy remain future work.
+- Dot repeat now resolves stored semantic keys against the current basis for
+  supported motions and text objects; stale-basis obstruction and richer
+  transformed insertion payloads remain future work.
+- Marks now support local set, exact jump, and line jump; anchor transformation
+  through later edit receipts remains future work.

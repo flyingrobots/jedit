@@ -143,6 +143,25 @@ Read-resolve-write commands such as `di"` are transaction-optic candidates:
 they must resolve and mutate on one basis, obstruct stale basis, or explicitly
 transform to a newer basis. Silent read-then-later-write is forbidden.
 
+The `vim/power-moves-execution` branch adds the first runtime execution package
+after the grammar/state-machine scaffolding: reading-basis motion resolution,
+core motion parity, text-object resolution, operator execution, delete, change,
+yank, put, named register storage, register provenance facts, Normal-mode
+pending Vim keys, and basic dot repeat. The proof surfaces are
+`spec/vim-power-motion-text-object.spec.mjs`,
+`spec/vim-power-operators-registers.spec.mjs`, and
+`spec/vim-power-normal-mode-integration.spec.mjs`; full search, structural
+motions, advanced registers, macros, marks, visual mode, substitute, and causal
+strand previews remain open.
+
+The `vim/power-moves-next-five` branch extends that runtime package with
+explicit transformed-repeat metadata through `sourceBasisDigest` and
+`resolve-current-basis` replay policy, `gu`/`gU`/`g~` case operators, `J` and
+`gJ` joins, local `m{mark}`/`` `{mark}``/`'{mark}` marks and jumps, and
+`:q!`/`:quit!` force-quit dispatch. Search history, structural motions, advanced
+registers, macros, visual mode, substitute, and causal strand previews remain
+open.
+
 ## Active Plan: Executable Design Cycle Template
 
 The current branch advances
