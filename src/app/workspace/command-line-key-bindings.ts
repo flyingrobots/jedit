@@ -24,6 +24,7 @@ import type { WorkspaceKeyBindingContext } from "./key-binding-context.js";
 import type { WorkspaceModel } from "./model.js";
 import type { WorkspaceMsg } from "./msg.js";
 import { WorkspaceKeys } from "./workspace-key.js";
+import { workspaceHasOpenFile } from "./workspace-model-query.js";
 
 type KeyBindingResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 
@@ -218,10 +219,6 @@ function updateCommandLineTextKey(
 
 function isCommandLineOpenKey(msg: KeyMsg): boolean {
   return !msg.ctrl && !msg.alt && msg.key === WorkspaceKeys.Colon;
-}
-
-function workspaceHasOpenFile(model: WorkspaceModel): boolean {
-  return model.editor != null;
 }
 
 function isCommandLineDispatchKey(msg: KeyMsg): boolean {

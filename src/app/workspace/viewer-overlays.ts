@@ -15,6 +15,7 @@ import type { WorkspaceModel } from './model.js';
 import { settingsRows } from './settings.js';
 import { startupFileModalRows } from './startup-file-modal.js';
 import { FOOTER_ROWS, MIN_COLUMNS, MIN_ROWS } from './viewport.js';
+import { workspaceHasOpenFile } from './workspace-model-query.js';
 
 const STARTUP_FILE_MODAL_I18N_KEYS = Object.freeze({
   Title: 'startupFileModal.title',
@@ -171,10 +172,6 @@ function shouldRenderCommandLineCompletionPopup(model: WorkspaceModel): boolean 
     model.columns >= MIN_COLUMNS &&
     model.rows >= MIN_ROWS
   );
-}
-
-function workspaceHasOpenFile(model: WorkspaceModel): boolean {
-  return model.editor != null;
 }
 
 function commandCompletionPopupWidth(columns: number): number {
