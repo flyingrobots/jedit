@@ -29,7 +29,7 @@ and open/edit/save usability witnesses.
 
 ## Table of Contents
 
-M. [Maintenance Posture](#maintenance-posture)
+- [Maintenance Posture](#maintenance-posture)
 0. [Domain Dictionary](#0-domain-dictionary)
 1. [What is jedit?](#1-what-is-jedit)
 2. [The Ecosystem — Bijou, Echo, Graft, Wesley](#2-the-ecosystem--bijou-echo-graft-wesley)
