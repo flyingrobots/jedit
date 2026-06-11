@@ -32,6 +32,7 @@ export function mockDeps(overrides = {}) {
       }),
       dirname: () => "",
       join: (...parts) => parts.join(path.sep),
+      resolve: (...parts) => path.resolve(...parts),
     },
     editorFile: {
       loadEditorFile: () => ({ lines: [], readOnly: false }),
