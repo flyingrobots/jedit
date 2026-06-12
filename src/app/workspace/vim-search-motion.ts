@@ -101,7 +101,7 @@ function searchDestination(
   const searchMatch = {
     direction,
     end: match.end,
-    matchId: searchMatchId(patternDigest, direction, match),
+    matchId: searchMatchId(patternDigest, match),
     matchOrdinal: match.matchOrdinal,
     patternDigest,
     patternKind: PATTERN_KIND_LITERAL,
@@ -172,8 +172,7 @@ function nextBackwardMatch(
 
 function searchMatchId(
   patternDigest: string,
-  direction: VimSearchDirection,
   match: LiteralSearchMatch,
 ): string {
-  return `${SEARCH_MATCH_ID_PREFIX}:${patternDigest}:${direction}:${match.start}:${match.end}:${match.matchOrdinal}`;
+  return `${SEARCH_MATCH_ID_PREFIX}:${patternDigest}:${match.start}:${match.end}:${match.matchOrdinal}`;
 }

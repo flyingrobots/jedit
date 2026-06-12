@@ -213,10 +213,11 @@ test("vim repeat-search motions expose match identity", async () => {
   assert.equal("obstruction" in countedNext, false);
   assert.equal("obstruction" in previous, false);
   assert.deepEqual(next.cursorAfter, { row: 0, column: 6 });
+  const expectedFirstMatchId = `vim-search-match:${patternDigest}:6:10:1`;
   assert.deepEqual(next.searchMatch, {
     direction: "forward",
     end: 10,
-    matchId: `vim-search-match:${patternDigest}:forward:6:10:1`,
+    matchId: expectedFirstMatchId,
     matchOrdinal: 1,
     patternDigest,
     patternKind: "literal",
@@ -228,6 +229,7 @@ test("vim repeat-search motions expose match identity", async () => {
   assert.equal(countedNext.searchMatch.matchOrdinal, 2);
   assert.deepEqual(previous.cursorAfter, { row: 0, column: 6 });
   assert.equal(previous.searchMatch.direction, "backward");
+  assert.equal(previous.searchMatch.matchId, expectedFirstMatchId);
 });
 
 test("vim section motions report honest unsupported posture", async () => {
