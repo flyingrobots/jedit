@@ -18,7 +18,7 @@ import { ensureEditorVisible, editorViewport } from "./editor-session.js";
 import { updateFromKey } from "./key-bindings.js";
 import { updateFromMouse } from "./mouse.js";
 import { createWorkspaceRenderer } from "./viewer.js";
-import { workspaceEditorFilePreviewSource } from "./command-completion-preview.js";
+import { applyWorkspaceCommandLineFilePreviewResult } from "./command-completion-preview.js";
 import {
   createInitialProfilerState,
   ProfilerMessageTypes,
@@ -54,11 +54,7 @@ const FRAME_TIME_HISTORY_SIZE = 50;
 export const createWorkspaceRuntime = (
   deps: WorkspaceRuntimeDependencies,
 ): WorkspaceRuntime => {
-  const renderWorkspace = createWorkspaceRenderer({
-    commandLineFilePreviewSource: workspaceEditorFilePreviewSource(
-      deps.editorFile,
-    ),
-  });
+  const renderWorkspace = createWorkspaceRenderer();
   return {
     init: () => {
       const wscStartupRecovery = recoverJeditWorkspaceFromWsc(
@@ -179,11 +175,9 @@ function updateWorkspaceStateMessage(
   if (msg.type === WorkspaceMessageTypes.GraftInfo) {
     return updateGraftInfoMessage(msg, model);
   }
-  if (msg.type === WorkspaceMessageTypes.LoadSceneResult) {
-    return [applySceneLoadResult(model, msg), []];
-  }
-  if (msg.type === SOURCE_HIGHLIGHT_MESSAGE) {
-    return [reduceSourceHighlightMsg(model, msg), []];
+  const generated = updateGeneratedStateMessage(msg, model);
+  if (generated != null) {
+    return generated;
   }
   const text = isWorkspaceMsg(msg)
     ? applyWorkspaceTextMessage(deps, msg, model)
@@ -199,6 +193,21 @@ function updateWorkspaceStateMessage(
         },
         [],
       ]
+    : undefined;
+}
+
+function updateGeneratedStateMessage(
+  msg: WorkspaceRuntimeMsg,
+  model: WorkspaceModel,
+): WorkspaceRuntimeResult | undefined {
+  if (msg.type === WorkspaceMessageTypes.LoadSceneResult) {
+    return [applySceneLoadResult(model, msg), []];
+  }
+  if (msg.type === SOURCE_HIGHLIGHT_MESSAGE) {
+    return [reduceSourceHighlightMsg(model, msg), []];
+  }
+  return msg.type === WorkspaceMessageTypes.CommandLineFilePreviewResult
+    ? [applyWorkspaceCommandLineFilePreviewResult(model, msg), []]
     : undefined;
 }
 

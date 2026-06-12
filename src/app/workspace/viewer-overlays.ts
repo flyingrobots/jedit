@@ -12,7 +12,6 @@ import {
 } from './command-completion.js';
 import {
   workspaceCommandLineCompletionPreview,
-  type WorkspaceFilePreviewSource,
 } from './command-completion-preview.js';
 import type { WorkspaceModel } from './model.js';
 import { settingsRows } from './settings.js';
@@ -32,19 +31,11 @@ const COMMAND_COMPLETION_CURSOR_PREFIX_WIDTH = 1;
 const COMMAND_COMPLETION_DEFAULT_ANCHOR_INDEX = 0;
 const COMMAND_COMPLETION_COMMAND_LINE_ROWS = 1;
 
-export interface WorkspaceOverlayOptions {
-  readonly commandLineFilePreviewSource?: WorkspaceFilePreviewSource;
-}
-
-const EMPTY_WORKSPACE_OVERLAY_OPTIONS: WorkspaceOverlayOptions =
-  Object.freeze({});
-
 export function paintWorkspaceOverlays(
   screen: Surface,
   model: WorkspaceModel,
   bodyTop: number,
   bodyHeight: number,
-  options: WorkspaceOverlayOptions = EMPTY_WORKSPACE_OVERLAY_OPTIONS,
 ): void {
   if (model.settingsOpen) {
     screen.blit(
@@ -75,7 +66,7 @@ export function paintWorkspaceOverlays(
   }
 
   paintStartupFileDrawer(screen, model, bodyTop, bodyHeight);
-  paintCommandLineCompletionPopup(screen, model, options);
+  paintCommandLineCompletionPopup(screen, model);
 }
 
 function paintStartupFileDrawer(
@@ -105,13 +96,12 @@ function paintStartupFileDrawer(
 function paintCommandLineCompletionPopup(
   screen: Surface,
   model: WorkspaceModel,
-  options: WorkspaceOverlayOptions,
 ): void {
   if (!shouldRenderCommandLineCompletionPopup(model)) {
     return;
   }
 
-  const popup = commandLineCompletionPopupContext(model, options);
+  const popup = commandLineCompletionPopupContext(model);
   if (popup == null) {
     return;
   }
@@ -138,10 +128,7 @@ function paintCommandLineCompletionPopup(
   );
 }
 
-function commandLineCompletionPopupContext(
-  model: WorkspaceModel,
-  options: WorkspaceOverlayOptions,
-) {
+function commandLineCompletionPopupContext(model: WorkspaceModel) {
   const items = workspaceCommandLineCompletionItems({
     commandLine: model.commandLine,
     entries: model.entries,
@@ -158,7 +145,7 @@ function commandLineCompletionPopupContext(
       commandLine: model.commandLine,
       entries: model.entries,
       hasOpenFile: workspaceHasOpenFile(model),
-      previewSource: options.commandLineFilePreviewSource,
+      filePreview: model.commandLineFilePreview,
     }),
     width: commandCompletionPopupWidth(model.columns),
     anchor: commandLineCompletionPopupAnchor(model),

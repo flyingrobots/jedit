@@ -22,11 +22,7 @@ import {
 import { renderDrawer } from './viewer-drawers.js';
 import { fillSurface } from './surface-fill.js';
 import { renderSmallTerminalNotice } from './small-terminal-view.js';
-import {
-  paintWorkspaceOverlays,
-  workspaceFeedbackOverlay,
-  type WorkspaceOverlayOptions,
-} from './viewer-overlays.js';
+import { paintWorkspaceOverlays, workspaceFeedbackOverlay } from './viewer-overlays.js';
 import { workspaceTextAuthorityPosture } from './workspace-text-authority.js';
 import type { JeditColorStop, JeditStyleToken } from '../../ui/jedit-theme.js';
 
@@ -39,30 +35,19 @@ const COMMAND_LINE_ERROR_FALLBACK_BACKGROUND_RGB: readonly [number, number, numb
 export { updateViewerFromKey } from './viewer-key.js';
 
 export type WorkspaceRenderer = (model: WorkspaceModel) => Surface;
-export type WorkspaceRendererOptions = WorkspaceOverlayOptions;
 
-const EMPTY_WORKSPACE_RENDERER_OPTIONS: WorkspaceRendererOptions =
-  Object.freeze({});
-
-export function createWorkspaceRenderer(
-  options: WorkspaceRendererOptions = EMPTY_WORKSPACE_RENDERER_OPTIONS,
-): WorkspaceRenderer {
+export function createWorkspaceRenderer(): WorkspaceRenderer {
   const viewerContent = createViewerContentRenderer();
-  return (model) => renderWorkspaceWithViewer(model, viewerContent, options);
+  return (model) => renderWorkspaceWithViewer(model, viewerContent);
 }
 
 export function renderWorkspace(model: WorkspaceModel): Surface {
-  return renderWorkspaceWithViewer(
-    model,
-    createViewerContentRenderer(),
-    EMPTY_WORKSPACE_RENDERER_OPTIONS,
-  );
+  return renderWorkspaceWithViewer(model, createViewerContentRenderer());
 }
 
 function renderWorkspaceWithViewer(
   model: WorkspaceModel,
   viewerContent: ViewerContentRenderer,
-  options: WorkspaceRendererOptions,
 ): Surface {
   const screen = createSurface(model.columns, model.rows);
   fillSurface(screen, model.jeditTheme.surface.workspace);
@@ -89,7 +74,7 @@ function renderWorkspaceWithViewer(
   paintWorkspaceDrawers(screen, model, layout, bodyTop, bodyHeight);
   paintWorkspaceFocusEdge(screen, model, layout, bodyTop, bodyHeight);
   paintWorkspaceFooter(screen, model);
-  paintWorkspaceOverlays(screen, model, bodyTop, bodyHeight, options);
+  paintWorkspaceOverlays(screen, model, bodyTop, bodyHeight);
 
   return renderFeedback(screen, model);
 }
