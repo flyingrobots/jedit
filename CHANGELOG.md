@@ -7,6 +7,8 @@
   separate fact.
 - Added `VimSearchDirections` as the runtime truth for Vim repeat-search
   direction values used by editor state and search motion resolution.
+- Added runtime paragraph-motion tokens and rejection for invalid paragraph
+  motion names instead of silently treating them as backward paragraph motions.
 - Added the next Jim/Vim power-move runtime batch: transformed dot-repeat
   metadata, `gu`/`gU`/`g~` case operators, `J`/`gJ` line joins, local marks
   with exact and line jumps, and `:q!`/`:quit!` forced quit commands.

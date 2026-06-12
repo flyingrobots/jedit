@@ -1,10 +1,25 @@
 import { lineStartTextIndex } from './editor-editing-core.js';
 import type { VimMotionName } from './vim-grammar-vocabulary.js';
 
+export const VimParagraphMotionNames = Object.freeze({
+  Backward: 'paragraphBackward',
+  Forward: 'paragraphForward',
+} as const);
+export type VimParagraphMotionName =
+  typeof VimParagraphMotionNames[keyof typeof VimParagraphMotionNames];
+
+export class InvalidVimParagraphMotionError extends Error {
+  constructor(motion: VimMotionName) {
+    super(`Unsupported Vim paragraph motion: ${motion}.`);
+    this.name = 'InvalidVimParagraphMotionError';
+  }
+}
+
 const EMPTY_LENGTH = 0;
 const FIRST_INDEX = 0;
 const ROW_STEP = 1;
-const MOTION_PARAGRAPH_FORWARD: VimMotionName = 'paragraphForward';
+const MOTION_PARAGRAPH_BACKWARD = VimParagraphMotionNames.Backward;
+const MOTION_PARAGRAPH_FORWARD = VimParagraphMotionNames.Forward;
 
 export function vimParagraphMotionDestination(
   lines: readonly string[],
@@ -13,9 +28,10 @@ export function vimParagraphMotionDestination(
   motion: VimMotionName,
   count: number,
 ): number {
+  const paragraphMotion = vimParagraphMotionName(motion);
   return lineStartTextIndex(
     lines,
-    paragraphDestinationRow(lines, startRow, startColumn, motion, count),
+    paragraphDestinationRow(lines, startRow, startColumn, paragraphMotion, count),
   );
 }
 
@@ -23,18 +39,27 @@ function paragraphDestinationRow(
   lines: readonly string[],
   startRow: number,
   startColumn: number,
-  motion: VimMotionName,
+  motion: VimParagraphMotionName,
   count: number,
 ): number {
   let row = boundedRow(lines, startRow);
   let column = startColumn;
   for (let step = FIRST_INDEX; step < count; step += ROW_STEP) {
-    row = motion === MOTION_PARAGRAPH_FORWARD
-      ? nextParagraphStartRow(lines, row)
-      : previousParagraphStartRow(lines, row, column);
+    if (motion === MOTION_PARAGRAPH_FORWARD) {
+      row = nextParagraphStartRow(lines, row);
+    } else {
+      row = previousParagraphStartRow(lines, row, column);
+    }
     column = FIRST_INDEX;
   }
   return row;
+}
+
+function vimParagraphMotionName(motion: VimMotionName): VimParagraphMotionName {
+  if (motion === MOTION_PARAGRAPH_FORWARD || motion === MOTION_PARAGRAPH_BACKWARD) {
+    return motion;
+  }
+  throw new InvalidVimParagraphMotionError(motion);
 }
 
 function nextParagraphStartRow(lines: readonly string[], row: number): number {

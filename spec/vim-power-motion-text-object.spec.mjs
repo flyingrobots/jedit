@@ -134,6 +134,21 @@ test("vim paragraph motions preserve EOF and current-paragraph backward boundari
   assert.deepEqual(currentBackward.target, { start: 7, end: 9 });
 });
 
+test("vim paragraph motion rejects non-paragraph motion names", async () => {
+  const paragraph = await importDist("app", "workspace", "vim-paragraph-motion.js");
+
+  assert.throws(
+    () => paragraph.vimParagraphMotionDestination(
+      ["alpha", "", "beta"],
+      2,
+      0,
+      "wordForward",
+      1,
+    ),
+    paragraph.InvalidVimParagraphMotionError,
+  );
+});
+
 test("vim matching-pair motion exposes structural pair identity", async () => {
   const [mode, motion] = await Promise.all([
     importDist("app", "workspace", "editor", "mode.js"),
