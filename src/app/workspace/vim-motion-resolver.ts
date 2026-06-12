@@ -6,17 +6,19 @@ import {
 import { vimMotionBasisDigest } from './vim-motion-basis-digest.js';
 import { vimParagraphMotionDestination } from './vim-paragraph-motion.js';
 import {
+  vimSearchMotionDestination,
+  type VimSearchMatchMotion,
+} from './vim-search-motion.js';
+import {
   clampNormalCol,
   editorText,
   insertPositionAtIndex,
   leadingWhitespace,
   lineStartTextIndex,
-  nextWordStartIndex,
   normalTextIndex,
-  previousWordStartIndex,
-  wordEndIndex,
 } from './editor-editing-core.js';
 import type { EditorState } from './editor/model.js';
+import { vimWordMotionDestination } from './vim-word-motion.js';
 
 export type VimResolvedTargetShape = 'charwise' | 'linewise';
 export const VimResolvedTargetShapes = Object.freeze({
@@ -43,6 +45,7 @@ export interface VimResolvedMotion {
   readonly cursorAfter: VimTextCursor;
   readonly cursorBefore: VimTextCursor;
   readonly motion: VimMotionName;
+  readonly searchMatch?: VimSearchMatchMotion;
   readonly structuralPair?: VimStructuralPairMotion;
   readonly target: VimTextRange;
   readonly targetShape: VimResolvedTargetShape;
@@ -77,14 +80,12 @@ const MOTION_LINE_END: VimMotionName = 'lineEnd';
 const MOTION_LINE_START: VimMotionName = 'lineStart';
 const MOTION_LINE_UP: VimMotionName = 'lineUp';
 const MOTION_MATCHING_PAIR: VimMotionName = 'matchingPair';
+const MOTION_NEXT_SEARCH: VimMotionName = 'nextSearch';
 const MOTION_PARAGRAPH_BACKWARD: VimMotionName = 'paragraphBackward';
 const MOTION_PARAGRAPH_FORWARD: VimMotionName = 'paragraphForward';
-const MOTION_WORD_BACKWARD: VimMotionName = 'wordBackward';
+const MOTION_PREVIOUS_SEARCH: VimMotionName = 'previousSearch';
 const MOTION_WORD_END: VimMotionName = 'wordEnd';
-const MOTION_WORD_FORWARD: VimMotionName = 'wordForward';
-const MOTION_WORD_BIG_BACKWARD: VimMotionName = 'WORDBackward';
 const MOTION_WORD_BIG_END: VimMotionName = 'WORDEnd';
-const MOTION_WORD_BIG_FORWARD: VimMotionName = 'WORDForward';
 const TARGET_SHAPE_CHARWISE = VimResolvedTargetShapes.Charwise;
 const TARGET_SHAPE_LINEWISE = VimResolvedTargetShapes.Linewise;
 
@@ -98,7 +99,9 @@ export function resolveVimMotion(request: VimMotionRequest): VimMotionResolution
   const count = normalizedMotionCount(request.count);
   const cursorBefore = editorCursor(editor);
   const structural = structuralPairDestination(editor, request.motion);
+  const search = searchMotionDestination(editor, request.motion, count);
   const afterIndex = structural?.destination ??
+    search?.destination ??
     motionDestinationIndex(editor, request.motion, count);
   if (afterIndex == null) {
     return obstructedMotion(request.motion, basisDigest, 'unsupported-motion');
@@ -111,6 +114,7 @@ export function resolveVimMotion(request: VimMotionRequest): VimMotionResolution
     cursorAfter: cursorAtTextIndex(editor.lines, afterIndex),
     cursorBefore,
     motion: request.motion,
+    ...(search == null ? {} : { searchMatch: search.searchMatch }),
     ...(structural == null ? {} : { structuralPair: structural.structuralPair }),
     target,
     targetShape: targetShape(request.motion),
@@ -213,7 +217,7 @@ function boundaryOrWordDestination(
       count,
     );
   }
-  return wordMotionDestination(editor, motion, count, text);
+  return vimWordMotionDestination(text, normalTextIndex(editor), motion, count);
 }
 
 function structuralPairDestination(
@@ -225,55 +229,14 @@ function structuralPairDestination(
     : undefined;
 }
 
-function wordMotionDestination(
+function searchMotionDestination(
   editor: EditorState,
   motion: VimMotionName,
   count: number,
-  text: string,
-): number | undefined {
-  let index = normalTextIndex(editor);
-  for (let step = FIRST_INDEX; step < count; step += 1) {
-    const next = nextWordMotionIndex(text, index, motion);
-    if (next == null) {
-      return undefined;
-    }
-    index = next;
-  }
-  return index;
-}
-
-function nextWordMotionIndex(
-  text: string,
-  index: number,
-  motion: VimMotionName,
-): number | undefined {
-  if (motion === MOTION_WORD_FORWARD) {
-    return nextWordStartIndex(text, index, true);
-  }
-  if (motion === MOTION_WORD_BACKWARD) {
-    return previousWordStartIndex(text, index);
-  }
-  if (motion === MOTION_WORD_END) {
-    return wordEndIndex(text, index);
-  }
-  return nextBigWordMotionIndex(text, index, motion);
-}
-
-function nextBigWordMotionIndex(
-  text: string,
-  index: number,
-  motion: VimMotionName,
-): number | undefined {
-  if (motion === MOTION_WORD_BIG_FORWARD) {
-    return nextBigWordStartIndex(text, index);
-  }
-  if (motion === MOTION_WORD_BIG_BACKWARD) {
-    return previousBigWordStartIndex(text, index);
-  }
-  if (motion === MOTION_WORD_BIG_END) {
-    return bigWordEndIndex(text, index);
-  }
-  return undefined;
+) {
+  return motion === MOTION_NEXT_SEARCH || motion === MOTION_PREVIOUS_SEARCH
+    ? vimSearchMotionDestination(editorText(editor), normalTextIndex(editor), motion, count, editor.lastSearch)
+    : undefined;
 }
 
 function lineMotionDestination(
@@ -394,84 +357,6 @@ function fileBottomRow(editor: EditorState, count: number): number {
 
 function boundedRow(lines: readonly string[], row: number): number {
   return Math.max(FIRST_INDEX, Math.min(row, Math.max(FIRST_INDEX, lines.length - LINE_BREAK_LENGTH)));
-}
-
-function nextBigWordStartIndex(text: string, index: number): number {
-  if (text.length === EMPTY_LENGTH) {
-    return FIRST_INDEX;
-  }
-
-  let cursor = boundedTextIndex(text, index);
-  cursor = isWhitespaceTextChar(text[cursor])
-    ? skipWhitespaceForward(text, cursor)
-    : skipWhitespaceForward(text, skipNonWhitespaceForward(text, cursor));
-  return boundedTextIndex(text, cursor);
-}
-
-function previousBigWordStartIndex(text: string, index: number): number {
-  if (text.length === EMPTY_LENGTH) {
-    return FIRST_INDEX;
-  }
-
-  let cursor = boundedTextIndex(text, index);
-  if (cursor === FIRST_INDEX) {
-    return FIRST_INDEX;
-  }
-
-  cursor -= LINE_BREAK_LENGTH;
-  while (cursor > FIRST_INDEX && isWhitespaceTextChar(text[cursor])) {
-    cursor -= LINE_BREAK_LENGTH;
-  }
-  while (cursor > FIRST_INDEX && !isWhitespaceTextChar(text[cursor - LINE_BREAK_LENGTH])) {
-    cursor -= LINE_BREAK_LENGTH;
-  }
-  return cursor;
-}
-
-function bigWordEndIndex(text: string, index: number): number {
-  if (text.length === EMPTY_LENGTH) {
-    return FIRST_INDEX;
-  }
-
-  let cursor = boundedTextIndex(text, index);
-  while (cursor < text.length && isWhitespaceTextChar(text[cursor])) {
-    cursor += LINE_BREAK_LENGTH;
-  }
-  if (cursor >= text.length) {
-    return text.length - LINE_BREAK_LENGTH;
-  }
-
-  while (
-    cursor < text.length - LINE_BREAK_LENGTH &&
-    !isWhitespaceTextChar(text[cursor + LINE_BREAK_LENGTH])
-  ) {
-    cursor += LINE_BREAK_LENGTH;
-  }
-  return cursor;
-}
-
-function skipWhitespaceForward(text: string, start: number): number {
-  let cursor = start;
-  while (cursor < text.length && isWhitespaceTextChar(text[cursor])) {
-    cursor += LINE_BREAK_LENGTH;
-  }
-  return cursor;
-}
-
-function skipNonWhitespaceForward(text: string, start: number): number {
-  let cursor = start;
-  while (cursor < text.length && !isWhitespaceTextChar(text[cursor])) {
-    cursor += LINE_BREAK_LENGTH;
-  }
-  return cursor;
-}
-
-function boundedTextIndex(text: string, index: number): number {
-  return Math.max(FIRST_INDEX, Math.min(index, text.length - LINE_BREAK_LENGTH));
-}
-
-function isWhitespaceTextChar(char: string | undefined): boolean {
-  return char == null || /\s/.test(char);
 }
 
 function editorCursor(editor: EditorState): VimTextCursor {

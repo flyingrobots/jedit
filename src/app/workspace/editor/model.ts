@@ -29,6 +29,12 @@ export interface VimMarkState {
   readonly column: number;
   readonly row: number;
 }
+export type VimSearchDirection = 'backward' | 'forward';
+export interface VimSearchState {
+  readonly direction: VimSearchDirection;
+  readonly pattern: string;
+  readonly searchId?: string;
+}
 export interface HistoryEntry {
   readonly lines: readonly string[];
   readonly cursorRow: number;
@@ -53,6 +59,7 @@ export interface EditorState {
   readonly registers?: Readonly<Record<string, RegisterState>>;
   readonly lastVimEdit?: VimRepeatState;
   readonly marks?: Readonly<Record<string, VimMarkState>>;
+  readonly lastSearch?: VimSearchState;
   readonly undoStack: readonly HistoryEntry[];
   readonly redoStack: readonly HistoryEntry[];
 }

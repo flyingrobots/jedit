@@ -134,6 +134,70 @@ test("vim matching-pair motion exposes structural pair identity", async () => {
   assert.match(resolved.basisDigest, /^vim-basis:/);
 });
 
+test("vim repeat-search motions expose match identity", async () => {
+  const [mode, motion] = await Promise.all([
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "vim-motion-resolver.js"),
+  ]);
+  const lines = ["alpha beta", "gamma beta", "beta"];
+  const pattern = "beta";
+  const patternDigest = motion.vimMotionBasisDigest([pattern]);
+  const editor = mockEditor(mode, {
+    lines,
+    cursorRow: 0,
+    cursorCol: 0,
+    lastSearch: {
+      direction: "forward",
+      pattern,
+      searchId: "search-1",
+    },
+  });
+  const middleEditor = mockEditor(mode, {
+    lines,
+    cursorRow: 1,
+    cursorCol: 6,
+    lastSearch: {
+      direction: "forward",
+      pattern,
+      searchId: "search-1",
+    },
+  });
+
+  const next = motion.resolveVimMotion({
+    editor,
+    motion: "nextSearch",
+  });
+  const countedNext = motion.resolveVimMotion({
+    editor,
+    motion: "nextSearch",
+    count: 2,
+  });
+  const previous = motion.resolveVimMotion({
+    editor: middleEditor,
+    motion: "previousSearch",
+  });
+
+  assert.equal("obstruction" in next, false);
+  assert.equal("obstruction" in countedNext, false);
+  assert.equal("obstruction" in previous, false);
+  assert.deepEqual(next.cursorAfter, { row: 0, column: 6 });
+  assert.deepEqual(next.searchMatch, {
+    direction: "forward",
+    end: 10,
+    matchId: `vim-search-match:${patternDigest}:forward:6:10:1`,
+    matchOrdinal: 1,
+    patternDigest,
+    patternKind: "literal",
+    policy: "literal-wrap-v1",
+    searchId: "search-1",
+    start: 6,
+  });
+  assert.deepEqual(countedNext.cursorAfter, { row: 1, column: 6 });
+  assert.equal(countedNext.searchMatch.matchOrdinal, 2);
+  assert.deepEqual(previous.cursorAfter, { row: 0, column: 6 });
+  assert.equal(previous.searchMatch.direction, "backward");
+});
+
 test("vim text object resolver targets words and delimiter interiors", async () => {
   const [mode, textObjects] = await Promise.all([
     importDist("app", "workspace", "editor", "mode.js"),

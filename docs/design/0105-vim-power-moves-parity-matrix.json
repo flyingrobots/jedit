@@ -74,13 +74,16 @@
         {
           "id": "motion.search",
           "keys": ["/", "?", "n", "N"],
-          "status": "unsupported",
+          "status": "partial",
           "targetSlices": [9, 26],
           "targetParity": "Move by forward/backward search and repeat search direction.",
-          "currentJedit": "Search motion parity is not complete.",
-          "currentProof": [],
-          "proofGap": "Needs search history, match identity, basis facts, and UI command integration.",
-          "causalOpportunity": "Search results can become stable match ids for later range commands.",
+          "currentJedit": "`n` and `N` can resolve a stored literal last-search state with match identity; `/` and `?` command entry are not complete.",
+          "currentProof": [
+            "spec/vim-power-motion-text-object.spec.mjs",
+            "spec/vim-power-operators-registers.spec.mjs"
+          ],
+          "proofGap": "Needs `/` and `?` UI command integration, regex policy, search history mutation, and rendered match feedback.",
+          "causalOpportunity": "Search results carry stable match ids, pattern digest, ordinal, direction, and basis facts for later range commands.",
           "echoBoundary": "Echo does not parse patterns; jedit submits only chosen edit intents."
         },
         {

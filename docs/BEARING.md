@@ -86,7 +86,8 @@ Lane checklist:
 
 - [x] Paragraph motions resolve blank-line basis boundaries.
 - [x] `%` resolves balanced bracket pairs with structural pair identity.
-- [ ] `/`, `?`, `n`, and `N` expose search match identity.
+- [x] `n` and `N` resolve stored literal search match identity.
+- [ ] `/` and `?` populate search history from UI input.
 - [ ] `[[` and `]]` expose honest section-motion posture.
 
 After that lane, continue WF-0105 through:

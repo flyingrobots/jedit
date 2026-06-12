@@ -514,7 +514,7 @@ Examples:
 | `0` `^` `$` | line boundary moves | preserves byte/grapheme distinction |
 | `gg` `G` | file boundary moves | uses bounded/full reading posture |
 | `%` | matching delimiter | text fallback records pair identity; parser/Graft provider can extend it |
-| `/` `?` | search motion | search result carries basis and match id |
+| `/` `?` | search motion | repeat search carries basis and match id; UI entry remains separate |
 | `}` `{` | paragraph motion | resolver owns blank-line policy |
 | `]]` `[[` | section motion | Graft-backed when structural data exists |
 
@@ -1287,11 +1287,15 @@ What changed from the design:
   `src/app/workspace/vim-motion-basis-digest.ts`; paragraph and `%` motions now
   expose basis-bound runtime proof, with `%` carrying pair id, direction, and
   bracket policy.
+- The same lane adds `src/app/workspace/vim-search-motion.ts`, plus
+  `src/app/workspace/vim-word-motion.ts` as a ratchet-preserving extraction.
+  Stored literal `n` and `N` search repeat now carries match id, pattern digest,
+  ordinal, direction, and wrap policy.
 
 Follow-up work:
 
-- Search match identity, section motions, tag pairs, comment pairs, and richer
-  structural providers remain future work.
+- `/` and `?` UI search entry, regex search policy, section motions, tag pairs,
+  comment pairs, and richer structural providers remain future work.
 - Full structural text objects such as functions, classes, comments, tags, and
   Graft-backed objects remain future work.
 - Register append, black-hole, system clipboard, numbered registers, and

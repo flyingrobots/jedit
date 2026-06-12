@@ -176,6 +176,36 @@ test("vim matching-pair operator motions delete the inclusive structural pair", 
   assert.deepEqual(nextEditor.lastVimEdit.keys, ["d", "%"]);
 });
 
+test("vim repeat-search operator motions delete up to the matched range", async () => {
+  const [mode, syntax, executor, model] = await Promise.all([
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "vim-chord-syntax.js"),
+    importDist("app", "workspace", "vim-command-executor.js"),
+    importDist("app", "workspace", "editor", "model.js"),
+  ]);
+  const editor = mockEditor(mode, {
+    lines: ["alpha beta gamma"],
+    cursorRow: 0,
+    cursorCol: 0,
+    lastSearch: {
+      direction: "forward",
+      pattern: "beta",
+      searchId: "search-1",
+    },
+  });
+
+  const nextEditor = executor.applyVimChordSyntaxToEditor(
+    editor,
+    syntax.parseVimChordSyntax(["d", "n"]),
+  );
+
+  assert.deepEqual(nextEditor.lines, ["beta gamma"]);
+  assert.equal(nextEditor.register.kind, model.RegisterKinds.Char);
+  assert.equal(nextEditor.register.text, "alpha ");
+  assert.equal(nextEditor.register.source.operation, "delete");
+  assert.deepEqual(nextEditor.lastVimEdit.keys, ["d", "n"]);
+});
+
 test("vim uppercase WORD motions treat punctuation as part of a WORD", async () => {
   const [mode, syntax, executor] = await Promise.all([
     importDist("app", "workspace", "editor", "mode.js"),
