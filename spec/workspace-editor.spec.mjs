@@ -106,5 +106,7 @@ test('editor mode exposes runtime mode, key, register, and operator tokens', asy
   assert.equal(mode.PendingOperators.Yank, 'yank');
   assert.equal(model.RegisterKinds.Char, 'char');
   assert.equal(model.RegisterKinds.Line, 'line');
+  assert.equal(model.VimSearchDirections.Backward, 'backward');
+  assert.equal(model.VimSearchDirections.Forward, 'forward');
   assert.equal(editorKeys.EditorKeys.PageDown, 'pagedown');
 });

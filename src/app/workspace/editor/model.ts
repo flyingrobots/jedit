@@ -29,7 +29,11 @@ export interface VimMarkState {
   readonly column: number;
   readonly row: number;
 }
-export type VimSearchDirection = 'backward' | 'forward';
+export const VimSearchDirections = Object.freeze({
+  Backward: 'backward',
+  Forward: 'forward',
+} as const);
+export type VimSearchDirection = typeof VimSearchDirections[keyof typeof VimSearchDirections];
 export interface VimSearchState {
   readonly direction: VimSearchDirection;
   readonly pattern: string;

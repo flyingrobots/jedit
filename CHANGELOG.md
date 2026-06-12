@@ -5,6 +5,8 @@
 - Stabilized Vim repeat-search match identity so `n` and `N` preserve the same
   `matchId` for the same physical match while exposing traversal direction as a
   separate fact.
+- Added `VimSearchDirections` as the runtime truth for Vim repeat-search
+  direction values used by editor state and search motion resolution.
 - Added the next Jim/Vim power-move runtime batch: transformed dot-repeat
   metadata, `gu`/`gU`/`g~` case operators, `J`/`gJ` line joins, local marks
   with exact and line jumps, and `:q!`/`:quit!` forced quit commands.

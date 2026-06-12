@@ -1,4 +1,4 @@
-import type { VimSearchDirection, VimSearchState } from './editor/model.js';
+import { VimSearchDirections, type VimSearchDirection, type VimSearchState } from './editor/model.js';
 import type { VimMotionName } from './vim-grammar-vocabulary.js';
 import { vimMotionBasisDigest } from './vim-motion-basis-digest.js';
 
@@ -33,8 +33,8 @@ const EMPTY_LENGTH = 0;
 const FIRST_INDEX = 0;
 const MISSING_INDEX = -1;
 const NEXT_INDEX = 1;
-const DIRECTION_BACKWARD: VimSearchDirection = 'backward';
-const DIRECTION_FORWARD: VimSearchDirection = 'forward';
+const DIRECTION_BACKWARD = VimSearchDirections.Backward;
+const DIRECTION_FORWARD = VimSearchDirections.Forward;
 const MOTION_NEXT_SEARCH: VimMotionName = 'nextSearch';
 const MOTION_PREVIOUS_SEARCH: VimMotionName = 'previousSearch';
 const PATTERN_KIND_LITERAL: VimSearchPatternKind = 'literal';
