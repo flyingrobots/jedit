@@ -77,6 +77,7 @@ export function createInitialModel(
     jeditTheme,
     ...initialGraftState(),
     ...initialSourceHighlightState(),
+    ...initialCommandLineFilePreviewState(),
     titleSceneSeed,
     titleMeshes,
     columns,
@@ -126,6 +127,14 @@ function initialSourceHighlightState() {
     sourceHighlight: undefined,
     sourceHighlightLoading: false,
     sourceHighlightRequestId: 0,
+  };
+}
+
+function initialCommandLineFilePreviewState() {
+  return {
+    commandLineFilePreview: undefined,
+    commandLineFilePreviewRequestId: 0,
+    commandLineFilePreviewRequest: undefined,
   };
 }
 

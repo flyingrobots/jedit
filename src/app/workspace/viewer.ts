@@ -45,7 +45,10 @@ export function renderWorkspace(model: WorkspaceModel): Surface {
   return renderWorkspaceWithViewer(model, createViewerContentRenderer());
 }
 
-function renderWorkspaceWithViewer(model: WorkspaceModel, viewerContent: ViewerContentRenderer): Surface {
+function renderWorkspaceWithViewer(
+  model: WorkspaceModel,
+  viewerContent: ViewerContentRenderer,
+): Surface {
   const screen = createSurface(model.columns, model.rows);
   fillSurface(screen, model.jeditTheme.surface.workspace);
 

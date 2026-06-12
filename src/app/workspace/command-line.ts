@@ -42,6 +42,8 @@ export function openWorkspaceCommandLine(
 ): WorkspaceModel {
   return {
     ...model,
+    commandLineFilePreview: undefined,
+    commandLineFilePreviewRequest: undefined,
     commandLine: {
       ...inactiveWorkspaceCommandLineState(),
       active: true,
@@ -55,6 +57,8 @@ export function closeWorkspaceCommandLine(
 ): WorkspaceModel {
   return {
     ...model,
+    commandLineFilePreview: undefined,
+    commandLineFilePreviewRequest: undefined,
     commandLine: inactiveWorkspaceCommandLineState(),
   };
 }
@@ -201,6 +205,8 @@ function updateWorkspaceCommandLineInput(
 ): WorkspaceModel {
   return {
     ...model,
+    commandLineFilePreview: undefined,
+    commandLineFilePreviewRequest: undefined,
     commandLine: {
       active: true,
       input,

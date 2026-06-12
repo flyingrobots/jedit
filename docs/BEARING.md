@@ -66,8 +66,8 @@ Active checklist:
 - [x] Merge title-scene ray acceleration.
 - [x] Update the signpost PR with current roadmap truth.
 - [x] Land the signpost truth pass.
-- [ ] Remove the merged outside-CWD worktree and scratch bug note.
-- [ ] Triage issue #123.
+- [x] Remove the merged outside-CWD worktree and scratch bug note.
+- [x] Triage issue #123.
 - [ ] Start WF-0105 search and structural motion parity.
 
 The next implementation lane is **search and structural motion parity**:

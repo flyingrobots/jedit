@@ -10,7 +10,9 @@ import { renderStartupFileDrawer } from '../../ui/startup-file-modal.js';
 import {
   workspaceCommandLineCompletionItems,
 } from './command-completion.js';
-import { workspaceCommandLineCompletionPreview } from './command-completion-preview.js';
+import {
+  workspaceCommandLineCompletionPreview,
+} from './command-completion-preview.js';
 import type { WorkspaceModel } from './model.js';
 import { settingsRows } from './settings.js';
 import { startupFileModalRows } from './startup-file-modal.js';
@@ -143,6 +145,7 @@ function commandLineCompletionPopupContext(model: WorkspaceModel) {
       commandLine: model.commandLine,
       entries: model.entries,
       hasOpenFile: workspaceHasOpenFile(model),
+      filePreview: model.commandLineFilePreview,
     }),
     width: commandCompletionPopupWidth(model.columns),
     anchor: commandLineCompletionPopupAnchor(model),

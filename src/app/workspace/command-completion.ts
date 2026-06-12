@@ -39,6 +39,11 @@ export interface WorkspaceSelectedCommandLineCompletionContext {
   readonly hasOpenFile?: boolean;
 }
 
+export interface WorkspaceSelectedCommandLineFileCompletion {
+  readonly item: InlineCompletionItem;
+  readonly entry: FileEntry;
+}
+
 interface CommandNameCompletionContext {
   readonly query: string;
   readonly replacementStart: number;
@@ -162,6 +167,28 @@ export function selectedWorkspaceCommandLineCompletionItem(
   ];
 }
 
+export function selectedWorkspaceCommandLineFileCompletion(
+  context: WorkspaceSelectedCommandLineCompletionContext,
+): WorkspaceSelectedCommandLineFileCompletion | undefined {
+  const fileContext = editFileCompletionContext(context.commandLine);
+  if (fileContext == null) {
+    return undefined;
+  }
+  const entries = workspaceFileCompletionEntries(context.entries, fileContext);
+  const entry = entries[
+    selectedWorkspaceCommandCompletionIndex(
+      context.commandLine,
+      entries.length,
+    )
+  ];
+  return entry == null
+    ? undefined
+    : {
+        item: fileCompletionItem(entry, fileContext),
+        entry,
+      };
+}
+
 export function selectedWorkspaceCommandCompletionIndex(
   commandLine: Pick<WorkspaceCommandLineState, "selectedCompletionIndex">,
   completionCount: number,
@@ -198,9 +225,15 @@ function workspaceFileCompletionItems(
   entries: readonly FileEntry[],
   context: EditFileCompletionContext,
 ): readonly InlineCompletionItem[] {
-  return entries
-    .filter((entry) => fileEntryMatchesQuery(entry, context.query))
+  return workspaceFileCompletionEntries(entries, context)
     .map((entry) => fileCompletionItem(entry, context));
+}
+
+function workspaceFileCompletionEntries(
+  entries: readonly FileEntry[],
+  context: EditFileCompletionContext,
+): readonly FileEntry[] {
+  return entries.filter((entry) => fileEntryMatchesQuery(entry, context.query));
 }
 
 function fileCompletionItem(

@@ -26,8 +26,13 @@ import type { WorkspaceTextAuthority } from "./workspace-text-authority.js";
 import type { EchoHistoryEntry } from "./echo-history.js";
 import type { StartupFileModalState } from "./startup-file-modal.js";
 import type { WorkspaceCommandLineState } from "./command-line.js";
+import type {
+  WorkspaceCommandLineFilePreviewState,
+} from "./command-completion-preview.js";
 
-export interface WorkspaceModel extends StartupFileModalState {
+export interface WorkspaceModel
+  extends StartupFileModalState,
+    WorkspaceCommandLineFilePreviewState {
   readonly i18n: I18nPort;
   readonly workspaceRoot: string;
   readonly cwd: string;

@@ -3,9 +3,11 @@ import {
   type InlineCompletionItem,
   type InlineCompletionPreview,
 } from "../../ui/inline-completion-popup.js";
+import type { Cmd } from "@flyingrobots/bijou-tui";
+import type { EditorFilePort } from "../../ports/editor-file.js";
 import { FileEntryKinds, type FileEntry } from "../../ports/file-system.js";
 import {
-  selectedWorkspaceCommandLineCompletionItem,
+  selectedWorkspaceCommandLineFileCompletion,
   WORKSPACE_FILE_PROVIDER_ID,
   type WorkspaceSelectedCommandLineCompletionContext,
 } from "./command-completion.js";
@@ -38,9 +40,44 @@ export interface WorkspaceFilePreviewSource {
   loadFilePreview(filePath: string): WorkspaceFilePreviewResult;
 }
 
+export type WorkspaceCommandLineFilePreviewIdentity = FileEntry;
+
+export interface WorkspaceCommandLineFilePreviewSelection {
+  readonly identity: WorkspaceCommandLineFilePreviewIdentity;
+  readonly filePath: string;
+}
+
+export interface WorkspaceCommandLineFilePreview
+  extends WorkspaceCommandLineFilePreviewSelection {
+  readonly result: WorkspaceFilePreviewResult;
+}
+
+export interface WorkspaceCommandLineFilePreviewState {
+  readonly commandLineFilePreview?: WorkspaceCommandLineFilePreview;
+  readonly commandLineFilePreviewRequestId: number;
+  readonly commandLineFilePreviewRequest?: WorkspaceCommandLineFilePreviewSelection;
+}
+
+export interface WorkspaceCommandLineFilePreviewMsg {
+  readonly requestId: number;
+  readonly selection: WorkspaceCommandLineFilePreviewSelection;
+  readonly result: WorkspaceFilePreviewResult;
+}
+
+export type WorkspaceCommandLineFilePreviewMessageMapper<M> = (
+  msg: WorkspaceCommandLineFilePreviewMsg,
+) => M;
+
+export interface WorkspaceCommandLineFilePreviewCommandRequest<M> {
+  readonly requestId: number;
+  readonly selection: WorkspaceCommandLineFilePreviewSelection;
+  readonly previewSource: WorkspaceFilePreviewSource;
+  readonly mapMessage: WorkspaceCommandLineFilePreviewMessageMapper<M>;
+}
+
 export interface WorkspaceCommandLineCompletionPreviewContext
   extends WorkspaceSelectedCommandLineCompletionContext {
-  readonly previewSource?: WorkspaceFilePreviewSource;
+  readonly filePreview?: WorkspaceCommandLineFilePreview;
   readonly maxPreviewLines?: number;
 }
 
@@ -50,25 +87,18 @@ const FILE_COMPLETION_PREVIEW_DIRECTORY_UNAVAILABLE =
   "Directory preview unavailable";
 const FILE_COMPLETION_PREVIEW_PARENT_UNAVAILABLE =
   "Parent directory preview unavailable";
-const FILE_COMPLETION_PREVIEW_ENTRY_UNAVAILABLE =
-  "Completion entry unavailable";
 const FILE_COMPLETION_PREVIEW_UNAVAILABLE_POSTURE = "unavailable";
+const FILE_COMPLETION_PREVIEW_LOADED_POSTURE = "loaded";
 
 export function workspaceCommandLineCompletionPreview(
   context: WorkspaceCommandLineCompletionPreviewContext,
 ): InlineCompletionPreview | undefined {
-  const item = selectedWorkspaceCommandLineCompletionItem(context);
-  if (item == null || item.providerId !== WORKSPACE_FILE_PROVIDER_ID) {
+  const completion = selectedWorkspaceCommandLineFileCompletion(context);
+  if (completion == null) {
     return undefined;
   }
 
-  const entry = fileEntryForCompletionItem(context.entries, item);
-  if (entry == null) {
-    return unavailableFileCompletionPreview(
-      item,
-      FILE_COMPLETION_PREVIEW_ENTRY_UNAVAILABLE,
-    );
-  }
+  const { item, entry } = completion;
   if (entry.kind !== FileEntryKinds.File) {
     return unavailableFileCompletionPreview(
       item,
@@ -76,7 +106,7 @@ export function workspaceCommandLineCompletionPreview(
     );
   }
 
-  const result = loadFilePreviewResult(context.previewSource, entry.path);
+  const result = previewResultForEntry(context.filePreview, entry);
   if (result.kind === WORKSPACE_FILE_PREVIEW_RESULT_KIND.Unavailable) {
     return unavailableFileCompletionPreview(
       item,
@@ -88,11 +118,95 @@ export function workspaceCommandLineCompletionPreview(
   return loadedFileCompletionPreview(item, result, context.maxPreviewLines);
 }
 
-function fileEntryForCompletionItem(
-  entries: readonly FileEntry[],
-  item: InlineCompletionItem,
-): FileEntry | undefined {
-  return entries.find((entry) => entry.path === item.previewRequestId);
+export function selectedWorkspaceCommandLineFilePreviewSelection(
+  context: WorkspaceSelectedCommandLineCompletionContext,
+): WorkspaceCommandLineFilePreviewSelection | undefined {
+  const completion = selectedWorkspaceCommandLineFileCompletion(context);
+  return completion?.entry.kind === FileEntryKinds.File
+    ? commandLineFilePreviewSelection(completion.entry)
+    : undefined;
+}
+
+export function workspaceEditorFilePreviewSource(
+  editorFile: Pick<EditorFilePort, "loadEditorFile">,
+): WorkspaceFilePreviewSource {
+  return {
+    loadFilePreview(filePath) {
+      const file = editorFile.loadEditorFile(filePath);
+      return {
+        kind: WORKSPACE_FILE_PREVIEW_RESULT_KIND.Loaded,
+        lines: file.lines,
+        evidencePosture: FILE_COMPLETION_PREVIEW_LOADED_POSTURE,
+      };
+    },
+  };
+}
+
+export function createWorkspaceCommandLineFilePreviewCmd<M>(
+  request: WorkspaceCommandLineFilePreviewCommandRequest<M>,
+): Cmd<M> {
+  return () =>
+    request.mapMessage({
+      requestId: request.requestId,
+      selection: request.selection,
+      result: loadFilePreviewResult(
+        request.previewSource,
+        request.selection.filePath,
+      ),
+    });
+}
+
+export function applyWorkspaceCommandLineFilePreviewResult<
+  Model extends WorkspaceCommandLineFilePreviewState,
+>(model: Model, msg: WorkspaceCommandLineFilePreviewMsg): Model {
+  return commandLineFilePreviewResultMatchesLiveRequest(model, msg)
+    ? {
+        ...model,
+        commandLineFilePreview: {
+          ...msg.selection,
+          result: msg.result,
+        },
+        commandLineFilePreviewRequest: undefined,
+      }
+    : model;
+}
+
+export function clearWorkspaceCommandLineFilePreview<
+  Model extends WorkspaceCommandLineFilePreviewState,
+>(model: Model): Model {
+  return {
+    ...model,
+    commandLineFilePreview: undefined,
+    commandLineFilePreviewRequest: undefined,
+  };
+}
+
+function commandLineFilePreviewSelection(
+  entry: FileEntry,
+): WorkspaceCommandLineFilePreviewSelection {
+  return {
+    identity: entry,
+    filePath: entry.path,
+  };
+}
+
+function commandLineFilePreviewResultMatchesLiveRequest(
+  model: WorkspaceCommandLineFilePreviewState,
+  msg: WorkspaceCommandLineFilePreviewMsg,
+): boolean {
+  return (
+    msg.requestId === model.commandLineFilePreviewRequestId &&
+    model.commandLineFilePreviewRequest?.identity === msg.selection.identity
+  );
+}
+
+function previewResultForEntry(
+  preview: WorkspaceCommandLineFilePreview | undefined,
+  entry: FileEntry,
+): WorkspaceFilePreviewResult {
+  return preview?.identity === entry
+    ? preview.result
+    : unavailableFilePreviewResult();
 }
 
 function loadFilePreviewResult(

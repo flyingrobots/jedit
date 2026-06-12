@@ -7,6 +7,11 @@ import type { ProfilerMsg } from "../raytracer-profiler.js";
 import type { SourceHighlightMsg } from "../source-highlight-session.js";
 import type { TitleCameraMotionMsg } from "../title-camera-session.js";
 import type {
+  WorkspaceCommandLineFilePreviewSelection,
+  WorkspaceFilePreviewResult,
+  WorkspaceCommandLineFilePreviewMsg,
+} from "./command-completion-preview.js";
+import type {
   WorkspaceTextCheckpointResult,
   WorkspaceTextEditResult,
   WorkspaceTextExportResult,
@@ -29,6 +34,8 @@ const WORKSPACE_MESSAGE_TEXT_EDIT_RESULT = "text-edit-result";
 const WORKSPACE_MESSAGE_TEXT_CHECKPOINT_RESULT = "text-checkpoint-result";
 const WORKSPACE_MESSAGE_TEXT_EXPORT_RESULT = "text-export-result";
 const WORKSPACE_MESSAGE_TEXT_READ_RESULT = "text-read-result";
+const WORKSPACE_MESSAGE_COMMAND_LINE_FILE_PREVIEW_RESULT =
+  "command-line-file-preview-result";
 const WORKSPACE_INPUT_MESSAGE_RESIZE = "resize";
 const WORKSPACE_INPUT_MESSAGE_KEY = "key";
 const WORKSPACE_INPUT_MESSAGE_MOUSE = "mouse";
@@ -48,6 +55,8 @@ export const WorkspaceMessageTypes = Object.freeze({
   TextCheckpointResult: WORKSPACE_MESSAGE_TEXT_CHECKPOINT_RESULT,
   TextExportResult: WORKSPACE_MESSAGE_TEXT_EXPORT_RESULT,
   TextReadResult: WORKSPACE_MESSAGE_TEXT_READ_RESULT,
+  CommandLineFilePreviewResult:
+    WORKSPACE_MESSAGE_COMMAND_LINE_FILE_PREVIEW_RESULT,
 });
 
 export const WorkspaceInputMessageTypes = Object.freeze({
@@ -108,10 +117,25 @@ export type WorkspaceMsg =
       type: typeof WorkspaceMessageTypes.TextReadResult;
       requestId: number;
       result: WorkspaceTextReadCommandResult;
+    }
+  | {
+      type: typeof WorkspaceMessageTypes.CommandLineFilePreviewResult;
+      requestId: number;
+      selection: WorkspaceCommandLineFilePreviewSelection;
+      result: WorkspaceFilePreviewResult;
     };
 
 export function workspaceSourceHighlightMessage(
   msg: SourceHighlightMsg,
 ): WorkspaceMsg {
   return msg;
+}
+
+export function workspaceCommandLineFilePreviewMessage(
+  msg: WorkspaceCommandLineFilePreviewMsg,
+): WorkspaceMsg {
+  return {
+    type: WorkspaceMessageTypes.CommandLineFilePreviewResult,
+    ...msg,
+  };
 }

@@ -19,10 +19,20 @@ import {
   selectedWorkspaceCommandLineCompletionItem,
   workspaceCommandLineCompletionItems,
 } from "./command-completion.js";
+import {
+  clearWorkspaceCommandLineFilePreview,
+  createWorkspaceCommandLineFilePreviewCmd,
+  selectedWorkspaceCommandLineFilePreviewSelection,
+  type WorkspaceCommandLineFilePreviewSelection,
+  workspaceEditorFilePreviewSource,
+} from "./command-completion-preview.js";
 import { validateWorkspaceCommandLineInput } from "./command-line-validation.js";
 import type { WorkspaceKeyBindingContext } from "./key-binding-context.js";
 import type { WorkspaceModel } from "./model.js";
-import type { WorkspaceMsg } from "./msg.js";
+import {
+  workspaceCommandLineFilePreviewMessage,
+  type WorkspaceMsg,
+} from "./msg.js";
 import { WorkspaceKeys } from "./workspace-key.js";
 import { workspaceHasOpenFile } from "./workspace-model-query.js";
 
@@ -59,7 +69,7 @@ function updateActiveCommandLineKey(
   model: WorkspaceModel,
   context: WorkspaceKeyBindingContext,
 ): KeyBindingResult | undefined {
-  return model.commandLine?.active === true
+  const result = model.commandLine?.active === true
     ? updateCommandLineCloseKey(msg, model)
       ?? updateCommandLineBackspaceKey(msg, model)
       ?? updateCommandLineCursorKey(msg, model)
@@ -67,6 +77,9 @@ function updateActiveCommandLineKey(
       ?? updateCommandLineDispatchKey(msg, model, context)
       ?? updateCommandLineTextKey(msg, model)
     : undefined;
+  return result == null
+    ? undefined
+    : withCommandLineFilePreviewRefresh(result, context);
 }
 
 function updateCommandLineCloseKey(
@@ -215,6 +228,66 @@ function updateCommandLineTextKey(
         ),
         [],
       ];
+}
+
+function withCommandLineFilePreviewRefresh(
+  result: KeyBindingResult,
+  context: WorkspaceKeyBindingContext,
+): KeyBindingResult {
+  const [model, commands] = result;
+  if (!model.commandLine.active) {
+    return [clearWorkspaceCommandLineFilePreview(model), commands];
+  }
+
+  const selection = selectedWorkspaceCommandLineFilePreviewSelection({
+    commandLine: model.commandLine,
+    entries: model.entries,
+    hasOpenFile: workspaceHasOpenFile(model),
+  });
+  if (selection == null) {
+    return [clearWorkspaceCommandLineFilePreview(model), commands];
+  }
+  return commandLineFilePreviewAlreadyRequested(model, selection)
+    ? result
+    : requestCommandLineFilePreview(model, commands, selection, context);
+}
+
+function commandLineFilePreviewAlreadyRequested(
+  model: WorkspaceModel,
+  selection: WorkspaceCommandLineFilePreviewSelection,
+): boolean {
+  return (
+    model.commandLineFilePreview?.identity === selection.identity ||
+    model.commandLineFilePreviewRequest?.identity === selection.identity
+  );
+}
+
+function requestCommandLineFilePreview(
+  model: WorkspaceModel,
+  commands: readonly Cmd<WorkspaceMsg>[],
+  selection: WorkspaceCommandLineFilePreviewSelection,
+  context: WorkspaceKeyBindingContext,
+): KeyBindingResult {
+  const requestId = model.commandLineFilePreviewRequestId + 1;
+  return [
+    {
+      ...model,
+      commandLineFilePreview: undefined,
+      commandLineFilePreviewRequestId: requestId,
+      commandLineFilePreviewRequest: selection,
+    },
+    [
+      ...commands,
+      createWorkspaceCommandLineFilePreviewCmd({
+        requestId,
+        selection,
+        previewSource: workspaceEditorFilePreviewSource(
+          context.deps.editorFile,
+        ),
+        mapMessage: workspaceCommandLineFilePreviewMessage,
+      }),
+    ],
+  ];
 }
 
 function isCommandLineOpenKey(msg: KeyMsg): boolean {
