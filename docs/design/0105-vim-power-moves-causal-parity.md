@@ -1291,11 +1291,14 @@ What changed from the design:
   `src/app/workspace/vim-word-motion.ts` as a ratchet-preserving extraction.
   Stored literal `n` and `N` search repeat now carries match id, pattern digest,
   ordinal, direction, and wrap policy.
+- Section motions now report `unsupported-section-motion` so provider absence is
+  visible to tests and agents instead of collapsed into a generic unsupported
+  motion.
 
 Follow-up work:
 
-- `/` and `?` UI search entry, regex search policy, section motions, tag pairs,
-  comment pairs, and richer structural providers remain future work.
+- `/` and `?` UI search entry, regex search policy, actual section providers,
+  tag pairs, comment pairs, and richer structural providers remain future work.
 - Full structural text objects such as functions, classes, comments, tags, and
   Graft-backed objects remain future work.
 - Register append, black-hole, system clipboard, numbered registers, and

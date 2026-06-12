@@ -198,6 +198,33 @@ test("vim repeat-search motions expose match identity", async () => {
   assert.equal(previous.searchMatch.direction, "backward");
 });
 
+test("vim section motions report honest unsupported posture", async () => {
+  const [mode, motion] = await Promise.all([
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "vim-motion-resolver.js"),
+  ]);
+  const editor = mockEditor(mode, {
+    lines: ["section one", "section two"],
+    cursorRow: 0,
+    cursorCol: 0,
+  });
+
+  const forward = motion.resolveVimMotion({
+    editor,
+    motion: "sectionForward",
+  });
+  const backward = motion.resolveVimMotion({
+    editor,
+    motion: "sectionBackward",
+  });
+
+  assert.equal("obstruction" in forward, true);
+  assert.equal("obstruction" in backward, true);
+  assert.equal(forward.obstruction, "unsupported-section-motion");
+  assert.equal(backward.obstruction, "unsupported-section-motion");
+  assert.match(forward.basisDigest, /^vim-basis:/);
+});
+
 test("vim text object resolver targets words and delimiter interiors", async () => {
   const [mode, textObjects] = await Promise.all([
     importDist("app", "workspace", "editor", "mode.js"),

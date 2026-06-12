@@ -107,9 +107,9 @@
           "status": "partial",
           "targetSlices": [9],
           "targetParity": "Move by paragraph and section boundaries.",
-          "currentJedit": "Paragraph movement resolves against blank-line boundaries; section movement remains unsupported.",
+          "currentJedit": "Paragraph movement resolves against blank-line boundaries; section movement reports a typed unsupported-section-motion obstruction.",
           "currentProof": ["spec/vim-power-motion-text-object.spec.mjs"],
-          "proofGap": "Needs structural-section fixture tables and section motion resolver support.",
+          "proofGap": "Needs structural-section fixture tables and actual section motion resolver support.",
           "causalOpportunity": "Section movement can degrade honestly when structural providers are absent.",
           "echoBoundary": "Echo receives no structural nouns."
         }

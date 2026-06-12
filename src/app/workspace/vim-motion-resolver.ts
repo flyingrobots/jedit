@@ -27,6 +27,7 @@ export const VimResolvedTargetShapes = Object.freeze({
 } as const satisfies Record<string, VimResolvedTargetShape>);
 export type VimMotionObstruction =
   | 'empty-buffer'
+  | 'unsupported-section-motion'
   | 'unsupported-motion';
 
 export interface VimTextCursor {
@@ -84,6 +85,8 @@ const MOTION_NEXT_SEARCH: VimMotionName = 'nextSearch';
 const MOTION_PARAGRAPH_BACKWARD: VimMotionName = 'paragraphBackward';
 const MOTION_PARAGRAPH_FORWARD: VimMotionName = 'paragraphForward';
 const MOTION_PREVIOUS_SEARCH: VimMotionName = 'previousSearch';
+const MOTION_SECTION_BACKWARD: VimMotionName = 'sectionBackward';
+const MOTION_SECTION_FORWARD: VimMotionName = 'sectionForward';
 const MOTION_WORD_END: VimMotionName = 'wordEnd';
 const MOTION_WORD_BIG_END: VimMotionName = 'WORDEnd';
 const TARGET_SHAPE_CHARWISE = VimResolvedTargetShapes.Charwise;
@@ -104,7 +107,7 @@ export function resolveVimMotion(request: VimMotionRequest): VimMotionResolution
     search?.destination ??
     motionDestinationIndex(editor, request.motion, count);
   if (afterIndex == null) {
-    return obstructedMotion(request.motion, basisDigest, 'unsupported-motion');
+    return obstructedMotion(request.motion, basisDigest, obstructionForMotion(request.motion));
   }
 
   const target = motionTargetRange(editor, request.motion, afterIndex, count);
@@ -237,6 +240,12 @@ function searchMotionDestination(
   return motion === MOTION_NEXT_SEARCH || motion === MOTION_PREVIOUS_SEARCH
     ? vimSearchMotionDestination(editorText(editor), normalTextIndex(editor), motion, count, editor.lastSearch)
     : undefined;
+}
+
+function obstructionForMotion(motion: VimMotionName): VimMotionObstruction {
+  return motion === MOTION_SECTION_BACKWARD || motion === MOTION_SECTION_FORWARD
+    ? 'unsupported-section-motion'
+    : 'unsupported-motion';
 }
 
 function lineMotionDestination(

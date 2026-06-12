@@ -88,7 +88,7 @@ Lane checklist:
 - [x] `%` resolves balanced bracket pairs with structural pair identity.
 - [x] `n` and `N` resolve stored literal search match identity.
 - [ ] `/` and `?` populate search history from UI input.
-- [ ] `[[` and `]]` expose honest section-motion posture.
+- [x] `[[` and `]]` expose honest section-motion posture.
 
 After that lane, continue WF-0105 through:
 
