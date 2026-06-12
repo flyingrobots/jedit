@@ -1,4 +1,5 @@
 import type { VimMotionName } from './vim-grammar-vocabulary.js';
+import { vimParagraphMotionDestination } from './vim-paragraph-motion.js';
 import {
   clampNormalCol,
   editorText,
@@ -76,6 +77,8 @@ const MOTION_LINE_DOWN: VimMotionName = 'lineDown';
 const MOTION_LINE_END: VimMotionName = 'lineEnd';
 const MOTION_LINE_START: VimMotionName = 'lineStart';
 const MOTION_LINE_UP: VimMotionName = 'lineUp';
+const MOTION_PARAGRAPH_BACKWARD: VimMotionName = 'paragraphBackward';
+const MOTION_PARAGRAPH_FORWARD: VimMotionName = 'paragraphForward';
 const MOTION_WORD_BACKWARD: VimMotionName = 'wordBackward';
 const MOTION_WORD_END: VimMotionName = 'wordEnd';
 const MOTION_WORD_FORWARD: VimMotionName = 'wordForward';
@@ -202,7 +205,20 @@ function boundaryOrWordDestination(
   if (motion === MOTION_LINE_END) {
     return lineEndTextIndex(editor);
   }
+  if (isParagraphMotion(motion)) {
+    return vimParagraphMotionDestination(
+      editor.lines,
+      editor.cursorRow,
+      motion,
+      count,
+    );
+  }
   return wordMotionDestination(editor, motion, count, text);
+}
+
+function isParagraphMotion(motion: VimMotionName): boolean {
+  return motion === MOTION_PARAGRAPH_BACKWARD ||
+    motion === MOTION_PARAGRAPH_FORWARD;
 }
 
 function wordMotionDestination(

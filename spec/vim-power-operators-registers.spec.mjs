@@ -128,6 +128,30 @@ test("vim linewise operator motions expand to full line ranges", async () => {
   assert.equal(nextEditor.register.text, "two\nthree");
 });
 
+test("vim paragraph operator motions preserve the next paragraph", async () => {
+  const [mode, syntax, executor, model] = await Promise.all([
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "vim-chord-syntax.js"),
+    importDist("app", "workspace", "vim-command-executor.js"),
+    importDist("app", "workspace", "editor", "model.js"),
+  ]);
+  const editor = mockEditor(mode, {
+    lines: ["alpha", "beta", "", "gamma"],
+    cursorRow: 0,
+    cursorCol: 0,
+  });
+
+  const nextEditor = executor.applyVimChordSyntaxToEditor(
+    editor,
+    syntax.parseVimChordSyntax(["d", "}"]),
+  );
+
+  assert.deepEqual(nextEditor.lines, ["gamma"]);
+  assert.equal(nextEditor.register.kind, model.RegisterKinds.Char);
+  assert.equal(nextEditor.register.text, "alpha\nbeta\n\n");
+  assert.deepEqual(nextEditor.lastVimEdit.keys, ["d", "}"]);
+});
+
 test("vim uppercase WORD motions treat punctuation as part of a WORD", async () => {
   const [mode, syntax, executor] = await Promise.all([
     importDist("app", "workspace", "editor", "mode.js"),

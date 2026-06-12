@@ -2,7 +2,7 @@
 title: "WF-0105 - Vim Power Moves Causal Parity"
 legend: "WF"
 lane: "design"
-issue: "TBD"
+issue: "https://github.com/flyingrobots/jedit/issues/128"
 status: "draft"
 owners:
   - "@flyingrobots"
@@ -14,7 +14,7 @@ updated: "2026-06-09"
 
 ## Linked Issue
 
-- TBD - open before implementation starts.
+- [#128 WF-0105: Search and structural motion parity](https://github.com/flyingrobots/jedit/issues/128)
 
 ## Decision Summary
 

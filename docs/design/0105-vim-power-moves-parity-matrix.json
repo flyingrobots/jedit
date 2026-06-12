@@ -98,12 +98,12 @@
         {
           "id": "motion.paragraph-section",
           "keys": ["{", "}", "[[", "]]"],
-          "status": "unsupported",
+          "status": "partial",
           "targetSlices": [9],
           "targetParity": "Move by paragraph and section boundaries.",
-          "currentJedit": "Paragraph and section movement are not implemented as Vim motions.",
-          "currentProof": [],
-          "proofGap": "Needs blank-line and structural-section fixture tables.",
+          "currentJedit": "Paragraph movement resolves against blank-line boundaries; section movement remains unsupported.",
+          "currentProof": ["spec/vim-power-motion-text-object.spec.mjs"],
+          "proofGap": "Needs structural-section fixture tables and section motion resolver support.",
           "causalOpportunity": "Section movement can degrade honestly when structural providers are absent.",
           "echoBoundary": "Echo receives no structural nouns."
         }

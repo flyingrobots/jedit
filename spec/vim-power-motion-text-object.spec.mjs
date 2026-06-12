@@ -59,6 +59,49 @@ test("vim file-top motion honors explicit counts", async () => {
   assert.deepEqual(countedTop.target, { start: 8, end: 18 });
 });
 
+test("vim paragraph motions resolve blank-line reading-basis boundaries", async () => {
+  const [mode, motion] = await Promise.all([
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "vim-motion-resolver.js"),
+  ]);
+  const lines = ["alpha", "beta", "", "gamma", "delta", "", "omega"];
+  const editor = mockEditor(mode, {
+    lines,
+    cursorRow: 0,
+    cursorCol: 0,
+  });
+  const bodyEditor = mockEditor(mode, {
+    lines,
+    cursorRow: 4,
+    cursorCol: 2,
+  });
+
+  const next = motion.resolveVimMotion({
+    editor,
+    motion: "paragraphForward",
+  });
+  const countedNext = motion.resolveVimMotion({
+    editor,
+    motion: "paragraphForward",
+    count: 2,
+  });
+  const previous = motion.resolveVimMotion({
+    editor: bodyEditor,
+    motion: "paragraphBackward",
+  });
+
+  assert.equal("obstruction" in next, false);
+  assert.equal("obstruction" in countedNext, false);
+  assert.equal("obstruction" in previous, false);
+  assert.deepEqual(next.cursorAfter, { row: 3, column: 0 });
+  assert.deepEqual(next.target, { start: 0, end: 12 });
+  assert.equal(next.targetShape, "charwise");
+  assert.match(next.basisDigest, /^vim-basis:/);
+  assert.deepEqual(countedNext.cursorAfter, { row: 6, column: 0 });
+  assert.deepEqual(previous.cursorAfter, { row: 3, column: 0 });
+  assert.deepEqual(previous.target, { start: 12, end: 20 });
+});
+
 test("vim text object resolver targets words and delimiter interiors", async () => {
   const [mode, textObjects] = await Promise.all([
     importDist("app", "workspace", "editor", "mode.js"),
