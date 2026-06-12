@@ -82,6 +82,13 @@ The next implementation lane is **search and structural motion parity**:
 - Operator integration must keep the same basis-bound execution discipline as
   the landed core motion and text-object work.
 
+Lane checklist:
+
+- [x] Paragraph motions resolve blank-line basis boundaries.
+- [x] `%` resolves balanced bracket pairs with structural pair identity.
+- [ ] `/`, `?`, `n`, and `N` expose search match identity.
+- [ ] `[[` and `]]` expose honest section-motion posture.
+
 After that lane, continue WF-0105 through:
 
 - Graft-backed structural text objects for functions, classes, comments, tags,

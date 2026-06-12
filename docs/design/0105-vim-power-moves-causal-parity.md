@@ -513,7 +513,7 @@ Examples:
 | `W` `B` `E` | WORD motions | same resolver, different tokenization |
 | `0` `^` `$` | line boundary moves | preserves byte/grapheme distinction |
 | `gg` `G` | file boundary moves | uses bounded/full reading posture |
-| `%` | matching delimiter | can use parser/Graft provider when available |
+| `%` | matching delimiter | text fallback records pair identity; parser/Graft provider can extend it |
 | `/` `?` | search motion | search result carries basis and match id |
 | `}` `{` | paragraph motion | resolver owns blank-line policy |
 | `]]` `[[` | section motion | Graft-backed when structural data exists |
@@ -1281,10 +1281,17 @@ What changed from the design:
   reusable case-transform, join, and mark helpers. Repeat records
   `sourceBasisDigest` and a `resolve-current-basis` replay policy so text-object
   repeat is explicit instead of an unlabelled key replay.
+- The search and structural motion lane adds
+  `src/app/workspace/vim-paragraph-motion.ts`,
+  `src/app/workspace/vim-matching-pair-motion.ts`, and
+  `src/app/workspace/vim-motion-basis-digest.ts`; paragraph and `%` motions now
+  expose basis-bound runtime proof, with `%` carrying pair id, direction, and
+  bracket policy.
 
 Follow-up work:
 
-- Search and structural motions remain future work.
+- Search match identity, section motions, tag pairs, comment pairs, and richer
+  structural providers remain future work.
 - Full structural text objects such as functions, classes, comments, tags, and
   Graft-backed objects remain future work.
 - Register append, black-hole, system clipboard, numbered registers, and

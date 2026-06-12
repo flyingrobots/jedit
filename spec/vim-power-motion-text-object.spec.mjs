@@ -102,6 +102,38 @@ test("vim paragraph motions resolve blank-line reading-basis boundaries", async 
   assert.deepEqual(previous.target, { start: 12, end: 20 });
 });
 
+test("vim matching-pair motion exposes structural pair identity", async () => {
+  const [mode, motion] = await Promise.all([
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "vim-motion-resolver.js"),
+  ]);
+  const editor = mockEditor(mode, {
+    lines: ["call(alpha, [beta])"],
+    cursorRow: 0,
+    cursorCol: 12,
+  });
+
+  const resolved = motion.resolveVimMotion({
+    editor,
+    motion: "matchingPair",
+  });
+
+  assert.equal("obstruction" in resolved, false);
+  assert.deepEqual(resolved.cursorAfter, { row: 0, column: 17 });
+  assert.deepEqual(resolved.target, { start: 12, end: 18 });
+  assert.deepEqual(resolved.structuralPair, {
+    close: "]",
+    closeIndex: 17,
+    direction: "forward",
+    open: "[",
+    openIndex: 12,
+    originIndex: 12,
+    pairId: "vim-pair:12:17:[]",
+    policy: "balanced-bracket-pair-v1",
+  });
+  assert.match(resolved.basisDigest, /^vim-basis:/);
+});
+
 test("vim text object resolver targets words and delimiter interiors", async () => {
   const [mode, textObjects] = await Promise.all([
     importDist("app", "workspace", "editor", "mode.js"),

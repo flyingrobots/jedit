@@ -86,13 +86,16 @@
         {
           "id": "motion.matching-delimiter",
           "keys": ["%"],
-          "status": "causally-enhanced",
+          "status": "partial",
           "targetSlices": [9, 12],
           "targetParity": "Jump to matching delimiter, tag, or language pair where supported.",
-          "currentJedit": "Delimiter matching is not parity-complete.",
-          "currentProof": [],
-          "proofGap": "Planned via text fallback first, then optional Graft structural readings.",
-          "causalOpportunity": "The match provider and pair identity can be recorded beside the resolved range.",
+          "currentJedit": "Balanced bracket delimiter matching resolves with explicit pair identity; tag and language pairs remain unsupported.",
+          "currentProof": [
+            "spec/vim-power-motion-text-object.spec.mjs",
+            "spec/vim-power-operators-registers.spec.mjs"
+          ],
+          "proofGap": "Needs tag, comment, language-pair, and optional Graft structural providers.",
+          "causalOpportunity": "Resolved bracket pairs record the pair id, direction, policy, and reading basis beside the resolved range.",
           "echoBoundary": "Echo remains generic; Graft and jedit own structure facts."
         },
         {

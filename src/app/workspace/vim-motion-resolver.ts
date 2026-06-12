@@ -1,4 +1,9 @@
 import type { VimMotionName } from './vim-grammar-vocabulary.js';
+import {
+  vimMatchingPairMotionDestination,
+  type VimStructuralPairMotion,
+} from './vim-matching-pair-motion.js';
+import { vimMotionBasisDigest } from './vim-motion-basis-digest.js';
 import { vimParagraphMotionDestination } from './vim-paragraph-motion.js';
 import {
   clampNormalCol,
@@ -38,6 +43,7 @@ export interface VimResolvedMotion {
   readonly cursorAfter: VimTextCursor;
   readonly cursorBefore: VimTextCursor;
   readonly motion: VimMotionName;
+  readonly structuralPair?: VimStructuralPairMotion;
   readonly target: VimTextRange;
   readonly targetShape: VimResolvedTargetShape;
 }
@@ -59,14 +65,7 @@ export type VimMotionResolution = VimMotionObstructed | VimResolvedMotion;
 const DEFAULT_COUNT = 1;
 const EMPTY_LENGTH = 0;
 const FIRST_INDEX = 0;
-const FNV_OFFSET_BASIS = 2166136261;
-const FNV_PRIME = 16777619;
-const HASH_RADIX = 16;
-const HASH_TEXT_WIDTH = 8;
 const LINE_BREAK_LENGTH = 1;
-const LINE_BREAK_TEXT = '\n';
-const BASIS_DIGEST_PREFIX = 'vim-basis';
-const HASH_PAD_TEXT = '0';
 const LINE_CURRENT_MOTION: VimMotionName = 'lineCurrent';
 const FILE_BOTTOM_MOTION: VimMotionName = 'fileBottom';
 const FILE_TOP_MOTION: VimMotionName = 'fileTop';
@@ -77,6 +76,7 @@ const MOTION_LINE_DOWN: VimMotionName = 'lineDown';
 const MOTION_LINE_END: VimMotionName = 'lineEnd';
 const MOTION_LINE_START: VimMotionName = 'lineStart';
 const MOTION_LINE_UP: VimMotionName = 'lineUp';
+const MOTION_MATCHING_PAIR: VimMotionName = 'matchingPair';
 const MOTION_PARAGRAPH_BACKWARD: VimMotionName = 'paragraphBackward';
 const MOTION_PARAGRAPH_FORWARD: VimMotionName = 'paragraphForward';
 const MOTION_WORD_BACKWARD: VimMotionName = 'wordBackward';
@@ -97,7 +97,9 @@ export function resolveVimMotion(request: VimMotionRequest): VimMotionResolution
 
   const count = normalizedMotionCount(request.count);
   const cursorBefore = editorCursor(editor);
-  const afterIndex = motionDestinationIndex(editor, request.motion, count);
+  const structural = structuralPairDestination(editor, request.motion);
+  const afterIndex = structural?.destination ??
+    motionDestinationIndex(editor, request.motion, count);
   if (afterIndex == null) {
     return obstructedMotion(request.motion, basisDigest, 'unsupported-motion');
   }
@@ -109,15 +111,13 @@ export function resolveVimMotion(request: VimMotionRequest): VimMotionResolution
     cursorAfter: cursorAtTextIndex(editor.lines, afterIndex),
     cursorBefore,
     motion: request.motion,
+    ...(structural == null ? {} : { structuralPair: structural.structuralPair }),
     target,
     targetShape: targetShape(request.motion),
   };
 }
 
-export function vimMotionBasisDigest(lines: readonly string[]): string {
-  const text = lines.join(LINE_BREAK_TEXT);
-  return `${BASIS_DIGEST_PREFIX}:${lines.length}:${text.length}:${fnv1a32Hex(text)}`;
-}
+export { vimMotionBasisDigest };
 
 export function cursorAtTextIndex(
   lines: readonly string[],
@@ -205,7 +205,7 @@ function boundaryOrWordDestination(
   if (motion === MOTION_LINE_END) {
     return lineEndTextIndex(editor);
   }
-  if (isParagraphMotion(motion)) {
+  if (motion === MOTION_PARAGRAPH_BACKWARD || motion === MOTION_PARAGRAPH_FORWARD) {
     return vimParagraphMotionDestination(
       editor.lines,
       editor.cursorRow,
@@ -216,9 +216,13 @@ function boundaryOrWordDestination(
   return wordMotionDestination(editor, motion, count, text);
 }
 
-function isParagraphMotion(motion: VimMotionName): boolean {
-  return motion === MOTION_PARAGRAPH_BACKWARD ||
-    motion === MOTION_PARAGRAPH_FORWARD;
+function structuralPairDestination(
+  editor: EditorState,
+  motion: VimMotionName,
+) {
+  return motion === MOTION_MATCHING_PAIR
+    ? vimMatchingPairMotionDestination(editor.lines, editor.cursorRow, editor.cursorCol)
+    : undefined;
 }
 
 function wordMotionDestination(
@@ -296,6 +300,9 @@ function motionTargetRange(
     return linewiseMotionRange(editor, destination);
   }
   const cursor = normalTextIndex(editor);
+  if (motion === MOTION_MATCHING_PAIR) {
+    return inclusiveCharwiseMotionRange(cursor, destination);
+  }
   return charwiseMotionRange(
     cursor,
     rangeEndForMotion(editor, motion, destination),
@@ -351,6 +358,12 @@ function charwiseMotionRange(start: number, end: number): VimTextRange {
   return start <= end
     ? { start, end }
     : { start: end, end: start };
+}
+
+function inclusiveCharwiseMotionRange(start: number, end: number): VimTextRange {
+  return start <= end
+    ? { start, end: end + LINE_BREAK_LENGTH }
+    : { start: end, end: start + LINE_BREAK_LENGTH };
 }
 
 function targetShape(motion: VimMotionName): VimResolvedTargetShape {
@@ -459,14 +472,6 @@ function boundedTextIndex(text: string, index: number): number {
 
 function isWhitespaceTextChar(char: string | undefined): boolean {
   return char == null || /\s/.test(char);
-}
-
-function fnv1a32Hex(text: string): string {
-  let hash = FNV_OFFSET_BASIS;
-  for (let index = FIRST_INDEX; index < text.length; index += 1) {
-    hash = Math.imul(hash ^ text.charCodeAt(index), FNV_PRIME);
-  }
-  return (hash >>> FIRST_INDEX).toString(HASH_RADIX).padStart(HASH_TEXT_WIDTH, HASH_PAD_TEXT);
 }
 
 function editorCursor(editor: EditorState): VimTextCursor {
