@@ -10,6 +10,15 @@ import {
   type VimSearchMatchMotion,
 } from './vim-search-motion.js';
 import {
+  VimMotionRangePolicies,
+  VimMotionStrategyKinds,
+  VimMotionTargetShapeKinds,
+  VimPrimitiveMotionKinds,
+  vimMotionStrategy,
+  type VimMotionStrategy,
+  type VimPrimitiveMotionStrategy,
+} from './vim-motion-strategy.js';
+import {
   clampNormalCol,
   editorText,
   insertPositionAtIndex,
@@ -58,6 +67,12 @@ export interface VimMotionObstructed {
   readonly obstruction: VimMotionObstruction;
 }
 
+interface VimMotionDestinationResolution {
+  readonly destination: number;
+  readonly searchMatch?: VimSearchMatchMotion;
+  readonly structuralPair?: VimStructuralPairMotion;
+}
+
 export interface VimMotionRequest {
   readonly count?: number;
   readonly editor: EditorState;
@@ -70,25 +85,26 @@ const DEFAULT_COUNT = 1;
 const EMPTY_LENGTH = 0;
 const FIRST_INDEX = 0;
 const LINE_BREAK_LENGTH = 1;
-const LINE_CURRENT_MOTION: VimMotionName = 'lineCurrent';
-const FILE_BOTTOM_MOTION: VimMotionName = 'fileBottom';
-const FILE_TOP_MOTION: VimMotionName = 'fileTop';
-const MOTION_CHAR_LEFT: VimMotionName = 'charLeft';
-const MOTION_CHAR_RIGHT: VimMotionName = 'charRight';
-const MOTION_FIRST_NON_WHITESPACE: VimMotionName = 'firstNonWhitespace';
-const MOTION_LINE_DOWN: VimMotionName = 'lineDown';
-const MOTION_LINE_END: VimMotionName = 'lineEnd';
-const MOTION_LINE_START: VimMotionName = 'lineStart';
-const MOTION_LINE_UP: VimMotionName = 'lineUp';
-const MOTION_MATCHING_PAIR: VimMotionName = 'matchingPair';
-const MOTION_NEXT_SEARCH: VimMotionName = 'nextSearch';
-const MOTION_PARAGRAPH_BACKWARD: VimMotionName = 'paragraphBackward';
-const MOTION_PARAGRAPH_FORWARD: VimMotionName = 'paragraphForward';
-const MOTION_PREVIOUS_SEARCH: VimMotionName = 'previousSearch';
-const MOTION_SECTION_BACKWARD: VimMotionName = 'sectionBackward';
-const MOTION_SECTION_FORWARD: VimMotionName = 'sectionForward';
-const MOTION_WORD_END: VimMotionName = 'wordEnd';
-const MOTION_WORD_BIG_END: VimMotionName = 'WORDEnd';
+const KIND_MATCHING_PAIR = VimMotionStrategyKinds.MatchingPair;
+const KIND_PARAGRAPH = VimMotionStrategyKinds.Paragraph;
+const KIND_PRIMITIVE = VimMotionStrategyKinds.Primitive;
+const KIND_SEARCH = VimMotionStrategyKinds.Search;
+const KIND_SECTION = VimMotionStrategyKinds.Section;
+const PRIMITIVE_CHAR_LEFT = VimPrimitiveMotionKinds.CharacterLeft;
+const PRIMITIVE_CHAR_RIGHT = VimPrimitiveMotionKinds.CharacterRight;
+const PRIMITIVE_FILE_BOTTOM = VimPrimitiveMotionKinds.FileBottom;
+const PRIMITIVE_FILE_TOP = VimPrimitiveMotionKinds.FileTop;
+const PRIMITIVE_FIRST_NON_WHITESPACE = VimPrimitiveMotionKinds.FirstNonWhitespace;
+const PRIMITIVE_LINE_CURRENT = VimPrimitiveMotionKinds.LineCurrent;
+const PRIMITIVE_LINE_DOWN = VimPrimitiveMotionKinds.LineDown;
+const PRIMITIVE_LINE_END = VimPrimitiveMotionKinds.LineEnd;
+const PRIMITIVE_LINE_START = VimPrimitiveMotionKinds.LineStart;
+const PRIMITIVE_LINE_UP = VimPrimitiveMotionKinds.LineUp;
+const PRIMITIVE_WORD = VimPrimitiveMotionKinds.Word;
+const RANGE_CURRENT_LINE = VimMotionRangePolicies.CurrentLine;
+const RANGE_INCLUDE_LINE_BREAK = VimMotionRangePolicies.IncludeLineBreak;
+const RANGE_INCLUSIVE_CHARWISE = VimMotionRangePolicies.InclusiveCharwise;
+const SHAPE_LINEWISE = VimMotionTargetShapeKinds.Linewise;
 const TARGET_SHAPE_CHARWISE = VimResolvedTargetShapes.Charwise;
 const TARGET_SHAPE_LINEWISE = VimResolvedTargetShapes.Linewise;
 
@@ -101,26 +117,23 @@ export function resolveVimMotion(request: VimMotionRequest): VimMotionResolution
 
   const count = normalizedMotionCount(request.count);
   const cursorBefore = editorCursor(editor);
-  const structural = structuralPairDestination(editor, request.motion);
-  const search = searchMotionDestination(editor, request.motion, count);
-  const afterIndex = structural?.destination ??
-    search?.destination ??
-    motionDestinationIndex(editor, request.motion, count);
-  if (afterIndex == null) {
-    return obstructedMotion(request.motion, basisDigest, obstructionForMotion(request.motion));
+  const strategy = vimMotionStrategy(request.motion);
+  const resolved = motionDestination(editor, strategy, count);
+  if (resolved == null) {
+    return obstructedMotion(strategy.motion, basisDigest, obstructionForMotion(strategy));
   }
 
-  const target = motionTargetRange(editor, request.motion, afterIndex, count);
+  const target = motionTargetRange(editor, strategy, resolved.destination, count);
   return {
     basisDigest,
     count,
-    cursorAfter: cursorAtTextIndex(editor.lines, afterIndex),
+    cursorAfter: cursorAtTextIndex(editor.lines, resolved.destination),
     cursorBefore,
-    motion: request.motion,
-    ...(search == null ? {} : { searchMatch: search.searchMatch }),
-    ...(structural == null ? {} : { structuralPair: structural.structuralPair }),
+    motion: strategy.motion,
+    ...(resolved.searchMatch == null ? {} : { searchMatch: resolved.searchMatch }),
+    ...(resolved.structuralPair == null ? {} : { structuralPair: resolved.structuralPair }),
     target,
-    targetShape: targetShape(request.motion),
+    targetShape: targetShape(strategy),
   };
 }
 
@@ -138,123 +151,134 @@ export function cursorAtTextIndex(
   };
 }
 
-function motionDestinationIndex(
+function motionDestination(
   editor: EditorState,
-  motion: VimMotionName,
+  strategy: VimMotionStrategy,
   count: number,
-): number | undefined {
-  if (motion === LINE_CURRENT_MOTION) {
-    return lineStartTextIndex(editor.lines, editor.cursorRow);
+): VimMotionDestinationResolution | undefined {
+  if (strategy.kind === KIND_MATCHING_PAIR) {
+    return vimMatchingPairMotionDestination(editor.lines, editor.cursorRow, editor.cursorCol);
   }
-  return destinationByMotion(editor, motion, count);
+  if (strategy.kind === KIND_SEARCH) {
+    return vimSearchMotionDestination(editorText(editor), normalTextIndex(editor), strategy.motion, count, editor.lastSearch);
+  }
+  if (strategy.kind === KIND_PARAGRAPH) {
+    return {
+      destination: vimParagraphMotionDestination(
+        editor.lines,
+        editor.cursorRow,
+        editor.cursorCol,
+        strategy.paragraphMotion,
+        count,
+      ),
+    };
+  }
+  if (strategy.kind === KIND_PRIMITIVE) {
+    return primitiveMotionDestination(editor, strategy, count);
+  }
+  return undefined;
 }
 
-function destinationByMotion(
+function primitiveMotionDestination(
   editor: EditorState,
-  motion: VimMotionName,
+  strategy: VimPrimitiveMotionStrategy,
+  count: number,
+): VimMotionDestinationResolution | undefined {
+  const destination = primitiveDestinationIndex(editor, strategy, count);
+  return destination == null ? undefined : { destination };
+}
+
+function primitiveDestinationIndex(
+  editor: EditorState,
+  strategy: VimPrimitiveMotionStrategy,
   count: number,
 ): number | undefined {
-  const text = editorText(editor);
-  if (motion === FILE_TOP_MOTION) {
+  return filePrimitiveDestination(editor, strategy, count) ??
+    characterPrimitiveDestination(editor, strategy, count) ??
+    linePrimitiveDestination(editor, strategy, count) ??
+    wordPrimitiveDestination(editor, strategy, count);
+}
+
+function filePrimitiveDestination(
+  editor: EditorState,
+  strategy: VimPrimitiveMotionStrategy,
+  count: number,
+): number | undefined {
+  if (strategy.primitiveKind === PRIMITIVE_FILE_TOP) {
     return lineStartTextIndex(editor.lines, boundedRow(editor.lines, count - LINE_BREAK_LENGTH));
   }
-  if (motion === FILE_BOTTOM_MOTION) {
+  if (strategy.primitiveKind === PRIMITIVE_FILE_BOTTOM) {
     return lineStartTextIndex(editor.lines, fileBottomRow(editor, count));
   }
-  return rowOrCharacterDestination(editor, motion, count, text);
+  return undefined;
 }
 
-function rowOrCharacterDestination(
+function characterPrimitiveDestination(
   editor: EditorState,
-  motion: VimMotionName,
+  strategy: VimPrimitiveMotionStrategy,
   count: number,
-  text: string,
 ): number | undefined {
-  if (motion === MOTION_CHAR_LEFT) {
-    return Math.max(
-      lineStartTextIndex(editor.lines, editor.cursorRow),
-      normalTextIndex(editor) - count,
-    );
+  if (strategy.primitiveKind === PRIMITIVE_CHAR_LEFT) {
+    return Math.max(lineStartTextIndex(editor.lines, editor.cursorRow), normalTextIndex(editor) - count);
   }
-  if (motion === MOTION_CHAR_RIGHT) {
-    return Math.min(
-      lineEndTextIndex(editor),
-      normalTextIndex(editor) + count,
-    );
+  if (strategy.primitiveKind === PRIMITIVE_CHAR_RIGHT) {
+    return Math.min(lineEndTextIndex(editor), normalTextIndex(editor) + count);
   }
-  return lineOrWordDestination(editor, motion, count, text);
+  return undefined;
 }
 
-function lineOrWordDestination(
+function linePrimitiveDestination(
   editor: EditorState,
-  motion: VimMotionName,
+  strategy: VimPrimitiveMotionStrategy,
   count: number,
-  text: string,
 ): number | undefined {
-  if (motion === MOTION_LINE_DOWN || motion === MOTION_LINE_UP) {
-    return lineMotionDestination(editor, motion, count);
-  }
-  if (motion === MOTION_LINE_START) {
+  if (strategy.primitiveKind === PRIMITIVE_LINE_CURRENT) {
     return lineStartTextIndex(editor.lines, editor.cursorRow);
   }
-  return boundaryOrWordDestination(editor, motion, count, text);
+  if (strategy.primitiveKind === PRIMITIVE_LINE_DOWN || strategy.primitiveKind === PRIMITIVE_LINE_UP) {
+    return lineMotionDestination(editor, strategy, count);
+  }
+  return lineBoundaryPrimitiveDestination(editor, strategy);
 }
 
-function boundaryOrWordDestination(
+function lineBoundaryPrimitiveDestination(
   editor: EditorState,
-  motion: VimMotionName,
-  count: number,
-  text: string,
+  strategy: VimPrimitiveMotionStrategy,
 ): number | undefined {
-  if (motion === MOTION_FIRST_NON_WHITESPACE) {
+  if (strategy.primitiveKind === PRIMITIVE_LINE_START) {
+    return lineStartTextIndex(editor.lines, editor.cursorRow);
+  }
+  if (strategy.primitiveKind === PRIMITIVE_FIRST_NON_WHITESPACE) {
     return firstNonWhitespaceIndex(editor);
   }
-  if (motion === MOTION_LINE_END) {
+  if (strategy.primitiveKind === PRIMITIVE_LINE_END) {
     return lineEndTextIndex(editor);
   }
-  if (motion === MOTION_PARAGRAPH_BACKWARD || motion === MOTION_PARAGRAPH_FORWARD) {
-    return vimParagraphMotionDestination(
-      editor.lines,
-      editor.cursorRow,
-      editor.cursorCol,
-      motion,
-      count,
-    );
-  }
-  return vimWordMotionDestination(text, normalTextIndex(editor), motion, count);
+  return undefined;
 }
 
-function structuralPairDestination(
+function wordPrimitiveDestination(
   editor: EditorState,
-  motion: VimMotionName,
-) {
-  return motion === MOTION_MATCHING_PAIR
-    ? vimMatchingPairMotionDestination(editor.lines, editor.cursorRow, editor.cursorCol)
-    : undefined;
-}
-
-function searchMotionDestination(
-  editor: EditorState,
-  motion: VimMotionName,
+  strategy: VimPrimitiveMotionStrategy,
   count: number,
-) {
-  return motion === MOTION_NEXT_SEARCH || motion === MOTION_PREVIOUS_SEARCH
-    ? vimSearchMotionDestination(editorText(editor), normalTextIndex(editor), motion, count, editor.lastSearch)
+): number | undefined {
+  return strategy.primitiveKind === PRIMITIVE_WORD
+    ? vimWordMotionDestination(editorText(editor), normalTextIndex(editor), strategy.motion, count)
     : undefined;
 }
 
-function obstructionForMotion(motion: VimMotionName): VimMotionObstruction {
-  return motion === MOTION_SECTION_BACKWARD || motion === MOTION_SECTION_FORWARD
+function obstructionForMotion(strategy: VimMotionStrategy): VimMotionObstruction {
+  return strategy.kind === KIND_SECTION
     ? 'unsupported-section-motion'
     : 'unsupported-motion';
 }
 
 function lineMotionDestination(
   editor: EditorState,
-  motion: VimMotionName,
+  strategy: VimPrimitiveMotionStrategy,
   count: number,
 ): number {
-  const delta = motion === MOTION_LINE_DOWN ? count : -count;
+  const delta = strategy.lineStep * count;
   const row = boundedRow(editor.lines, editor.cursorRow + delta);
   const line = editor.lines[row] ?? '';
   return lineStartTextIndex(editor.lines, row) + clampNormalCol(editor.cursorCol, line);
@@ -262,32 +286,32 @@ function lineMotionDestination(
 
 function motionTargetRange(
   editor: EditorState,
-  motion: VimMotionName,
+  strategy: VimMotionStrategy,
   destination: number,
   count: number,
 ): VimTextRange {
-  if (motion === LINE_CURRENT_MOTION) {
+  if (strategy.rangePolicy === RANGE_CURRENT_LINE) {
     return currentLineRange(editor, count);
   }
-  if (targetShape(motion) === TARGET_SHAPE_LINEWISE) {
+  if (targetShape(strategy) === TARGET_SHAPE_LINEWISE) {
     return linewiseMotionRange(editor, destination);
   }
   const cursor = normalTextIndex(editor);
-  if (motion === MOTION_MATCHING_PAIR) {
+  if (strategy.rangePolicy === RANGE_INCLUSIVE_CHARWISE) {
     return inclusiveCharwiseMotionRange(cursor, destination);
   }
   return charwiseMotionRange(
     cursor,
-    rangeEndForMotion(editor, motion, destination),
+    rangeEndForMotion(editor, strategy, destination),
   );
 }
 
 function rangeEndForMotion(
   editor: EditorState,
-  motion: VimMotionName,
+  strategy: VimMotionStrategy,
   destination: number,
 ): number {
-  if (motion === MOTION_LINE_END || motion === MOTION_WORD_END || motion === MOTION_WORD_BIG_END) {
+  if (strategy.rangePolicy === RANGE_INCLUDE_LINE_BREAK) {
     return Math.min(editorText(editor).length, destination + LINE_BREAK_LENGTH);
   }
   return destination;
@@ -339,12 +363,8 @@ function inclusiveCharwiseMotionRange(start: number, end: number): VimTextRange 
     : { start: end, end: start + LINE_BREAK_LENGTH };
 }
 
-function targetShape(motion: VimMotionName): VimResolvedTargetShape {
-  return motion === LINE_CURRENT_MOTION ||
-    motion === FILE_TOP_MOTION ||
-    motion === FILE_BOTTOM_MOTION ||
-    motion === MOTION_LINE_DOWN ||
-    motion === MOTION_LINE_UP
+function targetShape(strategy: VimMotionStrategy): VimResolvedTargetShape {
+  return strategy.targetShapeKind === SHAPE_LINEWISE
     ? TARGET_SHAPE_LINEWISE
     : TARGET_SHAPE_CHARWISE;
 }

@@ -59,6 +59,31 @@ test("vim file-top motion honors explicit counts", async () => {
   assert.deepEqual(countedTop.target, { start: 8, end: 18 });
 });
 
+test("vim motion strategy classifies raw motion names at the boundary", async () => {
+  const strategy = await importDist("app", "workspace", "vim-motion-strategy.js");
+
+  assert.equal(
+    strategy.vimMotionStrategy("matchingPair").kind,
+    strategy.VimMotionStrategyKinds.MatchingPair,
+  );
+  assert.equal(
+    strategy.vimMotionStrategy("nextSearch").kind,
+    strategy.VimMotionStrategyKinds.Search,
+  );
+  assert.equal(
+    strategy.vimMotionStrategy("paragraphForward").kind,
+    strategy.VimMotionStrategyKinds.Paragraph,
+  );
+  assert.equal(
+    strategy.vimMotionStrategy("sectionBackward").kind,
+    strategy.VimMotionStrategyKinds.Section,
+  );
+  assert.equal(
+    strategy.vimMotionStrategy("wordForward").kind,
+    strategy.VimMotionStrategyKinds.Primitive,
+  );
+});
+
 test("vim paragraph motions resolve blank-line reading-basis boundaries", async () => {
   const [mode, motion] = await Promise.all([
     importDist("app", "workspace", "editor", "mode.js"),

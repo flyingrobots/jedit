@@ -9,6 +9,9 @@
   direction values used by editor state and search motion resolution.
 - Added runtime paragraph-motion tokens and rejection for invalid paragraph
   motion names instead of silently treating them as backward paragraph motions.
+- Routed Vim motion resolution through runtime strategy tags so structural,
+  search, paragraph, section, primitive, target-shape, and range-policy behavior
+  are normalized once at the resolver boundary.
 - Added the next Jim/Vim power-move runtime batch: transformed dot-repeat
   metadata, `gu`/`gU`/`g~` case operators, `J`/`gJ` line joins, local marks
   with exact and line jumps, and `:q!`/`:quit!` forced quit commands.
