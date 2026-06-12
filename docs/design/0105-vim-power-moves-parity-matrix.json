@@ -74,36 +74,42 @@
         {
           "id": "motion.search",
           "keys": ["/", "?", "n", "N"],
-          "status": "unsupported",
+          "status": "partial",
           "targetSlices": [9, 26],
           "targetParity": "Move by forward/backward search and repeat search direction.",
-          "currentJedit": "Search motion parity is not complete.",
-          "currentProof": [],
-          "proofGap": "Needs search history, match identity, basis facts, and UI command integration.",
-          "causalOpportunity": "Search results can become stable match ids for later range commands.",
+          "currentJedit": "`n` and `N` can resolve a stored literal last-search state with match identity; `/` and `?` command entry are not complete.",
+          "currentProof": [
+            "spec/vim-power-motion-text-object.spec.mjs",
+            "spec/vim-power-operators-registers.spec.mjs"
+          ],
+          "proofGap": "Needs `/` and `?` UI command integration, regex policy, search history mutation, and rendered match feedback.",
+          "causalOpportunity": "Search results carry stable match ids, pattern digest, ordinal, direction, and basis facts for later range commands.",
           "echoBoundary": "Echo does not parse patterns; jedit submits only chosen edit intents."
         },
         {
           "id": "motion.matching-delimiter",
           "keys": ["%"],
-          "status": "causally-enhanced",
+          "status": "partial",
           "targetSlices": [9, 12],
           "targetParity": "Jump to matching delimiter, tag, or language pair where supported.",
-          "currentJedit": "Delimiter matching is not parity-complete.",
-          "currentProof": [],
-          "proofGap": "Planned via text fallback first, then optional Graft structural readings.",
-          "causalOpportunity": "The match provider and pair identity can be recorded beside the resolved range.",
+          "currentJedit": "Balanced bracket delimiter matching resolves with explicit pair identity; tag and language pairs remain unsupported.",
+          "currentProof": [
+            "spec/vim-power-motion-text-object.spec.mjs",
+            "spec/vim-power-operators-registers.spec.mjs"
+          ],
+          "proofGap": "Needs tag, comment, language-pair, and optional Graft structural providers.",
+          "causalOpportunity": "Resolved bracket pairs record the pair id, direction, policy, and reading basis beside the resolved range.",
           "echoBoundary": "Echo remains generic; Graft and jedit own structure facts."
         },
         {
           "id": "motion.paragraph-section",
           "keys": ["{", "}", "[[", "]]"],
-          "status": "unsupported",
+          "status": "partial",
           "targetSlices": [9],
           "targetParity": "Move by paragraph and section boundaries.",
-          "currentJedit": "Paragraph and section movement are not implemented as Vim motions.",
-          "currentProof": [],
-          "proofGap": "Needs blank-line and structural-section fixture tables.",
+          "currentJedit": "Paragraph movement resolves against blank-line boundaries; section movement reports a typed unsupported-section-motion obstruction.",
+          "currentProof": ["spec/vim-power-motion-text-object.spec.mjs"],
+          "proofGap": "Needs structural-section fixture tables and actual section motion resolver support.",
           "causalOpportunity": "Section movement can degrade honestly when structural providers are absent.",
           "echoBoundary": "Echo receives no structural nouns."
         }

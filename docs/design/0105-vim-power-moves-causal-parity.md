@@ -2,7 +2,7 @@
 title: "WF-0105 - Vim Power Moves Causal Parity"
 legend: "WF"
 lane: "design"
-issue: "TBD"
+issue: "https://github.com/flyingrobots/jedit/issues/128"
 status: "draft"
 owners:
   - "@flyingrobots"
@@ -14,7 +14,7 @@ updated: "2026-06-09"
 
 ## Linked Issue
 
-- TBD - open before implementation starts.
+- [#128 WF-0105: Search and structural motion parity](https://github.com/flyingrobots/jedit/issues/128)
 
 ## Decision Summary
 
@@ -513,8 +513,8 @@ Examples:
 | `W` `B` `E` | WORD motions | same resolver, different tokenization |
 | `0` `^` `$` | line boundary moves | preserves byte/grapheme distinction |
 | `gg` `G` | file boundary moves | uses bounded/full reading posture |
-| `%` | matching delimiter | can use parser/Graft provider when available |
-| `/` `?` | search motion | search result carries basis and match id |
+| `%` | matching delimiter | text fallback records pair identity; parser/Graft provider can extend it |
+| `/` `?` | search motion | repeat search carries basis and match id; UI entry remains separate |
 | `}` `{` | paragraph motion | resolver owns blank-line policy |
 | `]]` `[[` | section motion | Graft-backed when structural data exists |
 
@@ -1281,10 +1281,24 @@ What changed from the design:
   reusable case-transform, join, and mark helpers. Repeat records
   `sourceBasisDigest` and a `resolve-current-basis` replay policy so text-object
   repeat is explicit instead of an unlabelled key replay.
+- The search and structural motion lane adds
+  `src/app/workspace/vim-paragraph-motion.ts`,
+  `src/app/workspace/vim-matching-pair-motion.ts`, and
+  `src/app/workspace/vim-motion-basis-digest.ts`; paragraph and `%` motions now
+  expose basis-bound runtime proof, with `%` carrying pair id, direction, and
+  bracket policy.
+- The same lane adds `src/app/workspace/vim-search-motion.ts`, plus
+  `src/app/workspace/vim-word-motion.ts` as a ratchet-preserving extraction.
+  Stored literal `n` and `N` search repeat now carries match id, pattern digest,
+  ordinal, direction, and wrap policy.
+- Section motions now report `unsupported-section-motion` so provider absence is
+  visible to tests and agents instead of collapsed into a generic unsupported
+  motion.
 
 Follow-up work:
 
-- Search and structural motions remain future work.
+- `/` and `?` UI search entry, regex search policy, actual section providers,
+  tag pairs, comment pairs, and richer structural providers remain future work.
 - Full structural text objects such as functions, classes, comments, tags, and
   Graft-backed objects remain future work.
 - Register append, black-hole, system clipboard, numbered registers, and

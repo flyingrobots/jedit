@@ -68,10 +68,12 @@ Active checklist:
 - [x] Land the signpost truth pass.
 - [x] Remove the merged outside-CWD worktree and scratch bug note.
 - [x] Triage issue #123.
-- [ ] Start WF-0105 search and structural motion parity.
+- [x] Start WF-0105 search and structural motion parity.
 
 The next implementation lane is **search and structural motion parity**:
 
+- Active issue:
+  [#128 WF-0105: Search and structural motion parity](https://github.com/flyingrobots/jedit/issues/128).
 - `/`, `?`, `n`, and `N` should resolve against explicit reading-basis match
   facts instead of hidden UI state.
 - `%`, section, paragraph, and structure-aware motions should become explicit
@@ -79,6 +81,14 @@ The next implementation lane is **search and structural motion parity**:
 - Search history and match identity should be visible to tests and agents.
 - Operator integration must keep the same basis-bound execution discipline as
   the landed core motion and text-object work.
+
+Lane checklist:
+
+- [x] Paragraph motions resolve blank-line basis boundaries.
+- [x] `%` resolves balanced bracket pairs with structural pair identity.
+- [x] `n` and `N` resolve stored literal search match identity.
+- [ ] `/` and `?` populate search history from UI input.
+- [x] `[[` and `]]` expose honest section-motion posture.
 
 After that lane, continue WF-0105 through:
 
