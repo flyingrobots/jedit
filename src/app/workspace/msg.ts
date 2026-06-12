@@ -7,6 +7,7 @@ import type { ProfilerMsg } from "../raytracer-profiler.js";
 import type { SourceHighlightMsg } from "../source-highlight-session.js";
 import type { TitleCameraMotionMsg } from "../title-camera-session.js";
 import type {
+  WorkspaceCommandLineFilePreviewSelection,
   WorkspaceFilePreviewResult,
   WorkspaceCommandLineFilePreviewMsg,
 } from "./command-completion-preview.js";
@@ -120,7 +121,7 @@ export type WorkspaceMsg =
   | {
       type: typeof WorkspaceMessageTypes.CommandLineFilePreviewResult;
       requestId: number;
-      filePath: string;
+      selection: WorkspaceCommandLineFilePreviewSelection;
       result: WorkspaceFilePreviewResult;
     };
 

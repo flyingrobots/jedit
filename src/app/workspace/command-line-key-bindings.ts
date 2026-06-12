@@ -22,7 +22,8 @@ import {
 import {
   clearWorkspaceCommandLineFilePreview,
   createWorkspaceCommandLineFilePreviewCmd,
-  selectedWorkspaceCommandLineFilePreviewPath,
+  selectedWorkspaceCommandLineFilePreviewSelection,
+  type WorkspaceCommandLineFilePreviewSelection,
   workspaceEditorFilePreviewSource,
 } from "./command-completion-preview.js";
 import { validateWorkspaceCommandLineInput } from "./command-line-validation.js";
@@ -238,33 +239,33 @@ function withCommandLineFilePreviewRefresh(
     return [clearWorkspaceCommandLineFilePreview(model), commands];
   }
 
-  const filePath = selectedWorkspaceCommandLineFilePreviewPath({
+  const selection = selectedWorkspaceCommandLineFilePreviewSelection({
     commandLine: model.commandLine,
     entries: model.entries,
     hasOpenFile: workspaceHasOpenFile(model),
   });
-  if (filePath == null) {
+  if (selection == null) {
     return [clearWorkspaceCommandLineFilePreview(model), commands];
   }
-  return commandLineFilePreviewAlreadyRequested(model, filePath)
+  return commandLineFilePreviewAlreadyRequested(model, selection)
     ? result
-    : requestCommandLineFilePreview(model, commands, filePath, context);
+    : requestCommandLineFilePreview(model, commands, selection, context);
 }
 
 function commandLineFilePreviewAlreadyRequested(
   model: WorkspaceModel,
-  filePath: string,
+  selection: WorkspaceCommandLineFilePreviewSelection,
 ): boolean {
   return (
-    model.commandLineFilePreview?.filePath === filePath ||
-    model.commandLineFilePreviewRequestPath === filePath
+    model.commandLineFilePreview?.identity === selection.identity ||
+    model.commandLineFilePreviewRequest?.identity === selection.identity
   );
 }
 
 function requestCommandLineFilePreview(
   model: WorkspaceModel,
   commands: readonly Cmd<WorkspaceMsg>[],
-  filePath: string,
+  selection: WorkspaceCommandLineFilePreviewSelection,
   context: WorkspaceKeyBindingContext,
 ): KeyBindingResult {
   const requestId = model.commandLineFilePreviewRequestId + 1;
@@ -273,13 +274,13 @@ function requestCommandLineFilePreview(
       ...model,
       commandLineFilePreview: undefined,
       commandLineFilePreviewRequestId: requestId,
-      commandLineFilePreviewRequestPath: filePath,
+      commandLineFilePreviewRequest: selection,
     },
     [
       ...commands,
       createWorkspaceCommandLineFilePreviewCmd({
         requestId,
-        filePath,
+        selection,
         previewSource: workspaceEditorFilePreviewSource(
           context.deps.editorFile,
         ),

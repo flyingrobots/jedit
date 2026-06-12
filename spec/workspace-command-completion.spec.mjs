@@ -184,6 +184,7 @@ test("workspace command line completion provider returns bounded edit file previ
     importDist("app", "workspace", "command-completion-preview.js"),
     importDist("ports", "file-system.js"),
   ]);
+  const entries = editEntries(fileSystem);
 
   const preview = previewModule.workspaceCommandLineCompletionPreview({
     commandLine: {
@@ -191,9 +192,10 @@ test("workspace command line completion provider returns bounded edit file previ
       cursorIndex: 6,
       selectedCompletionIndex: 0,
     },
-    entries: editEntries(fileSystem),
+    entries,
     maxPreviewLines: 2,
     filePreview: {
+      identity: entries[2],
       filePath: "/repo/README.md",
       result: {
         kind: previewModule.WORKSPACE_FILE_PREVIEW_RESULT_KIND.Loaded,
@@ -214,6 +216,7 @@ test("workspace command line completion provider reports unavailable edit previe
     importDist("app", "workspace", "command-completion-preview.js"),
     importDist("ports", "file-system.js"),
   ]);
+  const entries = editEntries(fileSystem);
 
   const unreadablePreview = previewModule.workspaceCommandLineCompletionPreview({
     commandLine: {
@@ -221,8 +224,9 @@ test("workspace command line completion provider reports unavailable edit previe
       cursorIndex: 6,
       selectedCompletionIndex: 0,
     },
-    entries: editEntries(fileSystem),
+    entries,
     filePreview: {
+      identity: entries[2],
       filePath: "/repo/README.md",
       result: {
         kind: previewModule.WORKSPACE_FILE_PREVIEW_RESULT_KIND.Unavailable,
@@ -237,7 +241,7 @@ test("workspace command line completion provider reports unavailable edit previe
       cursorIndex: 2,
       selectedCompletionIndex: 1,
     },
-    entries: editEntries(fileSystem),
+    entries,
   });
 
   assert.equal(unreadablePreview.kind, "unavailable");
@@ -306,10 +310,11 @@ test("command-line mode accepts changing completions with enter before dispatch"
     importDist("ports", "file-system.js"),
   ]);
   const context = mockKeyBindingContext();
+  const entries = editEntries(fileSystem);
   const model = mockTitleScreenModel(titleScreen, {
     editor: mockEditor(editorMode),
     focusPane: "editor",
-    entries: editEntries(fileSystem),
+    entries,
     commandLine: {
       active: true,
       input: "e",
@@ -468,13 +473,14 @@ test("workspace render paints edit file completions above the Vim command line",
       importDist("app", "workspace", "editor", "mode.js"),
       importDist("ports", "file-system.js"),
     ]);
+  const entries = editEntries(fileSystem);
   const model = mockTitleScreenModel(titleScreen, {
     columns: 80,
     rows: 18,
     editor: mockEditor(editorMode, { lines: ["hello world"] }),
     focusPane: "editor",
     footerVisible: true,
-    entries: editEntries(fileSystem),
+    entries,
     jeditTheme: workspaceRenderTheme(),
     commandLine: {
       active: true,
@@ -483,6 +489,7 @@ test("workspace render paints edit file completions above the Vim command line",
       selectedCompletionIndex: 0,
     },
     commandLineFilePreview: {
+      identity: entries[2],
       filePath: "/repo/README.md",
       result: {
         kind: previewModule.WORKSPACE_FILE_PREVIEW_RESULT_KIND.Loaded,
@@ -500,6 +507,38 @@ test("workspace render paints edit file completions above the Vim command line",
   assert.match(lines[14], /# README/);
   assert.match(lines[15], /Project notes/);
   assert.match(lines[16], /^:edit R\s*$/);
+});
+
+test("command-line file previews require matching entry identity", async () => {
+  const [previewModule, fileSystem] =
+    await Promise.all([
+      importDist("app", "workspace", "command-completion-preview.js"),
+      importDist("ports", "file-system.js"),
+    ]);
+  const entries = editEntries(fileSystem);
+  const samePathEntries = entries.map((entry) => ({ ...entry }));
+
+  const preview = previewModule.workspaceCommandLineCompletionPreview({
+    commandLine: {
+      active: true,
+      input: "edit R",
+      cursorIndex: 6,
+      selectedCompletionIndex: 0,
+    },
+    entries: samePathEntries,
+    filePreview: {
+      identity: entries[2],
+      filePath: "/repo/README.md",
+      result: {
+        kind: previewModule.WORKSPACE_FILE_PREVIEW_RESULT_KIND.Loaded,
+        lines: ["# README"],
+        evidencePosture: "fixture-file",
+      },
+    },
+  });
+
+  assert.equal(preview.kind, "unavailable");
+  assert.deepEqual(preview.lines, ["Preview unavailable"]);
 });
 
 test("command-line file preview loads outside the render path", async () => {
@@ -524,11 +563,12 @@ test("command-line file preview loads outside the render path", async () => {
       },
     },
   });
+  const entries = editEntries(fileSystem);
   const model = mockTitleScreenModel(titleScreen, {
     columns: 80,
     rows: 18,
     footerVisible: true,
-    entries: editEntries(fileSystem),
+    entries,
     jeditTheme: workspaceRenderTheme(),
     commandLine: {
       active: true,
@@ -544,7 +584,8 @@ test("command-line file preview loads outside the render path", async () => {
     context,
   );
 
-  assert.equal(pending.commandLineFilePreviewRequestPath, "/repo/README.md");
+  assert.equal(pending.commandLineFilePreviewRequest?.filePath, "/repo/README.md");
+  assert.equal(pending.commandLineFilePreviewRequest?.identity, entries[2]);
   assert.equal(commands.length, 1);
   assert.deepEqual(previewCalls, []);
   viewer.renderWorkspace(pending);
@@ -556,6 +597,16 @@ test("command-line file preview loads outside the render path", async () => {
     msgModule.WorkspaceMessageTypes.CommandLineFilePreviewResult,
   );
   assert.deepEqual(previewCalls, ["/repo/README.md"]);
+
+  const cleared = {
+    ...pending,
+    commandLineFilePreviewRequest: undefined,
+  };
+  const stale = previewModule.applyWorkspaceCommandLineFilePreviewResult(
+    cleared,
+    previewMessage,
+  );
+  assert.equal(stale.commandLineFilePreview, undefined);
 
   const loaded = previewModule.applyWorkspaceCommandLineFilePreviewResult(
     pending,

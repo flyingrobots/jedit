@@ -134,7 +134,7 @@ function initialCommandLineFilePreviewState() {
   return {
     commandLineFilePreview: undefined,
     commandLineFilePreviewRequestId: 0,
-    commandLineFilePreviewRequestPath: undefined,
+    commandLineFilePreviewRequest: undefined,
   };
 }
 

@@ -287,7 +287,7 @@ export function mockTitleScreenModel(titleScreen, overrides = {}) {
     },
     commandLineFilePreview: undefined,
     commandLineFilePreviewRequestId: 0,
-    commandLineFilePreviewRequestPath: undefined,
+    commandLineFilePreviewRequest: undefined,
     startupIntroComplete: false,
     startupFileModalOpen: false,
     startupFileDrawerProgress: 0,
