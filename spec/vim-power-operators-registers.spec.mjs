@@ -152,6 +152,40 @@ test("vim paragraph operator motions preserve the next paragraph", async () => {
   assert.deepEqual(nextEditor.lastVimEdit.keys, ["d", "}"]);
 });
 
+test("vim paragraph operators preserve EOF and current paragraph backward boundaries", async () => {
+  const [mode, syntax, executor, model] = await Promise.all([
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "vim-chord-syntax.js"),
+    importDist("app", "workspace", "vim-command-executor.js"),
+    importDist("app", "workspace", "editor", "model.js"),
+  ]);
+  const eofEditor = mockEditor(mode, {
+    lines: ["alpha", "beta"],
+    cursorRow: 0,
+    cursorCol: 0,
+  });
+  const currentParagraphEditor = mockEditor(mode, {
+    lines: ["alpha", "", "beta"],
+    cursorRow: 2,
+    cursorCol: 2,
+  });
+
+  const eofDeleted = executor.applyVimChordSyntaxToEditor(
+    eofEditor,
+    syntax.parseVimChordSyntax(["d", "}"]),
+  );
+  const currentDeleted = executor.applyVimChordSyntaxToEditor(
+    currentParagraphEditor,
+    syntax.parseVimChordSyntax(["d", "{"]),
+  );
+
+  assert.deepEqual(eofDeleted.lines, [""]);
+  assert.equal(eofDeleted.register.kind, model.RegisterKinds.Char);
+  assert.equal(eofDeleted.register.text, "alpha\nbeta");
+  assert.deepEqual(currentDeleted.lines, ["alpha", "", "ta"]);
+  assert.equal(currentDeleted.register.text, "be");
+});
+
 test("vim matching-pair operator motions delete the inclusive structural pair", async () => {
   const [mode, syntax, executor, model] = await Promise.all([
     importDist("app", "workspace", "editor", "mode.js"),

@@ -216,6 +216,7 @@ function boundaryOrWordDestination(
     return vimParagraphMotionDestination(
       editor.lines,
       editor.cursorRow,
+      editor.cursorCol,
       motion,
       count,
     );

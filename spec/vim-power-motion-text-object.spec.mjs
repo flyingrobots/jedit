@@ -102,6 +102,38 @@ test("vim paragraph motions resolve blank-line reading-basis boundaries", async 
   assert.deepEqual(previous.target, { start: 12, end: 20 });
 });
 
+test("vim paragraph motions preserve EOF and current-paragraph backward boundaries", async () => {
+  const [mode, motion] = await Promise.all([
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "vim-motion-resolver.js"),
+  ]);
+  const eofEditor = mockEditor(mode, {
+    lines: ["alpha", "beta"],
+    cursorRow: 0,
+    cursorCol: 0,
+  });
+  const currentParagraphEditor = mockEditor(mode, {
+    lines: ["alpha", "", "beta"],
+    cursorRow: 2,
+    cursorCol: 2,
+  });
+
+  const eofForward = motion.resolveVimMotion({
+    editor: eofEditor,
+    motion: "paragraphForward",
+  });
+  const currentBackward = motion.resolveVimMotion({
+    editor: currentParagraphEditor,
+    motion: "paragraphBackward",
+  });
+
+  assert.equal("obstruction" in eofForward, false);
+  assert.equal("obstruction" in currentBackward, false);
+  assert.deepEqual(eofForward.target, { start: 0, end: 10 });
+  assert.deepEqual(currentBackward.cursorAfter, { row: 2, column: 0 });
+  assert.deepEqual(currentBackward.target, { start: 7, end: 9 });
+});
+
 test("vim matching-pair motion exposes structural pair identity", async () => {
   const [mode, motion] = await Promise.all([
     importDist("app", "workspace", "editor", "mode.js"),

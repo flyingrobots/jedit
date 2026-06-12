@@ -9,26 +9,30 @@ const MOTION_PARAGRAPH_FORWARD: VimMotionName = 'paragraphForward';
 export function vimParagraphMotionDestination(
   lines: readonly string[],
   startRow: number,
+  startColumn: number,
   motion: VimMotionName,
   count: number,
 ): number {
   return lineStartTextIndex(
     lines,
-    paragraphDestinationRow(lines, startRow, motion, count),
+    paragraphDestinationRow(lines, startRow, startColumn, motion, count),
   );
 }
 
 function paragraphDestinationRow(
   lines: readonly string[],
   startRow: number,
+  startColumn: number,
   motion: VimMotionName,
   count: number,
 ): number {
   let row = boundedRow(lines, startRow);
+  let column = startColumn;
   for (let step = FIRST_INDEX; step < count; step += ROW_STEP) {
     row = motion === MOTION_PARAGRAPH_FORWARD
       ? nextParagraphStartRow(lines, row)
-      : previousParagraphStartRow(lines, row);
+      : previousParagraphStartRow(lines, row, column);
+    column = FIRST_INDEX;
   }
   return row;
 }
@@ -41,9 +45,13 @@ function nextParagraphStartRow(lines: readonly string[], row: number): number {
   return nextNonBlankLineRow(lines, cursor);
 }
 
-function previousParagraphStartRow(lines: readonly string[], row: number): number {
+function previousParagraphStartRow(
+  lines: readonly string[],
+  row: number,
+  column: number,
+): number {
   let cursor = previousParagraphInteriorRow(lines, row);
-  if (isParagraphStartRow(lines, cursor) && cursor > FIRST_INDEX) {
+  if (column === FIRST_INDEX && isParagraphStartRow(lines, cursor) && cursor > FIRST_INDEX) {
     cursor -= ROW_STEP;
   }
   cursor = previousNonBlankLineRow(lines, cursor);
@@ -63,7 +71,7 @@ function nextNonBlankLineRow(lines: readonly string[], row: number): number {
   while (cursor < lines.length && isBlankLine(lines[cursor])) {
     cursor += ROW_STEP;
   }
-  return boundedRow(lines, cursor);
+  return cursor >= lines.length ? lines.length : boundedRow(lines, cursor);
 }
 
 function previousParagraphInteriorRow(
