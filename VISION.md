@@ -42,11 +42,10 @@ Users should still experience ordinary undo semantics. The causal model exists
 to preserve explainability and replayability below the product boundary, not to
 make editing feel like operating a ledger.
 
-Jim should not try to win by being a larger Vim, a terminal VS Code, or a
-generic AI chat surface. Neovim already owns the extensible Vim-platform lane,
-modern modal editors already own much of the modal-polish lane, and agentic
-editors are racing on broad AI workflow. Jim's open lane is accountable editing:
-edits that can be inspected, replayed, explained, previewed, and safely admitted.
+Jim should not try to win by being a larger Vim, a terminal IDE clone, a generic
+AI chat surface, or full modal-editor parity alone. Those lanes make the product
+interchangeable. Jim's owned lane is accountable editing: edits that can be
+inspected, replayed, explained, previewed, and safely admitted.
 
 The signature product loop is:
 

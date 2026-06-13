@@ -231,12 +231,12 @@ Terminal: 100 columns, dark theme, active editor surface.
 
 ```text
 +--------------------------------------------------------------------------------------------------+
-| src/example.ts                                                                                    |
+| src/example.ts                                                                                   |
 |                                                                                                  |
 | const accountName = customerName                                                                 |
 |                                                                                                  |
 | NORMAL  last: ciw -> inner word "customerName"  range 3:21-33  receipt tick:77                   |
-| :why explains syntax, basis, register effect, receipt, and result reading                       |
+| :why explains syntax, basis, register effect, receipt, and result reading                        |
 +--------------------------------------------------------------------------------------------------+
 ```
 
