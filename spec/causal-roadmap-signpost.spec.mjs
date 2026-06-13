@@ -53,6 +53,13 @@ test('WF-0108 follow-on debt is issue-backed', () => {
   }
 });
 
+test('WF-0108 playback exits insert mode before :why', () => {
+  const causalRoadmap = readRepoFile(CAUSAL_ROADMAP_PATH);
+  const playback = sectionBetween(causalRoadmap, '## Playback / Witness', 'Current repo command');
+
+  assert.match(playback, /<replacement>\n<Esc>\n:why/);
+});
+
 function sectionBetween(documentText, startHeading, endHeading) {
   const start = documentText.indexOf(startHeading);
   const end = documentText.indexOf(endHeading, start);

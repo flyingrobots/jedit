@@ -659,6 +659,7 @@ Target human playback once the `jim` alias is earned:
 jim demo.txt
 ciw
 <replacement>
+<Esc>
 :why
 ```
 
