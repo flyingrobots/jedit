@@ -60,6 +60,16 @@ test('WF-0108 playback exits insert mode before :why', () => {
   assert.match(playback, /<replacement>\n<Esc>\n:why/);
 });
 
+test('WF-0108 names command-event invariant enforcement', () => {
+  const causalRoadmap = readRepoFile(CAUSAL_ROADMAP_PATH);
+  const dataModel = sectionBetween(causalRoadmap, '## Data / State Model', '## Accessibility Posture');
+
+  assert.match(dataModel, /createJeditCommandEvent/);
+  assert.match(dataModel, /JeditCommandEventRejected/);
+  assert.match(dataModel, /AppliedCommandEvent/);
+  assert.match(dataModel, /RangeResolvedCommandEvent/);
+});
+
 function sectionBetween(documentText, startHeading, endHeading) {
   const start = documentText.indexOf(startHeading);
   const end = documentText.indexOf(endHeading, start);

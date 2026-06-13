@@ -381,6 +381,23 @@ result posture, and obstruction reason.
 | Serialization | JSON witness output for command events; future WSC linkage when retained evidence supports it. |
 | Deterministic assumptions | Command parsing and target resolution are deterministic over the supplied editor state and basis. |
 
+Invariant enforcement requirement:
+
+- Slice 1 must expose `createJeditCommandEvent(input)` as the only construction
+  surface for runtime command events.
+- The factory returns a validated event union such as `AppliedCommandEvent`,
+  `RangeResolvedCommandEvent`, `ObservedCommandEvent`, or a typed
+  `JeditCommandEventRejected` object. Callers must not serialize bare payloads.
+- `AppliedCommandEvent` requires explicit receipt posture for any mutation. A
+  missing receipt posture returns `JeditCommandEventRejected`.
+- `RangeResolvedCommandEvent` requires `basisReadingId` for every emitted range
+  or range set. A range without a basis returns `JeditCommandEventRejected`.
+- JSON witnesses, lower-mode summaries, and `:why` detail rendering consume only
+  the validated event union.
+- Slice 0 preflight must confirm the current runtime can distinguish mutation,
+  non-mutating command, range resolution, and obstruction facts before Slice 1
+  promises those constructors.
+
 ```mermaid
 stateDiagram-v2
   [*] --> Parsed
