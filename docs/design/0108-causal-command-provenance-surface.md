@@ -638,11 +638,18 @@ Commands expected before PR:
 
 ```bash
 npm run build
-node --test --test-concurrency=1 spec/<focused-command-provenance>.spec.mjs
+node --test --test-concurrency=1 \
+  spec/causal-roadmap-signpost.spec.mjs \
+  spec/design-cycle-policy.spec.mjs \
+  spec/vim-power-parity-matrix.spec.mjs \
+  spec/vim-power-target-usability-fixtures.spec.mjs
 npm run quality
 npx --yes markdownlint-cli2 docs/BEARING.md README.md VISION.md docs/design/0108-causal-command-provenance-surface.md
 git diff --check
 ```
+
+Implementation PRs must add and run a concrete focused command-provenance spec
+path; do not leave template placeholders in shell command blocks.
 
 ## Playback / Witness
 

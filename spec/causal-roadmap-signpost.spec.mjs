@@ -33,6 +33,13 @@ test('WF-0108 current truth cites merge-target evidence links', () => {
   assert.ok(evidenceLinks.length >= 7, 'Current Truth should cite every strong baseline claim');
 });
 
+test('WF-0108 validation commands are runnable shell commands', () => {
+  const causalRoadmap = readRepoFile(CAUSAL_ROADMAP_PATH);
+  const validationPlan = sectionBetween(causalRoadmap, '## Validation Plan', '## Playback / Witness');
+
+  assert.doesNotMatch(validationPlan, /spec\/<[^>]+>\.spec\.mjs/);
+});
+
 function sectionBetween(documentText, startHeading, endHeading) {
   const start = documentText.indexOf(startHeading);
   const end = documentText.indexOf(endHeading, start);
