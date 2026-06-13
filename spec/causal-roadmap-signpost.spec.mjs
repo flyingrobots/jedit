@@ -21,3 +21,24 @@ test('title-render follow-up arcs do not reserve active Jim cycle ids', () => {
   assert.match(geordiRoadmap, /WF-0112 - Bijou UI GraphQL Profile/);
   assert.match(geordiRoadmap, /WF-0113 - Geordi Scene3D Authoring Profile/);
 });
+
+test('WF-0108 current truth cites merge-target evidence links', () => {
+  const causalRoadmap = readRepoFile(CAUSAL_ROADMAP_PATH);
+  const currentTruth = sectionBetween(causalRoadmap, '## Current Truth', '## Problem');
+  const evidenceLinks = currentTruth.match(
+    /https:\/\/github\.com\/flyingrobots\/jedit\/blob\/[0-9a-f]{40}\/[^)\s]+#L[0-9]+/g,
+  );
+
+  assert.ok(evidenceLinks, 'Current Truth should include fully-qualified GitHub evidence links');
+  assert.ok(evidenceLinks.length >= 7, 'Current Truth should cite every strong baseline claim');
+});
+
+function sectionBetween(documentText, startHeading, endHeading) {
+  const start = documentText.indexOf(startHeading);
+  const end = documentText.indexOf(endHeading, start);
+
+  assert.notEqual(start, -1, `${startHeading} missing`);
+  assert.notEqual(end, -1, `${endHeading} missing after ${startHeading}`);
+
+  return documentText.slice(start, end);
+}

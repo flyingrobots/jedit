@@ -139,6 +139,42 @@ Current implemented truth:
   product-complete.
 - Production undo/redo is still not the final causal undo model.
 
+Evidence anchors from merge target `c511e2abc71c7c812ebc1eb79acb47480dad0ab5`:
+
+- Production text runtime is Echo-only and non-Echo profiles obstruct:
+  [spec/text-runtime-profile-session.spec.mjs#53:c511e2abc71c7c812ebc1eb79acb47480dad0ab5](https://github.com/flyingrobots/jedit/blob/c511e2abc71c7c812ebc1eb79acb47480dad0ab5/spec/text-runtime-profile-session.spec.mjs#L53).
+- BEARING records the same runtime profile, production undo/redo posture, WSC
+  surfaces, and Vim runtime baseline:
+  [docs/BEARING.md#14:c511e2abc71c7c812ebc1eb79acb47480dad0ab5](https://github.com/flyingrobots/jedit/blob/c511e2abc71c7c812ebc1eb79acb47480dad0ab5/docs/BEARING.md#L14).
+- Production text session opens, edits, reads, checkpoints, and exports through
+  app-owned text-session capabilities:
+  [spec/production-text-session.spec.mjs#20:c511e2abc71c7c812ebc1eb79acb47480dad0ab5](https://github.com/flyingrobots/jedit/blob/c511e2abc71c7c812ebc1eb79acb47480dad0ab5/spec/production-text-session.spec.mjs#L20).
+- Real workspace open/edit/save flows call production text authority and render
+  Echo readings:
+  [spec/workspace-app-echo-cutover.spec.mjs#5:c511e2abc71c7c812ebc1eb79acb47480dad0ab5](https://github.com/flyingrobots/jedit/blob/c511e2abc71c7c812ebc1eb79acb47480dad0ab5/spec/workspace-app-echo-cutover.spec.mjs#L5).
+- Viewer rendering treats Echo reading cache as production text projection,
+  not stale local line authority:
+  [spec/workspace-text-cutover.spec.mjs#128:c511e2abc71c7c812ebc1eb79acb47480dad0ab5](https://github.com/flyingrobots/jedit/blob/c511e2abc71c7c812ebc1eb79acb47480dad0ab5/spec/workspace-text-cutover.spec.mjs#L128).
+- Echo History drawer behavior and `ctrl+h` focus are covered by workspace
+  tests:
+  [spec/workspace-echo-history-drawer.spec.mjs#35:c511e2abc71c7c812ebc1eb79acb47480dad0ab5](https://github.com/flyingrobots/jedit/blob/c511e2abc71c7c812ebc1eb79acb47480dad0ab5/spec/workspace-echo-history-drawer.spec.mjs#L35).
+- WSC history listing exposes deterministic JSON records:
+  [spec/jedit-wsc-history-listing.spec.mjs#10:c511e2abc71c7c812ebc1eb79acb47480dad0ab5](https://github.com/flyingrobots/jedit/blob/c511e2abc71c7c812ebc1eb79acb47480dad0ab5/spec/jedit-wsc-history-listing.spec.mjs#L10).
+- Current and point-in-time WSC history export are covered by export specs:
+  [spec/jedit-wsc-current-history-export.spec.mjs#11:c511e2abc71c7c812ebc1eb79acb47480dad0ab5](https://github.com/flyingrobots/jedit/blob/c511e2abc71c7c812ebc1eb79acb47480dad0ab5/spec/jedit-wsc-current-history-export.spec.mjs#L11).
+- Historical basis selection is explicitly non-mutating:
+  [spec/jedit-wsc-history-basis.spec.mjs#30:c511e2abc71c7c812ebc1eb79acb47480dad0ab5](https://github.com/flyingrobots/jedit/blob/c511e2abc71c7c812ebc1eb79acb47480dad0ab5/spec/jedit-wsc-history-basis.spec.mjs#L30).
+- Vim motion resolver covers reading-basis motions, paragraph motions,
+  matching pairs, and repeat-search facts:
+  [spec/vim-power-motion-text-object.spec.mjs#9:c511e2abc71c7c812ebc1eb79acb47480dad0ab5](https://github.com/flyingrobots/jedit/blob/c511e2abc71c7c812ebc1eb79acb47480dad0ab5/spec/vim-power-motion-text-object.spec.mjs#L9).
+- Vim operators and registers cover delete/change/yank/put-style runtime
+  behavior with register provenance:
+  [spec/vim-power-operators-registers.spec.mjs#9:c511e2abc71c7c812ebc1eb79acb47480dad0ab5](https://github.com/flyingrobots/jedit/blob/c511e2abc71c7c812ebc1eb79acb47480dad0ab5/spec/vim-power-operators-registers.spec.mjs#L9).
+- Dot repeat and transformed repeat metadata are covered by normal-mode specs:
+  [spec/vim-power-normal-mode-integration.spec.mjs#9:c511e2abc71c7c812ebc1eb79acb47480dad0ab5](https://github.com/flyingrobots/jedit/blob/c511e2abc71c7c812ebc1eb79acb47480dad0ab5/spec/vim-power-normal-mode-integration.spec.mjs#L9).
+- Case operators, joins, and marks are covered by transform/mark specs:
+  [spec/vim-power-transforms-marks.spec.mjs#9:c511e2abc71c7c812ebc1eb79acb47480dad0ab5](https://github.com/flyingrobots/jedit/blob/c511e2abc71c7c812ebc1eb79acb47480dad0ab5/spec/vim-power-transforms-marks.spec.mjs#L9).
+
 Current design anchors:
 
 - [WF-0105 Vim Power Moves Causal Parity](0105-vim-power-moves-causal-parity.md)
