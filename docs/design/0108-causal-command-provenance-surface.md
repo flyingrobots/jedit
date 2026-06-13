@@ -701,13 +701,13 @@ Follow-on issues:
 - [WF-0109 Historical Basis Preview](https://github.com/flyingrobots/jedit/issues/134).
 - [WF-0110 Search Sets And Substitute Strand Preview](https://github.com/flyingrobots/jedit/issues/132).
 - [WF-0111 Historical Yank And Register Provenance](https://github.com/flyingrobots/jedit/issues/133).
-- Macro dry-run with obstruction report.
-- Causal marks with drift.
-- `:explain` range.
-- Register provenance detail view.
-- Semantic dot-repeat explanation.
-- Stale diagnostics and causal quickfix.
-- Agent proposal strands.
+- [WF-0114 Macro Dry-Run With Obstruction Report](https://github.com/flyingrobots/jedit/issues/141).
+- [WF-0115 Causal Marks With Drift](https://github.com/flyingrobots/jedit/issues/137).
+- [WF-0116 Explain Range](https://github.com/flyingrobots/jedit/issues/140).
+- [WF-0117 Register Provenance Detail View](https://github.com/flyingrobots/jedit/issues/139).
+- [WF-0118 Semantic Dot-Repeat Explanation](https://github.com/flyingrobots/jedit/issues/136).
+- [WF-0119 Stale Diagnostics And Causal Quickfix](https://github.com/flyingrobots/jedit/issues/138).
+- [WF-0120 Agent Proposal Strands](https://github.com/flyingrobots/jedit/issues/142).
 
 ## Retrospective
 

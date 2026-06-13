@@ -40,6 +40,19 @@ test('WF-0108 validation commands are runnable shell commands', () => {
   assert.doesNotMatch(validationPlan, /spec\/<[^>]+>\.spec\.mjs/);
 });
 
+test('WF-0108 follow-on debt is issue-backed', () => {
+  const causalRoadmap = readRepoFile(CAUSAL_ROADMAP_PATH);
+  const followOnDebt = sectionBetween(causalRoadmap, '## Follow-On Debt', '## Retrospective');
+  const debtItems = followOnDebt
+    .split('\n')
+    .filter((line) => line.startsWith('- '));
+
+  assert.ok(debtItems.length >= 10, 'expected issue-backed follow-on items');
+  for (const item of debtItems) {
+    assert.match(item, /^- \[[^\]]+\]\(https:\/\/github\.com\/flyingrobots\/jedit\/issues\/[0-9]+\)\.?$/);
+  }
+});
+
 function sectionBetween(documentText, startHeading, endHeading) {
   const start = documentText.indexOf(startHeading);
   const end = documentText.indexOf(endHeading, start);
