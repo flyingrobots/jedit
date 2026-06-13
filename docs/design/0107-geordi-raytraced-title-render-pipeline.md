@@ -783,14 +783,14 @@ GraphQL authoring profiles are important, but they should not block WF-0107.
 They should move into separate design arcs:
 
 ```text
-WF-0108 - Bijou UI GraphQL Profile
-WF-0109 - Geordi Scene3D Authoring Profile
+WF-0112 - Bijou UI GraphQL Profile
+WF-0113 - Geordi Scene3D Authoring Profile
 ```
 
-WF-0108 should define `bijou-ui.graphql`, terminal component primitives,
+WF-0112 should define `bijou-ui.graphql`, terminal component primitives,
 accessibility fields, and the Geordi-Bijou lowering bridge.
 
-WF-0109 should define `geordi-scene3d.graphql`, authored scene objects,
+WF-0113 should define `geordi-scene3d.graphql`, authored scene objects,
 materials, lights, animation tracks, renderer features, target capabilities, and
 imports from Bunny primitive graphics schemas.
 

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Pinned the Jim causal product roadmap around the
+  `explain -> preview -> admit -> recover` loop; added WF-0108 for Jim Command
+  Provenance And `:why` and moved release planning off the active roadmap.
 - Stabilized Vim repeat-search match identity so `n` and `N` preserve the same
   `matchId` for the same physical match while exposing traversal direction as a
   separate fact.

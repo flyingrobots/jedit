@@ -3,11 +3,11 @@ title: "WF-0105 - Vim Power Moves Causal Parity"
 legend: "WF"
 lane: "design"
 issue: "https://github.com/flyingrobots/jedit/issues/128"
-status: "draft"
+status: "active"
 owners:
   - "@flyingrobots"
 created: "2026-06-09"
-updated: "2026-06-09"
+updated: "2026-06-13"
 ---
 
 # WF-0105 - Vim Power Moves Causal Parity
@@ -30,6 +30,14 @@ backed by Graft structure, repeat can transform intent across changing text,
 undo can become inverse causal input, search/replace can preview as a strand,
 and macros can replay as a receipt-bearing causal script rather than raw key
 sleep.
+
+After the search and structural motion lane landed, WF-0105 remains the broad
+Vim/Jim substrate roadmap. It is no longer the only active product signpost.
+The next pinned product cycle is
+[WF-0108 Jim Command Provenance And :why](0108-causal-command-provenance-surface.md),
+which should choose Vim slices by whether they strengthen provenance, preview,
+replay, safe destructive edits, agent witnesses, structural objects, or user
+trust.
 
 This document also locks the product naming direction: `jim` is the intended
 future user-facing command and editor name for the Vim-shaped application,
