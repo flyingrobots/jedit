@@ -14,6 +14,13 @@ The active product direction is **JIM: Jedit Is Modal**. The repository,
 packages, release gates, contracts, and WSC directories remain `jedit` until the
 Echo-powered proof and compatibility plan make a user-facing `jim` command safe.
 
+The product promise Jim must earn before a public editor release is:
+
+```text
+Jim is a modal editor for people and agents who need edits to be explainable,
+recoverable, and reviewable.
+```
+
 ---
 
 ## Quick start
@@ -42,6 +49,9 @@ Press `?` inside the editor for the key binding reference.
 - **Jim/Vim roadmap** — command-line completion exists; the active roadmap is
   first-class Vim grammar, basis-bound motions, text objects, registers, macros,
   repeat, and causal proof
+- **Echo History drawer** — a first interactive history drawer lists
+  editor-shaped Echo activity such as opens, edits, reads, exports, checkpoints,
+  and obstructions
 - **Witness scripts** — JSON-reporting evidence tools for CI and agents (see [Witnesses](#witnesses))
 
 ---
@@ -190,19 +200,46 @@ automatically before TypeScript compilation.
 
 ## Next steps
 
-The immediate roadmap is not a broad docs rewrite. Keep signposts accurate, then
-continue the Echo/Jim proof work.
+The immediate roadmap is not release preparation. Release stays off the active
+radar until Jim has reliable editor trust, polished UI/UX, and one unmistakable
+causal product workflow.
 
-- Continue [WF-0105 Vim Power Moves Causal Parity](docs/design/0105-vim-power-moves-causal-parity.md)
-  with search and structural motion parity.
-- Resolve `/`, `?`, `n`, `N`, `%`, section, paragraph, and structure-aware
-  motions against explicit reading-basis facts.
-- Grow Graft-backed text objects, visual selections, registers, macros,
-  substitute/global commands, and causal strand previews through the same
-  grammar and proof surface.
+The active product loop is:
+
+```text
+explain -> preview -> admit -> recover
+```
+
+The active product ladder is:
+
+1. **Editor Trust Gate** — open, edit, save, quit, search, dirty-state, and
+   disk-output guardrails are witness-proven.
+2. **Command Provenance And `:why`** — the last meaningful Vim edit can explain
+   what ran, what target resolved, what changed, and what evidence proves it.
+3. **Historical Basis Preview** — History can preview a bounded historical
+   reading while clearly saying the current head is unchanged.
+4. **Search Sets And Substitute Strand Preview** — search creates basis-bound
+   result sets, `:%s` previews a proposal strand, and `:admit` admits selected
+   rows.
+5. **Historical Yank And Register Provenance** — retained historical material
+   can be yanked into the current head with source evidence.
+6. **Vim Power Core** — visual mode, serious registers, semantic repeat, macros,
+   marks, structural text objects, and range commands land through causal
+   proofs.
+7. **Agent-Safe Editing** — agents produce accountable proposal strands with
+   basis, range, rationale, evidence, and admission paths.
+
+Next implementation start:
+
+- Start [WF-0108 Jim Command Provenance And :why](docs/design/0108-causal-command-provenance-surface.md)
+  with an Editor Trust Gate preflight.
+- Keep [WF-0105 Vim Power Moves Causal Parity](docs/design/0105-vim-power-moves-causal-parity.md)
+  as the broad Vim substrate roadmap, but choose next Vim slices by whether
+  they strengthen provenance, preview, replay, safe destructive edits, agent
+  witnesses, structural objects, or user trust.
 - Keep title-rendering work on the separate
   [WF-0107 Geordi title-render lane](docs/design/0107-geordi-raytraced-title-render-pipeline.md)
   until rendering is the explicit objective.
 - Keep `README.md`, `docs/technical-teardown.md`, and signpost docs truthful in
-  compact passes; do the full rewrite after a few more Echo/Jim goalposts prove
-  the final shape.
+  compact passes; do the full rewrite after command provenance, history, and
+  broad-edit preview prove the final shape.

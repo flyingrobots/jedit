@@ -12,6 +12,13 @@ runtime evidence.
 
 `jedit` should make causal editing usable.
 
+The product promise Jim must earn is:
+
+```text
+Jim is a modal editor for people and agents who need edits to be explainable,
+recoverable, and reviewable.
+```
+
 The user should experience:
 
 - a fast keyboard-first editor
@@ -34,6 +41,18 @@ The stack should provide:
 Users should still experience ordinary undo semantics. The causal model exists
 to preserve explainability and replayability below the product boundary, not to
 make editing feel like operating a ledger.
+
+Jim should not try to win by being a larger Vim, a terminal VS Code, or a
+generic AI chat surface. Neovim already owns the extensible Vim-platform lane,
+modern modal editors already own much of the modal-polish lane, and agentic
+editors are racing on broad AI workflow. Jim's open lane is accountable editing:
+edits that can be inspected, replayed, explained, previewed, and safely admitted.
+
+The signature product loop is:
+
+```text
+explain -> preview -> admit -> recover
+```
 
 ## Product pressure
 
@@ -192,22 +211,36 @@ product.
 
 ## Execution sequence
 
-Near-term work should stay narrow:
+Near-term product work should stay narrow and ordered by goalposts:
 
-1. Keep Stack Witness 0001 green across the fake transport.
-2. Keep the real Echo WASM witness on an app/host split:
-   application submits and observes, trusted host ticks.
-3. Keep the witness report honest about inline evidence, missing retained refs,
-   and replay obstruction.
-4. Graduate `TextBufferOptic` and `ReadBasisHandle` into a real optic/session
-   bootstrap contract.
-5. Move remaining fixture-only basis lore below a durable session boundary.
-6. Consume an Echo-owned versioned WASM package artifact.
-7. Replace hand-authored fixture assumptions with Wesley-generated helpers.
-8. Add editor semantics only when they are pulled by the causal seam:
-   `createBuffer`, `replaceRange`, `textWindow`, then undo as inverse history.
-9. Bring Continuum in only after the local jedit/Echo boundary is proven enough
-   to publish without speculative ontology.
+1. **Editor Trust Gate**: prove open, edit, save, quit, search, dirty-state, and
+   disk-output behavior before leaning on causal UI.
+2. **Command Provenance And `:why`**: expose why representative Vim edits
+   changed text, which basis they used, which range they touched, and what
+   receipt or result reading proves the outcome.
+3. **Historical Basis Preview**: preview history through a bounded basis view
+   while clearly preserving the current head.
+4. **Search Sets And Substitute Strand Preview**: let search create basis-bound
+   result sets, let `:%s` preview proposal strands, and let `:admit` admit all
+   or selected rows.
+5. **Historical Yank And Register Provenance**: reuse retained historical
+   material without moving the current head.
+6. **Vim Power Core**: deepen Vim parity through the causal system, prioritizing
+   visual mode, registers, semantic repeat, macros, marks, structural text
+   objects, and range commands.
+7. **Agent-Safe Editing**: require agent edits to arrive as accountable proposal
+   strands with basis, range, rationale, evidence, and admission paths.
+
+Runtime work still follows product pressure:
+
+- Keep Echo app/host authority split intact.
+- Keep witness reports honest about inline evidence, missing retained refs, and
+  replay obstruction.
+- Move remaining fixture-only basis lore below durable session boundaries.
+- Replace hand-authored fixture assumptions with Wesley-generated helpers.
+- Add editor semantics only when pulled by the causal seam.
+- Bring Continuum in only after the local jedit/Echo boundary is proven enough
+  to publish without speculative ontology.
 
 ## Non-goals right now
 
@@ -215,6 +248,8 @@ Near-term work should stay narrow:
 - Do not make Echo know jedit product nouns.
 - Do not make jedit know Echo substrate coordinates.
 - Do not publish packages just because the witness ritual works.
+- Do not prepare a public editor release until the product has a credible demo
+  path for accountable editing.
 - Do not route around Wesley with permanent hand-authored protocol shapes.
 - Do not bring Continuum in to bless an unproven boundary.
 - Do not implement collaboration before one local causal file history is honest.

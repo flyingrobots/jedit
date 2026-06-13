@@ -44,21 +44,51 @@ commands, generated output, tests, GitHub state, or committed artifacts.
 
 ## Roadmap Pin
 
-Do not cut a release just because recent cleanup PRs landed. The next release
-decision needs an explicit release-readiness audit, version policy check,
-changelog check, and release gate run.
+Release is off the immediate radar. The next public release decision needs an
+explicit release-readiness audit, version policy check, changelog check, release
+gate run, UI/UX pass, and a demo path that proves Jim's causal product promise.
+
+Jim's product promise:
+
+```text
+Jim is a modal editor for people and agents who need edits to be explainable,
+recoverable, and reviewable.
+```
+
+The active roadmap is Jim's signature loop:
+
+```text
+explain -> preview -> admit -> recover
+```
+
+That loop is tracked as goalposts:
+
+1. **Editor Trust Gate**: open, edit, save, quit, search, dirty-state, and
+   disk-output guardrails are witness-proven.
+2. **Command Provenance And `:why`**: the last meaningful Vim edit can explain
+   what ran, what target resolved, what changed, and what evidence proves it.
+3. **Historical Basis Preview**: History can preview a bounded historical
+   reading while clearly saying the current head is unchanged.
+4. **Search Sets And Substitute Strand Preview**: search creates basis-bound
+   result sets, `:%s` previews a proposal strand, and `:admit` admits selected
+   rows.
+5. **Historical Yank And Register Provenance**: retained historical material can
+   be yanked into the current head with source evidence.
+6. **Vim Power Core**: visual mode, serious registers, semantic repeat, macros,
+   marks, structural text objects, and range commands land through causal
+   proofs.
+7. **Agent-Safe Editing**: agents produce accountable proposal strands with
+   basis, range, rationale, evidence, and admission paths.
 
 Immediate order:
 
-1. Land the signpost truth pass so the repo stops pointing agents at stale
-   ledgers.
-2. Clean local workspace debris after the signpost PR lands: the merged
-   `fix/open-files-outside-cwd` worktree, merged local branches, and the
-   scratch bug note for the already-fixed outside-CWD `:edit` issue.
-3. Triage the live command-surface bug:
-   [#123 Preview panel stays empty for command/file completions](https://github.com/flyingrobots/jedit/issues/123).
-4. Resume the Jim/Vim roadmap from
-   [`WF-0105 - Vim Power Moves Causal Parity`](design/0105-vim-power-moves-causal-parity.md).
+1. Land the causal roadmap signpost pass.
+2. Start [`WF-0108 - Jim Command Provenance And :why`](design/0108-causal-command-provenance-surface.md).
+3. Run the Editor Trust Gate preflight before implementation:
+   open/edit/save/quit, `/` and `?` search entry, dirty quit, dirty file switch,
+   single-buffer versus multi-buffer posture, and disk-output verification.
+4. Implement the first command-provenance slice only after trust blockers are
+   either fixed or honestly scoped.
 
 Active checklist:
 
@@ -68,38 +98,13 @@ Active checklist:
 - [x] Land the signpost truth pass.
 - [x] Remove the merged outside-CWD worktree and scratch bug note.
 - [x] Triage issue #123.
-- [x] Start WF-0105 search and structural motion parity.
+- [x] Land WF-0105 search and structural motion parity start.
+- [x] Land causal roadmap signpost pass.
+- [ ] Start WF-0108 Editor Trust Gate preflight.
 
-The next implementation lane is **search and structural motion parity**:
-
-- Active issue:
-  [#128 WF-0105: Search and structural motion parity](https://github.com/flyingrobots/jedit/issues/128).
-- `/`, `?`, `n`, and `N` should resolve against explicit reading-basis match
-  facts instead of hidden UI state.
-- `%`, section, paragraph, and structure-aware motions should become explicit
-  motion results with typed unsupported posture where structure is unavailable.
-- Search history and match identity should be visible to tests and agents.
-- Operator integration must keep the same basis-bound execution discipline as
-  the landed core motion and text-object work.
-
-Lane checklist:
-
-- [x] Paragraph motions resolve blank-line basis boundaries.
-- [x] `%` resolves balanced bracket pairs with structural pair identity.
-- [x] `n` and `N` resolve stored literal search match identity.
-- [ ] `/` and `?` populate search history from UI input.
-- [x] `[[` and `]]` expose honest section-motion posture.
-
-After that lane, continue WF-0105 through:
-
-- Graft-backed structural text objects for functions, classes, comments, tags,
-  and language blocks.
-- Visual selection state and visual operators.
-- Register hardening: append, black-hole, numbered, expression, and clipboard
-  policy.
-- Macro recording/replay as causal scripts with obstruction reports.
-- Substitute/global/range commands with previewable causal strand posture.
-- Agent/MCP Vim power witnesses and a parity release gate.
+WF-0105 remains the broad Vim/Jim power-move roadmap. Its next slices should be
+chosen only when they strengthen provenance, preview, replay, safe destructive
+edits, agent witnesses, structural objects, or user trust.
 
 ## Parked Lanes
 
@@ -130,7 +135,17 @@ After that lane, continue WF-0105 through:
 | Vim target workflows | [`docs/design/0105-vim-target-usability-tests.md`](design/0105-vim-target-usability-tests.md) |
 | Vim/Jim power moves | [`docs/design/0105-vim-power-moves-causal-parity.md`](design/0105-vim-power-moves-causal-parity.md) |
 | Emacs ideas to steal causally | [`docs/design/0106-emacs-ideas-to-steal-causally.md`](design/0106-emacs-ideas-to-steal-causally.md) |
+| Jim command provenance and `:why` | [`docs/design/0108-causal-command-provenance-surface.md`](design/0108-causal-command-provenance-surface.md) |
 | Title render pipeline | [`docs/design/0107-geordi-raytraced-title-render-pipeline.md`](design/0107-geordi-raytraced-title-render-pipeline.md) |
+
+## Next Cycle Anchors
+
+| Cycle | Issue | Role |
+| --- | --- | --- |
+| WF-0108 | [#131](https://github.com/flyingrobots/jedit/issues/131) | Jim Command Provenance And `:why` |
+| WF-0109 | [#134](https://github.com/flyingrobots/jedit/issues/134) | Historical Basis Preview |
+| WF-0110 | [#132](https://github.com/flyingrobots/jedit/issues/132) | Search Sets And Substitute Strand Preview |
+| WF-0111 | [#133](https://github.com/flyingrobots/jedit/issues/133) | Historical Yank And Register Provenance |
 
 ## Active Work
 
@@ -141,9 +156,9 @@ internal APIs remain `jedit` until the Echo-powered proof and compatibility plan
 make a user-facing rename safe. `jim` is the future command/product name for the
 modal editor that grows out of this repo.
 
-The active editing roadmap is WF-0105. The currently pinned lane is search and
-structural motion parity, with command-surface bug #123 as the nearest
-user-visible bug to triage.
+The active editing roadmap is now the causal product ladder above. WF-0105
+remains the Vim power-move substrate, and WF-0108 is the next pinned design
+cycle because it turns that substrate into Jim's user-facing differentiator.
 
 ## Deferred Full Rewrite
 
@@ -155,7 +170,8 @@ for after the repo has executable proof for:
 
 - Echo-backed text/edit authority in the interactive TUI;
 - basis-bound Vim search and structural motions;
-- causal or transactional edit operations beyond the landed core operators;
+- causal command provenance beyond the landed core operators;
+- previewable broad edits;
 - at least one open/edit/save/quit usability witness;
 - durable WSC evidence that can recover and export a historical basis.
 
