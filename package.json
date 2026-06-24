@@ -35,7 +35,7 @@
     "@flyingrobots/bijou-node": "7.0.0",
     "@flyingrobots/bijou-tui": "7.0.0",
     "@flyingrobots/bijou-tui-app": "7.0.0",
-    "@flyingrobots/graft": "0.7.1",
+    "@flyingrobots/graft": "0.10.0",
     "@modelcontextprotocol/sdk": "^1.29.0"
   },
   "devDependencies": {

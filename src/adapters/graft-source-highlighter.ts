@@ -1,3 +1,4 @@
+import { spawnSync, type SpawnSyncOptionsWithStringEncoding } from 'node:child_process';
 import {
   SOURCE_HIGHLIGHT_ROLE,
   type SourceHighlightReading,
@@ -9,6 +10,8 @@ import {
 } from '../ports/source-highlighter.js';
 
 const EDITOR_HEAD_BASIS_KIND = 'editor_head';
+const COLORFUL_CLI_COMMAND = 'colorful';
+const PROCESS_RUNNER_ENCODING = 'utf8';
 const VIEWPORT_START_COLUMN = 0;
 const VIEWPORT_END_COLUMN = 0;
 
@@ -70,6 +73,26 @@ interface GraftProjectionOptions {
   };
 }
 
+interface GraftProcessRunRequest {
+  readonly command: string;
+  readonly args: readonly string[];
+  readonly cwd: string;
+  readonly stdin?: string;
+  readonly timeoutMs?: number;
+  readonly maxBufferBytes?: number;
+}
+
+interface GraftProcessRunResult {
+  readonly status: number | null;
+  readonly stdout: string;
+  readonly stderr: string;
+  readonly error?: Error;
+}
+
+interface GraftProcessRunner {
+  run(request: GraftProcessRunRequest): GraftProcessRunResult;
+}
+
 export interface GraftSourceHighlighterRuntime {
   ensureParserReady(): Promise<void>;
   createProjectionBundle(path: string, content: string, options: GraftProjectionOptions): GraftProjectionBundle;
@@ -100,6 +123,32 @@ const GRAFT_ROLE_ENTRIES: readonly GraftRoleEntry[] = [
 ];
 
 let cachedRuntime: GraftSourceHighlighterRuntime | undefined;
+
+const NODE_PROCESS_RUNNER: GraftProcessRunner = {
+  run(request: GraftProcessRunRequest): GraftProcessRunResult {
+    const options: SpawnSyncOptionsWithStringEncoding = {
+      cwd: request.cwd,
+      encoding: PROCESS_RUNNER_ENCODING,
+    };
+    if (request.stdin != null) {
+      options.input = request.stdin;
+    }
+    if (request.timeoutMs != null) {
+      options.timeout = request.timeoutMs;
+    }
+    if (request.maxBufferBytes != null) {
+      options.maxBuffer = request.maxBufferBytes;
+    }
+
+    const result = spawnSync(request.command, request.args, options);
+    return {
+      status: result.status,
+      stdout: result.stdout,
+      stderr: result.stderr,
+      ...(result.error == null ? {} : { error: result.error }),
+    };
+  },
+};
 
 export function createGraftSourceHighlighter(options: GraftSourceHighlighterOptions = {}): SourceHighlighter {
   const loadRuntime = options.loadRuntime ?? defaultRuntimeLoader();
@@ -166,9 +215,17 @@ function defaultRuntimeLoader(): LoadGraftSourceHighlighterRuntime {
     }
 
     const runtime = await import('@flyingrobots/graft');
+    const proseProjector = runtime.createColorfulCliProseProjector({
+      processRunner: NODE_PROCESS_RUNNER,
+      cwd: process.cwd(),
+      command: COLORFUL_CLI_COMMAND,
+    });
     cachedRuntime = {
-      ensureParserReady: async () => undefined,
-      createProjectionBundle: runtime.createProjectionBundle,
+      ensureParserReady: runtime.ensureParserReady,
+      createProjectionBundle: (path, content, options) => runtime.createProjectionBundle(path, content, {
+        ...options,
+        proseProjector,
+      }),
     };
     return cachedRuntime;
   };

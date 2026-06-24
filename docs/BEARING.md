@@ -27,6 +27,8 @@ history, merged pull requests, release notes, and design docs.
 - The Vim/Jim runtime now has parser, normal/operator-pending state, basis-bound
   core motions, core text objects, delete/change/yank/put execution, basic dot
   repeat, transformed-repeat metadata, case operators, joins, and local marks.
+- Graft-backed source highlighting consumes Graft 0.10.0 projections, including
+  plain-text prose spans when `colorful >= 0.2.1` is available on `PATH`.
 
 ## Source Of Truth
 
