@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
+import semver from 'semver';
 import { REPO_ROOT, ensureDistBuilt } from './dist-helpers.mjs';
 
 const PORT_PATH = path.join(REPO_ROOT, 'dist', 'ports', 'source-highlighter.js');
@@ -30,25 +31,14 @@ const PROSE_NUMBER_END_COLUMN = 8;
 const PROSE_PUNCTUATION_START_COLUMN = 8;
 const PROSE_PUNCTUATION_END_COLUMN = 9;
 
-function parseSemver(version) {
-  const match = /^(\d+)\.(\d+)\.(\d+)(?:[-+][0-9A-Za-z.-]+)?$/.exec(version);
-  assert.notEqual(match, null);
-  return [Number(match[1]), Number(match[2]), Number(match[3])];
+function semverAtLeast(actual, minimum) {
+  return semver.gte(actual, minimum);
 }
 
-function semverAtLeast(actual, minimum) {
-  const actualParts = parseSemver(actual);
-  const minimumParts = parseSemver(minimum);
-  for (let index = 0; index < minimumParts.length; index += 1) {
-    if (actualParts[index] > minimumParts[index]) {
-      return true;
-    }
-    if (actualParts[index] < minimumParts[index]) {
-      return false;
-    }
-  }
-  return true;
-}
+test('Graft source highlighter dependency version check honors prerelease ordering', () => {
+  assert.equal(semverAtLeast('0.10.0-alpha.1', GRAFT_COLORFUL_PROSE_MINIMUM_VERSION), false);
+  assert.equal(semverAtLeast('0.10.0', GRAFT_COLORFUL_PROSE_MINIMUM_VERSION), true);
+});
 
 function readGraftPackageVersion() {
   const packageJson = JSON.parse(fs.readFileSync(GRAFT_PACKAGE_PATH, 'utf8'));
