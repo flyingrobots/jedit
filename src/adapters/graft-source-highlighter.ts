@@ -125,8 +125,6 @@ const GRAFT_ROLE_ENTRIES: readonly GraftRoleEntry[] = [
 
 let cachedRuntime: GraftSourceHighlighterRuntime | undefined;
 
-const NODE_PROCESS_RUNNER = createGraftSourceHighlighterProcessRunner();
-
 export function createGraftSourceHighlighterProcessRunner(): GraftProcessRunner {
   return {
     run(request: GraftProcessRunRequest): GraftProcessRunResult {
@@ -220,8 +218,9 @@ function defaultRuntimeLoader(): LoadGraftSourceHighlighterRuntime {
     }
 
     const runtime = await import('@flyingrobots/graft');
+    const processRunner = createGraftSourceHighlighterProcessRunner();
     const proseProjector = runtime.createColorfulCliProseProjector({
-      processRunner: NODE_PROCESS_RUNNER,
+      processRunner,
       cwd: process.cwd(),
       command: COLORFUL_CLI_COMMAND,
     });

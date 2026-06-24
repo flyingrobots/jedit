@@ -5,10 +5,12 @@ import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
 import semver from 'semver';
+import ts from 'typescript';
 import { REPO_ROOT, ensureDistBuilt } from './dist-helpers.mjs';
 
 const PORT_PATH = path.join(REPO_ROOT, 'dist', 'ports', 'source-highlighter.js');
 const ADAPTER_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'graft-source-highlighter.js');
+const ADAPTER_SOURCE_PATH = path.join(REPO_ROOT, 'src', 'adapters', 'graft-source-highlighter.ts');
 const GRAFT_PACKAGE_PATH = path.join(REPO_ROOT, 'node_modules', '@flyingrobots', 'graft', 'package.json');
 const GRAFT_COLORFUL_PROSE_MINIMUM_VERSION = '0.10.0';
 const GRAFT_COLORFUL_CLI_MINIMUM_VERSION = '0.2.1';
@@ -35,9 +37,33 @@ function semverAtLeast(actual, minimum) {
   return semver.gte(actual, minimum);
 }
 
+function readAdapterSourceFile() {
+  return ts.createSourceFile(
+    ADAPTER_SOURCE_PATH,
+    fs.readFileSync(ADAPTER_SOURCE_PATH, 'utf8'),
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+}
+
 test('Graft source highlighter dependency version check honors prerelease ordering', () => {
   assert.equal(semverAtLeast('0.10.0-alpha.1', GRAFT_COLORFUL_PROSE_MINIMUM_VERSION), false);
   assert.equal(semverAtLeast('0.10.0', GRAFT_COLORFUL_PROSE_MINIMUM_VERSION), true);
+});
+
+test('Graft source highlighter default loader does not rely on a module-level process runner singleton', () => {
+  const sourceFile = readAdapterSourceFile();
+
+  const hasModuleLevelProcessRunner = sourceFile.statements.some((statement) => (
+    ts.isVariableStatement(statement) &&
+    statement.declarationList.declarations.some((declaration) => (
+      ts.isIdentifier(declaration.name) &&
+      declaration.name.text === 'NODE_PROCESS_RUNNER'
+    ))
+  ));
+
+  assert.equal(hasModuleLevelProcessRunner, false);
 });
 
 function readGraftPackageVersion() {
