@@ -19,6 +19,9 @@ const FAKE_COLORFUL_IR_COMMAND = 'ir';
 const FAKE_COLORFUL_STDIN_PATH = '-';
 const FAKE_COLORFUL_USAGE_EXIT_STATUS = 64;
 const EXECUTABLE_MODE = 0o755;
+const MISSING_COLORFUL_CLI_NAME = 'missing-colorful-cli';
+const MISSING_COLORFUL_TIMEOUT_MS = 1000;
+const MISSING_COLORFUL_MAX_BUFFER_BYTES = 1024;
 const PROSE_FIXTURE_TEXT = 'Now is 7.';
 const PROSE_KEYWORD_START_COLUMN = 4;
 const PROSE_KEYWORD_END_COLUMN = 6;
@@ -290,6 +293,29 @@ test('Graft source highlighter maps Colorful prose spans from text buffers', asy
       port.SOURCE_HIGHLIGHT_ROLE.String,
     ],
   );
+});
+
+test('Graft source highlighter process runner normalizes missing CLI output streams', async () => {
+  const { adapter } = await loadGraftSourceHighlighterModules();
+  const tempDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'jedit-missing-colorful-cli-'));
+  const runner = adapter.createGraftSourceHighlighterProcessRunner();
+
+  try {
+    const result = runner.run({
+      command: path.join(tempDirectory, MISSING_COLORFUL_CLI_NAME),
+      args: ['--version'],
+      cwd: REPO_ROOT,
+      timeoutMs: MISSING_COLORFUL_TIMEOUT_MS,
+      maxBufferBytes: MISSING_COLORFUL_MAX_BUFFER_BYTES,
+    });
+
+    assert.equal(result.status, null);
+    assert.equal(result.stdout, '');
+    assert.equal(result.stderr, '');
+    assert.equal(result.error instanceof Error, true);
+  } finally {
+    fs.rmSync(tempDirectory, { recursive: true, force: true });
+  }
 });
 
 test('Graft source highlighter uses Colorful CLI prose projection for text buffers by default', async () => {

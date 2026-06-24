@@ -12,6 +12,7 @@ import {
 const EDITOR_HEAD_BASIS_KIND = 'editor_head';
 const COLORFUL_CLI_COMMAND = 'colorful';
 const PROCESS_RUNNER_ENCODING = 'utf8';
+const PROCESS_RUNNER_EMPTY_OUTPUT = '';
 const VIEWPORT_START_COLUMN = 0;
 const VIEWPORT_END_COLUMN = 0;
 
@@ -73,7 +74,7 @@ interface GraftProjectionOptions {
   };
 }
 
-interface GraftProcessRunRequest {
+export interface GraftProcessRunRequest {
   readonly command: string;
   readonly args: readonly string[];
   readonly cwd: string;
@@ -82,14 +83,14 @@ interface GraftProcessRunRequest {
   readonly maxBufferBytes?: number;
 }
 
-interface GraftProcessRunResult {
+export interface GraftProcessRunResult {
   readonly status: number | null;
   readonly stdout: string;
   readonly stderr: string;
   readonly error?: Error;
 }
 
-interface GraftProcessRunner {
+export interface GraftProcessRunner {
   run(request: GraftProcessRunRequest): GraftProcessRunResult;
 }
 
@@ -124,31 +125,35 @@ const GRAFT_ROLE_ENTRIES: readonly GraftRoleEntry[] = [
 
 let cachedRuntime: GraftSourceHighlighterRuntime | undefined;
 
-const NODE_PROCESS_RUNNER: GraftProcessRunner = {
-  run(request: GraftProcessRunRequest): GraftProcessRunResult {
-    const options: SpawnSyncOptionsWithStringEncoding = {
-      cwd: request.cwd,
-      encoding: PROCESS_RUNNER_ENCODING,
-    };
-    if (request.stdin != null) {
-      options.input = request.stdin;
-    }
-    if (request.timeoutMs != null) {
-      options.timeout = request.timeoutMs;
-    }
-    if (request.maxBufferBytes != null) {
-      options.maxBuffer = request.maxBufferBytes;
-    }
+const NODE_PROCESS_RUNNER = createGraftSourceHighlighterProcessRunner();
 
-    const result = spawnSync(request.command, request.args, options);
-    return {
-      status: result.status,
-      stdout: result.stdout,
-      stderr: result.stderr,
-      ...(result.error == null ? {} : { error: result.error }),
-    };
-  },
-};
+export function createGraftSourceHighlighterProcessRunner(): GraftProcessRunner {
+  return {
+    run(request: GraftProcessRunRequest): GraftProcessRunResult {
+      const options: SpawnSyncOptionsWithStringEncoding = {
+        cwd: request.cwd,
+        encoding: PROCESS_RUNNER_ENCODING,
+      };
+      if (request.stdin != null) {
+        options.input = request.stdin;
+      }
+      if (request.timeoutMs != null) {
+        options.timeout = request.timeoutMs;
+      }
+      if (request.maxBufferBytes != null) {
+        options.maxBuffer = request.maxBufferBytes;
+      }
+
+      const result = spawnSync(request.command, request.args, options);
+      return {
+        status: result.status,
+        stdout: result.stdout ?? PROCESS_RUNNER_EMPTY_OUTPUT,
+        stderr: result.stderr ?? PROCESS_RUNNER_EMPTY_OUTPUT,
+        ...(result.error == null ? {} : { error: result.error }),
+      };
+    },
+  };
+}
 
 export function createGraftSourceHighlighter(options: GraftSourceHighlighterOptions = {}): SourceHighlighter {
   const loadRuntime = options.loadRuntime ?? defaultRuntimeLoader();
