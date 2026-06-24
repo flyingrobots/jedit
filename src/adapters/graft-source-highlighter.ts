@@ -131,6 +131,7 @@ export function createGraftSourceHighlighterProcessRunner(): GraftProcessRunner 
       const options: SpawnSyncOptionsWithStringEncoding = {
         cwd: request.cwd,
         encoding: PROCESS_RUNNER_ENCODING,
+        shell: false,
       };
       if (request.stdin != null) {
         options.input = request.stdin;

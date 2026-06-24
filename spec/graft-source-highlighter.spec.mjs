@@ -47,6 +47,39 @@ function readAdapterSourceFile() {
   );
 }
 
+function findFunctionDeclaration(sourceFile, functionName) {
+  for (const statement of sourceFile.statements) {
+    if (
+      ts.isFunctionDeclaration(statement) &&
+      statement.name != null &&
+      statement.name.text === functionName
+    ) {
+      return statement;
+    }
+  }
+  assert.fail(`expected ${functionName} function declaration`);
+}
+
+function nodeHasShellFalseProperty(node) {
+  let found = false;
+
+  function visit(child) {
+    if (
+      ts.isPropertyAssignment(child) &&
+      ts.isIdentifier(child.name) &&
+      child.name.text === 'shell' &&
+      child.initializer.kind === ts.SyntaxKind.FalseKeyword
+    ) {
+      found = true;
+      return;
+    }
+    ts.forEachChild(child, visit);
+  }
+
+  visit(node);
+  return found;
+}
+
 test('Graft source highlighter dependency version check honors prerelease ordering', () => {
   assert.equal(semverAtLeast('0.10.0-alpha.1', GRAFT_COLORFUL_PROSE_MINIMUM_VERSION), false);
   assert.equal(semverAtLeast('0.10.0', GRAFT_COLORFUL_PROSE_MINIMUM_VERSION), true);
@@ -64,6 +97,13 @@ test('Graft source highlighter default loader does not rely on a module-level pr
   ));
 
   assert.equal(hasModuleLevelProcessRunner, false);
+});
+
+test('Graft source highlighter process runner explicitly disables shell execution', () => {
+  const sourceFile = readAdapterSourceFile();
+  const factory = findFunctionDeclaration(sourceFile, 'createGraftSourceHighlighterProcessRunner');
+
+  assert.equal(nodeHasShellFalseProperty(factory), true);
 });
 
 function readGraftPackageVersion() {
