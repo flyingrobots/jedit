@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Updated the Graft dependency to 0.10.1 so the default Colorful prose
+  projection path accepts real `colorful 0.2.1` numeric IR identifiers.
 - Updated the Graft source-highlighter adapter to consume Graft 0.10.0, warm the
   real parser runtime before default projections, and map Colorful prose spans
   for `.txt` buffers when `colorful >= 0.2.1` is available on `PATH`.
