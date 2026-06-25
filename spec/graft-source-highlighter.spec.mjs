@@ -151,21 +151,21 @@ if (args.length === 2 && args[0] === ${JSON.stringify(FAKE_COLORFUL_IR_COMMAND)}
     },
     tokens: [
       {
-        occurrenceId: 'tok_is',
+        occurrenceId: 1,
         byteRange: { startUtf8: ${String(PROSE_KEYWORD_START_COLUMN)}, endUtf8: ${String(PROSE_KEYWORD_END_COLUMN)} },
         tokenKind: 'WORD',
         lexicalClass: 'FUNCTION',
         functionKind: null,
       },
       {
-        occurrenceId: 'tok_7',
+        occurrenceId: 2,
         byteRange: { startUtf8: ${String(PROSE_NUMBER_START_COLUMN)}, endUtf8: ${String(PROSE_NUMBER_END_COLUMN)} },
         tokenKind: 'NUMBER',
         lexicalClass: null,
         functionKind: null,
       },
       {
-        occurrenceId: 'tok_period',
+        occurrenceId: 3,
         byteRange: { startUtf8: ${String(PROSE_PUNCTUATION_START_COLUMN)}, endUtf8: ${String(PROSE_PUNCTUATION_END_COLUMN)} },
         tokenKind: 'PUNCTUATION',
         lexicalClass: null,
@@ -174,14 +174,14 @@ if (args.length === 2 && args[0] === ${JSON.stringify(FAKE_COLORFUL_IR_COMMAND)}
     ],
     structure: [
       {
-        nodeId: 'paragraph_1',
+        nodeId: 0,
         kind: 'PARAGRAPH',
         byteRange: { startUtf8: 0, endUtf8: bytes.byteLength },
         depth: 0,
-        childNodeIds: ['sentence_1'],
+        childNodeIds: [1],
       },
       {
-        nodeId: 'sentence_1',
+        nodeId: 1,
         kind: 'SENTENCE',
         byteRange: { startUtf8: 0, endUtf8: bytes.byteLength },
         depth: 1,
