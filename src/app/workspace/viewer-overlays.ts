@@ -4,6 +4,10 @@ import {
   renderInlineCompletionPopup,
   resolveInlineCompletionPopupGeometry,
 } from '../../ui/inline-completion-popup.js';
+import {
+  renderGraftDiagnosticsPanel,
+  resolveGraftDiagnosticsPanelWidth,
+} from '../../ui/graft-diagnostics-panel.js';
 import { resolveScenePickerDrawerWidth, renderScenePickerDrawer } from '../../ui/scene-picker-drawer.js';
 import { resolveSettingsDrawerWidth, renderSettingsDrawer } from '../../ui/settings-drawer.js';
 import { renderStartupFileDrawer } from '../../ui/startup-file-modal.js';
@@ -37,19 +41,7 @@ export function paintWorkspaceOverlays(
   bodyTop: number,
   bodyHeight: number,
 ): void {
-  if (model.settingsOpen) {
-    screen.blit(
-      renderSettingsDrawer({
-        rows: settingsRows(model),
-        selectedIndex: model.settingsFocusIndex,
-        theme: model.jeditTheme,
-        width: resolveSettingsDrawerWidth(model.columns),
-        height: bodyHeight,
-      }),
-      0,
-      bodyTop,
-    );
-  }
+  paintSettingsOverlay(screen, model, bodyTop, bodyHeight);
 
   if (model.scenePickerOpen && model.editor == null) {
     screen.blit(
@@ -67,6 +59,36 @@ export function paintWorkspaceOverlays(
 
   paintStartupFileDrawer(screen, model, bodyTop, bodyHeight);
   paintCommandLineCompletionPopup(screen, model);
+}
+
+function paintSettingsOverlay(
+  screen: Surface,
+  model: WorkspaceModel,
+  bodyTop: number,
+  bodyHeight: number,
+): void {
+  if (!model.settingsOpen) {
+    return;
+  }
+  screen.blit(
+    model.settingsDiagnosticsOpen
+      ? renderGraftDiagnosticsPanel({
+        report: model.graftDiagnostics,
+        loading: model.graftDiagnosticsLoading,
+        theme: model.jeditTheme,
+        width: resolveGraftDiagnosticsPanelWidth(model.columns),
+        height: bodyHeight,
+      })
+      : renderSettingsDrawer({
+        rows: settingsRows(model),
+        selectedIndex: model.settingsFocusIndex,
+        theme: model.jeditTheme,
+        width: resolveSettingsDrawerWidth(model.columns),
+        height: bodyHeight,
+      }),
+    0,
+    bodyTop,
+  );
 }
 
 function paintStartupFileDrawer(

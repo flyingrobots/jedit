@@ -51,6 +51,7 @@ test('settings drawer renders structured rows and highlights the selected row', 
   assert.match(text, /↻ Theme/);
   assert.match(text, /☑ Footer/);
   assert.match(text, /↻ Markdown preview/);
+  assert.match(text, /↻ Diagnostics Open/);
   assert.equal(surface.get(2, 8).char, '›');
   assert.equal(surface.get(2, 8).fg, theme.cursor.normal.fg);
   assert.equal(surface.get(2, 8).bg, theme.cursor.normal.bg);

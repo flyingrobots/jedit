@@ -1,6 +1,7 @@
 import type { Cmd } from '@flyingrobots/bijou-tui';
 import type { EditorFilePort } from '../../ports/editor-file.js';
 import type { FileSystemPort } from '../../ports/file-system.js';
+import type { GraftDiagnosticsPort } from '../../ports/graft-diagnostics.js';
 import type { GraftSessionPort } from '../../ports/graft-session.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import type { TitleSceneLoaderPort } from '../../ports/title-scene-loader.js';
@@ -17,6 +18,7 @@ export interface UpdateFromKeyDeps {
   readonly fileSystem: FileSystemPort;
   readonly editorFile: EditorFilePort;
   readonly sourceHighlighter: SourceHighlighter;
+  readonly graftDiagnostics: GraftDiagnosticsPort;
   readonly graftSession: GraftSessionPort;
   readonly titleSceneLoader: TitleSceneLoaderPort;
   readonly productionTextSession: ProductionTextSession;

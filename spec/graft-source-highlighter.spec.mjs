@@ -25,6 +25,8 @@ const EXECUTABLE_MODE = 0o755;
 const MISSING_COLORFUL_CLI_NAME = 'missing-colorful-cli';
 const MISSING_COLORFUL_TIMEOUT_MS = 1000;
 const MISSING_COLORFUL_MAX_BUFFER_BYTES = 1024;
+const DIAGNOSTICS_CWD = '/repo';
+const DIAGNOSTICS_COMMAND = 'colorful-test';
 const PROSE_FIXTURE_TEXT = 'Now is 7.';
 const PROSE_KEYWORD_START_COLUMN = 4;
 const PROSE_KEYWORD_END_COLUMN = 6;
@@ -372,6 +374,53 @@ test('Graft source highlighter process runner normalizes missing CLI output stre
   } finally {
     fs.rmSync(tempDirectory, { recursive: true, force: true });
   }
+});
+
+test('Graft diagnostics report the parser, Graft, and Colorful CLI posture', async () => {
+  const { adapter } = await loadGraftSourceHighlighterModules();
+  const requests = [];
+  const diagnostics = adapter.createGraftDiagnosticsPort({
+    cwd: DIAGNOSTICS_CWD,
+    command: DIAGNOSTICS_COMMAND,
+    processRunner: {
+      run(request) {
+        requests.push(request);
+        return {
+          status: 0,
+          stdout: FAKE_COLORFUL_VERSION_OUTPUT,
+          stderr: '',
+        };
+      },
+    },
+    loadRuntime: async () => ({
+      GRAFT_VERSION: GRAFT_COLORFUL_PROSE_MINIMUM_VERSION,
+      COLORFUL_CLI_MINIMUM_VERSION: GRAFT_COLORFUL_CLI_MINIMUM_VERSION,
+      isParserReady: () => false,
+    }),
+  });
+
+  const report = await diagnostics.loadDiagnostics();
+
+  assert.equal(report.title, 'Graft diagnostics');
+  assert.equal(report.summary, 'Colorful prose projection is active.');
+  assert.deepEqual(requests, [{
+    command: DIAGNOSTICS_COMMAND,
+    args: ['--version'],
+    cwd: DIAGNOSTICS_CWD,
+    timeoutMs: 5000,
+    maxBufferBytes: 65536,
+  }]);
+  assert.deepEqual(
+    report.rows.map((row) => [row.label, row.value, row.status]),
+    [
+      ['Graft package', GRAFT_COLORFUL_PROSE_MINIMUM_VERSION, 'ok'],
+      ['Parser runtime', 'cold', 'warn'],
+      ['Colorful command', DIAGNOSTICS_COMMAND, 'ok'],
+      ['Colorful minimum', GRAFT_COLORFUL_CLI_MINIMUM_VERSION, 'ok'],
+      ['Colorful CLI', GRAFT_COLORFUL_CLI_MINIMUM_VERSION, 'ok'],
+      ['Prose projection', 'active', 'ok'],
+    ],
+  );
 });
 
 test('Graft source highlighter uses Colorful CLI prose projection for text buffers by default', async () => {

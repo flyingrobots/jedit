@@ -51,6 +51,7 @@ test('jedit settings rows expose theme, footer, and markdown preview preferences
       ['Light/dark', 'Dark', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
       ['Footer', 'On', settings.JEDIT_SETTING_ROW_KIND.Toggle, true],
       ['Markdown preview', 'Source', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
+      ['Diagnostics', 'Open', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
     ],
   );
 });
@@ -90,6 +91,9 @@ test('settings key reducer closes, moves, and activates focused settings rows', 
     toggleMarkdownPreview(model) {
       return [{ ...model, viewMode: 'preview' }, []];
     },
+    openDiagnostics(model) {
+      return [{ ...model, diagnosticsOpened: true }, []];
+    },
     selectLocale(model, locale) {
       return [{ ...model, selectedLocale: locale.locale }, []];
     },
@@ -111,4 +115,13 @@ test('settings key reducer closes, moves, and activates focused settings rows', 
 
   const [activated] = settings.updateJeditSettingsFromKey({ key: 'enter' }, { ...baseModel, settingsFocusIndex: 4 }, rows, handlers);
   assert.equal(activated.viewMode, 'preview');
+
+  const diagnosticsIndex = rows.findIndex((row) => row.id === 'diagnostics');
+  const [diagnostics] = settings.updateJeditSettingsFromKey(
+    { key: 'enter' },
+    { ...baseModel, settingsFocusIndex: diagnosticsIndex },
+    rows,
+    handlers,
+  );
+  assert.equal(diagnostics.diagnosticsOpened, true);
 });

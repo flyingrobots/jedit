@@ -2,6 +2,7 @@ import type { Cmd, KeyMsg, MouseMsg, ResizeMsg, RuntimeIssue } from '@flyingrobo
 import type { DrawerKind } from '../../ui/drawer-layout.js';
 import type { EditorFilePort } from '../../ports/editor-file.js';
 import type { FileSystemPort } from '../../ports/file-system.js';
+import type { GraftDiagnosticsPort } from '../../ports/graft-diagnostics.js';
 import type { GraftSessionPort } from '../../ports/graft-session.js';
 import type { JeditWscWorkspaceStorePort } from '../../ports/jedit-wsc-workspace-store.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
@@ -24,6 +25,7 @@ export interface WorkspaceRuntimeDependencies {
   readonly initialWorkingDirectory: string;
   readonly fileSystem: FileSystemPort;
   readonly editorFile: EditorFilePort;
+  readonly graftDiagnostics: GraftDiagnosticsPort;
   readonly graftSession: GraftSessionPort;
   readonly sourceHighlighter: SourceHighlighter;
   readonly titleSceneLoader: TitleSceneLoaderPort;

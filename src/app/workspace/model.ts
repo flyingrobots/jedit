@@ -1,5 +1,6 @@
 import type { NotificationState } from "@flyingrobots/bijou-tui";
 import type { FileEntry } from "../../ports/file-system.js";
+import type { GraftDiagnosticsReport } from "../../ports/graft-diagnostics.js";
 import type { GraftInfo } from "../../ports/graft-session.js";
 import type { I18nPort } from "../../ports/i18n.js";
 import type { BuiltInTitleSceneName } from "../../ports/title-scene-loader.js";
@@ -59,7 +60,11 @@ export interface WorkspaceModel
   readonly footerVisible: boolean;
   readonly settingsOpen: boolean;
   readonly settingsFocusIndex: number;
+  readonly settingsDiagnosticsOpen: boolean;
   readonly jeditTheme: JeditTheme;
+  readonly graftDiagnostics?: GraftDiagnosticsReport;
+  readonly graftDiagnosticsLoading: boolean;
+  readonly graftDiagnosticsRequestId: number;
   readonly graftInfo?: GraftInfo;
   readonly graftLoading: boolean;
   readonly graftRequestId: number;

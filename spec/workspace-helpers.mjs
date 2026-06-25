@@ -41,6 +41,18 @@ export function mockDeps(overrides = {}) {
     sourceHighlighter: {
       highlight: async () => ({ path: "", partial: false, spans: [] }),
     },
+    graftDiagnostics: {
+      loadDiagnostics: async () => ({
+        title: "Graft diagnostics",
+        summary: "test diagnostics",
+        rows: [],
+      }),
+      failedDiagnostics: ({ message }) => ({
+        title: "Graft diagnostics",
+        summary: message,
+        rows: [],
+      }),
+    },
     graftSession: {
       loadGraftInfo: async () => ({
         path: "/repo/main.md",
@@ -270,6 +282,7 @@ export function mockTitleScreenModel(titleScreen, overrides = {}) {
     echoHistorySelectedIndex: 0,
     settingsOpen: false,
     settingsFocusIndex: 0,
+    settingsDiagnosticsOpen: false,
     scenePickerOpen: false,
     scenePickerFocusIndex: 0,
     availableScenes: [],
@@ -294,6 +307,9 @@ export function mockTitleScreenModel(titleScreen, overrides = {}) {
     startupFileModalInput: "",
     startupFileModalSelectedIndex: 0,
     jeditTheme: mockJeditTheme(),
+    graftDiagnostics: undefined,
+    graftDiagnosticsLoading: false,
+    graftDiagnosticsRequestId: 0,
     i18n: mockI18n(),
     time: 0,
     titleSceneSeed: 0.5,

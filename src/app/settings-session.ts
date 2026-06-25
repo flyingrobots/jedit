@@ -8,6 +8,7 @@ export const JEDIT_SETTING_ACTION = {
   ToggleThemeMode: Symbol('jedit.settings.action.toggle-theme-mode'),
   ToggleFooter: Symbol('jedit.settings.action.toggle-footer'),
   ToggleMarkdownPreview: Symbol('jedit.settings.action.toggle-markdown-preview'),
+  OpenDiagnostics: Symbol('jedit.settings.action.open-diagnostics'),
   SelectLocale: Symbol('jedit.settings.action.select-locale'),
 } as const;
 
@@ -57,6 +58,7 @@ export interface JeditSettingsHandlers<Model, Command> {
   toggleThemeMode(model: Model): [Model, Cmd<Command>[]];
   toggleFooter(model: Model): [Model, Cmd<Command>[]];
   toggleMarkdownPreview(model: Model): [Model, Cmd<Command>[]];
+  openDiagnostics(model: Model): [Model, Cmd<Command>[]];
   selectLocale(model: Model, locale: JeditSettingsLocaleSelection): [Model, Cmd<Command>[]];
 }
 
@@ -75,10 +77,12 @@ export interface JeditSettingsRow {
 const SETTINGS_SECTION_LANGUAGE = 'Language';
 const SETTINGS_SECTION_APPEARANCE = 'Appearance';
 const SETTINGS_SECTION_EDITOR = 'Editor';
+const SETTINGS_SECTION_RUNTIME = 'Runtime';
 const ROW_ID_THEME = 'theme';
 const ROW_ID_THEME_MODE = 'theme-mode';
 const ROW_ID_FOOTER = 'footer';
 const ROW_ID_MARKDOWN_PREVIEW = 'markdown-preview';
+const ROW_ID_DIAGNOSTICS = 'diagnostics';
 const ROW_ID_LOCALE_PREFIX = 'locale:';
 const VALUE_ON = 'On';
 const VALUE_OFF = 'Off';
@@ -87,6 +91,7 @@ const VALUE_THEME_MODE_LIGHT = 'Light';
 const VALUE_SOURCE = 'Source';
 const VALUE_PREVIEW = 'Preview';
 const VALUE_CURRENT = 'Current';
+const VALUE_OPEN = 'Open';
 const KEY_ESCAPE = 'escape';
 const KEY_DOWN = 'down';
 const KEY_UP = 'up';
@@ -129,6 +134,7 @@ export function jeditSettingsRows(state: JeditSettingsState & { readonly i18n: J
   if (state.markdownPreviewActive) {
     rows.push(markdownPreviewSettingsRow(state));
   }
+  rows.push(diagnosticsSettingsRow());
 
   return rows;
 }
@@ -201,6 +207,18 @@ function markdownPreviewSettingsRow(state: JeditSettingsState): JeditSettingsRow
     valueLabel: state.viewMode === ViewModes.Preview ? VALUE_PREVIEW : VALUE_SOURCE,
     kind: JEDIT_SETTING_ROW_KIND.Choice,
     action: JEDIT_SETTING_ACTION.ToggleMarkdownPreview,
+  };
+}
+
+function diagnosticsSettingsRow(): JeditSettingsRow {
+  return {
+    id: ROW_ID_DIAGNOSTICS,
+    section: SETTINGS_SECTION_RUNTIME,
+    label: 'Diagnostics',
+    description: 'Inspect Graft, parser, and Colorful runtime wiring.',
+    valueLabel: VALUE_OPEN,
+    kind: JEDIT_SETTING_ROW_KIND.Choice,
+    action: JEDIT_SETTING_ACTION.OpenDiagnostics,
   };
 }
 
@@ -285,6 +303,9 @@ function activateSettingsRow<Model, Command>(
   }
   if (action === JEDIT_SETTING_ACTION.ToggleMarkdownPreview) {
     return handlers.toggleMarkdownPreview(model);
+  }
+  if (action === JEDIT_SETTING_ACTION.OpenDiagnostics) {
+    return handlers.openDiagnostics(model);
   }
   if (action === JEDIT_SETTING_ACTION.SelectLocale && row?.locale != null) {
     return handlers.selectLocale(model, row.locale);

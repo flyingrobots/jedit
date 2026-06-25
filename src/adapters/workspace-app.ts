@@ -6,7 +6,10 @@ import type { WorkspaceMsg } from '../app/workspace/msg.js';
 import { createRaytracerProfilerPort } from './raytracer-profiler.js';
 import { editorFilePort } from './editor-file.js';
 import { createGraftSessionPort } from './graft-api-session.js';
-import { createGraftSourceHighlighter } from './graft-source-highlighter.js';
+import {
+  createGraftDiagnosticsPort,
+  createGraftSourceHighlighter,
+} from './graft-source-highlighter.js';
 import { createTitleSceneLoaderPort } from './title-scene-loader.js';
 import { createInitialModelSnapshot } from './workspace-initial-model-snapshot.js';
 import { createNodeJeditWscWorkspaceStore } from './jedit-wsc-workspace-store.js';
@@ -45,6 +48,7 @@ function workspaceRuntimeDependencies(
   random: () => number,
 ) {
   const editorFile = editorFilePort;
+  const graftDiagnostics = createGraftDiagnosticsPort();
   const graftSession = createGraftSessionPort();
   const sourceHighlighter = createGraftSourceHighlighter();
   const titleSceneLoader = createTitleSceneLoaderPort();
@@ -54,6 +58,7 @@ function workspaceRuntimeDependencies(
     initialWorkingDirectory: options.initialWorkingDirectory,
     fileSystem: FileSystemPortAdapter,
     editorFile,
+    graftDiagnostics,
     productionTextSession: createWorkspaceProductionTextSession(),
     wscWorkspaceStore: createNodeJeditWscWorkspaceStore(options.initialWorkingDirectory),
     graftSession,

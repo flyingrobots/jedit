@@ -33,7 +33,7 @@ function updateWorkspaceOverlayKey(
   context: WorkspaceKeyBindingContext,
 ) {
   return updateStartupFileModalKey(msg, model, context)
-    ?? updateSettingsKey(msg, model)
+    ?? updateSettingsKey(msg, model, context)
     ?? updateScenePickerKey(msg, model, context)
     ?? updateCommandLineKey(msg, model, context)
     ?? updateTitleScreenKey(msg, model, context);
