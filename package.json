@@ -43,7 +43,7 @@
     "@flyingrobots/bijou-i18n-tools-xlsx": "^7.0.0",
     "@types/node": "^22.0.0",
     "semver": "^7.8.5",
-    "tsx": "^4.21.0",
+    "tsx": "^4.22.4",
     "typescript": "^5.9.3"
   }
 }
