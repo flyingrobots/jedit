@@ -39,6 +39,7 @@ test('jedit settings rows expose theme, footer, and markdown preview preferences
     jeditTheme: theme,
     footerVisible: true,
     markdownPreviewActive: true,
+    diagnosticsAvailable: true,
     viewMode: 'source',
   });
 
@@ -73,6 +74,7 @@ test('settings key reducer closes, moves, and activates focused settings rows', 
     jeditTheme: theme,
     footerVisible: true,
     markdownPreviewActive: true,
+    diagnosticsAvailable: true,
     viewMode: 'source',
     settingsOpen: true,
     settingsFocusIndex: 0,
@@ -124,4 +126,20 @@ test('settings key reducer closes, moves, and activates focused settings rows', 
     handlers,
   );
   assert.equal(diagnostics.diagnosticsOpened, true);
+});
+
+test('jedit settings rows hide diagnostics when diagnostics are unavailable', async () => {
+  const { settings, themes } = await loadSettingsModules();
+  const theme = themes.availableJeditThemes()[0];
+
+  const rows = settings.jeditSettingsRows({
+    i18n: createI18nMock(),
+    jeditTheme: theme,
+    footerVisible: true,
+    markdownPreviewActive: true,
+    diagnosticsAvailable: false,
+    viewMode: 'source',
+  });
+
+  assert.equal(rows.some((row) => row.id === 'diagnostics'), false);
 });

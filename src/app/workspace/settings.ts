@@ -3,6 +3,7 @@ import {
   type JeditSettingsLocaleSelection,
   type JeditSettingsHandlers,
 } from '../settings-session.js';
+import type { Cmd } from '@flyingrobots/bijou-tui';
 import { isWorkspaceMarkdownFile } from './editor-session.js';
 import { beginGraftDiagnosticsRefresh } from './graft-diagnostics.js';
 import { type WorkspaceModel } from './model.js';
@@ -27,6 +28,7 @@ export function settingsRows(model: WorkspaceModel): ReturnType<typeof jeditSett
     jeditTheme: model.jeditTheme,
     footerVisible: model.footerVisible,
     markdownPreviewActive: model.editor != null && isWorkspaceMarkdownFile(model.editor.path),
+    diagnosticsAvailable: true,
     viewMode: model.viewMode,
   });
 }
@@ -64,7 +66,7 @@ function applyWorkspaceLocale(model: WorkspaceModel, locale: JeditSettingsLocale
   };
 }
 
-function toggleWorkspaceMarkdownPreview(model: WorkspaceModel): [WorkspaceModel, []] {
+function toggleWorkspaceMarkdownPreview(model: WorkspaceModel): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (model.editor == null || !isWorkspaceMarkdownFile(model.editor.path)) {
     return [model, []];
   }

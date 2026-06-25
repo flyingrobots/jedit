@@ -9,7 +9,6 @@ import { WorkspaceKeys } from './workspace-key.js';
 import { settingsRows, workspaceSettingsHandlers } from './settings.js';
 
 type KeyBindingResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
-const SPACE_KEY = ' ';
 
 export function updateSettingsKey(
   msg: KeyMsg,
@@ -59,7 +58,6 @@ function isDiagnosticsRefreshKey(msg: KeyMsg): boolean {
   return (
     msg.key === WorkspaceKeys.Enter ||
     msg.key === WorkspaceKeys.Return ||
-    msg.key === WorkspaceKeys.Space ||
-    msg.key === SPACE_KEY
+    msg.key === WorkspaceKeys.Space
   );
 }

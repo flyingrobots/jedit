@@ -30,6 +30,29 @@ export function createI18nMock(overrides = {}) {
     'footer.command.hints.enter_run': 'enter run',
     'footer.command.hints.esc_cancel': 'esc cancel',
   };
+  const settings = {
+    'settings.sections.appearance': 'Appearance',
+    'settings.sections.editor': 'Editor',
+    'settings.sections.runtime': 'Runtime',
+    'settings.rows.theme.label': 'Theme',
+    'settings.rows.theme.description': 'Switch between installed data-driven themes.',
+    'settings.rows.theme_mode.label': 'Light/dark',
+    'settings.rows.theme_mode.description': 'Switch the current theme to its light or dark companion.',
+    'settings.rows.footer.label': 'Footer',
+    'settings.rows.footer.description': 'Show mode, focus, and command hints at the bottom edge.',
+    'settings.rows.markdown_preview.label': 'Markdown preview',
+    'settings.rows.markdown_preview.description': 'Switch the active Markdown buffer between source and preview.',
+    'settings.rows.diagnostics.label': 'Diagnostics',
+    'settings.rows.diagnostics.description': 'Inspect Graft, parser, and Colorful runtime wiring.',
+    'settings.values.on': 'On',
+    'settings.values.off': 'Off',
+    'settings.values.theme_mode_dark': 'Dark',
+    'settings.values.theme_mode_light': 'Light',
+    'settings.values.source': 'Source',
+    'settings.values.preview': 'Preview',
+    'settings.values.current': 'Current',
+    'settings.values.open': 'Open',
+  };
   return {
     locale: 'en',
     localeLabel: 'English',
@@ -51,6 +74,7 @@ export function createI18nMock(overrides = {}) {
       const parts = path.split('.');
       const id = parts[parts.length - 1];
       if (commands[path] != null) return commands[path];
+      if (settings[path] != null) return settings[path];
       if (hints[id] != null) return hints[id];
       return id.replace(/_/g, ' ');
     },

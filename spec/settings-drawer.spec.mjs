@@ -33,6 +33,7 @@ test('settings drawer renders structured rows and highlights the selected row', 
     jeditTheme: theme,
     footerVisible: true,
     markdownPreviewActive: true,
+    diagnosticsAvailable: true,
     viewMode: 'source',
   });
 
@@ -65,6 +66,7 @@ test('settings drawer keeps the focused row visible when section headers consume
     jeditTheme: theme,
     footerVisible: true,
     markdownPreviewActive: true,
+    diagnosticsAvailable: true,
     viewMode: 'source',
   });
   const selectedIndex = rows.findIndex((row) => row.id === 'markdown-preview');
