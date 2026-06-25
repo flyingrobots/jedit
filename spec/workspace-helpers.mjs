@@ -13,6 +13,27 @@ const MOCK_I18N_TRANSLATIONS = Object.freeze({
   "startupFileModal.title": "Open file",
   "startupFileModal.current_directory": "Current directory",
   "startupFileModal.empty": "No files in this directory",
+  "settings.sections.appearance": "Appearance",
+  "settings.sections.editor": "Editor",
+  "settings.sections.runtime": "Runtime",
+  "settings.rows.theme.label": "Theme",
+  "settings.rows.theme.description": "Switch between installed data-driven themes.",
+  "settings.rows.theme_mode.label": "Light/dark",
+  "settings.rows.theme_mode.description": "Switch the current theme to its light or dark companion.",
+  "settings.rows.footer.label": "Footer",
+  "settings.rows.footer.description": "Show mode, focus, and command hints at the bottom edge.",
+  "settings.rows.markdown_preview.label": "Markdown preview",
+  "settings.rows.markdown_preview.description": "Switch the active Markdown buffer between source and preview.",
+  "settings.rows.diagnostics.label": "Diagnostics",
+  "settings.rows.diagnostics.description": "Inspect Graft, parser, and Colorful runtime wiring.",
+  "settings.values.on": "On",
+  "settings.values.off": "Off",
+  "settings.values.theme_mode_dark": "Dark",
+  "settings.values.theme_mode_light": "Light",
+  "settings.values.source": "Source",
+  "settings.values.preview": "Preview",
+  "settings.values.current": "Current",
+  "settings.values.open": "Open",
 });
 const MOCK_HEAP_USED_BYTES = 10;
 const MOCK_HEAP_TOTAL_BYTES = 20;
@@ -40,6 +61,18 @@ export function mockDeps(overrides = {}) {
     },
     sourceHighlighter: {
       highlight: async () => ({ path: "", partial: false, spans: [] }),
+    },
+    graftDiagnostics: {
+      loadDiagnostics: async () => ({
+        title: "Graft diagnostics",
+        summary: "test diagnostics",
+        rows: [],
+      }),
+      failedDiagnostics: ({ message }) => ({
+        title: "Graft diagnostics",
+        summary: message,
+        rows: [],
+      }),
     },
     graftSession: {
       loadGraftInfo: async () => ({
@@ -270,6 +303,7 @@ export function mockTitleScreenModel(titleScreen, overrides = {}) {
     echoHistorySelectedIndex: 0,
     settingsOpen: false,
     settingsFocusIndex: 0,
+    settingsDiagnosticsOpen: false,
     scenePickerOpen: false,
     scenePickerFocusIndex: 0,
     availableScenes: [],
@@ -294,6 +328,9 @@ export function mockTitleScreenModel(titleScreen, overrides = {}) {
     startupFileModalInput: "",
     startupFileModalSelectedIndex: 0,
     jeditTheme: mockJeditTheme(),
+    graftDiagnostics: undefined,
+    graftDiagnosticsLoading: false,
+    graftDiagnosticsRequestId: 0,
     i18n: mockI18n(),
     time: 0,
     titleSceneSeed: 0.5,

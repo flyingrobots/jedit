@@ -8,6 +8,16 @@ import {
   type SourceHighlightSpan,
   type SourceRange,
 } from '../ports/source-highlighter.js';
+export {
+  createGraftDiagnosticsPort,
+  createGraftDiagnosticsProcessRunner,
+} from './graft-diagnostics-adapter.js';
+export type {
+  GraftAsyncProcessRunner,
+  GraftDiagnosticsOptions,
+  GraftDiagnosticsRuntime,
+  LoadGraftDiagnosticsRuntime,
+} from './graft-diagnostics-adapter.js';
 
 const EDITOR_HEAD_BASIS_KIND = 'editor_head';
 const COLORFUL_CLI_COMMAND = 'colorful';
@@ -15,6 +25,7 @@ const PROCESS_RUNNER_ENCODING = 'utf8';
 const PROCESS_RUNNER_EMPTY_OUTPUT = '';
 const VIEWPORT_START_COLUMN = 0;
 const VIEWPORT_END_COLUMN = 0;
+const DIAGNOSTICS_NOTICE_PROJECTION_FAILED_PREFIX = 'Graft projection failed';
 
 const GRAFT_CLASS_COMMENT = 'comment';
 const GRAFT_CLASS_FUNCTION = 'function';
@@ -161,26 +172,52 @@ export function createGraftSourceHighlighter(options: GraftSourceHighlighterOpti
     async highlight(input: SourceHighlightInput): Promise<SourceHighlightReading> {
       const runtime = await loadRuntime();
       await runtime.ensureParserReady();
-      const bundle = runtime.createProjectionBundle(input.path, input.text, {
-        basis: {
-          kind: EDITOR_HEAD_BASIS_KIND,
-          headId: input.headId,
-          tick: input.tick,
-        },
-        viewport: {
-          start: { row: input.startLine, column: VIEWPORT_START_COLUMN },
-          end: { row: input.startLine + input.lineCount, column: VIEWPORT_END_COLUMN },
-        },
-      });
+      const bundle = readProjectionBundle(runtime, input);
 
       return {
         path: input.path,
-        partial: bundle.syntax.partial === true,
-        spans: graftSyntaxSpansToSourceHighlights(bundle.syntax.spans),
-        ...(bundle.syntax.reason == null ? {} : { notice: bundle.syntax.reason }),
+        partial: bundle.partial,
+        spans: graftSyntaxSpansToSourceHighlights(bundle.spans),
+        ...(bundle.reason == null ? {} : { notice: bundle.reason }),
       };
     },
   };
+}
+
+function readProjectionBundle(
+  runtime: GraftSourceHighlighterRuntime,
+  input: SourceHighlightInput,
+): {
+  readonly partial: boolean;
+  readonly spans: readonly GraftSyntaxSpan[];
+  readonly reason?: string;
+} {
+  try {
+    const bundle = runtime.createProjectionBundle(input.path, input.text, {
+      basis: {
+        kind: EDITOR_HEAD_BASIS_KIND,
+        headId: input.headId,
+        tick: input.tick,
+      },
+      viewport: {
+        start: { row: input.startLine, column: VIEWPORT_START_COLUMN },
+        end: { row: input.startLine + input.lineCount, column: VIEWPORT_END_COLUMN },
+      },
+    });
+    return {
+      partial: bundle.syntax.partial === true,
+      spans: bundle.syntax.spans,
+      ...(bundle.syntax.reason == null ? {} : { reason: bundle.syntax.reason }),
+    };
+  } catch (cause) {
+    return {
+      partial: true,
+      spans: [],
+      reason: cause instanceof Error
+        ? `${DIAGNOSTICS_NOTICE_PROJECTION_FAILED_PREFIX}: ${cause.message}`
+        : `${DIAGNOSTICS_NOTICE_PROJECTION_FAILED_PREFIX}: ${String(cause)}`,
+    };
+  }
 }
 
 export function graftSyntaxSpansToSourceHighlights(spans: readonly GraftSyntaxSpan[]): readonly SourceHighlightSpan[] {

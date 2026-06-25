@@ -34,6 +34,7 @@ import {
 } from "./msg.js";
 import {
   applyDrawerProgress,
+  applyGraftDiagnostics,
   applyGraftInfo,
   applyStartupFileDrawerProgress,
   applyStartupIntroTime,
@@ -174,6 +175,9 @@ function updateWorkspaceStateMessage(
   }
   if (msg.type === WorkspaceMessageTypes.GraftInfo) {
     return updateGraftInfoMessage(msg, model);
+  }
+  if (msg.type === WorkspaceMessageTypes.GraftDiagnostics) {
+    return [applyGraftDiagnostics(model, msg.requestId, msg.report), []];
   }
   const generated = updateGeneratedStateMessage(msg, model);
   if (generated != null) {
@@ -400,6 +404,7 @@ function workspaceKeyDeps(deps: WorkspaceRuntimeDependencies) {
       editorFile: deps.editorFile,
       sourceHighlighter: deps.sourceHighlighter,
       graftSession: deps.graftSession,
+      graftDiagnostics: deps.graftDiagnostics,
       titleSceneLoader: deps.titleSceneLoader,
       productionTextSession: deps.productionTextSession,
     },

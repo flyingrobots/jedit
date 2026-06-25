@@ -8,6 +8,7 @@ export const JEDIT_SETTING_ACTION = {
   ToggleThemeMode: Symbol('jedit.settings.action.toggle-theme-mode'),
   ToggleFooter: Symbol('jedit.settings.action.toggle-footer'),
   ToggleMarkdownPreview: Symbol('jedit.settings.action.toggle-markdown-preview'),
+  OpenDiagnostics: Symbol('jedit.settings.action.open-diagnostics'),
   SelectLocale: Symbol('jedit.settings.action.select-locale'),
 } as const;
 
@@ -25,6 +26,7 @@ export interface JeditSettingsState {
   readonly jeditTheme: JeditTheme;
   readonly footerVisible: boolean;
   readonly markdownPreviewActive: boolean;
+  readonly diagnosticsAvailable: boolean;
   readonly viewMode: ViewMode;
 }
 
@@ -32,6 +34,7 @@ export interface JeditSettingsI18nState {
   readonly locale: string;
   readonly localeLabel: string;
   readonly locales: readonly JeditSettingsLocaleOption[];
+  t(path: string, values?: Record<string, string | number>): string;
 }
 
 export interface JeditSettingsLocaleSelection {
@@ -57,6 +60,7 @@ export interface JeditSettingsHandlers<Model, Command> {
   toggleThemeMode(model: Model): [Model, Cmd<Command>[]];
   toggleFooter(model: Model): [Model, Cmd<Command>[]];
   toggleMarkdownPreview(model: Model): [Model, Cmd<Command>[]];
+  openDiagnostics(model: Model): [Model, Cmd<Command>[]];
   selectLocale(model: Model, locale: JeditSettingsLocaleSelection): [Model, Cmd<Command>[]];
 }
 
@@ -73,20 +77,12 @@ export interface JeditSettingsRow {
 }
 
 const SETTINGS_SECTION_LANGUAGE = 'Language';
-const SETTINGS_SECTION_APPEARANCE = 'Appearance';
-const SETTINGS_SECTION_EDITOR = 'Editor';
 const ROW_ID_THEME = 'theme';
 const ROW_ID_THEME_MODE = 'theme-mode';
 const ROW_ID_FOOTER = 'footer';
 const ROW_ID_MARKDOWN_PREVIEW = 'markdown-preview';
+const ROW_ID_DIAGNOSTICS = 'diagnostics';
 const ROW_ID_LOCALE_PREFIX = 'locale:';
-const VALUE_ON = 'On';
-const VALUE_OFF = 'Off';
-const VALUE_THEME_MODE_DARK = 'Dark';
-const VALUE_THEME_MODE_LIGHT = 'Light';
-const VALUE_SOURCE = 'Source';
-const VALUE_PREVIEW = 'Preview';
-const VALUE_CURRENT = 'Current';
 const KEY_ESCAPE = 'escape';
 const KEY_DOWN = 'down';
 const KEY_UP = 'up';
@@ -97,6 +93,29 @@ const KEY_SPACE = ' ';
 const KEY_SPACE_CANONICAL = 'space';
 const FOCUS_STEP_FORWARD = 1;
 const FOCUS_STEP_BACKWARD = -1;
+const SETTINGS_I18N_KEYS = Object.freeze({
+  SectionAppearance: 'settings.sections.appearance',
+  SectionEditor: 'settings.sections.editor',
+  SectionRuntime: 'settings.sections.runtime',
+  ThemeLabel: 'settings.rows.theme.label',
+  ThemeDescription: 'settings.rows.theme.description',
+  ThemeModeLabel: 'settings.rows.theme_mode.label',
+  ThemeModeDescription: 'settings.rows.theme_mode.description',
+  FooterLabel: 'settings.rows.footer.label',
+  FooterDescription: 'settings.rows.footer.description',
+  MarkdownPreviewLabel: 'settings.rows.markdown_preview.label',
+  MarkdownPreviewDescription: 'settings.rows.markdown_preview.description',
+  DiagnosticsLabel: 'settings.rows.diagnostics.label',
+  DiagnosticsDescription: 'settings.rows.diagnostics.description',
+  ValueOn: 'settings.values.on',
+  ValueOff: 'settings.values.off',
+  ValueThemeModeDark: 'settings.values.theme_mode_dark',
+  ValueThemeModeLight: 'settings.values.theme_mode_light',
+  ValueSource: 'settings.values.source',
+  ValuePreview: 'settings.values.preview',
+  ValueCurrent: 'settings.values.current',
+  ValueOpen: 'settings.values.open',
+} as const);
 
 const SETTINGS_KEY_ACTION = {
   Close: Symbol('jedit.settings.key-action.close'),
@@ -118,7 +137,9 @@ const SETTINGS_KEY_ACTIONS = new Map<string, SettingsKeyAction>([
   [KEY_SPACE_CANONICAL, SETTINGS_KEY_ACTION.Activate],
 ]);
 
-export function jeditSettingsRows(state: JeditSettingsState & { readonly i18n: JeditSettingsI18nState }): readonly JeditSettingsRow[] {
+type JeditSettingsContext = JeditSettingsState & { readonly i18n: JeditSettingsI18nState };
+
+export function jeditSettingsRows(state: JeditSettingsContext): readonly JeditSettingsRow[] {
   const rows: JeditSettingsRow[] = [
     ...localeSettingsRows(state.i18n),
     themeSettingsRow(state),
@@ -128,6 +149,9 @@ export function jeditSettingsRows(state: JeditSettingsState & { readonly i18n: J
 
   if (state.markdownPreviewActive) {
     rows.push(markdownPreviewSettingsRow(state));
+  }
+  if (state.diagnosticsAvailable) {
+    rows.push(diagnosticsSettingsRow(state.i18n));
   }
 
   return rows;
@@ -147,7 +171,7 @@ function localeSettingsRow(
     section: SETTINGS_SECTION_LANGUAGE,
     label: locale.label,
     description: `${locale.locale} ${locale.direction.toUpperCase()}`,
-    valueLabel: active ? VALUE_CURRENT : locale.locale,
+    valueLabel: active ? i18n.t(SETTINGS_I18N_KEYS.ValueCurrent) : locale.locale,
     kind: JEDIT_SETTING_ROW_KIND.Option,
     checked: active,
     locale,
@@ -155,57 +179,73 @@ function localeSettingsRow(
   };
 }
 
-function themeSettingsRow(state: JeditSettingsState): JeditSettingsRow {
+function themeSettingsRow(state: JeditSettingsContext): JeditSettingsRow {
   return {
     id: ROW_ID_THEME,
-    section: SETTINGS_SECTION_APPEARANCE,
-    label: 'Theme',
-    description: 'Switch between installed data-driven themes.',
+    section: state.i18n.t(SETTINGS_I18N_KEYS.SectionAppearance),
+    label: state.i18n.t(SETTINGS_I18N_KEYS.ThemeLabel),
+    description: state.i18n.t(SETTINGS_I18N_KEYS.ThemeDescription),
     valueLabel: state.jeditTheme.name,
     kind: JEDIT_SETTING_ROW_KIND.Choice,
     action: JEDIT_SETTING_ACTION.CycleTheme,
   };
 }
 
-function themeModeSettingsRow(state: JeditSettingsState): JeditSettingsRow {
+function themeModeSettingsRow(state: JeditSettingsContext): JeditSettingsRow {
   return {
     id: ROW_ID_THEME_MODE,
-    section: SETTINGS_SECTION_APPEARANCE,
-    label: 'Light/dark',
-    description: 'Switch the current theme to its light or dark companion.',
-    valueLabel: settingsThemeModeLabel(state.jeditTheme),
+    section: state.i18n.t(SETTINGS_I18N_KEYS.SectionAppearance),
+    label: state.i18n.t(SETTINGS_I18N_KEYS.ThemeModeLabel),
+    description: state.i18n.t(SETTINGS_I18N_KEYS.ThemeModeDescription),
+    valueLabel: settingsThemeModeLabel(state),
     kind: JEDIT_SETTING_ROW_KIND.Choice,
     action: JEDIT_SETTING_ACTION.ToggleThemeMode,
   };
 }
 
-function footerSettingsRow(state: JeditSettingsState): JeditSettingsRow {
+function footerSettingsRow(state: JeditSettingsContext): JeditSettingsRow {
   return {
     id: ROW_ID_FOOTER,
-    section: SETTINGS_SECTION_APPEARANCE,
-    label: 'Footer',
-    description: 'Show mode, focus, and command hints at the bottom edge.',
-    valueLabel: state.footerVisible ? VALUE_ON : VALUE_OFF,
+    section: state.i18n.t(SETTINGS_I18N_KEYS.SectionAppearance),
+    label: state.i18n.t(SETTINGS_I18N_KEYS.FooterLabel),
+    description: state.i18n.t(SETTINGS_I18N_KEYS.FooterDescription),
+    valueLabel: state.footerVisible ? state.i18n.t(SETTINGS_I18N_KEYS.ValueOn) : state.i18n.t(SETTINGS_I18N_KEYS.ValueOff),
     kind: JEDIT_SETTING_ROW_KIND.Toggle,
     checked: state.footerVisible,
     action: JEDIT_SETTING_ACTION.ToggleFooter,
   };
 }
 
-function markdownPreviewSettingsRow(state: JeditSettingsState): JeditSettingsRow {
+function markdownPreviewSettingsRow(state: JeditSettingsContext): JeditSettingsRow {
   return {
     id: ROW_ID_MARKDOWN_PREVIEW,
-    section: SETTINGS_SECTION_EDITOR,
-    label: 'Markdown preview',
-    description: 'Switch the active Markdown buffer between source and preview.',
-    valueLabel: state.viewMode === ViewModes.Preview ? VALUE_PREVIEW : VALUE_SOURCE,
+    section: state.i18n.t(SETTINGS_I18N_KEYS.SectionEditor),
+    label: state.i18n.t(SETTINGS_I18N_KEYS.MarkdownPreviewLabel),
+    description: state.i18n.t(SETTINGS_I18N_KEYS.MarkdownPreviewDescription),
+    valueLabel: state.viewMode === ViewModes.Preview
+      ? state.i18n.t(SETTINGS_I18N_KEYS.ValuePreview)
+      : state.i18n.t(SETTINGS_I18N_KEYS.ValueSource),
     kind: JEDIT_SETTING_ROW_KIND.Choice,
     action: JEDIT_SETTING_ACTION.ToggleMarkdownPreview,
   };
 }
 
-function settingsThemeModeLabel(theme: JeditTheme): string {
-  return theme.mode === JEDIT_THEME_MODE.Light ? VALUE_THEME_MODE_LIGHT : VALUE_THEME_MODE_DARK;
+function diagnosticsSettingsRow(i18n: JeditSettingsI18nState): JeditSettingsRow {
+  return {
+    id: ROW_ID_DIAGNOSTICS,
+    section: i18n.t(SETTINGS_I18N_KEYS.SectionRuntime),
+    label: i18n.t(SETTINGS_I18N_KEYS.DiagnosticsLabel),
+    description: i18n.t(SETTINGS_I18N_KEYS.DiagnosticsDescription),
+    valueLabel: i18n.t(SETTINGS_I18N_KEYS.ValueOpen),
+    kind: JEDIT_SETTING_ROW_KIND.Choice,
+    action: JEDIT_SETTING_ACTION.OpenDiagnostics,
+  };
+}
+
+function settingsThemeModeLabel(state: JeditSettingsContext): string {
+  return state.jeditTheme.mode === JEDIT_THEME_MODE.Light
+    ? state.i18n.t(SETTINGS_I18N_KEYS.ValueThemeModeLight)
+    : state.i18n.t(SETTINGS_I18N_KEYS.ValueThemeModeDark);
 }
 
 export function moveSettingsFocusIndex(index: number, delta: number, rowCount: number): number {
@@ -285,6 +325,9 @@ function activateSettingsRow<Model, Command>(
   }
   if (action === JEDIT_SETTING_ACTION.ToggleMarkdownPreview) {
     return handlers.toggleMarkdownPreview(model);
+  }
+  if (action === JEDIT_SETTING_ACTION.OpenDiagnostics) {
+    return handlers.openDiagnostics(model);
   }
   if (action === JEDIT_SETTING_ACTION.SelectLocale && row?.locale != null) {
     return handlers.selectLocale(model, row.locale);

@@ -104,6 +104,7 @@ function initialSettingsState() {
   return {
     settingsOpen: false,
     settingsFocusIndex: 0,
+    settingsDiagnosticsOpen: false,
   };
 }
 
@@ -115,6 +116,9 @@ function initialShellState() {
 
 function initialGraftState() {
   return {
+    graftDiagnostics: undefined,
+    graftDiagnosticsLoading: false,
+    graftDiagnosticsRequestId: 0,
     graftInfo: undefined,
     graftLoading: false,
     graftRequestId: 0,
