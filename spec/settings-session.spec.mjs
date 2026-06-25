@@ -39,6 +39,7 @@ test('jedit settings rows expose theme, footer, and markdown preview preferences
     jeditTheme: theme,
     footerVisible: true,
     markdownPreviewActive: true,
+    diagnosticsAvailable: true,
     viewMode: 'source',
   });
 
@@ -51,6 +52,7 @@ test('jedit settings rows expose theme, footer, and markdown preview preferences
       ['Light/dark', 'Dark', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
       ['Footer', 'On', settings.JEDIT_SETTING_ROW_KIND.Toggle, true],
       ['Markdown preview', 'Source', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
+      ['Diagnostics', 'Open', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
     ],
   );
 });
@@ -72,6 +74,7 @@ test('settings key reducer closes, moves, and activates focused settings rows', 
     jeditTheme: theme,
     footerVisible: true,
     markdownPreviewActive: true,
+    diagnosticsAvailable: true,
     viewMode: 'source',
     settingsOpen: true,
     settingsFocusIndex: 0,
@@ -89,6 +92,9 @@ test('settings key reducer closes, moves, and activates focused settings rows', 
     },
     toggleMarkdownPreview(model) {
       return [{ ...model, viewMode: 'preview' }, []];
+    },
+    openDiagnostics(model) {
+      return [{ ...model, diagnosticsOpened: true }, []];
     },
     selectLocale(model, locale) {
       return [{ ...model, selectedLocale: locale.locale }, []];
@@ -111,4 +117,29 @@ test('settings key reducer closes, moves, and activates focused settings rows', 
 
   const [activated] = settings.updateJeditSettingsFromKey({ key: 'enter' }, { ...baseModel, settingsFocusIndex: 4 }, rows, handlers);
   assert.equal(activated.viewMode, 'preview');
+
+  const diagnosticsIndex = rows.findIndex((row) => row.id === 'diagnostics');
+  const [diagnostics] = settings.updateJeditSettingsFromKey(
+    { key: 'enter' },
+    { ...baseModel, settingsFocusIndex: diagnosticsIndex },
+    rows,
+    handlers,
+  );
+  assert.equal(diagnostics.diagnosticsOpened, true);
+});
+
+test('jedit settings rows hide diagnostics when diagnostics are unavailable', async () => {
+  const { settings, themes } = await loadSettingsModules();
+  const theme = themes.availableJeditThemes()[0];
+
+  const rows = settings.jeditSettingsRows({
+    i18n: createI18nMock(),
+    jeditTheme: theme,
+    footerVisible: true,
+    markdownPreviewActive: true,
+    diagnosticsAvailable: false,
+    viewMode: 'source',
+  });
+
+  assert.equal(rows.some((row) => row.id === 'diagnostics'), false);
 });

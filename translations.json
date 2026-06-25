@@ -91,6 +91,45 @@
           "title": "Open file",
           "current_directory": "Current directory",
           "empty": "No files in this directory"
+        },
+        "settings": {
+          "sections": {
+            "appearance": "Appearance",
+            "editor": "Editor",
+            "runtime": "Runtime"
+          },
+          "rows": {
+            "theme": {
+              "label": "Theme",
+              "description": "Switch between installed data-driven themes."
+            },
+            "theme_mode": {
+              "label": "Light/dark",
+              "description": "Switch the current theme to its light or dark companion."
+            },
+            "footer": {
+              "label": "Footer",
+              "description": "Show mode, focus, and command hints at the bottom edge."
+            },
+            "markdown_preview": {
+              "label": "Markdown preview",
+              "description": "Switch the active Markdown buffer between source and preview."
+            },
+            "diagnostics": {
+              "label": "Diagnostics",
+              "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            }
+          },
+          "values": {
+            "on": "On",
+            "off": "Off",
+            "theme_mode_dark": "Dark",
+            "theme_mode_light": "Light",
+            "source": "Source",
+            "preview": "Preview",
+            "current": "Current",
+            "open": "Open"
+          }
         }
       }
     },
@@ -185,6 +224,45 @@
           "title": "Open file",
           "current_directory": "Current directory",
           "empty": "No files in this directory"
+        },
+        "settings": {
+          "sections": {
+            "appearance": "Appearance",
+            "editor": "Editor",
+            "runtime": "Runtime"
+          },
+          "rows": {
+            "theme": {
+              "label": "Theme",
+              "description": "Switch between installed data-driven themes."
+            },
+            "theme_mode": {
+              "label": "Light/dark",
+              "description": "Switch the current theme to its light or dark companion."
+            },
+            "footer": {
+              "label": "Footer",
+              "description": "Show mode, focus, and command hints at the bottom edge."
+            },
+            "markdown_preview": {
+              "label": "Markdown preview",
+              "description": "Switch the active Markdown buffer between source and preview."
+            },
+            "diagnostics": {
+              "label": "Diagnostics",
+              "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            }
+          },
+          "values": {
+            "on": "On",
+            "off": "Off",
+            "theme_mode_dark": "Dark",
+            "theme_mode_light": "Light",
+            "source": "Source",
+            "preview": "Preview",
+            "current": "Current",
+            "open": "Open"
+          }
         }
       }
     },
@@ -279,6 +357,45 @@
           "title": "Open file",
           "current_directory": "Current directory",
           "empty": "No files in this directory"
+        },
+        "settings": {
+          "sections": {
+            "appearance": "Appearance",
+            "editor": "Editor",
+            "runtime": "Runtime"
+          },
+          "rows": {
+            "theme": {
+              "label": "Theme",
+              "description": "Switch between installed data-driven themes."
+            },
+            "theme_mode": {
+              "label": "Light/dark",
+              "description": "Switch the current theme to its light or dark companion."
+            },
+            "footer": {
+              "label": "Footer",
+              "description": "Show mode, focus, and command hints at the bottom edge."
+            },
+            "markdown_preview": {
+              "label": "Markdown preview",
+              "description": "Switch the active Markdown buffer between source and preview."
+            },
+            "diagnostics": {
+              "label": "Diagnostics",
+              "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            }
+          },
+          "values": {
+            "on": "On",
+            "off": "Off",
+            "theme_mode_dark": "Dark",
+            "theme_mode_light": "Light",
+            "source": "Source",
+            "preview": "Preview",
+            "current": "Current",
+            "open": "Open"
+          }
         }
       }
     },
@@ -373,6 +490,45 @@
           "title": "Open file",
           "current_directory": "Current directory",
           "empty": "No files in this directory"
+        },
+        "settings": {
+          "sections": {
+            "appearance": "Appearance",
+            "editor": "Editor",
+            "runtime": "Runtime"
+          },
+          "rows": {
+            "theme": {
+              "label": "Theme",
+              "description": "Switch between installed data-driven themes."
+            },
+            "theme_mode": {
+              "label": "Light/dark",
+              "description": "Switch the current theme to its light or dark companion."
+            },
+            "footer": {
+              "label": "Footer",
+              "description": "Show mode, focus, and command hints at the bottom edge."
+            },
+            "markdown_preview": {
+              "label": "Markdown preview",
+              "description": "Switch the active Markdown buffer between source and preview."
+            },
+            "diagnostics": {
+              "label": "Diagnostics",
+              "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            }
+          },
+          "values": {
+            "on": "On",
+            "off": "Off",
+            "theme_mode_dark": "Dark",
+            "theme_mode_light": "Light",
+            "source": "Source",
+            "preview": "Preview",
+            "current": "Current",
+            "open": "Open"
+          }
         }
       }
     },
@@ -467,6 +623,45 @@
           "title": "Open file",
           "current_directory": "Current directory",
           "empty": "No files in this directory"
+        },
+        "settings": {
+          "sections": {
+            "appearance": "Appearance",
+            "editor": "Editor",
+            "runtime": "Runtime"
+          },
+          "rows": {
+            "theme": {
+              "label": "Theme",
+              "description": "Switch between installed data-driven themes."
+            },
+            "theme_mode": {
+              "label": "Light/dark",
+              "description": "Switch the current theme to its light or dark companion."
+            },
+            "footer": {
+              "label": "Footer",
+              "description": "Show mode, focus, and command hints at the bottom edge."
+            },
+            "markdown_preview": {
+              "label": "Markdown preview",
+              "description": "Switch the active Markdown buffer between source and preview."
+            },
+            "diagnostics": {
+              "label": "Diagnostics",
+              "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            }
+          },
+          "values": {
+            "on": "On",
+            "off": "Off",
+            "theme_mode_dark": "Dark",
+            "theme_mode_light": "Light",
+            "source": "Source",
+            "preview": "Preview",
+            "current": "Current",
+            "open": "Open"
+          }
         }
       }
     },
@@ -561,6 +756,45 @@
           "title": "Open file",
           "current_directory": "Current directory",
           "empty": "No files in this directory"
+        },
+        "settings": {
+          "sections": {
+            "appearance": "Appearance",
+            "editor": "Editor",
+            "runtime": "Runtime"
+          },
+          "rows": {
+            "theme": {
+              "label": "Theme",
+              "description": "Switch between installed data-driven themes."
+            },
+            "theme_mode": {
+              "label": "Light/dark",
+              "description": "Switch the current theme to its light or dark companion."
+            },
+            "footer": {
+              "label": "Footer",
+              "description": "Show mode, focus, and command hints at the bottom edge."
+            },
+            "markdown_preview": {
+              "label": "Markdown preview",
+              "description": "Switch the active Markdown buffer between source and preview."
+            },
+            "diagnostics": {
+              "label": "Diagnostics",
+              "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            }
+          },
+          "values": {
+            "on": "On",
+            "off": "Off",
+            "theme_mode_dark": "Dark",
+            "theme_mode_light": "Light",
+            "source": "Source",
+            "preview": "Preview",
+            "current": "Current",
+            "open": "Open"
+          }
         }
       }
     },
@@ -655,6 +889,45 @@
           "title": "Open file",
           "current_directory": "Current directory",
           "empty": "No files in this directory"
+        },
+        "settings": {
+          "sections": {
+            "appearance": "Appearance",
+            "editor": "Editor",
+            "runtime": "Runtime"
+          },
+          "rows": {
+            "theme": {
+              "label": "Theme",
+              "description": "Switch between installed data-driven themes."
+            },
+            "theme_mode": {
+              "label": "Light/dark",
+              "description": "Switch the current theme to its light or dark companion."
+            },
+            "footer": {
+              "label": "Footer",
+              "description": "Show mode, focus, and command hints at the bottom edge."
+            },
+            "markdown_preview": {
+              "label": "Markdown preview",
+              "description": "Switch the active Markdown buffer between source and preview."
+            },
+            "diagnostics": {
+              "label": "Diagnostics",
+              "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            }
+          },
+          "values": {
+            "on": "On",
+            "off": "Off",
+            "theme_mode_dark": "Dark",
+            "theme_mode_light": "Light",
+            "source": "Source",
+            "preview": "Preview",
+            "current": "Current",
+            "open": "Open"
+          }
         }
       }
     },
@@ -749,6 +1022,45 @@
           "title": "Open file",
           "current_directory": "Current directory",
           "empty": "No files in this directory"
+        },
+        "settings": {
+          "sections": {
+            "appearance": "Appearance",
+            "editor": "Editor",
+            "runtime": "Runtime"
+          },
+          "rows": {
+            "theme": {
+              "label": "Theme",
+              "description": "Switch between installed data-driven themes."
+            },
+            "theme_mode": {
+              "label": "Light/dark",
+              "description": "Switch the current theme to its light or dark companion."
+            },
+            "footer": {
+              "label": "Footer",
+              "description": "Show mode, focus, and command hints at the bottom edge."
+            },
+            "markdown_preview": {
+              "label": "Markdown preview",
+              "description": "Switch the active Markdown buffer between source and preview."
+            },
+            "diagnostics": {
+              "label": "Diagnostics",
+              "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            }
+          },
+          "values": {
+            "on": "On",
+            "off": "Off",
+            "theme_mode_dark": "Dark",
+            "theme_mode_light": "Light",
+            "source": "Source",
+            "preview": "Preview",
+            "current": "Current",
+            "open": "Open"
+          }
         }
       }
     },
@@ -843,6 +1155,45 @@
           "title": "Open file",
           "current_directory": "Current directory",
           "empty": "No files in this directory"
+        },
+        "settings": {
+          "sections": {
+            "appearance": "Appearance",
+            "editor": "Editor",
+            "runtime": "Runtime"
+          },
+          "rows": {
+            "theme": {
+              "label": "Theme",
+              "description": "Switch between installed data-driven themes."
+            },
+            "theme_mode": {
+              "label": "Light/dark",
+              "description": "Switch the current theme to its light or dark companion."
+            },
+            "footer": {
+              "label": "Footer",
+              "description": "Show mode, focus, and command hints at the bottom edge."
+            },
+            "markdown_preview": {
+              "label": "Markdown preview",
+              "description": "Switch the active Markdown buffer between source and preview."
+            },
+            "diagnostics": {
+              "label": "Diagnostics",
+              "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            }
+          },
+          "values": {
+            "on": "On",
+            "off": "Off",
+            "theme_mode_dark": "Dark",
+            "theme_mode_light": "Light",
+            "source": "Source",
+            "preview": "Preview",
+            "current": "Current",
+            "open": "Open"
+          }
         }
       }
     },
@@ -937,6 +1288,45 @@
           "title": "Open file",
           "current_directory": "Current directory",
           "empty": "No files in this directory"
+        },
+        "settings": {
+          "sections": {
+            "appearance": "Appearance",
+            "editor": "Editor",
+            "runtime": "Runtime"
+          },
+          "rows": {
+            "theme": {
+              "label": "Theme",
+              "description": "Switch between installed data-driven themes."
+            },
+            "theme_mode": {
+              "label": "Light/dark",
+              "description": "Switch the current theme to its light or dark companion."
+            },
+            "footer": {
+              "label": "Footer",
+              "description": "Show mode, focus, and command hints at the bottom edge."
+            },
+            "markdown_preview": {
+              "label": "Markdown preview",
+              "description": "Switch the active Markdown buffer between source and preview."
+            },
+            "diagnostics": {
+              "label": "Diagnostics",
+              "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            }
+          },
+          "values": {
+            "on": "On",
+            "off": "Off",
+            "theme_mode_dark": "Dark",
+            "theme_mode_light": "Light",
+            "source": "Source",
+            "preview": "Preview",
+            "current": "Current",
+            "open": "Open"
+          }
         }
       }
     },
@@ -1031,6 +1421,45 @@
           "title": "Open file",
           "current_directory": "Current directory",
           "empty": "No files in this directory"
+        },
+        "settings": {
+          "sections": {
+            "appearance": "Appearance",
+            "editor": "Editor",
+            "runtime": "Runtime"
+          },
+          "rows": {
+            "theme": {
+              "label": "Theme",
+              "description": "Switch between installed data-driven themes."
+            },
+            "theme_mode": {
+              "label": "Light/dark",
+              "description": "Switch the current theme to its light or dark companion."
+            },
+            "footer": {
+              "label": "Footer",
+              "description": "Show mode, focus, and command hints at the bottom edge."
+            },
+            "markdown_preview": {
+              "label": "Markdown preview",
+              "description": "Switch the active Markdown buffer between source and preview."
+            },
+            "diagnostics": {
+              "label": "Diagnostics",
+              "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            }
+          },
+          "values": {
+            "on": "On",
+            "off": "Off",
+            "theme_mode_dark": "Dark",
+            "theme_mode_light": "Light",
+            "source": "Source",
+            "preview": "Preview",
+            "current": "Current",
+            "open": "Open"
+          }
         }
       }
     },
@@ -1125,6 +1554,45 @@
           "title": "Open file",
           "current_directory": "Current directory",
           "empty": "No files in this directory"
+        },
+        "settings": {
+          "sections": {
+            "appearance": "Appearance",
+            "editor": "Editor",
+            "runtime": "Runtime"
+          },
+          "rows": {
+            "theme": {
+              "label": "Theme",
+              "description": "Switch between installed data-driven themes."
+            },
+            "theme_mode": {
+              "label": "Light/dark",
+              "description": "Switch the current theme to its light or dark companion."
+            },
+            "footer": {
+              "label": "Footer",
+              "description": "Show mode, focus, and command hints at the bottom edge."
+            },
+            "markdown_preview": {
+              "label": "Markdown preview",
+              "description": "Switch the active Markdown buffer between source and preview."
+            },
+            "diagnostics": {
+              "label": "Diagnostics",
+              "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            }
+          },
+          "values": {
+            "on": "On",
+            "off": "Off",
+            "theme_mode_dark": "Dark",
+            "theme_mode_light": "Light",
+            "source": "Source",
+            "preview": "Preview",
+            "current": "Current",
+            "open": "Open"
+          }
         }
       }
     },
@@ -1219,6 +1687,45 @@
           "title": "Open file",
           "current_directory": "Current directory",
           "empty": "No files in this directory"
+        },
+        "settings": {
+          "sections": {
+            "appearance": "Appearance",
+            "editor": "Editor",
+            "runtime": "Runtime"
+          },
+          "rows": {
+            "theme": {
+              "label": "Theme",
+              "description": "Switch between installed data-driven themes."
+            },
+            "theme_mode": {
+              "label": "Light/dark",
+              "description": "Switch the current theme to its light or dark companion."
+            },
+            "footer": {
+              "label": "Footer",
+              "description": "Show mode, focus, and command hints at the bottom edge."
+            },
+            "markdown_preview": {
+              "label": "Markdown preview",
+              "description": "Switch the active Markdown buffer between source and preview."
+            },
+            "diagnostics": {
+              "label": "Diagnostics",
+              "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            }
+          },
+          "values": {
+            "on": "On",
+            "off": "Off",
+            "theme_mode_dark": "Dark",
+            "theme_mode_light": "Light",
+            "source": "Source",
+            "preview": "Preview",
+            "current": "Current",
+            "open": "Open"
+          }
         }
       }
     },
@@ -1313,6 +1820,45 @@
           "title": "Open file",
           "current_directory": "Current directory",
           "empty": "No files in this directory"
+        },
+        "settings": {
+          "sections": {
+            "appearance": "Appearance",
+            "editor": "Editor",
+            "runtime": "Runtime"
+          },
+          "rows": {
+            "theme": {
+              "label": "Theme",
+              "description": "Switch between installed data-driven themes."
+            },
+            "theme_mode": {
+              "label": "Light/dark",
+              "description": "Switch the current theme to its light or dark companion."
+            },
+            "footer": {
+              "label": "Footer",
+              "description": "Show mode, focus, and command hints at the bottom edge."
+            },
+            "markdown_preview": {
+              "label": "Markdown preview",
+              "description": "Switch the active Markdown buffer between source and preview."
+            },
+            "diagnostics": {
+              "label": "Diagnostics",
+              "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            }
+          },
+          "values": {
+            "on": "On",
+            "off": "Off",
+            "theme_mode_dark": "Dark",
+            "theme_mode_light": "Light",
+            "source": "Source",
+            "preview": "Preview",
+            "current": "Current",
+            "open": "Open"
+          }
         }
       }
     },
@@ -1407,6 +1953,45 @@
           "title": "Open file",
           "current_directory": "Current directory",
           "empty": "No files in this directory"
+        },
+        "settings": {
+          "sections": {
+            "appearance": "Appearance",
+            "editor": "Editor",
+            "runtime": "Runtime"
+          },
+          "rows": {
+            "theme": {
+              "label": "Theme",
+              "description": "Switch between installed data-driven themes."
+            },
+            "theme_mode": {
+              "label": "Light/dark",
+              "description": "Switch the current theme to its light or dark companion."
+            },
+            "footer": {
+              "label": "Footer",
+              "description": "Show mode, focus, and command hints at the bottom edge."
+            },
+            "markdown_preview": {
+              "label": "Markdown preview",
+              "description": "Switch the active Markdown buffer between source and preview."
+            },
+            "diagnostics": {
+              "label": "Diagnostics",
+              "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            }
+          },
+          "values": {
+            "on": "On",
+            "off": "Off",
+            "theme_mode_dark": "Dark",
+            "theme_mode_light": "Light",
+            "source": "Source",
+            "preview": "Preview",
+            "current": "Current",
+            "open": "Open"
+          }
         }
       }
     },
@@ -1501,6 +2086,45 @@
           "title": "Open file",
           "current_directory": "Current directory",
           "empty": "No files in this directory"
+        },
+        "settings": {
+          "sections": {
+            "appearance": "Appearance",
+            "editor": "Editor",
+            "runtime": "Runtime"
+          },
+          "rows": {
+            "theme": {
+              "label": "Theme",
+              "description": "Switch between installed data-driven themes."
+            },
+            "theme_mode": {
+              "label": "Light/dark",
+              "description": "Switch the current theme to its light or dark companion."
+            },
+            "footer": {
+              "label": "Footer",
+              "description": "Show mode, focus, and command hints at the bottom edge."
+            },
+            "markdown_preview": {
+              "label": "Markdown preview",
+              "description": "Switch the active Markdown buffer between source and preview."
+            },
+            "diagnostics": {
+              "label": "Diagnostics",
+              "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            }
+          },
+          "values": {
+            "on": "On",
+            "off": "Off",
+            "theme_mode_dark": "Dark",
+            "theme_mode_light": "Light",
+            "source": "Source",
+            "preview": "Preview",
+            "current": "Current",
+            "open": "Open"
+          }
         }
       }
     },
@@ -1595,6 +2219,45 @@
           "title": "Open file",
           "current_directory": "Current directory",
           "empty": "No files in this directory"
+        },
+        "settings": {
+          "sections": {
+            "appearance": "Appearance",
+            "editor": "Editor",
+            "runtime": "Runtime"
+          },
+          "rows": {
+            "theme": {
+              "label": "Theme",
+              "description": "Switch between installed data-driven themes."
+            },
+            "theme_mode": {
+              "label": "Light/dark",
+              "description": "Switch the current theme to its light or dark companion."
+            },
+            "footer": {
+              "label": "Footer",
+              "description": "Show mode, focus, and command hints at the bottom edge."
+            },
+            "markdown_preview": {
+              "label": "Markdown preview",
+              "description": "Switch the active Markdown buffer between source and preview."
+            },
+            "diagnostics": {
+              "label": "Diagnostics",
+              "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            }
+          },
+          "values": {
+            "on": "On",
+            "off": "Off",
+            "theme_mode_dark": "Dark",
+            "theme_mode_light": "Light",
+            "source": "Source",
+            "preview": "Preview",
+            "current": "Current",
+            "open": "Open"
+          }
         }
       }
     },
@@ -1689,6 +2352,45 @@
           "title": "Open file",
           "current_directory": "Current directory",
           "empty": "No files in this directory"
+        },
+        "settings": {
+          "sections": {
+            "appearance": "Appearance",
+            "editor": "Editor",
+            "runtime": "Runtime"
+          },
+          "rows": {
+            "theme": {
+              "label": "Theme",
+              "description": "Switch between installed data-driven themes."
+            },
+            "theme_mode": {
+              "label": "Light/dark",
+              "description": "Switch the current theme to its light or dark companion."
+            },
+            "footer": {
+              "label": "Footer",
+              "description": "Show mode, focus, and command hints at the bottom edge."
+            },
+            "markdown_preview": {
+              "label": "Markdown preview",
+              "description": "Switch the active Markdown buffer between source and preview."
+            },
+            "diagnostics": {
+              "label": "Diagnostics",
+              "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            }
+          },
+          "values": {
+            "on": "On",
+            "off": "Off",
+            "theme_mode_dark": "Dark",
+            "theme_mode_light": "Light",
+            "source": "Source",
+            "preview": "Preview",
+            "current": "Current",
+            "open": "Open"
+          }
         }
       }
     },
@@ -1783,6 +2485,45 @@
           "title": "Open file",
           "current_directory": "Current directory",
           "empty": "No files in this directory"
+        },
+        "settings": {
+          "sections": {
+            "appearance": "Appearance",
+            "editor": "Editor",
+            "runtime": "Runtime"
+          },
+          "rows": {
+            "theme": {
+              "label": "Theme",
+              "description": "Switch between installed data-driven themes."
+            },
+            "theme_mode": {
+              "label": "Light/dark",
+              "description": "Switch the current theme to its light or dark companion."
+            },
+            "footer": {
+              "label": "Footer",
+              "description": "Show mode, focus, and command hints at the bottom edge."
+            },
+            "markdown_preview": {
+              "label": "Markdown preview",
+              "description": "Switch the active Markdown buffer between source and preview."
+            },
+            "diagnostics": {
+              "label": "Diagnostics",
+              "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            }
+          },
+          "values": {
+            "on": "On",
+            "off": "Off",
+            "theme_mode_dark": "Dark",
+            "theme_mode_light": "Light",
+            "source": "Source",
+            "preview": "Preview",
+            "current": "Current",
+            "open": "Open"
+          }
         }
       }
     },
@@ -1877,6 +2618,45 @@
           "title": "Open file",
           "current_directory": "Current directory",
           "empty": "No files in this directory"
+        },
+        "settings": {
+          "sections": {
+            "appearance": "Appearance",
+            "editor": "Editor",
+            "runtime": "Runtime"
+          },
+          "rows": {
+            "theme": {
+              "label": "Theme",
+              "description": "Switch between installed data-driven themes."
+            },
+            "theme_mode": {
+              "label": "Light/dark",
+              "description": "Switch the current theme to its light or dark companion."
+            },
+            "footer": {
+              "label": "Footer",
+              "description": "Show mode, focus, and command hints at the bottom edge."
+            },
+            "markdown_preview": {
+              "label": "Markdown preview",
+              "description": "Switch the active Markdown buffer between source and preview."
+            },
+            "diagnostics": {
+              "label": "Diagnostics",
+              "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            }
+          },
+          "values": {
+            "on": "On",
+            "off": "Off",
+            "theme_mode_dark": "Dark",
+            "theme_mode_light": "Light",
+            "source": "Source",
+            "preview": "Preview",
+            "current": "Current",
+            "open": "Open"
+          }
         }
       }
     }

@@ -68,6 +68,7 @@ Press `?` inside the editor for the key binding reference.
 | [AGENTS.md](AGENTS.md) | Agent-specific guidance and witness commands |
 | [docs/BEARING.md](docs/BEARING.md) | Compact current state, active roadmap anchors, and non-negotiables |
 | [docs/stack-map.md](docs/stack-map.md) | Current jedit/Echo/Wesley/Graft/Bijou layer map |
+| [docs/topics/syntax-highlighting/](docs/topics/syntax-highlighting/) | How Graft-backed syntax spans, Colorful prose projection, and theming work |
 | [docs/method/roadmap-planning.md](docs/method/roadmap-planning.md) | Roadmap, release-gate, slice, and proof policy |
 | [docs/technical-teardown.md](docs/technical-teardown.md) | **Deep technical reference** — domain dictionary, golden paths, payload anatomy, trade-offs, security boundaries, async model |
 | [docs/jedit-echo-end-to-end.md](docs/jedit-echo-end-to-end.md) | The full jedit + Echo process-level path |

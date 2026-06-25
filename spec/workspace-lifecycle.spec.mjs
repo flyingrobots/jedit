@@ -67,12 +67,90 @@ test('workspace settings selects a locale through runtime tokens', async () => {
     }),
   };
 
-  const [selected] = settings.workspaceSettingsHandlers.selectLocale(model, nextLocale);
+  const [selected] = settings.workspaceSettingsHandlers().selectLocale(model, nextLocale);
 
   assert.notEqual(selected, model);
   assert.notEqual(selected.i18n, model.i18n);
   assert.equal(selected.i18n, replacementI18n);
   assert.deepEqual(localeChanges, [nextLocale.locale]);
+});
+
+test('workspace settings opens and refreshes the Graft diagnostics panel', async () => {
+  const [runtimeModule, settingsModule, diagnosticsPort] = await Promise.all([
+    importDist('app', 'workspace', 'runtime.js'),
+    importDist('app', 'workspace', 'settings.js'),
+    importDist('ports', 'graft-diagnostics.js'),
+  ]);
+  const report = {
+    title: 'Graft diagnostics',
+    summary: 'Colorful prose projection is active.',
+    rows: [{
+      label: 'Graft package',
+      value: '0.10.0',
+      status: diagnosticsPort.GRAFT_DIAGNOSTIC_STATUS.Ok,
+    }],
+  };
+  let loadCount = 0;
+  const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime({
+    graftDiagnostics: {
+      loadDiagnostics: async () => {
+        loadCount += 1;
+        return report;
+      },
+      failedDiagnostics: ({ message }) => ({
+        title: 'Graft diagnostics',
+        summary: message,
+        rows: [],
+      }),
+    },
+  }));
+  const [initialModel] = runtime.init();
+  const [settingsOpen] = runtime.update({ type: 'key', key: 'f2' }, initialModel);
+  const diagnosticsIndex = settingsModule.settingsRows(settingsOpen).findIndex((row) => row.id === 'diagnostics');
+
+  const [opened, commands] = runtime.update(
+    { type: 'key', key: 'enter' },
+    { ...settingsOpen, settingsFocusIndex: diagnosticsIndex },
+  );
+  const [loaded] = runtime.update(await commands[0](), opened);
+  const [refreshed, refreshCommands] = runtime.update({ type: 'key', key: 'enter' }, loaded);
+  const [refreshedLoaded] = runtime.update(await refreshCommands[0](), refreshed);
+  const [backToSettings] = runtime.update({ type: 'key', key: 'escape' }, refreshedLoaded);
+
+  assert.equal(opened.settingsDiagnosticsOpen, true);
+  assert.equal(opened.graftDiagnosticsLoading, true);
+  assert.equal(loaded.graftDiagnostics, report);
+  assert.equal(loaded.graftDiagnosticsLoading, false);
+  assert.equal(refreshed.graftDiagnosticsLoading, true);
+  assert.equal(refreshedLoaded.graftDiagnostics, report);
+  assert.equal(backToSettings.settingsDiagnosticsOpen, false);
+  assert.equal(backToSettings.settingsOpen, true);
+  assert.equal(loadCount, 2);
+});
+
+test('workspace diagnostics failure report receives the failed request message', async () => {
+  const runtimeModule = await importDist('app', 'workspace', 'runtime.js');
+  const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime({
+    graftDiagnostics: {
+      loadDiagnostics: async () => {
+        throw new Error('diagnostics crashed');
+      },
+      failedDiagnostics: ({ message }) => ({
+        title: 'Graft diagnostics',
+        summary: message,
+        rows: [],
+      }),
+    },
+  }));
+  const [initialModel] = runtime.init();
+  const [opened, commands] = runtime.update(
+    { type: 'key', key: 'enter' },
+    { ...initialModel, settingsOpen: true, settingsFocusIndex: 4 },
+  );
+  const [loaded] = runtime.update(await commands[0](), opened);
+
+  assert.equal(loaded.graftDiagnostics.summary, 'diagnostics crashed');
+  assert.equal(loaded.graftDiagnosticsLoading, false);
 });
 
 test('workspace exposes runtime tokens for drawer, focus, file entry, and key dispatch values', async () => {

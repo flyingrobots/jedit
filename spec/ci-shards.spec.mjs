@@ -13,8 +13,11 @@ import { PACKAGE_CHANGE_KINDS, impactForPath, planChangedShards } from '../scrip
 
 const TYPESCRIPT_BUILD_SNIPPET = 'node_modules/typescript/bin/' + 'tsc';
 const CI_WORKFLOW_PATH = '.github/workflows/ci.yml';
+const PACKAGE_JSON_PATH = 'package.json';
 const STRUCTURAL_HISTORY_DESCRIPTOR_PATH =
   'src/generated/jedit/structural-history-replace-text-range.wesley.generated.ts';
+const FULL_PREBUILT_TEST_SCRIPT =
+  'npm run build && JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/**/*.spec.mjs tests/**/*.spec.mjs';
 
 test('test shard manifest assigns every spec to one non-empty shard', () => {
   const specs = discoverSpecFiles();
@@ -99,6 +102,14 @@ test('spec files use the dist helper instead of per-spec TypeScript builds', () 
     .filter((specPath) => readFileSync(specPath, 'utf8').includes(TYPESCRIPT_BUILD_SNIPPET));
 
   assert.deepEqual(offenders, []);
+});
+
+test('local full test scripts use one prebuilt dist pass', () => {
+  const packageJson = JSON.parse(readFileSync(PACKAGE_JSON_PATH, 'utf8'));
+
+  assert.equal(packageJson.scripts['test:all'], FULL_PREBUILT_TEST_SCRIPT);
+  assert.equal(packageJson.scripts.test, 'npm run test:all');
+  assert.equal(packageJson.scripts.check, 'npm run test:all && npm run quality');
 });
 
 test('CI build artifact restores generated sources required by cycle proofs', () => {
