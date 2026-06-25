@@ -3,6 +3,7 @@ import { run } from '@flyingrobots/bijou-tui';
 import { JEDIT_TERMINAL_MOUSE_OPTIONS } from './ui/terminal-mouse.js';
 import { createWorkspaceApp } from './adapters/workspace-app.js';
 import { parseTextRuntimeProfile, requireTextRuntimeProfile } from './app/text-runtime-profile.js';
+import { jeditStartupCliAction } from './app/jedit-startup-cli.js';
 
 const DEFAULT_TERMINAL_COLUMNS = 100;
 const DEFAULT_TERMINAL_ROWS = 32;
@@ -22,6 +23,12 @@ const BOOLEAN_BY_ENV_VALUE: Readonly<Record<string, boolean>> = Object.freeze({
 });
 interface EnvBooleanOptions {
   readonly defaultValue: boolean;
+}
+
+const startupCliAction = jeditStartupCliAction(process.argv.slice(2));
+if (startupCliAction != null) {
+  process.stdout.write(startupCliAction.text);
+  process.exit(0);
 }
 
 requireTextRuntimeProfile(parseTextRuntimeProfile(

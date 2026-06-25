@@ -192,4 +192,21 @@ workspace.
 
 ## Retrospective
 
-To be filled before marking the PR ready.
+Implemented as a narrow startup guard in `src/main.ts` backed by
+`src/app/jedit-startup-cli.ts` and `src/app/jedit-package-identity.ts`.
+`package.json` now declares the private jedit identity as
+`0.1.0-release-gate`, and the runtime constant is pinned to that manifest
+value by `spec/jedit-startup-cli.spec.mjs`.
+
+Evidence:
+
+- `node --test spec/jedit-startup-cli.spec.mjs`
+- `node node_modules/typescript/bin/tsc -p tsconfig.json`
+- `npm run --silent quality`
+- `npm run build`
+- `npm run test:all`
+- `git diff --check`
+
+The final spec includes both the pure startup parser contract and a spawned
+`node dist/main.js --version` / `--help` witness, so the command boundary proves
+the identity paths return before TUI initialization.
