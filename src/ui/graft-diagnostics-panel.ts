@@ -21,12 +21,16 @@ const DIAGNOSTICS_HINT_ROW = 2;
 const DIAGNOSTICS_SUMMARY_ROW = 4;
 const DIAGNOSTICS_FIRST_ROW = 6;
 const DIAGNOSTICS_LEFT_PAD = 2;
+const DIAGNOSTICS_DETAIL_INDENT = 2;
 const DIAGNOSTICS_ROW_HEIGHT = 2;
 const DIAGNOSTICS_LABEL_SEPARATOR = ': ';
 const DIAGNOSTICS_LOADING_TEXT = 'loading';
 const DIAGNOSTICS_FALLBACK_TITLE = 'Graft diagnostics';
 const DIAGNOSTICS_FALLBACK_SUMMARY = 'Open diagnostics to inspect Graft and Colorful.';
 const DIAGNOSTICS_CLOSE_HINT = 'F2 close · Esc back · Enter refresh';
+const DIAGNOSTICS_STATUS_LABEL_OK = 'ok';
+const DIAGNOSTICS_STATUS_LABEL_WARNING = 'warn';
+const DIAGNOSTICS_STATUS_LABEL_ERROR = 'error';
 
 export interface RenderGraftDiagnosticsPanelOptions {
   readonly report?: GraftDiagnosticsReport;
@@ -79,7 +83,7 @@ function paintRow(
 ): void {
   paintText(surface, rowLine(row), DIAGNOSTICS_LEFT_PAD, y, rowToken(options, row.status));
   if (row.detail != null) {
-    paintText(surface, row.detail, DIAGNOSTICS_LEFT_PAD + 2, y + 1, hintToken(options));
+    paintText(surface, row.detail, DIAGNOSTICS_LEFT_PAD + DIAGNOSTICS_DETAIL_INDENT, y + 1, hintToken(options));
   }
 }
 
@@ -89,30 +93,34 @@ function rowLine(row: GraftDiagnosticRow): string {
 
 function statusLabel(status: GraftDiagnosticStatus): string {
   if (status === GRAFT_DIAGNOSTIC_STATUS.Ok) {
-    return 'ok';
+    return DIAGNOSTICS_STATUS_LABEL_OK;
   }
   if (status === GRAFT_DIAGNOSTIC_STATUS.Warning) {
-    return 'warn';
+    return DIAGNOSTICS_STATUS_LABEL_WARNING;
   }
-  return 'error';
+  return DIAGNOSTICS_STATUS_LABEL_ERROR;
 }
 
 function titleToken(options: RenderGraftDiagnosticsPanelOptions): JeditStyleToken {
-  return options.theme.markdown.get(JEDIT_MARKDOWN_TOKEN.Heading) ?? options.theme.surface.drawer;
+  return options.theme.markdown.get(JEDIT_MARKDOWN_TOKEN.Heading) ?? drawerToken(options);
 }
 
 function summaryToken(options: RenderGraftDiagnosticsPanelOptions): JeditStyleToken {
-  return options.theme.markdown.get(JEDIT_MARKDOWN_TOKEN.HeadingSoft) ?? options.theme.surface.drawer;
+  return options.theme.markdown.get(JEDIT_MARKDOWN_TOKEN.HeadingSoft) ?? drawerToken(options);
 }
 
 function hintToken(options: RenderGraftDiagnosticsPanelOptions): JeditStyleToken {
-  return options.theme.source.get(JEDIT_SOURCE_TOKEN.Comment) ?? options.theme.surface.drawer;
+  return options.theme.source.get(JEDIT_SOURCE_TOKEN.Comment) ?? drawerToken(options);
 }
 
 function rowToken(options: RenderGraftDiagnosticsPanelOptions, status: GraftDiagnosticStatus): JeditStyleToken {
   if (status === GRAFT_DIAGNOSTIC_STATUS.Error) {
     return options.theme.cursor.normal;
   }
+  return drawerToken(options);
+}
+
+function drawerToken(options: RenderGraftDiagnosticsPanelOptions): JeditStyleToken {
   return options.theme.surface.drawer;
 }
 

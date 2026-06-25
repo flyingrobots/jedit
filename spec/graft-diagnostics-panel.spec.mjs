@@ -68,3 +68,46 @@ test('Graft diagnostics panel renders runtime facts and loading posture', async 
   assert.match(text, /command: colorful/);
   assert.match(text, /warn Parser: cold/);
 });
+
+test('Graft diagnostics panel renders steady report summary without loading prefix', async () => {
+  const { panel, port, themes } = await loadPanelModules();
+  const theme = themes.availableJeditThemes()[0];
+  const surface = panel.renderGraftDiagnosticsPanel({
+    report: {
+      title: 'Graft diagnostics',
+      summary: 'Colorful prose projection is active.',
+      rows: [{
+        label: 'Projection',
+        value: 'active',
+        status: port.GRAFT_DIAGNOSTIC_STATUS.Ok,
+      }],
+    },
+    loading: false,
+    theme,
+    width: 50,
+    height: 12,
+  });
+  const text = surfaceText(surface);
+
+  assert.match(text, /Colorful prose projection is active\./);
+  assert.doesNotMatch(text, /loading Colorful prose projection is active\./);
+  assert.match(text, /ok Projection: active/);
+});
+
+test('Graft diagnostics panel renders fallback title and empty rows without a report', async () => {
+  const { panel, themes } = await loadPanelModules();
+  const theme = themes.availableJeditThemes()[0];
+  const surface = panel.renderGraftDiagnosticsPanel({
+    loading: false,
+    theme,
+    width: 50,
+    height: 12,
+  });
+  const text = surfaceText(surface);
+
+  assert.match(text, /Graft diagnostics/);
+  assert.match(text, /Open diagnostics to inspect Graft and Colorful\./);
+  assert.doesNotMatch(text, /ok .*:/);
+  assert.doesNotMatch(text, /warn .*:/);
+  assert.doesNotMatch(text, /error .*:/);
+});
