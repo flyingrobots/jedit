@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Updated the Graft source-highlighter adapter to consume Graft 0.10.0, warm the
+  real parser runtime before default projections, and map Colorful prose spans
+  for `.txt` buffers when `colorful >= 0.2.1` is available on `PATH`.
 - Pinned the Jim causal product roadmap around the
   `explain -> preview -> admit -> recover` loop; added WF-0108 for Jim Command
   Provenance And `:why` and moved release planning off the active roadmap.

@@ -35,13 +35,14 @@
     "@flyingrobots/bijou-node": "7.0.0",
     "@flyingrobots/bijou-tui": "7.0.0",
     "@flyingrobots/bijou-tui-app": "7.0.0",
-    "@flyingrobots/graft": "0.7.1",
+    "@flyingrobots/graft": "0.10.0",
     "@modelcontextprotocol/sdk": "^1.29.0"
   },
   "devDependencies": {
     "@flyingrobots/bijou-i18n-tools-node": "^7.0.0",
     "@flyingrobots/bijou-i18n-tools-xlsx": "^7.0.0",
     "@types/node": "^22.0.0",
+    "semver": "^7.8.5",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }

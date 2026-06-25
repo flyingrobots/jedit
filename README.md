@@ -40,7 +40,8 @@ Press `?` inside the editor for the key binding reference.
 - **File drawer** — directory navigation, open files with Enter
 - **Graft drawer** — current-file structural outline and change summary via the direct Graft API
 - **Markdown preview** — live lens over the active buffer (`ctrl+p` to toggle)
-- **Syntax highlighting** — themed source rendering for supported languages
+- **Syntax highlighting** — themed source rendering for supported languages;
+  plain-text prose highlights when Graft can find `colorful >= 0.2.1`
 - **Echo-hosted text session** — every edit submits a contract intent through
   `TextBufferOptic`; the production TUI has no non-Echo text runtime mode
 - **Structural-history contract** — `replaceTextRange` operation identity comes from Wesley-generated metadata, not hardcoded strings
