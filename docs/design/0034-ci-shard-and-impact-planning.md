@@ -18,14 +18,17 @@ The current GitHub workflow has one job named `check`.
 
 ```text
 npm run check
--> npm run test
+-> npm run test:all
    -> npm run build
-   -> node --test --test-concurrency=1 spec/**/*.spec.mjs tests/**/*.spec.mjs
+   -> JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/**/*.spec.mjs tests/**/*.spec.mjs
 -> npm run quality
 ```
 
 Recent CI evidence showed checkout, Node setup, and dependency installation
-finishing in seconds. The long pole was the single `Run checks` step.
+finishing in seconds. The long pole was the single `Run checks` step. Local
+full-suite execution also must build `dist` once and then run specs with
+`JEDIT_DIST_PREBUILT=1`; otherwise each spec process can rebuild TypeScript
+even after an explicit build.
 
 ## Design Rules
 

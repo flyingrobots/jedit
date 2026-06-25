@@ -22,13 +22,13 @@
     "release-gate:echo": "npm run release-gate:jedit-echo",
     "release-gate:jedit-echo": "node scripts/jedit-echo-release-gate.mjs",
     "quality": "node scripts/quality-gate.mjs",
-    "test:all": "node --test --test-concurrency=1 spec/**/*.spec.mjs tests/**/*.spec.mjs",
-    "test": "npm run build && npm run test:all",
+    "test:all": "npm run build && JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/**/*.spec.mjs tests/**/*.spec.mjs",
+    "test": "npm run test:all",
     "ci:plan": "node scripts/ci/changed-shards.mjs",
     "ci:profile": "node scripts/ci/profile-check.mjs",
     "ci:shard": "node scripts/ci/run-shard.mjs",
     "ci:verify-shards": "node scripts/ci/verify-test-shards.mjs",
-    "check": "npm run build && npm run test:all && npm run quality"
+    "check": "npm run test:all && npm run quality"
   },
   "dependencies": {
     "@flyingrobots/bijou": "7.0.0",
