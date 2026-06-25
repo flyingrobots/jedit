@@ -13,7 +13,10 @@ const ADAPTER_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'graft-source-high
 const ADAPTER_SOURCE_PATH = path.join(REPO_ROOT, 'src', 'adapters', 'graft-source-highlighter.ts');
 const GRAFT_PACKAGE_PATH = path.join(REPO_ROOT, 'node_modules', '@flyingrobots', 'graft', 'package.json');
 const GRAFT_COLORFUL_PROSE_MINIMUM_VERSION = '0.10.0';
+const GRAFT_COLORFUL_NUMERIC_IR_MINIMUM_VERSION = '0.10.1';
 const GRAFT_COLORFUL_CLI_MINIMUM_VERSION = '0.2.1';
+const GRAFT_COLORFUL_CLI_BELOW_MINIMUM_VERSION = '0.2.0';
+const GRAFT_MALFORMED_VERSION = 'not-semver';
 const COLORFUL_CONTRACT_VERSION = 'colorful.syntax/v1';
 const COLORFUL_VOCABULARY_HASH = 'sha256:c3709c173d632bd18385b991f63dc3ac09cdba582bc05550f0376db24117bbe1';
 const FAKE_COLORFUL_CLI_NAME = 'colorful';
@@ -27,6 +30,9 @@ const MISSING_COLORFUL_TIMEOUT_MS = 1000;
 const MISSING_COLORFUL_MAX_BUFFER_BYTES = 1024;
 const DIAGNOSTICS_CWD = '/repo';
 const DIAGNOSTICS_COMMAND = 'colorful-test';
+const DIAGNOSTICS_FAILURE_MESSAGE = 'adapter exploded';
+const DIAGNOSTICS_NONZERO_ERROR = 'colorful command failed';
+const DIAGNOSTICS_PARSE_OUTPUT = 'colorful dev';
 const PROSE_FIXTURE_TEXT = 'Now is 7.';
 const PROSE_KEYWORD_START_COLUMN = 4;
 const PROSE_KEYWORD_END_COLUMN = 6;
@@ -353,6 +359,32 @@ test('Graft source highlighter maps Colorful prose spans from text buffers', asy
   );
 });
 
+test('Graft source highlighter returns a partial reading when projection throws', async () => {
+  const { adapter } = await loadGraftSourceHighlighterModules();
+  const highlighter = adapter.createGraftSourceHighlighter({
+    loadRuntime: async () => ({
+      ensureParserReady: async () => undefined,
+      createProjectionBundle: () => {
+        throw new Error(DIAGNOSTICS_FAILURE_MESSAGE);
+      },
+    }),
+  });
+
+  const result = await highlighter.highlight({
+    path: 'notes.txt',
+    text: PROSE_FIXTURE_TEXT,
+    startLine: 0,
+    lineCount: 1,
+    headId: 'head-prose',
+    tick: 9,
+  });
+
+  assert.equal(result.path, 'notes.txt');
+  assert.equal(result.partial, true);
+  assert.deepEqual(result.spans, []);
+  assert.match(result.notice, new RegExp(DIAGNOSTICS_FAILURE_MESSAGE));
+});
+
 test('Graft source highlighter process runner normalizes missing CLI output streams', async () => {
   const { adapter } = await loadGraftSourceHighlighterModules();
   const tempDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'jedit-missing-colorful-cli-'));
@@ -385,15 +417,15 @@ test('Graft diagnostics report the parser, Graft, and Colorful CLI posture', asy
     processRunner: {
       run(request) {
         requests.push(request);
-        return {
+        return Promise.resolve({
           status: 0,
           stdout: FAKE_COLORFUL_VERSION_OUTPUT,
           stderr: '',
-        };
+        });
       },
     },
     loadRuntime: async () => ({
-      GRAFT_VERSION: GRAFT_COLORFUL_PROSE_MINIMUM_VERSION,
+      GRAFT_VERSION: GRAFT_COLORFUL_NUMERIC_IR_MINIMUM_VERSION,
       COLORFUL_CLI_MINIMUM_VERSION: GRAFT_COLORFUL_CLI_MINIMUM_VERSION,
       isParserReady: () => false,
     }),
@@ -408,12 +440,12 @@ test('Graft diagnostics report the parser, Graft, and Colorful CLI posture', asy
     args: ['--version'],
     cwd: DIAGNOSTICS_CWD,
     timeoutMs: 5000,
-    maxBufferBytes: 65536,
-  }]);
+      maxBufferBytes: 65536,
+    }]);
   assert.deepEqual(
     report.rows.map((row) => [row.label, row.value, row.status]),
     [
-      ['Graft package', GRAFT_COLORFUL_PROSE_MINIMUM_VERSION, 'ok'],
+      ['Graft package', GRAFT_COLORFUL_NUMERIC_IR_MINIMUM_VERSION, 'ok'],
       ['Parser runtime', 'cold', 'warn'],
       ['Colorful command', DIAGNOSTICS_COMMAND, 'ok'],
       ['Colorful minimum', GRAFT_COLORFUL_CLI_MINIMUM_VERSION, 'ok'],
@@ -421,6 +453,101 @@ test('Graft diagnostics report the parser, Graft, and Colorful CLI posture', asy
       ['Prose projection', 'active', 'ok'],
     ],
   );
+});
+
+test('Graft diagnostics report Colorful version probe and projection failures', async () => {
+  const { adapter } = await loadGraftSourceHighlighterModules();
+  const scenarios = [
+    {
+      name: 'nonzero',
+      result: { status: 2, stdout: '', stderr: DIAGNOSTICS_NONZERO_ERROR },
+      summary: 'Colorful prose projection is inactive.',
+      row: ['Colorful CLI', 'unavailable', 'error', DIAGNOSTICS_NONZERO_ERROR],
+    },
+    {
+      name: 'parse',
+      result: { status: 0, stdout: DIAGNOSTICS_PARSE_OUTPUT, stderr: '' },
+      summary: 'Colorful prose projection is inactive.',
+      row: ['Colorful CLI', 'unavailable', 'error', DIAGNOSTICS_PARSE_OUTPUT],
+    },
+    {
+      name: 'below-minimum',
+      result: { status: 0, stdout: `colorful ${GRAFT_COLORFUL_CLI_BELOW_MINIMUM_VERSION}`, stderr: '' },
+      summary: 'Colorful prose projection is inactive.',
+      row: ['Prose projection', 'inactive', 'warn', GRAFT_COLORFUL_CLI_MINIMUM_VERSION],
+    },
+  ];
+
+  for (const scenario of scenarios) {
+    const diagnostics = adapter.createGraftDiagnosticsPort({
+      cwd: DIAGNOSTICS_CWD,
+      command: DIAGNOSTICS_COMMAND,
+      processRunner: {
+        run: async () => scenario.result,
+      },
+      loadRuntime: async () => ({
+        GRAFT_VERSION: GRAFT_COLORFUL_NUMERIC_IR_MINIMUM_VERSION,
+        COLORFUL_CLI_MINIMUM_VERSION: GRAFT_COLORFUL_CLI_MINIMUM_VERSION,
+        isParserReady: () => true,
+      }),
+    });
+
+    const report = await diagnostics.loadDiagnostics();
+    const row = report.rows.find((candidate) => candidate.label === scenario.row[0]);
+
+    assert.equal(report.summary, scenario.summary, scenario.name);
+    assert.equal(row.value, scenario.row[1], scenario.name);
+    assert.equal(row.status, scenario.row[2], scenario.name);
+    assert.match(row.detail, new RegExp(scenario.row[3]), scenario.name);
+  }
+});
+
+test('Graft diagnostics fail closed for malformed runtime minimum and old Graft support', async () => {
+  const { adapter } = await loadGraftSourceHighlighterModules();
+  const diagnostics = adapter.createGraftDiagnosticsPort({
+    cwd: DIAGNOSTICS_CWD,
+    command: DIAGNOSTICS_COMMAND,
+    processRunner: {
+      run: async () => ({
+        status: 0,
+        stdout: FAKE_COLORFUL_VERSION_OUTPUT,
+        stderr: '',
+      }),
+    },
+    loadRuntime: async () => ({
+      GRAFT_VERSION: GRAFT_COLORFUL_PROSE_MINIMUM_VERSION,
+      COLORFUL_CLI_MINIMUM_VERSION: GRAFT_MALFORMED_VERSION,
+      isParserReady: () => true,
+    }),
+  });
+
+  const report = await diagnostics.loadDiagnostics();
+  const graftRow = report.rows.find((row) => row.label === 'Graft package');
+  const minimumRow = report.rows.find((row) => row.label === 'Colorful minimum');
+  const projectionRow = report.rows.find((row) => row.label === 'Prose projection');
+
+  assert.equal(report.summary, 'Colorful prose projection is inactive.');
+  assert.equal(graftRow.status, 'error');
+  assert.match(graftRow.detail, new RegExp(GRAFT_COLORFUL_NUMERIC_IR_MINIMUM_VERSION));
+  assert.equal(minimumRow.status, 'error');
+  assert.match(minimumRow.detail, new RegExp(GRAFT_MALFORMED_VERSION));
+  assert.equal(projectionRow.value, 'inactive');
+  assert.equal(projectionRow.status, 'warn');
+});
+
+test('Graft diagnostics failedDiagnostics maps the failure request message', async () => {
+  const { adapter } = await loadGraftSourceHighlighterModules();
+  const diagnostics = adapter.createGraftDiagnosticsPort();
+
+  const report = diagnostics.failedDiagnostics({ message: DIAGNOSTICS_FAILURE_MESSAGE });
+
+  assert.equal(report.summary, 'Graft diagnostics failed.');
+  assert.deepEqual(report.rows, [{
+    label: 'Prose projection',
+    value: 'unavailable',
+    status: 'error',
+    detail: DIAGNOSTICS_FAILURE_MESSAGE,
+  }]);
 });
 
 test('Graft source highlighter uses Colorful CLI prose projection for text buffers by default', async () => {

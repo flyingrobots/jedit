@@ -97,7 +97,7 @@ test('workspace settings opens and refreshes the Graft diagnostics panel', async
         loadCount += 1;
         return report;
       },
-      failedDiagnostics: (message) => ({
+      failedDiagnostics: ({ message }) => ({
         title: 'Graft diagnostics',
         summary: message,
         rows: [],
@@ -126,6 +126,31 @@ test('workspace settings opens and refreshes the Graft diagnostics panel', async
   assert.equal(backToSettings.settingsDiagnosticsOpen, false);
   assert.equal(backToSettings.settingsOpen, true);
   assert.equal(loadCount, 2);
+});
+
+test('workspace diagnostics failure report receives the failed request message', async () => {
+  const runtimeModule = await importDist('app', 'workspace', 'runtime.js');
+  const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime({
+    graftDiagnostics: {
+      loadDiagnostics: async () => {
+        throw new Error('diagnostics crashed');
+      },
+      failedDiagnostics: ({ message }) => ({
+        title: 'Graft diagnostics',
+        summary: message,
+        rows: [],
+      }),
+    },
+  }));
+  const [initialModel] = runtime.init();
+  const [opened, commands] = runtime.update(
+    { type: 'key', key: 'enter' },
+    { ...initialModel, settingsOpen: true, settingsFocusIndex: 4 },
+  );
+  const [loaded] = runtime.update(await commands[0](), opened);
+
+  assert.equal(loaded.graftDiagnostics.summary, 'diagnostics crashed');
+  assert.equal(loaded.graftDiagnosticsLoading, false);
 });
 
 test('workspace exposes runtime tokens for drawer, focus, file entry, and key dispatch values', async () => {

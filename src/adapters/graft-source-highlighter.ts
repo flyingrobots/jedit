@@ -8,54 +8,24 @@ import {
   type SourceHighlightSpan,
   type SourceRange,
 } from '../ports/source-highlighter.js';
-import {
-  GRAFT_DIAGNOSTIC_STATUS,
-  type FailedGraftDiagnosticsRequest,
-  type GraftDiagnosticRow,
-  type GraftDiagnosticsPort,
-  type GraftDiagnosticsReport,
-} from '../ports/graft-diagnostics.js';
+export {
+  createGraftDiagnosticsPort,
+  createGraftDiagnosticsProcessRunner,
+} from './graft-diagnostics-adapter.js';
+export type {
+  GraftAsyncProcessRunner,
+  GraftDiagnosticsOptions,
+  GraftDiagnosticsRuntime,
+  LoadGraftDiagnosticsRuntime,
+} from './graft-diagnostics-adapter.js';
 
 const EDITOR_HEAD_BASIS_KIND = 'editor_head';
 const COLORFUL_CLI_COMMAND = 'colorful';
 const PROCESS_RUNNER_ENCODING = 'utf8';
 const PROCESS_RUNNER_EMPTY_OUTPUT = '';
-const PROCESS_SUCCESS_STATUS = 0;
-const COLORFUL_VERSION_ARGS: readonly string[] = ['--version'];
-const COLORFUL_VERSION_TIMEOUT_MS = 5000;
-const BYTES_PER_KIBIBYTE = 1024;
-const COLORFUL_VERSION_MAX_BUFFER_BYTES = 64 * BYTES_PER_KIBIBYTE;
 const VIEWPORT_START_COLUMN = 0;
 const VIEWPORT_END_COLUMN = 0;
-const DIAGNOSTICS_TITLE = 'Graft diagnostics';
-const DIAGNOSTICS_SUMMARY_ACTIVE = 'Colorful prose projection is active.';
-const DIAGNOSTICS_SUMMARY_INACTIVE = 'Colorful prose projection is inactive.';
-const DIAGNOSTICS_SUMMARY_FAILED = 'Graft diagnostics failed.';
-const DIAGNOSTICS_LABEL_GRAFT = 'Graft package';
-const DIAGNOSTICS_LABEL_PARSER = 'Parser runtime';
-const DIAGNOSTICS_LABEL_COMMAND = 'Colorful command';
-const DIAGNOSTICS_LABEL_MINIMUM = 'Colorful minimum';
-const DIAGNOSTICS_LABEL_CLI = 'Colorful CLI';
-const DIAGNOSTICS_LABEL_PROJECTION = 'Prose projection';
-const DIAGNOSTICS_VALUE_READY = 'ready';
-const DIAGNOSTICS_VALUE_COLD = 'cold';
-const DIAGNOSTICS_VALUE_ACTIVE = 'active';
-const DIAGNOSTICS_VALUE_INACTIVE = 'inactive';
-const DIAGNOSTICS_VALUE_UNAVAILABLE = 'unavailable';
-const DIAGNOSTICS_DETAIL_PARSER_COLD = 'ensureParserReady() runs before projection.';
-const DIAGNOSTICS_DETAIL_PROJECTOR = 'createColorfulCliProseProjector is wired into projection bundles.';
-const SEMVER_CAPTURE_MAJOR = 1;
-const SEMVER_CAPTURE_MINOR = 2;
-const SEMVER_CAPTURE_PATCH = 3;
-const SEMVER_PARTS = 3;
-const SEMVER_PATTERN = /\b(\d+)\.(\d+)\.(\d+)(?:[-+][0-9A-Za-z.-]+)?\b/u;
-const COLORFUL_PROJECTION_POSTURE = Object.freeze({
-  Active: DIAGNOSTICS_VALUE_ACTIVE,
-  Inactive: DIAGNOSTICS_VALUE_INACTIVE,
-} as const);
-
-type ColorfulProjectionPosture =
-  typeof COLORFUL_PROJECTION_POSTURE[keyof typeof COLORFUL_PROJECTION_POSTURE];
+const DIAGNOSTICS_NOTICE_PROJECTION_FAILED_PREFIX = 'Graft projection failed';
 
 const GRAFT_CLASS_COMMENT = 'comment';
 const GRAFT_CLASS_FUNCTION = 'function';
@@ -142,23 +112,8 @@ export interface GraftSourceHighlighterRuntime {
 
 export type LoadGraftSourceHighlighterRuntime = () => Promise<GraftSourceHighlighterRuntime>;
 
-export interface GraftDiagnosticsRuntime {
-  readonly GRAFT_VERSION: string;
-  readonly COLORFUL_CLI_MINIMUM_VERSION: string;
-  isParserReady(): boolean;
-}
-
-export type LoadGraftDiagnosticsRuntime = () => Promise<GraftDiagnosticsRuntime>;
-
 export interface GraftSourceHighlighterOptions {
   readonly loadRuntime?: LoadGraftSourceHighlighterRuntime;
-}
-
-export interface GraftDiagnosticsOptions {
-  readonly loadRuntime?: LoadGraftDiagnosticsRuntime;
-  readonly processRunner?: GraftProcessRunner;
-  readonly cwd?: string;
-  readonly command?: string;
 }
 
 interface GraftRoleEntry {
@@ -217,54 +172,52 @@ export function createGraftSourceHighlighter(options: GraftSourceHighlighterOpti
     async highlight(input: SourceHighlightInput): Promise<SourceHighlightReading> {
       const runtime = await loadRuntime();
       await runtime.ensureParserReady();
-      const bundle = runtime.createProjectionBundle(input.path, input.text, {
-        basis: {
-          kind: EDITOR_HEAD_BASIS_KIND,
-          headId: input.headId,
-          tick: input.tick,
-        },
-        viewport: {
-          start: { row: input.startLine, column: VIEWPORT_START_COLUMN },
-          end: { row: input.startLine + input.lineCount, column: VIEWPORT_END_COLUMN },
-        },
-      });
+      const bundle = readProjectionBundle(runtime, input);
 
       return {
         path: input.path,
-        partial: bundle.syntax.partial === true,
-        spans: graftSyntaxSpansToSourceHighlights(bundle.syntax.spans),
-        ...(bundle.syntax.reason == null ? {} : { notice: bundle.syntax.reason }),
+        partial: bundle.partial,
+        spans: graftSyntaxSpansToSourceHighlights(bundle.spans),
+        ...(bundle.reason == null ? {} : { notice: bundle.reason }),
       };
     },
   };
 }
 
-export function createGraftDiagnosticsPort(options: GraftDiagnosticsOptions = {}): GraftDiagnosticsPort {
-  const loadRuntime = options.loadRuntime ?? defaultDiagnosticsRuntimeLoader();
-  const processRunner = options.processRunner ?? createGraftSourceHighlighterProcessRunner();
-  const cwd = options.cwd ?? process.cwd();
-  const command = options.command ?? COLORFUL_CLI_COMMAND;
-
-  return {
-    async loadDiagnostics(): Promise<GraftDiagnosticsReport> {
-      const runtime = await loadRuntime();
-      const colorful = probeColorfulVersion(processRunner, cwd, command);
-      const posture = colorfulProjectionPosture(colorful, runtime.COLORFUL_CLI_MINIMUM_VERSION);
-      return graftDiagnosticsReport(runtime, command, colorful, posture);
-    },
-    failedDiagnostics(request: FailedGraftDiagnosticsRequest): GraftDiagnosticsReport {
-      return {
-        title: DIAGNOSTICS_TITLE,
-        summary: DIAGNOSTICS_SUMMARY_FAILED,
-        rows: [{
-          label: DIAGNOSTICS_LABEL_PROJECTION,
-          value: DIAGNOSTICS_VALUE_UNAVAILABLE,
-          status: GRAFT_DIAGNOSTIC_STATUS.Error,
-          detail: request.message,
-        }],
-      };
-    },
-  };
+function readProjectionBundle(
+  runtime: GraftSourceHighlighterRuntime,
+  input: SourceHighlightInput,
+): {
+  readonly partial: boolean;
+  readonly spans: readonly GraftSyntaxSpan[];
+  readonly reason?: string;
+} {
+  try {
+    const bundle = runtime.createProjectionBundle(input.path, input.text, {
+      basis: {
+        kind: EDITOR_HEAD_BASIS_KIND,
+        headId: input.headId,
+        tick: input.tick,
+      },
+      viewport: {
+        start: { row: input.startLine, column: VIEWPORT_START_COLUMN },
+        end: { row: input.startLine + input.lineCount, column: VIEWPORT_END_COLUMN },
+      },
+    });
+    return {
+      partial: bundle.syntax.partial === true,
+      spans: bundle.syntax.spans,
+      ...(bundle.syntax.reason == null ? {} : { reason: bundle.syntax.reason }),
+    };
+  } catch (cause) {
+    return {
+      partial: true,
+      spans: [],
+      reason: cause instanceof Error
+        ? `${DIAGNOSTICS_NOTICE_PROJECTION_FAILED_PREFIX}: ${cause.message}`
+        : `${DIAGNOSTICS_NOTICE_PROJECTION_FAILED_PREFIX}: ${String(cause)}`,
+    };
+  }
 }
 
 export function graftSyntaxSpansToSourceHighlights(spans: readonly GraftSyntaxSpan[]): readonly SourceHighlightSpan[] {
@@ -318,182 +271,4 @@ function defaultRuntimeLoader(): LoadGraftSourceHighlighterRuntime {
     };
     return cachedRuntime;
   };
-}
-
-function defaultDiagnosticsRuntimeLoader(): LoadGraftDiagnosticsRuntime {
-  return async () => import('@flyingrobots/graft');
-}
-
-interface ColorfulVersionProbe {
-  readonly version?: SemanticVersion;
-  readonly errorDetail?: string;
-}
-
-interface SemanticVersion {
-  readonly major: number;
-  readonly minor: number;
-  readonly patch: number;
-}
-
-function probeColorfulVersion(
-  processRunner: GraftProcessRunner,
-  cwd: string,
-  command: string,
-): ColorfulVersionProbe {
-  const result = processRunner.run({
-    command,
-    args: COLORFUL_VERSION_ARGS,
-    cwd,
-    timeoutMs: COLORFUL_VERSION_TIMEOUT_MS,
-    maxBufferBytes: COLORFUL_VERSION_MAX_BUFFER_BYTES,
-  });
-  const rawOutput = combinedProcessOutput(result);
-  if (result.status !== PROCESS_SUCCESS_STATUS || result.error != null) {
-    return { errorDetail: colorfulVersionErrorDetail(result) };
-  }
-  const version = parseSemanticVersion(rawOutput);
-  return version == null
-    ? { errorDetail: colorfulVersionParseErrorDetail(rawOutput) }
-    : { version };
-}
-
-function graftDiagnosticsReport(
-  runtime: GraftDiagnosticsRuntime,
-  command: string,
-  colorful: ColorfulVersionProbe,
-  posture: ColorfulProjectionPosture,
-): GraftDiagnosticsReport {
-  return {
-    title: DIAGNOSTICS_TITLE,
-    summary: projectionActive(posture) ? DIAGNOSTICS_SUMMARY_ACTIVE : DIAGNOSTICS_SUMMARY_INACTIVE,
-    rows: [
-      graftPackageRow(runtime),
-      parserRuntimeRow(runtime),
-      colorfulCommandRow(command),
-      colorfulMinimumRow(runtime),
-      colorfulCliRow(colorful, posture),
-      proseProjectionRow(posture),
-    ],
-  };
-}
-
-function colorfulProjectionPosture(
-  colorful: ColorfulVersionProbe,
-  minimumVersion: string,
-): ColorfulProjectionPosture {
-  return colorful.version != null &&
-    semanticVersionAtLeast(colorful.version, parseRequiredSemanticVersion(minimumVersion))
-    ? COLORFUL_PROJECTION_POSTURE.Active
-    : COLORFUL_PROJECTION_POSTURE.Inactive;
-}
-
-function graftPackageRow(runtime: GraftDiagnosticsRuntime): GraftDiagnosticRow {
-  return {
-    label: DIAGNOSTICS_LABEL_GRAFT,
-    value: runtime.GRAFT_VERSION,
-    status: GRAFT_DIAGNOSTIC_STATUS.Ok,
-  };
-}
-
-function parserRuntimeRow(runtime: GraftDiagnosticsRuntime): GraftDiagnosticRow {
-  const ready = runtime.isParserReady();
-  return {
-    label: DIAGNOSTICS_LABEL_PARSER,
-    value: ready ? DIAGNOSTICS_VALUE_READY : DIAGNOSTICS_VALUE_COLD,
-    status: ready ? GRAFT_DIAGNOSTIC_STATUS.Ok : GRAFT_DIAGNOSTIC_STATUS.Warning,
-    ...(ready ? {} : { detail: DIAGNOSTICS_DETAIL_PARSER_COLD }),
-  };
-}
-
-function colorfulCommandRow(command: string): GraftDiagnosticRow {
-  return {
-    label: DIAGNOSTICS_LABEL_COMMAND,
-    value: command,
-    status: GRAFT_DIAGNOSTIC_STATUS.Ok,
-  };
-}
-
-function colorfulMinimumRow(runtime: GraftDiagnosticsRuntime): GraftDiagnosticRow {
-  return {
-    label: DIAGNOSTICS_LABEL_MINIMUM,
-    value: runtime.COLORFUL_CLI_MINIMUM_VERSION,
-    status: GRAFT_DIAGNOSTIC_STATUS.Ok,
-  };
-}
-
-function colorfulCliRow(colorful: ColorfulVersionProbe, posture: ColorfulProjectionPosture): GraftDiagnosticRow {
-  return {
-    label: DIAGNOSTICS_LABEL_CLI,
-    value: colorful.version == null ? DIAGNOSTICS_VALUE_UNAVAILABLE : formatSemanticVersion(colorful.version),
-    status: projectionActive(posture) ? GRAFT_DIAGNOSTIC_STATUS.Ok : GRAFT_DIAGNOSTIC_STATUS.Error,
-    ...(colorful.errorDetail == null ? {} : { detail: colorful.errorDetail }),
-  };
-}
-
-function proseProjectionRow(posture: ColorfulProjectionPosture): GraftDiagnosticRow {
-  return {
-    label: DIAGNOSTICS_LABEL_PROJECTION,
-    value: posture,
-    status: projectionActive(posture) ? GRAFT_DIAGNOSTIC_STATUS.Ok : GRAFT_DIAGNOSTIC_STATUS.Warning,
-    ...(projectionActive(posture) ? { detail: DIAGNOSTICS_DETAIL_PROJECTOR } : {}),
-  };
-}
-
-function projectionActive(posture: ColorfulProjectionPosture): boolean {
-  return posture === COLORFUL_PROJECTION_POSTURE.Active;
-}
-
-function combinedProcessOutput(result: GraftProcessRunResult): string {
-  return `${result.stdout}\n${result.stderr}`.trim();
-}
-
-function colorfulVersionErrorDetail(result: GraftProcessRunResult): string {
-  if (result.error != null) {
-    return result.error.message;
-  }
-  if (result.stderr.trim().length > 0) {
-    return result.stderr.trim();
-  }
-  return `colorful version probe exited with status ${String(result.status)}`;
-}
-
-function colorfulVersionParseErrorDetail(rawOutput: string): string {
-  return rawOutput.length === 0
-    ? 'colorful version probe returned no output'
-    : `could not parse colorful version from: ${rawOutput}`;
-}
-
-function parseRequiredSemanticVersion(value: string): SemanticVersion {
-  return parseSemanticVersion(value) ?? { major: 0, minor: 0, patch: 0 };
-}
-
-function parseSemanticVersion(value: string): SemanticVersion | undefined {
-  const match = SEMVER_PATTERN.exec(value);
-  if (match == null || match.length < SEMVER_PARTS + 1) {
-    return undefined;
-  }
-  return semanticVersionFromMatch(match);
-}
-
-function semanticVersionFromMatch(match: RegExpExecArray): SemanticVersion | undefined {
-  const major = Number(match[SEMVER_CAPTURE_MAJOR]);
-  const minor = Number(match[SEMVER_CAPTURE_MINOR]);
-  const patch = Number(match[SEMVER_CAPTURE_PATCH]);
-  return Number.isFinite(major) && Number.isFinite(minor) && Number.isFinite(patch)
-    ? { major, minor, patch }
-    : undefined;
-}
-
-function semanticVersionAtLeast(actual: SemanticVersion, minimum: SemanticVersion): boolean {
-  if (actual.major !== minimum.major) {
-    return actual.major > minimum.major;
-  }
-  if (actual.minor !== minimum.minor) {
-    return actual.minor > minimum.minor;
-  }
-  return actual.patch >= minimum.patch;
-}
-
-function formatSemanticVersion(version: SemanticVersion): string {
-  return `${String(version.major)}.${String(version.minor)}.${String(version.patch)}`;
 }
