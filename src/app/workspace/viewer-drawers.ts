@@ -9,8 +9,8 @@ import type { WorkspaceModel } from './model.js';
 import { DRAWER_INNER_PAD } from './viewport.js';
 import { applyBackground, fillSurface } from './surface-fill.js';
 import { renderEchoHistoryLines } from './echo-history.js';
+import { renderWorkspaceWorldlinePhaseLines } from './worldline-phase-view.js';
 import {
-  renderWorldlineGraphLines,
   WorkspaceHistoryDrawerViews,
 } from './worldline-state.js';
 
@@ -47,7 +47,7 @@ function renderHistoryDrawer(model: WorkspaceModel, width: number, height: numbe
   const innerWidth = Math.max(MIN_VIEWPORT_DIMENSION, width - (DRAWER_INNER_PAD * DRAWER_PAD_MULTIPLIER));
   const innerHeight = Math.max(MIN_VIEWPORT_DIMENSION, height - (DRAWER_INNER_PAD * DRAWER_PAD_MULTIPLIER));
   const lines = model.historyDrawerView === WorkspaceHistoryDrawerViews.Worldlines
-    ? renderWorldlineGraphLines(model.worldline, innerWidth, innerHeight, model.i18n)
+    ? renderWorkspaceWorldlinePhaseLines(model, innerWidth, innerHeight, model.i18n)
     : renderEchoHistoryLines(
       model.echoHistory,
       model.echoHistorySelectedIndex,

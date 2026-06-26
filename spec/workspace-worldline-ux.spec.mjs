@@ -8,6 +8,7 @@ import {
   surfaceText,
 } from "./workspace-helpers.mjs";
 import { createI18nMock } from "./i18n-mock.mjs";
+import { createWorkspaceEchoAppHarness, productionTextObstruction } from "./workspace-echo-app-harness.mjs";
 
 test("ttd commands move the observer without mutating canonical worldline posture", async () => {
   const [keyBindings, titleScreen, editorMode, worldline] = await Promise.all([
@@ -164,6 +165,41 @@ test("workspace footer separates causal posture from filesystem materialization"
   assert.match(footerContext, /\/repo\/notes\.md \[dirty \| strand:draft \| fs:unmaterialized \| target:main/);
 });
 
+test("worldline drawer shows unconfirmed optimistic braid while Echo edit is in flight", async () => {
+  const drawers = await importDist("app", "workspace", "viewer-drawers.js");
+  const harness = await openedEchoHarness({ readings: [""] });
+
+  await harness.key("i");
+  await harness.key("X", { shift: true });
+  harness.setModel(worldlineDrawerModel(harness.model));
+
+  const rendered = surfaceText(drawers.renderDrawer("history", harness.model, 96, 9));
+
+  assert.match(rendered, /projection:\s+canonical@t0 \+ local optimistic \| braid active \| phase:unconfirmed/);
+  assert.match(rendered, />\s+settled\s+C\s+main\s+main\s+0\s+\+0\/-0\s+canonical@t0/);
+  assert.match(rendered, /unconfirmed\s+L\s+local\s+canonical@t0\s+-\s+\+local\/-0\s+request:2\s+optimistic/);
+  assert.match(rendered, /unconfirmed\s+B\s+visible braid\s+main\+local\s+-\s+\+local\/-0\s+canonical@t0\s+active/);
+});
+
+test("worldline drawer keeps conflicted optimistic braid visible after obstruction", async () => {
+  const drawers = await importDist("app", "workspace", "viewer-drawers.js");
+  const harness = await openedEchoHarness({
+    readings: [""],
+    editObstruction: productionTextObstruction("footprint changed"),
+  });
+
+  await harness.key("i");
+  await harness.runFirst(await harness.key("X", { shift: true }));
+  harness.setModel(worldlineDrawerModel(harness.model));
+
+  const rendered = surfaceText(drawers.renderDrawer("history", harness.model, 96, 9));
+
+  assert.match(rendered, /phase:conflicted/);
+  assert.match(rendered, /conflicted\s+L\s+local\s+canonical@t0\s+-\s+\+local\/-0\s+\/repo\/notes\.md:/);
+  assert.match(rendered, /conflicted\s+B\s+visible braid\s+main\+local\s+-\s+\+local\/-0\s+canonical@t0\s+active/);
+  assert.match(harness.renderText(), /X/);
+});
+
 function activeCommandLine(input) {
   return {
     active: true,
@@ -171,6 +207,29 @@ function activeCommandLine(input) {
     cursorIndex: input.length,
     anchorCursorIndex: 0,
     selectedCompletionIndex: 0,
+  };
+}
+
+async function openedEchoHarness(options = {}) {
+  const harness = await createWorkspaceEchoAppHarness({
+    ...options,
+    readings: options.readings ?? [""],
+  });
+  await harness.runFirst(await harness.key("enter"));
+  harness.setModel({
+    ...harness.model,
+    focusPane: "editor",
+    fileDrawerOpen: false,
+  });
+  return harness;
+}
+
+function worldlineDrawerModel(model) {
+  return {
+    ...model,
+    historyDrawerOpen: true,
+    historyDrawerProgress: 1,
+    historyDrawerView: "worldlines",
   };
 }
 
