@@ -5,6 +5,7 @@ import {
 import { FileEntryKinds, type FileEntry } from "../../ports/file-system.js";
 import type { I18nPort } from "../../ports/i18n.js";
 import type { WorkspaceCommandLineState } from "./command-line.js";
+import { WorkspaceCommandNames } from "./workspace-command-names.js";
 
 export interface WorkspaceCommandDescriptor {
   readonly id: string;
@@ -64,9 +65,6 @@ const COMMAND_COMPLETION_EMPTY_QUERY = "";
 const COMMAND_COMPLETION_FIRST_INDEX = 0;
 const COMMAND_ARGUMENT_STEP = 1;
 const FILE_COMPLETION_FUZZY_MIN_QUERY_LENGTH = 2;
-const EDIT_COMMAND_NAME = "edit";
-const EDIT_COMMAND_ALIAS = "e";
-const EDIT_COMMAND_COMPLETION_REPLACEMENT = "edit ";
 const FILE_COMPLETION_PARENT_LABEL = "../";
 const FILE_COMPLETION_DIRECTORY_SUFFIX = "/";
 const FILE_COMPLETION_FILE_DETAIL = "File";
@@ -77,37 +75,61 @@ const COMMAND_DETAIL_KEYS = Object.freeze({
   Write: "footer.command.details.write",
   Quit: "footer.command.details.quit",
   WriteQuit: "footer.command.details.wq",
+  TimeTravelDebugger: "footer.command.details.ttd",
+  Strand: "footer.command.details.strand",
+  Braid: "footer.command.details.braid",
 });
 const WORKSPACE_COMMAND_DESCRIPTORS = [
   {
     id: "command:edit",
-    name: EDIT_COMMAND_NAME,
-    aliases: [EDIT_COMMAND_ALIAS],
+    name: WorkspaceCommandNames.Edit,
+    aliases: [WorkspaceCommandNames.EditAlias],
     detail: "Open a file",
     detailKey: COMMAND_DETAIL_KEYS.Edit,
   },
   {
     id: "command:write",
-    name: "write",
-    aliases: ["w"],
+    name: WorkspaceCommandNames.Write,
+    aliases: [WorkspaceCommandNames.WriteAlias],
     detail: "Write the current file",
     detailKey: COMMAND_DETAIL_KEYS.Write,
     requiresOpenFile: true,
   },
   {
     id: "command:quit",
-    name: "quit",
-    aliases: ["q"],
+    name: WorkspaceCommandNames.Quit,
+    aliases: [WorkspaceCommandNames.QuitAlias],
     detail: "Quit jedit",
     detailKey: COMMAND_DETAIL_KEYS.Quit,
   },
   {
     id: "command:wq",
-    name: "wq",
-    aliases: ["x"],
+    name: WorkspaceCommandNames.WriteQuit,
+    aliases: [WorkspaceCommandNames.WriteQuitAlias],
     detail: "Write and quit",
     detailKey: COMMAND_DETAIL_KEYS.WriteQuit,
     requiresOpenFile: true,
+  },
+  {
+    id: "command:ttd",
+    name: WorkspaceCommandNames.TimeTravelDebugger,
+    aliases: [],
+    detail: "Observe a causal tick without moving canonical head",
+    detailKey: COMMAND_DETAIL_KEYS.TimeTravelDebugger,
+  },
+  {
+    id: "command:strand",
+    name: WorkspaceCommandNames.Strand,
+    aliases: [],
+    detail: "Create, switch, or list copy-on-write strands",
+    detailKey: COMMAND_DETAIL_KEYS.Strand,
+  },
+  {
+    id: "command:braid",
+    name: WorkspaceCommandNames.Braid,
+    aliases: [],
+    detail: "View, preview, or admit braid candidates",
+    detailKey: COMMAND_DETAIL_KEYS.Braid,
   },
 ] satisfies readonly WorkspaceCommandDescriptor[];
 
@@ -275,9 +297,16 @@ function localizedCommandDetail(
 function commandCompletionReplacementText(
   descriptor: WorkspaceCommandDescriptor,
 ): string {
-  return descriptor.name === EDIT_COMMAND_NAME
-    ? EDIT_COMMAND_COMPLETION_REPLACEMENT
+  return commandAcceptsCompletionArgument(descriptor.name)
+    ? `${descriptor.name} `
     : descriptor.name;
+}
+
+function commandAcceptsCompletionArgument(name: string): boolean {
+  return name === WorkspaceCommandNames.Edit ||
+    name === WorkspaceCommandNames.TimeTravelDebugger ||
+    name === WorkspaceCommandNames.Strand ||
+    name === WorkspaceCommandNames.Braid;
 }
 
 function commandDescriptorAvailable(
@@ -412,7 +441,8 @@ function fileCompletionKind(entry: FileEntry): InlineCompletionItem["kind"] {
 
 function isEditCommand(command: string): boolean {
   const normalized = command.toLowerCase();
-  return normalized === EDIT_COMMAND_NAME || normalized === EDIT_COMMAND_ALIAS;
+  return normalized === WorkspaceCommandNames.Edit ||
+    normalized === WorkspaceCommandNames.EditAlias;
 }
 
 function commandArgumentStartIndex(input: string, commandEnd: number): number {

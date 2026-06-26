@@ -30,6 +30,10 @@ import type { WorkspaceCommandLineState } from "./command-line.js";
 import type {
   WorkspaceCommandLineFilePreviewState,
 } from "./command-completion-preview.js";
+import type {
+  WorkspaceHistoryDrawerView,
+  WorkspaceWorldlineState,
+} from "./worldline-state.js";
 
 export interface WorkspaceModel
   extends StartupFileModalState,
@@ -54,6 +58,8 @@ export interface WorkspaceModel
   readonly historyDrawerProgress: number;
   readonly echoHistory: readonly EchoHistoryEntry[];
   readonly echoHistorySelectedIndex: number;
+  readonly historyDrawerView: WorkspaceHistoryDrawerView;
+  readonly worldline: WorkspaceWorldlineState;
   readonly notifications: NotificationState<WorkspaceMsg>;
   readonly notificationLoopActive: boolean;
   readonly quitConfirmOpen: boolean;

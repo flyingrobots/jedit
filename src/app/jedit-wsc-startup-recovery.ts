@@ -14,6 +14,8 @@ import {
   type JeditWscStartupRecoveryResult,
 } from '../ports/jedit-wsc-startup-recovery.js';
 
+export type { JeditWscStartupRecoveryResult } from '../ports/jedit-wsc-startup-recovery.js';
+
 export function unrecoveredJeditWscStartupRecovery(): JeditWscStartupRecoveryNotRequested {
   return {
     status: JEDIT_WSC_STARTUP_RECOVERY_NOT_REQUESTED,

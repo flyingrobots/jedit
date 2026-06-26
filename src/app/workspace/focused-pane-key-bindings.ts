@@ -8,6 +8,10 @@ import type { WorkspaceKeyBindingContext } from './key-binding-context.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 import { updateEchoHistorySelectionFromKey } from './echo-history.js';
+import {
+  updateWorldlineGraphSelectionFromKey,
+  WorkspaceHistoryDrawerViews,
+} from './worldline-state.js';
 
 type KeyBindingResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 
@@ -34,6 +38,22 @@ export function updateFocusedPaneKey(
 }
 
 function updateHistoryDrawerFromKey(msg: KeyMsg, model: WorkspaceModel): KeyBindingResult {
+  if (model.historyDrawerView === WorkspaceHistoryDrawerViews.Worldlines) {
+    const selectedIndex = updateWorldlineGraphSelectionFromKey(
+      msg,
+      model.worldline.selectedGraphIndex,
+      model.worldline.graph.length,
+    );
+    return selectedIndex === undefined
+      ? [model, []]
+      : [{
+        ...model,
+        worldline: {
+          ...model.worldline,
+          selectedGraphIndex: selectedIndex,
+        },
+      }, []];
+  }
   const selectedIndex = updateEchoHistorySelectionFromKey(msg, model.echoHistorySelectedIndex, model.echoHistory.length);
   return selectedIndex === undefined
     ? [model, []]

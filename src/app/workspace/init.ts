@@ -3,8 +3,8 @@ import { createFeedbackState } from "../../ui/feedback.js";
 import {
   titleBunnySceneCameraPlacement,
   titleSceneCameraPlacement,
+  type TitleScene,
 } from "../../ui/title-scene.js";
-import type { TitleScene } from "../../ui/title-scene.js";
 import {
   TITLE_ASCII_PALETTE,
   TITLE_RENDER_MODE,
@@ -22,11 +22,17 @@ import type { JeditTheme } from "../../ui/jedit-theme.js";
 import type { FileEntry } from "../../ports/file-system.js";
 import { ViewModes } from "./view-mode.js";
 import { TEXT_RUNTIME_PROFILE_ECHO_HOSTED } from "../text-runtime-profile.js";
-import type { JeditWscStartupRecoveryResult } from "../../ports/jedit-wsc-startup-recovery.js";
-import { unrecoveredJeditWscStartupRecovery } from "../jedit-wsc-startup-recovery.js";
+import {
+  unrecoveredJeditWscStartupRecovery,
+  type JeditWscStartupRecoveryResult,
+} from "../jedit-wsc-startup-recovery.js";
 import { createWorkspaceTextAuthority } from "./workspace-text-authority.js";
-import { initialStartupFileModalState } from "./startup-file-modal.js";
-import { initialWorkspaceCommandLineState } from "./command-line.js";
+import {
+  initialStartupFileModalState,
+  initialWorkspaceCommandLineState,
+  initialWorkspaceWorldlineState,
+  WorkspaceHistoryDrawerViews,
+} from "./initial-workspace-state.js";
 
 export { recoverJeditWorkspaceFromWsc } from "../jedit-wsc-startup-recovery.js";
 
@@ -97,6 +103,8 @@ function initialDrawerState() {
     historyDrawerProgress: 0,
     echoHistory: [],
     echoHistorySelectedIndex: 0,
+    historyDrawerView: WorkspaceHistoryDrawerViews.Echo,
+    worldline: initialWorkspaceWorldlineState(),
   };
 }
 

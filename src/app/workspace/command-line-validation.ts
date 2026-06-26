@@ -98,5 +98,9 @@ function commandTokenHasInvalidArgument(token: CommandLineToken): boolean {
 }
 
 function commandTokenAcceptsArgument(name: string): boolean {
-  return name === WorkspaceCommandNames.Edit || name === WorkspaceCommandNames.EditAlias;
+  return name === WorkspaceCommandNames.Edit ||
+    name === WorkspaceCommandNames.EditAlias ||
+    name === WorkspaceCommandNames.TimeTravelDebugger ||
+    name === WorkspaceCommandNames.Strand ||
+    name === WorkspaceCommandNames.Braid;
 }

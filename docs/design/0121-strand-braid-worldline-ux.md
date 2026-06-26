@@ -3,7 +3,7 @@ title: "WF-0121 - Strand/Braid Worldline UX"
 legend: "WF"
 lane: "design"
 issue: "https://github.com/flyingrobots/jedit/issues/153"
-status: "planned"
+status: "implemented"
 owners:
   - "@flyingrobots"
 created: "2026-06-26"
@@ -114,6 +114,18 @@ Start explicit before adding terse Normal-mode chords:
 :braid admit <strand>
 ```
 
+Implemented anchors:
+
+- `src/app/workspace/worldline-state.ts` owns posture labels, graph rows,
+  ahead/behind facts, materialization labels, TTD observer movement, strand
+  creation/switching, and braid preview/admission model transitions.
+- `src/app/workspace/command-line-dispatch.ts` dispatches `:ttd`, `:strand`,
+  and `:braid` commands through the workspace command line.
+- `src/app/workspace/viewer-drawers.ts` renders `:braid view` and
+  `:strand list` in the existing history drawer as the worldline graph view.
+- `src/ui/workspace-chrome.ts` and `src/app/workspace/viewer.ts` keep causal
+  posture and filesystem materialization visible as distinct footer facts.
+
 Normal-mode shortcuts can follow after the command semantics are proven:
 
 ```vim
@@ -154,6 +166,11 @@ Required operations:
 
 Agents may propose into isolated durable strands. Only braid/admission changes
 canonical mainline.
+
+Implemented anchor:
+
+- `src/ports/jedit-agent-strand-contract.ts` defines the CLI/MCP/API-facing
+  session, intent envelope, braid preview, and admission request contract.
 
 ## Echo Dependency
 

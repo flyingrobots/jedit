@@ -257,7 +257,7 @@ test('footer renders production text posture without exposing text authority', a
   const harness = await openedHarness();
   const text = harness.renderWorkspaceText();
 
-  assert.match(text, /notes\.md \[clean\]/);
+  assert.match(text, /notes\.md \[clean \| main \| fs:materialized/);
 });
 
 test('source highlighting consumes reading material after production edit', async () => {

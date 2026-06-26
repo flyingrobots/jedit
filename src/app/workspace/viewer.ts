@@ -23,7 +23,10 @@ import { renderDrawer } from './viewer-drawers.js';
 import { fillSurface } from './surface-fill.js';
 import { renderSmallTerminalNotice } from './small-terminal-view.js';
 import { paintWorkspaceOverlays, workspaceFeedbackOverlay } from './viewer-overlays.js';
-import { workspaceTextAuthorityPosture } from './workspace-text-authority.js';
+import {
+  workspaceFooterTextPosture,
+  workspaceHistoryContextLine,
+} from './workspace-footer-posture.js';
 import type { JeditColorStop, JeditStyleToken } from '../../ui/jedit-theme.js';
 
 const WORKSPACE_BODY_TOP_OFFSET = 2;
@@ -146,8 +149,9 @@ function paintWorkspaceFooter(screen: Surface, model: WorkspaceModel): void {
         cwd: model.cwd,
         selectedEntry: model.entries[model.selectedIndex],
         editorPath: model.editor?.path,
-        textPosture: workspaceTextAuthorityPosture(model.textAuthority),
+        textPosture: workspaceFooterTextPosture(model),
         echoHistoryCount: model.echoHistory.length,
+        historyContextLine: workspaceHistoryContextLine(model),
         graftPath: model.graftInfo?.path,
         graftSelection: selectedGraftSelection(model),
         commandLine: model.commandLine,

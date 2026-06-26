@@ -112,6 +112,7 @@ export interface WorkspaceFooterState {
   readonly editorPath?: string;
   readonly textPosture?: string;
   readonly echoHistoryCount?: number;
+  readonly historyContextLine?: string;
   readonly graftPath?: string;
   readonly graftSelection?: { readonly kind: string; readonly name: string; readonly startLine: number };
   readonly commandLine?: WorkspaceCommandLineFooterState;
@@ -370,12 +371,8 @@ function footerContextLine(state: WorkspaceFooterState): string {
 
 function activeDrawerContextLine(state: WorkspaceFooterState): string | undefined {
   const kind = activeDrawerKind(state);
-  if (kind === DrawerKinds.Files) {
-    return state.selectedEntry?.path ?? state.cwd;
-  }
-  if (kind === DrawerKinds.Graft) {
-    return graftFooterContextLine(state);
-  }
+  if (kind === DrawerKinds.Files) return state.selectedEntry?.path ?? state.cwd;
+  if (kind === DrawerKinds.Graft) return graftFooterContextLine(state);
   return kind === DrawerKinds.History ? historyFooterContextLine(state) : undefined;
 }
 
@@ -404,6 +401,7 @@ function graftFooterContextLine(state: WorkspaceFooterState): string {
 }
 
 function historyFooterContextLine(state: WorkspaceFooterState): string {
+  if (state.historyContextLine != null) return state.historyContextLine;
   const count = state.echoHistoryCount ?? 0;
   return count === 0
     ? state.i18n.t(FOOTER_CONTEXT_HISTORY_EMPTY)
