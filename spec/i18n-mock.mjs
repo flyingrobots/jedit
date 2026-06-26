@@ -26,6 +26,9 @@ export function createI18nMock(overrides = {}) {
     'footer.command.details.write': 'Write the current file',
     'footer.command.details.quit': 'Quit jedit',
     'footer.command.details.wq': 'Write and quit',
+    'footer.command.details.ttd': 'Observe a causal tick without moving canonical head',
+    'footer.command.details.strand': 'Create, switch, or list copy-on-write strands',
+    'footer.command.details.braid': 'View, preview, or admit braid candidates',
     'footer.command.hints.tab_accept': 'tab accept',
     'footer.command.hints.enter_run': 'enter run',
     'footer.command.hints.esc_cancel': 'esc cancel',
@@ -70,6 +73,11 @@ export function createI18nMock(overrides = {}) {
       if (path === 'history.empty') return 'No Echo evidence yet';
       if (path === 'history.header') {
         return '#   tick  kind        status       evidence       summary';
+      }
+      if (path === 'worldline.title') return 'Worldlines';
+      if (path === 'worldline.empty') return 'No worldlines yet';
+      if (path === 'worldline.header') {
+        return 'kind      name           basis          head  delta     conflict';
       }
       const parts = path.split('.');
       const id = parts[parts.length - 1];

@@ -10,6 +10,7 @@ import type { WorkspaceModel } from "./model.js";
 import type { WorkspaceMsg } from "./msg.js";
 import { WorkspaceCommandNames } from "./workspace-command-names.js";
 import { saveWorkspace } from "./workspace-save-key.js";
+import { dispatchWorldlineCommand } from "./worldline-command-dispatch.js";
 
 type KeyBindingResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 
@@ -34,9 +35,21 @@ export function dispatchWorkspaceCommandLine(
   if (isEditCommand(command.name)) {
     return dispatchEditCommand(model, command.argument, context);
   }
+  const worldlineCommand = dispatchWorldlineCommand(model, command);
+  if (worldlineCommand != null) {
+    return worldlineCommand;
+  }
   if (!hasNoArgument(command)) {
     return [invalidateWorkspaceCommandLine(model), []];
   }
+  return dispatchNoArgumentCommand(model, command, context);
+}
+
+function dispatchNoArgumentCommand(
+  model: WorkspaceModel,
+  command: ParsedWorkspaceCommandLine,
+  context: WorkspaceKeyBindingContext,
+): KeyBindingResult {
   if (isWriteCommand(command.name)) {
     return saveWorkspace(closeWorkspaceCommandLine(model), context);
   }

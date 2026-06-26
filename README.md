@@ -49,7 +49,7 @@ Press `?` inside the editor for the key binding reference.
   and historical editing evidence
 - **Jim/Vim roadmap** — command-line completion exists; the active roadmap is
   first-class Vim grammar, basis-bound motions, text objects, registers, macros,
-  repeat, and causal proof
+  repeat, causal proof, and strand/braid worldline UX
 - **Echo History drawer** — a first interactive history drawer lists
   editor-shaped Echo activity such as opens, edits, reads, exports, checkpoints,
   and obstructions
@@ -115,6 +115,8 @@ The process-level jedit + Echo path is explained in
   truths. Markdown preview is the first lens; others must justify themselves.
 - Truth beats convenience. If a panel is showing saved-on-disk structure while
   the buffer is dirty, the UI should say so explicitly.
+- Strand state is not dirty state. Durable noncanonical work belongs to its
+  causal worldline; save and Git export are materialization/on-ramp boundaries.
 - Anything noisy must earn its existence.
 
 The full invariant set is in [docs/design/project-invariants.md](docs/design/project-invariants.md).

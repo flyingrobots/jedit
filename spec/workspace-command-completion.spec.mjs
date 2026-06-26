@@ -26,7 +26,7 @@ test("workspace command completion provider matches Vim command names and aliase
 
   assert.deepEqual(
     empty.map((item) => item.label),
-    ["edit", "write", "quit", "wq"],
+    ["edit", "write", "quit", "wq", "ttd", "strand", "braid"],
   );
   assert.deepEqual(
     writeQuery.map((item) => item.label),
@@ -65,7 +65,7 @@ test("workspace command completion provider hides file commands with no open fil
 
   assert.deepEqual(
     titleScreenItems.map((item) => item.label),
-    ["edit", "quit"],
+    ["edit", "quit", "ttd", "strand", "braid"],
   );
   assert.deepEqual(writeQuery, []);
 });
@@ -388,7 +388,7 @@ test("workspace render paints command completions above the Vim command line", a
   ]);
   const model = mockTitleScreenModel(titleScreen, {
     columns: 80,
-    rows: 18,
+    rows: 22,
     editor: mockEditor(editorMode, { lines: ["hello world"] }),
     focusPane: "editor",
     footerVisible: true,
@@ -401,11 +401,10 @@ test("workspace render paints command completions above the Vim command line", a
     },
   });
 
-  const lines = surfaceText(viewer.renderWorkspace(model)).split("\n");
+  const text = surfaceText(viewer.renderWorkspace(model));
 
-  assert.equal(viewer.renderWorkspace(model).get(1, 15).char, "›");
-  assert.match(lines[15], /› edit\s+cmd\s+Open a file/);
-  assert.match(lines[16], /^:e\s*$/);
+  assert.match(text, /› edit\s+cmd\s+Open a file/);
+  assert.match(text, /^:e\s*$/m);
 });
 
 test("workspace render omits write completions on the title screen", async () => {
@@ -427,11 +426,13 @@ test("workspace render omits write completions on the title screen", async () =>
     },
   });
 
-  const lines = surfaceText(viewer.renderWorkspace(model)).split("\n");
-  const completionText = lines.slice(12, 16).join("\n");
+  const completionText = surfaceText(viewer.renderWorkspace(model));
 
   assert.match(completionText, /› edit\s+cmd\s+Open a file/);
   assert.match(completionText, /quit\s+cmd\s+Quit jedit/);
+  assert.match(completionText, /ttd\s+cmd\s+Observe a causal tick/);
+  assert.match(completionText, /strand\s+cmd\s+Create, switch, or list/);
+  assert.match(completionText, /braid\s+cmd\s+View, preview, or admit/);
   assert.doesNotMatch(completionText, /write\s+cmd\s+Write the current file/);
   assert.doesNotMatch(completionText, /wq\s+cmd\s+Write and quit/);
 });

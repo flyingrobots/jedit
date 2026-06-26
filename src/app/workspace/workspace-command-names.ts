@@ -9,4 +9,7 @@ export const WorkspaceCommandNames = Object.freeze({
   QuitBangAlias: "q!",
   WriteQuit: "wq",
   WriteQuitAlias: "x",
+  TimeTravelDebugger: "ttd",
+  Strand: "strand",
+  Braid: "braid",
 } as const);
