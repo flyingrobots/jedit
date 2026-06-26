@@ -74,6 +74,7 @@ export function editorFromWorkspaceTextReadingCache(
     registers: projection.existing?.registers,
     lastVimEdit: projection.existing?.lastVimEdit,
     marks: projection.existing?.marks,
+    lastSearch: projection.existing?.lastSearch,
     undoStack: projection.existing?.undoStack ?? EMPTY_STACK,
     redoStack: projection.existing?.redoStack ?? EMPTY_STACK,
   };

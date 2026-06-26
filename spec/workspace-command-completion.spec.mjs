@@ -23,18 +23,26 @@ test("workspace command completion provider matches Vim command names and aliase
     input: "q",
     cursorIndex: 1,
   });
+  const whyQuery = completion.workspaceCommandCompletionItems({
+    input: "why",
+    cursorIndex: 3,
+  });
 
   assert.deepEqual(
     empty.map((item) => item.label),
-    ["edit", "write", "quit", "wq", "ttd", "strand", "braid"],
+    ["edit", "write", "quit", "wq", "ttd", "strand", "braid", "why"],
   );
   assert.deepEqual(
     writeQuery.map((item) => item.label),
-    ["write", "wq"],
+    ["write", "wq", "why"],
   );
   assert.deepEqual(
     quitAlias.map((item) => item.label),
     ["quit"],
+  );
+  assert.deepEqual(
+    whyQuery.map((item) => [item.label, item.detail]),
+    [["why", "Explain the last meaningful command"]],
   );
   assert.deepEqual(writeQuery[0].replacement, {
     start: 0,
@@ -65,9 +73,12 @@ test("workspace command completion provider hides file commands with no open fil
 
   assert.deepEqual(
     titleScreenItems.map((item) => item.label),
-    ["edit", "quit", "ttd", "strand", "braid"],
+    ["edit", "quit", "ttd", "strand", "braid", "why"],
   );
-  assert.deepEqual(writeQuery, []);
+  assert.deepEqual(
+    writeQuery.map((item) => item.label),
+    ["why"],
+  );
 });
 
 test("workspace command completion provider localizes command copy", async () => {
@@ -93,11 +104,13 @@ test("workspace command completion provider localizes command copy", async () =>
     [
       "copy:footer.command.details.write (w)",
       "copy:footer.command.details.wq (x)",
+      "copy:footer.command.details.why",
     ],
   );
   assert.deepEqual(requestedKeys, [
     "footer.command.details.write",
     "footer.command.details.wq",
+    "footer.command.details.why",
   ]);
 });
 
@@ -433,6 +446,7 @@ test("workspace render omits write completions on the title screen", async () =>
   assert.match(completionText, /ttd\s+cmd\s+Observe a causal tick/);
   assert.match(completionText, /strand\s+cmd\s+Create, switch, or list/);
   assert.match(completionText, /braid\s+cmd\s+View, preview, or admit/);
+  assert.match(completionText, /why\s+cmd\s+Explain the last meaningful command/);
   assert.doesNotMatch(completionText, /write\s+cmd\s+Write the current file/);
   assert.doesNotMatch(completionText, /wq\s+cmd\s+Write and quit/);
 });

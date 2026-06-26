@@ -1,5 +1,12 @@
 import { quit, type Cmd } from "@flyingrobots/bijou-tui";
+import {
+  NotificationPlacements,
+  NotificationTones,
+  NotificationVariants,
+  pushNotificationToast,
+} from "../../ui/feedback.js";
 import { FileEntryKinds, type FileEntry } from "../../ports/file-system.js";
+import { explainLastJeditCommand } from "./command-provenance.js";
 import {
   closeWorkspaceCommandLine,
   invalidateWorkspaceCommandLine,
@@ -23,6 +30,7 @@ const EMPTY_COMMAND_ARGUMENT = "";
 const NO_WHITESPACE_INDEX = -1;
 const DIRECTORY_LABEL_SUFFIX = "/";
 const PARENT_DIRECTORY_LABEL = "../";
+const WHY_REPORT_OBSTRUCTION_KIND = "obstruction";
 
 export function dispatchWorkspaceCommandLine(
   model: WorkspaceModel,
@@ -58,6 +66,9 @@ function dispatchNoArgumentCommand(
   }
   if (isForceQuitCommand(command.name)) {
     return [closeWorkspaceCommandLine(model), [quit<WorkspaceMsg>()]];
+  }
+  if (isWhyCommand(command.name)) {
+    return dispatchWhyCommand(model, context);
   }
   return isWriteQuitCommand(command.name)
     ? dispatchWriteQuitCommand(model, context)
@@ -106,6 +117,28 @@ function dispatchWriteQuitCommand(
     },
     commands,
   ];
+}
+
+function dispatchWhyCommand(
+  model: WorkspaceModel,
+  context: WorkspaceKeyBindingContext,
+): KeyBindingResult {
+  const report = explainLastJeditCommand(model.editor, model.textAuthority);
+  const tone = report.kind === WHY_REPORT_OBSTRUCTION_KIND
+    ? NotificationTones.Warning
+    : NotificationTones.Info;
+  return pushNotificationToast(
+    closeWorkspaceCommandLine(model),
+    {
+      title: report.title,
+      message: report.message,
+      variant: NotificationVariants.Toast,
+      tone,
+      placement: NotificationPlacements.LowerRight,
+    },
+    context.nowMs(),
+    context.createNotificationTickCmd,
+  );
 }
 
 function editCommandFileEntry(
@@ -206,4 +239,8 @@ function isWriteQuitCommand(name: string): boolean {
     name === WorkspaceCommandNames.WriteQuit ||
     name === WorkspaceCommandNames.WriteQuitAlias
   );
+}
+
+function isWhyCommand(name: string): boolean {
+  return name === WorkspaceCommandNames.Why;
 }

@@ -562,6 +562,117 @@ test("enter dispatches forced quit commands without confirmation", async () => {
   }
 });
 
+test("enter dispatches why with a calm no-event obstruction", async () => {
+  const [keyBindings, titleScreen, editorMode] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+  ]);
+
+  const [nextModel, commands] = keyBindings.updateFromKey(
+    { type: "key", key: "enter", ctrl: false, alt: false, shift: false },
+    mockTitleScreenModel(titleScreen, {
+      editor: mockEditor(editorMode),
+      focusPane: "editor",
+      commandLine: activeCommandLine("why"),
+    }),
+    mockKeyBindingContext(),
+  );
+
+  assert.equal(nextModel.commandLine.active, false);
+  assert.equal(nextModel.notifications.items[0].title, "Why");
+  assert.match(
+    nextModel.notifications.items[0].message,
+    /No meaningful command recorded yet.*jedit_why_no_meaningful_event/,
+  );
+  assert.equal(commands.length, 1);
+});
+
+test("enter dispatches why for the last meaningful Vim command", async () => {
+  const [keyBindings, titleScreen, editorMode, editing, authority] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "editor-editing.js"),
+    importDist("app", "workspace", "workspace-text-authority.js"),
+  ]);
+  const editor = mockEditor(editorMode, {
+    lines: ["alpha beta"],
+    cursorRow: 0,
+    cursorCol: 0,
+  });
+  const pending = editing.updateNormalMode(editor, { key: "d" }, 80, 24);
+  const deleted = editing.updateNormalMode(pending, { key: "w" }, 80, 24);
+
+  const [nextModel] = keyBindings.updateFromKey(
+    { type: "key", key: "enter", ctrl: false, alt: false, shift: false },
+    mockTitleScreenModel(titleScreen, {
+      editor: deleted,
+      focusPane: "editor",
+      textAuthority: authority.openedWorkspaceTextAuthority({
+        profile: "echoHosted",
+        filePath: "/repo/notes.md",
+        bufferId: "buffer:notes",
+        readOnly: false,
+        dirty: true,
+        lastReceiptId: "receipt:dw",
+      }),
+      commandLine: activeCommandLine("Why"),
+    }),
+    mockKeyBindingContext(),
+  );
+  const message = nextModel.notifications.items[0].message;
+
+  assert.equal(nextModel.commandLine.active, false);
+  assert.match(message, /command: dw/);
+  assert.match(message, /family: operatorMotion/);
+  assert.match(message, /operator: delete/);
+  assert.match(message, /motion: wordForward/);
+  assert.match(message, /register: char delete 0\.\.6/);
+  assert.match(message, /receipt: receipt:dw/);
+});
+
+test("production normal edits keep Vim command provenance while queued", async () => {
+  const [keyBindings, titleScreen, editorMode, authority] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "workspace-text-authority.js"),
+  ]);
+  const model = mockTitleScreenModel(titleScreen, {
+    editor: mockEditor(editorMode, {
+      lines: ["alpha beta"],
+      cursorRow: 0,
+      cursorCol: 0,
+    }),
+    focusPane: "editor",
+    textAuthority: authority.openedWorkspaceTextAuthority({
+      profile: "echoHosted",
+      filePath: "/repo/notes.md",
+      bufferId: "buffer:notes",
+      readOnly: false,
+      dirty: false,
+    }),
+  });
+  const context = mockKeyBindingContext();
+  const [pending] = keyBindings.updateFromKey(
+    { type: "key", key: "d", ctrl: false, alt: false, shift: false },
+    model,
+    context,
+  );
+  const [queued, commands] = keyBindings.updateFromKey(
+    { type: "key", key: "w", ctrl: false, alt: false, shift: false },
+    pending,
+    context,
+  );
+
+  assert.deepEqual(queued.editor.lastVimEdit.keys, ["d", "w"]);
+  assert.equal(queued.editor.register.source.operation, "delete");
+  assert.equal(queued.editor.register.source.rangeStart, 0);
+  assert.equal(queued.editor.register.source.rangeEnd, 6);
+  assert.equal(commands.length, 1);
+});
+
 test("forced quit commands are valid command-line input without visible completions", async () => {
   const [completion, validation] = await Promise.all([
     importDist("app", "workspace", "command-completion.js"),

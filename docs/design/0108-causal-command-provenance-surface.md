@@ -628,10 +628,10 @@ model facts, lower-mode summary, `:why`, JSON witness, and obstruction posture.
 ## Implementation Slices
 
 - [x] Slice 0: Run Editor Trust Gate preflight and record blockers.
-- [ ] Slice 1: Define `JeditCommandEvent` model and fixture shape.
+- [x] Slice 1: Define `JeditCommandEvent` model and fixture shape.
 - [ ] Slice 2: Emit provenance for `ciw`, `dw`, `d%`, `gUap`, and `n`/`N`.
 - [ ] Slice 3: Render lower-mode command provenance summary.
-- [ ] Slice 4: Add `:why` command-line dispatch.
+- [x] Slice 4: Add `:why` command-line dispatch.
 - [ ] Slice 5: Add JSON command provenance witness.
 - [ ] Slice 6: Add typed obstruction posture for unsupported, no-event, or
       stale-basis cases.
@@ -644,7 +644,7 @@ Behavior tests required:
 - [ ] Command event model test for stable event fields.
 - [ ] Runtime tests comparing command behavior with emitted provenance facts.
 - [ ] Render test for lower-mode summary at wide and narrow terminal widths.
-- [ ] Command-line/detail test for `:why`.
+- [x] Command-line/detail test for `:why`.
 - [ ] JSON witness test for agent-readable command facts.
 - [ ] Obstruction test for unsupported or stale-basis command provenance.
 
@@ -652,11 +652,11 @@ Required command assertions:
 
 - [ ] `ciw` `:why` reports text object, range, register effect, and
       receipt/result posture.
-- [ ] `dw` `:why` reports word motion target and deletion range.
+- [x] `dw` `:why` reports word motion target and deletion range.
 - [ ] `d%` `:why` reports pair identity and affected range.
 - [ ] `gUap` `:why` reports paragraph text object and transform operator.
 - [ ] `n`/`N` `:why` reports search match identity and traversal direction.
-- [ ] `:why` with no meaningful event reports calm obstruction.
+- [x] `:why` with no meaningful event reports calm obstruction.
 
 Documentation and process tests:
 
