@@ -217,7 +217,8 @@ This cycle includes:
 
 ## Slice 0 Editor Trust Gate Preflight
 
-Slice 0 is now recorded by an executable JSON report:
+Slice 0 is now recorded by an executable JSON report. The witness requires the
+explicit `--json` flag so callers cannot confuse it with a human display mode:
 
 ```bash
 npm run build

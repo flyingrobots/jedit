@@ -14,14 +14,24 @@ const GATE_SEARCH_ENTRY = 'slash-question-search-entry';
 const GATE_SINGLE_BUFFER_POSTURE = 'single-buffer-posture';
 const PASS_OPEN_EDIT_SAVE =
   'Open, edit, save, and disk output route through production text authority.';
+const BLOCK_OPEN_EDIT_SAVE =
+  'Open, edit, save, or disk output is not routed through production text authority.';
 const PASS_QUIT_CONFIRMATION =
   'Plain quit requires confirmation and forced quit remains explicit.';
+const BLOCK_QUIT_CONFIRMATION =
+  'Plain quit confirmation or explicit forced quit behavior is not available.';
+const PASS_DIRTY_QUIT = 'Dirty quit uses a dirty-specific guardrail.';
 const BLOCK_DIRTY_QUIT =
   'Dirty quit currently uses the generic quit confirmation instead of a dirty-specific guardrail.';
+const PASS_DIRTY_SWITCH =
+  'Dirty file switches resolve unsaved changes before opening a replacement file.';
 const BLOCK_DIRTY_SWITCH =
   'Dirty file switches can start a replacement open without first resolving unsaved changes.';
+const PASS_SEARCH_ENTRY = 'Both / and ? search entry are product-complete.';
 const BLOCK_SEARCH_ENTRY =
   'Repeat-search facts exist for n/N, but / and ? search entry is not product-complete.';
+const PASS_SINGLE_BUFFER =
+  'Multi-buffer behavior is supported and explicitly claimed.';
 const SCOPED_SINGLE_BUFFER =
   'The current product posture is single-buffer; multi-buffer behavior is not claimed.';
 const NEXT_ACTION =
@@ -54,6 +64,27 @@ export type EditorTrustPreflightReportStatus =
 export type EditorTrustPreflightGateStatus =
   typeof EditorTrustPreflightGateStatuses[keyof typeof EditorTrustPreflightGateStatuses];
 
+interface EditorTrustPreflightReportStatusToken {
+  readonly value: EditorTrustPreflightReportStatus;
+}
+
+interface EditorTrustPreflightGateStatusToken {
+  readonly value: EditorTrustPreflightGateStatus;
+}
+
+const REPORT_STATUS = Object.freeze({
+  Ready: Object.freeze({ value: REPORT_STATUS_READY }),
+  Blocked: Object.freeze({ value: REPORT_STATUS_BLOCKED }),
+} as const);
+
+const GATE_STATUS = Object.freeze({
+  Passed: Object.freeze({ value: GATE_STATUS_PASSED }),
+  Blocked: Object.freeze({ value: GATE_STATUS_BLOCKED }),
+  Scoped: Object.freeze({ value: GATE_STATUS_SCOPED }),
+} as const);
+
+type InternalGateStatus = typeof GATE_STATUS[keyof typeof GATE_STATUS];
+
 export interface EditorTrustPreflightObservation {
   readonly openUsesProductionAuthority: boolean;
   readonly editUsesProductionAuthority: boolean;
@@ -67,6 +98,12 @@ export interface EditorTrustPreflightObservation {
   readonly slashSearchEntryAvailable: boolean;
   readonly questionSearchEntryAvailable: boolean;
   readonly hasMultipleOpenBuffers: boolean;
+}
+
+export interface EditorTrustPreflightProbe {
+  readonly observe: () =>
+    | EditorTrustPreflightObservation
+    | Promise<EditorTrustPreflightObservation>;
 }
 
 export interface EditorTrustPreflightGate {
@@ -87,6 +124,14 @@ export interface EditorTrustPreflightReport {
   readonly nextAction: typeof NEXT_ACTION;
 }
 
+interface InternalEditorTrustPreflightGate {
+  readonly id: string;
+  readonly status: InternalGateStatus;
+  readonly summary: string;
+  readonly evidence: readonly string[];
+  readonly blocker?: string;
+}
+
 export function createEditorTrustPreflightReport(
   observation: EditorTrustPreflightObservation,
 ): EditorTrustPreflightReport {
@@ -98,42 +143,45 @@ export function createEditorTrustPreflightReport(
     searchEntryGate(observation),
     singleBufferGate(observation),
   ];
-  const blockers = gates.filter((gate) => gate.status === GATE_STATUS_BLOCKED);
+  const blockers = gates.filter(isBlockedGate);
   return {
     schema: REPORT_SCHEMA,
     cycle: CYCLE_ID,
     slice: SLICE_ID,
-    status: blockers.length === 0 ? REPORT_STATUS_READY : REPORT_STATUS_BLOCKED,
-    gates,
-    blockers,
+    status: encodeReportStatus(blockers.length === 0 ? REPORT_STATUS.Ready : REPORT_STATUS.Blocked),
+    gates: gates.map(encodeGate),
+    blockers: blockers.map(encodeGate),
     nextAction: NEXT_ACTION,
   };
 }
 
-export function currentEditorTrustPreflightReport(): EditorTrustPreflightReport {
-  return createEditorTrustPreflightReport(currentPreflightObservation());
+export function createEditorTrustPreflightReporter(
+  probe: EditorTrustPreflightProbe,
+): {
+  readonly currentObservation: () => Promise<EditorTrustPreflightObservation>;
+  readonly currentReport: () => Promise<EditorTrustPreflightReport>;
+} {
+  return Object.freeze({
+    currentObservation: () => currentPreflightObservation(probe),
+    currentReport: () => currentEditorTrustPreflightReport(probe),
+  });
 }
 
-export function currentPreflightObservation(): EditorTrustPreflightObservation {
-  return {
-    openUsesProductionAuthority: true,
-    editUsesProductionAuthority: true,
-    saveExportsProductionText: true,
-    diskOutputVerified: true,
-    quitRequiresConfirmation: true,
-    forceQuitAvailable: true,
-    dirtyStateTracked: true,
-    dirtyQuitHasDirtySpecificGuard: false,
-    dirtyFileSwitchBlocked: false,
-    slashSearchEntryAvailable: false,
-    questionSearchEntryAvailable: false,
-    hasMultipleOpenBuffers: false,
-  };
+export async function currentEditorTrustPreflightReport(
+  probe: EditorTrustPreflightProbe,
+): Promise<EditorTrustPreflightReport> {
+  return createEditorTrustPreflightReport(await currentPreflightObservation(probe));
+}
+
+export async function currentPreflightObservation(
+  probe: EditorTrustPreflightProbe,
+): Promise<EditorTrustPreflightObservation> {
+  return probe.observe();
 }
 
 function openEditSaveDiskGate(
   observation: EditorTrustPreflightObservation,
-): EditorTrustPreflightGate {
+): InternalEditorTrustPreflightGate {
   const passed =
     observation.openUsesProductionAuthority &&
     observation.editUsesProductionAuthority &&
@@ -141,32 +189,34 @@ function openEditSaveDiskGate(
     observation.diskOutputVerified;
   return gate({
     id: GATE_OPEN_EDIT_SAVE_DISK,
-    status: passed ? GATE_STATUS_PASSED : GATE_STATUS_BLOCKED,
-    summary: PASS_OPEN_EDIT_SAVE,
+    status: passed ? GATE_STATUS.Passed : GATE_STATUS.Blocked,
+    summary: passed ? PASS_OPEN_EDIT_SAVE : BLOCK_OPEN_EDIT_SAVE,
     evidence: [EVIDENCE_OPEN, EVIDENCE_EDIT, EVIDENCE_EXPORT, EVIDENCE_DISK],
+    blocker: passed ? undefined : BLOCK_OPEN_EDIT_SAVE,
   });
 }
 
 function quitConfirmationGate(
   observation: EditorTrustPreflightObservation,
-): EditorTrustPreflightGate {
+): InternalEditorTrustPreflightGate {
   const passed = observation.quitRequiresConfirmation && observation.forceQuitAvailable;
   return gate({
     id: GATE_QUIT_CONFIRMATION,
-    status: passed ? GATE_STATUS_PASSED : GATE_STATUS_BLOCKED,
-    summary: PASS_QUIT_CONFIRMATION,
+    status: passed ? GATE_STATUS.Passed : GATE_STATUS.Blocked,
+    summary: passed ? PASS_QUIT_CONFIRMATION : BLOCK_QUIT_CONFIRMATION,
     evidence: [EVIDENCE_QUIT_CONFIRM, EVIDENCE_FORCE_QUIT],
+    blocker: passed ? undefined : BLOCK_QUIT_CONFIRMATION,
   });
 }
 
 function dirtyQuitGate(
   observation: EditorTrustPreflightObservation,
-): EditorTrustPreflightGate {
+): InternalEditorTrustPreflightGate {
   const passed = observation.dirtyStateTracked && observation.dirtyQuitHasDirtySpecificGuard;
   return gate({
     id: GATE_DIRTY_QUIT_GUARD,
-    status: passed ? GATE_STATUS_PASSED : GATE_STATUS_BLOCKED,
-    summary: BLOCK_DIRTY_QUIT,
+    status: passed ? GATE_STATUS.Passed : GATE_STATUS.Blocked,
+    summary: passed ? PASS_DIRTY_QUIT : BLOCK_DIRTY_QUIT,
     evidence: [EVIDENCE_DIRTY_STATE, EVIDENCE_QUIT_CONFIRM],
     blocker: passed ? undefined : BLOCK_DIRTY_QUIT,
   });
@@ -174,26 +224,27 @@ function dirtyQuitGate(
 
 function dirtyFileSwitchGate(
   observation: EditorTrustPreflightObservation,
-): EditorTrustPreflightGate {
+): InternalEditorTrustPreflightGate {
+  const passed = observation.dirtyFileSwitchBlocked;
   return gate({
     id: GATE_DIRTY_FILE_SWITCH_GUARD,
-    status: observation.dirtyFileSwitchBlocked ? GATE_STATUS_PASSED : GATE_STATUS_BLOCKED,
-    summary: BLOCK_DIRTY_SWITCH,
+    status: passed ? GATE_STATUS.Passed : GATE_STATUS.Blocked,
+    summary: passed ? PASS_DIRTY_SWITCH : BLOCK_DIRTY_SWITCH,
     evidence: [EVIDENCE_DIRTY_STATE, EVIDENCE_DIRTY_SWITCH],
-    blocker: observation.dirtyFileSwitchBlocked ? undefined : BLOCK_DIRTY_SWITCH,
+    blocker: passed ? undefined : BLOCK_DIRTY_SWITCH,
   });
 }
 
 function searchEntryGate(
   observation: EditorTrustPreflightObservation,
-): EditorTrustPreflightGate {
+): InternalEditorTrustPreflightGate {
   const passed =
     observation.slashSearchEntryAvailable &&
     observation.questionSearchEntryAvailable;
   return gate({
     id: GATE_SEARCH_ENTRY,
-    status: passed ? GATE_STATUS_PASSED : GATE_STATUS_BLOCKED,
-    summary: BLOCK_SEARCH_ENTRY,
+    status: passed ? GATE_STATUS.Passed : GATE_STATUS.Blocked,
+    summary: passed ? PASS_SEARCH_ENTRY : BLOCK_SEARCH_ENTRY,
     evidence: [EVIDENCE_SEARCH],
     blocker: passed ? undefined : BLOCK_SEARCH_ENTRY,
   });
@@ -201,16 +252,19 @@ function searchEntryGate(
 
 function singleBufferGate(
   observation: EditorTrustPreflightObservation,
-): EditorTrustPreflightGate {
+): InternalEditorTrustPreflightGate {
+  const passed = observation.hasMultipleOpenBuffers;
   return gate({
     id: GATE_SINGLE_BUFFER_POSTURE,
-    status: observation.hasMultipleOpenBuffers ? GATE_STATUS_PASSED : GATE_STATUS_SCOPED,
-    summary: SCOPED_SINGLE_BUFFER,
+    status: passed ? GATE_STATUS.Passed : GATE_STATUS.Scoped,
+    summary: passed ? PASS_SINGLE_BUFFER : SCOPED_SINGLE_BUFFER,
     evidence: [EVIDENCE_BUFFER_MODEL],
   });
 }
 
-function gate(gateValue: EditorTrustPreflightGate): EditorTrustPreflightGate {
+function gate(
+  gateValue: InternalEditorTrustPreflightGate,
+): InternalEditorTrustPreflightGate {
   return gateValue.blocker == null
     ? {
         id: gateValue.id,
@@ -219,4 +273,39 @@ function gate(gateValue: EditorTrustPreflightGate): EditorTrustPreflightGate {
         evidence: gateValue.evidence,
       }
     : gateValue;
+}
+
+function isBlockedGate(gateValue: InternalEditorTrustPreflightGate): boolean {
+  return gateValue.status === GATE_STATUS.Blocked;
+}
+
+function encodeGate(
+  gateValue: InternalEditorTrustPreflightGate,
+): EditorTrustPreflightGate {
+  return gateValue.blocker == null
+    ? {
+        id: gateValue.id,
+        status: encodeGateStatus(gateValue.status),
+        summary: gateValue.summary,
+        evidence: gateValue.evidence,
+      }
+    : {
+        id: gateValue.id,
+        status: encodeGateStatus(gateValue.status),
+        summary: gateValue.summary,
+        evidence: gateValue.evidence,
+        blocker: gateValue.blocker,
+      };
+}
+
+function encodeReportStatus(
+  status: EditorTrustPreflightReportStatusToken,
+): EditorTrustPreflightReportStatus {
+  return status.value;
+}
+
+function encodeGateStatus(
+  status: EditorTrustPreflightGateStatusToken,
+): EditorTrustPreflightGateStatus {
+  return status.value;
 }

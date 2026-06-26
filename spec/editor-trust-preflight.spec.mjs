@@ -12,6 +12,18 @@ const GATE_SINGLE_BUFFER_POSTURE = 'single-buffer-posture';
 const STATUS_PASSED = 'passed';
 const STATUS_BLOCKED = 'blocked';
 const STATUS_SCOPED = 'scoped';
+const STATUS_READY = 'ready';
+const SAVED_TEXT = 'saved from Echo';
+const PASS_DIRTY_QUIT = 'Dirty quit uses a dirty-specific guardrail.';
+const PASS_DIRTY_SWITCH =
+  'Dirty file switches resolve unsaved changes before opening a replacement file.';
+const PASS_SEARCH_ENTRY = 'Both / and ? search entry are product-complete.';
+const PASS_MULTI_BUFFER =
+  'Multi-buffer behavior is supported and explicitly claimed.';
+const BLOCK_OPEN_EDIT_SAVE =
+  'Open, edit, save, or disk output is not routed through production text authority.';
+const BLOCK_QUIT_CONFIRMATION =
+  'Plain quit confirmation or explicit forced quit behavior is not available.';
 
 test('editor trust preflight names current blockers from workspace behavior', async () => {
   const preflight = await importDist('app', 'workspace', 'editor-trust-preflight.js');
@@ -42,8 +54,14 @@ test('editor trust preflight names current blockers from workspace behavior', as
 });
 
 test('editor trust preflight current report stays aligned with Slice 0 findings', async () => {
-  const preflight = await importDist('app', 'workspace', 'editor-trust-preflight.js');
-  const report = preflight.currentEditorTrustPreflightReport();
+  const [preflight, runtimeProbe] = await Promise.all([
+    importDist('app', 'workspace', 'editor-trust-preflight.js'),
+    importDist('app', 'workspace', 'editor-trust-preflight-runtime-probe.js'),
+  ]);
+  const reporter = preflight.createEditorTrustPreflightReporter(
+    runtimeProbe.createEditorTrustPreflightRuntimeProbe(),
+  );
+  const report = await reporter.currentReport();
 
   assert.equal(report.status, 'blocked');
   assert.deepEqual(report.blockers.map((gate) => gate.id), [
@@ -53,10 +71,43 @@ test('editor trust preflight current report stays aligned with Slice 0 findings'
   ]);
 });
 
+test('editor trust preflight gives regressed pass gates blocker text', async () => {
+  const preflight = await importDist('app', 'workspace', 'editor-trust-preflight.js');
+  const report = preflight.createEditorTrustPreflightReport({
+    ...passingObservation(),
+    openUsesProductionAuthority: false,
+    quitRequiresConfirmation: false,
+  });
+
+  const openGate = assertGate(report, GATE_OPEN_EDIT_SAVE_DISK, STATUS_BLOCKED);
+  const quitGate = assertGate(report, GATE_QUIT_CONFIRMATION, STATUS_BLOCKED);
+
+  assert.equal(openGate.summary, BLOCK_OPEN_EDIT_SAVE);
+  assert.equal(openGate.blocker, BLOCK_OPEN_EDIT_SAVE);
+  assert.equal(quitGate.summary, BLOCK_QUIT_CONFIRMATION);
+  assert.equal(quitGate.blocker, BLOCK_QUIT_CONFIRMATION);
+  assert.deepEqual(report.blockers.map((gate) => gate.id), [
+    GATE_OPEN_EDIT_SAVE_DISK,
+    GATE_QUIT_CONFIRMATION,
+  ]);
+});
+
+test('editor trust preflight uses status-aware summaries for passing gates', async () => {
+  const preflight = await importDist('app', 'workspace', 'editor-trust-preflight.js');
+  const report = preflight.createEditorTrustPreflightReport(passingObservation());
+
+  assert.equal(report.status, STATUS_READY);
+  assert.equal(assertGate(report, GATE_DIRTY_QUIT_GUARD, STATUS_PASSED).summary, PASS_DIRTY_QUIT);
+  assert.equal(assertGate(report, GATE_DIRTY_FILE_SWITCH_GUARD, STATUS_PASSED).summary, PASS_DIRTY_SWITCH);
+  assert.equal(assertGate(report, GATE_SEARCH_ENTRY, STATUS_PASSED).summary, PASS_SEARCH_ENTRY);
+  assert.equal(assertGate(report, GATE_SINGLE_BUFFER_POSTURE, STATUS_PASSED).summary, PASS_MULTI_BUFFER);
+  assert.deepEqual(report.blockers, []);
+});
+
 async function observeOpenEditSaveAndQuit() {
   const harness = await createWorkspaceEchoAppHarness({
     readings: ['before edit', 'after edit'],
-    exportText: 'saved from Echo',
+    exportText: SAVED_TEXT,
   });
   await harness.runFirst(await harness.key('enter'));
   harness.setModel({
@@ -85,7 +136,7 @@ async function observeOpenEditSaveAndQuit() {
     openUsesProductionAuthority: harness.calls.open.length === 1,
     editUsesProductionAuthority: harness.calls.insert.length === 1,
     saveExportsProductionText: harness.calls.export.length === 1 && harness.calls.checkpoint.length === 1,
-    diskOutputVerified: savedText(harness) === 'saved from Echo',
+    diskOutputVerified: savedText(harness) === SAVED_TEXT,
     quitRequiresConfirmation,
     forceQuitAvailable,
     dirtyStateTracked: dirtyModel.textAuthority.dirty === true && dirtyModel.editor.dirty === true,
@@ -160,7 +211,7 @@ async function openedEditorHarness() {
 }
 
 function searchEntryAvailable(model) {
-  return model.commandLine.active || model.editor?.lastSearch?.pattern != null;
+  return model.commandLine?.active === true || model.editor?.lastSearch?.pattern != null;
 }
 
 function savedText(harness) {
@@ -181,4 +232,22 @@ function assertGate(report, id, status) {
   const gate = report.gates.find((candidate) => candidate.id === id);
   assert.ok(gate, `missing gate ${id}`);
   assert.equal(gate.status, status);
+  return gate;
+}
+
+function passingObservation() {
+  return {
+    openUsesProductionAuthority: true,
+    editUsesProductionAuthority: true,
+    saveExportsProductionText: true,
+    diskOutputVerified: true,
+    quitRequiresConfirmation: true,
+    forceQuitAvailable: true,
+    dirtyStateTracked: true,
+    dirtyQuitHasDirtySpecificGuard: true,
+    dirtyFileSwitchBlocked: true,
+    slashSearchEntryAvailable: true,
+    questionSearchEntryAvailable: true,
+    hasMultipleOpenBuffers: true,
+  };
 }
