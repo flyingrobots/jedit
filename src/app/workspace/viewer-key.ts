@@ -1,5 +1,4 @@
 import type { Cmd, KeyMsg } from '@flyingrobots/bijou-tui';
-import { hasFocusablePeers } from '../../ui/panel-focus.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import type { ProductionTextSession } from './production-text-session.js';
 import {
@@ -15,23 +14,27 @@ import {
 import { snapshotEditor } from './editor-editing-core.js';
 import { EditorModes, PendingNormals } from './editor/mode.js';
 import { EditorKeys } from './editor/key.js';
-import { focusCycleState } from './focus.js';
 import type { WorkspaceModel } from './model.js';
 import { workspaceSourceHighlightMessage, type WorkspaceMsg } from './msg.js';
 import { ViewModes } from './view-mode.js';
+import {
+  canEditorTabIndent,
+  optimisticProductionInsertMutation,
+} from './workspace-production-optimistic-edit.js';
 import {
   createWorkspaceTextEditCmd,
   createWorkspaceTextReadCmd,
   defaultWorkspaceTextAperture,
   WorkspaceTextEditCommandKinds,
 } from './workspace-text-commands.js';
-import { WorkspaceTextAuthorityKinds } from './workspace-text-authority.js';
 import {
-  planWorkspaceTextBackspace,
+  WorkspaceTextAuthorityKinds,
+  workspaceTextAuthorityWithPendingEdit,
+} from './workspace-text-authority.js';
+import {
   planWorkspaceTextDeleteLine,
   planWorkspaceTextDeleteTransition,
   planWorkspaceTextDeleteUnderCursor,
-  planWorkspaceTextInsert,
   planWorkspaceTextReplaceLine,
   planWorkspaceTextReplaceTransition,
   WorkspaceTextEditPlanKinds,
@@ -40,10 +43,6 @@ import {
   type WorkspaceTextReplacePlan,
   type WorkspaceTextUnsupportedPlan,
 } from './workspace-text-edit-planner.js';
-
-const INSERT_TAB_TEXT = '  ';
-const INSERT_NEWLINE_TEXT = '\n';
-const INSERT_SPACE_TEXT = ' ';
 
 export function updateViewerFromKey(
   msg: KeyMsg,
@@ -68,7 +67,7 @@ export function updateViewerFromKey(
     return productionEdit;
   }
 
-  const canTabIndent = !hasFocusablePeers(focusCycleState(model));
+  const canTabIndent = canEditorTabIndent(model);
   const editor = model.editor.mode === EditorModes.Insert
     ? updateInsertMode(model.editor, msg, {
       viewportWidth: viewport.width,
@@ -179,10 +178,12 @@ function modelWithQueuedNormalEdit(
     ...model,
     editor: {
       ...editor,
+      lines: moved.lines,
       cursorRow: moved.cursorRow,
       cursorCol: moved.cursorCol,
       scrollRow: moved.scrollRow,
       scrollCol: moved.scrollCol,
+      dirty: moved.dirty,
       mode: moved.mode,
       pendingNormal: moved.pendingNormal,
       pendingVimKeys: moved.pendingVimKeys,
@@ -262,36 +263,13 @@ function productionInsertMutation(
   model: WorkspaceModel,
   productionTextSession: ProductionTextSession,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] | undefined {
-  const editor = model.editor;
-  if (editor == null) {
+  const mutation = optimisticProductionInsertMutation(msg, model);
+  if (mutation == null) {
     return undefined;
   }
-  const insertText = insertTextFromKey(msg);
-  if (insertText != null) {
-    return productionInsertText(model, productionTextSession, insertText);
-  }
-  if (msg.key === EditorKeys.Backspace) {
-    return productionBackspace(model, productionTextSession);
-  }
-  return msg.key === EditorKeys.Delete
-    ? productionDeleteUnderCursor(model, productionTextSession)
-    : undefined;
-}
-
-function productionInsertText(
-  model: WorkspaceModel,
-  productionTextSession: ProductionTextSession,
-  insertText: string,
-): [WorkspaceModel, Cmd<WorkspaceMsg>[]] | undefined {
-  const editor = model.editor;
-  if (editor == null) {
-    return undefined;
-  }
-  return queueProductionTextPlan(
-    modelWithProductionUndoSnapshot(model),
-    productionTextSession,
-    planWorkspaceTextInsert(editor, insertText),
-  );
+  return mutation.plan.kind === WorkspaceTextEditPlanKinds.Unsupported
+    ? [mutation.model, []]
+    : queueProductionTextPlan(mutation.model, productionTextSession, mutation.plan);
 }
 
 function productionInsertNavigation(
@@ -307,7 +285,7 @@ function productionInsertNavigation(
   const moved = updateInsertMode(editor, msg, {
     viewportWidth: viewport.width,
     viewportHeight: viewport.height,
-    allowTabIndent: !hasFocusablePeers(focusCycleState(model)),
+    allowTabIndent: canEditorTabIndent(model),
   });
   if (moved.lines !== editor.lines) {
     return [model, []];
@@ -346,20 +324,6 @@ function updateProductionTextView(
       aperture: defaultWorkspaceTextAperture(),
     }),
   ]];
-}
-
-function productionBackspace(
-  model: WorkspaceModel,
-  productionTextSession: ProductionTextSession,
-): [WorkspaceModel, Cmd<WorkspaceMsg>[]] | undefined {
-  const editor = model.editor;
-  if (editor == null) {
-    return undefined;
-  }
-  const plan = planWorkspaceTextBackspace(editor);
-  return plan.kind === WorkspaceTextEditPlanKinds.Unsupported
-    ? [model, []]
-    : queueProductionTextPlan(modelWithProductionUndoSnapshot(model), productionTextSession, plan);
 }
 
 function productionDeleteUnderCursor(
@@ -430,6 +394,7 @@ function queueProductionTextEdit(
   return [{
     ...model,
     textRequestId: requestId,
+    textAuthority: workspaceTextAuthorityWithPendingEdit(model.textAuthority),
   }, [
     createWorkspaceTextEditCmd({
       ...base,
@@ -463,19 +428,3 @@ type WorkspaceTextNormalPlan =
   | WorkspaceTextReplacePlan
   | WorkspaceTextDeletePlan
   | WorkspaceTextUnsupportedPlan;
-
-function insertTextFromKey(msg: KeyMsg): string | undefined {
-  if (msg.ctrl || msg.alt) {
-    return undefined;
-  }
-  if (msg.key === EditorKeys.Enter) {
-    return INSERT_NEWLINE_TEXT;
-  }
-  if (msg.key === EditorKeys.Tab) {
-    return INSERT_TAB_TEXT;
-  }
-  if (msg.key === EditorKeys.Space) {
-    return INSERT_SPACE_TEXT;
-  }
-  return msg.key.length === 1 ? msg.key : undefined;
-}

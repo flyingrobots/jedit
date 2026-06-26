@@ -461,7 +461,8 @@ export function isWorkspaceMarkdownPreviewAvailable(
 
 function displayEditor(model: WorkspaceModel): WorkspaceModel["editor"] {
   return isWorkspaceTextAuthorityOpened(model.textAuthority) &&
-    model.textAuthority.cache != null
+    model.textAuthority.cache != null &&
+    model.textAuthority.dirty !== true
     ? editorFromWorkspaceTextCache(model.textAuthority, model.editor)
     : model.editor;
 }

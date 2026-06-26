@@ -65,6 +65,53 @@ test('real workspace app path advances insert cursor after each echoed character
   assert.doesNotMatch(harness.renderText(), /olleh/);
 });
 
+test('real workspace app path renders rapid inserts before Echo observe resolves', async () => {
+  const harness = await openedHarness({ readings: ['', 'h', 'he', 'hel', 'hell', 'hello'] });
+
+  await harness.key('i');
+  const commands = [];
+  for (const character of ['h', 'e', 'l', 'l', 'o']) {
+    commands.push(...await harness.key(character));
+  }
+
+  assert.equal(harness.calls.insert.length, 0);
+  assert.equal(harness.model.editor.cursorCol, 5);
+  assert.equal(harness.model.textAuthority.dirty, true);
+  assert.match(harness.renderText(), /hello/);
+
+  for (const command of commands) {
+    await command();
+  }
+
+  assert.deepEqual(harness.calls.insert.map((call) => ({
+    startByte: call.startByte,
+    insertText: call.insertText,
+  })), [
+    { startByte: 0, insertText: 'h' },
+    { startByte: 1, insertText: 'e' },
+    { startByte: 2, insertText: 'l' },
+    { startByte: 3, insertText: 'l' },
+    { startByte: 4, insertText: 'o' },
+  ]);
+});
+
+test('real workspace app path keeps optimistic text visible when Echo obstructs an edit', async () => {
+  const harness = await openedHarness({
+    readings: [''],
+    editObstruction: productionTextObstruction('footprint changed'),
+  });
+
+  await harness.key('i');
+  const commands = await harness.key('X', { shift: true });
+  assert.match(harness.renderText(), /X/);
+
+  await harness.runFirst(commands);
+
+  assert.match(harness.renderText(), /X/);
+  assert.equal(harness.model.echoHistory.at(-1).status, 'obstructed');
+  assert.match(harness.model.echoHistory.at(-1).summary, /footprint changed/);
+});
+
 test('real workspace app path inserts canonical spacebar token in insert mode', async () => {
   const harness = await openedHarness({ readings: ['before edit', 'h', 'hi', 'hi ', 'hi x'] });
 

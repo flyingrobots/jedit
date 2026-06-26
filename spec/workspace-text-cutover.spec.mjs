@@ -191,7 +191,7 @@ test("viewer renders production text from reading cache instead of stale editor 
   assert.doesNotMatch(text, /stale local line/);
 });
 
-test("insert and delete keys submit production text edits without local line mutation", async () => {
+test("insert and delete keys submit production text edits with optimistic local projection", async () => {
   const [viewerKey, runtimeModule, modeModule, authority, profile] =
     await Promise.all([
       importDist("app", "workspace", "viewer-key.js"),
@@ -240,6 +240,10 @@ test("insert and delete keys submit production text edits without local line mut
     mockDeps().sourceHighlighter,
     productionTextSession,
   );
+  assert.deepEqual(pendingInsert.editor.lines, ["aXbc"]);
+  assert.equal(pendingInsert.editor.cursorCol, 2);
+  assert.equal(pendingInsert.textAuthority.dirty, true);
+
   const insertMessage = await insertCommands[0]();
   assert.equal(
     insertMessage.result.wscSettlementEnvelope.envelopeId.length,
@@ -310,6 +314,9 @@ test("insert and delete keys submit production text edits without local line mut
     mockDeps().sourceHighlighter,
     productionTextSession,
   );
+  assert.deepEqual(pendingDelete.editor.lines, ["abc"]);
+  assert.equal(pendingDelete.textAuthority.dirty, true);
+
   const deleteMessage = await deleteCommands[0]();
   const [deletedModel] = runtime.update(deleteMessage, pendingDelete);
 
@@ -322,7 +329,7 @@ test("insert and delete keys submit production text edits without local line mut
       atMs: 12,
     },
   ]);
-  assert.deepEqual(deletedModel.editor.lines, ["Xbc"]);
+  assert.deepEqual(deletedModel.editor.lines, ["abc"]);
   assert.equal(deletedModel.textAuthority.lastReceiptId, "receipt:delete");
 
   const backspaceModel = {
@@ -339,6 +346,8 @@ test("insert and delete keys submit production text edits without local line mut
     mockDeps().sourceHighlighter,
     productionTextSession,
   );
+  assert.deepEqual(pendingBackspace.editor.lines, ["bc"]);
+
   const backspaceMessage = await backspaceCommands[0]();
   const [backspacedModel] = runtime.update(backspaceMessage, pendingBackspace);
 
@@ -493,7 +502,7 @@ function editReadingText(index) {
     return "aXbc";
   }
   if (index === 2) {
-    return "Xbc";
+    return "abc";
   }
   return "bc";
 }

@@ -178,6 +178,14 @@ This product lane depends on Echo treating topology changes as causal history.
 The Echo-side owner issue is
 [flyingrobots/echo#604](https://github.com/flyingrobots/echo/issues/604).
 
+## Follow-On Design
+
+- [WF-0122 - Optimistic Strand Worldline Phases](0146-optimistic-strand-worldline-phases.md)
+  narrows the local typing case: rapid user input should render as an
+  optimistic strand braided with the canonical basis, with WAL, pending,
+  admitted, observed, settled, and conflicted phases surfaced in the
+  worldline view.
+
 Jim can prototype UI affordances before the full substrate lands, but it must
 label any missing Echo recovery posture honestly.
 

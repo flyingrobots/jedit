@@ -148,6 +148,7 @@ edits, agent witnesses, structural objects, or user trust.
 | Emacs ideas to steal causally | [`docs/design/0106-emacs-ideas-to-steal-causally.md`](design/0106-emacs-ideas-to-steal-causally.md) |
 | Jim command provenance and `:why` | [`docs/design/0108-causal-command-provenance-surface.md`](design/0108-causal-command-provenance-surface.md) |
 | Strand/braid worldline UX | [`docs/design/0121-strand-braid-worldline-ux.md`](design/0121-strand-braid-worldline-ux.md) |
+| Optimistic strand worldline phases | [`docs/design/0146-optimistic-strand-worldline-phases.md`](design/0146-optimistic-strand-worldline-phases.md) |
 | Title render pipeline | [`docs/design/0107-geordi-raytraced-title-render-pipeline.md`](design/0107-geordi-raytraced-title-render-pipeline.md) |
 
 ## Next Cycle Anchors
@@ -159,6 +160,7 @@ edits, agent witnesses, structural objects, or user trust.
 | WF-0110 | [#132](https://github.com/flyingrobots/jedit/issues/132) | Search Sets And Substitute Strand Preview |
 | WF-0111 | [#133](https://github.com/flyingrobots/jedit/issues/133) | Historical Yank And Register Provenance |
 | WF-0121 | [#153](https://github.com/flyingrobots/jedit/issues/153) | Strand/Braid Worldline UX |
+| WF-0122 | [#158](https://github.com/flyingrobots/jedit/issues/158) | Optimistic Strand Worldline Phases |
 
 ## Active Work
 

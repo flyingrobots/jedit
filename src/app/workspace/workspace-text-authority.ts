@@ -153,6 +153,15 @@ export function workspaceTextAuthorityWithReceipt(
   };
 }
 
+export function workspaceTextAuthorityWithPendingEdit(
+  authority: WorkspaceTextAuthorityOpened,
+): WorkspaceTextAuthorityOpened {
+  return {
+    ...authority,
+    dirty: true,
+  };
+}
+
 export function workspaceTextAuthorityWithCheckpoint(
   authority: WorkspaceTextAuthorityOpened,
   checkpointId: string,
