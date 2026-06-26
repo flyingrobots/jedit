@@ -81,6 +81,9 @@ That loop is tracked as goalposts:
    proofs.
 7. **Agent-Safe Editing**: agents produce accountable proposal strands with
    basis, range, rationale, evidence, and admission paths.
+8. **Strand/Braid Worldline UX**: show when the user or an agent is on main,
+   on a strand, observing history, or previewing a braid, and treat Git plus
+   saved files as on/off ramps rather than live truth.
 
 Immediate order:
 
@@ -106,8 +109,8 @@ Active checklist:
 
 Slice 0 named the current trust blockers before command provenance work:
 
-- Dirty quit needs a dirty-specific guardrail.
-- Dirty file switch needs an unsaved-change guardrail.
+- Dirty quit and dirty file switch need WAL-backed causal recovery posture, not
+  classic dirty-buffer warning semantics.
 - `/` and `?` search entry needs product-complete behavior.
 
 WF-0105 remains the broad Vim/Jim power-move roadmap. Its next slices should be
@@ -144,6 +147,7 @@ edits, agent witnesses, structural objects, or user trust.
 | Vim/Jim power moves | [`docs/design/0105-vim-power-moves-causal-parity.md`](design/0105-vim-power-moves-causal-parity.md) |
 | Emacs ideas to steal causally | [`docs/design/0106-emacs-ideas-to-steal-causally.md`](design/0106-emacs-ideas-to-steal-causally.md) |
 | Jim command provenance and `:why` | [`docs/design/0108-causal-command-provenance-surface.md`](design/0108-causal-command-provenance-surface.md) |
+| Strand/braid worldline UX | [`docs/design/0121-strand-braid-worldline-ux.md`](design/0121-strand-braid-worldline-ux.md) |
 | Title render pipeline | [`docs/design/0107-geordi-raytraced-title-render-pipeline.md`](design/0107-geordi-raytraced-title-render-pipeline.md) |
 
 ## Next Cycle Anchors
@@ -154,6 +158,7 @@ edits, agent witnesses, structural objects, or user trust.
 | WF-0109 | [#134](https://github.com/flyingrobots/jedit/issues/134) | Historical Basis Preview |
 | WF-0110 | [#132](https://github.com/flyingrobots/jedit/issues/132) | Search Sets And Substitute Strand Preview |
 | WF-0111 | [#133](https://github.com/flyingrobots/jedit/issues/133) | Historical Yank And Register Provenance |
+| WF-0121 | [#153](https://github.com/flyingrobots/jedit/issues/153) | Strand/Braid Worldline UX |
 
 ## Active Work
 

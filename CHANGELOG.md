@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added WF-0121 for Strand/Braid Worldline UX, locking in copy-on-write
+  strands, braid preview/admission, TTD observer commands, and agent-isolated
+  proposal strands as the product lane after the current trust/provenance work.
 - Updated the Graft dependency to 0.10.1 so the default Colorful prose
   projection path accepts real `colorful 0.2.1` numeric IR identifiers.
 - Updated the Graft source-highlighter adapter to consume Graft 0.10.0, warm the
