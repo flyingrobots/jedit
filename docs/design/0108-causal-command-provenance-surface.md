@@ -3,11 +3,11 @@ title: "WF-0108 - Jim Command Provenance And :why"
 legend: "WF"
 lane: "design"
 issue: "https://github.com/flyingrobots/jedit/issues/131"
-status: "draft"
+status: "active"
 owners:
   - "@flyingrobots"
 created: "2026-06-13"
-updated: "2026-06-13"
+updated: "2026-06-26"
 ---
 
 # WF-0108 - Jim Command Provenance And :why
@@ -214,6 +214,34 @@ This cycle includes:
 - Optional richer detail rendering behind the `:why` surface.
 - A JSON witness that reports command provenance without terminal scraping.
 - Typed obstruction posture for unsupported, unavailable, or stale-basis cases.
+
+## Slice 0 Editor Trust Gate Preflight
+
+Slice 0 is now recorded by an executable JSON report:
+
+```bash
+npm run build
+node scripts/jedit-editor-trust-preflight.mjs --json
+```
+
+Current passed gates:
+
+- Open, edit, save, and disk output route through production text authority.
+- Plain quit requires confirmation, and forced quit remains explicit.
+
+Current scoped posture:
+
+- The product is currently single-buffer. Multi-buffer behavior is not claimed
+  in this cycle.
+
+Current blockers before Slice 1:
+
+- Dirty quit uses the generic quit confirmation instead of a dirty-specific
+  guardrail.
+- Dirty file switches can start a replacement open before unsaved changes are
+  resolved.
+- `/` and `?` search entry is not product-complete, although repeat-search
+  facts exist for `n` and `N`.
 
 ## Non-Goals
 
@@ -598,7 +626,7 @@ model facts, lower-mode summary, `:why`, JSON witness, and obstruction posture.
 
 ## Implementation Slices
 
-- [ ] Slice 0: Run Editor Trust Gate preflight and record blockers.
+- [x] Slice 0: Run Editor Trust Gate preflight and record blockers.
 - [ ] Slice 1: Define `JeditCommandEvent` model and fixture shape.
 - [ ] Slice 2: Emit provenance for `ciw`, `dw`, `d%`, `gUap`, and `n`/`N`.
 - [ ] Slice 3: Render lower-mode command provenance summary.
@@ -611,7 +639,7 @@ model facts, lower-mode summary, `:why`, JSON witness, and obstruction posture.
 
 Behavior tests required:
 
-- [ ] Trust preflight witness for open/edit/save/quit and disk verification.
+- [x] Trust preflight witness for open/edit/save/quit and disk verification.
 - [ ] Command event model test for stable event fields.
 - [ ] Runtime tests comparing command behavior with emitted provenance facts.
 - [ ] Render test for lower-mode summary at wide and narrow terminal widths.
@@ -637,7 +665,7 @@ Documentation and process tests:
 
 The work is done when:
 
-- [ ] Editor Trust Gate preflight names any blockers before implementation
+- [x] Editor Trust Gate preflight names any blockers before implementation
       proceeds.
 - [ ] At least five representative commands emit stable provenance facts.
 - [ ] Lower-mode summary communicates the last meaningful command without
@@ -656,6 +684,8 @@ Commands expected before PR:
 ```bash
 npm run build
 node --test --test-concurrency=1 \
+  spec/editor-trust-preflight.spec.mjs \
+  spec/editor-trust-preflight-cli.spec.mjs \
   spec/causal-roadmap-signpost.spec.mjs \
   spec/design-cycle-policy.spec.mjs \
   spec/vim-power-parity-matrix.spec.mjs \

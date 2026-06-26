@@ -102,7 +102,13 @@ Active checklist:
 - [x] Triage issue #123.
 - [x] Land WF-0105 search and structural motion parity start.
 - [x] Land causal roadmap signpost pass.
-- [ ] Start WF-0108 Editor Trust Gate preflight.
+- [x] Start WF-0108 Editor Trust Gate preflight.
+
+Slice 0 named the current trust blockers before command provenance work:
+
+- Dirty quit needs a dirty-specific guardrail.
+- Dirty file switch needs an unsaved-change guardrail.
+- `/` and `?` search entry needs product-complete behavior.
 
 WF-0105 remains the broad Vim/Jim power-move roadmap. Its next slices should be
 chosen only when they strengthen provenance, preview, replay, safe destructive
