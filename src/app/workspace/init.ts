@@ -27,6 +27,7 @@ import {
   type JeditWscStartupRecoveryResult,
 } from "../jedit-wsc-startup-recovery.js";
 import { createWorkspaceTextAuthority } from "./workspace-text-authority.js";
+import { emptyWorkspaceBufferRegistry } from "./workspace-buffer-registry.js";
 import {
   initialStartupFileModalState,
   initialWorkspaceCommandLineState,
@@ -67,6 +68,7 @@ export function createInitialModel(
     entries,
     selectedIndex: 0,
     editor: undefined,
+    ...initialBufferRegistryState(),
     textRuntimeProfile,
     textAuthority: createWorkspaceTextAuthority(textRuntimeProfile),
     wscStartupRecovery:
@@ -90,6 +92,13 @@ export function createInitialModel(
     rows,
     ...initialSceneStateFromSnapshot(titleSceneSeed, titleMeshes, snapshot),
     ...initialRuntimeState(nowMs),
+  };
+}
+
+function initialBufferRegistryState() {
+  return {
+    buffers: emptyWorkspaceBufferRegistry(),
+    activeBufferId: undefined,
   };
 }
 

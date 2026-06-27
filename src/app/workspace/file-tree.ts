@@ -1,6 +1,11 @@
-import type { KeyMsg } from '@flyingrobots/bijou-tui';
-import type { FileSystemPort, DirectoryAction } from '../../ports/file-system.js';
-import { DIRECTORY_ACTION_OPEN, DIRECTORY_ACTION_REFRESH, FileEntryKinds } from '../../ports/file-system.js';
+import type { Cmd, KeyMsg } from '@flyingrobots/bijou-tui';
+import {
+  DIRECTORY_ACTION_OPEN,
+  DIRECTORY_ACTION_REFRESH,
+  FileEntryKinds,
+  type DirectoryAction,
+  type FileSystemPort,
+} from '../../ports/file-system.js';
 import type { EditorFilePort } from '../../ports/editor-file.js';
 import type { GraftSessionPort } from '../../ports/graft-session.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
@@ -11,9 +16,7 @@ import { isWorkspaceMarkdownFile } from './editor-session.js';
 import { ViewModes } from './view-mode.js';
 import { FocusPanes } from '../../ui/panel-focus.js';
 import type { WorkspaceModel } from './model.js';
-import { WorkspaceMessageTypes } from './msg.js';
-import type { WorkspaceMsg } from './msg.js';
-import { type Cmd } from '@flyingrobots/bijou-tui';
+import { WorkspaceMessageTypes, type WorkspaceMsg } from './msg.js';
 import type { ProductionTextSession } from './production-text-session.js';
 import { createWorkspaceTextOpenCmd, defaultWorkspaceTextAperture } from './workspace-text-commands.js';
 import { pendingWorkspaceTextOpen } from './workspace-text-authority.js';
@@ -24,6 +27,12 @@ import {
   isWorkspaceRefreshKey,
   isWorkspaceUpKey,
 } from './workspace-key.js';
+import {
+  activateWorkspaceBufferRecord,
+  clearActiveWorkspaceBuffer,
+  findWorkspaceBufferRecordByPath,
+  syncActiveWorkspaceBufferRecord,
+} from './workspace-buffer-registry.js';
 
 export const FILE_TREE_META_MIN = 0;
 
@@ -114,17 +123,18 @@ function openEditorEntry(
   nowMs: () => number,
   deps: UpdateTreeFromKeyDeps,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
-  const requestId = model.textRequestId + 1;
   const atMs = nowMs();
+  const withCurrentBuffer = syncActiveWorkspaceBufferRecord(model);
+  const existingBuffer = findWorkspaceBufferRecordByPath(withCurrentBuffer, path);
+  if (existingBuffer != null) {
+    return [activateWorkspaceBufferRecord(withCurrentBuffer, existingBuffer, atMs), []];
+  }
+  const requestId = model.textRequestId + 1;
   return [withFocusPane({
-    ...model,
+    ...clearActiveWorkspaceBuffer(withCurrentBuffer),
     textRequestId: requestId,
     textAuthority: pendingWorkspaceTextOpen(model.textRuntimeProfile, path, requestId, atMs),
-    editor: undefined,
     viewMode: ViewModes.Source,
-    graftInfo: undefined,
-    graftLoading: false,
-    graftSelectedIndex: 0,
   }, FocusPanes.Editor), [
     createWorkspaceTextOpenCmd({
       requestId,

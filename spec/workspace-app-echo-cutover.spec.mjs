@@ -199,6 +199,144 @@ test('real workspace app path keeps optimistic text visible when Echo obstructs 
   assert.match(harness.model.echoHistory.at(-1).summary, /footprint changed/);
 });
 
+test('workspace buffer registry preserves dirty existing buffers across file switches', async () => {
+  const harness = await twoFileHarness({
+    hostLinesByPath: new Map([
+      ['/repo/a.txt', ['']],
+      ['/repo/b.txt', ['B']],
+    ]),
+    readings: ['', 'A', 'B'],
+  });
+
+  await harness.runFirst(await harness.key('enter'));
+  harness.setModel({
+    ...harness.model,
+    fileDrawerOpen: false,
+    focusPane: 'editor',
+  });
+  await harness.key('i');
+  await harness.runFirst(await harness.key('A', { shift: true }));
+  await openFileDrawerIndex(harness, 1);
+  await harness.runFirst(await harness.key('enter'));
+  await openFileDrawerIndex(harness, 0);
+  const reopenCommands = await harness.key('enter');
+
+  assert.equal(reopenCommands.length, 0);
+  assert.equal(harness.calls.open.length, 2);
+  assert.equal(harness.model.editor.path, '/repo/a.txt');
+  assert.equal(harness.model.editor.lines[0], 'A');
+  assert.equal(harness.model.textAuthority.filePath, '/repo/a.txt');
+  assert.equal(harness.model.textAuthority.dirty, true);
+});
+
+test('workspace buffer registry preserves missing-path unmaterialized buffers across file switches', async () => {
+  const harness = await twoFileHarness({
+    missingPaths: new Set(['/repo/a.txt']),
+    hostLinesByPath: new Map([
+      ['/repo/b.txt', ['B']],
+    ]),
+    readings: ['', 'M', 'B'],
+  });
+
+  await harness.runFirst(await harness.key('enter'));
+  harness.setModel({
+    ...harness.model,
+    fileDrawerOpen: false,
+    focusPane: 'editor',
+  });
+  await harness.key('i');
+  await harness.runFirst(await harness.key('M', { shift: true }));
+  await openFileDrawerIndex(harness, 1);
+  await harness.runFirst(await harness.key('enter'));
+  await openFileDrawerIndex(harness, 0);
+  await harness.key('enter');
+
+  assert.equal(harness.savedFiles.length, 0);
+  assert.equal(harness.model.editor.path, '/repo/a.txt');
+  assert.equal(harness.model.editor.lines[0], 'M');
+  assert.equal(harness.model.textAuthority.hostBasis, 'missing');
+  assert.equal(harness.model.textAuthority.materialization, 'unmaterialized');
+});
+
+test('workspace buffer registry restores accepted Graft and highlight state per buffer', async () => {
+  const sourceHighlight = {
+    path: '/repo/a.txt',
+    partial: false,
+    spans: [],
+  };
+  const graftInfo = {
+    path: '/repo/a.txt',
+    relativePath: 'a.txt',
+    dirty: false,
+    projectionSource: 'saved-file',
+    projectionPosture: 'current',
+    outlineItems: [{
+      kind: 'section',
+      name: 'A',
+      startLine: 1,
+      endLine: 1,
+    }],
+    changeLines: [],
+  };
+  const harness = await twoFileHarness({
+    hostLinesByPath: new Map([
+      ['/repo/a.txt', ['A']],
+      ['/repo/b.txt', ['B']],
+    ]),
+    readings: ['A', 'B'],
+  });
+
+  await harness.runFirst(await harness.key('enter'));
+  harness.setModel({
+    ...harness.model,
+    fileDrawerOpen: false,
+    focusPane: 'editor',
+    sourceHighlight,
+    sourceHighlightLoading: true,
+    graftInfo,
+    graftLoading: true,
+  });
+  await harness.key('escape');
+  await openFileDrawerIndex(harness, 1);
+  await harness.runFirst(await harness.key('enter'));
+  await openFileDrawerIndex(harness, 0);
+  await harness.key('enter');
+
+  assert.equal(harness.model.sourceHighlight, sourceHighlight);
+  assert.equal(harness.model.sourceHighlightLoading, false);
+  assert.equal(harness.model.graftInfo, graftInfo);
+  assert.equal(harness.model.graftLoading, false);
+});
+
+test('edit command for the active buffer reuses the registry record', async () => {
+  const harness = await twoFileHarness({
+    hostLinesByPath: new Map([
+      ['/repo/a.txt', ['A']],
+      ['/repo/b.txt', ['B']],
+    ]),
+    readings: ['A'],
+  });
+
+  await harness.runFirst(await harness.key('enter'));
+  harness.setModel({
+    ...harness.model,
+    fileDrawerOpen: false,
+    focusPane: 'editor',
+    commandLine: {
+      ...harness.model.commandLine,
+      active: true,
+      input: 'edit a.txt',
+      cursorIndex: 'edit a.txt'.length,
+      selectedCompletionIndex: 0,
+    },
+  });
+  const commands = await harness.key('enter');
+
+  assert.equal(commands.length, 0);
+  assert.equal(harness.calls.open.length, 1);
+  assert.equal(harness.model.editor.path, '/repo/a.txt');
+});
+
 test('real workspace app path inserts canonical spacebar token in insert mode', async () => {
   const harness = await openedHarness({ readings: ['before edit', 'h', 'hi', 'hi ', 'hi x'] });
 
@@ -270,6 +408,31 @@ async function openedHarness(options = {}) {
     fileDrawerOpen: false,
   });
   return harness;
+}
+
+async function twoFileHarness(options = {}) {
+  return createWorkspaceEchoAppHarness({
+    filePath: '/repo/a.txt',
+    fileName: 'a.txt',
+    entries: [
+      { kind: 'file', name: 'a.txt', path: '/repo/a.txt' },
+      { kind: 'file', name: 'b.txt', path: '/repo/b.txt' },
+    ],
+    bufferIdByKey: new Map([
+      ['/repo/a.txt', 'buffer:a'],
+      ['/repo/b.txt', 'buffer:b'],
+    ]),
+    ...options,
+  });
+}
+
+async function openFileDrawerIndex(harness, selectedIndex) {
+  harness.setModel({
+    ...harness.model,
+    fileDrawerOpen: true,
+    focusPane: 'files',
+    selectedIndex,
+  });
 }
 
 function echoTextDocument(initialText) {

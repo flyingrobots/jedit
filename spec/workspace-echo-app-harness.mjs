@@ -44,10 +44,7 @@ export async function createWorkspaceEchoAppHarness(options = {}) {
       textRuntimeProfile: profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
     },
     editorFile: {
-      loadEditorFile: (filePath) => ({
-        lines: options.hostLinesByPath?.get(filePath) ?? options.hostLines ?? ['host import'],
-        readOnly: false,
-      }),
+      loadEditorFile: (filePath) => editorFileLoadResult(filePath, options),
       saveEditorFile: (filePath, lines) => {
         savedFiles.push({ filePath, lines });
       },
@@ -107,6 +104,19 @@ export async function createWorkspaceEchoAppHarness(options = {}) {
     renderWorkspaceText() {
       return surfaceText(viewer.renderWorkspace(model));
     },
+  };
+}
+
+function editorFileLoadResult(filePath, options) {
+  if (options.missingPaths?.has(filePath)) {
+    return {
+      kind: 'missing',
+      filePath,
+    };
+  }
+  return {
+    lines: options.hostLinesByPath?.get(filePath) ?? options.hostLines ?? ['host import'],
+    readOnly: false,
   };
 }
 
