@@ -17,6 +17,7 @@ import type { WorkspaceModel } from "./model.js";
 import type { WorkspaceMsg } from "./msg.js";
 import { WorkspaceCommandNames } from "./workspace-command-names.js";
 import { saveWorkspace } from "./workspace-save-key.js";
+import { WorkspaceTextAuthorityKinds } from "./workspace-text-authority.js";
 import { dispatchWorldlineCommand } from "./worldline-command-dispatch.js";
 
 type KeyBindingResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
@@ -106,10 +107,21 @@ function dispatchWriteQuitCommand(
   model: WorkspaceModel,
   context: WorkspaceKeyBindingContext,
 ): KeyBindingResult {
+  const baseModel = closeWorkspaceCommandLine(model);
   const [savedModel, commands] = saveWorkspace(
-    closeWorkspaceCommandLine(model),
+    baseModel,
     context,
   );
+  if (shouldDeferWriteQuit(baseModel, savedModel)) {
+    return [
+      {
+        ...savedModel,
+        quitConfirmOpen: false,
+        quitAfterSaveRequestId: savedModel.textRequestId,
+      },
+      commands,
+    ];
+  }
   return [
     {
       ...savedModel,
@@ -117,6 +129,16 @@ function dispatchWriteQuitCommand(
     },
     commands,
   ];
+}
+
+function shouldDeferWriteQuit(
+  beforeSave: WorkspaceModel,
+  savedModel: WorkspaceModel,
+): boolean {
+  return (
+    savedModel.textAuthority.kind === WorkspaceTextAuthorityKinds.Opened &&
+    savedModel.textRequestId !== beforeSave.textRequestId
+  );
 }
 
 function dispatchWhyCommand(

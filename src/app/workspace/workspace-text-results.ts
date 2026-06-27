@@ -1,4 +1,5 @@
 import type { RuntimeIssue } from '@flyingrobots/bijou-tui';
+import type { EditorFileFingerprint } from '../../ports/editor-file.js';
 import type { JeditWscWorkspaceEnvelope } from '../../ports/jedit-wsc-workspace-store.js';
 import type { TextPosition } from './workspace-text-position.js';
 import type { WorkspaceTextHostBasisKind } from './workspace-text-authority.js';
@@ -28,6 +29,7 @@ export interface WorkspaceTextOpenedResult {
   readonly readOnly: boolean;
   readonly materialization: WorkspaceWorldlineMaterializationKind;
   readonly hostBasis: WorkspaceTextHostBasisKind;
+  readonly hostFingerprint?: EditorFileFingerprint;
   readonly cache: WorkspaceTextReadingCache;
 }
 
@@ -53,6 +55,7 @@ export interface WorkspaceTextExportedResult {
   readonly filePath: string;
   readonly bufferId: string;
   readonly readingId: string;
+  readonly hostFingerprint: EditorFileFingerprint;
 }
 
 export interface WorkspaceTextReadResult {

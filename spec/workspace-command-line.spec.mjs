@@ -10,6 +10,17 @@ import {
   surfaceText,
 } from "./workspace-helpers.mjs";
 
+const HOST_FINGERPRINT_A = Object.freeze({
+  algorithm: "sha256",
+  digest: "host-a",
+  byteLength: 6,
+});
+const HOST_FINGERPRINT_B = Object.freeze({
+  algorithm: "sha256",
+  digest: "host-b",
+  byteLength: 8,
+});
+
 test("colon in normal editor mode enters command-line mode", async () => {
   const [keyBindings, titleScreen, editorMode] = await Promise.all([
     importDist("app", "workspace", "key-bindings.js"),
@@ -529,8 +540,9 @@ test("enter dispatches edit for missing paths as unmaterialized buffers", async 
 });
 
 test("enter dispatches write and wq commands through production save", async () => {
-  const [keyBindings, titleScreen, editorMode, authority] = await Promise.all([
+  const [keyBindings, runtimeModule, titleScreen, editorMode, authority] = await Promise.all([
     importDist("app", "workspace", "key-bindings.js"),
+    importDist("app", "workspace", "runtime.js"),
     importDist("ui", "title-screen.js"),
     importDist("app", "workspace", "editor", "mode.js"),
     importDist("app", "workspace", "workspace-text-authority.js"),
@@ -577,23 +589,141 @@ test("enter dispatches write and wq commands through production save", async () 
     commandDispatchModel(titleScreen, editorMode, authority, "x"),
     context,
   );
-  await writeCommands[0]();
-  await writeCommands[1]();
-  await wqCommands[0]();
-  await wqCommands[1]();
+  assert.equal(writeCommands.length, 1);
+  assert.equal(wqCommands.length, 1);
+  const runtime = runtimeModule.createWorkspaceRuntime(
+    mockRuntime({
+      productionTextSession: context.deps.productionTextSession,
+    }),
+  );
+  const writeExportMessage = await writeCommands[0]();
+  const [writeExported, writeCheckpointCommands] = runtime.update(
+    writeExportMessage,
+    written,
+  );
+  assert.equal(writeCheckpointCommands.length, 1);
+  const writeCheckpointMessage = await writeCheckpointCommands[0]();
+  runtime.update(writeCheckpointMessage, writeExported);
+  const wqExportMessage = await wqCommands[0]();
+  const [wqExported, wqCheckpointCommands] = runtime.update(
+    wqExportMessage,
+    wqModel,
+  );
+  assert.equal(wqCheckpointCommands.length, 1);
+  const wqCheckpointMessage = await wqCheckpointCommands[0]();
+  runtime.update(wqCheckpointMessage, wqExported);
 
   assert.equal(written.commandLine.active, false);
   assert.equal(written.quitConfirmOpen, false);
   assert.equal(written.textRequestId, 1);
   assert.equal(wqModel.commandLine.active, false);
-  assert.equal(wqModel.quitConfirmOpen, true);
+  assert.equal(wqModel.quitConfirmOpen, false);
+  assert.equal(wqModel.quitAfterSaveRequestId, 1);
   assert.equal(wqModel.textRequestId, 1);
+  assert.equal(wqExported.quitConfirmOpen, true);
+  assert.equal(wqExported.quitAfterSaveRequestId, undefined);
   assert.deepEqual(savedFiles, [
     { filePath: "/repo/notes.md", lines: ["alpha", "beta"] },
     { filePath: "/repo/notes.md", lines: ["alpha", "beta"] },
   ]);
   assert.equal(exportCalls.length, 2);
   assert.equal(checkpointCalls.length, 2);
+});
+
+test("blocked production wq remains open with honest materialization status", async () => {
+  const [keyBindings, runtimeModule, titleScreen, editorMode, authority, footerPosture] =
+    await Promise.all([
+      importDist("app", "workspace", "key-bindings.js"),
+      importDist("app", "workspace", "runtime.js"),
+      importDist("ui", "title-screen.js"),
+      importDist("app", "workspace", "editor", "mode.js"),
+      importDist("app", "workspace", "workspace-text-authority.js"),
+      importDist("app", "workspace", "workspace-footer-posture.js"),
+    ]);
+  const savedFiles = [];
+  const exportCalls = [];
+  const checkpointCalls = [];
+  const productionTextSession = fakeProductionTextSession({
+    exportWindow: async (request) => {
+      exportCalls.push(request);
+      return {
+        kind: "exported",
+        text: "alpha\nbeta",
+        readingId: "reading:wq",
+      };
+    },
+    checkpointBuffer: async (request) => {
+      checkpointCalls.push(request);
+      return {
+        kind: "checkpointed",
+        result: { checkpointId: "checkpoint:wq" },
+      };
+    },
+  });
+  const context = mockKeyBindingContext({
+    nowMs: () => 89,
+    deps: {
+      editorFile: {
+        loadEditorFile: () => ({
+          lines: ["external"],
+          readOnly: false,
+          fingerprint: HOST_FINGERPRINT_B,
+        }),
+        saveEditorFile(filePath, lines) {
+          savedFiles.push({ filePath, lines });
+        },
+      },
+      productionTextSession,
+    },
+  });
+  const baseModel = commandDispatchModel(titleScreen, editorMode, authority, "x");
+  const model = {
+    ...baseModel,
+    textAuthority: authority.openedWorkspaceTextAuthority({
+      profile: "echoHosted",
+      filePath: "/repo/notes.md",
+      bufferId: "buffer:notes",
+      readOnly: false,
+      dirty: true,
+      hostFingerprint: HOST_FINGERPRINT_A,
+      cache: {
+        bufferId: "buffer:notes",
+        readingId: "reading:local",
+        lines: ["local draft"],
+        lineCount: 1,
+        cursorLine: 0,
+        viewportLineCount: 24,
+        truncated: false,
+      },
+    }),
+  };
+
+  const [pendingWq, commands] = keyBindings.updateFromKey(
+    { type: "key", key: "enter", ctrl: false, alt: false, shift: false },
+    model,
+    context,
+  );
+  assert.equal(commands.length, 1);
+  assert.equal(pendingWq.quitConfirmOpen, false);
+  assert.equal(pendingWq.quitAfterSaveRequestId, 1);
+  const exportMessage = await commands[0]();
+  const runtime = runtimeModule.createWorkspaceRuntime(
+    mockRuntime({ productionTextSession }),
+  );
+  const [blockedModel] = runtime.update(exportMessage, pendingWq);
+  const footer = footerPosture.workspaceFooterTextPosture(blockedModel);
+
+  assert.equal(exportMessage.result.kind, "obstructed");
+  assert.match(exportMessage.result.issue.message, /changed on disk after open/);
+  assert.deepEqual(exportCalls, []);
+  assert.deepEqual(checkpointCalls, []);
+  assert.deepEqual(savedFiles, []);
+  assert.equal(blockedModel.quitConfirmOpen, false);
+  assert.equal(blockedModel.quitAfterSaveRequestId, undefined);
+  assert.equal(blockedModel.textAuthority.dirty, true);
+  assert.equal(blockedModel.textAuthority.materialization, "unmaterialized");
+  assert.equal(blockedModel.editor.dirty, true);
+  assert.match(footer, /dirty \| main \| fs:unmaterialized/);
 });
 
 test("enter dispatches quit commands through the quit confirmation posture", async () => {

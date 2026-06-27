@@ -1,4 +1,5 @@
 import type { RuntimeIssue } from '@flyingrobots/bijou-tui';
+import type { EditorFileFingerprint } from '../../ports/editor-file.js';
 import type { TextRuntimeProfile } from '../text-runtime-profile.js';
 import type { EditorState } from './editor/model.js';
 import {
@@ -61,6 +62,7 @@ export interface WorkspaceTextAuthorityOpened {
   readonly dirty: boolean;
   readonly materialization: WorkspaceWorldlineMaterializationKind;
   readonly hostBasis: WorkspaceTextHostBasisKind;
+  readonly hostFingerprint?: EditorFileFingerprint;
   readonly cache?: WorkspaceTextReadingCache;
   readonly lastReceiptId?: string;
   readonly lastCheckpointId?: string;
@@ -83,6 +85,7 @@ export interface OpenedWorkspaceTextAuthorityOptions {
   readonly dirty: boolean;
   readonly materialization?: WorkspaceWorldlineMaterializationKind;
   readonly hostBasis?: WorkspaceTextHostBasisKind;
+  readonly hostFingerprint?: EditorFileFingerprint;
   readonly cache?: WorkspaceTextReadingCache;
   readonly lastReceiptId?: string;
   readonly lastCheckpointId?: string;
@@ -133,6 +136,7 @@ export function openedWorkspaceTextAuthority(
     dirty: options.dirty,
     materialization: options.materialization ?? materializationFromOptions(options),
     hostBasis: options.hostBasis ?? WorkspaceTextHostBasisKinds.File,
+    hostFingerprint: options.hostFingerprint,
     cache: options.cache,
     lastReceiptId: options.lastReceiptId,
     lastCheckpointId: options.lastCheckpointId,
@@ -201,11 +205,13 @@ export function workspaceTextAuthorityWithCheckpoint(
 export function workspaceTextAuthorityWithExport(
   authority: WorkspaceTextAuthorityOpened,
   readingId: string,
+  hostFingerprint: EditorFileFingerprint,
 ): WorkspaceTextAuthorityOpened {
   return {
     ...authority,
     dirty: false,
     hostBasis: WorkspaceTextHostBasisKinds.File,
+    hostFingerprint,
     materialization: WorkspaceWorldlineMaterializationKinds.Materialized,
     lastExportReadingId: readingId,
   };

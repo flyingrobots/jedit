@@ -5,7 +5,6 @@ import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 import { WorkspaceKeys } from './workspace-key.js';
 import {
-  createWorkspaceTextCheckpointCmd,
   createWorkspaceTextExportCmd,
   fullWorkspaceTextExportAperture,
 } from './workspace-text-commands.js';
@@ -72,10 +71,10 @@ function saveProductionText(
     createWorkspaceTextExportCmd({
       ...base,
       hostBasis: model.textAuthority.hostBasis,
+      hostFingerprint: model.textAuthority.hostFingerprint,
       editorFile: context.deps.editorFile,
       aperture: fullWorkspaceTextExportAperture(),
     }),
-    createWorkspaceTextCheckpointCmd(base),
   ]];
 }
 

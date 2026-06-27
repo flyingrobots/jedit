@@ -139,8 +139,7 @@ test('real workspace app path saves by exporting and checkpointing production te
   await harness.key('i');
   await harness.runFirst(await harness.key('X', { shift: true }));
   const saveCommands = await harness.key('s', { ctrl: true });
-  await harness.run(saveCommands[0]);
-  await harness.run(saveCommands[1]);
+  await harness.runAll(saveCommands);
 
   assert.deepEqual(harness.savedFiles, [{ filePath: '/repo/notes.md', lines: ['saved from Echo'] }]);
   assert.equal(harness.calls.export.length, 1);

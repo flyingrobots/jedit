@@ -87,6 +87,16 @@ export async function createWorkspaceEchoAppHarness(options = {}) {
       model = nextModel;
       return { message, commands };
     },
+    async runAll(commands) {
+      const results = [];
+      let pending = [...commands];
+      while (pending.length > 0) {
+        const result = await this.run(pending[0]);
+        results.push(result);
+        pending = [...pending.slice(1), ...result.commands];
+      }
+      return results;
+    },
     async runFirst(commands) {
       assert.ok(commands[0], 'expected command');
       return this.run(commands[0]);

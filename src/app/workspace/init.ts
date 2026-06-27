@@ -119,6 +119,7 @@ function initialSettingsState() {
 function initialShellState() {
   return {
     quitConfirmOpen: false,
+    quitAfterSaveRequestId: undefined,
   };
 }
 

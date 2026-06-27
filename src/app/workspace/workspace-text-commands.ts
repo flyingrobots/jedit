@@ -1,5 +1,6 @@
 import type { Cmd, RuntimeIssue } from '@flyingrobots/bijou-tui';
-import { isMissingEditorFile, type EditorFilePort } from '../../ports/editor-file.js';
+import type { EditorFileFingerprint, EditorFilePort } from '../../ports/editor-file.js';
+import { editorFileFingerprintFromText } from '../../ports/editor-file-fingerprint.js';
 import { joinLines, normalizeLines } from '../editor-lines.js';
 import type {
   ProductionTextSession,
@@ -18,15 +19,14 @@ import {
   type WorkspaceTextOpenResult,
   type WorkspaceTextReadCommandResult,
 } from './workspace-text-results.js';
+import type { WorkspaceTextHostBasisKind } from './workspace-text-authority.js';
+import { materializationPreflightIssue } from './workspace-text-materialization-preflight.js';
 import {
-  WorkspaceTextHostBasisKinds,
-  type WorkspaceTextHostBasisKind,
-} from './workspace-text-authority.js';
+  WorkspaceTextOpenBasisResultKinds,
+  workspaceTextOpenBasis,
+  type WorkspaceTextOpenBasis,
+} from './workspace-text-open-basis.js';
 import { createWorkspaceTextEditSettlementEnvelope } from './workspace-text-wsc-settlement.js';
-import {
-  WorkspaceWorldlineMaterializationKinds,
-  type WorkspaceWorldlineMaterializationKind,
-} from './worldline-types.js';
 
 const ISSUE_LEVEL_ERROR = RuntimeIssueLevels.Error;
 const ISSUE_SOURCE_COMMAND = RuntimeIssueSources.Command;
@@ -34,7 +34,6 @@ const OPEN_FAILURE_PREFIX = 'Text open failed';
 const EDIT_FAILURE_PREFIX = 'Text edit failed';
 const CHECKPOINT_FAILURE_PREFIX = 'Text checkpoint failed';
 const EXPORT_FAILURE_PREFIX = 'Text export failed';
-const EXPORT_COLLISION_PREFIX = 'Text export blocked';
 const READ_FAILURE_PREFIX = 'Text read failed';
 const CHECKPOINT_LABEL = 'interactive workspace save';
 const EDIT_COMMAND_INSERT = 'insert';
@@ -50,14 +49,6 @@ const FULL_EXPORT_BEFORE_LINES = 0;
 const FULL_EXPORT_AFTER_LINES = 0;
 const FULL_EXPORT_VIEWPORT_LINE_COUNT = Number.MAX_SAFE_INTEGER;
 const FULL_EXPORT_MAX_BYTES = Number.MAX_SAFE_INTEGER;
-const EMPTY_INITIAL_TEXT = '';
-
-interface WorkspaceTextOpenBasis {
-  readonly initialText: string;
-  readonly readOnly: boolean;
-  readonly materialization: WorkspaceWorldlineMaterializationKind;
-  readonly hostBasis: WorkspaceTextHostBasisKind;
-}
 
 export const WorkspaceTextEditCommandKinds = Object.freeze({
   Insert: EDIT_COMMAND_INSERT,
@@ -121,6 +112,7 @@ export interface WorkspaceTextExportCommandRequest {
   readonly filePath: string;
   readonly bufferId: string;
   readonly hostBasis: WorkspaceTextHostBasisKind;
+  readonly hostFingerprint?: EditorFileFingerprint;
   readonly editorFile: EditorFilePort;
   readonly productionTextSession: ProductionTextSession;
   readonly atMs: number;
@@ -219,7 +211,11 @@ async function openWorkspaceText(
   request: WorkspaceTextOpenCommandRequest,
 ): Promise<WorkspaceTextOpenResult> {
   try {
-    const basis = workspaceTextOpenBasis(request);
+    const basisResult = workspaceTextOpenBasis(request);
+    if (basisResult.kind === WorkspaceTextOpenBasisResultKinds.Obstructed) {
+      return obstructedOpen(request.filePath, basisResult.issue);
+    }
+    const basis = basisResult.basis;
     const opened = await request.productionTextSession.openBuffer({
       bufferKey: request.filePath,
       initialText: basis.initialText,
@@ -237,15 +233,12 @@ async function openWorkspaceText(
     if (observed.kind === ProductionTextSessionOutcomeKinds.Obstructed) {
       return obstructedOpen(request.filePath, observed.obstruction.issue);
     }
-    return {
-      kind: WorkspaceTextResultKinds.Opened,
-      filePath: request.filePath,
-      bufferId: opened.optic.buffer.bufferId,
-      readOnly: basis.readOnly,
-      materialization: basis.materialization,
-      hostBasis: basis.hostBasis,
-      cache: readingCache(opened.optic.buffer.bufferId, observed.observed.value),
-    };
+    return openedTextResult(
+      request,
+      basis,
+      opened.optic.buffer.bufferId,
+      observed.observed.value,
+    );
   } catch (cause) {
     return obstructedOpen(
       request.filePath,
@@ -254,23 +247,22 @@ async function openWorkspaceText(
   }
 }
 
-function workspaceTextOpenBasis(
+function openedTextResult(
   request: WorkspaceTextOpenCommandRequest,
-): WorkspaceTextOpenBasis {
-  const loaded = request.editorFile.loadEditorFile(request.filePath);
-  return isMissingEditorFile(loaded)
-    ? {
-        initialText: EMPTY_INITIAL_TEXT,
-        readOnly: false,
-        materialization: WorkspaceWorldlineMaterializationKinds.Unmaterialized,
-        hostBasis: WorkspaceTextHostBasisKinds.Missing,
-      }
-    : {
-        initialText: joinLines(loaded.lines),
-        readOnly: loaded.readOnly,
-        materialization: WorkspaceWorldlineMaterializationKinds.Materialized,
-        hostBasis: WorkspaceTextHostBasisKinds.File,
-      };
+  basis: WorkspaceTextOpenBasis,
+  bufferId: string,
+  reading: WorkspaceTextObservedReading,
+): WorkspaceTextOpenResult {
+  return {
+    kind: WorkspaceTextResultKinds.Opened,
+    filePath: request.filePath,
+    bufferId,
+    readOnly: basis.readOnly,
+    materialization: basis.materialization,
+    hostBasis: basis.hostBasis,
+    hostFingerprint: basis.hostFingerprint,
+    cache: readingCache(bufferId, reading),
+  };
 }
 
 async function editWorkspaceText(
@@ -363,6 +355,10 @@ async function exportWorkspaceText(
   request: WorkspaceTextExportCommandRequest,
 ): Promise<WorkspaceTextExportResult> {
   try {
+    const preflightIssue = materializationPreflightIssue(request);
+    if (preflightIssue != null) {
+      return obstructedExport(request.filePath, preflightIssue);
+    }
     const exported = await request.productionTextSession.exportWindow({
       bufferId: request.bufferId,
       aperture: request.aperture,
@@ -371,16 +367,14 @@ async function exportWorkspaceText(
     if (exported.kind === ProductionTextSessionOutcomeKinds.Obstructed) {
       return obstructedExport(request.filePath, exported.obstruction.issue);
     }
-    const collision = materializationCollision(request);
-    if (collision != null) {
-      return obstructedExport(request.filePath, collision);
-    }
-    request.editorFile.saveEditorFile(request.filePath, normalizeLines(exported.text));
+    const savedLines = normalizeLines(exported.text);
+    request.editorFile.saveEditorFile(request.filePath, savedLines);
     return {
       kind: WorkspaceTextResultKinds.Exported,
       filePath: request.filePath,
       bufferId: request.bufferId,
       readingId: exported.readingId,
+      hostFingerprint: editorFileFingerprintFromText(joinLines(savedLines)),
     };
   } catch (cause) {
     return obstructedExport(
@@ -388,18 +382,6 @@ async function exportWorkspaceText(
       runtimeIssue(`${EXPORT_FAILURE_PREFIX}: ${cause instanceof Error ? cause.message : String(cause)}`, request.atMs),
     );
   }
-}
-
-function materializationCollision(
-  request: WorkspaceTextExportCommandRequest,
-): RuntimeIssue | undefined {
-  if (request.hostBasis !== WorkspaceTextHostBasisKinds.Missing) {
-    return undefined;
-  }
-  const observed = request.editorFile.loadEditorFile(request.filePath);
-  return isMissingEditorFile(observed)
-    ? undefined
-    : runtimeIssue(`${EXPORT_COLLISION_PREFIX}: ${request.filePath} appeared on disk after open`, request.atMs);
 }
 
 async function readWorkspaceText(

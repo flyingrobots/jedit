@@ -4,7 +4,11 @@ import type { Cmd } from '@flyingrobots/bijou-tui';
 import type { WorkspaceModel } from './model.js';
 import { WorkspaceMessageTypes, workspaceSourceHighlightMessage, type WorkspaceMsg } from './msg.js';
 import type { EditorState } from './editor/model.js';
-import { isMissingEditorFile, type EditorFilePort } from '../../ports/editor-file.js';
+import {
+  isLoadedEditorFile,
+  isMissingEditorFile,
+  type EditorFilePort,
+} from '../../ports/editor-file.js';
 import type { GraftSessionPort } from '../../ports/graft-session.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import { isMarkdownFile } from './file-types.js';
@@ -45,6 +49,9 @@ export function loadEditor(filePath: string, editorFile: EditorFilePort): Editor
     if (isMissingEditorFile(file)) {
       return emptyEditor(filePath);
     }
+    if (!isLoadedEditorFile(file)) {
+      return readOnlyErrorEditor(filePath, file.kind);
+    }
 
     return ensureEditorVisible({
       path: filePath,
@@ -60,20 +67,24 @@ export function loadEditor(filePath: string, editorFile: EditorFilePort): Editor
       redoStack: [],
     }, INITIAL_EDITOR_VIEWPORT_WIDTH, INITIAL_EDITOR_VIEWPORT_HEIGHT);
   } catch (error) {
-    return {
-      path: filePath,
-      lines: [String(error)],
-      cursorRow: 0,
-      cursorCol: 0,
-      scrollRow: 0,
-      scrollCol: 0,
-      dirty: false,
-      readOnly: true,
-      mode: EditorModes.Normal,
-      undoStack: [],
-      redoStack: [],
-    };
+    return readOnlyErrorEditor(filePath, String(error));
   }
+}
+
+function readOnlyErrorEditor(filePath: string, message: string): EditorState {
+  return {
+    path: filePath,
+    lines: [message],
+    cursorRow: 0,
+    cursorCol: 0,
+    scrollRow: 0,
+    scrollCol: 0,
+    dirty: false,
+    readOnly: true,
+    mode: EditorModes.Normal,
+    undoStack: [],
+    redoStack: [],
+  };
 }
 
 function emptyEditor(filePath: string): EditorState {

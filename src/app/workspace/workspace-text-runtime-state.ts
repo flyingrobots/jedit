@@ -28,6 +28,7 @@ import {
   type WorkspaceTextAppliedResult,
   type WorkspaceTextOpenedResult,
 } from './workspace-text-results.js';
+import { createWorkspaceTextCheckpointCmd } from './workspace-text-commands.js';
 import type { TextPosition } from './workspace-text-position.js';
 import {
   JEDIT_WSC_WORKSPACE_STORE_STATUS,
@@ -38,6 +39,12 @@ export type WorkspaceRuntimeResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 const WSC_SETTLEMENT_OBSTRUCTION_PREFIX = 'WSC edit settlement failed';
 const ISSUE_LEVEL_ERROR = 'error';
 const ISSUE_SOURCE_COMMAND = 'command';
+
+interface TextExportCheckpointRequest {
+  readonly requestId: number;
+  readonly filePath: string;
+  readonly bufferId: string;
+}
 
 export function applyWorkspaceTextMessage(
   deps: WorkspaceRuntimeDependencies,
@@ -113,6 +120,7 @@ function openedTextModel(
     dirty: false,
     materialization: result.materialization,
     hostBasis: result.hostBasis,
+    hostFingerprint: result.hostFingerprint,
     cache: result.cache,
   });
   return {
@@ -250,18 +258,34 @@ function applyTextExportResult(
   }
   if (msg.result.kind === WorkspaceTextResultKinds.Obstructed) {
     return pushRuntimeIssueToast(
-      withEchoHistoryEntry(model, obstructedHistoryEntry(EchoHistoryEntryKinds.Export, msg.result.filePath, msg.result.issue)),
+      withEchoHistoryEntry(
+        { ...model, quitAfterSaveRequestId: undefined },
+        obstructedHistoryEntry(EchoHistoryEntryKinds.Export, msg.result.filePath, msg.result.issue),
+      ),
       msg.result.issue,
       deps.createNotificationTickCmd,
     );
   }
-  const textAuthority = workspaceTextAuthorityWithExport(authority, msg.result.readingId);
-  return [withEchoHistoryEntry(withTextAuthority(model, textAuthority), {
+  const textAuthority = workspaceTextAuthorityWithExport(
+    authority,
+    msg.result.readingId,
+    msg.result.hostFingerprint,
+  );
+  const exported = withTextAuthority({
+    ...model,
+    quitAfterSaveRequestId: undefined,
+    quitConfirmOpen: shouldOpenQuitAfterExport(model, msg.requestId),
+  }, textAuthority);
+  return [withEchoHistoryEntry(exported, {
     kind: EchoHistoryEntryKinds.Export,
     status: EchoHistoryEntryStatuses.Exported,
     evidenceId: msg.result.readingId,
     summary: msg.result.filePath,
-  }), []];
+  }), [exportCheckpointCommand(deps, {
+    requestId: msg.requestId,
+    filePath: msg.result.filePath,
+    bufferId: msg.result.bufferId,
+  })]];
 }
 
 function applyTextReadResult(
@@ -337,4 +361,21 @@ function obstructedHistoryEntry(
 
 function shouldRefreshGraftAfterTextChange(model: WorkspaceModel): boolean {
   return model.graftDrawerOpen || model.graftInfo?.path === model.editor?.path;
+}
+
+function shouldOpenQuitAfterExport(model: WorkspaceModel, requestId: number): boolean {
+  return model.quitConfirmOpen || model.quitAfterSaveRequestId === requestId;
+}
+
+function exportCheckpointCommand(
+  deps: WorkspaceRuntimeDependencies,
+  request: TextExportCheckpointRequest,
+): Cmd<WorkspaceMsg> {
+  return createWorkspaceTextCheckpointCmd({
+    requestId: request.requestId,
+    filePath: request.filePath,
+    bufferId: request.bufferId,
+    productionTextSession: deps.productionTextSession,
+    atMs: deps.nowMs(),
+  });
 }

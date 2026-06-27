@@ -344,6 +344,7 @@ export function mockTitleScreenModel(titleScreen, overrides = {}) {
     notifications: createNotificationState(),
     notificationLoopActive: false,
     quitConfirmOpen: false,
+    quitAfterSaveRequestId: undefined,
     commandLine: {
       active: false,
       input: "",

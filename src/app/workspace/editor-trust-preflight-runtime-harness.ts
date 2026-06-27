@@ -10,6 +10,7 @@ import type { WorkspaceMsg } from './msg.js';
 import {
   PREFLIGHT_FIRST_INDEX,
   PREFLIGHT_NOW_MS,
+  PREFLIGHT_ONE,
   createPreflightProductionTextCalls,
   createPreflightRuntimeDependencies,
   type PreflightProductionTextCalls,
@@ -53,6 +54,9 @@ export interface PreflightRuntimeHarness {
   readonly runFirst: (
     commands: WorkspaceRuntimeResult[1],
   ) => Promise<WorkspaceRuntimeResult[1]>;
+  readonly runAll: (
+    commands: WorkspaceRuntimeResult[1],
+  ) => Promise<WorkspaceRuntimeResult[1]>;
 }
 
 type WorkspaceCommand = WorkspaceRuntimeResult[1][number];
@@ -77,6 +81,7 @@ export function createPreflightRuntimeHarness(
     key: (key, modifiers = {}) => updateHarnessKey(state, key, modifiers),
     run: (command) => runHarnessCommand(state, command),
     runFirst: (commands) => runFirstHarnessCommand(state, commands),
+    runAll: (commands) => runAllHarnessCommands(state, commands),
   };
 }
 
@@ -204,4 +209,17 @@ async function runFirstHarnessCommand(
 ): Promise<WorkspaceRuntimeResult[1]> {
   const command = commands[PREFLIGHT_FIRST_INDEX];
   return command == null ? [] : runHarnessCommand(state, command);
+}
+
+async function runAllHarnessCommands(
+  state: PreflightRuntimeHarnessState,
+  commands: WorkspaceRuntimeResult[1],
+): Promise<WorkspaceRuntimeResult[1]> {
+  let pending = [...commands];
+  let nextCommands: WorkspaceRuntimeResult[1] = [];
+  while (pending.length > 0) {
+    nextCommands = await runFirstHarnessCommand(state, pending);
+    pending = [...pending.slice(PREFLIGHT_ONE), ...nextCommands];
+  }
+  return nextCommands;
 }

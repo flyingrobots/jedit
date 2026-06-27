@@ -7,7 +7,7 @@ status: "proposed"
 owners:
   - "@flyingrobots"
 created: "2026-06-26"
-updated: "2026-06-26"
+updated: "2026-06-27"
 ---
 
 # WF-0122 - Optimistic Strand Worldline Phases
@@ -206,6 +206,45 @@ The smallest typing-latency improvement should stay aligned with this model:
    observe/materialization completes.
 
 This slice can be implemented before the full worldline graph exists.
+
+## Architecture Correction: Speculation Belongs To Echo
+
+Jim/JEDIT must not own a fake pre-Echo predictive strand as durable truth.
+JEDIT may render keystrokes immediately, but the causal runtime underneath that
+projection must be Echo-owned speculative intent state. The UI should render
+projection/status facts; it should not invent an app-local worldline that can
+silently diverge from Echo.
+
+The future Echo client runtime should expose speculative causal intents with
+receipt/status evidence. Useful intent statuses include:
+
+- `predicted`;
+- `submitted`;
+- `admitted`;
+- `rebased`;
+- `blocked`;
+- `obstructed`;
+- `superseded`;
+- `abandoned`.
+
+Useful projection labels include:
+
+- `canonical`;
+- `session`;
+- `speculative`;
+- `braid`;
+- `obstructed`.
+
+If one predicted intent obstructs, dependent later intents become blocked,
+rebased, superseded, or abandoned through explicit causal records. They must
+not disappear through silent rollback. JEDIT can still draw the visible text
+quickly, but each rendered speculative edge should have an Echo receipt,
+request id, or obstruction status once the runtime can supply it.
+
+This document records the doctrine only. The WF-0123 hardening slice does not
+implement full Echo predictive runtime, full braid resolution, watcher intake,
+or conflict UI. It prevents JEDIT from cementing the wrong abstraction while
+the save/materialization path is made safe.
 
 ## Non-Goals
 
