@@ -30,15 +30,18 @@ import {
   type WorkspaceTextAppliedResult,
   type WorkspaceTextOpenedResult,
 } from './workspace-text-results.js';
+import {
+  shouldIgnoreTextEditObstruction,
+  textCheckpointResultTargetsAuthority,
+  textEditResultBlockedByEarlierObstruction,
+  textEditResultTargetsAuthority,
+  textExportResultTargetsAuthority,
+  textReadResultTargetsAuthority,
+} from './workspace-text-result-guards.js';
 import { createWorkspaceTextCheckpointCmd } from './workspace-text-commands.js';
 import type { TextPosition } from './workspace-text-position.js';
-import {
-  canReadingReplaceWholeEditor,
-  editorFromWorkspaceTextLines,
-} from './workspace-text-reading-cache.js';
-import {
-  JEDIT_WSC_WORKSPACE_STORE_STATUS,
-} from '../../ports/jedit-wsc-workspace-store.js';
+import { canReadingReplaceWholeEditor, editorFromWorkspaceTextLines } from './workspace-text-reading-cache.js';
+import { JEDIT_WSC_WORKSPACE_STORE_STATUS } from '../../ports/jedit-wsc-workspace-store.js';
 
 export type WorkspaceRuntimeResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 
@@ -157,16 +160,31 @@ function applyTextEditResult(
   if (authority.kind !== WorkspaceTextAuthorityKinds.Opened) {
     return [model, []];
   }
+  if (!textEditResultTargetsAuthority(authority, msg.result)) {
+    return [model, []];
+  }
   if (msg.result.kind === WorkspaceTextResultKinds.Obstructed) {
-    return msg.requestId > model.textRequestId
+    return shouldIgnoreTextEditObstruction(authority, msg.requestId, model.textRequestId)
       ? [model, []]
       : applyTextEditObstruction(deps, msg, model, authority);
   }
   if (msg.requestId !== model.textRequestId) {
     return [model, []];
   }
-  if (intentBlockedByEarlierObstruction(authority, msg.requestId)) {
+  if (textEditResultBlockedByEarlierObstruction(authority, msg.requestId)) {
     return applyBlockedDependentTextEdit(deps, msg, model, authority);
+  }
+  return applyAppliedTextEditResult(deps, msg, model, authority);
+}
+
+function applyAppliedTextEditResult(
+  deps: WorkspaceRuntimeDependencies,
+  msg: Extract<WorkspaceMsg, { type: typeof WorkspaceMessageTypes.TextEditResult }>,
+  model: WorkspaceModel,
+  authority: Extract<WorkspaceModel['textAuthority'], { kind: typeof WorkspaceTextAuthorityKinds.Opened }>,
+): WorkspaceRuntimeResult {
+  if (msg.result.kind !== WorkspaceTextResultKinds.Applied) {
+    return [model, []];
   }
   const withCache = workspaceTextAuthorityWithCache(
     workspaceTextAuthorityWithReceipt(authority, msg.result.receiptId),
@@ -207,13 +225,6 @@ function applyTextEditObstruction(
     msg.result.issue,
     deps.createNotificationTickCmd,
   );
-}
-
-function intentBlockedByEarlierObstruction(
-  authority: Extract<WorkspaceModel['textAuthority'], { kind: typeof WorkspaceTextAuthorityKinds.Opened }>,
-  requestId: number,
-): boolean {
-  return authority.blockedByClientSeq != null && requestId > authority.blockedByClientSeq;
 }
 
 function applyBlockedDependentTextEdit(
@@ -310,7 +321,11 @@ function applyTextCheckpointResult(
   model: WorkspaceModel,
 ): WorkspaceRuntimeResult {
   const authority = model.textAuthority;
-  if (authority.kind !== WorkspaceTextAuthorityKinds.Opened || msg.requestId !== model.textRequestId) {
+  if (
+    authority.kind !== WorkspaceTextAuthorityKinds.Opened ||
+    msg.requestId !== model.textRequestId ||
+    !textCheckpointResultTargetsAuthority(authority, msg.result)
+  ) {
     return [model, []];
   }
   if (msg.result.kind === WorkspaceTextResultKinds.Obstructed) {
@@ -335,39 +350,29 @@ function applyTextExportResult(
   model: WorkspaceModel,
 ): WorkspaceRuntimeResult {
   const authority = model.textAuthority;
-  if (authority.kind !== WorkspaceTextAuthorityKinds.Opened || msg.requestId !== model.textRequestId) {
+  if (
+    authority.kind !== WorkspaceTextAuthorityKinds.Opened ||
+    msg.requestId !== model.textRequestId ||
+    !textExportResultTargetsAuthority(authority, msg.result)
+  ) {
     return [model, []];
   }
   if (msg.result.kind === WorkspaceTextResultKinds.Obstructed) {
-    return pushRuntimeIssueToast(
-      withEchoHistoryEntry(
-        { ...model, quitAfterSaveRequestId: undefined },
-        obstructedHistoryEntry(EchoHistoryEntryKinds.Export, msg.result.filePath, msg.result.issue),
-      ),
-      msg.result.issue,
-      deps.createNotificationTickCmd,
+    const obstructed = withEchoHistoryEntry(
+      { ...model, quitAfterSaveRequestId: undefined },
+      obstructedHistoryEntry(EchoHistoryEntryKinds.Export, msg.result.filePath, msg.result.issue),
     );
+    return pushRuntimeIssueToast(obstructed, msg.result.issue, deps.createNotificationTickCmd);
   }
-  const textAuthority = workspaceTextAuthorityWithExport(
-    authority,
-    msg.result.readingId,
-    msg.result.hostFingerprint,
-  );
+  const textAuthority = workspaceTextAuthorityWithExport(authority, msg.result.readingId, msg.result.hostFingerprint);
   const exported = withTextAuthority({
-    ...model,
-    quitAfterSaveRequestId: undefined,
-    quitConfirmOpen: shouldOpenQuitAfterExport(model, msg.requestId),
+    ...model, quitAfterSaveRequestId: undefined, quitConfirmOpen: shouldOpenQuitAfterExport(model, msg.requestId),
   }, textAuthority);
-  return [withEchoHistoryEntry(exported, {
-    kind: EchoHistoryEntryKinds.Export,
-    status: EchoHistoryEntryStatuses.Exported,
-    evidenceId: msg.result.readingId,
-    summary: msg.result.filePath,
-  }), [exportCheckpointCommand(deps, {
-    requestId: msg.requestId,
-    filePath: msg.result.filePath,
-    bufferId: msg.result.bufferId,
-  })]];
+  const history = withEchoHistoryEntry(exported, {
+    kind: EchoHistoryEntryKinds.Export, status: EchoHistoryEntryStatuses.Exported, evidenceId: msg.result.readingId, summary: msg.result.filePath,
+  });
+  const checkpoint = exportCheckpointCommand(deps, { requestId: msg.requestId, filePath: msg.result.filePath, bufferId: msg.result.bufferId });
+  return [history, [checkpoint]];
 }
 
 function applyTextReadResult(
@@ -376,7 +381,11 @@ function applyTextReadResult(
   model: WorkspaceModel,
 ): WorkspaceRuntimeResult {
   const authority = model.textAuthority;
-  if (authority.kind !== WorkspaceTextAuthorityKinds.Opened || msg.requestId !== model.textRequestId) {
+  if (
+    authority.kind !== WorkspaceTextAuthorityKinds.Opened ||
+    msg.requestId !== model.textRequestId ||
+    !textReadResultTargetsAuthority(authority, msg.result)
+  ) {
     return [model, []];
   }
   if (msg.result.kind === WorkspaceTextResultKinds.Obstructed) {

@@ -726,6 +726,57 @@ test("blocked production wq remains open with honest materialization status", as
   assert.match(footer, /dirty \| main \| fs:unmaterialized/);
 });
 
+test("pending production intent blocks wq without arming quit confirmation", async () => {
+  const [keyBindings, titleScreen, editorMode, authority] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "workspace-text-authority.js"),
+  ]);
+  const exportCalls = [];
+  const context = mockKeyBindingContext({
+    nowMs: () => 90,
+    deps: {
+      productionTextSession: fakeProductionTextSession({
+        exportSnapshot: async (request) => {
+          exportCalls.push(request);
+          return {
+            kind: "exported",
+            text: "stale",
+            readingId: "reading:stale",
+          };
+        },
+      }),
+    },
+  });
+  const baseModel = commandDispatchModel(titleScreen, editorMode, authority, "x");
+  const model = {
+    ...baseModel,
+    textRequestId: 4,
+    textAuthority: authority.openedWorkspaceTextAuthority({
+      profile: "echoHosted",
+      filePath: "/repo/notes.md",
+      bufferId: "buffer:notes",
+      readOnly: false,
+      dirty: true,
+      pendingClientSeq: 4,
+      pendingIntentStatus: authority.WorkspaceTextIntentStatuses.Predicted,
+    }),
+  };
+
+  const [blockedModel, commands] = keyBindings.updateFromKey(
+    { type: "key", key: "enter", ctrl: false, alt: false, shift: false },
+    model,
+    context,
+  );
+
+  assert.equal(blockedModel.textRequestId, 4);
+  assert.equal(blockedModel.quitConfirmOpen, false);
+  assert.equal(blockedModel.quitAfterSaveRequestId, undefined);
+  assert.equal(commands.length, 1);
+  assert.equal(exportCalls.length, 0);
+});
+
 test("enter dispatches quit commands through the quit confirmation posture", async () => {
   const [keyBindings, titleScreen, editorMode] = await Promise.all([
     importDist("app", "workspace", "key-bindings.js"),

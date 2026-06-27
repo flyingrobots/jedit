@@ -16,7 +16,10 @@ import type { WorkspaceKeyBindingContext } from "./key-binding-context.js";
 import type { WorkspaceModel } from "./model.js";
 import type { WorkspaceMsg } from "./msg.js";
 import { WorkspaceCommandNames } from "./workspace-command-names.js";
-import { saveWorkspace } from "./workspace-save-key.js";
+import {
+  hasUnresolvedProductionTextIntent,
+  saveWorkspace,
+} from "./workspace-save-key.js";
 import { WorkspaceTextAuthorityKinds } from "./workspace-text-authority.js";
 import { dispatchWorldlineCommand } from "./worldline-command-dispatch.js";
 
@@ -108,10 +111,14 @@ function dispatchWriteQuitCommand(
   context: WorkspaceKeyBindingContext,
 ): KeyBindingResult {
   const baseModel = closeWorkspaceCommandLine(model);
+  const blocksQuit = hasUnresolvedProductionTextIntent(baseModel);
   const [savedModel, commands] = saveWorkspace(
     baseModel,
     context,
   );
+  if (blocksQuit) {
+    return [savedModel, commands];
+  }
   if (shouldDeferWriteQuit(baseModel, savedModel)) {
     return [
       {

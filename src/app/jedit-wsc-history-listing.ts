@@ -40,6 +40,7 @@ const SORT_AFTER = 1;
 const SHA256_ALGORITHM = 'sha256';
 const HEX_ENCODING = 'hex';
 const MISSING_TIMESTAMP_SORT = Number.MAX_SAFE_INTEGER;
+const READING_COVERAGE_FULL = 'full';
 
 interface JeditWscHistoryRecordDraft {
   readonly basisId: string;
@@ -167,6 +168,7 @@ function appliedRecord(
   payload: JeditWscHistoryEnvelopePayload,
 ): JeditWscHistoryRecordDraft {
   const readingId = payload.reading?.readingId;
+  const readingCoverage = payload.reading?.coverage;
   return {
     basisId: envelopeId,
     envelopeId,
@@ -174,14 +176,14 @@ function appliedRecord(
     evidencePosture: JEDIT_WSC_HISTORY_SETTLEMENT_EVIDENCE,
     ...commonPayloadFields(payload),
     readingId,
-    readingCoverage: payload.reading?.coverage,
+    readingCoverage,
     readingStartLine: payload.reading?.startLine,
     readingLineCount: payload.reading?.lineCount,
     readingReturnedLineCount: payload.reading?.returnedLineCount,
     readingTotalLineCount: payload.reading?.totalLineCount,
     readingTruncated: payload.reading?.truncated,
     readingTextDigest: readingDigest(payload.reading?.lines),
-    exportEvidenceId: readingId != null
+    exportEvidenceId: readingId != null && readingCoverage === READING_COVERAGE_FULL
       ? `${JEDIT_WSC_CURRENT_HISTORY_EXPORT_EVIDENCE_PREFIX}${envelopeId}:${readingId}`
       : undefined,
   };

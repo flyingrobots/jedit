@@ -109,6 +109,7 @@ test('WSC history listing displays bounded reading evidence without export claim
   assert.equal(result.records[0].readingTotalLineCount, 2);
   assert.equal(result.records[0].readingTruncated, false);
   assert.equal(result.records[0].evidencePosture, ports.JEDIT_WSC_HISTORY_SETTLEMENT_EVIDENCE);
+  assert.equal(result.records[0].exportEvidenceId, undefined);
 });
 
 async function historyModules() {
