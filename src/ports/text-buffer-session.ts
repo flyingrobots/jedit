@@ -46,6 +46,10 @@ export interface TextWindowReading {
   readonly lines: readonly TextWindowLine[];
   readonly byteLength: number;
   readonly lineCount: number;
+  readonly startLine: number;
+  readonly totalLineCount: number;
+  readonly hasMoreBefore: boolean;
+  readonly hasMoreAfter: boolean;
   readonly cursorLine: number;
   readonly viewportLineCount: number;
   readonly truncated: boolean;

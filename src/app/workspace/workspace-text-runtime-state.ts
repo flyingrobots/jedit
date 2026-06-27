@@ -14,7 +14,7 @@ import {
   type EchoHistoryEntryDraft,
 } from './echo-history.js';
 import {
-  editorFromWorkspaceTextCache,
+  editorFromFullWorkspaceTextCache,
   openedWorkspaceTextAuthority,
   obstructedWorkspaceTextAuthority,
   WorkspaceTextAuthorityKinds,
@@ -30,6 +30,10 @@ import {
 } from './workspace-text-results.js';
 import { createWorkspaceTextCheckpointCmd } from './workspace-text-commands.js';
 import type { TextPosition } from './workspace-text-position.js';
+import {
+  canReadingReplaceWholeEditor,
+  editorFromWorkspaceTextLines,
+} from './workspace-text-reading-cache.js';
 import {
   JEDIT_WSC_WORKSPACE_STORE_STATUS,
 } from '../../ports/jedit-wsc-workspace-store.js';
@@ -126,7 +130,13 @@ function openedTextModel(
   return {
     ...model,
     textAuthority,
-    editor: editorFromWorkspaceTextCache(textAuthority, model.editor),
+    editor: editorFromWorkspaceTextLines({
+      filePath: result.filePath,
+      readOnly: result.readOnly,
+      dirty: false,
+      lines: result.initialLines,
+      existing: model.editor,
+    }),
     viewMode: ViewModes.Source,
     focusPane: FocusPanes.Editor,
     graftInfo: undefined,
@@ -210,15 +220,8 @@ function editorAfterTextEdit(
   authority: Extract<WorkspaceModel['textAuthority'], { kind: typeof WorkspaceTextAuthorityKinds.Opened }>,
   cursorAfter: TextPosition | undefined,
 ) {
-  const editor = shouldPreserveLocalEditorAfterTextEdit(model, authority, cursorAfter)
-    ? {
-      ...model.editor,
-      path: authority.filePath,
-      dirty: authority.dirty,
-      readOnly: authority.readOnly,
-    }
-    : editorFromWorkspaceTextCache(authority, model.editor);
-  if (cursorAfter == null) {
+  const editor = editorForTextAuthority(model, authority);
+  if (editor == null || cursorAfter == null) {
     return editor;
   }
   const viewport = editorViewport(model);
@@ -227,22 +230,6 @@ function editorAfterTextEdit(
     cursorRow: cursorAfter.row,
     cursorCol: cursorAfter.column,
   }, viewport.width, viewport.height);
-}
-
-function shouldPreserveLocalEditorAfterTextEdit(
-  model: WorkspaceModel,
-  authority: Extract<WorkspaceModel['textAuthority'], { kind: typeof WorkspaceTextAuthorityKinds.Opened }>,
-  cursorAfter: TextPosition | undefined,
-): model is WorkspaceModel & { readonly editor: NonNullable<WorkspaceModel['editor']> } {
-  const editor = model.editor;
-  const cache = authority.cache;
-  if (editor == null || cursorAfter == null || cache == null) {
-    return false;
-  }
-  const cacheIsBounded = cache.truncated || cache.lineCount > cache.lines.length;
-  const cacheMissesReceiptCursor = cursorAfter.row >= cache.lines.length;
-  const localEditorCoversReceiptCursor = cursorAfter.row < editor.lines.length;
-  return cacheIsBounded && cacheMissesReceiptCursor && localEditorCoversReceiptCursor;
 }
 
 function applyTextCheckpointResult(
@@ -356,7 +343,25 @@ function withTextAuthority(
   return {
     ...model,
     textAuthority,
-    editor: editorFromWorkspaceTextCache(textAuthority, model.editor),
+    editor: editorForTextAuthority(model, textAuthority),
+  };
+}
+
+function editorForTextAuthority(
+  model: WorkspaceModel,
+  authority: Extract<WorkspaceModel['textAuthority'], { kind: typeof WorkspaceTextAuthorityKinds.Opened }>,
+) {
+  if (canReadingReplaceWholeEditor(authority.cache)) {
+    return editorFromFullWorkspaceTextCache({ ...authority, cache: authority.cache }, model.editor);
+  }
+  if (model.editor == null) {
+    return undefined;
+  }
+  return {
+    ...model.editor,
+    path: authority.filePath,
+    dirty: authority.dirty,
+    readOnly: authority.readOnly,
   };
 }
 

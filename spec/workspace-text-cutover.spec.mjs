@@ -158,7 +158,78 @@ test("file open routes through production text session and applies initial bound
   assert.equal(openedModel.editor.readOnly, false);
 });
 
-test("viewer renders production text from reading cache instead of stale editor lines", async () => {
+test("opening a long file does not truncate editor projection to the first window", async () => {
+  const [initModule, fileTree, fileSystem, runtimeModule, authority] =
+    await Promise.all([
+      importDist("app", "workspace", "init.js"),
+      importDist("app", "workspace", "file-tree.js"),
+      importDist("ports", "file-system.js"),
+      importDist("app", "workspace", "runtime.js"),
+      importDist("app", "workspace", "workspace-text-authority.js"),
+    ]);
+  const filePath = "/repo/long.txt";
+  const hostLines = Array.from({ length: 40 }, (_, index) => `line ${index}`);
+  const productionTextSession = {
+    openBuffer: async () => ({
+      kind: "opened",
+      optic: {
+        buffer: {
+          bufferId: "buffer:long",
+        },
+      },
+    }),
+    observeWindow: async () => ({
+      kind: "observed",
+      observed: {
+        value: textWindowReading({
+          readingId: "reading:long",
+          lines: hostLines.slice(0, 24),
+          totalLineCount: hostLines.length,
+        }),
+      },
+    }),
+  };
+  const model = initModule.createInitialModel("/repo", 120, 24, {
+    titleSceneSeed: 0.5,
+    jeditTheme: mockJeditTheme(),
+    i18n: mockI18n(),
+    entries: [
+      {
+        kind: fileSystem.FileEntryKinds.File,
+        name: "long.txt",
+        path: filePath,
+      },
+    ],
+    nowMs: 100,
+  });
+
+  const [pendingModel, commands] = fileTree.updateTreeFromKey(
+    { key: "enter" },
+    model,
+    () => 123,
+    mockDeps({
+      editorFile: {
+        loadEditorFile: () => ({ lines: hostLines, readOnly: false }),
+        saveEditorFile: () => undefined,
+      },
+      productionTextSession,
+    }),
+  );
+  const message = await commands[0]();
+  const runtime = runtimeModule.createWorkspaceRuntime(
+    mockRuntime({ productionTextSession }),
+  );
+  const [openedModel] = runtime.update(message, pendingModel);
+
+  assert.equal(
+    openedModel.textAuthority.kind,
+    authority.WorkspaceTextAuthorityKinds.Opened,
+  );
+  assert.equal(openedModel.textAuthority.cache.coverage, "window");
+  assert.deepEqual(openedModel.editor.lines, hostLines);
+});
+
+test("viewer renders production text from full reading cache instead of stale editor lines", async () => {
   const [viewerContent, modeModule, authority, profile] = await Promise.all([
     importDist("app", "workspace", "viewer-content.js"),
     importDist("app", "workspace", "editor", "mode.js"),
@@ -185,15 +256,11 @@ test("viewer renders production text from reading cache instead of stale editor 
       bufferId: "buffer:notes",
       readOnly: false,
       dirty: false,
-      cache: {
+      cache: workspaceReadingCache({
         bufferId: "buffer:notes",
         readingId: "reading:fresh",
         lines: ["fresh Echo reading"],
-        lineCount: 1,
-        cursorLine: 0,
-        viewportLineCount: 24,
-        truncated: false,
-      },
+      }),
     }),
     viewMode: "source",
     sourceHighlight: undefined,
@@ -589,15 +656,25 @@ test("viewport movement requests a bounded read without submitting edits", async
     },
     observeWindow: async (request) => {
       observed.push(request);
+      const startLine = request.aperture.cursorLine;
       return {
         kind: "observed",
         observed: {
           value: {
             readingId: "reading:viewport",
-            lines: [{ text: "line after viewport move" }],
+            lines: [{
+              lineNumber: startLine,
+              startByte: startLine * 8,
+              endByte: startLine * 8 + 24,
+              text: "line after viewport move",
+            }],
+            startLine,
             lineCount: 1,
-            cursorLine: 0,
-            viewportLineCount: 24,
+            totalLineCount: 40,
+            hasMoreBefore: startLine > 0,
+            hasMoreAfter: true,
+            cursorLine: startLine,
+            viewportLineCount: request.aperture.viewportLineCount,
             truncated: false,
           },
         },
@@ -631,8 +708,8 @@ test("viewport movement requests a bounded read without submitting edits", async
     {
       bufferId: "buffer:notes",
       aperture: {
-        cursorLine: 0,
-        viewportLineCount: 24,
+        cursorLine: pendingRead.editor.scrollRow,
+        viewportLineCount: 4,
         beforeLines: 0,
         afterLines: 0,
         maxBytes: 1048576,
@@ -640,7 +717,188 @@ test("viewport movement requests a bounded read without submitting edits", async
       atMs: 12,
     },
   ]);
-  assert.deepEqual(readModel.editor.lines, ["line after viewport move"]);
+  assert.equal(readModel.textAuthority.cache.coverage, "window");
+  assert.equal(readModel.textAuthority.cache.startLine, pendingRead.editor.scrollRow);
+  assert.deepEqual(readModel.editor.lines, model.editor.lines);
+});
+
+test("bounded TextReadResult preserves dirty local editor projection", async () => {
+  const [runtimeModule, modeModule, authority, profile, msgModule, results] =
+    await Promise.all([
+      importDist("app", "workspace", "runtime.js"),
+      importDist("app", "workspace", "editor", "mode.js"),
+      importDist("app", "workspace", "workspace-text-authority.js"),
+      importDist("app", "text-runtime-profile.js"),
+      importDist("app", "workspace", "msg.js"),
+      importDist("app", "workspace", "workspace-text-results.js"),
+    ]);
+  const localLines = Array.from({ length: 50 }, (_, index) => `local ${index}`);
+  const model = {
+    ...textWorkspaceModel(modeModule, authority, profile, {
+      dirty: true,
+      mode: modeModule.EditorModes.Insert,
+      lines: localLines,
+      cursorRow: 40,
+      scrollRow: 24,
+    }),
+    textRequestId: 5,
+    textAuthority: authority.openedWorkspaceTextAuthority({
+      profile: profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+      filePath: "/repo/notes.txt",
+      bufferId: "buffer:notes",
+      readOnly: false,
+      dirty: true,
+      cache: workspaceReadingCache({ lines: localLines }),
+    }),
+  };
+  const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime());
+  const [readModel] = runtime.update({
+    type: msgModule.WorkspaceMessageTypes.TextReadResult,
+    requestId: 5,
+    result: {
+      kind: results.WorkspaceTextResultKinds.Read,
+      filePath: "/repo/notes.txt",
+      bufferId: "buffer:notes",
+      cache: workspaceReadingCache({
+        readingId: "reading:bounded",
+        lines: ["window 24"],
+        startLine: 24,
+        returnedLineCount: 1,
+        totalLineCount: localLines.length,
+        hasMoreBefore: true,
+        hasMoreAfter: true,
+      }),
+    },
+  }, model);
+
+  assert.equal(readModel.textAuthority.cache.coverage, "window");
+  assert.deepEqual(readModel.editor.lines, localLines);
+  assert.equal(readModel.editor.cursorRow, 40);
+  assert.equal(readModel.editor.dirty, true);
+});
+
+test("bounded TextEditResult preserves dirty local editor projection", async () => {
+  const [runtimeModule, modeModule, authority, profile, msgModule, results] =
+    await Promise.all([
+      importDist("app", "workspace", "runtime.js"),
+      importDist("app", "workspace", "editor", "mode.js"),
+      importDist("app", "workspace", "workspace-text-authority.js"),
+      importDist("app", "text-runtime-profile.js"),
+      importDist("app", "workspace", "msg.js"),
+      importDist("app", "workspace", "workspace-text-results.js"),
+    ]);
+  const localLines = Array.from({ length: 50 }, (_, index) => `local ${index}`);
+  const model = {
+    ...textWorkspaceModel(modeModule, authority, profile, {
+      dirty: true,
+      mode: modeModule.EditorModes.Insert,
+      lines: localLines,
+      cursorRow: 39,
+      cursorCol: 3,
+      scrollRow: 24,
+    }),
+    textRequestId: 8,
+    textAuthority: authority.openedWorkspaceTextAuthority({
+      profile: profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+      filePath: "/repo/notes.txt",
+      bufferId: "buffer:notes",
+      readOnly: false,
+      dirty: true,
+      cache: workspaceReadingCache({ lines: localLines }),
+    }),
+  };
+  const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime());
+  const [editModel] = runtime.update({
+    type: msgModule.WorkspaceMessageTypes.TextEditResult,
+    requestId: 8,
+    result: {
+      kind: results.WorkspaceTextResultKinds.Applied,
+      filePath: "/repo/notes.txt",
+      bufferId: "buffer:notes",
+      receiptId: "receipt:bounded",
+      cursorAfter: { row: 40, column: 1 },
+      cache: workspaceReadingCache({
+        readingId: "reading:bounded-edit",
+        lines: ["window 24"],
+        startLine: 24,
+        returnedLineCount: 1,
+        totalLineCount: localLines.length,
+        hasMoreBefore: true,
+        hasMoreAfter: true,
+      }),
+    },
+  }, model);
+
+  assert.equal(editModel.textAuthority.cache.coverage, "window");
+  assert.deepEqual(editModel.editor.lines, localLines);
+  assert.equal(editModel.editor.cursorRow, 40);
+  assert.equal(editModel.editor.cursorCol, 1);
+  assert.equal(editModel.editor.dirty, true);
+});
+
+test("edit planning after bounded read uses the full local projection", async () => {
+  const [viewerKey, modeModule, authority, profile] =
+    await Promise.all([
+      importDist("app", "workspace", "viewer-key.js"),
+      importDist("app", "workspace", "editor", "mode.js"),
+      importDist("app", "workspace", "workspace-text-authority.js"),
+      importDist("app", "text-runtime-profile.js"),
+    ]);
+  const inserts = [];
+  const localLines = Array.from({ length: 50 }, (_, index) => `local ${index}`);
+  const model = {
+    ...textWorkspaceModel(modeModule, authority, profile, {
+      mode: modeModule.EditorModes.Insert,
+      lines: localLines,
+      cursorRow: 30,
+      cursorCol: 0,
+      scrollRow: 24,
+    }),
+    textAuthority: authority.openedWorkspaceTextAuthority({
+      profile: profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+      filePath: "/repo/notes.txt",
+      bufferId: "buffer:notes",
+      readOnly: false,
+      dirty: true,
+      cache: workspaceReadingCache({
+        readingId: "reading:bounded",
+        lines: ["window 24"],
+        startLine: 24,
+        returnedLineCount: 1,
+        totalLineCount: localLines.length,
+        hasMoreBefore: true,
+        hasMoreAfter: true,
+      }),
+    }),
+  };
+  const productionTextSession = {
+    insertText: async (request) => {
+      inserts.push(request);
+      return { kind: "applied", result: { receiptId: "receipt:insert" } };
+    },
+    observeWindow: async () => ({
+      kind: "observed",
+      observed: {
+        value: textWindowReading({
+          readingId: "reading:after-insert",
+          lines: ["window 24"],
+          startLine: 24,
+          totalLineCount: localLines.length,
+        }),
+      },
+    }),
+  };
+
+  const [, commands] = viewerKey.updateViewerFromKey(
+    { key: "Z", ctrl: false, alt: false, shift: true },
+    model,
+    mockDeps().sourceHighlighter,
+    productionTextSession,
+  );
+  await commands[0]();
+
+  assert.equal(inserts[0].startByte, byteOffsetAtLine(localLines, 30));
+  assert.equal(inserts[0].insertText, "Z");
 });
 
 test("ctrl-s exports production text and checkpoints without direct local save first", async () => {
@@ -1076,15 +1334,11 @@ function textWorkspaceModel(modeModule, authority, profile, editorOverrides) {
       bufferId: "buffer:notes",
       readOnly: false,
       dirty: false,
-      cache: {
+      cache: workspaceReadingCache({
         bufferId: "buffer:notes",
         readingId: "reading:initial",
         lines: ["abc"],
-        lineCount: 1,
-        cursorLine: 0,
-        viewportLineCount: 24,
-        truncated: false,
-      },
+      }),
     }),
     textRuntimeProfile: profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
     textRequestId: 0,
@@ -1113,4 +1367,71 @@ function textWorkspaceModel(modeModule, authority, profile, editorOverrides) {
     entries: [],
     selectedIndex: 0,
   };
+}
+
+function workspaceReadingCache(overrides = {}) {
+  const lines = overrides.lines ?? ["abc"];
+  const startLine = overrides.startLine ?? 0;
+  const returnedLineCount = overrides.returnedLineCount ?? lines.length;
+  const totalLineCount = overrides.totalLineCount ?? lines.length;
+  const truncated = overrides.truncated ?? false;
+  const hasMoreBefore = overrides.hasMoreBefore ?? startLine > 0;
+  const hasMoreAfter = overrides.hasMoreAfter ?? startLine + returnedLineCount < totalLineCount;
+  const coverage = overrides.coverage
+    ?? (
+      startLine === 0 &&
+      hasMoreBefore !== true &&
+      hasMoreAfter !== true &&
+      truncated !== true &&
+      returnedLineCount === totalLineCount
+        ? "full"
+        : "window"
+    );
+  return {
+    bufferId: "buffer:notes",
+    readingId: "reading:test",
+    lines,
+    coverage,
+    lineCount: totalLineCount,
+    startLine,
+    returnedLineCount,
+    totalLineCount,
+    hasMoreBefore,
+    hasMoreAfter,
+    cursorLine: startLine,
+    viewportLineCount: 24,
+    truncated,
+    ...overrides,
+  };
+}
+
+function textWindowReading(options) {
+  const startLine = options.startLine ?? 0;
+  const lines = options.lines ?? ["abc"];
+  const totalLineCount = options.totalLineCount ?? lines.length;
+  return {
+    readingId: options.readingId ?? "reading:test",
+    lines: lines.map((text, index) => ({
+      lineNumber: startLine + index,
+      startByte: byteOffsetAtLine(lines, index),
+      endByte: byteOffsetAtLine(lines, index) + text.length,
+      text,
+    })),
+    startLine,
+    lineCount: lines.length,
+    totalLineCount,
+    hasMoreBefore: startLine > 0,
+    hasMoreAfter: startLine + lines.length < totalLineCount,
+    cursorLine: startLine,
+    viewportLineCount: lines.length,
+    truncated: false,
+  };
+}
+
+function byteOffsetAtLine(lines, targetLine) {
+  let offset = 0;
+  for (let line = 0; line < targetLine; line += 1) {
+    offset += (lines[line] ?? "").length + 1;
+  }
+  return offset;
 }

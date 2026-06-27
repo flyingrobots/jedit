@@ -13,7 +13,13 @@ test('reading cache materializes text and reports explicit postures', async () =
     bufferId: 'buffer:notes',
     readingId: 'reading:notes',
     lines: ['a', 'b'],
+    coverage: 'full',
     lineCount: 2,
+    startLine: 0,
+    returnedLineCount: 2,
+    totalLineCount: 2,
+    hasMoreBefore: false,
+    hasMoreAfter: false,
     cursorLine: 0,
     viewportLineCount: 24,
     truncated: false,
@@ -44,7 +50,13 @@ test('reading cache projection preserves Vim marks across production refresh', a
     bufferId: 'buffer:notes',
     readingId: 'reading:notes',
     lines: ['one', '  two'],
+    coverage: 'full',
     lineCount: 2,
+    startLine: 0,
+    returnedLineCount: 2,
+    totalLineCount: 2,
+    hasMoreBefore: false,
+    hasMoreAfter: false,
     cursorLine: 0,
     viewportLineCount: 24,
     truncated: false,
@@ -63,7 +75,7 @@ test('reading cache projection preserves Vim marks across production refresh', a
     },
   });
 
-  const projected = cacheModule.editorFromWorkspaceTextReadingCache({
+  const projected = cacheModule.editorFromFullWorkspaceTextReadingCache({
     filePath: '/repo/notes.md',
     readOnly: false,
     dirty: false,
@@ -195,6 +207,7 @@ test('replace command submits through production text session and refreshes read
 
 test('production undo and redo submit Echo replacement edits', async () => {
   const harness = await openedHarness({
+    hostLines: ['abc'],
     readings: ['abc', 'bc', 'abc', 'bc'],
   });
 
@@ -229,6 +242,7 @@ test('production undo and redo submit Echo replacement edits', async () => {
 
 test('production insert-mode edits can be undone through Echo', async () => {
   const harness = await openedHarness({
+    hostLines: ['a'],
     readings: ['a', 'Xa', 'a'],
   });
 

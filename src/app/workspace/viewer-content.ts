@@ -22,7 +22,8 @@ import type { WorkspaceModel } from "./model.js";
 import { isWorkspaceMarkdownFile } from "./editor-session.js";
 import { ViewModes } from "./view-mode.js";
 import {
-  editorFromWorkspaceTextCache,
+  canReadingReplaceWholeEditor,
+  editorFromFullWorkspaceTextCache,
   isWorkspaceTextAuthorityOpened,
 } from "./workspace-text-authority.js";
 import { VIEWER_LEFT_PAD, VIEWER_TOP_PAD } from "./viewport.js";
@@ -458,12 +459,12 @@ export function isWorkspaceMarkdownPreviewAvailable(
   const editor = displayEditor(model);
   return editor != null && isWorkspaceMarkdownFile(editor.path);
 }
-
 function displayEditor(model: WorkspaceModel): WorkspaceModel["editor"] {
-  return isWorkspaceTextAuthorityOpened(model.textAuthority) &&
-    model.textAuthority.cache != null &&
-    model.textAuthority.dirty !== true
-    ? editorFromWorkspaceTextCache(model.textAuthority, model.editor)
+  const authority = model.textAuthority;
+  return isWorkspaceTextAuthorityOpened(authority) &&
+    authority.dirty !== true &&
+    canReadingReplaceWholeEditor(authority.cache)
+    ? editorFromFullWorkspaceTextCache({ ...authority, cache: authority.cache }, model.editor)
     : model.editor;
 }
 

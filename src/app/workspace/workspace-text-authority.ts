@@ -7,9 +7,10 @@ import {
   type WorkspaceWorldlineMaterializationKind,
 } from './worldline-types.js';
 import {
-  editorFromWorkspaceTextReadingCache,
+  editorFromFullWorkspaceTextReadingCache,
   WorkspaceTextReadingPostures,
   workspaceTextReadingCachePosture,
+  type WorkspaceTextFullReadingCache,
   type WorkspaceTextReadingCache,
   type WorkspaceTextReadingPosture,
 } from './workspace-text-reading-cache.js';
@@ -39,6 +40,7 @@ export type WorkspaceTextHostBasisKind =
   typeof WorkspaceTextHostBasisKinds[keyof typeof WorkspaceTextHostBasisKinds];
 
 export type { WorkspaceTextReadingCache } from './workspace-text-reading-cache.js';
+export { canReadingReplaceWholeEditor } from './workspace-text-reading-cache.js';
 
 export interface WorkspaceTextAuthorityNone {
   readonly kind: typeof AUTHORITY_NONE;
@@ -231,11 +233,11 @@ function materializationFromOptions(
     : WorkspaceWorldlineMaterializationKinds.Materialized;
 }
 
-export function editorFromWorkspaceTextCache(
-  authority: WorkspaceTextAuthorityOpened,
+export function editorFromFullWorkspaceTextCache(
+  authority: WorkspaceTextAuthorityOpened & { readonly cache: WorkspaceTextFullReadingCache },
   existing: EditorState | undefined,
 ): EditorState {
-  return editorFromWorkspaceTextReadingCache({
+  return editorFromFullWorkspaceTextReadingCache({
     filePath: authority.filePath,
     dirty: authority.dirty,
     readOnly: authority.readOnly,

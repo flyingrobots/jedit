@@ -9,8 +9,8 @@ import type {
 import { ProductionTextSessionOutcomeKinds } from './production-text-session.js';
 import { RuntimeIssueLevels, RuntimeIssueSources } from './runtime-issue.js';
 import { WorkspaceMessageTypes, type WorkspaceMsg } from './msg.js';
+import type { EditorState } from './editor/model.js';
 import type { TextPosition } from './workspace-text-position.js';
-import type { WorkspaceTextReadingCache } from './workspace-text-reading-cache.js';
 import {
   WorkspaceTextResultKinds,
   type WorkspaceTextCheckpointResult,
@@ -27,6 +27,10 @@ import {
   type WorkspaceTextOpenBasis,
 } from './workspace-text-open-basis.js';
 import { createWorkspaceTextEditSettlementEnvelope } from './workspace-text-wsc-settlement.js';
+import {
+  readingCache,
+  type WorkspaceTextObservedReading,
+} from './workspace-text-observed-reading.js';
 
 const ISSUE_LEVEL_ERROR = RuntimeIssueLevels.Error;
 const ISSUE_SOURCE_COMMAND = RuntimeIssueSources.Command;
@@ -128,15 +132,6 @@ export interface WorkspaceTextReadCommandRequest {
   readonly aperture: ProductionTextViewportAperture;
 }
 
-export interface WorkspaceTextObservedReading {
-  readonly readingId: string;
-  readonly lines: readonly { readonly text: string }[];
-  readonly lineCount: number;
-  readonly cursorLine: number;
-  readonly viewportLineCount: number;
-  readonly truncated: boolean;
-}
-
 export function createWorkspaceTextOpenCmd(
   request: WorkspaceTextOpenCommandRequest,
 ): Cmd<WorkspaceMsg> {
@@ -154,6 +149,17 @@ export function defaultWorkspaceTextAperture(): ProductionTextViewportAperture {
     beforeLines: DEFAULT_BEFORE_LINES,
     afterLines: DEFAULT_AFTER_LINES,
     maxBytes: DEFAULT_MAX_BYTES,
+  };
+}
+
+export function workspaceTextApertureFromEditor(
+  editor: Pick<EditorState, 'scrollRow'>,
+  viewportLineCount: number,
+): ProductionTextViewportAperture {
+  return {
+    ...defaultWorkspaceTextAperture(),
+    cursorLine: Math.max(INITIAL_CURSOR_LINE, editor.scrollRow),
+    viewportLineCount: Math.max(1, viewportLineCount),
   };
 }
 
@@ -261,6 +267,7 @@ function openedTextResult(
     materialization: basis.materialization,
     hostBasis: basis.hostBasis,
     hostFingerprint: basis.hostFingerprint,
+    initialLines: normalizeLines(basis.initialText),
     cache: readingCache(bufferId, reading),
   };
 }
@@ -447,21 +454,6 @@ function obstructedRead(filePath: string, issue: RuntimeIssue): WorkspaceTextRea
     kind: WorkspaceTextResultKinds.Obstructed,
     filePath,
     issue,
-  };
-}
-
-export function readingCache(
-  bufferId: string,
-  reading: WorkspaceTextObservedReading,
-): WorkspaceTextReadingCache {
-  return {
-    bufferId,
-    readingId: reading.readingId,
-    lines: reading.lines.map((line) => line.text),
-    lineCount: reading.lineCount,
-    cursorLine: reading.cursorLine,
-    viewportLineCount: reading.viewportLineCount,
-    truncated: reading.truncated,
   };
 }
 

@@ -60,8 +60,20 @@ type TextWindowReading {
     """Total UTF-8 byte length represented by the returned lines."""
     byteLength: Int!
 
+    """Zero-based first line included in this bounded window."""
+    startLine: Int!
+
     """Number of returned lines."""
     lineCount: Int!
+
+    """Total line count in the observed text frontier."""
+    totalLineCount: Int!
+
+    """True when earlier lines exist before this bounded window."""
+    hasMoreBefore: Boolean!
+
+    """True when later lines exist after this bounded window."""
+    hasMoreAfter: Boolean!
 
     """Requested cursor line used to center the read."""
     cursorLine: Int!

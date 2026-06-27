@@ -30,6 +30,7 @@ export interface WorkspaceTextOpenedResult {
   readonly materialization: WorkspaceWorldlineMaterializationKind;
   readonly hostBasis: WorkspaceTextHostBasisKind;
   readonly hostFingerprint?: EditorFileFingerprint;
+  readonly initialLines: readonly string[];
   readonly cache: WorkspaceTextReadingCache;
 }
 

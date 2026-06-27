@@ -24,7 +24,7 @@ import {
 import {
   createWorkspaceTextEditCmd,
   createWorkspaceTextReadCmd,
-  defaultWorkspaceTextAperture,
+  workspaceTextApertureFromEditor,
   WorkspaceTextEditCommandKinds,
 } from './workspace-text-commands.js';
 import {
@@ -321,7 +321,7 @@ function updateProductionTextView(
       bufferId: model.textAuthority.bufferId,
       productionTextSession,
       atMs: model.time,
-      aperture: defaultWorkspaceTextAperture(),
+      aperture: workspaceTextApertureFromEditor(editor, editorViewport(nextModel).height),
     }),
   ]];
 }
@@ -379,17 +379,18 @@ function queueProductionTextEdit(
   productionTextSession: ProductionTextSession,
   edit: ProductionTextEditRequest,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
-  if (model.textAuthority.kind !== WorkspaceTextAuthorityKinds.Opened) {
+  if (model.textAuthority.kind !== WorkspaceTextAuthorityKinds.Opened || model.editor == null) {
     return [model, []];
   }
   const requestId = model.textRequestId + 1;
+  const viewport = editorViewport(model);
   const base = {
     requestId,
     filePath: model.textAuthority.filePath,
     bufferId: model.textAuthority.bufferId,
     productionTextSession,
     atMs: model.time,
-    aperture: defaultWorkspaceTextAperture(),
+    aperture: workspaceTextApertureFromEditor(model.editor, viewport.height),
   };
   return [{
     ...model,

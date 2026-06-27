@@ -126,17 +126,27 @@ test('real workspace app path keeps newline insertion past bounded Echo readings
     observeWindow: async (request) => {
       calls.observe.push(request);
       const lines = document.lines();
-      const visibleLines = lines.slice(0, request.aperture.viewportLineCount);
+      const startLine = Math.max(0, request.aperture.cursorLine);
+      const visibleLines = lines.slice(startLine, startLine + request.aperture.viewportLineCount);
       return {
         kind: 'observed',
         observed: {
           value: {
             readingId: `reading:${calls.observe.length}`,
-            lines: visibleLines.map((text) => ({ text })),
-            lineCount: lines.length,
+            lines: visibleLines.map((text, index) => ({
+              lineNumber: startLine + index,
+              startByte: byteOffsetAtLine(lines, startLine + index),
+              endByte: byteOffsetAtLine(lines, startLine + index) + text.length,
+              text,
+            })),
+            startLine,
+            lineCount: visibleLines.length,
+            totalLineCount: lines.length,
+            hasMoreBefore: startLine > 0,
+            hasMoreAfter: startLine + visibleLines.length < lines.length,
             cursorLine: request.aperture.cursorLine,
             viewportLineCount: request.aperture.viewportLineCount,
-            truncated: visibleLines.length < lines.length,
+            truncated: false,
           },
         },
       };
@@ -148,20 +158,21 @@ test('real workspace app path keeps newline insertion past bounded Echo readings
   });
 
   await harness.key('i');
-  for (let index = 0; index < 30; index += 1) {
-    await harness.runFirst(await harness.key('enter'));
+  for (let index = 0; index < 40; index += 1) {
+    await harness.runAll(await harness.key('enter'));
   }
-  await harness.runFirst(await harness.key('Z', { shift: true }));
+  await harness.runAll(await harness.key('Z', { shift: true }));
 
-  assert.equal(harness.model.editor.cursorRow, 30);
+  assert.equal(harness.model.editor.cursorRow, 40);
   assert.equal(harness.model.editor.cursorCol, 1);
-  assert.equal(harness.model.editor.lines.length, 31);
-  assert.equal(harness.model.editor.lines[30], 'Z');
-  assert.equal(harness.model.textAuthority.cache.truncated, true);
-  assert.equal(calls.insert.length, 31);
+  assert.equal(harness.model.editor.lines.length, 41);
+  assert.equal(harness.model.editor.lines[40], 'Z');
+  assert.equal(harness.model.textAuthority.cache.coverage, 'window');
+  assert.equal(harness.model.textAuthority.cache.truncated, false);
+  assert.equal(calls.insert.length, 41);
   assert.deepEqual(calls.insert.at(-1), {
     bufferId: 'buffer:notes',
-    startByte: 30,
+    startByte: 40,
     insertText: 'Z',
     atMs: 0,
   });
@@ -270,4 +281,12 @@ function echoTextDocument(initialText) {
       return text.split('\n');
     },
   };
+}
+
+function byteOffsetAtLine(lines, targetLine) {
+  let offset = 0;
+  for (let line = 0; line < targetLine; line += 1) {
+    offset += (lines[line] ?? '').length + 1;
+  }
+  return offset;
 }

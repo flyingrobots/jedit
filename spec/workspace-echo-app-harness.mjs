@@ -164,8 +164,17 @@ function recordingProductionTextSession(calls, options) {
         observed: {
           value: {
             readingId: `reading:${calls.observe.length}`,
-            lines: [{ text: readings[Math.min(calls.observe.length - 1, readings.length - 1)] ?? '' }],
+            lines: [{
+              lineNumber: 0,
+              startByte: 0,
+              endByte: (readings[Math.min(calls.observe.length - 1, readings.length - 1)] ?? '').length,
+              text: readings[Math.min(calls.observe.length - 1, readings.length - 1)] ?? '',
+            }],
+            startLine: 0,
             lineCount: 1,
+            totalLineCount: 1,
+            hasMoreBefore: false,
+            hasMoreAfter: false,
             cursorLine: 0,
             viewportLineCount: 24,
             truncated: false,
