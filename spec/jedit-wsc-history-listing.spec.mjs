@@ -28,6 +28,10 @@ test('WSC history listing exposes deterministic app-safe evidence records', asyn
   assert.equal(result.records[0].outcomeStatus, ports.JEDIT_WSC_HISTORY_APPLIED);
   assert.equal(result.records[0].evidencePosture, ports.JEDIT_WSC_HISTORY_SETTLEMENT_EVIDENCE);
   assert.equal(result.records[0].readingId, 'reading:/repo/a.txt:10');
+  assert.equal(result.records[0].readingCoverage, 'full');
+  assert.equal(result.records[0].readingReturnedLineCount, 1);
+  assert.equal(result.records[0].readingTotalLineCount, 1);
+  assert.equal(result.records[0].readingTruncated, false);
   assert.equal(result.records[0].exportEvidenceId, `wsc-current-export:${BASIS_OLD}:reading:/repo/a.txt:10`);
   assert.equal(result.records[1].outcomeStatus, ports.JEDIT_WSC_HISTORY_REJECTED);
   assert.equal(result.records[1].rejectionReason, 'stale causal basis');
@@ -79,6 +83,32 @@ test('WSC history listing can isolate one file from retained multi-file history'
   assert.equal(fileA.status, ports.JEDIT_WSC_HISTORY_LISTED);
   assert.deepEqual(fileA.records.map((record) => record.filePath), ['/repo/a.txt']);
   assert.deepEqual(fileA.files.map((summary) => summary.filePath), ['/repo/a.txt']);
+});
+
+test('WSC history listing displays bounded reading evidence without export claim', async () => {
+  const [history, ports] = await historyModules();
+  const result = history.listJeditWscHistory(fakeStore({
+    ids: [BASIS_OLD],
+    envelopes: {
+      [BASIS_OLD]: settlementPayload({
+        filePath: '/repo/a.txt',
+        submittedAtMs: 10,
+        reading: {
+          coverage: 'window',
+          returnedLineCount: 1,
+          totalLineCount: 2,
+          hasMoreAfter: true,
+        },
+      }),
+    },
+  }));
+
+  assert.equal(result.status, ports.JEDIT_WSC_HISTORY_LISTED);
+  assert.equal(result.records[0].readingCoverage, 'window');
+  assert.equal(result.records[0].readingReturnedLineCount, 1);
+  assert.equal(result.records[0].readingTotalLineCount, 2);
+  assert.equal(result.records[0].readingTruncated, false);
+  assert.equal(result.records[0].evidencePosture, ports.JEDIT_WSC_HISTORY_SETTLEMENT_EVIDENCE);
 });
 
 async function historyModules() {
@@ -134,7 +164,13 @@ function settlementPayload(overrides) {
     reading: {
       readingId: `reading:${filePath}:${String(submittedAtMs)}`,
       lines: [`${filePath} at ${String(submittedAtMs)}`],
+      coverage: overrides.reading?.coverage ?? 'full',
       lineCount: 1,
+      startLine: 0,
+      returnedLineCount: overrides.reading?.returnedLineCount ?? 1,
+      totalLineCount: overrides.reading?.totalLineCount ?? 1,
+      hasMoreBefore: false,
+      hasMoreAfter: overrides.reading?.hasMoreAfter ?? false,
       cursorLine: 0,
       viewportLineCount: 1,
       truncated: false,

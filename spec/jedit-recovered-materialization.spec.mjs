@@ -50,6 +50,11 @@ test('jedit blocks materialization from local buffer payload source', async () =
       source: 'local_buffer',
       text: 'Local text',
       textDigest: 'sha256:local',
+      coverage: 'full',
+      startLine: 0,
+      returnedLineCount: 1,
+      totalLineCount: 1,
+      truncated: false,
       readingId: 'reading:materialize',
       basisDigest: 'basis:materialize',
       readingBasisDigest: 'basis:materialize',
@@ -60,6 +65,23 @@ test('jedit blocks materialization from local buffer payload source', async () =
 
   assert.equal(result.status, 'JEDIT_RECOVERED_MATERIALIZATION_BLOCKED');
   assert.equal(result.reason, 'recovered_payload_source_not_echo');
+});
+
+test('jedit blocks materialization from bounded recovered reading payloads', async () => {
+  const modules = await loadModules();
+  const payload = echoPayload(modules, 'Window text');
+  payload.coverage = 'window';
+  payload.returnedLineCount = 1;
+  payload.totalLineCount = 2;
+
+  const result = modules.materialization.materializeJeditTextArtifactFromRecoveredBasis({
+    recoveredReading: availableReading(),
+    payload,
+    hash: modules.hash.createHashPort(),
+  });
+
+  assert.equal(result.status, 'JEDIT_RECOVERED_MATERIALIZATION_BLOCKED');
+  assert.equal(result.reason, 'bounded_reading_not_materializable');
 });
 
 test('jedit blocks materialization when payload evidence does not match the recovered reading', async () => {
@@ -111,6 +133,11 @@ function echoPayload(modules, text) {
     source: 'echo_recovered_reading',
     text,
     textDigest: `sha256:${modules.hash.createHashPort().sha256Hex(text)}`,
+    coverage: 'full',
+    startLine: 0,
+    returnedLineCount: text.split('\n').length,
+    totalLineCount: text.split('\n').length,
+    truncated: false,
     readingId: 'reading:materialize',
     basisDigest: 'basis:materialize',
     readingBasisDigest: 'basis:materialize',

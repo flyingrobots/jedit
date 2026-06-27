@@ -205,6 +205,60 @@ test('replace command submits through production text session and refreshes read
   assert.equal(message.result.cache.lines[0], 'replaced from reading');
 });
 
+test('settlement envelope records bounded reading coverage metadata', async () => {
+  const commands = await importDist('app', 'workspace', 'workspace-text-commands.js');
+  const productionTextSession = {
+    insertText: async () => ({ kind: 'applied', result: { receiptId: 'receipt:window' } }),
+    observeWindow: async () => ({
+      kind: 'observed',
+      observed: {
+        value: {
+          readingId: 'reading:window',
+          lines: [{
+            lineNumber: 24,
+            text: 'window evidence',
+          }],
+          startLine: 24,
+          lineCount: 1,
+          totalLineCount: 40,
+          hasMoreBefore: true,
+          hasMoreAfter: true,
+          cursorLine: 24,
+          viewportLineCount: 4,
+          truncated: false,
+        },
+      },
+    }),
+  };
+
+  const message = await commands.createWorkspaceTextEditCmd({
+    kind: commands.WorkspaceTextEditCommandKinds.Insert,
+    requestId: 8,
+    filePath: '/repo/notes.md',
+    bufferId: 'buffer:notes',
+    productionTextSession,
+    atMs: 42,
+    aperture: {
+      cursorLine: 24,
+      viewportLineCount: 4,
+      beforeLines: 0,
+      afterLines: 0,
+      maxBytes: 1048576,
+    },
+    startByte: 100,
+    insertText: 'Z',
+  })();
+  const payload = JSON.parse(new TextDecoder().decode(message.result.wscSettlementEnvelope.bytes));
+
+  assert.equal(payload.reading.coverage, 'window');
+  assert.equal(payload.reading.startLine, 24);
+  assert.equal(payload.reading.returnedLineCount, 1);
+  assert.equal(payload.reading.totalLineCount, 40);
+  assert.equal(payload.reading.hasMoreBefore, true);
+  assert.equal(payload.reading.hasMoreAfter, true);
+  assert.equal(payload.reading.truncated, false);
+});
+
 test('production undo and redo submit Echo replacement edits', async () => {
   const harness = await openedHarness({
     hostLines: ['abc'],

@@ -132,7 +132,13 @@ function settlementPayload() {
     reading: {
       readingId: 'reading:cli',
       lines: ['cli history'],
+      coverage: 'full',
       lineCount: 1,
+      startLine: 0,
+      returnedLineCount: 1,
+      totalLineCount: 1,
+      hasMoreBefore: false,
+      hasMoreAfter: false,
       cursorLine: 0,
       viewportLineCount: 1,
       truncated: false,

@@ -52,7 +52,12 @@ interface JeditWscHistoryRecordDraft {
   readonly submittedAtMs?: number;
   readonly receiptId?: string;
   readonly readingId?: string;
+  readonly readingCoverage?: string;
+  readonly readingStartLine?: number;
   readonly readingLineCount?: number;
+  readonly readingReturnedLineCount?: number;
+  readonly readingTotalLineCount?: number;
+  readonly readingTruncated?: boolean;
   readonly readingTextDigest?: string;
   readonly checkpointId?: string;
   readonly exportEvidenceId?: string;
@@ -94,7 +99,12 @@ interface JeditWscHistoryCommonFields {
 
 interface JeditWscHistoryReadingPayload {
   readonly readingId?: string;
+  readonly coverage?: string;
+  readonly startLine?: number;
   readonly lineCount?: number;
+  readonly returnedLineCount?: number;
+  readonly totalLineCount?: number;
+  readonly truncated?: boolean;
   readonly lines?: readonly string[];
 }
 
@@ -164,7 +174,12 @@ function appliedRecord(
     evidencePosture: JEDIT_WSC_HISTORY_SETTLEMENT_EVIDENCE,
     ...commonPayloadFields(payload),
     readingId,
+    readingCoverage: payload.reading?.coverage,
+    readingStartLine: payload.reading?.startLine,
     readingLineCount: payload.reading?.lineCount,
+    readingReturnedLineCount: payload.reading?.returnedLineCount,
+    readingTotalLineCount: payload.reading?.totalLineCount,
+    readingTruncated: payload.reading?.truncated,
     readingTextDigest: readingDigest(payload.reading?.lines),
     exportEvidenceId: readingId != null
       ? `${JEDIT_WSC_CURRENT_HISTORY_EXPORT_EVIDENCE_PREFIX}${envelopeId}:${readingId}`

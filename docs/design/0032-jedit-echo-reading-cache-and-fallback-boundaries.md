@@ -51,6 +51,26 @@ jedit UI command
 Echo remains generic. It does not own text, editor, buffer, cursor, file,
 selection, preview, highlight, or save semantics.
 
+## WSC Reading Evidence
+
+WSC retained readings are evidence. They are not automatically recovery
+material and they are not automatically host materialization payloads.
+
+A retained text edit envelope may carry:
+
+- operation evidence, such as the edit range, receipt, file path, and submitted
+  time;
+- observation evidence, such as a bounded reading window and its coverage
+  metadata;
+- replay or export evidence, if a later cycle proves a full projection or a
+  replayable operation chain from a known full basis.
+
+A bounded reading is not a document. A current-history export, recovered
+materialization, or restart recovery path must fail closed unless it has either
+a full-document projection or a replayable causal operation chain from a known
+full basis. Window-only evidence remains useful for history and debugging, but
+it must not be presented as recovered full text and must not be written to disk.
+
 ## Local Witnesses
 
 ```bash

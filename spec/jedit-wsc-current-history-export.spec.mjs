@@ -147,6 +147,43 @@ test('current WSC history export obstructs malformed retained evidence instead o
   assert.deepEqual(saved, []);
 });
 
+test('current WSC history export blocks bounded reading evidence before materialization', async () => {
+  const [currentExport, ports] = await exportModules();
+  const saved = [];
+  let materializeCount = 0;
+  const result = currentExport.exportCurrentJeditWscHistory({
+    store: fakeStore({
+      envelopeIds: [BASIS_B],
+      readEnvelope: (basisId) => ({
+        status: 'JEDIT_WSC_WORKSPACE_STORE_READ',
+        envelope: {
+          envelopeId: basisId,
+          bytes: settlementBytes(20, boundedReadingPayload()),
+        },
+        workspacePath: '/repo/.jedit/echo-wsc/envelopes',
+      }),
+    }),
+    editorFile: fakeEditorFile(saved),
+    materializer: {
+      materialize: () => {
+        materializeCount += 1;
+        return {
+          status: ports.JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_OBSTRUCTED,
+          obstruction: {
+            code: ports.JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_FAILED,
+            message: 'must not materialize a bounded reading',
+          },
+        };
+      },
+    },
+  });
+
+  assert.equal(result.status, ports.JEDIT_WSC_CURRENT_HISTORY_EXPORT_OBSTRUCTED);
+  assert.equal(result.obstruction.code, ports.JEDIT_WSC_CURRENT_HISTORY_BOUNDED_READING_NOT_MATERIALIZABLE);
+  assert.equal(materializeCount, 0);
+  assert.deepEqual(saved, []);
+});
+
 test('point-in-time WSC history export materializes the requested historical basis', async () => {
   const [currentExport, ports] = await exportModules();
   const saved = [];
@@ -443,11 +480,40 @@ function envelopeMaterializer() {
   };
 }
 
-function settlementBytes(submittedAtMs) {
+function settlementBytes(submittedAtMs, reading = fullReadingPayload()) {
   return new TextEncoder().encode(JSON.stringify({
     schemaVersion: 'jedit.workspace_text_edit_settlement.v1',
     submittedAtMs,
+    reading,
   }));
+}
+
+function fullReadingPayload() {
+  return {
+    readingId: READING_ID,
+    lines: ['full text'],
+    coverage: 'full',
+    lineCount: 1,
+    startLine: 0,
+    returnedLineCount: 1,
+    totalLineCount: 1,
+    hasMoreBefore: false,
+    hasMoreAfter: false,
+    cursorLine: 0,
+    viewportLineCount: 24,
+    truncated: false,
+  };
+}
+
+function boundedReadingPayload() {
+  return {
+    ...fullReadingPayload(),
+    coverage: 'window',
+    lines: ['window text'],
+    returnedLineCount: 1,
+    totalLineCount: 2,
+    hasMoreAfter: true,
+  };
 }
 
 function rejectionBytes(submittedAtMs) {
