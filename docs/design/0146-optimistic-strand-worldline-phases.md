@@ -3,7 +3,7 @@ title: "WF-0122 - Optimistic Strand Worldline Phases"
 legend: "WF"
 lane: "design"
 issue: "https://github.com/flyingrobots/jedit/issues/158"
-status: "proposed"
+status: "landed"
 owners:
   - "@flyingrobots"
 created: "2026-06-26"
@@ -14,7 +14,26 @@ updated: "2026-06-27"
 
 ## Linked Issue
 
-- [#158 WF-0122: Optimistic strand worldline phases](https://github.com/flyingrobots/jedit/issues/158)
+- [#158 WF-0122: Optimistic strand worldline phases](https://github.com/flyingrobots/jedit/issues/158) landed through
+  [PR #160](https://github.com/flyingrobots/jedit/pull/160).
+
+## Outcome
+
+PR #160 landed the JEDIT-side product and architecture slice:
+
+- rapid typing renders through local/session projection without waiting for a
+  bounded Echo observation to return;
+- bounded Echo readings carry coverage and cannot replace whole editor text;
+- local optimistic text remains visible on obstruction;
+- speculative edit posture is explicit enough for the UI/history surfaces;
+- dependent optimistic edits are blocked when an earlier dependency obstructs;
+- worldline/history UI can name canonical, session, speculative, braid, and
+  obstructed posture.
+
+The remaining native runtime work moved to
+[#164 Native Echo speculative intent runtime](https://github.com/flyingrobots/jedit/issues/164).
+WF-0108 `:why` will consume this posture when explaining optimistic or
+conflicted visible text.
 
 ## Decision Summary
 
