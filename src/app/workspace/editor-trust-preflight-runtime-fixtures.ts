@@ -7,7 +7,12 @@ import {
   type FileSystemPort,
 } from '../../ports/file-system.js';
 import type { GraftDiagnosticsPort } from '../../ports/graft-diagnostics.js';
-import type { GraftInfo, GraftSessionPort } from '../../ports/graft-session.js';
+import {
+  GraftProjectionPostures,
+  GraftProjectionSources,
+  type GraftInfo,
+  type GraftSessionPort,
+} from '../../ports/graft-session.js';
 import type { I18nLocaleOption, I18nPort } from '../../ports/i18n.js';
 import {
   JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED,
@@ -245,6 +250,8 @@ function preflightGraftInfo(): GraftInfo {
     path: PREFLIGHT_DEFAULT_FILE_PATH,
     relativePath: GRAFT_INFO_RELATIVE_PATH,
     dirty: false,
+    projectionSource: GraftProjectionSources.SavedFile,
+    projectionPosture: GraftProjectionPostures.Current,
     outlineItems: [],
     changeLines: [],
   };

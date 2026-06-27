@@ -81,6 +81,13 @@ when `colorful >= 0.2.1` is available on the `PATH` inherited by the running
 If Colorful is missing, too old, or returns invalid data, source editing still
 works. Prose highlighting is simply inactive for that projection.
 
+The Graft drawer is a separate projection surface from source highlighting.
+When the drawer is populated from saved-file structural data, it must label that
+source and whether the data is stale relative to the visible buffer. A plain
+text file can therefore show live Colorful prose projection while the drawer
+also says that structural outline is unavailable for that file type. The drawer
+must not collapse those facts into a bare "no structural outline" message.
+
 From a local Colorful checkout, the project-provided installer places the CLI
 under `~/.colorful-language/bin`:
 

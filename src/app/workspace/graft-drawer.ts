@@ -12,7 +12,7 @@ import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 import type { Cmd } from '@flyingrobots/bijou-tui';
 
-const GRAFT_META_ROWS = 5;
+const GRAFT_META_ROWS = 7;
 const GRAFT_CHANGE_ROWS = 5;
 
 export function updateGraftDrawerFromKey(
