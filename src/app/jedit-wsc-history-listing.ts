@@ -40,6 +40,7 @@ const SORT_AFTER = 1;
 const SHA256_ALGORITHM = 'sha256';
 const HEX_ENCODING = 'hex';
 const MISSING_TIMESTAMP_SORT = Number.MAX_SAFE_INTEGER;
+const READING_COVERAGE_FULL = 'full';
 
 interface JeditWscHistoryRecordDraft {
   readonly basisId: string;
@@ -52,7 +53,12 @@ interface JeditWscHistoryRecordDraft {
   readonly submittedAtMs?: number;
   readonly receiptId?: string;
   readonly readingId?: string;
+  readonly readingCoverage?: string;
+  readonly readingStartLine?: number;
   readonly readingLineCount?: number;
+  readonly readingReturnedLineCount?: number;
+  readonly readingTotalLineCount?: number;
+  readonly readingTruncated?: boolean;
   readonly readingTextDigest?: string;
   readonly checkpointId?: string;
   readonly exportEvidenceId?: string;
@@ -94,7 +100,12 @@ interface JeditWscHistoryCommonFields {
 
 interface JeditWscHistoryReadingPayload {
   readonly readingId?: string;
+  readonly coverage?: string;
+  readonly startLine?: number;
   readonly lineCount?: number;
+  readonly returnedLineCount?: number;
+  readonly totalLineCount?: number;
+  readonly truncated?: boolean;
   readonly lines?: readonly string[];
 }
 
@@ -157,6 +168,7 @@ function appliedRecord(
   payload: JeditWscHistoryEnvelopePayload,
 ): JeditWscHistoryRecordDraft {
   const readingId = payload.reading?.readingId;
+  const readingCoverage = payload.reading?.coverage;
   return {
     basisId: envelopeId,
     envelopeId,
@@ -164,9 +176,14 @@ function appliedRecord(
     evidencePosture: JEDIT_WSC_HISTORY_SETTLEMENT_EVIDENCE,
     ...commonPayloadFields(payload),
     readingId,
+    readingCoverage,
+    readingStartLine: payload.reading?.startLine,
     readingLineCount: payload.reading?.lineCount,
+    readingReturnedLineCount: payload.reading?.returnedLineCount,
+    readingTotalLineCount: payload.reading?.totalLineCount,
+    readingTruncated: payload.reading?.truncated,
     readingTextDigest: readingDigest(payload.reading?.lines),
-    exportEvidenceId: readingId != null
+    exportEvidenceId: readingId != null && readingCoverage === READING_COVERAGE_FULL
       ? `${JEDIT_WSC_CURRENT_HISTORY_EXPORT_EVIDENCE_PREFIX}${envelopeId}:${readingId}`
       : undefined,
   };

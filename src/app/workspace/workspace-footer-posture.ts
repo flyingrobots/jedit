@@ -1,4 +1,5 @@
 import { workspaceTextAuthorityPosture } from './workspace-text-authority.js';
+import { WorkspaceTextAuthorityKinds } from './workspace-text-authority.js';
 import {
   workspaceWorldlineContextLabel,
   workspaceWorldlineMaterialization,
@@ -12,7 +13,7 @@ export function workspaceFooterTextPosture(model: WorkspaceModel): string {
     workspaceTextAuthorityPosture(model.textAuthority),
     workspaceWorldlineContextLabel({
       worldline: model.worldline,
-      materialization: workspaceWorldlineMaterialization(model.editor?.dirty),
+      materialization: workspaceFooterMaterialization(model),
     }),
   ].join(' | ');
 }
@@ -21,4 +22,12 @@ export function workspaceHistoryContextLine(model: WorkspaceModel): string | und
   return model.historyDrawerView === WorkspaceHistoryDrawerViews.Worldlines
     ? worldlineGraphContextLine(model.worldline)
     : undefined;
+}
+
+function workspaceFooterMaterialization(
+  model: WorkspaceModel,
+) {
+  return model.textAuthority.kind === WorkspaceTextAuthorityKinds.Opened
+    ? model.textAuthority.materialization
+    : workspaceWorldlineMaterialization(model.editor?.dirty);
 }

@@ -10,6 +10,10 @@ export const JEDIT_WSC_CURRENT_HISTORY_MISSING_CURRENT_BASIS = 'missing_current_
 export const JEDIT_WSC_CURRENT_HISTORY_WSC_STORE_OBSTRUCTED = 'wsc_store_obstructed';
 export const JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_FAILED = 'materialization_failed';
 export const JEDIT_WSC_CURRENT_HISTORY_HOST_ARTIFACT_WRITE_FAILED = 'host_artifact_write_failed';
+export const JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_REQUIRES_FULL_PROJECTION =
+  'materialization_requires_full_projection';
+export const JEDIT_WSC_CURRENT_HISTORY_BOUNDED_READING_NOT_MATERIALIZABLE =
+  'bounded_reading_not_materializable';
 
 export interface JeditWscCurrentHistoryArtifact {
   readonly filePath: string;

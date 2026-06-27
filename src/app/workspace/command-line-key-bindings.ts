@@ -192,8 +192,27 @@ function shouldAcceptChangingCommandLineCompletion(
 ): boolean {
   return (
     workspaceCommandLineReplacementChangesInput(model, selected.replacement) &&
+    !commandCompletionOnlyChangesCase(model, selected) &&
     shouldAcceptCommandLineCompletionOnEnter(model, selected)
   );
+}
+
+function commandCompletionOnlyChangesCase(
+  model: WorkspaceModel,
+  selected: InlineCompletionItem,
+): boolean {
+  if (selected.kind !== INLINE_COMPLETION_ITEM_KIND.Command) {
+    return false;
+  }
+  const input = model.commandLine.input;
+  const start = Math.max(
+    0,
+    Math.min(input.length, selected.replacement.start),
+  );
+  const end = Math.max(start, Math.min(input.length, selected.replacement.end));
+  const current = input.slice(start, end);
+  return current !== selected.replacement.text &&
+    current.toLowerCase() === selected.replacement.text.toLowerCase();
 }
 
 function shouldAcceptCommandLineCompletionOnEnter(

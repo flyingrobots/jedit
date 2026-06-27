@@ -113,8 +113,7 @@ async function runOpenEditSaveAndQuitScenario() {
     !harness.model.quitConfirmOpen && forceQuitCommands.length === PREFLIGHT_ONE;
   harness.setModel(dirtyModel);
   const saveCommands = await harness.key(SAVE_KEY, { ctrl: true });
-  await harness.runFirst(saveCommands);
-  await harness.runFirst(saveCommands.slice(PREFLIGHT_ONE));
+  await harness.runAll(saveCommands);
   return {
     harness,
     dirtyModel,

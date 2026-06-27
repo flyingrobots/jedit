@@ -13,6 +13,9 @@ const POSTURE_DIRTY = 'dirty';
 const POSTURE_CHECKPOINTED = 'checkpointed';
 const POSTURE_EXPORTED = 'exported';
 const POSTURE_OBSTRUCTED = 'obstructed';
+const COVERAGE_FULL = 'full';
+const COVERAGE_WINDOW = 'window';
+const FULL_READING_START_LINE = 0;
 
 export const WorkspaceTextReadingPostures = Object.freeze({
   NoText: POSTURE_NO_TEXT,
@@ -25,24 +28,49 @@ export const WorkspaceTextReadingPostures = Object.freeze({
   Obstructed: POSTURE_OBSTRUCTED,
 } as const);
 
+export const WorkspaceTextReadingCoverages = Object.freeze({
+  Full: COVERAGE_FULL,
+  Window: COVERAGE_WINDOW,
+} as const);
+
 export type WorkspaceTextReadingPosture =
   typeof WorkspaceTextReadingPostures[keyof typeof WorkspaceTextReadingPostures];
+export type WorkspaceTextReadingCoverage =
+  typeof WorkspaceTextReadingCoverages[keyof typeof WorkspaceTextReadingCoverages];
 
-export interface WorkspaceTextReadingCache {
+export interface WorkspaceTextReadingCacheBase {
   readonly bufferId: string;
   readonly readingId: string;
   readonly lines: readonly string[];
+  readonly coverage: WorkspaceTextReadingCoverage;
   readonly lineCount: number;
+  readonly startLine: number;
+  readonly returnedLineCount: number;
+  readonly totalLineCount: number;
+  readonly hasMoreBefore: boolean;
+  readonly hasMoreAfter: boolean;
   readonly cursorLine: number;
   readonly viewportLineCount: number;
   readonly truncated: boolean;
 }
 
+export interface WorkspaceTextFullReadingCache extends WorkspaceTextReadingCacheBase {
+  readonly coverage: typeof COVERAGE_FULL;
+}
+
+export interface WorkspaceTextWindowReadingCache extends WorkspaceTextReadingCacheBase {
+  readonly coverage: typeof COVERAGE_WINDOW;
+}
+
+export type WorkspaceTextReadingCache =
+  | WorkspaceTextFullReadingCache
+  | WorkspaceTextWindowReadingCache;
+
 export interface WorkspaceTextReadingProjection {
   readonly filePath: string;
   readonly readOnly: boolean;
   readonly dirty: boolean;
-  readonly cache?: WorkspaceTextReadingCache;
+  readonly lines: readonly string[];
   readonly existing?: EditorState;
 }
 
@@ -54,10 +82,19 @@ export interface WorkspaceTextReadingCachePostureOptions {
   readonly lastExportReadingId?: string;
 }
 
-export function editorFromWorkspaceTextReadingCache(
+export interface WorkspaceTextReadingCoverageOptions {
+  readonly startLine: number;
+  readonly returnedLineCount: number;
+  readonly totalLineCount: number;
+  readonly hasMoreBefore: boolean;
+  readonly hasMoreAfter: boolean;
+  readonly truncated: boolean;
+}
+
+export function editorFromWorkspaceTextLines(
   projection: WorkspaceTextReadingProjection,
 ): EditorState {
-  const lines = projection.cache?.lines ?? [EMPTY_LINE];
+  const lines = projection.lines.length === 0 ? [EMPTY_LINE] : projection.lines;
   return {
     path: projection.filePath,
     lines,
@@ -74,15 +111,39 @@ export function editorFromWorkspaceTextReadingCache(
     registers: projection.existing?.registers,
     lastVimEdit: projection.existing?.lastVimEdit,
     marks: projection.existing?.marks,
+    lastSearch: projection.existing?.lastSearch,
     undoStack: projection.existing?.undoStack ?? EMPTY_STACK,
     redoStack: projection.existing?.redoStack ?? EMPTY_STACK,
   };
 }
 
+export function editorFromFullWorkspaceTextReadingCache(
+  projection: Omit<WorkspaceTextReadingProjection, 'lines'> & {
+    readonly cache: WorkspaceTextFullReadingCache;
+  },
+): EditorState {
+  return editorFromWorkspaceTextLines({
+    ...projection,
+    lines: projection.cache.lines,
+  });
+}
+
 export function materializeWorkspaceTextReadingCache(
-  cache: WorkspaceTextReadingCache,
+  cache: WorkspaceTextFullReadingCache,
 ): string {
   return cache.lines.join('\n');
+}
+
+export function canReadingReplaceWholeEditor(
+  cache: WorkspaceTextReadingCache | undefined,
+): cache is WorkspaceTextFullReadingCache {
+  return cache?.coverage === COVERAGE_FULL;
+}
+
+export function workspaceTextReadingCoverage(
+  options: WorkspaceTextReadingCoverageOptions,
+): WorkspaceTextReadingCoverage {
+  return isFullCoverage(options) ? COVERAGE_FULL : COVERAGE_WINDOW;
 }
 
 export function workspaceTextReadingCachePosture(
@@ -113,9 +174,19 @@ function editorCursorRow(
   projection: WorkspaceTextReadingProjection,
   lines: readonly string[],
 ): number {
-  return clampLine(projection.existing?.cursorRow ?? projection.cache?.cursorLine ?? FIRST_LINE, lines);
+  return clampLine(projection.existing?.cursorRow ?? FIRST_LINE, lines);
 }
 
 function clampLine(row: number, lines: readonly string[]): number {
   return Math.max(FIRST_LINE, Math.min(row, Math.max(FIRST_LINE, lines.length - 1)));
+}
+
+function isFullCoverage(
+  options: WorkspaceTextReadingCoverageOptions,
+): boolean {
+  return options.startLine === FULL_READING_START_LINE
+    && options.hasMoreBefore !== true
+    && options.hasMoreAfter !== true
+    && options.truncated !== true
+    && options.returnedLineCount === options.totalLineCount;
 }

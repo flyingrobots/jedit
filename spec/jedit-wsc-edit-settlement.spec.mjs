@@ -138,15 +138,11 @@ function openedTextModel(modules) {
       bufferId: 'buffer:notes',
       readOnly: false,
       dirty: false,
-      cache: {
+      cache: fullReadingCache({
         bufferId: 'buffer:notes',
         readingId: 'reading:before',
         lines: ['before'],
-        lineCount: 1,
-        cursorLine: 0,
-        viewportLineCount: 24,
-        truncated: false,
-      },
+      }),
     }),
   };
 }
@@ -160,17 +156,33 @@ function appliedEditMessage(modules) {
       filePath: '/repo/notes.txt',
       bufferId: 'buffer:notes',
       receiptId: 'receipt:122',
-      cache: {
+      cache: fullReadingCache({
         bufferId: 'buffer:notes',
         readingId: 'reading:after',
         lines: ['after'],
-        lineCount: 1,
-        cursorLine: 0,
-        viewportLineCount: 24,
-        truncated: false,
-      },
+      }),
       wscSettlementEnvelope: settlementEnvelope(),
     },
+  };
+}
+
+function fullReadingCache(overrides) {
+  const lines = overrides.lines ?? [''];
+  return {
+    bufferId: 'buffer:notes',
+    readingId: 'reading:test',
+    lines,
+    coverage: 'full',
+    lineCount: lines.length,
+    startLine: 0,
+    returnedLineCount: lines.length,
+    totalLineCount: lines.length,
+    hasMoreBefore: false,
+    hasMoreAfter: false,
+    cursorLine: 0,
+    viewportLineCount: 24,
+    truncated: false,
+    ...overrides,
   };
 }
 

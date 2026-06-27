@@ -29,6 +29,7 @@ export function createI18nMock(overrides = {}) {
     'footer.command.details.ttd': 'Observe a causal tick without moving canonical head',
     'footer.command.details.strand': 'Create, switch, or list copy-on-write strands',
     'footer.command.details.braid': 'View, preview, or admit braid candidates',
+    'footer.command.details.why': 'Explain the last meaningful command',
     'footer.command.hints.tab_accept': 'tab accept',
     'footer.command.hints.enter_run': 'enter run',
     'footer.command.hints.esc_cancel': 'esc cancel',

@@ -13,6 +13,14 @@ const CONFLICT_OBSTRUCTED = 'obstructed';
 const MATERIALIZED = 'materialized';
 const UNMATERIALIZED = 'unmaterialized';
 const NO_PROJECTION = 'no-projection';
+const PHASE_LOCAL = 'local';
+const PHASE_UNCONFIRMED = 'unconfirmed';
+const PHASE_WAL = 'WAL';
+const PHASE_PENDING = 'pending';
+const PHASE_ADMITTED = 'admitted';
+const PHASE_OBSERVED = 'observed';
+const PHASE_SETTLED = 'settled';
+const PHASE_CONFLICTED = 'conflicted';
 const VIEW_ECHO = 'echo';
 const VIEW_WORLDLINES = 'worldlines';
 
@@ -49,6 +57,17 @@ export const WorkspaceWorldlineMaterializationKinds = Object.freeze({
   NoProjection: NO_PROJECTION,
 } as const);
 
+export const WorkspaceWorldlinePhaseKinds = Object.freeze({
+  Local: PHASE_LOCAL,
+  Unconfirmed: PHASE_UNCONFIRMED,
+  Wal: PHASE_WAL,
+  Pending: PHASE_PENDING,
+  Admitted: PHASE_ADMITTED,
+  Observed: PHASE_OBSERVED,
+  Settled: PHASE_SETTLED,
+  Conflicted: PHASE_CONFLICTED,
+} as const);
+
 export const WorkspaceHistoryDrawerViews = Object.freeze({
   Echo: VIEW_ECHO,
   Worldlines: VIEW_WORLDLINES,
@@ -62,6 +81,8 @@ export type WorkspaceWorldlineConflictKind =
   typeof WorkspaceWorldlineConflictKinds[keyof typeof WorkspaceWorldlineConflictKinds];
 export type WorkspaceWorldlineMaterializationKind =
   typeof WorkspaceWorldlineMaterializationKinds[keyof typeof WorkspaceWorldlineMaterializationKinds];
+export type WorkspaceWorldlinePhaseKind =
+  typeof WorkspaceWorldlinePhaseKinds[keyof typeof WorkspaceWorldlinePhaseKinds];
 export type WorkspaceHistoryDrawerView =
   typeof WorkspaceHistoryDrawerViews[keyof typeof WorkspaceHistoryDrawerViews];
 

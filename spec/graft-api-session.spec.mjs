@@ -114,6 +114,32 @@ test('Graft session port uses the direct API without a close lifecycle', async (
   ]);
 });
 
+test('Graft session labels dirty drawer data as stale saved-file projection', async () => {
+  const { graft } = await loadGraftApiSession();
+  const api = {
+    createRepoLocalGraft: (options) => ({ cwd: options.cwd }),
+    callGraftTool: async (_session, name) => {
+      if (name === 'file_outline') {
+        return {
+          projection: 'ready',
+          jumpTable: [],
+        };
+      }
+      return { files: [] };
+    },
+  };
+  const port = graft.createGraftSessionPort({ api });
+  const info = await port.loadGraftInfo({
+    workspaceRoot: REPO_ROOT,
+    filePath: path.join(REPO_ROOT, 'notes.txt'),
+    dirty: true,
+  });
+
+  assert.equal(info.projectionSource, 'saved-file');
+  assert.equal(info.projectionPosture, 'stale');
+  assert.equal(info.notice, 'saved file only; unsaved buffer edits not included');
+});
+
 test('Graft file outline decoder rejects malformed jump table entries', async () => {
   const { graft } = await loadGraftApiSession();
 

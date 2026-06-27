@@ -1,13 +1,22 @@
 import { createRepoLocalGraft } from '@flyingrobots/graft';
 import { execFileSync } from 'node:child_process';
 import { isAbsolute, relative } from 'node:path';
-import type { FailedGraftInfoRequest, GraftFileRequest, GraftInfo, GraftSessionPort } from '../ports/graft-session.js';
+import {
+  GraftProjectionPostures,
+  GraftProjectionSources,
+  type FailedGraftInfoRequest,
+  type GraftFileRequest,
+  type GraftInfo,
+  type GraftProjectionPosture,
+  type GraftSessionPort,
+} from '../ports/graft-session.js';
 
 import { GraftInvalidPayloadError } from '../domain/errors.js';
 
 const GRAFT_FILE_OUTLINE_TOOL = 'file_outline';
 const GRAFT_DIFF_TOOL = 'graft_diff';
 const GRAFT_PROJECTION_REFUSED = 'refused';
+const SAVED_FILE_ONLY_NOTICE = 'saved file only; unsaved buffer edits not included';
 
 type JsonPrimitive = string | number | boolean | null;
 type JsonValue = JsonPrimitive | readonly JsonValue[] | JsonObject;
@@ -72,6 +81,11 @@ export interface GraftStructDiffResult {
 
 interface GraftOutlineProjection {
   readonly outlineItems: readonly GraftOutlineItem[];
+  readonly error?: string;
+}
+
+interface SavedFileProjectionPostureInput {
+  readonly dirty: boolean;
   readonly error?: string;
 }
 
@@ -156,11 +170,23 @@ async function loadGraftInfo(request: GraftFileRequest, manager: GraftApiSession
     path: filePath,
     relativePath,
     dirty,
+    projectionSource: GraftProjectionSources.SavedFile,
+    projectionPosture: savedFileProjectionPosture({
+      dirty,
+      ...(outline.error == null ? {} : { error: outline.error }),
+    }),
     outlineItems: outline.outlineItems,
     changeLines: await loadGraftChanges(manager, workspaceRoot, relativePath),
-    ...(dirty ? { notice: 'saved file only; unsaved edits are not reflected' } : {}),
+    ...(dirty ? { notice: SAVED_FILE_ONLY_NOTICE } : {}),
     ...(outline.error != null ? { error: outline.error } : {}),
   };
+}
+
+function savedFileProjectionPosture(input: SavedFileProjectionPostureInput): GraftProjectionPosture {
+  if (input.error != null) {
+    return GraftProjectionPostures.Obstructed;
+  }
+  return input.dirty ? GraftProjectionPostures.Stale : GraftProjectionPostures.Current;
 }
 
 function outsideWorkspaceGraftInfo(request: Pick<GraftFileRequest, 'filePath' | 'dirty'>): GraftInfo {
@@ -168,6 +194,8 @@ function outsideWorkspaceGraftInfo(request: Pick<GraftFileRequest, 'filePath' | 
     path: request.filePath,
     relativePath: request.filePath,
     dirty: request.dirty,
+    projectionSource: GraftProjectionSources.Unavailable,
+    projectionPosture: GraftProjectionPostures.Unavailable,
     outlineItems: [],
     changeLines: ['outside workspace root'],
     error: 'Graft only runs against files inside the launch workspace.',
@@ -209,10 +237,12 @@ export function failedGraftInfo(request: FailedGraftInfoRequest): GraftInfo {
     path: filePath,
     relativePath: relative(workspaceRoot, filePath).replace(/\\/g, '/'),
     dirty,
+    projectionSource: GraftProjectionSources.Unavailable,
+    projectionPosture: GraftProjectionPostures.Obstructed,
     outlineItems: [],
     changeLines: [],
     error: `graft request failed: ${message}`,
-    ...(dirty ? { notice: 'saved file only; unsaved edits are not reflected' } : {}),
+    ...(dirty ? { notice: SAVED_FILE_ONLY_NOTICE } : {}),
   };
 }
 

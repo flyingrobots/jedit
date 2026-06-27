@@ -22,7 +22,12 @@ export interface JeditWscHistoryRecord {
   readonly submittedAtMs?: number;
   readonly receiptId?: string;
   readonly readingId?: string;
+  readonly readingCoverage?: string;
+  readonly readingStartLine?: number;
   readonly readingLineCount?: number;
+  readonly readingReturnedLineCount?: number;
+  readonly readingTotalLineCount?: number;
+  readonly readingTruncated?: boolean;
   readonly readingTextDigest?: string;
   readonly checkpointId?: string;
   readonly exportEvidenceId?: string;

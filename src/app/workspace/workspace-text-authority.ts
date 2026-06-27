@@ -1,10 +1,16 @@
 import type { RuntimeIssue } from '@flyingrobots/bijou-tui';
+import type { EditorFileFingerprint } from '../../ports/editor-file.js';
 import type { TextRuntimeProfile } from '../text-runtime-profile.js';
 import type { EditorState } from './editor/model.js';
 import {
-  editorFromWorkspaceTextReadingCache,
+  WorkspaceWorldlineMaterializationKinds,
+  type WorkspaceWorldlineMaterializationKind,
+} from './worldline-types.js';
+import {
+  editorFromFullWorkspaceTextReadingCache,
   WorkspaceTextReadingPostures,
   workspaceTextReadingCachePosture,
+  type WorkspaceTextFullReadingCache,
   type WorkspaceTextReadingCache,
   type WorkspaceTextReadingPosture,
 } from './workspace-text-reading-cache.js';
@@ -13,6 +19,16 @@ const AUTHORITY_NONE = 'none';
 const AUTHORITY_PENDING_OPEN = 'pending-open';
 const AUTHORITY_OPENED = 'opened';
 const AUTHORITY_OBSTRUCTED = 'obstructed';
+const HOST_BASIS_FILE = 'file';
+const HOST_BASIS_MISSING = 'missing';
+const INTENT_STATUS_PREDICTED = 'predicted';
+const INTENT_STATUS_SUBMITTED = 'submitted';
+const INTENT_STATUS_ADMITTED = 'admitted';
+const INTENT_STATUS_REBASED = 'rebased';
+const INTENT_STATUS_BLOCKED = 'blocked';
+const INTENT_STATUS_OBSTRUCTED = 'obstructed';
+const INTENT_STATUS_SUPERSEDED = 'superseded';
+const INTENT_STATUS_ABANDONED = 'abandoned';
 
 export const WorkspaceTextAuthorityKinds = Object.freeze({
   None: AUTHORITY_NONE,
@@ -21,10 +37,31 @@ export const WorkspaceTextAuthorityKinds = Object.freeze({
   Obstructed: AUTHORITY_OBSTRUCTED,
 } as const);
 
+export const WorkspaceTextHostBasisKinds = Object.freeze({
+  File: HOST_BASIS_FILE,
+  Missing: HOST_BASIS_MISSING,
+} as const);
+
+export const WorkspaceTextIntentStatuses = Object.freeze({
+  Predicted: INTENT_STATUS_PREDICTED,
+  Submitted: INTENT_STATUS_SUBMITTED,
+  Admitted: INTENT_STATUS_ADMITTED,
+  Rebased: INTENT_STATUS_REBASED,
+  Blocked: INTENT_STATUS_BLOCKED,
+  Obstructed: INTENT_STATUS_OBSTRUCTED,
+  Superseded: INTENT_STATUS_SUPERSEDED,
+  Abandoned: INTENT_STATUS_ABANDONED,
+} as const);
+
 export type WorkspaceTextAuthorityKind =
   typeof WorkspaceTextAuthorityKinds[keyof typeof WorkspaceTextAuthorityKinds];
+export type WorkspaceTextHostBasisKind =
+  typeof WorkspaceTextHostBasisKinds[keyof typeof WorkspaceTextHostBasisKinds];
+export type WorkspaceTextIntentStatus =
+  typeof WorkspaceTextIntentStatuses[keyof typeof WorkspaceTextIntentStatuses];
 
 export type { WorkspaceTextReadingCache } from './workspace-text-reading-cache.js';
+export { canReadingReplaceWholeEditor } from './workspace-text-reading-cache.js';
 
 export interface WorkspaceTextAuthorityNone {
   readonly kind: typeof AUTHORITY_NONE;
@@ -46,7 +83,15 @@ export interface WorkspaceTextAuthorityOpened {
   readonly bufferId: string;
   readonly readOnly: boolean;
   readonly dirty: boolean;
+  readonly materialization: WorkspaceWorldlineMaterializationKind;
+  readonly hostBasis: WorkspaceTextHostBasisKind;
+  readonly hostFingerprint?: EditorFileFingerprint;
   readonly cache?: WorkspaceTextReadingCache;
+  readonly pendingClientSeq?: number;
+  readonly pendingReceiptId?: string;
+  readonly pendingIntentStatus?: WorkspaceTextIntentStatus;
+  readonly blockedByClientSeq?: number;
+  readonly lastObstruction?: RuntimeIssue;
   readonly lastReceiptId?: string;
   readonly lastCheckpointId?: string;
   readonly lastExportReadingId?: string;
@@ -66,10 +111,22 @@ export interface OpenedWorkspaceTextAuthorityOptions {
   readonly bufferId: string;
   readonly readOnly: boolean;
   readonly dirty: boolean;
+  readonly materialization?: WorkspaceWorldlineMaterializationKind;
+  readonly hostBasis?: WorkspaceTextHostBasisKind;
+  readonly hostFingerprint?: EditorFileFingerprint;
   readonly cache?: WorkspaceTextReadingCache;
+  readonly pendingClientSeq?: number;
+  readonly pendingReceiptId?: string;
+  readonly pendingIntentStatus?: WorkspaceTextIntentStatus;
+  readonly blockedByClientSeq?: number;
+  readonly lastObstruction?: RuntimeIssue;
   readonly lastReceiptId?: string;
   readonly lastCheckpointId?: string;
   readonly lastExportReadingId?: string;
+}
+
+interface WorkspaceTextMaterializationOptions {
+  readonly dirty: boolean;
 }
 
 export type WorkspaceTextAuthority =
@@ -110,7 +167,15 @@ export function openedWorkspaceTextAuthority(
     bufferId: options.bufferId,
     readOnly: options.readOnly,
     dirty: options.dirty,
+    materialization: options.materialization ?? materializationFromOptions(options),
+    hostBasis: options.hostBasis ?? WorkspaceTextHostBasisKinds.File,
+    hostFingerprint: options.hostFingerprint,
     cache: options.cache,
+    pendingClientSeq: options.pendingClientSeq,
+    pendingReceiptId: options.pendingReceiptId,
+    pendingIntentStatus: options.pendingIntentStatus,
+    blockedByClientSeq: options.blockedByClientSeq,
+    lastObstruction: options.lastObstruction,
     lastReceiptId: options.lastReceiptId,
     lastCheckpointId: options.lastCheckpointId,
     lastExportReadingId: options.lastExportReadingId,
@@ -149,7 +214,51 @@ export function workspaceTextAuthorityWithReceipt(
   return {
     ...authority,
     dirty: true,
+    materialization: WorkspaceWorldlineMaterializationKinds.Unmaterialized,
+    pendingReceiptId: receiptId,
+    pendingIntentStatus: WorkspaceTextIntentStatuses.Admitted,
     lastReceiptId: receiptId,
+  };
+}
+
+export function workspaceTextAuthorityWithPendingEdit(
+  authority: WorkspaceTextAuthorityOpened,
+  pendingClientSeq: number,
+): WorkspaceTextAuthorityOpened {
+  return {
+    ...authority,
+    dirty: true,
+    materialization: WorkspaceWorldlineMaterializationKinds.Unmaterialized,
+    pendingClientSeq,
+    pendingIntentStatus: WorkspaceTextIntentStatuses.Predicted,
+    lastObstruction: undefined,
+  };
+}
+
+export function workspaceTextAuthorityWithObstruction(
+  authority: WorkspaceTextAuthorityOpened,
+  pendingClientSeq: number,
+  issue: RuntimeIssue,
+): WorkspaceTextAuthorityOpened {
+  return {
+    ...authority,
+    dirty: true,
+    materialization: WorkspaceWorldlineMaterializationKinds.Unmaterialized,
+    pendingClientSeq: authority.pendingClientSeq ?? pendingClientSeq,
+    pendingIntentStatus: WorkspaceTextIntentStatuses.Obstructed,
+    blockedByClientSeq: pendingClientSeq,
+    lastObstruction: issue,
+  };
+}
+
+export function workspaceTextAuthorityWithBlockedIntent(
+  authority: WorkspaceTextAuthorityOpened,
+): WorkspaceTextAuthorityOpened {
+  return {
+    ...authority,
+    dirty: true,
+    materialization: WorkspaceWorldlineMaterializationKinds.Unmaterialized,
+    pendingIntentStatus: WorkspaceTextIntentStatuses.Blocked,
   };
 }
 
@@ -160,6 +269,11 @@ export function workspaceTextAuthorityWithCheckpoint(
   return {
     ...authority,
     dirty: false,
+    pendingClientSeq: undefined,
+    pendingReceiptId: undefined,
+    pendingIntentStatus: undefined,
+    blockedByClientSeq: undefined,
+    lastObstruction: undefined,
     lastCheckpointId: checkpointId,
   };
 }
@@ -167,10 +281,19 @@ export function workspaceTextAuthorityWithCheckpoint(
 export function workspaceTextAuthorityWithExport(
   authority: WorkspaceTextAuthorityOpened,
   readingId: string,
+  hostFingerprint: EditorFileFingerprint,
 ): WorkspaceTextAuthorityOpened {
   return {
     ...authority,
     dirty: false,
+    hostBasis: WorkspaceTextHostBasisKinds.File,
+    hostFingerprint,
+    materialization: WorkspaceWorldlineMaterializationKinds.Materialized,
+    pendingClientSeq: undefined,
+    pendingReceiptId: undefined,
+    pendingIntentStatus: undefined,
+    blockedByClientSeq: undefined,
+    lastObstruction: undefined,
     lastExportReadingId: readingId,
   };
 }
@@ -181,11 +304,19 @@ export function isWorkspaceTextAuthorityOpened(
   return authority.kind === AUTHORITY_OPENED;
 }
 
-export function editorFromWorkspaceTextCache(
-  authority: WorkspaceTextAuthorityOpened,
+function materializationFromOptions(
+  options: WorkspaceTextMaterializationOptions,
+): WorkspaceWorldlineMaterializationKind {
+  return options.dirty
+    ? WorkspaceWorldlineMaterializationKinds.Unmaterialized
+    : WorkspaceWorldlineMaterializationKinds.Materialized;
+}
+
+export function editorFromFullWorkspaceTextCache(
+  authority: WorkspaceTextAuthorityOpened & { readonly cache: WorkspaceTextFullReadingCache },
   existing: EditorState | undefined,
 ): EditorState {
-  return editorFromWorkspaceTextReadingCache({
+  return editorFromFullWorkspaceTextReadingCache({
     filePath: authority.filePath,
     dirty: authority.dirty,
     readOnly: authority.readOnly,

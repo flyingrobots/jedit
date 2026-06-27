@@ -5,9 +5,21 @@ import {
   importDist,
   mockEditor,
   mockKeyBindingContext,
+  mockRuntime,
   mockTitleScreenModel,
   surfaceText,
 } from "./workspace-helpers.mjs";
+
+const HOST_FINGERPRINT_A = Object.freeze({
+  algorithm: "sha256",
+  digest: "host-a",
+  byteLength: 6,
+});
+const HOST_FINGERPRINT_B = Object.freeze({
+  algorithm: "sha256",
+  digest: "host-b",
+  byteLength: 8,
+});
 
 test("colon in normal editor mode enters command-line mode", async () => {
   const [keyBindings, titleScreen, editorMode] = await Promise.all([
@@ -444,9 +456,93 @@ test("enter dispatches edit commands outside the cwd hierarchy", async () => {
   assert.equal(message.result.kind, "opened");
 });
 
-test("enter dispatches write and wq commands through production save", async () => {
-  const [keyBindings, titleScreen, editorMode, authority] = await Promise.all([
+test("enter dispatches edit for missing paths as unmaterialized buffers", async () => {
+  const [keyBindings, runtimeModule, viewer, titleScreen, editorMode] = await Promise.all([
     importDist("app", "workspace", "key-bindings.js"),
+    importDist("app", "workspace", "runtime.js"),
+    importDist("app", "workspace", "viewer.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+  ]);
+  const loadedFiles = [];
+  const savedFiles = [];
+  const openCalls = [];
+  const productionTextSession = fakeProductionTextSession({
+    openBuffer: async (request) => {
+      openCalls.push(request);
+      return {
+        kind: "opened",
+        optic: { buffer: { bufferId: "buffer:foo" } },
+      };
+    },
+    observeWindow: async () => ({
+      kind: "observed",
+      observed: {
+        value: {
+          readingId: "reading:foo",
+          lines: [{ text: "" }],
+          lineCount: 1,
+          cursorLine: 0,
+          viewportLineCount: 24,
+          truncated: false,
+        },
+      },
+    }),
+  });
+  const context = mockKeyBindingContext({
+    nowMs: () => 80,
+    deps: {
+      editorFile: {
+        loadEditorFile(filePath) {
+          loadedFiles.push(filePath);
+          return { kind: "missing", filePath };
+        },
+        saveEditorFile(filePath, lines) {
+          savedFiles.push({ filePath, lines });
+        },
+      },
+      productionTextSession,
+    },
+  });
+  const model = mockTitleScreenModel(titleScreen, {
+    editor: mockEditor(editorMode),
+    focusPane: "editor",
+    footerVisible: true,
+    jeditTheme: commandLineRenderTheme(),
+    commandLine: activeCommandLine("edit foo.txt"),
+  });
+
+  const [pendingOpen, commands] = keyBindings.updateFromKey(
+    { type: "key", key: "enter", ctrl: false, alt: false, shift: false },
+    model,
+    context,
+  );
+  const message = await commands[0]();
+  const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime({ productionTextSession }));
+  const [opened] = runtime.update(message, pendingOpen);
+  const rendered = surfaceText(viewer.renderWorkspace(opened));
+
+  assert.deepEqual(loadedFiles, ["/repo/foo.txt"]);
+  assert.deepEqual(openCalls, [
+    {
+      bufferKey: "/repo/foo.txt",
+      initialText: "",
+      projectionPath: "/repo/foo.txt",
+      atMs: 80,
+    },
+  ]);
+  assert.deepEqual(savedFiles, []);
+  assert.equal(opened.textAuthority.kind, "opened");
+  assert.equal(opened.textAuthority.materialization, "unmaterialized");
+  assert.equal(opened.editor.dirty, false);
+  assert.deepEqual(opened.editor.lines, [""]);
+  assert.match(rendered, /foo\.txt \[clean \| main \| fs:unmaterialized/);
+});
+
+test("enter dispatches write and wq commands through production save", async () => {
+  const [keyBindings, runtimeModule, titleScreen, editorMode, authority] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("app", "workspace", "runtime.js"),
     importDist("ui", "title-screen.js"),
     importDist("app", "workspace", "editor", "mode.js"),
     importDist("app", "workspace", "workspace-text-authority.js"),
@@ -464,7 +560,7 @@ test("enter dispatches write and wq commands through production save", async () 
         },
       },
       productionTextSession: fakeProductionTextSession({
-        exportWindow: async (request) => {
+        exportSnapshot: async (request) => {
           exportCalls.push(request);
           return {
             kind: "exported",
@@ -493,23 +589,192 @@ test("enter dispatches write and wq commands through production save", async () 
     commandDispatchModel(titleScreen, editorMode, authority, "x"),
     context,
   );
-  await writeCommands[0]();
-  await writeCommands[1]();
-  await wqCommands[0]();
-  await wqCommands[1]();
+  assert.equal(writeCommands.length, 1);
+  assert.equal(wqCommands.length, 1);
+  const runtime = runtimeModule.createWorkspaceRuntime(
+    mockRuntime({
+      productionTextSession: context.deps.productionTextSession,
+    }),
+  );
+  const writeExportMessage = await writeCommands[0]();
+  const [writeExported, writeCheckpointCommands] = runtime.update(
+    writeExportMessage,
+    written,
+  );
+  assert.equal(writeCheckpointCommands.length, 1);
+  const writeCheckpointMessage = await writeCheckpointCommands[0]();
+  runtime.update(writeCheckpointMessage, writeExported);
+  const wqExportMessage = await wqCommands[0]();
+  const [wqExported, wqCheckpointCommands] = runtime.update(
+    wqExportMessage,
+    wqModel,
+  );
+  assert.equal(wqCheckpointCommands.length, 1);
+  const wqCheckpointMessage = await wqCheckpointCommands[0]();
+  runtime.update(wqCheckpointMessage, wqExported);
 
   assert.equal(written.commandLine.active, false);
   assert.equal(written.quitConfirmOpen, false);
   assert.equal(written.textRequestId, 1);
   assert.equal(wqModel.commandLine.active, false);
-  assert.equal(wqModel.quitConfirmOpen, true);
+  assert.equal(wqModel.quitConfirmOpen, false);
+  assert.equal(wqModel.quitAfterSaveRequestId, 1);
   assert.equal(wqModel.textRequestId, 1);
+  assert.equal(wqExported.quitConfirmOpen, true);
+  assert.equal(wqExported.quitAfterSaveRequestId, undefined);
   assert.deepEqual(savedFiles, [
     { filePath: "/repo/notes.md", lines: ["alpha", "beta"] },
     { filePath: "/repo/notes.md", lines: ["alpha", "beta"] },
   ]);
   assert.equal(exportCalls.length, 2);
   assert.equal(checkpointCalls.length, 2);
+});
+
+test("blocked production wq remains open with honest materialization status", async () => {
+  const [keyBindings, runtimeModule, titleScreen, editorMode, authority, footerPosture] =
+    await Promise.all([
+      importDist("app", "workspace", "key-bindings.js"),
+      importDist("app", "workspace", "runtime.js"),
+      importDist("ui", "title-screen.js"),
+      importDist("app", "workspace", "editor", "mode.js"),
+      importDist("app", "workspace", "workspace-text-authority.js"),
+      importDist("app", "workspace", "workspace-footer-posture.js"),
+    ]);
+  const savedFiles = [];
+  const exportCalls = [];
+  const checkpointCalls = [];
+  const productionTextSession = fakeProductionTextSession({
+    exportSnapshot: async (request) => {
+      exportCalls.push(request);
+      return {
+        kind: "exported",
+        text: "alpha\nbeta",
+        readingId: "reading:wq",
+      };
+    },
+    checkpointBuffer: async (request) => {
+      checkpointCalls.push(request);
+      return {
+        kind: "checkpointed",
+        result: { checkpointId: "checkpoint:wq" },
+      };
+    },
+  });
+  const context = mockKeyBindingContext({
+    nowMs: () => 89,
+    deps: {
+      editorFile: {
+        loadEditorFile: () => ({
+          lines: ["external"],
+          readOnly: false,
+          fingerprint: HOST_FINGERPRINT_B,
+        }),
+        saveEditorFile(filePath, lines) {
+          savedFiles.push({ filePath, lines });
+        },
+      },
+      productionTextSession,
+    },
+  });
+  const baseModel = commandDispatchModel(titleScreen, editorMode, authority, "x");
+  const model = {
+    ...baseModel,
+    textAuthority: authority.openedWorkspaceTextAuthority({
+      profile: "echoHosted",
+      filePath: "/repo/notes.md",
+      bufferId: "buffer:notes",
+      readOnly: false,
+      dirty: true,
+      hostFingerprint: HOST_FINGERPRINT_A,
+      cache: {
+        bufferId: "buffer:notes",
+        readingId: "reading:local",
+        lines: ["local draft"],
+        lineCount: 1,
+        cursorLine: 0,
+        viewportLineCount: 24,
+        truncated: false,
+      },
+    }),
+  };
+
+  const [pendingWq, commands] = keyBindings.updateFromKey(
+    { type: "key", key: "enter", ctrl: false, alt: false, shift: false },
+    model,
+    context,
+  );
+  assert.equal(commands.length, 1);
+  assert.equal(pendingWq.quitConfirmOpen, false);
+  assert.equal(pendingWq.quitAfterSaveRequestId, 1);
+  const exportMessage = await commands[0]();
+  const runtime = runtimeModule.createWorkspaceRuntime(
+    mockRuntime({ productionTextSession }),
+  );
+  const [blockedModel] = runtime.update(exportMessage, pendingWq);
+  const footer = footerPosture.workspaceFooterTextPosture(blockedModel);
+
+  assert.equal(exportMessage.result.kind, "obstructed");
+  assert.match(exportMessage.result.issue.message, /changed on disk after open/);
+  assert.deepEqual(exportCalls, [{ bufferId: "buffer:notes", atMs: 89 }]);
+  assert.deepEqual(checkpointCalls, []);
+  assert.deepEqual(savedFiles, []);
+  assert.equal(blockedModel.quitConfirmOpen, false);
+  assert.equal(blockedModel.quitAfterSaveRequestId, undefined);
+  assert.equal(blockedModel.textAuthority.dirty, true);
+  assert.equal(blockedModel.textAuthority.materialization, "unmaterialized");
+  assert.equal(blockedModel.editor.dirty, true);
+  assert.match(footer, /dirty \| main \| fs:unmaterialized/);
+});
+
+test("pending production intent blocks wq without arming quit confirmation", async () => {
+  const [keyBindings, titleScreen, editorMode, authority] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "workspace-text-authority.js"),
+  ]);
+  const exportCalls = [];
+  const context = mockKeyBindingContext({
+    nowMs: () => 90,
+    deps: {
+      productionTextSession: fakeProductionTextSession({
+        exportSnapshot: async (request) => {
+          exportCalls.push(request);
+          return {
+            kind: "exported",
+            text: "stale",
+            readingId: "reading:stale",
+          };
+        },
+      }),
+    },
+  });
+  const baseModel = commandDispatchModel(titleScreen, editorMode, authority, "x");
+  const model = {
+    ...baseModel,
+    textRequestId: 4,
+    textAuthority: authority.openedWorkspaceTextAuthority({
+      profile: "echoHosted",
+      filePath: "/repo/notes.md",
+      bufferId: "buffer:notes",
+      readOnly: false,
+      dirty: true,
+      pendingClientSeq: 4,
+      pendingIntentStatus: authority.WorkspaceTextIntentStatuses.Predicted,
+    }),
+  };
+
+  const [blockedModel, commands] = keyBindings.updateFromKey(
+    { type: "key", key: "enter", ctrl: false, alt: false, shift: false },
+    model,
+    context,
+  );
+
+  assert.equal(blockedModel.textRequestId, 4);
+  assert.equal(blockedModel.quitConfirmOpen, false);
+  assert.equal(blockedModel.quitAfterSaveRequestId, undefined);
+  assert.equal(commands.length, 1);
+  assert.equal(exportCalls.length, 0);
 });
 
 test("enter dispatches quit commands through the quit confirmation posture", async () => {
@@ -560,6 +825,117 @@ test("enter dispatches forced quit commands without confirmation", async () => {
     assert.equal(nextModel.quitConfirmOpen, false);
     assert.equal(commands.length, 1);
   }
+});
+
+test("enter dispatches why with a calm no-event obstruction", async () => {
+  const [keyBindings, titleScreen, editorMode] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+  ]);
+
+  const [nextModel, commands] = keyBindings.updateFromKey(
+    { type: "key", key: "enter", ctrl: false, alt: false, shift: false },
+    mockTitleScreenModel(titleScreen, {
+      editor: mockEditor(editorMode),
+      focusPane: "editor",
+      commandLine: activeCommandLine("why"),
+    }),
+    mockKeyBindingContext(),
+  );
+
+  assert.equal(nextModel.commandLine.active, false);
+  assert.equal(nextModel.notifications.items[0].title, "Why");
+  assert.match(
+    nextModel.notifications.items[0].message,
+    /No meaningful command recorded yet.*jedit_why_no_meaningful_event/,
+  );
+  assert.equal(commands.length, 1);
+});
+
+test("enter dispatches why for the last meaningful Vim command", async () => {
+  const [keyBindings, titleScreen, editorMode, editing, authority] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "editor-editing.js"),
+    importDist("app", "workspace", "workspace-text-authority.js"),
+  ]);
+  const editor = mockEditor(editorMode, {
+    lines: ["alpha beta"],
+    cursorRow: 0,
+    cursorCol: 0,
+  });
+  const pending = editing.updateNormalMode(editor, { key: "d" }, 80, 24);
+  const deleted = editing.updateNormalMode(pending, { key: "w" }, 80, 24);
+
+  const [nextModel] = keyBindings.updateFromKey(
+    { type: "key", key: "enter", ctrl: false, alt: false, shift: false },
+    mockTitleScreenModel(titleScreen, {
+      editor: deleted,
+      focusPane: "editor",
+      textAuthority: authority.openedWorkspaceTextAuthority({
+        profile: "echoHosted",
+        filePath: "/repo/notes.md",
+        bufferId: "buffer:notes",
+        readOnly: false,
+        dirty: true,
+        lastReceiptId: "receipt:dw",
+      }),
+      commandLine: activeCommandLine("Why"),
+    }),
+    mockKeyBindingContext(),
+  );
+  const message = nextModel.notifications.items[0].message;
+
+  assert.equal(nextModel.commandLine.active, false);
+  assert.match(message, /command: dw/);
+  assert.match(message, /family: operatorMotion/);
+  assert.match(message, /operator: delete/);
+  assert.match(message, /motion: wordForward/);
+  assert.match(message, /register: char delete 0\.\.6/);
+  assert.match(message, /receipt: receipt:dw/);
+});
+
+test("production normal edits keep Vim command provenance while queued", async () => {
+  const [keyBindings, titleScreen, editorMode, authority] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "workspace-text-authority.js"),
+  ]);
+  const model = mockTitleScreenModel(titleScreen, {
+    editor: mockEditor(editorMode, {
+      lines: ["alpha beta"],
+      cursorRow: 0,
+      cursorCol: 0,
+    }),
+    focusPane: "editor",
+    textAuthority: authority.openedWorkspaceTextAuthority({
+      profile: "echoHosted",
+      filePath: "/repo/notes.md",
+      bufferId: "buffer:notes",
+      readOnly: false,
+      dirty: false,
+    }),
+  });
+  const context = mockKeyBindingContext();
+  const [pending] = keyBindings.updateFromKey(
+    { type: "key", key: "d", ctrl: false, alt: false, shift: false },
+    model,
+    context,
+  );
+  const [queued, commands] = keyBindings.updateFromKey(
+    { type: "key", key: "w", ctrl: false, alt: false, shift: false },
+    pending,
+    context,
+  );
+
+  assert.deepEqual(queued.editor.lastVimEdit.keys, ["d", "w"]);
+  assert.equal(queued.editor.register.source.operation, "delete");
+  assert.equal(queued.editor.register.source.rangeStart, 0);
+  assert.equal(queued.editor.register.source.rangeEnd, 6);
+  assert.equal(commands.length, 1);
 });
 
 test("forced quit commands are valid command-line input without visible completions", async () => {

@@ -78,6 +78,7 @@ const COMMAND_DETAIL_KEYS = Object.freeze({
   TimeTravelDebugger: "footer.command.details.ttd",
   Strand: "footer.command.details.strand",
   Braid: "footer.command.details.braid",
+  Why: "footer.command.details.why",
 });
 const WORKSPACE_COMMAND_DESCRIPTORS = [
   {
@@ -130,6 +131,13 @@ const WORKSPACE_COMMAND_DESCRIPTORS = [
     aliases: [],
     detail: "View, preview, or admit braid candidates",
     detailKey: COMMAND_DETAIL_KEYS.Braid,
+  },
+  {
+    id: "command:why",
+    name: WorkspaceCommandNames.Why,
+    aliases: [],
+    detail: "Explain the last meaningful command",
+    detailKey: COMMAND_DETAIL_KEYS.Why,
   },
 ] satisfies readonly WorkspaceCommandDescriptor[];
 

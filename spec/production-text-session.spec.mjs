@@ -144,30 +144,63 @@ test('production text session creates manual checkpoint evidence through app cap
   }]);
 });
 
-test('production text session exports materialized text from bounded readings without edit intent', async () => {
+test('production text session exports materialized text from a full snapshot without edit intent', async () => {
   const module = await loadModule();
   const applyIntentCalls = [];
+  const textWindowCalls = [];
   const optic = fakeTextBufferOptic({
     applyIntent(intent) {
       applyIntentCalls.push(intent);
       return appliedResult();
     },
-    textWindow() {
+    textWindow(readBasis, input) {
+      textWindowCalls.push({ readBasis, input });
       return observedReading();
     },
   });
   const production = module.createProductionTextSession(fakeTextBufferSession({ optic }));
 
-  const outcome = await production.exportWindow({
+  const outcome = await production.exportSnapshot({
     bufferId: BUFFER_ID,
-    aperture: VIEWPORT_APERTURE,
     atMs: AT_MS,
   });
 
   assert.equal(outcome.kind, module.ProductionTextSessionOutcomeKinds.Exported);
   assert.equal(outcome.text, 'text');
   assert.equal(outcome.readingId, 'reading:1');
+  assert.deepEqual(textWindowCalls, [{
+    readBasis: { kind: 'read-basis-handle', id: 'basis:1' },
+    input: {
+      cursorLine: 0,
+      viewportLineCount: Number.MAX_SAFE_INTEGER,
+      beforeLines: 0,
+      afterLines: 0,
+      maxBytes: Number.MAX_SAFE_INTEGER,
+    },
+  }]);
   assert.deepEqual(applyIntentCalls, []);
+});
+
+test('production text session blocks snapshot export from bounded readings', async () => {
+  const module = await loadModule();
+  const optic = fakeTextBufferOptic({
+    textWindow() {
+      return observedReading({
+        totalLineCount: 2,
+        hasMoreAfter: true,
+      });
+    },
+  });
+  const production = module.createProductionTextSession(fakeTextBufferSession({ optic }));
+
+  const outcome = await production.exportSnapshot({
+    bufferId: BUFFER_ID,
+    atMs: AT_MS,
+  });
+
+  assert.equal(outcome.kind, module.ProductionTextSessionOutcomeKinds.Obstructed);
+  assert.equal(outcome.obstruction.code, module.ProductionTextObstructionCodes.Export);
+  assert.match(outcome.obstruction.issue.message, /full untruncated text snapshot/);
 });
 
 test('production text session maps obstructed edits to typed runtime issue posture without retry', async () => {
@@ -302,16 +335,20 @@ function checkpointResult() {
   };
 }
 
-function observedReading() {
+function observedReading(overrides = {}) {
   return {
     value: {
       readingId: 'reading:1',
       lines: [{ lineNumber: 0, startByte: 0, endByte: 4, text: 'text' }],
       byteLength: 4,
-      lineCount: 1,
+      lineCount: overrides.lineCount ?? 1,
+      startLine: overrides.startLine ?? 0,
+      totalLineCount: overrides.totalLineCount ?? 1,
+      hasMoreBefore: overrides.hasMoreBefore ?? false,
+      hasMoreAfter: overrides.hasMoreAfter ?? false,
       cursorLine: VIEWPORT_APERTURE.cursorLine,
       viewportLineCount: VIEWPORT_APERTURE.viewportLineCount,
-      truncated: false,
+      truncated: overrides.truncated ?? false,
     },
     evidence: {
       readingId: 'reading:1',

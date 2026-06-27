@@ -60,7 +60,7 @@ export function createPreflightProductionTextSession(
     multiRangeEdit: multiRangeProbe(calls),
     checkpointBuffer: checkpointProbe(calls),
     observeWindow: observeWindowProbe(calls, readings),
-    exportWindow: exportWindowProbe(options, calls),
+    exportSnapshot: exportSnapshotProbe(options, calls),
   };
 }
 
@@ -147,10 +147,10 @@ function observeWindowProbe(
   };
 }
 
-function exportWindowProbe(
+function exportSnapshotProbe(
   options: PreflightRuntimeHarnessOptions,
   calls: PreflightProductionTextCalls,
-): ProductionTextSession['exportWindow'] {
+): ProductionTextSession['exportSnapshot'] {
   return async (request) => {
     calls.export.push(request);
     return {
@@ -251,7 +251,11 @@ function textWindowReading(text: string, readingId: string): TextWindowReading {
       },
     ],
     byteLength: text.length,
+    startLine: PREFLIGHT_FIRST_INDEX,
     lineCount: PREFLIGHT_ONE,
+    totalLineCount: PREFLIGHT_ONE,
+    hasMoreBefore: false,
+    hasMoreAfter: false,
     cursorLine: PREFLIGHT_FIRST_INDEX,
     viewportLineCount: PREFLIGHT_ROWS,
     truncated: false,

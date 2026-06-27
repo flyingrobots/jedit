@@ -44,10 +44,7 @@ export async function createWorkspaceEchoAppHarness(options = {}) {
       textRuntimeProfile: profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
     },
     editorFile: {
-      loadEditorFile: (filePath) => ({
-        lines: options.hostLinesByPath?.get(filePath) ?? options.hostLines ?? ['host import'],
-        readOnly: false,
-      }),
+      loadEditorFile: (filePath) => editorFileLoadResult(filePath, options),
       saveEditorFile: (filePath, lines) => {
         savedFiles.push({ filePath, lines });
       },
@@ -87,6 +84,16 @@ export async function createWorkspaceEchoAppHarness(options = {}) {
       model = nextModel;
       return { message, commands };
     },
+    async runAll(commands) {
+      const results = [];
+      let pending = [...commands];
+      while (pending.length > 0) {
+        const result = await this.run(pending[0]);
+        results.push(result);
+        pending = [...pending.slice(1), ...result.commands];
+      }
+      return results;
+    },
     async runFirst(commands) {
       assert.ok(commands[0], 'expected command');
       return this.run(commands[0]);
@@ -97,6 +104,19 @@ export async function createWorkspaceEchoAppHarness(options = {}) {
     renderWorkspaceText() {
       return surfaceText(viewer.renderWorkspace(model));
     },
+  };
+}
+
+function editorFileLoadResult(filePath, options) {
+  if (options.missingPaths?.has(filePath)) {
+    return {
+      kind: 'missing',
+      filePath,
+    };
+  }
+  return {
+    lines: options.hostLinesByPath?.get(filePath) ?? options.hostLines ?? ['host import'],
+    readOnly: false,
   };
 }
 
@@ -154,8 +174,17 @@ function recordingProductionTextSession(calls, options) {
         observed: {
           value: {
             readingId: `reading:${calls.observe.length}`,
-            lines: [{ text: readings[Math.min(calls.observe.length - 1, readings.length - 1)] ?? '' }],
+            lines: [{
+              lineNumber: 0,
+              startByte: 0,
+              endByte: (readings[Math.min(calls.observe.length - 1, readings.length - 1)] ?? '').length,
+              text: readings[Math.min(calls.observe.length - 1, readings.length - 1)] ?? '',
+            }],
+            startLine: 0,
             lineCount: 1,
+            totalLineCount: 1,
+            hasMoreBefore: false,
+            hasMoreAfter: false,
             cursorLine: 0,
             viewportLineCount: 24,
             truncated: false,
@@ -163,7 +192,7 @@ function recordingProductionTextSession(calls, options) {
         },
       };
     },
-    exportWindow: async (request) => {
+    exportSnapshot: async (request) => {
       calls.export.push(request);
       return options.exportObstruction ?? {
         kind: 'exported',

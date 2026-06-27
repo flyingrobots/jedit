@@ -118,9 +118,13 @@ observer basis, and the product-shaped text result.
 
 ## Current Runtime Truth
 
-The visible TUI editor still uses `EditorState.lines` as editable buffer truth.
+In production, Echo/session authority owns causal text. `EditorState.lines` is
+the full local visible projection cache used for rendering, cursoring, and
+transitional edit planning. It must not be reconstructed from bounded readings.
+It is not saved or recovered as authority.
+
 Source rendering, Markdown preview, drawers, syntax highlighting, and footer
-state are projections over that text.
+state are projections over that visible/session projection.
 
 The structural-history GraphQL schema is the forward authority for product
 history facts:

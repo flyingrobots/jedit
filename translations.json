@@ -35,7 +35,8 @@
               "wq": "Write and quit",
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
-              "braid": "View, preview, or admit braid candidates"
+              "braid": "View, preview, or admit braid candidates",
+              "why": "Explain the last meaningful command"
             }
           },
           "hints": {
@@ -176,7 +177,8 @@
               "wq": "Write and quit",
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
-              "braid": "View, preview, or admit braid candidates"
+              "braid": "View, preview, or admit braid candidates",
+              "why": "Explain the last meaningful command"
             }
           },
           "hints": {
@@ -317,7 +319,8 @@
               "wq": "Write and quit",
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
-              "braid": "View, preview, or admit braid candidates"
+              "braid": "View, preview, or admit braid candidates",
+              "why": "Explain the last meaningful command"
             }
           },
           "hints": {
@@ -458,7 +461,8 @@
               "wq": "Write and quit",
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
-              "braid": "View, preview, or admit braid candidates"
+              "braid": "View, preview, or admit braid candidates",
+              "why": "Explain the last meaningful command"
             }
           },
           "hints": {
@@ -599,7 +603,8 @@
               "wq": "Write and quit",
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
-              "braid": "View, preview, or admit braid candidates"
+              "braid": "View, preview, or admit braid candidates",
+              "why": "Explain the last meaningful command"
             }
           },
           "hints": {
@@ -740,7 +745,8 @@
               "wq": "Write and quit",
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
-              "braid": "View, preview, or admit braid candidates"
+              "braid": "View, preview, or admit braid candidates",
+              "why": "Explain the last meaningful command"
             }
           },
           "hints": {
@@ -881,7 +887,8 @@
               "wq": "Write and quit",
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
-              "braid": "View, preview, or admit braid candidates"
+              "braid": "View, preview, or admit braid candidates",
+              "why": "Explain the last meaningful command"
             }
           },
           "hints": {
@@ -1022,7 +1029,8 @@
               "wq": "Write and quit",
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
-              "braid": "View, preview, or admit braid candidates"
+              "braid": "View, preview, or admit braid candidates",
+              "why": "Explain the last meaningful command"
             }
           },
           "hints": {
@@ -1163,7 +1171,8 @@
               "wq": "Write and quit",
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
-              "braid": "View, preview, or admit braid candidates"
+              "braid": "View, preview, or admit braid candidates",
+              "why": "Explain the last meaningful command"
             }
           },
           "hints": {
@@ -1304,7 +1313,8 @@
               "wq": "Write and quit",
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
-              "braid": "View, preview, or admit braid candidates"
+              "braid": "View, preview, or admit braid candidates",
+              "why": "Explain the last meaningful command"
             }
           },
           "hints": {
@@ -1445,7 +1455,8 @@
               "wq": "Write and quit",
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
-              "braid": "View, preview, or admit braid candidates"
+              "braid": "View, preview, or admit braid candidates",
+              "why": "Explain the last meaningful command"
             }
           },
           "hints": {
@@ -1586,7 +1597,8 @@
               "wq": "Write and quit",
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
-              "braid": "View, preview, or admit braid candidates"
+              "braid": "View, preview, or admit braid candidates",
+              "why": "Explain the last meaningful command"
             }
           },
           "hints": {
@@ -1727,7 +1739,8 @@
               "wq": "Write and quit",
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
-              "braid": "View, preview, or admit braid candidates"
+              "braid": "View, preview, or admit braid candidates",
+              "why": "Explain the last meaningful command"
             }
           },
           "hints": {
@@ -1868,7 +1881,8 @@
               "wq": "Write and quit",
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
-              "braid": "View, preview, or admit braid candidates"
+              "braid": "View, preview, or admit braid candidates",
+              "why": "Explain the last meaningful command"
             }
           },
           "hints": {
@@ -2009,7 +2023,8 @@
               "wq": "Write and quit",
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
-              "braid": "View, preview, or admit braid candidates"
+              "braid": "View, preview, or admit braid candidates",
+              "why": "Explain the last meaningful command"
             }
           },
           "hints": {
@@ -2150,7 +2165,8 @@
               "wq": "Write and quit",
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
-              "braid": "View, preview, or admit braid candidates"
+              "braid": "View, preview, or admit braid candidates",
+              "why": "Explain the last meaningful command"
             }
           },
           "hints": {
@@ -2291,7 +2307,8 @@
               "wq": "Write and quit",
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
-              "braid": "View, preview, or admit braid candidates"
+              "braid": "View, preview, or admit braid candidates",
+              "why": "Explain the last meaningful command"
             }
           },
           "hints": {
@@ -2432,7 +2449,8 @@
               "wq": "Write and quit",
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
-              "braid": "View, preview, or admit braid candidates"
+              "braid": "View, preview, or admit braid candidates",
+              "why": "Explain the last meaningful command"
             }
           },
           "hints": {
@@ -2573,7 +2591,8 @@
               "wq": "Write and quit",
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
-              "braid": "View, preview, or admit braid candidates"
+              "braid": "View, preview, or admit braid candidates",
+              "why": "Explain the last meaningful command"
             }
           },
           "hints": {
@@ -2714,7 +2733,8 @@
               "wq": "Write and quit",
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
-              "braid": "View, preview, or admit braid candidates"
+              "braid": "View, preview, or admit braid candidates",
+              "why": "Explain the last meaningful command"
             }
           },
           "hints": {

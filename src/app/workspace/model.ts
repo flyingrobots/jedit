@@ -24,6 +24,7 @@ import type { EditorState } from "./editor/model.js";
 import type { WorkspaceMsg } from "./msg.js";
 import type { ViewMode } from "./view-mode.js";
 import type { WorkspaceTextAuthority } from "./workspace-text-authority.js";
+import type { WorkspaceBufferRegistry } from "./workspace-buffer-registry.js";
 import type { EchoHistoryEntry } from "./echo-history.js";
 import type { StartupFileModalState } from "./startup-file-modal.js";
 import type { WorkspaceCommandLineState } from "./command-line.js";
@@ -44,6 +45,8 @@ export interface WorkspaceModel
   readonly entries: readonly FileEntry[];
   readonly selectedIndex: number;
   readonly editor?: EditorState;
+  readonly buffers: WorkspaceBufferRegistry;
+  readonly activeBufferId?: string;
   readonly textRuntimeProfile: TextRuntimeProfile;
   readonly textAuthority: WorkspaceTextAuthority;
   readonly wscStartupRecovery: JeditWscStartupRecoveryResult;
@@ -63,6 +66,7 @@ export interface WorkspaceModel
   readonly notifications: NotificationState<WorkspaceMsg>;
   readonly notificationLoopActive: boolean;
   readonly quitConfirmOpen: boolean;
+  readonly quitAfterSaveRequestId?: number;
   readonly footerVisible: boolean;
   readonly settingsOpen: boolean;
   readonly settingsFocusIndex: number;

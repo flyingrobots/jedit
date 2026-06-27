@@ -1,5 +1,6 @@
 import type { Cmd, RuntimeIssue } from '@flyingrobots/bijou-tui';
-import type { EditorFilePort } from '../../ports/editor-file.js';
+import type { EditorFileFingerprint, EditorFilePort } from '../../ports/editor-file.js';
+import { editorFileFingerprintFromText } from '../../ports/editor-file-fingerprint.js';
 import { joinLines, normalizeLines } from '../editor-lines.js';
 import type {
   ProductionTextSession,
@@ -8,8 +9,8 @@ import type {
 import { ProductionTextSessionOutcomeKinds } from './production-text-session.js';
 import { RuntimeIssueLevels, RuntimeIssueSources } from './runtime-issue.js';
 import { WorkspaceMessageTypes, type WorkspaceMsg } from './msg.js';
+import type { EditorState } from './editor/model.js';
 import type { TextPosition } from './workspace-text-position.js';
-import type { WorkspaceTextReadingCache } from './workspace-text-reading-cache.js';
 import {
   WorkspaceTextResultKinds,
   type WorkspaceTextCheckpointResult,
@@ -18,7 +19,18 @@ import {
   type WorkspaceTextOpenResult,
   type WorkspaceTextReadCommandResult,
 } from './workspace-text-results.js';
+import type { WorkspaceTextHostBasisKind } from './workspace-text-authority.js';
+import { materializationPreflightIssue } from './workspace-text-materialization-preflight.js';
+import {
+  WorkspaceTextOpenBasisResultKinds,
+  workspaceTextOpenBasis,
+  type WorkspaceTextOpenBasis,
+} from './workspace-text-open-basis.js';
 import { createWorkspaceTextEditSettlementEnvelope } from './workspace-text-wsc-settlement.js';
+import {
+  readingCache,
+  type WorkspaceTextObservedReading,
+} from './workspace-text-observed-reading.js';
 
 const ISSUE_LEVEL_ERROR = RuntimeIssueLevels.Error;
 const ISSUE_SOURCE_COMMAND = RuntimeIssueSources.Command;
@@ -36,11 +48,6 @@ const DEFAULT_VIEWPORT_LINE_COUNT = 24;
 const DEFAULT_BEFORE_LINES = 0;
 const DEFAULT_AFTER_LINES = 0;
 const DEFAULT_MAX_BYTES = 1048576;
-const FULL_EXPORT_CURSOR_LINE = 0;
-const FULL_EXPORT_BEFORE_LINES = 0;
-const FULL_EXPORT_AFTER_LINES = 0;
-const FULL_EXPORT_VIEWPORT_LINE_COUNT = Number.MAX_SAFE_INTEGER;
-const FULL_EXPORT_MAX_BYTES = Number.MAX_SAFE_INTEGER;
 
 export const WorkspaceTextEditCommandKinds = Object.freeze({
   Insert: EDIT_COMMAND_INSERT,
@@ -103,10 +110,11 @@ export interface WorkspaceTextExportCommandRequest {
   readonly requestId: number;
   readonly filePath: string;
   readonly bufferId: string;
+  readonly hostBasis: WorkspaceTextHostBasisKind;
+  readonly hostFingerprint?: EditorFileFingerprint;
   readonly editorFile: EditorFilePort;
   readonly productionTextSession: ProductionTextSession;
   readonly atMs: number;
-  readonly aperture: ProductionTextViewportAperture;
 }
 
 export interface WorkspaceTextReadCommandRequest {
@@ -116,15 +124,6 @@ export interface WorkspaceTextReadCommandRequest {
   readonly productionTextSession: ProductionTextSession;
   readonly atMs: number;
   readonly aperture: ProductionTextViewportAperture;
-}
-
-export interface WorkspaceTextObservedReading {
-  readonly readingId: string;
-  readonly lines: readonly { readonly text: string }[];
-  readonly lineCount: number;
-  readonly cursorLine: number;
-  readonly viewportLineCount: number;
-  readonly truncated: boolean;
 }
 
 export function createWorkspaceTextOpenCmd(
@@ -147,13 +146,14 @@ export function defaultWorkspaceTextAperture(): ProductionTextViewportAperture {
   };
 }
 
-export function fullWorkspaceTextExportAperture(): ProductionTextViewportAperture {
+export function workspaceTextApertureFromEditor(
+  editor: Pick<EditorState, 'scrollRow'>,
+  viewportLineCount: number,
+): ProductionTextViewportAperture {
   return {
-    cursorLine: FULL_EXPORT_CURSOR_LINE,
-    viewportLineCount: FULL_EXPORT_VIEWPORT_LINE_COUNT,
-    beforeLines: FULL_EXPORT_BEFORE_LINES,
-    afterLines: FULL_EXPORT_AFTER_LINES,
-    maxBytes: FULL_EXPORT_MAX_BYTES,
+    ...defaultWorkspaceTextAperture(),
+    cursorLine: Math.max(INITIAL_CURSOR_LINE, editor.scrollRow),
+    viewportLineCount: Math.max(1, viewportLineCount),
   };
 }
 
@@ -201,10 +201,14 @@ async function openWorkspaceText(
   request: WorkspaceTextOpenCommandRequest,
 ): Promise<WorkspaceTextOpenResult> {
   try {
-    const loaded = request.editorFile.loadEditorFile(request.filePath);
+    const basisResult = workspaceTextOpenBasis(request);
+    if (basisResult.kind === WorkspaceTextOpenBasisResultKinds.Obstructed) {
+      return obstructedOpen(request.filePath, basisResult.issue);
+    }
+    const basis = basisResult.basis;
     const opened = await request.productionTextSession.openBuffer({
       bufferKey: request.filePath,
-      initialText: joinLines(loaded.lines),
+      initialText: basis.initialText,
       projectionPath: request.filePath,
       atMs: request.atMs,
     });
@@ -219,19 +223,37 @@ async function openWorkspaceText(
     if (observed.kind === ProductionTextSessionOutcomeKinds.Obstructed) {
       return obstructedOpen(request.filePath, observed.obstruction.issue);
     }
-    return {
-      kind: WorkspaceTextResultKinds.Opened,
-      filePath: request.filePath,
-      bufferId: opened.optic.buffer.bufferId,
-      readOnly: loaded.readOnly,
-      cache: readingCache(opened.optic.buffer.bufferId, observed.observed.value),
-    };
+    return openedTextResult(
+      request,
+      basis,
+      opened.optic.buffer.bufferId,
+      observed.observed.value,
+    );
   } catch (cause) {
     return obstructedOpen(
       request.filePath,
       runtimeIssue(`${OPEN_FAILURE_PREFIX}: ${cause instanceof Error ? cause.message : String(cause)}`, request.atMs),
     );
   }
+}
+
+function openedTextResult(
+  request: WorkspaceTextOpenCommandRequest,
+  basis: WorkspaceTextOpenBasis,
+  bufferId: string,
+  reading: WorkspaceTextObservedReading,
+): WorkspaceTextOpenResult {
+  return {
+    kind: WorkspaceTextResultKinds.Opened,
+    filePath: request.filePath,
+    bufferId,
+    readOnly: basis.readOnly,
+    materialization: basis.materialization,
+    hostBasis: basis.hostBasis,
+    hostFingerprint: basis.hostFingerprint,
+    initialLines: normalizeLines(basis.initialText),
+    cache: readingCache(bufferId, reading),
+  };
 }
 
 async function editWorkspaceText(
@@ -324,20 +346,25 @@ async function exportWorkspaceText(
   request: WorkspaceTextExportCommandRequest,
 ): Promise<WorkspaceTextExportResult> {
   try {
-    const exported = await request.productionTextSession.exportWindow({
+    const exported = await request.productionTextSession.exportSnapshot({
       bufferId: request.bufferId,
-      aperture: request.aperture,
       atMs: request.atMs,
     });
     if (exported.kind === ProductionTextSessionOutcomeKinds.Obstructed) {
       return obstructedExport(request.filePath, exported.obstruction.issue);
     }
-    request.editorFile.saveEditorFile(request.filePath, normalizeLines(exported.text));
+    const preflightIssue = materializationPreflightIssue(request);
+    if (preflightIssue != null) {
+      return obstructedExport(request.filePath, preflightIssue);
+    }
+    const savedLines = normalizeLines(exported.text);
+    request.editorFile.saveEditorFile(request.filePath, savedLines);
     return {
       kind: WorkspaceTextResultKinds.Exported,
       filePath: request.filePath,
       bufferId: request.bufferId,
       readingId: exported.readingId,
+      hostFingerprint: editorFileFingerprintFromText(joinLines(savedLines)),
     };
   } catch (cause) {
     return obstructedExport(
@@ -410,21 +437,6 @@ function obstructedRead(filePath: string, issue: RuntimeIssue): WorkspaceTextRea
     kind: WorkspaceTextResultKinds.Obstructed,
     filePath,
     issue,
-  };
-}
-
-export function readingCache(
-  bufferId: string,
-  reading: WorkspaceTextObservedReading,
-): WorkspaceTextReadingCache {
-  return {
-    bufferId,
-    readingId: reading.readingId,
-    lines: reading.lines.map((line) => line.text),
-    lineCount: reading.lineCount,
-    cursorLine: reading.cursorLine,
-    viewportLineCount: reading.viewportLineCount,
-    truncated: reading.truncated,
   };
 }
 

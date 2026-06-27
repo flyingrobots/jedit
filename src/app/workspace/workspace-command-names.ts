@@ -12,4 +12,5 @@ export const WorkspaceCommandNames = Object.freeze({
   TimeTravelDebugger: "ttd",
   Strand: "strand",
   Braid: "braid",
+  Why: "why",
 } as const);

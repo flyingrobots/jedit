@@ -39,6 +39,7 @@ import {
   applyStartupFileDrawerProgress,
   applyStartupIntroTime,
   applyWorkspaceTextMessage,
+  syncActiveWorkspaceBufferRecord,
 } from "./workspace-state-reducers.js";
 import type {
   WorkspaceRuntime,
@@ -90,6 +91,14 @@ function updateWorkspaceRuntime(
   msg: WorkspaceRuntimeMsg,
   model: WorkspaceModel,
 ): WorkspaceRuntimeResult {
+  return syncWorkspaceRuntimeResult(updateWorkspaceRuntimeState(deps, msg, model));
+}
+
+function updateWorkspaceRuntimeState(
+  deps: WorkspaceRuntimeDependencies,
+  msg: WorkspaceRuntimeMsg,
+  model: WorkspaceModel,
+): WorkspaceRuntimeResult {
   const resized = updateResizeMessage(deps, msg, model);
   if (resized != null) {
     return resized;
@@ -103,6 +112,10 @@ function updateWorkspaceRuntime(
     return effects;
   }
   return updateWorkspaceInputMessage(deps, msg, model);
+}
+
+function syncWorkspaceRuntimeResult(result: WorkspaceRuntimeResult): WorkspaceRuntimeResult {
+  return [syncActiveWorkspaceBufferRecord(result[0]), result[1]];
 }
 
 function initialRuntimeCommands(

@@ -129,8 +129,7 @@ async function observeOpenEditSaveAndQuit() {
   const forceQuitAvailable = !harness.model.quitConfirmOpen && forceQuitCommands.length === 1;
   harness.setModel(dirtyModel);
   const saveCommands = await harness.key('s', { ctrl: true });
-  await harness.run(saveCommands[0]);
-  await harness.run(saveCommands[1]);
+  await harness.runAll(saveCommands);
 
   return {
     openUsesProductionAuthority: harness.calls.open.length === 1,

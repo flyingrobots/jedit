@@ -65,6 +65,278 @@ test('real workspace app path advances insert cursor after each echoed character
   assert.doesNotMatch(harness.renderText(), /olleh/);
 });
 
+test('real workspace app path renders rapid inserts before Echo observe resolves', async () => {
+  const harness = await openedHarness({ readings: ['', 'h', 'he', 'hel', 'hell', 'hello'] });
+
+  await harness.key('i');
+  const commands = [];
+  for (const character of ['h', 'e', 'l', 'l', 'o']) {
+    commands.push(...await harness.key(character));
+  }
+
+  assert.equal(harness.calls.insert.length, 0);
+  assert.equal(harness.model.editor.cursorCol, 5);
+  assert.equal(harness.model.textAuthority.dirty, true);
+  assert.equal(harness.model.textAuthority.pendingClientSeq, 6);
+  assert.equal(harness.model.textAuthority.pendingIntentStatus, 'predicted');
+  assert.match(harness.renderText(), /hello/);
+
+  for (const command of commands) {
+    await command();
+  }
+
+  assert.deepEqual(harness.calls.insert.map((call) => ({
+    startByte: call.startByte,
+    insertText: call.insertText,
+  })), [
+    { startByte: 0, insertText: 'h' },
+    { startByte: 1, insertText: 'e' },
+    { startByte: 2, insertText: 'l' },
+    { startByte: 3, insertText: 'l' },
+    { startByte: 4, insertText: 'o' },
+  ]);
+});
+
+test('real workspace app path keeps newline insertion past bounded Echo readings', async () => {
+  const document = echoTextDocument('');
+  const calls = {
+    insert: [],
+    observe: [],
+  };
+  const productionTextSession = {
+    openBuffer: async (request) => {
+      document.replace(request.initialText);
+      return {
+        kind: 'opened',
+        optic: {
+          buffer: {
+            bufferId: 'buffer:notes',
+          },
+        },
+      };
+    },
+    insertText: async (request) => {
+      calls.insert.push(request);
+      document.insert(request.startByte, request.insertText);
+      return {
+        kind: 'applied',
+        result: {
+          receiptId: `receipt:${calls.insert.length}`,
+        },
+      };
+    },
+    observeWindow: async (request) => {
+      calls.observe.push(request);
+      const lines = document.lines();
+      const startLine = Math.max(0, request.aperture.cursorLine);
+      const visibleLines = lines.slice(startLine, startLine + request.aperture.viewportLineCount);
+      return {
+        kind: 'observed',
+        observed: {
+          value: {
+            readingId: `reading:${calls.observe.length}`,
+            lines: visibleLines.map((text, index) => ({
+              lineNumber: startLine + index,
+              startByte: byteOffsetAtLine(lines, startLine + index),
+              endByte: byteOffsetAtLine(lines, startLine + index) + text.length,
+              text,
+            })),
+            startLine,
+            lineCount: visibleLines.length,
+            totalLineCount: lines.length,
+            hasMoreBefore: startLine > 0,
+            hasMoreAfter: startLine + visibleLines.length < lines.length,
+            cursorLine: request.aperture.cursorLine,
+            viewportLineCount: request.aperture.viewportLineCount,
+            truncated: false,
+          },
+        },
+      };
+    },
+  };
+  const harness = await openedHarness({
+    hostLines: [''],
+    productionTextSession,
+  });
+
+  await harness.key('i');
+  for (let index = 0; index < 40; index += 1) {
+    await harness.runAll(await harness.key('enter'));
+  }
+  await harness.runAll(await harness.key('Z', { shift: true }));
+
+  assert.equal(harness.model.editor.cursorRow, 40);
+  assert.equal(harness.model.editor.cursorCol, 1);
+  assert.equal(harness.model.editor.lines.length, 41);
+  assert.equal(harness.model.editor.lines[40], 'Z');
+  assert.equal(harness.model.textAuthority.cache.coverage, 'window');
+  assert.equal(harness.model.textAuthority.cache.truncated, false);
+  assert.equal(calls.insert.length, 41);
+  assert.deepEqual(calls.insert.at(-1), {
+    bufferId: 'buffer:notes',
+    startByte: 40,
+    insertText: 'Z',
+    atMs: 0,
+  });
+});
+
+test('real workspace app path keeps optimistic text visible when Echo obstructs an edit', async () => {
+  const harness = await openedHarness({
+    readings: [''],
+    editObstruction: productionTextObstruction('footprint changed'),
+  });
+
+  await harness.key('i');
+  const commands = await harness.key('X', { shift: true });
+  assert.match(harness.renderText(), /X/);
+
+  await harness.runFirst(commands);
+
+  assert.match(harness.renderText(), /X/);
+  assert.equal(harness.model.textAuthority.pendingIntentStatus, 'obstructed');
+  assert.equal(harness.model.textAuthority.lastObstruction.message, 'footprint changed');
+  assert.equal(harness.model.echoHistory.at(-1).status, 'obstructed');
+  assert.match(harness.model.echoHistory.at(-1).summary, /footprint changed/);
+});
+
+test('workspace buffer registry preserves dirty existing buffers across file switches', async () => {
+  const harness = await twoFileHarness({
+    hostLinesByPath: new Map([
+      ['/repo/a.txt', ['']],
+      ['/repo/b.txt', ['B']],
+    ]),
+    readings: ['', 'A', 'B'],
+  });
+
+  await harness.runFirst(await harness.key('enter'));
+  harness.setModel({
+    ...harness.model,
+    fileDrawerOpen: false,
+    focusPane: 'editor',
+  });
+  await harness.key('i');
+  await harness.runFirst(await harness.key('A', { shift: true }));
+  await openFileDrawerIndex(harness, 1);
+  await harness.runFirst(await harness.key('enter'));
+  await openFileDrawerIndex(harness, 0);
+  const reopenCommands = await harness.key('enter');
+
+  assert.equal(reopenCommands.length, 0);
+  assert.equal(harness.calls.open.length, 2);
+  assert.equal(harness.model.editor.path, '/repo/a.txt');
+  assert.equal(harness.model.editor.lines[0], 'A');
+  assert.equal(harness.model.textAuthority.filePath, '/repo/a.txt');
+  assert.equal(harness.model.textAuthority.dirty, true);
+});
+
+test('workspace buffer registry preserves missing-path unmaterialized buffers across file switches', async () => {
+  const harness = await twoFileHarness({
+    missingPaths: new Set(['/repo/a.txt']),
+    hostLinesByPath: new Map([
+      ['/repo/b.txt', ['B']],
+    ]),
+    readings: ['', 'M', 'B'],
+  });
+
+  await harness.runFirst(await harness.key('enter'));
+  harness.setModel({
+    ...harness.model,
+    fileDrawerOpen: false,
+    focusPane: 'editor',
+  });
+  await harness.key('i');
+  await harness.runFirst(await harness.key('M', { shift: true }));
+  await openFileDrawerIndex(harness, 1);
+  await harness.runFirst(await harness.key('enter'));
+  await openFileDrawerIndex(harness, 0);
+  await harness.key('enter');
+
+  assert.equal(harness.savedFiles.length, 0);
+  assert.equal(harness.model.editor.path, '/repo/a.txt');
+  assert.equal(harness.model.editor.lines[0], 'M');
+  assert.equal(harness.model.textAuthority.hostBasis, 'missing');
+  assert.equal(harness.model.textAuthority.materialization, 'unmaterialized');
+});
+
+test('workspace buffer registry restores accepted Graft and highlight state per buffer', async () => {
+  const sourceHighlight = {
+    path: '/repo/a.txt',
+    partial: false,
+    spans: [],
+  };
+  const graftInfo = {
+    path: '/repo/a.txt',
+    relativePath: 'a.txt',
+    dirty: false,
+    projectionSource: 'saved-file',
+    projectionPosture: 'current',
+    outlineItems: [{
+      kind: 'section',
+      name: 'A',
+      startLine: 1,
+      endLine: 1,
+    }],
+    changeLines: [],
+  };
+  const harness = await twoFileHarness({
+    hostLinesByPath: new Map([
+      ['/repo/a.txt', ['A']],
+      ['/repo/b.txt', ['B']],
+    ]),
+    readings: ['A', 'B'],
+  });
+
+  await harness.runFirst(await harness.key('enter'));
+  harness.setModel({
+    ...harness.model,
+    fileDrawerOpen: false,
+    focusPane: 'editor',
+    sourceHighlight,
+    sourceHighlightLoading: true,
+    graftInfo,
+    graftLoading: true,
+  });
+  await harness.key('escape');
+  await openFileDrawerIndex(harness, 1);
+  await harness.runFirst(await harness.key('enter'));
+  await openFileDrawerIndex(harness, 0);
+  await harness.key('enter');
+
+  assert.equal(harness.model.sourceHighlight, sourceHighlight);
+  assert.equal(harness.model.sourceHighlightLoading, false);
+  assert.equal(harness.model.graftInfo, graftInfo);
+  assert.equal(harness.model.graftLoading, false);
+});
+
+test('edit command for the active buffer reuses the registry record', async () => {
+  const harness = await twoFileHarness({
+    hostLinesByPath: new Map([
+      ['/repo/a.txt', ['A']],
+      ['/repo/b.txt', ['B']],
+    ]),
+    readings: ['A'],
+  });
+
+  await harness.runFirst(await harness.key('enter'));
+  harness.setModel({
+    ...harness.model,
+    fileDrawerOpen: false,
+    focusPane: 'editor',
+    commandLine: {
+      ...harness.model.commandLine,
+      active: true,
+      input: 'edit a.txt',
+      cursorIndex: 'edit a.txt'.length,
+      selectedCompletionIndex: 0,
+    },
+  });
+  const commands = await harness.key('enter');
+
+  assert.equal(commands.length, 0);
+  assert.equal(harness.calls.open.length, 1);
+  assert.equal(harness.model.editor.path, '/repo/a.txt');
+});
+
 test('real workspace app path inserts canonical spacebar token in insert mode', async () => {
   const harness = await openedHarness({ readings: ['before edit', 'h', 'hi', 'hi ', 'hi x'] });
 
@@ -92,8 +364,7 @@ test('real workspace app path saves by exporting and checkpointing production te
   await harness.key('i');
   await harness.runFirst(await harness.key('X', { shift: true }));
   const saveCommands = await harness.key('s', { ctrl: true });
-  await harness.run(saveCommands[0]);
-  await harness.run(saveCommands[1]);
+  await harness.runAll(saveCommands);
 
   assert.deepEqual(harness.savedFiles, [{ filePath: '/repo/notes.md', lines: ['saved from Echo'] }]);
   assert.equal(harness.calls.export.length, 1);
@@ -137,4 +408,52 @@ async function openedHarness(options = {}) {
     fileDrawerOpen: false,
   });
   return harness;
+}
+
+async function twoFileHarness(options = {}) {
+  return createWorkspaceEchoAppHarness({
+    filePath: '/repo/a.txt',
+    fileName: 'a.txt',
+    entries: [
+      { kind: 'file', name: 'a.txt', path: '/repo/a.txt' },
+      { kind: 'file', name: 'b.txt', path: '/repo/b.txt' },
+    ],
+    bufferIdByKey: new Map([
+      ['/repo/a.txt', 'buffer:a'],
+      ['/repo/b.txt', 'buffer:b'],
+    ]),
+    ...options,
+  });
+}
+
+async function openFileDrawerIndex(harness, selectedIndex) {
+  harness.setModel({
+    ...harness.model,
+    fileDrawerOpen: true,
+    focusPane: 'files',
+    selectedIndex,
+  });
+}
+
+function echoTextDocument(initialText) {
+  let text = initialText;
+  return {
+    insert(startByte, insertText) {
+      text = `${text.slice(0, startByte)}${insertText}${text.slice(startByte)}`;
+    },
+    replace(nextText) {
+      text = nextText;
+    },
+    lines() {
+      return text.split('\n');
+    },
+  };
+}
+
+function byteOffsetAtLine(lines, targetLine) {
+  let offset = 0;
+  for (let line = 0; line < targetLine; line += 1) {
+    offset += (lines[line] ?? '').length + 1;
+  }
+  return offset;
 }

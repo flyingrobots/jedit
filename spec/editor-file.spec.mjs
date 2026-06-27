@@ -58,6 +58,20 @@ test('keeps binary files read-only', async (t) => {
   assert.deepEqual(loaded.lines, [BINARY_FILE_MESSAGE]);
 });
 
+test('reports missing files without materializing them', async (t) => {
+  const editorFile = await loadEditorFileModule();
+  const tempDir = createTempDir(t);
+  const filePath = path.join(tempDir, 'missing.txt');
+
+  const loaded = editorFile.loadEditorFile(filePath);
+
+  assert.deepEqual(loaded, {
+    kind: 'missing',
+    filePath,
+  });
+  assert.equal(fs.existsSync(filePath), false);
+});
+
 test('saves editor lines with line-feed separators', async (t) => {
   const editorFile = await loadEditorFileModule();
   const tempDir = createTempDir(t);

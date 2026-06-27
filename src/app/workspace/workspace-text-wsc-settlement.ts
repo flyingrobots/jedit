@@ -37,7 +37,13 @@ function settlementPayload(
     reading: {
       readingId: cache.readingId,
       lines: cache.lines,
+      coverage: cache.coverage,
       lineCount: cache.lineCount,
+      startLine: cache.startLine,
+      returnedLineCount: cache.returnedLineCount,
+      totalLineCount: cache.totalLineCount,
+      hasMoreBefore: cache.hasMoreBefore,
+      hasMoreAfter: cache.hasMoreAfter,
       cursorLine: cache.cursorLine,
       viewportLineCount: cache.viewportLineCount,
       truncated: cache.truncated,

@@ -12,11 +12,14 @@ import {
   JEDIT_WSC_CURRENT_HISTORY_EXPORTED,
   JEDIT_WSC_CURRENT_HISTORY_EXPORT_EVIDENCE_PREFIX,
   JEDIT_WSC_CURRENT_HISTORY_EXPORT_OBSTRUCTED,
+  JEDIT_WSC_CURRENT_HISTORY_BOUNDED_READING_NOT_MATERIALIZABLE,
   JEDIT_WSC_CURRENT_HISTORY_HOST_ARTIFACT_WRITE_FAILED,
   JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_OBSTRUCTED,
   JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_FAILED,
+  JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_REQUIRES_FULL_PROJECTION,
   JEDIT_WSC_CURRENT_HISTORY_MISSING_CURRENT_BASIS,
   JEDIT_WSC_CURRENT_HISTORY_WSC_STORE_OBSTRUCTED,
+  type JeditWscCurrentHistoryObstruction,
   type JeditWscCurrentHistoryExportObstructed,
   type JeditWscCurrentHistoryExportResult,
   type JeditWscCurrentHistoryMaterializer,
@@ -53,11 +56,24 @@ type CurrentWscHistoryEnvelopeMetadata =
 interface CurrentWscSettlementPayload {
   readonly schemaVersion?: string;
   readonly submittedAtMs?: number;
+  readonly reading?: CurrentWscSettlementReadingPayload;
+}
+
+interface CurrentWscSettlementReadingPayload {
+  readonly coverage?: string;
+  readonly startLine?: number;
+  readonly returnedLineCount?: number;
+  readonly totalLineCount?: number;
+  readonly hasMoreBefore?: boolean;
+  readonly hasMoreAfter?: boolean;
+  readonly truncated?: boolean;
 }
 
 const METADATA_CANDIDATE: 'candidate' = 'candidate';
 const METADATA_IGNORED: 'ignored' = 'ignored';
 const METADATA_OBSTRUCTED: 'obstructed' = 'obstructed';
+const READING_COVERAGE_FULL = 'full';
+const FIRST_READING_LINE = 0;
 
 export interface ExportCurrentJeditWscHistoryInput {
   readonly store: JeditWscWorkspaceStorePort;
@@ -109,6 +125,13 @@ export function exportJeditWscHistoryAtBasis(
 function exportJeditWscHistoryBasis(
   input: ExportJeditWscHistoryBasisInput,
 ): JeditWscCurrentHistoryExportResult {
+  const projectionObstruction = materializationProjectionObstruction(input.envelope, input.basis.basisId);
+  if (projectionObstruction != null) {
+    return {
+      status: JEDIT_WSC_CURRENT_HISTORY_EXPORT_OBSTRUCTED,
+      obstruction: projectionObstruction,
+    };
+  }
   const materialized = input.materializer.materialize(input.envelope, input.basis);
   if (materialized.status === JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_OBSTRUCTED) {
     return exportObstructed(materialized.obstruction.code, materialized.obstruction.message, input.basis.basisId);
@@ -230,6 +253,59 @@ function currentHistoryMetadataFromEnvelope(envelope: JeditWscWorkspaceEnvelope)
   return isFiniteNumber(submittedAtMs)
     ? { status: METADATA_CANDIDATE, submittedAtMs }
     : { status: METADATA_OBSTRUCTED, message: `WSC envelope lacks current-basis metadata: ${envelope.envelopeId}` };
+}
+
+function materializationProjectionObstruction(
+  envelope: JeditWscWorkspaceEnvelope,
+  basisId: string,
+): JeditWscCurrentHistoryObstruction | undefined {
+  const payload = settlementPayloadFromEnvelope(envelope);
+  if (!('payload' in payload)) {
+    return { code: JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_FAILED, message: payload.message, basisId };
+  }
+  if (payload.payload.schemaVersion !== WSC_EDIT_SETTLEMENT_SCHEMA_VERSION) {
+    return {
+      code: JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_FAILED,
+      message: `WSC envelope has unsupported materialization schema: ${envelope.envelopeId}`,
+      basisId,
+    };
+  }
+  const reading = payload.payload.reading;
+  if (reading?.coverage == null) {
+    return {
+      code: JEDIT_WSC_CURRENT_HISTORY_MATERIALIZATION_REQUIRES_FULL_PROJECTION,
+      message: `WSC envelope lacks full-projection reading coverage: ${envelope.envelopeId}`,
+      basisId,
+    };
+  }
+  return readingCoversFullProjection(reading)
+    ? undefined
+    : {
+      code: JEDIT_WSC_CURRENT_HISTORY_BOUNDED_READING_NOT_MATERIALIZABLE,
+      message: `WSC envelope reading is bounded and cannot be materialized as full text: ${envelope.envelopeId}`,
+      basisId,
+    };
+}
+
+function settlementPayloadFromEnvelope(
+  envelope: JeditWscWorkspaceEnvelope,
+): { readonly payload: CurrentWscSettlementPayload } | { readonly message: string } {
+  try {
+    return {
+      payload: JSON.parse(Buffer.from(envelope.bytes).toString(UTF8_ENCODING)),
+    };
+  } catch {
+    return { message: `WSC envelope is not valid JSON: ${envelope.envelopeId}` };
+  }
+}
+
+function readingCoversFullProjection(reading: CurrentWscSettlementReadingPayload): boolean {
+  return reading.coverage === READING_COVERAGE_FULL
+    && reading.startLine === FIRST_READING_LINE
+    && reading.hasMoreBefore !== true
+    && reading.hasMoreAfter !== true
+    && reading.truncated !== true
+    && reading.returnedLineCount === reading.totalLineCount;
 }
 
 function isFiniteNumber(value: number | undefined): value is number {

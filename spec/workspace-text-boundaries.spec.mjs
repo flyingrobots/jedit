@@ -13,7 +13,13 @@ test('reading cache materializes text and reports explicit postures', async () =
     bufferId: 'buffer:notes',
     readingId: 'reading:notes',
     lines: ['a', 'b'],
+    coverage: 'full',
     lineCount: 2,
+    startLine: 0,
+    returnedLineCount: 2,
+    totalLineCount: 2,
+    hasMoreBefore: false,
+    hasMoreAfter: false,
     cursorLine: 0,
     viewportLineCount: 24,
     truncated: false,
@@ -44,7 +50,13 @@ test('reading cache projection preserves Vim marks across production refresh', a
     bufferId: 'buffer:notes',
     readingId: 'reading:notes',
     lines: ['one', '  two'],
+    coverage: 'full',
     lineCount: 2,
+    startLine: 0,
+    returnedLineCount: 2,
+    totalLineCount: 2,
+    hasMoreBefore: false,
+    hasMoreAfter: false,
     cursorLine: 0,
     viewportLineCount: 24,
     truncated: false,
@@ -63,7 +75,7 @@ test('reading cache projection preserves Vim marks across production refresh', a
     },
   });
 
-  const projected = cacheModule.editorFromWorkspaceTextReadingCache({
+  const projected = cacheModule.editorFromFullWorkspaceTextReadingCache({
     filePath: '/repo/notes.md',
     readOnly: false,
     dirty: false,
@@ -193,8 +205,63 @@ test('replace command submits through production text session and refreshes read
   assert.equal(message.result.cache.lines[0], 'replaced from reading');
 });
 
+test('settlement envelope records bounded reading coverage metadata', async () => {
+  const commands = await importDist('app', 'workspace', 'workspace-text-commands.js');
+  const productionTextSession = {
+    insertText: async () => ({ kind: 'applied', result: { receiptId: 'receipt:window' } }),
+    observeWindow: async () => ({
+      kind: 'observed',
+      observed: {
+        value: {
+          readingId: 'reading:window',
+          lines: [{
+            lineNumber: 24,
+            text: 'window evidence',
+          }],
+          startLine: 24,
+          lineCount: 1,
+          totalLineCount: 40,
+          hasMoreBefore: true,
+          hasMoreAfter: true,
+          cursorLine: 24,
+          viewportLineCount: 4,
+          truncated: false,
+        },
+      },
+    }),
+  };
+
+  const message = await commands.createWorkspaceTextEditCmd({
+    kind: commands.WorkspaceTextEditCommandKinds.Insert,
+    requestId: 8,
+    filePath: '/repo/notes.md',
+    bufferId: 'buffer:notes',
+    productionTextSession,
+    atMs: 42,
+    aperture: {
+      cursorLine: 24,
+      viewportLineCount: 4,
+      beforeLines: 0,
+      afterLines: 0,
+      maxBytes: 1048576,
+    },
+    startByte: 100,
+    insertText: 'Z',
+  })();
+  const payload = JSON.parse(new TextDecoder().decode(message.result.wscSettlementEnvelope.bytes));
+
+  assert.equal(payload.reading.coverage, 'window');
+  assert.equal(payload.reading.startLine, 24);
+  assert.equal(payload.reading.returnedLineCount, 1);
+  assert.equal(payload.reading.totalLineCount, 40);
+  assert.equal(payload.reading.hasMoreBefore, true);
+  assert.equal(payload.reading.hasMoreAfter, true);
+  assert.equal(payload.reading.truncated, false);
+});
+
 test('production undo and redo submit Echo replacement edits', async () => {
   const harness = await openedHarness({
+    hostLines: ['abc'],
     readings: ['abc', 'bc', 'abc', 'bc'],
   });
 
@@ -229,6 +296,7 @@ test('production undo and redo submit Echo replacement edits', async () => {
 
 test('production insert-mode edits can be undone through Echo', async () => {
   const harness = await openedHarness({
+    hostLines: ['a'],
     readings: ['a', 'Xa', 'a'],
   });
 

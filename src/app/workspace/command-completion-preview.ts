@@ -4,7 +4,11 @@ import {
   type InlineCompletionPreview,
 } from "../../ui/inline-completion-popup.js";
 import type { Cmd } from "@flyingrobots/bijou-tui";
-import type { EditorFilePort } from "../../ports/editor-file.js";
+import {
+  isLoadedEditorFile,
+  isMissingEditorFile,
+  type EditorFilePort,
+} from "../../ports/editor-file.js";
 import { FileEntryKinds, type FileEntry } from "../../ports/file-system.js";
 import {
   selectedWorkspaceCommandLineFileCompletion,
@@ -133,6 +137,9 @@ export function workspaceEditorFilePreviewSource(
   return {
     loadFilePreview(filePath) {
       const file = editorFile.loadEditorFile(filePath);
+      if (isMissingEditorFile(file) || !isLoadedEditorFile(file)) {
+        return unavailableFilePreviewResult();
+      }
       return {
         kind: WORKSPACE_FILE_PREVIEW_RESULT_KIND.Loaded,
         lines: file.lines,

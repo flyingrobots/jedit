@@ -12,6 +12,11 @@ export interface JeditRecoveredMaterializationPayload {
   readonly source: string;
   readonly text: string;
   readonly textDigest: string;
+  readonly coverage: string;
+  readonly startLine: number;
+  readonly returnedLineCount: number;
+  readonly totalLineCount: number;
+  readonly truncated: boolean;
   readonly readingId: string;
   readonly basisDigest: string;
   readonly readingBasisDigest: string;

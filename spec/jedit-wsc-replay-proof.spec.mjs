@@ -97,6 +97,7 @@ function fakeStore(payloadsByEnvelopeId) {
 }
 
 function settlementPayload(overrides = {}) {
+  const lines = overrides.lines ?? ['same semantic text'];
   return {
     schemaVersion: 'jedit.workspace_text_edit_settlement.v1',
     filePath: '/repo/a.txt',
@@ -111,8 +112,12 @@ function settlementPayload(overrides = {}) {
     executionId: 'execution:semantic',
     reading: {
       readingId: 'reading:semantic',
-      lines: overrides.lines ?? ['same semantic text'],
-      lineCount: 1,
+      coverage: overrides.coverage ?? 'full',
+      startLine: overrides.startLine ?? 0,
+      lines,
+      lineCount: lines.length,
+      returnedLineCount: overrides.returnedLineCount ?? lines.length,
+      totalLineCount: overrides.totalLineCount ?? lines.length,
       cursorLine: 0,
       viewportLineCount: 1,
       truncated: false,

@@ -15,8 +15,7 @@ test('Echo history drawer renders workspace-visible Echo evidence', async () => 
   await harness.key('i');
   await harness.runFirst(await harness.key('X', { shift: true }));
   const saveCommands = await harness.key('s', { ctrl: true });
-  await harness.run(saveCommands[0]);
-  await harness.run(saveCommands[1]);
+  await harness.runAll(saveCommands);
 
   assert.deepEqual(harness.model.echoHistory.map((entry) => [entry.kind, entry.status, entry.evidenceId]), [
     ['open', 'opened', 'reading:1'],

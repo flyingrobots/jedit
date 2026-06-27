@@ -1,5 +1,12 @@
 import { quit, type Cmd } from "@flyingrobots/bijou-tui";
+import {
+  NotificationPlacements,
+  NotificationTones,
+  NotificationVariants,
+  pushNotificationToast,
+} from "../../ui/feedback.js";
 import { FileEntryKinds, type FileEntry } from "../../ports/file-system.js";
+import { explainLastJeditCommand } from "./command-provenance.js";
 import {
   closeWorkspaceCommandLine,
   invalidateWorkspaceCommandLine,
@@ -9,7 +16,11 @@ import type { WorkspaceKeyBindingContext } from "./key-binding-context.js";
 import type { WorkspaceModel } from "./model.js";
 import type { WorkspaceMsg } from "./msg.js";
 import { WorkspaceCommandNames } from "./workspace-command-names.js";
-import { saveWorkspace } from "./workspace-save-key.js";
+import {
+  hasUnresolvedProductionTextIntent,
+  saveWorkspace,
+} from "./workspace-save-key.js";
+import { WorkspaceTextAuthorityKinds } from "./workspace-text-authority.js";
 import { dispatchWorldlineCommand } from "./worldline-command-dispatch.js";
 
 type KeyBindingResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
@@ -23,6 +34,7 @@ const EMPTY_COMMAND_ARGUMENT = "";
 const NO_WHITESPACE_INDEX = -1;
 const DIRECTORY_LABEL_SUFFIX = "/";
 const PARENT_DIRECTORY_LABEL = "../";
+const WHY_REPORT_OBSTRUCTION_KIND = "obstruction";
 
 export function dispatchWorkspaceCommandLine(
   model: WorkspaceModel,
@@ -58,6 +70,9 @@ function dispatchNoArgumentCommand(
   }
   if (isForceQuitCommand(command.name)) {
     return [closeWorkspaceCommandLine(model), [quit<WorkspaceMsg>()]];
+  }
+  if (isWhyCommand(command.name)) {
+    return dispatchWhyCommand(model, context);
   }
   return isWriteQuitCommand(command.name)
     ? dispatchWriteQuitCommand(model, context)
@@ -95,10 +110,25 @@ function dispatchWriteQuitCommand(
   model: WorkspaceModel,
   context: WorkspaceKeyBindingContext,
 ): KeyBindingResult {
+  const baseModel = closeWorkspaceCommandLine(model);
+  const blocksQuit = hasUnresolvedProductionTextIntent(baseModel);
   const [savedModel, commands] = saveWorkspace(
-    closeWorkspaceCommandLine(model),
+    baseModel,
     context,
   );
+  if (blocksQuit) {
+    return [savedModel, commands];
+  }
+  if (shouldDeferWriteQuit(baseModel, savedModel)) {
+    return [
+      {
+        ...savedModel,
+        quitConfirmOpen: false,
+        quitAfterSaveRequestId: savedModel.textRequestId,
+      },
+      commands,
+    ];
+  }
   return [
     {
       ...savedModel,
@@ -106,6 +136,38 @@ function dispatchWriteQuitCommand(
     },
     commands,
   ];
+}
+
+function shouldDeferWriteQuit(
+  beforeSave: WorkspaceModel,
+  savedModel: WorkspaceModel,
+): boolean {
+  return (
+    savedModel.textAuthority.kind === WorkspaceTextAuthorityKinds.Opened &&
+    savedModel.textRequestId !== beforeSave.textRequestId
+  );
+}
+
+function dispatchWhyCommand(
+  model: WorkspaceModel,
+  context: WorkspaceKeyBindingContext,
+): KeyBindingResult {
+  const report = explainLastJeditCommand(model.editor, model.textAuthority);
+  const tone = report.kind === WHY_REPORT_OBSTRUCTION_KIND
+    ? NotificationTones.Warning
+    : NotificationTones.Info;
+  return pushNotificationToast(
+    closeWorkspaceCommandLine(model),
+    {
+      title: report.title,
+      message: report.message,
+      variant: NotificationVariants.Toast,
+      tone,
+      placement: NotificationPlacements.LowerRight,
+    },
+    context.nowMs(),
+    context.createNotificationTickCmd,
+  );
 }
 
 function editCommandFileEntry(
@@ -206,4 +268,8 @@ function isWriteQuitCommand(name: string): boolean {
     name === WorkspaceCommandNames.WriteQuit ||
     name === WorkspaceCommandNames.WriteQuitAlias
   );
+}
+
+function isWhyCommand(name: string): boolean {
+  return name === WorkspaceCommandNames.Why;
 }

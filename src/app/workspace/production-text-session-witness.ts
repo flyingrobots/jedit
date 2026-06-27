@@ -159,7 +159,7 @@ async function completeWitness(
   if (observed.kind === ProductionTextSessionOutcomeKinds.Obstructed) {
     return obstructed(WITNESS_STAGE_READING, observed.obstruction.issue);
   }
-  const exported = await request.session.exportWindow({ bufferId, aperture: request.aperture, atMs: request.atMs });
+  const exported = await request.session.exportSnapshot({ bufferId, atMs: request.atMs });
   if (exported.kind === ProductionTextSessionOutcomeKinds.Obstructed) {
     return obstructed(WITNESS_STAGE_EXPORT, exported.obstruction.issue);
   }
