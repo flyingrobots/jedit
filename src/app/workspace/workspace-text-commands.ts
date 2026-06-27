@@ -1,5 +1,5 @@
 import type { Cmd, RuntimeIssue } from '@flyingrobots/bijou-tui';
-import type { EditorFilePort } from '../../ports/editor-file.js';
+import { isMissingEditorFile, type EditorFilePort } from '../../ports/editor-file.js';
 import { joinLines, normalizeLines } from '../editor-lines.js';
 import type {
   ProductionTextSession,
@@ -18,7 +18,15 @@ import {
   type WorkspaceTextOpenResult,
   type WorkspaceTextReadCommandResult,
 } from './workspace-text-results.js';
+import {
+  WorkspaceTextHostBasisKinds,
+  type WorkspaceTextHostBasisKind,
+} from './workspace-text-authority.js';
 import { createWorkspaceTextEditSettlementEnvelope } from './workspace-text-wsc-settlement.js';
+import {
+  WorkspaceWorldlineMaterializationKinds,
+  type WorkspaceWorldlineMaterializationKind,
+} from './worldline-types.js';
 
 const ISSUE_LEVEL_ERROR = RuntimeIssueLevels.Error;
 const ISSUE_SOURCE_COMMAND = RuntimeIssueSources.Command;
@@ -26,6 +34,7 @@ const OPEN_FAILURE_PREFIX = 'Text open failed';
 const EDIT_FAILURE_PREFIX = 'Text edit failed';
 const CHECKPOINT_FAILURE_PREFIX = 'Text checkpoint failed';
 const EXPORT_FAILURE_PREFIX = 'Text export failed';
+const EXPORT_COLLISION_PREFIX = 'Text export blocked';
 const READ_FAILURE_PREFIX = 'Text read failed';
 const CHECKPOINT_LABEL = 'interactive workspace save';
 const EDIT_COMMAND_INSERT = 'insert';
@@ -41,6 +50,14 @@ const FULL_EXPORT_BEFORE_LINES = 0;
 const FULL_EXPORT_AFTER_LINES = 0;
 const FULL_EXPORT_VIEWPORT_LINE_COUNT = Number.MAX_SAFE_INTEGER;
 const FULL_EXPORT_MAX_BYTES = Number.MAX_SAFE_INTEGER;
+const EMPTY_INITIAL_TEXT = '';
+
+interface WorkspaceTextOpenBasis {
+  readonly initialText: string;
+  readonly readOnly: boolean;
+  readonly materialization: WorkspaceWorldlineMaterializationKind;
+  readonly hostBasis: WorkspaceTextHostBasisKind;
+}
 
 export const WorkspaceTextEditCommandKinds = Object.freeze({
   Insert: EDIT_COMMAND_INSERT,
@@ -103,6 +120,7 @@ export interface WorkspaceTextExportCommandRequest {
   readonly requestId: number;
   readonly filePath: string;
   readonly bufferId: string;
+  readonly hostBasis: WorkspaceTextHostBasisKind;
   readonly editorFile: EditorFilePort;
   readonly productionTextSession: ProductionTextSession;
   readonly atMs: number;
@@ -201,10 +219,10 @@ async function openWorkspaceText(
   request: WorkspaceTextOpenCommandRequest,
 ): Promise<WorkspaceTextOpenResult> {
   try {
-    const loaded = request.editorFile.loadEditorFile(request.filePath);
+    const basis = workspaceTextOpenBasis(request);
     const opened = await request.productionTextSession.openBuffer({
       bufferKey: request.filePath,
-      initialText: joinLines(loaded.lines),
+      initialText: basis.initialText,
       projectionPath: request.filePath,
       atMs: request.atMs,
     });
@@ -223,7 +241,9 @@ async function openWorkspaceText(
       kind: WorkspaceTextResultKinds.Opened,
       filePath: request.filePath,
       bufferId: opened.optic.buffer.bufferId,
-      readOnly: loaded.readOnly,
+      readOnly: basis.readOnly,
+      materialization: basis.materialization,
+      hostBasis: basis.hostBasis,
       cache: readingCache(opened.optic.buffer.bufferId, observed.observed.value),
     };
   } catch (cause) {
@@ -232,6 +252,25 @@ async function openWorkspaceText(
       runtimeIssue(`${OPEN_FAILURE_PREFIX}: ${cause instanceof Error ? cause.message : String(cause)}`, request.atMs),
     );
   }
+}
+
+function workspaceTextOpenBasis(
+  request: WorkspaceTextOpenCommandRequest,
+): WorkspaceTextOpenBasis {
+  const loaded = request.editorFile.loadEditorFile(request.filePath);
+  return isMissingEditorFile(loaded)
+    ? {
+        initialText: EMPTY_INITIAL_TEXT,
+        readOnly: false,
+        materialization: WorkspaceWorldlineMaterializationKinds.Unmaterialized,
+        hostBasis: WorkspaceTextHostBasisKinds.Missing,
+      }
+    : {
+        initialText: joinLines(loaded.lines),
+        readOnly: loaded.readOnly,
+        materialization: WorkspaceWorldlineMaterializationKinds.Materialized,
+        hostBasis: WorkspaceTextHostBasisKinds.File,
+      };
 }
 
 async function editWorkspaceText(
@@ -332,6 +371,10 @@ async function exportWorkspaceText(
     if (exported.kind === ProductionTextSessionOutcomeKinds.Obstructed) {
       return obstructedExport(request.filePath, exported.obstruction.issue);
     }
+    const collision = materializationCollision(request);
+    if (collision != null) {
+      return obstructedExport(request.filePath, collision);
+    }
     request.editorFile.saveEditorFile(request.filePath, normalizeLines(exported.text));
     return {
       kind: WorkspaceTextResultKinds.Exported,
@@ -345,6 +388,18 @@ async function exportWorkspaceText(
       runtimeIssue(`${EXPORT_FAILURE_PREFIX}: ${cause instanceof Error ? cause.message : String(cause)}`, request.atMs),
     );
   }
+}
+
+function materializationCollision(
+  request: WorkspaceTextExportCommandRequest,
+): RuntimeIssue | undefined {
+  if (request.hostBasis !== WorkspaceTextHostBasisKinds.Missing) {
+    return undefined;
+  }
+  const observed = request.editorFile.loadEditorFile(request.filePath);
+  return isMissingEditorFile(observed)
+    ? undefined
+    : runtimeIssue(`${EXPORT_COLLISION_PREFIX}: ${request.filePath} appeared on disk after open`, request.atMs);
 }
 
 async function readWorkspaceText(

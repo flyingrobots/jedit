@@ -71,6 +71,7 @@ function saveProductionText(
   }, [
     createWorkspaceTextExportCmd({
       ...base,
+      hostBasis: model.textAuthority.hostBasis,
       editorFile: context.deps.editorFile,
       aperture: fullWorkspaceTextExportAperture(),
     }),

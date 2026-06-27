@@ -1,7 +1,9 @@
 import type { RuntimeIssue } from '@flyingrobots/bijou-tui';
 import type { JeditWscWorkspaceEnvelope } from '../../ports/jedit-wsc-workspace-store.js';
 import type { TextPosition } from './workspace-text-position.js';
+import type { WorkspaceTextHostBasisKind } from './workspace-text-authority.js';
 import type { WorkspaceTextReadingCache } from './workspace-text-reading-cache.js';
+import type { WorkspaceWorldlineMaterializationKind } from './worldline-types.js';
 
 const RESULT_OPENED = 'opened';
 const RESULT_APPLIED = 'applied';
@@ -24,6 +26,8 @@ export interface WorkspaceTextOpenedResult {
   readonly filePath: string;
   readonly bufferId: string;
   readonly readOnly: boolean;
+  readonly materialization: WorkspaceWorldlineMaterializationKind;
+  readonly hostBasis: WorkspaceTextHostBasisKind;
   readonly cache: WorkspaceTextReadingCache;
 }
 

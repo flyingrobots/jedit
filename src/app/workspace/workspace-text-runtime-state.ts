@@ -111,6 +111,8 @@ function openedTextModel(
     bufferId: result.bufferId,
     readOnly: result.readOnly,
     dirty: false,
+    materialization: result.materialization,
+    hostBasis: result.hostBasis,
     cache: result.cache,
   });
   return {

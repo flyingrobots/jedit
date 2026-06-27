@@ -719,6 +719,185 @@ test("ctrl-s exports production text and checkpoints without direct local save f
   assert.equal(checkpointedModel.editor.dirty, false);
 });
 
+test("ctrl-s blocks materialization when a missing-open path appeared", async () => {
+  const [keyBindings, modeModule, authority, profile] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "workspace-text-authority.js"),
+    importDist("app", "text-runtime-profile.js"),
+  ]);
+  const savedFiles = [];
+  const loadedFiles = [];
+  const exportCalls = [];
+  const productionTextSession = {
+    exportWindow: async (request) => {
+      exportCalls.push(request);
+      return {
+        kind: "exported",
+        text: "local draft",
+        readingId: "reading:export",
+      };
+    },
+    checkpointBuffer: async () => ({
+      kind: "checkpointed",
+      result: {
+        checkpointId: "checkpoint:save",
+      },
+    }),
+  };
+  const model = {
+    ...textWorkspaceModel(modeModule, authority, profile, {
+      dirty: true,
+      lines: ["local draft"],
+    }),
+    textAuthority: authority.openedWorkspaceTextAuthority({
+      profile: profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+      filePath: "/repo/new.txt",
+      bufferId: "buffer:new",
+      readOnly: false,
+      dirty: true,
+      materialization: "unmaterialized",
+      hostBasis: "missing",
+      cache: {
+        bufferId: "buffer:new",
+        readingId: "reading:local",
+        lines: ["local draft"],
+        lineCount: 1,
+        cursorLine: 0,
+        viewportLineCount: 24,
+        truncated: false,
+      },
+    }),
+  };
+  const context = {
+    ...mockKeyBindingContext(),
+    nowMs: () => 100,
+    deps: mockDeps({
+      editorFile: {
+        loadEditorFile: (filePath) => {
+          loadedFiles.push(filePath);
+          return { lines: ["external"], readOnly: false };
+        },
+        saveEditorFile: (filePath, lines) => {
+          savedFiles.push({ filePath, lines });
+        },
+      },
+      productionTextSession,
+    }),
+  };
+
+  const [, commands] = keyBindings.updateFromKey(
+    { key: "s", ctrl: true, alt: false, shift: false },
+    model,
+    context,
+  );
+  const exportMessage = await commands[0]();
+
+  assert.deepEqual(exportCalls, [
+    {
+      bufferId: "buffer:new",
+      aperture: {
+        cursorLine: 0,
+        viewportLineCount: Number.MAX_SAFE_INTEGER,
+        beforeLines: 0,
+        afterLines: 0,
+        maxBytes: Number.MAX_SAFE_INTEGER,
+      },
+      atMs: 100,
+    },
+  ]);
+  assert.deepEqual(loadedFiles, ["/repo/new.txt"]);
+  assert.equal(exportMessage.result.kind, "obstructed");
+  assert.match(exportMessage.result.issue.message, /appeared on disk after open/);
+  assert.deepEqual(savedFiles, []);
+});
+
+test("ctrl-s materializes a missing-open path when it is still absent", async () => {
+  const [keyBindings, runtimeModule, modeModule, authority, profile] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("app", "workspace", "runtime.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "workspace-text-authority.js"),
+    importDist("app", "text-runtime-profile.js"),
+  ]);
+  const savedFiles = [];
+  const loadedFiles = [];
+  const productionTextSession = {
+    exportWindow: async () => ({
+      kind: "exported",
+      text: "local draft",
+      readingId: "reading:export",
+    }),
+    checkpointBuffer: async () => ({
+      kind: "checkpointed",
+      result: {
+        checkpointId: "checkpoint:save",
+      },
+    }),
+  };
+  const model = {
+    ...textWorkspaceModel(modeModule, authority, profile, {
+      dirty: true,
+      lines: ["local draft"],
+    }),
+    textAuthority: authority.openedWorkspaceTextAuthority({
+      profile: profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+      filePath: "/repo/new.txt",
+      bufferId: "buffer:new",
+      readOnly: false,
+      dirty: true,
+      materialization: "unmaterialized",
+      hostBasis: "missing",
+      cache: {
+        bufferId: "buffer:new",
+        readingId: "reading:local",
+        lines: ["local draft"],
+        lineCount: 1,
+        cursorLine: 0,
+        viewportLineCount: 24,
+        truncated: false,
+      },
+    }),
+  };
+  const context = {
+    ...mockKeyBindingContext(),
+    nowMs: () => 101,
+    deps: mockDeps({
+      editorFile: {
+        loadEditorFile: (filePath) => {
+          loadedFiles.push(filePath);
+          return { kind: "missing", filePath };
+        },
+        saveEditorFile: (filePath, lines) => {
+          savedFiles.push({ filePath, lines });
+        },
+      },
+      productionTextSession,
+    }),
+  };
+
+  const [pendingSave, commands] = keyBindings.updateFromKey(
+    { key: "s", ctrl: true, alt: false, shift: false },
+    model,
+    context,
+  );
+  const exportMessage = await commands[0]();
+  const checkpointMessage = await commands[1]();
+  const runtime = runtimeModule.createWorkspaceRuntime(
+    mockRuntime({ productionTextSession }),
+  );
+  const [exportedModel] = runtime.update(exportMessage, pendingSave);
+  const [checkpointedModel] = runtime.update(checkpointMessage, exportedModel);
+
+  assert.deepEqual(loadedFiles, ["/repo/new.txt"]);
+  assert.deepEqual(savedFiles, [
+    { filePath: "/repo/new.txt", lines: ["local draft"] },
+  ]);
+  assert.equal(checkpointedModel.textAuthority.hostBasis, "file");
+  assert.equal(checkpointedModel.textAuthority.materialization, "materialized");
+  assert.equal(checkpointedModel.editor.dirty, false);
+});
+
 function textWorkspaceModel(modeModule, authority, profile, editorOverrides) {
   return {
     editor: {

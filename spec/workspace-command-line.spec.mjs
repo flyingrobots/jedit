@@ -5,6 +5,7 @@ import {
   importDist,
   mockEditor,
   mockKeyBindingContext,
+  mockRuntime,
   mockTitleScreenModel,
   surfaceText,
 } from "./workspace-helpers.mjs";
@@ -442,6 +443,89 @@ test("enter dispatches edit commands outside the cwd hierarchy", async () => {
   ]);
   assert.equal(message.type, "text-open-result");
   assert.equal(message.result.kind, "opened");
+});
+
+test("enter dispatches edit for missing paths as unmaterialized buffers", async () => {
+  const [keyBindings, runtimeModule, viewer, titleScreen, editorMode] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("app", "workspace", "runtime.js"),
+    importDist("app", "workspace", "viewer.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+  ]);
+  const loadedFiles = [];
+  const savedFiles = [];
+  const openCalls = [];
+  const productionTextSession = fakeProductionTextSession({
+    openBuffer: async (request) => {
+      openCalls.push(request);
+      return {
+        kind: "opened",
+        optic: { buffer: { bufferId: "buffer:foo" } },
+      };
+    },
+    observeWindow: async () => ({
+      kind: "observed",
+      observed: {
+        value: {
+          readingId: "reading:foo",
+          lines: [{ text: "" }],
+          lineCount: 1,
+          cursorLine: 0,
+          viewportLineCount: 24,
+          truncated: false,
+        },
+      },
+    }),
+  });
+  const context = mockKeyBindingContext({
+    nowMs: () => 80,
+    deps: {
+      editorFile: {
+        loadEditorFile(filePath) {
+          loadedFiles.push(filePath);
+          return { kind: "missing", filePath };
+        },
+        saveEditorFile(filePath, lines) {
+          savedFiles.push({ filePath, lines });
+        },
+      },
+      productionTextSession,
+    },
+  });
+  const model = mockTitleScreenModel(titleScreen, {
+    editor: mockEditor(editorMode),
+    focusPane: "editor",
+    footerVisible: true,
+    jeditTheme: commandLineRenderTheme(),
+    commandLine: activeCommandLine("edit foo.txt"),
+  });
+
+  const [pendingOpen, commands] = keyBindings.updateFromKey(
+    { type: "key", key: "enter", ctrl: false, alt: false, shift: false },
+    model,
+    context,
+  );
+  const message = await commands[0]();
+  const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime({ productionTextSession }));
+  const [opened] = runtime.update(message, pendingOpen);
+  const rendered = surfaceText(viewer.renderWorkspace(opened));
+
+  assert.deepEqual(loadedFiles, ["/repo/foo.txt"]);
+  assert.deepEqual(openCalls, [
+    {
+      bufferKey: "/repo/foo.txt",
+      initialText: "",
+      projectionPath: "/repo/foo.txt",
+      atMs: 80,
+    },
+  ]);
+  assert.deepEqual(savedFiles, []);
+  assert.equal(opened.textAuthority.kind, "opened");
+  assert.equal(opened.textAuthority.materialization, "unmaterialized");
+  assert.equal(opened.editor.dirty, false);
+  assert.deepEqual(opened.editor.lines, [""]);
+  assert.match(rendered, /foo\.txt \[clean \| main \| fs:unmaterialized/);
 });
 
 test("enter dispatches write and wq commands through production save", async () => {

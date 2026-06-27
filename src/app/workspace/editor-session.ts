@@ -4,7 +4,7 @@ import type { Cmd } from '@flyingrobots/bijou-tui';
 import type { WorkspaceModel } from './model.js';
 import { WorkspaceMessageTypes, workspaceSourceHighlightMessage, type WorkspaceMsg } from './msg.js';
 import type { EditorState } from './editor/model.js';
-import type { EditorFilePort } from '../../ports/editor-file.js';
+import { isMissingEditorFile, type EditorFilePort } from '../../ports/editor-file.js';
 import type { GraftSessionPort } from '../../ports/graft-session.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import { isMarkdownFile } from './file-types.js';
@@ -42,6 +42,9 @@ export function isWorkspaceMarkdownFile(path: string): boolean {
 export function loadEditor(filePath: string, editorFile: EditorFilePort): EditorState {
   try {
     const file = editorFile.loadEditorFile(filePath);
+    if (isMissingEditorFile(file)) {
+      return emptyEditor(filePath);
+    }
 
     return ensureEditorVisible({
       path: filePath,
@@ -71,6 +74,22 @@ export function loadEditor(filePath: string, editorFile: EditorFilePort): Editor
       redoStack: [],
     };
   }
+}
+
+function emptyEditor(filePath: string): EditorState {
+  return ensureEditorVisible({
+    path: filePath,
+    lines: [''],
+    cursorRow: 0,
+    cursorCol: 0,
+    scrollRow: 0,
+    scrollCol: 0,
+    dirty: false,
+    readOnly: false,
+    mode: EditorModes.Normal,
+    undoStack: [],
+    redoStack: [],
+  }, INITIAL_EDITOR_VIEWPORT_WIDTH, INITIAL_EDITOR_VIEWPORT_HEIGHT);
 }
 
 export function saveEditor(editor: EditorState, editorFile: EditorFilePort): EditorState {

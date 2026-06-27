@@ -2,6 +2,10 @@ import type { RuntimeIssue } from '@flyingrobots/bijou-tui';
 import type { TextRuntimeProfile } from '../text-runtime-profile.js';
 import type { EditorState } from './editor/model.js';
 import {
+  WorkspaceWorldlineMaterializationKinds,
+  type WorkspaceWorldlineMaterializationKind,
+} from './worldline-types.js';
+import {
   editorFromWorkspaceTextReadingCache,
   WorkspaceTextReadingPostures,
   workspaceTextReadingCachePosture,
@@ -13,6 +17,8 @@ const AUTHORITY_NONE = 'none';
 const AUTHORITY_PENDING_OPEN = 'pending-open';
 const AUTHORITY_OPENED = 'opened';
 const AUTHORITY_OBSTRUCTED = 'obstructed';
+const HOST_BASIS_FILE = 'file';
+const HOST_BASIS_MISSING = 'missing';
 
 export const WorkspaceTextAuthorityKinds = Object.freeze({
   None: AUTHORITY_NONE,
@@ -21,8 +27,15 @@ export const WorkspaceTextAuthorityKinds = Object.freeze({
   Obstructed: AUTHORITY_OBSTRUCTED,
 } as const);
 
+export const WorkspaceTextHostBasisKinds = Object.freeze({
+  File: HOST_BASIS_FILE,
+  Missing: HOST_BASIS_MISSING,
+} as const);
+
 export type WorkspaceTextAuthorityKind =
   typeof WorkspaceTextAuthorityKinds[keyof typeof WorkspaceTextAuthorityKinds];
+export type WorkspaceTextHostBasisKind =
+  typeof WorkspaceTextHostBasisKinds[keyof typeof WorkspaceTextHostBasisKinds];
 
 export type { WorkspaceTextReadingCache } from './workspace-text-reading-cache.js';
 
@@ -46,6 +59,8 @@ export interface WorkspaceTextAuthorityOpened {
   readonly bufferId: string;
   readonly readOnly: boolean;
   readonly dirty: boolean;
+  readonly materialization: WorkspaceWorldlineMaterializationKind;
+  readonly hostBasis: WorkspaceTextHostBasisKind;
   readonly cache?: WorkspaceTextReadingCache;
   readonly lastReceiptId?: string;
   readonly lastCheckpointId?: string;
@@ -66,10 +81,16 @@ export interface OpenedWorkspaceTextAuthorityOptions {
   readonly bufferId: string;
   readonly readOnly: boolean;
   readonly dirty: boolean;
+  readonly materialization?: WorkspaceWorldlineMaterializationKind;
+  readonly hostBasis?: WorkspaceTextHostBasisKind;
   readonly cache?: WorkspaceTextReadingCache;
   readonly lastReceiptId?: string;
   readonly lastCheckpointId?: string;
   readonly lastExportReadingId?: string;
+}
+
+interface WorkspaceTextMaterializationOptions {
+  readonly dirty: boolean;
 }
 
 export type WorkspaceTextAuthority =
@@ -110,6 +131,8 @@ export function openedWorkspaceTextAuthority(
     bufferId: options.bufferId,
     readOnly: options.readOnly,
     dirty: options.dirty,
+    materialization: options.materialization ?? materializationFromOptions(options),
+    hostBasis: options.hostBasis ?? WorkspaceTextHostBasisKinds.File,
     cache: options.cache,
     lastReceiptId: options.lastReceiptId,
     lastCheckpointId: options.lastCheckpointId,
@@ -149,6 +172,7 @@ export function workspaceTextAuthorityWithReceipt(
   return {
     ...authority,
     dirty: true,
+    materialization: WorkspaceWorldlineMaterializationKinds.Unmaterialized,
     lastReceiptId: receiptId,
   };
 }
@@ -159,6 +183,7 @@ export function workspaceTextAuthorityWithPendingEdit(
   return {
     ...authority,
     dirty: true,
+    materialization: WorkspaceWorldlineMaterializationKinds.Unmaterialized,
   };
 }
 
@@ -180,6 +205,8 @@ export function workspaceTextAuthorityWithExport(
   return {
     ...authority,
     dirty: false,
+    hostBasis: WorkspaceTextHostBasisKinds.File,
+    materialization: WorkspaceWorldlineMaterializationKinds.Materialized,
     lastExportReadingId: readingId,
   };
 }
@@ -188,6 +215,14 @@ export function isWorkspaceTextAuthorityOpened(
   authority: WorkspaceTextAuthority,
 ): authority is WorkspaceTextAuthorityOpened {
   return authority.kind === AUTHORITY_OPENED;
+}
+
+function materializationFromOptions(
+  options: WorkspaceTextMaterializationOptions,
+): WorkspaceWorldlineMaterializationKind {
+  return options.dirty
+    ? WorkspaceWorldlineMaterializationKinds.Unmaterialized
+    : WorkspaceWorldlineMaterializationKinds.Materialized;
 }
 
 export function editorFromWorkspaceTextCache(
