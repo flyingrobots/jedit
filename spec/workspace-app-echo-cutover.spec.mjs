@@ -77,6 +77,8 @@ test('real workspace app path renders rapid inserts before Echo observe resolves
   assert.equal(harness.calls.insert.length, 0);
   assert.equal(harness.model.editor.cursorCol, 5);
   assert.equal(harness.model.textAuthority.dirty, true);
+  assert.equal(harness.model.textAuthority.pendingClientSeq, 6);
+  assert.equal(harness.model.textAuthority.pendingIntentStatus, 'predicted');
   assert.match(harness.renderText(), /hello/);
 
   for (const command of commands) {
@@ -191,6 +193,8 @@ test('real workspace app path keeps optimistic text visible when Echo obstructs 
   await harness.runFirst(commands);
 
   assert.match(harness.renderText(), /X/);
+  assert.equal(harness.model.textAuthority.pendingIntentStatus, 'obstructed');
+  assert.equal(harness.model.textAuthority.lastObstruction.message, 'footprint changed');
   assert.equal(harness.model.echoHistory.at(-1).status, 'obstructed');
   assert.match(harness.model.echoHistory.at(-1).summary, /footprint changed/);
 });

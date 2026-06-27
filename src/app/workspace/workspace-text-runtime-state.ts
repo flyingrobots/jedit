@@ -19,8 +19,10 @@ import {
   obstructedWorkspaceTextAuthority,
   WorkspaceTextAuthorityKinds,
   workspaceTextAuthorityWithCache,
+  workspaceTextAuthorityWithBlockedIntent,
   workspaceTextAuthorityWithCheckpoint,
   workspaceTextAuthorityWithExport,
+  workspaceTextAuthorityWithObstruction,
   workspaceTextAuthorityWithReceipt,
 } from './workspace-text-authority.js';
 import {
@@ -41,6 +43,7 @@ import {
 export type WorkspaceRuntimeResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 
 const WSC_SETTLEMENT_OBSTRUCTION_PREFIX = 'WSC edit settlement failed';
+const DEPENDENT_EDIT_BLOCKED_PREFIX = 'Text edit blocked by obstructed intent';
 const ISSUE_LEVEL_ERROR = 'error';
 const ISSUE_SOURCE_COMMAND = 'command';
 
@@ -151,15 +154,19 @@ function applyTextEditResult(
   model: WorkspaceModel,
 ): WorkspaceRuntimeResult {
   const authority = model.textAuthority;
-  if (authority.kind !== WorkspaceTextAuthorityKinds.Opened || msg.requestId !== model.textRequestId) {
+  if (authority.kind !== WorkspaceTextAuthorityKinds.Opened) {
     return [model, []];
   }
   if (msg.result.kind === WorkspaceTextResultKinds.Obstructed) {
-    return pushRuntimeIssueToast(
-      withEchoHistoryEntry(model, obstructedHistoryEntry(EchoHistoryEntryKinds.Edit, msg.result.filePath, msg.result.issue)),
-      msg.result.issue,
-      deps.createNotificationTickCmd,
-    );
+    return msg.requestId > model.textRequestId
+      ? [model, []]
+      : applyTextEditObstruction(deps, msg, model, authority);
+  }
+  if (msg.requestId !== model.textRequestId) {
+    return [model, []];
+  }
+  if (intentBlockedByEarlierObstruction(authority, msg.requestId)) {
+    return applyBlockedDependentTextEdit(deps, msg, model, authority);
   }
   const withCache = workspaceTextAuthorityWithCache(
     workspaceTextAuthorityWithReceipt(authority, msg.result.receiptId),
@@ -180,6 +187,58 @@ function applyTextEditResult(
   return settlement == null
     ? [refreshed, refreshCommands]
     : [settlement[0], [...refreshCommands, ...settlement[1]]];
+}
+
+function applyTextEditObstruction(
+  deps: WorkspaceRuntimeDependencies,
+  msg: Extract<WorkspaceMsg, { type: typeof WorkspaceMessageTypes.TextEditResult }>,
+  model: WorkspaceModel,
+  authority: Extract<WorkspaceModel['textAuthority'], { kind: typeof WorkspaceTextAuthorityKinds.Opened }>,
+): WorkspaceRuntimeResult {
+  if (msg.result.kind !== WorkspaceTextResultKinds.Obstructed) {
+    return [model, []];
+  }
+  const obstructed = {
+    ...model,
+    textAuthority: workspaceTextAuthorityWithObstruction(authority, msg.requestId, msg.result.issue),
+  };
+  return pushRuntimeIssueToast(
+    withEchoHistoryEntry(obstructed, obstructedHistoryEntry(EchoHistoryEntryKinds.Edit, msg.result.filePath, msg.result.issue)),
+    msg.result.issue,
+    deps.createNotificationTickCmd,
+  );
+}
+
+function intentBlockedByEarlierObstruction(
+  authority: Extract<WorkspaceModel['textAuthority'], { kind: typeof WorkspaceTextAuthorityKinds.Opened }>,
+  requestId: number,
+): boolean {
+  return authority.blockedByClientSeq != null && requestId > authority.blockedByClientSeq;
+}
+
+function applyBlockedDependentTextEdit(
+  deps: WorkspaceRuntimeDependencies,
+  msg: Extract<WorkspaceMsg, { type: typeof WorkspaceMessageTypes.TextEditResult }>,
+  model: WorkspaceModel,
+  authority: Extract<WorkspaceModel['textAuthority'], { kind: typeof WorkspaceTextAuthorityKinds.Opened }>,
+): WorkspaceRuntimeResult {
+  if (msg.result.kind !== WorkspaceTextResultKinds.Applied) {
+    return [model, []];
+  }
+  const issue = dependentEditBlockedIssue(msg.result.filePath, authority.blockedByClientSeq, deps.nowMs());
+  const blocked = {
+    ...model,
+    textAuthority: workspaceTextAuthorityWithBlockedIntent(authority),
+  };
+  return pushRuntimeIssueToast(
+    withEchoHistoryEntry(blocked, {
+      kind: EchoHistoryEntryKinds.Edit,
+      status: EchoHistoryEntryStatuses.Blocked,
+      summary: issue.message,
+    }),
+    issue,
+    deps.createNotificationTickCmd,
+  );
 }
 
 function persistEditSettlement(
@@ -209,6 +268,19 @@ function settlementObstructionIssue(
 ): RuntimeIssue {
   return {
     message: `${WSC_SETTLEMENT_OBSTRUCTION_PREFIX}: ${filePath}: ${obstruction.message}`,
+    level: ISSUE_LEVEL_ERROR,
+    source: ISSUE_SOURCE_COMMAND,
+    atMs,
+  };
+}
+
+function dependentEditBlockedIssue(
+  filePath: string,
+  blockedByClientSeq: number | undefined,
+  atMs: number,
+): RuntimeIssue {
+  return {
+    message: `${DEPENDENT_EDIT_BLOCKED_PREFIX}: ${filePath}: request:${blockedByClientSeq ?? 0}`,
     level: ISSUE_LEVEL_ERROR,
     source: ISSUE_SOURCE_COMMAND,
     atMs,

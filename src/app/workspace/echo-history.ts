@@ -15,6 +15,7 @@ const STATUS_OBSERVED = 'observed';
 const STATUS_CHECKPOINTED = 'checkpointed';
 const STATUS_EXPORTED = 'exported';
 const STATUS_OBSTRUCTED = 'obstructed';
+const STATUS_BLOCKED = 'blocked';
 const NO_TICK = '-';
 const NO_EVIDENCE = '-';
 const TITLE_KEY = 'history.title';
@@ -49,6 +50,7 @@ export const EchoHistoryEntryStatuses = Object.freeze({
   Checkpointed: STATUS_CHECKPOINTED,
   Exported: STATUS_EXPORTED,
   Obstructed: STATUS_OBSTRUCTED,
+  Blocked: STATUS_BLOCKED,
 } as const);
 
 export type EchoHistoryEntryKind =

@@ -2,7 +2,7 @@ import type { I18nPort } from '../../ports/i18n.js';
 import { fitLine } from '../../ui/workspace-render.js';
 import { EchoHistoryEntryKinds, EchoHistoryEntryStatuses, type EchoHistoryEntry } from './echo-history.js';
 import type { WorkspaceModel } from './model.js';
-import { WorkspaceTextAuthorityKinds } from './workspace-text-authority.js';
+import { WorkspaceTextAuthorityKinds, WorkspaceTextIntentStatuses } from './workspace-text-authority.js';
 import {
   MAIN_WORLDLINE_NAME,
   WorkspaceWorldlineConflictKinds,
@@ -39,6 +39,7 @@ const LOCAL_DELTA = '+local/-0';
 const OPTIMISTIC_NOTE = 'optimistic';
 const ACTIVE_NOTE = 'active';
 const CONFLICT_NOTE = 'conflict';
+const BLOCKED_NOTE = 'blocked';
 const PHASE_HEADER = 's phase       r name           basis          head  delta     evidence           note';
 const SELECTED_MARKER = '>';
 const UNSELECTED_MARKER = ' ';
@@ -130,7 +131,7 @@ function localOptimisticRow(model: WorkspaceModel): WorldlinePhaseRow | undefine
     head: NO_HEAD,
     delta: LOCAL_DELTA,
     evidence: localOptimisticEvidence(model, latest),
-    note: phase === WorkspaceWorldlinePhaseKinds.Conflicted ? CONFLICT_NOTE : OPTIMISTIC_NOTE,
+    note: localOptimisticNote(phase),
   };
 }
 
@@ -159,25 +160,46 @@ function localOptimisticPhase(
   model: WorkspaceModel,
   latest: EchoHistoryEntry | undefined,
 ): WorkspaceWorldlinePhaseKind {
-  if (latest?.status === EchoHistoryEntryStatuses.Obstructed) {
+  const status = model.textAuthority.kind === WorkspaceTextAuthorityKinds.Opened
+    ? model.textAuthority.pendingIntentStatus
+    : undefined;
+  if (status === WorkspaceTextIntentStatuses.Obstructed ||
+    latest?.status === EchoHistoryEntryStatuses.Obstructed) {
     return WorkspaceWorldlinePhaseKinds.Conflicted;
   }
-  return model.textAuthority.kind === WorkspaceTextAuthorityKinds.Opened &&
-    model.textAuthority.lastReceiptId != null
-    ? WorkspaceWorldlinePhaseKinds.Settled
-    : WorkspaceWorldlinePhaseKinds.Unconfirmed;
+  if (status === WorkspaceTextIntentStatuses.Blocked ||
+    latest?.status === EchoHistoryEntryStatuses.Blocked) {
+    return WorkspaceWorldlinePhaseKinds.Pending;
+  }
+  if (status === WorkspaceTextIntentStatuses.Admitted) {
+    return WorkspaceWorldlinePhaseKinds.Admitted;
+  }
+  return WorkspaceWorldlinePhaseKinds.Unconfirmed;
 }
 
 function localOptimisticEvidence(
   model: WorkspaceModel,
   latest: EchoHistoryEntry | undefined,
 ): string {
+  if (model.textAuthority.kind !== WorkspaceTextAuthorityKinds.Opened) {
+    return NO_EVIDENCE;
+  }
   if (latest?.status === EchoHistoryEntryStatuses.Obstructed) {
     return latest.summary;
   }
-  return model.textAuthority.kind === WorkspaceTextAuthorityKinds.Opened
-    ? model.textAuthority.lastReceiptId ?? `request:${model.textRequestId}`
-    : NO_EVIDENCE;
+  if (model.textAuthority.lastObstruction != null) {
+    return model.textAuthority.lastObstruction.message;
+  }
+  return model.textAuthority.pendingReceiptId
+    ?? model.textAuthority.lastReceiptId
+    ?? `request:${model.textAuthority.pendingClientSeq ?? model.textRequestId}`;
+}
+
+function localOptimisticNote(phase: WorkspaceWorldlinePhaseKind): string {
+  if (phase === WorkspaceWorldlinePhaseKinds.Conflicted) {
+    return CONFLICT_NOTE;
+  }
+  return phase === WorkspaceWorldlinePhaseKinds.Pending ? BLOCKED_NOTE : OPTIMISTIC_NOTE;
 }
 
 function graphNodePhase(node: WorkspaceWorldlineGraphNode): WorkspaceWorldlinePhaseKind {

@@ -836,6 +836,79 @@ test("bounded TextEditResult preserves dirty local editor projection", async () 
   assert.equal(editModel.editor.dirty, true);
 });
 
+test("dependent TextEditResult stays blocked after an earlier obstruction", async () => {
+  const [runtimeModule, modeModule, authority, profile, msgModule, results] =
+    await Promise.all([
+      importDist("app", "workspace", "runtime.js"),
+      importDist("app", "workspace", "editor", "mode.js"),
+      importDist("app", "workspace", "workspace-text-authority.js"),
+      importDist("app", "text-runtime-profile.js"),
+      importDist("app", "workspace", "msg.js"),
+      importDist("app", "workspace", "workspace-text-results.js"),
+    ]);
+  const localLines = ["ab"];
+  const model = {
+    ...textWorkspaceModel(modeModule, authority, profile, {
+      dirty: true,
+      mode: modeModule.EditorModes.Insert,
+      lines: localLines,
+      cursorRow: 0,
+      cursorCol: 2,
+    }),
+    textRequestId: 2,
+    textAuthority: authority.openedWorkspaceTextAuthority({
+      profile: profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+      filePath: "/repo/notes.txt",
+      bufferId: "buffer:notes",
+      readOnly: false,
+      dirty: true,
+      pendingClientSeq: 2,
+      pendingIntentStatus: authority.WorkspaceTextIntentStatuses.Predicted,
+      cache: workspaceReadingCache({ lines: [""] }),
+    }),
+  };
+  const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime({
+    nowMs: () => 55,
+  }));
+  const [obstructedModel] = runtime.update({
+    type: msgModule.WorkspaceMessageTypes.TextEditResult,
+    requestId: 1,
+    result: {
+      kind: results.WorkspaceTextResultKinds.Obstructed,
+      filePath: "/repo/notes.txt",
+      issue: {
+        message: "footprint changed",
+        level: "error",
+        source: "command",
+        atMs: 54,
+      },
+    },
+  }, model);
+  const [blockedModel] = runtime.update({
+    type: msgModule.WorkspaceMessageTypes.TextEditResult,
+    requestId: 2,
+    result: {
+      kind: results.WorkspaceTextResultKinds.Applied,
+      filePath: "/repo/notes.txt",
+      bufferId: "buffer:notes",
+      receiptId: "receipt:dependent",
+      cursorAfter: { row: 0, column: 2 },
+      cache: workspaceReadingCache({
+        readingId: "reading:dependent",
+        lines: ["ab"],
+      }),
+    },
+  }, obstructedModel);
+
+  assert.deepEqual(blockedModel.editor.lines, localLines);
+  assert.equal(blockedModel.textAuthority.pendingIntentStatus, authority.WorkspaceTextIntentStatuses.Blocked);
+  assert.equal(blockedModel.textAuthority.blockedByClientSeq, 1);
+  assert.equal(blockedModel.textAuthority.lastReceiptId, undefined);
+  assert.equal(blockedModel.echoHistory.at(-2).status, "obstructed");
+  assert.equal(blockedModel.echoHistory.at(-1).status, "blocked");
+  assert.match(blockedModel.echoHistory.at(-1).summary, /request:1/);
+});
+
 test("edit planning after bounded read uses the full local projection", async () => {
   const [viewerKey, modeModule, authority, profile] =
     await Promise.all([

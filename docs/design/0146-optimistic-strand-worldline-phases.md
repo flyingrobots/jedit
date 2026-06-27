@@ -241,6 +241,23 @@ not disappear through silent rollback. JEDIT can still draw the visible text
 quickly, but each rendered speculative edge should have an Echo receipt,
 request id, or obstruction status once the runtime can supply it.
 
+Example:
+
+```text
+user types: abcdef
+a -> admitted as receipt:a
+b -> obstructed by footprint check
+cdef -> blocked-by-b, rebased, superseded, or abandoned by explicit status
+visible text -> remains a named speculative/braid projection until resolved
+```
+
+The important rule is that `cdef` cannot later be reported as admitted through
+the same dependency chain while `b` remains obstructed. A future Echo
+speculative runtime should own the dependency graph and transform/rebase rules.
+Until then, JEDIT guardrails must preserve the local projection and mark
+dependent local work as blocked rather than silently rolling it back or
+claiming it was admitted.
+
 This document records the doctrine only. The WF-0123 hardening slice does not
 implement full Echo predictive runtime, full braid resolution, watcher intake,
 or conflict UI. It prevents JEDIT from cementing the wrong abstraction while

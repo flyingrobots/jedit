@@ -21,6 +21,14 @@ const AUTHORITY_OPENED = 'opened';
 const AUTHORITY_OBSTRUCTED = 'obstructed';
 const HOST_BASIS_FILE = 'file';
 const HOST_BASIS_MISSING = 'missing';
+const INTENT_STATUS_PREDICTED = 'predicted';
+const INTENT_STATUS_SUBMITTED = 'submitted';
+const INTENT_STATUS_ADMITTED = 'admitted';
+const INTENT_STATUS_REBASED = 'rebased';
+const INTENT_STATUS_BLOCKED = 'blocked';
+const INTENT_STATUS_OBSTRUCTED = 'obstructed';
+const INTENT_STATUS_SUPERSEDED = 'superseded';
+const INTENT_STATUS_ABANDONED = 'abandoned';
 
 export const WorkspaceTextAuthorityKinds = Object.freeze({
   None: AUTHORITY_NONE,
@@ -34,10 +42,23 @@ export const WorkspaceTextHostBasisKinds = Object.freeze({
   Missing: HOST_BASIS_MISSING,
 } as const);
 
+export const WorkspaceTextIntentStatuses = Object.freeze({
+  Predicted: INTENT_STATUS_PREDICTED,
+  Submitted: INTENT_STATUS_SUBMITTED,
+  Admitted: INTENT_STATUS_ADMITTED,
+  Rebased: INTENT_STATUS_REBASED,
+  Blocked: INTENT_STATUS_BLOCKED,
+  Obstructed: INTENT_STATUS_OBSTRUCTED,
+  Superseded: INTENT_STATUS_SUPERSEDED,
+  Abandoned: INTENT_STATUS_ABANDONED,
+} as const);
+
 export type WorkspaceTextAuthorityKind =
   typeof WorkspaceTextAuthorityKinds[keyof typeof WorkspaceTextAuthorityKinds];
 export type WorkspaceTextHostBasisKind =
   typeof WorkspaceTextHostBasisKinds[keyof typeof WorkspaceTextHostBasisKinds];
+export type WorkspaceTextIntentStatus =
+  typeof WorkspaceTextIntentStatuses[keyof typeof WorkspaceTextIntentStatuses];
 
 export type { WorkspaceTextReadingCache } from './workspace-text-reading-cache.js';
 export { canReadingReplaceWholeEditor } from './workspace-text-reading-cache.js';
@@ -66,6 +87,11 @@ export interface WorkspaceTextAuthorityOpened {
   readonly hostBasis: WorkspaceTextHostBasisKind;
   readonly hostFingerprint?: EditorFileFingerprint;
   readonly cache?: WorkspaceTextReadingCache;
+  readonly pendingClientSeq?: number;
+  readonly pendingReceiptId?: string;
+  readonly pendingIntentStatus?: WorkspaceTextIntentStatus;
+  readonly blockedByClientSeq?: number;
+  readonly lastObstruction?: RuntimeIssue;
   readonly lastReceiptId?: string;
   readonly lastCheckpointId?: string;
   readonly lastExportReadingId?: string;
@@ -89,6 +115,11 @@ export interface OpenedWorkspaceTextAuthorityOptions {
   readonly hostBasis?: WorkspaceTextHostBasisKind;
   readonly hostFingerprint?: EditorFileFingerprint;
   readonly cache?: WorkspaceTextReadingCache;
+  readonly pendingClientSeq?: number;
+  readonly pendingReceiptId?: string;
+  readonly pendingIntentStatus?: WorkspaceTextIntentStatus;
+  readonly blockedByClientSeq?: number;
+  readonly lastObstruction?: RuntimeIssue;
   readonly lastReceiptId?: string;
   readonly lastCheckpointId?: string;
   readonly lastExportReadingId?: string;
@@ -140,6 +171,11 @@ export function openedWorkspaceTextAuthority(
     hostBasis: options.hostBasis ?? WorkspaceTextHostBasisKinds.File,
     hostFingerprint: options.hostFingerprint,
     cache: options.cache,
+    pendingClientSeq: options.pendingClientSeq,
+    pendingReceiptId: options.pendingReceiptId,
+    pendingIntentStatus: options.pendingIntentStatus,
+    blockedByClientSeq: options.blockedByClientSeq,
+    lastObstruction: options.lastObstruction,
     lastReceiptId: options.lastReceiptId,
     lastCheckpointId: options.lastCheckpointId,
     lastExportReadingId: options.lastExportReadingId,
@@ -179,17 +215,50 @@ export function workspaceTextAuthorityWithReceipt(
     ...authority,
     dirty: true,
     materialization: WorkspaceWorldlineMaterializationKinds.Unmaterialized,
+    pendingReceiptId: receiptId,
+    pendingIntentStatus: WorkspaceTextIntentStatuses.Admitted,
     lastReceiptId: receiptId,
   };
 }
 
 export function workspaceTextAuthorityWithPendingEdit(
   authority: WorkspaceTextAuthorityOpened,
+  pendingClientSeq: number,
 ): WorkspaceTextAuthorityOpened {
   return {
     ...authority,
     dirty: true,
     materialization: WorkspaceWorldlineMaterializationKinds.Unmaterialized,
+    pendingClientSeq,
+    pendingIntentStatus: WorkspaceTextIntentStatuses.Predicted,
+    lastObstruction: undefined,
+  };
+}
+
+export function workspaceTextAuthorityWithObstruction(
+  authority: WorkspaceTextAuthorityOpened,
+  pendingClientSeq: number,
+  issue: RuntimeIssue,
+): WorkspaceTextAuthorityOpened {
+  return {
+    ...authority,
+    dirty: true,
+    materialization: WorkspaceWorldlineMaterializationKinds.Unmaterialized,
+    pendingClientSeq: authority.pendingClientSeq ?? pendingClientSeq,
+    pendingIntentStatus: WorkspaceTextIntentStatuses.Obstructed,
+    blockedByClientSeq: pendingClientSeq,
+    lastObstruction: issue,
+  };
+}
+
+export function workspaceTextAuthorityWithBlockedIntent(
+  authority: WorkspaceTextAuthorityOpened,
+): WorkspaceTextAuthorityOpened {
+  return {
+    ...authority,
+    dirty: true,
+    materialization: WorkspaceWorldlineMaterializationKinds.Unmaterialized,
+    pendingIntentStatus: WorkspaceTextIntentStatuses.Blocked,
   };
 }
 
@@ -200,6 +269,11 @@ export function workspaceTextAuthorityWithCheckpoint(
   return {
     ...authority,
     dirty: false,
+    pendingClientSeq: undefined,
+    pendingReceiptId: undefined,
+    pendingIntentStatus: undefined,
+    blockedByClientSeq: undefined,
+    lastObstruction: undefined,
     lastCheckpointId: checkpointId,
   };
 }
@@ -215,6 +289,11 @@ export function workspaceTextAuthorityWithExport(
     hostBasis: WorkspaceTextHostBasisKinds.File,
     hostFingerprint,
     materialization: WorkspaceWorldlineMaterializationKinds.Materialized,
+    pendingClientSeq: undefined,
+    pendingReceiptId: undefined,
+    pendingIntentStatus: undefined,
+    blockedByClientSeq: undefined,
+    lastObstruction: undefined,
     lastExportReadingId: readingId,
   };
 }

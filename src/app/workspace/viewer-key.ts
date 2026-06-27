@@ -395,7 +395,7 @@ function queueProductionTextEdit(
   return [{
     ...model,
     textRequestId: requestId,
-    textAuthority: workspaceTextAuthorityWithPendingEdit(model.textAuthority),
+    textAuthority: workspaceTextAuthorityWithPendingEdit(model.textAuthority, requestId),
   }, [
     createWorkspaceTextEditCmd({
       ...base,
