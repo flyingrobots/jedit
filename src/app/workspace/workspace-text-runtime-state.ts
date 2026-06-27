@@ -210,7 +210,14 @@ function editorAfterTextEdit(
   authority: Extract<WorkspaceModel['textAuthority'], { kind: typeof WorkspaceTextAuthorityKinds.Opened }>,
   cursorAfter: TextPosition | undefined,
 ) {
-  const editor = editorFromWorkspaceTextCache(authority, model.editor);
+  const editor = shouldPreserveLocalEditorAfterTextEdit(model, authority, cursorAfter)
+    ? {
+      ...model.editor,
+      path: authority.filePath,
+      dirty: authority.dirty,
+      readOnly: authority.readOnly,
+    }
+    : editorFromWorkspaceTextCache(authority, model.editor);
   if (cursorAfter == null) {
     return editor;
   }
@@ -220,6 +227,22 @@ function editorAfterTextEdit(
     cursorRow: cursorAfter.row,
     cursorCol: cursorAfter.column,
   }, viewport.width, viewport.height);
+}
+
+function shouldPreserveLocalEditorAfterTextEdit(
+  model: WorkspaceModel,
+  authority: Extract<WorkspaceModel['textAuthority'], { kind: typeof WorkspaceTextAuthorityKinds.Opened }>,
+  cursorAfter: TextPosition | undefined,
+): model is WorkspaceModel & { readonly editor: NonNullable<WorkspaceModel['editor']> } {
+  const editor = model.editor;
+  const cache = authority.cache;
+  if (editor == null || cursorAfter == null || cache == null) {
+    return false;
+  }
+  const cacheIsBounded = cache.truncated || cache.lineCount > cache.lines.length;
+  const cacheMissesReceiptCursor = cursorAfter.row >= cache.lines.length;
+  const localEditorCoversReceiptCursor = cursorAfter.row < editor.lines.length;
+  return cacheIsBounded && cacheMissesReceiptCursor && localEditorCoversReceiptCursor;
 }
 
 function applyTextCheckpointResult(

@@ -95,6 +95,78 @@ test('real workspace app path renders rapid inserts before Echo observe resolves
   ]);
 });
 
+test('real workspace app path keeps newline insertion past bounded Echo readings', async () => {
+  const document = echoTextDocument('');
+  const calls = {
+    insert: [],
+    observe: [],
+  };
+  const productionTextSession = {
+    openBuffer: async (request) => {
+      document.replace(request.initialText);
+      return {
+        kind: 'opened',
+        optic: {
+          buffer: {
+            bufferId: 'buffer:notes',
+          },
+        },
+      };
+    },
+    insertText: async (request) => {
+      calls.insert.push(request);
+      document.insert(request.startByte, request.insertText);
+      return {
+        kind: 'applied',
+        result: {
+          receiptId: `receipt:${calls.insert.length}`,
+        },
+      };
+    },
+    observeWindow: async (request) => {
+      calls.observe.push(request);
+      const lines = document.lines();
+      const visibleLines = lines.slice(0, request.aperture.viewportLineCount);
+      return {
+        kind: 'observed',
+        observed: {
+          value: {
+            readingId: `reading:${calls.observe.length}`,
+            lines: visibleLines.map((text) => ({ text })),
+            lineCount: lines.length,
+            cursorLine: request.aperture.cursorLine,
+            viewportLineCount: request.aperture.viewportLineCount,
+            truncated: visibleLines.length < lines.length,
+          },
+        },
+      };
+    },
+  };
+  const harness = await openedHarness({
+    hostLines: [''],
+    productionTextSession,
+  });
+
+  await harness.key('i');
+  for (let index = 0; index < 30; index += 1) {
+    await harness.runFirst(await harness.key('enter'));
+  }
+  await harness.runFirst(await harness.key('Z', { shift: true }));
+
+  assert.equal(harness.model.editor.cursorRow, 30);
+  assert.equal(harness.model.editor.cursorCol, 1);
+  assert.equal(harness.model.editor.lines.length, 31);
+  assert.equal(harness.model.editor.lines[30], 'Z');
+  assert.equal(harness.model.textAuthority.cache.truncated, true);
+  assert.equal(calls.insert.length, 31);
+  assert.deepEqual(calls.insert.at(-1), {
+    bufferId: 'buffer:notes',
+    startByte: 30,
+    insertText: 'Z',
+    atMs: 0,
+  });
+});
+
 test('real workspace app path keeps optimistic text visible when Echo obstructs an edit', async () => {
   const harness = await openedHarness({
     readings: [''],
@@ -183,4 +255,19 @@ async function openedHarness(options = {}) {
     fileDrawerOpen: false,
   });
   return harness;
+}
+
+function echoTextDocument(initialText) {
+  let text = initialText;
+  return {
+    insert(startByte, insertText) {
+      text = `${text.slice(0, startByte)}${insertText}${text.slice(startByte)}`;
+    },
+    replace(nextText) {
+      text = nextText;
+    },
+    lines() {
+      return text.split('\n');
+    },
+  };
 }
