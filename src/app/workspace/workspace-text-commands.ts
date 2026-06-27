@@ -48,11 +48,6 @@ const DEFAULT_VIEWPORT_LINE_COUNT = 24;
 const DEFAULT_BEFORE_LINES = 0;
 const DEFAULT_AFTER_LINES = 0;
 const DEFAULT_MAX_BYTES = 1048576;
-const FULL_EXPORT_CURSOR_LINE = 0;
-const FULL_EXPORT_BEFORE_LINES = 0;
-const FULL_EXPORT_AFTER_LINES = 0;
-const FULL_EXPORT_VIEWPORT_LINE_COUNT = Number.MAX_SAFE_INTEGER;
-const FULL_EXPORT_MAX_BYTES = Number.MAX_SAFE_INTEGER;
 
 export const WorkspaceTextEditCommandKinds = Object.freeze({
   Insert: EDIT_COMMAND_INSERT,
@@ -120,7 +115,6 @@ export interface WorkspaceTextExportCommandRequest {
   readonly editorFile: EditorFilePort;
   readonly productionTextSession: ProductionTextSession;
   readonly atMs: number;
-  readonly aperture: ProductionTextViewportAperture;
 }
 
 export interface WorkspaceTextReadCommandRequest {
@@ -160,16 +154,6 @@ export function workspaceTextApertureFromEditor(
     ...defaultWorkspaceTextAperture(),
     cursorLine: Math.max(INITIAL_CURSOR_LINE, editor.scrollRow),
     viewportLineCount: Math.max(1, viewportLineCount),
-  };
-}
-
-export function fullWorkspaceTextExportAperture(): ProductionTextViewportAperture {
-  return {
-    cursorLine: FULL_EXPORT_CURSOR_LINE,
-    viewportLineCount: FULL_EXPORT_VIEWPORT_LINE_COUNT,
-    beforeLines: FULL_EXPORT_BEFORE_LINES,
-    afterLines: FULL_EXPORT_AFTER_LINES,
-    maxBytes: FULL_EXPORT_MAX_BYTES,
   };
 }
 
@@ -362,17 +346,16 @@ async function exportWorkspaceText(
   request: WorkspaceTextExportCommandRequest,
 ): Promise<WorkspaceTextExportResult> {
   try {
-    const preflightIssue = materializationPreflightIssue(request);
-    if (preflightIssue != null) {
-      return obstructedExport(request.filePath, preflightIssue);
-    }
-    const exported = await request.productionTextSession.exportWindow({
+    const exported = await request.productionTextSession.exportSnapshot({
       bufferId: request.bufferId,
-      aperture: request.aperture,
       atMs: request.atMs,
     });
     if (exported.kind === ProductionTextSessionOutcomeKinds.Obstructed) {
       return obstructedExport(request.filePath, exported.obstruction.issue);
+    }
+    const preflightIssue = materializationPreflightIssue(request);
+    if (preflightIssue != null) {
+      return obstructedExport(request.filePath, preflightIssue);
     }
     const savedLines = normalizeLines(exported.text);
     request.editorFile.saveEditorFile(request.filePath, savedLines);

@@ -560,7 +560,7 @@ test("enter dispatches write and wq commands through production save", async () 
         },
       },
       productionTextSession: fakeProductionTextSession({
-        exportWindow: async (request) => {
+        exportSnapshot: async (request) => {
           exportCalls.push(request);
           return {
             kind: "exported",
@@ -644,7 +644,7 @@ test("blocked production wq remains open with honest materialization status", as
   const exportCalls = [];
   const checkpointCalls = [];
   const productionTextSession = fakeProductionTextSession({
-    exportWindow: async (request) => {
+    exportSnapshot: async (request) => {
       exportCalls.push(request);
       return {
         kind: "exported",
@@ -715,7 +715,7 @@ test("blocked production wq remains open with honest materialization status", as
 
   assert.equal(exportMessage.result.kind, "obstructed");
   assert.match(exportMessage.result.issue.message, /changed on disk after open/);
-  assert.deepEqual(exportCalls, []);
+  assert.deepEqual(exportCalls, [{ bufferId: "buffer:notes", atMs: 89 }]);
   assert.deepEqual(checkpointCalls, []);
   assert.deepEqual(savedFiles, []);
   assert.equal(blockedModel.quitConfirmOpen, false);

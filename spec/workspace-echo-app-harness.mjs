@@ -182,7 +182,7 @@ function recordingProductionTextSession(calls, options) {
         },
       };
     },
-    exportWindow: async (request) => {
+    exportSnapshot: async (request) => {
       calls.export.push(request);
       return options.exportObstruction ?? {
         kind: 'exported',

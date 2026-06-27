@@ -28,6 +28,24 @@ test("viewer key follow-up reads use current editor aperture", async () => {
   assert.match(source, /\bworkspaceTextApertureFromEditor\(/);
 });
 
+test("save export path uses full snapshots rather than reading-cache or window exports", async () => {
+  const [commandsSource, saveKeySource, productionSource, witnessSource] = await Promise.all([
+    readWorkspaceFile("src/app/workspace/workspace-text-commands.ts"),
+    readWorkspaceFile("src/app/workspace/workspace-save-key.ts"),
+    readWorkspaceFile("src/app/workspace/production-text-session.ts"),
+    readWorkspaceFile("scripts/jedit-workspace-echo-witness.mjs"),
+  ]);
+
+  assert.doesNotMatch(commandsSource, /\bexportWindow\b/);
+  assert.doesNotMatch(witnessSource, /\bexportWindow\b/);
+  assert.doesNotMatch(commandsSource, /\bsaveEditorFile\([^;]*cache\.lines/s);
+  assert.doesNotMatch(saveKeySource, /\bfullWorkspaceTextExportAperture\b/);
+  assert.doesNotMatch(saveKeySource, /\baperture:/);
+  assert.match(commandsSource, /\bproductionTextSession\.exportSnapshot\(/);
+  assert.match(productionSource, /\bexportSnapshot\b/);
+  assert.match(productionSource, /\bobservedReadingCoversFullSnapshot\b/);
+});
+
 async function readWorkspaceFile(relativePath) {
   return readFile(path.join(REPO_ROOT, relativePath), "utf8");
 }

@@ -138,7 +138,7 @@ export function fakeProductionTextSession(overrides = {}) {
       kind: "obstructed",
       obstruction: fakeProductionTextObstruction(),
     }),
-    exportWindow: async () => ({
+    exportSnapshot: async () => ({
       kind: "obstructed",
       obstruction: fakeProductionTextObstruction(),
     }),

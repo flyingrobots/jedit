@@ -22,6 +22,7 @@ const CHECKPOINT_OBSTRUCTION_CODE = 'text-buffer-checkpoint-obstructed';
 const MISSING_BUFFER_OBSTRUCTION_CODE = 'text-buffer-missing-obstructed';
 const TEXT_EXPORT_OBSTRUCTION_CODE = 'text-buffer-export-obstructed';
 const GROUPED_EDIT_OBSTRUCTION_MESSAGE = 'Grouped production text edits require explicit jedit command planning.';
+const FULL_SNAPSHOT_OBSTRUCTION_MESSAGE = 'Text export requires a full untruncated text snapshot.';
 const TEXT_EXPORT_LINE_SEPARATOR = '\n';
 const OUTCOME_OPENED = 'opened';
 const OUTCOME_APPLIED = 'applied';
@@ -29,6 +30,11 @@ const OUTCOME_CHECKPOINTED = 'checkpointed';
 const OUTCOME_OBSERVED = 'observed';
 const OUTCOME_EXPORTED = 'exported';
 const OUTCOME_OBSTRUCTED = 'obstructed';
+const FULL_SNAPSHOT_CURSOR_LINE = 0;
+const FULL_SNAPSHOT_BEFORE_LINES = 0;
+const FULL_SNAPSHOT_AFTER_LINES = 0;
+const FULL_SNAPSHOT_VIEWPORT_LINE_COUNT = Number.MAX_SAFE_INTEGER;
+const FULL_SNAPSHOT_MAX_BYTES = Number.MAX_SAFE_INTEGER;
 
 export const ProductionTextSessionOutcomeKinds = Object.freeze({
   Opened: OUTCOME_OPENED,
@@ -117,7 +123,6 @@ export interface ProductionTextCheckpointRequest {
 
 export interface ProductionTextExportRequest {
   readonly bufferId: string;
-  readonly aperture: ProductionTextViewportAperture;
   readonly atMs: number;
 }
 
@@ -185,7 +190,7 @@ export interface ProductionTextSession {
   multiRangeEdit(request: ProductionTextMultiRangeRequest): Promise<ProductionTextEditOutcome>;
   checkpointBuffer(request: ProductionTextCheckpointRequest): Promise<ProductionTextCheckpointOutcome>;
   observeWindow(request: ProductionTextWindowRequest): Promise<ProductionTextWindowOutcome>;
-  exportWindow(request: ProductionTextExportRequest): Promise<ProductionTextExportOutcome>;
+  exportSnapshot(request: ProductionTextExportRequest): Promise<ProductionTextExportOutcome>;
 }
 
 export function createProductionTextSession(
@@ -209,7 +214,7 @@ export function createProductionTextSession(
     multiRangeEdit: (request: ProductionTextMultiRangeRequest) => multiRangeEdit(request),
     checkpointBuffer: (request: ProductionTextCheckpointRequest) => checkpointBuffer(session, request),
     observeWindow: (request: ProductionTextWindowRequest) => observeWindow(session, request),
-    exportWindow: (request: ProductionTextExportRequest) => exportWindow(session, request),
+    exportSnapshot: (request: ProductionTextExportRequest) => exportSnapshot(session, request),
   });
 }
 
@@ -239,11 +244,15 @@ async function checkpointBuffer(
   }
 }
 
-async function exportWindow(
+async function exportSnapshot(
   session: TextBufferSessionPort,
   request: ProductionTextExportRequest,
 ): Promise<ProductionTextExportOutcome> {
-  const observed = await observeWindow(session, request);
+  const observed = await observeWindow(session, {
+    bufferId: request.bufferId,
+    aperture: fullSnapshotAperture(),
+    atMs: request.atMs,
+  });
   if (observed.kind === OUTCOME_OBSTRUCTED) {
     return obstructed(
       TEXT_EXPORT_OBSTRUCTION_CODE,
@@ -251,11 +260,37 @@ async function exportWindow(
       observed.obstruction.issue.message,
     );
   }
+  if (!observedReadingCoversFullSnapshot(observed.observed.value)) {
+    return obstructed(
+      TEXT_EXPORT_OBSTRUCTION_CODE,
+      request.atMs,
+      FULL_SNAPSHOT_OBSTRUCTION_MESSAGE,
+    );
+  }
   return {
     kind: OUTCOME_EXPORTED,
     text: materializeObservedText(observed.observed),
     readingId: observed.observed.evidence.readingId,
   };
+}
+
+function fullSnapshotAperture(): ProductionTextViewportAperture {
+  return {
+    cursorLine: FULL_SNAPSHOT_CURSOR_LINE,
+    viewportLineCount: FULL_SNAPSHOT_VIEWPORT_LINE_COUNT,
+    beforeLines: FULL_SNAPSHOT_BEFORE_LINES,
+    afterLines: FULL_SNAPSHOT_AFTER_LINES,
+    maxBytes: FULL_SNAPSHOT_MAX_BYTES,
+  };
+}
+
+function observedReadingCoversFullSnapshot(reading: TextWindowReading): boolean {
+  return reading.startLine === FULL_SNAPSHOT_CURSOR_LINE
+    && reading.hasMoreBefore !== true
+    && reading.hasMoreAfter !== true
+    && reading.truncated !== true
+    && reading.lineCount === reading.totalLineCount
+    && reading.lines.length === reading.totalLineCount;
 }
 
 async function multiRangeEdit(

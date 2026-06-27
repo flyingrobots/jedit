@@ -45,7 +45,9 @@ jedit UI command
 -> TextBufferSessionPort
 -> Echo-hosted jedit contract state
 -> bounded reading cache
--> render, preview, highlight, save/export materialization
+-> render, preview, highlight
+-> full export snapshot
+-> save/export materialization
 ```
 
 Echo remains generic. It does not own text, editor, buffer, cursor, file,
@@ -70,6 +72,29 @@ materialization, or restart recovery path must fail closed unless it has either
 a full-document projection or a replayable causal operation chain from a known
 full basis. Window-only evidence remains useful for history and debugging, but
 it must not be presented as recovered full text and must not be written to disk.
+
+## Text Windows And Export Snapshots
+
+`textWindow` is a bounded observation operation. It is for rendering,
+navigation, projection evidence, and diagnostics. The app may request different
+apertures as the cursor or viewport moves, but the returned lines remain window
+evidence unless the reading explicitly covers the whole document.
+
+Save and host export use a separate app-level operation: `exportSnapshot`.
+Today that operation is a transitional wrapper over the existing text-window
+read path. The wrapper must prove full coverage before it returns text:
+
+- `startLine` is zero;
+- no earlier or later lines exist;
+- the reading is not truncated;
+- returned line count equals total line count;
+- returned line entries cover the total line count.
+
+If those facts are not present, export is obstructed before host preflight,
+`saveEditorFile`, checkpointing, or clean/materialized authority updates. A
+future Echo API can replace the transitional wrapper with a native full
+frontier snapshot or replay-backed materialization operation, but the product
+boundary remains the same: a text window is not an export.
 
 ## Local Witnesses
 

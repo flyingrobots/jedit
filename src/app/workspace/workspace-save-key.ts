@@ -4,10 +4,7 @@ import type { WorkspaceKeyBindingContext } from './key-binding-context.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 import { WorkspaceKeys } from './workspace-key.js';
-import {
-  createWorkspaceTextExportCmd,
-  fullWorkspaceTextExportAperture,
-} from './workspace-text-commands.js';
+import { createWorkspaceTextExportCmd } from './workspace-text-commands.js';
 import { WorkspaceTextAuthorityKinds } from './workspace-text-authority.js';
 
 type KeyBindingResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
@@ -73,7 +70,6 @@ function saveProductionText(
       hostBasis: model.textAuthority.hostBasis,
       hostFingerprint: model.textAuthority.hostFingerprint,
       editorFile: context.deps.editorFile,
-      aperture: fullWorkspaceTextExportAperture(),
     }),
   ]];
 }

@@ -60,7 +60,7 @@ export function createPreflightProductionTextSession(
     multiRangeEdit: multiRangeProbe(calls),
     checkpointBuffer: checkpointProbe(calls),
     observeWindow: observeWindowProbe(calls, readings),
-    exportWindow: exportWindowProbe(options, calls),
+    exportSnapshot: exportSnapshotProbe(options, calls),
   };
 }
 
@@ -147,10 +147,10 @@ function observeWindowProbe(
   };
 }
 
-function exportWindowProbe(
+function exportSnapshotProbe(
   options: PreflightRuntimeHarnessOptions,
   calls: PreflightProductionTextCalls,
-): ProductionTextSession['exportWindow'] {
+): ProductionTextSession['exportSnapshot'] {
   return async (request) => {
     calls.export.push(request);
     return {

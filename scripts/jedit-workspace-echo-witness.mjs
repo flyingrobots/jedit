@@ -67,9 +67,8 @@ async function workspaceWitnessReport(options) {
   if (read.kind === 'obstructed') {
     return obstructedReport('read', read.obstruction.issue.message);
   }
-  const exported = await productionTextSession.exportWindow({
+  const exported = await productionTextSession.exportSnapshot({
     bufferId: opened.optic.buffer.bufferId,
-    aperture: witnessAperture(),
     atMs: 4,
   });
   if (exported.kind === 'obstructed') {
@@ -171,6 +170,10 @@ function createWitnessOptic() {
           }],
           byteLength: text.length,
           lineCount: 1,
+          startLine: 0,
+          totalLineCount: 1,
+          hasMoreBefore: false,
+          hasMoreAfter: false,
           cursorLine: 0,
           viewportLineCount: 24,
           truncated: false,

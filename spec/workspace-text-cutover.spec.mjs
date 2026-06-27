@@ -901,7 +901,7 @@ test("edit planning after bounded read uses the full local projection", async ()
   assert.equal(inserts[0].insertText, "Z");
 });
 
-test("ctrl-s exports production text and checkpoints without direct local save first", async () => {
+test("ctrl-s exports a full production snapshot and checkpoints without direct local save first", async () => {
   const [keyBindings, runtimeModule, modeModule, authority, profile] =
     await Promise.all([
       importDist("app", "workspace", "key-bindings.js"),
@@ -917,13 +917,11 @@ test("ctrl-s exports production text and checkpoints without direct local save f
     (_, index) => `line ${index}`,
   );
   const productionTextSession = {
-    exportWindow: async (request) => {
+    exportSnapshot: async (request) => {
       exportCalls.push(request);
       return {
         kind: "exported",
-        text: documentLines
-          .slice(0, request.aperture.viewportLineCount)
-          .join("\n"),
+        text: documentLines.join("\n"),
         readingId: "reading:export",
       };
     },
@@ -996,13 +994,6 @@ test("ctrl-s exports production text and checkpoints without direct local save f
   assert.deepEqual(exportCalls, [
     {
       bufferId: "buffer:notes",
-      aperture: {
-        cursorLine: 0,
-        viewportLineCount: Number.MAX_SAFE_INTEGER,
-        beforeLines: 0,
-        afterLines: 0,
-        maxBytes: Number.MAX_SAFE_INTEGER,
-      },
       atMs: 99,
     },
   ]);
@@ -1039,7 +1030,7 @@ for (const blockCase of EXISTING_SAVE_BLOCK_CASES) {
     const checkpointCalls = [];
     const filePath = "/repo/notes.txt";
     const productionTextSession = {
-      exportWindow: async (request) => {
+      exportSnapshot: async (request) => {
         exportCalls.push(request);
         return {
           kind: "exported",
@@ -1110,7 +1101,7 @@ for (const blockCase of EXISTING_SAVE_BLOCK_CASES) {
     const [blockedModel] = runtime.update(exportMessage, pendingSave);
 
     assert.deepEqual(loadedFiles, [filePath]);
-    assert.deepEqual(exportCalls, []);
+    assert.deepEqual(exportCalls, [{ bufferId: "buffer:notes", atMs: 102 }]);
     assert.deepEqual(savedFiles, []);
     assert.deepEqual(checkpointCalls, []);
     assert.equal(exportMessage.result.kind, "obstructed");
@@ -1139,7 +1130,7 @@ test("ctrl-s blocks materialization when a missing-open path appeared", async ()
   const exportCalls = [];
   const checkpointCalls = [];
   const productionTextSession = {
-    exportWindow: async (request) => {
+    exportSnapshot: async (request) => {
       exportCalls.push(request);
       return {
         kind: "exported",
@@ -1210,12 +1201,112 @@ test("ctrl-s blocks materialization when a missing-open path appeared", async ()
   );
   const [blockedModel] = runtime.update(exportMessage, pendingSave);
 
-  assert.deepEqual(exportCalls, []);
+  assert.deepEqual(exportCalls, [{ bufferId: "buffer:new", atMs: 100 }]);
   assert.deepEqual(loadedFiles, ["/repo/new.txt"]);
   assert.equal(exportMessage.result.kind, "obstructed");
   assert.match(exportMessage.result.issue.message, /appeared on disk after open/);
   assert.deepEqual(savedFiles, []);
   assert.deepEqual(checkpointCalls, []);
+  assert.equal(blockedModel.textAuthority.dirty, true);
+  assert.equal(blockedModel.textAuthority.materialization, "unmaterialized");
+  assert.equal(blockedModel.editor.dirty, true);
+});
+
+test("ctrl-s blocks without saving when full snapshot export obstructs", async () => {
+  const [keyBindings, runtimeModule, modeModule, authority, profile] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("app", "workspace", "runtime.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "workspace-text-authority.js"),
+    importDist("app", "text-runtime-profile.js"),
+  ]);
+  const savedFiles = [];
+  const loadedFiles = [];
+  const checkpointCalls = [];
+  const productionTextSession = {
+    exportSnapshot: async () => ({
+      kind: "obstructed",
+      obstruction: {
+        code: "text-buffer-export-obstructed",
+        issue: {
+          message: "Text export requires a full untruncated text snapshot.",
+          level: "error",
+          source: "command",
+          atMs: 103,
+        },
+      },
+    }),
+    checkpointBuffer: async (request) => {
+      checkpointCalls.push(request);
+      return {
+        kind: "checkpointed",
+        result: {
+          checkpointId: "checkpoint:save",
+        },
+      };
+    },
+  };
+  const model = {
+    ...textWorkspaceModel(modeModule, authority, profile, {
+      dirty: true,
+      lines: ["local draft"],
+    }),
+    textAuthority: authority.openedWorkspaceTextAuthority({
+      profile: profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+      filePath: "/repo/notes.txt",
+      bufferId: "buffer:notes",
+      readOnly: false,
+      dirty: true,
+      hostFingerprint: HOST_FINGERPRINT_A,
+      cache: {
+        bufferId: "buffer:notes",
+        readingId: "reading:local",
+        lines: ["local draft"],
+        lineCount: 1,
+        cursorLine: 0,
+        viewportLineCount: 24,
+        truncated: false,
+      },
+    }),
+  };
+  const context = {
+    ...mockKeyBindingContext(),
+    nowMs: () => 103,
+    deps: mockDeps({
+      editorFile: {
+        loadEditorFile: (filePath) => {
+          loadedFiles.push(filePath);
+          return {
+            lines: ["local draft"],
+            readOnly: false,
+            fingerprint: HOST_FINGERPRINT_A,
+          };
+        },
+        saveEditorFile: (filePath, lines) => {
+          savedFiles.push({ filePath, lines });
+        },
+      },
+      productionTextSession,
+    }),
+  };
+
+  const [pendingSave, commands] = keyBindings.updateFromKey(
+    { key: "s", ctrl: true, alt: false, shift: false },
+    model,
+    context,
+  );
+  assert.equal(commands.length, 1);
+  const exportMessage = await commands[0]();
+  const runtime = runtimeModule.createWorkspaceRuntime(
+    mockRuntime({ productionTextSession }),
+  );
+  const [blockedModel] = runtime.update(exportMessage, pendingSave);
+
+  assert.deepEqual(loadedFiles, []);
+  assert.deepEqual(savedFiles, []);
+  assert.deepEqual(checkpointCalls, []);
+  assert.equal(exportMessage.result.kind, "obstructed");
+  assert.match(exportMessage.result.issue.message, /full untruncated text snapshot/);
   assert.equal(blockedModel.textAuthority.dirty, true);
   assert.equal(blockedModel.textAuthority.materialization, "unmaterialized");
   assert.equal(blockedModel.editor.dirty, true);
@@ -1232,7 +1323,7 @@ test("ctrl-s materializes a missing-open path when it is still absent", async ()
   const savedFiles = [];
   const loadedFiles = [];
   const productionTextSession = {
-    exportWindow: async () => ({
+    exportSnapshot: async () => ({
       kind: "exported",
       text: "local draft",
       readingId: "reading:export",
