@@ -36,8 +36,10 @@ highlight, and save semantics inside jedit-owned modules and ports.
 
 ## Doctrine
 
-`EditorState.lines` remains a render and navigation cache. It is not production
-text authority. The production authority path is:
+In production, Echo/session authority owns causal text. `EditorState.lines` is
+the full local visible projection cache used for rendering, cursoring, and
+transitional edit planning. It must not be reconstructed from bounded readings.
+It is not saved or recovered as authority. The production authority path is:
 
 ```text
 jedit UI command
@@ -52,6 +54,37 @@ jedit UI command
 
 Echo remains generic. It does not own text, editor, buffer, cursor, file,
 selection, preview, highlight, or save semantics.
+
+## Projection Coverage
+
+The production path names coverage explicitly because these terms are not
+interchangeable:
+
+- **Full projection**: a complete selected text frontier that covers the whole
+  document. It may replace `editor.lines` when the coverage predicate proves
+  the reading is full.
+- **Window projection**: an Echo text-window observation with `startLine`,
+  returned line count, total line count, before/after flags, and truncation
+  posture. It may update cache, history, diagnostics, and status. It may not
+  replace the whole editor.
+- **Viewport rendering slice**: the bounded source or preview rows painted into
+  the current terminal rectangle. It is paint material only.
+- **Export snapshot**: a full selected frontier materialization payload used by
+  save/export. It is not a viewport window and not `WorkspaceTextReadingCache`
+  lines by convention.
+- **Recovery evidence**: retained operation, observation, replay, or snapshot
+  evidence. It is materializable only when it proves full coverage or a
+  replayable chain from a known full basis.
+
+## Forbidden Patterns
+
+These patterns are architecture bugs:
+
+- `editor.lines = cache.lines` when cache coverage is `window`;
+- `saveEditorFile(cache.lines)`;
+- WSC recovery or materialization from a truncated/window reading;
+- default top-of-file aperture for current cursor or edit follow-up refresh;
+- Graft drawer rows that use stale or saved-only data without visible posture.
 
 ## WSC Reading Evidence
 

@@ -3,14 +3,15 @@
 This guide explains the current runtime shape of `jedit` from the perspective
 of someone trying to understand how an opened buffer becomes terminal pixels.
 
-The short version: the editable buffer is plain text state in `EditorState`.
-Everything on screen is a projection of that state into Bijou `Surface` cells.
-Syntax highlighting, Markdown preview, drawers, footer text, themes, and future
-Graft/Echo readings are projections. They do not own buffer truth.
+The short version: the visible editor is a full local projection cache in
+`EditorState`. Everything on screen is a projection of that state into Bijou
+`Surface` cells. Echo/session authority owns causal text in production. Syntax
+highlighting, Markdown preview, drawers, footer text, themes, and bounded
+Graft/Echo readings are projections or evidence. They do not own buffer truth.
 
 ## Buffer Truth
 
-The current editable buffer lives in `src/main.ts` as `EditorState`.
+The current visible editor projection lives in `src/main.ts` as `EditorState`.
 
 `EditorState` carries:
 
@@ -25,14 +26,15 @@ The current editable buffer lives in `src/main.ts` as `EditorState`.
 - register state
 - undo and redo snapshots
 
-The canonical text for the active editor is `editor.lines`. Rendering reads
-from those lines. Saving writes those lines back to disk. Projections may cache
-or classify the text, but they are not allowed to become the editable source of
-truth.
+In production, Echo/session authority owns causal text. `editor.lines` is the
+full local visible projection cache used for rendering, cursoring, and
+transitional edit planning. It must not be reconstructed from bounded readings.
+It is not saved or recovered as authority.
 
-This is still a transitional design. The long-term direction is Echo-backed
-causal text history, but the current TUI render path intentionally treats the
-local `EditorState.lines` array as the buffer authority.
+This is still a transitional design. The TUI needs fast local material for
+rendering and byte-offset planning while Echo exposes first-class session and
+speculative projection APIs. That local material is a full visible/session
+projection cache, not canonical causal truth.
 
 ## Loading A Buffer
 
@@ -66,9 +68,10 @@ visible viewport. It normalizes the cursor row and column, then adjusts
 `scrollRow` and `scrollCol` so rendering can draw the correct window over the
 buffer.
 
-The important point is that mutations change plain editor state. They do not
-write ANSI escapes, style tokens, syntax classes, or preview state into the
-buffer.
+The important point is that mutations change the plain visible projection.
+They do not write ANSI escapes, style tokens, syntax classes, or preview state
+into the buffer, and production mutation authority still runs through the
+Echo-backed text session.
 
 ## Structural History Metadata Path
 
@@ -154,7 +157,7 @@ When the active editor is in source mode, `renderViewer(...)` calls
 
 That function performs three jobs.
 
-First, it turns the current local buffer lines into a bounded
+First, it turns the current visible editor projection into a bounded
 `SourceWindowReading`:
 
 ```ts
@@ -168,7 +171,8 @@ createSourceWindowReadingFromLines({
 This reading has line numbers, visible line text, total line count, and before
 or after flags. Today it is derived from `editor.lines`. The shape is deliberate
 because it can later be backed by a bounded observer or optic reading instead
-of local array slicing.
+of local array slicing. A `SourceWindowReading` is not a whole-document buffer.
+It is viewport material for paint-time work.
 
 Second, `renderSourceViewer(...)` calls `paintHighlightedSourceWindow(...)` in
 `src/ui/source-highlight.ts`.
@@ -205,7 +209,7 @@ The request sends a `SourceHighlightInput` to the configured `SourceHighlighter`
 port:
 
 - file path
-- current editor text from `joinLines(editor.lines)`
+- current visible editor projection from `joinLines(editor.lines)`
 - start line
 - visible line count
 - synthetic head id
@@ -259,8 +263,9 @@ When the editor is in preview mode and the file is Markdown, `renderViewer(...)`
 calls `renderPreview(...)`, which calls `paintMarkdownPreview(...)` in
 `src/ui/markdown-preview.ts`.
 
-Preview rendering starts by joining `editor.lines` into text. The preview
-classifier then converts Markdown into preview lines and segments:
+Preview rendering starts by joining the visible projection in `editor.lines`
+into text. The preview classifier then converts Markdown into preview lines and
+segments:
 
 - headings
 - list markers
@@ -331,8 +336,8 @@ new source highlight refresh for the newly visible window.
 
 The current rendering pipeline is built around a few invariants:
 
-- Buffer text stays plain. No ANSI escapes or style metadata are stored in
-  `editor.lines`.
+- Visible projection text stays plain. No ANSI escapes or style metadata are
+  stored in `editor.lines`.
 - Renderers consume projections. Source windows, syntax spans, preview
   segments, drawers, and footer lines are all derived views.
 - Styling is theme data. Renderers map roles and tones to tokens; theme files
@@ -341,6 +346,8 @@ The current rendering pipeline is built around a few invariants:
   visible window, not the entire file.
 - Graft is a projection engine. It can classify current text for rendering, but
   it does not own editable buffer truth.
+- Bounded Echo readings are observation evidence. Only full projections may
+  replace the whole visible editor projection.
 - Bijou surfaces are the paint target. jedit composes surfaces first; terminal
   output happens after composition.
 
@@ -349,11 +356,10 @@ The current rendering pipeline is built around a few invariants:
 The end-to-end source mode path is:
 
 ```text
-disk bytes
-  -> loadEditorFile
-  -> normalizeLines
+host basis or Echo/session projection
+  -> full local visible projection cache
   -> EditorState.lines
-  -> createSourceWindowReadingFromLines
+  -> bounded SourceWindowReading for the viewport
   -> optional SourceHighlightReading from Graft
   -> theme source tokens
   -> paintHighlightedSourceWindow
@@ -366,7 +372,7 @@ disk bytes
 The end-to-end Markdown preview path is:
 
 ```text
-EditorState.lines
+EditorState.lines full visible projection
   -> join lines into Markdown text
   -> previewMarkdownLines
   -> theme markdown tokens
@@ -376,9 +382,10 @@ EditorState.lines
   -> Bijou terminal renderer
 ```
 
-These paths are intentionally boring. The buffer can become more causal and the
-projections can become smarter, but the render loop should remain a clear
-conversion from buffer truth to bounded projections to themed cells.
+These paths are intentionally boring. Echo/session authority can become richer
+and projections can become smarter, but the render loop should remain a clear
+conversion from a full visible projection to bounded projections to themed
+cells.
 
 The structural-history replace/tick witness path is separate from the render
 loop:

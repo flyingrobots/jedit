@@ -15,8 +15,10 @@ history, merged pull requests, release notes, and design docs.
 - `TextBufferSessionPort` and `TextBufferOptic` are jedit app capabilities.
 - Interactive workspace open, edit, read, render, save, export, and checkpoint
   flows route through the Echo-hosted production text session.
-- `EditorState.lines` is render, navigation, and reading-cache material in
-  production. It is not the text authority.
+- In production, Echo/session authority owns causal text. `EditorState.lines`
+  is the full local visible projection cache used for rendering, cursoring,
+  and transitional edit planning. It must not be reconstructed from bounded
+  readings. It is not saved or recovered as authority.
 - Production undo/redo remains intentionally unsupported until modeled as
   explicit causal input.
 - WSC history listing, current export, and historical export exist as

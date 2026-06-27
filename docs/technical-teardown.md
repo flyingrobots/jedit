@@ -151,7 +151,8 @@ These terms appear throughout the codebase with precise meanings that differ fro
 | **TextBufferOptic**     | The app-facing capability object for one text-buffer session. It is how jedit talks to the Echo-hosted text authority without exposing runtime coordinates to the UI.                                                                        |
 | **ReadBasisHandle**     | An opaque capability token produced by the optic after buffer creation, mutation, or recovery. Application code passes it back to `textWindow()` to request a read. It cannot be forged or cloned.                                           |
 | **Frontier**            | A causal marker for an observation. It identifies the point against which a reading was taken without giving UI code scheduler or tick authority.                                                                                            |
-| **Reading Cache**       | Render/navigation material derived from a bounded Echo-backed text reading. `EditorState.lines` is cache material in production, not the source of text authority.                                                                           |
+| **Reading Cache**       | Observation evidence from an Echo-backed text reading. It may be a window. It must carry coverage metadata before any code treats it as whole-document material.                                                                             |
+| **Visible Projection**  | The full local text projection in `EditorState.lines`. It is used for rendering, cursoring, and transitional edit planning, but Echo/session authority owns causal text.                                                                      |
 | **Edit Group**          | Product-level grouping of editing actions. The current local grouping/snapshot mechanics are transitional until undo and redo become explicit causal input.                                                                                  |
 | **Checkpoint**          | A named posture marker created through the text session. It is useful for save/export evidence, but the UI does not get direct Echo checkpoint authority.                                                                                    |
 | **Structural History**  | The product-layer taxonomy of text history events: revisions, replacements, edit groups, provenance, command status. It describes what the editor did above the generic Echo boundary.                                                       |
@@ -202,8 +203,10 @@ of this teardown:
 - File open, edit planning, reading, render, save/export, and checkpoint flows
   route through jedit-owned ports backed by an Echo-hosted production text
   session.
-- `EditorState.lines` remains only render, navigation, and cache material in
-  production. It is not the text source of truth.
+- `EditorState.lines` is the full local visible projection cache used for
+  rendering, cursoring, and transitional edit planning. It must not be
+  reconstructed from bounded readings, and it is not saved or recovered as
+  authority.
 - Local undo/redo is intentionally blocked in the production path until undo is
   modeled as explicit causal input.
 - WSC-backed persistence, startup recovery, current export, and historical
@@ -717,7 +720,7 @@ classDiagram
 
 **`editor?: EditorState`** — The `?` is significant. When no file is open, `editor` is `undefined` and the workspace shows the animated title screen. The title screen is not a separate route — it is just the absent-editor state. This elegantly avoids a `page`/`route` concept entirely.
 
-**`textAuthority: WorkspaceTextAuthority`** — The workspace posture for Echo-hosted text authority. It tracks which buffer is backed by the production text session, the `bufferId`, the latest reading cache, and the current obstruction/export/checkpoint posture. `EditorState.lines` remains render/navigation cache material, not production text authority.
+**`textAuthority: WorkspaceTextAuthority`** — The workspace posture for Echo-hosted text authority. It tracks which buffer is backed by the production text session, the `bufferId`, the latest reading cache, and the current obstruction/export/checkpoint posture. `EditorState.lines` remains the full local visible projection cache, not production text authority.
 
 **`fileDrawerProgress / graftDrawerProgress`** — Floating-point animation state (`0.0` to `1.0`). The layout engine reads these on every frame to calculate drawer pixel widths. Partial values produce the slide-open animation. Animation is data, not code.
 
@@ -863,7 +866,12 @@ be production truth.
 
 ### UTF-8 Dual-Track Awareness
 
-Insert mode builds on jedit-owned edit planning over displayed text positions. The production text path works in **byte offsets** — `byteOffsetForTextPosition` converts `{ row, column }` to a UTF-8 byte offset before submitting to the text runtime. Render/cache positions and Echo-hosted text authority must stay synchronized through bounded readings; production edits should not treat local line arrays as the source of truth.
+Insert mode builds on jedit-owned edit planning over displayed text positions.
+The production text path works in **byte offsets** —
+`byteOffsetForTextPosition` converts `{ row, column }` to a UTF-8 byte offset
+before submitting to the text runtime. Planning uses the full local visible
+projection; bounded readings may refresh observation evidence, but they must
+not replace the whole editor unless coverage proves a full projection.
 
 ---
 
@@ -1638,10 +1646,12 @@ sequenceDiagram
     Bijou->>User: terminal renders file content
 ```
 
-**Authority/cache split**: Production rendering uses `EditorState.lines` as a
-projection from the latest bounded text reading. The production session owns
-open/edit/read/checkpoint/export behavior through `TextBufferOptic` and
-`WorkspaceTextAuthority`; local lines are render and navigation cache material.
+**Authority/cache split**: Production rendering uses `EditorState.lines` as the
+full local visible projection cache. A full projection may replace that cache.
+A bounded text-window reading may update reading evidence, history, status, and
+diagnostics, but it must not replace the whole editor. The production session
+owns open/edit/read/checkpoint/export behavior through `TextBufferOptic` and
+`WorkspaceTextAuthority`.
 
 ---
 
@@ -1666,7 +1676,7 @@ sequenceDiagram
     Bijou->>Update: KeyMsg { key: 'h' }
     Update->>InsertMode: updateInsertMode
 
-    Note over InsertMode: Plan against reading-derived cache
+    Note over InsertMode: Plan against full visible projection
     InsertMode->>EditPlanner: planWorkspaceTextInsert(editor, 'h')
     EditPlanner->>EditPlanner: byteOffsetForTextPosition → startByte
     EditPlanner-->>InsertMode: WorkspaceTextInsertPlan { startByte, insertText }
@@ -1693,12 +1703,13 @@ sequenceDiagram
     Update-->>Bijou: [model with updated textAuthority, [textReadCmd]]
 ```
 
-The key design here is **cache-assisted production authority**. Key handlers
-plan byte-precise edits from the reading-derived cache, but the production
-state transition is the session command and its Echo-hosted receipt. Follow-up
-read commands refresh the cache from bounded readings. If the production
+The key design here is **projection-assisted production authority**. Key
+handlers plan byte-precise edits from the full visible projection, but the
+production state transition is the session command and its Echo-hosted receipt.
+Follow-up read commands refresh bounded observation evidence. They replace the
+whole editor only when coverage proves a full projection. If the production
 command is obstructed, the workspace must show explicit obstruction posture
-instead of silently treating local cache movement as authority.
+instead of silently treating local projection movement as authority.
 
 ---
 
@@ -1728,9 +1739,11 @@ authority rather than create a competing one.
 
 ### Trade-off 2: Reading Cache vs. Echo Authority
 
-**Current**: `EditorState.lines[]` is render/navigation cache material derived
-from bounded readings. `WorkspaceTextAuthority` and `ProductionTextSession`
-track the production text authority posture.
+**Current**: `EditorState.lines[]` is the full local visible projection cache
+used for rendering, cursoring, and transitional edit planning.
+`WorkspaceTextAuthority` and `ProductionTextSession` track the production text
+authority posture. Bounded readings are observation evidence unless coverage
+proves they are full-document projections.
 
 **Gain**: The editor can keep cursor movement, viewport math, highlighting, and
 rendering responsive while still routing open/edit/read/save/checkpoint/export
