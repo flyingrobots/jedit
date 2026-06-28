@@ -48,6 +48,25 @@ test('Echo history edit rows include Vim command provenance when available', asy
   assert.match(edit.summary, /\/repo\/notes\.md dw delete motion 0\.\.6 receipt receipt:delete/);
 });
 
+test('Echo history does not reuse stale Vim provenance for later insert edits', async () => {
+  const harness = await createWorkspaceEchoAppHarness({
+    hostLines: ['alpha beta'],
+    readings: ['alpha beta', 'beta', 'Xbeta'],
+  });
+
+  await harness.runFirst(await harness.key('enter'));
+  await harness.key('d');
+  await harness.runAll(await harness.key('w'));
+  await harness.key('i');
+  await harness.runAll(await harness.key('X', { shift: true }));
+
+  const edits = harness.model.echoHistory.filter((entry) => entry.kind === 'edit');
+  assert.equal(edits.length, 2);
+  assert.match(edits[0].summary, /dw delete motion 0\.\.6 receipt receipt:delete/);
+  assert.equal(edits[1].evidenceId, 'receipt:insert');
+  assert.equal(edits[1].summary, '/repo/notes.md');
+});
+
 test('ctrl-h focuses Echo history and j/k navigates its selected row', async () => {
   const harness = await createWorkspaceEchoAppHarness({
     readings: ['before edit', 'after edit'],

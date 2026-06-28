@@ -86,9 +86,7 @@ export function repeatLastVimEdit(editor: EditorState): EditorState {
   if (repeat == null) {
     return clearVimPending(editor);
   }
-  return applyVimChordSyntaxToEditor(editor, parseVimChordSyntax(repeat.keys), {
-    recordRepeat: false,
-  });
+  return applyVimChordSyntaxToEditor(editor, parseVimChordSyntax(repeat.keys));
 }
 
 function applyCompleteCommand(

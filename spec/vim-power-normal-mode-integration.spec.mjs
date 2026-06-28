@@ -25,6 +25,9 @@ test("normal mode stores pending vim keys and dot repeats the last edit", async 
   assert.deepEqual(deleted.lines, ["beta gamma"]);
   assert.deepEqual(deleted.lastVimEdit.keys, ["d", "w"]);
   assert.deepEqual(repeated.lines, ["gamma"]);
+  assert.deepEqual(repeated.lastVimEdit.keys, ["d", "w"]);
+  assert.equal(repeated.lastVimEdit.target.rangeStart, 0);
+  assert.equal(repeated.lastVimEdit.target.rangeEnd, 5);
 });
 
 test("dot repeat resolves text objects against the current basis", async () => {

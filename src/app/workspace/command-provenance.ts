@@ -5,7 +5,11 @@ import type {
   VimRepeatTargetShape,
 } from './editor/model.js';
 import type { WorkspaceTextAuthority } from './workspace-text-authority.js';
-import { WorkspaceTextAuthorityKinds } from './workspace-text-authority.js';
+import {
+  WorkspaceTextAuthorityKinds,
+  WorkspaceTextIntentStatuses,
+  WorkspaceTextPendingCommandKinds,
+} from './workspace-text-authority.js';
 import {
   parseVimChordSyntax,
   VimChordSyntaxKinds,
@@ -111,9 +115,6 @@ const RECEIPT_UNAVAILABLE = 'unavailable';
 const EVENT_ID_SEPARATOR = ':';
 const EVENT_KIND_REJECTED: JeditCommandEventRejected['kind'] = 'rejected';
 const EVENT_KIND_VIM: JeditCommandEvent['kind'] = 'vim';
-const REGISTER_KIND_LINE = 'line';
-const TARGET_SHAPE_CHARWISE: VimRepeatTargetShape = 'charwise';
-const TARGET_SHAPE_LINEWISE: VimRepeatTargetShape = 'linewise';
 
 export function explainLastJeditCommand(
   editor: EditorState | undefined,
@@ -146,7 +147,7 @@ export function createJeditCommandEvent(
   }
   const receipt = commandReceipt(input.textAuthority);
   const register = registerEffect(input.editor.register);
-  const target = commandTarget(input.repeat, register, syntax);
+  const target = commandTarget(input.repeat, syntax);
   if (target != null && target.basisDigest.length === 0) {
     return rejectedCommandEvent(command, JeditCommandEventRejectedCodes.RangeWithoutBasis);
   }
@@ -168,6 +169,17 @@ export function jeditCommandHistorySummary(
 ): string {
   const event = jeditCommandEventFromEditor(editor, textAuthority);
   return event == null ? filePath : `${filePath} ${event.summary}`;
+}
+
+export function jeditAppliedCommandHistorySummary(
+  filePath: string,
+  requestId: number,
+  editor: EditorState | undefined,
+  textAuthority: WorkspaceTextAuthority,
+): string {
+  return canUsePendingVimCommand(requestId, textAuthority)
+    ? jeditCommandHistorySummary(filePath, editor, textAuthority)
+    : filePath;
 }
 
 function jeditCommandEventResultFromEditor(
@@ -269,33 +281,14 @@ function commandSummary(
   return `${command} ${operation} ${resolvedTarget} receipt ${receiptMessage(receipt)}`;
 }
 
-function commandTarget(
-  repeat: VimRepeatState,
-  effect: JeditCommandRegisterEffect | undefined,
-  syntax: VimChordSyntax,
-): JeditCommandTarget | undefined {
+function commandTarget(repeat: VimRepeatState, syntax: VimChordSyntax): JeditCommandTarget | undefined {
   if (repeat.target != null) {
     return {
       ...repeat.target,
       kind: targetKind(syntax),
     };
   }
-  return commandTargetFromRegister(effect);
-}
-
-function commandTargetFromRegister(
-  effect: JeditCommandRegisterEffect | undefined,
-): JeditCommandTarget | undefined {
-  if (effect?.basisDigest == null || effect.rangeStart == null || effect.rangeEnd == null) {
-    return undefined;
-  }
-  return {
-    basisDigest: effect.basisDigest,
-    kind: 'registerSource',
-    rangeEnd: effect.rangeEnd,
-    rangeStart: effect.rangeStart,
-    shape: effect.kind === REGISTER_KIND_LINE ? TARGET_SHAPE_LINEWISE : TARGET_SHAPE_CHARWISE,
-  };
+  return undefined;
 }
 
 function targetKind(syntax: VimChordSyntax): JeditCommandTargetKind {
@@ -354,9 +347,18 @@ function commandReceipt(textAuthority: WorkspaceTextAuthority): JeditCommandRece
   if (textAuthority.kind !== WorkspaceTextAuthorityKinds.Opened) {
     return { posture: RECEIPT_UNAVAILABLE };
   }
+  if (textAuthority.pendingIntentStatus === WorkspaceTextIntentStatuses.Predicted) {
+    return { posture: RECEIPT_PENDING };
+  }
   return textAuthority.lastReceiptId == null
     ? { posture: RECEIPT_PENDING }
     : { posture: 'received', receiptId: textAuthority.lastReceiptId };
+}
+
+function canUsePendingVimCommand(requestId: number, textAuthority: WorkspaceTextAuthority): boolean {
+  return textAuthority.kind === WorkspaceTextAuthorityKinds.Opened
+    && textAuthority.pendingClientSeq === requestId
+    && textAuthority.pendingCommandKind === WorkspaceTextPendingCommandKinds.Vim;
 }
 
 function receiptMessage(receipt: JeditCommandReceipt): string {

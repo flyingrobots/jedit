@@ -28,6 +28,7 @@ import {
   WorkspaceTextEditCommandKinds,
 } from './workspace-text-commands.js';
 import {
+  WorkspaceTextPendingCommandKinds,
   WorkspaceTextAuthorityKinds,
   workspaceTextAuthorityWithPendingEdit,
 } from './workspace-text-authority.js';
@@ -138,6 +139,7 @@ function productionNormalModeLocalEdit(
       modelWithQueuedNormalEdit(model, moved),
       productionTextSession,
       plan,
+      WorkspaceTextPendingCommandKinds.Vim,
     );
 }
 
@@ -344,6 +346,7 @@ function queueProductionTextPlan(
   model: WorkspaceModel,
   productionTextSession: ProductionTextSession,
   plan: WorkspaceTextInsertPlan | WorkspaceTextReplacePlan | WorkspaceTextDeletePlan,
+  pendingCommandKind?: typeof WorkspaceTextPendingCommandKinds.Vim,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (plan.kind === WorkspaceTextEditPlanKinds.Insert) {
     return queueProductionTextEdit(model, productionTextSession, {
@@ -351,7 +354,7 @@ function queueProductionTextPlan(
       startByte: plan.startByte,
       insertText: plan.insertText,
       cursorAfter: plan.cursorAfter,
-    });
+    }, pendingCommandKind);
   }
   return plan.kind === WorkspaceTextEditPlanKinds.Replace
     ? queueProductionTextEdit(model, productionTextSession, {
@@ -360,13 +363,13 @@ function queueProductionTextPlan(
       endByte: plan.endByte,
       insertText: plan.insertText,
       cursorAfter: plan.cursorAfter,
-    })
+    }, pendingCommandKind)
     : queueProductionTextEdit(model, productionTextSession, {
       kind: WorkspaceTextEditCommandKinds.Delete,
       startByte: plan.startByte,
       endByte: plan.endByte,
       cursorAfter: plan.cursorAfter,
-    });
+    }, pendingCommandKind);
 }
 
 function isNormalModeHistoryKey(msg: KeyMsg): boolean {
@@ -378,6 +381,7 @@ function queueProductionTextEdit(
   model: WorkspaceModel,
   productionTextSession: ProductionTextSession,
   edit: ProductionTextEditRequest,
+  pendingCommandKind?: typeof WorkspaceTextPendingCommandKinds.Vim,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (model.textAuthority.kind !== WorkspaceTextAuthorityKinds.Opened || model.editor == null) {
     return [model, []];
@@ -395,7 +399,7 @@ function queueProductionTextEdit(
   return [{
     ...model,
     textRequestId: requestId,
-    textAuthority: workspaceTextAuthorityWithPendingEdit(model.textAuthority, requestId),
+    textAuthority: workspaceTextAuthorityWithPendingEdit(model.textAuthority, requestId, pendingCommandKind),
   }, [
     createWorkspaceTextEditCmd({
       ...base,
