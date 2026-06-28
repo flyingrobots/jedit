@@ -1,249 +1,128 @@
-# jedit
+<div align="center"><h1><code>Jim</code></h1>
 
-![jedit title screen](https://github.com/user-attachments/assets/c15575ba-b680-4880-baed-2bfa55c84b10)
+<img alt="Jimlogo" src="https://github.com/user-attachments/assets/7db3d40f-e91d-4585-a43b-96d1e017f46c" />
 
-Terminal-first, Vim-shaped editor built on Bijou and shaped around causal
-history through Echo.
+</div>
 
-`jedit` is the product pressure for the Echo stack — a real editor that forces
-the lower layers to prove the seams that matter: contract-shaped edits, bounded
-reads, provenance, replayable observations, and eventual undo-as-counter-history.
-If Echo can't serve a working editor, it doesn't ship.
+## What is Jim?
 
-The active product direction is **JIM: Jedit Is Modal**. The repository,
-packages, release gates, contracts, and WSC directories remain `jedit` until the
-Echo-powered proof and compatibility plan make a user-facing `jim` command safe.
+Jim is a **_Vim_**-shaped modal editor for people and agents who are tired of pretending that mutable files are the whole story.
 
-The product promise Jim must earn before a public editor release is:
+It keeps the parts of Vim that belong in your hands — modes, operators, motions, text objects, registers, command-line workflows — and relocates the strange part beneath the floorboards. Under the visible editor lives causal history, command provenance, bounded observation, and Echo-backed text authority. Jim is not trying to become a larger Vim, a terminal IDE, or a protocol cosplay performance. It is trying to become a small, sharp editor with a memory and the decency to explain itself.
 
-```text
-Jim is a modal editor for people and agents who need edits to be explainable,
-recoverable, and reviewable.
+Most editors act as if the file on disk is the truth and everything else is a rumor. Jim comes from a different place. In Jim, files are materialized projections over causal history: real, useful, necessary, but not sovereign. The surface stays direct. The ontology gets weirder. The runtime can answer questions ordinary editors mostly dodge: what changed, why it changed, what evidence supports that answer, what the buffer looked like before, and whether the thing you are looking at is current head, retained history, or a bounded projection with a narrower claim.
+
+### The post-Unix philosophy
+
+Unix says: everything is a file.  
+Jim says: files are a useful fiction, but they are not the base reality.
+
+The point is not to force users to think about runtime substrate lore every time they type `dw`. The point is the opposite. The hands should stay calm. The semantics should stay familiar. The weirdness should be concentrated below the product boundary, where it can do actual work: preserving provenance, making history inspectable, keeping observations bounded, and making destructive edits less magical.
+
+Many features already exist or are in the process of being dragged into honesty: Echo-hosted text sessions, structural history, command provenance through `:why`, an interactive history drawer, Graft-backed syntax highlighting and outlines, witness scripts, and a growing Jim/Vim command surface. Vim compatibility is preserved where it matters. If Vim is already in your fingers, Jim should feel less like a betrayal and more like a suspiciously well-behaved fork from a better timeline.
+
+### Is this just Vim + Git?
+
+No, [get outta here](https://github.com/flyingrobots/echo#is-this-just-git).
+
+### How Vim-like is Jim?
+
+See `docs/vi_diff.txt` when available, along with the design docs and parity notes, for differences from Vim.
+
+### Should I use Jim?
+
+Probably not yet, unless you enjoy living near the active edge of a weird — but ambitious — editor.
+
+That said, I have started dogfooding it and pushing it toward daily-driver territory. Jim is especially useful for editing programs and other plain text where trust, auditability, and recoverability matter. All core commands use ordinary keyboard characters. The editing surface is meant to stay quiet, direct, and fast. The editor should not scream just because the runtime underneath it knows more than most editors dare to remember.
+
+Jim aims to remain lightweight at the surface even as the machinery beneath it becomes causally explicit. The production path is Echo-hosted: application code submits edit intent and observes bounded readings, while trusted host code owns runtime lifecycle and scheduler control. That split is not decorative. Jim should know editor truths, not substrate coordinates.
+
+Jim grows out of the `jedit` repository. The product arc is Jim. The repository, packages, contracts, release gates, and internal APIs remain `jedit` until the Echo-backed proof and compatibility plan make a public rename safe. The rename should be earned the same way the rest of the editor is earned: through real product pressure, not theater.
+
+## Distribution
+
+Maybe one day Jim will arrive through ordinary package channels, all civilized and respectable.
+
+For now, build it from source. Run the development scripts. Read the witnesses. Treat the repository as what it presently is: an editor, a proof harness, a design lab, and a pressure vessel for the Echo stack. If Echo cannot host a real editor without cheating, then Echo does not get to pretend it is ready.
+
+Check out the repository from GitHub. It includes scripts for witnesses, release gates, command provenance, Echo-powered sessions, and production text validation.
+
+## Compiling
+
+```bash
+npm ci
+npm run build
+node dist/main.js
 ```
 
----
+The build and witness tooling live in the repository and the `scripts/` directory. Read `GUIDE.md` for operational guidance, `ARCHITECTURE.md` for layer rules and dependency posture, `ADVANCED_GUIDE.md` for the render and authority path, and `docs/BEARING.md` for the compact statement of current truth.
 
-## Quick start
+## Installation
 
-```sh
-npm install
-npm run dev
-```
+See the quickstart materials under `docs/releases/` for the current release-gate path.
 
-Press `?` inside the editor for the key binding reference.
-
----
-
-## What you get right now
-
-- **Vim-shaped editing** — Normal/Insert modes, `w b e dd yy p u ctrl+r`, and growing
-- **File drawer** — directory navigation, open files with Enter
-- **Graft drawer** — current-file structural outline and change summary via the direct Graft API
-- **Markdown preview** — live lens over the active buffer (`ctrl+p` to toggle)
-- **Syntax highlighting** — themed source rendering for supported languages;
-  plain-text prose highlights when Graft can find `colorful >= 0.2.1`
-- **Echo-hosted text session** — every edit submits a contract intent through
-  `TextBufferOptic`; the production TUI has no non-Echo text runtime mode
-- **Structural-history contract** — `replaceTextRange` operation identity comes from Wesley-generated metadata, not hardcoded strings
-- **WSC history surfaces** — JSON witnesses can list, export, and replay current
-  and historical editing evidence
-- **Jim/Vim roadmap** — command-line completion exists; the active roadmap is
-  first-class Vim grammar, basis-bound motions, text objects, registers, macros,
-  repeat, causal proof, and strand/braid worldline UX
-- **Echo History drawer** — a first interactive history drawer lists
-  editor-shaped Echo activity such as opens, edits, reads, exports, checkpoints,
-  and obstructions
-- **Witness scripts** — JSON-reporting evidence tools for CI and agents (see [Witnesses](#witnesses))
-
----
+At the moment, the quickstart is aimed less at “install this polished public editor” and more at “prove this Echo-backed edit/read path is real, bounded, and honest.” This is not a bug in the README. The product should earn its myths.
 
 ## Documentation
 
-| Document | What it covers |
-|----------|----------------|
-| [GUIDE.md](GUIDE.md) | Running, building, validating, generating contracts |
-| [ADVANCED_GUIDE.md](ADVANCED_GUIDE.md) | How a buffer becomes terminal pixels — the full render path |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Layer rules, dependency graph, editor vocabulary, testing rules |
-| [VISION.md](VISION.md) | Long-term product direction |
-| [AGENTS.md](AGENTS.md) | Agent-specific guidance and witness commands |
-| [docs/BEARING.md](docs/BEARING.md) | Compact current state, active roadmap anchors, and non-negotiables |
-| [docs/stack-map.md](docs/stack-map.md) | Current jedit/Echo/Wesley/Graft/Bijou layer map |
-| [docs/topics/syntax-highlighting/](docs/topics/syntax-highlighting/) | How Graft-backed syntax spans, Colorful prose projection, and theming work |
-| [docs/method/roadmap-planning.md](docs/method/roadmap-planning.md) | Roadmap, release-gate, slice, and proof policy |
-| [docs/technical-teardown.md](docs/technical-teardown.md) | **Deep technical reference** — domain dictionary, golden paths, payload anatomy, trade-offs, security boundaries, async model |
-| [docs/jedit-echo-end-to-end.md](docs/jedit-echo-end-to-end.md) | The full jedit + Echo process-level path |
-| [docs/design/](docs/design/) | Design notes: project invariants, runtime temperatures, text-edit algebra, causal event model, structural history |
+Start here:
 
-The teardown is the right starting point if you want to understand how the
-codebase actually works — it covers the Bijou TEA loop, the hexagonal layer
-rules, the three pure domain contracts, the dual-transport design, the
-`ReadBasisHandle` capability pattern, and all major architectural trade-offs.
-It is a deep reference, not the current roadmap. Use `docs/BEARING.md` and the
-design docs above for the active goalpost trail.
+- `GUIDE.md` — how to run, build, validate, and work with contract generation.
+- `ADVANCED_GUIDE.md` — how the visible editor, projections, and Echo authority fit together.
+- `ARCHITECTURE.md` — the layer rules, dependency graph, and product vocabulary.
+- `docs/BEARING.md` — compact current truth, active roadmap anchors, and non-negotiables.
+- `docs/design/` — living design specs for each major cycle.
+- `docs/method/` — process, roadmap, release, and proof policy.
+- `docs/jedit-echo-end-to-end.md` — the current jedit-plus-Echo proof path.
 
----
+Inside the editor, the command surface continues to grow. The roadmap is not “become all of Vim and then add lore.” The roadmap is accountable editing through a product loop with teeth: explain, preview, admit, recover.
 
-## Product invariants
+## Current posture
 
-`jedit` is aiming for a quiet editing surface with smart edges, not a terminal
-IDE clone.
+What you get right now includes:
 
-The full invariant set is written down in
-[docs/design/project-invariants.md](docs/design/project-invariants.md).
-The identity doctrine is canonical in
-[docs/design/echo-identity-doctrine.md](docs/design/echo-identity-doctrine.md).
-The short operational guide is [GUIDE.md](GUIDE.md).
-The end-to-end buffer rendering path is explained in
-[ADVANCED_GUIDE.md](ADVANCED_GUIDE.md).
-The process-level jedit + Echo path is explained in
-[docs/jedit-echo-end-to-end.md](docs/jedit-echo-end-to-end.md).
+- Vim-shaped editing with Normal and Insert behavior, plus a growing command surface.
+- An Echo-hosted text session for causal editing.
+- An interactive history drawer for inspecting editor activity such as opens, edits, reads, exports, checkpoints, and obstructions.
+- Graft-backed syntax highlighting, outlines, diagnostics, and structural projections where available.
+- Witness scripts and JSON-reporting evidence tools for CI, agents, and release-gate work.
+- Agent-oriented interfaces for bounded, inspectable editing workflows.
 
-- Zen core, instrumented edges. The main editor area stays visually quiet;
-  richer context appears at the edges and only when it earns the space.
-- Minimal by default. Panels are hidden until explicitly opened.
-- One-line header. The header identifies what the main pane is showing and
-  does not turn into a dashboard.
-- Two-line footer. The top line belongs to the focused surface and may change
-  rapidly. The bottom line carries slower workspace and buffer truth.
-- Buffers are not panes. Panes are not panels. Lenses are not extra buffers.
-- Panels are tools, not furniture. The same chord opens and closes the same panel.
-- `tab` cycles only across visible interactive panes. Hidden panels do not
-  participate in focus order.
-- Strongly Vim-shaped without trying to become "vim 2". Familiarity matters;
-  reenactment is not the goal.
-- Alternate views of a file are lenses over the active buffer, not separate
-  truths. Markdown preview is the first lens; others must justify themselves.
-- Truth beats convenience. If a panel is showing saved-on-disk structure while
-  the buffer is dirty, the UI should say so explicitly.
-- Strand state is not dirty state. Durable noncanonical work belongs to its
-  causal worldline; save and Git export are materialization/on-ramp boundaries.
-- Anything noisy must earn its existence.
+The current wedge is not “more editor.” It is accountable editing.
 
-The full invariant set is in [docs/design/project-invariants.md](docs/design/project-invariants.md).
+Jim is the product shape I am using to apply pressure to a broader causal computing vision. What sets it apart is that it is trying to do one thing most editors barely attempt: explain what happened in terms stronger than “because the buffer changed.” That is where `:why`, historical basis preview, proposal strands, and strand/braid/worldline UX are headed. The editor should not merely let you act. It should be able to account for the act afterwards.
+
+This does not mean Jim currently claims full causal omniscience. It does not. Some parts of the story already exist. Some are actively being proven. Some are still roadmap. The weirdness here is intentional, but it is not supposed to be fake.
+
+_There is no file. Only witnessed causal history and lawful, bounded optics._
+
+## Copying
+
+Jim is currently under active development. See `LICENSE` for the current terms.
+
+## Contributing
+
+Contributions are welcome, but this is not a “throw code at it until destiny reveals itself” project.
+
+Jim follows a _strict_ design-cycle process with executable specs, quality gates, and release witnesses. Read `AGENTS.md`, `docs/method/process.md`, and the active design-cycle documents before making substantial changes.
+
+Bug reports, design feedback, and causal UX ideas are welcome through GitHub issues and Discussions.
+
+## Information
+
+Latest news, design notes, and witness surfaces live in the repository. For deeper dives into provenance, worldlines, history, Echo hosting, and command explanation, start in `docs/design/` and `docs/BEARING.md`.
+
+### Useful entry points
+
+- `scripts/jedit-command-provenance-witness.mjs` — command provenance witness.
+- `scripts/jedit-echo-powered-session.mjs` — Echo-backed session witness.
+- `scripts/jedit-production-text-session.mjs` — production text-session witness.
+- `scripts/jedit-editor-trust-preflight.mjs` — trust-gate preflight witness.
+
+If something goes wrong, read the relevant design docs, run the nearest witness, and then open an issue.
+
+This is the early README for Jim: Jedit Is Modal.
 
 ---
 
-## Stack posture
-
-`jedit` is the release gate for Echo `v0.1.0`. Echo does not ship until jedit
-can run a real contract-backed edit/read/replay path end-to-end.
-
-The authority split is non-negotiable:
-
-- **Application code** submits edit intents and observes readings through
-  `TextBufferOptic`. It holds `ReadBasisHandle` capability tokens — opaque,
-  unforgeable, and scoped to one session.
-- **Trusted host code** owns package install, runtime lifecycle, scheduler
-  policy, and fault recovery. Application code has no path to these.
-
-**Echo** owns substrate truth: worldlines, rope heads, tick receipts, scheduler
-materialization, and observed readings. `jedit` never manufactures raw substrate
-coordinates.
-
-**Wesley** is the contract compiler. GraphQL SDL in `contracts/jedit/` is the
-canonical authority. TypeScript types, Zod schemas, and operation metadata are
-generated output — not authored source.
-
-**Graft** provides structural intelligence (syntax spans, outlines, diagnostics,
-structural diff) over saved workspace files through the direct `@flyingrobots/graft`
-API. It is an enrichment engine, not the editing kernel.
-
-Full posture details live in [ARCHITECTURE.md](ARCHITECTURE.md).
-
----
-
-## Development
-
-### Environment
-
-| Variable | Effect |
-|----------|--------|
-| `JEDIT_TEXT_RUNTIME` | Unset or `echoHosted` → Echo-hosted production text runtime. Any other value is unsupported startup input. |
-| `JEDIT_PERF` | Set to `1` to enable the frame-time performance overlay. |
-| `ECHO_WARP_WASM_DIR` | Path to Echo's `crates/warp-wasm` directory. Required for the opt-in real WASM witness only, not for the default TUI. |
-
-### Validate
-
-```sh
-npm run check   # build + test + quality gate
-```
-
-The default app runtime is Echo-hosted and requires no sibling repo checkout.
-Focused tests may still inject fake ports directly when they need fixture-only
-behavior, but the production TUI does not expose a non-Echo runtime profile.
-
-### Witnesses
-
-```sh
-# Fast smoke path — installed jedit contract transport, no Echo checkout needed
-npm run witness:echo:session
-
-# Opt-in real WASM witness — requires a built Echo checkout
-ECHO_WARP_WASM_DIR=/path/to/echo/crates/warp-wasm \
-  node scripts/jedit-echo-witness.mjs --json --replay
-```
-
-The witness scripts report contract metadata, reading identity, artifact hash,
-authority split, retained-evidence posture, and replay posture as JSON. They are
-the canonical proof that the stack works end-to-end.
-
-### Contract generation
-
-```sh
-# Structural-history only (no sibling checkout needed — uses published wesley-cli)
-npm run gen:contract:structural-history:wesley
-
-# Full contract surface (requires JEDIT_WESLEY_ROOT pointing at a Wesley checkout)
-JEDIT_WESLEY_ROOT=/path/to/wesley npm run gen:contract
-```
-
-`npm run build` and `npm test` run the structural-history generator
-automatically before TypeScript compilation.
-
----
-
-## Next steps
-
-The immediate roadmap is not release preparation. Release stays off the active
-radar until Jim has reliable editor trust, polished UI/UX, and one unmistakable
-causal product workflow.
-
-The active product loop is:
-
-```text
-explain -> preview -> admit -> recover
-```
-
-The active product ladder is:
-
-1. **Editor Trust Gate** — open, edit, save, quit, search, dirty-state, and
-   disk-output guardrails are witness-proven.
-2. **Command Provenance And `:why`** — the last meaningful Vim edit can explain
-   what ran, what target resolved, what changed, and what evidence proves it.
-3. **Historical Basis Preview** — History can preview a bounded historical
-   reading while clearly saying the current head is unchanged.
-4. **Search Sets And Substitute Strand Preview** — search creates basis-bound
-   result sets, `:%s` previews a proposal strand, and `:admit` admits selected
-   rows.
-5. **Historical Yank And Register Provenance** — retained historical material
-   can be yanked into the current head with source evidence.
-6. **Vim Power Core** — visual mode, serious registers, semantic repeat, macros,
-   marks, structural text objects, and range commands land through causal
-   proofs.
-7. **Agent-Safe Editing** — agents produce accountable proposal strands with
-   basis, range, rationale, evidence, and admission paths.
-
-Next implementation start:
-
-- Start [WF-0108 Jim Command Provenance And :why](docs/design/0108-causal-command-provenance-surface.md)
-  with an Editor Trust Gate preflight.
-- Keep [WF-0105 Vim Power Moves Causal Parity](docs/design/0105-vim-power-moves-causal-parity.md)
-  as the broad Vim substrate roadmap, but choose next Vim slices by whether
-  they strengthen provenance, preview, replay, safe destructive edits, agent
-  witnesses, structural objects, or user trust.
-- Keep title-rendering work on the separate
-  [WF-0107 Geordi title-render lane](docs/design/0107-geordi-raytraced-title-render-pipeline.md)
-  until rendering is the explicit objective.
-- Keep `README.md`, `docs/technical-teardown.md`, and signpost docs truthful in
-  compact passes; do the full rewrite after command provenance, history, and
-  broad-edit preview prove the final shape.
+From the mind of: `flyingrobots`.
