@@ -18,11 +18,19 @@ export interface RegisterSourceState {
   readonly rangeEnd: number;
   readonly rangeStart: number;
 }
+export type VimRepeatTargetShape = 'charwise' | 'linewise';
+export interface VimRepeatTargetState {
+  readonly basisDigest: string;
+  readonly rangeEnd: number;
+  readonly rangeStart: number;
+  readonly shape: VimRepeatTargetShape;
+}
 export interface VimRepeatState {
   readonly description: string;
   readonly keys: readonly string[];
   readonly replayPolicy?: 'resolve-current-basis';
   readonly sourceBasisDigest?: string;
+  readonly target?: VimRepeatTargetState;
 }
 export interface VimMarkState {
   readonly basisDigest: string;

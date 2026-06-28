@@ -7,7 +7,7 @@ status: "active"
 owners:
   - "@flyingrobots"
 created: "2026-06-13"
-updated: "2026-06-27"
+updated: "2026-06-28"
 ---
 
 # WF-0108 - Jim Command Provenance And :why
@@ -265,6 +265,31 @@ Initial command coverage should use existing proven operations:
 | `ciw` | Text-object change proves target/range and mode transition facts. |
 | `dd` | Linewise edit proves command event and range summary without search. |
 | `gUap` | Operator plus text object proves transformed range provenance. |
+
+## Slice 1 Runtime Status
+
+Slice 1 now has a narrow runtime spine:
+
+- `createJeditCommandEvent(input)` is the supported construction surface for
+  command provenance events and returns either a validated Vim event or a typed
+  rejection.
+- Vim repeat state records the resolved target basis, byte range, and
+  charwise/linewise shape for mutating commands, so non-register transforms such
+  as `gUap` can still be explained honestly.
+- `:why` explains the last meaningful Vim edit using the validated event.
+- The normal-mode footer can show a compact last-command summary.
+- Echo History applied-edit rows include the command summary when an Echo edit
+  receipt settles.
+- The JSON witness is available after build:
+
+```bash
+node scripts/jedit-command-provenance-witness.mjs --json
+node scripts/jedit-command-provenance-witness.mjs --json --command gUap
+```
+
+The first witness-backed command set is `dw`, `ciw`, `dd`, and `gUap`. Native
+WSC linkage for command events, historical preview, range explanation, search
+sets, and substitute proposal strands remain future cycles.
 
 Hold `n`/`N` until `/` and `?` search entry is product-complete. Hold `:%s`
 until Search Sets And Substitute Strand Preview becomes the active preview

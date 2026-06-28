@@ -117,6 +117,7 @@ export interface WorkspaceFooterState {
   readonly graftSelection?: { readonly kind: string; readonly name: string; readonly startLine: number };
   readonly commandLine?: WorkspaceCommandLineFooterState;
   readonly commandLineError?: JeditStyleToken;
+  readonly commandSummary?: string;
 }
 
 export function activeWorkspaceTitle(state: WorkspaceTitleState): string {
@@ -279,7 +280,7 @@ function normalFooterDetail(state: WorkspaceFooterState, t: FooterHintTranslator
   }
 
   const previewHint = state.markdownPreviewActive ? t(FooterHintKeys.F3Preview) : t(FooterHintKeys.CtrlSSave);
-  return footerHints([t(FooterHintKeys.IInsert), t(FooterHintKeys.OOpenLine), previewHint, themeHint(t), focusHint(state, t)]);
+  return footerHints([state.commandSummary, t(FooterHintKeys.IInsert), t(FooterHintKeys.OOpenLine), previewHint, themeHint(t), focusHint(state, t)]);
 }
 
 function pendingNormalFooterDetail(pending: PendingNormal, t: FooterHintTranslator): string {

@@ -1,30 +1,79 @@
-import type { EditorState, RegisterState, VimRepeatState } from './editor/model.js';
+import type {
+  EditorState,
+  RegisterState,
+  VimRepeatState,
+  VimRepeatTargetShape,
+} from './editor/model.js';
 import type { WorkspaceTextAuthority } from './workspace-text-authority.js';
-import { WorkspaceTextAuthorityKinds } from './workspace-text-authority.js';
-import { parseVimChordSyntax } from './vim-chord-syntax.js';
+import {
+  WorkspaceTextAuthorityKinds,
+  WorkspaceTextIntentStatuses,
+  WorkspaceTextPendingCommandKinds,
+} from './workspace-text-authority.js';
+import {
+  parseVimChordSyntax,
+  VimChordSyntaxKinds,
+  type VimChordSyntax,
+} from './vim-chord-syntax.js';
 
 export const JEDIT_WHY_TOAST_TITLE = 'Why';
 export const JEDIT_WHY_NO_EVENT_OBSTRUCTION_CODE = 'jedit_why_no_meaningful_event';
 
+export const JeditCommandEventRejectedCodes = Object.freeze({
+  InvalidSyntax: 'jedit_command_event_invalid_syntax',
+  RangeWithoutBasis: 'jedit_command_event_range_without_basis',
+} as const);
+
 export type JeditWhyReportKind = 'event' | 'obstruction';
+export type JeditCommandEventReceiptPosture = 'pending' | 'received' | 'unavailable';
+export type JeditCommandTargetKind = 'command' | 'motion' | 'registerSource' | 'textObject';
+export type JeditCommandEventRejectedCode =
+  typeof JeditCommandEventRejectedCodes[keyof typeof JeditCommandEventRejectedCodes];
+
+export interface CreateJeditCommandEventInput {
+  readonly editor: EditorState;
+  readonly repeat: VimRepeatState;
+  readonly textAuthority: WorkspaceTextAuthority;
+}
 
 export interface JeditCommandEvent {
   readonly basisDigest?: string;
   readonly command: string;
   readonly count?: number;
+  readonly eventId: string;
   readonly family: string;
   readonly keys: readonly string[];
   readonly kind: 'vim';
   readonly motion?: string;
   readonly operator?: string;
+  readonly receipt: JeditCommandReceipt;
   readonly receiptId?: string;
   readonly registerEffect?: JeditCommandRegisterEffect;
   readonly replayPolicy?: VimRepeatState['replayPolicy'];
   readonly result: JeditCommandResult;
+  readonly summary: string;
+  readonly target?: JeditCommandTarget;
   readonly textObject?: JeditCommandTextObject;
 }
 
+export interface JeditCommandEventRejected {
+  readonly code: JeditCommandEventRejectedCode;
+  readonly command: string;
+  readonly kind: 'rejected';
+  readonly message: string;
+}
+
+export type JeditCommandEventFactoryResult =
+  | JeditCommandEvent
+  | JeditCommandEventRejected;
+
+export interface JeditCommandReceipt {
+  readonly posture: JeditCommandEventReceiptPosture;
+  readonly receiptId?: string;
+}
+
 export interface JeditCommandRegisterEffect {
+  readonly basisDigest?: string;
   readonly kind: RegisterState['kind'];
   readonly operation?: string;
   readonly rangeEnd?: number;
@@ -36,6 +85,14 @@ export interface JeditCommandResult {
   readonly cursorRow: number;
   readonly dirty: boolean;
   readonly mode: string;
+}
+
+export interface JeditCommandTarget {
+  readonly basisDigest: string;
+  readonly kind: JeditCommandTargetKind;
+  readonly rangeEnd: number;
+  readonly rangeStart: number;
+  readonly shape: VimRepeatTargetShape;
 }
 
 export interface JeditCommandTextObject {
@@ -55,44 +112,117 @@ const COMMAND_FIELD_SEPARATOR = ' | ';
 const KEY_SEQUENCE_EMPTY = '<empty>';
 const RECEIPT_PENDING = 'pending';
 const RECEIPT_UNAVAILABLE = 'unavailable';
+const EVENT_ID_SEPARATOR = ':';
+const EVENT_KIND_REJECTED: JeditCommandEventRejected['kind'] = 'rejected';
+const EVENT_KIND_VIM: JeditCommandEvent['kind'] = 'vim';
 
 export function explainLastJeditCommand(
   editor: EditorState | undefined,
   textAuthority: WorkspaceTextAuthority,
 ): JeditWhyReport {
-  const event = jeditCommandEventFromEditor(editor, textAuthority);
-  return event == null ? noCommandEventReport() : commandEventReport(event);
+  const result = jeditCommandEventResultFromEditor(editor, textAuthority);
+  if (result == null) {
+    return noCommandEventReport();
+  }
+  return result.kind === EVENT_KIND_REJECTED
+    ? rejectedCommandEventReport(result)
+    : commandEventReport(result);
 }
 
 export function jeditCommandEventFromEditor(
   editor: EditorState | undefined,
   textAuthority: WorkspaceTextAuthority,
 ): JeditCommandEvent | undefined {
+  const result = jeditCommandEventResultFromEditor(editor, textAuthority);
+  return result?.kind === EVENT_KIND_VIM ? result : undefined;
+}
+
+export function createJeditCommandEvent(
+  input: CreateJeditCommandEventInput,
+): JeditCommandEventFactoryResult {
+  const syntax = parseVimChordSyntax(input.repeat.keys);
+  const command = commandKeySequence(input.repeat.keys);
+  if (syntax.kind !== VimChordSyntaxKinds.Complete) {
+    return rejectedCommandEvent(command, JeditCommandEventRejectedCodes.InvalidSyntax);
+  }
+  const receipt = commandReceipt(input.textAuthority);
+  const register = registerEffect(input.editor.register);
+  const target = commandTarget(input.repeat, syntax);
+  if (target != null && target.basisDigest.length === 0) {
+    return rejectedCommandEvent(command, JeditCommandEventRejectedCodes.RangeWithoutBasis);
+  }
+  return eventFromValidatedFacts(input, syntax, receipt, register, target);
+}
+
+export function jeditCommandFooterSummary(
+  editor: EditorState | undefined,
+  textAuthority: WorkspaceTextAuthority,
+): string | undefined {
+  const event = jeditCommandEventFromEditor(editor, textAuthority);
+  return event == null ? undefined : `last: ${event.summary}`;
+}
+
+export function jeditCommandHistorySummary(
+  filePath: string,
+  editor: EditorState | undefined,
+  textAuthority: WorkspaceTextAuthority,
+): string {
+  const event = jeditCommandEventFromEditor(editor, textAuthority);
+  return event == null ? filePath : `${filePath} ${event.summary}`;
+}
+
+export function jeditAppliedCommandHistorySummary(
+  filePath: string,
+  requestId: number,
+  editor: EditorState | undefined,
+  textAuthority: WorkspaceTextAuthority,
+): string {
+  return canUsePendingVimCommand(requestId, textAuthority)
+    ? jeditCommandHistorySummary(filePath, editor, textAuthority)
+    : filePath;
+}
+
+function jeditCommandEventResultFromEditor(
+  editor: EditorState | undefined,
+  textAuthority: WorkspaceTextAuthority,
+): JeditCommandEventFactoryResult | undefined {
   if (editor?.lastVimEdit == null) {
     return undefined;
   }
+  return createJeditCommandEvent({
+    editor,
+    repeat: editor.lastVimEdit,
+    textAuthority,
+  });
+}
 
-  const repeat = editor.lastVimEdit;
-  const syntax = parseVimChordSyntax(repeat.keys);
+function eventFromValidatedFacts(
+  input: CreateJeditCommandEventInput,
+  syntax: VimChordSyntax,
+  receipt: JeditCommandReceipt,
+  register: JeditCommandRegisterEffect | undefined,
+  target: JeditCommandTarget | undefined,
+): JeditCommandEvent {
+  const command = commandKeySequence(input.repeat.keys);
+  const basis = basisDigest(input.editor, input.repeat, target);
   return {
-    kind: 'vim',
-    command: commandKeySequence(repeat.keys),
-    keys: repeat.keys,
+    kind: EVENT_KIND_VIM,
+    eventId: commandEventId(command, basis, target, receipt),
+    command,
+    keys: input.repeat.keys,
     family: syntax.family,
     count: syntax.count,
     operator: syntax.operator,
     motion: syntax.motion,
     textObject: syntax.textObject,
-    basisDigest: basisDigest(editor, repeat),
-    replayPolicy: repeat.replayPolicy,
-    receiptId: receiptId(textAuthority),
-    registerEffect: registerEffect(editor.register),
-    result: {
-      cursorRow: editor.cursorRow,
-      cursorCol: editor.cursorCol,
-      mode: editor.mode,
-      dirty: editor.dirty,
-    },
+    basisDigest: basis,
+    replayPolicy: input.repeat.replayPolicy,
+    receipt,
+    receiptId: receipt.receiptId,
+    registerEffect: register,
+    target,
+    result: commandResult(input.editor),
+    summary: commandSummary(command, syntax, target, receipt),
   };
 }
 
@@ -115,20 +245,68 @@ function noCommandEventReport(): JeditWhyReport {
   };
 }
 
+function rejectedCommandEventReport(rejected: JeditCommandEventRejected): JeditWhyReport {
+  return {
+    kind: 'obstruction',
+    title: JEDIT_WHY_TOAST_TITLE,
+    code: rejected.code,
+    message: rejected.message,
+  };
+}
+
 function commandEventMessage(event: JeditCommandEvent): string {
   return [
     `command: ${event.command}`,
     `family: ${event.family}`,
     event.operator == null ? undefined : `operator: ${event.operator}`,
     event.motion == null ? undefined : `motion: ${event.motion}`,
-    event.textObject == null
-      ? undefined
-      : `text-object: ${event.textObject.scope}:${event.textObject.target}`,
+    textObjectMessage(event.textObject),
+    targetMessage(event.target),
     registerEffectMessage(event.registerEffect),
     event.basisDigest == null ? undefined : `basis: ${event.basisDigest}`,
-    `receipt: ${event.receiptId ?? RECEIPT_PENDING}`,
+    `receipt: ${receiptMessage(event.receipt)}`,
     `result: ${event.result.mode} @ ${event.result.cursorRow}:${event.result.cursorCol}`,
+    `summary: ${event.summary}`,
   ].filter((field): field is string => field != null).join(COMMAND_FIELD_SEPARATOR);
+}
+
+function commandSummary(
+  command: string,
+  syntax: VimChordSyntax,
+  target: JeditCommandTarget | undefined,
+  receipt: JeditCommandReceipt,
+): string {
+  const operation = syntax.operator ?? syntax.family;
+  const resolvedTarget = target == null ? 'target unavailable' : `${target.kind} ${target.rangeStart}..${target.rangeEnd}`;
+  return `${command} ${operation} ${resolvedTarget} receipt ${receiptMessage(receipt)}`;
+}
+
+function commandTarget(repeat: VimRepeatState, syntax: VimChordSyntax): JeditCommandTarget | undefined {
+  if (repeat.target != null) {
+    return {
+      ...repeat.target,
+      kind: targetKind(syntax),
+    };
+  }
+  return undefined;
+}
+
+function targetKind(syntax: VimChordSyntax): JeditCommandTargetKind {
+  if (syntax.textObject != null) {
+    return 'textObject';
+  }
+  return syntax.motion == null ? 'command' : 'motion';
+}
+
+function textObjectMessage(object: JeditCommandTextObject | undefined): string | undefined {
+  return object == null ? undefined : `text-object: ${object.scope}:${object.target}`;
+}
+
+function targetMessage(target: JeditCommandTarget | undefined): string | undefined {
+  if (target == null) {
+    return undefined;
+  }
+  return `target: ${target.kind} ${target.shape} ${target.rangeStart}..${target.rangeEnd}`;
 }
 
 function registerEffectMessage(effect: JeditCommandRegisterEffect | undefined): string | undefined {
@@ -145,8 +323,9 @@ function registerEffectMessage(effect: JeditCommandRegisterEffect | undefined): 
 function basisDigest(
   editor: EditorState,
   repeat: VimRepeatState,
+  target: JeditCommandTarget | undefined,
 ): string | undefined {
-  return repeat.sourceBasisDigest ?? editor.register?.source?.basisDigest;
+  return repeat.sourceBasisDigest ?? target?.basisDigest ?? editor.register?.source?.basisDigest;
 }
 
 function registerEffect(
@@ -157,17 +336,69 @@ function registerEffect(
   }
   return {
     kind: register.kind,
+    basisDigest: register.source?.basisDigest,
     operation: register.source?.operation,
     rangeStart: register.source?.rangeStart,
     rangeEnd: register.source?.rangeEnd,
   };
 }
 
-function receiptId(textAuthority: WorkspaceTextAuthority): string | undefined {
+function commandReceipt(textAuthority: WorkspaceTextAuthority): JeditCommandReceipt {
   if (textAuthority.kind !== WorkspaceTextAuthorityKinds.Opened) {
-    return RECEIPT_UNAVAILABLE;
+    return { posture: RECEIPT_UNAVAILABLE };
   }
-  return textAuthority.lastReceiptId;
+  if (textAuthority.pendingIntentStatus === WorkspaceTextIntentStatuses.Predicted) {
+    return { posture: RECEIPT_PENDING };
+  }
+  return textAuthority.lastReceiptId == null
+    ? { posture: RECEIPT_PENDING }
+    : { posture: 'received', receiptId: textAuthority.lastReceiptId };
+}
+
+function canUsePendingVimCommand(requestId: number, textAuthority: WorkspaceTextAuthority): boolean {
+  return textAuthority.kind === WorkspaceTextAuthorityKinds.Opened
+    && textAuthority.pendingClientSeq === requestId
+    && textAuthority.pendingCommandKind === WorkspaceTextPendingCommandKinds.Vim;
+}
+
+function receiptMessage(receipt: JeditCommandReceipt): string {
+  return receipt.receiptId ?? receipt.posture;
+}
+
+function commandResult(editor: EditorState): JeditCommandResult {
+  return {
+    cursorRow: editor.cursorRow,
+    cursorCol: editor.cursorCol,
+    mode: editor.mode,
+    dirty: editor.dirty,
+  };
+}
+
+function rejectedCommandEvent(
+  command: string,
+  code: JeditCommandEventRejectedCode,
+): JeditCommandEventRejected {
+  return {
+    kind: EVENT_KIND_REJECTED,
+    command,
+    code,
+    message: `Command provenance rejected for ${command}. obstruction: ${code}`,
+  };
+}
+
+function commandEventId(
+  command: string,
+  basis: string | undefined,
+  target: JeditCommandTarget | undefined,
+  receipt: JeditCommandReceipt,
+): string {
+  return [
+    'jedit-command',
+    command,
+    basis ?? 'no-basis',
+    target?.rangeStart ?? 'no-range',
+    receipt.receiptId ?? receipt.posture,
+  ].join(EVENT_ID_SEPARATOR);
 }
 
 function commandKeySequence(keys: readonly string[]): string {

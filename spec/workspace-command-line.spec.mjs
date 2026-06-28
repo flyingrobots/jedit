@@ -893,8 +893,161 @@ test("enter dispatches why for the last meaningful Vim command", async () => {
   assert.match(message, /family: operatorMotion/);
   assert.match(message, /operator: delete/);
   assert.match(message, /motion: wordForward/);
+  assert.match(message, /target: motion charwise 0\.\.6/);
   assert.match(message, /register: char delete 0\.\.6/);
   assert.match(message, /receipt: receipt:dw/);
+  assert.match(message, /summary: dw delete motion 0\.\.6 receipt receipt:dw/);
+});
+
+test("command provenance validates slice 1 Vim edit targets", async () => {
+  const [mode, syntax, executor, authority, provenance] = await Promise.all([
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "vim-chord-syntax.js"),
+    importDist("app", "workspace", "vim-command-executor.js"),
+    importDist("app", "workspace", "workspace-text-authority.js"),
+    importDist("app", "workspace", "command-provenance.js"),
+  ]);
+  const cases = [
+    {
+      command: "dw",
+      keys: ["d", "w"],
+      lines: ["alpha beta"],
+      targetKind: "motion",
+      shape: "charwise",
+    },
+    {
+      command: "ciw",
+      keys: ["c", "i", "w"],
+      lines: ["alpha beta"],
+      targetKind: "textObject",
+      shape: "charwise",
+    },
+    {
+      command: "dd",
+      keys: ["d", "d"],
+      lines: ["alpha", "beta"],
+      targetKind: "motion",
+      shape: "linewise",
+    },
+    {
+      command: "gUap",
+      keys: ["g", "U", "a", "p"],
+      lines: ["alpha", "beta", "", "gamma"],
+      targetKind: "textObject",
+      shape: "linewise",
+    },
+  ];
+
+  for (const item of cases) {
+    const editor = mockEditor(mode, { lines: item.lines, cursorRow: 0, cursorCol: 0 });
+    const edited = executor.applyVimChordSyntaxToEditor(editor, syntax.parseVimChordSyntax(item.keys));
+    assert.ok(edited.lastVimEdit, `${item.command} should record repeat/provenance state`);
+    const event = provenance.createJeditCommandEvent({
+      editor: edited,
+      repeat: edited.lastVimEdit,
+      textAuthority: authority.openedWorkspaceTextAuthority({
+        profile: "echoHosted",
+        filePath: "/repo/notes.md",
+        bufferId: "buffer:notes",
+        readOnly: false,
+        dirty: true,
+        lastReceiptId: `receipt:${item.command}`,
+      }),
+    });
+
+    assert.equal(event.kind, "vim");
+    assert.equal(event.command, item.command);
+    assert.equal(event.target.kind, item.targetKind);
+    assert.equal(event.target.shape, item.shape);
+    assert.equal(event.receipt.posture, "received");
+    assert.equal(event.receiptId, `receipt:${item.command}`);
+    assert.equal(event.target.rangeEnd > event.target.rangeStart, true);
+    assert.match(event.summary, new RegExp(`^${item.command} `));
+  }
+});
+
+test("command provenance reports pending posture while a new edit is in flight", async () => {
+  const [editorMode, authority, provenance] = await Promise.all([
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "workspace-text-authority.js"),
+    importDist("app", "workspace", "command-provenance.js"),
+  ]);
+  const editor = mockEditor(editorMode, {
+    lastVimEdit: {
+      keys: ["c", "i", "w"],
+      description: "operatorTextObject:change:",
+      replayPolicy: "resolve-current-basis",
+      sourceBasisDigest: "basis:pending",
+      target: {
+        basisDigest: "basis:pending",
+        rangeStart: 0,
+        rangeEnd: 5,
+        shape: "charwise",
+      },
+    },
+  });
+  const opened = authority.openedWorkspaceTextAuthority({
+    profile: "echoHosted",
+    filePath: "/repo/notes.md",
+    bufferId: "buffer:notes",
+    readOnly: false,
+    dirty: true,
+    lastReceiptId: "receipt:old",
+  });
+
+  const event = provenance.createJeditCommandEvent({
+    editor,
+    repeat: editor.lastVimEdit,
+    textAuthority: authority.workspaceTextAuthorityWithPendingEdit(opened, 7, authority.WorkspaceTextPendingCommandKinds.Vim),
+  });
+
+  assert.equal(event.kind, "vim");
+  assert.equal(event.receipt.posture, "pending");
+  assert.equal(event.receiptId, undefined);
+  assert.match(event.summary, /receipt pending/);
+});
+
+test("command provenance does not synthesize targets from stale registers", async () => {
+  const [editorMode, authority, provenance] = await Promise.all([
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "workspace-text-authority.js"),
+    importDist("app", "workspace", "command-provenance.js"),
+  ]);
+  const editor = mockEditor(editorMode, {
+    register: {
+      kind: "char",
+      text: "alpha",
+      source: {
+        basisDigest: "basis:yank",
+        operation: "yank",
+        rangeStart: 0,
+        rangeEnd: 5,
+      },
+    },
+    lastVimEdit: {
+      keys: ["p"],
+      description: "put:putAfter:",
+      replayPolicy: "resolve-current-basis",
+      sourceBasisDigest: "basis:put",
+    },
+  });
+
+  const event = provenance.createJeditCommandEvent({
+    editor,
+    repeat: editor.lastVimEdit,
+    textAuthority: authority.openedWorkspaceTextAuthority({
+      profile: "echoHosted",
+      filePath: "/repo/notes.md",
+      bufferId: "buffer:notes",
+      readOnly: false,
+      dirty: true,
+      lastReceiptId: "receipt:put",
+    }),
+  });
+
+  assert.equal(event.kind, "vim");
+  assert.equal(event.target, undefined);
+  assert.match(event.summary, /target unavailable/);
 });
 
 test("production normal edits keep Vim command provenance while queued", async () => {

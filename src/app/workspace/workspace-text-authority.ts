@@ -29,6 +29,7 @@ const INTENT_STATUS_BLOCKED = 'blocked';
 const INTENT_STATUS_OBSTRUCTED = 'obstructed';
 const INTENT_STATUS_SUPERSEDED = 'superseded';
 const INTENT_STATUS_ABANDONED = 'abandoned';
+const PENDING_COMMAND_KIND_VIM = 'vim';
 
 export const WorkspaceTextAuthorityKinds = Object.freeze({
   None: AUTHORITY_NONE,
@@ -53,12 +54,18 @@ export const WorkspaceTextIntentStatuses = Object.freeze({
   Abandoned: INTENT_STATUS_ABANDONED,
 } as const);
 
+export const WorkspaceTextPendingCommandKinds = Object.freeze({
+  Vim: PENDING_COMMAND_KIND_VIM,
+} as const);
+
 export type WorkspaceTextAuthorityKind =
   typeof WorkspaceTextAuthorityKinds[keyof typeof WorkspaceTextAuthorityKinds];
 export type WorkspaceTextHostBasisKind =
   typeof WorkspaceTextHostBasisKinds[keyof typeof WorkspaceTextHostBasisKinds];
 export type WorkspaceTextIntentStatus =
   typeof WorkspaceTextIntentStatuses[keyof typeof WorkspaceTextIntentStatuses];
+export type WorkspaceTextPendingCommandKind =
+  typeof WorkspaceTextPendingCommandKinds[keyof typeof WorkspaceTextPendingCommandKinds];
 
 export type { WorkspaceTextReadingCache } from './workspace-text-reading-cache.js';
 export { canReadingReplaceWholeEditor } from './workspace-text-reading-cache.js';
@@ -88,6 +95,7 @@ export interface WorkspaceTextAuthorityOpened {
   readonly hostFingerprint?: EditorFileFingerprint;
   readonly cache?: WorkspaceTextReadingCache;
   readonly pendingClientSeq?: number;
+  readonly pendingCommandKind?: WorkspaceTextPendingCommandKind;
   readonly pendingReceiptId?: string;
   readonly pendingIntentStatus?: WorkspaceTextIntentStatus;
   readonly blockedByClientSeq?: number;
@@ -116,6 +124,7 @@ export interface OpenedWorkspaceTextAuthorityOptions {
   readonly hostFingerprint?: EditorFileFingerprint;
   readonly cache?: WorkspaceTextReadingCache;
   readonly pendingClientSeq?: number;
+  readonly pendingCommandKind?: WorkspaceTextPendingCommandKind;
   readonly pendingReceiptId?: string;
   readonly pendingIntentStatus?: WorkspaceTextIntentStatus;
   readonly blockedByClientSeq?: number;
@@ -172,6 +181,7 @@ export function openedWorkspaceTextAuthority(
     hostFingerprint: options.hostFingerprint,
     cache: options.cache,
     pendingClientSeq: options.pendingClientSeq,
+    pendingCommandKind: options.pendingCommandKind,
     pendingReceiptId: options.pendingReceiptId,
     pendingIntentStatus: options.pendingIntentStatus,
     blockedByClientSeq: options.blockedByClientSeq,
@@ -224,12 +234,14 @@ export function workspaceTextAuthorityWithReceipt(
 export function workspaceTextAuthorityWithPendingEdit(
   authority: WorkspaceTextAuthorityOpened,
   pendingClientSeq: number,
+  pendingCommandKind?: WorkspaceTextPendingCommandKind,
 ): WorkspaceTextAuthorityOpened {
   return {
     ...authority,
     dirty: true,
     materialization: WorkspaceWorldlineMaterializationKinds.Unmaterialized,
     pendingClientSeq,
+    pendingCommandKind,
     pendingIntentStatus: WorkspaceTextIntentStatuses.Predicted,
     lastObstruction: undefined,
   };
@@ -270,6 +282,7 @@ export function workspaceTextAuthorityWithCheckpoint(
     ...authority,
     dirty: false,
     pendingClientSeq: undefined,
+    pendingCommandKind: undefined,
     pendingReceiptId: undefined,
     pendingIntentStatus: undefined,
     blockedByClientSeq: undefined,
@@ -290,6 +303,7 @@ export function workspaceTextAuthorityWithExport(
     hostFingerprint,
     materialization: WorkspaceWorldlineMaterializationKinds.Materialized,
     pendingClientSeq: undefined,
+    pendingCommandKind: undefined,
     pendingReceiptId: undefined,
     pendingIntentStatus: undefined,
     blockedByClientSeq: undefined,

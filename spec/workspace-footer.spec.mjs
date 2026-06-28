@@ -45,6 +45,21 @@ test('workspace footer shows compact uppercase normal-mode guidance', async () =
   );
 });
 
+test('workspace footer can surface the last command provenance summary', async () => {
+  const footer = await loadFooterModule();
+
+  assert.deepEqual(
+    footer.workspaceFooterLines({
+      ...idleNormalState(),
+      commandSummary: 'last: dw delete motion 0..6 receipt receipt:dw',
+    }),
+    [
+      'NORMAL [last: dw delete motion 0..6 receipt receipt:dw · i insert · o open line · f3 preview · ctrl+t theme]',
+      '/repo/notes/todo.md',
+    ],
+  );
+});
+
 test('workspace footer renders active command-line input like Vim', async () => {
   const footer = await loadFooterModule();
 

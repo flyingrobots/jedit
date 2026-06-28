@@ -1,5 +1,4 @@
 import type { Cmd, RuntimeIssue } from '@flyingrobots/bijou-tui';
-import { FocusPanes } from '../../ui/panel-focus.js';
 import { pushRuntimeIssueToast } from '../../ui/feedback.js';
 import { beginEditorProjectionRefresh, editorViewport, ensureEditorVisible } from './editor-session.js';
 import type { WorkspaceModel } from './model.js';
@@ -42,11 +41,13 @@ import { createWorkspaceTextCheckpointCmd } from './workspace-text-commands.js';
 import type { TextPosition } from './workspace-text-position.js';
 import { canReadingReplaceWholeEditor, editorFromWorkspaceTextLines } from './workspace-text-reading-cache.js';
 import { JEDIT_WSC_WORKSPACE_STORE_STATUS } from '../../ports/jedit-wsc-workspace-store.js';
+import { jeditAppliedCommandHistorySummary } from './command-provenance.js';
 
 export type WorkspaceRuntimeResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 
 const WSC_SETTLEMENT_OBSTRUCTION_PREFIX = 'WSC edit settlement failed';
 const DEPENDENT_EDIT_BLOCKED_PREFIX = 'Text edit blocked by obstructed intent';
+const FOCUS_PANE_EDITOR = 'editor';
 const ISSUE_LEVEL_ERROR = 'error';
 const ISSUE_SOURCE_COMMAND = 'command';
 
@@ -144,7 +145,7 @@ function openedTextModel(
       existing: model.editor,
     }),
     viewMode: ViewModes.Source,
-    focusPane: FocusPanes.Editor,
+    focusPane: FOCUS_PANE_EDITOR,
     graftInfo: undefined,
     graftLoading: false,
     graftSelectedIndex: 0,
@@ -198,7 +199,7 @@ function applyAppliedTextEditResult(
     kind: EchoHistoryEntryKinds.Edit,
     status: EchoHistoryEntryStatuses.Applied,
     evidenceId: msg.result.receiptId,
-    summary: msg.result.filePath,
+    summary: jeditAppliedCommandHistorySummary(msg.result.filePath, msg.requestId, model.editor, withCache),
   });
   const [refreshed, refreshCommands] = refreshAfterEdit(deps, applied);
   const settlement = persistEditSettlement(deps, msg.result, refreshed);
