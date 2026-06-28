@@ -3,7 +3,7 @@ title: "WF-0122 - Optimistic Strand Worldline Phases"
 legend: "WF"
 lane: "design"
 issue: "https://github.com/flyingrobots/jedit/issues/158"
-status: "proposed"
+status: "superseded"
 owners:
   - "@flyingrobots"
 created: "2026-06-26"
@@ -14,7 +14,28 @@ updated: "2026-06-27"
 
 ## Linked Issue
 
-- [#158 WF-0122: Optimistic strand worldline phases](https://github.com/flyingrobots/jedit/issues/158)
+- [#158 WF-0122: Optimistic strand worldline phases](https://github.com/flyingrobots/jedit/issues/158) was closed and split after
+  [PR #160](https://github.com/flyingrobots/jedit/pull/160) landed the
+  JEDIT-side projection posture foundation.
+
+## Outcome
+
+PR #160 landed the JEDIT-side product and architecture slice:
+
+- rapid typing renders through local/session projection without waiting for a
+  bounded Echo observation to return;
+- bounded Echo readings carry coverage and cannot replace whole editor text;
+- local optimistic text remains visible on obstruction;
+- speculative edit posture is explicit enough for the UI/history surfaces;
+- dependent optimistic edits are blocked when an earlier dependency obstructs;
+- worldline/history UI can name canonical, session, speculative, braid, and
+  obstructed posture.
+
+The broader WF-0122 cycle is now superseded by focused follow-up issues instead
+of remaining open as one umbrella. The remaining native runtime work moved to
+[#164 Native Echo speculative intent runtime](https://github.com/flyingrobots/jedit/issues/164).
+WF-0108 `:why` will consume this posture when explaining optimistic or
+conflicted visible text.
 
 ## Decision Summary
 
@@ -258,10 +279,10 @@ Until then, JEDIT guardrails must preserve the local projection and mark
 dependent local work as blocked rather than silently rolling it back or
 claiming it was admitted.
 
-This document records the doctrine only. The WF-0123 hardening slice does not
-implement full Echo predictive runtime, full braid resolution, watcher intake,
-or conflict UI. It prevents JEDIT from cementing the wrong abstraction while
-the save/materialization path is made safe.
+This document records the doctrine and the landed JEDIT-side guardrails. PR #160
+does not implement full Echo predictive runtime, full braid resolution, watcher
+intake, or conflict UI. It prevents JEDIT from cementing the wrong abstraction
+while the projection and save/materialization paths are made safe.
 
 ## Non-Goals
 
@@ -286,12 +307,23 @@ The design should feed back into:
 
 ## Acceptance Checklist
 
-- [ ] Define typed phase labels for local, unconfirmed, WAL, pending,
+Closed by PR #160:
+
+- [x] Define typed phase labels for local, unconfirmed, WAL, pending,
       admitted, observed, settled, and conflicted.
-- [ ] Show optimistic braid state outside the history drawer.
-- [ ] Show canonical, local, and visible braid rows in the history drawer.
-- [ ] Keep optimistic text visible on Echo obstruction.
-- [ ] Surface obstruction as conflict, not rollback.
-- [ ] Make `:why` explain optimistic/conflicted visible text.
-- [ ] Add rapid typing regression coverage for local projection before Echo
-      observe completes.
+- [x] Preserve local visible text on Echo obstruction.
+- [x] Surface obstruction as blocked/obstructed projection posture, not silent
+      rollback.
+- [x] Add rapid typing regression coverage for local projection before bounded
+      Echo observations can replace editor text.
+- [x] Show canonical, session, speculative, braid, and obstructed posture in
+      history/worldline-adjacent surfaces.
+
+Moved to focused follow-ups:
+
+- [ ] Native Echo speculative intent runtime:
+      [#164](https://github.com/flyingrobots/jedit/issues/164).
+- [ ] Full braid/diff reconciliation UI:
+      [#163](https://github.com/flyingrobots/jedit/issues/163).
+- [ ] `:why` explanation for optimistic/conflicted visible text:
+      [WF-0108 / #131](https://github.com/flyingrobots/jedit/issues/131).

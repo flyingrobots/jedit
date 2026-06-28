@@ -9,8 +9,9 @@ history, merged pull requests, release notes, and design docs.
 
 ## Current Truth
 
-- `main` includes the recent Vim power-move runtime work, the outside-CWD
-  `:edit` path fix, and the title-scene ray acceleration work.
+- `main` includes PR #160, which hardened Echo-backed projection boundaries,
+  file materialization preflight, bounded-reading WSC recovery/export posture,
+  speculative edit posture, Graft drawer posture, and inactive buffer records.
 - The production TUI has no supported non-Echo text runtime mode.
 - `TextBufferSessionPort` and `TextBufferOptic` are jedit app capabilities.
 - Interactive workspace open, edit, read, render, save, export, and checkpoint
@@ -65,7 +66,7 @@ The active roadmap is Jim's signature loop:
 explain -> preview -> admit -> recover
 ```
 
-That loop is tracked as goalposts:
+That loop is the product golden path. Keep most roadmap attention here:
 
 1. **Editor Trust Gate**: open, edit, save, quit, search, dirty-state, and
    disk-output guardrails are witness-proven.
@@ -83,19 +84,37 @@ That loop is tracked as goalposts:
    proofs.
 7. **Agent-Safe Editing**: agents produce accountable proposal strands with
    basis, range, rationale, evidence, and admission paths.
-8. **Strand/Braid Worldline UX**: show when the user or an agent is on main,
-   on a strand, observing history, or previewing a braid, and treat Git plus
-   saved files as on/off ramps rather than live truth.
+
+Safety and recovery work is the second lane. It matters, but it should not
+hijack the golden path unless smoke tests, CI, or user-visible trust failures
+force it forward:
+
+1. **Recovery UX**: restart can surface inactive/unmaterialized local strands
+   and offer resume, inspect disk, abandon, or later braid actions.
+2. **External Edit Intake**: host changes become causal External Edit events
+   instead of overwrite hazards.
+3. **Braid Reconciliation UX**: compare canonical, local, external, historical,
+   and proposal worldlines with explicit admit/defer/rewind choices.
+
+Infrastructure and hygiene are the third lane. Keep these scoped:
+
+- issue hygiene after major PRs, so umbrella issues do not become debt fog;
+- native Echo speculative intent runtime when product pressure from `:why` and
+  recovery proves the metadata shape;
+- file watcher and external move detection as UX accelerators, not save-safety
+  preconditions.
 
 Immediate order:
 
-1. Land the causal roadmap signpost pass.
+1. Record the landed PR #160 scope and split the remaining #158/#159 umbrella
+   work into focused follow-up issues.
 2. Start [`WF-0108 - Jim Command Provenance And :why`](design/0108-causal-command-provenance-surface.md).
-3. Run the Editor Trust Gate preflight before implementation:
-   open/edit/save/quit, `/` and `?` search entry, dirty quit, dirty file switch,
-   single-buffer versus multi-buffer posture, and disk-output verification.
-4. Implement the first command-provenance slice only after trust blockers are
-   either fixed or honestly scoped.
+3. Implement a narrow `:why` MVP for the last meaningful Vim edit:
+   command event record, lower-mode explanation, JSON witness, and Echo History
+   drawer integration.
+4. Use existing proven Vim operations first: `dw`, `ciw`, `dd`, and `gUap`.
+   Keep `n`/`N` and `:%s` for later slices once search entry and proposal
+   preview are product-complete.
 
 Active checklist:
 
@@ -108,12 +127,18 @@ Active checklist:
 - [x] Land WF-0105 search and structural motion parity start.
 - [x] Land causal roadmap signpost pass.
 - [x] Start WF-0108 Editor Trust Gate preflight.
+- [x] Land PR #160 Echo projection and materialization hardening.
+- [x] Split #158 and #159 into focused post-#160 follow-up issues.
 
-Slice 0 named the current trust blockers before command provenance work:
+PR #160 closed the highest-risk projection/materialization blockers. Remaining
+trust work should now be selected by product pressure:
 
-- Dirty quit and dirty file switch need WAL-backed causal recovery posture, not
-  classic dirty-buffer warning semantics.
-- `/` and `?` search entry needs product-complete behavior.
+- Restart recovery UI for inactive and unmaterialized buffers proves
+  "recoverable" to users.
+- External Edit intake turns host changes into causal inputs instead of save
+  obstructions only.
+- `/` and `?` search entry still needs product-complete behavior before search
+  sets and substitute preview can be the main slice.
 
 WF-0105 remains the broad Vim/Jim power-move roadmap. Its next slices should be
 chosen only when they strengthen provenance, preview, replay, safe destructive
@@ -154,7 +179,7 @@ edits, agent witnesses, structural objects, or user trust.
 | Unmaterialized file frontier | [`docs/design/0147-unmaterialized-file-frontier.md`](design/0147-unmaterialized-file-frontier.md) |
 | Title render pipeline | [`docs/design/0107-geordi-raytraced-title-render-pipeline.md`](design/0107-geordi-raytraced-title-render-pipeline.md) |
 
-## Next Cycle Anchors
+## Next And Follow-Up Anchors
 
 | Cycle | Issue | Role |
 | --- | --- | --- |
@@ -162,9 +187,12 @@ edits, agent witnesses, structural objects, or user trust.
 | WF-0109 | [#134](https://github.com/flyingrobots/jedit/issues/134) | Historical Basis Preview |
 | WF-0110 | [#132](https://github.com/flyingrobots/jedit/issues/132) | Search Sets And Substitute Strand Preview |
 | WF-0111 | [#133](https://github.com/flyingrobots/jedit/issues/133) | Historical Yank And Register Provenance |
-| WF-0121 | [#153](https://github.com/flyingrobots/jedit/issues/153) | Strand/Braid Worldline UX |
-| WF-0122 | [#158](https://github.com/flyingrobots/jedit/issues/158) | Optimistic Strand Worldline Phases |
-| WF-0123 | [#159](https://github.com/flyingrobots/jedit/issues/159) | Unmaterialized File Buffers And External Edit Frontier |
+| WF-0121 | [#153](https://github.com/flyingrobots/jedit/issues/153) | Strand/Braid Worldline UX foundation |
+| WF-0124 | [#161](https://github.com/flyingrobots/jedit/issues/161) | Restart Recovery UI |
+| WF-0125 | [#162](https://github.com/flyingrobots/jedit/issues/162) | External Edit Intake |
+| WF-0126 | [#163](https://github.com/flyingrobots/jedit/issues/163) | Braid And Diff Reconciliation UX |
+| WF-0127 | [#164](https://github.com/flyingrobots/jedit/issues/164) | Native Echo Speculative Intent Runtime |
+| WF-0128 | [#165](https://github.com/flyingrobots/jedit/issues/165) | File Watcher And External Move Detection |
 
 ## Active Work
 

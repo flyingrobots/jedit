@@ -7,7 +7,7 @@ status: "active"
 owners:
   - "@flyingrobots"
 created: "2026-06-13"
-updated: "2026-06-26"
+updated: "2026-06-27"
 ---
 
 # WF-0108 - Jim Command Provenance And :why
@@ -124,10 +124,16 @@ Current implemented truth:
 - The production TUI has no supported non-Echo text runtime mode.
 - Interactive open, edit, read, render, save, export, and checkpoint flows route
   through the Echo-hosted production text session.
+- PR #160 hardened the text projection and materialization boundary: bounded
+  Echo readings cannot replace whole editable editor text, save/export requires
+  full projection evidence, WSC recovery/materialization fails closed on window
+  readings, blocked materialization stays visibly blocked, and inactive buffer
+  records preserve local projection/authority across file switches.
 - WSC history listing, current export, and historical export exist as
   agent-facing JSON surfaces.
-- `ctrl+h` opens a first-slice Echo History drawer that lists editor-shaped
-  Echo activity, but it does not yet reproject historical bases.
+- `ctrl+h` opens an Echo History/worldline drawer that can show editor-shaped
+  Echo activity and optimistic/worldline posture, but it does not yet reproject
+  historical bases.
 - The Vim/Jim runtime has parser, normal/operator-pending state, basis-bound
   core motions, core text objects, delete/change/yank/put execution, basic dot
   repeat, transformed-repeat metadata, case operators, joins, local marks, and
@@ -138,8 +144,27 @@ Current implemented truth:
 - `/` and `?` search entry and complete search-history mutation are not yet
   product-complete.
 - Production undo/redo is still not the final causal undo model.
+- WF-0122 and WF-0123 were closed after PR #160; their remaining work is split
+  into focused recovery, external edit, braid reconciliation, native Echo
+  speculation, and watcher follow-up issues.
 
-Evidence anchors from merge target `c511e2abc71c7c812ebc1eb79acb47480dad0ab5`:
+Post-#160 anchors:
+
+- PR #160:
+  [Harden Echo text projection and file materialization semantics](https://github.com/flyingrobots/jedit/pull/160).
+- Restart recovery UI follow-up:
+  [#161](https://github.com/flyingrobots/jedit/issues/161).
+- External Edit intake follow-up:
+  [#162](https://github.com/flyingrobots/jedit/issues/162).
+- Braid/diff reconciliation follow-up:
+  [#163](https://github.com/flyingrobots/jedit/issues/163).
+- Native Echo speculative runtime follow-up:
+  [#164](https://github.com/flyingrobots/jedit/issues/164).
+- File watcher/external move follow-up:
+  [#165](https://github.com/flyingrobots/jedit/issues/165).
+
+Older WF-0108 evidence anchors from merge target
+`c511e2abc71c7c812ebc1eb79acb47480dad0ab5`:
 
 - Production text runtime is Echo-only and non-Echo profiles obstruct:
   [spec/text-runtime-profile-session.spec.mjs#53:c511e2abc71c7c812ebc1eb79acb47480dad0ab5](https://github.com/flyingrobots/jedit/blob/c511e2abc71c7c812ebc1eb79acb47480dad0ab5/spec/text-runtime-profile-session.spec.mjs#L53).
@@ -208,12 +233,42 @@ This cycle includes:
 - An Editor Trust Gate preflight that audits open/edit/save/quit, dirty-state,
   search entry, and disk verification gaps before implementation starts.
 - A `JeditCommandEvent` model for selected command provenance.
-- Provenance for `ciw`, `dw`, `d%`, `gUap`, and `n`/`N`.
+- Provenance for representative Vim edits. Slice 1 scope, tests, and acceptance
+  gates use the same initial command set: `dw`, `ciw`, `dd`, and `gUap`. Later
+  slices can add `d%`, `n`/`N`, and broader range commands when their product
+  surfaces are ready.
 - A compact lower-mode summary after meaningful edits.
 - `:why` command-line dispatch for the last meaningful command.
 - Optional richer detail rendering behind the `:why` surface.
 - A JSON witness that reports command provenance without terminal scraping.
 - Typed obstruction posture for unsupported, unavailable, or stale-basis cases.
+
+## Slice 1 `:why` MVP
+
+Do not start by explaining every possible edit. The first product slice should
+prove one thin path:
+
+```text
+last meaningful Vim edit
+-> command event record
+-> :why explanation
+-> lower-mode text
+-> JSON witness
+-> Echo History drawer row
+```
+
+Initial command coverage should use existing proven operations:
+
+| Command | Why it belongs in Slice 1 |
+| --- | --- |
+| `dw` | Small destructive motion command with familiar Vim semantics. |
+| `ciw` | Text-object change proves target/range and mode transition facts. |
+| `dd` | Linewise edit proves command event and range summary without search. |
+| `gUap` | Operator plus text object proves transformed range provenance. |
+
+Hold `n`/`N` until `/` and `?` search entry is product-complete. Hold `:%s`
+until Search Sets And Substitute Strand Preview becomes the active preview
+cycle.
 
 ## Slice 0 Editor Trust Gate Preflight
 
@@ -629,7 +684,7 @@ model facts, lower-mode summary, `:why`, JSON witness, and obstruction posture.
 
 - [x] Slice 0: Run Editor Trust Gate preflight and record blockers.
 - [x] Slice 1: Define `JeditCommandEvent` model and fixture shape.
-- [ ] Slice 2: Emit provenance for `ciw`, `dw`, `d%`, `gUap`, and `n`/`N`.
+- [ ] Slice 2: Emit provenance for `dw`, `ciw`, `dd`, and `gUap`.
 - [ ] Slice 3: Render lower-mode command provenance summary.
 - [x] Slice 4: Add `:why` command-line dispatch.
 - [ ] Slice 5: Add JSON command provenance witness.
@@ -650,12 +705,11 @@ Behavior tests required:
 
 Required command assertions:
 
+- [ ] `dw` `:why` reports word motion target and deletion range.
 - [ ] `ciw` `:why` reports text object, range, register effect, and
       receipt/result posture.
-- [x] `dw` `:why` reports word motion target and deletion range.
-- [ ] `d%` `:why` reports pair identity and affected range.
+- [ ] `dd` `:why` reports linewise deletion and affected line range.
 - [ ] `gUap` `:why` reports paragraph text object and transform operator.
-- [ ] `n`/`N` `:why` reports search match identity and traversal direction.
 - [x] `:why` with no meaningful event reports calm obstruction.
 
 Documentation and process tests:
@@ -668,7 +722,8 @@ The work is done when:
 
 - [x] Editor Trust Gate preflight names any blockers before implementation
       proceeds.
-- [ ] At least five representative commands emit stable provenance facts.
+- [ ] The Slice 1 command set (`dw`, `ciw`, `dd`, `gUap`) emits stable
+      provenance facts.
 - [ ] Lower-mode summary communicates the last meaningful command without
       overwhelming normal editing.
 - [ ] `:why` exposes structured facts for the last meaningful command.

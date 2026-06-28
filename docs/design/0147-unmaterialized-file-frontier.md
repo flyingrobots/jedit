@@ -3,18 +3,40 @@ title: "WF-0123 - Unmaterialized File Buffers And External Edit Frontier"
 legend: "WF"
 lane: "design"
 issue: "https://github.com/flyingrobots/jedit/issues/159"
-status: "draft"
+status: "landed"
 owners:
   - "@flyingrobots"
 created: "2026-06-26"
-updated: "2026-06-26"
+updated: "2026-06-27"
 ---
 
 # WF-0123 - Unmaterialized File Buffers And External Edit Frontier
 
 ## Linked Issue
 
-- [#159 WF-0123: Unmaterialized file buffers and external edit frontier](https://github.com/flyingrobots/jedit/issues/159)
+- [#159 WF-0123: Unmaterialized file buffers and external edit frontier](https://github.com/flyingrobots/jedit/issues/159) landed its
+  safety foundation through [PR #160](https://github.com/flyingrobots/jedit/pull/160).
+
+## Outcome
+
+PR #160 landed the safe foundation:
+
+- missing-path `:edit foo.txt` opens an unmaterialized Echo-backed buffer;
+- opening a missing path does not write to disk;
+- save/export preflights host fingerprints for missing and existing paths;
+- externally changed, deleted, obstructed, or path-kind-conflicted host paths
+  block materialization instead of being overwritten;
+- blocked materialization never marks the buffer clean/materialized;
+- blocked `:wq` does not quit;
+- WSC recovery/export refuses bounded readings as materializable text;
+- inactive and unmaterialized buffers survive file switching.
+
+Remaining work is split into focused follow-up issues:
+
+- [#161 Restart recovery UI](https://github.com/flyingrobots/jedit/issues/161)
+- [#162 External Edit intake](https://github.com/flyingrobots/jedit/issues/162)
+- [#163 Braid and diff reconciliation UX](https://github.com/flyingrobots/jedit/issues/163)
+- [#165 File watcher and external move detection](https://github.com/flyingrobots/jedit/issues/165)
 
 ## Decision Summary
 
