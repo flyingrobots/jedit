@@ -31,6 +31,23 @@ test('Echo history drawer renders workspace-visible Echo evidence', async () => 
   assert.match(rendered, /checkpoint:save/);
 });
 
+test('Echo history edit rows include Vim command provenance when available', async () => {
+  const harness = await createWorkspaceEchoAppHarness({
+    hostLines: ['alpha beta'],
+    readings: ['alpha beta', 'beta'],
+  });
+
+  await harness.runFirst(await harness.key('enter'));
+  await harness.key('d');
+  await harness.runAll(await harness.key('w'));
+
+  const edit = harness.model.echoHistory.find((entry) => entry.kind === 'edit');
+  assert.ok(edit, 'expected an applied edit history row');
+  assert.equal(edit.status, 'applied');
+  assert.equal(edit.evidenceId, 'receipt:delete');
+  assert.match(edit.summary, /\/repo\/notes\.md dw delete motion 0\.\.6 receipt receipt:delete/);
+});
+
 test('ctrl-h focuses Echo history and j/k navigates its selected row', async () => {
   const harness = await createWorkspaceEchoAppHarness({
     readings: ['before edit', 'after edit'],

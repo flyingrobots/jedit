@@ -7,6 +7,7 @@ import {
   WorkspaceHistoryDrawerViews,
 } from './worldline-state.js';
 import type { WorkspaceModel } from './model.js';
+import { jeditCommandFooterSummary } from './command-provenance.js';
 
 export function workspaceFooterTextPosture(model: WorkspaceModel): string {
   return [
@@ -22,6 +23,10 @@ export function workspaceHistoryContextLine(model: WorkspaceModel): string | und
   return model.historyDrawerView === WorkspaceHistoryDrawerViews.Worldlines
     ? worldlineGraphContextLine(model.worldline)
     : undefined;
+}
+
+export function workspaceFooterCommandSummary(model: WorkspaceModel): string | undefined {
+  return jeditCommandFooterSummary(model.editor, model.textAuthority);
 }
 
 function workspaceFooterMaterialization(

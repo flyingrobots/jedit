@@ -1,4 +1,4 @@
-import type { EditorState, RegisterKind, RegisterState } from './editor/model.js';
+import type { EditorState, RegisterKind, RegisterState, VimRepeatTargetState } from './editor/model.js';
 import { RegisterKinds } from './editor/model.js';
 import { EditorModes } from './editor/mode.js';
 import { PastePlacements } from './editor/key.js';
@@ -46,6 +46,11 @@ interface VimOperatorTarget {
   readonly basisDigest: string;
   readonly range: VimTextRange;
   readonly shape: VimResolvedTargetShape;
+}
+
+interface VimRepeatFacts {
+  readonly sourceBasisDigest?: string;
+  readonly target?: VimRepeatTargetState;
 }
 
 const NORMAL_MODE = EditorModes.Normal;
@@ -171,19 +176,21 @@ function applyStandaloneOperator(
   options: VimExecutionOptions,
 ): EditorState {
   if (syntax.operator === VimOperatorNames.DeleteToLineEnd) {
+    const target = lineEndTarget(editor);
     return withRepeat(
-      applyDeleteRange(editor, syntax, lineEndTarget(editor)),
+      applyDeleteRange(editor, syntax, target),
       syntax,
       options,
-      basisDigest(editor),
+      repeatFactsForTarget(target),
     );
   }
   if (syntax.operator === VimOperatorNames.ChangeToLineEnd) {
+    const target = lineEndTarget(editor);
     return withRepeat(
-      applyChangeRange(editor, syntax, lineEndTarget(editor)),
+      applyChangeRange(editor, syntax, target),
       syntax,
       options,
-      basisDigest(editor),
+      repeatFactsForTarget(target),
     );
   }
   if (syntax.operator === VimOperatorNames.YankLine) {
@@ -194,7 +201,7 @@ function applyStandaloneOperator(
       applyVimJoinCurrentLine(editor, syntax.operator === VimOperatorNames.JoinWithSpace ? 'spaced' : 'compact'),
       syntax,
       options,
-      basisDigest(editor),
+      repeatFactsForBasis(editor),
     );
   }
   if (syntax.operator === VimOperatorNames.DeleteChar) {
@@ -210,12 +217,13 @@ function applyDeleteChar(
 ): EditorState {
   const start = cursorIndex(editor);
   const count = Math.max(1, syntax.count ?? 1);
-  const next = applyDeleteRange(editor, syntax, {
+  const target = {
     basisDigest: basisDigest(editor),
     range: { start, end: start + count },
     shape: VimResolvedTargetShapes.Charwise,
-  });
-  return withRepeat(next, syntax, options, basisDigest(editor));
+  };
+  const next = applyDeleteRange(editor, syntax, target);
+  return withRepeat(next, syntax, options, repeatFactsForTarget(target));
 }
 
 function applyOperatorTarget(
@@ -225,10 +233,10 @@ function applyOperatorTarget(
   options: VimExecutionOptions,
 ): EditorState {
   if (syntax.operator === VimOperatorNames.Delete) {
-    return withRepeat(applyDeleteRange(editor, syntax, target), syntax, options, target.basisDigest);
+    return withRepeat(applyDeleteRange(editor, syntax, target), syntax, options, repeatFactsForTarget(target));
   }
   if (syntax.operator === VimOperatorNames.Change) {
-    return withRepeat(applyChangeRange(editor, syntax, target), syntax, options, target.basisDigest);
+    return withRepeat(applyChangeRange(editor, syntax, target), syntax, options, repeatFactsForTarget(target));
   }
   if (syntax.operator === VimOperatorNames.Yank) {
     return applyYankRange(editor, syntax, target);
@@ -238,7 +246,7 @@ function applyOperatorTarget(
       applyVimCaseTransform(editor, mutationRangeForTarget(editor, target), vimCaseTransformForOperator(syntax.operator)),
       syntax,
       options,
-      target.basisDigest,
+      repeatFactsForTarget(target),
     );
   }
   return editor;
@@ -295,7 +303,7 @@ function applyPutOperator(
     ? PastePlacements.Before
     : PastePlacements.After;
   const next = pasteRegister({ ...editor, register }, placement);
-  return withRepeat(next, syntax, options, basisDigest(editor));
+  return withRepeat(next, syntax, options, repeatFactsForBasis(editor));
 }
 
 function targetFromMotion(resolved: VimResolvedMotion): VimOperatorTarget {
@@ -390,7 +398,7 @@ function withRepeat(
   editor: EditorState,
   syntax: VimChordSyntax,
   options: VimExecutionOptions,
-  sourceBasisDigest?: string,
+  facts: VimRepeatFacts,
 ): EditorState {
   return options.recordRepeat ?? RECORD_REPEAT_DEFAULT
     ? {
@@ -399,10 +407,27 @@ function withRepeat(
         keys: syntax.keys,
         description: repeatDescription(syntax),
         replayPolicy: 'resolve-current-basis',
-        ...(sourceBasisDigest == null ? {} : { sourceBasisDigest }),
+        ...(facts.sourceBasisDigest == null ? {} : { sourceBasisDigest: facts.sourceBasisDigest }),
+        ...(facts.target == null ? {} : { target: facts.target }),
       },
     }
     : editor;
+}
+
+function repeatFactsForBasis(editor: EditorState): VimRepeatFacts {
+  return { sourceBasisDigest: basisDigest(editor) };
+}
+
+function repeatFactsForTarget(target: VimOperatorTarget): VimRepeatFacts {
+  return {
+    sourceBasisDigest: target.basisDigest,
+    target: {
+      basisDigest: target.basisDigest,
+      rangeEnd: target.range.end,
+      rangeStart: target.range.start,
+      shape: target.shape,
+    },
+  };
 }
 
 function repeatDescription(syntax: VimChordSyntax): string {

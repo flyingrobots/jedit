@@ -24,6 +24,7 @@ import { fillSurface } from './surface-fill.js';
 import { renderSmallTerminalNotice } from './small-terminal-view.js';
 import { paintWorkspaceOverlays, workspaceFeedbackOverlay } from './viewer-overlays.js';
 import {
+  workspaceFooterCommandSummary,
   workspaceFooterTextPosture,
   workspaceHistoryContextLine,
 } from './workspace-footer-posture.js';
@@ -156,6 +157,7 @@ function paintWorkspaceFooter(screen: Surface, model: WorkspaceModel): void {
         graftSelection: selectedGraftSelection(model),
         commandLine: model.commandLine,
         commandLineError: commandLineErrorToken(model),
+        commandSummary: workspaceFooterCommandSummary(model),
       }, model.columns, model.jeditTheme.surface.footer),
       0,
       model.rows - FOOTER_ROWS,
