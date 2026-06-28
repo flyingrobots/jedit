@@ -22,7 +22,6 @@ import {
   workspaceTextAuthorityWithCheckpoint,
   workspaceTextAuthorityWithExport,
   workspaceTextAuthorityWithObstruction,
-  workspaceTextAuthorityWithReceipt,
 } from './workspace-text-authority.js';
 import {
   WorkspaceTextResultKinds,
@@ -41,7 +40,10 @@ import { createWorkspaceTextCheckpointCmd } from './workspace-text-commands.js';
 import type { TextPosition } from './workspace-text-position.js';
 import { canReadingReplaceWholeEditor, editorFromWorkspaceTextLines } from './workspace-text-reading-cache.js';
 import { JEDIT_WSC_WORKSPACE_STORE_STATUS } from '../../ports/jedit-wsc-workspace-store.js';
-import { jeditAppliedCommandHistorySummary } from './command-provenance.js';
+import {
+  jeditAppliedCommandHistorySummary,
+  workspaceTextAuthorityWithAppliedJeditCommandReceipt,
+} from './command-provenance.js';
 
 export type WorkspaceRuntimeResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 
@@ -188,7 +190,7 @@ function applyAppliedTextEditResult(
     return [model, []];
   }
   const withCache = workspaceTextAuthorityWithCache(
-    workspaceTextAuthorityWithReceipt(authority, msg.result.receiptId),
+    workspaceTextAuthorityWithAppliedJeditCommandReceipt(authority, msg.requestId, msg.result.receiptId),
     msg.result.cache,
   );
   const applied = withEchoHistoryEntry({
@@ -199,7 +201,7 @@ function applyAppliedTextEditResult(
     kind: EchoHistoryEntryKinds.Edit,
     status: EchoHistoryEntryStatuses.Applied,
     evidenceId: msg.result.receiptId,
-    summary: jeditAppliedCommandHistorySummary(msg.result.filePath, msg.requestId, model.editor, withCache),
+    summary: jeditAppliedCommandHistorySummary(msg.result.filePath, msg.requestId, withCache),
   });
   const [refreshed, refreshCommands] = refreshAfterEdit(deps, applied);
   const settlement = persistEditSettlement(deps, msg.result, refreshed);
