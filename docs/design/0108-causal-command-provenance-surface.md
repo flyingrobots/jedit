@@ -233,9 +233,10 @@ This cycle includes:
 - An Editor Trust Gate preflight that audits open/edit/save/quit, dirty-state,
   search entry, and disk verification gaps before implementation starts.
 - A `JeditCommandEvent` model for selected command provenance.
-- Provenance for representative Vim edits. The first implementation slice uses
-  `dw`, `ciw`, `dd`, and `gUap`; later slices can add `d%`, `n`/`N`, and
-  broader range commands when their product surfaces are ready.
+- Provenance for representative Vim edits. Slice 1 scope, tests, and acceptance
+  gates use the same initial command set: `dw`, `ciw`, `dd`, and `gUap`. Later
+  slices can add `d%`, `n`/`N`, and broader range commands when their product
+  surfaces are ready.
 - A compact lower-mode summary after meaningful edits.
 - `:why` command-line dispatch for the last meaningful command.
 - Optional richer detail rendering behind the `:why` surface.
