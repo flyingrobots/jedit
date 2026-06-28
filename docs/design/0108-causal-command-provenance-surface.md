@@ -683,7 +683,7 @@ model facts, lower-mode summary, `:why`, JSON witness, and obstruction posture.
 
 - [x] Slice 0: Run Editor Trust Gate preflight and record blockers.
 - [x] Slice 1: Define `JeditCommandEvent` model and fixture shape.
-- [ ] Slice 2: Emit provenance for `ciw`, `dw`, `d%`, `gUap`, and `n`/`N`.
+- [ ] Slice 2: Emit provenance for `dw`, `ciw`, `dd`, and `gUap`.
 - [ ] Slice 3: Render lower-mode command provenance summary.
 - [x] Slice 4: Add `:why` command-line dispatch.
 - [ ] Slice 5: Add JSON command provenance witness.
@@ -704,12 +704,11 @@ Behavior tests required:
 
 Required command assertions:
 
+- [ ] `dw` `:why` reports word motion target and deletion range.
 - [ ] `ciw` `:why` reports text object, range, register effect, and
       receipt/result posture.
-- [x] `dw` `:why` reports word motion target and deletion range.
-- [ ] `d%` `:why` reports pair identity and affected range.
+- [ ] `dd` `:why` reports linewise deletion and affected line range.
 - [ ] `gUap` `:why` reports paragraph text object and transform operator.
-- [ ] `n`/`N` `:why` reports search match identity and traversal direction.
 - [x] `:why` with no meaningful event reports calm obstruction.
 
 Documentation and process tests:
@@ -722,7 +721,8 @@ The work is done when:
 
 - [x] Editor Trust Gate preflight names any blockers before implementation
       proceeds.
-- [ ] At least five representative commands emit stable provenance facts.
+- [ ] The Slice 1 command set (`dw`, `ciw`, `dd`, `gUap`) emits stable
+      provenance facts.
 - [ ] Lower-mode summary communicates the last meaningful command without
       overwhelming normal editing.
 - [ ] `:why` exposes structured facts for the last meaningful command.

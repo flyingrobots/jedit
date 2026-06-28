@@ -3,7 +3,7 @@ title: "WF-0123 - Unmaterialized File Buffers And External Edit Frontier"
 legend: "WF"
 lane: "design"
 issue: "https://github.com/flyingrobots/jedit/issues/159"
-status: "foundation-landed"
+status: "landed"
 owners:
   - "@flyingrobots"
 created: "2026-06-26"
