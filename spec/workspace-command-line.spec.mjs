@@ -1007,6 +1007,106 @@ test("command provenance reports pending posture while a new edit is in flight",
   assert.match(event.summary, /receipt pending/);
 });
 
+test("command provenance prefers stored command events over mutable editor repeat state", async () => {
+  const [editorMode, syntax, executor, authority, provenance] = await Promise.all([
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "vim-chord-syntax.js"),
+    importDist("app", "workspace", "vim-command-executor.js"),
+    importDist("app", "workspace", "workspace-text-authority.js"),
+    importDist("app", "workspace", "command-provenance.js"),
+  ]);
+  const opened = authority.openedWorkspaceTextAuthority({
+    profile: "echoHosted",
+    filePath: "/repo/notes.md",
+    bufferId: "buffer:notes",
+    readOnly: false,
+    dirty: true,
+    lastReceiptId: "receipt:dw",
+  });
+  const deleted = executor.applyVimChordSyntaxToEditor(
+    mockEditor(editorMode, { lines: ["alpha beta"], cursorRow: 0, cursorCol: 0 }),
+    syntax.parseVimChordSyntax(["d", "w"]),
+  );
+  assert.ok(deleted.lastVimEdit);
+  const event = provenance.createJeditCommandEvent({
+    editor: deleted,
+    requestId: 12,
+    repeat: deleted.lastVimEdit,
+    textAuthority: opened,
+  });
+  assert.equal(event.kind, "vim");
+
+  const report = provenance.explainLastJeditCommand(
+    mockEditor(editorMode, {
+      lastVimEdit: {
+        keys: ["c", "i", "w"],
+        description: "operatorTextObject:change:",
+        replayPolicy: "resolve-current-basis",
+        sourceBasisDigest: "basis:stale",
+        target: {
+          basisDigest: "basis:stale",
+          rangeStart: 0,
+          rangeEnd: 5,
+          shape: "charwise",
+        },
+      },
+    }),
+    authority.openedWorkspaceTextAuthority({
+      ...opened,
+      lastCommandEvent: event,
+    }),
+  );
+
+  assert.equal(report.kind, "event");
+  assert.match(report.message, /command: dw/);
+  assert.match(report.message, /receipt: receipt:dw/);
+  assert.doesNotMatch(report.message, /command: ciw/);
+});
+
+test("pending non-Vim edits do not rewrite stored command receipt posture", async () => {
+  const [editorMode, syntax, executor, authority, provenance] = await Promise.all([
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "vim-chord-syntax.js"),
+    importDist("app", "workspace", "vim-command-executor.js"),
+    importDist("app", "workspace", "workspace-text-authority.js"),
+    importDist("app", "workspace", "command-provenance.js"),
+  ]);
+  const opened = authority.openedWorkspaceTextAuthority({
+    profile: "echoHosted",
+    filePath: "/repo/notes.md",
+    bufferId: "buffer:notes",
+    readOnly: false,
+    dirty: true,
+    lastReceiptId: "receipt:dw",
+  });
+  const deleted = executor.applyVimChordSyntaxToEditor(
+    mockEditor(editorMode, { lines: ["alpha beta"], cursorRow: 0, cursorCol: 0 }),
+    syntax.parseVimChordSyntax(["d", "w"]),
+  );
+  assert.ok(deleted.lastVimEdit);
+  const event = provenance.createJeditCommandEvent({
+    editor: deleted,
+    requestId: 12,
+    repeat: deleted.lastVimEdit,
+    textAuthority: opened,
+  });
+  assert.equal(event.kind, "vim");
+  const pendingInsert = authority.workspaceTextAuthorityWithPendingEdit(
+    authority.openedWorkspaceTextAuthority({
+      ...opened,
+      lastCommandEvent: event,
+    }),
+    13,
+  );
+
+  const report = provenance.explainLastJeditCommand(undefined, pendingInsert);
+
+  assert.equal(report.kind, "event");
+  assert.match(report.message, /command: dw/);
+  assert.match(report.message, /receipt: receipt:dw/);
+  assert.doesNotMatch(report.message, /receipt: pending/);
+});
+
 test("command provenance does not synthesize targets from stale registers", async () => {
   const [editorMode, authority, provenance] = await Promise.all([
     importDist("app", "workspace", "editor", "mode.js"),
@@ -1085,6 +1185,10 @@ test("production normal edits keep Vim command provenance while queued", async (
   );
 
   assert.deepEqual(queued.editor.lastVimEdit.keys, ["d", "w"]);
+  assert.equal(queued.textAuthority.pendingCommandEvent.requestId, queued.textRequestId);
+  assert.equal(queued.textAuthority.pendingCommandEvent.event.command, "dw");
+  assert.equal(queued.textAuthority.lastCommandEvent.requestId, queued.textRequestId);
+  assert.match(queued.textAuthority.lastCommandEvent.summary, /dw delete motion 0\.\.6 receipt pending/);
   assert.equal(queued.editor.register.source.operation, "delete");
   assert.equal(queued.editor.register.source.rangeStart, 0);
   assert.equal(queued.editor.register.source.rangeEnd, 6);

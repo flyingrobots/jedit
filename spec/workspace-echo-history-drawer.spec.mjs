@@ -67,6 +67,50 @@ test('Echo history does not reuse stale Vim provenance for later insert edits', 
   assert.equal(edits[1].summary, '/repo/notes.md');
 });
 
+test('Echo history uses the planned command event when editor repeat state drifts before settlement', async () => {
+  const harness = await createWorkspaceEchoAppHarness({
+    hostLines: ['alpha beta'],
+    readings: ['alpha beta', 'beta'],
+  });
+
+  await harness.runFirst(await harness.key('enter'));
+  await harness.key('d');
+  const commands = await harness.key('w');
+  const queued = harness.model;
+
+  assert.equal(queued.textAuthority.pendingCommandEvent.requestId, queued.textRequestId);
+  assert.equal(queued.textAuthority.pendingCommandEvent.event.command, 'dw');
+
+  harness.setModel({
+    ...queued,
+    editor: {
+      ...queued.editor,
+      lastVimEdit: {
+        keys: ['c', 'i', 'w'],
+        description: 'operatorTextObject:change:',
+        replayPolicy: 'resolve-current-basis',
+        sourceBasisDigest: 'basis:stale',
+        target: {
+          basisDigest: 'basis:stale',
+          rangeStart: 0,
+          rangeEnd: 5,
+          shape: 'charwise',
+        },
+      },
+    },
+  });
+  await harness.runAll(commands);
+
+  const edit = harness.model.echoHistory.find((entry) => entry.kind === 'edit');
+  assert.ok(edit, 'expected an applied edit history row');
+  assert.equal(edit.evidenceId, 'receipt:delete');
+  assert.match(edit.summary, /\/repo\/notes\.md dw delete motion 0\.\.6 receipt receipt:delete/);
+  assert.doesNotMatch(edit.summary, /ciw/);
+  assert.equal(harness.model.textAuthority.lastCommandEvent.command, 'dw');
+  assert.equal(harness.model.textAuthority.lastCommandEvent.requestId, queued.textRequestId);
+  assert.equal(harness.model.textAuthority.lastCommandEvent.receiptId, 'receipt:delete');
+});
+
 test('ctrl-h focuses Echo history and j/k navigates its selected row', async () => {
   const harness = await createWorkspaceEchoAppHarness({
     readings: ['before edit', 'after edit'],

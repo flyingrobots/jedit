@@ -2,6 +2,10 @@ import type { RuntimeIssue } from '@flyingrobots/bijou-tui';
 import type { EditorFileFingerprint } from '../../ports/editor-file.js';
 import type { TextRuntimeProfile } from '../text-runtime-profile.js';
 import type { EditorState } from './editor/model.js';
+import type {
+  JeditCommandEvent,
+  JeditPlannedCommandEvent,
+} from './command-provenance.js';
 import {
   WorkspaceWorldlineMaterializationKinds,
   type WorkspaceWorldlineMaterializationKind,
@@ -96,10 +100,12 @@ export interface WorkspaceTextAuthorityOpened {
   readonly cache?: WorkspaceTextReadingCache;
   readonly pendingClientSeq?: number;
   readonly pendingCommandKind?: WorkspaceTextPendingCommandKind;
+  readonly pendingCommandEvent?: JeditPlannedCommandEvent;
   readonly pendingReceiptId?: string;
   readonly pendingIntentStatus?: WorkspaceTextIntentStatus;
   readonly blockedByClientSeq?: number;
   readonly lastObstruction?: RuntimeIssue;
+  readonly lastCommandEvent?: JeditCommandEvent;
   readonly lastReceiptId?: string;
   readonly lastCheckpointId?: string;
   readonly lastExportReadingId?: string;
@@ -125,10 +131,12 @@ export interface OpenedWorkspaceTextAuthorityOptions {
   readonly cache?: WorkspaceTextReadingCache;
   readonly pendingClientSeq?: number;
   readonly pendingCommandKind?: WorkspaceTextPendingCommandKind;
+  readonly pendingCommandEvent?: JeditPlannedCommandEvent;
   readonly pendingReceiptId?: string;
   readonly pendingIntentStatus?: WorkspaceTextIntentStatus;
   readonly blockedByClientSeq?: number;
   readonly lastObstruction?: RuntimeIssue;
+  readonly lastCommandEvent?: JeditCommandEvent;
   readonly lastReceiptId?: string;
   readonly lastCheckpointId?: string;
   readonly lastExportReadingId?: string;
@@ -182,10 +190,12 @@ export function openedWorkspaceTextAuthority(
     cache: options.cache,
     pendingClientSeq: options.pendingClientSeq,
     pendingCommandKind: options.pendingCommandKind,
+    pendingCommandEvent: options.pendingCommandEvent,
     pendingReceiptId: options.pendingReceiptId,
     pendingIntentStatus: options.pendingIntentStatus,
     blockedByClientSeq: options.blockedByClientSeq,
     lastObstruction: options.lastObstruction,
+    lastCommandEvent: options.lastCommandEvent,
     lastReceiptId: options.lastReceiptId,
     lastCheckpointId: options.lastCheckpointId,
     lastExportReadingId: options.lastExportReadingId,
@@ -225,6 +235,7 @@ export function workspaceTextAuthorityWithReceipt(
     ...authority,
     dirty: true,
     materialization: WorkspaceWorldlineMaterializationKinds.Unmaterialized,
+    pendingCommandEvent: undefined,
     pendingReceiptId: receiptId,
     pendingIntentStatus: WorkspaceTextIntentStatuses.Admitted,
     lastReceiptId: receiptId,
@@ -235,6 +246,7 @@ export function workspaceTextAuthorityWithPendingEdit(
   authority: WorkspaceTextAuthorityOpened,
   pendingClientSeq: number,
   pendingCommandKind?: WorkspaceTextPendingCommandKind,
+  pendingCommandEvent?: JeditPlannedCommandEvent,
 ): WorkspaceTextAuthorityOpened {
   return {
     ...authority,
@@ -242,8 +254,21 @@ export function workspaceTextAuthorityWithPendingEdit(
     materialization: WorkspaceWorldlineMaterializationKinds.Unmaterialized,
     pendingClientSeq,
     pendingCommandKind,
+    pendingCommandEvent,
     pendingIntentStatus: WorkspaceTextIntentStatuses.Predicted,
     lastObstruction: undefined,
+    lastCommandEvent: pendingCommandEvent?.event ?? authority.lastCommandEvent,
+  };
+}
+
+export function workspaceTextAuthorityWithLastCommandEvent(
+  authority: WorkspaceTextAuthorityOpened,
+  lastCommandEvent: JeditCommandEvent,
+): WorkspaceTextAuthorityOpened {
+  return {
+    ...authority,
+    pendingCommandEvent: undefined,
+    lastCommandEvent,
   };
 }
 
@@ -283,6 +308,7 @@ export function workspaceTextAuthorityWithCheckpoint(
     dirty: false,
     pendingClientSeq: undefined,
     pendingCommandKind: undefined,
+    pendingCommandEvent: undefined,
     pendingReceiptId: undefined,
     pendingIntentStatus: undefined,
     blockedByClientSeq: undefined,
@@ -304,6 +330,7 @@ export function workspaceTextAuthorityWithExport(
     materialization: WorkspaceWorldlineMaterializationKinds.Materialized,
     pendingClientSeq: undefined,
     pendingCommandKind: undefined,
+    pendingCommandEvent: undefined,
     pendingReceiptId: undefined,
     pendingIntentStatus: undefined,
     blockedByClientSeq: undefined,

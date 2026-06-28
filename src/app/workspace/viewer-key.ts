@@ -11,6 +11,7 @@ import {
   updateInsertMode,
   updateNormalMode,
 } from './editor-session.js';
+import { createPlannedJeditCommandEvent } from './command-provenance.js';
 import { snapshotEditor } from './editor-editing-core.js';
 import { EditorModes, PendingNormals } from './editor/mode.js';
 import { EditorKeys } from './editor/key.js';
@@ -399,13 +400,47 @@ function queueProductionTextEdit(
   return [{
     ...model,
     textRequestId: requestId,
-    textAuthority: workspaceTextAuthorityWithPendingEdit(model.textAuthority, requestId, pendingCommandKind),
+    textAuthority: textAuthorityForQueuedEdit(model.textAuthority, model.editor, requestId, pendingCommandKind),
   }, [
     createWorkspaceTextEditCmd({
       ...base,
       ...edit,
     }),
   ]];
+}
+
+function textAuthorityForQueuedEdit(
+  authority: Extract<WorkspaceModel['textAuthority'], { kind: typeof WorkspaceTextAuthorityKinds.Opened }>,
+  editor: NonNullable<WorkspaceModel['editor']>,
+  requestId: number,
+  pendingCommandKind?: typeof WorkspaceTextPendingCommandKinds.Vim,
+) {
+  const pendingAuthority = workspaceTextAuthorityWithPendingEdit(authority, requestId, pendingCommandKind);
+  const pendingCommandEvent = plannedCommandEventForQueuedEdit(
+    editor,
+    pendingAuthority,
+    requestId,
+    pendingCommandKind,
+  );
+  return workspaceTextAuthorityWithPendingEdit(authority, requestId, pendingCommandKind, pendingCommandEvent);
+}
+
+function plannedCommandEventForQueuedEdit(
+  editor: NonNullable<WorkspaceModel['editor']>,
+  textAuthority: ReturnType<typeof workspaceTextAuthorityWithPendingEdit>,
+  requestId: number,
+  pendingCommandKind?: typeof WorkspaceTextPendingCommandKinds.Vim,
+) {
+  if (pendingCommandKind !== WorkspaceTextPendingCommandKinds.Vim || editor.lastVimEdit == null) {
+    return undefined;
+  }
+  const result = createPlannedJeditCommandEvent({
+    editor,
+    requestId,
+    repeat: editor.lastVimEdit,
+    textAuthority,
+  });
+  return 'event' in result ? result : undefined;
 }
 
 type ProductionTextEditRequest =
