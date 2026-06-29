@@ -106,12 +106,16 @@ Infrastructure and hygiene are the third lane. Keep these scoped:
 
 Immediate order:
 
-1. Record the landed PR #160 scope and split the remaining #158/#159 umbrella
-   work into focused follow-up issues.
-2. Start [`WF-0108 - Jim Command Provenance And :why`](design/0108-causal-command-provenance-surface.md).
-3. Implement a narrow `:why` MVP for the last meaningful Vim edit:
-   command event record, lower-mode explanation, JSON witness, and Echo History
-   drawer integration.
+1. Lock
+   [`WF-0108A - :why Observation Evidence Roadmap`](design/0108a-why-observation-evidence-roadmap.md)
+   and the cross-repo issue topology.
+2. Keep
+   [`WF-0106 - Emacs Ideas To Steal Causally`](design/0106-emacs-ideas-to-steal-causally.md)
+   as the supporting product-surface packet for command catalog, describe,
+   register, macro, buffer, diagnostics, and trace surfaces.
+3. Close the `:why` evidence gap in this order: local observation coordinate
+   model, typed evidence obstructions, text-window evidence fields, Echo
+   ReadingEnvelope identity, then golden command witnesses.
 4. Use existing proven Vim operations first: `dw`, `ciw`, `dd`, and `gUap`.
    Keep `n`/`N` and `:%s` for later slices once search entry and proposal
    preview are product-complete.
@@ -174,6 +178,7 @@ edits, agent witnesses, structural objects, or user trust.
 | Vim/Jim power moves | [`docs/design/0105-vim-power-moves-causal-parity.md`](design/0105-vim-power-moves-causal-parity.md) |
 | Emacs ideas to steal causally | [`docs/design/0106-emacs-ideas-to-steal-causally.md`](design/0106-emacs-ideas-to-steal-causally.md) |
 | Jim command provenance and `:why` | [`docs/design/0108-causal-command-provenance-surface.md`](design/0108-causal-command-provenance-surface.md) |
+| `:why` observation evidence | [`docs/design/0108a-why-observation-evidence-roadmap.md`](design/0108a-why-observation-evidence-roadmap.md) |
 | Strand/braid worldline UX | [`docs/design/0121-strand-braid-worldline-ux.md`](design/0121-strand-braid-worldline-ux.md) |
 | Optimistic strand worldline phases | [`docs/design/0146-optimistic-strand-worldline-phases.md`](design/0146-optimistic-strand-worldline-phases.md) |
 | Unmaterialized file frontier | [`docs/design/0147-unmaterialized-file-frontier.md`](design/0147-unmaterialized-file-frontier.md) |
@@ -183,7 +188,9 @@ edits, agent witnesses, structural objects, or user trust.
 
 | Cycle | Issue | Role |
 | --- | --- | --- |
+| WF-0106 | [#192](https://github.com/flyingrobots/jedit/issues/192) | Emacs Ideas To Steal Causally |
 | WF-0108 | [#131](https://github.com/flyingrobots/jedit/issues/131) | Jim Command Provenance And `:why` |
+| WF-0108A | [#181](https://github.com/flyingrobots/jedit/issues/181) | Complete `:why` Through Observation Evidence |
 | WF-0109 | [#134](https://github.com/flyingrobots/jedit/issues/134) | Historical Basis Preview |
 | WF-0110 | [#132](https://github.com/flyingrobots/jedit/issues/132) | Search Sets And Substitute Strand Preview |
 | WF-0111 | [#133](https://github.com/flyingrobots/jedit/issues/133) | Historical Yank And Register Provenance |
@@ -204,8 +211,9 @@ make a user-facing rename safe. `jim` is the future command/product name for the
 modal editor that grows out of this repo.
 
 The active editing roadmap is now the causal product ladder above. WF-0105
-remains the Vim power-move substrate, and WF-0108 is the next pinned design
-cycle because it turns that substrate into Jim's user-facing differentiator.
+remains the Vim power-move substrate, WF-0108 is the shipped base for command
+provenance, WF-0108A is the current `:why` evidence-completion plan, and
+WF-0106 is the supporting product-surface plan.
 
 ## Deferred Full Rewrite
 

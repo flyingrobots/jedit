@@ -72,6 +72,7 @@ Start here:
 - `ARCHITECTURE.md` — the layer rules, dependency graph, and product vocabulary.
 - `docs/BEARING.md` — compact current truth, active roadmap anchors, and non-negotiables.
 - `docs/design/` — living design specs for each major cycle.
+- `docs/design/echo-identity-doctrine.md` — canonical Echo identity, scope, and transport doctrine.
 - `docs/method/` — process, roadmap, release, and proof policy.
 - `docs/jedit-echo-end-to-end.md` — the current jedit-plus-Echo proof path.
 
