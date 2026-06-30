@@ -357,8 +357,10 @@ test('real workspace app path cancels a queued save after an edit obstruction', 
 
   pendingInsert.resolve();
   await applyWorkspaceMessage(harness, await editMessage);
-  harness.runtime.update(await saveMessage, harness.model);
+  const [afterSave, afterSaveCommands] = harness.runtime.update(await saveMessage, harness.model);
+  harness.setModel(afterSave);
 
+  assert.equal(afterSaveCommands.length, 0);
   assert.equal(calls.export.length, 0);
   assert.equal(calls.checkpoint.length, 0);
   assert.deepEqual(harness.savedFiles, []);
