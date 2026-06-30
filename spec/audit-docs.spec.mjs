@@ -15,3 +15,9 @@ test('ready-to-ship audit does not prescribe forbidden unknown annotations', () 
   assert.doesNotMatch(audit, /loadErrorResult\(filePath: string, cause: unknown\)/);
   assert.match(audit, /nodeErrorCode\(cause: Error\): string \| undefined/);
 });
+
+test('ready-to-ship audit includes parent directory fsync in atomic save guidance', () => {
+  const audit = readRepoText(READY_AUDIT);
+
+  assert.match(audit, /fsync the parent directory after rename/);
+});
