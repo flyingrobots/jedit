@@ -29,21 +29,25 @@ identity, typed evidence obstructions, and future-proof slots without moving
 Jim editor nouns into Echo or pretending that Jim/Echo integration goes through
 Continuum.
 
-## Product Boundary
+## Sponsored Human
 
-The ownership split is deliberately strict:
+A Jim user wants `:why` to explain the last meaningful modal edit in product
+terms so that recovery, review, and trust do not require reading raw debug
+state or guessing which basis the editor observed.
 
-| Layer | Owns | Does not own |
-| --- | --- | --- |
-| Jim / jedit | `:why` UX, command catalog, Vim command grammar, editor facts, JSON witness shape | Runtime admission or generic protocol doctrine |
-| Echo | Reading envelopes, receipts, retained evidence, runtime admission, replayable basis facts | Jim commands, Vim nouns, buffers, registers, macros |
-| Continuum | Portable profile vocabulary, evidence posture, participant discovery, conformance fixtures | Jim/Echo app integration, runtime implementation, editor app ontology |
+## Sponsored Agent
 
-Jim is an Echo app. Jim does not talk to Echo through Continuum. Continuum
-becomes relevant only where Jim/Echo evidence needs to be portable to WARP TTD,
-Graft, WARP DRIVE, agents, or other Continuum participants.
+An agent needs stable `:why` JSON witness fields and typed obstruction posture
+so it can inspect command provenance without scraping terminal prose or
+inventing Echo evidence that Jim has not received.
 
-## Current Source Truth
+## Hill
+
+By the end of WF-0108A, a user or agent can run representative Jim commands,
+ask `:why`, and inspect the same command, target, range, register, lower-mode,
+and evidence-posture facts through human text and JSON witnesses.
+
+## Current Truth
 
 Current builds already contain the first `:why` proof:
 
@@ -64,6 +68,150 @@ The remaining production gap is observation evidence:
 - cryptographic proof posture should have reserved fields, but fake proof
   strength must not be claimed before Echo and Continuum can witness it.
 
+## Problem
+
+`:why` currently proves that Jim can explain a local meaningful command, but it
+does not yet prove complete observation evidence for every target command
+family. Without explicit reading identity, typed missing-evidence posture, and
+golden command witnesses, the feature can sound stronger than the source truth
+supports.
+
+## Scope
+
+This roadmap-lock cycle includes:
+
+- the Jim/Echo/Continuum ownership boundary for `:why` evidence;
+- the jedit, Echo, and Continuum issue topology;
+- the execution order for completing observation evidence;
+- the proof posture for future cryptographic evidence without implementation
+  overclaiming.
+
+It does not implement the runtime slices. Those are tracked as the linked
+jedit, Echo, and Continuum issues below.
+
+## Product Boundary
+
+The ownership split is deliberately strict:
+
+| Layer | Owns | Does not own |
+| --- | --- | --- |
+| Jim / jedit | `:why` UX, command catalog, Vim command grammar, editor facts, JSON witness shape | Runtime admission or generic protocol doctrine |
+| Echo | Reading envelopes, receipts, retained evidence, runtime admission, replayable basis facts | Jim commands, Vim nouns, buffers, registers, macros |
+| Continuum | Portable profile vocabulary, evidence posture, participant discovery, conformance fixtures | Jim/Echo app integration, runtime implementation, editor app ontology |
+
+Jim is an Echo app. Jim does not talk to Echo through Continuum. Continuum
+becomes relevant only where Jim/Echo evidence needs to be portable to WARP TTD,
+Graft, WARP DRIVE, agents, or other Continuum participants.
+
+## User Experience / Product Shape
+
+The product shape stays the golden Jim loop:
+
+- explain;
+- preview;
+- admit;
+- recover.
+
+For WF-0108A, the visible user action is still:
+
+```vim
+:why
+```
+
+The output should explain the last meaningful command without requiring the
+user to understand Echo internals. When evidence is partial, unavailable,
+stale, unsupported, translated, redacted, or obstructed, the wording should say
+that plainly instead of silently falling back to a weaker claim.
+
+### User Journey
+
+```mermaid
+flowchart TD
+  Command[User runs Jim command] --> Why[User runs :why]
+  Why --> Evidence[Jim reports command facts and evidence posture]
+  Evidence --> Review[User reviews or recovers from the edit]
+  Evidence --> Obstruction[Jim reports typed missing evidence when needed]
+```
+
+### Wide UI Mockup
+
+Not applicable for this roadmap-lock PR. Runtime slices that change rendered
+`:why` output should include focused snapshots or witness text.
+
+### Narrow UI Mockup
+
+Not applicable for this roadmap-lock PR. The intended narrow behavior is
+plain-text wrapping with no visual-only facts.
+
+### Accessibility Considerations
+
+`:why` facts must be available as text and JSON, not only through layout,
+color, or terminal position.
+
+## Runtime / API Contract
+
+The planned contract is a Jim-owned `:why` explanation surface backed by a
+stable JSON witness. The contract should include:
+
+- command identity and parsed form;
+- target or typed obstruction;
+- affected range or transform;
+- register and lower-mode posture;
+- Echo reading basis or missing-evidence posture;
+- receipt or retained evidence refs when available;
+- future-proof posture fields that do not claim proof strength before evidence
+  exists.
+
+Echo supplies generic reading, receipt, obstruction, and replay evidence. Jim
+projects that evidence into editor language. Continuum names portable protocol
+vocabulary only when the facts cross participant boundaries.
+
+## Lower Modes
+
+Required lower modes:
+
+- JSON witness output for agents and tests;
+- deterministic no-event output when no meaningful command exists;
+- typed obstruction output for missing, stale, unsupported, redacted,
+  translated, or unavailable evidence;
+- plain terminal text that does not require color or layout to understand.
+
+## Accessibility Posture
+
+| Concern | Posture |
+| --- | --- |
+| Semantic labels or facts | Command, target, range, register, and evidence posture must be textual and machine-readable. |
+| Focus order or ownership | `:why` remains a command-line action; future rendered panels must not steal input focus silently. |
+| Hidden or visual-only information | No evidence fact may be conveyed only by color, glyph, or placement. |
+| Keyboard behavior | The feature remains keyboard-first through Vim command-line dispatch. |
+| Secret or redaction behavior | Redacted evidence must be named as redacted rather than omitted as if complete. |
+
+## Localization / Directionality Posture
+
+| Concern | Posture |
+| --- | --- |
+| User-visible strings | Roadmap-lock PR only changes docs. Runtime slices must account for changed `:why` strings. |
+| Catalog keys | Future command catalog work should provide stable ids before broad string expansion. |
+| Supported locales updated | Not applicable for this roadmap-lock PR. |
+| Directionality assumptions | `:why` output should not encode meaning through left-to-right alignment. |
+| Validation command | Runtime slices should add focused tests for any changed user-visible output. |
+
+## Agent Inspectability / Explainability Posture
+
+Agents should inspect `:why` through stable witness fields:
+
+- command id and key form;
+- effect class;
+- resolved target or typed obstruction;
+- range, transform, and register posture;
+- reading identity or missing-evidence posture;
+- receipt refs when available;
+- proof posture slots that distinguish native, translated, fixture,
+  digest-only, claimed, and absent evidence.
+
+Agents must not need to parse the human `:why` paragraph to understand whether
+evidence is complete.
+
 ## Goalpost
 
 The active jedit goalpost is:
@@ -81,7 +229,9 @@ and receive an explanation that includes:
 - receipt or retained evidence refs when available;
 - JSON witness fields matching the human-facing truth.
 
-## Jedit Slices
+## Implementation Slices
+
+The first implementation slices are jedit-owned:
 
 | Issue | Slice | Proof |
 | --- | --- | --- |
@@ -167,6 +317,23 @@ available, while preventing fake evidence claims.
 - Do not claim native cryptographic proof strength before witnesses exist.
 - Do not let `:why` become a raw debug dump.
 
+## Tests To Write First
+
+Behavior tests required:
+
+- [ ] `JeditWhyObservation` model test covering basis, window, authority, and
+      evidence posture.
+- [ ] JSON witness test proving Echo reading identity or typed missing evidence
+      appears without terminal scraping.
+- [ ] Golden command tests for `dw`, `dd`, `ciw`, and `gUap`.
+- [ ] Obstruction tests for stale, unavailable, unsupported, translated, and
+      redacted evidence posture.
+
+Documentation and process tests:
+
+- [x] Design-cycle policy test proving WF-0108A preserves required full-cycle
+      headings.
+
 ## Acceptance Criteria
 
 - `:why` explains the last meaningful command in user-facing Jim terms.
@@ -196,6 +363,19 @@ git diff --check
 
 Implementation PRs must add focused runtime tests for the specific slice and
 run the relevant command-provenance, witness, and Echo-history specs.
+
+## Playback / Witness
+
+Roadmap playback for this PR is:
+
+- inspect this design document for ownership boundaries and slices;
+- inspect linked jedit, Echo, and Continuum issues for repo-specific work;
+- run `spec/design-cycle-policy.spec.mjs` for template/process enforcement;
+- run markdownlint and `git diff --check` for docs hygiene.
+
+Implementation playback will move into the slice PRs and must include focused
+runtime witnesses for command explanations, JSON output, and typed evidence
+obstructions.
 
 ## Retrospective
 
