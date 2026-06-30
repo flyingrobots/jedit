@@ -8,6 +8,7 @@ import type {
   TextWindowRangeInput,
   TextWindowReading,
 } from '../../ports/text-buffer-session.js';
+import type { JeditWhyByteRange, JeditWhyRangeReport } from '../../ports/jedit-why-range.js';
 import {
   REPLACE_RANGE_INTENT_KIND,
   TEXT_BUFFER_CHECKPOINT_KIND_MANUAL_SAVE,
@@ -21,6 +22,7 @@ const QUERY_OBSTRUCTION_CODE = 'text-buffer-query-obstructed';
 const CHECKPOINT_OBSTRUCTION_CODE = 'text-buffer-checkpoint-obstructed';
 const MISSING_BUFFER_OBSTRUCTION_CODE = 'text-buffer-missing-obstructed';
 const TEXT_EXPORT_OBSTRUCTION_CODE = 'text-buffer-export-obstructed';
+const WHY_RANGE_OBSTRUCTION_CODE = 'text-buffer-why-range-obstructed';
 const GROUPED_EDIT_OBSTRUCTION_MESSAGE = 'Grouped production text edits require explicit jedit command planning.';
 const FULL_SNAPSHOT_OBSTRUCTION_MESSAGE = 'Text export requires a full untruncated text snapshot.';
 const TEXT_EXPORT_LINE_SEPARATOR = '\n';
@@ -29,6 +31,7 @@ const OUTCOME_APPLIED = 'applied';
 const OUTCOME_CHECKPOINTED = 'checkpointed';
 const OUTCOME_OBSERVED = 'observed';
 const OUTCOME_EXPORTED = 'exported';
+const OUTCOME_RANGE_EXPLAINED = 'range-explained';
 const OUTCOME_OBSTRUCTED = 'obstructed';
 const FULL_SNAPSHOT_CURSOR_LINE = 0;
 const FULL_SNAPSHOT_BEFORE_LINES = 0;
@@ -42,6 +45,7 @@ export const ProductionTextSessionOutcomeKinds = Object.freeze({
   Checkpointed: OUTCOME_CHECKPOINTED,
   Observed: OUTCOME_OBSERVED,
   Exported: OUTCOME_EXPORTED,
+  RangeExplained: OUTCOME_RANGE_EXPLAINED,
   Obstructed: OUTCOME_OBSTRUCTED,
 } as const);
 
@@ -51,6 +55,7 @@ export const ProductionTextObstructionCodes = Object.freeze({
   Query: QUERY_OBSTRUCTION_CODE,
   Checkpoint: CHECKPOINT_OBSTRUCTION_CODE,
   Export: TEXT_EXPORT_OBSTRUCTION_CODE,
+  WhyRange: WHY_RANGE_OBSTRUCTION_CODE,
   MissingBuffer: MISSING_BUFFER_OBSTRUCTION_CODE,
 } as const);
 
@@ -126,6 +131,12 @@ export interface ProductionTextExportRequest {
   readonly atMs: number;
 }
 
+export interface ProductionTextWhyRangeRequest {
+  readonly bufferId: string;
+  readonly range: JeditWhyByteRange;
+  readonly atMs: number;
+}
+
 export interface ProductionTextObstruction {
   readonly code: ProductionTextObstructionCode;
   readonly issue: RuntimeIssue;
@@ -157,6 +168,11 @@ export interface ProductionTextExported {
   readonly readingId: string;
 }
 
+export interface ProductionTextRangeExplained {
+  readonly kind: typeof OUTCOME_RANGE_EXPLAINED;
+  readonly report: JeditWhyRangeReport;
+}
+
 export interface ProductionTextObstructed {
   readonly kind: typeof OUTCOME_OBSTRUCTED;
   readonly obstruction: ProductionTextObstruction;
@@ -182,6 +198,10 @@ export type ProductionTextExportOutcome =
   | ProductionTextExported
   | ProductionTextObstructed;
 
+export type ProductionTextWhyRangeOutcome =
+  | ProductionTextRangeExplained
+  | ProductionTextObstructed;
+
 export interface ProductionTextSession {
   openBuffer(request: ProductionTextOpenRequest): Promise<ProductionTextOpenOutcome>;
   insertText(request: ProductionTextInsertRequest): Promise<ProductionTextEditOutcome>;
@@ -191,6 +211,7 @@ export interface ProductionTextSession {
   checkpointBuffer(request: ProductionTextCheckpointRequest): Promise<ProductionTextCheckpointOutcome>;
   observeWindow(request: ProductionTextWindowRequest): Promise<ProductionTextWindowOutcome>;
   exportSnapshot(request: ProductionTextExportRequest): Promise<ProductionTextExportOutcome>;
+  explainRange(request: ProductionTextWhyRangeRequest): Promise<ProductionTextWhyRangeOutcome>;
 }
 
 export function createProductionTextSession(
@@ -215,6 +236,7 @@ export function createProductionTextSession(
     checkpointBuffer: (request: ProductionTextCheckpointRequest) => checkpointBuffer(session, request),
     observeWindow: (request: ProductionTextWindowRequest) => observeWindow(session, request),
     exportSnapshot: (request: ProductionTextExportRequest) => exportSnapshot(session, request),
+    explainRange: (request: ProductionTextWhyRangeRequest) => explainRange(session, request),
   });
 }
 
@@ -357,6 +379,28 @@ async function observeWindow(
   } catch (cause) {
     return obstructed(
       QUERY_OBSTRUCTION_CODE,
+      request.atMs,
+      cause instanceof Error ? cause.message : String(cause),
+    );
+  }
+}
+
+async function explainRange(
+  session: TextBufferSessionPort,
+  request: ProductionTextWhyRangeRequest,
+): Promise<ProductionTextWhyRangeOutcome> {
+  try {
+    const optic = await session.getBufferOptic(request.bufferId);
+    if (optic == null) {
+      return missingBuffer(request.atMs);
+    }
+    return {
+      kind: OUTCOME_RANGE_EXPLAINED,
+      report: await optic.explainRange(request.range),
+    };
+  } catch (cause) {
+    return obstructed(
+      WHY_RANGE_OBSTRUCTION_CODE,
       request.atMs,
       cause instanceof Error ? cause.message : String(cause),
     );

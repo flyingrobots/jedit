@@ -56,21 +56,8 @@ type WorldlineSnapshotResult = ReturnType<typeof QueryOperationSchemas.worldline
 type JeditWorldlineSessionRecord = {
   readonly worldline: BufferWorldline;
   readonly state: HotTextBufferState;
-  readonly tickMetadata: readonly TickMetadataRecord[];
-  readonly checkpointMetadata: readonly CheckpointMetadataRecord[];
-};
-
-type TickMetadataRecord = {
-  readonly tickId: number;
-  readonly kind: RewriteKind;
-  readonly author?: string;
-};
-
-type CheckpointMetadataRecord = {
-  readonly checkpointId: number;
-  readonly kind: CreateCheckpointInput['kind'];
-  readonly label?: string;
-  readonly createdByRopeRewriteId?: number;
+  readonly tickMetadata: readonly TickMetadata[];
+  readonly checkpointMetadata: readonly CheckpointMetadata[];
 };
 
 export class JeditWorldlineSession {
@@ -95,12 +82,7 @@ export class JeditWorldlineSession {
   }
 
   public static from(record: JeditWorldlineSessionRecord): JeditWorldlineSession {
-    return new JeditWorldlineSession(
-      record.worldline,
-      record.state,
-      record.tickMetadata,
-      record.checkpointMetadata,
-    );
+    return new JeditWorldlineSession(record.worldline, record.state, record.tickMetadata, record.checkpointMetadata);
   }
 }
 
@@ -119,10 +101,16 @@ export interface CreateCheckpointExecution {
   readonly result?: CreateCheckpointResult;
 }
 
-interface TickMetadata {
+export interface TickMetadata {
   readonly tickId: number;
   readonly kind: RewriteKind;
   readonly author?: string;
+  readonly baseHeadId?: string;
+  readonly nextHeadId?: string;
+  readonly startByte?: number;
+  readonly endByte?: number;
+  readonly insertedByteLength?: number;
+  readonly deletedByteLength?: number;
 }
 
 interface CheckpointMetadata {
@@ -227,7 +215,8 @@ export function replaceRangeAsTick(
     return noReplaceRangeAsTickExecution(session, admission.nextState);
   }
 
-  const tickMetadata = createTickMetadata(admission.receipt, parsedInput.author ?? undefined);
+  const nextHeadId = toHeadId(admission.nextState.currentRoot.id);
+  const tickMetadata = createTickMetadata(admission.receipt, baseHeadId, nextHeadId, parsedInput.insertText, parsedInput.author ?? undefined);
   const nextSession = createSessionFromExisting(
     session,
     admission.nextState,
@@ -327,12 +316,7 @@ function createSession(
     projectionPath,
   };
 
-  return new JeditWorldlineSession(
-    worldline,
-    state,
-    tickMetadata,
-    checkpointMetadata,
-  );
+  return new JeditWorldlineSession(worldline, state, tickMetadata, checkpointMetadata);
 }
 
 function createSessionFromExisting(
@@ -350,11 +334,21 @@ function createSessionFromExisting(
   );
 }
 
-function createTickMetadata(receipt: TickAdmissionReceipt, author: string | undefined): TickMetadata {
+function createTickMetadata(
+  receipt: TickAdmissionReceipt, baseHeadId: string, nextHeadId: string, insertText: string, author: string | undefined,
+): TickMetadata {
+  const startByte = receipt.replaceReceipt.replaced.start.byte;
+  const endByte = receipt.replaceReceipt.replaced.end.byte;
   return {
     tickId: receipt.tickId,
     kind: REWRITE_KIND_REPLACE_RANGE_AS_TICK,
     author,
+    baseHeadId,
+    nextHeadId,
+    startByte,
+    endByte,
+    insertedByteLength: byteLength(insertText),
+    deletedByteLength: endByte - startByte,
   };
 }
 

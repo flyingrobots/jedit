@@ -39,6 +39,7 @@ import {
   applyStartupFileDrawerProgress,
   applyStartupIntroTime,
   applyWorkspaceTextMessage,
+  applyWorkspaceWhyRangeResult,
   syncActiveWorkspaceBufferRecord,
 } from "./workspace-state-reducers.js";
 import type {
@@ -280,6 +281,9 @@ function updateWorkspaceEffectMessage(
   msg: WorkspaceRuntimeMsg,
   model: WorkspaceModel,
 ): WorkspaceRuntimeResult | undefined {
+  if (msg.type === WorkspaceMessageTypes.WhyRangeResult) {
+    return applyWorkspaceWhyRangeResult(deps, msg, model);
+  }
   if (msg.type === WorkspaceMessageTypes.NotificationTick) {
     return tickNotificationState(
       model,

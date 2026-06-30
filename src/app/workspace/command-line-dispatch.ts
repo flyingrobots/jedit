@@ -22,6 +22,10 @@ import {
 } from "./workspace-save-key.js";
 import { WorkspaceTextAuthorityKinds } from "./workspace-text-authority.js";
 import { dispatchWorldlineCommand } from "./worldline-command-dispatch.js";
+import {
+  createWorkspaceWhyRangeCmd,
+  jeditWhyRangeAtCursor,
+} from "./workspace-why-range.js";
 
 type KeyBindingResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 
@@ -153,6 +157,31 @@ function dispatchWhyCommand(
   context: WorkspaceKeyBindingContext,
 ): KeyBindingResult {
   const report = explainLastJeditCommand(model.editor, model.textAuthority);
+  const range = jeditWhyRangeAtCursor(model.editor);
+  if (
+    report.kind === WHY_REPORT_OBSTRUCTION_KIND &&
+    range != null &&
+    model.textAuthority.kind === WorkspaceTextAuthorityKinds.Opened
+  ) {
+    return [
+      closeWorkspaceCommandLine(model),
+      [createWorkspaceWhyRangeCmd({
+        bufferId: model.textAuthority.bufferId,
+        range,
+        productionTextSession: context.deps.productionTextSession,
+        fallbackReport: report,
+        atMs: context.nowMs(),
+      })],
+    ];
+  }
+  return pushWhyReportToast(closeWorkspaceCommandLine(model), report, context);
+}
+
+function pushWhyReportToast(
+  model: WorkspaceModel,
+  report: ReturnType<typeof explainLastJeditCommand>,
+  context: WorkspaceKeyBindingContext,
+): KeyBindingResult {
   const tone = report.kind === WHY_REPORT_OBSTRUCTION_KIND
     ? NotificationTones.Warning
     : NotificationTones.Info;

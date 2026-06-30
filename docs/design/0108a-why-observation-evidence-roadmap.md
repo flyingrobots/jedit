@@ -358,9 +358,9 @@ Behavior tests required:
       claim `EchoReadingEnvelope` evidence.
 - [ ] JSON witness test proving Echo reading identity or typed missing evidence
       appears without terminal scraping.
-- [ ] Range `:why` test proving explanation survives cleared or mutated
+- [x] Range `:why` test proving explanation survives cleared or mutated
       `editor.lastVimEdit`.
-- [ ] Duplicate-text range `:why` test proving coordinate lookup, not string
+- [x] Duplicate-text range `:why` test proving coordinate lookup, not string
       search.
 - [ ] Golden command tests for `dw`, `dd`, `ciw`, and `gUap`.
 - [ ] Obstruction tests for stale, unavailable, unsupported, translated, and
