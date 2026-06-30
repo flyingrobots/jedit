@@ -3,6 +3,8 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const READY_AUDIT = 'docs/audits/ready-to-ship-assessment-2026-06-28.md';
+const TWO_PHASE_AUDIT = 'docs/audits/two-phase-assessment-2026-06-28.md';
+const DOC_AUDIT = 'docs/audits/documentation-readme-audit-2026-06-28.md';
 
 function readRepoText(path) {
   return readFileSync(path, 'utf8');
@@ -29,4 +31,15 @@ test('ready-to-ship audit separates production export preflight from legacy save
   assert.match(audit, /materializationPreflightIssue/);
   assert.match(audit, /legacy.*saveEditor/s);
   assert.doesNotMatch(audit, /Two Jim instances, or Jim plus any external tool, silently clobber each other/);
+});
+
+test('ready-to-ship audit reflects the current CI quality gate', () => {
+  const audit = readRepoText(READY_AUDIT);
+
+  assert.match(audit, /\.github\/workflows\/ci\.yml.*quality job/s);
+  assert.match(audit, /scripts\/quality-gate\.mjs/);
+  assert.match(audit, /npm run quality/);
+  assert.match(audit, /aggregate `check` job.*quality/s);
+  assert.doesNotMatch(audit, /no lint job in CI/);
+  assert.doesNotMatch(audit, /CI `\.github\/workflows\/ci\.yml` = build \+ sharded tests, no lint\/audit gate/);
 });

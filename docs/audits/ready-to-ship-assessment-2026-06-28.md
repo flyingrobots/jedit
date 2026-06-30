@@ -13,7 +13,7 @@
 
 Low debt, and that is an evidence-backed claim: **1 `any` (in a comment), 12 `unknown`, 0 `@ts-ignore`, 1 TODO, 0 stray `console.*`** across 51k LOC, under a strict `tsconfig` (`noUncheckedIndexedAccess`, `noPropertyAccessFromIndexSignature`, `noImplicitOverride`). The three patterns that keep it from a 1–2:
 
-1. **Doctrine enforced by humans, not tooling.** Every "non-negotiable" (≤500 LOC, no `any`, no magic strings, inward dependencies) lives in `ARCHITECTURE.md` and reviewer vigilance. There is **no ESLint config and no lint job in CI** (`.github/workflows/ci.yml` runs build + sharded tests only). The clean numbers are a *current* fact, not a *guaranteed* one.
+1. **Doctrine enforced by custom tooling, not ESLint.** Every "non-negotiable" (<=500 LOC, no `any`, no magic strings, inward dependencies) lives in `ARCHITECTURE.md`, reviewer vigilance, and the repo-owned quality gate. There is no ESLint config, but `scripts/quality-gate.mjs` is wired through `npm run quality`, `.github/workflows/ci.yml` has a dedicated quality job, and the aggregate `check` job fails unless quality succeeds. The clean numbers are protected by a custom gate, but not by a standard lint ecosystem or dependency-audit gate.
 2. **LOC-cap fragmentation.** Ten files sit at 490–499 LOC against the hard 500 cap (`viewer-content.ts` 499, `jedit-echo-optic-codec.ts` 499, `workspace-chrome.ts` 498, `jedit-contract-runtime.ts` 496). The metric is met *numerically*; the risk is artificial splits and inter-file coupling the line count cannot see. `src/app/workspace` alone holds 102 files.
 3. **Build-coupled feedback loop.** `test:all` = `npm run build && JEDIT_DIST_PREBUILT=1 node --test … spec/**/*.spec.mjs`, single-concurrency, against compiled `dist/`. Every test run pays a full Wesley-gen + `tsc`. Slow loops are a long-term maintenance tax.
 
@@ -200,7 +200,7 @@ Not because the codebase is low quality — it is, by the metrics, excellent. Th
 
 - **Action 1 (High Urgency):** Make host writes atomic and close the legacy conflict gap — implement temp-write + file fsync + rename + parent-directory fsync in `saveEditorFile`, keep production export on `materializationPreflightIssue`, and either retire `saveEditor` or thread the load-time fingerprint into it for drift detection (**Mitigation Prompts 7 & 8**). This closes the two data-loss ship-stoppers and reuses a pattern already in the repo.
 - **Action 2 (Medium Urgency):** Add the top-level crash guard with terminal restore + emergency dirty-buffer swap-save, plus a structured crash diagnostic sink (**Mitigation Prompt 9** + Operational Gaps 1–2). Protects the user's shell and unsaved work in the field.
-- **Action 3 (Low Urgency):** Armor the doctrine and the encoding boundary — add the strict ESLint flat config with boundary + max-lines rules wired into CI (TD score §1.1), and tighten non-UTF-8 handling (**Mitigation Prompt 11**). Prevents quality regression and silent corruption over the long maintenance tail.
+- **Action 3 (Low Urgency):** Armor the doctrine and the encoding boundary — keep the existing `scripts/quality-gate.mjs` / `npm run quality` / CI quality job path, add a strict ESLint flat config with boundary + max-lines rules as a complementary standard lint surface, and tighten non-UTF-8 handling (**Mitigation Prompt 11**). Prevents quality regression and silent corruption over the long maintenance tail.
 
 ---
 
@@ -211,4 +211,4 @@ Not because the codebase is low quality — it is, by the metrics, excellent. Th
 - External process exec (all `shell: false`, array args): `graft-source-highlighter.ts:157`, `graft-diagnostics-adapter.ts:160/178`, `node-echo-recovery-command.ts:26`, `graft-api-session.ts:284`.
 - Crash safety: no `uncaughtException`/`unhandledRejection`/`process.on` handler in `src/`; raw-mode launch at `src/main-workspace.ts:45`.
 - Encoding: NULL-byte-only binary detection + lossy `toString('utf8')` at `src/adapters/editor-file.ts:30,38`.
-- Type discipline: 1 `any` (comment), 12 `unknown`, 0 `@ts-ignore`, 0 `console.*`, 1 TODO; strict `tsconfig.json`; no ESLint; CI `.github/workflows/ci.yml` = build + sharded tests, no lint/audit gate.
+- Type discipline: 1 `any` (comment), 12 `unknown`, 0 `@ts-ignore`, 0 `console.*`, 1 TODO; strict `tsconfig.json`; no ESLint; `scripts/quality-gate.mjs` runs through `npm run quality`; CI `.github/workflows/ci.yml` includes a quality job and the aggregate `check` job requires quality success.
