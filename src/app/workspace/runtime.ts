@@ -424,6 +424,7 @@ function workspaceKeyDeps(deps: WorkspaceRuntimeDependencies) {
       graftDiagnostics: deps.graftDiagnostics,
       titleSceneLoader: deps.titleSceneLoader,
       productionTextSession: deps.productionTextSession,
+      textOperationSequencer: deps.textOperationSequencer,
     },
   };
 }

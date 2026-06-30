@@ -475,6 +475,7 @@ function exportCheckpointCommand(
     filePath: request.filePath,
     bufferId: request.bufferId,
     productionTextSession: deps.productionTextSession,
+    textOperationSequencer: deps.textOperationSequencer,
     atMs: deps.nowMs(),
   });
 }

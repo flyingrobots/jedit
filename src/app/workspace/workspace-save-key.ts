@@ -63,6 +63,7 @@ function saveProductionText(
     filePath: model.textAuthority.filePath,
     bufferId: model.textAuthority.bufferId,
     productionTextSession: context.deps.productionTextSession,
+    textOperationSequencer: context.deps.textOperationSequencer,
     atMs: context.nowMs(),
   };
   return [{

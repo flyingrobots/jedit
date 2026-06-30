@@ -1,6 +1,7 @@
 import type { Cmd, KeyMsg } from '@flyingrobots/bijou-tui';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import type { ProductionTextSession } from './production-text-session.js';
+import type { WorkspaceTextOperationSequencer } from './workspace-text-operation-sequencer.js';
 import {
   beginSourceHighlightRefresh,
   shouldRefreshSourceHighlight,
@@ -51,6 +52,7 @@ export function updateViewerFromKey(
   model: WorkspaceModel,
   sourceHighlighter: SourceHighlighter,
   productionTextSession: ProductionTextSession,
+  textOperationSequencer: WorkspaceTextOperationSequencer,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (model.editor == null) {
     return [model, []];
@@ -64,7 +66,7 @@ export function updateViewerFromKey(
     }, []];
   }
 
-  const productionEdit = updateProductionTextEditFromKey(msg, model, productionTextSession);
+  const productionEdit = updateProductionTextEditFromKey(msg, model, productionTextSession, textOperationSequencer);
   if (productionEdit != null) {
     return productionEdit;
   }
@@ -92,28 +94,30 @@ function updateProductionTextEditFromKey(
   msg: KeyMsg,
   model: WorkspaceModel,
   productionTextSession: ProductionTextSession,
+  textOperationSequencer: WorkspaceTextOperationSequencer,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] | undefined {
   if (model.textAuthority.kind !== WorkspaceTextAuthorityKinds.Opened || model.editor == null) {
     return undefined;
   }
   const editor = model.editor;
   if (editor.mode === EditorModes.Insert) {
-    return productionInsertModeEdit(msg, model, productionTextSession);
+    return productionInsertModeEdit(msg, model, productionTextSession, textOperationSequencer);
   }
-  return productionNormalModeEdit(msg, model, productionTextSession, editor);
+  return productionNormalModeEdit(msg, model, productionTextSession, textOperationSequencer, editor);
 }
 
 function productionNormalModeEdit(
   msg: KeyMsg,
   model: WorkspaceModel,
   productionTextSession: ProductionTextSession,
+  textOperationSequencer: WorkspaceTextOperationSequencer,
   editor: NonNullable<WorkspaceModel['editor']>,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] | undefined {
-  const normalEdit = productionNormalModeLocalEdit(msg, model, productionTextSession, editor);
+  const normalEdit = productionNormalModeLocalEdit(msg, model, productionTextSession, textOperationSequencer, editor);
   if (normalEdit != null) {
     return normalEdit;
   }
-  const deleteEdit = normalModeDeleteEdit(msg, model, productionTextSession);
+  const deleteEdit = normalModeDeleteEdit(msg, model, productionTextSession, textOperationSequencer);
   if (deleteEdit != null) {
     return deleteEdit;
   }
@@ -124,6 +128,7 @@ function productionNormalModeLocalEdit(
   msg: KeyMsg,
   model: WorkspaceModel,
   productionTextSession: ProductionTextSession,
+  textOperationSequencer: WorkspaceTextOperationSequencer,
   editor: NonNullable<WorkspaceModel['editor']>,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] | undefined {
   const viewport = editorViewport(model);
@@ -139,6 +144,7 @@ function productionNormalModeLocalEdit(
     : queueProductionTextPlan(
       modelWithQueuedNormalEdit(model, moved),
       productionTextSession,
+      textOperationSequencer,
       plan,
       WorkspaceTextPendingCommandKinds.Vim,
     );
@@ -230,9 +236,10 @@ function normalModeDeleteEdit(
   msg: KeyMsg,
   model: WorkspaceModel,
   productionTextSession: ProductionTextSession,
+  textOperationSequencer: WorkspaceTextOperationSequencer,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] | undefined {
   return msg.key === EditorKeys.X && !msg.ctrl && !msg.alt
-    ? productionDeleteUnderCursor(model, productionTextSession)
+    ? productionDeleteUnderCursor(model, productionTextSession, textOperationSequencer)
     : undefined;
 }
 
@@ -256,8 +263,9 @@ function productionInsertModeEdit(
   msg: KeyMsg,
   model: WorkspaceModel,
   productionTextSession: ProductionTextSession,
+  textOperationSequencer: WorkspaceTextOperationSequencer,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] | undefined {
-  return productionInsertMutation(msg, model, productionTextSession)
+  return productionInsertMutation(msg, model, productionTextSession, textOperationSequencer)
     ?? productionInsertNavigation(msg, model, productionTextSession);
 }
 
@@ -265,6 +273,7 @@ function productionInsertMutation(
   msg: KeyMsg,
   model: WorkspaceModel,
   productionTextSession: ProductionTextSession,
+  textOperationSequencer: WorkspaceTextOperationSequencer,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] | undefined {
   const mutation = optimisticProductionInsertMutation(msg, model);
   if (mutation == null) {
@@ -272,7 +281,12 @@ function productionInsertMutation(
   }
   return mutation.plan.kind === WorkspaceTextEditPlanKinds.Unsupported
     ? [mutation.model, []]
-    : queueProductionTextPlan(mutation.model, productionTextSession, mutation.plan);
+    : queueProductionTextPlan(
+      mutation.model,
+      productionTextSession,
+      textOperationSequencer,
+      mutation.plan,
+    );
 }
 
 function productionInsertNavigation(
@@ -332,6 +346,7 @@ function updateProductionTextView(
 function productionDeleteUnderCursor(
   model: WorkspaceModel,
   productionTextSession: ProductionTextSession,
+  textOperationSequencer: WorkspaceTextOperationSequencer,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] | undefined {
   const editor = model.editor;
   if (editor == null) {
@@ -340,17 +355,23 @@ function productionDeleteUnderCursor(
   const plan = planWorkspaceTextDeleteUnderCursor(editor);
   return plan.kind === WorkspaceTextEditPlanKinds.Unsupported
     ? [model, []]
-    : queueProductionTextPlan(modelWithProductionUndoSnapshot(model), productionTextSession, plan);
+    : queueProductionTextPlan(
+      modelWithProductionUndoSnapshot(model),
+      productionTextSession,
+      textOperationSequencer,
+      plan,
+    );
 }
 
 function queueProductionTextPlan(
   model: WorkspaceModel,
   productionTextSession: ProductionTextSession,
+  textOperationSequencer: WorkspaceTextOperationSequencer,
   plan: WorkspaceTextInsertPlan | WorkspaceTextReplacePlan | WorkspaceTextDeletePlan,
   pendingCommandKind?: typeof WorkspaceTextPendingCommandKinds.Vim,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (plan.kind === WorkspaceTextEditPlanKinds.Insert) {
-    return queueProductionTextEdit(model, productionTextSession, {
+    return queueProductionTextEdit(model, productionTextSession, textOperationSequencer, {
       kind: WorkspaceTextEditCommandKinds.Insert,
       startByte: plan.startByte,
       insertText: plan.insertText,
@@ -358,14 +379,14 @@ function queueProductionTextPlan(
     }, pendingCommandKind);
   }
   return plan.kind === WorkspaceTextEditPlanKinds.Replace
-    ? queueProductionTextEdit(model, productionTextSession, {
+    ? queueProductionTextEdit(model, productionTextSession, textOperationSequencer, {
       kind: WorkspaceTextEditCommandKinds.Replace,
       startByte: plan.startByte,
       endByte: plan.endByte,
       insertText: plan.insertText,
       cursorAfter: plan.cursorAfter,
     }, pendingCommandKind)
-    : queueProductionTextEdit(model, productionTextSession, {
+    : queueProductionTextEdit(model, productionTextSession, textOperationSequencer, {
       kind: WorkspaceTextEditCommandKinds.Delete,
       startByte: plan.startByte,
       endByte: plan.endByte,
@@ -381,6 +402,7 @@ function isNormalModeHistoryKey(msg: KeyMsg): boolean {
 function queueProductionTextEdit(
   model: WorkspaceModel,
   productionTextSession: ProductionTextSession,
+  textOperationSequencer: WorkspaceTextOperationSequencer,
   edit: ProductionTextEditRequest,
   pendingCommandKind?: typeof WorkspaceTextPendingCommandKinds.Vim,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
@@ -394,6 +416,7 @@ function queueProductionTextEdit(
     filePath: model.textAuthority.filePath,
     bufferId: model.textAuthority.bufferId,
     productionTextSession,
+    textOperationSequencer,
     atMs: model.time,
     aperture: workspaceTextApertureFromEditor(model.editor, viewport.height),
   };

@@ -103,8 +103,17 @@ export function mockDeps(overrides = {}) {
       loadBuiltInTitleScene: async () => undefined,
     },
     productionTextSession: fakeProductionTextSession(),
+    textOperationSequencer: fakeTextOperationSequencer(),
     wscWorkspaceStore: fakeWscWorkspaceStore(),
     ...overrides,
+  };
+}
+
+export function fakeTextOperationSequencer() {
+  return {
+    sequenceEdit: (_session, operation) => operation(),
+    sequenceCheckpoint: (_session, _filePath, operation) => operation(),
+    sequenceExport: (_session, _filePath, _bufferId, operation) => operation(),
   };
 }
 

@@ -14,7 +14,10 @@ import { createTitleSceneLoaderPort } from './title-scene-loader.js';
 import { createInitialModelSnapshot } from './workspace-initial-model-snapshot.js';
 import { createNodeJeditWscWorkspaceStore } from './jedit-wsc-workspace-store.js';
 import { createPerfApp } from './workspace-perf-app.js';
-import { createWorkspaceProductionTextSession } from './workspace-production-text-session.js';
+import {
+  createWorkspaceProductionTextSession,
+  createWorkspaceTextOperationSequencer,
+} from './workspace-production-text-session.js';
 import {
   createStartupFileDrawerAnimationCmd,
   createWorkspaceDrawerAnimationCmd,
@@ -60,6 +63,7 @@ function workspaceRuntimeDependencies(
     editorFile,
     graftDiagnostics,
     productionTextSession: createWorkspaceProductionTextSession(),
+    textOperationSequencer: createWorkspaceTextOperationSequencer(),
     wscWorkspaceStore: createNodeJeditWscWorkspaceStore(options.initialWorkingDirectory),
     graftSession,
     sourceHighlighter,

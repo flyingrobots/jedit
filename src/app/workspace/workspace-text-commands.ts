@@ -31,11 +31,7 @@ import {
   readingCache,
   type WorkspaceTextObservedReading,
 } from './workspace-text-observed-reading.js';
-import {
-  sequenceWorkspaceTextCheckpointOperation,
-  sequenceWorkspaceTextEditOperation,
-  sequenceWorkspaceTextExportOperation,
-} from './workspace-text-operation-sequencer.js';
+import type { WorkspaceTextOperationSequencer } from './workspace-text-operation-sequencer.js';
 
 const ISSUE_LEVEL_ERROR = RuntimeIssueLevels.Error;
 const ISSUE_SOURCE_COMMAND = RuntimeIssueSources.Command;
@@ -74,6 +70,7 @@ export interface WorkspaceTextCommandBase {
   readonly filePath: string;
   readonly bufferId: string;
   readonly productionTextSession: ProductionTextSession;
+  readonly textOperationSequencer: WorkspaceTextOperationSequencer;
   readonly atMs: number;
   readonly aperture: ProductionTextViewportAperture;
   readonly cursorAfter?: TextPosition;
@@ -108,6 +105,7 @@ export interface WorkspaceTextCheckpointCommandRequest {
   readonly filePath: string;
   readonly bufferId: string;
   readonly productionTextSession: ProductionTextSession;
+  readonly textOperationSequencer: WorkspaceTextOperationSequencer;
   readonly atMs: number;
 }
 
@@ -119,6 +117,7 @@ export interface WorkspaceTextExportCommandRequest {
   readonly hostFingerprint?: EditorFileFingerprint;
   readonly editorFile: EditorFilePort;
   readonly productionTextSession: ProductionTextSession;
+  readonly textOperationSequencer: WorkspaceTextOperationSequencer;
   readonly atMs: number;
 }
 
@@ -166,7 +165,7 @@ export function createWorkspaceTextEditCmd(
   request: WorkspaceTextEditCommandRequest,
 ): Cmd<WorkspaceMsg> {
   return async () => {
-    const result = await sequenceWorkspaceTextEditOperation(
+    const result = await request.textOperationSequencer.sequenceEdit(
       request.productionTextSession,
       () => editWorkspaceText(request),
     );
@@ -182,7 +181,7 @@ export function createWorkspaceTextCheckpointCmd(
   request: WorkspaceTextCheckpointCommandRequest,
 ): Cmd<WorkspaceMsg> {
   return async () => {
-    const result = await sequenceWorkspaceTextCheckpointOperation(
+    const result = await request.textOperationSequencer.sequenceCheckpoint(
       request.productionTextSession,
       request.filePath,
       () => checkpointWorkspaceText(request),
@@ -199,7 +198,7 @@ export function createWorkspaceTextExportCmd(
   request: WorkspaceTextExportCommandRequest,
 ): Cmd<WorkspaceMsg> {
   return async () => {
-    const result = await sequenceWorkspaceTextExportOperation(
+    const result = await request.textOperationSequencer.sequenceExport(
       request.productionTextSession,
       request.filePath,
       request.bufferId,

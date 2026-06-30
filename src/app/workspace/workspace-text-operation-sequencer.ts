@@ -7,88 +7,135 @@ import {
   type WorkspaceTextExportResult,
 } from './workspace-text-results.js';
 
-const textOperationQueues = new WeakMap<ProductionTextSession, Promise<void>>();
-const textOperationObstructions = new WeakMap<ProductionTextSession, RuntimeIssue>();
-const textOperationExports = new WeakMap<ProductionTextSession, ActiveTextExportOperation>();
-
 interface ActiveTextExportOperation {
   readonly bufferId: string;
   readonly filePath: string;
   readonly promise: Promise<WorkspaceTextExportResult>;
 }
 
-export function sequenceWorkspaceTextEditOperation(
-  session: ProductionTextSession,
-  operation: () => Promise<WorkspaceTextEditResult>,
-): Promise<WorkspaceTextEditResult> {
-  return sequenceWorkspaceTextOperation(session, async () => {
-    const result = await operation();
-    recordTextOperationResult(session, result);
-    return result;
-  });
+interface WorkspaceTextOperationSequencerState {
+  readonly queues: WeakMap<ProductionTextSession, Promise<void>>;
+  readonly obstructions: WeakMap<ProductionTextSession, RuntimeIssue>;
+  readonly exports: WeakMap<ProductionTextSession, ActiveTextExportOperation>;
 }
 
-export function sequenceWorkspaceTextCheckpointOperation(
-  session: ProductionTextSession,
-  filePath: string,
-  operation: () => Promise<WorkspaceTextCheckpointResult>,
-): Promise<WorkspaceTextCheckpointResult> {
-  return sequenceWorkspaceTextOperation(session, () => {
-    const issue = textOperationObstructions.get(session);
-    return issue == null ? operation() : Promise.resolve(obstructedTextOperation(filePath, issue));
-  });
+export interface WorkspaceTextOperationSequencer {
+  readonly sequenceEdit: (
+    session: ProductionTextSession,
+    operation: () => Promise<WorkspaceTextEditResult>,
+  ) => Promise<WorkspaceTextEditResult>;
+  readonly sequenceCheckpoint: (
+    session: ProductionTextSession,
+    filePath: string,
+    operation: () => Promise<WorkspaceTextCheckpointResult>,
+  ) => Promise<WorkspaceTextCheckpointResult>;
+  readonly sequenceExport: (
+    session: ProductionTextSession,
+    filePath: string,
+    bufferId: string,
+    operation: () => Promise<WorkspaceTextExportResult>,
+  ) => Promise<WorkspaceTextExportResult>;
 }
 
-export function sequenceWorkspaceTextExportOperation(
-  session: ProductionTextSession,
-  filePath: string,
-  bufferId: string,
-  operation: () => Promise<WorkspaceTextExportResult>,
-): Promise<WorkspaceTextExportResult> {
-  const active = textOperationExports.get(session);
-  if (active?.filePath === filePath && active.bufferId === bufferId) {
-    return active.promise;
-  }
-  const promise = sequenceWorkspaceTextOperation(session, () => {
-    const issue = textOperationObstructions.get(session);
-    return issue == null ? operation() : Promise.resolve(obstructedTextOperation(filePath, issue));
-  });
-  textOperationExports.set(session, { bufferId, filePath, promise });
-  promise.finally(() => {
-    if (textOperationExports.get(session)?.promise === promise) {
-      textOperationExports.delete(session);
-    }
-  });
-  return promise;
+export function createWorkspaceTextOperationSequencer(): WorkspaceTextOperationSequencer {
+  const state = {
+    queues: new WeakMap<ProductionTextSession, Promise<void>>(),
+    obstructions: new WeakMap<ProductionTextSession, RuntimeIssue>(),
+    exports: new WeakMap<ProductionTextSession, ActiveTextExportOperation>(),
+  };
+  return {
+    sequenceEdit: (session, operation) => sequenceEditOperation(state, session, operation),
+    sequenceCheckpoint: (session, filePath, operation) => sequenceCheckpointOperation(state, session, filePath, operation),
+    sequenceExport: (session, filePath, bufferId, operation) => sequenceExportOperation(state, session, filePath, bufferId, operation),
+  };
 }
 
 function sequenceWorkspaceTextOperation<T>(
+  state: WorkspaceTextOperationSequencerState,
   session: ProductionTextSession,
   operation: () => Promise<T>,
 ): Promise<T> {
-  const previous = textOperationQueues.get(session) ?? Promise.resolve();
+  const previous = state.queues.get(session) ?? Promise.resolve();
   const current = previous
     .catch(() => undefined)
     .then(operation);
   const tail = current.then(() => undefined, () => undefined);
-  textOperationQueues.set(session, tail);
+  state.queues.set(session, tail);
   tail.finally(() => {
-    if (textOperationQueues.get(session) === tail) {
-      textOperationQueues.delete(session);
+    if (state.queues.get(session) === tail) {
+      state.queues.delete(session);
     }
   });
   return current;
 }
 
+function sequenceEditOperation(
+  state: WorkspaceTextOperationSequencerState,
+  session: ProductionTextSession,
+  operation: () => Promise<WorkspaceTextEditResult>,
+): Promise<WorkspaceTextEditResult> {
+  return sequenceWorkspaceTextOperation(state, session, async () => {
+    const result = await operation();
+    recordTextOperationResult(state, session, result);
+    return result;
+  });
+}
+
+function sequenceCheckpointOperation(
+  state: WorkspaceTextOperationSequencerState,
+  session: ProductionTextSession,
+  filePath: string,
+  operation: () => Promise<WorkspaceTextCheckpointResult>,
+): Promise<WorkspaceTextCheckpointResult> {
+  return sequenceWorkspaceTextOperation(state, session, () => {
+    const issue = state.obstructions.get(session);
+    return issue == null ? operation() : Promise.resolve(obstructedTextOperation(filePath, issue));
+  });
+}
+
+function sequenceExportOperation(
+  state: WorkspaceTextOperationSequencerState,
+  session: ProductionTextSession,
+  filePath: string,
+  bufferId: string,
+  operation: () => Promise<WorkspaceTextExportResult>,
+): Promise<WorkspaceTextExportResult> {
+  const active = state.exports.get(session);
+  if (active?.filePath === filePath && active.bufferId === bufferId) {
+    return active.promise;
+  }
+  return trackTextExport(state, session, filePath, bufferId, sequenceWorkspaceTextOperation(state, session, () => {
+    const issue = state.obstructions.get(session);
+    return issue == null ? operation() : Promise.resolve(obstructedTextOperation(filePath, issue));
+  }));
+}
+
+function trackTextExport(
+  state: WorkspaceTextOperationSequencerState,
+  session: ProductionTextSession,
+  filePath: string,
+  bufferId: string,
+  promise: Promise<WorkspaceTextExportResult>,
+): Promise<WorkspaceTextExportResult> {
+  state.exports.set(session, { bufferId, filePath, promise });
+  promise.finally(() => {
+    if (state.exports.get(session)?.promise === promise) {
+      state.exports.delete(session);
+    }
+  });
+  return promise;
+}
+
 function recordTextOperationResult(
+  state: WorkspaceTextOperationSequencerState,
   session: ProductionTextSession,
   result: WorkspaceTextEditResult,
 ): void {
   if (result.kind === WorkspaceTextResultKinds.Obstructed) {
-    textOperationObstructions.set(session, result.issue);
+    state.obstructions.set(session, result.issue);
     return;
   }
-  textOperationObstructions.delete(session);
+  state.obstructions.delete(session);
 }
 
 function obstructedTextOperation(

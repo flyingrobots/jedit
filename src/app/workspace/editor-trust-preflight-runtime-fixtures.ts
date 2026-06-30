@@ -36,6 +36,7 @@ import {
 } from './production-text-session.js';
 import { createPreflightProductionTextSession } from './editor-trust-preflight-production-text-fixture.js';
 import type { WorkspaceRuntimeDependencies } from './workspace-runtime-dependencies.js';
+import { createWorkspaceTextOperationSequencer } from './workspace-text-operation-sequencer.js';
 import { WorkspaceMessageTypes } from './msg.js';
 
 export const PREFLIGHT_NOW_MS = 42;
@@ -135,6 +136,7 @@ function preflightRuntimePorts(
   | 'sourceHighlighter'
   | 'titleSceneLoader'
   | 'productionTextSession'
+  | 'textOperationSequencer'
   | 'wscWorkspaceStore'
   | 'profiler'
 > {
@@ -146,6 +148,7 @@ function preflightRuntimePorts(
     sourceHighlighter: preflightSourceHighlighter(),
     titleSceneLoader: preflightTitleSceneLoader(),
     productionTextSession: createPreflightProductionTextSession(options, calls),
+    textOperationSequencer: createWorkspaceTextOperationSequencer(),
     wscWorkspaceStore: preflightWscWorkspaceStore(),
     profiler: preflightProfiler(),
   };
