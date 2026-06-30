@@ -1,8 +1,5 @@
-import type { App } from '@flyingrobots/bijou-tui';
 import { FileSystemPortAdapter } from './filesystem.js';
 import { createWorkspaceRuntime } from '../app/workspace/runtime.js';
-import type { WorkspaceModel } from '../app/workspace/model.js';
-import type { WorkspaceMsg } from '../app/workspace/msg.js';
 import { createRaytracerProfilerPort } from './raytracer-profiler.js';
 import { editorFilePort } from './editor-file.js';
 import { createGraftSessionPort } from './graft-api-session.js';
@@ -14,8 +11,7 @@ import { createTitleSceneLoaderPort } from './title-scene-loader.js';
 import { createInitialModelSnapshot } from './workspace-initial-model-snapshot.js';
 import { createNodeJeditWscWorkspaceStore } from './jedit-wsc-workspace-store.js';
 import { createPerfApp } from './workspace-perf-app.js';
-import { createWorkspaceTextOperationSequencer } from '../app/workspace/workspace-text-operation-sequencer.js';
-import { createWorkspaceProductionTextSession } from './workspace-production-text-session.js';
+import { createWorkspaceProductionTextDependencies } from './workspace-production-text-dependencies.js';
 import {
   createStartupFileDrawerAnimationCmd,
   createWorkspaceDrawerAnimationCmd,
@@ -34,7 +30,7 @@ export interface WorkspaceAppOptions {
   seed?: ReturnType<typeof createInitialModelSnapshot>;
 }
 
-export function createWorkspaceApp(options: WorkspaceAppOptions): App<WorkspaceModel, WorkspaceMsg> {
+export function createWorkspaceApp(options: WorkspaceAppOptions) {
   const nowMs = options.nowMs ?? (() => Date.now());
   const random = options.random ?? Math.random;
   const runtime = createWorkspaceRuntime(workspaceRuntimeDependencies(options, nowMs, random));
@@ -53,6 +49,7 @@ function workspaceRuntimeDependencies(
   const graftSession = createGraftSessionPort();
   const sourceHighlighter = createGraftSourceHighlighter();
   const titleSceneLoader = createTitleSceneLoaderPort();
+  const productionText = createWorkspaceProductionTextDependencies();
   return {
     initialColumns: options.initialColumns,
     initialRows: options.initialRows,
@@ -60,8 +57,8 @@ function workspaceRuntimeDependencies(
     fileSystem: FileSystemPortAdapter,
     editorFile,
     graftDiagnostics,
-    productionTextSession: createWorkspaceProductionTextSession(),
-    textOperationSequencer: createWorkspaceTextOperationSequencer(),
+    productionTextSession: productionText.productionTextSession,
+    textOperationSequencer: productionText.textOperationSequencer,
     wscWorkspaceStore: createNodeJeditWscWorkspaceStore(options.initialWorkingDirectory),
     graftSession,
     sourceHighlighter,
@@ -77,7 +74,7 @@ function workspaceRuntimeDependencies(
   };
 }
 
-function workspaceRuntimeApp(runtime: ReturnType<typeof createWorkspaceRuntime>): App<WorkspaceModel, WorkspaceMsg> {
+function workspaceRuntimeApp(runtime: ReturnType<typeof createWorkspaceRuntime>) {
   return {
     init: runtime.init,
     update: runtime.update,
