@@ -54,6 +54,10 @@ test('settings drawer renders structured rows and highlights the selected row', 
   assert.match(text, /↻ Markdown preview/);
   assert.match(text, /↻ Diagnostics Open/);
   assert.ok(text.includes('› ↻ Theme'));
+  const selectedMarker = surface.get(2, 8);
+  assert.equal(selectedMarker.char, '›');
+  assert.equal(selectedMarker.fg, theme.cursor.normal.fg);
+  assert.equal(selectedMarker.bg, theme.cursor.normal.bg);
 });
 
 test('settings drawer keeps the focused row visible when section headers consume short drawers', async () => {
