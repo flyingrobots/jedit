@@ -18,8 +18,9 @@ test('workspace text operation sequencer does not run queued edits after obstruc
   };
   const filePath = '/repo/notes.md';
   const bufferId = 'buffer:notes';
+  const target = { filePath, bufferId };
 
-  const first = sequencer.sequenceEdit(session, filePath, bufferId, async () => {
+  const first = sequencer.sequenceEdit(session, target, async () => {
     calls.push('first');
     return {
       kind: resultsModule.WorkspaceTextResultKinds.Obstructed,
@@ -27,7 +28,7 @@ test('workspace text operation sequencer does not run queued edits after obstruc
       issue,
     };
   });
-  const second = sequencer.sequenceEdit(session, filePath, bufferId, async () => {
+  const second = sequencer.sequenceEdit(session, target, async () => {
     calls.push('second');
     return appliedResult(resultsModule, filePath, bufferId, 'receipt:second');
   });
@@ -52,21 +53,22 @@ test('workspace text operation sequencer does not coalesce exports after newer q
   const firstEditGate = deferred();
   const filePath = '/repo/notes.md';
   const bufferId = 'buffer:notes';
+  const target = { filePath, bufferId };
 
-  const firstEdit = sequencer.sequenceEdit(session, filePath, bufferId, async () => {
+  const firstEdit = sequencer.sequenceEdit(session, target, async () => {
     calls.push('edit:first');
     await firstEditGate.promise;
     return appliedResult(resultsModule, filePath, bufferId, 'receipt:first');
   });
-  const firstExport = sequencer.sequenceExport(session, filePath, bufferId, async () => {
+  const firstExport = sequencer.sequenceExport(session, target, async () => {
     calls.push('export:first');
     return exportedResult(resultsModule, filePath, bufferId, 'reading:first');
   });
-  const secondEdit = sequencer.sequenceEdit(session, filePath, bufferId, async () => {
+  const secondEdit = sequencer.sequenceEdit(session, target, async () => {
     calls.push('edit:second');
     return appliedResult(resultsModule, filePath, bufferId, 'receipt:second');
   });
-  const secondExport = sequencer.sequenceExport(session, filePath, bufferId, async () => {
+  const secondExport = sequencer.sequenceExport(session, target, async () => {
     calls.push('export:second');
     return exportedResult(resultsModule, filePath, bufferId, 'reading:second');
   });
@@ -101,7 +103,7 @@ test('workspace text operation sequencer scopes obstructions to the obstructed b
     atMs: 1,
   };
 
-  const alphaEdit = sequencer.sequenceEdit(session, '/repo/alpha.md', 'buffer:alpha', async () => {
+  const alphaEdit = sequencer.sequenceEdit(session, { filePath: '/repo/alpha.md', bufferId: 'buffer:alpha' }, async () => {
     calls.push('alpha:edit');
     return {
       kind: resultsModule.WorkspaceTextResultKinds.Obstructed,
@@ -109,7 +111,7 @@ test('workspace text operation sequencer scopes obstructions to the obstructed b
       issue,
     };
   });
-  const betaExport = sequencer.sequenceExport(session, '/repo/beta.md', 'buffer:beta', async () => {
+  const betaExport = sequencer.sequenceExport(session, { filePath: '/repo/beta.md', bufferId: 'buffer:beta' }, async () => {
     calls.push('beta:export');
     return exportedResult(resultsModule, '/repo/beta.md', 'buffer:beta', 'reading:beta');
   });

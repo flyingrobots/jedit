@@ -8,15 +8,13 @@ import {
 } from './workspace-text-results.js';
 
 interface ActiveTextExportOperation {
-  readonly bufferId: string;
-  readonly filePath: string;
+  readonly target: WorkspaceTextOperationTarget;
   readonly operationSequence: number;
   readonly promise: Promise<WorkspaceTextExportResult>;
 }
 
 interface BlockedTextOperation {
-  readonly bufferId: string;
-  readonly filePath: string;
+  readonly target: WorkspaceTextOperationTarget;
   readonly issue: RuntimeIssue;
 }
 
@@ -35,22 +33,24 @@ interface SequencedOperation<T> {
 export interface WorkspaceTextOperationSequencer {
   readonly sequenceEdit: (
     session: ProductionTextSession,
-    filePath: string,
-    bufferId: string,
+    target: WorkspaceTextOperationTarget,
     operation: () => Promise<WorkspaceTextEditResult>,
   ) => Promise<WorkspaceTextEditResult>;
   readonly sequenceCheckpoint: (
     session: ProductionTextSession,
-    filePath: string,
-    bufferId: string,
+    target: WorkspaceTextOperationTarget,
     operation: () => Promise<WorkspaceTextCheckpointResult>,
   ) => Promise<WorkspaceTextCheckpointResult>;
   readonly sequenceExport: (
     session: ProductionTextSession,
-    filePath: string,
-    bufferId: string,
+    target: WorkspaceTextOperationTarget,
     operation: () => Promise<WorkspaceTextExportResult>,
   ) => Promise<WorkspaceTextExportResult>;
+}
+
+export interface WorkspaceTextOperationTarget {
+  readonly filePath: string;
+  readonly bufferId: string;
 }
 
 export function createWorkspaceTextOperationSequencer(): WorkspaceTextOperationSequencer {
@@ -61,9 +61,9 @@ export function createWorkspaceTextOperationSequencer(): WorkspaceTextOperationS
     operationSequences: new WeakMap<ProductionTextSession, number>(),
   };
   return {
-    sequenceEdit: (session, filePath, bufferId, operation) => sequenceEditOperation(state, session, filePath, bufferId, operation),
-    sequenceCheckpoint: (session, filePath, bufferId, operation) => sequenceCheckpointOperation(state, session, filePath, bufferId, operation),
-    sequenceExport: (session, filePath, bufferId, operation) => sequenceExportOperation(state, session, filePath, bufferId, operation),
+    sequenceEdit: (session, target, operation) => sequenceEditOperation(state, session, target, operation),
+    sequenceCheckpoint: (session, target, operation) => sequenceCheckpointOperation(state, session, target, operation),
+    sequenceExport: (session, target, operation) => sequenceExportOperation(state, session, target, operation),
   };
 }
 
@@ -90,17 +90,16 @@ function sequenceWorkspaceTextOperation<T>(
 function sequenceEditOperation(
   state: WorkspaceTextOperationSequencerState,
   session: ProductionTextSession,
-  filePath: string,
-  bufferId: string,
+  target: WorkspaceTextOperationTarget,
   operation: () => Promise<WorkspaceTextEditResult>,
 ): Promise<WorkspaceTextEditResult> {
   return sequenceWorkspaceTextOperation(state, session, async () => {
-    const obstruction = textBufferObstruction(state, session, bufferId);
+    const obstruction = textBufferObstruction(state, session, target);
     if (obstruction != null) {
-      return obstructedTextOperation(filePath, obstruction.issue);
+      return obstructedTextOperation(target.filePath, obstruction.issue);
     }
     const result = await operation();
-    recordTextOperationResult(state, session, bufferId, result);
+    recordTextOperationResult(state, session, target, result);
     return result;
   }).promise;
 }
@@ -108,42 +107,39 @@ function sequenceEditOperation(
 function sequenceCheckpointOperation(
   state: WorkspaceTextOperationSequencerState,
   session: ProductionTextSession,
-  filePath: string,
-  bufferId: string,
+  target: WorkspaceTextOperationTarget,
   operation: () => Promise<WorkspaceTextCheckpointResult>,
 ): Promise<WorkspaceTextCheckpointResult> {
   return sequenceWorkspaceTextOperation(state, session, () => {
-    const obstruction = textBufferObstruction(state, session, bufferId);
-    return obstruction == null ? operation() : Promise.resolve(obstructedTextOperation(filePath, obstruction.issue));
+    const obstruction = textBufferObstruction(state, session, target);
+    return obstruction == null ? operation() : Promise.resolve(obstructedTextOperation(target.filePath, obstruction.issue));
   }).promise;
 }
 
 function sequenceExportOperation(
   state: WorkspaceTextOperationSequencerState,
   session: ProductionTextSession,
-  filePath: string,
-  bufferId: string,
+  target: WorkspaceTextOperationTarget,
   operation: () => Promise<WorkspaceTextExportResult>,
 ): Promise<WorkspaceTextExportResult> {
   const active = state.exports.get(session);
-  if (active?.filePath === filePath && active.bufferId === bufferId && active.operationSequence === currentOperationSequence(state, session)) {
+  if (active != null && sameWorkspaceTextOperationTarget(active.target, target) && active.operationSequence === currentOperationSequence(state, session)) {
     return active.promise;
   }
   const sequenced = sequenceWorkspaceTextOperation(state, session, () => {
-    const obstruction = textBufferObstruction(state, session, bufferId);
-    return obstruction == null ? operation() : Promise.resolve(obstructedTextOperation(filePath, obstruction.issue));
+    const obstruction = textBufferObstruction(state, session, target);
+    return obstruction == null ? operation() : Promise.resolve(obstructedTextOperation(target.filePath, obstruction.issue));
   });
-  return trackTextExport(state, session, filePath, bufferId, sequenced);
+  return trackTextExport(state, session, target, sequenced);
 }
 
 function trackTextExport(
   state: WorkspaceTextOperationSequencerState,
   session: ProductionTextSession,
-  filePath: string,
-  bufferId: string,
+  target: WorkspaceTextOperationTarget,
   sequenced: SequencedOperation<WorkspaceTextExportResult>,
 ): Promise<WorkspaceTextExportResult> {
-  state.exports.set(session, { bufferId, filePath, operationSequence: sequenced.operationSequence, promise: sequenced.promise });
+  state.exports.set(session, { target, operationSequence: sequenced.operationSequence, promise: sequenced.promise });
   sequenced.promise.finally(() => {
     if (state.exports.get(session)?.promise === sequenced.promise) {
       state.exports.delete(session);
@@ -155,18 +151,20 @@ function trackTextExport(
 function recordTextOperationResult(
   state: WorkspaceTextOperationSequencerState,
   session: ProductionTextSession,
-  bufferId: string,
+  target: WorkspaceTextOperationTarget,
   result: WorkspaceTextEditResult,
 ): void {
   if (result.kind === WorkspaceTextResultKinds.Obstructed) {
     setTextBufferObstruction(state, session, {
-      bufferId,
-      filePath: result.filePath,
+      target: {
+        ...target,
+        filePath: result.filePath,
+      },
       issue: result.issue,
     });
     return;
   }
-  clearTextBufferObstruction(state, session, bufferId);
+  clearTextBufferObstruction(state, session, target);
 }
 
 function obstructedTextOperation(
@@ -199,9 +197,9 @@ function currentOperationSequence(
 function textBufferObstruction(
   state: WorkspaceTextOperationSequencerState,
   session: ProductionTextSession,
-  bufferId: string,
+  target: WorkspaceTextOperationTarget,
 ): BlockedTextOperation | undefined {
-  return state.obstructions.get(session)?.get(bufferId);
+  return state.obstructions.get(session)?.get(target.bufferId);
 }
 
 function setTextBufferObstruction(
@@ -210,15 +208,22 @@ function setTextBufferObstruction(
   obstruction: BlockedTextOperation,
 ): void {
   const obstructions = state.obstructions.get(session) ?? new Map<string, BlockedTextOperation>();
-  obstructions.set(obstruction.bufferId, obstruction);
+  obstructions.set(obstruction.target.bufferId, obstruction);
   state.obstructions.set(session, obstructions);
 }
 
 function clearTextBufferObstruction(
   state: WorkspaceTextOperationSequencerState,
   session: ProductionTextSession,
-  bufferId: string,
+  target: WorkspaceTextOperationTarget,
 ): void {
   const obstructions = state.obstructions.get(session);
-  obstructions?.delete(bufferId);
+  obstructions?.delete(target.bufferId);
+}
+
+function sameWorkspaceTextOperationTarget(
+  left: WorkspaceTextOperationTarget,
+  right: WorkspaceTextOperationTarget,
+): boolean {
+  return left.bufferId === right.bufferId;
 }

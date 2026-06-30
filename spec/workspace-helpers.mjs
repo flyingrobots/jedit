@@ -111,9 +111,9 @@ export function mockDeps(overrides = {}) {
 
 export function fakeTextOperationSequencer() {
   return {
-    sequenceEdit: (_session, _filePath, _bufferId, operation) => operation(),
-    sequenceCheckpoint: (_session, _filePath, _bufferId, operation) => operation(),
-    sequenceExport: (_session, _filePath, _bufferId, operation) => operation(),
+    sequenceEdit: (_session, _target, operation) => operation(),
+    sequenceCheckpoint: (_session, _target, operation) => operation(),
+    sequenceExport: (_session, _target, operation) => operation(),
   };
 }
 

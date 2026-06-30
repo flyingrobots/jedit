@@ -31,7 +31,10 @@ import {
   readingCache,
   type WorkspaceTextObservedReading,
 } from './workspace-text-observed-reading.js';
-import type { WorkspaceTextOperationSequencer } from './workspace-text-operation-sequencer.js';
+import type {
+  WorkspaceTextOperationSequencer,
+  WorkspaceTextOperationTarget,
+} from './workspace-text-operation-sequencer.js';
 
 const ISSUE_LEVEL_ERROR = RuntimeIssueLevels.Error;
 const ISSUE_SOURCE_COMMAND = RuntimeIssueSources.Command;
@@ -167,8 +170,7 @@ export function createWorkspaceTextEditCmd(
   return async () => {
     const result = await request.textOperationSequencer.sequenceEdit(
       request.productionTextSession,
-      request.filePath,
-      request.bufferId,
+      workspaceTextOperationTarget(request),
       () => editWorkspaceText(request),
     );
     return {
@@ -185,8 +187,7 @@ export function createWorkspaceTextCheckpointCmd(
   return async () => {
     const result = await request.textOperationSequencer.sequenceCheckpoint(
       request.productionTextSession,
-      request.filePath,
-      request.bufferId,
+      workspaceTextOperationTarget(request),
       () => checkpointWorkspaceText(request),
     );
     return {
@@ -203,8 +204,7 @@ export function createWorkspaceTextExportCmd(
   return async () => {
     const result = await request.textOperationSequencer.sequenceExport(
       request.productionTextSession,
-      request.filePath,
-      request.bufferId,
+      workspaceTextOperationTarget(request),
       () => exportWorkspaceText(request),
     );
     return {
@@ -212,6 +212,15 @@ export function createWorkspaceTextExportCmd(
       requestId: request.requestId,
       result,
     };
+  };
+}
+
+function workspaceTextOperationTarget(
+  request: Pick<WorkspaceTextCommandBase, 'filePath' | 'bufferId'>,
+): WorkspaceTextOperationTarget {
+  return {
+    filePath: request.filePath,
+    bufferId: request.bufferId,
   };
 }
 
