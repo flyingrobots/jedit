@@ -7,7 +7,7 @@ status: "active"
 owners:
   - "@flyingrobots"
 created: "2026-06-29"
-updated: "2026-06-29"
+updated: "2026-06-30"
 ---
 
 # WF-0108A - :why Observation Evidence Roadmap
@@ -18,15 +18,22 @@ updated: "2026-06-29"
 
 ## Decision Summary
 
-`:why` is a Jim feature. It should explain the last meaningful Jim command in
-product terms, while carrying enough evidence posture for humans, agents, and
-future debugging surfaces to tell what was native, missing, stale, or
-obstructed.
+`:why` is a Jim feature with two different questions that must not be
+collapsed.
+
+No-selection `:why` answers the command question: why did Jim treat the last
+command as meaningful? That can start from local command provenance, then grow
+receipt links as Echo evidence becomes available.
+
+Cursor, selection, or range `:why` answers the text question: why is this text
+here? That must come from the rope/worldline path: current reading coordinate,
+current rope head, reverse rope diff or rewrite walk, producing tick, and then
+receipt or BTR provenance when available.
 
 WF-0108 already landed the narrow command-dispatch and local command-provenance
-base. WF-0108A closes the remaining gap by wiring `:why` to Echo-backed reading
-identity, typed evidence obstructions, and future-proof slots without moving
-Jim editor nouns into Echo or pretending that Jim/Echo integration goes through
+base. WF-0108A closes the remaining gap by making evidence posture honest,
+then moving range explanations toward retained rope history without moving Jim
+editor nouns into Echo or pretending that Jim/Echo integration goes through
 Continuum.
 
 ## Sponsored Human
@@ -57,12 +64,15 @@ Current builds already contain the first `:why` proof:
 - human-facing explanation surfaces;
 - agent-facing witness paths for the local command event.
 
-The remaining production gap is observation evidence:
+The remaining production gaps are observation evidence and range causality:
 
-- `:why` must name the Echo reading identity or obstruction posture it depended
-  on;
+- local reading caches must not be represented as Echo ReadingEnvelopes;
+- `:why` must name the local window posture, explicit Echo reading identity, or
+  obstruction posture it depended on;
 - unsupported, stale, missing, or translated evidence must be typed instead of
   collapsed into prose;
+- range `:why` must walk retained rope diff history instead of consulting
+  ephemeral command memory;
 - the first golden commands must prove the same command facts through runtime
   behavior, JSON, and human explanation;
 - cryptographic proof posture should have reserved fields, but fake proof
@@ -70,11 +80,14 @@ The remaining production gap is observation evidence:
 
 ## Problem
 
-`:why` currently proves that Jim can explain a local meaningful command, but it
+`:why` currently proves that Jim can explain a local meaningful command. It
 does not yet prove complete observation evidence for every target command
-family. Without explicit reading identity, typed missing-evidence posture, and
-golden command witnesses, the feature can sound stronger than the source truth
-supports.
+family, and it does not yet explain a selected text range from retained rope
+history.
+
+Without explicit evidence posture, a local reading cache can sound like an Echo
+ReadingEnvelope. Without range-at-head lookup, a text explanation can degrade
+into string search or command-memory replay. Both are false authority.
 
 ## Scope
 
@@ -166,6 +179,18 @@ Echo supplies generic reading, receipt, obstruction, and replay evidence. Jim
 projects that evidence into editor language. Continuum names portable protocol
 vocabulary only when the facts cross participant boundaries.
 
+`JeditWhyObservation` is an honesty envelope, not a causal authority source.
+It may label local editor provenance, local text-window posture, receipt refs,
+explicit Echo ReadingEnvelope refs, translated evidence, native evidence,
+missing evidence, stale basis, and obstruction. It must not synthesize an Echo
+ReadingEnvelope from a local cache or reading id.
+
+The follow-on range contract is `JeditWhyRange`: given a current rope head and
+byte range, map the range backward through retained `RopeDiff` and
+`RopeRewrite` history, identify the producing tick or receipt when possible,
+and report typed unavailable or missing evidence when BTR or provenance payload
+is absent.
+
 ## Lower Modes
 
 Required lower modes:
@@ -229,6 +254,10 @@ and receive an explanation that includes:
 - receipt or retained evidence refs when available;
 - JSON witness fields matching the human-facing truth.
 
+For range `:why`, completion additionally requires a selected or cursor-derived
+range at the current rope head to resolve through retained rope history rather
+than through `editor.lastVimEdit` or text-content search.
+
 ## Implementation Slices
 
 The first implementation slices are jedit-owned:
@@ -236,13 +265,14 @@ The first implementation slices are jedit-owned:
 | Issue | Slice | Proof |
 | --- | --- | --- |
 | [#173](https://github.com/flyingrobots/jedit/issues/173) | Lock WF-0108A roadmap and cross-repo issue links | Docs name ownership, order, and evidence boundaries |
-| [#174](https://github.com/flyingrobots/jedit/issues/174) | Add `JeditWhyObservation` coordinate model | Model test proves basis/window/authority fields |
+| [#174](https://github.com/flyingrobots/jedit/issues/174) | Add `JeditWhyObservation` coordinate model | Model test proves basis/window/authority fields and no fake Echo envelope |
 | [#175](https://github.com/flyingrobots/jedit/issues/175) | Upgrade text-window envelope evidence fields | Window evidence distinguishes full, partial, stale, and unavailable |
 | [#176](https://github.com/flyingrobots/jedit/issues/176) | Wire `:why` JSON to Echo ReadingEnvelope identity | JSON witness includes Echo reading identity or obstruction |
 | [#177](https://github.com/flyingrobots/jedit/issues/177) | Add typed `:why` evidence obstructions | Unsupported and stale cases return machine-readable posture |
 | [#178](https://github.com/flyingrobots/jedit/issues/178) | Golden `dw` witness through Echo evidence | Human and JSON `:why` agree for `dw` |
 | [#179](https://github.com/flyingrobots/jedit/issues/179) | Expand witness to `dd`, `ciw`, and `gUap` | Each command proves command, target, range, and evidence facts |
 | [#180](https://github.com/flyingrobots/jedit/issues/180) | Add proof posture slots for future crypto evidence | Schema reserves proof posture without overclaiming |
+| [#194](https://github.com/flyingrobots/jedit/issues/194) | Explain selected text from rope diff history | Range witness walks rope diffs by coordinate and survives cleared command memory |
 
 ## Echo Dependencies
 
@@ -297,13 +327,14 @@ evidence truth; they do not replace WF-0108A.
 ## Execution Order
 
 1. Lock this roadmap and issue topology through [#173](https://github.com/flyingrobots/jedit/issues/173).
-2. Add the local `JeditWhyObservation` model through [#174](https://github.com/flyingrobots/jedit/issues/174).
+2. Add the honesty-only `JeditWhyObservation` model through [#174](https://github.com/flyingrobots/jedit/issues/174).
 3. Add typed local evidence obstructions through [#177](https://github.com/flyingrobots/jedit/issues/177).
 4. Upgrade text-window evidence fields through [#175](https://github.com/flyingrobots/jedit/issues/175).
 5. Wire Echo reading identity when Echo exposes the needed refs through [#176](https://github.com/flyingrobots/jedit/issues/176).
-6. Prove `dw` end to end through [#178](https://github.com/flyingrobots/jedit/issues/178).
-7. Expand the command set through [#179](https://github.com/flyingrobots/jedit/issues/179).
-8. Add future-proof posture slots through [#180](https://github.com/flyingrobots/jedit/issues/180).
+6. Start range-at-head reverse rope-diff explanation through [#194](https://github.com/flyingrobots/jedit/issues/194).
+7. Prove `dw` end to end through [#178](https://github.com/flyingrobots/jedit/issues/178).
+8. Expand the command set through [#179](https://github.com/flyingrobots/jedit/issues/179).
+9. Add future-proof posture slots through [#180](https://github.com/flyingrobots/jedit/issues/180).
 
 This order keeps Jim useful before the full protocol and crypto posture are
 available, while preventing fake evidence claims.
@@ -321,10 +352,16 @@ available, while preventing fake evidence claims.
 
 Behavior tests required:
 
-- [ ] `JeditWhyObservation` model test covering basis, window, authority, and
+- [x] `JeditWhyObservation` model test covering basis, window, authority, and
       evidence posture.
+- [x] `JeditWhyObservation` regression proving a local reading cache does not
+      claim `EchoReadingEnvelope` evidence.
 - [ ] JSON witness test proving Echo reading identity or typed missing evidence
       appears without terminal scraping.
+- [ ] Range `:why` test proving explanation survives cleared or mutated
+      `editor.lastVimEdit`.
+- [ ] Duplicate-text range `:why` test proving coordinate lookup, not string
+      search.
 - [ ] Golden command tests for `dw`, `dd`, `ciw`, and `gUap`.
 - [ ] Obstruction tests for stale, unavailable, unsupported, translated, and
       redacted evidence posture.
@@ -340,6 +377,9 @@ Documentation and process tests:
 - JSON witness output contains the same core facts without terminal scraping.
 - Missing, stale, partial, unsupported, redacted, or translated evidence is
   machine-readable.
+- Local text-window evidence is never mislabeled as an Echo ReadingEnvelope.
+- Range `:why` resolves from the current rope head and retained rewrite history
+  when available.
 - `dw`, `dd`, `ciw`, and `gUap` each have command assertions covering command
   identity, target, range or transform, register posture where applicable, and
   evidence posture.
@@ -387,8 +427,10 @@ when facts cross participant boundaries.
 
 The main correction was moving vague cross-repo ambition into explicit slices:
 Jedit can start with local observation coordinates and typed obstructions before
-Echo exposes every ReadingEnvelope ref, while the Verkle, IPA, ZK, DID, and
-UCAN posture remains protocol-facing and future-proofed rather than claimed.
+Echo exposes every ReadingEnvelope ref, but local cache evidence must remain
+local. The next product pivot is range `:why` through rope diffs and producing
+ticks, while the Verkle, IPA, ZK, DID, and UCAN posture remains
+protocol-facing and future-proofed rather than claimed.
 
 Implementation retrospectives still belong in the slice PRs that land the
 model, witnesses, Echo evidence wiring, and golden command assertions.
