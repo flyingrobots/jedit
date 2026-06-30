@@ -3,7 +3,7 @@
 **Date:** 2026-06-28
 **Role:** Senior Principal Software Auditor (long-term maintenance risk + deployment feasibility)
 **Scope:** Full repository at `flyingrobots/jedit`, `main`. Terminal-first modal editor + Echo-backed causal-editing harness. 330 `.ts` files, ~51k LOC, 166 specs, strict `tsc`, no ESLint.
-**Headline:** Internals are exceptionally clean; the **primary file-save path is not crash-safe and not conflict-safe**, which is disqualifying for a tool whose entire thesis is *trust, auditability, and recoverability*.
+**Headline:** Internals are exceptionally clean; the **host file-write adapter is not crash-safe, the legacy save branch is not conflict-safe, and the process lacks a crash guard**, which is disqualifying for a tool whose thesis is *trust, auditability, and recoverability*.
 
 ---
 
@@ -23,9 +23,9 @@ Low debt, and that is an evidence-backed claim: **1 `any` (in a comment), 12 `un
 
 > **Mitigation Prompt 1:** `Add JSDoc to every method on the EditorFilePort interface in src/ports/editor-file.ts. For saveEditorFile, document: the file is written UTF-8; whether the write is atomic; that it throws on I/O failure (and which error shapes); and any preconditions (e.g. readOnly buffers must not call it). Match the documentation density of the obstruction mappers. Do not change signatures.`
 
-**Issue 2 — Two parallel save entry points with different safety levels.** `saveEditor` (`src/app/workspace/editor-session.ts:105`) and the export path `exportWorkspaceText` (`src/app/workspace/workspace-text-commands.ts:345`) both end at `saveEditorFile`, but only the export path runs `materializationPreflightIssue(request)` to detect on-disk drift. Nothing in the code or naming signals that one path is conflict-checked and the other is not — a trap for onboarding engineers.
+**Issue 2 — Production save and legacy save have different safety levels.** Ctrl-S and `:write` dispatch through `saveWorkspace`, and an opened production text authority takes the `saveProductionText` path (`src/app/workspace/workspace-save-key.ts:31-74`). That path exports through `exportWorkspaceText` (`src/app/workspace/workspace-text-commands.ts:345`) and runs `materializationPreflightIssue(request)` before writing. The legacy/non-opened fallback still calls `saveEditor` (`src/app/workspace/editor-session.ts:105`) directly and bypasses that drift preflight. The trap is not normal production save; it is retaining a fallback branch with weaker safety semantics.
 
-> **Mitigation Prompt 2:** `Unify the two save paths in src/app/workspace. Extract a single saveBuffer use-case that always runs the materialization preflight (drift/fingerprint check) before delegating to EditorFilePort.saveEditorFile, and route both saveEditor (editor-session.ts) and exportWorkspaceText (workspace-text-commands.ts) through it. Add a spec asserting a stale-fingerprint save is obstructed on both paths.`
+> **Mitigation Prompt 2:** `Either retire the legacy saveEditor fallback or route it through the same materialization preflight posture as the production save path. Keep Ctrl-S and :write on saveProductionText for opened production text authorities. Add specs proving production save still calls materializationPreflightIssue and the legacy/non-opened branch cannot silently overwrite a stale host file.`
 
 **Issue 3 — Duck-typed Node error decoding inlined per adapter.** `nodeErrorCode` in `src/adapters/editor-file.ts:58` reaches into `'code' in cause && typeof cause.code === 'string'`. This idiom is re-derived across adapters instead of being a shared, named boundary decoder, so error-handling consistency depends on each author repeating it correctly.
 
@@ -160,9 +160,9 @@ This writes directly over the target path. A crash, `SIGKILL`, full disk, or pow
 
 > **Mitigation Prompt 7:** `Make saveEditorFile in src/adapters/editor-file.ts crash-safe: write to a sibling temp file in the same directory (so rename is atomic on the same filesystem), fsync the file descriptor, rename() over the target, then fsync the parent directory after rename so the directory entry is durable on Unix filesystems; clean up the temp file on failure. Preserve the original file's mode/permissions. Mirror the temp-write discipline already used in jedit-wsc-workspace-store.ts. Add specs that assert the original file is intact when the write step throws and that the parent-directory fsync path is exercised after a successful rename.`
 
-**Risk 2 — Blind overwrite with no on-disk conflict detection (lost update / TOCTOU). [HIGH]** `src/app/workspace/editor-session.ts:105` → `saveEditorFile`. The load path computes a `fingerprint` (`editor-file.ts:28`), and the *export* path checks `materializationPreflightIssue`, but the plain `saveEditor` path overwrites `editor.path` regardless of whether the file changed on disk since it was opened. Two Jim instances, or Jim plus any external tool, silently clobber each other.
+**Risk 2 — Legacy/non-opened save can still blind-overwrite host changes. [HIGH]** `src/app/workspace/editor-session.ts:105` → `saveEditorFile`. The production opened-text path used by Ctrl-S and `:write` checks `materializationPreflightIssue` before writing, so it is not the normal two-instance overwrite path. The remaining risk is the legacy/non-opened fallback: it writes `editor.path` without checking whether the host file changed since load. Keeping that branch around makes the save model easy to misunderstand and leaves a weaker path for future call sites.
 
-> **Mitigation Prompt 8:** `Thread the load-time fingerprint through saveEditor. Before writing, re-stat/re-fingerprint the on-disk file and compare to the fingerprint captured at open; if they differ, obstruct the save with a recovery message ("file changed on disk; reload or force-overwrite") instead of writing. Add an explicit force path for the user. Cover changed-on-disk and unchanged cases with specs.`
+> **Mitigation Prompt 8:** `Close or harden the legacy/non-opened save path. If saveEditor remains callable, thread the load-time fingerprint through it; before writing, re-stat/re-fingerprint the on-disk file and compare to the fingerprint captured at open. If they differ, obstruct with a recovery message ("file changed on disk; reload or force-overwrite") instead of writing. Add an explicit force path for the user. Cover changed-on-disk and unchanged cases with specs.`
 
 **Risk 3 — No top-level crash guard leaves the terminal wrecked. [HIGH]** No `process.on('uncaughtException'…)` or `'unhandledRejection'` handler exists anywhere in `src/` (grep returns only a comment). The app enters raw mode + mouse reporting via `run(app, { mouse: … })` (`src/main-workspace.ts:45`). Any uncaught throw (162 `throw` sites, 57 `catch`) on the render/input path crashes the process with the terminal still in raw/alt-screen/mouse mode — the user's shell is left unusable and any unsaved buffer is gone with no diagnostic.
 
@@ -194,11 +194,11 @@ This writes directly over the target path. A crash, `SIGKILL`, full disk, or pow
 
 ### 3.1 Final Ship Recommendation — **NO (as-is).**
 
-Not because the codebase is low quality — it is, by the metrics, excellent. The blocker is specific and narrow: **the file-save path is neither crash-safe (Risk 1) nor conflict-safe (Risk 2), and the process has no crash guard (Risk 3).** For a general-purpose editor that markets *trust, auditability, and recoverability*, shipping a save path that can truncate the user's file on a mid-write crash is a contradiction of the product's core promise. This becomes a **"YES, BUT…"** the moment Risks 1–3 are fixed and covered by tests; none of the three is large.
+Not because the codebase is low quality — it is, by the metrics, excellent. The blocker is specific and narrow: **the shared host file-write adapter is not crash-safe (Risk 1), the legacy/non-opened save branch is not conflict-safe (Risk 2), and the process has no crash guard (Risk 3).** For a general-purpose editor that markets *trust, auditability, and recoverability*, shipping a write adapter that can truncate the user's file on a mid-write crash is a contradiction of the product's core promise. This becomes a **"YES, BUT…"** the moment Risks 1–3 are fixed and covered by tests; none of the three is large.
 
 ### 3.2 Prioritized Action Plan
 
-- **Action 1 (High Urgency):** Make saves atomic and conflict-aware — implement temp-write + file fsync + rename + parent-directory fsync in `saveEditorFile`, and thread the load-time fingerprint into `saveEditor` for drift detection (**Mitigation Prompts 7 & 8**). This closes the two data-loss ship-stoppers and reuses a pattern already in the repo.
+- **Action 1 (High Urgency):** Make host writes atomic and close the legacy conflict gap — implement temp-write + file fsync + rename + parent-directory fsync in `saveEditorFile`, keep production export on `materializationPreflightIssue`, and either retire `saveEditor` or thread the load-time fingerprint into it for drift detection (**Mitigation Prompts 7 & 8**). This closes the two data-loss ship-stoppers and reuses a pattern already in the repo.
 - **Action 2 (Medium Urgency):** Add the top-level crash guard with terminal restore + emergency dirty-buffer swap-save, plus a structured crash diagnostic sink (**Mitigation Prompt 9** + Operational Gaps 1–2). Protects the user's shell and unsaved work in the field.
 - **Action 3 (Low Urgency):** Armor the doctrine and the encoding boundary — add the strict ESLint flat config with boundary + max-lines rules wired into CI (TD score §1.1), and tighten non-UTF-8 handling (**Mitigation Prompt 11**). Prevents quality regression and silent corruption over the long maintenance tail.
 
@@ -206,7 +206,7 @@ Not because the codebase is low quality — it is, by the metrics, excellent. Th
 
 ### Evidence Basis
 
-- Save path: `src/adapters/editor-file.ts:50` (`writeFileSync` direct), `src/app/workspace/editor-session.ts:105` (`saveEditor`), `src/app/workspace/workspace-text-commands.ts:361` (export save with preflight).
+- Save path: `src/adapters/editor-file.ts:50` (`writeFileSync` direct), `src/app/workspace/workspace-save-key.ts:31-74` (Ctrl-S / `:write` production route), `src/app/workspace/editor-session.ts:105` (legacy `saveEditor` fallback), `src/app/workspace/workspace-text-commands.ts:361` (export save with preflight).
 - Atomic pattern already present: `src/adapters/jedit-wsc-workspace-store.ts` (temp + `rmSync force`).
 - External process exec (all `shell: false`, array args): `graft-source-highlighter.ts:157`, `graft-diagnostics-adapter.ts:160/178`, `node-echo-recovery-command.ts:26`, `graft-api-session.ts:284`.
 - Crash safety: no `uncaughtException`/`unhandledRejection`/`process.on` handler in `src/`; raw-mode launch at `src/main-workspace.ts:45`.
