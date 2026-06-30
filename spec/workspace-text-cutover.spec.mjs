@@ -1428,9 +1428,10 @@ test("repeated ctrl-s coalesces an in-flight production export", async () => {
   const runtime = runtimeModule.createWorkspaceRuntime(
     mockRuntime({ productionTextSession, textOperationSequencer }),
   );
-  const [ignoredFirst] = runtime.update(firstMessage, secondSave);
+  const [ignoredFirst, firstCheckpointCommands] = runtime.update(firstMessage, secondSave);
   const [exportedModel, checkpointCommands] = runtime.update(secondMessage, ignoredFirst);
 
+  assert.equal(firstCheckpointCommands.length, 0);
   assert.equal(exportCalls.length, 1);
   assert.deepEqual(savedFiles, [{ filePath: "/repo/notes.txt", lines: ["fresh"] }]);
   assert.equal(secondMessage.result.kind, "exported");
