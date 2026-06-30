@@ -13,7 +13,6 @@ import {
   type EchoHistoryEntryDraft,
 } from './echo-history.js';
 import {
-  editorFromFullWorkspaceTextCache,
   openedWorkspaceTextAuthority,
   obstructedWorkspaceTextAuthority,
   WorkspaceTextAuthorityKinds,
@@ -30,6 +29,7 @@ import {
 } from './workspace-text-results.js';
 import {
   shouldIgnoreTextEditObstruction,
+  shouldRecordIntermediateTextEditResult,
   textCheckpointResultTargetsAuthority,
   textEditResultBlockedByEarlierObstruction,
   textEditResultTargetsAuthority,
@@ -37,8 +37,10 @@ import {
   textReadResultTargetsAuthority,
 } from './workspace-text-result-guards.js';
 import { createWorkspaceTextCheckpointCmd } from './workspace-text-commands.js';
-import type { TextPosition } from './workspace-text-position.js';
-import { canReadingReplaceWholeEditor, editorFromWorkspaceTextLines } from './workspace-text-reading-cache.js';
+import {
+  editorFromWorkspaceTextLines,
+  workspaceModelWithTextAuthorityEditor,
+} from './workspace-text-reading-cache.js';
 import { JEDIT_WSC_WORKSPACE_STORE_STATUS } from '../../ports/jedit-wsc-workspace-store.js';
 import {
   jeditAppliedCommandHistorySummary,
@@ -173,12 +175,33 @@ function applyTextEditResult(
       : applyTextEditObstruction(deps, msg, model, authority);
   }
   if (msg.requestId !== model.textRequestId) {
-    return [model, []];
+    return shouldRecordIntermediateTextEditResult(authority, msg.requestId, model.textRequestId)
+      ? applyIntermediateTextEditResult(deps, msg, model, authority)
+      : [model, []];
   }
   if (textEditResultBlockedByEarlierObstruction(authority, msg.requestId)) {
     return applyBlockedDependentTextEdit(deps, msg, model, authority);
   }
   return applyAppliedTextEditResult(deps, msg, model, authority);
+}
+
+function applyIntermediateTextEditResult(
+  deps: WorkspaceRuntimeDependencies,
+  msg: Extract<WorkspaceMsg, { type: typeof WorkspaceMessageTypes.TextEditResult }>,
+  model: WorkspaceModel,
+  authority: Extract<WorkspaceModel['textAuthority'], { kind: typeof WorkspaceTextAuthorityKinds.Opened }>,
+): WorkspaceRuntimeResult {
+  if (msg.result.kind !== WorkspaceTextResultKinds.Applied) {
+    return [model, []];
+  }
+  const applied = withEchoHistoryEntry(model, {
+    kind: EchoHistoryEntryKinds.Edit,
+    status: EchoHistoryEntryStatuses.Applied,
+    evidenceId: msg.result.receiptId,
+    summary: jeditAppliedCommandHistorySummary(msg.result.filePath, msg.requestId, authority),
+  });
+  const settlement = persistEditSettlement(deps, msg.result, applied);
+  return settlement == null ? [applied, []] : settlement;
 }
 
 function applyAppliedTextEditResult(
@@ -306,9 +329,9 @@ function dependentEditBlockedIssue(
 function editorAfterTextEdit(
   model: WorkspaceModel,
   authority: Extract<WorkspaceModel['textAuthority'], { kind: typeof WorkspaceTextAuthorityKinds.Opened }>,
-  cursorAfter: TextPosition | undefined,
+  cursorAfter: WorkspaceTextAppliedResult['cursorAfter'],
 ) {
-  const editor = editorForTextAuthority(model, authority);
+  const editor = workspaceModelWithTextAuthorityEditor(model, authority).editor;
   if (editor == null || cursorAfter == null) {
     return editor;
   }
@@ -426,29 +449,7 @@ function withTextAuthority(
   model: WorkspaceModel,
   textAuthority: Extract<WorkspaceModel['textAuthority'], { kind: typeof WorkspaceTextAuthorityKinds.Opened }>,
 ): WorkspaceModel {
-  return {
-    ...model,
-    textAuthority,
-    editor: editorForTextAuthority(model, textAuthority),
-  };
-}
-
-function editorForTextAuthority(
-  model: WorkspaceModel,
-  authority: Extract<WorkspaceModel['textAuthority'], { kind: typeof WorkspaceTextAuthorityKinds.Opened }>,
-) {
-  if (canReadingReplaceWholeEditor(authority.cache)) {
-    return editorFromFullWorkspaceTextCache({ ...authority, cache: authority.cache }, model.editor);
-  }
-  if (model.editor == null) {
-    return undefined;
-  }
-  return {
-    ...model.editor,
-    path: authority.filePath,
-    dirty: authority.dirty,
-    readOnly: authority.readOnly,
-  };
+  return workspaceModelWithTextAuthorityEditor(model, textAuthority);
 }
 
 function withEchoHistoryEntry(model: WorkspaceModel, draft: EchoHistoryEntryDraft): WorkspaceModel {

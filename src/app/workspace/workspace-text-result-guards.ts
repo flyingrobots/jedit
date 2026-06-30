@@ -33,6 +33,15 @@ export function textEditResultBlockedByEarlierObstruction(
   return authority.blockedByClientSeq != null && requestId > authority.blockedByClientSeq;
 }
 
+export function shouldRecordIntermediateTextEditResult(
+  authority: WorkspaceTextAuthorityOpened,
+  requestId: number,
+  latestRequestId: number,
+): boolean {
+  return requestId < latestRequestId &&
+    hasPredictedDependentEdit(authority, requestId);
+}
+
 export function textEditResultTargetsAuthority(
   authority: WorkspaceTextAuthority,
   result: WorkspaceTextEditResult,

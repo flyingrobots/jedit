@@ -97,6 +97,90 @@ test('real workspace app path renders rapid inserts before Echo observe resolves
   ]);
 });
 
+test('real workspace app path serializes rapid insert settlement and records each edit', async () => {
+  const sentence = "this is an editor and i'm typing in it";
+  const document = echoTextDocument('');
+  const calls = {
+    insert: [],
+    observe: [],
+  };
+  const pendingInserts = [];
+  const productionTextSession = {
+    openBuffer: async (request) => {
+      document.replace(request.initialText);
+      return {
+        kind: 'opened',
+        optic: {
+          buffer: {
+            bufferId: 'buffer:notes',
+          },
+        },
+      };
+    },
+    insertText: async (request) => {
+      calls.insert.push(request);
+      const pending = deferred();
+      pendingInserts.push({ pending, request });
+      await pending.promise;
+      document.insert(request.startByte, request.insertText);
+      return {
+        kind: 'applied',
+        result: {
+          receiptId: `receipt:${calls.insert.length}`,
+        },
+      };
+    },
+    replaceRange: async () => {
+      throw new Error('replaceRange should not run for insert typing');
+    },
+    deleteRange: async () => {
+      throw new Error('deleteRange should not run for insert typing');
+    },
+    multiRangeEdit: async () => ({
+      kind: 'obstructed',
+      obstruction: productionTextObstruction('multi-range unsupported'),
+    }),
+    checkpointBuffer: async () => ({
+      kind: 'checkpointed',
+      result: { checkpointId: 'checkpoint:save' },
+    }),
+    observeWindow: async (request) => {
+      calls.observe.push(request);
+      return observedDocumentWindow(document, calls.observe.length, request);
+    },
+    exportSnapshot: async () => ({
+      kind: 'exported',
+      text: document.lines().join('\n'),
+      readingId: 'reading:export',
+    }),
+  };
+  const harness = await openedHarness({
+    hostLines: [''],
+    productionTextSession,
+  });
+
+  await harness.key('i');
+  const commands = [];
+  for (const character of sentence) {
+    commands.push(...await harness.key(character));
+  }
+  const commandMessages = commands.map((command) => command());
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assert.equal(calls.insert.length, 1, 'only one Echo mutation should be in flight before the first settles');
+
+  for (let index = 0; index < sentence.length; index += 1) {
+    await waitForPendingInsertCount(pendingInserts, index + 1);
+    pendingInserts[index].pending.resolve();
+    await applyWorkspaceMessage(harness, await commandMessages[index]);
+  }
+
+  assert.equal(harness.model.editor.lines[0], sentence);
+  assert.equal(harness.model.echoHistory.filter((entry) => entry.kind === 'edit').length, sentence.length);
+  assert.equal(harness.model.echoHistory.at(-1).summary, '/repo/notes.md');
+});
+
 test('real workspace app path keeps newline insertion past bounded Echo readings', async () => {
   const document = echoTextDocument('');
   const calls = {
@@ -448,6 +532,57 @@ function echoTextDocument(initialText) {
       return text.split('\n');
     },
   };
+}
+
+function observedDocumentWindow(document, sequence, request) {
+  const lines = document.lines();
+  const startLine = Math.max(0, request.aperture.cursorLine);
+  const visibleLines = lines.slice(startLine, startLine + request.aperture.viewportLineCount);
+  return {
+    kind: 'observed',
+    observed: {
+      value: {
+        readingId: `reading:${sequence}`,
+        lines: visibleLines.map((text, index) => ({
+          lineNumber: startLine + index,
+          startByte: byteOffsetAtLine(lines, startLine + index),
+          endByte: byteOffsetAtLine(lines, startLine + index) + text.length,
+          text,
+        })),
+        startLine,
+        lineCount: visibleLines.length,
+        totalLineCount: lines.length,
+        hasMoreBefore: startLine > 0,
+        hasMoreAfter: startLine + visibleLines.length < lines.length,
+        cursorLine: request.aperture.cursorLine,
+        viewportLineCount: request.aperture.viewportLineCount,
+        truncated: false,
+      },
+    },
+  };
+}
+
+function deferred() {
+  let resolve;
+  const promise = new Promise((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
+}
+
+async function waitForPendingInsertCount(pendingInserts, count) {
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    if (pendingInserts.length >= count) {
+      return;
+    }
+    await Promise.resolve();
+  }
+  assert.equal(pendingInserts.length, count);
+}
+
+async function applyWorkspaceMessage(harness, message) {
+  const [nextModel] = harness.runtime.update(message, harness.model);
+  harness.setModel(nextModel);
 }
 
 function byteOffsetAtLine(lines, targetLine) {

@@ -127,6 +127,31 @@ test("ctrl-h opens Echo history and clears pending editor motion", async () => {
   assert.deepEqual(commands, []);
 });
 
+test("ctrl-h reopens Echo history after worldline view was active", async () => {
+  const [keyBindings, titleScreen, editorMode] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+  ]);
+
+  const [nextModel, commands] = keyBindings.updateFromKey(
+    { type: "key", key: "h", ctrl: true, alt: false, shift: false },
+    mockTitleScreenModel(titleScreen, {
+      editor: mockEditor(editorMode),
+      focusPane: "editor",
+      historyDrawerOpen: false,
+      historyDrawerProgress: 0,
+      historyDrawerView: "worldlines",
+    }),
+    mockKeyBindingContext(),
+  );
+
+  assert.equal(nextModel.historyDrawerOpen, true);
+  assert.equal(nextModel.historyDrawerView, "echo");
+  assert.equal(nextModel.focusPane, "history");
+  assert.deepEqual(commands, []);
+});
+
 test("plain q opens Bijou quit confirmation instead of quitting immediately", async () => {
   const [keyBindings, titleScreen, editorMode] = await Promise.all([
     importDist("app", "workspace", "key-bindings.js"),

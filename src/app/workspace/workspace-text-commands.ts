@@ -49,6 +49,8 @@ const DEFAULT_BEFORE_LINES = 0;
 const DEFAULT_AFTER_LINES = 0;
 const DEFAULT_MAX_BYTES = 1048576;
 
+const textEditCommandQueues = new WeakMap<ProductionTextSession, Promise<void>>();
+
 export const WorkspaceTextEditCommandKinds = Object.freeze({
   Insert: EDIT_COMMAND_INSERT,
   Replace: EDIT_COMMAND_REPLACE,
@@ -160,11 +162,31 @@ export function workspaceTextApertureFromEditor(
 export function createWorkspaceTextEditCmd(
   request: WorkspaceTextEditCommandRequest,
 ): Cmd<WorkspaceMsg> {
-  return async () => ({
-    type: WorkspaceMessageTypes.TextEditResult,
-    requestId: request.requestId,
-    result: await editWorkspaceText(request),
+  return async () => {
+    const result = await serializeWorkspaceTextEdit(request);
+    return {
+      type: WorkspaceMessageTypes.TextEditResult,
+      requestId: request.requestId,
+      result,
+    };
+  };
+}
+
+function serializeWorkspaceTextEdit(
+  request: WorkspaceTextEditCommandRequest,
+): Promise<WorkspaceTextEditResult> {
+  const previous = textEditCommandQueues.get(request.productionTextSession) ?? Promise.resolve();
+  const current = previous
+    .catch(() => undefined)
+    .then(() => editWorkspaceText(request));
+  const tail = current.then(() => undefined, () => undefined);
+  textEditCommandQueues.set(request.productionTextSession, tail);
+  tail.finally(() => {
+    if (textEditCommandQueues.get(request.productionTextSession) === tail) {
+      textEditCommandQueues.delete(request.productionTextSession);
+    }
   });
+  return current;
 }
 
 export function createWorkspaceTextCheckpointCmd(
