@@ -199,4 +199,16 @@ run the relevant command-provenance, witness, and Echo-history specs.
 
 ## Retrospective
 
-To fill when WF-0108A lands or is superseded.
+This roadmap-lock pass clarified that the remaining `:why` work is evidence
+completion, not basic command dispatch. The important outcome is the ownership
+boundary: Jim owns the user-facing explanation and editor facts, Echo owns
+generic runtime evidence, and Continuum owns portable protocol vocabulary only
+when facts cross participant boundaries.
+
+The main correction was moving vague cross-repo ambition into explicit slices:
+Jedit can start with local observation coordinates and typed obstructions before
+Echo exposes every ReadingEnvelope ref, while the Verkle, IPA, ZK, DID, and
+UCAN posture remains protocol-facing and future-proofed rather than claimed.
+
+Implementation retrospectives still belong in the slice PRs that land the
+model, witnesses, Echo evidence wiring, and golden command assertions.
