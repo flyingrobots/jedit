@@ -5,6 +5,7 @@ import test from 'node:test';
 const READY_AUDIT = 'docs/audits/ready-to-ship-assessment-2026-06-28.md';
 const TWO_PHASE_AUDIT = 'docs/audits/two-phase-assessment-2026-06-28.md';
 const DOC_AUDIT = 'docs/audits/documentation-readme-audit-2026-06-28.md';
+const JIM_LOGO = 'JimLogo.svg';
 
 function readRepoText(path) {
   return readFileSync(path, 'utf8');
@@ -61,4 +62,12 @@ test('documentation audit prompt covers all stale Advanced Guide runtime referen
   assert.match(audit, /`src\/ui\/workspace-render\.ts`/);
   assert.match(audit, /`src\/main-workspace\.ts`/);
   assert.match(audit, /`src\/main\.ts` only remains the process entrypoint/);
+});
+
+test('Jim logo is original project artwork with explicit metadata', () => {
+  const logo = readRepoText(JIM_LOGO);
+
+  assert.doesNotMatch(logo, /Vimlogo|VimLogo|Vim logo|sodipodi|inkscape/i);
+  assert.match(logo, /Original Jim project logo/);
+  assert.match(logo, /Apache-2\.0/);
 });
