@@ -271,3 +271,73 @@ test('real workspace app path cancels a queued save after an edit obstruction', 
   assert.equal(harness.model.textAuthority.pendingIntentStatus, 'obstructed');
   assert.equal(harness.model.textAuthority.dirty, true);
 });
+
+test('real workspace app path admits final queued edit before export obstruction', async () => {
+  const pendingInsert = deferred();
+  const calls = {
+    insert: [],
+    export: [],
+  };
+  const productionTextSession = {
+    openBuffer: async () => ({
+      kind: 'opened',
+      optic: {
+        buffer: {
+          bufferId: 'buffer:notes',
+        },
+      },
+    }),
+    insertText: async (request) => {
+      calls.insert.push(request);
+      await pendingInsert.promise;
+      return {
+        kind: 'applied',
+        result: {
+          receiptId: 'receipt:insert',
+        },
+      };
+    },
+    replaceRange: async () => {
+      throw new Error('replaceRange should not run for insert typing');
+    },
+    deleteRange: async () => {
+      throw new Error('deleteRange should not run for insert typing');
+    },
+    multiRangeEdit: async () => productionTextObstruction('multi-range unsupported'),
+    checkpointBuffer: async () => ({
+      kind: 'checkpointed',
+      result: { checkpointId: 'checkpoint:save' },
+    }),
+    observeWindow: async (request) => observedDocumentWindow(echoTextDocument('X'), 1, request),
+    exportSnapshot: async (request) => {
+      calls.export.push(request);
+      return productionTextObstruction('export blocked');
+    },
+  };
+  const harness = await openedHarness({
+    hostLines: [''],
+    productionTextSession,
+  });
+
+  await harness.key('i');
+  const editCommands = await harness.key('X', { shift: true });
+  const editMessage = editCommands[0]();
+  await Promise.resolve();
+  await Promise.resolve();
+  const saveCommands = await harness.key('s', { ctrl: true });
+  const saveMessage = saveCommands[0]();
+  await Promise.resolve();
+
+  pendingInsert.resolve();
+  await applyWorkspaceMessage(harness, await editMessage);
+  const [afterSave] = harness.runtime.update(await saveMessage, harness.model);
+  harness.setModel(afterSave);
+
+  assert.equal(calls.insert.length, 1);
+  assert.equal(calls.export.length, 1);
+  assert.equal(harness.model.textAuthority.pendingReceiptId, 'receipt:insert');
+  assert.equal(harness.model.textAuthority.pendingIntentStatus, 'admitted');
+  assert.equal(harness.model.textAuthority.dirty, true);
+  assert.equal(harness.model.textAuthority.lastObstruction, undefined);
+  assert.equal(harness.model.echoHistory.at(-1).status, 'obstructed');
+});

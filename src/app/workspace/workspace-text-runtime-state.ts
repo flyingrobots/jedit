@@ -198,13 +198,10 @@ function applyIntermediateTextEditResult(
   if (msg.result.kind !== WorkspaceTextResultKinds.Applied) {
     return [model, []];
   }
-  const event = receivedJeditCommandEventForRequest(authority, msg.requestId, msg.result.receiptId);
-  const withCache = workspaceTextAuthorityWithCache({
-    ...authority,
-    pendingReceiptId: msg.result.receiptId,
-    lastReceiptId: msg.result.receiptId,
-    lastCommandEvent: event ?? authority.lastCommandEvent,
-  }, msg.result.cache);
+  const withCache = workspaceTextAuthorityWithCache(
+    textAuthorityWithIntermediateEditReceipt(authority, msg),
+    msg.result.cache,
+  );
   const withCurrentObservation = workspaceTextAuthorityWithCurrentJeditCommandObservation(withCache);
   const applied = withEchoHistoryEntry({
     ...model,
@@ -217,6 +214,25 @@ function applyIntermediateTextEditResult(
   });
   const settlement = persistEditSettlement(deps, msg.result, applied);
   return settlement == null ? [applied, []] : settlement;
+}
+
+function textAuthorityWithIntermediateEditReceipt(
+  authority: Extract<WorkspaceModel['textAuthority'], { kind: typeof WorkspaceTextAuthorityKinds.Opened }>,
+  msg: Extract<WorkspaceMsg, { type: typeof WorkspaceMessageTypes.TextEditResult }>,
+) {
+  if (msg.result.kind !== WorkspaceTextResultKinds.Applied) {
+    return authority;
+  }
+  if (msg.requestId === authority.pendingClientSeq) {
+    return workspaceTextAuthorityWithAppliedJeditCommandReceipt(authority, msg.requestId, msg.result.receiptId);
+  }
+  const event = receivedJeditCommandEventForRequest(authority, msg.requestId, msg.result.receiptId);
+  return {
+    ...authority,
+    pendingReceiptId: msg.result.receiptId,
+    lastReceiptId: msg.result.receiptId,
+    lastCommandEvent: event ?? authority.lastCommandEvent,
+  };
 }
 
 function applyAppliedTextEditResult(
