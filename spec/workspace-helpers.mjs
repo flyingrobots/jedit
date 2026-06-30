@@ -142,6 +142,10 @@ export function fakeProductionTextSession(overrides = {}) {
       kind: "obstructed",
       obstruction: fakeProductionTextObstruction(),
     }),
+    explainRange: async () => ({
+      kind: "obstructed",
+      obstruction: fakeProductionTextObstruction(),
+    }),
     ...overrides,
   };
 }

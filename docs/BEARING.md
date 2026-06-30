@@ -115,7 +115,8 @@ Immediate order:
    register, macro, buffer, diagnostics, and trace surfaces.
 3. Close the `:why` evidence gap in this order: local observation coordinate
    model, typed evidence obstructions, text-window evidence fields, Echo
-   ReadingEnvelope identity, then golden command witnesses.
+   ReadingEnvelope identity, range-at-head rope history, then golden command
+   witnesses.
 4. Use existing proven Vim operations first: `dw`, `ciw`, `dd`, and `gUap`.
    Keep `n`/`N` and `:%s` for later slices once search entry and proposal
    preview are product-complete.
