@@ -79,3 +79,29 @@ test('settings drawer keeps the focused row visible when section headers consume
 
   assert.match(surfaceText(surface), /› ↻ Markdown preview Source/);
 });
+
+test('settings drawer always returns the requested positive surface size', async () => {
+  const { drawer, settings, themes } = await loadDrawerModules();
+  const theme = themes.availableJeditThemes()[0];
+  const rows = settings.jeditSettingsRows({
+    i18n: createI18nMock(),
+    jeditTheme: theme,
+    footerVisible: true,
+    markdownPreviewActive: true,
+    diagnosticsAvailable: true,
+    viewMode: 'source',
+  });
+
+  for (const [width, height] of [[1, 1], [2, 2], [5, 3], [42, 20]]) {
+    const surface = drawer.renderSettingsDrawer({
+      rows,
+      selectedIndex: 0,
+      theme,
+      width,
+      height,
+    });
+
+    assert.equal(surface.width, width);
+    assert.equal(surface.height, height);
+  }
+});

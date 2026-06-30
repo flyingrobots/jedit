@@ -33,6 +33,8 @@ const SETTINGS_FALLBACK_FOREGROUND = '#e2e7ec';
 const SETTINGS_FALLBACK_BACKGROUND = '#0e1116';
 const SETTINGS_BODY_HORIZONTAL_BORDER = 4;
 const SETTINGS_BODY_VERTICAL_BORDER = 2;
+const SETTINGS_FALLBACK_CONTENT_X = 2;
+const SETTINGS_FALLBACK_CONTENT_Y = 1;
 
 export interface RenderSettingsDrawerOptions {
   readonly rows: readonly JeditSettingsRow[];
@@ -86,7 +88,14 @@ export function renderSettingsDrawer(options: RenderSettingsDrawerOptions): Surf
     borderToken: tokenValue(options.theme.chrome.activeEdge),
     bgToken: tokenValue(options.theme.surface.drawer),
   });
-  return overlay.surface ?? content;
+  return overlay.surface ?? renderSettingsDrawerFallback(options, content);
+}
+
+function renderSettingsDrawerFallback(options: RenderSettingsDrawerOptions, content: Surface): Surface {
+  const surface = createSurface(options.width, options.height);
+  fillSurface(surface, options.theme.surface.drawer);
+  surface.blit(content, SETTINGS_FALLBACK_CONTENT_X, SETTINGS_FALLBACK_CONTENT_Y);
+  return surface;
 }
 
 function renderSettingsDrawerBody(options: RenderSettingsDrawerOptions): Surface {
