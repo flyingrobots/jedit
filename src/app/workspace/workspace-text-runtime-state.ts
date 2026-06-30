@@ -27,11 +27,7 @@ import {
   workspaceTextAuthorityWithExport,
   workspaceTextAuthorityWithObstruction,
 } from './workspace-text-authority.js';
-import {
-  WorkspaceTextResultKinds,
-  type WorkspaceTextAppliedResult,
-  type WorkspaceTextOpenedResult,
-} from './workspace-text-results.js';
+import { WorkspaceTextResultKinds, type WorkspaceTextAppliedResult, type WorkspaceTextOpenedResult } from './workspace-text-results.js';
 import {
   dependentEditBlockedIssue,
   shouldIgnoreTextEditObstruction,
@@ -44,10 +40,7 @@ import {
   textReadResultTargetsAuthority,
 } from './workspace-text-result-guards.js';
 import { createWorkspaceTextCheckpointCmd } from './workspace-text-commands.js';
-import {
-  editorFromWorkspaceTextLines,
-  workspaceModelWithTextAuthorityEditor,
-} from './workspace-text-reading-cache.js';
+import { editorFromWorkspaceTextLines, workspaceModelWithTextAuthorityEditor } from './workspace-text-reading-cache.js';
 import { JEDIT_WSC_WORKSPACE_STORE_STATUS } from '../../ports/jedit-wsc-workspace-store.js';
 import {
   jeditAppliedCommandHistorySummary,
@@ -199,7 +192,7 @@ function applyIntermediateTextEditResult(
     return [model, []];
   }
   const withCache = workspaceTextAuthorityWithCache(
-    textAuthorityWithIntermediateEditReceipt(authority, msg),
+    textAuthorityWithIntermediateEditReceipt(authority, msg.requestId, msg.result),
     msg.result.cache,
   );
   const withCurrentObservation = workspaceTextAuthorityWithCurrentJeditCommandObservation(withCache);
@@ -217,19 +210,17 @@ function applyIntermediateTextEditResult(
 
 function textAuthorityWithIntermediateEditReceipt(
   authority: Extract<WorkspaceModel['textAuthority'], { kind: typeof WorkspaceTextAuthorityKinds.Opened }>,
-  msg: Extract<WorkspaceMsg, { type: typeof WorkspaceMessageTypes.TextEditResult }>,
+  requestId: number,
+  result: WorkspaceTextAppliedResult,
 ) {
-  if (msg.result.kind !== WorkspaceTextResultKinds.Applied) {
-    return authority;
+  if (requestId === authority.pendingClientSeq) {
+    return workspaceTextAuthorityWithAppliedJeditCommandReceipt(authority, requestId, result.receiptId);
   }
-  if (msg.requestId === authority.pendingClientSeq) {
-    return workspaceTextAuthorityWithAppliedJeditCommandReceipt(authority, msg.requestId, msg.result.receiptId);
-  }
-  const event = receivedJeditCommandEventForRequest(authority, msg.requestId, msg.result.receiptId);
+  const event = receivedJeditCommandEventForRequest(authority, requestId, result.receiptId);
   return {
     ...authority,
-    pendingReceiptId: msg.result.receiptId,
-    lastReceiptId: msg.result.receiptId,
+    pendingReceiptId: result.receiptId,
+    lastReceiptId: result.receiptId,
     lastCommandEvent: event ?? authority.lastCommandEvent,
   };
 }
