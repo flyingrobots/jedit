@@ -64,6 +64,8 @@ test('settings focus movement loops through the available rows', async () => {
   assert.equal(settings.moveSettingsFocusIndex(2, 1, 3), 0);
   assert.equal(settings.moveSettingsFocusIndex(0, -1, 3), 2);
   assert.equal(settings.moveSettingsFocusIndex(3, 0, 3), 2);
+  assert.equal(settings.moveSettingsFocusIndex(0, 1, 0), 0);
+  assert.equal(settings.moveSettingsFocusIndex(4, -1, 0), 0);
 });
 
 test('settings key reducer closes, moves, and activates focused settings rows', async () => {
