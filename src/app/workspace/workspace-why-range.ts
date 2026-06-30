@@ -100,11 +100,11 @@ function toastReportFromWhyRange(
   rangeReport: JeditWhyRangeReport | undefined,
   fallbackReport: JeditWhyReport,
 ): ToastReport {
-  if (rangeReport?.witness.result.kind === RESULT_PRODUCED) {
+  if (rangeReport != null) {
     return {
       title: rangeReport.title,
       message: rangeReport.message,
-      tone: NotificationTones.Info,
+      tone: rangeReport.witness.result.kind === RESULT_PRODUCED ? NotificationTones.Info : NotificationTones.Warning,
     };
   }
   return {

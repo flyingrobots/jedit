@@ -956,6 +956,54 @@ test("enter dispatches why through retained range history when a cursor range is
   assert.doesNotMatch(notified.notifications.items[0].message, /No meaningful command/);
 });
 
+test("enter dispatches why with typed unavailable range evidence", async () => {
+  const [keyBindings, runtimeModule, titleScreen, editorMode, authority] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("app", "workspace", "runtime.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "workspace-text-authority.js"),
+  ]);
+  const productionTextSession = fakeProductionTextSession({
+    explainRange: async (request) => ({
+      kind: "range-explained",
+      report: fakeUnavailableRangeWhyReport(request.range),
+    }),
+  });
+  const model = mockTitleScreenModel(titleScreen, {
+    editor: mockEditor(editorMode, {
+      lines: ["alpha Jim"],
+      cursorRow: 0,
+      cursorCol: 7,
+      lastVimEdit: undefined,
+    }),
+    focusPane: "editor",
+    textAuthority: authority.openedWorkspaceTextAuthority({
+      profile: "echoHosted",
+      filePath: "/repo/notes.md",
+      bufferId: "text-buffer:0",
+      readOnly: false,
+      dirty: true,
+    }),
+    commandLine: activeCommandLine("why"),
+  });
+
+  const [pendingWhy, commands] = keyBindings.updateFromKey(
+    { type: "key", key: "enter", ctrl: false, alt: false, shift: false },
+    model,
+    mockKeyBindingContext({ nowMs: () => 90, deps: { productionTextSession } }),
+  );
+  const message = await commands[0]();
+  const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime({ productionTextSession }));
+  const [notified] = runtime.update(message, pendingWhy);
+
+  assert.equal(pendingWhy.commandLine.active, false);
+  assert.equal(message.type, "why-range-result");
+  assert.equal(notified.notifications.items[0].title, "Why range");
+  assert.match(notified.notifications.items[0].message, /jedit_why_range_retained_history_horizon/);
+  assert.doesNotMatch(notified.notifications.items[0].message, /No meaningful command/);
+});
+
 test("command provenance validates slice 1 Vim edit targets", async () => {
   const [mode, syntax, executor, authority, provenance] = await Promise.all([
     importDist("app", "workspace", "editor", "mode.js"),
@@ -1047,6 +1095,26 @@ function fakeProducedRangeWhyReport(range) {
         deletedByteLength: 0,
       },
       evidencePosture: { causalHistory: "available", btr: "missing" },
+    },
+  };
+}
+
+function fakeUnavailableRangeWhyReport(range) {
+  return {
+    kind: "range",
+    title: "Why range",
+    message: `No retained rope diff proves range ${range.startByte}..${range.endByte}: jedit_why_range_retained_history_horizon`,
+    witness: {
+      worldlineId: "wl:/repo/notes.md",
+      currentHeadId: "head:2",
+      queriedRange: range,
+      reverseWalk: { coordinateKind: "range-at-head", inspectedDiffIds: [] },
+      result: {
+        kind: "unavailable",
+        code: "jedit_why_range_retained_history_horizon",
+        reason: "Retained rope history does not identify a producing diff for this range.",
+      },
+      evidencePosture: { causalHistory: "unavailable", btr: "missing" },
     },
   };
 }
