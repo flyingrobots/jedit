@@ -39,7 +39,11 @@ test("workspace text cache has no unsafe whole-editor rebuild helper", async () 
   );
   assert.match(
     runtimeSource,
-    /\bworkspaceModelWithTextAuthorityEditor\(/,
+    /function editorAfterTextEdit\([\s\S]*workspaceModelWithTextAuthorityEditor\(/s,
+  );
+  assert.match(
+    runtimeSource,
+    /function withTextAuthority\([\s\S]*workspaceModelWithTextAuthorityEditor\(/s,
   );
 });
 
