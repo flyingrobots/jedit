@@ -853,6 +853,58 @@ test("enter dispatches why with a calm no-event obstruction", async () => {
   assert.equal(commands.length, 1);
 });
 
+test("enter keeps non-no-event command why obstructions on the command path", async () => {
+  const [keyBindings, titleScreen, editorMode, authority] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "workspace-text-authority.js"),
+  ]);
+  const explainRangeCalls = [];
+  const productionTextSession = fakeProductionTextSession({
+    explainRange: async (request) => {
+      explainRangeCalls.push(request);
+      return {
+        kind: "range-explained",
+        report: fakeProducedRangeWhyReport(request.range),
+      };
+    },
+  });
+
+  const [nextModel, commands] = keyBindings.updateFromKey(
+    { type: "key", key: "enter", ctrl: false, alt: false, shift: false },
+    mockTitleScreenModel(titleScreen, {
+      editor: mockEditor(editorMode, {
+        lines: ["alpha Jim"],
+        cursorRow: 0,
+        cursorCol: 7,
+        lastVimEdit: {
+          keys: ["d"],
+          description: "operator:delete:",
+          replayPolicy: "resolve-current-basis",
+        },
+      }),
+      focusPane: "editor",
+      textAuthority: authority.openedWorkspaceTextAuthority({
+        profile: "echoHosted",
+        filePath: "/repo/notes.md",
+        bufferId: "text-buffer:0",
+        readOnly: false,
+        dirty: true,
+      }),
+      commandLine: activeCommandLine("why"),
+    }),
+    mockKeyBindingContext({ deps: { productionTextSession } }),
+  );
+
+  assert.equal(nextModel.commandLine.active, false);
+  assert.equal(nextModel.notifications.items[0].title, "Why");
+  assert.match(nextModel.notifications.items[0].message, /jedit_command_event_invalid_syntax/);
+  assert.doesNotMatch(nextModel.notifications.items[0].message, /ropeDiff/);
+  assert.deepEqual(explainRangeCalls, []);
+  assert.equal(commands.length, 1);
+});
+
 test("enter dispatches why for the last meaningful Vim command", async () => {
   const [keyBindings, titleScreen, editorMode, editing, authority] = await Promise.all([
     importDist("app", "workspace", "key-bindings.js"),
