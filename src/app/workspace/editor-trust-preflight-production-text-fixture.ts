@@ -12,6 +12,16 @@ import {
   type TextWindowRangeInput,
   type TextWindowReading,
 } from '../../ports/text-buffer-session.js';
+import {
+  BTR_MISSING,
+  CAUSAL_HISTORY_UNAVAILABLE,
+  COORDINATE_KIND_RANGE_AT_HEAD,
+  REPORT_KIND_RANGE,
+  REPORT_TITLE,
+  RESULT_UNAVAILABLE,
+  type JeditWhyByteRange,
+  type JeditWhyRangeReport,
+} from '../../ports/jedit-why-range.js';
 import { RuntimeIssueLevels, RuntimeIssueSources } from './runtime-issue.js';
 import {
   ProductionTextSessionOutcomeKinds,
@@ -61,6 +71,7 @@ export function createPreflightProductionTextSession(
     checkpointBuffer: checkpointProbe(calls),
     observeWindow: observeWindowProbe(calls, readings),
     exportSnapshot: exportSnapshotProbe(options, calls),
+    explainRange: explainRangeProbe(),
   };
 }
 
@@ -161,6 +172,13 @@ function exportSnapshotProbe(
   };
 }
 
+function explainRangeProbe(): ProductionTextSession['explainRange'] {
+  return async (request) => ({
+    kind: ProductionTextSessionOutcomeKinds.RangeExplained,
+    report: preflightWhyRangeReport(request.range),
+  });
+}
+
 function textBuffer(
   bufferKey: string,
   bufferId: string,
@@ -188,6 +206,27 @@ function textBufferOptic(
     createCheckpoint: async () => checkpointResult(buffer.bufferId),
     textWindow: async (_readBasis: ReadBasisHandle, input: TextWindowRangeInput) =>
       observedReading(readings, input.cursorLine + PREFLIGHT_ONE),
+    explainRange: async (range: JeditWhyByteRange) => preflightWhyRangeReport(range),
+  };
+}
+
+function preflightWhyRangeReport(range: JeditWhyByteRange): JeditWhyRangeReport {
+  return {
+    kind: REPORT_KIND_RANGE,
+    title: REPORT_TITLE,
+    message: 'Preflight range why is unavailable.',
+    witness: {
+      worldlineId: 'wl:preflight',
+      currentHeadId: 'head:preflight',
+      queriedRange: range,
+      reverseWalk: { coordinateKind: COORDINATE_KIND_RANGE_AT_HEAD, inspectedDiffIds: [] },
+      result: {
+        kind: RESULT_UNAVAILABLE,
+        code: 'preflight_why_range_unavailable',
+        reason: 'Preflight fixture does not retain rope diff history.',
+      },
+      evidencePosture: { causalHistory: CAUSAL_HISTORY_UNAVAILABLE, btr: BTR_MISSING },
+    },
   };
 }
 

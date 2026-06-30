@@ -17,11 +17,13 @@ import type {
   TextWindowReading,
 } from '../ports/text-buffer-session.js';
 import { REPLACE_RANGE_INTENT_KIND } from '../ports/text-buffer-session.js';
+import type { JeditWhyByteRange, JeditWhyRangeReport } from '../ports/jedit-why-range.js';
 import type {
   JeditOpticClient,
 } from '../ports/jedit-optic-client.js';
 import type { JeditWorldlineSession } from './jedit-contract-runtime.js';
 import type { TextWindowReadingEnvelope } from './jedit-observer-runtime.js';
+import { explainJeditWhyRange } from './jedit-why-range.js';
 
 const OPTIC_SESSION_ID: SessionId = 'optic-session:0';
 const TEXT_BUFFER_ID_PREFIX = 'text-buffer:';
@@ -110,6 +112,9 @@ function createTextBufferOptic(
       input: TextWindowRangeInput,
     ): Promise<Observed<TextWindowReading>> {
       return readTextBufferWindow(client, buffer, state, readBasis, input);
+    },
+    async explainRange(range: JeditWhyByteRange): Promise<JeditWhyRangeReport> {
+      return explainJeditWhyRange(state.currentSession, range);
     },
   });
 }

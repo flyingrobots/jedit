@@ -3,6 +3,7 @@ import type {
   QueryTextWindowRequest,
 } from '../generated/jedit/rope.wesley.generated.js';
 import type { JeditRetainedEvidenceInventory } from './jedit-retained-evidence.js';
+import type { JeditWhyByteRange, JeditWhyRangeReport } from './jedit-why-range.js';
 
 export const READ_BASIS_HANDLE_KIND = 'read-basis-handle';
 export const REPLACE_RANGE_INTENT_KIND = 'replaceRange';
@@ -99,6 +100,8 @@ export interface TextBufferOptic {
     readBasis: ReadBasisHandle,
     input: TextWindowRangeInput,
   ): Promise<Observed<TextWindowReading>>;
+
+  explainRange(range: JeditWhyByteRange): Promise<JeditWhyRangeReport>;
 }
 
 export interface CreateTextBufferRequest {

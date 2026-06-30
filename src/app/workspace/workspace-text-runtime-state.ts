@@ -43,6 +43,7 @@ import { JEDIT_WSC_WORKSPACE_STORE_STATUS } from '../../ports/jedit-wsc-workspac
 import {
   jeditAppliedCommandHistorySummary,
   workspaceTextAuthorityWithAppliedJeditCommandReceipt,
+  workspaceTextAuthorityWithCurrentJeditCommandObservation,
 } from './command-provenance.js';
 
 export type WorkspaceRuntimeResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
@@ -193,15 +194,16 @@ function applyAppliedTextEditResult(
     workspaceTextAuthorityWithAppliedJeditCommandReceipt(authority, msg.requestId, msg.result.receiptId),
     msg.result.cache,
   );
+  const withCurrentObservation = workspaceTextAuthorityWithCurrentJeditCommandObservation(withCache);
   const applied = withEchoHistoryEntry({
     ...model,
-    textAuthority: withCache,
-    editor: editorAfterTextEdit(model, withCache, msg.result.cursorAfter),
+    textAuthority: withCurrentObservation,
+    editor: editorAfterTextEdit(model, withCurrentObservation, msg.result.cursorAfter),
   }, {
     kind: EchoHistoryEntryKinds.Edit,
     status: EchoHistoryEntryStatuses.Applied,
     evidenceId: msg.result.receiptId,
-    summary: jeditAppliedCommandHistorySummary(msg.result.filePath, msg.requestId, withCache),
+    summary: jeditAppliedCommandHistorySummary(msg.result.filePath, msg.requestId, withCurrentObservation),
   });
   const [refreshed, refreshCommands] = refreshAfterEdit(deps, applied);
   const settlement = persistEditSettlement(deps, msg.result, refreshed);

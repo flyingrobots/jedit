@@ -57,6 +57,12 @@ node dist/main.js
 
 The build and witness tooling live in the repository and the `scripts/` directory. Read `GUIDE.md` for operational guidance, `ARCHITECTURE.md` for layer rules and dependency posture, `ADVANCED_GUIDE.md` for the render and authority path, and `docs/BEARING.md` for the compact statement of current truth.
 
+Legacy contract generation requires a sibling Wesley checkout:
+
+```bash
+JEDIT_WESLEY_ROOT=/path/to/wesley npm run gen:contract
+```
+
 ## Installation
 
 See the quickstart materials under `docs/releases/` for the current release-gate path.
@@ -72,6 +78,7 @@ Start here:
 - `ARCHITECTURE.md` — the layer rules, dependency graph, and product vocabulary.
 - `docs/BEARING.md` — compact current truth, active roadmap anchors, and non-negotiables.
 - `docs/design/` — living design specs for each major cycle.
+- `docs/design/echo-identity-doctrine.md` — canonical Echo identity, scope, and transport doctrine.
 - `docs/method/` — process, roadmap, release, and proof policy.
 - `docs/jedit-echo-end-to-end.md` — the current jedit-plus-Echo proof path.
 

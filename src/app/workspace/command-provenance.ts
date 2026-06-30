@@ -14,11 +14,19 @@ import {
   workspaceTextAuthorityWithLastCommandEvent,
   workspaceTextAuthorityWithReceipt,
 } from './workspace-text-authority.js';
+import { createJeditWhyObservation, jeditWhyObservationMessage, type JeditWhyObservation } from './jedit-why-observation.js';
+import {
+  jeditCommandEventSummary,
+  jeditCommandReceiptMessage,
+  jeditCommandSummary,
+} from './jedit-command-event-summary.js';
 import {
   parseVimChordSyntax,
   VimChordSyntaxKinds,
   type VimChordSyntax,
 } from './vim-chord-syntax.js';
+
+export { workspaceTextAuthorityWithCurrentJeditCommandObservation } from './jedit-command-event-observation.js';
 
 export const JEDIT_WHY_TOAST_TITLE = 'Why';
 export const JEDIT_WHY_NO_EVENT_OBSTRUCTION_CODE = 'jedit_why_no_meaningful_event';
@@ -51,6 +59,7 @@ export interface JeditCommandEvent {
   readonly kind: 'vim';
   readonly motion?: string;
   readonly operator?: string;
+  readonly observation: JeditWhyObservation;
   readonly receipt: JeditCommandReceipt;
   readonly receiptId?: string;
   readonly requestId?: number;
@@ -273,6 +282,12 @@ function eventFromValidatedFacts(
 ): JeditCommandEvent {
   const command = commandKeySequence(input.repeat.keys);
   const basis = basisDigest(input.editor, input.repeat, target);
+  const observation = createJeditWhyObservation({
+    basisDigest: basis,
+    receiptReferenceId: receipt.receiptId,
+    target,
+    textAuthority: input.textAuthority,
+  });
   return {
     kind: EVENT_KIND_VIM,
     eventId: commandEventId(command, basis, target, receipt, input.requestId),
@@ -283,6 +298,7 @@ function eventFromValidatedFacts(
     operator: syntax.operator,
     motion: syntax.motion,
     textObject: syntax.textObject,
+    observation,
     basisDigest: basis,
     requestId: input.requestId,
     replayPolicy: input.repeat.replayPolicy,
@@ -291,7 +307,7 @@ function eventFromValidatedFacts(
     registerEffect: register,
     target,
     result: commandResult(input.editor),
-    summary: commandSummary(command, syntax, target, receipt),
+    summary: jeditCommandSummary(command, syntax, target, receipt),
   };
 }
 
@@ -300,13 +316,16 @@ function jeditCommandEventWithReceipt(
   receipt: JeditCommandReceipt,
 ): JeditCommandEvent {
   const syntax = parseVimChordSyntax(event.keys);
-  return {
+  const received = {
     ...event,
     eventId: commandEventId(event.command, event.basisDigest, event.target, receipt, event.requestId),
     receipt,
     receiptId: receipt.receiptId,
+  };
+  return {
+    ...received,
     summary: syntax.kind === VimChordSyntaxKinds.Complete
-      ? commandSummary(event.command, syntax, event.target, receipt)
+      ? jeditCommandEventSummary(received)
       : event.summary,
   };
 }
@@ -349,21 +368,11 @@ function commandEventMessage(event: JeditCommandEvent): string {
     targetMessage(event.target),
     registerEffectMessage(event.registerEffect),
     event.basisDigest == null ? undefined : `basis: ${event.basisDigest}`,
-    `receipt: ${receiptMessage(event.receipt)}`,
+    jeditWhyObservationMessage(event.observation),
+    `receipt: ${jeditCommandReceiptMessage(event.receipt)}`,
     `result: ${event.result.mode} @ ${event.result.cursorRow}:${event.result.cursorCol}`,
     `summary: ${event.summary}`,
   ].filter((field): field is string => field != null).join(COMMAND_FIELD_SEPARATOR);
-}
-
-function commandSummary(
-  command: string,
-  syntax: VimChordSyntax,
-  target: JeditCommandTarget | undefined,
-  receipt: JeditCommandReceipt,
-): string {
-  const operation = syntax.operator ?? syntax.family;
-  const resolvedTarget = target == null ? 'target unavailable' : `${target.kind} ${target.rangeStart}..${target.rangeEnd}`;
-  return `${command} ${operation} ${resolvedTarget} receipt ${receiptMessage(receipt)}`;
 }
 
 function commandTarget(repeat: VimRepeatState, syntax: VimChordSyntax): JeditCommandTarget | undefined {
@@ -440,10 +449,6 @@ function commandReceipt(textAuthority: WorkspaceTextAuthority): JeditCommandRece
     : { posture: 'received', receiptId: textAuthority.lastReceiptId };
 }
 
-function receiptMessage(receipt: JeditCommandReceipt): string {
-  return receipt.receiptId ?? receipt.posture;
-}
-
 function commandResult(editor: EditorState): JeditCommandResult {
   return {
     cursorRow: editor.cursorRow,
@@ -478,7 +483,7 @@ function commandEventId(
     command,
     basis ?? 'no-basis',
     target?.rangeStart ?? 'no-range',
-    receipt.receiptId ?? receipt.posture,
+    jeditCommandReceiptMessage(receipt),
   ].join(EVENT_ID_SEPARATOR);
 }
 

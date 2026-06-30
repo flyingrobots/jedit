@@ -2,19 +2,20 @@
 title: "WF-0106 - Emacs Ideas To Steal Causally"
 legend: "WF"
 lane: "design"
-issue: "TBD"
-status: "draft"
+issue: "https://github.com/flyingrobots/jedit/issues/192"
+status: "active"
 owners:
   - "@flyingrobots"
 created: "2026-06-09"
-updated: "2026-06-09"
+updated: "2026-06-29"
 ---
 
 # WF-0106 - Emacs Ideas To Steal Causally
 
 ## Linked Issue
 
-- TBD - open before implementation starts.
+- [#192 WF-0106: Emacs ideas to steal causally](https://github.com/flyingrobots/jedit/issues/192)
+- Milestone: [WF-0106 - Emacs Ideas To Steal Causally](https://github.com/flyingrobots/jedit/milestone/3)
 
 ## Decision Summary
 
@@ -108,6 +109,25 @@ An Emacs idea is eligible only if it can answer:
 5. What JSON or CLI witness can prove the behavior?
 
 If the answer is "local mutable editor state," the idea is not ready.
+
+## Priority Set
+
+The first serious candidates are ordered by how much command truth they unlock:
+
+| Priority | Feature | Tracking issue | Why first |
+| --- | --- | --- | --- |
+| 1 | Command catalog and describe surfaces | [#183](https://github.com/flyingrobots/jedit/issues/183) | Enables discovery, docs, prefix help, agents, and later mode tooling. |
+| 2 | Prefix help and describe-key | [#184](https://github.com/flyingrobots/jedit/issues/184) | Makes Vim grammar legible without diluting modal editing. |
+| 3 | Register history / causal kill ring | [#185](https://github.com/flyingrobots/jedit/issues/185) | Bridges Vim registers and Emacs kill-ring behavior through provenance. |
+| 4 | Semantic macros | [#187](https://github.com/flyingrobots/jedit/issues/187) | Turns replay into accountable causal scripts instead of raw key ghosts. |
+| 5 | Buffer and mode reports | [#186](https://github.com/flyingrobots/jedit/issues/186) | Gives workspace power without hidden mutable state. |
+| 6 | Compilation / diagnostics buffer | [#188](https://github.com/flyingrobots/jedit/issues/188) | Adds practical build/test workflow with anchors and replay posture. |
+| 7 | Debug trace buffer | [#189](https://github.com/flyingrobots/jedit/issues/189) | Becomes a differentiator after transcript honesty exists. |
+| 8 | Dired-style host operations | [#190](https://github.com/flyingrobots/jedit/issues/190) | Useful host surface, but lower priority than local command truth. |
+
+The command catalog schema and register provenance schema should land early
+because they force honesty across describe surfaces, prefix help, `:why`,
+macros, diagnostics, and agent witnesses.
 
 ## Ideas To Steal
 
@@ -257,13 +277,28 @@ must still go through the WF-0105 Vim grammar and jedit-owned command ports.
 | Build fix loop | Diagnostics become causal anchors. | Braid fixes that satisfy diagnostics into current head. |
 | Debug trace | Record observed execution as a causal trace. | Compare failing and fixed traces as a braid. |
 
-## Brainstorm Slices
+## Tracked Slices
+
+| Issue | Slice | First proof |
+| --- | --- | --- |
+| [#182](https://github.com/flyingrobots/jedit/issues/182) | Lock WF-0106 feature packet and issue links | This doc names priorities, tracking issues, and execution order. |
+| [#183](https://github.com/flyingrobots/jedit/issues/183) | Add Jim command catalog schema and witness | `jedit-command-catalog-witness` emits stable JSON metadata. |
+| [#184](https://github.com/flyingrobots/jedit/issues/184) | Add describe command, describe-key, and prefix help | Prefix help consumes the execution grammar, not a shadow table. |
+| [#185](https://github.com/flyingrobots/jedit/issues/185) | Add causal register history and kill-ring posture | Register entries retain source basis, range, digest, and command refs. |
+| [#186](https://github.com/flyingrobots/jedit/issues/186) | Add buffer and mode reports | Reports expose basis, dirty posture, mode packs, and command deltas. |
+| [#187](https://github.com/flyingrobots/jedit/issues/187) | Add semantic macro scripts and replay reports | Replay reports applied count, receipts, and first obstruction. |
+| [#188](https://github.com/flyingrobots/jedit/issues/188) | Add compilation diagnostics buffer with anchors | Diagnostics jump by file/line/column anchor and cite command facts. |
+| [#189](https://github.com/flyingrobots/jedit/issues/189) | Add debug trace buffer with honest replay levels | Trace entries distinguish inspection, rerun, adapter replay, and TTD. |
+| [#190](https://github.com/flyingrobots/jedit/issues/190) | Add Dired-style host operation previews | File operations produce previewable host-effect plans and receipts. |
+| [#191](https://github.com/flyingrobots/jedit/issues/191) | Add WF-0106 combined walkthrough witness | One workflow ties command help, `:why`, registers, macros, and strands. |
+
+## Implementation Slices
 
 ### Slice 1: Command Discovery And Self-Documentation
 
 - Define the command catalog shape.
 - Map Vim grammar entries and command-line commands into descriptors.
-- Add describe-key and describe-command target witness examples.
+- Add `:describe`, `:describe-key`, and prefix-help witness examples.
 - Keep execution unchanged.
 
 ### Slice 2: Buffers, Modes, And Register History
@@ -282,6 +317,28 @@ must still go through the WF-0105 Vim grammar and jedit-owned command ports.
 - Add target fixtures for macro replay, substitution preview, and project-wide
   braid admission.
 
+## Combined Walkthrough Target
+
+The target product proof for this packet is a single honest Jim workflow:
+
+1. The user types `d` and receives prefix help explaining legal next forms,
+   destructive posture, register writes, and basis requirements.
+2. The user runs `di"` on a string.
+3. Jim records command provenance and writes deleted text into causal register
+   history with source basis and range posture.
+4. `:why` explains what changed and what evidence posture supports it.
+5. `:describe-register "` shows where the deleted fragment came from.
+6. The user records a macro for the same cleanup pattern.
+7. Jim stores the macro as semantic commands plus bounded raw insert spans.
+8. Replay is previewed as a strand across several matches.
+9. One site obstructs because the expected delimiter structure is missing.
+10. Jim admits only valid applications and records receipts for the admitted
+    edits.
+
+That workflow should feel like Jim, not Vim-plus or Emacs-lite: Vim grammar,
+Emacs-style discoverability, Echo-backed evidence, typed obstructions, and
+strand admission.
+
 ## Acceptance Criteria
 
 - Emacs-inspired features do not alter the WF-0105 commitment to Vim grammar.
@@ -295,7 +352,8 @@ must still go through the WF-0105 Vim grammar and jedit-owned command ports.
 ```bash
 npx --yes markdownlint-cli2 \
   docs/design/0106-emacs-ideas-to-steal-causally.md \
-  docs/design/0105-vim-power-moves-causal-parity.md
+  docs/design/0105-vim-power-moves-causal-parity.md \
+  docs/design/0108a-why-observation-evidence-roadmap.md
 node --test --test-concurrency=1 spec/design-cycle-policy.spec.mjs
 npm run --silent quality
 git diff --check

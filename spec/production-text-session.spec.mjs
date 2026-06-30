@@ -144,6 +144,29 @@ test('production text session creates manual checkpoint evidence through app cap
   }]);
 });
 
+test('production text session explains ranges through the text buffer optic', async () => {
+  const module = await loadModule();
+  const calls = [];
+  const optic = fakeTextBufferOptic({
+    explainRange(range) {
+      calls.push(range);
+      return whyRangeReport(range);
+    },
+  });
+  const production = module.createProductionTextSession(fakeTextBufferSession({ optic }));
+
+  const outcome = await production.explainRange({
+    bufferId: BUFFER_ID,
+    range: { startByte: 6, endByte: 9 },
+    atMs: AT_MS,
+  });
+
+  assert.equal(outcome.kind, module.ProductionTextSessionOutcomeKinds.RangeExplained);
+  assert.equal(outcome.report.witness.result.kind, 'produced');
+  assert.equal(outcome.report.witness.result.ropeDiffId, 'receipt:range');
+  assert.deepEqual(calls, [{ startByte: 6, endByte: 9 }]);
+});
+
 test('production text session exports materialized text from a full snapshot without edit intent', async () => {
   const module = await loadModule();
   const applyIntentCalls = [];
@@ -302,6 +325,37 @@ function fakeTextBufferOptic(overrides = {}) {
     },
     async textWindow(readBasis, input) {
       return overrides.textWindow == null ? observedReading() : overrides.textWindow(readBasis, input);
+    },
+    async explainRange(range) {
+      return overrides.explainRange == null ? whyRangeReport(range) : overrides.explainRange(range);
+    },
+  };
+}
+
+function whyRangeReport(range) {
+  return {
+    kind: 'range',
+    title: 'Why range',
+    message: `range: ${range.startByte}..${range.endByte} | ropeDiff receipt:range`,
+    witness: {
+      worldlineId: 'wl:/repo/notes.md',
+      currentHeadId: 'head:2',
+      queriedRange: range,
+      reverseWalk: { coordinateKind: 'range-at-head', inspectedDiffIds: ['receipt:range'] },
+      result: {
+        kind: 'produced',
+        ropeRewriteId: 'tick:range',
+        ropeDiffId: 'receipt:range',
+        tickId: 'tick:range',
+        receiptId: 'receipt:range',
+        baseHeadId: 'head:1',
+        nextHeadId: 'head:2',
+        startByte: range.startByte,
+        endByte: range.endByte,
+        insertedByteLength: range.endByte - range.startByte,
+        deletedByteLength: 0,
+      },
+      evidencePosture: { causalHistory: 'available', btr: 'missing' },
     },
   };
 }

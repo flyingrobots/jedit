@@ -7,6 +7,9 @@ import type { TitleScene } from "../../ui/title-scene.js";
 import type { ProfilerMsg } from "../raytracer-profiler.js";
 import type { SourceHighlightMsg } from "../source-highlight-session.js";
 import type { TitleCameraMotionMsg } from "../title-camera-session.js";
+import type { JeditWhyRangeReport } from "../../ports/jedit-why-range.js";
+import type { JeditWhyReport } from "./command-provenance.js";
+import type { ProductionTextObstruction } from "./production-text-session.js";
 import type {
   WorkspaceCommandLineFilePreviewSelection,
   WorkspaceFilePreviewResult,
@@ -36,6 +39,7 @@ const WORKSPACE_MESSAGE_TEXT_EDIT_RESULT = "text-edit-result";
 const WORKSPACE_MESSAGE_TEXT_CHECKPOINT_RESULT = "text-checkpoint-result";
 const WORKSPACE_MESSAGE_TEXT_EXPORT_RESULT = "text-export-result";
 const WORKSPACE_MESSAGE_TEXT_READ_RESULT = "text-read-result";
+const WORKSPACE_MESSAGE_WHY_RANGE_RESULT = "why-range-result";
 const WORKSPACE_MESSAGE_COMMAND_LINE_FILE_PREVIEW_RESULT =
   "command-line-file-preview-result";
 const WORKSPACE_INPUT_MESSAGE_RESIZE = "resize";
@@ -58,6 +62,7 @@ export const WorkspaceMessageTypes = Object.freeze({
   TextCheckpointResult: WORKSPACE_MESSAGE_TEXT_CHECKPOINT_RESULT,
   TextExportResult: WORKSPACE_MESSAGE_TEXT_EXPORT_RESULT,
   TextReadResult: WORKSPACE_MESSAGE_TEXT_READ_RESULT,
+  WhyRangeResult: WORKSPACE_MESSAGE_WHY_RANGE_RESULT,
   CommandLineFilePreviewResult:
     WORKSPACE_MESSAGE_COMMAND_LINE_FILE_PREVIEW_RESULT,
 });
@@ -125,6 +130,13 @@ export type WorkspaceMsg =
       type: typeof WorkspaceMessageTypes.TextReadResult;
       requestId: number;
       result: WorkspaceTextReadCommandResult;
+    }
+  | {
+      type: typeof WorkspaceMessageTypes.WhyRangeResult;
+      report?: JeditWhyRangeReport;
+      obstruction?: ProductionTextObstruction;
+      fallbackReport: JeditWhyReport;
+      atMs: number;
     }
   | {
       type: typeof WorkspaceMessageTypes.CommandLineFilePreviewResult;
