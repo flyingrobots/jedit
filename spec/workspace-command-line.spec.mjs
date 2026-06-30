@@ -1004,6 +1004,63 @@ test("enter dispatches why with typed unavailable range evidence", async () => {
   assert.doesNotMatch(notified.notifications.items[0].message, /No meaningful command/);
 });
 
+test("enter dispatches why with typed range obstruction evidence", async () => {
+  const [keyBindings, runtimeModule, titleScreen, editorMode, authority] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("app", "workspace", "runtime.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "workspace-text-authority.js"),
+  ]);
+  const productionTextSession = fakeProductionTextSession({
+    explainRange: async () => ({
+      kind: "obstructed",
+      obstruction: {
+        code: "text-buffer-why-range-obstructed",
+        issue: {
+          source: "production-text",
+          level: "error",
+          code: "text-buffer-why-range-obstructed",
+          message: "range explanation failed",
+        },
+      },
+    }),
+  });
+  const model = mockTitleScreenModel(titleScreen, {
+    editor: mockEditor(editorMode, {
+      lines: ["alpha Jim"],
+      cursorRow: 0,
+      cursorCol: 7,
+      lastVimEdit: undefined,
+    }),
+    focusPane: "editor",
+    textAuthority: authority.openedWorkspaceTextAuthority({
+      profile: "echoHosted",
+      filePath: "/repo/notes.md",
+      bufferId: "text-buffer:0",
+      readOnly: false,
+      dirty: true,
+    }),
+    commandLine: activeCommandLine("why"),
+  });
+
+  const [pendingWhy, commands] = keyBindings.updateFromKey(
+    { type: "key", key: "enter", ctrl: false, alt: false, shift: false },
+    model,
+    mockKeyBindingContext({ nowMs: () => 90, deps: { productionTextSession } }),
+  );
+  const message = await commands[0]();
+  const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime({ productionTextSession }));
+  const [notified] = runtime.update(message, pendingWhy);
+
+  assert.equal(pendingWhy.commandLine.active, false);
+  assert.equal(message.type, "why-range-result");
+  assert.equal(notified.notifications.items[0].title, "Why range obstructed");
+  assert.match(notified.notifications.items[0].message, /text-buffer-why-range-obstructed/);
+  assert.match(notified.notifications.items[0].message, /range explanation failed/);
+  assert.doesNotMatch(notified.notifications.items[0].message, /No meaningful command/);
+});
+
 test("command provenance validates slice 1 Vim edit targets", async () => {
   const [mode, syntax, executor, authority, provenance] = await Promise.all([
     importDist("app", "workspace", "editor", "mode.js"),

@@ -11,7 +11,7 @@ import type { JeditWhyReport } from './command-provenance.js';
 import type { EditorState } from './editor/model.js';
 import type { WorkspaceModel } from './model.js';
 import { WorkspaceMessageTypes, type WorkspaceMsg } from './msg.js';
-import type { ProductionTextSession } from './production-text-session.js';
+import type { ProductionTextObstruction, ProductionTextSession } from './production-text-session.js';
 import { ProductionTextSessionOutcomeKinds } from './production-text-session.js';
 import type { WorkspaceRuntimeDependencies, WorkspaceRuntimeResult } from './workspace-runtime-dependencies.js';
 import { byteOffsetForTextPosition } from './workspace-text-position.js';
@@ -70,6 +70,7 @@ export function createWorkspaceWhyRangeCmd(
     return {
       type: WorkspaceMessageTypes.WhyRangeResult,
       report: outcome.kind === ProductionTextSessionOutcomeKinds.RangeExplained ? outcome.report : undefined,
+      obstruction: outcome.kind === ProductionTextSessionOutcomeKinds.Obstructed ? outcome.obstruction : undefined,
       fallbackReport: request.fallbackReport,
       atMs: request.atMs,
     };
@@ -81,7 +82,7 @@ export function applyWorkspaceWhyRangeResult(
   msg: Extract<WorkspaceMsg, { type: typeof WorkspaceMessageTypes.WhyRangeResult }>,
   model: WorkspaceModel,
 ): WorkspaceRuntimeResult {
-  const report = toastReportFromWhyRange(msg.report, msg.fallbackReport);
+  const report = toastReportFromWhyRange(msg.report, msg.obstruction, msg.fallbackReport);
   return pushNotificationToast(
     model,
     {
@@ -98,6 +99,7 @@ export function applyWorkspaceWhyRangeResult(
 
 function toastReportFromWhyRange(
   rangeReport: JeditWhyRangeReport | undefined,
+  obstruction: ProductionTextObstruction | undefined,
   fallbackReport: JeditWhyReport,
 ): ToastReport {
   if (rangeReport != null) {
@@ -105,6 +107,13 @@ function toastReportFromWhyRange(
       title: rangeReport.title,
       message: rangeReport.message,
       tone: rangeReport.witness.result.kind === RESULT_PRODUCED ? NotificationTones.Info : NotificationTones.Warning,
+    };
+  }
+  if (obstruction != null) {
+    return {
+      title: 'Why range obstructed',
+      message: `${obstruction.code}: ${obstruction.issue.message}`,
+      tone: NotificationTones.Warning,
     };
   }
   return {

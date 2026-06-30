@@ -9,6 +9,7 @@ import type { SourceHighlightMsg } from "../source-highlight-session.js";
 import type { TitleCameraMotionMsg } from "../title-camera-session.js";
 import type { JeditWhyRangeReport } from "../../ports/jedit-why-range.js";
 import type { JeditWhyReport } from "./command-provenance.js";
+import type { ProductionTextObstruction } from "./production-text-session.js";
 import type {
   WorkspaceCommandLineFilePreviewSelection,
   WorkspaceFilePreviewResult,
@@ -133,6 +134,7 @@ export type WorkspaceMsg =
   | {
       type: typeof WorkspaceMessageTypes.WhyRangeResult;
       report?: JeditWhyRangeReport;
+      obstruction?: ProductionTextObstruction;
       fallbackReport: JeditWhyReport;
       atMs: number;
     }
