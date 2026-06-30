@@ -167,6 +167,8 @@ export function createWorkspaceTextEditCmd(
   return async () => {
     const result = await request.textOperationSequencer.sequenceEdit(
       request.productionTextSession,
+      request.filePath,
+      request.bufferId,
       () => editWorkspaceText(request),
     );
     return {
@@ -184,6 +186,7 @@ export function createWorkspaceTextCheckpointCmd(
     const result = await request.textOperationSequencer.sequenceCheckpoint(
       request.productionTextSession,
       request.filePath,
+      request.bufferId,
       () => checkpointWorkspaceText(request),
     );
     return {

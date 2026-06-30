@@ -16,24 +16,20 @@ test('workspace text operation sequencer does not run queued edits after obstruc
     source: 'command',
     atMs: 1,
   };
+  const filePath = '/repo/notes.md';
+  const bufferId = 'buffer:notes';
 
-  const first = sequencer.sequenceEdit(session, async () => {
+  const first = sequencer.sequenceEdit(session, filePath, bufferId, async () => {
     calls.push('first');
     return {
       kind: resultsModule.WorkspaceTextResultKinds.Obstructed,
-      filePath: '/repo/notes.md',
+      filePath,
       issue,
     };
   });
-  const second = sequencer.sequenceEdit(session, async () => {
+  const second = sequencer.sequenceEdit(session, filePath, bufferId, async () => {
     calls.push('second');
-    return {
-      kind: resultsModule.WorkspaceTextResultKinds.Applied,
-      filePath: '/repo/notes.md',
-      bufferId: 'buffer:notes',
-      receiptId: 'receipt:second',
-      cache: {},
-    };
+    return appliedResult(resultsModule, filePath, bufferId, 'receipt:second');
   });
 
   assert.equal((await first).kind, resultsModule.WorkspaceTextResultKinds.Obstructed);
@@ -41,7 +37,7 @@ test('workspace text operation sequencer does not run queued edits after obstruc
 
   assert.deepEqual(calls, ['first']);
   assert.equal(secondResult.kind, resultsModule.WorkspaceTextResultKinds.Obstructed);
-  assert.equal(secondResult.filePath, '/repo/notes.md');
+  assert.equal(secondResult.filePath, filePath);
   assert.equal(secondResult.issue, issue);
 });
 
@@ -57,7 +53,7 @@ test('workspace text operation sequencer does not coalesce exports after newer q
   const filePath = '/repo/notes.md';
   const bufferId = 'buffer:notes';
 
-  const firstEdit = sequencer.sequenceEdit(session, async () => {
+  const firstEdit = sequencer.sequenceEdit(session, filePath, bufferId, async () => {
     calls.push('edit:first');
     await firstEditGate.promise;
     return appliedResult(resultsModule, filePath, bufferId, 'receipt:first');
@@ -66,7 +62,7 @@ test('workspace text operation sequencer does not coalesce exports after newer q
     calls.push('export:first');
     return exportedResult(resultsModule, filePath, bufferId, 'reading:first');
   });
-  const secondEdit = sequencer.sequenceEdit(session, async () => {
+  const secondEdit = sequencer.sequenceEdit(session, filePath, bufferId, async () => {
     calls.push('edit:second');
     return appliedResult(resultsModule, filePath, bufferId, 'receipt:second');
   });
@@ -88,6 +84,42 @@ test('workspace text operation sequencer does not coalesce exports after newer q
   assert.deepEqual(calls, ['edit:first', 'export:first', 'edit:second', 'export:second']);
   assert.equal(firstExportResult.readingId, 'reading:first');
   assert.equal(secondExportResult.readingId, 'reading:second');
+});
+
+test('workspace text operation sequencer scopes obstructions to the obstructed buffer', async () => {
+  const [sequencerModule, resultsModule] = await Promise.all([
+    importDist('app', 'workspace', 'workspace-text-operation-sequencer.js'),
+    importDist('app', 'workspace', 'workspace-text-results.js'),
+  ]);
+  const sequencer = sequencerModule.createWorkspaceTextOperationSequencer();
+  const session = {};
+  const calls = [];
+  const issue = {
+    message: 'basis changed',
+    level: 'error',
+    source: 'command',
+    atMs: 1,
+  };
+
+  const alphaEdit = sequencer.sequenceEdit(session, '/repo/alpha.md', 'buffer:alpha', async () => {
+    calls.push('alpha:edit');
+    return {
+      kind: resultsModule.WorkspaceTextResultKinds.Obstructed,
+      filePath: '/repo/alpha.md',
+      issue,
+    };
+  });
+  const betaExport = sequencer.sequenceExport(session, '/repo/beta.md', 'buffer:beta', async () => {
+    calls.push('beta:export');
+    return exportedResult(resultsModule, '/repo/beta.md', 'buffer:beta', 'reading:beta');
+  });
+
+  assert.equal((await alphaEdit).kind, resultsModule.WorkspaceTextResultKinds.Obstructed);
+  const betaExportResult = await betaExport;
+
+  assert.deepEqual(calls, ['alpha:edit', 'beta:export']);
+  assert.equal(betaExportResult.kind, resultsModule.WorkspaceTextResultKinds.Exported);
+  assert.equal(betaExportResult.readingId, 'reading:beta');
 });
 
 function appliedResult(resultsModule, filePath, bufferId, receiptId) {
