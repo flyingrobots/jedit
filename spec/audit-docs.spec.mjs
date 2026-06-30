@@ -43,3 +43,11 @@ test('ready-to-ship audit reflects the current CI quality gate', () => {
   assert.doesNotMatch(audit, /no lint job in CI/);
   assert.doesNotMatch(audit, /CI `\.github\/workflows\/ci\.yml` = build \+ sharded tests, no lint\/audit gate/);
 });
+
+test('two-phase audit names exact and ranged first-party dependencies correctly', () => {
+  const audit = readRepoText(TWO_PHASE_AUDIT);
+
+  assert.match(audit, /`@flyingrobots\/graft` is exact-pinned to `0\.10\.1`/);
+  assert.match(audit, /`@flyingrobots\/bijou-i18n` and its tools use `\^7\.0\.0`/);
+  assert.doesNotMatch(audit, /Pin @flyingrobots\/graft to an exact version/);
+});
