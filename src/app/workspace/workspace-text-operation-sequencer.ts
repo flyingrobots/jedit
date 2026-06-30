@@ -9,6 +9,13 @@ import {
 
 const textOperationQueues = new WeakMap<ProductionTextSession, Promise<void>>();
 const textOperationObstructions = new WeakMap<ProductionTextSession, RuntimeIssue>();
+const textOperationExports = new WeakMap<ProductionTextSession, ActiveTextExportOperation>();
+
+interface ActiveTextExportOperation {
+  readonly bufferId: string;
+  readonly filePath: string;
+  readonly promise: Promise<WorkspaceTextExportResult>;
+}
 
 export function sequenceWorkspaceTextEditOperation(
   session: ProductionTextSession,
@@ -35,12 +42,24 @@ export function sequenceWorkspaceTextCheckpointOperation(
 export function sequenceWorkspaceTextExportOperation(
   session: ProductionTextSession,
   filePath: string,
+  bufferId: string,
   operation: () => Promise<WorkspaceTextExportResult>,
 ): Promise<WorkspaceTextExportResult> {
-  return sequenceWorkspaceTextOperation(session, () => {
+  const active = textOperationExports.get(session);
+  if (active?.filePath === filePath && active.bufferId === bufferId) {
+    return active.promise;
+  }
+  const promise = sequenceWorkspaceTextOperation(session, () => {
     const issue = textOperationObstructions.get(session);
     return issue == null ? operation() : Promise.resolve(obstructedTextOperation(filePath, issue));
   });
+  textOperationExports.set(session, { bufferId, filePath, promise });
+  promise.finally(() => {
+    if (textOperationExports.get(session)?.promise === promise) {
+      textOperationExports.delete(session);
+    }
+  });
+  return promise;
 }
 
 function sequenceWorkspaceTextOperation<T>(

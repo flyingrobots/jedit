@@ -1248,6 +1248,89 @@ test("ctrl-s exports a full production snapshot and checkpoints without direct l
   assert.equal(checkpointedModel.editor.dirty, false);
 });
 
+test("repeated ctrl-s coalesces an in-flight production export", async () => {
+  const [keyBindings, runtimeModule, modeModule, authority, profile] =
+    await Promise.all([
+      importDist("app", "workspace", "key-bindings.js"),
+      importDist("app", "workspace", "runtime.js"),
+      importDist("app", "workspace", "editor", "mode.js"),
+      importDist("app", "workspace", "workspace-text-authority.js"),
+      importDist("app", "text-runtime-profile.js"),
+    ]);
+  const savedFiles = [];
+  const exportCalls = [];
+  let materialized = false;
+  const productionTextSession = fakeProductionTextSession({
+    exportSnapshot: async (request) => {
+      exportCalls.push(request);
+      return {
+        kind: "exported",
+        text: "fresh",
+        readingId: "reading:export",
+      };
+    },
+  });
+  const model = {
+    ...textWorkspaceModel(modeModule, authority, profile, {
+      dirty: true,
+      lines: ["stale"],
+    }),
+    textAuthority: authority.openedWorkspaceTextAuthority({
+      profile: profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+      filePath: "/repo/notes.txt",
+      bufferId: "buffer:notes",
+      readOnly: false,
+      dirty: true,
+      hostFingerprint: HOST_FINGERPRINT_A,
+      cache: workspaceReadingCache({ lines: ["stale"] }),
+    }),
+  };
+  const context = {
+    ...mockKeyBindingContext(),
+    nowMs: () => 99,
+    deps: mockDeps({
+      editorFile: {
+        loadEditorFile: () => ({
+          lines: materialized ? ["fresh"] : ["stale"],
+          readOnly: false,
+          fingerprint: materialized ? HOST_FINGERPRINT_B : HOST_FINGERPRINT_A,
+        }),
+        saveEditorFile: (filePath, lines) => {
+          materialized = true;
+          savedFiles.push({ filePath, lines });
+        },
+      },
+      productionTextSession,
+    }),
+  };
+
+  const [firstSave, firstCommands] = keyBindings.updateFromKey(
+    { key: "s", ctrl: true, alt: false, shift: false },
+    model,
+    context,
+  );
+  const [secondSave, secondCommands] = keyBindings.updateFromKey(
+    { key: "s", ctrl: true, alt: false, shift: false },
+    firstSave,
+    context,
+  );
+  const firstExport = firstCommands[0]();
+  const secondExport = secondCommands[0]();
+  const firstMessage = await firstExport;
+  const secondMessage = await secondExport;
+  const runtime = runtimeModule.createWorkspaceRuntime(
+    mockRuntime({ productionTextSession }),
+  );
+  const [ignoredFirst] = runtime.update(firstMessage, secondSave);
+  const [exportedModel, checkpointCommands] = runtime.update(secondMessage, ignoredFirst);
+
+  assert.equal(exportCalls.length, 1);
+  assert.deepEqual(savedFiles, [{ filePath: "/repo/notes.txt", lines: ["fresh"] }]);
+  assert.equal(secondMessage.result.kind, "exported");
+  assert.equal(exportedModel.textAuthority.dirty, false);
+  assert.equal(checkpointCommands.length, 1);
+});
+
 for (const blockCase of EXISTING_SAVE_BLOCK_CASES) {
   test(`ctrl-s blocks materialization when ${blockCase.title}`, async () => {
     const [keyBindings, runtimeModule, modeModule, authority, profile] =

@@ -202,6 +202,7 @@ export function createWorkspaceTextExportCmd(
     const result = await sequenceWorkspaceTextExportOperation(
       request.productionTextSession,
       request.filePath,
+      request.bufferId,
       () => exportWorkspaceText(request),
     );
     return {
