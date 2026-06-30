@@ -282,6 +282,7 @@ test('real workspace app path waits for queued rapid inserts before saving', asy
   assert.deepEqual(harness.savedFiles, [{ filePath: '/repo/notes.md', lines: [sentence] }]);
   assert.equal(calls.export.length, 1);
   assert.equal(calls.checkpoint.length, 1);
+  assert.equal(harness.model.editor.lines[0], sentence);
   assert.equal(harness.model.textAuthority.lastExportReadingId, 'reading:export');
   assert.equal(harness.model.textAuthority.lastCheckpointId, 'checkpoint:save');
   assert.equal(harness.model.textAuthority.dirty, false);

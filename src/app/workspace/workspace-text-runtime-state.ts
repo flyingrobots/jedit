@@ -28,8 +28,10 @@ import {
   type WorkspaceTextOpenedResult,
 } from './workspace-text-results.js';
 import {
+  dependentEditBlockedIssue,
   shouldIgnoreTextEditObstruction,
   shouldRecordIntermediateTextEditResult,
+  settlementObstructionIssue,
   textCheckpointResultTargetsAuthority,
   textEditResultBlockedByEarlierObstruction,
   textEditResultTargetsAuthority,
@@ -44,17 +46,14 @@ import {
 import { JEDIT_WSC_WORKSPACE_STORE_STATUS } from '../../ports/jedit-wsc-workspace-store.js';
 import {
   jeditAppliedCommandHistorySummary,
+  receivedJeditCommandEventForRequest,
   workspaceTextAuthorityWithAppliedJeditCommandReceipt,
   workspaceTextAuthorityWithCurrentJeditCommandObservation,
 } from './command-provenance.js';
 
 export type WorkspaceRuntimeResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 
-const WSC_SETTLEMENT_OBSTRUCTION_PREFIX = 'WSC edit settlement failed';
-const DEPENDENT_EDIT_BLOCKED_PREFIX = 'Text edit blocked by obstructed intent';
 const FOCUS_PANE_EDITOR = 'editor';
-const ISSUE_LEVEL_ERROR = 'error';
-const ISSUE_SOURCE_COMMAND = 'command';
 
 interface TextExportCheckpointRequest {
   readonly requestId: number;
@@ -194,11 +193,22 @@ function applyIntermediateTextEditResult(
   if (msg.result.kind !== WorkspaceTextResultKinds.Applied) {
     return [model, []];
   }
-  const applied = withEchoHistoryEntry(model, {
+  const event = receivedJeditCommandEventForRequest(authority, msg.requestId, msg.result.receiptId);
+  const withCache = workspaceTextAuthorityWithCache({
+    ...authority,
+    pendingReceiptId: msg.result.receiptId,
+    lastReceiptId: msg.result.receiptId,
+    lastCommandEvent: event ?? authority.lastCommandEvent,
+  }, msg.result.cache);
+  const withCurrentObservation = workspaceTextAuthorityWithCurrentJeditCommandObservation(withCache);
+  const applied = withEchoHistoryEntry({
+    ...model,
+    textAuthority: withCurrentObservation,
+  }, {
     kind: EchoHistoryEntryKinds.Edit,
     status: EchoHistoryEntryStatuses.Applied,
     evidenceId: msg.result.receiptId,
-    summary: jeditAppliedCommandHistorySummary(msg.result.filePath, msg.requestId, authority),
+    summary: jeditAppliedCommandHistorySummary(msg.result.filePath, msg.requestId, withCurrentObservation),
   });
   const settlement = persistEditSettlement(deps, msg.result, applied);
   return settlement == null ? [applied, []] : settlement;
@@ -298,32 +308,6 @@ function persistEditSettlement(
     issue,
     deps.createNotificationTickCmd,
   );
-}
-
-function settlementObstructionIssue(
-  filePath: string,
-  obstruction: { readonly code: string; readonly message: string },
-  atMs: number,
-): RuntimeIssue {
-  return {
-    message: `${WSC_SETTLEMENT_OBSTRUCTION_PREFIX}: ${filePath}: ${obstruction.message}`,
-    level: ISSUE_LEVEL_ERROR,
-    source: ISSUE_SOURCE_COMMAND,
-    atMs,
-  };
-}
-
-function dependentEditBlockedIssue(
-  filePath: string,
-  blockedByClientSeq: number | undefined,
-  atMs: number,
-): RuntimeIssue {
-  return {
-    message: `${DEPENDENT_EDIT_BLOCKED_PREFIX}: ${filePath}: request:${blockedByClientSeq ?? 0}`,
-    level: ISSUE_LEVEL_ERROR,
-    source: ISSUE_SOURCE_COMMAND,
-    atMs,
-  };
 }
 
 function editorAfterTextEdit(

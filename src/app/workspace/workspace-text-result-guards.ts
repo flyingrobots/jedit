@@ -1,3 +1,4 @@
+import type { RuntimeIssue } from '@flyingrobots/bijou-tui';
 import {
   WorkspaceTextAuthorityKinds,
   WorkspaceTextIntentStatuses,
@@ -11,6 +12,16 @@ import {
   type WorkspaceTextExportResult,
   type WorkspaceTextReadCommandResult,
 } from './workspace-text-results.js';
+
+const WSC_SETTLEMENT_OBSTRUCTION_PREFIX = 'WSC edit settlement failed';
+const DEPENDENT_EDIT_BLOCKED_PREFIX = 'Text edit blocked by obstructed intent';
+const ISSUE_LEVEL_ERROR = 'error';
+const ISSUE_SOURCE_COMMAND = 'command';
+
+export interface WorkspaceTextSettlementObstruction {
+  readonly code: string;
+  readonly message: string;
+}
 
 export function shouldIgnoreTextEditObstruction(
   authority: WorkspaceTextAuthorityOpened,
@@ -40,6 +51,32 @@ export function shouldRecordIntermediateTextEditResult(
 ): boolean {
   return requestId < latestRequestId &&
     hasPredictedDependentEdit(authority, requestId);
+}
+
+export function settlementObstructionIssue(
+  filePath: string,
+  obstruction: WorkspaceTextSettlementObstruction,
+  atMs: number,
+): RuntimeIssue {
+  return {
+    message: `${WSC_SETTLEMENT_OBSTRUCTION_PREFIX}: ${filePath}: ${obstruction.message}`,
+    level: ISSUE_LEVEL_ERROR,
+    source: ISSUE_SOURCE_COMMAND,
+    atMs,
+  };
+}
+
+export function dependentEditBlockedIssue(
+  filePath: string,
+  blockedByClientSeq: number | undefined,
+  atMs: number,
+): RuntimeIssue {
+  return {
+    message: `${DEPENDENT_EDIT_BLOCKED_PREFIX}: ${filePath}: request:${blockedByClientSeq ?? 0}`,
+    level: ISSUE_LEVEL_ERROR,
+    source: ISSUE_SOURCE_COMMAND,
+    atMs,
+  };
 }
 
 export function textEditResultTargetsAuthority(
