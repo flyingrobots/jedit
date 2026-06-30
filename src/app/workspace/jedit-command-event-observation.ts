@@ -5,12 +5,13 @@ import {
   type WorkspaceTextAuthorityOpened,
 } from './workspace-text-authority.js';
 import { createJeditWhyObservation } from './jedit-why-observation.js';
+import { jeditCommandEventSummary } from './jedit-command-event-summary.js';
 
 export function jeditCommandEventWithCurrentObservation(
   event: JeditCommandEvent,
   textAuthority: WorkspaceTextAuthority,
 ): JeditCommandEvent {
-  return {
+  const withObservation = {
     ...event,
     observation: createJeditWhyObservation({
       basisDigest: event.basisDigest,
@@ -18,6 +19,10 @@ export function jeditCommandEventWithCurrentObservation(
       target: event.target,
       textAuthority,
     }),
+  };
+  return {
+    ...withObservation,
+    summary: jeditCommandEventSummary(withObservation),
   };
 }
 

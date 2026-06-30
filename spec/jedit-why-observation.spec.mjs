@@ -247,6 +247,15 @@ test('why observation uses current command receipts and refreshes after admissio
       .referenceId,
     'receipt:new',
   );
+
+  const staleSummaryAuthority = authority.workspaceTextAuthorityWithLastCommandEvent(withFreshCache, {
+    ...refreshed.lastCommandEvent,
+    summary: planned.event.summary,
+  });
+  const summaryRefreshed = observationRefresh
+    .workspaceTextAuthorityWithCurrentJeditCommandObservation(staleSummaryAuthority);
+  assert.match(summaryRefreshed.lastCommandEvent.summary, /receipt receipt:new/);
+  assert.doesNotMatch(summaryRefreshed.lastCommandEvent.summary, /receipt pending/);
 });
 
 function hasEvidenceSource(observation, kind) {
