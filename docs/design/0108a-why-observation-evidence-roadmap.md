@@ -25,7 +25,7 @@ obstructed.
 
 WF-0108 already landed the narrow command-dispatch and local command-provenance
 base. WF-0108A closes the remaining gap by wiring `:why` to Echo-backed reading
-identity, typed evidence obstructions, and future proof slots without moving
+identity, typed evidence obstructions, and future-proof slots without moving
 Jim editor nouns into Echo or pretending that Jim/Echo integration goes through
 Continuum.
 
@@ -105,7 +105,7 @@ Echo work is required where `:why` needs runtime evidence, not editor semantics:
 | [echo#630](https://github.com/flyingrobots/echo/issues/630) | Return retained receipt and reading evidence refs | Lets `:why` cite real runtime evidence |
 | [echo#631](https://github.com/flyingrobots/echo/issues/631) | Preserve trusted-host scheduler split for jedit witness | Prevents app code from claiming runtime admission authority |
 | [echo#632](https://github.com/flyingrobots/echo/issues/632) | Add replay proof for Jim edit and bounded reading | Makes recovery/debug claims evidence-backed |
-| [echo#633](https://github.com/flyingrobots/echo/issues/633) | Define canonical digest domains for observation evidence | Stabilizes future proof posture and comparison |
+| [echo#633](https://github.com/flyingrobots/echo/issues/633) | Define canonical digest domains for observation evidence | Stabilizes future-proof posture and comparison |
 
 Echo must not learn Jim, Vim, buffers, registers, macros, or `:why`. It should
 export generic runtime evidence that Jim can project into editor language.
@@ -153,7 +153,7 @@ evidence truth; they do not replace WF-0108A.
 5. Wire Echo reading identity when Echo exposes the needed refs through [#176](https://github.com/flyingrobots/jedit/issues/176).
 6. Prove `dw` end to end through [#178](https://github.com/flyingrobots/jedit/issues/178).
 7. Expand the command set through [#179](https://github.com/flyingrobots/jedit/issues/179).
-8. Add future proof posture slots through [#180](https://github.com/flyingrobots/jedit/issues/180).
+8. Add future-proof posture slots through [#180](https://github.com/flyingrobots/jedit/issues/180).
 
 This order keeps Jim useful before the full protocol and crypto posture are
 available, while preventing fake evidence claims.
