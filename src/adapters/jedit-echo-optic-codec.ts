@@ -73,31 +73,15 @@ const QueryOperationNameSchema = z.union([
   z.literal(TEXT_WINDOW_OPERATION),
 ]);
 
-const BufferRootSchema = z.object({
-  id: z.number().int(),
-  text: z.string(),
-});
+const BufferRootSchema = z.object({ id: z.number().int(), text: z.string() });
 
-const AdmittedTickSchema = z.object({
-  id: z.number().int(),
-  rootId: z.number().int(),
-});
+const AdmittedTickSchema = z.object({ id: z.number().int(), rootId: z.number().int() });
 
-const EditGroupSchema = z.object({
-  id: z.number().int(),
-  tickIds: z.array(z.number().int()),
-});
+const EditGroupSchema = z.object({ id: z.number().int(), tickIds: z.array(z.number().int()) });
 
-const OpenEditGroupSchema = z.object({
-  id: z.number().int(),
-  tickIds: z.array(z.number().int()),
-});
+const OpenEditGroupSchema = z.object({ id: z.number().int(), tickIds: z.array(z.number().int()) });
 
-const SaveCheckpointSchema = z.object({
-  id: z.number().int(),
-  rootId: z.number().int(),
-  path: z.string(),
-});
+const SaveCheckpointSchema = z.object({ id: z.number().int(), rootId: z.number().int(), path: z.string() });
 
 const HotTextBufferStateSchema = z.object({
   path: z.string(),
@@ -113,6 +97,12 @@ const TickMetadataSchema = z.object({
   tickId: z.number().int(),
   kind: RewriteKindSchema,
   author: z.string().optional(),
+  baseHeadId: z.string().optional(),
+  nextHeadId: z.string().optional(),
+  startByte: z.number().int().optional(),
+  endByte: z.number().int().optional(),
+  insertedByteLength: z.number().int().optional(),
+  deletedByteLength: z.number().int().optional(),
 });
 
 const CheckpointMetadataSchema = z.object({
