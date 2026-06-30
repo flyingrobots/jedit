@@ -14,6 +14,7 @@ import {
   workspaceTextAuthorityWithLastCommandEvent,
   workspaceTextAuthorityWithReceipt,
 } from './workspace-text-authority.js';
+import { createJeditWhyObservation, jeditWhyObservationMessage, type JeditWhyObservation } from './jedit-why-observation.js';
 import {
   parseVimChordSyntax,
   VimChordSyntaxKinds,
@@ -51,6 +52,7 @@ export interface JeditCommandEvent {
   readonly kind: 'vim';
   readonly motion?: string;
   readonly operator?: string;
+  readonly observation: JeditWhyObservation;
   readonly receipt: JeditCommandReceipt;
   readonly receiptId?: string;
   readonly requestId?: number;
@@ -273,6 +275,11 @@ function eventFromValidatedFacts(
 ): JeditCommandEvent {
   const command = commandKeySequence(input.repeat.keys);
   const basis = basisDigest(input.editor, input.repeat, target);
+  const observation = createJeditWhyObservation({
+    basisDigest: basis,
+    target,
+    textAuthority: input.textAuthority,
+  });
   return {
     kind: EVENT_KIND_VIM,
     eventId: commandEventId(command, basis, target, receipt, input.requestId),
@@ -283,6 +290,7 @@ function eventFromValidatedFacts(
     operator: syntax.operator,
     motion: syntax.motion,
     textObject: syntax.textObject,
+    observation,
     basisDigest: basis,
     requestId: input.requestId,
     replayPolicy: input.repeat.replayPolicy,
@@ -349,6 +357,7 @@ function commandEventMessage(event: JeditCommandEvent): string {
     targetMessage(event.target),
     registerEffectMessage(event.registerEffect),
     event.basisDigest == null ? undefined : `basis: ${event.basisDigest}`,
+    jeditWhyObservationMessage(event.observation),
     `receipt: ${receiptMessage(event.receipt)}`,
     `result: ${event.result.mode} @ ${event.result.cursorRow}:${event.result.cursorCol}`,
     `summary: ${event.summary}`,
