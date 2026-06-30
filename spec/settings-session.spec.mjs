@@ -46,8 +46,8 @@ test('jedit settings rows expose theme, footer, and markdown preview preferences
   assert.deepEqual(
     rows.map((row) => [row.label, row.valueLabel, row.kind, row.checked === true]),
     [
-      ['English', 'en', settings.JEDIT_SETTING_ROW_KIND.Option, false],
-      ['Français', 'Current', settings.JEDIT_SETTING_ROW_KIND.Option, true],
+      ['English', '', settings.JEDIT_SETTING_ROW_KIND.Option, false],
+      ['Français', '', settings.JEDIT_SETTING_ROW_KIND.Option, true],
       ['Theme', theme.name, settings.JEDIT_SETTING_ROW_KIND.Choice, false],
       ['Light/dark', 'Dark', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
       ['Footer', 'On', settings.JEDIT_SETTING_ROW_KIND.Toggle, true],
@@ -57,12 +57,12 @@ test('jedit settings rows expose theme, footer, and markdown preview preferences
   );
 });
 
-test('settings focus movement clamps to the available rows', async () => {
+test('settings focus movement loops through the available rows', async () => {
   const { settings } = await loadSettingsModules();
 
   assert.equal(settings.moveSettingsFocusIndex(0, 1, 3), 1);
-  assert.equal(settings.moveSettingsFocusIndex(2, 1, 3), 2);
-  assert.equal(settings.moveSettingsFocusIndex(0, -1, 3), 0);
+  assert.equal(settings.moveSettingsFocusIndex(2, 1, 3), 0);
+  assert.equal(settings.moveSettingsFocusIndex(0, -1, 3), 2);
   assert.equal(settings.moveSettingsFocusIndex(3, 0, 3), 2);
 });
 
@@ -108,6 +108,9 @@ test('settings key reducer closes, moves, and activates focused settings rows', 
 
   const [closed] = settings.updateJeditSettingsFromKey({ key: 'escape' }, baseModel, rows, handlers);
   assert.equal(closed.settingsOpen, false);
+
+  const [closedWithQ] = settings.updateJeditSettingsFromKey({ key: 'q' }, baseModel, rows, handlers);
+  assert.equal(closedWithQ.settingsOpen, false);
 
   const [moved] = settings.updateJeditSettingsFromKey({ key: 'down' }, baseModel, rows, handlers);
   assert.equal(moved.settingsFocusIndex, 1);

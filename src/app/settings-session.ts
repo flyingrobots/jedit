@@ -88,6 +88,7 @@ const KEY_DOWN = 'down';
 const KEY_UP = 'up';
 const KEY_J = 'j';
 const KEY_K = 'k';
+const KEY_Q = 'q';
 const KEY_ENTER = 'enter';
 const KEY_SPACE = ' ';
 const KEY_SPACE_CANONICAL = 'space';
@@ -113,7 +114,6 @@ const SETTINGS_I18N_KEYS = Object.freeze({
   ValueThemeModeLight: 'settings.values.theme_mode_light',
   ValueSource: 'settings.values.source',
   ValuePreview: 'settings.values.preview',
-  ValueCurrent: 'settings.values.current',
   ValueOpen: 'settings.values.open',
 } as const);
 
@@ -128,6 +128,7 @@ type SettingsKeyAction = typeof SETTINGS_KEY_ACTION[keyof typeof SETTINGS_KEY_AC
 
 const SETTINGS_KEY_ACTIONS = new Map<string, SettingsKeyAction>([
   [KEY_ESCAPE, SETTINGS_KEY_ACTION.Close],
+  [KEY_Q, SETTINGS_KEY_ACTION.Close],
   [KEY_DOWN, SETTINGS_KEY_ACTION.Down],
   [KEY_J, SETTINGS_KEY_ACTION.Down],
   [KEY_UP, SETTINGS_KEY_ACTION.Up],
@@ -171,7 +172,7 @@ function localeSettingsRow(
     section: SETTINGS_SECTION_LANGUAGE,
     label: locale.label,
     description: `${locale.locale} ${locale.direction.toUpperCase()}`,
-    valueLabel: active ? i18n.t(SETTINGS_I18N_KEYS.ValueCurrent) : locale.locale,
+    valueLabel: '',
     kind: JEDIT_SETTING_ROW_KIND.Option,
     checked: active,
     locale,
@@ -249,7 +250,10 @@ function settingsThemeModeLabel(state: JeditSettingsContext): string {
 }
 
 export function moveSettingsFocusIndex(index: number, delta: number, rowCount: number): number {
-  return clampSettingsFocusIndex(index + delta, rowCount);
+  if (rowCount <= 0) {
+    return 0;
+  }
+  return positiveModulo(clampSettingsFocusIndex(index, rowCount) + delta, rowCount);
 }
 
 export function clampSettingsFocusIndex(index: number, rowCount: number): number {
@@ -257,6 +261,10 @@ export function clampSettingsFocusIndex(index: number, rowCount: number): number
     return 0;
   }
   return Math.max(0, Math.min(index, rowCount - 1));
+}
+
+function positiveModulo(value: number, size: number): number {
+  return ((value % size) + size) % size;
 }
 
 export function toggleSettingsOpen<Model extends JeditSettingsHostState>(model: Model): Model {

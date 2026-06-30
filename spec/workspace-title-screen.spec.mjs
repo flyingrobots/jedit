@@ -629,6 +629,40 @@ test("startup file selector renders as a left drawer over the title screen", asy
   assert.match(text, /README\.md/);
 });
 
+test("workspace title row uses the active theme chrome token", async () => {
+  const [viewer, titleScreen, themes] = await Promise.all([
+    importDist("app", "workspace", "viewer.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("ui", "jedit-themes.js"),
+  ]);
+  const theme = themes.availableJeditThemes()[0];
+  const surface = viewer.renderWorkspace(mockTitleScreenModel(titleScreen, {
+    columns: 80,
+    rows: 24,
+    jeditTheme: theme,
+    startupIntroComplete: true,
+    editor: {
+      path: "/repo/foo.txt",
+      lines: ["themed title"],
+      cursorRow: 0,
+      cursorCol: 0,
+      scrollRow: 0,
+      scrollCol: 0,
+      dirty: true,
+      readOnly: false,
+      mode: "normal",
+      undoStack: [],
+      redoStack: [],
+    },
+  }));
+  const titleCells = Array.from({ length: surface.width }, (_, x) => surface.get(x, 0));
+  const titleCell = titleCells.find((cell) => cell.char !== " ");
+
+  assert.ok(titleCell);
+  assert.equal(titleCell.bg, theme.chrome.titleLogo.bg);
+  assert.equal(titleCell.fg, theme.chrome.titleLogo.fg);
+});
+
 test("startup file selector drawer width follows spring progress", async () => {
   const [viewer, titleScreen, themes, fileSystem] = await Promise.all([
     importDist("app", "workspace", "viewer.js"),

@@ -1,4 +1,11 @@
-import { createSurface, stringToSurface, type Surface } from '@flyingrobots/bijou';
+import {
+  colorHex,
+  createSurface,
+  stringToSurface,
+  type Surface,
+  type TokenValue,
+} from '@flyingrobots/bijou';
+import { drawer } from '@flyingrobots/bijou-tui';
 import type { JeditSettingsRow } from '../app/settings-session.js';
 import { JEDIT_SETTING_ROW_KIND } from '../app/settings-session.js';
 import { JEDIT_SETTINGS_TOGGLE_LABEL } from '../app/keybindings.js';
@@ -8,21 +15,24 @@ import { fitLine } from './workspace-render.js';
 const SETTINGS_DRAWER_MIN_WIDTH = 28;
 const SETTINGS_DRAWER_MAX_WIDTH = 42;
 const SETTINGS_DRAWER_WIDTH_RATIO = 0.3;
-const SETTINGS_HEADER_ROW = 1;
-const SETTINGS_HINT_ROW = 2;
-const SETTINGS_FIRST_ROW = 4;
-const SETTINGS_LEFT_PAD = 2;
+const SETTINGS_HINT_ROW = 1;
+const SETTINGS_FIRST_ROW = 3;
+const SETTINGS_LEFT_PAD = 0;
 const SETTINGS_ROW_GAP = 1;
 const SETTINGS_ROW_HEIGHT = 2;
 const SETTINGS_SELECTED_MARK = '›';
 const SETTINGS_UNSELECTED_MARK = ' ';
 const SETTINGS_CHOICE_MARK = '↻';
-const SETTINGS_OPTION_SELECTED_MARK = '●';
-const SETTINGS_OPTION_MARK = '○';
+const SETTINGS_OPTION_SELECTED_MARK = '[x]';
+const SETTINGS_OPTION_MARK = '[ ]';
 const SETTINGS_CHECKED_MARK = '☑';
 const SETTINGS_UNCHECKED_MARK = '☐';
-const SETTINGS_CLOSE_HINT = `${JEDIT_SETTINGS_TOGGLE_LABEL.toUpperCase()}/Esc close`;
+const SETTINGS_CLOSE_HINT = `${JEDIT_SETTINGS_TOGGLE_LABEL.toUpperCase()}/Esc/q close`;
 const SETTINGS_TITLE = 'Settings';
+const SETTINGS_FALLBACK_FOREGROUND = '#e2e7ec';
+const SETTINGS_FALLBACK_BACKGROUND = '#0e1116';
+const SETTINGS_BODY_HORIZONTAL_BORDER = 4;
+const SETTINGS_BODY_VERTICAL_BORDER = 2;
 
 export interface RenderSettingsDrawerOptions {
   readonly rows: readonly JeditSettingsRow[];
@@ -58,9 +68,30 @@ export function resolveSettingsDrawerWidth(columns: number): number {
 }
 
 export function renderSettingsDrawer(options: RenderSettingsDrawerOptions): Surface {
+  if (options.width <= 0 || options.height <= 0) {
+    return createSurface(Math.max(0, options.width), Math.max(0, options.height));
+  }
+  const content = renderSettingsDrawerBody({
+    ...options,
+    width: Math.max(1, options.width - SETTINGS_BODY_HORIZONTAL_BORDER),
+    height: Math.max(0, options.height - SETTINGS_BODY_VERTICAL_BORDER),
+  });
+  const overlay = drawer({
+    anchor: 'left',
+    title: SETTINGS_TITLE,
+    content,
+    screenWidth: options.width,
+    screenHeight: options.height,
+    width: options.width,
+    borderToken: tokenValue(options.theme.chrome.activeEdge),
+    bgToken: tokenValue(options.theme.surface.drawer),
+  });
+  return overlay.surface ?? content;
+}
+
+function renderSettingsDrawerBody(options: RenderSettingsDrawerOptions): Surface {
   const surface = createSurface(options.width, options.height);
   fillSurface(surface, options.theme.surface.drawer);
-  paintText(surface, SETTINGS_TITLE, SETTINGS_LEFT_PAD, SETTINGS_HEADER_ROW, settingsTitleToken(options));
   paintText(surface, SETTINGS_CLOSE_HINT, SETTINGS_LEFT_PAD, SETTINGS_HINT_ROW, settingsHintToken(options));
   const firstVisibleRow = firstVisibleSettingsRow(options.rows, options.selectedIndex, options.height);
   for (const layout of settingsRowLayouts(options.rows, firstVisibleRow)) {
@@ -101,17 +132,14 @@ function paintSettingsRow(surface: Surface, options: PaintSettingsRowOptions): v
   }
 }
 
-function settingsTitleToken(options: RenderSettingsDrawerOptions): JeditStyleToken {
-  return options.theme.markdown.get(JEDIT_MARKDOWN_TOKEN.Heading) ?? options.theme.surface.drawer;
-}
-
 function settingsHintToken(options: RenderSettingsDrawerOptions): JeditStyleToken {
   return options.theme.source.get(JEDIT_SOURCE_TOKEN.Comment) ?? options.theme.surface.drawer;
 }
 
 function settingsRowLabel(options: PaintSettingsRowOptions): string {
   const mark = options.selected ? SETTINGS_SELECTED_MARK : SETTINGS_UNSELECTED_MARK;
-  return `${mark} ${rowMark(options.row)} ${options.row.label} ${options.row.valueLabel}`;
+  const value = options.row.valueLabel.length > 0 ? ` ${options.row.valueLabel}` : '';
+  return `${mark} ${rowMark(options.row)} ${options.row.label}${value}`;
 }
 
 function rowMark(row: JeditSettingsRow): string {
@@ -225,4 +253,11 @@ function applyToken(surface: Surface, token: JeditStyleToken): void {
       });
     }
   }
+}
+
+function tokenValue(token: JeditStyleToken): TokenValue {
+  return {
+    hex: colorHex(token.fg) ?? token.hex ?? SETTINGS_FALLBACK_FOREGROUND,
+    bg: colorHex(token.bg) ?? SETTINGS_FALLBACK_BACKGROUND,
+  };
 }

@@ -1,6 +1,11 @@
 import type { Cmd, RuntimeIssue } from '@flyingrobots/bijou-tui';
 import { pushRuntimeIssueToast } from '../../ui/feedback.js';
-import { beginEditorProjectionRefresh, editorViewport, ensureEditorVisible } from './editor-session.js';
+import {
+  beginEditorProjectionRefresh,
+  beginEditorSourceHighlightRefresh,
+  editorViewport,
+  ensureEditorVisible,
+} from './editor-session.js';
 import type { WorkspaceModel } from './model.js';
 import { WorkspaceMessageTypes, type WorkspaceMsg } from './msg.js';
 import type { WorkspaceRuntimeDependencies } from './workspace-runtime-dependencies.js';
@@ -426,7 +431,7 @@ function refreshAfterEdit(
   deps: WorkspaceRuntimeDependencies,
   model: WorkspaceModel,
 ): WorkspaceRuntimeResult {
-  return beginEditorProjectionRefresh(model, { refreshGraft: shouldRefreshGraftAfterTextChange(model) }, deps);
+  return beginEditorSourceHighlightRefresh(model, deps);
 }
 
 function withTextAuthority(
@@ -456,10 +461,6 @@ function obstructedHistoryEntry(
     status: EchoHistoryEntryStatuses.Obstructed,
     summary: `${filePath}: ${issue.message}`,
   };
-}
-
-function shouldRefreshGraftAfterTextChange(model: WorkspaceModel): boolean {
-  return model.graftDrawerOpen || model.graftInfo?.path === model.editor?.path;
 }
 
 function shouldOpenQuitAfterExport(model: WorkspaceModel, requestId: number): boolean {

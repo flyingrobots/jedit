@@ -47,15 +47,13 @@ test('settings drawer renders structured rows and highlights the selected row', 
   const text = surfaceText(surface);
 
   assert.match(text, /Settings/);
-  assert.match(text, /F2\/Esc close/);
-  assert.match(text, /● English Current/);
+  assert.match(text, /F2\/Esc\/q close/);
+  assert.match(text, /\[x\] English/);
   assert.match(text, /↻ Theme/);
   assert.match(text, /☑ Footer/);
   assert.match(text, /↻ Markdown preview/);
   assert.match(text, /↻ Diagnostics Open/);
-  assert.equal(surface.get(2, 8).char, '›');
-  assert.equal(surface.get(2, 8).fg, theme.cursor.normal.fg);
-  assert.equal(surface.get(2, 8).bg, theme.cursor.normal.bg);
+  assert.ok(text.includes('› ↻ Theme'));
 });
 
 test('settings drawer keeps the focused row visible when section headers consume short drawers', async () => {

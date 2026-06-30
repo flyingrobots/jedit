@@ -84,16 +84,14 @@ function renderWorkspaceWithViewer(
 }
 
 function paintWorkspaceTitle(screen: Surface, model: WorkspaceModel): void {
-  screen.blit(
-    stringToSurface(centerLine(activeWorkspaceTitle({
-      cwd: model.cwd,
-      editorPath: model.editor?.path,
-      editorDirty: model.editor?.dirty ?? false,
-      selectedEntry: model.entries[model.selectedIndex],
-    }), model.columns), model.columns, 1),
-    0,
-    0,
-  );
+  const title = stringToSurface(centerLine(activeWorkspaceTitle({
+    cwd: model.cwd,
+    editorPath: model.editor?.path,
+    editorDirty: model.editor?.dirty ?? false,
+    selectedEntry: model.entries[model.selectedIndex],
+  }), model.columns), model.columns, 1);
+  applyTitleToken(title, model.jeditTheme.chrome.titleLogo);
+  screen.blit(title, 0, 0);
 }
 
 function paintWorkspaceDrawers(
@@ -192,6 +190,23 @@ function fallbackCommandLineErrorToken(): JeditStyleToken {
     foregroundVariables: [],
     backgroundVariables: [],
   };
+}
+
+function applyTitleToken(surface: Surface, token: JeditStyleToken): void {
+  for (let y = 0; y < surface.height; y += 1) {
+    for (let x = 0; x < surface.width; x += 1) {
+      const cell = surface.get(x, y);
+      surface.set(x, y, {
+        ...cell,
+        fg: token.fg ?? cell.fg,
+        fgRGB: token.fgRGB ?? cell.fgRGB,
+        bg: token.bg ?? cell.bg,
+        bgRGB: token.bgRGB ?? cell.bgRGB,
+        modifiers: token.modifiers == null ? cell.modifiers : [...token.modifiers],
+        empty: false,
+      });
+    }
+  }
 }
 
 function warningCommandLineErrorToken(

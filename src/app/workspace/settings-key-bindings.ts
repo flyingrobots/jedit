@@ -49,6 +49,9 @@ function updateDiagnosticsPanelKey(
   if (msg.key === WorkspaceKeys.Escape) {
     return [{ ...model, settingsDiagnosticsOpen: false }, []];
   }
+  if (msg.key === WorkspaceKeys.Q) {
+    return [{ ...model, settingsOpen: false, settingsDiagnosticsOpen: false }, []];
+  }
   return isDiagnosticsRefreshKey(msg)
     ? beginGraftDiagnosticsRefresh(model, context.deps.graftDiagnostics)
     : [model, []];

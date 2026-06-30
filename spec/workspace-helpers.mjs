@@ -282,19 +282,41 @@ export function noopNotificationTickCmd() {
 }
 
 export function mockJeditTheme() {
+  const workspace = {
+    fg: "#f0f6fc",
+    bg: "#0d1117",
+  };
+  const drawer = {
+    fg: "#f0f6fc",
+    bg: "#161b22",
+  };
+  const accent = {
+    fg: "#58a6ff",
+    bg: "#0d1117",
+  };
   return {
     variables: new Map(),
     surface: {
-      workspace: {
-        fg: "#f0f6fc",
-        bg: "#0d1117",
-      },
+      workspace,
+      drawer,
+      footer: drawer,
     },
     cursor: {
       normal: {
         bg: "#58a6ff",
       },
+      insert: accent,
     },
+    chrome: {
+      activeEdge: accent,
+      titleLogo: accent,
+      titleLogoShadow: workspace,
+      titleSceneNear: workspace,
+      titleSceneFar: workspace,
+    },
+    source: new Map(),
+    sourceRoleMap: new Map(),
+    markdown: new Map(),
   };
 }
 
