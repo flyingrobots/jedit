@@ -70,6 +70,29 @@ test('TextBufferOptic headless flow uses installed jedit contract transport', as
   assert.equal('tick' in optic, false);
 });
 
+test('installed transport preserves retained diff metadata across intent response codec', async () => {
+  const modules = await loadModules();
+  const transport = modules.transport.createInstalledJeditContractEchoTransport();
+  const created = modules.codec.decodeJeditIntentResponse(transport.submitIntentBytes(
+    createBufferWorldlineEnvelope(modules),
+  ));
+
+  assert.equal(created.status, modules.codec.JEDIT_TRANSPORT_STATUS_OK);
+  transport.jeditSessionPort.registerSession(created.execution.nextSession);
+  const edited = modules.codec.decodeJeditIntentResponse(transport.submitIntentBytes(
+    replaceRangeAsTickEnvelope(modules, created.execution.nextSession),
+  ));
+
+  assert.equal(edited.status, modules.codec.JEDIT_TRANSPORT_STATUS_OK);
+  assert.equal(edited.execution.nextSession.tickMetadata.length, 1);
+  assert.equal(edited.execution.nextSession.tickMetadata[0].baseHeadId, created.execution.nextSession.worldline.canonicalHeadId);
+  assert.equal(edited.execution.nextSession.tickMetadata[0].nextHeadId, edited.execution.nextSession.worldline.canonicalHeadId);
+  assert.equal(edited.execution.nextSession.tickMetadata[0].startByte, INSERT_BYTE);
+  assert.equal(edited.execution.nextSession.tickMetadata[0].endByte, INSERT_BYTE);
+  assert.equal(edited.execution.nextSession.tickMetadata[0].insertedByteLength, INSERT_TEXT.length);
+  assert.equal(edited.execution.nextSession.tickMetadata[0].deletedByteLength, 0);
+});
+
 test('installed transport stages runtime work before mutation handler execution', async () => {
   const modules = await loadModules();
   const events = [];
@@ -390,6 +413,22 @@ function createBufferWorldlineEnvelope(modules) {
         initialText: INITIAL_TEXT,
         projectionPath: BUFFER_KEY,
         createInitialCheckpoint: null,
+      },
+    },
+  });
+}
+
+function replaceRangeAsTickEnvelope(modules, session) {
+  return modules.codec.encodeJeditMutationIntentEnvelope({
+    operationName: modules.codec.REPLACE_RANGE_AS_TICK_OPERATION,
+    vars: {
+      input: {
+        worldlineId: session.worldline.worldlineId,
+        baseHeadId: session.worldline.canonicalHeadId,
+        startByte: INSERT_BYTE,
+        endByte: INSERT_BYTE,
+        insertText: INSERT_TEXT,
+        author: 'transport-test',
       },
     },
   });

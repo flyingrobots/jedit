@@ -108,6 +108,29 @@ test('range why resolves duplicate text by current coordinate, not string conten
   assert.equal(report.witness.result.ropeDiffId, edited.result.ropeDiff.ropeDiffId);
 });
 
+test('range why does not mark mixed old and inserted bytes as wholly produced', async () => {
+  const { whyRange, contractApp, adapter, hash } = await loadModules();
+  const runtime = adapter.createInMemoryHotTextRuntime();
+  const created = createBuffer(contractApp, runtime, hash, 'foo');
+  const edited = contractApp.replaceRangeAsTick(runtime, created.nextSession, {
+    worldlineId: created.result.worldline.worldlineId,
+    baseHeadId: created.result.head.headId,
+    startByte: 1,
+    endByte: 1,
+    insertText: 'X',
+    author: 'tester',
+  }, hash);
+
+  const report = whyRange.explainJeditWhyRange(edited.nextSession, {
+    startByte: 0,
+    endByte: 4,
+  });
+
+  assert.equal(report.witness.result.kind, 'unavailable');
+  assert.equal(report.witness.result.code, 'jedit_why_range_partial_overlap_unavailable');
+  assert.match(report.message, /No retained rope diff proves range 0\.\.4/);
+});
+
 function createBuffer(contractApp, runtime, hash, initialText) {
   return contractApp.createBufferWorldline(runtime, {
     bufferKey: 'notes/today.md',

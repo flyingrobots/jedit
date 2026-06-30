@@ -6,7 +6,10 @@ import {
   pushNotificationToast,
 } from "../../ui/feedback.js";
 import { FileEntryKinds, type FileEntry } from "../../ports/file-system.js";
-import { explainLastJeditCommand } from "./command-provenance.js";
+import {
+  explainLastJeditCommand,
+  JEDIT_WHY_NO_EVENT_OBSTRUCTION_CODE,
+} from "./command-provenance.js";
 import {
   closeWorkspaceCommandLine,
   invalidateWorkspaceCommandLine,
@@ -160,6 +163,7 @@ function dispatchWhyCommand(
   const range = jeditWhyRangeAtCursor(model.editor);
   if (
     report.kind === WHY_REPORT_OBSTRUCTION_KIND &&
+    report.code === JEDIT_WHY_NO_EVENT_OBSTRUCTION_CODE &&
     range != null &&
     model.textAuthority.kind === WorkspaceTextAuthorityKinds.Opened
   ) {

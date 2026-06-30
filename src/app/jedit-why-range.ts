@@ -121,7 +121,7 @@ function retainedRopeDiff(tick: TickMetadata): RetainedRopeDiff | undefined {
 }
 
 function diffProducesRange(diff: RetainedRopeDiff, range: JeditWhyByteRange): boolean {
-  return diff.insertedByteLength > ZERO_BYTES && rangesIntersect(range, insertedRange(diff));
+  return diff.insertedByteLength > ZERO_BYTES && rangeContains(insertedRange(diff), range);
 }
 
 function mapRangeBeforeDiff(
@@ -207,8 +207,8 @@ function insertedRange(diff: RetainedRopeDiff): JeditWhyByteRange {
   };
 }
 
-function rangesIntersect(left: JeditWhyByteRange, right: JeditWhyByteRange): boolean {
-  return left.startByte < right.endByte && right.startByte < left.endByte;
+function rangeContains(outer: JeditWhyByteRange, inner: JeditWhyByteRange): boolean {
+  return outer.startByte <= inner.startByte && inner.endByte <= outer.endByte;
 }
 
 function offsetRange(range: JeditWhyByteRange, offset: number): JeditWhyByteRange {
