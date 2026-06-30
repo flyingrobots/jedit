@@ -221,10 +221,7 @@ test('real workspace app path waits for queued rapid inserts before saving', asy
     deleteRange: async () => {
       throw new Error('deleteRange should not run for insert typing');
     },
-    multiRangeEdit: async () => ({
-      kind: 'obstructed',
-      obstruction: productionTextObstruction('multi-range unsupported'),
-    }),
+    multiRangeEdit: async () => productionTextObstruction('multi-range unsupported'),
     checkpointBuffer: async (request) => {
       calls.checkpoint.push(request);
       return {
@@ -314,10 +311,7 @@ test('real workspace app path cancels a queued save after an edit obstruction', 
     deleteRange: async () => {
       throw new Error('deleteRange should not run for insert typing');
     },
-    multiRangeEdit: async () => ({
-      kind: 'obstructed',
-      obstruction: productionTextObstruction('multi-range unsupported'),
-    }),
+    multiRangeEdit: async () => productionTextObstruction('multi-range unsupported'),
     checkpointBuffer: async (request) => {
       calls.checkpoint.push(request);
       return {
