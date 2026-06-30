@@ -51,3 +51,14 @@ test('two-phase audit names exact and ranged first-party dependencies correctly'
   assert.match(audit, /`@flyingrobots\/bijou-i18n` and its tools use `\^7\.0\.0`/);
   assert.doesNotMatch(audit, /Pin @flyingrobots\/graft to an exact version/);
 });
+
+test('documentation audit prompt covers all stale Advanced Guide runtime references', () => {
+  const audit = readRepoText(DOC_AUDIT);
+
+  assert.match(audit, /`src\/app\/workspace\/editor\/model\.ts`/);
+  assert.match(audit, /`src\/app\/workspace\/editor-editing-core\.ts`/);
+  assert.match(audit, /`src\/app\/workspace\/runtime\.ts`/);
+  assert.match(audit, /`src\/ui\/workspace-render\.ts`/);
+  assert.match(audit, /`src\/main-workspace\.ts`/);
+  assert.match(audit, /`src\/main\.ts` only remains the process entrypoint/);
+});
