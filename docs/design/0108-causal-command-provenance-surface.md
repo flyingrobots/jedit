@@ -7,7 +7,7 @@ status: "active"
 owners:
   - "@flyingrobots"
 created: "2026-06-13"
-updated: "2026-06-28"
+updated: "2026-06-29"
 ---
 
 # WF-0108 - Jim Command Provenance And :why
@@ -15,6 +15,24 @@ updated: "2026-06-28"
 ## Linked Issue
 
 - [#131 WF-0108: Jim Command Provenance And :why](https://github.com/flyingrobots/jedit/issues/131)
+- Follow-up roadmap: [#181 WF-0108A: Complete `:why` through observation evidence](https://github.com/flyingrobots/jedit/issues/181)
+
+## WF-0108A Roadmap Lock
+
+This document remains the historical base cycle for command provenance and the
+first `:why` implementation. The current completion plan is tracked in:
+
+- [WF-0108A - `:why` Observation Evidence Roadmap](0108a-why-observation-evidence-roadmap.md)
+
+Current source truth is sharper than the original checklist: `:why`
+command-line dispatch and the calm no-event case are already implemented. The
+remaining gap is not basic dispatch; it is full observation evidence for the
+golden commands, typed evidence obstruction posture, JSON witness parity, and
+Echo ReadingEnvelope identity.
+
+Jim owns the user-facing `:why` command. Echo owns generic runtime evidence.
+Continuum owns portable protocol/profile vocabulary only when the evidence must
+cross participant boundaries.
 
 ## Decision Summary
 

@@ -8,6 +8,12 @@ const AGENTS_PATH = path.join(REPO_ROOT, 'AGENTS.md');
 const PROCESS_PATH = path.join(REPO_ROOT, 'docs', 'method', 'process.md');
 const TEMPLATE_PATH = path.join(REPO_ROOT, 'docs', 'design', 'TEMPLATE.md');
 const POLICY_DESIGN_PATH = path.join(REPO_ROOT, 'docs', 'design', '0034-design-cycle-template-and-lifecycle.md');
+const WHY_OBSERVATION_ROADMAP_PATH = path.join(
+  REPO_ROOT,
+  'docs',
+  'design',
+  '0108a-why-observation-evidence-roadmap.md',
+);
 
 const REQUIRED_TEMPLATE_HEADINGS = Object.freeze([
   '## Linked Issue',
@@ -58,6 +64,14 @@ test('full cycle design template includes the required proof-oriented sections',
   assert.match(template, /Graft API boundary/);
   assert.match(template, /terminal size constraints/);
   assert.match(template, /Agent Inspectability/);
+});
+
+test('WF-0108A roadmap preserves required full-cycle design headings', () => {
+  const roadmap = readRepoFile(WHY_OBSERVATION_ROADMAP_PATH);
+
+  for (const heading of REQUIRED_TEMPLATE_HEADINGS) {
+    assert.match(roadmap, new RegExp(`^${escapeRegExp(heading)}$`, 'm'), `${heading} missing from WF-0108A`);
+  }
 });
 
 test('process doc defines the official cycle lifecycle and proof boundary', () => {
