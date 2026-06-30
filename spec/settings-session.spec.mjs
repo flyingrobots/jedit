@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url';
 import { createI18nMock } from './i18n-mock.mjs';
 import { REPO_ROOT, ensureDistBuilt } from './dist-helpers.mjs';
 
+const KEYBINDINGS_PATH = path.join(REPO_ROOT, 'dist', 'app', 'keybindings.js');
 const SESSION_PATH = path.join(REPO_ROOT, 'dist', 'app', 'settings-session.js');
 const THEMES_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'jedit-themes.js');
 
@@ -12,6 +13,7 @@ async function loadSettingsModules() {
   await ensureDistBuilt();
 
   return {
+    keybindings: await import(pathToFileURL(KEYBINDINGS_PATH).href),
     settings: await import(pathToFileURL(SESSION_PATH).href),
     themes: await import(pathToFileURL(THEMES_PATH).href),
   };
@@ -69,7 +71,7 @@ test('settings focus movement loops through the available rows', async () => {
 });
 
 test('settings key reducer closes, moves, and activates focused settings rows', async () => {
-  const { settings, themes } = await loadSettingsModules();
+  const { keybindings, settings, themes } = await loadSettingsModules();
   const theme = themes.availableJeditThemes()[0];
   const baseModel = {
     i18n: createI18nMock(),
@@ -111,7 +113,12 @@ test('settings key reducer closes, moves, and activates focused settings rows', 
   const [closed] = settings.updateJeditSettingsFromKey({ key: 'escape' }, baseModel, rows, handlers);
   assert.equal(closed.settingsOpen, false);
 
-  const [closedWithQ] = settings.updateJeditSettingsFromKey({ key: 'q' }, baseModel, rows, handlers);
+  const [closedWithQ] = settings.updateJeditSettingsFromKey(
+    { key: keybindings.JEDIT_SETTINGS_CLOSE_KEY },
+    baseModel,
+    rows,
+    handlers,
+  );
   assert.equal(closedWithQ.settingsOpen, false);
 
   const [moved] = settings.updateJeditSettingsFromKey({ key: 'down' }, baseModel, rows, handlers);

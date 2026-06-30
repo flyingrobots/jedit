@@ -23,6 +23,7 @@ type JeditKeyChord = Pick<JeditKeyBinding, 'key' | 'ctrl' | 'alt' | 'shift'>;
 const KEY_F2 = 'f2';
 const KEY_F3 = 'f3';
 const KEY_L = 'l';
+const KEY_Q = 'q';
 const KEY_T = 't';
 const MODIFIER_CTRL = 'ctrl';
 const MODIFIER_ALT = 'alt';
@@ -32,6 +33,8 @@ const DUPLICATE_BINDING_PREFIX = 'Duplicate jedit key binding';
 
 export const JEDIT_SETTINGS_TOGGLE_KEY = KEY_F2;
 export const JEDIT_SETTINGS_TOGGLE_LABEL = KEY_F2;
+export const JEDIT_SETTINGS_CLOSE_KEY = KEY_Q;
+export const JEDIT_SETTINGS_CLOSE_LABEL = KEY_Q;
 export const JEDIT_MARKDOWN_PREVIEW_TOGGLE_KEY = KEY_F3;
 export const JEDIT_MARKDOWN_PREVIEW_TOGGLE_LABEL = KEY_F3;
 export const JEDIT_SCENE_PICKER_TOGGLE_KEY = KEY_L;

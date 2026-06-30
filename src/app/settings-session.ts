@@ -1,6 +1,7 @@
 import type { Cmd } from '@flyingrobots/bijou-tui';
 import type { I18nDirection } from '../ports/i18n.js';
 import { JEDIT_THEME_MODE, type JeditTheme } from '../ui/jedit-theme.js';
+import { JEDIT_SETTINGS_CLOSE_KEY } from './keybindings.js';
 import { ViewModes, type ViewMode } from './workspace/view-mode.js';
 
 export const JEDIT_SETTING_ACTION = {
@@ -88,7 +89,6 @@ const KEY_DOWN = 'down';
 const KEY_UP = 'up';
 const KEY_J = 'j';
 const KEY_K = 'k';
-const KEY_Q = 'q';
 const KEY_ENTER = 'enter';
 const KEY_SPACE = ' ';
 const KEY_SPACE_CANONICAL = 'space';
@@ -128,7 +128,7 @@ type SettingsKeyAction = typeof SETTINGS_KEY_ACTION[keyof typeof SETTINGS_KEY_AC
 
 const SETTINGS_KEY_ACTIONS = new Map<string, SettingsKeyAction>([
   [KEY_ESCAPE, SETTINGS_KEY_ACTION.Close],
-  [KEY_Q, SETTINGS_KEY_ACTION.Close],
+  [JEDIT_SETTINGS_CLOSE_KEY, SETTINGS_KEY_ACTION.Close],
   [KEY_DOWN, SETTINGS_KEY_ACTION.Down],
   [KEY_J, SETTINGS_KEY_ACTION.Down],
   [KEY_UP, SETTINGS_KEY_ACTION.Up],
