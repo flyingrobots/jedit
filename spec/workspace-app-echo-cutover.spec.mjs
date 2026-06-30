@@ -665,6 +665,24 @@ test('real workspace app path exposes no lifecycle authority through production 
   assert.equal('tick' in harness.productionTextSession, false);
 });
 
+test('observed document window helper reports UTF-8 byte offsets', () => {
+  const observed = observedDocumentWindow(echoTextDocument('é\nx'), 1, {
+    aperture: {
+      cursorLine: 0,
+      viewportLineCount: 2,
+    },
+  });
+
+  assert.deepEqual(observed.observed.value.lines.map((line) => ({
+    lineNumber: line.lineNumber,
+    startByte: line.startByte,
+    endByte: line.endByte,
+  })), [
+    { lineNumber: 0, startByte: 0, endByte: 2 },
+    { lineNumber: 1, startByte: 3, endByte: 4 },
+  ]);
+});
+
 async function openedHarness(options = {}) {
   const harness = await createWorkspaceEchoAppHarness({
     readings: ['before edit', 'after edit'],
@@ -731,7 +749,7 @@ function observedDocumentWindow(document, sequence, request) {
         lines: visibleLines.map((text, index) => ({
           lineNumber: startLine + index,
           startByte: byteOffsetAtLine(lines, startLine + index),
-          endByte: byteOffsetAtLine(lines, startLine + index) + text.length,
+          endByte: byteOffsetAtLine(lines, startLine + index) + Buffer.byteLength(text, 'utf8'),
           text,
         })),
         startLine,
@@ -773,7 +791,7 @@ async function applyWorkspaceMessage(harness, message) {
 function byteOffsetAtLine(lines, targetLine) {
   let offset = 0;
   for (let line = 0; line < targetLine; line += 1) {
-    offset += (lines[line] ?? '').length + 1;
+    offset += Buffer.byteLength(lines[line] ?? '', 'utf8') + 1;
   }
   return offset;
 }
