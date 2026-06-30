@@ -137,10 +137,7 @@ test('real workspace app path serializes rapid insert settlement and records eac
     deleteRange: async () => {
       throw new Error('deleteRange should not run for insert typing');
     },
-    multiRangeEdit: async () => ({
-      kind: 'obstructed',
-      obstruction: productionTextObstruction('multi-range unsupported'),
-    }),
+    multiRangeEdit: async () => productionTextObstruction('multi-range unsupported'),
     checkpointBuffer: async () => ({
       kind: 'checkpointed',
       result: { checkpointId: 'checkpoint:save' },
