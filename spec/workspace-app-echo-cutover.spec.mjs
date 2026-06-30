@@ -118,6 +118,7 @@ test('real workspace app path serializes rapid insert settlement and records eac
       };
     },
     insertText: async (request) => {
+      const receiptSequence = calls.insert.length + 1;
       calls.insert.push(request);
       const pending = deferred();
       pendingInserts.push({ pending, request });
@@ -126,7 +127,7 @@ test('real workspace app path serializes rapid insert settlement and records eac
       return {
         kind: 'applied',
         result: {
-          receiptId: `receipt:${calls.insert.length}`,
+          receiptId: `receipt:${receiptSequence}`,
         },
       };
     },
@@ -204,6 +205,7 @@ test('real workspace app path waits for queued rapid inserts before saving', asy
       };
     },
     insertText: async (request) => {
+      const receiptSequence = calls.insert.length + 1;
       calls.insert.push(request);
       const pending = deferred();
       pendingInserts.push({ pending, request });
@@ -212,7 +214,7 @@ test('real workspace app path waits for queued rapid inserts before saving', asy
       return {
         kind: 'applied',
         result: {
-          receiptId: `receipt:${calls.insert.length}`,
+          receiptId: `receipt:${receiptSequence}`,
         },
       };
     },
