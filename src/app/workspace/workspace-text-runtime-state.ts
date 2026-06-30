@@ -212,8 +212,7 @@ function applyIntermediateTextEditResult(
     evidenceId: msg.result.receiptId,
     summary: jeditAppliedCommandHistorySummary(msg.result.filePath, msg.requestId, withCurrentObservation),
   });
-  const settlement = persistEditSettlement(deps, msg.result, applied);
-  return settlement == null ? [applied, []] : settlement;
+  return refreshAndPersistAppliedTextEdit(deps, msg.result, applied);
 }
 
 function textAuthorityWithIntermediateEditReceipt(
@@ -259,8 +258,16 @@ function applyAppliedTextEditResult(
     evidenceId: msg.result.receiptId,
     summary: jeditAppliedCommandHistorySummary(msg.result.filePath, msg.requestId, withCurrentObservation),
   });
-  const [refreshed, refreshCommands] = refreshAfterEdit(deps, applied);
-  const settlement = persistEditSettlement(deps, msg.result, refreshed);
+  return refreshAndPersistAppliedTextEdit(deps, msg.result, applied);
+}
+
+function refreshAndPersistAppliedTextEdit(
+  deps: WorkspaceRuntimeDependencies,
+  result: WorkspaceTextAppliedResult,
+  model: WorkspaceModel,
+): WorkspaceRuntimeResult {
+  const [refreshed, refreshCommands] = refreshAfterEdit(deps, model);
+  const settlement = persistEditSettlement(deps, result, refreshed);
   return settlement == null
     ? [refreshed, refreshCommands]
     : [settlement[0], [...refreshCommands, ...settlement[1]]];
