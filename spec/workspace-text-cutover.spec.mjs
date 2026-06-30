@@ -1018,7 +1018,7 @@ test("stale TextEditResult obstruction is ignored after a newer edit settles", a
   assert.deepEqual(nextModel.echoHistory, []);
 });
 
-test("save blocks while a production text intent is still pending", async () => {
+test("save can be requested while a production text intent is still pending", async () => {
   const [saveKey, modeModule, authority, profile] =
     await Promise.all([
       importDist("app", "workspace", "workspace-save-key.js"),
@@ -1060,12 +1060,14 @@ test("save blocks while a production text intent is still pending", async () => 
     },
   });
 
-  const [blockedModel, commands] = saveKey.saveWorkspace(model, context);
+  const [pendingSaveModel, commands] = saveKey.saveWorkspace(model, context);
 
-  assert.equal(blockedModel.textRequestId, 4);
-  assert.equal(blockedModel.textAuthority.pendingIntentStatus, authority.WorkspaceTextIntentStatuses.Predicted);
+  assert.equal(pendingSaveModel.textRequestId, 5);
+  assert.equal(pendingSaveModel.textAuthority.pendingIntentStatus, authority.WorkspaceTextIntentStatuses.Predicted);
   assert.equal(exportCalls.length, 0);
   assert.equal(commands.length, 1);
+  await commands[0]();
+  assert.deepEqual(exportCalls, [{ bufferId: "buffer:notes", atMs: 77 }]);
 });
 
 test("edit planning after bounded read uses the full local projection", async () => {

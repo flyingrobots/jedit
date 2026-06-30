@@ -2,11 +2,11 @@ import type { Cmd, RuntimeIssue } from '@flyingrobots/bijou-tui';
 import type { EditorFileFingerprint, EditorFilePort } from '../../ports/editor-file.js';
 import { editorFileFingerprintFromText } from '../../ports/editor-file-fingerprint.js';
 import { joinLines, normalizeLines } from '../editor-lines.js';
-import type {
-  ProductionTextSession,
-  ProductionTextViewportAperture,
+import {
+  ProductionTextSessionOutcomeKinds,
+  type ProductionTextSession,
+  type ProductionTextViewportAperture,
 } from './production-text-session.js';
-import { ProductionTextSessionOutcomeKinds } from './production-text-session.js';
 import { RuntimeIssueLevels, RuntimeIssueSources } from './runtime-issue.js';
 import { WorkspaceMessageTypes, type WorkspaceMsg } from './msg.js';
 import type { EditorState } from './editor/model.js';
@@ -31,6 +31,7 @@ import {
   readingCache,
   type WorkspaceTextObservedReading,
 } from './workspace-text-observed-reading.js';
+import { sequenceWorkspaceTextOperation } from './workspace-text-operation-sequencer.js';
 
 const ISSUE_LEVEL_ERROR = RuntimeIssueLevels.Error;
 const ISSUE_SOURCE_COMMAND = RuntimeIssueSources.Command;
@@ -48,8 +49,6 @@ const DEFAULT_VIEWPORT_LINE_COUNT = 24;
 const DEFAULT_BEFORE_LINES = 0;
 const DEFAULT_AFTER_LINES = 0;
 const DEFAULT_MAX_BYTES = 1048576;
-
-const textEditCommandQueues = new WeakMap<ProductionTextSession, Promise<void>>();
 
 export const WorkspaceTextEditCommandKinds = Object.freeze({
   Insert: EDIT_COMMAND_INSERT,
@@ -163,7 +162,10 @@ export function createWorkspaceTextEditCmd(
   request: WorkspaceTextEditCommandRequest,
 ): Cmd<WorkspaceMsg> {
   return async () => {
-    const result = await serializeWorkspaceTextEdit(request);
+    const result = await sequenceWorkspaceTextOperation(
+      request.productionTextSession,
+      () => editWorkspaceText(request),
+    );
     return {
       type: WorkspaceMessageTypes.TextEditResult,
       requestId: request.requestId,
@@ -172,41 +174,36 @@ export function createWorkspaceTextEditCmd(
   };
 }
 
-function serializeWorkspaceTextEdit(
-  request: WorkspaceTextEditCommandRequest,
-): Promise<WorkspaceTextEditResult> {
-  const previous = textEditCommandQueues.get(request.productionTextSession) ?? Promise.resolve();
-  const current = previous
-    .catch(() => undefined)
-    .then(() => editWorkspaceText(request));
-  const tail = current.then(() => undefined, () => undefined);
-  textEditCommandQueues.set(request.productionTextSession, tail);
-  tail.finally(() => {
-    if (textEditCommandQueues.get(request.productionTextSession) === tail) {
-      textEditCommandQueues.delete(request.productionTextSession);
-    }
-  });
-  return current;
-}
-
 export function createWorkspaceTextCheckpointCmd(
   request: WorkspaceTextCheckpointCommandRequest,
 ): Cmd<WorkspaceMsg> {
-  return async () => ({
-    type: WorkspaceMessageTypes.TextCheckpointResult,
-    requestId: request.requestId,
-    result: await checkpointWorkspaceText(request),
-  });
+  return async () => {
+    const result = await sequenceWorkspaceTextOperation(
+      request.productionTextSession,
+      () => checkpointWorkspaceText(request),
+    );
+    return {
+      type: WorkspaceMessageTypes.TextCheckpointResult,
+      requestId: request.requestId,
+      result,
+    };
+  };
 }
 
 export function createWorkspaceTextExportCmd(
   request: WorkspaceTextExportCommandRequest,
 ): Cmd<WorkspaceMsg> {
-  return async () => ({
-    type: WorkspaceMessageTypes.TextExportResult,
-    requestId: request.requestId,
-    result: await exportWorkspaceText(request),
-  });
+  return async () => {
+    const result = await sequenceWorkspaceTextOperation(
+      request.productionTextSession,
+      () => exportWorkspaceText(request),
+    );
+    return {
+      type: WorkspaceMessageTypes.TextExportResult,
+      requestId: request.requestId,
+      result,
+    };
+  };
 }
 
 export function createWorkspaceTextReadCmd(

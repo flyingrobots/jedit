@@ -181,6 +181,112 @@ test('real workspace app path serializes rapid insert settlement and records eac
   assert.equal(harness.model.echoHistory.at(-1).summary, '/repo/notes.md');
 });
 
+test('real workspace app path waits for queued rapid inserts before saving', async () => {
+  const sentence = "this is an editor and i'm typing in it";
+  const document = echoTextDocument('');
+  const calls = {
+    insert: [],
+    observe: [],
+    export: [],
+    checkpoint: [],
+  };
+  const pendingInserts = [];
+  const productionTextSession = {
+    openBuffer: async (request) => {
+      document.replace(request.initialText);
+      return {
+        kind: 'opened',
+        optic: {
+          buffer: {
+            bufferId: 'buffer:notes',
+          },
+        },
+      };
+    },
+    insertText: async (request) => {
+      calls.insert.push(request);
+      const pending = deferred();
+      pendingInserts.push({ pending, request });
+      await pending.promise;
+      document.insert(request.startByte, request.insertText);
+      return {
+        kind: 'applied',
+        result: {
+          receiptId: `receipt:${calls.insert.length}`,
+        },
+      };
+    },
+    replaceRange: async () => {
+      throw new Error('replaceRange should not run for insert typing');
+    },
+    deleteRange: async () => {
+      throw new Error('deleteRange should not run for insert typing');
+    },
+    multiRangeEdit: async () => ({
+      kind: 'obstructed',
+      obstruction: productionTextObstruction('multi-range unsupported'),
+    }),
+    checkpointBuffer: async (request) => {
+      calls.checkpoint.push(request);
+      return {
+        kind: 'checkpointed',
+        result: { checkpointId: 'checkpoint:save' },
+      };
+    },
+    observeWindow: async (request) => {
+      calls.observe.push(request);
+      return observedDocumentWindow(document, calls.observe.length, request);
+    },
+    exportSnapshot: async (request) => {
+      calls.export.push(request);
+      return {
+        kind: 'exported',
+        text: document.lines().join('\n'),
+        readingId: 'reading:export',
+      };
+    },
+  };
+  const harness = await openedHarness({
+    hostLines: [''],
+    productionTextSession,
+  });
+
+  await harness.key('i');
+  const editCommands = [];
+  for (const character of sentence) {
+    editCommands.push(...await harness.key(character));
+  }
+  const editMessages = editCommands.map((command) => command());
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(calls.insert.length, 1, 'rapid typing should still admit only one Echo mutation at a time');
+
+  const saveCommands = await harness.key('s', { ctrl: true });
+  assert.equal(saveCommands.length, 1);
+  const saveMessage = saveCommands[0]();
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(calls.export.length, 0, 'save must not export a partial Echo frontier while edits are queued');
+  assert.deepEqual(harness.savedFiles, []);
+
+  for (let index = 0; index < sentence.length; index += 1) {
+    await waitForPendingInsertCount(pendingInserts, index + 1);
+    pendingInserts[index].pending.resolve();
+    await applyWorkspaceMessage(harness, await editMessages[index]);
+  }
+
+  const [exportedModel, checkpointCommands] = harness.runtime.update(await saveMessage, harness.model);
+  harness.setModel(exportedModel);
+  await harness.runAll(checkpointCommands);
+
+  assert.deepEqual(harness.savedFiles, [{ filePath: '/repo/notes.md', lines: [sentence] }]);
+  assert.equal(calls.export.length, 1);
+  assert.equal(calls.checkpoint.length, 1);
+  assert.equal(harness.model.textAuthority.lastExportReadingId, 'reading:export');
+  assert.equal(harness.model.textAuthority.lastCheckpointId, 'checkpoint:save');
+  assert.equal(harness.model.textAuthority.dirty, false);
+});
+
 test('real workspace app path keeps newline insertion past bounded Echo readings', async () => {
   const document = echoTextDocument('');
   const calls = {
