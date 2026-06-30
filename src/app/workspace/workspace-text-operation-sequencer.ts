@@ -10,6 +10,7 @@ import {
 interface ActiveTextExportOperation {
   readonly bufferId: string;
   readonly filePath: string;
+  readonly operationSequence: number;
   readonly promise: Promise<WorkspaceTextExportResult>;
 }
 
@@ -22,6 +23,12 @@ interface WorkspaceTextOperationSequencerState {
   readonly queues: WeakMap<ProductionTextSession, Promise<void>>;
   readonly obstructions: WeakMap<ProductionTextSession, BlockedTextOperation>;
   readonly exports: WeakMap<ProductionTextSession, ActiveTextExportOperation>;
+  readonly operationSequences: WeakMap<ProductionTextSession, number>;
+}
+
+interface SequencedOperation<T> {
+  readonly operationSequence: number;
+  readonly promise: Promise<T>;
 }
 
 export interface WorkspaceTextOperationSequencer {
@@ -47,6 +54,7 @@ export function createWorkspaceTextOperationSequencer(): WorkspaceTextOperationS
     queues: new WeakMap<ProductionTextSession, Promise<void>>(),
     obstructions: new WeakMap<ProductionTextSession, BlockedTextOperation>(),
     exports: new WeakMap<ProductionTextSession, ActiveTextExportOperation>(),
+    operationSequences: new WeakMap<ProductionTextSession, number>(),
   };
   return {
     sequenceEdit: (session, operation) => sequenceEditOperation(state, session, operation),
@@ -59,7 +67,8 @@ function sequenceWorkspaceTextOperation<T>(
   state: WorkspaceTextOperationSequencerState,
   session: ProductionTextSession,
   operation: () => Promise<T>,
-): Promise<T> {
+): SequencedOperation<T> {
+  const operationSequence = nextOperationSequence(state, session);
   const previous = state.queues.get(session) ?? Promise.resolve();
   const current = previous
     .catch(() => undefined)
@@ -71,7 +80,7 @@ function sequenceWorkspaceTextOperation<T>(
       state.queues.delete(session);
     }
   });
-  return current;
+  return { operationSequence, promise: current };
 }
 
 function sequenceEditOperation(
@@ -87,7 +96,7 @@ function sequenceEditOperation(
     const result = await operation();
     recordTextOperationResult(state, session, result);
     return result;
-  });
+  }).promise;
 }
 
 function sequenceCheckpointOperation(
@@ -99,7 +108,7 @@ function sequenceCheckpointOperation(
   return sequenceWorkspaceTextOperation(state, session, () => {
     const obstruction = state.obstructions.get(session);
     return obstruction == null ? operation() : Promise.resolve(obstructedTextOperation(filePath, obstruction.issue));
-  });
+  }).promise;
 }
 
 function sequenceExportOperation(
@@ -110,13 +119,14 @@ function sequenceExportOperation(
   operation: () => Promise<WorkspaceTextExportResult>,
 ): Promise<WorkspaceTextExportResult> {
   const active = state.exports.get(session);
-  if (active?.filePath === filePath && active.bufferId === bufferId) {
+  if (active?.filePath === filePath && active.bufferId === bufferId && active.operationSequence === currentOperationSequence(state, session)) {
     return active.promise;
   }
-  return trackTextExport(state, session, filePath, bufferId, sequenceWorkspaceTextOperation(state, session, () => {
+  const sequenced = sequenceWorkspaceTextOperation(state, session, () => {
     const obstruction = state.obstructions.get(session);
     return obstruction == null ? operation() : Promise.resolve(obstructedTextOperation(filePath, obstruction.issue));
-  }));
+  });
+  return trackTextExport(state, session, filePath, bufferId, sequenced);
 }
 
 function trackTextExport(
@@ -124,15 +134,15 @@ function trackTextExport(
   session: ProductionTextSession,
   filePath: string,
   bufferId: string,
-  promise: Promise<WorkspaceTextExportResult>,
+  sequenced: SequencedOperation<WorkspaceTextExportResult>,
 ): Promise<WorkspaceTextExportResult> {
-  state.exports.set(session, { bufferId, filePath, promise });
-  promise.finally(() => {
-    if (state.exports.get(session)?.promise === promise) {
+  state.exports.set(session, { bufferId, filePath, operationSequence: sequenced.operationSequence, promise: sequenced.promise });
+  sequenced.promise.finally(() => {
+    if (state.exports.get(session)?.promise === sequenced.promise) {
       state.exports.delete(session);
     }
   });
-  return promise;
+  return sequenced.promise;
 }
 
 function recordTextOperationResult(
@@ -159,4 +169,20 @@ function obstructedTextOperation(
     filePath,
     issue,
   };
+}
+
+function nextOperationSequence(
+  state: WorkspaceTextOperationSequencerState,
+  session: ProductionTextSession,
+): number {
+  const next = currentOperationSequence(state, session) + 1;
+  state.operationSequences.set(session, next);
+  return next;
+}
+
+function currentOperationSequence(
+  state: WorkspaceTextOperationSequencerState,
+  session: ProductionTextSession,
+): number {
+  return state.operationSequences.get(session) ?? 0;
 }
