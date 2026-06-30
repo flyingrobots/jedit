@@ -13,9 +13,14 @@ interface ActiveTextExportOperation {
   readonly promise: Promise<WorkspaceTextExportResult>;
 }
 
+interface BlockedTextOperation {
+  readonly filePath: string;
+  readonly issue: RuntimeIssue;
+}
+
 interface WorkspaceTextOperationSequencerState {
   readonly queues: WeakMap<ProductionTextSession, Promise<void>>;
-  readonly obstructions: WeakMap<ProductionTextSession, RuntimeIssue>;
+  readonly obstructions: WeakMap<ProductionTextSession, BlockedTextOperation>;
   readonly exports: WeakMap<ProductionTextSession, ActiveTextExportOperation>;
 }
 
@@ -38,9 +43,9 @@ export interface WorkspaceTextOperationSequencer {
 }
 
 export function createWorkspaceTextOperationSequencer(): WorkspaceTextOperationSequencer {
-  const state = {
+  const state: WorkspaceTextOperationSequencerState = {
     queues: new WeakMap<ProductionTextSession, Promise<void>>(),
-    obstructions: new WeakMap<ProductionTextSession, RuntimeIssue>(),
+    obstructions: new WeakMap<ProductionTextSession, BlockedTextOperation>(),
     exports: new WeakMap<ProductionTextSession, ActiveTextExportOperation>(),
   };
   return {
@@ -75,6 +80,10 @@ function sequenceEditOperation(
   operation: () => Promise<WorkspaceTextEditResult>,
 ): Promise<WorkspaceTextEditResult> {
   return sequenceWorkspaceTextOperation(state, session, async () => {
+    const obstruction = state.obstructions.get(session);
+    if (obstruction != null) {
+      return obstructedTextOperation(obstruction.filePath, obstruction.issue);
+    }
     const result = await operation();
     recordTextOperationResult(state, session, result);
     return result;
@@ -88,8 +97,8 @@ function sequenceCheckpointOperation(
   operation: () => Promise<WorkspaceTextCheckpointResult>,
 ): Promise<WorkspaceTextCheckpointResult> {
   return sequenceWorkspaceTextOperation(state, session, () => {
-    const issue = state.obstructions.get(session);
-    return issue == null ? operation() : Promise.resolve(obstructedTextOperation(filePath, issue));
+    const obstruction = state.obstructions.get(session);
+    return obstruction == null ? operation() : Promise.resolve(obstructedTextOperation(filePath, obstruction.issue));
   });
 }
 
@@ -105,8 +114,8 @@ function sequenceExportOperation(
     return active.promise;
   }
   return trackTextExport(state, session, filePath, bufferId, sequenceWorkspaceTextOperation(state, session, () => {
-    const issue = state.obstructions.get(session);
-    return issue == null ? operation() : Promise.resolve(obstructedTextOperation(filePath, issue));
+    const obstruction = state.obstructions.get(session);
+    return obstruction == null ? operation() : Promise.resolve(obstructedTextOperation(filePath, obstruction.issue));
   }));
 }
 
@@ -132,7 +141,10 @@ function recordTextOperationResult(
   result: WorkspaceTextEditResult,
 ): void {
   if (result.kind === WorkspaceTextResultKinds.Obstructed) {
-    state.obstructions.set(session, result.issue);
+    state.obstructions.set(session, {
+      filePath: result.filePath,
+      issue: result.issue,
+    });
     return;
   }
   state.obstructions.delete(session);
