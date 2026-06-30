@@ -3,6 +3,7 @@ import type { TextRuntimeProfile } from '../text-runtime-profile.js';
 import type { WorkspaceWorldlineMaterializationKind } from './worldline-types.js';
 import {
   WorkspaceTextAuthorityKinds,
+  WorkspaceTextIntentStatuses,
   workspaceTextAuthorityPosture,
   type WorkspaceTextAuthority,
   type WorkspaceTextAuthorityKind,
@@ -10,7 +11,6 @@ import {
   type WorkspaceTextIntentStatus,
 } from './workspace-text-authority.js';
 import {
-  WorkspaceTextReadingPostures,
   type WorkspaceTextReadingCache,
   type WorkspaceTextReadingCoverage,
   type WorkspaceTextReadingPosture,
@@ -65,6 +65,7 @@ export type JeditWhyEvidencePosture =
 export interface CreateJeditWhyObservationInput {
   readonly basisDigest?: string;
   readonly extraEvidenceSources?: readonly JeditWhyEvidenceSource[];
+  readonly receiptReferenceId?: string;
   readonly target?: JeditWhyObservationTarget;
   readonly textAuthority: WorkspaceTextAuthority;
 }
@@ -205,7 +206,7 @@ function evidenceSources(
   return [
     evidenceSource(SOURCE_LOCAL_EDITOR_PROVENANCE, POSTURE_AVAILABLE, input.basisDigest),
     ...authorityEvidenceSources(input.textAuthority, cache, posture),
-    ...receiptEvidenceSources(input.textAuthority),
+    ...receiptEvidenceSources(input.receiptReferenceId),
     ...extraEvidenceSources(input.extraEvidenceSources),
   ];
 }
@@ -222,13 +223,7 @@ function authorityEvidenceSources(
   return [evidenceSource(SOURCE_LOCAL_TEXT_WINDOW_ENVELOPE, posture, readingId)];
 }
 
-function receiptEvidenceSources(
-  authority: WorkspaceTextAuthority,
-): readonly JeditWhyEvidenceSource[] {
-  if (authority.kind !== WorkspaceTextAuthorityKinds.Opened) {
-    return [];
-  }
-  const receiptId = authority.lastReceiptId ?? authority.pendingReceiptId;
+function receiptEvidenceSources(receiptId: string | undefined): readonly JeditWhyEvidenceSource[] {
   return receiptId == null ? [] : [evidenceSource(SOURCE_RECEIPT_REFERENCE, POSTURE_AVAILABLE, receiptId)];
 }
 
@@ -236,7 +231,7 @@ function evidencePosture(
   authority: WorkspaceTextAuthority,
   cache: WorkspaceTextReadingCache | undefined,
 ): JeditWhyEvidencePosture {
-  if (obstructionIssue(authority) != null) {
+  if (currentObstructionIssue(authority) != null) {
     return POSTURE_OBSTRUCTED;
   }
   if (authority.kind !== WorkspaceTextAuthorityKinds.Opened) {
@@ -247,13 +242,11 @@ function evidencePosture(
   if (cache == null) {
     return POSTURE_MISSING_ENVELOPE;
   }
-  return authority.dirty ? POSTURE_STALE_BASIS : POSTURE_AVAILABLE;
+  return hasUnadmittedIntent(authority) ? POSTURE_STALE_BASIS : POSTURE_AVAILABLE;
 }
 
 function authorityReadingPosture(authority: WorkspaceTextAuthority): WorkspaceTextReadingPosture {
-  return obstructionIssue(authority) == null
-    ? workspaceTextAuthorityPosture(authority)
-    : WorkspaceTextReadingPostures.Obstructed;
+  return workspaceTextAuthorityPosture(authority);
 }
 
 function readingCache(authority: WorkspaceTextAuthority): WorkspaceTextReadingCache | undefined {
@@ -282,19 +275,24 @@ function apertureFromCache(cache: WorkspaceTextReadingCache): JeditWhyObservatio
   };
 }
 
-function obstructionIssue(authority: WorkspaceTextAuthority): RuntimeIssue | undefined {
-  if (authority.kind === WorkspaceTextAuthorityKinds.Obstructed) {
-    return authority.issue;
+function currentObstructionIssue(authority: WorkspaceTextAuthority): RuntimeIssue | undefined {
+  return authority.kind === WorkspaceTextAuthorityKinds.Obstructed ? authority.issue : undefined;
+}
+
+function hasUnadmittedIntent(authority: WorkspaceTextAuthority): boolean {
+  if (authority.kind !== WorkspaceTextAuthorityKinds.Opened) {
+    return false;
   }
-  return authority.kind === WorkspaceTextAuthorityKinds.Opened
-    ? authority.lastObstruction
-    : undefined;
+  return authority.pendingIntentStatus === WorkspaceTextIntentStatuses.Predicted
+    || authority.pendingIntentStatus === WorkspaceTextIntentStatuses.Submitted
+    || authority.pendingIntentStatus === WorkspaceTextIntentStatuses.Blocked
+    || authority.pendingIntentStatus === WorkspaceTextIntentStatuses.Obstructed;
 }
 
 function observationObstruction(
   authority: WorkspaceTextAuthority,
 ): JeditWhyObservationObstruction | undefined {
-  const issue = obstructionIssue(authority);
+  const issue = currentObstructionIssue(authority);
   return issue == null
     ? undefined
     : {

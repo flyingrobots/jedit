@@ -21,6 +21,8 @@ import {
   type VimChordSyntax,
 } from './vim-chord-syntax.js';
 
+export { workspaceTextAuthorityWithCurrentJeditCommandObservation } from './jedit-command-event-observation.js';
+
 export const JEDIT_WHY_TOAST_TITLE = 'Why';
 export const JEDIT_WHY_NO_EVENT_OBSTRUCTION_CODE = 'jedit_why_no_meaningful_event';
 
@@ -277,6 +279,7 @@ function eventFromValidatedFacts(
   const basis = basisDigest(input.editor, input.repeat, target);
   const observation = createJeditWhyObservation({
     basisDigest: basis,
+    receiptReferenceId: receipt.receiptId,
     target,
     textAuthority: input.textAuthority,
   });

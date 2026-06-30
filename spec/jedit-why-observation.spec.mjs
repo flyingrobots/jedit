@@ -94,8 +94,8 @@ test('why observation represents no-echo, missing, stale, obstructed, and proof 
   });
   assert.equal(missing.evidence.posture, whyObservation.JeditWhyEvidencePostures.MissingEnvelope);
 
-  const stale = whyObservation.createJeditWhyObservation({
-    basisDigest: 'basis:stale',
+  const freshDirty = whyObservation.createJeditWhyObservation({
+    basisDigest: 'basis:fresh-dirty',
     textAuthority: authority.openedWorkspaceTextAuthority({
       profile: profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
       filePath: '/repo/notes.md',
@@ -105,7 +105,36 @@ test('why observation represents no-echo, missing, stale, obstructed, and proof 
       cache: windowReadingCache(),
     }),
   });
+  assert.equal(freshDirty.evidence.posture, whyObservation.JeditWhyEvidencePostures.Available);
+
+  const stale = whyObservation.createJeditWhyObservation({
+    basisDigest: 'basis:stale',
+    textAuthority: authority.openedWorkspaceTextAuthority({
+      profile: profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+      filePath: '/repo/notes.md',
+      bufferId: 'buffer:notes',
+      readOnly: false,
+      dirty: true,
+      cache: windowReadingCache(),
+      pendingIntentStatus: authority.WorkspaceTextIntentStatuses.Predicted,
+    }),
+  });
   assert.equal(stale.evidence.posture, whyObservation.JeditWhyEvidencePostures.StaleBasis);
+
+  const recovered = whyObservation.createJeditWhyObservation({
+    basisDigest: 'basis:recovered',
+    textAuthority: authority.openedWorkspaceTextAuthority({
+      profile: profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+      filePath: '/repo/notes.md',
+      bufferId: 'buffer:notes',
+      readOnly: false,
+      dirty: false,
+      cache: windowReadingCache(),
+      lastObstruction: runtimeIssue('historical obstruction'),
+    }),
+  });
+  assert.equal(recovered.evidence.posture, whyObservation.JeditWhyEvidencePostures.Available);
+  assert.equal(recovered.evidence.obstruction, undefined);
 
   const obstructed = whyObservation.createJeditWhyObservation({
     basisDigest: 'basis:obstructed',
@@ -159,8 +188,75 @@ test('why observation represents no-echo, missing, stale, obstructed, and proof 
   ));
 });
 
+test('why observation uses current command receipts and refreshes after admission', async () => {
+  const [mode, authority, profile, provenance, observationRefresh, whyObservation] = await Promise.all([
+    importDist('app', 'workspace', 'editor', 'mode.js'),
+    importDist('app', 'workspace', 'workspace-text-authority.js'),
+    importDist('app', 'text-runtime-profile.js'),
+    importDist('app', 'workspace', 'command-provenance.js'),
+    importDist('app', 'workspace', 'jedit-command-event-observation.js'),
+    importDist('app', 'workspace', 'jedit-why-observation.js'),
+  ]);
+  const opened = authority.openedWorkspaceTextAuthority({
+    profile: profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+    filePath: '/repo/notes.md',
+    bufferId: 'buffer:notes',
+    readOnly: false,
+    dirty: false,
+    cache: windowReadingCache('reading:old'),
+    lastReceiptId: 'receipt:old',
+  });
+  const pendingAuthority = authority.workspaceTextAuthorityWithPendingEdit(
+    opened,
+    7,
+    authority.WorkspaceTextPendingCommandKinds.Vim,
+  );
+  const editor = mockEditor(mode, {
+    lastVimEdit: repeatWithTarget('basis:new'),
+  });
+  const planned = provenance.createPlannedJeditCommandEvent({
+    editor,
+    requestId: 7,
+    repeat: editor.lastVimEdit,
+    textAuthority: pendingAuthority,
+  });
+  assert.ok('event' in planned);
+  assert.equal(planned.event.receipt.posture, 'pending');
+  assert.equal(hasEvidenceSource(planned.event.observation, whyObservation.JeditWhyEvidenceSourceKinds.ReceiptReference), false);
+
+  const queuedAuthority = authority.workspaceTextAuthorityWithPendingEdit(
+    opened,
+    7,
+    authority.WorkspaceTextPendingCommandKinds.Vim,
+    planned,
+  );
+  const admittedAuthority = provenance.workspaceTextAuthorityWithAppliedJeditCommandReceipt(
+    queuedAuthority,
+    7,
+    'receipt:new',
+  );
+  const withFreshCache = authority.workspaceTextAuthorityWithCache(
+    admittedAuthority,
+    windowReadingCache('reading:admitted'),
+  );
+  const refreshed = observationRefresh.workspaceTextAuthorityWithCurrentJeditCommandObservation(withFreshCache);
+  assert.equal(refreshed.lastCommandEvent.observation.coordinate.readingId, 'reading:admitted');
+  assert.equal(refreshed.lastCommandEvent.observation.evidence.posture, whyObservation.JeditWhyEvidencePostures.Available);
+  assert.equal(
+    findEvidenceSource(refreshed.lastCommandEvent.observation, whyObservation.JeditWhyEvidenceSourceKinds.ReceiptReference)
+      .referenceId,
+    'receipt:new',
+  );
+});
+
 function hasEvidenceSource(observation, kind) {
   return observation.evidence.sources.some((source) => source.kind === kind);
+}
+
+function findEvidenceSource(observation, kind) {
+  const source = observation.evidence.sources.find((candidate) => candidate.kind === kind);
+  assert.ok(source, `missing evidence source ${kind}`);
+  return source;
 }
 
 function repeatWithTarget(basisDigest) {
@@ -178,10 +274,10 @@ function repeatWithTarget(basisDigest) {
   };
 }
 
-function windowReadingCache() {
+function windowReadingCache(readingId = 'reading:window') {
   return {
     bufferId: 'buffer:notes',
-    readingId: 'reading:window',
+    readingId,
     lines: ['gamma'],
     coverage: 'window',
     lineCount: 2,
