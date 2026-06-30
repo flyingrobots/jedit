@@ -31,7 +31,11 @@ import {
   readingCache,
   type WorkspaceTextObservedReading,
 } from './workspace-text-observed-reading.js';
-import { sequenceWorkspaceTextOperation } from './workspace-text-operation-sequencer.js';
+import {
+  sequenceWorkspaceTextCheckpointOperation,
+  sequenceWorkspaceTextEditOperation,
+  sequenceWorkspaceTextExportOperation,
+} from './workspace-text-operation-sequencer.js';
 
 const ISSUE_LEVEL_ERROR = RuntimeIssueLevels.Error;
 const ISSUE_SOURCE_COMMAND = RuntimeIssueSources.Command;
@@ -162,7 +166,7 @@ export function createWorkspaceTextEditCmd(
   request: WorkspaceTextEditCommandRequest,
 ): Cmd<WorkspaceMsg> {
   return async () => {
-    const result = await sequenceWorkspaceTextOperation(
+    const result = await sequenceWorkspaceTextEditOperation(
       request.productionTextSession,
       () => editWorkspaceText(request),
     );
@@ -178,8 +182,9 @@ export function createWorkspaceTextCheckpointCmd(
   request: WorkspaceTextCheckpointCommandRequest,
 ): Cmd<WorkspaceMsg> {
   return async () => {
-    const result = await sequenceWorkspaceTextOperation(
+    const result = await sequenceWorkspaceTextCheckpointOperation(
       request.productionTextSession,
+      request.filePath,
       () => checkpointWorkspaceText(request),
     );
     return {
@@ -194,8 +199,9 @@ export function createWorkspaceTextExportCmd(
   request: WorkspaceTextExportCommandRequest,
 ): Cmd<WorkspaceMsg> {
   return async () => {
-    const result = await sequenceWorkspaceTextOperation(
+    const result = await sequenceWorkspaceTextExportOperation(
       request.productionTextSession,
+      request.filePath,
       () => exportWorkspaceText(request),
     );
     return {

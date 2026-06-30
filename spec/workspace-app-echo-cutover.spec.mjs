@@ -288,6 +288,82 @@ test('real workspace app path waits for queued rapid inserts before saving', asy
   assert.equal(harness.model.textAuthority.dirty, false);
 });
 
+test('real workspace app path cancels a queued save after an edit obstruction', async () => {
+  const pendingInsert = deferred();
+  const calls = {
+    insert: [],
+    export: [],
+    checkpoint: [],
+  };
+  const productionTextSession = {
+    openBuffer: async () => ({
+      kind: 'opened',
+      optic: {
+        buffer: {
+          bufferId: 'buffer:notes',
+        },
+      },
+    }),
+    insertText: async (request) => {
+      calls.insert.push(request);
+      await pendingInsert.promise;
+      return productionTextObstruction('footprint changed');
+    },
+    replaceRange: async () => {
+      throw new Error('replaceRange should not run for insert typing');
+    },
+    deleteRange: async () => {
+      throw new Error('deleteRange should not run for insert typing');
+    },
+    multiRangeEdit: async () => ({
+      kind: 'obstructed',
+      obstruction: productionTextObstruction('multi-range unsupported'),
+    }),
+    checkpointBuffer: async (request) => {
+      calls.checkpoint.push(request);
+      return {
+        kind: 'checkpointed',
+        result: { checkpointId: 'checkpoint:save' },
+      };
+    },
+    observeWindow: async (request) => observedDocumentWindow(echoTextDocument(''), 1, request),
+    exportSnapshot: async (request) => {
+      calls.export.push(request);
+      return {
+        kind: 'exported',
+        text: '',
+        readingId: 'reading:export',
+      };
+    },
+  };
+  const harness = await openedHarness({
+    hostLines: [''],
+    productionTextSession,
+  });
+
+  await harness.key('i');
+  const editCommands = await harness.key('X', { shift: true });
+  const editMessage = editCommands[0]();
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(calls.insert.length, 1);
+
+  const saveCommands = await harness.key('s', { ctrl: true });
+  const saveMessage = saveCommands[0]();
+  await Promise.resolve();
+  assert.equal(calls.export.length, 0);
+
+  pendingInsert.resolve();
+  await applyWorkspaceMessage(harness, await editMessage);
+  harness.runtime.update(await saveMessage, harness.model);
+
+  assert.equal(calls.export.length, 0);
+  assert.equal(calls.checkpoint.length, 0);
+  assert.deepEqual(harness.savedFiles, []);
+  assert.equal(harness.model.textAuthority.pendingIntentStatus, 'obstructed');
+  assert.equal(harness.model.textAuthority.dirty, true);
+});
+
 test('real workspace app path keeps newline insertion past bounded Echo readings', async () => {
   const document = echoTextDocument('');
   const calls = {
