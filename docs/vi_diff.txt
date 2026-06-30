@@ -1,0 +1,230 @@
+*vi_diff.txt*    Differences between Vim and Jim
+
+This file summarizes important differences between Vim and Jim.
+It is written in a plain style on purpose.  Jim is still under
+active development, so some items below describe current posture
+rather than finished long-term behavior.
+
+==============================================================================
+
+1. INTRODUCTION                                        *jim-vim-differences*
+
+Jim is a Vim-shaped modal editor.
+
+It keeps familiar concepts such as:
+- Normal and Insert mode
+- operators
+- motions
+- text objects
+- registers
+- command-line workflows
+
+Jim differs from Vim in product direction and runtime model.
+
+Vim is a mature editor centered on direct text editing over files.
+
+Jim is an editor centered on accountable editing.  It treats edits,
+readings, and related history as evidence-bearing operations, and it
+treats files as materialized projections rather than the only source
+of truth.
+
+Jim is not yet a full Vim replacement.
+
+==============================================================================
+
+2. CURRENT GOALS                                           *jim-goals*
+
+Jim currently aims to provide:
+
+- a fast terminal editor with familiar modal editing behavior
+- command provenance for meaningful edits
+- inspectable editing history
+- bounded historical reading
+- stronger recovery and evidence surfaces
+- agent-facing witness and inspection tooling
+
+Jim does not currently aim to win by:
+- being larger than Vim
+- acting as a terminal IDE
+- matching all Vim features before establishing its causal model
+
+==============================================================================
+
+3. FILE MODEL                                           *jim-file-model*
+
+In Vim, ordinary editing is centered directly on files and buffers.
+
+In Jim, files are user-facing and important, but they are treated as
+materialized projections over causal history.
+
+Practical consequences include:
+
+- save and export are boundary actions, not the whole internal story
+- history and readings may have evidence and basis information
+- current head and historical basis are distinct concepts
+- some future features are planned around previewing or admitting
+  changes without immediately treating every edit as the final truth
+
+This does not mean files are absent.  Jim still opens, edits, saves,
+and exports user-facing files.
+
+==============================================================================
+
+4. HISTORY AND UNDO                                     *jim-history*
+
+Vim provides undo and redo in the traditional editor sense.
+
+Jim is building toward a broader history model.
+
+Current and planned differences include:
+- structural history
+- command provenance
+- history inspection surfaces
+- bounded historical reading
+- future causal undo shaped as explicit history, not silent deletion
+
+Production causal undo is not complete.  Where ordinary undo behavior exists,
+it should be understood as transitional editor behavior until undo is modeled
+as explicit causal input with evidence.
+
+==============================================================================
+
+5. COMMAND PROVENANCE                              *jim-why* *:why*
+
+Jim introduces the idea that a meaningful command should be explainable
+after it runs.
+
+A central early command is:
+
+    :why
+
+The purpose of |:why| is to explain the last meaningful command in
+product terms.  Current builds may support the command before every
+command family has complete provenance.
+
+The explanation may include:
+- what command ran
+- what target it resolved
+- what range it affected
+- what evidence or receipt supports the result
+
+Vim does not have this kind of causal command explanation as a core
+product feature.
+
+==============================================================================
+
+6. HISTORY INSPECTION                               *jim-history-drawer*
+
+Jim includes or is actively developing history-oriented surfaces such as:
+- an interactive history drawer
+- exported witness data
+- current and historical inspection paths
+
+These surfaces are intended to let users or agents inspect editor-shaped
+activity such as opens, edits, reads, exports, checkpoints, and
+obstructions.
+
+Vim has persistent undo and other features, but it does not present the
+same product direction around causal inspection.
+
+==============================================================================
+
+7. ECHO HOSTING                                        *jim-echo*
+
+Vim is a standalone editor with its own mature editing model.
+
+Jim is hosted on Echo for its production text path.
+
+In practice this means:
+- application code submits edit intent
+- application code observes bounded readings
+- trusted host code owns runtime lifecycle and scheduler control
+
+This hosting split is part of Jim's design.  It is not an implementation
+detail that users need to understand for basic editing, but it affects
+how the system is structured.
+
+==============================================================================
+
+8. BOUNDED READINGS                                  *jim-readings*
+
+Vim generally presents text directly through its own editor model.
+
+Jim distinguishes between:
+- the visible editing surface
+- bounded readings
+- current head
+- historical basis
+
+This is important because some reads are intended to make narrower claims
+than "this is the whole truth of the buffer forever".  Jim tries to be
+explicit about what a reading represents.
+
+==============================================================================
+
+9. AGENTS AND WITNESSES                               *jim-agents*
+
+Jim has explicit agent-oriented and witness-oriented tooling.
+
+This includes scripts and JSON-oriented surfaces intended for:
+- CI
+- proof work
+- command provenance inspection
+- session witnesses
+- release-gate validation
+
+Vim does not organize itself around this kind of product-facing witness
+infrastructure.
+
+==============================================================================
+
+10. VIM COMPATIBILITY                              *jim-compatibility*
+
+Jim is intentionally Vim-shaped, but compatibility is selective.
+
+General posture:
+
+- preserve familiar modal editing semantics where they matter
+- keep common motions, operators, and text-object workflows recognizable
+- avoid breaking keyboard-first editing habits without a strong reason
+- do not promise full Vim parity before the causal product surfaces are ready
+
+Some Vim features are present.
+Some are partial.
+Some are planned.
+Some may remain intentionally different.
+
+==============================================================================
+
+11. STATUS                                               *jim-status*
+
+Jim is under active development.
+
+Important consequences:
+- some features are already usable
+- some are witness-proven but not yet polished
+- some are roadmap only
+- some names and commands may still change
+- the repository still uses the name "jedit" in many places
+
+The user-facing product arc is "Jim", but internal names, package names,
+contracts, and release machinery may still refer to "jedit".
+
+==============================================================================
+
+12. SUMMARY                                             *jim-summary*
+
+If you want a mature, feature-rich, widely deployed modal editor,
+use Vim.
+
+If you want a Vim-shaped editor that is trying to make edits more
+explainable, recoverable, and reviewable, Jim is aiming at that lane.
+
+Jim should be understood as:
+- Vim-shaped at the surface
+- causally opinionated underneath
+- still in active proof and development
+
+==============================================================================
+
+vim:tw=78:ts=8:noet:ft=help:norl:

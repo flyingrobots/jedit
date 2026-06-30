@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Jim logo</title>
+  <desc id="desc">Original Jim project logo: a terminal prompt mark over a blue causal editing diamond.</desc>
+  <metadata>Original Jim project logo created for the flyingrobots/jedit repository. Distributed under Apache-2.0 with this repository.</metadata>
+  <defs>
+    <linearGradient id="diamond" x1="96" y1="64" x2="416" y2="448" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#17b6ff"/>
+      <stop offset="0.52" stop-color="#0750d8"/>
+      <stop offset="1" stop-color="#061d66"/>
+    </linearGradient>
+    <linearGradient id="screen" x1="154" y1="148" x2="358" y2="360" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#172033"/>
+      <stop offset="1" stop-color="#050814"/>
+    </linearGradient>
+    <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#020617" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="88" fill="#07101f"/>
+  <path d="M256 42 470 256 256 470 42 256Z" fill="url(#diamond)" filter="url(#soft-shadow)"/>
+  <path d="M256 84 428 256 256 428 84 256Z" fill="none" stroke="#8bd9ff" stroke-width="14" stroke-linejoin="round" opacity="0.88"/>
+  <rect x="138" y="145" width="236" height="222" rx="34" fill="url(#screen)" stroke="#e5f4ff" stroke-width="12"/>
+  <path d="M180 209 225 254 180 299" fill="none" stroke="#7dd3fc" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M253 304h86" fill="none" stroke="#f8fafc" stroke-width="24" stroke-linecap="round"/>
+  <text x="256" y="413" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="56" font-weight="800" fill="#f8fafc" letter-spacing="8">JIM</text>
+</svg>
