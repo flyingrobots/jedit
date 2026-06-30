@@ -158,10 +158,7 @@ function recordingProductionTextSession(calls, options) {
       calls.delete.push(request);
       return options.editObstruction ?? { kind: 'applied', result: { receiptId: 'receipt:delete' } };
     },
-    multiRangeEdit: async () => options.multiRangeObstruction ?? {
-      kind: 'obstructed',
-      obstruction: productionTextObstruction('multi-range unsupported'),
-    },
+    multiRangeEdit: async () => options.multiRangeObstruction ?? productionTextObstruction('multi-range unsupported'),
     checkpointBuffer: async (request) => {
       calls.checkpoint.push(request);
       return options.checkpointObstruction ?? {
