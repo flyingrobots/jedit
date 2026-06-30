@@ -71,8 +71,10 @@ export function dependentEditBlockedIssue(
   blockedByClientSeq: number | undefined,
   atMs: number,
 ): RuntimeIssue {
+  const blocker = blockedByClientSeq == null ? 'request:unknown' : `request:${blockedByClientSeq}`;
+
   return {
-    message: `${DEPENDENT_EDIT_BLOCKED_PREFIX}: ${filePath}: request:${blockedByClientSeq ?? 0}`,
+    message: `${DEPENDENT_EDIT_BLOCKED_PREFIX}: ${filePath}: ${blocker}`,
     level: ISSUE_LEVEL_ERROR,
     source: ISSUE_SOURCE_COMMAND,
     atMs,
