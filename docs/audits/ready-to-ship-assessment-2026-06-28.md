@@ -36,6 +36,7 @@ Low debt, and that is an evidence-backed claim: **1 `any` (in a comment), 12 `un
 **Violation 1 — `loadEditorFile` does five jobs in one function** (`src/adapters/editor-file.ts:17-47`): path classification (dir / non-file), I/O, binary detection, UTF-8 decode, fingerprinting, *and* error-to-result mapping.
 
 Original (abridged):
+
 ```ts
 export function loadEditorFile(filePath: string): EditorFileLoadResult {
   try {
@@ -53,6 +54,7 @@ export function loadEditorFile(filePath: string): EditorFileLoadResult {
 ```
 
 Simplified Rewrite — separate *classification*, *decoding*, and *error mapping*:
+
 ```ts
 export function loadEditorFile(filePath: string): EditorFileLoadResult {
   try {
@@ -89,6 +91,7 @@ function loadErrorResult(filePath: string, cause: unknown): EditorFileLoadResult
 **Violation 2 — Imperative, mutation-based option assembly in the Graft process runner** (`src/adapters/graft-source-highlighter.ts:138-167`): a mutable `options` object is conditionally patched three times before `spawnSync`.
 
 Original:
+
 ```ts
 const options: SpawnSyncOptionsWithStringEncoding = { cwd: request.cwd, encoding: PROCESS_RUNNER_ENCODING, shell: false };
 if (request.stdin != null) options.input = request.stdin;
@@ -98,6 +101,7 @@ const result = spawnSync(request.command, request.args, options);
 ```
 
 Simplified Rewrite — pure construction via conditional spread:
+
 ```ts
 const options: SpawnSyncOptionsWithStringEncoding = {
   cwd: request.cwd,
@@ -115,6 +119,7 @@ const result = spawnSync(request.command, request.args, options);
 **Violation 3 — `saveEditor` couples policy (readOnly guard + dirty-flag state) with the durability decision it cannot see** (`src/app/workspace/editor-session.ts:105-116`). It returns a clean (`dirty: false`) state *before knowing the bytes are durably on disk*, because `saveEditorFile` is fire-and-return with a non-atomic write underneath.
 
 Original:
+
 ```ts
 export function saveEditor(editor: EditorState, editorFile: EditorFilePort): EditorState {
   if (editor.readOnly) return editor;
@@ -124,6 +129,7 @@ export function saveEditor(editor: EditorState, editorFile: EditorFilePort): Edi
 ```
 
 Simplified Rewrite — make durability a returned outcome, not an assumption:
+
 ```ts
 export function saveEditor(editor: EditorState, editorFile: EditorFilePort): SaveEditorOutcome {
   if (editor.readOnly) return { kind: SaveOutcomeKinds.Skipped, editor };
@@ -143,11 +149,13 @@ export function saveEditor(editor: EditorState, editorFile: EditorFilePort): Sav
 ### 2.1 Top 3 Ship-Stopping Risks ("Hard No")
 
 **Risk 1 — Non-atomic file save can corrupt user data. [CRITICAL]** `src/adapters/editor-file.ts:50-52`
+
 ```ts
 export function saveEditorFile(filePath: string, lines: readonly string[]): void {
   writeFileSync(filePath, joinLines(lines), UTF8_ENCODING);
 }
 ```
+
 This writes directly over the target path. A crash, `SIGKILL`, full disk, or power loss *mid-write* leaves the user's file truncated or partially written — total data loss. This is doubly indefensible because the repo **already has** the safe pattern elsewhere: `src/adapters/jedit-wsc-workspace-store.ts` writes a temp file and uses `rmSync(tempPath, { force: true })` cleanup around an atomic swap. The editor's headline promise is recoverability; its save path is the least recoverable code in the tree.
 
 > **Mitigation Prompt 7:** `Make saveEditorFile in src/adapters/editor-file.ts crash-safe: write to a sibling temp file in the same directory (so rename is atomic on the same filesystem), fsync the file descriptor, then rename() over the target; clean up the temp file on failure. Preserve the original file's mode/permissions. Mirror the temp-write discipline already used in jedit-wsc-workspace-store.ts. Add a spec that asserts the original file is intact when the write step throws.`
