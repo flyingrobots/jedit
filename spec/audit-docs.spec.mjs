@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import test from 'node:test';
+
+const READY_AUDIT = 'docs/audits/ready-to-ship-assessment-2026-06-28.md';
+
+function readRepoText(path) {
+  return readFileSync(path, 'utf8');
+}
+
+test('ready-to-ship audit does not prescribe forbidden unknown annotations', () => {
+  const audit = readRepoText(READY_AUDIT);
+
+  assert.doesNotMatch(audit, /nodeErrorCode\(cause: unknown\)/);
+  assert.doesNotMatch(audit, /loadErrorResult\(filePath: string, cause: unknown\)/);
+  assert.match(audit, /nodeErrorCode\(cause: Error\): string \| undefined/);
+});

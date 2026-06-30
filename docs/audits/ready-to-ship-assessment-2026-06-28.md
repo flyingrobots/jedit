@@ -29,7 +29,7 @@ Low debt, and that is an evidence-backed claim: **1 `any` (in a comment), 12 `un
 
 **Issue 3 — Duck-typed Node error decoding inlined per adapter.** `nodeErrorCode` in `src/adapters/editor-file.ts:58` reaches into `'code' in cause && typeof cause.code === 'string'`. This idiom is re-derived across adapters instead of being a shared, named boundary decoder, so error-handling consistency depends on each author repeating it correctly.
 
-> **Mitigation Prompt 3:** `Create a single shared helper (e.g. src/adapters/node-error.ts) exporting nodeErrorCode(cause: unknown): string | undefined with a named NodeErrnoException type guard. Replace the inline duck-typing in editor-file.ts and any sibling adapters with it. Add a unit spec covering an ENOENT error, a non-Error throw, and an error with no code.`
+> **Mitigation Prompt 3:** `Create a single shared helper (e.g. src/adapters/node-error.ts) exporting nodeErrorCode(cause: Error): string | undefined with a named Error-specific code guard. Keep non-Error thrown values at the catch boundary and convert them before calling the helper, so the src/ quality gate does not gain any explicit unknown annotations. Replace the inline duck-typing in editor-file.ts and any sibling adapters with it. Add a unit spec covering an ENOENT Error, a non-Error thrown value, and an Error with no code.`
 
 ### 1.3 Code Quality Violations (SRP / unnecessary complexity)
 
@@ -78,11 +78,11 @@ function decodeRegularFile(bytes: Buffer): EditorFileLoadResult {
     : { lines: normalizeLines(bytes.toString(UTF8_ENCODING)), readOnly: false, fingerprint };
 }
 
-function loadErrorResult(filePath: string, cause: unknown): EditorFileLoadResult {
-  const code = cause instanceof Error ? nodeErrorCode(cause) : undefined;
+function loadErrorResult(filePath: string, cause: Error): EditorFileLoadResult {
+  const code = nodeErrorCode(cause);
   return code === NODE_ERROR_NOT_FOUND
     ? missingEditorFile(filePath)
-    : obstructedEditorFile(filePath, cause instanceof Error ? cause.message : String(cause), code);
+    : obstructedEditorFile(filePath, cause.message, code);
 }
 ```
 
