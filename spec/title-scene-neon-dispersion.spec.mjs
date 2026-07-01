@@ -19,11 +19,18 @@ const MIN_ORBIT_RENDER_COLOR_VARIETY = 10;
 const CHECKER_FLOOR_DARK = [2, 3, 7];
 const CHECKER_FLOOR_LIGHT = [42, 52, 60];
 const CHECKER_FLOOR_GRID_SCALE = 1.05;
-const MAX_DEFAULT_CAMERA_RADIUS = 10.5;
-const MAX_DEFAULT_CAMERA_Y = 0.8;
-const MAX_PRIMARY_TRANSPARENCY = 0.12;
-const MAX_MIRROR_RADIUS = 0.6;
+const MAX_DEFAULT_CAMERA_RADIUS = 5.4;
+const MIN_DEFAULT_CAMERA_Y = 3.4;
+const MIN_CAMERA_LOOKDOWN = 2;
+const MAX_PRIMARY_TRANSPARENCY = 0.05;
+const MAX_MIRROR_RADIUS = 1.05;
 const MIN_MIRROR_FRONT_OFFSET = 0.45;
+const REFLECTION_GRID_WIDTH = 72;
+const REFLECTION_GRID_HEIGHT = 40;
+const MIN_MIRROR_REFLECTED_BUNNY_RAYS = 25;
+const MIRROR_REFLECTION_RAY_BIAS = 0.03;
+const TITLE_PROJECTION_DISTANCE = 2.7;
+const TITLE_VERTICAL_SCREEN_OFFSET = 0.2;
 const DEFAULT_SCENE_OBJECT_COUNT = 2;
 const THEME_STABILITY_VARIABLE_NAMES = [
   "accent",
@@ -53,8 +60,10 @@ test("continuum gate is the registered default title scene", async () => {
   assert.equal(modules.port.BUILT_IN_TITLE_SCENE_NAMES[0], DEFAULT_TITLE_SCENE);
   assert.equal(scene.objects.length, DEFAULT_SCENE_OBJECT_COUNT);
   assert.ok(scene.camera.radius <= MAX_DEFAULT_CAMERA_RADIUS);
-  assert.ok(scene.camera.position[1] <= MAX_DEFAULT_CAMERA_Y);
-  assert.ok(scene.camera.position[1] < scene.camera.target[1]);
+  assert.ok(scene.camera.position[1] >= MIN_DEFAULT_CAMERA_Y);
+  assert.ok(
+    scene.camera.position[1] - scene.camera.target[1] >= MIN_CAMERA_LOOKDOWN,
+  );
   assert.ok(scene.camera.position[2] > scene.camera.target[2]);
   assert.equal(primary.label, PRIMARY_OBJECT_LABEL);
   assert.equal(primary.kind, "mesh");
@@ -68,6 +77,10 @@ test("continuum gate is the registered default title scene", async () => {
   assert.ok(mirror.position[0] > primaryCenter[0]);
   assert.ok(primaryCenter[2] - mirror.position[2] >= MIN_MIRROR_FRONT_OFFSET);
   assert.ok(mirror.position[1] > primaryCenter[1]);
+  assert.ok(
+    mirrorReflectedBunnyRayCount(modules.titleScene, scene) >=
+      MIN_MIRROR_REFLECTED_BUNNY_RAYS,
+  );
   assert.ok(scene.environment?.floor != null);
   assert.equal(scene.environment?.floor?.kind, "grid");
   assert.deepEqual(scene.environment?.floor?.dark, CHECKER_FLOOR_DARK);
@@ -222,6 +235,94 @@ function sceneCellSignature(surface) {
       [cell.char, cell.fgRGB.join(","), cell.bgRGB.join(",")].join("|"),
     )
     .join("\n");
+}
+
+function mirrorReflectedBunnyRayCount(titleScene, scene) {
+  let count = 0;
+  for (let row = 0; row < REFLECTION_GRID_HEIGHT; row += 1) {
+    for (let col = 0; col < REFLECTION_GRID_WIDTH; col += 1) {
+      count += mirrorReflectedBunnyRayHit(titleScene, scene, col, row);
+    }
+  }
+  return count;
+}
+
+function mirrorReflectedBunnyRayHit(titleScene, scene, col, row) {
+  const ray = titleSceneSampleRay(scene.camera, col, row);
+  const mirrorHit = titleScene.nearestTitleSceneObjectHit(
+    scene.camera.position,
+    ray,
+    scene.objects,
+  );
+  if (mirrorHit?.object?.label !== MIRROR_OBJECT_LABEL) {
+    return 0;
+  }
+  const point = add(
+    scene.camera.position,
+    scale(ray, mirrorHit.distance + MIRROR_REFLECTION_RAY_BIAS),
+  );
+  const reflectedHit = titleScene.nearestTitleSceneObjectHit(
+    point,
+    reflect(ray, mirrorHit.normal),
+    scene.objects,
+    { ignoredObject: mirrorHit.object },
+  );
+  return reflectedHit?.object?.label === PRIMARY_OBJECT_LABEL ? 1 : 0;
+}
+
+function titleSceneSampleRay(camera, col, row) {
+  const rx = ((col + 0.5) / REFLECTION_GRID_WIDTH) * 2 - 1;
+  const ry = ((row + 0.5) / REFLECTION_GRID_HEIGHT) * 2 - 1;
+  return projectedRay(camera.position, camera.target, [
+    rx,
+    -ry - TITLE_VERTICAL_SCREEN_OFFSET,
+    TITLE_PROJECTION_DISTANCE,
+  ]);
+}
+
+function projectedRay(origin, target, screenCoords) {
+  const forward = normalize(sub(target, origin));
+  const right = normalize(cross(forward, [0, 1, 0]));
+  const up = cross(right, forward);
+  return normalize(
+    add(
+      add(scale(right, screenCoords[0]), scale(up, screenCoords[1])),
+      scale(forward, screenCoords[2]),
+    ),
+  );
+}
+
+function reflect(ray, normal) {
+  return sub(ray, scale(normal, 2 * dot(ray, normal)));
+}
+
+function normalize(vector) {
+  const length = Math.hypot(...vector);
+  return length === 0 ? [0, 0, 0] : scale(vector, 1 / length);
+}
+
+function cross(a, b) {
+  return [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0],
+  ];
+}
+
+function dot(a, b) {
+  return a.reduce((sum, component, index) => sum + component * b[index], 0);
+}
+
+function add(a, b) {
+  return a.map((component, index) => component + b[index]);
+}
+
+function sub(a, b) {
+  return a.map((component, index) => component - b[index]);
+}
+
+function scale(vector, scalar) {
+  return vector.map((component) => component * scalar);
 }
 
 function themeWithWashedGeneralColors(theme) {
