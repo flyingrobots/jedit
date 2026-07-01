@@ -56,12 +56,14 @@ function normalize(vector) {
   return vector.map((component) => component / length);
 }
 
-test("loaded mesh scenes do not expose scene-authored mesh position as ray-hit state", async () => {
+test("loaded mesh scenes decode authored mesh transforms without exposing position", async () => {
   const { loader, titleScene, titleMeshLibrary, titleBunnyMesh } =
     await loadTitleSceneLoaderModules();
   const mesh = titleMeshLibrary.createTitleBunnyMesh(
     titleBunnyMesh.loadTitleBunnyMeshSource(),
   );
+  const offset = [0.5, 0.1, -0.25];
+  const localYaw = { phase: 1.25, angularSpeed: 0.125 };
   const scene = loader.parseTitleSceneJson(
     {
       objects: [
@@ -69,6 +71,8 @@ test("loaded mesh scenes do not expose scene-authored mesh position as ray-hit s
           kind: titleScene.TITLE_SCENE_SHAPE_KIND.Mesh,
           mesh: "bunny",
           position: [100, 100, 100],
+          offset,
+          localYaw,
           radius: mesh.footprintRadius,
           footprintRadius: mesh.footprintRadius,
           height: mesh.height,
@@ -80,12 +84,15 @@ test("loaded mesh scenes do not expose scene-authored mesh position as ray-hit s
     { bunny: mesh },
   );
   const loadedMesh = scene.objects[0];
-  const origin = [-1, 1.1, 4.5];
-  const ray = normalize([-0.05, -0.04, -1]);
+  const center = titleScene.titleSceneObjectFootprintCenter(loadedMesh);
+  const origin = [center[0], center[1] + 0.02, center[2] + 4.5];
+  const ray = normalize([0, -0.02, -1]);
   const hit = titleScene.nearestTitleSceneObjectHit(origin, ray, scene.objects);
 
   assert.equal(loadedMesh.kind, titleScene.TITLE_SCENE_SHAPE_KIND.Mesh);
   assert.equal(Object.hasOwn(loadedMesh, "position"), false);
+  assert.deepEqual(loadedMesh.offset, offset);
+  assert.deepEqual(loadedMesh.localYaw, localYaw);
   assert.ok(hit != null);
   assert.equal(hit.object, loadedMesh);
 });
@@ -132,63 +139,6 @@ test("scene loader decodes bounded optical material fields", async () => {
     (error) =>
       error?.name === "SceneDecodeError" &&
       String(error.message).includes("transparency"),
-  );
-});
-
-test("scene loader decodes animated light orbits", async () => {
-  const { loader, titleScene } = await loadTitleSceneLoaderModules();
-  const scene = loader.parseTitleSceneJson(
-    {
-      environment: {
-        light: {
-          orbit: {
-            radius: 1.9,
-            height: 3.1,
-            phase: -1.1,
-            angularSpeed: 0.55,
-          },
-        },
-      },
-      objects: [
-        {
-          kind: titleScene.TITLE_SCENE_SHAPE_KIND.Sphere,
-          position: [0, 1, 0],
-          radius: 1,
-          color: [120, 220, 255],
-          reflectivity: 0.12,
-        },
-      ],
-    },
-    {},
-  );
-
-  assert.deepEqual(scene.environment.light.orbit, {
-    radius: 1.9,
-    height: 3.1,
-    phase: -1.1,
-    angularSpeed: 0.55,
-  });
-  assert.throws(
-    () =>
-      loader.parseTitleSceneJson(
-        {
-          environment: {
-            light: {
-              orbit: {
-                radius: 0,
-                height: 0,
-                phase: 0,
-                angularSpeed: 1,
-              },
-            },
-          },
-          objects: [],
-        },
-        {},
-      ),
-    (error) =>
-      error?.name === "SceneDecodeError" &&
-      String(error.message).includes("non-zero light direction"),
   );
 });
 

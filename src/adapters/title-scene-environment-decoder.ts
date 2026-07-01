@@ -130,7 +130,6 @@ function decodeLight(value: JsonValue): SceneLight {
   const light = objectAt(value, "scene.environment.light");
   return {
     ...decodeLightDirection(light),
-    ...decodeLightOrbit(light),
     ...decodeLightAmbient(light),
     ...decodeLightDiffuse(light),
     ...decodeLightSpecular(light),
@@ -149,41 +148,6 @@ function decodeLightDirection(
           "scene.environment.light.direction",
         ),
       };
-}
-
-function decodeLightOrbit(light: JsonObject): Pick<SceneLight, "orbit"> {
-  return light["orbit"] == null
-    ? {}
-    : { orbit: decodeLightOrbitObject(light["orbit"]) };
-}
-
-function decodeLightOrbitObject(value: JsonValue): SceneLight["orbit"] {
-  const orbit = objectAt(value, "scene.environment.light.orbit");
-  const radius = nonNegativeNumberAt(
-    orbit["radius"],
-    "scene.environment.light.orbit.radius",
-  );
-  const height = finiteNumberAt(
-    orbit["height"],
-    "scene.environment.light.orbit.height",
-  );
-  if (radius === 0 && height === 0) {
-    throw new SceneDecodeError(
-      "scene.environment.light.orbit must produce a non-zero light direction.",
-    );
-  }
-  return {
-    radius,
-    height,
-    phase: finiteNumberAt(
-      orbit["phase"],
-      "scene.environment.light.orbit.phase",
-    ),
-    angularSpeed: finiteNumberAt(
-      orbit["angularSpeed"],
-      "scene.environment.light.orbit.angularSpeed",
-    ),
-  };
 }
 
 function decodeLightAmbient(light: JsonObject): Pick<SceneLight, "ambient"> {

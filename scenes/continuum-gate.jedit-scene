@@ -1,7 +1,7 @@
 {
   "camera": {
-    "position": [-1.05, 0.46, 2.15],
-    "target": [-1.05, 1.2, -0.24]
+    "position": [-4.6, 0.74, 7.2],
+    "target": [1.15, 1.58, -1.24]
   },
   "environment": {
     "background": [2, 3, 7],
@@ -11,18 +11,6 @@
       "light": [42, 52, 60],
       "gridScale": 1.05,
       "fadeDistance": 22
-    },
-    "light": {
-      "orbit": {
-        "radius": 1.9,
-        "height": 3.1,
-        "phase": -1.1,
-        "angularSpeed": 0.55
-      },
-      "ambient": 0.07,
-      "diffuse": 1.04,
-      "specularStrength": 1.46,
-      "rimStrength": 1.72
     }
   },
   "objects": [
@@ -30,25 +18,27 @@
       "label": "stanford-bunny",
       "kind": "mesh",
       "mesh": "bunny",
-      "radius": 1.25,
-      "footprintRadius": 1.25,
+      "offset": [0.08, 0, 0.12],
+      "localYaw": { "phase": -0.62, "angularSpeed": 0 },
+      "radius": 1.16,
+      "footprintRadius": 1.16,
       "height": 2.35,
-      "color": [194, 236, 255],
-      "reflectivity": 0.22,
-      "transparency": 0.52,
-      "refractiveIndex": 1.52
+      "color": [188, 226, 240],
+      "reflectivity": 0.18,
+      "transparency": 0.08,
+      "refractiveIndex": 1.1
     },
     {
       "label": "chrome-mirror-sphere",
       "kind": "sphere",
-      "position": [1.35, 0.72, -1.25],
-      "radius": 0.72,
-      "height": 1.44,
-      "footprintRadius": 0.72,
+      "position": [1.15, 1.58, -1.24],
+      "radius": 0.56,
+      "height": 1.12,
+      "footprintRadius": 0.56,
       "color": [236, 244, 255],
       "reflectivity": 0.98,
-      "transparency": 0.02,
-      "refractiveIndex": 1.12
+      "transparency": 0.01,
+      "refractiveIndex": 1.08
     }
   ]
 }
