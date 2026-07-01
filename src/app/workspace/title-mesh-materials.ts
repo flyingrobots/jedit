@@ -14,7 +14,10 @@ export interface TitleMeshMaterialPreset {
   readonly refractiveIndex: number;
 }
 
-const TITLE_MESH_MATERIAL_OBJECT_LABEL = "stanford-bunny";
+const TITLE_MESH_MATERIAL_OBJECT_LABELS = new Set([
+  "stanford-bunny",
+  "title-primary-mesh",
+]);
 const FIRST_TITLE_MESH_MATERIAL_INDEX = 0;
 const NEXT_TITLE_MESH_MATERIAL_STEP = 1;
 const DEFAULT_TITLE_MESH_MATERIAL_PRESET = {
@@ -104,7 +107,8 @@ function isTitleMeshMaterialObject(
 ): object is TitleSceneMeshObject {
   return (
     object.kind === TITLE_SCENE_SHAPE_KIND.Mesh &&
-    object.label === TITLE_MESH_MATERIAL_OBJECT_LABEL
+    object.label != null &&
+    TITLE_MESH_MATERIAL_OBJECT_LABELS.has(object.label)
   );
 }
 

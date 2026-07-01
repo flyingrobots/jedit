@@ -138,16 +138,17 @@ test("startup file modal shortcuts defer to the active title command line", asyn
 });
 
 test("title screen m cycles title mesh materials and reports the material name", async () => {
-  const [keyBindings, titleScreen, material, sceneLoader, meshes] =
+  const [keyBindings, titleScreen, material, sceneLoader, meshes, port] =
     await Promise.all([
       importDist("app", "workspace", "key-bindings.js"),
       importDist("ui", "title-screen.js"),
       importDist("app", "workspace", "title-mesh-materials.js"),
       importDist("adapters", "title-scene-loader.js"),
       importDist("adapters", "workspace-title-meshes.js"),
+      importDist("ports", "title-scene-loader.js"),
     ]);
   const scene = await sceneLoader.loadBuiltInTitleScene(
-    "bunny.jedit-scene",
+    port.DEFAULT_BUILT_IN_TITLE_SCENE_NAME,
     meshes.loadStartupTitleMeshes(),
   );
   const [first] = keyBindings.updateFromKey(

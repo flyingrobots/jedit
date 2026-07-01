@@ -1,0 +1,150 @@
+{
+  "camera": {
+    "position": [0, 0.68, 5.05],
+    "target": [0, 1.34, -0.32]
+  },
+  "environment": {
+    "background": [1, 2, 6],
+    "floor": {
+      "kind": "grid",
+      "dark": [2, 5, 11],
+      "light": [44, 68, 78],
+      "gridScale": 0.72,
+      "fadeDistance": 24
+    },
+    "light": {
+      "ambient": 0.1,
+      "diffuse": 0.96,
+      "specularStrength": 1.2,
+      "rimStrength": 1.42
+    }
+  },
+  "objects": [
+    {
+      "label": "title-primary-mesh",
+      "kind": "mesh",
+      "mesh": "dragon",
+      "radius": 1.18,
+      "height": 2.25,
+      "footprintRadius": 1.28,
+      "color": [164, 226, 255],
+      "reflectivity": 0.36,
+      "transparency": 0.42,
+      "refractiveIndex": 1.5
+    },
+    {
+      "label": "left-gate-pylon",
+      "kind": "column",
+      "position": [-2.3, 1.55, -0.46],
+      "radius": 0.32,
+      "height": 3.1,
+      "footprintRadius": 0.32,
+      "color": [30, 46, 60],
+      "reflectivity": 0.62
+    },
+    {
+      "label": "right-gate-pylon",
+      "kind": "column",
+      "position": [2.3, 1.55, -0.46],
+      "radius": 0.32,
+      "height": 3.1,
+      "footprintRadius": 0.32,
+      "color": [36, 44, 58],
+      "reflectivity": 0.62
+    },
+    {
+      "label": "crown-mirror",
+      "kind": "sphere",
+      "position": [0, 2.92, -1.15],
+      "radius": 0.62,
+      "height": 1.24,
+      "footprintRadius": 0.62,
+      "color": [232, 242, 248],
+      "reflectivity": 0.98
+    },
+    {
+      "label": "eclipse-core",
+      "kind": "sphere",
+      "position": [0.2, 2.96, -1.36],
+      "radius": 0.44,
+      "height": 0.88,
+      "footprintRadius": 0.44,
+      "color": [4, 6, 13],
+      "reflectivity": 0.08
+    },
+    {
+      "label": "left-worldline-orb",
+      "kind": "sphere",
+      "position": [-1.48, 0.58, 1.42],
+      "radius": 0.43,
+      "height": 0.86,
+      "footprintRadius": 0.43,
+      "color": [255, 118, 68],
+      "reflectivity": 0.88
+    },
+    {
+      "label": "right-worldline-orb",
+      "kind": "sphere",
+      "position": [1.48, 0.58, 1.42],
+      "radius": 0.43,
+      "height": 0.86,
+      "footprintRadius": 0.43,
+      "color": [68, 224, 255],
+      "reflectivity": 0.88
+    },
+    {
+      "label": "left-terminal-prism",
+      "kind": "cube",
+      "position": [-0.94, 0.36, 2.28],
+      "radius": 0.36,
+      "height": 0.72,
+      "footprintRadius": 0.51,
+      "color": [216, 117, 255],
+      "reflectivity": 0.44,
+      "transparency": 0.18,
+      "refractiveIndex": 1.24
+    },
+    {
+      "label": "right-terminal-prism",
+      "kind": "cube",
+      "position": [0.94, 0.36, 2.28],
+      "radius": 0.36,
+      "height": 0.72,
+      "footprintRadius": 0.51,
+      "color": [116, 255, 184],
+      "reflectivity": 0.44,
+      "transparency": 0.18,
+      "refractiveIndex": 1.24
+    },
+    {
+      "label": "rear-left-signal",
+      "kind": "column",
+      "position": [-0.86, 1.62, -2.24],
+      "radius": 0.13,
+      "height": 3.24,
+      "footprintRadius": 0.13,
+      "color": [255, 166, 78],
+      "reflectivity": 0.36
+    },
+    {
+      "label": "rear-right-signal",
+      "kind": "column",
+      "position": [0.86, 1.62, -2.24],
+      "radius": 0.13,
+      "height": 3.24,
+      "footprintRadius": 0.13,
+      "color": [68, 214, 255],
+      "reflectivity": 0.36
+    },
+    {
+      "label": "near-console-mirror",
+      "kind": "sphere",
+      "position": [0, 0.28, 2.92],
+      "radius": 0.28,
+      "height": 0.56,
+      "footprintRadius": 0.28,
+      "color": [230, 236, 244],
+      "reflectivity": 0.92
+    }
+  ]
+}

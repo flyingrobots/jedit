@@ -4,32 +4,36 @@ import { importDist } from "./dist-helpers.mjs";
 import { cells, fixedTitleRenderOptions } from "./title-screen-helpers.mjs";
 import { mockI18n, mockJeditTheme, REPO_ROOT } from "./workspace-helpers.mjs";
 
-const DEFAULT_BUNNY_SCENE = "bunny.jedit-scene";
-const BUNNY_OBJECT_LABEL = "stanford-bunny";
+const DEFAULT_TITLE_SCENE = "continuum-gate.jedit-scene";
+const PRIMARY_OBJECT_LABEL = "title-primary-mesh";
 const TITLE_WIDTH = 92;
 const TITLE_HEIGHT = 28;
 const TITLE_TIME = 6.75;
 const MIN_RENDER_COLOR_VARIETY = 6;
-const MIN_BUNNY_REFRACTIVE_INDEX = 1.5;
-const MIN_BUNNY_TRANSPARENCY = 0.5;
-const MIN_BUNNY_TRIANGLES = 1000;
+const MIN_PRIMARY_REFRACTIVE_INDEX = 1.45;
+const MIN_PRIMARY_TRANSPARENCY = 0.35;
+const MIN_PRIMARY_TRIANGLES = 1000;
 const MIN_DRESSING_MATERIAL_COUNT = 6;
 const CAMERA_ORBIT_SAMPLE_COUNT = 16;
 const FULL_CAMERA_ORBIT_RADIANS = Math.PI * 2;
 const MIN_ORBIT_RENDER_COLOR_VARIETY = 20;
-const CHECKER_FLOOR_DARK = [3, 4, 7];
-const CHECKER_FLOOR_LIGHT = [58, 68, 76];
-const CHECKER_FLOOR_GRID_SCALE = 0.95;
-const MAX_DEFAULT_BUNNY_CAMERA_RADIUS = 2.4;
-const MAX_DEFAULT_BUNNY_CAMERA_Y = 0.75;
-const MIN_DEFAULT_BUNNY_OBJECT_COUNT = 7;
-const MIN_DEFAULT_BUNNY_COLOR_COUNT = 7;
-const MIN_DRESSED_REFLECTIVE_OBJECTS = 4;
+const CHECKER_FLOOR_DARK = [2, 5, 11];
+const CHECKER_FLOOR_LIGHT = [44, 68, 78];
+const CHECKER_FLOOR_GRID_SCALE = 0.72;
+const MAX_DEFAULT_CAMERA_RADIUS = 5.6;
+const MAX_DEFAULT_CAMERA_Y = 0.8;
+const MIN_DEFAULT_OBJECT_COUNT = 10;
+const MIN_DEFAULT_COLOR_COUNT = 9;
+const MIN_DRESSED_REFLECTIVE_OBJECTS = 8;
 const MIN_DRESSED_TRANSPARENT_OBJECTS = 3;
-const CHROME_LABEL_PREFIX = "chrome-";
-const MIN_CHROME_SPHERE_COUNT = 3;
+const GATE_PYLON_LABEL_SUFFIX = "gate-pylon";
+const WORLDLINE_ORB_LABEL_SUFFIX = "worldline-orb";
+const TERMINAL_PRISM_LABEL_SUFFIX = "terminal-prism";
+const MIN_GATE_PYLON_COUNT = 2;
+const MIN_WORLDLINE_ORB_COUNT = 2;
+const MIN_TERMINAL_PRISM_COUNT = 2;
 const MIN_CHROME_REFLECTIVITY = 0.85;
-const MAX_FACE_TARGET_CENTERLINE_OFFSET = 0.25;
+const MAX_TARGET_CENTERLINE_OFFSET = 0.18;
 const THEME_STABILITY_VARIABLE_NAMES = [
   "accent",
   "info",
@@ -41,32 +45,34 @@ const THEME_STABILITY_VARIABLE_NAMES = [
 const THEME_STABILITY_RGB = [244, 246, 248];
 const THEME_STABILITY_HEX = "#f4f6f8";
 
-test("bunny is the registered default title scene", async () => {
-  const modules = await loadDefaultBunnyModules();
-  const scene = await loadDefaultBunnyScene(modules);
-  const bunny = scene.objects[0];
-  const bunnyCenter = modules.titleScene.titleSceneObjectFootprintCenter(bunny);
+test("continuum gate is the registered default title scene", async () => {
+  const modules = await loadDefaultSceneModules();
+  const scene = await loadDefaultScene(modules);
+  const primary = scene.objects[0];
+  const primaryCenter =
+    modules.titleScene.titleSceneObjectFootprintCenter(primary);
 
   assert.equal(
     modules.port.DEFAULT_BUILT_IN_TITLE_SCENE_NAME,
-    DEFAULT_BUNNY_SCENE,
+    DEFAULT_TITLE_SCENE,
   );
-  assert.equal(modules.port.BUILT_IN_TITLE_SCENE_NAMES[0], DEFAULT_BUNNY_SCENE);
-  assert.ok(scene.objects.length >= MIN_DEFAULT_BUNNY_OBJECT_COUNT);
-  assert.ok(scene.camera.radius <= MAX_DEFAULT_BUNNY_CAMERA_RADIUS);
-  assert.ok(scene.camera.position[1] <= MAX_DEFAULT_BUNNY_CAMERA_Y);
+  assert.equal(modules.port.BUILT_IN_TITLE_SCENE_NAMES[0], DEFAULT_TITLE_SCENE);
+  assert.ok(scene.objects.length >= MIN_DEFAULT_OBJECT_COUNT);
+  assert.ok(scene.camera.radius <= MAX_DEFAULT_CAMERA_RADIUS);
+  assert.ok(scene.camera.position[1] <= MAX_DEFAULT_CAMERA_Y);
   assert.ok(scene.camera.position[1] < scene.camera.target[1]);
   assert.ok(scene.camera.position[2] > scene.camera.target[2]);
   assert.ok(
-    Math.abs(scene.camera.target[0] - bunnyCenter[0]) <=
-      MAX_FACE_TARGET_CENTERLINE_OFFSET,
+    Math.abs(scene.camera.target[0] - primaryCenter[0]) <=
+      MAX_TARGET_CENTERLINE_OFFSET,
   );
-  assert.ok(scene.camera.target[1] > bunnyCenter[1]);
-  assert.ok(scene.camera.target[2] > bunnyCenter[2]);
-  assert.equal(bunny.label, BUNNY_OBJECT_LABEL);
-  assert.equal(bunny.kind, "mesh");
+  assert.ok(scene.camera.target[1] > primaryCenter[1]);
+  assert.ok(scene.camera.target[2] < scene.camera.position[2]);
+  assert.equal(primary.label, PRIMARY_OBJECT_LABEL);
+  assert.equal(primary.kind, "mesh");
   assert.ok(scene.objects.some((object) => object.kind === "sphere"));
   assert.ok(scene.objects.some((object) => object.kind === "cube"));
+  assert.ok(scene.objects.some((object) => object.kind === "column"));
   assert.ok(
     new Set(scene.objects.map((object) => object.color.join(","))).size >=
       MIN_DRESSING_MATERIAL_COUNT,
@@ -80,14 +86,14 @@ test("bunny is the registered default title scene", async () => {
   assert.equal(scene.environment?.floor?.gridScale, CHECKER_FLOOR_GRID_SCALE);
   assert.ok(scene.environment?.light != null);
   assert.equal(scene.environment?.walls, undefined);
-  assert.ok(bunny.mesh.triangles.length >= MIN_BUNNY_TRIANGLES);
-  assert.ok(bunny.transparency >= MIN_BUNNY_TRANSPARENCY);
-  assert.ok(bunny.refractiveIndex >= MIN_BUNNY_REFRACTIVE_INDEX);
-  assertDefaultBunnyDressing(scene.objects);
-  assertDefaultBunnyChromeBackdrop(scene.objects, scene.camera.target);
+  assert.ok(primary.mesh.triangles.length >= MIN_PRIMARY_TRIANGLES);
+  assert.ok(primary.transparency >= MIN_PRIMARY_TRANSPARENCY);
+  assert.ok(primary.refractiveIndex >= MIN_PRIMARY_REFRACTIVE_INDEX);
+  assertDefaultSceneDressing(scene.objects);
+  assertDefaultScenePortalComposition(scene.objects);
 });
 
-test("startup snapshot preloads the default bunny as the initial scene", async () => {
+test("startup snapshot preloads the default title scene", async () => {
   const [adapter, init, port] = await Promise.all([
     importDist("adapters", "workspace-initial-model-snapshot.js"),
     importDist("app", "workspace", "init.js"),
@@ -101,7 +107,7 @@ test("startup snapshot preloads the default bunny as the initial scene", async (
   });
 
   assert.ok(snapshot.sceneOverride != null);
-  assert.equal(snapshot.sceneOverride.objects[0].label, BUNNY_OBJECT_LABEL);
+  assert.equal(snapshot.sceneOverride.objects[0].label, PRIMARY_OBJECT_LABEL);
   assert.equal(
     model.availableScenes[0],
     port.DEFAULT_BUILT_IN_TITLE_SCENE_NAME,
@@ -119,9 +125,9 @@ test("startup snapshot preloads the default bunny as the initial scene", async (
   );
 });
 
-test("default bunny renders glass against the authored light stage", async () => {
-  const modules = await loadDefaultBunnyModules();
-  const scene = await loadDefaultBunnyScene(modules);
+test("default title scene renders glass against the authored light stage", async () => {
+  const modules = await loadDefaultSceneModules();
+  const scene = await loadDefaultScene(modules);
   const floorEffects = modules.title.titleFloorLightEffectsAt(
     [0, 0, 0],
     scene.objects,
@@ -142,9 +148,9 @@ test("default bunny renders glass against the authored light stage", async () =>
   assert.ok(floorEffects.causticStrength > 0);
 });
 
-test("default bunny authored colors remain stable across general themes", async () => {
-  const modules = await loadDefaultBunnyModules();
-  const scene = await loadDefaultBunnyScene(modules);
+test("default title scene authored colors remain stable across general themes", async () => {
+  const modules = await loadDefaultSceneModules();
+  const scene = await loadDefaultScene(modules);
   const theme = modules.themes.resolveInitialJeditTheme("graphite");
   const washedTheme = themeWithWashedGeneralColors(theme);
   const renderOptions = fixedTitleRenderOptions({
@@ -173,9 +179,9 @@ test("default bunny authored colors remain stable across general themes", async 
   );
 });
 
-test("default bunny keeps visible detail around the camera orbit", async () => {
-  const modules = await loadDefaultBunnyModules();
-  const scene = await loadDefaultBunnyScene(modules);
+test("default title scene keeps visible detail around the camera orbit", async () => {
+  const modules = await loadDefaultSceneModules();
+  const scene = await loadDefaultScene(modules);
   const theme = modules.themes.resolveInitialJeditTheme("graphite");
 
   for (let index = 0; index < CAMERA_ORBIT_SAMPLE_COUNT; index += 1) {
@@ -200,7 +206,7 @@ test("default bunny keeps visible detail around the camera orbit", async () => {
   }
 });
 
-async function loadDefaultBunnyModules() {
+async function loadDefaultSceneModules() {
   return {
     adapter: await importDist("adapters", "title-scene-loader.js"),
     meshes: await importDist("adapters", "workspace-title-meshes.js"),
@@ -211,14 +217,14 @@ async function loadDefaultBunnyModules() {
   };
 }
 
-function loadDefaultBunnyScene(modules) {
+function loadDefaultScene(modules) {
   return modules.adapter.loadBuiltInTitleScene(
-    DEFAULT_BUNNY_SCENE,
+    DEFAULT_TITLE_SCENE,
     modules.meshes.loadStartupTitleMeshes(),
   );
 }
 
-function assertDefaultBunnyDressing(objects) {
+function assertDefaultSceneDressing(objects) {
   assert.equal(
     objects.some((object) => object.kind === "sphere"),
     true,
@@ -227,25 +233,34 @@ function assertDefaultBunnyDressing(objects) {
     objects.some((object) => object.kind === "cube"),
     true,
   );
-  assert.ok(sceneColorCount(objects) >= MIN_DEFAULT_BUNNY_COLOR_COUNT);
+  assert.ok(sceneColorCount(objects) >= MIN_DEFAULT_COLOR_COUNT);
   assert.ok(reflectiveObjectCount(objects) >= MIN_DRESSED_REFLECTIVE_OBJECTS);
   assert.ok(
     transparentObjectCount(objects) >= MIN_DRESSED_TRANSPARENT_OBJECTS,
   );
 }
 
-function assertDefaultBunnyChromeBackdrop(objects, cameraTarget) {
-  const chromeSpheres = objects.filter(
-    (object) =>
-      object.label?.startsWith(CHROME_LABEL_PREFIX) === true &&
-      object.kind === "sphere",
+function assertDefaultScenePortalComposition(objects) {
+  const pylons = objects.filter((object) =>
+    object.label?.endsWith(GATE_PYLON_LABEL_SUFFIX),
+  );
+  const worldlineOrbs = objects.filter((object) =>
+    object.label?.endsWith(WORLDLINE_ORB_LABEL_SUFFIX),
+  );
+  const terminalPrisms = objects.filter((object) =>
+    object.label?.endsWith(TERMINAL_PRISM_LABEL_SUFFIX),
   );
 
-  assert.ok(chromeSpheres.length >= MIN_CHROME_SPHERE_COUNT);
-  for (const sphere of chromeSpheres) {
-    assert.ok(sphere.position[2] < cameraTarget[2]);
-    assert.ok(sphere.reflectivity >= MIN_CHROME_REFLECTIVITY);
-  }
+  assert.ok(pylons.length >= MIN_GATE_PYLON_COUNT);
+  assert.ok(worldlineOrbs.length >= MIN_WORLDLINE_ORB_COUNT);
+  assert.ok(terminalPrisms.length >= MIN_TERMINAL_PRISM_COUNT);
+  assert.ok(
+    worldlineOrbs.every(
+      (object) =>
+        object.kind === "sphere" && object.reflectivity >= MIN_CHROME_REFLECTIVITY,
+    ),
+  );
+  assert.ok(terminalPrisms.every((object) => object.kind === "cube"));
 }
 
 function sceneColorCount(objects) {
