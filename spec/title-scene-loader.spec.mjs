@@ -135,6 +135,63 @@ test("scene loader decodes bounded optical material fields", async () => {
   );
 });
 
+test("scene loader decodes animated light orbits", async () => {
+  const { loader, titleScene } = await loadTitleSceneLoaderModules();
+  const scene = loader.parseTitleSceneJson(
+    {
+      environment: {
+        light: {
+          orbit: {
+            radius: 1.9,
+            height: 3.1,
+            phase: -1.1,
+            angularSpeed: 0.55,
+          },
+        },
+      },
+      objects: [
+        {
+          kind: titleScene.TITLE_SCENE_SHAPE_KIND.Sphere,
+          position: [0, 1, 0],
+          radius: 1,
+          color: [120, 220, 255],
+          reflectivity: 0.12,
+        },
+      ],
+    },
+    {},
+  );
+
+  assert.deepEqual(scene.environment.light.orbit, {
+    radius: 1.9,
+    height: 3.1,
+    phase: -1.1,
+    angularSpeed: 0.55,
+  });
+  assert.throws(
+    () =>
+      loader.parseTitleSceneJson(
+        {
+          environment: {
+            light: {
+              orbit: {
+                radius: 0,
+                height: 0,
+                phase: 0,
+                angularSpeed: 1,
+              },
+            },
+          },
+          objects: [],
+        },
+        {},
+      ),
+    (error) =>
+      error?.name === "SceneDecodeError" &&
+      String(error.message).includes("non-zero light direction"),
+  );
+});
+
 test("scene loader resolves world-space camera target objects", async () => {
   const { loader, titleScene } = await loadTitleSceneLoaderModules();
   const scene = loader.parseTitleSceneJson(

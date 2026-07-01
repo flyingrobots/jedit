@@ -1,8 +1,6 @@
 import {
-  TITLE_SCENE_SHAPE_KIND,
   type TitleScene,
   type TitleSceneColor,
-  type TitleSceneMeshObject,
   type TitleSceneObject,
 } from "../../ui/title-scene.js";
 
@@ -88,7 +86,7 @@ export function applyTitleMeshMaterial(
     ...scene,
     objects: scene.objects.map((object) =>
       isTitleMeshMaterialObject(object)
-        ? titleMeshObjectWithMaterial(object, preset)
+        ? titleObjectWithMaterial(object, preset)
         : object,
     ),
   };
@@ -104,18 +102,16 @@ function titleMeshMaterialIndex(index: number): number {
 
 function isTitleMeshMaterialObject(
   object: TitleSceneObject,
-): object is TitleSceneMeshObject {
+): boolean {
   return (
-    object.kind === TITLE_SCENE_SHAPE_KIND.Mesh &&
-    object.label != null &&
-    TITLE_MESH_MATERIAL_OBJECT_LABELS.has(object.label)
+    object.label != null && TITLE_MESH_MATERIAL_OBJECT_LABELS.has(object.label)
   );
 }
 
-function titleMeshObjectWithMaterial(
-  object: TitleSceneMeshObject,
+function titleObjectWithMaterial(
+  object: TitleSceneObject,
   preset: TitleMeshMaterialPreset,
-): TitleSceneMeshObject {
+): TitleSceneObject {
   return {
     ...object,
     color: preset.color,

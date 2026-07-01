@@ -261,6 +261,39 @@ test("title scene day/night environment follows wall clock and scene seed", asyn
   assert.ok(luminance(noon.floor.light) > luminance(noon.floor.dark));
 });
 
+test("title scene light orbit produces animated key directions", async () => {
+  const { titleSceneEnvironment } = await loadTitleModules();
+  const environment = {
+    light: {
+      orbit: {
+        radius: 2,
+        height: 3,
+        phase: 0,
+        angularSpeed: 0.8,
+      },
+      ambient: 0.07,
+      diffuse: 1.04,
+    },
+  };
+
+  assert.notDeepEqual(
+    roundedVector(
+      titleSceneEnvironment.titleSceneLightDirectionAt(environment, 0),
+    ),
+    roundedVector(
+      titleSceneEnvironment.titleSceneLightDirectionAt(environment, 2),
+    ),
+  );
+  assert.equal(
+    titleSceneEnvironment.titleSceneDayNightEnvironmentAtHour(
+      environment,
+      FIRST_CHECKER_SEED,
+      NOON_HOUR,
+    ).light.diffuse,
+    environment.light.diffuse,
+  );
+});
+
 function cellColorKey(cell) {
   return cell.fg ?? cell.fgRGB?.join(",") ?? "";
 }
@@ -289,4 +322,8 @@ function luminance(rgb) {
     return 0;
   }
   return rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722;
+}
+
+function roundedVector(vector) {
+  return vector.map((component) => Number(component.toFixed(6)));
 }

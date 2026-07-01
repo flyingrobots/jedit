@@ -26,10 +26,18 @@ export interface TitleSceneWallEnvironment {
 
 export interface TitleSceneLightEnvironment {
   readonly direction?: TitleSceneVector3;
+  readonly orbit?: TitleSceneLightOrbit;
   readonly ambient?: number;
   readonly diffuse?: number;
   readonly specularStrength?: number;
   readonly rimStrength?: number;
+}
+
+export interface TitleSceneLightOrbit {
+  readonly radius: number;
+  readonly height: number;
+  readonly phase: number;
+  readonly angularSpeed: number;
 }
 
 export interface TitleSceneEnvironment {
@@ -111,6 +119,22 @@ export function titleSceneBackgroundColor(
 }
 
 export function titleSceneLightDirection(environment: TitleSceneEnvironment | undefined): TitleSceneVector3 | undefined {
+  return titleSceneLightDirectionAt(environment);
+}
+
+export function titleSceneLightDirectionAt(
+  environment: TitleSceneEnvironment | undefined,
+  time = 0,
+): TitleSceneVector3 | undefined {
+  const orbit = environment?.light?.orbit;
+  if (orbit != null) {
+    const angle = orbit.phase + time * orbit.angularSpeed;
+    return normalize([
+      Math.cos(angle) * orbit.radius,
+      orbit.height,
+      Math.sin(angle) * orbit.radius,
+    ]);
+  }
   return environment?.light?.direction == null ? undefined : normalize(environment.light.direction);
 }
 
@@ -222,12 +246,52 @@ function titleSceneDayNightLight(
 ): SceneLight {
   return {
     ...light,
-    direction: titleSceneSunDirection(hour, factors),
-    ambient: mixScalar(NIGHT_AMBIENT, DAY_AMBIENT, factors.daylight),
-    diffuse: mixScalar(NIGHT_DIFFUSE, DAY_DIFFUSE, Math.max(factors.daylight, factors.twilight * 0.72)),
-    specularStrength: mixScalar(NIGHT_SPECULAR, DAY_SPECULAR, factors.daylight),
-    rimStrength: mixScalar(NIGHT_RIM, DAY_RIM, factors.daylight),
+    direction: light?.direction ?? titleSceneSunDirection(hour, factors),
+    ambient: dayNightLightAmbient(light, factors),
+    diffuse: dayNightLightDiffuse(light, factors),
+    specularStrength: dayNightLightSpecular(light, factors),
+    rimStrength: dayNightLightRim(light, factors),
   };
+}
+
+function dayNightLightAmbient(
+  light: SceneLight | undefined,
+  factors: TitleSceneDayNightFactors,
+): number {
+  return light?.orbit != null
+    ? light.ambient ?? NIGHT_AMBIENT
+    : mixScalar(NIGHT_AMBIENT, DAY_AMBIENT, factors.daylight);
+}
+
+function dayNightLightDiffuse(
+  light: SceneLight | undefined,
+  factors: TitleSceneDayNightFactors,
+): number {
+  return light?.orbit != null
+    ? light.diffuse ?? DAY_DIFFUSE
+    : mixScalar(
+        NIGHT_DIFFUSE,
+        DAY_DIFFUSE,
+        Math.max(factors.daylight, factors.twilight * 0.72),
+      );
+}
+
+function dayNightLightSpecular(
+  light: SceneLight | undefined,
+  factors: TitleSceneDayNightFactors,
+): number {
+  return light?.orbit != null
+    ? light.specularStrength ?? DAY_SPECULAR
+    : mixScalar(NIGHT_SPECULAR, DAY_SPECULAR, factors.daylight);
+}
+
+function dayNightLightRim(
+  light: SceneLight | undefined,
+  factors: TitleSceneDayNightFactors,
+): number {
+  return light?.orbit != null
+    ? light.rimStrength ?? DAY_RIM
+    : mixScalar(NIGHT_RIM, DAY_RIM, factors.daylight);
 }
 
 interface TitleSceneDayNightFactors {

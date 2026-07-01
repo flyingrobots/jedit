@@ -137,7 +137,7 @@ test("startup file modal shortcuts defer to the active title command line", asyn
   assert.deepEqual(enterCommands, []);
 });
 
-test("title screen m cycles title mesh materials and reports the material name", async () => {
+test("title screen m cycles title materials and reports the material name", async () => {
   const [keyBindings, titleScreen, material, sceneLoader, meshes, port] =
     await Promise.all([
       importDist("app", "workspace", "key-bindings.js"),

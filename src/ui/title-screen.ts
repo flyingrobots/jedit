@@ -26,7 +26,7 @@ import {
   nearestTitleEnvironmentSurfaceHit,
   titleSceneBackgroundColor,
   titleSceneDayNightEnvironment,
-  titleSceneLightDirection,
+  titleSceneLightDirectionAt,
   type TitleSceneEnvironment,
 } from "./title-scene-environment.js";
 import {
@@ -330,7 +330,7 @@ function titleSceneRayContext(
     origin,
     ray: getRayDir(origin, target, [rx, -ry - 0.2, 2.7]),
     lightDirection:
-      titleSceneLightDirection(options.environment) ??
+      titleSceneLightDirectionAt(options.environment, options.time) ??
       TITLE_KEY_LIGHT_DIRECTION,
     spotlight: titleSceneSpotlightForCameraPlacement(
       options.spotlightCamera,
