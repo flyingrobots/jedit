@@ -153,7 +153,7 @@ test("viewer renderer resets adaptive Braille history after ASCII title frames",
   ]);
 });
 
-test("viewer renderer uses motion LOD while the title camera settles", async () => {
+test("viewer renderer keeps full Braille sampling while the title camera settles", async () => {
   const [viewerContent, titleScreen] = await Promise.all([
     importDist("app", "workspace", "viewer-content.js"),
     importDist("ui", "title-screen.js"),
@@ -188,8 +188,51 @@ test("viewer renderer uses motion LOD while the title camera settles", async () 
 
   assert.deepEqual(budgets, [
     { phase: 0, phaseCount: 1 },
-    { phase: 1, phaseCount: 8 },
+    { phase: 0, phaseCount: 1 },
   ]);
+});
+
+test("viewer renderer resets Braille samples after FPS camera movement", async () => {
+  const [viewerContent, titleScreen] = await Promise.all([
+    importDist("app", "workspace", "viewer-content.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const budgets = [];
+  const cacheObjects = [];
+  const renderer = viewerContent.createViewerContentRenderer(
+    (width, height, _time, _theme, options) => {
+      budgets.push(options.brailleSampling?.traceBudget);
+      cacheObjects.push(options.brailleSampling?.sampleCache);
+      markHighActivity(options.brailleSampling?.stats);
+      return stringToSurface("frame", width, height);
+    },
+  );
+  const base = mockTitleScreenModel(titleScreen, {
+    frameTimeMs: FAST_FRAME_MS,
+    startupIntroComplete: false,
+    startupFileModalOpen: false,
+  });
+
+  renderer.renderViewer(base, TITLE_WIDTH, TITLE_HEIGHT);
+  renderer.renderViewer(
+    {
+      ...base,
+      time: 1,
+      titleCamera: {
+        ...base.titleCamera,
+        position: [0, 2.65, 8],
+        target: [0, 0.78, -0.5],
+      },
+    },
+    TITLE_WIDTH,
+    TITLE_HEIGHT,
+  );
+
+  assert.deepEqual(budgets, [
+    { phase: 0, phaseCount: 1 },
+    { phase: 0, phaseCount: 1 },
+  ]);
+  assert.notEqual(cacheObjects[0], cacheObjects[1]);
 });
 
 function markHighActivity(stats) {
