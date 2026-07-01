@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { setImmediate as waitForTurn } from 'node:timers/promises';
 import { createWorkspaceEchoAppHarness } from './workspace-echo-app-harness.mjs';
 
 export async function openedHarness(options = {}) {
@@ -44,7 +45,8 @@ export function echoTextDocument(initialText) {
   let text = initialText;
   return {
     insert(startByte, insertText) {
-      text = `${text.slice(0, startByte)}${insertText}${text.slice(startByte)}`;
+      const startIndex = stringIndexFromUtf8ByteOffset(text, startByte);
+      text = `${text.slice(0, startIndex)}${insertText}${text.slice(startIndex)}`;
     },
     replace(nextText) {
       text = nextText;
@@ -92,18 +94,39 @@ export function deferred() {
 }
 
 export async function waitForPendingInsertCount(pendingInserts, count) {
-  for (let attempt = 0; attempt < 10; attempt += 1) {
-    if (pendingInserts.length >= count) {
+  await waitForItemCount(pendingInserts, count, 'pending insert');
+}
+
+export async function waitForItemCount(items, count, label = 'item') {
+  for (let attempt = 0; attempt < 25; attempt += 1) {
+    if (items.length === count) {
       return;
     }
-    await Promise.resolve();
+    if (items.length > count) {
+      break;
+    }
+    await waitForTurn();
   }
-  assert.equal(pendingInserts.length, count);
+  assert.equal(items.length, count, `expected ${count} ${label} entries`);
 }
 
 export async function applyWorkspaceMessage(harness, message) {
-  const [nextModel] = harness.runtime.update(message, harness.model);
+  const [nextModel, commands] = harness.runtime.update(message, harness.model);
   harness.setModel(nextModel);
+  let pendingCommands = [...commands];
+  while (pendingCommands.length > 0) {
+    const followUpMessage = await pendingCommands[0]();
+    pendingCommands = pendingCommands.slice(1);
+    if (followUpMessage == null) {
+      continue;
+    }
+    const [followUpModel, followUpCommands] = harness.runtime.update(
+      followUpMessage,
+      harness.model,
+    );
+    harness.setModel(followUpModel);
+    pendingCommands = [...pendingCommands, ...followUpCommands];
+  }
 }
 
 export function byteOffsetAtLine(lines, targetLine) {
@@ -112,4 +135,25 @@ export function byteOffsetAtLine(lines, targetLine) {
     offset += Buffer.byteLength(lines[line] ?? '', 'utf8') + 1;
   }
   return offset;
+}
+
+function stringIndexFromUtf8ByteOffset(text, byteOffset) {
+  if (byteOffset <= 0) {
+    return 0;
+  }
+  let bytes = 0;
+  for (let index = 0; index < text.length;) {
+    const codePoint = text.codePointAt(index);
+    const character = String.fromCodePoint(codePoint);
+    const nextBytes = bytes + Buffer.byteLength(character, 'utf8');
+    if (nextBytes > byteOffset) {
+      return index;
+    }
+    bytes = nextBytes;
+    index += character.length;
+    if (bytes === byteOffset) {
+      return index;
+    }
+  }
+  return text.length;
 }

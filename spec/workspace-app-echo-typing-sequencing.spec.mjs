@@ -7,8 +7,17 @@ import {
   echoTextDocument,
   observedDocumentWindow,
   openedHarness,
+  waitForItemCount,
   waitForPendingInsertCount,
 } from './workspace-echo-test-utils.mjs';
+
+test('echoTextDocument inserts at UTF-8 byte coordinates', () => {
+  const document = echoTextDocument('aé💥z');
+
+  document.insert(Buffer.byteLength('aé', 'utf8'), '-');
+
+  assert.deepEqual(document.lines(), ['aé-💥z']);
+});
 
 test('real workspace app path serializes rapid insert settlement and records each edit', async () => {
   const sentence = "this is an editor and i'm typing in it";
@@ -76,8 +85,7 @@ test('real workspace app path serializes rapid insert settlement and records eac
     commands.push(...await harness.key(character));
   }
   const commandMessages = commands.map((command) => command());
-  await Promise.resolve();
-  await Promise.resolve();
+  await waitForItemCount(calls.insert, 1, 'insert call');
 
   assert.equal(calls.insert.length, 1, 'only one Echo mutation should be in flight before the first settles');
 
@@ -166,15 +174,12 @@ test('real workspace app path waits for queued rapid inserts before saving', asy
     editCommands.push(...await harness.key(character));
   }
   const editMessages = editCommands.map((command) => command());
-  await Promise.resolve();
-  await Promise.resolve();
+  await waitForItemCount(calls.insert, 1, 'insert call');
   assert.equal(calls.insert.length, 1, 'rapid typing should still admit only one Echo mutation at a time');
 
   const saveCommands = await harness.key('s', { ctrl: true });
   assert.equal(saveCommands.length, 1);
   const saveMessage = saveCommands[0]();
-  await Promise.resolve();
-  await Promise.resolve();
   assert.equal(calls.export.length, 0, 'save must not export a partial Echo frontier while edits are queued');
   assert.deepEqual(harness.savedFiles, []);
 
@@ -250,13 +255,11 @@ test('real workspace app path cancels a queued save after an edit obstruction', 
   await harness.key('i');
   const editCommands = await harness.key('X', { shift: true });
   const editMessage = editCommands[0]();
-  await Promise.resolve();
-  await Promise.resolve();
+  await waitForItemCount(calls.insert, 1, 'insert call');
   assert.equal(calls.insert.length, 1);
 
   const saveCommands = await harness.key('s', { ctrl: true });
   const saveMessage = saveCommands[0]();
-  await Promise.resolve();
   assert.equal(calls.export.length, 0);
 
   pendingInsert.resolve();
@@ -322,11 +325,9 @@ test('real workspace app path admits final queued edit before export obstruction
   await harness.key('i');
   const editCommands = await harness.key('X', { shift: true });
   const editMessage = editCommands[0]();
-  await Promise.resolve();
-  await Promise.resolve();
+  await waitForItemCount(calls.insert, 1, 'insert call');
   const saveCommands = await harness.key('s', { ctrl: true });
   const saveMessage = saveCommands[0]();
-  await Promise.resolve();
 
   pendingInsert.resolve();
   await applyWorkspaceMessage(harness, await editMessage);
