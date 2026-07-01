@@ -20,13 +20,16 @@ const MIN_ORBIT_RENDER_COLOR_VARIETY = 20;
 const CHECKER_FLOOR_DARK = [3, 4, 7];
 const CHECKER_FLOOR_LIGHT = [58, 68, 76];
 const CHECKER_FLOOR_GRID_SCALE = 0.95;
-const MAX_DEFAULT_BUNNY_CAMERA_RADIUS = 3.1;
-const MIN_DEFAULT_BUNNY_CAMERA_Y = 1.2;
-const MAX_DEFAULT_BUNNY_CAMERA_Y = 1.7;
+const MAX_DEFAULT_BUNNY_CAMERA_RADIUS = 2.4;
+const MAX_DEFAULT_BUNNY_CAMERA_Y = 0.75;
 const MIN_DEFAULT_BUNNY_OBJECT_COUNT = 7;
 const MIN_DEFAULT_BUNNY_COLOR_COUNT = 7;
 const MIN_DRESSED_REFLECTIVE_OBJECTS = 4;
 const MIN_DRESSED_TRANSPARENT_OBJECTS = 3;
+const CHROME_LABEL_PREFIX = "chrome-";
+const MIN_CHROME_SPHERE_COUNT = 3;
+const MIN_CHROME_REFLECTIVITY = 0.85;
+const MAX_FACE_TARGET_CENTERLINE_OFFSET = 0.25;
 const THEME_STABILITY_VARIABLE_NAMES = [
   "accent",
   "info",
@@ -42,6 +45,7 @@ test("bunny is the registered default title scene", async () => {
   const modules = await loadDefaultBunnyModules();
   const scene = await loadDefaultBunnyScene(modules);
   const bunny = scene.objects[0];
+  const bunnyCenter = modules.titleScene.titleSceneObjectFootprintCenter(bunny);
 
   assert.equal(
     modules.port.DEFAULT_BUILT_IN_TITLE_SCENE_NAME,
@@ -50,13 +54,15 @@ test("bunny is the registered default title scene", async () => {
   assert.equal(modules.port.BUILT_IN_TITLE_SCENE_NAMES[0], DEFAULT_BUNNY_SCENE);
   assert.ok(scene.objects.length >= MIN_DEFAULT_BUNNY_OBJECT_COUNT);
   assert.ok(scene.camera.radius <= MAX_DEFAULT_BUNNY_CAMERA_RADIUS);
-  assert.ok(scene.camera.position[1] >= MIN_DEFAULT_BUNNY_CAMERA_Y);
   assert.ok(scene.camera.position[1] <= MAX_DEFAULT_BUNNY_CAMERA_Y);
-  assert.ok(scene.camera.position[2] < scene.camera.target[2]);
-  assert.deepEqual(
-    scene.camera.target,
-    modules.titleScene.titleSceneObjectFootprintCenter(bunny),
+  assert.ok(scene.camera.position[1] < scene.camera.target[1]);
+  assert.ok(scene.camera.position[2] > scene.camera.target[2]);
+  assert.ok(
+    Math.abs(scene.camera.target[0] - bunnyCenter[0]) <=
+      MAX_FACE_TARGET_CENTERLINE_OFFSET,
   );
+  assert.ok(scene.camera.target[1] > bunnyCenter[1]);
+  assert.ok(scene.camera.target[2] > bunnyCenter[2]);
   assert.equal(bunny.label, BUNNY_OBJECT_LABEL);
   assert.equal(bunny.kind, "mesh");
   assert.ok(scene.objects.some((object) => object.kind === "sphere"));
@@ -78,6 +84,7 @@ test("bunny is the registered default title scene", async () => {
   assert.ok(bunny.transparency >= MIN_BUNNY_TRANSPARENCY);
   assert.ok(bunny.refractiveIndex >= MIN_BUNNY_REFRACTIVE_INDEX);
   assertDefaultBunnyDressing(scene.objects);
+  assertDefaultBunnyChromeBackdrop(scene.objects, scene.camera.target);
 });
 
 test("startup snapshot preloads the default bunny as the initial scene", async () => {
@@ -126,8 +133,7 @@ test("default bunny renders glass against the authored light stage", async () =>
     TITLE_TIME,
     modules.themes.resolveInitialJeditTheme("graphite"),
     fixedTitleRenderOptions({
-      camAngle: scene.camera.angle,
-      camRadius: scene.camera.radius,
+      camera: scene.camera,
       sceneOverride: scene,
     }),
   );
@@ -142,8 +148,7 @@ test("default bunny authored colors remain stable across general themes", async 
   const theme = modules.themes.resolveInitialJeditTheme("graphite");
   const washedTheme = themeWithWashedGeneralColors(theme);
   const renderOptions = fixedTitleRenderOptions({
-    camAngle: scene.camera.angle,
-    camRadius: scene.camera.radius,
+    camera: scene.camera,
     sceneOverride: scene,
   });
 
@@ -227,6 +232,20 @@ function assertDefaultBunnyDressing(objects) {
   assert.ok(
     transparentObjectCount(objects) >= MIN_DRESSED_TRANSPARENT_OBJECTS,
   );
+}
+
+function assertDefaultBunnyChromeBackdrop(objects, cameraTarget) {
+  const chromeSpheres = objects.filter(
+    (object) =>
+      object.label?.startsWith(CHROME_LABEL_PREFIX) === true &&
+      object.kind === "sphere",
+  );
+
+  assert.ok(chromeSpheres.length >= MIN_CHROME_SPHERE_COUNT);
+  for (const sphere of chromeSpheres) {
+    assert.ok(sphere.position[2] < cameraTarget[2]);
+    assert.ok(sphere.reflectivity >= MIN_CHROME_REFLECTIVITY);
+  }
 }
 
 function sceneColorCount(objects) {
