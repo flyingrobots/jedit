@@ -212,6 +212,48 @@ test("title scene spotlight visibly tints an object under the beam", async () =>
   assert.ok(underColor[2] > awayColor[2] + SPOTLIGHT_COLOR_DELTA);
 });
 
+test("title mirror reflections preserve the reflected object's material hue", async () => {
+  const { titleOptics, titleScene } = await loadTitleModules();
+  const colors = {
+    ...emptyMaterialColors(),
+    spotlight: [255, 128, 16],
+  };
+  const environment = {
+    light: { ambient: 0, diffuse: 0, specularStrength: 0, rimStrength: 0 },
+  };
+  const red = titleOptics.reflectedEnvironmentColor({
+    point: [0, 0, 2.1],
+    ray: [0, 0, -1],
+    colors,
+    objects: [materialSphere(titleScene, [240, 32, 32])],
+    time: 0,
+    environment,
+    lightDirection: [0, 1, 0],
+    spotlight: titleOptics.titleSceneSpotlightAt(
+      [0, 4, 2],
+      [0, 0, 0],
+      colors.spotlight,
+    ),
+  });
+  const blue = titleOptics.reflectedEnvironmentColor({
+    point: [0, 0, 2.1],
+    ray: [0, 0, -1],
+    colors,
+    objects: [materialSphere(titleScene, [32, 64, 240])],
+    time: 0,
+    environment,
+    lightDirection: [0, 1, 0],
+    spotlight: titleOptics.titleSceneSpotlightAt(
+      [0, 4, 2],
+      [0, 0, 0],
+      colors.spotlight,
+    ),
+  });
+
+  assert.ok(red[0] > blue[0] + 80);
+  assert.ok(blue[2] > red[2] + 80);
+});
+
 test("title environment fogs infinite floor hits into the background", async () => {
   const { titleSceneEnvironment } = await loadTitleModules();
   const colors = {
@@ -294,6 +336,20 @@ function glassSphere(titleScene, refractiveIndex) {
     reflectivity: 0,
     transparency: 0.9,
     refractiveIndex,
+  };
+}
+
+function materialSphere(titleScene, color) {
+  return {
+    kind: titleScene.TITLE_SCENE_SHAPE_KIND.Sphere,
+    position: [0, 0, 0],
+    radius: 1,
+    footprintRadius: 1,
+    height: 2,
+    color,
+    reflectivity: 0,
+    transparency: 0,
+    refractiveIndex: 1,
   };
 }
 

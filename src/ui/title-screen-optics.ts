@@ -82,7 +82,8 @@ const REFLECTION_EDGE_BIAS = 0.28;
 const REFLECTION_FRESNEL_POWER = 3;
 const MIRROR_REFLECTIVITY_THRESHOLD = 0.95;
 const MIRROR_REFLECTION_AMOUNT = 1;
-const REFLECTION_OBJECT_TINT = 1.18;
+const REFLECTION_OBJECT_TINT = 1.05;
+const REFLECTION_OBJECT_MATERIAL_MIX = 0.46;
 const SURFACE_REFLECTION_TINT = 0.72;
 const REFRACTION_RAY_BIAS = 0.04;
 const REFRACTION_FRESNEL_LOSS = 0.65;
@@ -250,7 +251,7 @@ function reflectedObjectColor(
   options: ReflectedEnvironmentColorOptions,
   objectHit: TitleObjectSurfaceHit,
 ): Color3 {
-  return scaleColor(
+  const shaded = scaleColor(
     shadedObjectColor({
       objectHit,
       point: add(options.point, scale(options.ray, objectHit.distance)),
@@ -262,6 +263,9 @@ function reflectedObjectColor(
     }),
     REFLECTION_OBJECT_TINT,
   );
+  const material = scaleColor(objectHit.object.color, REFLECTION_OBJECT_TINT);
+
+  return mixColor(shaded, material, REFLECTION_OBJECT_MATERIAL_MIX);
 }
 
 function reflectedSurfaceColor(

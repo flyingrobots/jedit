@@ -235,6 +235,44 @@ test("viewer renderer resets Braille samples after FPS camera movement", async (
   assert.notEqual(cacheObjects[0], cacheObjects[1]);
 });
 
+test("viewer renderer resets Braille samples after title material changes", async () => {
+  const [viewerContent, titleScreen] = await Promise.all([
+    importDist("app", "workspace", "viewer-content.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const cacheObjects = [];
+  const renderer = viewerContent.createViewerContentRenderer(
+    (width, height, _time, _theme, options) => {
+      cacheObjects.push(options.brailleSampling?.sampleCache);
+      markHighActivity(options.brailleSampling?.stats);
+      return stringToSurface("frame", width, height);
+    },
+  );
+  const sceneOverride = {
+    camera: { angle: 0, radius: 8 },
+    objects: [],
+  };
+  const base = mockTitleScreenModel(titleScreen, {
+    frameTimeMs: FAST_FRAME_MS,
+    sceneOverride,
+    startupIntroComplete: false,
+    startupFileModalOpen: false,
+  });
+
+  renderer.renderViewer(base, TITLE_WIDTH, TITLE_HEIGHT);
+  renderer.renderViewer(
+    {
+      ...base,
+      sceneOverride: { ...sceneOverride },
+      time: 1,
+    },
+    TITLE_WIDTH,
+    TITLE_HEIGHT,
+  );
+
+  assert.notEqual(cacheObjects[0], cacheObjects[1]);
+});
+
 function markHighActivity(stats) {
   if (stats == null) {
     return;

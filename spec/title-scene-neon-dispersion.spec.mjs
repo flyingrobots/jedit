@@ -17,17 +17,19 @@ const CAMERA_ORBIT_SAMPLE_COUNT = 16;
 const FULL_CAMERA_ORBIT_RADIANS = Math.PI * 2;
 const MIN_ORBIT_RENDER_COLOR_VARIETY = 10;
 const CHECKER_FLOOR_DARK = [2, 3, 7];
-const CHECKER_FLOOR_LIGHT = [42, 52, 60];
-const CHECKER_FLOOR_GRID_SCALE = 1.05;
+const CHECKER_FLOOR_LIGHT = [68, 90, 100];
+const CHECKER_FLOOR_GRID_SCALE = 1.2;
 const MAX_DEFAULT_CAMERA_RADIUS = 5.4;
 const MIN_DEFAULT_CAMERA_Y = 3.4;
 const MIN_CAMERA_LOOKDOWN = 2;
 const MAX_PRIMARY_TRANSPARENCY = 0.05;
-const MAX_MIRROR_RADIUS = 1.05;
+const MAX_MIRROR_RADIUS = 1.25;
 const MIN_MIRROR_FRONT_OFFSET = 0.45;
 const REFLECTION_GRID_WIDTH = 72;
 const REFLECTION_GRID_HEIGHT = 40;
 const MIN_MIRROR_REFLECTED_BUNNY_RAYS = 25;
+const MIN_MIRROR_PRIMARY_RAYS = 900;
+const MAX_DIRECT_BUNNY_PRIMARY_RAYS = 80;
 const MIRROR_REFLECTION_RAY_BIAS = 0.03;
 const TITLE_PROJECTION_DISTANCE = 2.7;
 const TITLE_VERTICAL_SCREEN_OFFSET = 0.2;
@@ -81,6 +83,10 @@ test("continuum gate is the registered default title scene", async () => {
     mirrorReflectedBunnyRayCount(modules.titleScene, scene) >=
       MIN_MIRROR_REFLECTED_BUNNY_RAYS,
   );
+  assert.deepEqual(primaryRayCounts(modules.titleScene, scene), {
+    directBunny: 0,
+    directMirror: 1216,
+  });
   assert.ok(scene.environment?.floor != null);
   assert.equal(scene.environment?.floor?.kind, "grid");
   assert.deepEqual(scene.environment?.floor?.dark, CHECKER_FLOOR_DARK);
@@ -245,6 +251,32 @@ function mirrorReflectedBunnyRayCount(titleScene, scene) {
     }
   }
   return count;
+}
+
+function primaryRayCounts(titleScene, scene) {
+  const counts = {
+    directBunny: 0,
+    directMirror: 0,
+  };
+  for (let row = 0; row < REFLECTION_GRID_HEIGHT; row += 1) {
+    for (let col = 0; col < REFLECTION_GRID_WIDTH; col += 1) {
+      const objectHit = titleScene.nearestTitleSceneObjectHit(
+        scene.camera.position,
+        titleSceneSampleRay(scene.camera, col, row),
+        scene.objects,
+      );
+      if (objectHit?.object?.label === PRIMARY_OBJECT_LABEL) {
+        counts.directBunny += 1;
+      }
+      if (objectHit?.object?.label === MIRROR_OBJECT_LABEL) {
+        counts.directMirror += 1;
+      }
+    }
+  }
+
+  assert.ok(counts.directMirror >= MIN_MIRROR_PRIMARY_RAYS);
+  assert.ok(counts.directBunny <= MAX_DIRECT_BUNNY_PRIMARY_RAYS);
+  return counts;
 }
 
 function mirrorReflectedBunnyRayHit(titleScene, scene, col, row) {
