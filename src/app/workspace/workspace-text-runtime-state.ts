@@ -1,6 +1,11 @@
 import type { Cmd, RuntimeIssue } from '@flyingrobots/bijou-tui';
 import { pushRuntimeIssueToast } from '../../ui/feedback.js';
-import { beginEditorProjectionRefresh, editorViewport, ensureEditorVisible } from './editor-session.js';
+import {
+  beginEditorProjectionRefresh,
+  beginEditorSourceHighlightRefresh,
+  editorViewport,
+  ensureEditorVisible,
+} from './editor-session.js';
 import type { WorkspaceModel } from './model.js';
 import { WorkspaceMessageTypes, type WorkspaceMsg } from './msg.js';
 import type { WorkspaceRuntimeDependencies } from './workspace-runtime-dependencies.js';
@@ -13,7 +18,6 @@ import {
   type EchoHistoryEntryDraft,
 } from './echo-history.js';
 import {
-  editorFromFullWorkspaceTextCache,
   openedWorkspaceTextAuthority,
   obstructedWorkspaceTextAuthority,
   WorkspaceTextAuthorityKinds,
@@ -23,13 +27,12 @@ import {
   workspaceTextAuthorityWithExport,
   workspaceTextAuthorityWithObstruction,
 } from './workspace-text-authority.js';
+import { WorkspaceTextResultKinds, type WorkspaceTextAppliedResult, type WorkspaceTextOpenedResult } from './workspace-text-results.js';
 import {
-  WorkspaceTextResultKinds,
-  type WorkspaceTextAppliedResult,
-  type WorkspaceTextOpenedResult,
-} from './workspace-text-results.js';
-import {
+  dependentEditBlockedIssue,
   shouldIgnoreTextEditObstruction,
+  shouldRecordIntermediateTextEditResult,
+  settlementObstructionIssue,
   textCheckpointResultTargetsAuthority,
   textEditResultBlockedByEarlierObstruction,
   textEditResultTargetsAuthority,
@@ -37,22 +40,18 @@ import {
   textReadResultTargetsAuthority,
 } from './workspace-text-result-guards.js';
 import { createWorkspaceTextCheckpointCmd } from './workspace-text-commands.js';
-import type { TextPosition } from './workspace-text-position.js';
-import { canReadingReplaceWholeEditor, editorFromWorkspaceTextLines } from './workspace-text-reading-cache.js';
+import { editorFromWorkspaceTextLines, workspaceModelWithTextAuthorityEditor } from './workspace-text-reading-cache.js';
 import { JEDIT_WSC_WORKSPACE_STORE_STATUS } from '../../ports/jedit-wsc-workspace-store.js';
 import {
   jeditAppliedCommandHistorySummary,
+  receivedJeditCommandEventForRequest,
   workspaceTextAuthorityWithAppliedJeditCommandReceipt,
   workspaceTextAuthorityWithCurrentJeditCommandObservation,
 } from './command-provenance.js';
 
 export type WorkspaceRuntimeResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 
-const WSC_SETTLEMENT_OBSTRUCTION_PREFIX = 'WSC edit settlement failed';
-const DEPENDENT_EDIT_BLOCKED_PREFIX = 'Text edit blocked by obstructed intent';
 const FOCUS_PANE_EDITOR = 'editor';
-const ISSUE_LEVEL_ERROR = 'error';
-const ISSUE_SOURCE_COMMAND = 'command';
 
 interface TextExportCheckpointRequest {
   readonly requestId: number;
@@ -173,12 +172,57 @@ function applyTextEditResult(
       : applyTextEditObstruction(deps, msg, model, authority);
   }
   if (msg.requestId !== model.textRequestId) {
-    return [model, []];
+    return shouldRecordIntermediateTextEditResult(authority, msg.requestId, model.textRequestId)
+      ? applyIntermediateTextEditResult(deps, msg, model, authority)
+      : [model, []];
   }
   if (textEditResultBlockedByEarlierObstruction(authority, msg.requestId)) {
     return applyBlockedDependentTextEdit(deps, msg, model, authority);
   }
   return applyAppliedTextEditResult(deps, msg, model, authority);
+}
+
+function applyIntermediateTextEditResult(
+  deps: WorkspaceRuntimeDependencies,
+  msg: Extract<WorkspaceMsg, { type: typeof WorkspaceMessageTypes.TextEditResult }>,
+  model: WorkspaceModel,
+  authority: Extract<WorkspaceModel['textAuthority'], { kind: typeof WorkspaceTextAuthorityKinds.Opened }>,
+): WorkspaceRuntimeResult {
+  if (msg.result.kind !== WorkspaceTextResultKinds.Applied) {
+    return [model, []];
+  }
+  const withCache = workspaceTextAuthorityWithCache(
+    textAuthorityWithIntermediateEditReceipt(authority, msg.requestId, msg.result),
+    msg.result.cache,
+  );
+  const withCurrentObservation = workspaceTextAuthorityWithCurrentJeditCommandObservation(withCache);
+  const applied = withEchoHistoryEntry({
+    ...model,
+    textAuthority: withCurrentObservation,
+  }, {
+    kind: EchoHistoryEntryKinds.Edit,
+    status: EchoHistoryEntryStatuses.Applied,
+    evidenceId: msg.result.receiptId,
+    summary: jeditAppliedCommandHistorySummary(msg.result.filePath, msg.requestId, withCurrentObservation),
+  });
+  return refreshAndPersistAppliedTextEdit(deps, msg.result, applied);
+}
+
+function textAuthorityWithIntermediateEditReceipt(
+  authority: Extract<WorkspaceModel['textAuthority'], { kind: typeof WorkspaceTextAuthorityKinds.Opened }>,
+  requestId: number,
+  result: WorkspaceTextAppliedResult,
+) {
+  if (requestId === authority.pendingClientSeq) {
+    return workspaceTextAuthorityWithAppliedJeditCommandReceipt(authority, requestId, result.receiptId);
+  }
+  const event = receivedJeditCommandEventForRequest(authority, requestId, result.receiptId);
+  return {
+    ...authority,
+    pendingReceiptId: result.receiptId,
+    lastReceiptId: result.receiptId,
+    lastCommandEvent: event ?? authority.lastCommandEvent,
+  };
 }
 
 function applyAppliedTextEditResult(
@@ -205,8 +249,16 @@ function applyAppliedTextEditResult(
     evidenceId: msg.result.receiptId,
     summary: jeditAppliedCommandHistorySummary(msg.result.filePath, msg.requestId, withCurrentObservation),
   });
-  const [refreshed, refreshCommands] = refreshAfterEdit(deps, applied);
-  const settlement = persistEditSettlement(deps, msg.result, refreshed);
+  return refreshAndPersistAppliedTextEdit(deps, msg.result, applied);
+}
+
+function refreshAndPersistAppliedTextEdit(
+  deps: WorkspaceRuntimeDependencies,
+  result: WorkspaceTextAppliedResult,
+  model: WorkspaceModel,
+): WorkspaceRuntimeResult {
+  const [refreshed, refreshCommands] = refreshAfterEdit(deps, model);
+  const settlement = persistEditSettlement(deps, result, refreshed);
   return settlement == null
     ? [refreshed, refreshCommands]
     : [settlement[0], [...refreshCommands, ...settlement[1]]];
@@ -277,38 +329,12 @@ function persistEditSettlement(
   );
 }
 
-function settlementObstructionIssue(
-  filePath: string,
-  obstruction: { readonly code: string; readonly message: string },
-  atMs: number,
-): RuntimeIssue {
-  return {
-    message: `${WSC_SETTLEMENT_OBSTRUCTION_PREFIX}: ${filePath}: ${obstruction.message}`,
-    level: ISSUE_LEVEL_ERROR,
-    source: ISSUE_SOURCE_COMMAND,
-    atMs,
-  };
-}
-
-function dependentEditBlockedIssue(
-  filePath: string,
-  blockedByClientSeq: number | undefined,
-  atMs: number,
-): RuntimeIssue {
-  return {
-    message: `${DEPENDENT_EDIT_BLOCKED_PREFIX}: ${filePath}: request:${blockedByClientSeq ?? 0}`,
-    level: ISSUE_LEVEL_ERROR,
-    source: ISSUE_SOURCE_COMMAND,
-    atMs,
-  };
-}
-
 function editorAfterTextEdit(
   model: WorkspaceModel,
   authority: Extract<WorkspaceModel['textAuthority'], { kind: typeof WorkspaceTextAuthorityKinds.Opened }>,
-  cursorAfter: TextPosition | undefined,
+  cursorAfter: WorkspaceTextAppliedResult['cursorAfter'],
 ) {
-  const editor = editorForTextAuthority(model, authority);
+  const editor = workspaceModelWithTextAuthorityEditor(model, authority).editor;
   if (editor == null || cursorAfter == null) {
     return editor;
   }
@@ -419,36 +445,14 @@ function refreshAfterEdit(
   deps: WorkspaceRuntimeDependencies,
   model: WorkspaceModel,
 ): WorkspaceRuntimeResult {
-  return beginEditorProjectionRefresh(model, { refreshGraft: shouldRefreshGraftAfterTextChange(model) }, deps);
+  return beginEditorSourceHighlightRefresh(model, deps);
 }
 
 function withTextAuthority(
   model: WorkspaceModel,
   textAuthority: Extract<WorkspaceModel['textAuthority'], { kind: typeof WorkspaceTextAuthorityKinds.Opened }>,
 ): WorkspaceModel {
-  return {
-    ...model,
-    textAuthority,
-    editor: editorForTextAuthority(model, textAuthority),
-  };
-}
-
-function editorForTextAuthority(
-  model: WorkspaceModel,
-  authority: Extract<WorkspaceModel['textAuthority'], { kind: typeof WorkspaceTextAuthorityKinds.Opened }>,
-) {
-  if (canReadingReplaceWholeEditor(authority.cache)) {
-    return editorFromFullWorkspaceTextCache({ ...authority, cache: authority.cache }, model.editor);
-  }
-  if (model.editor == null) {
-    return undefined;
-  }
-  return {
-    ...model.editor,
-    path: authority.filePath,
-    dirty: authority.dirty,
-    readOnly: authority.readOnly,
-  };
+  return workspaceModelWithTextAuthorityEditor(model, textAuthority);
 }
 
 function withEchoHistoryEntry(model: WorkspaceModel, draft: EchoHistoryEntryDraft): WorkspaceModel {
@@ -473,10 +477,6 @@ function obstructedHistoryEntry(
   };
 }
 
-function shouldRefreshGraftAfterTextChange(model: WorkspaceModel): boolean {
-  return model.graftDrawerOpen || model.graftInfo?.path === model.editor?.path;
-}
-
 function shouldOpenQuitAfterExport(model: WorkspaceModel, requestId: number): boolean {
   return model.quitConfirmOpen || model.quitAfterSaveRequestId === requestId;
 }
@@ -490,6 +490,7 @@ function exportCheckpointCommand(
     filePath: request.filePath,
     bufferId: request.bufferId,
     productionTextSession: deps.productionTextSession,
+    textOperationSequencer: deps.textOperationSequencer,
     atMs: deps.nowMs(),
   });
 }

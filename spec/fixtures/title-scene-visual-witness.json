@@ -19,7 +19,7 @@
       "⢕⢵⢝⢵░▓█▒⠕⢅⢕⢵⢝⢽⢕⢥⠝⢽⢝⢽⢝⢝⠕⢅⠕⢅⠕⢽⢝⢽⢝⢵⠝⢕⠝⢵⢝⢵⠕⢅⠕⠭",
       "⡕⡅⡝⡕██▓░⡕⣥⣝⣽⣝⣽⣝⡍⡕⡅⡕⡍⡝⣅⡕⡅⡕⡅⡕⣽⣝⣽⣝⣽⣝⡅⡕⡅⡕⡅⡕⡥⣕⣭"
     ],
-    "foregroundDigest": "cf49e7a0fdb9d729",
+    "foregroundDigest": "0be1378fba7ca909",
     "backgroundDigest": "65a24ea998becce0"
   },
   {
@@ -42,7 +42,7 @@
       "⠕⢅⢝⢅⠕⢅⠕⢅⢕⢵⢝⢵⢝⢽⠝⢝⠝⢽⢝⢽⠕⢅⠕⢅⠕⢅⢝⢵⢕⢅⠕⢵⢝⢵⢝⢵⢝⢅⠕⢅⠝⠭",
       "⣕⡵⣝⡵⣕⡅⣕⣵⣝⣽⣝⣽⣝⡍⡕⡅⡕⡅⡝⣅⡕⡅⡕⡅⡕⣽⣝⣽⣝⣽⣝⡍⡝⡵⣝⡵⣝⡅⡕⡅⡕⣭"
     ],
-    "foregroundDigest": "6b666ae8f7c6f251",
+    "foregroundDigest": "acaad4c34d0e5484",
     "backgroundDigest": "d56a3f804cc5b610"
   },
   {
@@ -52,10 +52,10 @@
     "glyphRows": [
       "                                          ",
       "                 55                       ",
-      "             ,,,XH5,Xi,,,,,,,,            ",
-      ",,,,,iiiiiiiiiiiiG5#B9Miiiiiiiiiiiiii,,,,i",
+      "             ,,,XH2,Xi,,,,,,,,            ",
+      ",,,,,iiiiiiiiiiiiG3#B9Miiiiiiiiiiiiii,,,,i",
       "iiiiiiiiiiiiiiiiiSSS#HhhS2h33iiiiiiiiiiii2",
-      "iiiiiiiiirii#Brrr#G35AXsrMMMM2riiiiiiiiii2",
+      "iiiiiiiiirii#Brrr#G35AAsrMMMM2riiiiiiiiii2",
       "iiiiriiiriii32i;rAr2XsXiX3AAAXXiiiiiiiiir5",
       ",rri,;iri,irs;rr:;,,Xri;:3AAAMi:i,rrii:i, ",
       "iri,irri,,,sr;,:sssr:is,,5AA2:irrri,:iii, ",
@@ -65,7 +65,7 @@
       ",,r:,,,,rsssss;r;sss,,,,,;ssr;,ssssss,,,, ",
       "Xs2s5;X555555,;,;,;Xr,;,;A55555;rrAs5;;,;;"
     ],
-    "foregroundDigest": "e7baf08de00f5c17",
+    "foregroundDigest": "c6c7e3ff04d5fe00",
     "backgroundDigest": "4cc8acca331fa313"
   },
   {
@@ -88,7 +88,7 @@
       "⠕⢅⢕⢵⢕⢅⠕⢅⢕⢵⢝⢵⢝⢽⠕⢝⠝⢽⢝⢝⠕⢅⠕⢅⠕⢽⢕⢥⢕⢅⠕⢵⢝⢵⢝⢵⢕⢅⠝⢕⠝⠭",
       "⣕⡵⣝⡵⣝⡵⣕⣵⣝⣽⣝⣽⡝⡅⡕⡅⡕⡍⣝⣅⡕⡅⡕⡅⡕⣽⣝⣽⣝⣽⣕⡝⡝⣵⣝⡵⣝⡅⡕⡅⡕⣭"
     ],
-    "foregroundDigest": "fd4770907df4d58d",
+    "foregroundDigest": "9db9b0c054e3e9ff",
     "backgroundDigest": "7e30be255634420e"
   }
 ]

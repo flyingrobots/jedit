@@ -116,6 +116,8 @@ test('workspace settings opens and refreshes the Graft diagnostics panel', async
   const [refreshed, refreshCommands] = runtime.update({ type: 'key', key: 'enter' }, loaded);
   const [refreshedLoaded] = runtime.update(await refreshCommands[0](), refreshed);
   const [backToSettings] = runtime.update({ type: 'key', key: 'escape' }, refreshedLoaded);
+  const [closedFromDiagnostics] = runtime.update({ type: 'key', key: 'q' }, refreshedLoaded);
+  const [closedFromSettings] = runtime.update({ type: 'key', key: 'q' }, backToSettings);
 
   assert.equal(opened.settingsDiagnosticsOpen, true);
   assert.equal(opened.graftDiagnosticsLoading, true);
@@ -125,6 +127,9 @@ test('workspace settings opens and refreshes the Graft diagnostics panel', async
   assert.equal(refreshedLoaded.graftDiagnostics, report);
   assert.equal(backToSettings.settingsDiagnosticsOpen, false);
   assert.equal(backToSettings.settingsOpen, true);
+  assert.equal(closedFromDiagnostics.settingsDiagnosticsOpen, false);
+  assert.equal(closedFromDiagnostics.settingsOpen, false);
+  assert.equal(closedFromSettings.settingsOpen, false);
   assert.equal(loadCount, 2);
 });
 

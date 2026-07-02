@@ -174,7 +174,7 @@ test("title Braille sampling holds reduced quality while screen activity remains
   );
 });
 
-test("title Braille sampling traces one dot while the camera moves under pressure", async () => {
+test("title Braille sampling keeps full quality while the camera moves", async () => {
   const sampling = await importDist(
     "app",
     "workspace",
@@ -190,8 +190,8 @@ test("title Braille sampling traces one dot while the camera moves under pressur
       cameraMoving: true,
     }),
     {
-      phase: 2,
-      phaseCount: 8,
+      phase: 0,
+      phaseCount: 1,
     },
   );
 });

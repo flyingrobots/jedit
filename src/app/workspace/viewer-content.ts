@@ -16,8 +16,6 @@ import {
   type BrailleSampleFrameStats,
   type BrailleTraceBudget,
 } from "../../ui/averaging-braille-canvas.js";
-import type { TitleMesh } from "../../ui/title-mesh.js";
-import type { TitleScene } from "../../ui/title-scene.js";
 import type { WorkspaceModel } from "./model.js";
 import { isWorkspaceMarkdownFile } from "./editor-session.js";
 import { ViewModes } from "./view-mode.js";
@@ -34,7 +32,12 @@ import {
   TITLE_SCENE_RENDER_POSTURE,
   type TitleScenePerformanceFacts,
 } from "./title-scene-performance-governor.js";
-import { titleBrailleTraceBudget } from "./title-braille-sampling.js";
+import {
+  sameTitleBrailleSampleCacheIdentity,
+  titleBrailleTraceBudget,
+  titleBrailleSampleCacheIdentity,
+  type TitleBrailleSampleCacheIdentity,
+} from "./title-braille-sampling.js";
 
 const MIN_VIEWPORT_DIMENSION = 1;
 const VIEWER_PAD_MULTIPLIER = 2;
@@ -69,17 +72,6 @@ interface ViewerContentRendererState {
   titleBrailleFrameIndex?: number;
   lastBrailleSampleStats?: BrailleSampleFrameStats;
   lastBrailleTraceBudget?: BrailleTraceBudget;
-}
-
-interface TitleBrailleSampleCacheIdentity {
-  readonly width: number;
-  readonly height: number;
-  readonly themeName: string;
-  readonly titleRenderMode: WorkspaceModel["titleRenderMode"];
-  readonly titleSceneSeed: number;
-  readonly titleSceneName?: WorkspaceModel["titleSceneName"];
-  readonly sceneOverride?: TitleScene;
-  readonly mesh?: TitleMesh;
 }
 
 interface TitleBrailleSamplingRenderContext {
@@ -364,39 +356,6 @@ function titleCameraIsMoving(camera: WorkspaceModel["titleCamera"]): boolean {
 
 function titleCameraAxisIsMoving(current: number, target: number): boolean {
   return Math.abs(current - target) > TITLE_CAMERA_MOTION_EPSILON;
-}
-
-function titleBrailleSampleCacheIdentity(
-  model: WorkspaceModel,
-  width: number,
-  height: number,
-): TitleBrailleSampleCacheIdentity {
-  return {
-    width,
-    height,
-    themeName: model.jeditTheme.name,
-    titleRenderMode: model.titleRenderMode,
-    titleSceneSeed: model.titleSceneSeed,
-    titleSceneName: model.titleSceneName,
-    sceneOverride: model.sceneOverride,
-    mesh: model.titleMeshes.bunny,
-  };
-}
-
-function sameTitleBrailleSampleCacheIdentity(
-  left: TitleBrailleSampleCacheIdentity,
-  right: TitleBrailleSampleCacheIdentity,
-): boolean {
-  return (
-    left.width === right.width &&
-    left.height === right.height &&
-    left.themeName === right.themeName &&
-    left.titleRenderMode === right.titleRenderMode &&
-    left.titleSceneSeed === right.titleSceneSeed &&
-    left.titleSceneName === right.titleSceneName &&
-    left.sceneOverride === right.sceneOverride &&
-    left.mesh === right.mesh
-  );
 }
 
 function recordTitleBrailleSamplingStats(

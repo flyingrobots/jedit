@@ -158,6 +158,19 @@ export function beginEditorProjectionRefresh(
   return [withHighlight, [...graftCmds, ...highlightCmds]];
 }
 
+export function beginEditorSourceHighlightRefresh(
+  model: WorkspaceModel,
+  ports: Pick<EditorSessionPorts, 'sourceHighlighter'>,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
+  return beginSourceHighlightRefresh<WorkspaceModel, WorkspaceMsg>(
+    model,
+    model.editor,
+    editorViewport(model),
+    ports.sourceHighlighter,
+    workspaceSourceHighlightMessage,
+  );
+}
+
 export function beginGraftRefresh(
   model: WorkspaceModel,
   options: GraftRefreshOptions,

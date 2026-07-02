@@ -1,5 +1,7 @@
 import type { EditorState } from './editor/model.js';
 import { EditorModes } from './editor/mode.js';
+import type { WorkspaceModel } from './model.js';
+import type { WorkspaceTextAuthorityOpened } from './workspace-text-authority.js';
 
 const FIRST_LINE = 0;
 const FIRST_COLUMN = 0;
@@ -140,6 +142,17 @@ export function canReadingReplaceWholeEditor(
   return cache?.coverage === COVERAGE_FULL;
 }
 
+export function workspaceModelWithTextAuthorityEditor(
+  model: WorkspaceModel,
+  textAuthority: WorkspaceTextAuthorityOpened,
+): WorkspaceModel {
+  return {
+    ...model,
+    textAuthority,
+    editor: editorForTextAuthority(model, textAuthority),
+  };
+}
+
 export function workspaceTextReadingCoverage(
   options: WorkspaceTextReadingCoverageOptions,
 ): WorkspaceTextReadingCoverage {
@@ -175,6 +188,24 @@ function editorCursorRow(
   lines: readonly string[],
 ): number {
   return clampLine(projection.existing?.cursorRow ?? FIRST_LINE, lines);
+}
+
+function editorForTextAuthority(
+  model: WorkspaceModel,
+  authority: WorkspaceTextAuthorityOpened,
+): EditorState | undefined {
+  if (canReadingReplaceWholeEditor(authority.cache)) {
+    return editorFromFullWorkspaceTextReadingCache({ ...authority, cache: authority.cache, existing: model.editor });
+  }
+  if (model.editor == null) {
+    return undefined;
+  }
+  return {
+    ...model.editor,
+    path: authority.filePath,
+    dirty: authority.dirty,
+    readOnly: authority.readOnly,
+  };
 }
 
 function clampLine(row: number, lines: readonly string[]): number {

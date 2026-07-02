@@ -1,5 +1,5 @@
 import type { Cmd, KeyMsg } from '@flyingrobots/bijou-tui';
-import { JEDIT_SETTINGS_TOGGLE_KEY } from '../keybindings.js';
+import { JEDIT_SETTINGS_CLOSE_KEY, JEDIT_SETTINGS_TOGGLE_KEY } from '../keybindings.js';
 import { updateJeditSettingsFromKey } from '../settings-session.js';
 import { beginGraftDiagnosticsRefresh } from './graft-diagnostics.js';
 import type { WorkspaceKeyBindingContext } from './key-binding-context.js';
@@ -48,6 +48,9 @@ function updateDiagnosticsPanelKey(
 ): KeyBindingResult {
   if (msg.key === WorkspaceKeys.Escape) {
     return [{ ...model, settingsDiagnosticsOpen: false }, []];
+  }
+  if (msg.key === JEDIT_SETTINGS_CLOSE_KEY) {
+    return [{ ...model, settingsOpen: false, settingsDiagnosticsOpen: false }, []];
   }
   return isDiagnosticsRefreshKey(msg)
     ? beginGraftDiagnosticsRefresh(model, context.deps.graftDiagnostics)

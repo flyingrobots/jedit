@@ -726,7 +726,7 @@ test("blocked production wq remains open with honest materialization status", as
   assert.match(footer, /dirty \| main \| fs:unmaterialized/);
 });
 
-test("pending production intent blocks wq without arming quit confirmation", async () => {
+test("pending production intent queues wq save without arming quit confirmation", async () => {
   const [keyBindings, titleScreen, editorMode, authority] = await Promise.all([
     importDist("app", "workspace", "key-bindings.js"),
     importDist("ui", "title-screen.js"),
@@ -764,17 +764,19 @@ test("pending production intent blocks wq without arming quit confirmation", asy
     }),
   };
 
-  const [blockedModel, commands] = keyBindings.updateFromKey(
+  const [pendingSaveModel, commands] = keyBindings.updateFromKey(
     { type: "key", key: "enter", ctrl: false, alt: false, shift: false },
     model,
     context,
   );
 
-  assert.equal(blockedModel.textRequestId, 4);
-  assert.equal(blockedModel.quitConfirmOpen, false);
-  assert.equal(blockedModel.quitAfterSaveRequestId, undefined);
+  assert.equal(pendingSaveModel.textRequestId, 5);
+  assert.equal(pendingSaveModel.quitConfirmOpen, false);
+  assert.equal(pendingSaveModel.quitAfterSaveRequestId, undefined);
   assert.equal(commands.length, 1);
   assert.equal(exportCalls.length, 0);
+  await commands[0]();
+  assert.deepEqual(exportCalls, [{ bufferId: "buffer:notes", atMs: 90 }]);
 });
 
 test("enter dispatches quit commands through the quit confirmation posture", async () => {

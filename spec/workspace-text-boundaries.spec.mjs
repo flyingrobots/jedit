@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createWorkspaceEchoAppHarness } from './workspace-echo-app-harness.mjs';
-import { importDist, mockEditor } from './workspace-helpers.mjs';
+import {
+  fakeTextOperationSequencer,
+  importDist,
+  mockEditor,
+} from './workspace-helpers.mjs';
 
 test('reading cache materializes text and reports explicit postures', async () => {
   const [cacheModule, authorityModule, profile] = await Promise.all([
@@ -186,6 +190,7 @@ test('replace command submits through production text session and refreshes read
     filePath: '/repo/notes.md',
     bufferId: 'buffer:notes',
     productionTextSession,
+    textOperationSequencer: fakeTextOperationSequencer(),
     atMs: 42,
     aperture: commands.defaultWorkspaceTextAperture(),
     startByte: 1,
@@ -237,6 +242,7 @@ test('settlement envelope records bounded reading coverage metadata', async () =
     filePath: '/repo/notes.md',
     bufferId: 'buffer:notes',
     productionTextSession,
+    textOperationSequencer: fakeTextOperationSequencer(),
     atMs: 42,
     aperture: {
       cursorLine: 24,

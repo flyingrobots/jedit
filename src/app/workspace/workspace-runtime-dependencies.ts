@@ -12,6 +12,7 @@ import type { CreateStartupFileDrawerAnimationCmd } from './key-binding-context.
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 import type { ProductionTextSession } from './production-text-session.js';
+import type { WorkspaceTextOperationSequencer } from './workspace-text-operation-sequencer.js';
 import type { ProfilerTracePort } from '../raytracer-profiler.js';
 import type { renderWorkspace } from './viewer.js';
 
@@ -30,6 +31,7 @@ export interface WorkspaceRuntimeDependencies {
   readonly sourceHighlighter: SourceHighlighter;
   readonly titleSceneLoader: TitleSceneLoaderPort;
   readonly productionTextSession: ProductionTextSession;
+  readonly textOperationSequencer: WorkspaceTextOperationSequencer;
   readonly wscWorkspaceStore: JeditWscWorkspaceStorePort;
   readonly profiler: ProfilerTracePort;
   readonly profileOnStartup: boolean;

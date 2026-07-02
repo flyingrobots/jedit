@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createNotificationState } from "@flyingrobots/bijou-tui";
 import {
+  fakeTextOperationSequencer,
   importDist,
   fakeProductionTextSession,
   mockDeps,
@@ -340,6 +341,7 @@ test("insert and delete keys submit production text edits with optimistic local 
     baseModel,
     mockDeps().sourceHighlighter,
     productionTextSession,
+    fakeTextOperationSequencer(),
   );
   assert.deepEqual(pendingInsert.editor.lines, ["aXbc"]);
   assert.equal(pendingInsert.editor.cursorCol, 2);
@@ -414,6 +416,7 @@ test("insert and delete keys submit production text edits with optimistic local 
     normalModel,
     mockDeps().sourceHighlighter,
     productionTextSession,
+    fakeTextOperationSequencer(),
   );
   assert.deepEqual(pendingDelete.editor.lines, ["abc"]);
   assert.equal(pendingDelete.textAuthority.dirty, true);
@@ -446,6 +449,7 @@ test("insert and delete keys submit production text edits with optimistic local 
     backspaceModel,
     mockDeps().sourceHighlighter,
     productionTextSession,
+    fakeTextOperationSequencer(),
   );
   assert.deepEqual(pendingBackspace.editor.lines, ["bc"]);
 
@@ -507,12 +511,14 @@ test("normal mode dd submits a production line delete edit", async () => {
     model,
     mockDeps().sourceHighlighter,
     productionTextSession,
+    fakeTextOperationSequencer(),
   );
   const [queuedDelete, deleteCommands] = viewerKey.updateViewerFromKey(
     { key: "d", ctrl: false, alt: false, shift: false },
     pendingDelete,
     mockDeps().sourceHighlighter,
     productionTextSession,
+    fakeTextOperationSequencer(),
   );
   const deleteMessage = await deleteCommands[0]();
   const [deletedModel] = runtime.update(deleteMessage, queuedDelete);
@@ -574,12 +580,14 @@ test("normal mode cw submits a production change edit and enters insert mode", a
     model,
     mockDeps().sourceHighlighter,
     productionTextSession,
+    fakeTextOperationSequencer(),
   );
   const [queuedChange, changeCommands] = viewerKey.updateViewerFromKey(
     { key: "w", ctrl: false, alt: false, shift: false },
     pendingChange,
     mockDeps().sourceHighlighter,
     productionTextSession,
+    fakeTextOperationSequencer(),
   );
   const changeMessage = await changeCommands[0]();
   const [changedModel] = runtime.update(changeMessage, queuedChange);
@@ -634,6 +642,7 @@ test("cursor movement on production text changes UI only and does not submit edi
     model,
     mockDeps().sourceHighlighter,
     productionTextSession,
+    fakeTextOperationSequencer(),
   );
 
   assert.equal(nextModel.editor.cursorCol, 1);
@@ -697,6 +706,7 @@ test("viewport movement requests a bounded read without submitting edits", async
     },
     mockDeps().sourceHighlighter,
     productionTextSession,
+    fakeTextOperationSequencer(),
   );
   const message = await commands[0]();
   const runtime = runtimeModule.createWorkspaceRuntime(
@@ -1018,7 +1028,7 @@ test("stale TextEditResult obstruction is ignored after a newer edit settles", a
   assert.deepEqual(nextModel.echoHistory, []);
 });
 
-test("save blocks while a production text intent is still pending", async () => {
+test("save can be requested while a production text intent is still pending", async () => {
   const [saveKey, modeModule, authority, profile] =
     await Promise.all([
       importDist("app", "workspace", "workspace-save-key.js"),
@@ -1060,12 +1070,14 @@ test("save blocks while a production text intent is still pending", async () => 
     },
   });
 
-  const [blockedModel, commands] = saveKey.saveWorkspace(model, context);
+  const [pendingSaveModel, commands] = saveKey.saveWorkspace(model, context);
 
-  assert.equal(blockedModel.textRequestId, 4);
-  assert.equal(blockedModel.textAuthority.pendingIntentStatus, authority.WorkspaceTextIntentStatuses.Predicted);
+  assert.equal(pendingSaveModel.textRequestId, 5);
+  assert.equal(pendingSaveModel.textAuthority.pendingIntentStatus, authority.WorkspaceTextIntentStatuses.Predicted);
   assert.equal(exportCalls.length, 0);
   assert.equal(commands.length, 1);
+  await commands[0]();
+  assert.deepEqual(exportCalls, [{ bufferId: "buffer:notes", atMs: 77 }]);
 });
 
 test("edit planning after bounded read uses the full local projection", async () => {
@@ -1126,6 +1138,7 @@ test("edit planning after bounded read uses the full local projection", async ()
     model,
     mockDeps().sourceHighlighter,
     productionTextSession,
+    fakeTextOperationSequencer(),
   );
   await commands[0]();
 
@@ -1244,6 +1257,93 @@ test("ctrl-s exports a full production snapshot and checkpoints without direct l
   assert.equal(checkpointedModel.textAuthority.materialization, "materialized");
   assert.equal(checkpointedModel.textAuthority.hostFingerprint.algorithm, "sha256");
   assert.equal(checkpointedModel.editor.dirty, false);
+});
+
+test("repeated ctrl-s coalesces an in-flight production export", async () => {
+  const [keyBindings, runtimeModule, modeModule, authority, profile, sequencer] =
+    await Promise.all([
+      importDist("app", "workspace", "key-bindings.js"),
+      importDist("app", "workspace", "runtime.js"),
+      importDist("app", "workspace", "editor", "mode.js"),
+      importDist("app", "workspace", "workspace-text-authority.js"),
+      importDist("app", "text-runtime-profile.js"),
+      importDist("app", "workspace", "workspace-text-operation-sequencer.js"),
+    ]);
+  const savedFiles = [];
+  const exportCalls = [];
+  let materialized = false;
+  const productionTextSession = fakeProductionTextSession({
+    exportSnapshot: async (request) => {
+      exportCalls.push(request);
+      return {
+        kind: "exported",
+        text: "fresh",
+        readingId: "reading:export",
+      };
+    },
+  });
+  const textOperationSequencer = sequencer.createWorkspaceTextOperationSequencer();
+  const model = {
+    ...textWorkspaceModel(modeModule, authority, profile, {
+      dirty: true,
+      lines: ["stale"],
+    }),
+    textAuthority: authority.openedWorkspaceTextAuthority({
+      profile: profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+      filePath: "/repo/notes.txt",
+      bufferId: "buffer:notes",
+      readOnly: false,
+      dirty: true,
+      hostFingerprint: HOST_FINGERPRINT_A,
+      cache: workspaceReadingCache({ lines: ["stale"] }),
+    }),
+  };
+  const context = {
+    ...mockKeyBindingContext(),
+    nowMs: () => 99,
+    deps: mockDeps({
+      editorFile: {
+        loadEditorFile: () => ({
+          lines: materialized ? ["fresh"] : ["stale"],
+          readOnly: false,
+          fingerprint: materialized ? HOST_FINGERPRINT_B : HOST_FINGERPRINT_A,
+        }),
+        saveEditorFile: (filePath, lines) => {
+          materialized = true;
+          savedFiles.push({ filePath, lines });
+        },
+      },
+      productionTextSession,
+      textOperationSequencer,
+    }),
+  };
+
+  const [firstSave, firstCommands] = keyBindings.updateFromKey(
+    { key: "s", ctrl: true, alt: false, shift: false },
+    model,
+    context,
+  );
+  const [secondSave, secondCommands] = keyBindings.updateFromKey(
+    { key: "s", ctrl: true, alt: false, shift: false },
+    firstSave,
+    context,
+  );
+  const firstExport = firstCommands[0]();
+  const secondExport = secondCommands[0]();
+  const firstMessage = await firstExport;
+  const secondMessage = await secondExport;
+  const runtime = runtimeModule.createWorkspaceRuntime(
+    mockRuntime({ productionTextSession, textOperationSequencer }),
+  );
+  const [ignoredFirst, firstCheckpointCommands] = runtime.update(firstMessage, secondSave);
+  const [exportedModel, checkpointCommands] = runtime.update(secondMessage, ignoredFirst);
+
+  assert.equal(firstCheckpointCommands.length, 0);
+  assert.equal(exportCalls.length, 1);
+  assert.deepEqual(savedFiles, [{ filePath: "/repo/notes.txt", lines: ["fresh"] }]);
+  assert.equal(secondMessage.result.kind, "exported");
+  assert.equal(exportedModel.textAuthority.dirty, false);
+  assert.equal(checkpointCommands.length, 1);
 });
 
 for (const blockCase of EXISTING_SAVE_BLOCK_CASES) {

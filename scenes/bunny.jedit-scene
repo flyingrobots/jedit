@@ -1,7 +1,7 @@
 {
   "camera": {
-    "position": [0, 1.45, -2.55],
-    "targetObject": "stanford-bunny"
+    "position": [-1.05, 0.46, 2.15],
+    "target": [-1.05, 1.2, -0.24]
   },
   "environment": {
     "background": [2, 3, 7],
@@ -64,6 +64,42 @@
       "footprintRadius": 0.3,
       "color": [148, 232, 124],
       "reflectivity": 0.13
+    },
+    {
+      "label": "chrome-left-orb",
+      "kind": "sphere",
+      "position": [-1.42, 0.62, -1.55],
+      "radius": 0.48,
+      "height": 0.96,
+      "footprintRadius": 0.48,
+      "color": [218, 237, 255],
+      "reflectivity": 0.94,
+      "transparency": 0.04,
+      "refractiveIndex": 1.18
+    },
+    {
+      "label": "chrome-crown-orb",
+      "kind": "sphere",
+      "position": [0.12, 1.05, -1.95],
+      "radius": 0.58,
+      "height": 1.16,
+      "footprintRadius": 0.58,
+      "color": [236, 244, 255],
+      "reflectivity": 0.96,
+      "transparency": 0.03,
+      "refractiveIndex": 1.2
+    },
+    {
+      "label": "chrome-right-orb",
+      "kind": "sphere",
+      "position": [1.5, 0.68, -1.52],
+      "radius": 0.5,
+      "height": 1.0,
+      "footprintRadius": 0.5,
+      "color": [204, 226, 255],
+      "reflectivity": 0.92,
+      "transparency": 0.05,
+      "refractiveIndex": 1.16
     },
     {
       "label": "amber-glass-tower",

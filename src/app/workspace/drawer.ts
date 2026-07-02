@@ -6,6 +6,7 @@ import { withFocusPane } from './focus.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 import type { GraftRefreshOptions } from './editor-session.js';
+import { WorkspaceHistoryDrawerViews } from './worldline-state.js';
 
 export type CreateDrawerAnimationCmd = (kind: DrawerKind, from: number, to: number) => Cmd<WorkspaceMsg>[];
 
@@ -47,7 +48,11 @@ function openHistoryDrawer(
   model: WorkspaceModel,
   createDrawerAnimationCmd: CreateDrawerAnimationCmd,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
-  const next = withFocusPane({ ...model, historyDrawerOpen: true }, FocusPanes.History);
+  const next = withFocusPane({
+    ...model,
+    historyDrawerOpen: true,
+    historyDrawerView: WorkspaceHistoryDrawerViews.Echo,
+  }, FocusPanes.History);
   return model.historyDrawerOpen
     ? [next, []]
     : [next, drawerAnimation(DrawerKinds.History, model.historyDrawerProgress, 1, createDrawerAnimationCmd)];
@@ -83,7 +88,9 @@ export function toggleDrawer(
   }
 
   if (kind === DrawerKinds.History && model.historyDrawerOpen) {
-    return closeDrawer(model, kind, createDrawerAnimationCmd);
+    return model.historyDrawerView === WorkspaceHistoryDrawerViews.Echo
+      ? closeDrawer(model, kind, createDrawerAnimationCmd)
+      : [withFocusPane({ ...model, historyDrawerView: WorkspaceHistoryDrawerViews.Echo }, FocusPanes.History), []];
   }
 
   return openDrawer(model, kind, beginGraftRefresh, createDrawerAnimationCmd);

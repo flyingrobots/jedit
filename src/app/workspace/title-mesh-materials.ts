@@ -1,8 +1,6 @@
 import {
-  TITLE_SCENE_SHAPE_KIND,
   type TitleScene,
   type TitleSceneColor,
-  type TitleSceneMeshObject,
   type TitleSceneObject,
 } from "../../ui/title-scene.js";
 
@@ -14,7 +12,10 @@ export interface TitleMeshMaterialPreset {
   readonly refractiveIndex: number;
 }
 
-const TITLE_MESH_MATERIAL_OBJECT_LABEL = "stanford-bunny";
+const TITLE_MESH_MATERIAL_OBJECT_LABELS = new Set([
+  "stanford-bunny",
+  "title-primary-mesh",
+]);
 const FIRST_TITLE_MESH_MATERIAL_INDEX = 0;
 const NEXT_TITLE_MESH_MATERIAL_STEP = 1;
 const DEFAULT_TITLE_MESH_MATERIAL_PRESET = {
@@ -85,7 +86,7 @@ export function applyTitleMeshMaterial(
     ...scene,
     objects: scene.objects.map((object) =>
       isTitleMeshMaterialObject(object)
-        ? titleMeshObjectWithMaterial(object, preset)
+        ? titleObjectWithMaterial(object, preset)
         : object,
     ),
   };
@@ -101,17 +102,16 @@ function titleMeshMaterialIndex(index: number): number {
 
 function isTitleMeshMaterialObject(
   object: TitleSceneObject,
-): object is TitleSceneMeshObject {
+): boolean {
   return (
-    object.kind === TITLE_SCENE_SHAPE_KIND.Mesh &&
-    object.label === TITLE_MESH_MATERIAL_OBJECT_LABEL
+    object.label != null && TITLE_MESH_MATERIAL_OBJECT_LABELS.has(object.label)
   );
 }
 
-function titleMeshObjectWithMaterial(
-  object: TitleSceneMeshObject,
+function titleObjectWithMaterial(
+  object: TitleSceneObject,
   preset: TitleMeshMaterialPreset,
-): TitleSceneMeshObject {
+): TitleSceneObject {
   return {
     ...object,
     color: preset.color,

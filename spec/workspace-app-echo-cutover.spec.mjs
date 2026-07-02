@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createWorkspaceEchoAppHarness, productionTextObstruction } from './workspace-echo-app-harness.mjs';
+import {
+  byteOffsetAtLine,
+  echoTextDocument,
+  observedDocumentWindow,
+  openFileDrawerIndex,
+  openedHarness,
+  twoFileHarness,
+} from './workspace-echo-test-utils.mjs';
 
 test('real workspace app path opens files through production text authority', async () => {
   const harness = await createWorkspaceEchoAppHarness({
@@ -396,64 +404,20 @@ test('real workspace app path exposes no lifecycle authority through production 
   assert.equal('tick' in harness.productionTextSession, false);
 });
 
-async function openedHarness(options = {}) {
-  const harness = await createWorkspaceEchoAppHarness({
-    readings: ['before edit', 'after edit'],
-    ...options,
-  });
-  await harness.runFirst(await harness.key('enter'));
-  harness.setModel({
-    ...harness.model,
-    focusPane: 'editor',
-    fileDrawerOpen: false,
-  });
-  return harness;
-}
-
-async function twoFileHarness(options = {}) {
-  return createWorkspaceEchoAppHarness({
-    filePath: '/repo/a.txt',
-    fileName: 'a.txt',
-    entries: [
-      { kind: 'file', name: 'a.txt', path: '/repo/a.txt' },
-      { kind: 'file', name: 'b.txt', path: '/repo/b.txt' },
-    ],
-    bufferIdByKey: new Map([
-      ['/repo/a.txt', 'buffer:a'],
-      ['/repo/b.txt', 'buffer:b'],
-    ]),
-    ...options,
-  });
-}
-
-async function openFileDrawerIndex(harness, selectedIndex) {
-  harness.setModel({
-    ...harness.model,
-    fileDrawerOpen: true,
-    focusPane: 'files',
-    selectedIndex,
-  });
-}
-
-function echoTextDocument(initialText) {
-  let text = initialText;
-  return {
-    insert(startByte, insertText) {
-      text = `${text.slice(0, startByte)}${insertText}${text.slice(startByte)}`;
+test('observed document window helper reports UTF-8 byte offsets', () => {
+  const observed = observedDocumentWindow(echoTextDocument('é\nx'), 1, {
+    aperture: {
+      cursorLine: 0,
+      viewportLineCount: 2,
     },
-    replace(nextText) {
-      text = nextText;
-    },
-    lines() {
-      return text.split('\n');
-    },
-  };
-}
+  });
 
-function byteOffsetAtLine(lines, targetLine) {
-  let offset = 0;
-  for (let line = 0; line < targetLine; line += 1) {
-    offset += (lines[line] ?? '').length + 1;
-  }
-  return offset;
-}
+  assert.deepEqual(observed.observed.value.lines.map((line) => ({
+    lineNumber: line.lineNumber,
+    startByte: line.startByte,
+    endByte: line.endByte,
+  })), [
+    { lineNumber: 0, startByte: 0, endByte: 2 },
+    { lineNumber: 1, startByte: 3, endByte: 4 },
+  ]);
+});

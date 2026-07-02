@@ -2,11 +2,11 @@ import type { Cmd, RuntimeIssue } from '@flyingrobots/bijou-tui';
 import type { EditorFileFingerprint, EditorFilePort } from '../../ports/editor-file.js';
 import { editorFileFingerprintFromText } from '../../ports/editor-file-fingerprint.js';
 import { joinLines, normalizeLines } from '../editor-lines.js';
-import type {
-  ProductionTextSession,
-  ProductionTextViewportAperture,
+import {
+  ProductionTextSessionOutcomeKinds,
+  type ProductionTextSession,
+  type ProductionTextViewportAperture,
 } from './production-text-session.js';
-import { ProductionTextSessionOutcomeKinds } from './production-text-session.js';
 import { RuntimeIssueLevels, RuntimeIssueSources } from './runtime-issue.js';
 import { WorkspaceMessageTypes, type WorkspaceMsg } from './msg.js';
 import type { EditorState } from './editor/model.js';
@@ -31,6 +31,10 @@ import {
   readingCache,
   type WorkspaceTextObservedReading,
 } from './workspace-text-observed-reading.js';
+import type {
+  WorkspaceTextOperationSequencer,
+  WorkspaceTextOperationTarget,
+} from './workspace-text-operation-sequencer.js';
 
 const ISSUE_LEVEL_ERROR = RuntimeIssueLevels.Error;
 const ISSUE_SOURCE_COMMAND = RuntimeIssueSources.Command;
@@ -69,6 +73,7 @@ export interface WorkspaceTextCommandBase {
   readonly filePath: string;
   readonly bufferId: string;
   readonly productionTextSession: ProductionTextSession;
+  readonly textOperationSequencer: WorkspaceTextOperationSequencer;
   readonly atMs: number;
   readonly aperture: ProductionTextViewportAperture;
   readonly cursorAfter?: TextPosition;
@@ -103,6 +108,7 @@ export interface WorkspaceTextCheckpointCommandRequest {
   readonly filePath: string;
   readonly bufferId: string;
   readonly productionTextSession: ProductionTextSession;
+  readonly textOperationSequencer: WorkspaceTextOperationSequencer;
   readonly atMs: number;
 }
 
@@ -114,6 +120,7 @@ export interface WorkspaceTextExportCommandRequest {
   readonly hostFingerprint?: EditorFileFingerprint;
   readonly editorFile: EditorFilePort;
   readonly productionTextSession: ProductionTextSession;
+  readonly textOperationSequencer: WorkspaceTextOperationSequencer;
   readonly atMs: number;
 }
 
@@ -160,31 +167,61 @@ export function workspaceTextApertureFromEditor(
 export function createWorkspaceTextEditCmd(
   request: WorkspaceTextEditCommandRequest,
 ): Cmd<WorkspaceMsg> {
-  return async () => ({
-    type: WorkspaceMessageTypes.TextEditResult,
-    requestId: request.requestId,
-    result: await editWorkspaceText(request),
-  });
+  return async () => {
+    const result = await request.textOperationSequencer.sequenceEdit(
+      request.productionTextSession,
+      workspaceTextOperationTarget(request),
+      () => editWorkspaceText(request),
+    );
+    return {
+      type: WorkspaceMessageTypes.TextEditResult,
+      requestId: request.requestId,
+      result,
+    };
+  };
 }
 
 export function createWorkspaceTextCheckpointCmd(
   request: WorkspaceTextCheckpointCommandRequest,
 ): Cmd<WorkspaceMsg> {
-  return async () => ({
-    type: WorkspaceMessageTypes.TextCheckpointResult,
-    requestId: request.requestId,
-    result: await checkpointWorkspaceText(request),
-  });
+  return async () => {
+    const result = await request.textOperationSequencer.sequenceCheckpoint(
+      request.productionTextSession,
+      workspaceTextOperationTarget(request),
+      () => checkpointWorkspaceText(request),
+    );
+    return {
+      type: WorkspaceMessageTypes.TextCheckpointResult,
+      requestId: request.requestId,
+      result,
+    };
+  };
 }
 
 export function createWorkspaceTextExportCmd(
   request: WorkspaceTextExportCommandRequest,
 ): Cmd<WorkspaceMsg> {
-  return async () => ({
-    type: WorkspaceMessageTypes.TextExportResult,
-    requestId: request.requestId,
-    result: await exportWorkspaceText(request),
-  });
+  return async () => {
+    const result = await request.textOperationSequencer.sequenceExport(
+      request.productionTextSession,
+      workspaceTextOperationTarget(request),
+      () => exportWorkspaceText(request),
+    );
+    return {
+      type: WorkspaceMessageTypes.TextExportResult,
+      requestId: request.requestId,
+      result,
+    };
+  };
+}
+
+function workspaceTextOperationTarget(
+  request: Pick<WorkspaceTextCommandBase, 'filePath' | 'bufferId'>,
+): WorkspaceTextOperationTarget {
+  return {
+    filePath: request.filePath,
+    bufferId: request.bufferId,
+  };
 }
 
 export function createWorkspaceTextReadCmd(

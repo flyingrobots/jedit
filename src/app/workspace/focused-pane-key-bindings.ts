@@ -34,7 +34,13 @@ export function updateFocusedPaneKey(
     return updateHistoryDrawerFromKey(msg, model);
   }
 
-  return updateViewerFromKey(msg, model, context.deps.sourceHighlighter, context.deps.productionTextSession);
+  return updateViewerFromKey(
+    msg,
+    model,
+    context.deps.sourceHighlighter,
+    context.deps.productionTextSession,
+    context.deps.textOperationSequencer,
+  );
 }
 
 function updateHistoryDrawerFromKey(msg: KeyMsg, model: WorkspaceModel): KeyBindingResult {

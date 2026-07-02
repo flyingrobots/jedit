@@ -1,0 +1,44 @@
+{
+  "camera": {
+    "position": [0, 4.2, 3.4],
+    "target": [0, 1.25, 0]
+  },
+  "environment": {
+    "background": [2, 3, 7],
+    "floor": {
+      "kind": "grid",
+      "dark": [2, 3, 7],
+      "light": [68, 90, 100],
+      "gridScale": 1.2,
+      "fadeDistance": 34
+    }
+  },
+  "objects": [
+    {
+      "label": "stanford-bunny",
+      "kind": "mesh",
+      "mesh": "bunny",
+      "offset": [-0.95, 0, 2.84],
+      "localYaw": { "phase": 2.94, "angularSpeed": 0 },
+      "radius": 1.02,
+      "footprintRadius": 1.02,
+      "height": 2.35,
+      "color": [82, 98, 104],
+      "reflectivity": 0.1,
+      "transparency": 0,
+      "refractiveIndex": 1
+    },
+    {
+      "label": "chrome-mirror-sphere",
+      "kind": "sphere",
+      "position": [0, 1.25, 0],
+      "radius": 1.18,
+      "height": 2.36,
+      "footprintRadius": 1.18,
+      "color": [236, 244, 255],
+      "reflectivity": 0.99,
+      "transparency": 0.005,
+      "refractiveIndex": 1.06
+    }
+  ]
+}

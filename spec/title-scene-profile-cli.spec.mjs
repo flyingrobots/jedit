@@ -125,7 +125,7 @@ test("title-scene profile CLI witnesses allocation posture with exposed GC", () 
   assert.equal(result.status, 0, result.stderr || result.stdout);
   const report = JSON.parse(result.stdout);
 
-  assert.equal(report.scene.name, "bunny.jedit-scene");
+  assert.equal(report.scene.name, "continuum-gate.jedit-scene");
   assert.equal(report.allocation.renderer, "title-braille-bunny");
   assert.equal(report.allocation.width, 16);
   assert.equal(report.allocation.height, 6);

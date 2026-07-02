@@ -34,8 +34,16 @@ test("workspace text cache has no unsafe whole-editor rebuild helper", async () 
     /function editorFromFullWorkspaceTextCache\([\s\S]*readonly cache: WorkspaceTextFullReadingCache/s,
   );
   assert.match(
+    readingCacheSource,
+    /if \(canReadingReplaceWholeEditor\(authority\.cache\)\) \{[\s\S]*editorFromFullWorkspaceTextReadingCache/s,
+  );
+  assert.match(
     runtimeSource,
-    /if \(canReadingReplaceWholeEditor\(authority\.cache\)\) \{[\s\S]*editorFromFullWorkspaceTextCache/s,
+    /function editorAfterTextEdit\([\s\S]*workspaceModelWithTextAuthorityEditor\(/s,
+  );
+  assert.match(
+    runtimeSource,
+    /function withTextAuthority\([\s\S]*workspaceModelWithTextAuthorityEditor\(/s,
   );
 });
 
