@@ -1,6 +1,10 @@
 import type { Cmd } from '@flyingrobots/bijou-tui';
 import type { I18nDirection } from '../ports/i18n.js';
 import { JEDIT_THEME_MODE, type JeditTheme } from '../ui/jedit-theme.js';
+import {
+  SOURCE_LINE_NUMBER_MODE,
+  type SourceLineNumberMode,
+} from '../ui/source-line-number-mode.js';
 import { JEDIT_SETTINGS_CLOSE_KEY } from './keybindings.js';
 import { ViewModes, type ViewMode } from './workspace/view-mode.js';
 
@@ -8,6 +12,7 @@ export const JEDIT_SETTING_ACTION = {
   CycleTheme: Symbol('jedit.settings.action.cycle-theme'),
   ToggleThemeMode: Symbol('jedit.settings.action.toggle-theme-mode'),
   ToggleFooter: Symbol('jedit.settings.action.toggle-footer'),
+  ToggleLineNumberMode: Symbol('jedit.settings.action.toggle-line-number-mode'),
   ToggleMarkdownPreview: Symbol('jedit.settings.action.toggle-markdown-preview'),
   OpenDiagnostics: Symbol('jedit.settings.action.open-diagnostics'),
   SelectLocale: Symbol('jedit.settings.action.select-locale'),
@@ -26,6 +31,7 @@ export type JeditSettingRowKind = typeof JEDIT_SETTING_ROW_KIND[keyof typeof JED
 export interface JeditSettingsState {
   readonly jeditTheme: JeditTheme;
   readonly footerVisible: boolean;
+  readonly lineNumberMode: SourceLineNumberMode;
   readonly markdownPreviewActive: boolean;
   readonly diagnosticsAvailable: boolean;
   readonly viewMode: ViewMode;
@@ -60,6 +66,7 @@ export interface JeditSettingsHandlers<Model, Command> {
   cycleTheme(model: Model): [Model, Cmd<Command>[]];
   toggleThemeMode(model: Model): [Model, Cmd<Command>[]];
   toggleFooter(model: Model): [Model, Cmd<Command>[]];
+  toggleLineNumberMode(model: Model): [Model, Cmd<Command>[]];
   toggleMarkdownPreview(model: Model): [Model, Cmd<Command>[]];
   openDiagnostics(model: Model): [Model, Cmd<Command>[]];
   selectLocale(model: Model, locale: JeditSettingsLocaleSelection): [Model, Cmd<Command>[]];
@@ -81,6 +88,7 @@ const SETTINGS_SECTION_LANGUAGE = 'Language';
 const ROW_ID_THEME = 'theme';
 const ROW_ID_THEME_MODE = 'theme-mode';
 const ROW_ID_FOOTER = 'footer';
+const ROW_ID_LINE_NUMBERS = 'line-numbers';
 const ROW_ID_MARKDOWN_PREVIEW = 'markdown-preview';
 const ROW_ID_DIAGNOSTICS = 'diagnostics';
 const ROW_ID_LOCALE_PREFIX = 'locale:';
@@ -104,6 +112,8 @@ const SETTINGS_I18N_KEYS = Object.freeze({
   ThemeModeDescription: 'settings.rows.theme_mode.description',
   FooterLabel: 'settings.rows.footer.label',
   FooterDescription: 'settings.rows.footer.description',
+  LineNumbersLabel: 'settings.rows.line_numbers.label',
+  LineNumbersDescription: 'settings.rows.line_numbers.description',
   MarkdownPreviewLabel: 'settings.rows.markdown_preview.label',
   MarkdownPreviewDescription: 'settings.rows.markdown_preview.description',
   DiagnosticsLabel: 'settings.rows.diagnostics.label',
@@ -112,6 +122,8 @@ const SETTINGS_I18N_KEYS = Object.freeze({
   ValueOff: 'settings.values.off',
   ValueThemeModeDark: 'settings.values.theme_mode_dark',
   ValueThemeModeLight: 'settings.values.theme_mode_light',
+  ValueLineNumbersAbsolute: 'settings.values.line_numbers_absolute',
+  ValueLineNumbersRelative: 'settings.values.line_numbers_relative',
   ValueSource: 'settings.values.source',
   ValuePreview: 'settings.values.preview',
   ValueOpen: 'settings.values.open',
@@ -138,6 +150,26 @@ const SETTINGS_KEY_ACTIONS = new Map<string, SettingsKeyAction>([
   [KEY_SPACE_CANONICAL, SETTINGS_KEY_ACTION.Activate],
 ]);
 
+type NonLocaleSettingsHandlerName =
+  | 'cycleTheme'
+  | 'toggleThemeMode'
+  | 'toggleFooter'
+  | 'toggleLineNumberMode'
+  | 'toggleMarkdownPreview'
+  | 'openDiagnostics';
+
+const SETTINGS_ACTION_HANDLERS: ReadonlyMap<
+  JeditSettingAction,
+  NonLocaleSettingsHandlerName
+> = new Map([
+  [JEDIT_SETTING_ACTION.CycleTheme, 'cycleTheme'],
+  [JEDIT_SETTING_ACTION.ToggleThemeMode, 'toggleThemeMode'],
+  [JEDIT_SETTING_ACTION.ToggleFooter, 'toggleFooter'],
+  [JEDIT_SETTING_ACTION.ToggleLineNumberMode, 'toggleLineNumberMode'],
+  [JEDIT_SETTING_ACTION.ToggleMarkdownPreview, 'toggleMarkdownPreview'],
+  [JEDIT_SETTING_ACTION.OpenDiagnostics, 'openDiagnostics'],
+]);
+
 type JeditSettingsContext = JeditSettingsState & { readonly i18n: JeditSettingsI18nState };
 
 export function jeditSettingsRows(state: JeditSettingsContext): readonly JeditSettingsRow[] {
@@ -146,6 +178,7 @@ export function jeditSettingsRows(state: JeditSettingsContext): readonly JeditSe
     themeSettingsRow(state),
     themeModeSettingsRow(state),
     footerSettingsRow(state),
+    lineNumbersSettingsRow(state),
   ];
 
   if (state.markdownPreviewActive) {
@@ -217,6 +250,18 @@ function footerSettingsRow(state: JeditSettingsContext): JeditSettingsRow {
   };
 }
 
+function lineNumbersSettingsRow(state: JeditSettingsContext): JeditSettingsRow {
+  return {
+    id: ROW_ID_LINE_NUMBERS,
+    section: state.i18n.t(SETTINGS_I18N_KEYS.SectionEditor),
+    label: state.i18n.t(SETTINGS_I18N_KEYS.LineNumbersLabel),
+    description: state.i18n.t(SETTINGS_I18N_KEYS.LineNumbersDescription),
+    valueLabel: settingsLineNumberModeLabel(state),
+    kind: JEDIT_SETTING_ROW_KIND.Choice,
+    action: JEDIT_SETTING_ACTION.ToggleLineNumberMode,
+  };
+}
+
 function markdownPreviewSettingsRow(state: JeditSettingsContext): JeditSettingsRow {
   return {
     id: ROW_ID_MARKDOWN_PREVIEW,
@@ -247,6 +292,12 @@ function settingsThemeModeLabel(state: JeditSettingsContext): string {
   return state.jeditTheme.mode === JEDIT_THEME_MODE.Light
     ? state.i18n.t(SETTINGS_I18N_KEYS.ValueThemeModeLight)
     : state.i18n.t(SETTINGS_I18N_KEYS.ValueThemeModeDark);
+}
+
+function settingsLineNumberModeLabel(state: JeditSettingsContext): string {
+  return state.lineNumberMode === SOURCE_LINE_NUMBER_MODE.Relative
+    ? state.i18n.t(SETTINGS_I18N_KEYS.ValueLineNumbersRelative)
+    : state.i18n.t(SETTINGS_I18N_KEYS.ValueLineNumbersAbsolute);
 }
 
 export function moveSettingsFocusIndex(index: number, delta: number, rowCount: number): number {
@@ -322,23 +373,9 @@ function activateSettingsRow<Model, Command>(
   handlers: JeditSettingsHandlers<Model, Command>,
 ): [Model, Cmd<Command>[]] {
   const action = row?.action;
-  if (action === JEDIT_SETTING_ACTION.CycleTheme) {
-    return handlers.cycleTheme(model);
-  }
-  if (action === JEDIT_SETTING_ACTION.ToggleThemeMode) {
-    return handlers.toggleThemeMode(model);
-  }
-  if (action === JEDIT_SETTING_ACTION.ToggleFooter) {
-    return handlers.toggleFooter(model);
-  }
-  if (action === JEDIT_SETTING_ACTION.ToggleMarkdownPreview) {
-    return handlers.toggleMarkdownPreview(model);
-  }
-  if (action === JEDIT_SETTING_ACTION.OpenDiagnostics) {
-    return handlers.openDiagnostics(model);
-  }
   if (action === JEDIT_SETTING_ACTION.SelectLocale && row?.locale != null) {
     return handlers.selectLocale(model, row.locale);
   }
-  return [model, []];
+  const handlerName = action == null ? undefined : SETTINGS_ACTION_HANDLERS.get(action);
+  return handlerName == null ? [model, []] : handlers[handlerName](model);
 }

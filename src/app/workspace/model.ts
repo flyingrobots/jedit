@@ -6,6 +6,7 @@ import type { I18nPort } from "../../ports/i18n.js";
 import type { BuiltInTitleSceneName } from "../../ports/title-scene-loader.js";
 import type { SourceHighlightReading } from "../../ports/source-highlighter.js";
 import type { JeditTheme } from "../../ui/jedit-theme.js";
+import type { SourceLineNumberMode } from "../../ui/source-line-number-mode.js";
 import type { FocusPane } from "../../ui/panel-focus.js";
 import type { TitleMeshLibrary } from "../../ui/title-mesh-library.js";
 import type { TitleScene } from "../../ui/title-scene.js";
@@ -31,6 +32,7 @@ import type { WorkspaceCommandLineState } from "./command-line.js";
 import type {
   WorkspaceCommandLineFilePreviewState,
 } from "./command-completion-preview.js";
+import type { WorkspaceInlinePanel } from "./workspace-inline-panel.js";
 import type {
   WorkspaceHistoryDrawerView,
   WorkspaceWorldlineState,
@@ -68,6 +70,7 @@ export interface WorkspaceModel
   readonly quitConfirmOpen: boolean;
   readonly quitAfterSaveRequestId?: number;
   readonly footerVisible: boolean;
+  readonly lineNumberMode: SourceLineNumberMode;
   readonly settingsOpen: boolean;
   readonly settingsFocusIndex: number;
   readonly settingsDiagnosticsOpen: boolean;
@@ -103,4 +106,5 @@ export interface WorkspaceModel
   readonly titleMeshMaterialIndex: number;
   readonly profiler: ProfilerState;
   readonly commandLine: WorkspaceCommandLineState;
+  readonly inlinePanel?: WorkspaceInlinePanel;
 }

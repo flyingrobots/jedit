@@ -39,6 +39,7 @@ export { recoverJeditWorkspaceFromWsc } from "../jedit-wsc-startup-recovery.js";
 
 const INITIAL_FOCUS_PANE: FocusPane = FocusPanes.Editor;
 const INITIAL_VIEW_MODE = ViewModes.Source;
+const INITIAL_LINE_NUMBER_MODE: WorkspaceModel["lineNumberMode"] = "absolute";
 
 export interface WorkspaceInitialModelSnapshot {
   readonly titleSceneSeed: number;
@@ -119,6 +120,7 @@ function initialDrawerState() {
 
 function initialSettingsState() {
   return {
+    lineNumberMode: INITIAL_LINE_NUMBER_MODE,
     settingsOpen: false,
     settingsFocusIndex: 0,
     settingsDiagnosticsOpen: false,

@@ -13,4 +13,5 @@ export const WorkspaceCommandNames = Object.freeze({
   Strand: "strand",
   Braid: "braid",
   Why: "why",
+  Help: "help",
 } as const);

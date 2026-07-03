@@ -330,8 +330,11 @@ test('production insert-mode edits can be undone through Echo', async () => {
 test('footer renders production text posture without exposing text authority', async () => {
   const harness = await openedHarness();
   const text = harness.renderWorkspaceText();
+  const footerContext = text.split('\n').at(-1) ?? '';
 
-  assert.match(text, /notes\.md \[clean \| main \| fs:materialized/);
+  assert.equal(footerContext.startsWith('/repo/notes.md'), true);
+  assert.match(footerContext, /\[clean \| main \| fs:materialized/);
+  assert.equal(footerContext.endsWith('target:main | +0/-0]'), true);
 });
 
 test('source highlighting consumes reading material after production edit', async () => {

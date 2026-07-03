@@ -134,7 +134,10 @@ test('workspace settings opens and refreshes the Graft diagnostics panel', async
 });
 
 test('workspace diagnostics failure report receives the failed request message', async () => {
-  const runtimeModule = await importDist('app', 'workspace', 'runtime.js');
+  const [runtimeModule, settingsModule] = await Promise.all([
+    importDist('app', 'workspace', 'runtime.js'),
+    importDist('app', 'workspace', 'settings.js'),
+  ]);
   const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime({
     graftDiagnostics: {
       loadDiagnostics: async () => {
@@ -148,9 +151,10 @@ test('workspace diagnostics failure report receives the failed request message',
     },
   }));
   const [initialModel] = runtime.init();
+  const diagnosticsIndex = settingsModule.settingsRows(initialModel).findIndex((row) => row.id === 'diagnostics');
   const [opened, commands] = runtime.update(
     { type: 'key', key: 'enter' },
-    { ...initialModel, settingsOpen: true, settingsFocusIndex: 4 },
+    { ...initialModel, settingsOpen: true, settingsFocusIndex: diagnosticsIndex },
   );
   const [loaded] = runtime.update(await commands[0](), opened);
 

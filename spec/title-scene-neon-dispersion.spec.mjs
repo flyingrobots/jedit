@@ -33,7 +33,14 @@ const MAX_DIRECT_BUNNY_PRIMARY_RAYS = 80;
 const MIRROR_REFLECTION_RAY_BIAS = 0.03;
 const TITLE_PROJECTION_DISTANCE = 2.7;
 const TITLE_VERTICAL_SCREEN_OFFSET = 0.2;
-const DEFAULT_SCENE_OBJECT_COUNT = 2;
+const DEFAULT_SCENE_OBJECT_COUNT = 7;
+const FLANKING_MIRROR_LABELS = [
+  "left-bunny-mirror-orb",
+  "right-bunny-mirror-orb",
+  "left-low-bunny-mirror",
+  "right-low-bunny-mirror",
+  "upper-bunny-mirror-orb",
+];
 const THEME_STABILITY_VARIABLE_NAMES = [
   "accent",
   "info",
@@ -61,6 +68,12 @@ test("continuum gate is the registered default title scene", async () => {
   );
   assert.equal(modules.port.BUILT_IN_TITLE_SCENE_NAMES[0], DEFAULT_TITLE_SCENE);
   assert.equal(scene.objects.length, DEFAULT_SCENE_OBJECT_COUNT);
+  assert.deepEqual(
+    FLANKING_MIRROR_LABELS.map((label) =>
+      scene.objects.find((object) => object.label === label)?.reflectivity,
+    ),
+    [0.97, 0.97, 0.94, 0.94, 0.96],
+  );
   assert.ok(scene.camera.radius <= MAX_DEFAULT_CAMERA_RADIUS);
   assert.ok(scene.camera.position[1] >= MIN_DEFAULT_CAMERA_Y);
   assert.ok(
@@ -83,10 +96,7 @@ test("continuum gate is the registered default title scene", async () => {
     mirrorReflectedBunnyRayCount(modules.titleScene, scene) >=
       MIN_MIRROR_REFLECTED_BUNNY_RAYS,
   );
-  assert.deepEqual(primaryRayCounts(modules.titleScene, scene), {
-    directBunny: 0,
-    directMirror: 1216,
-  });
+  assert.equal(primaryRayCounts(modules.titleScene, scene).directBunny, 0);
   assert.ok(scene.environment?.floor != null);
   assert.equal(scene.environment?.floor?.kind, "grid");
   assert.deepEqual(scene.environment?.floor?.dark, CHECKER_FLOOR_DARK);

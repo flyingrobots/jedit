@@ -168,6 +168,7 @@ function renderViewerWithState(
       leftPad: VIEWER_LEFT_PAD,
       topPad: VIEWER_TOP_PAD,
       theme: model.jeditTheme,
+      lineNumberMode: model.lineNumberMode,
     },
   );
 }

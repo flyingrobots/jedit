@@ -60,6 +60,24 @@ test('workspace footer can surface the last command provenance summary', async (
   );
 });
 
+test('workspace footer shows editor cursor position when available', async () => {
+  const footer = await loadFooterModule();
+
+  assert.deepEqual(
+    footer.workspaceFooterLines({
+      ...idleNormalState(),
+      editorCursorPosition: {
+        line: 6,
+        col: 1,
+      },
+    }),
+    [
+      'NORMAL 6:1 [i insert · o open line · f3 preview · ctrl+t theme]',
+      '/repo/notes/todo.md',
+    ],
+  );
+});
+
 test('workspace footer renders active command-line input like Vim', async () => {
   const footer = await loadFooterModule();
 
@@ -131,6 +149,20 @@ test('workspace footer renders command-line hints on the painted secondary row',
   }, 44, {});
 
   assert.equal(rowText(surface, 1).trim(), '[tab accept · enter run · esc cancel]');
+});
+
+test('workspace footer pins editor posture to the lower-right corner when it fits', async () => {
+  const footer = await loadFooterModule();
+  const posture = 'clean | main | fs:materialized | target:main | +0/-0';
+  const surface = footer.renderWorkspaceFooter({
+    ...idleNormalState(),
+    textPosture: posture,
+  }, 96, {});
+  const secondary = rowText(surface, 1);
+
+  assert.equal(secondary.startsWith('/repo/notes/todo.md'), true);
+  assert.equal(secondary.endsWith(`[${posture}]`), true);
+  assert.equal(secondary.includes(`/repo/notes/todo.md [${posture}]`), false);
 });
 
 test('workspace footer shows pending change-operator continuations', async () => {

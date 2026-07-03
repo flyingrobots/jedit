@@ -1,10 +1,4 @@
 import type { Cmd } from '@flyingrobots/bijou-tui';
-import {
-  NotificationPlacements,
-  NotificationTones,
-  NotificationVariants,
-  pushNotificationToast,
-} from '../../ui/feedback.js';
 import type { JeditWhyByteRange, JeditWhyRangeReport } from '../../ports/jedit-why-range.js';
 import { RESULT_PRODUCED } from '../../ports/jedit-why-range.js';
 import type { JeditWhyReport } from './command-provenance.js';
@@ -13,8 +7,20 @@ import type { WorkspaceModel } from './model.js';
 import { WorkspaceMessageTypes, type WorkspaceMsg } from './msg.js';
 import type { ProductionTextObstruction, ProductionTextSession } from './production-text-session.js';
 import { ProductionTextSessionOutcomeKinds } from './production-text-session.js';
-import type { WorkspaceRuntimeDependencies, WorkspaceRuntimeResult } from './workspace-runtime-dependencies.js';
+import type { WorkspaceRuntimeResult } from './workspace-runtime-dependencies.js';
 import { byteOffsetForTextPosition } from './workspace-text-position.js';
+import {
+  anchoredWorkspaceInlinePanel,
+  WORKSPACE_INLINE_PANEL_TONE,
+  type WorkspaceInlinePanelAnchor,
+  type WorkspaceInlinePanelTone,
+  workspaceInlinePanelAtAnchor,
+} from './workspace-inline-panel.js';
+
+export {
+  WORKSPACE_INLINE_PANEL_TONE,
+  workspaceInlinePanelAnchorFromEditor,
+} from './workspace-inline-panel.js';
 
 const FIRST_ROW = 0;
 const FIRST_COLUMN = 0;
@@ -28,13 +34,14 @@ interface WorkspaceWhyRangeCommandRequest {
   readonly range: JeditWhyByteRange;
   readonly productionTextSession: ProductionTextSession;
   readonly fallbackReport: JeditWhyReport;
+  readonly anchor: WorkspaceInlinePanelAnchor;
   readonly atMs: number;
 }
 
-interface ToastReport {
+export interface WorkspaceInlinePanelReport {
   readonly title: string;
   readonly message: string;
-  readonly tone: typeof NotificationTones.Info | typeof NotificationTones.Warning;
+  readonly tone: WorkspaceInlinePanelTone;
 }
 
 export function jeditWhyRangeAtCursor(editor: EditorState | undefined): JeditWhyByteRange | undefined {
@@ -72,54 +79,74 @@ export function createWorkspaceWhyRangeCmd(
       report: outcome.kind === ProductionTextSessionOutcomeKinds.RangeExplained ? outcome.report : undefined,
       obstruction: outcome.kind === ProductionTextSessionOutcomeKinds.Obstructed ? outcome.obstruction : undefined,
       fallbackReport: request.fallbackReport,
+      anchor: request.anchor,
       atMs: request.atMs,
     };
   };
 }
 
 export function applyWorkspaceWhyRangeResult(
-  deps: WorkspaceRuntimeDependencies,
   msg: Extract<WorkspaceMsg, { type: typeof WorkspaceMessageTypes.WhyRangeResult }>,
   model: WorkspaceModel,
 ): WorkspaceRuntimeResult {
-  const report = toastReportFromWhyRange(msg.report, msg.obstruction, msg.fallbackReport);
-  return pushNotificationToast(
-    model,
-    {
-      title: report.title,
-      message: report.message,
-      variant: NotificationVariants.Toast,
-      tone: report.tone,
-      placement: NotificationPlacements.LowerRight,
-    },
-    msg.atMs,
-    deps.createNotificationTickCmd,
-  );
+  const report = whyInlinePanelReportFromRange(msg.report, msg.obstruction, msg.fallbackReport);
+  return [modelWithWorkspaceInlinePanelAtAnchor(model, report, msg.anchor), []];
 }
 
-function toastReportFromWhyRange(
+export function modelWithWorkspaceInlinePanel(
+  model: WorkspaceModel,
+  report: WorkspaceInlinePanelReport,
+): WorkspaceModel {
+  return model.editor == null
+    ? model
+    : {
+        ...model,
+        inlinePanel: anchoredWorkspaceInlinePanel(model.editor, report),
+      };
+}
+
+function modelWithWorkspaceInlinePanelAtAnchor(
+  model: WorkspaceModel,
+  report: WorkspaceInlinePanelReport,
+  anchor: WorkspaceInlinePanelAnchor,
+): WorkspaceModel {
+  return model.editor == null ||
+    model.editor.cursorRow !== anchor.row ||
+    model.editor.cursorCol !== anchor.column
+    ? model
+    : {
+        ...model,
+        inlinePanel: workspaceInlinePanelAtAnchor(report, anchor),
+      };
+}
+
+function whyInlinePanelReportFromRange(
   rangeReport: JeditWhyRangeReport | undefined,
   obstruction: ProductionTextObstruction | undefined,
   fallbackReport: JeditWhyReport,
-): ToastReport {
+): WorkspaceInlinePanelReport {
   if (rangeReport != null) {
     return {
       title: rangeReport.title,
       message: rangeReport.message,
-      tone: rangeReport.witness.result.kind === RESULT_PRODUCED ? NotificationTones.Info : NotificationTones.Warning,
+      tone: rangeReport.witness.result.kind === RESULT_PRODUCED
+        ? WORKSPACE_INLINE_PANEL_TONE.Info
+        : WORKSPACE_INLINE_PANEL_TONE.Warning,
     };
   }
   if (obstruction != null) {
     return {
       title: 'Why range obstructed',
       message: `${obstruction.code}: ${obstruction.issue.message}`,
-      tone: NotificationTones.Warning,
+      tone: WORKSPACE_INLINE_PANEL_TONE.Warning,
     };
   }
   return {
     title: fallbackReport.title,
     message: fallbackReport.message,
-    tone: fallbackReport.kind === WHY_REPORT_OBSTRUCTION_KIND ? NotificationTones.Warning : NotificationTones.Info,
+    tone: fallbackReport.kind === WHY_REPORT_OBSTRUCTION_KIND
+      ? WORKSPACE_INLINE_PANEL_TONE.Warning
+      : WORKSPACE_INLINE_PANEL_TONE.Info,
   };
 }
 

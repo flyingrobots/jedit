@@ -32,6 +32,7 @@ test('settings drawer renders structured rows and highlights the selected row', 
     i18n: createI18nMock(),
     jeditTheme: theme,
     footerVisible: true,
+    lineNumberMode: 'absolute',
     markdownPreviewActive: true,
     diagnosticsAvailable: true,
     viewMode: 'source',
@@ -42,7 +43,7 @@ test('settings drawer renders structured rows and highlights the selected row', 
     selectedIndex: 1,
     theme,
     width: 42,
-    height: 20,
+    height: 26,
   });
   const text = surfaceText(surface);
 
@@ -51,6 +52,7 @@ test('settings drawer renders structured rows and highlights the selected row', 
   assert.match(text, /\[x\] English/);
   assert.match(text, /↻ Theme/);
   assert.match(text, /☑ Footer/);
+  assert.match(text, /↻ Line numbers Absolute/);
   assert.match(text, /↻ Markdown preview/);
   assert.match(text, /↻ Diagnostics Open/);
   assert.ok(text.includes('› ↻ Theme'));
@@ -67,6 +69,7 @@ test('settings drawer keeps the focused row visible when section headers consume
     i18n: createI18nMock(),
     jeditTheme: theme,
     footerVisible: true,
+    lineNumberMode: 'absolute',
     markdownPreviewActive: true,
     diagnosticsAvailable: true,
     viewMode: 'source',
@@ -91,6 +94,7 @@ test('settings drawer always returns the requested positive surface size', async
     i18n: createI18nMock(),
     jeditTheme: theme,
     footerVisible: true,
+    lineNumberMode: 'absolute',
     markdownPreviewActive: true,
     diagnosticsAvailable: true,
     viewMode: 'source',

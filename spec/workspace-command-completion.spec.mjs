@@ -30,7 +30,7 @@ test("workspace command completion provider matches Vim command names and aliase
 
   assert.deepEqual(
     empty.map((item) => item.label),
-    ["edit", "write", "quit", "wq", "ttd", "strand", "braid", "why"],
+    ["edit", "write", "quit", "wq", "ttd", "strand", "braid", "why", "help"],
   );
   assert.deepEqual(
     writeQuery.map((item) => item.label),
@@ -73,7 +73,7 @@ test("workspace command completion provider hides file commands with no open fil
 
   assert.deepEqual(
     titleScreenItems.map((item) => item.label),
-    ["edit", "quit", "ttd", "strand", "braid", "why"],
+    ["edit", "quit", "ttd", "strand", "braid", "why", "help"],
   );
   assert.deepEqual(
     writeQuery.map((item) => item.label),
@@ -123,6 +123,87 @@ test("workspace command completion provider leaves argument text to later provid
   });
 
   assert.deepEqual(items, []);
+});
+
+test("workspace command line completion provider suggests worldline command arguments", async () => {
+  const completion = await importDist("app", "workspace", "command-completion.js");
+
+  const strandItems = completion.workspaceCommandLineCompletionItems({
+    commandLine: {
+      input: "strand ",
+      cursorIndex: 7,
+      selectedCompletionIndex: 0,
+    },
+    entries: [],
+  });
+  const braidItems = completion.workspaceCommandLineCompletionItems({
+    commandLine: {
+      input: "braid pr",
+      cursorIndex: 8,
+      selectedCompletionIndex: 0,
+    },
+    entries: [],
+  });
+
+  assert.deepEqual(
+    strandItems.map((item) => [item.label, item.detail]),
+    [
+      ["list", "Show worldline graph"],
+      ["new from here", "Fork from current basis"],
+      ["switch main", "Switch back to main"],
+    ],
+  );
+  assert.deepEqual(strandItems[1].replacement, {
+    start: 7,
+    end: 7,
+    text: "new from here",
+  });
+  assert.deepEqual(
+    braidItems.map((item) => item.label),
+    ["preview"],
+  );
+});
+
+test("workspace command line completion preview documents commands and arguments", async () => {
+  const [completion, preview] = await Promise.all([
+    importDist("app", "workspace", "command-completion.js"),
+    importDist("app", "workspace", "command-completion-preview.js"),
+  ]);
+
+  const commandPreview = preview.workspaceCommandLineCompletionPreview({
+    commandLine: {
+      input: "tt",
+      cursorIndex: 2,
+      selectedCompletionIndex: 0,
+    },
+    entries: [],
+  });
+  const argumentPreview = preview.workspaceCommandLineCompletionPreview({
+    commandLine: {
+      input: "strand n",
+      cursorIndex: 8,
+      selectedCompletionIndex: 0,
+    },
+    entries: [],
+  });
+
+  assert.equal(commandPreview.kind, "documentation");
+  assert.equal(commandPreview.title, ":ttd");
+  assert.match(commandPreview.lines[0], /Usage: :ttd/);
+  assert.equal(argumentPreview.kind, "documentation");
+  assert.equal(argumentPreview.title, ":strand");
+  assert.match(argumentPreview.lines.join("\n"), /new from here/);
+  assert.equal(
+    completion.workspaceCommandLineCompletionItems({
+      commandLine: {
+        input: "help ",
+        cursorIndex: 5,
+        selectedCompletionIndex: 0,
+      },
+      entries: [],
+    })[0].label,
+    "edit",
+  );
 });
 
 test("workspace command line completion provider filters :edit files and directories", async () => {
@@ -444,9 +525,9 @@ test("workspace render omits write completions on the title screen", async () =>
   assert.match(completionText, /› edit\s+cmd\s+Open a file/);
   assert.match(completionText, /quit\s+cmd\s+Quit jedit/);
   assert.match(completionText, /ttd\s+cmd\s+Observe a causal tick/);
-  assert.match(completionText, /strand\s+cmd\s+Create, switch, or list/);
+  assert.match(completionText, /strand\s+cmd\s+Create, switch, or lis/);
   assert.match(completionText, /braid\s+cmd\s+View, preview, or admit/);
-  assert.match(completionText, /why\s+cmd\s+Explain the last meaningful command/);
+  assert.match(completionText, /why\s+cmd\s+Explain the last meaningf/);
   assert.doesNotMatch(completionText, /write\s+cmd\s+Write the current file/);
   assert.doesNotMatch(completionText, /wq\s+cmd\s+Write and quit/);
 });
@@ -474,9 +555,13 @@ test("workspace render pins command completions to the original command anchor",
   });
 
   const surface = viewer.renderWorkspace(model);
+  const completionRow = surfaceText(surface)
+    .split("\n")
+    .find((line) => line.includes("› edit"));
 
-  assert.equal(surface.get(1, 15).char, "›");
-  assert.notEqual(surface.get(4, 15).char, "›");
+  assert.ok(completionRow);
+  assert.equal(completionRow.indexOf("›"), 1);
+  assert.notEqual(completionRow.indexOf("›"), 4);
 });
 
 test("workspace render paints edit file completions above the Vim command line", async () => {

@@ -1,4 +1,4 @@
-import { createSurface, stringToSurface, type Surface } from '@flyingrobots/bijou';
+import { createSurface, type Surface } from '@flyingrobots/bijou';
 import { clipToWidth } from '@flyingrobots/bijou-tui';
 import { basename } from 'node:path';
 import { FileEntryKinds, type FileEntry } from '../ports/file-system.js';
@@ -10,13 +10,15 @@ import { ViewModes, type ViewMode } from '../app/workspace/view-mode.js';
 import { EditorModes, PendingNormals, type EditorMode, type PendingNormal } from '../app/workspace/editor/mode.js';
 import { renderWorkspaceCommandLineFooter, workspaceCommandLineFooterHintLine as commandLineHints } from './workspace-command-line-footer.js';
 import type { WorkspaceCommandLineFooterState } from './workspace-command-line-footer.js';
+import {
+  fillFooterSurface,
+  footerLineSurface,
+  footerSecondaryLineSurface,
+} from './workspace-footer-line-surface.js';
 const FOOTER_ROWS = 2;
-const FOOTER_LINE_HEIGHT = 1;
 const FOOTER_PRIMARY_ROW = 0;
 const FOOTER_SECONDARY_ROW = 1;
 const FOOTER_ORIGIN = 0;
-const MIN_FOOTER_CONTENT_WIDTH = 1;
-const TEXT_DIRECTION_RTL = 'rtl';
 const FOOTER_MODE_BROWSE = 'browse';
 const FOOTER_MODE_INSERT = 'insert';
 const FOOTER_MODE_NORMAL = 'normal';
@@ -106,6 +108,7 @@ export interface WorkspaceFooterState {
   readonly markdownPreviewActive: boolean;
   readonly settingsOpen: boolean;
   readonly editorMode?: EditorMode;
+  readonly editorCursorPosition?: WorkspaceFooterCursorPosition;
   readonly pendingNormal?: PendingNormal;
   readonly cwd: string;
   readonly selectedEntry?: FileEntry;
@@ -118,6 +121,11 @@ export interface WorkspaceFooterState {
   readonly commandLine?: WorkspaceCommandLineFooterState;
   readonly commandLineError?: JeditStyleToken;
   readonly commandSummary?: string;
+}
+
+export interface WorkspaceFooterCursorPosition {
+  readonly line: number;
+  readonly col: number;
 }
 
 export function activeWorkspaceTitle(state: WorkspaceTitleState): string {
@@ -147,7 +155,7 @@ export function centerLine(text: string, width: number): string {
 
 export function renderWorkspaceFooter(state: WorkspaceFooterState, width: number, background: JeditStyleToken): Surface {
   const surface = createSurface(width, FOOTER_ROWS);
-  fillSurface(surface, background);
+  fillFooterSurface(surface, background);
   if (width <= FOOTER_ORIGIN) {
     return surface;
   }
@@ -161,7 +169,17 @@ export function renderWorkspaceFooter(state: WorkspaceFooterState, width: number
 
   const [primary, secondary] = workspaceFooterLines(state);
   const primaryLine = footerLineSurface(primary, width, background, state.i18n.direction);
-  const secondaryLine = footerLineSurface(secondary, width, background, state.i18n.direction);
+  const secondaryLine = footerSecondaryLineSurface(
+    {
+      direction: state.i18n.direction,
+      rightAlignPosture: !state.settingsOpen && activeDrawerKind(state) == null,
+      editorPath: state.editorPath,
+      textPosture: state.textPosture,
+    },
+    secondary,
+    width,
+    background,
+  );
 
   surface.blit(primaryLine.surface, primaryLine.x, FOOTER_PRIMARY_ROW);
   surface.blit(secondaryLine.surface, secondaryLine.x, FOOTER_SECONDARY_ROW);
@@ -175,11 +193,21 @@ export function workspaceFooterLines(state: WorkspaceFooterState): readonly [str
   const modeKey = interactionModeKey(state);
   const modeLabel = state.i18n.t(`footer.mode.${modeKey}`).toUpperCase();
   const detail = footerDetail(state);
+  const position = footerCursorPosition(state);
 
-  const primary = detail.length > 0 ? `${modeLabel} ${detail}` : modeLabel;
+  const primary = footerPrimaryLine(modeLabel, position, detail);
   const secondary = footerContextLine(state);
 
   return [primary, secondary];
+}
+
+function footerPrimaryLine(
+  modeLabel: string,
+  position: string | undefined,
+  detail: string,
+): string {
+  const prefix = position == null ? modeLabel : `${modeLabel} ${position}`;
+  return detail.length > 0 ? `${prefix} ${detail}` : prefix;
 }
 
 function interactionModeKey(state: WorkspaceFooterState): string {
@@ -249,6 +277,13 @@ function editorFooterDetail(state: WorkspaceFooterState, t: FooterHintTranslator
     return footerHints(insertModeFooterHints(state, t));
   }
   return state.editorMode === EditorModes.Normal ? normalFooterDetail(state, t) : undefined;
+}
+
+function footerCursorPosition(state: WorkspaceFooterState): string | undefined {
+  const position = state.editorCursorPosition;
+  return state.editorMode == null || position == null
+    ? undefined
+    : `${position.line}:${position.col}`;
 }
 
 function footerHintTranslator(state: WorkspaceFooterState): FooterHintTranslator {
@@ -412,62 +447,6 @@ function historyFooterContextLine(state: WorkspaceFooterState): string {
 function displayName(path: string): string {
   const name = basename(path);
   return name.length > 0 ? name : path;
-}
-
-function fillSurface(surface: Surface, token: JeditStyleToken) {
-  surface.fill({
-    char: ' ',
-    bg: token.bg,
-    bgRGB: token.bgRGB,
-    empty: false,
-  });
-}
-
-function applyBackground(surface: Surface, token: JeditStyleToken) {
-  for (let y = 0; y < surface.height; y += 1) {
-    for (let x = 0; x < surface.width; x += 1) {
-      const cell = surface.get(x, y);
-      surface.set(x, y, {
-        ...cell,
-        char: cell.char.length > 0 ? cell.char : ' ',
-        bg: token.bg,
-        bgRGB: token.bgRGB,
-        empty: false,
-      });
-    }
-  }
-}
-
-function fitLine(text: string, width: number): string {
-  const clipped = clipToWidth(text, width);
-  const visible = [...clipped].length;
-  if (visible >= width) {
-    return clipped;
-  }
-
-  return clipped.padEnd(width, ' ');
-}
-
-function footerLineSurface(
-  text: string,
-  width: number,
-  background: JeditStyleToken,
-  direction: I18nPort['direction'],
-): { readonly surface: Surface; readonly x: number } {
-  const content = footerLineContent(text, width);
-  const contentWidth = Math.max(MIN_FOOTER_CONTENT_WIDTH, Math.min(width, [...content].length));
-  const lineSurface = stringToSurface(fitLine(content, contentWidth), contentWidth, FOOTER_LINE_HEIGHT);
-  applyBackground(lineSurface, background);
-
-  return {
-    surface: lineSurface,
-    x: direction === TEXT_DIRECTION_RTL ? width - lineSurface.width : FOOTER_ORIGIN,
-  };
-}
-
-function footerLineContent(text: string, width: number): string {
-  const clipped = clipToWidth(text, width).trimEnd();
-  return clipped.length > 0 ? clipped : ' ';
 }
 
 function footerHasFocusablePeers(state: WorkspaceFooterState): boolean {

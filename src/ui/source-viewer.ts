@@ -1,11 +1,22 @@
 import type { Cell, Surface } from '@flyingrobots/bijou';
 import type { SourceHighlightReading } from '../ports/source-highlighter.js';
-import type { JeditStyleToken, JeditTheme } from './jedit-theme.js';
+import { JEDIT_SOURCE_TOKEN, type JeditStyleToken, type JeditTheme } from './jedit-theme.js';
+import {
+  SOURCE_LINE_NUMBER_MODE,
+  type SourceLineNumberMode,
+} from './source-line-number-mode.js';
 import { createSourceWindowReadingFromLines } from './source-window.js';
 import { paintHighlightedSourceWindow } from './source-highlight.js';
 
 const NORMAL_MODE = 'normal';
 const INSERT_MODE = 'insert';
+const FIRST_VISIBLE_LINE_NUMBER = 1;
+const GUTTER_CONTENT_GAP = 1;
+const GUTTER_RULE_GAP = 1;
+const GUTTER_RULE = '│';
+const MIN_TEXT_VIEWPORT_WIDTH = 1;
+const DEFAULT_LINE_NUMBER_MODE = SOURCE_LINE_NUMBER_MODE.Absolute;
+const CURRENT_LINE_RELATIVE_NUMBER = 0;
 
 export type SourceViewerMode = typeof NORMAL_MODE | typeof INSERT_MODE;
 
@@ -28,6 +39,7 @@ export interface SourceViewerOptions {
   readonly leftPad: number;
   readonly topPad: number;
   readonly theme: JeditTheme;
+  readonly lineNumberMode?: SourceLineNumberMode;
 }
 
 export function renderSourceViewer(
@@ -41,23 +53,34 @@ export function renderSourceViewer(
     startLine: editor.scrollRow,
     lineCount: options.viewport.height,
   });
-  paintHighlightedSourceWindow(surface, sourceWindow, highlight, {
-    x: options.leftPad,
-    y: options.topPad,
-    scrollCol: editor.scrollCol,
-    width: options.viewport.width,
-    height: options.viewport.height,
-    theme: options.theme,
-  });
+  const lineNumberMode = options.lineNumberMode ?? DEFAULT_LINE_NUMBER_MODE;
+  const gutter = sourceViewerGutter(
+    sourceWindow.totalLineCount,
+    editor.cursorRow,
+    lineNumberMode,
+  );
+  paintSourceViewerGutter(surface, sourceWindow, options, gutter, editor.cursorRow);
+  const viewport = sourceTextViewport(options, gutter, editor.scrollCol);
+  paintHighlightedSourceWindow(surface, sourceWindow, highlight, viewport);
+  paintSourceViewerCursor(surface, editor, options, viewport);
 
+  return surface;
+}
+
+function paintSourceViewerCursor(
+  surface: Surface,
+  editor: SourceViewerEditor,
+  options: SourceViewerOptions,
+  viewport: ReturnType<typeof sourceTextViewport>,
+): void {
   const cursor = cursorDisplayPosition(editor);
   const cursorY = options.topPad + (cursor.row - editor.scrollRow);
-  const cursorX = options.leftPad + (cursor.col - editor.scrollCol);
+  const cursorX = viewport.x + (cursor.col - editor.scrollCol);
   if (
     cursorY >= options.topPad
     && cursorY < options.topPad + options.viewport.height
-    && cursorX >= options.leftPad
-    && cursorX < options.leftPad + options.viewport.width
+    && cursorX >= viewport.x
+    && cursorX < viewport.x + viewport.width
   ) {
     const cell = surface.get(cursorX, cursorY);
     const token = editor.mode === NORMAL_MODE ? options.theme.cursor.normal : options.theme.cursor.insert;
@@ -68,8 +91,152 @@ export function renderSourceViewer(
       empty: false,
     });
   }
+}
 
-  return surface;
+interface SourceViewerGutter {
+  readonly numberWidth: number;
+  readonly width: number;
+}
+
+export function sourceViewerGutterWidth(
+  totalLineCount: number,
+  cursorRow: number = CURRENT_LINE_RELATIVE_NUMBER,
+  mode: SourceLineNumberMode = DEFAULT_LINE_NUMBER_MODE,
+): number {
+  return sourceViewerGutter(totalLineCount, cursorRow, mode).width;
+}
+
+function sourceViewerGutter(
+  totalLineCount: number,
+  cursorRow: number,
+  mode: SourceLineNumberMode,
+): SourceViewerGutter {
+  const numberWidth = lineNumberLabelWidth(totalLineCount, cursorRow, mode);
+  return {
+    numberWidth,
+    width: numberWidth + GUTTER_CONTENT_GAP + GUTTER_RULE_GAP,
+  };
+}
+
+function sourceTextViewport(
+  options: SourceViewerOptions,
+  gutter: SourceViewerGutter,
+  scrollCol: number,
+) {
+  return {
+    x: options.leftPad + gutter.width,
+    y: options.topPad,
+    scrollCol,
+    width: Math.max(MIN_TEXT_VIEWPORT_WIDTH, options.viewport.width - gutter.width),
+    height: options.viewport.height,
+    theme: options.theme,
+  };
+}
+
+function paintSourceViewerGutter(
+  surface: Surface,
+  reading: ReturnType<typeof createSourceWindowReadingFromLines>,
+  options: SourceViewerOptions,
+  gutter: SourceViewerGutter,
+  cursorRow: number,
+): void {
+  const numberToken =
+    options.theme.source.get(JEDIT_SOURCE_TOKEN.Comment) ??
+    options.theme.chrome.titleLogoShadow;
+  const ruleToken = options.theme.chrome.activeEdge;
+  const ruleX = options.leftPad + gutter.numberWidth + GUTTER_CONTENT_GAP - 1;
+  const mode = options.lineNumberMode ?? DEFAULT_LINE_NUMBER_MODE;
+  for (let row = 0; row < options.viewport.height; row += 1) {
+    const sourceLine = reading.lines[row];
+    const y = options.topPad + row;
+    const label = sourceLine == null
+      ? ''
+      : sourceLineNumberLabel(sourceLine.lineNumber, mode, cursorRow).padStart(
+          gutter.numberWidth,
+          ' ',
+        );
+    paintGutterText(surface, label, options.leftPad, y, numberToken);
+    paintGutterCell(surface, ruleX, y, GUTTER_RULE, ruleToken);
+    paintGutterRuleGap(surface, ruleX, y, options.theme.surface.workspace);
+  }
+}
+
+function sourceLineNumberLabel(
+  lineNumber: number,
+  mode: SourceLineNumberMode,
+  cursorRow: number,
+): string {
+  if (mode === SOURCE_LINE_NUMBER_MODE.Absolute) {
+    return String(lineNumber + FIRST_VISIBLE_LINE_NUMBER);
+  }
+  const relative = lineNumber - cursorRow;
+  return relative > CURRENT_LINE_RELATIVE_NUMBER
+    ? `+${relative}`
+    : String(relative);
+}
+
+function lineNumberLabelWidth(
+  totalLineCount: number,
+  cursorRow: number,
+  mode: SourceLineNumberMode,
+): number {
+  const absoluteWidth = String(Math.max(FIRST_VISIBLE_LINE_NUMBER, totalLineCount)).length;
+  if (mode === SOURCE_LINE_NUMBER_MODE.Absolute) {
+    return absoluteWidth;
+  }
+  const maxRelative = Math.max(
+    Math.abs(cursorRow),
+    Math.abs(totalLineCount - FIRST_VISIBLE_LINE_NUMBER - cursorRow),
+  );
+  return Math.max(absoluteWidth, signedLineNumberWidth(maxRelative));
+}
+
+function signedLineNumberWidth(value: number): number {
+  return value <= CURRENT_LINE_RELATIVE_NUMBER
+    ? String(CURRENT_LINE_RELATIVE_NUMBER).length
+    : String(value).length + GUTTER_CONTENT_GAP;
+}
+
+function paintGutterRuleGap(
+  surface: Surface,
+  ruleX: number,
+  y: number,
+  token: JeditStyleToken,
+): void {
+  for (let gap = 0; gap < GUTTER_RULE_GAP; gap += 1) {
+    paintGutterCell(surface, ruleX + gap + 1, y, ' ', token);
+  }
+}
+
+function paintGutterText(
+  surface: Surface,
+  text: string,
+  x: number,
+  y: number,
+  token: JeditStyleToken,
+): void {
+  for (let index = 0; index < text.length; index += 1) {
+    paintGutterCell(surface, x + index, y, text[index] ?? ' ', token);
+  }
+}
+
+function paintGutterCell(
+  surface: Surface,
+  x: number,
+  y: number,
+  char: string,
+  token: JeditStyleToken,
+): void {
+  if (x < 0 || y < 0 || x >= surface.width || y >= surface.height) {
+    return;
+  }
+  const cell = surface.get(x, y);
+  surface.set(x, y, {
+    ...cell,
+    char,
+    ...cellStyle(token),
+    empty: false,
+  });
 }
 
 function cursorDisplayPosition(editor: SourceViewerEditor): { readonly row: number; readonly col: number } {
