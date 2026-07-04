@@ -1,6 +1,6 @@
 import { createSurface, stringToSurface, type Surface } from "@flyingrobots/bijou";
 import { clipToWidth } from "@flyingrobots/bijou-tui";
-import type { I18nPort } from "../ports/i18n.js";
+import { I18N_TEXT_DIRECTION, type I18nPort } from "../ports/i18n.js";
 import { JEDIT_TEXT_MODIFIER, type JeditStyleToken } from "./jedit-theme.js";
 import { visibleLineLength } from "./fit-line.js";
 import {
@@ -23,7 +23,6 @@ const FOOTER_PRIMARY_ROW = 0;
 const FOOTER_ROWS = 2;
 const FOOTER_SECONDARY_ROW = 1;
 const MIN_FOOTER_CONTENT_WIDTH = 1;
-const TEXT_DIRECTION_RTL = "rtl";
 
 interface CommandLineDispatchPosture {
   readonly kind: string;
@@ -180,7 +179,7 @@ function footerLineSurface(
 
   return {
     surface: lineSurface,
-    x: direction === TEXT_DIRECTION_RTL
+    x: direction === I18N_TEXT_DIRECTION.Rtl
       ? width - lineSurface.width
       : FOOTER_ORIGIN,
   };
