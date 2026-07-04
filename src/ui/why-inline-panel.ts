@@ -10,10 +10,18 @@ import {
 } from "./theme-variable-token.js";
 import { fitLine } from "./workspace-render.js";
 
+export const WHY_INLINE_PANEL_TONE = Object.freeze({
+  Info: "info",
+  Warning: "warning",
+} as const);
+
+export type WhyInlinePanelTone =
+  (typeof WHY_INLINE_PANEL_TONE)[keyof typeof WHY_INLINE_PANEL_TONE];
+
 export interface RenderWhyInlinePanelOptions {
   readonly title: string;
   readonly message: string;
-  readonly tone: "info" | "warning";
+  readonly tone: WhyInlinePanelTone;
   readonly theme: JeditTheme;
   readonly width: number;
   readonly maxRows: number;
@@ -58,7 +66,9 @@ function whyPanelRows(
 }
 
 function whyPanelTitlePrefix(tone: RenderWhyInlinePanelOptions["tone"]): string {
-  return tone === "warning" ? WHY_PANEL_WARNING_PREFIX : WHY_PANEL_TITLE_PREFIX;
+  return tone === WHY_INLINE_PANEL_TONE.Warning
+    ? WHY_PANEL_WARNING_PREFIX
+    : WHY_PANEL_TITLE_PREFIX;
 }
 
 function wrapWhyPanelMessage(message: string, width: number): readonly string[] {
@@ -133,7 +143,7 @@ function paintText(
 
 function whyPanelToneToken(options: RenderWhyInlinePanelOptions): JeditStyleToken {
   const baseToken = whyPanelAccentBaseToken(options.theme);
-  return options.tone === "warning"
+  return options.tone === WHY_INLINE_PANEL_TONE.Warning
     ? foregroundTokenFromThemeVariable(
         options.theme,
         JEDIT_THEME_VARIABLE_TOKEN.Warning,
