@@ -92,6 +92,7 @@ function shouldKeepWorkspaceInlinePanel(
 function sourceEditorOwnsInlinePanel(model: WorkspaceModel): boolean {
   return model.focusPane === FocusPanes.Editor &&
     model.viewMode === ViewModes.Source &&
+    model.quitConfirmOpen !== true &&
     model.settingsOpen !== true &&
     model.scenePickerOpen !== true &&
     model.startupFileModalOpen !== true &&
