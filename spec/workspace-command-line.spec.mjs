@@ -1069,6 +1069,9 @@ test("enter dispatches why through retained range history when a cursor range is
   }]);
   assert.equal(message.type, "why-range-result");
   assert.deepEqual(message.anchor, { row: 0, column: 7 });
+  assert.equal(message.outcome.kind, "range");
+  assert.equal(Object.hasOwn(message, "report"), false);
+  assert.equal(Object.hasOwn(message, "obstruction"), false);
   assert.match(notified.inlinePanel.message, /ropeDiff receipt:range/);
   assert.doesNotMatch(notified.inlinePanel.message, /No meaningful command/);
   assert.equal(stale.inlinePanel, undefined);

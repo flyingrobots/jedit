@@ -1,11 +1,16 @@
 import type { Cmd } from '@flyingrobots/bijou-tui';
-import type { JeditWhyByteRange, JeditWhyRangeReport } from '../../ports/jedit-why-range.js';
+import type { JeditWhyByteRange } from '../../ports/jedit-why-range.js';
 import { RESULT_PRODUCED } from '../../ports/jedit-why-range.js';
 import type { JeditWhyReport } from './command-provenance.js';
 import type { EditorState } from './editor/model.js';
 import type { WorkspaceModel } from './model.js';
-import { WorkspaceMessageTypes, type WorkspaceMsg } from './msg.js';
-import type { ProductionTextObstruction, ProductionTextSession } from './production-text-session.js';
+import {
+  WorkspaceMessageTypes,
+  WorkspaceWhyRangeOutcomeKinds,
+  type WorkspaceMsg,
+  type WorkspaceWhyRangeOutcome,
+} from './msg.js';
+import type { ProductionTextSession, ProductionTextWhyRangeOutcome } from './production-text-session.js';
 import { ProductionTextSessionOutcomeKinds } from './production-text-session.js';
 import type { WorkspaceRuntimeResult } from './workspace-runtime-dependencies.js';
 import { byteOffsetForTextPosition } from './workspace-text-position.js';
@@ -70,7 +75,7 @@ export function createWorkspaceWhyRangeCmd(
   request: WorkspaceWhyRangeCommandRequest,
 ): Cmd<WorkspaceMsg> {
   return async () => {
-    const outcome = await request.productionTextSession.explainRange({
+    const explainOutcome = await request.productionTextSession.explainRange({
       bufferId: request.bufferId,
       range: request.range,
       atMs: request.atMs,
@@ -78,8 +83,7 @@ export function createWorkspaceWhyRangeCmd(
     return {
       type: WorkspaceMessageTypes.WhyRangeResult,
       bufferId: request.bufferId,
-      report: outcome.kind === ProductionTextSessionOutcomeKinds.RangeExplained ? outcome.report : undefined,
-      obstruction: outcome.kind === ProductionTextSessionOutcomeKinds.Obstructed ? outcome.obstruction : undefined,
+      outcome: workspaceWhyRangeOutcomeFromProduction(explainOutcome),
       fallbackReport: request.fallbackReport,
       anchor: request.anchor,
       atMs: request.atMs,
@@ -94,8 +98,22 @@ export function applyWorkspaceWhyRangeResult(
   if (!whyRangeResultMatchesActiveBuffer(model, msg.bufferId)) {
     return [model, []];
   }
-  const report = whyInlinePanelReportFromRange(msg.report, msg.obstruction, msg.fallbackReport);
+  const report = whyInlinePanelReportFromRange(msg.outcome, msg.fallbackReport);
   return [modelWithWorkspaceInlinePanelAtAnchor(model, report, msg.anchor), []];
+}
+
+function workspaceWhyRangeOutcomeFromProduction(
+  explainOutcome: ProductionTextWhyRangeOutcome,
+): WorkspaceWhyRangeOutcome {
+  return explainOutcome.kind === ProductionTextSessionOutcomeKinds.RangeExplained
+    ? {
+        kind: WorkspaceWhyRangeOutcomeKinds.Range,
+        report: explainOutcome.report,
+      }
+    : {
+        kind: WorkspaceWhyRangeOutcomeKinds.Obstructed,
+        obstruction: explainOutcome.obstruction,
+      };
 }
 
 function whyRangeResultMatchesActiveBuffer(model: WorkspaceModel, bufferId: string): boolean {
@@ -131,23 +149,22 @@ function modelWithWorkspaceInlinePanelAtAnchor(
 }
 
 function whyInlinePanelReportFromRange(
-  rangeReport: JeditWhyRangeReport | undefined,
-  obstruction: ProductionTextObstruction | undefined,
+  outcome: WorkspaceWhyRangeOutcome,
   fallbackReport: JeditWhyReport,
 ): WorkspaceInlinePanelReport {
-  if (rangeReport != null) {
+  if (outcome.kind === WorkspaceWhyRangeOutcomeKinds.Range) {
     return {
-      title: rangeReport.title,
-      message: rangeReport.message,
-      tone: rangeReport.witness.result.kind === RESULT_PRODUCED
+      title: outcome.report.title,
+      message: outcome.report.message,
+      tone: outcome.report.witness.result.kind === RESULT_PRODUCED
         ? WORKSPACE_INLINE_PANEL_TONE.Info
         : WORKSPACE_INLINE_PANEL_TONE.Warning,
     };
   }
-  if (obstruction != null) {
+  if (outcome.kind === WorkspaceWhyRangeOutcomeKinds.Obstructed) {
     return {
       title: 'Why range obstructed',
-      message: `${obstruction.code}: ${obstruction.issue.message}`,
+      message: `${outcome.obstruction.code}: ${outcome.obstruction.issue.message}`,
       tone: WORKSPACE_INLINE_PANEL_TONE.Warning,
     };
   }
