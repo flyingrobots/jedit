@@ -206,6 +206,13 @@ test("workspace command line completion preview documents commands and arguments
   assert.equal(helpItem.previewCommandName, "edit");
 });
 
+test("workspace command help reports unknown commands consistently", async () => {
+  const catalog = await importDist("app", "workspace", "workspace-command-catalog.js");
+
+  assert.equal(catalog.workspaceCommandHelpTitle("nope"), "Command help");
+  assert.deepEqual(catalog.workspaceCommandHelpLines("nope"), ["Unknown command: nope"]);
+});
+
 test("workspace command line completion provider filters :edit files and directories", async () => {
   const [completion, fileSystem] = await Promise.all([
     importDist("app", "workspace", "command-completion.js"),

@@ -42,6 +42,8 @@ const COMMAND_DETAIL_KEYS = Object.freeze({
   Why: "footer.command.details.why",
   Help: "footer.command.details.help",
 });
+const COMMAND_HELP_TITLE = "Command help";
+const UNKNOWN_COMMAND_HELP_PREFIX = "Unknown command:";
 
 const WORKSPACE_COMMAND_DESCRIPTORS = [
   {
@@ -238,7 +240,11 @@ export function workspaceCommandDescriptorByName(
 }
 
 export function workspaceCommandHelpTitle(name: string | undefined): string {
-  return name == null ? "Command help" : `:${name}`;
+  if (name == null) {
+    return COMMAND_HELP_TITLE;
+  }
+  const descriptor = workspaceCommandDescriptorByName(name);
+  return descriptor == null ? COMMAND_HELP_TITLE : `:${descriptor.name}`;
 }
 
 export function workspaceCommandHelpLines(name: string | undefined): readonly string[] {
@@ -248,6 +254,9 @@ export function workspaceCommandHelpLines(name: string | undefined): readonly st
       `Usage: :${descriptor.usage}`,
       ...descriptor.help,
     ];
+  }
+  if (name != null) {
+    return [`${UNKNOWN_COMMAND_HELP_PREFIX} ${name}`];
   }
   return WORKSPACE_COMMAND_DESCRIPTORS.map((command) =>
     `:${command.usage} - ${command.detail}`,
