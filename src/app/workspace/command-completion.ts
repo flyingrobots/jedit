@@ -74,7 +74,6 @@ export const VIM_COMMAND_ARGUMENT_PROVIDER_ID = "vim-command-argument";
 const COMMAND_COMPLETION_EMPTY_QUERY = "";
 const COMMAND_COMPLETION_FIRST_INDEX = 0;
 const COMMAND_ARGUMENT_STEP = 1;
-const COMMAND_ARGUMENT_ID_MIN_PARTS = 2;
 
 export function workspaceCommandCompletionItems(
   commandLine: Pick<WorkspaceCommandLineState, "input" | "cursorIndex">,
@@ -200,6 +199,7 @@ function commandCompletionItem(
     detail: commandCompletionDetail(descriptor, i18n),
     kind: INLINE_COMPLETION_ITEM_KIND.Command,
     providerId: VIM_COMMAND_PROVIDER_ID,
+    previewCommandName: descriptor.name,
     replacement: {
       start: context.replacementStart,
       end: context.replacementEnd,
@@ -223,6 +223,7 @@ function commandArgumentDescriptorsForContext(
     ? workspaceCommandDescriptors().map((descriptor) => ({
         id: `command-arg:help:${descriptor.name}`,
         commandName: WorkspaceCommandNames.Help,
+        previewCommandName: descriptor.name,
         label: descriptor.name,
         detail: descriptor.detail,
         replacementText: descriptor.name,
@@ -241,6 +242,7 @@ function commandArgumentCompletionItem(
     detail: descriptor.detail,
     kind: INLINE_COMPLETION_ITEM_KIND.Documentation,
     providerId: VIM_COMMAND_ARGUMENT_PROVIDER_ID,
+    previewCommandName: descriptor.previewCommandName ?? descriptor.commandName,
     replacement: {
       start: context.replacementStart,
       end: context.replacementEnd,
@@ -402,20 +404,12 @@ function commandNameFromCompletionItem(
   item: InlineCompletionItem,
 ): string | undefined {
   if (item.providerId === VIM_COMMAND_PROVIDER_ID) {
-    return item.label;
+    return item.previewCommandName;
   }
   if (item.providerId !== VIM_COMMAND_ARGUMENT_PROVIDER_ID) {
     return undefined;
   }
-  const prefix = `command-arg:help:`;
-  return item.id.startsWith(prefix)
-    ? item.id.slice(prefix.length)
-    : commandNameFromArgumentCompletionId(item.id);
-}
-
-function commandNameFromArgumentCompletionId(id: string): string | undefined {
-  const parts = id.split(":");
-  return parts.length >= COMMAND_ARGUMENT_ID_MIN_PARTS ? parts[1] : undefined;
+  return item.previewCommandName;
 }
 
 function commandArgumentStartIndex(input: string, commandEnd: number): number {

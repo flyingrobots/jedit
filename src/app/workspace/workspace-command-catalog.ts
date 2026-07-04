@@ -14,6 +14,7 @@ export interface WorkspaceCommandDescriptor {
 export interface WorkspaceCommandArgumentDescriptor {
   readonly id: string;
   readonly commandName: string;
+  readonly previewCommandName?: string;
   readonly label: string;
   readonly detail: string;
   readonly replacementText: string;
@@ -23,6 +24,7 @@ export interface WorkspaceCommandArgumentDescriptor {
 interface WorkspaceCommandArgumentDefinition {
   readonly id: string;
   readonly commandName: string;
+  readonly previewCommandName?: string;
   readonly label: string;
   readonly detail: string;
   readonly replacementText: string;
@@ -258,6 +260,7 @@ function argument(
   return {
     id: `command-arg:${definition.id}`,
     commandName: definition.commandName,
+    previewCommandName: definition.previewCommandName,
     label: definition.label,
     detail: definition.detail,
     replacementText: definition.replacementText,

@@ -193,17 +193,17 @@ test("workspace command line completion preview documents commands and arguments
   assert.equal(argumentPreview.kind, "documentation");
   assert.equal(argumentPreview.title, ":strand");
   assert.match(argumentPreview.lines.join("\n"), /new from here/);
-  assert.equal(
-    completion.workspaceCommandLineCompletionItems({
-      commandLine: {
-        input: "help ",
-        cursorIndex: 5,
-        selectedCompletionIndex: 0,
-      },
-      entries: [],
-    })[0].label,
-    "edit",
-  );
+  const helpItem = completion.workspaceCommandLineCompletionItems({
+    commandLine: {
+      input: "help ",
+      cursorIndex: 5,
+      selectedCompletionIndex: 0,
+    },
+    entries: [],
+  })[0];
+
+  assert.equal(helpItem.label, "edit");
+  assert.equal(helpItem.previewCommandName, "edit");
 });
 
 test("workspace command line completion provider filters :edit files and directories", async () => {

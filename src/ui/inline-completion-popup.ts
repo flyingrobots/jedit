@@ -62,6 +62,7 @@ export interface InlineCompletionItem {
   readonly kind: InlineCompletionItemKind;
   readonly providerId: string;
   readonly replacement: InlineCompletionReplacement;
+  readonly previewCommandName?: string;
   readonly previewRequestId?: string;
 }
 
