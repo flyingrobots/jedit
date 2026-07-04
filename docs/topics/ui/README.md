@@ -26,7 +26,7 @@ Jim UI documents use three terminal width profiles:
 | Page | Surface |
 | --- | --- |
 | [Title Screen](title-screen.md) | Startup scene, title browser, and first file-open path. |
-| [Editor Chrome](editor-chrome.md) | Source viewport, gutter, status footer, dirty state, and cursor position. |
+| [Editor Chrome](editor-chrome.md) | Source viewport, gutter, status footer, causal posture, and cursor position. |
 | [Settings Menu](settings-menu.md) | F2 settings drawer, keyboard controls, diagnostics, and change feedback. |
 | [Command Line And Completions](command-line-and-completions.md) | Normal-mode `:` input, command help, file completion, and inline suggestions. |
 | [Drawers And Panels](drawers-and-panels.md) | File tree, Graft outline, Echo history, diagnostics, and inline why panels. |

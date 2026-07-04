@@ -133,7 +133,7 @@ test("workspace footer separates causal posture from filesystem materialization"
     importDist("app", "workspace", "worldline-state.js"),
   ]);
   const model = mockTitleScreenModel(titleScreen, {
-    columns: 100,
+    columns: 132,
     rows: 12,
     editor: mockEditor(editorMode, {
       dirty: true,
@@ -163,8 +163,11 @@ test("workspace footer separates causal posture from filesystem materialization"
   const footerContext = rendered.split("\n").at(-1);
 
   assert.equal(footerContext.startsWith("/repo/notes.md"), true);
-  assert.match(footerContext, /\[dirty \| strand:draft \| fs:unmaterialized \| target:main/);
-  assert.equal(footerContext.endsWith("+0/-0]"), true);
+  assert.match(
+    footerContext,
+    /\[basis:reading \| head:local \| worldline:strand:draft \| export:pending \| admit:main/,
+  );
+  assert.equal(footerContext.endsWith("tick:t1]"), true);
 });
 
 test("worldline drawer shows unconfirmed optimistic braid while Echo edit is in flight", async () => {
@@ -178,9 +181,9 @@ test("worldline drawer shows unconfirmed optimistic braid while Echo edit is in 
   const rendered = surfaceText(drawers.renderDrawer("history", harness.model, 96, 9));
 
   assert.match(rendered, /projection:\s+canonical@t0 \+ local optimistic \| braid active \| phase:unconfirmed/);
-  assert.match(rendered, />\s+settled\s+C\s+main\s+main\s+0\s+\+0\/-0\s+canonical@t0/);
-  assert.match(rendered, /unconfirmed\s+L\s+local\s+canonical@t0\s+-\s+\+local\/-0\s+request:2\s+optimistic/);
-  assert.match(rendered, /unconfirmed\s+B\s+visible braid\s+main\+local\s+-\s+\+local\/-0\s+canonical@t0\s+active/);
+  assert.match(rendered, />\s+settled\s+C\s+main\s+main\s+0\s+tick:t0\s+canonical@t0/);
+  assert.match(rendered, /unconfirmed\s+L\s+local\s+canonical@t0\s+-\s+local\s+request:2\s+optimistic/);
+  assert.match(rendered, /unconfirmed\s+B\s+visible braid\s+main\+local\s+-\s+local\s+canonical@t0\s+active/);
 });
 
 test("worldline drawer keeps conflicted optimistic braid visible after obstruction", async () => {
@@ -197,8 +200,8 @@ test("worldline drawer keeps conflicted optimistic braid visible after obstructi
   const rendered = surfaceText(drawers.renderDrawer("history", harness.model, 96, 9));
 
   assert.match(rendered, /phase:conflicted/);
-  assert.match(rendered, /conflicted\s+L\s+local\s+canonical@t0\s+-\s+\+local\/-0\s+\/repo\/notes\.md:/);
-  assert.match(rendered, /conflicted\s+B\s+visible braid\s+main\+local\s+-\s+\+local\/-0\s+canonical@t0\s+active/);
+  assert.match(rendered, /conflicted\s+L\s+local\s+canonical@t0\s+-\s+local\s+\/repo\/notes\.md:/);
+  assert.match(rendered, /conflicted\s+B\s+visible braid\s+main\+local\s+-\s+local\s+canonical@t0\s+active/);
   assert.match(harness.renderText(), /X/);
 });
 

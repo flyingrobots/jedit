@@ -333,8 +333,8 @@ test('footer renders production text posture without exposing text authority', a
   const footerContext = text.split('\n').at(-1) ?? '';
 
   assert.equal(footerContext.startsWith('/repo/notes.md'), true);
-  assert.match(footerContext, /\[clean \| main \| fs:materialized/);
-  assert.equal(footerContext.endsWith('target:main | +0/-0]'), true);
+  assert.match(footerContext, /\[basis:reading \| head:basis \| worldline:main \| export:host/);
+  assert.equal(footerContext.endsWith('admit:main | tick:t0]'), true);
 });
 
 test('source highlighting consumes reading material after production edit', async () => {

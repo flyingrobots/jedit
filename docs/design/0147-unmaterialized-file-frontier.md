@@ -210,13 +210,13 @@ The buffer is real even before disk exists.
 The editor opens immediately with an empty buffer. The footer names the state:
 
 ```text
-/repo/foo.txt [clean | main | fs:unmaterialized | target:main]
+/repo/foo.txt [basis:reading | head:basis | worldline:main | export:pending | admit:main | tick:t0]
 ```
 
 After typing:
 
 ```text
-/repo/foo.txt [dirty | main+local | fs:unmaterialized | target:main]
+/repo/foo.txt [basis:reading | head:local | worldline:main | export:pending | admit:main | tick:t0]
 ```
 
 The history/worldline drawer shows:
@@ -224,10 +224,10 @@ The history/worldline drawer shows:
 ```text
 Worldlines
 projection: canonical@t0 + local optimistic | braid active | phase:unconfirmed
-s phase       r name           basis          head  delta     evidence           note
-> settled     C main           main           0     +0/-0     canonical@t0       clear
-  unconfirmed L local          canonical@t0   -     +local/-0 request:3          optimistic
-  unconfirmed B visible braid  main+local     -     +local/-0 canonical@t0       active
+s phase       r name           basis          head  span      evidence           note
+> settled     C main           main           0     tick:t0   canonical@t0       clear
+  unconfirmed L local          canonical@t0   -     local     request:3          optimistic
+  unconfirmed B visible braid  main+local     -     local     canonical@t0       active
 ```
 
 ### First Save
@@ -393,7 +393,7 @@ Deliverables:
 
 - split host path observation from file load;
 - open missing paths with empty initial text;
-- footer/history label `fs:unmaterialized`;
+- footer/history label `export:pending`;
 - command-line regression for `:edit missing.txt`;
 - no host file write before save.
 
@@ -442,7 +442,7 @@ Deliverables:
 
 Lower modes must expose the same facts without relying on color:
 
-- footer text uses explicit `fs:unmaterialized`, `external-frontier`, and
+- footer text uses explicit `export:pending`, `external-frontier`, and
   `braid active` labels;
 - history drawer rows include `External Edit` as text, not just color;
 - `:why` states whether the visible buffer is canonical, local, external, or

@@ -1,7 +1,7 @@
 # Editor Chrome
 
 Editor chrome is the persistent frame around the current buffer: source
-viewport, gutter, header title, footer hints, dirty markers, and coordinate
+viewport, gutter, header title, footer hints, causal markers, and coordinate
 readouts.
 
 <img src="./editor-chrome.svg" alt="Editor chrome layout across wide, narrow, and xs terminal profiles." />
@@ -44,8 +44,9 @@ Line number modes:
 | `Off` | Hide line numbers. |
 
 Future gutter work should add theme-token-controlled dimming and modified-line
-markers. Modified-line markers need a real saved-buffer baseline; they should
-not be faked from the generic dirty flag.
+markers. Modified and removed line markers should be projections of Echo edit
+receipts relative to the current causal basis or checkpoint; they should not be
+derived from Git diff, host-file comparison, or a single projection-changed flag.
 
 ## Footer
 
@@ -54,16 +55,17 @@ The footer is the main low-friction status surface. It should show:
 - current mode;
 - `line:col` cursor position when a source cursor is active;
 - mode-specific hints;
-- dirty and materialization posture;
-- target branch or runtime posture when available;
+- causal basis and head posture;
+- export or materialization posture;
+- worldline, admission, and tick posture when available;
 - command-line input when `:` mode is active.
 
 When settings or another non-source overlay owns focus, the footer should show
 that surface's focus state instead of leaking the editor cursor coordinate.
 
 The lower-right status segment currently reports workspace and worldline
-posture. It is not a line-diff counter unless the implementation has a
-saved-text baseline to compare against.
+posture. It is not a Git diff counter; modified and removed line evidence must
+come from Echo receipts admitted after the displayed basis.
 
 ## Implementation Map
 

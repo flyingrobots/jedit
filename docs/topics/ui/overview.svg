@@ -56,7 +56,7 @@
   <text class="dim" x="832" y="264">diagnostics can sit beside</text>
   <text class="dim" x="832" y="288">the active drawer</text>
   <text class="small" x="92" y="393">NORMAL 6:1 [i insert - : command - F2 settings]</text>
-  <text class="small" x="822" y="393">[dirty | main | fs:materialized]</text>
+  <text class="small" x="688" y="393">[basis:reading | head:local | export:host | tick:t0]</text>
 
   <text class="label" x="70" y="462">narrow</text>
   <rect class="term" x="70" y="480" width="520" height="215" />

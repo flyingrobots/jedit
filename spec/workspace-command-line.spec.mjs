@@ -537,7 +537,10 @@ test("enter dispatches edit for missing paths as unmaterialized buffers", async 
   assert.equal(opened.textAuthority.materialization, "unmaterialized");
   assert.equal(opened.editor.dirty, false);
   assert.deepEqual(opened.editor.lines, [""]);
-  assert.match(rendered, /\/repo\/foo\.txt\s+\[clean \| main \| fs:unmaterialized/);
+  assert.match(
+    rendered,
+    /\/repo\/foo\.txt\s+\[basis:reading \| head:basis \| worldline:main \| export:pending/,
+  );
 });
 
 test("enter dispatches write and wq commands through production save", async () => {
@@ -724,7 +727,7 @@ test("blocked production wq remains open with honest materialization status", as
   assert.equal(blockedModel.textAuthority.dirty, true);
   assert.equal(blockedModel.textAuthority.materialization, "unmaterialized");
   assert.equal(blockedModel.editor.dirty, true);
-  assert.match(footer, /dirty \| main \| fs:unmaterialized/);
+  assert.match(footer, /basis:reading \| head:local \| worldline:main \| export:pending/);
 });
 
 test("pending production intent queues wq save without arming quit confirmation", async () => {

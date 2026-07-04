@@ -161,11 +161,11 @@ test('workspace footer renders command-line hints on the painted secondary row',
 
 test('workspace footer pins editor posture to the lower-right corner when it fits', async () => {
   const footer = await loadFooterModule();
-  const posture = 'clean | main | fs:materialized | target:main | +0/-0';
+  const posture = 'basis:reading | head:basis | worldline:main | export:host | admit:main | tick:t0';
   const surface = footer.renderWorkspaceFooter({
     ...idleNormalState(),
     textPosture: posture,
-  }, 96, {});
+  }, 132, {});
   const secondary = rowText(surface, 1);
 
   assert.equal(secondary.startsWith('/repo/notes/todo.md'), true);
@@ -176,10 +176,10 @@ test('workspace footer pins editor posture to the lower-right corner when it fit
 test('workspace footer posture fit uses terminal display width for wide glyphs', async () => {
   const footerPosture = await loadFooterPostureModule();
   const editorPath = '/repo/界.md';
-  const textPosture = 'dirty | main';
+  const textPosture = 'basis:reading | head:local';
   const requiredWidth = visibleLength(`${editorPath} [${textPosture}]`);
 
-  assert.equal(requiredWidth, 26);
+  assert.equal(requiredWidth, 40);
   assert.equal(footerPosture.editorFooterPostureFits(editorPath, textPosture, requiredWidth - 1), false);
   assert.equal(footerPosture.editorFooterPostureFits(editorPath, textPosture, requiredWidth), true);
 });

@@ -23,7 +23,7 @@
   <text class="code" x="154" y="296">this is a change</text>
   <rect x="286" y="283" width="9" height="19" fill="#82aaff"/>
   <text class="small" x="94" y="393">INSERT 5:17 [text input - esc normal - ctrl+s save]</text>
-  <text class="small" x="796" y="393">[dirty | main | fs:unmaterialized]</text>
+  <text class="small" x="656" y="393">[basis:reading | head:local | export:pending | tick:t0]</text>
 
   <text class="label" x="70" y="462">narrow</text>
   <rect class="term" x="70" y="480" width="520" height="215"/>

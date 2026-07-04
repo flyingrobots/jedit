@@ -21,7 +21,7 @@ const RAIL_CELL_WIDTH = 1;
 const NAME_CELL_WIDTH = 14;
 const BASIS_CELL_WIDTH = 14;
 const HEAD_CELL_WIDTH = 5;
-const DELTA_CELL_WIDTH = 9;
+const SPAN_CELL_WIDTH = 9;
 const EVIDENCE_CELL_WIDTH = 18;
 const SELECTED_CELL_WIDTH = 1;
 const NO_EVIDENCE = '-';
@@ -33,14 +33,17 @@ const BRAID_RAIL = 'B';
 const LOCAL_RAIL = 'L';
 const PROJECTION_PREFIX = 'projection:';
 const CANONICAL_PREFIX = 'canonical@t';
+const TICK_PREFIX = 'tick:t';
+const TICKS_PREFIX = 'ticks:t';
+const TICK_SPAN_SEPARATOR = '->t';
 const LOCAL_NAME = 'local';
 const VISIBLE_BRAID_NAME = 'visible braid';
-const LOCAL_DELTA = '+local/-0';
+const LOCAL_SPAN = 'local';
 const OPTIMISTIC_NOTE = 'optimistic';
 const ACTIVE_NOTE = 'active';
 const CONFLICT_NOTE = 'conflict';
 const BLOCKED_NOTE = 'blocked';
-const PHASE_HEADER = 's phase       r name           basis          head  delta     evidence           note';
+const PHASE_HEADER = 's phase       r name           basis          head  span      evidence           note';
 const SELECTED_MARKER = '>';
 const UNSELECTED_MARKER = ' ';
 
@@ -51,7 +54,7 @@ interface WorldlinePhaseRow {
   readonly name: string;
   readonly basis: string;
   readonly head: string;
-  readonly delta: string;
+  readonly span: string;
   readonly evidence: string;
   readonly note: string;
 }
@@ -109,7 +112,7 @@ function graphNodePhaseRow(
     name: node.name,
     basis: node.basis,
     head: node.headTick == null ? NO_HEAD : String(node.headTick),
-    delta: worldlineDeltaLabel(node),
+    span: worldlineSpanLabel(node),
     evidence: node.headTick == null ? NO_EVIDENCE : `${CANONICAL_PREFIX}${node.headTick}`,
     note: graphNodeNote(node),
   };
@@ -129,7 +132,7 @@ function localOptimisticRow(model: WorkspaceModel): WorldlinePhaseRow | undefine
     name: LOCAL_NAME,
     basis: canonicalRef(model),
     head: NO_HEAD,
-    delta: LOCAL_DELTA,
+    span: LOCAL_SPAN,
     evidence: localOptimisticEvidence(model, latest),
     note: localOptimisticNote(phase),
   };
@@ -146,7 +149,7 @@ function visibleBraidRow(
     name: VISIBLE_BRAID_NAME,
     basis: `${MAIN_WORLDLINE_NAME}+${LOCAL_NAME}`,
     head: NO_HEAD,
-    delta: LOCAL_DELTA,
+    span: LOCAL_SPAN,
     evidence: canonicalRef(model),
     note: ACTIVE_NOTE,
   };
@@ -235,8 +238,17 @@ function canonicalRef(model: WorkspaceModel): string {
   return `${CANONICAL_PREFIX}${model.worldline.canonicalHeadTick}`;
 }
 
-function worldlineDeltaLabel(node: WorkspaceWorldlineGraphNode): string {
-  return `+${node.ahead}/-${node.behind}`;
+function worldlineSpanLabel(node: WorkspaceWorldlineGraphNode): string {
+  if (node.basisTick == null && node.headTick == null) {
+    return NO_EVIDENCE;
+  }
+  if (node.basisTick == null) {
+    return `${TICK_PREFIX}${node.headTick}`;
+  }
+  if (node.headTick == null || node.basisTick === node.headTick) {
+    return `${TICK_PREFIX}${node.basisTick}`;
+  }
+  return `${TICKS_PREFIX}${node.basisTick}${TICK_SPAN_SEPARATOR}${node.headTick}`;
 }
 
 function renderPhaseRow(row: WorldlinePhaseRow): string {
@@ -247,7 +259,7 @@ function renderPhaseRow(row: WorldlinePhaseRow): string {
     cell(row.name, NAME_CELL_WIDTH),
     cell(row.basis, BASIS_CELL_WIDTH),
     cell(row.head, HEAD_CELL_WIDTH),
-    cell(row.delta, DELTA_CELL_WIDTH),
+    cell(row.span, SPAN_CELL_WIDTH),
     cell(row.evidence, EVIDENCE_CELL_WIDTH),
     row.note,
   ].filter((part) => part.length > EMPTY_LENGTH).join(' ');
