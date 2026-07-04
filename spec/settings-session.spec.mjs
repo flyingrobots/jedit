@@ -40,6 +40,7 @@ test('jedit settings rows expose theme, footer, and markdown preview preferences
     }),
     jeditTheme: theme,
     footerVisible: true,
+    lineNumberMode: 'absolute',
     markdownPreviewActive: true,
     diagnosticsAvailable: true,
     viewMode: 'source',
@@ -48,11 +49,11 @@ test('jedit settings rows expose theme, footer, and markdown preview preferences
   assert.deepEqual(
     rows.map((row) => [row.label, row.valueLabel, row.kind, row.checked === true]),
     [
-      ['English', '', settings.JEDIT_SETTING_ROW_KIND.Option, false],
-      ['Français', '', settings.JEDIT_SETTING_ROW_KIND.Option, true],
+      ['Language', '< Français > 2/2', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
       ['Theme', theme.name, settings.JEDIT_SETTING_ROW_KIND.Choice, false],
       ['Light/dark', 'Dark', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
       ['Footer', 'On', settings.JEDIT_SETTING_ROW_KIND.Toggle, true],
+      ['Line numbers', 'Absolute', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
       ['Markdown preview', 'Source', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
       ['Diagnostics', 'Open', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
     ],
@@ -77,6 +78,7 @@ test('settings key reducer closes, moves, and activates focused settings rows', 
     i18n: createI18nMock(),
     jeditTheme: theme,
     footerVisible: true,
+    lineNumberMode: 'absolute',
     markdownPreviewActive: true,
     diagnosticsAvailable: true,
     viewMode: 'source',
@@ -94,11 +96,17 @@ test('settings key reducer closes, moves, and activates focused settings rows', 
     toggleFooter(model) {
       return [{ ...model, footerVisible: !model.footerVisible }, []];
     },
+    toggleLineNumberMode(model) {
+      return [{ ...model, lineNumberMode: 'relative' }, []];
+    },
     toggleMarkdownPreview(model) {
       return [{ ...model, viewMode: 'preview' }, []];
     },
     openDiagnostics(model) {
       return [{ ...model, diagnosticsOpened: true }, []];
+    },
+    cycleLocale(model, delta) {
+      return [{ ...model, localeDelta: delta }, []];
     },
     selectLocale(model, locale) {
       return [{ ...model, selectedLocale: locale.locale }, []];
@@ -108,7 +116,10 @@ test('settings key reducer closes, moves, and activates focused settings rows', 
   assert.equal(settings.toggleSettingsOpen(baseModel).settingsOpen, false);
 
   const [activatedLocale] = settings.updateJeditSettingsFromKey({ key: 'enter' }, baseModel, rows, handlers);
-  assert.equal(activatedLocale.selectedLocale, 'en');
+  assert.equal(activatedLocale.localeDelta, 1);
+
+  const [previousLocale] = settings.updateJeditSettingsFromKey({ key: 'left' }, baseModel, rows, handlers);
+  assert.equal(previousLocale.localeDelta, -1);
 
   const [closed] = settings.updateJeditSettingsFromKey({ key: 'escape' }, baseModel, rows, handlers);
   assert.equal(closed.settingsOpen, false);
@@ -127,7 +138,17 @@ test('settings key reducer closes, moves, and activates focused settings rows', 
   const [activatedMode] = settings.updateJeditSettingsFromKey({ key: 'enter' }, { ...baseModel, settingsFocusIndex: 2 }, rows, handlers);
   assert.equal(activatedMode.toggledThemeMode, true);
 
-  const [activated] = settings.updateJeditSettingsFromKey({ key: 'enter' }, { ...baseModel, settingsFocusIndex: 4 }, rows, handlers);
+  const lineNumbersIndex = rows.findIndex((row) => row.id === 'line-numbers');
+  const [lineNumbers] = settings.updateJeditSettingsFromKey(
+    { key: 'enter' },
+    { ...baseModel, settingsFocusIndex: lineNumbersIndex },
+    rows,
+    handlers,
+  );
+  assert.equal(lineNumbers.lineNumberMode, 'relative');
+
+  const markdownIndex = rows.findIndex((row) => row.id === 'markdown-preview');
+  const [activated] = settings.updateJeditSettingsFromKey({ key: 'enter' }, { ...baseModel, settingsFocusIndex: markdownIndex }, rows, handlers);
   assert.equal(activated.viewMode, 'preview');
 
   const diagnosticsIndex = rows.findIndex((row) => row.id === 'diagnostics');
@@ -148,6 +169,7 @@ test('jedit settings rows hide diagnostics when diagnostics are unavailable', as
     i18n: createI18nMock(),
     jeditTheme: theme,
     footerVisible: true,
+    lineNumberMode: 'absolute',
     markdownPreviewActive: true,
     diagnosticsAvailable: false,
     viewMode: 'source',

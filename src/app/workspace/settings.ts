@@ -1,5 +1,6 @@
 import {
   jeditSettingsRows,
+  type JeditSettingsActivationDelta,
   type JeditSettingsLocaleSelection,
   type JeditSettingsHandlers,
 } from '../settings-session.js';
@@ -11,6 +12,7 @@ import type { WorkspaceMsg } from './msg.js';
 import { nextJeditTheme, oppositeJeditTheme } from '../../ui/jedit-themes.js';
 import { ViewModes } from './view-mode.js';
 import type { GraftDiagnosticsPort } from '../../ports/graft-diagnostics.js';
+import { nextSourceLineNumberMode } from '../../ui/source-line-number-mode.js';
 
 export const WorkspaceLocales = Object.freeze({
   Default: 'en',
@@ -27,6 +29,7 @@ export function settingsRows(model: WorkspaceModel): ReturnType<typeof jeditSett
     i18n: model.i18n,
     jeditTheme: model.jeditTheme,
     footerVisible: model.footerVisible,
+    lineNumberMode: model.lineNumberMode,
     markdownPreviewActive: model.editor != null && isWorkspaceMarkdownFile(model.editor.path),
     diagnosticsAvailable: true,
     viewMode: model.viewMode,
@@ -53,8 +56,13 @@ export function workspaceSettingsHandlers(
       ...model,
       footerVisible: !model.footerVisible,
     }, []]),
+    toggleLineNumberMode: (model) => ([{
+      ...model,
+      lineNumberMode: nextSourceLineNumberMode(model.lineNumberMode),
+    }, []]),
     toggleMarkdownPreview: (model) => toggleWorkspaceMarkdownPreview(model),
     openDiagnostics: (model) => openWorkspaceDiagnostics(model, context),
+    cycleLocale: (model, delta) => cycleWorkspaceLocale(model, delta),
     selectLocale: (model, locale) => [applyWorkspaceLocale(model, locale), []],
   };
 }
@@ -64,6 +72,25 @@ function applyWorkspaceLocale(model: WorkspaceModel, locale: JeditSettingsLocale
     ...model,
     i18n: model.i18n.withLocale(locale.locale),
   };
+}
+
+function cycleWorkspaceLocale(
+  model: WorkspaceModel,
+  delta: JeditSettingsActivationDelta,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
+  const locales = model.i18n.locales;
+  if (locales.length === 0) {
+    return [model, []];
+  }
+  const index = locales.findIndex((locale) => locale.locale === model.i18n.locale);
+  const currentIndex = index < 0 ? 0 : index;
+  const nextIndex = positiveModulo(currentIndex + delta, locales.length);
+  const nextLocale = locales[nextIndex] ?? locales[currentIndex];
+  return nextLocale == null ? [model, []] : [applyWorkspaceLocale(model, nextLocale), []];
+}
+
+function positiveModulo(value: number, size: number): number {
+  return ((value % size) + size) % size;
 }
 
 function toggleWorkspaceMarkdownPreview(model: WorkspaceModel): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {

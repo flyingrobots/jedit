@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  hasNotification,
   importDist,
   mockI18n,
   mockRuntime,
@@ -73,6 +74,45 @@ test('workspace settings selects a locale through runtime tokens', async () => {
   assert.notEqual(selected.i18n, model.i18n);
   assert.equal(selected.i18n, replacementI18n);
   assert.deepEqual(localeChanges, [nextLocale.locale]);
+
+  localeChanges.length = 0;
+  const [cycled] = settings.workspaceSettingsHandlers().cycleLocale(model, 1);
+  assert.equal(cycled.i18n, replacementI18n);
+  assert.deepEqual(localeChanges, [nextLocale.locale]);
+});
+
+test('workspace settings posts a toast when a setting changes', async () => {
+  const [runtimeModule, settingsModule] = await Promise.all([
+    importDist('app', 'workspace', 'runtime.js'),
+    importDist('app', 'workspace', 'settings.js'),
+  ]);
+  const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime());
+  const localizedI18n = mockI18n({
+    translations: {
+      'settings.rows.line_numbers.label': 'Numéros de ligne',
+      'settings.values.line_numbers_absolute': 'Absolus',
+      'settings.values.line_numbers_relative': 'Relatifs',
+      'settings.toast.changed_title': 'Paramètres modifiés',
+    },
+  });
+  const [initialModel] = runtime.init();
+  const [settingsOpen] = runtime.update(
+    { type: 'key', key: 'f2' },
+    { ...initialModel, i18n: localizedI18n },
+  );
+  const lineNumbersIndex = settingsModule.settingsRows(settingsOpen)
+    .findIndex((row) => row.id === 'line-numbers');
+
+  const [changed] = runtime.update(
+    { type: 'key', key: 'enter' },
+    { ...settingsOpen, settingsFocusIndex: lineNumbersIndex },
+  );
+
+  assert.equal(changed.lineNumberMode, 'relative');
+  assert.equal(
+    hasNotification(changed, 'Paramètres modifiés', 'Numéros de ligne: Absolus -> Relatifs'),
+    true,
+  );
 });
 
 test('workspace settings opens and refreshes the Graft diagnostics panel', async () => {
@@ -134,7 +174,10 @@ test('workspace settings opens and refreshes the Graft diagnostics panel', async
 });
 
 test('workspace diagnostics failure report receives the failed request message', async () => {
-  const runtimeModule = await importDist('app', 'workspace', 'runtime.js');
+  const [runtimeModule, settingsModule] = await Promise.all([
+    importDist('app', 'workspace', 'runtime.js'),
+    importDist('app', 'workspace', 'settings.js'),
+  ]);
   const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime({
     graftDiagnostics: {
       loadDiagnostics: async () => {
@@ -148,9 +191,10 @@ test('workspace diagnostics failure report receives the failed request message',
     },
   }));
   const [initialModel] = runtime.init();
+  const diagnosticsIndex = settingsModule.settingsRows(initialModel).findIndex((row) => row.id === 'diagnostics');
   const [opened, commands] = runtime.update(
     { type: 'key', key: 'enter' },
-    { ...initialModel, settingsOpen: true, settingsFocusIndex: 4 },
+    { ...initialModel, settingsOpen: true, settingsFocusIndex: diagnosticsIndex },
   );
   const [loaded] = runtime.update(await commands[0](), opened);
 

@@ -10,7 +10,7 @@ import type { JeditSettingsRow } from '../app/settings-session.js';
 import { JEDIT_SETTING_ROW_KIND } from '../app/settings-session.js';
 import { JEDIT_SETTINGS_CLOSE_LABEL, JEDIT_SETTINGS_TOGGLE_LABEL } from '../app/keybindings.js';
 import { JEDIT_MARKDOWN_TOKEN, JEDIT_SOURCE_TOKEN, type JeditStyleToken, type JeditTheme } from './jedit-theme.js';
-import { fitLine } from './workspace-render.js';
+import { fitLine } from './fit-line.js';
 
 const SETTINGS_DRAWER_MIN_WIDTH = 28;
 const SETTINGS_DRAWER_MAX_WIDTH = 42;
@@ -110,7 +110,10 @@ function renderSettingsDrawerBody(options: RenderSettingsDrawerOptions): Surface
         layout.section,
         SETTINGS_LEFT_PAD,
         layout.sectionY,
-        options.theme.markdown.get(JEDIT_MARKDOWN_TOKEN.HeadingSoft) ?? options.theme.surface.drawer,
+        settingsDrawerTextToken(
+          options.theme,
+          options.theme.markdown.get(JEDIT_MARKDOWN_TOKEN.HeadingSoft) ?? options.theme.surface.drawer,
+        ),
       );
     }
     paintSettingsRow(surface, {
@@ -132,17 +135,36 @@ function paintSettingsRow(surface: Surface, options: PaintSettingsRowOptions): v
     return;
   }
   const label = fitLine(settingsRowLabel(options), Math.max(1, surface.width - options.x));
-  const labelToken = options.selected ? options.theme.cursor.normal : options.theme.surface.drawer;
+  const labelToken = options.selected
+    ? options.theme.cursor.normal
+    : options.theme.surface.drawer;
   paintText(surface, label, options.x, options.y, labelToken);
 
   if (options.y + 1 < surface.height) {
-    const descriptionToken = options.theme.source.get(JEDIT_SOURCE_TOKEN.Comment) ?? options.theme.surface.drawer;
+    const descriptionToken = settingsDrawerTextToken(
+      options.theme,
+      options.theme.source.get(JEDIT_SOURCE_TOKEN.Comment) ?? options.theme.surface.drawer,
+    );
     paintText(surface, `  ${options.row.description}`, options.x, options.y + 1, descriptionToken);
   }
 }
 
 function settingsHintToken(options: RenderSettingsDrawerOptions): JeditStyleToken {
-  return options.theme.source.get(JEDIT_SOURCE_TOKEN.Comment) ?? options.theme.surface.drawer;
+  return settingsDrawerTextToken(
+    options.theme,
+    options.theme.source.get(JEDIT_SOURCE_TOKEN.Comment) ?? options.theme.surface.drawer,
+  );
+}
+
+function settingsDrawerTextToken(
+  theme: JeditTheme,
+  foreground: JeditStyleToken,
+): JeditStyleToken {
+  return {
+    ...foreground,
+    bg: theme.surface.drawer.bg,
+    bgRGB: theme.surface.drawer.bgRGB,
+  };
 }
 
 function settingsRowLabel(options: PaintSettingsRowOptions): string {

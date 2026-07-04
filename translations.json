@@ -36,7 +36,8 @@
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
               "braid": "View, preview, or admit braid candidates",
-              "why": "Explain the last meaningful command"
+              "why": "Explain the last meaningful command",
+              "help": "Show command help"
             }
           },
           "hints": {
@@ -122,6 +123,10 @@
             "diagnostics": {
               "label": "Diagnostics",
               "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            },
+            "line_numbers": {
+              "label": "Line numbers",
+              "description": "Switch between absolute and cursor-relative editor line numbers."
             }
           },
           "values": {
@@ -129,16 +134,24 @@
             "off": "Off",
             "theme_mode_dark": "Dark",
             "theme_mode_light": "Light",
+            "line_numbers_absolute": "Absolute",
+            "line_numbers_relative": "Relative",
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
             "open": "Open"
+          },
+          "toast": {
+            "changed_title": "Settings changed"
           }
         },
         "worldline": {
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -178,7 +191,8 @@
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
               "braid": "View, preview, or admit braid candidates",
-              "why": "Explain the last meaningful command"
+              "why": "Explain the last meaningful command",
+              "help": "Show command help"
             }
           },
           "hints": {
@@ -264,6 +278,10 @@
             "diagnostics": {
               "label": "Diagnostics",
               "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            },
+            "line_numbers": {
+              "label": "Line numbers",
+              "description": "Switch between absolute and cursor-relative editor line numbers."
             }
           },
           "values": {
@@ -271,16 +289,24 @@
             "off": "Off",
             "theme_mode_dark": "Dark",
             "theme_mode_light": "Light",
+            "line_numbers_absolute": "Absolute",
+            "line_numbers_relative": "Relative",
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
             "open": "Open"
+          },
+          "toast": {
+            "changed_title": "Settings changed"
           }
         },
         "worldline": {
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -320,7 +346,8 @@
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
               "braid": "View, preview, or admit braid candidates",
-              "why": "Explain the last meaningful command"
+              "why": "Explain the last meaningful command",
+              "help": "Show command help"
             }
           },
           "hints": {
@@ -406,6 +433,10 @@
             "diagnostics": {
               "label": "Diagnostics",
               "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            },
+            "line_numbers": {
+              "label": "Line numbers",
+              "description": "Switch between absolute and cursor-relative editor line numbers."
             }
           },
           "values": {
@@ -413,16 +444,24 @@
             "off": "Off",
             "theme_mode_dark": "Dark",
             "theme_mode_light": "Light",
+            "line_numbers_absolute": "Absolute",
+            "line_numbers_relative": "Relative",
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
             "open": "Open"
+          },
+          "toast": {
+            "changed_title": "Settings changed"
           }
         },
         "worldline": {
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -462,7 +501,8 @@
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
               "braid": "View, preview, or admit braid candidates",
-              "why": "Explain the last meaningful command"
+              "why": "Explain the last meaningful command",
+              "help": "Show command help"
             }
           },
           "hints": {
@@ -548,6 +588,10 @@
             "diagnostics": {
               "label": "Diagnostics",
               "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            },
+            "line_numbers": {
+              "label": "Line numbers",
+              "description": "Switch between absolute and cursor-relative editor line numbers."
             }
           },
           "values": {
@@ -555,16 +599,24 @@
             "off": "Off",
             "theme_mode_dark": "Dark",
             "theme_mode_light": "Light",
+            "line_numbers_absolute": "Absolute",
+            "line_numbers_relative": "Relative",
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
             "open": "Open"
+          },
+          "toast": {
+            "changed_title": "Settings changed"
           }
         },
         "worldline": {
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -604,7 +656,8 @@
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
               "braid": "View, preview, or admit braid candidates",
-              "why": "Explain the last meaningful command"
+              "why": "Explain the last meaningful command",
+              "help": "Show command help"
             }
           },
           "hints": {
@@ -690,6 +743,10 @@
             "diagnostics": {
               "label": "Diagnostics",
               "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            },
+            "line_numbers": {
+              "label": "Line numbers",
+              "description": "Switch between absolute and cursor-relative editor line numbers."
             }
           },
           "values": {
@@ -697,16 +754,24 @@
             "off": "Off",
             "theme_mode_dark": "Dark",
             "theme_mode_light": "Light",
+            "line_numbers_absolute": "Absolute",
+            "line_numbers_relative": "Relative",
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
             "open": "Open"
+          },
+          "toast": {
+            "changed_title": "Settings changed"
           }
         },
         "worldline": {
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -746,7 +811,8 @@
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
               "braid": "View, preview, or admit braid candidates",
-              "why": "Explain the last meaningful command"
+              "why": "Explain the last meaningful command",
+              "help": "Show command help"
             }
           },
           "hints": {
@@ -832,6 +898,10 @@
             "diagnostics": {
               "label": "Diagnostics",
               "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            },
+            "line_numbers": {
+              "label": "Line numbers",
+              "description": "Switch between absolute and cursor-relative editor line numbers."
             }
           },
           "values": {
@@ -839,16 +909,24 @@
             "off": "Off",
             "theme_mode_dark": "Dark",
             "theme_mode_light": "Light",
+            "line_numbers_absolute": "Absolute",
+            "line_numbers_relative": "Relative",
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
             "open": "Open"
+          },
+          "toast": {
+            "changed_title": "Settings changed"
           }
         },
         "worldline": {
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -888,7 +966,8 @@
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
               "braid": "View, preview, or admit braid candidates",
-              "why": "Explain the last meaningful command"
+              "why": "Explain the last meaningful command",
+              "help": "Show command help"
             }
           },
           "hints": {
@@ -974,6 +1053,10 @@
             "diagnostics": {
               "label": "Diagnostics",
               "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            },
+            "line_numbers": {
+              "label": "Line numbers",
+              "description": "Switch between absolute and cursor-relative editor line numbers."
             }
           },
           "values": {
@@ -981,16 +1064,24 @@
             "off": "Off",
             "theme_mode_dark": "Dark",
             "theme_mode_light": "Light",
+            "line_numbers_absolute": "Absolute",
+            "line_numbers_relative": "Relative",
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
             "open": "Open"
+          },
+          "toast": {
+            "changed_title": "Settings changed"
           }
         },
         "worldline": {
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -1030,7 +1121,8 @@
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
               "braid": "View, preview, or admit braid candidates",
-              "why": "Explain the last meaningful command"
+              "why": "Explain the last meaningful command",
+              "help": "Show command help"
             }
           },
           "hints": {
@@ -1116,6 +1208,10 @@
             "diagnostics": {
               "label": "Diagnostics",
               "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            },
+            "line_numbers": {
+              "label": "Line numbers",
+              "description": "Switch between absolute and cursor-relative editor line numbers."
             }
           },
           "values": {
@@ -1123,16 +1219,24 @@
             "off": "Off",
             "theme_mode_dark": "Dark",
             "theme_mode_light": "Light",
+            "line_numbers_absolute": "Absolute",
+            "line_numbers_relative": "Relative",
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
             "open": "Open"
+          },
+          "toast": {
+            "changed_title": "Settings changed"
           }
         },
         "worldline": {
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -1172,7 +1276,8 @@
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
               "braid": "View, preview, or admit braid candidates",
-              "why": "Explain the last meaningful command"
+              "why": "Explain the last meaningful command",
+              "help": "Show command help"
             }
           },
           "hints": {
@@ -1258,6 +1363,10 @@
             "diagnostics": {
               "label": "Diagnostics",
               "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            },
+            "line_numbers": {
+              "label": "Line numbers",
+              "description": "Switch between absolute and cursor-relative editor line numbers."
             }
           },
           "values": {
@@ -1265,16 +1374,24 @@
             "off": "Off",
             "theme_mode_dark": "Dark",
             "theme_mode_light": "Light",
+            "line_numbers_absolute": "Absolute",
+            "line_numbers_relative": "Relative",
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
             "open": "Open"
+          },
+          "toast": {
+            "changed_title": "Settings changed"
           }
         },
         "worldline": {
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -1314,7 +1431,8 @@
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
               "braid": "View, preview, or admit braid candidates",
-              "why": "Explain the last meaningful command"
+              "why": "Explain the last meaningful command",
+              "help": "Show command help"
             }
           },
           "hints": {
@@ -1400,6 +1518,10 @@
             "diagnostics": {
               "label": "Diagnostics",
               "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            },
+            "line_numbers": {
+              "label": "Line numbers",
+              "description": "Switch between absolute and cursor-relative editor line numbers."
             }
           },
           "values": {
@@ -1407,16 +1529,24 @@
             "off": "Off",
             "theme_mode_dark": "Dark",
             "theme_mode_light": "Light",
+            "line_numbers_absolute": "Absolute",
+            "line_numbers_relative": "Relative",
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
             "open": "Open"
+          },
+          "toast": {
+            "changed_title": "Settings changed"
           }
         },
         "worldline": {
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -1456,7 +1586,8 @@
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
               "braid": "View, preview, or admit braid candidates",
-              "why": "Explain the last meaningful command"
+              "why": "Explain the last meaningful command",
+              "help": "Show command help"
             }
           },
           "hints": {
@@ -1542,6 +1673,10 @@
             "diagnostics": {
               "label": "Diagnostics",
               "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            },
+            "line_numbers": {
+              "label": "Line numbers",
+              "description": "Switch between absolute and cursor-relative editor line numbers."
             }
           },
           "values": {
@@ -1549,16 +1684,24 @@
             "off": "Off",
             "theme_mode_dark": "Dark",
             "theme_mode_light": "Light",
+            "line_numbers_absolute": "Absolute",
+            "line_numbers_relative": "Relative",
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
             "open": "Open"
+          },
+          "toast": {
+            "changed_title": "Settings changed"
           }
         },
         "worldline": {
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -1598,7 +1741,8 @@
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
               "braid": "View, preview, or admit braid candidates",
-              "why": "Explain the last meaningful command"
+              "why": "Explain the last meaningful command",
+              "help": "Show command help"
             }
           },
           "hints": {
@@ -1684,6 +1828,10 @@
             "diagnostics": {
               "label": "Diagnostics",
               "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            },
+            "line_numbers": {
+              "label": "Line numbers",
+              "description": "Switch between absolute and cursor-relative editor line numbers."
             }
           },
           "values": {
@@ -1691,16 +1839,24 @@
             "off": "Off",
             "theme_mode_dark": "Dark",
             "theme_mode_light": "Light",
+            "line_numbers_absolute": "Absolute",
+            "line_numbers_relative": "Relative",
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
             "open": "Open"
+          },
+          "toast": {
+            "changed_title": "Settings changed"
           }
         },
         "worldline": {
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -1740,7 +1896,8 @@
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
               "braid": "View, preview, or admit braid candidates",
-              "why": "Explain the last meaningful command"
+              "why": "Explain the last meaningful command",
+              "help": "Show command help"
             }
           },
           "hints": {
@@ -1826,6 +1983,10 @@
             "diagnostics": {
               "label": "Diagnostics",
               "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            },
+            "line_numbers": {
+              "label": "Line numbers",
+              "description": "Switch between absolute and cursor-relative editor line numbers."
             }
           },
           "values": {
@@ -1833,16 +1994,24 @@
             "off": "Off",
             "theme_mode_dark": "Dark",
             "theme_mode_light": "Light",
+            "line_numbers_absolute": "Absolute",
+            "line_numbers_relative": "Relative",
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
             "open": "Open"
+          },
+          "toast": {
+            "changed_title": "Settings changed"
           }
         },
         "worldline": {
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -1882,7 +2051,8 @@
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
               "braid": "View, preview, or admit braid candidates",
-              "why": "Explain the last meaningful command"
+              "why": "Explain the last meaningful command",
+              "help": "Show command help"
             }
           },
           "hints": {
@@ -1968,6 +2138,10 @@
             "diagnostics": {
               "label": "Diagnostics",
               "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            },
+            "line_numbers": {
+              "label": "Line numbers",
+              "description": "Switch between absolute and cursor-relative editor line numbers."
             }
           },
           "values": {
@@ -1975,16 +2149,24 @@
             "off": "Off",
             "theme_mode_dark": "Dark",
             "theme_mode_light": "Light",
+            "line_numbers_absolute": "Absolute",
+            "line_numbers_relative": "Relative",
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
             "open": "Open"
+          },
+          "toast": {
+            "changed_title": "Settings changed"
           }
         },
         "worldline": {
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -2024,7 +2206,8 @@
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
               "braid": "View, preview, or admit braid candidates",
-              "why": "Explain the last meaningful command"
+              "why": "Explain the last meaningful command",
+              "help": "Show command help"
             }
           },
           "hints": {
@@ -2110,6 +2293,10 @@
             "diagnostics": {
               "label": "Diagnostics",
               "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            },
+            "line_numbers": {
+              "label": "Line numbers",
+              "description": "Switch between absolute and cursor-relative editor line numbers."
             }
           },
           "values": {
@@ -2117,16 +2304,24 @@
             "off": "Off",
             "theme_mode_dark": "Dark",
             "theme_mode_light": "Light",
+            "line_numbers_absolute": "Absolute",
+            "line_numbers_relative": "Relative",
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
             "open": "Open"
+          },
+          "toast": {
+            "changed_title": "Settings changed"
           }
         },
         "worldline": {
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -2166,7 +2361,8 @@
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
               "braid": "View, preview, or admit braid candidates",
-              "why": "Explain the last meaningful command"
+              "why": "Explain the last meaningful command",
+              "help": "Show command help"
             }
           },
           "hints": {
@@ -2252,6 +2448,10 @@
             "diagnostics": {
               "label": "Diagnostics",
               "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            },
+            "line_numbers": {
+              "label": "Line numbers",
+              "description": "Switch between absolute and cursor-relative editor line numbers."
             }
           },
           "values": {
@@ -2259,16 +2459,24 @@
             "off": "Off",
             "theme_mode_dark": "Dark",
             "theme_mode_light": "Light",
+            "line_numbers_absolute": "Absolute",
+            "line_numbers_relative": "Relative",
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
             "open": "Open"
+          },
+          "toast": {
+            "changed_title": "Settings changed"
           }
         },
         "worldline": {
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -2308,7 +2516,8 @@
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
               "braid": "View, preview, or admit braid candidates",
-              "why": "Explain the last meaningful command"
+              "why": "Explain the last meaningful command",
+              "help": "Show command help"
             }
           },
           "hints": {
@@ -2394,6 +2603,10 @@
             "diagnostics": {
               "label": "Diagnostics",
               "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            },
+            "line_numbers": {
+              "label": "Line numbers",
+              "description": "Switch between absolute and cursor-relative editor line numbers."
             }
           },
           "values": {
@@ -2401,16 +2614,24 @@
             "off": "Off",
             "theme_mode_dark": "Dark",
             "theme_mode_light": "Light",
+            "line_numbers_absolute": "Absolute",
+            "line_numbers_relative": "Relative",
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
             "open": "Open"
+          },
+          "toast": {
+            "changed_title": "Settings changed"
           }
         },
         "worldline": {
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -2450,7 +2671,8 @@
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
               "braid": "View, preview, or admit braid candidates",
-              "why": "Explain the last meaningful command"
+              "why": "Explain the last meaningful command",
+              "help": "Show command help"
             }
           },
           "hints": {
@@ -2536,6 +2758,10 @@
             "diagnostics": {
               "label": "Diagnostics",
               "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            },
+            "line_numbers": {
+              "label": "Line numbers",
+              "description": "Switch between absolute and cursor-relative editor line numbers."
             }
           },
           "values": {
@@ -2543,16 +2769,24 @@
             "off": "Off",
             "theme_mode_dark": "Dark",
             "theme_mode_light": "Light",
+            "line_numbers_absolute": "Absolute",
+            "line_numbers_relative": "Relative",
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
             "open": "Open"
+          },
+          "toast": {
+            "changed_title": "Settings changed"
           }
         },
         "worldline": {
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -2592,7 +2826,8 @@
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
               "braid": "View, preview, or admit braid candidates",
-              "why": "Explain the last meaningful command"
+              "why": "Explain the last meaningful command",
+              "help": "Show command help"
             }
           },
           "hints": {
@@ -2678,6 +2913,10 @@
             "diagnostics": {
               "label": "Diagnostics",
               "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            },
+            "line_numbers": {
+              "label": "Line numbers",
+              "description": "Switch between absolute and cursor-relative editor line numbers."
             }
           },
           "values": {
@@ -2685,16 +2924,24 @@
             "off": "Off",
             "theme_mode_dark": "Dark",
             "theme_mode_light": "Light",
+            "line_numbers_absolute": "Absolute",
+            "line_numbers_relative": "Relative",
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
             "open": "Open"
+          },
+          "toast": {
+            "changed_title": "Settings changed"
           }
         },
         "worldline": {
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -2734,7 +2981,8 @@
               "ttd": "Observe a causal tick without moving canonical head",
               "strand": "Create, switch, or list copy-on-write strands",
               "braid": "View, preview, or admit braid candidates",
-              "why": "Explain the last meaningful command"
+              "why": "Explain the last meaningful command",
+              "help": "Show command help"
             }
           },
           "hints": {
@@ -2820,6 +3068,10 @@
             "diagnostics": {
               "label": "Diagnostics",
               "description": "Inspect Graft, parser, and Colorful runtime wiring."
+            },
+            "line_numbers": {
+              "label": "Line numbers",
+              "description": "Switch between absolute and cursor-relative editor line numbers."
             }
           },
           "values": {
@@ -2827,16 +3079,24 @@
             "off": "Off",
             "theme_mode_dark": "Dark",
             "theme_mode_light": "Light",
+            "line_numbers_absolute": "Absolute",
+            "line_numbers_relative": "Relative",
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
             "open": "Open"
+          },
+          "toast": {
+            "changed_title": "Settings changed"
           }
         },
         "worldline": {
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     }

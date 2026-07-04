@@ -3,7 +3,7 @@ import { invalidateWorkspaceCommandLine } from "./command-line.js";
 import {
   workspaceCommandDescriptors,
   type WorkspaceCommandDescriptor,
-} from "./command-completion.js";
+} from "./workspace-command-catalog.js";
 import type { WorkspaceModel } from "./model.js";
 import { WorkspaceCommandNames } from "./workspace-command-names.js";
 
@@ -102,5 +102,6 @@ function commandTokenAcceptsArgument(name: string): boolean {
     name === WorkspaceCommandNames.EditAlias ||
     name === WorkspaceCommandNames.TimeTravelDebugger ||
     name === WorkspaceCommandNames.Strand ||
-    name === WorkspaceCommandNames.Braid;
+    name === WorkspaceCommandNames.Braid ||
+    name === WorkspaceCommandNames.Help;
 }

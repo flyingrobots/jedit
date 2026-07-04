@@ -1,6 +1,6 @@
 import type { KeyMsg } from '@flyingrobots/bijou-tui';
 import type { I18nPort } from '../../ports/i18n.js';
-import { fitLine } from '../../ui/workspace-render.js';
+import { fitLine } from '../../ui/fit-line.js';
 import { clampIndex } from './viewport.js';
 import { isWorkspaceDownKey, isWorkspaceUpKey, WorkspaceKeys } from './workspace-key.js';
 

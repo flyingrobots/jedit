@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">Jim UI overview width profiles</title>
+  <desc id="desc">Diagram showing Jim UI screen families across wide, narrow, and xs terminal profiles.</desc>
+  <style>
+    :root {
+      --bg: #080d13;
+      --surface: #101820;
+      --surface-2: #17212b;
+      --line: #7d8da1;
+      --text: #d5dde8;
+      --muted: #8d98a8;
+      --accent: #dc8cff;
+      --cyan: #56d6d6;
+      --green: #68e09b;
+      --yellow: #f2c96b;
+      --red: #ee7f7a;
+    }
+    .canvas { fill: var(--bg); }
+    .label { fill: var(--accent); font: 700 21px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .small { fill: var(--muted); font: 14px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .tiny { fill: var(--muted); font: 11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .term { fill: var(--surface); stroke: var(--line); stroke-width: 2; rx: 10; }
+    .panel { fill: var(--surface-2); stroke: #344253; stroke-width: 1.5; rx: 6; }
+    .footer { fill: #141c25; }
+    .code { fill: var(--text); font: 13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .dim { fill: var(--muted); font: 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .accent { fill: var(--accent); }
+    .cyan { fill: var(--cyan); }
+    .green { fill: var(--green); }
+    .yellow { fill: var(--yellow); }
+    .red { fill: var(--red); }
+    .rule { stroke: #354354; stroke-width: 2; }
+    .thin { stroke: #59687a; stroke-width: 1.5; fill: none; }
+  </style>
+  <rect class="canvas" width="1200" height="760" />
+  <text class="label" x="40" y="44">Jim UI width profiles</text>
+  <text class="small" x="40" y="70">Every documented surface should have a wide, narrow, and xs posture.</text>
+
+  <text class="label" x="70" y="122">wide</text>
+  <rect class="term" x="70" y="140" width="1060" height="270" />
+  <rect class="footer" x="72" y="367" width="1056" height="40" />
+  <text class="accent" x="562" y="170" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18" font-weight="700">jedit</text>
+  <rect class="panel" x="98" y="188" width="220" height="158" />
+  <text class="code" x="116" y="214">files</text>
+  <text class="dim" x="116" y="238">src/</text>
+  <text class="dim" x="116" y="260">docs/</text>
+  <text class="green" x="116" y="282" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13">README.md</text>
+  <rect class="panel" x="340" y="188" width="450" height="158" />
+  <text class="code" x="360" y="214">editor viewport</text>
+  <text class="dim" x="360" y="240">1  export function renderWorkspace()</text>
+  <text class="dim" x="360" y="264">2  source, gutter, overlays</text>
+  <text class="dim" x="360" y="288">3  footer posture</text>
+  <rect class="panel" x="812" y="188" width="288" height="158" />
+  <text class="code" x="832" y="214">secondary panel</text>
+  <text class="dim" x="832" y="240">Graft / Echo / Settings</text>
+  <text class="dim" x="832" y="264">diagnostics can sit beside</text>
+  <text class="dim" x="832" y="288">the active drawer</text>
+  <text class="small" x="92" y="393">NORMAL 6:1 [i insert - : command - F2 settings]</text>
+  <text class="small" x="822" y="393">[dirty | main | fs:materialized]</text>
+
+  <text class="label" x="70" y="462">narrow</text>
+  <rect class="term" x="70" y="480" width="520" height="215" />
+  <rect class="footer" x="72" y="655" width="516" height="38" />
+  <text class="accent" x="296" y="508" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16" font-weight="700">jedit</text>
+  <rect class="panel" x="92" y="526" width="220" height="106" />
+  <text class="code" x="108" y="550">editor</text>
+  <text class="dim" x="108" y="574">1  buffer text</text>
+  <text class="dim" x="108" y="598">2  line:col shown</text>
+  <rect class="panel" x="328" y="526" width="238" height="106" />
+  <text class="code" x="344" y="550">drawer</text>
+  <text class="dim" x="344" y="574">preview hidden or</text>
+  <text class="dim" x="344" y="598">stacked below focus</text>
+  <text class="tiny" x="92" y="678">NORMAL 6:1 [: command - F2 settings]</text>
+
+  <text class="label" x="670" y="462">xs</text>
+  <rect class="term" x="670" y="480" width="260" height="215" />
+  <rect class="footer" x="672" y="655" width="256" height="38" />
+  <text class="accent" x="784" y="508" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16" font-weight="700">jim</text>
+  <rect class="panel" x="692" y="526" width="216" height="106" />
+  <text class="code" x="708" y="550">focused surface</text>
+  <text class="dim" x="708" y="574">one panel dominates</text>
+  <text class="dim" x="708" y="598">footer stays compact</text>
+  <text class="tiny" x="692" y="678">NORMAL 6:1</text>
+
+  <rect class="panel" x="965" y="498" width="165" height="174" />
+  <text class="code" x="986" y="526">rule</text>
+  <line class="rule" x1="986" y1="540" x2="1104" y2="540" />
+  <text class="tiny" x="986" y="566">same model</text>
+  <text class="tiny" x="986" y="588">less chrome</text>
+  <text class="tiny" x="986" y="610">no hidden state</text>
+  <text class="tiny" x="986" y="632">wrap or clip</text>
+</svg>

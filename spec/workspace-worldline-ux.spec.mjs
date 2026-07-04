@@ -162,7 +162,9 @@ test("workspace footer separates causal posture from filesystem materialization"
   const rendered = surfaceText(viewer.renderWorkspace(model));
   const footerContext = rendered.split("\n").at(-1);
 
-  assert.match(footerContext, /\/repo\/notes\.md \[dirty \| strand:draft \| fs:unmaterialized \| target:main/);
+  assert.equal(footerContext.startsWith("/repo/notes.md"), true);
+  assert.match(footerContext, /\[dirty \| strand:draft \| fs:unmaterialized \| target:main/);
+  assert.equal(footerContext.endsWith("+0/-0]"), true);
 });
 
 test("worldline drawer shows unconfirmed optimistic braid while Echo edit is in flight", async () => {

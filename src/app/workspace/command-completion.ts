@@ -1,20 +1,29 @@
 import {
   INLINE_COMPLETION_ITEM_KIND,
+  INLINE_COMPLETION_PREVIEW_KIND,
   type InlineCompletionItem,
+  type InlineCompletionPreview,
 } from "../../ui/inline-completion-popup.js";
-import { FileEntryKinds, type FileEntry } from "../../ports/file-system.js";
+import type { FileEntry } from "../../ports/file-system.js";
 import type { I18nPort } from "../../ports/i18n.js";
 import type { WorkspaceCommandLineState } from "./command-line.js";
+import { workspaceCompletionMatches } from "./workspace-completion-match.js";
+import {
+  workspaceCommandArgumentDescriptors,
+  workspaceCommandDescriptors,
+  workspaceCommandHelpLines,
+  workspaceCommandHelpTitle,
+  type WorkspaceCommandArgumentDescriptor,
+  type WorkspaceCommandDescriptor,
+} from "./workspace-command-catalog.js";
 import { WorkspaceCommandNames } from "./workspace-command-names.js";
-
-export interface WorkspaceCommandDescriptor {
-  readonly id: string;
-  readonly name: string;
-  readonly aliases: readonly string[];
-  readonly detail: string;
-  readonly detailKey: string;
-  readonly requiresOpenFile?: boolean;
-}
+import {
+  workspaceFileCompletionEntries,
+  workspaceFileCompletionItem,
+  workspaceFileCompletionItems,
+  type WorkspaceFileCompletionContext,
+} from "./workspace-file-completion.js";
+export type { WorkspaceCommandDescriptor } from "./workspace-command-catalog.js";
 
 export interface WorkspaceCommandCompletionAvailability {
   readonly hasOpenFile?: boolean;
@@ -51,7 +60,8 @@ interface CommandNameCompletionContext {
   readonly replacementEnd: number;
 }
 
-interface EditFileCompletionContext {
+interface CommandArgumentCompletionContext {
+  readonly command: string;
   readonly query: string;
   readonly replacementStart: number;
   readonly replacementEnd: number;
@@ -60,90 +70,10 @@ interface EditFileCompletionContext {
 type WorkspaceCommandCompletionI18n = Pick<I18nPort, "t">;
 
 export const VIM_COMMAND_PROVIDER_ID = "vim-command";
-export const WORKSPACE_FILE_PROVIDER_ID = "workspace-file";
+export const VIM_COMMAND_ARGUMENT_PROVIDER_ID = "vim-command-argument";
 const COMMAND_COMPLETION_EMPTY_QUERY = "";
 const COMMAND_COMPLETION_FIRST_INDEX = 0;
 const COMMAND_ARGUMENT_STEP = 1;
-const FILE_COMPLETION_FUZZY_MIN_QUERY_LENGTH = 2;
-const FILE_COMPLETION_PARENT_LABEL = "../";
-const FILE_COMPLETION_DIRECTORY_SUFFIX = "/";
-const FILE_COMPLETION_FILE_DETAIL = "File";
-const FILE_COMPLETION_DIRECTORY_DETAIL = "Directory";
-const FILE_COMPLETION_PARENT_DETAIL = "Parent directory";
-const COMMAND_DETAIL_KEYS = Object.freeze({
-  Edit: "footer.command.details.edit",
-  Write: "footer.command.details.write",
-  Quit: "footer.command.details.quit",
-  WriteQuit: "footer.command.details.wq",
-  TimeTravelDebugger: "footer.command.details.ttd",
-  Strand: "footer.command.details.strand",
-  Braid: "footer.command.details.braid",
-  Why: "footer.command.details.why",
-});
-const WORKSPACE_COMMAND_DESCRIPTORS = [
-  {
-    id: "command:edit",
-    name: WorkspaceCommandNames.Edit,
-    aliases: [WorkspaceCommandNames.EditAlias],
-    detail: "Open a file",
-    detailKey: COMMAND_DETAIL_KEYS.Edit,
-  },
-  {
-    id: "command:write",
-    name: WorkspaceCommandNames.Write,
-    aliases: [WorkspaceCommandNames.WriteAlias],
-    detail: "Write the current file",
-    detailKey: COMMAND_DETAIL_KEYS.Write,
-    requiresOpenFile: true,
-  },
-  {
-    id: "command:quit",
-    name: WorkspaceCommandNames.Quit,
-    aliases: [WorkspaceCommandNames.QuitAlias],
-    detail: "Quit jedit",
-    detailKey: COMMAND_DETAIL_KEYS.Quit,
-  },
-  {
-    id: "command:wq",
-    name: WorkspaceCommandNames.WriteQuit,
-    aliases: [WorkspaceCommandNames.WriteQuitAlias],
-    detail: "Write and quit",
-    detailKey: COMMAND_DETAIL_KEYS.WriteQuit,
-    requiresOpenFile: true,
-  },
-  {
-    id: "command:ttd",
-    name: WorkspaceCommandNames.TimeTravelDebugger,
-    aliases: [],
-    detail: "Observe a causal tick without moving canonical head",
-    detailKey: COMMAND_DETAIL_KEYS.TimeTravelDebugger,
-  },
-  {
-    id: "command:strand",
-    name: WorkspaceCommandNames.Strand,
-    aliases: [],
-    detail: "Create, switch, or list copy-on-write strands",
-    detailKey: COMMAND_DETAIL_KEYS.Strand,
-  },
-  {
-    id: "command:braid",
-    name: WorkspaceCommandNames.Braid,
-    aliases: [],
-    detail: "View, preview, or admit braid candidates",
-    detailKey: COMMAND_DETAIL_KEYS.Braid,
-  },
-  {
-    id: "command:why",
-    name: WorkspaceCommandNames.Why,
-    aliases: [],
-    detail: "Explain the last meaningful command",
-    detailKey: COMMAND_DETAIL_KEYS.Why,
-  },
-] satisfies readonly WorkspaceCommandDescriptor[];
-
-export function workspaceCommandDescriptors(): readonly WorkspaceCommandDescriptor[] {
-  return WORKSPACE_COMMAND_DESCRIPTORS;
-}
 
 export function workspaceCommandCompletionItems(
   commandLine: Pick<WorkspaceCommandLineState, "input" | "cursorIndex">,
@@ -155,7 +85,7 @@ export function workspaceCommandCompletionItems(
     return [];
   }
 
-  return WORKSPACE_COMMAND_DESCRIPTORS.filter((descriptor) =>
+  return workspaceCommandDescriptors().filter((descriptor) =>
     commandDescriptorAvailable(descriptor, availability) &&
       descriptorMatchesQuery(descriptor, context.query),
   ).map((descriptor) => commandCompletionItem(descriptor, context, i18n));
@@ -165,9 +95,14 @@ export function workspaceCommandLineCompletionItems(
   context: WorkspaceCommandLineCompletionContext,
 ): readonly InlineCompletionItem[] {
   const fileContext = editFileCompletionContext(context.commandLine);
-  return fileContext == null
+  if (fileContext != null) {
+    return workspaceFileCompletionItems(context.entries, fileContext);
+  }
+
+  const argumentContext = commandArgumentCompletionContext(context.commandLine);
+  return argumentContext == null
     ? workspaceCommandCompletionItems(context.commandLine, context.i18n, context)
-    : workspaceFileCompletionItems(context.entries, fileContext);
+    : workspaceCommandArgumentCompletionItems(argumentContext);
 }
 
 export function selectedWorkspaceCommandCompletionItem(
@@ -214,8 +149,29 @@ export function selectedWorkspaceCommandLineFileCompletion(
   return entry == null
     ? undefined
     : {
-        item: fileCompletionItem(entry, fileContext),
+        item: workspaceFileCompletionItem(entry, fileContext),
         entry,
+      };
+}
+
+export function workspaceCommandLineCompletionPreviewForItem(
+  item: InlineCompletionItem,
+): InlineCompletionPreview | undefined {
+  if (
+    item.providerId !== VIM_COMMAND_PROVIDER_ID &&
+    item.providerId !== VIM_COMMAND_ARGUMENT_PROVIDER_ID
+  ) {
+    return undefined;
+  }
+  const command = commandNameFromCompletionItem(item);
+  return command == null
+    ? undefined
+    : {
+        id: `preview:${item.id}`,
+        kind: INLINE_COMPLETION_PREVIEW_KIND.Documentation,
+        title: workspaceCommandHelpTitle(command),
+        lines: workspaceCommandHelpLines(command),
+        providerId: item.providerId,
       };
 }
 
@@ -243,6 +199,7 @@ function commandCompletionItem(
     detail: commandCompletionDetail(descriptor, i18n),
     kind: INLINE_COMPLETION_ITEM_KIND.Command,
     providerId: VIM_COMMAND_PROVIDER_ID,
+    previewCommandName: descriptor.name,
     replacement: {
       start: context.replacementStart,
       end: context.replacementEnd,
@@ -251,36 +208,45 @@ function commandCompletionItem(
   };
 }
 
-function workspaceFileCompletionItems(
-  entries: readonly FileEntry[],
-  context: EditFileCompletionContext,
+function workspaceCommandArgumentCompletionItems(
+  context: CommandArgumentCompletionContext,
 ): readonly InlineCompletionItem[] {
-  return workspaceFileCompletionEntries(entries, context)
-    .map((entry) => fileCompletionItem(entry, context));
+  return commandArgumentDescriptorsForContext(context)
+    .filter((descriptor) => commandArgumentDescriptorMatchesQuery(descriptor, context.query))
+    .map((descriptor) => commandArgumentCompletionItem(descriptor, context));
 }
 
-function workspaceFileCompletionEntries(
-  entries: readonly FileEntry[],
-  context: EditFileCompletionContext,
-): readonly FileEntry[] {
-  return entries.filter((entry) => fileEntryMatchesQuery(entry, context.query));
+function commandArgumentDescriptorsForContext(
+  context: CommandArgumentCompletionContext,
+): readonly WorkspaceCommandArgumentDescriptor[] {
+  return context.command === WorkspaceCommandNames.Help
+    ? workspaceCommandDescriptors().map((descriptor) => ({
+        id: `command-arg:help:${descriptor.name}`,
+        commandName: WorkspaceCommandNames.Help,
+        previewCommandName: descriptor.name,
+        label: descriptor.name,
+        detail: descriptor.detail,
+        replacementText: descriptor.name,
+        help: descriptor.help,
+      }))
+    : workspaceCommandArgumentDescriptors(context.command);
 }
 
-function fileCompletionItem(
-  entry: FileEntry,
-  context: EditFileCompletionContext,
+function commandArgumentCompletionItem(
+  descriptor: WorkspaceCommandArgumentDescriptor,
+  context: CommandArgumentCompletionContext,
 ): InlineCompletionItem {
   return {
-    id: `file:${entry.path}`,
-    label: fileCompletionLabel(entry),
-    detail: fileCompletionDetail(entry),
-    kind: fileCompletionKind(entry),
-    providerId: WORKSPACE_FILE_PROVIDER_ID,
-    previewRequestId: entry.path,
+    id: descriptor.id,
+    label: descriptor.label,
+    detail: descriptor.detail,
+    kind: INLINE_COMPLETION_ITEM_KIND.Documentation,
+    providerId: VIM_COMMAND_ARGUMENT_PROVIDER_ID,
+    previewCommandName: descriptor.previewCommandName ?? descriptor.commandName,
     replacement: {
       start: context.replacementStart,
       end: context.replacementEnd,
-      text: fileCompletionReplacement(entry),
+      text: descriptor.replacementText,
     },
   };
 }
@@ -314,7 +280,8 @@ function commandAcceptsCompletionArgument(name: string): boolean {
   return name === WorkspaceCommandNames.Edit ||
     name === WorkspaceCommandNames.TimeTravelDebugger ||
     name === WorkspaceCommandNames.Strand ||
-    name === WorkspaceCommandNames.Braid;
+    name === WorkspaceCommandNames.Braid ||
+    name === WorkspaceCommandNames.Help;
 }
 
 function commandDescriptorAvailable(
@@ -366,7 +333,7 @@ function commandNameCompletionContext(
 
 function editFileCompletionContext(
   commandLine: Pick<WorkspaceCommandLineState, "input" | "cursorIndex">,
-): EditFileCompletionContext | undefined {
+): WorkspaceFileCompletionContext | undefined {
   const input = commandLine.input;
   const cursorIndex = clampedCommandCursorIndex(commandLine);
   const commandStart = firstCommandNameIndex(input);
@@ -391,66 +358,58 @@ function editFileCompletionContext(
   };
 }
 
-function fileEntryMatchesQuery(entry: FileEntry, query: string): boolean {
-  const normalizedQuery = normalizeFileCompletionText(query);
-  return (
-    normalizedQuery.length === 0 ||
-    fuzzyFileCompletionMatch(
-      normalizeFileCompletionText(fileCompletionLabel(entry)),
-      normalizedQuery,
-    )
-  );
-}
+function commandArgumentCompletionContext(
+  commandLine: Pick<WorkspaceCommandLineState, "input" | "cursorIndex">,
+): CommandArgumentCompletionContext | undefined {
+  const input = commandLine.input;
+  const cursorIndex = clampedCommandCursorIndex(commandLine);
+  const commandStart = firstCommandNameIndex(input);
+  const commandEnd = commandNameEndIndex(input, commandStart);
+  const command = input.slice(commandStart, commandEnd).toLowerCase();
+  const replacementStart = commandArgumentStartIndex(input, commandEnd);
+  const replacementEnd = commandArgumentEndIndex(input, replacementStart);
 
-function fuzzyFileCompletionMatch(label: string, query: string): boolean {
-  if (query.length < FILE_COMPLETION_FUZZY_MIN_QUERY_LENGTH) {
-    return label.startsWith(query);
+  if (
+    !commandAcceptsCompletionArgument(command) ||
+    isEditCommand(command) ||
+    replacementStart <= commandEnd ||
+    cursorIndex < replacementStart ||
+    cursorIndex > replacementEnd
+  ) {
+    return undefined;
   }
 
-  let labelIndex = 0;
-  for (const character of query) {
-    const nextIndex = label.indexOf(character, labelIndex);
-    if (nextIndex < 0) {
-      return false;
-    }
-    labelIndex = nextIndex + COMMAND_ARGUMENT_STEP;
-  }
-  return true;
+  return {
+    command,
+    query: input.slice(replacementStart, cursorIndex).toLowerCase(),
+    replacementStart,
+    replacementEnd,
+  };
 }
 
-function fileCompletionLabel(entry: FileEntry): string {
-  if (entry.kind === FileEntryKinds.Parent) {
-    return FILE_COMPLETION_PARENT_LABEL;
-  }
-  if (entry.kind === FileEntryKinds.Directory) {
-    return `${entry.name}${FILE_COMPLETION_DIRECTORY_SUFFIX}`;
-  }
-  return entry.name;
-}
-
-function fileCompletionReplacement(entry: FileEntry): string {
-  return fileCompletionLabel(entry);
-}
-
-function fileCompletionDetail(entry: FileEntry): string {
-  if (entry.kind === FileEntryKinds.Parent) {
-    return FILE_COMPLETION_PARENT_DETAIL;
-  }
-  return entry.kind === FileEntryKinds.Directory
-    ? FILE_COMPLETION_DIRECTORY_DETAIL
-    : FILE_COMPLETION_FILE_DETAIL;
-}
-
-function fileCompletionKind(entry: FileEntry): InlineCompletionItem["kind"] {
-  return entry.kind === FileEntryKinds.File
-    ? INLINE_COMPLETION_ITEM_KIND.File
-    : INLINE_COMPLETION_ITEM_KIND.Directory;
+function commandArgumentDescriptorMatchesQuery(
+  descriptor: WorkspaceCommandArgumentDescriptor,
+  query: string,
+): boolean {
+  return workspaceCompletionMatches(descriptor.label, query);
 }
 
 function isEditCommand(command: string): boolean {
   const normalized = command.toLowerCase();
   return normalized === WorkspaceCommandNames.Edit ||
     normalized === WorkspaceCommandNames.EditAlias;
+}
+
+function commandNameFromCompletionItem(
+  item: InlineCompletionItem,
+): string | undefined {
+  if (item.providerId === VIM_COMMAND_PROVIDER_ID) {
+    return item.previewCommandName;
+  }
+  if (item.providerId !== VIM_COMMAND_ARGUMENT_PROVIDER_ID) {
+    return undefined;
+  }
+  return item.previewCommandName;
 }
 
 function commandArgumentStartIndex(input: string, commandEnd: number): number {
@@ -465,10 +424,6 @@ function commandArgumentEndIndex(input: string, argumentStart: number): number {
   const rest = input.slice(argumentStart);
   const whitespaceIndex = rest.search(/\s/);
   return whitespaceIndex < 0 ? input.length : argumentStart + whitespaceIndex;
-}
-
-function normalizeFileCompletionText(value: string): string {
-  return value.toLowerCase();
 }
 
 function clampedCommandCursorIndex(

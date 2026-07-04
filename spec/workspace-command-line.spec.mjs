@@ -4,6 +4,7 @@ import {
   fakeProductionTextSession,
   importDist,
   mockEditor,
+  mockI18n,
   mockKeyBindingContext,
   mockRuntime,
   mockTitleScreenModel,
@@ -536,7 +537,7 @@ test("enter dispatches edit for missing paths as unmaterialized buffers", async 
   assert.equal(opened.textAuthority.materialization, "unmaterialized");
   assert.equal(opened.editor.dirty, false);
   assert.deepEqual(opened.editor.lines, [""]);
-  assert.match(rendered, /foo\.txt \[clean \| main \| fs:unmaterialized/);
+  assert.match(rendered, /\/repo\/foo\.txt\s+\[clean \| main \| fs:unmaterialized/);
 });
 
 test("enter dispatches write and wq commands through production save", async () => {
@@ -847,12 +848,105 @@ test("enter dispatches why with a calm no-event obstruction", async () => {
   );
 
   assert.equal(nextModel.commandLine.active, false);
-  assert.equal(nextModel.notifications.items[0].title, "Why");
+  assert.equal(nextModel.inlinePanel.title, "Why");
   assert.match(
-    nextModel.notifications.items[0].message,
+    nextModel.inlinePanel.message,
     /No meaningful command recorded yet.*jedit_why_no_meaningful_event/,
   );
-  assert.equal(commands.length, 1);
+  assert.equal(nextModel.inlinePanel.anchorRow, 0);
+  assert.equal(nextModel.inlinePanel.anchorColumn, 0);
+  assert.equal(commands.length, 0);
+});
+
+test("enter dispatches help into an anchored inline panel", async () => {
+  const [keyBindings, viewer, titleScreen, editorMode] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("app", "workspace", "viewer.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+  ]);
+  const model = mockTitleScreenModel(titleScreen, {
+    columns: 96,
+    rows: 20,
+    editor: mockEditor(editorMode, {
+      lines: ["alpha beta"],
+      cursorRow: 0,
+      cursorCol: 6,
+    }),
+    focusPane: "editor",
+    footerVisible: true,
+    jeditTheme: commandLineRenderTheme(),
+    commandLine: activeCommandLine("help braid"),
+  });
+
+  const [nextModel, commands] = keyBindings.updateFromKey(
+    { type: "key", key: "enter", ctrl: false, alt: false, shift: false },
+    model,
+    mockKeyBindingContext(),
+  );
+  const rendered = surfaceText(viewer.renderWorkspace(nextModel));
+
+  assert.equal(nextModel.commandLine.active, false);
+  assert.equal(nextModel.inlinePanel.title, ":braid");
+  assert.match(nextModel.inlinePanel.message, /Usage: :braid/);
+  assert.match(rendered, /i :braid/);
+  assert.match(rendered, /Usage: :braid/);
+  assert.deepEqual(commands, []);
+
+  const [cleared] = keyBindings.updateFromKey(
+    { type: "key", key: "escape", ctrl: false, alt: false, shift: false },
+    nextModel,
+    mockKeyBindingContext(),
+  );
+  assert.equal(cleared.inlinePanel, undefined);
+});
+
+test("inline panels clear when the active buffer changes at the same cursor position", async () => {
+  const [inlinePanel, titleScreen, editorMode, authority] = await Promise.all([
+    importDist("app", "workspace", "workspace-inline-panel.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "workspace-text-authority.js"),
+  ]);
+  const model = mockTitleScreenModel(titleScreen, {
+    editor: mockEditor(editorMode, {
+      lines: ["alpha beta"],
+      cursorRow: 0,
+      cursorCol: 0,
+    }),
+    textAuthority: authority.openedWorkspaceTextAuthority({
+      profile: "echoHosted",
+      filePath: "/repo/a.md",
+      bufferId: "buffer:a",
+      readOnly: false,
+      dirty: false,
+    }),
+    inlinePanel: {
+      title: "Why",
+      message: "buffer-a explanation",
+      tone: inlinePanel.WORKSPACE_INLINE_PANEL_TONE.Info,
+      anchorRow: 0,
+      anchorColumn: 0,
+      bufferId: "buffer:a",
+    },
+  });
+  const nextModel = {
+    ...model,
+    textAuthority: authority.openedWorkspaceTextAuthority({
+      profile: "echoHosted",
+      filePath: "/repo/b.md",
+      bufferId: "buffer:b",
+      readOnly: false,
+      dirty: false,
+    }),
+  };
+
+  const cleared = inlinePanel.clearWorkspaceInlinePanelAfterKey(
+    { type: "key", key: "a", ctrl: false, alt: false, shift: false },
+    nextModel,
+  );
+
+  assert.equal(cleared.inlinePanel, undefined);
 });
 
 test("enter keeps non-no-event command why obstructions on the command path", async () => {
@@ -900,11 +994,11 @@ test("enter keeps non-no-event command why obstructions on the command path", as
   );
 
   assert.equal(nextModel.commandLine.active, false);
-  assert.equal(nextModel.notifications.items[0].title, "Why");
-  assert.match(nextModel.notifications.items[0].message, /jedit_command_event_invalid_syntax/);
-  assert.doesNotMatch(nextModel.notifications.items[0].message, /ropeDiff/);
+  assert.equal(nextModel.inlinePanel.title, "Why");
+  assert.match(nextModel.inlinePanel.message, /jedit_command_event_invalid_syntax/);
+  assert.doesNotMatch(nextModel.inlinePanel.message, /ropeDiff/);
   assert.deepEqual(explainRangeCalls, []);
-  assert.equal(commands.length, 1);
+  assert.equal(commands.length, 0);
 });
 
 test("enter dispatches why for the last meaningful Vim command", async () => {
@@ -940,7 +1034,7 @@ test("enter dispatches why for the last meaningful Vim command", async () => {
     }),
     mockKeyBindingContext(),
   );
-  const message = nextModel.notifications.items[0].message;
+  const message = nextModel.inlinePanel.message;
 
   assert.equal(nextModel.commandLine.active, false);
   assert.match(message, /command: dw/);
@@ -997,6 +1091,23 @@ test("enter dispatches why through retained range history when a cursor range is
   const message = await commands[0]();
   const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime({ productionTextSession }));
   const [notified] = runtime.update(message, pendingWhy);
+  const [stale] = runtime.update(message, {
+    ...pendingWhy,
+    editor: {
+      ...pendingWhy.editor,
+      cursorCol: 8,
+    },
+  });
+  const [staleBuffer] = runtime.update(message, {
+    ...pendingWhy,
+    textAuthority: authority.openedWorkspaceTextAuthority({
+      profile: "echoHosted",
+      filePath: "/repo/other.md",
+      bufferId: "text-buffer:1",
+      readOnly: false,
+      dirty: true,
+    }),
+  });
 
   assert.equal(pendingWhy.commandLine.active, false);
   assert.equal(commands.length, 1);
@@ -1006,8 +1117,14 @@ test("enter dispatches why through retained range history when a cursor range is
     atMs: 90,
   }]);
   assert.equal(message.type, "why-range-result");
-  assert.match(notified.notifications.items[0].message, /ropeDiff receipt:range/);
-  assert.doesNotMatch(notified.notifications.items[0].message, /No meaningful command/);
+  assert.deepEqual(message.anchor, { row: 0, column: 7 });
+  assert.equal(message.outcome.kind, "range");
+  assert.equal(Object.hasOwn(message, "report"), false);
+  assert.equal(Object.hasOwn(message, "obstruction"), false);
+  assert.match(notified.inlinePanel.message, /ropeDiff receipt:range/);
+  assert.doesNotMatch(notified.inlinePanel.message, /No meaningful command/);
+  assert.equal(stale.inlinePanel, undefined);
+  assert.equal(staleBuffer.inlinePanel, undefined);
 });
 
 test("enter dispatches why with typed unavailable range evidence", async () => {
@@ -1053,9 +1170,9 @@ test("enter dispatches why with typed unavailable range evidence", async () => {
 
   assert.equal(pendingWhy.commandLine.active, false);
   assert.equal(message.type, "why-range-result");
-  assert.equal(notified.notifications.items[0].title, "Why range");
-  assert.match(notified.notifications.items[0].message, /jedit_why_range_retained_history_horizon/);
-  assert.doesNotMatch(notified.notifications.items[0].message, /No meaningful command/);
+  assert.equal(notified.inlinePanel.title, "Why range");
+  assert.match(notified.inlinePanel.message, /jedit_why_range_retained_history_horizon/);
+  assert.doesNotMatch(notified.inlinePanel.message, /No meaningful command/);
 });
 
 test("enter dispatches why with typed range obstruction evidence", async () => {
@@ -1088,6 +1205,11 @@ test("enter dispatches why with typed range obstruction evidence", async () => {
       lastVimEdit: undefined,
     }),
     focusPane: "editor",
+    i18n: mockI18n({
+      translations: {
+        "why.range_obstructed_title": "Range why blocked",
+      },
+    }),
     textAuthority: authority.openedWorkspaceTextAuthority({
       profile: "echoHosted",
       filePath: "/repo/notes.md",
@@ -1109,10 +1231,10 @@ test("enter dispatches why with typed range obstruction evidence", async () => {
 
   assert.equal(pendingWhy.commandLine.active, false);
   assert.equal(message.type, "why-range-result");
-  assert.equal(notified.notifications.items[0].title, "Why range obstructed");
-  assert.match(notified.notifications.items[0].message, /text-buffer-why-range-obstructed/);
-  assert.match(notified.notifications.items[0].message, /range explanation failed/);
-  assert.doesNotMatch(notified.notifications.items[0].message, /No meaningful command/);
+  assert.equal(notified.inlinePanel.title, "Range why blocked");
+  assert.match(notified.inlinePanel.message, /text-buffer-why-range-obstructed/);
+  assert.match(notified.inlinePanel.message, /range explanation failed/);
+  assert.doesNotMatch(notified.inlinePanel.message, /No meaningful command/);
 });
 
 test("command provenance validates slice 1 Vim edit targets", async () => {

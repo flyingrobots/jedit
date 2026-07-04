@@ -282,7 +282,7 @@ function updateWorkspaceEffectMessage(
   model: WorkspaceModel,
 ): WorkspaceRuntimeResult | undefined {
   if (msg.type === WorkspaceMessageTypes.WhyRangeResult) {
-    return applyWorkspaceWhyRangeResult(deps, msg, model);
+    return applyWorkspaceWhyRangeResult(msg, model);
   }
   if (msg.type === WorkspaceMessageTypes.NotificationTick) {
     return tickNotificationState(

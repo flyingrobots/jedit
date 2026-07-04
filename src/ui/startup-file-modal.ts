@@ -17,7 +17,8 @@ import {
   type JeditStyleToken,
   type JeditTheme,
 } from "./jedit-theme.js";
-import { fitLine, formatTreeLine } from "./workspace-render.js";
+import { fitLine } from "./fit-line.js";
+import { formatTreeLine } from "./workspace-render.js";
 
 export interface StartupFileModalRenderRow {
   readonly entry: FileEntry;

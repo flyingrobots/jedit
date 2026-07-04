@@ -4,6 +4,7 @@ import {
   activeWorkspaceTitle,
   centerLine,
   renderWorkspaceFooter,
+  type WorkspaceFooterCursorPosition,
 } from '../../ui/workspace-chrome.js';
 import { paintActivePaneEdge } from '../../ui/workspace-focus-edge.js';
 import { DrawerKinds, resolveWorkspaceLayout } from '../../ui/drawer-layout.js';
@@ -35,6 +36,7 @@ const COMMAND_LINE_WARNING_VARIABLE = 'warning';
 const COMMAND_LINE_ERROR_FALLBACK_BACKGROUND = '#6f1d1b';
 const COMMAND_LINE_ERROR_FALLBACK_FOREGROUND = '#ffeef0';
 const COMMAND_LINE_ERROR_FALLBACK_BACKGROUND_RGB: readonly [number, number, number] = [111, 29, 27];
+const CURSOR_POSITION_DISPLAY_OFFSET = 1;
 
 export { updateViewerFromKey } from './viewer-key.js';
 
@@ -143,6 +145,7 @@ function paintWorkspaceFooter(screen: Surface, model: WorkspaceModel): void {
         viewMode: model.viewMode,
         markdownPreviewActive: isWorkspaceMarkdownPreviewAvailable(model),
         editorMode: model.editor?.mode,
+        editorCursorPosition: workspaceFooterCursorPosition(model),
         pendingNormal: model.editor?.pendingNormal,
         settingsOpen: model.settingsOpen,
         cwd: model.cwd,
@@ -161,6 +164,18 @@ function paintWorkspaceFooter(screen: Surface, model: WorkspaceModel): void {
       model.rows - FOOTER_ROWS,
     );
   }
+}
+
+function workspaceFooterCursorPosition(
+  model: WorkspaceModel,
+): WorkspaceFooterCursorPosition | undefined {
+  const editor = model.editor;
+  return editor == null
+    ? undefined
+    : {
+      line: editor.cursorRow + CURSOR_POSITION_DISPLAY_OFFSET,
+      col: editor.cursorCol + CURSOR_POSITION_DISPLAY_OFFSET,
+    };
 }
 
 function selectedGraftSelection(model: WorkspaceModel): { kind: string; name: string; startLine: number } | undefined {

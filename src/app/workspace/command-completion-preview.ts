@@ -12,9 +12,11 @@ import {
 import { FileEntryKinds, type FileEntry } from "../../ports/file-system.js";
 import {
   selectedWorkspaceCommandLineFileCompletion,
-  WORKSPACE_FILE_PROVIDER_ID,
+  selectedWorkspaceCommandLineCompletionItem,
+  workspaceCommandLineCompletionPreviewForItem,
   type WorkspaceSelectedCommandLineCompletionContext,
 } from "./command-completion.js";
+import { WORKSPACE_FILE_PROVIDER_ID } from "./workspace-file-completion.js";
 
 export const WORKSPACE_FILE_PREVIEW_RESULT_KIND = Object.freeze({
   Loaded: "loaded",
@@ -99,7 +101,7 @@ export function workspaceCommandLineCompletionPreview(
 ): InlineCompletionPreview | undefined {
   const completion = selectedWorkspaceCommandLineFileCompletion(context);
   if (completion == null) {
-    return undefined;
+    return workspaceCommandLineCompletionPreviewForSelectedItem(context);
   }
 
   const { item, entry } = completion;
@@ -120,6 +122,15 @@ export function workspaceCommandLineCompletionPreview(
   }
 
   return loadedFileCompletionPreview(item, result, context.maxPreviewLines);
+}
+
+function workspaceCommandLineCompletionPreviewForSelectedItem(
+  context: WorkspaceCommandLineCompletionPreviewContext,
+): InlineCompletionPreview | undefined {
+  const selected = selectedWorkspaceCommandLineCompletionItem(context);
+  return selected == null
+    ? undefined
+    : workspaceCommandLineCompletionPreviewForItem(selected);
 }
 
 export function selectedWorkspaceCommandLineFilePreviewSelection(

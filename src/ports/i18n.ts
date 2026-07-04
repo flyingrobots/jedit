@@ -1,4 +1,9 @@
-export type I18nDirection = 'ltr' | 'rtl';
+export const I18N_TEXT_DIRECTION = Object.freeze({
+  Ltr: 'ltr',
+  Rtl: 'rtl',
+} as const);
+
+export type I18nDirection = (typeof I18N_TEXT_DIRECTION)[keyof typeof I18N_TEXT_DIRECTION];
 
 export interface I18nLocaleOption {
   readonly locale: string;

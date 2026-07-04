@@ -30,7 +30,7 @@ test("workspace command completion provider matches Vim command names and aliase
 
   assert.deepEqual(
     empty.map((item) => item.label),
-    ["edit", "write", "quit", "wq", "ttd", "strand", "braid", "why"],
+    ["edit", "write", "quit", "wq", "ttd", "strand", "braid", "why", "help"],
   );
   assert.deepEqual(
     writeQuery.map((item) => item.label),
@@ -73,7 +73,7 @@ test("workspace command completion provider hides file commands with no open fil
 
   assert.deepEqual(
     titleScreenItems.map((item) => item.label),
-    ["edit", "quit", "ttd", "strand", "braid", "why"],
+    ["edit", "quit", "ttd", "strand", "braid", "why", "help"],
   );
   assert.deepEqual(
     writeQuery.map((item) => item.label),
@@ -123,6 +123,94 @@ test("workspace command completion provider leaves argument text to later provid
   });
 
   assert.deepEqual(items, []);
+});
+
+test("workspace command line completion provider suggests worldline command arguments", async () => {
+  const completion = await importDist("app", "workspace", "command-completion.js");
+
+  const strandItems = completion.workspaceCommandLineCompletionItems({
+    commandLine: {
+      input: "strand ",
+      cursorIndex: 7,
+      selectedCompletionIndex: 0,
+    },
+    entries: [],
+  });
+  const braidItems = completion.workspaceCommandLineCompletionItems({
+    commandLine: {
+      input: "braid pr",
+      cursorIndex: 8,
+      selectedCompletionIndex: 0,
+    },
+    entries: [],
+  });
+
+  assert.deepEqual(
+    strandItems.map((item) => [item.label, item.detail]),
+    [
+      ["list", "Show worldline graph"],
+      ["new from here", "Fork from current basis"],
+      ["switch main", "Switch back to main"],
+    ],
+  );
+  assert.deepEqual(strandItems[1].replacement, {
+    start: 7,
+    end: 7,
+    text: "new from here",
+  });
+  assert.deepEqual(
+    braidItems.map((item) => item.label),
+    ["preview"],
+  );
+});
+
+test("workspace command line completion preview documents commands and arguments", async () => {
+  const [completion, preview] = await Promise.all([
+    importDist("app", "workspace", "command-completion.js"),
+    importDist("app", "workspace", "command-completion-preview.js"),
+  ]);
+
+  const commandPreview = preview.workspaceCommandLineCompletionPreview({
+    commandLine: {
+      input: "tt",
+      cursorIndex: 2,
+      selectedCompletionIndex: 0,
+    },
+    entries: [],
+  });
+  const argumentPreview = preview.workspaceCommandLineCompletionPreview({
+    commandLine: {
+      input: "strand n",
+      cursorIndex: 8,
+      selectedCompletionIndex: 0,
+    },
+    entries: [],
+  });
+
+  assert.equal(commandPreview.kind, "documentation");
+  assert.equal(commandPreview.title, ":ttd");
+  assert.match(commandPreview.lines[0], /Usage: :ttd/);
+  assert.equal(argumentPreview.kind, "documentation");
+  assert.equal(argumentPreview.title, ":strand");
+  assert.match(argumentPreview.lines.join("\n"), /new from here/);
+  const helpItem = completion.workspaceCommandLineCompletionItems({
+    commandLine: {
+      input: "help ",
+      cursorIndex: 5,
+      selectedCompletionIndex: 0,
+    },
+    entries: [],
+  })[0];
+
+  assert.equal(helpItem.label, "edit");
+  assert.equal(helpItem.previewCommandName, "edit");
+});
+
+test("workspace command help reports unknown commands consistently", async () => {
+  const catalog = await importDist("app", "workspace", "workspace-command-catalog.js");
+
+  assert.equal(catalog.workspaceCommandHelpTitle("nope"), "Command help");
+  assert.deepEqual(catalog.workspaceCommandHelpLines("nope"), ["Unknown command: nope"]);
 });
 
 test("workspace command line completion provider filters :edit files and directories", async () => {
@@ -393,6 +481,102 @@ test("command-line mode accepts edit file completions", async () => {
   assert.equal(commands.length, 1);
 });
 
+test("command-line mode enters edit completion directories with enter", async () => {
+  const [keyBindings, titleScreen, editorMode, fileSystem] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("ports", "file-system.js"),
+  ]);
+  const entriesByPath = new Map([
+    [
+      "/repo",
+      [
+        parentEntry(fileSystem, "/"),
+        directoryEntry(fileSystem, "src", "/repo/src"),
+        fileEntry(fileSystem, "README.md", "/repo/README.md"),
+      ],
+    ],
+    [
+      "/repo/src",
+      [
+        parentEntry(fileSystem, "/repo"),
+        directoryEntry(fileSystem, "deep", "/repo/src/deep"),
+        fileEntry(fileSystem, "index.ts", "/repo/src/index.ts"),
+      ],
+    ],
+    [
+      "/repo/src/deep",
+      [
+        parentEntry(fileSystem, "/repo/src"),
+        fileEntry(fileSystem, "leaf.ts", "/repo/src/deep/leaf.ts"),
+      ],
+    ],
+  ]);
+  const context = mockKeyBindingContext({
+    deps: {
+      fileSystem: {
+        loadEntries: (cwd) => entriesByPath.get(cwd) ?? [],
+        describeDirectoryIssue: () => ({
+          title: "directory issue",
+          message: "directory issue",
+        }),
+        dirname: (cwd) => cwd.split("/").slice(0, -1).join("/") || "/",
+        join: (...parts) => parts.join("/"),
+        resolve: (...parts) => parts.join("/"),
+      },
+    },
+  });
+  const model = mockTitleScreenModel(titleScreen, {
+    editor: mockEditor(editorMode),
+    focusPane: "editor",
+    cwd: "/repo",
+    entries: entriesByPath.get("/repo"),
+    commandLine: {
+      active: true,
+      input: "edit ",
+      cursorIndex: 5,
+      selectedCompletionIndex: 1,
+    },
+  });
+
+  const [srcModel, srcCommands] = keyBindings.updateFromKey(
+    { type: "key", key: "enter", ctrl: false, alt: false, shift: false },
+    model,
+    context,
+  );
+  const [srcDirectorySelected] = keyBindings.updateFromKey(
+    { type: "key", key: "down", ctrl: false, alt: false, shift: false },
+    srcModel,
+    context,
+  );
+  const [deepModel, deepCommands] = keyBindings.updateFromKey(
+    { type: "key", key: "enter", ctrl: false, alt: false, shift: false },
+    srcDirectorySelected,
+    context,
+  );
+
+  assert.equal(srcModel.cwd, "/repo/src");
+  assert.equal(srcModel.commandLine.active, true);
+  assert.equal(srcModel.commandLine.input, "edit ");
+  assert.equal(srcModel.commandLine.cursorIndex, 5);
+  assert.deepEqual(srcModel.entries.map((entry) => entry.name), [
+    "..",
+    "deep",
+    "index.ts",
+  ]);
+  assert.deepEqual(srcCommands, []);
+  assert.equal(srcDirectorySelected.commandLine.selectedCompletionIndex, 1);
+  assert.equal(deepModel.cwd, "/repo/src/deep");
+  assert.equal(deepModel.commandLine.active, true);
+  assert.equal(deepModel.commandLine.input, "edit ");
+  assert.deepEqual(deepModel.entries.map((entry) => entry.name), [
+    "..",
+    "leaf.ts",
+  ]);
+  assert.deepEqual(deepCommands, []);
+});
+
 test("workspace render paints command completions above the Vim command line", async () => {
   const [viewer, titleScreen, editorMode] = await Promise.all([
     importDist("app", "workspace", "viewer.js"),
@@ -444,9 +628,9 @@ test("workspace render omits write completions on the title screen", async () =>
   assert.match(completionText, /› edit\s+cmd\s+Open a file/);
   assert.match(completionText, /quit\s+cmd\s+Quit jedit/);
   assert.match(completionText, /ttd\s+cmd\s+Observe a causal tick/);
-  assert.match(completionText, /strand\s+cmd\s+Create, switch, or list/);
+  assert.match(completionText, /strand\s+cmd\s+Create, switch, or lis/);
   assert.match(completionText, /braid\s+cmd\s+View, preview, or admit/);
-  assert.match(completionText, /why\s+cmd\s+Explain the last meaningful command/);
+  assert.match(completionText, /why\s+cmd\s+Explain the last meaningf/);
   assert.doesNotMatch(completionText, /write\s+cmd\s+Write the current file/);
   assert.doesNotMatch(completionText, /wq\s+cmd\s+Write and quit/);
 });
@@ -474,9 +658,13 @@ test("workspace render pins command completions to the original command anchor",
   });
 
   const surface = viewer.renderWorkspace(model);
+  const completionRow = surfaceText(surface)
+    .split("\n")
+    .find((line) => line.includes("› edit"));
 
-  assert.equal(surface.get(1, 15).char, "›");
-  assert.notEqual(surface.get(4, 15).char, "›");
+  assert.ok(completionRow);
+  assert.equal(completionRow.indexOf("›"), 1);
+  assert.notEqual(completionRow.indexOf("›"), 4);
 });
 
 test("workspace render paints edit file completions above the Vim command line", async () => {
@@ -657,6 +845,30 @@ function editEntries(fileSystem) {
       path: "/repo/package.json",
     },
   ];
+}
+
+function parentEntry(fileSystem, path) {
+  return {
+    kind: fileSystem.FileEntryKinds.Parent,
+    name: "..",
+    path,
+  };
+}
+
+function directoryEntry(fileSystem, name, path) {
+  return {
+    kind: fileSystem.FileEntryKinds.Directory,
+    name,
+    path,
+  };
+}
+
+function fileEntry(fileSystem, name, path) {
+  return {
+    kind: fileSystem.FileEntryKinds.File,
+    name,
+    path,
+  };
 }
 
 function workspaceRenderTheme() {

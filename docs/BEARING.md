@@ -115,8 +115,8 @@ Immediate order:
    register, macro, buffer, diagnostics, and trace surfaces.
 3. Close the `:why` evidence gap in this order: local observation coordinate
    model, typed evidence obstructions, text-window evidence fields, Echo
-   ReadingEnvelope identity, range-at-head rope history, then golden command
-   witnesses.
+   ReadingEnvelope identity, Supported Outcome Settlement outcome vocabulary,
+   range-at-head rope history, then golden command witnesses.
 4. Use existing proven Vim operations first: `dw`, `ciw`, `dd`, and `gUap`.
    Keep `n`/`N` and `:%s` for later slices once search entry and proposal
    preview are product-complete.
@@ -168,6 +168,7 @@ edits, agent witnesses, structural objects, or user trust.
 | Roadmap policy | [`docs/method/roadmap-planning.md`](method/roadmap-planning.md) |
 | Echo release gate | [`docs/design/0024-jedit-powered-by-echo-release-gate.md`](design/0024-jedit-powered-by-echo-release-gate.md) |
 | Echo hosting pattern | [`docs/design/0025-echo-application-hosting-pattern.md`](design/0025-echo-application-hosting-pattern.md) |
+| Supported Outcome Settlement and `:why` | [`docs/design/supported-outcome-settlement-and-why.md`](design/supported-outcome-settlement-and-why.md) |
 | Production cutover | [`docs/design/0027-echo-hosted-production-cutover.md`](design/0027-echo-hosted-production-cutover.md) |
 | Identity doctrine | [`docs/design/echo-identity-doctrine.md`](design/echo-identity-doctrine.md) |
 | Reading cache boundary | [`docs/design/0032-jedit-echo-reading-cache-and-fallback-boundaries.md`](design/0032-jedit-echo-reading-cache-and-fallback-boundaries.md) |

@@ -1,7 +1,7 @@
 import { createSurface, stringToSurface, type Surface } from '@flyingrobots/bijou';
 import { JEDIT_SCENE_PICKER_TOGGLE_LABEL } from '../app/keybindings.js';
 import { JEDIT_MARKDOWN_TOKEN, type JeditStyleToken, type JeditTheme } from './jedit-theme.js';
-import { fitLine } from './workspace-render.js';
+import { fitLine } from './fit-line.js';
 
 const SCENE_PICKER_DRAWER_MIN_WIDTH = 28;
 const SCENE_PICKER_DRAWER_MAX_WIDTH = 42;

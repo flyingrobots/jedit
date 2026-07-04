@@ -10,6 +10,7 @@ import type { TitleCameraMotionMsg } from "../title-camera-session.js";
 import type { JeditWhyRangeReport } from "../../ports/jedit-why-range.js";
 import type { JeditWhyReport } from "./command-provenance.js";
 import type { ProductionTextObstruction } from "./production-text-session.js";
+import type { WorkspaceInlinePanelAnchor } from "./workspace-inline-panel.js";
 import type {
   WorkspaceCommandLineFilePreviewSelection,
   WorkspaceFilePreviewResult,
@@ -42,6 +43,9 @@ const WORKSPACE_MESSAGE_TEXT_READ_RESULT = "text-read-result";
 const WORKSPACE_MESSAGE_WHY_RANGE_RESULT = "why-range-result";
 const WORKSPACE_MESSAGE_COMMAND_LINE_FILE_PREVIEW_RESULT =
   "command-line-file-preview-result";
+const WORKSPACE_WHY_RANGE_OUTCOME_RANGE = "range";
+const WORKSPACE_WHY_RANGE_OUTCOME_OBSTRUCTED = "obstructed";
+const WORKSPACE_WHY_RANGE_OUTCOME_FALLBACK = "fallback";
 const WORKSPACE_INPUT_MESSAGE_RESIZE = "resize";
 const WORKSPACE_INPUT_MESSAGE_KEY = "key";
 const WORKSPACE_INPUT_MESSAGE_MOUSE = "mouse";
@@ -72,6 +76,25 @@ export const WorkspaceInputMessageTypes = Object.freeze({
   Key: WORKSPACE_INPUT_MESSAGE_KEY,
   Mouse: WORKSPACE_INPUT_MESSAGE_MOUSE,
 });
+
+export const WorkspaceWhyRangeOutcomeKinds = Object.freeze({
+  Range: WORKSPACE_WHY_RANGE_OUTCOME_RANGE,
+  Obstructed: WORKSPACE_WHY_RANGE_OUTCOME_OBSTRUCTED,
+  Fallback: WORKSPACE_WHY_RANGE_OUTCOME_FALLBACK,
+});
+
+export type WorkspaceWhyRangeOutcome =
+  | {
+      readonly kind: typeof WorkspaceWhyRangeOutcomeKinds.Range;
+      readonly report: JeditWhyRangeReport;
+    }
+  | {
+      readonly kind: typeof WorkspaceWhyRangeOutcomeKinds.Obstructed;
+      readonly obstruction: ProductionTextObstruction;
+    }
+  | {
+      readonly kind: typeof WorkspaceWhyRangeOutcomeKinds.Fallback;
+    };
 
 export type WorkspaceMsg =
   | {
@@ -133,9 +156,10 @@ export type WorkspaceMsg =
     }
   | {
       type: typeof WorkspaceMessageTypes.WhyRangeResult;
-      report?: JeditWhyRangeReport;
-      obstruction?: ProductionTextObstruction;
+      bufferId: string;
+      outcome: WorkspaceWhyRangeOutcome;
       fallbackReport: JeditWhyReport;
+      anchor: WorkspaceInlinePanelAnchor;
       atMs: number;
     }
   | {

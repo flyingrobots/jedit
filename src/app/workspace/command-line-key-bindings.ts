@@ -3,6 +3,7 @@ import {
   INLINE_COMPLETION_ITEM_KIND,
   type InlineCompletionItem,
 } from "../../ui/inline-completion-popup.js";
+import { FileEntryKinds } from "../../ports/file-system.js";
 import {
   appendWorkspaceCommandLineInput,
   backspaceWorkspaceCommandLineInput,
@@ -16,6 +17,7 @@ import {
 } from "./command-line.js";
 import { dispatchWorkspaceCommandLine } from "./command-line-dispatch.js";
 import {
+  selectedWorkspaceCommandLineFileCompletion,
   selectedWorkspaceCommandLineCompletionItem,
   workspaceCommandLineCompletionItems,
 } from "./command-completion.js";
@@ -33,6 +35,7 @@ import {
   workspaceCommandLineFilePreviewMessage,
   type WorkspaceMsg,
 } from "./msg.js";
+import { openWorkspaceFileEntry } from "./file-tree.js";
 import { WorkspaceKeys } from "./workspace-key.js";
 import { workspaceHasOpenFile } from "./workspace-model-query.js";
 
@@ -73,7 +76,7 @@ function updateActiveCommandLineKey(
     ? updateCommandLineCloseKey(msg, model)
       ?? updateCommandLineBackspaceKey(msg, model)
       ?? updateCommandLineCursorKey(msg, model)
-      ?? updateCommandLineCompletionKey(msg, model)
+      ?? updateCommandLineCompletionKey(msg, model, context)
       ?? updateCommandLineDispatchKey(msg, model, context)
       ?? updateCommandLineTextKey(msg, model)
     : undefined;
@@ -120,6 +123,7 @@ function updateCommandLineCursorKey(
 function updateCommandLineCompletionKey(
   msg: KeyMsg,
   model: WorkspaceModel,
+  context: WorkspaceKeyBindingContext,
 ): KeyBindingResult | undefined {
   const completions = workspaceCommandLineCompletionItems({
     commandLine: model.commandLine,
@@ -153,7 +157,7 @@ function updateCommandLineCompletionKey(
   }
 
   if (isCommandLineCompletionCommitKey(msg)) {
-    return acceptChangingCommandLineCompletion(model);
+    return commitCommandLineCompletion(model, context);
   }
 
   return undefined;
@@ -170,6 +174,51 @@ function acceptCommandLineCompletion(
   return selected == null
     ? [model, []]
     : [replaceWorkspaceCommandLineInput(model, selected.replacement), []];
+}
+
+function commitCommandLineCompletion(
+  model: WorkspaceModel,
+  context: WorkspaceKeyBindingContext,
+): KeyBindingResult | undefined {
+  return openSelectedEditDirectoryCompletion(model, context)
+    ?? acceptChangingCommandLineCompletion(model);
+}
+
+function openSelectedEditDirectoryCompletion(
+  model: WorkspaceModel,
+  context: WorkspaceKeyBindingContext,
+): KeyBindingResult | undefined {
+  const selected = selectedWorkspaceCommandLineFileCompletion({
+    commandLine: model.commandLine,
+    entries: model.entries,
+    hasOpenFile: workspaceHasOpenFile(model),
+  });
+  if (
+    selected == null ||
+    (
+      selected.entry.kind !== FileEntryKinds.Directory &&
+      selected.entry.kind !== FileEntryKinds.Parent
+    )
+  ) {
+    return undefined;
+  }
+
+  return openWorkspaceFileEntry(
+    clearEditCommandLineArgument(model, selected.item),
+    selected.entry,
+    context.nowMs,
+    context.deps,
+  );
+}
+
+function clearEditCommandLineArgument(
+  model: WorkspaceModel,
+  selected: InlineCompletionItem,
+): WorkspaceModel {
+  return replaceWorkspaceCommandLineInput(model, {
+    ...selected.replacement,
+    text: "",
+  });
 }
 
 function acceptChangingCommandLineCompletion(

@@ -11,6 +11,10 @@ import {
   JEDIT_WHY_NO_EVENT_OBSTRUCTION_CODE,
 } from "./command-provenance.js";
 import {
+  workspaceCommandHelpLines,
+  workspaceCommandHelpTitle,
+} from "./workspace-command-catalog.js";
+import {
   closeWorkspaceCommandLine,
   invalidateWorkspaceCommandLine,
 } from "./command-line.js";
@@ -27,7 +31,11 @@ import { WorkspaceTextAuthorityKinds } from "./workspace-text-authority.js";
 import { dispatchWorldlineCommand } from "./worldline-command-dispatch.js";
 import {
   createWorkspaceWhyRangeCmd,
+  jeditWhyReportTone,
   jeditWhyRangeAtCursor,
+  modelWithWorkspaceInlinePanel,
+  WORKSPACE_INLINE_PANEL_TONE,
+  workspaceInlinePanelAnchorFromEditor,
 } from "./workspace-why-range.js";
 
 type KeyBindingResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
@@ -58,10 +66,30 @@ export function dispatchWorkspaceCommandLine(
   if (worldlineCommand != null) {
     return worldlineCommand;
   }
+  if (isHelpCommand(command.name)) {
+    return dispatchHelpCommand(model, command.argument, context);
+  }
   if (!hasNoArgument(command)) {
     return [invalidateWorkspaceCommandLine(model), []];
   }
   return dispatchNoArgumentCommand(model, command, context);
+}
+
+function dispatchHelpCommand(
+  model: WorkspaceModel,
+  argument: string,
+  context: WorkspaceKeyBindingContext,
+): KeyBindingResult {
+  const commandName = argument.length === 0 ? undefined : argument;
+  const closed = closeWorkspaceCommandLine(model);
+  const report = {
+    title: workspaceCommandHelpTitle(commandName),
+    message: workspaceCommandHelpLines(commandName).join("\n"),
+    tone: WORKSPACE_INLINE_PANEL_TONE.Info,
+  };
+  return closed.editor == null
+    ? pushHelpReportToast(closed, report, context)
+    : [modelWithWorkspaceInlinePanel(closed, report), []];
 }
 
 function dispatchNoArgumentCommand(
@@ -165,6 +193,7 @@ function dispatchWhyCommand(
     report.kind === WHY_REPORT_OBSTRUCTION_KIND &&
     report.code === JEDIT_WHY_NO_EVENT_OBSTRUCTION_CODE &&
     range != null &&
+    model.editor != null &&
     model.textAuthority.kind === WorkspaceTextAuthorityKinds.Opened
   ) {
     return [
@@ -174,11 +203,19 @@ function dispatchWhyCommand(
         range,
         productionTextSession: context.deps.productionTextSession,
         fallbackReport: report,
+        anchor: workspaceInlinePanelAnchorFromEditor(model.editor),
         atMs: context.nowMs(),
       })],
     ];
   }
-  return pushWhyReportToast(closeWorkspaceCommandLine(model), report, context);
+  const closed = closeWorkspaceCommandLine(model);
+  return closed.editor == null
+    ? pushWhyReportToast(closed, report, context)
+    : [modelWithWorkspaceInlinePanel(closed, {
+        title: report.title,
+        message: report.message,
+        tone: jeditWhyReportTone(report),
+      }), []];
 }
 
 function pushWhyReportToast(
@@ -196,6 +233,28 @@ function pushWhyReportToast(
       message: report.message,
       variant: NotificationVariants.Toast,
       tone,
+      placement: NotificationPlacements.LowerRight,
+    },
+    context.nowMs(),
+    context.createNotificationTickCmd,
+  );
+}
+
+function pushHelpReportToast(
+  model: WorkspaceModel,
+  report: {
+    readonly title: string;
+    readonly message: string;
+  },
+  context: WorkspaceKeyBindingContext,
+): KeyBindingResult {
+  return pushNotificationToast(
+    closeWorkspaceCommandLine(model),
+    {
+      title: report.title,
+      message: report.message,
+      variant: NotificationVariants.Toast,
+      tone: NotificationTones.Info,
       placement: NotificationPlacements.LowerRight,
     },
     context.nowMs(),
@@ -305,4 +364,8 @@ function isWriteQuitCommand(name: string): boolean {
 
 function isWhyCommand(name: string): boolean {
   return name === WorkspaceCommandNames.Why;
+}
+
+function isHelpCommand(name: string): boolean {
+  return name === WorkspaceCommandNames.Help;
 }

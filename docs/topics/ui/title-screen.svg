@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">Title screen width profiles</title>
+  <desc id="desc">Diagram showing Jim title screen behavior across wide, narrow, and xs terminal profiles.</desc>
+  <style>
+    :root { --bg:#080d13; --surface:#101820; --panel:#17212b; --line:#7d8da1; --text:#d5dde8; --muted:#8d98a8; --accent:#dc8cff; --cyan:#56d6d6; --green:#68e09b; --yellow:#f2c96b; --red:#ee7f7a; }
+    .canvas{fill:var(--bg)} .term{fill:var(--surface);stroke:var(--line);stroke-width:2;rx:10} .panel{fill:var(--panel);stroke:#344253;stroke-width:1.5;rx:6}
+    .footer{fill:#141c25}.label{fill:var(--accent);font:700 21px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.small{fill:var(--muted);font:14px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.tiny{fill:var(--muted);font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.code{fill:var(--text);font:13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.accent{fill:var(--accent)}.cyan{fill:var(--cyan)}.green{fill:var(--green)}.yellow{fill:var(--yellow)}.red{fill:var(--red)}.ray{stroke:#cc8cff;stroke-width:1.4;opacity:.55}.grid{stroke:#354354;stroke-width:1}
+  </style>
+  <rect class="canvas" width="1200" height="760"/>
+  <text class="label" x="40" y="44">Title screen</text>
+  <text class="small" x="40" y="70">The first surface is live: scene, title chrome, file opening, and command entry.</text>
+
+  <text class="label" x="70" y="122">wide</text>
+  <rect class="term" x="70" y="140" width="1060" height="270"/>
+  <rect class="footer" x="72" y="367" width="1056" height="40"/>
+  <text class="accent" x="576" y="168" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="18" font-weight="700">jedit</text>
+  <rect class="panel" x="96" y="180" width="228" height="154"/>
+  <text class="code" x="116" y="206">debug overlay</text>
+  <text class="small" x="116" y="232">FPS 56</text>
+  <text class="small" x="116" y="254">frame 18 ms</text>
+  <text class="small" x="116" y="276">scene continuum</text>
+  <line class="grid" x1="360" y1="320" x2="1085" y2="320"/>
+  <line class="grid" x1="360" y1="296" x2="1085" y2="296"/>
+  <line class="grid" x1="360" y1="272" x2="1085" y2="272"/>
+  <circle cx="716" cy="258" r="72" fill="#0b1118" stroke="#8ad9ff" stroke-width="2"/>
+  <circle cx="716" cy="258" r="46" fill="#121b24" stroke="#cc8cff" stroke-width="1.5"/>
+  <ellipse cx="560" cy="282" rx="40" ry="52" fill="#1b2430" stroke="#8ad9ff" stroke-width="1.5"/>
+  <ellipse cx="870" cy="282" rx="40" ry="52" fill="#1b2430" stroke="#8ad9ff" stroke-width="1.5"/>
+  <path class="ray" d="M716 258 C650 210 610 230 560 282"/>
+  <path class="ray" d="M716 258 C780 210 826 230 870 282"/>
+  <text class="tiny" x="680" y="260">mirror sphere</text>
+  <text class="tiny" x="528" y="350">flanking reflected mirrors</text>
+  <text class="small" x="94" y="393">BROWSE [ctrl+b files - : command - F2 settings - ctrl+t theme]</text>
+
+  <text class="label" x="70" y="462">narrow</text>
+  <rect class="term" x="70" y="480" width="520" height="215"/>
+  <rect class="footer" x="72" y="655" width="516" height="38"/>
+  <text class="accent" x="303" y="508" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="16" font-weight="700">jedit</text>
+  <circle cx="330" cy="580" r="48" fill="#0b1118" stroke="#8ad9ff" stroke-width="2"/>
+  <ellipse cx="220" cy="592" rx="26" ry="36" fill="#1b2430" stroke="#8ad9ff" stroke-width="1.4"/>
+  <ellipse cx="440" cy="592" rx="26" ry="36" fill="#1b2430" stroke="#8ad9ff" stroke-width="1.4"/>
+  <text class="tiny" x="96" y="536">scene fills width; perf overlay optional</text>
+  <text class="tiny" x="96" y="678">BROWSE [: command - ctrl+b files - F2]</text>
+
+  <text class="label" x="670" y="462">xs</text>
+  <rect class="term" x="670" y="480" width="260" height="215"/>
+  <rect class="footer" x="672" y="655" width="256" height="38"/>
+  <text class="accent" x="784" y="508" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="16" font-weight="700">jim</text>
+  <circle cx="800" cy="584" r="44" fill="#0b1118" stroke="#8ad9ff" stroke-width="2"/>
+  <text class="tiny" x="706" y="536">single scene focus</text>
+  <text class="tiny" x="704" y="678">BROWSE [: - F2]</text>
+  <rect class="panel" x="965" y="498" width="165" height="174"/>
+  <text class="code" x="986" y="526">contract</text>
+  <text class="tiny" x="986" y="554">same :edit path</text>
+  <text class="tiny" x="986" y="576">same file open</text>
+  <text class="tiny" x="986" y="598">theme tokens</text>
+  <text class="tiny" x="986" y="620">debug optional</text>
+</svg>

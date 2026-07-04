@@ -12,7 +12,7 @@ import type {
   InlineCompletionPopupGeometry,
 } from "./inline-completion-popup-geometry.js";
 import type { JeditStyleToken, JeditTheme } from "./jedit-theme.js";
-import { fitLine } from "./workspace-render.js";
+import { fitLine } from "./fit-line.js";
 
 export {
   INLINE_COMPLETION_POPUP_PLACEMENT,
@@ -62,6 +62,7 @@ export interface InlineCompletionItem {
   readonly kind: InlineCompletionItemKind;
   readonly providerId: string;
   readonly replacement: InlineCompletionReplacement;
+  readonly previewCommandName?: string;
   readonly previewRequestId?: string;
 }
 

@@ -2,15 +2,23 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
+import { visibleLength } from '@flyingrobots/bijou-tui';
 import { createI18nMock } from './i18n-mock.mjs';
 import { REPO_ROOT, ensureDistBuilt } from './dist-helpers.mjs';
 
 const MODULE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'workspace-chrome.js');
+const POSTURE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'workspace-footer-posture-line.js');
 
 async function loadFooterModule() {
   await ensureDistBuilt();
 
   return import(pathToFileURL(MODULE_PATH).href);
+}
+
+async function loadFooterPostureModule() {
+  await ensureDistBuilt();
+
+  return import(pathToFileURL(POSTURE_MODULE_PATH).href);
 }
 
 function idleNormalState() {
@@ -55,6 +63,24 @@ test('workspace footer can surface the last command provenance summary', async (
     }),
     [
       'NORMAL [last: dw delete motion 0..6 receipt receipt:dw · i insert · o open line · f3 preview · ctrl+t theme]',
+      '/repo/notes/todo.md',
+    ],
+  );
+});
+
+test('workspace footer shows editor cursor position when available', async () => {
+  const footer = await loadFooterModule();
+
+  assert.deepEqual(
+    footer.workspaceFooterLines({
+      ...idleNormalState(),
+      editorCursorPosition: {
+        line: 6,
+        col: 1,
+      },
+    }),
+    [
+      'NORMAL 6:1 [i insert · o open line · f3 preview · ctrl+t theme]',
       '/repo/notes/todo.md',
     ],
   );
@@ -131,6 +157,31 @@ test('workspace footer renders command-line hints on the painted secondary row',
   }, 44, {});
 
   assert.equal(rowText(surface, 1).trim(), '[tab accept · enter run · esc cancel]');
+});
+
+test('workspace footer pins editor posture to the lower-right corner when it fits', async () => {
+  const footer = await loadFooterModule();
+  const posture = 'clean | main | fs:materialized | target:main | +0/-0';
+  const surface = footer.renderWorkspaceFooter({
+    ...idleNormalState(),
+    textPosture: posture,
+  }, 96, {});
+  const secondary = rowText(surface, 1);
+
+  assert.equal(secondary.startsWith('/repo/notes/todo.md'), true);
+  assert.equal(secondary.endsWith(`[${posture}]`), true);
+  assert.equal(secondary.includes(`/repo/notes/todo.md [${posture}]`), false);
+});
+
+test('workspace footer posture fit uses terminal display width for wide glyphs', async () => {
+  const footerPosture = await loadFooterPostureModule();
+  const editorPath = '/repo/界.md';
+  const textPosture = 'dirty | main';
+  const requiredWidth = visibleLength(`${editorPath} [${textPosture}]`);
+
+  assert.equal(requiredWidth, 26);
+  assert.equal(footerPosture.editorFooterPostureFits(editorPath, textPosture, requiredWidth - 1), false);
+  assert.equal(footerPosture.editorFooterPostureFits(editorPath, textPosture, requiredWidth), true);
 });
 
 test('workspace footer shows pending change-operator continuations', async () => {
@@ -234,6 +285,10 @@ test('workspace footer shows settings drawer controls while settings are open', 
     footer.workspaceFooterLines({
       ...idleNormalState(),
       settingsOpen: true,
+      editorCursorPosition: {
+        line: 9,
+        col: 1,
+      },
     }),
     [
       'SETTINGS [j/k move · enter change · f2 close · esc close]',

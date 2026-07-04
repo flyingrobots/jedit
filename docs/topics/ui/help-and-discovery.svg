@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">Help and discovery width profiles</title>
+  <desc id="desc">Diagram showing footer hints, help panel, command details, and why explanations across terminal widths.</desc>
+  <style>
+    :root{--bg:#080d13;--surface:#101820;--panel:#17212b;--line:#7d8da1;--text:#d5dde8;--muted:#8d98a8;--accent:#dc8cff;--cyan:#56d6d6;--green:#68e09b;--yellow:#f2c96b}
+    .canvas{fill:var(--bg)}.term{fill:var(--surface);stroke:var(--line);stroke-width:2;rx:10}.panel{fill:var(--panel);stroke:#344253;stroke-width:1.5;rx:6}.footer{fill:#141c25}.help{fill:#0b1016;stroke:#7d8da1;stroke-width:1.5;rx:6}.label{fill:var(--accent);font:700 21px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.small{fill:var(--muted);font:14px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.tiny{fill:var(--muted);font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.code{fill:var(--text);font:13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.accent{fill:var(--accent)}.green{fill:var(--green)}.yellow{fill:var(--yellow)}
+  </style>
+  <rect class="canvas" width="1200" height="760"/>
+  <text class="label" x="40" y="44">Help and discovery</text>
+  <text class="small" x="40" y="70">Jim teaches at the active surface: footer hints, inline command help, :help, and :why.</text>
+
+  <text class="label" x="70" y="122">wide</text>
+  <rect class="term" x="70" y="140" width="1060" height="270"/>
+  <rect class="footer" x="72" y="367" width="1056" height="40"/>
+  <text class="accent" x="548" y="168" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="18" font-weight="700">README.md</text>
+  <rect class="help" x="116" y="188" width="330" height="158"/>
+  <text class="code" x="138" y="214">Help</text>
+  <text class="tiny" x="138" y="240">commands</text><text class="tiny" x="138" y="262">settings</text><text class="tiny" x="138" y="284">causal concepts</text><text class="tiny" x="138" y="306">key bindings</text>
+  <rect class="panel" x="488" y="214" width="330" height="78"/>
+  <text class="yellow" x="508" y="238" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13">:why explanation</text>
+  <text class="tiny" x="508" y="262">stays visible until cursor moves</text>
+  <rect class="panel" x="846" y="214" width="220" height="78"/>
+  <text class="code" x="866" y="238">command detail</text>
+  <text class="tiny" x="866" y="262">strand list | new</text>
+  <text class="small" x="94" y="393">NORMAL [i insert - : command - F2 settings]</text>
+
+  <text class="label" x="70" y="462">narrow</text>
+  <rect class="term" x="70" y="480" width="520" height="215"/>
+  <rect class="footer" x="72" y="655" width="516" height="38"/>
+  <rect class="help" x="92" y="514" width="250" height="120"/>
+  <text class="code" x="112" y="540">:help</text>
+  <text class="tiny" x="112" y="564">command list plus</text>
+  <text class="tiny" x="112" y="586">focused topic preview</text>
+  <rect class="panel" x="358" y="514" width="204" height="120"/>
+  <text class="tiny" x="374" y="540">footer remains</text>
+  <text class="tiny" x="374" y="562">short, not a manual</text>
+  <text class="tiny" x="92" y="678">HELP [j/k - enter - esc]</text>
+
+  <text class="label" x="670" y="462">xs</text>
+  <rect class="term" x="670" y="480" width="260" height="215"/>
+  <rect class="footer" x="672" y="655" width="256" height="38"/>
+  <rect class="help" x="692" y="514" width="216" height="120"/>
+  <text class="code" x="712" y="540">Help topic</text>
+  <text class="tiny" x="712" y="564">one readable page</text>
+  <text class="tiny" x="712" y="586">compact hints below</text>
+  <text class="tiny" x="692" y="678">HELP [esc]</text>
+  <rect class="panel" x="965" y="498" width="165" height="174"/>
+  <text class="code" x="986" y="526">rules</text>
+  <text class="tiny" x="986" y="554">help near action</text>
+  <text class="tiny" x="986" y="576">argument shapes</text>
+  <text class="tiny" x="986" y="598">no guessing</text>
+  <text class="tiny" x="986" y="620">durable why</text>
+</svg>

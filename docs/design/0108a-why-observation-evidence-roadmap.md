@@ -174,6 +174,9 @@ stable JSON witness. The contract should include:
 - receipt or retained evidence refs when available;
 - future-proof posture fields that do not claim proof strength before evidence
   exists.
+- Supported Outcome Settlement outcome vocabulary: completion, repairable
+  obstruction, authority block, underdetermined support, dispute, and invalid
+  proposal must remain distinct in JSON and human text.
 
 Echo supplies generic reading, receipt, obstruction, and replay evidence. Jim
 projects that evidence into editor language. Continuum names portable protocol
