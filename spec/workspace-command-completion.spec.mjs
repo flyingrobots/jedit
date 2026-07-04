@@ -474,6 +474,102 @@ test("command-line mode accepts edit file completions", async () => {
   assert.equal(commands.length, 1);
 });
 
+test("command-line mode enters edit completion directories with enter", async () => {
+  const [keyBindings, titleScreen, editorMode, fileSystem] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("ports", "file-system.js"),
+  ]);
+  const entriesByPath = new Map([
+    [
+      "/repo",
+      [
+        parentEntry(fileSystem, "/"),
+        directoryEntry(fileSystem, "src", "/repo/src"),
+        fileEntry(fileSystem, "README.md", "/repo/README.md"),
+      ],
+    ],
+    [
+      "/repo/src",
+      [
+        parentEntry(fileSystem, "/repo"),
+        directoryEntry(fileSystem, "deep", "/repo/src/deep"),
+        fileEntry(fileSystem, "index.ts", "/repo/src/index.ts"),
+      ],
+    ],
+    [
+      "/repo/src/deep",
+      [
+        parentEntry(fileSystem, "/repo/src"),
+        fileEntry(fileSystem, "leaf.ts", "/repo/src/deep/leaf.ts"),
+      ],
+    ],
+  ]);
+  const context = mockKeyBindingContext({
+    deps: {
+      fileSystem: {
+        loadEntries: (cwd) => entriesByPath.get(cwd) ?? [],
+        describeDirectoryIssue: () => ({
+          title: "directory issue",
+          message: "directory issue",
+        }),
+        dirname: (cwd) => cwd.split("/").slice(0, -1).join("/") || "/",
+        join: (...parts) => parts.join("/"),
+        resolve: (...parts) => parts.join("/"),
+      },
+    },
+  });
+  const model = mockTitleScreenModel(titleScreen, {
+    editor: mockEditor(editorMode),
+    focusPane: "editor",
+    cwd: "/repo",
+    entries: entriesByPath.get("/repo"),
+    commandLine: {
+      active: true,
+      input: "edit ",
+      cursorIndex: 5,
+      selectedCompletionIndex: 1,
+    },
+  });
+
+  const [srcModel, srcCommands] = keyBindings.updateFromKey(
+    { type: "key", key: "enter", ctrl: false, alt: false, shift: false },
+    model,
+    context,
+  );
+  const [srcDirectorySelected] = keyBindings.updateFromKey(
+    { type: "key", key: "down", ctrl: false, alt: false, shift: false },
+    srcModel,
+    context,
+  );
+  const [deepModel, deepCommands] = keyBindings.updateFromKey(
+    { type: "key", key: "enter", ctrl: false, alt: false, shift: false },
+    srcDirectorySelected,
+    context,
+  );
+
+  assert.equal(srcModel.cwd, "/repo/src");
+  assert.equal(srcModel.commandLine.active, true);
+  assert.equal(srcModel.commandLine.input, "edit ");
+  assert.equal(srcModel.commandLine.cursorIndex, 5);
+  assert.deepEqual(srcModel.entries.map((entry) => entry.name), [
+    "..",
+    "deep",
+    "index.ts",
+  ]);
+  assert.deepEqual(srcCommands, []);
+  assert.equal(srcDirectorySelected.commandLine.selectedCompletionIndex, 1);
+  assert.equal(deepModel.cwd, "/repo/src/deep");
+  assert.equal(deepModel.commandLine.active, true);
+  assert.equal(deepModel.commandLine.input, "edit ");
+  assert.deepEqual(deepModel.entries.map((entry) => entry.name), [
+    "..",
+    "leaf.ts",
+  ]);
+  assert.deepEqual(deepCommands, []);
+});
+
 test("workspace render paints command completions above the Vim command line", async () => {
   const [viewer, titleScreen, editorMode] = await Promise.all([
     importDist("app", "workspace", "viewer.js"),
@@ -742,6 +838,30 @@ function editEntries(fileSystem) {
       path: "/repo/package.json",
     },
   ];
+}
+
+function parentEntry(fileSystem, path) {
+  return {
+    kind: fileSystem.FileEntryKinds.Parent,
+    name: "..",
+    path,
+  };
+}
+
+function directoryEntry(fileSystem, name, path) {
+  return {
+    kind: fileSystem.FileEntryKinds.Directory,
+    name,
+    path,
+  };
+}
+
+function fileEntry(fileSystem, name, path) {
+  return {
+    kind: fileSystem.FileEntryKinds.File,
+    name,
+    path,
+  };
 }
 
 function workspaceRenderTheme() {
