@@ -11,7 +11,7 @@ runtime. The blunt version is correct: the code currently named around
 `RopeHead`, `BufferRoot`, `replaceRangeAsTick`, and `HotTextBufferState` does not
 implement a graph-backed rope runtime.
 
-The current hot text runtime still uses full text snapshots:
+The current hot text runtime still uses full-text snapshots:
 
 - [`src/domain/text-edit-contract.ts`](../../src/domain/text-edit-contract.ts)
   encodes the entire buffer into UTF-8 bytes, splices the requested range,
@@ -163,7 +163,7 @@ type ByteOffset = number & { readonly __brand: "utf8-byte-offset" };
 type Utf16Offset = number & { readonly __brand: "utf16-code-unit-offset" };
 
 interface LineColumn {
-  readonly line: number;
+  readonly line: number & { readonly __brand: "zero-based-line-index" };
   readonly columnUtf16: Utf16Offset;
 }
 ```
@@ -172,7 +172,14 @@ Rules:
 
 - rope mutation ranges are half-open UTF-8 byte ranges;
 - text blobs store UTF-8 bytes;
-- line/column and UTF-16 offsets are UI or protocol projections;
+- `LineColumn.line` is a zero-based logical line index;
+- `LineColumn.columnUtf16` is a zero-based UTF-16 code-unit offset from the start
+  of that logical line;
+- line/column and UTF-16 offsets are UI or protocol projections, not storage
+  authority;
+- line projection treats CRLF as one logical line break and treats bare CR and
+  bare LF as one logical line break each;
+- newline projection never mutates stored blob bytes or save/export bytes;
 - grapheme-aware movement is a command-planning concern over readings, not the
   authoritative storage coordinate;
 - every conversion must cite the basis head or reading it was computed from.
@@ -195,6 +202,7 @@ type Hash = string & { readonly __brand: "Hash" };
 
 interface BufferWorldlineFact {
   readonly kind: "jedit.text.BufferWorldline";
+  readonly schemaVersion: 1;
   readonly worldlineId: WorldlineId;
   readonly createdAtTick: TickId;
   readonly initialHeadId: RopeHeadId;
@@ -202,6 +210,7 @@ interface BufferWorldlineFact {
 
 interface RopeHeadFact {
   readonly kind: "jedit.text.RopeHead";
+  readonly schemaVersion: 1;
   readonly headId: RopeHeadId;
   readonly worldlineId: WorldlineId;
   readonly rootNodeId: RopeNodeId;
@@ -214,6 +223,7 @@ interface RopeHeadFact {
 
 interface RopeBranchFact {
   readonly kind: "jedit.text.RopeBranch";
+  readonly schemaVersion: 1;
   readonly nodeId: RopeNodeId;
   readonly left: RopeNodeId;
   readonly right: RopeNodeId;
@@ -225,6 +235,7 @@ interface RopeBranchFact {
 
 interface RopeLeafFact {
   readonly kind: "jedit.text.RopeLeaf";
+  readonly schemaVersion: 1;
   readonly nodeId: RopeNodeId;
   readonly blobId: TextBlobId;
   readonly byteStart: ByteOffset;
@@ -235,6 +246,7 @@ interface RopeLeafFact {
 
 interface TextBlobFact {
   readonly kind: "jedit.text.TextBlob";
+  readonly schemaVersion: 1;
   readonly blobId: TextBlobId;
   readonly encoding: "utf8";
   readonly byteLength: number;
@@ -252,6 +264,50 @@ The full design must also define facts for:
 - strands, braids, and admissions when their implementation slice begins.
 
 Echo remains generic. jedit owns these fact shapes and text-specific witnesses.
+
+Runtime construction and validation are part of the contract. The branded types
+above are compile-time helpers only; decoded runtime payloads must pass through
+jedit-owned constructors or validators before becoming facts.
+
+Required constructor and validator path:
+
+```typescript
+type FactValidationErrorCode =
+  | "invalid-kind"
+  | "invalid-schema-version"
+  | "invalid-id"
+  | "invalid-reference"
+  | "invalid-metric"
+  | "invalid-hash"
+  | "hash-mismatch";
+
+type FactValidationResult<TFact> =
+  | { readonly ok: true; readonly fact: TFact }
+  | { readonly ok: false; readonly code: FactValidationErrorCode };
+
+declare function makeTextBlobFact(bytes: Uint8Array): TextBlobFact;
+declare function validateRopeFact(payload: object): FactValidationResult<
+  | BufferWorldlineFact
+  | RopeHeadFact
+  | RopeBranchFact
+  | RopeLeafFact
+  | TextBlobFact
+>;
+```
+
+Validation rules:
+
+- `kind` and `schemaVersion` are mandatory runtime tags;
+- IDs must be non-empty canonical IDs in the expected namespace;
+- numeric metrics must be non-negative integers;
+- branch children, head roots, and leaf blobs must reference facts available in
+  the same write set or an already admitted basis;
+- `TextBlobFact.blobId` and `contentHash` must be derived from
+  `encoding + bytes`, not trusted from caller input;
+- branch, leaf, and head hashes must be recomputed from child/blob references and
+  metrics before admission;
+- invalid facts are rejected before Echo admission and never become retained
+  authority.
 
 ### 4. Separate Text Authority From Observations
 
@@ -293,11 +349,26 @@ const result = await runtime.replaceRangeAsTick({
 });
 const after = await runtime.debugRopeShape(result.nextHeadId);
 
-expect(after.untouchedLeftSubtreeId).toEqual(before.untouchedLeftSubtreeId);
-expect(after.untouchedRightSubtreeId).toEqual(before.untouchedRightSubtreeId);
+const preserved = compareUntouchedStructure({
+  before,
+  after,
+  changedRange: range,
+});
+
+expect(preserved.rebuiltUntouchedSpans).toEqual([]);
+expect(preserved.preservedSubtreeIds).toEqual(
+  preserved.expectedUntouchedSubtreeIds,
+);
 ```
 
 This should be part of the contract, not an incidental optimization.
+
+The witness must be recursive. `debugRopeShape` should expose each node's byte
+span within the head, node ID, child IDs, hash, and structural-maintenance
+evidence if a rebalance touched otherwise unchanged text. The comparison should
+walk the before and after shapes, classify spans outside the edited range as
+untouched, and require every unaffected subtree identity to survive unless a
+retained structural-maintenance fact explicitly explains the replacement.
 
 ### 6. Make Retention Measurable
 
@@ -368,7 +439,7 @@ The witnesses are architectural teeth, not after-the-fact documentation.
 Required first witnesses:
 
 - snapshot fixture cannot be constructed as default production authority;
-- repeated edits do not retain one full text snapshot per edit;
+- repeated edits do not retain one full-text snapshot per edit;
 - untouched subtree identity survives a narrow replacement;
 - no-op intent can produce admission evidence without a new head or rewrite;
 - text-window reads cite a basis head and byte range;
@@ -527,12 +598,12 @@ These are not first-slice requirements, but they should stay visible:
 
 ### 15. Things Not To Do
 
-- Do not optimize the full-snapshot runtime as a substitute for graph-backed
+- Avoid optimizing the full-snapshot runtime as a substitute for graph-backed
   authority.
-- Do not let names outrun facts. A `RopeHead` must point to an actual rope.
-- Do not make UI truthier than storage truth.
-- Do not mix cache invalidation with authority mutation.
-- Do not make compaction destroy explainability by accident.
+- Keep names behind facts. A `RopeHead` must point to an actual rope.
+- Keep UI claims no more authoritative than storage truth.
+- Separate cache invalidation from authority mutation.
+- Preserve explainability when compaction policy deletes or cold-stores evidence.
 
 ### 16. Treat UI Work As Dependent On Runtime Honesty
 
