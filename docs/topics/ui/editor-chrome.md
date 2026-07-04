@@ -4,6 +4,8 @@ Editor chrome is the persistent frame around the current buffer: source
 viewport, gutter, header title, footer hints, dirty markers, and coordinate
 readouts.
 
+<img src="./editor-chrome.svg" alt="Editor chrome layout across wide, narrow, and xs terminal profiles." />
+
 ## How To Reach It
 
 Open a file from the title screen, files drawer, or command line:

@@ -9,6 +9,18 @@ Jim is still named `jedit` in repository paths, package names, and several
 internal APIs. The UI documentation uses Jim for the product surface and
 `jedit` when referring to code.
 
+<img src="./overview.svg" alt="Jim UI overview across wide, narrow, and xs terminal profiles." />
+
+## Terminal Width Profiles
+
+Jim UI documents use three terminal width profiles:
+
+| Profile | Shape |
+| --- | --- |
+| `wide` | Desktop-sized terminal with room for the editor, footer posture, and side panels. |
+| `narrow` | Tablet-sized terminal where previews and secondary panels may stack or collapse. |
+| `xs` | Phone-sized or very small terminal where one focused surface should dominate. |
+
 ## Screens And Components
 
 | Page | Surface |

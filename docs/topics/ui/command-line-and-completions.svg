@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">Command line and completions width profiles</title>
+  <desc id="desc">Diagram showing colon command input, completions, argument help, and file browsing across terminal profiles.</desc>
+  <style>
+    :root{--bg:#080d13;--surface:#101820;--panel:#17212b;--line:#7d8da1;--text:#d5dde8;--muted:#8d98a8;--accent:#dc8cff;--cyan:#56d6d6;--green:#68e09b;--yellow:#f2c96b}
+    .canvas{fill:var(--bg)}.term{fill:var(--surface);stroke:var(--line);stroke-width:2;rx:10}.footer{fill:#141c25}.panel{fill:var(--panel);stroke:#344253;stroke-width:1.5;rx:6}.popup{fill:#d8dee9;stroke:#c8d0dc;stroke-width:1.5;rx:4}.label{fill:var(--accent);font:700 21px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.small{fill:var(--muted);font:14px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.tiny{fill:var(--muted);font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.code{fill:var(--text);font:13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.dark{fill:#111820;font:13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.accent{fill:var(--accent)}.green{fill:var(--green)}.yellow{fill:var(--yellow)}
+  </style>
+  <rect class="canvas" width="1200" height="760"/>
+  <text class="label" x="40" y="44">Command line and completions</text>
+  <text class="small" x="40" y="70">Colon mode owns the footer and anchors suggestions near the command cursor.</text>
+
+  <text class="label" x="70" y="122">wide</text>
+  <rect class="term" x="70" y="140" width="1060" height="270"/>
+  <rect class="footer" x="72" y="367" width="1056" height="40"/>
+  <text class="accent" x="554" y="168" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="18" font-weight="700">README.md</text>
+  <text class="code" x="118" y="210">1  # Jim</text>
+  <text class="code" x="118" y="234">2  product docs and source</text>
+  <rect class="popup" x="96" y="244" width="450" height="104"/>
+  <rect x="96" y="244" width="450" height="24" fill="#eef2f7"/>
+  <text class="dark" x="116" y="261">edit   cmd  Open a file</text>
+  <text class="dark" x="116" y="286">strand cmd  Create, switch, or list strands</text>
+  <text class="dark" x="116" y="310">braid  cmd  View or admit braid candidates</text>
+  <text class="dark" x="116" y="334">help   cmd  Open help</text>
+  <rect class="panel" x="566" y="244" width="330" height="104"/>
+  <text class="code" x="586" y="268">argument help</text>
+  <text class="tiny" x="586" y="292">edit &lt;path&gt;</text>
+  <text class="tiny" x="586" y="314">directories descend in place</text>
+  <text class="small" x="94" y="393">:edit src/app/workspace/  [tab accept - enter run - esc cancel]</text>
+
+  <text class="label" x="70" y="462">narrow</text>
+  <rect class="term" x="70" y="480" width="520" height="215"/>
+  <rect class="footer" x="72" y="655" width="516" height="38"/>
+  <text class="code" x="96" y="532">command input stays footer-owned</text>
+  <rect class="popup" x="96" y="548" width="300" height="84"/>
+  <text class="dark" x="112" y="570">edit  Open a file</text>
+  <text class="dark" x="112" y="594">wq    Write and quit</text>
+  <text class="dark" x="112" y="618">why   Explain last command</text>
+  <text class="tiny" x="408" y="574">preview hidden</text>
+  <text class="tiny" x="408" y="596">or stacked</text>
+  <text class="tiny" x="92" y="678">COMMAND [:edit src/]</text>
+
+  <text class="label" x="670" y="462">xs</text>
+  <rect class="term" x="670" y="480" width="260" height="215"/>
+  <rect class="footer" x="672" y="655" width="256" height="38"/>
+  <rect class="popup" x="692" y="530" width="216" height="102"/>
+  <text class="dark" x="706" y="554">edit</text>
+  <text class="dark" x="706" y="578">write</text>
+  <text class="dark" x="706" y="602">why</text>
+  <text class="tiny" x="706" y="624">no preview; focus list</text>
+  <text class="tiny" x="692" y="678">:edit</text>
+  <rect class="panel" x="965" y="498" width="165" height="174"/>
+  <text class="code" x="986" y="526">rules</text>
+  <text class="tiny" x="986" y="554">Tab accepts</text>
+  <text class="tiny" x="986" y="576">Enter runs</text>
+  <text class="tiny" x="986" y="598">Esc cancels</text>
+  <text class="tiny" x="986" y="620">help near input</text>
+</svg>

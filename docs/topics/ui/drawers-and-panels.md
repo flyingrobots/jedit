@@ -4,6 +4,8 @@ Drawers and panels are secondary Jim surfaces that appear over or beside the
 editor without becoming independent applications. They should preserve context,
 use theme tokens, and close predictably.
 
+<img src="./drawers-and-panels.svg" alt="Drawers and panels layout across wide, narrow, and xs terminal profiles." />
+
 ## Common Rules
 
 All drawers and panels should:

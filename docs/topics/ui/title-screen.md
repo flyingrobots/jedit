@@ -3,6 +3,8 @@
 The title screen is the first Jim surface when no file has been opened. It is
 both a product identity surface and a usable file-opening surface.
 
+<img src="./title-screen.svg" alt="Title screen layout across wide, narrow, and xs terminal profiles." />
+
 ## How To Open It
 
 Start Jim without a file argument:

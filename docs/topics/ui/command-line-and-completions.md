@@ -4,6 +4,8 @@ Jim's command line is the Normal-mode `:` surface. It is the main path for
 Vim-shaped commands, command discovery, file opening, and future command
 arguments.
 
+<img src="./command-line-and-completions.svg" alt="Command line and completion layout across wide, narrow, and xs terminal profiles." />
+
 ## How To Access It
 
 Press `:` in Normal mode. The footer becomes a command input row.

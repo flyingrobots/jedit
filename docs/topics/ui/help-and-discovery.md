@@ -4,6 +4,8 @@ Jim should teach available actions at the point where the user needs them.
 Help should be specific enough for dogfooding, but not so large that it hides
 the editor.
 
+<img src="./help-and-discovery.svg" alt="Help and discovery layout across wide, narrow, and xs terminal profiles." />
+
 ## Help Surfaces
 
 Jim uses several help surfaces:

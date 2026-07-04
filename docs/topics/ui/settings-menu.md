@@ -3,6 +3,8 @@
 The settings menu is Jim's in-app preferences drawer. It should look like the
 rest of Jim, use theme tokens, and keep long option sets compact.
 
+<img src="./settings-menu.svg" alt="Settings menu layout across wide, narrow, and xs terminal profiles." />
+
 ## How To Access It
 
 Press `F2` from the title screen or editor.

@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">Drawers and panels width profiles</title>
+  <desc id="desc">Diagram showing files, Graft, Echo history, diagnostics, and inline why surfaces across profiles.</desc>
+  <style>
+    :root{--bg:#080d13;--surface:#101820;--panel:#17212b;--line:#7d8da1;--text:#d5dde8;--muted:#8d98a8;--accent:#dc8cff;--cyan:#56d6d6;--green:#68e09b;--yellow:#f2c96b;--red:#ee7f7a}
+    .canvas{fill:var(--bg)}.term{fill:var(--surface);stroke:var(--line);stroke-width:2;rx:10}.drawer{fill:#0b1016;stroke:#7d8da1;stroke-width:1.5;rx:6}.panel{fill:var(--panel);stroke:#344253;stroke-width:1.5;rx:6}.footer{fill:#141c25}.label{fill:var(--accent);font:700 21px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.small{fill:var(--muted);font:14px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.tiny{fill:var(--muted);font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.code{fill:var(--text);font:13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.accent{fill:var(--accent)}.cyan{fill:var(--cyan)}.green{fill:var(--green)}.yellow{fill:var(--yellow)}
+  </style>
+  <rect class="canvas" width="1200" height="760"/>
+  <text class="label" x="40" y="44">Drawers and panels</text>
+  <text class="small" x="40" y="70">Secondary surfaces preserve editor context and avoid replacing focus silently.</text>
+
+  <text class="label" x="70" y="122">wide</text>
+  <rect class="term" x="70" y="140" width="1060" height="270"/>
+  <rect class="footer" x="72" y="367" width="1056" height="40"/>
+  <rect class="drawer" x="96" y="178" width="220" height="174"/>
+  <text class="code" x="116" y="204">Files</text>
+  <text class="tiny" x="116" y="230">src/</text><text class="tiny" x="116" y="252">docs/</text><text class="green" x="116" y="274" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="11">README.md</text>
+  <rect class="panel" x="338" y="178" width="390" height="174"/>
+  <text class="code" x="358" y="204">Editor stays visible</text>
+  <text class="tiny" x="358" y="230">drawers do not mutate text</text>
+  <rect class="drawer" x="750" y="178" width="168" height="174"/>
+  <text class="code" x="770" y="204">Graft</text>
+  <text class="tiny" x="770" y="230">symbols</text><text class="tiny" x="770" y="252">projection</text><text class="tiny" x="770" y="274">posture</text>
+  <rect class="drawer" x="934" y="178" width="168" height="174"/>
+  <text class="code" x="954" y="204">History</text>
+  <text class="tiny" x="954" y="230"># tick kind</text><text class="tiny" x="954" y="252">1 open</text><text class="tiny" x="954" y="274">2 edit</text>
+  <rect class="panel" x="520" y="296" width="260" height="48"/>
+  <text class="yellow" x="538" y="318" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12">why inline panel</text>
+  <text class="tiny" x="538" y="336">anchored near explained line</text>
+  <text class="small" x="94" y="393">DRAWER [j/k move - enter open - esc close]</text>
+
+  <text class="label" x="70" y="462">narrow</text>
+  <rect class="term" x="70" y="480" width="520" height="215"/>
+  <rect class="footer" x="72" y="655" width="516" height="38"/>
+  <rect class="drawer" x="92" y="514" width="180" height="120"/>
+  <text class="code" x="112" y="540">Files</text>
+  <text class="tiny" x="112" y="564">focused list</text>
+  <rect class="panel" x="288" y="514" width="278" height="120"/>
+  <text class="code" x="306" y="540">Editor / panel stack</text>
+  <text class="tiny" x="306" y="564">right drawers collapse to</text>
+  <text class="tiny" x="306" y="586">one readable surface</text>
+  <text class="tiny" x="92" y="678">DRAWER [enter open - esc close]</text>
+
+  <text class="label" x="670" y="462">xs</text>
+  <rect class="term" x="670" y="480" width="260" height="215"/>
+  <rect class="footer" x="672" y="655" width="256" height="38"/>
+  <rect class="drawer" x="692" y="514" width="216" height="120"/>
+  <text class="code" x="712" y="540">One panel</text>
+  <text class="tiny" x="712" y="564">files, help, why, or</text>
+  <text class="tiny" x="712" y="586">diagnostics dominates</text>
+  <text class="tiny" x="692" y="678">PANEL [esc]</text>
+  <rect class="panel" x="965" y="498" width="165" height="174"/>
+  <text class="code" x="986" y="526">rules</text>
+  <text class="tiny" x="986" y="554">durable reading</text>
+  <text class="tiny" x="986" y="576">visible focus</text>
+  <text class="tiny" x="986" y="598">word wrap</text>
+  <text class="tiny" x="986" y="620">no silent replace</text>
+</svg>
