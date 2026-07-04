@@ -11,7 +11,8 @@ import { createI18nMock } from "./i18n-mock.mjs";
 import { createWorkspaceEchoAppHarness, productionTextObstruction } from "./workspace-echo-app-harness.mjs";
 
 test("ttd commands move the observer without mutating canonical worldline posture", async () => {
-  const [keyBindings, titleScreen, editorMode, worldline] = await Promise.all([
+  const [footerPosture, keyBindings, titleScreen, editorMode, worldline] = await Promise.all([
+    importDist("app", "workspace", "workspace-footer-posture.js"),
     importDist("app", "workspace", "key-bindings.js"),
     importDist("ui", "title-screen.js"),
     importDist("app", "workspace", "editor", "mode.js"),
@@ -44,6 +45,10 @@ test("ttd commands move the observer without mutating canonical worldline postur
   assert.equal(observing.worldline.posture.kind, "historical");
   assert.equal(observing.worldline.posture.observedTick, 2);
   assert.equal(worldline.workspaceWorldlinePostureLabel(observing.worldline.posture), "observe:t2");
+  assert.match(
+    footerPosture.workspaceFooterTextPosture(observing),
+    /worldline:observe:t2 \| export:host \| admit:main \| tick:t2/,
+  );
   assert.equal(head.worldline.posture.kind, "canonical");
   assert.equal(worldline.workspaceWorldlinePostureLabel(head.worldline.posture), "main");
 });

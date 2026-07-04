@@ -9,6 +9,7 @@ import {
   openedHarness,
   twoFileHarness,
 } from './workspace-echo-test-utils.mjs';
+import { importDist } from './workspace-helpers.mjs';
 
 test('real workspace app path opens files through production text authority', async () => {
   const harness = await createWorkspaceEchoAppHarness({
@@ -367,6 +368,7 @@ test('real workspace app path inserts canonical spacebar token in insert mode', 
 });
 
 test('real workspace app path saves by exporting and checkpointing production text', async () => {
+  const footerPosture = await importDist('app', 'workspace', 'workspace-footer-posture.js');
   const harness = await openedHarness({ exportText: 'saved from Echo' });
 
   await harness.key('i');
@@ -379,6 +381,10 @@ test('real workspace app path saves by exporting and checkpointing production te
   assert.equal(harness.calls.checkpoint.length, 1);
   assert.equal(harness.model.textAuthority.lastExportReadingId, 'reading:export');
   assert.equal(harness.model.textAuthority.lastCheckpointId, 'checkpoint:save');
+  assert.match(
+    footerPosture.workspaceFooterTextPosture(harness.model),
+    /basis:checkpoint \| head:checkpoint \| worldline:main \| export:host/,
+  );
 });
 
 test('real workspace app path keeps obstruction honest without retrying', async () => {

@@ -90,9 +90,9 @@ function openedTextHead(authority: WorkspaceTextAuthorityOpened): string {
   if (authority.pendingIntentStatus != null) {
     return `${HEAD_PREFIX}${authority.pendingIntentStatus}`;
   }
-  if (authority.lastReceiptId != null) return HEAD_RECEIPT;
-  if (authority.dirty) return HEAD_LOCAL;
   if (authority.lastCheckpointId != null) return HEAD_CHECKPOINT;
   if (authority.lastExportReadingId != null) return HEAD_EXPORT;
+  if (authority.lastReceiptId != null) return HEAD_RECEIPT;
+  if (authority.dirty) return HEAD_LOCAL;
   return HEAD_BASIS;
 }

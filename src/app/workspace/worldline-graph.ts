@@ -4,15 +4,14 @@ import { fitLine } from '../../ui/fit-line.js';
 import { clampIndex } from './viewport.js';
 import { isWorkspaceDownKey, isWorkspaceUpKey, WorkspaceKeys } from './workspace-key.js';
 import {
-  MAIN_WORLDLINE_NAME,
   WorkspaceWorldlineNodeKinds,
-  WorkspaceWorldlinePostureKinds,
   WorkspaceWorldlineMaterializationKinds,
   workspaceWorldlinePostureLabel,
   type WorkspaceWorldlineGraphNode,
   type WorkspaceWorldlineMaterializationKind,
   type WorkspaceWorldlineState,
 } from './worldline-types.js';
+import { workspaceWorldlineTickSpanLabel } from './worldline-tick-span.js';
 
 const GRAPH_PAGE_STEP = 10;
 const TITLE_KEY = 'worldline.title';
@@ -35,9 +34,6 @@ const EXPORT_HOST = 'export:host';
 const EXPORT_PENDING = 'export:pending';
 const EXPORT_NONE = 'export:none';
 const ADMIT_PREFIX = 'admit:';
-const TICK_PREFIX = 'tick:t';
-const TICKS_PREFIX = 'ticks:t';
-const TICK_SPAN_SEPARATOR = '->t';
 
 export interface WorkspaceWorldlineContextState {
   readonly worldline: WorkspaceWorldlineState;
@@ -47,12 +43,11 @@ export interface WorkspaceWorldlineContextState {
 export function workspaceWorldlineContextLabel(
   state: WorkspaceWorldlineContextState,
 ): string {
-  const node = currentWorldlineGraphNode(state.worldline);
   return [
     `${WORLDLINE_PREFIX}${workspaceWorldlinePostureLabel(state.worldline.posture)}`,
     workspaceWorldlineExportLabel(state.materialization),
     `${ADMIT_PREFIX}${state.worldline.posture.admissionTarget}`,
-    node == null ? undefined : worldlineTickSpanLabel(node),
+    workspaceWorldlineTickSpanLabel(state.worldline.posture),
   ].filter((part): part is string => part != null && part.length > EMPTY_LENGTH).join(' | ');
 }
 
@@ -142,16 +137,6 @@ function graphScrollStart(selectedIndex: number, total: number, visible: number)
   return Math.min(Math.max(FIRST_ROW, selectedIndex - half), total - visible);
 }
 
-function currentWorldlineGraphNode(
-  worldline: WorkspaceWorldlineState,
-): WorkspaceWorldlineGraphNode | undefined {
-  if (worldline.posture.kind === WorkspaceWorldlinePostureKinds.Canonical ||
-    worldline.posture.kind === WorkspaceWorldlinePostureKinds.Historical) {
-    return worldline.graph.find((node) => node.name === MAIN_WORLDLINE_NAME);
-  }
-  return worldline.graph.find((node) => node.name === worldline.posture.name);
-}
-
 function worldlineDeltaLabel(node: WorkspaceWorldlineGraphNode): string {
   return `+${node.ahead}/-${node.behind}`;
 }
@@ -165,19 +150,6 @@ function workspaceWorldlineExportLabel(
   return materialization === WorkspaceWorldlineMaterializationKinds.Unmaterialized
     ? EXPORT_PENDING
     : EXPORT_NONE;
-}
-
-function worldlineTickSpanLabel(node: WorkspaceWorldlineGraphNode): string | undefined {
-  if (node.basisTick == null && node.headTick == null) {
-    return undefined;
-  }
-  if (node.basisTick == null) {
-    return `${TICK_PREFIX}${node.headTick}`;
-  }
-  if (node.headTick == null || node.basisTick === node.headTick) {
-    return `${TICK_PREFIX}${node.basisTick}`;
-  }
-  return `${TICKS_PREFIX}${node.basisTick}${TICK_SPAN_SEPARATOR}${node.headTick}`;
 }
 
 function braidStatusLabel(node: WorkspaceWorldlineGraphNode): string {

@@ -1,6 +1,6 @@
 import type { Cell, Surface } from '@flyingrobots/bijou';
 import type { SourceHighlightReading } from '../ports/source-highlighter.js';
-import type { JeditStyleToken, JeditTheme } from './jedit-theme.js';
+import { JEDIT_SOURCE_TOKEN, type JeditStyleToken, type JeditTheme } from './jedit-theme.js';
 import {
   SOURCE_LINE_NUMBER_MODE,
   type SourceLineNumberMode,
@@ -154,7 +154,9 @@ function paintSourceViewerGutter(
   context: SourceViewerGutterPaintContext,
 ): void {
   const { reading, options, gutter, cursorRow, mode } = context;
-  const numberToken = options.theme.surface.workspace;
+  const numberToken =
+    options.theme.source.get(JEDIT_SOURCE_TOKEN.Comment) ??
+    options.theme.chrome.titleLogoShadow;
   const ruleToken = options.theme.chrome.activeEdge;
   const baseToken = options.theme.surface.workspace;
   const numberStyle = cellStyle(numberToken, baseToken);

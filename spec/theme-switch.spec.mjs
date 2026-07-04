@@ -36,6 +36,7 @@ const LUMINANCE_RED_WEIGHT = 0.2126;
 const LUMINANCE_GREEN_WEIGHT = 0.7152;
 const LUMINANCE_BLUE_WEIGHT = 0.0722;
 const MIN_SURFACE_TEXT_CONTRAST = 4.5;
+const MIN_ACCENT_TEXT_CONTRAST = 3.0;
 const CONTRAST_LUMINANCE_OFFSET = 0.05;
 const SRGB_CHANNEL_MAX = 255;
 const SRGB_LINEAR_BREAKPOINT = 0.03928;
@@ -154,6 +155,16 @@ test("jedit surface text clears contrast for built-in and companion themes", asy
   }
 });
 
+test("jedit rendered accent text clears contrast for built-in and companion themes", async () => {
+  const { themes } = await loadThemesModule();
+
+  for (const theme of themesWithGeneratedCompanions(themes)) {
+    assertTokenGroupContrast(theme.name, "source", theme.source, theme.surface.workspace.bgRGB);
+    assertTokenGroupContrast(theme.name, "markdown", theme.markdown, theme.surface.workspace.bgRGB);
+    assertObjectTokenContrast(theme.name, "chrome", theme.chrome, theme.surface.workspace.bgRGB);
+  }
+});
+
 test("built-in jedit theme tokens map back to named variables and effect metadata", async () => {
   const { themes, style } = await loadThemesModule();
 
@@ -231,6 +242,36 @@ function colorContrastRatio(first, second) {
   const lighter = Math.max(firstLuminance, secondLuminance);
   const darker = Math.min(firstLuminance, secondLuminance);
   return (lighter + CONTRAST_LUMINANCE_OFFSET) / (darker + CONTRAST_LUMINANCE_OFFSET);
+}
+
+function assertTokenGroupContrast(themeName, groupName, tokens, fallbackBackground) {
+  for (const [tokenName, token] of tokens) {
+    assertRenderedTokenContrast(
+      themeName,
+      `${groupName}.${tokenName.description ?? String(tokenName)}`,
+      token,
+      fallbackBackground,
+    );
+  }
+}
+
+function assertObjectTokenContrast(themeName, groupName, tokens, fallbackBackground) {
+  for (const [tokenName, token] of Object.entries(tokens)) {
+    assertRenderedTokenContrast(
+      themeName,
+      `${groupName}.${tokenName}`,
+      token,
+      fallbackBackground,
+    );
+  }
+}
+
+function assertRenderedTokenContrast(themeName, tokenName, token, fallbackBackground) {
+  const ratio = colorContrastRatio(token.fgRGB, token.bgRGB ?? fallbackBackground);
+  assert.ok(
+    ratio >= MIN_ACCENT_TEXT_CONTRAST,
+    `${themeName} ${tokenName} contrast ratio ${ratio.toFixed(2)}`,
+  );
 }
 
 function relativeColorLuminance(color) {

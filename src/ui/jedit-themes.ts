@@ -35,6 +35,20 @@ const ACTIVE_EDGE_CHAR = "░";
 const THEME_MODE_LABEL_DARK = "Dark";
 const THEME_MODE_LABEL_LIGHT = "Light";
 const COLOR_CHANNEL_MAX = 255;
+const COLOR_CHANNEL_MIN = 0;
+const CONTRAST_BLEND_STEPS = 20;
+const CONTRAST_LUMINANCE_OFFSET = 0.05;
+const CONTRAST_TARGET_LIGHTNESS = 0.5;
+const LUMINANCE_BLUE_WEIGHT = 0.0722;
+const LUMINANCE_GREEN_WEIGHT = 0.7152;
+const LUMINANCE_RED_WEIGHT = 0.2126;
+const MIN_ACCENT_CONTRAST_RATIO = 3;
+const MIN_SURFACE_TEXT_CONTRAST_RATIO = 4.5;
+const SRGB_LINEAR_BREAKPOINT = 0.03928;
+const SRGB_LINEAR_DIVISOR = 12.92;
+const SRGB_LINEAR_EXPONENT = 2.4;
+const SRGB_LINEAR_OFFSET = 0.055;
+const SRGB_LINEAR_SCALE = 1.055;
 
 interface ThemeVariables {
   readonly ink: ThemeColorVariable;
@@ -223,7 +237,7 @@ function oppositeThemeMode(mode: JeditThemeMode): JeditThemeMode {
 }
 
 function oppositePalette(palette: ThemePalette): ThemePalette {
-  return {
+  return contrastAdjustedPalette({
     ink: invertColor(palette.ink),
     muted: invertColor(palette.muted),
     accent: invertColor(palette.accent),
@@ -233,7 +247,96 @@ function oppositePalette(palette: ThemePalette): ThemePalette {
     surface: invertColor(palette.surface),
     surfaceRaised: invertColor(palette.surfaceRaised),
     surfaceMuted: invertColor(palette.surfaceMuted),
+  });
+}
+
+function contrastAdjustedPalette(palette: ThemePalette): ThemePalette {
+  return {
+    ink: contrastAdjustedColor(palette.ink, surfaceBackgrounds(palette), MIN_SURFACE_TEXT_CONTRAST_RATIO),
+    muted: contrastAdjustedColor(palette.muted, [palette.surface], MIN_ACCENT_CONTRAST_RATIO),
+    accent: contrastAdjustedColor(palette.accent, [palette.surface], MIN_ACCENT_CONTRAST_RATIO),
+    info: contrastAdjustedColor(palette.info, [palette.surface, palette.surfaceRaised], MIN_ACCENT_CONTRAST_RATIO),
+    warning: contrastAdjustedColor(palette.warning, [palette.surface, palette.surfaceRaised], MIN_ACCENT_CONTRAST_RATIO),
+    success: contrastAdjustedColor(palette.success, [palette.surface], MIN_ACCENT_CONTRAST_RATIO),
+    surface: palette.surface,
+    surfaceRaised: palette.surfaceRaised,
+    surfaceMuted: palette.surfaceMuted,
   };
+}
+
+function surfaceBackgrounds(palette: ThemePalette): readonly RgbTuple[] {
+  return [palette.surface, palette.surfaceRaised, palette.surfaceMuted];
+}
+
+function contrastAdjustedColor(
+  color: RgbTuple,
+  backgrounds: readonly RgbTuple[],
+  minContrastRatio: number,
+): RgbTuple {
+  const target = averageLuminance(backgrounds) > CONTRAST_TARGET_LIGHTNESS
+    ? colorTarget(COLOR_CHANNEL_MIN)
+    : colorTarget(COLOR_CHANNEL_MAX);
+  for (let step = 0; step <= CONTRAST_BLEND_STEPS; step += 1) {
+    const candidate = blendColor(color, target, step / CONTRAST_BLEND_STEPS);
+    if (passesContrast(candidate, backgrounds, minContrastRatio)) {
+      return candidate;
+    }
+  }
+  return target;
+}
+
+function averageLuminance(colors: readonly RgbTuple[]): number {
+  const total = colors.reduce((sum, color) => sum + relativeColorLuminance(color), 0);
+  return total / colors.length;
+}
+
+function colorTarget(channel: number): RgbTuple {
+  return [channel, channel, channel];
+}
+
+function blendColor(from: RgbTuple, to: RgbTuple, amount: number): RgbTuple {
+  return [
+    blendChannel(from[0], to[0], amount),
+    blendChannel(from[1], to[1], amount),
+    blendChannel(from[2], to[2], amount),
+  ];
+}
+
+function blendChannel(from: number, to: number, amount: number): number {
+  return Math.round(from + ((to - from) * amount));
+}
+
+function passesContrast(
+  color: RgbTuple,
+  backgrounds: readonly RgbTuple[],
+  minContrastRatio: number,
+): boolean {
+  return backgrounds.every(
+    (background) => colorContrastRatio(color, background) >= minContrastRatio,
+  );
+}
+
+function colorContrastRatio(first: RgbTuple, second: RgbTuple): number {
+  const firstLuminance = relativeColorLuminance(first);
+  const secondLuminance = relativeColorLuminance(second);
+  const lighter = Math.max(firstLuminance, secondLuminance);
+  const darker = Math.min(firstLuminance, secondLuminance);
+  return (lighter + CONTRAST_LUMINANCE_OFFSET) / (darker + CONTRAST_LUMINANCE_OFFSET);
+}
+
+function relativeColorLuminance(color: RgbTuple): number {
+  return (
+    linearChannel(color[0]) * LUMINANCE_RED_WEIGHT +
+    linearChannel(color[1]) * LUMINANCE_GREEN_WEIGHT +
+    linearChannel(color[2]) * LUMINANCE_BLUE_WEIGHT
+  );
+}
+
+function linearChannel(channel: number): number {
+  const scaled = channel / COLOR_CHANNEL_MAX;
+  return scaled <= SRGB_LINEAR_BREAKPOINT
+    ? scaled / SRGB_LINEAR_DIVISOR
+    : ((scaled + SRGB_LINEAR_OFFSET) / SRGB_LINEAR_SCALE) ** SRGB_LINEAR_EXPONENT;
 }
 
 function paletteFromTheme(theme: JeditTheme): ThemePalette {

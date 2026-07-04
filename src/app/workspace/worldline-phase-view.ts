@@ -11,6 +11,7 @@ import {
   type WorkspaceWorldlineGraphNode,
   type WorkspaceWorldlinePhaseKind,
 } from './worldline-types.js';
+import { workspaceWorldlineTickSpanLabel } from './worldline-tick-span.js';
 
 const TITLE_KEY = 'worldline.title';
 const EMPTY_LENGTH = 0;
@@ -33,9 +34,6 @@ const BRAID_RAIL = 'B';
 const LOCAL_RAIL = 'L';
 const PROJECTION_PREFIX = 'projection:';
 const CANONICAL_PREFIX = 'canonical@t';
-const TICK_PREFIX = 'tick:t';
-const TICKS_PREFIX = 'ticks:t';
-const TICK_SPAN_SEPARATOR = '->t';
 const LOCAL_NAME = 'local';
 const VISIBLE_BRAID_NAME = 'visible braid';
 const LOCAL_SPAN = 'local';
@@ -112,7 +110,7 @@ function graphNodePhaseRow(
     name: node.name,
     basis: node.basis,
     head: node.headTick == null ? NO_HEAD : String(node.headTick),
-    span: worldlineSpanLabel(node),
+    span: workspaceWorldlineTickSpanLabel(node) ?? NO_EVIDENCE,
     evidence: node.headTick == null ? NO_EVIDENCE : `${CANONICAL_PREFIX}${node.headTick}`,
     note: graphNodeNote(node),
   };
@@ -236,19 +234,6 @@ function graphNodeNote(node: WorkspaceWorldlineGraphNode): string {
 
 function canonicalRef(model: WorkspaceModel): string {
   return `${CANONICAL_PREFIX}${model.worldline.canonicalHeadTick}`;
-}
-
-function worldlineSpanLabel(node: WorkspaceWorldlineGraphNode): string {
-  if (node.basisTick == null && node.headTick == null) {
-    return NO_EVIDENCE;
-  }
-  if (node.basisTick == null) {
-    return `${TICK_PREFIX}${node.headTick}`;
-  }
-  if (node.headTick == null || node.basisTick === node.headTick) {
-    return `${TICK_PREFIX}${node.basisTick}`;
-  }
-  return `${TICKS_PREFIX}${node.basisTick}${TICK_SPAN_SEPARATOR}${node.headTick}`;
 }
 
 function renderPhaseRow(row: WorldlinePhaseRow): string {
