@@ -1,4 +1,5 @@
 import { resolveWorkspaceLayout } from '../../ui/drawer-layout.js';
+import { sourceViewerGutterWidth } from '../../ui/source-viewer.js';
 import type { WorkspaceModel } from './model.js';
 
 export const MIN_COLUMNS = 60;
@@ -48,7 +49,7 @@ export function viewerViewport(width: number, height: number): WorkspaceViewport
 type WorkspaceViewportModel = Pick<
   WorkspaceModel,
   'columns' | 'rows' | 'fileDrawerProgress' | 'graftDrawerProgress' | 'historyDrawerProgress' | 'footerVisible'
->;
+> & Partial<Pick<WorkspaceModel, 'editor' | 'lineNumberMode'>>;
 
 export function editorViewport(model: WorkspaceViewportModel): WorkspaceViewport {
   const bodyHeight = workspaceBodyHeight({
@@ -61,5 +62,21 @@ export function editorViewport(model: WorkspaceViewportModel): WorkspaceViewport
     model.graftDrawerProgress,
     model.historyDrawerProgress,
   );
-  return viewerViewport(layout.viewer.width, bodyHeight);
+  const viewport = viewerViewport(layout.viewer.width, bodyHeight);
+  return {
+    ...viewport,
+    width: editorTextViewportWidth(model, viewport.width),
+  };
+}
+
+function editorTextViewportWidth(model: WorkspaceViewportModel, viewerWidth: number): number {
+  if (model.editor == null || model.lineNumberMode == null) {
+    return viewerWidth;
+  }
+  const gutterWidth = sourceViewerGutterWidth(
+    model.editor.lines.length,
+    model.editor.cursorRow,
+    model.lineNumberMode,
+  );
+  return Math.max(1, viewerWidth - gutterWidth);
 }
