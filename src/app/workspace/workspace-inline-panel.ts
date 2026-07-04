@@ -2,6 +2,7 @@ import type { KeyMsg } from "@flyingrobots/bijou-tui";
 import type { EditorState } from "./editor/model.js";
 import type { WorkspaceModel } from "./model.js";
 import { WorkspaceKeys } from "./workspace-key.js";
+import { WorkspaceTextAuthorityKinds } from "./workspace-text-authority.js";
 
 export const WORKSPACE_INLINE_PANEL_TONE = Object.freeze({
   Info: "info",
@@ -17,6 +18,7 @@ export interface WorkspaceInlinePanel {
   readonly tone: WorkspaceInlinePanelTone;
   readonly anchorRow: number;
   readonly anchorColumn: number;
+  readonly bufferId?: string;
 }
 
 export interface WorkspaceInlinePanelAnchor {
@@ -26,7 +28,7 @@ export interface WorkspaceInlinePanelAnchor {
 
 export function anchoredWorkspaceInlinePanel(
   editor: EditorState,
-  panel: Pick<WorkspaceInlinePanel, "title" | "message" | "tone">,
+  panel: Pick<WorkspaceInlinePanel, "title" | "message" | "tone" | "bufferId">,
 ): WorkspaceInlinePanel {
   return workspaceInlinePanelAtAnchor(panel, workspaceInlinePanelAnchorFromEditor(editor));
 }
@@ -41,14 +43,20 @@ export function workspaceInlinePanelAnchorFromEditor(
 }
 
 export function workspaceInlinePanelAtAnchor(
-  panel: Pick<WorkspaceInlinePanel, "title" | "message" | "tone">,
+  panel: Pick<WorkspaceInlinePanel, "title" | "message" | "tone" | "bufferId">,
   anchor: WorkspaceInlinePanelAnchor,
 ): WorkspaceInlinePanel {
-  return {
+  const anchored = {
     ...panel,
     anchorRow: anchor.row,
     anchorColumn: anchor.column,
   };
+  return panel.bufferId == null
+    ? anchored
+    : {
+        ...anchored,
+        bufferId: panel.bufferId,
+      };
 }
 
 export function clearWorkspaceInlinePanelAfterKey(
@@ -58,20 +66,33 @@ export function clearWorkspaceInlinePanelAfterKey(
   if (model.inlinePanel == null) {
     return model;
   }
-  return shouldKeepWorkspaceInlinePanel(msg, model.editor, model.inlinePanel)
+  return shouldKeepWorkspaceInlinePanel(msg, model, model.inlinePanel)
     ? model
     : { ...model, inlinePanel: undefined };
 }
 
 function shouldKeepWorkspaceInlinePanel(
   msg: KeyMsg,
-  editor: EditorState | undefined,
+  model: WorkspaceModel,
   panel: WorkspaceInlinePanel,
 ): boolean {
+  const editor = model.editor;
   return (
     msg.key !== WorkspaceKeys.Escape &&
     editor != null &&
     editor.cursorRow === panel.anchorRow &&
-    editor.cursorCol === panel.anchorColumn
+    editor.cursorCol === panel.anchorColumn &&
+    inlinePanelMatchesActiveBuffer(model, panel)
   );
+}
+
+function inlinePanelMatchesActiveBuffer(
+  model: WorkspaceModel,
+  panel: WorkspaceInlinePanel,
+): boolean {
+  if (panel.bufferId == null) {
+    return true;
+  }
+  return model.textAuthority.kind === WorkspaceTextAuthorityKinds.Opened &&
+    model.textAuthority.bufferId === panel.bufferId;
 }

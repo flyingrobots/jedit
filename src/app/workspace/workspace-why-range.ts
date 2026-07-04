@@ -17,6 +17,7 @@ import { byteOffsetForTextPosition } from './workspace-text-position.js';
 import {
   anchoredWorkspaceInlinePanel,
   WORKSPACE_INLINE_PANEL_TONE,
+  type WorkspaceInlinePanel,
   type WorkspaceInlinePanelAnchor,
   type WorkspaceInlinePanelTone,
   workspaceInlinePanelAtAnchor,
@@ -129,7 +130,10 @@ export function modelWithWorkspaceInlinePanel(
     ? model
     : {
         ...model,
-        inlinePanel: anchoredWorkspaceInlinePanel(model.editor, report),
+        inlinePanel: anchoredWorkspaceInlinePanel(
+          model.editor,
+          workspaceInlinePanelReportForModel(model, report),
+        ),
       };
 }
 
@@ -144,8 +148,20 @@ function modelWithWorkspaceInlinePanelAtAnchor(
     ? model
     : {
         ...model,
-        inlinePanel: workspaceInlinePanelAtAnchor(report, anchor),
+        inlinePanel: workspaceInlinePanelAtAnchor(
+          workspaceInlinePanelReportForModel(model, report),
+          anchor,
+        ),
       };
+}
+
+function workspaceInlinePanelReportForModel(
+  model: WorkspaceModel,
+  report: WorkspaceInlinePanelReport,
+): Pick<WorkspaceInlinePanel, "title" | "message" | "tone" | "bufferId"> {
+  return model.textAuthority.kind === WorkspaceTextAuthorityKinds.Opened
+    ? { ...report, bufferId: model.textAuthority.bufferId }
+    : report;
 }
 
 function whyInlinePanelReportFromRange(

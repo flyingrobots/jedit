@@ -900,6 +900,54 @@ test("enter dispatches help into an anchored inline panel", async () => {
   assert.equal(cleared.inlinePanel, undefined);
 });
 
+test("inline panels clear when the active buffer changes at the same cursor position", async () => {
+  const [inlinePanel, titleScreen, editorMode, authority] = await Promise.all([
+    importDist("app", "workspace", "workspace-inline-panel.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "workspace-text-authority.js"),
+  ]);
+  const model = mockTitleScreenModel(titleScreen, {
+    editor: mockEditor(editorMode, {
+      lines: ["alpha beta"],
+      cursorRow: 0,
+      cursorCol: 0,
+    }),
+    textAuthority: authority.openedWorkspaceTextAuthority({
+      profile: "echoHosted",
+      filePath: "/repo/a.md",
+      bufferId: "buffer:a",
+      readOnly: false,
+      dirty: false,
+    }),
+    inlinePanel: {
+      title: "Why",
+      message: "buffer-a explanation",
+      tone: inlinePanel.WORKSPACE_INLINE_PANEL_TONE.Info,
+      anchorRow: 0,
+      anchorColumn: 0,
+      bufferId: "buffer:a",
+    },
+  });
+  const nextModel = {
+    ...model,
+    textAuthority: authority.openedWorkspaceTextAuthority({
+      profile: "echoHosted",
+      filePath: "/repo/b.md",
+      bufferId: "buffer:b",
+      readOnly: false,
+      dirty: false,
+    }),
+  };
+
+  const cleared = inlinePanel.clearWorkspaceInlinePanelAfterKey(
+    { type: "key", key: "a", ctrl: false, alt: false, shift: false },
+    nextModel,
+  );
+
+  assert.equal(cleared.inlinePanel, undefined);
+});
+
 test("enter keeps non-no-event command why obstructions on the command path", async () => {
   const [keyBindings, titleScreen, editorMode, authority] = await Promise.all([
     importDist("app", "workspace", "key-bindings.js"),
