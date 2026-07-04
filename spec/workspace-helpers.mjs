@@ -33,6 +33,7 @@ const MOCK_I18N_TRANSLATIONS = Object.freeze({
   "settings.rows.markdown_preview.description": "Switch the active Markdown buffer between source and preview.",
   "settings.rows.diagnostics.label": "Diagnostics",
   "settings.rows.diagnostics.description": "Inspect Graft, parser, and Colorful runtime wiring.",
+  "settings.toast.changed_title": "Settings changed",
   "settings.values.on": "On",
   "settings.values.off": "Off",
   "settings.values.theme_mode_dark": "Dark",

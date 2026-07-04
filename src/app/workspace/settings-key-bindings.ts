@@ -19,8 +19,12 @@ import {
 
 type KeyBindingResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 
-const SETTINGS_TOAST_TITLE = 'Settings changed';
 const SETTINGS_TOAST_SEPARATOR = ' -> ';
+const SETTINGS_TOAST_I18N_KEYS = Object.freeze({
+  ChangedTitle: 'settings.toast.changed_title',
+  ValueOn: 'settings.values.on',
+  ValueOff: 'settings.values.off',
+} as const);
 
 export function updateSettingsKey(
   msg: KeyMsg,
@@ -73,7 +77,7 @@ function withSettingsChangeToast(
   const [notified, toastCommands] = pushNotificationToast(
     after,
     {
-      title: SETTINGS_TOAST_TITLE,
+      title: after.i18n.t(SETTINGS_TOAST_I18N_KEYS.ChangedTitle),
       message,
       variant: NotificationVariants.Toast,
       tone: NotificationTones.Info,
@@ -95,18 +99,22 @@ function settingsChangeMessage(
     return undefined;
   }
   const afterRow = settingsRows(after).find((row) => row.id === beforeRow.id);
-  const beforeValue = settingRowValue(beforeRow);
-  const afterValue = afterRow == null ? beforeValue : settingRowValue(afterRow);
+  const beforeValue = settingRowValue(beforeRow, before.i18n);
+  const afterValue = afterRow == null
+    ? beforeValue
+    : settingRowValue(afterRow, after.i18n);
   return beforeValue === afterValue
     ? undefined
     : `${beforeRow.label}: ${beforeValue}${SETTINGS_TOAST_SEPARATOR}${afterValue}`;
 }
 
-function settingRowValue(row: JeditSettingsRow): string {
+function settingRowValue(row: JeditSettingsRow, i18n: WorkspaceModel['i18n']): string {
   if (row.valueLabel.length > 0) {
     return row.valueLabel;
   }
-  return row.checked === true ? 'On' : 'Off';
+  return i18n.t(row.checked === true
+    ? SETTINGS_TOAST_I18N_KEYS.ValueOn
+    : SETTINGS_TOAST_I18N_KEYS.ValueOff);
 }
 
 function updateDiagnosticsPanelKey(

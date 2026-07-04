@@ -87,8 +87,19 @@ test('workspace settings posts a toast when a setting changes', async () => {
     importDist('app', 'workspace', 'settings.js'),
   ]);
   const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime());
+  const localizedI18n = mockI18n({
+    translations: {
+      'settings.rows.line_numbers.label': 'Numéros de ligne',
+      'settings.values.line_numbers_absolute': 'Absolus',
+      'settings.values.line_numbers_relative': 'Relatifs',
+      'settings.toast.changed_title': 'Paramètres modifiés',
+    },
+  });
   const [initialModel] = runtime.init();
-  const [settingsOpen] = runtime.update({ type: 'key', key: 'f2' }, initialModel);
+  const [settingsOpen] = runtime.update(
+    { type: 'key', key: 'f2' },
+    { ...initialModel, i18n: localizedI18n },
+  );
   const lineNumbersIndex = settingsModule.settingsRows(settingsOpen)
     .findIndex((row) => row.id === 'line-numbers');
 
@@ -99,7 +110,7 @@ test('workspace settings posts a toast when a setting changes', async () => {
 
   assert.equal(changed.lineNumberMode, 'relative');
   assert.equal(
-    hasNotification(changed, 'Settings changed', 'Line numbers: Absolute -> Relative'),
+    hasNotification(changed, 'Paramètres modifiés', 'Numéros de ligne: Absolus -> Relatifs'),
     true,
   );
 });
