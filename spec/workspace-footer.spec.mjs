@@ -159,6 +159,24 @@ test('workspace footer renders command-line hints on the painted secondary row',
   assert.equal(rowText(surface, 1).trim(), '[tab accept · enter run · esc cancel]');
 });
 
+test('workspace footer applies theme foreground and background to painted text', async () => {
+  const footer = await loadFooterModule();
+  const token = {
+    fg: '#22272e',
+    fgRGB: [34, 39, 46],
+    bg: '#dedad0',
+    bgRGB: [222, 218, 208],
+    foregroundVariables: [],
+    backgroundVariables: [],
+  };
+  const surface = footer.renderWorkspaceFooter(idleNormalState(), 24, token);
+  const cell = surface.get(0, 0);
+
+  assert.equal(cell.char, 'N');
+  assert.deepEqual(cell.fgRGB, token.fgRGB);
+  assert.deepEqual(cell.bgRGB, token.bgRGB);
+});
+
 test('workspace footer pins editor posture to the lower-right corner when it fits', async () => {
   const footer = await loadFooterModule();
   const posture = 'basis:reading | head:basis | worldline:main | export:host | admit:main | tick:t0';

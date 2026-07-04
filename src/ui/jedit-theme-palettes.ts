@@ -103,7 +103,7 @@ const SOLARIZED_DARK_PALETTE: ThemePalette = {
 };
 
 const SOLARIZED_LIGHT_PALETTE: ThemePalette = {
-  ink: [101, 123, 131],
+  ink: [79, 98, 104],
   muted: [147, 161, 161],
   accent: [211, 54, 130],
   info: [38, 139, 210],
