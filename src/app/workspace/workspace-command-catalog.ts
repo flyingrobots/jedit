@@ -225,17 +225,19 @@ export function workspaceCommandDescriptors(): readonly WorkspaceCommandDescript
 export function workspaceCommandArgumentDescriptors(
   commandName: string,
 ): readonly WorkspaceCommandArgumentDescriptor[] {
+  const normalizedCommandName = normalizedWorkspaceCommandLookup(commandName);
   return WORKSPACE_COMMAND_ARGUMENT_DESCRIPTORS.filter((descriptor) =>
-    descriptor.commandName === commandName,
+    descriptor.commandName === normalizedCommandName,
   );
 }
 
 export function workspaceCommandDescriptorByName(
   name: string,
 ): WorkspaceCommandDescriptor | undefined {
+  const normalizedName = normalizedWorkspaceCommandLookup(name);
   return WORKSPACE_COMMAND_DESCRIPTORS.find((descriptor) =>
-    descriptor.name === name ||
-    descriptor.aliases.some((alias) => alias === name),
+    descriptor.name === normalizedName ||
+    descriptor.aliases.some((alias) => alias === normalizedName),
   );
 }
 
@@ -261,6 +263,10 @@ export function workspaceCommandHelpLines(name: string | undefined): readonly st
   return WORKSPACE_COMMAND_DESCRIPTORS.map((command) =>
     `:${command.usage} - ${command.detail}`,
   );
+}
+
+function normalizedWorkspaceCommandLookup(name: string): string {
+  return name.trim().toLowerCase();
 }
 
 function argument(

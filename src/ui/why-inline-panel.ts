@@ -92,12 +92,16 @@ function wrapWhyPanelLine(line: string, width: number): readonly string[] {
       : `${current}${WHY_PANEL_WORD_SEPARATOR}${word}`;
     if ([...candidate].length <= width) {
       current = candidate;
+    } else if (current.length === 0) {
+      rows.push(word);
     } else {
       rows.push(current);
       current = word;
     }
   }
-  rows.push(current);
+  if (current.length > 0) {
+    rows.push(current);
+  }
   return rows;
 }
 

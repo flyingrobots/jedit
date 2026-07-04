@@ -115,6 +115,59 @@ test('workspace settings posts a toast when a setting changes', async () => {
   );
 });
 
+test('workspace settings reclamps editor visibility when line-number width changes', async () => {
+  const [settingsModule, editorMode, viewportModule] = await Promise.all([
+    importDist('app', 'workspace', 'settings.js'),
+    importDist('app', 'workspace', 'editor', 'mode.js'),
+    importDist('app', 'workspace', 'viewport.js'),
+  ]);
+  const model = {
+    columns: 60,
+    rows: 16,
+    fileDrawerProgress: 0,
+    graftDrawerProgress: 0,
+    historyDrawerProgress: 0,
+    footerVisible: true,
+    lineNumberMode: 'absolute',
+    editor: {
+      path: '/repo/notes.txt',
+      lines: Array.from({ length: 99 }, (_, index) => (index === 0 ? 'x'.repeat(80) : `line-${index}`)),
+      cursorRow: 0,
+      cursorCol: 0,
+      scrollRow: 0,
+      scrollCol: 0,
+      mode: editorMode.EditorModes.Normal,
+      dirty: false,
+      readOnly: false,
+      undoStack: [],
+      redoStack: [],
+      pendingNormal: undefined,
+      pendingVimKeys: [],
+      register: '',
+      registers: {},
+      marks: {},
+    },
+  };
+  const absoluteViewport = viewportModule.editorViewport(model);
+  const cursorAtOldRightEdge = absoluteViewport.width - 1;
+  const atEdge = {
+    ...model,
+    editor: {
+      ...model.editor,
+      cursorCol: cursorAtOldRightEdge,
+    },
+  };
+  const relativeViewport = viewportModule.editorViewport({
+    ...atEdge,
+    lineNumberMode: 'relative',
+  });
+
+  const [changed] = settingsModule.workspaceSettingsHandlers().toggleLineNumberMode(atEdge);
+
+  assert.equal(changed.lineNumberMode, 'relative');
+  assert.equal(changed.editor.scrollCol, cursorAtOldRightEdge - relativeViewport.width + 1);
+});
+
 test('workspace settings opens and refreshes the Graft diagnostics panel', async () => {
   const [runtimeModule, settingsModule, diagnosticsPort] = await Promise.all([
     importDist('app', 'workspace', 'runtime.js'),

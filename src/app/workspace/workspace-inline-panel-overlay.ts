@@ -64,9 +64,16 @@ function inlinePanelPlacement(
   if (anchorViewportRow < 0 || anchorViewportRow >= viewport.height) {
     return undefined;
   }
+  const gutterWidth = sourceViewerGutterWidth(editor.lines.length, panel.anchorRow, model.lineNumberMode);
+  const textViewportWidth = Math.max(INLINE_PANEL_MIN_WIDTH, viewport.width - gutterWidth);
+  const anchorViewportColumn = panel.anchorColumn - editor.scrollCol;
+  if (anchorViewportColumn < 0 || anchorViewportColumn >= textViewportWidth) {
+    return undefined;
+  }
   const sourceX = layout.viewer.x +
     VIEWER_LEFT_PAD +
-    sourceViewerGutterWidth(editor.lines.length, panel.anchorRow, model.lineNumberMode);
+    gutterWidth +
+    anchorViewportColumn;
   const maxWidth = Math.max(
     INLINE_PANEL_MIN_WIDTH,
     layout.viewer.x + layout.viewer.width - sourceX - INLINE_PANEL_EDGE_INSET,
