@@ -901,6 +901,45 @@ test("enter dispatches help into an anchored inline panel", async () => {
   assert.equal(cleared.inlinePanel, undefined);
 });
 
+test("help inline panels render at the cursor column when horizontally visible", async () => {
+  const [keyBindings, viewer, titleScreen, editorMode] = await Promise.all([
+    importDist("app", "workspace", "key-bindings.js"),
+    importDist("app", "workspace", "viewer.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+  ]);
+  const model = mockTitleScreenModel(titleScreen, {
+    columns: 96,
+    rows: 20,
+    editor: mockEditor(editorMode, {
+      lines: ["alpha beta gamma"],
+      cursorRow: 0,
+      cursorCol: 11,
+      scrollCol: 0,
+    }),
+    focusPane: "editor",
+    footerVisible: true,
+    jeditTheme: commandLineRenderTheme(),
+    commandLine: activeCommandLine("help braid"),
+  });
+
+  const [nextModel] = keyBindings.updateFromKey(
+    { type: "key", key: "enter", ctrl: false, alt: false, shift: false },
+    model,
+    mockKeyBindingContext(),
+  );
+  const rows = surfaceText(viewer.renderWorkspace(nextModel)).split("\n");
+  const panelRow = rows.find((row) => row.includes("│ i :braid"));
+  const sourceRow = rows.find((row) => row.includes("alpha beta gamma"));
+
+  assert.ok(panelRow != null, "expected rendered inline help panel");
+  assert.ok(sourceRow != null, "expected rendered source row");
+  assert.equal(
+    panelRow.indexOf("│ i :braid"),
+    sourceRow.indexOf("alpha beta gamma") + nextModel.inlinePanel.anchorColumn,
+  );
+});
+
 test("inline panels clear when the active buffer changes at the same cursor position", async () => {
   const [inlinePanel, titleScreen, editorMode, authority] = await Promise.all([
     importDist("app", "workspace", "workspace-inline-panel.js"),
@@ -947,6 +986,60 @@ test("inline panels clear when the active buffer changes at the same cursor posi
   );
 
   assert.equal(cleared.inlinePanel, undefined);
+});
+
+test("inline panels clear when source editor no longer owns focus", async () => {
+  const [inlinePanel, titleScreen, editorMode] = await Promise.all([
+    importDist("app", "workspace", "workspace-inline-panel.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+  ]);
+  const model = mockTitleScreenModel(titleScreen, {
+    editor: mockEditor(editorMode, {
+      lines: ["alpha beta"],
+      cursorRow: 0,
+      cursorCol: 0,
+    }),
+    focusPane: "editor",
+    settingsOpen: false,
+    viewMode: "source",
+    commandLine: {
+      active: false,
+      input: "",
+      cursorIndex: 0,
+      anchorCursorIndex: 0,
+      selectedCompletionIndex: 0,
+    },
+    inlinePanel: {
+      title: "Why",
+      message: "same-cursor explanation",
+      tone: inlinePanel.WORKSPACE_INLINE_PANEL_TONE.Info,
+      anchorRow: 0,
+      anchorColumn: 0,
+    },
+  });
+  const cases = [
+    { settingsOpen: true },
+    { viewMode: "preview" },
+    { focusPane: "files" },
+    {
+      commandLine: {
+        active: true,
+        input: "",
+        cursorIndex: 0,
+        anchorCursorIndex: 0,
+        selectedCompletionIndex: 0,
+      },
+    },
+  ];
+
+  for (const overrides of cases) {
+    const cleared = inlinePanel.clearWorkspaceInlinePanelAfterKey(
+      { type: "key", key: "f2", ctrl: false, alt: false, shift: false },
+      { ...model, ...overrides },
+    );
+    assert.equal(cleared.inlinePanel, undefined);
+  }
 });
 
 test("enter keeps non-no-event command why obstructions on the command path", async () => {

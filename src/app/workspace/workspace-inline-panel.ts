@@ -1,6 +1,8 @@
 import type { KeyMsg } from "@flyingrobots/bijou-tui";
+import { FocusPanes } from "../../ui/panel-focus.js";
 import type { EditorState } from "./editor/model.js";
 import type { WorkspaceModel } from "./model.js";
+import { ViewModes } from "./view-mode.js";
 import { WorkspaceKeys } from "./workspace-key.js";
 import { WorkspaceTextAuthorityKinds } from "./workspace-text-authority.js";
 
@@ -79,11 +81,21 @@ function shouldKeepWorkspaceInlinePanel(
   const editor = model.editor;
   return (
     msg.key !== WorkspaceKeys.Escape &&
+    sourceEditorOwnsInlinePanel(model) &&
     editor != null &&
     editor.cursorRow === panel.anchorRow &&
     editor.cursorCol === panel.anchorColumn &&
     inlinePanelMatchesActiveBuffer(model, panel)
   );
+}
+
+function sourceEditorOwnsInlinePanel(model: WorkspaceModel): boolean {
+  return model.focusPane === FocusPanes.Editor &&
+    model.viewMode === ViewModes.Source &&
+    model.settingsOpen !== true &&
+    model.scenePickerOpen !== true &&
+    model.startupFileModalOpen !== true &&
+    model.commandLine.active !== true;
 }
 
 function inlinePanelMatchesActiveBuffer(

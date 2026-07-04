@@ -213,6 +213,13 @@ test("workspace command help reports unknown commands consistently", async () =>
   assert.deepEqual(catalog.workspaceCommandHelpLines("nope"), ["Unknown command: nope"]);
 });
 
+test("workspace command help normalizes command names and aliases", async () => {
+  const catalog = await importDist("app", "workspace", "workspace-command-catalog.js");
+
+  assert.equal(catalog.workspaceCommandHelpTitle("Write"), ":write");
+  assert.match(catalog.workspaceCommandHelpLines("W").join("\n"), /Usage: :write/);
+});
+
 test("workspace command line completion provider filters :edit files and directories", async () => {
   const [completion, fileSystem] = await Promise.all([
     importDist("app", "workspace", "command-completion.js"),

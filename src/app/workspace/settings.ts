@@ -5,7 +5,7 @@ import {
   type JeditSettingsHandlers,
 } from '../settings-session.js';
 import type { Cmd } from '@flyingrobots/bijou-tui';
-import { isWorkspaceMarkdownFile } from './editor-session.js';
+import { ensureEditorVisible, editorViewport, isWorkspaceMarkdownFile } from './editor-session.js';
 import { beginGraftDiagnosticsRefresh } from './graft-diagnostics.js';
 import { type WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
@@ -56,15 +56,27 @@ export function workspaceSettingsHandlers(
       ...model,
       footerVisible: !model.footerVisible,
     }, []]),
-    toggleLineNumberMode: (model) => ([{
-      ...model,
-      lineNumberMode: nextSourceLineNumberMode(model.lineNumberMode),
-    }, []]),
+    toggleLineNumberMode: (model) => toggleWorkspaceLineNumberMode(model),
     toggleMarkdownPreview: (model) => toggleWorkspaceMarkdownPreview(model),
     openDiagnostics: (model) => openWorkspaceDiagnostics(model, context),
     cycleLocale: (model, delta) => cycleWorkspaceLocale(model, delta),
     selectLocale: (model, locale) => [applyWorkspaceLocale(model, locale), []],
   };
+}
+
+function toggleWorkspaceLineNumberMode(model: WorkspaceModel): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
+  const next: WorkspaceModel = {
+    ...model,
+    lineNumberMode: nextSourceLineNumberMode(model.lineNumberMode),
+  };
+  if (next.editor == null) {
+    return [next, []];
+  }
+  const viewport = editorViewport(next);
+  return [{
+    ...next,
+    editor: ensureEditorVisible(next.editor, viewport.width, viewport.height),
+  }, []];
 }
 
 function applyWorkspaceLocale(model: WorkspaceModel, locale: JeditSettingsLocaleSelection): WorkspaceModel {
