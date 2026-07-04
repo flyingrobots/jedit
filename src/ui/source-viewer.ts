@@ -59,7 +59,13 @@ export function renderSourceViewer(
     editor.cursorRow,
     lineNumberMode,
   );
-  paintSourceViewerGutter(surface, sourceWindow, options, gutter, editor.cursorRow);
+  paintSourceViewerGutter(surface, {
+    reading: sourceWindow,
+    options,
+    gutter,
+    cursorRow: editor.cursorRow,
+    mode: lineNumberMode,
+  });
   const viewport = sourceTextViewport(options, gutter, editor.scrollCol);
   paintHighlightedSourceWindow(surface, sourceWindow, highlight, viewport);
   paintSourceViewerCursor(surface, editor, options, viewport);
@@ -96,6 +102,14 @@ function paintSourceViewerCursor(
 interface SourceViewerGutter {
   readonly numberWidth: number;
   readonly width: number;
+}
+
+interface SourceViewerGutterPaintContext {
+  readonly reading: ReturnType<typeof createSourceWindowReadingFromLines>;
+  readonly options: SourceViewerOptions;
+  readonly gutter: SourceViewerGutter;
+  readonly cursorRow: number;
+  readonly mode: SourceLineNumberMode;
 }
 
 export function sourceViewerGutterWidth(
@@ -135,17 +149,14 @@ function sourceTextViewport(
 
 function paintSourceViewerGutter(
   surface: Surface,
-  reading: ReturnType<typeof createSourceWindowReadingFromLines>,
-  options: SourceViewerOptions,
-  gutter: SourceViewerGutter,
-  cursorRow: number,
+  context: SourceViewerGutterPaintContext,
 ): void {
+  const { reading, options, gutter, cursorRow, mode } = context;
   const numberToken =
     options.theme.source.get(JEDIT_SOURCE_TOKEN.Comment) ??
     options.theme.chrome.titleLogoShadow;
   const ruleToken = options.theme.chrome.activeEdge;
   const ruleX = options.leftPad + gutter.numberWidth + GUTTER_CONTENT_GAP - 1;
-  const mode = options.lineNumberMode ?? DEFAULT_LINE_NUMBER_MODE;
   for (let row = 0; row < options.viewport.height; row += 1) {
     const sourceLine = reading.lines[row];
     const y = options.topPad + row;
