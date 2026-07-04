@@ -13,6 +13,7 @@ const INSERT_MODE = 'insert';
 const FIRST_VISIBLE_LINE_NUMBER = 1;
 const GUTTER_CONTENT_GAP = 1;
 const GUTTER_RULE_GAP = 1;
+const SIGN_CHARACTER_WIDTH = 1;
 const GUTTER_RULE = '│';
 const MIN_TEXT_VIEWPORT_WIDTH = 1;
 const DEFAULT_LINE_NUMBER_MODE = SOURCE_LINE_NUMBER_MODE.Absolute;
@@ -205,7 +206,7 @@ function lineNumberLabelWidth(
 function signedLineNumberWidth(value: number): number {
   return value <= CURRENT_LINE_RELATIVE_NUMBER
     ? String(CURRENT_LINE_RELATIVE_NUMBER).length
-    : String(value).length + GUTTER_CONTENT_GAP;
+    : String(value).length + SIGN_CHARACTER_WIDTH;
 }
 
 function paintGutterRuleGap(
