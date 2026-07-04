@@ -1,5 +1,6 @@
 import {
   jeditSettingsRows,
+  type JeditSettingsActivationDelta,
   type JeditSettingsLocaleSelection,
   type JeditSettingsHandlers,
 } from '../settings-session.js';
@@ -75,7 +76,7 @@ function applyWorkspaceLocale(model: WorkspaceModel, locale: JeditSettingsLocale
 
 function cycleWorkspaceLocale(
   model: WorkspaceModel,
-  delta: number,
+  delta: JeditSettingsActivationDelta,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   const locales = model.i18n.locales;
   if (locales.length === 0) {

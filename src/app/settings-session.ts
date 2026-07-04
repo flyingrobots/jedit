@@ -29,6 +29,13 @@ export const JEDIT_SETTING_ROW_KIND = {
 
 export type JeditSettingRowKind = typeof JEDIT_SETTING_ROW_KIND[keyof typeof JEDIT_SETTING_ROW_KIND];
 
+const SETTINGS_ACTIVATE_NEXT_DELTA = 1;
+const SETTINGS_ACTIVATE_PREVIOUS_DELTA = -1;
+
+export type JeditSettingsActivationDelta =
+  | typeof SETTINGS_ACTIVATE_NEXT_DELTA
+  | typeof SETTINGS_ACTIVATE_PREVIOUS_DELTA;
+
 export interface JeditSettingsState {
   readonly jeditTheme: JeditTheme;
   readonly footerVisible: boolean;
@@ -71,7 +78,7 @@ export interface JeditSettingsHandlers<Model, Command> {
   toggleLineNumberMode(model: Model): [Model, Cmd<Command>[]];
   toggleMarkdownPreview(model: Model): [Model, Cmd<Command>[]];
   openDiagnostics(model: Model): [Model, Cmd<Command>[]];
-  cycleLocale(model: Model, delta: number): [Model, Cmd<Command>[]];
+  cycleLocale(model: Model, delta: JeditSettingsActivationDelta): [Model, Cmd<Command>[]];
   selectLocale(model: Model, locale: JeditSettingsLocaleSelection): [Model, Cmd<Command>[]];
 }
 
@@ -159,9 +166,6 @@ const SETTINGS_KEY_ACTIONS = new Map<string, SettingsKeyAction>([
   [KEY_SPACE, SETTINGS_KEY_ACTION.Activate],
   [KEY_SPACE_CANONICAL, SETTINGS_KEY_ACTION.Activate],
 ]);
-
-const SETTINGS_ACTIVATE_NEXT_DELTA = 1;
-const SETTINGS_ACTIVATE_PREVIOUS_DELTA = -1;
 
 type NonLocaleSettingsHandlerName =
   | 'cycleTheme'
@@ -389,7 +393,7 @@ function reduceSettingsKeyAction<Model extends JeditSettingsHostState, Command>(
   );
 }
 
-function settingsActivationDelta(action: SettingsKeyAction): number {
+function settingsActivationDelta(action: SettingsKeyAction): JeditSettingsActivationDelta {
   return action === SETTINGS_KEY_ACTION.ActivatePrevious
     ? SETTINGS_ACTIVATE_PREVIOUS_DELTA
     : SETTINGS_ACTIVATE_NEXT_DELTA;
@@ -406,7 +410,7 @@ function activateSettingsRow<Model, Command>(
   model: Model,
   row: JeditSettingsRow | undefined,
   handlers: JeditSettingsHandlers<Model, Command>,
-  delta: number,
+  delta: JeditSettingsActivationDelta,
 ): [Model, Cmd<Command>[]] {
   const action = row?.action;
   if (action === JEDIT_SETTING_ACTION.CycleLocale) {
