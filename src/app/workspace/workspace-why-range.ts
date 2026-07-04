@@ -103,6 +103,12 @@ export function applyWorkspaceWhyRangeResult(
   return [modelWithWorkspaceInlinePanelAtAnchor(model, report, msg.anchor), []];
 }
 
+export function jeditWhyReportTone(report: JeditWhyReport): WorkspaceInlinePanelTone {
+  return report.kind === WHY_REPORT_OBSTRUCTION_KIND
+    ? WORKSPACE_INLINE_PANEL_TONE.Warning
+    : WORKSPACE_INLINE_PANEL_TONE.Info;
+}
+
 function workspaceWhyRangeOutcomeFromProduction(
   explainOutcome: ProductionTextWhyRangeOutcome,
 ): WorkspaceWhyRangeOutcome {
@@ -187,9 +193,7 @@ function whyInlinePanelReportFromRange(
   return {
     title: fallbackReport.title,
     message: fallbackReport.message,
-    tone: fallbackReport.kind === WHY_REPORT_OBSTRUCTION_KIND
-      ? WORKSPACE_INLINE_PANEL_TONE.Warning
-      : WORKSPACE_INLINE_PANEL_TONE.Info,
+    tone: jeditWhyReportTone(fallbackReport),
   };
 }
 

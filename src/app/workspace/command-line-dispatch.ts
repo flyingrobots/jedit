@@ -31,6 +31,7 @@ import { WorkspaceTextAuthorityKinds } from "./workspace-text-authority.js";
 import { dispatchWorldlineCommand } from "./worldline-command-dispatch.js";
 import {
   createWorkspaceWhyRangeCmd,
+  jeditWhyReportTone,
   jeditWhyRangeAtCursor,
   modelWithWorkspaceInlinePanel,
   WORKSPACE_INLINE_PANEL_TONE,
@@ -213,9 +214,7 @@ function dispatchWhyCommand(
     : [modelWithWorkspaceInlinePanel(closed, {
         title: report.title,
         message: report.message,
-        tone: report.kind === WHY_REPORT_OBSTRUCTION_KIND
-          ? WORKSPACE_INLINE_PANEL_TONE.Warning
-          : WORKSPACE_INLINE_PANEL_TONE.Info,
+        tone: jeditWhyReportTone(report),
       }), []];
 }
 
