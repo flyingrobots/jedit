@@ -732,6 +732,24 @@ Recommended posture:
 - both can be retained;
 - normal UI hides structural maintenance unless debugging.
 
+Initial balance invariant for the tiny graph-backed runtime:
+
+- target leaf byte length is 4096 bytes;
+- minimum non-edge leaf byte length is 1024 bytes;
+- edge leaves may be smaller than the minimum when the buffer itself is smaller
+  or when the edge range has no merge candidate;
+- maximum leaf byte length is 8192 bytes before a replacement must split or
+  rebalance;
+- branches store exact `byteLength`, `lineCount`, `height`, and `contentHash`
+  aggregates from children;
+- branch height difference must be no greater than 1 after maintenance, except
+  while one admitted rewrite is still emitting its structural-maintenance facts;
+- replacement triggers rebalance when a touched leaf exceeds 8192 bytes, a
+  non-edge leaf falls below 1024 bytes and has a merge candidate, or a copied
+  path would create a branch height difference greater than 1;
+- rebalancing emits structural-maintenance evidence linked to the semantic
+  rewrite that made maintenance necessary.
+
 Checkpoint semantics also need precision. A checkpoint is not new text truth. It
 is a durable named basis for efficient future reads, retention, or export.
 

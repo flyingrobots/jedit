@@ -132,6 +132,15 @@ test('HT-0149 checkpoint fact carries schema version', () => {
   assert.match(discovery, /interface RopeCheckpointFact \{[\s\S]*readonly schemaVersion: 1;/);
 });
 
+test('HT-0149 specifies concrete rope balance invariants', () => {
+  const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
+
+  assert.match(discovery, /target leaf byte length is 4096 bytes/);
+  assert.match(discovery, /minimum non-edge leaf byte length is 1024 bytes/);
+  assert.match(discovery, /maximum leaf byte length is 8192 bytes/);
+  assert.match(discovery, /branch height difference must be no greater than 1/);
+});
+
 test('process doc defines the official cycle lifecycle and proof boundary', () => {
   const processDoc = readRepoFile(PROCESS_PATH);
 
