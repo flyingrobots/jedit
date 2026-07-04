@@ -4,6 +4,7 @@ import {
   fakeProductionTextSession,
   importDist,
   mockEditor,
+  mockI18n,
   mockKeyBindingContext,
   mockRuntime,
   mockTitleScreenModel,
@@ -1204,6 +1205,11 @@ test("enter dispatches why with typed range obstruction evidence", async () => {
       lastVimEdit: undefined,
     }),
     focusPane: "editor",
+    i18n: mockI18n({
+      translations: {
+        "why.range_obstructed_title": "Range why blocked",
+      },
+    }),
     textAuthority: authority.openedWorkspaceTextAuthority({
       profile: "echoHosted",
       filePath: "/repo/notes.md",
@@ -1225,7 +1231,7 @@ test("enter dispatches why with typed range obstruction evidence", async () => {
 
   assert.equal(pendingWhy.commandLine.active, false);
   assert.equal(message.type, "why-range-result");
-  assert.equal(notified.inlinePanel.title, "Why range obstructed");
+  assert.equal(notified.inlinePanel.title, "Range why blocked");
   assert.match(notified.inlinePanel.message, /text-buffer-why-range-obstructed/);
   assert.match(notified.inlinePanel.message, /range explanation failed/);
   assert.doesNotMatch(notified.inlinePanel.message, /No meaningful command/);

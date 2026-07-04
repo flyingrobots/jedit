@@ -149,6 +149,9 @@
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -301,6 +304,9 @@
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -453,6 +459,9 @@
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -605,6 +614,9 @@
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -757,6 +769,9 @@
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -909,6 +924,9 @@
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -1061,6 +1079,9 @@
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -1213,6 +1234,9 @@
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -1365,6 +1389,9 @@
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -1517,6 +1544,9 @@
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -1669,6 +1699,9 @@
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -1821,6 +1854,9 @@
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -1973,6 +2009,9 @@
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -2125,6 +2164,9 @@
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -2277,6 +2319,9 @@
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -2429,6 +2474,9 @@
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -2581,6 +2629,9 @@
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -2733,6 +2784,9 @@
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -2885,6 +2939,9 @@
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     },
@@ -3037,6 +3094,9 @@
           "title": "Worldlines",
           "empty": "No worldlines yet",
           "header": "kind      name           basis          head  delta     conflict"
+        },
+        "why": {
+          "range_obstructed_title": "Why range obstructed"
         }
       }
     }

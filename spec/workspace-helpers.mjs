@@ -44,6 +44,7 @@ const MOCK_I18N_TRANSLATIONS = Object.freeze({
   "settings.values.preview": "Preview",
   "settings.values.current": "Current",
   "settings.values.open": "Open",
+  "why.range_obstructed_title": "Why range obstructed",
   "worldline.title": "Worldlines",
   "worldline.empty": "No worldlines yet",
   "worldline.header": "kind      name           basis          head  delta     conflict",

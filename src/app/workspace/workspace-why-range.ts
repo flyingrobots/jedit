@@ -35,6 +35,9 @@ const NEXT_COLUMN = 1;
 const ZERO_LENGTH = 0;
 const EMPTY_CHARACTER = '';
 const WHY_REPORT_OBSTRUCTION_KIND = 'obstruction';
+const WHY_RANGE_I18N_KEYS = Object.freeze({
+  ObstructedTitle: 'why.range_obstructed_title',
+} as const);
 
 interface WorkspaceWhyRangeCommandRequest {
   readonly bufferId: string;
@@ -99,7 +102,11 @@ export function applyWorkspaceWhyRangeResult(
   if (!whyRangeResultMatchesActiveBuffer(model, msg.bufferId)) {
     return [model, []];
   }
-  const report = whyInlinePanelReportFromRange(msg.outcome, msg.fallbackReport);
+  const report = whyInlinePanelReportFromRange(
+    msg.outcome,
+    msg.fallbackReport,
+    model.i18n,
+  );
   return [modelWithWorkspaceInlinePanelAtAnchor(model, report, msg.anchor), []];
 }
 
@@ -173,6 +180,7 @@ function workspaceInlinePanelReportForModel(
 function whyInlinePanelReportFromRange(
   outcome: WorkspaceWhyRangeOutcome,
   fallbackReport: JeditWhyReport,
+  i18n: WorkspaceModel['i18n'],
 ): WorkspaceInlinePanelReport {
   if (outcome.kind === WorkspaceWhyRangeOutcomeKinds.Range) {
     return {
@@ -185,7 +193,7 @@ function whyInlinePanelReportFromRange(
   }
   if (outcome.kind === WorkspaceWhyRangeOutcomeKinds.Obstructed) {
     return {
-      title: 'Why range obstructed',
+      title: i18n.t(WHY_RANGE_I18N_KEYS.ObstructedTitle),
       message: `${outcome.obstruction.code}: ${outcome.obstruction.issue.message}`,
       tone: WORKSPACE_INLINE_PANEL_TONE.Warning,
     };
