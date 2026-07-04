@@ -16,6 +16,7 @@ import {
   type WorkspaceInlinePanelTone,
   workspaceInlinePanelAtAnchor,
 } from './workspace-inline-panel.js';
+import { WorkspaceTextAuthorityKinds } from './workspace-text-authority.js';
 
 export {
   WORKSPACE_INLINE_PANEL_TONE,
@@ -76,6 +77,7 @@ export function createWorkspaceWhyRangeCmd(
     });
     return {
       type: WorkspaceMessageTypes.WhyRangeResult,
+      bufferId: request.bufferId,
       report: outcome.kind === ProductionTextSessionOutcomeKinds.RangeExplained ? outcome.report : undefined,
       obstruction: outcome.kind === ProductionTextSessionOutcomeKinds.Obstructed ? outcome.obstruction : undefined,
       fallbackReport: request.fallbackReport,
@@ -89,8 +91,16 @@ export function applyWorkspaceWhyRangeResult(
   msg: Extract<WorkspaceMsg, { type: typeof WorkspaceMessageTypes.WhyRangeResult }>,
   model: WorkspaceModel,
 ): WorkspaceRuntimeResult {
+  if (!whyRangeResultMatchesActiveBuffer(model, msg.bufferId)) {
+    return [model, []];
+  }
   const report = whyInlinePanelReportFromRange(msg.report, msg.obstruction, msg.fallbackReport);
   return [modelWithWorkspaceInlinePanelAtAnchor(model, report, msg.anchor), []];
+}
+
+function whyRangeResultMatchesActiveBuffer(model: WorkspaceModel, bufferId: string): boolean {
+  return model.textAuthority.kind === WorkspaceTextAuthorityKinds.Opened &&
+    model.textAuthority.bufferId === bufferId;
 }
 
 export function modelWithWorkspaceInlinePanel(

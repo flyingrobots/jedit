@@ -1049,6 +1049,16 @@ test("enter dispatches why through retained range history when a cursor range is
       cursorCol: 8,
     },
   });
+  const [staleBuffer] = runtime.update(message, {
+    ...pendingWhy,
+    textAuthority: authority.openedWorkspaceTextAuthority({
+      profile: "echoHosted",
+      filePath: "/repo/other.md",
+      bufferId: "text-buffer:1",
+      readOnly: false,
+      dirty: true,
+    }),
+  });
 
   assert.equal(pendingWhy.commandLine.active, false);
   assert.equal(commands.length, 1);
@@ -1062,6 +1072,7 @@ test("enter dispatches why through retained range history when a cursor range is
   assert.match(notified.inlinePanel.message, /ropeDiff receipt:range/);
   assert.doesNotMatch(notified.inlinePanel.message, /No meaningful command/);
   assert.equal(stale.inlinePanel, undefined);
+  assert.equal(staleBuffer.inlinePanel, undefined);
 });
 
 test("enter dispatches why with typed unavailable range evidence", async () => {

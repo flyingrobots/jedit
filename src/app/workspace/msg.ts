@@ -134,12 +134,13 @@ export type WorkspaceMsg =
     }
   | {
       type: typeof WorkspaceMessageTypes.WhyRangeResult;
-	      report?: JeditWhyRangeReport;
-	      obstruction?: ProductionTextObstruction;
-	      fallbackReport: JeditWhyReport;
-	      anchor: WorkspaceInlinePanelAnchor;
-	      atMs: number;
-	    }
+      bufferId: string;
+      report?: JeditWhyRangeReport;
+      obstruction?: ProductionTextObstruction;
+      fallbackReport: JeditWhyReport;
+      anchor: WorkspaceInlinePanelAnchor;
+      atMs: number;
+    }
   | {
       type: typeof WorkspaceMessageTypes.CommandLineFilePreviewResult;
       requestId: number;
