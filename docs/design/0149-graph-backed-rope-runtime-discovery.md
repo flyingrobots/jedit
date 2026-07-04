@@ -97,64 +97,444 @@ We should not patch this by making full-string replacement faster. That would
 preserve the wrong architecture. The response needs to be a graph-backed runtime
 cutover.
 
-### 1. Fence The Fixture
+The hard gate is:
 
-The current in-memory full-snapshot runtime must be renamed, documented, or
-otherwise fenced as a fixture or transitional adapter. It should not silently be
-the default production text authority for daily-driver jedit.
+```text
+Do not begin more UI causal-honesty work until the text runtime has at least one
+real graph-backed path for create, read, replace, and checkpoint.
+```
+
+Until then, UI labels such as `basis`, `head`, `tick`, `checkpoint`, and
+`worldline` must either be backed by graph facts or explicitly marked as
+transitional projection posture.
+
+### 1. Rename And Fence The Fixture
+
+The current in-memory full-snapshot runtime must be renamed so accidental
+production use is visibly wrong. Acceptable names include:
+
+- `FullSnapshotHotTextRuntimeFixture`
+- `InMemoryFullSnapshotTextRuntime`
+- `TransitionalSnapshotTextRuntime`
+
+Unacceptable names include:
+
+- `InMemoryHotTextRuntime`
+- `HotTextRuntime`
+- `DefaultHotTextRuntime`
+- `ProductionHotTextRuntime`
+
+The name should make the wrong wiring ugly.
 
 Planned guardrails:
 
 - rename or document the runtime as full-snapshot/transitional;
-- add a production guard against implicit default use where possible;
+- add a production guard against implicit default use;
 - keep focused tests able to inject it deliberately;
 - make release and preflight checks fail if product code starts treating it as
   durable text authority again.
 
-### 2. Write The Runtime Design
+The installed/default transport must not silently instantiate the full-snapshot
+runtime. If a temporary escape hatch is required, it should be explicit:
 
-Create a full graph-backed rope runtime design that specifies:
+```typescript
+if (process.env.JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY !== "1") {
+  throw new Error(
+    "FullSnapshotHotTextRuntimeFixture cannot be used as production text authority.",
+  );
+}
+```
 
-- graph facts and relations for worldlines, heads, branches, leaves, blobs,
-  rewrites, diffs, ticks, checkpoints, anchors, strands, and admissions;
-- intent semantics for `createBufferWorldline`, `replaceRangeAsTick`, and
-  `createCheckpoint`;
-- reading semantics for `textWindow`, `worldlineSnapshot`, save/export, source
-  highlighting, Graft, and `:why`;
-- retention and compaction policy for graph facts, text blobs, receipts,
-  checkpoints, and materialized projections;
-- cutover strategy from the current full-root fixture to the graph-backed
-  implementation.
+Tests may opt in deliberately. Product startup should not.
 
-### 3. Add Witnesses That Fail The Current Architecture
+### 2. Define Coordinates Before Facts
 
-Before implementation, add explicit witnesses for the non-negotiable properties:
+The graph-backed rope design must define its coordinate system before it defines
+facts. The current code uses UTF-8 byte ranges, JavaScript strings are UTF-16,
+and editor UI needs line/column positions. Those must not blur together.
 
-- repeated small edits to a large buffer must not retain one full text snapshot
-  per edit as authoritative history;
-- `replaceRangeAsTick` must preserve identity for untouched subtrees;
-- no-op replacement must not mint a tick;
-- text-window reads must materialize from a rope head, not from a retained full
-  root list;
-- save/export must read from a causal basis and must not mutate text authority;
-- `:why` for a byte range must be able to cite graph-backed rewrite/diff
-  evidence.
+Authoritative mutation coordinates should be UTF-8 byte offsets. UI coordinates
+should be adapters over that storage coordinate.
 
-### 4. Implement The Cutover In Slices
+The design should introduce branded coordinate types:
+
+```typescript
+type ByteOffset = number & { readonly __brand: "utf8-byte-offset" };
+type Utf16Offset = number & { readonly __brand: "utf16-code-unit-offset" };
+
+interface LineColumn {
+  readonly line: number;
+  readonly columnUtf16: Utf16Offset;
+}
+```
+
+Rules:
+
+- rope mutation ranges are half-open UTF-8 byte ranges;
+- text blobs store UTF-8 bytes;
+- line/column and UTF-16 offsets are UI or protocol projections;
+- grapheme-aware movement is a command-planning concern over readings, not the
+  authoritative storage coordinate;
+- every conversion must cite the basis head or reading it was computed from.
+
+### 3. Define Real Typed Graph Facts
+
+Create a full graph-backed rope runtime design that specifies concrete fact
+shapes. The exact names may evolve, but the design must be precise enough for
+witnesses to target.
+
+Example fact skeleton:
+
+```typescript
+type WorldlineId = string & { readonly __brand: "WorldlineId" };
+type RopeHeadId = string & { readonly __brand: "RopeHeadId" };
+type RopeNodeId = string & { readonly __brand: "RopeNodeId" };
+type TextBlobId = string & { readonly __brand: "TextBlobId" };
+type TickId = string & { readonly __brand: "TickId" };
+type Hash = string & { readonly __brand: "Hash" };
+
+interface BufferWorldlineFact {
+  readonly kind: "jedit.text.BufferWorldline";
+  readonly worldlineId: WorldlineId;
+  readonly createdAtTick: TickId;
+  readonly initialHeadId: RopeHeadId;
+}
+
+interface RopeHeadFact {
+  readonly kind: "jedit.text.RopeHead";
+  readonly headId: RopeHeadId;
+  readonly worldlineId: WorldlineId;
+  readonly rootNodeId: RopeNodeId;
+  readonly basisHeadId?: RopeHeadId;
+  readonly createdByTickId: TickId;
+  readonly byteLength: number;
+  readonly lineCount: number;
+  readonly contentHash: Hash;
+}
+
+interface RopeBranchFact {
+  readonly kind: "jedit.text.RopeBranch";
+  readonly nodeId: RopeNodeId;
+  readonly left: RopeNodeId;
+  readonly right: RopeNodeId;
+  readonly byteLength: number;
+  readonly lineCount: number;
+  readonly height: number;
+  readonly contentHash: Hash;
+}
+
+interface RopeLeafFact {
+  readonly kind: "jedit.text.RopeLeaf";
+  readonly nodeId: RopeNodeId;
+  readonly blobId: TextBlobId;
+  readonly byteStart: ByteOffset;
+  readonly byteLength: number;
+  readonly lineCount: number;
+  readonly contentHash: Hash;
+}
+
+interface TextBlobFact {
+  readonly kind: "jedit.text.TextBlob";
+  readonly blobId: TextBlobId;
+  readonly encoding: "utf8";
+  readonly byteLength: number;
+  readonly contentHash: Hash;
+}
+```
+
+The full design must also define facts for:
+
+- `RopeRewrite`;
+- `RopeDiff`;
+- `TickReceipt`;
+- `RopeCheckpoint`;
+- anchors;
+- strands, braids, and admissions when their implementation slice begins.
+
+Echo remains generic. jedit owns these fact shapes and text-specific witnesses.
+
+### 4. Separate Text Authority From Observations
+
+No-op behavior needs causal precision. A no-op replacement should not mint a new
+text head or rewrite evidence claiming text changed. The system may still record
+an admitted no-op intent, rejected edit, idempotent command, observation, or
+receipt.
+
+The design should distinguish:
+
+- `ReplaceRangeIntent`;
+- `ReplaceRangeAdmission`;
+- `RopeRewrite | null`;
+- `RopeDiff | null`;
+- `WorldlineAdvance | null`;
+- `TickReceipt`.
+
+Rules:
+
+- no text change means no new `RopeHead`;
+- no changed range means no `RopeRewrite`;
+- optional admission or receipt evidence may still exist;
+- no-op evidence must not pollute the rope graph as if bytes changed.
+
+### 5. Make Untouched Subtree Identity A Contract
+
+Untouched subtree identity is the central rope property. If a narrow replacement
+rebuilds the whole tree, it is not the intended runtime.
+
+Witness shape:
+
+```typescript
+const before = await runtime.debugRopeShape(headA);
+const result = await runtime.replaceRangeAsTick({
+  worldlineId,
+  basisHeadId: headA,
+  range,
+  replacement,
+});
+const after = await runtime.debugRopeShape(result.nextHeadId);
+
+expect(after.untouchedLeftSubtreeId).toEqual(before.untouchedLeftSubtreeId);
+expect(after.untouchedRightSubtreeId).toEqual(before.untouchedRightSubtreeId);
+```
+
+This should be part of the contract, not an incidental optimization.
+
+### 6. Make Retention Measurable
+
+Do not rely on qualitative claims. Add an explicit witness around retained
+authoritative bytes.
+
+Example target:
+
+```text
+largeBufferSize = 10_000_000 bytes
+edits = 1_000 single-byte edits
+```
+
+The full-snapshot runtime retains roughly 10 GB of authoritative text snapshots.
+The graph-backed runtime should retain approximately:
+
+- initial text blobs;
+- changed leaves;
+- path-copied branch nodes;
+- rewrite and diff facts;
+- receipts;
+- indexes and checkpoints.
+
+The exact byte count may vary, but the witness must assert retained
+authoritative text is not O(buffer_size * edit_count).
+
+### 7. Define Materialization Boundaries
+
+Materialized strings are allowed only as readings or projections. Every
+materialized string must answer:
+
+- which `RopeHead` was read;
+- which UTF-8 byte range was read;
+- whether the materialization came from cache;
+- how the cache was validated against the head.
+
+Good:
+
+```typescript
+const text = await runtime.textWindow({
+  basisHeadId,
+  byteRange,
+});
+```
+
+Bad:
+
+```typescript
+const text = state.roots[state.roots.length - 1].text;
+```
+
+This boundary is what makes `:why`, historical preview, save/export, and UI
+evidence trustworthy.
+
+### 8. Write Witnesses Before Most Implementation
+
+The better implementation order is:
+
+1. minimal design skeleton;
+2. failing witnesses;
+3. tiny graph-backed runtime;
+4. refined design;
+5. more witnesses;
+6. production cutover.
+
+The witnesses are architectural teeth, not after-the-fact documentation.
+
+Required first witnesses:
+
+- snapshot fixture cannot be constructed as default production authority;
+- repeated edits do not retain one full text snapshot per edit;
+- untouched subtree identity survives a narrow replacement;
+- no-op intent can produce admission evidence without a new head or rewrite;
+- text-window reads cite a basis head and byte range;
+- save/export reads from a causal basis without mutating text authority;
+- `:why` can cite rewrite, diff, tick, head, leaf, and blob evidence for a byte
+  range.
+
+### 9. Build The Smallest Real Runtime First
+
+Do not start by solving compaction, braids, collaborative merge, source
+highlighting, and `:why` all at once. The first implementation win should be:
+
+```text
+create buffer
+-> read window
+-> replace small range
+-> read window
+-> prove untouched identity survived
+-> checkpoint
+```
+
+Initial scope:
+
+- immutable rope nodes;
+- content-addressed blobs;
+- binary branch tree;
+- append-only graph fact store;
+- single-range replacement;
+- text-window read;
+- checkpoint fact;
+- debug-only shape inspection.
+
+### 10. Mark Evidence Versus Indexes
+
+The design must distinguish durable semantic facts from rebuildable acceleration
+indexes.
+
+Durable truth:
+
+- `RopeHead`;
+- `RopeBranch`;
+- `RopeLeaf`;
+- `TextBlob`;
+- `RopeRewrite`;
+- `RopeDiff`;
+- `TickReceipt`;
+- `RopeCheckpoint`.
+
+Rebuildable indexes and caches:
+
+- line offset index;
+- syntax highlighting cache;
+- materialized window cache;
+- source map cache;
+- render layout cache;
+- search index.
+
+Rule:
+
+```text
+If deleting it changes history, it is evidence.
+If deleting it only makes reads slower, it is an index.
+```
+
+### 11. Define Balance And Checkpoint Policy
+
+A rope that path-copies forever without balance policy eventually becomes a
+linked list with better names. The design must define:
+
+- target leaf size;
+- maximum and minimum leaf size;
+- branch weight rules;
+- balance invariant;
+- when replacement triggers rebalance;
+- whether rebalance creates causal facts;
+- whether rebalance is visible to `:why`.
+
+Recommended posture:
+
+- edits create semantic rewrite evidence;
+- rebalancing creates structural maintenance evidence;
+- both can be retained;
+- normal UI hides structural maintenance unless debugging.
+
+Checkpoint semantics also need precision. A checkpoint is not new text truth. It
+is a durable named basis for efficient future reads, retention, or export.
+
+```typescript
+interface RopeCheckpointFact {
+  readonly kind: "jedit.text.RopeCheckpoint";
+  readonly checkpointId: string;
+  readonly worldlineId: WorldlineId;
+  readonly headId: RopeHeadId;
+  readonly createdByTickId: TickId;
+  readonly reason:
+    | "manual-save"
+    | "autosave"
+    | "retention-boundary"
+    | "import"
+    | "test-fixture";
+}
+```
+
+Save/export should read from a head or checkpoint. It should not mutate text
+authority unless the product explicitly records a checkpoint.
+
+### 12. Make `:why` An Acceptance Target
+
+Do not let `:why` become a bolt-on archaeology tool. For a byte range, the
+runtime should be able to answer:
+
+- this range is present in head H;
+- it descends from leaf L and blob B;
+- it was introduced or last touched by rewrite R;
+- rewrite R was admitted by tick T;
+- tick T had basis head H0;
+- here is the diff evidence;
+- here are related checkpoints.
+
+This is the runtime acceptance demo.
+
+### 13. Implement The Cutover In Slices
 
 The likely implementation sequence is:
 
-1. graph-backed `createBufferWorldline`;
-2. graph-backed `textWindow` over a `RopeHead`;
-3. graph-backed single-range `replaceRangeAsTick`;
-4. graph-backed `createCheckpoint`;
-5. production session cutover to the graph-backed runtime;
-6. quarantine or delete full-root production authority paths;
-7. update `:why`, gutter evidence, worldline drawers, and save/export posture to
-   consume graph facts directly;
-8. define compaction and cold-retention rules.
+1. rename the snapshot runtime and add the production guard;
+2. add the fixture quarantine witness;
+3. define coordinate and fact skeletons;
+4. add retention, subtree identity, materialization, no-op, and `:why` witnesses;
+5. implement graph-backed `createBufferWorldline`;
+6. implement graph-backed `textWindow` over a `RopeHead`;
+7. implement graph-backed single-range `replaceRangeAsTick`;
+8. implement graph-backed `createCheckpoint`;
+9. cut the production session over to the graph-backed runtime;
+10. quarantine or delete full-root production authority paths;
+11. update `:why`, gutter evidence, worldline drawers, and save/export posture to
+    consume graph facts directly;
+12. define compaction and cold-retention rules.
 
-### 5. Treat UI Work As Dependent On Runtime Honesty
+### 14. Useful Later Ideas
+
+These are not first-slice requirements, but they should stay visible:
+
+- content-addressed `TextBlob` storage where `blobId = hash(encoding + bytes)`;
+- internal-only `debugRopeShape` for witnesses and developer tools;
+- transitional `textAuthorityKind` such as `full-snapshot-fixture` or
+  `graph-backed-rope`;
+- explicit import from old snapshot roots into one graph-backed import
+  checkpoint;
+- queryable retention policy that explains why evidence, blobs, projections, or
+  indexes were retained or compacted;
+- a rope fact inspector drawer;
+- a causal heatmap over edit ancestry;
+- a retention budget dashboard;
+- basis-pinned save/export receipts.
+
+### 15. Things Not To Do
+
+- Do not optimize the full-snapshot runtime as a substitute for graph-backed
+  authority.
+- Do not let names outrun facts. A `RopeHead` must point to an actual rope.
+- Do not make UI truthier than storage truth.
+- Do not mix cache invalidation with authority mutation.
+- Do not make compaction destroy explainability by accident.
+
+### 16. Treat UI Work As Dependent On Runtime Honesty
 
 UI posture work, including the causal footer and gutter evidence work, should be
 checked against the runtime truth. If the UI says "basis", "head", "tick",
@@ -167,6 +547,19 @@ Do not treat the current full-snapshot hot text runtime as an acceptable
 production implementation. It can remain only as a bounded fixture while the
 graph-backed runtime is designed and cut over.
 
-The next work item is a careful design document for the graph-backed rope
-runtime, followed by failing witnesses that make the current architecture's
-retention and rewrite behavior unacceptable for production.
+The next work item is not implementation of the final runtime. It is:
+
+1. rename and fence the snapshot fixture;
+2. add the production guard;
+3. define concrete coordinate and graph fact shapes;
+4. write failing witnesses for retention, subtree identity, no-op admission,
+   materialization basis, save/export basis, and `:why` evidence;
+5. implement the smallest real graph-backed create/read/replace/checkpoint path.
+
+The core principle is:
+
+```text
+A rope runtime is defined by what survives an edit.
+Materialization is a reading, not reality.
+Causal honesty is an end-to-end property.
+```
