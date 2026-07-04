@@ -66,7 +66,7 @@ function inlinePanelPlacement(
   }
   const sourceX = layout.viewer.x +
     VIEWER_LEFT_PAD +
-    sourceViewerGutterWidth(editor.lines.length, editor.cursorRow, model.lineNumberMode);
+    sourceViewerGutterWidth(editor.lines.length, panel.anchorRow, model.lineNumberMode);
   const maxWidth = Math.max(
     INLINE_PANEL_MIN_WIDTH,
     layout.viewer.x + layout.viewer.width - sourceX - INLINE_PANEL_EDGE_INSET,
