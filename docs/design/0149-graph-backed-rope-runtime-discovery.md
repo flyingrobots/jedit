@@ -736,9 +736,12 @@ Checkpoint semantics also need precision. A checkpoint is not new text truth. It
 is a durable named basis for efficient future reads, retention, or export.
 
 ```typescript
+type CheckpointId = string & { readonly __brand: "CheckpointId" };
+
 interface RopeCheckpointFact {
   readonly kind: "jedit.text.RopeCheckpoint";
-  readonly checkpointId: string;
+  readonly schemaVersion: 1;
+  readonly checkpointId: CheckpointId;
   readonly worldlineId: WorldlineId;
   readonly headId: RopeHeadId;
   readonly createdByTickId: TickId;

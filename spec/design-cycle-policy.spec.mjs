@@ -126,6 +126,12 @@ test('HT-0149 defines rewrite diff and tick receipt facts', () => {
   assert.match(discovery, /readonly admittedAtSequence: number;/);
 });
 
+test('HT-0149 checkpoint fact carries schema version', () => {
+  const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
+
+  assert.match(discovery, /interface RopeCheckpointFact \{[\s\S]*readonly schemaVersion: 1;/);
+});
+
 test('process doc defines the official cycle lifecycle and proof boundary', () => {
   const processDoc = readRepoFile(PROCESS_PATH);
 
