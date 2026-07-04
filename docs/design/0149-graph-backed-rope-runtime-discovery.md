@@ -429,7 +429,6 @@ interface TickReceiptFact {
 
 The full design must also define facts for:
 
-- `RopeCheckpoint`;
 - anchors;
 - strands, braids, and admissions when their implementation slice begins.
 
@@ -482,6 +481,7 @@ declare function validateRopeFact(
   | RopeRewriteFact
   | RopeDiffFact
   | TickReceiptFact
+  | RopeCheckpointFact
 >;
 ```
 
@@ -490,8 +490,9 @@ Validation rules:
 - `kind` and `schemaVersion` are mandatory runtime tags;
 - IDs must be non-empty canonical IDs in the expected namespace;
 - numeric metrics must be non-negative integers;
-- branch children, head roots, leaf blobs, rewrites, diffs, and receipts must
-  reference facts available in the same write set or an already admitted basis;
+- branch children, head roots, leaf blobs, rewrites, diffs, receipts, and
+  checkpoints must reference facts available in the same write set or an already
+  admitted basis;
 - the validator receives those scopes through `RopeFactValidationContext` and
   must not consult ambient process state;
 - `TextBlobFact.blobId` and `contentHash` must be derived from
@@ -504,8 +505,8 @@ Validation rules:
   not a fallback to stale projection text;
 - branch, leaf, and head hashes must be recomputed from child/blob references and
   metrics before admission;
-- rewrite, diff, and tick receipt hashes and sequence numbers must be recomputed
-  or range-checked against the admitted basis before admission;
+- rewrite, diff, tick receipt, and checkpoint hashes and sequence numbers must
+  be recomputed or range-checked against the admitted basis before admission;
 - invalid facts are rejected before Echo admission and never become retained
   authority.
 

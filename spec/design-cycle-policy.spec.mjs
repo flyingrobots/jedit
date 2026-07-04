@@ -132,6 +132,14 @@ test('HT-0149 checkpoint fact carries schema version', () => {
   assert.match(discovery, /interface RopeCheckpointFact \{[\s\S]*readonly schemaVersion: 1;/);
 });
 
+test('HT-0149 checkpoint facts are validated rather than deferred', () => {
+  const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
+  const deferredFacts = sectionBetween(discovery, 'The full design must also define facts for:', 'Echo remains generic.');
+
+  assert.match(discovery, /\| TickReceiptFact\n  \| RopeCheckpointFact\n>/);
+  assert.doesNotMatch(deferredFacts, /`RopeCheckpoint`/);
+});
+
 test('HT-0149 specifies concrete rope balance invariants', () => {
   const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
 
