@@ -14,6 +14,12 @@ const WHY_OBSERVATION_ROADMAP_PATH = path.join(
   'design',
   '0108a-why-observation-evidence-roadmap.md',
 );
+const GRAPH_RUNTIME_DISCOVERY_PATH = path.join(
+  REPO_ROOT,
+  'docs',
+  'design',
+  '0149-graph-backed-rope-runtime-discovery.md',
+);
 
 const REQUIRED_TEMPLATE_HEADINGS = Object.freeze([
   '## Linked Issue',
@@ -71,6 +77,25 @@ test('WF-0108A roadmap preserves required full-cycle design headings', () => {
 
   for (const heading of REQUIRED_TEMPLATE_HEADINGS) {
     assert.match(roadmap, new RegExp(`^${escapeRegExp(heading)}$`, 'm'), `${heading} missing from WF-0108A`);
+  }
+});
+
+test('HT-0149 runtime discovery pins Current Truth evidence to git SHAs', () => {
+  const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
+  const sha = '[0-9a-f]{40}';
+
+  for (const repoPath of [
+    'src/domain/text-edit-contract.ts',
+    'src/ports/hot-text-runtime.ts',
+    'src/adapters/in-memory-hot-text-runtime.ts',
+    'src/adapters/installed-jedit-contract-echo-transport.ts',
+    'docs/design/jedit-echo-graph-model.md',
+  ]) {
+    assert.match(
+      discovery,
+      new RegExp(`https://github\\.com/flyingrobots/jedit/blob/${sha}/${escapeRegExp(repoPath)}#L\\d+`),
+      `${repoPath} needs a pinned Current Truth evidence link`,
+    );
   }
 });
 

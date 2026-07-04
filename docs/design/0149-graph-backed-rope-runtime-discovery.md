@@ -52,14 +52,14 @@ implement a graph-backed rope runtime.
 
 The current hot text runtime still uses full-text snapshots:
 
-- [`src/domain/text-edit-contract.ts`](../../src/domain/text-edit-contract.ts)
+- [`src/domain/text-edit-contract.ts`](https://github.com/flyingrobots/jedit/blob/e93b2e1a138a762d7a33da6179d3ad8b8b2a9c6e/src/domain/text-edit-contract.ts#L84)
   encodes the entire buffer into UTF-8 bytes, splices the requested range,
   decodes a new full string, and wraps that string in a new `BufferRoot`.
-- [`src/ports/hot-text-runtime.ts`](../../src/ports/hot-text-runtime.ts)
+- [`src/ports/hot-text-runtime.ts`](https://github.com/flyingrobots/jedit/blob/e93b2e1a138a762d7a33da6179d3ad8b8b2a9c6e/src/ports/hot-text-runtime.ts#L6)
   defines `HotTextBufferState.roots` as an array of retained roots.
-- [`src/adapters/in-memory-hot-text-runtime.ts`](../../src/adapters/in-memory-hot-text-runtime.ts)
+- [`src/adapters/in-memory-hot-text-runtime.ts`](https://github.com/flyingrobots/jedit/blob/e93b2e1a138a762d7a33da6179d3ad8b8b2a9c6e/src/adapters/in-memory-hot-text-runtime.ts#L76)
   appends the new full root to that retained array after an admitted edit.
-- [`src/adapters/installed-jedit-contract-echo-transport.ts`](../../src/adapters/installed-jedit-contract-echo-transport.ts)
+- [`src/adapters/installed-jedit-contract-echo-transport.ts`](https://github.com/flyingrobots/jedit/blob/e93b2e1a138a762d7a33da6179d3ad8b8b2a9c6e/src/adapters/installed-jedit-contract-echo-transport.ts#L159)
   still defaults the installed jedit contract transport to that in-memory
   runtime.
 
@@ -116,15 +116,15 @@ ways:
 
 The existing docs already point in the right direction. In particular:
 
-- [`0003-echo-backed-rope-worldline-contract.md`](0003-echo-backed-rope-worldline-contract/echo-backed-rope-worldline-contract.md)
+- [`0003-echo-backed-rope-worldline-contract.md`](https://github.com/flyingrobots/jedit/blob/e93b2e1a138a762d7a33da6179d3ad8b8b2a9c6e/docs/design/0003-echo-backed-rope-worldline-contract/echo-backed-rope-worldline-contract.md#L28)
   says witnessed causal history is canonical and materialized projections are
   not editor truth.
-- [`jedit-echo-graph-model.md`](jedit-echo-graph-model.md) describes the desired
-  `BufferWorldline -> RopeHead -> Rope DAG` shape and states that
-  `ReplaceRangeAsTick` should reuse untouched subtrees.
-- [`0027-echo-hosted-production-cutover.md`](0027-echo-hosted-production-cutover.md)
+- [`jedit-echo-graph-model.md`](https://github.com/flyingrobots/jedit/blob/e93b2e1a138a762d7a33da6179d3ad8b8b2a9c6e/docs/design/jedit-echo-graph-model.md#L31)
+  describes the desired `BufferWorldline -> RopeHead -> Rope DAG` shape and
+  states that `ReplaceRangeAsTick` should reuse untouched subtrees.
+- [`0027-echo-hosted-production-cutover.md`](https://github.com/flyingrobots/jedit/blob/e93b2e1a138a762d7a33da6179d3ad8b8b2a9c6e/docs/design/0027-echo-hosted-production-cutover.md#L35)
   says the local in-memory text model is no longer a production authority target.
-- [`structural-history-graphql-authority.md`](structural-history-graphql-authority.md)
+- [`structural-history-graphql-authority.md`](https://github.com/flyingrobots/jedit/blob/e93b2e1a138a762d7a33da6179d3ad8b8b2a9c6e/docs/design/structural-history-graphql-authority.md#L11)
   says the TypeScript model is transitional evidence, not durable authority.
 
 The problem is that implementation reality has not caught up to those design
