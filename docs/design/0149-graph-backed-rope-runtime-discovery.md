@@ -304,7 +304,15 @@ type RopeHeadId = string & { readonly __brand: "RopeHeadId" };
 type RopeNodeId = string & { readonly __brand: "RopeNodeId" };
 type TextBlobId = string & { readonly __brand: "TextBlobId" };
 type TickId = string & { readonly __brand: "TickId" };
+type RopeRewriteId = string & { readonly __brand: "RopeRewriteId" };
+type RopeDiffId = string & { readonly __brand: "RopeDiffId" };
+type AdmissionId = string & { readonly __brand: "AdmissionId" };
 type Hash = string & { readonly __brand: "Hash" };
+
+interface TextByteRange {
+  readonly startByte: ByteOffset;
+  readonly endByte: ByteOffset;
+}
 
 interface BufferWorldlineFact {
   readonly kind: "jedit.text.BufferWorldline";
@@ -372,13 +380,55 @@ interface TextBlobFact {
   readonly contentHash: Hash;
   readonly storage: TextBlobStorage;
 }
+
+interface RopeRewriteFact {
+  readonly kind: "jedit.text.RopeRewrite";
+  readonly schemaVersion: 1;
+  readonly rewriteId: RopeRewriteId;
+  readonly worldlineId: WorldlineId;
+  readonly basisHeadId: RopeHeadId;
+  readonly nextHeadId: RopeHeadId;
+  readonly admittedByTickId: TickId;
+  readonly range: TextByteRange;
+  readonly replacementBlobId: TextBlobId;
+  readonly diffId: RopeDiffId;
+  readonly contentHash: Hash;
+}
+
+interface RopeDiffSpan {
+  readonly kind: "equal" | "delete" | "insert";
+  readonly basisRange?: TextByteRange;
+  readonly nextRange?: TextByteRange;
+  readonly blobId?: TextBlobId;
+  readonly contentHash: Hash;
+}
+
+interface RopeDiffFact {
+  readonly kind: "jedit.text.RopeDiff";
+  readonly schemaVersion: 1;
+  readonly diffId: RopeDiffId;
+  readonly rewriteId: RopeRewriteId;
+  readonly basisHeadId: RopeHeadId;
+  readonly nextHeadId: RopeHeadId;
+  readonly spans: readonly RopeDiffSpan[];
+  readonly contentHash: Hash;
+}
+
+interface TickReceiptFact {
+  readonly kind: "jedit.text.TickReceipt";
+  readonly schemaVersion: 1;
+  readonly tickId: TickId;
+  readonly admissionId: AdmissionId;
+  readonly worldlineId: WorldlineId;
+  readonly basisHeadId: RopeHeadId;
+  readonly nextHeadId: RopeHeadId;
+  readonly rewriteId: RopeRewriteId;
+  readonly admittedAtSequence: number;
+}
 ```
 
 The full design must also define facts for:
 
-- `RopeRewrite`;
-- `RopeDiff`;
-- `TickReceipt`;
 - `RopeCheckpoint`;
 - anchors;
 - strands, braids, and admissions when their implementation slice begins.
@@ -429,6 +479,9 @@ declare function validateRopeFact(
   | RopeBranchFact
   | RopeLeafFact
   | TextBlobFact
+  | RopeRewriteFact
+  | RopeDiffFact
+  | TickReceiptFact
 >;
 ```
 
@@ -437,8 +490,8 @@ Validation rules:
 - `kind` and `schemaVersion` are mandatory runtime tags;
 - IDs must be non-empty canonical IDs in the expected namespace;
 - numeric metrics must be non-negative integers;
-- branch children, head roots, and leaf blobs must reference facts available in
-  the same write set or an already admitted basis;
+- branch children, head roots, leaf blobs, rewrites, diffs, and receipts must
+  reference facts available in the same write set or an already admitted basis;
 - the validator receives those scopes through `RopeFactValidationContext` and
   must not consult ambient process state;
 - `TextBlobFact.blobId` and `contentHash` must be derived from
@@ -451,6 +504,8 @@ Validation rules:
   not a fallback to stale projection text;
 - branch, leaf, and head hashes must be recomputed from child/blob references and
   metrics before admission;
+- rewrite, diff, and tick receipt hashes and sequence numbers must be recomputed
+  or range-checked against the admitted basis before admission;
 - invalid facts are rejected before Echo admission and never become retained
   authority.
 

@@ -112,6 +112,20 @@ test('HT-0149 rope fact validation receives admission context', () => {
   );
 });
 
+test('HT-0149 defines rewrite diff and tick receipt facts', () => {
+  const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
+
+  for (const factName of ['RopeRewriteFact', 'RopeDiffFact', 'TickReceiptFact']) {
+    assert.match(discovery, new RegExp(`^interface ${factName} \\{$`, 'm'));
+  }
+
+  assert.match(discovery, /^interface TextByteRange \{$/m);
+  assert.match(discovery, /readonly range: TextByteRange;/);
+  assert.match(discovery, /readonly diffId: RopeDiffId;/);
+  assert.match(discovery, /readonly spans: readonly RopeDiffSpan\[\];/);
+  assert.match(discovery, /readonly admittedAtSequence: number;/);
+});
+
 test('process doc defines the official cycle lifecycle and proof boundary', () => {
   const processDoc = readRepoFile(PROCESS_PATH);
 
