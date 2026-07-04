@@ -141,6 +141,15 @@ test('HT-0149 specifies concrete rope balance invariants', () => {
   assert.match(discovery, /branch height difference must be no greater than 1/);
 });
 
+test('HT-0149 follow-on debt is issue-backed', () => {
+  const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
+  const followOnDebt = sectionBetween(discovery, '## Follow-On Debt', '## Retrospective');
+  const issueLinks = followOnDebt.match(/https:\/\/github\.com\/flyingrobots\/jedit\/issues\/\d+/g) ?? [];
+
+  assert.ok(issueLinks.length >= 6, 'follow-on debt should link tracker issues for every deferred item');
+  assert.doesNotMatch(followOnDebt, /should create narrower issues/);
+});
+
 test('process doc defines the official cycle lifecycle and proof boundary', () => {
   const processDoc = readRepoFile(PROCESS_PATH);
 
@@ -173,6 +182,16 @@ test('policy design links the GitHub issue and records the retrospective', () =>
   assert.match(policy, /What the tests proved:/);
   assert.match(policy, /Other repositories still need their own adapted templates/);
 });
+
+function sectionBetween(documentText, startHeading, endHeading) {
+  const start = documentText.indexOf(startHeading);
+  const end = documentText.indexOf(endHeading, start + startHeading.length);
+
+  assert.notEqual(start, -1, `${startHeading} missing`);
+  assert.notEqual(end, -1, `${endHeading} missing`);
+
+  return documentText.slice(start, end);
+}
 
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

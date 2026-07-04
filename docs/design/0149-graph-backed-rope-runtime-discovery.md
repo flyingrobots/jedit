@@ -1077,10 +1077,18 @@ Mitigations:
 
 ## Follow-On Debt
 
-- Issue #206 tracks the runtime gate and implementation slices.
-- Follow-up runtime PRs should create narrower issues for compaction,
-  rebalancing policy, `:why` inspector UI, retention dashboards, and migration
-  from snapshot fixture state.
+- [#206](https://github.com/flyingrobots/jedit/issues/206) tracks the runtime
+  gate and implementation slices.
+- [#207](https://github.com/flyingrobots/jedit/issues/207) tracks graph-backed
+  rope compaction policy.
+- [#208](https://github.com/flyingrobots/jedit/issues/208) tracks graph-backed
+  rope rebalancing evidence.
+- [#209](https://github.com/flyingrobots/jedit/issues/209) tracks the rope fact
+  inspector and range `:why` UI.
+- [#210](https://github.com/flyingrobots/jedit/issues/210) tracks the retention
+  budget dashboard.
+- [#211](https://github.com/flyingrobots/jedit/issues/211) tracks snapshot
+  fixture import migration.
 
 ## Retrospective
 
