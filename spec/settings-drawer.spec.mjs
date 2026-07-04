@@ -49,7 +49,7 @@ test('settings drawer renders structured rows and highlights the selected row', 
 
   assert.match(text, /Settings/);
   assert.match(text, /F2\/Esc\/q close/);
-  assert.match(text, /\[x\] English/);
+  assert.match(text, /↻ Language < English > 1\/1/);
   assert.match(text, /↻ Theme/);
   assert.match(text, /☑ Footer/);
   assert.match(text, /↻ Line numbers Absolute/);

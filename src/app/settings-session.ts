@@ -15,6 +15,7 @@ export const JEDIT_SETTING_ACTION = {
   ToggleLineNumberMode: Symbol('jedit.settings.action.toggle-line-number-mode'),
   ToggleMarkdownPreview: Symbol('jedit.settings.action.toggle-markdown-preview'),
   OpenDiagnostics: Symbol('jedit.settings.action.open-diagnostics'),
+  CycleLocale: Symbol('jedit.settings.action.cycle-locale'),
   SelectLocale: Symbol('jedit.settings.action.select-locale'),
 } as const;
 
@@ -40,6 +41,7 @@ export interface JeditSettingsState {
 export interface JeditSettingsI18nState {
   readonly locale: string;
   readonly localeLabel: string;
+  readonly direction: I18nDirection;
   readonly locales: readonly JeditSettingsLocaleOption[];
   t(path: string, values?: Record<string, string | number>): string;
 }
@@ -69,6 +71,7 @@ export interface JeditSettingsHandlers<Model, Command> {
   toggleLineNumberMode(model: Model): [Model, Cmd<Command>[]];
   toggleMarkdownPreview(model: Model): [Model, Cmd<Command>[]];
   openDiagnostics(model: Model): [Model, Cmd<Command>[]];
+  cycleLocale(model: Model, delta: number): [Model, Cmd<Command>[]];
   selectLocale(model: Model, locale: JeditSettingsLocaleSelection): [Model, Cmd<Command>[]];
 }
 
@@ -85,16 +88,19 @@ export interface JeditSettingsRow {
 }
 
 const SETTINGS_SECTION_LANGUAGE = 'Language';
+const ROW_ID_LANGUAGE = 'language';
 const ROW_ID_THEME = 'theme';
 const ROW_ID_THEME_MODE = 'theme-mode';
 const ROW_ID_FOOTER = 'footer';
 const ROW_ID_LINE_NUMBERS = 'line-numbers';
 const ROW_ID_MARKDOWN_PREVIEW = 'markdown-preview';
 const ROW_ID_DIAGNOSTICS = 'diagnostics';
-const ROW_ID_LOCALE_PREFIX = 'locale:';
+const SETTINGS_LANGUAGE_LABEL = 'Language';
 const KEY_ESCAPE = 'escape';
 const KEY_DOWN = 'down';
 const KEY_UP = 'up';
+const KEY_LEFT = 'left';
+const KEY_RIGHT = 'right';
 const KEY_J = 'j';
 const KEY_K = 'k';
 const KEY_ENTER = 'enter';
@@ -134,6 +140,8 @@ const SETTINGS_KEY_ACTION = {
   Down: Symbol('jedit.settings.key-action.down'),
   Up: Symbol('jedit.settings.key-action.up'),
   Activate: Symbol('jedit.settings.key-action.activate'),
+  ActivatePrevious: Symbol('jedit.settings.key-action.activate-previous'),
+  ActivateNext: Symbol('jedit.settings.key-action.activate-next'),
 } as const;
 
 type SettingsKeyAction = typeof SETTINGS_KEY_ACTION[keyof typeof SETTINGS_KEY_ACTION];
@@ -145,10 +153,15 @@ const SETTINGS_KEY_ACTIONS = new Map<string, SettingsKeyAction>([
   [KEY_J, SETTINGS_KEY_ACTION.Down],
   [KEY_UP, SETTINGS_KEY_ACTION.Up],
   [KEY_K, SETTINGS_KEY_ACTION.Up],
+  [KEY_LEFT, SETTINGS_KEY_ACTION.ActivatePrevious],
+  [KEY_RIGHT, SETTINGS_KEY_ACTION.ActivateNext],
   [KEY_ENTER, SETTINGS_KEY_ACTION.Activate],
   [KEY_SPACE, SETTINGS_KEY_ACTION.Activate],
   [KEY_SPACE_CANONICAL, SETTINGS_KEY_ACTION.Activate],
 ]);
+
+const SETTINGS_ACTIVATE_NEXT_DELTA = 1;
+const SETTINGS_ACTIVATE_PREVIOUS_DELTA = -1;
 
 type NonLocaleSettingsHandlerName =
   | 'cycleTheme'
@@ -174,7 +187,7 @@ type JeditSettingsContext = JeditSettingsState & { readonly i18n: JeditSettingsI
 
 export function jeditSettingsRows(state: JeditSettingsContext): readonly JeditSettingsRow[] {
   const rows: JeditSettingsRow[] = [
-    ...localeSettingsRows(state.i18n),
+    languageSettingsRow(state.i18n),
     themeSettingsRow(state),
     themeModeSettingsRow(state),
     footerSettingsRow(state),
@@ -191,26 +204,37 @@ export function jeditSettingsRows(state: JeditSettingsContext): readonly JeditSe
   return rows;
 }
 
-function localeSettingsRows(i18n: JeditSettingsI18nState): readonly JeditSettingsRow[] {
-  return i18n.locales.map((locale) => localeSettingsRow(i18n, locale));
+function languageSettingsRow(
+  i18n: JeditSettingsI18nState,
+): JeditSettingsRow {
+  const active = activeSettingsLocale(i18n);
+  const index = settingsLocaleIndex(i18n);
+  return {
+    id: ROW_ID_LANGUAGE,
+    section: SETTINGS_SECTION_LANGUAGE,
+    label: SETTINGS_LANGUAGE_LABEL,
+    description: `${active.locale} ${active.direction.toUpperCase()}`,
+    valueLabel: `< ${active.label} > ${index + 1}/${settingsLocaleCount(i18n)}`,
+    kind: JEDIT_SETTING_ROW_KIND.Choice,
+    action: JEDIT_SETTING_ACTION.CycleLocale,
+  };
 }
 
-function localeSettingsRow(
-  i18n: JeditSettingsI18nState,
-  locale: JeditSettingsLocaleOption,
-): JeditSettingsRow {
-  const active = locale.locale === i18n.locale;
-  return {
-    id: `${ROW_ID_LOCALE_PREFIX}${locale.locale}`,
-    section: SETTINGS_SECTION_LANGUAGE,
-    label: locale.label,
-    description: `${locale.locale} ${locale.direction.toUpperCase()}`,
-    valueLabel: '',
-    kind: JEDIT_SETTING_ROW_KIND.Option,
-    checked: active,
-    locale,
-    action: JEDIT_SETTING_ACTION.SelectLocale,
+function activeSettingsLocale(i18n: JeditSettingsI18nState): JeditSettingsLocaleOption {
+  return i18n.locales.find((locale) => locale.locale === i18n.locale) ?? {
+    locale: i18n.locale,
+    label: i18n.localeLabel,
+    direction: i18n.direction,
   };
+}
+
+function settingsLocaleIndex(i18n: JeditSettingsI18nState): number {
+  const index = i18n.locales.findIndex((locale) => locale.locale === i18n.locale);
+  return index < 0 ? 0 : index;
+}
+
+function settingsLocaleCount(i18n: JeditSettingsI18nState): number {
+  return Math.max(1, i18n.locales.length);
 }
 
 function themeSettingsRow(state: JeditSettingsContext): JeditSettingsRow {
@@ -357,7 +381,18 @@ function reduceSettingsKeyAction<Model extends JeditSettingsHostState, Command>(
   if (action === SETTINGS_KEY_ACTION.Up) {
     return [moveHostFocus(model, FOCUS_STEP_BACKWARD, rows.length), []];
   }
-  return activateSettingsRow(model, rows[clampSettingsFocusIndex(model.settingsFocusIndex, rows.length)], handlers);
+  return activateSettingsRow(
+    model,
+    rows[clampSettingsFocusIndex(model.settingsFocusIndex, rows.length)],
+    handlers,
+    settingsActivationDelta(action),
+  );
+}
+
+function settingsActivationDelta(action: SettingsKeyAction): number {
+  return action === SETTINGS_KEY_ACTION.ActivatePrevious
+    ? SETTINGS_ACTIVATE_PREVIOUS_DELTA
+    : SETTINGS_ACTIVATE_NEXT_DELTA;
 }
 
 function moveHostFocus<Model extends JeditSettingsHostState>(model: Model, delta: number, rowCount: number): Model {
@@ -371,8 +406,12 @@ function activateSettingsRow<Model, Command>(
   model: Model,
   row: JeditSettingsRow | undefined,
   handlers: JeditSettingsHandlers<Model, Command>,
+  delta: number,
 ): [Model, Cmd<Command>[]] {
   const action = row?.action;
+  if (action === JEDIT_SETTING_ACTION.CycleLocale) {
+    return handlers.cycleLocale(model, delta);
+  }
   if (action === JEDIT_SETTING_ACTION.SelectLocale && row?.locale != null) {
     return handlers.selectLocale(model, row.locale);
   }

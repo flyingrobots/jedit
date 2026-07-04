@@ -266,6 +266,10 @@ test('workspace footer shows settings drawer controls while settings are open', 
     footer.workspaceFooterLines({
       ...idleNormalState(),
       settingsOpen: true,
+      editorCursorPosition: {
+        line: 9,
+        col: 1,
+      },
     }),
     [
       'SETTINGS [j/k move · enter change · f2 close · esc close]',

@@ -59,23 +59,43 @@ function paintSettingsOverlay(
   if (!model.settingsOpen) {
     return;
   }
+  const settingsWidth = resolveSettingsDrawerWidth(model.columns);
   screen.blit(
-    model.settingsDiagnosticsOpen
-      ? renderGraftDiagnosticsPanel({
-        report: model.graftDiagnostics,
-        loading: model.graftDiagnosticsLoading,
-        theme: model.jeditTheme,
-        width: resolveGraftDiagnosticsPanelWidth(model.columns),
-        height: bodyHeight,
-      })
-      : renderSettingsDrawer({
-        rows: settingsRows(model),
-        selectedIndex: model.settingsFocusIndex,
-        theme: model.jeditTheme,
-        width: resolveSettingsDrawerWidth(model.columns),
-        height: bodyHeight,
-      }),
+    renderSettingsDrawer({
+      rows: settingsRows(model),
+      selectedIndex: model.settingsFocusIndex,
+      theme: model.jeditTheme,
+      width: settingsWidth,
+      height: bodyHeight,
+    }),
     0,
+    bodyTop,
+  );
+  paintSettingsDiagnosticsOverlay(screen, model, settingsWidth, bodyTop, bodyHeight);
+}
+
+function paintSettingsDiagnosticsOverlay(
+  screen: Surface,
+  model: WorkspaceModel,
+  settingsWidth: number,
+  bodyTop: number,
+  bodyHeight: number,
+): void {
+  if (!model.settingsDiagnosticsOpen || settingsWidth >= model.columns) {
+    return;
+  }
+  screen.blit(
+    renderGraftDiagnosticsPanel({
+      report: model.graftDiagnostics,
+      loading: model.graftDiagnosticsLoading,
+      theme: model.jeditTheme,
+      width: Math.min(
+        resolveGraftDiagnosticsPanelWidth(model.columns),
+        model.columns - settingsWidth,
+      ),
+      height: bodyHeight,
+    }),
+    settingsWidth,
     bodyTop,
   );
 }

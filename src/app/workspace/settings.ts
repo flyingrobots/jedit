@@ -61,6 +61,7 @@ export function workspaceSettingsHandlers(
     }, []]),
     toggleMarkdownPreview: (model) => toggleWorkspaceMarkdownPreview(model),
     openDiagnostics: (model) => openWorkspaceDiagnostics(model, context),
+    cycleLocale: (model, delta) => cycleWorkspaceLocale(model, delta),
     selectLocale: (model, locale) => [applyWorkspaceLocale(model, locale), []],
   };
 }
@@ -70,6 +71,25 @@ function applyWorkspaceLocale(model: WorkspaceModel, locale: JeditSettingsLocale
     ...model,
     i18n: model.i18n.withLocale(locale.locale),
   };
+}
+
+function cycleWorkspaceLocale(
+  model: WorkspaceModel,
+  delta: number,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
+  const locales = model.i18n.locales;
+  if (locales.length === 0) {
+    return [model, []];
+  }
+  const index = locales.findIndex((locale) => locale.locale === model.i18n.locale);
+  const currentIndex = index < 0 ? 0 : index;
+  const nextIndex = positiveModulo(currentIndex + delta, locales.length);
+  const nextLocale = locales[nextIndex] ?? locales[currentIndex];
+  return nextLocale == null ? [model, []] : [applyWorkspaceLocale(model, nextLocale), []];
+}
+
+function positiveModulo(value: number, size: number): number {
+  return ((value % size) + size) % size;
 }
 
 function toggleWorkspaceMarkdownPreview(model: WorkspaceModel): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {

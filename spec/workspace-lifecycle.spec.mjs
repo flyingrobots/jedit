@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  hasNotification,
   importDist,
   mockI18n,
   mockRuntime,
@@ -73,6 +74,34 @@ test('workspace settings selects a locale through runtime tokens', async () => {
   assert.notEqual(selected.i18n, model.i18n);
   assert.equal(selected.i18n, replacementI18n);
   assert.deepEqual(localeChanges, [nextLocale.locale]);
+
+  localeChanges.length = 0;
+  const [cycled] = settings.workspaceSettingsHandlers().cycleLocale(model, 1);
+  assert.equal(cycled.i18n, replacementI18n);
+  assert.deepEqual(localeChanges, [nextLocale.locale]);
+});
+
+test('workspace settings posts a toast when a setting changes', async () => {
+  const [runtimeModule, settingsModule] = await Promise.all([
+    importDist('app', 'workspace', 'runtime.js'),
+    importDist('app', 'workspace', 'settings.js'),
+  ]);
+  const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime());
+  const [initialModel] = runtime.init();
+  const [settingsOpen] = runtime.update({ type: 'key', key: 'f2' }, initialModel);
+  const lineNumbersIndex = settingsModule.settingsRows(settingsOpen)
+    .findIndex((row) => row.id === 'line-numbers');
+
+  const [changed] = runtime.update(
+    { type: 'key', key: 'enter' },
+    { ...settingsOpen, settingsFocusIndex: lineNumbersIndex },
+  );
+
+  assert.equal(changed.lineNumberMode, 'relative');
+  assert.equal(
+    hasNotification(changed, 'Settings changed', 'Line numbers: Absolute -> Relative'),
+    true,
+  );
 });
 
 test('workspace settings opens and refreshes the Graft diagnostics panel', async () => {

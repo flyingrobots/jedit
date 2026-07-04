@@ -1,4 +1,4 @@
-import { clipToWidth } from '@flyingrobots/bijou-tui';
+import { clipToWidth, visibleLength } from '@flyingrobots/bijou-tui';
 
 import { FileEntryKinds, type FileEntry } from '../ports/file-system.js';
 
@@ -26,7 +26,7 @@ export function fitBlock(text: string, width: number, height: number): string {
 
 export function fitLine(text: string, width: number): string {
   const clipped = clipToWidth(text, width);
-  const visible = [...clipped].length;
+  const visible = visibleLength(clipped);
   if (visible >= width) {
     return clipped;
   }

@@ -281,7 +281,7 @@ function editorFooterDetail(state: WorkspaceFooterState, t: FooterHintTranslator
 
 function footerCursorPosition(state: WorkspaceFooterState): string | undefined {
   const position = state.editorCursorPosition;
-  return state.editorMode == null || position == null
+  return state.settingsOpen || state.editorMode == null || position == null
     ? undefined
     : `${position.line}:${position.col}`;
 }

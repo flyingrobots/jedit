@@ -49,8 +49,7 @@ test('jedit settings rows expose theme, footer, and markdown preview preferences
   assert.deepEqual(
     rows.map((row) => [row.label, row.valueLabel, row.kind, row.checked === true]),
     [
-      ['English', '', settings.JEDIT_SETTING_ROW_KIND.Option, false],
-      ['Français', '', settings.JEDIT_SETTING_ROW_KIND.Option, true],
+      ['Language', '< Français > 2/2', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
       ['Theme', theme.name, settings.JEDIT_SETTING_ROW_KIND.Choice, false],
       ['Light/dark', 'Dark', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
       ['Footer', 'On', settings.JEDIT_SETTING_ROW_KIND.Toggle, true],
@@ -106,6 +105,9 @@ test('settings key reducer closes, moves, and activates focused settings rows', 
     openDiagnostics(model) {
       return [{ ...model, diagnosticsOpened: true }, []];
     },
+    cycleLocale(model, delta) {
+      return [{ ...model, localeDelta: delta }, []];
+    },
     selectLocale(model, locale) {
       return [{ ...model, selectedLocale: locale.locale }, []];
     },
@@ -114,7 +116,10 @@ test('settings key reducer closes, moves, and activates focused settings rows', 
   assert.equal(settings.toggleSettingsOpen(baseModel).settingsOpen, false);
 
   const [activatedLocale] = settings.updateJeditSettingsFromKey({ key: 'enter' }, baseModel, rows, handlers);
-  assert.equal(activatedLocale.selectedLocale, 'en');
+  assert.equal(activatedLocale.localeDelta, 1);
+
+  const [previousLocale] = settings.updateJeditSettingsFromKey({ key: 'left' }, baseModel, rows, handlers);
+  assert.equal(previousLocale.localeDelta, -1);
 
   const [closed] = settings.updateJeditSettingsFromKey({ key: 'escape' }, baseModel, rows, handlers);
   assert.equal(closed.settingsOpen, false);
