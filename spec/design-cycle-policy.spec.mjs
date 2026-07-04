@@ -99,6 +99,19 @@ test('HT-0149 runtime discovery pins Current Truth evidence to git SHAs', () => 
   }
 });
 
+test('HT-0149 rope fact validation receives admission context', () => {
+  const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
+
+  assert.match(discovery, /^interface RopeFactValidationContext \{$/m);
+  assert.match(discovery, /readonly writeSet:/);
+  assert.match(discovery, /readonly admittedBasis:/);
+  assert.match(discovery, /readonly blobStore:/);
+  assert.match(
+    discovery,
+    /declare function validateRopeFact\(\n  payload: object,\n  context: RopeFactValidationContext,\n\): FactValidationResult</,
+  );
+});
+
 test('process doc defines the official cycle lifecycle and proof boundary', () => {
   const processDoc = readRepoFile(PROCESS_PATH);
 

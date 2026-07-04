@@ -405,8 +405,25 @@ type FactValidationResult<TFact> =
   | { readonly ok: true; readonly fact: TFact }
   | { readonly ok: false; readonly code: FactValidationErrorCode };
 
+interface RopeFactReadModel {
+  hasFact(id: string): boolean;
+}
+
+interface TextBlobStorePort {
+  readBlobBytes(storage: StoredTextBlobStorage): Uint8Array | null;
+}
+
+interface RopeFactValidationContext {
+  readonly writeSet: readonly object[];
+  readonly admittedBasis: RopeFactReadModel;
+  readonly blobStore: TextBlobStorePort;
+}
+
 declare function makeTextBlobFact(bytes: Uint8Array): TextBlobFact;
-declare function validateRopeFact(payload: object): FactValidationResult<
+declare function validateRopeFact(
+  payload: object,
+  context: RopeFactValidationContext,
+): FactValidationResult<
   | BufferWorldlineFact
   | RopeHeadFact
   | RopeBranchFact
@@ -422,12 +439,14 @@ Validation rules:
 - numeric metrics must be non-negative integers;
 - branch children, head roots, and leaf blobs must reference facts available in
   the same write set or an already admitted basis;
+- the validator receives those scopes through `RopeFactValidationContext` and
+  must not consult ambient process state;
 - `TextBlobFact.blobId` and `contentHash` must be derived from
   `encoding + bytes`, not trusted from caller input;
 - inline blob facts must compute hash and length from their `Uint8Array` bytes;
 - blob-store-backed facts must name the store adapter and content reference, and
-  admission must fetch bytes, verify length, and recompute the hash before the
-  fact can become authority;
+  admission must fetch bytes through `context.blobStore`, verify length, and
+  recompute the hash before the fact can become authority;
 - a `textWindow` read over a missing or hash-mismatched blob is an obstruction,
   not a fallback to stale projection text;
 - branch, leaf, and head hashes must be recomputed from child/blob references and
