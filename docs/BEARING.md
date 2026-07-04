@@ -32,6 +32,10 @@ history, merged pull requests, release notes, and design docs.
   repeat, transformed-repeat metadata, case operators, joins, and local marks.
 - Graft-backed source highlighting consumes Graft 0.10.0 projections, including
   plain-text prose spans when `colorful >= 0.2.1` is available on `PATH`.
+- Graph-backed rope runtime authority is now an active hard gate. Do not begin
+  new UI causal-honesty work until
+  [`HT-0149 - Graph-Backed Rope Runtime Discovery`](design/0149-graph-backed-rope-runtime-discovery.md)
+  proves a real graph-backed create/read/replace/checkpoint path.
 
 ## Source Of Truth
 
@@ -106,18 +110,21 @@ Infrastructure and hygiene are the third lane. Keep these scoped:
 
 Immediate order:
 
-1. Lock
+1. Land
+   [`HT-0149 - Graph-Backed Rope Runtime Discovery`](design/0149-graph-backed-rope-runtime-discovery.md)
+   as the active runtime authority gate before more causal UI posture work.
+2. Lock
    [`WF-0108A - :why Observation Evidence Roadmap`](design/0108a-why-observation-evidence-roadmap.md)
    and the cross-repo issue topology.
-2. Keep
+3. Keep
    [`WF-0106 - Emacs Ideas To Steal Causally`](design/0106-emacs-ideas-to-steal-causally.md)
    as the supporting product-surface packet for command catalog, describe,
    register, macro, buffer, diagnostics, and trace surfaces.
-3. Close the `:why` evidence gap in this order: local observation coordinate
+4. Close the `:why` evidence gap in this order: local observation coordinate
    model, typed evidence obstructions, text-window evidence fields, Echo
    ReadingEnvelope identity, Supported Outcome Settlement outcome vocabulary,
    range-at-head rope history, then golden command witnesses.
-4. Use existing proven Vim operations first: `dw`, `ciw`, `dd`, and `gUap`.
+5. Use existing proven Vim operations first: `dw`, `ciw`, `dd`, and `gUap`.
    Keep `n`/`N` and `:%s` for later slices once search entry and proposal
    preview are product-complete.
 
@@ -181,6 +188,7 @@ edits, agent witnesses, structural objects, or user trust.
 | Emacs ideas to steal causally | [`docs/design/0106-emacs-ideas-to-steal-causally.md`](design/0106-emacs-ideas-to-steal-causally.md) |
 | Jim command provenance and `:why` | [`docs/design/0108-causal-command-provenance-surface.md`](design/0108-causal-command-provenance-surface.md) |
 | `:why` observation evidence | [`docs/design/0108a-why-observation-evidence-roadmap.md`](design/0108a-why-observation-evidence-roadmap.md) |
+| Graph-backed rope runtime gate | [`docs/design/0149-graph-backed-rope-runtime-discovery.md`](design/0149-graph-backed-rope-runtime-discovery.md) |
 | Strand/braid worldline UX | [`docs/design/0121-strand-braid-worldline-ux.md`](design/0121-strand-braid-worldline-ux.md) |
 | Optimistic strand worldline phases | [`docs/design/0146-optimistic-strand-worldline-phases.md`](design/0146-optimistic-strand-worldline-phases.md) |
 | Unmaterialized file frontier | [`docs/design/0147-unmaterialized-file-frontier.md`](design/0147-unmaterialized-file-frontier.md) |

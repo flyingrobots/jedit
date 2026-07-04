@@ -1,10 +1,49 @@
-# Graph-Backed Rope Runtime Discovery
+---
+title: "HT-0149 - Graph-Backed Rope Runtime Discovery"
+legend: "HT"
+lane: "design"
+issue: "https://github.com/flyingrobots/jedit/issues/206"
+status: "active"
+owners:
+  - "@flyingrobots"
+created: "2026-07-04"
+updated: "2026-07-04"
+---
 
-Status: discovery summary and design gate
+# HT-0149 - Graph-Backed Rope Runtime Discovery
 
-Date: 2026-07-04
+## Linked Issue
 
-## Summary
+- https://github.com/flyingrobots/jedit/issues/206
+
+## Decision Summary
+
+jedit's production text authority must move from retained full-text snapshots to
+a graph-backed rope runtime whose heads, nodes, blobs, rewrites, diffs,
+checkpoints, and receipts are admitted as inspectable causal facts. Until a real
+graph-backed create/read/replace/checkpoint path exists, new UI causal-honesty
+work must not claim storage truth that the runtime cannot prove.
+
+## Sponsored Human
+
+A Jim daily driver wants edits, saves, history, and `:why` explanations to remain
+fast and causally trustworthy on real files, without depending on retained
+full-buffer snapshots that make the editor slower and less honest as files grow.
+
+## Sponsored Agent
+
+An agent needs stable graph facts, basis IDs, byte ranges, receipts, and witness
+APIs so it can inspect text authority and explain changes without scraping
+rendered projections or inferring private runtime state.
+
+## Hill
+
+By the end of this cycle, jedit can create a graph-backed buffer, read a bounded
+text window, replace a narrow byte range, checkpoint the resulting head, and prove
+through witnesses that unchanged rope structure and authoritative bytes were not
+duplicated as full snapshots.
+
+## Current Truth
 
 An external audit called out a real architectural drift in jedit's current text
 runtime. The blunt version is correct: the code currently named around
@@ -91,7 +130,74 @@ The existing docs already point in the right direction. In particular:
 The problem is that implementation reality has not caught up to those design
 claims.
 
-## Planned Response
+## Problem
+
+The installed jedit text authority still admits edits by copying and retaining
+whole materialized strings. That contradicts the graph-backed rope architecture,
+turns rope/worldline names into misleading labels, makes byte-range provenance
+harder to prove, and allows future UI work to present causal claims that the
+storage layer cannot support.
+
+## Scope
+
+This cycle includes:
+
+- documenting the current full-snapshot runtime as fixture-only;
+- defining the production guard that prevents implicit snapshot authority;
+- defining authoritative UTF-8 byte coordinates and projection coordinates;
+- defining concrete graph-backed rope fact shapes and validation boundaries;
+- defining byte authority for `TextBlob` facts;
+- defining no-op admission semantics without minting text ticks;
+- defining retention, subtree identity, materialization, checkpoint, and `:why`
+  witnesses;
+- linking the active repo bearing to this hard gate.
+
+## Non-Goals
+
+This cycle does not include:
+
+- implementing the final production graph-backed runtime;
+- optimizing the full-snapshot runtime;
+- changing rendered editor UI, gutter UI, footer UI, or settings UI;
+- solving compaction, braids, collaborative merges, search indexes, syntax
+  caches, or structural highlighting;
+- moving jedit text semantics into Echo core.
+
+## User Experience / Product Shape
+
+This design does not add a new rendered surface. The user-facing impact is a
+hard execution gate: Jim should avoid additional causal-honesty UI claims until
+runtime truth can back those claims with graph facts.
+
+### User Journey
+
+```mermaid
+flowchart TD
+  Start[User edits a buffer] --> Admit[Runtime admits text intent]
+  Admit --> Facts[Graph-backed rope facts evolve]
+  Facts --> Read[UI reads bounded projection from a basis head]
+  Read --> Explain[:why cites head, leaf, blob, rewrite, diff, and tick]
+  Admit --> NoOp[No-op admission]
+  NoOp --> Receipt[Receipt without new text head or tick]
+```
+
+### Wide UI Mockup
+
+Not applicable. This cycle changes runtime authority design and process
+signposting, not rendered TUI layout.
+
+### Narrow UI Mockup
+
+Not applicable. This cycle changes runtime authority design and process
+signposting, not rendered TUI layout.
+
+### Accessibility Considerations
+
+No rendered accessibility behavior changes in this cycle. Future UI work that
+uses this runtime must expose the same causal facts through keyboard-accessible
+commands and machine-readable witnesses, not color-only or pixel-only cues.
+
+## Runtime / API Contract
 
 We should not patch this by making full-string replacement faster. That would
 preserve the wrong architecture. The response needs to be a graph-backed runtime
@@ -244,6 +350,19 @@ interface RopeLeafFact {
   readonly contentHash: Hash;
 }
 
+interface InlineTextBlobStorage {
+  readonly kind: "inline-utf8-bytes";
+  readonly bytes: Uint8Array;
+}
+
+interface StoredTextBlobStorage {
+  readonly kind: "content-addressed-blob-store";
+  readonly storeId: "jedit.text.blob-store.v1";
+  readonly contentRef: string;
+}
+
+type TextBlobStorage = InlineTextBlobStorage | StoredTextBlobStorage;
+
 interface TextBlobFact {
   readonly kind: "jedit.text.TextBlob";
   readonly schemaVersion: 1;
@@ -251,6 +370,7 @@ interface TextBlobFact {
   readonly encoding: "utf8";
   readonly byteLength: number;
   readonly contentHash: Hash;
+  readonly storage: TextBlobStorage;
 }
 ```
 
@@ -304,6 +424,12 @@ Validation rules:
   the same write set or an already admitted basis;
 - `TextBlobFact.blobId` and `contentHash` must be derived from
   `encoding + bytes`, not trusted from caller input;
+- inline blob facts must compute hash and length from their `Uint8Array` bytes;
+- blob-store-backed facts must name the store adapter and content reference, and
+  admission must fetch bytes, verify length, and recompute the hash before the
+  fact can become authority;
+- a `textWindow` read over a missing or hash-mismatched blob is an obstruction,
+  not a fallback to stale projection text;
 - branch, leaf, and head hashes must be recomputed from child/blob references and
   metrics before admission;
 - invalid facts are rejected before Echo admission and never become retained
@@ -319,17 +445,25 @@ receipt.
 The design should distinguish:
 
 - `ReplaceRangeIntent`;
-- `ReplaceRangeAdmission`;
+- `TextChangeAdmission`;
+- `NoOpAdmissionReceipt`;
+- `RejectedIntentReceipt`;
 - `RopeRewrite | null`;
 - `RopeDiff | null`;
 - `WorldlineAdvance | null`;
-- `TickReceipt`.
+- `TickReceipt | null`.
 
 Rules:
 
 - no text change means no new `RopeHead`;
 - no changed range means no `RopeRewrite`;
-- optional admission or receipt evidence may still exist;
+- no text change means no new text tick, no tick sequence advance, and no reuse
+  of a prior `TickId`;
+- `TickReceipt` exists only for a text-changing admission that advances the
+  worldline;
+- `NoOpAdmissionReceipt` records request ID, basis head, range, replacement hash,
+  and reason such as `unchanged-bytes`, but it is not a text tick;
+- rejected intents use `RejectedIntentReceipt` and also do not mint text ticks;
 - no-op evidence must not pollute the rope graph as if bytes changed.
 
 ### 5. Make Untouched Subtree Identity A Contract
@@ -612,7 +746,122 @@ checked against the runtime truth. If the UI says "basis", "head", "tick",
 "checkpoint", or "worldline", the source underneath should be graph-backed
 causal evidence or explicitly marked as a transitional projection.
 
-## Immediate Decision
+## Lower Modes
+
+The runtime contract must remain inspectable without a full TUI session:
+
+- tests can inject the full-snapshot fixture only through an explicit
+  fixture-allowing path;
+- debug and witness APIs can emit deterministic JSON for rope shape, retained
+  bytes, materialization basis, no-op receipts, and checkpoints;
+- missing Echo, Graft, filesystem, or blob-store evidence produces typed
+  obstructions instead of silently falling back to projection text;
+- terminal size, color, and localization do not affect graph fact authority.
+
+## Data / State Model
+
+| Category | Description |
+| --- | --- |
+| Source of truth | Echo-admitted jedit rope facts: worldlines, heads, nodes, blobs, rewrites, diffs, checkpoints, and receipts. |
+| Derived state | Materialized text windows, line offset indexes, syntax spans, render layout, search indexes, and UI caches. |
+| Invalid states | A head without a root node, a leaf without verified blob bytes, a branch with mismatched metrics or hash, a no-op that advances a text tick, and product startup that silently uses the snapshot fixture. |
+| Reset behavior | Rebuild derived indexes from a named head or checkpoint. Do not rebuild authority from rendered lines or cached projections. |
+| Serialization | Graph facts and blob-store entries serialize with runtime `kind`, `schemaVersion`, IDs, byte metrics, references, and hashes. |
+| Deterministic assumptions | UTF-8 bytes are storage authority; line/column and UTF-16 positions are basis-bound projections; hash and metric validation is deterministic. |
+
+```mermaid
+stateDiagram-v2
+  [*] --> SnapshotFixtureQuarantined
+  SnapshotFixtureQuarantined --> GraphFactsDefined
+  GraphFactsDefined --> WitnessesFailing
+  WitnessesFailing --> TinyGraphRuntime
+  TinyGraphRuntime --> ProductionCutover
+```
+
+## Accessibility Posture
+
+| Concern | Posture |
+| --- | --- |
+| Semantic labels or facts | Runtime truth is exposed as graph facts and deterministic witness output. |
+| Focus order or ownership | Not changed by this design cycle. |
+| Hidden or visual-only information | Causal state must not be available only through color, gutter marks, or footer prose. |
+| Keyboard behavior | Not changed by this design cycle. |
+| Secret or redaction behavior | Blob witnesses should support redacted byte previews while retaining hashes and byte ranges. |
+
+## Localization / Directionality Posture
+
+| Concern | Posture |
+| --- | --- |
+| User-visible strings | No new runtime strings beyond guard and obstruction messages. |
+| Catalog keys | Not required for this design-only cycle. |
+| Supported locales updated | Not required. |
+| Directionality assumptions | Text storage uses UTF-8 byte order; UI directionality is a projection concern. |
+| Validation command | `npx markdownlint-cli2 docs/design/0149-graph-backed-rope-runtime-discovery.md` |
+
+## Agent Inspectability / Explainability Posture
+
+Agents must be able to inspect the result through stable IDs and witness APIs:
+
+- `debugRopeShape(headId)` exposes head ID, root ID, spans, node IDs, child IDs,
+  hashes, depth, retained blob bytes, and materialized projection bytes;
+- `textWindow({ basisHeadId, byteRange })` returns text with basis head, byte
+  range, cache status, and validation evidence;
+- no-op admissions emit non-ticking receipt objects;
+- `:why` acceptance cites head, leaf, blob, rewrite, diff, tick, checkpoint, and
+  basis evidence for a byte range.
+
+## Linked Invariants
+
+- Runtime truth beats type theater.
+- Materialization is a reading, not reality.
+- A rope runtime is defined by what survives an edit.
+- Echo remains generic and does not learn jedit text semantics.
+- UI causal claims must not outrun storage authority.
+- Tests and witnesses are executable spec.
+
+## Design Alternatives Considered
+
+### Option A: Optimize The Snapshot Runtime
+
+Pros:
+
+- Smaller immediate code change.
+- Could reduce short-term latency for small files.
+
+Cons:
+
+- Preserves the wrong authority model.
+- Keeps full-buffer retention as production truth.
+- Lets misleading rope/worldline names continue to outrun facts.
+
+### Option B: Move Directly To A Complete Rope Runtime
+
+Pros:
+
+- Reaches the intended architecture in one broad effort.
+- Avoids intermediate fixture quarantine work.
+
+Cons:
+
+- Too large to review or witness safely.
+- Risks mixing compaction, braids, UI, syntax, and retention before the minimal
+  create/read/replace/checkpoint path is proven.
+
+### Option C: Fence The Fixture And Build The Smallest Real Path
+
+Pros:
+
+- Makes the unsafe authority explicit immediately.
+- Lets witnesses fail before implementation.
+- Proves graph-backed create/read/replace/checkpoint before UI posture depends on
+  it.
+
+Cons:
+
+- Leaves some current dogfood discomfort in place while the real runtime lands.
+- Requires transitional compatibility until production cutover finishes.
+
+## Decision
 
 Do not treat the current full-snapshot hot text runtime as an acceptable
 production implementation. It can remain only as a bounded fixture while the
@@ -634,3 +883,125 @@ A rope runtime is defined by what survives an edit.
 Materialization is a reading, not reality.
 Causal honesty is an end-to-end property.
 ```
+
+## Implementation Slices
+
+- [ ] Slice 1: Rename the snapshot runtime as a full-snapshot fixture and add the
+      production guard.
+- [ ] Slice 2: Add a quarantine witness proving default product construction
+      cannot silently use the fixture.
+- [ ] Slice 3: Land coordinate, fact, byte-authority, and validation contracts.
+- [ ] Slice 4: Add failing retention, subtree identity, materialization, no-op,
+      save/export, and `:why` witnesses.
+- [ ] Slice 5: Implement graph-backed `createBufferWorldline` and `textWindow`.
+- [ ] Slice 6: Implement graph-backed single-range `replaceRangeAsTick`.
+- [ ] Slice 7: Implement graph-backed `createCheckpoint` and cut product
+      construction over to graph-backed authority.
+
+## Tests To Write First
+
+Behavior tests required:
+
+- [ ] Product construction rejects implicit `FullSnapshotHotTextRuntimeFixture`.
+- [ ] Repeated small edits on a large buffer do not retain O(buffer size * edit
+      count) authoritative bytes.
+- [ ] Narrow replacement preserves untouched subtree identity recursively.
+- [ ] No-op replacement emits no new head, rewrite, diff, worldline advance, or
+      text tick.
+- [ ] `textWindow` returns basis head, UTF-8 byte range, cache status, and hash
+      validation evidence.
+- [ ] Save/export reads from a named head or checkpoint without mutating text
+      authority.
+- [ ] `:why` can cite head, leaf, blob, rewrite, diff, tick, checkpoint, and
+      basis evidence for a byte range.
+
+Documentation and process tests:
+
+- [ ] Design-cycle policy continues to recognize the required template headings.
+- [ ] BEARING links this runtime gate while it blocks UI causal-honesty work.
+
+## Acceptance Criteria
+
+The work is done when:
+
+- [ ] The full-snapshot runtime cannot be installed as default production text
+      authority without an explicit fixture escape hatch.
+- [ ] A graph-backed runtime can create, read, replace, and checkpoint one buffer.
+- [ ] Retention, subtree identity, no-op, materialization, save/export, and `:why`
+      witnesses pass against graph-backed authority.
+- [ ] UI surfaces that mention basis, head, tick, checkpoint, or worldline cite
+      graph facts or explicitly mark transitional projection posture.
+- [ ] Issue #206 and PR #205 are linked correctly.
+- [ ] CI and local validation are green.
+
+## Validation Plan
+
+Commands expected before implementation PRs:
+
+```bash
+git diff --check
+npx markdownlint-cli2 docs/BEARING.md docs/design/0149-graph-backed-rope-runtime-discovery.md
+node --test --test-concurrency=1 spec/design-cycle-policy.spec.mjs
+npm run quality
+```
+
+Runtime implementation slices should also run focused behavior witnesses and the
+full `npm run check` before merge.
+
+## Playback / Witness
+
+Reviewers can inspect:
+
+```bash
+sed -n '1,260p' docs/design/0149-graph-backed-rope-runtime-discovery.md
+sed -n '1,220p' docs/BEARING.md
+node --test --test-concurrency=1 spec/design-cycle-policy.spec.mjs
+```
+
+Future runtime PRs should add machine-readable witness output for retained bytes,
+debug rope shape, text-window basis, checkpoint basis, and `:why` byte-range
+evidence.
+
+## Risks
+
+Known risks:
+
+- The snapshot fixture could remain wired into product code too long.
+- A graph-backed runtime could materialize full strings internally and still pass
+  superficial read tests.
+- Blob-store-backed facts could become unverifiable if byte retrieval and hash
+  checks are optional.
+- UI work could resume causal language before runtime authority is ready.
+
+Mitigations:
+
+- Keep the fixture name and guard intentionally loud.
+- Make retention and untouched subtree witnesses required implementation proof.
+- Treat missing or mismatched blob bytes as obstructions.
+- Keep BEARING pointed at this gate until create/read/replace/checkpoint lands.
+
+## Follow-On Debt
+
+- Issue #206 tracks the runtime gate and implementation slices.
+- Follow-up runtime PRs should create narrower issues for compaction,
+  rebalancing policy, `:why` inspector UI, retention dashboards, and migration
+  from snapshot fixture state.
+
+## Retrospective
+
+What changed from the design:
+
+- This PR is the design gate and does not implement graph-backed authority.
+
+What the tests proved:
+
+- Markdown structure, design-cycle policy, ASCII hygiene, and the repo quality
+  gate pass for the design packet.
+
+What remains open:
+
+- The implementation slices in issue #206 remain open.
+
+PR:
+
+- https://github.com/flyingrobots/jedit/pull/205
