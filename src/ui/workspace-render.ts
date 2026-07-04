@@ -1,6 +1,7 @@
-import { clipToWidth, visibleLength } from '@flyingrobots/bijou-tui';
-
 import { FileEntryKinds, type FileEntry } from '../ports/file-system.js';
+import { fitLine } from './fit-line.js';
+
+export { fitLine } from './fit-line.js';
 
 export interface GraftOutlineDisplayItem {
   readonly kind: string;
@@ -22,15 +23,6 @@ export function fitBlock(text: string, width: number, height: number): string {
   }
 
   return lines.join('\n');
-}
-
-export function fitLine(text: string, width: number): string {
-  const clipped = clipToWidth(text, width);
-  const visible = visibleLength(clipped);
-  if (visible >= width) {
-    return clipped;
-  }
-  return clipped.padEnd(width, ' ');
 }
 
 export function formatGraftOutlineLine(item: GraftOutlineDisplayItem, options: SelectableLineOptions): string {

@@ -8,7 +8,7 @@ import {
   foregroundTokenFromThemeVariable,
   JEDIT_THEME_VARIABLE_TOKEN,
 } from "./theme-variable-token.js";
-import { fitLine } from "./workspace-render.js";
+import { fitLine } from "./fit-line.js";
 
 export const WHY_INLINE_PANEL_TONE = Object.freeze({
   Info: "info",

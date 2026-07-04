@@ -2,6 +2,12 @@ import { stringToSurface, type Surface } from '@flyingrobots/bijou';
 import { clipToWidth } from '@flyingrobots/bijou-tui';
 import type { I18nPort } from '../ports/i18n.js';
 import type { JeditStyleToken } from './jedit-theme.js';
+import { visibleLineLength } from './fit-line.js';
+import {
+  applyBackground,
+  fillSurface,
+  fitLine,
+} from './workspace-footer-surface-utils.js';
 import {
   editorFooterPostureFits,
   rightAlignedEditorPostureLineSurface,
@@ -20,12 +26,7 @@ export interface WorkspaceFooterSecondaryLineState {
 }
 
 export function fillFooterSurface(surface: Surface, token: JeditStyleToken): void {
-  surface.fill({
-    char: ' ',
-    bg: token.bg,
-    bgRGB: token.bgRGB,
-    empty: false,
-  });
+  fillSurface(surface, token);
 }
 
 export function footerLineSurface(
@@ -35,7 +36,7 @@ export function footerLineSurface(
   direction: I18nPort['direction'],
 ): { readonly surface: Surface; readonly x: number } {
   const content = footerLineContent(text, width);
-  const contentWidth = Math.max(MIN_FOOTER_CONTENT_WIDTH, Math.min(width, [...content].length));
+  const contentWidth = Math.max(MIN_FOOTER_CONTENT_WIDTH, Math.min(width, visibleLineLength(content)));
   const lineSurface = stringToSurface(fitLine(content, contentWidth), contentWidth, FOOTER_LINE_HEIGHT);
   applyBackground(lineSurface, background);
 
@@ -73,31 +74,6 @@ function shouldRightAlignEditorPosture(
     state.editorPath != null &&
     state.textPosture != null &&
     editorFooterPostureFits(state.editorPath, state.textPosture, width);
-}
-
-function applyBackground(surface: Surface, token: JeditStyleToken): void {
-  for (let y = 0; y < surface.height; y += 1) {
-    for (let x = 0; x < surface.width; x += 1) {
-      const cell = surface.get(x, y);
-      surface.set(x, y, {
-        ...cell,
-        char: cell.char.length > 0 ? cell.char : ' ',
-        bg: token.bg,
-        bgRGB: token.bgRGB,
-        empty: false,
-      });
-    }
-  }
-}
-
-function fitLine(text: string, width: number): string {
-  const clipped = clipToWidth(text, width);
-  const visible = [...clipped].length;
-  if (visible >= width) {
-    return clipped;
-  }
-
-  return clipped.padEnd(width, ' ');
 }
 
 function footerLineContent(text: string, width: number): string {

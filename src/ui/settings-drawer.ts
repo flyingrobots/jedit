@@ -10,7 +10,7 @@ import type { JeditSettingsRow } from '../app/settings-session.js';
 import { JEDIT_SETTING_ROW_KIND } from '../app/settings-session.js';
 import { JEDIT_SETTINGS_CLOSE_LABEL, JEDIT_SETTINGS_TOGGLE_LABEL } from '../app/keybindings.js';
 import { JEDIT_MARKDOWN_TOKEN, JEDIT_SOURCE_TOKEN, type JeditStyleToken, type JeditTheme } from './jedit-theme.js';
-import { fitLine } from './workspace-render.js';
+import { fitLine } from './fit-line.js';
 
 const SETTINGS_DRAWER_MIN_WIDTH = 28;
 const SETTINGS_DRAWER_MAX_WIDTH = 42;

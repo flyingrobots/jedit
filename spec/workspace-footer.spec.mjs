@@ -2,15 +2,23 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
+import { visibleLength } from '@flyingrobots/bijou-tui';
 import { createI18nMock } from './i18n-mock.mjs';
 import { REPO_ROOT, ensureDistBuilt } from './dist-helpers.mjs';
 
 const MODULE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'workspace-chrome.js');
+const POSTURE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'ui', 'workspace-footer-posture-line.js');
 
 async function loadFooterModule() {
   await ensureDistBuilt();
 
   return import(pathToFileURL(MODULE_PATH).href);
+}
+
+async function loadFooterPostureModule() {
+  await ensureDistBuilt();
+
+  return import(pathToFileURL(POSTURE_MODULE_PATH).href);
 }
 
 function idleNormalState() {
@@ -163,6 +171,17 @@ test('workspace footer pins editor posture to the lower-right corner when it fit
   assert.equal(secondary.startsWith('/repo/notes/todo.md'), true);
   assert.equal(secondary.endsWith(`[${posture}]`), true);
   assert.equal(secondary.includes(`/repo/notes/todo.md [${posture}]`), false);
+});
+
+test('workspace footer posture fit uses terminal display width for wide glyphs', async () => {
+  const footerPosture = await loadFooterPostureModule();
+  const editorPath = '/repo/界.md';
+  const textPosture = 'dirty | main';
+  const requiredWidth = visibleLength(`${editorPath} [${textPosture}]`);
+
+  assert.equal(requiredWidth, 26);
+  assert.equal(footerPosture.editorFooterPostureFits(editorPath, textPosture, requiredWidth - 1), false);
+  assert.equal(footerPosture.editorFooterPostureFits(editorPath, textPosture, requiredWidth), true);
 });
 
 test('workspace footer shows pending change-operator continuations', async () => {

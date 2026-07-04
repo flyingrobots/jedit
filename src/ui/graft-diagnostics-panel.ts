@@ -12,7 +12,7 @@ import {
   type JeditStyleToken,
   type JeditTheme,
 } from './jedit-theme.js';
-import { fitLine } from './workspace-render.js';
+import { fitLine } from './fit-line.js';
 
 const DIAGNOSTICS_PANEL_MIN_WIDTH = 36;
 const DIAGNOSTICS_PANEL_MAX_WIDTH = 58;

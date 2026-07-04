@@ -1,4 +1,5 @@
-import { fitLine, formatGraftOutlineLine, graftOutlineScroll } from './workspace-render.js';
+import { fitLine } from './fit-line.js';
+import { formatGraftOutlineLine, graftOutlineScroll } from './workspace-render.js';
 import {
   GraftProjectionPostures,
   GraftProjectionSources,

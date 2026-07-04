@@ -1,5 +1,5 @@
 import type { I18nPort } from '../../ports/i18n.js';
-import { fitLine } from '../../ui/workspace-render.js';
+import { fitLine } from '../../ui/fit-line.js';
 import { EchoHistoryEntryKinds, EchoHistoryEntryStatuses, type EchoHistoryEntry } from './echo-history.js';
 import type { WorkspaceModel } from './model.js';
 import { WorkspaceTextAuthorityKinds, WorkspaceTextIntentStatuses } from './workspace-text-authority.js';
