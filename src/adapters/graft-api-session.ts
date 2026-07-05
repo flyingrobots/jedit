@@ -218,7 +218,11 @@ async function loadGraftOutline(
       { path: relativePath },
     ));
     if (outline.projection === GRAFT_PROJECTION_REFUSED) {
-      return { outlineItems: [], error: outline.reason ?? 'outline refused' };
+      return {
+        outlineItems: [],
+        error: outline.reason ?? 'outline refused',
+        ...(outline.obstructionReceipt != null ? { obstructionReceipt: outline.obstructionReceipt } : {}),
+      };
     }
     return {
       outlineItems: graftOutlineItems(outline),

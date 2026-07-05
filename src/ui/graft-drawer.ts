@@ -154,7 +154,11 @@ function reasonPayloadLines(value: GraftJsonObject): readonly string[] {
 function formatJsonObjectEntries(value: GraftJsonObject): readonly string[] {
   return Object.keys(value)
     .sort()
-    .map((key) => `${key}=${formatJsonValue(value[key])}`);
+    .map((key) => `${formatJsonKey(key)}=${formatJsonValue(value[key])}`);
+}
+
+function formatJsonKey(value: string): string {
+  return JSON.stringify(value);
 }
 
 function formatJsonValue(value: GraftJsonValue | undefined): string {
