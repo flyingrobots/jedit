@@ -14,6 +14,9 @@ import type { SourceHighlightReading } from '../ports/source-highlighter.js';
 
 const GRAFT_CHANGE_ROWS = 5;
 const GRAFT_RECEIPT_PAYLOAD_ROWS = 3;
+const GRAFT_RECEIPT_VALUE_ITEMS = 3;
+const GRAFT_RECEIPT_VALUE_DEPTH = 2;
+const GRAFT_RECEIPT_VALUE_TEXT = 120;
 const COLORFUL_ACTIVE_SUMMARY = 'Colorful prose projection is active.';
 
 export interface GraftDrawerOutlineItem {
@@ -130,9 +133,18 @@ function targetIrReceiptLabel(receipt: GraftObstructionReceiptProjection): strin
     : `${receipt.targetIrDomain} ${receipt.targetIrDigest}`;
 }
 
-function formatJsonObject(value: GraftJsonObject): string {
-  const entries = formatJsonObjectEntries(value, sortedJsonObjectKeys(value));
-  return entries.length === 0 ? '{}' : entries.join(', ');
+function formatJsonObject(value: GraftJsonObject, childDepth: number): string {
+  const keys = sortedJsonObjectKeys(value);
+  if (keys.length === 0) {
+    return '{}';
+  }
+
+  const visibleKeys = keys.slice(0, GRAFT_RECEIPT_VALUE_ITEMS);
+  const omittedEntries = keys.length - visibleKeys.length;
+  const entries = formatJsonObjectEntries(value, visibleKeys, childDepth);
+  return omittedEntries === 0
+    ? entries.join(', ')
+    : `${entries.join(', ')}, ... ${String(omittedEntries)} more`;
 }
 
 function reasonPayloadLines(value: GraftJsonObject): readonly string[] {
@@ -142,7 +154,7 @@ function reasonPayloadLines(value: GraftJsonObject): readonly string[] {
   }
   const visibleKeys = keys.slice(0, GRAFT_RECEIPT_PAYLOAD_ROWS);
   const omittedEntries = keys.length - visibleKeys.length;
-  const visibleEntries = formatJsonObjectEntries(value, visibleKeys);
+  const visibleEntries = formatJsonObjectEntries(value, visibleKeys, 0);
   const visibleLines = visibleEntries.map((entry) => `payload: ${entry}`);
   return omittedEntries === 0
     ? visibleLines
@@ -157,32 +169,60 @@ function sortedJsonObjectKeys(value: GraftJsonObject): readonly string[] {
     .sort();
 }
 
-function formatJsonObjectEntries(value: GraftJsonObject, keys: readonly string[]): readonly string[] {
+function formatJsonObjectEntries(value: GraftJsonObject, keys: readonly string[], childDepth: number): readonly string[] {
   return keys
-    .map((key) => `${formatJsonKey(key)}=${formatJsonValue(value[key])}`);
+    .map((key) => `${formatJsonKey(key)}=${formatJsonValue(value[key], childDepth)}`);
 }
 
 function formatJsonKey(value: string): string {
-  return JSON.stringify(value);
+  return limitReceiptText(JSON.stringify(value));
 }
 
-function formatJsonValue(value: GraftJsonValue | undefined): string {
+function formatJsonValue(value: GraftJsonValue | undefined, depth: number): string {
   if (value === undefined || value === null) {
     return 'null';
   }
   if (isJsonArray(value)) {
-    return `[${value.map((item) => formatJsonValue(item)).join(', ')}]`;
+    return formatJsonArray(value, depth);
   }
   if (isJsonObject(value)) {
-    const objectText = formatJsonObject(value);
-    return objectText === '{}'
-      ? objectText
-      : `{${objectText}}`;
+    return formatNestedJsonObject(value, depth);
   }
   if (typeof value === 'string') {
-    return JSON.stringify(value);
+    return limitReceiptText(JSON.stringify(value));
   }
-  return String(value);
+  return limitReceiptText(String(value));
+}
+
+function formatJsonArray(value: readonly GraftJsonValue[], depth: number): string {
+  if (depth >= GRAFT_RECEIPT_VALUE_DEPTH) {
+    return '[...]';
+  }
+
+  const visibleItems = value.slice(0, GRAFT_RECEIPT_VALUE_ITEMS);
+  const omittedItems = value.length - visibleItems.length;
+  const entries = visibleItems.map((item) => formatJsonValue(item, depth + 1));
+  const text = omittedItems === 0
+    ? `[${entries.join(', ')}]`
+    : `[${entries.join(', ')}, ... ${String(omittedItems)} more]`;
+  return limitReceiptText(text);
+}
+
+function formatNestedJsonObject(value: GraftJsonObject, depth: number): string {
+  if (depth >= GRAFT_RECEIPT_VALUE_DEPTH) {
+    return '{...}';
+  }
+
+  const objectText = formatJsonObject(value, depth + 1);
+  return objectText === '{}'
+    ? objectText
+    : limitReceiptText(`{${objectText}}`);
+}
+
+function limitReceiptText(value: string): string {
+  return value.length <= GRAFT_RECEIPT_VALUE_TEXT
+    ? value
+    : `${value.slice(0, GRAFT_RECEIPT_VALUE_TEXT)}...`;
 }
 
 function isJsonArray(value: GraftJsonValue): value is readonly GraftJsonValue[] {

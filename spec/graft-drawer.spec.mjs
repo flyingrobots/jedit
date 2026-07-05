@@ -219,6 +219,53 @@ test('Graft drawer formats only visible receipt payload entries', async () => {
   assert.doesNotMatch(text, /key03/);
 });
 
+test('Graft drawer bounds nested receipt payload formatting', async () => {
+  const { renderGraftDrawerLines } = await loadGraftDrawer();
+  const nestedObject = {
+    alpha: 'one',
+    beta: 'two',
+    gamma: 'three',
+  };
+  Object.defineProperty(nestedObject, 'omega', {
+    enumerable: true,
+    get() {
+      throw new Error('omitted nested object entry should not be formatted');
+    },
+  });
+  const nestedArray = ['one', 'two', 'three'];
+  Object.defineProperty(nestedArray, '3', {
+    enumerable: true,
+    get() {
+      throw new Error('omitted nested array entry should not be formatted');
+    },
+  });
+
+  const lines = renderGraftDrawerLines(baseDrawerModel({
+    path: '/repo/demo.edict',
+    relativePath: 'demo.edict',
+    projectionSource: 'live-buffer',
+    projectionPosture: 'current',
+    obstructionReceipt: {
+      outcomeKind: 'obstructed_strand',
+      targetIrDigest: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+      reasonPayload: {
+        nestedArray,
+        nestedObject,
+      },
+      receipt: {
+        schema: 'echo.execution.receipt.review/v0',
+      },
+    },
+    outlineItems: [],
+    changeLines: [],
+  }), 120, 24);
+  const text = linesToText(lines);
+
+  assert.match(text, /payload: "nestedArray"=\["one", "two", "three", \.\.\. 1 more\]/);
+  assert.match(text, /payload: "nestedObject"=\{"alpha"="one", "beta"="two", "gamma"="three", \.\.\. 1 more\}/);
+  assert.doesNotMatch(text, /omega/);
+});
+
 test('Graft drawer page movement uses bounded receipt payload rows', async () => {
   const { updateGraftDrawerFromKey } = await loadWorkspaceGraftDrawer();
   const reasonPayload = Object.fromEntries(Array.from({ length: 20 }, (_entry, index) => [
