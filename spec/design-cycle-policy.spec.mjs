@@ -104,12 +104,13 @@ test('HT-0149 rope fact validation receives admission context', () => {
   const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
 
   assert.match(discovery, /^interface RopeFactValidationContext \{$/m);
-  assert.match(discovery, /readonly writeSet:/);
+  assert.match(discovery, /readonly writeSet: readonly RopeAdmittedFact\[\];/);
   assert.match(discovery, /readonly admittedBasis:/);
   assert.match(discovery, /readonly blobStore:/);
+  assert.match(discovery, /readonly hash: TextBlobHashPort;/);
   assert.match(
     discovery,
-    /declare function validateRopeFact\(\n  payload: object,\n  context: RopeFactValidationContext,\n\): FactValidationResult</,
+    /declare function validateRopeFact\(\n  payload: RopeAdmittedFact,\n  context: RopeFactValidationContext,\n\): FactValidationResult</,
   );
 });
 

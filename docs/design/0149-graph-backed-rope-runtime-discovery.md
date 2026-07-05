@@ -513,15 +513,27 @@ interface TextBlobStorePort {
   readBlobBytes(storage: StoredTextBlobStorage): Uint8Array | null;
 }
 
-interface RopeFactValidationContext {
-  readonly writeSet: readonly object[];
-  readonly admittedBasis: RopeFactReadModel;
-  readonly blobStore: TextBlobStorePort;
+interface TextBlobHashPort {
+  sha256Hex(value: string): string;
 }
 
-declare function makeTextBlobFact(bytes: Uint8Array): TextBlobFact;
+interface MakeTextBlobFactInput {
+  readonly bytes: Uint8Array;
+  readonly hash: TextBlobHashPort;
+}
+
+interface RopeFactValidationContext {
+  readonly writeSet: readonly RopeAdmittedFact[];
+  readonly admittedBasis: RopeFactReadModel;
+  readonly blobStore: TextBlobStorePort;
+  readonly hash: TextBlobHashPort;
+}
+
+declare function makeTextBlobFact(
+  input: MakeTextBlobFactInput,
+): FactValidationResult<TextBlobFact>;
 declare function validateRopeFact(
-  payload: object,
+  payload: RopeAdmittedFact,
   context: RopeFactValidationContext,
 ): FactValidationResult<RopeAdmittedFact>;
 ```
@@ -1038,7 +1050,7 @@ Causal honesty is an end-to-end property.
       production guard.
 - [x] Slice 2: Add a quarantine witness proving default product construction
       cannot silently use the fixture.
-- [ ] Slice 3: Land coordinate, fact, byte-authority, and validation contracts.
+- [x] Slice 3: Land coordinate, fact, byte-authority, and validation contracts.
 - [ ] Slice 4: Add failing retention, subtree identity, materialization, no-op,
       save/export, and `:why` witnesses.
 - [ ] Slice 5: Implement graph-backed `createBufferWorldline` and `textWindow`.
@@ -1051,6 +1063,9 @@ Causal honesty is an end-to-end property.
 Behavior tests required:
 
 - [x] Product construction rejects implicit `FullSnapshotHotTextRuntimeFixture`.
+- [x] Graph rope contracts separate UTF-8 storage coordinates from UI
+      projections, derive text blob identity from bytes, and reject hash or
+      reference mismatches.
 - [ ] Repeated small edits on a large buffer do not retain O(buffer size * edit
       count) authoritative bytes.
 - [ ] Narrow replacement preserves untouched subtree identity recursively.
@@ -1090,6 +1105,7 @@ Commands expected before implementation PRs:
 git diff --check
 npx markdownlint-cli2 docs/BEARING.md docs/design/0149-graph-backed-rope-runtime-discovery.md
 node --test --test-concurrency=1 spec/design-cycle-policy.spec.mjs
+node --test --test-concurrency=1 spec/graph-rope-contract.spec.mjs
 npm run quality
 ```
 
@@ -1104,6 +1120,7 @@ Reviewers can inspect:
 sed -n '1,260p' docs/design/0149-graph-backed-rope-runtime-discovery.md
 sed -n '1,220p' docs/BEARING.md
 node --test --test-concurrency=1 spec/design-cycle-policy.spec.mjs
+node --test --test-concurrency=1 spec/graph-rope-contract.spec.mjs
 ```
 
 Future runtime PRs should add machine-readable witness output for retained bytes,
@@ -1147,16 +1164,22 @@ Mitigations:
 
 What changed from the design:
 
-- This PR is the design gate and does not implement graph-backed authority.
+- The snapshot runtime is quarantined as a fixture.
+- The first executable graph rope contract slice now defines coordinate values,
+  typed fact shapes, byte-derived text blob identity, blob-store validation, and
+  typed admission context. It does not yet implement graph-backed authority.
 
 What the tests proved:
 
+- Product construction rejects implicit full-snapshot text authority.
+- Graph rope contract witnesses prove coordinate separation, byte-derived blob
+  identity, stored blob hash validation, and typed reference validation.
 - Markdown structure, design-cycle policy, ASCII hygiene, and the repo quality
   gate pass for the design packet.
 
 What remains open:
 
-- The implementation slices in issue #206 remain open.
+- Graph-backed create/read/replace/checkpoint authority remains open.
 
 PR:
 
