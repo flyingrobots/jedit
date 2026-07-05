@@ -134,3 +134,40 @@ test('Graft drawer displays opaque obstruction receipt projection facts', async 
   assert.doesNotMatch(text, /hard rejection/);
   assert.doesNotMatch(text, /counterfactual/);
 });
+
+test('Graft drawer bounds receipt payload rows before outline content', async () => {
+  const { renderGraftDrawerLines } = await loadGraftDrawer();
+  const reasonPayload = Object.fromEntries(Array.from({ length: 20 }, (_entry, index) => [
+    `key${String(index).padStart(2, '0')}`,
+    `value${String(index).padStart(2, '0')}`,
+  ]));
+  const drawerHeight = 18;
+  const lines = renderGraftDrawerLines(baseDrawerModel({
+    path: '/repo/demo.edict',
+    relativePath: 'demo.edict',
+    projectionSource: 'live-buffer',
+    projectionPosture: 'current',
+    obstructionReceipt: {
+      outcomeKind: 'obstructed_strand',
+      targetIrDigest: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+      targetIrDomain: 'echo.span-ir/v1',
+      reasonKind: 'jim.EditObstruction.StaleBase',
+      reasonPayload,
+      receipt: {
+        schema: 'echo.execution.receipt.review/v0',
+      },
+    },
+    outlineItems: [{
+      kind: 'function',
+      name: 'render',
+      startLine: 7,
+    }],
+    changeLines: [],
+  }), 120, drawerHeight);
+  const visibleText = lines.slice(0, drawerHeight).join('\n');
+
+  assert.match(visibleText, /outline/);
+  assert.match(visibleText, /function render/);
+  assert.match(visibleText, /payload: key00=value00/);
+  assert.doesNotMatch(visibleText, /key19=value19/);
+});

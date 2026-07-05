@@ -13,6 +13,7 @@ import type { GraftDiagnosticsReport } from '../ports/graft-diagnostics.js';
 import type { SourceHighlightReading } from '../ports/source-highlighter.js';
 
 const GRAFT_CHANGE_ROWS = 5;
+const GRAFT_RECEIPT_PAYLOAD_ROWS = 3;
 const COLORFUL_ACTIVE_SUMMARY = 'Colorful prose projection is active.';
 
 export interface GraftDrawerOutlineItem {
@@ -136,9 +137,18 @@ function formatJsonObject(value: GraftJsonObject): string {
 
 function reasonPayloadLines(value: GraftJsonObject): readonly string[] {
   const entries = formatJsonObjectEntries(value);
-  return entries.length === 0
-    ? ['payload: {}']
-    : entries.map((entry) => `payload: ${entry}`);
+  if (entries.length === 0) {
+    return ['payload: {}'];
+  }
+  const visibleEntries = entries.slice(0, GRAFT_RECEIPT_PAYLOAD_ROWS);
+  const omittedEntries = entries.length - visibleEntries.length;
+  const visibleLines = visibleEntries.map((entry) => `payload: ${entry}`);
+  return omittedEntries === 0
+    ? visibleLines
+    : [
+      ...visibleLines,
+      `payload: ... ${String(omittedEntries)} more`,
+    ];
 }
 
 function formatJsonObjectEntries(value: GraftJsonObject): readonly string[] {
