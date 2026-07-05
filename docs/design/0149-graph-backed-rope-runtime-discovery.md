@@ -1051,7 +1051,7 @@ Causal honesty is an end-to-end property.
 - [x] Slice 2: Add a quarantine witness proving default product construction
       cannot silently use the fixture.
 - [x] Slice 3: Land coordinate, fact, byte-authority, and validation contracts.
-- [ ] Slice 4: Add failing retention, subtree identity, materialization, no-op,
+- [x] Slice 4: Add failing retention, subtree identity, materialization, no-op,
       save/export, and `:why` witnesses.
 - [ ] Slice 5: Implement graph-backed `createBufferWorldline` and `textWindow`.
 - [ ] Slice 6: Implement graph-backed single-range `replaceRangeAsTick`.
@@ -1066,17 +1066,18 @@ Behavior tests required:
 - [x] Graph rope contracts separate UTF-8 storage coordinates from UI
       projections, derive text blob identity from bytes, and reject hash or
       reference mismatches.
-- [ ] Repeated small edits on a large buffer do not retain O(buffer size * edit
-      count) authoritative bytes.
-- [ ] Narrow replacement preserves untouched subtree identity recursively.
-- [ ] No-op replacement emits no new head, rewrite, diff, worldline advance, or
-      text tick.
-- [ ] `textWindow` returns basis head, UTF-8 byte range, cache status, and hash
-      validation evidence.
-- [ ] Save/export reads from a named head or checkpoint without mutating text
-      authority.
-- [ ] `:why` can cite head, leaf, blob, rewrite, diff, tick, checkpoint, and
-      basis evidence for a byte range.
+- [x] RED witness declared: repeated small edits on a large buffer do not retain
+      O(buffer size * edit count) authoritative bytes.
+- [x] RED witness declared: narrow replacement preserves untouched subtree
+      identity recursively.
+- [x] RED witness declared: no-op replacement emits no new head, rewrite, diff,
+      worldline advance, or text tick.
+- [x] RED witness declared: `textWindow` returns basis head, UTF-8 byte range,
+      cache status, and hash validation evidence.
+- [x] RED witness declared: save/export reads from a named head or checkpoint
+      without mutating text authority.
+- [x] RED witness declared: `:why` can cite head, leaf, blob, rewrite, diff,
+      tick, checkpoint, and basis evidence for a byte range.
 
 Documentation and process tests:
 
@@ -1106,6 +1107,7 @@ git diff --check
 npx markdownlint-cli2 docs/BEARING.md docs/design/0149-graph-backed-rope-runtime-discovery.md
 node --test --test-concurrency=1 spec/design-cycle-policy.spec.mjs
 node --test --test-concurrency=1 spec/graph-rope-contract.spec.mjs
+node --test --test-concurrency=1 spec/graph-rope-runtime-red-matrix.spec.mjs
 npm run quality
 ```
 
@@ -1121,6 +1123,7 @@ sed -n '1,260p' docs/design/0149-graph-backed-rope-runtime-discovery.md
 sed -n '1,220p' docs/BEARING.md
 node --test --test-concurrency=1 spec/design-cycle-policy.spec.mjs
 node --test --test-concurrency=1 spec/graph-rope-contract.spec.mjs
+node --test --test-concurrency=1 spec/graph-rope-runtime-red-matrix.spec.mjs
 ```
 
 Future runtime PRs should add machine-readable witness output for retained bytes,
@@ -1174,6 +1177,8 @@ What the tests proved:
 - Product construction rejects implicit full-snapshot text authority.
 - Graph rope contract witnesses prove coordinate separation, byte-derived blob
   identity, stored blob hash validation, and typed reference validation.
+- The graph-backed runtime RED matrix declares retention, subtree identity,
+  no-op, materialization, save/export, and `:why` acceptance witnesses.
 - Markdown structure, design-cycle policy, ASCII hygiene, and the repo quality
   gate pass for the design packet.
 
