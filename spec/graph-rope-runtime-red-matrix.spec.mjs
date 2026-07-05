@@ -23,14 +23,6 @@ test.skip('RED: narrow replacement preserves untouched subtree identity recursiv
   assert.fail(PENDING_GRAPH_RUNTIME);
 });
 
-test.skip('RED: no-op replacement emits no new text head rewrite diff or worldline advance', () => {
-  // Fixture: admit a ReplaceRangeIntent whose replacement bytes equal the bytes
-  // in the target half-open range.
-  // Expected: optional admission or receipt evidence may exist, but there is no
-  // new RopeHead, RopeRewrite, RopeDiff, or text tick.
-  assert.fail(PENDING_GRAPH_RUNTIME);
-});
-
 test.skip('RED: save and export read from a named head or checkpoint without mutating text authority', () => {
   // Fixture: export text from head H, then create a manual-save checkpoint C for
   // H and export from C.

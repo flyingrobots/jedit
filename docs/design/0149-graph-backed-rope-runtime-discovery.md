@@ -1054,7 +1054,7 @@ Causal honesty is an end-to-end property.
 - [x] Slice 4: Add failing retention, subtree identity, materialization, no-op,
       save/export, and `:why` witnesses.
 - [x] Slice 5: Implement graph-backed `createBufferWorldline` and `textWindow`.
-- [ ] Slice 6: Implement graph-backed single-range `replaceRangeAsTick`.
+- [x] Slice 6: Implement graph-backed single-range `replaceRangeAsTick`.
 - [ ] Slice 7: Implement graph-backed `createCheckpoint` and cut product
       construction over to graph-backed authority.
 
@@ -1070,10 +1070,12 @@ Behavior tests required:
       O(buffer size * edit count) authoritative bytes.
 - [x] RED witness declared: narrow replacement preserves untouched subtree
       identity recursively.
-- [x] RED witness declared: no-op replacement emits no new head, rewrite, diff,
-      worldline advance, or text tick.
+- [x] Graph-backed no-op replacement emits no new head, rewrite, diff, or text
+      tick.
 - [x] Graph-backed `textWindow` returns basis head, UTF-8 byte range, cache
       status, and hash validation evidence for the initial single-leaf runtime.
+- [x] Graph-backed `replaceRangeAsTick` admits rewrite, diff, receipt, and next
+      head facts without retaining a full replacement snapshot.
 - [x] RED witness declared: save/export reads from a named head or checkpoint
       without mutating text authority.
 - [x] RED witness declared: `:why` can cite head, leaf, blob, rewrite, diff,
@@ -1091,8 +1093,9 @@ The work is done when:
 - [x] The full-snapshot runtime cannot be installed as default production text
       authority without an explicit fixture escape hatch.
 - [x] A graph-backed runtime can create and read one single-leaf buffer.
-- [ ] A graph-backed runtime can create, read, replace, and checkpoint one buffer.
-- [ ] Retention, subtree identity, no-op, materialization, save/export, and `:why`
+- [x] A graph-backed runtime can create, read, and replace one buffer.
+- [ ] A graph-backed runtime can checkpoint one buffer.
+- [ ] Retention stress, recursive subtree identity, save/export, and `:why`
       witnesses pass against graph-backed authority.
 - [ ] UI surfaces that mention basis, head, tick, checkpoint, or worldline cite
       graph facts or explicitly mark transitional projection posture.
@@ -1183,14 +1186,19 @@ What the tests proved:
 - The first graph-backed runtime path can create a single-leaf worldline, read a
   named head window, report retained blob bytes through debug shape, and obstruct
   missing heads or invalid UTF-8 byte boundaries.
+- The graph-backed runtime can admit a single-range replacement as rewrite, diff,
+  receipt, and next-head facts; logical no-op replacements do not mint text
+  authority facts.
 - The graph-backed runtime RED matrix declares retention, subtree identity,
-  no-op, save/export, and `:why` acceptance witnesses.
+  save/export, and `:why` acceptance witnesses.
 - Markdown structure, design-cycle policy, ASCII hygiene, and the repo quality
   gate pass for the design packet.
 
 What remains open:
 
-- Graph-backed replace/checkpoint authority remains open.
+- Graph-backed checkpoint authority remains open.
+- Retention stress and recursive subtree identity still need stronger witnesses
+  before product cutover.
 
 PR:
 
