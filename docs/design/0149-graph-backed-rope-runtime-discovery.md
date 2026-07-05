@@ -454,8 +454,19 @@ type FactValidationResult<TFact> =
   | { readonly ok: true; readonly fact: TFact }
   | { readonly ok: false; readonly code: FactValidationErrorCode };
 
+type RopeAdmittedFact =
+  | BufferWorldlineFact
+  | RopeHeadFact
+  | RopeBranchFact
+  | RopeLeafFact
+  | TextBlobFact
+  | RopeRewriteFact
+  | RopeDiffFact
+  | TickReceiptFact
+  | RopeCheckpointFact;
+
 interface RopeFactReadModel {
-  hasFact(id: string): boolean;
+  getFact(id: string): RopeAdmittedFact | null;
 }
 
 interface TextBlobStorePort {
@@ -472,17 +483,7 @@ declare function makeTextBlobFact(bytes: Uint8Array): TextBlobFact;
 declare function validateRopeFact(
   payload: object,
   context: RopeFactValidationContext,
-): FactValidationResult<
-  | BufferWorldlineFact
-  | RopeHeadFact
-  | RopeBranchFact
-  | RopeLeafFact
-  | TextBlobFact
-  | RopeRewriteFact
-  | RopeDiffFact
-  | TickReceiptFact
-  | RopeCheckpointFact
->;
+): FactValidationResult<RopeAdmittedFact>;
 ```
 
 Validation rules:
@@ -493,6 +494,9 @@ Validation rules:
 - branch children, head roots, leaf blobs, rewrites, diffs, receipts, and
   checkpoints must reference facts available in the same write set or an already
   admitted basis;
+- reference validation must retrieve typed facts from the current write set or
+  `admittedBasis.getFact(...)` before checking kind, metrics, content hash, and
+  worldline linkage; ID existence alone is not a valid reference proof;
 - the validator receives those scopes through `RopeFactValidationContext` and
   must not consult ambient process state;
 - `TextBlobFact.blobId` and `contentHash` must be derived from

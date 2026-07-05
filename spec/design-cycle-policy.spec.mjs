@@ -136,9 +136,21 @@ test('HT-0149 checkpoint fact carries schema version', () => {
 test('HT-0149 checkpoint facts are validated rather than deferred', () => {
   const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
   const deferredFacts = sectionBetween(discovery, 'The full design must also define facts for:', 'Echo remains generic.');
+  const admittedFacts = sectionBetween(discovery, 'type RopeAdmittedFact =', 'interface RopeFactReadModel');
 
-  assert.match(discovery, /\| TickReceiptFact\n  \| RopeCheckpointFact\n>/);
+  assert.match(admittedFacts, /\| TickReceiptFact\n  \| RopeCheckpointFact;/);
+  assert.match(discovery, /\): FactValidationResult<RopeAdmittedFact>;/);
   assert.doesNotMatch(deferredFacts, /`RopeCheckpoint`/);
+});
+
+test('HT-0149 validation exposes typed admitted facts', () => {
+  const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
+
+  assert.match(discovery, /^type RopeAdmittedFact =$/m);
+  assert.match(discovery, /getFact\(id: string\): RopeAdmittedFact \| null;/);
+  assert.match(discovery, /\): FactValidationResult<RopeAdmittedFact>;/);
+  assert.doesNotMatch(discovery, /hasFact\(id: string\): boolean;/);
+  assert.match(discovery, /reference validation must retrieve typed facts/);
 });
 
 test('HT-0149 specifies concrete rope balance invariants', () => {
