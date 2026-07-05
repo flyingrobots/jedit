@@ -395,13 +395,27 @@ interface RopeRewriteFact {
   readonly contentHash: Hash;
 }
 
-interface RopeDiffSpan {
-  readonly kind: "equal" | "delete" | "insert";
-  readonly basisRange?: TextByteRange;
-  readonly nextRange?: TextByteRange;
-  readonly blobId?: TextBlobId;
+interface RopeEqualDiffSpan {
+  readonly kind: "equal";
+  readonly basisRange: TextByteRange;
+  readonly nextRange: TextByteRange;
   readonly contentHash: Hash;
 }
+
+interface RopeDeleteDiffSpan {
+  readonly kind: "delete";
+  readonly basisRange: TextByteRange;
+  readonly contentHash: Hash;
+}
+
+interface RopeInsertDiffSpan {
+  readonly kind: "insert";
+  readonly nextRange: TextByteRange;
+  readonly blobId: TextBlobId;
+  readonly contentHash: Hash;
+}
+
+type RopeDiffSpan = RopeEqualDiffSpan | RopeDeleteDiffSpan | RopeInsertDiffSpan;
 
 interface RopeDiffFact {
   readonly kind: "jedit.text.RopeDiff";
@@ -511,6 +525,10 @@ Validation rules:
   metrics before admission;
 - rewrite, diff, tick receipt, and checkpoint hashes and sequence numbers must
   be recomputed or range-checked against the admitted basis before admission;
+- diff spans are kind-specific: equal spans must carry basis and next ranges,
+  delete spans must carry only the removed basis range, insert spans must carry
+  the next range and inserted blob, and validators must reject missing or extra
+  coordinate fields for each span kind;
 - invalid facts are rejected before Echo admission and never become retained
   authority.
 

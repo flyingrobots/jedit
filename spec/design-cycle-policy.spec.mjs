@@ -153,6 +153,19 @@ test('HT-0149 validation exposes typed admitted facts', () => {
   assert.match(discovery, /reference validation must retrieve typed facts/);
 });
 
+test('HT-0149 diff spans are kind-specific', () => {
+  const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
+
+  for (const spanName of ['RopeEqualDiffSpan', 'RopeDeleteDiffSpan', 'RopeInsertDiffSpan']) {
+    assert.match(discovery, new RegExp(`^interface ${spanName} \\{$`, 'm'));
+  }
+
+  assert.match(discovery, /^type RopeDiffSpan = RopeEqualDiffSpan \| RopeDeleteDiffSpan \| RopeInsertDiffSpan;$/m);
+  assert.doesNotMatch(discovery, /readonly kind: "equal" \| "delete" \| "insert";/);
+  assert.doesNotMatch(discovery, /readonly basisRange\?: TextByteRange;/);
+  assert.match(discovery, /diff spans are kind-specific/);
+});
+
 test('HT-0149 specifies concrete rope balance invariants', () => {
   const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
 
