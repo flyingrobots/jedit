@@ -3,6 +3,9 @@ import { formatGraftOutlineLine, graftOutlineScroll } from './workspace-render.j
 import {
   GraftProjectionPostures,
   GraftProjectionSources,
+  type GraftJsonObject,
+  type GraftJsonValue,
+  type GraftObstructionReceiptProjection,
   type GraftProjectionPosture,
   type GraftProjectionSource,
 } from '../ports/graft-session.js';
@@ -10,6 +13,10 @@ import type { GraftDiagnosticsReport } from '../ports/graft-diagnostics.js';
 import type { SourceHighlightReading } from '../ports/source-highlighter.js';
 
 const GRAFT_CHANGE_ROWS = 5;
+const GRAFT_RECEIPT_PAYLOAD_ROWS = 3;
+const GRAFT_RECEIPT_VALUE_ITEMS = 3;
+const GRAFT_RECEIPT_VALUE_DEPTH = 2;
+const GRAFT_RECEIPT_VALUE_TEXT = 120;
 const COLORFUL_ACTIVE_SUMMARY = 'Colorful prose projection is active.';
 
 export interface GraftDrawerOutlineItem {
@@ -25,6 +32,7 @@ export interface GraftDrawerInfo {
   readonly projectionPosture?: GraftProjectionPosture;
   readonly outlineItems: readonly GraftDrawerOutlineItem[];
   readonly changeLines: readonly string[];
+  readonly obstructionReceipt?: GraftObstructionReceiptProjection;
   readonly notice?: string;
   readonly error?: string;
 }
@@ -68,6 +76,7 @@ function renderLoadedGraftDrawerLines(
     `posture: ${projectionPostureForInfo(info)}`,
     model.graftLoading ? 'loading...' : (info.notice ?? ''),
     info.error == null ? '' : `error: ${info.error}`,
+    ...obstructionReceiptLines(info),
     'outline',
   ];
   const changeLines = ['', 'changes', ...info.changeLines];
@@ -101,6 +110,132 @@ function projectionPostureForInfo(info: GraftDrawerInfo): GraftProjectionPosture
     return info.projectionPosture;
   }
   return info.error == null ? GraftProjectionPostures.Current : GraftProjectionPostures.Obstructed;
+}
+
+function obstructionReceiptLines(info: GraftDrawerInfo): readonly string[] {
+  const receipt = info.obstructionReceipt;
+  if (receipt == null) {
+    return [];
+  }
+
+  return [
+    'receipt',
+    `outcome: ${formatReceiptScalar(receipt.outcomeKind)}`,
+    `target: ${targetIrReceiptLabel(receipt)}`,
+    ...(receipt.reasonKind == null ? [] : [`reason: ${formatReceiptScalar(receipt.reasonKind)}`]),
+    ...(receipt.reasonPayload == null ? [] : reasonPayloadLines(receipt.reasonPayload)),
+  ];
+}
+
+function targetIrReceiptLabel(receipt: GraftObstructionReceiptProjection): string {
+  const digest = formatReceiptScalar(receipt.targetIrDigest);
+  return receipt.targetIrDomain == null
+    ? digest
+    : `${formatReceiptScalar(receipt.targetIrDomain)} ${digest}`;
+}
+
+function formatReceiptScalar(value: string): string {
+  return limitReceiptText(JSON.stringify(value).slice(1, -1));
+}
+
+function formatJsonObject(value: GraftJsonObject, childDepth: number): string {
+  const keys = sortedJsonObjectKeys(value);
+  if (keys.length === 0) {
+    return '{}';
+  }
+
+  const visibleKeys = keys.slice(0, GRAFT_RECEIPT_VALUE_ITEMS);
+  const omittedEntries = keys.length - visibleKeys.length;
+  const entries = formatJsonObjectEntries(value, visibleKeys, childDepth);
+  return omittedEntries === 0
+    ? entries.join(', ')
+    : `${entries.join(', ')}, ... ${String(omittedEntries)} more`;
+}
+
+function reasonPayloadLines(value: GraftJsonObject): readonly string[] {
+  const keys = sortedJsonObjectKeys(value);
+  if (keys.length === 0) {
+    return ['payload: {}'];
+  }
+  const visibleKeys = keys.slice(0, GRAFT_RECEIPT_PAYLOAD_ROWS);
+  const omittedEntries = keys.length - visibleKeys.length;
+  const visibleEntries = formatJsonObjectEntries(value, visibleKeys, 0);
+  const visibleLines = visibleEntries.map((entry) => `payload: ${entry}`);
+  return omittedEntries === 0
+    ? visibleLines
+    : [
+      ...visibleLines,
+      `payload: ... ${String(omittedEntries)} more`,
+    ];
+}
+
+function sortedJsonObjectKeys(value: GraftJsonObject): readonly string[] {
+  return Object.keys(value)
+    .sort();
+}
+
+function formatJsonObjectEntries(value: GraftJsonObject, keys: readonly string[], childDepth: number): readonly string[] {
+  return keys
+    .map((key) => `${formatJsonKey(key)}=${formatJsonValue(value[key], childDepth)}`);
+}
+
+function formatJsonKey(value: string): string {
+  return limitReceiptText(JSON.stringify(value));
+}
+
+function formatJsonValue(value: GraftJsonValue | undefined, depth: number): string {
+  if (value === undefined || value === null) {
+    return 'null';
+  }
+  if (isJsonArray(value)) {
+    return formatJsonArray(value, depth);
+  }
+  if (isJsonObject(value)) {
+    return formatNestedJsonObject(value, depth);
+  }
+  if (typeof value === 'string') {
+    return limitReceiptText(JSON.stringify(value));
+  }
+  return limitReceiptText(String(value));
+}
+
+function formatJsonArray(value: readonly GraftJsonValue[], depth: number): string {
+  if (depth >= GRAFT_RECEIPT_VALUE_DEPTH) {
+    return '[...]';
+  }
+
+  const visibleItems = value.slice(0, GRAFT_RECEIPT_VALUE_ITEMS);
+  const omittedItems = value.length - visibleItems.length;
+  const entries = visibleItems.map((item) => formatJsonValue(item, depth + 1));
+  const text = omittedItems === 0
+    ? `[${entries.join(', ')}]`
+    : `[${entries.join(', ')}, ... ${String(omittedItems)} more]`;
+  return limitReceiptText(text);
+}
+
+function formatNestedJsonObject(value: GraftJsonObject, depth: number): string {
+  if (depth >= GRAFT_RECEIPT_VALUE_DEPTH) {
+    return '{...}';
+  }
+
+  const objectText = formatJsonObject(value, depth + 1);
+  return objectText === '{}'
+    ? objectText
+    : limitReceiptText(`{${objectText}}`);
+}
+
+function limitReceiptText(value: string): string {
+  return value.length <= GRAFT_RECEIPT_VALUE_TEXT
+    ? value
+    : `${value.slice(0, GRAFT_RECEIPT_VALUE_TEXT)}...`;
+}
+
+function isJsonArray(value: GraftJsonValue): value is readonly GraftJsonValue[] {
+  return Array.isArray(value);
+}
+
+function isJsonObject(value: GraftJsonValue): value is GraftJsonObject {
+  return typeof value === 'object' && !Array.isArray(value);
 }
 
 function emptyOutlineLines(model: GraftDrawerState, info: GraftDrawerInfo): readonly string[] {

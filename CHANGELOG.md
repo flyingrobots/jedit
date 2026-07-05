@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added a display-only obstruction receipt lane to the Graft drawer so upstream
+  Edict/Echo projection receipt facts can show outcome kind, Target IR digest,
+  reason kind, and reason payload without jedit executing Echo, admitting Jim
+  artifacts, rendering a receipt digest, or interpreting obstruction semantics.
 - Added WF-0121 for Strand/Braid Worldline UX, locking in copy-on-write
   strands, braid preview/admission, TTD observer commands, and agent-isolated
   proposal strands as the product lane after the current trust/provenance work.

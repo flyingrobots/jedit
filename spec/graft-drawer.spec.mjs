@@ -6,6 +6,10 @@ async function loadGraftDrawer() {
   return importDist('ui', 'graft-drawer.js');
 }
 
+async function loadWorkspaceGraftDrawer() {
+  return importDist('app', 'workspace', 'graft-drawer.js');
+}
+
 function linesToText(lines) {
   return lines.join('\n');
 }
@@ -97,4 +101,290 @@ test('Graft drawer uses text labels for projection state rows', async () => {
 
   assert.ok(lines.some((line) => line.startsWith('source: saved-file')));
   assert.ok(lines.some((line) => line.startsWith('posture: current')));
+});
+
+test('Graft drawer displays opaque obstruction receipt projection facts', async () => {
+  const { renderGraftDrawerLines } = await loadGraftDrawer();
+  const lines = renderGraftDrawerLines(baseDrawerModel({
+    path: '/repo/demo.edict',
+    relativePath: 'demo.edict',
+    projectionSource: 'live-buffer',
+    projectionPosture: 'current',
+    obstructionReceipt: {
+      outcomeKind: 'obstructed_strand',
+      targetIrDigest: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+      targetIrDomain: 'echo.span-ir/v1',
+      reasonKind: 'jim.EditObstruction.StaleBase',
+      reasonPayload: {
+        inputBasisDigest: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+        meta: {},
+        observedBasisDigest: 'sha256:4444444444444444444444444444444444444444444444444444444444444444',
+      },
+      receipt: {
+        receiptDigest: 'sha256:9999999999999999999999999999999999999999999999999999999999999999',
+      },
+    },
+    outlineItems: [],
+    changeLines: [],
+  }), 120, 24);
+  const text = linesToText(lines);
+
+  assert.match(text, /receipt/);
+  assert.match(text, /outcome: obstructed_strand/);
+  assert.match(text, /target: echo\.span-ir\/v1 sha256:333333/);
+  assert.match(text, /reason: jim\.EditObstruction\.StaleBase/);
+  assert.match(text, /payload: "inputBasisDigest"="sha256:111111/);
+  assert.match(text, /payload: "meta"=\{\}/);
+  assert.doesNotMatch(text, /meta=\{\{\}\}/);
+  assert.match(text, /"observedBasisDigest"="sha256:444444/);
+  assert.doesNotMatch(text, /receiptDigest/);
+  assert.doesNotMatch(text, /hard rejection/);
+  assert.doesNotMatch(text, /counterfactual/);
+});
+
+test('Graft drawer bounds receipt payload rows before outline content', async () => {
+  const { renderGraftDrawerLines } = await loadGraftDrawer();
+  const reasonPayload = Object.fromEntries(Array.from({ length: 20 }, (_entry, index) => [
+    `key${String(index).padStart(2, '0')}`,
+    `value${String(index).padStart(2, '0')}`,
+  ]));
+  const drawerHeight = 18;
+  const lines = renderGraftDrawerLines(baseDrawerModel({
+    path: '/repo/demo.edict',
+    relativePath: 'demo.edict',
+    projectionSource: 'live-buffer',
+    projectionPosture: 'current',
+    obstructionReceipt: {
+      outcomeKind: 'obstructed_strand',
+      targetIrDigest: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+      targetIrDomain: 'echo.span-ir/v1',
+      reasonKind: 'jim.EditObstruction.StaleBase',
+      reasonPayload,
+      receipt: {
+        schema: 'echo.execution.receipt.review/v0',
+      },
+    },
+    outlineItems: [{
+      kind: 'function',
+      name: 'render',
+      startLine: 7,
+    }],
+    changeLines: [],
+  }), 120, drawerHeight);
+  const visibleText = lines.slice(0, drawerHeight).join('\n');
+
+  assert.match(visibleText, /outline/);
+  assert.match(visibleText, /function render/);
+  assert.match(visibleText, /payload: "key00"="value00"/);
+  assert.doesNotMatch(visibleText, /key19=value19/);
+});
+
+test('Graft drawer formats only visible receipt payload entries', async () => {
+  const { renderGraftDrawerLines } = await loadGraftDrawer();
+  const reasonPayload = {
+    key00: 'value00',
+    key01: 'value01',
+    key02: 'value02',
+  };
+  Object.defineProperty(reasonPayload, 'key03', {
+    enumerable: true,
+    get() {
+      throw new Error('omitted payload entry should not be formatted');
+    },
+  });
+
+  const lines = renderGraftDrawerLines(baseDrawerModel({
+    path: '/repo/demo.edict',
+    relativePath: 'demo.edict',
+    projectionSource: 'live-buffer',
+    projectionPosture: 'current',
+    obstructionReceipt: {
+      outcomeKind: 'obstructed_strand',
+      targetIrDigest: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+      targetIrDomain: 'echo.span-ir/v1',
+      reasonKind: 'jim.EditObstruction.StaleBase',
+      reasonPayload,
+      receipt: {
+        schema: 'echo.execution.receipt.review/v0',
+      },
+    },
+    outlineItems: [],
+    changeLines: [],
+  }), 120, 24);
+  const text = linesToText(lines);
+
+  assert.match(text, /payload: "key00"="value00"/);
+  assert.match(text, /payload: "key02"="value02"/);
+  assert.match(text, /payload: \.\.\. 1 more/);
+  assert.doesNotMatch(text, /key03/);
+});
+
+test('Graft drawer bounds nested receipt payload formatting', async () => {
+  const { renderGraftDrawerLines } = await loadGraftDrawer();
+  const nestedObject = {
+    alpha: 'one',
+    beta: 'two',
+    gamma: 'three',
+  };
+  Object.defineProperty(nestedObject, 'omega', {
+    enumerable: true,
+    get() {
+      throw new Error('omitted nested object entry should not be formatted');
+    },
+  });
+  const nestedArray = ['one', 'two', 'three'];
+  Object.defineProperty(nestedArray, '3', {
+    enumerable: true,
+    get() {
+      throw new Error('omitted nested array entry should not be formatted');
+    },
+  });
+
+  const lines = renderGraftDrawerLines(baseDrawerModel({
+    path: '/repo/demo.edict',
+    relativePath: 'demo.edict',
+    projectionSource: 'live-buffer',
+    projectionPosture: 'current',
+    obstructionReceipt: {
+      outcomeKind: 'obstructed_strand',
+      targetIrDigest: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+      reasonPayload: {
+        nestedArray,
+        nestedObject,
+      },
+      receipt: {
+        schema: 'echo.execution.receipt.review/v0',
+      },
+    },
+    outlineItems: [],
+    changeLines: [],
+  }), 120, 24);
+  const text = linesToText(lines);
+
+  assert.match(text, /payload: "nestedArray"=\["one", "two", "three", \.\.\. 1 more\]/);
+  assert.match(text, /payload: "nestedObject"=\{"alpha"="one", "beta"="two", "gamma"="three", \.\.\. 1 more\}/);
+  assert.doesNotMatch(text, /omega/);
+});
+
+test('Graft drawer page movement uses bounded receipt payload rows', async () => {
+  const { updateGraftDrawerFromKey } = await loadWorkspaceGraftDrawer();
+  const reasonPayload = Object.fromEntries(Array.from({ length: 20 }, (_entry, index) => [
+    `key${String(index).padStart(2, '0')}`,
+    `value${String(index).padStart(2, '0')}`,
+  ]));
+  const outlineItems = Array.from({ length: 30 }, (_entry, index) => ({
+    kind: 'function',
+    name: `item${String(index).padStart(2, '0')}`,
+    startLine: index + 1,
+  }));
+  const [nextModel] = updateGraftDrawerFromKey(
+    { key: 'pagedown' },
+    {
+      rows: 30,
+      footerVisible: false,
+      graftSelectedIndex: 0,
+      graftInfo: {
+        path: '/repo/demo.edict',
+        relativePath: 'demo.edict',
+        projectionSource: 'live-buffer',
+        projectionPosture: 'current',
+        obstructionReceipt: {
+          outcomeKind: 'obstructed_strand',
+          targetIrDigest: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+          targetIrDomain: 'echo.span-ir/v1',
+          reasonKind: 'jim.EditObstruction.StaleBase',
+          reasonPayload,
+          receipt: {
+            schema: 'echo.execution.receipt.review/v0',
+          },
+        },
+        outlineItems,
+        changeLines: [],
+      },
+    },
+    () => {
+      throw new Error('refresh should not run for PageDown');
+    },
+  );
+
+  assert.equal(nextModel.graftSelectedIndex, 6);
+});
+
+test('Graft drawer escapes receipt payload strings before row fitting', async () => {
+  const { renderGraftDrawerLines } = await loadGraftDrawer();
+  const lines = renderGraftDrawerLines(baseDrawerModel({
+    path: '/repo/demo.edict',
+    relativePath: 'demo.edict',
+    projectionSource: 'live-buffer',
+    projectionPosture: 'current',
+    obstructionReceipt: {
+      outcomeKind: 'obstructed_strand',
+      targetIrDigest: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+      reasonPayload: {
+        message: 'line one\nline two',
+      },
+      receipt: {
+        schema: 'echo.execution.receipt.review/v0',
+      },
+    },
+    outlineItems: [],
+    changeLines: [],
+  }), 120, 24);
+  const text = linesToText(lines);
+
+  assert.equal(lines.some((line) => line.includes('\n')), false);
+  assert.match(text, /payload: "message"="line one\\nline two"/);
+});
+
+test('Graft drawer escapes receipt payload keys before row fitting', async () => {
+  const { renderGraftDrawerLines } = await loadGraftDrawer();
+  const lines = renderGraftDrawerLines(baseDrawerModel({
+    path: '/repo/demo.edict',
+    relativePath: 'demo.edict',
+    projectionSource: 'live-buffer',
+    projectionPosture: 'current',
+    obstructionReceipt: {
+      outcomeKind: 'obstructed_strand',
+      targetIrDigest: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+      reasonPayload: {
+        'line one\nline two': 'value',
+      },
+      receipt: {
+        schema: 'echo.execution.receipt.review/v0',
+      },
+    },
+    outlineItems: [],
+    changeLines: [],
+  }), 120, 24);
+  const text = linesToText(lines);
+
+  assert.equal(lines.some((line) => line.includes('\n')), false);
+  assert.match(text, /payload: "line one\\nline two"="value"/);
+});
+
+test('Graft drawer escapes receipt scalar rows before row fitting', async () => {
+  const { renderGraftDrawerLines } = await loadGraftDrawer();
+  const lines = renderGraftDrawerLines(baseDrawerModel({
+    path: '/repo/demo.edict',
+    relativePath: 'demo.edict',
+    projectionSource: 'live-buffer',
+    projectionPosture: 'current',
+    obstructionReceipt: {
+      outcomeKind: 'obstructed\nstrand',
+      targetIrDigest: 'sha256:3333333333333333333333333333333333333333333333333333333333333333\nmutated',
+      targetIrDomain: 'echo.span-ir/v1\nshadow',
+      reasonKind: 'jim.EditObstruction.StaleBase\nshadow',
+      receipt: {
+        schema: 'echo.execution.receipt.review/v0',
+      },
+    },
+    outlineItems: [],
+    changeLines: [],
+  }), 120, 24);
+  const text = linesToText(lines);
+
+  assert.equal(lines.some((line) => line.includes('\n')), false);
+  assert.match(text, /outcome: obstructed\\nstrand/);
+  assert.match(text, /target: echo\.span-ir\/v1\\nshadow sha256:333333/);
+  assert.match(text, /reason: jim\.EditObstruction\.StaleBase\\nshadow/);
 });
