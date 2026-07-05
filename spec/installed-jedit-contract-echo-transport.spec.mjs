@@ -8,7 +8,7 @@ const TRANSPORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'installe
 const CLIENT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-optic-client.js');
 const SESSION_ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'echo-backed-text-buffer-session.js');
 const CODEC_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-optic-codec.js');
-const RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'in-memory-hot-text-runtime.js');
+const RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'full-snapshot-hot-text-runtime-fixture.js');
 const WORK_ENVELOPE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'ports', 'jedit-runtime-work-envelope.js');
 const INVOCATION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-runtime-handler-invocation.js');
 const STATE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-state-port.js');
@@ -25,12 +25,61 @@ const SINGLE_LINE = 1;
 const BYTE_BUDGET = 80;
 const PACKAGE_INSTALL_BLOCKED_MESSAGE = 'blocked in test host';
 const PACKAGE_NOT_INSTALLED_CODE = 'JEDIT_PACKAGE_NOT_INSTALLED';
+const FULL_SNAPSHOT_AUTHORITY_ENV = 'JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY';
+const FULL_SNAPSHOT_GUARD_MESSAGE = /FullSnapshotHotTextRuntimeFixture cannot be used as production text authority/;
 
 let modulesPromise;
 
+test('installed transport rejects implicit full-snapshot fixture authority by default', async () => {
+  const modules = await loadModules();
+
+  withFullSnapshotAuthorityEnv(undefined, () => {
+    assert.throws(
+      () => modules.transport.createInstalledJeditContractEchoTransport(),
+      FULL_SNAPSHOT_GUARD_MESSAGE,
+    );
+  });
+});
+
+test('installed transport rejects explicit full-snapshot fixture authority without opt-in', async () => {
+  const modules = await loadModules();
+  const runtime = modules.runtime.createFullSnapshotHotTextRuntimeFixture();
+
+  withFullSnapshotAuthorityEnv(undefined, () => {
+    assert.throws(
+      () => modules.transport.createInstalledJeditContractEchoTransport({ runtime }),
+      FULL_SNAPSHOT_GUARD_MESSAGE,
+    );
+  });
+});
+
+test('installed transport accepts full-snapshot fixture authority with explicit opt-in', async () => {
+  const modules = await loadModules();
+  const runtime = modules.runtime.createFullSnapshotHotTextRuntimeFixture();
+
+  const transport = withFullSnapshotAuthorityEnv(undefined, () => (
+    modules.transport.createInstalledJeditContractEchoTransport({
+      allowFullSnapshotTextAuthority: true,
+      runtime,
+    })
+  ));
+
+  assert.equal(typeof transport.submitIntentBytes, 'function');
+});
+
+test('installed transport accepts full-snapshot fixture authority with environment escape hatch', async () => {
+  const modules = await loadModules();
+
+  const transport = withFullSnapshotAuthorityEnv('1', () => (
+    modules.transport.createInstalledJeditContractEchoTransport()
+  ));
+
+  assert.equal(typeof transport.submitIntentBytes, 'function');
+});
+
 test('TextBufferOptic headless flow uses installed jedit contract transport', async () => {
   const modules = await loadModules();
-  const transport = modules.transport.createInstalledJeditContractEchoTransport();
+  const transport = createFixtureBackedInstalledTransport(modules);
   const client = modules.client.createEchoTransportJeditOpticClient(transport);
   const session = modules.sessionAdapter.createEchoBackedTextBufferSession({
     client,
@@ -72,7 +121,7 @@ test('TextBufferOptic headless flow uses installed jedit contract transport', as
 
 test('installed transport preserves retained diff metadata across intent response codec', async () => {
   const modules = await loadModules();
-  const transport = modules.transport.createInstalledJeditContractEchoTransport();
+  const transport = createFixtureBackedInstalledTransport(modules);
   const created = modules.codec.decodeJeditIntentResponse(transport.submitIntentBytes(
     createBufferWorldlineEnvelope(modules),
   ));
@@ -97,7 +146,7 @@ test('installed transport stages runtime work before mutation handler execution'
   const modules = await loadModules();
   const events = [];
   const envelopes = [];
-  const baseRuntime = modules.runtime.createInMemoryHotTextRuntime();
+  const baseRuntime = modules.runtime.createFullSnapshotHotTextRuntimeFixture();
   const runtime = {
     ...baseRuntime,
     createBuffer(pathValue, textValue) {
@@ -105,7 +154,7 @@ test('installed transport stages runtime work before mutation handler execution'
       return baseRuntime.createBuffer(pathValue, textValue);
     },
   };
-  const transport = modules.transport.createInstalledJeditContractEchoTransport({
+  const transport = createFixtureBackedInstalledTransport(modules, {
     runtime,
     workSink: {
       recordRuntimeWorkEnvelope(envelope) {
@@ -129,7 +178,7 @@ test('installed transport stages runtime work before mutation handler execution'
 test('installed transport does not stage query observations as mutation work', async () => {
   const modules = await loadModules();
   const envelopes = [];
-  const transport = modules.transport.createInstalledJeditContractEchoTransport({
+  const transport = createFixtureBackedInstalledTransport(modules, {
     workSink: {
       recordRuntimeWorkEnvelope(envelope) {
         envelopes.push(envelope);
@@ -162,7 +211,7 @@ test('installed transport does not stage query observations as mutation work', a
 test('installed transport invokes handlers with scheduler authority only', async () => {
   const modules = await loadModules();
   const authorities = [];
-  const transport = modules.transport.createInstalledJeditContractEchoTransport({
+  const transport = createFixtureBackedInstalledTransport(modules, {
     handlerInvocationSink: {
       recordHandlerInvocationAuthority(authority) {
         authorities.push(authority);
@@ -183,7 +232,7 @@ test('installed transport invokes handlers with scheduler authority only', async
 test('installed transport publishes handler state through jedit state port', async () => {
   const modules = await loadModules();
   const statePort = modules.state.createInMemoryJeditContractStatePort();
-  const transport = modules.transport.createInstalledJeditContractEchoTransport({
+  const transport = createFixtureBackedInstalledTransport(modules, {
     statePort,
   });
   const createResponse = modules.codec.decodeJeditIntentResponse(transport.submitIntentBytes(
@@ -211,7 +260,7 @@ test('installed transport records accepted submissions before handler execution'
       return baseLedger.readSubmission(submissionId);
     },
   };
-  const baseRuntime = modules.runtime.createInMemoryHotTextRuntime();
+  const baseRuntime = modules.runtime.createFullSnapshotHotTextRuntimeFixture();
   const runtime = {
     ...baseRuntime,
     createBuffer(pathValue, textValue) {
@@ -219,7 +268,7 @@ test('installed transport records accepted submissions before handler execution'
       return baseRuntime.createBuffer(pathValue, textValue);
     },
   };
-  const transport = modules.transport.createInstalledJeditContractEchoTransport({
+  const transport = createFixtureBackedInstalledTransport(modules, {
     runtime,
     submissionLedger,
   });
@@ -235,7 +284,7 @@ test('installed transport blocks unticketed work before handler invocation', asy
   const modules = await loadModules();
   const handlerAuthorities = [];
   const envelopes = [];
-  const transport = modules.transport.createInstalledJeditContractEchoTransport({
+  const transport = createFixtureBackedInstalledTransport(modules, {
     workSink: {
       recordRuntimeWorkEnvelope(envelope) {
         envelopes.push(envelope);
@@ -267,7 +316,7 @@ test('installed transport accepts package host injection and blocks non-installe
   const hostRequests = [];
   const handlerAuthorities = [];
   const envelopes = [];
-  const transport = modules.transport.createInstalledJeditContractEchoTransport({
+  const transport = createFixtureBackedInstalledTransport(modules, {
     packageHost: {
       installContractPackage(request) {
         hostRequests.push(request);
@@ -306,7 +355,7 @@ test('installed transport keeps submission identity aligned across ledger ticket
   const ticketRequests = [];
   const envelopes = [];
   const baseLedger = modules.ledger.createInMemoryJeditSubmissionLedgerPort();
-  const transport = modules.transport.createInstalledJeditContractEchoTransport({
+  const transport = createFixtureBackedInstalledTransport(modules, {
     submissionLedger: {
       recordAcceptedSubmission(record) {
         ledgerRecords.push(record);
@@ -349,7 +398,7 @@ test('installed transport keeps submission identity aligned across ledger ticket
 test('installed query observers require state-port-backed basis', async () => {
   const modules = await loadModules();
   const statePort = createMissingReadStatePort(modules);
-  const transport = modules.transport.createInstalledJeditContractEchoTransport({
+  const transport = createFixtureBackedInstalledTransport(modules, {
     statePort,
   });
   const createResponse = modules.codec.decodeJeditIntentResponse(transport.submitIntentBytes(
@@ -378,7 +427,7 @@ test('installed query observers require state-port-backed basis', async () => {
 
 test('installed query observer runtime errors do not masquerade as package install failures', async () => {
   const modules = await loadModules();
-  const transport = modules.transport.createInstalledJeditContractEchoTransport();
+  const transport = createFixtureBackedInstalledTransport(modules);
   const createResponse = modules.codec.decodeJeditIntentResponse(transport.submitIntentBytes(
     createBufferWorldlineEnvelope(modules),
   ));
@@ -436,7 +485,7 @@ function replaceRangeAsTickEnvelope(modules, session) {
 
 test('installed transport: malformed EINT envelope yields obstructed response with absent operationName', async () => {
   const modules = await loadModules();
-  const transport = modules.transport.createInstalledJeditContractEchoTransport();
+  const transport = createFixtureBackedInstalledTransport(modules);
   // Bytes that are NOT a valid EINT envelope. The bridge's decode step must
   // fail before any operationName is known, so the obstructed response
   // omits operationName entirely and the consumer is forced to branch on
@@ -470,6 +519,32 @@ function createMissingReadStatePort(modules) {
       };
     },
   };
+}
+
+function createFixtureBackedInstalledTransport(modules, options = {}) {
+  return modules.transport.createInstalledJeditContractEchoTransport({
+    allowFullSnapshotTextAuthority: true,
+    ...options,
+  });
+}
+
+function withFullSnapshotAuthorityEnv(value, callback) {
+  const previous = process.env[FULL_SNAPSHOT_AUTHORITY_ENV];
+  if (value === undefined) {
+    delete process.env[FULL_SNAPSHOT_AUTHORITY_ENV];
+  } else {
+    process.env[FULL_SNAPSHOT_AUTHORITY_ENV] = value;
+  }
+
+  try {
+    return callback();
+  } finally {
+    if (previous === undefined) {
+      delete process.env[FULL_SNAPSHOT_AUTHORITY_ENV];
+    } else {
+      process.env[FULL_SNAPSHOT_AUTHORITY_ENV] = previous;
+    }
+  }
 }
 
 async function loadModules() {

@@ -1034,9 +1034,9 @@ Causal honesty is an end-to-end property.
 
 ## Implementation Slices
 
-- [ ] Slice 1: Rename the snapshot runtime as a full-snapshot fixture and add the
+- [x] Slice 1: Rename the snapshot runtime as a full-snapshot fixture and add the
       production guard.
-- [ ] Slice 2: Add a quarantine witness proving default product construction
+- [x] Slice 2: Add a quarantine witness proving default product construction
       cannot silently use the fixture.
 - [ ] Slice 3: Land coordinate, fact, byte-authority, and validation contracts.
 - [ ] Slice 4: Add failing retention, subtree identity, materialization, no-op,
@@ -1050,7 +1050,7 @@ Causal honesty is an end-to-end property.
 
 Behavior tests required:
 
-- [ ] Product construction rejects implicit `FullSnapshotHotTextRuntimeFixture`.
+- [x] Product construction rejects implicit `FullSnapshotHotTextRuntimeFixture`.
 - [ ] Repeated small edits on a large buffer do not retain O(buffer size * edit
       count) authoritative bytes.
 - [ ] Narrow replacement preserves untouched subtree identity recursively.
@@ -1072,7 +1072,7 @@ Documentation and process tests:
 
 The work is done when:
 
-- [ ] The full-snapshot runtime cannot be installed as default production text
+- [x] The full-snapshot runtime cannot be installed as default production text
       authority without an explicit fixture escape hatch.
 - [ ] A graph-backed runtime can create, read, replace, and checkpoint one buffer.
 - [ ] Retention, subtree identity, no-op, materialization, save/export, and `:why`

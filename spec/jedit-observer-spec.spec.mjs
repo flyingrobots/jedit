@@ -8,7 +8,7 @@ const OBSERVER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-observer
 const OBSERVER_RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-observer-runtime.js');
 const CONTRACT_RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-runtime.js');
 const HASH_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'hash.js');
-const ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'in-memory-hot-text-runtime.js');
+const ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'full-snapshot-hot-text-runtime-fixture.js');
 const GENERATED_PLAN_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'generated', 'jedit', 'worldlineSnapshot.observer-plan.generated.js');
 
 async function loadModules() {
@@ -49,7 +49,7 @@ test('worldlineSnapshot observer spec is memoryless, canonical-head only, and au
 
 test('worldlineSnapshot observer plan is compiled by Wesley and consumed at runtime', async () => {
   const { observer, observerRuntime, contractRuntime, adapter, hash, generatedPlan } = await loadModules();
-  const runtime = adapter.createInMemoryHotTextRuntime();
+  const runtime = adapter.createFullSnapshotHotTextRuntimeFixture();
   const created = contractRuntime.createBufferWorldline(runtime, {
     bufferKey: 'notes/today.md',
     initialText: 'hello world',
@@ -93,7 +93,7 @@ test('worldlineSnapshot observer plan is compiled by Wesley and consumed at runt
 
 test('worldlineSnapshot observer rejects malformed reading payloads', async () => {
   const { observerRuntime, adapter, contractRuntime, hash } = await loadModules();
-  const runtime = adapter.createInMemoryHotTextRuntime();
+  const runtime = adapter.createFullSnapshotHotTextRuntimeFixture();
   const created = contractRuntime.createBufferWorldline(runtime, {
     bufferKey: 'notes/today.md',
     initialText: 'hello world',

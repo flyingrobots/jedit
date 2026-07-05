@@ -140,7 +140,7 @@ test('structural history authority note documents extraction and deferred runtim
   const note = await readFile(DESIGN_NOTE_PATH, 'utf8');
 
   assert.match(note, /Old TS concept -> GraphQL concept -> notes/);
-  assert.match(note, /`src\/adapters\/in-memory-hot-text-runtime\.ts`/);
+  assert.match(note, /`src\/adapters\/full-snapshot-hot-text-runtime-fixture\.ts`/);
   assert.match(note, new RegExp(escapeRegExp(STRUCTURAL_HISTORY_CONTRACT_REF)));
   assert.match(note, /Wesley generation should consume/);
   assert.match(note, /Runtime storage is out of scope/);

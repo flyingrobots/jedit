@@ -11,7 +11,10 @@ const RELEASE_GATE_SCRIPT = path.join(REPO_ROOT, 'scripts', 'jedit-echo-release-
 test('package exposes the jedit Echo release-gate script', () => {
   const packageJson = JSON.parse(readFileSync(PACKAGE_JSON_PATH, 'utf8'));
 
-  assert.equal(packageJson.scripts['release-gate:jedit-echo'], 'node scripts/jedit-echo-release-gate.mjs');
+  assert.equal(
+    packageJson.scripts['release-gate:jedit-echo'],
+    'JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 node scripts/jedit-echo-release-gate.mjs',
+  );
   assert.equal(packageJson.scripts['release-gate:echo'], 'npm run release-gate:jedit-echo');
 });
 

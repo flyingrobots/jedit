@@ -30,7 +30,7 @@ const BOUNDARY_MODULE_PATH = path.join(
   'structural-history-replace-text-range.js',
 );
 const HOT_BUFFER_SESSION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'hot-buffer-session.js');
-const HOT_TEXT_RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'in-memory-hot-text-runtime.js');
+const HOT_TEXT_RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'full-snapshot-hot-text-runtime-fixture.js');
 const TEXT_EDIT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'domain', 'text-edit-contract.js');
 const STRUCTURAL_HISTORY_GENERATION_SCRIPT = 'gen:contract:structural-history:wesley';
 
@@ -139,7 +139,7 @@ test('structural history request builder emits generated replaceTextRange intent
 
 test('replaceTextRange metadata route preserves hot buffer tick behavior', async () => {
   const modules = await loadBuiltModules();
-  const runtime = modules.hotTextRuntime.createInMemoryHotTextRuntime();
+  const runtime = modules.hotTextRuntime.createFullSnapshotHotTextRuntimeFixture();
   const opened = modules.hotBufferSession.beginEditGroup(
     runtime,
     modules.hotBufferSession.startHotBufferSession(runtime, 'notes/today.md', 'hello world'),

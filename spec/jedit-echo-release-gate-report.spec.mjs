@@ -5,6 +5,7 @@ import test from 'node:test';
 
 const REPO_ROOT = process.cwd();
 const RELEASE_GATE_PATH = path.join(REPO_ROOT, 'scripts', 'jedit-echo-release-gate.mjs');
+const FULL_SNAPSHOT_AUTHORITY_ENV = 'JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY';
 
 test('jedit Echo release gate emits happy, non-happy, replay, and authority evidence', () => {
   const result = spawnSync(process.execPath, [
@@ -13,6 +14,7 @@ test('jedit Echo release gate emits happy, non-happy, replay, and authority evid
   ], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
+    env: fullSnapshotAuthorityEnv(),
   });
 
   assert.equal(result.status, 0, result.stderr || result.stdout);
@@ -42,3 +44,10 @@ test('jedit Echo release gate emits happy, non-happy, replay, and authority evid
   assert.equal(report.releaseGate.appCanTick, false);
   assert.equal(report.releaseGate.retainedEvidenceRefCount, 4);
 });
+
+function fullSnapshotAuthorityEnv() {
+  return {
+    ...process.env,
+    [FULL_SNAPSHOT_AUTHORITY_ENV]: '1',
+  };
+}

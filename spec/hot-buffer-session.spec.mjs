@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url';
 import { REPO_ROOT, ensureDistBuilt } from './dist-helpers.mjs';
 
 const APP_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'hot-buffer-session.js');
-const ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'in-memory-hot-text-runtime.js');
+const ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'full-snapshot-hot-text-runtime-fixture.js');
 const TEXT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'domain', 'text-edit-contract.js');
 
 async function loadModules() {
@@ -22,7 +22,7 @@ async function loadModules() {
 
 test('Applying edits inside an open group auto-includes admitted ticks in that group.', async () => {
   const { app, adapter, text } = await loadModules();
-  const runtime = adapter.createInMemoryHotTextRuntime();
+  const runtime = adapter.createFullSnapshotHotTextRuntimeFixture();
   const opened = app.beginEditGroup(
     runtime,
     app.startHotBufferSession(runtime, 'notes/today.md', 'hello world'),
@@ -57,7 +57,7 @@ test('Applying edits inside an open group auto-includes admitted ticks in that g
 
 test('A logical no-op edit does not mint a tick or change open-group membership.', async () => {
   const { app, adapter, text } = await loadModules();
-  const runtime = adapter.createInMemoryHotTextRuntime();
+  const runtime = adapter.createFullSnapshotHotTextRuntimeFixture();
   const opened = app.beginEditGroup(
     runtime,
     app.startHotBufferSession(runtime, 'notes/today.md', 'hello'),
@@ -77,7 +77,7 @@ test('A logical no-op edit does not mint a tick or change open-group membership.
 
 test('Saving preserves tick and edit-group history while adding a checkpoint.', async () => {
   const { app, adapter, text } = await loadModules();
-  const runtime = adapter.createInMemoryHotTextRuntime();
+  const runtime = adapter.createFullSnapshotHotTextRuntimeFixture();
   const opened = app.beginEditGroup(
     runtime,
     app.startHotBufferSession(runtime, 'notes/today.md', 'hello'),

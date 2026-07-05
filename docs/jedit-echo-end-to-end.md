@@ -121,7 +121,7 @@ The files most relevant to this guide are:
 | `src/adapters/fake-echo-jedit-optic-transport.ts`      | Default fake Echo-shaped test transport.                                      |
 | `src/app/jedit-contract-runtime.ts`                    | jedit-owned transitional hot-text contract executor.                          |
 | `src/app/jedit-observer-runtime.ts`                    | jedit-owned observer/read envelope helpers.                                   |
-| `src/adapters/in-memory-hot-text-runtime.ts`           | Transitional in-memory hot-text runtime.                                      |
+| `src/adapters/full-snapshot-hot-text-runtime-fixture.ts` | Full-snapshot hot-text runtime fixture.                                       |
 | `contracts/jedit/hot-text-runtime.graphql`             | jedit-authored hot-text runtime contract.                                     |
 | `contracts/jedit/text-buffer-optic.graphql`            | jedit app-facing optic contract.                                              |
 | `contracts/jedit/structural-history.graphql`           | jedit structural history contract authority.                                  |
@@ -715,7 +715,7 @@ depending on a sibling Echo checkout or a WASM build.
 
 The fake transport:
 
-- uses `createInMemoryHotTextRuntime()`;
+- uses `createFullSnapshotHotTextRuntimeFixture()`;
 - decodes jedit JSON fixture request bytes;
 - executes jedit-owned contract runtime functions;
 - returns encoded OK or obstructed responses;
@@ -737,7 +737,7 @@ sequenceDiagram
   participant Client as JeditOpticClient
   participant Fake as FakeEchoJeditOpticTransport
   participant Contract as jedit-contract-runtime
-  participant Memory as InMemoryHotTextRuntime
+  participant Memory as FullSnapshotHotTextRuntimeFixture
   participant Observer as jedit-observer-runtime
 
   App->>Client: replaceRangeAsTick(session, input)

@@ -14,6 +14,8 @@ import {
   surfaceText,
 } from "./workspace-helpers.mjs";
 
+const FULL_SNAPSHOT_AUTHORITY_ENV = "JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY";
+
 test("runtime toggle-perf message flips perf visibility state", async () => {
   const runtimeModule = await importDist("app", "workspace", "runtime.js");
   const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime());
@@ -110,7 +112,7 @@ test("workspace app renders perf overlay after toggle when perf starts disabled"
     importDist("adapters", "workspace-app.js"),
     importDist("ui", "jedit-themes.js"),
   ]);
-  const app = workspaceApp.createWorkspaceApp({
+  const app = withFullSnapshotAuthorityEnv(() => workspaceApp.createWorkspaceApp({
     initialColumns: 120,
     initialRows: 24,
     initialWorkingDirectory: "/repo",
@@ -124,7 +126,7 @@ test("workspace app renders perf overlay after toggle when perf starts disabled"
       entries: [],
       nowMs: 0,
     },
-  });
+  }));
 
   const [initialModel] = app.init();
   const [visibleModel] = app.update({ type: "toggle-perf" }, initialModel);
@@ -148,7 +150,7 @@ test("workspace app can start with perf overlay already visible", async () => {
     importDist("adapters", "workspace-app.js"),
     importDist("ui", "jedit-themes.js"),
   ]);
-  const app = workspaceApp.createWorkspaceApp({
+  const app = withFullSnapshotAuthorityEnv(() => workspaceApp.createWorkspaceApp({
     initialColumns: 120,
     initialRows: 24,
     initialWorkingDirectory: "/repo",
@@ -162,7 +164,7 @@ test("workspace app can start with perf overlay already visible", async () => {
       entries: [],
       nowMs: 0,
     },
-  });
+  }));
 
   const [initialModel] = app.init();
   const surface = app.view({
@@ -233,7 +235,7 @@ test("workspace app rejects stale non-Echo seeded text runtime profile", async (
     importDist("ui", "jedit-themes.js"),
     importDist("app", "text-runtime-profile.js"),
   ]);
-  const app = workspaceApp.createWorkspaceApp({
+  const app = withFullSnapshotAuthorityEnv(() => workspaceApp.createWorkspaceApp({
     initialColumns: 120,
     initialRows: 24,
     initialWorkingDirectory: "/repo",
@@ -248,7 +250,7 @@ test("workspace app rejects stale non-Echo seeded text runtime profile", async (
       nowMs: 0,
       textRuntimeProfile: "testLocal",
     },
-  });
+  }));
 
   const [initialModel] = app.init();
 
@@ -609,4 +611,19 @@ function mockProfileMemory() {
     externalBytes: 40,
     arrayBuffersBytes: 50,
   };
+}
+
+function withFullSnapshotAuthorityEnv(callback) {
+  const previous = process.env[FULL_SNAPSHOT_AUTHORITY_ENV];
+  process.env[FULL_SNAPSHOT_AUTHORITY_ENV] = "1";
+
+  try {
+    return callback();
+  } finally {
+    if (previous === undefined) {
+      delete process.env[FULL_SNAPSHOT_AUTHORITY_ENV];
+    } else {
+      process.env[FULL_SNAPSHOT_AUTHORITY_ENV] = previous;
+    }
+  }
 }

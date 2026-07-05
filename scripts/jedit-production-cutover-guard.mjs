@@ -100,6 +100,8 @@ const FORBIDDEN_LIFECYCLE_AUTHORITY_PATTERNS = Object.freeze([
 const FORBIDDEN_RECOVERY_FALLBACK_PATTERNS = Object.freeze([
   { label: 'createInMemoryHotTextRuntime', pattern: /\bcreateInMemoryHotTextRuntime\b/u },
   { label: 'in-memory-hot-text-runtime', pattern: /\bin-memory-hot-text-runtime\b/u },
+  { label: 'createFullSnapshotHotTextRuntimeFixture', pattern: /\bcreateFullSnapshotHotTextRuntimeFixture\b/u },
+  { label: 'full-snapshot-hot-text-runtime-fixture', pattern: /\bfull-snapshot-hot-text-runtime-fixture\b/u },
   { label: 'createTextBufferSession', pattern: /\bcreateTextBufferSession\b/u },
   { label: 'HotTextBufferState', pattern: /\bHotTextBufferState\b/u },
   { label: 'getCurrentText', pattern: /\bgetCurrentText\b/u },

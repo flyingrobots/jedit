@@ -6,7 +6,7 @@ import { pathToFileURL } from 'node:url';
 const REPO_ROOT = process.cwd();
 const HANDLERS_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-mutation-handlers.js');
 const PACKAGE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-package.js');
-const RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'in-memory-hot-text-runtime.js');
+const RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'full-snapshot-hot-text-runtime-fixture.js');
 const HASH_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'hash.js');
 const SESSION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'text-buffer-session.js');
 const TRANSPORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'fake-echo-jedit-optic-transport.js');
@@ -117,7 +117,7 @@ async function loadModules() {
 
 function createRegistry(modules) {
   return modules.handlers.createJeditContractMutationHandlerRegistry({
-    runtime: modules.runtime.createInMemoryHotTextRuntime(),
+    runtime: modules.runtime.createFullSnapshotHotTextRuntimeFixture(),
     hash: modules.hash.createHashPort(),
   });
 }

@@ -1167,7 +1167,7 @@ material must be explicit rather than implied by missing fields.
 
 ## 16. The Hot Text Runtime Adapter
 
-`createInMemoryHotTextRuntime()` implements `HotTextRuntimePort` by composing the three domain contracts into a stateful buffer.
+`createFullSnapshotHotTextRuntimeFixture()` implements `HotTextRuntimePort` by composing the three domain contracts into a stateful full-snapshot fixture.
 
 > **Transitional Runtime Fixture: `HotTextBufferState`**
 > The hot text runtime remains the local executor for contract-runtime fixtures,
@@ -1325,7 +1325,7 @@ graph TD
     INSTALLED["InstalledJeditContractEchoTransport<br />(default production seam)"]
     FAKE["createFakeEchoJeditOpticTransport<br />(focused test fixture)"]
     WITNESS["echo-wasm-kernel<br />(opt-in real WASM witness)"]
-    HOT["createInMemoryHotTextRuntime<br />(transitional contract executor)"]
+    HOT["createFullSnapshotHotTextRuntimeFixture<br />(full-snapshot fixture)"]
     WSC["JeditWscWorkspaceStorePort<br />(generic WSC envelope placement)"]
     WASM["Echo WASM module<br />(compiled Rust witness binary)"]
 

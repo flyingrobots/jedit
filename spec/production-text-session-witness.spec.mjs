@@ -9,6 +9,7 @@ const SESSION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'workspace', 'pr
 const PROFILE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'text-runtime-profile.js');
 const ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'text-runtime-profile-session.js');
 const INSERT_TEXT = 'hello production';
+const FULL_SNAPSHOT_AUTHORITY_ENV = 'JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY';
 
 let modulesPromise;
 
@@ -67,9 +68,11 @@ test('production text session witness reports obstruction stage without lifecycl
 });
 
 function createProductionSession(modules) {
-  const binding = modules.adapter.createTextRuntimeProfileSession({
-    profile: modules.profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
-  });
+  const binding = withFullSnapshotAuthorityEnv('1', () => (
+    modules.adapter.createTextRuntimeProfileSession({
+      profile: modules.profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+    })
+  ));
   return modules.session.createProductionTextSession(binding.session);
 }
 
@@ -103,7 +106,8 @@ async function loadModules() {
   if (modulesPromise) {
     return modulesPromise;
   }
-  modulesPromise = (async () => {    const [witness, session, profile, adapter] = await Promise.all([
+  modulesPromise = (async () => {
+    const [witness, session, profile, adapter] = await Promise.all([
       import(pathToFileURL(WITNESS_MODULE_PATH).href),
       import(pathToFileURL(SESSION_MODULE_PATH).href),
       import(pathToFileURL(PROFILE_MODULE_PATH).href),
@@ -112,4 +116,19 @@ async function loadModules() {
     return { witness, session, profile, adapter };
   })();
   return modulesPromise;
+}
+
+function withFullSnapshotAuthorityEnv(value, callback) {
+  const previous = process.env[FULL_SNAPSHOT_AUTHORITY_ENV];
+  process.env[FULL_SNAPSHOT_AUTHORITY_ENV] = value;
+
+  try {
+    return callback();
+  } finally {
+    if (previous === undefined) {
+      delete process.env[FULL_SNAPSHOT_AUTHORITY_ENV];
+    } else {
+      process.env[FULL_SNAPSHOT_AUTHORITY_ENV] = previous;
+    }
+  }
 }
