@@ -120,8 +120,10 @@ Immediate order:
    [`WF-0106 - Emacs Ideas To Steal Causally`](design/0106-emacs-ideas-to-steal-causally.md)
    as the supporting product-surface packet for command catalog, describe,
    register, macro, buffer, diagnostics, and trace surfaces.
-4. Close the `:why` evidence gap in this order: local observation coordinate
-   model, typed evidence obstructions, text-window evidence fields, Echo
+4. Do not resume the `:why` evidence gap sequence until the graph-backed
+   create/read/replace/checkpoint path and witnesses land. When that runtime
+   proof exists, resume in this order: local observation coordinate model,
+   typed evidence obstructions, text-window evidence fields, Echo
    ReadingEnvelope identity, Supported Outcome Settlement outcome vocabulary,
    range-at-head rope history, then golden command witnesses.
 5. Use existing proven Vim operations first: `dw`, `ciw`, `dd`, and `gUap`.

@@ -8,6 +8,7 @@ const AGENTS_PATH = path.join(REPO_ROOT, 'AGENTS.md');
 const PROCESS_PATH = path.join(REPO_ROOT, 'docs', 'method', 'process.md');
 const TEMPLATE_PATH = path.join(REPO_ROOT, 'docs', 'design', 'TEMPLATE.md');
 const POLICY_DESIGN_PATH = path.join(REPO_ROOT, 'docs', 'design', '0034-design-cycle-template-and-lifecycle.md');
+const BEARING_PATH = path.join(REPO_ROOT, 'docs', 'BEARING.md');
 const WHY_OBSERVATION_ROADMAP_PATH = path.join(
   REPO_ROOT,
   'docs',
@@ -156,6 +157,13 @@ test('HT-0149 follow-on debt is issue-backed', () => {
 
   assert.ok(issueLinks.length >= 6, 'follow-on debt should link tracker issues for every deferred item');
   assert.doesNotMatch(followOnDebt, /should create narrower issues/);
+});
+
+test('BEARING blocks why work on graph runtime proof', () => {
+  const bearing = readRepoFile(BEARING_PATH);
+
+  assert.match(bearing, /Do not resume the `:why` evidence gap sequence until/);
+  assert.match(bearing, /graph-backed\s+create\/read\/replace\/checkpoint path and witnesses land/);
 });
 
 test('process doc defines the official cycle lifecycle and proof boundary', () => {
