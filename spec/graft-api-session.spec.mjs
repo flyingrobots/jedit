@@ -32,6 +32,18 @@ test('Graft file outline decoder accepts runtime-validated outline payloads', as
         end: 12,
       },
     ],
+    obstructionReceipt: {
+      outcomeKind: 'obstructed_strand',
+      targetIrDigest: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+      targetIrDomain: 'echo.span-ir/v1',
+      reasonKind: 'jim.EditObstruction.StaleBase',
+      reasonPayload: {
+        inputBasisDigest: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+      },
+      receipt: {
+        schema: 'echo.execution.receipt.review/v0',
+      },
+    },
   });
 
   assert.deepEqual(result, {
@@ -44,6 +56,18 @@ test('Graft file outline decoder accepts runtime-validated outline payloads', as
         end: 12,
       },
     ],
+    obstructionReceipt: {
+      outcomeKind: 'obstructed_strand',
+      targetIrDigest: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+      targetIrDomain: 'echo.span-ir/v1',
+      reasonKind: 'jim.EditObstruction.StaleBase',
+      reasonPayload: {
+        inputBasisDigest: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+      },
+      receipt: {
+        schema: 'echo.execution.receipt.review/v0',
+      },
+    },
   });
 });
 
@@ -68,6 +92,18 @@ test('Graft session port uses the direct API without a close lifecycle', async (
             start: 4,
             end: 12,
           }],
+          obstructionReceipt: {
+            outcomeKind: 'obstructed_strand',
+            targetIrDigest: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+            targetIrDomain: 'echo.span-ir/v1',
+            reasonKind: 'jim.EditObstruction.StaleBase',
+            reasonPayload: {
+              inputBasisDigest: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+            },
+            receipt: {
+              schema: 'echo.execution.receipt.review/v0',
+            },
+          },
         };
       }
       return {
@@ -112,6 +148,18 @@ test('Graft session port uses the direct API without a close lifecycle', async (
     'changed',
     '+ function render',
   ]);
+  assert.deepEqual(info.obstructionReceipt, {
+    outcomeKind: 'obstructed_strand',
+    targetIrDigest: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+    targetIrDomain: 'echo.span-ir/v1',
+    reasonKind: 'jim.EditObstruction.StaleBase',
+    reasonPayload: {
+      inputBasisDigest: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+    },
+    receipt: {
+      schema: 'echo.execution.receipt.review/v0',
+    },
+  });
 });
 
 test('Graft session labels dirty drawer data as stale saved-file projection', async () => {
@@ -138,6 +186,45 @@ test('Graft session labels dirty drawer data as stale saved-file projection', as
   assert.equal(info.projectionSource, 'saved-file');
   assert.equal(info.projectionPosture, 'stale');
   assert.equal(info.notice, 'saved file only; unsaved buffer edits not included');
+});
+
+test('Graft session preserves obstruction receipts on refused projections', async () => {
+  const { graft } = await loadGraftApiSession();
+  const api = {
+    createRepoLocalGraft: (options) => ({ cwd: options.cwd }),
+    callGraftTool: async (_session, name) => {
+      if (name === 'file_outline') {
+        return {
+          projection: 'refused',
+          reason: 'outline refused',
+          obstructionReceipt: {
+            outcomeKind: 'obstructed_strand',
+            targetIrDigest: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+            targetIrDomain: 'echo.span-ir/v1',
+            reasonKind: 'jim.EditObstruction.StaleBase',
+            reasonPayload: {
+              inputBasisDigest: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+            },
+            receipt: {
+              schema: 'echo.execution.receipt.review/v0',
+            },
+          },
+        };
+      }
+      return { files: [] };
+    },
+  };
+  const port = graft.createGraftSessionPort({ api });
+
+  const info = await port.loadGraftInfo({
+    workspaceRoot: REPO_ROOT,
+    filePath: path.join(REPO_ROOT, 'demo.edict'),
+    dirty: false,
+  });
+
+  assert.equal(info.error, 'outline refused');
+  assert.equal(info.obstructionReceipt?.outcomeKind, 'obstructed_strand');
+  assert.equal(info.obstructionReceipt?.targetIrDomain, 'echo.span-ir/v1');
 });
 
 test('Graft file outline decoder rejects malformed jump table entries', async () => {
