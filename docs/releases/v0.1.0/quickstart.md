@@ -18,37 +18,40 @@ npm run build
 Inspect the witness plan without running the edit/read flow:
 
 ```bash
-node scripts/jedit-echo-powered-session.mjs --json --dry-run
+JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 node scripts/jedit-echo-powered-session.mjs --json --dry-run
 ```
 
 Run the installed-package edit/read witness:
 
 ```bash
-node scripts/jedit-echo-powered-session.mjs --json --text "hello Echo"
+JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 node scripts/jedit-echo-powered-session.mjs --json --text "hello Echo"
 ```
 
 Run the production text session witness:
 
 ```bash
-node scripts/jedit-production-text-session.mjs --json --text "hello Echo"
+JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 node scripts/jedit-production-text-session.mjs --json --text "hello Echo"
 ```
 
 Compare two local witness runs using stable evidence identity:
 
 ```bash
-node scripts/jedit-echo-powered-session.mjs --json --replay-local
-node scripts/jedit-production-text-session.mjs --json --replay-local
+JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 node scripts/jedit-echo-powered-session.mjs --json --replay-local
+JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 node scripts/jedit-production-text-session.mjs --json --replay-local
 ```
 
 Start the interactive app. The default text runtime is the Echo-hosted
 production profile:
 
 ```bash
-npm start
+JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 npm start
 ```
 
-For explicit demos, `JEDIT_TEXT_RUNTIME=echoHosted npm start` selects the same
-profile. Any other `JEDIT_TEXT_RUNTIME` value is unsupported startup input.
+For explicit demos,
+`JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 JEDIT_TEXT_RUNTIME=echoHosted npm start`
+selects the same profile. Any other `JEDIT_TEXT_RUNTIME` value is unsupported
+startup input. The full-snapshot authority flag is temporary until the
+graph-backed rope runtime lands.
 
 ## Expected JSON Shape
 

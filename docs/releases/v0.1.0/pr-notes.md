@@ -15,10 +15,10 @@ boundary; no jedit text nouns are introduced into Echo.
 
 - `npm run release-gate:jedit-echo`
 - `npm run check`
-- `node scripts/jedit-echo-powered-session.mjs --json --text "hello Echo"`
-- `node scripts/jedit-echo-powered-session.mjs --json --replay-local`
-- `node scripts/jedit-production-text-session.mjs --json --text "hello Echo"`
-- `node scripts/jedit-production-text-session.mjs --json --replay-local`
+- `JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 node scripts/jedit-echo-powered-session.mjs --json --text "hello Echo"`
+- `JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 node scripts/jedit-echo-powered-session.mjs --json --replay-local`
+- `JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 node scripts/jedit-production-text-session.mjs --json --text "hello Echo"`
+- `JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 node scripts/jedit-production-text-session.mjs --json --replay-local`
 
 Recorded reports:
 
