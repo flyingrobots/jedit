@@ -147,3 +147,147 @@ test('rope leaf validation requires a typed text blob reference in the admission
     code: FACT_VALIDATION_ERROR_INVALID_REFERENCE,
   });
 });
+
+test('rope checkpoint validation references a causal anchor instead of a tick receipt', async () => {
+  const contract = await loadContract();
+  const facts = checkpointFixture(contract);
+
+  assert.equal(contract.validateRopeFact(
+    facts.checkpoint,
+    createValidationContext(contract, facts.writeSet),
+  ).ok, true);
+  assert.equal('createdByTickId' in facts.checkpoint, false);
+
+  assert.deepEqual(contract.validateRopeFact(
+    { ...facts.checkpoint, causalAnchorId: 'tick:initial' },
+    createValidationContext(contract, facts.writeSet),
+  ), {
+    ok: false,
+    code: FACT_VALIDATION_ERROR_INVALID_REFERENCE,
+  });
+});
+
+test('rope checkpoints require a matching authority root on their causal anchor', async () => {
+  const contract = await loadContract();
+  const facts = checkpointFixture(contract);
+  const weakAnchor = {
+    ...facts.anchor,
+    anchorId: 'causal-anchor:weak',
+    retainedRoots: [{
+      ...facts.anchor.retainedRoots[0],
+      id: 'rope-head:other',
+    }],
+  };
+  const weakCheckpoint = {
+    ...facts.checkpoint,
+    checkpointId: 'rope-checkpoint:weak',
+    causalAnchorId: weakAnchor.anchorId,
+  };
+
+  assert.equal(contract.validateRopeFact(
+    weakAnchor,
+    createValidationContext(contract, [...facts.baseFacts, weakAnchor]),
+  ).ok, true);
+  assert.deepEqual(contract.validateRopeFact(
+    weakCheckpoint,
+    createValidationContext(contract, [...facts.baseFacts, weakAnchor, weakCheckpoint]),
+  ), {
+    ok: false,
+    code: FACT_VALIDATION_ERROR_INVALID_REFERENCE,
+  });
+});
+
+test('causal anchor validation rejects authority roots as materializations', async () => {
+  const contract = await loadContract();
+  const facts = checkpointFixture(contract);
+  const projectionAuthorityAnchor = {
+    ...facts.anchor,
+    anchorId: 'causal-anchor:projection-authority',
+    materializationRoots: [facts.anchor.retainedRoots[0]],
+  };
+
+  assert.deepEqual(contract.validateRopeFact(
+    projectionAuthorityAnchor,
+    createValidationContext(contract, [...facts.baseFacts, projectionAuthorityAnchor]),
+  ), {
+    ok: false,
+    code: FACT_VALIDATION_ERROR_INVALID_REFERENCE,
+  });
+});
+
+function checkpointFixture(contract) {
+  const blob = assertOk(contract.makeTextBlobFact({
+    bytes: UTF8_ENCODER.encode('checkpoint text'),
+    hash: createHashPort(),
+  }));
+  const leaf = {
+    kind: contract.ROPE_LEAF_FACT_KIND,
+    schemaVersion: contract.GRAPH_ROPE_SCHEMA_VERSION,
+    nodeId: 'rope-node:checkpoint-leaf',
+    blobId: blob.blobId,
+    byteStart: assertOk(contract.makeByteOffset(0)),
+    byteLength: blob.byteLength,
+    lineCount: 1,
+    contentHash: 'leaf-hash',
+  };
+  const head = {
+    kind: contract.ROPE_HEAD_FACT_KIND,
+    schemaVersion: contract.GRAPH_ROPE_SCHEMA_VERSION,
+    headId: 'rope-head:checkpoint',
+    worldlineId: 'worldline:checkpoint',
+    rootNodeId: leaf.nodeId,
+    createdByTickId: 'tick:initial',
+    byteLength: blob.byteLength,
+    lineCount: 1,
+    contentHash: 'head-hash',
+  };
+  const worldline = {
+    kind: contract.BUFFER_WORLDLINE_FACT_KIND,
+    schemaVersion: contract.GRAPH_ROPE_SCHEMA_VERSION,
+    worldlineId: head.worldlineId,
+    createdAtTick: 'tick:initial',
+    initialHeadId: head.headId,
+  };
+  const anchor = {
+    kind: contract.ECHO_CAUSAL_ANCHOR_FACT_KIND,
+    schemaVersion: contract.GRAPH_ROPE_SCHEMA_VERSION,
+    anchorId: 'causal-anchor:checkpoint',
+    subject: {
+      appId: contract.JEDIT_CAUSAL_ANCHOR_APP_ID,
+      subjectKind: contract.JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_BUFFER_WORLDLINE,
+      subjectId: worldline.worldlineId,
+    },
+    basisFrontierDigest: 'frontier:checkpoint',
+    retainedRoots: [{
+      kind: contract.ECHO_CAUSAL_ANCHOR_ROOT_KIND_APP_SUBJECT,
+      appId: contract.JEDIT_CAUSAL_ANCHOR_APP_ID,
+      subjectKind: contract.JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_ROPE_HEAD,
+      id: head.headId,
+      role: contract.ECHO_CAUSAL_ANCHOR_ROOT_ROLE_AUTHORITY,
+    }],
+    materializationRoots: [],
+    purpose: 'user-save',
+    admittedByReceiptId: 'receipt:checkpoint-anchor',
+    anchorDigest: 'anchor-digest',
+  };
+  const checkpoint = {
+    kind: contract.ROPE_CHECKPOINT_FACT_KIND,
+    schemaVersion: contract.GRAPH_ROPE_SCHEMA_VERSION,
+    checkpointId: 'rope-checkpoint:checkpoint',
+    worldlineId: worldline.worldlineId,
+    headId: head.headId,
+    causalAnchorId: anchor.anchorId,
+    reason: 'manual-save',
+  };
+  const baseFacts = [blob, leaf, head, worldline];
+  return {
+    blob,
+    leaf,
+    head,
+    worldline,
+    anchor,
+    checkpoint,
+    baseFacts,
+    writeSet: [...baseFacts, anchor, checkpoint],
+  };
+}

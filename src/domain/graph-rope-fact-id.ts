@@ -1,5 +1,6 @@
 import {
   BUFFER_WORLDLINE_FACT_KIND,
+  ECHO_CAUSAL_ANCHOR_FACT_KIND,
   ROPE_BRANCH_FACT_KIND,
   ROPE_CHECKPOINT_FACT_KIND,
   ROPE_DIFF_FACT_KIND,
@@ -25,6 +26,7 @@ const ROPE_FACT_ID_READERS: ReadonlyMap<string, RopeFactIdReader> = new Map([
   [TICK_RECEIPT_FACT_KIND, tickReceiptFactId],
   [ROPE_STRUCTURAL_MAINTENANCE_FACT_KIND, structuralMaintenanceFactId],
   [ROPE_CHECKPOINT_FACT_KIND, ropeCheckpointFactId],
+  [ECHO_CAUSAL_ANCHOR_FACT_KIND, echoCausalAnchorFactId],
 ]);
 
 export function ropeFactId(fact: RopeAdmittedFact): string {
@@ -72,4 +74,8 @@ function structuralMaintenanceFactId(fact: RopeAdmittedFact): string {
 
 function ropeCheckpointFactId(fact: RopeAdmittedFact): string {
   return fact.kind === ROPE_CHECKPOINT_FACT_KIND ? fact.checkpointId : '';
+}
+
+function echoCausalAnchorFactId(fact: RopeAdmittedFact): string {
+  return fact.kind === ECHO_CAUSAL_ANCHOR_FACT_KIND ? fact.anchorId : '';
 }

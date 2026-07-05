@@ -8,6 +8,7 @@ const ROPE_LEAF_FACT_KIND = 'jedit.text.RopeLeaf';
 const OBSTRUCTION_MISSING_HEAD = 'missing-head';
 const OBSTRUCTION_INVALID_BYTE_RANGE = 'invalid-byte-range';
 const OBSTRUCTION_INVALID_UTF8_BOUNDARY = 'invalid-utf8-boundary';
+const OBSTRUCTION_INVALID_FACT = 'invalid-fact';
 
 async function loadModules() {
   const [runtime, contract] = await Promise.all([
@@ -135,6 +136,71 @@ test('graph runtime no-op replacement does not mint text authority facts', async
   assert.equal(replaced.rewrite, null);
   assert.equal(replaced.diff, null);
   assert.equal(replaced.receipt, null);
+});
+
+test('graph runtime checkpoints a head through a non-mutating causal anchor', async () => {
+  const { runtime, contract } = await loadModules();
+  const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
+  const created = assertOk(graph.createBufferWorldline({
+    worldlineId: 'worldline:checkpoint',
+    initialText: 'alpha beta',
+  }));
+  const replaced = assertOk(graph.replaceRangeAsTick({
+    basisHeadId: created.head.headId,
+    range: byteRange(contract, 6, 10),
+    replacementText: 'BETA',
+  }));
+  const before = assertOk(graph.debugRopeShape(replaced.nextHead.headId));
+
+  const checkpointed = assertOk(graph.createCheckpoint({
+    worldlineId: 'worldline:checkpoint',
+    headId: replaced.nextHead.headId,
+    reason: 'manual-save',
+  }));
+  const after = assertOk(graph.debugRopeShape(replaced.nextHead.headId));
+  const reading = assertOk(graph.textWindow({
+    basisHeadId: replaced.nextHead.headId,
+    byteRange: byteRange(contract, 0, UTF8_ENCODER.encode('alpha BETA').length),
+  }));
+
+  assert.equal(checkpointed.head.headId, replaced.nextHead.headId);
+  assert.equal(checkpointed.checkpoint.headId, replaced.nextHead.headId);
+  assert.equal(checkpointed.checkpoint.causalAnchorId, checkpointed.causalAnchor.anchorId);
+  assert.equal(checkpointed.causalAnchor.subject.appId, contract.JEDIT_CAUSAL_ANCHOR_APP_ID);
+  assert.equal(checkpointed.causalAnchor.subject.subjectKind, contract.JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_BUFFER_WORLDLINE);
+  assert.equal(checkpointed.causalAnchor.subject.subjectId, 'worldline:checkpoint');
+  assert.equal(checkpointed.causalAnchor.purpose, 'user-save');
+  assert.deepEqual(checkpointed.causalAnchor.retainedRoots, [{
+    kind: contract.ECHO_CAUSAL_ANCHOR_ROOT_KIND_APP_SUBJECT,
+    appId: contract.JEDIT_CAUSAL_ANCHOR_APP_ID,
+    subjectKind: contract.JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_ROPE_HEAD,
+    id: replaced.nextHead.headId,
+    role: contract.ECHO_CAUSAL_ANCHOR_ROOT_ROLE_AUTHORITY,
+  }]);
+  assert.equal(checkpointed.causalAnchor.materializationRoots.length, 0);
+  assert.equal('rewrite' in checkpointed, false);
+  assert.equal('diff' in checkpointed, false);
+  assert.equal('receipt' in checkpointed, false);
+  assert.deepEqual(after, before);
+  assert.equal(reading.text, 'alpha BETA');
+});
+
+test('graph runtime rejects checkpoints for a different worldline', async () => {
+  const { runtime } = await loadModules();
+  const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
+  const created = assertOk(graph.createBufferWorldline({
+    worldlineId: 'worldline:checkpoint-mismatch',
+    initialText: 'alpha',
+  }));
+
+  assert.deepEqual(graph.createCheckpoint({
+    worldlineId: 'worldline:other',
+    headId: created.head.headId,
+    reason: 'manual-save',
+  }), {
+    ok: false,
+    code: OBSTRUCTION_INVALID_FACT,
+  });
 });
 
 test('graph runtime preserves untouched leaf identity across narrow replacements', async () => {

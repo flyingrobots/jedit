@@ -503,7 +503,8 @@ type RopeAdmittedFact =
   | RopeDiffFact
   | TickReceiptFact
   | RopeStructuralMaintenanceFact
-  | RopeCheckpointFact;
+  | RopeCheckpointFact
+  | EchoCausalAnchorFact;
 
 interface RopeFactReadModel {
   getFact(id: string): RopeAdmittedFact | null;
@@ -759,6 +760,7 @@ Durable truth:
 - `RopeDiff`;
 - `TickReceipt`;
 - `RopeStructuralMaintenance`;
+- `echo.causal.Anchor`;
 - `RopeCheckpoint`.
 
 Rebuildable indexes and caches:
@@ -816,10 +818,43 @@ Initial balance invariant for the tiny graph-backed runtime:
   rewrite that made maintenance necessary.
 
 Checkpoint semantics also need precision. A checkpoint is not new text truth. It
-is a durable named basis for efficient future reads, retention, or export.
+is a durable named basis for efficient future reads, retention, or export. Echo
+owns the generic causal anchor. jedit owns the rope checkpoint that says which
+rope head the anchor names in text-domain terms.
 
 ```typescript
 type CheckpointId = string & { readonly __brand: "CheckpointId" };
+type CausalAnchorId = string & { readonly __brand: "CausalAnchorId" };
+
+interface EchoCausalAnchorFact {
+  readonly kind: "echo.causal.Anchor";
+  readonly schemaVersion: 1;
+  readonly anchorId: CausalAnchorId;
+  readonly subject: {
+    readonly appId: "jedit";
+    readonly subjectKind: "BufferWorldline";
+    readonly subjectId: WorldlineId;
+  };
+  readonly basisFrontierDigest: Hash;
+  readonly retainedRoots: readonly [{
+    readonly kind: "AppSubjectRoot";
+    readonly appId: "jedit";
+    readonly subjectKind: "RopeHead";
+    readonly id: RopeHeadId;
+    readonly role: "authority";
+  }];
+  readonly materializationRoots: readonly unknown[];
+  readonly purpose:
+    | "recovery"
+    | "retention"
+    | "export"
+    | "user-save"
+    | "autosave"
+    | "debug"
+    | "cache-warm";
+  readonly admittedByReceiptId: Hash;
+  readonly anchorDigest: Hash;
+}
 
 interface RopeCheckpointFact {
   readonly kind: "jedit.text.RopeCheckpoint";
@@ -827,18 +862,22 @@ interface RopeCheckpointFact {
   readonly checkpointId: CheckpointId;
   readonly worldlineId: WorldlineId;
   readonly headId: RopeHeadId;
-  readonly createdByTickId: TickId;
+  readonly causalAnchorId: CausalAnchorId;
   readonly reason:
     | "manual-save"
     | "autosave"
     | "retention-boundary"
+    | "export"
     | "import"
     | "test-fixture";
 }
 ```
 
 Save/export should read from a head or checkpoint. It should not mutate text
-authority unless the product explicitly records a checkpoint.
+authority unless the product explicitly records a checkpoint. Creating a
+checkpoint admits an anchor and a checkpoint fact; it does not create a
+`RopeHead`, `RopeRewrite`, `RopeDiff`, replacement blob, or text mutation
+receipt.
 
 ### 12. Make `:why` An Acceptance Target
 
@@ -1094,7 +1133,7 @@ The work is done when:
       authority without an explicit fixture escape hatch.
 - [x] A graph-backed runtime can create and read one single-leaf buffer.
 - [x] A graph-backed runtime can create, read, and replace one buffer.
-- [ ] A graph-backed runtime can checkpoint one buffer.
+- [x] A graph-backed runtime can checkpoint one buffer.
 - [ ] Retention stress, recursive subtree identity, save/export, and `:why`
       witnesses pass against graph-backed authority.
 - [ ] UI surfaces that mention basis, head, tick, checkpoint, or worldline cite

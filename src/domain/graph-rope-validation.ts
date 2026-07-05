@@ -1,8 +1,14 @@
 import { ropeFactId } from './graph-rope-fact-id.js';
 import {
+  checkpointAnchorMatches,
+  checkpointReferencesSameWorldline,
+  validateEchoCausalAnchorFact,
+} from './graph-rope-causal-anchor-validation.js';
+import {
   BUFFER_WORLDLINE_FACT_KIND,
   BYTE_OFFSET_COORDINATE_KIND,
   CONTENT_ADDRESSED_BLOB_STORE_KIND,
+  ECHO_CAUSAL_ANCHOR_FACT_KIND,
   FACT_VALIDATION_ERROR_HASH_MISMATCH,
   FACT_VALIDATION_ERROR_INVALID_HASH,
   FACT_VALIDATION_ERROR_INVALID_ID,
@@ -66,6 +72,7 @@ const ROPE_FACT_VALIDATORS: ReadonlyMap<string, RopeFactValidator> = new Map([
   [TICK_RECEIPT_FACT_KIND, validateTickReceiptFact],
   [ROPE_STRUCTURAL_MAINTENANCE_FACT_KIND, validateStructuralMaintenanceFact],
   [ROPE_CHECKPOINT_FACT_KIND, validateRopeCheckpointFact],
+  [ECHO_CAUSAL_ANCHOR_FACT_KIND, validateEchoCausalAnchorFact],
 ]);
 
 export function makeTextBlobFact(input: MakeTextBlobFactInput): MakeTextBlobFactResult {
@@ -250,9 +257,17 @@ function validateRopeCheckpointFact(
   const refResult = requireReferences(context, [
     [fact.worldlineId, BUFFER_WORLDLINE_FACT_KIND],
     [fact.headId, ROPE_HEAD_FACT_KIND],
-    [fact.createdByTickId, TICK_RECEIPT_FACT_KIND],
+    [fact.causalAnchorId, ECHO_CAUSAL_ANCHOR_FACT_KIND],
   ]);
-  return validateIdsAfterReferences(refResult, fact, [fact.checkpointId]);
+  if (refResult !== null) {
+    return invalidFact(refResult);
+  }
+  const head = resolveFactById(context, fact.headId);
+  const anchor = resolveFactById(context, fact.causalAnchorId);
+  if (!checkpointReferencesSameWorldline(fact, head) || !checkpointAnchorMatches(fact, anchor)) {
+    return invalidFact(FACT_VALIDATION_ERROR_INVALID_REFERENCE);
+  }
+  return validateIds(fact, [fact.checkpointId]);
 }
 
 function validateTextBlobBytes(
@@ -432,17 +447,11 @@ function contentHashForBytes(hash: TextBlobHashPort, bytes: Uint8Array): string 
   return hash.sha256Hex(`${GRAPH_ROPE_HASH_MATERIAL_PREFIX}${bytesToHex(bytes)}`);
 }
 
-function textBlobIdForHash(contentHash: string): string {
-  return `${TEXT_BLOB_ID_PREFIX}${contentHash}`;
-}
+function textBlobIdForHash(contentHash: string): string { return `${TEXT_BLOB_ID_PREFIX}${contentHash}`; }
 
-function bytesToHex(bytes: Uint8Array): string {
-  return Array.from(bytes, byteToHex).join('');
-}
+function bytesToHex(bytes: Uint8Array): string { return Array.from(bytes, byteToHex).join(''); }
 
-function byteToHex(byte: number): string {
-  return byte.toString(HEX_RADIX).padStart(HEX_BYTE_WIDTH, '0');
-}
+function byteToHex(byte: number): string { return byte.toString(HEX_RADIX).padStart(HEX_BYTE_WIDTH, '0'); }
 
 function isValidUtf8(bytes: Uint8Array): boolean {
   try {
@@ -453,17 +462,11 @@ function isValidUtf8(bytes: Uint8Array): boolean {
   }
 }
 
-function hasInvalidMetric(metrics: readonly number[]): boolean {
-  return metrics.some((metric) => !isNonNegativeInteger(metric));
-}
+function hasInvalidMetric(metrics: readonly number[]): boolean { return metrics.some((metric) => !isNonNegativeInteger(metric)); }
 
-function isNonNegativeInteger(value: number): boolean {
-  return Number.isInteger(value) && value >= ZERO_VALUE;
-}
+function isNonNegativeInteger(value: number): boolean { return Number.isInteger(value) && value >= ZERO_VALUE; }
 
-function isInvalidHash(contentHash: string): boolean {
-  return contentHash.length < MIN_ID_LENGTH;
-}
+function isInvalidHash(contentHash: string): boolean { return contentHash.length < MIN_ID_LENGTH; }
 
 function invalidRangeIssue(range: TextByteRange): FactValidationErrorCode | null {
   return isValidTextByteRange(range) ? null : FACT_VALIDATION_ERROR_INVALID_METRIC;

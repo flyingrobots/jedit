@@ -17,6 +17,11 @@ import {
   type TickReceiptFact,
 } from './graph-rope-contract.js';
 import {
+  createCheckpointFacts,
+  type GraphRopeCreateCheckpointInput,
+  type GraphRopeCreateCheckpointResult,
+} from './graph-rope-runtime-checkpoint.js';
+import {
   GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_FACT,
   GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_UTF8_BOUNDARY,
   GRAPH_ROPE_RUNTIME_OBSTRUCTION_MISSING_HEAD,
@@ -45,6 +50,10 @@ export {
   GRAPH_ROPE_TEXT_WINDOW_CACHE_STATUS_UNCACHED,
 } from './graph-rope-runtime-issues.js';
 export type { GraphRopeRuntimeObstructionCode } from './graph-rope-runtime-issues.js';
+export type {
+  GraphRopeCreateCheckpointInput,
+  GraphRopeCreateCheckpointResult,
+} from './graph-rope-runtime-checkpoint.js';
 
 const ONE_VALUE = 1;
 const INITIAL_ADMISSION_SEQUENCE = 1;
@@ -130,6 +139,7 @@ export interface GraphRopeDebugNode {
 export interface GraphRopeRuntime {
   createBufferWorldline(input: CreateBufferWorldlineInput): GraphRopeRuntimeResult<GraphRopeCreateWorldlineResult>;
   replaceRangeAsTick(input: GraphRopeReplaceRangeInput): GraphRopeRuntimeResult<GraphRopeReplaceRangeResult>;
+  createCheckpoint(input: GraphRopeCreateCheckpointInput): GraphRopeRuntimeResult<GraphRopeCreateCheckpointResult>;
   textWindow(input: GraphRopeTextWindowInput): GraphRopeRuntimeResult<GraphRopeTextWindowReading>;
   debugRopeShape(headId: string): GraphRopeRuntimeResult<GraphRopeDebugShape>;
 }
@@ -163,6 +173,9 @@ export function createGraphRopeRuntime(input: CreateGraphRopeRuntimeInput): Grap
     },
     replaceRangeAsTick(replaceInput) {
       return replaceRangeAsTick(state, replaceInput);
+    },
+    createCheckpoint(checkpointInput) {
+      return createCheckpoint(state, checkpointInput);
     },
     textWindow(readInput) {
       return textWindow(state, readInput);
@@ -208,6 +221,25 @@ function replaceRangeAsTick(
     reader: state,
   });
   return plan.ok ? admitReplacePlan(state, plan.value) : plan;
+}
+
+function createCheckpoint(
+  state: GraphRopeRuntimeState,
+  input: GraphRopeCreateCheckpointInput,
+): GraphRopeRuntimeResult<GraphRopeCreateCheckpointResult> {
+  const head = headById(state, input.headId);
+  if (head === null) {
+    return { ok: false, code: GRAPH_ROPE_RUNTIME_OBSTRUCTION_MISSING_HEAD };
+  }
+  if (head.worldlineId !== input.worldlineId) {
+    return { ok: false, code: GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_FACT };
+  }
+  const checkpointFacts = createCheckpointFacts(head, input.reason, state.hash);
+  const admissionIssue = admitFacts(state, [checkpointFacts.causalAnchor, checkpointFacts.checkpoint]);
+  if (admissionIssue !== null) {
+    return { ok: false, code: admissionIssue };
+  }
+  return { ok: true, value: cloneCheckpointResult(checkpointFacts) };
 }
 
 function textWindow(
@@ -330,6 +362,14 @@ function cloneReplaceResult(result: GraphRopeReplaceRangeResult): GraphRopeRepla
     rewrite: nullableClone(result.rewrite),
     diff: nullableClone(result.diff),
     receipt: nullableClone(result.receipt),
+  };
+}
+
+function cloneCheckpointResult(result: GraphRopeCreateCheckpointResult): GraphRopeCreateCheckpointResult {
+  return {
+    head: cloneFact(result.head),
+    causalAnchor: cloneFact(result.causalAnchor),
+    checkpoint: cloneFact(result.checkpoint),
   };
 }
 

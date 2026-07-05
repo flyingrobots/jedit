@@ -148,7 +148,8 @@ test('HT-0149 checkpoint facts are validated rather than deferred', () => {
   const admittedFacts = sectionBetween(discovery, 'type RopeAdmittedFact =', 'interface RopeFactReadModel');
 
   assert.match(admittedFacts, /\| TickReceiptFact/);
-  assert.match(admittedFacts, /\| RopeCheckpointFact;/);
+  assert.match(admittedFacts, /\| RopeCheckpointFact\b/);
+  assert.match(admittedFacts, /\| EchoCausalAnchorFact;/);
   assert.match(discovery, /\): FactValidationResult<RopeAdmittedFact>;/);
   assert.doesNotMatch(deferredFacts, /`RopeCheckpoint`/);
 });
