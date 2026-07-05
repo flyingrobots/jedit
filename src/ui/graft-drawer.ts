@@ -165,7 +165,10 @@ function formatJsonValue(value: GraftJsonValue | undefined): string {
     return `[${value.map((item) => formatJsonValue(item)).join(', ')}]`;
   }
   if (isJsonObject(value)) {
-    return `{${formatJsonObject(value)}}`;
+    const objectText = formatJsonObject(value);
+    return objectText === '{}'
+      ? objectText
+      : `{${objectText}}`;
   }
   return String(value);
 }

@@ -113,6 +113,7 @@ test('Graft drawer displays opaque obstruction receipt projection facts', async 
       reasonKind: 'jim.EditObstruction.StaleBase',
       reasonPayload: {
         inputBasisDigest: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+        meta: {},
         observedBasisDigest: 'sha256:4444444444444444444444444444444444444444444444444444444444444444',
       },
       receipt: {
@@ -129,6 +130,8 @@ test('Graft drawer displays opaque obstruction receipt projection facts', async 
   assert.match(text, /target: echo\.span-ir\/v1 sha256:333333/);
   assert.match(text, /reason: jim\.EditObstruction\.StaleBase/);
   assert.match(text, /payload: inputBasisDigest=sha256:111111/);
+  assert.match(text, /payload: meta=\{\}/);
+  assert.doesNotMatch(text, /meta=\{\{\}\}/);
   assert.match(text, /observedBasisDigest=sha256:444444/);
   assert.doesNotMatch(text, /receiptDigest/);
   assert.doesNotMatch(text, /hard rejection/);
