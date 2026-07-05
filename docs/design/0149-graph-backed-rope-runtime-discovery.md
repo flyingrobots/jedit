@@ -306,6 +306,8 @@ type TextBlobId = string & { readonly __brand: "TextBlobId" };
 type TickId = string & { readonly __brand: "TickId" };
 type RopeRewriteId = string & { readonly __brand: "RopeRewriteId" };
 type RopeDiffId = string & { readonly __brand: "RopeDiffId" };
+type RopeStructuralMaintenanceId =
+  string & { readonly __brand: "RopeStructuralMaintenanceId" };
 type AdmissionId = string & { readonly __brand: "AdmissionId" };
 type Hash = string & { readonly __brand: "Hash" };
 
@@ -440,6 +442,28 @@ interface TickReceiptFact {
   readonly admittedAtSequence: number;
   readonly contentHash: Hash;
 }
+
+type RopeStructuralMaintenanceOperation =
+  | "split-leaf"
+  | "merge-leaves"
+  | "rotate-left"
+  | "rotate-right"
+  | "rebalance-branch";
+
+interface RopeStructuralMaintenanceFact {
+  readonly kind: "jedit.text.RopeStructuralMaintenance";
+  readonly schemaVersion: 1;
+  readonly maintenanceId: RopeStructuralMaintenanceId;
+  readonly worldlineId: WorldlineId;
+  readonly rewriteId: RopeRewriteId;
+  readonly basisHeadId: RopeHeadId;
+  readonly nextHeadId: RopeHeadId;
+  readonly operation: RopeStructuralMaintenanceOperation;
+  readonly affectedRange: TextByteRange;
+  readonly replacedNodeIds: readonly RopeNodeId[];
+  readonly replacementNodeIds: readonly RopeNodeId[];
+  readonly contentHash: Hash;
+}
 ```
 
 The full design must also define facts for:
@@ -478,6 +502,7 @@ type RopeAdmittedFact =
   | RopeRewriteFact
   | RopeDiffFact
   | TickReceiptFact
+  | RopeStructuralMaintenanceFact
   | RopeCheckpointFact;
 
 interface RopeFactReadModel {
@@ -530,6 +555,9 @@ Validation rules:
   delete spans must carry only the removed basis range, insert spans must carry
   the next range and inserted blob, and validators must reject missing or extra
   coordinate fields for each span kind;
+- structural maintenance facts must reference the semantic rewrite, basis head,
+  next head, affected range, operation, and exact replaced and replacement node
+  IDs before an untouched subtree identity exception is accepted;
 - invalid facts are rejected before Echo admission and never become retained
   authority.
 
@@ -718,6 +746,7 @@ Durable truth:
 - `RopeRewrite`;
 - `RopeDiff`;
 - `TickReceipt`;
+- `RopeStructuralMaintenance`;
 - `RopeCheckpoint`.
 
 Rebuildable indexes and caches:

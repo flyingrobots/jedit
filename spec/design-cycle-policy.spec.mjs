@@ -138,7 +138,8 @@ test('HT-0149 checkpoint facts are validated rather than deferred', () => {
   const deferredFacts = sectionBetween(discovery, 'The full design must also define facts for:', 'Echo remains generic.');
   const admittedFacts = sectionBetween(discovery, 'type RopeAdmittedFact =', 'interface RopeFactReadModel');
 
-  assert.match(admittedFacts, /\| TickReceiptFact\n  \| RopeCheckpointFact;/);
+  assert.match(admittedFacts, /\| TickReceiptFact/);
+  assert.match(admittedFacts, /\| RopeCheckpointFact;/);
   assert.match(discovery, /\): FactValidationResult<RopeAdmittedFact>;/);
   assert.doesNotMatch(deferredFacts, /`RopeCheckpoint`/);
 });
@@ -170,6 +171,21 @@ test('HT-0149 tick receipt facts carry content hash', () => {
   const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
 
   assert.match(discovery, /interface TickReceiptFact \{[\s\S]*readonly contentHash: Hash;/);
+});
+
+test('HT-0149 defines structural maintenance facts for rebalance exceptions', () => {
+  const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
+  const admittedFacts = sectionBetween(discovery, 'type RopeAdmittedFact =', 'interface RopeFactReadModel');
+
+  assert.match(discovery, /^type RopeStructuralMaintenanceId =/m);
+  assert.match(discovery, /^type RopeStructuralMaintenanceOperation =$/m);
+  assert.match(discovery, /^interface RopeStructuralMaintenanceFact \{$/m);
+  assert.match(discovery, /readonly operation: RopeStructuralMaintenanceOperation;/);
+  assert.match(discovery, /readonly replacedNodeIds: readonly RopeNodeId\[\];/);
+  assert.match(discovery, /readonly replacementNodeIds: readonly RopeNodeId\[\];/);
+  assert.match(discovery, /readonly affectedRange: TextByteRange;/);
+  assert.match(admittedFacts, /\| RopeStructuralMaintenanceFact/);
+  assert.match(discovery, /structural maintenance facts must reference the semantic rewrite/);
 });
 
 test('HT-0149 specifies concrete rope balance invariants', () => {
