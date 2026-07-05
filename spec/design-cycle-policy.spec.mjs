@@ -8,11 +8,18 @@ const AGENTS_PATH = path.join(REPO_ROOT, 'AGENTS.md');
 const PROCESS_PATH = path.join(REPO_ROOT, 'docs', 'method', 'process.md');
 const TEMPLATE_PATH = path.join(REPO_ROOT, 'docs', 'design', 'TEMPLATE.md');
 const POLICY_DESIGN_PATH = path.join(REPO_ROOT, 'docs', 'design', '0034-design-cycle-template-and-lifecycle.md');
+const BEARING_PATH = path.join(REPO_ROOT, 'docs', 'BEARING.md');
 const WHY_OBSERVATION_ROADMAP_PATH = path.join(
   REPO_ROOT,
   'docs',
   'design',
   '0108a-why-observation-evidence-roadmap.md',
+);
+const GRAPH_RUNTIME_DISCOVERY_PATH = path.join(
+  REPO_ROOT,
+  'docs',
+  'design',
+  '0149-graph-backed-rope-runtime-discovery.md',
 );
 
 const REQUIRED_TEMPLATE_HEADINGS = Object.freeze([
@@ -74,6 +81,138 @@ test('WF-0108A roadmap preserves required full-cycle design headings', () => {
   }
 });
 
+test('HT-0149 runtime discovery pins Current Truth evidence to git SHAs', () => {
+  const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
+  const sha = '[0-9a-f]{40}';
+
+  for (const repoPath of [
+    'src/domain/text-edit-contract.ts',
+    'src/ports/hot-text-runtime.ts',
+    'src/adapters/in-memory-hot-text-runtime.ts',
+    'src/adapters/installed-jedit-contract-echo-transport.ts',
+    'docs/design/jedit-echo-graph-model.md',
+  ]) {
+    assert.match(
+      discovery,
+      new RegExp(`https://github\\.com/flyingrobots/jedit/blob/${sha}/${escapeRegExp(repoPath)}#L\\d+`),
+      `${repoPath} needs a pinned Current Truth evidence link`,
+    );
+  }
+});
+
+test('HT-0149 rope fact validation receives admission context', () => {
+  const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
+
+  assert.match(discovery, /^interface RopeFactValidationContext \{$/m);
+  assert.match(discovery, /readonly writeSet:/);
+  assert.match(discovery, /readonly admittedBasis:/);
+  assert.match(discovery, /readonly blobStore:/);
+  assert.match(
+    discovery,
+    /declare function validateRopeFact\(\n  payload: object,\n  context: RopeFactValidationContext,\n\): FactValidationResult</,
+  );
+});
+
+test('HT-0149 defines rewrite diff and tick receipt facts', () => {
+  const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
+
+  for (const factName of ['RopeRewriteFact', 'RopeDiffFact', 'TickReceiptFact']) {
+    assert.match(discovery, new RegExp(`^interface ${factName} \\{$`, 'm'));
+  }
+
+  assert.match(discovery, /^interface TextByteRange \{$/m);
+  assert.match(discovery, /readonly range: TextByteRange;/);
+  assert.match(discovery, /readonly diffId: RopeDiffId;/);
+  assert.match(discovery, /readonly spans: readonly RopeDiffSpan\[\];/);
+  assert.match(discovery, /readonly admittedAtSequence: number;/);
+});
+
+test('HT-0149 checkpoint fact carries schema version', () => {
+  const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
+
+  assert.match(discovery, /interface RopeCheckpointFact \{[\s\S]*readonly schemaVersion: 1;/);
+});
+
+test('HT-0149 checkpoint facts are validated rather than deferred', () => {
+  const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
+  const deferredFacts = sectionBetween(discovery, 'The full design must also define facts for:', 'Echo remains generic.');
+  const admittedFacts = sectionBetween(discovery, 'type RopeAdmittedFact =', 'interface RopeFactReadModel');
+
+  assert.match(admittedFacts, /\| TickReceiptFact/);
+  assert.match(admittedFacts, /\| RopeCheckpointFact;/);
+  assert.match(discovery, /\): FactValidationResult<RopeAdmittedFact>;/);
+  assert.doesNotMatch(deferredFacts, /`RopeCheckpoint`/);
+});
+
+test('HT-0149 validation exposes typed admitted facts', () => {
+  const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
+
+  assert.match(discovery, /^type RopeAdmittedFact =$/m);
+  assert.match(discovery, /getFact\(id: string\): RopeAdmittedFact \| null;/);
+  assert.match(discovery, /\): FactValidationResult<RopeAdmittedFact>;/);
+  assert.doesNotMatch(discovery, /hasFact\(id: string\): boolean;/);
+  assert.match(discovery, /reference validation must retrieve typed facts/);
+});
+
+test('HT-0149 diff spans are kind-specific', () => {
+  const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
+
+  for (const spanName of ['RopeEqualDiffSpan', 'RopeDeleteDiffSpan', 'RopeInsertDiffSpan']) {
+    assert.match(discovery, new RegExp(`^interface ${spanName} \\{$`, 'm'));
+  }
+
+  assert.match(discovery, /^type RopeDiffSpan = RopeEqualDiffSpan \| RopeDeleteDiffSpan \| RopeInsertDiffSpan;$/m);
+  assert.doesNotMatch(discovery, /readonly kind: "equal" \| "delete" \| "insert";/);
+  assert.doesNotMatch(discovery, /readonly basisRange\?: TextByteRange;/);
+  assert.match(discovery, /diff spans are kind-specific/);
+});
+
+test('HT-0149 tick receipt facts carry content hash', () => {
+  const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
+
+  assert.match(discovery, /interface TickReceiptFact \{[\s\S]*readonly contentHash: Hash;/);
+});
+
+test('HT-0149 defines structural maintenance facts for rebalance exceptions', () => {
+  const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
+  const admittedFacts = sectionBetween(discovery, 'type RopeAdmittedFact =', 'interface RopeFactReadModel');
+
+  assert.match(discovery, /^type RopeStructuralMaintenanceId =/m);
+  assert.match(discovery, /^type RopeStructuralMaintenanceOperation =$/m);
+  assert.match(discovery, /^interface RopeStructuralMaintenanceFact \{$/m);
+  assert.match(discovery, /readonly operation: RopeStructuralMaintenanceOperation;/);
+  assert.match(discovery, /readonly replacedNodeIds: readonly RopeNodeId\[\];/);
+  assert.match(discovery, /readonly replacementNodeIds: readonly RopeNodeId\[\];/);
+  assert.match(discovery, /readonly affectedRange: TextByteRange;/);
+  assert.match(admittedFacts, /\| RopeStructuralMaintenanceFact/);
+  assert.match(discovery, /structural maintenance facts must reference the semantic rewrite/);
+});
+
+test('HT-0149 specifies concrete rope balance invariants', () => {
+  const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
+
+  assert.match(discovery, /target leaf byte length is 4096 bytes/);
+  assert.match(discovery, /minimum non-edge leaf byte length is 1024 bytes/);
+  assert.match(discovery, /maximum leaf byte length is 8192 bytes/);
+  assert.match(discovery, /branch height difference must be no greater than 1/);
+});
+
+test('HT-0149 follow-on debt is issue-backed', () => {
+  const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
+  const followOnDebt = sectionBetween(discovery, '## Follow-On Debt', '## Retrospective');
+  const issueLinks = followOnDebt.match(/https:\/\/github\.com\/flyingrobots\/jedit\/issues\/\d+/g) ?? [];
+
+  assert.ok(issueLinks.length >= 6, 'follow-on debt should link tracker issues for every deferred item');
+  assert.doesNotMatch(followOnDebt, /should create narrower issues/);
+});
+
+test('BEARING blocks why work on graph runtime proof', () => {
+  const bearing = readRepoFile(BEARING_PATH);
+
+  assert.match(bearing, /Do not resume the `:why` evidence gap sequence until/);
+  assert.match(bearing, /graph-backed\s+create\/read\/replace\/checkpoint path and witnesses land/);
+});
+
 test('process doc defines the official cycle lifecycle and proof boundary', () => {
   const processDoc = readRepoFile(PROCESS_PATH);
 
@@ -106,6 +245,16 @@ test('policy design links the GitHub issue and records the retrospective', () =>
   assert.match(policy, /What the tests proved:/);
   assert.match(policy, /Other repositories still need their own adapted templates/);
 });
+
+function sectionBetween(documentText, startHeading, endHeading) {
+  const start = documentText.indexOf(startHeading);
+  const end = documentText.indexOf(endHeading, start + startHeading.length);
+
+  assert.notEqual(start, -1, `${startHeading} missing`);
+  assert.notEqual(end, -1, `${endHeading} missing`);
+
+  return documentText.slice(start, end);
+}
 
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
