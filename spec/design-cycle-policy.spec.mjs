@@ -166,6 +166,12 @@ test('HT-0149 diff spans are kind-specific', () => {
   assert.match(discovery, /diff spans are kind-specific/);
 });
 
+test('HT-0149 tick receipt facts carry content hash', () => {
+  const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
+
+  assert.match(discovery, /interface TickReceiptFact \{[\s\S]*readonly contentHash: Hash;/);
+});
+
 test('HT-0149 specifies concrete rope balance invariants', () => {
   const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
 

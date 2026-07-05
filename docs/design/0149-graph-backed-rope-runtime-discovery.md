@@ -438,6 +438,7 @@ interface TickReceiptFact {
   readonly nextHeadId: RopeHeadId;
   readonly rewriteId: RopeRewriteId;
   readonly admittedAtSequence: number;
+  readonly contentHash: Hash;
 }
 ```
 
