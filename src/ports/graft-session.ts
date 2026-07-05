@@ -30,7 +30,7 @@ export interface GraftObstructionReceiptProjection {
   readonly targetIrDomain?: string;
   readonly reasonKind?: string;
   readonly reasonPayload?: GraftJsonObject;
-  readonly receiptReview?: GraftJsonObject;
+  readonly receipt?: GraftJsonObject;
 }
 
 export interface GraftInfo {

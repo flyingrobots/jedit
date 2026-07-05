@@ -115,7 +115,7 @@ test('Graft drawer displays opaque obstruction receipt projection facts', async 
         inputBasisDigest: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
         observedBasisDigest: 'sha256:4444444444444444444444444444444444444444444444444444444444444444',
       },
-      receiptReview: {
+      receipt: {
         receiptDigest: 'sha256:9999999999999999999999999999999999999999999999999999999999999999',
       },
     },

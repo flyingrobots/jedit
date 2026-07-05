@@ -140,11 +140,12 @@ type GraftObstructionReceiptProjection = {
   targetIrDomain?: string;
   reasonKind?: string;
   reasonPayload?: GraftJsonObject;
-  receiptReview?: GraftJsonObject;
+  receipt?: GraftJsonObject;
 };
 ```
 
-`receiptReview` is opaque. jedit may carry it but does not interpret it.
+`receipt` is the opaque Graft/Edict receipt review object. jedit may carry it
+but does not interpret it.
 
 The drawer renders:
 
