@@ -129,10 +129,10 @@ test('Graft drawer displays opaque obstruction receipt projection facts', async 
   assert.match(text, /outcome: obstructed_strand/);
   assert.match(text, /target: echo\.span-ir\/v1 sha256:333333/);
   assert.match(text, /reason: jim\.EditObstruction\.StaleBase/);
-  assert.match(text, /payload: inputBasisDigest=sha256:111111/);
+  assert.match(text, /payload: inputBasisDigest="sha256:111111/);
   assert.match(text, /payload: meta=\{\}/);
   assert.doesNotMatch(text, /meta=\{\{\}\}/);
-  assert.match(text, /observedBasisDigest=sha256:444444/);
+  assert.match(text, /observedBasisDigest="sha256:444444/);
   assert.doesNotMatch(text, /receiptDigest/);
   assert.doesNotMatch(text, /hard rejection/);
   assert.doesNotMatch(text, /counterfactual/);
@@ -171,6 +171,32 @@ test('Graft drawer bounds receipt payload rows before outline content', async ()
 
   assert.match(visibleText, /outline/);
   assert.match(visibleText, /function render/);
-  assert.match(visibleText, /payload: key00=value00/);
+  assert.match(visibleText, /payload: key00="value00"/);
   assert.doesNotMatch(visibleText, /key19=value19/);
+});
+
+test('Graft drawer escapes receipt payload strings before row fitting', async () => {
+  const { renderGraftDrawerLines } = await loadGraftDrawer();
+  const lines = renderGraftDrawerLines(baseDrawerModel({
+    path: '/repo/demo.edict',
+    relativePath: 'demo.edict',
+    projectionSource: 'live-buffer',
+    projectionPosture: 'current',
+    obstructionReceipt: {
+      outcomeKind: 'obstructed_strand',
+      targetIrDigest: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+      reasonPayload: {
+        message: 'line one\nline two',
+      },
+      receipt: {
+        schema: 'echo.execution.receipt.review/v0',
+      },
+    },
+    outlineItems: [],
+    changeLines: [],
+  }), 120, 24);
+  const text = linesToText(lines);
+
+  assert.equal(lines.some((line) => line.includes('\n')), false);
+  assert.match(text, /payload: message="line one\\nline two"/);
 });

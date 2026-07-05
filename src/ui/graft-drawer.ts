@@ -170,6 +170,9 @@ function formatJsonValue(value: GraftJsonValue | undefined): string {
       ? objectText
       : `{${objectText}}`;
   }
+  if (typeof value === 'string') {
+    return JSON.stringify(value);
+  }
   return String(value);
 }
 
