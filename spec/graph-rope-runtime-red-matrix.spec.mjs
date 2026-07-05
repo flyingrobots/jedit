@@ -31,13 +31,6 @@ test.skip('RED: no-op replacement emits no new text head rewrite diff or worldli
   assert.fail(PENDING_GRAPH_RUNTIME);
 });
 
-test.skip('RED: textWindow read returns basis head byte range cache status and validation evidence', () => {
-  // Fixture: request a bounded textWindow from a named RopeHead and byte range.
-  // Expected: reading cites basisHeadId, UTF-8 byte range, cache/projection
-  // posture, and verified blob/hash evidence for every materialized byte.
-  assert.fail(PENDING_GRAPH_RUNTIME);
-});
-
 test.skip('RED: save and export read from a named head or checkpoint without mutating text authority', () => {
   // Fixture: export text from head H, then create a manual-save checkpoint C for
   // H and export from C.

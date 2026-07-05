@@ -60,7 +60,6 @@ const GRAPH_RUNTIME_RED_WITNESSES = Object.freeze([
   'RED: graph-backed runtime retention is not O(buffer size * edit count)',
   'RED: narrow replacement preserves untouched subtree identity recursively',
   'RED: no-op replacement emits no new text head rewrite diff or worldline advance',
-  'RED: textWindow read returns basis head byte range cache status and validation evidence',
   'RED: save and export read from a named head or checkpoint without mutating text authority',
   'RED: range why cites head leaf blob rewrite diff tick checkpoint and basis evidence',
 ]);

@@ -1053,7 +1053,7 @@ Causal honesty is an end-to-end property.
 - [x] Slice 3: Land coordinate, fact, byte-authority, and validation contracts.
 - [x] Slice 4: Add failing retention, subtree identity, materialization, no-op,
       save/export, and `:why` witnesses.
-- [ ] Slice 5: Implement graph-backed `createBufferWorldline` and `textWindow`.
+- [x] Slice 5: Implement graph-backed `createBufferWorldline` and `textWindow`.
 - [ ] Slice 6: Implement graph-backed single-range `replaceRangeAsTick`.
 - [ ] Slice 7: Implement graph-backed `createCheckpoint` and cut product
       construction over to graph-backed authority.
@@ -1072,8 +1072,8 @@ Behavior tests required:
       identity recursively.
 - [x] RED witness declared: no-op replacement emits no new head, rewrite, diff,
       worldline advance, or text tick.
-- [x] RED witness declared: `textWindow` returns basis head, UTF-8 byte range,
-      cache status, and hash validation evidence.
+- [x] Graph-backed `textWindow` returns basis head, UTF-8 byte range, cache
+      status, and hash validation evidence for the initial single-leaf runtime.
 - [x] RED witness declared: save/export reads from a named head or checkpoint
       without mutating text authority.
 - [x] RED witness declared: `:why` can cite head, leaf, blob, rewrite, diff,
@@ -1090,6 +1090,7 @@ The work is done when:
 
 - [x] The full-snapshot runtime cannot be installed as default production text
       authority without an explicit fixture escape hatch.
+- [x] A graph-backed runtime can create and read one single-leaf buffer.
 - [ ] A graph-backed runtime can create, read, replace, and checkpoint one buffer.
 - [ ] Retention, subtree identity, no-op, materialization, save/export, and `:why`
       witnesses pass against graph-backed authority.
@@ -1107,6 +1108,7 @@ git diff --check
 npx markdownlint-cli2 docs/BEARING.md docs/design/0149-graph-backed-rope-runtime-discovery.md
 node --test --test-concurrency=1 spec/design-cycle-policy.spec.mjs
 node --test --test-concurrency=1 spec/graph-rope-contract.spec.mjs
+node --test --test-concurrency=1 spec/graph-rope-runtime.spec.mjs
 node --test --test-concurrency=1 spec/graph-rope-runtime-red-matrix.spec.mjs
 npm run quality
 ```
@@ -1123,6 +1125,7 @@ sed -n '1,260p' docs/design/0149-graph-backed-rope-runtime-discovery.md
 sed -n '1,220p' docs/BEARING.md
 node --test --test-concurrency=1 spec/design-cycle-policy.spec.mjs
 node --test --test-concurrency=1 spec/graph-rope-contract.spec.mjs
+node --test --test-concurrency=1 spec/graph-rope-runtime.spec.mjs
 node --test --test-concurrency=1 spec/graph-rope-runtime-red-matrix.spec.mjs
 ```
 
@@ -1177,14 +1180,17 @@ What the tests proved:
 - Product construction rejects implicit full-snapshot text authority.
 - Graph rope contract witnesses prove coordinate separation, byte-derived blob
   identity, stored blob hash validation, and typed reference validation.
+- The first graph-backed runtime path can create a single-leaf worldline, read a
+  named head window, report retained blob bytes through debug shape, and obstruct
+  missing heads or invalid UTF-8 byte boundaries.
 - The graph-backed runtime RED matrix declares retention, subtree identity,
-  no-op, materialization, save/export, and `:why` acceptance witnesses.
+  no-op, save/export, and `:why` acceptance witnesses.
 - Markdown structure, design-cycle policy, ASCII hygiene, and the repo quality
   gate pass for the design packet.
 
 What remains open:
 
-- Graph-backed create/read/replace/checkpoint authority remains open.
+- Graph-backed replace/checkpoint authority remains open.
 
 PR:
 
