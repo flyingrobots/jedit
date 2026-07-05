@@ -1113,7 +1113,7 @@ Echo tick:
 Run the interactive development app:
 
 ```sh
-JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 npm run dev
+npm run dev
 ```
 
 Build and start the compiled app:
@@ -1123,8 +1123,9 @@ npm run build
 JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 npm start
 ```
 
-The environment flag is a temporary fixture escape hatch. Without it, product
-startup refuses to instantiate the full-snapshot text authority.
+The development script applies the temporary fixture escape hatch only to the
+source TUI process. Compiled product startup still refuses to instantiate the
+full-snapshot text authority unless the environment flag is supplied explicitly.
 
 Run the default checks:
 
@@ -1176,7 +1177,7 @@ sequenceDiagram
   participant Echo
   participant Graft
 
-  Developer->>Shell: JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 npm run dev/start
+  Developer->>Shell: npm run dev / JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 npm start
   Shell->>Jedit: start src/main.ts / dist/main.js
   Jedit->>Jedit: initialize workspace model and ports
   Jedit->>Graft: request outlines/diffs as projections

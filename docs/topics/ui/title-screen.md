@@ -10,7 +10,7 @@ both a product identity surface and a usable file-opening surface.
 Start Jim without a file argument:
 
 ```sh
-JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 npm run dev
+npm run dev
 ```
 
 In an installed build, launch the Jim executable without a path. The title
