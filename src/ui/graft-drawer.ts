@@ -3,6 +3,9 @@ import { formatGraftOutlineLine, graftOutlineScroll } from './workspace-render.j
 import {
   GraftProjectionPostures,
   GraftProjectionSources,
+  type GraftJsonObject,
+  type GraftJsonValue,
+  type GraftObstructionReceiptProjection,
   type GraftProjectionPosture,
   type GraftProjectionSource,
 } from '../ports/graft-session.js';
@@ -25,6 +28,7 @@ export interface GraftDrawerInfo {
   readonly projectionPosture?: GraftProjectionPosture;
   readonly outlineItems: readonly GraftDrawerOutlineItem[];
   readonly changeLines: readonly string[];
+  readonly obstructionReceipt?: GraftObstructionReceiptProjection;
   readonly notice?: string;
   readonly error?: string;
 }
@@ -68,6 +72,7 @@ function renderLoadedGraftDrawerLines(
     `posture: ${projectionPostureForInfo(info)}`,
     model.graftLoading ? 'loading...' : (info.notice ?? ''),
     info.error == null ? '' : `error: ${info.error}`,
+    ...obstructionReceiptLines(info),
     'outline',
   ];
   const changeLines = ['', 'changes', ...info.changeLines];
@@ -101,6 +106,66 @@ function projectionPostureForInfo(info: GraftDrawerInfo): GraftProjectionPosture
     return info.projectionPosture;
   }
   return info.error == null ? GraftProjectionPostures.Current : GraftProjectionPostures.Obstructed;
+}
+
+function obstructionReceiptLines(info: GraftDrawerInfo): readonly string[] {
+  const receipt = info.obstructionReceipt;
+  if (receipt == null) {
+    return [];
+  }
+
+  return [
+    'receipt',
+    `outcome: ${receipt.outcomeKind}`,
+    `target: ${targetIrReceiptLabel(receipt)}`,
+    ...(receipt.reasonKind == null ? [] : [`reason: ${receipt.reasonKind}`]),
+    ...(receipt.reasonPayload == null ? [] : reasonPayloadLines(receipt.reasonPayload)),
+  ];
+}
+
+function targetIrReceiptLabel(receipt: GraftObstructionReceiptProjection): string {
+  return receipt.targetIrDomain == null
+    ? receipt.targetIrDigest
+    : `${receipt.targetIrDomain} ${receipt.targetIrDigest}`;
+}
+
+function formatJsonObject(value: GraftJsonObject): string {
+  const entries = formatJsonObjectEntries(value);
+  return entries.length === 0 ? '{}' : entries.join(', ');
+}
+
+function reasonPayloadLines(value: GraftJsonObject): readonly string[] {
+  const entries = formatJsonObjectEntries(value);
+  return entries.length === 0
+    ? ['payload: {}']
+    : entries.map((entry) => `payload: ${entry}`);
+}
+
+function formatJsonObjectEntries(value: GraftJsonObject): readonly string[] {
+  return Object.keys(value)
+    .sort()
+    .map((key) => `${key}=${formatJsonValue(value[key])}`);
+}
+
+function formatJsonValue(value: GraftJsonValue | undefined): string {
+  if (value === undefined || value === null) {
+    return 'null';
+  }
+  if (isJsonArray(value)) {
+    return `[${value.map((item) => formatJsonValue(item)).join(', ')}]`;
+  }
+  if (isJsonObject(value)) {
+    return `{${formatJsonObject(value)}}`;
+  }
+  return String(value);
+}
+
+function isJsonArray(value: GraftJsonValue): value is readonly GraftJsonValue[] {
+  return Array.isArray(value);
+}
+
+function isJsonObject(value: GraftJsonValue): value is GraftJsonObject {
+  return typeof value === 'object' && !Array.isArray(value);
 }
 
 function emptyOutlineLines(model: GraftDrawerState, info: GraftDrawerInfo): readonly string[] {

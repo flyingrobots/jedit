@@ -17,6 +17,22 @@ export const GraftProjectionPostures = Object.freeze({
 
 export type GraftProjectionPosture = typeof GraftProjectionPostures[keyof typeof GraftProjectionPostures];
 
+export type GraftJsonPrimitive = string | number | boolean | null;
+export type GraftJsonValue = GraftJsonPrimitive | readonly GraftJsonValue[] | GraftJsonObject;
+
+export interface GraftJsonObject {
+  readonly [key: string]: GraftJsonValue;
+}
+
+export interface GraftObstructionReceiptProjection {
+  readonly outcomeKind: string;
+  readonly targetIrDigest: string;
+  readonly targetIrDomain?: string;
+  readonly reasonKind?: string;
+  readonly reasonPayload?: GraftJsonObject;
+  readonly receiptReview?: GraftJsonObject;
+}
+
 export interface GraftInfo {
   readonly path: string;
   readonly relativePath: string;
@@ -30,6 +46,7 @@ export interface GraftInfo {
     readonly endLine: number;
   }[];
   readonly changeLines: readonly string[];
+  readonly obstructionReceipt?: GraftObstructionReceiptProjection;
   readonly notice?: string;
   readonly error?: string;
 }

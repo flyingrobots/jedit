@@ -12,7 +12,9 @@ import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 import type { Cmd } from '@flyingrobots/bijou-tui';
 
-const GRAFT_META_ROWS = 7;
+const GRAFT_BASE_META_ROWS = 7;
+const GRAFT_RECEIPT_BASE_ROWS = 3;
+const GRAFT_RECEIPT_REASON_ROWS = 1;
 const GRAFT_CHANGE_ROWS = 5;
 
 export function updateGraftDrawerFromKey(
@@ -66,7 +68,7 @@ function updateGraftPageSelectionIndex(
       footerVisible: model.footerVisible,
     }),
     DRAWER_INNER_PAD,
-    GRAFT_META_ROWS,
+    graftMetaRows(model),
     GRAFT_CHANGE_ROWS,
   );
 
@@ -99,6 +101,28 @@ function isPlainGraftEdgeKey(msg: KeyMsg): boolean {
 
 function isShiftGraftEdgeKey(msg: KeyMsg): boolean {
   return !msg.ctrl && !msg.alt && msg.shift && msg.key === WorkspaceKeys.G;
+}
+
+function graftMetaRows(model: WorkspaceModel): number {
+  const receipt = model.graftInfo?.obstructionReceipt;
+  if (receipt == null) {
+    return GRAFT_BASE_META_ROWS;
+  }
+
+  return GRAFT_BASE_META_ROWS
+    + GRAFT_RECEIPT_BASE_ROWS
+    + (receipt.reasonKind == null ? 0 : GRAFT_RECEIPT_REASON_ROWS)
+    + receiptPayloadRowCount(receipt.reasonPayload);
+}
+
+function receiptPayloadRowCount(
+  payload: Readonly<Record<string, object | string | number | boolean | null>> | undefined,
+): number {
+  if (payload == null) {
+    return 0;
+  }
+
+  return Math.max(1, Object.keys(payload).length);
 }
 
 function focusSelectedGraftItem(model: WorkspaceModel): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {

@@ -98,3 +98,39 @@ test('Graft drawer uses text labels for projection state rows', async () => {
   assert.ok(lines.some((line) => line.startsWith('source: saved-file')));
   assert.ok(lines.some((line) => line.startsWith('posture: current')));
 });
+
+test('Graft drawer displays opaque obstruction receipt projection facts', async () => {
+  const { renderGraftDrawerLines } = await loadGraftDrawer();
+  const lines = renderGraftDrawerLines(baseDrawerModel({
+    path: '/repo/demo.edict',
+    relativePath: 'demo.edict',
+    projectionSource: 'live-buffer',
+    projectionPosture: 'current',
+    obstructionReceipt: {
+      outcomeKind: 'obstructed_strand',
+      targetIrDigest: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+      targetIrDomain: 'echo.span-ir/v1',
+      reasonKind: 'jim.EditObstruction.StaleBase',
+      reasonPayload: {
+        inputBasisDigest: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+        observedBasisDigest: 'sha256:4444444444444444444444444444444444444444444444444444444444444444',
+      },
+      receiptReview: {
+        receiptDigest: 'sha256:9999999999999999999999999999999999999999999999999999999999999999',
+      },
+    },
+    outlineItems: [],
+    changeLines: [],
+  }), 120, 24);
+  const text = linesToText(lines);
+
+  assert.match(text, /receipt/);
+  assert.match(text, /outcome: obstructed_strand/);
+  assert.match(text, /target: echo\.span-ir\/v1 sha256:333333/);
+  assert.match(text, /reason: jim\.EditObstruction\.StaleBase/);
+  assert.match(text, /payload: inputBasisDigest=sha256:111111/);
+  assert.match(text, /observedBasisDigest=sha256:444444/);
+  assert.doesNotMatch(text, /receiptDigest/);
+  assert.doesNotMatch(text, /hard rejection/);
+  assert.doesNotMatch(text, /counterfactual/);
+});
