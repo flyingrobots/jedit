@@ -6,6 +6,10 @@ async function loadGraftDrawer() {
   return importDist('ui', 'graft-drawer.js');
 }
 
+async function loadWorkspaceGraftDrawer() {
+  return importDist('app', 'workspace', 'graft-drawer.js');
+}
+
 function linesToText(lines) {
   return lines.join('\n');
 }
@@ -173,6 +177,50 @@ test('Graft drawer bounds receipt payload rows before outline content', async ()
   assert.match(visibleText, /function render/);
   assert.match(visibleText, /payload: key00="value00"/);
   assert.doesNotMatch(visibleText, /key19=value19/);
+});
+
+test('Graft drawer page movement uses bounded receipt payload rows', async () => {
+  const { updateGraftDrawerFromKey } = await loadWorkspaceGraftDrawer();
+  const reasonPayload = Object.fromEntries(Array.from({ length: 20 }, (_entry, index) => [
+    `key${String(index).padStart(2, '0')}`,
+    `value${String(index).padStart(2, '0')}`,
+  ]));
+  const outlineItems = Array.from({ length: 30 }, (_entry, index) => ({
+    kind: 'function',
+    name: `item${String(index).padStart(2, '0')}`,
+    startLine: index + 1,
+  }));
+  const [nextModel] = updateGraftDrawerFromKey(
+    { key: 'pagedown' },
+    {
+      rows: 30,
+      footerVisible: false,
+      graftSelectedIndex: 0,
+      graftInfo: {
+        path: '/repo/demo.edict',
+        relativePath: 'demo.edict',
+        projectionSource: 'live-buffer',
+        projectionPosture: 'current',
+        obstructionReceipt: {
+          outcomeKind: 'obstructed_strand',
+          targetIrDigest: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+          targetIrDomain: 'echo.span-ir/v1',
+          reasonKind: 'jim.EditObstruction.StaleBase',
+          reasonPayload,
+          receipt: {
+            schema: 'echo.execution.receipt.review/v0',
+          },
+        },
+        outlineItems,
+        changeLines: [],
+      },
+    },
+    () => {
+      throw new Error('refresh should not run for PageDown');
+    },
+  );
+
+  assert.equal(nextModel.graftSelectedIndex, 6);
 });
 
 test('Graft drawer escapes receipt payload strings before row fitting', async () => {

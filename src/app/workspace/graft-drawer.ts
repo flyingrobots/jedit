@@ -15,6 +15,8 @@ import type { Cmd } from '@flyingrobots/bijou-tui';
 const GRAFT_BASE_META_ROWS = 7;
 const GRAFT_RECEIPT_BASE_ROWS = 3;
 const GRAFT_RECEIPT_REASON_ROWS = 1;
+const GRAFT_RECEIPT_PAYLOAD_ROWS = 3;
+const GRAFT_RECEIPT_OMITTED_ROW = 1;
 const GRAFT_CHANGE_ROWS = 5;
 
 export function updateGraftDrawerFromKey(
@@ -122,7 +124,13 @@ function receiptPayloadRowCount(
     return 0;
   }
 
-  return Math.max(1, Object.keys(payload).length);
+  const entryCount = Object.keys(payload).length;
+  if (entryCount === 0) {
+    return 1;
+  }
+
+  return Math.min(entryCount, GRAFT_RECEIPT_PAYLOAD_ROWS)
+    + (entryCount > GRAFT_RECEIPT_PAYLOAD_ROWS ? GRAFT_RECEIPT_OMITTED_ROW : 0);
 }
 
 function focusSelectedGraftItem(model: WorkspaceModel): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
