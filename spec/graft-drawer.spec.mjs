@@ -361,3 +361,30 @@ test('Graft drawer escapes receipt payload keys before row fitting', async () =>
   assert.equal(lines.some((line) => line.includes('\n')), false);
   assert.match(text, /payload: "line one\\nline two"="value"/);
 });
+
+test('Graft drawer escapes receipt scalar rows before row fitting', async () => {
+  const { renderGraftDrawerLines } = await loadGraftDrawer();
+  const lines = renderGraftDrawerLines(baseDrawerModel({
+    path: '/repo/demo.edict',
+    relativePath: 'demo.edict',
+    projectionSource: 'live-buffer',
+    projectionPosture: 'current',
+    obstructionReceipt: {
+      outcomeKind: 'obstructed\nstrand',
+      targetIrDigest: 'sha256:3333333333333333333333333333333333333333333333333333333333333333\nmutated',
+      targetIrDomain: 'echo.span-ir/v1\nshadow',
+      reasonKind: 'jim.EditObstruction.StaleBase\nshadow',
+      receipt: {
+        schema: 'echo.execution.receipt.review/v0',
+      },
+    },
+    outlineItems: [],
+    changeLines: [],
+  }), 120, 24);
+  const text = linesToText(lines);
+
+  assert.equal(lines.some((line) => line.includes('\n')), false);
+  assert.match(text, /outcome: obstructed\\nstrand/);
+  assert.match(text, /target: echo\.span-ir\/v1\\nshadow sha256:333333/);
+  assert.match(text, /reason: jim\.EditObstruction\.StaleBase\\nshadow/);
+});

@@ -120,17 +120,22 @@ function obstructionReceiptLines(info: GraftDrawerInfo): readonly string[] {
 
   return [
     'receipt',
-    `outcome: ${receipt.outcomeKind}`,
+    `outcome: ${formatReceiptScalar(receipt.outcomeKind)}`,
     `target: ${targetIrReceiptLabel(receipt)}`,
-    ...(receipt.reasonKind == null ? [] : [`reason: ${receipt.reasonKind}`]),
+    ...(receipt.reasonKind == null ? [] : [`reason: ${formatReceiptScalar(receipt.reasonKind)}`]),
     ...(receipt.reasonPayload == null ? [] : reasonPayloadLines(receipt.reasonPayload)),
   ];
 }
 
 function targetIrReceiptLabel(receipt: GraftObstructionReceiptProjection): string {
+  const digest = formatReceiptScalar(receipt.targetIrDigest);
   return receipt.targetIrDomain == null
-    ? receipt.targetIrDigest
-    : `${receipt.targetIrDomain} ${receipt.targetIrDigest}`;
+    ? digest
+    : `${formatReceiptScalar(receipt.targetIrDomain)} ${digest}`;
+}
+
+function formatReceiptScalar(value: string): string {
+  return limitReceiptText(JSON.stringify(value).slice(1, -1));
 }
 
 function formatJsonObject(value: GraftJsonObject, childDepth: number): string {
