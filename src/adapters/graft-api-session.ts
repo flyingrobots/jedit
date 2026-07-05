@@ -7,6 +7,7 @@ import {
   type FailedGraftInfoRequest,
   type GraftFileRequest,
   type GraftInfo,
+  type GraftObstructionReceiptProjection,
   type GraftProjectionPosture,
   type GraftSessionPort,
 } from '../ports/graft-session.js';
@@ -65,6 +66,7 @@ export interface GraftFileOutlineResult {
   readonly jumpTable?: readonly GraftJumpEntry[];
   readonly projection?: string;
   readonly reason?: string;
+  readonly obstructionReceipt?: GraftObstructionReceiptProjection;
 }
 
 export interface GraftStructDiffResult {
@@ -82,6 +84,7 @@ export interface GraftStructDiffResult {
 interface GraftOutlineProjection {
   readonly outlineItems: readonly GraftOutlineItem[];
   readonly error?: string;
+  readonly obstructionReceipt?: GraftObstructionReceiptProjection;
 }
 
 interface SavedFileProjectionPostureInput {
@@ -177,6 +180,7 @@ async function loadGraftInfo(request: GraftFileRequest, manager: GraftApiSession
     }),
     outlineItems: outline.outlineItems,
     changeLines: await loadGraftChanges(manager, workspaceRoot, relativePath),
+    ...(outline.obstructionReceipt != null ? { obstructionReceipt: outline.obstructionReceipt } : {}),
     ...(dirty ? { notice: SAVED_FILE_ONLY_NOTICE } : {}),
     ...(outline.error != null ? { error: outline.error } : {}),
   };
@@ -216,7 +220,10 @@ async function loadGraftOutline(
     if (outline.projection === GRAFT_PROJECTION_REFUSED) {
       return { outlineItems: [], error: outline.reason ?? 'outline refused' };
     }
-    return { outlineItems: graftOutlineItems(outline) };
+    return {
+      outlineItems: graftOutlineItems(outline),
+      ...(outline.obstructionReceipt != null ? { obstructionReceipt: outline.obstructionReceipt } : {}),
+    };
   } catch (cause) {
     return { outlineItems: [], error: `graft outline failed: ${cause instanceof Error ? cause.message : String(cause)}` };
   }
@@ -352,6 +359,25 @@ export function decodeGraftFileOutlineResult(value: JsonValue): GraftFileOutline
     ...(result['jumpTable'] !== undefined ? { jumpTable: decodeGraftJumpTable(result['jumpTable'], 'jumpTable') } : {}),
     ...(result['projection'] !== undefined ? { projection: asString(result['projection'], 'projection') } : {}),
     ...(result['reason'] !== undefined ? { reason: asString(result['reason'], 'reason') } : {}),
+    ...(result['obstructionReceipt'] !== undefined
+      ? { obstructionReceipt: decodeGraftObstructionReceipt(result['obstructionReceipt'], 'obstructionReceipt') }
+      : {}),
+  };
+}
+
+function decodeGraftObstructionReceipt(value: JsonValue, path: string): GraftObstructionReceiptProjection {
+  const receipt = asJsonObject(value, path);
+  const targetIrDomain = receipt['targetIrDomain'];
+  const reasonKind = receipt['reasonKind'];
+  const reasonPayload = receipt['reasonPayload'];
+  const opaqueReceipt = receipt['receipt'];
+  return {
+    outcomeKind: asString(receipt['outcomeKind'], `${path}.outcomeKind`),
+    targetIrDigest: asString(receipt['targetIrDigest'], `${path}.targetIrDigest`),
+    ...(targetIrDomain !== undefined ? { targetIrDomain: asString(targetIrDomain, `${path}.targetIrDomain`) } : {}),
+    ...(reasonKind !== undefined ? { reasonKind: asString(reasonKind, `${path}.reasonKind`) } : {}),
+    ...(reasonPayload !== undefined ? { reasonPayload: asJsonObject(reasonPayload, `${path}.reasonPayload`) } : {}),
+    ...(opaqueReceipt !== undefined ? { receipt: asJsonObject(opaqueReceipt, `${path}.receipt`) } : {}),
   };
 }
 
