@@ -131,17 +131,18 @@ function targetIrReceiptLabel(receipt: GraftObstructionReceiptProjection): strin
 }
 
 function formatJsonObject(value: GraftJsonObject): string {
-  const entries = formatJsonObjectEntries(value);
+  const entries = formatJsonObjectEntries(value, sortedJsonObjectKeys(value));
   return entries.length === 0 ? '{}' : entries.join(', ');
 }
 
 function reasonPayloadLines(value: GraftJsonObject): readonly string[] {
-  const entries = formatJsonObjectEntries(value);
-  if (entries.length === 0) {
+  const keys = sortedJsonObjectKeys(value);
+  if (keys.length === 0) {
     return ['payload: {}'];
   }
-  const visibleEntries = entries.slice(0, GRAFT_RECEIPT_PAYLOAD_ROWS);
-  const omittedEntries = entries.length - visibleEntries.length;
+  const visibleKeys = keys.slice(0, GRAFT_RECEIPT_PAYLOAD_ROWS);
+  const omittedEntries = keys.length - visibleKeys.length;
+  const visibleEntries = formatJsonObjectEntries(value, visibleKeys);
   const visibleLines = visibleEntries.map((entry) => `payload: ${entry}`);
   return omittedEntries === 0
     ? visibleLines
@@ -151,9 +152,13 @@ function reasonPayloadLines(value: GraftJsonObject): readonly string[] {
     ];
 }
 
-function formatJsonObjectEntries(value: GraftJsonObject): readonly string[] {
+function sortedJsonObjectKeys(value: GraftJsonObject): readonly string[] {
   return Object.keys(value)
-    .sort()
+    .sort();
+}
+
+function formatJsonObjectEntries(value: GraftJsonObject, keys: readonly string[]): readonly string[] {
+  return keys
     .map((key) => `${formatJsonKey(key)}=${formatJsonValue(value[key])}`);
 }
 

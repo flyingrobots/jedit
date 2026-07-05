@@ -179,6 +179,46 @@ test('Graft drawer bounds receipt payload rows before outline content', async ()
   assert.doesNotMatch(visibleText, /key19=value19/);
 });
 
+test('Graft drawer formats only visible receipt payload entries', async () => {
+  const { renderGraftDrawerLines } = await loadGraftDrawer();
+  const reasonPayload = {
+    key00: 'value00',
+    key01: 'value01',
+    key02: 'value02',
+  };
+  Object.defineProperty(reasonPayload, 'key03', {
+    enumerable: true,
+    get() {
+      throw new Error('omitted payload entry should not be formatted');
+    },
+  });
+
+  const lines = renderGraftDrawerLines(baseDrawerModel({
+    path: '/repo/demo.edict',
+    relativePath: 'demo.edict',
+    projectionSource: 'live-buffer',
+    projectionPosture: 'current',
+    obstructionReceipt: {
+      outcomeKind: 'obstructed_strand',
+      targetIrDigest: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+      targetIrDomain: 'echo.span-ir/v1',
+      reasonKind: 'jim.EditObstruction.StaleBase',
+      reasonPayload,
+      receipt: {
+        schema: 'echo.execution.receipt.review/v0',
+      },
+    },
+    outlineItems: [],
+    changeLines: [],
+  }), 120, 24);
+  const text = linesToText(lines);
+
+  assert.match(text, /payload: "key00"="value00"/);
+  assert.match(text, /payload: "key02"="value02"/);
+  assert.match(text, /payload: \.\.\. 1 more/);
+  assert.doesNotMatch(text, /key03/);
+});
+
 test('Graft drawer page movement uses bounded receipt payload rows', async () => {
   const { updateGraftDrawerFromKey } = await loadWorkspaceGraftDrawer();
   const reasonPayload = Object.fromEntries(Array.from({ length: 20 }, (_entry, index) => [
