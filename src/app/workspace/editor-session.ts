@@ -1,4 +1,5 @@
 import { beginSourceHighlightRefresh } from '../source-highlight-session.js';
+import { joinLines } from '../editor-lines.js';
 import { editorViewport, type WorkspaceViewport } from './viewport.js';
 import type { Cmd } from '@flyingrobots/bijou-tui';
 import type { WorkspaceModel } from './model.js';
@@ -9,7 +10,7 @@ import {
   isMissingEditorFile,
   type EditorFilePort,
 } from '../../ports/editor-file.js';
-import type { GraftSessionPort } from '../../ports/graft-session.js';
+import { GraftProjectionSources, type GraftFileRequest, type GraftSessionPort } from '../../ports/graft-session.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import { isMarkdownFile } from './file-types.js';
 import { ViewModes } from './view-mode.js';
@@ -185,7 +186,10 @@ export function beginGraftRefresh(
     }, []];
   }
 
-  if (!options.force && model.graftInfo?.path === model.editor.path && model.graftInfo.dirty === model.editor.dirty) {
+  if (!options.force
+    && model.graftInfo?.path === model.editor.path
+    && model.graftInfo.dirty === model.editor.dirty
+    && model.graftInfo.projectionSource !== GraftProjectionSources.LiveBuffer) {
     return [model, []];
   }
 
@@ -204,17 +208,14 @@ export function beginGraftRefresh(
       workspaceRoot: model.workspaceRoot,
       filePath: model.editor.path,
       dirty: model.editor.dirty,
+      sourceText: joinLines(model.editor.lines),
     }, graftSession)],
   ];
 }
 
 function requestGraftInfoCmd(
   requestId: number,
-  request: {
-    readonly workspaceRoot: string;
-    readonly filePath: string;
-    readonly dirty: boolean;
-  },
+  request: GraftFileRequest,
   graftSession: GraftSessionPort,
 ): Cmd<WorkspaceMsg> {
   return async () => {

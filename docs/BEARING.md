@@ -30,8 +30,11 @@ history, merged pull requests, release notes, and design docs.
 - The Vim/Jim runtime now has parser, normal/operator-pending state, basis-bound
   core motions, core text objects, delete/change/yank/put execution, basic dot
   repeat, transformed-repeat metadata, case operators, joins, and local marks.
-- Graft-backed source highlighting consumes Graft 0.10.0 projections, including
-  plain-text prose spans when `colorful >= 0.2.1` is available on `PATH`.
+- Graft-backed source highlighting and projection display consume Graft 0.11.1
+  projections. Plain-text prose spans remain available when
+  `colorful >= 0.2.1` is on `PATH`, and `.edict` buffers can show upstream
+  Core and Echo Target IR projection lanes without jedit executing Echo or
+  admitting Jim artifacts.
 - Graph-backed rope runtime authority is now an active hard gate. Do not begin
   new UI causal-honesty work until
   [`HT-0149 - Graph-Backed Rope Runtime Discovery`](design/0149-graph-backed-rope-runtime-discovery.md)

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Updated the Graft dependency to 0.11.1 and added a display-only Edict
+  projection lens for dirty `.edict` buffers. The Graft drawer can now show
+  upstream Edict Core and Echo Target IR projection state, domains, targets,
+  and digests without jedit compiling Edict, executing Echo, or admitting Jim
+  artifacts.
 - Added a display-only obstruction receipt lane to the Graft drawer so upstream
   Edict/Echo projection receipt facts can show outcome kind, Target IR digest,
   reason kind, and reason payload without jedit executing Echo, admitting Jim

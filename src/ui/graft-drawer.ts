@@ -3,6 +3,8 @@ import { formatGraftOutlineLine, graftOutlineScroll } from './workspace-render.j
 import {
   GraftProjectionPostures,
   GraftProjectionSources,
+  type GraftEchoTargetIrProjectionLane,
+  type GraftEdictProjectionLane,
   type GraftJsonObject,
   type GraftJsonValue,
   type GraftObstructionReceiptProjection,
@@ -32,6 +34,8 @@ export interface GraftDrawerInfo {
   readonly projectionPosture?: GraftProjectionPosture;
   readonly outlineItems: readonly GraftDrawerOutlineItem[];
   readonly changeLines: readonly string[];
+  readonly edictCoreProjection?: GraftEdictProjectionLane;
+  readonly echoTargetIrProjection?: GraftEchoTargetIrProjectionLane;
   readonly obstructionReceipt?: GraftObstructionReceiptProjection;
   readonly notice?: string;
   readonly error?: string;
@@ -76,6 +80,8 @@ function renderLoadedGraftDrawerLines(
     `posture: ${projectionPostureForInfo(info)}`,
     model.graftLoading ? 'loading...' : (info.notice ?? ''),
     info.error == null ? '' : `error: ${info.error}`,
+    ...edictCoreProjectionLines(info),
+    ...echoTargetIrProjectionLines(info),
     ...obstructionReceiptLines(info),
     'outline',
   ];
@@ -110,6 +116,41 @@ function projectionPostureForInfo(info: GraftDrawerInfo): GraftProjectionPosture
     return info.projectionPosture;
   }
   return info.error == null ? GraftProjectionPostures.Current : GraftProjectionPostures.Obstructed;
+}
+
+function edictCoreProjectionLines(info: GraftDrawerInfo): readonly string[] {
+  const core = info.edictCoreProjection;
+  if (core == null) {
+    return [];
+  }
+
+  return [
+    'edict core',
+    `state: ${formatReceiptScalar(core.state)}`,
+    ...(core.digest == null ? [] : [`core digest: ${formatReceiptScalar(core.digest)}`]),
+    ...projectionSummaryLines(core),
+  ];
+}
+
+function echoTargetIrProjectionLines(info: GraftDrawerInfo): readonly string[] {
+  const targetIr = info.echoTargetIrProjection;
+  if (targetIr == null) {
+    return [];
+  }
+
+  return [
+    'echo target ir',
+    `state: ${formatReceiptScalar(targetIr.state)}`,
+    ...(targetIr.domain == null ? [] : [`domain: ${formatReceiptScalar(targetIr.domain)}`]),
+    ...(targetIr.targetCoordinate == null ? [] : [`target: ${formatReceiptScalar(targetIr.targetCoordinate)}`]),
+    ...(targetIr.targetProfileDigest == null ? [] : [`target profile: ${formatReceiptScalar(targetIr.targetProfileDigest)}`]),
+    ...(targetIr.digest == null ? [] : [`target ir digest: ${formatReceiptScalar(targetIr.digest)}`]),
+    ...projectionSummaryLines(targetIr),
+  ];
+}
+
+function projectionSummaryLines(projection: GraftEdictProjectionLane): readonly string[] {
+  return projection.summaryLines.map(formatReceiptScalar);
 }
 
 function obstructionReceiptLines(info: GraftDrawerInfo): readonly string[] {

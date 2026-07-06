@@ -24,6 +24,27 @@ export interface GraftJsonObject {
   readonly [key: string]: GraftJsonValue;
 }
 
+export const GraftProjectionSlotStates = Object.freeze({
+  NotRequested: 'not_requested',
+  Available: 'available',
+  Blocked: 'blocked',
+  Failed: 'failed',
+} as const);
+
+export type GraftProjectionSlotState = typeof GraftProjectionSlotStates[keyof typeof GraftProjectionSlotStates];
+
+export interface GraftEdictProjectionLane {
+  readonly state: GraftProjectionSlotState;
+  readonly digest?: string;
+  readonly summaryLines: readonly string[];
+}
+
+export interface GraftEchoTargetIrProjectionLane extends GraftEdictProjectionLane {
+  readonly domain?: string;
+  readonly targetCoordinate?: string;
+  readonly targetProfileDigest?: string;
+}
+
 export interface GraftObstructionReceiptProjection {
   readonly outcomeKind: string;
   readonly targetIrDigest: string;
@@ -46,6 +67,8 @@ export interface GraftInfo {
     readonly endLine: number;
   }[];
   readonly changeLines: readonly string[];
+  readonly edictCoreProjection?: GraftEdictProjectionLane;
+  readonly echoTargetIrProjection?: GraftEchoTargetIrProjectionLane;
   readonly obstructionReceipt?: GraftObstructionReceiptProjection;
   readonly notice?: string;
   readonly error?: string;
@@ -55,6 +78,7 @@ export interface GraftFileRequest {
   readonly workspaceRoot: string;
   readonly filePath: string;
   readonly dirty: boolean;
+  readonly sourceText?: string;
 }
 
 export interface FailedGraftInfoRequest extends GraftFileRequest {

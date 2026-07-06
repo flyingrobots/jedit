@@ -1,6 +1,12 @@
-import { createRepoLocalGraft } from '@flyingrobots/graft';
+import { createEdictCliProjectionProvider, createRepoLocalGraft, createStructuredBuffer } from '@flyingrobots/graft';
 import { execFileSync } from 'node:child_process';
 import { isAbsolute, relative } from 'node:path';
+import {
+  loadLiveEdictProjection,
+  type GraftEdictProjectionApi,
+  type LiveEdictProjectionInput,
+  type LiveEdictProjectionResult as LiveEdictResult,
+} from './graft-edict-projection.js';
 import {
   GraftProjectionPostures,
   GraftProjectionSources,
@@ -11,14 +17,13 @@ import {
   type GraftProjectionPosture,
   type GraftSessionPort,
 } from '../ports/graft-session.js';
-
 import { GraftInvalidPayloadError } from '../domain/errors.js';
 
 const GRAFT_FILE_OUTLINE_TOOL = 'file_outline';
 const GRAFT_DIFF_TOOL = 'graft_diff';
 const GRAFT_PROJECTION_REFUSED = 'refused';
 const SAVED_FILE_ONLY_NOTICE = 'saved file only; unsaved buffer edits not included';
-
+const SAVED_FILE_CHANGES_NOTICE = 'changes use saved file; unsaved buffer edits not included';
 type JsonPrimitive = string | number | boolean | null;
 type JsonValue = JsonPrimitive | readonly JsonValue[] | JsonObject;
 type GraftToolName = typeof GRAFT_FILE_OUTLINE_TOOL | typeof GRAFT_DIFF_TOOL;
@@ -33,7 +38,7 @@ export interface GraftApiCreateOptions {
   readonly cwd: string;
 }
 
-export interface GraftApiBindings<TSession = DefaultGraftApiSession> {
+export interface GraftApiBindings<TSession = DefaultGraftApiSession> extends GraftEdictProjectionApi {
   createRepoLocalGraft(options: GraftApiCreateOptions): TSession;
   callGraftTool(session: TSession, name: GraftToolName, args: GraftToolArgs): Promise<JsonValue>;
 }
@@ -108,6 +113,7 @@ interface GraftApiConnection<TSession> {
 
 interface GraftApiSessionManager {
   callTool(workspaceRoot: string, name: GraftToolName, args: GraftToolArgs): Promise<JsonValue>;
+  loadLiveEdictProjection(input: Omit<LiveEdictProjectionInput, 'api'>): LiveEdictResult | null;
   close(): Promise<void>;
 }
 
@@ -128,6 +134,8 @@ export function createGraftSessionPort<TSession = DefaultGraftApiSession>(
 function defaultGraftApiBindings(): GraftApiBindings {
   return {
     createRepoLocalGraft,
+    createEdictCliProjectionProvider,
+    createStructuredBuffer,
     async callGraftTool(session, name, args) {
       return parseGraftToolResult(await session.callTool(name, args));
     },
@@ -144,6 +152,9 @@ function createGraftApiSessionManager<TSession>(api: GraftApiBindings<TSession>)
         : createConnection(api, workspaceRoot);
       connection = activeConnection;
       return api.callGraftTool(activeConnection.session, name, args);
+    },
+    loadLiveEdictProjection(input) {
+      return loadLiveEdictProjection({ ...input, api });
     },
     async close() {
       connection = undefined;
@@ -168,6 +179,15 @@ async function loadGraftInfo(request: GraftFileRequest, manager: GraftApiSession
     return outsideWorkspaceGraftInfo({ filePath, dirty });
   }
 
+  const liveEdict = manager.loadLiveEdictProjection({
+    workspaceRoot,
+    relativePath,
+    sourceText: request.sourceText,
+  });
+  if (liveEdict != null) {
+    return liveEdictInfo(request, relativePath, liveEdict, manager);
+  }
+
   const outline = await loadGraftOutline(manager, workspaceRoot, relativePath);
   return {
     path: filePath,
@@ -183,6 +203,19 @@ async function loadGraftInfo(request: GraftFileRequest, manager: GraftApiSession
     ...(outline.obstructionReceipt != null ? { obstructionReceipt: outline.obstructionReceipt } : {}),
     ...(dirty ? { notice: SAVED_FILE_ONLY_NOTICE } : {}),
     ...(outline.error != null ? { error: outline.error } : {}),
+  };
+}
+
+async function liveEdictInfo(request: GraftFileRequest, relativePath: string, liveEdict: LiveEdictResult, manager: GraftApiSessionManager): Promise<GraftInfo> {
+  const outline = await loadGraftOutline(manager, request.workspaceRoot, relativePath);
+  return {
+    path: request.filePath,
+    relativePath,
+    dirty: request.dirty,
+    ...liveEdict,
+    changeLines: await loadGraftChanges(manager, request.workspaceRoot, relativePath),
+    ...(outline.obstructionReceipt != null ? { obstructionReceipt: outline.obstructionReceipt } : {}),
+    ...(request.dirty ? { notice: SAVED_FILE_CHANGES_NOTICE } : {}),
   };
 }
 
