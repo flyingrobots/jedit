@@ -32,15 +32,15 @@ const MISSING_GRAPH_ROPE_AUTHORITY_MESSAGE = /requires graph rope text authority
 
 let modulesPromise;
 
-test('installed transport rejects missing graph rope authority by default', async () => {
+test('installed transport constructs graph rope authority by default', async () => {
   const modules = await loadModules();
 
-  withFullSnapshotAuthorityEnv(undefined, () => {
-    assert.throws(
-      () => modules.transport.createInstalledJeditContractEchoTransport(),
-      MISSING_GRAPH_ROPE_AUTHORITY_MESSAGE,
-    );
-  });
+  const transport = withFullSnapshotAuthorityEnv(undefined, () => (
+    modules.transport.createInstalledJeditContractEchoTransport()
+  ));
+
+  assert.equal(typeof transport.submitIntentBytes, 'function');
+  assert.equal(typeof transport.observeBytes, 'function');
 });
 
 test('installed transport rejects explicit full-snapshot fixture authority without opt-in', async () => {
@@ -158,6 +158,36 @@ test('TextBufferOptic headless flow uses installed jedit contract transport', as
   assert.equal('readFactSet' in optic, false);
   assert.equal('requestRunUntilIdle' in optic, false);
   assert.equal('tick' in optic, false);
+});
+
+test('TextBufferOptic headless flow works with default graph rope authority', async () => {
+  const modules = await loadModules();
+  const transport = modules.transport.createInstalledJeditContractEchoTransport();
+  const client = modules.client.createEchoTransportJeditOpticClient(transport);
+  const session = modules.sessionAdapter.createEchoBackedTextBufferSession({
+    client,
+  });
+
+  const optic = await session.createBuffer({
+    bufferKey: BUFFER_KEY,
+    initialText: INITIAL_TEXT,
+    projectionPath: BUFFER_KEY,
+  });
+  await optic.applyIntent({
+    kind: 'replaceRange',
+    startByte: INSERT_BYTE,
+    endByte: INSERT_BYTE,
+    insertText: INSERT_TEXT,
+  });
+  const observed = await optic.textWindow(optic.currentReadBasis(), {
+    cursorLine: FIRST_LINE,
+    viewportLineCount: SINGLE_LINE,
+    beforeLines: FIRST_LINE,
+    afterLines: FIRST_LINE,
+    maxBytes: BYTE_BUDGET,
+  });
+
+  assert.equal(observed.value.lines[0].text, `${INITIAL_TEXT}${INSERT_TEXT}`);
 });
 
 test('installed transport preserves retained diff metadata across intent response codec', async () => {

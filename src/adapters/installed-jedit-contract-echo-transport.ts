@@ -19,7 +19,7 @@ import {
 } from '../app/jedit-runtime-handler-invocation.js';
 import {
   assertInstalledTextAuthorityAllowed,
-  MissingGraphRopeTextAuthorityError,
+  createGraphBackedRopeHotTextRuntime,
 } from './installed-text-authority-guard.js';
 import {
   installJeditContractPackage,
@@ -160,8 +160,8 @@ function resolveTransportSessionPort(
 function createTransportContext(
   options: InstalledJeditContractEchoTransportOptions,
 ): InstalledJeditContractEchoTransportContext {
-  const runtime = resolveTransportRuntime(options);
   const hash = options.hash ?? createHashPort();
+  const runtime = resolveTransportRuntime(options, hash);
   const defaults = createDefaultJeditHostingBoundaries(hash);
   const statePort = options.statePort ?? defaults.statePort;
   const mutations = createJeditContractMutationHandlerRegistry({ runtime, hash, statePort });
@@ -192,11 +192,9 @@ function createTransportContext(
 
 function resolveTransportRuntime(
   options: InstalledJeditContractEchoTransportOptions,
+  hash: HashPort,
 ): HotTextRuntimePort {
-  if (options.runtime == null) {
-    throw new MissingGraphRopeTextAuthorityError();
-  }
-  const runtime = options.runtime;
+  const runtime = options.runtime ?? createGraphBackedRopeHotTextRuntime({ hash });
   assertInstalledTextAuthorityAllowed(runtime, options);
   return runtime;
 }

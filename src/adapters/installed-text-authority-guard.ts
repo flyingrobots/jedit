@@ -1,5 +1,6 @@
 import { isGraphBackedRopeTextAuthority, type HotTextRuntimePort } from '../ports/hot-text-runtime.js';
 import { isFullSnapshotHotTextRuntimeFixture } from './full-snapshot-hot-text-runtime-fixture.js';
+export { createGraphBackedRopeHotTextRuntime } from './graph-backed-rope-hot-text-runtime.js';
 
 export const JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY = 'JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY';
 
