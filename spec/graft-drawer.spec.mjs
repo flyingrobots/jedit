@@ -142,6 +142,47 @@ test('Graft drawer displays Edict Core and Echo Target IR projection lanes', asy
   assert.doesNotMatch(text, /admitted/);
 });
 
+test('Graft drawer renders generic projection lanes without runtime claims', async () => {
+  const { renderGraftDrawerLines } = await loadGraftDrawer();
+  const lines = renderGraftDrawerLines(baseDrawerModel({
+    path: '/repo/schema.graphql',
+    relativePath: 'schema.graphql',
+    projectionSource: 'live-buffer',
+    projectionPosture: 'current',
+    projectionLanes: [{
+      title: 'wesley schema',
+      state: 'available',
+      digest: {
+        label: 'schema digest',
+        value: 'sha256:4444444444444444444444444444444444444444444444444444444444444444',
+      },
+      metadata: [{
+        label: 'profile',
+        value: 'echo-contract-sdl',
+      }, {
+        label: 'extension',
+        value: 'echo.graphql-contract-descriptors/v1',
+      }],
+      summaryLines: ['descriptor: echoContractHost'],
+    }],
+    outlineItems: [],
+    changeLines: [],
+  }), 120, 24);
+  const text = linesToText(lines);
+
+  assert.match(text, /wesley schema/);
+  assert.match(text, /state: available/);
+  assert.match(text, /schema digest: sha256:444444/);
+  assert.match(text, /profile: echo-contract-sdl/);
+  assert.match(text, /extension: echo\.graphql-contract-descriptors\/v1/);
+  assert.match(text, /descriptor: echoContractHost/);
+  assert.doesNotMatch(text, /run/i);
+  assert.doesNotMatch(text, /debug/i);
+  assert.doesNotMatch(text, /repl/i);
+  assert.doesNotMatch(text, /executed/i);
+  assert.doesNotMatch(text, /admitted/i);
+});
+
 test('Graft drawer displays opaque obstruction receipt projection facts', async () => {
   const { renderGraftDrawerLines } = await loadGraftDrawer();
   const lines = renderGraftDrawerLines(baseDrawerModel({
@@ -327,6 +368,16 @@ test('Graft drawer page movement uses bounded receipt payload rows', async () =>
         relativePath: 'demo.edict',
         projectionSource: 'live-buffer',
         projectionPosture: 'current',
+        projectionLanes: [{
+          title: 'wesley schema',
+          state: 'available',
+          digest: {
+            label: 'schema digest',
+            value: 'sha256:4444444444444444444444444444444444444444444444444444444444444444',
+          },
+          metadata: [{ label: 'profile', value: 'echo-contract-sdl' }, { label: 'extension', value: 'echo.graphql-contract-descriptors/v1' }],
+          summaryLines: ['descriptor: echoContractHost'],
+        }],
         obstructionReceipt: {
           outcomeKind: 'obstructed_strand',
           targetIrDigest: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
@@ -346,7 +397,7 @@ test('Graft drawer page movement uses bounded receipt payload rows', async () =>
     },
   );
 
-  assert.equal(nextModel.graftSelectedIndex, 6);
+  assert.equal(nextModel.graftSelectedIndex, 1);
 });
 
 test('Graft drawer escapes receipt payload strings before row fitting', async () => {

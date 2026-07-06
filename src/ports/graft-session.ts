@@ -54,6 +54,24 @@ export interface GraftObstructionReceiptProjection {
   readonly receipt?: GraftJsonObject;
 }
 
+export interface GraftProjectionPanelDigest {
+  readonly label: string;
+  readonly value: string;
+}
+
+export interface GraftProjectionPanelMetadata {
+  readonly label: string;
+  readonly value: string;
+}
+
+export interface GraftProjectionPanelLane {
+  readonly title: string;
+  readonly state: GraftProjectionSlotState;
+  readonly digest?: GraftProjectionPanelDigest;
+  readonly metadata: readonly GraftProjectionPanelMetadata[];
+  readonly summaryLines: readonly string[];
+}
+
 export interface GraftInfo {
   readonly path: string;
   readonly relativePath: string;
@@ -67,6 +85,7 @@ export interface GraftInfo {
     readonly endLine: number;
   }[];
   readonly changeLines: readonly string[];
+  readonly projectionLanes?: readonly GraftProjectionPanelLane[];
   readonly edictCoreProjection?: GraftEdictProjectionLane;
   readonly echoTargetIrProjection?: GraftEchoTargetIrProjectionLane;
   readonly obstructionReceipt?: GraftObstructionReceiptProjection;

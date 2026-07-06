@@ -192,6 +192,28 @@ test('Graft session projects dirty Edict buffers through live source text', asyn
     targetProfileDigest: TARGET_PROFILE_DIGEST,
     summaryLines: ['review: intents'],
   });
+  assert.deepEqual(info.projectionLanes, [{
+    title: 'edict core',
+    state: 'available',
+    digest: { label: 'core digest', value: CORE_DIGEST },
+    metadata: [],
+    summaryLines: ['review: apiVersion'],
+  }, {
+    title: 'echo target ir',
+    state: 'available',
+    digest: { label: 'target ir digest', value: TARGET_IR_DIGEST },
+    metadata: [{
+      label: 'domain',
+      value: 'echo.span-ir/v1',
+    }, {
+      label: 'target',
+      value: 'echo.dpo@1',
+    }, {
+      label: 'target profile',
+      value: TARGET_PROFILE_DIGEST,
+    }],
+    summaryLines: ['review: intents'],
+  }]);
 });
 
 test('Graft session preserves outline receipts on live Edict projections', async () => {

@@ -12,9 +12,11 @@ import {
   GraftProjectionSources,
   type GraftEchoTargetIrProjectionLane,
   type GraftEdictProjectionLane,
+  type GraftProjectionPanelLane,
   type GraftProjectionPosture,
   type GraftProjectionSource,
 } from '../ports/graft-session.js';
+import { graftProjectionPanelLanes } from '../ports/graft-projection-lanes.js';
 
 const EDICT_LANGUAGE = 'edict';
 const EDICT_EXTENSION = '.edict';
@@ -84,6 +86,7 @@ export interface LiveEdictProjectionResult {
   readonly projectionSource: GraftProjectionSource;
   readonly projectionPosture: GraftProjectionPosture;
   readonly outlineItems: readonly [];
+  readonly projectionLanes?: readonly GraftProjectionPanelLane[];
   readonly edictCoreProjection?: GraftEdictProjectionLane;
   readonly echoTargetIrProjection?: GraftEchoTargetIrProjectionLane;
   readonly error?: string;
@@ -135,6 +138,10 @@ function availableLiveEdictProjection(projection: EdictProjectionBundle): LiveEd
     projectionSource: GraftProjectionSources.LiveBuffer,
     projectionPosture: edictProjectionPosture(projection),
     outlineItems: [],
+    projectionLanes: graftProjectionPanelLanes({
+      edictCoreProjection: coreProjection,
+      echoTargetIrProjection: targetIrProjection,
+    }),
     edictCoreProjection: coreProjection,
     echoTargetIrProjection: targetIrProjection,
   };
