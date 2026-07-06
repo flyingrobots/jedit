@@ -4,6 +4,7 @@ import { importDist } from './dist-helpers.mjs';
 
 const UTF8_ENCODER = new TextEncoder();
 const FACT_VALIDATION_ERROR_HASH_MISMATCH = 'hash-mismatch';
+const FACT_VALIDATION_ERROR_INVALID_KIND = 'invalid-kind';
 const FACT_VALIDATION_ERROR_INVALID_REFERENCE = 'invalid-reference';
 
 async function loadContract() {
@@ -11,11 +12,12 @@ async function loadContract() {
 }
 
 async function loadModules() {
-  const [contract, runtime] = await Promise.all([
+  const [contract, runtime, anchorDigest] = await Promise.all([
     importDist('domain', 'graph-rope-contract.js'),
     importDist('domain', 'graph-rope-runtime.js'),
+    importDist('domain', 'graph-rope-causal-anchor-digest.js'),
   ]);
-  return { contract, runtime };
+  return { anchorDigest, contract, runtime };
 }
 
 function createHashPort() {
@@ -125,6 +127,29 @@ test('stored text blob validation fetches bytes from the declared blob store', a
   });
 });
 
+test('text blob validation rejects malformed stored blob variants', async () => {
+  const contract = await loadContract();
+  const stored = assertOk(contract.makeStoredTextBlobFact({
+    bytes: UTF8_ENCODER.encode('alpha'),
+    contentRef: 'blob/alpha',
+    hash: createHashPort(),
+  }));
+  const malformed = {
+    ...stored,
+    storage: { kind: 'bogus', contentRef: 'blob/alpha' },
+  };
+
+  const validation = contract.validateRopeFact(
+    malformed,
+    createValidationContext(contract, [malformed], new Map([['blob/alpha', UTF8_ENCODER.encode('alpha')]])),
+  );
+
+  assert.deepEqual(validation, {
+    ok: false,
+    code: FACT_VALIDATION_ERROR_INVALID_REFERENCE,
+  });
+});
+
 test('rope leaf validation requires a typed text blob reference in the admission scope', async () => {
   const facts = await graphCreateFixture('worldline:leaf-validation', 'leaf text');
   const { contract, blob, leaf } = facts;
@@ -137,6 +162,23 @@ test('rope leaf validation requires a typed text blob reference in the admission
   assert.deepEqual(contract.validateRopeFact(
     { ...leaf, blobId: 'text-blob:missing' },
     createValidationContext(contract, [leaf]),
+  ), {
+    ok: false,
+    code: FACT_VALIDATION_ERROR_INVALID_REFERENCE,
+  });
+});
+
+test('buffer worldline validation requires its initial head to belong to the worldline', async () => {
+  const facts = await graphCreateFixture('worldline:initial-head', 'initial');
+  const { contract } = facts;
+  const forged = {
+    ...facts.worldline,
+    worldlineId: 'worldline:forged',
+  };
+
+  assert.deepEqual(contract.validateRopeFact(
+    forged,
+    createValidationContext(contract, [...facts.writeSet, forged]),
   ), {
     ok: false,
     code: FACT_VALIDATION_ERROR_INVALID_REFERENCE,
@@ -156,6 +198,38 @@ test('rope checkpoint validation references a causal anchor instead of a tick re
   assert.deepEqual(contract.validateRopeFact(
     { ...facts.checkpoint, causalAnchorId: 'tick:initial' },
     createValidationContext(contract, facts.writeSet),
+  ), {
+    ok: false,
+    code: FACT_VALIDATION_ERROR_INVALID_REFERENCE,
+  });
+});
+
+test('rope checkpoint validation recomputes checkpoint identity and anchor frontier', async () => {
+  const facts = await checkpointFixture('worldline:checkpoint-identity');
+  const { anchorDigest, contract } = facts;
+  const forgedCheckpoint = {
+    ...facts.checkpoint,
+    checkpointId: 'rope-checkpoint:forged',
+  };
+  const frontierForgedAnchor = rekeyAnchor({
+    ...facts.anchor,
+    basisFrontierDigest: 'frontier:forged',
+  }, anchorDigest, createHashPort());
+  const frontierForgedCheckpoint = {
+    ...facts.checkpoint,
+    causalAnchorId: frontierForgedAnchor.anchorId,
+  };
+
+  assert.deepEqual(contract.validateRopeFact(
+    forgedCheckpoint,
+    createValidationContext(contract, [...facts.baseFacts, facts.anchor, forgedCheckpoint]),
+  ), {
+    ok: false,
+    code: FACT_VALIDATION_ERROR_HASH_MISMATCH,
+  });
+  assert.deepEqual(contract.validateRopeFact(
+    frontierForgedCheckpoint,
+    createValidationContext(contract, [...facts.baseFacts, frontierForgedAnchor, frontierForgedCheckpoint]),
   ), {
     ok: false,
     code: FACT_VALIDATION_ERROR_INVALID_REFERENCE,
@@ -230,6 +304,75 @@ test('causal anchor validation rejects forged digests ids and purposes', async (
   });
 });
 
+test('graph rope validation rejects forged diff span and rewrite evidence', async () => {
+  const facts = await graphEditFixture();
+  const { contract, replaced } = facts;
+  const insertSpan = replaced.diff.spans.find((span) => span.kind === contract.ROPE_DIFF_SPAN_INSERT_KIND);
+  const emptyDiff = {
+    ...replaced.diff,
+    spans: [],
+  };
+  const unknownSpanDiff = {
+    ...replaced.diff,
+    spans: replaced.diff.spans.map((span) => span === insertSpan ? { ...span, kind: 'move' } : span),
+  };
+  const wrongBlobRewrite = {
+    ...replaced.rewrite,
+    replacementBlobId: facts.blob.blobId,
+  };
+
+  assert.notEqual(insertSpan, undefined);
+  assert.deepEqual(contract.validateRopeFact(
+    emptyDiff,
+    createValidationContext(contract, [...facts.writeSet, emptyDiff]),
+  ), {
+    ok: false,
+    code: FACT_VALIDATION_ERROR_INVALID_REFERENCE,
+  });
+  assert.deepEqual(contract.validateRopeFact(
+    unknownSpanDiff,
+    createValidationContext(contract, [...facts.writeSet, unknownSpanDiff]),
+  ), {
+    ok: false,
+    code: FACT_VALIDATION_ERROR_INVALID_KIND,
+  });
+  assert.deepEqual(contract.validateRopeFact(
+    wrongBlobRewrite,
+    createValidationContext(contract, [...facts.writeSet, wrongBlobRewrite]),
+  ), {
+    ok: false,
+    code: FACT_VALIDATION_ERROR_INVALID_REFERENCE,
+  });
+});
+
+test('graph rope validation rejects rewrites outside their basis head', async () => {
+  const facts = await graphEditFixture();
+  const { contract, replaced } = facts;
+  const forged = rekeyRewriteChain({
+    basisHead: replaced.basisHead,
+    diff: replaced.diff,
+    receipt: replaced.receipt,
+    rewrite: replaced.rewrite,
+    range: textByteRange(contract, 99, 100),
+    hash: createHashPort(),
+  });
+
+  assert.deepEqual(contract.validateRopeFact(
+    forged.rewrite,
+    createValidationContext(contract, [
+      ...facts.writeSet,
+      replaced.replacementBlob,
+      replaced.nextHead,
+      forged.diff,
+      forged.rewrite,
+      forged.receipt,
+    ]),
+  ), {
+    ok: false,
+    code: FACT_VALIDATION_ERROR_INVALID_REFERENCE,
+  });
+});
+
 test('graph rope validation rejects forged branch and leaf metrics', async () => {
   const facts = await graphCreateFixture('worldline:metrics', 'a'.repeat(3000));
   const { contract } = facts;
@@ -287,13 +430,14 @@ test('graph rope validation rejects inconsistent rewrite diff and receipt links'
 });
 
 async function graphCreateFixture(worldlineId, initialText) {
-  const { contract, runtime } = await loadModules();
+  const { anchorDigest, contract, runtime } = await loadModules();
   const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
   const created = assertOk(graph.createBufferWorldline({ worldlineId, initialText }));
   const leaf = created.nodes.find((node) => node.kind === contract.ROPE_LEAF_FACT_KIND);
 
   assert.notEqual(leaf, undefined);
   return {
+    anchorDigest,
     contract,
     runtime,
     graph,
@@ -343,4 +487,59 @@ async function checkpointFixture(worldlineId) {
     baseFacts,
     writeSet: [...baseFacts, checkpointed.causalAnchor, checkpointed.checkpoint],
   };
+}
+
+function rekeyAnchor(anchor, anchorDigest, hash) {
+  const anchorDigestValue = anchorDigest.causalAnchorDigestFor(anchor, hash);
+  return {
+    ...anchor,
+    anchorDigest: anchorDigestValue,
+    anchorId: anchorDigest.causalAnchorIdForDigest(anchorDigestValue, hash),
+  };
+}
+
+function rekeyRewriteChain(input) {
+  const contentHash = input.hash.sha256Hex([
+    'rewrite',
+    input.rewrite.basisHeadId,
+    input.rewrite.nextHeadId,
+    input.range.startByte.value,
+    input.range.endByte.value,
+  ].join(':'));
+  const rewriteId = `rope-rewrite:${contentHash}`;
+  const diffId = `rope-diff:${contentHash}`;
+  const sequence = input.receipt.admittedAtSequence + 100;
+  const receiptHash = input.hash.sha256Hex(`${'receipt'}:${input.receipt.basisHeadId}:${input.receipt.nextHeadId}:${sequence}`);
+  const tickId = `tick:${input.hash.sha256Hex(`${input.receipt.worldlineId}:${receiptHash}`)}`;
+  return {
+    rewrite: {
+      ...input.rewrite,
+      rewriteId,
+      diffId,
+      range: input.range,
+      admittedByTickId: tickId,
+      contentHash,
+    },
+    diff: {
+      ...input.diff,
+      diffId,
+      rewriteId,
+      contentHash: input.hash.sha256Hex(`${'diff'}:${rewriteId}:${input.diff.basisHeadId}:${input.diff.nextHeadId}`),
+    },
+    receipt: {
+      ...input.receipt,
+      tickId,
+      admissionId: `rope-admission:${receiptHash}`,
+      rewriteId,
+      admittedAtSequence: sequence,
+      contentHash: receiptHash,
+    },
+  };
+}
+
+function textByteRange(contract, start, end) {
+  return assertOk(contract.makeTextByteRange(
+    assertOk(contract.makeByteOffset(start)),
+    assertOk(contract.makeByteOffset(end)),
+  ));
 }

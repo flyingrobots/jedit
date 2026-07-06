@@ -67,6 +67,43 @@ test('graph runtime creates a worldline from UTF-8 bytes and reads a named head 
   assert.equal(reading.validationEvidence[0].contentHash, created.blob.contentHash);
 });
 
+test('graph runtime rejects duplicate worldline creation', async () => {
+  const { runtime } = await loadModules();
+  const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
+
+  assertOk(graph.createBufferWorldline({
+    worldlineId: 'worldline:duplicate',
+    initialText: 'first',
+  }));
+
+  assert.deepEqual(graph.createBufferWorldline({
+    worldlineId: 'worldline:duplicate',
+    initialText: 'second',
+  }), {
+    ok: false,
+    code: OBSTRUCTION_INVALID_FACT,
+  });
+});
+
+test('graph runtime keeps CRLF pairs in the same leaf line metric', async () => {
+  const { runtime, contract } = await loadModules();
+  const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
+  const initialText = `${'a'.repeat(1023)}\r\nb`;
+  const byteLength = UTF8_ENCODER.encode(initialText).length;
+
+  const created = assertOk(graph.createBufferWorldline({
+    worldlineId: 'worldline:crlf-boundary',
+    initialText,
+  }));
+  const reading = assertOk(graph.textWindow({
+    basisHeadId: created.head.headId,
+    byteRange: byteRange(contract, 0, byteLength),
+  }));
+
+  assert.equal(created.head.lineCount, 2);
+  assert.equal(reading.text, initialText);
+});
+
 test('graph runtime debug shape reports retained blob bytes without materialized snapshot roots', async () => {
   const { runtime } = await loadModules();
   const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });

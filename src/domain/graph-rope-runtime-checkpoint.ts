@@ -7,12 +7,6 @@ import {
   JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_BUFFER_WORLDLINE,
   JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_ROPE_HEAD,
   ROPE_CHECKPOINT_FACT_KIND,
-  ROPE_CHECKPOINT_REASON_AUTOSAVE,
-  ROPE_CHECKPOINT_REASON_EXPORT,
-  ROPE_CHECKPOINT_REASON_IMPORT,
-  ROPE_CHECKPOINT_REASON_MANUAL_SAVE,
-  ROPE_CHECKPOINT_REASON_RETENTION_BOUNDARY,
-  ROPE_CHECKPOINT_REASON_TEST_FIXTURE,
   type EchoCausalAnchorAppSubjectRoot,
   type EchoCausalAnchorFact,
   type EchoCausalAnchorPurpose,
@@ -25,10 +19,13 @@ import {
   causalAnchorDigestFor,
   causalAnchorIdForDigest,
 } from './graph-rope-causal-anchor-digest.js';
+import {
+  basisFrontierDigestForRopeHead,
+  checkpointAnchorPurpose,
+  ropeCheckpointIdFor,
+} from './graph-rope-checkpoint-identity.js';
 
-const RUNTIME_HASH_PREFIX_CAUSAL_FRONTIER = 'causal-frontier:';
 const RUNTIME_HASH_PREFIX_CAUSAL_ANCHOR_RECEIPT = 'causal-anchor-receipt:';
-const RUNTIME_HASH_PREFIX_CHECKPOINT_ID = 'rope-checkpoint:';
 
 export interface GraphRopeCreateCheckpointInput {
   readonly worldlineId: string;
@@ -42,15 +39,6 @@ export interface GraphRopeCreateCheckpointResult {
   readonly checkpoint: RopeCheckpointFact;
 }
 
-interface CheckpointIdInput {
-  readonly worldlineId: string;
-  readonly headId: string;
-  readonly reason: RopeCheckpointReason;
-  readonly causalAnchorId: string;
-  readonly admittedByReceiptId: string;
-  readonly hash: TextBlobHashPort;
-}
-
 export function createCheckpointFacts(
   head: RopeHeadFact,
   reason: RopeCheckpointReason,
@@ -61,7 +49,7 @@ export function createCheckpointFacts(
   const checkpoint: RopeCheckpointFact = {
     kind: ROPE_CHECKPOINT_FACT_KIND,
     schemaVersion: GRAPH_ROPE_SCHEMA_VERSION,
-    checkpointId: checkpointIdFor({
+    checkpointId: ropeCheckpointIdFor({
       worldlineId: head.worldlineId,
       headId: head.headId,
       reason,
@@ -85,7 +73,7 @@ function causalAnchorForCheckpoint(
 ): EchoCausalAnchorFact {
   const purpose = checkpointAnchorPurpose(reason);
   const retainedRoot = retainedRopeHeadRoot(head.headId);
-  const basisFrontierDigest = basisFrontierDigestFor(head, hash);
+  const basisFrontierDigest = basisFrontierDigestForRopeHead(head, hash);
   const admittedByReceiptId = anchorReceiptIdFor(head, purpose, admissionSequence, hash);
   const anchor: Omit<EchoCausalAnchorFact, 'anchorDigest' | 'anchorId'> = {
     kind: ECHO_CAUSAL_ANCHOR_FACT_KIND,
@@ -119,12 +107,6 @@ function retainedRopeHeadRoot(headId: string): EchoCausalAnchorAppSubjectRoot {
   };
 }
 
-function basisFrontierDigestFor(head: RopeHeadFact, hash: TextBlobHashPort): string {
-  return hash.sha256Hex(
-    `${RUNTIME_HASH_PREFIX_CAUSAL_FRONTIER}${head.worldlineId}:${head.headId}:${head.contentHash}`,
-  );
-}
-
 function anchorReceiptIdFor(
   head: RopeHeadFact,
   purpose: EchoCausalAnchorPurpose,
@@ -132,31 +114,4 @@ function anchorReceiptIdFor(
   hash: TextBlobHashPort,
 ): string {
   return hash.sha256Hex(`${RUNTIME_HASH_PREFIX_CAUSAL_ANCHOR_RECEIPT}${head.worldlineId}:${head.headId}:${purpose}:${String(admissionSequence)}`);
-}
-
-function checkpointIdFor(input: CheckpointIdInput): string {
-  return `${RUNTIME_HASH_PREFIX_CHECKPOINT_ID}${input.hash.sha256Hex([
-    input.worldlineId,
-    input.headId,
-    input.reason,
-    input.causalAnchorId,
-    input.admittedByReceiptId,
-  ].join(':'))}`;
-}
-
-function checkpointAnchorPurpose(reason: RopeCheckpointReason): EchoCausalAnchorPurpose {
-  switch (reason) {
-    case ROPE_CHECKPOINT_REASON_MANUAL_SAVE:
-      return 'user-save';
-    case ROPE_CHECKPOINT_REASON_AUTOSAVE:
-      return 'autosave';
-    case ROPE_CHECKPOINT_REASON_RETENTION_BOUNDARY:
-      return 'retention';
-    case ROPE_CHECKPOINT_REASON_EXPORT:
-      return 'export';
-    case ROPE_CHECKPOINT_REASON_IMPORT:
-      return 'recovery';
-    case ROPE_CHECKPOINT_REASON_TEST_FIXTURE:
-      return 'debug';
-  }
 }

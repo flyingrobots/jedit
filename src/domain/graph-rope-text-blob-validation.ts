@@ -85,7 +85,14 @@ function textBlobBytes(fact: TextBlobFact, context: RopeFactValidationContext): 
   if (fact.storage.kind === INLINE_UTF8_BYTES_STORAGE_KIND) {
     return fact.storage.bytes;
   }
-  return context.blobStore.readBlobBytes(fact.storage);
+  if (
+    fact.storage.kind === CONTENT_ADDRESSED_BLOB_STORE_KIND
+    && fact.storage.storeId === TEXT_BLOB_STORE_ID
+    && fact.storage.contentRef.length >= MIN_ID_LENGTH
+  ) {
+    return context.blobStore.readBlobBytes(fact.storage);
+  }
+  return null;
 }
 
 function textBlobFactForBytes(

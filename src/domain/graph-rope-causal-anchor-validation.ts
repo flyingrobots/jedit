@@ -16,15 +16,8 @@ import {
   JEDIT_CAUSAL_ANCHOR_APP_ID,
   JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_BUFFER_WORLDLINE,
   JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_ROPE_HEAD,
-  ROPE_CHECKPOINT_REASON_AUTOSAVE,
-  ROPE_CHECKPOINT_REASON_EXPORT,
-  ROPE_CHECKPOINT_REASON_IMPORT,
-  ROPE_CHECKPOINT_REASON_MANUAL_SAVE,
-  ROPE_CHECKPOINT_REASON_RETENTION_BOUNDARY,
-  ROPE_CHECKPOINT_REASON_TEST_FIXTURE,
   ROPE_HEAD_FACT_KIND,
   type EchoCausalAnchorFact,
-  type EchoCausalAnchorPurpose,
   type EchoCausalAnchorRoot,
   type FactValidationErrorCode,
   type FactValidationResult,
@@ -37,6 +30,10 @@ import {
   causalAnchorDigestFor,
   causalAnchorIdForDigest,
 } from './graph-rope-causal-anchor-digest.js';
+import {
+  basisFrontierDigestForRopeHead,
+  checkpointAnchorPurpose,
+} from './graph-rope-checkpoint-identity.js';
 
 const MIN_ID_LENGTH = 1;
 const VALID_ANCHOR_PURPOSES = new Set<string>([
@@ -109,14 +106,17 @@ export function checkpointReferencesSameWorldline(
 
 export function checkpointAnchorMatches(
   fact: RopeCheckpointFact,
+  head: RopeAdmittedFact | null,
   anchor: RopeAdmittedFact | null,
+  context: RopeFactValidationContext,
 ): boolean {
-  if (!isEchoCausalAnchorFact(anchor)) {
+  if (!isRopeHeadFact(head) || !isEchoCausalAnchorFact(anchor)) {
     return false;
   }
   return anchor.subject.appId === JEDIT_CAUSAL_ANCHOR_APP_ID
     && anchor.subject.subjectKind === JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_BUFFER_WORLDLINE
     && anchor.subject.subjectId === fact.worldlineId
+    && anchor.basisFrontierDigest === basisFrontierDigestForRopeHead(head, context.hash)
     && anchor.purpose === checkpointAnchorPurpose(fact.reason)
     && anchor.retainedRoots.some((root) => isJeditRopeHeadAuthorityRoot(root, fact.headId));
 }
@@ -197,23 +197,6 @@ function isJeditRopeHeadAuthorityRoot(root: EchoCausalAnchorRoot, headId: string
     && root.subjectKind === JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_ROPE_HEAD
     && root.id === headId
     && root.role === ECHO_CAUSAL_ANCHOR_ROOT_ROLE_AUTHORITY;
-}
-
-function checkpointAnchorPurpose(reason: RopeCheckpointFact['reason']): EchoCausalAnchorPurpose {
-  switch (reason) {
-    case ROPE_CHECKPOINT_REASON_MANUAL_SAVE:
-      return 'user-save';
-    case ROPE_CHECKPOINT_REASON_AUTOSAVE:
-      return 'autosave';
-    case ROPE_CHECKPOINT_REASON_RETENTION_BOUNDARY:
-      return 'retention';
-    case ROPE_CHECKPOINT_REASON_EXPORT:
-      return 'export';
-    case ROPE_CHECKPOINT_REASON_IMPORT:
-      return 'recovery';
-    case ROPE_CHECKPOINT_REASON_TEST_FIXTURE:
-      return 'debug';
-  }
 }
 
 function isRopeHeadFact(fact: RopeAdmittedFact | null): fact is RopeHeadFact {

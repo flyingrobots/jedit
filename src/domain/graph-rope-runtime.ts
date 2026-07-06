@@ -190,6 +190,9 @@ function createBufferWorldline(
   state: GraphRopeRuntimeState,
   input: CreateBufferWorldlineInput,
 ): GraphRopeRuntimeResult<GraphRopeCreateWorldlineResult> {
+  if (state.currentHeadByWorldlineId.has(input.worldlineId) || state.factsById.has(input.worldlineId)) {
+    return { ok: false, code: GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_FACT };
+  }
   const bytes = TEXT_ENCODER.encode(input.initialText);
   const blobResult = makeTextBlobFact({ bytes, hash: state.hash });
   if (!blobResult.ok) {

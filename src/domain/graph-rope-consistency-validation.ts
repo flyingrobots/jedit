@@ -1,4 +1,6 @@
 import { ropeFactId } from './graph-rope-fact-id.js';
+import { ropeDiffContentHash } from './graph-rope-diff-identity.js';
+import { validateRopeRewriteDiffSemantics } from './graph-rope-diff-semantics-validation.js';
 import {
   CONTENT_ADDRESSED_BLOB_STORE_KIND,
   FACT_VALIDATION_ERROR_HASH_MISMATCH,
@@ -9,6 +11,7 @@ import {
   ROPE_DIFF_FACT_KIND,
   ROPE_DIFF_SPAN_DELETE_KIND,
   ROPE_DIFF_SPAN_EQUAL_KIND,
+  ROPE_DIFF_SPAN_INSERT_KIND,
   ROPE_HEAD_FACT_KIND,
   ROPE_LEAF_FACT_KIND,
   ROPE_REWRITE_FACT_KIND,
@@ -41,7 +44,6 @@ const RUNTIME_HASH_PREFIX_BRANCH = 'branch:';
 const RUNTIME_HASH_PREFIX_HEAD = 'head:';
 const RUNTIME_HASH_PREFIX_LEAF = 'leaf:';
 const RUNTIME_HASH_PREFIX_REWRITE = 'rewrite:';
-const RUNTIME_HASH_PREFIX_DIFF = 'diff:';
 const RUNTIME_HASH_PREFIX_RECEIPT = 'receipt:';
 const RUNTIME_HASH_PREFIX_SPAN = 'span:';
 const RUNTIME_HASH_PREFIX_TICK = 'tick:';
@@ -106,6 +108,10 @@ export function validateRopeRewriteConsistency(
   if (linkIssue !== null) {
     return linkIssue;
   }
+  const semanticIssue = validateRopeRewriteDiffSemantics({ rewrite, hash: context.hash, ...refs });
+  if (semanticIssue !== null) {
+    return semanticIssue;
+  }
   const expectedHash = rewriteContentHash(rewrite.basisHeadId, rewrite.nextHeadId, rewrite.range, context.hash);
   return rewriteMatchesHash(rewrite, expectedHash);
 }
@@ -118,10 +124,51 @@ export function validateRopeDiffConsistency(
   if (rewrite === null) {
     return FACT_VALIDATION_ERROR_INVALID_REFERENCE;
   }
-  if (rewrite.diffId !== diff.diffId || rewrite.basisHeadId !== diff.basisHeadId || rewrite.nextHeadId !== diff.nextHeadId) {
-    return FACT_VALIDATION_ERROR_INVALID_REFERENCE;
+  return validateResolvedRopeDiff(diff, rewrite, context);
+}
+
+function validateResolvedRopeDiff(
+  diff: RopeDiffFact,
+  rewrite: RopeRewriteFact,
+  context: RopeFactValidationContext,
+): FactValidationErrorCode | null {
+  const linkIssue = diffRewriteLinkIssue(diff, rewrite);
+  if (linkIssue !== null) {
+    return linkIssue;
   }
-  const expectedHash = context.hash.sha256Hex(`${RUNTIME_HASH_PREFIX_DIFF}${diff.rewriteId}:${diff.basisHeadId}:${diff.nextHeadId}`);
+  const semanticIssue = diffSemanticIssue(diff, rewrite, context);
+  if (semanticIssue !== null) {
+    return semanticIssue;
+  }
+  return diffMatchesHash(diff, context);
+}
+
+function diffRewriteLinkIssue(diff: RopeDiffFact, rewrite: RopeRewriteFact): FactValidationErrorCode | null {
+  return rewrite.diffId === diff.diffId
+    && rewrite.basisHeadId === diff.basisHeadId
+    && rewrite.nextHeadId === diff.nextHeadId
+    ? null
+    : FACT_VALIDATION_ERROR_INVALID_REFERENCE;
+}
+
+function diffSemanticIssue(
+  diff: RopeDiffFact,
+  rewrite: RopeRewriteFact,
+  context: RopeFactValidationContext,
+): FactValidationErrorCode | null {
+  const refs = rewriteReferences(context, rewrite);
+  return refs === null
+    ? FACT_VALIDATION_ERROR_INVALID_REFERENCE
+    : validateRopeRewriteDiffSemantics({ rewrite, hash: context.hash, ...refs, diff });
+}
+
+function diffMatchesHash(diff: RopeDiffFact, context: RopeFactValidationContext): FactValidationErrorCode | null {
+  const expectedHash = ropeDiffContentHash({
+    rewriteId: diff.rewriteId,
+    basisHeadId: diff.basisHeadId,
+    nextHeadId: diff.nextHeadId,
+    spans: diff.spans,
+  }, context.hash);
   return diff.contentHash === expectedHash && diff.diffId === diffIdForRewrite(diff.rewriteId)
     ? null
     : FACT_VALIDATION_ERROR_HASH_MISMATCH;
@@ -154,7 +201,10 @@ export function validateDiffSpanHash(
   if (span.kind === ROPE_DIFF_SPAN_DELETE_KIND) {
     return spanHashIssue(span.contentHash, 'delete', span.basisRange.startByte.value, span.basisRange.endByte.value, context.hash);
   }
-  return spanHashIssue(span.contentHash, 'insert', span.nextRange.startByte.value, span.nextRange.endByte.value, context.hash);
+  if (span.kind === ROPE_DIFF_SPAN_INSERT_KIND) {
+    return spanHashIssue(span.contentHash, 'insert', span.nextRange.startByte.value, span.nextRange.endByte.value, context.hash);
+  }
+  return FACT_VALIDATION_ERROR_INVALID_REFERENCE;
 }
 
 interface RewriteReferences {
@@ -162,6 +212,7 @@ interface RewriteReferences {
   readonly nextHead: RopeHeadFact;
   readonly diff: RopeDiffFact;
   readonly receipt: TickReceiptFact;
+  readonly replacementBlob: TextBlobFact;
 }
 
 function rewriteReferences(
@@ -172,10 +223,11 @@ function rewriteReferences(
   const nextHead = resolveRopeHeadFact(context, rewrite.nextHeadId);
   const diff = resolveRopeDiffFact(context, rewrite.diffId);
   const receipt = resolveTickReceiptFact(context, rewrite.admittedByTickId);
-  if (basisHead === null || nextHead === null || diff === null || receipt === null) {
+  const replacementBlob = resolveTextBlobFact(context, rewrite.replacementBlobId);
+  if (basisHead === null || nextHead === null || diff === null || receipt === null || replacementBlob === null) {
     return null;
   }
-  return { basisHead, nextHead, diff, receipt };
+  return { basisHead, nextHead, diff, receipt, replacementBlob };
 }
 
 function validateRewriteLinks(
@@ -371,9 +423,13 @@ function spanHashIssue(
   endByte: number,
   hash: TextBlobHashPort,
 ): FactValidationErrorCode | null {
-  return contentHash === hash.sha256Hex(`${RUNTIME_HASH_PREFIX_SPAN}${kind}:${String(startByte)}:${String(endByte)}`)
+  return contentHash === spanHash(kind, startByte, endByte, hash)
     ? null
     : FACT_VALIDATION_ERROR_HASH_MISMATCH;
+}
+
+function spanHash(kind: string, startByte: number, endByte: number, hash: TextBlobHashPort): string {
+  return hash.sha256Hex(`${RUNTIME_HASH_PREFIX_SPAN}${kind}:${String(startByte)}:${String(endByte)}`);
 }
 
 function diffIdForRewrite(rewriteId: string): string {

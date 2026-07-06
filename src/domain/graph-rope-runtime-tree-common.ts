@@ -255,7 +255,20 @@ function byteAt(leaves: readonly LeafSegment[], byteOffset: number): number | nu
 
 function chunkEnd(bytes: Uint8Array, start: number): number {
   const target = Math.min(start + LEAF_TARGET_BYTE_LENGTH, bytes.length);
-  return validBoundaryAtOrBefore(bytes, start, target);
+  return crlfSafeBoundary(bytes, start, validBoundaryAtOrBefore(bytes, start, target));
+}
+
+function crlfSafeBoundary(bytes: Uint8Array, start: number, end: number): number {
+  if (!splitsCrLf(bytes, end)) {
+    return end;
+  }
+  return end === start + ONE_VALUE ? end + ONE_VALUE : end - ONE_VALUE;
+}
+
+function splitsCrLf(bytes: Uint8Array, end: number): boolean {
+  return end < bytes.length
+    && bytes[end - ONE_VALUE] === CARRIAGE_RETURN_BYTE
+    && bytes[end] === LINE_FEED_BYTE;
 }
 
 function validBoundaryAtOrBefore(bytes: Uint8Array, start: number, target: number): number {

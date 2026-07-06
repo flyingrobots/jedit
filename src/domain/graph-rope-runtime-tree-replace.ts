@@ -34,6 +34,7 @@ import {
   tickIdFor,
 } from './graph-rope-runtime-tree-common.js';
 import { orderedLeafSegments, windowBytesFromLeaves } from './graph-rope-runtime-tree-read.js';
+import { ropeDiffContentHash } from './graph-rope-diff-identity.js';
 import {
   GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_BYTE_RANGE,
   GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_FACT,
@@ -41,7 +42,6 @@ import {
 } from './graph-rope-runtime-issues.js';
 import {
   RUNTIME_HASH_PREFIX_ADMISSION_ID,
-  RUNTIME_HASH_PREFIX_DIFF,
   RUNTIME_HASH_PREFIX_HEAD,
   RUNTIME_HASH_PREFIX_HEAD_ID,
   RUNTIME_HASH_PREFIX_RECEIPT,
@@ -268,7 +268,13 @@ function createRewrite(input: RewriteFactInput): RopeRewriteFact {
 }
 
 function createDiff(input: DiffFactInput): RopeDiffFact {
-  const contentHash = input.hash.sha256Hex(`${RUNTIME_HASH_PREFIX_DIFF}${input.rewriteId}:${input.basisHead.headId}:${input.nextHead.headId}`);
+  const spans = diffSpans(input.basisHead, input.range, input.replacementBlob, input.replacementBytes, input.hash);
+  const contentHash = ropeDiffContentHash({
+    rewriteId: input.rewriteId,
+    basisHeadId: input.basisHead.headId,
+    nextHeadId: input.nextHead.headId,
+    spans,
+  }, input.hash);
   return {
     kind: ROPE_DIFF_FACT_KIND,
     schemaVersion: GRAPH_ROPE_SCHEMA_VERSION,
@@ -276,7 +282,7 @@ function createDiff(input: DiffFactInput): RopeDiffFact {
     rewriteId: input.rewriteId,
     basisHeadId: input.basisHead.headId,
     nextHeadId: input.nextHead.headId,
-    spans: diffSpans(input.basisHead, input.range, input.replacementBlob, input.replacementBytes, input.hash),
+    spans,
     contentHash,
   };
 }
