@@ -64,11 +64,14 @@ render windows, tests, or caches. They are forbidden as product text authority.
 
 ## Forbidden Product Patterns
 
-These patterns are forbidden in installed product code:
+These patterns are forbidden in installed product code and enforced by
+`scripts/jedit-production-cutover-guard.mjs`:
 
 - constructing `FullSnapshotHotTextRuntimeFixture`;
 - importing `full-snapshot-hot-text-runtime-fixture`;
 - importing stale `in-memory-hot-text-runtime` aliases;
+- importing `fake-echo-jedit-optic-transport`;
+- importing `hot-buffer-session`;
 - reading current buffer text from `HotTextBufferState.roots`;
 - treating `materializeHotBuffer(...)` or a full text window cache as authority;
 - saving from an editor line array instead of a causal basis export;

@@ -84,6 +84,7 @@ const REMOVED_TRANSITIONAL_FILES = Object.freeze([
   TRANSITIONAL_FILE.INTERACTIVE_ECHO_TEXT_SESSION,
 ]);
 const EXPLICIT_FIXTURE_OR_MIGRATION_SOURCE_FILES = Object.freeze([
+  'src/app/hot-buffer-session.ts',
   'src/adapters/full-snapshot-hot-text-runtime-fixture.ts',
   'src/adapters/fake-echo-jedit-optic-transport.ts',
   'src/adapters/installed-jedit-contract-echo-transport.ts',
@@ -131,6 +132,14 @@ const FORBIDDEN_PRODUCT_FIXTURE_AUTHORITY_PATTERNS = Object.freeze([
   { label: 'full-snapshot-hot-text-runtime-fixture', pattern: /\bfull-snapshot-hot-text-runtime-fixture\b/u },
   { label: 'createInMemoryHotTextRuntime', pattern: /\bcreateInMemoryHotTextRuntime\b/u },
   { label: 'in-memory-hot-text-runtime', pattern: /\bin-memory-hot-text-runtime\b/u },
+  { label: 'createFakeEchoJeditOpticTransport', pattern: /\bcreateFakeEchoJeditOpticTransport\b/u },
+  { label: 'fake-echo-jedit-optic-transport', pattern: /\bfake-echo-jedit-optic-transport\b/u },
+  { label: 'startHotBufferSession', pattern: /\bstartHotBufferSession\b/u },
+  { label: 'materializeHotBuffer', pattern: /\bmaterializeHotBuffer\b/u },
+  { label: 'hot-buffer-session', pattern: /\bhot-buffer-session\b/u },
+  { label: 'HotTextBufferState.roots', pattern: /\bHotTextBufferState\.roots\b/u },
+  { label: 'editor line array save', pattern: /\bsave(?:Editor|Workspace)?Lines\b/u },
+  { label: 'Git diff modified lines', pattern: /\bgitDiffModifiedLines\b/u },
 ]);
 
 const options = parseArgs(process.argv.slice(2));

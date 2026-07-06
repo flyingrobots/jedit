@@ -84,6 +84,55 @@ test('production cutover guard catches sample legacy hot runtime fixture tokens'
   assert.match(result.stderr, /in-memory-hot-text-runtime/);
 });
 
+test('production cutover guard catches sample fake Echo fixture transport tokens', () => {
+  const tempDir = mkdtempSync(path.join(tmpdir(), 'jedit-fake-transport-guard-'));
+  const sample = path.join(tempDir, 'sample.ts');
+  writeFileSync(sample, [
+    "import { createFakeEchoJeditOpticTransport } from './fake-echo-jedit-optic-transport.js';",
+    'const transport = createFakeEchoJeditOpticTransport();',
+  ].join('\n'));
+
+  const result = spawnGuard('--sample-forbidden-file', sample);
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /createFakeEchoJeditOpticTransport/);
+  assert.match(result.stderr, /fake-echo-jedit-optic-transport/);
+});
+
+test('production cutover guard catches sample hot-buffer full-root helper tokens', () => {
+  const tempDir = mkdtempSync(path.join(tmpdir(), 'jedit-hot-buffer-guard-'));
+  const sample = path.join(tempDir, 'sample.ts');
+  writeFileSync(sample, [
+    "import { materializeHotBuffer, startHotBufferSession } from './hot-buffer-session.js';",
+    'const roots = HotTextBufferState.roots;',
+    'const text = materializeHotBuffer(buffer);',
+    'const session = startHotBufferSession(runtime);',
+  ].join('\n'));
+
+  const result = spawnGuard('--sample-forbidden-file', sample);
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /materializeHotBuffer/);
+  assert.match(result.stderr, /startHotBufferSession/);
+  assert.match(result.stderr, /hot-buffer-session/);
+  assert.match(result.stderr, /HotTextBufferState\.roots/);
+});
+
+test('production cutover guard catches sample line-array save and Git-diff modified-line tokens', () => {
+  const tempDir = mkdtempSync(path.join(tmpdir(), 'jedit-materialized-policy-guard-'));
+  const sample = path.join(tempDir, 'sample.ts');
+  writeFileSync(sample, [
+    'saveEditorLines(editor.lines);',
+    'const modified = gitDiffModifiedLines(filePath);',
+  ].join('\n'));
+
+  const result = spawnGuard('--sample-forbidden-file', sample);
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /editor line array save/);
+  assert.match(result.stderr, /Git diff modified lines/);
+});
+
 test('production cutover guard catches sample non-Echo runtime profile tokens', () => {
   const tempDir = mkdtempSync(path.join(tmpdir(), 'jedit-runtime-profile-guard-'));
   const sample = path.join(tempDir, 'sample.ts');
