@@ -12,6 +12,7 @@ import {
   FACT_VALIDATION_ERROR_INVALID_ID,
   FACT_VALIDATION_ERROR_INVALID_KIND,
   FACT_VALIDATION_ERROR_INVALID_REFERENCE,
+  FACT_VALIDATION_ERROR_HASH_MISMATCH,
   JEDIT_CAUSAL_ANCHOR_APP_ID,
   JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_BUFFER_WORLDLINE,
   JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_ROPE_HEAD,
@@ -29,10 +30,24 @@ import {
   type FactValidationResult,
   type RopeAdmittedFact,
   type RopeCheckpointFact,
+  type RopeFactValidationContext,
   type RopeHeadFact,
 } from './graph-rope-types.js';
+import {
+  causalAnchorDigestFor,
+  causalAnchorIdForDigest,
+} from './graph-rope-causal-anchor-digest.js';
 
 const MIN_ID_LENGTH = 1;
+const VALID_ANCHOR_PURPOSES = new Set<string>([
+  'recovery',
+  'retention',
+  'export',
+  'user-save',
+  'autosave',
+  'debug',
+  'cache-warm',
+]);
 const CAS_MATERIALIZATION_ROOT_ROLES = new Set<string>([
   ECHO_CAUSAL_ANCHOR_ROOT_ROLE_MATERIALIZATION,
   ECHO_CAUSAL_ANCHOR_ROOT_ROLE_MANIFEST,
@@ -48,12 +63,18 @@ const APP_SUBJECT_ROOT_ROLES = new Set<string>([
   ECHO_CAUSAL_ANCHOR_ROOT_ROLE_EVIDENCE,
 ]);
 
-export function validateEchoCausalAnchorFact(fact: RopeAdmittedFact): FactValidationResult<RopeAdmittedFact> {
+export function validateEchoCausalAnchorFact(
+  fact: RopeAdmittedFact,
+  context: RopeFactValidationContext,
+): FactValidationResult<RopeAdmittedFact> {
   if (fact.kind !== ECHO_CAUSAL_ANCHOR_FACT_KIND) {
     return invalidFact(FACT_VALIDATION_ERROR_INVALID_KIND);
   }
   if (isInvalidHash(fact.anchorDigest)) {
     return invalidFact(FACT_VALIDATION_ERROR_INVALID_HASH);
+  }
+  if (!VALID_ANCHOR_PURPOSES.has(fact.purpose)) {
+    return invalidFact(FACT_VALIDATION_ERROR_INVALID_REFERENCE);
   }
   const idResult = invalidIdIn([
     fact.anchorId,
@@ -67,7 +88,16 @@ export function validateEchoCausalAnchorFact(fact: RopeAdmittedFact): FactValida
     return invalidFact(idResult);
   }
   const rootIssue = validateAnchorRootSets(fact.retainedRoots, fact.materializationRoots);
-  return rootIssue === null ? validFact(fact) : invalidFact(rootIssue);
+  if (rootIssue !== null) {
+    return invalidFact(rootIssue);
+  }
+  if (fact.anchorDigest !== causalAnchorDigestFor(fact, context.hash)) {
+    return invalidFact(FACT_VALIDATION_ERROR_HASH_MISMATCH);
+  }
+  if (fact.anchorId !== causalAnchorIdForDigest(fact.anchorDigest, context.hash)) {
+    return invalidFact(FACT_VALIDATION_ERROR_HASH_MISMATCH);
+  }
+  return validFact(fact);
 }
 
 export function checkpointReferencesSameWorldline(

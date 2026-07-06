@@ -10,6 +10,14 @@ async function loadContract() {
   return importDist('domain', 'graph-rope-contract.js');
 }
 
+async function loadModules() {
+  const [contract, runtime] = await Promise.all([
+    importDist('domain', 'graph-rope-contract.js'),
+    importDist('domain', 'graph-rope-runtime.js'),
+  ]);
+  return { contract, runtime };
+}
+
 function createHashPort() {
   return {
     sha256Hex(value) {
@@ -118,21 +126,8 @@ test('stored text blob validation fetches bytes from the declared blob store', a
 });
 
 test('rope leaf validation requires a typed text blob reference in the admission scope', async () => {
-  const contract = await loadContract();
-  const blob = assertOk(contract.makeTextBlobFact({
-    bytes: UTF8_ENCODER.encode('leaf text'),
-    hash: createHashPort(),
-  }));
-  const leaf = {
-    kind: contract.ROPE_LEAF_FACT_KIND,
-    schemaVersion: contract.GRAPH_ROPE_SCHEMA_VERSION,
-    nodeId: 'rope-node:leaf-1',
-    blobId: blob.blobId,
-    byteStart: assertOk(contract.makeByteOffset(0)),
-    byteLength: blob.byteLength,
-    lineCount: 1,
-    contentHash: 'leaf-hash',
-  };
+  const facts = await graphCreateFixture('worldline:leaf-validation', 'leaf text');
+  const { contract, blob, leaf } = facts;
 
   assert.equal(contract.validateRopeFact(
     leaf,
@@ -149,8 +144,8 @@ test('rope leaf validation requires a typed text blob reference in the admission
 });
 
 test('rope checkpoint validation references a causal anchor instead of a tick receipt', async () => {
-  const contract = await loadContract();
-  const facts = checkpointFixture(contract);
+  const facts = await checkpointFixture('worldline:checkpoint');
+  const { contract } = facts;
 
   assert.equal(contract.validateRopeFact(
     facts.checkpoint,
@@ -168,29 +163,22 @@ test('rope checkpoint validation references a causal anchor instead of a tick re
 });
 
 test('rope checkpoints require a matching authority root on their causal anchor', async () => {
-  const contract = await loadContract();
-  const facts = checkpointFixture(contract);
-  const weakAnchor = {
-    ...facts.anchor,
-    anchorId: 'causal-anchor:weak',
-    retainedRoots: [{
-      ...facts.anchor.retainedRoots[0],
-      id: 'rope-head:other',
-    }],
-  };
+  const facts = await checkpointFixture('worldline:checkpoint');
+  const otherFacts = await checkpointFixture('worldline:other-checkpoint');
+  const { contract } = facts;
   const weakCheckpoint = {
     ...facts.checkpoint,
     checkpointId: 'rope-checkpoint:weak',
-    causalAnchorId: weakAnchor.anchorId,
+    causalAnchorId: otherFacts.anchor.anchorId,
   };
 
   assert.equal(contract.validateRopeFact(
-    weakAnchor,
-    createValidationContext(contract, [...facts.baseFacts, weakAnchor]),
+    otherFacts.anchor,
+    createValidationContext(contract, otherFacts.writeSet),
   ).ok, true);
   assert.deepEqual(contract.validateRopeFact(
     weakCheckpoint,
-    createValidationContext(contract, [...facts.baseFacts, weakAnchor, weakCheckpoint]),
+    createValidationContext(contract, [...facts.baseFacts, otherFacts.anchor, weakCheckpoint]),
   ), {
     ok: false,
     code: FACT_VALIDATION_ERROR_INVALID_REFERENCE,
@@ -198,8 +186,8 @@ test('rope checkpoints require a matching authority root on their causal anchor'
 });
 
 test('causal anchor validation rejects authority roots as materializations', async () => {
-  const contract = await loadContract();
-  const facts = checkpointFixture(contract);
+  const facts = await checkpointFixture('worldline:projection-anchor');
+  const { contract } = facts;
   const projectionAuthorityAnchor = {
     ...facts.anchor,
     anchorId: 'causal-anchor:projection-authority',
@@ -215,79 +203,144 @@ test('causal anchor validation rejects authority roots as materializations', asy
   });
 });
 
-function checkpointFixture(contract) {
-  const blob = assertOk(contract.makeTextBlobFact({
-    bytes: UTF8_ENCODER.encode('checkpoint text'),
-    hash: createHashPort(),
-  }));
-  const leaf = {
-    kind: contract.ROPE_LEAF_FACT_KIND,
-    schemaVersion: contract.GRAPH_ROPE_SCHEMA_VERSION,
-    nodeId: 'rope-node:checkpoint-leaf',
-    blobId: blob.blobId,
-    byteStart: assertOk(contract.makeByteOffset(0)),
-    byteLength: blob.byteLength,
-    lineCount: 1,
-    contentHash: 'leaf-hash',
-  };
-  const head = {
-    kind: contract.ROPE_HEAD_FACT_KIND,
-    schemaVersion: contract.GRAPH_ROPE_SCHEMA_VERSION,
-    headId: 'rope-head:checkpoint',
-    worldlineId: 'worldline:checkpoint',
-    rootNodeId: leaf.nodeId,
-    createdByTickId: 'tick:initial',
-    byteLength: blob.byteLength,
-    lineCount: 1,
-    contentHash: 'head-hash',
-  };
-  const worldline = {
-    kind: contract.BUFFER_WORLDLINE_FACT_KIND,
-    schemaVersion: contract.GRAPH_ROPE_SCHEMA_VERSION,
-    worldlineId: head.worldlineId,
-    createdAtTick: 'tick:initial',
-    initialHeadId: head.headId,
-  };
-  const anchor = {
-    kind: contract.ECHO_CAUSAL_ANCHOR_FACT_KIND,
-    schemaVersion: contract.GRAPH_ROPE_SCHEMA_VERSION,
-    anchorId: 'causal-anchor:checkpoint',
-    subject: {
-      appId: contract.JEDIT_CAUSAL_ANCHOR_APP_ID,
-      subjectKind: contract.JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_BUFFER_WORLDLINE,
-      subjectId: worldline.worldlineId,
-    },
-    basisFrontierDigest: 'frontier:checkpoint',
-    retainedRoots: [{
-      kind: contract.ECHO_CAUSAL_ANCHOR_ROOT_KIND_APP_SUBJECT,
-      appId: contract.JEDIT_CAUSAL_ANCHOR_APP_ID,
-      subjectKind: contract.JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_ROPE_HEAD,
-      id: head.headId,
-      role: contract.ECHO_CAUSAL_ANCHOR_ROOT_ROLE_AUTHORITY,
-    }],
-    materializationRoots: [],
-    purpose: 'user-save',
-    admittedByReceiptId: 'receipt:checkpoint-anchor',
-    anchorDigest: 'anchor-digest',
-  };
-  const checkpoint = {
-    kind: contract.ROPE_CHECKPOINT_FACT_KIND,
-    schemaVersion: contract.GRAPH_ROPE_SCHEMA_VERSION,
-    checkpointId: 'rope-checkpoint:checkpoint',
-    worldlineId: worldline.worldlineId,
-    headId: head.headId,
-    causalAnchorId: anchor.anchorId,
-    reason: 'manual-save',
-  };
-  const baseFacts = [blob, leaf, head, worldline];
+test('causal anchor validation rejects forged digests ids and purposes', async () => {
+  const facts = await checkpointFixture('worldline:forged-anchor');
+  const { contract } = facts;
+
+  assert.deepEqual(contract.validateRopeFact(
+    { ...facts.anchor, anchorDigest: 'anchor-digest:forged' },
+    createValidationContext(contract, facts.writeSet),
+  ), {
+    ok: false,
+    code: FACT_VALIDATION_ERROR_HASH_MISMATCH,
+  });
+  assert.deepEqual(contract.validateRopeFact(
+    { ...facts.anchor, anchorId: 'causal-anchor:forged' },
+    createValidationContext(contract, facts.writeSet),
+  ), {
+    ok: false,
+    code: FACT_VALIDATION_ERROR_HASH_MISMATCH,
+  });
+  assert.deepEqual(contract.validateRopeFact(
+    { ...facts.anchor, purpose: 'pretend-save' },
+    createValidationContext(contract, facts.writeSet),
+  ), {
+    ok: false,
+    code: FACT_VALIDATION_ERROR_INVALID_REFERENCE,
+  });
+});
+
+test('graph rope validation rejects forged branch and leaf metrics', async () => {
+  const facts = await graphCreateFixture('worldline:metrics', 'a'.repeat(3000));
+  const { contract } = facts;
+  const branch = facts.nodes.find((node) => node.kind === contract.ROPE_BRANCH_FACT_KIND);
+
+  assert.notEqual(branch, undefined);
+  assert.deepEqual(contract.validateRopeFact(
+    { ...branch, byteLength: branch.byteLength + 1 },
+    createValidationContext(contract, facts.writeSet),
+  ), {
+    ok: false,
+    code: 'invalid-metric',
+  });
+  assert.deepEqual(contract.validateRopeFact(
+    { ...facts.leaf, contentHash: 'leaf-hash:forged' },
+    createValidationContext(contract, facts.writeSet),
+  ), {
+    ok: false,
+    code: FACT_VALIDATION_ERROR_HASH_MISMATCH,
+  });
+});
+
+test('graph rope validation rejects inconsistent rewrite diff and receipt links', async () => {
+  const facts = await graphEditFixture();
+  const { contract, replaced } = facts;
+
+  assert.deepEqual(contract.validateRopeFact(
+    { ...replaced.rewrite, nextHeadId: replaced.basisHead.headId },
+    createValidationContext(contract, facts.writeSet),
+  ), {
+    ok: false,
+    code: FACT_VALIDATION_ERROR_INVALID_REFERENCE,
+  });
+  assert.deepEqual(contract.validateRopeFact(
+    { ...replaced.diff, nextHeadId: replaced.basisHead.headId },
+    createValidationContext(contract, facts.writeSet),
+  ), {
+    ok: false,
+    code: FACT_VALIDATION_ERROR_INVALID_REFERENCE,
+  });
+  assert.deepEqual(contract.validateRopeFact(
+    { ...replaced.receipt, nextHeadId: replaced.basisHead.headId },
+    createValidationContext(contract, facts.writeSet),
+  ), {
+    ok: false,
+    code: FACT_VALIDATION_ERROR_INVALID_REFERENCE,
+  });
+  assert.deepEqual(contract.validateRopeFact(
+    { ...replaced.diff, contentHash: 'diff-hash:forged' },
+    createValidationContext(contract, facts.writeSet),
+  ), {
+    ok: false,
+    code: FACT_VALIDATION_ERROR_HASH_MISMATCH,
+  });
+});
+
+async function graphCreateFixture(worldlineId, initialText) {
+  const { contract, runtime } = await loadModules();
+  const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
+  const created = assertOk(graph.createBufferWorldline({ worldlineId, initialText }));
+  const leaf = created.nodes.find((node) => node.kind === contract.ROPE_LEAF_FACT_KIND);
+
+  assert.notEqual(leaf, undefined);
   return {
-    blob,
+    contract,
+    runtime,
+    graph,
+    ...created,
     leaf,
-    head,
-    worldline,
-    anchor,
-    checkpoint,
+    writeSet: [created.blob, ...created.nodes, created.head, created.worldline],
+  };
+}
+
+async function graphEditFixture() {
+  const facts = await graphCreateFixture('worldline:edit-consistency', 'alpha beta gamma');
+  const range = assertOk(facts.contract.makeTextByteRange(
+    assertOk(facts.contract.makeByteOffset(6)),
+    assertOk(facts.contract.makeByteOffset(10)),
+  ));
+  const replaced = assertOk(facts.graph.replaceRangeAsTick({
+    basisHeadId: facts.head.headId,
+    range,
+    replacementText: 'BETA',
+  }));
+  return {
+    ...facts,
+    replaced,
+    writeSet: [
+      ...facts.writeSet,
+      replaced.replacementBlob,
+      replaced.nextHead,
+      replaced.diff,
+      replaced.rewrite,
+      replaced.receipt,
+    ],
+  };
+}
+
+async function checkpointFixture(worldlineId) {
+  const facts = await graphCreateFixture(worldlineId, 'checkpoint text');
+  const checkpointed = assertOk(facts.graph.createCheckpoint({
+    worldlineId,
+    headId: facts.head.headId,
+    reason: 'manual-save',
+  }));
+  const baseFacts = facts.writeSet;
+  return {
+    ...facts,
+    anchor: checkpointed.causalAnchor,
+    checkpoint: checkpointed.checkpoint,
     baseFacts,
-    writeSet: [...baseFacts, anchor, checkpoint],
+    writeSet: [...baseFacts, checkpointed.causalAnchor, checkpointed.checkpoint],
   };
 }

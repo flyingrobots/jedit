@@ -5,20 +5,28 @@ import {
   validateEchoCausalAnchorFact,
 } from './graph-rope-causal-anchor-validation.js';
 import {
+  validateDiffSpanHash,
+  validateRopeBranchConsistency,
+  validateRopeDiffConsistency,
+  validateRopeHeadConsistency,
+  validateRopeLeafConsistency,
+  validateRopeRewriteConsistency,
+  validateTickReceiptConsistency,
+} from './graph-rope-consistency-validation.js';
+import {
+  validateTextBlobFact,
+} from './graph-rope-text-blob-validation.js';
+import {
   BUFFER_WORLDLINE_FACT_KIND,
   BYTE_OFFSET_COORDINATE_KIND,
-  CONTENT_ADDRESSED_BLOB_STORE_KIND,
   ECHO_CAUSAL_ANCHOR_FACT_KIND,
-  FACT_VALIDATION_ERROR_HASH_MISMATCH,
   FACT_VALIDATION_ERROR_INVALID_HASH,
   FACT_VALIDATION_ERROR_INVALID_ID,
   FACT_VALIDATION_ERROR_INVALID_KIND,
   FACT_VALIDATION_ERROR_INVALID_METRIC,
   FACT_VALIDATION_ERROR_INVALID_REFERENCE,
   FACT_VALIDATION_ERROR_INVALID_SCHEMA_VERSION,
-  FACT_VALIDATION_ERROR_INVALID_UTF8,
   GRAPH_ROPE_SCHEMA_VERSION,
-  INLINE_UTF8_BYTES_STORAGE_KIND,
   ROPE_BRANCH_FACT_KIND,
   ROPE_CHECKPOINT_FACT_KIND,
   ROPE_DIFF_FACT_KIND,
@@ -28,33 +36,18 @@ import {
   ROPE_LEAF_FACT_KIND,
   ROPE_REWRITE_FACT_KIND,
   ROPE_STRUCTURAL_MAINTENANCE_FACT_KIND,
-  TEXT_BLOB_ENCODING_UTF8,
   TEXT_BLOB_FACT_KIND,
-  TEXT_BLOB_STORE_ID,
   TICK_RECEIPT_FACT_KIND,
   type FactValidationErrorCode,
   type FactValidationResult,
-  type InlineTextBlobStorage,
-  type MakeStoredTextBlobFactInput,
-  type MakeTextBlobFactInput,
-  type MakeTextBlobFactResult,
   type RopeAdmittedFact,
   type RopeDiffSpan,
   type RopeFactValidationContext,
-  type StoredTextBlobStorage,
-  type TextBlobFact,
-  type TextBlobHashPort,
-  type TextBlobStorage,
   type TextByteRange,
 } from './graph-rope-types.js';
 
 const ZERO_VALUE = 0;
 const MIN_ID_LENGTH = 1;
-const HEX_RADIX = 16;
-const HEX_BYTE_WIDTH = 2;
-const GRAPH_ROPE_HASH_MATERIAL_PREFIX = 'utf8:';
-const TEXT_BLOB_ID_PREFIX = 'text-blob:';
-const TEXT_DECODER = new TextDecoder('utf-8', { fatal: true });
 
 type RopeFactValidator = (
   fact: RopeAdmittedFact,
@@ -74,23 +67,6 @@ const ROPE_FACT_VALIDATORS: ReadonlyMap<string, RopeFactValidator> = new Map([
   [ROPE_CHECKPOINT_FACT_KIND, validateRopeCheckpointFact],
   [ECHO_CAUSAL_ANCHOR_FACT_KIND, validateEchoCausalAnchorFact],
 ]);
-
-export function makeTextBlobFact(input: MakeTextBlobFactInput): MakeTextBlobFactResult {
-  if (!isValidUtf8(input.bytes)) {
-    return invalidFact(FACT_VALIDATION_ERROR_INVALID_UTF8);
-  }
-  return validFact(textBlobFactForBytes(input.bytes, inlineStorageForBytes(input.bytes), input.hash));
-}
-
-export function makeStoredTextBlobFact(input: MakeStoredTextBlobFactInput): MakeTextBlobFactResult {
-  if (input.contentRef.length < MIN_ID_LENGTH) {
-    return invalidFact(FACT_VALIDATION_ERROR_INVALID_ID);
-  }
-  if (!isValidUtf8(input.bytes)) {
-    return invalidFact(FACT_VALIDATION_ERROR_INVALID_UTF8);
-  }
-  return validFact(textBlobFactForBytes(input.bytes, storedStorageForRef(input.contentRef), input.hash));
-}
 
 export function validateRopeFact(
   fact: RopeAdmittedFact,
@@ -128,7 +104,15 @@ function validateRopeHeadFact(fact: RopeAdmittedFact, context: RopeFactValidatio
   if (hasInvalidMetric([fact.byteLength, fact.lineCount]) || isInvalidHash(fact.contentHash)) {
     return invalidFact(FACT_VALIDATION_ERROR_INVALID_METRIC);
   }
-  return validateIdsAndNodeReference(fact, [fact.headId, fact.worldlineId, fact.createdByTickId], context, fact.rootNodeId);
+  const refResult = requireNodeReference(context, fact.rootNodeId)
+    ?? optionalReference(context, fact.basisHeadId, ROPE_HEAD_FACT_KIND);
+  if (refResult !== null) {
+    return invalidFact(refResult);
+  }
+  const consistencyIssue = validateRopeHeadConsistency(fact, context);
+  return consistencyIssue === null
+    ? validateIds(fact, [fact.headId, fact.worldlineId, fact.createdByTickId, fact.rootNodeId])
+    : invalidFact(consistencyIssue);
 }
 
 function validateRopeBranchFact(fact: RopeAdmittedFact, context: RopeFactValidationContext): FactValidationResult<RopeAdmittedFact> {
@@ -138,11 +122,14 @@ function validateRopeBranchFact(fact: RopeAdmittedFact, context: RopeFactValidat
   if (hasInvalidMetric([fact.byteLength, fact.lineCount, fact.height]) || isInvalidHash(fact.contentHash)) {
     return invalidFact(FACT_VALIDATION_ERROR_INVALID_METRIC);
   }
-  const leftResult = requireNodeReference(context, fact.left);
-  if (leftResult !== null) {
-    return invalidFact(leftResult);
+  const refResult = requireNodeReference(context, fact.left) ?? requireNodeReference(context, fact.right);
+  if (refResult !== null) {
+    return invalidFact(refResult);
   }
-  return validateIdsAndNodeReference(fact, [fact.nodeId], context, fact.right);
+  const consistencyIssue = validateRopeBranchConsistency(fact, context);
+  return consistencyIssue === null
+    ? validateIds(fact, [fact.nodeId, fact.left, fact.right])
+    : invalidFact(consistencyIssue);
 }
 
 function validateRopeLeafFact(
@@ -155,21 +142,14 @@ function validateRopeLeafFact(
   if (hasInvalidMetric([fact.byteStart.value, fact.byteLength, fact.lineCount]) || isInvalidHash(fact.contentHash)) {
     return invalidFact(FACT_VALIDATION_ERROR_INVALID_METRIC);
   }
-  return validateIdsAndReference(fact, [fact.nodeId], context, fact.blobId, TEXT_BLOB_FACT_KIND);
-}
-
-function validateTextBlobFact(
-  fact: RopeAdmittedFact,
-  context: RopeFactValidationContext,
-): FactValidationResult<RopeAdmittedFact> {
-  if (fact.kind !== TEXT_BLOB_FACT_KIND) {
-    return invalidFact(FACT_VALIDATION_ERROR_INVALID_KIND);
+  const refResult = requireReference(context, fact.blobId, TEXT_BLOB_FACT_KIND);
+  if (refResult !== null) {
+    return invalidFact(refResult);
   }
-  const bytes = textBlobBytes(fact, context);
-  if (bytes === null) {
-    return invalidFact(FACT_VALIDATION_ERROR_INVALID_REFERENCE);
-  }
-  return validateTextBlobBytes(fact, bytes, context.hash);
+  const consistencyIssue = validateRopeLeafConsistency(fact, context);
+  return consistencyIssue === null
+    ? validateIds(fact, [fact.nodeId, fact.blobId])
+    : invalidFact(consistencyIssue);
 }
 
 function validateRopeRewriteFact(
@@ -188,7 +168,15 @@ function validateRopeRewriteFact(
     [fact.replacementBlobId, TEXT_BLOB_FACT_KIND],
     [fact.diffId, ROPE_DIFF_FACT_KIND],
   ]);
-  return validateIdsAfterReferences(refResult, fact, [fact.rewriteId, fact.worldlineId, fact.admittedByTickId]);
+  if (refResult !== null) {
+    return invalidFact(refResult);
+  }
+  const idResult = invalidIdIn([fact.rewriteId, fact.worldlineId, fact.admittedByTickId]);
+  if (idResult !== null) {
+    return invalidFact(idResult);
+  }
+  const consistencyIssue = validateRopeRewriteConsistency(fact, context);
+  return consistencyIssue === null ? validFact(fact) : invalidFact(consistencyIssue);
 }
 
 function validateRopeDiffFact(
@@ -197,6 +185,9 @@ function validateRopeDiffFact(
 ): FactValidationResult<RopeAdmittedFact> {
   if (fact.kind !== ROPE_DIFF_FACT_KIND) {
     return invalidFact(FACT_VALIDATION_ERROR_INVALID_KIND);
+  }
+  if (isInvalidHash(fact.contentHash)) {
+    return invalidFact(FACT_VALIDATION_ERROR_INVALID_HASH);
   }
   const spanResult = validateDiffSpans(fact.spans, context);
   if (spanResult !== null) {
@@ -207,7 +198,15 @@ function validateRopeDiffFact(
     [fact.basisHeadId, ROPE_HEAD_FACT_KIND],
     [fact.nextHeadId, ROPE_HEAD_FACT_KIND],
   ]);
-  return validateIdsAfterReferences(refResult, fact, [fact.diffId]);
+  if (refResult !== null) {
+    return invalidFact(refResult);
+  }
+  const idResult = invalidIdIn([fact.diffId]);
+  if (idResult !== null) {
+    return invalidFact(idResult);
+  }
+  const consistencyIssue = validateRopeDiffConsistency(fact, context);
+  return consistencyIssue === null ? validFact(fact) : invalidFact(consistencyIssue);
 }
 
 function validateTickReceiptFact(
@@ -225,7 +224,15 @@ function validateTickReceiptFact(
     [fact.nextHeadId, ROPE_HEAD_FACT_KIND],
     [fact.rewriteId, ROPE_REWRITE_FACT_KIND],
   ]);
-  return validateIdsAfterReferences(refResult, fact, [fact.tickId, fact.admissionId, fact.worldlineId]);
+  if (refResult !== null) {
+    return invalidFact(refResult);
+  }
+  const idResult = invalidIdIn([fact.tickId, fact.admissionId, fact.worldlineId]);
+  if (idResult !== null) {
+    return invalidFact(idResult);
+  }
+  const consistencyIssue = validateTickReceiptConsistency(fact, context);
+  return consistencyIssue === null ? validFact(fact) : invalidFact(consistencyIssue);
 }
 
 function validateStructuralMaintenanceFact(
@@ -270,22 +277,12 @@ function validateRopeCheckpointFact(
   return validateIds(fact, [fact.checkpointId]);
 }
 
-function validateTextBlobBytes(
-  fact: TextBlobFact,
-  bytes: Uint8Array,
-  hash: TextBlobHashPort,
-): FactValidationResult<RopeAdmittedFact> {
-  if (fact.encoding !== TEXT_BLOB_ENCODING_UTF8 || !isValidUtf8(bytes)) {
-    return invalidFact(FACT_VALIDATION_ERROR_INVALID_UTF8);
-  }
-  if (fact.byteLength !== bytes.length || fact.blobId.length < MIN_ID_LENGTH) {
-    return invalidFact(FACT_VALIDATION_ERROR_INVALID_METRIC);
-  }
-  const expectedHash = contentHashForBytes(hash, bytes);
-  if (fact.contentHash !== expectedHash || fact.blobId !== textBlobIdForHash(expectedHash)) {
-    return invalidFact(FACT_VALIDATION_ERROR_HASH_MISMATCH);
-  }
-  return validFact(fact);
+function optionalReference(
+  context: RopeFactValidationContext,
+  id: string | undefined,
+  expectedKind: string,
+): FactValidationErrorCode | null {
+  return id === undefined ? null : requireReference(context, id, expectedKind);
 }
 
 function validateDiffSpans(
@@ -306,12 +303,42 @@ function validateDiffSpan(span: RopeDiffSpan, context: RopeFactValidationContext
     return FACT_VALIDATION_ERROR_INVALID_HASH;
   }
   if (span.kind === ROPE_DIFF_SPAN_EQUAL_KIND) {
-    return invalidRangeIssue(span.basisRange) ?? invalidRangeIssue(span.nextRange);
+    return validateEqualDiffSpan(span, context);
   }
   if (span.kind === ROPE_DIFF_SPAN_DELETE_KIND) {
-    return invalidRangeIssue(span.basisRange);
+    return validateDeleteDiffSpan(span, context);
   }
-  return invalidRangeIssue(span.nextRange) ?? requireReference(context, span.blobId, TEXT_BLOB_FACT_KIND);
+  return validateInsertDiffSpan(span, context);
+}
+
+type EqualDiffSpan = Extract<RopeDiffSpan, { readonly kind: typeof ROPE_DIFF_SPAN_EQUAL_KIND }>;
+type DeleteDiffSpan = Extract<RopeDiffSpan, { readonly kind: typeof ROPE_DIFF_SPAN_DELETE_KIND }>;
+type InsertDiffSpan = Exclude<RopeDiffSpan, EqualDiffSpan | DeleteDiffSpan>;
+
+function validateEqualDiffSpan(
+  span: EqualDiffSpan,
+  context: RopeFactValidationContext,
+): FactValidationErrorCode | null {
+  return invalidRangeIssue(span.basisRange)
+    ?? invalidRangeIssue(span.nextRange)
+    ?? validateDiffSpanHash(span, context);
+}
+
+function validateDeleteDiffSpan(
+  span: DeleteDiffSpan,
+  context: RopeFactValidationContext,
+): FactValidationErrorCode | null {
+  return invalidRangeIssue(span.basisRange)
+    ?? validateDiffSpanHash(span, context);
+}
+
+function validateInsertDiffSpan(
+  span: InsertDiffSpan,
+  context: RopeFactValidationContext,
+): FactValidationErrorCode | null {
+  return invalidRangeIssue(span.nextRange)
+    ?? requireReference(context, span.blobId, TEXT_BLOB_FACT_KIND)
+    ?? validateDiffSpanHash(span, context);
 }
 
 function validateIdsAndReference(
@@ -326,20 +353,6 @@ function validateIdsAndReference(
     return invalidFact(idResult);
   }
   const refResult = requireReference(context, referenceId, referenceKind);
-  return refResult === null ? validFact(fact) : invalidFact(refResult);
-}
-
-function validateIdsAndNodeReference(
-  fact: RopeAdmittedFact,
-  ids: readonly string[],
-  context: RopeFactValidationContext,
-  nodeId: string,
-): FactValidationResult<RopeAdmittedFact> {
-  const idResult = invalidIdIn([...ids, nodeId]);
-  if (idResult !== null) {
-    return invalidFact(idResult);
-  }
-  const refResult = requireNodeReference(context, nodeId);
   return refResult === null ? validFact(fact) : invalidFact(refResult);
 }
 
@@ -402,64 +415,6 @@ function resolveFactById(context: RopeFactValidationContext, id: string): RopeAd
     }
   }
   return context.admittedBasis.getFact(id);
-}
-
-function textBlobBytes(fact: TextBlobFact, context: RopeFactValidationContext): Uint8Array | null {
-  if (fact.storage.kind === INLINE_UTF8_BYTES_STORAGE_KIND) {
-    return fact.storage.bytes;
-  }
-  return context.blobStore.readBlobBytes(fact.storage);
-}
-
-function textBlobFactForBytes(
-  bytes: Uint8Array,
-  storage: TextBlobStorage,
-  hash: TextBlobHashPort,
-): TextBlobFact {
-  const contentHash = contentHashForBytes(hash, bytes);
-  return {
-    kind: TEXT_BLOB_FACT_KIND,
-    schemaVersion: GRAPH_ROPE_SCHEMA_VERSION,
-    blobId: textBlobIdForHash(contentHash),
-    encoding: TEXT_BLOB_ENCODING_UTF8,
-    byteLength: bytes.length,
-    contentHash,
-    storage,
-  };
-}
-
-function inlineStorageForBytes(bytes: Uint8Array): InlineTextBlobStorage {
-  return {
-    kind: INLINE_UTF8_BYTES_STORAGE_KIND,
-    bytes: bytes.slice(),
-  };
-}
-
-function storedStorageForRef(contentRef: string): StoredTextBlobStorage {
-  return {
-    kind: CONTENT_ADDRESSED_BLOB_STORE_KIND,
-    storeId: TEXT_BLOB_STORE_ID,
-    contentRef,
-  };
-}
-
-function contentHashForBytes(hash: TextBlobHashPort, bytes: Uint8Array): string {
-  return hash.sha256Hex(`${GRAPH_ROPE_HASH_MATERIAL_PREFIX}${bytesToHex(bytes)}`);
-}
-
-function textBlobIdForHash(contentHash: string): string { return `${TEXT_BLOB_ID_PREFIX}${contentHash}`; }
-
-function bytesToHex(bytes: Uint8Array): string { return Array.from(bytes, byteToHex).join(''); }
-
-function byteToHex(byte: number): string { return byte.toString(HEX_RADIX).padStart(HEX_BYTE_WIDTH, '0'); }
-
-function isValidUtf8(bytes: Uint8Array): boolean {
-  try {
-    TEXT_DECODER.decode(bytes);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 function hasInvalidMetric(metrics: readonly number[]): boolean { return metrics.some((metric) => !isNonNegativeInteger(metric)); }

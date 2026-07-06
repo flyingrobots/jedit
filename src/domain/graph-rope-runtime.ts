@@ -234,11 +234,12 @@ function createCheckpoint(
   if (head.worldlineId !== input.worldlineId) {
     return { ok: false, code: GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_FACT };
   }
-  const checkpointFacts = createCheckpointFacts(head, input.reason, state.hash);
+  const checkpointFacts = createCheckpointFacts(head, input.reason, state.hash, state.nextAdmissionSequence);
   const admissionIssue = admitFacts(state, [checkpointFacts.causalAnchor, checkpointFacts.checkpoint]);
   if (admissionIssue !== null) {
     return { ok: false, code: admissionIssue };
   }
+  state.nextAdmissionSequence += ONE_VALUE;
   return { ok: true, value: cloneCheckpointResult(checkpointFacts) };
 }
 

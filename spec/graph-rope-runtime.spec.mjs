@@ -185,6 +185,39 @@ test('graph runtime checkpoints a head through a non-mutating causal anchor', as
   assert.equal(reading.text, 'alpha BETA');
 });
 
+test('graph runtime treats repeated checkpoints as distinct causal admissions', async () => {
+  const { runtime } = await loadModules();
+  const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
+  const created = assertOk(graph.createBufferWorldline({
+    worldlineId: 'worldline:checkpoint-repeat',
+    initialText: 'alpha beta',
+  }));
+  const before = assertOk(graph.debugRopeShape(created.head.headId));
+
+  const first = assertOk(graph.createCheckpoint({
+    worldlineId: 'worldline:checkpoint-repeat',
+    headId: created.head.headId,
+    reason: 'manual-save',
+  }));
+  const second = assertOk(graph.createCheckpoint({
+    worldlineId: 'worldline:checkpoint-repeat',
+    headId: created.head.headId,
+    reason: 'manual-save',
+  }));
+  const after = assertOk(graph.debugRopeShape(created.head.headId));
+
+  assert.equal(first.head.headId, created.head.headId);
+  assert.equal(second.head.headId, created.head.headId);
+  assert.notEqual(first.causalAnchor.admittedByReceiptId, second.causalAnchor.admittedByReceiptId);
+  assert.notEqual(first.causalAnchor.anchorDigest, second.causalAnchor.anchorDigest);
+  assert.notEqual(first.causalAnchor.anchorId, second.causalAnchor.anchorId);
+  assert.notEqual(first.checkpoint.checkpointId, second.checkpoint.checkpointId);
+  assert.equal('rewrite' in first, false);
+  assert.equal('diff' in first, false);
+  assert.equal('receipt' in first, false);
+  assert.deepEqual(after, before);
+});
+
 test('graph runtime rejects checkpoints for a different worldline', async () => {
   const { runtime } = await loadModules();
   const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });

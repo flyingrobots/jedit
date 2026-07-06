@@ -21,11 +21,13 @@ import {
   type RopeHeadFact,
   type TextBlobHashPort,
 } from './graph-rope-contract.js';
+import {
+  causalAnchorDigestFor,
+  causalAnchorIdForDigest,
+} from './graph-rope-causal-anchor-digest.js';
 
 const RUNTIME_HASH_PREFIX_CAUSAL_FRONTIER = 'causal-frontier:';
 const RUNTIME_HASH_PREFIX_CAUSAL_ANCHOR_RECEIPT = 'causal-anchor-receipt:';
-const RUNTIME_HASH_PREFIX_CAUSAL_ANCHOR_DIGEST = 'causal-anchor-digest:';
-const RUNTIME_HASH_PREFIX_CAUSAL_ANCHOR_ID = 'causal-anchor:';
 const RUNTIME_HASH_PREFIX_CHECKPOINT_ID = 'rope-checkpoint:';
 
 export interface GraphRopeCreateCheckpointInput {
@@ -40,16 +42,33 @@ export interface GraphRopeCreateCheckpointResult {
   readonly checkpoint: RopeCheckpointFact;
 }
 
+interface CheckpointIdInput {
+  readonly worldlineId: string;
+  readonly headId: string;
+  readonly reason: RopeCheckpointReason;
+  readonly causalAnchorId: string;
+  readonly admittedByReceiptId: string;
+  readonly hash: TextBlobHashPort;
+}
+
 export function createCheckpointFacts(
   head: RopeHeadFact,
   reason: RopeCheckpointReason,
   hash: TextBlobHashPort,
+  admissionSequence: number,
 ): GraphRopeCreateCheckpointResult {
-  const causalAnchor = causalAnchorForCheckpoint(head, reason, hash);
+  const causalAnchor = causalAnchorForCheckpoint(head, reason, hash, admissionSequence);
   const checkpoint: RopeCheckpointFact = {
     kind: ROPE_CHECKPOINT_FACT_KIND,
     schemaVersion: GRAPH_ROPE_SCHEMA_VERSION,
-    checkpointId: checkpointIdFor(head.worldlineId, head.headId, reason, causalAnchor.anchorId, hash),
+    checkpointId: checkpointIdFor({
+      worldlineId: head.worldlineId,
+      headId: head.headId,
+      reason,
+      causalAnchorId: causalAnchor.anchorId,
+      admittedByReceiptId: causalAnchor.admittedByReceiptId,
+      hash,
+    }),
     worldlineId: head.worldlineId,
     headId: head.headId,
     causalAnchorId: causalAnchor.anchorId,
@@ -62,16 +81,15 @@ function causalAnchorForCheckpoint(
   head: RopeHeadFact,
   reason: RopeCheckpointReason,
   hash: TextBlobHashPort,
+  admissionSequence: number,
 ): EchoCausalAnchorFact {
   const purpose = checkpointAnchorPurpose(reason);
   const retainedRoot = retainedRopeHeadRoot(head.headId);
   const basisFrontierDigest = basisFrontierDigestFor(head, hash);
-  const admittedByReceiptId = anchorReceiptIdFor(head, purpose, hash);
-  const anchorDigest = hash.sha256Hex(anchorDigestMaterial(head, retainedRoot, purpose, basisFrontierDigest, admittedByReceiptId));
-  return {
+  const admittedByReceiptId = anchorReceiptIdFor(head, purpose, admissionSequence, hash);
+  const anchor: Omit<EchoCausalAnchorFact, 'anchorDigest' | 'anchorId'> = {
     kind: ECHO_CAUSAL_ANCHOR_FACT_KIND,
     schemaVersion: GRAPH_ROPE_SCHEMA_VERSION,
-    anchorId: `${RUNTIME_HASH_PREFIX_CAUSAL_ANCHOR_ID}${hash.sha256Hex(anchorDigest)}`,
     subject: {
       appId: JEDIT_CAUSAL_ANCHOR_APP_ID,
       subjectKind: JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_BUFFER_WORLDLINE,
@@ -82,6 +100,11 @@ function causalAnchorForCheckpoint(
     materializationRoots: [],
     purpose,
     admittedByReceiptId,
+  };
+  const anchorDigest = causalAnchorDigestFor(anchor, hash);
+  return {
+    ...anchor,
+    anchorId: causalAnchorIdForDigest(anchorDigest, hash),
     anchorDigest,
   };
 }
@@ -105,41 +128,20 @@ function basisFrontierDigestFor(head: RopeHeadFact, hash: TextBlobHashPort): str
 function anchorReceiptIdFor(
   head: RopeHeadFact,
   purpose: EchoCausalAnchorPurpose,
+  admissionSequence: number,
   hash: TextBlobHashPort,
 ): string {
-  return hash.sha256Hex(`${RUNTIME_HASH_PREFIX_CAUSAL_ANCHOR_RECEIPT}${head.worldlineId}:${head.headId}:${purpose}`);
+  return hash.sha256Hex(`${RUNTIME_HASH_PREFIX_CAUSAL_ANCHOR_RECEIPT}${head.worldlineId}:${head.headId}:${purpose}:${String(admissionSequence)}`);
 }
 
-function anchorDigestMaterial(
-  head: RopeHeadFact,
-  retainedRoot: EchoCausalAnchorAppSubjectRoot,
-  purpose: EchoCausalAnchorPurpose,
-  basisFrontierDigest: string,
-  admittedByReceiptId: string,
-): string {
-  return [
-    RUNTIME_HASH_PREFIX_CAUSAL_ANCHOR_DIGEST,
-    head.worldlineId,
-    head.headId,
-    basisFrontierDigest,
-    purpose,
-    admittedByReceiptId,
-    retainedRoot.kind,
-    retainedRoot.appId,
-    retainedRoot.subjectKind,
-    retainedRoot.id,
-    retainedRoot.role,
-  ].join(':');
-}
-
-function checkpointIdFor(
-  worldlineId: string,
-  headId: string,
-  reason: RopeCheckpointReason,
-  causalAnchorId: string,
-  hash: TextBlobHashPort,
-): string {
-  return `${RUNTIME_HASH_PREFIX_CHECKPOINT_ID}${hash.sha256Hex(`${worldlineId}:${headId}:${reason}:${causalAnchorId}`)}`;
+function checkpointIdFor(input: CheckpointIdInput): string {
+  return `${RUNTIME_HASH_PREFIX_CHECKPOINT_ID}${input.hash.sha256Hex([
+    input.worldlineId,
+    input.headId,
+    input.reason,
+    input.causalAnchorId,
+    input.admittedByReceiptId,
+  ].join(':'))}`;
 }
 
 function checkpointAnchorPurpose(reason: RopeCheckpointReason): EchoCausalAnchorPurpose {
