@@ -61,6 +61,57 @@ test('jedit query observers read worldline snapshots and text windows', async ()
   assert.equal(textWindow.planId.includes('fake'), false);
 });
 
+test('jedit text window observer reads a basis projection instead of materializing snapshots', async () => {
+  const modules = await loadModules();
+  const baseRuntime = modules.runtime.createFullSnapshotHotTextRuntimeFixture();
+  const hash = modules.hash.createHashPort();
+  const projectionText = 'runtime projection\nline';
+  const textWindowCalls = [];
+  const runtime = {
+    ...baseRuntime,
+    materialize() {
+      throw new Error('text window observer must not materialize a full worldline snapshot');
+    },
+    textWindow(_state, request) {
+      textWindowCalls.push(request);
+      return {
+        basisHeadId: request.basisHeadId,
+        startByte: request.startByte,
+        endByte: new TextEncoder().encode(projectionText).length,
+        text: projectionText,
+        cacheStatus: 'uncached-materialization',
+      };
+    },
+  };
+  const mutations = modules.mutations.createJeditContractMutationHandlerRegistry({ runtime, hash });
+  const observers = modules.observers.createJeditContractQueryObserverRegistry({ runtime, hash });
+  const session = createSession(modules, mutations);
+  const descriptor = modules.packageModule.jeditHotTextContractPackage();
+  const [, textWindowOperation] = descriptor.queryOperationNames;
+
+  const observed = observers.observeQuery({
+    operationName: textWindowOperation,
+    session,
+    frontierRef: FRONTIER_REF,
+    input: {
+      worldlineId: session.worldline.worldlineId,
+      cursorLine: FIRST_LINE,
+      viewportLineCount: SINGLE_LINE,
+      beforeLines: FIRST_LINE,
+      afterLines: FIRST_LINE,
+      maxBytes: BYTE_BUDGET,
+    },
+  });
+
+  assert.equal(textWindowCalls.length, 1);
+  assert.equal(textWindowCalls[0].basisHeadId, session.worldline.canonicalHeadId);
+  assert.equal(textWindowCalls[0].startByte, 0);
+  assert.equal(textWindowCalls[0].endByte, undefined);
+  assert.equal(observed.reading.head.headId, session.worldline.canonicalHeadId);
+  assert.equal(observed.reading.lines[0].text, 'runtime projection');
+  assert.match(observed.reading.readingId, /^text-window:head:/);
+});
+
 test('jedit query observer registry has no lifecycle or mutation authority', async () => {
   const modules = await loadModules();
   const context = createContext(modules);

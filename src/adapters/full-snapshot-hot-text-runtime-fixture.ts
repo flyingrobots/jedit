@@ -25,11 +25,19 @@ import type {
   AdmitReplaceRangeTickResult,
   CloseEditGroupResult,
   HotTextBufferState,
+  HotTextWindowReading,
+  HotTextWindowRequest,
   HotTextRuntimePort,
   SaveHotCheckpointResult,
 } from '../ports/hot-text-runtime.js';
+import { HOT_TEXT_WINDOW_CACHE_STATUS_UNCACHED } from '../ports/hot-text-runtime.js';
 
 export const FULL_SNAPSHOT_TEXT_AUTHORITY_KIND = 'full-snapshot-fixture';
+
+const LEGACY_HEAD_ID_PREFIX = 'head:';
+const ZERO_BYTE = 0;
+const TEXT_ENCODER = new TextEncoder();
+const TEXT_DECODER = new TextDecoder('utf-8', { fatal: true });
 
 export interface FullSnapshotHotTextRuntimeFixture extends HotTextRuntimePort {
   readonly textAuthorityKind: typeof FULL_SNAPSHOT_TEXT_AUTHORITY_KIND;
@@ -42,6 +50,7 @@ export function createFullSnapshotHotTextRuntimeFixture(): FullSnapshotHotTextRu
     isProductionSafe: false,
     createBuffer,
     materialize,
+    textWindow,
     admitReplaceRangeTick,
     openEditGroup,
     includeTickInOpenGroup,
@@ -74,6 +83,28 @@ function createBuffer(path: string, initialText: string): HotTextBufferState {
 
 function materialize(state: HotTextBufferState): string {
   return materializeRoot(state.currentRoot);
+}
+
+function textWindow(
+  state: HotTextBufferState,
+  request: HotTextWindowRequest,
+): HotTextWindowReading {
+  const expectedHeadId = `${LEGACY_HEAD_ID_PREFIX}${state.currentRoot.id}`;
+  if (request.basisHeadId !== expectedHeadId) {
+    throw new FullSnapshotHotTextRuntimeFixtureError(`Basis head mismatch: expected ${expectedHeadId}, received ${request.basisHeadId}.`);
+  }
+  const bytes = TEXT_ENCODER.encode(materializeRoot(state.currentRoot));
+  const endByte = request.endByte ?? bytes.length;
+  if (!byteRangeIsValid(request.startByte, endByte, bytes.length)) {
+    throw new FullSnapshotHotTextRuntimeFixtureError('Text window byte range is outside the current full snapshot.');
+  }
+  return {
+    basisHeadId: request.basisHeadId,
+    startByte: request.startByte,
+    endByte,
+    text: TEXT_DECODER.decode(bytes.slice(request.startByte, endByte)),
+    cacheStatus: HOT_TEXT_WINDOW_CACHE_STATUS_UNCACHED,
+  };
 }
 
 function admitReplaceRangeTick(
@@ -175,6 +206,14 @@ function toSaveCheckpointState(state: HotTextBufferState): SaveCheckpointState {
   };
 }
 
+function byteRangeIsValid(startByte: number, endByte: number, byteLength: number): boolean {
+  return Number.isInteger(startByte)
+    && Number.isInteger(endByte)
+    && ZERO_BYTE <= startByte
+    && startByte <= endByte
+    && endByte <= byteLength;
+}
+
 function withEditGroupState(state: HotTextBufferState, next: EditGroupState): HotTextBufferState {
   return {
     path: state.path,
@@ -199,4 +238,11 @@ function copyOpenEditGroup(state: HotTextBufferState) {
     id: state.openEditGroup.id,
     tickIds: [...state.openEditGroup.tickIds],
   };
+}
+
+class FullSnapshotHotTextRuntimeFixtureError extends Error {
+  public constructor(message: string) {
+    super(message);
+    this.name = 'FullSnapshotHotTextRuntimeFixtureError';
+  }
 }

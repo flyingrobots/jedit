@@ -28,6 +28,22 @@ export interface HotTextSaveCheckpointOptions {
   readonly reason?: HotTextCheckpointReason;
 }
 
+export const HOT_TEXT_WINDOW_CACHE_STATUS_UNCACHED = 'uncached-materialization';
+
+export interface HotTextWindowRequest {
+  readonly basisHeadId: string;
+  readonly startByte: number;
+  readonly endByte?: number;
+}
+
+export interface HotTextWindowReading {
+  readonly basisHeadId: string;
+  readonly startByte: number;
+  readonly endByte: number;
+  readonly text: string;
+  readonly cacheStatus: typeof HOT_TEXT_WINDOW_CACHE_STATUS_UNCACHED;
+}
+
 export interface AdmitReplaceRangeTickResult {
   readonly nextState: HotTextBufferState;
   readonly receipt?: TickAdmissionReceipt;
@@ -48,6 +64,7 @@ export interface HotTextRuntimePort {
   readonly isProductionSafe?: boolean;
   createBuffer(path: string, initialText: string, options?: HotTextCreateBufferOptions): HotTextBufferState;
   materialize(state: HotTextBufferState): string;
+  textWindow(state: HotTextBufferState, request: HotTextWindowRequest): HotTextWindowReading;
   admitReplaceRangeTick(state: HotTextBufferState, range: TextRange, text: string): AdmitReplaceRangeTickResult;
   openEditGroup(state: HotTextBufferState): HotTextBufferState;
   includeTickInOpenGroup(state: HotTextBufferState, tickId: number): HotTextBufferState;

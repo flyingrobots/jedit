@@ -27,18 +27,21 @@ import {
   type BufferRoot,
   type TextRange,
 } from '../domain/text-edit-contract.js';
-import { toWorldlineId } from '../app/jedit-contract-runtime-id.js';
+import { toHeadId, toWorldlineId } from '../app/jedit-contract-runtime-id.js';
 import type { HashPort } from '../ports/hash.js';
 import {
   GRAPH_BACKED_ROPE_TEXT_AUTHORITY_KIND,
   HOT_TEXT_CHECKPOINT_REASON_IMPORT,
   HOT_TEXT_CHECKPOINT_REASON_MANUAL_SAVE,
+  HOT_TEXT_WINDOW_CACHE_STATUS_UNCACHED,
   type AdmitReplaceRangeTickResult,
   type CloseEditGroupResult,
   type GraphBackedRopeTextAuthority,
   type HotTextCreateBufferOptions,
   type HotTextBufferState,
   type HotTextSaveCheckpointOptions,
+  type HotTextWindowReading,
+  type HotTextWindowRequest,
   type SaveHotCheckpointResult,
 } from '../ports/hot-text-runtime.js';
 
@@ -89,6 +92,7 @@ export function createGraphBackedRopeHotTextRuntime(
     isProductionSafe: true,
     createBuffer: (path, initialText, options) => createBuffer(state, path, initialText, options),
     materialize: (bufferState) => materialize(state, bufferState),
+    textWindow: (bufferState, request) => textWindow(state, bufferState, request),
     admitReplaceRangeTick: (bufferState, range, text) => admitReplaceRangeTick(state, bufferState, range, text),
     openEditGroup,
     includeTickInOpenGroup,
@@ -128,6 +132,33 @@ function materialize(
   bufferState: HotTextBufferState,
 ): string {
   return materializeHead(state, requireBinding(state, bufferState.currentRoot.id).headId);
+}
+
+function textWindow(
+  state: GraphBackedRopeHotTextRuntimeState,
+  bufferState: HotTextBufferState,
+  request: HotTextWindowRequest,
+): HotTextWindowReading {
+  const binding = requireBinding(state, bufferState.currentRoot.id);
+  const expectedHeadId = toHeadId(bufferState.currentRoot.id);
+  if (request.basisHeadId !== expectedHeadId) {
+    throw new GraphBackedRopeHotTextRuntimeError(`Basis head mismatch: expected ${expectedHeadId}, received ${request.basisHeadId}.`);
+  }
+  const endByte = request.endByte ?? graphHeadByteLength(state, binding.headId);
+  const window = state.graph.textWindow({
+    basisHeadId: binding.headId,
+    byteRange: toGraphRange(request.startByte, endByte),
+  });
+  if (!window.ok) {
+    throw new GraphBackedRopeHotTextRuntimeError(`Cannot read graph rope text window ${binding.headId}: ${window.code}.`);
+  }
+  return {
+    basisHeadId: request.basisHeadId,
+    startByte: window.value.byteRange.startByte.value,
+    endByte: window.value.byteRange.endByte.value,
+    text: window.value.text,
+    cacheStatus: HOT_TEXT_WINDOW_CACHE_STATUS_UNCACHED,
+  };
 }
 
 function admitReplaceRangeTick(
@@ -262,18 +293,23 @@ function requireBinding(
 }
 
 function materializeHead(state: GraphBackedRopeHotTextRuntimeState, headId: string): string {
-  const shape = state.graph.debugRopeShape(headId);
-  if (!shape.ok) {
-    throw new GraphBackedRopeHotTextRuntimeError(`Cannot inspect graph rope head ${headId}: ${shape.code}.`);
-  }
+  const byteLength = graphHeadByteLength(state, headId);
   const window = state.graph.textWindow({
     basisHeadId: headId,
-    byteRange: toGraphRange(ZERO_BYTE_OFFSET, shape.value.byteLength),
+    byteRange: toGraphRange(ZERO_BYTE_OFFSET, byteLength),
   });
   if (!window.ok) {
     throw new GraphBackedRopeHotTextRuntimeError(`Cannot materialize graph rope head ${headId}: ${window.code}.`);
   }
   return window.value.text;
+}
+
+function graphHeadByteLength(state: GraphBackedRopeHotTextRuntimeState, headId: string): number {
+  const shape = state.graph.debugRopeShape(headId);
+  if (!shape.ok) {
+    throw new GraphBackedRopeHotTextRuntimeError(`Cannot inspect graph rope head ${headId}: ${shape.code}.`);
+  }
+  return shape.value.byteLength;
 }
 
 function replaceCurrentRoot(
