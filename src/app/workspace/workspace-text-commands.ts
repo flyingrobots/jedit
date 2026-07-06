@@ -314,10 +314,15 @@ async function editWorkspaceText(
       kind: WorkspaceTextResultKinds.Applied,
       filePath: request.filePath,
       bufferId: request.bufferId,
+      changed: edited.result.changed,
       receiptId: edited.result.receiptId,
+      admittedTickId: edited.result.admittedTickId,
+      nextHeadId: edited.result.nextHeadId,
       cache,
       cursorAfter: request.cursorAfter,
-      wscSettlementEnvelope: createWorkspaceTextEditSettlementEnvelope(request, edited.result.receiptId, cache),
+      wscSettlementEnvelope: edited.result.receiptId == null
+        ? undefined
+        : createWorkspaceTextEditSettlementEnvelope(request, edited.result.receiptId, cache),
     };
   } catch (cause) {
     return obstructedEdit(

@@ -190,6 +190,63 @@ test('TextBufferOptic headless flow works with default graph rope authority', as
   assert.equal(observed.value.lines[0].text, `${INITIAL_TEXT}${INSERT_TEXT}`);
 });
 
+test('TextBufferOptic graph edits expose admitted tick and next head evidence', async () => {
+  const modules = await loadModules();
+  const transport = modules.transport.createInstalledJeditContractEchoTransport();
+  const client = modules.client.createEchoTransportJeditOpticClient(transport);
+  const session = modules.sessionAdapter.createEchoBackedTextBufferSession({ client });
+  const optic = await session.createBuffer({
+    bufferKey: BUFFER_KEY,
+    initialText: INITIAL_TEXT,
+    projectionPath: BUFFER_KEY,
+  });
+
+  const applied = await optic.applyIntent({
+    kind: 'replaceRange',
+    startByte: INSERT_BYTE,
+    endByte: INSERT_BYTE,
+    insertText: INSERT_TEXT,
+  });
+
+  assert.equal(applied.changed, true);
+  assert.match(applied.receiptId, /^receipt:/);
+  assert.match(applied.admittedTickId, /^tick:/);
+  assert.match(applied.nextHeadId, /^head:/);
+});
+
+test('TextBufferOptic graph no-op edits do not mint receipt or head evidence', async () => {
+  const modules = await loadModules();
+  const transport = modules.transport.createInstalledJeditContractEchoTransport();
+  const client = modules.client.createEchoTransportJeditOpticClient(transport);
+  const session = modules.sessionAdapter.createEchoBackedTextBufferSession({ client });
+  const optic = await session.createBuffer({
+    bufferKey: BUFFER_KEY,
+    initialText: INITIAL_TEXT,
+    projectionPath: BUFFER_KEY,
+  });
+
+  const applied = await optic.applyIntent({
+    kind: 'replaceRange',
+    startByte: FIRST_BYTE,
+    endByte: INSERT_BYTE,
+    insertText: INITIAL_TEXT,
+  });
+  const observed = await optic.textWindow(optic.currentReadBasis(), {
+    cursorLine: FIRST_LINE,
+    viewportLineCount: SINGLE_LINE,
+    beforeLines: FIRST_LINE,
+    afterLines: FIRST_LINE,
+    maxBytes: BYTE_BUDGET,
+  });
+
+  assert.equal(applied.changed, false);
+  assert.equal(applied.bufferVersion, 0);
+  assert.equal(applied.receiptId, undefined);
+  assert.equal(applied.admittedTickId, undefined);
+  assert.match(applied.nextHeadId, /^head:/);
+  assert.equal(observed.value.lines[0].text, INITIAL_TEXT);
+});
+
 test('installed transport preserves retained diff metadata across intent response codec', async () => {
   const modules = await loadModules();
   const transport = createFixtureBackedInstalledTransport(modules);

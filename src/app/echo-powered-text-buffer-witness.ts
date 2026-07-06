@@ -40,6 +40,13 @@ const INITIAL_TEXT_REVISION_SEQUENCE = 0;
 const STRUCTURAL_HISTORY_SOURCE_LABEL = 'jedit.echo-powered-text-buffer-witness';
 const UTF8_ENCODER = new TextEncoder();
 
+class EchoPoweredTextBufferWitnessError extends Error {
+  public constructor(message: string) {
+    super(message);
+    this.name = 'EchoPoweredTextBufferWitnessError';
+  }
+}
+
 interface WitnessReportInput {
   readonly buffer: ApplyIntentResult['buffer'];
   readonly editIntent: StructuralHistoryReplaceTextRangeRequest;
@@ -59,7 +66,7 @@ export async function runEchoPoweredTextBufferWitness(
   const intent = createJeditIntentHandle(editIntent.operationName, toReplaceRangeSubmissionId(editIntent));
   const pending = outcomes.acceptIntent(intent);
   const applied = await applyWitnessIntent(optic, request);
-  const outcome = outcomes.applyIntent(intent, createJeditReceiptHandle(applied.receiptId));
+  const outcome = outcomes.applyIntent(intent, createJeditReceiptHandle(requireApplyReceipt(applied)));
   const observed = await observeWitnessWindow(optic, applied, request);
 
   return toWitnessReport({
@@ -128,16 +135,17 @@ function observeWitnessWindow(
 }
 
 function toWitnessReport(input: WitnessReportInput): EchoPoweredTextBufferWitnessReport {
+  const receiptId = requireApplyReceipt(input.applied);
   const receiptCorrelation = correlateJeditEchoReceipt({
     submissionId: input.outcome.intent.submissionId,
-    receiptId: input.applied.receiptId,
+    receiptId,
   });
   const text = input.observed.value.lines.map((line) => line.text).join('\n');
   const retainedEvidence = createJeditRetainedEvidenceInventory({
     packageId: JEDIT_STRUCTURAL_HISTORY_PACKAGE_ID,
     mutationOperationName: input.editIntent.operationName,
     queryOperationName: queryTextWindowOperation.fieldName,
-    receiptId: input.applied.receiptId,
+    receiptId,
     readingId: input.observed.evidence.readingId,
     readingEvidence: input.observed.evidence.retainedEvidence,
   });
@@ -155,13 +163,20 @@ function toWitnessReport(input: WitnessReportInput): EchoPoweredTextBufferWitnes
     ticketedRuntimeIngress: missingJeditTicketedRuntimeIngress(input.outcome.intent.submissionId),
     retainedEvidence,
     restartPosture: currentJeditRestartPosture(),
-    receiptId: input.applied.receiptId,
+    receiptId,
     readingId: input.observed.evidence.readingId,
     roundTrip: toRoundTripReport(input, retainedEvidence.refs.length, text),
     text,
     lines: input.observed.value.lines,
     truncated: input.observed.value.truncated,
   };
+}
+
+function requireApplyReceipt(applied: ApplyIntentResult): string {
+  if (applied.receiptId == null) {
+    throw new EchoPoweredTextBufferWitnessError('Witness edit did not produce receipt evidence.');
+  }
+  return applied.receiptId;
 }
 
 function toRoundTripReport(

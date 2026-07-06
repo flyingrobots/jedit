@@ -38,7 +38,10 @@ export interface WorkspaceTextAppliedResult {
   readonly kind: typeof RESULT_APPLIED;
   readonly filePath: string;
   readonly bufferId: string;
-  readonly receiptId: string;
+  readonly changed: boolean;
+  readonly receiptId?: string;
+  readonly admittedTickId?: string;
+  readonly nextHeadId: string;
   readonly cache: WorkspaceTextReadingCache;
   readonly cursorAfter?: TextPosition;
   readonly wscSettlementEnvelope?: JeditWscWorkspaceEnvelope;

@@ -242,7 +242,10 @@ function applyIntentResult(bufferId: string): ApplyIntentResult {
     buffer: textBuffer(PREFLIGHT_DEFAULT_FILE_PATH, bufferId, PREFLIGHT_DEFAULT_FILE_PATH),
     readBasis: readBasis(),
     bufferVersion: DEFAULT_BUFFER_VERSION,
+    changed: true,
     receiptId: DEFAULT_RECEIPT_ID,
+    admittedTickId: DEFAULT_RECEIPT_ID,
+    nextHeadId: 'head:preflight',
   };
 }
 

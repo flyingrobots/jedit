@@ -60,7 +60,10 @@ export interface ApplyIntentResult {
   readonly buffer: TextBuffer;
   readonly readBasis: ReadBasisHandle;
   readonly bufferVersion: BufferVersion;
-  readonly receiptId: string;
+  readonly changed: boolean;
+  readonly receiptId?: string;
+  readonly admittedTickId?: string;
+  readonly nextHeadId: string;
 }
 
 export interface CreateTextBufferCheckpointRequest {

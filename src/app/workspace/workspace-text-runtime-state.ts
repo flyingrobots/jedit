@@ -53,11 +53,7 @@ export type WorkspaceRuntimeResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 
 const FOCUS_PANE_EDITOR = 'editor';
 
-interface TextExportCheckpointRequest {
-  readonly requestId: number;
-  readonly filePath: string;
-  readonly bufferId: string;
-}
+interface TextExportCheckpointRequest { readonly requestId: number; readonly filePath: string; readonly bufferId: string; }
 
 export function applyWorkspaceTextMessage(
   deps: WorkspaceRuntimeDependencies,
@@ -213,6 +209,9 @@ function textAuthorityWithIntermediateEditReceipt(
   requestId: number,
   result: WorkspaceTextAppliedResult,
 ) {
+  if (result.receiptId == null) {
+    return authority;
+  }
   if (requestId === authority.pendingClientSeq) {
     return workspaceTextAuthorityWithAppliedJeditCommandReceipt(authority, requestId, result.receiptId);
   }
@@ -234,8 +233,11 @@ function applyAppliedTextEditResult(
   if (msg.result.kind !== WorkspaceTextResultKinds.Applied) {
     return [model, []];
   }
+  const withReceipt = msg.result.receiptId == null
+    ? authority
+    : workspaceTextAuthorityWithAppliedJeditCommandReceipt(authority, msg.requestId, msg.result.receiptId);
   const withCache = workspaceTextAuthorityWithCache(
-    workspaceTextAuthorityWithAppliedJeditCommandReceipt(authority, msg.requestId, msg.result.receiptId),
+    withReceipt,
     msg.result.cache,
   );
   const withCurrentObservation = workspaceTextAuthorityWithCurrentJeditCommandObservation(withCache);

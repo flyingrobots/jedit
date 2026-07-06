@@ -4,6 +4,7 @@ import type {
   ProductionTextViewportAperture,
 } from './production-text-session.js';
 import { ProductionTextSessionOutcomeKinds } from './production-text-session.js';
+import { RuntimeIssueLevels, RuntimeIssueSources } from './runtime-issue.js';
 
 const DEFAULT_BUFFER_KEY = 'agent-production-text.md';
 const DEFAULT_INITIAL_TEXT = '';
@@ -151,6 +152,9 @@ async function completeWitness(
   if (edited.kind === ProductionTextSessionOutcomeKinds.Obstructed) {
     return obstructed(WITNESS_STAGE_EDIT, edited.obstruction.issue);
   }
+  if (edited.result.receiptId == null) {
+    return obstructed(WITNESS_STAGE_EDIT, witnessIssue('Witness edit did not produce receipt evidence.', request.atMs));
+  }
   const checkpointed = await request.session.checkpointBuffer({ bufferId, atMs: request.atMs });
   if (checkpointed.kind === ProductionTextSessionOutcomeKinds.Obstructed) {
     return obstructed(WITNESS_STAGE_CHECKPOINT, checkpointed.obstruction.issue);
@@ -233,6 +237,15 @@ function obstructed(
     stage,
     authority: witnessAuthority(),
     issue,
+  };
+}
+
+function witnessIssue(message: string, atMs: number): RuntimeIssue {
+  return {
+    level: RuntimeIssueLevels.Error,
+    source: RuntimeIssueSources.Command,
+    message,
+    atMs,
   };
 }
 

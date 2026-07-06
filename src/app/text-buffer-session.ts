@@ -130,7 +130,8 @@ async function applyTextBufferIntent(
   }
   const execution = await client.replaceRangeAsTick(state.currentSession, replaceRangeInput(state, intent));
   if (execution.result == null) {
-    throw new TextBufferOpticError('Text buffer intent did not produce a runtime receipt.');
+    state.currentSession = execution.nextSession;
+    return noChangeApplyIntentResult(buffer, state);
   }
   state.currentSession = execution.nextSession;
   state.bufferVersion += NEXT_BUFFER_VERSION_STEP;
@@ -138,7 +139,23 @@ async function applyTextBufferIntent(
     buffer,
     readBasis: state.currentReadBasis,
     bufferVersion: state.bufferVersion,
+    changed: true,
     receiptId: execution.result.ropeDiff.ropeDiffId,
+    admittedTickId: execution.result.ropeRewrite.ropeRewriteId,
+    nextHeadId: execution.result.nextHead.headId,
+  };
+}
+
+function noChangeApplyIntentResult(
+  buffer: TextBuffer,
+  state: TextBufferOpticRuntimeState,
+): ApplyIntentResult {
+  return {
+    buffer,
+    readBasis: state.currentReadBasis,
+    bufferVersion: state.bufferVersion,
+    changed: false,
+    nextHeadId: state.currentSession.worldline.canonicalHeadId,
   };
 }
 
