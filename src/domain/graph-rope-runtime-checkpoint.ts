@@ -10,6 +10,7 @@ import {
   type EchoCausalAnchorAdmissionRequest,
   type EchoCausalAnchorAdmissionResult,
   type EchoCausalAnchorAppSubjectRoot,
+  type EchoCausalAnchorRoot,
   type RopeCheckpointFact,
   type RopeCheckpointReason,
   type RopeHeadFact,
@@ -26,6 +27,7 @@ export interface GraphRopeCreateCheckpointInput {
   readonly worldlineId: string;
   readonly headId: string;
   readonly reason: RopeCheckpointReason;
+  readonly materializationRoots?: readonly EchoCausalAnchorRoot[];
 }
 
 export interface GraphRopeCreateCheckpointResult {
@@ -39,6 +41,7 @@ export function createCheckpointAnchorAdmissionRequest(
   head: RopeHeadFact,
   reason: RopeCheckpointReason,
   hash: TextBlobHashPort,
+  materializationRoots: readonly EchoCausalAnchorRoot[] = [],
 ): EchoCausalAnchorAdmissionRequest {
   return makeEchoCausalAnchorAdmissionRequest({
     subject: {
@@ -48,7 +51,7 @@ export function createCheckpointAnchorAdmissionRequest(
     },
     basisFrontierDigest: basisFrontierDigestForRopeHead(head, hash),
     retainedRoots: [retainedRopeHeadRoot(head.headId)],
-    materializationRoots: [],
+    materializationRoots,
     purpose: checkpointAnchorPurpose(reason),
     retention: {
       retentionClass: checkpointAnchorRetentionClass(reason),

@@ -329,6 +329,88 @@ test('causal anchor validation rejects authority roots as materializations', asy
   });
 });
 
+test('causal anchor admission distinguishes authority roots from materialization artifacts', async () => {
+  const contract = await loadContract();
+  const hash = createHashPort();
+  const admission = contract.createDeterministicEchoCausalAnchorAdmissionPort({ hash });
+  const retainedRoot = {
+    kind: contract.ECHO_CAUSAL_ANCHOR_ROOT_KIND_APP_SUBJECT,
+    appId: contract.JEDIT_CAUSAL_ANCHOR_APP_ID,
+    subjectKind: contract.JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_ROPE_HEAD,
+    id: 'rope-head:authority',
+    role: contract.ECHO_CAUSAL_ANCHOR_ROOT_ROLE_AUTHORITY,
+  };
+  const materializationRoot = {
+    kind: contract.ECHO_CAUSAL_ANCHOR_ROOT_KIND_CAS_OBJECT,
+    id: 'cas:flat-text-window',
+    role: contract.ECHO_CAUSAL_ANCHOR_ROOT_ROLE_MATERIALIZATION,
+  };
+  const anchor = admission.admitCausalAnchor(contract.makeEchoCausalAnchorAdmissionRequest({
+    subject: {
+      appId: contract.JEDIT_CAUSAL_ANCHOR_APP_ID,
+      subjectKind: contract.JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_BUFFER_WORLDLINE,
+      subjectId: 'worldline:authority-vs-cache',
+    },
+    basisFrontierDigest: 'frontier:authority-vs-cache',
+    retainedRoots: [retainedRoot],
+    materializationRoots: [materializationRoot],
+    purpose: contract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_USER_SAVE,
+    retention: {
+      retentionClass: contract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_USER_SAVE,
+    },
+  })).anchor;
+
+  assert.equal(contract.validateRopeFact(
+    anchor,
+    createValidationContext(contract, [anchor]),
+  ).ok, true);
+  assert.deepEqual(anchor.retainedRoots, [retainedRoot]);
+  assert.deepEqual(anchor.materializationRoots, [materializationRoot]);
+  assert.equal(anchor.retainedRoots[0].role, contract.ECHO_CAUSAL_ANCHOR_ROOT_ROLE_AUTHORITY);
+  assert.equal(anchor.materializationRoots[0].role, contract.ECHO_CAUSAL_ANCHOR_ROOT_ROLE_MATERIALIZATION);
+});
+
+test('causal anchor retention metadata distinguishes anchor policy classes', async () => {
+  const contract = await loadContract();
+  const hash = createHashPort();
+  const admission = contract.createDeterministicEchoCausalAnchorAdmissionPort({ hash });
+  const retentionClasses = [
+    contract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_RECOVERY,
+    contract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_EXPORT,
+    contract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_USER_SAVE,
+    contract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_AUTOSAVE,
+    contract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_DEBUG,
+    contract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_CACHE_WARM,
+  ];
+
+  const anchors = retentionClasses.map((retentionClass) => admission.admitCausalAnchor(
+    contract.makeEchoCausalAnchorAdmissionRequest({
+      subject: {
+        appId: contract.JEDIT_CAUSAL_ANCHOR_APP_ID,
+        subjectKind: contract.JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_BUFFER_WORLDLINE,
+        subjectId: `worldline:${retentionClass}`,
+      },
+      basisFrontierDigest: `frontier:${retentionClass}`,
+      retainedRoots: [{
+        kind: contract.ECHO_CAUSAL_ANCHOR_ROOT_KIND_GRAPH_FACT,
+        id: `fact:${retentionClass}`,
+        role: contract.ECHO_CAUSAL_ANCHOR_ROOT_ROLE_EVIDENCE,
+      }],
+      purpose: retentionClass,
+      retention: { retentionClass },
+    }),
+  ).anchor);
+
+  assert.deepEqual(anchors.map((anchor) => anchor.retention.retentionClass), retentionClasses);
+  assert.equal(new Set(anchors.map((anchor) => anchor.anchorId)).size, retentionClasses.length);
+  for (const anchor of anchors) {
+    assert.equal(contract.validateRopeFact(
+      anchor,
+      createValidationContext(contract, [anchor]),
+    ).ok, true);
+  }
+});
+
 test('causal anchor validation rejects forged digests ids and purposes', async () => {
   const facts = await checkpointFixture('worldline:forged-anchor');
   const { contract } = facts;

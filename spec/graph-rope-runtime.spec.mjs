@@ -281,6 +281,39 @@ test('graph runtime rejects checkpoint admissions with mismatched Echo receipts'
   });
 });
 
+test('graph runtime checkpoint anchors optional materialization roots as cache artifacts', async () => {
+  const { runtime, contract } = await loadModules();
+  const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
+  const materializationRoot = {
+    kind: contract.ECHO_CAUSAL_ANCHOR_ROOT_KIND_CAS_OBJECT,
+    id: 'cas:checkpoint-flat-text',
+    role: contract.ECHO_CAUSAL_ANCHOR_ROOT_ROLE_MATERIALIZATION,
+  };
+  const created = assertOk(graph.createBufferWorldline({
+    worldlineId: 'worldline:checkpoint-materialization',
+    initialText: 'alpha',
+  }));
+  const before = assertOk(graph.debugRopeShape(created.head.headId));
+
+  const checkpointed = assertOk(graph.createCheckpoint({
+    worldlineId: 'worldline:checkpoint-materialization',
+    headId: created.head.headId,
+    reason: 'export',
+    materializationRoots: [materializationRoot],
+  }));
+  const after = assertOk(graph.debugRopeShape(created.head.headId));
+
+  assert.deepEqual(checkpointed.causalAnchor.materializationRoots, [materializationRoot]);
+  assert.equal(checkpointed.causalAnchor.retainedRoots.length, 1);
+  assert.equal(checkpointed.causalAnchor.retainedRoots[0].role, contract.ECHO_CAUSAL_ANCHOR_ROOT_ROLE_AUTHORITY);
+  assert.equal(checkpointed.causalAnchor.purpose, contract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_EXPORT);
+  assert.deepEqual(checkpointed.causalAnchor.retention, {
+    retentionClass: contract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_EXPORT,
+  });
+  assert.equal(checkpointed.checkpoint.causalAnchorId, checkpointed.causalAnchor.anchorId);
+  assert.deepEqual(after, before);
+});
+
 test('graph runtime treats repeated checkpoints as distinct causal admissions', async () => {
   const { runtime } = await loadModules();
   const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });

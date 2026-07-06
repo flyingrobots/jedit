@@ -246,7 +246,7 @@ function createCheckpoint(
   if (head.worldlineId !== input.worldlineId) {
     return { ok: false, code: GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_FACT };
   }
-  const anchorRequest = createCheckpointAnchorAdmissionRequest(head, input.reason, state.hash);
+  const anchorRequest = createCheckpointAnchorAdmissionRequest(head, input.reason, state.hash, input.materializationRoots);
   const anchorAdmission = state.causalAnchorAdmission.admitCausalAnchor(anchorRequest);
   if (!anchorAdmissionMatches(anchorAdmission)) {
     return { ok: false, code: GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_FACT };
