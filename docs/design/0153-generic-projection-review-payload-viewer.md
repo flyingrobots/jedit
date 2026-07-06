@@ -325,7 +325,7 @@ The work is done when:
 - [ ] Edict Core review payloads display through the generic viewer.
 - [ ] Echo Target IR review payloads display through the generic viewer.
 - [ ] Drawer output contains no execution, admission, debugger, or REPL claim.
-- [ ] Issue #259 and the PR are linked correctly.
+- [x] Issue #259 and the PR are linked correctly.
 - [ ] Local validation is green.
 
 ## Validation Plan
@@ -392,4 +392,4 @@ What remains open:
 
 PR:
 
-- Not opened yet.
+- https://github.com/flyingrobots/jedit/pull/264
