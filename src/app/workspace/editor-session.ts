@@ -10,7 +10,7 @@ import {
   isMissingEditorFile,
   type EditorFilePort,
 } from '../../ports/editor-file.js';
-import type { GraftFileRequest, GraftSessionPort } from '../../ports/graft-session.js';
+import { GraftProjectionSources, type GraftFileRequest, type GraftSessionPort } from '../../ports/graft-session.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import { isMarkdownFile } from './file-types.js';
 import { ViewModes } from './view-mode.js';
@@ -186,7 +186,10 @@ export function beginGraftRefresh(
     }, []];
   }
 
-  if (!options.force && model.graftInfo?.path === model.editor.path && model.graftInfo.dirty === model.editor.dirty) {
+  if (!options.force
+    && model.graftInfo?.path === model.editor.path
+    && model.graftInfo.dirty === model.editor.dirty
+    && model.graftInfo.projectionSource !== GraftProjectionSources.LiveBuffer) {
     return [model, []];
   }
 
