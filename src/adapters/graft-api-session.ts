@@ -5,7 +5,7 @@ import {
   loadLiveEdictProjection,
   type GraftEdictProjectionApi,
   type LiveEdictProjectionInput,
-  type LiveEdictProjectionResult,
+  type LiveEdictProjectionResult as LiveEdictResult,
 } from './graft-edict-projection.js';
 import {
   GraftProjectionPostures,
@@ -17,14 +17,13 @@ import {
   type GraftProjectionPosture,
   type GraftSessionPort,
 } from '../ports/graft-session.js';
-
 import { GraftInvalidPayloadError } from '../domain/errors.js';
 
 const GRAFT_FILE_OUTLINE_TOOL = 'file_outline';
 const GRAFT_DIFF_TOOL = 'graft_diff';
 const GRAFT_PROJECTION_REFUSED = 'refused';
 const SAVED_FILE_ONLY_NOTICE = 'saved file only; unsaved buffer edits not included';
-
+const SAVED_FILE_CHANGES_NOTICE = 'changes use saved file; unsaved buffer edits not included';
 type JsonPrimitive = string | number | boolean | null;
 type JsonValue = JsonPrimitive | readonly JsonValue[] | JsonObject;
 type GraftToolName = typeof GRAFT_FILE_OUTLINE_TOOL | typeof GRAFT_DIFF_TOOL;
@@ -114,7 +113,7 @@ interface GraftApiConnection<TSession> {
 
 interface GraftApiSessionManager {
   callTool(workspaceRoot: string, name: GraftToolName, args: GraftToolArgs): Promise<JsonValue>;
-  loadLiveEdictProjection(input: Omit<LiveEdictProjectionInput, 'api'>): LiveEdictProjectionResult | null;
+  loadLiveEdictProjection(input: Omit<LiveEdictProjectionInput, 'api'>): LiveEdictResult | null;
   close(): Promise<void>;
 }
 
@@ -186,7 +185,7 @@ async function loadGraftInfo(request: GraftFileRequest, manager: GraftApiSession
     sourceText: request.sourceText,
   });
   if (liveEdict != null) {
-    return loadLiveEdictGraftInfo(request, relativePath, liveEdict, manager);
+    return liveEdictInfo(request, relativePath, liveEdict, manager);
   }
 
   const outline = await loadGraftOutline(manager, workspaceRoot, relativePath);
@@ -207,8 +206,7 @@ async function loadGraftInfo(request: GraftFileRequest, manager: GraftApiSession
   };
 }
 
-async function loadLiveEdictGraftInfo(request: GraftFileRequest, relativePath: string,
-  liveEdict: LiveEdictProjectionResult, manager: GraftApiSessionManager): Promise<GraftInfo> {
+async function liveEdictInfo(request: GraftFileRequest, relativePath: string, liveEdict: LiveEdictResult, manager: GraftApiSessionManager): Promise<GraftInfo> {
   const outline = await loadGraftOutline(manager, request.workspaceRoot, relativePath);
   return {
     path: request.filePath,
@@ -217,6 +215,7 @@ async function loadLiveEdictGraftInfo(request: GraftFileRequest, relativePath: s
     ...liveEdict,
     changeLines: await loadGraftChanges(manager, request.workspaceRoot, relativePath),
     ...(outline.obstructionReceipt != null ? { obstructionReceipt: outline.obstructionReceipt } : {}),
+    ...(request.dirty ? { notice: SAVED_FILE_CHANGES_NOTICE } : {}),
   };
 }
 

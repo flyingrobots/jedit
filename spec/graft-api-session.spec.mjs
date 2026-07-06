@@ -160,7 +160,7 @@ test('Graft session projects dirty Edict buffers through live source text', asyn
 
   assert.equal(info.projectionSource, 'live-buffer');
   assert.equal(info.projectionPosture, 'current');
-  assert.equal(info.notice, undefined);
+  assert.equal(info.notice, 'changes use saved file; unsaved buffer edits not included');
   assert.deepEqual(structuredBuffers.map((entry) => ({
     bufferPath: entry.bufferPath,
     content: entry.content,
