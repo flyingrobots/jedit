@@ -119,6 +119,73 @@ test('Graft drawer marks omitted review payload collection entries', async () =>
   assert.doesNotMatch(text, /epsilon/);
 });
 
+test('Graft drawer caps root object review payload entries', async () => {
+  const { renderGraftDrawerLines } = await loadGraftDrawer();
+  const payload = Object.fromEntries(Array.from({ length: 7 }, (_entry, index) => [
+    `key${String(index).padStart(2, '0')}`,
+    `value${String(index).padStart(2, '0')}`,
+  ]));
+  const lines = renderGraftDrawerLines(baseDrawerModel({
+    path: '/repo/schema.graphql',
+    relativePath: 'schema.graphql',
+    projectionSource: 'live-buffer',
+    projectionPosture: 'current',
+    projectionLanes: [reviewPayloadLane(payload)],
+    outlineItems: [],
+    changeLines: [],
+  }, 0), 120, 32);
+  const text = linesToText(lines);
+
+  assert.match(text, /"key00": "value00"/);
+  assert.match(text, /"key03": "value03"/);
+  assert.match(text, /\.\.\. 3 more entries/);
+  assert.doesNotMatch(text, /key04/);
+});
+
+test('Graft drawer toggles generic review payload visibility from key input', async () => {
+  const { renderGraftDrawerLines } = await loadGraftDrawer();
+  const { updateGraftDrawerFromKey } = await loadWorkspaceGraftDrawer();
+  const model = {
+    ...baseDrawerModel({
+      path: '/repo/schema.graphql',
+      relativePath: 'schema.graphql',
+      projectionSource: 'live-buffer',
+      projectionPosture: 'current',
+      projectionLanes: [reviewPayloadLane({
+        apiVersion: 'wesley.schema.review/v1',
+      })],
+      outlineItems: [],
+      changeLines: [],
+    }),
+    rows: 24,
+    footerVisible: false,
+  };
+  const [expandedModel] = updateGraftDrawerFromKey(
+    { key: 'space' },
+    model,
+    () => {
+      throw new Error('refresh should not run for expansion');
+    },
+  );
+  const expandedText = linesToText(renderGraftDrawerLines(expandedModel, 120, 24));
+
+  assert.equal(expandedModel.expandedProjectionLaneIndex, 0);
+  assert.match(expandedText, /review payload:/);
+  assert.match(expandedText, /"apiVersion": "wesley\.schema\.review\/v1"/);
+
+  const [collapsedModel] = updateGraftDrawerFromKey(
+    { key: 'space' },
+    expandedModel,
+    () => {
+      throw new Error('refresh should not run for collapse');
+    },
+  );
+  const collapsedText = linesToText(renderGraftDrawerLines(collapsedModel, 120, 24));
+
+  assert.equal(collapsedModel.expandedProjectionLaneIndex, undefined);
+  assert.doesNotMatch(collapsedText, /review payload:/);
+});
+
 test('Graft drawer page movement accounts for expanded review payload rows', async () => {
   const { updateGraftDrawerFromKey } = await loadWorkspaceGraftDrawer();
   const outlineItems = Array.from({ length: 30 }, (_entry, index) => ({

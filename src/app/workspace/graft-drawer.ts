@@ -33,7 +33,15 @@ export function updateGraftDrawerFromKey(
   }
 
   const graftInfo = model.graftInfo;
-  if (graftInfo == null || graftInfo.outlineItems.length === 0) {
+  if (graftInfo == null) {
+    return [model, []];
+  }
+
+  if (msg.key === WorkspaceKeys.Space) {
+    return [toggleProjectionReviewPayload(model, graftInfo), []];
+  }
+
+  if (graftInfo.outlineItems.length === 0) {
     return [model, []];
   }
 
@@ -107,6 +115,31 @@ function isPlainGraftEdgeKey(msg: KeyMsg): boolean {
 
 function isShiftGraftEdgeKey(msg: KeyMsg): boolean {
   return !msg.ctrl && !msg.alt && msg.shift && msg.key === WorkspaceKeys.G;
+}
+
+function toggleProjectionReviewPayload(model: WorkspaceModel, source: GraftProjectionLaneSource): WorkspaceModel {
+  return {
+    ...model,
+    expandedProjectionLaneIndex: nextProjectionReviewPayloadIndex(
+      graftProjectionPanelLanes(source),
+      model.expandedProjectionLaneIndex,
+    ),
+  };
+}
+
+function nextProjectionReviewPayloadIndex(
+  lanes: readonly GraftProjectionPanelLane[],
+  currentIndex: number | undefined,
+): number | undefined {
+  const indices = lanes
+    .flatMap((lane, index) => lane.reviewPayload == null ? [] : [index]);
+  if (currentIndex == null) {
+    return indices[0];
+  }
+  const offset = indices.indexOf(currentIndex);
+  return offset >= 0 && offset < indices.length - 1
+    ? indices[offset + 1]
+    : undefined;
 }
 
 function graftMetaRows(model: WorkspaceModel): number {

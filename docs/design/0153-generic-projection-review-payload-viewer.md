@@ -174,7 +174,7 @@ This cycle adds a display field to the existing jedit projection lane contract:
 
 ```ts
 interface GraftProjectionPanelLane {
-  readonly reviewPayload?: GraftJsonValue;
+  readonly reviewPayload?: GraftJsonObject;
 }
 ```
 
@@ -219,7 +219,7 @@ existing title, state, digest, metadata, and summary rows.
 | Semantic labels or facts | Lane title, digest labels, metadata, summaries, payload rows, and truncation notices are visible text. |
 | Focus order or ownership | Existing Graft drawer focus remains unchanged. |
 | Hidden or visual-only information | None; no new icon-only controls. |
-| Keyboard behavior | Existing drawer navigation remains; expansion uses jedit-owned drawer state. |
+| Keyboard behavior | Existing drawer navigation remains; space cycles expanded review payload lanes. |
 | Secret or redaction behavior | No new secret material is introduced. Payloads are upstream projection facts. |
 
 ## Localization / Directionality Posture
@@ -389,6 +389,9 @@ What changed from the design:
 - Expanded payload state is jedit-owned drawer state; providers only supply the
   payload.
 - The renderer caps total rows, depth, collection entries, and scalar length.
+- Self-review tightened the interaction path so the Graft drawer `space` key
+  cycles expanded review payload lanes, and root object entries now use the same
+  entry cap as nested objects.
 
 What the tests proved:
 
@@ -402,6 +405,18 @@ What the tests proved:
 - GREEN: `npm run check`
   passed with 1170 passing, 13 skipped, and quality regressions none.
 - GREEN: `git diff --check`
+- REVIEW RED:
+  `npm run build && JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/graft-review-payload-viewer.spec.mjs`
+  failed because root object entries were not capped and no key path toggled
+  review payload visibility.
+- REVIEW GREEN:
+  `npm run build && JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/graft-review-payload-viewer.spec.mjs`
+- REVIEW GREEN:
+  `JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/graft-api-session.spec.mjs spec/graft-drawer.spec.mjs spec/graft-review-payload-api-session.spec.mjs spec/graft-review-payload-viewer.spec.mjs spec/design-cycle-policy.spec.mjs`
+- REVIEW GREEN: `npm run quality`
+- REVIEW GREEN:
+  `npx markdownlint-cli2 docs/design/0153-generic-projection-review-payload-viewer.md CHANGELOG.md docs/BEARING.md`
+- REVIEW GREEN: `git diff --check`
 
 What remains open:
 

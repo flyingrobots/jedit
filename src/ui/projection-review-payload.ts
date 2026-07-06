@@ -44,9 +44,7 @@ function appendJsonObject(value: GraftJsonObject, depth: number, indent: number,
     return;
   }
   appendLine(`${indentText(indent)}{`, state);
-  for (const key of Object.keys(value).sort()) {
-    appendJsonProperty(key, value[key], depth + 1, indent + INDENT_STEP, state);
-  }
+  appendJsonObjectEntries(value, depth + 1, indent + INDENT_STEP, state);
   appendLine(`${indentText(indent)}}`, state);
 }
 
@@ -95,6 +93,9 @@ function appendJsonArrayEntries(
 ): void {
   const visibleItems = value.slice(0, REVIEW_PAYLOAD_ENTRY_LIMIT);
   for (const item of visibleItems) {
+    if (state.truncated) {
+      return;
+    }
     appendJsonValue(item, depth, indent, state);
   }
   appendOmittedLine(value.length - visibleItems.length, 'items', indent, state);
@@ -104,6 +105,9 @@ function appendJsonObjectEntries(value: GraftJsonObject, depth: number, indent: 
   const keys = Object.keys(value).sort();
   const visibleKeys = keys.slice(0, REVIEW_PAYLOAD_ENTRY_LIMIT);
   for (const key of visibleKeys) {
+    if (state.truncated) {
+      return;
+    }
     appendJsonProperty(key, value[key], depth, indent, state);
   }
   appendOmittedLine(keys.length - visibleKeys.length, 'entries', indent, state);
