@@ -121,7 +121,7 @@ The files most relevant to this guide are:
 | `src/adapters/fake-echo-jedit-optic-transport.ts`      | Default fake Echo-shaped test transport.                                      |
 | `src/app/jedit-contract-runtime.ts`                    | jedit-owned transitional hot-text contract executor.                          |
 | `src/app/jedit-observer-runtime.ts`                    | jedit-owned observer/read envelope helpers.                                   |
-| `src/adapters/in-memory-hot-text-runtime.ts`           | Transitional in-memory hot-text runtime.                                      |
+| `src/adapters/full-snapshot-hot-text-runtime-fixture.ts` | Full-snapshot hot-text runtime fixture.                                       |
 | `contracts/jedit/hot-text-runtime.graphql`             | jedit-authored hot-text runtime contract.                                     |
 | `contracts/jedit/text-buffer-optic.graphql`            | jedit app-facing optic contract.                                              |
 | `contracts/jedit/structural-history.graphql`           | jedit structural history contract authority.                                  |
@@ -715,7 +715,7 @@ depending on a sibling Echo checkout or a WASM build.
 
 The fake transport:
 
-- uses `createInMemoryHotTextRuntime()`;
+- uses `createFullSnapshotHotTextRuntimeFixture()`;
 - decodes jedit JSON fixture request bytes;
 - executes jedit-owned contract runtime functions;
 - returns encoded OK or obstructed responses;
@@ -737,7 +737,7 @@ sequenceDiagram
   participant Client as JeditOpticClient
   participant Fake as FakeEchoJeditOpticTransport
   participant Contract as jedit-contract-runtime
-  participant Memory as InMemoryHotTextRuntime
+  participant Memory as FullSnapshotHotTextRuntimeFixture
   participant Observer as jedit-observer-runtime
 
   App->>Client: replaceRangeAsTick(session, input)
@@ -1120,8 +1120,12 @@ Build and start the compiled app:
 
 ```sh
 npm run build
-npm start
+JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 npm start
 ```
+
+The development script applies the temporary fixture escape hatch only to the
+source TUI process. Compiled product startup still refuses to instantiate the
+full-snapshot text authority unless the environment flag is supplied explicitly.
 
 Run the default checks:
 
@@ -1153,7 +1157,7 @@ Run the production text session witness:
 
 ```sh
 npm run build
-node scripts/jedit-production-text-session.mjs --json
+JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 node scripts/jedit-production-text-session.mjs --json
 ```
 
 ## The End-to-End Story
@@ -1173,7 +1177,7 @@ sequenceDiagram
   participant Echo
   participant Graft
 
-  Developer->>Shell: npm run dev or npm start
+  Developer->>Shell: npm run dev / JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 npm start
   Shell->>Jedit: start src/main.ts / dist/main.js
   Jedit->>Jedit: initialize workspace model and ports
   Jedit->>Graft: request outlines/diffs as projections

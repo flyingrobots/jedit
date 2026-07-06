@@ -21,6 +21,7 @@ const GRAPH_RUNTIME_DISCOVERY_PATH = path.join(
   'design',
   '0149-graph-backed-rope-runtime-discovery.md',
 );
+const GRAPH_RUNTIME_RED_MATRIX_PATH = path.join(REPO_ROOT, 'spec', 'graph-rope-runtime-red-matrix.spec.mjs');
 
 const REQUIRED_TEMPLATE_HEADINGS = Object.freeze([
   '## Linked Issue',
@@ -53,6 +54,13 @@ const REQUIRED_PROCESS_SECTIONS = Object.freeze([
   '## During A Cycle',
   '## Ready For Review',
   '## Landing A Cycle',
+]);
+
+const GRAPH_RUNTIME_RED_WITNESSES = Object.freeze([
+  'RED: graph-backed runtime retention is not O(buffer size * edit count)',
+  'RED: narrow replacement preserves untouched subtree identity recursively',
+  'RED: save and export read from a named head or checkpoint without mutating text authority',
+  'RED: range why cites head leaf blob rewrite diff tick checkpoint and basis evidence',
 ]);
 
 function readRepoFile(filePath) {
@@ -104,12 +112,13 @@ test('HT-0149 rope fact validation receives admission context', () => {
   const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
 
   assert.match(discovery, /^interface RopeFactValidationContext \{$/m);
-  assert.match(discovery, /readonly writeSet:/);
+  assert.match(discovery, /readonly writeSet: readonly RopeAdmittedFact\[\];/);
   assert.match(discovery, /readonly admittedBasis:/);
   assert.match(discovery, /readonly blobStore:/);
+  assert.match(discovery, /readonly hash: TextBlobHashPort;/);
   assert.match(
     discovery,
-    /declare function validateRopeFact\(\n  payload: object,\n  context: RopeFactValidationContext,\n\): FactValidationResult</,
+    /declare function validateRopeFact\(\n  payload: RopeAdmittedFact,\n  context: RopeFactValidationContext,\n\): FactValidationResult</,
   );
 });
 
@@ -139,7 +148,8 @@ test('HT-0149 checkpoint facts are validated rather than deferred', () => {
   const admittedFacts = sectionBetween(discovery, 'type RopeAdmittedFact =', 'interface RopeFactReadModel');
 
   assert.match(admittedFacts, /\| TickReceiptFact/);
-  assert.match(admittedFacts, /\| RopeCheckpointFact;/);
+  assert.match(admittedFacts, /\| RopeCheckpointFact\b/);
+  assert.match(admittedFacts, /\| EchoCausalAnchorFact;/);
   assert.match(discovery, /\): FactValidationResult<RopeAdmittedFact>;/);
   assert.doesNotMatch(deferredFacts, /`RopeCheckpoint`/);
 });
@@ -204,6 +214,17 @@ test('HT-0149 follow-on debt is issue-backed', () => {
 
   assert.ok(issueLinks.length >= 6, 'follow-on debt should link tracker issues for every deferred item');
   assert.doesNotMatch(followOnDebt, /should create narrower issues/);
+});
+
+test('HT-0149 graph runtime RED matrix declares all Slice 4 witnesses', () => {
+  const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
+  const redMatrix = readRepoFile(GRAPH_RUNTIME_RED_MATRIX_PATH);
+
+  assert.match(discovery, /\[x\] Slice 4: Add failing retention/);
+
+  for (const witnessName of GRAPH_RUNTIME_RED_WITNESSES) {
+    assert.match(redMatrix, new RegExp(escapeRegExp(`test.skip('${witnessName}`)));
+  }
 });
 
 test('BEARING blocks why work on graph runtime proof', () => {

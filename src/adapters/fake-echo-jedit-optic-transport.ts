@@ -8,7 +8,7 @@ import {
   readTextWindowWithObserverPlan,
   readWorldlineSnapshotWithObserverPlan,
 } from '../app/jedit-observer-runtime.js';
-import { createInMemoryHotTextRuntime } from './in-memory-hot-text-runtime.js';
+import { createFullSnapshotHotTextRuntimeFixture } from './full-snapshot-hot-text-runtime-fixture.js';
 import type { EchoKernelInfo } from '../ports/echo-kernel-transport.js';
 import type { JeditTransportSeam } from '../ports/jedit-transport-seam.js';
 import type { HotTextRuntimePort } from '../ports/hot-text-runtime.js';
@@ -74,7 +74,7 @@ export function createFakeEchoJeditOpticTransport(
   options: CreateFakeEchoJeditOpticTransportOptions = {},
 ): JeditTransportSeam {
   const context: FakeTransportContext = {
-    runtime: options.runtime ?? createInMemoryHotTextRuntime(),
+    runtime: options.runtime ?? createFullSnapshotHotTextRuntimeFixture(),
     hash: options.hash ?? createHashPort(),
     sessionPort: options.sessionPort ?? createInMemoryJeditWorldlineSessionPort(),
   };

@@ -6,14 +6,31 @@ import { pathToFileURL } from 'node:url';
 const REPO_ROOT = process.cwd();
 const SESSION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'text-runtime-profile-session.js');
 const PROFILE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'text-runtime-profile.js');
+const FULL_SNAPSHOT_AUTHORITY_ENV = 'JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY';
+const FULL_SNAPSHOT_GUARD_MESSAGE = /FullSnapshotHotTextRuntimeFixture cannot be used as production text authority/;
 
 let modulesPromise;
 
+test('Echo-hosted text runtime profile rejects implicit full-snapshot authority by default', async () => {
+  const modules = await loadModules();
+
+  withFullSnapshotAuthorityEnv(undefined, () => {
+    assert.throws(
+      () => modules.session.createTextRuntimeProfileSession({
+        profile: modules.profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+      }),
+      FULL_SNAPSHOT_GUARD_MESSAGE,
+    );
+  });
+});
+
 test('Echo-hosted text runtime profile drives a narrow edit/read path through Echo-backed session', async () => {
   const modules = await loadModules();
-  const binding = modules.session.createTextRuntimeProfileSession({
-    profile: modules.profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
-  });
+  const binding = withFullSnapshotAuthorityEnv('1', () => (
+    modules.session.createTextRuntimeProfileSession({
+      profile: modules.profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+    })
+  ));
 
   const text = await runNarrowEditRead(binding.session, 'echoHosted');
 
@@ -145,7 +162,8 @@ async function loadModules() {
     return modulesPromise;
   }
 
-  modulesPromise = (async () => {    const [session, profile] = await Promise.all([
+  modulesPromise = (async () => {
+    const [session, profile] = await Promise.all([
       import(pathToFileURL(SESSION_MODULE_PATH).href),
       import(pathToFileURL(PROFILE_MODULE_PATH).href),
     ]);
@@ -153,4 +171,23 @@ async function loadModules() {
   })();
 
   return modulesPromise;
+}
+
+function withFullSnapshotAuthorityEnv(value, callback) {
+  const previous = process.env[FULL_SNAPSHOT_AUTHORITY_ENV];
+  if (value === undefined) {
+    delete process.env[FULL_SNAPSHOT_AUTHORITY_ENV];
+  } else {
+    process.env[FULL_SNAPSHOT_AUTHORITY_ENV] = value;
+  }
+
+  try {
+    return callback();
+  } finally {
+    if (previous === undefined) {
+      delete process.env[FULL_SNAPSHOT_AUTHORITY_ENV];
+    } else {
+      process.env[FULL_SNAPSHOT_AUTHORITY_ENV] = previous;
+    }
+  }
 }

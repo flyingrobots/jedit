@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url';
 import { REPO_ROOT, ensureDistBuilt } from './dist-helpers.mjs';
 
 const OPTIC_CLIENT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-optic-client.js');
-const ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'in-memory-hot-text-runtime.js');
+const ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'full-snapshot-hot-text-runtime-fixture.js');
 const TRANSPORT_CLIENT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-optic-client.js');
 const FAKE_TRANSPORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'fake-echo-jedit-optic-transport.js');
 const HASH_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'hash.js');
@@ -96,7 +96,7 @@ async function loadModules() {
 
 test('in-memory optic client exposes GraphQL-shaped mutation and observer operations', async () => {
   const { opticClientModule, adapter, hashModule } = await loadModules();
-  const runtime = adapter.createInMemoryHotTextRuntime();
+  const runtime = adapter.createFullSnapshotHotTextRuntimeFixture();
   const client = opticClientModule.createInMemoryJeditOpticClient(runtime, hashModule.createHashPort());
 
   const created = await client.createBufferWorldline({

@@ -6,7 +6,7 @@ import { pathToFileURL } from 'node:url';
 const REPO_ROOT = process.cwd();
 const STATE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-state-port.js');
 const RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-runtime.js');
-const HOT_RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'in-memory-hot-text-runtime.js');
+const HOT_RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'full-snapshot-hot-text-runtime-fixture.js');
 const HASH_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'hash.js');
 const BUFFER_KEY = 'notes/state-port.md';
 const INITIAL_TEXT = 'hello';
@@ -39,7 +39,7 @@ test('missing jedit contract state is typed', async () => {
 });
 
 function createSession(modules) {
-  const runtime = modules.hotRuntime.createInMemoryHotTextRuntime();
+  const runtime = modules.hotRuntime.createFullSnapshotHotTextRuntimeFixture();
   return modules.runtime.createBufferWorldline(runtime, {
     bufferKey: BUFFER_KEY,
     initialText: INITIAL_TEXT,

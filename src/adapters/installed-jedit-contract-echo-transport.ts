@@ -17,7 +17,10 @@ import {
   JEDIT_HANDLER_INVOCATION_STATUS_BLOCKED,
   type JeditHandlerInvocationSink,
 } from '../app/jedit-runtime-handler-invocation.js';
-import { createInMemoryHotTextRuntime } from './in-memory-hot-text-runtime.js';
+import {
+  createFullSnapshotHotTextRuntimeFixture,
+  isFullSnapshotHotTextRuntimeFixture,
+} from './full-snapshot-hot-text-runtime-fixture.js';
 import {
   installJeditContractPackage,
 } from './jedit-echo-contract-package-installer.js';
@@ -83,9 +86,13 @@ const STATE_MISSING_RECOVERY = 'publish jedit contract state before observing';
 const QUERY_OBSERVER_RUNTIME_ERROR_CODE = 'JEDIT_QUERY_OBSERVER_RUNTIME_ERROR';
 const QUERY_OBSERVER_RUNTIME_ERROR_RECOVERY = 'refresh the reading basis or fix query input';
 const QUERY_OBSERVER_RUNTIME_ERROR_MESSAGE = 'Jedit query observer failed while producing the reading';
+export const JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY = 'JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY';
+const FULL_SNAPSHOT_TEXT_AUTHORITY_GUARD_MESSAGE =
+  'FullSnapshotHotTextRuntimeFixture cannot be used as production text authority.';
 
 export interface InstalledJeditContractEchoTransportOptions {
   readonly runtime?: HotTextRuntimePort;
+  readonly allowFullSnapshotTextAuthority?: true;
   readonly hash?: HashPort;
   readonly moduleSpecifier?: string;
   readonly workSink?: JeditRuntimeWorkSink;
@@ -95,6 +102,13 @@ export interface InstalledJeditContractEchoTransportOptions {
   readonly ticketedWorkPort?: JeditTicketedWorkPort;
   readonly packageHost?: EchoContractPackageHostPort;
   readonly sessionPort?: JeditWorldlineSessionPort;
+}
+
+export class FullSnapshotTextAuthorityGuardError extends Error {
+  public constructor() {
+    super(FULL_SNAPSHOT_TEXT_AUTHORITY_GUARD_MESSAGE);
+    this.name = 'FullSnapshotTextAuthorityGuardError';
+  }
 }
 
 interface InstalledJeditContractEchoTransportContext {
@@ -156,7 +170,7 @@ function resolveTransportSessionPort(
 function createTransportContext(
   options: InstalledJeditContractEchoTransportOptions,
 ): InstalledJeditContractEchoTransportContext {
-  const runtime = options.runtime ?? createInMemoryHotTextRuntime();
+  const runtime = resolveTransportRuntime(options);
   const hash = options.hash ?? createHashPort();
   const defaults = createDefaultJeditHostingBoundaries(hash);
   const statePort = options.statePort ?? defaults.statePort;
@@ -184,6 +198,34 @@ function createTransportContext(
     ticketedWorkPort: options.ticketedWorkPort ?? defaults.ticketedWorkPort,
     bridge: createInstalledJeditEintBridge({ sessionPort }),
   };
+}
+
+function resolveTransportRuntime(
+  options: InstalledJeditContractEchoTransportOptions,
+): HotTextRuntimePort {
+  const runtime = options.runtime ?? createFullSnapshotHotTextRuntimeFixture();
+  assertRuntimeAllowed(runtime, options);
+  return runtime;
+}
+
+function assertRuntimeAllowed(
+  runtime: HotTextRuntimePort,
+  options: InstalledJeditContractEchoTransportOptions,
+): void {
+  if (!isFullSnapshotHotTextRuntimeFixture(runtime)) {
+    return;
+  }
+  if (isFullSnapshotAuthorityAllowed(options)) {
+    return;
+  }
+  throw new FullSnapshotTextAuthorityGuardError();
+}
+
+function isFullSnapshotAuthorityAllowed(
+  options: InstalledJeditContractEchoTransportOptions,
+): boolean {
+  return options.allowFullSnapshotTextAuthority === true
+    || process.env[JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY] === '1';
 }
 
 function submitInstalledIntent(

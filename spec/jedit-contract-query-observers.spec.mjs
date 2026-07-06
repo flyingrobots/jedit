@@ -7,7 +7,7 @@ const REPO_ROOT = process.cwd();
 const OBSERVERS_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-query-observers.js');
 const MUTATION_HANDLERS_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-mutation-handlers.js');
 const PACKAGE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-package.js');
-const RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'in-memory-hot-text-runtime.js');
+const RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'full-snapshot-hot-text-runtime-fixture.js');
 const HASH_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'hash.js');
 const BUFFER_KEY = 'notes/observer.md';
 const INITIAL_TEXT = 'hello observers';
@@ -111,7 +111,7 @@ async function loadModules() {
 }
 
 function createContext(modules) {
-  const runtime = modules.runtime.createInMemoryHotTextRuntime();
+  const runtime = modules.runtime.createFullSnapshotHotTextRuntimeFixture();
   const hash = modules.hash.createHashPort();
   return {
     mutations: modules.mutations.createJeditContractMutationHandlerRegistry({

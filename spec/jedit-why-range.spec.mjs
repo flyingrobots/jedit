@@ -6,7 +6,7 @@ import { REPO_ROOT, ensureDistBuilt } from './dist-helpers.mjs';
 
 const WHY_RANGE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-why-range.js');
 const CONTRACT_APP_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-runtime.js');
-const ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'in-memory-hot-text-runtime.js');
+const ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'full-snapshot-hot-text-runtime-fixture.js');
 const HASH_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'hash.js');
 
 async function loadModules() {
@@ -24,7 +24,7 @@ async function loadModules() {
 
 test('range why identifies the retained rope diff that produced a selected span', async () => {
   const { whyRange, contractApp, adapter, hash } = await loadModules();
-  const runtime = adapter.createInMemoryHotTextRuntime();
+  const runtime = adapter.createFullSnapshotHotTextRuntimeFixture();
   const created = createBuffer(contractApp, runtime, hash, 'alpha beta');
   const edited = contractApp.replaceRangeAsTick(runtime, created.nextSession, {
     worldlineId: created.result.worldline.worldlineId,
@@ -55,7 +55,7 @@ test('range why identifies the retained rope diff that produced a selected span'
 
 test('range why walks past later edits instead of depending on local command memory', async () => {
   const { whyRange, contractApp, adapter, hash } = await loadModules();
-  const runtime = adapter.createInMemoryHotTextRuntime();
+  const runtime = adapter.createFullSnapshotHotTextRuntimeFixture();
   const created = createBuffer(contractApp, runtime, hash, '');
   const inserted = contractApp.replaceRangeAsTick(runtime, created.nextSession, {
     worldlineId: created.result.worldline.worldlineId,
@@ -86,7 +86,7 @@ test('range why walks past later edits instead of depending on local command mem
 
 test('range why resolves duplicate text by current coordinate, not string content', async () => {
   const { whyRange, contractApp, adapter, hash } = await loadModules();
-  const runtime = adapter.createInMemoryHotTextRuntime();
+  const runtime = adapter.createFullSnapshotHotTextRuntimeFixture();
   const created = createBuffer(contractApp, runtime, hash, 'foo\nbar\n');
   const edited = contractApp.replaceRangeAsTick(runtime, created.nextSession, {
     worldlineId: created.result.worldline.worldlineId,
@@ -110,7 +110,7 @@ test('range why resolves duplicate text by current coordinate, not string conten
 
 test('range why does not mark mixed old and inserted bytes as wholly produced', async () => {
   const { whyRange, contractApp, adapter, hash } = await loadModules();
-  const runtime = adapter.createInMemoryHotTextRuntime();
+  const runtime = adapter.createFullSnapshotHotTextRuntimeFixture();
   const created = createBuffer(contractApp, runtime, hash, 'foo');
   const edited = contractApp.replaceRangeAsTick(runtime, created.nextSession, {
     worldlineId: created.result.worldline.worldlineId,

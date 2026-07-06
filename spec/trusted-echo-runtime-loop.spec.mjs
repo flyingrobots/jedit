@@ -133,7 +133,9 @@ test('trusted Echo runtime loop remains running when stop is rejected', async ()
 
 test('app-facing Echo-backed TextBufferSession port does not expose trusted host loop control', async () => {
   const modules = await loadModules();
-  const transport = modules.transport.createInstalledJeditContractEchoTransport();
+  const transport = modules.transport.createInstalledJeditContractEchoTransport({
+    allowFullSnapshotTextAuthority: true,
+  });
   const client = modules.client.createEchoTransportJeditOpticClient(transport);
   const session = modules.sessionAdapter.createEchoBackedTextBufferSession({
     client,

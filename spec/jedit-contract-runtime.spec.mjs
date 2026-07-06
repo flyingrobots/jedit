@@ -6,7 +6,7 @@ import { REPO_ROOT, ensureDistBuilt } from './dist-helpers.mjs';
 
 const CONTRACT_APP_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-runtime.js');
 const CONTRACT_ID_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-runtime-id.js');
-const ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'in-memory-hot-text-runtime.js');
+const ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'full-snapshot-hot-text-runtime-fixture.js');
 const HASH_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'hash.js');
 
 async function loadModules() {
@@ -24,7 +24,7 @@ async function loadModules() {
 
 test('createBufferWorldline returns contract-shaped worldline and head data', async () => {
   const { contractApp, adapter, hash } = await loadModules();
-  const runtime = adapter.createInMemoryHotTextRuntime();
+  const runtime = adapter.createFullSnapshotHotTextRuntimeFixture();
 
   const created = contractApp.createBufferWorldline(runtime, {
     bufferKey: 'notes/today.md',
@@ -44,7 +44,7 @@ test('createBufferWorldline returns contract-shaped worldline and head data', as
 
 test('replaceRangeAsTick returns contract-shaped tick and receipt data', async () => {
   const { contractApp, adapter, hash } = await loadModules();
-  const runtime = adapter.createInMemoryHotTextRuntime();
+  const runtime = adapter.createFullSnapshotHotTextRuntimeFixture();
   const created = contractApp.createBufferWorldline(runtime, {
     bufferKey: 'notes/today.md',
     initialText: 'hello world',
@@ -126,7 +126,7 @@ test('JeditWorldlineSession rejects malformed head identifiers before root compa
 
 test('createCheckpoint keeps checkpoint metadata in the app-owned adapter layer', async () => {
   const { contractApp, adapter, hash } = await loadModules();
-  const runtime = adapter.createInMemoryHotTextRuntime();
+  const runtime = adapter.createFullSnapshotHotTextRuntimeFixture();
   const created = contractApp.createBufferWorldline(runtime, {
     bufferKey: 'notes/today.md',
     initialText: 'hello world',
@@ -157,7 +157,7 @@ test('createCheckpoint keeps checkpoint metadata in the app-owned adapter layer'
 
 test('worldlineSnapshot returns canonical worldline, head, checkpoints, and text', async () => {
   const { contractApp, adapter, hash } = await loadModules();
-  const runtime = adapter.createInMemoryHotTextRuntime();
+  const runtime = adapter.createFullSnapshotHotTextRuntimeFixture();
   const created = contractApp.createBufferWorldline(runtime, {
     bufferKey: 'notes/today.md',
     initialText: 'hello world',
@@ -193,7 +193,7 @@ test('worldlineSnapshot returns canonical worldline, head, checkpoints, and text
 
 test('replaceRangeAsTick rejects a stale or foreign basis head at the app-owned contract layer', async () => {
   const { contractApp, adapter, hash } = await loadModules();
-  const runtime = adapter.createInMemoryHotTextRuntime();
+  const runtime = adapter.createFullSnapshotHotTextRuntimeFixture();
   const created = contractApp.createBufferWorldline(runtime, {
     bufferKey: 'notes/today.md',
     initialText: 'hello world',

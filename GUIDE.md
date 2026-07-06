@@ -16,8 +16,12 @@ npm install
 Start the TUI:
 
 ```sh
-npm run dev
+JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 npm run dev
 ```
+
+The environment flag is temporary. It acknowledges that the current text
+authority is the quarantined full-snapshot fixture until the graph-backed rope
+runtime replaces it.
 
 Build the app:
 

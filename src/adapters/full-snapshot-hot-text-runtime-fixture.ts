@@ -29,8 +29,17 @@ import type {
   SaveHotCheckpointResult,
 } from '../ports/hot-text-runtime.js';
 
-export function createInMemoryHotTextRuntime(): HotTextRuntimePort {
+export const FULL_SNAPSHOT_TEXT_AUTHORITY_KIND = 'full-snapshot-fixture';
+
+export interface FullSnapshotHotTextRuntimeFixture extends HotTextRuntimePort {
+  readonly textAuthorityKind: typeof FULL_SNAPSHOT_TEXT_AUTHORITY_KIND;
+  readonly isProductionSafe: false;
+}
+
+export function createFullSnapshotHotTextRuntimeFixture(): FullSnapshotHotTextRuntimeFixture {
   return {
+    textAuthorityKind: FULL_SNAPSHOT_TEXT_AUTHORITY_KIND,
+    isProductionSafe: false,
     createBuffer,
     materialize,
     admitReplaceRangeTick,
@@ -39,6 +48,15 @@ export function createInMemoryHotTextRuntime(): HotTextRuntimePort {
     closeEditGroup,
     saveCheckpoint,
   };
+}
+
+export function isFullSnapshotHotTextRuntimeFixture(
+  runtime: HotTextRuntimePort,
+): runtime is FullSnapshotHotTextRuntimeFixture {
+  return 'textAuthorityKind' in runtime
+    && runtime.textAuthorityKind === FULL_SNAPSHOT_TEXT_AUTHORITY_KIND
+    && 'isProductionSafe' in runtime
+    && runtime.isProductionSafe === false;
 }
 
 function createBuffer(path: string, initialText: string): HotTextBufferState {

@@ -14,7 +14,7 @@ readings.
 
 ## Source Model Inspected
 
-- `src/adapters/in-memory-hot-text-runtime.ts`
+- `src/adapters/full-snapshot-hot-text-runtime-fixture.ts`
 - `src/ports/hot-text-runtime.ts`
 - `src/domain/text-edit-contract.ts`
 - `src/domain/tick-admission-contract.ts`

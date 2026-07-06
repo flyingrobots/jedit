@@ -38,7 +38,7 @@ test('production cutover guard catches sample recovery local-memory fallback tok
   const tempDir = mkdtempSync(path.join(tmpdir(), 'jedit-recovery-guard-'));
   const sample = path.join(tempDir, 'sample.ts');
   writeFileSync(sample, [
-    "import { createInMemoryHotTextRuntime } from './in-memory-hot-text-runtime.js';",
+    "import { createFullSnapshotHotTextRuntimeFixture } from './full-snapshot-hot-text-runtime-fixture.js';",
     'const text = getCurrentText(currentBuffer);',
     'saveFromBuffer(text);',
   ].join('\n'));
@@ -46,9 +46,24 @@ test('production cutover guard catches sample recovery local-memory fallback tok
   const result = spawnGuard('--sample-forbidden-file', sample);
 
   assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /createInMemoryHotTextRuntime/);
+  assert.match(result.stderr, /createFullSnapshotHotTextRuntimeFixture/);
   assert.match(result.stderr, /getCurrentText/);
   assert.match(result.stderr, /saveFromBuffer/);
+});
+
+test('production cutover guard catches sample legacy hot runtime fixture tokens', () => {
+  const tempDir = mkdtempSync(path.join(tmpdir(), 'jedit-recovery-legacy-guard-'));
+  const sample = path.join(tempDir, 'sample.ts');
+  writeFileSync(sample, [
+    "import { createInMemoryHotTextRuntime } from './in-memory-hot-text-runtime.js';",
+    'const runtime = createInMemoryHotTextRuntime();',
+  ].join('\n'));
+
+  const result = spawnGuard('--sample-forbidden-file', sample);
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /createInMemoryHotTextRuntime/);
+  assert.match(result.stderr, /in-memory-hot-text-runtime/);
 });
 
 test('production cutover guard catches sample non-Echo runtime profile tokens', () => {
