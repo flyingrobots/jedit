@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added a generic projection review payload viewer so jedit can display bounded
+  provider-owned review payloads for Edict Core and Echo Target IR projection
+  lanes without interpreting, validating, lowering, executing, canonicalizing,
+  or assigning semantic meaning to those payloads.
 - Added a generic Graft projection-lane panel so jedit can render
   provider-neutral projection state, digest, metadata, and bounded summaries
   while preserving the current Edict Core and Echo Target IR display and

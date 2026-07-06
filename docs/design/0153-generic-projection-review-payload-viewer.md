@@ -283,11 +283,11 @@ payloads generically and use Edict Core plus Echo Target IR as fixtures.
 ## Implementation Slices
 
 - [x] Slice 1: Reframe issue #259 and add this design packet.
-- [ ] Slice 2: Add RED drawer/API tests for collapsed and expanded review
+- [x] Slice 2: Add RED drawer/API tests for collapsed and expanded review
       payloads.
-- [ ] Slice 3: Add generic review payload fields and carry Edict/Echo review
+- [x] Slice 3: Add generic review payload fields and carry Edict/Echo review
       payloads through the projection lane adapter.
-- [ ] Slice 4: Add bounded payload rendering and row accounting.
+- [x] Slice 4: Add bounded payload rendering and row accounting.
 - [ ] Slice 5: Update docs/changelog, fill retrospective, validate, and open
       PR.
 
@@ -295,36 +295,37 @@ payloads generically and use Edict Core plus Echo Target IR as fixtures.
 
 Behavior tests required:
 
-- [ ] `spec/graft-drawer.spec.mjs` proves collapsed lanes do not show review
+- [x] `spec/graft-review-payload-viewer.spec.mjs` proves collapsed lanes do not show review
       payload rows.
-- [ ] `spec/graft-drawer.spec.mjs` proves an expanded generic lane renders a
+- [x] `spec/graft-review-payload-viewer.spec.mjs` proves an expanded generic lane renders a
       structured review payload.
-- [ ] `spec/graft-drawer.spec.mjs` proves large payloads truncate explicitly.
-- [ ] `spec/graft-drawer.spec.mjs` proves PageDown accounting includes expanded
+- [x] `spec/graft-review-payload-viewer.spec.mjs` proves large payloads truncate explicitly.
+- [x] `spec/graft-review-payload-viewer.spec.mjs` proves collection entries are capped explicitly.
+- [x] `spec/graft-review-payload-viewer.spec.mjs` proves PageDown accounting includes expanded
       payload rows.
-- [ ] `spec/graft-api-session.spec.mjs` proves Edict Core and Echo Target IR
+- [x] `spec/graft-review-payload-api-session.spec.mjs` proves Edict Core and Echo Target IR
       lanes carry review payloads from upstream projection results.
-- [ ] `spec/graft-drawer.spec.mjs` proves runtime, admission, debugger, and REPL
+- [x] `spec/graft-review-payload-viewer.spec.mjs` proves runtime, admission, debugger, and REPL
       wording stays absent.
 
 Documentation and process tests:
 
-- [ ] Existing design-cycle checks remain green.
+- [x] Existing design-cycle checks remain green.
 
 ## Acceptance Criteria
 
 The work is done when:
 
-- [ ] Projection lanes may expose an optional review payload.
-- [ ] jedit can render collapsed compact lanes without payload rows.
-- [ ] jedit can render expanded generic review payload rows.
-- [ ] Payload rendering is bounded by depth, row count, array/object entries,
+- [x] Projection lanes may expose an optional review payload.
+- [x] jedit can render collapsed compact lanes without payload rows.
+- [x] jedit can render expanded generic review payload rows.
+- [x] Payload rendering is bounded by depth, row count, array/object entries,
       and scalar length.
-- [ ] Truncation is explicit.
-- [ ] Row accounting remains correct for expanded payloads.
-- [ ] Edict Core review payloads display through the generic viewer.
-- [ ] Echo Target IR review payloads display through the generic viewer.
-- [ ] Drawer output contains no execution, admission, debugger, or REPL claim.
+- [x] Truncation is explicit.
+- [x] Row accounting remains correct for expanded payloads.
+- [x] Edict Core review payloads display through the generic viewer.
+- [x] Echo Target IR review payloads display through the generic viewer.
+- [x] Drawer output contains no execution, admission, debugger, or REPL claim.
 - [x] Issue #259 and the PR are linked correctly.
 - [ ] Local validation is green.
 
@@ -380,15 +381,32 @@ Known deferrals in this cycle:
 
 What changed from the design:
 
-- Pending implementation.
+- The implementation kept the viewer generic by adding `reviewPayload` to
+  projection panel lanes rather than adding Edict- or Echo-specific drawer
+  branches.
+- Edict Core and Echo Target IR review objects are normalized at the Graft
+  adapter boundary before entering jedit's `GraftJsonObject` display model.
+- Expanded payload state is jedit-owned drawer state; providers only supply the
+  payload.
+- The renderer caps total rows, depth, collection entries, and scalar length.
 
 What the tests proved:
 
-- Pending implementation.
+- RED:
+  `npm run build && JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/graft-review-payload-api-session.spec.mjs spec/graft-review-payload-viewer.spec.mjs`
+  failed because lanes did not carry review payloads and the drawer ignored
+  expanded payload state.
+- GREEN:
+  `npm run build && JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/graft-review-payload-api-session.spec.mjs spec/graft-review-payload-viewer.spec.mjs spec/graft-api-session.spec.mjs spec/graft-drawer.spec.mjs`
+- GREEN: `npm run quality`
+- GREEN: `git diff --check`
 
 What remains open:
 
-- Pending implementation.
+- Profile-aware Wesley SDL projection belongs in Graft first.
+- jedit Wesley projection consumption follows the Graft provider work.
+- Canonical Echo receipt digest display waits for Echo-side canonical receipt
+  bytes and digests.
 
 PR:
 
