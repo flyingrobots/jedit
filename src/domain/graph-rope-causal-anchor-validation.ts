@@ -68,16 +68,24 @@ export function validateEchoCausalAnchorFact(
   if (fact.kind !== ECHO_CAUSAL_ANCHOR_FACT_KIND) {
     return invalidFact(FACT_VALIDATION_ERROR_INVALID_KIND);
   }
+  const issue = validateAnchorHeader(fact)
+    ?? validateAnchorRootSets(fact.retainedRoots, fact.materializationRoots)
+    ?? validateAnchorIdentity(fact, context);
+  if (issue !== null) {
+    return invalidFact(issue);
+  }
+  return validFact(fact);
+}
+
+function validateAnchorHeader(fact: EchoCausalAnchorFact): FactValidationErrorCode | null {
   if (isInvalidHash(fact.anchorDigest)) {
-    return invalidFact(FACT_VALIDATION_ERROR_INVALID_HASH);
+    return FACT_VALIDATION_ERROR_INVALID_HASH;
   }
-  if (!VALID_ANCHOR_PURPOSES.has(fact.purpose)) {
-    return invalidFact(FACT_VALIDATION_ERROR_INVALID_REFERENCE);
+  const policyIssue = validateAnchorPolicy(fact);
+  if (policyIssue !== null) {
+    return policyIssue;
   }
-  if (fact.retention == null || !VALID_ANCHOR_PURPOSES.has(fact.retention.retentionClass)) {
-    return invalidFact(FACT_VALIDATION_ERROR_INVALID_REFERENCE);
-  }
-  const idResult = invalidIdIn([
+  return invalidIdIn([
     fact.anchorId,
     fact.subject.appId,
     fact.subject.subjectKind,
@@ -86,20 +94,35 @@ export function validateEchoCausalAnchorFact(
     fact.retention.retentionClass,
     fact.admittedByReceiptId,
   ]);
-  if (idResult !== null) {
-    return invalidFact(idResult);
+}
+
+function validateAnchorPolicy(fact: EchoCausalAnchorFact): FactValidationErrorCode | null {
+  return validateAnchorPurpose(fact.purpose) ?? validateAnchorRetention(fact.retention);
+}
+
+function validateAnchorPurpose(purpose: string): FactValidationErrorCode | null {
+  return VALID_ANCHOR_PURPOSES.has(purpose) ? null : FACT_VALIDATION_ERROR_INVALID_REFERENCE;
+}
+
+function validateAnchorRetention(
+  retention: EchoCausalAnchorFact['retention'] | null | undefined,
+): FactValidationErrorCode | null {
+  if (retention == null) {
+    return FACT_VALIDATION_ERROR_INVALID_REFERENCE;
   }
-  const rootIssue = validateAnchorRootSets(fact.retainedRoots, fact.materializationRoots);
-  if (rootIssue !== null) {
-    return invalidFact(rootIssue);
-  }
+  return VALID_ANCHOR_PURPOSES.has(retention.retentionClass) ? null : FACT_VALIDATION_ERROR_INVALID_REFERENCE;
+}
+
+function validateAnchorIdentity(
+  fact: EchoCausalAnchorFact,
+  context: RopeFactValidationContext,
+): FactValidationErrorCode | null {
   if (fact.anchorDigest !== causalAnchorDigestFor(fact, context.hash)) {
-    return invalidFact(FACT_VALIDATION_ERROR_HASH_MISMATCH);
+    return FACT_VALIDATION_ERROR_HASH_MISMATCH;
   }
-  if (fact.anchorId !== causalAnchorIdForDigest(fact.anchorDigest, context.hash)) {
-    return invalidFact(FACT_VALIDATION_ERROR_HASH_MISMATCH);
-  }
-  return validFact(fact);
+  return fact.anchorId === causalAnchorIdForDigest(fact.anchorDigest, context.hash)
+    ? null
+    : FACT_VALIDATION_ERROR_HASH_MISMATCH;
 }
 
 export function checkpointReferencesSameWorldline(
@@ -118,13 +141,33 @@ export function checkpointAnchorMatches(
   if (!isRopeHeadFact(head) || !isEchoCausalAnchorFact(anchor)) {
     return false;
   }
+  return checkpointAnchorSubjectMatches(anchor, fact)
+    && checkpointAnchorFrontierMatches(anchor, head, context)
+    && checkpointAnchorPolicyMatches(anchor, fact)
+    && checkpointAnchorRetainsHead(anchor, fact);
+}
+
+function checkpointAnchorSubjectMatches(anchor: EchoCausalAnchorFact, fact: RopeCheckpointFact): boolean {
   return anchor.subject.appId === JEDIT_CAUSAL_ANCHOR_APP_ID
     && anchor.subject.subjectKind === JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_BUFFER_WORLDLINE
-    && anchor.subject.subjectId === fact.worldlineId
-    && anchor.basisFrontierDigest === basisFrontierDigestForRopeHead(head, context.hash)
-    && anchor.purpose === checkpointAnchorPurpose(fact.reason)
-    && anchor.retention.retentionClass === checkpointAnchorRetentionClass(fact.reason)
-    && anchor.retainedRoots.some((root) => isJeditRopeHeadAuthorityRoot(root, fact.headId));
+    && anchor.subject.subjectId === fact.worldlineId;
+}
+
+function checkpointAnchorFrontierMatches(
+  anchor: EchoCausalAnchorFact,
+  head: RopeHeadFact,
+  context: RopeFactValidationContext,
+): boolean {
+  return anchor.basisFrontierDigest === basisFrontierDigestForRopeHead(head, context.hash);
+}
+
+function checkpointAnchorPolicyMatches(anchor: EchoCausalAnchorFact, fact: RopeCheckpointFact): boolean {
+  return anchor.purpose === checkpointAnchorPurpose(fact.reason)
+    && anchor.retention.retentionClass === checkpointAnchorRetentionClass(fact.reason);
+}
+
+function checkpointAnchorRetainsHead(anchor: EchoCausalAnchorFact, fact: RopeCheckpointFact): boolean {
+  return anchor.retainedRoots.some((root) => isJeditRopeHeadAuthorityRoot(root, fact.headId));
 }
 
 function validateAnchorRootSets(
