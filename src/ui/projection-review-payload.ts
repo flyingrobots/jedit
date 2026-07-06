@@ -3,6 +3,7 @@ import type { GraftJsonObject, GraftJsonValue } from '../ports/graft-session.js'
 const REVIEW_PAYLOAD_HEADER = 'review payload:';
 const REVIEW_PAYLOAD_ROW_LIMIT = 12;
 const REVIEW_PAYLOAD_DEPTH_LIMIT = 4;
+const REVIEW_PAYLOAD_ENTRY_LIMIT = 4;
 const REVIEW_PAYLOAD_SCALAR_TEXT = 120;
 const INDENT_STEP = 2;
 
@@ -92,14 +93,25 @@ function appendJsonArrayEntries(
   indent: number,
   state: ReviewPayloadRenderState,
 ): void {
-  for (const item of value) {
+  const visibleItems = value.slice(0, REVIEW_PAYLOAD_ENTRY_LIMIT);
+  for (const item of visibleItems) {
     appendJsonValue(item, depth, indent, state);
   }
+  appendOmittedLine(value.length - visibleItems.length, 'items', indent, state);
 }
 
 function appendJsonObjectEntries(value: GraftJsonObject, depth: number, indent: number, state: ReviewPayloadRenderState): void {
-  for (const key of Object.keys(value).sort()) {
+  const keys = Object.keys(value).sort();
+  const visibleKeys = keys.slice(0, REVIEW_PAYLOAD_ENTRY_LIMIT);
+  for (const key of visibleKeys) {
     appendJsonProperty(key, value[key], depth, indent, state);
+  }
+  appendOmittedLine(keys.length - visibleKeys.length, 'entries', indent, state);
+}
+
+function appendOmittedLine(omittedCount: number, noun: string, indent: number, state: ReviewPayloadRenderState): void {
+  if (omittedCount > 0) {
+    appendLine(`${indentText(indent)}... ${String(omittedCount)} more ${noun}`, state);
   }
 }
 

@@ -100,6 +100,25 @@ test('Graft drawer explicitly truncates oversized review payloads', async () => 
   assert.doesNotMatch(text, /item19/);
 });
 
+test('Graft drawer marks omitted review payload collection entries', async () => {
+  const { renderGraftDrawerLines } = await loadGraftDrawer();
+  const lines = renderGraftDrawerLines(baseDrawerModel({
+    path: '/repo/schema.graphql',
+    relativePath: 'schema.graphql',
+    projectionSource: 'live-buffer',
+    projectionPosture: 'current',
+    projectionLanes: [reviewPayloadLane({
+      labels: ['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta'],
+    })],
+    outlineItems: [],
+    changeLines: [],
+  }, 0), 120, 32);
+  const text = linesToText(lines);
+
+  assert.match(text, /\.\.\. 2 more items/);
+  assert.doesNotMatch(text, /epsilon/);
+});
+
 test('Graft drawer page movement accounts for expanded review payload rows', async () => {
   const { updateGraftDrawerFromKey } = await loadWorkspaceGraftDrawer();
   const outlineItems = Array.from({ length: 30 }, (_entry, index) => ({
