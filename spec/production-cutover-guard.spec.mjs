@@ -51,6 +51,24 @@ test('production cutover guard catches sample recovery local-memory fallback tok
   assert.match(result.stderr, /saveFromBuffer/);
 });
 
+test('production cutover guard catches sample full-snapshot fixture authority tokens', () => {
+  const tempDir = mkdtempSync(path.join(tmpdir(), 'jedit-fixture-authority-guard-'));
+  const sample = path.join(tempDir, 'sample.ts');
+  writeFileSync(sample, [
+    "import type { FullSnapshotHotTextRuntimeFixture } from './full-snapshot-hot-text-runtime-fixture.js';",
+    "import { isFullSnapshotHotTextRuntimeFixture } from './full-snapshot-hot-text-runtime-fixture.js';",
+    'const runtime: FullSnapshotHotTextRuntimeFixture | null = null;',
+    'const fixture = runtime != null && isFullSnapshotHotTextRuntimeFixture(runtime);',
+  ].join('\n'));
+
+  const result = spawnGuard('--sample-forbidden-file', sample);
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /FullSnapshotHotTextRuntimeFixture/);
+  assert.match(result.stderr, /isFullSnapshotHotTextRuntimeFixture/);
+  assert.match(result.stderr, /full-snapshot-hot-text-runtime-fixture/);
+});
+
 test('production cutover guard catches sample legacy hot runtime fixture tokens', () => {
   const tempDir = mkdtempSync(path.join(tmpdir(), 'jedit-recovery-legacy-guard-'));
   const sample = path.join(tempDir, 'sample.ts');
