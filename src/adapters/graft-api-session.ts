@@ -186,13 +186,7 @@ async function loadGraftInfo(request: GraftFileRequest, manager: GraftApiSession
     sourceText: request.sourceText,
   });
   if (liveEdict != null) {
-    return {
-      path: filePath,
-      relativePath,
-      dirty,
-      ...liveEdict,
-      changeLines: await loadGraftChanges(manager, workspaceRoot, relativePath),
-    };
+    return loadLiveEdictGraftInfo(request, relativePath, liveEdict, manager);
   }
 
   const outline = await loadGraftOutline(manager, workspaceRoot, relativePath);
@@ -210,6 +204,19 @@ async function loadGraftInfo(request: GraftFileRequest, manager: GraftApiSession
     ...(outline.obstructionReceipt != null ? { obstructionReceipt: outline.obstructionReceipt } : {}),
     ...(dirty ? { notice: SAVED_FILE_ONLY_NOTICE } : {}),
     ...(outline.error != null ? { error: outline.error } : {}),
+  };
+}
+
+async function loadLiveEdictGraftInfo(request: GraftFileRequest, relativePath: string,
+  liveEdict: LiveEdictProjectionResult, manager: GraftApiSessionManager): Promise<GraftInfo> {
+  const outline = await loadGraftOutline(manager, request.workspaceRoot, relativePath);
+  return {
+    path: request.filePath,
+    relativePath,
+    dirty: request.dirty,
+    ...liveEdict,
+    changeLines: await loadGraftChanges(manager, request.workspaceRoot, relativePath),
+    ...(outline.obstructionReceipt != null ? { obstructionReceipt: outline.obstructionReceipt } : {}),
   };
 }
 

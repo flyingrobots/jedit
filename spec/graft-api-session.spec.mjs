@@ -194,6 +194,60 @@ test('Graft session projects dirty Edict buffers through live source text', asyn
   });
 });
 
+test('Graft session preserves outline receipts on live Edict projections', async () => {
+  const { graft } = await loadGraftApiSession();
+  const api = {
+    createRepoLocalGraft: (options) => ({ cwd: options.cwd }),
+    callGraftTool: async (_session, name) => {
+      if (name === 'file_outline') {
+        return {
+          projection: 'refused',
+          jumpTable: [],
+          obstructionReceipt: {
+            outcomeKind: 'obstructed_strand',
+            targetIrDigest: TARGET_IR_DIGEST,
+            targetIrDomain: 'echo.span-ir/v1',
+            reasonKind: 'jim.EditObstruction.StaleBase',
+            reasonPayload: {
+              inputBasisDigest: TARGET_PROFILE_DIGEST,
+            },
+            receipt: {
+              schema: 'echo.execution.receipt.review/v0',
+            },
+          },
+        };
+      }
+      return { files: [] };
+    },
+    createEdictCliProjectionProvider: () => ({ providerId: 'edict-provider' }),
+    createStructuredBuffer: () => ({
+      edictProjection: () => availableEdictProjection(),
+      dispose: () => undefined,
+    }),
+  };
+  const port = graft.createGraftSessionPort({ api });
+
+  const info = await port.loadGraftInfo({
+    workspaceRoot: REPO_ROOT,
+    filePath: path.join(REPO_ROOT, 'demo.edict'),
+    dirty: true,
+    sourceText: 'package demo.echo@1;',
+  });
+
+  assert.deepEqual(info.obstructionReceipt, {
+    outcomeKind: 'obstructed_strand',
+    targetIrDigest: TARGET_IR_DIGEST,
+    targetIrDomain: 'echo.span-ir/v1',
+    reasonKind: 'jim.EditObstruction.StaleBase',
+    reasonPayload: {
+      inputBasisDigest: TARGET_PROFILE_DIGEST,
+    },
+    receipt: {
+      schema: 'echo.execution.receipt.review/v0',
+    },
+  });
+});
+
 test('Graft session port uses the direct API without a close lifecycle', async () => {
   const { graft } = await loadGraftApiSession();
   const created = [];
