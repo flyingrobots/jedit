@@ -297,7 +297,7 @@ The work is done when:
       available.
 - [x] Existing obstruction receipt rows still render without receipt digests.
 - [x] Existing non-Edict outline/diff behavior remains unchanged.
-- [ ] Issue #256 and the PR are linked correctly.
+- [x] Issue #256 and the PR are linked correctly.
 - [x] Local validation is green.
 
 ## Validation Plan
@@ -385,4 +385,4 @@ What remains open:
 
 PR:
 
-- https://github.com/flyingrobots/jedit/pull/<number>
+- https://github.com/flyingrobots/jedit/pull/262
