@@ -8,9 +8,11 @@ import {
   type GraftJsonObject,
   type GraftJsonValue,
   type GraftObstructionReceiptProjection,
+  type GraftProjectionPanelLane,
   type GraftProjectionPosture,
   type GraftProjectionSource,
 } from '../ports/graft-session.js';
+import { graftProjectionPanelLanes } from '../ports/graft-projection-lanes.js';
 import type { GraftDiagnosticsReport } from '../ports/graft-diagnostics.js';
 import type { SourceHighlightReading } from '../ports/source-highlighter.js';
 
@@ -34,6 +36,7 @@ export interface GraftDrawerInfo {
   readonly projectionPosture?: GraftProjectionPosture;
   readonly outlineItems: readonly GraftDrawerOutlineItem[];
   readonly changeLines: readonly string[];
+  readonly projectionLanes?: readonly GraftProjectionPanelLane[];
   readonly edictCoreProjection?: GraftEdictProjectionLane;
   readonly echoTargetIrProjection?: GraftEchoTargetIrProjectionLane;
   readonly obstructionReceipt?: GraftObstructionReceiptProjection;
@@ -80,8 +83,7 @@ function renderLoadedGraftDrawerLines(
     `posture: ${projectionPostureForInfo(info)}`,
     model.graftLoading ? 'loading...' : (info.notice ?? ''),
     info.error == null ? '' : `error: ${info.error}`,
-    ...edictCoreProjectionLines(info),
-    ...echoTargetIrProjectionLines(info),
+    ...projectionLaneLines(info),
     ...obstructionReceiptLines(info),
     'outline',
   ];
@@ -118,39 +120,19 @@ function projectionPostureForInfo(info: GraftDrawerInfo): GraftProjectionPosture
   return info.error == null ? GraftProjectionPostures.Current : GraftProjectionPostures.Obstructed;
 }
 
-function edictCoreProjectionLines(info: GraftDrawerInfo): readonly string[] {
-  const core = info.edictCoreProjection;
-  if (core == null) {
-    return [];
-  }
-
-  return [
-    'edict core',
-    `state: ${formatReceiptScalar(core.state)}`,
-    ...(core.digest == null ? [] : [`core digest: ${formatReceiptScalar(core.digest)}`]),
-    ...projectionSummaryLines(core),
-  ];
+function projectionLaneLines(info: GraftDrawerInfo): readonly string[] {
+  return graftProjectionPanelLanes(info)
+    .flatMap(renderProjectionLane);
 }
 
-function echoTargetIrProjectionLines(info: GraftDrawerInfo): readonly string[] {
-  const targetIr = info.echoTargetIrProjection;
-  if (targetIr == null) {
-    return [];
-  }
-
+function renderProjectionLane(lane: GraftProjectionPanelLane): readonly string[] {
   return [
-    'echo target ir',
-    `state: ${formatReceiptScalar(targetIr.state)}`,
-    ...(targetIr.domain == null ? [] : [`domain: ${formatReceiptScalar(targetIr.domain)}`]),
-    ...(targetIr.targetCoordinate == null ? [] : [`target: ${formatReceiptScalar(targetIr.targetCoordinate)}`]),
-    ...(targetIr.targetProfileDigest == null ? [] : [`target profile: ${formatReceiptScalar(targetIr.targetProfileDigest)}`]),
-    ...(targetIr.digest == null ? [] : [`target ir digest: ${formatReceiptScalar(targetIr.digest)}`]),
-    ...projectionSummaryLines(targetIr),
+    lane.title,
+    `state: ${formatReceiptScalar(lane.state)}`,
+    ...(lane.digest == null ? [] : [`${lane.digest.label}: ${formatReceiptScalar(lane.digest.value)}`]),
+    ...lane.metadata.map((entry) => `${entry.label}: ${formatReceiptScalar(entry.value)}`),
+    ...lane.summaryLines.map(formatReceiptScalar),
   ];
-}
-
-function projectionSummaryLines(projection: GraftEdictProjectionLane): readonly string[] {
-  return projection.summaryLines.map(formatReceiptScalar);
 }
 
 function obstructionReceiptLines(info: GraftDrawerInfo): readonly string[] {

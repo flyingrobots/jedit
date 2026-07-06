@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added a generic Graft projection-lane panel so jedit can render
+  provider-neutral projection state, digest, metadata, and bounded summaries
+  while preserving the current Edict Core and Echo Target IR display and
+  avoiding runtime, debugger, REPL, execution, or admission claims.
 - Updated the Graft dependency to 0.11.1 and added a display-only Edict
   projection lens for dirty `.edict` buffers. The Graft drawer can now show
   upstream Edict Core and Echo Target IR projection state, domains, targets,

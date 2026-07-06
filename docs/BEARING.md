@@ -33,7 +33,8 @@ history, merged pull requests, release notes, and design docs.
 - Graft-backed source highlighting and projection display consume Graft 0.11.1
   projections. Plain-text prose spans remain available when
   `colorful >= 0.2.1` is on `PATH`, and `.edict` buffers can show upstream
-  Core and Echo Target IR projection lanes without jedit executing Echo or
+  Core and Echo Target IR projection lanes through a generic projection panel
+  without jedit executing Echo, debugging Edict, hosting an Edict REPL, or
   admitting Jim artifacts.
 - Graph-backed rope runtime authority is now an active hard gate. Do not begin
   new UI causal-honesty work until
