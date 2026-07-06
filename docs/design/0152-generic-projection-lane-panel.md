@@ -322,7 +322,7 @@ contract.
       and summary rows.
 - [x] Slice 5: Implement generic row accounting in
       `src/app/workspace/graft-drawer.ts`.
-- [ ] Slice 6: Update docs/changelog, fill retrospective, validate, and open
+- [x] Slice 6: Update docs/changelog, fill retrospective, validate, and open
       PR.
 
 ## Tests To Write First
@@ -354,7 +354,7 @@ The work is done when:
 - [x] Existing obstruction receipt, outline, changes, and dirty projection
       behavior remain unchanged.
 - [x] Drawer output contains no execution, admission, debugger, or REPL claim.
-- [ ] Issue #258 and the PR are linked correctly.
+- [x] Issue #258 and the PR are linked correctly.
 - [x] Local validation is green.
 
 ## Validation Plan
@@ -462,4 +462,4 @@ What remains open:
 
 PR:
 
-- Not opened yet.
+- https://github.com/flyingrobots/jedit/pull/263
