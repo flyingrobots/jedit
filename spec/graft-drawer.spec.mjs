@@ -103,6 +103,45 @@ test('Graft drawer uses text labels for projection state rows', async () => {
   assert.ok(lines.some((line) => line.startsWith('posture: current')));
 });
 
+test('Graft drawer displays Edict Core and Echo Target IR projection lanes', async () => {
+  const { renderGraftDrawerLines } = await loadGraftDrawer();
+  const lines = renderGraftDrawerLines(baseDrawerModel({
+    path: '/repo/demo.edict',
+    relativePath: 'demo.edict',
+    projectionSource: 'live-buffer',
+    projectionPosture: 'current',
+    edictCoreProjection: {
+      state: 'available',
+      digest: 'sha256:2222222222222222222222222222222222222222222222222222222222222222',
+      summaryLines: ['review: apiVersion'],
+    },
+    echoTargetIrProjection: {
+      state: 'available',
+      digest: 'sha256:3333333333333333333333333333333333333333333333333333333333333333',
+      domain: 'echo.span-ir/v1',
+      targetCoordinate: 'echo.dpo@1',
+      targetProfileDigest: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
+      summaryLines: ['review: intents'],
+    },
+    outlineItems: [],
+    changeLines: [],
+  }), 120, 24);
+  const text = linesToText(lines);
+
+  assert.match(text, /edict core/);
+  assert.match(text, /state: available/);
+  assert.match(text, /core digest: sha256:222222/);
+  assert.match(text, /review: apiVersion/);
+  assert.match(text, /echo target ir/);
+  assert.match(text, /domain: echo\.span-ir\/v1/);
+  assert.match(text, /target: echo\.dpo@1/);
+  assert.match(text, /target profile: sha256:111111/);
+  assert.match(text, /target ir digest: sha256:333333/);
+  assert.match(text, /review: intents/);
+  assert.doesNotMatch(text, /executed/);
+  assert.doesNotMatch(text, /admitted/);
+});
+
 test('Graft drawer displays opaque obstruction receipt projection facts', async () => {
   const { renderGraftDrawerLines } = await loadGraftDrawer();
   const lines = renderGraftDrawerLines(baseDrawerModel({

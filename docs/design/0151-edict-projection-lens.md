@@ -260,43 +260,45 @@ cycle should not build that larger UI.
 
 ## Implementation Slices
 
-- [ ] Slice 1: Add design packet and issue linkage.
-- [ ] Slice 2: Bump Graft dependency to 0.11.1 and add adapter RED tests for
+- [x] Slice 1: Add design packet and issue linkage.
+- [x] Slice 2: Bump Graft dependency to 0.11.1 and add adapter RED tests for
       dirty `.edict` projection input and decoded Core/Target IR lanes.
-- [ ] Slice 3: Implement adapter decoding and live buffer request plumbing.
-- [ ] Slice 4: Add drawer RED tests for Core/Target IR rows.
-- [ ] Slice 5: Implement bounded drawer rendering and row accounting.
-- [ ] Slice 6: Update docs/changelog, fill retrospective, validate, and open PR.
+- [x] Slice 3: Implement adapter decoding and live buffer request plumbing.
+- [x] Slice 4: Add drawer RED tests for Core/Target IR rows.
+- [x] Slice 5: Implement bounded drawer rendering and row accounting.
+- [x] Slice 6: Update docs/changelog, fill retrospective, validate, and open PR.
 
 ## Tests To Write First
 
 Behavior tests required:
 
-- [ ] `spec/graft-api-session.spec.mjs` proves dirty `.edict` content is passed
+- [x] `spec/graft-api-session.spec.mjs` proves dirty `.edict` content is passed
       to the Graft/Edict projection surface.
-- [ ] `spec/graft-api-session.spec.mjs` proves Core and Target IR lanes decode
+- [x] `spec/graft-api-session.spec.mjs` proves Core and Target IR lanes decode
       into `GraftInfo`.
-- [ ] `spec/graft-drawer.spec.mjs` proves Core and Target IR rows render.
-- [ ] `spec/graft-drawer.spec.mjs` proves rows stay bounded and receipt display
+- [x] `spec/workspace-graft-refresh.spec.mjs` proves live editor lines are
+      passed into Graft requests.
+- [x] `spec/graft-drawer.spec.mjs` proves Core and Target IR rows render.
+- [x] `spec/graft-drawer.spec.mjs` proves rows stay bounded and receipt display
       remains opaque.
 
 Documentation and process tests:
 
-- [ ] Existing quality and design-cycle checks remain green.
+- [x] Existing quality and design-cycle checks remain green.
 
 ## Acceptance Criteria
 
 The work is done when:
 
-- [ ] jedit depends on `@flyingrobots/graft` 0.11.1.
-- [ ] Dirty `.edict` buffers use live editor content for projection requests.
-- [ ] Core projection state and digest render in the drawer when available.
-- [ ] Echo Target IR state, domain, and digest render in the drawer when
+- [x] jedit depends on `@flyingrobots/graft` 0.11.1.
+- [x] Dirty `.edict` buffers use live editor content for projection requests.
+- [x] Core projection state and digest render in the drawer when available.
+- [x] Echo Target IR state, domain, and digest render in the drawer when
       available.
-- [ ] Existing obstruction receipt rows still render without receipt digests.
-- [ ] Existing non-Edict outline/diff behavior remains unchanged.
+- [x] Existing obstruction receipt rows still render without receipt digests.
+- [x] Existing non-Edict outline/diff behavior remains unchanged.
 - [ ] Issue #256 and the PR are linked correctly.
-- [ ] Local validation is green.
+- [x] Local validation is green.
 
 ## Validation Plan
 
@@ -304,7 +306,7 @@ Commands expected before PR:
 
 ```bash
 npm run build
-JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/graft-api-session.spec.mjs spec/graft-drawer.spec.mjs
+JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/graft-api-session.spec.mjs spec/workspace-graft-refresh.spec.mjs spec/graft-drawer.spec.mjs
 npm run quality
 npm run check
 ```
@@ -315,7 +317,7 @@ Reviewers can inspect the focused specs and run:
 
 ```bash
 npm run build
-JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/graft-api-session.spec.mjs spec/graft-drawer.spec.mjs
+JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/graft-api-session.spec.mjs spec/workspace-graft-refresh.spec.mjs spec/graft-drawer.spec.mjs
 ```
 
 The drawer rows provide the witness surface.
@@ -351,19 +353,35 @@ Known deferrals in this cycle:
 
 ## Retrospective
 
-Fill this in after implementation.
-
 What changed from the design:
 
-- ...
+- The implementation kept the display-only scope but intentionally did not map
+  Graft/Edict `echoReceipt` slots through the live `.edict` projection helper.
+  Existing obstruction receipt display remains on the already validated
+  `file_outline` adapter path until jedit owns a JSON decoder for that slot
+  shape without accepting `unknown` payloads.
+- The adapter uses a local process-runner boundary because Graft exports the
+  Edict provider factory but not its Node process runner.
 
 What the tests proved:
 
-- ...
+- `spec/workspace-graft-refresh.spec.mjs` proves refresh commands pass current
+  editor lines as `sourceText`.
+- `spec/graft-api-session.spec.mjs` proves dirty `.edict` source text reaches
+  the Graft/Edict projection surface and Core/Target IR slots normalize into
+  `GraftInfo`.
+- `spec/graft-drawer.spec.mjs` proves the drawer renders Core and Echo Target
+  IR rows, keeps receipt display opaque, and does not claim execution or
+  admission.
 
 What remains open:
 
-- ...
+- Generic projection-lane panel: https://github.com/flyingrobots/jedit/issues/258
+- Full Core/Target IR review JSON viewer:
+  https://github.com/flyingrobots/jedit/issues/259
+- jedit Echo run button: https://github.com/flyingrobots/jedit/issues/257
+- Canonical Echo receipt digest display:
+  https://github.com/flyingrobots/jedit/issues/260
 
 PR:
 

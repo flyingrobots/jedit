@@ -1,6 +1,12 @@
-import { createRepoLocalGraft } from '@flyingrobots/graft';
+import { createEdictCliProjectionProvider, createRepoLocalGraft, createStructuredBuffer } from '@flyingrobots/graft';
 import { execFileSync } from 'node:child_process';
 import { isAbsolute, relative } from 'node:path';
+import {
+  loadLiveEdictProjection,
+  type GraftEdictProjectionApi,
+  type LiveEdictProjectionInput,
+  type LiveEdictProjectionResult,
+} from './graft-edict-projection.js';
 import {
   GraftProjectionPostures,
   GraftProjectionSources,
@@ -33,7 +39,7 @@ export interface GraftApiCreateOptions {
   readonly cwd: string;
 }
 
-export interface GraftApiBindings<TSession = DefaultGraftApiSession> {
+export interface GraftApiBindings<TSession = DefaultGraftApiSession> extends GraftEdictProjectionApi {
   createRepoLocalGraft(options: GraftApiCreateOptions): TSession;
   callGraftTool(session: TSession, name: GraftToolName, args: GraftToolArgs): Promise<JsonValue>;
 }
@@ -108,6 +114,7 @@ interface GraftApiConnection<TSession> {
 
 interface GraftApiSessionManager {
   callTool(workspaceRoot: string, name: GraftToolName, args: GraftToolArgs): Promise<JsonValue>;
+  loadLiveEdictProjection(input: Omit<LiveEdictProjectionInput, 'api'>): LiveEdictProjectionResult | null;
   close(): Promise<void>;
 }
 
@@ -128,6 +135,8 @@ export function createGraftSessionPort<TSession = DefaultGraftApiSession>(
 function defaultGraftApiBindings(): GraftApiBindings {
   return {
     createRepoLocalGraft,
+    createEdictCliProjectionProvider,
+    createStructuredBuffer,
     async callGraftTool(session, name, args) {
       return parseGraftToolResult(await session.callTool(name, args));
     },
@@ -144,6 +153,9 @@ function createGraftApiSessionManager<TSession>(api: GraftApiBindings<TSession>)
         : createConnection(api, workspaceRoot);
       connection = activeConnection;
       return api.callGraftTool(activeConnection.session, name, args);
+    },
+    loadLiveEdictProjection(input) {
+      return loadLiveEdictProjection({ ...input, api });
     },
     async close() {
       connection = undefined;
@@ -166,6 +178,21 @@ async function loadGraftInfo(request: GraftFileRequest, manager: GraftApiSession
   const relativePath = relative(workspaceRoot, filePath).replace(/\\/g, '/');
   if (relativePath.startsWith('..') || isAbsolute(relativePath)) {
     return outsideWorkspaceGraftInfo({ filePath, dirty });
+  }
+
+  const liveEdict = manager.loadLiveEdictProjection({
+    workspaceRoot,
+    relativePath,
+    sourceText: request.sourceText,
+  });
+  if (liveEdict != null) {
+    return {
+      path: filePath,
+      relativePath,
+      dirty,
+      ...liveEdict,
+      changeLines: await loadGraftChanges(manager, workspaceRoot, relativePath),
+    };
   }
 
   const outline = await loadGraftOutline(manager, workspaceRoot, relativePath);

@@ -5,6 +5,10 @@ import { REPO_ROOT, importDist } from './dist-helpers.mjs';
 
 let modulesPromise;
 
+const TARGET_PROFILE_DIGEST = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
+const CORE_DIGEST = 'sha256:2222222222222222222222222222222222222222222222222222222222222222';
+const TARGET_IR_DIGEST = 'sha256:3333333333333333333333333333333333333333333333333333333333333333';
+
 async function loadGraftApiSession() {
   if (modulesPromise == null) {
     modulesPromise = importGraftApiSession();
@@ -18,6 +22,46 @@ async function importGraftApiSession() {
     importDist('domain', 'errors.js'),
   ]);
   return { graft, errors };
+}
+
+function availableEdictProjection() {
+  return {
+    language: 'edict',
+    name: 'demo.edict',
+    basis: null,
+    syntax: { state: 'not_requested' },
+    diagnostics: { items: [] },
+    core: {
+      state: 'available',
+      value: {
+        digest: CORE_DIGEST,
+        review: {
+          apiVersion: 'edict.core/v1',
+        },
+      },
+    },
+    targetIr: {
+      state: 'available',
+      value: {
+        domain: 'echo.span-ir/v1',
+        target: {
+          coordinate: 'echo.dpo@1',
+          digest: TARGET_PROFILE_DIGEST,
+        },
+        digest: TARGET_IR_DIGEST,
+        review: {
+          intents: {},
+        },
+      },
+    },
+    echoReceipt: { state: 'not_requested' },
+    status: {
+      status: 'ok',
+      checked: 1,
+      errors: 0,
+      exitCode: 0,
+    },
+  };
 }
 
 test('Graft file outline decoder accepts runtime-validated outline payloads', async () => {
@@ -68,6 +112,82 @@ test('Graft file outline decoder accepts runtime-validated outline payloads', as
         schema: 'echo.execution.receipt.review/v0',
       },
     },
+  });
+});
+
+test('Graft session projects dirty Edict buffers through live source text', async () => {
+  const { graft } = await loadGraftApiSession();
+  const structuredBuffers = [];
+  const edictProviders = [];
+  const api = {
+    createRepoLocalGraft: (options) => ({ cwd: options.cwd }),
+    callGraftTool: async (_session, name) => {
+      if (name === 'file_outline') {
+        return {
+          projection: 'ready',
+          jumpTable: [],
+        };
+      }
+      return { files: [] };
+    },
+    createEdictCliProjectionProvider: (options) => {
+      const provider = { providerId: `edict-${String(edictProviders.length + 1)}` };
+      edictProviders.push({ options, provider });
+      return provider;
+    },
+    createStructuredBuffer: (bufferPath, content, options) => {
+      structuredBuffers.push({ bufferPath, content, options });
+      return {
+        edictProjection: () => availableEdictProjection(),
+        dispose: () => undefined,
+      };
+    },
+  };
+  const port = graft.createGraftSessionPort({ api });
+  const sourceText = [
+    'package demo.echo@1;',
+    'intent replaceThing(input: Input) returns Output {',
+    '  return { id: input.id };',
+    '}',
+  ].join('\n');
+
+  const info = await port.loadGraftInfo({
+    workspaceRoot: REPO_ROOT,
+    filePath: path.join(REPO_ROOT, 'demo.edict'),
+    dirty: true,
+    sourceText,
+  });
+
+  assert.equal(info.projectionSource, 'live-buffer');
+  assert.equal(info.projectionPosture, 'current');
+  assert.equal(info.notice, undefined);
+  assert.deepEqual(structuredBuffers.map((entry) => ({
+    bufferPath: entry.bufferPath,
+    content: entry.content,
+    language: entry.options.language,
+    edictProjector: entry.options.edictProjector,
+  })), [{
+    bufferPath: 'demo.edict',
+    content: sourceText,
+    language: 'edict',
+    edictProjector: edictProviders[0].provider,
+  }]);
+  assert.equal(edictProviders[0].options.cwd, REPO_ROOT);
+  assert.equal(edictProviders[0].options.target.coordinate, 'echo.dpo@1');
+  assert.equal(edictProviders[0].options.target.irDomain, 'echo.span-ir/v1');
+  assert.equal(edictProviders[0].options.target.profileDigest, TARGET_PROFILE_DIGEST);
+  assert.deepEqual(info.edictCoreProjection, {
+    state: 'available',
+    digest: CORE_DIGEST,
+    summaryLines: ['review: apiVersion'],
+  });
+  assert.deepEqual(info.echoTargetIrProjection, {
+    state: 'available',
+    digest: TARGET_IR_DIGEST,
+    domain: 'echo.span-ir/v1',
+    targetCoordinate: 'echo.dpo@1',
+    targetProfileDigest: TARGET_PROFILE_DIGEST,
+    summaryLines: ['review: intents'],
   });
 });
 

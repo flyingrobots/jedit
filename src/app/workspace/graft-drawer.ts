@@ -11,8 +11,15 @@ import { WorkspaceKeys, isWorkspaceDownKey, isWorkspaceRefreshKey, isWorkspaceUp
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 import type { Cmd } from '@flyingrobots/bijou-tui';
+import type { GraftEchoTargetIrProjectionLane, GraftEdictProjectionLane } from '../../ports/graft-session.js';
 
 const GRAFT_BASE_META_ROWS = 7;
+const GRAFT_PROJECTION_HEADER_ROWS = 1;
+const GRAFT_PROJECTION_STATE_ROWS = 1;
+const GRAFT_PROJECTION_DIGEST_ROWS = 1;
+const GRAFT_TARGET_IR_DOMAIN_ROWS = 1;
+const GRAFT_TARGET_IR_TARGET_ROWS = 1;
+const GRAFT_TARGET_IR_PROFILE_ROWS = 1;
 const GRAFT_RECEIPT_BASE_ROWS = 3;
 const GRAFT_RECEIPT_REASON_ROWS = 1;
 const GRAFT_RECEIPT_PAYLOAD_ROWS = 3;
@@ -107,14 +114,37 @@ function isShiftGraftEdgeKey(msg: KeyMsg): boolean {
 
 function graftMetaRows(model: WorkspaceModel): number {
   const receipt = model.graftInfo?.obstructionReceipt;
-  if (receipt == null) {
-    return GRAFT_BASE_META_ROWS;
-  }
-
   return GRAFT_BASE_META_ROWS
-    + GRAFT_RECEIPT_BASE_ROWS
-    + (receipt.reasonKind == null ? 0 : GRAFT_RECEIPT_REASON_ROWS)
-    + receiptPayloadRowCount(receipt.reasonPayload);
+    + edictCoreProjectionRowCount(model.graftInfo?.edictCoreProjection)
+    + echoTargetIrProjectionRowCount(model.graftInfo?.echoTargetIrProjection)
+    + (receipt == null
+      ? 0
+      : GRAFT_RECEIPT_BASE_ROWS
+        + (receipt.reasonKind == null ? 0 : GRAFT_RECEIPT_REASON_ROWS)
+        + receiptPayloadRowCount(receipt.reasonPayload));
+}
+
+function edictCoreProjectionRowCount(projection: GraftEdictProjectionLane | undefined): number {
+  if (projection == null) {
+    return 0;
+  }
+  return GRAFT_PROJECTION_HEADER_ROWS
+    + GRAFT_PROJECTION_STATE_ROWS
+    + (projection.digest == null ? 0 : GRAFT_PROJECTION_DIGEST_ROWS)
+    + projection.summaryLines.length;
+}
+
+function echoTargetIrProjectionRowCount(projection: GraftEchoTargetIrProjectionLane | undefined): number {
+  if (projection == null) {
+    return 0;
+  }
+  return GRAFT_PROJECTION_HEADER_ROWS
+    + GRAFT_PROJECTION_STATE_ROWS
+    + (projection.domain == null ? 0 : GRAFT_TARGET_IR_DOMAIN_ROWS)
+    + (projection.targetCoordinate == null ? 0 : GRAFT_TARGET_IR_TARGET_ROWS)
+    + (projection.targetProfileDigest == null ? 0 : GRAFT_TARGET_IR_PROFILE_ROWS)
+    + (projection.digest == null ? 0 : GRAFT_PROJECTION_DIGEST_ROWS)
+    + projection.summaryLines.length;
 }
 
 function receiptPayloadRowCount(
