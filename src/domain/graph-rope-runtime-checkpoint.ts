@@ -22,6 +22,7 @@ import {
 import {
   basisFrontierDigestForRopeHead,
   checkpointAnchorPurpose,
+  checkpointAnchorRetentionClass,
   ropeCheckpointIdFor,
 } from './graph-rope-checkpoint-identity.js';
 
@@ -87,6 +88,9 @@ function causalAnchorForCheckpoint(
     retainedRoots: [retainedRoot],
     materializationRoots: [],
     purpose,
+    retention: {
+      retentionClass: checkpointAnchorRetentionClass(reason),
+    },
     admittedByReceiptId,
   };
   const anchorDigest = causalAnchorDigestFor(anchor, hash);

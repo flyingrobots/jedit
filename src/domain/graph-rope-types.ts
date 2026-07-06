@@ -33,6 +33,14 @@ export const ECHO_CAUSAL_ANCHOR_ROOT_ROLE_EVIDENCE = 'evidence';
 export const ECHO_CAUSAL_ANCHOR_ROOT_ROLE_INDEX = 'index';
 export const ECHO_CAUSAL_ANCHOR_ROOT_ROLE_MATERIALIZATION = 'materialization';
 export const ECHO_CAUSAL_ANCHOR_ROOT_ROLE_MANIFEST = 'manifest';
+export const ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_RECOVERY = 'recovery';
+export const ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_RETENTION = 'retention';
+export const ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_EXPORT = 'export';
+export const ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_USER_SAVE = 'user-save';
+export const ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_AUTOSAVE = 'autosave';
+export const ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_DEBUG = 'debug';
+export const ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_CACHE_WARM = 'cache-warm';
+export const ECHO_CAUSAL_ANCHOR_ADMISSION_AUTHORITY_ECHO = 'echo';
 
 export const ROPE_DIFF_SPAN_EQUAL_KIND = 'equal';
 export const ROPE_DIFF_SPAN_DELETE_KIND = 'delete';
@@ -271,13 +279,19 @@ export interface RopeCheckpointFact {
 }
 
 export type EchoCausalAnchorPurpose =
-  | 'recovery'
-  | 'retention'
-  | 'export'
-  | 'user-save'
-  | 'autosave'
-  | 'debug'
-  | 'cache-warm';
+  | typeof ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_RECOVERY
+  | typeof ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_RETENTION
+  | typeof ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_EXPORT
+  | typeof ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_USER_SAVE
+  | typeof ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_AUTOSAVE
+  | typeof ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_DEBUG
+  | typeof ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_CACHE_WARM;
+
+export type EchoCausalAnchorRetentionClass = EchoCausalAnchorPurpose;
+
+export interface EchoCausalAnchorRetentionMetadata {
+  readonly retentionClass: EchoCausalAnchorRetentionClass;
+}
 
 export interface EchoCausalAnchorSubject {
   readonly appId: string;
@@ -327,8 +341,42 @@ export interface EchoCausalAnchorFact {
   readonly retainedRoots: readonly EchoCausalAnchorRoot[];
   readonly materializationRoots: readonly EchoCausalAnchorRoot[];
   readonly purpose: EchoCausalAnchorPurpose;
+  readonly retention: EchoCausalAnchorRetentionMetadata;
   readonly admittedByReceiptId: string;
   readonly anchorDigest: string;
+}
+
+export interface EchoCausalAnchorAdmissionRequest {
+  readonly subject: EchoCausalAnchorSubject;
+  readonly basisFrontierDigest: string;
+  readonly retainedRoots: readonly EchoCausalAnchorRoot[];
+  readonly materializationRoots: readonly EchoCausalAnchorRoot[];
+  readonly purpose: EchoCausalAnchorPurpose;
+  readonly retention: EchoCausalAnchorRetentionMetadata;
+}
+
+export interface EchoCausalAnchorAdmissionRequestInput {
+  readonly subject: EchoCausalAnchorSubject;
+  readonly basisFrontierDigest: string;
+  readonly retainedRoots: readonly EchoCausalAnchorRoot[];
+  readonly materializationRoots?: readonly EchoCausalAnchorRoot[];
+  readonly purpose: EchoCausalAnchorPurpose;
+  readonly retention: EchoCausalAnchorRetentionMetadata;
+}
+
+export interface EchoCausalAnchorAdmissionReceipt {
+  readonly authority: typeof ECHO_CAUSAL_ANCHOR_ADMISSION_AUTHORITY_ECHO;
+  readonly receiptId: string;
+  readonly anchorId: string;
+}
+
+export interface EchoCausalAnchorAdmissionResult {
+  readonly anchor: EchoCausalAnchorFact;
+  readonly receipt: EchoCausalAnchorAdmissionReceipt;
+}
+
+export interface EchoCausalAnchorAdmissionPort {
+  admitCausalAnchor(request: EchoCausalAnchorAdmissionRequest): EchoCausalAnchorAdmissionResult;
 }
 
 export type RopeAdmittedFact =

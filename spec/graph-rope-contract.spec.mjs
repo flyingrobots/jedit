@@ -204,6 +204,43 @@ test('rope checkpoint validation references a causal anchor instead of a tick re
   });
 });
 
+test('causal anchor admission request is generic Echo authority without checkpoint receipts', async () => {
+  const contract = await loadContract();
+  const subject = {
+    appId: contract.JEDIT_CAUSAL_ANCHOR_APP_ID,
+    subjectKind: contract.JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_BUFFER_WORLDLINE,
+    subjectId: 'worldline:anchor-boundary',
+  };
+  const retainedRoot = {
+    kind: contract.ECHO_CAUSAL_ANCHOR_ROOT_KIND_APP_SUBJECT,
+    appId: contract.JEDIT_CAUSAL_ANCHOR_APP_ID,
+    subjectKind: contract.JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_ROPE_HEAD,
+    id: 'rope-head:anchor-boundary',
+    role: contract.ECHO_CAUSAL_ANCHOR_ROOT_ROLE_AUTHORITY,
+  };
+
+  const request = contract.makeEchoCausalAnchorAdmissionRequest({
+    subject,
+    basisFrontierDigest: 'frontier:anchor-boundary',
+    retainedRoots: [retainedRoot],
+    purpose: contract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_USER_SAVE,
+    retention: {
+      retentionClass: contract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_USER_SAVE,
+    },
+  });
+
+  assert.deepEqual(request.subject, subject);
+  assert.deepEqual(request.retainedRoots, [retainedRoot]);
+  assert.deepEqual(request.materializationRoots, []);
+  assert.deepEqual(request.retention, {
+    retentionClass: contract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_USER_SAVE,
+  });
+  assert.equal('admittedByReceiptId' in request, false);
+  assert.equal('checkpointId' in request, false);
+  assert.equal('headId' in request, false);
+  assert.equal('reason' in request, false);
+});
+
 test('rope checkpoint validation recomputes checkpoint identity and anchor frontier', async () => {
   const facts = await checkpointFixture('worldline:checkpoint-identity');
   const { anchorDigest, contract } = facts;
@@ -219,6 +256,14 @@ test('rope checkpoint validation recomputes checkpoint identity and anchor front
     ...facts.checkpoint,
     causalAnchorId: frontierForgedAnchor.anchorId,
   };
+  const retentionForgedAnchor = rekeyAnchor({
+    ...facts.anchor,
+    retention: { retentionClass: contract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_DEBUG },
+  }, anchorDigest, createHashPort());
+  const retentionForgedCheckpoint = {
+    ...facts.checkpoint,
+    causalAnchorId: retentionForgedAnchor.anchorId,
+  };
 
   assert.deepEqual(contract.validateRopeFact(
     forgedCheckpoint,
@@ -230,6 +275,13 @@ test('rope checkpoint validation recomputes checkpoint identity and anchor front
   assert.deepEqual(contract.validateRopeFact(
     frontierForgedCheckpoint,
     createValidationContext(contract, [...facts.baseFacts, frontierForgedAnchor, frontierForgedCheckpoint]),
+  ), {
+    ok: false,
+    code: FACT_VALIDATION_ERROR_INVALID_REFERENCE,
+  });
+  assert.deepEqual(contract.validateRopeFact(
+    retentionForgedCheckpoint,
+    createValidationContext(contract, [...facts.baseFacts, retentionForgedAnchor, retentionForgedCheckpoint]),
   ), {
     ok: false,
     code: FACT_VALIDATION_ERROR_INVALID_REFERENCE,
@@ -297,6 +349,13 @@ test('causal anchor validation rejects forged digests ids and purposes', async (
   });
   assert.deepEqual(contract.validateRopeFact(
     { ...facts.anchor, purpose: 'pretend-save' },
+    createValidationContext(contract, facts.writeSet),
+  ), {
+    ok: false,
+    code: FACT_VALIDATION_ERROR_INVALID_REFERENCE,
+  });
+  assert.deepEqual(contract.validateRopeFact(
+    { ...facts.anchor, retention: { retentionClass: 'pretend-save' } },
     createValidationContext(contract, facts.writeSet),
   ), {
     ok: false,

@@ -207,6 +207,9 @@ test('graph runtime checkpoints a head through a non-mutating causal anchor', as
   assert.equal(checkpointed.causalAnchor.subject.subjectKind, contract.JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_BUFFER_WORLDLINE);
   assert.equal(checkpointed.causalAnchor.subject.subjectId, 'worldline:checkpoint');
   assert.equal(checkpointed.causalAnchor.purpose, 'user-save');
+  assert.deepEqual(checkpointed.causalAnchor.retention, {
+    retentionClass: contract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_USER_SAVE,
+  });
   assert.deepEqual(checkpointed.causalAnchor.retainedRoots, [{
     kind: contract.ECHO_CAUSAL_ANCHOR_ROOT_KIND_APP_SUBJECT,
     appId: contract.JEDIT_CAUSAL_ANCHOR_APP_ID,

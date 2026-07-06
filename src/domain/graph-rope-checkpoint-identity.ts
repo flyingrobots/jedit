@@ -5,6 +5,7 @@ import {
   ROPE_CHECKPOINT_REASON_MANUAL_SAVE,
   ROPE_CHECKPOINT_REASON_RETENTION_BOUNDARY,
   ROPE_CHECKPOINT_REASON_TEST_FIXTURE,
+  type EchoCausalAnchorRetentionClass,
   type EchoCausalAnchorPurpose,
   type RopeCheckpointReason,
   type RopeHeadFact,
@@ -40,6 +41,10 @@ export function ropeCheckpointIdFor(input: RopeCheckpointIdInput): string {
 }
 
 export function checkpointAnchorPurpose(reason: RopeCheckpointReason): EchoCausalAnchorPurpose {
+  return checkpointAnchorRetentionClass(reason);
+}
+
+export function checkpointAnchorRetentionClass(reason: RopeCheckpointReason): EchoCausalAnchorRetentionClass {
   switch (reason) {
     case ROPE_CHECKPOINT_REASON_MANUAL_SAVE:
       return 'user-save';

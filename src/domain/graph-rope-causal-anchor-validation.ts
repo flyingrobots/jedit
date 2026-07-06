@@ -32,6 +32,7 @@ import {
 } from './graph-rope-causal-anchor-digest.js';
 import {
   basisFrontierDigestForRopeHead,
+  checkpointAnchorRetentionClass,
   checkpointAnchorPurpose,
 } from './graph-rope-checkpoint-identity.js';
 
@@ -73,12 +74,16 @@ export function validateEchoCausalAnchorFact(
   if (!VALID_ANCHOR_PURPOSES.has(fact.purpose)) {
     return invalidFact(FACT_VALIDATION_ERROR_INVALID_REFERENCE);
   }
+  if (fact.retention == null || !VALID_ANCHOR_PURPOSES.has(fact.retention.retentionClass)) {
+    return invalidFact(FACT_VALIDATION_ERROR_INVALID_REFERENCE);
+  }
   const idResult = invalidIdIn([
     fact.anchorId,
     fact.subject.appId,
     fact.subject.subjectKind,
     fact.subject.subjectId,
     fact.basisFrontierDigest,
+    fact.retention.retentionClass,
     fact.admittedByReceiptId,
   ]);
   if (idResult !== null) {
@@ -118,6 +123,7 @@ export function checkpointAnchorMatches(
     && anchor.subject.subjectId === fact.worldlineId
     && anchor.basisFrontierDigest === basisFrontierDigestForRopeHead(head, context.hash)
     && anchor.purpose === checkpointAnchorPurpose(fact.reason)
+    && anchor.retention.retentionClass === checkpointAnchorRetentionClass(fact.reason)
     && anchor.retainedRoots.some((root) => isJeditRopeHeadAuthorityRoot(root, fact.headId));
 }
 

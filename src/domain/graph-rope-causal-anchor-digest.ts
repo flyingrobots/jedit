@@ -30,6 +30,7 @@ export function causalAnchorDigestMaterial(
     `subject=${anchor.subject.appId}:${anchor.subject.subjectKind}:${anchor.subject.subjectId}`,
     `frontier=${anchor.basisFrontierDigest}`,
     `purpose=${anchor.purpose}`,
+    `retention=${anchor.retention.retentionClass}`,
     `receipt=${anchor.admittedByReceiptId}`,
     `retained=${canonicalRootSet(anchor.retainedRoots).join('|')}`,
     `materialization=${canonicalRootSet(anchor.materializationRoots).join('|')}`,
