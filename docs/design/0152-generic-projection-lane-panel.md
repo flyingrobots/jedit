@@ -312,15 +312,15 @@ contract.
 
 ## Implementation Slices
 
-- [ ] Slice 1: Add design packet and issue linkage.
-- [ ] Slice 2: Add RED drawer spec proving Edict Core and Echo Target IR render
+- [x] Slice 1: Add design packet and issue linkage.
+- [x] Slice 2: Add RED drawer spec proving Edict Core and Echo Target IR render
       through a generic projection-lane fixture with current non-execution
       assertions intact.
-- [ ] Slice 3: Implement generic projection-lane rendering in
+- [x] Slice 3: Implement generic projection-lane rendering in
       `src/ui/graft-drawer.ts`.
-- [ ] Slice 4: Add RED workspace row-accounting spec for generic lane metadata
+- [x] Slice 4: Add focused workspace row-accounting coverage for generic lane metadata
       and summary rows.
-- [ ] Slice 5: Implement generic row accounting in
+- [x] Slice 5: Implement generic row accounting in
       `src/app/workspace/graft-drawer.ts`.
 - [ ] Slice 6: Update docs/changelog, fill retrospective, validate, and open
       PR.
@@ -329,31 +329,31 @@ contract.
 
 Behavior tests required:
 
-- [ ] `spec/graft-drawer.spec.mjs` proves projection lanes keep the current
+- [x] `spec/graft-drawer.spec.mjs` proves projection lanes keep the current
       visible Edict Core and Echo Target IR rows.
-- [ ] `spec/graft-drawer.spec.mjs` proves projection lane display still avoids
+- [x] `spec/graft-drawer.spec.mjs` proves projection lane display still avoids
       execution, admission, debugger, and REPL wording.
-- [ ] `spec/graft-drawer.spec.mjs` proves generic lane metadata remains bounded
+- [x] `spec/graft-drawer.spec.mjs` proves generic lane metadata remains bounded
       and ordered.
-- [ ] `spec/graft-drawer.spec.mjs` or a focused workspace drawer spec proves
+- [x] `spec/graft-drawer.spec.mjs` proves
       page movement accounts for generic projection-lane rows.
 
 Documentation and process tests:
 
-- [ ] Existing design-cycle checks remain green.
+- [x] Existing design-cycle checks remain green.
 
 ## Acceptance Criteria
 
 The work is done when:
 
-- [ ] `GraftInfo.projectionLanes` can render a provider-neutral projection
+- [x] `GraftInfo.projectionLanes` can render a provider-neutral projection
       section.
-- [ ] Edict Core and Echo Target IR rows are rendered through generic
+- [x] Edict Core and Echo Target IR rows are rendered through generic
       projection lanes.
-- [ ] Workspace row accounting uses the same generic lane model.
-- [ ] Existing obstruction receipt, outline, changes, and dirty projection
+- [x] Workspace row accounting uses the same generic lane model.
+- [x] Existing obstruction receipt, outline, changes, and dirty projection
       behavior remain unchanged.
-- [ ] Drawer output contains no execution, admission, debugger, or REPL claim.
+- [x] Drawer output contains no execution, admission, debugger, or REPL claim.
 - [ ] Issue #258 and the PR are linked correctly.
 - [ ] Local validation is green.
 
@@ -415,20 +415,36 @@ its implementation.
 
 ## Retrospective
 
-Fill this in after implementation.
-
 What changed from the design:
 
-- ...
+- The implementation added `GraftInfo.projectionLanes` as the generic display
+  shape and retained `edictCoreProjection` plus `echoTargetIrProjection` as
+  compatibility/source facts for the current Edict projection adapter.
+- The row-accounting coverage landed as a compact extension to the existing
+  PageDown drawer spec after the generic renderer RED/GREEN, rather than as a
+  separate test file, to keep the touched specs under the 500-line ratchet.
 
 What the tests proved:
 
-- ...
+- `spec/graft-drawer.spec.mjs` first failed because `projectionLanes` were
+  ignored, then passed after the generic renderer showed provider-neutral
+  title, state, digest, metadata, and summary rows.
+- `spec/graft-api-session.spec.mjs` proves the live Edict adapter now carries
+  generic `projectionLanes` alongside the existing Edict-specific fields.
+- `spec/graft-drawer.spec.mjs` proves PageDown accounting includes generic lane
+  metadata and summary rows.
+- The drawer output still excludes runtime, debugger, REPL, execution, and
+  admission wording for projection lanes.
 
 What remains open:
 
-- ...
+- Full Core/Target IR review JSON viewer:
+  https://github.com/flyingrobots/jedit/issues/259
+- Echo run button from jedit:
+  https://github.com/flyingrobots/jedit/issues/257
+- Canonical Echo receipt digest display:
+  https://github.com/flyingrobots/jedit/issues/260
 
 PR:
 
-- ...
+- Not opened yet.
