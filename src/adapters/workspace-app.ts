@@ -11,10 +11,7 @@ import { createTitleSceneLoaderPort } from './title-scene-loader.js';
 import { createInitialModelSnapshot } from './workspace-initial-model-snapshot.js';
 import { createNodeJeditWscWorkspaceStore } from './jedit-wsc-workspace-store.js';
 import { createPerfApp } from './workspace-perf-app.js';
-import {
-  createWorkspaceProductionTextDependencies,
-  type WorkspaceProductionTextDependencies,
-} from './workspace-production-text-dependencies.js';
+import { createWorkspaceProductionTextDependencies } from './workspace-production-text-dependencies.js';
 import {
   createStartupFileDrawerAnimationCmd,
   createWorkspaceDrawerAnimationCmd,
@@ -31,7 +28,6 @@ export interface WorkspaceAppOptions {
   nowMs?: () => number;
   random?: () => number;
   seed?: ReturnType<typeof createInitialModelSnapshot>;
-  productionTextDependencies?: WorkspaceProductionTextDependencies;
 }
 
 export function createWorkspaceApp(options: WorkspaceAppOptions) {
@@ -53,7 +49,7 @@ function workspaceRuntimeDependencies(
   const graftSession = createGraftSessionPort();
   const sourceHighlighter = createGraftSourceHighlighter();
   const titleSceneLoader = createTitleSceneLoaderPort();
-  const productionText = options.productionTextDependencies ?? createWorkspaceProductionTextDependencies();
+  const productionText = createWorkspaceProductionTextDependencies();
   return {
     initialColumns: options.initialColumns,
     initialRows: options.initialRows,

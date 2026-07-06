@@ -1110,22 +1110,22 @@ Echo tick:
 
 ## How to Run the Important Paths
 
-Run the interactive development app:
+Verify the interactive development startup gate:
 
 ```sh
 npm run dev
 ```
 
-Build and start the compiled app:
+Verify the compiled startup gate:
 
 ```sh
 npm run build
 npm start
 ```
 
-Interactive startup is gated until graph-backed rope authority is installed.
-The product startup path must fail fast rather than silently instantiate the
-full-snapshot text fixture.
+These startup commands are expected to fail fast until graph-backed rope
+authority is installed. The product startup path must reject missing graph rope
+authority rather than silently instantiate the full-snapshot text fixture.
 
 Run the default checks:
 

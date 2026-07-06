@@ -40,10 +40,10 @@ node scripts/jedit-echo-powered-session.mjs --json --replay-local
 node scripts/jedit-production-text-session.mjs --json --replay-local
 ```
 
-Interactive startup is intentionally gated until graph-backed rope authority is
-installed. The default text runtime is the Echo-hosted production profile, but
-`npm start` must fail fast rather than silently constructing the full-snapshot
-fixture while the default graph rope authority is unavailable.
+Interactive startup is intentionally gated while graph-backed rope authority is
+unavailable. Use `npm start` as the startup gate; the default text runtime is the Echo-hosted
+production profile, and startup must fail fast rather than silently constructing
+the full-snapshot fixture.
 
 ```bash
 npm start

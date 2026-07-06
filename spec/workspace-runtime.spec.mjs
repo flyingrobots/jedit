@@ -53,6 +53,33 @@ test("workspace app animation commands emit centralized message types", async ()
   assert.doesNotMatch(source, /type: 'drawer-progress'/);
 });
 
+test("workspace app source does not expose production text dependency bypass", async () => {
+  const source = readFileSync(
+    path.join(REPO_ROOT, "src", "adapters", "workspace-app.ts"),
+    "utf8",
+  );
+
+  assert.doesNotMatch(source, /\bproductionTextDependencies\b/);
+  assert.doesNotMatch(source, /\bWorkspaceProductionTextDependencies\b/);
+});
+
+test("workspace app construction rejects absent graph rope authority", async () => {
+  const workspaceApp = await importDist("adapters", "workspace-app.js");
+
+  assert.throws(
+    () =>
+      workspaceApp.createWorkspaceApp({
+        initialColumns: 120,
+        initialRows: 24,
+        initialWorkingDirectory: "/repo",
+        perfEnabled: false,
+        nowMs: () => 0,
+        random: () => 0.5,
+      }),
+    /requires graph rope text authority/,
+  );
+});
+
 test("raytracer profiler uses centralized runtime issue tokens", async () => {
   const source = readFileSync(
     path.join(REPO_ROOT, "src", "app", "raytracer-profiler.ts"),
@@ -105,27 +132,12 @@ test("runtime load-scene-result applies the loaded scene camera to title camera 
   assert.equal(nextModel.titleCamera.eyeY, scene.camera.position[1]);
 });
 
-test("workspace app renders perf overlay after toggle when perf starts disabled", async () => {
-  const [workspaceApp, themes] = await Promise.all([
-    importDist("adapters", "workspace-app.js"),
-    importDist("ui", "jedit-themes.js"),
-  ]);
-  const app = workspaceApp.createWorkspaceApp({
-    initialColumns: 120,
-    initialRows: 24,
-    initialWorkingDirectory: "/repo",
-    perfEnabled: false,
-    productionTextDependencies: mockProductionTextDependencies(),
-    nowMs: () => 0,
-    random: () => 0.5,
-    seed: {
-      titleSceneSeed: 0.5,
-      jeditTheme: themes.resolveInitialJeditTheme(undefined),
-      i18n: mockI18n(),
-      entries: [],
-      nowMs: 0,
-    },
-  });
+test("perf app renders overlay after toggle when perf starts disabled", async () => {
+  const workspacePerfApp = await importDist("adapters", "workspace-perf-app.js");
+  const app = workspacePerfApp.createPerfApp(
+    surfaceOnlyApp({ ...mockPerfTitleModel(), perfVisible: false }),
+    { initialPerfVisible: false },
+  );
 
   const [initialModel] = app.init();
   const [visibleModel] = app.update({ type: "toggle-perf" }, initialModel);
@@ -144,27 +156,12 @@ test("workspace app renders perf overlay after toggle when perf starts disabled"
   assert.match(text, /rss\s+\d+\.\d MB/);
 });
 
-test("workspace app can start with perf overlay already visible", async () => {
-  const [workspaceApp, themes] = await Promise.all([
-    importDist("adapters", "workspace-app.js"),
-    importDist("ui", "jedit-themes.js"),
-  ]);
-  const app = workspaceApp.createWorkspaceApp({
-    initialColumns: 120,
-    initialRows: 24,
-    initialWorkingDirectory: "/repo",
-    perfEnabled: true,
-    productionTextDependencies: mockProductionTextDependencies(),
-    nowMs: () => 0,
-    random: () => 0.5,
-    seed: {
-      titleSceneSeed: 0.5,
-      jeditTheme: themes.resolveInitialJeditTheme(undefined),
-      i18n: mockI18n(),
-      entries: [],
-      nowMs: 0,
-    },
-  });
+test("perf app can start with overlay already visible", async () => {
+  const workspacePerfApp = await importDist("adapters", "workspace-perf-app.js");
+  const app = workspacePerfApp.createPerfApp(
+    surfaceOnlyApp({ ...mockPerfTitleModel(), perfVisible: false }),
+    { initialPerfVisible: true },
+  );
 
   const [initialModel] = app.init();
   const surface = app.view({
@@ -229,21 +226,17 @@ test("workspace perf overlay adds title-scene facts only on title screen", async
   assert.doesNotMatch(editorText, /title scene/);
 });
 
-test("workspace app rejects stale non-Echo seeded text runtime profile", async () => {
-  const [workspaceApp, themes, profile] = await Promise.all([
-    importDist("adapters", "workspace-app.js"),
+test("initial workspace model rejects stale non-Echo seeded text runtime profile", async () => {
+  const [initModule, themes, profile] = await Promise.all([
+    importDist("app", "workspace", "init.js"),
     importDist("ui", "jedit-themes.js"),
     importDist("app", "text-runtime-profile.js"),
   ]);
-  const app = workspaceApp.createWorkspaceApp({
-    initialColumns: 120,
-    initialRows: 24,
-    initialWorkingDirectory: "/repo",
-    perfEnabled: false,
-    productionTextDependencies: mockProductionTextDependencies(),
-    nowMs: () => 0,
-    random: () => 0.5,
-    seed: {
+  const initialModel = initModule.createInitialModel(
+    "/repo",
+    120,
+    24,
+    {
       titleSceneSeed: 0.5,
       jeditTheme: themes.resolveInitialJeditTheme(undefined),
       i18n: mockI18n(),
@@ -251,9 +244,7 @@ test("workspace app rejects stale non-Echo seeded text runtime profile", async (
       nowMs: 0,
       textRuntimeProfile: "testLocal",
     },
-  });
-
-  const [initialModel] = app.init();
+  );
 
   assert.equal(
     initialModel.textRuntimeProfile,
@@ -548,10 +539,15 @@ test("stopping a failed profile trace emits only the close failure issue", async
   assert.equal(message.issue.atMs, 123);
 });
 
-function surfaceOnlyApp() {
+function surfaceOnlyApp(initialModel = mockPerfTitleModel()) {
   return {
-    init: () => [mockPerfTitleModel(), []],
-    update: (_, model) => [model, []],
+    init: () => [initialModel, []],
+    update: (msg, model) => [
+      msg.type === "toggle-perf"
+        ? { ...model, perfVisible: !model.perfVisible }
+        : model,
+      [],
+    ],
     view: (model) => stringToSurface("workspace", model.columns, model.rows),
     routeRuntimeIssue: (issue) => issue,
   };
@@ -611,12 +607,5 @@ function mockProfileMemory() {
     rssBytes: 30,
     externalBytes: 40,
     arrayBuffersBytes: 50,
-  };
-}
-
-function mockProductionTextDependencies() {
-  return {
-    productionTextSession: {},
-    textOperationSequencer: {},
   };
 }

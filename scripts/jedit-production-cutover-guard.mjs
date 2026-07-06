@@ -87,6 +87,7 @@ const EXPLICIT_FIXTURE_OR_MIGRATION_SOURCE_FILES = Object.freeze([
   'src/adapters/full-snapshot-hot-text-runtime-fixture.ts',
   'src/adapters/fake-echo-jedit-optic-transport.ts',
   'src/adapters/installed-jedit-contract-echo-transport.ts',
+  'src/adapters/installed-text-authority-guard.ts',
 ]);
 const FORBIDDEN_LEGACY_AUTHORITY_PATTERNS = Object.freeze([
   { label: 'loadEditor', pattern: /\bloadEditor\b(?!File)/u },
