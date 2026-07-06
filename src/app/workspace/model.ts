@@ -82,6 +82,7 @@ export interface WorkspaceModel
   readonly graftLoading: boolean;
   readonly graftRequestId: number;
   readonly graftSelectedIndex: number;
+  readonly expandedProjectionLaneIndex?: number;
   readonly sourceHighlight?: SourceHighlightReading;
   readonly sourceHighlightLoading: boolean;
   readonly sourceHighlightRequestId: number;

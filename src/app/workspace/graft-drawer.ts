@@ -12,6 +12,8 @@ import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 import type { Cmd } from '@flyingrobots/bijou-tui';
 import { graftProjectionPanelLaneRowCount, graftProjectionPanelLanes } from '../../ports/graft-projection-lanes.js';
+import { projectionReviewPayloadLineCount } from '../../ui/projection-review-payload.js';
+import type { GraftProjectionPanelLane } from '../../ports/graft-session.js';
 import type { GraftProjectionLaneSource } from '../../ports/graft-projection-lanes.js';
 
 const GRAFT_BASE_META_ROWS = 7;
@@ -111,7 +113,7 @@ function graftMetaRows(model: WorkspaceModel): number {
   const info = model.graftInfo;
   const receipt = info?.obstructionReceipt;
   return GRAFT_BASE_META_ROWS
-    + (info == null ? 0 : projectionLaneRowCount(info))
+    + (info == null ? 0 : projectionLaneRowCount(info, model.expandedProjectionLaneIndex))
     + (receipt == null
       ? 0
       : GRAFT_RECEIPT_BASE_ROWS
@@ -119,9 +121,20 @@ function graftMetaRows(model: WorkspaceModel): number {
         + receiptPayloadRowCount(receipt.reasonPayload));
 }
 
-function projectionLaneRowCount(source: GraftProjectionLaneSource): number {
+function projectionLaneRowCount(source: GraftProjectionLaneSource, expandedProjectionLaneIndex: number | undefined): number {
   return graftProjectionPanelLanes(source)
-    .reduce((sum, lane) => sum + graftProjectionPanelLaneRowCount(lane), 0);
+    .reduce((sum, lane, index) => sum + expandedProjectionLaneRowCount(lane, index, expandedProjectionLaneIndex), 0);
+}
+
+function expandedProjectionLaneRowCount(
+  lane: GraftProjectionPanelLane,
+  index: number,
+  expandedProjectionLaneIndex: number | undefined,
+): number {
+  return graftProjectionPanelLaneRowCount(lane)
+    + (expandedProjectionLaneIndex === index && lane.reviewPayload != null
+      ? projectionReviewPayloadLineCount(lane.reviewPayload)
+      : 0);
 }
 
 function receiptPayloadRowCount(

@@ -12,6 +12,7 @@ import {
   GraftProjectionSources,
   type GraftEchoTargetIrProjectionLane,
   type GraftEdictProjectionLane,
+  type GraftJsonObject,
   type GraftProjectionPanelLane,
   type GraftProjectionPosture,
   type GraftProjectionSource,
@@ -141,6 +142,12 @@ function availableLiveEdictProjection(projection: EdictProjectionBundle): LiveEd
     projectionLanes: graftProjectionPanelLanes({
       edictCoreProjection: coreProjection,
       echoTargetIrProjection: targetIrProjection,
+      edictCoreReviewPayload: projection.core.state === GraftProjectionSlotStates.Available
+        ? reviewPayloadFromProjection(projection.core.value.review)
+        : undefined,
+      echoTargetIrReviewPayload: projection.targetIr.state === GraftProjectionSlotStates.Available
+        ? reviewPayloadFromProjection(projection.targetIr.value.review)
+        : undefined,
     }),
     edictCoreProjection: coreProjection,
     echoTargetIrProjection: targetIrProjection,
@@ -220,6 +227,10 @@ function reviewSummaryLines(review: object): readonly string[] {
       ? `${REVIEW_SUMMARY_PREFIX}${visibleKeys.join(', ')}`
       : `${REVIEW_SUMMARY_PREFIX}${visibleKeys.join(', ')}, ... ${String(hiddenCount)} more`,
   ];
+}
+
+function reviewPayloadFromProjection(review: object): GraftJsonObject {
+  return JSON.parse(JSON.stringify(review));
 }
 
 function unavailableLiveEdictProjection(): LiveEdictProjectionResult {
