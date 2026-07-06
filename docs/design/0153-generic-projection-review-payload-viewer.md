@@ -288,7 +288,7 @@ payloads generically and use Edict Core plus Echo Target IR as fixtures.
 - [x] Slice 3: Add generic review payload fields and carry Edict/Echo review
       payloads through the projection lane adapter.
 - [x] Slice 4: Add bounded payload rendering and row accounting.
-- [ ] Slice 5: Update docs/changelog, fill retrospective, validate, and open
+- [x] Slice 5: Update docs/changelog, fill retrospective, validate, and open
       PR.
 
 ## Tests To Write First
@@ -327,7 +327,7 @@ The work is done when:
 - [x] Echo Target IR review payloads display through the generic viewer.
 - [x] Drawer output contains no execution, admission, debugger, or REPL claim.
 - [x] Issue #259 and the PR are linked correctly.
-- [ ] Local validation is green.
+- [x] Local validation is green.
 
 ## Validation Plan
 
@@ -399,6 +399,8 @@ What the tests proved:
 - GREEN:
   `npm run build && JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/graft-review-payload-api-session.spec.mjs spec/graft-review-payload-viewer.spec.mjs spec/graft-api-session.spec.mjs spec/graft-drawer.spec.mjs`
 - GREEN: `npm run quality`
+- GREEN: `npm run check`
+  passed with 1170 passing, 13 skipped, and quality regressions none.
 - GREEN: `git diff --check`
 
 What remains open:
