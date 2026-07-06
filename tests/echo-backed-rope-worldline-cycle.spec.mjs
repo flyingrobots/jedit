@@ -296,9 +296,11 @@ test('Closing an empty open group is a logical no-op.', async () => {
 
 test('The app-facing causal session composes tick admission, edit grouping, and checkpointing without redefining ticks.', async () => {
   const app = await loadHotSessionApp();
-  const adapter = await import(pathToFileURL(path.join(REPO_ROOT, 'dist', 'adapters', 'in-memory-hot-text-runtime.js')).href);
+  const adapter = await import(
+    pathToFileURL(path.join(REPO_ROOT, 'dist', 'adapters', 'full-snapshot-hot-text-runtime-fixture.js')).href
+  );
   const text = await import(pathToFileURL(path.join(REPO_ROOT, 'dist', 'domain', 'text-edit-contract.js')).href);
-  const runtime = adapter.createInMemoryHotTextRuntime();
+  const runtime = adapter.createFullSnapshotHotTextRuntimeFixture();
 
   const opened = app.beginEditGroup(
     runtime,
