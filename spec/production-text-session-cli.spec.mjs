@@ -7,10 +7,26 @@ const REPO_ROOT = process.cwd();
 const CLI_PATH = path.join(REPO_ROOT, 'scripts', 'jedit-production-text-session.mjs');
 const INSERT_TEXT = 'cli text';
 
-test('production text session CLI reports edit reading checkpoint and export evidence', () => {
+test('production text session CLI rejects implicit full-snapshot fixture authority', () => {
   const result = spawnSync(process.execPath, [
     CLI_PATH,
     '--json',
+    '--text',
+    INSERT_TEXT,
+  ], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+  });
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /--allow-full-snapshot-fixture/);
+});
+
+test('production text session CLI reports explicit fixture edit reading checkpoint and export evidence', () => {
+  const result = spawnSync(process.execPath, [
+    CLI_PATH,
+    '--json',
+    '--allow-full-snapshot-fixture',
     '--text',
     INSERT_TEXT,
   ], {
@@ -33,6 +49,7 @@ test('production text session CLI reports stable local replay posture', () => {
   const result = spawnSync(process.execPath, [
     CLI_PATH,
     '--json',
+    '--allow-full-snapshot-fixture',
     '--replay-local',
     '--text',
     INSERT_TEXT,

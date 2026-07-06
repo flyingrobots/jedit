@@ -16,8 +16,10 @@ test('v0.1.0 quickstart documents executable witness commands', () => {
 
   assert.match(source, /npm run build/);
   assert.match(source, /--json --dry-run/);
-  assert.match(source, /--json --replay-local/);
-  assert.match(source, /jedit-production-text-session\.mjs --json/);
+  assert.match(source, /--json --allow-full-snapshot-fixture --replay-local/);
+  assert.match(source, /jedit-production-text-session\.mjs --json --allow-full-snapshot-fixture/);
+  assert.match(source, /"kind": "full-snapshot-fixture"/);
+  assert.match(source, /"productionSafe": false/);
   assert.match(source, /npm start/);
   assert.match(source, /Interactive startup is intentionally gated/);
   assert.match(source, /default text runtime is the Echo-hosted/);

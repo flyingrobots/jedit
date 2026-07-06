@@ -305,8 +305,8 @@ node --test --test-concurrency=1 spec/jedit-wsc-history-listing.spec.mjs
 node --test --test-concurrency=1 spec/jedit-wsc-replay-proof.spec.mjs
 node scripts/jedit-wsc-history.mjs list --json
 node scripts/jedit-echo-powered-session.mjs --json --dry-run
-node scripts/jedit-echo-powered-session.mjs --json
-node scripts/jedit-echo-powered-session.mjs --json --replay-local
+node scripts/jedit-echo-powered-session.mjs --json --allow-full-snapshot-fixture
+node scripts/jedit-echo-powered-session.mjs --json --allow-full-snapshot-fixture --replay-local
 ```
 
 ## Non-Goals

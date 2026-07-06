@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
+import { createFullSnapshotFixtureBackedEchoHostedSessionFactory } from '../scripts/full-snapshot-fixture-echo-hosted-session-factory.mjs';
 
 const REPO_ROOT = process.cwd();
 const SESSION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'text-runtime-profile-session.js');
@@ -29,7 +30,7 @@ test('Echo-hosted text runtime profile drives a narrow edit/read path through Ec
   const modules = await loadModules();
   const binding = modules.session.createTextRuntimeProfileSession({
     profile: modules.profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
-    echoHostedSessionFactory: createFixtureBackedEchoHostedSessionFactory(modules),
+    echoHostedSessionFactory: createFullSnapshotFixtureBackedEchoHostedSessionFactory(modules),
   });
 
   const text = await runNarrowEditRead(binding.session, 'echoHosted');
@@ -153,21 +154,6 @@ function fakeTextBufferSession(sessionId) {
     },
     async listBuffers() {
       return [];
-    },
-  };
-}
-
-function createFixtureBackedEchoHostedSessionFactory(modules) {
-  return {
-    create() {
-      const runtime = modules.runtime.createFullSnapshotHotTextRuntimeFixture();
-      const transport = modules.transport.createInstalledJeditContractEchoTransport({
-        allowFullSnapshotTextAuthority: true,
-        runtime,
-      });
-      return modules.sessionAdapter.createEchoBackedTextBufferSession({
-        client: modules.client.createEchoTransportJeditOpticClient(transport),
-      });
     },
   };
 }

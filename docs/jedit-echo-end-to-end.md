@@ -893,14 +893,20 @@ jedit application intent and it does not interrupt a half-committed tick.
 
 ## Agent Echo-Powered Session Witness
 
-The fast product-session command is:
+The fast installed-package plan command is:
 
 ```sh
 npm run witness:echo:session
 ```
 
-It is not the real Echo WASM substrate proof. It is a host-owned agent smoke
-path over the same app-facing product capability:
+It is not the real Echo WASM substrate proof. The edit/read smoke path is now an
+explicit full-snapshot fixture compatibility command:
+
+```sh
+node scripts/jedit-echo-powered-session.mjs --json --allow-full-snapshot-fixture
+```
+
+That compatibility command runs over the same app-facing product capability:
 
 ```text
 TextBufferOptic session
@@ -920,7 +926,7 @@ sequenceDiagram
   participant Client as app-safe optic client
   participant Transport as fake Echo-shaped transport
 
-  Agent->>CLI: npm run witness:echo:session
+  Agent->>CLI: node scripts/jedit-echo-powered-session.mjs --json --allow-full-snapshot-fixture
   CLI->>Session: createBuffer(...)
   Session->>Client: openTextBuffer(...)
   Client->>Transport: submitIntentBytes(createBuffer)
@@ -1147,17 +1153,17 @@ ECHO_WARP_WASM_DIR=/path/to/echo/crates/warp-wasm \
   node scripts/jedit-echo-witness.mjs --json --replay
 ```
 
-Run the fast product-session witness:
+Run the fast installed-package plan witness:
 
 ```sh
 npm run witness:echo:session
 ```
 
-Run the production text session witness:
+Run the explicit fixture compatibility production text session witness:
 
 ```sh
 npm run build
-node scripts/jedit-production-text-session.mjs --json
+node scripts/jedit-production-text-session.mjs --json --allow-full-snapshot-fixture
 ```
 
 ## The End-to-End Story

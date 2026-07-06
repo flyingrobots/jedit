@@ -121,19 +121,15 @@ function runJsonReport() {
   if (build.status !== 0) {
     return emitReportFailure('build_failed', build);
   }
-  const happy = runWitnessJson(['--json', '--text', 'release gate']);
+  const plan = runWitnessJson(['--json', '--dry-run']);
   const nonHappy = runWitnessJson(['--json', '--unsupported-mutation', 'unsupportedMutation']);
-  const replay = runWitnessJson(['--json', '--replay-local', '--text', 'release gate']);
-  if (!happy.ok) {
-    return emitReportFailure('happy_path_failed', happy.result);
+  if (!plan.ok) {
+    return emitReportFailure('plan_failed', plan.result);
   }
   if (!nonHappy.ok) {
     return emitReportFailure('non_happy_path_failed', nonHappy.result);
   }
-  if (!replay.ok) {
-    return emitReportFailure('local_replay_failed', replay.result);
-  }
-  process.stdout.write(`${JSON.stringify(toReleaseGateReport(happy.summary, nonHappy.summary, replay.summary), null, 2)}\n`);
+  process.stdout.write(`${JSON.stringify(toReleaseGateReport(plan.summary, nonHappy.summary), null, 2)}\n`);
   return 0;
 }
 
@@ -197,42 +193,18 @@ function emitReportFailure(reason, result) {
   return result.status === 0 ? 1 : result.status;
 }
 
-function toReleaseGateReport(happy, nonHappy, replay) {
+function toReleaseGateReport(plan, nonHappy) {
   return {
     ok: true,
     schemaVersion: 1,
-    transport: happy.transport,
-    install: happy.install,
-    authority: toAuthorityReport(happy),
-    happyPath: toHappyPathReport(happy),
+    transport: plan.transport,
+    install: plan.install,
+    plan: plan.plan,
     nonHappyPath: nonHappy.nonHappyPath,
-    replay: replay.replayLocal,
     releaseGate: {
       hiddenRetry: nonHappy.nonHappyPath.hiddenRetry,
-      appCanTick: happy.authority.appCanTick,
-      retainedEvidenceRefCount: happy.report.retainedEvidence.refs.length,
+      appCanTick: plan.plan.appCanTick,
+      fullSnapshotFixtureBypass: false,
     },
-  };
-}
-
-function toAuthorityReport(happy) {
-  return {
-    appFacingSessionPort: happy.authority.appFacingSessionPort,
-    appFacingBufferCapability: happy.authority.appFacingBufferCapability,
-    trustedLifecyclePort: happy.authority.trustedLifecyclePort,
-    appCanTick: happy.authority.appCanTick,
-    lifecycleRequests: happy.lifecycleRequests,
-    shutdown: happy.shutdown,
-  };
-}
-
-function toHappyPathReport(happy) {
-  return {
-    outcome: happy.report.outcome.status,
-    roundTrip: happy.report.roundTrip,
-    receiptCorrelation: happy.report.receiptCorrelation.status,
-    retainedEvidence: happy.report.retainedEvidence,
-    reading: happy.reading,
-    restartPosture: happy.report.restartPosture,
   };
 }

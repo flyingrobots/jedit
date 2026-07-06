@@ -31,7 +31,7 @@ npm run witness:echo:session
 or directly:
 
 ```sh
-node scripts/jedit-echo-powered-session.mjs --json
+node scripts/jedit-echo-powered-session.mjs --json --dry-run
 ```
 
 The emitted report names:

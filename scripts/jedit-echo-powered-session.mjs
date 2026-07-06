@@ -2,6 +2,11 @@
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import {
+  FULL_SNAPSHOT_FIXTURE_AUTHORITY_MESSAGE,
+  createFullSnapshotFixtureBackedInstalledTransport,
+  fullSnapshotFixtureAuthorityReport,
+} from './full-snapshot-fixture-echo-hosted-session-factory.mjs';
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(SCRIPT_DIR, '..');
@@ -40,6 +45,7 @@ async function main() {
 
 function parseArgs(args) {
   const options = {
+    allowFullSnapshotFixture: false,
     json: false,
     help: false,
     dryRun: false,
@@ -52,7 +58,9 @@ function parseArgs(args) {
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
-    if (arg === '--json') {
+    if (arg === '--allow-full-snapshot-fixture') {
+      options.allowFullSnapshotFixture = true;
+    } else if (arg === '--json') {
       options.json = true;
     } else if (arg === '--dry-run') {
       options.dryRun = true;
@@ -116,7 +124,19 @@ function parseCycleLimit(value) {
 }
 
 async function runSessionWitness(options) {
-  const modules = await loadDistModules();
+  if (options.replayLocal) {
+    requireFixtureAuthority(options);
+  }
+  if (!options.dryRun && options.unsupportedMutation == null && !options.replayLocal) {
+    requireFixtureAuthority(options);
+  }
+
+  const modules = await loadDistModules({
+    includeFixture: options.allowFullSnapshotFixture
+      && !options.dryRun
+      && options.unsupportedMutation == null
+      && !options.replayLocal,
+  });
   if (options.dryRun) {
     return dryRunSummary(options, modules.package);
   }
@@ -156,7 +176,7 @@ async function runSessionWitness(options) {
     tickIntervalSeconds: DEFAULT_TICK_INTERVAL_SECONDS,
   });
   const client = modules.transportClient.createEchoTransportJeditOpticClient(
-    createFixtureBackedInstalledTransport(modules),
+    createFullSnapshotFixtureBackedInstalledTransport(modules),
   );
   const session = modules.sessionAdapter.createEchoBackedTextBufferSession({
     client,
@@ -187,6 +207,7 @@ async function runSessionWitness(options) {
       appFacingBufferCapability: 'TextBufferOptic',
       appCanTick: false,
       trustedLifecyclePort: 'TrustedEchoRuntimeLifecyclePort',
+      textAuthority: fullSnapshotFixtureAuthorityReport(),
     },
     lifecycleRequests,
     startup,
@@ -218,6 +239,7 @@ function replayChildArgs(options) {
   return [
     fileURLToPath(import.meta.url),
     '--json',
+    '--allow-full-snapshot-fixture',
     '--buffer-key',
     options.bufferKey,
     '--text',
@@ -349,12 +371,11 @@ function unavailableReplayPosture() {
   };
 }
 
-async function loadDistModules() {
-  return {
+async function loadDistModules(options) {
+  const modules = {
     installedTransport: await importDist('adapters/installed-jedit-contract-echo-transport.js'),
     transportClient: await importDist('adapters/jedit-echo-optic-client.js'),
     sessionAdapter: await importDist('adapters/echo-backed-text-buffer-session.js'),
-    textRuntimeFixture: await importDist('adapters/full-snapshot-hot-text-runtime-fixture.js'),
     workflow: await importDist('app/echo-powered-text-buffer-witness.js'),
     host: await importDist('app/trusted-echo-runtime-host.js'),
     package: await importDist('app/jedit-contract-package.js'),
@@ -362,13 +383,19 @@ async function loadDistModules() {
     correlation: await importDist('app/jedit-receipt-correlation.js'),
     outcomes: await importDist('app/jedit-intent-outcomes.js'),
   };
+  if (options.includeFixture) {
+    return {
+      ...modules,
+      textRuntimeFixture: await importDist('adapters/full-snapshot-hot-text-runtime-fixture.js'),
+    };
+  }
+  return modules;
 }
 
-function createFixtureBackedInstalledTransport(modules) {
-  return modules.installedTransport.createInstalledJeditContractEchoTransport({
-    allowFullSnapshotTextAuthority: true,
-    runtime: modules.textRuntimeFixture.createFullSnapshotHotTextRuntimeFixture(),
-  });
+function requireFixtureAuthority(options) {
+  if (!options.allowFullSnapshotFixture) {
+    throw new Error(FULL_SNAPSHOT_FIXTURE_AUTHORITY_MESSAGE);
+  }
 }
 
 async function importDist(relativePath) {
@@ -418,6 +445,8 @@ function helpText() {
   return `Usage: node scripts/jedit-echo-powered-session.mjs [options]
 
 Options:
+  --allow-full-snapshot-fixture
+                          Run the explicit transitional fixture path.
   --buffer-key <path>     Buffer key for the local witness session.
   --text <text>           Text inserted by the replace-range intent.
   --cycle-limit <n>       Trusted host run-until-idle cycle limit.

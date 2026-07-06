@@ -18,7 +18,7 @@
     "title:profile": "npm run build && node scripts/title-scene-profile.mjs",
     "title:record": "npm run build && node scripts/title-scene-record.mjs",
     "witness:echo": "node scripts/jedit-echo-witness.mjs",
-    "witness:echo:session": "npm run build && node scripts/jedit-echo-powered-session.mjs --json",
+    "witness:echo:session": "npm run build && node scripts/jedit-echo-powered-session.mjs --json --dry-run",
     "release-gate:echo": "npm run release-gate:jedit-echo",
     "release-gate:jedit-echo": "node scripts/jedit-echo-release-gate.mjs",
     "quality": "node scripts/quality-gate.mjs",

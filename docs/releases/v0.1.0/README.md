@@ -41,10 +41,11 @@ of stable evidence identities.
 
 ```bash
 npm run build
-node scripts/jedit-echo-powered-session.mjs --json
-node scripts/jedit-echo-powered-session.mjs --json --replay-local
-node scripts/jedit-production-text-session.mjs --json
-node scripts/jedit-production-text-session.mjs --json --replay-local
+node scripts/jedit-echo-powered-session.mjs --json --dry-run
+node scripts/jedit-echo-powered-session.mjs --json --allow-full-snapshot-fixture
+node scripts/jedit-echo-powered-session.mjs --json --allow-full-snapshot-fixture --replay-local
+node scripts/jedit-production-text-session.mjs --json --allow-full-snapshot-fixture
+node scripts/jedit-production-text-session.mjs --json --allow-full-snapshot-fixture --replay-local
 npm run release-gate:jedit-echo
 ```
 

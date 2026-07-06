@@ -9,12 +9,32 @@ const CLI_PATH = path.join(REPO_ROOT, 'scripts', 'jedit-echo-powered-session.mjs
 const TICK_INTERVAL_SECONDS = 1 / 60;
 let built = false;
 
-test('Echo-powered session CLI reports app capability, lifecycle, and reading evidence', () => {
+test('Echo-powered session CLI rejects implicit full-snapshot fixture authority', () => {
   ensureBuilt();
 
   const result = spawnSync(process.execPath, [
     CLI_PATH,
     '--json',
+    '--text',
+    'hello',
+  ], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+  });
+
+  assert.notEqual(result.status, 0);
+  const summary = JSON.parse(result.stdout);
+  assert.equal(summary.ok, false);
+  assert.match(summary.message, /--allow-full-snapshot-fixture/);
+});
+
+test('Echo-powered session CLI reports explicit fixture app capability, lifecycle, and reading evidence', () => {
+  ensureBuilt();
+
+  const result = spawnSync(process.execPath, [
+    CLI_PATH,
+    '--json',
+    '--allow-full-snapshot-fixture',
     '--text',
     'hello',
     '--cycle-limit',
@@ -35,6 +55,10 @@ test('Echo-powered session CLI reports app capability, lifecycle, and reading ev
   assert.equal(summary.authority.appFacingSessionPort, 'TextBufferSessionPort');
   assert.equal(summary.authority.appFacingBufferCapability, 'TextBufferOptic');
   assert.equal(summary.authority.appCanTick, false);
+  assert.deepEqual(summary.authority.textAuthority, {
+    kind: 'full-snapshot-fixture',
+    productionSafe: false,
+  });
   assert.deepEqual(summary.lifecycleRequests, [
     { tickIntervalSeconds: TICK_INTERVAL_SECONDS },
     { cycleLimit: 6 },
@@ -174,6 +198,7 @@ test('Echo-powered session CLI has a local replay compare path', () => {
   const result = spawnSync(process.execPath, [
     CLI_PATH,
     '--json',
+    '--allow-full-snapshot-fixture',
     '--replay-local',
   ], {
     cwd: REPO_ROOT,
@@ -193,6 +218,7 @@ test('Echo-powered session CLI can run healthy work after unsupported mutation w
   const result = spawnSync(process.execPath, [
     CLI_PATH,
     '--json',
+    '--allow-full-snapshot-fixture',
     '--text',
     'still healthy',
   ], {
@@ -245,6 +271,7 @@ test('Echo-powered session CLI handles non-report human summaries', () => {
   });
   const replay = spawnSync(process.execPath, [
     CLI_PATH,
+    '--allow-full-snapshot-fixture',
     '--replay-local',
   ], {
     cwd: REPO_ROOT,

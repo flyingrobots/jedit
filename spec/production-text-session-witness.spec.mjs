@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
+import { createFullSnapshotFixtureBackedEchoHostedSessionFactory } from '../scripts/full-snapshot-fixture-echo-hosted-session-factory.mjs';
 
 const REPO_ROOT = process.cwd();
 const WITNESS_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'workspace', 'production-text-session-witness.js');
@@ -73,23 +74,9 @@ test('production text session witness reports obstruction stage without lifecycl
 function createProductionSession(modules) {
   const binding = modules.adapter.createTextRuntimeProfileSession({
     profile: modules.profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
-    echoHostedSessionFactory: createFixtureBackedEchoHostedSessionFactory(modules),
+    echoHostedSessionFactory: createFullSnapshotFixtureBackedEchoHostedSessionFactory(modules),
   });
   return modules.session.createProductionTextSession(binding.session);
-}
-
-function createFixtureBackedEchoHostedSessionFactory(modules) {
-  return {
-    create() {
-      const transport = modules.transport.createInstalledJeditContractEchoTransport({
-        allowFullSnapshotTextAuthority: true,
-        runtime: modules.runtime.createFullSnapshotHotTextRuntimeFixture(),
-      });
-      return modules.sessionAdapter.createEchoBackedTextBufferSession({
-        client: modules.client.createEchoTransportJeditOpticClient(transport),
-      });
-    },
-  };
 }
 
 function obstructedProductionSession() {

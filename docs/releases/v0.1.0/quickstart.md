@@ -21,23 +21,23 @@ Inspect the witness plan without running the edit/read flow:
 node scripts/jedit-echo-powered-session.mjs --json --dry-run
 ```
 
-Run the installed-package edit/read witness:
+Run the explicit full-snapshot fixture compatibility edit/read witness:
 
 ```bash
-node scripts/jedit-echo-powered-session.mjs --json --text "hello Echo"
+node scripts/jedit-echo-powered-session.mjs --json --allow-full-snapshot-fixture --text "hello Echo"
 ```
 
-Run the production text session witness:
+Run the explicit full-snapshot fixture compatibility production-session witness:
 
 ```bash
-node scripts/jedit-production-text-session.mjs --json --text "hello Echo"
+node scripts/jedit-production-text-session.mjs --json --allow-full-snapshot-fixture --text "hello Echo"
 ```
 
-Compare two local witness runs using stable evidence identity:
+Compare two explicit fixture compatibility runs using stable evidence identity:
 
 ```bash
-node scripts/jedit-echo-powered-session.mjs --json --replay-local
-node scripts/jedit-production-text-session.mjs --json --replay-local
+node scripts/jedit-echo-powered-session.mjs --json --allow-full-snapshot-fixture --replay-local
+node scripts/jedit-production-text-session.mjs --json --allow-full-snapshot-fixture --replay-local
 ```
 
 Interactive startup is intentionally gated while graph-backed rope authority is
@@ -54,7 +54,7 @@ profile. Any other `JEDIT_TEXT_RUNTIME` value is unsupported startup input.
 
 ## Expected JSON Shape
 
-The real witness should include these stable fields:
+The explicit fixture compatibility witness should include these stable fields:
 
 ```json
 {
@@ -67,7 +67,11 @@ The real witness should include these stable fields:
   "authority": {
     "appFacingSessionPort": "TextBufferSessionPort",
     "appFacingBufferCapability": "TextBufferOptic",
-    "appCanTick": false
+    "appCanTick": false,
+    "textAuthority": {
+      "kind": "full-snapshot-fixture",
+      "productionSafe": false
+    }
   },
   "report": {
     "outcome": {
