@@ -1,7 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import type {
   EdictProjectionBundle,
-  EdictProjectionCompilerContext,
   EdictProjectionProvider,
   EdictProjectionSlot,
   EdictProjectionTargetSettings,
@@ -22,47 +21,15 @@ const EDICT_EXTENSION = '.edict';
 const ECHO_TARGET_COORDINATE = 'echo.dpo@1';
 const ECHO_TARGET_PROFILE_DIGEST = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
 const ECHO_TARGET_IR_DOMAIN = 'echo.span-ir/v1';
-const ECHO_WRITE_PROFILE = 'continuum.profile.write/v1';
-const ECHO_EFFECT_SOURCE = 'p.effectful';
-const ECHO_TINY_BUDGET = 'p.tiny';
-const ECHO_REPLACE_EFFECT = 'target.replace';
-const ECHO_REPLACE_INTRINSIC = 'echo.dpo@1.replace';
-const ECHO_REJECTED_OBSTRUCTION = 'rejected';
 const REVIEW_SUMMARY_PREFIX = 'review: ';
 const EDICT_STATUS_OK = 'ok';
 const TYPE_STRING = 'string';
 const SUMMARY_ITEM_LIMIT = 3;
 
-const DEFAULT_ECHO_COMPILER_CONTEXT: EdictProjectionCompilerContext = {
-  operationProfiles: [{
-    source: ECHO_EFFECT_SOURCE,
-    core: ECHO_WRITE_PROFILE,
-    allowedWriteClasses: ['replace'],
-  }],
-  effectWriteClasses: [{
-    effect: ECHO_REPLACE_EFFECT,
-    writeClass: 'replace',
-  }],
-  budgets: [{
-    source: ECHO_TINY_BUDGET,
-    budget: {
-      maxSteps: 8,
-      maxAllocatedBytes: 1024,
-      maxOutputBytes: 256,
-    },
-  }],
-};
-
 const DEFAULT_ECHO_TARGET: EdictProjectionTargetSettings = {
   coordinate: ECHO_TARGET_COORDINATE,
   profileDigest: ECHO_TARGET_PROFILE_DIGEST,
   irDomain: ECHO_TARGET_IR_DOMAIN,
-  operationProfiles: [ECHO_WRITE_PROFILE],
-  obstructionCoordinates: [ECHO_REJECTED_OBSTRUCTION],
-  effectLowerings: [{
-    effect: ECHO_REPLACE_EFFECT,
-    targetIntrinsic: ECHO_REPLACE_INTRINSIC,
-  }],
 };
 
 interface ProcessRunRequest {
@@ -94,7 +61,6 @@ export interface GraftEdictProjectionApi {
   createEdictCliProjectionProvider(options: {
     readonly processRunner: ProcessRunner;
     readonly cwd: string;
-    readonly compilerContext?: EdictProjectionCompilerContext;
     readonly target?: EdictProjectionTargetSettings;
   }): EdictProjectionProvider;
   createStructuredBuffer(
@@ -145,7 +111,6 @@ function liveEdictProjection(input: Required<LiveEdictProjectionInput>): LiveEdi
   const edictProjector = input.api.createEdictCliProjectionProvider({
     processRunner: NODE_PROCESS_RUNNER,
     cwd: input.workspaceRoot,
-    compilerContext: DEFAULT_ECHO_COMPILER_CONTEXT,
     target: DEFAULT_ECHO_TARGET,
   });
   const buffer = input.api.createStructuredBuffer(input.relativePath, input.sourceText, {

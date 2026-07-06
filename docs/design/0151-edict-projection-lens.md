@@ -157,6 +157,11 @@ interface GraftEchoTargetIrProjectionLane extends GraftEdictProjectionLane {
 jedit treats these lanes as display facts from Graft. It does not derive them,
 validate their Edict semantics, execute Echo, or admit artifacts.
 
+jedit may pass the published Graft target selection shape for the Echo lens:
+target coordinate, target profile digest, and Target IR domain. It must not
+own compiler context, operation profile mappings, budgets, effect lowerings, or
+obstruction coordinates for Edict projection.
+
 ## Lower Modes
 
 The lower mode is the existing text drawer output. Focused specs assert the
@@ -173,7 +178,7 @@ state rather than crashing.
 | --- | --- |
 | Source of truth | The current editor buffer for `.edict` projection input; upstream Graft/Edict output for projection facts. |
 | Derived state | `GraftInfo` lanes and drawer text rows. |
-| Invalid states | jedit computing Core/Target IR itself, treating saved-file projection as current for dirty `.edict`, or interpreting receipt semantics. |
+| Invalid states | jedit computing Core/Target IR itself, carrying Edict compiler or Echo lowering semantics, treating saved-file projection as current for dirty `.edict`, or interpreting receipt semantics. |
 | Reset behavior | Projection lanes disappear when new `GraftInfo` lacks them or the active file changes. |
 | Serialization | No new persistence. |
 | Deterministic assumptions | Drawer row ordering is fixed and bounded; payload keys remain sorted where existing receipt logic applies. |
@@ -362,6 +367,10 @@ What changed from the design:
   shape without accepting `unknown` payloads.
 - The adapter uses a local process-runner boundary because Graft exports the
   Edict provider factory but not its Node process runner.
+- The adapter now passes only the published target selection facts to Graft:
+  target coordinate, target profile digest, and Target IR domain. It does not
+  carry Edict compiler context, operation profile mappings, budgets, effect
+  lowerings, or obstruction coordinates.
 
 What the tests proved:
 
@@ -369,7 +378,8 @@ What the tests proved:
   editor lines as `sourceText`.
 - `spec/graft-api-session.spec.mjs` proves dirty `.edict` source text reaches
   the Graft/Edict projection surface and Core/Target IR slots normalize into
-  `GraftInfo`.
+  `GraftInfo`. It also proves jedit does not pass compiler context or Echo
+  lowering semantics into the provider.
 - `spec/graft-drawer.spec.mjs` proves the drawer renders Core and Echo Target
   IR rows, keeps receipt display opaque, and does not claim execution or
   admission.

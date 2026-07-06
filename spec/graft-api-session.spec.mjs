@@ -173,9 +173,12 @@ test('Graft session projects dirty Edict buffers through live source text', asyn
     edictProjector: edictProviders[0].provider,
   }]);
   assert.equal(edictProviders[0].options.cwd, REPO_ROOT);
-  assert.equal(edictProviders[0].options.target.coordinate, 'echo.dpo@1');
-  assert.equal(edictProviders[0].options.target.irDomain, 'echo.span-ir/v1');
-  assert.equal(edictProviders[0].options.target.profileDigest, TARGET_PROFILE_DIGEST);
+  assert.equal(edictProviders[0].options.compilerContext, undefined);
+  assert.deepEqual(edictProviders[0].options.target, {
+    coordinate: 'echo.dpo@1',
+    profileDigest: TARGET_PROFILE_DIGEST,
+    irDomain: 'echo.span-ir/v1',
+  });
   assert.deepEqual(info.edictCoreProjection, {
     state: 'available',
     digest: CORE_DIGEST,
