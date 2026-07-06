@@ -67,6 +67,31 @@ test('graph runtime creates a worldline from UTF-8 bytes and reads a named head 
   assert.equal(reading.validationEvidence[0].contentHash, created.blob.contentHash);
 });
 
+test('graph runtime imports explicit UTF-8 file bytes as the initial authoritative blob', async () => {
+  const { runtime, contract } = await loadModules();
+  const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
+  const fileText = 'file bytes ✓\n';
+  const fileBytes = UTF8_ENCODER.encode(fileText);
+
+  const created = assertOk(graph.createBufferWorldline({
+    worldlineId: 'worldline:file-bytes',
+    initialText: '',
+    initialBytes: fileBytes,
+  }));
+  const reading = assertOk(graph.textWindow({
+    basisHeadId: created.head.headId,
+    byteRange: byteRange(contract, 0, fileBytes.length),
+  }));
+
+  assert.equal(created.blob.byteLength, fileBytes.length);
+  assert.equal(created.blob.blobId, `text-blob:${created.blob.contentHash}`);
+  assert.equal(created.head.byteLength, fileBytes.length);
+  assert.equal(created.head.lineCount, 2);
+  assert.equal(created.worldline.initialHeadId, created.head.headId);
+  assert.equal(reading.text, fileText);
+  assert.equal(reading.validationEvidence[0].blobId, created.blob.blobId);
+});
+
 test('graph runtime rejects duplicate worldline creation', async () => {
   const { runtime } = await loadModules();
   const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });

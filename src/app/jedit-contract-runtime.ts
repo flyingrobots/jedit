@@ -13,7 +13,10 @@ import type {
   RopeDiff,
 } from '../generated/jedit/rope.types.generated.js';
 import { MutationOperationSchemas, QueryOperationSchemas } from '../generated/jedit/rope.zod.generated.js';
-import type { HotTextBufferState, HotTextRuntimePort } from '../ports/hot-text-runtime.js';
+import {
+  HOT_TEXT_CHECKPOINT_REASON_IMPORT, HOT_TEXT_CHECKPOINT_REASON_MANUAL_SAVE,
+  type HotTextBufferState, type HotTextRuntimePort,
+} from '../ports/hot-text-runtime.js';
 import type { HashPort } from '../ports/hash.js';
 import {
   byteLength,
@@ -138,7 +141,9 @@ export function createBufferWorldline(
   const parsedInput = MutationOperationSchemas.createBufferWorldline.input.parse(input);
   const initialText = parsedInput.initialText ?? '';
   const projectionPath = parsedInput.projectionPath ?? parsedInput.bufferKey;
-  const initialState = runtime.createBuffer(projectionPath, initialText);
+  const initialState = runtime.createBuffer(projectionPath, initialText, {
+    initialBytes: new TextEncoder().encode(initialText),
+  });
   const initialSession = createSession(parsedInput.bufferKey, projectionPath, initialState, [], []);
 
   if (!(parsedInput.createInitialCheckpoint ?? false)) {
@@ -152,7 +157,9 @@ export function createBufferWorldline(
     };
   }
 
-  const saved = runtime.saveCheckpoint(initialState);
+  const saved = runtime.saveCheckpoint(initialState, {
+    reason: HOT_TEXT_CHECKPOINT_REASON_IMPORT,
+  });
   const metadata = saved.receipt == null
     ? []
     : [createCheckpointMetadata(saved.receipt, INITIAL_CHECKPOINT_KIND, undefined)];
@@ -238,7 +245,9 @@ export function createCheckpoint(
   const parsedInput = MutationOperationSchemas.createCheckpoint.input.parse(input);
   ensureMatchingWorldline(session, parsedInput.worldlineId);
 
-  const saved = runtime.saveCheckpoint(session.state);
+  const saved = runtime.saveCheckpoint(session.state, {
+    reason: HOT_TEXT_CHECKPOINT_REASON_MANUAL_SAVE,
+  });
   if (saved.receipt == null) {
     return noCheckpointExecution(session, saved.nextState);
   }

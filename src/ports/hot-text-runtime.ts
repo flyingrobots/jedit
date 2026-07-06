@@ -13,6 +13,21 @@ export interface HotTextBufferState {
   readonly checkpoints: readonly SaveCheckpoint[];
 }
 
+export const HOT_TEXT_CHECKPOINT_REASON_MANUAL_SAVE = 'manual-save';
+export const HOT_TEXT_CHECKPOINT_REASON_IMPORT = 'import';
+
+export type HotTextCheckpointReason =
+  | typeof HOT_TEXT_CHECKPOINT_REASON_MANUAL_SAVE
+  | typeof HOT_TEXT_CHECKPOINT_REASON_IMPORT;
+
+export interface HotTextCreateBufferOptions {
+  readonly initialBytes?: Uint8Array;
+}
+
+export interface HotTextSaveCheckpointOptions {
+  readonly reason?: HotTextCheckpointReason;
+}
+
 export interface AdmitReplaceRangeTickResult {
   readonly nextState: HotTextBufferState;
   readonly receipt?: TickAdmissionReceipt;
@@ -31,13 +46,13 @@ export interface SaveHotCheckpointResult {
 export interface HotTextRuntimePort {
   readonly textAuthorityKind?: string;
   readonly isProductionSafe?: boolean;
-  createBuffer(path: string, initialText: string): HotTextBufferState;
+  createBuffer(path: string, initialText: string, options?: HotTextCreateBufferOptions): HotTextBufferState;
   materialize(state: HotTextBufferState): string;
   admitReplaceRangeTick(state: HotTextBufferState, range: TextRange, text: string): AdmitReplaceRangeTickResult;
   openEditGroup(state: HotTextBufferState): HotTextBufferState;
   includeTickInOpenGroup(state: HotTextBufferState, tickId: number): HotTextBufferState;
   closeEditGroup(state: HotTextBufferState): CloseEditGroupResult;
-  saveCheckpoint(state: HotTextBufferState): SaveHotCheckpointResult;
+  saveCheckpoint(state: HotTextBufferState, options?: HotTextSaveCheckpointOptions): SaveHotCheckpointResult;
 }
 
 export const GRAPH_BACKED_ROPE_TEXT_AUTHORITY_KIND = 'graph-backed-rope';

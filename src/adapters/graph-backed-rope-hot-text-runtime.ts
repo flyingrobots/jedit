@@ -12,7 +12,9 @@ import {
 import {
   makeByteOffset,
   makeTextByteRange,
+  ROPE_CHECKPOINT_REASON_IMPORT,
   ROPE_CHECKPOINT_REASON_MANUAL_SAVE,
+  type RopeCheckpointReason,
   type TextByteRange,
 } from '../domain/graph-rope-contract.js';
 import {
@@ -29,15 +31,21 @@ import { toWorldlineId } from '../app/jedit-contract-runtime-id.js';
 import type { HashPort } from '../ports/hash.js';
 import {
   GRAPH_BACKED_ROPE_TEXT_AUTHORITY_KIND,
+  HOT_TEXT_CHECKPOINT_REASON_IMPORT,
+  HOT_TEXT_CHECKPOINT_REASON_MANUAL_SAVE,
   type AdmitReplaceRangeTickResult,
   type CloseEditGroupResult,
   type GraphBackedRopeTextAuthority,
+  type HotTextCreateBufferOptions,
   type HotTextBufferState,
+  type HotTextSaveCheckpointOptions,
   type SaveHotCheckpointResult,
 } from '../ports/hot-text-runtime.js';
 
 const FIRST_TICK_ID = 1;
 const ZERO_BYTE_OFFSET = 0;
+const TEXT_ENCODER = new TextEncoder();
+const TEXT_DECODER = new TextDecoder('utf-8', { fatal: true });
 
 export interface CreateGraphBackedRopeHotTextRuntimeOptions {
   readonly hash: HashPort;
@@ -79,13 +87,13 @@ export function createGraphBackedRopeHotTextRuntime(
   return {
     textAuthorityKind: GRAPH_BACKED_ROPE_TEXT_AUTHORITY_KIND,
     isProductionSafe: true,
-    createBuffer: (path, initialText) => createBuffer(state, path, initialText),
+    createBuffer: (path, initialText, options) => createBuffer(state, path, initialText, options),
     materialize: (bufferState) => materialize(state, bufferState),
     admitReplaceRangeTick: (bufferState, range, text) => admitReplaceRangeTick(state, bufferState, range, text),
     openEditGroup,
     includeTickInOpenGroup,
     closeEditGroup,
-    saveCheckpoint: (bufferState) => saveCheckpoint(state, bufferState),
+    saveCheckpoint: (bufferState, options) => saveCheckpoint(state, bufferState, options),
   };
 }
 
@@ -93,9 +101,11 @@ function createBuffer(
   state: GraphBackedRopeHotTextRuntimeState,
   path: string,
   initialText: string,
+  options: HotTextCreateBufferOptions = {},
 ): HotTextBufferState {
   const worldlineId = toWorldlineId(path);
-  const created = state.graph.createBufferWorldline({ worldlineId, initialText });
+  const initialBytes = initialBytesForText(initialText, options);
+  const created = state.graph.createBufferWorldline({ worldlineId, initialText, initialBytes });
   if (!created.ok) {
     throw new GraphBackedRopeHotTextRuntimeError(`Cannot create graph rope worldline ${worldlineId}: ${created.code}.`);
   }
@@ -190,6 +200,7 @@ function closeEditGroup(state: HotTextBufferState): CloseEditGroupResult {
 function saveCheckpoint(
   state: GraphBackedRopeHotTextRuntimeState,
   bufferState: HotTextBufferState,
+  options: HotTextSaveCheckpointOptions = {},
 ): SaveHotCheckpointResult {
   const saved = saveDomainCheckpoint(toSaveCheckpointState(bufferState));
   if (saved.receipt == null) {
@@ -199,7 +210,7 @@ function saveCheckpoint(
   const checkpointed = state.graph.createCheckpoint({
     worldlineId: binding.worldlineId,
     headId: binding.headId,
-    reason: ROPE_CHECKPOINT_REASON_MANUAL_SAVE,
+    reason: toRopeCheckpointReason(options),
   });
   if (!checkpointed.ok) {
     throw new GraphBackedRopeHotTextRuntimeError(`Cannot checkpoint graph rope head ${binding.headId}: ${checkpointed.code}.`);
@@ -208,6 +219,26 @@ function saveCheckpoint(
     nextState: withCheckpoints(bufferState, saved.nextState.checkpoints),
     receipt: saved.receipt,
   };
+}
+
+function initialBytesForText(initialText: string, options: HotTextCreateBufferOptions): Uint8Array {
+  if (options.initialBytes == null) {
+    return TEXT_ENCODER.encode(initialText);
+  }
+  const bytes = options.initialBytes.slice();
+  if (TEXT_DECODER.decode(bytes) !== initialText) {
+    throw new GraphBackedRopeHotTextRuntimeError('Initial UTF-8 bytes must decode to initialText.');
+  }
+  return bytes;
+}
+
+function toRopeCheckpointReason(options: HotTextSaveCheckpointOptions): RopeCheckpointReason {
+  switch (options.reason ?? HOT_TEXT_CHECKPOINT_REASON_MANUAL_SAVE) {
+    case HOT_TEXT_CHECKPOINT_REASON_IMPORT:
+      return ROPE_CHECKPOINT_REASON_IMPORT;
+    case HOT_TEXT_CHECKPOINT_REASON_MANUAL_SAVE:
+      return ROPE_CHECKPOINT_REASON_MANUAL_SAVE;
+  }
 }
 
 function bindRoot(

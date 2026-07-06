@@ -63,6 +63,7 @@ const ONE_VALUE = 1;
 const INITIAL_ADMISSION_SEQUENCE = 1;
 const RUNTIME_HASH_PREFIX_TICK = 'tick:';
 const TEXT_ENCODER = new TextEncoder();
+const TEXT_DECODER = new TextDecoder('utf-8', { fatal: true });
 
 export type GraphRopeRuntimeResult<TValue> =
   | { readonly ok: true; readonly value: TValue }
@@ -76,6 +77,7 @@ export interface CreateGraphRopeRuntimeInput {
 export interface CreateBufferWorldlineInput {
   readonly worldlineId: string;
   readonly initialText: string;
+  readonly initialBytes?: Uint8Array;
 }
 
 export interface GraphRopeCreateWorldlineResult {
@@ -161,6 +163,10 @@ interface CreateWorldlineFacts extends GraphRopeCreateWorldlineResult {
   readonly root: NodeRef;
 }
 
+type InitialWorldlineBytesResult =
+  | { readonly ok: true; readonly bytes: Uint8Array }
+  | { readonly ok: false };
+
 export function createGraphRopeRuntime(input: CreateGraphRopeRuntimeInput): GraphRopeRuntime {
   const factsById = new Map<string, RopeAdmittedFact>();
   const state: GraphRopeRuntimeState = {
@@ -202,7 +208,11 @@ function createBufferWorldline(
   if (state.currentHeadByWorldlineId.has(input.worldlineId) || state.factsById.has(input.worldlineId)) {
     return { ok: false, code: GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_FACT };
   }
-  const bytes = TEXT_ENCODER.encode(input.initialText);
+  const initialBytes = initialWorldlineBytes(input);
+  if (!initialBytes.ok) {
+    return { ok: false, code: GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_UTF8_BOUNDARY };
+  }
+  const bytes = initialBytes.bytes;
   const blobResult = makeTextBlobFact({ bytes, hash: state.hash });
   if (!blobResult.ok) {
     return { ok: false, code: GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_UTF8_BOUNDARY };
@@ -214,6 +224,18 @@ function createBufferWorldline(
   }
   state.currentHeadByWorldlineId.set(input.worldlineId, facts.head.headId);
   return { ok: true, value: cloneCreateWorldlineResult(facts) };
+}
+
+function initialWorldlineBytes(input: CreateBufferWorldlineInput): InitialWorldlineBytesResult {
+  if (input.initialBytes == null) {
+    return { ok: true, bytes: TEXT_ENCODER.encode(input.initialText) };
+  }
+  try {
+    TEXT_DECODER.decode(input.initialBytes);
+    return { ok: true, bytes: input.initialBytes.slice() };
+  } catch {
+    return { ok: false };
+  }
 }
 
 function replaceRangeAsTick(

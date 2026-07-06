@@ -7,19 +7,33 @@ import { REPO_ROOT, ensureDistBuilt } from './dist-helpers.mjs';
 const CONTRACT_APP_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-runtime.js');
 const CONTRACT_ID_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-runtime-id.js');
 const ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'full-snapshot-hot-text-runtime-fixture.js');
+const GRAPH_ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'graph-backed-rope-hot-text-runtime.js');
+const GRAPH_RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'domain', 'graph-rope-runtime.js');
+const GRAPH_CONTRACT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'domain', 'graph-rope-contract.js');
 const HASH_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'hash.js');
 
 async function loadModules() {
   await ensureDistBuilt();
 
-  const [contractApp, contractIds, adapter, hashAdapter] = await Promise.all([
+  const [
+    contractApp,
+    contractIds,
+    adapter,
+    graphAdapter,
+    graphRuntime,
+    graphContract,
+    hashAdapter,
+  ] = await Promise.all([
     import(pathToFileURL(CONTRACT_APP_MODULE_PATH).href),
     import(pathToFileURL(CONTRACT_ID_MODULE_PATH).href),
     import(pathToFileURL(ADAPTER_MODULE_PATH).href),
+    import(pathToFileURL(GRAPH_ADAPTER_MODULE_PATH).href),
+    import(pathToFileURL(GRAPH_RUNTIME_MODULE_PATH).href),
+    import(pathToFileURL(GRAPH_CONTRACT_MODULE_PATH).href),
     import(pathToFileURL(HASH_MODULE_PATH).href),
   ]);
 
-  return { contractApp, contractIds, adapter, hash: hashAdapter.createHashPort() };
+  return { contractApp, contractIds, adapter, graphAdapter, graphRuntime, graphContract, hash: hashAdapter.createHashPort() };
 }
 
 test('createBufferWorldline returns contract-shaped worldline and head data', async () => {
@@ -88,6 +102,40 @@ test('runtime id helpers round-trip numeric identifiers symmetrically', async ()
     () => contractIds.parseTickId('tick:not-a-number'),
     (error) => error?.name === 'JeditRuntimeIdParseError',
   );
+});
+
+test('createInitialCheckpoint admits graph-backed file imports as recovery anchors', async () => {
+  const { contractApp, graphAdapter, graphRuntime, graphContract, hash } = await loadModules();
+  const admittedRequests = [];
+  const echoAdmission = graphContract.createDeterministicEchoCausalAnchorAdmissionPort({ hash });
+  const graph = graphRuntime.createGraphRopeRuntime({
+    hash,
+    causalAnchorAdmission: {
+      admitCausalAnchor(request) {
+        admittedRequests.push(request);
+        return echoAdmission.admitCausalAnchor(request);
+      },
+    },
+  });
+  const runtime = graphAdapter.createGraphBackedRopeHotTextRuntime({ hash, graph });
+
+  const created = contractApp.createBufferWorldline(runtime, {
+    bufferKey: 'notes/imported.md',
+    initialText: 'imported file',
+    projectionPath: '/tmp/notes/imported.md',
+    createInitialCheckpoint: true,
+  }, hash);
+
+  assert.ok(created.result.checkpoint);
+  assert.equal(created.result.checkpoint.kind, 'INITIAL');
+  assert.equal(created.nextSession.state.ticks.length, 0);
+  assert.equal(created.nextSession.tickMetadata.length, 0);
+  assert.equal(admittedRequests.length, 1);
+  assert.equal(admittedRequests[0].purpose, graphContract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_RECOVERY);
+  assert.equal(admittedRequests[0].retention.retentionClass, graphContract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_RECOVERY);
+  assert.equal(admittedRequests[0].retainedRoots.length, 1);
+  assert.equal(admittedRequests[0].retainedRoots[0].role, graphContract.ECHO_CAUSAL_ANCHOR_ROOT_ROLE_AUTHORITY);
+  assert.equal(admittedRequests[0].materializationRoots.length, 0);
 });
 
 test('JeditWorldlineSession reports invalid root identifiers with a dedicated error code', async () => {
