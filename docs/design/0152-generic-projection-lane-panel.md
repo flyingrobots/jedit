@@ -355,7 +355,7 @@ The work is done when:
       behavior remain unchanged.
 - [x] Drawer output contains no execution, admission, debugger, or REPL claim.
 - [ ] Issue #258 and the PR are linked correctly.
-- [ ] Local validation is green.
+- [x] Local validation is green.
 
 ## Validation Plan
 
@@ -436,11 +436,26 @@ What the tests proved:
 - The drawer output still excludes runtime, debugger, REPL, execution, and
   admission wording for projection lanes.
 
+Validation completed:
+
+- RED:
+  `npm run build && JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/graft-drawer.spec.mjs`
+  failed because the drawer ignored generic `projectionLanes`.
+- GREEN:
+  `npm run build && JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/graft-api-session.spec.mjs spec/graft-drawer.spec.mjs`
+- GREEN: `npm run quality`
+- GREEN:
+  `npx markdownlint-cli2 CHANGELOG.md docs/BEARING.md docs/design/0152-generic-projection-lane-panel.md`
+- GREEN: `node --test --test-concurrency=1 spec/design-cycle-policy.spec.mjs`
+- GREEN: `git diff --check`
+- GREEN: `npm run check`
+
 What remains open:
 
 - Full Core/Target IR review JSON viewer:
   https://github.com/flyingrobots/jedit/issues/259
-- Echo run button from jedit:
+- Any Echo execution UX belongs in a separate explicitly scoped design, not
+  this projection panel:
   https://github.com/flyingrobots/jedit/issues/257
 - Canonical Echo receipt digest display:
   https://github.com/flyingrobots/jedit/issues/260
