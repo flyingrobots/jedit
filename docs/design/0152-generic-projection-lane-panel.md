@@ -18,12 +18,11 @@ updated: "2026-07-06"
 
 ## Decision Summary
 
-jedit will replace the hard-coded Edict Core and Echo Target IR drawer row
-helpers with a reusable projection-lane renderer and row counter. The cycle
-keeps the existing Edict projection facts and drawer placement, but makes the
-display shell provider-neutral enough for future Graft-backed language lanes
-without making jedit an Edict debugger, REPL, Echo runner, or semantic
-authority.
+jedit will add a jedit-owned generic `projectionLanes` display field and route
+the existing Edict Core and Echo Target IR facts through it. The cycle keeps the
+current Edict-specific fields for compatibility, but makes the display shell
+provider-neutral enough for future Graft-backed language lanes without making
+jedit an Edict debugger, REPL, Echo runner, or semantic authority.
 
 ## Sponsored Human
 
@@ -79,7 +78,7 @@ Edict even though jedit only owns projection display.
 
 This cycle includes:
 
-- adding a generic projection-lane display model inside jedit's Graft drawer
+- adding a generic projection-lane display model to jedit's Graft session
   boundary;
 - rendering Edict Core and Echo Target IR by adapting their existing facts into
   that display model;
@@ -174,8 +173,8 @@ rows do not rely on color, layout-only icons, or hidden UI state.
 
 ## Runtime / API Contract
 
-This cycle adds an internal drawer display contract, not a new external runtime
-API:
+This cycle adds a jedit-owned display contract to `GraftInfo`, not a new
+runtime API:
 
 ```ts
 interface GraftProjectionPanelLane {
@@ -195,8 +194,17 @@ interface GraftProjectionPanelLane {
 
 The existing `GraftInfo.edictCoreProjection` and
 `GraftInfo.echoTargetIrProjection` fields remain the source facts for this
-cycle. The panel helper adapts them at the drawer boundary. It does not compute
-projection facts, validate language semantics, execute Echo, or admit artifacts.
+cycle. `projectionLanes` carries their display shape:
+
+```ts
+interface GraftInfo {
+  readonly projectionLanes?: readonly GraftProjectionPanelLane[];
+}
+```
+
+The adapter derives `projectionLanes` from already decoded provider facts. It
+does not compute projection facts, validate language semantics, execute Echo, or
+admit artifacts.
 
 ## Lower Modes
 
@@ -211,7 +219,7 @@ outline/change sections as it does now.
 | Category | Description |
 | --- | --- |
 | Source of truth | Existing `GraftInfo` projection lane fields from the Graft session port. |
-| Derived state | Internal `GraftProjectionPanelLane` rows for rendering and row accounting. |
+| Derived state | `GraftInfo.projectionLanes` rows for rendering and row accounting. |
 | Invalid states | jedit deriving projection facts, interpreting provider semantics, showing execution/debugger/REPL controls, or treating projection availability as runtime availability. |
 | Reset behavior | Same as WF-0151: lanes disappear when new `GraftInfo` lacks them or the active file changes. |
 | Serialization | No persistence or wire format. |
@@ -338,8 +346,10 @@ Documentation and process tests:
 
 The work is done when:
 
-- [ ] Edict Core and Echo Target IR rows are rendered through a generic
-      projection-lane helper.
+- [ ] `GraftInfo.projectionLanes` can render a provider-neutral projection
+      section.
+- [ ] Edict Core and Echo Target IR rows are rendered through generic
+      projection lanes.
 - [ ] Workspace row accounting uses the same generic lane model.
 - [ ] Existing obstruction receipt, outline, changes, and dirty projection
       behavior remain unchanged.
