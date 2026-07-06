@@ -156,7 +156,7 @@ async function runSessionWitness(options) {
     tickIntervalSeconds: DEFAULT_TICK_INTERVAL_SECONDS,
   });
   const client = modules.transportClient.createEchoTransportJeditOpticClient(
-    modules.installedTransport.createInstalledJeditContractEchoTransport(),
+    createFixtureBackedInstalledTransport(modules),
   );
   const session = modules.sessionAdapter.createEchoBackedTextBufferSession({
     client,
@@ -354,6 +354,7 @@ async function loadDistModules() {
     installedTransport: await importDist('adapters/installed-jedit-contract-echo-transport.js'),
     transportClient: await importDist('adapters/jedit-echo-optic-client.js'),
     sessionAdapter: await importDist('adapters/echo-backed-text-buffer-session.js'),
+    textRuntimeFixture: await importDist('adapters/full-snapshot-hot-text-runtime-fixture.js'),
     workflow: await importDist('app/echo-powered-text-buffer-witness.js'),
     host: await importDist('app/trusted-echo-runtime-host.js'),
     package: await importDist('app/jedit-contract-package.js'),
@@ -361,6 +362,13 @@ async function loadDistModules() {
     correlation: await importDist('app/jedit-receipt-correlation.js'),
     outcomes: await importDist('app/jedit-intent-outcomes.js'),
   };
+}
+
+function createFixtureBackedInstalledTransport(modules) {
+  return modules.installedTransport.createInstalledJeditContractEchoTransport({
+    allowFullSnapshotTextAuthority: true,
+    runtime: modules.textRuntimeFixture.createFullSnapshotHotTextRuntimeFixture(),
+  });
 }
 
 async function importDist(relativePath) {

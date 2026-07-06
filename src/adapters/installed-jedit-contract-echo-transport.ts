@@ -17,10 +17,7 @@ import {
   JEDIT_HANDLER_INVOCATION_STATUS_BLOCKED,
   type JeditHandlerInvocationSink,
 } from '../app/jedit-runtime-handler-invocation.js';
-import {
-  createFullSnapshotHotTextRuntimeFixture,
-  isFullSnapshotHotTextRuntimeFixture,
-} from './full-snapshot-hot-text-runtime-fixture.js';
+import { isFullSnapshotHotTextRuntimeFixture } from './full-snapshot-hot-text-runtime-fixture.js';
 import {
   installJeditContractPackage,
 } from './jedit-echo-contract-package-installer.js';
@@ -87,8 +84,8 @@ const QUERY_OBSERVER_RUNTIME_ERROR_CODE = 'JEDIT_QUERY_OBSERVER_RUNTIME_ERROR';
 const QUERY_OBSERVER_RUNTIME_ERROR_RECOVERY = 'refresh the reading basis or fix query input';
 const QUERY_OBSERVER_RUNTIME_ERROR_MESSAGE = 'Jedit query observer failed while producing the reading';
 export const JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY = 'JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY';
-const FULL_SNAPSHOT_TEXT_AUTHORITY_GUARD_MESSAGE =
-  'FullSnapshotHotTextRuntimeFixture cannot be used as production text authority.';
+const FULL_SNAPSHOT_TEXT_AUTHORITY_GUARD_MESSAGE = 'FullSnapshotHotTextRuntimeFixture cannot be used as production text authority.';
+const MISSING_GRAPH_ROPE_TEXT_AUTHORITY_GUARD_MESSAGE = 'Installed jedit contract transport requires graph rope text authority.';
 
 export interface InstalledJeditContractEchoTransportOptions {
   readonly runtime?: HotTextRuntimePort;
@@ -105,10 +102,11 @@ export interface InstalledJeditContractEchoTransportOptions {
 }
 
 export class FullSnapshotTextAuthorityGuardError extends Error {
-  public constructor() {
-    super(FULL_SNAPSHOT_TEXT_AUTHORITY_GUARD_MESSAGE);
-    this.name = 'FullSnapshotTextAuthorityGuardError';
-  }
+  public constructor() { super(FULL_SNAPSHOT_TEXT_AUTHORITY_GUARD_MESSAGE); this.name = 'FullSnapshotTextAuthorityGuardError'; }
+}
+
+export class MissingGraphRopeTextAuthorityError extends Error {
+  public constructor() { super(MISSING_GRAPH_ROPE_TEXT_AUTHORITY_GUARD_MESSAGE); this.name = 'MissingGraphRopeTextAuthorityError'; }
 }
 
 interface InstalledJeditContractEchoTransportContext {
@@ -203,7 +201,10 @@ function createTransportContext(
 function resolveTransportRuntime(
   options: InstalledJeditContractEchoTransportOptions,
 ): HotTextRuntimePort {
-  const runtime = options.runtime ?? createFullSnapshotHotTextRuntimeFixture();
+  if (options.runtime == null) {
+    throw new MissingGraphRopeTextAuthorityError();
+  }
+  const runtime = options.runtime;
   assertRuntimeAllowed(runtime, options);
   return runtime;
 }

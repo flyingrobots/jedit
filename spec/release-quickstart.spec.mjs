@@ -18,9 +18,10 @@ test('v0.1.0 quickstart documents executable witness commands', () => {
   assert.match(source, /--json --dry-run/);
   assert.match(source, /--json --replay-local/);
   assert.match(source, /jedit-production-text-session\.mjs --json/);
-  assert.match(source, /JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 npm start/);
+  assert.match(source, /npm start/);
+  assert.match(source, /Interactive startup is intentionally gated/);
   assert.match(source, /default text runtime is the Echo-hosted/);
-  assert.match(source, /JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 JEDIT_TEXT_RUNTIME=echoHosted npm start/);
+  assert.match(source, /JEDIT_TEXT_RUNTIME=echoHosted npm start/);
   assert.match(source, /Any other `JEDIT_TEXT_RUNTIME` value is unsupported/);
   assert.match(source, /"transport": "installed-jedit-contract"/);
   assert.match(source, /"appCanTick": false/);

@@ -1120,12 +1120,12 @@ Build and start the compiled app:
 
 ```sh
 npm run build
-JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 npm start
+npm start
 ```
 
-The development script applies the temporary fixture escape hatch only to the
-source TUI process. Compiled product startup still refuses to instantiate the
-full-snapshot text authority unless the environment flag is supplied explicitly.
+Interactive startup is gated until graph-backed rope authority is installed.
+The product startup path must fail fast rather than silently instantiate the
+full-snapshot text fixture.
 
 Run the default checks:
 
@@ -1157,7 +1157,7 @@ Run the production text session witness:
 
 ```sh
 npm run build
-JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 node scripts/jedit-production-text-session.mjs --json
+node scripts/jedit-production-text-session.mjs --json
 ```
 
 ## The End-to-End Story
@@ -1177,7 +1177,7 @@ sequenceDiagram
   participant Echo
   participant Graft
 
-  Developer->>Shell: npm run dev / JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 npm start
+  Developer->>Shell: npm run dev / npm start
   Shell->>Jedit: start src/main.ts / dist/main.js
   Jedit->>Jedit: initialize workspace model and ports
   Jedit->>Graft: request outlines/diffs as projections

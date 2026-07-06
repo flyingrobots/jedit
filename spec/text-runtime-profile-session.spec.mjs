@@ -6,31 +6,31 @@ import { pathToFileURL } from 'node:url';
 const REPO_ROOT = process.cwd();
 const SESSION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'text-runtime-profile-session.js');
 const PROFILE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'text-runtime-profile.js');
-const FULL_SNAPSHOT_AUTHORITY_ENV = 'JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY';
-const FULL_SNAPSHOT_GUARD_MESSAGE = /FullSnapshotHotTextRuntimeFixture cannot be used as production text authority/;
+const TRANSPORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'installed-jedit-contract-echo-transport.js');
+const CLIENT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-optic-client.js');
+const SESSION_ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'echo-backed-text-buffer-session.js');
+const RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'full-snapshot-hot-text-runtime-fixture.js');
+const MISSING_GRAPH_ROPE_AUTHORITY_MESSAGE = /requires graph rope text authority/;
 
 let modulesPromise;
 
 test('Echo-hosted text runtime profile rejects implicit full-snapshot authority by default', async () => {
   const modules = await loadModules();
 
-  withFullSnapshotAuthorityEnv(undefined, () => {
-    assert.throws(
-      () => modules.session.createTextRuntimeProfileSession({
-        profile: modules.profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
-      }),
-      FULL_SNAPSHOT_GUARD_MESSAGE,
-    );
-  });
+  assert.throws(
+    () => modules.session.createTextRuntimeProfileSession({
+      profile: modules.profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+    }),
+    MISSING_GRAPH_ROPE_AUTHORITY_MESSAGE,
+  );
 });
 
 test('Echo-hosted text runtime profile drives a narrow edit/read path through Echo-backed session', async () => {
   const modules = await loadModules();
-  const binding = withFullSnapshotAuthorityEnv('1', () => (
-    modules.session.createTextRuntimeProfileSession({
-      profile: modules.profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
-    })
-  ));
+  const binding = modules.session.createTextRuntimeProfileSession({
+    profile: modules.profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+    echoHostedSessionFactory: createFixtureBackedEchoHostedSessionFactory(modules),
+  });
 
   const text = await runNarrowEditRead(binding.session, 'echoHosted');
 
@@ -157,37 +157,37 @@ function fakeTextBufferSession(sessionId) {
   };
 }
 
+function createFixtureBackedEchoHostedSessionFactory(modules) {
+  return {
+    create() {
+      const runtime = modules.runtime.createFullSnapshotHotTextRuntimeFixture();
+      const transport = modules.transport.createInstalledJeditContractEchoTransport({
+        allowFullSnapshotTextAuthority: true,
+        runtime,
+      });
+      return modules.sessionAdapter.createEchoBackedTextBufferSession({
+        client: modules.client.createEchoTransportJeditOpticClient(transport),
+      });
+    },
+  };
+}
+
 async function loadModules() {
   if (modulesPromise) {
     return modulesPromise;
   }
 
   modulesPromise = (async () => {
-    const [session, profile] = await Promise.all([
+    const [session, profile, transport, client, sessionAdapter, runtime] = await Promise.all([
       import(pathToFileURL(SESSION_MODULE_PATH).href),
       import(pathToFileURL(PROFILE_MODULE_PATH).href),
+      import(pathToFileURL(TRANSPORT_MODULE_PATH).href),
+      import(pathToFileURL(CLIENT_MODULE_PATH).href),
+      import(pathToFileURL(SESSION_ADAPTER_MODULE_PATH).href),
+      import(pathToFileURL(RUNTIME_MODULE_PATH).href),
     ]);
-    return { session, profile };
+    return { session, profile, transport, client, sessionAdapter, runtime };
   })();
 
   return modulesPromise;
-}
-
-function withFullSnapshotAuthorityEnv(value, callback) {
-  const previous = process.env[FULL_SNAPSHOT_AUTHORITY_ENV];
-  if (value === undefined) {
-    delete process.env[FULL_SNAPSHOT_AUTHORITY_ENV];
-  } else {
-    process.env[FULL_SNAPSHOT_AUTHORITY_ENV] = value;
-  }
-
-  try {
-    return callback();
-  } finally {
-    if (previous === undefined) {
-      delete process.env[FULL_SNAPSHOT_AUTHORITY_ENV];
-    } else {
-      process.env[FULL_SNAPSHOT_AUTHORITY_ENV] = previous;
-    }
-  }
 }

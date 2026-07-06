@@ -6,7 +6,6 @@ import test from 'node:test';
 const REPO_ROOT = process.cwd();
 const CLI_PATH = path.join(REPO_ROOT, 'scripts', 'jedit-production-text-session.mjs');
 const INSERT_TEXT = 'cli text';
-const FULL_SNAPSHOT_AUTHORITY_ENV = 'JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY';
 
 test('production text session CLI reports edit reading checkpoint and export evidence', () => {
   const result = spawnSync(process.execPath, [
@@ -17,7 +16,6 @@ test('production text session CLI reports edit reading checkpoint and export evi
   ], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
-    env: fullSnapshotAuthorityEnv(),
   });
 
   assert.equal(result.status, 0, result.stderr);
@@ -41,7 +39,6 @@ test('production text session CLI reports stable local replay posture', () => {
   ], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
-    env: fullSnapshotAuthorityEnv(),
   });
 
   assert.equal(result.status, 0, result.stderr);
@@ -52,10 +49,3 @@ test('production text session CLI reports stable local replay posture', () => {
   assert.equal(report.first.status, 'applied');
   assert.equal(report.second.status, 'applied');
 });
-
-function fullSnapshotAuthorityEnv() {
-  return {
-    ...process.env,
-    [FULL_SNAPSHOT_AUTHORITY_ENV]: '1',
-  };
-}

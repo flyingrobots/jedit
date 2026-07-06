@@ -18,40 +18,39 @@ npm run build
 Inspect the witness plan without running the edit/read flow:
 
 ```bash
-JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 node scripts/jedit-echo-powered-session.mjs --json --dry-run
+node scripts/jedit-echo-powered-session.mjs --json --dry-run
 ```
 
 Run the installed-package edit/read witness:
 
 ```bash
-JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 node scripts/jedit-echo-powered-session.mjs --json --text "hello Echo"
+node scripts/jedit-echo-powered-session.mjs --json --text "hello Echo"
 ```
 
 Run the production text session witness:
 
 ```bash
-JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 node scripts/jedit-production-text-session.mjs --json --text "hello Echo"
+node scripts/jedit-production-text-session.mjs --json --text "hello Echo"
 ```
 
 Compare two local witness runs using stable evidence identity:
 
 ```bash
-JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 node scripts/jedit-echo-powered-session.mjs --json --replay-local
-JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 node scripts/jedit-production-text-session.mjs --json --replay-local
+node scripts/jedit-echo-powered-session.mjs --json --replay-local
+node scripts/jedit-production-text-session.mjs --json --replay-local
 ```
 
-Start the interactive app. The default text runtime is the Echo-hosted
-production profile:
+Interactive startup is intentionally gated until graph-backed rope authority is
+installed. The default text runtime is the Echo-hosted production profile, but
+`npm start` must fail fast rather than silently constructing the full-snapshot
+fixture while the default graph rope authority is unavailable.
 
 ```bash
-JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 npm start
+npm start
 ```
 
-For explicit demos,
-`JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 JEDIT_TEXT_RUNTIME=echoHosted npm start`
-selects the same profile. Any other `JEDIT_TEXT_RUNTIME` value is unsupported
-startup input. The full-snapshot authority flag is temporary until the
-graph-backed rope runtime lands.
+For explicit demos, `JEDIT_TEXT_RUNTIME=echoHosted npm start` selects the same
+profile. Any other `JEDIT_TEXT_RUNTIME` value is unsupported startup input.
 
 ## Expected JSON Shape
 

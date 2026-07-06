@@ -69,8 +69,23 @@ function throwUsage(message) {
 function createProductionSession(modules) {
   const binding = modules.adapter.createTextRuntimeProfileSession({
     profile: ECHO_HOSTED_PROFILE,
+    echoHostedSessionFactory: createFixtureBackedEchoHostedSessionFactory(modules),
   });
   return modules.session.createProductionTextSession(binding.session);
+}
+
+function createFixtureBackedEchoHostedSessionFactory(modules) {
+  return {
+    create() {
+      const transport = modules.transport.createInstalledJeditContractEchoTransport({
+        allowFullSnapshotTextAuthority: true,
+        runtime: modules.runtime.createFullSnapshotHotTextRuntimeFixture(),
+      });
+      return modules.sessionAdapter.createEchoBackedTextBufferSession({
+        client: modules.client.createEchoTransportJeditOpticClient(transport),
+      });
+    },
+  };
 }
 
 async function writeJson(value) {
@@ -78,12 +93,16 @@ async function writeJson(value) {
 }
 
 async function loadModules() {
-  const [witness, session, adapter] = await Promise.all([
+  const [witness, session, adapter, transport, client, sessionAdapter, runtime] = await Promise.all([
     importDist('app/workspace/production-text-session-witness.js'),
     importDist('app/workspace/production-text-session.js'),
     importDist('adapters/text-runtime-profile-session.js'),
+    importDist('adapters/installed-jedit-contract-echo-transport.js'),
+    importDist('adapters/jedit-echo-optic-client.js'),
+    importDist('adapters/echo-backed-text-buffer-session.js'),
+    importDist('adapters/full-snapshot-hot-text-runtime-fixture.js'),
   ]);
-  return { witness, session, adapter };
+  return { witness, session, adapter, transport, client, sessionAdapter, runtime };
 }
 
 async function importDist(specifier) {
