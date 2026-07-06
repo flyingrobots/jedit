@@ -63,7 +63,7 @@ test('dev startup generates ignored replaceTextRange descriptor first', async ()
 
   assert.equal(
     packageJson.scripts.dev,
-    `npm run ${STRUCTURAL_HISTORY_GENERATION_SCRIPT} && JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 tsx src/main.ts`,
+    `npm run ${STRUCTURAL_HISTORY_GENERATION_SCRIPT} && tsx src/main.ts`,
   );
 });
 

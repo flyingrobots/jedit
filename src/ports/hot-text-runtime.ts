@@ -29,6 +29,8 @@ export interface SaveHotCheckpointResult {
 }
 
 export interface HotTextRuntimePort {
+  readonly textAuthorityKind?: string;
+  readonly isProductionSafe?: boolean;
   createBuffer(path: string, initialText: string): HotTextBufferState;
   materialize(state: HotTextBufferState): string;
   admitReplaceRangeTick(state: HotTextBufferState, range: TextRange, text: string): AdmitReplaceRangeTickResult;
@@ -36,4 +38,18 @@ export interface HotTextRuntimePort {
   includeTickInOpenGroup(state: HotTextBufferState, tickId: number): HotTextBufferState;
   closeEditGroup(state: HotTextBufferState): CloseEditGroupResult;
   saveCheckpoint(state: HotTextBufferState): SaveHotCheckpointResult;
+}
+
+export const GRAPH_BACKED_ROPE_TEXT_AUTHORITY_KIND = 'graph-backed-rope';
+
+export interface GraphBackedRopeTextAuthority extends HotTextRuntimePort {
+  readonly textAuthorityKind: typeof GRAPH_BACKED_ROPE_TEXT_AUTHORITY_KIND;
+  readonly isProductionSafe: true;
+}
+
+export function isGraphBackedRopeTextAuthority(
+  runtime: HotTextRuntimePort,
+): runtime is GraphBackedRopeTextAuthority {
+  return runtime.textAuthorityKind === GRAPH_BACKED_ROPE_TEXT_AUTHORITY_KIND
+    && runtime.isProductionSafe === true;
 }

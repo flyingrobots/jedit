@@ -31,7 +31,7 @@ npm run witness:echo:session
 or directly:
 
 ```sh
-JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 node scripts/jedit-echo-powered-session.mjs --json
+node scripts/jedit-echo-powered-session.mjs --json --dry-run
 ```
 
 The emitted report names:

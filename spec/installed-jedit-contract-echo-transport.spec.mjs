@@ -9,6 +9,7 @@ const CLIENT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-
 const SESSION_ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'echo-backed-text-buffer-session.js');
 const CODEC_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-optic-codec.js');
 const RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'full-snapshot-hot-text-runtime-fixture.js');
+const HOT_TEXT_RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'ports', 'hot-text-runtime.js');
 const WORK_ENVELOPE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'ports', 'jedit-runtime-work-envelope.js');
 const INVOCATION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-runtime-handler-invocation.js');
 const STATE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-state-port.js');
@@ -27,16 +28,17 @@ const PACKAGE_INSTALL_BLOCKED_MESSAGE = 'blocked in test host';
 const PACKAGE_NOT_INSTALLED_CODE = 'JEDIT_PACKAGE_NOT_INSTALLED';
 const FULL_SNAPSHOT_AUTHORITY_ENV = 'JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY';
 const FULL_SNAPSHOT_GUARD_MESSAGE = /FullSnapshotHotTextRuntimeFixture cannot be used as production text authority/;
+const MISSING_GRAPH_ROPE_AUTHORITY_MESSAGE = /requires graph rope text authority/;
 
 let modulesPromise;
 
-test('installed transport rejects implicit full-snapshot fixture authority by default', async () => {
+test('installed transport rejects missing graph rope authority by default', async () => {
   const modules = await loadModules();
 
   withFullSnapshotAuthorityEnv(undefined, () => {
     assert.throws(
       () => modules.transport.createInstalledJeditContractEchoTransport(),
-      FULL_SNAPSHOT_GUARD_MESSAGE,
+      MISSING_GRAPH_ROPE_AUTHORITY_MESSAGE,
     );
   });
 });
@@ -51,6 +53,44 @@ test('installed transport rejects explicit full-snapshot fixture authority witho
       FULL_SNAPSHOT_GUARD_MESSAGE,
     );
   });
+});
+
+test('installed transport rejects unmarked runtime authority by default', async () => {
+  const modules = await loadModules();
+  const runtime = unmarkedHotTextRuntime(modules);
+
+  withFullSnapshotAuthorityEnv(undefined, () => {
+    assert.throws(
+      () => modules.transport.createInstalledJeditContractEchoTransport({ runtime }),
+      MISSING_GRAPH_ROPE_AUTHORITY_MESSAGE,
+    );
+  });
+});
+
+test('installed transport fixture opt-in does not allow arbitrary runtime authority', async () => {
+  const modules = await loadModules();
+  const runtime = unmarkedHotTextRuntime(modules);
+
+  withFullSnapshotAuthorityEnv('1', () => {
+    assert.throws(
+      () => modules.transport.createInstalledJeditContractEchoTransport({
+        allowFullSnapshotTextAuthority: true,
+        runtime,
+      }),
+      MISSING_GRAPH_ROPE_AUTHORITY_MESSAGE,
+    );
+  });
+});
+
+test('installed transport accepts marked graph rope runtime authority', async () => {
+  const modules = await loadModules();
+  const runtime = markedGraphRopeRuntime(modules);
+
+  const transport = withFullSnapshotAuthorityEnv(undefined, () => (
+    modules.transport.createInstalledJeditContractEchoTransport({ runtime })
+  ));
+
+  assert.equal(typeof transport.submitIntentBytes, 'function');
 });
 
 test('installed transport accepts full-snapshot fixture authority with explicit opt-in', async () => {
@@ -69,9 +109,10 @@ test('installed transport accepts full-snapshot fixture authority with explicit 
 
 test('installed transport accepts full-snapshot fixture authority with environment escape hatch', async () => {
   const modules = await loadModules();
+  const runtime = modules.runtime.createFullSnapshotHotTextRuntimeFixture();
 
   const transport = withFullSnapshotAuthorityEnv('1', () => (
-    modules.transport.createInstalledJeditContractEchoTransport()
+    modules.transport.createInstalledJeditContractEchoTransport({ runtime })
   ));
 
   assert.equal(typeof transport.submitIntentBytes, 'function');
@@ -522,10 +563,27 @@ function createMissingReadStatePort(modules) {
 }
 
 function createFixtureBackedInstalledTransport(modules, options = {}) {
+  const runtime = options.runtime ?? modules.runtime.createFullSnapshotHotTextRuntimeFixture();
   return modules.transport.createInstalledJeditContractEchoTransport({
     allowFullSnapshotTextAuthority: true,
     ...options,
+    runtime,
   });
+}
+
+function unmarkedHotTextRuntime(modules) {
+  const runtime = { ...modules.runtime.createFullSnapshotHotTextRuntimeFixture() };
+  delete runtime.textAuthorityKind;
+  delete runtime.isProductionSafe;
+  return runtime;
+}
+
+function markedGraphRopeRuntime(modules) {
+  return {
+    ...unmarkedHotTextRuntime(modules),
+    textAuthorityKind: modules.hotTextRuntime.GRAPH_BACKED_ROPE_TEXT_AUTHORITY_KIND,
+    isProductionSafe: true,
+  };
 }
 
 function withFullSnapshotAuthorityEnv(value, callback) {
@@ -556,9 +614,10 @@ async function loadModules() {
     const [
       transport,
       client,
-    sessionAdapter,
+      sessionAdapter,
       codec,
       runtime,
+      hotTextRuntime,
       workEnvelope,
       invocation,
       state,
@@ -571,6 +630,7 @@ async function loadModules() {
       import(pathToFileURL(SESSION_ADAPTER_MODULE_PATH).href),
       import(pathToFileURL(CODEC_MODULE_PATH).href),
       import(pathToFileURL(RUNTIME_MODULE_PATH).href),
+      import(pathToFileURL(HOT_TEXT_RUNTIME_MODULE_PATH).href),
       import(pathToFileURL(WORK_ENVELOPE_MODULE_PATH).href),
       import(pathToFileURL(INVOCATION_MODULE_PATH).href),
       import(pathToFileURL(STATE_MODULE_PATH).href),
@@ -585,6 +645,7 @@ async function loadModules() {
       sessionAdapter,
       codec,
       runtime,
+      hotTextRuntime,
       workEnvelope,
       invocation,
       state,

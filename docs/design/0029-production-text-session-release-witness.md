@@ -49,8 +49,8 @@ the only product authority path.
 
 ```bash
 npm run build
-JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 node scripts/jedit-production-text-session.mjs --json --text "hello Echo"
-JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 node scripts/jedit-production-text-session.mjs --json --replay-local
+node scripts/jedit-production-text-session.mjs --json --allow-full-snapshot-fixture --text "hello Echo"
+node scripts/jedit-production-text-session.mjs --json --allow-full-snapshot-fixture --replay-local
 node scripts/jedit-production-cutover-guard.mjs
 npm run release-gate:jedit-echo
 ```

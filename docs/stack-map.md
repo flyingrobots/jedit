@@ -92,12 +92,12 @@ The next release-gate slice plan is recorded in
   vocabulary.
 - `TrustedEchoRuntimeLifecyclePort.requestStop()` wraps trusted Stop control
   without exposing app-controlled cancellation or half-tick interruption.
-- `scripts/jedit-echo-powered-session.mjs --json` gives agents a fast
-  product-session witness over the `TextBufferOptic` and trusted lifecycle
-  wrapper. The default TUI and release-gate path use the installed jedit
-  contract transport; fixture-local fake transport remains available for
-  focused tests, and the opt-in real Echo WASM witness remains the substrate
-  proof.
+- `scripts/jedit-echo-powered-session.mjs --json --dry-run` gives agents a fast
+  installed-package plan over the `TextBufferOptic` and trusted lifecycle
+  wrapper. The explicit `--allow-full-snapshot-fixture` command remains a
+  transitional compatibility witness; the default TUI and release-gate path do
+  not silently construct fixture text authority, and the opt-in real Echo WASM
+  witness remains the substrate proof.
 - `stopTrustedEchoRuntime(...)` is the deterministic host shutdown primitive
   for Echo lifecycle control. It is not app-facing stop/cancel behavior.
 - Fixture vars bytes are not the durable Wesley runtime codec.
@@ -114,12 +114,13 @@ The next release-gate slice plan is recorded in
   status, and evidence-bearing readings.
 - `replaceTextRange` operation identity is consumed from build-generated Wesley
   metadata while the old TypeScript runtime remains the transitional executor.
-- `scripts/jedit-echo-powered-session.mjs --json` reports the structural
-  `replaceTextRange` edit intent in the witness summary. The structural-history
-  generated-package descriptor now installs through the generic Echo package
-  port. The witness also reports a mutation/query round trip where
-  structural-history owns the mutation/receipt coordinate and the transitional
-  hot-text package still owns the bounded `textWindow` observer.
+- `scripts/jedit-echo-powered-session.mjs --json --allow-full-snapshot-fixture`
+  reports the structural `replaceTextRange` edit intent in the compatibility
+  witness summary. The structural-history generated-package descriptor now
+  installs through the generic Echo package port. The fixture witness also
+  reports a mutation/query round trip where structural-history owns the
+  mutation/receipt coordinate and the transitional hot-text package still owns
+  the bounded `textWindow` observer.
 - `scripts/jedit-echo-release-gate.mjs --json-report` is the current
   consolidated jedit/Echo proof report. It joins the happy path, unsupported
   mutation path, local replay posture, retained evidence refs, and authority

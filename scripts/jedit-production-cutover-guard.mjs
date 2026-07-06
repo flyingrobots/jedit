@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 
 const OPTION_SAMPLE_FORBIDDEN_FILE = '--sample-forbidden-file';
+const SOURCE_ROOT = 'src';
+const SOURCE_EXTENSION = '.ts';
 const PRODUCTION_FILE = Object.freeze({
   TEXT_RUNTIME_PROFILE: 'src/app/text-runtime-profile.ts',
   TEXT_SESSION: 'src/app/workspace/production-text-session.ts',
@@ -81,6 +83,13 @@ const REMOVED_TRANSITIONAL_FILES = Object.freeze([
   TRANSITIONAL_FILE.INTERACTIVE_TEXT_RUNTIME_MODE,
   TRANSITIONAL_FILE.INTERACTIVE_ECHO_TEXT_SESSION,
 ]);
+const EXPLICIT_FIXTURE_OR_MIGRATION_SOURCE_FILES = Object.freeze([
+  'src/app/hot-buffer-session.ts',
+  'src/adapters/full-snapshot-hot-text-runtime-fixture.ts',
+  'src/adapters/fake-echo-jedit-optic-transport.ts',
+  'src/adapters/installed-jedit-contract-echo-transport.ts',
+  'src/adapters/installed-text-authority-guard.ts',
+]);
 const FORBIDDEN_LEGACY_AUTHORITY_PATTERNS = Object.freeze([
   { label: 'loadEditor', pattern: /\bloadEditor\b(?!File)/u },
   { label: 'saveEditor', pattern: /\bsaveEditor\b(?!File)/u },
@@ -116,10 +125,27 @@ const FORBIDDEN_NON_ECHO_RUNTIME_MODE_PATTERNS = Object.freeze([
   { label: 'defaultTestLocalSessionFactory', pattern: /\bdefaultTestLocalSessionFactory\b/u },
   { label: 'fallbackProfile', pattern: /\bfallbackProfile\b/u },
 ]);
+const FORBIDDEN_PRODUCT_FIXTURE_AUTHORITY_PATTERNS = Object.freeze([
+  { label: 'createFullSnapshotHotTextRuntimeFixture', pattern: /\bcreateFullSnapshotHotTextRuntimeFixture\b/u },
+  { label: 'isFullSnapshotHotTextRuntimeFixture', pattern: /\bisFullSnapshotHotTextRuntimeFixture\b/u },
+  { label: 'FullSnapshotHotTextRuntimeFixture', pattern: /\bFullSnapshotHotTextRuntimeFixture\b/u },
+  { label: 'full-snapshot-hot-text-runtime-fixture', pattern: /\bfull-snapshot-hot-text-runtime-fixture\b/u },
+  { label: 'createInMemoryHotTextRuntime', pattern: /\bcreateInMemoryHotTextRuntime\b/u },
+  { label: 'in-memory-hot-text-runtime', pattern: /\bin-memory-hot-text-runtime\b/u },
+  { label: 'createFakeEchoJeditOpticTransport', pattern: /\bcreateFakeEchoJeditOpticTransport\b/u },
+  { label: 'fake-echo-jedit-optic-transport', pattern: /\bfake-echo-jedit-optic-transport\b/u },
+  { label: 'startHotBufferSession', pattern: /\bstartHotBufferSession\b/u },
+  { label: 'materializeHotBuffer', pattern: /\bmaterializeHotBuffer\b/u },
+  { label: 'hot-buffer-session', pattern: /\bhot-buffer-session\b/u },
+  { label: 'HotTextBufferState.roots', pattern: /\bHotTextBufferState\.roots\b/u },
+  { label: 'editor line array save', pattern: /\bsave(?:Editor|Workspace)?Lines\b/u },
+  { label: 'Git diff modified lines', pattern: /\bgitDiffModifiedLines\b/u },
+]);
 
 const options = parseArgs(process.argv.slice(2));
 const failures = [
   ...removedFileFailures(),
+  ...forbiddenSourceFailures(productSourceFiles(), FORBIDDEN_PRODUCT_FIXTURE_AUTHORITY_PATTERNS),
   ...forbiddenSourceFailures(DEFAULT_PRODUCTION_FILES, FORBIDDEN_LEGACY_AUTHORITY_PATTERNS),
   ...forbiddenSourceFailures(DEFAULT_PRODUCTION_FILES, FORBIDDEN_NON_ECHO_RUNTIME_MODE_PATTERNS),
   ...forbiddenSourceFailures(DEFAULT_LIFECYCLE_AUTHORITY_FILES, FORBIDDEN_LIFECYCLE_AUTHORITY_PATTERNS),
@@ -129,6 +155,7 @@ const failures = [
     ...FORBIDDEN_NON_ECHO_RUNTIME_MODE_PATTERNS,
     ...FORBIDDEN_LIFECYCLE_AUTHORITY_PATTERNS,
     ...FORBIDDEN_RECOVERY_FALLBACK_PATTERNS,
+    ...FORBIDDEN_PRODUCT_FIXTURE_AUTHORITY_PATTERNS,
   ]),
 ];
 
@@ -175,6 +202,23 @@ function removedFileFailures() {
     } catch {
       return [];
     }
+  });
+}
+
+function productSourceFiles() {
+  const allowed = new Set(EXPLICIT_FIXTURE_OR_MIGRATION_SOURCE_FILES);
+  return collectSourceFiles(SOURCE_ROOT).filter((filePath) => !allowed.has(filePath));
+}
+
+function collectSourceFiles(root) {
+  const entries = readdirSync(root).sort();
+  return entries.flatMap((entry) => {
+    const entryPath = `${root}/${entry}`;
+    const stat = statSync(entryPath);
+    if (stat.isDirectory()) {
+      return collectSourceFiles(entryPath);
+    }
+    return entryPath.endsWith(SOURCE_EXTENSION) ? [entryPath] : [];
   });
 }
 

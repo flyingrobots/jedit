@@ -893,14 +893,20 @@ jedit application intent and it does not interrupt a half-committed tick.
 
 ## Agent Echo-Powered Session Witness
 
-The fast product-session command is:
+The fast installed-package plan command is:
 
 ```sh
 npm run witness:echo:session
 ```
 
-It is not the real Echo WASM substrate proof. It is a host-owned agent smoke
-path over the same app-facing product capability:
+It is not the real Echo WASM substrate proof. The edit/read smoke path is now an
+explicit full-snapshot fixture compatibility command:
+
+```sh
+node scripts/jedit-echo-powered-session.mjs --json --allow-full-snapshot-fixture
+```
+
+That compatibility command runs over the same app-facing product capability:
 
 ```text
 TextBufferOptic session
@@ -920,7 +926,7 @@ sequenceDiagram
   participant Client as app-safe optic client
   participant Transport as fake Echo-shaped transport
 
-  Agent->>CLI: npm run witness:echo:session
+  Agent->>CLI: node scripts/jedit-echo-powered-session.mjs --json --allow-full-snapshot-fixture
   CLI->>Session: createBuffer(...)
   Session->>Client: openTextBuffer(...)
   Client->>Transport: submitIntentBytes(createBuffer)
@@ -1110,22 +1116,22 @@ Echo tick:
 
 ## How to Run the Important Paths
 
-Run the interactive development app:
+Verify the interactive development startup gate:
 
 ```sh
 npm run dev
 ```
 
-Build and start the compiled app:
+Verify the compiled startup gate:
 
 ```sh
 npm run build
-JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 npm start
+npm start
 ```
 
-The development script applies the temporary fixture escape hatch only to the
-source TUI process. Compiled product startup still refuses to instantiate the
-full-snapshot text authority unless the environment flag is supplied explicitly.
+These startup commands are expected to fail fast until graph-backed rope
+authority is installed. The product startup path must reject missing graph rope
+authority rather than silently instantiate the full-snapshot text fixture.
 
 Run the default checks:
 
@@ -1147,17 +1153,17 @@ ECHO_WARP_WASM_DIR=/path/to/echo/crates/warp-wasm \
   node scripts/jedit-echo-witness.mjs --json --replay
 ```
 
-Run the fast product-session witness:
+Run the fast installed-package plan witness:
 
 ```sh
 npm run witness:echo:session
 ```
 
-Run the production text session witness:
+Run the explicit fixture compatibility production text session witness:
 
 ```sh
 npm run build
-JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 node scripts/jedit-production-text-session.mjs --json
+node scripts/jedit-production-text-session.mjs --json --allow-full-snapshot-fixture
 ```
 
 ## The End-to-End Story
@@ -1177,7 +1183,7 @@ sequenceDiagram
   participant Echo
   participant Graft
 
-  Developer->>Shell: npm run dev / JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 npm start
+  Developer->>Shell: npm run dev / npm start
   Shell->>Jedit: start src/main.ts / dist/main.js
   Jedit->>Jedit: initialize workspace model and ports
   Jedit->>Graft: request outlines/diffs as projections

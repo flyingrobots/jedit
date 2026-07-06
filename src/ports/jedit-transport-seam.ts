@@ -36,11 +36,10 @@ export interface JeditTransportSeam extends EchoWasmKernelTransport {
 /**
  * Type guard: does this transport expose a jedit session port?
  *
- * In-process transports (`createInstalledJeditContractEchoTransport`,
- * `createFakeEchoJeditOpticTransport`) return `JeditTransportSeam`; the
- * real-WASM transport returns plain `EchoWasmKernelTransport`. The optic
- * client uses this guard to enforce the shared-port invariant without
- * silently creating a private fallback port for the in-process case.
+   * In-process installed and fixture transports return `JeditTransportSeam`;
+   * the real-WASM transport returns plain `EchoWasmKernelTransport`. The optic
+   * client uses this guard to enforce the shared-port invariant without
+   * silently creating a private fallback port for the in-process case.
  *
  * The `in` check is sufficient: `JeditTransportSeam` declares
  * `jeditSessionPort` as a required field, so any object that has the key

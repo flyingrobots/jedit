@@ -13,7 +13,7 @@ test('package exposes the jedit Echo release-gate script', () => {
 
   assert.equal(
     packageJson.scripts['release-gate:jedit-echo'],
-    'JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 node scripts/jedit-echo-release-gate.mjs',
+    'node scripts/jedit-echo-release-gate.mjs',
   );
   assert.equal(packageJson.scripts['release-gate:echo'], 'npm run release-gate:jedit-echo');
 });

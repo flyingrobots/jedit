@@ -8,6 +8,7 @@ const LOOP_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'trusted-echo-runti
 const TRANSPORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'installed-jedit-contract-echo-transport.js');
 const CLIENT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-optic-client.js');
 const SESSION_ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'echo-backed-text-buffer-session.js');
+const RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'full-snapshot-hot-text-runtime-fixture.js');
 const TICK_FREQUENCY_HZ = 60;
 const TICK_INTERVAL_SECONDS = 1 / 60;
 const CYCLE_LIMIT = 7;
@@ -135,6 +136,7 @@ test('app-facing Echo-backed TextBufferSession port does not expose trusted host
   const modules = await loadModules();
   const transport = modules.transport.createInstalledJeditContractEchoTransport({
     allowFullSnapshotTextAuthority: true,
+    runtime: modules.runtime.createFullSnapshotHotTextRuntimeFixture(),
   });
   const client = modules.client.createEchoTransportJeditOpticClient(transport);
   const session = modules.sessionAdapter.createEchoBackedTextBufferSession({
@@ -172,11 +174,12 @@ async function loadModules() {
   }
 
   modulesPromise = (async () => {
-    const [loop, transport, client, sessionAdapter] = await Promise.all([
+    const [loop, transport, client, sessionAdapter, runtime] = await Promise.all([
       import(pathToFileURL(LOOP_MODULE_PATH).href),
       import(pathToFileURL(TRANSPORT_MODULE_PATH).href),
       import(pathToFileURL(CLIENT_MODULE_PATH).href),
       import(pathToFileURL(SESSION_ADAPTER_MODULE_PATH).href),
+      import(pathToFileURL(RUNTIME_MODULE_PATH).href),
     ]);
 
     return {
@@ -184,6 +187,7 @@ async function loadModules() {
       transport,
       client,
       sessionAdapter,
+      runtime,
     };
   })();
 

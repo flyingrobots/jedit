@@ -18,44 +18,43 @@ npm run build
 Inspect the witness plan without running the edit/read flow:
 
 ```bash
-JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 node scripts/jedit-echo-powered-session.mjs --json --dry-run
+node scripts/jedit-echo-powered-session.mjs --json --dry-run
 ```
 
-Run the installed-package edit/read witness:
+Run the explicit full-snapshot fixture compatibility edit/read witness:
 
 ```bash
-JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 node scripts/jedit-echo-powered-session.mjs --json --text "hello Echo"
+node scripts/jedit-echo-powered-session.mjs --json --allow-full-snapshot-fixture --text "hello Echo"
 ```
 
-Run the production text session witness:
+Run the explicit full-snapshot fixture compatibility production-session witness:
 
 ```bash
-JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 node scripts/jedit-production-text-session.mjs --json --text "hello Echo"
+node scripts/jedit-production-text-session.mjs --json --allow-full-snapshot-fixture --text "hello Echo"
 ```
 
-Compare two local witness runs using stable evidence identity:
+Compare two explicit fixture compatibility runs using stable evidence identity:
 
 ```bash
-JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 node scripts/jedit-echo-powered-session.mjs --json --replay-local
-JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 node scripts/jedit-production-text-session.mjs --json --replay-local
+node scripts/jedit-echo-powered-session.mjs --json --allow-full-snapshot-fixture --replay-local
+node scripts/jedit-production-text-session.mjs --json --allow-full-snapshot-fixture --replay-local
 ```
 
-Start the interactive app. The default text runtime is the Echo-hosted
-production profile:
+Interactive startup is intentionally gated while graph-backed rope authority is
+unavailable. Use `npm start` as the startup gate; the default text runtime is the Echo-hosted
+production profile, and startup must fail fast rather than silently constructing
+the full-snapshot fixture.
 
 ```bash
-JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 npm start
+npm start
 ```
 
-For explicit demos,
-`JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 JEDIT_TEXT_RUNTIME=echoHosted npm start`
-selects the same profile. Any other `JEDIT_TEXT_RUNTIME` value is unsupported
-startup input. The full-snapshot authority flag is temporary until the
-graph-backed rope runtime lands.
+For explicit demos, `JEDIT_TEXT_RUNTIME=echoHosted npm start` selects the same
+profile. Any other `JEDIT_TEXT_RUNTIME` value is unsupported startup input.
 
 ## Expected JSON Shape
 
-The real witness should include these stable fields:
+The explicit fixture compatibility witness should include these stable fields:
 
 ```json
 {
@@ -68,7 +67,11 @@ The real witness should include these stable fields:
   "authority": {
     "appFacingSessionPort": "TextBufferSessionPort",
     "appFacingBufferCapability": "TextBufferOptic",
-    "appCanTick": false
+    "appCanTick": false,
+    "textAuthority": {
+      "kind": "full-snapshot-fixture",
+      "productionSafe": false
+    }
   },
   "report": {
     "outcome": {

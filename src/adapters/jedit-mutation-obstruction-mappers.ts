@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
-// Shared mutation-obstruction mappers used by both in-process transports
-// (`installed-jedit-eint-bridge.ts` and `fake-echo-jedit-optic-transport.ts`)
-// so the wire-level / session-level obstruction shapes stay consistent.
+// Shared mutation-obstruction mappers used by in-process transports so the
+// wire-level / session-level obstruction shapes stay consistent.
 //
 // Two functions, two return shapes:
 //

@@ -6,11 +6,10 @@ import { ensureDistBuiltSync } from './dist-helpers.mjs';
 
 const REPO_ROOT = process.cwd();
 const CLI_PATH = path.join(REPO_ROOT, 'scripts', 'jedit-echo-powered-session.mjs');
-const FULL_SNAPSHOT_AUTHORITY_ENV = 'JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY';
 const TICK_INTERVAL_SECONDS = 1 / 60;
 let built = false;
 
-test('Echo-powered session CLI reports app capability, lifecycle, and reading evidence', () => {
+test('Echo-powered session CLI rejects implicit full-snapshot fixture authority', () => {
   ensureBuilt();
 
   const result = spawnSync(process.execPath, [
@@ -18,12 +17,31 @@ test('Echo-powered session CLI reports app capability, lifecycle, and reading ev
     '--json',
     '--text',
     'hello',
+  ], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+  });
+
+  assert.notEqual(result.status, 0);
+  const summary = JSON.parse(result.stdout);
+  assert.equal(summary.ok, false);
+  assert.match(summary.message, /--allow-full-snapshot-fixture/);
+});
+
+test('Echo-powered session CLI reports explicit fixture app capability, lifecycle, and reading evidence', () => {
+  ensureBuilt();
+
+  const result = spawnSync(process.execPath, [
+    CLI_PATH,
+    '--json',
+    '--allow-full-snapshot-fixture',
+    '--text',
+    'hello',
     '--cycle-limit',
     '6',
   ], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
-    env: fullSnapshotAuthorityEnv(),
   });
 
   assert.equal(result.status, 0, result.stderr);
@@ -37,6 +55,10 @@ test('Echo-powered session CLI reports app capability, lifecycle, and reading ev
   assert.equal(summary.authority.appFacingSessionPort, 'TextBufferSessionPort');
   assert.equal(summary.authority.appFacingBufferCapability, 'TextBufferOptic');
   assert.equal(summary.authority.appCanTick, false);
+  assert.deepEqual(summary.authority.textAuthority, {
+    kind: 'full-snapshot-fixture',
+    productionSafe: false,
+  });
   assert.deepEqual(summary.lifecycleRequests, [
     { tickIntervalSeconds: TICK_INTERVAL_SECONDS },
     { cycleLimit: 6 },
@@ -134,7 +156,6 @@ test('Echo-powered session CLI dry-run reports installed package witness plan', 
   ], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
-    env: fullSnapshotAuthorityEnv(),
   });
 
   assert.equal(result.status, 0, result.stderr);
@@ -158,7 +179,6 @@ test('Echo-powered session CLI reports unsupported mutation as final obstruction
   ], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
-    env: fullSnapshotAuthorityEnv(),
   });
 
   assert.equal(result.status, 0, result.stderr);
@@ -178,11 +198,11 @@ test('Echo-powered session CLI has a local replay compare path', () => {
   const result = spawnSync(process.execPath, [
     CLI_PATH,
     '--json',
+    '--allow-full-snapshot-fixture',
     '--replay-local',
   ], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
-    env: fullSnapshotAuthorityEnv(),
   });
 
   assert.equal(result.status, 0, result.stderr);
@@ -198,12 +218,12 @@ test('Echo-powered session CLI can run healthy work after unsupported mutation w
   const result = spawnSync(process.execPath, [
     CLI_PATH,
     '--json',
+    '--allow-full-snapshot-fixture',
     '--text',
     'still healthy',
   ], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
-    env: fullSnapshotAuthorityEnv(),
   });
 
   assert.equal(result.status, 0, result.stderr);
@@ -223,7 +243,6 @@ test('Echo-powered session CLI rejects invalid cycle limits as JSON failures', (
   ], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
-    env: fullSnapshotAuthorityEnv(),
   });
 
   assert.notEqual(result.status, 0);
@@ -241,7 +260,6 @@ test('Echo-powered session CLI handles non-report human summaries', () => {
   ], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
-    env: fullSnapshotAuthorityEnv(),
   });
   const unsupported = spawnSync(process.execPath, [
     CLI_PATH,
@@ -250,15 +268,14 @@ test('Echo-powered session CLI handles non-report human summaries', () => {
   ], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
-    env: fullSnapshotAuthorityEnv(),
   });
   const replay = spawnSync(process.execPath, [
     CLI_PATH,
+    '--allow-full-snapshot-fixture',
     '--replay-local',
   ], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
-    env: fullSnapshotAuthorityEnv(),
   });
 
   assert.equal(dryRun.status, 0, dryRun.stderr);
@@ -275,11 +292,4 @@ function ensureBuilt() {
   }
   ensureDistBuiltSync();
   built = true;
-}
-
-function fullSnapshotAuthorityEnv() {
-  return {
-    ...process.env,
-    [FULL_SNAPSHOT_AUTHORITY_ENV]: '1',
-  };
 }
