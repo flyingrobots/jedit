@@ -142,6 +142,58 @@ test('Graft drawer caps root object review payload entries', async () => {
   assert.doesNotMatch(text, /key04/);
 });
 
+test('Graft drawer bounds nested object review payload depth', async () => {
+  const { renderGraftDrawerLines } = await loadGraftDrawer();
+  const payload = {
+    level1: {
+      level2: {
+        level3: {
+          level4: {
+            level5: {
+              leaked: 'too deep',
+            },
+          },
+        },
+      },
+    },
+  };
+  const lines = renderGraftDrawerLines(baseDrawerModel({
+    path: '/repo/schema.graphql',
+    relativePath: 'schema.graphql',
+    projectionSource: 'live-buffer',
+    projectionPosture: 'current',
+    projectionLanes: [reviewPayloadLane(payload)],
+    outlineItems: [],
+    changeLines: [],
+  }, 0), 120, 40);
+  const text = linesToText(lines);
+
+  assert.match(text, /"level4": \{\.\.\.\}/);
+  assert.doesNotMatch(text, /level5/);
+  assert.doesNotMatch(text, /too deep/);
+});
+
+test('Graft drawer bounds review payload object key scanning', async () => {
+  const { renderGraftDrawerLines } = await loadGraftDrawer();
+  const payload = Object.fromEntries(Array.from({ length: 80 }, (_entry, index) => [
+    `key${String(index).padStart(2, '0')}`,
+    `value${String(index).padStart(2, '0')}`,
+  ]));
+  const lines = renderGraftDrawerLines(baseDrawerModel({
+    path: '/repo/schema.graphql',
+    relativePath: 'schema.graphql',
+    projectionSource: 'live-buffer',
+    projectionPosture: 'current',
+    projectionLanes: [reviewPayloadLane(payload)],
+    outlineItems: [],
+    changeLines: [],
+  }, 0), 120, 32);
+  const text = linesToText(lines);
+
+  assert.match(text, /\.\.\. at least 61 more entries/);
+  assert.doesNotMatch(text, /key64/);
+});
+
 test('Graft drawer toggles generic review payload visibility from key input', async () => {
   const { renderGraftDrawerLines } = await loadGraftDrawer();
   const { updateGraftDrawerFromKey } = await loadWorkspaceGraftDrawer();
@@ -184,6 +236,35 @@ test('Graft drawer toggles generic review payload visibility from key input', as
 
   assert.equal(collapsedModel.expandedProjectionLaneIndex, undefined);
   assert.doesNotMatch(collapsedText, /review payload:/);
+});
+
+test('Graft drawer treats stale expanded review payload state as collapsed', async () => {
+  const { updateGraftDrawerFromKey } = await loadWorkspaceGraftDrawer();
+  const model = {
+    ...baseDrawerModel({
+      path: '/repo/schema.graphql',
+      relativePath: 'schema.graphql',
+      projectionSource: 'live-buffer',
+      projectionPosture: 'current',
+      projectionLanes: [reviewPayloadLane({
+        apiVersion: 'wesley.schema.review/v1',
+      })],
+      outlineItems: [],
+      changeLines: [],
+    }, 99),
+    rows: 24,
+    footerVisible: false,
+  };
+
+  const [expandedModel] = updateGraftDrawerFromKey(
+    { key: 'space' },
+    model,
+    () => {
+      throw new Error('refresh should not run for expansion');
+    },
+  );
+
+  assert.equal(expandedModel.expandedProjectionLaneIndex, 0);
 });
 
 test('Graft drawer page movement accounts for expanded review payload rows', async () => {

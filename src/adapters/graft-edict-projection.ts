@@ -13,6 +13,7 @@ import {
   type GraftEchoTargetIrProjectionLane,
   type GraftEdictProjectionLane,
   type GraftJsonObject,
+  type GraftJsonValue,
   type GraftProjectionPanelLane,
   type GraftProjectionPosture,
   type GraftProjectionSource,
@@ -28,6 +29,10 @@ const REVIEW_SUMMARY_PREFIX = 'review: ';
 const EDICT_STATUS_OK = 'ok';
 const TYPE_STRING = 'string';
 const SUMMARY_ITEM_LIMIT = 3;
+const REVIEW_PAYLOAD_OBJECT_KEY_SCAN_LIMIT = 64;
+const REVIEW_PAYLOAD_ENTRY_LIMIT = 4;
+const REVIEW_PAYLOAD_DEPTH_LIMIT = 4;
+const OBJECT_HAS_OWN = Object.prototype.hasOwnProperty;
 
 const DEFAULT_ECHO_TARGET: EdictProjectionTargetSettings = {
   coordinate: ECHO_TARGET_COORDINATE,
@@ -230,7 +235,49 @@ function reviewSummaryLines(review: object): readonly string[] {
 }
 
 function reviewPayloadFromProjection(review: object): GraftJsonObject {
-  return JSON.parse(JSON.stringify(review));
+  return reviewPayloadObject(review, 0);
+}
+
+function reviewPayloadObject(review: object, depth: number): GraftJsonObject {
+  if (depth >= REVIEW_PAYLOAD_DEPTH_LIMIT) {
+    return {};
+  }
+
+  const result: Record<string, GraftJsonValue> = {};
+  let scanned = 0;
+  for (const key in review) {
+    if (!OBJECT_HAS_OWN.call(review, key)) {
+      continue;
+    }
+    if (scanned >= REVIEW_PAYLOAD_OBJECT_KEY_SCAN_LIMIT) {
+      break;
+    }
+    result[key] = reviewPayloadValue(Reflect.get(review, key), depth + 1);
+    scanned += 1;
+  }
+  return result;
+}
+
+function reviewPayloadValue(value: GraftJsonValue, depth: number): GraftJsonValue {
+  if (Array.isArray(value)) {
+    return reviewPayloadArray(value, depth);
+  }
+  if (typeof value === 'object' && value !== null) {
+    return reviewPayloadObject(value, depth);
+  }
+  if (typeof value === TYPE_STRING || typeof value === 'number' || typeof value === 'boolean' || value === null) {
+    return value;
+  }
+  return null;
+}
+
+function reviewPayloadArray(value: readonly GraftJsonValue[], depth: number): readonly GraftJsonValue[] {
+  if (depth >= REVIEW_PAYLOAD_DEPTH_LIMIT) {
+    return [];
+  }
+  return value
+    .slice(0, REVIEW_PAYLOAD_ENTRY_LIMIT)
+    .map((entry) => reviewPayloadValue(entry, depth + 1));
 }
 
 function unavailableLiveEdictProjection(): LiveEdictProjectionResult {

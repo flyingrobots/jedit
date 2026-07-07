@@ -137,6 +137,9 @@ function nextProjectionReviewPayloadIndex(
     return indices[0];
   }
   const offset = indices.indexOf(currentIndex);
+  if (offset < 0) {
+    return indices[0];
+  }
   return offset >= 0 && offset < indices.length - 1
     ? indices[offset + 1]
     : undefined;

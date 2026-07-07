@@ -97,19 +97,20 @@ This cycle does not include:
 
 ## User Experience / Product Shape
 
-The Graft drawer keeps compact projection lanes by default. A focused projection
-lane can be expanded to reveal its provider-owned review payload. The expanded
-rows are plain text, capped, and explicitly truncated when the payload is too
-large for the viewer budget.
+The Graft drawer keeps compact projection lanes by default. Pressing `Space`
+while the Graft drawer is focused cycles through projection lanes that expose a
+provider-owned review payload, and pressing `Space` after the last payload lane
+collapses the expanded payload. The expanded rows are plain text, capped, and
+explicitly truncated when the payload is too large for the viewer budget.
 
 ### User Journey
 
 ```mermaid
 flowchart TD
   Start[User opens Graft drawer] --> Compact[Projection lanes render compact rows]
-  Compact --> Expand[User expands a lane]
+  Compact --> Expand[User presses Space to expand next payload lane]
   Expand --> Payload[Drawer shows bounded review payload]
-  Payload --> Collapse[User collapses the lane]
+  Payload --> Collapse[User presses Space past the last payload lane]
   Collapse --> Compact
 ```
 
@@ -185,7 +186,7 @@ is intentionally generic:
 - JSON object keys render deterministically.
 - arrays render in order.
 - strings are JSON-escaped and length-capped.
-- arrays, objects, depth, and row count are bounded.
+- arrays, objects, depth, row count, and object-key scan work are bounded.
 - truncation is explicit.
 
 jedit displays provider-owned review payloads. jedit does not interpret,
@@ -208,9 +209,9 @@ existing title, state, digest, metadata, and summary rows.
 | Source of truth | Provider-owned review payloads already decoded by the Graft projection adapter. |
 | Derived state | Bounded drawer rows generated from `reviewPayload`. |
 | Invalid states | jedit validating provider semantics, computing digests, executing artifacts, or treating expansion as runtime availability. |
-| Reset behavior | Expanded lane state is jedit-owned UI state and resets with normal drawer/file changes. |
+| Reset behavior | Expanded lane state is jedit-owned UI state and resets when the file changes or refreshed projection lanes no longer have a payload at the expanded index. |
 | Serialization | No persistence or wire format. |
-| Deterministic assumptions | Object keys are sorted; arrays preserve provider order; truncation is stable. |
+| Deterministic assumptions | Object key rendering uses a bounded key scan and sorts the visible bounded key set; arrays preserve provider order; truncation is stable. |
 
 ## Accessibility Posture
 
@@ -301,10 +302,20 @@ Behavior tests required:
       structured review payload.
 - [x] `spec/graft-review-payload-viewer.spec.mjs` proves large payloads truncate explicitly.
 - [x] `spec/graft-review-payload-viewer.spec.mjs` proves collection entries are capped explicitly.
+- [x] `spec/graft-review-payload-viewer.spec.mjs` proves nested object payload
+      depth is capped explicitly.
+- [x] `spec/graft-review-payload-viewer.spec.mjs` proves object-key scan work is
+      bounded.
+- [x] `spec/graft-review-payload-viewer.spec.mjs` proves stale expanded lane
+      state toggles like collapsed state.
+- [x] `spec/workspace-graft-refresh.spec.mjs` proves file and lane refreshes
+      clear stale expanded lane state.
 - [x] `spec/graft-review-payload-viewer.spec.mjs` proves PageDown accounting includes expanded
       payload rows.
 - [x] `spec/graft-review-payload-api-session.spec.mjs` proves Edict Core and Echo Target IR
       lanes carry review payloads from upstream projection results.
+- [x] `spec/graft-review-payload-api-session.spec.mjs` proves jedit does not
+      JSON-clone provider review payloads.
 - [x] `spec/graft-review-payload-viewer.spec.mjs` proves runtime, admission, debugger, and REPL
       wording stays absent.
 
@@ -320,9 +331,11 @@ The work is done when:
 - [x] jedit can render collapsed compact lanes without payload rows.
 - [x] jedit can render expanded generic review payload rows.
 - [x] Payload rendering is bounded by depth, row count, array/object entries,
-      and scalar length.
+      object-key scan work, and scalar length.
 - [x] Truncation is explicit.
 - [x] Row accounting remains correct for expanded payloads.
+- [x] Expanded payload state clears when a file changes or refreshed lanes no
+      longer support the current expanded index.
 - [x] Edict Core review payloads display through the generic viewer.
 - [x] Echo Target IR review payloads display through the generic viewer.
 - [x] Drawer output contains no execution, admission, debugger, or REPL claim.
@@ -372,10 +385,13 @@ Mitigations:
 
 Known deferrals in this cycle:
 
-- profile-aware Wesley SDL projection belongs in Graft first;
-- jedit Wesley projection consumption follows the Graft provider work;
+- profile-aware Wesley SDL projection belongs in Graft first:
+  https://github.com/flyingrobots/graft/issues/226
+- jedit Wesley projection consumption follows the Graft provider work:
+  https://github.com/flyingrobots/jedit/issues/266
 - canonical Echo receipt digest display waits for Echo-side canonical receipt
-  bytes and digests.
+  bytes and digests:
+  https://github.com/flyingrobots/jedit/issues/260
 
 ## Retrospective
 
@@ -384,14 +400,19 @@ What changed from the design:
 - The implementation kept the viewer generic by adding `reviewPayload` to
   projection panel lanes rather than adding Edict- or Echo-specific drawer
   branches.
-- Edict Core and Echo Target IR review objects are normalized at the Graft
-  adapter boundary before entering jedit's `GraftJsonObject` display model.
+- Edict Core and Echo Target IR review objects are carried through as
+  provider-owned `GraftJsonObject` payloads instead of JSON-cloning the full
+  provider tree.
 - Expanded payload state is jedit-owned drawer state; providers only supply the
   payload.
-- The renderer caps total rows, depth, collection entries, and scalar length.
+- The renderer caps total rows, depth, collection entries, object-key scan work,
+  and scalar length.
 - Self-review tightened the interaction path so the Graft drawer `space` key
   cycles expanded review payload lanes, and root object entries now use the same
   entry cap as nested objects.
+- Follow-up review tightened stale expansion reset, nested object depth caps,
+  bounded object-key scanning, provider payload pass-through, and issue-backed
+  follow-on debt.
 
 What the tests proved:
 
@@ -409,6 +430,10 @@ What the tests proved:
   `npm run build && JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/graft-review-payload-viewer.spec.mjs`
   failed because root object entries were not capped and no key path toggled
   review payload visibility.
+- REVIEW RED:
+  `npm run build && JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/graft-review-payload-viewer.spec.mjs spec/workspace-graft-refresh.spec.mjs`
+  failed because nested object depth, object-key scan work, stale expansion
+  toggle state, and cross-file expansion reset were not yet enforced.
 - REVIEW GREEN:
   `npm run build && JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/graft-review-payload-viewer.spec.mjs`
 - REVIEW GREEN:
@@ -420,10 +445,13 @@ What the tests proved:
 
 What remains open:
 
-- Profile-aware Wesley SDL projection belongs in Graft first.
-- jedit Wesley projection consumption follows the Graft provider work.
+- Profile-aware Wesley SDL projection belongs in Graft first:
+  https://github.com/flyingrobots/graft/issues/226
+- jedit Wesley projection consumption follows the Graft provider work:
+  https://github.com/flyingrobots/jedit/issues/266
 - Canonical Echo receipt digest display waits for Echo-side canonical receipt
-  bytes and digests.
+  bytes and digests:
+  https://github.com/flyingrobots/jedit/issues/260
 
 PR:
 

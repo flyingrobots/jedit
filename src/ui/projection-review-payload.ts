@@ -4,12 +4,20 @@ const REVIEW_PAYLOAD_HEADER = 'review payload:';
 const REVIEW_PAYLOAD_ROW_LIMIT = 12;
 const REVIEW_PAYLOAD_DEPTH_LIMIT = 4;
 const REVIEW_PAYLOAD_ENTRY_LIMIT = 4;
+const REVIEW_PAYLOAD_OBJECT_KEY_SCAN_LIMIT = 64;
 const REVIEW_PAYLOAD_SCALAR_TEXT = 120;
 const INDENT_STEP = 2;
+const OBJECT_HAS_OWN = Object.prototype.hasOwnProperty;
 
 interface ReviewPayloadRenderState {
   readonly rows: string[];
   truncated: boolean;
+}
+
+interface ReviewPayloadObjectKeys {
+  readonly visibleKeys: readonly string[];
+  readonly omittedCount: number;
+  readonly omittedIsLowerBound: boolean;
 }
 
 export function projectionReviewPayloadLines(payload: GraftJsonObject): readonly string[] {
@@ -61,14 +69,22 @@ function appendJsonProperty(
     return;
   }
   if (isJsonArray(value)) {
+    if (depth >= REVIEW_PAYLOAD_DEPTH_LIMIT) {
+      appendLine(`${prefix}[...]`, state);
+      return;
+    }
     appendLine(`${prefix}[`, state);
-    appendJsonArrayEntries(value, depth, indent + INDENT_STEP, state);
+    appendJsonArrayEntries(value, depth + 1, indent + INDENT_STEP, state);
     appendLine(`${indentText(indent)}]`, state);
     return;
   }
   if (isJsonObject(value)) {
+    if (depth >= REVIEW_PAYLOAD_DEPTH_LIMIT) {
+      appendLine(`${prefix}{...}`, state);
+      return;
+    }
     appendLine(`${prefix}{`, state);
-    appendJsonObjectEntries(value, depth, indent + INDENT_STEP, state);
+    appendJsonObjectEntries(value, depth + 1, indent + INDENT_STEP, state);
     appendLine(`${indentText(indent)}}`, state);
     return;
   }
@@ -102,21 +118,56 @@ function appendJsonArrayEntries(
 }
 
 function appendJsonObjectEntries(value: GraftJsonObject, depth: number, indent: number, state: ReviewPayloadRenderState): void {
-  const keys = Object.keys(value).sort();
-  const visibleKeys = keys.slice(0, REVIEW_PAYLOAD_ENTRY_LIMIT);
-  for (const key of visibleKeys) {
+  const keys = reviewPayloadObjectKeys(value);
+  for (const key of keys.visibleKeys) {
     if (state.truncated) {
       return;
     }
     appendJsonProperty(key, value[key], depth, indent, state);
   }
-  appendOmittedLine(keys.length - visibleKeys.length, 'entries', indent, state);
+  appendOmittedEntriesLine(keys, indent, state);
+}
+
+function reviewPayloadObjectKeys(value: GraftJsonObject): ReviewPayloadObjectKeys {
+  const keys: string[] = [];
+  let omittedIsLowerBound = false;
+  for (const key in value) {
+    if (!OBJECT_HAS_OWN.call(value, key)) {
+      continue;
+    }
+    if (keys.length >= REVIEW_PAYLOAD_OBJECT_KEY_SCAN_LIMIT) {
+      omittedIsLowerBound = true;
+      break;
+    }
+    keys.push(key);
+  }
+  keys.sort();
+  const visibleKeys = keys.slice(0, REVIEW_PAYLOAD_ENTRY_LIMIT);
+  return {
+    visibleKeys,
+    omittedCount: keys.length - visibleKeys.length + (omittedIsLowerBound ? 1 : 0),
+    omittedIsLowerBound,
+  };
 }
 
 function appendOmittedLine(omittedCount: number, noun: string, indent: number, state: ReviewPayloadRenderState): void {
   if (omittedCount > 0) {
     appendLine(`${indentText(indent)}... ${String(omittedCount)} more ${noun}`, state);
   }
+}
+
+function appendOmittedEntriesLine(
+  keys: ReviewPayloadObjectKeys,
+  indent: number,
+  state: ReviewPayloadRenderState,
+): void {
+  if (keys.omittedCount === 0) {
+    return;
+  }
+  const count = keys.omittedIsLowerBound
+    ? `at least ${String(keys.omittedCount)}`
+    : String(keys.omittedCount);
+  appendLine(`${indentText(indent)}... ${count} more entries`, state);
 }
 
 function appendLine(line: string, state: ReviewPayloadRenderState): void {
