@@ -3,12 +3,13 @@ import test from 'node:test';
 import { importDist } from './dist-helpers.mjs';
 
 async function loadWorkspaceModules() {
-  const [editorSession, editorMode, runtimeState] = await Promise.all([
+  const [editorSession, editorMode, runtimeState, workspaceBufferRegistry] = await Promise.all([
     importDist('app', 'workspace', 'editor-session.js'),
     importDist('app', 'workspace', 'editor', 'mode.js'),
     importDist('app', 'workspace', 'runtime-state.js'),
+    importDist('app', 'workspace', 'workspace-buffer-registry.js'),
   ]);
-  return { editorSession, editorMode, runtimeState };
+  return { editorSession, editorMode, runtimeState, workspaceBufferRegistry };
 }
 
 test('Graft refresh sends live editor source text with the file request', async () => {
@@ -243,4 +244,62 @@ test('Graft refresh clears stale expanded review payload state when lanes change
   });
 
   assert.equal(nextModel.expandedProjectionLaneIndex, undefined);
+});
+
+test('Workspace buffer switches clear expanded review payload state', async () => {
+  const { editorMode, workspaceBufferRegistry } = await loadWorkspaceModules();
+  const editor = {
+    path: '/repo/other.edict',
+    lines: ['package demo.other@1;'],
+    cursorRow: 0,
+    cursorCol: 0,
+    scrollRow: 0,
+    scrollCol: 0,
+    dirty: true,
+    readOnly: false,
+    mode: editorMode.EditorModes.Normal,
+    undoStack: [],
+    redoStack: [],
+  };
+  const record = {
+    bufferId: 'other',
+    pathBinding: '/repo/other.edict',
+    textAuthority: {
+      kind: 'opened',
+      bufferId: 'other',
+      filePath: '/repo/other.edict',
+      materialization: 'materialized',
+    },
+    editorProjection: editor,
+    materializationState: 'materialized',
+    graftInfo: {
+      path: '/repo/other.edict',
+      relativePath: 'other.edict',
+      dirty: true,
+      projectionSource: 'live-buffer',
+      projectionPosture: 'current',
+      projectionLanes: [{
+        title: 'edict core',
+        state: 'available',
+        metadata: [],
+        summaryLines: [],
+        reviewPayload: { apiVersion: 'edict.core/v1' },
+      }],
+      outlineItems: [],
+      changeLines: [],
+    },
+    graftSelectedIndex: 0,
+    lastActivatedAt: 0,
+  };
+
+  const activated = workspaceBufferRegistry.activateWorkspaceBufferRecord({
+    buffers: {},
+    expandedProjectionLaneIndex: 0,
+  }, record, 1);
+  const cleared = workspaceBufferRegistry.clearActiveWorkspaceBuffer({
+    expandedProjectionLaneIndex: 0,
+  });
+
+  assert.equal(activated.expandedProjectionLaneIndex, undefined);
+  assert.equal(cleared.expandedProjectionLaneIndex, undefined);
 });

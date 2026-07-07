@@ -6,6 +6,8 @@ import { REPO_ROOT, importDist } from './dist-helpers.mjs';
 const TARGET_PROFILE_DIGEST = 'sha256:1111111111111111111111111111111111111111111111111111111111111111';
 const CORE_DIGEST = 'sha256:2222222222222222222222222222222222222222222222222222222222222222';
 const TARGET_IR_DIGEST = 'sha256:3333333333333333333333333333333333333333333333333333333333333333';
+const WIDE_REVIEW_PAYLOAD_KEY_COUNT = 70;
+const REVIEW_PAYLOAD_OMITTED_KEY = '$jeditReviewPayloadOmitted';
 
 async function loadGraftApiSession() {
   return importDist('adapters', 'graft-api-session.js');
@@ -73,6 +75,41 @@ function deepArrayReviewPayload() {
     apiVersion: 'edict.core/v1',
     chain: [[[[['too deep']]]]],
   };
+}
+
+function rootWideObjectReviewPayload() {
+  return wideReviewObject('root');
+}
+
+function nestedWideObjectReviewPayload() {
+  return {
+    nested: {
+      wide: wideReviewObject('nested'),
+    },
+  };
+}
+
+function wideReviewObject(prefix) {
+  const result = {};
+  for (let index = 0; index < WIDE_REVIEW_PAYLOAD_KEY_COUNT; index += 1) {
+    result[`${prefix}${String(index).padStart(2, '0')}`] = index;
+  }
+  return result;
+}
+
+function arrayReviewPayload() {
+  return {
+    items: ['a', 'b', 'c', 'd', 'e', 'f'],
+  };
+}
+
+function reviewPayloadWithProtoKey() {
+  const review = {};
+  Object.defineProperty(review, '__proto__', {
+    enumerable: true,
+    value: 'provider data',
+  });
+  return review;
 }
 
 test('Graft session carries Edict review payloads into generic projection lanes', async () => {
@@ -176,8 +213,150 @@ test('Graft session bounds nested array review payloads before rendering', async
     sourceText: 'package demo.echo@1;',
   });
 
-  assert.deepEqual(info.projectionLanes?.[0]?.reviewPayload, {
-    apiVersion: 'edict.core/v1',
-    chain: [[[[]]]],
+  assert.equal(info.projectionLanes?.[0]?.reviewPayload.apiVersion, 'edict.core/v1');
+  assert.match(info.projectionLanes?.[0]?.reviewPayload.chain[0][0][0][0], /depth omitted/);
+});
+
+test('Graft session preserves omission markers for root review payload objects', async () => {
+  const graft = await loadGraftApiSession();
+  const api = {
+    createRepoLocalGraft: (options) => ({ cwd: options.cwd }),
+    callGraftTool: async (_session, name) => name === 'file_outline'
+      ? { projection: 'ready', jumpTable: [] }
+      : { files: [] },
+    createEdictCliProjectionProvider: () => ({ providerId: 'edict-provider' }),
+    createStructuredBuffer: () => ({
+      edictProjection: () => ({
+        ...availableEdictProjection(),
+        core: {
+          state: 'available',
+          value: {
+            digest: CORE_DIGEST,
+            review: rootWideObjectReviewPayload(),
+          },
+        },
+      }),
+      dispose: () => undefined,
+    }),
+  };
+  const port = graft.createGraftSessionPort({ api });
+
+  const info = await port.loadGraftInfo({
+    workspaceRoot: REPO_ROOT,
+    filePath: path.join(REPO_ROOT, 'demo.edict'),
+    dirty: true,
+    sourceText: 'package demo.echo@1;',
   });
+
+  const payload = info.projectionLanes?.[0]?.reviewPayload;
+  assert.equal(Object.keys(payload).length, 64);
+  assert.equal(Object.hasOwn(payload, REVIEW_PAYLOAD_OMITTED_KEY), true);
+  assert.equal(Object.hasOwn(payload, 'root63'), false);
+});
+
+test('Graft session preserves omission markers for nested review payload objects', async () => {
+  const graft = await loadGraftApiSession();
+  const api = {
+    createRepoLocalGraft: (options) => ({ cwd: options.cwd }),
+    callGraftTool: async (_session, name) => name === 'file_outline'
+      ? { projection: 'ready', jumpTable: [] }
+      : { files: [] },
+    createEdictCliProjectionProvider: () => ({ providerId: 'edict-provider' }),
+    createStructuredBuffer: () => ({
+      edictProjection: () => ({
+        ...availableEdictProjection(),
+        core: {
+          state: 'available',
+          value: {
+            digest: CORE_DIGEST,
+            review: nestedWideObjectReviewPayload(),
+          },
+        },
+      }),
+      dispose: () => undefined,
+    }),
+  };
+  const port = graft.createGraftSessionPort({ api });
+
+  const info = await port.loadGraftInfo({
+    workspaceRoot: REPO_ROOT,
+    filePath: path.join(REPO_ROOT, 'demo.edict'),
+    dirty: true,
+    sourceText: 'package demo.echo@1;',
+  });
+
+  const payload = info.projectionLanes?.[0]?.reviewPayload;
+  assert.equal(Object.keys(payload.nested.wide).length, 64);
+  assert.equal(Object.hasOwn(payload.nested.wide, REVIEW_PAYLOAD_OMITTED_KEY), true);
+  assert.equal(Object.hasOwn(payload.nested.wide, 'nested63'), false);
+});
+
+test('Graft session preserves omission markers for wide review payload arrays', async () => {
+  const graft = await loadGraftApiSession();
+  const api = {
+    createRepoLocalGraft: (options) => ({ cwd: options.cwd }),
+    callGraftTool: async (_session, name) => name === 'file_outline'
+      ? { projection: 'ready', jumpTable: [] }
+      : { files: [] },
+    createEdictCliProjectionProvider: () => ({ providerId: 'edict-provider' }),
+    createStructuredBuffer: () => ({
+      edictProjection: () => ({
+        ...availableEdictProjection(),
+        core: {
+          state: 'available',
+          value: {
+            digest: CORE_DIGEST,
+            review: arrayReviewPayload(),
+          },
+        },
+      }),
+      dispose: () => undefined,
+    }),
+  };
+  const port = graft.createGraftSessionPort({ api });
+
+  const info = await port.loadGraftInfo({
+    workspaceRoot: REPO_ROOT,
+    filePath: path.join(REPO_ROOT, 'demo.edict'),
+    dirty: true,
+    sourceText: 'package demo.echo@1;',
+  });
+
+  assert.deepEqual(info.projectionLanes?.[0]?.reviewPayload.items.slice(0, 3), ['a', 'b', 'c']);
+  assert.match(info.projectionLanes?.[0]?.reviewPayload.items[3], /3 more entries/);
+});
+
+test('Graft session copies provider review payload proto keys as data', async () => {
+  const graft = await loadGraftApiSession();
+  const api = {
+    createRepoLocalGraft: (options) => ({ cwd: options.cwd }),
+    callGraftTool: async (_session, name) => name === 'file_outline'
+      ? { projection: 'ready', jumpTable: [] }
+      : { files: [] },
+    createEdictCliProjectionProvider: () => ({ providerId: 'edict-provider' }),
+    createStructuredBuffer: () => ({
+      edictProjection: () => ({
+        ...availableEdictProjection(),
+        core: {
+          state: 'available',
+          value: {
+            digest: CORE_DIGEST,
+            review: reviewPayloadWithProtoKey(),
+          },
+        },
+      }),
+      dispose: () => undefined,
+    }),
+  };
+  const port = graft.createGraftSessionPort({ api });
+
+  const info = await port.loadGraftInfo({
+    workspaceRoot: REPO_ROOT,
+    filePath: path.join(REPO_ROOT, 'demo.edict'),
+    dirty: true,
+    sourceText: 'package demo.echo@1;',
+  });
+
+  assert.equal(Object.hasOwn(info.projectionLanes?.[0]?.reviewPayload, '__proto__'), true);
+  assert.equal(info.projectionLanes?.[0]?.reviewPayload.__proto__, 'provider data');
 });

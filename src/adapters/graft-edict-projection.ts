@@ -19,6 +19,11 @@ import {
   type GraftProjectionSource,
 } from '../ports/graft-session.js';
 import { graftProjectionPanelLanes } from '../ports/graft-projection-lanes.js';
+import {
+  REVIEW_PAYLOAD_DEPTH_LIMIT,
+  REVIEW_PAYLOAD_ENTRY_LIMIT,
+  REVIEW_PAYLOAD_OBJECT_KEY_SCAN_LIMIT,
+} from '../ports/graft-review-payload-limits.js';
 
 const EDICT_LANGUAGE = 'edict';
 const EDICT_EXTENSION = '.edict';
@@ -29,10 +34,11 @@ const REVIEW_SUMMARY_PREFIX = 'review: ';
 const EDICT_STATUS_OK = 'ok';
 const TYPE_STRING = 'string';
 const SUMMARY_ITEM_LIMIT = 3;
-const REVIEW_PAYLOAD_OBJECT_KEY_SCAN_LIMIT = 64;
-const REVIEW_PAYLOAD_ENTRY_LIMIT = 4;
-const REVIEW_PAYLOAD_DEPTH_LIMIT = 4;
-const OBJECT_HAS_OWN = Object.prototype.hasOwnProperty;
+const REVIEW_PAYLOAD_NODE_BUDGET = 512;
+const REVIEW_PAYLOAD_OMITTED_KEY = '$jeditReviewPayloadOmitted';
+const REVIEW_PAYLOAD_OMITTED_TEXT = 'review payload omitted by adapter bounds';
+const REVIEW_PAYLOAD_DEPTH_OMITTED_TEXT = 'review payload depth omitted by adapter bounds';
+const REVIEW_PAYLOAD_HAS_OWN = Object.prototype.hasOwnProperty;
 
 const DEFAULT_ECHO_TARGET: EdictProjectionTargetSettings = {
   coordinate: ECHO_TARGET_COORDINATE,
@@ -235,49 +241,122 @@ function reviewSummaryLines(review: object): readonly string[] {
 }
 
 function reviewPayloadFromProjection(review: object): GraftJsonObject {
-  return reviewPayloadObject(review, 0);
+  return reviewPayloadObject(review, 0, { remaining: REVIEW_PAYLOAD_NODE_BUDGET });
 }
 
-function reviewPayloadObject(review: object, depth: number): GraftJsonObject {
-  if (depth >= REVIEW_PAYLOAD_DEPTH_LIMIT) {
-    return {};
+interface ReviewPayloadBudget {
+  remaining: number;
+}
+
+function reviewPayloadObject(review: object, depth: number, budget: ReviewPayloadBudget): GraftJsonObject {
+  const result: Record<string, GraftJsonValue> = {};
+  if (depth >= REVIEW_PAYLOAD_DEPTH_LIMIT || !consumeReviewPayloadBudget(budget)) {
+    setReviewPayloadProperty(result, REVIEW_PAYLOAD_OMITTED_KEY, REVIEW_PAYLOAD_DEPTH_OMITTED_TEXT);
+    return result;
   }
 
-  const result: Record<string, GraftJsonValue> = {};
-  let scanned = 0;
-  for (const key in review) {
-    if (!OBJECT_HAS_OWN.call(review, key)) {
-      continue;
+  const keys = reviewPayloadVisibleKeys(review);
+  for (const key of keys.visibleKeys) {
+    if (!consumeReviewPayloadBudget(budget)) {
+      setReviewPayloadProperty(result, REVIEW_PAYLOAD_OMITTED_KEY, REVIEW_PAYLOAD_OMITTED_TEXT);
+      return result;
     }
-    if (scanned >= REVIEW_PAYLOAD_OBJECT_KEY_SCAN_LIMIT) {
-      break;
-    }
-    result[key] = reviewPayloadValue(Reflect.get(review, key), depth + 1);
-    scanned += 1;
+    setReviewPayloadProperty(result, key, reviewPayloadValue(Reflect.get(review, key), depth + 1, budget));
+  }
+  if (keys.omittedCount > 0) {
+    setReviewPayloadProperty(
+      result,
+      REVIEW_PAYLOAD_OMITTED_KEY,
+      omittedReviewPayloadText(keys.omittedCount, keys.omittedIsLowerBound),
+    );
   }
   return result;
 }
 
-function reviewPayloadValue(value: GraftJsonValue, depth: number): GraftJsonValue {
+interface ReviewPayloadVisibleKeys {
+  readonly visibleKeys: readonly string[];
+  readonly omittedCount: number;
+  readonly omittedIsLowerBound: boolean;
+}
+
+function reviewPayloadVisibleKeys(review: object): ReviewPayloadVisibleKeys {
+  const visibleKeys: string[] = [];
+  let omittedIsLowerBound = false;
+  for (const key in review) {
+    if (!REVIEW_PAYLOAD_HAS_OWN.call(review, key)) {
+      continue;
+    }
+    if (visibleKeys.length >= REVIEW_PAYLOAD_OBJECT_KEY_SCAN_LIMIT - 1) {
+      omittedIsLowerBound = true;
+      break;
+    }
+    visibleKeys.push(key);
+  }
+  return {
+    visibleKeys,
+    omittedCount: omittedIsLowerBound ? 1 : 0,
+    omittedIsLowerBound,
+  };
+}
+
+function reviewPayloadValue(value: GraftJsonValue, depth: number, budget: ReviewPayloadBudget): GraftJsonValue {
+  if (!consumeReviewPayloadBudget(budget)) {
+    return REVIEW_PAYLOAD_OMITTED_TEXT;
+  }
   if (Array.isArray(value)) {
-    return reviewPayloadArray(value, depth);
+    return reviewPayloadArray(value, depth, budget);
   }
   if (typeof value === 'object' && value !== null) {
-    return reviewPayloadObject(value, depth);
+    return reviewPayloadObject(value, depth, budget);
   }
-  if (typeof value === TYPE_STRING || typeof value === 'number' || typeof value === 'boolean' || value === null) {
+  if (isReviewPayloadPrimitive(value)) {
     return value;
   }
   return null;
 }
 
-function reviewPayloadArray(value: readonly GraftJsonValue[], depth: number): readonly GraftJsonValue[] {
+function isReviewPayloadPrimitive(value: GraftJsonValue): boolean {
+  return typeof value === TYPE_STRING
+    || typeof value === 'number'
+    || typeof value === 'boolean'
+    || value === null;
+}
+
+function reviewPayloadArray(value: readonly GraftJsonValue[], depth: number, budget: ReviewPayloadBudget): readonly GraftJsonValue[] {
   if (depth >= REVIEW_PAYLOAD_DEPTH_LIMIT) {
-    return [];
+    return [REVIEW_PAYLOAD_DEPTH_OMITTED_TEXT];
   }
+  const visibleItemCount = value.length > REVIEW_PAYLOAD_ENTRY_LIMIT
+    ? REVIEW_PAYLOAD_ENTRY_LIMIT - 1
+    : value.length;
   return value
-    .slice(0, REVIEW_PAYLOAD_ENTRY_LIMIT)
-    .map((entry) => reviewPayloadValue(entry, depth + 1));
+    .slice(0, visibleItemCount)
+    .map((entry) => reviewPayloadValue(entry, depth + 1, budget))
+    .concat(value.length > visibleItemCount ? [omittedReviewPayloadText(value.length - visibleItemCount)] : []);
+}
+
+function consumeReviewPayloadBudget(budget: ReviewPayloadBudget): boolean {
+  if (budget.remaining <= 0) {
+    return false;
+  }
+  budget.remaining -= 1;
+  return true;
+}
+
+function omittedReviewPayloadText(omittedCount: number, omittedIsLowerBound = false): string {
+  const count = omittedIsLowerBound
+    ? `at least ${String(omittedCount)}`
+    : String(omittedCount);
+  return `${REVIEW_PAYLOAD_OMITTED_TEXT}: ${count} more entries`;
+}
+
+function setReviewPayloadProperty(result: Record<string, GraftJsonValue>, key: string, value: GraftJsonValue): void {
+  Object.defineProperty(result, key, {
+    configurable: true,
+    enumerable: true,
+    value,
+    writable: false,
+  });
 }
 
 function unavailableLiveEdictProjection(): LiveEdictProjectionResult {

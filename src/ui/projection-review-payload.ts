@@ -1,10 +1,12 @@
 import type { GraftJsonObject, GraftJsonValue } from '../ports/graft-session.js';
+import {
+  REVIEW_PAYLOAD_DEPTH_LIMIT,
+  REVIEW_PAYLOAD_ENTRY_LIMIT,
+  REVIEW_PAYLOAD_OBJECT_KEY_SCAN_LIMIT,
+} from '../ports/graft-review-payload-limits.js';
 
 const REVIEW_PAYLOAD_HEADER = 'review payload:';
 const REVIEW_PAYLOAD_ROW_LIMIT = 12;
-const REVIEW_PAYLOAD_DEPTH_LIMIT = 4;
-const REVIEW_PAYLOAD_ENTRY_LIMIT = 4;
-const REVIEW_PAYLOAD_OBJECT_KEY_SCAN_LIMIT = 64;
 const REVIEW_PAYLOAD_SCALAR_TEXT = 120;
 const INDENT_STEP = 2;
 const OBJECT_HAS_OWN = Object.prototype.hasOwnProperty;
@@ -47,11 +49,21 @@ function appendJsonValue(value: GraftJsonValue, depth: number, indent: number, s
 }
 
 function appendJsonObject(value: GraftJsonObject, depth: number, indent: number, state: ReviewPayloadRenderState): void {
+  appendJsonObjectBlock(value, depth, indent, indentText(indent), state);
+}
+
+function appendJsonObjectBlock(
+  value: GraftJsonObject,
+  depth: number,
+  indent: number,
+  prefix: string,
+  state: ReviewPayloadRenderState,
+): void {
   if (depth >= REVIEW_PAYLOAD_DEPTH_LIMIT) {
-    appendLine(`${indentText(indent)}{...}`, state);
+    appendLine(`${prefix}{...}`, state);
     return;
   }
-  appendLine(`${indentText(indent)}{`, state);
+  appendLine(`${prefix}{`, state);
   appendJsonObjectEntries(value, depth + 1, indent + INDENT_STEP, state);
   appendLine(`${indentText(indent)}}`, state);
 }
@@ -69,34 +81,32 @@ function appendJsonProperty(
     return;
   }
   if (isJsonArray(value)) {
-    if (depth >= REVIEW_PAYLOAD_DEPTH_LIMIT) {
-      appendLine(`${prefix}[...]`, state);
-      return;
-    }
-    appendLine(`${prefix}[`, state);
-    appendJsonArrayEntries(value, depth + 1, indent + INDENT_STEP, state);
-    appendLine(`${indentText(indent)}]`, state);
+    appendJsonArrayBlock(value, depth, indent, prefix, state);
     return;
   }
   if (isJsonObject(value)) {
-    if (depth >= REVIEW_PAYLOAD_DEPTH_LIMIT) {
-      appendLine(`${prefix}{...}`, state);
-      return;
-    }
-    appendLine(`${prefix}{`, state);
-    appendJsonObjectEntries(value, depth + 1, indent + INDENT_STEP, state);
-    appendLine(`${indentText(indent)}}`, state);
+    appendJsonObjectBlock(value, depth, indent, prefix, state);
     return;
   }
   appendLine(`${prefix}${formatScalar(value)}`, state);
 }
 
 function appendJsonArray(value: readonly GraftJsonValue[], depth: number, indent: number, state: ReviewPayloadRenderState): void {
+  appendJsonArrayBlock(value, depth, indent, indentText(indent), state);
+}
+
+function appendJsonArrayBlock(
+  value: readonly GraftJsonValue[],
+  depth: number,
+  indent: number,
+  prefix: string,
+  state: ReviewPayloadRenderState,
+): void {
   if (depth >= REVIEW_PAYLOAD_DEPTH_LIMIT) {
-    appendLine(`${indentText(indent)}[...]`, state);
+    appendLine(`${prefix}[...]`, state);
     return;
   }
-  appendLine(`${indentText(indent)}[`, state);
+  appendLine(`${prefix}[`, state);
   appendJsonArrayEntries(value, depth + 1, indent + INDENT_STEP, state);
   appendLine(`${indentText(indent)}]`, state);
 }

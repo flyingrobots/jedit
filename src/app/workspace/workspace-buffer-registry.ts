@@ -45,6 +45,7 @@ export function clearActiveWorkspaceBuffer(model: WorkspaceModel): WorkspaceMode
     graftInfo: undefined,
     graftLoading: false,
     graftSelectedIndex: 0,
+    expandedProjectionLaneIndex: undefined,
   };
 }
 
@@ -73,6 +74,7 @@ export function activateWorkspaceBufferRecord(
     graftInfo: record.graftInfo,
     graftLoading: false,
     graftSelectedIndex: record.graftSelectedIndex,
+    expandedProjectionLaneIndex: undefined,
   };
 }
 
