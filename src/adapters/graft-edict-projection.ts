@@ -42,6 +42,8 @@ const REVIEW_PAYLOAD_DEPTH_OMITTED_TEXT = 'review payload depth omitted by adapt
 const REVIEW_PAYLOAD_ACCESSOR_OMITTED_TEXT = 'review payload accessor omitted by adapter bounds';
 const REVIEW_PAYLOAD_UNSUPPORTED_VALUE_TEXT = 'review payload unsupported value omitted by adapter bounds';
 const REVIEW_PAYLOAD_TEXT_LIMIT = 96;
+const REVIEW_PAYLOAD_TRUNCATION_SUFFIX = '...';
+const REVIEW_PAYLOAD_STORAGE_KEY_LIMIT = REVIEW_PAYLOAD_TEXT_LIMIT + REVIEW_PAYLOAD_TRUNCATION_SUFFIX.length;
 const REVIEW_PAYLOAD_HAS_OWN = Object.prototype.hasOwnProperty;
 
 const DEFAULT_ECHO_TARGET: EdictProjectionTargetSettings = {
@@ -427,18 +429,25 @@ function reviewPayloadStorageKey(result: Record<string, GraftJsonValue>, key: st
     return key;
   }
   let suffix = 1;
-  let nextKey = `${key}${String(suffix)}`;
+  let nextKey = reviewPayloadDuplicateStorageKey(key, suffix);
   while (REVIEW_PAYLOAD_HAS_OWN.call(result, nextKey)) {
     suffix += 1;
-    nextKey = `${key}${String(suffix)}`;
+    nextKey = reviewPayloadDuplicateStorageKey(key, suffix);
   }
   return nextKey;
+}
+
+function reviewPayloadDuplicateStorageKey(key: string, suffix: number): string {
+  const suffixText = String(suffix);
+  return key.length + suffixText.length <= REVIEW_PAYLOAD_STORAGE_KEY_LIMIT
+    ? `${key}${suffixText}`
+    : `${key.slice(0, REVIEW_PAYLOAD_STORAGE_KEY_LIMIT - suffixText.length)}${suffixText}`;
 }
 
 function limitReviewPayloadText(value: string): string {
   return value.length <= REVIEW_PAYLOAD_TEXT_LIMIT
     ? value
-    : `${value.slice(0, REVIEW_PAYLOAD_TEXT_LIMIT)}...`;
+    : `${value.slice(0, REVIEW_PAYLOAD_TEXT_LIMIT)}${REVIEW_PAYLOAD_TRUNCATION_SUFFIX}`;
 }
 
 function unavailableLiveEdictProjection(): LiveEdictProjectionResult {

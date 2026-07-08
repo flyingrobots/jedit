@@ -118,6 +118,14 @@ function longTextReviewPayload() {
   };
 }
 
+function duplicateCappedLongKeyReviewPayload() {
+  const sharedPrefix = `duplicate${'k'.repeat(160)}`;
+  return {
+    [`${sharedPrefix}A`]: 'first',
+    [`${sharedPrefix}B`]: 'second',
+  };
+}
+
 function unsupportedValueReviewPayload() {
   return {
     explicitNull: null,
@@ -274,6 +282,16 @@ test('Graft session caps provider review payload keys and strings before storing
   assert.equal(cappedKey?.endsWith('...'), true);
   assert.equal(payload[cappedKey], `${'v'.repeat(LONG_REVIEW_PAYLOAD_TEXT_LIMIT)}...`);
   assert.equal(payload.nested.value, `${'w'.repeat(LONG_REVIEW_PAYLOAD_TEXT_LIMIT)}...`);
+});
+
+test('Graft session keeps duplicate capped review payload keys within storage cap', async () => {
+  const info = await loadInfoForReviewPayload(duplicateCappedLongKeyReviewPayload());
+
+  const payload = info.projectionLanes?.[0]?.reviewPayload;
+  const keys = Object.keys(payload);
+  assert.equal(keys.length, 2);
+  assert.equal(keys.every((key) => key.length <= LONG_REVIEW_PAYLOAD_TEXT_LIMIT + 3), true);
+  assert.deepEqual(Object.values(payload).sort(), ['first', 'second']);
 });
 
 test('Graft session marks unsupported provider review payload values', async () => {
