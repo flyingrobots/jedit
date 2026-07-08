@@ -58,6 +58,28 @@ function inheritedWideReviewPayload() {
   return payload;
 }
 
+function accessorReviewPayload() {
+  const payload = { apiVersion: 'provider.review/v1' };
+  Object.defineProperty(payload, 'computed', {
+    enumerable: true,
+    get: () => {
+      throw new Error('review payload object accessors must not run');
+    },
+  });
+  return payload;
+}
+
+function arrayAccessorReviewPayload() {
+  const items = new Array(1);
+  Object.defineProperty(items, '0', {
+    enumerable: true,
+    get: () => {
+      throw new Error('review payload array accessors must not run');
+    },
+  });
+  return { items };
+}
+
 test('Graft drawer expands generic projection review payloads without semantic claims', async () => {
   const { renderGraftDrawerLines } = await loadGraftDrawer();
   const collapsed = renderGraftDrawerLines(baseDrawerModel({
@@ -265,6 +287,40 @@ test('Graft drawer bounds inherited review payload key scanning', async () => {
 
   assert.match(text, /"apiVersion": "provider\.review\/v1"/);
   assert.doesNotMatch(text, /inherited00/);
+});
+
+test('Graft drawer omits review payload object accessors without invoking them', async () => {
+  const { renderGraftDrawerLines } = await loadGraftDrawer();
+  const lines = renderGraftDrawerLines(baseDrawerModel({
+    path: '/repo/schema.graphql',
+    relativePath: 'schema.graphql',
+    projectionSource: 'live-buffer',
+    projectionPosture: 'current',
+    projectionLanes: [reviewPayloadLane(accessorReviewPayload())],
+    outlineItems: [],
+    changeLines: [],
+  }, 0), 120, 32);
+  const text = linesToText(lines);
+
+  assert.match(text, /"apiVersion": "provider\.review\/v1"/);
+  assert.match(text, /"computed": "review payload accessor omitted/);
+});
+
+test('Graft drawer omits review payload array accessors without invoking them', async () => {
+  const { renderGraftDrawerLines } = await loadGraftDrawer();
+  const lines = renderGraftDrawerLines(baseDrawerModel({
+    path: '/repo/schema.graphql',
+    relativePath: 'schema.graphql',
+    projectionSource: 'live-buffer',
+    projectionPosture: 'current',
+    projectionLanes: [reviewPayloadLane(arrayAccessorReviewPayload())],
+    outlineItems: [],
+    changeLines: [],
+  }, 0), 120, 32);
+  const text = linesToText(lines);
+
+  assert.match(text, /"items": \[/);
+  assert.match(text, /"review payload accessor omitted/);
 });
 
 test('Graft drawer toggles generic review payload visibility from key input', async () => {

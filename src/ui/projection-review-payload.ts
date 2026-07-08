@@ -10,6 +10,7 @@ const REVIEW_PAYLOAD_ROW_LIMIT = 12;
 const REVIEW_PAYLOAD_SCALAR_TEXT = 120;
 const REVIEW_PAYLOAD_STRING_RAW_TEXT = 96;
 const REVIEW_PAYLOAD_KEY_RAW_TEXT = 96;
+const REVIEW_PAYLOAD_ACCESSOR_OMITTED_TEXT = 'review payload accessor omitted by viewer bounds';
 const INDENT_STEP = 2;
 const OBJECT_HAS_OWN = Object.prototype.hasOwnProperty;
 
@@ -119,14 +120,14 @@ function appendJsonArrayEntries(
   indent: number,
   state: ReviewPayloadRenderState,
 ): void {
-  const visibleItems = value.slice(0, REVIEW_PAYLOAD_ENTRY_LIMIT);
-  for (const item of visibleItems) {
+  const visibleItemCount = Math.min(value.length, REVIEW_PAYLOAD_ENTRY_LIMIT);
+  for (let index = 0; index < visibleItemCount; index += 1) {
     if (state.truncated) {
       return;
     }
-    appendJsonValue(item, depth, indent, state);
+    appendJsonValue(reviewPayloadArrayItem(value, index), depth, indent, state);
   }
-  appendOmittedLine(value.length - visibleItems.length, 'items', indent, state);
+  appendOmittedLine(value.length - visibleItemCount, 'items', indent, state);
 }
 
 function appendJsonObjectEntries(value: GraftJsonObject, depth: number, indent: number, state: ReviewPayloadRenderState): void {
@@ -135,9 +136,27 @@ function appendJsonObjectEntries(value: GraftJsonObject, depth: number, indent: 
     if (state.truncated) {
       return;
     }
-    appendJsonProperty(key, value[key], depth, indent, state);
+    appendJsonProperty(key, reviewPayloadObjectValue(value, key), depth, indent, state);
   }
   appendOmittedEntriesLine(keys, indent, state);
+}
+
+function reviewPayloadObjectValue(value: GraftJsonObject, key: string): GraftJsonValue | undefined {
+  const descriptor = Object.getOwnPropertyDescriptor(value, key);
+  if (descriptor == null) {
+    return undefined;
+  }
+  return 'value' in descriptor
+    ? descriptor.value
+    : REVIEW_PAYLOAD_ACCESSOR_OMITTED_TEXT;
+}
+
+function reviewPayloadArrayItem(value: readonly GraftJsonValue[], index: number): GraftJsonValue {
+  const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
+  if (descriptor == null || !('value' in descriptor)) {
+    return REVIEW_PAYLOAD_ACCESSOR_OMITTED_TEXT;
+  }
+  return descriptor.value;
 }
 
 function reviewPayloadObjectKeys(value: GraftJsonObject): ReviewPayloadObjectKeys {
