@@ -353,10 +353,24 @@ function reviewPayloadArray(value: readonly GraftJsonValue[], depth: number, bud
   const visibleItemCount = value.length > REVIEW_PAYLOAD_ENTRY_LIMIT
     ? REVIEW_PAYLOAD_ENTRY_LIMIT - 1
     : value.length;
-  return value
-    .slice(0, visibleItemCount)
-    .map((entry) => reviewPayloadValue(entry, depth + 1, budget))
-    .concat(value.length > visibleItemCount ? [omittedReviewPayloadText(value.length - visibleItemCount)] : []);
+  const visibleItems: GraftJsonValue[] = [];
+  for (let index = 0; index < visibleItemCount; index += 1) {
+    visibleItems.push(reviewPayloadArrayItem(value, index, depth + 1, budget));
+  }
+  return visibleItems.concat(value.length > visibleItemCount ? [omittedReviewPayloadText(value.length - visibleItemCount)] : []);
+}
+
+function reviewPayloadArrayItem(
+  value: readonly GraftJsonValue[],
+  index: number,
+  depth: number,
+  budget: ReviewPayloadBudget,
+): GraftJsonValue {
+  const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
+  if (descriptor == null || !('value' in descriptor)) {
+    return REVIEW_PAYLOAD_ACCESSOR_OMITTED_TEXT;
+  }
+  return reviewPayloadValue(descriptor.value, depth, budget);
 }
 
 function consumeReviewPayloadBudget(budget: ReviewPayloadBudget): boolean {
