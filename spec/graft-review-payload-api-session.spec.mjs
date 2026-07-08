@@ -82,6 +82,13 @@ function rootWideObjectReviewPayload() {
   return wideReviewObject('root');
 }
 
+function rootWideObjectReviewPayloadWithOmittedKey() {
+  return {
+    [REVIEW_PAYLOAD_OMITTED_KEY]: 'provider data',
+    ...wideReviewObject('root'),
+  };
+}
+
 function nestedWideObjectReviewPayload() {
   return {
     nested: {
@@ -296,6 +303,45 @@ test('Graft session preserves omission markers for root review payload objects',
   assert.equal(Object.keys(payload).length, 64);
   assert.equal(Object.hasOwn(payload, REVIEW_PAYLOAD_OMITTED_KEY), true);
   assert.equal(Object.hasOwn(payload, 'root63'), false);
+});
+
+test('Graft session preserves provider data when adding omission markers', async () => {
+  const graft = await loadGraftApiSession();
+  const api = {
+    createRepoLocalGraft: (options) => ({ cwd: options.cwd }),
+    callGraftTool: async (_session, name) => name === 'file_outline'
+      ? { projection: 'ready', jumpTable: [] }
+      : { files: [] },
+    createEdictCliProjectionProvider: () => ({ providerId: 'edict-provider' }),
+    createStructuredBuffer: () => ({
+      edictProjection: () => ({
+        ...availableEdictProjection(),
+        core: {
+          state: 'available',
+          value: {
+            digest: CORE_DIGEST,
+            review: rootWideObjectReviewPayloadWithOmittedKey(),
+          },
+        },
+      }),
+      dispose: () => undefined,
+    }),
+  };
+  const port = graft.createGraftSessionPort({ api });
+
+  const info = await port.loadGraftInfo({
+    workspaceRoot: REPO_ROOT,
+    filePath: path.join(REPO_ROOT, 'demo.edict'),
+    dirty: true,
+    sourceText: 'package demo.echo@1;',
+  });
+
+  const payload = info.projectionLanes?.[0]?.reviewPayload;
+  const omissionKeys = Object.keys(payload)
+    .filter((key) => key.startsWith(REVIEW_PAYLOAD_OMITTED_KEY) && key !== REVIEW_PAYLOAD_OMITTED_KEY);
+  assert.equal(payload[REVIEW_PAYLOAD_OMITTED_KEY], 'provider data');
+  assert.equal(omissionKeys.length, 1);
+  assert.match(payload[omissionKeys[0]], /review payload omitted by adapter bounds/);
 });
 
 test('Graft session preserves omission markers for nested review payload objects', async () => {

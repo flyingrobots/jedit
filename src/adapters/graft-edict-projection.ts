@@ -252,28 +252,24 @@ interface ReviewPayloadBudget {
 function reviewPayloadObject(review: object, depth: number, budget: ReviewPayloadBudget): GraftJsonObject {
   const result: Record<string, GraftJsonValue> = {};
   if (depth >= REVIEW_PAYLOAD_DEPTH_LIMIT) {
-    setReviewPayloadProperty(result, REVIEW_PAYLOAD_OMITTED_KEY, REVIEW_PAYLOAD_DEPTH_OMITTED_TEXT);
+    setReviewPayloadOmittedProperty(result, REVIEW_PAYLOAD_DEPTH_OMITTED_TEXT);
     return result;
   }
   if (!consumeReviewPayloadBudget(budget)) {
-    setReviewPayloadProperty(result, REVIEW_PAYLOAD_OMITTED_KEY, REVIEW_PAYLOAD_OMITTED_TEXT);
+    setReviewPayloadOmittedProperty(result, REVIEW_PAYLOAD_OMITTED_TEXT);
     return result;
   }
 
   const keys = reviewPayloadVisibleKeys(review);
   for (const key of keys.visibleKeys) {
     if (!consumeReviewPayloadBudget(budget)) {
-      setReviewPayloadProperty(result, REVIEW_PAYLOAD_OMITTED_KEY, REVIEW_PAYLOAD_OMITTED_TEXT);
+      setReviewPayloadOmittedProperty(result, REVIEW_PAYLOAD_OMITTED_TEXT);
       return result;
     }
     setReviewPayloadProperty(result, key, reviewPayloadPropertyValue(review, key, depth + 1, budget));
   }
   if (keys.omittedCount > 0) {
-    setReviewPayloadProperty(
-      result,
-      REVIEW_PAYLOAD_OMITTED_KEY,
-      omittedReviewPayloadText(keys.omittedCount, keys.omittedIsLowerBound),
-    );
+    setReviewPayloadOmittedProperty(result, omittedReviewPayloadText(keys.omittedCount, keys.omittedIsLowerBound));
   }
   return result;
 }
@@ -376,6 +372,23 @@ function omittedReviewPayloadText(omittedCount: number, omittedIsLowerBound = fa
     ? `at least ${String(omittedCount)}`
     : String(omittedCount);
   return `${REVIEW_PAYLOAD_OMITTED_TEXT}: ${count} more entries`;
+}
+
+function setReviewPayloadOmittedProperty(result: Record<string, GraftJsonValue>, value: GraftJsonValue): void {
+  setReviewPayloadProperty(result, reviewPayloadOmittedKey(result), value);
+}
+
+function reviewPayloadOmittedKey(result: Record<string, GraftJsonValue>): string {
+  if (!REVIEW_PAYLOAD_HAS_OWN.call(result, REVIEW_PAYLOAD_OMITTED_KEY)) {
+    return REVIEW_PAYLOAD_OMITTED_KEY;
+  }
+  let suffix = 1;
+  let key = `${REVIEW_PAYLOAD_OMITTED_KEY}${String(suffix)}`;
+  while (REVIEW_PAYLOAD_HAS_OWN.call(result, key)) {
+    suffix += 1;
+    key = `${REVIEW_PAYLOAD_OMITTED_KEY}${String(suffix)}`;
+  }
+  return key;
 }
 
 function setReviewPayloadProperty(result: Record<string, GraftJsonValue>, key: string, value: GraftJsonValue): void {
