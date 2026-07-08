@@ -9,6 +9,7 @@ const REVIEW_PAYLOAD_HEADER = 'review payload:';
 const REVIEW_PAYLOAD_ROW_LIMIT = 12;
 const REVIEW_PAYLOAD_SCALAR_TEXT = 120;
 const REVIEW_PAYLOAD_STRING_RAW_TEXT = 96;
+const REVIEW_PAYLOAD_KEY_RAW_TEXT = 96;
 const INDENT_STEP = 2;
 const OBJECT_HAS_OWN = Object.prototype.hasOwnProperty;
 
@@ -76,7 +77,7 @@ function appendJsonProperty(
   indent: number,
   state: ReviewPayloadRenderState,
 ): void {
-  const prefix = `${indentText(indent)}${JSON.stringify(key)}: `;
+  const prefix = `${indentText(indent)}${formatJsonKey(key)}: `;
   if (value === undefined) {
     appendLine(`${prefix}null`, state);
     return;
@@ -201,6 +202,16 @@ function limitReviewString(value: string): string {
   return value.length <= REVIEW_PAYLOAD_STRING_RAW_TEXT
     ? value
     : `${value.slice(0, REVIEW_PAYLOAD_STRING_RAW_TEXT)}...`;
+}
+
+function formatJsonKey(key: string): string {
+  return JSON.stringify(limitReviewKey(key));
+}
+
+function limitReviewKey(key: string): string {
+  return key.length <= REVIEW_PAYLOAD_KEY_RAW_TEXT
+    ? key
+    : `${key.slice(0, REVIEW_PAYLOAD_KEY_RAW_TEXT)}...`;
 }
 
 function limitReviewText(value: string): string {

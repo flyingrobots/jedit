@@ -157,6 +157,24 @@ test('Graft drawer caps review payload strings before escaping', async () => {
   assert.match(text, /"a{96}\.\.\."/);
 });
 
+test('Graft drawer caps review payload keys before escaping', async () => {
+  const { renderGraftDrawerLines } = await loadGraftDrawer();
+  const lines = renderGraftDrawerLines(baseDrawerModel({
+    path: '/repo/schema.graphql',
+    relativePath: 'schema.graphql',
+    projectionSource: 'live-buffer',
+    projectionPosture: 'current',
+    projectionLanes: [reviewPayloadLane({
+      ['k'.repeat(121)]: 'value',
+    })],
+    outlineItems: [],
+    changeLines: [],
+  }, 0), 120, 32);
+  const text = linesToText(lines);
+
+  assert.match(text, /"k{96}\.\.\.": "value"/);
+});
+
 test('Graft drawer caps root object review payload entries', async () => {
   const { renderGraftDrawerLines } = await loadGraftDrawer();
   const payload = Object.fromEntries(Array.from({ length: 7 }, (_entry, index) => [
