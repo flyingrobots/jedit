@@ -38,6 +38,26 @@ function reviewPayloadLane(payload) {
   };
 }
 
+function inheritedWideReviewPayload() {
+  const protoTarget = {};
+  for (let index = 0; index < 70; index += 1) {
+    protoTarget[`inherited${String(index).padStart(2, '0')}`] = index;
+  }
+  let descriptorCount = 0;
+  const proto = new Proxy(protoTarget, {
+    getOwnPropertyDescriptor: (target, key) => {
+      descriptorCount += 1;
+      if (descriptorCount > 64) {
+        throw new Error('review payload renderer scanned too many inherited keys');
+      }
+      return Object.getOwnPropertyDescriptor(target, key);
+    },
+  });
+  const payload = Object.create(proto);
+  payload.apiVersion = 'provider.review/v1';
+  return payload;
+}
+
 test('Graft drawer expands generic projection review payloads without semantic claims', async () => {
   const { renderGraftDrawerLines } = await loadGraftDrawer();
   const collapsed = renderGraftDrawerLines(baseDrawerModel({
@@ -210,6 +230,23 @@ test('Graft drawer bounds review payload object key scanning', async () => {
 
   assert.match(text, /\.\.\. at least 61 more entries/);
   assert.doesNotMatch(text, /key64/);
+});
+
+test('Graft drawer bounds inherited review payload key scanning', async () => {
+  const { renderGraftDrawerLines } = await loadGraftDrawer();
+  const lines = renderGraftDrawerLines(baseDrawerModel({
+    path: '/repo/schema.graphql',
+    relativePath: 'schema.graphql',
+    projectionSource: 'live-buffer',
+    projectionPosture: 'current',
+    projectionLanes: [reviewPayloadLane(inheritedWideReviewPayload())],
+    outlineItems: [],
+    changeLines: [],
+  }, 0), 120, 32);
+  const text = linesToText(lines);
+
+  assert.match(text, /"apiVersion": "provider\.review\/v1"/);
+  assert.doesNotMatch(text, /inherited00/);
 });
 
 test('Graft drawer toggles generic review payload visibility from key input', async () => {

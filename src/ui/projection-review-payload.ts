@@ -142,13 +142,15 @@ function appendJsonObjectEntries(value: GraftJsonObject, depth: number, indent: 
 function reviewPayloadObjectKeys(value: GraftJsonObject): ReviewPayloadObjectKeys {
   const keys: string[] = [];
   let omittedIsLowerBound = false;
+  let examinedKeyCount = 0;
   for (const key in value) {
-    if (!OBJECT_HAS_OWN.call(value, key)) {
-      continue;
-    }
-    if (keys.length >= REVIEW_PAYLOAD_OBJECT_KEY_SCAN_LIMIT) {
+    if (examinedKeyCount >= REVIEW_PAYLOAD_OBJECT_KEY_SCAN_LIMIT) {
       omittedIsLowerBound = true;
       break;
+    }
+    examinedKeyCount += 1;
+    if (!OBJECT_HAS_OWN.call(value, key)) {
+      continue;
     }
     keys.push(key);
   }
