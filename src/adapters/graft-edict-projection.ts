@@ -287,8 +287,18 @@ interface ReviewPayloadVisibleKeys {
 function reviewPayloadVisibleKeys(review: object): ReviewPayloadVisibleKeys {
   const visibleKeys: string[] = [];
   let omittedIsLowerBound = false;
+  let examinedKeyCount = 0;
   for (const key in review) {
+    if (examinedKeyCount >= REVIEW_PAYLOAD_OBJECT_KEY_SCAN_LIMIT) {
+      omittedIsLowerBound = true;
+      break;
+    }
+    examinedKeyCount += 1;
     if (!REVIEW_PAYLOAD_HAS_OWN.call(review, key)) {
+      if (examinedKeyCount >= REVIEW_PAYLOAD_OBJECT_KEY_SCAN_LIMIT) {
+        omittedIsLowerBound = true;
+        break;
+      }
       continue;
     }
     if (visibleKeys.length >= REVIEW_PAYLOAD_OBJECT_KEY_SCAN_LIMIT - 1) {

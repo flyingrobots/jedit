@@ -7,6 +7,7 @@ const TARGET_PROFILE_DIGEST = 'sha256:111111111111111111111111111111111111111111
 const CORE_DIGEST = 'sha256:2222222222222222222222222222222222222222222222222222222222222222';
 const TARGET_IR_DIGEST = 'sha256:3333333333333333333333333333333333333333333333333333333333333333';
 const WIDE_REVIEW_PAYLOAD_KEY_COUNT = 70;
+const REVIEW_PAYLOAD_TEST_SCAN_LIMIT = 64;
 const REVIEW_PAYLOAD_OMITTED_KEY = '$jeditReviewPayloadOmitted';
 
 async function loadGraftApiSession() {
@@ -132,6 +133,26 @@ function reviewPayloadWithThrowingAccessor() {
       throw new Error('review payload accessors must not run');
     },
   });
+  return review;
+}
+
+function reviewPayloadWithThrowingPrototypeEnumeration() {
+  const protoTarget = {};
+  for (let index = 0; index < WIDE_REVIEW_PAYLOAD_KEY_COUNT; index += 1) {
+    protoTarget[`inherited${String(index).padStart(2, '0')}`] = index;
+  }
+  let descriptorCount = 0;
+  const proto = new Proxy(protoTarget, {
+    getOwnPropertyDescriptor: (target, key) => {
+      descriptorCount += 1;
+      if (descriptorCount > REVIEW_PAYLOAD_TEST_SCAN_LIMIT) {
+        throw new Error('review payload prototype traversal exceeded bound');
+      }
+      return Object.getOwnPropertyDescriptor(target, key);
+    },
+  });
+  const review = Object.create(proto);
+  review.apiVersion = 'edict.core/v1';
   return review;
 }
 
@@ -454,4 +475,40 @@ test('Graft session omits provider review payload accessors without invoking the
   assert.equal(info.error, undefined);
   assert.equal(info.projectionLanes?.[0]?.reviewPayload.apiVersion, 'edict.core/v1');
   assert.match(info.projectionLanes?.[0]?.reviewPayload.computed, /accessor omitted/);
+});
+
+test('Graft session bounds inherited prototype key traversal', async () => {
+  const graft = await loadGraftApiSession();
+  const api = {
+    createRepoLocalGraft: (options) => ({ cwd: options.cwd }),
+    callGraftTool: async (_session, name) => name === 'file_outline'
+      ? { projection: 'ready', jumpTable: [] }
+      : { files: [] },
+    createEdictCliProjectionProvider: () => ({ providerId: 'edict-provider' }),
+    createStructuredBuffer: () => ({
+      edictProjection: () => ({
+        ...availableEdictProjection(),
+        core: {
+          state: 'available',
+          value: {
+            digest: CORE_DIGEST,
+            review: reviewPayloadWithThrowingPrototypeEnumeration(),
+          },
+        },
+      }),
+      dispose: () => undefined,
+    }),
+  };
+  const port = graft.createGraftSessionPort({ api });
+
+  const info = await port.loadGraftInfo({
+    workspaceRoot: REPO_ROOT,
+    filePath: path.join(REPO_ROOT, 'demo.edict'),
+    dirty: true,
+    sourceText: 'package demo.echo@1;',
+  });
+
+  assert.equal(info.error, undefined);
+  assert.equal(info.projectionLanes?.[0]?.reviewPayload.apiVersion, 'edict.core/v1');
+  assert.equal(Object.hasOwn(info.projectionLanes?.[0]?.reviewPayload, 'inherited00'), false);
 });
