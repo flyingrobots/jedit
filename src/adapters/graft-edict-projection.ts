@@ -38,6 +38,7 @@ const REVIEW_PAYLOAD_NODE_BUDGET = 512;
 const REVIEW_PAYLOAD_OMITTED_KEY = '$jeditReviewPayloadOmitted';
 const REVIEW_PAYLOAD_OMITTED_TEXT = 'review payload omitted by adapter bounds';
 const REVIEW_PAYLOAD_DEPTH_OMITTED_TEXT = 'review payload depth omitted by adapter bounds';
+const REVIEW_PAYLOAD_ACCESSOR_OMITTED_TEXT = 'review payload accessor omitted by adapter bounds';
 const REVIEW_PAYLOAD_HAS_OWN = Object.prototype.hasOwnProperty;
 
 const DEFAULT_ECHO_TARGET: EdictProjectionTargetSettings = {
@@ -265,7 +266,7 @@ function reviewPayloadObject(review: object, depth: number, budget: ReviewPayloa
       setReviewPayloadProperty(result, REVIEW_PAYLOAD_OMITTED_KEY, REVIEW_PAYLOAD_OMITTED_TEXT);
       return result;
     }
-    setReviewPayloadProperty(result, key, reviewPayloadValue(Reflect.get(review, key), depth + 1, budget));
+    setReviewPayloadProperty(result, key, reviewPayloadPropertyValue(review, key, depth + 1, budget));
   }
   if (keys.omittedCount > 0) {
     setReviewPayloadProperty(
@@ -301,6 +302,19 @@ function reviewPayloadVisibleKeys(review: object): ReviewPayloadVisibleKeys {
     omittedCount: omittedIsLowerBound ? 1 : 0,
     omittedIsLowerBound,
   };
+}
+
+function reviewPayloadPropertyValue(
+  review: object,
+  key: string,
+  depth: number,
+  budget: ReviewPayloadBudget,
+): GraftJsonValue {
+  const descriptor = Object.getOwnPropertyDescriptor(review, key);
+  if (descriptor == null || !('value' in descriptor)) {
+    return REVIEW_PAYLOAD_ACCESSOR_OMITTED_TEXT;
+  }
+  return reviewPayloadValue(descriptor.value, depth, budget);
 }
 
 function reviewPayloadValue(value: GraftJsonValue, depth: number, budget: ReviewPayloadBudget): GraftJsonValue {

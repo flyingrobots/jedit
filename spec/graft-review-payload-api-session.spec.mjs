@@ -124,6 +124,17 @@ function reviewPayloadWithProtoKey() {
   return review;
 }
 
+function reviewPayloadWithThrowingAccessor() {
+  const review = { apiVersion: 'edict.core/v1' };
+  Object.defineProperty(review, 'computed', {
+    enumerable: true,
+    get: () => {
+      throw new Error('review payload accessors must not run');
+    },
+  });
+  return review;
+}
+
 test('Graft session carries Edict review payloads into generic projection lanes', async () => {
   const graft = await loadGraftApiSession();
   const api = {
@@ -407,4 +418,40 @@ test('Graft session copies provider review payload proto keys as data', async ()
 
   assert.equal(Object.hasOwn(info.projectionLanes?.[0]?.reviewPayload, '__proto__'), true);
   assert.equal(info.projectionLanes?.[0]?.reviewPayload.__proto__, 'provider data');
+});
+
+test('Graft session omits provider review payload accessors without invoking them', async () => {
+  const graft = await loadGraftApiSession();
+  const api = {
+    createRepoLocalGraft: (options) => ({ cwd: options.cwd }),
+    callGraftTool: async (_session, name) => name === 'file_outline'
+      ? { projection: 'ready', jumpTable: [] }
+      : { files: [] },
+    createEdictCliProjectionProvider: () => ({ providerId: 'edict-provider' }),
+    createStructuredBuffer: () => ({
+      edictProjection: () => ({
+        ...availableEdictProjection(),
+        core: {
+          state: 'available',
+          value: {
+            digest: CORE_DIGEST,
+            review: reviewPayloadWithThrowingAccessor(),
+          },
+        },
+      }),
+      dispose: () => undefined,
+    }),
+  };
+  const port = graft.createGraftSessionPort({ api });
+
+  const info = await port.loadGraftInfo({
+    workspaceRoot: REPO_ROOT,
+    filePath: path.join(REPO_ROOT, 'demo.edict'),
+    dirty: true,
+    sourceText: 'package demo.echo@1;',
+  });
+
+  assert.equal(info.error, undefined);
+  assert.equal(info.projectionLanes?.[0]?.reviewPayload.apiVersion, 'edict.core/v1');
+  assert.match(info.projectionLanes?.[0]?.reviewPayload.computed, /accessor omitted/);
 });
