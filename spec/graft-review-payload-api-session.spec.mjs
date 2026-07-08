@@ -103,6 +103,18 @@ function arrayReviewPayload() {
   };
 }
 
+function budgetExhaustingReviewPayload() {
+  const review = { preface: true };
+  for (let parentIndex = 0; parentIndex < 63; parentIndex += 1) {
+    const child = {};
+    for (let childIndex = 0; childIndex < WIDE_REVIEW_PAYLOAD_KEY_COUNT; childIndex += 1) {
+      child[`child${String(parentIndex).padStart(2, '0')}${String(childIndex).padStart(2, '0')}`] = {};
+    }
+    review[`parent${String(parentIndex).padStart(2, '0')}`] = child;
+  }
+  return review;
+}
+
 function reviewPayloadWithProtoKey() {
   const review = {};
   Object.defineProperty(review, '__proto__', {
@@ -324,6 +336,42 @@ test('Graft session preserves omission markers for wide review payload arrays', 
 
   assert.deepEqual(info.projectionLanes?.[0]?.reviewPayload.items.slice(0, 3), ['a', 'b', 'c']);
   assert.match(info.projectionLanes?.[0]?.reviewPayload.items[3], /3 more entries/);
+});
+
+test('Graft session reports budget omissions separately from depth omissions', async () => {
+  const graft = await loadGraftApiSession();
+  const api = {
+    createRepoLocalGraft: (options) => ({ cwd: options.cwd }),
+    callGraftTool: async (_session, name) => name === 'file_outline'
+      ? { projection: 'ready', jumpTable: [] }
+      : { files: [] },
+    createEdictCliProjectionProvider: () => ({ providerId: 'edict-provider' }),
+    createStructuredBuffer: () => ({
+      edictProjection: () => ({
+        ...availableEdictProjection(),
+        core: {
+          state: 'available',
+          value: {
+            digest: CORE_DIGEST,
+            review: budgetExhaustingReviewPayload(),
+          },
+        },
+      }),
+      dispose: () => undefined,
+    }),
+  };
+  const port = graft.createGraftSessionPort({ api });
+
+  const info = await port.loadGraftInfo({
+    workspaceRoot: REPO_ROOT,
+    filePath: path.join(REPO_ROOT, 'demo.edict'),
+    dirty: true,
+    sourceText: 'package demo.echo@1;',
+  });
+
+  const payloadText = JSON.stringify(info.projectionLanes?.[0]?.reviewPayload);
+  assert.match(payloadText, /review payload omitted by adapter bounds/);
+  assert.doesNotMatch(payloadText, /review payload depth omitted/);
 });
 
 test('Graft session copies provider review payload proto keys as data', async () => {

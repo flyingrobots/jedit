@@ -250,8 +250,12 @@ interface ReviewPayloadBudget {
 
 function reviewPayloadObject(review: object, depth: number, budget: ReviewPayloadBudget): GraftJsonObject {
   const result: Record<string, GraftJsonValue> = {};
-  if (depth >= REVIEW_PAYLOAD_DEPTH_LIMIT || !consumeReviewPayloadBudget(budget)) {
+  if (depth >= REVIEW_PAYLOAD_DEPTH_LIMIT) {
     setReviewPayloadProperty(result, REVIEW_PAYLOAD_OMITTED_KEY, REVIEW_PAYLOAD_DEPTH_OMITTED_TEXT);
+    return result;
+  }
+  if (!consumeReviewPayloadBudget(budget)) {
+    setReviewPayloadProperty(result, REVIEW_PAYLOAD_OMITTED_KEY, REVIEW_PAYLOAD_OMITTED_TEXT);
     return result;
   }
 
