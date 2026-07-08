@@ -8,6 +8,7 @@ import {
 const REVIEW_PAYLOAD_HEADER = 'review payload:';
 const REVIEW_PAYLOAD_ROW_LIMIT = 12;
 const REVIEW_PAYLOAD_SCALAR_TEXT = 120;
+const REVIEW_PAYLOAD_STRING_RAW_TEXT = 96;
 const INDENT_STEP = 2;
 const OBJECT_HAS_OWN = Object.prototype.hasOwnProperty;
 
@@ -190,8 +191,14 @@ function appendLine(line: string, state: ReviewPayloadRenderState): void {
 
 function formatScalar(value: GraftJsonValue): string {
   return typeof value === 'string'
-    ? limitReviewText(JSON.stringify(value))
+    ? limitReviewText(JSON.stringify(limitReviewString(value)))
     : limitReviewText(String(value));
+}
+
+function limitReviewString(value: string): string {
+  return value.length <= REVIEW_PAYLOAD_STRING_RAW_TEXT
+    ? value
+    : `${value.slice(0, REVIEW_PAYLOAD_STRING_RAW_TEXT)}...`;
 }
 
 function limitReviewText(value: string): string {
