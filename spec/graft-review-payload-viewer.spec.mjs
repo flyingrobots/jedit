@@ -287,6 +287,7 @@ test('Graft drawer bounds inherited review payload key scanning', async () => {
 
   assert.match(text, /"apiVersion": "provider\.review\/v1"/);
   assert.doesNotMatch(text, /inherited00/);
+  assert.doesNotMatch(text, /more entries/);
 });
 
 test('Graft drawer omits review payload object accessors without invoking them', async () => {

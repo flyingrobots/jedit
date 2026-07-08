@@ -9,6 +9,7 @@ const TARGET_IR_DIGEST = 'sha256:33333333333333333333333333333333333333333333333
 const WIDE_REVIEW_PAYLOAD_KEY_COUNT = 70;
 const REVIEW_PAYLOAD_TEST_SCAN_LIMIT = 64;
 const REVIEW_PAYLOAD_OMITTED_KEY = '$jeditReviewPayloadOmitted';
+const LONG_REVIEW_PAYLOAD_TEXT_LIMIT = 96;
 
 async function loadGraftApiSession() {
   return importDist('adapters', 'graft-api-session.js');
@@ -106,6 +107,25 @@ function arrayAccessorReviewPayload() {
     },
   });
   return { items };
+}
+
+function longTextReviewPayload() {
+  return {
+    [`long${'k'.repeat(160)}`]: 'v'.repeat(160),
+    nested: {
+      value: 'w'.repeat(160),
+    },
+  };
+}
+
+function unsupportedValueReviewPayload() {
+  return {
+    explicitNull: null,
+    missing: undefined,
+    callback: () => true,
+    token: Symbol('provider-token'),
+    count: BigInt(1),
+  };
 }
 
 function budgetExhaustingReviewPayload() {
@@ -244,6 +264,29 @@ test('Graft session omits provider review payload array accessors without invoki
   assert.match(info.projectionLanes?.[0]?.reviewPayload.items[0], /accessor omitted/);
 });
 
+test('Graft session caps provider review payload keys and strings before storing lanes', async () => {
+  const info = await loadInfoForReviewPayload(longTextReviewPayload());
+
+  const payload = info.projectionLanes?.[0]?.reviewPayload;
+  const cappedKey = Object.keys(payload)
+    .find((key) => key.startsWith('long'));
+  assert.equal(cappedKey?.length, LONG_REVIEW_PAYLOAD_TEXT_LIMIT + 3);
+  assert.equal(cappedKey?.endsWith('...'), true);
+  assert.equal(payload[cappedKey], `${'v'.repeat(LONG_REVIEW_PAYLOAD_TEXT_LIMIT)}...`);
+  assert.equal(payload.nested.value, `${'w'.repeat(LONG_REVIEW_PAYLOAD_TEXT_LIMIT)}...`);
+});
+
+test('Graft session marks unsupported provider review payload values', async () => {
+  const info = await loadInfoForReviewPayload(unsupportedValueReviewPayload());
+
+  const payload = info.projectionLanes?.[0]?.reviewPayload;
+  assert.equal(payload.explicitNull, null);
+  assert.match(payload.missing, /unsupported value/);
+  assert.match(payload.callback, /unsupported value/);
+  assert.match(payload.token, /unsupported value/);
+  assert.match(payload.count, /unsupported value/);
+});
+
 test('Graft session reports budget omissions separately from depth omissions', async () => {
   const info = await loadInfoForReviewPayload(budgetExhaustingReviewPayload());
 
@@ -273,4 +316,5 @@ test('Graft session bounds inherited prototype key traversal', async () => {
   assert.equal(info.error, undefined);
   assert.equal(info.projectionLanes?.[0]?.reviewPayload.apiVersion, 'edict.core/v1');
   assert.equal(Object.hasOwn(info.projectionLanes?.[0]?.reviewPayload, 'inherited00'), false);
+  assert.equal(Object.hasOwn(info.projectionLanes?.[0]?.reviewPayload, REVIEW_PAYLOAD_OMITTED_KEY), false);
 });

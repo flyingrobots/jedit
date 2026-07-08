@@ -164,12 +164,13 @@ function reviewPayloadObjectKeys(value: GraftJsonObject): ReviewPayloadObjectKey
   let omittedIsLowerBound = false;
   let examinedKeyCount = 0;
   for (const key in value) {
+    const isOwnKey = OBJECT_HAS_OWN.call(value, key);
     if (examinedKeyCount >= REVIEW_PAYLOAD_OBJECT_KEY_SCAN_LIMIT) {
-      omittedIsLowerBound = true;
+      omittedIsLowerBound = isOwnKey;
       break;
     }
     examinedKeyCount += 1;
-    if (!OBJECT_HAS_OWN.call(value, key)) {
+    if (!isOwnKey) {
       continue;
     }
     keys.push(key);

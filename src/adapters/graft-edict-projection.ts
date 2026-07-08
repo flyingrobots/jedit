@@ -40,6 +40,8 @@ const REVIEW_PAYLOAD_OMITTED_KEY = '$jeditReviewPayloadOmitted';
 const REVIEW_PAYLOAD_OMITTED_TEXT = 'review payload omitted by adapter bounds';
 const REVIEW_PAYLOAD_DEPTH_OMITTED_TEXT = 'review payload depth omitted by adapter bounds';
 const REVIEW_PAYLOAD_ACCESSOR_OMITTED_TEXT = 'review payload accessor omitted by adapter bounds';
+const REVIEW_PAYLOAD_UNSUPPORTED_VALUE_TEXT = 'review payload unsupported value omitted by adapter bounds';
+const REVIEW_PAYLOAD_TEXT_LIMIT = 96;
 const REVIEW_PAYLOAD_HAS_OWN = Object.prototype.hasOwnProperty;
 
 const DEFAULT_ECHO_TARGET: EdictProjectionTargetSettings = {
@@ -250,6 +252,12 @@ interface ReviewPayloadBudget {
   remaining: number;
 }
 
+interface ReviewPayloadCallable {
+  (...args: never[]): never;
+}
+
+type ReviewPayloadInput = GraftJsonValue | undefined | symbol | bigint | ReviewPayloadCallable;
+
 function reviewPayloadObject(review: object, depth: number, budget: ReviewPayloadBudget): GraftJsonObject {
   const result: Record<string, GraftJsonValue> = {};
   if (depth >= REVIEW_PAYLOAD_DEPTH_LIMIT) {
@@ -286,16 +294,13 @@ function reviewPayloadVisibleKeys(review: object): ReviewPayloadVisibleKeys {
   let omittedIsLowerBound = false;
   let examinedKeyCount = 0;
   for (const key in review) {
+    const isOwnKey = REVIEW_PAYLOAD_HAS_OWN.call(review, key);
     if (examinedKeyCount >= REVIEW_PAYLOAD_OBJECT_KEY_SCAN_LIMIT) {
-      omittedIsLowerBound = true;
+      omittedIsLowerBound = isOwnKey;
       break;
     }
     examinedKeyCount += 1;
-    if (!REVIEW_PAYLOAD_HAS_OWN.call(review, key)) {
-      if (examinedKeyCount >= REVIEW_PAYLOAD_OBJECT_KEY_SCAN_LIMIT) {
-        omittedIsLowerBound = true;
-        break;
-      }
+    if (!isOwnKey) {
       continue;
     }
     if (visibleKeys.length >= REVIEW_PAYLOAD_OBJECT_KEY_SCAN_LIMIT - REVIEW_PAYLOAD_OMISSION_MARKER_RESERVE) {
@@ -324,7 +329,7 @@ function reviewPayloadPropertyValue(
   return reviewPayloadValue(descriptor.value, depth, budget);
 }
 
-function reviewPayloadValue(value: GraftJsonValue, depth: number, budget: ReviewPayloadBudget): GraftJsonValue {
+function reviewPayloadValue(value: ReviewPayloadInput, depth: number, budget: ReviewPayloadBudget): GraftJsonValue {
   if (!consumeReviewPayloadBudget(budget)) {
     return REVIEW_PAYLOAD_OMITTED_TEXT;
   }
@@ -334,15 +339,17 @@ function reviewPayloadValue(value: GraftJsonValue, depth: number, budget: Review
   if (typeof value === 'object' && value !== null) {
     return reviewPayloadObject(value, depth, budget);
   }
+  if (typeof value === 'string') {
+    return limitReviewPayloadText(value);
+  }
   if (isReviewPayloadPrimitive(value)) {
     return value;
   }
-  return null;
+  return REVIEW_PAYLOAD_UNSUPPORTED_VALUE_TEXT;
 }
 
-function isReviewPayloadPrimitive(value: GraftJsonValue): boolean {
-  return typeof value === TYPE_STRING
-    || typeof value === 'number'
+function isReviewPayloadPrimitive(value: ReviewPayloadInput): value is number | boolean | null {
+  return typeof value === 'number'
     || typeof value === 'boolean'
     || value === null;
 }
@@ -407,12 +414,31 @@ function reviewPayloadOmittedKey(result: Record<string, GraftJsonValue>): string
 }
 
 function setReviewPayloadProperty(result: Record<string, GraftJsonValue>, key: string, value: GraftJsonValue): void {
-  Object.defineProperty(result, key, {
+  Object.defineProperty(result, reviewPayloadStorageKey(result, limitReviewPayloadText(key)), {
     configurable: true,
     enumerable: true,
     value,
     writable: false,
   });
+}
+
+function reviewPayloadStorageKey(result: Record<string, GraftJsonValue>, key: string): string {
+  if (!REVIEW_PAYLOAD_HAS_OWN.call(result, key)) {
+    return key;
+  }
+  let suffix = 1;
+  let nextKey = `${key}${String(suffix)}`;
+  while (REVIEW_PAYLOAD_HAS_OWN.call(result, nextKey)) {
+    suffix += 1;
+    nextKey = `${key}${String(suffix)}`;
+  }
+  return nextKey;
+}
+
+function limitReviewPayloadText(value: string): string {
+  return value.length <= REVIEW_PAYLOAD_TEXT_LIMIT
+    ? value
+    : `${value.slice(0, REVIEW_PAYLOAD_TEXT_LIMIT)}...`;
 }
 
 function unavailableLiveEdictProjection(): LiveEdictProjectionResult {
