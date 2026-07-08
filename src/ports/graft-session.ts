@@ -70,6 +70,7 @@ export interface GraftProjectionPanelLane {
   readonly digest?: GraftProjectionPanelDigest;
   readonly metadata: readonly GraftProjectionPanelMetadata[];
   readonly summaryLines: readonly string[];
+  readonly reviewPayload?: GraftJsonObject;
 }
 
 export interface GraftInfo {

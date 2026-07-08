@@ -1,6 +1,7 @@
 import type {
   GraftEchoTargetIrProjectionLane,
   GraftEdictProjectionLane,
+  GraftJsonObject,
   GraftProjectionPanelDigest,
   GraftProjectionPanelLane,
   GraftProjectionPanelMetadata,
@@ -21,6 +22,8 @@ export interface GraftProjectionLaneSource {
   readonly projectionLanes?: readonly GraftProjectionPanelLane[];
   readonly edictCoreProjection?: GraftEdictProjectionLane;
   readonly echoTargetIrProjection?: GraftEchoTargetIrProjectionLane;
+  readonly edictCoreReviewPayload?: GraftJsonObject;
+  readonly echoTargetIrReviewPayload?: GraftJsonObject;
 }
 
 export function graftProjectionPanelLanes(source: GraftProjectionLaneSource): readonly GraftProjectionPanelLane[] {
@@ -29,8 +32,8 @@ export function graftProjectionPanelLanes(source: GraftProjectionLaneSource): re
   }
 
   return [
-    ...edictCorePanelLane(source.edictCoreProjection),
-    ...echoTargetIrPanelLane(source.echoTargetIrProjection),
+    ...edictCorePanelLane(source),
+    ...echoTargetIrPanelLane(source),
   ];
 }
 
@@ -42,7 +45,8 @@ export function graftProjectionPanelLaneRowCount(lane: GraftProjectionPanelLane)
     + lane.summaryLines.length;
 }
 
-function edictCorePanelLane(projection: GraftEdictProjectionLane | undefined): readonly GraftProjectionPanelLane[] {
+function edictCorePanelLane(source: GraftProjectionLaneSource): readonly GraftProjectionPanelLane[] {
+  const projection = source.edictCoreProjection;
   if (projection == null) {
     return [];
   }
@@ -52,11 +56,13 @@ function edictCorePanelLane(projection: GraftEdictProjectionLane | undefined): r
     state: projection.state,
     metadata: [],
     summaryLines: projection.summaryLines,
+    ...(source.edictCoreReviewPayload == null ? {} : { reviewPayload: source.edictCoreReviewPayload }),
     ...(projection.digest == null ? {} : { digest: projectionDigest(EDICT_CORE_DIGEST_LABEL, projection.digest) }),
   }];
 }
 
-function echoTargetIrPanelLane(projection: GraftEchoTargetIrProjectionLane | undefined): readonly GraftProjectionPanelLane[] {
+function echoTargetIrPanelLane(source: GraftProjectionLaneSource): readonly GraftProjectionPanelLane[] {
+  const projection = source.echoTargetIrProjection;
   if (projection == null) {
     return [];
   }
@@ -66,6 +72,7 @@ function echoTargetIrPanelLane(projection: GraftEchoTargetIrProjectionLane | und
     state: projection.state,
     metadata: echoTargetIrMetadata(projection),
     summaryLines: projection.summaryLines,
+    ...(source.echoTargetIrReviewPayload == null ? {} : { reviewPayload: source.echoTargetIrReviewPayload }),
     ...(projection.digest == null ? {} : { digest: projectionDigest(ECHO_TARGET_IR_DIGEST_LABEL, projection.digest) }),
   }];
 }

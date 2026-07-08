@@ -198,6 +198,7 @@ test('Graft session projects dirty Edict buffers through live source text', asyn
     digest: { label: 'core digest', value: CORE_DIGEST },
     metadata: [],
     summaryLines: ['review: apiVersion'],
+    reviewPayload: { apiVersion: 'edict.core/v1' },
   }, {
     title: 'echo target ir',
     state: 'available',
@@ -213,6 +214,7 @@ test('Graft session projects dirty Edict buffers through live source text', asyn
       value: TARGET_PROFILE_DIGEST,
     }],
     summaryLines: ['review: intents'],
+    reviewPayload: { intents: {} },
   }]);
 });
 

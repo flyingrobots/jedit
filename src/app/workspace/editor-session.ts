@@ -178,18 +178,10 @@ export function beginGraftRefresh(
   graftSession: GraftSessionPort,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (model.editor == null) {
-    return [{
-      ...model,
-      graftInfo: undefined,
-      graftLoading: false,
-      graftSelectedIndex: 0,
-    }, []];
+    return [clearedGraftRefreshModel(model), []];
   }
 
-  if (!options.force
-    && model.graftInfo?.path === model.editor.path
-    && model.graftInfo.dirty === model.editor.dirty
-    && model.graftInfo.projectionSource !== GraftProjectionSources.LiveBuffer) {
+  if (shouldReuseGraftInfo(model, options)) {
     return [model, []];
   }
 
@@ -203,6 +195,7 @@ export function beginGraftRefresh(
       graftRequestId: requestId,
       graftInfo: sameFile ? model.graftInfo : undefined,
       graftSelectedIndex: sameFile ? model.graftSelectedIndex : 0,
+      expandedProjectionLaneIndex: sameFile ? model.expandedProjectionLaneIndex : undefined,
     },
     [requestGraftInfoCmd(requestId, {
       workspaceRoot: model.workspaceRoot,
@@ -211,6 +204,24 @@ export function beginGraftRefresh(
       sourceText: joinLines(model.editor.lines),
     }, graftSession)],
   ];
+}
+
+function clearedGraftRefreshModel(model: WorkspaceModel): WorkspaceModel {
+  return {
+    ...model,
+    graftInfo: undefined,
+    graftLoading: false,
+    graftSelectedIndex: 0,
+    expandedProjectionLaneIndex: undefined,
+  };
+}
+
+function shouldReuseGraftInfo(model: WorkspaceModel, options: GraftRefreshOptions): boolean {
+  return !options.force
+    && model.editor != null
+    && model.graftInfo?.path === model.editor.path
+    && model.graftInfo.dirty === model.editor.dirty
+    && model.graftInfo.projectionSource !== GraftProjectionSources.LiveBuffer;
 }
 
 function requestGraftInfoCmd(

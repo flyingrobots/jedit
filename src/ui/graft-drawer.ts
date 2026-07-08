@@ -13,6 +13,7 @@ import {
   type GraftProjectionSource,
 } from '../ports/graft-session.js';
 import { graftProjectionPanelLanes } from '../ports/graft-projection-lanes.js';
+import { projectionReviewPayloadLines } from './projection-review-payload.js';
 import type { GraftDiagnosticsReport } from '../ports/graft-diagnostics.js';
 import type { SourceHighlightReading } from '../ports/source-highlighter.js';
 
@@ -49,6 +50,7 @@ export interface GraftDrawerState {
   readonly graftInfo?: GraftDrawerInfo;
   readonly graftLoading: boolean;
   readonly graftSelectedIndex: number;
+  readonly expandedProjectionLaneIndex?: number;
   readonly graftDiagnostics?: GraftDiagnosticsReport;
   readonly sourceHighlight?: SourceHighlightReading;
 }
@@ -83,7 +85,7 @@ function renderLoadedGraftDrawerLines(
     `posture: ${projectionPostureForInfo(info)}`,
     model.graftLoading ? 'loading...' : (info.notice ?? ''),
     info.error == null ? '' : `error: ${info.error}`,
-    ...projectionLaneLines(info),
+    ...projectionLaneLines(info, model.expandedProjectionLaneIndex),
     ...obstructionReceiptLines(info),
     'outline',
   ];
@@ -120,19 +122,34 @@ function projectionPostureForInfo(info: GraftDrawerInfo): GraftProjectionPosture
   return info.error == null ? GraftProjectionPostures.Current : GraftProjectionPostures.Obstructed;
 }
 
-function projectionLaneLines(info: GraftDrawerInfo): readonly string[] {
+function projectionLaneLines(info: GraftDrawerInfo, expandedProjectionLaneIndex: number | undefined): readonly string[] {
   return graftProjectionPanelLanes(info)
-    .flatMap(renderProjectionLane);
+    .flatMap((lane, index) => renderProjectionLane(lane, index, expandedProjectionLaneIndex));
 }
 
-function renderProjectionLane(lane: GraftProjectionPanelLane): readonly string[] {
+function renderProjectionLane(
+  lane: GraftProjectionPanelLane,
+  index: number,
+  expandedProjectionLaneIndex: number | undefined,
+): readonly string[] {
   return [
     lane.title,
     `state: ${formatReceiptScalar(lane.state)}`,
     ...(lane.digest == null ? [] : [`${lane.digest.label}: ${formatReceiptScalar(lane.digest.value)}`]),
     ...lane.metadata.map((entry) => `${entry.label}: ${formatReceiptScalar(entry.value)}`),
     ...lane.summaryLines.map(formatReceiptScalar),
+    ...expandedProjectionPayloadLines(lane, index, expandedProjectionLaneIndex),
   ];
+}
+
+function expandedProjectionPayloadLines(
+  lane: GraftProjectionPanelLane,
+  index: number,
+  expandedProjectionLaneIndex: number | undefined,
+): readonly string[] {
+  return expandedProjectionLaneIndex === index && lane.reviewPayload != null
+    ? projectionReviewPayloadLines(lane.reviewPayload)
+    : [];
 }
 
 function obstructionReceiptLines(info: GraftDrawerInfo): readonly string[] {
