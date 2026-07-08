@@ -35,6 +35,7 @@ const EDICT_STATUS_OK = 'ok';
 const TYPE_STRING = 'string';
 const SUMMARY_ITEM_LIMIT = 3;
 const REVIEW_PAYLOAD_NODE_BUDGET = 512;
+const REVIEW_PAYLOAD_OMISSION_MARKER_RESERVE = 1;
 const REVIEW_PAYLOAD_OMITTED_KEY = '$jeditReviewPayloadOmitted';
 const REVIEW_PAYLOAD_OMITTED_TEXT = 'review payload omitted by adapter bounds';
 const REVIEW_PAYLOAD_DEPTH_OMITTED_TEXT = 'review payload depth omitted by adapter bounds';
@@ -297,7 +298,7 @@ function reviewPayloadVisibleKeys(review: object): ReviewPayloadVisibleKeys {
       }
       continue;
     }
-    if (visibleKeys.length >= REVIEW_PAYLOAD_OBJECT_KEY_SCAN_LIMIT - 1) {
+    if (visibleKeys.length >= REVIEW_PAYLOAD_OBJECT_KEY_SCAN_LIMIT - REVIEW_PAYLOAD_OMISSION_MARKER_RESERVE) {
       omittedIsLowerBound = true;
       break;
     }
