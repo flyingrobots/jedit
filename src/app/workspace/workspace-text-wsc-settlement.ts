@@ -31,6 +31,7 @@ function settlementPayload(
     filePath: request.filePath,
     bufferId: request.bufferId,
     commandKind: request.kind,
+    ...(request.provenanceKind == null ? {} : { provenanceKind: request.provenanceKind }),
     range: editRangePayload(request),
     submittedAtMs: request.atMs,
     receiptId,

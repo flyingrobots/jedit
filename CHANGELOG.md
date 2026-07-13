@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Named undo and redo in command provenance and settlement evidence: `u` and
+  `ctrl+r` now produce `history`-family command events (so `:why` and the
+  footer explain reversals), edit settlements carry an additive
+  `provenanceKind` field, and the WSC history listing exposes it to
+  agent-facing JSON surfaces.
+
 - Added WF-0154, the E-Brake goalpost (issue #267), locking in four audit
   remediations: undo/redo settlements named as reversals in provenance (the
   mechanism already submits Echo replacement edits), a title-scene freeze

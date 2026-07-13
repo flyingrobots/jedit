@@ -19,6 +19,7 @@ export interface JeditWscHistoryRecord {
   readonly filePath?: string;
   readonly bufferId?: string;
   readonly commandKind?: string;
+  readonly provenanceKind?: string;
   readonly submittedAtMs?: number;
   readonly receiptId?: string;
   readonly readingId?: string;

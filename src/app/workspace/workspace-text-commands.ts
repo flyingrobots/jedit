@@ -19,7 +19,10 @@ import {
   type WorkspaceTextOpenResult,
   type WorkspaceTextReadCommandResult,
 } from './workspace-text-results.js';
-import type { WorkspaceTextHostBasisKind } from './workspace-text-authority.js';
+import type {
+  WorkspaceTextHostBasisKind,
+  WorkspaceTextPendingCommandKind,
+} from './workspace-text-authority.js';
 import { materializationPreflightIssue } from './workspace-text-materialization-preflight.js';
 import {
   WorkspaceTextOpenBasisResultKinds,
@@ -77,6 +80,7 @@ export interface WorkspaceTextCommandBase {
   readonly atMs: number;
   readonly aperture: ProductionTextViewportAperture;
   readonly cursorAfter?: TextPosition;
+  readonly provenanceKind?: WorkspaceTextPendingCommandKind;
 }
 
 export interface WorkspaceTextInsertCommandRequest extends WorkspaceTextCommandBase {

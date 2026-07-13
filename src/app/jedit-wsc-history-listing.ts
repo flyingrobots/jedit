@@ -50,6 +50,7 @@ interface JeditWscHistoryRecordDraft {
   readonly filePath?: string;
   readonly bufferId?: string;
   readonly commandKind?: string;
+  readonly provenanceKind?: string;
   readonly submittedAtMs?: number;
   readonly receiptId?: string;
   readonly readingId?: string;
@@ -89,6 +90,7 @@ interface JeditWscHistoryCommonFields {
   readonly filePath?: string;
   readonly bufferId?: string;
   readonly commandKind?: string;
+  readonly provenanceKind?: string;
   readonly submittedAtMs?: number;
   readonly receiptId?: string;
   readonly checkpointId?: string;
@@ -208,6 +210,7 @@ function commonPayloadFields(payload: JeditWscHistoryEnvelopePayload): JeditWscH
     filePath: payload.filePath,
     bufferId: payload.bufferId,
     commandKind: payload.commandKind,
+    provenanceKind: payload.provenanceKind,
     submittedAtMs: payload.submittedAtMs,
     receiptId: payload.receiptId,
     checkpointId: payload.checkpointId,

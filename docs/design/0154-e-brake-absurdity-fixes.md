@@ -306,8 +306,8 @@ doctrine); executable doc-path witness before prose rewrite.
 
 ## Implementation Slices
 
-- [ ] Slice 1: Name undo/redo in provenance (issue #269; the stale BEARING
-      claim is already retired in this PR)
+- [x] Slice 1: Name undo/redo in provenance (issue #269; the stale BEARING
+      claim was retired in PR #268)
       (`feat(provenance): name undo and redo settlements as reversals`).
 - [x] Slice 2: Title-scene freeze leash + changed-shards guard
       (`chore(ci): freeze title scene behind title-unfreeze label`).
@@ -321,12 +321,12 @@ doctrine); executable doc-path witness before prose rewrite.
 
 Behavior tests required:
 
-- [ ] Provenance spec: after an edit and `u`, the settlement/provenance
+- [x] Provenance spec: after an edit and `u`, the settlement/provenance
       surface names an undo with a reference to the reversed transition, and
-      `:why` output includes the reversal explanation (fails before naming
-      lands).
-- [ ] Redo provenance spec: `ctrl+r` after undo is named as a redo (fails
-      before naming lands).
+      `:why` output includes the reversal explanation
+      (`spec/undo-provenance.spec.mjs`; failed RED before naming landed).
+- [x] Redo provenance spec: `ctrl+r` after undo is named as a redo
+      (`spec/undo-provenance.spec.mjs`; failed RED before naming landed).
 - [x] Identity spec: two independently constructed runtimes replaying an
       identical script mint identical root/head identities; interleaved
       buffers do not perturb ids (`spec/root-identity-determinism.spec.mjs`;
@@ -353,9 +353,10 @@ by behavior tests.
 
 The work is done when:
 
-- [ ] Provenance/history surfaces name undo and redo settlements with
+- [x] Provenance/history surfaces name undo and redo settlements with
       reversal references, proven by behavior spec.
-- [ ] `:why` output explains an undo as a reversal.
+- [x] `:why` output explains an undo as a reversal (history command events
+      flow through the existing `lastCommandEvent` -> `:why` path).
 - [x] Identity witness proves replay-stable root ids.
 - [x] Changed-shards guard blocks unlabeled title changes in CI.
 - [x] Doc-path witness is green and ADVANCED_GUIDE describes the real paths.

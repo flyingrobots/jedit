@@ -12,7 +12,12 @@ import {
   updateInsertMode,
   updateNormalMode,
 } from './editor-session.js';
-import { createPlannedJeditCommandEvent } from './command-provenance.js';
+import {
+  isHistoryPendingCommandKind,
+  isNormalModeHistoryKey,
+  pendingCommandKindForNormalModeKey,
+  plannedWorkspaceCommandEventForQueuedEdit,
+} from './workspace-history-commands.js';
 import { snapshotEditor } from './editor-editing-core.js';
 import { EditorModes, PendingNormals } from './editor/mode.js';
 import { EditorKeys } from './editor/key.js';
@@ -30,9 +35,9 @@ import {
   WorkspaceTextEditCommandKinds,
 } from './workspace-text-commands.js';
 import {
-  WorkspaceTextPendingCommandKinds,
   WorkspaceTextAuthorityKinds,
   workspaceTextAuthorityWithPendingEdit,
+  type WorkspaceTextPendingCommandKind,
 } from './workspace-text-authority.js';
 import {
   planWorkspaceTextDeleteLine,
@@ -146,7 +151,7 @@ function productionNormalModeLocalEdit(
       productionTextSession,
       textOperationSequencer,
       plan,
-      WorkspaceTextPendingCommandKinds.Vim,
+      pendingCommandKindForNormalModeKey(msg),
     );
 }
 
@@ -368,7 +373,7 @@ function queueProductionTextPlan(
   productionTextSession: ProductionTextSession,
   textOperationSequencer: WorkspaceTextOperationSequencer,
   plan: WorkspaceTextInsertPlan | WorkspaceTextReplacePlan | WorkspaceTextDeletePlan,
-  pendingCommandKind?: typeof WorkspaceTextPendingCommandKinds.Vim,
+  pendingCommandKind?: WorkspaceTextPendingCommandKind,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (plan.kind === WorkspaceTextEditPlanKinds.Insert) {
     return queueProductionTextEdit(model, productionTextSession, textOperationSequencer, {
@@ -394,17 +399,12 @@ function queueProductionTextPlan(
     }, pendingCommandKind);
 }
 
-function isNormalModeHistoryKey(msg: KeyMsg): boolean {
-  return (msg.key === EditorKeys.U && !msg.ctrl && !msg.alt)
-    || (msg.key === EditorKeys.R && msg.ctrl && !msg.alt && !msg.shift);
-}
-
 function queueProductionTextEdit(
   model: WorkspaceModel,
   productionTextSession: ProductionTextSession,
   textOperationSequencer: WorkspaceTextOperationSequencer,
   edit: ProductionTextEditRequest,
-  pendingCommandKind?: typeof WorkspaceTextPendingCommandKinds.Vim,
+  pendingCommandKind?: WorkspaceTextPendingCommandKind,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (model.textAuthority.kind !== WorkspaceTextAuthorityKinds.Opened || model.editor == null) {
     return [model, []];
@@ -427,6 +427,7 @@ function queueProductionTextEdit(
   }, [
     createWorkspaceTextEditCmd({
       ...base,
+      ...(isHistoryPendingCommandKind(pendingCommandKind) ? { provenanceKind: pendingCommandKind } : {}),
       ...edit,
     }),
   ]];
@@ -436,34 +437,16 @@ function textAuthorityForQueuedEdit(
   authority: Extract<WorkspaceModel['textAuthority'], { kind: typeof WorkspaceTextAuthorityKinds.Opened }>,
   editor: NonNullable<WorkspaceModel['editor']>,
   requestId: number,
-  pendingCommandKind?: typeof WorkspaceTextPendingCommandKinds.Vim,
+  pendingCommandKind?: WorkspaceTextPendingCommandKind,
 ) {
   const pendingAuthority = workspaceTextAuthorityWithPendingEdit(authority, requestId, pendingCommandKind);
-  const pendingCommandEvent = plannedCommandEventForQueuedEdit(
+  const pendingCommandEvent = plannedWorkspaceCommandEventForQueuedEdit({
     editor,
-    pendingAuthority,
-    requestId,
     pendingCommandKind,
-  );
-  return workspaceTextAuthorityWithPendingEdit(authority, requestId, pendingCommandKind, pendingCommandEvent);
-}
-
-function plannedCommandEventForQueuedEdit(
-  editor: NonNullable<WorkspaceModel['editor']>,
-  textAuthority: ReturnType<typeof workspaceTextAuthorityWithPendingEdit>,
-  requestId: number,
-  pendingCommandKind?: typeof WorkspaceTextPendingCommandKinds.Vim,
-) {
-  if (pendingCommandKind !== WorkspaceTextPendingCommandKinds.Vim || editor.lastVimEdit == null) {
-    return undefined;
-  }
-  const result = createPlannedJeditCommandEvent({
-    editor,
     requestId,
-    repeat: editor.lastVimEdit,
-    textAuthority,
+    textAuthority: pendingAuthority,
   });
-  return 'event' in result ? result : undefined;
+  return workspaceTextAuthorityWithPendingEdit(authority, requestId, pendingCommandKind, pendingCommandEvent);
 }
 
 type ProductionTextEditRequest =
