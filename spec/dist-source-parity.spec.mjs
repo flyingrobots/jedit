@@ -4,7 +4,15 @@ import path from 'node:path';
 import test from 'node:test';
 import { REPO_ROOT, ensureDistBuilt } from './dist-helpers.mjs';
 
-const CHECKED_LAYERS = ['adapters', 'app', 'domain', 'ports', 'transport', 'ui'];
+const CHECKED_LAYERS = [
+  'adapters',
+  'app',
+  'domain',
+  'generated',
+  'ports',
+  'transport',
+  'ui',
+];
 
 export function sourcePathForDistArtifact(distRelativePath) {
   if (!distRelativePath.endsWith('.js')) {
@@ -41,7 +49,7 @@ test('the parity mapping flags stale compiled modules for deleted sources', () =
   assert.equal(sourcePathForDistArtifact('main.js'), 'src/main.ts');
   assert.equal(sourcePathForDistArtifact('ui/bunny.obj'), undefined);
   assert.equal(sourcePathForDistArtifact('scenes/default.json'), undefined);
-  assert.equal(sourcePathForDistArtifact('generated/i18n.js'), undefined);
+  assert.equal(sourcePathForDistArtifact('generated/i18n.js'), 'src/generated/i18n.ts');
 });
 
 test('every compiled dist module has a living source twin', async () => {
