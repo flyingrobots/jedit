@@ -308,7 +308,7 @@ doctrine); executable doc-path witness before prose rewrite.
 
 - [ ] Slice 1: Name undo/redo in provenance + retire the stale BEARING claim
       (`feat(provenance): name undo and redo settlements as reversals`).
-- [ ] Slice 2: Title-scene freeze leash + changed-shards guard
+- [x] Slice 2: Title-scene freeze leash + changed-shards guard
       (`chore(ci): freeze title scene behind title-unfreeze label`).
 - [x] Slice 3: RED identity witness + chain-threaded root-id allocation;
       resolve bad-code entry
@@ -330,9 +330,10 @@ Behavior tests required:
       identical script mint identical root/head identities; interleaved
       buffers do not perturb ids (`spec/root-identity-determinism.spec.mjs`;
       failed RED before the allocation change).
-- [ ] Changed-shards guard spec: plan over a frozen title path without
+- [x] Changed-shards guard spec: plan over a frozen title path without
       `title-unfreeze` fails with the frozen-path reason; with the label it
-      passes (fails before guard exists).
+      passes (`spec/ci-frozen-paths.spec.mjs`; failed RED before the module
+      existed).
 
 Documentation and process tests, only if relevant:
 
@@ -354,7 +355,7 @@ The work is done when:
       reversal references, proven by behavior spec.
 - [ ] `:why` output explains an undo as a reversal.
 - [x] Identity witness proves replay-stable root ids.
-- [ ] Changed-shards guard blocks unlabeled title changes in CI.
+- [x] Changed-shards guard blocks unlabeled title changes in CI.
 - [ ] Doc-path witness is green and ADVANCED_GUIDE describes the real paths.
 - [ ] BEARING describes undo/redo truthfully, citing the boundary spec.
 - [x] `docs/method/backlog/bad-code/global-next-root-id-counter.md` resolved.
