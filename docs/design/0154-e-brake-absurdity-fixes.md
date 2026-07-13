@@ -306,7 +306,8 @@ doctrine); executable doc-path witness before prose rewrite.
 
 ## Implementation Slices
 
-- [ ] Slice 1: Name undo/redo in provenance + retire the stale BEARING claim
+- [ ] Slice 1: Name undo/redo in provenance (issue #269; the stale BEARING
+      claim is already retired in this PR)
       (`feat(provenance): name undo and redo settlements as reversals`).
 - [x] Slice 2: Title-scene freeze leash + changed-shards guard
       (`chore(ci): freeze title scene behind title-unfreeze label`).
@@ -416,22 +417,47 @@ Mitigations:
 
 ## Retrospective
 
-Fill this in after implementation.
-
 What changed from the design:
 
 - The original draft claimed undo/redo was implemented but unwired; review
   falsification (PR #268) proved it wired and Echo-routed since `f7a96fce`,
   and Slice 1 was rescoped from "wire undo" to "name undo in provenance and
-  fix doc truth".
+  fix doc truth". The doc-truth half (BEARING correction) landed in this PR;
+  the provenance naming half is deferred to issue #269 because it requires
+  extending the `'vim' | 'rejected'` command-event union and splitting
+  `command-provenance.ts` (at 492/500 lines), which deserves its own
+  RED/GREEN slice rather than a tail-end rush.
+- The doc was renumbered WF-0153 -> WF-0154 mid-cycle (0153 was already taken
+  on main) and the title-freeze globs were expanded from two path roots to
+  seven after inventorying the real title-scene file spread.
+- The root-id fix was implemented as chain-threaded value state
+  (`nextRootId` on `TickAdmissionState`/`HotTextBufferState`) rather than an
+  allocator object — stronger than the design's "per-runtime allocator":
+  serializable, replay-safe, and per-chain deterministic.
+- `admitReplaceRangeTick` now takes fragment text instead of a pre-built
+  fragment, making the domain the single allocation authority; the
+  `EXPECTED_RUNTIME_EXPORTS` pin in `tests/replace-range-cycle.spec.mjs`
+  gained `FIRST_ROOT_ID`.
 
 What the tests proved:
 
-- ...
+- `spec/root-identity-determinism.spec.mjs` (RED against the global counter,
+  GREEN after): same-script buffers and independent runtimes mint identical
+  root/head identities; interleaved creation does not perturb per-buffer ids.
+- `spec/ci-frozen-paths.spec.mjs` (RED before the module existed): all seven
+  title path roots are frozen, non-title paths never are, and the
+  `title-unfreeze` label admits changes; the CLI exits 1 with the policy
+  reason on a real historical title-only diff.
+- `spec/guide-path-references.spec.mjs` (RED on ADVANCED_GUIDE.md:91): every
+  `src/**`/`scripts/**` reference in the five top-level guides resolves,
+  including fenced-code and plain-prose references.
+- `npm run check` (full suite + quality gate) green over all slices.
 
 What remains open:
 
-- ...
+- Slice 1 provenance naming: issue #269 (seam map recorded there).
+- `docs/design/0001-replace-range-contract/replace-range-contract.md`
+  still describes the pre-allocator signatures (follow-on debt above).
 
 PR:
 
