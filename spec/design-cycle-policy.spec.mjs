@@ -23,6 +23,14 @@ const GRAPH_RUNTIME_DISCOVERY_PATH = path.join(
 );
 const GRAPH_RUNTIME_RED_MATRIX_PATH = path.join(REPO_ROOT, 'spec', 'graph-rope-runtime-red-matrix.spec.mjs');
 const WF_0154_DESIGN_PATH = path.join(REPO_ROOT, 'docs', 'design', '0154-e-brake-absurdity-fixes.md');
+const CAUSAL_UNDO_BACKLOG_PATH = path.join(
+  REPO_ROOT,
+  'docs',
+  'method',
+  'backlog',
+  'cool-ideas',
+  'causal-undo-family.md',
+);
 
 const REQUIRED_TEMPLATE_HEADINGS = Object.freeze([
   '## Linked Issue',
@@ -247,6 +255,15 @@ test('WF-0154 landed closeout has no unchecked gates or stale provenance deferra
   assert.doesNotMatch(retrospective, /provenance naming half is deferred/);
   assert.match(bearing, /undo\/redo settlements are provenance-named/);
   assert.doesNotMatch(bearing, /undo\/redo[^\n]*unsupported/);
+});
+
+test('causal undo blockers preserve plain undo and name only unshipped prerequisites', () => {
+  const backlog = readRepoFile(CAUSAL_UNDO_BACKLOG_PATH);
+  const blockers = sectionBetween(backlog, 'blocked_by:', 'acceptance_criteria:');
+
+  assert.doesNotMatch(blockers, /plain stack undo cutover/);
+  assert.match(blockers, /Historical Basis Preview/);
+  assert.match(blockers, /Search Sets \/ proposal strand preview \+ :admit/);
 });
 
 test('process doc defines the official cycle lifecycle and proof boundary', () => {

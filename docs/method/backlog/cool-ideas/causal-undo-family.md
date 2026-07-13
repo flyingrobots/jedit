@@ -12,7 +12,6 @@ keywords:
   - anchors
   - agents
 blocked_by:
-  - plain stack undo cutover (u / ctrl+r as causal counter-edits)
   - Historical Basis Preview (goalpost 3)
   - Search Sets / proposal strand preview + :admit (goalpost 4)
   - why-is-this-character-here-debugger (g? attribution)
@@ -29,6 +28,9 @@ acceptance_criteria:
 ## The proposal
 
 Undo as a family of causal operations, not a stack pop:
+
+WF-0154 already provenance-named standard `u`/`ctrl+r`; this family leaves
+those commands unchanged and adds separately previewed forward counter-edits.
 
 1. **Surgical revert** — cursor on a line: "undo the change that introduced
    this line." Attribution (`g?` machinery) -> inverse synthesis -> commute
