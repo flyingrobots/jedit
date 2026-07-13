@@ -83,6 +83,7 @@ export interface WorkspaceTextCommandBase {
   readonly provenanceKind?: WorkspaceTextPendingCommandKind;
   readonly reversedRequestId?: number;
   readonly reversedReceiptId?: string;
+  readonly reachableHistoryRequestIds?: readonly number[];
 }
 
 export interface WorkspaceTextInsertCommandRequest extends WorkspaceTextCommandBase {
@@ -230,6 +231,9 @@ function workspaceTextOperationTarget(
     bufferId: request.bufferId,
     requestId: request.requestId,
     ...(request.reversedRequestId == null ? {} : { reversedRequestId: request.reversedRequestId }),
+    ...(request.reachableHistoryRequestIds == null
+      ? {}
+      : { reachableHistoryRequestIds: request.reachableHistoryRequestIds }),
   };
 }
 

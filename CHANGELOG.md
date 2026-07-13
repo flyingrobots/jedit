@@ -23,6 +23,9 @@
   identity through the undo/redo stacks and resolves to admitted receipts in
   the serialized operation sequencer, including edits still unsettled when a
   history command is queued.
+  The sequencer's receipt index is an acceleration structure, not retained
+  evidence: after resolving a queued reversal, it prunes request receipts that
+  are no longer reachable from the editor's undo or redo history.
 
 - Added WF-0154, the E-Brake goalpost (issue #267), locking in four audit
   remediations: undo/redo settlements named as reversals in provenance (the

@@ -54,6 +54,7 @@ export interface WorkspaceTextOperationTarget {
   readonly bufferId: string;
   readonly requestId?: number;
   readonly reversedRequestId?: number;
+  readonly reachableHistoryRequestIds?: readonly number[];
 }
 
 export function createWorkspaceTextOperationSequencer(): WorkspaceTextOperationSequencer {
@@ -150,8 +151,24 @@ function recordEditReceipt(
   const sessionReceipts = state.editReceipts.get(session) ?? new Map<string, Map<number, string>>();
   const bufferReceipts = sessionReceipts.get(target.bufferId) ?? new Map<number, string>();
   bufferReceipts.set(target.requestId, receiptId);
+  retainReachableEditReceipts(bufferReceipts, target.reachableHistoryRequestIds);
   sessionReceipts.set(target.bufferId, bufferReceipts);
   state.editReceipts.set(session, sessionReceipts);
+}
+
+function retainReachableEditReceipts(
+  receipts: Map<number, string>,
+  reachableRequestIds: readonly number[] | undefined,
+): void {
+  if (reachableRequestIds == null) {
+    return;
+  }
+  const reachable = new Set(reachableRequestIds);
+  for (const requestId of receipts.keys()) {
+    if (!reachable.has(requestId)) {
+      receipts.delete(requestId);
+    }
+  }
 }
 
 function sequenceCheckpointOperation(

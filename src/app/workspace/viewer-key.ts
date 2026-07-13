@@ -18,6 +18,7 @@ import {
   isNormalModeHistoryKey,
   pendingCommandKindForNormalModeKey,
   plannedWorkspaceCommandEventForQueuedEdit,
+  reachableHistoryRequestIds,
   reversedRequestIdForHistoryCommand,
 } from './workspace-history-commands.js';
 import { snapshotEditor } from './editor-editing-core.js';
@@ -428,6 +429,7 @@ function queueProductionTextEdit(
     textOperationSequencer,
     atMs: model.time,
     aperture: workspaceTextApertureFromEditor(editor, viewport.height),
+    reachableHistoryRequestIds: reachableHistoryRequestIds(editor),
   };
   return [{
     ...queuedModel,

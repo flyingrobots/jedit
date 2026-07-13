@@ -145,6 +145,12 @@ export function editorWithTransitionRequest(
   };
 }
 
+export function reachableHistoryRequestIds(editor: EditorState): readonly number[] {
+  return [...editor.undoStack, ...editor.redoStack]
+    .map((entry) => entry.transitionRequestId)
+    .filter((requestId): requestId is number => requestId != null);
+}
+
 function historyStackWithTransitionRequest(
   stack: EditorState['undoStack'],
   requestId: number,
