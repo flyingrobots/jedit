@@ -3,7 +3,7 @@ title: "WF-0154 - E-Brake: Observed Absurdity Fixes"
 legend: "WF"
 lane: "design"
 issue: "https://github.com/flyingrobots/jedit/issues/267"
-status: "active"
+status: "landed"
 owners:
   - "@flyingrobots"
 created: "2026-07-12"
@@ -457,9 +457,10 @@ What the tests proved:
 
 What remains open:
 
-- Slice 1 provenance naming: issue #269 (seam map recorded there).
-- `docs/design/0001-replace-range-contract/replace-range-contract.md`
-  still describes the pre-allocator signatures (follow-on debt above).
+- Nothing. Slice 1 (provenance naming, #269) landed in the closeout PR along
+  with the dist/source parity witness (#249), the retained full-root guard
+  (#247), the 0001 Later Evolution note, and the WF-0155/WF-0156 draft
+  designs. The goalpost is met.
 
 PR:
 
