@@ -69,6 +69,35 @@ Do `RopeDiff` facts retain replaced bytes (local inverse synthesis is cheap)
 or ranges only (inversion must materialize adjacent states / checkpoints)?
 Decides whether surgical revert is cheap or checkpoint-dependent.
 
+## Blast radius containment (design laws)
+
+The butterfly-effect failure mode is real and has exactly two causes to
+reject by design:
+
+1. **Dependency is non-commutation, never temporal order.** E2 depends on E1
+   only if E1's inverse fails to commute past it (spatial overlap /
+   anchor-transform failure). Treating "came after" as "depends on"
+   degenerates cascade into global `:earlier`.
+2. **Bases on edit intents must be minimal and honest** — the touched range
+   plus explicit reads, not the viewport. Aperture tightness is the knob
+   that decides scalpel vs bulldozer.
+
+Containment UX:
+
+- Preview shows concentric rings with counts before details: overlapping
+  edits / basis-dependent / structurally related (Graft). User picks the cut.
+- Hard radius budget: over N edits -> typed obstruction offering narrower
+  range, shallower ring, or surgical mode.
+- Surgical escape valve always offered: revert only the target, leave
+  downstream standing, emit conflict markers where the inverse cannot
+  commute (git-revert semantics).
+- Classify pathological chains: whitespace/format edits are transparent to
+  closure (commute aggressively through them); rename-shaped edits display
+  as one group, not per-site entries.
+- Huge radius is information, not failure: "212 edits stand on this line"
+  is an answer only this substrate can compute. Acting on it stays behind
+  preview -> admit.
+
 ## Slice ladder
 
 1. `g?` attribution at coordinate (existing cool-idea, blocked on Echo
