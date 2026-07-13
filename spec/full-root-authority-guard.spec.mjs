@@ -3,6 +3,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { REPO_ROOT } from './dist-helpers.mjs';
+import { importDist } from './workspace-helpers.mjs';
 
 const STATE_ROOTS_ACCESS_PATTERN = /\bstate\.roots\b/;
 const ROOTS_BINDING_PATTERN = /\.roots\b|\broots\s*[,}:=]/;
@@ -92,7 +93,6 @@ test('the guard catches retained-root access regardless of binding shape', () =>
 });
 
 test('the quarantined fixture cannot pose as production text authority', async () => {
-  const { importDist } = await import('./workspace-helpers.mjs');
   const fixture = await importDist('adapters', 'full-snapshot-hot-text-runtime-fixture.js');
   const runtime = fixture.createFullSnapshotHotTextRuntimeFixture();
 

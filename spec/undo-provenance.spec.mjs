@@ -3,11 +3,8 @@ import test from 'node:test';
 import { createWorkspaceEchoAppHarness } from './workspace-echo-app-harness.mjs';
 import { importDist } from './workspace-helpers.mjs';
 
-async function openedHarness(options = {}) {
-  const harness = await createWorkspaceEchoAppHarness({
-    readings: ['before edit', 'after edit'],
-    ...options,
-  });
+async function openedHarness(options) {
+  const harness = await createWorkspaceEchoAppHarness(options);
   await harness.runFirst(await harness.key('enter'));
   harness.setModel({
     ...harness.model,
@@ -20,6 +17,24 @@ async function openedHarness(options = {}) {
 function lastCommandEvent(model) {
   const authority = model.textAuthority;
   return authority.pendingCommandEvent?.event ?? authority.lastCommandEvent;
+}
+
+function sampleReadingCache() {
+  return {
+    bufferId: 'buffer:notes',
+    readingId: 'reading:notes',
+    lines: ['abc'],
+    coverage: 'full',
+    lineCount: 1,
+    startLine: 0,
+    returnedLineCount: 1,
+    totalLineCount: 1,
+    hasMoreBefore: false,
+    hasMoreAfter: false,
+    cursorLine: 0,
+    viewportLineCount: 24,
+    truncated: false,
+  };
 }
 
 test('undo is named as a history reversal in command provenance', async () => {
@@ -85,21 +100,7 @@ test('redo is named as a history reversal in command provenance', async () => {
 
 test('undo settlements carry the history provenance kind', async () => {
   const settlement = await importDist('app', 'workspace', 'workspace-text-wsc-settlement.js');
-  const cache = {
-    bufferId: 'buffer:notes',
-    readingId: 'reading:notes',
-    lines: ['abc'],
-    coverage: 'full',
-    lineCount: 1,
-    startLine: 0,
-    returnedLineCount: 1,
-    totalLineCount: 1,
-    hasMoreBefore: false,
-    hasMoreAfter: false,
-    cursorLine: 0,
-    viewportLineCount: 24,
-    truncated: false,
-  };
+  const cache = sampleReadingCache();
   const request = {
     requestId: 7,
     filePath: '/repo/notes.md',
@@ -167,21 +168,7 @@ test('the WSC history listing exposes reversal naming to agent surfaces', async 
 
 test('ordinary edit settlements omit the provenance kind field', async () => {
   const settlement = await importDist('app', 'workspace', 'workspace-text-wsc-settlement.js');
-  const cache = {
-    bufferId: 'buffer:notes',
-    readingId: 'reading:notes',
-    lines: ['abc'],
-    coverage: 'full',
-    lineCount: 1,
-    startLine: 0,
-    returnedLineCount: 1,
-    totalLineCount: 1,
-    hasMoreBefore: false,
-    hasMoreAfter: false,
-    cursorLine: 0,
-    viewportLineCount: 24,
-    truncated: false,
-  };
+  const cache = sampleReadingCache();
   const request = {
     requestId: 8,
     filePath: '/repo/notes.md',
