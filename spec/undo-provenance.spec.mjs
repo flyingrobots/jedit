@@ -69,6 +69,77 @@ test('settled undo events keep history identity, receipt truth, and a reversal r
   assert.equal(typeof event?.reversedReceiptId, 'string');
 });
 
+test('repeated undo and redo events cite the corresponding transition receipts', async () => {
+  const harness = await openedHarness({
+    hostLines: ['abc'],
+    readings: ['abc', 'bc', 'Xbc', 'bc', 'abc', 'bc', 'Xbc'],
+    editReceiptIds: {
+      delete: ['receipt:edit-1'],
+      insert: ['receipt:edit-2'],
+      replace: [
+        'receipt:undo-1',
+        'receipt:undo-2',
+        'receipt:redo-1',
+        'receipt:redo-2',
+      ],
+    },
+  });
+
+  await harness.runFirst(await harness.key('x'));
+  const firstEditReceiptId = harness.model.textAuthority.lastReceiptId;
+  await harness.key('i');
+  await harness.runFirst(await harness.key('X', { shift: true }));
+  const secondEditReceiptId = harness.model.textAuthority.lastReceiptId;
+  await harness.key('escape');
+
+  assert.equal(firstEditReceiptId, 'receipt:edit-1');
+  assert.equal(secondEditReceiptId, 'receipt:edit-2');
+
+  await harness.runFirst(await harness.key('u'));
+  const firstUndo = lastCommandEvent(harness.model);
+  await harness.runFirst(await harness.key('u'));
+  const secondUndo = lastCommandEvent(harness.model);
+
+  assert.equal(firstUndo?.receiptId, 'receipt:undo-1');
+  assert.equal(secondUndo?.receiptId, 'receipt:undo-2');
+  assert.equal(firstUndo?.reversedReceiptId, secondEditReceiptId);
+  assert.equal(secondUndo?.reversedReceiptId, firstEditReceiptId);
+
+  await harness.runFirst(await harness.key('r', { ctrl: true }));
+  const firstRedo = lastCommandEvent(harness.model);
+  await harness.runFirst(await harness.key('r', { ctrl: true }));
+  const secondRedo = lastCommandEvent(harness.model);
+
+  assert.equal(firstRedo?.reversedReceiptId, secondUndo?.receiptId);
+  assert.equal(secondRedo?.reversedReceiptId, firstUndo?.receiptId);
+});
+
+test('queued undo resolves the edit receipt after its predecessor settles', async () => {
+  const harness = await openedHarness({
+    hostLines: ['abc'],
+    readings: ['abc', 'bc', 'abc'],
+  });
+
+  const editCommands = await harness.key('x');
+  const undoCommands = await harness.key('u');
+
+  const [editMessage, undoMessage] = await Promise.all([
+    editCommands[0](),
+    undoCommands[0](),
+  ]);
+  const [afterEdit] = harness.runtime.update(editMessage, harness.model);
+  harness.setModel(afterEdit);
+  const [afterUndo] = harness.runtime.update(undoMessage, harness.model);
+  harness.setModel(afterUndo);
+
+  const undo = lastCommandEvent(harness.model);
+  const settlement = JSON.parse(new TextDecoder().decode(
+    undoMessage.result.wscSettlementEnvelope.bytes,
+  ));
+  assert.equal(undo?.reversedReceiptId, 'receipt:delete');
+  assert.equal(settlement.reversedReceiptId, 'receipt:delete');
+});
+
 test('shift+U is never classified as a history key', async () => {
   const history = await importDist('app', 'workspace', 'workspace-history-commands.js');
   const authority = await importDist('app', 'workspace', 'workspace-text-authority.js');

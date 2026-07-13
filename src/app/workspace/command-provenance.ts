@@ -71,6 +71,7 @@ export interface JeditCommandEvent {
   readonly replayPolicy?: VimRepeatState['replayPolicy'];
   readonly result: JeditCommandResult;
   readonly reversedReceiptId?: string;
+  readonly reversedRequestId?: number;
   readonly summary: string;
   readonly target?: JeditCommandTarget;
   readonly textObject?: JeditCommandTextObject;
@@ -191,20 +192,22 @@ export function receivedJeditCommandEventForRequest(
   textAuthority: WorkspaceTextAuthority,
   requestId: number,
   receiptId: string,
+  reversedReceiptId?: string,
 ): JeditCommandEvent | undefined {
   const event = plannedOrLastJeditCommandEventForRequest(textAuthority, requestId);
   return event == null
     ? undefined
-    : jeditCommandEventWithReceipt(event, { posture: 'received', receiptId });
+    : jeditCommandEventWithReceipt(event, { posture: 'received', receiptId }, reversedReceiptId);
 }
 
 export function workspaceTextAuthorityWithAppliedJeditCommandReceipt(
   authority: WorkspaceTextAuthorityOpened,
   requestId: number,
   receiptId: string,
+  reversedReceiptId?: string,
 ): WorkspaceTextAuthorityOpened {
   const withReceipt = workspaceTextAuthorityWithReceipt(authority, receiptId);
-  const event = receivedJeditCommandEventForRequest(authority, requestId, receiptId);
+  const event = receivedJeditCommandEventForRequest(authority, requestId, receiptId, reversedReceiptId);
   return event == null
     ? withReceipt
     : workspaceTextAuthorityWithLastCommandEvent(withReceipt, event);
@@ -301,17 +304,23 @@ function eventFromValidatedFacts(
 function jeditCommandEventWithReceipt(
   event: JeditCommandEvent,
   receipt: JeditCommandReceipt,
+  reversedReceiptId?: string,
 ): JeditCommandEvent {
   if (event.family === JEDIT_HISTORY_COMMAND_EVENT_FAMILY) {
-    return {
+    const received = {
       ...event,
       receipt,
       receiptId: receipt.receiptId,
+      reversedReceiptId: reversedReceiptId ?? event.reversedReceiptId,
+    };
+    return {
+      ...received,
       summary: jeditHistoryCommandEventSummary(
-        event.command,
-        event.operator ?? event.family,
-        event.reversedReceiptId,
+        received.command,
+        received.operator ?? received.family,
+        received.reversedReceiptId,
         receipt,
+        received.reversedRequestId,
       ),
     };
   }
@@ -486,4 +495,3 @@ function commandEventId(
     jeditCommandReceiptMessage(receipt),
   ].join(EVENT_ID_SEPARATOR);
 }
-

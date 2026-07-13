@@ -54,6 +54,7 @@ export interface HistoryEntry {
   readonly scrollRow: number;
   readonly scrollCol: number;
   readonly dirty: boolean;
+  readonly transitionRequestId?: number;
 }
 export interface EditorState {
   readonly path: string;

@@ -12,6 +12,7 @@ import {
 const TARGET_UNAVAILABLE_SUMMARY = 'target unavailable';
 const KEY_SEQUENCE_EMPTY = '<empty>';
 const REVERSES_UNSETTLED_EDIT = 'reverses the prior unsettled edit';
+const REVERSES_REQUEST_PREFIX = 'reverses request';
 
 export function commandKeySequence(keys: readonly string[]): string {
   return keys.length === 0 ? KEY_SEQUENCE_EMPTY : keys.join('');
@@ -22,11 +23,22 @@ export function jeditHistoryCommandEventSummary(
   operator: string,
   reversedReceiptId: string | undefined,
   receipt: JeditCommandReceipt,
+  reversedRequestId?: number,
 ): string {
-  const reverses = reversedReceiptId == null
-    ? REVERSES_UNSETTLED_EDIT
-    : `reverses receipt ${reversedReceiptId}`;
+  const reverses = historyReversalSummary(reversedReceiptId, reversedRequestId);
   return `${command} ${operator} ${reverses} receipt ${jeditCommandReceiptMessage(receipt)}`;
+}
+
+function historyReversalSummary(
+  reversedReceiptId: string | undefined,
+  reversedRequestId: number | undefined,
+): string {
+  if (reversedReceiptId != null) {
+    return `reverses receipt ${reversedReceiptId}`;
+  }
+  return reversedRequestId == null
+    ? REVERSES_UNSETTLED_EDIT
+    : `${REVERSES_REQUEST_PREFIX} ${reversedRequestId} awaiting receipt`;
 }
 
 export function jeditCommandEventSummary(event: JeditCommandEvent): string {

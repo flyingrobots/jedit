@@ -19,7 +19,10 @@
   edit's settlement receipt, and the WSC history listing exposes them to
   agent-facing JSON surfaces. History events keep their `history:` event
   identity and refresh their receipt summary at settlement, and Shift+U is
-  never classified as the undo key.
+  never classified as the undo key. Reversal correlation follows request
+  identity through the undo/redo stacks and resolves to admitted receipts in
+  the serialized operation sequencer, including edits still unsettled when a
+  history command is queued.
 
 - Added WF-0154, the E-Brake goalpost (issue #267), locking in four audit
   remediations: undo/redo settlements named as reversals in provenance (the

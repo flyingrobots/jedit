@@ -10,7 +10,6 @@ import type { EditorState } from './editor/model.js';
 import { jeditHistoryCommandEventSummary } from './jedit-command-event-summary.js';
 import { createJeditWhyObservation } from './jedit-why-observation.js';
 import {
-  WorkspaceTextAuthorityKinds,
   WorkspaceTextPendingCommandKinds,
   type WorkspaceTextAuthority,
   type WorkspaceTextPendingCommandKind,
@@ -53,6 +52,7 @@ export interface PlannedWorkspaceCommandEventInput {
   readonly editor: EditorState;
   readonly pendingCommandKind?: WorkspaceTextPendingCommandKind;
   readonly requestId: number;
+  readonly reversedRequestId?: number;
   readonly textAuthority: WorkspaceTextAuthority;
 }
 
@@ -94,7 +94,6 @@ function historyCommandEvent(
   const command = undo ? HISTORY_COMMAND_UNDO : HISTORY_COMMAND_REDO;
   const label = undo ? HISTORY_LABEL_UNDO : HISTORY_LABEL_REDO;
   const receipt = { posture: HISTORY_RECEIPT_PENDING } as const;
-  const reversedReceiptId = reversedReceiptIdFromAuthority(input.textAuthority);
   return {
     kind: 'vim',
     eventId: historyEventId(label, input.requestId),
@@ -106,17 +105,54 @@ function historyCommandEvent(
     requestId: input.requestId,
     receipt,
     result: historyCommandResult(input.editor),
-    reversedReceiptId,
-    summary: jeditHistoryCommandEventSummary(command, label, reversedReceiptId, receipt),
+    reversedRequestId: input.reversedRequestId,
+    summary: jeditHistoryCommandEventSummary(
+      command,
+      label,
+      undefined,
+      receipt,
+      input.reversedRequestId,
+    ),
   };
 }
 
-export function reversedReceiptIdFromAuthority(
-  textAuthority: WorkspaceTextAuthority,
-): string | undefined {
-  return textAuthority.kind === WorkspaceTextAuthorityKinds.Opened
-    ? textAuthority.lastReceiptId
+export function reversedRequestIdForHistoryCommand(
+  editor: EditorState,
+  pendingCommandKind: WorkspaceTextPendingCommandKind | undefined,
+): number | undefined {
+  if (pendingCommandKind === WorkspaceTextPendingCommandKinds.Undo) {
+    return editor.undoStack.at(-1)?.transitionRequestId;
+  }
+  return pendingCommandKind === WorkspaceTextPendingCommandKinds.Redo
+    ? editor.redoStack.at(-1)?.transitionRequestId
     : undefined;
+}
+
+export function editorWithTransitionRequest(
+  editor: EditorState,
+  pendingCommandKind: WorkspaceTextPendingCommandKind | undefined,
+  requestId: number,
+): EditorState {
+  if (pendingCommandKind === WorkspaceTextPendingCommandKinds.Undo) {
+    return {
+      ...editor,
+      redoStack: historyStackWithTransitionRequest(editor.redoStack, requestId),
+    };
+  }
+  return {
+    ...editor,
+    undoStack: historyStackWithTransitionRequest(editor.undoStack, requestId),
+  };
+}
+
+function historyStackWithTransitionRequest(
+  stack: EditorState['undoStack'],
+  requestId: number,
+) {
+  const entry = stack.at(-1);
+  return entry == null
+    ? stack
+    : [...stack.slice(0, -1), { ...entry, transitionRequestId: requestId }];
 }
 
 function historyEventId(label: string, requestId: number): string {
