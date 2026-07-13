@@ -37,6 +37,37 @@ test('undo is named as a history reversal in command provenance', async () => {
   assert.match(event?.summary ?? '', /undo/);
 });
 
+test('settled undo events keep history identity, receipt truth, and a reversal reference', async () => {
+  const harness = await openedHarness({
+    hostLines: ['abc'],
+    readings: ['abc', 'bc', 'abc'],
+  });
+
+  await harness.runFirst(await harness.key('x'));
+  await harness.runFirst(await harness.key('u'));
+
+  const event = lastCommandEvent(harness.model);
+  assert.equal(event?.eventId.startsWith('history:undo:'), true);
+  assert.equal(event?.receipt.posture, 'received');
+  assert.equal(event?.summary.includes('receipt pending'), false);
+  assert.match(event?.summary ?? '', /reverses receipt/);
+  assert.equal(typeof event?.reversedReceiptId, 'string');
+});
+
+test('shift+U is never classified as a history key', async () => {
+  const history = await importDist('app', 'workspace', 'workspace-history-commands.js');
+  const authority = await importDist('app', 'workspace', 'workspace-text-authority.js');
+
+  const kind = history.pendingCommandKindForNormalModeKey({
+    key: 'u',
+    shift: true,
+    ctrl: false,
+    alt: false,
+  });
+
+  assert.equal(kind, authority.WorkspaceTextPendingCommandKinds.Vim);
+});
+
 test('redo is named as a history reversal in command provenance', async () => {
   const harness = await openedHarness({
     hostLines: ['abc'],

@@ -1,19 +1,22 @@
 import type { KeyMsg } from '@flyingrobots/bijou-tui';
 import {
+  JEDIT_HISTORY_COMMAND_EVENT_FAMILY,
   createPlannedJeditCommandEvent,
   type JeditCommandEvent,
   type JeditPlannedCommandEvent,
 } from './command-provenance.js';
 import { EditorKeys } from './editor/key.js';
 import type { EditorState } from './editor/model.js';
+import { jeditHistoryCommandEventSummary } from './jedit-command-event-summary.js';
 import { createJeditWhyObservation } from './jedit-why-observation.js';
 import {
+  WorkspaceTextAuthorityKinds,
   WorkspaceTextPendingCommandKinds,
   type WorkspaceTextAuthority,
   type WorkspaceTextPendingCommandKind,
 } from './workspace-text-authority.js';
 
-export const JEDIT_HISTORY_COMMAND_FAMILY = 'history';
+export const JEDIT_HISTORY_COMMAND_FAMILY = JEDIT_HISTORY_COMMAND_EVENT_FAMILY;
 
 const HISTORY_COMMAND_UNDO = 'u';
 const HISTORY_COMMAND_REDO = '<C-r>';
@@ -21,13 +24,10 @@ const HISTORY_LABEL_UNDO = 'undo';
 const HISTORY_LABEL_REDO = 'redo';
 const HISTORY_EVENT_ID_PREFIX = 'history';
 const HISTORY_EVENT_ID_SEPARATOR = ':';
-const HISTORY_SUMMARY_SEPARATOR = ' | ';
 const HISTORY_RECEIPT_PENDING = 'pending';
-const HISTORY_REVERSES_UNDO = 'reverses the previous edit';
-const HISTORY_REVERSES_REDO = 'reapplies the reversed edit';
 
 export function isNormalModeHistoryKey(msg: KeyMsg): boolean {
-  return (msg.key === EditorKeys.U && !msg.ctrl && !msg.alt)
+  return (msg.key === EditorKeys.U && !msg.ctrl && !msg.alt && !msg.shift)
     || (msg.key === EditorKeys.R && msg.ctrl && !msg.alt && !msg.shift);
 }
 
@@ -93,23 +93,30 @@ function historyCommandEvent(
   const undo = pendingCommandKind === WorkspaceTextPendingCommandKinds.Undo;
   const command = undo ? HISTORY_COMMAND_UNDO : HISTORY_COMMAND_REDO;
   const label = undo ? HISTORY_LABEL_UNDO : HISTORY_LABEL_REDO;
-  const reverses = undo ? HISTORY_REVERSES_UNDO : HISTORY_REVERSES_REDO;
+  const receipt = { posture: HISTORY_RECEIPT_PENDING } as const;
+  const reversedReceiptId = reversedReceiptIdFromAuthority(input.textAuthority);
   return {
     kind: 'vim',
     eventId: historyEventId(label, input.requestId),
     command,
     keys: [command],
     family: JEDIT_HISTORY_COMMAND_FAMILY,
+    operator: label,
     observation: createJeditWhyObservation({ textAuthority: input.textAuthority }),
     requestId: input.requestId,
-    receipt: { posture: HISTORY_RECEIPT_PENDING },
+    receipt,
     result: historyCommandResult(input.editor),
-    summary: [
-      `${command} ${label}`,
-      reverses,
-      `receipt ${HISTORY_RECEIPT_PENDING}`,
-    ].join(HISTORY_SUMMARY_SEPARATOR),
+    reversedReceiptId,
+    summary: jeditHistoryCommandEventSummary(command, label, reversedReceiptId, receipt),
   };
+}
+
+export function reversedReceiptIdFromAuthority(
+  textAuthority: WorkspaceTextAuthority,
+): string | undefined {
+  return textAuthority.kind === WorkspaceTextAuthorityKinds.Opened
+    ? textAuthority.lastReceiptId
+    : undefined;
 }
 
 function historyEventId(label: string, requestId: number): string {

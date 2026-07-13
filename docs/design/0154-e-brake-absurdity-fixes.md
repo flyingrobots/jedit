@@ -322,8 +322,10 @@ doctrine); executable doc-path witness before prose rewrite.
 Behavior tests required:
 
 - [x] Provenance spec: after an edit and `u`, the settlement/provenance
-      surface names an undo with a reference to the reversed transition, and
-      `:why` output includes the reversal explanation
+      surface names an undo with a reference to the reversed transition (the
+      reversed edit's settlement receipt id, carried as `reversedReceiptId`
+      on the event and the settlement payload), and `:why` output includes
+      the reversal explanation
       (`spec/undo-provenance.spec.mjs`; failed RED before naming landed).
 - [x] Redo provenance spec: `ctrl+r` after undo is named as a redo
       (`spec/undo-provenance.spec.mjs`; failed RED before naming landed).

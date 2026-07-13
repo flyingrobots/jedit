@@ -11,9 +11,12 @@
   release gates; the RED run caught and removed two real orphaned artifacts.
 - Named undo and redo in command provenance and settlement evidence: `u` and
   `ctrl+r` now produce `history`-family command events (so `:why` and the
-  footer explain reversals), edit settlements carry an additive
-  `provenanceKind` field, and the WSC history listing exposes it to
-  agent-facing JSON surfaces.
+  footer explain reversals), edit settlements carry additive
+  `provenanceKind` and `reversedReceiptId` fields referencing the reversed
+  edit's settlement receipt, and the WSC history listing exposes them to
+  agent-facing JSON surfaces. History events keep their `history:` event
+  identity and refresh their receipt summary at settlement, and Shift+U is
+  never classified as the undo key.
 
 - Added WF-0154, the E-Brake goalpost (issue #267), locking in four audit
   remediations: undo/redo settlements named as reversals in provenance (the

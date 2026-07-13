@@ -81,6 +81,7 @@ export interface WorkspaceTextCommandBase {
   readonly aperture: ProductionTextViewportAperture;
   readonly cursorAfter?: TextPosition;
   readonly provenanceKind?: WorkspaceTextPendingCommandKind;
+  readonly reversedReceiptId?: string;
 }
 
 export interface WorkspaceTextInsertCommandRequest extends WorkspaceTextCommandBase {

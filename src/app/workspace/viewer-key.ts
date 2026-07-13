@@ -17,6 +17,7 @@ import {
   isNormalModeHistoryKey,
   pendingCommandKindForNormalModeKey,
   plannedWorkspaceCommandEventForQueuedEdit,
+  reversedReceiptIdFromAuthority,
 } from './workspace-history-commands.js';
 import { snapshotEditor } from './editor-editing-core.js';
 import { EditorModes, PendingNormals } from './editor/mode.js';
@@ -427,7 +428,12 @@ function queueProductionTextEdit(
   }, [
     createWorkspaceTextEditCmd({
       ...base,
-      ...(isHistoryPendingCommandKind(pendingCommandKind) ? { provenanceKind: pendingCommandKind } : {}),
+      ...(isHistoryPendingCommandKind(pendingCommandKind)
+        ? {
+          provenanceKind: pendingCommandKind,
+          reversedReceiptId: reversedReceiptIdFromAuthority(model.textAuthority),
+        }
+        : {}),
       ...edit,
     }),
   ]];
