@@ -18,4 +18,3 @@ export function jeditCommandHistorySummary(
   const event = jeditCommandEventFromEditor(editor, textAuthority);
   return event == null ? filePath : `${filePath} ${event.summary}`;
 }
-
