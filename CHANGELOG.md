@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Quarantined retained full-root text authority behind an allowlisted guard
+  witness: the only permitted `HotTextBufferState.roots` readers are the type
+  definition, the production-unsafe full-snapshot fixture, root-fact evidence
+  emission, and the transport schema; any new reader fails the suite.
 - Added a dist/source parity witness so stale compiled artifacts for deleted
   sources cannot mask missing imports in dist-driven specs, cycle proofs, or
   release gates; the RED run caught and removed two real orphaned artifacts.
