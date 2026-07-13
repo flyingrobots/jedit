@@ -11,7 +11,10 @@ Graft/Echo readings are projections or evidence. They do not own buffer truth.
 
 ## Buffer Truth
 
-The current visible editor projection lives in `src/main.ts` as `EditorState`.
+The current visible editor projection lives in
+`src/app/workspace/editor/model.ts` as `EditorState`. (`src/main.ts` is a
+small CLI dispatcher; the workspace boots from `src/main-workspace.ts` through
+`src/adapters/workspace-app.ts`.)
 
 `EditorState` carries:
 
@@ -38,7 +41,8 @@ projection cache, not canonical causal truth.
 
 ## Loading A Buffer
 
-Opening a file eventually calls `loadEditor(filePath)` in `src/main.ts`.
+Opening a file eventually calls `loadEditor(filePath)` in
+`src/app/workspace/editor-session.ts`.
 
 That function delegates file IO to `loadEditorFile(filePath)` in
 `src/adapters/editor-file.ts`. The adapter is the boundary where bytes become
@@ -59,7 +63,8 @@ at the top of the file.
 Insert mode, normal mode, paste, delete, change, undo, and redo all operate on
 `EditorState`.
 
-Most edits go through `commitMutation(...)` in `src/main.ts`. That creates an
+Most edits go through `commitMutation(...)` in
+`src/app/workspace/editor-editing-core.ts`. That creates an
 undo snapshot of the previous editor state, clears the redo stack, applies the
 patch, and marks the buffer dirty unless the patch says otherwise.
 
@@ -88,7 +93,8 @@ contracts/jedit/structural-history.graphql
   -> ignored replaceTextRange descriptor under src/generated/jedit
   -> src/app/structural-history-replace-text-range.ts
   -> src/app/hot-buffer-session.ts
-  -> src/adapters/in-memory-hot-text-runtime.ts
+  -> src/ports/hot-text-runtime.ts
+  -> src/adapters/full-snapshot-hot-text-runtime-fixture.ts
 ```
 
 The generated descriptor supplies the `replaceTextRange` operation identity.
@@ -103,7 +109,8 @@ descriptor. The descriptor path is ignored because it is build output.
 
 ## The Frame Loop
 
-Bijou TUI runs the app declared in `src/main.ts`.
+Bijou TUI runs the app assembled in `src/adapters/workspace-app.ts` and
+started from `src/main-workspace.ts`.
 
 On each frame, the app calls:
 

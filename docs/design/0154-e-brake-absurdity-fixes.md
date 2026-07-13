@@ -313,7 +313,7 @@ doctrine); executable doc-path witness before prose rewrite.
 - [x] Slice 3: RED identity witness + chain-threaded root-id allocation;
       resolve bad-code entry
       (`fix(domain): thread root id allocation through chain state`).
-- [ ] Slice 4: RED doc-path witness + ADVANCED_GUIDE rewrite + GUIDE/README
+- [x] Slice 4: RED doc-path witness + ADVANCED_GUIDE rewrite + GUIDE/README
       corrections (`docs: make top-level guides pass the path witness`).
 
 ## Tests To Write First
@@ -337,10 +337,11 @@ Behavior tests required:
 
 Documentation and process tests, only if relevant:
 
-- [ ] Doc-path witness: every `src/**`/`scripts/**` path-like reference in
+- [x] Doc-path witness: every `src/**`/`scripts/**` path-like reference in
       README, GUIDE, ADVANCED_GUIDE, ARCHITECTURE, BEARING — including fenced
-      code blocks and plain prose — resolves (fails today on ADVANCED_GUIDE's
-      fenced `in-memory-hot-text-runtime` flow).
+      code blocks and plain prose — resolves
+      (`spec/guide-path-references.spec.mjs`; failed RED on ADVANCED_GUIDE's
+      fenced `in-memory-hot-text-runtime` flow before the guide fix).
 - [ ] BEARING truth assertion: BEARING no longer claims undo/redo is
       unsupported.
 
@@ -356,7 +357,7 @@ The work is done when:
 - [ ] `:why` output explains an undo as a reversal.
 - [x] Identity witness proves replay-stable root ids.
 - [x] Changed-shards guard blocks unlabeled title changes in CI.
-- [ ] Doc-path witness is green and ADVANCED_GUIDE describes the real paths.
+- [x] Doc-path witness is green and ADVANCED_GUIDE describes the real paths.
 - [ ] BEARING describes undo/redo truthfully, citing the boundary spec.
 - [x] `docs/method/backlog/bad-code/global-next-root-id-counter.md` resolved.
 - [ ] CHANGELOG updated; issue #267 and PR #268 linked.
