@@ -2,6 +2,9 @@ const ZERO_BYTE_OFFSET = 0;
 const REPLACE_RANGE_ERROR_INVALID_RANGE = 1;
 const REPLACE_RANGE_ERROR_OUT_OF_BOUNDS = 2;
 const REPLACE_RANGE_ERROR_INVALID_UTF8_BOUNDARY = 3;
+const REPLACE_RANGE_ERROR_INVALID_ROOT_ID = 4;
+
+export const FIRST_ROOT_ID = 1;
 
 const TEXT_ENCODER = new TextEncoder();
 const TEXT_DECODER = new TextDecoder('utf-8', { fatal: true });
@@ -46,8 +49,6 @@ export class TextEditContractError extends Error {
   }
 }
 
-let nextRootId = 1;
-
 export function createTextPoint(byte: number): TextPoint {
   return { byte };
 }
@@ -59,17 +60,14 @@ export function createTextRange(startByte: number, endByte: number): TextRange {
   };
 }
 
-export function createBufferRoot(text: string): BufferRoot {
-  const root = {
-    id: nextRootId,
-    text,
-  };
-  nextRootId += 1;
-  return root;
+export function createBufferRoot(id: number, text: string): BufferRoot {
+  validateRootId(id);
+
+  return { id, text };
 }
 
-export function createTextFragment(text: string): TextFragment {
-  const root = createBufferRoot(text);
+export function createTextFragment(id: number, text: string): TextFragment {
+  const root = createBufferRoot(id, text);
   return { root };
 }
 
@@ -77,11 +75,17 @@ export function materializeRoot(root: BufferRoot): string {
   return root.text;
 }
 
-export function emptyFragment(): TextFragment {
-  return createTextFragment('');
+export function emptyFragment(id: number): TextFragment {
+  return createTextFragment(id, '');
 }
 
-export function replaceRange(baseRoot: BufferRoot, range: TextRange, fragment: TextFragment): ReplaceResult {
+export function replaceRange(
+  baseRoot: BufferRoot,
+  range: TextRange,
+  fragment: TextFragment,
+  nextRootId: number,
+): ReplaceResult {
+  validateRootId(nextRootId);
   const baseBytes = encodeText(baseRoot.text);
   validateRange(range, baseBytes.length);
   ensureUtf8Boundary(baseBytes, range.start.byte);
@@ -96,6 +100,7 @@ export function replaceRange(baseRoot: BufferRoot, range: TextRange, fragment: T
   }
 
   const nextRoot = createBufferRoot(
+    nextRootId,
     decodeText(concatBytes(
       baseBytes.subarray(ZERO_BYTE_OFFSET, range.start.byte),
       insertedBytes,
@@ -116,6 +121,15 @@ export function replaceRange(baseRoot: BufferRoot, range: TextRange, fragment: T
 
 export function firstPoint(): TextPoint {
   return createTextPoint(ZERO_BYTE_OFFSET);
+}
+
+function validateRootId(id: number): void {
+  if (!Number.isInteger(id) || id < FIRST_ROOT_ID) {
+    throw new TextEditContractError(
+      REPLACE_RANGE_ERROR_INVALID_ROOT_ID,
+      'Buffer roots require positive integer ids.',
+    );
+  }
 }
 
 function validateRange(range: TextRange, byteLength: number): void {

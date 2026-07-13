@@ -2,7 +2,19 @@
 title: global-next-root-id-counter
 lane: bad-code
 owner: jedit domain
-priority: low
+priority: resolved
+resolved_by:
+  cycle: WF-0153
+  issue: 267
+  date: 2026-07-12
+  resolution: |
+    Option A implemented, extended with chain-threaded allocation state:
+    createBufferRoot/createTextFragment/emptyFragment take explicit ids,
+    replaceRange takes the next root id, TickAdmissionState and
+    HotTextBufferState thread nextRootId as value state, and
+    admitReplaceRangeTick is the single allocation authority (takes
+    fragment text, allocates fragment + next root ids). Witnessed by
+    spec/root-identity-determinism.spec.mjs.
 keywords:
   - domain
   - text-edit-contract

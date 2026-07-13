@@ -91,6 +91,7 @@ const HotTextBufferStateSchema = z.object({
   editGroups: z.array(EditGroupSchema),
   openEditGroup: OpenEditGroupSchema.optional(),
   checkpoints: z.array(SaveCheckpointSchema),
+  nextRootId: z.number().int(),
 });
 
 const TickMetadataSchema = z.object({

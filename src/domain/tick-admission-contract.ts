@@ -1,10 +1,12 @@
 import {
+  createTextFragment,
   replaceRange,
   type BufferRoot,
   type ReplaceReceipt,
-  type TextFragment,
   type TextRange,
 } from './text-edit-contract.js';
+
+const ALLOCATED_IDS_PER_ADMITTED_TICK = 2;
 
 const TICK_ADMISSION_ERROR_INVALID_STATE = 1;
 const FIRST_TICK_ID = 1;
@@ -17,6 +19,7 @@ export interface AdmittedTick {
 export interface TickAdmissionState {
   readonly currentRoot: BufferRoot;
   readonly ticks: readonly AdmittedTick[];
+  readonly nextRootId: number;
 }
 
 export interface TickAdmissionReceipt {
@@ -42,23 +45,26 @@ export class TickAdmissionContractError extends Error {
 export function createTickAdmissionState(
   currentRoot: BufferRoot,
   ticks: readonly AdmittedTick[] = [],
+  nextRootId: number = deriveNextRootId(currentRoot, ticks),
 ): TickAdmissionState {
-  validateStateShape(currentRoot, ticks);
+  validateStateShape(currentRoot, ticks, nextRootId);
 
   return {
     currentRoot,
     ticks: [...ticks],
+    nextRootId,
   };
 }
 
 export function admitReplaceRangeTick(
   state: TickAdmissionState,
   range: TextRange,
-  fragment: TextFragment,
+  fragmentText: string,
 ): TickAdmissionResult {
-  validateStateShape(state.currentRoot, state.ticks);
+  validateStateShape(state.currentRoot, state.ticks, state.nextRootId);
 
-  const replaceResult = replaceRange(state.currentRoot, range, fragment);
+  const fragment = createTextFragment(state.nextRootId, fragmentText);
+  const replaceResult = replaceRange(state.currentRoot, range, fragment, state.nextRootId + 1);
   if (replaceResult.receipt === undefined) {
     return { nextState: state };
   }
@@ -72,6 +78,7 @@ export function admitReplaceRangeTick(
     nextState: {
       currentRoot: replaceResult.nextRoot,
       ticks: [...state.ticks, nextTick],
+      nextRootId: state.nextRootId + ALLOCATED_IDS_PER_ADMITTED_TICK,
     },
     receipt: {
       tickId: nextTick.id,
@@ -80,7 +87,21 @@ export function admitReplaceRangeTick(
   };
 }
 
-function validateStateShape(currentRoot: BufferRoot, ticks: readonly AdmittedTick[]): void {
+function deriveNextRootId(currentRoot: BufferRoot, ticks: readonly AdmittedTick[]): number {
+  let highestRootId = currentRoot.id;
+  for (const tick of ticks) {
+    if (tick.rootId > highestRootId) {
+      highestRootId = tick.rootId;
+    }
+  }
+  return highestRootId + 1;
+}
+
+function validateStateShape(
+  currentRoot: BufferRoot,
+  ticks: readonly AdmittedTick[],
+  nextRootId: number,
+): void {
   validatePositiveRootId(currentRoot.id, 'Tick admission requires a positive integer current root id.');
 
   let expectedTickId = FIRST_TICK_ID;
@@ -98,6 +119,30 @@ function validateStateShape(currentRoot: BufferRoot, ticks: readonly AdmittedTic
       TICK_ADMISSION_ERROR_INVALID_STATE,
       'Tick admission current root must match the last admitted tick root.',
     );
+  }
+
+  validateNextRootId(nextRootId, currentRoot, ticks);
+}
+
+function validateNextRootId(
+  nextRootId: number,
+  currentRoot: BufferRoot,
+  ticks: readonly AdmittedTick[],
+): void {
+  if (!Number.isInteger(nextRootId) || nextRootId <= currentRoot.id) {
+    throw new TickAdmissionContractError(
+      TICK_ADMISSION_ERROR_INVALID_STATE,
+      'Tick admission requires the next root id to exceed the current root id.',
+    );
+  }
+
+  for (const tick of ticks) {
+    if (nextRootId <= tick.rootId) {
+      throw new TickAdmissionContractError(
+        TICK_ADMISSION_ERROR_INVALID_STATE,
+        'Tick admission requires the next root id to exceed all admitted root ids.',
+      );
+    }
   }
 }
 

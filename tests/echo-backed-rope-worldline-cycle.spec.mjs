@@ -191,12 +191,14 @@ test('Saving the same head twice is a logical no-op.', async () => {
 test('Admitting a ReplaceRange mints a tick and advances the current root.', async () => {
   const contract = await loadTickContract();
   const text = await import(pathToFileURL(path.join(REPO_ROOT, 'dist', 'domain', 'text-edit-contract.js')).href);
-  const state = contract.createTickAdmissionState(text.createBufferRoot('hello world'));
+  const state = contract.createTickAdmissionState(
+    text.createBufferRoot(text.FIRST_ROOT_ID, 'hello world'),
+  );
 
   const result = contract.admitReplaceRangeTick(
     state,
     text.createTextRange(5, 5),
-    text.createTextFragment(' brave new'),
+    ' brave new',
   );
 
   assert.equal(text.materializeRoot(result.nextState.currentRoot), 'hello brave new world');
@@ -212,30 +214,31 @@ test('Admitting a ReplaceRange mints a tick and advances the current root.', asy
 test('Tick admission carries the ReplaceRange receipt as its causal witness.', async () => {
   const contract = await loadTickContract();
   const text = await import(pathToFileURL(path.join(REPO_ROOT, 'dist', 'domain', 'text-edit-contract.js')).href);
-  const initialRoot = text.createBufferRoot('hello world');
-  const fragment = text.createTextFragment(' brave new');
+  const initialRoot = text.createBufferRoot(text.FIRST_ROOT_ID, 'hello world');
   const state = contract.createTickAdmissionState(initialRoot);
 
   const result = contract.admitReplaceRangeTick(
     state,
     text.createTextRange(5, 5),
-    fragment,
+    ' brave new',
   );
 
   assert.equal(result.receipt?.replaceReceipt.baseRootId, initialRoot.id);
   assert.equal(result.receipt?.replaceReceipt.nextRootId, result.nextState.currentRoot.id);
-  assert.equal(result.receipt?.replaceReceipt.insertedRootId, fragment.root.id);
+  assert.equal(result.receipt?.replaceReceipt.insertedRootId, state.nextRootId);
 });
 
 test('A logical no-op does not mint a tick.', async () => {
   const contract = await loadTickContract();
   const text = await import(pathToFileURL(path.join(REPO_ROOT, 'dist', 'domain', 'text-edit-contract.js')).href);
-  const state = contract.createTickAdmissionState(text.createBufferRoot('hello'));
+  const state = contract.createTickAdmissionState(
+    text.createBufferRoot(text.FIRST_ROOT_ID, 'hello'),
+  );
 
   const result = contract.admitReplaceRangeTick(
     state,
     text.createTextRange(0, 5),
-    text.createTextFragment('hello'),
+    'hello',
   );
 
   assert.equal(result.nextState, state);
