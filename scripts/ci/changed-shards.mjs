@@ -3,6 +3,7 @@ import { appendFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 
+import { evaluateFrozenPaths } from './frozen-paths.mjs';
 import {
   TEST_SHARDS,
   TEST_SHARD_NAMES,
@@ -16,6 +17,7 @@ const GITHUB_OUTPUT_ENV = 'GITHUB_OUTPUT';
 const GITHUB_STEP_SUMMARY_ENV = 'GITHUB_STEP_SUMMARY';
 const JSON_FLAG = '--json';
 const FULL_FLAG = '--full';
+const ENFORCE_FROZEN_FLAG = '--enforce-frozen';
 const GITHUB_OUTPUT_FLAG = '--github-output';
 const SUMMARY_FLAG = '--summary';
 const BASE_FLAG = '--base';
@@ -157,6 +159,7 @@ function parseArgs(args) {
     baseRef: DEFAULT_BASE_REF,
     headRef: DEFAULT_HEAD_REF,
     full: process.env.JEDIT_CI_FULL === '1',
+    enforceFrozen: process.env.JEDIT_CI_ENFORCE_FROZEN === '1',
     githubOutput: false,
     json: false,
     summary: false,
@@ -172,6 +175,8 @@ function parseArgs(args) {
       index += 1;
     } else if (arg === FULL_FLAG) {
       parsed.full = true;
+    } else if (arg === ENFORCE_FROZEN_FLAG) {
+      parsed.enforceFrozen = true;
     } else if (arg === GITHUB_OUTPUT_FLAG) {
       parsed.githubOutput = true;
     } else if (arg === JSON_FLAG) {
@@ -190,6 +195,15 @@ function parseArgs(args) {
 function main() {
   const options = parseArgs(process.argv.slice(2));
   const paths = changedPaths(options.baseRef, options.headRef);
+
+  if (options.enforceFrozen) {
+    const frozenVerdict = evaluateFrozenPaths(paths, { allowTitleChanges: false });
+    if (!frozenVerdict.allowed) {
+      process.stderr.write(`${frozenVerdict.reason}\n`);
+      process.exit(1);
+    }
+  }
+
   const plan = options.full
     ? fullPlan([FULL_REASON])
     : planChangedShards(paths, { packageChangeKind: classifyPackageChange(options.baseRef, options.headRef, paths) });

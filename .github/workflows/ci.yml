@@ -38,10 +38,14 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || 'origin/main' }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           FULL_CI: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' && inputs.full || github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'full-ci') }}
+          ENFORCE_FROZEN: ${{ github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'title-unfreeze') }}
         run: |
           args=(--base "$BASE_SHA" --head "$HEAD_SHA" --json --summary --github-output)
           if [[ "$FULL_CI" == "true" ]]; then
             args+=(--full)
+          fi
+          if [[ "$ENFORCE_FROZEN" == "true" ]]; then
+            args+=(--enforce-frozen)
           fi
           node scripts/ci/changed-shards.mjs "${args[@]}"
 

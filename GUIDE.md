@@ -43,8 +43,7 @@ npm run check
 That runs:
 
 ```text
-npm run build
-npm test
+npm run test:all   (which builds first, then runs spec/ and tests/)
 npm run quality
 ```
 

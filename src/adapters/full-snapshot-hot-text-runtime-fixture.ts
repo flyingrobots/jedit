@@ -11,8 +11,8 @@ import {
   type SaveCheckpointState,
 } from '../domain/save-checkpoint-contract.js';
 import {
+  FIRST_ROOT_ID,
   createBufferRoot,
-  createTextFragment,
   materializeRoot,
   type TextRange,
 } from '../domain/text-edit-contract.js';
@@ -60,7 +60,7 @@ export function isFullSnapshotHotTextRuntimeFixture(
 }
 
 function createBuffer(path: string, initialText: string): HotTextBufferState {
-  const currentRoot = createBufferRoot(initialText);
+  const currentRoot = createBufferRoot(FIRST_ROOT_ID, initialText);
 
   return {
     path,
@@ -69,6 +69,7 @@ function createBuffer(path: string, initialText: string): HotTextBufferState {
     ticks: [],
     editGroups: [],
     checkpoints: [],
+    nextRootId: FIRST_ROOT_ID + 1,
   };
 }
 
@@ -81,11 +82,7 @@ function admitReplaceRangeTick(
   range: TextRange,
   text: string,
 ): AdmitReplaceRangeTickResult {
-  const result = admitDomainReplaceRangeTick(
-    toTickAdmissionState(state),
-    range,
-    createTextFragment(text),
-  );
+  const result = admitDomainReplaceRangeTick(toTickAdmissionState(state), range, text);
 
   if (result.receipt === undefined) {
     return { nextState: state };
@@ -100,6 +97,7 @@ function admitReplaceRangeTick(
       editGroups: [...state.editGroups],
       openEditGroup: copyOpenEditGroup(state),
       checkpoints: [...state.checkpoints],
+      nextRootId: result.nextState.nextRootId,
     },
     receipt: result.receipt,
   };
@@ -134,13 +132,14 @@ function saveCheckpoint(state: HotTextBufferState): SaveHotCheckpointResult {
       editGroups: [...state.editGroups],
       openEditGroup: copyOpenEditGroup(state),
       checkpoints: [...result.nextState.checkpoints],
+      nextRootId: state.nextRootId,
     },
     receipt: result.receipt,
   };
 }
 
 function toTickAdmissionState(state: HotTextBufferState): TickAdmissionState {
-  return createTickAdmissionState(state.currentRoot, state.ticks);
+  return createTickAdmissionState(state.currentRoot, state.ticks, state.nextRootId);
 }
 
 function toEditGroupState(state: HotTextBufferState): EditGroupState {
@@ -187,6 +186,7 @@ function withEditGroupState(state: HotTextBufferState, next: EditGroupState): Ho
       tickIds: [...next.openGroup.tickIds],
     },
     checkpoints: [...state.checkpoints],
+    nextRootId: state.nextRootId,
   };
 }
 
