@@ -118,6 +118,53 @@ test('undo settlements carry the history provenance kind', async () => {
   assert.equal(payload.provenanceKind, 'undo');
 });
 
+test('the WSC history listing exposes reversal naming to agent surfaces', async () => {
+  const listing = await importDist('app', 'jedit-wsc-history-listing.js');
+  const payload = {
+    schemaVersion: 'jedit.workspace_text_edit_settlement.v1',
+    filePath: '/repo/notes.md',
+    bufferId: 'buffer:notes',
+    commandKind: 'replace',
+    provenanceKind: 'undo',
+    reversedReceiptId: 'receipt:reversed',
+    submittedAtMs: 10,
+    receiptId: 'receipt:undo',
+    reading: {
+      readingId: 'reading:undo',
+      coverage: 'full',
+      startLine: 0,
+      lines: ['abc'],
+      lineCount: 1,
+      returnedLineCount: 1,
+      totalLineCount: 1,
+      cursorLine: 0,
+      viewportLineCount: 1,
+      truncated: false,
+    },
+  };
+  const bytes = new TextEncoder().encode(JSON.stringify(payload));
+  const store = {
+    writeEnvelope: () => ({
+      status: 'JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED',
+      obstruction: { code: 'read_only_test_store', message: 'listing test is read-only' },
+    }),
+    readEnvelope: (envelopeId) => ({
+      status: 'JEDIT_WSC_WORKSPACE_STORE_READ',
+      envelope: { envelopeId, bytes },
+      workspacePath: '/repo/.jedit/echo-wsc/envelopes',
+    }),
+    listEnvelopes: () => ({
+      status: 'JEDIT_WSC_WORKSPACE_STORE_LISTED',
+      envelopeIds: ['envelope:undo'],
+    }),
+  };
+
+  const listed = listing.listJeditWscHistory(store);
+
+  assert.equal(listed.records[0].provenanceKind, 'undo');
+  assert.equal(listed.records[0].reversedReceiptId, 'receipt:reversed');
+});
+
 test('ordinary edit settlements omit the provenance kind field', async () => {
   const settlement = await importDist('app', 'workspace', 'workspace-text-wsc-settlement.js');
   const cache = {
