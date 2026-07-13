@@ -94,3 +94,13 @@ admission.
 ## Backlog Context
 
 Turn the Echo-backed text-kernel direction into a real cycle centered on the `ReplaceRange` primitive. The immediate deliverable is an explicit design hill plus playback questions that align with the existing red contract tests for insertion/materialization law, deletion by empty fragment, and logical no-op behavior.
+
+## Later Evolution
+
+WF-0154 (2026-07-12) removed the module-global root-id counter this cycle's
+minimal runtime shipped with: `createBufferRoot`, `createTextFragment`, and
+`emptyFragment` now take explicit ids, `replaceRange` takes the next root id,
+and tick admission threads `nextRootId` as chain state
+(`spec/root-identity-determinism.spec.mjs`). The behavioral laws in this
+document (materialization, deletion by empty fragment, logical no-op) are
+unchanged.

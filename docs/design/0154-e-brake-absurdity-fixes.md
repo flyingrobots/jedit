@@ -413,8 +413,9 @@ Mitigations:
   (`docs/method/backlog/cool-ideas/causal-undo-family.md`).
 - Content-addressed root identity under the identity doctrine.
 - `docs/design/0001-replace-range-contract/replace-range-contract.md`
-  describes the pre-allocator signatures; refresh alongside the Slice 4 doc
-  pass.
+  turned out to state only behavior-level laws (still true); a Later
+  Evolution note recording the WF-0154 identity-allocation change was added
+  instead of a rewrite.
 
 ## Retrospective
 
