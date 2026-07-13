@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added a dist/source parity witness so stale compiled artifacts for deleted
+  sources cannot mask missing imports in dist-driven specs, cycle proofs, or
+  release gates; the RED run caught and removed two real orphaned artifacts.
 - Named undo and redo in command provenance and settlement evidence: `u` and
   `ctrl+r` now produce `history`-family command events (so `:why` and the
   footer explain reversals), edit settlements carry an additive
