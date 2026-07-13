@@ -118,6 +118,13 @@ Immediate order:
 1. Land
    [`HT-0149 - Graph-Backed Rope Runtime Discovery`](design/0149-graph-backed-rope-runtime-discovery.md)
    as the active runtime authority gate before more causal UI posture work.
+   In parallel, land
+   [`WF-0153 - E-Brake: Observed Absurdity Fixes`](design/0153-e-brake-absurdity-fixes.md)
+   (issue #267): wire the existing undo/redo reducers as causal
+   counter-edits, freeze the title scene behind a `title-unfreeze` label,
+   replace the process-global root-id counter with a per-runtime allocator,
+   and make the top-level guides pass an executable doc-path witness. The
+   root-id slice gates future Echo transport parity witnessing.
 2. Lock
    [`WF-0108A - :why Observation Evidence Roadmap`](design/0108a-why-observation-evidence-roadmap.md)
    and the cross-repo issue topology.

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added WF-0153, the E-Brake goalpost (issue #267), locking in four audit
+  remediations: undo/redo wired as causal counter-edits, a title-scene freeze
+  guard, per-runtime root-id allocation replacing the process-global counter,
+  and an executable doc-path witness with an `ADVANCED_GUIDE.md` rewrite.
 - Added a generic projection review payload viewer so jedit can display bounded
   provider-owned review payloads for Edict Core and Echo Target IR projection
   lanes without interpreting, validating, lowering, executing, canonicalizing,
