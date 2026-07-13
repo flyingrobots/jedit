@@ -20,8 +20,12 @@ history, merged pull requests, release notes, and design docs.
   is the full local visible projection cache used for rendering, cursoring,
   and transitional edit planning. It must not be reconstructed from bounded
   readings. It is not saved or recovered as authority.
-- Production undo/redo remains intentionally unsupported until modeled as
-  explicit causal input.
+- Production undo/redo works: `u`/`ctrl+r` submit Echo replacement edits
+  through the production text session (landed in `f7a96fce`; witnessed by
+  `spec/workspace-text-boundaries.spec.mjs`). Undo settlements are not yet
+  named as reversals in provenance; WF-0154 Slice 1 owns that naming.
+  First-class causal counter-history remains future work under the
+  causal-undo family.
 - WSC history listing, current export, and historical export exist as
   agent-facing JSON surfaces. Replay closeout exists as app/spec proof, not yet
   as a standalone agent CLI.
@@ -119,10 +123,10 @@ Immediate order:
    [`HT-0149 - Graph-Backed Rope Runtime Discovery`](design/0149-graph-backed-rope-runtime-discovery.md)
    as the active runtime authority gate before more causal UI posture work.
    In parallel, land
-   [`WF-0153 - E-Brake: Observed Absurdity Fixes`](design/0153-e-brake-absurdity-fixes.md)
-   (issue #267): wire the existing undo/redo reducers as causal
-   counter-edits, freeze the title scene behind a `title-unfreeze` label,
-   replace the process-global root-id counter with a per-runtime allocator,
+   [`WF-0154 - E-Brake: Observed Absurdity Fixes`](design/0154-e-brake-absurdity-fixes.md)
+   (issue #267): name undo/redo settlements as reversals in provenance,
+   freeze the title scene behind a `title-unfreeze` label, replace the
+   process-global root-id counter with chain-threaded allocation state,
    and make the top-level guides pass an executable doc-path witness. The
    root-id slice gates future Echo transport parity witnessing.
 2. Lock
