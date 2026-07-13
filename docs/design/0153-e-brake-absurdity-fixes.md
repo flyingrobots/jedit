@@ -3,7 +3,7 @@ title: "WF-0153 - E-Brake: Observed Absurdity Fixes"
 legend: "WF"
 lane: "design"
 issue: "https://github.com/flyingrobots/jedit/issues/267"
-status: "draft"
+status: "active"
 owners:
   - "@flyingrobots"
 created: "2026-07-12"
