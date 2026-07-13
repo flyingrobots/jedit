@@ -71,6 +71,15 @@ evidence.
   (`src/adapters/jedit-echo-witness-mcp-adapter.ts`).
 - VISION names `missing_retention` and `durable_replay_unavailable` as
   release-gate blockers, not acceptable end states.
+- **Upstream dependency: Edict.** Echo's runtime execution semantics flow
+  through the Edict pipeline (intent -> Core IR -> Echo Target IR -> WASM
+  sandbox), and Edict `v0.11.0-alpha.1` states that participant admission,
+  runtime execution, canonical full-manifest bytes, and the WASM sandbox are
+  not implemented yet (Edict README, Current Status). The raw text-kernel
+  byte ABI (`rmg_wasm` create/replace/textWindow) exists today without
+  Edict, so Phases A-C are packaging/adapter work; Phase D's full gate
+  (scheduler-owned tick, retained evidence, durable replay) and Phase E's
+  admission step land behind Edict's runtime milestones.
 
 ## Problem
 
@@ -283,6 +292,9 @@ path).
 
 Known risks:
 
+- Edict readiness is the pacing dependency: runtime execution, participant
+  admission, and the WASM sandbox are unimplemented at `v0.11.0-alpha.1`,
+  and Phases D-E cannot go green until Echo hosts them.
 - Echo-repo readiness: retention and durable replay are admitted blockers.
 - ABI drift between the package and `src/transport/eint.ts`.
 - Parity divergence exposing semantic gaps the TS implementation papered
@@ -290,6 +302,10 @@ Known risks:
 
 Mitigations:
 
+- Sequence around Edict: land Phases A-C (package, adapter, profile) against
+  the existing text-kernel byte ABI now, and scope an interim parity witness
+  to the create/replace/read/checkpoint script that ABI already serves;
+  widen the gate to scheduler/retention/replay as Edict milestones land.
 - Phase D treats divergence as the product working as designed: every
   divergence becomes an Echo conformance bug with a jedit-authored witness.
 - EINT codec round-trip tests pin the ABI on both sides.
