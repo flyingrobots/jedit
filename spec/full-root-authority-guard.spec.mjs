@@ -4,14 +4,17 @@ import path from 'node:path';
 import test from 'node:test';
 import { REPO_ROOT } from './dist-helpers.mjs';
 
-const ROOTS_ACCESS_PATTERN = new RegExp(
-  [
-    String.raw`\bstate\.roots\b`,
-    String.raw`readonly roots: readonly BufferRoot`,
-    String.raw`roots: z\.array\(BufferRootSchema\)`,
-    String.raw`roots: \[currentRoot\]`,
-  ].join('|'),
-);
+const STATE_ROOTS_ACCESS_PATTERN = /\bstate\.roots\b/;
+const ROOTS_BINDING_PATTERN = /\.roots\b|\broots\s*[,}:=]/;
+const RETAINED_ROOT_CONTEXT_PATTERN = /HotTextBufferState|BufferRoot|hot-text-runtime/;
+
+export function accessesRetainedRoots(sourceText) {
+  if (STATE_ROOTS_ACCESS_PATTERN.test(sourceText)) {
+    return true;
+  }
+  return RETAINED_ROOT_CONTEXT_PATTERN.test(sourceText)
+    && ROOTS_BINDING_PATTERN.test(sourceText);
+}
 
 const RETAINED_ROOT_ACCESS_ALLOWLIST = new Map([
   [
@@ -50,7 +53,7 @@ test('retained full-root access stays quarantined to the allowlist', () => {
   const offenders = sourceFiles(path.join(REPO_ROOT, 'src'), 'src')
     .filter((file) => !file.startsWith('src/generated/'))
     .filter((file) => !RETAINED_ROOT_ACCESS_ALLOWLIST.has(file))
-    .filter((file) => ROOTS_ACCESS_PATTERN.test(readFileSync(path.join(REPO_ROOT, file), 'utf8')));
+    .filter((file) => accessesRetainedRoots(readFileSync(path.join(REPO_ROOT, file), 'utf8')));
 
   assert.deepEqual(
     offenders,
@@ -62,11 +65,30 @@ test('retained full-root access stays quarantined to the allowlist', () => {
 test('the quarantine allowlist names only living files with reasons', () => {
   for (const [file, reason] of RETAINED_ROOT_ACCESS_ALLOWLIST) {
     assert.equal(
-      ROOTS_ACCESS_PATTERN.test(readFileSync(path.join(REPO_ROOT, file), 'utf8')),
+      accessesRetainedRoots(readFileSync(path.join(REPO_ROOT, file), 'utf8')),
       true,
       `${file} no longer accesses retained roots; remove it from the allowlist (${reason})`,
     );
   }
+});
+
+test('the guard catches retained-root access regardless of binding shape', () => {
+  const evasions = [
+    'const { roots } = bufferState; // HotTextBufferState destructure',
+    'snapshot.roots.map((root) => root.text) // BufferRoot snapshot walk',
+    'import type { HotTextBufferState } from "x"; const kept = history.roots;',
+  ];
+  for (const evasion of evasions) {
+    assert.equal(accessesRetainedRoots(evasion), true, evasion);
+  }
+  assert.equal(
+    accessesRetainedRoots('const roots = quadraticRoots(a, b, c); // ray math'),
+    false,
+  );
+  assert.equal(
+    accessesRetainedRoots('canonicalRootSet(roots: readonly EchoCausalAnchorRoot[])'),
+    false,
+  );
 });
 
 test('the quarantined fixture cannot pose as production text authority', async () => {
