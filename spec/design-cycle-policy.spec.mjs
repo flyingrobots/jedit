@@ -22,6 +22,7 @@ const GRAPH_RUNTIME_DISCOVERY_PATH = path.join(
   '0149-graph-backed-rope-runtime-discovery.md',
 );
 const GRAPH_RUNTIME_RED_MATRIX_PATH = path.join(REPO_ROOT, 'spec', 'graph-rope-runtime-red-matrix.spec.mjs');
+const WF_0154_DESIGN_PATH = path.join(REPO_ROOT, 'docs', 'design', '0154-e-brake-absurdity-fixes.md');
 
 const REQUIRED_TEMPLATE_HEADINGS = Object.freeze([
   '## Linked Issue',
@@ -232,6 +233,20 @@ test('BEARING blocks why work on graph runtime proof', () => {
 
   assert.match(bearing, /Do not resume the `:why` evidence gap sequence until/);
   assert.match(bearing, /graph-backed\s+create\/read\/replace\/checkpoint path and witnesses land/);
+});
+
+test('WF-0154 landed closeout has no unchecked gates or stale provenance deferral', () => {
+  const design = readRepoFile(WF_0154_DESIGN_PATH);
+  const bearing = readRepoFile(BEARING_PATH);
+  const tests = sectionBetween(design, '## Tests To Write First', '## Acceptance Criteria');
+  const acceptance = sectionBetween(design, '## Acceptance Criteria', '## Validation Plan');
+  const retrospective = sectionBetween(design, '## Retrospective', 'PR:');
+
+  assert.doesNotMatch(tests, /^- \[ \]/m);
+  assert.doesNotMatch(acceptance, /^- \[ \]/m);
+  assert.doesNotMatch(retrospective, /provenance naming half is deferred/);
+  assert.match(bearing, /undo\/redo settlements are provenance-named/);
+  assert.doesNotMatch(bearing, /undo\/redo[^\n]*unsupported/);
 });
 
 test('process doc defines the official cycle lifecycle and proof boundary', () => {
