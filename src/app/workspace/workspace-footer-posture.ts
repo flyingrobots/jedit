@@ -7,7 +7,7 @@ import {
   WorkspaceHistoryDrawerViews,
 } from './worldline-state.js';
 import type { WorkspaceModel } from './model.js';
-import { jeditCommandFooterSummary } from './command-provenance.js';
+import { jeditCommandFooterSummary } from './command-provenance-summaries.js';
 
 export function workspaceFooterTextPosture(model: WorkspaceModel): string {
   return [

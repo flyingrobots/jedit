@@ -16,9 +16,11 @@ import {
 } from './workspace-text-authority.js';
 import { createJeditWhyObservation, jeditWhyObservationMessage, type JeditWhyObservation } from './jedit-why-observation.js';
 import {
+  commandKeySequence,
   jeditCommandEventSummary,
   jeditCommandReceiptMessage,
   jeditCommandSummary,
+  jeditHistoryCommandEventSummary,
 } from './jedit-command-event-summary.js';
 import {
   parseVimChordSyntax,
@@ -30,6 +32,8 @@ export { workspaceTextAuthorityWithCurrentJeditCommandObservation } from './jedi
 
 export const JEDIT_WHY_TOAST_TITLE = 'Why';
 export const JEDIT_WHY_NO_EVENT_OBSTRUCTION_CODE = 'jedit_why_no_meaningful_event';
+
+export const JEDIT_HISTORY_COMMAND_EVENT_FAMILY = 'history';
 
 export const JeditCommandEventRejectedCodes = Object.freeze({
   InvalidSyntax: 'jedit_command_event_invalid_syntax',
@@ -66,6 +70,8 @@ export interface JeditCommandEvent {
   readonly registerEffect?: JeditCommandRegisterEffect;
   readonly replayPolicy?: VimRepeatState['replayPolicy'];
   readonly result: JeditCommandResult;
+  readonly reversedReceiptId?: string;
+  readonly reversedRequestId?: number;
   readonly summary: string;
   readonly target?: JeditCommandTarget;
   readonly textObject?: JeditCommandTextObject;
@@ -129,7 +135,6 @@ export interface JeditWhyReport {
 }
 
 const COMMAND_FIELD_SEPARATOR = ' | ';
-const KEY_SEQUENCE_EMPTY = '<empty>';
 const RECEIPT_PENDING = 'pending';
 const RECEIPT_UNAVAILABLE = 'unavailable';
 const EVENT_ID_SEPARATOR = ':';
@@ -187,49 +192,25 @@ export function receivedJeditCommandEventForRequest(
   textAuthority: WorkspaceTextAuthority,
   requestId: number,
   receiptId: string,
+  reversedReceiptId?: string,
 ): JeditCommandEvent | undefined {
   const event = plannedOrLastJeditCommandEventForRequest(textAuthority, requestId);
   return event == null
     ? undefined
-    : jeditCommandEventWithReceipt(event, { posture: 'received', receiptId });
+    : jeditCommandEventWithReceipt(event, { posture: 'received', receiptId }, reversedReceiptId);
 }
 
 export function workspaceTextAuthorityWithAppliedJeditCommandReceipt(
   authority: WorkspaceTextAuthorityOpened,
   requestId: number,
   receiptId: string,
+  reversedReceiptId?: string,
 ): WorkspaceTextAuthorityOpened {
   const withReceipt = workspaceTextAuthorityWithReceipt(authority, receiptId);
-  const event = receivedJeditCommandEventForRequest(authority, requestId, receiptId);
+  const event = receivedJeditCommandEventForRequest(authority, requestId, receiptId, reversedReceiptId);
   return event == null
     ? withReceipt
     : workspaceTextAuthorityWithLastCommandEvent(withReceipt, event);
-}
-
-export function jeditCommandFooterSummary(
-  editor: EditorState | undefined,
-  textAuthority: WorkspaceTextAuthority,
-): string | undefined {
-  const event = jeditCommandEventFromEditor(editor, textAuthority);
-  return event == null ? undefined : `last: ${event.summary}`;
-}
-
-export function jeditCommandHistorySummary(
-  filePath: string,
-  editor: EditorState | undefined,
-  textAuthority: WorkspaceTextAuthority,
-): string {
-  const event = jeditCommandEventFromEditor(editor, textAuthority);
-  return event == null ? filePath : `${filePath} ${event.summary}`;
-}
-
-export function jeditAppliedCommandHistorySummary(
-  filePath: string,
-  requestId: number,
-  textAuthority: WorkspaceTextAuthority,
-): string {
-  const event = plannedOrLastJeditCommandEventForRequest(textAuthority, requestId);
-  return event == null ? filePath : `${filePath} ${event.summary}`;
 }
 
 function jeditCommandEventResultFromEditor(
@@ -256,6 +237,15 @@ function jeditCommandEventFromAuthority(
   return textAuthority.kind === WorkspaceTextAuthorityKinds.Opened
     ? textAuthority.lastCommandEvent
     : undefined;
+}
+
+export function jeditAppliedCommandHistorySummary(
+  filePath: string,
+  requestId: number,
+  textAuthority: WorkspaceTextAuthority,
+): string {
+  const event = plannedOrLastJeditCommandEventForRequest(textAuthority, requestId);
+  return event == null ? filePath : `${filePath} ${event.summary}`;
 }
 
 function plannedOrLastJeditCommandEventForRequest(
@@ -314,7 +304,26 @@ function eventFromValidatedFacts(
 function jeditCommandEventWithReceipt(
   event: JeditCommandEvent,
   receipt: JeditCommandReceipt,
+  reversedReceiptId?: string,
 ): JeditCommandEvent {
+  if (event.family === JEDIT_HISTORY_COMMAND_EVENT_FAMILY) {
+    const received = {
+      ...event,
+      receipt,
+      receiptId: receipt.receiptId,
+      reversedReceiptId: reversedReceiptId ?? event.reversedReceiptId,
+    };
+    return {
+      ...received,
+      summary: jeditHistoryCommandEventSummary(
+        received.command,
+        received.operator ?? received.family,
+        received.reversedReceiptId,
+        receipt,
+        received.reversedRequestId,
+      ),
+    };
+  }
   const syntax = parseVimChordSyntax(event.keys);
   const received = {
     ...event,
@@ -485,8 +494,4 @@ function commandEventId(
     target?.rangeStart ?? 'no-range',
     jeditCommandReceiptMessage(receipt),
   ].join(EVENT_ID_SEPARATOR);
-}
-
-function commandKeySequence(keys: readonly string[]): string {
-  return keys.length === 0 ? KEY_SEQUENCE_EMPTY : keys.join('');
 }

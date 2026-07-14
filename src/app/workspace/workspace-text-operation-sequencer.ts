@@ -22,6 +22,7 @@ interface WorkspaceTextOperationSequencerState {
   readonly queues: WeakMap<ProductionTextSession, Promise<void>>;
   readonly obstructions: WeakMap<ProductionTextSession, Map<string, BlockedTextOperation>>;
   readonly exports: WeakMap<ProductionTextSession, ActiveTextExportOperation>;
+  readonly editReceipts: WeakMap<ProductionTextSession, Map<string, Map<number, string>>>;
   readonly operationSequences: WeakMap<ProductionTextSession, number>;
 }
 
@@ -51,6 +52,9 @@ export interface WorkspaceTextOperationSequencer {
 export interface WorkspaceTextOperationTarget {
   readonly filePath: string;
   readonly bufferId: string;
+  readonly requestId?: number;
+  readonly reversedRequestId?: number;
+  readonly reachableHistoryRequestIds?: readonly number[];
 }
 
 export function createWorkspaceTextOperationSequencer(): WorkspaceTextOperationSequencer {
@@ -58,6 +62,7 @@ export function createWorkspaceTextOperationSequencer(): WorkspaceTextOperationS
     queues: new WeakMap<ProductionTextSession, Promise<void>>(),
     obstructions: new WeakMap<ProductionTextSession, Map<string, BlockedTextOperation>>(),
     exports: new WeakMap<ProductionTextSession, ActiveTextExportOperation>(),
+    editReceipts: new WeakMap<ProductionTextSession, Map<string, Map<number, string>>>(),
     operationSequences: new WeakMap<ProductionTextSession, number>(),
   };
   return {
@@ -98,10 +103,72 @@ function sequenceEditOperation(
     if (obstruction != null) {
       return obstructedTextOperation(target.filePath, obstruction.issue);
     }
-    const result = await operation();
+    const result = textEditResultWithReversalReceipt(
+      state,
+      session,
+      target,
+      await operation(),
+    );
     recordTextOperationResult(state, session, target, result);
     return result;
   }).promise;
+}
+
+function textEditResultWithReversalReceipt(
+  state: WorkspaceTextOperationSequencerState,
+  session: ProductionTextSession,
+  target: WorkspaceTextOperationTarget,
+  result: WorkspaceTextEditResult,
+): WorkspaceTextEditResult {
+  if (result.kind !== WorkspaceTextResultKinds.Applied) {
+    return result;
+  }
+  const reversedReceiptId = target.reversedRequestId == null
+    ? undefined
+    : editReceiptForRequest(state, session, target.bufferId, target.reversedRequestId);
+  recordEditReceipt(state, session, target, result.receiptId);
+  return reversedReceiptId == null ? result : { ...result, reversedReceiptId };
+}
+
+function editReceiptForRequest(
+  state: WorkspaceTextOperationSequencerState,
+  session: ProductionTextSession,
+  bufferId: string,
+  requestId: number,
+): string | undefined {
+  return state.editReceipts.get(session)?.get(bufferId)?.get(requestId);
+}
+
+function recordEditReceipt(
+  state: WorkspaceTextOperationSequencerState,
+  session: ProductionTextSession,
+  target: WorkspaceTextOperationTarget,
+  receiptId: string,
+): void {
+  if (target.requestId == null) {
+    return;
+  }
+  const sessionReceipts = state.editReceipts.get(session) ?? new Map<string, Map<number, string>>();
+  const bufferReceipts = sessionReceipts.get(target.bufferId) ?? new Map<number, string>();
+  bufferReceipts.set(target.requestId, receiptId);
+  retainReachableEditReceipts(bufferReceipts, target.reachableHistoryRequestIds);
+  sessionReceipts.set(target.bufferId, bufferReceipts);
+  state.editReceipts.set(session, sessionReceipts);
+}
+
+function retainReachableEditReceipts(
+  receipts: Map<number, string>,
+  reachableRequestIds: readonly number[] | undefined,
+): void {
+  if (reachableRequestIds == null) {
+    return;
+  }
+  const reachable = new Set(reachableRequestIds);
+  for (const requestId of receipts.keys()) {
+    if (!reachable.has(requestId)) {
+      receipts.delete(requestId);
+    }
+  }
 }
 
 function sequenceCheckpointOperation(

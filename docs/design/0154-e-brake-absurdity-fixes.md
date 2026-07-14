@@ -3,11 +3,11 @@ title: "WF-0154 - E-Brake: Observed Absurdity Fixes"
 legend: "WF"
 lane: "design"
 issue: "https://github.com/flyingrobots/jedit/issues/267"
-status: "active"
+status: "landed"
 owners:
   - "@flyingrobots"
 created: "2026-07-12"
-updated: "2026-07-12"
+updated: "2026-07-13"
 ---
 
 # WF-0154 - E-Brake: Observed Absurdity Fixes
@@ -15,6 +15,9 @@ updated: "2026-07-12"
 ## Linked Issue
 
 - https://github.com/flyingrobots/jedit/issues/267
+- https://github.com/flyingrobots/jedit/issues/269
+- https://github.com/flyingrobots/jedit/pull/268
+- https://github.com/flyingrobots/jedit/pull/272
 
 ## Decision Summary
 
@@ -306,8 +309,8 @@ doctrine); executable doc-path witness before prose rewrite.
 
 ## Implementation Slices
 
-- [ ] Slice 1: Name undo/redo in provenance (issue #269; the stale BEARING
-      claim is already retired in this PR)
+- [x] Slice 1: Name undo/redo in provenance (issue #269; the stale BEARING
+      claim was retired in PR #268)
       (`feat(provenance): name undo and redo settlements as reversals`).
 - [x] Slice 2: Title-scene freeze leash + changed-shards guard
       (`chore(ci): freeze title scene behind title-unfreeze label`).
@@ -321,12 +324,14 @@ doctrine); executable doc-path witness before prose rewrite.
 
 Behavior tests required:
 
-- [ ] Provenance spec: after an edit and `u`, the settlement/provenance
-      surface names an undo with a reference to the reversed transition, and
-      `:why` output includes the reversal explanation (fails before naming
-      lands).
-- [ ] Redo provenance spec: `ctrl+r` after undo is named as a redo (fails
-      before naming lands).
+- [x] Provenance spec: after an edit and `u`, the settlement/provenance
+      surface names an undo with a reference to the reversed transition (the
+      reversed edit's settlement receipt id, carried as `reversedReceiptId`
+      on the event and the settlement payload), and `:why` output includes
+      the reversal explanation
+      (`spec/undo-provenance.spec.mjs`; failed RED before naming landed).
+- [x] Redo provenance spec: `ctrl+r` after undo is named as a redo
+      (`spec/undo-provenance.spec.mjs`; failed RED before naming landed).
 - [x] Identity spec: two independently constructed runtimes replaying an
       identical script mint identical root/head identities; interleaved
       buffers do not perturb ids (`spec/root-identity-determinism.spec.mjs`;
@@ -343,7 +348,7 @@ Documentation and process tests, only if relevant:
       code blocks and plain prose — resolves
       (`spec/guide-path-references.spec.mjs`; failed RED on ADVANCED_GUIDE's
       fenced `in-memory-hot-text-runtime` flow before the guide fix).
-- [ ] BEARING truth assertion: BEARING no longer claims undo/redo is
+- [x] BEARING truth assertion: BEARING no longer claims undo/redo is
       unsupported.
 
 Rule honored: the doc witnesses prove only doc claims; slices 1-3 are proven
@@ -353,16 +358,17 @@ by behavior tests.
 
 The work is done when:
 
-- [ ] Provenance/history surfaces name undo and redo settlements with
+- [x] Provenance/history surfaces name undo and redo settlements with
       reversal references, proven by behavior spec.
-- [ ] `:why` output explains an undo as a reversal.
+- [x] `:why` output explains an undo as a reversal (history command events
+      flow through the existing `lastCommandEvent` -> `:why` path).
 - [x] Identity witness proves replay-stable root ids.
 - [x] Changed-shards guard blocks unlabeled title changes in CI.
 - [x] Doc-path witness is green and ADVANCED_GUIDE describes the real paths.
-- [ ] BEARING describes undo/redo truthfully, citing the boundary spec.
+- [x] BEARING describes undo/redo truthfully, citing the boundary spec.
 - [x] `docs/method/backlog/bad-code/global-next-root-id-counter.md` resolved.
-- [ ] CHANGELOG updated; issue #267 and PR #268 linked.
-- [ ] CI and local validation are green.
+- [x] CHANGELOG updated; issues #267/#269 and PRs #268/#272 linked.
+- [x] CI and local validation are green.
 
 ## Validation Plan
 
@@ -383,8 +389,8 @@ node --test --test-concurrency=1 spec/workspace-text-boundaries.spec.mjs
 ```
 
 TUI reproduction: open a file, `dw`, `u` (text restored), `:why` (reversal
-explanation once Slice 1 lands), `ctrl+r` (re-applied). 120x30 terminal,
-graphite theme, en locale.
+explanation names the reversed receipt), `ctrl+r` (re-applied). 120x30
+terminal, graphite theme, en locale.
 
 ## Risks
 
@@ -412,8 +418,9 @@ Mitigations:
   (`docs/method/backlog/cool-ideas/causal-undo-family.md`).
 - Content-addressed root identity under the identity doctrine.
 - `docs/design/0001-replace-range-contract/replace-range-contract.md`
-  describes the pre-allocator signatures; refresh alongside the Slice 4 doc
-  pass.
+  turned out to state only behavior-level laws (still true); a Later
+  Evolution note recording the WF-0154 identity-allocation change was added
+  instead of a rewrite.
 
 ## Retrospective
 
@@ -422,11 +429,9 @@ What changed from the design:
 - The original draft claimed undo/redo was implemented but unwired; review
   falsification (PR #268) proved it wired and Echo-routed since `f7a96fce`,
   and Slice 1 was rescoped from "wire undo" to "name undo in provenance and
-  fix doc truth". The doc-truth half (BEARING correction) landed in this PR;
-  the provenance naming half is deferred to issue #269 because it requires
-  extending the `'vim' | 'rejected'` command-event union and splitting
-  `command-provenance.ts` (at 492/500 lines), which deserves its own
-  RED/GREEN slice rather than a tail-end rush.
+  fix doc truth". PR #268 corrected BEARING; issue #269 landed the provenance
+  naming and reversed-receipt linkage in closeout PR #272, with history-family
+  command handling split out of `command-provenance.ts`.
 - The doc was renumbered WF-0153 -> WF-0154 mid-cycle (0153 was already taken
   on main) and the title-freeze globs were expanded from two path roots to
   seven after inventorying the real title-scene file spread.
@@ -451,14 +456,19 @@ What the tests proved:
 - `spec/guide-path-references.spec.mjs` (RED on ADVANCED_GUIDE.md:91): every
   `src/**`/`scripts/**` reference in the five top-level guides resolves,
   including fenced-code and plain-prose references.
+- `spec/undo-provenance.spec.mjs` proves undo/redo settlement naming, stable
+  history event identity, and reversed-receipt correlation across queued and
+  repeated history commands.
 - `npm run check` (full suite + quality gate) green over all slices.
 
 What remains open:
 
-- Slice 1 provenance naming: issue #269 (seam map recorded there).
-- `docs/design/0001-replace-range-contract/replace-range-contract.md`
-  still describes the pre-allocator signatures (follow-on debt above).
+- Nothing. Slice 1 (provenance naming, #269) landed in the closeout PR along
+  with the dist/source parity witness (#249), the retained full-root guard
+  (#247), the 0001 Later Evolution note, and the WF-0155/WF-0156 draft
+  designs. The goalpost is met.
 
 PR:
 
 - https://github.com/flyingrobots/jedit/pull/268
+- https://github.com/flyingrobots/jedit/pull/272

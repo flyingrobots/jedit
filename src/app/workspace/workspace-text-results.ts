@@ -39,6 +39,7 @@ export interface WorkspaceTextAppliedResult {
   readonly filePath: string;
   readonly bufferId: string;
   readonly receiptId: string;
+  readonly reversedReceiptId?: string;
   readonly cache: WorkspaceTextReadingCache;
   readonly cursorAfter?: TextPosition;
   readonly wscSettlementEnvelope?: JeditWscWorkspaceEnvelope;

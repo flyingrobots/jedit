@@ -122,13 +122,15 @@ Immediate order:
 1. Land
    [`HT-0149 - Graph-Backed Rope Runtime Discovery`](design/0149-graph-backed-rope-runtime-discovery.md)
    as the active runtime authority gate before more causal UI posture work.
-   In parallel, land
    [`WF-0154 - E-Brake: Observed Absurdity Fixes`](design/0154-e-brake-absurdity-fixes.md)
-   (issue #267): name undo/redo settlements as reversals in provenance,
-   freeze the title scene behind a `title-unfreeze` label, replace the
-   process-global root-id counter with chain-threaded allocation state,
-   and make the top-level guides pass an executable doc-path witness. The
-   root-id slice gates future Echo transport parity witnessing.
+   (issue #267) has landed: undo/redo settlements are provenance-named,
+   the title scene is frozen behind a `title-unfreeze` label, root ids are
+   chain-threaded and replay-stable, and the top-level guides pass an
+   executable doc-path witness. Queued next-cycle designs:
+   [`WF-0155 - Causal Undo Family`](design/0155-causal-undo-family.md)
+   (issue #270) and
+   [`WF-0156 - Real Echo WASM In-Tree`](design/0156-echo-wasm-in-tree.md)
+   (issue #271), the latter unblocked by the root-id slice.
 2. Lock
    [`WF-0108A - :why Observation Evidence Roadmap`](design/0108a-why-observation-evidence-roadmap.md)
    and the cross-repo issue topology.

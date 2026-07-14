@@ -14,6 +14,8 @@ export interface JeditWscReplayIdentityRecord {
   readonly filePath?: string;
   readonly bufferId?: string;
   readonly commandKind?: string;
+  readonly provenanceKind?: string;
+  readonly reversedReceiptId?: string;
   readonly outcomeStatus: string;
   readonly receiptId?: string;
   readonly readingId?: string;
