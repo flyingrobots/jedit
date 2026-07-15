@@ -1,9 +1,8 @@
 import { ropeFactId } from './graph-rope-fact-id.js';
 import {
-  checkpointAnchorMatches,
-  checkpointReferencesSameWorldline,
-  validateEchoCausalAnchorFact,
-} from './graph-rope-causal-anchor-validation.js';
+  validateRopeCheckpointAnchoredFact,
+  validateRopeCheckpointFact,
+} from './graph-rope-checkpoint-validation.js';
 import {
   validateDiffSpanHash,
   validateRopeBranchConsistency,
@@ -17,13 +16,8 @@ import {
   validateTextBlobFact,
 } from './graph-rope-text-blob-validation.js';
 import {
-  ropeCheckpointIdFor,
-} from './graph-rope-checkpoint-identity.js';
-import {
   BUFFER_WORLDLINE_FACT_KIND,
   BYTE_OFFSET_COORDINATE_KIND,
-  ECHO_CAUSAL_ANCHOR_FACT_KIND,
-  FACT_VALIDATION_ERROR_HASH_MISMATCH,
   FACT_VALIDATION_ERROR_INVALID_HASH,
   FACT_VALIDATION_ERROR_INVALID_ID,
   FACT_VALIDATION_ERROR_INVALID_KIND,
@@ -32,6 +26,7 @@ import {
   FACT_VALIDATION_ERROR_INVALID_SCHEMA_VERSION,
   GRAPH_ROPE_SCHEMA_VERSION,
   ROPE_BRANCH_FACT_KIND,
+  ROPE_CHECKPOINT_ANCHORED_FACT_KIND,
   ROPE_CHECKPOINT_FACT_KIND,
   ROPE_DIFF_FACT_KIND,
   ROPE_DIFF_SPAN_DELETE_KIND,
@@ -44,7 +39,6 @@ import {
   TEXT_BLOB_FACT_KIND,
   TICK_RECEIPT_FACT_KIND,
   type BufferWorldlineFact,
-  type EchoCausalAnchorFact,
   type FactValidationErrorCode,
   type FactValidationResult,
   type RopeAdmittedFact,
@@ -73,7 +67,7 @@ const ROPE_FACT_VALIDATORS: ReadonlyMap<string, RopeFactValidator> = new Map([
   [TICK_RECEIPT_FACT_KIND, validateTickReceiptFact],
   [ROPE_STRUCTURAL_MAINTENANCE_FACT_KIND, validateStructuralMaintenanceFact],
   [ROPE_CHECKPOINT_FACT_KIND, validateRopeCheckpointFact],
-  [ECHO_CAUSAL_ANCHOR_FACT_KIND, validateEchoCausalAnchorFact],
+  [ROPE_CHECKPOINT_ANCHORED_FACT_KIND, validateRopeCheckpointAnchoredFact],
 ]);
 
 export function validateRopeFact(
@@ -263,32 +257,6 @@ function validateStructuralMaintenanceFact(
   return validateIdsAfterReferences(refResult, fact, ids);
 }
 
-function validateRopeCheckpointFact(
-  fact: RopeAdmittedFact,
-  context: RopeFactValidationContext,
-): FactValidationResult<RopeAdmittedFact> {
-  if (fact.kind !== ROPE_CHECKPOINT_FACT_KIND) {
-    return invalidFact(FACT_VALIDATION_ERROR_INVALID_KIND);
-  }
-  const refResult = requireReferences(context, [
-    [fact.worldlineId, BUFFER_WORLDLINE_FACT_KIND],
-    [fact.headId, ROPE_HEAD_FACT_KIND],
-    [fact.causalAnchorId, ECHO_CAUSAL_ANCHOR_FACT_KIND],
-  ]);
-  if (refResult !== null) {
-    return invalidFact(refResult);
-  }
-  const head = resolveFactById(context, fact.headId);
-  const anchor = resolveFactById(context, fact.causalAnchorId);
-  if (!checkpointReferencesSameWorldline(fact, head) || !checkpointAnchorMatches(fact, head, anchor, context)) {
-    return invalidFact(FACT_VALIDATION_ERROR_INVALID_REFERENCE);
-  }
-  if (!checkpointIdentityMatches(fact, anchor, context)) {
-    return invalidFact(FACT_VALIDATION_ERROR_HASH_MISMATCH);
-  }
-  return validateIds(fact, [fact.checkpointId]);
-}
-
 function optionalReference(
   context: RopeFactValidationContext,
   id: string | undefined,
@@ -326,7 +294,6 @@ function validateDiffSpan(span: RopeDiffSpan, context: RopeFactValidationContext
   return FACT_VALIDATION_ERROR_INVALID_KIND;
 }
 
-type CheckpointFact = Extract<RopeAdmittedFact, { readonly kind: typeof ROPE_CHECKPOINT_FACT_KIND }>;
 type EqualDiffSpan = Extract<RopeDiffSpan, { readonly kind: typeof ROPE_DIFF_SPAN_EQUAL_KIND }>;
 type DeleteDiffSpan = Extract<RopeDiffSpan, { readonly kind: typeof ROPE_DIFF_SPAN_DELETE_KIND }>;
 type InsertDiffSpan = Extract<RopeDiffSpan, { readonly kind: typeof ROPE_DIFF_SPAN_INSERT_KIND }>;
@@ -343,28 +310,8 @@ function bufferWorldlineMatchesInitialHead(
     && fact.createdAtTick === tickIdFor(fact.worldlineId, head.contentHash, context.hash);
 }
 
-function checkpointIdentityMatches(
-  fact: CheckpointFact,
-  anchor: RopeAdmittedFact | null,
-  context: RopeFactValidationContext,
-): anchor is EchoCausalAnchorFact {
-  return isEchoCausalAnchorFact(anchor)
-    && fact.checkpointId === ropeCheckpointIdFor({
-      worldlineId: fact.worldlineId,
-      headId: fact.headId,
-      reason: fact.reason,
-      causalAnchorId: fact.causalAnchorId,
-      admittedByReceiptId: anchor.admittedByReceiptId,
-      hash: context.hash,
-    });
-}
-
 function isRopeHeadFact(fact: RopeAdmittedFact | null): fact is RopeHeadFact {
   return fact?.kind === ROPE_HEAD_FACT_KIND;
-}
-
-function isEchoCausalAnchorFact(fact: RopeAdmittedFact | null): fact is EchoCausalAnchorFact {
-  return fact?.kind === ECHO_CAUSAL_ANCHOR_FACT_KIND;
 }
 
 function tickIdFor(worldlineId: string, contentHash: string, hash: RopeFactValidationContext['hash']): string {

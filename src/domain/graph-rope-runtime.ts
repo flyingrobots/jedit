@@ -1,15 +1,15 @@
 import {
   BUFFER_WORLDLINE_FACT_KIND,
   GRAPH_ROPE_SCHEMA_VERSION,
+  ROPE_CHECKPOINT_FACT_KIND,
   ROPE_HEAD_FACT_KIND,
-  createDeterministicEchoCausalAnchorAdmissionPort,
   makeTextBlobFact,
   ropeFactId,
   validateRopeFact,
   type BufferWorldlineFact,
   type EchoCausalAnchorAdmissionPort,
-  type EchoCausalAnchorAdmissionResult,
   type RopeAdmittedFact,
+  type RopeCheckpointFact,
   type RopeDiffFact,
   type RopeFactValidationContext,
   type RopeHeadFact,
@@ -19,15 +19,23 @@ import {
   type TextByteRange,
   type TickReceiptFact,
 } from './graph-rope-contract.js';
+import { validateCheckpointAnchorAdmissionRequest } from './graph-rope-causal-anchor-validation.js';
 import {
   createCheckpointAnchorAdmissionRequest,
-  createCheckpointFacts,
+  createCheckpointAnchorAssociation,
+  createCheckpointFact,
+  type GraphRopeAnchorCheckpointInput,
+  type GraphRopeAnchorCheckpointResult,
   type GraphRopeCreateCheckpointInput,
   type GraphRopeCreateCheckpointResult,
 } from './graph-rope-runtime-checkpoint.js';
+import { requestCheckpointAnchorAdmission } from './graph-rope-runtime-echo-adapter.js';
 import {
+  GRAPH_ROPE_RUNTIME_OBSTRUCTION_CAUSAL_ANCHOR_ADMISSION_FAILED,
+  GRAPH_ROPE_RUNTIME_OBSTRUCTION_CAUSAL_ANCHOR_UNAVAILABLE,
   GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_FACT,
   GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_UTF8_BOUNDARY,
+  GRAPH_ROPE_RUNTIME_OBSTRUCTION_MISSING_CHECKPOINT,
   GRAPH_ROPE_RUNTIME_OBSTRUCTION_MISSING_HEAD,
   GRAPH_ROPE_TEXT_WINDOW_CACHE_STATUS_UNCACHED,
   type GraphRopeRuntimeObstructionCode,
@@ -49,12 +57,17 @@ export {
   GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_FACT,
   GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_UTF8_BOUNDARY,
   GRAPH_ROPE_RUNTIME_OBSTRUCTION_MISSING_BLOB,
+  GRAPH_ROPE_RUNTIME_OBSTRUCTION_MISSING_CHECKPOINT,
   GRAPH_ROPE_RUNTIME_OBSTRUCTION_MISSING_HEAD,
   GRAPH_ROPE_RUNTIME_OBSTRUCTION_MISSING_NODE,
+  GRAPH_ROPE_RUNTIME_OBSTRUCTION_CAUSAL_ANCHOR_ADMISSION_FAILED,
+  GRAPH_ROPE_RUNTIME_OBSTRUCTION_CAUSAL_ANCHOR_UNAVAILABLE,
   GRAPH_ROPE_TEXT_WINDOW_CACHE_STATUS_UNCACHED,
 } from './graph-rope-runtime-issues.js';
 export type { GraphRopeRuntimeObstructionCode } from './graph-rope-runtime-issues.js';
 export type {
+  GraphRopeAnchorCheckpointInput,
+  GraphRopeAnchorCheckpointResult,
   GraphRopeCreateCheckpointInput,
   GraphRopeCreateCheckpointResult,
 } from './graph-rope-runtime-checkpoint.js';
@@ -145,13 +158,14 @@ export interface GraphRopeRuntime {
   createBufferWorldline(input: CreateBufferWorldlineInput): GraphRopeRuntimeResult<GraphRopeCreateWorldlineResult>;
   replaceRangeAsTick(input: GraphRopeReplaceRangeInput): GraphRopeRuntimeResult<GraphRopeReplaceRangeResult>;
   createCheckpoint(input: GraphRopeCreateCheckpointInput): GraphRopeRuntimeResult<GraphRopeCreateCheckpointResult>;
+  anchorCheckpoint(input: GraphRopeAnchorCheckpointInput): GraphRopeRuntimeResult<GraphRopeAnchorCheckpointResult>;
   textWindow(input: GraphRopeTextWindowInput): GraphRopeRuntimeResult<GraphRopeTextWindowReading>;
   debugRopeShape(headId: string): GraphRopeRuntimeResult<GraphRopeDebugShape>;
 }
 
 interface GraphRopeRuntimeState extends GraphRopeRuntimeFactReader {
   readonly hash: TextBlobHashPort;
-  readonly causalAnchorAdmission: EchoCausalAnchorAdmissionPort;
+  readonly causalAnchorAdmission: EchoCausalAnchorAdmissionPort | null;
   readonly factsById: Map<string, RopeAdmittedFact>;
   readonly currentHeadByWorldlineId: Map<string, string>;
   nextAdmissionSequence: number;
@@ -165,9 +179,7 @@ export function createGraphRopeRuntime(input: CreateGraphRopeRuntimeInput): Grap
   const factsById = new Map<string, RopeAdmittedFact>();
   const state: GraphRopeRuntimeState = {
     hash: input.hash,
-    causalAnchorAdmission: input.causalAnchorAdmission ?? createDeterministicEchoCausalAnchorAdmissionPort({
-      hash: input.hash,
-    }),
+    causalAnchorAdmission: input.causalAnchorAdmission ?? null,
     factsById,
     currentHeadByWorldlineId: new Map<string, string>(),
     nextAdmissionSequence: INITIAL_ADMISSION_SEQUENCE,
@@ -185,6 +197,9 @@ export function createGraphRopeRuntime(input: CreateGraphRopeRuntimeInput): Grap
     },
     createCheckpoint(checkpointInput) {
       return createCheckpoint(state, checkpointInput);
+    },
+    anchorCheckpoint(anchorInput) {
+      return anchorCheckpoint(state, anchorInput);
     },
     textWindow(readInput) {
       return textWindow(state, readInput);
@@ -246,22 +261,46 @@ function createCheckpoint(
   if (head.worldlineId !== input.worldlineId) {
     return { ok: false, code: GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_FACT };
   }
-  const anchorRequest = createCheckpointAnchorAdmissionRequest(head, input.reason, state.hash, input.materializationRoots);
-  const anchorAdmission = state.causalAnchorAdmission.admitCausalAnchor(anchorRequest);
-  if (!anchorAdmissionMatches(anchorAdmission)) {
-    return { ok: false, code: GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_FACT };
-  }
-  const checkpointFacts = createCheckpointFacts(head, input.reason, anchorAdmission, state.hash);
-  const admissionIssue = admitFacts(state, [checkpointFacts.causalAnchor, checkpointFacts.checkpoint]);
+  const checkpoint = createCheckpointFact(head, input.reason, state.hash);
+  const admissionIssue = admitFacts(state, [checkpoint]);
   if (admissionIssue !== null) {
     return { ok: false, code: admissionIssue };
   }
-  return { ok: true, value: cloneCheckpointResult(checkpointFacts) };
+  return { ok: true, value: cloneCheckpointResult({ head, checkpoint }) };
 }
 
-function anchorAdmissionMatches(anchorAdmission: EchoCausalAnchorAdmissionResult): boolean {
-  return anchorAdmission.receipt.anchorId === anchorAdmission.anchor.anchorId
-    && anchorAdmission.receipt.receiptId === anchorAdmission.anchor.admittedByReceiptId;
+function anchorCheckpoint(
+  state: GraphRopeRuntimeState,
+  input: GraphRopeAnchorCheckpointInput,
+): GraphRopeRuntimeResult<GraphRopeAnchorCheckpointResult> {
+  const checkpoint = checkpointById(state, input.checkpointId);
+  if (checkpoint === null) {
+    return { ok: false, code: GRAPH_ROPE_RUNTIME_OBSTRUCTION_MISSING_CHECKPOINT };
+  }
+  const head = headById(state, checkpoint.headId);
+  if (head === null) {
+    return { ok: false, code: GRAPH_ROPE_RUNTIME_OBSTRUCTION_MISSING_HEAD };
+  }
+  const request = createCheckpointAnchorAdmissionRequest(checkpoint, input.materializationRoots);
+  if (validateCheckpointAnchorAdmissionRequest(request) !== null) {
+    return { ok: false, code: GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_FACT };
+  }
+  if (state.causalAnchorAdmission === null) {
+    return { ok: false, code: GRAPH_ROPE_RUNTIME_OBSTRUCTION_CAUSAL_ANCHOR_UNAVAILABLE };
+  }
+  const evidence = requestCheckpointAnchorAdmission(state.causalAnchorAdmission, request);
+  if (evidence === null) {
+    return { ok: false, code: GRAPH_ROPE_RUNTIME_OBSTRUCTION_CAUSAL_ANCHOR_ADMISSION_FAILED };
+  }
+  const association = createCheckpointAnchorAssociation(checkpoint, evidence, state.hash);
+  const admissionIssue = admitFacts(state, [association]);
+  if (admissionIssue !== null) {
+    return { ok: false, code: admissionIssue };
+  }
+  return {
+    ok: true,
+    value: cloneAnchorCheckpointResult({ head, checkpoint, echoEvidence: evidence, association }),
+  };
 }
 
 function textWindow(
@@ -390,9 +429,16 @@ function cloneReplaceResult(result: GraphRopeReplaceRangeResult): GraphRopeRepla
 function cloneCheckpointResult(result: GraphRopeCreateCheckpointResult): GraphRopeCreateCheckpointResult {
   return {
     head: cloneFact(result.head),
-    causalAnchor: cloneFact(result.causalAnchor),
-    causalAnchorReceipt: cloneFact(result.causalAnchorReceipt),
     checkpoint: cloneFact(result.checkpoint),
+  };
+}
+
+function cloneAnchorCheckpointResult(result: GraphRopeAnchorCheckpointResult): GraphRopeAnchorCheckpointResult {
+  return {
+    head: cloneFact(result.head),
+    checkpoint: cloneFact(result.checkpoint),
+    echoEvidence: cloneFact(result.echoEvidence),
+    association: cloneFact(result.association),
   };
 }
 
@@ -427,6 +473,11 @@ function validationContext(
 function headById(state: GraphRopeRuntimeState, headId: string): RopeHeadFact | null {
   const fact = state.factsById.get(headId);
   return fact?.kind === ROPE_HEAD_FACT_KIND ? fact : null;
+}
+
+function checkpointById(state: GraphRopeRuntimeState, checkpointId: string): RopeCheckpointFact | null {
+  const fact = state.factsById.get(checkpointId);
+  return fact?.kind === ROPE_CHECKPOINT_FACT_KIND ? fact : null;
 }
 
 function tickIdFor(worldlineId: string, contentHash: string, hash: TextBlobHashPort): string {

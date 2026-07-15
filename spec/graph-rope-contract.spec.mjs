@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { importDist } from './dist-helpers.mjs';
+import { createTestEchoCausalAnchorAdmissionPort } from './support/test-echo-causal-anchor-admission.mjs';
 
 const UTF8_ENCODER = new TextEncoder();
 const FACT_VALIDATION_ERROR_HASH_MISMATCH = 'hash-mismatch';
+const FACT_VALIDATION_ERROR_INVALID_ID = 'invalid-id';
 const FACT_VALIDATION_ERROR_INVALID_KIND = 'invalid-kind';
 const FACT_VALIDATION_ERROR_INVALID_REFERENCE = 'invalid-reference';
 
@@ -12,12 +14,11 @@ async function loadContract() {
 }
 
 async function loadModules() {
-  const [contract, runtime, anchorDigest] = await Promise.all([
+  const [contract, runtime] = await Promise.all([
     importDist('domain', 'graph-rope-contract.js'),
     importDist('domain', 'graph-rope-runtime.js'),
-    importDist('domain', 'graph-rope-causal-anchor-digest.js'),
   ]);
-  return { anchorDigest, contract, runtime };
+  return { contract, runtime };
 }
 
 function createHashPort() {
@@ -185,7 +186,7 @@ test('buffer worldline validation requires its initial head to belong to the wor
   });
 });
 
-test('rope checkpoint validation references a causal anchor instead of a tick receipt', async () => {
+test('rope checkpoint validation admits a Jim declaration without Echo evidence', async () => {
   const facts = await checkpointFixture('worldline:checkpoint');
   const { contract } = facts;
 
@@ -194,255 +195,95 @@ test('rope checkpoint validation references a causal anchor instead of a tick re
     createValidationContext(contract, facts.writeSet),
   ).ok, true);
   assert.equal('createdByTickId' in facts.checkpoint, false);
-
-  assert.deepEqual(contract.validateRopeFact(
-    { ...facts.checkpoint, causalAnchorId: 'tick:initial' },
-    createValidationContext(contract, facts.writeSet),
-  ), {
-    ok: false,
-    code: FACT_VALIDATION_ERROR_INVALID_REFERENCE,
-  });
+  assert.equal('causalAnchorId' in facts.checkpoint, false);
 });
 
-test('causal anchor admission request is generic Echo authority without checkpoint receipts', async () => {
-  const contract = await loadContract();
-  const subject = {
-    appId: contract.JEDIT_CAUSAL_ANCHOR_APP_ID,
-    subjectKind: contract.JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_BUFFER_WORLDLINE,
-    subjectId: 'worldline:anchor-boundary',
-  };
-  const retainedRoot = {
-    kind: contract.ECHO_CAUSAL_ANCHOR_ROOT_KIND_APP_SUBJECT,
-    appId: contract.JEDIT_CAUSAL_ANCHOR_APP_ID,
-    subjectKind: contract.JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_ROPE_HEAD,
-    id: 'rope-head:anchor-boundary',
-    role: contract.ECHO_CAUSAL_ANCHOR_ROOT_ROLE_AUTHORITY,
-  };
-
-  const request = contract.makeEchoCausalAnchorAdmissionRequest({
-    subject,
-    basisFrontierDigest: 'frontier:anchor-boundary',
-    retainedRoots: [retainedRoot],
-    purpose: contract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_USER_SAVE,
-    retention: {
-      retentionClass: contract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_USER_SAVE,
-    },
-  });
-
-  assert.deepEqual(request.subject, subject);
-  assert.deepEqual(request.retainedRoots, [retainedRoot]);
-  assert.deepEqual(request.materializationRoots, []);
-  assert.deepEqual(request.retention, {
-    retentionClass: contract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_USER_SAVE,
-  });
-  assert.equal('admittedByReceiptId' in request, false);
-  assert.equal('checkpointId' in request, false);
-  assert.equal('headId' in request, false);
-  assert.equal('reason' in request, false);
-});
-
-test('rope checkpoint validation recomputes checkpoint identity and anchor frontier', async () => {
+test('rope checkpoint validation recomputes Jim-owned declaration identity', async () => {
   const facts = await checkpointFixture('worldline:checkpoint-identity');
-  const { anchorDigest, contract } = facts;
+  const { contract } = facts;
   const forgedCheckpoint = {
     ...facts.checkpoint,
     checkpointId: 'rope-checkpoint:forged',
   };
-  const frontierForgedAnchor = rekeyAnchor({
-    ...facts.anchor,
-    basisFrontierDigest: 'frontier:forged',
-  }, anchorDigest, createHashPort());
-  const frontierForgedCheckpoint = {
-    ...facts.checkpoint,
-    causalAnchorId: frontierForgedAnchor.anchorId,
-  };
-  const retentionForgedAnchor = rekeyAnchor({
-    ...facts.anchor,
-    retention: { retentionClass: contract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_DEBUG },
-  }, anchorDigest, createHashPort());
-  const retentionForgedCheckpoint = {
-    ...facts.checkpoint,
-    causalAnchorId: retentionForgedAnchor.anchorId,
-  };
 
   assert.deepEqual(contract.validateRopeFact(
     forgedCheckpoint,
-    createValidationContext(contract, [...facts.baseFacts, facts.anchor, forgedCheckpoint]),
+    createValidationContext(contract, [...facts.baseFacts, forgedCheckpoint]),
   ), {
     ok: false,
     code: FACT_VALIDATION_ERROR_HASH_MISMATCH,
   });
-  assert.deepEqual(contract.validateRopeFact(
-    frontierForgedCheckpoint,
-    createValidationContext(contract, [...facts.baseFacts, frontierForgedAnchor, frontierForgedCheckpoint]),
-  ), {
-    ok: false,
-    code: FACT_VALIDATION_ERROR_INVALID_REFERENCE,
-  });
-  assert.deepEqual(contract.validateRopeFact(
-    retentionForgedCheckpoint,
-    createValidationContext(contract, [...facts.baseFacts, retentionForgedAnchor, retentionForgedCheckpoint]),
-  ), {
-    ok: false,
-    code: FACT_VALIDATION_ERROR_INVALID_REFERENCE,
-  });
 });
 
-test('rope checkpoints require a matching authority root on their causal anchor', async () => {
-  const facts = await checkpointFixture('worldline:checkpoint');
-  const otherFacts = await checkpointFixture('worldline:other-checkpoint');
+test('checkpoint anchor associations retain opaque Echo identities as Jim facts', async () => {
+  const facts = await checkpointAnchorFixture('worldline:checkpoint-anchor');
   const { contract } = facts;
-  const weakCheckpoint = {
-    ...facts.checkpoint,
-    checkpointId: 'rope-checkpoint:weak',
-    causalAnchorId: otherFacts.anchor.anchorId,
-  };
 
   assert.equal(contract.validateRopeFact(
-    otherFacts.anchor,
-    createValidationContext(contract, otherFacts.writeSet),
+    facts.association,
+    createValidationContext(contract, facts.writeSet),
   ).ok, true);
+  assert.equal(facts.association.causalAnchorId, 'test-only-anchor:1');
+  assert.equal(facts.association.causalAnchorFactId, 'test-only-anchor-fact:1');
+  assert.equal(facts.association.causalAnchorReceiptId, 'test-only-anchor-receipt:1');
+  assert.equal('authority' in facts.association, false);
+
   assert.deepEqual(contract.validateRopeFact(
-    weakCheckpoint,
-    createValidationContext(contract, [...facts.baseFacts, otherFacts.anchor, weakCheckpoint]),
+    { ...facts.association, checkpointId: 'rope-checkpoint:missing' },
+    createValidationContext(contract, facts.writeSet),
   ), {
     ok: false,
     code: FACT_VALIDATION_ERROR_INVALID_REFERENCE,
   });
-});
-
-test('causal anchor validation rejects authority roots as materializations', async () => {
-  const facts = await checkpointFixture('worldline:projection-anchor');
-  const { contract } = facts;
-  const projectionAuthorityAnchor = {
-    ...facts.anchor,
-    anchorId: 'causal-anchor:projection-authority',
-    materializationRoots: [facts.anchor.retainedRoots[0]],
-  };
-
   assert.deepEqual(contract.validateRopeFact(
-    projectionAuthorityAnchor,
-    createValidationContext(contract, [...facts.baseFacts, projectionAuthorityAnchor]),
-  ), {
-    ok: false,
-    code: FACT_VALIDATION_ERROR_INVALID_REFERENCE,
-  });
-});
-
-test('causal anchor admission distinguishes authority roots from materialization artifacts', async () => {
-  const contract = await loadContract();
-  const hash = createHashPort();
-  const admission = contract.createDeterministicEchoCausalAnchorAdmissionPort({ hash });
-  const retainedRoot = {
-    kind: contract.ECHO_CAUSAL_ANCHOR_ROOT_KIND_APP_SUBJECT,
-    appId: contract.JEDIT_CAUSAL_ANCHOR_APP_ID,
-    subjectKind: contract.JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_ROPE_HEAD,
-    id: 'rope-head:authority',
-    role: contract.ECHO_CAUSAL_ANCHOR_ROOT_ROLE_AUTHORITY,
-  };
-  const materializationRoot = {
-    kind: contract.ECHO_CAUSAL_ANCHOR_ROOT_KIND_CAS_OBJECT,
-    id: 'cas:flat-text-window',
-    role: contract.ECHO_CAUSAL_ANCHOR_ROOT_ROLE_MATERIALIZATION,
-  };
-  const anchor = admission.admitCausalAnchor(contract.makeEchoCausalAnchorAdmissionRequest({
-    subject: {
-      appId: contract.JEDIT_CAUSAL_ANCHOR_APP_ID,
-      subjectKind: contract.JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_BUFFER_WORLDLINE,
-      subjectId: 'worldline:authority-vs-cache',
-    },
-    basisFrontierDigest: 'frontier:authority-vs-cache',
-    retainedRoots: [retainedRoot],
-    materializationRoots: [materializationRoot],
-    purpose: contract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_USER_SAVE,
-    retention: {
-      retentionClass: contract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_USER_SAVE,
-    },
-  })).anchor;
-
-  assert.equal(contract.validateRopeFact(
-    anchor,
-    createValidationContext(contract, [anchor]),
-  ).ok, true);
-  assert.deepEqual(anchor.retainedRoots, [retainedRoot]);
-  assert.deepEqual(anchor.materializationRoots, [materializationRoot]);
-  assert.equal(anchor.retainedRoots[0].role, contract.ECHO_CAUSAL_ANCHOR_ROOT_ROLE_AUTHORITY);
-  assert.equal(anchor.materializationRoots[0].role, contract.ECHO_CAUSAL_ANCHOR_ROOT_ROLE_MATERIALIZATION);
-});
-
-test('causal anchor retention metadata distinguishes anchor policy classes', async () => {
-  const contract = await loadContract();
-  const hash = createHashPort();
-  const admission = contract.createDeterministicEchoCausalAnchorAdmissionPort({ hash });
-  const retentionClasses = [
-    contract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_RECOVERY,
-    contract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_EXPORT,
-    contract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_USER_SAVE,
-    contract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_AUTOSAVE,
-    contract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_DEBUG,
-    contract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_CACHE_WARM,
-  ];
-
-  const anchors = retentionClasses.map((retentionClass) => admission.admitCausalAnchor(
-    contract.makeEchoCausalAnchorAdmissionRequest({
-      subject: {
-        appId: contract.JEDIT_CAUSAL_ANCHOR_APP_ID,
-        subjectKind: contract.JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_BUFFER_WORLDLINE,
-        subjectId: `worldline:${retentionClass}`,
-      },
-      basisFrontierDigest: `frontier:${retentionClass}`,
-      retainedRoots: [{
-        kind: contract.ECHO_CAUSAL_ANCHOR_ROOT_KIND_GRAPH_FACT,
-        id: `fact:${retentionClass}`,
-        role: contract.ECHO_CAUSAL_ANCHOR_ROOT_ROLE_EVIDENCE,
-      }],
-      purpose: retentionClass,
-      retention: { retentionClass },
-    }),
-  ).anchor);
-
-  assert.deepEqual(anchors.map((anchor) => anchor.retention.retentionClass), retentionClasses);
-  assert.equal(new Set(anchors.map((anchor) => anchor.anchorId)).size, retentionClasses.length);
-  for (const anchor of anchors) {
-    assert.equal(contract.validateRopeFact(
-      anchor,
-      createValidationContext(contract, [anchor]),
-    ).ok, true);
-  }
-});
-
-test('causal anchor validation rejects forged digests ids and purposes', async () => {
-  const facts = await checkpointFixture('worldline:forged-anchor');
-  const { contract } = facts;
-
-  assert.deepEqual(contract.validateRopeFact(
-    { ...facts.anchor, anchorDigest: 'anchor-digest:forged' },
+    { ...facts.association, associationId: 'rope-checkpoint-anchor:forged' },
     createValidationContext(contract, facts.writeSet),
   ), {
     ok: false,
     code: FACT_VALIDATION_ERROR_HASH_MISMATCH,
   });
   assert.deepEqual(contract.validateRopeFact(
-    { ...facts.anchor, anchorId: 'causal-anchor:forged' },
+    { ...facts.association, causalAnchorFactId: '' },
     createValidationContext(contract, facts.writeSet),
   ), {
     ok: false,
-    code: FACT_VALIDATION_ERROR_HASH_MISMATCH,
+    code: FACT_VALIDATION_ERROR_INVALID_ID,
   });
-  assert.deepEqual(contract.validateRopeFact(
-    { ...facts.anchor, purpose: 'pretend-save' },
-    createValidationContext(contract, facts.writeSet),
-  ), {
-    ok: false,
-    code: FACT_VALIDATION_ERROR_INVALID_REFERENCE,
+});
+
+test('checkpoint identities do not collide when opaque fields contain separators', async () => {
+  const identity = await importDist('domain', 'graph-rope-checkpoint-identity.js');
+  const hash = createHashPort();
+
+  const firstCheckpointId = identity.ropeCheckpointIdFor({
+    worldlineId: 'worldline:a',
+    headId: 'b',
+    reason: 'manual-save',
+    hash,
   });
-  assert.deepEqual(contract.validateRopeFact(
-    { ...facts.anchor, retention: { retentionClass: 'pretend-save' } },
-    createValidationContext(contract, facts.writeSet),
-  ), {
-    ok: false,
-    code: FACT_VALIDATION_ERROR_INVALID_REFERENCE,
+  const secondCheckpointId = identity.ropeCheckpointIdFor({
+    worldlineId: 'worldline',
+    headId: 'a:b',
+    reason: 'manual-save',
+    hash,
   });
+  const firstAssociationId = identity.ropeCheckpointAnchorAssociationIdFor({
+    checkpointId: 'rope-checkpoint:a',
+    causalAnchorId: 'b',
+    causalAnchorFactId: 'c',
+    causalAnchorReceiptId: 'd',
+    hash,
+  });
+  const secondAssociationId = identity.ropeCheckpointAnchorAssociationIdFor({
+    checkpointId: 'rope-checkpoint',
+    causalAnchorId: 'a:b',
+    causalAnchorFactId: 'c',
+    causalAnchorReceiptId: 'd',
+    hash,
+  });
+
+  assert.notEqual(secondCheckpointId, firstCheckpointId);
+  assert.notEqual(secondAssociationId, firstAssociationId);
 });
 
 test('graph rope validation rejects forged diff span and rewrite evidence', async () => {
@@ -571,14 +412,13 @@ test('graph rope validation rejects inconsistent rewrite diff and receipt links'
 });
 
 async function graphCreateFixture(worldlineId, initialText) {
-  const { anchorDigest, contract, runtime } = await loadModules();
+  const { contract, runtime } = await loadModules();
   const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
   const created = assertOk(graph.createBufferWorldline({ worldlineId, initialText }));
   const leaf = created.nodes.find((node) => node.kind === contract.ROPE_LEAF_FACT_KIND);
 
   assert.notEqual(leaf, undefined);
   return {
-    anchorDigest,
     contract,
     runtime,
     graph,
@@ -623,19 +463,33 @@ async function checkpointFixture(worldlineId) {
   const baseFacts = facts.writeSet;
   return {
     ...facts,
-    anchor: checkpointed.causalAnchor,
     checkpoint: checkpointed.checkpoint,
     baseFacts,
-    writeSet: [...baseFacts, checkpointed.causalAnchor, checkpointed.checkpoint],
+    writeSet: [...baseFacts, checkpointed.checkpoint],
   };
 }
 
-function rekeyAnchor(anchor, anchorDigest, hash) {
-  const anchorDigestValue = anchorDigest.causalAnchorDigestFor(anchor, hash);
+async function checkpointAnchorFixture(worldlineId) {
+  const { contract, runtime } = await loadModules();
+  const graph = runtime.createGraphRopeRuntime({
+    hash: createHashPort(),
+    causalAnchorAdmission: createTestEchoCausalAnchorAdmissionPort(),
+  });
+  const created = assertOk(graph.createBufferWorldline({ worldlineId, initialText: 'checkpoint text' }));
+  const checkpointed = assertOk(graph.createCheckpoint({
+    worldlineId,
+    headId: created.head.headId,
+    reason: 'manual-save',
+  }));
+  const anchored = assertOk(graph.anchorCheckpoint({
+    checkpointId: checkpointed.checkpoint.checkpointId,
+  }));
+  const baseFacts = [created.blob, ...created.nodes, created.head, created.worldline];
   return {
-    ...anchor,
-    anchorDigest: anchorDigestValue,
-    anchorId: anchorDigest.causalAnchorIdForDigest(anchorDigestValue, hash),
+    contract,
+    association: anchored.association,
+    checkpoint: checkpointed.checkpoint,
+    writeSet: [...baseFacts, checkpointed.checkpoint, anchored.association],
   };
 }
 

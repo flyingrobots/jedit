@@ -84,8 +84,9 @@ In that model:
 - `replaceRangeAsTick` is an Echo intent that reads a base head, range-closes
   over touched rope nodes, creates the new local rope facts, emits rewrite and
   diff evidence, and advances the worldline head.
-- `RopeRewrite`, `RopeDiff`, tick receipts, checkpoints, anchors, strands, and
-  admissions are retained causal evidence.
+- `RopeRewrite`, `RopeDiff`, application tick evidence, checkpoint declarations,
+  and anchor associations are retained jedit evidence; Echo owns causal-anchor
+  and admission evidence.
 - Materialized strings are readings or projections. They are allowed for UI
   rendering, export, save, tests, and caches, but they are not the source of
   editor truth.
@@ -466,12 +467,13 @@ interface RopeStructuralMaintenanceFact {
 }
 ```
 
-The full design must also define facts for:
+The full design must also define jedit facts for:
 
-- anchors;
+- associations between rope checkpoints and opaque Echo anchor evidence;
 - strands, braids, and admissions when their implementation slice begins.
 
-Echo remains generic. jedit owns these fact shapes and text-specific witnesses.
+Echo remains generic and owns causal-anchor admission. jedit owns rope facts,
+domain associations, and text-specific witnesses.
 
 Runtime construction and validation are part of the contract. The branded types
 above are compile-time helpers only; decoded runtime payloads must pass through
@@ -504,7 +506,7 @@ type RopeAdmittedFact =
   | TickReceiptFact
   | RopeStructuralMaintenanceFact
   | RopeCheckpointFact
-  | EchoCausalAnchorFact;
+  | RopeCheckpointAnchoredFact;
 
 interface RopeFactReadModel {
   getFact(id: string): RopeAdmittedFact | null;
@@ -817,44 +819,18 @@ Initial balance invariant for the tiny graph-backed runtime:
 - rebalancing emits structural-maintenance evidence linked to the semantic
   rewrite that made maintenance necessary.
 
-Checkpoint semantics also need precision. A checkpoint is not new text truth. It
-is a durable named basis for efficient future reads, retention, or export. Echo
-owns the generic causal anchor. jedit owns the rope checkpoint that says which
-rope head the anchor names in text-domain terms.
+Checkpoint semantics also need precision. A checkpoint is not new text truth.
+It is a jedit declaration that a named rope head matters for a domain reason.
+That declaration does not necessarily request special Echo retention. Echo owns
+generic causal-anchor admission, while jedit may separately associate an
+admitted Echo anchor with a checkpoint for durable recovery, retention, save,
+or export policy.
 
 ```typescript
 type CheckpointId = string & { readonly __brand: "CheckpointId" };
 type CausalAnchorId = string & { readonly __brand: "CausalAnchorId" };
-
-interface EchoCausalAnchorFact {
-  readonly kind: "echo.causal.Anchor";
-  readonly schemaVersion: 1;
-  readonly anchorId: CausalAnchorId;
-  readonly subject: {
-    readonly appId: "jedit";
-    readonly subjectKind: "BufferWorldline";
-    readonly subjectId: WorldlineId;
-  };
-  readonly basisFrontierDigest: Hash;
-  readonly retainedRoots: readonly [{
-    readonly kind: "AppSubjectRoot";
-    readonly appId: "jedit";
-    readonly subjectKind: "RopeHead";
-    readonly id: RopeHeadId;
-    readonly role: "authority";
-  }];
-  readonly materializationRoots: readonly unknown[];
-  readonly purpose:
-    | "recovery"
-    | "retention"
-    | "export"
-    | "user-save"
-    | "autosave"
-    | "debug"
-    | "cache-warm";
-  readonly admittedByReceiptId: Hash;
-  readonly anchorDigest: Hash;
-}
+type CausalAnchorFactId = string & { readonly __brand: "CausalAnchorFactId" };
+type CausalAnchorReceiptId = string & { readonly __brand: "CausalAnchorReceiptId" };
 
 interface RopeCheckpointFact {
   readonly kind: "jedit.text.RopeCheckpoint";
@@ -862,7 +838,6 @@ interface RopeCheckpointFact {
   readonly checkpointId: CheckpointId;
   readonly worldlineId: WorldlineId;
   readonly headId: RopeHeadId;
-  readonly causalAnchorId: CausalAnchorId;
   readonly reason:
     | "manual-save"
     | "autosave"
@@ -871,13 +846,36 @@ interface RopeCheckpointFact {
     | "import"
     | "test-fixture";
 }
+
+interface RopeCheckpointAnchoredFact {
+  readonly kind: "jedit.text.RopeCheckpointAnchored";
+  readonly schemaVersion: 1;
+  readonly associationId: string;
+  readonly checkpointId: CheckpointId;
+  readonly causalAnchorId: CausalAnchorId;
+  readonly causalAnchorFactId: CausalAnchorFactId;
+  readonly causalAnchorReceiptId: CausalAnchorReceiptId;
+}
 ```
 
 Save/export should read from a head or checkpoint. It should not mutate text
-authority unless the product explicitly records a checkpoint. Creating a
-checkpoint admits an anchor and a checkpoint fact; it does not create a
-`RopeHead`, `RopeRewrite`, `RopeDiff`, replacement blob, or text mutation
-receipt.
+authority unless the product explicitly records a checkpoint. Declaring a
+checkpoint creates only `RopeCheckpointFact`. A separate, explicitly injected
+Echo capability may admit a causal anchor and return opaque anchor, fact, and
+receipt identities; jedit then records `RopeCheckpointAnchoredFact`. Neither
+operation creates a `RopeHead`, `RopeRewrite`, `RopeDiff`, replacement blob, or
+text mutation receipt.
+
+The transitional TypeScript port must not derive Echo basis frontiers, IDs,
+digests, receipts, WAL evidence, or retention policy. It validates jedit-owned
+checkpoint and materialization semantics before invocation, fails closed when
+no Echo capability is available, and treats all returned Echo identities as
+opaque references. Echo's witnessed causal history remains authoritative after
+restart; registries and lookup maps are disposable projections over that
+history. Replace this port with a generated Edict client once Echo can install
+and invoke the corresponding verified operation natively. The port is a
+short-lived seam for this one capability, not a Jim/Echo protocol: do not add
+new handwritten operations or give it long-term compatibility guarantees.
 
 ### 12. Make `:why` An Acceptance Target
 

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { importDist } from './dist-helpers.mjs';
+import { createTestEchoCausalAnchorAdmissionPort } from './support/test-echo-causal-anchor-admission.mjs';
 
 const UTF8_ENCODER = new TextEncoder();
 const WINDOW_CACHE_STATUS_UNCACHED = 'uncached-materialization';
@@ -9,6 +10,9 @@ const OBSTRUCTION_MISSING_HEAD = 'missing-head';
 const OBSTRUCTION_INVALID_BYTE_RANGE = 'invalid-byte-range';
 const OBSTRUCTION_INVALID_UTF8_BOUNDARY = 'invalid-utf8-boundary';
 const OBSTRUCTION_INVALID_FACT = 'invalid-fact';
+const OBSTRUCTION_MISSING_CHECKPOINT = 'missing-checkpoint';
+const OBSTRUCTION_CAUSAL_ANCHOR_UNAVAILABLE = 'causal-anchor-unavailable';
+const OBSTRUCTION_CAUSAL_ANCHOR_ADMISSION_FAILED = 'causal-anchor-admission-failed';
 
 async function loadModules() {
   const [runtime, contract] = await Promise.all([
@@ -175,20 +179,9 @@ test('graph runtime no-op replacement does not mint text authority facts', async
   assert.equal(replaced.receipt, null);
 });
 
-test('graph runtime checkpoints a head through a non-mutating causal anchor', async () => {
+test('graph runtime declares a checkpoint without requiring Echo admission', async () => {
   const { runtime, contract } = await loadModules();
-  const hash = createHashPort();
-  const admittedRequests = [];
-  const echoAdmission = contract.createDeterministicEchoCausalAnchorAdmissionPort({ hash });
-  const graph = runtime.createGraphRopeRuntime({
-    hash,
-    causalAnchorAdmission: {
-      admitCausalAnchor(request) {
-        admittedRequests.push(request);
-        return echoAdmission.admitCausalAnchor(request);
-      },
-    },
-  });
+  const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
   const created = assertOk(graph.createBufferWorldline({
     worldlineId: 'worldline:checkpoint',
     initialText: 'alpha beta',
@@ -213,33 +206,10 @@ test('graph runtime checkpoints a head through a non-mutating causal anchor', as
 
   assert.equal(checkpointed.head.headId, replaced.nextHead.headId);
   assert.equal(checkpointed.checkpoint.headId, replaced.nextHead.headId);
-  assert.equal(checkpointed.checkpoint.causalAnchorId, checkpointed.causalAnchor.anchorId);
-  assert.equal(admittedRequests.length, 1);
-  assert.equal(admittedRequests[0].subject.appId, contract.JEDIT_CAUSAL_ANCHOR_APP_ID);
-  assert.equal(admittedRequests[0].subject.subjectKind, contract.JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_BUFFER_WORLDLINE);
-  assert.equal(admittedRequests[0].subject.subjectId, 'worldline:checkpoint');
-  assert.equal(admittedRequests[0].basisFrontierDigest, checkpointed.causalAnchor.basisFrontierDigest);
-  assert.deepEqual(admittedRequests[0].retainedRoots, checkpointed.causalAnchor.retainedRoots);
-  assert.deepEqual(admittedRequests[0].materializationRoots, []);
-  assert.equal('admittedByReceiptId' in admittedRequests[0], false);
-  assert.equal(checkpointed.causalAnchorReceipt.authority, contract.ECHO_CAUSAL_ANCHOR_ADMISSION_AUTHORITY_ECHO);
-  assert.equal(checkpointed.causalAnchorReceipt.anchorId, checkpointed.causalAnchor.anchorId);
-  assert.equal(checkpointed.causalAnchorReceipt.receiptId, checkpointed.causalAnchor.admittedByReceiptId);
-  assert.equal(checkpointed.causalAnchor.subject.appId, contract.JEDIT_CAUSAL_ANCHOR_APP_ID);
-  assert.equal(checkpointed.causalAnchor.subject.subjectKind, contract.JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_BUFFER_WORLDLINE);
-  assert.equal(checkpointed.causalAnchor.subject.subjectId, 'worldline:checkpoint');
-  assert.equal(checkpointed.causalAnchor.purpose, 'user-save');
-  assert.deepEqual(checkpointed.causalAnchor.retention, {
-    retentionClass: contract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_USER_SAVE,
-  });
-  assert.deepEqual(checkpointed.causalAnchor.retainedRoots, [{
-    kind: contract.ECHO_CAUSAL_ANCHOR_ROOT_KIND_APP_SUBJECT,
-    appId: contract.JEDIT_CAUSAL_ANCHOR_APP_ID,
-    subjectKind: contract.JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_ROPE_HEAD,
-    id: replaced.nextHead.headId,
-    role: contract.ECHO_CAUSAL_ANCHOR_ROOT_ROLE_AUTHORITY,
-  }]);
-  assert.equal(checkpointed.causalAnchor.materializationRoots.length, 0);
+  assert.equal(checkpointed.checkpoint.reason, 'manual-save');
+  assert.equal('causalAnchorId' in checkpointed.checkpoint, false);
+  assert.equal('causalAnchor' in checkpointed, false);
+  assert.equal('causalAnchorReceipt' in checkpointed, false);
   assert.equal('rewrite' in checkpointed, false);
   assert.equal('diff' in checkpointed, false);
   assert.equal('receipt' in checkpointed, false);
@@ -247,47 +217,37 @@ test('graph runtime checkpoints a head through a non-mutating causal anchor', as
   assert.equal(reading.text, 'alpha BETA');
 });
 
-test('graph runtime rejects checkpoint admissions with mismatched Echo receipts', async () => {
-  const { runtime, contract } = await loadModules();
-  const hash = createHashPort();
-  const echoAdmission = contract.createDeterministicEchoCausalAnchorAdmissionPort({ hash });
-  const graph = runtime.createGraphRopeRuntime({
-    hash,
-    causalAnchorAdmission: {
-      admitCausalAnchor(request) {
-        const admission = echoAdmission.admitCausalAnchor(request);
-        return {
-          ...admission,
-          receipt: {
-            ...admission.receipt,
-            anchorId: 'causal-anchor:forged',
-          },
-        };
-      },
-    },
-  });
+test('graph runtime fails closed when checkpoint anchoring has no Echo adapter', async () => {
+  const { runtime } = await loadModules();
+  const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
   const created = assertOk(graph.createBufferWorldline({
-    worldlineId: 'worldline:checkpoint-bad-receipt',
+    worldlineId: 'worldline:checkpoint-no-echo',
     initialText: 'alpha',
   }));
-
-  assert.deepEqual(graph.createCheckpoint({
-    worldlineId: 'worldline:checkpoint-bad-receipt',
+  const checkpointed = assertOk(graph.createCheckpoint({
+    worldlineId: 'worldline:checkpoint-no-echo',
     headId: created.head.headId,
     reason: 'manual-save',
+  }));
+
+  assert.deepEqual(graph.anchorCheckpoint({
+    checkpointId: checkpointed.checkpoint.checkpointId,
   }), {
     ok: false,
-    code: OBSTRUCTION_INVALID_FACT,
+    code: OBSTRUCTION_CAUSAL_ANCHOR_UNAVAILABLE,
   });
 });
 
-test('graph runtime checkpoint anchors optional materialization roots as cache artifacts', async () => {
-  const { runtime, contract } = await loadModules();
-  const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
+test('graph runtime associates explicitly injected opaque Echo evidence with a checkpoint', async () => {
+  const { runtime } = await loadModules();
+  const requests = [];
+  const graph = runtime.createGraphRopeRuntime({
+    hash: createHashPort(),
+    causalAnchorAdmission: createTestEchoCausalAnchorAdmissionPort({ requests }),
+  });
   const materializationRoot = {
-    kind: contract.ECHO_CAUSAL_ANCHOR_ROOT_KIND_CAS_OBJECT,
     id: 'cas:checkpoint-flat-text',
-    role: contract.ECHO_CAUSAL_ANCHOR_ROOT_ROLE_MATERIALIZATION,
+    role: 'materialization',
   };
   const created = assertOk(graph.createBufferWorldline({
     worldlineId: 'worldline:checkpoint-materialization',
@@ -299,22 +259,164 @@ test('graph runtime checkpoint anchors optional materialization roots as cache a
     worldlineId: 'worldline:checkpoint-materialization',
     headId: created.head.headId,
     reason: 'export',
+  }));
+  const anchored = assertOk(graph.anchorCheckpoint({
+    checkpointId: checkpointed.checkpoint.checkpointId,
     materializationRoots: [materializationRoot],
   }));
   const after = assertOk(graph.debugRopeShape(created.head.headId));
 
-  assert.deepEqual(checkpointed.causalAnchor.materializationRoots, [materializationRoot]);
-  assert.equal(checkpointed.causalAnchor.retainedRoots.length, 1);
-  assert.equal(checkpointed.causalAnchor.retainedRoots[0].role, contract.ECHO_CAUSAL_ANCHOR_ROOT_ROLE_AUTHORITY);
-  assert.equal(checkpointed.causalAnchor.purpose, contract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_EXPORT);
-  assert.deepEqual(checkpointed.causalAnchor.retention, {
-    retentionClass: contract.ECHO_CAUSAL_ANCHOR_RETENTION_CLASS_EXPORT,
+  assert.deepEqual(requests, [{
+    checkpointId: checkpointed.checkpoint.checkpointId,
+    worldlineId: 'worldline:checkpoint-materialization',
+    headId: created.head.headId,
+    reason: 'export',
+    materializationRoots: [materializationRoot],
+  }]);
+  assert.deepEqual(anchored.echoEvidence, {
+    anchorId: 'test-only-anchor:1',
+    anchorFactId: 'test-only-anchor-fact:1',
+    receiptId: 'test-only-anchor-receipt:1',
   });
-  assert.equal(checkpointed.checkpoint.causalAnchorId, checkpointed.causalAnchor.anchorId);
+  assert.equal(anchored.association.checkpointId, checkpointed.checkpoint.checkpointId);
+  assert.equal(anchored.association.causalAnchorId, anchored.echoEvidence.anchorId);
+  assert.equal(anchored.association.causalAnchorFactId, anchored.echoEvidence.anchorFactId);
+  assert.equal(anchored.association.causalAnchorReceiptId, anchored.echoEvidence.receiptId);
+  assert.equal('authority' in anchored.echoEvidence, false);
   assert.deepEqual(after, before);
 });
 
-test('graph runtime treats repeated checkpoints as distinct causal admissions', async () => {
+test('graph runtime validates materialization roots before invoking Echo', async () => {
+  const { runtime } = await loadModules();
+  const requests = [];
+  const graph = runtime.createGraphRopeRuntime({
+    hash: createHashPort(),
+    causalAnchorAdmission: createTestEchoCausalAnchorAdmissionPort({ requests }),
+  });
+  const created = assertOk(graph.createBufferWorldline({
+    worldlineId: 'worldline:checkpoint-invalid-materialization',
+    initialText: 'alpha',
+  }));
+  const checkpointed = assertOk(graph.createCheckpoint({
+    worldlineId: 'worldline:checkpoint-invalid-materialization',
+    headId: created.head.headId,
+    reason: 'export',
+  }));
+
+  const invalidRootSets = [
+    [null],
+    [{ id: '', role: 'materialization' }],
+    [{ id: 'cas:authority', role: 'authority' }],
+    [
+      { id: 'cas:duplicate', role: 'materialization' },
+      { id: 'cas:duplicate', role: 'materialization' },
+    ],
+  ];
+
+  for (const materializationRoots of invalidRootSets) {
+    assert.deepEqual(graph.anchorCheckpoint({
+      checkpointId: checkpointed.checkpoint.checkpointId,
+      materializationRoots,
+    }), {
+      ok: false,
+      code: OBSTRUCTION_INVALID_FACT,
+    });
+  }
+  assert.equal(requests.length, 0);
+});
+
+test('graph runtime turns Echo adapter failures into typed obstructions', async () => {
+  const { runtime } = await loadModules();
+  const graph = runtime.createGraphRopeRuntime({
+    hash: createHashPort(),
+    causalAnchorAdmission: createTestEchoCausalAnchorAdmissionPort({
+      admit() {
+        return { ok: false, obstructionId: 'test-only-echo-offline' };
+      },
+    }),
+  });
+  const created = assertOk(graph.createBufferWorldline({
+    worldlineId: 'worldline:checkpoint-echo-obstructed',
+    initialText: 'alpha',
+  }));
+  const checkpointed = assertOk(graph.createCheckpoint({
+    worldlineId: 'worldline:checkpoint-echo-obstructed',
+    headId: created.head.headId,
+    reason: 'manual-save',
+  }));
+
+  assert.deepEqual(graph.anchorCheckpoint({
+    checkpointId: checkpointed.checkpoint.checkpointId,
+  }), {
+    ok: false,
+    code: OBSTRUCTION_CAUSAL_ANCHOR_ADMISSION_FAILED,
+  });
+});
+
+test('graph runtime fails closed on malformed Echo evidence', async () => {
+  const { runtime } = await loadModules();
+  const graph = runtime.createGraphRopeRuntime({
+    hash: createHashPort(),
+    causalAnchorAdmission: createTestEchoCausalAnchorAdmissionPort({
+      admit() {
+        return {
+          ok: true,
+          evidence: {
+            anchorId: 'test-only-anchor:malformed',
+            anchorFactId: '',
+            receiptId: 'test-only-anchor-receipt:malformed',
+          },
+        };
+      },
+    }),
+  });
+  const created = assertOk(graph.createBufferWorldline({
+    worldlineId: 'worldline:checkpoint-malformed-evidence',
+    initialText: 'alpha',
+  }));
+  const checkpointed = assertOk(graph.createCheckpoint({
+    worldlineId: 'worldline:checkpoint-malformed-evidence',
+    headId: created.head.headId,
+    reason: 'manual-save',
+  }));
+
+  assert.deepEqual(graph.anchorCheckpoint({
+    checkpointId: checkpointed.checkpoint.checkpointId,
+  }), {
+    ok: false,
+    code: OBSTRUCTION_CAUSAL_ANCHOR_ADMISSION_FAILED,
+  });
+});
+
+test('graph runtime fails closed when the Echo adapter throws', async () => {
+  const { runtime } = await loadModules();
+  const graph = runtime.createGraphRopeRuntime({
+    hash: createHashPort(),
+    causalAnchorAdmission: createTestEchoCausalAnchorAdmissionPort({
+      admit() {
+        throw new Error('test-only Echo adapter failure');
+      },
+    }),
+  });
+  const created = assertOk(graph.createBufferWorldline({
+    worldlineId: 'worldline:checkpoint-echo-throws',
+    initialText: 'alpha',
+  }));
+  const checkpointed = assertOk(graph.createCheckpoint({
+    worldlineId: 'worldline:checkpoint-echo-throws',
+    headId: created.head.headId,
+    reason: 'manual-save',
+  }));
+
+  assert.deepEqual(graph.anchorCheckpoint({
+    checkpointId: checkpointed.checkpoint.checkpointId,
+  }), {
+    ok: false,
+    code: OBSTRUCTION_CAUSAL_ANCHOR_ADMISSION_FAILED,
+  });
+});
+
+test('graph runtime treats repeated checkpoint declarations as idempotent', async () => {
   const { runtime } = await loadModules();
   const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
   const created = assertOk(graph.createBufferWorldline({
@@ -337,14 +439,58 @@ test('graph runtime treats repeated checkpoints as distinct causal admissions', 
 
   assert.equal(first.head.headId, created.head.headId);
   assert.equal(second.head.headId, created.head.headId);
-  assert.notEqual(first.causalAnchor.admittedByReceiptId, second.causalAnchor.admittedByReceiptId);
-  assert.notEqual(first.causalAnchor.anchorDigest, second.causalAnchor.anchorDigest);
-  assert.notEqual(first.causalAnchor.anchorId, second.causalAnchor.anchorId);
-  assert.notEqual(first.checkpoint.checkpointId, second.checkpoint.checkpointId);
+  assert.equal(first.checkpoint.checkpointId, second.checkpoint.checkpointId);
   assert.equal('rewrite' in first, false);
   assert.equal('diff' in first, false);
   assert.equal('receipt' in first, false);
   assert.deepEqual(after, before);
+});
+
+test('checkpoint declarations do not perturb later text tick identity', async () => {
+  const { runtime, contract } = await loadModules();
+  const hash = createHashPort();
+  const checkpointedGraph = runtime.createGraphRopeRuntime({ hash });
+  const controlGraph = runtime.createGraphRopeRuntime({ hash });
+  const checkpointedCreated = assertOk(checkpointedGraph.createBufferWorldline({
+    worldlineId: 'worldline:checkpoint-text-sequence',
+    initialText: 'alpha',
+  }));
+  const controlCreated = assertOk(controlGraph.createBufferWorldline({
+    worldlineId: 'worldline:checkpoint-text-sequence',
+    initialText: 'alpha',
+  }));
+  assertOk(checkpointedGraph.createCheckpoint({
+    worldlineId: 'worldline:checkpoint-text-sequence',
+    headId: checkpointedCreated.head.headId,
+    reason: 'manual-save',
+  }));
+
+  const checkpointedEdit = assertOk(checkpointedGraph.replaceRangeAsTick({
+    basisHeadId: checkpointedCreated.head.headId,
+    range: byteRange(contract, 0, 1),
+    replacementText: 'A',
+  }));
+  const controlEdit = assertOk(controlGraph.replaceRangeAsTick({
+    basisHeadId: controlCreated.head.headId,
+    range: byteRange(contract, 0, 1),
+    replacementText: 'A',
+  }));
+
+  assert.deepEqual(checkpointedEdit.receipt, controlEdit.receipt);
+  assert.deepEqual(checkpointedEdit.nextHead, controlEdit.nextHead);
+});
+
+test('graph runtime rejects anchoring an unknown checkpoint', async () => {
+  const { runtime } = await loadModules();
+  const graph = runtime.createGraphRopeRuntime({
+    hash: createHashPort(),
+    causalAnchorAdmission: createTestEchoCausalAnchorAdmissionPort(),
+  });
+
+  assert.deepEqual(graph.anchorCheckpoint({ checkpointId: 'rope-checkpoint:missing' }), {
+    ok: false,
+    code: OBSTRUCTION_MISSING_CHECKPOINT,
+  });
 });
 
 test('graph runtime rejects checkpoints for a different worldline', async () => {
@@ -359,6 +505,24 @@ test('graph runtime rejects checkpoints for a different worldline', async () => 
     worldlineId: 'worldline:other',
     headId: created.head.headId,
     reason: 'manual-save',
+  }), {
+    ok: false,
+    code: OBSTRUCTION_INVALID_FACT,
+  });
+});
+
+test('graph runtime rejects unknown checkpoint reasons', async () => {
+  const { runtime } = await loadModules();
+  const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
+  const created = assertOk(graph.createBufferWorldline({
+    worldlineId: 'worldline:checkpoint-reason',
+    initialText: 'alpha',
+  }));
+
+  assert.deepEqual(graph.createCheckpoint({
+    worldlineId: 'worldline:checkpoint-reason',
+    headId: created.head.headId,
+    reason: 'pretend-save',
   }), {
     ok: false,
     code: OBSTRUCTION_INVALID_FACT,
