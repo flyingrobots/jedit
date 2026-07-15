@@ -52,6 +52,7 @@ export interface WorkspaceTextCheckpointedResult {
   readonly filePath: string;
   readonly bufferId: string;
   readonly checkpointId: string;
+  readonly basisHeadId: string;
 }
 
 export interface WorkspaceTextExportedResult {

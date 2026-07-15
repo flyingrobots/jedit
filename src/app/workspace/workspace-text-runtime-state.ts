@@ -363,7 +363,11 @@ function applyTextCheckpointResult(
       deps.createNotificationTickCmd,
     );
   }
-  const textAuthority = workspaceTextAuthorityWithCheckpoint(authority, msg.result.checkpointId);
+  const textAuthority = workspaceTextAuthorityWithCheckpoint(
+    authority,
+    msg.result.checkpointId,
+    msg.result.basisHeadId,
+  );
   return [withEchoHistoryEntry(withTextAuthority(model, textAuthority), {
     kind: EchoHistoryEntryKinds.Checkpoint,
     status: EchoHistoryEntryStatuses.Checkpointed,
@@ -392,7 +396,9 @@ function applyTextExportResult(
     );
     return pushRuntimeIssueToast(obstructed, msg.result.issue, deps.createNotificationTickCmd);
   }
-  const textAuthority = workspaceTextAuthorityWithExport(authority, msg.result.readingId, msg.result.hostFingerprint);
+  const textAuthority = workspaceTextAuthorityWithExport(
+    authority, msg.result.readingId, msg.result.basisHeadId, msg.result.hostFingerprint,
+  );
   const exported = withTextAuthority({
     ...model, quitAfterSaveRequestId: undefined, quitConfirmOpen: shouldOpenQuitAfterExport(model, msg.requestId),
   }, textAuthority);

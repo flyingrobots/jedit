@@ -360,6 +360,7 @@ async function checkpointWorkspaceText(
       filePath: request.filePath,
       bufferId: request.bufferId,
       checkpointId: checkpointed.result.checkpointId,
+      basisHeadId: checkpointed.result.textBasis.basisHeadId,
     };
   } catch (cause) {
     return obstructedCheckpoint(

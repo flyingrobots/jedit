@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Added an explicit workspace buffer durability model that keeps pending Jim
+  intents, Echo-admitted rope heads, saved-file projection bases, local Git
+  commits, and remote Git durability independent. Queuing an edit no longer
+  advances the durability model's causal head, admitted edits do not silently
+  move its saved-file basis, and a checkpoint declaration is associated with a
+  saved projection only when both name the same opaque rope head. Git posture
+  remains explicitly unknown until supplied by an external Git observer.
 - Added versioned text-window materialization provenance and a bounded,
   disposable cache. Cache coordinates now name the requested rope head, exact
   branded UTF-8 coverage, request namespace, observer plan, materializer

@@ -8,6 +8,18 @@ import type {
   JeditPlannedCommandEvent,
 } from './command-provenance.js';
 import {
+  openedWorkspaceBufferDurability,
+  workspaceBufferDurabilityWithAdmittedTransition,
+  workspaceBufferDurabilityWithCheckpoint,
+  workspaceBufferDurabilityWithExport,
+  workspaceBufferDurabilityWithPendingIntent,
+  workspaceBufferDurabilityWithPendingStatus,
+  WorkspaceTextIntentStatuses,
+  type WorkspaceBufferDurability,
+  type WorkspaceTextIntentStatus,
+  type WorkspaceTextPendingCommandKind,
+} from './workspace-buffer-durability.js';
+import {
   WorkspaceWorldlineMaterializationKinds,
   type WorkspaceWorldlineMaterializationKind,
 } from './worldline-types.js';
@@ -27,17 +39,6 @@ const AUTHORITY_OPENED = 'opened';
 const AUTHORITY_OBSTRUCTED = 'obstructed';
 const HOST_BASIS_FILE = 'file';
 const HOST_BASIS_MISSING = 'missing';
-const INTENT_STATUS_PREDICTED = 'predicted';
-const INTENT_STATUS_SUBMITTED = 'submitted';
-const INTENT_STATUS_ADMITTED = 'admitted';
-const INTENT_STATUS_REBASED = 'rebased';
-const INTENT_STATUS_BLOCKED = 'blocked';
-const INTENT_STATUS_OBSTRUCTED = 'obstructed';
-const INTENT_STATUS_SUPERSEDED = 'superseded';
-const INTENT_STATUS_ABANDONED = 'abandoned';
-const PENDING_COMMAND_KIND_VIM = 'vim';
-const PENDING_COMMAND_KIND_UNDO = 'undo';
-const PENDING_COMMAND_KIND_REDO = 'redo';
 
 export const WorkspaceTextAuthorityKinds = Object.freeze({
   None: AUTHORITY_NONE,
@@ -51,31 +52,19 @@ export const WorkspaceTextHostBasisKinds = Object.freeze({
   Missing: HOST_BASIS_MISSING,
 } as const);
 
-export const WorkspaceTextIntentStatuses = Object.freeze({
-  Predicted: INTENT_STATUS_PREDICTED,
-  Submitted: INTENT_STATUS_SUBMITTED,
-  Admitted: INTENT_STATUS_ADMITTED,
-  Rebased: INTENT_STATUS_REBASED,
-  Blocked: INTENT_STATUS_BLOCKED,
-  Obstructed: INTENT_STATUS_OBSTRUCTED,
-  Superseded: INTENT_STATUS_SUPERSEDED,
-  Abandoned: INTENT_STATUS_ABANDONED,
-} as const);
-
-export const WorkspaceTextPendingCommandKinds = Object.freeze({
-  Vim: PENDING_COMMAND_KIND_VIM,
-  Undo: PENDING_COMMAND_KIND_UNDO,
-  Redo: PENDING_COMMAND_KIND_REDO,
-} as const);
-
 export type WorkspaceTextAuthorityKind =
   typeof WorkspaceTextAuthorityKinds[keyof typeof WorkspaceTextAuthorityKinds];
 export type WorkspaceTextHostBasisKind =
   typeof WorkspaceTextHostBasisKinds[keyof typeof WorkspaceTextHostBasisKinds];
-export type WorkspaceTextIntentStatus =
-  typeof WorkspaceTextIntentStatuses[keyof typeof WorkspaceTextIntentStatuses];
-export type WorkspaceTextPendingCommandKind =
-  typeof WorkspaceTextPendingCommandKinds[keyof typeof WorkspaceTextPendingCommandKinds];
+
+export {
+  WorkspaceTextIntentStatuses,
+  WorkspaceTextPendingCommandKinds,
+} from './workspace-buffer-durability.js';
+export type {
+  WorkspaceTextIntentStatus,
+  WorkspaceTextPendingCommandKind,
+} from './workspace-buffer-durability.js';
 
 export type { WorkspaceTextReadingCache } from './workspace-text-reading-cache.js';
 export { canReadingReplaceWholeEditor } from './workspace-text-reading-cache.js';
@@ -100,6 +89,7 @@ export interface WorkspaceTextAuthorityOpened {
   readonly bufferId: string;
   readonly readOnly: boolean;
   readonly dirty: boolean;
+  readonly durability: WorkspaceBufferDurability;
   readonly materialization: WorkspaceWorldlineMaterializationKind;
   readonly hostBasis: WorkspaceTextHostBasisKind;
   readonly hostFingerprint?: EditorFileFingerprint;
@@ -132,6 +122,7 @@ export interface OpenedWorkspaceTextAuthorityOptions {
   readonly bufferId: string;
   readonly readOnly: boolean;
   readonly dirty: boolean;
+  readonly durability?: WorkspaceBufferDurability;
   readonly materialization?: WorkspaceWorldlineMaterializationKind;
   readonly hostBasis?: WorkspaceTextHostBasisKind;
   readonly hostFingerprint?: EditorFileFingerprint;
@@ -185,6 +176,8 @@ export function pendingWorkspaceTextOpen(
 export function openedWorkspaceTextAuthority(
   options: OpenedWorkspaceTextAuthorityOptions,
 ): WorkspaceTextAuthorityOpened {
+  const materialization = options.materialization ?? materializationFromOptions(options);
+  const hostBasis = options.hostBasis ?? WorkspaceTextHostBasisKinds.File;
   return {
     kind: AUTHORITY_OPENED,
     profile: options.profile,
@@ -192,8 +185,14 @@ export function openedWorkspaceTextAuthority(
     bufferId: options.bufferId,
     readOnly: options.readOnly,
     dirty: options.dirty,
-    materialization: options.materialization ?? materializationFromOptions(options),
-    hostBasis: options.hostBasis ?? WorkspaceTextHostBasisKinds.File,
+    durability: options.durability ?? openedWorkspaceBufferDurability({
+      basisHeadId: options.cache?.textBasis?.basisHeadId,
+      hostBasis,
+      materialization,
+      hostFingerprint: options.hostFingerprint,
+    }),
+    materialization,
+    hostBasis,
     hostFingerprint: options.hostFingerprint,
     cache: options.cache,
     pendingClientSeq: options.pendingClientSeq,
@@ -279,6 +278,16 @@ export function workspaceTextAuthorityWithReceipt(
   return {
     ...authority,
     dirty: true,
+    durability: workspaceBufferDurabilityWithAdmittedTransition(
+      authority.durability,
+      causalTransition == null
+        ? undefined
+        : {
+          receiptId,
+          admittedTickId: causalTransition.admittedTickId,
+          nextHeadId: causalTransition.nextHeadId,
+        },
+    ),
     materialization: WorkspaceWorldlineMaterializationKinds.Unmaterialized,
     pendingCommandEvent: undefined,
     pendingReceiptId: receiptId,
@@ -297,6 +306,12 @@ export function workspaceTextAuthorityWithPendingEdit(
   return {
     ...authority,
     dirty: true,
+    durability: workspaceBufferDurabilityWithPendingIntent(
+      authority.durability,
+      pendingClientSeq,
+      WorkspaceTextIntentStatuses.Predicted,
+      pendingCommandKind,
+    ),
     materialization: WorkspaceWorldlineMaterializationKinds.Unmaterialized,
     pendingClientSeq,
     pendingCommandKind,
@@ -326,6 +341,11 @@ export function workspaceTextAuthorityWithObstruction(
   return {
     ...authority,
     dirty: true,
+    durability: workspaceBufferDurabilityWithPendingStatus(
+      authority.durability,
+      authority.pendingClientSeq ?? pendingClientSeq,
+      WorkspaceTextIntentStatuses.Obstructed,
+    ),
     materialization: WorkspaceWorldlineMaterializationKinds.Unmaterialized,
     pendingClientSeq: authority.pendingClientSeq ?? pendingClientSeq,
     pendingIntentStatus: WorkspaceTextIntentStatuses.Obstructed,
@@ -340,6 +360,11 @@ export function workspaceTextAuthorityWithBlockedIntent(
   return {
     ...authority,
     dirty: true,
+    durability: workspaceBufferDurabilityWithPendingStatus(
+      authority.durability,
+      authority.pendingClientSeq,
+      WorkspaceTextIntentStatuses.Blocked,
+    ),
     materialization: WorkspaceWorldlineMaterializationKinds.Unmaterialized,
     pendingIntentStatus: WorkspaceTextIntentStatuses.Blocked,
   };
@@ -348,10 +373,16 @@ export function workspaceTextAuthorityWithBlockedIntent(
 export function workspaceTextAuthorityWithCheckpoint(
   authority: WorkspaceTextAuthorityOpened,
   checkpointId: string,
+  basisHeadId?: string,
 ): WorkspaceTextAuthorityOpened {
   return {
     ...authority,
     dirty: false,
+    durability: workspaceBufferDurabilityWithCheckpoint(
+      authority.durability,
+      checkpointId,
+      basisHeadId,
+    ),
     pendingClientSeq: undefined,
     pendingCommandKind: undefined,
     pendingCommandEvent: undefined,
@@ -366,11 +397,18 @@ export function workspaceTextAuthorityWithCheckpoint(
 export function workspaceTextAuthorityWithExport(
   authority: WorkspaceTextAuthorityOpened,
   readingId: string,
+  basisHeadId: string,
   hostFingerprint: EditorFileFingerprint,
 ): WorkspaceTextAuthorityOpened {
   return {
     ...authority,
     dirty: false,
+    durability: workspaceBufferDurabilityWithExport(
+      authority.durability,
+      readingId,
+      basisHeadId,
+      hostFingerprint,
+    ),
     hostBasis: WorkspaceTextHostBasisKinds.File,
     hostFingerprint,
     materialization: WorkspaceWorldlineMaterializationKinds.Materialized,

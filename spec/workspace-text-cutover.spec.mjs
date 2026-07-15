@@ -1236,6 +1236,10 @@ test("ctrl-s exports a full production snapshot and checkpoints without direct l
         kind: "checkpointed",
         result: {
           checkpointId: "checkpoint:save",
+          textBasis: {
+            ...testTextBasis(documentLines.join("\n")),
+            basisHeadId: request.basisHeadId,
+          },
         },
       };
     },

@@ -409,6 +409,36 @@ checkpoint, `:why` result, or recovery outcome. A future native Echo/Edict read
 corridor may replace the request namespace with opaque admitted basis evidence,
 but Jim must consume that evidence rather than derive or mint it.
 
+### Workspace buffer durability
+
+Workspace durability is not one scalar and it is not a synonym for `dirty`.
+`WorkspaceBufferDurability` keeps five propositions independent:
+
+- whether a Jim intent is still pending and has not advanced causal text;
+- which opaque rope head Echo has admitted for the buffer;
+- which rope head supplied the last successfully written file projection;
+- whether an external Git observer has found that projection in a local commit;
+  and
+- whether an external Git observer has found that commit on a named remote.
+
+The default Git posture is `unknown`. Jim must not infer Git durability from
+worldline names, causal ahead/behind counters, filesystem materialization, or a
+rope checkpoint. An explicit Git adapter may replace the unknown readings with
+observed commit evidence later.
+
+A checkpoint declaration and a saved file are also separate propositions.
+Declaring a checkpoint records its checkpoint and basis-head identities. It is
+associated with the saved-file layer only when the saved projection names the
+same head. A save/export result moves the file layer only after the host write
+succeeds and carries its own basis head, reading identity, and fingerprint.
+Neither operation advances causal text.
+
+The legacy `dirty` and `materialization` fields remain compatibility
+projections during CR-04. New durability behavior must read the structured
+model. The following slices derive dirty state, footer language, and change
+counts from its opaque causal and file bases before those legacy fields are
+removed.
+
 ***
 
 ## Echo/Wesley operation model
