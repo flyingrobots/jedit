@@ -1,8 +1,8 @@
 import type {
-  ReadBasisHandle,
   TextBuffer,
   TextBufferOptic,
   TextBufferSessionPort,
+  TextWindowBasis,
 } from '../ports/text-buffer-session.js';
 import type { ApplyIntentResult, Observed, TextWindowReading } from '../ports/jedit-optic-client.js';
 import { REPLACE_RANGE_INTENT_KIND } from '../ports/jedit-optic-client.js';
@@ -55,7 +55,7 @@ export async function runEchoPoweredTextBufferWitness(
 ): Promise<EchoPoweredTextBufferWitnessReport> {
   const outcomes = createJeditIntentOutcomeLedger();
   const optic = await createWitnessBuffer(session, request);
-  const editIntent = createWitnessEditIntent(optic.buffer, request, optic.currentReadBasis());
+  const editIntent = createWitnessEditIntent(optic.buffer, request, optic.openedTextBasis);
   const intent = createJeditIntentHandle(editIntent.operationName, toReplaceRangeSubmissionId(editIntent));
   const pending = outcomes.acceptIntent(intent);
   const applied = await applyWitnessIntent(optic, request);
@@ -86,7 +86,7 @@ async function createWitnessBuffer(
 function createWitnessEditIntent(
   buffer: TextBuffer,
   request: EchoPoweredTextBufferWitnessRequest,
-  readBasis: ReadBasisHandle,
+  textBasis: TextWindowBasis,
 ): StructuralHistoryReplaceTextRangeRequest {
   return createStructuralHistoryReplaceTextRangeRequest({
     historyId: buffer.bufferId,
@@ -96,7 +96,7 @@ function createWitnessEditIntent(
     insertText: request.insertText,
     author: STRUCTURAL_HISTORY_SOURCE_LABEL,
     sourceLabel: STRUCTURAL_HISTORY_SOURCE_LABEL,
-    externalEvidenceId: readBasis.id,
+    externalEvidenceId: textBasis.basisHeadId,
     projectionPath: buffer.projectionPath,
   });
 }
@@ -118,12 +118,15 @@ function observeWitnessWindow(
   applied: ApplyIntentResult,
   request: EchoPoweredTextBufferWitnessRequest,
 ): Promise<Observed<TextWindowReading>> {
-  return optic.textWindow(applied.readBasis, {
-    cursorLine: request.cursorLine,
-    beforeLines: request.beforeLines,
-    viewportLineCount: request.viewportLineCount,
-    afterLines: request.afterLines,
-    maxBytes: request.maxBytes,
+  return optic.textWindow({
+    ...applied.textBasis,
+    aperture: {
+      cursorLine: request.cursorLine,
+      beforeLines: request.beforeLines,
+      viewportLineCount: request.viewportLineCount,
+      afterLines: request.afterLines,
+      maxBytes: request.maxBytes,
+    },
   });
 }
 

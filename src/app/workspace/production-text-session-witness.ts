@@ -156,11 +156,18 @@ async function completeWitness(
   if (edited.kind === ProductionTextSessionOutcomeKinds.Obstructed) {
     return obstructed(WITNESS_STAGE_EDIT, edited.obstruction.issue);
   }
-  const observed = await request.session.observeWindow({ bufferId, aperture: request.aperture, atMs: request.atMs });
+  const observed = await request.session.observeWindow({
+    bufferId, ...edited.result.textBasis,
+    aperture: request.aperture,
+    atMs: request.atMs,
+  });
   if (observed.kind === ProductionTextSessionOutcomeKinds.Obstructed) {
     return obstructed(WITNESS_STAGE_READING, observed.obstruction.issue);
   }
-  const exported = await request.session.exportSnapshot({ bufferId, atMs: request.atMs });
+  const exported = await request.session.exportSnapshot({
+    bufferId, ...edited.result.textBasis,
+    atMs: request.atMs,
+  });
   if (exported.kind === ProductionTextSessionOutcomeKinds.Obstructed) {
     return obstructed(WITNESS_STAGE_EXPORT, exported.obstruction.issue);
   }

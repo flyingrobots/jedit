@@ -3,12 +3,14 @@ import {
   type WorkspaceTextReadingCache,
 } from './workspace-text-reading-cache.js';
 import type { HotTextWindowProjection } from '../../ports/hot-text-runtime.js';
+import type { TextWindowBasis } from '../../ports/text-buffer-session.js';
 
 const FIRST_READING_LINE = 0;
 const UTF8_ENCODER = new TextEncoder();
 
 export interface WorkspaceTextObservedReading {
   readonly readingId: string;
+  readonly textBasis: TextWindowBasis;
   readonly projection?: HotTextWindowProjection;
   readonly lines: readonly { readonly lineNumber?: number; readonly text: string }[];
   readonly startLine?: number;
@@ -33,6 +35,7 @@ export function readingCache(
   return {
     bufferId,
     readingId: reading.readingId,
+    textBasis: reading.textBasis,
     projection: validatedProjection(reading),
     lines: reading.lines.map((line) => line.text),
     coverage: workspaceTextReadingCoverage({

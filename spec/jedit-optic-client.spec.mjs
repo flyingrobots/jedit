@@ -329,13 +329,13 @@ test('transport-backed textWindow uses an opaque read basis handle', async () =>
       opened.nextSession,
       'frontier:text-window:semantic-forgery',
       semanticReadBasisHandle,
-      {
+      textWindowRequest(opened.result.head, {
         cursorLine: 0,
         viewportLineCount: 1,
         beforeLines: 0,
         afterLines: 0,
         maxBytes: 128,
-      },
+      }),
     ),
     readBasisHandleModule.ReadBasisHandleResolutionError,
   );
@@ -348,13 +348,13 @@ test('transport-backed textWindow uses an opaque read basis handle', async () =>
       opened.nextSession,
       'frontier:text-window:cloned-handle',
       clonedReadBasisHandle,
-      {
+      textWindowRequest(opened.result.head, {
         cursorLine: 0,
         viewportLineCount: 1,
         beforeLines: 0,
         afterLines: 0,
         maxBytes: 128,
-      },
+      }),
     ),
     readBasisHandleModule.ReadBasisHandleResolutionError,
   );
@@ -363,18 +363,21 @@ test('transport-backed textWindow uses an opaque read basis handle', async () =>
     opened.nextSession,
     'frontier:text-window:1',
     opened.readBasisHandle,
-    {
+    textWindowRequest(opened.result.head, {
       cursorLine: 500,
       viewportLineCount: 4,
       beforeLines: 1,
       afterLines: 2,
       maxBytes: 4096,
-    },
+    }),
   );
 
   assert.equal(observedRequests.length, 1);
   assert.equal(observedRequests[0].operationName, codecModule.TEXT_WINDOW_OPERATION);
   assert.equal(observedRequests[0].input.worldlineId, opened.nextSession.worldline.worldlineId);
+  assert.equal(observedRequests[0].input.basisHeadId, opened.result.head.headId);
+  assert.equal(observedRequests[0].input.startByte, FIRST_BYTE_OFFSET);
+  assert.equal(observedRequests[0].input.endByte, opened.result.head.byteLength);
   assert.equal(envelope.operationName, codecModule.TEXT_WINDOW_OPERATION);
   assert.equal(envelope.frontierRef, 'frontier:text-window:1');
   assert.equal(envelope.reading.text, undefined);
@@ -403,13 +406,13 @@ test('transport-backed textWindow uses an opaque read basis handle', async () =>
       otherOpened.nextSession,
       'frontier:text-window:cross-session',
       opened.readBasisHandle,
-      {
+      textWindowRequest(otherOpened.result.head, {
         cursorLine: FIRST_LINE,
         viewportLineCount: SINGLE_LINE_WINDOW,
         beforeLines: FIRST_LINE,
         afterLines: FIRST_LINE,
         maxBytes: 128,
-      },
+      }),
     ),
     readBasisHandleModule.ReadBasisHandleResolutionError,
   );
@@ -417,13 +420,13 @@ test('transport-backed textWindow uses an opaque read basis handle', async () =>
     otherOpened.nextSession,
     'frontier:text-window:other',
     otherOpened.readBasisHandle,
-    {
+    textWindowRequest(otherOpened.result.head, {
       cursorLine: FIRST_LINE,
       viewportLineCount: SINGLE_LINE_WINDOW,
       beforeLines: FIRST_LINE,
       afterLines: FIRST_LINE,
       maxBytes: 128,
-    },
+    }),
   );
   assert.deepEqual(
     otherEnvelope.reading.lines.map((line) => line.text),
@@ -481,13 +484,13 @@ test('Stack Witness 0001 walks createBuffer -> replaceRange -> textWindow throug
     edited.nextSession,
     STACK_WITNESS_FRONTIER_REF,
     opened.readBasisHandle,
-    {
+    textWindowRequest(edited.result.nextHead, {
       cursorLine: FIRST_LINE,
       viewportLineCount: SINGLE_LINE_WINDOW,
       beforeLines: FIRST_LINE,
       afterLines: FIRST_LINE,
       maxBytes: byteLength(STACK_WITNESS_TEXT),
-    },
+    }),
   );
 
   assert.deepEqual(
@@ -532,7 +535,7 @@ test('TextBufferOptic creates, edits, and reads without exposing runtime coordin
     initialText: EMPTY_TEXT,
     projectionPath: STACK_WITNESS_BUFFER_KEY,
   });
-  const readBasis = optic.currentReadBasis();
+  const openedTextBasis = optic.openedTextBasis;
 
   assert.deepEqual(Object.keys(optic.buffer).sort(), [
     'bufferId',
@@ -544,7 +547,7 @@ test('TextBufferOptic creates, edits, and reads without exposing runtime coordin
   for (const rawFieldName of RAW_BASIS_FIELD_NAMES) {
     assert.equal(Object.hasOwn(optic, rawFieldName), false);
     assert.equal(Object.hasOwn(optic.buffer, rawFieldName), false);
-    assert.equal(Object.hasOwn(readBasis, rawFieldName), false);
+    assert.equal(Object.hasOwn(openedTextBasis, rawFieldName), false);
   }
 
   const applied = await optic.applyIntent({
@@ -555,16 +558,19 @@ test('TextBufferOptic creates, edits, and reads without exposing runtime coordin
   });
 
   assert.equal(applied.buffer.bufferId, optic.buffer.bufferId);
-  assert.equal(applied.readBasis, optic.currentReadBasis());
+  assert.equal(applied.textBasis.basisHeadId.length > 0, true);
   assert.equal(applied.bufferVersion, 1);
   assert.equal(typeof applied.receiptId, 'string');
 
-  const observed = await optic.textWindow(optic.currentReadBasis(), {
-    cursorLine: FIRST_LINE,
-    viewportLineCount: SINGLE_LINE_WINDOW,
-    beforeLines: FIRST_LINE,
-    afterLines: FIRST_LINE,
-    maxBytes: byteLength(STACK_WITNESS_TEXT),
+  const observed = await optic.textWindow({
+    ...applied.textBasis,
+    aperture: {
+      cursorLine: FIRST_LINE,
+      viewportLineCount: SINGLE_LINE_WINDOW,
+      beforeLines: FIRST_LINE,
+      afterLines: FIRST_LINE,
+      maxBytes: byteLength(STACK_WITNESS_TEXT),
+    },
   });
 
   assert.equal(observed.value.cursorLine, FIRST_LINE);
@@ -577,39 +583,6 @@ test('TextBufferOptic creates, edits, and reads without exposing runtime coordin
     [STACK_WITNESS_TEXT],
   );
   assert.equal(observed.evidence.readingId, observed.value.readingId);
-});
-
-test('TextBufferOptic rejects cloned read basis handles', async () => {
-  const {
-    transportClientModule,
-    fakeTransportModule,
-    readBasisHandleModule,
-    textBufferSessionModule,
-  } = await loadModules();
-  const client = transportClientModule.createEchoTransportJeditOpticClient(
-    fakeTransportModule.createFakeEchoJeditOpticTransport(),
-  );
-  const session = textBufferSessionModule.createTextBufferSession(client);
-  const optic = await session.createBuffer({
-    bufferKey: STACK_WITNESS_BUFFER_KEY,
-    initialText: STACK_WITNESS_TEXT,
-    projectionPath: STACK_WITNESS_BUFFER_KEY,
-  });
-  const clonedReadBasis = Object.freeze({
-    kind: optic.currentReadBasis().kind,
-    id: optic.currentReadBasis().id,
-  });
-
-  await assert.rejects(
-    () => optic.textWindow(clonedReadBasis, {
-      cursorLine: FIRST_LINE,
-      viewportLineCount: SINGLE_LINE_WINDOW,
-      beforeLines: FIRST_LINE,
-      afterLines: FIRST_LINE,
-      maxBytes: byteLength(STACK_WITNESS_TEXT),
-    }),
-    readBasisHandleModule.ReadBasisHandleResolutionError,
-  );
 });
 
 test('TextBufferOptic does not mark a satisfied bounded aperture as truncated', async () => {
@@ -629,12 +602,15 @@ test('TextBufferOptic does not mark a satisfied bounded aperture as truncated', 
     projectionPath: 'demo-multiline.txt',
   });
 
-  const observed = await optic.textWindow(optic.currentReadBasis(), {
-    cursorLine: 2,
-    viewportLineCount: 1,
-    beforeLines: 1,
-    afterLines: 1,
-    maxBytes: 1024,
+  const observed = await optic.textWindow({
+    ...optic.openedTextBasis,
+    aperture: {
+      cursorLine: 2,
+      viewportLineCount: 1,
+      beforeLines: 1,
+      afterLines: 1,
+      maxBytes: 1024,
+    },
   });
 
   assert.deepEqual(
@@ -643,12 +619,15 @@ test('TextBufferOptic does not mark a satisfied bounded aperture as truncated', 
   );
   assert.equal(observed.value.truncated, false);
 
-  const byteBounded = await optic.textWindow(optic.currentReadBasis(), {
-    cursorLine: 2,
-    viewportLineCount: 1,
-    beforeLines: 1,
-    afterLines: 1,
-    maxBytes: 6,
+  const byteBounded = await optic.textWindow({
+    ...optic.openedTextBasis,
+    aperture: {
+      cursorLine: 2,
+      viewportLineCount: 1,
+      beforeLines: 1,
+      afterLines: 1,
+      maxBytes: 6,
+    },
   });
 
   assert.deepEqual(
@@ -676,18 +655,21 @@ test('Echo-backed TextBufferSession port does not request lifecycle during app-f
     initialText: EMPTY_TEXT,
     projectionPath: STACK_WITNESS_BUFFER_KEY,
   });
-  await optic.applyIntent({
+  const applied = await optic.applyIntent({
     kind: 'replaceRange',
     startByte: FIRST_BYTE_OFFSET,
     endByte: FIRST_BYTE_OFFSET,
     insertText: STACK_WITNESS_TEXT,
   });
-  const observed = await optic.textWindow(optic.currentReadBasis(), {
-    cursorLine: FIRST_LINE,
-    viewportLineCount: SINGLE_LINE_WINDOW,
-    beforeLines: FIRST_LINE,
-    afterLines: FIRST_LINE,
-    maxBytes: byteLength(STACK_WITNESS_TEXT),
+  const observed = await optic.textWindow({
+    ...applied.textBasis,
+    aperture: {
+      cursorLine: FIRST_LINE,
+      viewportLineCount: SINGLE_LINE_WINDOW,
+      beforeLines: FIRST_LINE,
+      afterLines: FIRST_LINE,
+      maxBytes: byteLength(STACK_WITNESS_TEXT),
+    },
   });
 
   assert.equal(observed.value.lines[0].text, STACK_WITNESS_TEXT);
@@ -699,6 +681,17 @@ test('Echo-backed TextBufferSession port does not request lifecycle during app-f
 
 function byteLength(text) {
   return UTF8_ENCODER.encode(text).length;
+}
+
+function textWindowRequest(head, aperture) {
+  return {
+    basisHeadId: head.headId,
+    byteRange: {
+      startByte: { kind: 'utf8-byte-offset', value: FIRST_BYTE_OFFSET },
+      endByte: { kind: 'utf8-byte-offset', value: head.byteLength },
+    },
+    aperture,
+  };
 }
 
 function lineStartByte(lines, lineNumber) {

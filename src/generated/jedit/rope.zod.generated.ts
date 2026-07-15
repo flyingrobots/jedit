@@ -130,9 +130,18 @@ export const TextLineReadingSchema = z.object({
 });
 export type TextLineReading = z.infer<typeof TextLineReadingSchema>;
 
+export const TextWindowHeadBasisSchema = z.object({
+  headId: z.string(),
+  worldlineId: z.string(),
+  rootNodeId: z.string(),
+  byteLength: z.number().int(),
+  lineCount: z.number().int()
+});
+export type TextWindowHeadBasis = z.infer<typeof TextWindowHeadBasisSchema>;
+
 export const TextWindowReadingSchema = z.object({
   worldline: z.lazy(() => BufferWorldlineSchema),
-  head: z.lazy(() => RopeHeadSchema),
+  head: z.lazy(() => TextWindowHeadBasisSchema),
   readingId: z.string(),
   startLine: z.number().int(),
   lineCount: z.number().int(),
@@ -198,6 +207,9 @@ export type WorldlineSnapshotInput = z.infer<typeof WorldlineSnapshotInputSchema
 
 export const TextWindowInputSchema = z.object({
   worldlineId: z.string(),
+  basisHeadId: z.string(),
+  startByte: z.number().int(),
+  endByte: z.number().int(),
   cursorLine: z.number().int(),
   viewportLineCount: z.number().int(),
   beforeLines: z.number().int(),

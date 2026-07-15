@@ -280,6 +280,7 @@ test('real workspace app path cancels a queued save after an edit obstruction', 
 
 test('real workspace app path admits final queued edit before export obstruction', async () => {
   const pendingInsert = deferred();
+  const document = echoTextDocument('');
   const calls = {
     insert: [],
     export: [],
@@ -296,6 +297,7 @@ test('real workspace app path admits final queued edit before export obstruction
     insertText: async (request) => {
       calls.insert.push(request);
       await pendingInsert.promise;
+      document.insert(request.startByte, request.insertText);
       return {
         kind: 'applied',
         result: {
@@ -314,7 +316,7 @@ test('real workspace app path admits final queued edit before export obstruction
       kind: 'checkpointed',
       result: { checkpointId: 'checkpoint:save' },
     }),
-    observeWindow: async (request) => observedDocumentWindow(echoTextDocument('X'), 1, request),
+    observeWindow: async (request) => observedDocumentWindow(document, 1, request),
     exportSnapshot: async (request) => {
       calls.export.push(request);
       return productionTextObstruction('export blocked');

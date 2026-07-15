@@ -130,18 +130,21 @@ test('TextBufferOptic headless flow uses installed jedit contract transport', as
     initialText: INITIAL_TEXT,
     projectionPath: BUFFER_KEY,
   });
-  await optic.applyIntent({
+  const applied = await optic.applyIntent({
     kind: 'replaceRange',
     startByte: INSERT_BYTE,
     endByte: INSERT_BYTE,
     insertText: INSERT_TEXT,
   });
-  const observed = await optic.textWindow(optic.currentReadBasis(), {
-    cursorLine: FIRST_LINE,
-    viewportLineCount: SINGLE_LINE,
-    beforeLines: FIRST_LINE,
-    afterLines: FIRST_LINE,
-    maxBytes: BYTE_BUDGET,
+  const observed = await optic.textWindow({
+    ...applied.textBasis,
+    aperture: {
+      cursorLine: FIRST_LINE,
+      viewportLineCount: SINGLE_LINE,
+      beforeLines: FIRST_LINE,
+      afterLines: FIRST_LINE,
+      maxBytes: BYTE_BUDGET,
+    },
   });
 
   assert.equal(observed.value.lines[0].text, `${INITIAL_TEXT}${INSERT_TEXT}`);
@@ -237,6 +240,7 @@ test('installed transport does not stage query observations as mutation work', a
     frontierRef: createResponse.execution.nextSession.worldline.canonicalHeadId,
     input: {
       worldlineId: createResponse.execution.nextSession.worldline.worldlineId,
+      ...textWindowBasisInput(createResponse.execution.result.head),
       cursorLine: FIRST_LINE,
       viewportLineCount: SINGLE_LINE,
       beforeLines: FIRST_LINE,
@@ -452,6 +456,7 @@ test('installed query observers require state-port-backed basis', async () => {
       frontierRef: createResponse.execution.nextSession.worldline.canonicalHeadId,
       input: {
         worldlineId: createResponse.execution.nextSession.worldline.worldlineId,
+        ...textWindowBasisInput(createResponse.execution.result.head),
         cursorLine: FIRST_LINE,
         viewportLineCount: SINGLE_LINE,
         beforeLines: FIRST_LINE,
@@ -479,6 +484,7 @@ test('installed query observer runtime errors do not masquerade as package insta
       frontierRef: createResponse.execution.nextSession.worldline.canonicalHeadId,
       input: {
         worldlineId: createResponse.execution.nextSession.worldline.worldlineId,
+        ...textWindowBasisInput(createResponse.execution.result.head),
         cursorLine: FIRST_LINE,
         viewportLineCount: SINGLE_LINE,
         beforeLines: FIRST_LINE,
@@ -582,6 +588,14 @@ function markedGraphRopeRuntime(modules) {
     ...unmarkedHotTextRuntime(modules),
     textAuthorityKind: modules.hotTextRuntime.GRAPH_BACKED_ROPE_TEXT_AUTHORITY_KIND,
     isProductionSafe: true,
+  };
+}
+
+function textWindowBasisInput(head) {
+  return {
+    basisHeadId: head.headId,
+    startByte: 0,
+    endByte: head.byteLength,
   };
 }
 

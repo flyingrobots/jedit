@@ -5,13 +5,16 @@ import type { CheckpointKind } from '../generated/jedit/rope.types.generated.js'
 import type { BufferRoot, TextRange } from '../domain/text-edit-contract.js';
 import type { AdmittedTick, TickAdmissionReceipt } from '../domain/tick-admission-contract.js';
 
-export interface HotTextAuthorityBasis {
+export interface HotTextHeadBasis {
   readonly worldlineId: string;
   readonly headId: string;
   readonly rootNodeId: string;
-  readonly createdByTickId: string;
   readonly byteLength: number;
   readonly lineCount: number;
+}
+
+export interface HotTextAuthorityBasis extends HotTextHeadBasis {
+  readonly createdByTickId: string;
   readonly contentHash: string;
 }
 
@@ -38,6 +41,7 @@ export interface HotTextWindowSupport {
 
 export interface HotTextWindowProjection {
   readonly basisHeadId: string;
+  readonly basis: HotTextHeadBasis;
   readonly byteRange: HotTextWindowByteRange;
   readonly text: string;
   readonly support: readonly HotTextWindowSupport[];

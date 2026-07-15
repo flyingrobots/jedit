@@ -85,8 +85,11 @@ test('installed text optic exposes opaque graph tick and next-head identities', 
   const applied = await optic.applyIntent({
     kind: 'replaceRange', startByte: 5, endByte: 8, insertText: 'causal',
   });
-  const observed = await optic.textWindow(optic.currentReadBasis(), {
-    cursorLine: 1, viewportLineCount: 1, beforeLines: 0, afterLines: 0, maxBytes: 80,
+  const observed = await optic.textWindow({
+    ...applied.textBasis,
+    aperture: {
+      cursorLine: 1, viewportLineCount: 1, beforeLines: 0, afterLines: 0, maxBytes: 80,
+    },
   });
 
   assert.ok(applied.causalTransition);
@@ -96,6 +99,37 @@ test('installed text optic exposes opaque graph tick and next-head identities', 
   assert.deepEqual(observed.value.projection.byteRange, { startByte: 5, endByte: 11 });
   assert.ok(observed.value.projection.support.length > 0);
   assert.deepEqual(observed.value.lines.map((line) => line.text), ['causal']);
+});
+
+test('text optic keeps an explicitly pinned historical head stable after later edits', async () => {
+  const modules = await loadModules();
+  const client = modules.client.createEchoTransportJeditOpticClient(
+    modules.transport.createInstalledJeditContractEchoTransport(),
+  );
+  const textSession = modules.textSession.createTextBufferSession(client);
+  const optic = await textSession.createBuffer({
+    bufferKey: 'historical.txt',
+    initialText: 'before',
+    projectionPath: '/tmp/historical.txt',
+  });
+  const historicalBasis = optic.openedTextBasis;
+  const aperture = {
+    cursorLine: 0, viewportLineCount: 1, beforeLines: 0, afterLines: 0, maxBytes: 80,
+  };
+  const before = await optic.textWindow({ ...historicalBasis, aperture });
+  const applied = await optic.applyIntent({
+    kind: 'replaceRange', startByte: 0, endByte: 6, insertText: 'after',
+  });
+  const current = await optic.textWindow({ ...applied.textBasis, aperture });
+  const historical = await optic.textWindow({ ...historicalBasis, aperture });
+
+  assert.deepEqual(before.value.lines.map((line) => line.text), ['before']);
+  assert.deepEqual(current.value.lines.map((line) => line.text), ['after']);
+  assert.deepEqual(historical.value.lines.map((line) => line.text), ['before']);
+  assert.equal(historical.value.textBasis.basisHeadId, historicalBasis.basisHeadId);
+  assert.equal(historical.value.projection.basis.headId, historicalBasis.basisHeadId);
+  assert.equal(current.value.projection.basis.headId, applied.textBasis.basisHeadId);
+  assert.deepEqual(historical.value.textBasis.byteRange, historicalBasis.byteRange);
 });
 
 test('routes insert delete and replace through graph authority without minting no-op evidence', async () => {
@@ -332,8 +366,11 @@ test('checkpoint rejects a stale exported head before requesting Echo admission'
     initialText: 'before',
     projectionPath: '/tmp/stale-export.txt',
   });
-  const before = await optic.textWindow(optic.currentReadBasis(), {
-    cursorLine: 0, viewportLineCount: 1, beforeLines: 0, afterLines: 0, maxBytes: 80,
+  const before = await optic.textWindow({
+    ...optic.openedTextBasis,
+    aperture: {
+      cursorLine: 0, viewportLineCount: 1, beforeLines: 0, afterLines: 0, maxBytes: 80,
+    },
   });
   await optic.applyIntent({
     kind: 'replaceRange', startByte: 0, endByte: 6, insertText: 'after',

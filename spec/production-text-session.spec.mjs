@@ -14,6 +14,10 @@ const VIEWPORT_APERTURE = Object.freeze({
   afterLines: 3,
   maxBytes: 512,
 });
+const TEXT_BASIS = Object.freeze({
+  basisHeadId: 'head:projection',
+  byteRange: byteRange(0, 4),
+});
 
 let modulePromise;
 
@@ -51,6 +55,7 @@ test('production text session opens buffers through TextBufferSessionPort', asyn
   }]);
   assert.equal('requestRunUntilIdle' in production, false);
   assert.equal('requestRunUntilIdle' in outcome.optic, false);
+  assert.deepEqual(outcome.textBasis, TEXT_BASIS);
 });
 
 test('production text session submits insert replace and delete as app intents', async () => {
@@ -103,8 +108,8 @@ test('production text session reads bounded windows from cursor and viewport ape
       applyIntentCalls.push(intent);
       return appliedResult();
     },
-    textWindow(readBasis, input) {
-      textWindowCalls.push({ readBasis, input });
+    textWindow(request) {
+      textWindowCalls.push(request);
       return observedReading();
     },
   });
@@ -112,14 +117,15 @@ test('production text session reads bounded windows from cursor and viewport ape
 
   const outcome = await production.observeWindow({
     bufferId: BUFFER_ID,
+    ...TEXT_BASIS,
     aperture: VIEWPORT_APERTURE,
     atMs: AT_MS,
   });
 
   assert.equal(outcome.kind, module.ProductionTextSessionOutcomeKinds.Observed);
   assert.deepEqual(textWindowCalls, [{
-    readBasis: { kind: 'read-basis-handle', id: 'basis:1' },
-    input: VIEWPORT_APERTURE,
+    ...TEXT_BASIS,
+    aperture: VIEWPORT_APERTURE,
   }]);
   assert.deepEqual(applyIntentCalls, []);
   assert.equal(outcome.observed.evidence.readingId, 'reading:1');
@@ -186,8 +192,8 @@ test('production text session exports materialized text from a full snapshot wit
       applyIntentCalls.push(intent);
       return appliedResult();
     },
-    textWindow(readBasis, input) {
-      textWindowCalls.push({ readBasis, input });
+    textWindow(request) {
+      textWindowCalls.push(request);
       return observedReading();
     },
   });
@@ -195,6 +201,7 @@ test('production text session exports materialized text from a full snapshot wit
 
   const outcome = await production.exportSnapshot({
     bufferId: BUFFER_ID,
+    ...TEXT_BASIS,
     atMs: AT_MS,
   });
 
@@ -203,8 +210,8 @@ test('production text session exports materialized text from a full snapshot wit
   assert.equal(outcome.readingId, 'reading:1');
   assert.equal(outcome.basisHeadId, 'head:projection');
   assert.deepEqual(textWindowCalls, [{
-    readBasis: { kind: 'read-basis-handle', id: 'basis:1' },
-    input: {
+    ...TEXT_BASIS,
+    aperture: {
       cursorLine: 0,
       viewportLineCount: Number.MAX_SAFE_INTEGER,
       beforeLines: 0,
@@ -229,6 +236,7 @@ test('production text session blocks snapshot export from bounded readings', asy
 
   const outcome = await production.exportSnapshot({
     bufferId: BUFFER_ID,
+    ...TEXT_BASIS,
     atMs: AT_MS,
   });
 
@@ -248,6 +256,7 @@ test('production text session blocks snapshot export without an opaque basis hea
 
   const outcome = await production.exportSnapshot({
     bufferId: BUFFER_ID,
+    ...TEXT_BASIS,
     atMs: AT_MS,
   });
 
@@ -344,17 +353,15 @@ function fakeTextBufferOptic(overrides = {}) {
       projectionPath: 'notes.md',
       createdAt: '1970-01-01T00:00:00.000Z',
     },
-    currentReadBasis() {
-      return { kind: 'read-basis-handle', id: 'basis:1' };
-    },
+    openedTextBasis: TEXT_BASIS,
     async applyIntent(intent) {
       return overrides.applyIntent == null ? appliedResult() : overrides.applyIntent(intent);
     },
     async createCheckpoint(request) {
       return overrides.createCheckpoint == null ? checkpointResult() : overrides.createCheckpoint(request);
     },
-    async textWindow(readBasis, input) {
-      return overrides.textWindow == null ? observedReading() : overrides.textWindow(readBasis, input);
+    async textWindow(request) {
+      return overrides.textWindow == null ? observedReading() : overrides.textWindow(request);
     },
     async explainRange(range) {
       return overrides.explainRange == null ? whyRangeReport(range) : overrides.explainRange(range);
@@ -398,7 +405,7 @@ function appliedResult() {
       projectionPath: 'notes.md',
       createdAt: '1970-01-01T00:00:00.000Z',
     },
-    readBasis: { kind: 'read-basis-handle', id: 'basis:1' },
+    textBasis: TEXT_BASIS,
     bufferVersion: 1,
     receiptId: 'receipt:1',
   };
@@ -412,7 +419,7 @@ function checkpointResult() {
       projectionPath: 'notes.md',
       createdAt: '1970-01-01T00:00:00.000Z',
     },
-    readBasis: { kind: 'read-basis-handle', id: 'basis:1' },
+    textBasis: TEXT_BASIS,
     bufferVersion: 1,
     checkpointId: 'checkpoint:1',
     checkpointKind: 'MANUAL_SAVE',
@@ -423,6 +430,7 @@ function observedReading(overrides = {}) {
   return {
     value: {
       readingId: 'reading:1',
+      textBasis: TEXT_BASIS,
       projection: {
         basisHeadId: overrides.basisHeadId ?? 'head:projection',
         byteRange: { startByte: 0, endByte: 4 },

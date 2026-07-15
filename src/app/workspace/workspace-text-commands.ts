@@ -1,5 +1,6 @@
 import type { Cmd, RuntimeIssue } from '@flyingrobots/bijou-tui';
 import type { ByteOffset } from '../../domain/graph-rope-types.js';
+import type { TextWindowBasis } from '../../ports/text-buffer-session.js';
 import type { EditorFileFingerprint, EditorFilePort } from '../../ports/editor-file.js';
 import { editorFileFingerprintFromText } from '../../ports/editor-file-fingerprint.js';
 import { joinLines, normalizeLines } from '../editor-lines.js';
@@ -28,13 +29,10 @@ import { materializationPreflightIssue } from './workspace-text-materialization-
 import {
   WorkspaceTextOpenBasisResultKinds,
   workspaceTextOpenBasis,
-  type WorkspaceTextOpenBasis,
 } from './workspace-text-open-basis.js';
 import { workspaceTextEditResultWithSettlement } from './workspace-text-wsc-settlement.js';
-import {
-  readingCache,
-  type WorkspaceTextObservedReading,
-} from './workspace-text-observed-reading.js';
+import { readingCache } from './workspace-text-observed-reading.js';
+import { openedWorkspaceTextResult } from './workspace-text-open-result.js';
 import type {
   WorkspaceTextOperationSequencer,
   WorkspaceTextOperationTarget,
@@ -122,13 +120,13 @@ export interface WorkspaceTextCheckpointCommandRequest extends WorkspaceTextSave
   readonly basisHeadId: string;
 }
 
-export interface WorkspaceTextExportCommandRequest extends WorkspaceTextSaveCommandRequest {
+export interface WorkspaceTextExportCommandRequest extends WorkspaceTextSaveCommandRequest, TextWindowBasis {
   readonly hostBasis: WorkspaceTextHostBasisKind;
   readonly hostFingerprint?: EditorFileFingerprint;
   readonly editorFile: EditorFilePort;
 }
 
-export interface WorkspaceTextReadCommandRequest {
+export interface WorkspaceTextReadCommandRequest extends TextWindowBasis {
   readonly requestId: number;
   readonly filePath: string;
   readonly bufferId: string;
@@ -263,14 +261,14 @@ async function openWorkspaceText(
       return obstructedOpen(request.filePath, opened.obstruction.issue);
     }
     const observed = await request.productionTextSession.observeWindow({
-      bufferId: opened.optic.buffer.bufferId,
+      bufferId: opened.optic.buffer.bufferId, ...opened.textBasis,
       aperture: request.aperture ?? defaultWorkspaceTextAperture(),
       atMs: request.atMs,
     });
     if (observed.kind === ProductionTextSessionOutcomeKinds.Obstructed) {
       return obstructedOpen(request.filePath, observed.obstruction.issue);
     }
-    return openedTextResult(
+    return openedWorkspaceTextResult(
       request,
       basis,
       opened.optic.buffer.bufferId,
@@ -284,25 +282,6 @@ async function openWorkspaceText(
   }
 }
 
-function openedTextResult(
-  request: WorkspaceTextOpenCommandRequest,
-  basis: WorkspaceTextOpenBasis,
-  bufferId: string,
-  reading: WorkspaceTextObservedReading,
-): WorkspaceTextOpenResult {
-  return {
-    kind: WorkspaceTextResultKinds.Opened,
-    filePath: request.filePath,
-    bufferId,
-    readOnly: basis.readOnly,
-    materialization: basis.materialization,
-    hostBasis: basis.hostBasis,
-    hostFingerprint: basis.hostFingerprint,
-    initialLines: normalizeLines(basis.initialText),
-    cache: readingCache(bufferId, reading),
-  };
-}
-
 async function editWorkspaceText(
   request: WorkspaceTextEditCommandRequest,
 ): Promise<WorkspaceTextEditResult> {
@@ -312,7 +291,7 @@ async function editWorkspaceText(
       return obstructedEdit(request.filePath, edited.obstruction.issue);
     }
     const observed = await request.productionTextSession.observeWindow({
-      bufferId: request.bufferId,
+      bufferId: request.bufferId, ...edited.result.textBasis,
       aperture: request.aperture,
       atMs: request.atMs,
     });
@@ -396,6 +375,8 @@ async function exportWorkspaceText(
   try {
     const exported = await request.productionTextSession.exportSnapshot({
       bufferId: request.bufferId,
+      basisHeadId: request.basisHeadId,
+      byteRange: request.byteRange,
       atMs: request.atMs,
     });
     if (exported.kind === ProductionTextSessionOutcomeKinds.Obstructed) {
@@ -429,6 +410,8 @@ async function readWorkspaceText(
   try {
     const observed = await request.productionTextSession.observeWindow({
       bufferId: request.bufferId,
+      basisHeadId: request.basisHeadId,
+      byteRange: request.byteRange,
       aperture: request.aperture,
       atMs: request.atMs,
     });

@@ -12,7 +12,7 @@ import type {
 } from '../app/jedit-contract-runtime.js';
 import type { WorldlineSnapshotReadingEnvelope } from '../app/jedit-observer-runtime.js';
 import type { TextWindowReadingEnvelope } from '../app/jedit-observer-runtime.js';
-import type { ReadBasisHandle, TextWindowRangeInput } from './text-buffer-session.js';
+import type { ReadBasisHandle, TextWindowRequest } from './text-buffer-session.js';
 export type {
   ApplyIntentResult,
   BufferKey,
@@ -28,7 +28,9 @@ export type {
   TextBufferOptic,
   TextBufferSessionPort,
   TextWindowLine,
+  TextWindowBasis,
   TextWindowRangeInput,
+  TextWindowRequest,
   TextWindowReading,
 } from './text-buffer-session.js';
 export { READ_BASIS_HANDLE_KIND, REPLACE_RANGE_INTENT_KIND } from './text-buffer-session.js';
@@ -68,7 +70,7 @@ export interface JeditObserverOpticClient {
     session: JeditWorldlineSession,
     frontierRef: string,
     readBasisHandle: ReadBasisHandle,
-    input: TextWindowRangeInput,
+    request: TextWindowRequest,
   ): Promise<TextWindowReadingEnvelope>;
 }
 

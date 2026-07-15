@@ -157,12 +157,15 @@ test('app-facing Echo-backed TextBufferSession port does not expose trusted host
 
   const lifecycle = recordingLifecycle();
   const beforeReadRequestCount = lifecycleRequestCount(lifecycle);
-  await optic.textWindow(optic.currentReadBasis(), {
-    cursorLine: 0,
-    beforeLines: 0,
-    viewportLineCount: 1,
-    afterLines: 0,
-    maxBytes: 80,
+  await optic.textWindow({
+    ...optic.openedTextBasis,
+    aperture: {
+      cursorLine: 0,
+      beforeLines: 0,
+      viewportLineCount: 1,
+      afterLines: 0,
+      maxBytes: 80,
+    },
   });
 
   assert.equal(lifecycleRequestCount(lifecycle), beforeReadRequestCount);

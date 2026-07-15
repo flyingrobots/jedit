@@ -693,15 +693,7 @@ test("blocked production wq remains open with honest materialization status", as
       readOnly: false,
       dirty: true,
       hostFingerprint: HOST_FINGERPRINT_A,
-      cache: {
-        bufferId: "buffer:notes",
-        readingId: "reading:local",
-        lines: ["local draft"],
-        lineCount: 1,
-        cursorLine: 0,
-        viewportLineCount: 24,
-        truncated: false,
-      },
+      cache: commandTextCache("local draft"),
     }),
   };
 
@@ -722,7 +714,11 @@ test("blocked production wq remains open with honest materialization status", as
 
   assert.equal(exportMessage.result.kind, "obstructed");
   assert.match(exportMessage.result.issue.message, /changed on disk after open/);
-  assert.deepEqual(exportCalls, [{ bufferId: "buffer:notes", atMs: 89 }]);
+  assert.deepEqual(exportCalls, [{
+    bufferId: "buffer:notes",
+    ...commandTextBasisRequest("local draft"),
+    atMs: 89,
+  }]);
   assert.deepEqual(checkpointCalls, []);
   assert.deepEqual(savedFiles, []);
   assert.equal(blockedModel.quitConfirmOpen, false);
@@ -769,6 +765,7 @@ test("pending production intent queues wq save without arming quit confirmation"
       dirty: true,
       pendingClientSeq: 4,
       pendingIntentStatus: authority.WorkspaceTextIntentStatuses.Predicted,
+      cache: commandTextCache("stale"),
     }),
   };
 
@@ -784,7 +781,11 @@ test("pending production intent queues wq save without arming quit confirmation"
   assert.equal(commands.length, 1);
   assert.equal(exportCalls.length, 0);
   await commands[0]();
-  assert.deepEqual(exportCalls, [{ bufferId: "buffer:notes", atMs: 90 }]);
+  assert.deepEqual(exportCalls, [{
+    bufferId: "buffer:notes",
+    ...commandTextBasisRequest("stale"),
+    atMs: 90,
+  }]);
 });
 
 test("enter dispatches quit commands through the quit confirmation posture", async () => {
@@ -1296,6 +1297,7 @@ test("enter dispatches why through retained range history when a cursor range is
       bufferId: "text-buffer:0",
       readOnly: false,
       dirty: true,
+      cache: commandTextCache("local draft"),
     }),
     commandLine: activeCommandLine("why"),
   });
@@ -1545,6 +1547,47 @@ function fakeProducedRangeWhyReport(range) {
         deletedByteLength: 0,
       },
       evidencePosture: { causalHistory: "available", btr: "missing" },
+    },
+  };
+}
+
+function commandTextCache(text) {
+  const textBasis = commandTextBasis(text);
+  return {
+    bufferId: "buffer:notes",
+    readingId: "reading:command",
+    textBasis,
+    projection: {
+      basisHeadId: textBasis.basisHeadId,
+      byteRange: { startByte: 0, endByte: textBasis.byteRange.endByte.value },
+      text,
+      support: [],
+    },
+    lines: [text],
+    coverage: "full",
+    lineCount: 1,
+    startLine: 0,
+    returnedLineCount: 1,
+    totalLineCount: 1,
+    hasMoreBefore: false,
+    hasMoreAfter: false,
+    cursorLine: 0,
+    viewportLineCount: 24,
+    truncated: false,
+  };
+}
+
+function commandTextBasisRequest(text) {
+  const basis = commandTextBasis(text);
+  return { basisHeadId: basis.basisHeadId, byteRange: basis.byteRange };
+}
+
+function commandTextBasis(text) {
+  return {
+    basisHeadId: "head:command",
+    byteRange: {
+      startByte: { kind: "utf8-byte-offset", value: 0 },
+      endByte: { kind: "utf8-byte-offset", value: Buffer.byteLength(text, "utf8") },
     },
   };
 }
@@ -1885,6 +1928,7 @@ function commandDispatchModel(titleScreen, editorMode, authority, input) {
       bufferId: "buffer:notes",
       readOnly: false,
       dirty: true,
+      cache: commandTextCache("local draft"),
     }),
     commandLine: activeCommandLine(input),
   });

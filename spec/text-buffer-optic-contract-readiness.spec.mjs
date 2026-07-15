@@ -12,14 +12,7 @@ const PACKAGE_JSON_PATH = path.join(REPO_ROOT, 'package.json');
 const FORBIDDEN_APP_CONTRACT_TERMS = Object.freeze([
   'worldline',
   'worldlineId',
-  'head',
-  'headId',
-  'baseHead',
-  'baseHeadId',
-  'canonicalHead',
-  'canonicalHeadId',
   'tick',
-  'rope',
   'strand',
   'root',
   'scheduler',
@@ -34,20 +27,26 @@ const EXPECTED_APP_QUERIES = Object.freeze([
   'textWindow',
 ]);
 
-test('text buffer optic SDL exposes product nouns and opaque read handles', async () => {
+test('text buffer optic SDL exposes product nouns and basis-pinned reads', async () => {
   const contract = await readFile(APP_CONTRACT_PATH, 'utf8');
 
-  assert.match(contract, /\bscalar\s+ReadBasisHandle\b/);
+  assert.doesNotMatch(contract, /\bscalar\s+ReadBasisHandle\b/);
   assert.doesNotMatch(contract, /\btype\s+ReadBasisHandle\b/);
   assert.doesNotMatch(contract, /\binput\s+ReadBasisHandle\b/);
   assert.match(contract, /\btype\s+TextBuffer\b/);
   assert.match(contract, /\btype\s+TextBufferOptic\b/);
   assert.match(contract, /\btype\s+TextWindowReading\b/);
+  assert.match(contract, /\btype\s+TextWindowBasis\b/);
   assert.match(contract, /\btype\s+CreateBufferPayload\b/);
   assert.match(contract, /\btype\s+ReplaceRangePayload\b/);
   assert.match(contract, /\binput\s+CreateBufferInput\b/);
   assert.match(contract, /\binput\s+ReplaceRangeInput\b/);
   assert.match(contract, /\binput\s+TextWindowInput\b/);
+  assert.match(contract, /\bbasisHeadId:\s*ID!/);
+  assert.match(contract, /\bstartByte:\s*Int!/);
+  assert.match(contract, /\bendByte:\s*Int!/);
+  assert.match(contract, /\bopenedTextBasis:\s*TextWindowBasis!/);
+  assert.match(contract, /\btextBasis:\s*TextWindowBasis!/);
 
   for (const operationName of EXPECTED_APP_MUTATIONS) {
     assert.match(
@@ -61,9 +60,18 @@ test('text buffer optic SDL exposes product nouns and opaque read handles', asyn
     assert.match(
       contract,
       querySignaturePattern(operationName),
-      `${operationName} must read through an opaque ReadBasisHandle`,
+      `${operationName} must require an explicit product text basis`,
     );
   }
+});
+
+test('runtime textWindow input requires an explicit head and byte range', async () => {
+  const contract = await readFile(RUNTIME_CONTRACT_PATH, 'utf8');
+
+  assert.match(contract, /\binput\s+TextWindowInput\b/);
+  assert.match(contract, /\bbasisHeadId:\s*ID!/);
+  assert.match(contract, /\bstartByte:\s*Int!/);
+  assert.match(contract, /\bendByte:\s*Int!/);
 });
 
 test('text buffer optic signature matchers reject partial declarations', () => {
@@ -76,11 +84,11 @@ test('text buffer optic signature matchers reject partial declarations', () => {
     mutationSignaturePattern('createBuffer'),
   );
   assert.doesNotMatch(
-    'textWindow(readBasis: ReadBasisHandle!): TextWindowReading!',
+    'textWindow: TextWindowReading!',
     querySignaturePattern('textWindow'),
   );
   assert.doesNotMatch(
-    'textWindow(readBasis: ReadBasisHandle!, input: TextWindowInput!): TextWindowReading',
+    'textWindow(input: TextWindowInput!): TextWindowReading',
     querySignaturePattern('textWindow'),
   );
 });
@@ -120,7 +128,7 @@ test('data model documentation mirrors the app-facing textWindow contract', asyn
   assert.doesNotMatch(dataModel, /\btype\s+ObservedTextWindowReading\b/);
   assert.match(
     dataModel,
-    /\btextWindow\(readBasis:\s*ReadBasisHandle!,\s*input:\s*TextWindowInput!\):\s*TextWindowReading!/,
+    /\btextWindow\(input:\s*TextWindowInput!\):\s*TextWindowReading!/,
   );
 });
 
@@ -168,7 +176,7 @@ function mutationSignaturePattern(operationName) {
 
 function querySignaturePattern(operationName) {
   if (operationName === 'textWindow') {
-    return /\btextWindow\s*\(\s*readBasis:\s*ReadBasisHandle!\s*,\s*input:\s*TextWindowInput!\s*\)\s*:\s*\w+!/;
+    return /\btextWindow\s*\(\s*input:\s*TextWindowInput!\s*\)\s*:\s*\w+!/;
   }
   throw new Error(`Unhandled app query: ${operationName}`);
 }

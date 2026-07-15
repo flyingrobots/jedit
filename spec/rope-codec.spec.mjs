@@ -330,6 +330,9 @@ await test('rope codec — worldlineSnapshot and textWindow vars', async t => {
         const input = {
             input: {
                 worldlineId: 'wl-001',
+                basisHeadId: 'head-001',
+                startByte: 0,
+                endByte: 80,
                 cursorLine: 5,
                 viewportLineCount: 40,
                 beforeLines: 10,
@@ -404,6 +407,9 @@ await test('rope codec — top-level vars decoders reject trailing bytes', async
     const canonical = encodeTextWindowVars({
       input: {
         worldlineId: 'wl',
+        basisHeadId: 'head',
+        startByte: 0,
+        endByte: 1024,
         cursorLine: 0,
         viewportLineCount: 10,
         beforeLines: 1,

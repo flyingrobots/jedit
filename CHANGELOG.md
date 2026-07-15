@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Required every product text-window materialization to name an opaque rope
+  head and branded UTF-8 byte range. Historical windows now resolve retained
+  head authority rather than current session state, and generated readings use
+  a minimal immutable text-basis record instead of fabricating complete
+  `RopeHead` metadata from bounded bytes.
 - Added explicit UTF-8 byte, UTF-16 code-unit, and zero-based line-column
   coordinate adapters for graph-backed text. Coordinate conversion now rejects
   split surrogate pairs, split UTF-8 sequences, CRLF-interior positions, and

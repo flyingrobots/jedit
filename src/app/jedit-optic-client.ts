@@ -4,7 +4,7 @@ import {
   type JeditOpticClient,
   type OpenTextBufferExecution,
   type ReadBasisHandle,
-  type TextWindowRangeInput,
+  type TextWindowRequest,
 } from '../ports/jedit-optic-client.js';
 import { ReadBasisHandleRegistry } from './read-basis-handle-registry.js';
 import {
@@ -21,9 +21,9 @@ import type {
   MutationOperationMap,
   QueryOperationMap,
 } from '../generated/jedit/rope.types.generated.js';
+import { serializeJeditTextWindowInput } from './jedit-text-window-input.js';
 
 type CreateBufferWorldlineInput = MutationOperationMap['createBufferWorldline']['input'];
-type TextWindowInput = QueryOperationMap['textWindow']['input'];
 
 // Until Wesley emits direct intent/observer clients, keep one narrow seam where
 // generated GraphQL operation names are transmuted into app-owned runtime calls.
@@ -35,11 +35,11 @@ export function createInMemoryJeditOpticClient(runtime: HotTextRuntimePort, hash
     replaceRangeAsTick: async (session, input) => replaceRangeAsTick(runtime, session, input, hash),
     createCheckpoint: async (session, input) => createCheckpoint(runtime, session, input, hash),
     worldlineSnapshot: async (session, frontierRef, input) => readWorldlineSnapshotWithObserverPlan(runtime, session, frontierRef, input, hash),
-    textWindow: async (session, frontierRef, readBasisHandle, input) => readTextWindowWithObserverPlan(
+    textWindow: async (session, frontierRef, readBasisHandle, request) => readTextWindowWithObserverPlan(
       runtime,
       session,
       frontierRef,
-      toTextWindowInput(readBasisHandles, session, readBasisHandle, input),
+      toTextWindowInput(readBasisHandles, session, readBasisHandle, request),
       hash,
     ),
     requestRunUntilIdle: async () => {
@@ -65,10 +65,10 @@ function toTextWindowInput(
   readBasisHandles: ReadBasisHandleRegistry,
   session: JeditWorldlineSession,
   readBasisHandle: ReadBasisHandle,
-  input: TextWindowRangeInput,
-): TextWindowInput {
-  return {
-    ...input,
-    worldlineId: readBasisHandles.resolveWorldlineId(session, readBasisHandle),
-  };
+  request: TextWindowRequest,
+): QueryOperationMap['textWindow']['input'] {
+  return serializeJeditTextWindowInput(
+    readBasisHandles.resolveWorldlineId(session, readBasisHandle),
+    request,
+  );
 }

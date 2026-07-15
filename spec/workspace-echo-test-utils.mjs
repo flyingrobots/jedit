@@ -61,11 +61,27 @@ export function observedDocumentWindow(document, sequence, request) {
   const lines = document.lines();
   const startLine = Math.max(0, request.aperture.cursorLine);
   const visibleLines = lines.slice(startLine, startLine + request.aperture.viewportLineCount);
+  const projectionText = visibleLines.join('\n');
+  const projectionStartByte = byteOffsetAtLine(lines, startLine);
+  const textBasis = {
+    basisHeadId: request.basisHeadId,
+    byteRange: request.byteRange,
+  };
   return {
     kind: 'observed',
     observed: {
       value: {
         readingId: `reading:${sequence}`,
+        textBasis,
+        projection: {
+          basisHeadId: textBasis.basisHeadId,
+          byteRange: {
+            startByte: projectionStartByte,
+            endByte: projectionStartByte + Buffer.byteLength(projectionText, 'utf8'),
+          },
+          text: projectionText,
+          support: [],
+        },
         lines: visibleLines.map((text, index) => ({
           lineNumber: startLine + index,
           startByte: byteOffsetAtLine(lines, startLine + index),

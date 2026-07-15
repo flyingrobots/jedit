@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createWorkspaceEchoAppHarness } from './workspace-echo-app-harness.mjs';
 import {
+  basisPinnedTestTextSession,
   fakeTextOperationSequencer,
   importDist,
   mockEditor,
@@ -202,10 +203,13 @@ test('replace command submits through production text session and refreshes read
     replace: [],
     observe: [],
   };
-  const productionTextSession = {
+  const productionTextSession = basisPinnedTestTextSession({
     replaceRange: async (request) => {
       calls.replace.push(request);
-      return { kind: 'applied', result: { receiptId: 'receipt:replace' } };
+      return {
+        kind: 'applied',
+        result: { receiptId: 'receipt:replace', textBasis: testTextBasis(21, 'head:replace') },
+      };
     },
     observeWindow: async (request) => {
       calls.observe.push(request);
@@ -223,7 +227,7 @@ test('replace command submits through production text session and refreshes read
         },
       };
     },
-  };
+  });
   const message = await commands.createWorkspaceTextEditCmd({
     kind: commands.WorkspaceTextEditCommandKinds.Replace,
     requestId: 7,
@@ -252,8 +256,11 @@ test('replace command submits through production text session and refreshes read
 
 test('settlement envelope records bounded reading coverage metadata', async () => {
   const commands = await importDist('app', 'workspace', 'workspace-text-commands.js');
-  const productionTextSession = {
-    insertText: async () => ({ kind: 'applied', result: { receiptId: 'receipt:window' } }),
+  const productionTextSession = basisPinnedTestTextSession({
+    insertText: async () => ({
+      kind: 'applied',
+      result: { receiptId: 'receipt:window', textBasis: testTextBasis(101, 'head:window') },
+    }),
     observeWindow: async () => ({
       kind: 'observed',
       observed: {
@@ -274,7 +281,7 @@ test('settlement envelope records bounded reading coverage metadata', async () =
         },
       },
     }),
-  };
+  });
 
   const message = await commands.createWorkspaceTextEditCmd({
     kind: commands.WorkspaceTextEditCommandKinds.Insert,
@@ -304,6 +311,16 @@ test('settlement envelope records bounded reading coverage metadata', async () =
   assert.equal(payload.reading.hasMoreAfter, true);
   assert.equal(payload.reading.truncated, false);
 });
+
+function testTextBasis(endByte, basisHeadId) {
+  return {
+    basisHeadId,
+    byteRange: {
+      startByte: { kind: 'utf8-byte-offset', value: 0 },
+      endByte: { kind: 'utf8-byte-offset', value: endByte },
+    },
+  };
+}
 
 test('production undo and redo submit Echo replacement edits', async () => {
   const harness = await openedHarness({

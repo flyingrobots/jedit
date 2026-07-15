@@ -16,6 +16,16 @@ import {
 } from '../../ports/text-buffer-session.js';
 import { RuntimeIssueLevels, RuntimeIssueSources } from './runtime-issue.js';
 import { serializeByteOffset, serializeTextByteRange } from './production-text-coordinate-serialization.js';
+import type {
+  ProductionTextExportRequest,
+  ProductionTextViewportAperture,
+  ProductionTextWindowRequest,
+} from './production-text-basis-request.js';
+export type {
+  ProductionTextExportRequest,
+  ProductionTextViewportAperture,
+  ProductionTextWindowRequest,
+} from './production-text-basis-request.js';
 
 const EMPTY_INSERT_TEXT = '';
 const OPEN_OBSTRUCTION_CODE = 'text-buffer-open-obstructed';
@@ -110,29 +120,10 @@ export interface ProductionTextMultiRangeRequest {
   readonly atMs: number;
 }
 
-export interface ProductionTextViewportAperture {
-  readonly cursorLine: number;
-  readonly viewportLineCount: number;
-  readonly beforeLines: number;
-  readonly afterLines: number;
-  readonly maxBytes: number;
-}
-
-export interface ProductionTextWindowRequest {
-  readonly bufferId: string;
-  readonly aperture: ProductionTextViewportAperture;
-  readonly atMs: number;
-}
-
 export interface ProductionTextCheckpointRequest {
   readonly bufferId: string;
   readonly basisHeadId: string;
   readonly label?: string | null;
-  readonly atMs: number;
-}
-
-export interface ProductionTextExportRequest {
-  readonly bufferId: string;
   readonly atMs: number;
 }
 
@@ -150,6 +141,7 @@ export interface ProductionTextObstruction {
 export interface ProductionTextOpenApplied {
   readonly kind: typeof OUTCOME_OPENED;
   readonly optic: TextBufferOptic;
+  readonly textBasis: TextBufferOptic['openedTextBasis'];
 }
 
 export interface ProductionTextEditApplied {
@@ -279,6 +271,8 @@ async function exportSnapshot(
 ): Promise<ProductionTextExportOutcome> {
   const observed = await observeWindow(session, {
     bufferId: request.bufferId,
+    basisHeadId: request.basisHeadId,
+    byteRange: request.byteRange,
     aperture: fullSnapshotAperture(),
     atMs: request.atMs,
   });
@@ -350,6 +344,7 @@ async function openBuffer(
     const outcome: ProductionTextOpenApplied = {
       kind: OUTCOME_OPENED,
       optic,
+      textBasis: optic.openedTextBasis,
     };
     return outcome;
   } catch (cause) {
@@ -383,10 +378,11 @@ async function observeWindow(
     if (optic == null) {
       return missingBuffer(request.atMs);
     }
-    const observed = await optic.textWindow(
-      optic.currentReadBasis(),
-      textWindowInputFromViewport(request.aperture),
-    );
+    const observed = await optic.textWindow({
+      basisHeadId: request.basisHeadId,
+      byteRange: request.byteRange,
+      aperture: textWindowInputFromViewport(request.aperture),
+    });
     const outcome: ProductionTextWindowObserved = {
       kind: OUTCOME_OBSERVED,
       observed,

@@ -410,6 +410,11 @@ test('real workspace app path exposes no lifecycle authority through production 
 
 test('observed document window helper reports UTF-8 byte offsets', () => {
   const observed = observedDocumentWindow(echoTextDocument('é\nx'), 1, {
+    basisHeadId: 'head:test',
+    byteRange: {
+      startByte: byteOffset(0),
+      endByte: byteOffset(4),
+    },
     aperture: {
       cursorLine: 0,
       viewportLineCount: 2,

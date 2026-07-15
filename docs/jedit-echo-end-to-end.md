@@ -552,13 +552,15 @@ The app-facing model is intentionally capability-shaped:
 ```text
 TextBufferSessionPort
 -> TextBufferOptic
--> currentReadBasis()
+-> openedTextBasis
 -> applyIntent(replace range)
--> textWindow(read basis, bounded input)
+-> textWindow(explicit head + branded byte range + aperture)
 ```
 
-The app can hold and use a `TextBufferOptic`. It cannot inspect the private
-runtime coordinates that make the optic work.
+The app can hold and use a `TextBufferOptic`, replay opaque Jim head identities
+returned by admitted operations, and select materialization ranges with branded
+UTF-8 offsets. It cannot mint those identities or inspect the private
+worldline/transport coordinates that make the optic work.
 
 The Echo-backed session adapter composes that product capability with the
 app-safe client boundary:
@@ -933,7 +935,7 @@ sequenceDiagram
   CLI->>Session: applyIntent(replaceRange)
   Session->>Client: replaceRangeAsTick(...)
   Client->>Transport: submitIntentBytes(replaceRange)
-  CLI->>Session: textWindow(readBasis, aperture)
+  CLI->>Session: textWindow(head, byteRange, aperture)
   Session->>Client: textWindow(...)
   Client->>Transport: observeBytes(textWindow)
   CLI->>CLI: trusted host stop request

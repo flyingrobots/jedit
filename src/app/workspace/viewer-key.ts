@@ -329,12 +329,9 @@ function updateProductionTextView(
   productionTextSession: ProductionTextSession,
   editor: NonNullable<WorkspaceModel['editor']>,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
-  const nextModel = {
-    ...model,
-    editor,
-  };
+  const nextModel = { ...model, editor };
   if (
-    model.textAuthority.kind !== WorkspaceTextAuthorityKinds.Opened
+    model.textAuthority.kind !== WorkspaceTextAuthorityKinds.Opened || model.textAuthority.cache == null
     || editor.scrollRow === model.editor?.scrollRow
   ) {
     return [nextModel, []];
@@ -348,6 +345,7 @@ function updateProductionTextView(
       requestId,
       filePath: model.textAuthority.filePath,
       bufferId: model.textAuthority.bufferId,
+      ...model.textAuthority.cache.textBasis,
       productionTextSession,
       atMs: model.time,
       aperture: workspaceTextApertureFromEditor(editor, editorViewport(nextModel).height),

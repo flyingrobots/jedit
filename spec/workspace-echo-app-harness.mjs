@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict';
 import { createI18nMock } from './i18n-mock.mjs';
-import { importDist, mockJeditTheme, mockRuntime, surfaceText } from './workspace-helpers.mjs';
+import {
+  basisPinnedTestTextSession,
+  importDist,
+  mockJeditTheme,
+  mockRuntime,
+  surfaceText,
+} from './workspace-helpers.mjs';
 
 const DEFAULT_NOW_MS = 42;
 const DEFAULT_COLUMNS = 100;
@@ -28,7 +34,9 @@ export async function createWorkspaceEchoAppHarness(options = {}) {
     checkpoint: [],
     lifecycle: [],
   };
-  const productionTextSession = options.productionTextSession ?? recordingProductionTextSession(calls, options);
+  const productionTextSession = basisPinnedTestTextSession(
+    options.productionTextSession ?? recordingProductionTextSession(calls, options),
+  );
   const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime({
     initialColumns: options.columns ?? DEFAULT_COLUMNS,
     initialRows: options.rows ?? DEFAULT_ROWS,
@@ -137,34 +145,46 @@ function recordingProductionTextSession(calls, options) {
   return {
     openBuffer: async (request) => {
       calls.open.push(request);
+      const textBasis = textBasisFor('head:opened', currentReading(readings, 1));
       return options.openObstruction ?? {
         kind: 'opened',
         optic: {
           buffer: {
             bufferId: options.bufferIdByKey?.get(request.bufferKey) ?? options.bufferId ?? 'buffer:notes',
           },
+          openedTextBasis: textBasis,
         },
+        textBasis,
       };
     },
     insertText: async (request) => {
       calls.insert.push(request);
       return options.editObstruction ?? {
         kind: 'applied',
-        result: { receiptId: editReceiptId(options, 'insert', calls.insert.length) },
+        result: {
+          receiptId: editReceiptId(options, 'insert', calls.insert.length),
+          textBasis: nextTextBasis(readings, calls.observe.length, 'insert', calls.insert.length),
+        },
       };
     },
     replaceRange: async (request) => {
       calls.replace.push(request);
       return options.editObstruction ?? {
         kind: 'applied',
-        result: { receiptId: editReceiptId(options, 'replace', calls.replace.length) },
+        result: {
+          receiptId: editReceiptId(options, 'replace', calls.replace.length),
+          textBasis: nextTextBasis(readings, calls.observe.length, 'replace', calls.replace.length),
+        },
       };
     },
     deleteRange: async (request) => {
       calls.delete.push(request);
       return options.editObstruction ?? {
         kind: 'applied',
-        result: { receiptId: editReceiptId(options, 'delete', calls.delete.length) },
+        result: {
+          receiptId: editReceiptId(options, 'delete', calls.delete.length),
+          textBasis: nextTextBasis(readings, calls.observe.length, 'delete', calls.delete.length),
+        },
       };
     },
     multiRangeEdit: async () => options.multiRangeObstruction ?? productionTextObstruction('multi-range unsupported'),
@@ -172,20 +192,34 @@ function recordingProductionTextSession(calls, options) {
       calls.checkpoint.push(request);
       return options.checkpointObstruction ?? {
         kind: 'checkpointed',
-        result: { checkpointId: 'checkpoint:save' },
+        result: {
+          checkpointId: 'checkpoint:save',
+          textBasis: textBasisFor(
+            request.basisHeadId ?? 'head:checkpoint',
+            currentReading(readings, calls.observe.length),
+          ),
+        },
       };
     },
     observeWindow: async (request) => {
       calls.observe.push(request);
       const text = currentReading(readings, calls.observe.length);
+      const textBasis = {
+        basisHeadId: request.basisHeadId,
+        byteRange: request.byteRange,
+      };
       return options.readObstruction ?? {
         kind: 'observed',
         observed: {
           value: {
             readingId: `reading:${calls.observe.length}`,
+            textBasis,
             projection: {
-              basisHeadId: `head:reading:${calls.observe.length}`,
-              byteRange: { startByte: 0, endByte: Buffer.byteLength(text, 'utf8') },
+              basisHeadId: textBasis.basisHeadId,
+              byteRange: {
+                startByte: textBasis.byteRange.startByte.value,
+                endByte: textBasis.byteRange.endByte.value,
+              },
               text,
               support: [],
             },
@@ -225,6 +259,23 @@ function currentReading(readings, observationCount) {
 
 function editReceiptId(options, kind, callCount) {
   return options.editReceiptIds?.[kind]?.[callCount - 1] ?? `receipt:${kind}`;
+}
+
+function nextTextBasis(readings, observationCount, kind, callCount) {
+  return textBasisFor(
+    `head:${kind}:${callCount}`,
+    currentReading(readings, observationCount + 1),
+  );
+}
+
+function textBasisFor(basisHeadId, text) {
+  return {
+    basisHeadId,
+    byteRange: {
+      startByte: { kind: 'utf8-byte-offset', value: 0 },
+      endByte: { kind: 'utf8-byte-offset', value: Buffer.byteLength(text, 'utf8') },
+    },
+  };
 }
 
 export function productionTextObstruction(message) {

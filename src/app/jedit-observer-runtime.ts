@@ -10,11 +10,9 @@ import type {
   HotTextWindowProjection,
   HotTextWindowRequest,
 } from '../ports/hot-text-runtime.js';
-import { isGraphBackedRopeTextAuthority } from '../ports/hot-text-runtime.js';
 import type { JeditRetainedEvidenceInventory } from '../ports/jedit-retained-evidence.js';
 import type { JeditWorldlineSession } from './jedit-contract-runtime.js';
 import { readWorldlineSnapshot } from './jedit-contract-runtime.js';
-import { projectedHeadRecord } from './jedit-contract-runtime-authority-basis.js';
 import { JEDIT_HOT_TEXT_PACKAGE_ID } from './jedit-contract-package.js';
 import { createJeditReadingRetainedEvidenceInventory } from './jedit-retained-evidence.js';
 import type { HashPort } from '../ports/hash.js';
@@ -90,7 +88,7 @@ export function readTextWindowWithObserverPlan(
 ): TextWindowReadingEnvelope {
   const schemas = QueryOperationSchemas.textWindow;
   const parsedInput = schemas.input.parse(input);
-  const reading = readTextWindow(runtime, session, parsedInput, hash);
+  const reading = readTextWindow(runtime, session, parsedInput);
 
   return {
     planId: textWindowPlanId(hash),
@@ -125,22 +123,32 @@ function readTextWindow(
   runtime: HotTextRuntimePort,
   session: JeditWorldlineSession,
   input: TextWindowInput,
-  hash: HashPort,
 ): ProjectedTextWindowReading {
   assertPositiveCount(input.viewportLineCount, 'viewportLineCount');
   assertNonNegativeCount(input.beforeLines, 'beforeLines');
   assertNonNegativeCount(input.afterLines, 'afterLines');
   assertPositiveCount(input.maxBytes, 'maxBytes');
+  assertNonNegativeCount(input.startByte, 'startByte');
+  assertNonNegativeCount(input.endByte, 'endByte');
+  if (input.startByte > input.endByte) {
+    throw new TextWindowRuntimeError('startByte must not exceed endByte.');
+  }
 
-  const fullProjection = readFullHeadProjection(runtime, session);
-  const allLines = toTextLineReadings(fullProjection.text, TEXT_WINDOW_MIN_LINE, TEXT_WINDOW_MIN_LINE);
+  const basisProjection = readProjection(runtime, session, {
+    basisHeadId: input.basisHeadId,
+    byteRange: { startByte: input.startByte, endByte: input.endByte },
+  });
+  const allLines = toTextLineReadings(basisProjection.text, TEXT_WINDOW_MIN_LINE, input.startByte);
   const selection = selectTextWindow(allLines, input);
-  const projection = readProjection(runtime, session, selection.byteRange);
+  const projection = readProjection(runtime, session, {
+    basisHeadId: input.basisHeadId,
+    byteRange: selection.byteRange,
+  });
   const lines = toTextLineReadings(projection.text, selection.startLine, selection.byteRange.startByte);
 
   return {
     worldline: session.worldline,
-    head: projectedHeadRecord(session.state, session.worldline.worldlineId, fullProjection.text, hash),
+    head: basisProjection.basis,
     readingId: toTextWindowReadingId(projection.basisHeadId, selection.byteRange),
     startLine: selection.startLine,
     lineCount: lines.length,
@@ -169,36 +177,14 @@ function toTextLineReadings(text: string, firstLine: number, firstByte: number):
   });
 }
 
-function readFullHeadProjection(
-  runtime: HotTextRuntimePort,
-  session: JeditWorldlineSession,
-): HotTextWindowProjection {
-  const endByte = projectionByteLength(runtime, session);
-  return readProjection(runtime, session, { startByte: TEXT_WINDOW_MIN_LINE, endByte });
-}
-
-function projectionByteLength(runtime: HotTextRuntimePort, session: JeditWorldlineSession): number {
-  if (session.state.authorityBasis != null) {
-    return session.state.authorityBasis.byteLength;
-  }
-  if (isGraphBackedRopeTextAuthority(runtime)) {
-    throw new TextWindowRuntimeError('Graph rope text projection requires an explicit authority basis.');
-  }
-  return byteLength(runtime.materialize(session.state));
-}
-
 function readProjection(
   runtime: HotTextRuntimePort,
   session: JeditWorldlineSession,
-  byteRange: HotTextWindowByteRange,
+  request: HotTextWindowRequest,
 ): HotTextWindowProjection {
-  const request: HotTextWindowRequest = {
-    basisHeadId: session.worldline.canonicalHeadId,
-    byteRange,
-  };
   const projection = runtime.textWindow(session.state, request);
-  if (!projectionMatchesRequest(projection, request)) {
-    throw new TextWindowRuntimeError('Text projection does not match its requested head and byte range.');
+  if (!projectionMatchesRequest(projection, request, session.worldline.worldlineId)) {
+    throw new TextWindowRuntimeError('Text projection does not match its requested causal basis.');
   }
   return projection;
 }
@@ -206,10 +192,14 @@ function readProjection(
 function projectionMatchesRequest(
   projection: HotTextWindowProjection,
   request: HotTextWindowRequest,
+  expectedWorldlineId: string,
 ): boolean {
   return projection.basisHeadId === request.basisHeadId
+    && projection.basis.headId === request.basisHeadId
+    && projection.basis.worldlineId === expectedWorldlineId
     && projection.byteRange.startByte === request.byteRange.startByte
     && projection.byteRange.endByte === request.byteRange.endByte
+    && projection.byteRange.endByte <= projection.basis.byteLength
     && byteLength(projection.text) === request.byteRange.endByte - request.byteRange.startByte
     && projection.support.every((support) => supportWithinRange(support.byteRange, request.byteRange));
 }
