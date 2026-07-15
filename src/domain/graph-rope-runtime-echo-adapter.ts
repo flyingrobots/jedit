@@ -13,7 +13,7 @@ export function requestCheckpointAnchorAdmission(
 ): EchoCausalAnchorAdmissionEvidence | null {
   try {
     const result = port.admitCheckpointAnchor(cloneRequest(request));
-    if (result == null || !result.ok) {
+    if (result == null || result.ok !== true) {
       return null;
     }
     return snapshotEvidence(result.evidence);

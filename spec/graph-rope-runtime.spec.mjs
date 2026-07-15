@@ -304,6 +304,8 @@ test('graph runtime validates materialization roots before invoking Echo', async
   }));
 
   const invalidRootSets = [
+    null,
+    {},
     [null],
     [{ id: '', role: 'materialization' }],
     [{ id: 'cas:authority', role: 'authority' }],
@@ -455,6 +457,8 @@ test('graph runtime snapshots opaque Echo evidence before admitting its associat
       },
     },
   });
+  evidence.authority = 'echo';
+  evidence.nonCloneable = () => 'adapter-owned';
   const graph = runtime.createGraphRopeRuntime({
     hash: createHashPort(),
     causalAnchorAdmission: createTestEchoCausalAnchorAdmissionPort({
@@ -478,9 +482,46 @@ test('graph runtime snapshots opaque Echo evidence before admitting its associat
   }));
 
   assert.deepEqual(reads, { anchorId: 1, anchorFactId: 1, receiptId: 1 });
+  assert.equal('authority' in anchored.echoEvidence, false);
+  assert.equal('nonCloneable' in anchored.echoEvidence, false);
   assert.equal(anchored.association.causalAnchorId, anchored.echoEvidence.anchorId);
   assert.equal(anchored.association.causalAnchorFactId, anchored.echoEvidence.anchorFactId);
   assert.equal(anchored.association.causalAnchorReceiptId, anchored.echoEvidence.receiptId);
+});
+
+test('graph runtime requires a boolean success tag from the Echo adapter', async () => {
+  const { runtime } = await loadModules();
+  const graph = runtime.createGraphRopeRuntime({
+    hash: createHashPort(),
+    causalAnchorAdmission: createTestEchoCausalAnchorAdmissionPort({
+      admit() {
+        return {
+          ok: 'false',
+          evidence: {
+            anchorId: 'test-only-anchor:invalid-tag',
+            anchorFactId: 'test-only-anchor-fact:invalid-tag',
+            receiptId: 'test-only-anchor-receipt:invalid-tag',
+          },
+        };
+      },
+    }),
+  });
+  const created = assertOk(graph.createBufferWorldline({
+    worldlineId: 'worldline:checkpoint-invalid-success-tag',
+    initialText: 'alpha',
+  }));
+  const checkpointed = assertOk(graph.createCheckpoint({
+    worldlineId: 'worldline:checkpoint-invalid-success-tag',
+    headId: created.head.headId,
+    reason: 'manual-save',
+  }));
+
+  assert.deepEqual(graph.anchorCheckpoint({
+    checkpointId: checkpointed.checkpoint.checkpointId,
+  }), {
+    ok: false,
+    code: OBSTRUCTION_CAUSAL_ANCHOR_ADMISSION_FAILED,
+  });
 });
 
 test('graph runtime fails closed when the Echo adapter throws', async () => {
