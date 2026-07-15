@@ -94,6 +94,7 @@ test("TextEditResult refreshes highlighting without reloading saved-file Graft d
       filePath: "/repo/notes.txt",
       bufferId: "buffer:notes",
       receiptId: "receipt:edit",
+      causalTransition: { admittedTickId: "tick:edit", nextHeadId: "head:edit" },
       cursorAfter: { row: 0, column: 4 },
       cache: workspaceReadingCache({
         readingId: "reading:edit",
@@ -109,6 +110,10 @@ test("TextEditResult refreshes highlighting without reloading saved-file Graft d
   assert.equal(nextModel.graftLoading, false);
   assert.equal(graftLoadCount, 0);
   assert.equal(highlightCount, 1);
+  assert.deepEqual(nextModel.textAuthority.lastCausalTransition, {
+    admittedTickId: "tick:edit",
+    nextHeadId: "head:edit",
+  });
 });
 
 test("intermediate TextEditResult refreshes highlighting before queued save settles", async () => {

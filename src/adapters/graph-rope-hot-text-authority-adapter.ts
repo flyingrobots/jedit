@@ -7,9 +7,17 @@ import {
   type OpenEditGroup,
 } from '../domain/edit-group-contract.js';
 import {
+  makeByteOffset,
+  makeTextByteRange,
+} from '../domain/graph-rope-coordinates.js';
+import type {
+  RopeHeadFact,
+  TextByteRange,
+} from '../domain/graph-rope-contract.js';
+import {
   createGraphRopeRuntime,
-  type GraphRopeCreateWorldlineResult,
   type GraphRopeDebugShape,
+  type GraphRopeReplaceRangeResult,
   type GraphRopeRuntime,
   type GraphRopeRuntimeObstructionCode,
   type GraphRopeRuntimeResult,
@@ -28,6 +36,7 @@ import {
   type CloseEditGroupResult,
   type GraphBackedRopeTextAuthority,
   type HotTextAuthorityBasis,
+  type HotTextAuthorityTransition,
   type HotTextBufferState,
   type SaveHotCheckpointResult,
 } from '../ports/hot-text-runtime.js';
@@ -37,6 +46,19 @@ const REPLACE_RANGE_OPERATION = 'admitReplaceRangeTick';
 const SAVE_CHECKPOINT_OPERATION = 'saveCheckpoint';
 const GRAPH_ROPE_OBSTRUCTION_MESSAGE = 'Graph rope text authority operation was obstructed';
 const GRAPH_ROPE_CAPABILITY_MESSAGE = 'Graph rope text authority capability is not installed yet';
+const GRAPH_ROPE_STATE_MESSAGE = 'Graph rope text authority received invalid compatibility state';
+const GRAPH_ROPE_STATE_MISSING_BASIS = 'missing-authority-basis';
+const GRAPH_ROPE_STATE_INVALID_RANGE = 'invalid-byte-range';
+const GRAPH_ROPE_STATE_INCOMPLETE_TRANSITION = 'incomplete-authority-transition';
+const ROOT_IDS_PER_EDIT = 2;
+const NEXT_PROJECTION_ROOT_OFFSET = 1;
+const NEXT_TICK_OFFSET = 1;
+const ZERO_BYTE_OFFSET = 0;
+
+type GraphRopeTextAuthorityStateCode =
+  | typeof GRAPH_ROPE_STATE_MISSING_BASIS
+  | typeof GRAPH_ROPE_STATE_INVALID_RANGE
+  | typeof GRAPH_ROPE_STATE_INCOMPLETE_TRANSITION;
 
 type GraphRopeAuthorityOperation =
   | typeof CREATE_BUFFER_OPERATION
@@ -76,6 +98,16 @@ export class GraphRopeTextAuthorityCapabilityError extends Error {
   }
 }
 
+export class GraphRopeTextAuthorityStateError extends Error {
+  public readonly code: GraphRopeTextAuthorityStateCode;
+
+  public constructor(code: GraphRopeTextAuthorityStateCode) {
+    super(`${GRAPH_ROPE_STATE_MESSAGE}: ${code}.`);
+    this.name = 'GraphRopeTextAuthorityStateError';
+    this.code = code;
+  }
+}
+
 export function createGraphRopeHotTextAuthority(
   options: CreateGraphRopeHotTextAuthorityOptions,
 ): GraphRopeHotTextAuthority {
@@ -96,7 +128,7 @@ class GraphRopeHotTextAuthorityAdapter implements GraphRopeHotTextAuthority {
     if (!created.ok) {
       throw new GraphRopeTextAuthorityObstructionError(CREATE_BUFFER_OPERATION, created.code);
     }
-    return initialProjection(path, initialText, authorityBasis(created.value));
+    return initialProjection(path, initialText, authorityBasis(created.value.head));
   }
 
   public materialize(state: HotTextBufferState): string {
@@ -104,11 +136,22 @@ class GraphRopeHotTextAuthorityAdapter implements GraphRopeHotTextAuthority {
   }
 
   public admitReplaceRangeTick(
-    _state: HotTextBufferState,
-    _range: TextRange,
-    _text: string,
+    state: HotTextBufferState,
+    range: TextRange,
+    text: string,
   ): AdmitReplaceRangeTickResult {
-    throw new GraphRopeTextAuthorityCapabilityError(REPLACE_RANGE_OPERATION);
+    const basis = requireAuthorityBasis(state);
+    const replaced = this.graph.replaceRangeAsTick({
+      basisHeadId: basis.headId,
+      range: graphByteRange(range),
+      replacementText: text,
+    });
+    if (!replaced.ok) {
+      throw new GraphRopeTextAuthorityObstructionError(REPLACE_RANGE_OPERATION, replaced.code);
+    }
+    return replaced.value.changed
+      ? changedReplaceResult(this.graph, state, range, replaced.value)
+      : { nextState: state };
   }
 
   public openEditGroup(state: HotTextBufferState): HotTextBufferState {
@@ -153,15 +196,108 @@ function initialProjection(
   };
 }
 
-function authorityBasis(created: GraphRopeCreateWorldlineResult): HotTextAuthorityBasis {
+function authorityBasis(head: RopeHeadFact): HotTextAuthorityBasis {
   return {
-    worldlineId: created.worldline.worldlineId,
-    headId: created.head.headId,
-    rootNodeId: created.head.rootNodeId,
-    createdByTickId: created.head.createdByTickId,
-    byteLength: created.head.byteLength,
-    lineCount: created.head.lineCount,
-    contentHash: created.head.contentHash,
+    worldlineId: head.worldlineId,
+    headId: head.headId,
+    rootNodeId: head.rootNodeId,
+    createdByTickId: head.createdByTickId,
+    byteLength: head.byteLength,
+    lineCount: head.lineCount,
+    contentHash: head.contentHash,
+  };
+}
+
+function requireAuthorityBasis(state: HotTextBufferState): HotTextAuthorityBasis {
+  if (state.authorityBasis == null) {
+    throw new GraphRopeTextAuthorityStateError(GRAPH_ROPE_STATE_MISSING_BASIS);
+  }
+  return state.authorityBasis;
+}
+
+function graphByteRange(range: TextRange): TextByteRange {
+  const start = makeByteOffset(range.start.byte);
+  const end = makeByteOffset(range.end.byte);
+  if (!start.ok || !end.ok) {
+    throw new GraphRopeTextAuthorityStateError(GRAPH_ROPE_STATE_INVALID_RANGE);
+  }
+  const graphRange = makeTextByteRange(start.value, end.value);
+  if (!graphRange.ok) {
+    throw new GraphRopeTextAuthorityStateError(GRAPH_ROPE_STATE_INVALID_RANGE);
+  }
+  return graphRange.value;
+}
+
+function changedReplaceResult(
+  graph: GraphRopeRuntime,
+  state: HotTextBufferState,
+  range: TextRange,
+  replaced: GraphRopeReplaceRangeResult,
+): AdmitReplaceRangeTickResult {
+  const transition = authorityTransition(replaced);
+  const projectionText = materializeGraphHead(graph, replaced.nextHead);
+  const tickId = state.ticks.length + NEXT_TICK_OFFSET;
+  const nextRootId = state.nextRootId + NEXT_PROJECTION_ROOT_OFFSET;
+  const nextRoot = createBufferRoot(nextRootId, projectionText);
+  return {
+    nextState: nextProjectionState(state, nextRoot, tickId, transition.nextBasis),
+    receipt: {
+      tickId,
+      replaceReceipt: {
+        baseRootId: state.currentRoot.id,
+        nextRootId,
+        replaced: range,
+        insertedRootId: state.nextRootId,
+      },
+    },
+    authorityTransition: transition,
+  };
+}
+
+function authorityTransition(replaced: GraphRopeReplaceRangeResult): HotTextAuthorityTransition {
+  if (replaced.rewrite == null || replaced.diff == null || replaced.receipt == null) {
+    throw new GraphRopeTextAuthorityStateError(GRAPH_ROPE_STATE_INCOMPLETE_TRANSITION);
+  }
+  return {
+    tickId: replaced.receipt.tickId,
+    admissionId: replaced.receipt.admissionId,
+    rewriteId: replaced.rewrite.rewriteId,
+    diffId: replaced.diff.diffId,
+    admittedAtSequence: replaced.receipt.admittedAtSequence,
+    nextBasis: authorityBasis(replaced.nextHead),
+  };
+}
+
+function materializeGraphHead(graph: GraphRopeRuntime, head: RopeHeadFact): string {
+  const reading = graph.textWindow({
+    basisHeadId: head.headId,
+    byteRange: graphByteRange({
+      start: { byte: ZERO_BYTE_OFFSET },
+      end: { byte: head.byteLength },
+    }),
+  });
+  if (!reading.ok) {
+    throw new GraphRopeTextAuthorityObstructionError(REPLACE_RANGE_OPERATION, reading.code);
+  }
+  return reading.value.text;
+}
+
+function nextProjectionState(
+  state: HotTextBufferState,
+  currentRoot: HotTextBufferState['currentRoot'],
+  tickId: number,
+  basis: HotTextAuthorityBasis,
+): HotTextBufferState {
+  return {
+    ...state,
+    authorityBasis: basis,
+    currentRoot,
+    roots: [currentRoot],
+    ticks: [...state.ticks, { id: tickId, rootId: currentRoot.id }],
+    editGroups: [...state.editGroups],
+    openEditGroup: state.openEditGroup == null ? undefined : copyOpenEditGroup(state.openEditGroup),
+    checkpoints: [...state.checkpoints],
+    nextRootId: state.nextRootId + ROOT_IDS_PER_EDIT,
   };
 }
 

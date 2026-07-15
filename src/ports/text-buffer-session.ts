@@ -61,6 +61,12 @@ export interface ApplyIntentResult {
   readonly readBasis: ReadBasisHandle;
   readonly bufferVersion: BufferVersion;
   readonly receiptId: string;
+  readonly causalTransition?: TextBufferCausalTransition;
+}
+
+export interface TextBufferCausalTransition {
+  readonly admittedTickId: string;
+  readonly nextHeadId: string;
 }
 
 export interface CreateTextBufferCheckpointRequest {

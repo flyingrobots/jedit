@@ -13,6 +13,15 @@ export interface HotTextAuthorityBasis {
   readonly contentHash: string;
 }
 
+export interface HotTextAuthorityTransition {
+  readonly tickId: string;
+  readonly admissionId: string;
+  readonly rewriteId: string;
+  readonly diffId: string;
+  readonly admittedAtSequence: number;
+  readonly nextBasis: HotTextAuthorityBasis;
+}
+
 export interface HotTextBufferState {
   readonly path: string;
   readonly authorityBasis?: HotTextAuthorityBasis;
@@ -28,6 +37,7 @@ export interface HotTextBufferState {
 export interface AdmitReplaceRangeTickResult {
   readonly nextState: HotTextBufferState;
   readonly receipt?: TickAdmissionReceipt;
+  readonly authorityTransition?: HotTextAuthorityTransition;
 }
 
 export interface CloseEditGroupResult {

@@ -27,6 +27,7 @@ import {
   QueryOperationSchemas,
   RewriteKindSchema,
 } from '../generated/jedit/rope.zod.generated.js';
+import { HotTextAuthorityBasisSchema } from './hot-text-authority-basis-codec.js';
 import { JeditRetainedEvidenceInventorySchema } from './jedit-retained-evidence-codec.js';
 
 // EINT envelope codec re-export (kept here so adapters import wire and
@@ -75,13 +76,6 @@ const QueryOperationNameSchema = z.union([
 
 const BufferRootSchema = z.object({ id: z.number().int(), text: z.string() });
 
-const HotTextAuthorityBasisSchema = z.object({
-  worldlineId: z.string().min(1), headId: z.string().min(1), rootNodeId: z.string().min(1),
-  createdByTickId: z.string().min(1), contentHash: z.string().min(1),
-  byteLength: z.number().int().nonnegative(),
-  lineCount: z.number().int().positive(),
-});
-
 const AdmittedTickSchema = z.object({ id: z.number().int(), rootId: z.number().int() });
 
 const EditGroupSchema = z.object({ id: z.number().int(), tickIds: z.array(z.number().int()) });
@@ -112,6 +106,11 @@ const TickMetadataSchema = z.object({
   endByte: z.number().int().optional(),
   insertedByteLength: z.number().int().optional(),
   deletedByteLength: z.number().int().optional(),
+  authorityTickId: z.string().min(1).optional(),
+  authorityAdmissionId: z.string().min(1).optional(),
+  authorityRewriteId: z.string().min(1).optional(),
+  authorityDiffId: z.string().min(1).optional(),
+  authoritySequenceNumber: z.number().int().positive().optional(),
 });
 
 const CheckpointMetadataSchema = z.object({

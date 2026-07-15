@@ -55,7 +55,6 @@ const DEFAULT_VIEWPORT_LINE_COUNT = 24;
 const DEFAULT_BEFORE_LINES = 0;
 const DEFAULT_AFTER_LINES = 0;
 const DEFAULT_MAX_BYTES = 1048576;
-
 export const WorkspaceTextEditCommandKinds = Object.freeze({
   Insert: EDIT_COMMAND_INSERT,
   Replace: EDIT_COMMAND_REPLACE,
@@ -328,6 +327,7 @@ async function editWorkspaceText(
       filePath: request.filePath,
       bufferId: request.bufferId,
       receiptId: edited.result.receiptId,
+      causalTransition: edited.result.causalTransition,
       cache,
       cursorAfter: request.cursorAfter,
     };

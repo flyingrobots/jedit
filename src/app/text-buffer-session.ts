@@ -9,6 +9,7 @@ import type {
   ReplaceRangeIntent,
   SessionId,
   TextBuffer,
+  TextBufferCausalTransition,
   TextBufferId,
   TextBufferOptic,
   TextBufferSessionPort,
@@ -21,7 +22,7 @@ import type { JeditWhyByteRange, JeditWhyRangeReport } from '../ports/jedit-why-
 import type {
   JeditOpticClient,
 } from '../ports/jedit-optic-client.js';
-import type { JeditWorldlineSession } from './jedit-contract-runtime.js';
+import type { JeditWorldlineSession, ReplaceRangeAsTickExecution } from './jedit-contract-runtime.js';
 import type { TextWindowReadingEnvelope } from './jedit-observer-runtime.js';
 import { explainJeditWhyRange } from './jedit-why-range.js';
 
@@ -134,12 +135,24 @@ async function applyTextBufferIntent(
   }
   state.currentSession = execution.nextSession;
   state.bufferVersion += NEXT_BUFFER_VERSION_STEP;
+  const causalTransition = causalTransitionForExecution(execution);
   return {
     buffer,
     readBasis: state.currentReadBasis,
     bufferVersion: state.bufferVersion,
     receiptId: execution.result.ropeDiff.ropeDiffId,
+    ...(causalTransition == null ? {} : { causalTransition }),
   };
+}
+
+function causalTransitionForExecution(
+  execution: ReplaceRangeAsTickExecution,
+): TextBufferCausalTransition | undefined {
+  const admittedTickId = execution.nextSession.tickMetadata.at(-1)?.authorityTickId;
+  if (admittedTickId == null || execution.result == null) {
+    return undefined;
+  }
+  return { admittedTickId, nextHeadId: execution.result.nextHead.headId };
 }
 
 function replaceRangeInput(

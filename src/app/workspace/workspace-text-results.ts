@@ -1,6 +1,7 @@
 import type { RuntimeIssue } from '@flyingrobots/bijou-tui';
 import type { EditorFileFingerprint } from '../../ports/editor-file.js';
 import type { JeditWscWorkspaceEnvelope } from '../../ports/jedit-wsc-workspace-store.js';
+import type { TextBufferCausalTransition } from '../../ports/text-buffer-session.js';
 import type { TextPosition } from './workspace-text-position.js';
 import type { WorkspaceTextHostBasisKind } from './workspace-text-authority.js';
 import type { WorkspaceTextReadingCache } from './workspace-text-reading-cache.js';
@@ -39,6 +40,7 @@ export interface WorkspaceTextAppliedResult {
   readonly filePath: string;
   readonly bufferId: string;
   readonly receiptId: string;
+  readonly causalTransition?: TextBufferCausalTransition;
   readonly reversedReceiptId?: string;
   readonly cache: WorkspaceTextReadingCache;
   readonly cursorAfter?: TextPosition;

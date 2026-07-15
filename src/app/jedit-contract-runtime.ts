@@ -14,6 +14,7 @@ import type {
 } from '../generated/jedit/rope.types.generated.js';
 import { MutationOperationSchemas, QueryOperationSchemas } from '../generated/jedit/rope.zod.generated.js';
 import type {
+  HotTextAuthorityTransition,
   HotTextBufferState,
   HotTextRuntimePort,
 } from '../ports/hot-text-runtime.js';
@@ -115,6 +116,11 @@ export interface TickMetadata {
   readonly endByte?: number;
   readonly insertedByteLength?: number;
   readonly deletedByteLength?: number;
+  readonly authorityTickId?: string;
+  readonly authorityAdmissionId?: string;
+  readonly authorityRewriteId?: string;
+  readonly authorityDiffId?: string;
+  readonly authoritySequenceNumber?: number;
 }
 
 interface CheckpointMetadata {
@@ -209,8 +215,15 @@ export function replaceRangeAsTick(
     return noReplaceRangeAsTickExecution(session, admission.nextState);
   }
 
-  const nextHeadId = toHeadId(admission.nextState.currentRoot.id);
-  const tickMetadata = createTickMetadata(admission.receipt, baseHeadId, nextHeadId, parsedInput.insertText, parsedInput.author ?? undefined);
+  const nextHeadId = canonicalHeadIdForState(admission.nextState);
+  const tickMetadata = createTickMetadata({
+    receipt: admission.receipt,
+    authorityTransition: admission.authorityTransition,
+    baseHeadId,
+    nextHeadId,
+    insertText: parsedInput.insertText,
+    author: parsedInput.author ?? undefined,
+  });
   const nextSession = createSessionFromExisting(
     session,
     admission.nextState,
@@ -291,7 +304,13 @@ function replaceRangeAsTickResult(input: ReplaceRangeAsTickResultInput): Replace
     worldline: input.nextSession.worldline,
     nextHead: toHeadRecord(input.nextSession, input.hash),
     ropeRewrite: toRopeRewriteRecord(input.nextSession, input.tickMetadata),
-    ropeDiff: toRopeDiffRecord(input.receipt, input.baseHeadId, input.nextSession.worldline.canonicalHeadId, input.insertText),
+    ropeDiff: toRopeDiffRecord(
+      input.receipt,
+      input.tickMetadata,
+      input.baseHeadId,
+      input.nextSession.worldline.canonicalHeadId,
+      input.insertText,
+    ),
   });
 }
 
@@ -327,21 +346,33 @@ function createSessionFromExisting(
   );
 }
 
-function createTickMetadata(
-  receipt: TickAdmissionReceipt, baseHeadId: string, nextHeadId: string, insertText: string, author: string | undefined,
-): TickMetadata {
-  const startByte = receipt.replaceReceipt.replaced.start.byte;
-  const endByte = receipt.replaceReceipt.replaced.end.byte;
+interface CreateTickMetadataInput {
+  readonly receipt: TickAdmissionReceipt;
+  readonly authorityTransition?: HotTextAuthorityTransition;
+  readonly baseHeadId: string;
+  readonly nextHeadId: string;
+  readonly insertText: string;
+  readonly author?: string;
+}
+
+function createTickMetadata(input: CreateTickMetadataInput): TickMetadata {
+  const startByte = input.receipt.replaceReceipt.replaced.start.byte;
+  const endByte = input.receipt.replaceReceipt.replaced.end.byte;
   return {
-    tickId: receipt.tickId,
+    tickId: input.receipt.tickId,
     kind: REWRITE_KIND_REPLACE_RANGE_AS_TICK,
-    author,
-    baseHeadId,
-    nextHeadId,
+    author: input.author,
+    baseHeadId: input.baseHeadId,
+    nextHeadId: input.nextHeadId,
     startByte,
     endByte,
-    insertedByteLength: byteLength(insertText),
+    insertedByteLength: byteLength(input.insertText),
     deletedByteLength: endByte - startByte,
+    authorityTickId: input.authorityTransition?.tickId,
+    authorityAdmissionId: input.authorityTransition?.admissionId,
+    authorityRewriteId: input.authorityTransition?.rewriteId,
+    authorityDiffId: input.authorityTransition?.diffId,
+    authoritySequenceNumber: input.authorityTransition?.admittedAtSequence,
   };
 }
 
@@ -382,16 +413,17 @@ function toHeadRecord(session: JeditWorldlineSession, hash: HashPort): RopeHead 
 
 function toRopeRewriteRecord(session: JeditWorldlineSession, metadata: TickMetadata): RopeRewrite {
   return {
-    ropeRewriteId: toTickId(metadata.tickId),
+    ropeRewriteId: metadata.authorityRewriteId ?? toTickId(metadata.tickId),
     worldlineId: session.worldline.worldlineId,
     kind: metadata.kind,
-    sequenceNumber: metadata.tickId,
+    sequenceNumber: metadata.authoritySequenceNumber ?? metadata.tickId,
     author: metadata.author,
   };
 }
 
 function toRopeDiffRecord(
   receipt: TickAdmissionReceipt,
+  metadata: TickMetadata,
   baseHeadId: string,
   nextHeadId: string,
   insertText: string,
@@ -399,8 +431,8 @@ function toRopeDiffRecord(
   const deletedByteLength = receipt.replaceReceipt.replaced.end.byte - receipt.replaceReceipt.replaced.start.byte;
 
   return {
-    ropeDiffId: toReceiptId(receipt.tickId),
-    ropeRewriteId: toTickId(receipt.tickId),
+    ropeDiffId: metadata.authorityDiffId ?? toReceiptId(receipt.tickId),
+    ropeRewriteId: metadata.authorityRewriteId ?? toTickId(receipt.tickId),
     baseHeadId,
     nextHeadId,
     rewriteKind: REWRITE_KIND_REPLACE_RANGE_AS_TICK,

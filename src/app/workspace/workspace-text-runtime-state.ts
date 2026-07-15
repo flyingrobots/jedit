@@ -50,7 +50,6 @@ import {
 } from './command-provenance.js';
 
 export type WorkspaceRuntimeResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
-
 const FOCUS_PANE_EDITOR = 'editor';
 
 interface TextExportCheckpointRequest {
@@ -214,7 +213,9 @@ function textAuthorityWithIntermediateEditReceipt(
   result: WorkspaceTextAppliedResult,
 ) {
   if (requestId === authority.pendingClientSeq) {
-    return workspaceTextAuthorityWithAppliedJeditCommandReceipt(authority, requestId, result.receiptId, result.reversedReceiptId);
+    return workspaceTextAuthorityWithAppliedJeditCommandReceipt(
+      authority, requestId, result.receiptId, result.reversedReceiptId, result.causalTransition,
+    );
   }
   const event = receivedJeditCommandEventForRequest(authority, requestId, result.receiptId, result.reversedReceiptId);
   return {
@@ -235,7 +236,9 @@ function applyAppliedTextEditResult(
     return [model, []];
   }
   const withCache = workspaceTextAuthorityWithCache(
-    workspaceTextAuthorityWithAppliedJeditCommandReceipt(authority, msg.requestId, msg.result.receiptId, msg.result.reversedReceiptId),
+    workspaceTextAuthorityWithAppliedJeditCommandReceipt(
+      authority, msg.requestId, msg.result.receiptId, msg.result.reversedReceiptId, msg.result.causalTransition,
+    ),
     msg.result.cache,
   );
   const withCurrentObservation = workspaceTextAuthorityWithCurrentJeditCommandObservation(withCache);

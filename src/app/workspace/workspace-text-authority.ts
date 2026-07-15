@@ -1,5 +1,6 @@
 import type { RuntimeIssue } from '@flyingrobots/bijou-tui';
 import type { EditorFileFingerprint } from '../../ports/editor-file.js';
+import type { TextBufferCausalTransition } from '../../ports/text-buffer-session.js';
 import type { TextRuntimeProfile } from '../text-runtime-profile.js';
 import type { EditorState } from './editor/model.js';
 import type {
@@ -111,6 +112,7 @@ export interface WorkspaceTextAuthorityOpened {
   readonly lastObstruction?: RuntimeIssue;
   readonly lastCommandEvent?: JeditCommandEvent;
   readonly lastReceiptId?: string;
+  readonly lastCausalTransition?: TextBufferCausalTransition;
   readonly lastCheckpointId?: string;
   readonly lastExportReadingId?: string;
 }
@@ -142,6 +144,7 @@ export interface OpenedWorkspaceTextAuthorityOptions {
   readonly lastObstruction?: RuntimeIssue;
   readonly lastCommandEvent?: JeditCommandEvent;
   readonly lastReceiptId?: string;
+  readonly lastCausalTransition?: TextBufferCausalTransition;
   readonly lastCheckpointId?: string;
   readonly lastExportReadingId?: string;
 }
@@ -201,6 +204,7 @@ export function openedWorkspaceTextAuthority(
     lastObstruction: options.lastObstruction,
     lastCommandEvent: options.lastCommandEvent,
     lastReceiptId: options.lastReceiptId,
+    lastCausalTransition: options.lastCausalTransition,
     lastCheckpointId: options.lastCheckpointId,
     lastExportReadingId: options.lastExportReadingId,
   };
@@ -234,6 +238,7 @@ export function workspaceTextAuthorityWithCache(
 export function workspaceTextAuthorityWithReceipt(
   authority: WorkspaceTextAuthorityOpened,
   receiptId: string,
+  causalTransition?: TextBufferCausalTransition,
 ): WorkspaceTextAuthorityOpened {
   return {
     ...authority,
@@ -243,6 +248,7 @@ export function workspaceTextAuthorityWithReceipt(
     pendingReceiptId: receiptId,
     pendingIntentStatus: WorkspaceTextIntentStatuses.Admitted,
     lastReceiptId: receiptId,
+    ...(causalTransition == null ? {} : { lastCausalTransition: causalTransition }),
   };
 }
 
