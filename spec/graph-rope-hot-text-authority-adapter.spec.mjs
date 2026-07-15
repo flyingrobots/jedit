@@ -131,6 +131,20 @@ test('routes insert delete and replace through graph authority without minting n
   assert.equal(noOp.nextSession.tickMetadata.length, replaced.nextSession.tickMetadata.length);
 });
 
+test('materialization ignores a forged compatibility projection and reads the graph head', async () => {
+  const modules = await loadModules();
+  const authority = modules.authority.createGraphRopeHotTextAuthority({
+    hash: modules.hash.createHashPort(),
+  });
+  const state = authority.createBuffer('/tmp/materialize-authority.txt', 'graph authority');
+  const forgedProjection = {
+    ...state,
+    currentRoot: { ...state.currentRoot, text: 'forged projection' },
+  };
+
+  assert.equal(authority.materialize(forgedProjection), 'graph authority');
+});
+
 test('manual save declares and anchors the current head without changing rope authority', async () => {
   const modules = await loadModules();
   const requests = [];

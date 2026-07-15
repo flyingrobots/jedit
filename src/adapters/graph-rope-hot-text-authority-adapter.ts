@@ -36,7 +36,6 @@ import {
 import {
   FIRST_ROOT_ID,
   createBufferRoot,
-  materializeRoot,
   type TextRange,
 } from '../domain/text-edit-contract.js';
 import { toWorldlineId } from '../app/jedit-contract-runtime-id.js';
@@ -147,7 +146,15 @@ class GraphRopeHotTextAuthorityAdapter implements GraphRopeHotTextAuthority {
   }
 
   public materialize(state: HotTextBufferState): string {
-    return materializeRoot(state.currentRoot);
+    const basis = requireAuthorityBasis(state);
+    const reading = this.graph.textWindow({
+      basisHeadId: basis.headId,
+      byteRange: graphWindowByteRange({ startByte: ZERO_BYTE_OFFSET, endByte: basis.byteLength }),
+    });
+    if (!reading.ok) {
+      throw new GraphRopeTextAuthorityObstructionError(TEXT_WINDOW_OPERATION, reading.code);
+    }
+    return reading.value.text;
   }
 
   public textWindow(_state: HotTextBufferState, request: HotTextWindowRequest): HotTextWindowProjection {
