@@ -282,7 +282,7 @@ function anchorCheckpoint(
     return { ok: false, code: GRAPH_ROPE_RUNTIME_OBSTRUCTION_MISSING_HEAD };
   }
   const request = createCheckpointAnchorAdmissionRequest(checkpoint, input.materializationRoots);
-  if (validateCheckpointAnchorAdmissionRequest(request) !== null) {
+  if (request === null || validateCheckpointAnchorAdmissionRequest(request) !== null) {
     return { ok: false, code: GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_FACT };
   }
   if (state.causalAnchorAdmission === null) {

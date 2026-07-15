@@ -62,14 +62,21 @@ export function createCheckpointFact(
 export function createCheckpointAnchorAdmissionRequest(
   checkpoint: RopeCheckpointFact,
   materializationRoots: readonly RopeCheckpointMaterializationRoot[] = [],
-): RopeCheckpointAnchorAdmissionRequest {
-  return {
-    checkpointId: checkpoint.checkpointId,
-    worldlineId: checkpoint.worldlineId,
-    headId: checkpoint.headId,
-    reason: checkpoint.reason,
-    materializationRoots: [...materializationRoots],
-  };
+): RopeCheckpointAnchorAdmissionRequest | null {
+  try {
+    return {
+      checkpointId: checkpoint.checkpointId,
+      worldlineId: checkpoint.worldlineId,
+      headId: checkpoint.headId,
+      reason: checkpoint.reason,
+      materializationRoots: materializationRoots.map((root) => ({
+        id: root.id,
+        role: root.role,
+      })),
+    };
+  } catch {
+    return null;
+  }
 }
 
 export function createCheckpointAnchorAssociation(

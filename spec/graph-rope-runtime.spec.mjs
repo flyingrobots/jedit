@@ -325,6 +325,50 @@ test('graph runtime validates materialization roots before invoking Echo', async
   assert.equal(requests.length, 0);
 });
 
+test('graph runtime snapshots materialization roots before validation and Echo invocation', async () => {
+  const { runtime } = await loadModules();
+  const requests = [];
+  const reads = { id: 0, role: 0 };
+  const materializationRoot = Object.defineProperties({}, {
+    id: {
+      get() {
+        reads.id += 1;
+        return 'cas:stable';
+      },
+    },
+    role: {
+      get() {
+        reads.role += 1;
+        return 'materialization';
+      },
+    },
+  });
+  const graph = runtime.createGraphRopeRuntime({
+    hash: createHashPort(),
+    causalAnchorAdmission: createTestEchoCausalAnchorAdmissionPort({ requests }),
+  });
+  const created = assertOk(graph.createBufferWorldline({
+    worldlineId: 'worldline:checkpoint-request-snapshot',
+    initialText: 'alpha',
+  }));
+  const checkpointed = assertOk(graph.createCheckpoint({
+    worldlineId: 'worldline:checkpoint-request-snapshot',
+    headId: created.head.headId,
+    reason: 'export',
+  }));
+
+  assertOk(graph.anchorCheckpoint({
+    checkpointId: checkpointed.checkpoint.checkpointId,
+    materializationRoots: [materializationRoot],
+  }));
+
+  assert.deepEqual(reads, { id: 1, role: 1 });
+  assert.deepEqual(requests[0].materializationRoots, [{
+    id: 'cas:stable',
+    role: 'materialization',
+  }]);
+});
+
 test('graph runtime turns Echo adapter failures into typed obstructions', async () => {
   const { runtime } = await loadModules();
   const graph = runtime.createGraphRopeRuntime({
@@ -386,6 +430,57 @@ test('graph runtime fails closed on malformed Echo evidence', async () => {
     ok: false,
     code: OBSTRUCTION_CAUSAL_ANCHOR_ADMISSION_FAILED,
   });
+});
+
+test('graph runtime snapshots opaque Echo evidence before admitting its association', async () => {
+  const { runtime } = await loadModules();
+  const reads = { anchorId: 0, anchorFactId: 0, receiptId: 0 };
+  const evidence = Object.defineProperties({}, {
+    anchorId: {
+      get() {
+        reads.anchorId += 1;
+        return 'test-only-anchor:stable';
+      },
+    },
+    anchorFactId: {
+      get() {
+        reads.anchorFactId += 1;
+        return 'test-only-anchor-fact:stable';
+      },
+    },
+    receiptId: {
+      get() {
+        reads.receiptId += 1;
+        return 'test-only-anchor-receipt:stable';
+      },
+    },
+  });
+  const graph = runtime.createGraphRopeRuntime({
+    hash: createHashPort(),
+    causalAnchorAdmission: createTestEchoCausalAnchorAdmissionPort({
+      admit() {
+        return { ok: true, evidence };
+      },
+    }),
+  });
+  const created = assertOk(graph.createBufferWorldline({
+    worldlineId: 'worldline:checkpoint-evidence-snapshot',
+    initialText: 'alpha',
+  }));
+  const checkpointed = assertOk(graph.createCheckpoint({
+    worldlineId: 'worldline:checkpoint-evidence-snapshot',
+    headId: created.head.headId,
+    reason: 'manual-save',
+  }));
+
+  const anchored = assertOk(graph.anchorCheckpoint({
+    checkpointId: checkpointed.checkpoint.checkpointId,
+  }));
+
+  assert.deepEqual(reads, { anchorId: 1, anchorFactId: 1, receiptId: 1 });
+  assert.equal(anchored.association.causalAnchorId, anchored.echoEvidence.anchorId);
+  assert.equal(anchored.association.causalAnchorFactId, anchored.echoEvidence.anchorFactId);
+  assert.equal(anchored.association.causalAnchorReceiptId, anchored.echoEvidence.receiptId);
 });
 
 test('graph runtime fails closed when the Echo adapter throws', async () => {

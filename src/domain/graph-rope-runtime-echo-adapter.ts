@@ -13,10 +13,10 @@ export function requestCheckpointAnchorAdmission(
 ): EchoCausalAnchorAdmissionEvidence | null {
   try {
     const result = port.admitCheckpointAnchor(cloneRequest(request));
-    if (result == null || !result.ok || !isUsableEchoEvidence(result.evidence)) {
+    if (result == null || !result.ok) {
       return null;
     }
-    return result.evidence;
+    return snapshotEvidence(result.evidence);
   } catch {
     return null;
   }
@@ -33,6 +33,20 @@ function cloneRequest(request: RopeCheckpointAnchorAdmissionRequest): RopeCheckp
       role: root.role,
     })),
   };
+}
+
+function snapshotEvidence(
+  evidence: EchoCausalAnchorAdmissionEvidence | null | undefined,
+): EchoCausalAnchorAdmissionEvidence | null {
+  if (evidence == null) {
+    return null;
+  }
+  const snapshot = {
+    anchorId: evidence.anchorId,
+    anchorFactId: evidence.anchorFactId,
+    receiptId: evidence.receiptId,
+  };
+  return isUsableEchoEvidence(snapshot) ? snapshot : null;
 }
 
 function isUsableEchoEvidence(
