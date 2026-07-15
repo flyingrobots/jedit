@@ -18,6 +18,7 @@ const CONTRACT_SPEC_PATH = path.join('spec', 'replace-range.contract.spec.mjs');
 const QUALITY_GATE_PATH = path.join('scripts', 'quality-gate.mjs');
 const TYPESCRIPT_CLI_PATH = path.join('node_modules', 'typescript', 'bin', 'tsc');
 const EXPECTED_RUNTIME_EXPORTS = [
+  'FIRST_ROOT_ID',
   'TextEditContractError',
   'createBufferRoot',
   'createTextFragment',
@@ -28,6 +29,9 @@ const EXPECTED_RUNTIME_EXPORTS = [
   'materializeRoot',
   'replaceRange',
 ];
+const BASE_ROOT_ID = 1;
+const FRAGMENT_ROOT_ID = 2;
+const NEXT_ROOT_ID = 3;
 
 let cachedContractPromise;
 
@@ -100,11 +104,11 @@ test('This cycle makes accessibility, localization, and agent inspectability exp
 
 test('ReplaceRange insertion satisfies the materialization law.', async () => {
   const contract = await loadContract();
-  const baseRoot = contract.createBufferRoot('hello world');
-  const fragment = contract.createTextFragment(' brave new');
+  const baseRoot = contract.createBufferRoot(BASE_ROOT_ID, 'hello world');
+  const fragment = contract.createTextFragment(FRAGMENT_ROOT_ID, ' brave new');
   const range = contract.createTextRange(5, 5);
 
-  const result = contract.replaceRange(baseRoot, range, fragment);
+  const result = contract.replaceRange(baseRoot, range, fragment, NEXT_ROOT_ID);
 
   assert.equal(contract.materializeRoot(result.nextRoot), 'hello brave new world');
   assert.equal(result.receipt?.baseRootId, baseRoot.id);
@@ -113,21 +117,26 @@ test('ReplaceRange insertion satisfies the materialization law.', async () => {
 
 test('ReplaceRange deletion is replacement by the empty fragment.', async () => {
   const contract = await loadContract();
-  const baseRoot = contract.createBufferRoot('hello brave new world');
+  const baseRoot = contract.createBufferRoot(BASE_ROOT_ID, 'hello brave new world');
   const range = contract.createTextRange(5, 15);
 
-  const result = contract.replaceRange(baseRoot, range, contract.emptyFragment());
+  const result = contract.replaceRange(
+    baseRoot,
+    range,
+    contract.emptyFragment(FRAGMENT_ROOT_ID),
+    NEXT_ROOT_ID,
+  );
 
   assert.equal(contract.materializeRoot(result.nextRoot), 'hello world');
 });
 
 test('ReplaceRange returns the same root and no receipt for a logical no-op.', async () => {
   const contract = await loadContract();
-  const baseRoot = contract.createBufferRoot('hello');
+  const baseRoot = contract.createBufferRoot(BASE_ROOT_ID, 'hello');
   const range = contract.createTextRange(0, 5);
-  const fragment = contract.createTextFragment('hello');
+  const fragment = contract.createTextFragment(FRAGMENT_ROOT_ID, 'hello');
 
-  const result = contract.replaceRange(baseRoot, range, fragment);
+  const result = contract.replaceRange(baseRoot, range, fragment, NEXT_ROOT_ID);
 
   assert.equal(result.nextRoot.id, baseRoot.id);
   assert.equal(result.receipt, undefined);

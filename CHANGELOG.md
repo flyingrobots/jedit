@@ -2,6 +2,42 @@
 
 ## Unreleased
 
+- Quarantined retained full-root text authority behind an allowlisted guard
+  witness: the only permitted `HotTextBufferState.roots` readers are the type
+  definition, the production-unsafe full-snapshot fixture, root-fact evidence
+  emission, and the transport schema. The witness flags `state.roots` access
+  directly and any roots binding in files that name the retained-root types,
+  independent of binding shape; it is a source-pattern tripwire, not a type
+  checker.
+- Added a dist/source parity witness so stale compiled artifacts for deleted
+  sources cannot mask missing imports in dist-driven specs, cycle proofs, or
+  release gates; the RED run caught and removed two real orphaned artifacts.
+- Named undo and redo in command provenance and settlement evidence: `u` and
+  `ctrl+r` now produce `history`-family command events (so `:why` and the
+  footer explain reversals), edit settlements carry additive
+  `provenanceKind` and `reversedReceiptId` fields referencing the reversed
+  edit's settlement receipt, and the WSC history listing exposes them to
+  agent-facing JSON surfaces. History events keep their `history:` event
+  identity and refresh their receipt summary at settlement, and Shift+U is
+  never classified as the undo key. Reversal correlation follows request
+  identity through the undo/redo stacks and resolves to admitted receipts in
+  the serialized operation sequencer, including edits still unsettled when a
+  history command is queued.
+  The sequencer's receipt index is an acceleration structure, not retained
+  evidence: after resolving a queued reversal, it prunes request receipts that
+  are no longer reachable from the editor's undo or redo history.
+
+- Added WF-0154, the E-Brake goalpost (issue #267), locking in four audit
+  remediations: undo/redo settlements named as reversals in provenance (the
+  mechanism already submits Echo replacement edits), a title-scene freeze
+  guard, chain-threaded root-id allocation replacing the process-global
+  counter, and an executable doc-path witness with an `ADVANCED_GUIDE.md`
+  rewrite. Corrected the stale BEARING claim that production undo/redo is
+  unsupported.
+- Added a generic projection review payload viewer so jedit can display bounded
+  provider-owned review payloads for Edict Core and Echo Target IR projection
+  lanes without interpreting, validating, lowering, executing, canonicalizing,
+  or assigning semantic meaning to those payloads.
 - Added a generic Graft projection-lane panel so jedit can render
   provider-neutral projection state, digest, metadata, and bounded summaries
   while preserving the current Edict Core and Echo Target IR display and

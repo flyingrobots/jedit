@@ -214,9 +214,9 @@ function textAuthorityWithIntermediateEditReceipt(
   result: WorkspaceTextAppliedResult,
 ) {
   if (requestId === authority.pendingClientSeq) {
-    return workspaceTextAuthorityWithAppliedJeditCommandReceipt(authority, requestId, result.receiptId);
+    return workspaceTextAuthorityWithAppliedJeditCommandReceipt(authority, requestId, result.receiptId, result.reversedReceiptId);
   }
-  const event = receivedJeditCommandEventForRequest(authority, requestId, result.receiptId);
+  const event = receivedJeditCommandEventForRequest(authority, requestId, result.receiptId, result.reversedReceiptId);
   return {
     ...authority,
     pendingReceiptId: result.receiptId,
@@ -235,7 +235,7 @@ function applyAppliedTextEditResult(
     return [model, []];
   }
   const withCache = workspaceTextAuthorityWithCache(
-    workspaceTextAuthorityWithAppliedJeditCommandReceipt(authority, msg.requestId, msg.result.receiptId),
+    workspaceTextAuthorityWithAppliedJeditCommandReceipt(authority, msg.requestId, msg.result.receiptId, msg.result.reversedReceiptId),
     msg.result.cache,
   );
   const withCurrentObservation = workspaceTextAuthorityWithCurrentJeditCommandObservation(withCache);

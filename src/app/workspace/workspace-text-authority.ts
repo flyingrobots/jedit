@@ -34,6 +34,8 @@ const INTENT_STATUS_OBSTRUCTED = 'obstructed';
 const INTENT_STATUS_SUPERSEDED = 'superseded';
 const INTENT_STATUS_ABANDONED = 'abandoned';
 const PENDING_COMMAND_KIND_VIM = 'vim';
+const PENDING_COMMAND_KIND_UNDO = 'undo';
+const PENDING_COMMAND_KIND_REDO = 'redo';
 
 export const WorkspaceTextAuthorityKinds = Object.freeze({
   None: AUTHORITY_NONE,
@@ -60,6 +62,8 @@ export const WorkspaceTextIntentStatuses = Object.freeze({
 
 export const WorkspaceTextPendingCommandKinds = Object.freeze({
   Vim: PENDING_COMMAND_KIND_VIM,
+  Undo: PENDING_COMMAND_KIND_UNDO,
+  Redo: PENDING_COMMAND_KIND_REDO,
 } as const);
 
 export type WorkspaceTextAuthorityKind =

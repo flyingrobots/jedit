@@ -12,7 +12,15 @@ import {
   updateInsertMode,
   updateNormalMode,
 } from './editor-session.js';
-import { createPlannedJeditCommandEvent } from './command-provenance.js';
+import {
+  editorWithTransitionRequest,
+  isHistoryPendingCommandKind,
+  isNormalModeHistoryKey,
+  pendingCommandKindForNormalModeKey,
+  plannedWorkspaceCommandEventForQueuedEdit,
+  reachableHistoryRequestIds,
+  reversedRequestIdForHistoryCommand,
+} from './workspace-history-commands.js';
 import { snapshotEditor } from './editor-editing-core.js';
 import { EditorModes, PendingNormals } from './editor/mode.js';
 import { EditorKeys } from './editor/key.js';
@@ -30,9 +38,9 @@ import {
   WorkspaceTextEditCommandKinds,
 } from './workspace-text-commands.js';
 import {
-  WorkspaceTextPendingCommandKinds,
   WorkspaceTextAuthorityKinds,
   workspaceTextAuthorityWithPendingEdit,
+  type WorkspaceTextPendingCommandKind,
 } from './workspace-text-authority.js';
 import {
   planWorkspaceTextDeleteLine,
@@ -139,6 +147,7 @@ function productionNormalModeLocalEdit(
   const plan = normalModeHistoryPlan(msg, editor, moved)
     ?? normalModeLinePlan(msg, editor, moved)
     ?? normalModeTransitionPlan(editor, moved);
+  const pendingCommandKind = pendingCommandKindForNormalModeKey(msg);
   return plan.kind === WorkspaceTextEditPlanKinds.Unsupported
     ? [model, []]
     : queueProductionTextPlan(
@@ -146,7 +155,10 @@ function productionNormalModeLocalEdit(
       productionTextSession,
       textOperationSequencer,
       plan,
-      WorkspaceTextPendingCommandKinds.Vim,
+      {
+        pendingCommandKind,
+        reversedRequestId: reversedRequestIdForHistoryCommand(editor, pendingCommandKind),
+      },
     );
 }
 
@@ -368,7 +380,7 @@ function queueProductionTextPlan(
   productionTextSession: ProductionTextSession,
   textOperationSequencer: WorkspaceTextOperationSequencer,
   plan: WorkspaceTextInsertPlan | WorkspaceTextReplacePlan | WorkspaceTextDeletePlan,
-  pendingCommandKind?: typeof WorkspaceTextPendingCommandKinds.Vim,
+  provenance?: QueuedTextProvenance,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (plan.kind === WorkspaceTextEditPlanKinds.Insert) {
     return queueProductionTextEdit(model, productionTextSession, textOperationSequencer, {
@@ -376,7 +388,7 @@ function queueProductionTextPlan(
       startByte: plan.startByte,
       insertText: plan.insertText,
       cursorAfter: plan.cursorAfter,
-    }, pendingCommandKind);
+    }, provenance);
   }
   return plan.kind === WorkspaceTextEditPlanKinds.Replace
     ? queueProductionTextEdit(model, productionTextSession, textOperationSequencer, {
@@ -385,18 +397,13 @@ function queueProductionTextPlan(
       endByte: plan.endByte,
       insertText: plan.insertText,
       cursorAfter: plan.cursorAfter,
-    }, pendingCommandKind)
+    }, provenance)
     : queueProductionTextEdit(model, productionTextSession, textOperationSequencer, {
       kind: WorkspaceTextEditCommandKinds.Delete,
       startByte: plan.startByte,
       endByte: plan.endByte,
       cursorAfter: plan.cursorAfter,
-    }, pendingCommandKind);
-}
-
-function isNormalModeHistoryKey(msg: KeyMsg): boolean {
-  return (msg.key === EditorKeys.U && !msg.ctrl && !msg.alt)
-    || (msg.key === EditorKeys.R && msg.ctrl && !msg.alt && !msg.shift);
+    }, provenance);
 }
 
 function queueProductionTextEdit(
@@ -404,13 +411,16 @@ function queueProductionTextEdit(
   productionTextSession: ProductionTextSession,
   textOperationSequencer: WorkspaceTextOperationSequencer,
   edit: ProductionTextEditRequest,
-  pendingCommandKind?: typeof WorkspaceTextPendingCommandKinds.Vim,
+  provenance?: QueuedTextProvenance,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (model.textAuthority.kind !== WorkspaceTextAuthorityKinds.Opened || model.editor == null) {
     return [model, []];
   }
   const requestId = model.textRequestId + 1;
-  const viewport = editorViewport(model);
+  const editor = editorWithTransitionRequest(model.editor, provenance?.pendingCommandKind, requestId);
+  const queuedModel = { ...model, editor };
+  const viewport = editorViewport(queuedModel);
+  const textAuthority = textAuthorityForQueuedEdit(model.textAuthority, editor, requestId, provenance);
   const base = {
     requestId,
     filePath: model.textAuthority.filePath,
@@ -418,15 +428,22 @@ function queueProductionTextEdit(
     productionTextSession,
     textOperationSequencer,
     atMs: model.time,
-    aperture: workspaceTextApertureFromEditor(model.editor, viewport.height),
+    aperture: workspaceTextApertureFromEditor(editor, viewport.height),
+    reachableHistoryRequestIds: reachableHistoryRequestIds(editor),
   };
   return [{
-    ...model,
+    ...queuedModel,
     textRequestId: requestId,
-    textAuthority: textAuthorityForQueuedEdit(model.textAuthority, model.editor, requestId, pendingCommandKind),
+    textAuthority,
   }, [
     createWorkspaceTextEditCmd({
       ...base,
+      ...(isHistoryPendingCommandKind(provenance?.pendingCommandKind)
+        ? {
+          provenanceKind: provenance.pendingCommandKind,
+          reversedRequestId: provenance.reversedRequestId,
+        }
+        : {}),
       ...edit,
     }),
   ]];
@@ -436,34 +453,23 @@ function textAuthorityForQueuedEdit(
   authority: Extract<WorkspaceModel['textAuthority'], { kind: typeof WorkspaceTextAuthorityKinds.Opened }>,
   editor: NonNullable<WorkspaceModel['editor']>,
   requestId: number,
-  pendingCommandKind?: typeof WorkspaceTextPendingCommandKinds.Vim,
+  provenance?: QueuedTextProvenance,
 ) {
+  const pendingCommandKind = provenance?.pendingCommandKind;
   const pendingAuthority = workspaceTextAuthorityWithPendingEdit(authority, requestId, pendingCommandKind);
-  const pendingCommandEvent = plannedCommandEventForQueuedEdit(
+  const pendingCommandEvent = plannedWorkspaceCommandEventForQueuedEdit({
     editor,
-    pendingAuthority,
-    requestId,
     pendingCommandKind,
-  );
+    requestId,
+    reversedRequestId: provenance?.reversedRequestId,
+    textAuthority: pendingAuthority,
+  });
   return workspaceTextAuthorityWithPendingEdit(authority, requestId, pendingCommandKind, pendingCommandEvent);
 }
 
-function plannedCommandEventForQueuedEdit(
-  editor: NonNullable<WorkspaceModel['editor']>,
-  textAuthority: ReturnType<typeof workspaceTextAuthorityWithPendingEdit>,
-  requestId: number,
-  pendingCommandKind?: typeof WorkspaceTextPendingCommandKinds.Vim,
-) {
-  if (pendingCommandKind !== WorkspaceTextPendingCommandKinds.Vim || editor.lastVimEdit == null) {
-    return undefined;
-  }
-  const result = createPlannedJeditCommandEvent({
-    editor,
-    requestId,
-    repeat: editor.lastVimEdit,
-    textAuthority,
-  });
-  return 'event' in result ? result : undefined;
+interface QueuedTextProvenance {
+  readonly pendingCommandKind?: WorkspaceTextPendingCommandKind;
+  readonly reversedRequestId?: number;
 }
 
 type ProductionTextEditRequest =

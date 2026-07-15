@@ -19,14 +19,17 @@ import {
   type WorkspaceTextOpenResult,
   type WorkspaceTextReadCommandResult,
 } from './workspace-text-results.js';
-import type { WorkspaceTextHostBasisKind } from './workspace-text-authority.js';
+import type {
+  WorkspaceTextHostBasisKind,
+  WorkspaceTextPendingCommandKind,
+} from './workspace-text-authority.js';
 import { materializationPreflightIssue } from './workspace-text-materialization-preflight.js';
 import {
   WorkspaceTextOpenBasisResultKinds,
   workspaceTextOpenBasis,
   type WorkspaceTextOpenBasis,
 } from './workspace-text-open-basis.js';
-import { createWorkspaceTextEditSettlementEnvelope } from './workspace-text-wsc-settlement.js';
+import { workspaceTextEditResultWithSettlement } from './workspace-text-wsc-settlement.js';
 import {
   readingCache,
   type WorkspaceTextObservedReading,
@@ -77,6 +80,10 @@ export interface WorkspaceTextCommandBase {
   readonly atMs: number;
   readonly aperture: ProductionTextViewportAperture;
   readonly cursorAfter?: TextPosition;
+  readonly provenanceKind?: WorkspaceTextPendingCommandKind;
+  readonly reversedRequestId?: number;
+  readonly reversedReceiptId?: string;
+  readonly reachableHistoryRequestIds?: readonly number[];
 }
 
 export interface WorkspaceTextInsertCommandRequest extends WorkspaceTextCommandBase {
@@ -168,11 +175,12 @@ export function createWorkspaceTextEditCmd(
   request: WorkspaceTextEditCommandRequest,
 ): Cmd<WorkspaceMsg> {
   return async () => {
-    const result = await request.textOperationSequencer.sequenceEdit(
+    const sequenced = await request.textOperationSequencer.sequenceEdit(
       request.productionTextSession,
       workspaceTextOperationTarget(request),
       () => editWorkspaceText(request),
     );
+    const result = workspaceTextEditResultWithSettlement(request, sequenced);
     return {
       type: WorkspaceMessageTypes.TextEditResult,
       requestId: request.requestId,
@@ -216,11 +224,16 @@ export function createWorkspaceTextExportCmd(
 }
 
 function workspaceTextOperationTarget(
-  request: Pick<WorkspaceTextCommandBase, 'filePath' | 'bufferId'>,
+  request: WorkspaceTextOperationTarget,
 ): WorkspaceTextOperationTarget {
   return {
     filePath: request.filePath,
     bufferId: request.bufferId,
+    requestId: request.requestId,
+    ...(request.reversedRequestId == null ? {} : { reversedRequestId: request.reversedRequestId }),
+    ...(request.reachableHistoryRequestIds == null
+      ? {}
+      : { reachableHistoryRequestIds: request.reachableHistoryRequestIds }),
   };
 }
 
@@ -317,7 +330,6 @@ async function editWorkspaceText(
       receiptId: edited.result.receiptId,
       cache,
       cursorAfter: request.cursorAfter,
-      wscSettlementEnvelope: createWorkspaceTextEditSettlementEnvelope(request, edited.result.receiptId, cache),
     };
   } catch (cause) {
     return obstructedEdit(

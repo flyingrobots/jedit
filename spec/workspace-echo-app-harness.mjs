@@ -148,15 +148,24 @@ function recordingProductionTextSession(calls, options) {
     },
     insertText: async (request) => {
       calls.insert.push(request);
-      return options.editObstruction ?? { kind: 'applied', result: { receiptId: 'receipt:insert' } };
+      return options.editObstruction ?? {
+        kind: 'applied',
+        result: { receiptId: editReceiptId(options, 'insert', calls.insert.length) },
+      };
     },
     replaceRange: async (request) => {
       calls.replace.push(request);
-      return options.editObstruction ?? { kind: 'applied', result: { receiptId: 'receipt:replace' } };
+      return options.editObstruction ?? {
+        kind: 'applied',
+        result: { receiptId: editReceiptId(options, 'replace', calls.replace.length) },
+      };
     },
     deleteRange: async (request) => {
       calls.delete.push(request);
-      return options.editObstruction ?? { kind: 'applied', result: { receiptId: 'receipt:delete' } };
+      return options.editObstruction ?? {
+        kind: 'applied',
+        result: { receiptId: editReceiptId(options, 'delete', calls.delete.length) },
+      };
     },
     multiRangeEdit: async () => options.multiRangeObstruction ?? productionTextObstruction('multi-range unsupported'),
     checkpointBuffer: async (request) => {
@@ -200,6 +209,10 @@ function recordingProductionTextSession(calls, options) {
       };
     },
   };
+}
+
+function editReceiptId(options, kind, callCount) {
+  return options.editReceiptIds?.[kind]?.[callCount - 1] ?? `receipt:${kind}`;
 }
 
 export function productionTextObstruction(message) {

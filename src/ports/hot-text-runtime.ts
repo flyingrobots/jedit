@@ -11,6 +11,7 @@ export interface HotTextBufferState {
   readonly editGroups: readonly EditGroup[];
   readonly openEditGroup?: OpenEditGroup;
   readonly checkpoints: readonly SaveCheckpoint[];
+  readonly nextRootId: number;
 }
 
 export interface AdmitReplaceRangeTickResult {

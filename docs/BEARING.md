@@ -20,8 +20,12 @@ history, merged pull requests, release notes, and design docs.
   is the full local visible projection cache used for rendering, cursoring,
   and transitional edit planning. It must not be reconstructed from bounded
   readings. It is not saved or recovered as authority.
-- Production undo/redo remains intentionally unsupported until modeled as
-  explicit causal input.
+- Production undo/redo works: `u`/`ctrl+r` submit Echo replacement edits
+  through the production text session (landed in `f7a96fce`; witnessed by
+  `spec/workspace-text-boundaries.spec.mjs`). Undo settlements are not yet
+  named as reversals in provenance; WF-0154 Slice 1 owns that naming.
+  First-class causal counter-history remains future work under the
+  causal-undo family.
 - WSC history listing, current export, and historical export exist as
   agent-facing JSON surfaces. Replay closeout exists as app/spec proof, not yet
   as a standalone agent CLI.
@@ -33,9 +37,10 @@ history, merged pull requests, release notes, and design docs.
 - Graft-backed source highlighting and projection display consume Graft 0.11.1
   projections. Plain-text prose spans remain available when
   `colorful >= 0.2.1` is on `PATH`, and `.edict` buffers can show upstream
-  Core and Echo Target IR projection lanes through a generic projection panel
-  without jedit executing Echo, debugging Edict, hosting an Edict REPL, or
-  admitting Jim artifacts.
+  Core and Echo Target IR projection lanes through a generic projection panel.
+  Those lanes can expose bounded provider-owned review payloads for display
+  without jedit executing Echo, debugging Edict, hosting an Edict REPL,
+  interpreting payload semantics, or admitting Jim artifacts.
 - Graph-backed rope runtime authority is now an active hard gate. Do not begin
   new UI causal-honesty work until
   [`HT-0149 - Graph-Backed Rope Runtime Discovery`](design/0149-graph-backed-rope-runtime-discovery.md)
@@ -117,6 +122,15 @@ Immediate order:
 1. Land
    [`HT-0149 - Graph-Backed Rope Runtime Discovery`](design/0149-graph-backed-rope-runtime-discovery.md)
    as the active runtime authority gate before more causal UI posture work.
+   [`WF-0154 - E-Brake: Observed Absurdity Fixes`](design/0154-e-brake-absurdity-fixes.md)
+   (issue #267) has landed: undo/redo settlements are provenance-named,
+   the title scene is frozen behind a `title-unfreeze` label, root ids are
+   chain-threaded and replay-stable, and the top-level guides pass an
+   executable doc-path witness. Queued next-cycle designs:
+   [`WF-0155 - Causal Undo Family`](design/0155-causal-undo-family.md)
+   (issue #270) and
+   [`WF-0156 - Real Echo WASM In-Tree`](design/0156-echo-wasm-in-tree.md)
+   (issue #271), the latter unblocked by the root-id slice.
 2. Lock
    [`WF-0108A - :why Observation Evidence Roadmap`](design/0108a-why-observation-evidence-roadmap.md)
    and the cross-repo issue topology.

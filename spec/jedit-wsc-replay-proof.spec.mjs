@@ -41,6 +41,48 @@ test('WSC replay proof reports the divergent semantic evidence coordinate', asyn
   assert.equal(proof.mismatchCoordinate, 'history[0].readingTextDigest');
 });
 
+test('WSC replay proof treats reversal naming as semantic identity', async () => {
+  const [history, replay, ports] = await replayModules();
+  const first = history.listJeditWscHistory(fakeStore({
+    [BASIS_A]: {
+      ...settlementPayload(),
+      provenanceKind: 'undo',
+      reversedReceiptId: 'receipt:reversed',
+    },
+  }));
+  const second = history.listJeditWscHistory(fakeStore({
+    [BASIS_A]: settlementPayload(),
+  }));
+
+  const proof = replay.proveJeditWscReplay(first, second);
+
+  assert.equal(proof.status, ports.JEDIT_WSC_REPLAY_MISMATCH);
+  assert.equal(proof.mismatchCoordinate, 'history[0].provenanceKind');
+});
+
+test('WSC replay proof detects reversed receipt identity independently', async () => {
+  const [history, replay, ports] = await replayModules();
+  const first = history.listJeditWscHistory(fakeStore({
+    [BASIS_A]: {
+      ...settlementPayload(),
+      provenanceKind: 'undo',
+      reversedReceiptId: 'receipt:first-reversed',
+    },
+  }));
+  const second = history.listJeditWscHistory(fakeStore({
+    [BASIS_A]: {
+      ...settlementPayload(),
+      provenanceKind: 'undo',
+      reversedReceiptId: 'receipt:second-reversed',
+    },
+  }));
+
+  const proof = replay.proveJeditWscReplay(first, second);
+
+  assert.equal(proof.status, ports.JEDIT_WSC_REPLAY_MISMATCH);
+  assert.equal(proof.mismatchCoordinate, 'history[0].reversedReceiptId');
+});
+
 test('WSC replay closeout covers retained DIND coordinates and non-applied outcomes', async () => {
   const [history, replay, ports] = await replayModules();
   const listed = history.listJeditWscHistory(fakeStore({

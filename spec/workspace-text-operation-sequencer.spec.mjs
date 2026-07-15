@@ -124,6 +124,41 @@ test('workspace text operation sequencer scopes obstructions to the obstructed b
   assert.equal(betaExportResult.readingId, 'reading:beta');
 });
 
+test('workspace text operation sequencer releases receipts discarded from reversible history', async () => {
+  const [sequencerModule, resultsModule] = await Promise.all([
+    importDist('app', 'workspace', 'workspace-text-operation-sequencer.js'),
+    importDist('app', 'workspace', 'workspace-text-results.js'),
+  ]);
+  const sequencer = sequencerModule.createWorkspaceTextOperationSequencer();
+  const session = {};
+  const filePath = '/repo/notes.md';
+  const bufferId = 'buffer:notes';
+
+  await sequencer.sequenceEdit(
+    session,
+    { filePath, bufferId, requestId: 1, reachableHistoryRequestIds: [1] },
+    async () => appliedResult(resultsModule, filePath, bufferId, 'receipt:first'),
+  );
+  await sequencer.sequenceEdit(
+    session,
+    { filePath, bufferId, requestId: 2, reachableHistoryRequestIds: [2] },
+    async () => appliedResult(resultsModule, filePath, bufferId, 'receipt:second'),
+  );
+  const staleReversal = await sequencer.sequenceEdit(
+    session,
+    {
+      filePath,
+      bufferId,
+      requestId: 3,
+      reversedRequestId: 1,
+      reachableHistoryRequestIds: [3],
+    },
+    async () => appliedResult(resultsModule, filePath, bufferId, 'receipt:third'),
+  );
+
+  assert.equal(staleReversal.reversedReceiptId, undefined);
+});
+
 function appliedResult(resultsModule, filePath, bufferId, receiptId) {
   return {
     kind: resultsModule.WorkspaceTextResultKinds.Applied,

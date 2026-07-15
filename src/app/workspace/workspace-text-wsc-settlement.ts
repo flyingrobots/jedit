@@ -2,6 +2,10 @@ import { createHash } from 'node:crypto';
 import type { JeditWscWorkspaceEnvelope } from '../../ports/jedit-wsc-workspace-store.js';
 import type { WorkspaceTextEditCommandRequest } from './workspace-text-commands.js';
 import type { WorkspaceTextReadingCache } from './workspace-text-reading-cache.js';
+import {
+  WorkspaceTextResultKinds,
+  type WorkspaceTextEditResult,
+} from './workspace-text-results.js';
 
 export const WSC_EDIT_SETTLEMENT_SCHEMA_VERSION = 'jedit.workspace_text_edit_settlement.v1';
 export const UTF8_ENCODING = 'utf8';
@@ -21,6 +25,26 @@ export function createWorkspaceTextEditSettlementEnvelope(
   };
 }
 
+export function workspaceTextEditResultWithSettlement(
+  request: WorkspaceTextEditCommandRequest,
+  result: WorkspaceTextEditResult,
+): WorkspaceTextEditResult {
+  if (result.kind !== WorkspaceTextResultKinds.Applied) {
+    return result;
+  }
+  const settlementRequest = result.reversedReceiptId == null
+    ? request
+    : { ...request, reversedReceiptId: result.reversedReceiptId };
+  return {
+    ...result,
+    wscSettlementEnvelope: createWorkspaceTextEditSettlementEnvelope(
+      settlementRequest,
+      result.receiptId,
+      result.cache,
+    ),
+  };
+}
+
 function settlementPayload(
   request: WorkspaceTextEditCommandRequest,
   receiptId: string,
@@ -31,6 +55,8 @@ function settlementPayload(
     filePath: request.filePath,
     bufferId: request.bufferId,
     commandKind: request.kind,
+    ...(request.provenanceKind == null ? {} : { provenanceKind: request.provenanceKind }),
+    ...(request.reversedReceiptId == null ? {} : { reversedReceiptId: request.reversedReceiptId }),
     range: editRangePayload(request),
     submittedAtMs: request.atMs,
     receiptId,

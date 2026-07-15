@@ -3,6 +3,7 @@ import type { GraftInfo } from '../../ports/graft-session.js';
 import type { DrawerKind } from '../../ui/drawer-layout.js';
 import type { WorkspaceModel } from './model.js';
 import { clamp01, clampIndex } from './viewport.js';
+import { graftProjectionPanelLanes } from '../../ports/graft-projection-lanes.js';
 
 class UnsupportedDrawerKindError extends Error {
   constructor(kind: never) {
@@ -40,5 +41,15 @@ export function applyGraftInfo(model: WorkspaceModel, info: GraftInfo): Workspac
     graftInfo: info,
     graftLoading: false,
     graftSelectedIndex: clampIndex(model.graftSelectedIndex, info.outlineItems.length),
+    expandedProjectionLaneIndex: refreshedProjectionLaneIndex(info, model.expandedProjectionLaneIndex),
   };
+}
+
+function refreshedProjectionLaneIndex(info: GraftInfo, currentIndex: number | undefined): number | undefined {
+  if (currentIndex == null) {
+    return undefined;
+  }
+  return graftProjectionPanelLanes(info)[currentIndex]?.reviewPayload == null
+    ? undefined
+    : currentIndex;
 }
