@@ -63,13 +63,16 @@ export function createCheckpointAnchorAdmissionRequest(
   checkpoint: RopeCheckpointFact,
   materializationRoots: readonly RopeCheckpointMaterializationRoot[] = [],
 ): RopeCheckpointAnchorAdmissionRequest | null {
+  if (!Array.isArray(materializationRoots)) {
+    return null;
+  }
   try {
     return {
       checkpointId: checkpoint.checkpointId,
       worldlineId: checkpoint.worldlineId,
       headId: checkpoint.headId,
       reason: checkpoint.reason,
-      materializationRoots: materializationRoots.map((root) => ({
+      materializationRoots: Array.from(materializationRoots, (root) => ({
         id: root.id,
         role: root.role,
       })),

@@ -306,6 +306,7 @@ test('graph runtime validates materialization roots before invoking Echo', async
   const invalidRootSets = [
     null,
     {},
+    { map() { return null; } },
     [null],
     [{ id: '', role: 'materialization' }],
     [{ id: 'cas:authority', role: 'authority' }],
