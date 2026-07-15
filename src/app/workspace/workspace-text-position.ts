@@ -1,7 +1,23 @@
+import {
+  byteOffsetFromLineColumn,
+  makeLineColumn,
+  makeUtf16Offset,
+  makeZeroBasedLineIndex,
+} from '../../domain/graph-rope-coordinates.js';
+import type {
+  ByteOffset,
+  CoordinateResult,
+  LineColumn,
+} from '../../domain/graph-rope-types.js';
+import { joinLines } from '../editor-lines.js';
+
 const FIRST_LINE = 0;
 const FIRST_COLUMN = 0;
 const LINE_FEED = '\n';
-const TEXT_ENCODER = new TextEncoder();
+const HIGH_SURROGATE_START = 0xd800;
+const HIGH_SURROGATE_END = 0xdbff;
+const LOW_SURROGATE_START = 0xdc00;
+const LOW_SURROGATE_END = 0xdfff;
 
 export interface TextPosition {
   readonly row: number;
@@ -35,7 +51,7 @@ export function previousTextPosition(
   if (column > FIRST_COLUMN) {
     return {
       row,
-      column: column - 1,
+      column: previousUtf16Boundary(line, column),
     };
   }
   if (row === FIRST_LINE) {
@@ -53,53 +69,86 @@ export function previousTextPosition(
 export function byteOffsetForTextPosition(
   lines: readonly string[],
   position: TextPosition,
-): number {
+): ByteOffset {
+  const lineColumn = lineColumnForTextPosition(lines, position);
+  return requiredCoordinate(
+    byteOffsetFromLineColumn(joinLines(lines), lineColumn),
+    'UI line-column does not identify a UTF-8 boundary',
+  );
+}
+
+export function lineColumnForTextPosition(
+  lines: readonly string[],
+  position: TextPosition,
+): LineColumn {
   const row = clampRow(lines, position.row);
-  const column = Math.max(FIRST_COLUMN, position.column);
-  let offset = 0;
-  for (let index = FIRST_LINE; index < row; index += 1) {
-    offset += utf8ByteLength(`${lines[index] ?? ''}${LINE_FEED}`);
-  }
-  return offset + utf8ByteLength((lines[row] ?? '').slice(FIRST_COLUMN, column));
+  const line = lines[row] ?? '';
+  const column = Math.max(FIRST_COLUMN, Math.min(position.column, line.length));
+  return makeLineColumn(
+    requiredCoordinate(makeZeroBasedLineIndex(row), 'UI row is not a valid line index'),
+    requiredCoordinate(makeUtf16Offset(column), 'UI column is not a valid UTF-16 offset'),
+  );
 }
 
 export function nextByteOffset(
   lines: readonly string[],
   position: TextPosition,
-): number {
+): ByteOffset {
   const row = clampRow(lines, position.row);
   const line = lines[row] ?? '';
-  const column = Math.min(position.column + 1, line.length);
+  const column = nextUtf16Boundary(line, position.column);
   return byteOffsetForTextPosition(lines, { row, column });
 }
 
 export function previousByteOffset(
   lines: readonly string[],
   position: TextPosition,
-): number {
-  const row = clampRow(lines, position.row);
-  if (position.column > FIRST_COLUMN) {
-    return byteOffsetForTextPosition(lines, {
-      row,
-      column: position.column - 1,
-    });
-  }
-  if (row === FIRST_LINE) {
-    return byteOffsetForTextPosition(lines, {
-      row,
-      column: FIRST_COLUMN,
-    });
-  }
-  return byteOffsetForTextPosition(lines, {
-    row: row - 1,
-    column: (lines[row - 1] ?? '').length,
-  });
+): ByteOffset {
+  return byteOffsetForTextPosition(lines, previousTextPosition(lines, position));
 }
 
 function clampRow(lines: readonly string[], row: number): number {
   return Math.max(FIRST_LINE, Math.min(row, Math.max(FIRST_LINE, lines.length - 1)));
 }
 
-function utf8ByteLength(value: string): number {
-  return TEXT_ENCODER.encode(value).length;
+function nextUtf16Boundary(line: string, column: number): number {
+  const clamped = Math.max(FIRST_COLUMN, Math.min(column, line.length));
+  if (clamped >= line.length) {
+    return line.length;
+  }
+  return isHighSurrogate(line.charCodeAt(clamped)) && isLowSurrogate(line.charCodeAt(clamped + 1))
+    ? clamped + 2
+    : clamped + 1;
+}
+
+function previousUtf16Boundary(line: string, column: number): number {
+  const clamped = Math.max(FIRST_COLUMN, Math.min(column, line.length));
+  if (clamped <= FIRST_COLUMN) {
+    return FIRST_COLUMN;
+  }
+  return isLowSurrogate(line.charCodeAt(clamped - 1)) && isHighSurrogate(line.charCodeAt(clamped - 2))
+    ? clamped - 2
+    : clamped - 1;
+}
+
+function isHighSurrogate(value: number): boolean {
+  return value >= HIGH_SURROGATE_START && value <= HIGH_SURROGATE_END;
+}
+
+function isLowSurrogate(value: number): boolean {
+  return value >= LOW_SURROGATE_START && value <= LOW_SURROGATE_END;
+}
+
+function requiredCoordinate<TValue>(result: CoordinateResult<TValue>, message: string): TValue {
+  if (!result.ok) {
+    throw new WorkspaceTextCoordinateError(message);
+  }
+  return result.value;
+}
+
+export class WorkspaceTextCoordinateError extends Error {
+  public constructor(message: string) {
+    super(message);
+    this.name = 'WorkspaceTextCoordinateError';
+  }
 }

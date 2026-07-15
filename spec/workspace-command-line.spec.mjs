@@ -11,6 +11,10 @@ import {
   surfaceText,
 } from "./workspace-helpers.mjs";
 
+function byteOffset(value) {
+  return { kind: "utf8-byte-offset", value };
+}
+
 const HOST_FINGERPRINT_A = Object.freeze({
   algorithm: "sha256",
   digest: "host-a",
@@ -1326,7 +1330,7 @@ test("enter dispatches why through retained range history when a cursor range is
   assert.equal(commands.length, 1);
   assert.deepEqual(explainCalls, [{
     bufferId: "text-buffer:0",
-    range: { startByte: 6, endByte: 9 },
+    range: { startByte: byteOffset(6), endByte: byteOffset(9) },
     atMs: 90,
   }]);
   assert.equal(message.type, "why-range-result");

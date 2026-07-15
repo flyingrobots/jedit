@@ -13,6 +13,10 @@ import {
   surfaceText,
 } from "./workspace-helpers.mjs";
 
+function byteOffset(value) {
+  return { kind: "utf8-byte-offset", value };
+}
+
 const HOST_FINGERPRINT_A = Object.freeze({
   algorithm: "sha256",
   digest: "host-a",
@@ -454,7 +458,7 @@ test("insert and delete keys submit production text edits with optimistic local 
     "insert",
     {
       bufferId: "buffer:notes",
-      startByte: 1,
+      startByte: byteOffset(1),
       insertText: "X",
       atMs: 12,
     },
@@ -490,8 +494,8 @@ test("insert and delete keys submit production text edits with optimistic local 
     "delete",
     {
       bufferId: "buffer:notes",
-      startByte: 1,
-      endByte: 2,
+      startByte: byteOffset(1),
+      endByte: byteOffset(2),
       atMs: 12,
     },
   ]);
@@ -522,8 +526,8 @@ test("insert and delete keys submit production text edits with optimistic local 
     "delete",
     {
       bufferId: "buffer:notes",
-      startByte: 0,
-      endByte: 1,
+      startByte: byteOffset(0),
+      endByte: byteOffset(1),
       atMs: 12,
     },
   ]);
@@ -589,8 +593,8 @@ test("normal mode dd submits a production line delete edit", async () => {
   assert.deepEqual(deletes, [
     {
       bufferId: "buffer:notes",
-      startByte: 4,
-      endByte: 8,
+      startByte: byteOffset(4),
+      endByte: byteOffset(8),
       atMs: 12,
     },
   ]);
@@ -657,8 +661,8 @@ test("normal mode cw submits a production change edit and enters insert mode", a
   assert.deepEqual(replacements, [
     {
       bufferId: "buffer:notes",
-      startByte: 0,
-      endByte: 6,
+      startByte: byteOffset(0),
+      endByte: byteOffset(6),
       insertText: "",
       atMs: 12,
     },
@@ -1205,7 +1209,7 @@ test("edit planning after bounded read uses the full local projection", async ()
   );
   await commands[0]();
 
-  assert.equal(inserts[0].startByte, byteOffsetAtLine(localLines, 30));
+  assert.deepEqual(inserts[0].startByte, byteOffset(byteOffsetAtLine(localLines, 30)));
   assert.equal(inserts[0].insertText, "Z");
 });
 

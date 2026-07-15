@@ -1,4 +1,9 @@
 import type { RuntimeIssue } from '@flyingrobots/bijou-tui';
+import {
+  byteOffsetFromUtf16Offset,
+  makeUtf16Offset,
+} from '../../domain/graph-rope-coordinates.js';
+import type { ByteOffset, CoordinateResult } from '../../domain/graph-rope-types.js';
 import type {
   ProductionTextSession,
   ProductionTextViewportAperture,
@@ -144,7 +149,7 @@ async function completeWitness(
 ): Promise<ProductionTextSessionWitnessReport> {
   const edited = await request.session.insertText({
     bufferId,
-    startByte: request.initialText.length,
+    startByte: byteOffsetAtEnd(request.initialText),
     insertText: request.insertText,
     atMs: request.atMs,
   });
@@ -168,6 +173,25 @@ async function completeWitness(
     return obstructed(WITNESS_STAGE_CHECKPOINT, checkpointed.obstruction.issue);
   }
   return appliedWitnessReport(bufferId, edited.result.receiptId, checkpointed.result.checkpointId, observed.observed.evidence.readingId, exported.text);
+}
+
+function byteOffsetAtEnd(text: string): ByteOffset {
+  const utf16Offset = requiredCoordinate(makeUtf16Offset(text.length));
+  return requiredCoordinate(byteOffsetFromUtf16Offset(text, utf16Offset));
+}
+
+function requiredCoordinate<TValue>(result: CoordinateResult<TValue>): TValue {
+  if (!result.ok) {
+    throw new ProductionTextWitnessCoordinateError(result.code);
+  }
+  return result.value;
+}
+
+class ProductionTextWitnessCoordinateError extends Error {
+  public constructor(code: string) {
+    super(`Invalid production text witness coordinate: ${code}.`);
+    this.name = 'ProductionTextWitnessCoordinateError';
+  }
 }
 
 function appliedWitnessReport(

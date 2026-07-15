@@ -475,21 +475,21 @@ interface QueuedTextProvenance {
 type ProductionTextEditRequest =
   | {
     readonly kind: typeof WorkspaceTextEditCommandKinds.Insert;
-    readonly startByte: number;
+    readonly startByte: WorkspaceTextInsertPlan['startByte'];
     readonly insertText: string;
     readonly cursorAfter: WorkspaceTextInsertPlan['cursorAfter'];
   }
   | {
     readonly kind: typeof WorkspaceTextEditCommandKinds.Replace;
-    readonly startByte: number;
-    readonly endByte: number;
+    readonly startByte: WorkspaceTextReplacePlan['startByte'];
+    readonly endByte: WorkspaceTextReplacePlan['endByte'];
     readonly insertText: string;
     readonly cursorAfter: WorkspaceTextReplacePlan['cursorAfter'];
   }
   | {
     readonly kind: typeof WorkspaceTextEditCommandKinds.Delete;
-    readonly startByte: number;
-    readonly endByte: number;
+    readonly startByte: WorkspaceTextDeletePlan['startByte'];
+    readonly endByte: WorkspaceTextDeletePlan['endByte'];
     readonly cursorAfter: WorkspaceTextDeletePlan['cursorAfter'];
   };
 

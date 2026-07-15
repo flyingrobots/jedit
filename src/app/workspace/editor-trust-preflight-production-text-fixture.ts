@@ -178,7 +178,10 @@ function exportSnapshotProbe(
 function explainRangeProbe(): ProductionTextSession['explainRange'] {
   return async (request) => ({
     kind: ProductionTextSessionOutcomeKinds.RangeExplained,
-    report: preflightWhyRangeReport(request.range),
+    report: preflightWhyRangeReport({
+      startByte: request.range.startByte.value,
+      endByte: request.range.endByte.value,
+    }),
   });
 }
 

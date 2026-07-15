@@ -17,6 +17,14 @@ const VIEWPORT_APERTURE = Object.freeze({
 
 let modulePromise;
 
+function byteOffset(value) {
+  return { kind: 'utf8-byte-offset', value };
+}
+
+function byteRange(startByte, endByte) {
+  return { startByte: byteOffset(startByte), endByte: byteOffset(endByte) };
+}
+
 test('production text session opens buffers through TextBufferSessionPort', async () => {
   const module = await loadModule();
   const calls = [];
@@ -58,21 +66,21 @@ test('production text session submits insert replace and delete as app intents',
 
   const inserted = await production.insertText({
     bufferId: BUFFER_ID,
-    startByte: 0,
+    startByte: byteOffset(0),
     insertText: 'abc',
     atMs: AT_MS,
   });
   const replaced = await production.replaceRange({
     bufferId: BUFFER_ID,
-    startByte: 1,
-    endByte: 2,
+    startByte: byteOffset(1),
+    endByte: byteOffset(2),
     insertText: 'B',
     atMs: AT_MS,
   });
   const deleted = await production.deleteRange({
     bufferId: BUFFER_ID,
-    startByte: 2,
-    endByte: 3,
+    startByte: byteOffset(2),
+    endByte: byteOffset(3),
     atMs: AT_MS,
   });
 
@@ -159,7 +167,7 @@ test('production text session explains ranges through the text buffer optic', as
 
   const outcome = await production.explainRange({
     bufferId: BUFFER_ID,
-    range: { startByte: 6, endByte: 9 },
+    range: byteRange(6, 9),
     atMs: AT_MS,
   });
 
@@ -261,8 +269,8 @@ test('production text session maps obstructed edits to typed runtime issue postu
 
   const outcome = await production.replaceRange({
     bufferId: BUFFER_ID,
-    startByte: 0,
-    endByte: 1,
+    startByte: byteOffset(0),
+    endByte: byteOffset(1),
     insertText: 'x',
     atMs: AT_MS,
   });
@@ -282,8 +290,8 @@ test('production text session maps missing buffers to obstruction without mutati
 
   const outcome = await production.deleteRange({
     bufferId: BUFFER_ID,
-    startByte: 0,
-    endByte: 1,
+    startByte: byteOffset(0),
+    endByte: byteOffset(1),
     atMs: AT_MS,
   });
 
@@ -304,7 +312,7 @@ test('production text session obstructs grouped edits instead of mutating locall
 
   const outcome = await production.multiRangeEdit({
     bufferId: BUFFER_ID,
-    ranges: [{ startByte: 0, endByte: 1, insertText: 'x' }],
+    ranges: [{ ...byteRange(0, 1), insertText: 'x' }],
     atMs: AT_MS,
   });
 

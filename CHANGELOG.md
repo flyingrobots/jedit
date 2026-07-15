@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Added explicit UTF-8 byte, UTF-16 code-unit, and zero-based line-column
+  coordinate adapters for graph-backed text. Coordinate conversion now rejects
+  split surrogate pairs, split UTF-8 sequences, CRLF-interior positions, and
+  out-of-bounds coordinates; workspace edit plans preserve branded byte
+  offsets until the transitional text-session serialization boundary.
 - Quarantined retained full-root text authority behind an allowlisted guard
   witness: the only permitted `HotTextBufferState.roots` readers are the type
   definition, the production-unsafe full-snapshot fixture, root-fact evidence

@@ -71,6 +71,73 @@ test('graph rope coordinates keep UTF-8 storage offsets separate from UI project
   assert.equal(contract.makeTextByteRange(end, start).ok, false);
 });
 
+test('graph rope coordinate adapters preserve Unicode boundaries and end of buffer', async () => {
+  const contract = await loadContract();
+  const text = 'A😀é';
+  const afterEmojiUtf16 = assertOk(contract.makeUtf16Offset(3));
+  const afterEmojiByte = assertOk(contract.makeByteOffset(5));
+  const endUtf16 = assertOk(contract.makeUtf16Offset(4));
+  const endByte = assertOk(contract.makeByteOffset(7));
+
+  assert.deepEqual(
+    assertOk(contract.byteOffsetFromUtf16Offset(text, afterEmojiUtf16)),
+    afterEmojiByte,
+  );
+  assert.deepEqual(
+    assertOk(contract.utf16OffsetFromByteOffset(text, afterEmojiByte)),
+    afterEmojiUtf16,
+  );
+  assert.deepEqual(assertOk(contract.byteOffsetFromUtf16Offset(text, endUtf16)), endByte);
+  assert.deepEqual(assertOk(contract.utf16OffsetFromByteOffset(text, endByte)), endUtf16);
+
+  const splitSurrogate = assertOk(contract.makeUtf16Offset(2));
+  const splitUtf8Sequence = assertOk(contract.makeByteOffset(2));
+  assert.equal(contract.byteOffsetFromUtf16Offset(text, splitSurrogate).ok, false);
+  assert.equal(contract.utf16OffsetFromByteOffset(text, splitUtf8Sequence).ok, false);
+
+  const bomText = '\uFEFFx';
+  assert.deepEqual(
+    assertOk(contract.utf16OffsetFromByteOffset(
+      bomText,
+      assertOk(contract.makeByteOffset(3)),
+    )),
+    assertOk(contract.makeUtf16Offset(1)),
+  );
+});
+
+test('graph rope line-column adapters treat CRLF as one break and preserve EOF', async () => {
+  const contract = await loadContract();
+  const text = 'ab\r\n😀\r\n';
+  const lineOne = assertOk(contract.makeZeroBasedLineIndex(1));
+  const lineTwo = assertOk(contract.makeZeroBasedLineIndex(2));
+  const columnZero = assertOk(contract.makeUtf16Offset(0));
+  const columnTwo = assertOk(contract.makeUtf16Offset(2));
+  const afterFirstCrlf = assertOk(contract.makeByteOffset(4));
+  const afterEmoji = assertOk(contract.makeByteOffset(8));
+  const endByte = assertOk(contract.makeByteOffset(10));
+  const emojiEnd = contract.makeLineColumn(lineOne, columnTwo);
+  const eof = contract.makeLineColumn(lineTwo, columnZero);
+
+  assert.deepEqual(
+    assertOk(contract.byteOffsetFromLineColumn(text, emojiEnd)),
+    afterEmoji,
+  );
+  assert.deepEqual(
+    assertOk(contract.lineColumnFromByteOffset(text, afterFirstCrlf)),
+    contract.makeLineColumn(lineOne, columnZero),
+  );
+  assert.deepEqual(assertOk(contract.byteOffsetFromLineColumn(text, eof)), endByte);
+  assert.deepEqual(assertOk(contract.lineColumnFromByteOffset(text, endByte)), eof);
+
+  const pastLineEnd = contract.makeLineColumn(
+    assertOk(contract.makeZeroBasedLineIndex(0)),
+    assertOk(contract.makeUtf16Offset(3)),
+  );
+  const insideCrlf = assertOk(contract.makeByteOffset(9));
+  assert.equal(contract.byteOffsetFromLineColumn(text, pastLineEnd).ok, false);
+  assert.equal(contract.lineColumnFromByteOffset(text, insideCrlf).ok, false);
+});
+
 test('text blob facts derive identity, length, storage, and hash from UTF-8 bytes', async () => {
   const contract = await loadContract();
   const bytes = UTF8_ENCODER.encode('a\n');

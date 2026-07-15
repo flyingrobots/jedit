@@ -1,4 +1,5 @@
 import type { Cmd, RuntimeIssue } from '@flyingrobots/bijou-tui';
+import type { ByteOffset } from '../../domain/graph-rope-types.js';
 import type { EditorFileFingerprint, EditorFilePort } from '../../ports/editor-file.js';
 import { editorFileFingerprintFromText } from '../../ports/editor-file-fingerprint.js';
 import { joinLines, normalizeLines } from '../editor-lines.js';
@@ -38,7 +39,6 @@ import type {
   WorkspaceTextOperationSequencer,
   WorkspaceTextOperationTarget,
 } from './workspace-text-operation-sequencer.js';
-
 const ISSUE_LEVEL_ERROR = RuntimeIssueLevels.Error;
 const ISSUE_SOURCE_COMMAND = RuntimeIssueSources.Command;
 const OPEN_FAILURE_PREFIX = 'Text open failed';
@@ -87,21 +87,21 @@ export interface WorkspaceTextCommandBase {
 
 export interface WorkspaceTextInsertCommandRequest extends WorkspaceTextCommandBase {
   readonly kind: typeof EDIT_COMMAND_INSERT;
-  readonly startByte: number;
+  readonly startByte: ByteOffset;
   readonly insertText: string;
 }
 
 export interface WorkspaceTextReplaceCommandRequest extends WorkspaceTextCommandBase {
   readonly kind: typeof EDIT_COMMAND_REPLACE;
-  readonly startByte: number;
-  readonly endByte: number;
+  readonly startByte: ByteOffset;
+  readonly endByte: ByteOffset;
   readonly insertText: string;
 }
 
 export interface WorkspaceTextDeleteCommandRequest extends WorkspaceTextCommandBase {
   readonly kind: typeof EDIT_COMMAND_DELETE;
-  readonly startByte: number;
-  readonly endByte: number;
+  readonly startByte: ByteOffset;
+  readonly endByte: ByteOffset;
 }
 
 export type WorkspaceTextEditCommandRequest =

@@ -1,3 +1,8 @@
+import type { ByteOffset } from '../../domain/graph-rope-types.js';
+import {
+  byteOffsetsEqual,
+  compareByteOffsets,
+} from '../../domain/graph-rope-coordinates.js';
 import type { EditorState } from './editor/model.js';
 import {
   editorText,
@@ -44,23 +49,23 @@ export interface WorkspaceTextSelectionRange {
 
 export interface WorkspaceTextInsertPlan {
   readonly kind: typeof PLAN_INSERT;
-  readonly startByte: number;
+  readonly startByte: ByteOffset;
   readonly insertText: string;
   readonly cursorAfter: TextPosition;
 }
 
 export interface WorkspaceTextReplacePlan {
   readonly kind: typeof PLAN_REPLACE;
-  readonly startByte: number;
-  readonly endByte: number;
+  readonly startByte: ByteOffset;
+  readonly endByte: ByteOffset;
   readonly insertText: string;
   readonly cursorAfter: TextPosition;
 }
 
 export interface WorkspaceTextDeletePlan {
   readonly kind: typeof PLAN_DELETE;
-  readonly startByte: number;
-  readonly endByte: number;
+  readonly startByte: ByteOffset;
+  readonly endByte: ByteOffset;
   readonly cursorAfter: TextPosition;
 }
 
@@ -108,13 +113,14 @@ export function planWorkspaceTextSelectionReplace(
     row: selection.endRow,
     column: selection.endColumn,
   });
+  const startsBeforeEnd = compareByteOffsets(startByte, endByte) <= 0;
   return {
     kind: PLAN_REPLACE,
-    startByte: Math.min(startByte, endByte),
-    endByte: Math.max(startByte, endByte),
+    startByte: startsBeforeEnd ? startByte : endByte,
+    endByte: startsBeforeEnd ? endByte : startByte,
     insertText,
     cursorAfter: positionAfterInsertedText(
-      startByte <= endByte
+      startsBeforeEnd
         ? { row: selection.startRow, column: selection.startColumn }
         : { row: selection.endRow, column: selection.endColumn },
       insertText,
@@ -128,7 +134,7 @@ export function planWorkspaceTextBackspace(
   const position = editorTextPosition(editor);
   const endByte = byteOffsetForTextPosition(editor.lines, position);
   const startByte = previousByteOffset(editor.lines, position);
-  return startByte === endByte
+  return byteOffsetsEqual(startByte, endByte)
     ? unsupportedPlan(UNSUPPORTED_EMPTY_BACKSPACE)
     : {
       kind: PLAN_DELETE,
@@ -144,7 +150,7 @@ export function planWorkspaceTextDeleteUnderCursor(
   const position = editorTextPosition(editor);
   const startByte = byteOffsetForTextPosition(editor.lines, position);
   const endByte = nextByteOffset(editor.lines, position);
-  return startByte === endByte
+  return byteOffsetsEqual(startByte, endByte)
     ? unsupportedPlan(UNSUPPORTED_EMPTY_DELETE)
     : {
       kind: PLAN_DELETE,
@@ -298,15 +304,15 @@ function shouldExtendCommonSuffix(
 }
 
 interface WorkspaceTextTransition {
-  readonly startByte: number;
-  readonly endByte: number;
+  readonly startByte: ByteOffset;
+  readonly endByte: ByteOffset;
   readonly insertText: string;
   readonly cursorAfter: TextPosition;
 }
 
 interface WorkspaceTextRange {
-  readonly startByte: number;
-  readonly endByte: number;
+  readonly startByte: ByteOffset;
+  readonly endByte: ByteOffset;
 }
 
 function unsupportedPlan(
