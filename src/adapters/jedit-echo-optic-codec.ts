@@ -1,5 +1,4 @@
 import { z } from 'zod';
-
 import type {
   CreateBufferWorldlineExecution,
   CreateCheckpointExecution,
@@ -27,6 +26,8 @@ import {
   QueryOperationSchemas,
   RewriteKindSchema,
 } from '../generated/jedit/rope.zod.generated.js';
+import { HotTextAuthorityBasisSchema } from './hot-text-authority-basis-codec.js';
+import { HotTextWindowProjectionSchema } from './hot-text-window-codec.js';
 import { JeditRetainedEvidenceInventorySchema } from './jedit-retained-evidence-codec.js';
 
 // EINT envelope codec re-export (kept here so adapters import wire and
@@ -81,12 +82,14 @@ const EditGroupSchema = z.object({ id: z.number().int(), tickIds: z.array(z.numb
 
 const OpenEditGroupSchema = z.object({ id: z.number().int(), tickIds: z.array(z.number().int()) });
 
-const SaveCheckpointSchema = z.object({ id: z.number().int(), rootId: z.number().int(), path: z.string() });
-
+const SaveCheckpointSchema = z.object({
+  id: z.number().int(), rootId: z.number().int(), path: z.string(), authorityCheckpointId: z.string().min(1).optional(),
+});
 const HotTextBufferStateSchema = z.object({
   path: z.string(),
+  authorityBasis: HotTextAuthorityBasisSchema.optional(),
   currentRoot: BufferRootSchema,
-  roots: z.array(BufferRootSchema),
+  roots: z.array(BufferRootSchema).optional(),
   ticks: z.array(AdmittedTickSchema),
   editGroups: z.array(EditGroupSchema),
   openEditGroup: OpenEditGroupSchema.optional(),
@@ -104,15 +107,20 @@ const TickMetadataSchema = z.object({
   endByte: z.number().int().optional(),
   insertedByteLength: z.number().int().optional(),
   deletedByteLength: z.number().int().optional(),
+  authorityTickId: z.string().min(1).optional(),
+  authorityAdmissionId: z.string().min(1).optional(),
+  authorityRewriteId: z.string().min(1).optional(),
+  authorityDiffId: z.string().min(1).optional(),
+  authoritySequenceNumber: z.number().int().positive().optional(),
 });
 
 const CheckpointMetadataSchema = z.object({
   checkpointId: z.number().int(),
+  authorityCheckpointId: z.string().min(1).optional(), authorityHeadId: z.string().min(1).optional(),
   kind: CheckpointKindSchema,
   label: z.string().optional(),
   createdByRopeRewriteId: z.number().int().optional(),
 });
-
 const JeditWorldlineSessionSchema = z.object({
   worldline: BufferWorldlineSchema,
   state: HotTextBufferStateSchema,
@@ -149,6 +157,7 @@ const TextWindowReadingEnvelopeSchema = z.object({
   operationName: z.literal(TEXT_WINDOW_OPERATION),
   frontierRef: z.string(),
   reading: QueryOperationSchemas.textWindow.result,
+  projection: HotTextWindowProjectionSchema,
   retainedEvidence: JeditRetainedEvidenceInventorySchema,
 });
 

@@ -20,6 +20,7 @@ test('production text session CLI rejects implicit full-snapshot fixture authori
 
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /--allow-full-snapshot-fixture/);
+  assert.doesNotMatch(result.stderr, /graph-backed authority is not installed/);
 });
 
 test('production text session CLI reports explicit fixture edit reading checkpoint and export evidence', () => {

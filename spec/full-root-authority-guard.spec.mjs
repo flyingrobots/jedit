@@ -6,7 +6,7 @@ import { REPO_ROOT } from './dist-helpers.mjs';
 import { importDist } from './workspace-helpers.mjs';
 
 const STATE_ROOTS_ACCESS_PATTERN = /\bstate(?:\.roots\b|\s*\[\s*['"`]roots['"`]\s*\])/;
-const ROOTS_BINDING_PATTERN = /\.roots\b|\[\s*['"`]roots['"`]\s*\]|\broots\s*[,}:=]/;
+const ROOTS_BINDING_PATTERN = /\.roots\b|\[\s*['"`]roots['"`]\s*\]|\broots\s*\??\s*[,}:=]/;
 const RETAINED_ROOT_CONTEXT_PATTERN = /HotTextBufferState|BufferRoot|hot-text-runtime/;
 
 export function accessesRetainedRoots(sourceText) {

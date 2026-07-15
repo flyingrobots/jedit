@@ -131,6 +131,7 @@ test('production text session creates manual checkpoint evidence through app cap
 
   const outcome = await production.checkpointBuffer({
     bufferId: BUFFER_ID,
+    basisHeadId: 'head:projection',
     label: 'manual save',
     atMs: AT_MS,
   });
@@ -140,6 +141,7 @@ test('production text session creates manual checkpoint evidence through app cap
   assert.equal(outcome.result.checkpointKind, 'MANUAL_SAVE');
   assert.deepEqual(checkpoints, [{
     kind: 'MANUAL_SAVE',
+    basisHeadId: 'head:projection',
     label: 'manual save',
   }]);
 });
@@ -191,6 +193,7 @@ test('production text session exports materialized text from a full snapshot wit
   assert.equal(outcome.kind, module.ProductionTextSessionOutcomeKinds.Exported);
   assert.equal(outcome.text, 'text');
   assert.equal(outcome.readingId, 'reading:1');
+  assert.equal(outcome.basisHeadId, 'head:projection');
   assert.deepEqual(textWindowCalls, [{
     readBasis: { kind: 'read-basis-handle', id: 'basis:1' },
     input: {
@@ -212,6 +215,25 @@ test('production text session blocks snapshot export from bounded readings', asy
         totalLineCount: 2,
         hasMoreAfter: true,
       });
+    },
+  });
+  const production = module.createProductionTextSession(fakeTextBufferSession({ optic }));
+
+  const outcome = await production.exportSnapshot({
+    bufferId: BUFFER_ID,
+    atMs: AT_MS,
+  });
+
+  assert.equal(outcome.kind, module.ProductionTextSessionOutcomeKinds.Obstructed);
+  assert.equal(outcome.obstruction.code, module.ProductionTextObstructionCodes.Export);
+  assert.match(outcome.obstruction.issue.message, /full untruncated text snapshot/);
+});
+
+test('production text session blocks snapshot export without an opaque basis head', async () => {
+  const module = await loadModule();
+  const optic = fakeTextBufferOptic({
+    textWindow() {
+      return observedReading({ basisHeadId: '' });
     },
   });
   const production = module.createProductionTextSession(fakeTextBufferSession({ optic }));
@@ -393,6 +415,12 @@ function observedReading(overrides = {}) {
   return {
     value: {
       readingId: 'reading:1',
+      projection: {
+        basisHeadId: overrides.basisHeadId ?? 'head:projection',
+        byteRange: { startByte: 0, endByte: 4 },
+        text: 'text',
+        support: [],
+      },
       lines: [{ lineNumber: 0, startByte: 0, endByte: 4, text: 'text' }],
       byteLength: 4,
       lineCount: overrides.lineCount ?? 1,

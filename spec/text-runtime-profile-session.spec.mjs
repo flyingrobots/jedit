@@ -11,19 +11,16 @@ const TRANSPORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'installe
 const CLIENT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-optic-client.js');
 const SESSION_ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'echo-backed-text-buffer-session.js');
 const RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'full-snapshot-hot-text-runtime-fixture.js');
-const MISSING_GRAPH_ROPE_AUTHORITY_MESSAGE = /requires graph rope text authority/;
 
 let modulesPromise;
 
-test('Echo-hosted text runtime profile rejects implicit full-snapshot authority by default', async () => {
+test('Echo-hosted text runtime profile installs graph rope authority by default', async () => {
   const modules = await loadModules();
+  const binding = modules.session.createTextRuntimeProfileSession({
+    profile: modules.profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+  });
 
-  assert.throws(
-    () => modules.session.createTextRuntimeProfileSession({
-      profile: modules.profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
-    }),
-    MISSING_GRAPH_ROPE_AUTHORITY_MESSAGE,
-  );
+  assert.equal(await runNarrowEditRead(binding.session, 'graphDefault'), 'graphDefault');
 });
 
 test('Echo-hosted text runtime profile drives a narrow edit/read path through Echo-backed session', async () => {

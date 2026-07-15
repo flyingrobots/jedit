@@ -293,6 +293,68 @@ test("viewer renders production text from full reading cache instead of stale ed
   assert.doesNotMatch(text, /stale local line/);
 });
 
+test("viewer renders a basis-tagged bounded projection instead of local editor text", async () => {
+  const [viewerContent, modeModule, authority, profile] = await Promise.all([
+    importDist("app", "workspace", "viewer-content.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "workspace-text-authority.js"),
+    importDist("app", "text-runtime-profile.js"),
+  ]);
+  const localLines = Array.from({ length: 50 }, (_, index) => `local ${index}`);
+  const model = projectedViewerModel(modeModule, authority, profile, localLines);
+
+  const text = surfaceText(viewerContent.renderViewer(model, 80, 16));
+
+  assert.match(text, /causal window/);
+  assert.doesNotMatch(text, /local 24/);
+});
+
+test("viewer does not render local text when an opened authority has no projection", async () => {
+  const [viewerContent, modeModule, authority, profile] = await Promise.all([
+    importDist("app", "workspace", "viewer-content.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "workspace-text-authority.js"),
+    importDist("app", "text-runtime-profile.js"),
+  ]);
+  const model = {
+    ...textWorkspaceModel(modeModule, authority, profile, {
+      lines: ["unwitnessed local text"],
+    }),
+    jeditTheme: mockJeditTheme(),
+    textAuthority: authority.openedWorkspaceTextAuthority({
+      profile: profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+      filePath: "/repo/notes.txt",
+      bufferId: "buffer:notes",
+      readOnly: false,
+      dirty: false,
+    }),
+  };
+
+  const text = surfaceText(viewerContent.renderViewer(model, 80, 16));
+
+  assert.doesNotMatch(text, /unwitnessed local text/);
+});
+
+function projectedViewerModel(modeModule, authority, profile, localLines) {
+  return {
+    ...textWorkspaceModel(modeModule, authority, profile, {
+      dirty: true, lines: localLines, cursorRow: 24, scrollRow: 24,
+    }),
+    jeditTheme: mockJeditTheme(),
+    textAuthority: authority.openedWorkspaceTextAuthority({
+      profile: profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+      filePath: "/repo/notes.txt",
+      bufferId: "buffer:notes",
+      readOnly: false,
+      dirty: true,
+      cache: workspaceReadingCache({
+        lines: ["causal window"], startLine: 24, totalLineCount: localLines.length,
+        returnedLineCount: 1, hasMoreBefore: true, hasMoreAfter: true,
+      }),
+    }),
+  };
+}
+
 test("insert and delete keys submit production text edits with optimistic local projection", async () => {
   const [viewerKey, runtimeModule, modeModule, authority, profile] =
     await Promise.all([
@@ -1064,6 +1126,7 @@ test("save can be requested while a production text intent is still pending", as
             kind: "exported",
             text: "base",
             readingId: "reading:base",
+            basisHeadId: "head:base",
           };
         },
       }),
@@ -1157,6 +1220,7 @@ test("ctrl-s exports a full production snapshot and checkpoints without direct l
     ]);
   const savedFiles = [];
   const exportCalls = [];
+  const checkpointCalls = [];
   const documentLines = Array.from(
     { length: 30 },
     (_, index) => `line ${index}`,
@@ -1168,14 +1232,18 @@ test("ctrl-s exports a full production snapshot and checkpoints without direct l
         kind: "exported",
         text: documentLines.join("\n"),
         readingId: "reading:export",
+        basisHeadId: "head:export",
       };
     },
-    checkpointBuffer: async () => ({
-      kind: "checkpointed",
-      result: {
-        checkpointId: "checkpoint:save",
-      },
-    }),
+    checkpointBuffer: async (request) => {
+      checkpointCalls.push(request);
+      return {
+        kind: "checkpointed",
+        result: {
+          checkpointId: "checkpoint:save",
+        },
+      };
+    },
   };
   const model = {
     ...textWorkspaceModel(modeModule, authority, profile, {
@@ -1245,6 +1313,12 @@ test("ctrl-s exports a full production snapshot and checkpoints without direct l
   assert.deepEqual(savedFiles, [
     { filePath: "/repo/notes.txt", lines: documentLines },
   ]);
+  assert.deepEqual(checkpointCalls, [{
+    bufferId: "buffer:notes",
+    basisHeadId: "head:export",
+    label: "interactive workspace save",
+    atMs: 0,
+  }]);
   assert.equal(
     checkpointedModel.textAuthority.lastExportReadingId,
     "reading:export",
@@ -1279,6 +1353,7 @@ test("repeated ctrl-s coalesces an in-flight production export", async () => {
         kind: "exported",
         text: "fresh",
         readingId: "reading:export",
+        basisHeadId: "head:export",
       };
     },
   });
@@ -1368,6 +1443,7 @@ for (const blockCase of EXISTING_SAVE_BLOCK_CASES) {
           kind: "exported",
           text: "local draft",
           readingId: "reading:export",
+          basisHeadId: "head:export",
         };
       },
       checkpointBuffer: async (request) => {
@@ -1468,6 +1544,7 @@ test("ctrl-s blocks materialization when a missing-open path appeared", async ()
         kind: "exported",
         text: "local draft",
         readingId: "reading:export",
+        basisHeadId: "head:export",
       };
     },
     checkpointBuffer: async (request) => {
@@ -1659,6 +1736,7 @@ test("ctrl-s materializes a missing-open path when it is still absent", async ()
       kind: "exported",
       text: "local draft",
       readingId: "reading:export",
+      basisHeadId: "head:export",
     }),
     checkpointBuffer: async () => ({
       kind: "checkpointed",
@@ -1810,9 +1888,16 @@ function workspaceReadingCache(overrides = {}) {
         ? "full"
         : "window"
     );
+  const projectionText = lines.join("\n");
   return {
     bufferId: "buffer:notes",
     readingId: "reading:test",
+    projection: {
+      basisHeadId: "head:test",
+      byteRange: { startByte: 0, endByte: Buffer.byteLength(projectionText, "utf8") },
+      text: projectionText,
+      support: [],
+    },
     lines,
     coverage,
     lineCount: totalLineCount,
@@ -1832,8 +1917,15 @@ function textWindowReading(options) {
   const startLine = options.startLine ?? 0;
   const lines = options.lines ?? ["abc"];
   const totalLineCount = options.totalLineCount ?? lines.length;
+  const projectionText = lines.join("\n");
   return {
     readingId: options.readingId ?? "reading:test",
+    projection: {
+      basisHeadId: "head:test",
+      byteRange: { startByte: 0, endByte: Buffer.byteLength(projectionText, "utf8") },
+      text: projectionText,
+      support: [],
+    },
     lines: lines.map((text, index) => ({
       lineNumber: startLine + index,
       startByte: byteOffsetAtLine(lines, index),

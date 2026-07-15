@@ -1,5 +1,6 @@
 import type { RuntimeIssue } from '@flyingrobots/bijou-tui';
 import type { EditorFileFingerprint } from '../../ports/editor-file.js';
+import type { TextBufferCausalTransition } from '../../ports/text-buffer-session.js';
 import type { TextRuntimeProfile } from '../text-runtime-profile.js';
 import type { EditorState } from './editor/model.js';
 import type {
@@ -18,6 +19,7 @@ import {
   type WorkspaceTextReadingCache,
   type WorkspaceTextReadingPosture,
 } from './workspace-text-reading-cache.js';
+import { workspaceTextProjectionMatchesLines } from './workspace-text-observed-reading.js';
 
 const AUTHORITY_NONE = 'none';
 const AUTHORITY_PENDING_OPEN = 'pending-open';
@@ -111,6 +113,7 @@ export interface WorkspaceTextAuthorityOpened {
   readonly lastObstruction?: RuntimeIssue;
   readonly lastCommandEvent?: JeditCommandEvent;
   readonly lastReceiptId?: string;
+  readonly lastCausalTransition?: TextBufferCausalTransition;
   readonly lastCheckpointId?: string;
   readonly lastExportReadingId?: string;
 }
@@ -142,6 +145,7 @@ export interface OpenedWorkspaceTextAuthorityOptions {
   readonly lastObstruction?: RuntimeIssue;
   readonly lastCommandEvent?: JeditCommandEvent;
   readonly lastReceiptId?: string;
+  readonly lastCausalTransition?: TextBufferCausalTransition;
   readonly lastCheckpointId?: string;
   readonly lastExportReadingId?: string;
 }
@@ -201,6 +205,7 @@ export function openedWorkspaceTextAuthority(
     lastObstruction: options.lastObstruction,
     lastCommandEvent: options.lastCommandEvent,
     lastReceiptId: options.lastReceiptId,
+    lastCausalTransition: options.lastCausalTransition,
     lastCheckpointId: options.lastCheckpointId,
     lastExportReadingId: options.lastExportReadingId,
   };
@@ -231,9 +236,43 @@ export function workspaceTextAuthorityWithCache(
   };
 }
 
+export function projectedSourceWindow(authority: WorkspaceTextAuthorityOpened) {
+  const cache = authority.cache;
+  if (cache?.projection == null || !projectionMatchesAuthority(authority, cache)) {
+    return undefined;
+  }
+  return {
+    startLine: cache.startLine,
+    lineCount: cache.returnedLineCount,
+    totalLineCount: cache.totalLineCount,
+    hasMoreBefore: cache.hasMoreBefore,
+    hasMoreAfter: cache.hasMoreAfter,
+    lines: cache.lines.map((text, index) => ({ lineNumber: cache.startLine + index, text })),
+  };
+}
+
+export function hasVisibleOptimisticText(authority: WorkspaceTextAuthorityOpened): boolean {
+  const status = authority.pendingIntentStatus;
+  return status != null && (
+    status !== WorkspaceTextIntentStatuses.Admitted || projectedSourceWindow(authority) == null
+  );
+}
+
+function projectionMatchesAuthority(
+  authority: WorkspaceTextAuthorityOpened,
+  cache: WorkspaceTextReadingCache,
+): boolean {
+  const latestHeadId = authority.lastCausalTransition?.nextHeadId;
+  return cache.bufferId === authority.bufferId
+    && cache.projection != null
+    && workspaceTextProjectionMatchesLines(cache.projection, cache.lines)
+    && (latestHeadId == null || cache.projection.basisHeadId === latestHeadId);
+}
+
 export function workspaceTextAuthorityWithReceipt(
   authority: WorkspaceTextAuthorityOpened,
   receiptId: string,
+  causalTransition?: TextBufferCausalTransition,
 ): WorkspaceTextAuthorityOpened {
   return {
     ...authority,
@@ -243,6 +282,7 @@ export function workspaceTextAuthorityWithReceipt(
     pendingReceiptId: receiptId,
     pendingIntentStatus: WorkspaceTextIntentStatuses.Admitted,
     lastReceiptId: receiptId,
+    ...(causalTransition == null ? {} : { lastCausalTransition: causalTransition }),
   };
 }
 

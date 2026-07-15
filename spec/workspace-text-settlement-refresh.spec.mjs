@@ -30,6 +30,7 @@ test("TextEditResult refreshes highlighting without reloading saved-file Graft d
     ]);
   let graftLoadCount = 0;
   let highlightCount = 0;
+  let highlightInput;
   const model = {
     ...textWorkspaceModel(modeModule, authority, profile, {
       dirty: true,
@@ -80,8 +81,9 @@ test("TextEditResult refreshes highlighting without reloading saved-file Graft d
       closeConnection: async () => undefined,
     },
     sourceHighlighter: {
-      highlight: async () => {
+      highlight: async (input) => {
         highlightCount += 1;
+        highlightInput = input;
         return { path: "/repo/notes.txt", partial: false, spans: [] };
       },
     },
@@ -94,6 +96,7 @@ test("TextEditResult refreshes highlighting without reloading saved-file Graft d
       filePath: "/repo/notes.txt",
       bufferId: "buffer:notes",
       receiptId: "receipt:edit",
+      causalTransition: { admittedTickId: "tick:edit", nextHeadId: "head:edit" },
       cursorAfter: { row: 0, column: 4 },
       cache: workspaceReadingCache({
         readingId: "reading:edit",
@@ -109,6 +112,13 @@ test("TextEditResult refreshes highlighting without reloading saved-file Graft d
   assert.equal(nextModel.graftLoading, false);
   assert.equal(graftLoadCount, 0);
   assert.equal(highlightCount, 1);
+  assert.equal(highlightInput.text, "abcd");
+  assert.equal(highlightInput.headId, "head:edit");
+  assert.deepEqual(highlightInput.projection.byteRange, { startByte: 0, endByte: 4 });
+  assert.deepEqual(nextModel.textAuthority.lastCausalTransition, {
+    admittedTickId: "tick:edit",
+    nextHeadId: "head:edit",
+  });
 });
 
 test("intermediate TextEditResult refreshes highlighting before queued save settles", async () => {
@@ -143,6 +153,7 @@ test("intermediate TextEditResult refreshes highlighting before queued save sett
         kind: "exported",
         text: "abcd",
         readingId: "reading:export",
+        basisHeadId: "head:export",
       };
     },
     checkpointBuffer: async () => ({
@@ -332,6 +343,12 @@ function workspaceReadingCache(overrides = {}) {
   return {
     bufferId: "buffer:notes",
     readingId: "reading:test",
+    projection: {
+      basisHeadId: "head:edit",
+      byteRange: { startByte: 0, endByte: Buffer.byteLength(lines.join("\n"), "utf8") },
+      text: lines.join("\n"),
+      support: [],
+    },
     lines,
     coverage,
     lineCount: totalLineCount,

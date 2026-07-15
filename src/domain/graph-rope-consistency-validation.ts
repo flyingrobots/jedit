@@ -60,7 +60,7 @@ export function validateRopeHeadConsistency(
     return FACT_VALIDATION_ERROR_INVALID_METRIC;
   }
   const expectedHash = headContentHash(head, root, context.hash);
-  return headMatchesHash(head, expectedHash, context.hash);
+  return headMatchesHash(head, expectedHash, context);
 }
 
 export function validateRopeBranchConsistency(
@@ -288,13 +288,20 @@ function branchMetricsMatch(
 function headMatchesHash(
   head: RopeHeadFact,
   expectedHash: string,
-  hash: TextBlobHashPort,
+  context: RopeFactValidationContext,
 ): FactValidationErrorCode | null {
-  return head.contentHash === expectedHash
-    && head.headId === `${ROPE_HEAD_ID_PREFIX}${expectedHash}`
-    && head.createdByTickId === tickIdFor(head.worldlineId, expectedHash, hash)
+  if (head.contentHash !== expectedHash || head.headId !== `${ROPE_HEAD_ID_PREFIX}${expectedHash}`) {
+    return FACT_VALIDATION_ERROR_HASH_MISMATCH;
+  }
+  if (head.basisHeadId === undefined) {
+    return head.createdByTickId === tickIdFor(head.worldlineId, expectedHash, context.hash)
+      ? null
+      : FACT_VALIDATION_ERROR_HASH_MISMATCH;
+  }
+  const receipt = resolveTickReceiptFact(context, head.createdByTickId);
+  return receipt?.basisHeadId === head.basisHeadId && receipt.nextHeadId === head.headId
     ? null
-    : FACT_VALIDATION_ERROR_HASH_MISMATCH;
+    : FACT_VALIDATION_ERROR_INVALID_REFERENCE;
 }
 
 function nodeMatchesHash(

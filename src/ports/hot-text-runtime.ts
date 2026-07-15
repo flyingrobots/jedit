@@ -1,12 +1,58 @@
 import type { EditGroup, EditGroupReceipt, OpenEditGroup } from '../domain/edit-group-contract.js';
 import type { SaveCheckpoint, SaveCheckpointReceipt } from '../domain/save-checkpoint-contract.js';
+import type { RopeCheckpointAnchoredFact, RopeCheckpointFact } from '../domain/graph-rope-contract.js';
+import type { CheckpointKind } from '../generated/jedit/rope.types.generated.js';
 import type { BufferRoot, TextRange } from '../domain/text-edit-contract.js';
 import type { AdmittedTick, TickAdmissionReceipt } from '../domain/tick-admission-contract.js';
 
+export interface HotTextAuthorityBasis {
+  readonly worldlineId: string;
+  readonly headId: string;
+  readonly rootNodeId: string;
+  readonly createdByTickId: string;
+  readonly byteLength: number;
+  readonly lineCount: number;
+  readonly contentHash: string;
+}
+
+export interface HotTextAuthorityTransition {
+  readonly tickId: string;
+  readonly admissionId: string;
+  readonly rewriteId: string;
+  readonly diffId: string;
+  readonly admittedAtSequence: number;
+  readonly nextBasis: HotTextAuthorityBasis;
+}
+
+export interface HotTextWindowByteRange {
+  readonly startByte: number;
+  readonly endByte: number;
+}
+
+export interface HotTextWindowSupport {
+  readonly leafId: string;
+  readonly blobId: string;
+  readonly contentHash: string;
+  readonly byteRange: HotTextWindowByteRange;
+}
+
+export interface HotTextWindowProjection {
+  readonly basisHeadId: string;
+  readonly byteRange: HotTextWindowByteRange;
+  readonly text: string;
+  readonly support: readonly HotTextWindowSupport[];
+}
+
+export interface HotTextWindowRequest {
+  readonly basisHeadId: string;
+  readonly byteRange: HotTextWindowByteRange;
+}
+
 export interface HotTextBufferState {
   readonly path: string;
+  readonly authorityBasis?: HotTextAuthorityBasis;
   readonly currentRoot: BufferRoot;
-  readonly roots: readonly BufferRoot[];
+  readonly roots?: readonly BufferRoot[];
   readonly ticks: readonly AdmittedTick[];
   readonly editGroups: readonly EditGroup[];
   readonly openEditGroup?: OpenEditGroup;
@@ -17,6 +63,7 @@ export interface HotTextBufferState {
 export interface AdmitReplaceRangeTickResult {
   readonly nextState: HotTextBufferState;
   readonly receipt?: TickAdmissionReceipt;
+  readonly authorityTransition?: HotTextAuthorityTransition;
 }
 
 export interface CloseEditGroupResult {
@@ -27,6 +74,12 @@ export interface CloseEditGroupResult {
 export interface SaveHotCheckpointResult {
   readonly nextState: HotTextBufferState;
   readonly receipt?: SaveCheckpointReceipt;
+  readonly checkpointDeclaration?: RopeCheckpointFact;
+  readonly anchorAssociation?: RopeCheckpointAnchoredFact;
+}
+
+export interface SaveHotCheckpointRequest {
+  readonly kind: CheckpointKind;
 }
 
 export interface HotTextRuntimePort {
@@ -34,11 +87,12 @@ export interface HotTextRuntimePort {
   readonly isProductionSafe?: boolean;
   createBuffer(path: string, initialText: string): HotTextBufferState;
   materialize(state: HotTextBufferState): string;
+  textWindow(state: HotTextBufferState, request: HotTextWindowRequest): HotTextWindowProjection;
   admitReplaceRangeTick(state: HotTextBufferState, range: TextRange, text: string): AdmitReplaceRangeTickResult;
   openEditGroup(state: HotTextBufferState): HotTextBufferState;
   includeTickInOpenGroup(state: HotTextBufferState, tickId: number): HotTextBufferState;
   closeEditGroup(state: HotTextBufferState): CloseEditGroupResult;
-  saveCheckpoint(state: HotTextBufferState): SaveHotCheckpointResult;
+  saveCheckpoint(state: HotTextBufferState, request: SaveHotCheckpointRequest): SaveHotCheckpointResult;
 }
 
 export const GRAPH_BACKED_ROPE_TEXT_AUTHORITY_KIND = 'graph-backed-rope';

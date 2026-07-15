@@ -4,10 +4,17 @@ import type {
 import { QueryOperationSchemas } from '../generated/jedit/rope.zod.generated.js';
 import { queryTextWindowOperation } from '../generated/jedit/rope.wesley.generated.js';
 import { worldlineSnapshotObserverPlan } from '../generated/jedit/worldlineSnapshot.observer-plan.generated.js';
-import type { HotTextRuntimePort } from '../ports/hot-text-runtime.js';
+import type {
+  HotTextRuntimePort,
+  HotTextWindowByteRange,
+  HotTextWindowProjection,
+  HotTextWindowRequest,
+} from '../ports/hot-text-runtime.js';
+import { isGraphBackedRopeTextAuthority } from '../ports/hot-text-runtime.js';
 import type { JeditRetainedEvidenceInventory } from '../ports/jedit-retained-evidence.js';
 import type { JeditWorldlineSession } from './jedit-contract-runtime.js';
 import { readWorldlineSnapshot } from './jedit-contract-runtime.js';
+import { projectedHeadRecord } from './jedit-contract-runtime-authority-basis.js';
 import { JEDIT_HOT_TEXT_PACKAGE_ID } from './jedit-contract-package.js';
 import { createJeditReadingRetainedEvidenceInventory } from './jedit-retained-evidence.js';
 import type { HashPort } from '../ports/hash.js';
@@ -50,6 +57,7 @@ export interface TextWindowReadingEnvelope {
   readonly operationName: string;
   readonly frontierRef: string;
   readonly reading: TextWindowReading;
+  readonly projection: HotTextWindowProjection;
   readonly retainedEvidence: JeditRetainedEvidenceInventory;
 }
 
@@ -90,6 +98,7 @@ export function readTextWindowWithObserverPlan(
     operationName: TEXT_WINDOW_PLAN_SPEC.operationName,
     frontierRef,
     reading: schemas.result.parse(reading),
+    projection: reading.projection,
     retainedEvidence: createJeditReadingRetainedEvidenceInventory({
       packageId: JEDIT_HOT_TEXT_PACKAGE_ID,
       queryOperationName: TEXT_WINDOW_PLAN_SPEC.operationName,
@@ -102,51 +111,55 @@ function textWindowPlanId(hash: HashPort): string {
   return `${TEXT_WINDOW_PLAN_SPEC.idPrefix}${hash.sha256Hex(JSON.stringify(TEXT_WINDOW_PLAN_SPEC)).slice(0, TEXT_WINDOW_PLAN_SPEC.hashLength)}`;
 }
 
+interface ProjectedTextWindowReading extends TextWindowReading {
+  readonly projection: HotTextWindowProjection;
+}
+
+interface TextWindowSelection {
+  readonly startLine: number;
+  readonly totalLineCount: number;
+  readonly byteRange: HotTextWindowByteRange;
+}
+
 function readTextWindow(
   runtime: HotTextRuntimePort,
   session: JeditWorldlineSession,
   input: TextWindowInput,
   hash: HashPort,
-): TextWindowReading {
+): ProjectedTextWindowReading {
   assertPositiveCount(input.viewportLineCount, 'viewportLineCount');
   assertNonNegativeCount(input.beforeLines, 'beforeLines');
   assertNonNegativeCount(input.afterLines, 'afterLines');
   assertPositiveCount(input.maxBytes, 'maxBytes');
 
-  // Adapter-local implementation detail: derive the bounded reading from the
-  // current jedit contract session while Echo hosts only the generic observer
-  // invocation and evidence envelope.
-  const snapshot = readWorldlineSnapshot(runtime, session, {
-    worldlineId: input.worldlineId,
-  }, hash);
-  const allLines = toTextLineReadings(snapshot.text);
-  const cursorLine = clampLine(input.cursorLine, allLines.length);
-  const startLine = Math.max(TEXT_WINDOW_MIN_LINE, cursorLine - input.beforeLines);
-  const requestedLineCount = input.beforeLines + input.viewportLineCount + input.afterLines;
-  const requestedLines = allLines.slice(startLine, startLine + requestedLineCount);
-  const lines = takeWithinByteBudget(requestedLines, input.maxBytes);
+  const fullProjection = readFullHeadProjection(runtime, session);
+  const allLines = toTextLineReadings(fullProjection.text, TEXT_WINDOW_MIN_LINE, TEXT_WINDOW_MIN_LINE);
+  const selection = selectTextWindow(allLines, input);
+  const projection = readProjection(runtime, session, selection.byteRange);
+  const lines = toTextLineReadings(projection.text, selection.startLine, selection.byteRange.startByte);
 
   return {
-    worldline: snapshot.worldline,
-    head: snapshot.head,
-    readingId: toTextWindowReadingId(snapshot.head.headId, startLine, lines.length, input.maxBytes),
-    startLine,
+    worldline: session.worldline,
+    head: projectedHeadRecord(session.state, session.worldline.worldlineId, fullProjection.text, hash),
+    readingId: toTextWindowReadingId(projection.basisHeadId, selection.byteRange),
+    startLine: selection.startLine,
     lineCount: lines.length,
-    totalLineCount: allLines.length,
-    hasMoreBefore: startLine > TEXT_WINDOW_MIN_LINE,
-    hasMoreAfter: startLine + lines.length < allLines.length,
+    totalLineCount: selection.totalLineCount,
+    hasMoreBefore: selection.startLine > TEXT_WINDOW_MIN_LINE,
+    hasMoreAfter: selection.startLine + lines.length < selection.totalLineCount,
     lines,
+    projection,
   };
 }
 
-function toTextLineReadings(text: string): TextLineReading[] {
+function toTextLineReadings(text: string, firstLine: number, firstByte: number): TextLineReading[] {
   const lines = text.split('\n');
-  let startByte = TEXT_WINDOW_MIN_LINE;
+  let startByte = firstByte;
 
-  return lines.map((line, lineNumber) => {
+  return lines.map((line, lineOffset) => {
     const endByte = startByte + byteLength(line);
     const reading = {
-      lineNumber,
+      lineNumber: firstLine + lineOffset,
       text: line,
       startByte,
       endByte,
@@ -154,6 +167,85 @@ function toTextLineReadings(text: string): TextLineReading[] {
     startByte = endByte + TEXT_WINDOW_LINE_SEPARATOR_BYTE_LENGTH;
     return reading;
   });
+}
+
+function readFullHeadProjection(
+  runtime: HotTextRuntimePort,
+  session: JeditWorldlineSession,
+): HotTextWindowProjection {
+  const endByte = projectionByteLength(runtime, session);
+  return readProjection(runtime, session, { startByte: TEXT_WINDOW_MIN_LINE, endByte });
+}
+
+function projectionByteLength(runtime: HotTextRuntimePort, session: JeditWorldlineSession): number {
+  if (session.state.authorityBasis != null) {
+    return session.state.authorityBasis.byteLength;
+  }
+  if (isGraphBackedRopeTextAuthority(runtime)) {
+    throw new TextWindowRuntimeError('Graph rope text projection requires an explicit authority basis.');
+  }
+  return byteLength(runtime.materialize(session.state));
+}
+
+function readProjection(
+  runtime: HotTextRuntimePort,
+  session: JeditWorldlineSession,
+  byteRange: HotTextWindowByteRange,
+): HotTextWindowProjection {
+  const request: HotTextWindowRequest = {
+    basisHeadId: session.worldline.canonicalHeadId,
+    byteRange,
+  };
+  const projection = runtime.textWindow(session.state, request);
+  if (!projectionMatchesRequest(projection, request)) {
+    throw new TextWindowRuntimeError('Text projection does not match its requested head and byte range.');
+  }
+  return projection;
+}
+
+function projectionMatchesRequest(
+  projection: HotTextWindowProjection,
+  request: HotTextWindowRequest,
+): boolean {
+  return projection.basisHeadId === request.basisHeadId
+    && projection.byteRange.startByte === request.byteRange.startByte
+    && projection.byteRange.endByte === request.byteRange.endByte
+    && byteLength(projection.text) === request.byteRange.endByte - request.byteRange.startByte
+    && projection.support.every((support) => supportWithinRange(support.byteRange, request.byteRange));
+}
+
+function supportWithinRange(
+  support: HotTextWindowByteRange,
+  requested: HotTextWindowByteRange,
+): boolean {
+  return support.startByte >= requested.startByte
+    && support.endByte <= requested.endByte
+    && support.startByte <= support.endByte;
+}
+
+function selectTextWindow(
+  allLines: readonly TextLineReading[],
+  input: TextWindowInput,
+): TextWindowSelection {
+  const cursorLine = clampLine(input.cursorLine, allLines.length);
+  const startLine = Math.max(TEXT_WINDOW_MIN_LINE, cursorLine - input.beforeLines);
+  const requestedLineCount = input.beforeLines + input.viewportLineCount + input.afterLines;
+  const requestedLines = allLines.slice(startLine, startLine + requestedLineCount);
+  const lines = takeWithinByteBudget(requestedLines, input.maxBytes);
+  return {
+    startLine,
+    totalLineCount: allLines.length,
+    byteRange: byteRangeForLines(lines),
+  };
+}
+
+function byteRangeForLines(lines: readonly TextLineReading[]): HotTextWindowByteRange {
+  const first = lines[0];
+  const last = lines.at(-1);
+  if (first == null || last == null) {
+    return { startByte: TEXT_WINDOW_MIN_LINE, endByte: TEXT_WINDOW_MIN_LINE };
+  }
+  return { startByte: first.startByte, endByte: last.endByte };
 }
 
 function takeWithinByteBudget(
@@ -196,11 +288,9 @@ function clampLine(line: number, totalLineCount: number): number {
 
 function toTextWindowReadingId(
   headId: string,
-  startLine: number,
-  lineCount: number,
-  maxBytes: number,
+  byteRange: HotTextWindowByteRange,
 ): string {
-  return `text-window:${headId}:${startLine}:${lineCount}:${maxBytes}`;
+  return `text-window:${headId}:${byteRange.startByte}:${byteRange.endByte}`;
 }
 
 function byteLength(text: string): number {

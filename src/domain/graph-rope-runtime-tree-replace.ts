@@ -130,9 +130,10 @@ function changedReplacementPlan(
   replacementBlob: TextBlobFact,
 ): TreeResult<GraphRopeReplacePlan> {
   const tree = buildTreeFromPieces(replacementPieces(leaves, input.range, replacementBlob, replacementBytes, input.hash), input.hash);
-  const nextHead = createReplacementHead(input.basisHead, tree.root, input.hash);
-  const rewriteHash = rewriteContentHash(input.basisHead.headId, nextHead.headId, input.range, input.hash);
-  const receipt = createReceipt(input.basisHead, nextHead, rewriteIdFromHash(rewriteHash), input.sequence, input.hash);
+  const provisionalHead = createReplacementHead(input.basisHead, tree.root, input.hash);
+  const rewriteHash = rewriteContentHash(input.basisHead.headId, provisionalHead.headId, input.range, input.hash);
+  const receipt = createReceipt(input.basisHead, provisionalHead, rewriteIdFromHash(rewriteHash), input.sequence, input.hash);
+  const nextHead = withCreatingTick(provisionalHead, receipt.tickId);
   const rewrite = createRewrite({
     basisHead: input.basisHead,
     nextHead,
@@ -151,6 +152,13 @@ function changedReplacementPlan(
     hash: input.hash,
   });
   return { ok: true, value: changedPlan({ basisHead: input.basisHead, nextHead, replacementBlob, rewrite, diff, receipt, treeFacts: tree.facts }) };
+}
+
+function withCreatingTick(head: RopeHeadFact, tickId: string): RopeHeadFact {
+  return {
+    ...head,
+    createdByTickId: tickId,
+  };
 }
 
 function changedPlan(parts: ChangedPlanParts): GraphRopeReplacePlan {

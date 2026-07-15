@@ -7,6 +7,7 @@ export interface SaveCheckpoint {
   readonly id: number;
   readonly rootId: number;
   readonly path: string;
+  readonly authorityCheckpointId?: string;
 }
 
 export interface SaveCheckpointState {
@@ -20,6 +21,7 @@ export interface SaveCheckpointReceipt {
   readonly checkpointId: number;
   readonly rootId: number;
   readonly path: string;
+  readonly authorityCheckpointId?: string;
 }
 
 export interface SaveCheckpointResult {

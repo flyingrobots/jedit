@@ -1,6 +1,11 @@
 import { isGraphBackedRopeTextAuthority, type HotTextRuntimePort } from '../ports/hot-text-runtime.js';
 import { isFullSnapshotHotTextRuntimeFixture } from './full-snapshot-hot-text-runtime-fixture.js';
 
+export {
+  createGraphRopeHotTextAuthority,
+  GraphRopeTextAuthorityObstructionError,
+} from './graph-rope-hot-text-authority-adapter.js';
+
 export const JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY = 'JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY';
 
 const FULL_SNAPSHOT_TEXT_AUTHORITY_GUARD_MESSAGE = 'FullSnapshotHotTextRuntimeFixture cannot be used as production text authority.';

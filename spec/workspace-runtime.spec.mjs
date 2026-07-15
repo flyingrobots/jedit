@@ -63,20 +63,19 @@ test("workspace app source does not expose production text dependency bypass", a
   assert.doesNotMatch(source, /\bWorkspaceProductionTextDependencies\b/);
 });
 
-test("workspace app construction rejects absent graph rope authority", async () => {
+test("workspace app construction installs graph rope authority by default", async () => {
   const workspaceApp = await importDist("adapters", "workspace-app.js");
 
-  assert.throws(
+  assert.doesNotThrow(
     () =>
       workspaceApp.createWorkspaceApp({
         initialColumns: 120,
         initialRows: 24,
-        initialWorkingDirectory: "/repo",
+        initialWorkingDirectory: REPO_ROOT,
         perfEnabled: false,
         nowMs: () => 0,
         random: () => 0.5,
       }),
-    /requires graph rope text authority/,
   );
 });
 

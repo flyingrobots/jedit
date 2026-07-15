@@ -1,4 +1,4 @@
-export const FULL_SNAPSHOT_FIXTURE_AUTHORITY_MESSAGE = 'Full-snapshot fixture text authority requires --allow-full-snapshot-fixture; graph-backed authority is not installed yet.';
+export const FULL_SNAPSHOT_FIXTURE_AUTHORITY_MESSAGE = 'Full-snapshot fixture witness requires explicit --allow-full-snapshot-fixture; installed Jim uses graph-backed rope authority by default.';
 
 export function createFullSnapshotFixtureBackedEchoHostedSessionFactory(modules) {
   return {

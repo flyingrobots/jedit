@@ -1,4 +1,5 @@
 import type { EditorState } from './editor/model.js';
+import type { HotTextWindowProjection } from '../../ports/hot-text-runtime.js';
 import { EditorModes } from './editor/mode.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceTextAuthorityOpened } from './workspace-text-authority.js';
@@ -43,6 +44,7 @@ export type WorkspaceTextReadingCoverage =
 export interface WorkspaceTextReadingCacheBase {
   readonly bufferId: string;
   readonly readingId: string;
+  readonly projection?: HotTextWindowProjection;
   readonly lines: readonly string[];
   readonly coverage: WorkspaceTextReadingCoverage;
   readonly lineCount: number;

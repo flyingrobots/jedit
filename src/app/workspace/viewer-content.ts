@@ -22,7 +22,9 @@ import { ViewModes } from "./view-mode.js";
 import {
   canReadingReplaceWholeEditor,
   editorFromFullWorkspaceTextCache,
+  hasVisibleOptimisticText,
   isWorkspaceTextAuthorityOpened,
+  projectedSourceWindow,
 } from "./workspace-text-authority.js";
 import { VIEWER_LEFT_PAD, VIEWER_TOP_PAD } from "./viewport.js";
 import { fillSurface } from "./surface-fill.js";
@@ -38,7 +40,6 @@ import {
   titleBrailleSampleCacheIdentity,
   type TitleBrailleSampleCacheIdentity,
 } from "./title-braille-sampling.js";
-
 const MIN_VIEWPORT_DIMENSION = 1;
 const VIEWER_PAD_MULTIPLIER = 2;
 const TITLE_CAMERA_MOTION_EPSILON = 0.001;
@@ -160,17 +161,57 @@ function renderViewerWithState(
   return renderSourceViewer(
     surface,
     editor,
-    model.sourceHighlight?.path === editor.path
-      ? model.sourceHighlight
-      : undefined,
+    sourceHighlightForProjection(model, editor.path),
     {
       viewport,
       leftPad: VIEWER_LEFT_PAD,
       topPad: VIEWER_TOP_PAD,
       theme: model.jeditTheme,
       lineNumberMode: model.lineNumberMode,
+      reading: sourceWindowForModel(model),
     },
   );
+}
+
+function sourceWindowForModel(model: WorkspaceModel) {
+  if (!isWorkspaceTextAuthorityOpened(model.textAuthority)) {
+    return undefined;
+  }
+  if (hasVisibleOptimisticText(model.textAuthority)) {
+    return undefined;
+  }
+  const projected = projectedSourceWindow(model.textAuthority);
+  return projected ?? {
+    startLine: model.editor?.scrollRow ?? 0,
+    lineCount: 0,
+    totalLineCount: model.textAuthority.cache?.totalLineCount ?? 0,
+    hasMoreBefore: false,
+    hasMoreAfter: false,
+    lines: [],
+  };
+}
+
+function sourceHighlightForProjection(
+  model: WorkspaceModel,
+  editorPath: string,
+): WorkspaceModel['sourceHighlight'] {
+  const highlight = model.sourceHighlight;
+  if (highlight?.path !== editorPath || !isWorkspaceTextAuthorityOpened(model.textAuthority)) {
+    return highlight?.path === editorPath ? highlight : undefined;
+  }
+  const projection = model.textAuthority.cache?.projection;
+  return projection != null && sameProjectionBasis(highlight.projection, projection)
+    ? highlight
+    : undefined;
+}
+
+function sameProjectionBasis(
+  left: NonNullable<WorkspaceModel['sourceHighlight']>['projection'],
+  right: NonNullable<WorkspaceModel['sourceHighlight']>['projection'],
+): boolean {
+  return left?.basisHeadId === right?.basisHeadId
+    && left?.byteRange.startByte === right?.byteRange.startByte
+    && left?.byteRange.endByte === right?.byteRange.endByte;
 }
 
 function renderTitleBackdrop(
@@ -412,7 +453,6 @@ function shouldActivateLowRateBackdrop(
 interface FrameBudgetDecision {
   readonly frameBudgetPosture: TitleScenePerformanceFacts["frameBudgetPosture"];
 }
-
 export function isWorkspaceMarkdownPreviewAvailable(
   model: WorkspaceModel,
 ): boolean {
@@ -422,7 +462,7 @@ export function isWorkspaceMarkdownPreviewAvailable(
 function displayEditor(model: WorkspaceModel): WorkspaceModel["editor"] {
   const authority = model.textAuthority;
   return isWorkspaceTextAuthorityOpened(authority) &&
-    authority.dirty !== true &&
+    !hasVisibleOptimisticText(authority) &&
     canReadingReplaceWholeEditor(authority.cache)
     ? editorFromFullWorkspaceTextCache({ ...authority, cache: authority.cache }, model.editor)
     : model.editor;

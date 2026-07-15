@@ -55,7 +55,6 @@ const DEFAULT_VIEWPORT_LINE_COUNT = 24;
 const DEFAULT_BEFORE_LINES = 0;
 const DEFAULT_AFTER_LINES = 0;
 const DEFAULT_MAX_BYTES = 1048576;
-
 export const WorkspaceTextEditCommandKinds = Object.freeze({
   Insert: EDIT_COMMAND_INSERT,
   Replace: EDIT_COMMAND_REPLACE,
@@ -110,7 +109,7 @@ export type WorkspaceTextEditCommandRequest =
   | WorkspaceTextReplaceCommandRequest
   | WorkspaceTextDeleteCommandRequest;
 
-export interface WorkspaceTextCheckpointCommandRequest {
+interface WorkspaceTextSaveCommandRequest {
   readonly requestId: number;
   readonly filePath: string;
   readonly bufferId: string;
@@ -119,16 +118,14 @@ export interface WorkspaceTextCheckpointCommandRequest {
   readonly atMs: number;
 }
 
-export interface WorkspaceTextExportCommandRequest {
-  readonly requestId: number;
-  readonly filePath: string;
-  readonly bufferId: string;
+export interface WorkspaceTextCheckpointCommandRequest extends WorkspaceTextSaveCommandRequest {
+  readonly basisHeadId: string;
+}
+
+export interface WorkspaceTextExportCommandRequest extends WorkspaceTextSaveCommandRequest {
   readonly hostBasis: WorkspaceTextHostBasisKind;
   readonly hostFingerprint?: EditorFileFingerprint;
   readonly editorFile: EditorFilePort;
-  readonly productionTextSession: ProductionTextSession;
-  readonly textOperationSequencer: WorkspaceTextOperationSequencer;
-  readonly atMs: number;
 }
 
 export interface WorkspaceTextReadCommandRequest {
@@ -328,6 +325,7 @@ async function editWorkspaceText(
       filePath: request.filePath,
       bufferId: request.bufferId,
       receiptId: edited.result.receiptId,
+      causalTransition: edited.result.causalTransition,
       cache,
       cursorAfter: request.cursorAfter,
     };
@@ -371,6 +369,7 @@ async function checkpointWorkspaceText(
   try {
     const checkpointed = await request.productionTextSession.checkpointBuffer({
       bufferId: request.bufferId,
+      basisHeadId: request.basisHeadId,
       label: CHECKPOINT_LABEL,
       atMs: request.atMs,
     });
@@ -413,6 +412,7 @@ async function exportWorkspaceText(
       filePath: request.filePath,
       bufferId: request.bufferId,
       readingId: exported.readingId,
+      basisHeadId: exported.basisHeadId,
       hostFingerprint: editorFileFingerprintFromText(joinLines(savedLines)),
     };
   } catch (cause) {

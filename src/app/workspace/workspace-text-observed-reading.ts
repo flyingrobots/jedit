@@ -2,11 +2,14 @@ import {
   workspaceTextReadingCoverage,
   type WorkspaceTextReadingCache,
 } from './workspace-text-reading-cache.js';
+import type { HotTextWindowProjection } from '../../ports/hot-text-runtime.js';
 
 const FIRST_READING_LINE = 0;
+const UTF8_ENCODER = new TextEncoder();
 
 export interface WorkspaceTextObservedReading {
   readonly readingId: string;
+  readonly projection?: HotTextWindowProjection;
   readonly lines: readonly { readonly lineNumber?: number; readonly text: string }[];
   readonly startLine?: number;
   readonly lineCount: number;
@@ -30,6 +33,7 @@ export function readingCache(
   return {
     bufferId,
     readingId: reading.readingId,
+    projection: validatedProjection(reading),
     lines: reading.lines.map((line) => line.text),
     coverage: workspaceTextReadingCoverage({
       startLine,
@@ -49,6 +53,54 @@ export function readingCache(
     viewportLineCount: reading.viewportLineCount,
     truncated: reading.truncated,
   };
+}
+
+function validatedProjection(reading: WorkspaceTextObservedReading): HotTextWindowProjection | undefined {
+  if (reading.projection == null) {
+    return undefined;
+  }
+  const lines = reading.lines.map((line) => line.text);
+  if (!workspaceTextProjectionMatchesLines(reading.projection, lines)) {
+    throw new WorkspaceTextProjectionError();
+  }
+  return reading.projection;
+}
+
+export function workspaceTextProjectionMatchesLines(
+  projection: HotTextWindowProjection,
+  lines: readonly string[],
+): boolean {
+  return projection.text === lines.join('\n')
+    && validProjectionRange(projection)
+    && projection.support.every((support) => supportWithinProjection(support.byteRange, projection.byteRange));
+}
+
+function validProjectionRange(projection: HotTextWindowProjection): boolean {
+  const { startByte, endByte } = projection.byteRange;
+  return projection.basisHeadId.length > 0
+    && Number.isInteger(startByte)
+    && Number.isInteger(endByte)
+    && startByte >= FIRST_READING_LINE
+    && startByte <= endByte
+    && UTF8_ENCODER.encode(projection.text).length === endByte - startByte;
+}
+
+function supportWithinProjection(
+  support: HotTextWindowProjection['byteRange'],
+  projection: HotTextWindowProjection['byteRange'],
+): boolean {
+  return Number.isInteger(support.startByte)
+    && Number.isInteger(support.endByte)
+    && support.startByte >= projection.startByte
+    && support.startByte <= support.endByte
+    && support.endByte <= projection.endByte;
+}
+
+export class WorkspaceTextProjectionError extends Error {
+  public constructor() {
+    super('Workspace text cache projection does not match its rendered lines.');
+    this.name = 'WorkspaceTextProjectionError';
+  }
 }
 
 function readingStartLine(reading: WorkspaceTextObservedReading): number {

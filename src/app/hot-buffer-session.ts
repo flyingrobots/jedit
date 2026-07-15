@@ -69,5 +69,5 @@ export function saveHotBuffer(
   runtime: HotTextRuntimePort,
   state: HotTextBufferState,
 ): SaveHotCheckpointResult {
-  return runtime.saveCheckpoint(state);
+  return runtime.saveCheckpoint(state, { kind: 'MANUAL_SAVE' });
 }

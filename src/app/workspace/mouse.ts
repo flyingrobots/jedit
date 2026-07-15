@@ -5,15 +5,15 @@ import {
   scrollTextViewport,
 } from '../../ui/mouse-scroll.js';
 import { updateTitleCameraFromMouseLook } from '../title-camera-session.js';
-import { beginSourceHighlightRefresh } from '../source-highlight-session.js';
 import { moveSettingsFocusIndex } from '../settings-session.js';
 import type { WorkspaceModel } from './model.js';
-import { workspaceSourceHighlightMessage, type WorkspaceMsg } from './msg.js';
+import type { WorkspaceMsg } from './msg.js';
 import { editorViewport } from './editor-session.js';
 import { settingsRows } from './settings.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import { ViewModes } from './view-mode.js';
 import { FocusPanes } from '../../ui/panel-focus.js';
+import { beginWorkspaceSourceHighlightRefresh } from './workspace-source-highlight.js';
 
 export function updateFromMouse(
   msg: MouseMsg,
@@ -95,7 +95,7 @@ function updateEditorFromMouse(
   const editor = scrollTextViewport(model.editor, deltaRows, viewport.height);
   const next = { ...model, editor };
   return model.viewMode === ViewModes.Source
-    ? beginSourceHighlightRefresh<WorkspaceModel, WorkspaceMsg>(next, editor, viewport, sourceHighlighter, workspaceSourceHighlightMessage)
+    ? beginWorkspaceSourceHighlightRefresh(next, viewport, sourceHighlighter)
     : [next, []];
 }
 

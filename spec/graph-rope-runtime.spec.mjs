@@ -126,6 +126,7 @@ test('graph runtime replaces a UTF-8 range by admitting rewrite diff and receipt
   assert.equal(replaced.rewrite.basisHeadId, created.head.headId);
   assert.equal(replaced.diff.rewriteId, replaced.rewrite.rewriteId);
   assert.equal(replaced.receipt.rewriteId, replaced.rewrite.rewriteId);
+  assert.equal(replaced.nextHead.createdByTickId, replaced.receipt.tickId);
   assert.equal(reading.text, 'alpha BETA gamma');
   assert.equal(shape.retainedBlobBytes, UTF8_ENCODER.encode(initialText).length + UTF8_ENCODER.encode(replacementText).length);
   assert.equal(shape.materializedProjectionBytes, 0);

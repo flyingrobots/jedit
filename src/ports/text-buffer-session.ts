@@ -4,6 +4,7 @@ import type {
 } from '../generated/jedit/rope.wesley.generated.js';
 import type { JeditRetainedEvidenceInventory } from './jedit-retained-evidence.js';
 import type { JeditWhyByteRange, JeditWhyRangeReport } from './jedit-why-range.js';
+import type { HotTextWindowProjection } from './hot-text-runtime.js';
 
 export const READ_BASIS_HANDLE_KIND = 'read-basis-handle';
 export const REPLACE_RANGE_INTENT_KIND = 'replaceRange';
@@ -44,6 +45,7 @@ export interface TextWindowLine {
 
 export interface TextWindowReading {
   readonly readingId: ReadingId;
+  readonly projection: HotTextWindowProjection;
   readonly lines: readonly TextWindowLine[];
   readonly byteLength: number;
   readonly lineCount: number;
@@ -61,10 +63,17 @@ export interface ApplyIntentResult {
   readonly readBasis: ReadBasisHandle;
   readonly bufferVersion: BufferVersion;
   readonly receiptId: string;
+  readonly causalTransition?: TextBufferCausalTransition;
+}
+
+export interface TextBufferCausalTransition {
+  readonly admittedTickId: string;
+  readonly nextHeadId: string;
 }
 
 export interface CreateTextBufferCheckpointRequest {
   readonly kind: CheckpointKind;
+  readonly basisHeadId?: string;
   readonly label?: string | null;
 }
 

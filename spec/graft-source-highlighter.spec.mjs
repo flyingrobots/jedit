@@ -288,6 +288,49 @@ test('Graft source highlighter projects editor-buffer syntax spans through the s
   assert.equal(result.spans[1].role, port.SOURCE_HIGHLIGHT_ROLE.Variable);
 });
 
+test('Graft source highlighter preserves bounded projection basis and global line coordinates', async () => {
+  const { adapter } = await loadGraftSourceHighlighterModules();
+  let request;
+  const highlighter = adapter.createGraftSourceHighlighter({
+    loadRuntime: async () => ({
+      ensureParserReady: async () => undefined,
+      createProjectionBundle: (filePath, content, options) => {
+        request = { filePath, content, options };
+        return { syntax: { spans: [keywordSpanAtRow(0)] } };
+      },
+    }),
+  });
+  const projection = {
+    basisHeadId: 'head:causal',
+    byteRange: { startByte: 120, endByte: 126 },
+    text: 'export',
+    support: [{
+      leafId: 'leaf:1', blobId: 'blob:1', contentHash: 'hash:1',
+      byteRange: { startByte: 120, endByte: 126 },
+    }],
+  };
+
+  const result = await highlighter.highlight({
+    path: 'src/window.ts', text: projection.text, startLine: 24, lineCount: 1,
+    headId: projection.basisHeadId, tick: 8, textStartLine: 24, projection,
+  });
+
+  assert.equal(request.options.basis.headId, projection.basisHeadId);
+  assert.deepEqual(request.options.viewport, {
+    start: { row: 0, column: 0 }, end: { row: 1, column: 0 },
+  });
+  assert.deepEqual(result.spans[0].range, {
+    start: { row: 24, column: 0 }, end: { row: 24, column: 6 },
+  });
+});
+
+function keywordSpanAtRow(row) {
+  return {
+    className: 'keyword', text: 'export',
+    range: { start: { row, column: 0 }, end: { row, column: 6 } },
+  };
+}
+
 test('Graft source highlighter dependency includes released Colorful prose support', async () => {
   await ensureDistBuilt();
 
