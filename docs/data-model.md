@@ -345,6 +345,34 @@ construct. `startByte` and `endByte` are serialized forms of branded UTF-8
 offsets. `worldlineId` and the `ReadBasisHandle` representation remain below
 the optic boundary.
 
+### Authoritative line summaries and disposable indexes
+
+Line metrics retained by `RopeHead`, `RopeBranch`, and `RopeLeaf` are
+authoritative Jim facts. They participate in rope validation, causal readings,
+and retained evidence. A line-offset index is different: it is a versioned,
+basis-pinned projection derived from complete UTF-8 coverage of one rope head.
+
+The current disposable projection records:
+
+- the worldline and rope head that supplied its basis;
+- the immutable head metrics used to validate that basis;
+- the complete branded UTF-8 byte range it indexed;
+- zero-based line identities and branded byte offsets for line content and the
+  following line start; and
+- a projection kind and implementation version.
+
+The store keys indexes by both worldline and head identity. Head labels are not
+assumed globally unique. An observer may reuse a matching index to select a
+bounded text window, but it must reject and evict the index when the requested
+coverage or returned head metadata no longer matches.
+
+Line projection treats CRLF as one logical break and preserves the original
+UTF-8 byte width of Unicode text. Clearing every line index changes only read
+cost: the same index can be rebuilt from the same basis. It cannot change rope
+history, retained rewrite evidence, `:why` answers, or the authoritative line
+counts. The projection must never be emitted as a graph fact or used to mint a
+head, receipt, or causal identity.
+
 ***
 
 ## Echo/Wesley operation model

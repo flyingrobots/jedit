@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Separated authoritative rope line-count summaries from disposable line-offset
+  indexes. Text-window observers now rebuild versioned indexes from complete,
+  basis-pinned UTF-8 head coverage, isolate equal head labels across
+  worldlines, preserve Unicode and CRLF byte boundaries, reuse indexes for
+  bounded reads, and evict mismatched projections without changing history or
+  `:why` evidence.
 - Required every product text-window materialization to name an opaque rope
   head and branded UTF-8 byte range. Historical windows now resolve retained
   head authority rather than current session state, and generated readings use

@@ -16,11 +16,20 @@ import { readWorldlineSnapshot } from './jedit-contract-runtime.js';
 import { JEDIT_HOT_TEXT_PACKAGE_ID } from './jedit-contract-package.js';
 import { createJeditReadingRetainedEvidenceInventory } from './jedit-retained-evidence.js';
 import type { HashPort } from '../ports/hash.js';
+import {
+  buildJeditLineIndexProjection,
+  createDisposableJeditLineIndexStore,
+  selectJeditLineIndexWindow,
+  type DisposableJeditLineIndexStore,
+  type JeditLineIndexProjection,
+  type JeditLineIndexWindow,
+  type JeditLineOffsetProjection,
+} from './jedit-line-index-projection.js';
 
 const TEXT_WINDOW_MIN_LINE = 0;
 const TEXT_WINDOW_MIN_COUNT = 1;
-const TEXT_WINDOW_LINE_SEPARATOR_BYTE_LENGTH = 1;
 const UTF8_ENCODER = new TextEncoder();
+const UTF8_DECODER = new TextDecoder('utf-8', { fatal: true });
 const TEXT_WINDOW_PLAN_SPEC = Object.freeze({
   idPrefix: 'observer-plan:textWindow:',
   observerName: 'textWindow',
@@ -59,6 +68,20 @@ export interface TextWindowReadingEnvelope {
   readonly retainedEvidence: JeditRetainedEvidenceInventory;
 }
 
+export interface JeditTextWindowObserver {
+  read(
+    session: JeditWorldlineSession,
+    frontierRef: string,
+    input: TextWindowInput,
+  ): TextWindowReadingEnvelope;
+}
+
+interface JeditTextWindowObserverContext {
+  readonly runtime: HotTextRuntimePort;
+  readonly hash: HashPort;
+  readonly lineIndexes: DisposableJeditLineIndexStore;
+}
+
 export function readWorldlineSnapshotWithObserverPlan(
   runtime: HotTextRuntimePort,
   session: JeditWorldlineSession,
@@ -79,19 +102,32 @@ export function readWorldlineSnapshotWithObserverPlan(
   };
 }
 
-export function readTextWindowWithObserverPlan(
+export function createJeditTextWindowObserver(
   runtime: HotTextRuntimePort,
+  hash: HashPort,
+  lineIndexes: DisposableJeditLineIndexStore = createDisposableJeditLineIndexStore(),
+): JeditTextWindowObserver {
+  const context = Object.freeze({ runtime, hash, lineIndexes });
+  const observer: JeditTextWindowObserver = {
+    read(session, frontierRef, input) {
+      return readTextWindowWithObserverPlan(context, session, frontierRef, input);
+    },
+  };
+  return Object.freeze(observer);
+}
+
+function readTextWindowWithObserverPlan(
+  context: JeditTextWindowObserverContext,
   session: JeditWorldlineSession,
   frontierRef: string,
   input: TextWindowInput,
-  hash: HashPort,
 ): TextWindowReadingEnvelope {
   const schemas = QueryOperationSchemas.textWindow;
   const parsedInput = schemas.input.parse(input);
-  const reading = readTextWindow(runtime, session, parsedInput);
+  const reading = readTextWindow(context, session, parsedInput);
 
   return {
-    planId: textWindowPlanId(hash),
+    planId: textWindowPlanId(context.hash),
     observerName: TEXT_WINDOW_PLAN_SPEC.observerName,
     operationName: TEXT_WINDOW_PLAN_SPEC.operationName,
     frontierRef,
@@ -113,17 +149,12 @@ interface ProjectedTextWindowReading extends TextWindowReading {
   readonly projection: HotTextWindowProjection;
 }
 
-interface TextWindowSelection {
-  readonly startLine: number;
-  readonly totalLineCount: number;
-  readonly byteRange: HotTextWindowByteRange;
-}
-
 function readTextWindow(
-  runtime: HotTextRuntimePort,
+  context: JeditTextWindowObserverContext,
   session: JeditWorldlineSession,
   input: TextWindowInput,
 ): ProjectedTextWindowReading {
+  assertWorldlineMatchesSession(session, input);
   assertPositiveCount(input.viewportLineCount, 'viewportLineCount');
   assertNonNegativeCount(input.beforeLines, 'beforeLines');
   assertNonNegativeCount(input.afterLines, 'afterLines');
@@ -134,47 +165,67 @@ function readTextWindow(
     throw new TextWindowRuntimeError('startByte must not exceed endByte.');
   }
 
-  const basisProjection = readProjection(runtime, session, {
+  const lineIndex = lineIndexForInput(context, session, input);
+  const selection = selectJeditLineIndexWindow(lineIndex, input);
+  const byteRange = serializedRange(selection);
+  const projection = readProjection(context.runtime, session, {
     basisHeadId: input.basisHeadId,
-    byteRange: { startByte: input.startByte, endByte: input.endByte },
+    byteRange,
   });
-  const allLines = toTextLineReadings(basisProjection.text, TEXT_WINDOW_MIN_LINE, input.startByte);
-  const selection = selectTextWindow(allLines, input);
-  const projection = readProjection(runtime, session, {
-    basisHeadId: input.basisHeadId,
-    byteRange: selection.byteRange,
-  });
-  const lines = toTextLineReadings(projection.text, selection.startLine, selection.byteRange.startByte);
+  assertLineIndexBasis(context.lineIndexes, lineIndex, projection);
+  const lines = toTextLineReadings(projection, selection.lines);
+  const startLine = selection.startLine.value;
 
   return {
     worldline: session.worldline,
-    head: basisProjection.basis,
-    readingId: toTextWindowReadingId(projection.basisHeadId, selection.byteRange),
-    startLine: selection.startLine,
+    head: lineIndex.basis,
+    readingId: toTextWindowReadingId(projection.basisHeadId, byteRange),
+    startLine,
     lineCount: lines.length,
     totalLineCount: selection.totalLineCount,
-    hasMoreBefore: selection.startLine > TEXT_WINDOW_MIN_LINE,
-    hasMoreAfter: selection.startLine + lines.length < selection.totalLineCount,
+    hasMoreBefore: startLine > TEXT_WINDOW_MIN_LINE,
+    hasMoreAfter: startLine + lines.length < selection.totalLineCount,
     lines,
     projection,
   };
 }
 
-function toTextLineReadings(text: string, firstLine: number, firstByte: number): TextLineReading[] {
-  const lines = text.split('\n');
-  let startByte = firstByte;
+function assertWorldlineMatchesSession(
+  session: JeditWorldlineSession,
+  input: TextWindowInput,
+): void {
+  if (input.worldlineId !== session.worldline.worldlineId) {
+    throw new TextWindowRuntimeError('Text window worldline does not match its session basis.');
+  }
+}
 
-  return lines.map((line, lineOffset) => {
-    const endByte = startByte + byteLength(line);
-    const reading = {
-      lineNumber: firstLine + lineOffset,
-      text: line,
-      startByte,
-      endByte,
-    };
-    startByte = endByte + TEXT_WINDOW_LINE_SEPARATOR_BYTE_LENGTH;
-    return reading;
-  });
+function lineIndexForInput(
+  context: JeditTextWindowObserverContext,
+  session: JeditWorldlineSession,
+  input: TextWindowInput,
+): JeditLineIndexProjection {
+  const cached = context.lineIndexes.find(input.worldlineId, input.basisHeadId);
+  if (cached != null) {
+    assertLineIndexCoverage(context.lineIndexes, cached, input);
+    return cached;
+  }
+  const projection = readProjection(context.runtime, session, inputWindowRequest(input));
+  const index = buildJeditLineIndexProjection(projection);
+  context.lineIndexes.retain(index);
+  return index;
+}
+
+function toTextLineReadings(
+  projection: HotTextWindowProjection,
+  indexedLines: readonly JeditLineOffsetProjection[],
+): TextLineReading[] {
+  const bytes = UTF8_ENCODER.encode(projection.text);
+  return indexedLines.map((line) => ({
+    lineNumber: line.line.value,
+    text: decodeIndexedLine(bytes, projection.byteRange.startByte, line),
+    startByte: line.startByte.value,
+    endByte: line.contentEndByte.value,
+  }));
 }
 
 function readProjection(
@@ -213,48 +264,65 @@ function supportWithinRange(
     && support.startByte <= support.endByte;
 }
 
-function selectTextWindow(
-  allLines: readonly TextLineReading[],
+function inputWindowRequest(
   input: TextWindowInput,
-): TextWindowSelection {
-  const cursorLine = clampLine(input.cursorLine, allLines.length);
-  const startLine = Math.max(TEXT_WINDOW_MIN_LINE, cursorLine - input.beforeLines);
-  const requestedLineCount = input.beforeLines + input.viewportLineCount + input.afterLines;
-  const requestedLines = allLines.slice(startLine, startLine + requestedLineCount);
-  const lines = takeWithinByteBudget(requestedLines, input.maxBytes);
+): HotTextWindowRequest {
   return {
-    startLine,
-    totalLineCount: allLines.length,
-    byteRange: byteRangeForLines(lines),
+    basisHeadId: input.basisHeadId,
+    byteRange: { startByte: input.startByte, endByte: input.endByte },
   };
 }
 
-function byteRangeForLines(lines: readonly TextLineReading[]): HotTextWindowByteRange {
-  const first = lines[0];
-  const last = lines.at(-1);
-  if (first == null || last == null) {
-    return { startByte: TEXT_WINDOW_MIN_LINE, endByte: TEXT_WINDOW_MIN_LINE };
-  }
-  return { startByte: first.startByte, endByte: last.endByte };
+function serializedRange(selection: JeditLineIndexWindow): HotTextWindowByteRange {
+  return {
+    startByte: selection.byteRange.startByte.value,
+    endByte: selection.byteRange.endByte.value,
+  };
 }
 
-function takeWithinByteBudget(
-  lines: readonly TextLineReading[],
-  maxBytes: number,
-): TextLineReading[] {
-  let consumedBytes = TEXT_WINDOW_MIN_LINE;
-  const bounded: TextLineReading[] = [];
-
-  for (const line of lines) {
-    const lineBytes = line.endByte - line.startByte;
-    if (bounded.length > TEXT_WINDOW_MIN_LINE && consumedBytes + lineBytes > maxBytes) {
-      break;
-    }
-    bounded.push(line);
-    consumedBytes += lineBytes;
+function assertLineIndexCoverage(
+  store: DisposableJeditLineIndexStore,
+  index: JeditLineIndexProjection,
+  input: TextWindowInput,
+): void {
+  if (index.coverage.startByte.value !== input.startByte
+    || index.coverage.endByte.value !== input.endByte) {
+    store.delete(index.basis.worldlineId, index.basis.headId);
+    throw new TextWindowRuntimeError('Line index coverage does not match the requested text basis.');
   }
+}
 
-  return bounded;
+function assertLineIndexBasis(
+  store: DisposableJeditLineIndexStore,
+  index: JeditLineIndexProjection,
+  projection: HotTextWindowProjection,
+): void {
+  const basis = projection.basis;
+  if (basis.worldlineId !== index.basis.worldlineId
+    || basis.headId !== index.basis.headId
+    || basis.rootNodeId !== index.basis.rootNodeId
+    || basis.byteLength !== index.basis.byteLength
+    || basis.lineCount !== index.basis.lineCount) {
+    store.delete(index.basis.worldlineId, index.basis.headId);
+    throw new TextWindowRuntimeError('Line index basis does not match the materialized text head.');
+  }
+}
+
+function decodeIndexedLine(
+  bytes: Uint8Array,
+  projectionStartByte: number,
+  line: JeditLineOffsetProjection,
+): string {
+  const startByte = line.startByte.value - projectionStartByte;
+  const endByte = line.contentEndByte.value - projectionStartByte;
+  if (startByte < TEXT_WINDOW_MIN_LINE || endByte < startByte || endByte > bytes.length) {
+    throw new TextWindowRuntimeError('Line index offsets fall outside the materialized text window.');
+  }
+  try {
+    return UTF8_DECODER.decode(bytes.slice(startByte, endByte));
+  } catch {
+    throw new TextWindowRuntimeError('Line index offsets split a UTF-8 sequence.');
+  }
 }
 
 function assertPositiveCount(value: number, fieldName: string): void {
@@ -267,13 +335,6 @@ function assertNonNegativeCount(value: number, fieldName: string): void {
   if (!Number.isInteger(value) || value < TEXT_WINDOW_MIN_LINE) {
     throw new TextWindowRuntimeError(`${fieldName} must be a non-negative integer.`);
   }
-}
-
-function clampLine(line: number, totalLineCount: number): number {
-  if (line < TEXT_WINDOW_MIN_LINE) {
-    return TEXT_WINDOW_MIN_LINE;
-  }
-  return Math.min(line, Math.max(TEXT_WINDOW_MIN_LINE, totalLineCount - TEXT_WINDOW_MIN_COUNT));
 }
 
 function toTextWindowReadingId(

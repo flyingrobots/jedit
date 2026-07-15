@@ -59,6 +59,59 @@ test('jedit query observers read worldline snapshots and text windows', async ()
   assert.equal(textWindow.planId.includes('fake'), false);
 });
 
+test('text window observers reuse disposable CRLF and Unicode line indexes', async () => {
+  const modules = await loadModules();
+  const fixture = modules.runtime.createFullSnapshotHotTextRuntimeFixture();
+  const requests = [];
+  const context = createContext(modules, {
+    ...fixture,
+    textWindow(state, request) {
+      requests.push(request);
+      return fixture.textWindow(state, request);
+    },
+  });
+  const text = 'zero\r\none🙂\r\ntwo';
+  const session = createSession(modules, context.mutations, text);
+  const operationName = modules.packageModule.jeditHotTextContractPackage().queryOperationNames[1];
+
+  const first = context.observers.observeTextWindow({
+    operationName,
+    session,
+    frontierRef: FRONTIER_REF,
+    input: {
+      ...textWindowInput(session, text),
+      cursorLine: 1,
+    },
+  });
+  const second = context.observers.observeTextWindow({
+    operationName,
+    session,
+    frontierRef: FRONTIER_REF,
+    input: {
+      ...textWindowInput(session, text),
+      cursorLine: 2,
+    },
+  });
+
+  assert.deepEqual(first.reading.lines[0], {
+    lineNumber: 1,
+    text: 'one🙂',
+    startByte: 6,
+    endByte: 13,
+  });
+  assert.deepEqual(second.reading.lines[0], {
+    lineNumber: 2,
+    text: 'two',
+    startByte: 15,
+    endByte: 18,
+  });
+  assert.deepEqual(requests.map((request) => request.byteRange), [
+    { startByte: 0, endByte: 18 },
+    { startByte: 6, endByte: 13 },
+    { startByte: 15, endByte: 18 },
+  ]);
+});
+
 test('text window observers reject projections from the wrong causal basis', async () => {
   const modules = await loadModules();
   const fixture = modules.runtime.createFullSnapshotHotTextRuntimeFixture();
@@ -76,6 +129,22 @@ test('text window observers reject projections from the wrong causal basis', asy
     frontierRef: FRONTIER_REF,
     input: textWindowInput(session),
   }), /does not match its requested causal basis/);
+});
+
+test('text window observers reject input from another worldline', async () => {
+  const modules = await loadModules();
+  const context = createContext(modules);
+  const session = createSession(modules, context.mutations);
+
+  assert.throws(() => context.observers.observeQuery({
+    operationName: modules.packageModule.jeditHotTextContractPackage().queryOperationNames[1],
+    session,
+    frontierRef: FRONTIER_REF,
+    input: {
+      ...textWindowInput(session),
+      worldlineId: 'wl:other-buffer',
+    },
+  }), /worldline does not match its session basis/);
 });
 
 test('text window observers reject projection metadata from another worldline', async () => {
@@ -205,12 +274,12 @@ function createContext(modules, runtime = modules.runtime.createFullSnapshotHotT
   };
 }
 
-function textWindowInput(session) {
+function textWindowInput(session, text = INITIAL_TEXT) {
   return {
     worldlineId: session.worldline.worldlineId,
     basisHeadId: session.worldline.canonicalHeadId,
     startByte: 0,
-    endByte: Buffer.byteLength(INITIAL_TEXT, 'utf8'),
+    endByte: Buffer.byteLength(text, 'utf8'),
     cursorLine: FIRST_LINE,
     viewportLineCount: SINGLE_LINE,
     beforeLines: FIRST_LINE,
@@ -219,14 +288,14 @@ function textWindowInput(session) {
   };
 }
 
-function createSession(modules, mutations) {
+function createSession(modules, mutations, initialText = INITIAL_TEXT) {
   const descriptor = modules.packageModule.jeditHotTextContractPackage();
   const [createOperation] = descriptor.mutationOperationNames;
   const created = mutations.executeMutation({
     operationName: createOperation,
     input: {
       bufferKey: BUFFER_KEY,
-      initialText: INITIAL_TEXT,
+      initialText,
       projectionPath: BUFFER_KEY,
     },
   });

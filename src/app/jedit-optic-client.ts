@@ -14,8 +14,8 @@ import {
   type JeditWorldlineSession,
 } from './jedit-contract-runtime.js';
 import {
+  createJeditTextWindowObserver,
   readWorldlineSnapshotWithObserverPlan,
-  readTextWindowWithObserverPlan,
 } from './jedit-observer-runtime.js';
 import type {
   MutationOperationMap,
@@ -29,18 +29,17 @@ type CreateBufferWorldlineInput = MutationOperationMap['createBufferWorldline'][
 // generated GraphQL operation names are transmuted into app-owned runtime calls.
 export function createInMemoryJeditOpticClient(runtime: HotTextRuntimePort, hash: HashPort): JeditOpticClient {
   const readBasisHandles = new ReadBasisHandleRegistry();
+  const textWindowObserver = createJeditTextWindowObserver(runtime, hash);
   return {
     openTextBuffer: async (input) => openTextBuffer(runtime, hash, readBasisHandles, input),
     createBufferWorldline: async (input) => createBufferWorldline(runtime, input, hash),
     replaceRangeAsTick: async (session, input) => replaceRangeAsTick(runtime, session, input, hash),
     createCheckpoint: async (session, input) => createCheckpoint(runtime, session, input, hash),
     worldlineSnapshot: async (session, frontierRef, input) => readWorldlineSnapshotWithObserverPlan(runtime, session, frontierRef, input, hash),
-    textWindow: async (session, frontierRef, readBasisHandle, request) => readTextWindowWithObserverPlan(
-      runtime,
+    textWindow: async (session, frontierRef, readBasisHandle, request) => textWindowObserver.read(
       session,
       frontierRef,
       toTextWindowInput(readBasisHandles, session, readBasisHandle, request),
-      hash,
     ),
     requestRunUntilIdle: async () => {
       await Promise.resolve();
