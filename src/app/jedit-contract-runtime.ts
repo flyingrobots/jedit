@@ -1,4 +1,4 @@
-import { createTextRange, materializeRoot } from '../domain/text-edit-contract.js';
+import { createTextRange } from '../domain/text-edit-contract.js';
 import type { SaveCheckpointReceipt } from '../domain/save-checkpoint-contract.js';
 import type { TickAdmissionReceipt } from '../domain/tick-admission-contract.js';
 import type {
@@ -143,7 +143,7 @@ export function createBufferWorldline(
   if (!(parsedInput.createInitialCheckpoint ?? false)) {
     const result = MutationOperationSchemas.createBufferWorldline.result.parse({
       worldline: initialSession.worldline,
-      head: toHeadRecord(initialSession, hash),
+      head: toHeadRecord(runtime, initialSession, hash),
     });
     return {
       nextSession: initialSession,
@@ -164,7 +164,7 @@ export function createBufferWorldline(
   const checkpoint = metadata[0] == null ? undefined : toCheckpointRecord(nextSession, metadata[0]);
   const result = MutationOperationSchemas.createBufferWorldline.result.parse({
     worldline: nextSession.worldline,
-    head: toHeadRecord(nextSession, hash),
+    head: toHeadRecord(runtime, nextSession, hash),
     checkpoint,
   });
 
@@ -190,11 +190,12 @@ export function readWorldlineSnapshot(
   const parsedInput = QueryOperationSchemas.worldlineSnapshot.input.parse(input);
   ensureMatchingWorldline(session, parsedInput.worldlineId);
 
+  const text = materializeWorldline(runtime, session);
   return QueryOperationSchemas.worldlineSnapshot.result.parse({
     worldline: session.worldline,
-    head: toHeadRecord(session, hash),
+    head: projectedHeadRecord(session.state, session.worldline.worldlineId, text, hash),
     checkpoints: toCheckpointRecords(session),
-    text: materializeWorldline(runtime, session),
+    text,
   });
 }
 
@@ -236,7 +237,7 @@ export function replaceRangeAsTick(
   );
   return {
     nextSession: nextSession,
-    result: replaceRangeAsTickResult({ nextSession, tickMetadata, receipt: admission.receipt, baseHeadId, insertText: parsedInput.insertText, hash }),
+    result: replaceRangeAsTickResult({ runtime, nextSession, tickMetadata, receipt: admission.receipt, baseHeadId, insertText: parsedInput.insertText, hash }),
   };
 }
 
@@ -270,7 +271,7 @@ export function createCheckpoint(
   const checkpoint = toCheckpointRecord(nextSession, checkpointMetadata);
   const result = MutationOperationSchemas.createCheckpoint.result.parse({
     worldline: nextSession.worldline,
-    head: toHeadRecord(nextSession, hash),
+    head: toHeadRecord(runtime, nextSession, hash),
     checkpoint,
   });
 
@@ -301,13 +302,14 @@ function noCheckpointExecution(
 }
 
 type ReplaceRangeAsTickResultInput = {
+  readonly runtime: HotTextRuntimePort;
   readonly nextSession: JeditWorldlineSession; readonly tickMetadata: TickMetadata; readonly receipt: TickAdmissionReceipt;
   readonly baseHeadId: string; readonly insertText: string; readonly hash: HashPort;
 };
 function replaceRangeAsTickResult(input: ReplaceRangeAsTickResultInput): ReplaceRangeAsTickResult {
   return MutationOperationSchemas.replaceRangeAsTick.result.parse({
     worldline: input.nextSession.worldline,
-    nextHead: toHeadRecord(input.nextSession, input.hash),
+    nextHead: toHeadRecord(input.runtime, input.nextSession, input.hash),
     ropeRewrite: toRopeRewriteRecord(input.nextSession, input.tickMetadata),
     ropeDiff: toRopeDiffRecord(
       input.receipt,
@@ -400,11 +402,15 @@ function toCheckpointRecords(session: JeditWorldlineSession): Checkpoint[] {
   return session.checkpointMetadata.map((metadata) => toCheckpointRecord(session, metadata));
 }
 
-function toHeadRecord(session: JeditWorldlineSession, hash: HashPort): RopeHead {
+function toHeadRecord(
+  runtime: HotTextRuntimePort,
+  session: JeditWorldlineSession,
+  hash: HashPort,
+): RopeHead {
   return projectedHeadRecord(
     session.state,
     session.worldline.worldlineId,
-    materializeRoot(session.state.currentRoot),
+    materializeWorldline(runtime, session),
     hash,
   );
 }

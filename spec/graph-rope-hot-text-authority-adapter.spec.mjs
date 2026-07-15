@@ -145,6 +145,35 @@ test('materialization ignores a forged compatibility projection and reads the gr
   assert.equal(authority.materialize(forgedProjection), 'graph authority');
 });
 
+test('worldline snapshot head metadata is derived from graph materialization', async () => {
+  const modules = await loadModules();
+  const hash = modules.hash.createHashPort();
+  const authority = modules.authority.createGraphRopeHotTextAuthority({ hash });
+  const created = modules.contract.createBufferWorldline(authority, {
+    bufferKey: 'snapshot-authority.txt',
+    initialText: 'graph snapshot',
+    projectionPath: '/tmp/snapshot-authority.txt',
+    createInitialCheckpoint: false,
+  }, hash);
+  const session = new modules.contract.JeditWorldlineSession(
+    created.nextSession.worldline,
+    {
+      ...created.nextSession.state,
+      currentRoot: { ...created.nextSession.state.currentRoot, text: 'forged projection' },
+    },
+    created.nextSession.tickMetadata,
+    created.nextSession.checkpointMetadata,
+  );
+
+  const snapshot = modules.contract.readWorldlineSnapshot(authority, session, {
+    worldlineId: session.worldline.worldlineId,
+  }, hash);
+
+  assert.equal(snapshot.text, 'graph snapshot');
+  assert.equal(snapshot.head.utf16Length, snapshot.text.length);
+  assert.equal(snapshot.head.equivalenceDigest, hash.sha256Hex(snapshot.text));
+});
+
 test('manual save declares and anchors the current head without changing rope authority', async () => {
   const modules = await loadModules();
   const requests = [];
