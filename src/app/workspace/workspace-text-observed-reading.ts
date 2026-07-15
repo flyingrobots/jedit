@@ -4,6 +4,8 @@ import {
 } from './workspace-text-reading-cache.js';
 import type { HotTextWindowProjection } from '../../ports/hot-text-runtime.js';
 import type { TextWindowBasis } from '../../ports/text-buffer-session.js';
+import type { JeditTextWindowMaterializationProvenance } from '../../ports/jedit-text-window-materialization.js';
+import { jeditTextWindowMaterializationProvenanceMatchesProjection } from '../jedit-text-window-materialization-cache.js';
 
 const FIRST_READING_LINE = 0;
 const UTF8_ENCODER = new TextEncoder();
@@ -12,6 +14,7 @@ export interface WorkspaceTextObservedReading {
   readonly readingId: string;
   readonly textBasis: TextWindowBasis;
   readonly projection?: HotTextWindowProjection;
+  readonly materialization: JeditTextWindowMaterializationProvenance;
   readonly lines: readonly { readonly lineNumber?: number; readonly text: string }[];
   readonly startLine?: number;
   readonly lineCount: number;
@@ -37,6 +40,7 @@ export function readingCache(
     readingId: reading.readingId,
     textBasis: reading.textBasis,
     projection: validatedProjection(reading),
+    materialization: reading.materialization,
     lines: reading.lines.map((line) => line.text),
     coverage: workspaceTextReadingCoverage({
       startLine,
@@ -63,7 +67,11 @@ function validatedProjection(reading: WorkspaceTextObservedReading): HotTextWind
     return undefined;
   }
   const lines = reading.lines.map((line) => line.text);
-  if (!workspaceTextProjectionMatchesLines(reading.projection, lines)) {
+  if (!workspaceTextProjectionMatchesLines(reading.projection, lines)
+    || !jeditTextWindowMaterializationProvenanceMatchesProjection(
+      reading.materialization,
+      reading.projection,
+    )) {
     throw new WorkspaceTextProjectionError();
   }
   return reading.projection;

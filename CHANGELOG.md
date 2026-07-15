@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Added versioned text-window materialization provenance and a bounded,
+  disposable cache. Cache coordinates now name the requested rope head, exact
+  branded UTF-8 coverage, request namespace, observer plan, materializer
+  version, and policy. Stale or unsupported entries fail closed, materialized
+  projection bytes are metered separately from retained authoritative bytes,
+  and cache eviction cannot mutate rope history. Local cache digests and
+  request-frontier labels are explicitly acceleration metadata, not Echo
+  identities or admitted frontier evidence.
 - Separated authoritative rope line-count summaries from disposable line-offset
   indexes. Text-window observers now rebuild versioned indexes from complete,
   basis-pinned UTF-8 head coverage, isolate equal head labels across

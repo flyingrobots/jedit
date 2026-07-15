@@ -11,8 +11,7 @@ import type {
   HotTextWindowRequest,
 } from '../ports/hot-text-runtime.js';
 import type { JeditRetainedEvidenceInventory } from '../ports/jedit-retained-evidence.js';
-import type { JeditWorldlineSession } from './jedit-contract-runtime.js';
-import { readWorldlineSnapshot } from './jedit-contract-runtime.js';
+import { readWorldlineSnapshot, type JeditWorldlineSession } from './jedit-contract-runtime.js';
 import { JEDIT_HOT_TEXT_PACKAGE_ID } from './jedit-contract-package.js';
 import { createJeditReadingRetainedEvidenceInventory } from './jedit-retained-evidence.js';
 import type { HashPort } from '../ports/hash.js';
@@ -25,6 +24,17 @@ import {
   type JeditLineIndexWindow,
   type JeditLineOffsetProjection,
 } from './jedit-line-index-projection.js';
+import {
+  createDisposableJeditTextWindowMaterializationCache,
+  createJeditTextWindowMaterialization,
+  createJeditTextWindowMaterializationKey,
+  JEDIT_MATERIALIZATION_CACHE_HIT,
+  jeditTextWindowMaterializationProvenance,
+  type DisposableJeditTextWindowMaterializationCache,
+  type JeditTextWindowMaterialization,
+  type JeditTextWindowMaterializationKey,
+  type JeditTextWindowMaterializationProvenance,
+} from './jedit-text-window-materialization-cache.js';
 
 const TEXT_WINDOW_MIN_LINE = 0;
 const TEXT_WINDOW_MIN_COUNT = 1;
@@ -65,6 +75,7 @@ export interface TextWindowReadingEnvelope {
   readonly frontierRef: string;
   readonly reading: TextWindowReading;
   readonly projection: HotTextWindowProjection;
+  readonly materialization: JeditTextWindowMaterializationProvenance;
   readonly retainedEvidence: JeditRetainedEvidenceInventory;
 }
 
@@ -80,6 +91,14 @@ interface JeditTextWindowObserverContext {
   readonly runtime: HotTextRuntimePort;
   readonly hash: HashPort;
   readonly lineIndexes: DisposableJeditLineIndexStore;
+  readonly materializations: DisposableJeditTextWindowMaterializationCache;
+}
+
+interface JeditMaterializationObserverCoordinate {
+  readonly frontierRef: string;
+  readonly observerPlanId: string;
+  readonly basisHeadId: string;
+  readonly selection: JeditLineIndexWindow;
 }
 
 export function readWorldlineSnapshotWithObserverPlan(
@@ -106,8 +125,9 @@ export function createJeditTextWindowObserver(
   runtime: HotTextRuntimePort,
   hash: HashPort,
   lineIndexes: DisposableJeditLineIndexStore = createDisposableJeditLineIndexStore(),
+  materializations: DisposableJeditTextWindowMaterializationCache = createDisposableJeditTextWindowMaterializationCache(),
 ): JeditTextWindowObserver {
-  const context = Object.freeze({ runtime, hash, lineIndexes });
+  const context = Object.freeze({ runtime, hash, lineIndexes, materializations });
   const observer: JeditTextWindowObserver = {
     read(session, frontierRef, input) {
       return readTextWindowWithObserverPlan(context, session, frontierRef, input);
@@ -124,15 +144,17 @@ function readTextWindowWithObserverPlan(
 ): TextWindowReadingEnvelope {
   const schemas = QueryOperationSchemas.textWindow;
   const parsedInput = schemas.input.parse(input);
-  const reading = readTextWindow(context, session, parsedInput);
+  const planId = textWindowPlanId(context.hash);
+  const reading = readTextWindow(context, session, frontierRef, planId, parsedInput);
 
   return {
-    planId: textWindowPlanId(context.hash),
+    planId,
     observerName: TEXT_WINDOW_PLAN_SPEC.observerName,
     operationName: TEXT_WINDOW_PLAN_SPEC.operationName,
     frontierRef,
     reading: schemas.result.parse(reading),
     projection: reading.projection,
+    materialization: reading.materialization,
     retainedEvidence: createJeditReadingRetainedEvidenceInventory({
       packageId: JEDIT_HOT_TEXT_PACKAGE_ID,
       queryOperationName: TEXT_WINDOW_PLAN_SPEC.operationName,
@@ -147,32 +169,29 @@ function textWindowPlanId(hash: HashPort): string {
 
 interface ProjectedTextWindowReading extends TextWindowReading {
   readonly projection: HotTextWindowProjection;
+  readonly materialization: JeditTextWindowMaterializationProvenance;
 }
 
 function readTextWindow(
   context: JeditTextWindowObserverContext,
   session: JeditWorldlineSession,
+  frontierRef: string,
+  observerPlanId: string,
   input: TextWindowInput,
 ): ProjectedTextWindowReading {
-  assertWorldlineMatchesSession(session, input);
-  assertPositiveCount(input.viewportLineCount, 'viewportLineCount');
-  assertNonNegativeCount(input.beforeLines, 'beforeLines');
-  assertNonNegativeCount(input.afterLines, 'afterLines');
-  assertPositiveCount(input.maxBytes, 'maxBytes');
-  assertNonNegativeCount(input.startByte, 'startByte');
-  assertNonNegativeCount(input.endByte, 'endByte');
-  if (input.startByte > input.endByte) {
-    throw new TextWindowRuntimeError('startByte must not exceed endByte.');
-  }
+  assertTextWindowInput(session, input);
 
   const lineIndex = lineIndexForInput(context, session, input);
   const selection = selectJeditLineIndexWindow(lineIndex, input);
-  const byteRange = serializedRange(selection);
-  const projection = readProjection(context.runtime, session, {
+  const key = materializationKey(context, session, {
+    frontierRef,
+    observerPlanId,
     basisHeadId: input.basisHeadId,
-    byteRange,
+    selection,
   });
-  assertLineIndexBasis(context.lineIndexes, lineIndex, projection);
+  const materialization = materializeTextWindow(context, session, lineIndex, key);
+  const projection = materialization.projection;
+  const byteRange = serializedRange(selection);
   const lines = toTextLineReadings(projection, selection.lines);
   const startLine = selection.startLine.value;
 
@@ -187,6 +206,63 @@ function readTextWindow(
     hasMoreAfter: startLine + lines.length < selection.totalLineCount,
     lines,
     projection,
+    materialization: jeditTextWindowMaterializationProvenance(materialization),
+  };
+}
+
+function assertTextWindowInput(session: JeditWorldlineSession, input: TextWindowInput): void {
+  assertWorldlineMatchesSession(session, input);
+  assertPositiveCount(input.viewportLineCount, 'viewportLineCount');
+  assertNonNegativeCount(input.beforeLines, 'beforeLines');
+  assertNonNegativeCount(input.afterLines, 'afterLines');
+  assertPositiveCount(input.maxBytes, 'maxBytes');
+  assertNonNegativeCount(input.startByte, 'startByte');
+  assertNonNegativeCount(input.endByte, 'endByte');
+  if (input.startByte > input.endByte) {
+    throw new TextWindowRuntimeError('startByte must not exceed endByte.');
+  }
+}
+
+function materializationKey(
+  context: JeditTextWindowObserverContext,
+  session: JeditWorldlineSession,
+  coordinate: JeditMaterializationObserverCoordinate,
+): JeditTextWindowMaterializationKey {
+  return createJeditTextWindowMaterializationKey({
+    worldlineId: session.worldline.worldlineId,
+    headId: coordinate.basisHeadId,
+    requestFrontierRef: coordinate.frontierRef,
+    coverage: coordinate.selection.byteRange,
+    observerPlanId: coordinate.observerPlanId,
+  }, context.hash);
+}
+
+function materializeTextWindow(
+  context: JeditTextWindowObserverContext,
+  session: JeditWorldlineSession,
+  lineIndex: JeditLineIndexProjection,
+  key: JeditTextWindowMaterializationKey,
+): JeditTextWindowMaterialization {
+  const cached = context.materializations.lookup(key);
+  if (cached.status === JEDIT_MATERIALIZATION_CACHE_HIT) {
+    return cached.entry;
+  }
+  const projection = readProjection(context.runtime, session, {
+    basisHeadId: key.basis.headId,
+    byteRange: serializedMaterializationCoverage(key),
+  });
+  assertLineIndexBasis(context.lineIndexes, lineIndex, projection);
+  const materialization = createJeditTextWindowMaterialization(key, projection);
+  context.materializations.retain(materialization);
+  return materialization;
+}
+
+function serializedMaterializationCoverage(
+  key: JeditTextWindowMaterializationKey,
+): HotTextWindowByteRange {
+  return {
+    startByte: key.coverage.startByte.value,
+    endByte: key.coverage.endByte.value,
   };
 }
 

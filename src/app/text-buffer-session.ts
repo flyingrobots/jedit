@@ -250,6 +250,7 @@ function toObservedTextWindowReading(
       byteRange: request.byteRange,
     },
     projection: envelope.projection,
+    materialization: envelope.materialization,
     lines: toTextWindowLines(envelope),
     byteLength: textWindowByteLength(envelope),
     lineCount: envelope.reading.lineCount,

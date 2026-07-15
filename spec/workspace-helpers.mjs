@@ -194,15 +194,21 @@ export function basisPinnedTestTextSession(delegate) {
     async observeWindow(request) {
       const outcome = await delegate.observeWindow(request);
       if (outcome.kind !== "observed") return outcome;
-      const textBasis = outcome.observed.value.textBasis ?? requestTextBasis(request);
-      const lines = outcome.observed.value.lines;
+      const value = outcome.observed.value;
+      const textBasis = value.textBasis ?? requestTextBasis(request);
+      const lines = value.lines;
       const projectionText = lines.map((line) => line.text).join("\n");
-      const projection = outcome.observed.value.projection ?? fakeProjection(textBasis, lines, projectionText);
+      const projection = fixtureProjectionBasis(
+        value.projection ?? fakeProjection(textBasis, lines, projectionText),
+        value.totalLineCount ?? lines.length,
+      );
+      const materialization = value.materialization
+        ?? fixtureTextWindowMaterialization(projection, value.readingId);
       return {
         ...outcome,
         observed: {
           ...outcome.observed,
-          value: { ...outcome.observed.value, textBasis, projection },
+          value: { ...value, textBasis, projection, materialization },
         },
       };
     },
@@ -222,6 +228,48 @@ export function basisPinnedTestTextSession(delegate) {
     const currentLength = basis.byteRange.endByte.value - basis.byteRange.startByte.value;
     return fakeTextBasisForByteLength(currentLength + delta, `head:test:edit:${nextSequence}`);
   }
+}
+
+export function fixtureTextWindowMaterialization(projection, readingId = "fixture:reading") {
+  const startByte = projection.byteRange.startByte;
+  const endByte = projection.byteRange.endByte;
+  return {
+    key: {
+      schemaVersion: 1,
+      materializerVersion: "jedit.text-window.materializer.v1",
+      basis: {
+        worldlineId: projection.basis.worldlineId,
+        headId: projection.basisHeadId,
+        requestFrontierRef: `fixture:request-frontier:${readingId}`,
+      },
+      coverage: {
+        startByte: { kind: "utf8-byte-offset", value: startByte },
+        endByte: { kind: "utf8-byte-offset", value: endByte },
+      },
+      observerPlanId: "fixture:text-window-observer-plan",
+      policyDigest: "fixture:text-window-policy",
+      coordinateDigest: `fixture:text-window-coordinate:${readingId}`,
+      cacheKeyDigest: `fixture:text-window-cache-key:${readingId}`,
+    },
+    completeness: "complete",
+    materializedProjectionBytes: Buffer.byteLength(projection.text, "utf8"),
+  };
+}
+
+export function fixtureProjectionBasis(projection, totalLineCount) {
+  if (projection.basis != null) {
+    return projection;
+  }
+  return {
+    ...projection,
+    basis: {
+      worldlineId: "fixture:test-worldline",
+      headId: projection.basisHeadId,
+      rootNodeId: `fixture:test-root:${projection.basisHeadId}`,
+      byteLength: projection.byteRange.endByte,
+      lineCount: totalLineCount,
+    },
+  };
 }
 
 function fakeProjection(textBasis, lines, text) {

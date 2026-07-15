@@ -11,6 +11,12 @@ import {
   type TextWindowReading,
 } from '../../ports/text-buffer-session.js';
 import {
+  JEDIT_TEXT_WINDOW_MATERIALIZATION_COMPLETENESS_COMPLETE,
+  JEDIT_TEXT_WINDOW_MATERIALIZATION_SCHEMA_VERSION,
+  JEDIT_TEXT_WINDOW_MATERIALIZER_VERSION,
+  type JeditTextWindowMaterializationProvenance,
+} from '../../ports/jedit-text-window-materialization.js';
+import {
   BTR_MISSING,
   CAUSAL_HISTORY_UNAVAILABLE,
   COORDINATE_KIND_RANGE_AT_HEAD,
@@ -47,6 +53,11 @@ const DEFAULT_READING_ID = 'reading:preflight';
 const DEFAULT_HEAD_ID = 'head:preflight';
 const DEFAULT_WORLDLINE_ID = 'worldline:preflight';
 const DEFAULT_ROOT_NODE_ID = 'root:preflight';
+const FIXTURE_FRONTIER_REF = 'fixture:preflight-request-frontier';
+const FIXTURE_OBSERVER_PLAN_ID = 'fixture:preflight-observer-plan';
+const FIXTURE_POLICY_DIGEST = 'fixture:preflight-policy';
+const FIXTURE_COORDINATE_DIGEST = 'fixture:preflight-coordinate';
+const FIXTURE_CACHE_KEY_DIGEST = 'fixture:preflight-cache-key';
 const DEFAULT_TEXT_START_BYTE = 0;
 const UTF8_ENCODER = new TextEncoder();
 const DEFAULT_BUFFER_VERSION = 1;
@@ -284,19 +295,8 @@ function textWindowReading(text: string, readingId: string, basis: TextWindowBas
   return {
     readingId,
     textBasis: basis,
-    projection: {
-      basisHeadId: DEFAULT_HEAD_ID,
-      basis: {
-        worldlineId: DEFAULT_WORLDLINE_ID,
-        headId: DEFAULT_HEAD_ID,
-        rootNodeId: DEFAULT_ROOT_NODE_ID,
-        byteLength: textByteLength,
-        lineCount: text.split('\n').length,
-      },
-      byteRange: { startByte: DEFAULT_TEXT_START_BYTE, endByte: textByteLength },
-      text,
-      support: [],
-    },
+    projection: fixtureProjection(text, textByteLength),
+    materialization: fixtureMaterialization(textByteLength),
     lines: [
       {
         lineNumber: PREFLIGHT_FIRST_INDEX,
@@ -314,6 +314,51 @@ function textWindowReading(text: string, readingId: string, basis: TextWindowBas
     cursorLine: PREFLIGHT_FIRST_INDEX,
     viewportLineCount: PREFLIGHT_ROWS,
     truncated: false,
+  };
+}
+
+function fixtureProjection(
+  text: string,
+  textByteLength: number,
+): NonNullable<TextWindowReading['projection']> {
+  return {
+    basisHeadId: DEFAULT_HEAD_ID,
+    basis: {
+      worldlineId: DEFAULT_WORLDLINE_ID,
+      headId: DEFAULT_HEAD_ID,
+      rootNodeId: DEFAULT_ROOT_NODE_ID,
+      byteLength: textByteLength,
+      lineCount: text.split('\n').length,
+    },
+    byteRange: { startByte: DEFAULT_TEXT_START_BYTE, endByte: textByteLength },
+    text,
+    support: [],
+  };
+}
+
+function fixtureMaterialization(
+  textByteLength: number,
+): JeditTextWindowMaterializationProvenance {
+  return {
+    key: {
+      schemaVersion: JEDIT_TEXT_WINDOW_MATERIALIZATION_SCHEMA_VERSION,
+      materializerVersion: JEDIT_TEXT_WINDOW_MATERIALIZER_VERSION,
+      basis: {
+        worldlineId: DEFAULT_WORLDLINE_ID,
+        headId: DEFAULT_HEAD_ID,
+        requestFrontierRef: FIXTURE_FRONTIER_REF,
+      },
+      coverage: {
+        startByte: { kind: 'utf8-byte-offset', value: DEFAULT_TEXT_START_BYTE },
+        endByte: { kind: 'utf8-byte-offset', value: textByteLength },
+      },
+      observerPlanId: FIXTURE_OBSERVER_PLAN_ID,
+      policyDigest: FIXTURE_POLICY_DIGEST,
+      coordinateDigest: FIXTURE_COORDINATE_DIGEST,
+      cacheKeyDigest: FIXTURE_CACHE_KEY_DIGEST,
+    },
+    completeness: JEDIT_TEXT_WINDOW_MATERIALIZATION_COMPLETENESS_COMPLETE,
+    materializedProjectionBytes: textByteLength,
   };
 }
 

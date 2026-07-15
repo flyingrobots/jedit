@@ -3,6 +3,8 @@ import test from "node:test";
 import { createNotificationState } from "@flyingrobots/bijou-tui";
 import {
   fakeTextOperationSequencer,
+  fixtureProjectionBasis,
+  fixtureTextWindowMaterialization,
   importDist,
   fakeProductionTextSession,
   mockDeps,
@@ -1856,16 +1858,19 @@ function workspaceReadingCache(overrides = {}) {
     );
   const projectionText = lines.join("\n");
   const textBasis = testTextBasis(projectionText);
+  const readingId = overrides.readingId ?? "reading:test";
+  const projection = fixtureProjectionBasis({
+    basisHeadId: textBasis.basisHeadId,
+    byteRange: { startByte: 0, endByte: Buffer.byteLength(projectionText, "utf8") },
+    text: projectionText,
+    support: [],
+  }, totalLineCount);
   return {
     bufferId: "buffer:notes",
-    readingId: "reading:test",
+    readingId,
     textBasis,
-    projection: {
-      basisHeadId: "head:test",
-      byteRange: { startByte: 0, endByte: Buffer.byteLength(projectionText, "utf8") },
-      text: projectionText,
-      support: [],
-    },
+    projection,
+    materialization: fixtureTextWindowMaterialization(projection, readingId),
     lines,
     coverage,
     lineCount: totalLineCount,
@@ -1887,15 +1892,18 @@ function textWindowReading(options) {
   const totalLineCount = options.totalLineCount ?? lines.length;
   const projectionText = lines.join("\n");
   const textBasis = options.textBasis ?? testTextBasis(projectionText);
+  const readingId = options.readingId ?? "reading:test";
+  const projection = fixtureProjectionBasis({
+    basisHeadId: textBasis.basisHeadId,
+    byteRange: { startByte: 0, endByte: Buffer.byteLength(projectionText, "utf8") },
+    text: projectionText,
+    support: [],
+  }, totalLineCount);
   return {
-    readingId: options.readingId ?? "reading:test",
+    readingId,
     textBasis,
-    projection: {
-      basisHeadId: "head:test",
-      byteRange: { startByte: 0, endByte: Buffer.byteLength(projectionText, "utf8") },
-      text: projectionText,
-      support: [],
-    },
+    projection,
+    materialization: fixtureTextWindowMaterialization(projection, readingId),
     lines: lines.map((text, index) => ({
       lineNumber: startLine + index,
       startByte: byteOffsetAtLine(lines, index),

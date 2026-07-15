@@ -92,6 +92,15 @@ test('text window observers reuse disposable CRLF and Unicode line indexes', asy
       cursorLine: 2,
     },
   });
+  const repeated = context.observers.observeTextWindow({
+    operationName,
+    session,
+    frontierRef: FRONTIER_REF,
+    input: {
+      ...textWindowInput(session, text),
+      cursorLine: 2,
+    },
+  });
 
   assert.deepEqual(first.reading.lines[0], {
     lineNumber: 1,
@@ -110,6 +119,16 @@ test('text window observers reuse disposable CRLF and Unicode line indexes', asy
     { startByte: 6, endByte: 13 },
     { startByte: 15, endByte: 18 },
   ]);
+  assert.deepEqual(repeated.projection, second.projection);
+  assert.equal(repeated.materialization.key.basis.headId, session.worldline.canonicalHeadId);
+  assert.equal(repeated.materialization.key.basis.requestFrontierRef, FRONTIER_REF);
+  assert.equal(repeated.materialization.key.observerPlanId, repeated.planId);
+  assert.deepEqual(repeated.materialization.key.coverage, {
+    startByte: { kind: 'utf8-byte-offset', value: 15 },
+    endByte: { kind: 'utf8-byte-offset', value: 18 },
+  });
+  assert.equal(repeated.materialization.completeness, 'complete');
+  assert.equal(repeated.materialization.materializedProjectionBytes, 3);
 });
 
 test('text window observers reject projections from the wrong causal basis', async () => {

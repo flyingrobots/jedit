@@ -170,6 +170,11 @@ export function byteOffsetsEqual(left: ByteOffset, right: ByteOffset): boolean {
   return compareByteOffsets(left, right) === ORDER_EQUAL;
 }
 
+export function textByteRangesEqual(left: TextByteRange, right: TextByteRange): boolean {
+  return byteOffsetsEqual(left.startByte, right.startByte)
+    && byteOffsetsEqual(left.endByte, right.endByte);
+}
+
 function isNonNegativeInteger(value: number): boolean {
   return Number.isInteger(value) && value >= ZERO_VALUE;
 }

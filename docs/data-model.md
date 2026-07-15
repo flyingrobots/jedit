@@ -28,6 +28,11 @@ flowchart LR
 
 Core rules:
 
+- Every durable or recoverable user-state transition, and every authoritative
+  reading used to reconstruct that state, must pass through Echo-owned
+  admission, scheduling, witnessed history, receipts, and recovery. Jim may
+  own domain semantics and disposable projections; it may not substitute a
+  local map, cache, fixture, or handwritten host for Echo authority.
 - App-facing jedit code carries opaque Jim-owned rope-head identities and
   branded UTF-8 byte ranges when it requests materialized text.
 - App code does not derive, inspect, or mint those identities.
@@ -372,6 +377,37 @@ cost: the same index can be rebuilt from the same basis. It cannot change rope
 history, retained rewrite evidence, `:why` answers, or the authoritative line
 counts. The projection must never be emitted as a graph fact or used to mint a
 head, receipt, or causal identity.
+
+### Disposable text-window materializations
+
+A text-window materialization is a derived read artifact, not rope authority.
+Its cache key records:
+
+- the Jim worldline and opaque rope head used as its basis;
+- the exact branded UTF-8 byte coverage;
+- the schema and materializer versions;
+- the observer plan and policy digest; and
+- a request-frontier namespace used to prevent reuse across distinct requests.
+
+`requestFrontierRef` is intentionally not called an Echo frontier. The current
+value is supplied by the transitional request corridor and is not evidence of
+an Echo-admitted causal frontier. Likewise, `coordinateDigest`,
+`cacheKeyDigest`, and `policyDigest` are Jim-local acceleration identifiers.
+They must not be accepted as Echo facts, receipts, anchor identities, WAL
+evidence, or provenance.
+
+Completeness means that the cached projection exactly covers the byte range in
+its key. It does not mean that the range covers the whole document. A stale
+schema, materializer, policy, basis, coverage, or projection mismatch makes the
+entry unusable. The observer evicts or ignores that entry and rematerializes
+from the requested rope basis; it never silently serves the stale bytes.
+
+The cache reports `materializedProjectionBytes` separately from graph-rope
+retention metrics. Clearing or evicting every materialization may make reads
+slower, but it cannot change a rope head, graph fact, rewrite, receipt,
+checkpoint, `:why` result, or recovery outcome. A future native Echo/Edict read
+corridor may replace the request namespace with opaque admitted basis evidence,
+but Jim must consume that evidence rather than derive or mint it.
 
 ***
 

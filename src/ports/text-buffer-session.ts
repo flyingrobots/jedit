@@ -6,6 +6,7 @@ import type { TextByteRange } from '../domain/graph-rope-types.js';
 import type { JeditRetainedEvidenceInventory } from './jedit-retained-evidence.js';
 import type { JeditWhyByteRange, JeditWhyRangeReport } from './jedit-why-range.js';
 import type { HotTextWindowProjection } from './hot-text-runtime.js';
+import type { JeditTextWindowMaterializationProvenance } from './jedit-text-window-materialization.js';
 
 export const READ_BASIS_HANDLE_KIND = 'read-basis-handle';
 export const REPLACE_RANGE_INTENT_KIND = 'replaceRange';
@@ -48,6 +49,7 @@ export interface TextWindowReading {
   readonly readingId: ReadingId;
   readonly textBasis: TextWindowBasis;
   readonly projection: HotTextWindowProjection;
+  readonly materialization: JeditTextWindowMaterializationProvenance;
   readonly lines: readonly TextWindowLine[];
   readonly byteLength: number;
   readonly lineCount: number;
