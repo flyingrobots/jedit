@@ -20,6 +20,7 @@ import {
   type TickReceiptFact,
 } from './graph-rope-contract.js';
 import { validateCheckpointAnchorAdmissionRequest } from './graph-rope-causal-anchor-validation.js';
+import { isRopeCheckpointReason } from './graph-rope-checkpoint-validation.js';
 import {
   createCheckpointAnchorAdmissionRequest,
   createCheckpointAnchorAssociation,
@@ -254,6 +255,9 @@ function createCheckpoint(
   state: GraphRopeRuntimeState,
   input: GraphRopeCreateCheckpointInput,
 ): GraphRopeRuntimeResult<GraphRopeCreateCheckpointResult> {
+  if (!isRopeCheckpointReason(input.reason)) {
+    return { ok: false, code: GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_FACT };
+  }
   const head = headById(state, input.headId);
   if (head === null) {
     return { ok: false, code: GRAPH_ROPE_RUNTIME_OBSTRUCTION_MISSING_HEAD };

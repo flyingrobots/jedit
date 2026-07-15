@@ -648,7 +648,7 @@ test('graph runtime rejects checkpoints for a different worldline', async () => 
   });
 });
 
-test('graph runtime rejects unknown checkpoint reasons', async () => {
+test('graph runtime rejects invalid checkpoint reasons before deriving identity', async () => {
   const { runtime } = await loadModules();
   const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
   const created = assertOk(graph.createBufferWorldline({
@@ -656,14 +656,16 @@ test('graph runtime rejects unknown checkpoint reasons', async () => {
     initialText: 'alpha',
   }));
 
-  assert.deepEqual(graph.createCheckpoint({
-    worldlineId: 'worldline:checkpoint-reason',
-    headId: created.head.headId,
-    reason: 'pretend-save',
-  }), {
-    ok: false,
-    code: OBSTRUCTION_INVALID_FACT,
-  });
+  for (const reason of ['pretend-save', 1n]) {
+    assert.deepEqual(graph.createCheckpoint({
+      worldlineId: 'worldline:checkpoint-reason',
+      headId: created.head.headId,
+      reason,
+    }), {
+      ok: false,
+      code: OBSTRUCTION_INVALID_FACT,
+    });
+  }
 });
 
 test('graph runtime preserves untouched leaf identity across narrow replacements', async () => {

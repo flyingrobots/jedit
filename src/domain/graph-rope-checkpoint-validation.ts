@@ -16,6 +16,7 @@ import {
   type FactValidationErrorCode,
   type FactValidationResult,
   type RopeAdmittedFact,
+  type RopeCheckpointReason,
   type RopeFactValidationContext,
 } from './graph-rope-types.js';
 
@@ -34,7 +35,7 @@ export function validateRopeCheckpointFact(
   if (idIssue !== null) {
     return invalidFact(idIssue);
   }
-  if (!VALID_CHECKPOINT_REASONS.has(fact.reason)) {
+  if (!isRopeCheckpointReason(fact.reason)) {
     return invalidFact(FACT_VALIDATION_ERROR_INVALID_REFERENCE);
   }
   const worldline = resolveFactById(context, fact.worldlineId);
@@ -53,6 +54,10 @@ export function validateRopeCheckpointFact(
   return fact.checkpointId === expectedId
     ? validFact(fact)
     : invalidFact(FACT_VALIDATION_ERROR_HASH_MISMATCH);
+}
+
+export function isRopeCheckpointReason(reason: RopeCheckpointReason): boolean {
+  return typeof reason === STRING_TYPE && VALID_CHECKPOINT_REASONS.has(reason);
 }
 
 export function validateRopeCheckpointAnchoredFact(
