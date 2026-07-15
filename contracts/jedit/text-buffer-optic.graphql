@@ -1,11 +1,10 @@
 """
 App-facing text buffer optic contract.
 
-This schema owns editor nouns and opaque app capabilities. Runtime coordinates
-belong below this boundary.
+This schema owns editor nouns and explicit Jim text bases. Echo runtime
+coordinates and transport capabilities belong below this boundary.
 """
 scalar DateTime
-scalar ReadBasisHandle
 
 """Product-facing text buffer identity and display metadata."""
 type TextBuffer {
@@ -27,11 +26,23 @@ type TextBufferOptic {
     """Product buffer exposed by this optic."""
     buffer: TextBuffer!
 
-    """Opaque token used to request reads through this optic capability."""
-    readBasis: ReadBasisHandle!
+    """Immutable text basis returned when this optic was opened."""
+    openedTextBasis: TextWindowBasis!
 
     """Session-local product version for this buffer optic."""
     bufferVersion: Int!
+}
+
+"""Opaque Jim head identity and authoritative UTF-8 materialization range."""
+type TextWindowBasis {
+    """Opaque Jim rope-head fact identity; clients must not construct it."""
+    basisHeadId: ID!
+
+    """Inclusive UTF-8 byte offset for this materialization basis."""
+    startByte: Int!
+
+    """Exclusive UTF-8 byte offset for this materialization basis."""
+    endByte: Int!
 }
 
 """One line returned by a bounded text-window read."""
@@ -53,6 +64,9 @@ type TextWindowLine {
 type TextWindowReading {
     """Stable reading identifier for this observed window."""
     readingId: ID!
+
+    """Exact immutable head and byte-range basis for this reading."""
+    textBasis: TextWindowBasis!
 
     """Lines included in this bounded window."""
     lines: [TextWindowLine!]!
@@ -90,8 +104,8 @@ type CreateBufferPayload {
     """Created product buffer."""
     buffer: TextBuffer!
 
-    """Opaque read token issued for the created buffer."""
-    readBasis: ReadBasisHandle!
+    """Initial immutable basis for reading the created buffer."""
+    textBasis: TextWindowBasis!
 
     """Initial session-local product version."""
     bufferVersion: Int!
@@ -105,8 +119,8 @@ type ReplaceRangePayload {
     """Edited product buffer."""
     buffer: TextBuffer!
 
-    """Opaque read token for reading after the edit."""
-    readBasis: ReadBasisHandle!
+    """Immutable basis for reading the admitted edit result."""
+    textBasis: TextWindowBasis!
 
     """Updated session-local product version."""
     bufferVersion: Int!
@@ -144,6 +158,15 @@ input ReplaceRangeInput {
 
 """Input for reading a bounded text window."""
 input TextWindowInput {
+    """Opaque rope head that supplies text for this reading."""
+    basisHeadId: ID!
+
+    """Inclusive UTF-8 byte offset of the allowed materialization range."""
+    startByte: Int!
+
+    """Exclusive UTF-8 byte offset of the allowed materialization range."""
+    endByte: Int!
+
     """Zero-based cursor line used to center the read."""
     cursorLine: Int!
 
@@ -171,6 +194,6 @@ type Mutation {
 
 """Product-facing text buffer reads."""
 type Query {
-    """Read a bounded text window through an opaque read basis handle."""
-    textWindow(readBasis: ReadBasisHandle!, input: TextWindowInput!): TextWindowReading!
+    """Read a bounded text window from the explicit basis in the input."""
+    textWindow(input: TextWindowInput!): TextWindowReading!
 }

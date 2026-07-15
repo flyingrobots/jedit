@@ -3,6 +3,8 @@ import test from "node:test";
 import { createNotificationState } from "@flyingrobots/bijou-tui";
 import {
   fakeTextOperationSequencer,
+  fixtureProjectionBasis,
+  fixtureTextWindowMaterialization,
   importDist,
   fakeProductionTextSession,
   mockDeps,
@@ -12,6 +14,10 @@ import {
   mockRuntime,
   surfaceText,
 } from "./workspace-helpers.mjs";
+
+function byteOffset(value) {
+  return { kind: "utf8-byte-offset", value };
+}
 
 const HOST_FINGERPRINT_A = Object.freeze({
   algorithm: "sha256",
@@ -74,28 +80,17 @@ test("file open routes through production text session and applies initial bound
   const productionTextSession = {
     openBuffer: async (request) => {
       openedBuffers.push(request);
-      return {
-        kind: "opened",
-        optic: {
-          buffer: {
-            bufferId: "buffer:notes",
-          },
-        },
-      };
+      return openedTextOutcome("buffer:notes", "hello\nworld");
     },
     observeWindow: async (request) => {
       observedBuffers.push(request);
       return {
         kind: "observed",
         observed: {
-          value: {
+          value: textWindowReading({
             readingId: "reading:notes",
-            lines: [{ text: "hello" }, { text: "world" }],
-            lineCount: 2,
-            cursorLine: 0,
-            viewportLineCount: 24,
-            truncated: false,
-          },
+            lines: ["hello", "world"],
+          }),
         },
       };
     },
@@ -133,6 +128,11 @@ test("file open routes through production text session and applies initial bound
   assert.deepEqual(observedBuffers, [
     {
       bufferId: "buffer:notes",
+      basisHeadId: "head:test",
+      byteRange: {
+        startByte: { kind: "utf8-byte-offset", value: 0 },
+        endByte: { kind: "utf8-byte-offset", value: 11 },
+      },
       aperture: {
         cursorLine: 0,
         viewportLineCount: 24,
@@ -172,14 +172,7 @@ test("opening a long file does not truncate editor projection to the first windo
   const filePath = "/repo/long.txt";
   const hostLines = Array.from({ length: 40 }, (_, index) => `line ${index}`);
   const productionTextSession = {
-    openBuffer: async () => ({
-      kind: "opened",
-      optic: {
-        buffer: {
-          bufferId: "buffer:long",
-        },
-      },
-    }),
+    openBuffer: async () => openedTextOutcome("buffer:long", hostLines.join("\n")),
     observeWindow: async () => ({
       kind: "observed",
       observed: {
@@ -369,25 +362,22 @@ test("insert and delete keys submit production text edits with optimistic local 
   const productionTextSession = {
     insertText: async (request) => {
       edits.push(["insert", request]);
-      return { kind: "applied", result: { receiptId: "receipt:insert" } };
+      return appliedTextOutcome("receipt:insert", "aXbc");
     },
     deleteRange: async (request) => {
       edits.push(["delete", request]);
-      return { kind: "applied", result: { receiptId: "receipt:delete" } };
+      return appliedTextOutcome("receipt:delete", editReadingText(observed.length + 1));
     },
     observeWindow: async (request) => {
       observed.push(request);
       return {
         kind: "observed",
         observed: {
-          value: {
+          value: textWindowReading({
             readingId: `reading:${observed.length}`,
-            lines: [{ text: editReadingText(observed.length) }],
-            lineCount: 1,
-            cursorLine: 0,
-            viewportLineCount: 24,
-            truncated: false,
-          },
+            lines: [editReadingText(observed.length)],
+            textBasis: { basisHeadId: request.basisHeadId, byteRange: request.byteRange },
+          }),
         },
       };
     },
@@ -454,7 +444,7 @@ test("insert and delete keys submit production text edits with optimistic local 
     "insert",
     {
       bufferId: "buffer:notes",
-      startByte: 1,
+      startByte: byteOffset(1),
       insertText: "X",
       atMs: 12,
     },
@@ -490,8 +480,8 @@ test("insert and delete keys submit production text edits with optimistic local 
     "delete",
     {
       bufferId: "buffer:notes",
-      startByte: 1,
-      endByte: 2,
+      startByte: byteOffset(1),
+      endByte: byteOffset(2),
       atMs: 12,
     },
   ]);
@@ -522,8 +512,8 @@ test("insert and delete keys submit production text edits with optimistic local 
     "delete",
     {
       bufferId: "buffer:notes",
-      startByte: 0,
-      endByte: 1,
+      startByte: byteOffset(0),
+      endByte: byteOffset(1),
       atMs: 12,
     },
   ]);
@@ -589,8 +579,8 @@ test("normal mode dd submits a production line delete edit", async () => {
   assert.deepEqual(deletes, [
     {
       bufferId: "buffer:notes",
-      startByte: 4,
-      endByte: 8,
+      startByte: byteOffset(4),
+      endByte: byteOffset(8),
       atMs: 12,
     },
   ]);
@@ -657,8 +647,8 @@ test("normal mode cw submits a production change edit and enters insert mode", a
   assert.deepEqual(replacements, [
     {
       bufferId: "buffer:notes",
-      startByte: 0,
-      endByte: 6,
+      startByte: byteOffset(0),
+      endByte: byteOffset(6),
       insertText: "",
       atMs: 12,
     },
@@ -778,9 +768,10 @@ test("viewport movement requests a bounded read without submitting edits", async
 
   assert.equal(commands.length, 1);
   assert.deepEqual(observed, [
-    {
-      bufferId: "buffer:notes",
-      aperture: {
+      {
+        bufferId: "buffer:notes",
+        ...textBasisRequest("abc"),
+        aperture: {
         cursorLine: pendingRead.editor.scrollRow,
         viewportLineCount: 4,
         beforeLines: 0,
@@ -1140,7 +1131,11 @@ test("save can be requested while a production text intent is still pending", as
   assert.equal(exportCalls.length, 0);
   assert.equal(commands.length, 1);
   await commands[0]();
-  assert.deepEqual(exportCalls, [{ bufferId: "buffer:notes", atMs: 77 }]);
+  assert.deepEqual(exportCalls, [{
+    bufferId: "buffer:notes",
+    ...textBasisRequest("base"),
+    atMs: 77,
+  }]);
 });
 
 test("edit planning after bounded read uses the full local projection", async () => {
@@ -1205,7 +1200,7 @@ test("edit planning after bounded read uses the full local projection", async ()
   );
   await commands[0]();
 
-  assert.equal(inserts[0].startByte, byteOffsetAtLine(localLines, 30));
+  assert.deepEqual(inserts[0].startByte, byteOffset(byteOffsetAtLine(localLines, 30)));
   assert.equal(inserts[0].insertText, "Z");
 });
 
@@ -1257,15 +1252,7 @@ test("ctrl-s exports a full production snapshot and checkpoints without direct l
       readOnly: false,
       dirty: true,
       hostFingerprint: HOST_FINGERPRINT_A,
-      cache: {
-        bufferId: "buffer:notes",
-        readingId: "reading:dirty",
-        lines: ["stale"],
-        lineCount: 1,
-        cursorLine: 0,
-        viewportLineCount: 24,
-        truncated: false,
-      },
+      cache: workspaceReadingCache({ readingId: "reading:dirty", lines: ["stale"] }),
     }),
   };
   const context = {
@@ -1307,6 +1294,7 @@ test("ctrl-s exports a full production snapshot and checkpoints without direct l
   assert.deepEqual(exportCalls, [
     {
       bufferId: "buffer:notes",
+      ...textBasisRequest("stale"),
       atMs: 99,
     },
   ]);
@@ -1468,15 +1456,7 @@ for (const blockCase of EXISTING_SAVE_BLOCK_CASES) {
         readOnly: false,
         dirty: true,
         hostFingerprint: HOST_FINGERPRINT_A,
-        cache: {
-          bufferId: "buffer:notes",
-          readingId: "reading:local",
-          lines: ["local draft"],
-          lineCount: 1,
-          cursorLine: 0,
-          viewportLineCount: 24,
-          truncated: false,
-        },
+        cache: workspaceReadingCache({ readingId: "reading:local", lines: ["local draft"] }),
       }),
     };
     const context = {
@@ -1509,7 +1489,11 @@ for (const blockCase of EXISTING_SAVE_BLOCK_CASES) {
     const [blockedModel] = runtime.update(exportMessage, pendingSave);
 
     assert.deepEqual(loadedFiles, [filePath]);
-    assert.deepEqual(exportCalls, [{ bufferId: "buffer:notes", atMs: 102 }]);
+    assert.deepEqual(exportCalls, [{
+      bufferId: "buffer:notes",
+      ...textBasisRequest("local draft"),
+      atMs: 102,
+    }]);
     assert.deepEqual(savedFiles, []);
     assert.deepEqual(checkpointCalls, []);
     assert.equal(exportMessage.result.kind, "obstructed");
@@ -1570,15 +1554,9 @@ test("ctrl-s blocks materialization when a missing-open path appeared", async ()
       dirty: true,
       materialization: "unmaterialized",
       hostBasis: "missing",
-      cache: {
-        bufferId: "buffer:new",
-        readingId: "reading:local",
-        lines: ["local draft"],
-        lineCount: 1,
-        cursorLine: 0,
-        viewportLineCount: 24,
-        truncated: false,
-      },
+      cache: workspaceReadingCache({
+        bufferId: "buffer:new", readingId: "reading:local", lines: ["local draft"],
+      }),
     }),
   };
   const context = {
@@ -1610,7 +1588,11 @@ test("ctrl-s blocks materialization when a missing-open path appeared", async ()
   );
   const [blockedModel] = runtime.update(exportMessage, pendingSave);
 
-  assert.deepEqual(exportCalls, [{ bufferId: "buffer:new", atMs: 100 }]);
+  assert.deepEqual(exportCalls, [{
+    bufferId: "buffer:new",
+    ...textBasisRequest("local draft"),
+    atMs: 100,
+  }]);
   assert.deepEqual(loadedFiles, ["/repo/new.txt"]);
   assert.equal(exportMessage.result.kind, "obstructed");
   assert.match(exportMessage.result.issue.message, /appeared on disk after open/);
@@ -1667,15 +1649,7 @@ test("ctrl-s blocks without saving when full snapshot export obstructs", async (
       readOnly: false,
       dirty: true,
       hostFingerprint: HOST_FINGERPRINT_A,
-      cache: {
-        bufferId: "buffer:notes",
-        readingId: "reading:local",
-        lines: ["local draft"],
-        lineCount: 1,
-        cursorLine: 0,
-        viewportLineCount: 24,
-        truncated: false,
-      },
+      cache: workspaceReadingCache({ readingId: "reading:local", lines: ["local draft"] }),
     }),
   };
   const context = {
@@ -1758,15 +1732,9 @@ test("ctrl-s materializes a missing-open path when it is still absent", async ()
       dirty: true,
       materialization: "unmaterialized",
       hostBasis: "missing",
-      cache: {
-        bufferId: "buffer:new",
-        readingId: "reading:local",
-        lines: ["local draft"],
-        lineCount: 1,
-        cursorLine: 0,
-        viewportLineCount: 24,
-        truncated: false,
-      },
+      cache: workspaceReadingCache({
+        bufferId: "buffer:new", readingId: "reading:local", lines: ["local draft"],
+      }),
     }),
   };
   const context = {
@@ -1889,15 +1857,20 @@ function workspaceReadingCache(overrides = {}) {
         : "window"
     );
   const projectionText = lines.join("\n");
+  const textBasis = testTextBasis(projectionText);
+  const readingId = overrides.readingId ?? "reading:test";
+  const projection = fixtureProjectionBasis({
+    basisHeadId: textBasis.basisHeadId,
+    byteRange: { startByte: 0, endByte: Buffer.byteLength(projectionText, "utf8") },
+    text: projectionText,
+    support: [],
+  }, totalLineCount);
   return {
     bufferId: "buffer:notes",
-    readingId: "reading:test",
-    projection: {
-      basisHeadId: "head:test",
-      byteRange: { startByte: 0, endByte: Buffer.byteLength(projectionText, "utf8") },
-      text: projectionText,
-      support: [],
-    },
+    readingId,
+    textBasis,
+    projection,
+    materialization: fixtureTextWindowMaterialization(projection, readingId),
     lines,
     coverage,
     lineCount: totalLineCount,
@@ -1918,14 +1891,19 @@ function textWindowReading(options) {
   const lines = options.lines ?? ["abc"];
   const totalLineCount = options.totalLineCount ?? lines.length;
   const projectionText = lines.join("\n");
+  const textBasis = options.textBasis ?? testTextBasis(projectionText);
+  const readingId = options.readingId ?? "reading:test";
+  const projection = fixtureProjectionBasis({
+    basisHeadId: textBasis.basisHeadId,
+    byteRange: { startByte: 0, endByte: Buffer.byteLength(projectionText, "utf8") },
+    text: projectionText,
+    support: [],
+  }, totalLineCount);
   return {
-    readingId: options.readingId ?? "reading:test",
-    projection: {
-      basisHeadId: "head:test",
-      byteRange: { startByte: 0, endByte: Buffer.byteLength(projectionText, "utf8") },
-      text: projectionText,
-      support: [],
-    },
+    readingId,
+    textBasis,
+    projection,
+    materialization: fixtureTextWindowMaterialization(projection, readingId),
     lines: lines.map((text, index) => ({
       lineNumber: startLine + index,
       startByte: byteOffsetAtLine(lines, index),
@@ -1940,6 +1918,43 @@ function textWindowReading(options) {
     cursorLine: startLine,
     viewportLineCount: lines.length,
     truncated: false,
+  };
+}
+
+function appliedTextOutcome(receiptId, text) {
+  return { kind: "applied", result: { receiptId, textBasis: testTextBasis(text) } };
+}
+
+function textBasisRequest(text) {
+  const basis = testTextBasis(text);
+  return { basisHeadId: basis.basisHeadId, byteRange: basis.byteRange };
+}
+
+function testTextBasis(text) {
+  return {
+    basisHeadId: "head:test",
+    byteRange: {
+      startByte: { kind: "utf8-byte-offset", value: 0 },
+      endByte: { kind: "utf8-byte-offset", value: Buffer.byteLength(text, "utf8") },
+    },
+  };
+}
+
+function openedTextOutcome(bufferId, text) {
+  const textBasis = {
+    basisHeadId: "head:test",
+    byteRange: {
+      startByte: { kind: "utf8-byte-offset", value: 0 },
+      endByte: { kind: "utf8-byte-offset", value: Buffer.byteLength(text, "utf8") },
+    },
+  };
+  return {
+    kind: "opened",
+    optic: {
+      buffer: { bufferId },
+      openedTextBasis: textBasis,
+    },
+    textBasis,
   };
 }
 

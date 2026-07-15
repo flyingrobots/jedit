@@ -145,8 +145,19 @@ export interface TextLineReading {
   endByte: number;
 }
 
+export interface TextWindowHeadBasis {
+  headId: string;
+  worldlineId: string;
+  rootNodeId: string;
+  byteLength: number;
+  lineCount: number;
+}
+
 export interface TextWindowInput {
   worldlineId: string;
+  basisHeadId: string;
+  startByte: number;
+  endByte: number;
   cursorLine: number;
   viewportLineCount: number;
   beforeLines: number;
@@ -156,7 +167,7 @@ export interface TextWindowInput {
 
 export interface TextWindowReading {
   worldline: BufferWorldline;
-  head: RopeHead;
+  head: TextWindowHeadBasis;
   readingId: string;
   startLine: number;
   lineCount: number;

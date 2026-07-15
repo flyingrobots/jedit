@@ -125,7 +125,7 @@ export function fakeTextOperationSequencer() {
 }
 
 export function fakeProductionTextSession(overrides = {}) {
-  return {
+  return basisPinnedTestTextSession({
     openBuffer: async () => ({
       kind: "obstructed",
       obstruction: fakeProductionTextObstruction(),
@@ -163,6 +163,155 @@ export function fakeProductionTextSession(overrides = {}) {
       obstruction: fakeProductionTextObstruction(),
     }),
     ...overrides,
+  });
+}
+
+export function basisPinnedTestTextSession(delegate) {
+  let sequence = 0;
+  let basis = fakeTextBasis("", "head:test:unopened");
+  return {
+    ...delegate,
+    async openBuffer(request) {
+      const outcome = await delegate.openBuffer(request);
+      if (outcome.kind !== "opened") return outcome;
+      basis = outcome.textBasis ?? outcome.optic.openedTextBasis
+        ?? fakeTextBasis(request.initialText, "head:test:opened");
+      return {
+        ...outcome,
+        optic: { ...outcome.optic, openedTextBasis: basis },
+        textBasis: basis,
+      };
+    },
+    insertText: basisAdvancingEdit(delegate.insertText, insertedByteLength),
+    replaceRange: basisAdvancingEdit(delegate.replaceRange, replacementByteLength),
+    deleteRange: basisAdvancingEdit(delegate.deleteRange, deletedByteLength),
+    async checkpointBuffer(request) {
+      const outcome = await delegate.checkpointBuffer(request);
+      return outcome.kind === "checkpointed"
+        ? { ...outcome, result: { ...outcome.result, textBasis: outcome.result.textBasis ?? basis } }
+        : outcome;
+    },
+    async observeWindow(request) {
+      const outcome = await delegate.observeWindow(request);
+      if (outcome.kind !== "observed") return outcome;
+      const value = outcome.observed.value;
+      const textBasis = value.textBasis ?? requestTextBasis(request);
+      const lines = value.lines;
+      const projectionText = lines.map((line) => line.text).join("\n");
+      const projection = fixtureProjectionBasis(
+        value.projection ?? fakeProjection(textBasis, lines, projectionText),
+        value.totalLineCount ?? lines.length,
+      );
+      const materialization = value.materialization
+        ?? fixtureTextWindowMaterialization(projection, value.readingId);
+      return {
+        ...outcome,
+        observed: {
+          ...outcome.observed,
+          value: { ...value, textBasis, projection, materialization },
+        },
+      };
+    },
+  };
+
+  function basisAdvancingEdit(edit, byteLengthDelta) {
+    return async (request) => {
+      const outcome = await edit(request);
+      if (outcome.kind !== "applied") return outcome;
+      sequence += 1;
+      basis = outcome.result.textBasis ?? nextBasis(byteLengthDelta(request), sequence);
+      return { ...outcome, result: { ...outcome.result, textBasis: basis } };
+    };
+  }
+
+  function nextBasis(delta, nextSequence) {
+    const currentLength = basis.byteRange.endByte.value - basis.byteRange.startByte.value;
+    return fakeTextBasisForByteLength(currentLength + delta, `head:test:edit:${nextSequence}`);
+  }
+}
+
+export function fixtureTextWindowMaterialization(projection, readingId = "fixture:reading") {
+  const startByte = projection.byteRange.startByte;
+  const endByte = projection.byteRange.endByte;
+  return {
+    key: {
+      schemaVersion: 1,
+      materializerVersion: "jedit.text-window.materializer.v1",
+      basis: {
+        worldlineId: projection.basis.worldlineId,
+        headId: projection.basisHeadId,
+        requestFrontierRef: `fixture:request-frontier:${readingId}`,
+      },
+      coverage: {
+        startByte: { kind: "utf8-byte-offset", value: startByte },
+        endByte: { kind: "utf8-byte-offset", value: endByte },
+      },
+      observerPlanId: "fixture:text-window-observer-plan",
+      policyDigest: "fixture:text-window-policy",
+      coordinateDigest: `fixture:text-window-coordinate:${readingId}`,
+      cacheKeyDigest: `fixture:text-window-cache-key:${readingId}`,
+    },
+    completeness: "complete",
+    materializedProjectionBytes: Buffer.byteLength(projection.text, "utf8"),
+  };
+}
+
+export function fixtureProjectionBasis(projection, totalLineCount) {
+  if (projection.basis != null) {
+    return projection;
+  }
+  return {
+    ...projection,
+    basis: {
+      worldlineId: "fixture:test-worldline",
+      headId: projection.basisHeadId,
+      rootNodeId: `fixture:test-root:${projection.basisHeadId}`,
+      byteLength: projection.byteRange.endByte,
+      lineCount: totalLineCount,
+    },
+  };
+}
+
+function fakeProjection(textBasis, lines, text) {
+  const startByte = lines[0]?.startByte ?? textBasis.byteRange.startByte.value;
+  return {
+    basisHeadId: textBasis.basisHeadId,
+    byteRange: {
+      startByte,
+      endByte: lines.at(-1)?.endByte ?? startByte + Buffer.byteLength(text, "utf8"),
+    },
+    text,
+    support: [],
+  };
+}
+
+function requestTextBasis(request) {
+  return { basisHeadId: request.basisHeadId, byteRange: request.byteRange };
+}
+
+function insertedByteLength(request) {
+  return Buffer.byteLength(request.insertText, "utf8");
+}
+
+function replacementByteLength(request) {
+  return insertedByteLength(request) - deletedByteLength(request);
+}
+
+function deletedByteLength(request) {
+  return request.endByte.value - request.startByte.value;
+}
+
+function fakeTextBasis(text, basisHeadId = "head:test") {
+  return fakeTextBasisForByteLength(Buffer.byteLength(text, "utf8"), basisHeadId);
+}
+
+function fakeTextBasisForByteLength(byteLength, basisHeadId) {
+  return {
+    basisHeadId,
+    byteRange: {
+      startByte: { kind: "utf8-byte-offset", value: 0 },
+      endByte: { kind: "utf8-byte-offset", value: byteLength },
+    },
   };
 }
 

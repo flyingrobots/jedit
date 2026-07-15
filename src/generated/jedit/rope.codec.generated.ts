@@ -267,6 +267,9 @@ export function decodeTextEncoding(b: Uint8Array): TextEncoding {
 // ─── input TextWindowInput ───
 export interface TextWindowInput {
     worldlineId: string;
+    basisHeadId: string;
+    startByte: number;
+    endByte: number;
     cursorLine: number;
     viewportLineCount: number;
     beforeLines: number;
@@ -275,6 +278,9 @@ export interface TextWindowInput {
 }
 export function _encTextWindowInput(w: Writer, v: TextWindowInput): void {
     w.writeString(v.worldlineId);
+    w.writeString(v.basisHeadId);
+    w.writeI32Le(v.startByte);
+    w.writeI32Le(v.endByte);
     w.writeI32Le(v.cursorLine);
     w.writeI32Le(v.viewportLineCount);
     w.writeI32Le(v.beforeLines);
@@ -284,6 +290,9 @@ export function _encTextWindowInput(w: Writer, v: TextWindowInput): void {
 export function _decTextWindowInput(r: Reader): TextWindowInput {
     return {
         worldlineId: r.readString(),
+        basisHeadId: r.readString(),
+        startByte: r.readI32Le(),
+        endByte: r.readI32Le(),
         cursorLine: r.readI32Le(),
         viewportLineCount: r.readI32Le(),
         beforeLines: r.readI32Le(),

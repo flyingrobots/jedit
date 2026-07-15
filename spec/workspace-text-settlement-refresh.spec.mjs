@@ -324,6 +324,14 @@ function textWorkspaceModel(modeModule, authority, profile, editorOverrides) {
 
 function workspaceReadingCache(overrides = {}) {
   const lines = overrides.lines ?? ["abc"];
+  const byteLength = Buffer.byteLength(lines.join("\n"), "utf8");
+  const textBasis = {
+    basisHeadId: "head:edit",
+    byteRange: {
+      startByte: { kind: "utf8-byte-offset", value: 0 },
+      endByte: { kind: "utf8-byte-offset", value: byteLength },
+    },
+  };
   const startLine = overrides.startLine ?? 0;
   const returnedLineCount = overrides.returnedLineCount ?? lines.length;
   const totalLineCount = overrides.totalLineCount ?? lines.length;
@@ -343,9 +351,10 @@ function workspaceReadingCache(overrides = {}) {
   return {
     bufferId: "buffer:notes",
     readingId: "reading:test",
+    textBasis,
     projection: {
       basisHeadId: "head:edit",
-      byteRange: { startByte: 0, endByte: Buffer.byteLength(lines.join("\n"), "utf8") },
+      byteRange: { startByte: 0, endByte: byteLength },
       text: lines.join("\n"),
       support: [],
     },

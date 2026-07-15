@@ -15,7 +15,7 @@ import {
   type JeditOpticClient,
   type OpenTextBufferExecution,
   type ReadBasisHandle,
-  type TextWindowRangeInput,
+  type TextWindowRequest,
 } from '../ports/jedit-optic-client.js';
 import { isJeditTransportSeam } from '../ports/jedit-transport-seam.js';
 import type { JeditWorldlineSessionPort } from '../ports/jedit-worldline-session-port.js';
@@ -45,6 +45,7 @@ import type {
   CreateCheckpointVars,
   ReplaceRangeAsTickVars,
 } from '../generated/jedit/rope.codec.generated.js';
+import { serializeJeditTextWindowInput } from '../app/jedit-text-window-input.js';
 
 type CreateBufferWorldlineInput = MutationOperationMap['createBufferWorldline']['input'];
 type ReplaceRangeAsTickInput = MutationOperationMap['replaceRangeAsTick']['input'];
@@ -58,7 +59,7 @@ interface TextWindowTransportRequest {
   readonly session: JeditWorldlineSession;
   readonly frontierRef: string;
   readonly readBasisHandle: ReadBasisHandle;
-  readonly input: TextWindowRangeInput;
+  readonly request: TextWindowRequest;
 }
 
 interface OpticClientContext {
@@ -125,11 +126,11 @@ export function createEchoTransportJeditOpticClient(
     replaceRangeAsTick: (session, input) => replaceRangeAsTickViaTransport(context, session, input),
     createCheckpoint: (session, input) => createCheckpointViaTransport(context, session, input),
     worldlineSnapshot: (session, frontierRef, input) => worldlineSnapshotViaTransport(context, session, frontierRef, input),
-    textWindow: (session, frontierRef, readBasisHandle, input) => textWindowViaTransport(context, {
+    textWindow: (session, frontierRef, readBasisHandle, request) => textWindowViaTransport(context, {
       session,
       frontierRef,
       readBasisHandle,
-      input,
+      request,
     }),
     requestRunUntilIdle: async () => {
       // In-process transports complete synchronously inside their await microtasks;
@@ -237,7 +238,7 @@ async function textWindowViaTransport(
     operationName: TEXT_WINDOW_OPERATION,
     session: request.session,
     frontierRef: request.frontierRef,
-    input: toTextWindowInput(context.readBasisHandles, request.session, request.readBasisHandle, request.input),
+    input: toTextWindowInput(context.readBasisHandles, request.session, request.readBasisHandle, request.request),
   });
   if (response.operationName !== TEXT_WINDOW_OPERATION) {
     throwUnexpectedOperation(TEXT_WINDOW_OPERATION, response.operationName);
@@ -249,12 +250,12 @@ function toTextWindowInput(
   readBasisHandles: ReadBasisHandleRegistry,
   session: JeditWorldlineSession,
   readBasisHandle: ReadBasisHandle,
-  input: TextWindowRangeInput,
+  request: TextWindowRequest,
 ): TextWindowInput {
-  return {
-    ...input,
-    worldlineId: readBasisHandles.resolveWorldlineId(session, readBasisHandle),
-  };
+  return serializeJeditTextWindowInput(
+    readBasisHandles.resolveWorldlineId(session, readBasisHandle),
+    request,
+  );
 }
 
 function toCreateBufferWorldlineVars(input: CreateBufferWorldlineInput): CreateBufferWorldlineVars {

@@ -1,9 +1,10 @@
 import type {
+  JeditTextWindowObserver,
   TextWindowReadingEnvelope,
   WorldlineSnapshotReadingEnvelope,
 } from './jedit-observer-runtime.js';
 import {
-  readTextWindowWithObserverPlan,
+  createJeditTextWindowObserver,
   readWorldlineSnapshotWithObserverPlan,
 } from './jedit-observer-runtime.js';
 import { requireJeditContractFactSet } from './jedit-contract-state-port.js';
@@ -64,9 +65,17 @@ export interface JeditContractQueryObserverRegistry {
   ): JeditContractQueryObserverResult;
 }
 
+interface JeditContractQueryObserverContext extends JeditContractQueryObserverRegistryOptions {
+  readonly textWindowObserver: JeditTextWindowObserver;
+}
+
 export function createJeditContractQueryObserverRegistry(
   options: JeditContractQueryObserverRegistryOptions,
 ): JeditContractQueryObserverRegistry {
+  const context: JeditContractQueryObserverContext = Object.freeze({
+    ...options,
+    textWindowObserver: createJeditTextWindowObserver(options.runtime, options.hash),
+  });
   const queryOperationNames: readonly string[] = Object.freeze([
     queryWorldlineSnapshotOperation.fieldName,
     queryTextWindowOperation.fieldName,
@@ -80,58 +89,56 @@ export function createJeditContractQueryObserverRegistry(
     observeWorldlineSnapshot(
       request: JeditWorldlineSnapshotObserverRequest,
     ): WorldlineSnapshotReadingEnvelope {
-      return observeWorldlineSnapshot(options, request);
+      return observeWorldlineSnapshot(context, request);
     },
     observeTextWindow(
       request: JeditTextWindowObserverRequest,
     ): TextWindowReadingEnvelope {
-      return observeTextWindow(options, request);
+      return observeTextWindow(context, request);
     },
     observeQuery(
       request: JeditContractQueryObserverRequest,
     ): JeditContractQueryObserverResult {
-      return observeJeditQuery(options, request);
+      return observeJeditQuery(context, request);
     },
   });
 }
 
 function observeJeditQuery(
-  options: JeditContractQueryObserverRegistryOptions,
+  context: JeditContractQueryObserverContext,
   request: JeditContractQueryObserverRequest,
 ): JeditContractQueryObserverResult {
   switch (request.operationName) {
     case queryWorldlineSnapshotOperation.fieldName:
-      return observeWorldlineSnapshot(options, request);
+      return observeWorldlineSnapshot(context, request);
     case queryTextWindowOperation.fieldName:
-      return observeTextWindow(options, request);
+      return observeTextWindow(context, request);
   }
 }
 
 function observeWorldlineSnapshot(
-  options: JeditContractQueryObserverRegistryOptions,
+  context: JeditContractQueryObserverContext,
   request: JeditWorldlineSnapshotObserverRequest,
 ): WorldlineSnapshotReadingEnvelope {
-  requireStateIfAvailable(options, request.input.worldlineId);
+  requireStateIfAvailable(context, request.input.worldlineId);
   return readWorldlineSnapshotWithObserverPlan(
-    options.runtime,
+    context.runtime,
     request.session,
     request.frontierRef,
     request.input,
-    options.hash,
+    context.hash,
   );
 }
 
 function observeTextWindow(
-  options: JeditContractQueryObserverRegistryOptions,
+  context: JeditContractQueryObserverContext,
   request: JeditTextWindowObserverRequest,
 ): TextWindowReadingEnvelope {
-  requireStateIfAvailable(options, request.input.worldlineId);
-  return readTextWindowWithObserverPlan(
-    options.runtime,
+  requireStateIfAvailable(context, request.input.worldlineId);
+  return context.textWindowObserver.read(
     request.session,
     request.frontierRef,
     request.input,
-    options.hash,
   );
 }
 

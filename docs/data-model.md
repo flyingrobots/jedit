@@ -28,15 +28,26 @@ flowchart LR
 
 Core rules:
 
-- App-facing jedit code never sees `worldlineId`, `headId`, or other runtime coordinates.
-- `TextBufferOptic` is the authorized capability that may hold them privately.
-- Wesley operations require them explicitly.
+- Every durable or recoverable user-state transition, and every authoritative
+  reading used to reconstruct that state, must pass through Echo-owned
+  admission, scheduling, witnessed history, receipts, and recovery. Jim may
+  own domain semantics and disposable projections; it may not substitute a
+  local map, cache, fixture, or handwritten host for Echo authority.
+- App-facing jedit code carries opaque Jim-owned rope-head identities and
+  branded UTF-8 byte ranges when it requests materialized text.
+- App code does not derive, inspect, or mint those identities.
+- `ReadBasisHandle` is an internal transport capability. It is not the causal
+  basis of a text reading.
+- `TextBufferOptic` retains the transport capability and exposes explicit
+  `TextWindowBasis` values returned by admitted operations.
+- Wesley operations require the same head and range semantics explicitly.
 - Echo hosts generic installed contracts, schedules admitted work, and produces
   evidence.
 
 > The app may hold the optic.
 > The app may invoke the optic.
-> The app may not inspect the optic’s runtime coordinates.
+> The app may replay an opaque head identity returned by Jim.
+> The app may not manufacture Echo or Jim authority.
 
 `ReadBasisHandle` is supporting machinery, not the star. `TextBufferOptic` is the primary authorized boundary object.
 
@@ -87,10 +98,13 @@ jedit lives at the **product** and **contract** layers. Echo lives at the **runt
 - **Product nouns**: `TextBuffer`, `TextWindowReading`, edit intents.
 - **Session capability**: `TextBufferSessionPort`.
 - **Per-buffer capability**: `TextBufferOptic`.
-- **App-safe token**: `ReadBasisHandle`.
-- **Runtime coordinates**: `worldlineId`, `headId` (private to optic + Echo).
+- **Transport capability**: `ReadBasisHandle` (private to the optic).
+- **Materialization basis**: opaque Jim `basisHeadId` plus branded UTF-8 range.
+- **Runtime coordinate**: `worldlineId` (private to the optic and runtime).
 
-If app-facing code needs runtime coordinates to make progress, either the boundary is wrong or the witness is not ready. That is the trap detector.
+If app-facing code unwraps a branded offset outside a serialization or external
+adapter boundary, derives an authority identity, or treats `ReadBasisHandle` as
+history, the boundary is wrong. That is the trap detector.
 
 ***
 
@@ -107,6 +121,16 @@ type BufferVersion = number;
 
 type WorldlineId = string;
 type RopeHeadId = string;
+
+type Utf8ByteOffset = {
+  readonly kind: 'utf8-byte-offset';
+  readonly value: number;
+};
+
+type TextByteRange = {
+  readonly startByte: Utf8ByteOffset;
+  readonly endByte: Utf8ByteOffset;
+};
 
 // ---------- app-safe token ----------
 
@@ -131,12 +155,21 @@ export type ReplaceRangeIntent = {
   readonly insertText: string;
 };
 
-export type TextWindowInput = {
+export type TextWindowBasis = {
+  readonly basisHeadId: RopeHeadId;
+  readonly byteRange: TextByteRange;
+};
+
+export type TextWindowAperture = {
   readonly cursorLine: number;
   readonly viewportLineCount: number;
   readonly beforeLines: number;
   readonly afterLines: number;
   readonly maxBytes: number;
+};
+
+export type TextWindowRequest = TextWindowBasis & {
+  readonly aperture: TextWindowAperture;
 };
 
 export type TextWindowLine = {
@@ -148,6 +181,7 @@ export type TextWindowLine = {
 
 export type TextWindowReading = {
   readonly readingId: ReadingId;
+  readonly textBasis: TextWindowBasis;
   readonly lines: readonly TextWindowLine[];
   readonly byteLength: number;
   readonly lineCount: number;
@@ -158,7 +192,7 @@ export type TextWindowReading = {
 
 export type ApplyIntentResult = {
   readonly buffer: TextBuffer;
-  readonly readBasis: ReadBasisHandle;
+  readonly textBasis: TextWindowBasis;
   readonly bufferVersion: BufferVersion;
   readonly receiptId: string;
 };
@@ -175,15 +209,11 @@ export type Observed<T> = {
 
 export interface TextBufferOptic {
   readonly buffer: TextBuffer;
-
-  currentReadBasis(): ReadBasisHandle;
+  readonly openedTextBasis: TextWindowBasis;
 
   applyIntent(intent: ReplaceRangeIntent): Promise<ApplyIntentResult>;
 
-  textWindow(
-    readBasis: ReadBasisHandle,
-    input: TextWindowInput
-  ): Promise<Observed<TextWindowReading>>;
+  textWindow(request: TextWindowRequest): Promise<Observed<TextWindowReading>>;
 }
 
 // ---------- session capability ----------
@@ -208,11 +238,15 @@ type InternalOpticState = {
   bufferId: BufferId;
   worldlineId: WorldlineId;
   currentHeadId: RopeHeadId;
-  activeReadBasisHandleId: string;
+  readCapability: ReadBasisHandle;
 };
 ```
 
-The optic may freely hold `worldlineId` and `currentHeadId` in `InternalOpticState`, but those fields never cross the contract boundary. This follows the opaque-capability pattern: callers can use the capability while remaining insulated from its internal representation.
+The optic may hold `worldlineId`, the current head, and the read capability in
+`InternalOpticState`. Product callers receive only immutable Jim text bases
+returned by open/edit/checkpoint operations. The optic passes the transport
+capability internally while serializing the explicit head and branded range at
+the generated-query adapter boundary.
 
 ***
 
@@ -220,19 +254,17 @@ The optic may freely hold `worldlineId` and `currentHeadId` in `InternalOpticSta
 
 The canonical jedit-facing SDL now lives at
 [`contracts/jedit/text-buffer-optic.graphql`](../contracts/jedit/text-buffer-optic.graphql).
-It defines product nouns plus an opaque app-safe read basis token. In GraphQL,
-`ReadBasisHandle` is a custom scalar rather than an object type, because the
-token is intentionally opaque and should not invite field-level coupling.
+It defines product nouns plus the explicit Jim head and UTF-8 range basis
+required for every text materialization. The transport-only `ReadBasisHandle`
+does not appear in this app-facing schema.
 
 The SDL is intentionally compile-ready before its generated TypeScript artifact
 is committed. The current Wesley TypeScript emitter maps custom scalars such as
-`ReadBasisHandle` and `DateTime` to `unknown`; jedit should not check in that
-surface until Wesley has a scalar-mapping policy that preserves this repo's
-no-new-`unknown` rule.
+`DateTime` to `unknown`; jedit should not check in that surface until Wesley has
+a scalar-mapping policy that preserves this repo's no-new-`unknown` rule.
 
 ```graphql
 scalar DateTime
-scalar ReadBasisHandle
 
 type TextBuffer {
   bufferId: ID!
@@ -248,8 +280,15 @@ type TextWindowLine {
   text: String!
 }
 
+type TextWindowBasis {
+  basisHeadId: ID!
+  startByte: Int!
+  endByte: Int!
+}
+
 type TextWindowReading {
   readingId: ID!
+  textBasis: TextWindowBasis!
   lines: [TextWindowLine!]!
   byteLength: Int!
   lineCount: Int!
@@ -260,14 +299,14 @@ type TextWindowReading {
 
 type CreateBufferPayload {
   buffer: TextBuffer!
-  readBasis: ReadBasisHandle!
+  textBasis: TextWindowBasis!
   bufferVersion: Int!
   receiptId: ID!
 }
 
 type ReplaceRangePayload {
   buffer: TextBuffer!
-  readBasis: ReadBasisHandle!
+  textBasis: TextWindowBasis!
   bufferVersion: Int!
   receiptId: ID!
 }
@@ -286,6 +325,9 @@ input ReplaceRangeInput {
 }
 
 input TextWindowInput {
+  basisHeadId: ID!
+  startByte: Int!
+  endByte: Int!
   cursorLine: Int!
   viewportLineCount: Int!
   beforeLines: Int!
@@ -299,11 +341,73 @@ type Mutation {
 }
 
 type Query {
-  textWindow(readBasis: ReadBasisHandle!, input: TextWindowInput!): TextWindowReading!
+  textWindow(input: TextWindowInput!): TextWindowReading!
 }
 ```
 
-No `worldlineId` or `headId` appear here. Those are Echo runtime coordinates, not jedit product nouns.
+`basisHeadId` is an opaque Jim-owned fact identity, not a value the product may
+construct. `startByte` and `endByte` are serialized forms of branded UTF-8
+offsets. `worldlineId` and the `ReadBasisHandle` representation remain below
+the optic boundary.
+
+### Authoritative line summaries and disposable indexes
+
+Line metrics retained by `RopeHead`, `RopeBranch`, and `RopeLeaf` are
+authoritative Jim facts. They participate in rope validation, causal readings,
+and retained evidence. A line-offset index is different: it is a versioned,
+basis-pinned projection derived from complete UTF-8 coverage of one rope head.
+
+The current disposable projection records:
+
+- the worldline and rope head that supplied its basis;
+- the immutable head metrics used to validate that basis;
+- the complete branded UTF-8 byte range it indexed;
+- zero-based line identities and branded byte offsets for line content and the
+  following line start; and
+- a projection kind and implementation version.
+
+The store keys indexes by both worldline and head identity. Head labels are not
+assumed globally unique. An observer may reuse a matching index to select a
+bounded text window, but it must reject and evict the index when the requested
+coverage or returned head metadata no longer matches.
+
+Line projection treats CRLF as one logical break and preserves the original
+UTF-8 byte width of Unicode text. Clearing every line index changes only read
+cost: the same index can be rebuilt from the same basis. It cannot change rope
+history, retained rewrite evidence, `:why` answers, or the authoritative line
+counts. The projection must never be emitted as a graph fact or used to mint a
+head, receipt, or causal identity.
+
+### Disposable text-window materializations
+
+A text-window materialization is a derived read artifact, not rope authority.
+Its cache key records:
+
+- the Jim worldline and opaque rope head used as its basis;
+- the exact branded UTF-8 byte coverage;
+- the schema and materializer versions;
+- the observer plan and policy digest; and
+- a request-frontier namespace used to prevent reuse across distinct requests.
+
+`requestFrontierRef` is intentionally not called an Echo frontier. The current
+value is supplied by the transitional request corridor and is not evidence of
+an Echo-admitted causal frontier. Likewise, `coordinateDigest`,
+`cacheKeyDigest`, and `policyDigest` are Jim-local acceleration identifiers.
+They must not be accepted as Echo facts, receipts, anchor identities, WAL
+evidence, or provenance.
+
+Completeness means that the cached projection exactly covers the byte range in
+its key. It does not mean that the range covers the whole document. A stale
+schema, materializer, policy, basis, coverage, or projection mismatch makes the
+entry unusable. The observer evicts or ignores that entry and rematerializes
+from the requested rope basis; it never silently serves the stale bytes.
+
+The cache reports `materializedProjectionBytes` separately from graph-rope
+retention metrics. Clearing or evicting every materialization may make reads
+slower, but it cannot change a rope head, graph fact, rewrite, receipt,
+checkpoint, `:why` result, or recovery outcome. A future native Echo/Edict read
+corridor may replace the request namespace with opaque admitted basis evidence,
+but Jim must consume that evidence rather than derive or mint it.
 
 ***
 
@@ -349,7 +453,7 @@ type Query {
   worldlineSnapshot(input: WorldlineSnapshotInput!): WorldlineSnapshot!
     @wes_op(name: "worldlineSnapshot")
 
-  textWindow(input: TextWindowRuntimeInput!): TextWindowReading!
+  textWindow(input: TextWindowInput!): TextWindowReading!
     @wes_op(name: "textWindow")
 }
 ```
@@ -379,6 +483,11 @@ classDiagram
     +opaque
   }
 
+  class TextWindowBasis {
+    +basisHeadId
+    +byteRange
+  }
+
   class TextWindowReading {
     +readingId
     +byteLength
@@ -396,11 +505,11 @@ classDiagram
   class TextBufferOptic {
     -worldlineId
     -currentHeadId
-    -activeReadBasisHandleId
+    -readCapability
     +buffer
-    +currentReadBasis()
+    +openedTextBasis
     +applyIntent(intent)
-    +textWindow(readBasis, input)
+    +textWindow(request)
   }
 
   class TextBufferSessionPort {
@@ -424,6 +533,7 @@ classDiagram
   TextBufferSessionPort --> TextBufferOptic
   TextBufferOptic --> TextBuffer
   TextBufferOptic --> ReadBasisHandle
+  TextBufferOptic --> TextWindowBasis
   TextBufferOptic --> ObservedTextWindowReading
   TextBufferOptic --> WesleyRuntimeClient
   WesleyRuntimeClient --> Echo
@@ -436,7 +546,8 @@ classDiagram
 ```mermaid
 erDiagram
   TEXT_BUFFER ||--|| TEXT_BUFFER_OPTIC : represented_by
-  TEXT_BUFFER_OPTIC ||--o{ READ_BASIS_HANDLE : issues
+  TEXT_BUFFER_OPTIC ||--|| READ_BASIS_HANDLE : retains_privately
+  TEXT_BUFFER_OPTIC ||--o{ TEXT_WINDOW_BASIS : returns
   TEXT_BUFFER_OPTIC ||--|| BUFFER_WORLDLINE : maps_privately_to
   BUFFER_WORLDLINE ||--|| ROPE_HEAD : canonical_head
   ROPE_HEAD ||--o{ TICK : advances_via
@@ -458,6 +569,11 @@ erDiagram
     string opaque_token
   }
 
+  TEXT_WINDOW_BASIS {
+    string basis_head_id
+    string branded_utf8_byte_range
+  }
+
   BUFFER_WORLDLINE {
     string worldline_id
     string canonical_head_id
@@ -476,7 +592,9 @@ erDiagram
   }
 ```
 
-Runtime coordinates exist (`worldline_id`, `head_id`, etc.) but remain below the optic boundary.
+Runtime coordinates still exist. `worldline_id` remains below the optic
+boundary; a `head_id` crosses it only as an opaque Jim fact reference inside a
+`TextWindowBasis`.
 
 ***
 
@@ -500,10 +618,12 @@ sequenceDiagram
   R-->>W: tick + receipt + canonicalHead
   W-->>O: ReplaceRangeAsTickResult
   O->>O: update private currentHeadId
-  O-->>App: ApplyIntentResult { buffer, readBasis, bufferVersion, receiptId }
+  O-->>App: ApplyIntentResult { buffer, textBasis, bufferVersion, receiptId }
 ```
 
-The optic is the authorized translator from product intent to runtime operation. The app never handles `worldlineId` or `headId` directly.
+The optic is the authorized translator from product intent to runtime
+operation. The app never handles `worldlineId`; it carries `headId` only as an
+opaque basis returned by Jim.
 
 ***
 
@@ -527,6 +647,8 @@ operations and observed text windows here.
 
 **Operating rule:**
 
-If a jedit layer needs forbidden runtime knowledge such as worldlines, heads, scheduler state, or rope nodes to make progress, the boundary is wrong or the witness is not ready.
+If a jedit layer needs forbidden runtime knowledge such as worldlines,
+scheduler state, rope nodes, or the representation of a head identity to make
+progress, the boundary is wrong or the witness is not ready.
 
 The optic exists so that boundaries can remain correct while real runtime work still happens.

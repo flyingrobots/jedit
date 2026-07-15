@@ -114,6 +114,7 @@ export interface GraphRopeTextWindowEvidence {
 
 export interface GraphRopeTextWindowReading {
   readonly basisHeadId: string;
+  readonly basisHead: RopeHeadFact;
   readonly byteRange: TextByteRange;
   readonly cacheStatus: typeof GRAPH_ROPE_TEXT_WINDOW_CACHE_STATUS_UNCACHED;
   readonly text: string;
@@ -323,6 +324,7 @@ function textWindow(
     ok: true,
     value: {
       basisHeadId: input.basisHeadId,
+      basisHead: cloneFact(head),
       byteRange: input.byteRange,
       cacheStatus: GRAPH_ROPE_TEXT_WINDOW_CACHE_STATUS_UNCACHED,
       text: reading.value.text,

@@ -40,6 +40,7 @@ import {
 } from '../domain/text-edit-contract.js';
 import { toWorldlineId } from '../app/jedit-contract-runtime-id.js';
 import type { HashPort } from '../ports/hash.js';
+import { toHotTextHeadBasis } from './graph-rope-hot-text-head-basis.js';
 import {
   GRAPH_BACKED_ROPE_TEXT_AUTHORITY_KIND,
   type AdmitReplaceRangeTickResult,
@@ -355,6 +356,7 @@ function graphWindowProjection(
   }
   return {
     basisHeadId: reading.basisHeadId,
+    basis: toHotTextHeadBasis(reading.basisHead),
     byteRange: request.byteRange,
     text: reading.text,
     support: reading.validationEvidence.map((evidence) => ({
@@ -374,6 +376,7 @@ function windowReadingMatchesRequest(
   reading: GraphRopeTextWindowReading,
 ): boolean {
   return reading.basisHeadId === request.basisHeadId
+    && reading.basisHead.headId === request.basisHeadId
     && reading.byteRange.startByte.value === request.byteRange.startByte
     && reading.byteRange.endByte.value === request.byteRange.endByte;
 }

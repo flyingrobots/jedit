@@ -1,4 +1,5 @@
 import type { RuntimeIssue } from '@flyingrobots/bijou-tui';
+import type { ByteOffset, TextByteRange } from '../../domain/graph-rope-types.js';
 import type {
   ApplyIntentResult,
   Observed,
@@ -8,12 +9,23 @@ import type {
   TextWindowRangeInput,
   TextWindowReading,
 } from '../../ports/text-buffer-session.js';
-import type { JeditWhyByteRange, JeditWhyRangeReport } from '../../ports/jedit-why-range.js';
+import type { JeditWhyRangeReport } from '../../ports/jedit-why-range.js';
 import {
   REPLACE_RANGE_INTENT_KIND,
   TEXT_BUFFER_CHECKPOINT_KIND_MANUAL_SAVE,
 } from '../../ports/text-buffer-session.js';
 import { RuntimeIssueLevels, RuntimeIssueSources } from './runtime-issue.js';
+import { serializeByteOffset, serializeTextByteRange } from './production-text-coordinate-serialization.js';
+import type {
+  ProductionTextExportRequest,
+  ProductionTextViewportAperture,
+  ProductionTextWindowRequest,
+} from './production-text-basis-request.js';
+export type {
+  ProductionTextExportRequest,
+  ProductionTextViewportAperture,
+  ProductionTextWindowRequest,
+} from './production-text-basis-request.js';
 
 const EMPTY_INSERT_TEXT = '';
 const OPEN_OBSTRUCTION_CODE = 'text-buffer-open-obstructed';
@@ -76,49 +88,35 @@ export interface ProductionTextOpenRequest {
 
 export interface ProductionTextReplaceRequest {
   readonly bufferId: string;
-  readonly startByte: number;
-  readonly endByte: number;
+  readonly startByte: ByteOffset;
+  readonly endByte: ByteOffset;
   readonly insertText: string;
   readonly atMs: number;
 }
 
 export interface ProductionTextInsertRequest {
   readonly bufferId: string;
-  readonly startByte: number;
+  readonly startByte: ByteOffset;
   readonly insertText: string;
   readonly atMs: number;
 }
 
 export interface ProductionTextDeleteRequest {
   readonly bufferId: string;
-  readonly startByte: number;
-  readonly endByte: number;
+  readonly startByte: ByteOffset;
+  readonly endByte: ByteOffset;
   readonly atMs: number;
 }
 
 export interface ProductionTextRange {
-  readonly startByte: number;
-  readonly endByte: number;
+  readonly startByte: ByteOffset;
+  readonly endByte: ByteOffset;
   readonly insertText: string;
 }
 
 export interface ProductionTextMultiRangeRequest {
   readonly bufferId: string;
   readonly ranges: readonly ProductionTextRange[];
-  readonly atMs: number;
-}
-
-export interface ProductionTextViewportAperture {
-  readonly cursorLine: number;
-  readonly viewportLineCount: number;
-  readonly beforeLines: number;
-  readonly afterLines: number;
-  readonly maxBytes: number;
-}
-
-export interface ProductionTextWindowRequest {
-  readonly bufferId: string;
-  readonly aperture: ProductionTextViewportAperture;
   readonly atMs: number;
 }
 
@@ -129,14 +127,9 @@ export interface ProductionTextCheckpointRequest {
   readonly atMs: number;
 }
 
-export interface ProductionTextExportRequest {
-  readonly bufferId: string;
-  readonly atMs: number;
-}
-
 export interface ProductionTextWhyRangeRequest {
   readonly bufferId: string;
-  readonly range: JeditWhyByteRange;
+  readonly range: TextByteRange;
   readonly atMs: number;
 }
 
@@ -148,6 +141,7 @@ export interface ProductionTextObstruction {
 export interface ProductionTextOpenApplied {
   readonly kind: typeof OUTCOME_OPENED;
   readonly optic: TextBufferOptic;
+  readonly textBasis: TextBufferOptic['openedTextBasis'];
 }
 
 export interface ProductionTextEditApplied {
@@ -277,6 +271,8 @@ async function exportSnapshot(
 ): Promise<ProductionTextExportOutcome> {
   const observed = await observeWindow(session, {
     bufferId: request.bufferId,
+    basisHeadId: request.basisHeadId,
+    byteRange: request.byteRange,
     aperture: fullSnapshotAperture(),
     atMs: request.atMs,
   });
@@ -348,6 +344,7 @@ async function openBuffer(
     const outcome: ProductionTextOpenApplied = {
       kind: OUTCOME_OPENED,
       optic,
+      textBasis: optic.openedTextBasis,
     };
     return outcome;
   } catch (cause) {
@@ -381,10 +378,11 @@ async function observeWindow(
     if (optic == null) {
       return missingBuffer(request.atMs);
     }
-    const observed = await optic.textWindow(
-      optic.currentReadBasis(),
-      textWindowInputFromViewport(request.aperture),
-    );
+    const observed = await optic.textWindow({
+      basisHeadId: request.basisHeadId,
+      byteRange: request.byteRange,
+      aperture: textWindowInputFromViewport(request.aperture),
+    });
     const outcome: ProductionTextWindowObserved = {
       kind: OUTCOME_OBSERVED,
       observed,
@@ -410,7 +408,7 @@ async function explainRange(
     }
     return {
       kind: OUTCOME_RANGE_EXPLAINED,
-      report: await optic.explainRange(request.range),
+      report: await optic.explainRange(serializeTextByteRange(request.range)),
     };
   } catch (cause) {
     return obstructed(
@@ -450,8 +448,8 @@ async function applyReplaceRange(
     }
     const result = await optic.applyIntent({
       kind: REPLACE_RANGE_INTENT_KIND,
-      startByte: request.startByte,
-      endByte: request.endByte,
+      startByte: serializeByteOffset(request.startByte),
+      endByte: serializeByteOffset(request.endByte),
       insertText: request.insertText,
     });
     const outcome: ProductionTextEditApplied = {

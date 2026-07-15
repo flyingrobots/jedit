@@ -1,5 +1,9 @@
 # Agent Echo-Powered Session Witness
 
+> **Historical design note:** CR-03 removed `currentReadBasis()` from the
+> product optic. Current reads carry an explicit Jim `basisHeadId` and branded
+> UTF-8 byte range while the optic retains the opaque transport capability.
+
 ## Claim
 
 Agents can exercise the jedit `TextBufferOptic` product path through a
@@ -53,7 +57,7 @@ The app-facing object remains `TextBufferOptic`. It exposes:
 
 - `applyIntent(...)`;
 - `textWindow(...)`;
-- `currentReadBasis()`.
+- `openedTextBasis`.
 
 It does not expose:
 

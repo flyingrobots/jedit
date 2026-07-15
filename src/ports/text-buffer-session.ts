@@ -2,9 +2,11 @@ import type {
   CheckpointKind,
   QueryTextWindowRequest,
 } from '../generated/jedit/rope.wesley.generated.js';
+import type { TextByteRange } from '../domain/graph-rope-types.js';
 import type { JeditRetainedEvidenceInventory } from './jedit-retained-evidence.js';
 import type { JeditWhyByteRange, JeditWhyRangeReport } from './jedit-why-range.js';
 import type { HotTextWindowProjection } from './hot-text-runtime.js';
+import type { JeditTextWindowMaterializationProvenance } from './jedit-text-window-materialization.js';
 
 export const READ_BASIS_HANDLE_KIND = 'read-basis-handle';
 export const REPLACE_RANGE_INTENT_KIND = 'replaceRange';
@@ -45,7 +47,9 @@ export interface TextWindowLine {
 
 export interface TextWindowReading {
   readonly readingId: ReadingId;
+  readonly textBasis: TextWindowBasis;
   readonly projection: HotTextWindowProjection;
+  readonly materialization: JeditTextWindowMaterializationProvenance;
   readonly lines: readonly TextWindowLine[];
   readonly byteLength: number;
   readonly lineCount: number;
@@ -60,7 +64,7 @@ export interface TextWindowReading {
 
 export interface ApplyIntentResult {
   readonly buffer: TextBuffer;
-  readonly readBasis: ReadBasisHandle;
+  readonly textBasis: TextWindowBasis;
   readonly bufferVersion: BufferVersion;
   readonly receiptId: string;
   readonly causalTransition?: TextBufferCausalTransition;
@@ -79,7 +83,7 @@ export interface CreateTextBufferCheckpointRequest {
 
 export interface CreateTextBufferCheckpointResult {
   readonly buffer: TextBuffer;
-  readonly readBasis: ReadBasisHandle;
+  readonly textBasis: TextWindowBasis;
   readonly bufferVersion: BufferVersion;
   readonly checkpointId: string;
   readonly checkpointKind: CheckpointKind;
@@ -96,8 +100,7 @@ export interface Observed<T> {
 
 export interface TextBufferOptic {
   readonly buffer: TextBuffer;
-
-  currentReadBasis(): ReadBasisHandle;
+  readonly openedTextBasis: TextWindowBasis;
 
   applyIntent(intent: ReplaceRangeIntent): Promise<ApplyIntentResult>;
 
@@ -105,10 +108,7 @@ export interface TextBufferOptic {
     request: CreateTextBufferCheckpointRequest,
   ): Promise<CreateTextBufferCheckpointResult>;
 
-  textWindow(
-    readBasis: ReadBasisHandle,
-    input: TextWindowRangeInput,
-  ): Promise<Observed<TextWindowReading>>;
+  textWindow(request: TextWindowRequest): Promise<Observed<TextWindowReading>>;
 
   explainRange(range: JeditWhyByteRange): Promise<JeditWhyRangeReport>;
 }
@@ -129,4 +129,16 @@ export interface TextBufferSessionPort {
   listBuffers(): Promise<readonly TextBuffer[]>;
 }
 
-export type TextWindowRangeInput = Omit<QueryTextWindowRequest['input'], 'worldlineId'>;
+export interface TextWindowBasis {
+  readonly basisHeadId: string;
+  readonly byteRange: TextByteRange;
+}
+
+export interface TextWindowRequest extends TextWindowBasis {
+  readonly aperture: TextWindowRangeInput;
+}
+
+export type TextWindowRangeInput = Omit<
+  QueryTextWindowRequest['input'],
+  'worldlineId' | 'basisHeadId' | 'startByte' | 'endByte'
+>;

@@ -1,17 +1,21 @@
 import type { RuntimeIssue } from '@flyingrobots/bijou-tui';
 import {
-  READ_BASIS_HANDLE_KIND,
   TEXT_BUFFER_CHECKPOINT_KIND_MANUAL_SAVE,
   type ApplyIntentResult,
   type CreateTextBufferCheckpointResult,
   type Observed,
-  type ReadBasisHandle,
   type ReplaceRangeIntent,
   type TextBuffer,
   type TextBufferOptic,
-  type TextWindowRangeInput,
+  type TextWindowBasis,
   type TextWindowReading,
 } from '../../ports/text-buffer-session.js';
+import {
+  JEDIT_TEXT_WINDOW_MATERIALIZATION_COMPLETENESS_COMPLETE,
+  JEDIT_TEXT_WINDOW_MATERIALIZATION_SCHEMA_VERSION,
+  JEDIT_TEXT_WINDOW_MATERIALIZER_VERSION,
+  type JeditTextWindowMaterializationProvenance,
+} from '../../ports/jedit-text-window-materialization.js';
 import {
   BTR_MISSING,
   CAUSAL_HISTORY_UNAVAILABLE,
@@ -43,11 +47,17 @@ import {
 } from './editor-trust-preflight-runtime-fixtures.js';
 
 const OPENED_BUFFER_CREATED_AT = '2026-06-26T00:00:00.000Z';
-const DEFAULT_READ_BASIS_ID = 'read-basis:preflight';
 const DEFAULT_RECEIPT_ID = 'receipt:preflight';
 const DEFAULT_CHECKPOINT_ID = 'checkpoint:preflight';
 const DEFAULT_READING_ID = 'reading:preflight';
 const DEFAULT_HEAD_ID = 'head:preflight';
+const DEFAULT_WORLDLINE_ID = 'worldline:preflight';
+const DEFAULT_ROOT_NODE_ID = 'root:preflight';
+const FIXTURE_FRONTIER_REF = 'fixture:preflight-request-frontier';
+const FIXTURE_OBSERVER_PLAN_ID = 'fixture:preflight-observer-plan';
+const FIXTURE_POLICY_DIGEST = 'fixture:preflight-policy';
+const FIXTURE_COORDINATE_DIGEST = 'fixture:preflight-coordinate';
+const FIXTURE_CACHE_KEY_DIGEST = 'fixture:preflight-cache-key';
 const DEFAULT_TEXT_START_BYTE = 0;
 const UTF8_ENCODER = new TextEncoder();
 const DEFAULT_BUFFER_VERSION = 1;
@@ -89,9 +99,11 @@ function openBufferProbe(
       options.bufferIdByKey?.get(request.bufferKey) ?? PREFLIGHT_DEFAULT_BUFFER_ID,
       request.projectionPath,
     );
+    const optic = textBufferOptic(buffer, readings);
     return {
       kind: ProductionTextSessionOutcomeKinds.Opened,
-      optic: textBufferOptic(buffer, readings),
+      optic,
+      textBasis: optic.openedTextBasis,
     };
   };
 }
@@ -155,7 +167,7 @@ function observeWindowProbe(
     calls.observe.push(request);
     return {
       kind: ProductionTextSessionOutcomeKinds.Observed,
-      observed: observedReading(readings, calls.observe.length),
+      observed: observedReading(readings, calls.observe.length, request),
     };
   };
 }
@@ -178,7 +190,10 @@ function exportSnapshotProbe(
 function explainRangeProbe(): ProductionTextSession['explainRange'] {
   return async (request) => ({
     kind: ProductionTextSessionOutcomeKinds.RangeExplained,
-    report: preflightWhyRangeReport(request.range),
+    report: preflightWhyRangeReport({
+      startByte: request.range.startByte.value,
+      endByte: request.range.endByte.value,
+    }),
   });
 }
 
@@ -201,14 +216,14 @@ function textBufferOptic(
 ): TextBufferOptic {
   return {
     buffer,
-    currentReadBasis: () => readBasis(),
+    openedTextBasis: textBasis(readings[PREFLIGHT_FIRST_INDEX] ?? ''),
     applyIntent: async (intent: ReplaceRangeIntent) => ({
       ...applyIntentResult(buffer.bufferId),
       receiptId: `${DEFAULT_RECEIPT_ID}:${intent.kind}`,
     }),
     createCheckpoint: async () => checkpointResult(buffer.bufferId),
-    textWindow: async (_readBasis: ReadBasisHandle, input: TextWindowRangeInput) =>
-      observedReading(readings, input.cursorLine + PREFLIGHT_ONE),
+    textWindow: async (request) =>
+      observedReading(readings, request.aperture.cursorLine + PREFLIGHT_ONE, request),
     explainRange: async (range: JeditWhyByteRange) => preflightWhyRangeReport(range),
   };
 }
@@ -243,7 +258,7 @@ function appliedTextOutcome(bufferId: string) {
 function applyIntentResult(bufferId: string): ApplyIntentResult {
   return {
     buffer: textBuffer(PREFLIGHT_DEFAULT_FILE_PATH, bufferId, PREFLIGHT_DEFAULT_FILE_PATH),
-    readBasis: readBasis(),
+    textBasis: textBasis(PREFLIGHT_DEFAULT_EDITED_READING_TEXT),
     bufferVersion: DEFAULT_BUFFER_VERSION,
     receiptId: DEFAULT_RECEIPT_ID,
   };
@@ -252,28 +267,22 @@ function applyIntentResult(bufferId: string): ApplyIntentResult {
 function checkpointResult(bufferId: string): CreateTextBufferCheckpointResult {
   return {
     buffer: textBuffer(PREFLIGHT_DEFAULT_FILE_PATH, bufferId, PREFLIGHT_DEFAULT_FILE_PATH),
-    readBasis: readBasis(),
+    textBasis: textBasis(PREFLIGHT_DEFAULT_EDITED_READING_TEXT),
     bufferVersion: CHECKPOINT_BUFFER_VERSION,
     checkpointId: DEFAULT_CHECKPOINT_ID,
     checkpointKind: TEXT_BUFFER_CHECKPOINT_KIND_MANUAL_SAVE,
   };
 }
 
-function readBasis(): ReadBasisHandle {
-  return {
-    kind: READ_BASIS_HANDLE_KIND,
-    id: DEFAULT_READ_BASIS_ID,
-  };
-}
-
 function observedReading(
   readings: readonly string[],
   readingCount: number,
+  basis: TextWindowBasis,
 ): Observed<TextWindowReading> {
   const index = Math.min(readingCount - PREFLIGHT_ONE, readings.length - PREFLIGHT_ONE);
   const readingId = `${DEFAULT_READING_ID}:${readingCount}`;
   return {
-    value: textWindowReading(readings[index] ?? '', readingId),
+    value: textWindowReading(readings[index] ?? '', readingId, basis),
     evidence: {
       readingId,
       receiptId: DEFAULT_RECEIPT_ID,
@@ -281,15 +290,13 @@ function observedReading(
   };
 }
 
-function textWindowReading(text: string, readingId: string): TextWindowReading {
+function textWindowReading(text: string, readingId: string, basis: TextWindowBasis): TextWindowReading {
+  const textByteLength = UTF8_ENCODER.encode(text).length;
   return {
     readingId,
-    projection: {
-      basisHeadId: DEFAULT_HEAD_ID,
-      byteRange: { startByte: DEFAULT_TEXT_START_BYTE, endByte: UTF8_ENCODER.encode(text).length },
-      text,
-      support: [],
-    },
+    textBasis: basis,
+    projection: fixtureProjection(text, textByteLength),
+    materialization: fixtureMaterialization(textByteLength),
     lines: [
       {
         lineNumber: PREFLIGHT_FIRST_INDEX,
@@ -307,6 +314,61 @@ function textWindowReading(text: string, readingId: string): TextWindowReading {
     cursorLine: PREFLIGHT_FIRST_INDEX,
     viewportLineCount: PREFLIGHT_ROWS,
     truncated: false,
+  };
+}
+
+function fixtureProjection(
+  text: string,
+  textByteLength: number,
+): NonNullable<TextWindowReading['projection']> {
+  return {
+    basisHeadId: DEFAULT_HEAD_ID,
+    basis: {
+      worldlineId: DEFAULT_WORLDLINE_ID,
+      headId: DEFAULT_HEAD_ID,
+      rootNodeId: DEFAULT_ROOT_NODE_ID,
+      byteLength: textByteLength,
+      lineCount: text.split('\n').length,
+    },
+    byteRange: { startByte: DEFAULT_TEXT_START_BYTE, endByte: textByteLength },
+    text,
+    support: [],
+  };
+}
+
+function fixtureMaterialization(
+  textByteLength: number,
+): JeditTextWindowMaterializationProvenance {
+  return {
+    key: {
+      schemaVersion: JEDIT_TEXT_WINDOW_MATERIALIZATION_SCHEMA_VERSION,
+      materializerVersion: JEDIT_TEXT_WINDOW_MATERIALIZER_VERSION,
+      basis: {
+        worldlineId: DEFAULT_WORLDLINE_ID,
+        headId: DEFAULT_HEAD_ID,
+        requestFrontierRef: FIXTURE_FRONTIER_REF,
+      },
+      coverage: {
+        startByte: { kind: 'utf8-byte-offset', value: DEFAULT_TEXT_START_BYTE },
+        endByte: { kind: 'utf8-byte-offset', value: textByteLength },
+      },
+      observerPlanId: FIXTURE_OBSERVER_PLAN_ID,
+      policyDigest: FIXTURE_POLICY_DIGEST,
+      coordinateDigest: FIXTURE_COORDINATE_DIGEST,
+      cacheKeyDigest: FIXTURE_CACHE_KEY_DIGEST,
+    },
+    completeness: JEDIT_TEXT_WINDOW_MATERIALIZATION_COMPLETENESS_COMPLETE,
+    materializedProjectionBytes: textByteLength,
+  };
+}
+
+function textBasis(text: string): TextWindowBasis {
+  return {
+    basisHeadId: DEFAULT_HEAD_ID,
+    byteRange: {
+      startByte: { kind: 'utf8-byte-offset', value: DEFAULT_TEXT_START_BYTE },
+      endByte: { kind: 'utf8-byte-offset', value: UTF8_ENCODER.encode(text).length },
+    },
   };
 }
 

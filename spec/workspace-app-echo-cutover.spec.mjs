@@ -10,6 +10,10 @@ import {
   twoFileHarness,
 } from './workspace-echo-test-utils.mjs';
 
+function byteOffset(value) {
+  return { kind: 'utf8-byte-offset', value };
+}
+
 test('real workspace app path opens files through production text authority', async () => {
   const harness = await createWorkspaceEchoAppHarness({
     hostLines: ['host-only text'],
@@ -41,7 +45,7 @@ test('real workspace app path edits through production text session', async () =
 
   assert.deepEqual(harness.calls.insert, [{
     bufferId: 'buffer:notes',
-    startByte: 0,
+    startByte: byteOffset(0),
     insertText: 'X',
     atMs: 0,
   }]);
@@ -62,11 +66,11 @@ test('real workspace app path advances insert cursor after each echoed character
     startByte: call.startByte,
     insertText: call.insertText,
   })), [
-    { startByte: 0, insertText: 'h' },
-    { startByte: 1, insertText: 'e' },
-    { startByte: 2, insertText: 'l' },
-    { startByte: 3, insertText: 'l' },
-    { startByte: 4, insertText: 'o' },
+    { startByte: byteOffset(0), insertText: 'h' },
+    { startByte: byteOffset(1), insertText: 'e' },
+    { startByte: byteOffset(2), insertText: 'l' },
+    { startByte: byteOffset(3), insertText: 'l' },
+    { startByte: byteOffset(4), insertText: 'o' },
   ]);
   assert.equal(harness.model.editor.cursorCol, 5);
   assert.match(harness.renderText(), /hello/);
@@ -97,11 +101,11 @@ test('real workspace app path renders rapid inserts before Echo observe resolves
     startByte: call.startByte,
     insertText: call.insertText,
   })), [
-    { startByte: 0, insertText: 'h' },
-    { startByte: 1, insertText: 'e' },
-    { startByte: 2, insertText: 'l' },
-    { startByte: 3, insertText: 'l' },
-    { startByte: 4, insertText: 'o' },
+    { startByte: byteOffset(0), insertText: 'h' },
+    { startByte: byteOffset(1), insertText: 'e' },
+    { startByte: byteOffset(2), insertText: 'l' },
+    { startByte: byteOffset(3), insertText: 'l' },
+    { startByte: byteOffset(4), insertText: 'o' },
   ]);
 });
 
@@ -182,7 +186,7 @@ test('real workspace app path keeps newline insertion past bounded Echo readings
   assert.equal(calls.insert.length, 41);
   assert.deepEqual(calls.insert.at(-1), {
     bufferId: 'buffer:notes',
-    startByte: 40,
+    startByte: byteOffset(40),
     insertText: 'Z',
     atMs: 0,
   });
@@ -357,10 +361,10 @@ test('real workspace app path inserts canonical spacebar token in insert mode', 
     startByte: call.startByte,
     insertText: call.insertText,
   })), [
-    { startByte: 0, insertText: 'h' },
-    { startByte: 1, insertText: 'i' },
-    { startByte: 2, insertText: ' ' },
-    { startByte: 3, insertText: 'x' },
+    { startByte: byteOffset(0), insertText: 'h' },
+    { startByte: byteOffset(1), insertText: 'i' },
+    { startByte: byteOffset(2), insertText: ' ' },
+    { startByte: byteOffset(3), insertText: 'x' },
   ]);
   assert.equal(harness.model.editor.cursorCol, 4);
   assert.match(harness.renderText(), /hi x/);
@@ -406,6 +410,11 @@ test('real workspace app path exposes no lifecycle authority through production 
 
 test('observed document window helper reports UTF-8 byte offsets', () => {
   const observed = observedDocumentWindow(echoTextDocument('é\nx'), 1, {
+    basisHeadId: 'head:test',
+    byteRange: {
+      startByte: byteOffset(0),
+      endByte: byteOffset(4),
+    },
     aperture: {
       cursorLine: 0,
       viewportLineCount: 2,

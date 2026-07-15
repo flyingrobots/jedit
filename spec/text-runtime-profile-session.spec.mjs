@@ -124,18 +124,21 @@ async function runNarrowEditRead(session, text) {
     initialText: '',
     projectionPath: `${text}.md`,
   });
-  await optic.applyIntent({
+  const applied = await optic.applyIntent({
     kind: 'replaceRange',
     startByte: 0,
     endByte: 0,
     insertText: text,
   });
-  const observed = await optic.textWindow(optic.currentReadBasis(), {
-    cursorLine: 0,
-    beforeLines: 0,
-    viewportLineCount: 1,
-    afterLines: 0,
-    maxBytes: 80,
+  const observed = await optic.textWindow({
+    ...applied.textBasis,
+    aperture: {
+      cursorLine: 0,
+      beforeLines: 0,
+      viewportLineCount: 1,
+      afterLines: 0,
+      maxBytes: 80,
+    },
   });
   return observed.value.lines.map((line) => line.text).join('\n');
 }

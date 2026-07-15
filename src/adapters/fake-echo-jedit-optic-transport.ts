@@ -5,8 +5,9 @@ import {
   replaceRangeAsTick,
 } from '../app/jedit-contract-runtime.js';
 import {
-  readTextWindowWithObserverPlan,
+  createJeditTextWindowObserver,
   readWorldlineSnapshotWithObserverPlan,
+  type JeditTextWindowObserver,
 } from '../app/jedit-observer-runtime.js';
 import { createFullSnapshotHotTextRuntimeFixture } from './full-snapshot-hot-text-runtime-fixture.js';
 import type { EchoKernelInfo } from '../ports/echo-kernel-transport.js';
@@ -68,15 +69,19 @@ interface FakeTransportContext {
   readonly runtime: HotTextRuntimePort;
   readonly hash: HashPort;
   readonly sessionPort: JeditWorldlineSessionPort;
+  readonly textWindowObserver: JeditTextWindowObserver;
 }
 
 export function createFakeEchoJeditOpticTransport(
   options: CreateFakeEchoJeditOpticTransportOptions = {},
 ): JeditTransportSeam {
+  const runtime = options.runtime ?? createFullSnapshotHotTextRuntimeFixture();
+  const hash = options.hash ?? createHashPort();
   const context: FakeTransportContext = {
-    runtime: options.runtime ?? createFullSnapshotHotTextRuntimeFixture(),
-    hash: options.hash ?? createHashPort(),
+    runtime,
+    hash,
     sessionPort: options.sessionPort ?? createInMemoryJeditWorldlineSessionPort(),
+    textWindowObserver: createJeditTextWindowObserver(runtime, hash),
   };
   const info: EchoKernelInfo = {
     moduleSpecifier: options.moduleSpecifier ?? FAKE_ECHO_JEDIT_MODULE_SPECIFIER,
@@ -196,7 +201,7 @@ function executeObservedOperation(
       return {
         status: JEDIT_TRANSPORT_STATUS_OK,
         operationName: TEXT_WINDOW_OPERATION,
-        envelope: readTextWindowWithObserverPlan(context.runtime, request.session, request.frontierRef, request.input, context.hash),
+        envelope: context.textWindowObserver.read(request.session, request.frontierRef, request.input),
       };
   }
 }

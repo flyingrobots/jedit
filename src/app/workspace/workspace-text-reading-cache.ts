@@ -1,5 +1,7 @@
 import type { EditorState } from './editor/model.js';
 import type { HotTextWindowProjection } from '../../ports/hot-text-runtime.js';
+import type { TextWindowBasis } from '../../ports/text-buffer-session.js';
+import type { JeditTextWindowMaterializationProvenance } from '../../ports/jedit-text-window-materialization.js';
 import { EditorModes } from './editor/mode.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceTextAuthorityOpened } from './workspace-text-authority.js';
@@ -44,7 +46,9 @@ export type WorkspaceTextReadingCoverage =
 export interface WorkspaceTextReadingCacheBase {
   readonly bufferId: string;
   readonly readingId: string;
+  readonly textBasis: TextWindowBasis;
   readonly projection?: HotTextWindowProjection;
+  readonly materialization: JeditTextWindowMaterializationProvenance;
   readonly lines: readonly string[];
   readonly coverage: WorkspaceTextReadingCoverage;
   readonly lineCount: number;

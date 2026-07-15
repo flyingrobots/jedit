@@ -54,7 +54,10 @@ function saveProductionText(
   model: WorkspaceModel,
   context: WorkspaceKeyBindingContext,
 ): KeyBindingResult {
-  if (model.textAuthority.kind !== WorkspaceTextAuthorityKinds.Opened) {
+  if (
+    model.textAuthority.kind !== WorkspaceTextAuthorityKinds.Opened
+    || model.textAuthority.cache == null
+  ) {
     return [model, []];
   }
   const requestId = model.textRequestId + 1;
@@ -72,6 +75,8 @@ function saveProductionText(
   }, [
     createWorkspaceTextExportCmd({
       ...base,
+      basisHeadId: model.textAuthority.cache.textBasis.basisHeadId,
+      byteRange: model.textAuthority.cache.textBasis.byteRange,
       hostBasis: model.textAuthority.hostBasis,
       hostFingerprint: model.textAuthority.hostFingerprint,
       editorFile: context.deps.editorFile,

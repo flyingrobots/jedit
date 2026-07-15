@@ -14,8 +14,15 @@ import {
   FIRST_ROOT_ID,
   createBufferRoot,
   materializeRoot,
+  type BufferRoot,
   type TextRange,
 } from '../domain/text-edit-contract.js';
+import {
+  lineCount,
+  toHeadId,
+  toRootNodeId,
+  toWorldlineId,
+} from '../app/jedit-contract-runtime-id.js';
 import {
   admitReplaceRangeTick as admitDomainReplaceRangeTick,
   createTickAdmissionState,
@@ -104,13 +111,22 @@ function textWindow(
   state: HotTextBufferState,
   request: HotTextWindowRequest,
 ): HotTextWindowProjection {
-  const bytes = UTF8_ENCODER.encode(materialize(state));
+  const root = retainedRootForHead(state, request.basisHeadId);
+  const text = materializeRoot(root);
+  const bytes = UTF8_ENCODER.encode(text);
   if (!validWindowRange(request, bytes.length)) {
     throw new FullSnapshotTextWindowError();
   }
   try {
     return {
       basisHeadId: request.basisHeadId,
+      basis: {
+        worldlineId: toWorldlineId(state.path),
+        headId: request.basisHeadId,
+        rootNodeId: toRootNodeId(root.id),
+        byteLength: bytes.length,
+        lineCount: lineCount(text),
+      },
       byteRange: request.byteRange,
       text: UTF8_DECODER.decode(bytes.slice(request.byteRange.startByte, request.byteRange.endByte)),
       support: [],
@@ -118,6 +134,17 @@ function textWindow(
   } catch {
     throw new FullSnapshotTextWindowError();
   }
+}
+
+function retainedRootForHead(state: HotTextBufferState, basisHeadId: string): BufferRoot {
+  if (toHeadId(state.currentRoot.id) === basisHeadId) {
+    return state.currentRoot;
+  }
+  const root = state.roots?.find((candidate) => toHeadId(candidate.id) === basisHeadId);
+  if (root == null) {
+    throw new FullSnapshotTextWindowError();
+  }
+  return root;
 }
 
 function validWindowRange(request: HotTextWindowRequest, byteLength: number): boolean {

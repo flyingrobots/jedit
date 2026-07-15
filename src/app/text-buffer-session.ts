@@ -14,10 +14,15 @@ import type {
   TextBufferOptic,
   TextBufferSessionPort,
   TextWindowLine,
+  TextWindowBasis,
   TextWindowRangeInput,
+  TextWindowRequest,
   TextWindowReading,
 } from '../ports/text-buffer-session.js';
 import { REPLACE_RANGE_INTENT_KIND } from '../ports/text-buffer-session.js';
+import { makeByteOffset, makeTextByteRange } from '../domain/graph-rope-coordinates.js';
+import type { CoordinateResult } from '../domain/graph-rope-types.js';
+import type { RopeHead } from '../generated/jedit/rope.types.generated.js';
 import type { JeditWhyByteRange, JeditWhyRangeReport } from '../ports/jedit-why-range.js';
 import type {
   JeditOpticClient,
@@ -39,7 +44,7 @@ const TEXT_WINDOW_MIN_LINE_COUNT = 0;
 
 interface TextBufferOpticRuntimeState {
   currentSession: JeditWorldlineSession;
-  currentReadBasis: ReadBasisHandle;
+  readCapability: ReadBasisHandle;
   bufferVersion: BufferVersion;
 }
 
@@ -70,6 +75,7 @@ export function createTextBufferSession(client: JeditOpticClient): TextBufferSes
         buffer,
         opened.nextSession,
         opened.readBasisHandle,
+        textBasisForHead(opened.result.head),
       );
       optics.set(buffer.bufferId, optic);
       return optic;
@@ -87,19 +93,18 @@ function createTextBufferOptic(
   client: JeditOpticClient,
   buffer: TextBuffer,
   initialSession: JeditWorldlineSession,
-  initialReadBasis: ReadBasisHandle,
+  readCapability: ReadBasisHandle,
+  openedTextBasis: TextWindowBasis,
 ): TextBufferOptic {
   const state: TextBufferOpticRuntimeState = {
     currentSession: initialSession,
-    currentReadBasis: initialReadBasis,
+    readCapability,
     bufferVersion: FIRST_BUFFER_VERSION,
   };
 
   return Object.freeze({
     buffer,
-    currentReadBasis(): ReadBasisHandle {
-      return state.currentReadBasis;
-    },
+    openedTextBasis,
     async applyIntent(intent: ReplaceRangeIntent): Promise<ApplyIntentResult> {
       return applyTextBufferIntent(client, buffer, state, intent);
     },
@@ -108,11 +113,8 @@ function createTextBufferOptic(
     ): Promise<CreateTextBufferCheckpointResult> {
       return createTextBufferCheckpoint(client, buffer, state, request);
     },
-    async textWindow(
-      readBasis: ReadBasisHandle,
-      input: TextWindowRangeInput,
-    ): Promise<Observed<TextWindowReading>> {
-      return readTextBufferWindow(client, buffer, state, readBasis, input);
+    async textWindow(request: TextWindowRequest): Promise<Observed<TextWindowReading>> {
+      return readTextBufferWindow(client, buffer, state, request);
     },
     async explainRange(range: JeditWhyByteRange): Promise<JeditWhyRangeReport> {
       return explainJeditWhyRange(state.currentSession, range);
@@ -138,7 +140,7 @@ async function applyTextBufferIntent(
   const causalTransition = causalTransitionForExecution(execution);
   return {
     buffer,
-    readBasis: state.currentReadBasis,
+    textBasis: textBasisForHead(execution.result.nextHead),
     bufferVersion: state.bufferVersion,
     receiptId: execution.result.ropeDiff.ropeDiffId,
     ...(causalTransition == null ? {} : { causalTransition }),
@@ -173,16 +175,15 @@ async function readTextBufferWindow(
   client: JeditOpticClient,
   buffer: TextBuffer,
   state: TextBufferOpticRuntimeState,
-  readBasis: ReadBasisHandle,
-  input: TextWindowRangeInput,
+  request: TextWindowRequest,
 ): Promise<Observed<TextWindowReading>> {
   const envelope = await client.textWindow(
     state.currentSession,
     toFrontierRef(buffer.bufferId, state.bufferVersion),
-    readBasis,
-    input,
+    state.readCapability,
+    request,
   );
-  return toObservedTextWindowReading(envelope, input);
+  return toObservedTextWindowReading(envelope, request);
 }
 
 async function createTextBufferCheckpoint(
@@ -203,7 +204,7 @@ async function createTextBufferCheckpoint(
   state.currentSession = execution.nextSession;
   return {
     buffer,
-    readBasis: state.currentReadBasis,
+    textBasis: textBasisForHead(execution.result.head),
     bufferVersion: state.bufferVersion,
     checkpointId: execution.result.checkpoint.checkpointId,
     checkpointKind: execution.result.checkpoint.kind,
@@ -240,11 +241,16 @@ function toTextBuffer(sequence: number, input: CreateTextBufferRequest): TextBuf
 
 function toObservedTextWindowReading(
   envelope: TextWindowReadingEnvelope,
-  input: TextWindowRangeInput,
+  request: TextWindowRequest,
 ): Observed<TextWindowReading> {
   const reading: TextWindowReading = {
     readingId: envelope.reading.readingId,
+    textBasis: {
+      basisHeadId: request.basisHeadId,
+      byteRange: request.byteRange,
+    },
     projection: envelope.projection,
+    materialization: envelope.materialization,
     lines: toTextWindowLines(envelope),
     byteLength: textWindowByteLength(envelope),
     lineCount: envelope.reading.lineCount,
@@ -252,9 +258,9 @@ function toObservedTextWindowReading(
     totalLineCount: envelope.reading.totalLineCount,
     hasMoreBefore: envelope.reading.hasMoreBefore,
     hasMoreAfter: envelope.reading.hasMoreAfter,
-    cursorLine: input.cursorLine,
-    viewportLineCount: input.viewportLineCount,
-    truncated: textWindowWasTruncated(envelope, input),
+    cursorLine: request.aperture.cursorLine,
+    viewportLineCount: request.aperture.viewportLineCount,
+    truncated: textWindowWasTruncated(envelope, request.aperture),
   };
   return {
     value: reading,
@@ -295,4 +301,20 @@ function textWindowWasTruncated(
 
 function toFrontierRef(bufferId: TextBufferId, bufferVersion: BufferVersion): string {
   return `${TEXT_BUFFER_OPTIC_FRONTIER_PREFIX}${bufferId}:${bufferVersion}`;
+}
+
+function textBasisForHead(head: RopeHead): TextWindowBasis {
+  const startByte = requiredCoordinate(makeByteOffset(EMPTY_BYTE_LENGTH));
+  const endByte = requiredCoordinate(makeByteOffset(head.byteLength));
+  return {
+    basisHeadId: head.headId,
+    byteRange: requiredCoordinate(makeTextByteRange(startByte, endByte)),
+  };
+}
+
+function requiredCoordinate<TValue>(result: CoordinateResult<TValue>): TValue {
+  if (!result.ok) {
+    throw new TextBufferOpticError('Text head does not define a valid UTF-8 byte range.');
+  }
+  return result.value;
 }

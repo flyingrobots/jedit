@@ -55,6 +55,15 @@ jedit UI command
 Echo remains generic. It does not own text, editor, buffer, cursor, file,
 selection, preview, highlight, or save semantics.
 
+The campaign acceptance criterion is stronger than using Echo-shaped names or
+an in-process transport: every durable or recoverable user-state transition and
+every authoritative reading must be backed by Echo-owned admission, witnessed
+history, receipts, and recovery. Jim-owned caches and indexes are permitted
+only when they are disposable, basis-pinned projections whose loss cannot
+change semantic history. The current handwritten invocation corridor remains
+transitional until generated Edict operations are installed and invoked by
+Echo.
+
 ## Projection Coverage
 
 The production path names coverage explicitly because these terms are not
@@ -85,6 +94,21 @@ These patterns are architecture bugs:
 - WSC recovery or materialization from a truncated/window reading;
 - default top-of-file aperture for current cursor or edit follow-up refresh;
 - Graft drawer rows that use stale or saved-only data without visible posture.
+
+## Materialization Cache Provenance
+
+The text-window observer may retain exact-repeat materializations to avoid
+reading unchanged rope bytes repeatedly. Each entry is keyed by Jim worldline
+and head, exact branded UTF-8 coverage, schema and materializer versions,
+observer plan, policy digest, and a request namespace. Entries declare exact
+range completeness and separately count their UTF-8 projection bytes.
+
+This metadata is cache provenance, not causal provenance. The transitional
+`requestFrontierRef` is not an Echo frontier witness, and cache digests are not
+Echo identities. Cache lookup must fail closed when any coordinate or
+projection metadata is stale. Invalidating, evicting, or losing the cache may
+increase read cost only; it must never rewrite graph-rope authority or alter
+retained evidence.
 
 ## WSC Reading Evidence
 

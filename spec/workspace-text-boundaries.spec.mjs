@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createWorkspaceEchoAppHarness } from './workspace-echo-app-harness.mjs';
 import {
+  basisPinnedTestTextSession,
   fakeTextOperationSequencer,
   importDist,
   mockEditor,
@@ -128,14 +129,14 @@ test('text edit planner owns cursor selection and unsupported range posture', as
 
   assert.deepEqual(planner.planWorkspaceTextInsert(editor, 'X'), {
     kind: planner.WorkspaceTextEditPlanKinds.Insert,
-    startByte: 1,
+    startByte: { kind: 'utf8-byte-offset', value: 1 },
     insertText: 'X',
     cursorAfter: { row: 0, column: 2 },
   });
   assert.deepEqual(planner.planWorkspaceTextDeleteUnderCursor(editor), {
     kind: planner.WorkspaceTextEditPlanKinds.Delete,
-    startByte: 1,
-    endByte: 2,
+    startByte: { kind: 'utf8-byte-offset', value: 1 },
+    endByte: { kind: 'utf8-byte-offset', value: 2 },
     cursorAfter: { row: 0, column: 1 },
   });
   assert.deepEqual(planner.planWorkspaceTextSelectionReplace(editor, {
@@ -145,8 +146,8 @@ test('text edit planner owns cursor selection and unsupported range posture', as
     endColumn: 2,
   }, 'Z'), {
     kind: planner.WorkspaceTextEditPlanKinds.Replace,
-    startByte: 1,
-    endByte: 6,
+    startByte: { kind: 'utf8-byte-offset', value: 1 },
+    endByte: { kind: 'utf8-byte-offset', value: 6 },
     insertText: 'Z',
     cursorAfter: { row: 0, column: 2 },
   });
@@ -156,16 +157,59 @@ test('text edit planner owns cursor selection and unsupported range posture', as
   });
 });
 
+test('text edit planner converts UTF-16 cursor columns to branded UTF-8 bytes', async () => {
+  const [planner, modeModule] = await Promise.all([
+    importDist('app', 'workspace', 'workspace-text-edit-planner.js'),
+    importDist('app', 'workspace', 'editor', 'mode.js'),
+  ]);
+  const editor = {
+    path: '/repo/unicode.txt',
+    lines: ['A😀é'],
+    cursorRow: 0,
+    cursorCol: 3,
+    scrollRow: 0,
+    scrollCol: 0,
+    dirty: false,
+    readOnly: false,
+    mode: modeModule.EditorModes.Insert,
+    undoStack: [],
+    redoStack: [],
+  };
+
+  assert.deepEqual(planner.planWorkspaceTextInsert(editor, '!').startByte, {
+    kind: 'utf8-byte-offset',
+    value: 5,
+  });
+  assert.deepEqual(planner.planWorkspaceTextBackspace(editor), {
+    kind: planner.WorkspaceTextEditPlanKinds.Delete,
+    startByte: { kind: 'utf8-byte-offset', value: 1 },
+    endByte: { kind: 'utf8-byte-offset', value: 5 },
+    cursorAfter: { row: 0, column: 1 },
+  });
+  assert.deepEqual(planner.planWorkspaceTextDeleteUnderCursor({
+    ...editor,
+    cursorCol: 1,
+  }), {
+    kind: planner.WorkspaceTextEditPlanKinds.Delete,
+    startByte: { kind: 'utf8-byte-offset', value: 1 },
+    endByte: { kind: 'utf8-byte-offset', value: 5 },
+    cursorAfter: { row: 0, column: 1 },
+  });
+});
+
 test('replace command submits through production text session and refreshes reading', async () => {
   const commands = await importDist('app', 'workspace', 'workspace-text-commands.js');
   const calls = {
     replace: [],
     observe: [],
   };
-  const productionTextSession = {
+  const productionTextSession = basisPinnedTestTextSession({
     replaceRange: async (request) => {
       calls.replace.push(request);
-      return { kind: 'applied', result: { receiptId: 'receipt:replace' } };
+      return {
+        kind: 'applied',
+        result: { receiptId: 'receipt:replace', textBasis: testTextBasis(21, 'head:replace') },
+      };
     },
     observeWindow: async (request) => {
       calls.observe.push(request);
@@ -183,7 +227,7 @@ test('replace command submits through production text session and refreshes read
         },
       };
     },
-  };
+  });
   const message = await commands.createWorkspaceTextEditCmd({
     kind: commands.WorkspaceTextEditCommandKinds.Replace,
     requestId: 7,
@@ -193,15 +237,15 @@ test('replace command submits through production text session and refreshes read
     textOperationSequencer: fakeTextOperationSequencer(),
     atMs: 42,
     aperture: commands.defaultWorkspaceTextAperture(),
-    startByte: 1,
-    endByte: 4,
+    startByte: { kind: 'utf8-byte-offset', value: 1 },
+    endByte: { kind: 'utf8-byte-offset', value: 4 },
     insertText: 'XYZ',
   })();
 
   assert.deepEqual(calls.replace, [{
     bufferId: 'buffer:notes',
-    startByte: 1,
-    endByte: 4,
+    startByte: { kind: 'utf8-byte-offset', value: 1 },
+    endByte: { kind: 'utf8-byte-offset', value: 4 },
     insertText: 'XYZ',
     atMs: 42,
   }]);
@@ -212,8 +256,11 @@ test('replace command submits through production text session and refreshes read
 
 test('settlement envelope records bounded reading coverage metadata', async () => {
   const commands = await importDist('app', 'workspace', 'workspace-text-commands.js');
-  const productionTextSession = {
-    insertText: async () => ({ kind: 'applied', result: { receiptId: 'receipt:window' } }),
+  const productionTextSession = basisPinnedTestTextSession({
+    insertText: async () => ({
+      kind: 'applied',
+      result: { receiptId: 'receipt:window', textBasis: testTextBasis(101, 'head:window') },
+    }),
     observeWindow: async () => ({
       kind: 'observed',
       observed: {
@@ -234,7 +281,7 @@ test('settlement envelope records bounded reading coverage metadata', async () =
         },
       },
     }),
-  };
+  });
 
   const message = await commands.createWorkspaceTextEditCmd({
     kind: commands.WorkspaceTextEditCommandKinds.Insert,
@@ -251,7 +298,7 @@ test('settlement envelope records bounded reading coverage metadata', async () =
       afterLines: 0,
       maxBytes: 1048576,
     },
-    startByte: 100,
+    startByte: { kind: 'utf8-byte-offset', value: 100 },
     insertText: 'Z',
   })();
   const payload = JSON.parse(new TextDecoder().decode(message.result.wscSettlementEnvelope.bytes));
@@ -265,6 +312,16 @@ test('settlement envelope records bounded reading coverage metadata', async () =
   assert.equal(payload.reading.truncated, false);
 });
 
+function testTextBasis(endByte, basisHeadId) {
+  return {
+    basisHeadId,
+    byteRange: {
+      startByte: { kind: 'utf8-byte-offset', value: 0 },
+      endByte: { kind: 'utf8-byte-offset', value: endByte },
+    },
+  };
+}
+
 test('production undo and redo submit Echo replacement edits', async () => {
   const harness = await openedHarness({
     hostLines: ['abc'],
@@ -277,22 +334,22 @@ test('production undo and redo submit Echo replacement edits', async () => {
 
   assert.deepEqual(harness.calls.delete, [{
     bufferId: 'buffer:notes',
-    startByte: 0,
-    endByte: 1,
+    startByte: { kind: 'utf8-byte-offset', value: 0 },
+    endByte: { kind: 'utf8-byte-offset', value: 1 },
     atMs: 0,
   }]);
   assert.deepEqual(harness.calls.replace, [
     {
       bufferId: 'buffer:notes',
-      startByte: 0,
-      endByte: 0,
+      startByte: { kind: 'utf8-byte-offset', value: 0 },
+      endByte: { kind: 'utf8-byte-offset', value: 0 },
       insertText: 'a',
       atMs: 0,
     },
     {
       bufferId: 'buffer:notes',
-      startByte: 0,
-      endByte: 1,
+      startByte: { kind: 'utf8-byte-offset', value: 0 },
+      endByte: { kind: 'utf8-byte-offset', value: 1 },
       insertText: '',
       atMs: 0,
     },
@@ -313,14 +370,14 @@ test('production insert-mode edits can be undone through Echo', async () => {
 
   assert.deepEqual(harness.calls.insert, [{
     bufferId: 'buffer:notes',
-    startByte: 0,
+    startByte: { kind: 'utf8-byte-offset', value: 0 },
     insertText: 'X',
     atMs: 0,
   }]);
   assert.deepEqual(harness.calls.replace, [{
     bufferId: 'buffer:notes',
-    startByte: 0,
-    endByte: 1,
+    startByte: { kind: 'utf8-byte-offset', value: 0 },
+    endByte: { kind: 'utf8-byte-offset', value: 1 },
     insertText: '',
     atMs: 0,
   }]);

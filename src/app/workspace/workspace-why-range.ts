@@ -1,5 +1,6 @@
 import type { Cmd } from '@flyingrobots/bijou-tui';
-import type { JeditWhyByteRange } from '../../ports/jedit-why-range.js';
+import { makeTextByteRange } from '../../domain/graph-rope-coordinates.js';
+import type { TextByteRange } from '../../domain/graph-rope-types.js';
 import { RESULT_PRODUCED } from '../../ports/jedit-why-range.js';
 import type { JeditWhyReport } from './command-provenance.js';
 import type { EditorState } from './editor/model.js';
@@ -41,7 +42,7 @@ const WHY_RANGE_I18N_KEYS = Object.freeze({
 
 interface WorkspaceWhyRangeCommandRequest {
   readonly bufferId: string;
-  readonly range: JeditWhyByteRange;
+  readonly range: TextByteRange;
   readonly productionTextSession: ProductionTextSession;
   readonly fallbackReport: JeditWhyReport;
   readonly anchor: WorkspaceInlinePanelAnchor;
@@ -54,7 +55,7 @@ export interface WorkspaceInlinePanelReport {
   readonly tone: WorkspaceInlinePanelTone;
 }
 
-export function jeditWhyRangeAtCursor(editor: EditorState | undefined): JeditWhyByteRange | undefined {
+export function jeditWhyRangeAtCursor(editor: EditorState | undefined): TextByteRange | undefined {
   if (editor == null) {
     return undefined;
   }
@@ -69,10 +70,11 @@ export function jeditWhyRangeAtCursor(editor: EditorState | undefined): JeditWhy
   }
   const startColumn = scanRangeStart(line, anchorColumn);
   const endColumn = scanRangeEnd(line, anchorColumn);
-  return {
-    startByte: byteOffsetForTextPosition(editor.lines, { row, column: startColumn }),
-    endByte: byteOffsetForTextPosition(editor.lines, { row, column: endColumn }),
-  };
+  const range = makeTextByteRange(
+    byteOffsetForTextPosition(editor.lines, { row, column: startColumn }),
+    byteOffsetForTextPosition(editor.lines, { row, column: endColumn }),
+  );
+  return range.ok ? range.value : undefined;
 }
 
 export function createWorkspaceWhyRangeCmd(

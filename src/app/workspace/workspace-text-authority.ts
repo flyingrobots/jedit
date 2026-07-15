@@ -265,6 +265,8 @@ function projectionMatchesAuthority(
   const latestHeadId = authority.lastCausalTransition?.nextHeadId;
   return cache.bufferId === authority.bufferId
     && cache.projection != null
+    && cache.materialization != null
+    && cache.materialization.key.basis.headId === cache.projection.basisHeadId
     && workspaceTextProjectionMatchesLines(cache.projection, cache.lines)
     && (latestHeadId == null || cache.projection.basisHeadId === latestHeadId);
 }

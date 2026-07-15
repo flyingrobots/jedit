@@ -2,6 +2,30 @@
 
 ## Unreleased
 
+- Added versioned text-window materialization provenance and a bounded,
+  disposable cache. Cache coordinates now name the requested rope head, exact
+  branded UTF-8 coverage, request namespace, observer plan, materializer
+  version, and policy. Stale or unsupported entries fail closed, materialized
+  projection bytes are metered separately from retained authoritative bytes,
+  and cache eviction cannot mutate rope history. Local cache digests and
+  request-frontier labels are explicitly acceleration metadata, not Echo
+  identities or admitted frontier evidence.
+- Separated authoritative rope line-count summaries from disposable line-offset
+  indexes. Text-window observers now rebuild versioned indexes from complete,
+  basis-pinned UTF-8 head coverage, isolate equal head labels across
+  worldlines, preserve Unicode and CRLF byte boundaries, reuse indexes for
+  bounded reads, and evict mismatched projections without changing history or
+  `:why` evidence.
+- Required every product text-window materialization to name an opaque rope
+  head and branded UTF-8 byte range. Historical windows now resolve retained
+  head authority rather than current session state, and generated readings use
+  a minimal immutable text-basis record instead of fabricating complete
+  `RopeHead` metadata from bounded bytes.
+- Added explicit UTF-8 byte, UTF-16 code-unit, and zero-based line-column
+  coordinate adapters for graph-backed text. Coordinate conversion now rejects
+  split surrogate pairs, split UTF-8 sequences, CRLF-interior positions, and
+  out-of-bounds coordinates; workspace edit plans preserve branded byte
+  offsets until the transitional text-session serialization boundary.
 - Quarantined retained full-root text authority behind an allowlisted guard
   witness: the only permitted `HotTextBufferState.roots` readers are the type
   definition, the production-unsafe full-snapshot fixture, root-fact evidence

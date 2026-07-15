@@ -1219,20 +1219,28 @@ This appears for every domain contract the adapter composes. It is verbose but e
 
 ## 17. The TextBufferOptic — The Capability Boundary
 
-The `TextBufferOptic` is the most architecturally significant abstraction in `jedit`. It is the interface through which application code accesses text buffers. **App code never sees raw worldline IDs, rope head IDs, or any Echo substrate coordinate.**
+The `TextBufferOptic` is the most architecturally significant abstraction in
+`jedit`. It is the interface through which application code accesses text
+buffers. App code may replay opaque Jim rope-head IDs returned by operations so
+every materialization names its causal basis. It never derives those IDs or
+receives raw worldline and Echo substrate coordinates.
 
 ```mermaid
 classDiagram
     class TextBufferOptic {
         +buffer: TextBuffer
-        +currentReadBasis() ReadBasisHandle
+        +openedTextBasis: TextWindowBasis
         +applyIntent(intent) Promise~ApplyIntentResult~
         +createCheckpoint(req) Promise~CreateTextBufferCheckpointResult~
-        +textWindow(readBasis, input) Promise~Observed~TextWindowReading~~
+        +textWindow(request) Promise~Observed~TextWindowReading~~
     }
     class ReadBasisHandle {
         +kind: "read-basis-handle"
         +id: string
+    }
+    class TextWindowBasis {
+        +basisHeadId: string
+        +byteRange: TextByteRange
     }
     class TextBuffer {
         +bufferId: string
@@ -1248,7 +1256,8 @@ classDiagram
     }
 
     TextBufferOptic --> TextBuffer : buffer
-    TextBufferOptic ..> ReadBasisHandle : currentReadBasis()
+    TextBufferOptic ..> ReadBasisHandle : private transport capability
+    TextBufferOptic --> TextWindowBasis : opened/read basis
     TextBufferOptic ..> Observed : textWindow() returns
 ```
 
@@ -1264,7 +1273,11 @@ classDiagram
 
 ### Capability 1: `ReadBasisHandle` — Object Identity as Authorization
 
-A `ReadBasisHandle` is `{ kind: "read-basis-handle", id: string }`. App code holds one. It passes it to `textWindow()`. Inside `ReadBasisHandleRegistry`:
+A `ReadBasisHandle` is `{ kind: "read-basis-handle", id: string }`. The optic
+holds one internally and passes it through the transport when it executes
+`textWindow()`. Product code supplies a separate explicit `TextWindowBasis`;
+the handle is capability plumbing, not causal history. Inside
+`ReadBasisHandleRegistry`:
 
 ```typescript
 // In ReadBasisHandleRegistry (src/app/read-basis-handle-registry.ts)
@@ -1813,7 +1826,10 @@ generated Wesley metadata keeps operation identity visible.
 
 **Gain**: Handles are unforgeable by construction. No capability can be manufactured by app code. Memory is automatically reclaimed when the handle is GC'd (no manual cleanup required).
 
-**Cost**: The handle must stay alive in JavaScript's heap while it is needed. If the optic holds the only reference and it is GC'd prematurely, the binding is lost. In practice this is not a problem because the `WorkspaceModel` holds `currentReadBasis` and is always reachable.
+**Cost**: The handle must stay alive in JavaScript's heap while it is needed. If
+the optic holds the only reference and it is GC'd prematurely, the binding is
+lost. In practice the active production text session retains the optic for the
+open buffer lifetime.
 
 **Interesting property**: Using `WeakMap` means the capability registry does not prevent the handle from being garbage collected. This is the correct behavior — a handle that nothing holds a reference to is a handle that nobody can use, so its binding can be cleaned up automatically.
 

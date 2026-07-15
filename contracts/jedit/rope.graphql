@@ -165,9 +165,18 @@ type TextLineReading {
     endByte: Int!
 }
 
+"""Immutable rope-head basis named by a bounded text materialization."""
+type TextWindowHeadBasis {
+    headId: ID!
+    worldlineId: ID!
+    rootNodeId: ID!
+    byteLength: Int!
+    lineCount: Int!
+}
+
 type TextWindowReading {
     worldline: BufferWorldline!
-    head: RopeHead!
+    head: TextWindowHeadBasis!
     readingId: ID!
     startLine: Int!
     lineCount: Int!
@@ -224,6 +233,9 @@ input WorldlineSnapshotInput {
 
 input TextWindowInput {
     worldlineId: ID!
+    basisHeadId: ID!
+    startByte: Int!
+    endByte: Int!
     cursorLine: Int!
     viewportLineCount: Int!
     beforeLines: Int!
@@ -386,9 +398,9 @@ type Query {
         @wes_op(name: "worldlineSnapshot")
 
     """
-    Returns a bounded canonical text window around the active viewport. This is
-    the normal editor painting read. Full text snapshots remain explicit
-    snapshot reads, not the default source-rendering contract.
+    Returns a bounded text window from the explicitly named retained head and
+    UTF-8 byte range. The requested head may be historical; current session
+    state never silently replaces the supplied materialization basis.
     """
     textWindow(input: TextWindowInput!): TextWindowReading!
         @wes_op(name: "textWindow")
