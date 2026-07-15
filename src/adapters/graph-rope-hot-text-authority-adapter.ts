@@ -8,8 +8,11 @@ import {
 } from '../domain/edit-group-contract.js';
 import {
   createGraphRopeRuntime,
+  type GraphRopeCreateWorldlineResult,
+  type GraphRopeDebugShape,
   type GraphRopeRuntime,
   type GraphRopeRuntimeObstructionCode,
+  type GraphRopeRuntimeResult,
 } from '../domain/graph-rope-runtime.js';
 import {
   FIRST_ROOT_ID,
@@ -24,6 +27,7 @@ import {
   type AdmitReplaceRangeTickResult,
   type CloseEditGroupResult,
   type GraphBackedRopeTextAuthority,
+  type HotTextAuthorityBasis,
   type HotTextBufferState,
   type SaveHotCheckpointResult,
 } from '../ports/hot-text-runtime.js';
@@ -41,6 +45,10 @@ type GraphRopeAuthorityOperation =
 
 export interface CreateGraphRopeHotTextAuthorityOptions {
   readonly hash: HashPort;
+}
+
+export interface GraphRopeHotTextAuthority extends GraphBackedRopeTextAuthority {
+  debugRopeShape(headId: string): GraphRopeRuntimeResult<GraphRopeDebugShape>;
 }
 
 export class GraphRopeTextAuthorityObstructionError extends Error {
@@ -70,11 +78,11 @@ export class GraphRopeTextAuthorityCapabilityError extends Error {
 
 export function createGraphRopeHotTextAuthority(
   options: CreateGraphRopeHotTextAuthorityOptions,
-): GraphBackedRopeTextAuthority {
-  return new GraphRopeHotTextAuthority(createGraphRopeRuntime({ hash: options.hash }));
+): GraphRopeHotTextAuthority {
+  return new GraphRopeHotTextAuthorityAdapter(createGraphRopeRuntime({ hash: options.hash }));
 }
 
-class GraphRopeHotTextAuthority implements GraphBackedRopeTextAuthority {
+class GraphRopeHotTextAuthorityAdapter implements GraphRopeHotTextAuthority {
   public readonly textAuthorityKind: typeof GRAPH_BACKED_ROPE_TEXT_AUTHORITY_KIND = GRAPH_BACKED_ROPE_TEXT_AUTHORITY_KIND;
   public readonly isProductionSafe: true = true;
 
@@ -88,7 +96,7 @@ class GraphRopeHotTextAuthority implements GraphBackedRopeTextAuthority {
     if (!created.ok) {
       throw new GraphRopeTextAuthorityObstructionError(CREATE_BUFFER_OPERATION, created.code);
     }
-    return initialProjection(path, initialText);
+    return initialProjection(path, initialText, authorityBasis(created.value));
   }
 
   public materialize(state: HotTextBufferState): string {
@@ -121,18 +129,39 @@ class GraphRopeHotTextAuthority implements GraphBackedRopeTextAuthority {
   public saveCheckpoint(_state: HotTextBufferState): SaveHotCheckpointResult {
     throw new GraphRopeTextAuthorityCapabilityError(SAVE_CHECKPOINT_OPERATION);
   }
+
+  public debugRopeShape(headId: string): GraphRopeRuntimeResult<GraphRopeDebugShape> {
+    return this.graph.debugRopeShape(headId);
+  }
 }
 
-function initialProjection(path: string, initialText: string): HotTextBufferState {
+function initialProjection(
+  path: string,
+  initialText: string,
+  basis: HotTextAuthorityBasis,
+): HotTextBufferState {
   const currentRoot = createBufferRoot(FIRST_ROOT_ID, initialText);
   return {
     path,
+    authorityBasis: basis,
     currentRoot,
     roots: [currentRoot],
     ticks: [],
     editGroups: [],
     checkpoints: [],
     nextRootId: FIRST_ROOT_ID + 1,
+  };
+}
+
+function authorityBasis(created: GraphRopeCreateWorldlineResult): HotTextAuthorityBasis {
+  return {
+    worldlineId: created.worldline.worldlineId,
+    headId: created.head.headId,
+    rootNodeId: created.head.rootNodeId,
+    createdByTickId: created.head.createdByTickId,
+    byteLength: created.head.byteLength,
+    lineCount: created.head.lineCount,
+    contentHash: created.head.contentHash,
   };
 }
 

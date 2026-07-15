@@ -13,31 +13,36 @@ import type {
   RopeDiff,
 } from '../generated/jedit/rope.types.generated.js';
 import { MutationOperationSchemas, QueryOperationSchemas } from '../generated/jedit/rope.zod.generated.js';
-import type { HotTextBufferState, HotTextRuntimePort } from '../ports/hot-text-runtime.js';
+import type {
+  HotTextBufferState,
+  HotTextRuntimePort,
+} from '../ports/hot-text-runtime.js';
 import type { HashPort } from '../ports/hash.js';
 import {
   byteLength,
   digest,
   lineCount,
-  parseHeadId,
-  parseWorldlineId,
   toCheckpointId,
   toHeadId,
   toReceiptId,
   toRootNodeId,
   toTickId,
-  toWorldlineId,
 } from './jedit-contract-runtime-id.js';
-
-export const JeditContractRuntimeErrorCode = Object.freeze({
-  WorldlineMismatch: 'WORLDLINE_MISMATCH',
-  BaseHeadMismatch: 'BASE_HEAD_MISMATCH',
-  InvalidRootId: 'INVALID_ROOT_ID',
-  InvalidWorldlineId: 'INVALID_WORLDLINE_ID',
-  InvalidHeadId: 'INVALID_HEAD_ID',
-} as const);
-
-export type JeditContractRuntimeErrorCode = typeof JeditContractRuntimeErrorCode[keyof typeof JeditContractRuntimeErrorCode];
+import {
+  authorityHeadRecord,
+  canonicalHeadIdForState,
+  ensureSessionBasis,
+  ensureWorldlineId,
+  worldlineIdForState,
+} from './jedit-contract-runtime-authority-basis.js';
+import {
+  JeditContractRuntimeError,
+  JeditContractRuntimeErrorCode,
+} from './jedit-contract-runtime-errors.js';
+export {
+  JeditContractRuntimeError,
+  JeditContractRuntimeErrorCode,
+} from './jedit-contract-runtime-errors.js';
 
 const REWRITE_KIND_REPLACE_RANGE_AS_TICK: RewriteKind = 'REPLACE_RANGE_AS_TICK';
 const INITIAL_CHECKPOINT_KIND: CheckpointKind = 'INITIAL';
@@ -73,8 +78,7 @@ export class JeditWorldlineSession {
     checkpointMetadata: readonly CheckpointMetadata[],
   ) {
     ensureWorldlineId(worldline.worldlineId);
-    ensureHeadId(worldline.canonicalHeadId);
-    ensureStateRootId(worldline.canonicalHeadId, state.currentRoot.id);
+    ensureSessionBasis(worldline, state);
     this.worldline = worldline;
     this.state = state;
     this.tickMetadata = [...tickMetadata];
@@ -118,16 +122,6 @@ interface CheckpointMetadata {
   readonly kind: CreateCheckpointInput['kind'];
   readonly label?: string;
   readonly createdByRopeRewriteId?: number;
-}
-
-export class JeditContractRuntimeError extends Error {
-  public readonly code: JeditContractRuntimeErrorCode;
-
-  public constructor(code: JeditContractRuntimeErrorCode, message: string) {
-    super(message);
-    this.name = 'JeditContractRuntimeError';
-    this.code = code;
-  }
 }
 
 export function createBufferWorldline(
@@ -308,11 +302,10 @@ function createSession(
   tickMetadata: readonly TickMetadata[],
   checkpointMetadata: readonly CheckpointMetadata[],
 ): JeditWorldlineSession {
-  const worldlineId = toWorldlineId(projectionPath);
   const worldline: BufferWorldline = {
-    worldlineId,
+    worldlineId: worldlineIdForState(state, projectionPath),
     bufferKey,
-    canonicalHeadId: toHeadId(state.currentRoot.id),
+    canonicalHeadId: canonicalHeadIdForState(state),
     projectionPath,
   };
 
@@ -370,6 +363,11 @@ function toCheckpointRecords(session: JeditWorldlineSession): Checkpoint[] {
 
 function toHeadRecord(session: JeditWorldlineSession, hash: HashPort): RopeHead {
   const text = materializeRoot(session.state.currentRoot);
+  const basis = session.state.authorityBasis;
+
+  if (basis != null) {
+    return authorityHeadRecord(basis, text, hash);
+  }
 
   return {
     headId: toHeadId(session.state.currentRoot.id),
@@ -451,40 +449,6 @@ function ensureMatchingBaseHead(session: JeditWorldlineSession, baseHeadId: stri
     throw new JeditContractRuntimeError(
       JeditContractRuntimeErrorCode.BaseHeadMismatch,
       `Base head mismatch: expected ${session.worldline.canonicalHeadId}, received ${baseHeadId}.`,
-    );
-  }
-}
-
-function ensureStateRootId(headId: string, rootId: number): void {
-  if (!Number.isFinite(rootId) || !Number.isInteger(rootId)) {
-    throw new JeditContractRuntimeError(
-      JeditContractRuntimeErrorCode.InvalidRootId,
-      `Invalid root identifier: ${rootId}.`,
-    );
-  }
-
-  if (toHeadId(rootId) !== headId) {
-    throw new JeditContractRuntimeError(
-      JeditContractRuntimeErrorCode.BaseHeadMismatch,
-      `Canonical head mismatch: expected ${toHeadId(rootId)}, received ${headId}.`,
-    );
-  }
-}
-
-function ensureWorldlineId(worldlineId: string): void {
-  if (parseWorldlineId(worldlineId) == null) {
-    throw new JeditContractRuntimeError(
-      JeditContractRuntimeErrorCode.InvalidWorldlineId,
-      `Invalid worldline identifier: ${worldlineId}.`,
-    );
-  }
-}
-
-function ensureHeadId(headId: string): void {
-  if (parseHeadId(headId) == null) {
-    throw new JeditContractRuntimeError(
-      JeditContractRuntimeErrorCode.InvalidHeadId,
-      `Invalid head identifier: ${headId}.`,
     );
   }
 }

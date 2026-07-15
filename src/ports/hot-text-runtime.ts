@@ -3,8 +3,19 @@ import type { SaveCheckpoint, SaveCheckpointReceipt } from '../domain/save-check
 import type { BufferRoot, TextRange } from '../domain/text-edit-contract.js';
 import type { AdmittedTick, TickAdmissionReceipt } from '../domain/tick-admission-contract.js';
 
+export interface HotTextAuthorityBasis {
+  readonly worldlineId: string;
+  readonly headId: string;
+  readonly rootNodeId: string;
+  readonly createdByTickId: string;
+  readonly byteLength: number;
+  readonly lineCount: number;
+  readonly contentHash: string;
+}
+
 export interface HotTextBufferState {
   readonly path: string;
+  readonly authorityBasis?: HotTextAuthorityBasis;
   readonly currentRoot: BufferRoot;
   readonly roots: readonly BufferRoot[];
   readonly ticks: readonly AdmittedTick[];
