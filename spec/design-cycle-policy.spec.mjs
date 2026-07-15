@@ -153,12 +153,12 @@ test('HT-0149 checkpoint fact carries schema version', () => {
 
 test('HT-0149 checkpoint facts are validated rather than deferred', () => {
   const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
-  const deferredFacts = sectionBetween(discovery, 'The full design must also define facts for:', 'Echo remains generic.');
+  const deferredFacts = sectionBetween(discovery, 'The full design must also define jedit facts for:', 'Echo remains generic');
   const admittedFacts = sectionBetween(discovery, 'type RopeAdmittedFact =', 'interface RopeFactReadModel');
 
   assert.match(admittedFacts, /\| TickReceiptFact/);
   assert.match(admittedFacts, /\| RopeCheckpointFact\b/);
-  assert.match(admittedFacts, /\| EchoCausalAnchorFact;/);
+  assert.match(admittedFacts, /\| RopeCheckpointAnchoredFact;/);
   assert.match(discovery, /\): FactValidationResult<RopeAdmittedFact>;/);
   assert.doesNotMatch(deferredFacts, /`RopeCheckpoint`/);
 });

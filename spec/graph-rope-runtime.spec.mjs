@@ -1,42 +1,19 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { importDist } from './dist-helpers.mjs';
+import {
+  UTF8_ENCODER,
+  assertOk,
+  byteRange,
+  createHashPort,
+  loadModules,
+} from './support/graph-rope-runtime-test-kit.mjs';
 
-const UTF8_ENCODER = new TextEncoder();
 const WINDOW_CACHE_STATUS_UNCACHED = 'uncached-materialization';
 const ROPE_LEAF_FACT_KIND = 'jedit.text.RopeLeaf';
 const OBSTRUCTION_MISSING_HEAD = 'missing-head';
 const OBSTRUCTION_INVALID_BYTE_RANGE = 'invalid-byte-range';
 const OBSTRUCTION_INVALID_UTF8_BOUNDARY = 'invalid-utf8-boundary';
 const OBSTRUCTION_INVALID_FACT = 'invalid-fact';
-
-async function loadModules() {
-  const [runtime, contract] = await Promise.all([
-    importDist('domain', 'graph-rope-runtime.js'),
-    importDist('domain', 'graph-rope-contract.js'),
-  ]);
-  return { runtime, contract };
-}
-
-function createHashPort() {
-  return {
-    sha256Hex(value) {
-      return `hash(${value})`;
-    },
-  };
-}
-
-function assertOk(result) {
-  assert.equal(result.ok, true);
-  return result.value ?? result.fact ?? result;
-}
-
-function byteRange(contract, start, end) {
-  return assertOk(contract.makeTextByteRange(
-    assertOk(contract.makeByteOffset(start)),
-    assertOk(contract.makeByteOffset(end)),
-  ));
-}
 
 test('graph runtime creates a worldline from UTF-8 bytes and reads a named head window', async () => {
   const { runtime, contract } = await loadModules();
@@ -173,104 +150,6 @@ test('graph runtime no-op replacement does not mint text authority facts', async
   assert.equal(replaced.rewrite, null);
   assert.equal(replaced.diff, null);
   assert.equal(replaced.receipt, null);
-});
-
-test('graph runtime checkpoints a head through a non-mutating causal anchor', async () => {
-  const { runtime, contract } = await loadModules();
-  const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
-  const created = assertOk(graph.createBufferWorldline({
-    worldlineId: 'worldline:checkpoint',
-    initialText: 'alpha beta',
-  }));
-  const replaced = assertOk(graph.replaceRangeAsTick({
-    basisHeadId: created.head.headId,
-    range: byteRange(contract, 6, 10),
-    replacementText: 'BETA',
-  }));
-  const before = assertOk(graph.debugRopeShape(replaced.nextHead.headId));
-
-  const checkpointed = assertOk(graph.createCheckpoint({
-    worldlineId: 'worldline:checkpoint',
-    headId: replaced.nextHead.headId,
-    reason: 'manual-save',
-  }));
-  const after = assertOk(graph.debugRopeShape(replaced.nextHead.headId));
-  const reading = assertOk(graph.textWindow({
-    basisHeadId: replaced.nextHead.headId,
-    byteRange: byteRange(contract, 0, UTF8_ENCODER.encode('alpha BETA').length),
-  }));
-
-  assert.equal(checkpointed.head.headId, replaced.nextHead.headId);
-  assert.equal(checkpointed.checkpoint.headId, replaced.nextHead.headId);
-  assert.equal(checkpointed.checkpoint.causalAnchorId, checkpointed.causalAnchor.anchorId);
-  assert.equal(checkpointed.causalAnchor.subject.appId, contract.JEDIT_CAUSAL_ANCHOR_APP_ID);
-  assert.equal(checkpointed.causalAnchor.subject.subjectKind, contract.JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_BUFFER_WORLDLINE);
-  assert.equal(checkpointed.causalAnchor.subject.subjectId, 'worldline:checkpoint');
-  assert.equal(checkpointed.causalAnchor.purpose, 'user-save');
-  assert.deepEqual(checkpointed.causalAnchor.retainedRoots, [{
-    kind: contract.ECHO_CAUSAL_ANCHOR_ROOT_KIND_APP_SUBJECT,
-    appId: contract.JEDIT_CAUSAL_ANCHOR_APP_ID,
-    subjectKind: contract.JEDIT_CAUSAL_ANCHOR_SUBJECT_KIND_ROPE_HEAD,
-    id: replaced.nextHead.headId,
-    role: contract.ECHO_CAUSAL_ANCHOR_ROOT_ROLE_AUTHORITY,
-  }]);
-  assert.equal(checkpointed.causalAnchor.materializationRoots.length, 0);
-  assert.equal('rewrite' in checkpointed, false);
-  assert.equal('diff' in checkpointed, false);
-  assert.equal('receipt' in checkpointed, false);
-  assert.deepEqual(after, before);
-  assert.equal(reading.text, 'alpha BETA');
-});
-
-test('graph runtime treats repeated checkpoints as distinct causal admissions', async () => {
-  const { runtime } = await loadModules();
-  const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
-  const created = assertOk(graph.createBufferWorldline({
-    worldlineId: 'worldline:checkpoint-repeat',
-    initialText: 'alpha beta',
-  }));
-  const before = assertOk(graph.debugRopeShape(created.head.headId));
-
-  const first = assertOk(graph.createCheckpoint({
-    worldlineId: 'worldline:checkpoint-repeat',
-    headId: created.head.headId,
-    reason: 'manual-save',
-  }));
-  const second = assertOk(graph.createCheckpoint({
-    worldlineId: 'worldline:checkpoint-repeat',
-    headId: created.head.headId,
-    reason: 'manual-save',
-  }));
-  const after = assertOk(graph.debugRopeShape(created.head.headId));
-
-  assert.equal(first.head.headId, created.head.headId);
-  assert.equal(second.head.headId, created.head.headId);
-  assert.notEqual(first.causalAnchor.admittedByReceiptId, second.causalAnchor.admittedByReceiptId);
-  assert.notEqual(first.causalAnchor.anchorDigest, second.causalAnchor.anchorDigest);
-  assert.notEqual(first.causalAnchor.anchorId, second.causalAnchor.anchorId);
-  assert.notEqual(first.checkpoint.checkpointId, second.checkpoint.checkpointId);
-  assert.equal('rewrite' in first, false);
-  assert.equal('diff' in first, false);
-  assert.equal('receipt' in first, false);
-  assert.deepEqual(after, before);
-});
-
-test('graph runtime rejects checkpoints for a different worldline', async () => {
-  const { runtime } = await loadModules();
-  const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
-  const created = assertOk(graph.createBufferWorldline({
-    worldlineId: 'worldline:checkpoint-mismatch',
-    initialText: 'alpha',
-  }));
-
-  assert.deepEqual(graph.createCheckpoint({
-    worldlineId: 'worldline:other',
-    headId: created.head.headId,
-    reason: 'manual-save',
-  }), {
-    ok: false,
-    code: OBSTRUCTION_INVALID_FACT,
-  });
 });
 
 test('graph runtime preserves untouched leaf identity across narrow replacements', async () => {
