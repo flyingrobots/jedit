@@ -1,3 +1,5 @@
+import type { HotTextWindowProjection } from './hot-text-runtime.js';
+
 const COMMENT_ROLE_DESCRIPTION = 'jedit.source-highlight.comment';
 const FUNCTION_ROLE_DESCRIPTION = 'jedit.source-highlight.function';
 const KEYWORD_ROLE_DESCRIPTION = 'jedit.source-highlight.keyword';
@@ -46,12 +48,15 @@ export interface SourceHighlightInput {
   readonly lineCount: number;
   readonly headId: string;
   readonly tick: number;
+  readonly textStartLine?: number;
+  readonly projection?: HotTextWindowProjection;
 }
 
 export interface SourceHighlightReading {
   readonly path: string;
   readonly partial: boolean;
   readonly spans: readonly SourceHighlightSpan[];
+  readonly projection?: HotTextWindowProjection;
   readonly notice?: string;
   readonly error?: string;
 }

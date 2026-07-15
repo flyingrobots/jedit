@@ -177,16 +177,23 @@ function recordingProductionTextSession(calls, options) {
     },
     observeWindow: async (request) => {
       calls.observe.push(request);
+      const text = currentReading(readings, calls.observe.length);
       return options.readObstruction ?? {
         kind: 'observed',
         observed: {
           value: {
             readingId: `reading:${calls.observe.length}`,
+            projection: {
+              basisHeadId: `head:reading:${calls.observe.length}`,
+              byteRange: { startByte: 0, endByte: Buffer.byteLength(text, 'utf8') },
+              text,
+              support: [],
+            },
             lines: [{
               lineNumber: 0,
               startByte: 0,
-              endByte: (readings[Math.min(calls.observe.length - 1, readings.length - 1)] ?? '').length,
-              text: readings[Math.min(calls.observe.length - 1, readings.length - 1)] ?? '',
+              endByte: Buffer.byteLength(text, 'utf8'),
+              text,
             }],
             startLine: 0,
             lineCount: 1,
@@ -209,6 +216,10 @@ function recordingProductionTextSession(calls, options) {
       };
     },
   };
+}
+
+function currentReading(readings, observationCount) {
+  return readings[Math.min(observationCount - 1, readings.length - 1)] ?? '';
 }
 
 function editReceiptId(options, kind, callCount) {

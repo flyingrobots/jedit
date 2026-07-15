@@ -21,19 +21,16 @@ import type {
 import type { HashPort } from '../ports/hash.js';
 import {
   byteLength,
-  digest,
-  lineCount,
   toCheckpointId,
   toHeadId,
   toReceiptId,
-  toRootNodeId,
   toTickId,
 } from './jedit-contract-runtime-id.js';
 import {
-  authorityHeadRecord,
   canonicalHeadIdForState,
   ensureSessionBasis,
   ensureWorldlineId,
+  projectedHeadRecord,
   worldlineIdForState,
 } from './jedit-contract-runtime-authority-basis.js';
 import {
@@ -393,22 +390,12 @@ function toCheckpointRecords(session: JeditWorldlineSession): Checkpoint[] {
 }
 
 function toHeadRecord(session: JeditWorldlineSession, hash: HashPort): RopeHead {
-  const text = materializeRoot(session.state.currentRoot);
-  const basis = session.state.authorityBasis;
-
-  if (basis != null) {
-    return authorityHeadRecord(basis, text, hash);
-  }
-
-  return {
-    headId: toHeadId(session.state.currentRoot.id),
-    worldlineId: session.worldline.worldlineId,
-    rootNodeId: toRootNodeId(session.state.currentRoot.id),
-    byteLength: byteLength(text),
-    lineCount: lineCount(text),
-    utf16Length: text.length,
-    equivalenceDigest: digest(text, hash),
-  };
+  return projectedHeadRecord(
+    session.state,
+    session.worldline.worldlineId,
+    materializeRoot(session.state.currentRoot),
+    hash,
+  );
 }
 
 function toRopeRewriteRecord(session: JeditWorldlineSession, metadata: TickMetadata): RopeRewrite {

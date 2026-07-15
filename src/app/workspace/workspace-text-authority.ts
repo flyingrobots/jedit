@@ -19,6 +19,7 @@ import {
   type WorkspaceTextReadingCache,
   type WorkspaceTextReadingPosture,
 } from './workspace-text-reading-cache.js';
+import { workspaceTextProjectionMatchesLines } from './workspace-text-observed-reading.js';
 
 const AUTHORITY_NONE = 'none';
 const AUTHORITY_PENDING_OPEN = 'pending-open';
@@ -233,6 +234,32 @@ export function workspaceTextAuthorityWithCache(
     ...authority,
     cache,
   };
+}
+
+export function projectedSourceWindow(authority: WorkspaceTextAuthorityOpened) {
+  const cache = authority.cache;
+  if (cache?.projection == null || !projectionMatchesAuthority(authority, cache)) {
+    return undefined;
+  }
+  return {
+    startLine: cache.startLine,
+    lineCount: cache.returnedLineCount,
+    totalLineCount: cache.totalLineCount,
+    hasMoreBefore: cache.hasMoreBefore,
+    hasMoreAfter: cache.hasMoreAfter,
+    lines: cache.lines.map((text, index) => ({ lineNumber: cache.startLine + index, text })),
+  };
+}
+
+function projectionMatchesAuthority(
+  authority: WorkspaceTextAuthorityOpened,
+  cache: WorkspaceTextReadingCache,
+): boolean {
+  const latestHeadId = authority.lastCausalTransition?.nextHeadId;
+  return cache.bufferId === authority.bufferId
+    && cache.projection != null
+    && workspaceTextProjectionMatchesLines(cache.projection, cache.lines)
+    && (latestHeadId == null || cache.projection.basisHeadId === latestHeadId);
 }
 
 export function workspaceTextAuthorityWithReceipt(

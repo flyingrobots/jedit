@@ -57,8 +57,29 @@ test('jedit query observers read worldline snapshots and text windows', async ()
 
   assert.equal(snapshot.reading.text, INITIAL_TEXT);
   assert.equal(textWindow.reading.lines[0].text, INITIAL_TEXT);
+  assert.equal(textWindow.projection.basisHeadId, session.worldline.canonicalHeadId);
+  assert.deepEqual(textWindow.projection.byteRange, { startByte: 0, endByte: INITIAL_TEXT.length });
   assert.match(textWindow.planId, /^observer-plan:textWindow:/);
   assert.equal(textWindow.planId.includes('fake'), false);
+});
+
+test('text window observers reject projections from the wrong causal basis', async () => {
+  const modules = await loadModules();
+  const fixture = modules.runtime.createFullSnapshotHotTextRuntimeFixture();
+  const context = createContext(modules, {
+    ...fixture,
+    textWindow(state, request) {
+      return { ...fixture.textWindow(state, request), basisHeadId: 'head:wrong-basis' };
+    },
+  });
+  const session = createSession(modules, context.mutations);
+
+  assert.throws(() => context.observers.observeQuery({
+    operationName: modules.packageModule.jeditHotTextContractPackage().queryOperationNames[1],
+    session,
+    frontierRef: FRONTIER_REF,
+    input: textWindowInput(session),
+  }), /does not match its requested head and byte range/);
 });
 
 test('jedit query observer registry has no lifecycle or mutation authority', async () => {
@@ -110,8 +131,7 @@ async function loadModules() {
   return modulesPromise;
 }
 
-function createContext(modules) {
-  const runtime = modules.runtime.createFullSnapshotHotTextRuntimeFixture();
+function createContext(modules, runtime = modules.runtime.createFullSnapshotHotTextRuntimeFixture()) {
   const hash = modules.hash.createHashPort();
   return {
     mutations: modules.mutations.createJeditContractMutationHandlerRegistry({
@@ -122,6 +142,17 @@ function createContext(modules) {
       runtime,
       hash,
     }),
+  };
+}
+
+function textWindowInput(session) {
+  return {
+    worldlineId: session.worldline.worldlineId,
+    cursorLine: FIRST_LINE,
+    viewportLineCount: SINGLE_LINE,
+    beforeLines: FIRST_LINE,
+    afterLines: FIRST_LINE,
+    maxBytes: BYTE_BUDGET,
   };
 }
 

@@ -21,6 +21,7 @@ import {
   type GraphRopeRuntime,
   type GraphRopeRuntimeObstructionCode,
   type GraphRopeRuntimeResult,
+  type GraphRopeTextWindowReading,
 } from '../domain/graph-rope-runtime.js';
 import {
   FIRST_ROOT_ID,
@@ -38,11 +39,14 @@ import {
   type HotTextAuthorityBasis,
   type HotTextAuthorityTransition,
   type HotTextBufferState,
+  type HotTextWindowProjection,
+  type HotTextWindowRequest,
   type SaveHotCheckpointResult,
 } from '../ports/hot-text-runtime.js';
 
 const CREATE_BUFFER_OPERATION = 'createBuffer';
 const REPLACE_RANGE_OPERATION = 'admitReplaceRangeTick';
+const TEXT_WINDOW_OPERATION = 'textWindow';
 const SAVE_CHECKPOINT_OPERATION = 'saveCheckpoint';
 const GRAPH_ROPE_OBSTRUCTION_MESSAGE = 'Graph rope text authority operation was obstructed';
 const GRAPH_ROPE_CAPABILITY_MESSAGE = 'Graph rope text authority capability is not installed yet';
@@ -50,6 +54,7 @@ const GRAPH_ROPE_STATE_MESSAGE = 'Graph rope text authority received invalid com
 const GRAPH_ROPE_STATE_MISSING_BASIS = 'missing-authority-basis';
 const GRAPH_ROPE_STATE_INVALID_RANGE = 'invalid-byte-range';
 const GRAPH_ROPE_STATE_INCOMPLETE_TRANSITION = 'incomplete-authority-transition';
+const GRAPH_ROPE_STATE_PROJECTION_MISMATCH = 'projection-basis-mismatch';
 const ROOT_IDS_PER_EDIT = 2;
 const NEXT_PROJECTION_ROOT_OFFSET = 1;
 const NEXT_TICK_OFFSET = 1;
@@ -58,11 +63,13 @@ const ZERO_BYTE_OFFSET = 0;
 type GraphRopeTextAuthorityStateCode =
   | typeof GRAPH_ROPE_STATE_MISSING_BASIS
   | typeof GRAPH_ROPE_STATE_INVALID_RANGE
-  | typeof GRAPH_ROPE_STATE_INCOMPLETE_TRANSITION;
+  | typeof GRAPH_ROPE_STATE_INCOMPLETE_TRANSITION
+  | typeof GRAPH_ROPE_STATE_PROJECTION_MISMATCH;
 
 type GraphRopeAuthorityOperation =
   | typeof CREATE_BUFFER_OPERATION
   | typeof REPLACE_RANGE_OPERATION
+  | typeof TEXT_WINDOW_OPERATION
   | typeof SAVE_CHECKPOINT_OPERATION;
 
 export interface CreateGraphRopeHotTextAuthorityOptions {
@@ -133,6 +140,17 @@ class GraphRopeHotTextAuthorityAdapter implements GraphRopeHotTextAuthority {
 
   public materialize(state: HotTextBufferState): string {
     return materializeRoot(state.currentRoot);
+  }
+
+  public textWindow(_state: HotTextBufferState, request: HotTextWindowRequest): HotTextWindowProjection {
+    const reading = this.graph.textWindow({
+      basisHeadId: request.basisHeadId,
+      byteRange: graphWindowByteRange(request.byteRange),
+    });
+    if (!reading.ok) {
+      throw new GraphRopeTextAuthorityObstructionError(TEXT_WINDOW_OPERATION, reading.code);
+    }
+    return graphWindowProjection(request, reading.value);
   }
 
   public admitReplaceRangeTick(
@@ -216,8 +234,12 @@ function requireAuthorityBasis(state: HotTextBufferState): HotTextAuthorityBasis
 }
 
 function graphByteRange(range: TextRange): TextByteRange {
-  const start = makeByteOffset(range.start.byte);
-  const end = makeByteOffset(range.end.byte);
+  return graphWindowByteRange({ startByte: range.start.byte, endByte: range.end.byte });
+}
+
+function graphWindowByteRange(range: HotTextWindowRequest['byteRange']): TextByteRange {
+  const start = makeByteOffset(range.startByte);
+  const end = makeByteOffset(range.endByte);
   if (!start.ok || !end.ok) {
     throw new GraphRopeTextAuthorityStateError(GRAPH_ROPE_STATE_INVALID_RANGE);
   }
@@ -226,6 +248,38 @@ function graphByteRange(range: TextRange): TextByteRange {
     throw new GraphRopeTextAuthorityStateError(GRAPH_ROPE_STATE_INVALID_RANGE);
   }
   return graphRange.value;
+}
+
+function graphWindowProjection(
+  request: HotTextWindowRequest,
+  reading: GraphRopeTextWindowReading,
+): HotTextWindowProjection {
+  if (!windowReadingMatchesRequest(request, reading)) {
+    throw new GraphRopeTextAuthorityStateError(GRAPH_ROPE_STATE_PROJECTION_MISMATCH);
+  }
+  return {
+    basisHeadId: reading.basisHeadId,
+    byteRange: request.byteRange,
+    text: reading.text,
+    support: reading.validationEvidence.map((evidence) => ({
+      leafId: evidence.leafId,
+      blobId: evidence.blobId,
+      contentHash: evidence.contentHash,
+      byteRange: {
+        startByte: evidence.byteRange.startByte.value,
+        endByte: evidence.byteRange.endByte.value,
+      },
+    })),
+  };
+}
+
+function windowReadingMatchesRequest(
+  request: HotTextWindowRequest,
+  reading: GraphRopeTextWindowReading,
+): boolean {
+  return reading.basisHeadId === request.basisHeadId
+    && reading.byteRange.startByte.value === request.byteRange.startByte
+    && reading.byteRange.endByte.value === request.byteRange.endByte;
 }
 
 function changedReplaceResult(
@@ -271,10 +325,7 @@ function authorityTransition(replaced: GraphRopeReplaceRangeResult): HotTextAuth
 function materializeGraphHead(graph: GraphRopeRuntime, head: RopeHeadFact): string {
   const reading = graph.textWindow({
     basisHeadId: head.headId,
-    byteRange: graphByteRange({
-      start: { byte: ZERO_BYTE_OFFSET },
-      end: { byte: head.byteLength },
-    }),
+    byteRange: graphWindowByteRange({ startByte: ZERO_BYTE_OFFSET, endByte: head.byteLength }),
   });
   if (!reading.ok) {
     throw new GraphRopeTextAuthorityObstructionError(REPLACE_RANGE_OPERATION, reading.code);

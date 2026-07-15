@@ -1,9 +1,8 @@
-import { beginSourceHighlightRefresh } from '../source-highlight-session.js';
 import { joinLines } from '../editor-lines.js';
 import { editorViewport, type WorkspaceViewport } from './viewport.js';
 import type { Cmd } from '@flyingrobots/bijou-tui';
 import type { WorkspaceModel } from './model.js';
-import { WorkspaceMessageTypes, workspaceSourceHighlightMessage, type WorkspaceMsg } from './msg.js';
+import { WorkspaceMessageTypes, type WorkspaceMsg } from './msg.js';
 import type { EditorState } from './editor/model.js';
 import {
   isLoadedEditorFile,
@@ -22,6 +21,7 @@ import {
   updateNormalMode,
 } from './editor-editing.js';
 import { EditorModes } from './editor/mode.js';
+import { beginWorkspaceSourceHighlightRefresh } from './workspace-source-highlight.js';
 
 const INITIAL_EDITOR_VIEWPORT_WIDTH = Number.MAX_SAFE_INTEGER;
 const INITIAL_EDITOR_VIEWPORT_HEIGHT = Number.MAX_SAFE_INTEGER;
@@ -131,13 +131,7 @@ export function toggleMarkdownPreview(
   };
 
   if (next.viewMode === ViewModes.Source) {
-    return beginSourceHighlightRefresh<WorkspaceModel, WorkspaceMsg>(
-      next,
-      next.editor,
-      editorViewport(next),
-      sourceHighlighter,
-      workspaceSourceHighlightMessage,
-    );
+    return beginWorkspaceSourceHighlightRefresh(next, editorViewport(next), sourceHighlighter);
   }
 
   return [next, []];
@@ -149,12 +143,8 @@ export function beginEditorProjectionRefresh(
   ports: EditorSessionPorts,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   const [withGraft, graftCmds] = beginGraftRefresh(model, { force: options.refreshGraft }, ports.graftSession);
-  const [withHighlight, highlightCmds] = beginSourceHighlightRefresh<WorkspaceModel, WorkspaceMsg>(
-    withGraft,
-    withGraft.editor,
-    editorViewport(withGraft),
-    ports.sourceHighlighter,
-    workspaceSourceHighlightMessage,
+  const [withHighlight, highlightCmds] = beginWorkspaceSourceHighlightRefresh(
+    withGraft, editorViewport(withGraft), ports.sourceHighlighter,
   );
   return [withHighlight, [...graftCmds, ...highlightCmds]];
 }
@@ -163,13 +153,7 @@ export function beginEditorSourceHighlightRefresh(
   model: WorkspaceModel,
   ports: Pick<EditorSessionPorts, 'sourceHighlighter'>,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
-  return beginSourceHighlightRefresh<WorkspaceModel, WorkspaceMsg>(
-    model,
-    model.editor,
-    editorViewport(model),
-    ports.sourceHighlighter,
-    workspaceSourceHighlightMessage,
-  );
+  return beginWorkspaceSourceHighlightRefresh(model, editorViewport(model), ports.sourceHighlighter);
 }
 
 export function beginGraftRefresh(

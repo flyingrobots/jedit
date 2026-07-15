@@ -28,6 +28,7 @@ import {
   RewriteKindSchema,
 } from '../generated/jedit/rope.zod.generated.js';
 import { HotTextAuthorityBasisSchema } from './hot-text-authority-basis-codec.js';
+import { HotTextWindowProjectionSchema } from './hot-text-window-codec.js';
 import { JeditRetainedEvidenceInventorySchema } from './jedit-retained-evidence-codec.js';
 
 // EINT envelope codec re-export (kept here so adapters import wire and
@@ -156,6 +157,7 @@ const TextWindowReadingEnvelopeSchema = z.object({
   operationName: z.literal(TEXT_WINDOW_OPERATION),
   frontierRef: z.string(),
   reading: QueryOperationSchemas.textWindow.result,
+  projection: HotTextWindowProjectionSchema,
   retainedEvidence: JeditRetainedEvidenceInventorySchema,
 });
 

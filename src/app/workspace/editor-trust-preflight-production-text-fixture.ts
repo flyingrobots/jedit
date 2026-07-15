@@ -47,7 +47,9 @@ const DEFAULT_READ_BASIS_ID = 'read-basis:preflight';
 const DEFAULT_RECEIPT_ID = 'receipt:preflight';
 const DEFAULT_CHECKPOINT_ID = 'checkpoint:preflight';
 const DEFAULT_READING_ID = 'reading:preflight';
+const DEFAULT_HEAD_ID = 'head:preflight';
 const DEFAULT_TEXT_START_BYTE = 0;
+const UTF8_ENCODER = new TextEncoder();
 const DEFAULT_BUFFER_VERSION = 1;
 const CHECKPOINT_BUFFER_VERSION = 2;
 const RUNTIME_ISSUE_NAME = 'EditorTrustPreflightProbe';
@@ -281,6 +283,12 @@ function observedReading(
 function textWindowReading(text: string, readingId: string): TextWindowReading {
   return {
     readingId,
+    projection: {
+      basisHeadId: DEFAULT_HEAD_ID,
+      byteRange: { startByte: DEFAULT_TEXT_START_BYTE, endByte: UTF8_ENCODER.encode(text).length },
+      text,
+      support: [],
+    },
     lines: [
       {
         lineNumber: PREFLIGHT_FIRST_INDEX,

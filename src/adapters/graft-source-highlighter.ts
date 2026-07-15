@@ -24,6 +24,7 @@ const COLORFUL_CLI_COMMAND = 'colorful';
 const PROCESS_RUNNER_ENCODING = 'utf8';
 const PROCESS_RUNNER_EMPTY_OUTPUT = '';
 const VIEWPORT_START_COLUMN = 0;
+const FIRST_PROJECTED_LINE = 0;
 const VIEWPORT_END_COLUMN = 0;
 const DIAGNOSTICS_NOTICE_PROJECTION_FAILED_PREFIX = 'Graft projection failed';
 
@@ -177,7 +178,8 @@ export function createGraftSourceHighlighter(options: GraftSourceHighlighterOpti
       return {
         path: input.path,
         partial: bundle.partial,
-        spans: graftSyntaxSpansToSourceHighlights(bundle.spans),
+        spans: graftSyntaxSpansToSourceHighlights(bundle.spans, input.textStartLine),
+        projection: input.projection,
         ...(bundle.reason == null ? {} : { notice: bundle.reason }),
       };
     },
@@ -193,6 +195,7 @@ function readProjectionBundle(
   readonly reason?: string;
 } {
   try {
+    const textStartLine = input.textStartLine ?? FIRST_PROJECTED_LINE;
     const bundle = runtime.createProjectionBundle(input.path, input.text, {
       basis: {
         kind: EDITOR_HEAD_BASIS_KIND,
@@ -200,8 +203,8 @@ function readProjectionBundle(
         tick: input.tick,
       },
       viewport: {
-        start: { row: input.startLine, column: VIEWPORT_START_COLUMN },
-        end: { row: input.startLine + input.lineCount, column: VIEWPORT_END_COLUMN },
+        start: { row: input.startLine - textStartLine, column: VIEWPORT_START_COLUMN },
+        end: { row: input.startLine - textStartLine + input.lineCount, column: VIEWPORT_END_COLUMN },
       },
     });
     return {
@@ -220,7 +223,10 @@ function readProjectionBundle(
   }
 }
 
-export function graftSyntaxSpansToSourceHighlights(spans: readonly GraftSyntaxSpan[]): readonly SourceHighlightSpan[] {
+export function graftSyntaxSpansToSourceHighlights(
+  spans: readonly GraftSyntaxSpan[],
+  textStartLine: number = FIRST_PROJECTED_LINE,
+): readonly SourceHighlightSpan[] {
   return spans.flatMap((span) => {
     const role = sourceRoleForGraftClass(span.className);
     if (role == null) {
@@ -228,7 +234,7 @@ export function graftSyntaxSpansToSourceHighlights(spans: readonly GraftSyntaxSp
     }
     return [{
       role,
-      range: sourceRangeFromGraftRange(span.range),
+      range: sourceRangeFromGraftRange(span.range, textStartLine),
     }];
   });
 }
@@ -242,10 +248,10 @@ function sourceRoleForGraftClass(className: string): SourceHighlightRole | undef
   return undefined;
 }
 
-function sourceRangeFromGraftRange(range: GraftRange): SourceRange {
+function sourceRangeFromGraftRange(range: GraftRange, textStartLine: number): SourceRange {
   return {
-    start: { row: range.start.row, column: range.start.column },
-    end: { row: range.end.row, column: range.end.column },
+    start: { row: range.start.row + textStartLine, column: range.start.column },
+    end: { row: range.end.row + textStartLine, column: range.end.column },
   };
 }
 

@@ -78,16 +78,23 @@ test('installed text optic exposes opaque graph tick and next-head identities', 
   const textSession = modules.textSession.createTextBufferSession(client);
   const optic = await textSession.createBuffer({
     bufferKey: 'optic-edit.txt',
-    initialText: '',
+    initialText: 'zero\none\ntwo',
     projectionPath: '/tmp/optic-edit.txt',
   });
   const applied = await optic.applyIntent({
-    kind: 'replaceRange', startByte: 0, endByte: 0, insertText: 'causal',
+    kind: 'replaceRange', startByte: 5, endByte: 8, insertText: 'causal',
+  });
+  const observed = await optic.textWindow(optic.currentReadBasis(), {
+    cursorLine: 1, viewportLineCount: 1, beforeLines: 0, afterLines: 0, maxBytes: 80,
   });
 
   assert.ok(applied.causalTransition);
   assert.notEqual(applied.causalTransition.admittedTickId, applied.receiptId);
   assert.ok(applied.causalTransition.nextHeadId.length > 0);
+  assert.equal(observed.value.projection.basisHeadId, applied.causalTransition.nextHeadId);
+  assert.deepEqual(observed.value.projection.byteRange, { startByte: 5, endByte: 11 });
+  assert.ok(observed.value.projection.support.length > 0);
+  assert.deepEqual(observed.value.lines.map((line) => line.text), ['causal']);
 });
 
 test('routes insert delete and replace through graph authority without minting no-op evidence', async () => {

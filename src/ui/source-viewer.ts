@@ -5,7 +5,7 @@ import {
   SOURCE_LINE_NUMBER_MODE,
   type SourceLineNumberMode,
 } from './source-line-number-mode.js';
-import { createSourceWindowReadingFromLines } from './source-window.js';
+import { createSourceWindowReadingFromLines, type SourceWindowReading } from './source-window.js';
 import { paintHighlightedSourceWindow } from './source-highlight.js';
 
 const NORMAL_MODE = 'normal';
@@ -41,6 +41,7 @@ export interface SourceViewerOptions {
   readonly topPad: number;
   readonly theme: JeditTheme;
   readonly lineNumberMode?: SourceLineNumberMode;
+  readonly reading?: SourceWindowReading;
 }
 
 export function renderSourceViewer(
@@ -49,7 +50,7 @@ export function renderSourceViewer(
   highlight: SourceHighlightReading | undefined,
   options: SourceViewerOptions,
 ): Surface {
-  const sourceWindow = createSourceWindowReadingFromLines({
+  const sourceWindow = options.reading ?? createSourceWindowReadingFromLines({
     lines: editor.lines,
     startLine: editor.scrollRow,
     lineCount: options.viewport.height,
@@ -69,7 +70,7 @@ export function renderSourceViewer(
   });
   const viewport = sourceTextViewport(options, gutter, editor.scrollCol);
   paintHighlightedSourceWindow(surface, sourceWindow, highlight, viewport);
-  paintSourceViewerCursor(surface, editor, options, viewport);
+  paintSourceViewerCursor(surface, editor, options, viewport, sourceWindow.startLine);
 
   return surface;
 }
@@ -79,9 +80,10 @@ function paintSourceViewerCursor(
   editor: SourceViewerEditor,
   options: SourceViewerOptions,
   viewport: ReturnType<typeof sourceTextViewport>,
+  windowStartLine: number,
 ): void {
   const cursor = cursorDisplayPosition(editor);
-  const cursorY = options.topPad + (cursor.row - editor.scrollRow);
+  const cursorY = options.topPad + (cursor.row - windowStartLine);
   const cursorX = viewport.x + (cursor.col - editor.scrollCol);
   if (
     cursorY >= options.topPad

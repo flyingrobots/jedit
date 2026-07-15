@@ -22,6 +22,30 @@ export interface HotTextAuthorityTransition {
   readonly nextBasis: HotTextAuthorityBasis;
 }
 
+export interface HotTextWindowByteRange {
+  readonly startByte: number;
+  readonly endByte: number;
+}
+
+export interface HotTextWindowSupport {
+  readonly leafId: string;
+  readonly blobId: string;
+  readonly contentHash: string;
+  readonly byteRange: HotTextWindowByteRange;
+}
+
+export interface HotTextWindowProjection {
+  readonly basisHeadId: string;
+  readonly byteRange: HotTextWindowByteRange;
+  readonly text: string;
+  readonly support: readonly HotTextWindowSupport[];
+}
+
+export interface HotTextWindowRequest {
+  readonly basisHeadId: string;
+  readonly byteRange: HotTextWindowByteRange;
+}
+
 export interface HotTextBufferState {
   readonly path: string;
   readonly authorityBasis?: HotTextAuthorityBasis;
@@ -55,6 +79,7 @@ export interface HotTextRuntimePort {
   readonly isProductionSafe?: boolean;
   createBuffer(path: string, initialText: string): HotTextBufferState;
   materialize(state: HotTextBufferState): string;
+  textWindow(state: HotTextBufferState, request: HotTextWindowRequest): HotTextWindowProjection;
   admitReplaceRangeTick(state: HotTextBufferState, range: TextRange, text: string): AdmitReplaceRangeTickResult;
   openEditGroup(state: HotTextBufferState): HotTextBufferState;
   includeTickInOpenGroup(state: HotTextBufferState, tickId: number): HotTextBufferState;

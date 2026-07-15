@@ -8,10 +8,13 @@ import type {
   HotTextBufferState,
 } from '../ports/hot-text-runtime.js';
 import {
+  byteLength,
   digest,
+  lineCount,
   parseHeadId,
   parseWorldlineId,
   toHeadId,
+  toRootNodeId,
   toWorldlineId,
 } from './jedit-contract-runtime-id.js';
 import {
@@ -62,6 +65,26 @@ export function authorityHeadRecord(
     rootNodeId: basis.rootNodeId,
     byteLength: basis.byteLength,
     lineCount: basis.lineCount,
+    utf16Length: text.length,
+    equivalenceDigest: digest(text, hash),
+  };
+}
+
+export function projectedHeadRecord(
+  state: HotTextBufferState,
+  worldlineId: string,
+  text: string,
+  hash: HashPort,
+): RopeHead {
+  if (state.authorityBasis != null) {
+    return authorityHeadRecord(state.authorityBasis, text, hash);
+  }
+  return {
+    headId: toHeadId(state.currentRoot.id),
+    worldlineId,
+    rootNodeId: toRootNodeId(state.currentRoot.id),
+    byteLength: byteLength(text),
+    lineCount: lineCount(text),
     utf16Length: text.length,
     equivalenceDigest: digest(text, hash),
   };

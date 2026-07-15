@@ -3,9 +3,9 @@ import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import type { ProductionTextSession } from './production-text-session.js';
 import type { WorkspaceTextOperationSequencer } from './workspace-text-operation-sequencer.js';
 import {
-  beginSourceHighlightRefresh,
   shouldRefreshSourceHighlight,
-} from '../source-highlight-session.js';
+  beginWorkspaceSourceHighlightRefresh,
+} from './workspace-source-highlight.js';
 import {
   editorViewport,
   scrollPreview,
@@ -25,7 +25,7 @@ import { snapshotEditor } from './editor-editing-core.js';
 import { EditorModes, PendingNormals } from './editor/mode.js';
 import { EditorKeys } from './editor/key.js';
 import type { WorkspaceModel } from './model.js';
-import { workspaceSourceHighlightMessage, type WorkspaceMsg } from './msg.js';
+import type { WorkspaceMsg } from './msg.js';
 import { ViewModes } from './view-mode.js';
 import {
   canEditorTabIndent,
@@ -94,7 +94,7 @@ export function updateViewerFromKey(
   };
 
   return shouldRefreshSourceHighlight(model.editor, editor)
-    ? beginSourceHighlightRefresh(next, editor, viewport, sourceHighlighter, workspaceSourceHighlightMessage)
+    ? beginWorkspaceSourceHighlightRefresh(next, viewport, sourceHighlighter)
     : [next, []];
 }
 

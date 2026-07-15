@@ -224,6 +224,7 @@ function toObservedTextWindowReading(
 ): Observed<TextWindowReading> {
   const reading: TextWindowReading = {
     readingId: envelope.reading.readingId,
+    projection: envelope.projection,
     lines: toTextWindowLines(envelope),
     byteLength: textWindowByteLength(envelope),
     lineCount: envelope.reading.lineCount,

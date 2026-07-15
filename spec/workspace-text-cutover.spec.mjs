@@ -293,6 +293,68 @@ test("viewer renders production text from full reading cache instead of stale ed
   assert.doesNotMatch(text, /stale local line/);
 });
 
+test("viewer renders a basis-tagged bounded projection instead of local editor text", async () => {
+  const [viewerContent, modeModule, authority, profile] = await Promise.all([
+    importDist("app", "workspace", "viewer-content.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "workspace-text-authority.js"),
+    importDist("app", "text-runtime-profile.js"),
+  ]);
+  const localLines = Array.from({ length: 50 }, (_, index) => `local ${index}`);
+  const model = projectedViewerModel(modeModule, authority, profile, localLines);
+
+  const text = surfaceText(viewerContent.renderViewer(model, 80, 16));
+
+  assert.match(text, /causal window/);
+  assert.doesNotMatch(text, /local 24/);
+});
+
+test("viewer does not render local text when an opened authority has no projection", async () => {
+  const [viewerContent, modeModule, authority, profile] = await Promise.all([
+    importDist("app", "workspace", "viewer-content.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "workspace-text-authority.js"),
+    importDist("app", "text-runtime-profile.js"),
+  ]);
+  const model = {
+    ...textWorkspaceModel(modeModule, authority, profile, {
+      lines: ["unwitnessed local text"],
+    }),
+    jeditTheme: mockJeditTheme(),
+    textAuthority: authority.openedWorkspaceTextAuthority({
+      profile: profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+      filePath: "/repo/notes.txt",
+      bufferId: "buffer:notes",
+      readOnly: false,
+      dirty: false,
+    }),
+  };
+
+  const text = surfaceText(viewerContent.renderViewer(model, 80, 16));
+
+  assert.doesNotMatch(text, /unwitnessed local text/);
+});
+
+function projectedViewerModel(modeModule, authority, profile, localLines) {
+  return {
+    ...textWorkspaceModel(modeModule, authority, profile, {
+      dirty: true, lines: localLines, cursorRow: 24, scrollRow: 24,
+    }),
+    jeditTheme: mockJeditTheme(),
+    textAuthority: authority.openedWorkspaceTextAuthority({
+      profile: profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+      filePath: "/repo/notes.txt",
+      bufferId: "buffer:notes",
+      readOnly: false,
+      dirty: true,
+      cache: workspaceReadingCache({
+        lines: ["causal window"], startLine: 24, totalLineCount: localLines.length,
+        returnedLineCount: 1, hasMoreBefore: true, hasMoreAfter: true,
+      }),
+    }),
+  };
+}
+
 test("insert and delete keys submit production text edits with optimistic local projection", async () => {
   const [viewerKey, runtimeModule, modeModule, authority, profile] =
     await Promise.all([
@@ -1810,9 +1872,16 @@ function workspaceReadingCache(overrides = {}) {
         ? "full"
         : "window"
     );
+  const projectionText = lines.join("\n");
   return {
     bufferId: "buffer:notes",
     readingId: "reading:test",
+    projection: {
+      basisHeadId: "head:test",
+      byteRange: { startByte: 0, endByte: Buffer.byteLength(projectionText, "utf8") },
+      text: projectionText,
+      support: [],
+    },
     lines,
     coverage,
     lineCount: totalLineCount,
@@ -1832,8 +1901,15 @@ function textWindowReading(options) {
   const startLine = options.startLine ?? 0;
   const lines = options.lines ?? ["abc"];
   const totalLineCount = options.totalLineCount ?? lines.length;
+  const projectionText = lines.join("\n");
   return {
     readingId: options.readingId ?? "reading:test",
+    projection: {
+      basisHeadId: "head:test",
+      byteRange: { startByte: 0, endByte: Buffer.byteLength(projectionText, "utf8") },
+      text: projectionText,
+      support: [],
+    },
     lines: lines.map((text, index) => ({
       lineNumber: startLine + index,
       startByte: byteOffsetAtLine(lines, index),

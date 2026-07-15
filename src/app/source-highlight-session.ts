@@ -1,6 +1,6 @@
 import type { Cmd } from '@flyingrobots/bijou-tui';
 import { joinLines } from './editor-lines.js';
-import type { SourceHighlightReading, SourceHighlighter } from '../ports/source-highlighter.js';
+import type { SourceHighlightInput, SourceHighlightReading, SourceHighlighter } from '../ports/source-highlighter.js';
 
 export const SOURCE_HIGHLIGHT_MESSAGE = 'source-highlight';
 
@@ -22,6 +22,9 @@ export interface SourceHighlightEditor {
   readonly path: string;
   readonly lines: readonly string[];
   readonly scrollRow: number;
+  readonly projection?: SourceHighlightInput['projection'];
+  readonly projectionStartLine?: number;
+  readonly requiresProjection?: boolean;
 }
 
 export interface SourceHighlightViewport {
@@ -37,7 +40,7 @@ export function beginSourceHighlightRefresh<Model extends SourceHighlightState, 
   highlighter: SourceHighlighter,
   mapMessage: SourceHighlightMessageMapper<M>,
 ): [Model, Cmd<M>[]] {
-  if (editor == null) {
+  if (editor == null || (editor.requiresProjection === true && editor.projection == null)) {
     return [clearSourceHighlight(model), []];
   }
 
@@ -78,11 +81,13 @@ function requestSourceHighlightCmd<M>(
         requestId,
         info: await highlighter.highlight({
           path: editor.path,
-          text: joinLines(editor.lines),
-          startLine: editor.scrollRow,
+          text: editor.projection?.text ?? joinLines(editor.lines),
+          startLine: highlightStartLine(editor),
           lineCount: viewport.height,
-          headId: `${editor.path}${HEAD_ID_SEPARATOR}${String(requestId)}`,
+          headId: editor.projection?.basisHeadId ?? `${editor.path}${HEAD_ID_SEPARATOR}${String(requestId)}`,
           tick: requestId,
+          textStartLine: editor.projectionStartLine,
+          projection: editor.projection,
         }),
       });
     } catch (cause) {
@@ -93,11 +98,21 @@ function requestSourceHighlightCmd<M>(
           path: editor.path,
           partial: false,
           spans: [],
+          projection: editor.projection,
           error: cause instanceof Error ? cause.message : String(cause),
         },
       });
     }
   };
+}
+
+function highlightStartLine(editor: SourceHighlightEditor): number {
+  const projectionStartLine = editor.projectionStartLine;
+  if (projectionStartLine == null || editor.projection == null) {
+    return editor.scrollRow;
+  }
+  const projectionEndLine = projectionStartLine + editor.projection.text.split('\n').length - 1;
+  return Math.max(projectionStartLine, Math.min(editor.scrollRow, projectionEndLine));
 }
 
 function clearSourceHighlight<Model extends SourceHighlightState>(model: Model): Model {
