@@ -19,7 +19,7 @@ import {
 } from '../app/jedit-runtime-handler-invocation.js';
 import {
   assertInstalledTextAuthorityAllowed,
-  MissingGraphRopeTextAuthorityError,
+  createGraphRopeHotTextAuthority,
 } from './installed-text-authority-guard.js';
 import {
   installJeditContractPackage,
@@ -30,7 +30,6 @@ import {
   type EchoContractPackageInstallRequest,
 } from '../ports/echo-contract-package-host.js';
 import type { EchoKernelInfo } from '../ports/echo-kernel-transport.js';
-import type { HashPort } from '../ports/hash.js';
 import type { HotTextRuntimePort } from '../ports/hot-text-runtime.js';
 import type { JeditContractStatePort } from '../ports/jedit-contract-state-port.js';
 import type { JeditSubmissionLedgerPort } from '../ports/jedit-submission-ledger.js';
@@ -87,10 +86,12 @@ const QUERY_OBSERVER_RUNTIME_ERROR_CODE = 'JEDIT_QUERY_OBSERVER_RUNTIME_ERROR';
 const QUERY_OBSERVER_RUNTIME_ERROR_RECOVERY = 'refresh the reading basis or fix query input';
 const QUERY_OBSERVER_RUNTIME_ERROR_MESSAGE = 'Jedit query observer failed while producing the reading';
 
+type InstalledHashPort = ReturnType<typeof createHashPort>;
+
 export interface InstalledJeditContractEchoTransportOptions {
   readonly runtime?: HotTextRuntimePort;
   readonly allowFullSnapshotTextAuthority?: true;
-  readonly hash?: HashPort;
+  readonly hash?: InstalledHashPort;
   readonly moduleSpecifier?: string;
   readonly workSink?: JeditRuntimeWorkSink;
   readonly handlerInvocationSink?: JeditHandlerInvocationSink;
@@ -103,7 +104,7 @@ export interface InstalledJeditContractEchoTransportOptions {
 
 interface InstalledJeditContractEchoTransportContext {
   readonly info: EchoKernelInfo;
-  readonly hash: HashPort;
+  readonly hash: InstalledHashPort;
   readonly isPackageInstalled: boolean;
   readonly mutations: ReturnType<typeof createJeditContractMutationHandlerRegistry>;
   readonly observers: ReturnType<typeof createJeditContractQueryObserverRegistry>;
@@ -160,8 +161,8 @@ function resolveTransportSessionPort(
 function createTransportContext(
   options: InstalledJeditContractEchoTransportOptions,
 ): InstalledJeditContractEchoTransportContext {
-  const runtime = resolveTransportRuntime(options);
   const hash = options.hash ?? createHashPort();
+  const runtime = resolveTransportRuntime(options, hash);
   const defaults = createDefaultJeditHostingBoundaries(hash);
   const statePort = options.statePort ?? defaults.statePort;
   const mutations = createJeditContractMutationHandlerRegistry({ runtime, hash, statePort });
@@ -192,11 +193,9 @@ function createTransportContext(
 
 function resolveTransportRuntime(
   options: InstalledJeditContractEchoTransportOptions,
+  hash: InstalledHashPort,
 ): HotTextRuntimePort {
-  if (options.runtime == null) {
-    throw new MissingGraphRopeTextAuthorityError();
-  }
-  const runtime = options.runtime;
+  const runtime = options.runtime ?? createGraphRopeHotTextAuthority({ hash });
   assertInstalledTextAuthorityAllowed(runtime, options);
   return runtime;
 }
@@ -285,7 +284,7 @@ function recordRuntimeWorkEnvelope(
   workSink: JeditRuntimeWorkSink | undefined,
   intentBytes: Uint8Array,
   request: JeditIntentRequest,
-  hash: HashPort,
+  hash: InstalledHashPort,
   submissionId: string,
 ): void {
   workSink?.recordRuntimeWorkEnvelope(createJeditRuntimeWorkEnvelope({

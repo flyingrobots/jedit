@@ -32,15 +32,14 @@ const MISSING_GRAPH_ROPE_AUTHORITY_MESSAGE = /requires graph rope text authority
 
 let modulesPromise;
 
-test('installed transport rejects missing graph rope authority by default', async () => {
+test('installed transport constructs graph rope authority by default', async () => {
   const modules = await loadModules();
 
-  withFullSnapshotAuthorityEnv(undefined, () => {
-    assert.throws(
-      () => modules.transport.createInstalledJeditContractEchoTransport(),
-      MISSING_GRAPH_ROPE_AUTHORITY_MESSAGE,
-    );
-  });
+  const transport = withFullSnapshotAuthorityEnv(undefined, () => (
+    modules.transport.createInstalledJeditContractEchoTransport()
+  ));
+
+  assert.equal(typeof transport.submitIntentBytes, 'function');
 });
 
 test('installed transport rejects explicit full-snapshot fixture authority without opt-in', async () => {
