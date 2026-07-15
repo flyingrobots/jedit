@@ -191,6 +191,7 @@ async function createTextBufferCheckpoint(
   state: TextBufferOpticRuntimeState,
   request: CreateTextBufferCheckpointRequest,
 ): Promise<CreateTextBufferCheckpointResult> {
+  ensureCheckpointBasis(state, request.basisHeadId);
   const execution = await client.createCheckpoint(state.currentSession, {
     worldlineId: state.currentSession.worldline.worldlineId,
     kind: request.kind,
@@ -207,6 +208,25 @@ async function createTextBufferCheckpoint(
     checkpointId: execution.result.checkpoint.checkpointId,
     checkpointKind: execution.result.checkpoint.kind,
   };
+}
+
+function ensureCheckpointBasis(
+  state: TextBufferOpticRuntimeState,
+  basisHeadId: string | undefined,
+): void {
+  if (basisHeadId != null && basisHeadId !== state.currentSession.worldline.canonicalHeadId) {
+    throw new TextBufferCheckpointBasisError(
+      state.currentSession.worldline.canonicalHeadId,
+      basisHeadId,
+    );
+  }
+}
+
+export class TextBufferCheckpointBasisError extends Error {
+  public constructor(expectedHeadId: string, receivedHeadId: string) {
+    super(`Text buffer checkpoint basis mismatch: expected ${expectedHeadId}, received ${receivedHeadId}.`);
+    this.name = 'TextBufferCheckpointBasisError';
+  }
 }
 
 function toTextBuffer(sequence: number, input: CreateTextBufferRequest): TextBuffer {

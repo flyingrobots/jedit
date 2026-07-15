@@ -567,6 +567,7 @@ test("enter dispatches write and wq commands through production save", async () 
             kind: "exported",
             text: "alpha\nbeta",
             readingId: "reading:write",
+            basisHeadId: "head:write",
           };
         },
         checkpointBuffer: async (request) => {
@@ -651,6 +652,7 @@ test("blocked production wq remains open with honest materialization status", as
         kind: "exported",
         text: "alpha\nbeta",
         readingId: "reading:wq",
+        basisHeadId: "head:wq",
       };
     },
     checkpointBuffer: async (request) => {
@@ -745,6 +747,7 @@ test("pending production intent queues wq save without arming quit confirmation"
             kind: "exported",
             text: "stale",
             readingId: "reading:stale",
+            basisHeadId: "head:stale",
           };
         },
       }),

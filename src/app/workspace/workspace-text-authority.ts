@@ -251,6 +251,13 @@ export function projectedSourceWindow(authority: WorkspaceTextAuthorityOpened) {
   };
 }
 
+export function hasVisibleOptimisticText(authority: WorkspaceTextAuthorityOpened): boolean {
+  const status = authority.pendingIntentStatus;
+  return status != null && (
+    status !== WorkspaceTextIntentStatuses.Admitted || projectedSourceWindow(authority) == null
+  );
+}
+
 function projectionMatchesAuthority(
   authority: WorkspaceTextAuthorityOpened,
   cache: WorkspaceTextReadingCache,

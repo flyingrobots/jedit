@@ -52,12 +52,6 @@ import {
 export type WorkspaceRuntimeResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 const FOCUS_PANE_EDITOR = 'editor';
 
-interface TextExportCheckpointRequest {
-  readonly requestId: number;
-  readonly filePath: string;
-  readonly bufferId: string;
-}
-
 export function applyWorkspaceTextMessage(
   deps: WorkspaceRuntimeDependencies,
   msg: WorkspaceMsg,
@@ -405,7 +399,15 @@ function applyTextExportResult(
   const history = withEchoHistoryEntry(exported, {
     kind: EchoHistoryEntryKinds.Export, status: EchoHistoryEntryStatuses.Exported, evidenceId: msg.result.readingId, summary: msg.result.filePath,
   });
-  const checkpoint = exportCheckpointCommand(deps, { requestId: msg.requestId, filePath: msg.result.filePath, bufferId: msg.result.bufferId });
+  const checkpoint = createWorkspaceTextCheckpointCmd({
+    requestId: msg.requestId,
+    filePath: msg.result.filePath,
+    bufferId: msg.result.bufferId,
+    basisHeadId: msg.result.basisHeadId,
+    productionTextSession: deps.productionTextSession,
+    textOperationSequencer: deps.textOperationSequencer,
+    atMs: deps.nowMs(),
+  });
   return [history, [checkpoint]];
 }
 
@@ -482,18 +484,4 @@ function obstructedHistoryEntry(
 
 function shouldOpenQuitAfterExport(model: WorkspaceModel, requestId: number): boolean {
   return model.quitConfirmOpen || model.quitAfterSaveRequestId === requestId;
-}
-
-function exportCheckpointCommand(
-  deps: WorkspaceRuntimeDependencies,
-  request: TextExportCheckpointRequest,
-): Cmd<WorkspaceMsg> {
-  return createWorkspaceTextCheckpointCmd({
-    requestId: request.requestId,
-    filePath: request.filePath,
-    bufferId: request.bufferId,
-    productionTextSession: deps.productionTextSession,
-    textOperationSequencer: deps.textOperationSequencer,
-    atMs: deps.nowMs(),
-  });
 }

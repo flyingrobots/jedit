@@ -22,6 +22,7 @@ import { ViewModes } from "./view-mode.js";
 import {
   canReadingReplaceWholeEditor,
   editorFromFullWorkspaceTextCache,
+  hasVisibleOptimisticText,
   isWorkspaceTextAuthorityOpened,
   projectedSourceWindow,
 } from "./workspace-text-authority.js";
@@ -39,7 +40,6 @@ import {
   titleBrailleSampleCacheIdentity,
   type TitleBrailleSampleCacheIdentity,
 } from "./title-braille-sampling.js";
-
 const MIN_VIEWPORT_DIMENSION = 1;
 const VIEWER_PAD_MULTIPLIER = 2;
 const TITLE_CAMERA_MOTION_EPSILON = 0.001;
@@ -177,7 +177,11 @@ function sourceWindowForModel(model: WorkspaceModel) {
   if (!isWorkspaceTextAuthorityOpened(model.textAuthority)) {
     return undefined;
   }
-  return projectedSourceWindow(model.textAuthority) ?? {
+  if (hasVisibleOptimisticText(model.textAuthority)) {
+    return undefined;
+  }
+  const projected = projectedSourceWindow(model.textAuthority);
+  return projected ?? {
     startLine: model.editor?.scrollRow ?? 0,
     lineCount: 0,
     totalLineCount: model.textAuthority.cache?.totalLineCount ?? 0,
@@ -449,7 +453,6 @@ function shouldActivateLowRateBackdrop(
 interface FrameBudgetDecision {
   readonly frameBudgetPosture: TitleScenePerformanceFacts["frameBudgetPosture"];
 }
-
 export function isWorkspaceMarkdownPreviewAvailable(
   model: WorkspaceModel,
 ): boolean {
@@ -459,6 +462,7 @@ export function isWorkspaceMarkdownPreviewAvailable(
 function displayEditor(model: WorkspaceModel): WorkspaceModel["editor"] {
   const authority = model.textAuthority;
   return isWorkspaceTextAuthorityOpened(authority) &&
+    !hasVisibleOptimisticText(authority) &&
     canReadingReplaceWholeEditor(authority.cache)
     ? editorFromFullWorkspaceTextCache({ ...authority, cache: authority.cache }, model.editor)
     : model.editor;

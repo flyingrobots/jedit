@@ -170,6 +170,7 @@ function exportSnapshotProbe(
       kind: ProductionTextSessionOutcomeKinds.Exported,
       text: options.exportText ?? PREFLIGHT_DEFAULT_EXPORT_TEXT,
       readingId: DEFAULT_READING_ID,
+      basisHeadId: DEFAULT_HEAD_ID,
     };
   };
 }

@@ -28,11 +28,13 @@ import type {
   HotTextRuntimePort,
   HotTextWindowProjection,
   HotTextWindowRequest,
+  SaveHotCheckpointRequest,
   SaveHotCheckpointResult,
 } from '../ports/hot-text-runtime.js';
 
 export const FULL_SNAPSHOT_TEXT_AUTHORITY_KIND = 'full-snapshot-fixture';
 const INVALID_TEXT_WINDOW_MESSAGE = 'Full-snapshot fixture received an invalid text window';
+const MISSING_RETAINED_ROOTS_MESSAGE = 'Full-snapshot fixture state is missing retained roots';
 const ZERO_BYTE_OFFSET = 0;
 const UTF8_ENCODER = new TextEncoder();
 const UTF8_DECODER = new TextDecoder('utf-8', { fatal: true });
@@ -61,6 +63,13 @@ export class FullSnapshotTextWindowError extends Error {
   public constructor() {
     super(INVALID_TEXT_WINDOW_MESSAGE);
     this.name = 'FullSnapshotTextWindowError';
+  }
+}
+
+export class FullSnapshotRetainedRootsError extends Error {
+  public constructor() {
+    super(MISSING_RETAINED_ROOTS_MESSAGE);
+    this.name = 'FullSnapshotRetainedRootsError';
   }
 }
 
@@ -135,7 +144,7 @@ function admitReplaceRangeTick(
     nextState: {
       path: state.path,
       currentRoot: result.nextState.currentRoot,
-      roots: [...state.roots, result.nextState.currentRoot],
+      roots: [...retainedRoots(state), result.nextState.currentRoot],
       ticks: [...result.nextState.ticks],
       editGroups: [...state.editGroups],
       openEditGroup: copyOpenEditGroup(state),
@@ -164,13 +173,16 @@ function closeEditGroup(state: HotTextBufferState): CloseEditGroupResult {
   };
 }
 
-function saveCheckpoint(state: HotTextBufferState): SaveHotCheckpointResult {
+function saveCheckpoint(
+  state: HotTextBufferState,
+  _request: SaveHotCheckpointRequest,
+): SaveHotCheckpointResult {
   const result = saveDomainCheckpoint(toSaveCheckpointState(state));
   return {
     nextState: {
       path: state.path,
       currentRoot: state.currentRoot,
-      roots: [...state.roots],
+      roots: [...retainedRoots(state)],
       ticks: [...state.ticks],
       editGroups: [...state.editGroups],
       openEditGroup: copyOpenEditGroup(state),
@@ -221,7 +233,7 @@ function withEditGroupState(state: HotTextBufferState, next: EditGroupState): Ho
   return {
     path: state.path,
     currentRoot: state.currentRoot,
-    roots: [...state.roots],
+    roots: [...retainedRoots(state)],
     ticks: [...state.ticks],
     editGroups: [...next.groups],
     openEditGroup: next.openGroup == null ? undefined : {
@@ -242,4 +254,11 @@ function copyOpenEditGroup(state: HotTextBufferState) {
     id: state.openEditGroup.id,
     tickIds: [...state.openEditGroup.tickIds],
   };
+}
+
+function retainedRoots(state: HotTextBufferState): NonNullable<HotTextBufferState['roots']> {
+  if (state.roots == null) {
+    throw new FullSnapshotRetainedRootsError();
+  }
+  return state.roots;
 }

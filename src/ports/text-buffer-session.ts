@@ -73,6 +73,7 @@ export interface TextBufferCausalTransition {
 
 export interface CreateTextBufferCheckpointRequest {
   readonly kind: CheckpointKind;
+  readonly basisHeadId?: string;
   readonly label?: string | null;
 }
 

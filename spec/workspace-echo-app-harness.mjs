@@ -213,6 +213,7 @@ function recordingProductionTextSession(calls, options) {
         kind: 'exported',
         text: options.exportText ?? 'Echo exported text',
         readingId: 'reading:export',
+        basisHeadId: options.exportBasisHeadId ?? 'head:export',
       };
     },
   };

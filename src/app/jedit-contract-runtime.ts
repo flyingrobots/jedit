@@ -122,6 +122,8 @@ export interface TickMetadata {
 
 interface CheckpointMetadata {
   readonly checkpointId: number;
+  readonly authorityCheckpointId?: string;
+  readonly authorityHeadId?: string;
   readonly kind: CreateCheckpointInput['kind'];
   readonly label?: string;
   readonly createdByRopeRewriteId?: number;
@@ -149,10 +151,15 @@ export function createBufferWorldline(
     };
   }
 
-  const saved = runtime.saveCheckpoint(initialState);
+  const saved = runtime.saveCheckpoint(initialState, { kind: INITIAL_CHECKPOINT_KIND });
   const metadata = saved.receipt == null
     ? []
-    : [createCheckpointMetadata(saved.receipt, INITIAL_CHECKPOINT_KIND, undefined)];
+    : [createCheckpointMetadata(
+      saved.receipt,
+      saved.checkpointDeclaration,
+      INITIAL_CHECKPOINT_KIND,
+      undefined,
+    )];
   const nextSession = createSession(parsedInput.bufferKey, projectionPath, saved.nextState, [], metadata);
   const checkpoint = metadata[0] == null ? undefined : toCheckpointRecord(nextSession, metadata[0]);
   const result = MutationOperationSchemas.createBufferWorldline.result.parse({
@@ -242,13 +249,14 @@ export function createCheckpoint(
   const parsedInput = MutationOperationSchemas.createCheckpoint.input.parse(input);
   ensureMatchingWorldline(session, parsedInput.worldlineId);
 
-  const saved = runtime.saveCheckpoint(session.state);
+  const saved = runtime.saveCheckpoint(session.state, { kind: parsedInput.kind });
   if (saved.receipt == null) {
     return noCheckpointExecution(session, saved.nextState);
   }
 
   const checkpointMetadata = createCheckpointMetadata(
     saved.receipt,
+    saved.checkpointDeclaration,
     parsedInput.kind,
     parsedInput.label ?? undefined,
   );
@@ -375,11 +383,14 @@ function createTickMetadata(input: CreateTickMetadataInput): TickMetadata {
 
 function createCheckpointMetadata(
   receipt: SaveCheckpointReceipt,
+  declaration: { readonly checkpointId: string; readonly headId: string } | undefined,
   kind: CreateCheckpointInput['kind'],
   label: string | undefined,
 ): CheckpointMetadata {
   return {
     checkpointId: receipt.checkpointId,
+    authorityCheckpointId: declaration?.checkpointId ?? receipt.authorityCheckpointId,
+    authorityHeadId: declaration?.headId,
     kind,
     label,
   };
@@ -445,9 +456,9 @@ function toCheckpointRecord(
     : toHeadId(checkpoint.rootId);
 
   return {
-    checkpointId: toCheckpointId(metadata.checkpointId),
+    checkpointId: metadata.authorityCheckpointId ?? toCheckpointId(metadata.checkpointId),
     worldlineId: session.worldline.worldlineId,
-    headId,
+    headId: metadata.authorityHeadId ?? headId,
     kind: metadata.kind,
     label: metadata.label,
     createdByRopeRewriteId: metadata.createdByRopeRewriteId == null ? undefined : toTickId(metadata.createdByRopeRewriteId),

@@ -59,6 +59,7 @@ export interface WorkspaceTextExportedResult {
   readonly filePath: string;
   readonly bufferId: string;
   readonly readingId: string;
+  readonly basisHeadId: string;
   readonly hostFingerprint: EditorFileFingerprint;
 }
 

@@ -20,6 +20,7 @@ import {
 import {
   assertInstalledTextAuthorityAllowed,
   createGraphRopeHotTextAuthority,
+  GraphRopeTextAuthorityObstructionError,
 } from './installed-text-authority-guard.js';
 import {
   installJeditContractPackage,
@@ -31,6 +32,7 @@ import {
 } from '../ports/echo-contract-package-host.js';
 import type { EchoKernelInfo } from '../ports/echo-kernel-transport.js';
 import type { HotTextRuntimePort } from '../ports/hot-text-runtime.js';
+import type { EchoCausalAnchorAdmissionPort } from '../domain/graph-rope-contract.js';
 import type { JeditContractStatePort } from '../ports/jedit-contract-state-port.js';
 import type { JeditSubmissionLedgerPort } from '../ports/jedit-submission-ledger.js';
 import {
@@ -85,11 +87,13 @@ const STATE_MISSING_RECOVERY = 'publish jedit contract state before observing';
 const QUERY_OBSERVER_RUNTIME_ERROR_CODE = 'JEDIT_QUERY_OBSERVER_RUNTIME_ERROR';
 const QUERY_OBSERVER_RUNTIME_ERROR_RECOVERY = 'refresh the reading basis or fix query input';
 const QUERY_OBSERVER_RUNTIME_ERROR_MESSAGE = 'Jedit query observer failed while producing the reading';
+const TEXT_AUTHORITY_OBSTRUCTION_RECOVERY = 'resolve the text authority obstruction and retry against the current basis';
 
 type InstalledHashPort = ReturnType<typeof createHashPort>;
 
 export interface InstalledJeditContractEchoTransportOptions {
   readonly runtime?: HotTextRuntimePort;
+  readonly causalAnchorAdmission?: EchoCausalAnchorAdmissionPort;
   readonly allowFullSnapshotTextAuthority?: true;
   readonly hash?: InstalledHashPort;
   readonly moduleSpecifier?: string;
@@ -195,7 +199,10 @@ function resolveTransportRuntime(
   options: InstalledJeditContractEchoTransportOptions,
   hash: InstalledHashPort,
 ): HotTextRuntimePort {
-  const runtime = options.runtime ?? createGraphRopeHotTextAuthority({ hash });
+  const runtime = options.runtime ?? createGraphRopeHotTextAuthority({
+    hash,
+    causalAnchorAdmission: options.causalAnchorAdmission,
+  });
   assertInstalledTextAuthorityAllowed(runtime, options);
   return runtime;
 }
@@ -234,7 +241,15 @@ function submitInstalledIntent(
     return encodeJeditIntentResponse(obstructedIntent(request, ticketedWorkObstruction(ticketedWork)));
   }
   recordRuntimeWorkEnvelope(context.workSink, intentBytes, request, context.hash, submission.submissionId);
-  return encodeJeditIntentResponse(executeIntent(context.mutations, context.handlerInvocationSink, request));
+  try {
+    return encodeJeditIntentResponse(executeIntent(context.mutations, context.handlerInvocationSink, request));
+  } catch (error) {
+    const obstruction = mutationRuntimeObstruction(error instanceof Error ? error : undefined);
+    if (obstruction === null) {
+      throw error;
+    }
+    return encodeJeditIntentResponse(obstructedIntent(request, obstruction));
+  }
 }
 
 function recordAcceptedSubmission(
@@ -438,6 +453,17 @@ function ticketedWorkObstruction(
     code: ticketedWork.obstruction.code,
     message: ticketedWork.obstruction.reason,
     recovery: 'issue ticketed work before handler invocation',
+  };
+}
+
+function mutationRuntimeObstruction(error: Error | undefined): JeditTransportObstruction | null {
+  if (!(error instanceof GraphRopeTextAuthorityObstructionError)) {
+    return null;
+  }
+  return {
+    code: error.obstructionCode,
+    message: error.message,
+    recovery: TEXT_AUTHORITY_OBSTRUCTION_RECOVERY,
   };
 }
 

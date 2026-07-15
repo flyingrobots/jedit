@@ -1126,6 +1126,7 @@ test("save can be requested while a production text intent is still pending", as
             kind: "exported",
             text: "base",
             readingId: "reading:base",
+            basisHeadId: "head:base",
           };
         },
       }),
@@ -1219,6 +1220,7 @@ test("ctrl-s exports a full production snapshot and checkpoints without direct l
     ]);
   const savedFiles = [];
   const exportCalls = [];
+  const checkpointCalls = [];
   const documentLines = Array.from(
     { length: 30 },
     (_, index) => `line ${index}`,
@@ -1230,14 +1232,18 @@ test("ctrl-s exports a full production snapshot and checkpoints without direct l
         kind: "exported",
         text: documentLines.join("\n"),
         readingId: "reading:export",
+        basisHeadId: "head:export",
       };
     },
-    checkpointBuffer: async () => ({
-      kind: "checkpointed",
-      result: {
-        checkpointId: "checkpoint:save",
-      },
-    }),
+    checkpointBuffer: async (request) => {
+      checkpointCalls.push(request);
+      return {
+        kind: "checkpointed",
+        result: {
+          checkpointId: "checkpoint:save",
+        },
+      };
+    },
   };
   const model = {
     ...textWorkspaceModel(modeModule, authority, profile, {
@@ -1307,6 +1313,12 @@ test("ctrl-s exports a full production snapshot and checkpoints without direct l
   assert.deepEqual(savedFiles, [
     { filePath: "/repo/notes.txt", lines: documentLines },
   ]);
+  assert.deepEqual(checkpointCalls, [{
+    bufferId: "buffer:notes",
+    basisHeadId: "head:export",
+    label: "interactive workspace save",
+    atMs: 0,
+  }]);
   assert.equal(
     checkpointedModel.textAuthority.lastExportReadingId,
     "reading:export",
@@ -1341,6 +1353,7 @@ test("repeated ctrl-s coalesces an in-flight production export", async () => {
         kind: "exported",
         text: "fresh",
         readingId: "reading:export",
+        basisHeadId: "head:export",
       };
     },
   });
@@ -1430,6 +1443,7 @@ for (const blockCase of EXISTING_SAVE_BLOCK_CASES) {
           kind: "exported",
           text: "local draft",
           readingId: "reading:export",
+          basisHeadId: "head:export",
         };
       },
       checkpointBuffer: async (request) => {
@@ -1530,6 +1544,7 @@ test("ctrl-s blocks materialization when a missing-open path appeared", async ()
         kind: "exported",
         text: "local draft",
         readingId: "reading:export",
+        basisHeadId: "head:export",
       };
     },
     checkpointBuffer: async (request) => {
@@ -1721,6 +1736,7 @@ test("ctrl-s materializes a missing-open path when it is still absent", async ()
       kind: "exported",
       text: "local draft",
       readingId: "reading:export",
+      basisHeadId: "head:export",
     }),
     checkpointBuffer: async () => ({
       kind: "checkpointed",

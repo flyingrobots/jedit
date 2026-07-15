@@ -72,6 +72,7 @@ test('real workspace app path serializes rapid insert settlement and records eac
       kind: 'exported',
       text: document.lines().join('\n'),
       readingId: 'reading:export',
+      basisHeadId: 'head:export',
     }),
   };
   const harness = await openedHarness({
@@ -160,6 +161,7 @@ test('real workspace app path waits for queued rapid inserts before saving', asy
         kind: 'exported',
         text: document.lines().join('\n'),
         readingId: 'reading:export',
+        basisHeadId: 'head:export',
       };
     },
   };
@@ -244,6 +246,7 @@ test('real workspace app path cancels a queued save after an edit obstruction', 
         kind: 'exported',
         text: '',
         readingId: 'reading:export',
+        basisHeadId: 'head:export',
       };
     },
   };

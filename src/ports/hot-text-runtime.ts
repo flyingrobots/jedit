@@ -1,5 +1,7 @@
 import type { EditGroup, EditGroupReceipt, OpenEditGroup } from '../domain/edit-group-contract.js';
 import type { SaveCheckpoint, SaveCheckpointReceipt } from '../domain/save-checkpoint-contract.js';
+import type { RopeCheckpointAnchoredFact, RopeCheckpointFact } from '../domain/graph-rope-contract.js';
+import type { CheckpointKind } from '../generated/jedit/rope.types.generated.js';
 import type { BufferRoot, TextRange } from '../domain/text-edit-contract.js';
 import type { AdmittedTick, TickAdmissionReceipt } from '../domain/tick-admission-contract.js';
 
@@ -50,7 +52,7 @@ export interface HotTextBufferState {
   readonly path: string;
   readonly authorityBasis?: HotTextAuthorityBasis;
   readonly currentRoot: BufferRoot;
-  readonly roots: readonly BufferRoot[];
+  readonly roots?: readonly BufferRoot[];
   readonly ticks: readonly AdmittedTick[];
   readonly editGroups: readonly EditGroup[];
   readonly openEditGroup?: OpenEditGroup;
@@ -72,6 +74,12 @@ export interface CloseEditGroupResult {
 export interface SaveHotCheckpointResult {
   readonly nextState: HotTextBufferState;
   readonly receipt?: SaveCheckpointReceipt;
+  readonly checkpointDeclaration?: RopeCheckpointFact;
+  readonly anchorAssociation?: RopeCheckpointAnchoredFact;
+}
+
+export interface SaveHotCheckpointRequest {
+  readonly kind: CheckpointKind;
 }
 
 export interface HotTextRuntimePort {
@@ -84,7 +92,7 @@ export interface HotTextRuntimePort {
   openEditGroup(state: HotTextBufferState): HotTextBufferState;
   includeTickInOpenGroup(state: HotTextBufferState, tickId: number): HotTextBufferState;
   closeEditGroup(state: HotTextBufferState): CloseEditGroupResult;
-  saveCheckpoint(state: HotTextBufferState): SaveHotCheckpointResult;
+  saveCheckpoint(state: HotTextBufferState, request: SaveHotCheckpointRequest): SaveHotCheckpointResult;
 }
 
 export const GRAPH_BACKED_ROPE_TEXT_AUTHORITY_KIND = 'graph-backed-rope';

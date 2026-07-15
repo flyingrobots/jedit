@@ -38,6 +38,8 @@ const FULL_SNAPSHOT_BEFORE_LINES = 0;
 const FULL_SNAPSHOT_AFTER_LINES = 0;
 const FULL_SNAPSHOT_VIEWPORT_LINE_COUNT = Number.MAX_SAFE_INTEGER;
 const FULL_SNAPSHOT_MAX_BYTES = Number.MAX_SAFE_INTEGER;
+const MIN_OPAQUE_ID_LENGTH = 1;
+const UTF8_ENCODER = new TextEncoder();
 
 export const ProductionTextSessionOutcomeKinds = Object.freeze({
   Opened: OUTCOME_OPENED,
@@ -122,6 +124,7 @@ export interface ProductionTextWindowRequest {
 
 export interface ProductionTextCheckpointRequest {
   readonly bufferId: string;
+  readonly basisHeadId: string;
   readonly label?: string | null;
   readonly atMs: number;
 }
@@ -166,6 +169,7 @@ export interface ProductionTextExported {
   readonly kind: typeof OUTCOME_EXPORTED;
   readonly text: string;
   readonly readingId: string;
+  readonly basisHeadId: string;
 }
 
 export interface ProductionTextRangeExplained {
@@ -251,6 +255,7 @@ async function checkpointBuffer(
     }
     const result = await optic.createCheckpoint({
       kind: TEXT_BUFFER_CHECKPOINT_KIND_MANUAL_SAVE,
+      basisHeadId: request.basisHeadId,
       label: request.label,
     });
     return {
@@ -293,6 +298,7 @@ async function exportSnapshot(
     kind: OUTCOME_EXPORTED,
     text: materializeObservedText(observed.observed),
     readingId: observed.observed.evidence.readingId,
+    basisHeadId: observed.observed.value.projection.basisHeadId,
   };
 }
 
@@ -312,7 +318,15 @@ function observedReadingCoversFullSnapshot(reading: TextWindowReading): boolean 
     && reading.hasMoreAfter !== true
     && reading.truncated !== true
     && reading.lineCount === reading.totalLineCount
-    && reading.lines.length === reading.totalLineCount;
+    && reading.lines.length === reading.totalLineCount
+    && projectionCoversFullSnapshot(reading);
+}
+
+function projectionCoversFullSnapshot(reading: TextWindowReading): boolean {
+  return reading.projection.basisHeadId.length >= MIN_OPAQUE_ID_LENGTH
+    && reading.projection.byteRange.startByte === FULL_SNAPSHOT_CURSOR_LINE
+    && reading.projection.byteRange.endByte === UTF8_ENCODER.encode(reading.projection.text).length
+    && reading.projection.text === reading.lines.map((line) => line.text).join(TEXT_EXPORT_LINE_SEPARATOR);
 }
 
 async function multiRangeEdit(
@@ -422,7 +436,7 @@ export function textWindowInputFromViewport(
 export function materializeObservedText(
   observed: Observed<TextWindowReading>,
 ): string {
-  return observed.value.lines.map((line) => line.text).join(TEXT_EXPORT_LINE_SEPARATOR);
+  return observed.value.projection.text;
 }
 
 async function applyReplaceRange(

@@ -1,5 +1,4 @@
 import { z } from 'zod';
-
 import type {
   CreateBufferWorldlineExecution,
   CreateCheckpointExecution,
@@ -83,13 +82,14 @@ const EditGroupSchema = z.object({ id: z.number().int(), tickIds: z.array(z.numb
 
 const OpenEditGroupSchema = z.object({ id: z.number().int(), tickIds: z.array(z.number().int()) });
 
-const SaveCheckpointSchema = z.object({ id: z.number().int(), rootId: z.number().int(), path: z.string() });
-
+const SaveCheckpointSchema = z.object({
+  id: z.number().int(), rootId: z.number().int(), path: z.string(), authorityCheckpointId: z.string().min(1).optional(),
+});
 const HotTextBufferStateSchema = z.object({
   path: z.string(),
   authorityBasis: HotTextAuthorityBasisSchema.optional(),
   currentRoot: BufferRootSchema,
-  roots: z.array(BufferRootSchema),
+  roots: z.array(BufferRootSchema).optional(),
   ticks: z.array(AdmittedTickSchema),
   editGroups: z.array(EditGroupSchema),
   openEditGroup: OpenEditGroupSchema.optional(),
@@ -116,11 +116,11 @@ const TickMetadataSchema = z.object({
 
 const CheckpointMetadataSchema = z.object({
   checkpointId: z.number().int(),
+  authorityCheckpointId: z.string().min(1).optional(), authorityHeadId: z.string().min(1).optional(),
   kind: CheckpointKindSchema,
   label: z.string().optional(),
   createdByRopeRewriteId: z.number().int().optional(),
 });
-
 const JeditWorldlineSessionSchema = z.object({
   worldline: BufferWorldlineSchema,
   state: HotTextBufferStateSchema,

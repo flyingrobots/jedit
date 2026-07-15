@@ -109,7 +109,7 @@ export type WorkspaceTextEditCommandRequest =
   | WorkspaceTextReplaceCommandRequest
   | WorkspaceTextDeleteCommandRequest;
 
-export interface WorkspaceTextCheckpointCommandRequest {
+interface WorkspaceTextSaveCommandRequest {
   readonly requestId: number;
   readonly filePath: string;
   readonly bufferId: string;
@@ -118,16 +118,14 @@ export interface WorkspaceTextCheckpointCommandRequest {
   readonly atMs: number;
 }
 
-export interface WorkspaceTextExportCommandRequest {
-  readonly requestId: number;
-  readonly filePath: string;
-  readonly bufferId: string;
+export interface WorkspaceTextCheckpointCommandRequest extends WorkspaceTextSaveCommandRequest {
+  readonly basisHeadId: string;
+}
+
+export interface WorkspaceTextExportCommandRequest extends WorkspaceTextSaveCommandRequest {
   readonly hostBasis: WorkspaceTextHostBasisKind;
   readonly hostFingerprint?: EditorFileFingerprint;
   readonly editorFile: EditorFilePort;
-  readonly productionTextSession: ProductionTextSession;
-  readonly textOperationSequencer: WorkspaceTextOperationSequencer;
-  readonly atMs: number;
 }
 
 export interface WorkspaceTextReadCommandRequest {
@@ -371,6 +369,7 @@ async function checkpointWorkspaceText(
   try {
     const checkpointed = await request.productionTextSession.checkpointBuffer({
       bufferId: request.bufferId,
+      basisHeadId: request.basisHeadId,
       label: CHECKPOINT_LABEL,
       atMs: request.atMs,
     });
@@ -413,6 +412,7 @@ async function exportWorkspaceText(
       filePath: request.filePath,
       bufferId: request.bufferId,
       readingId: exported.readingId,
+      basisHeadId: exported.basisHeadId,
       hostFingerprint: editorFileFingerprintFromText(joinLines(savedLines)),
     };
   } catch (cause) {

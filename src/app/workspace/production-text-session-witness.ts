@@ -151,10 +151,6 @@ async function completeWitness(
   if (edited.kind === ProductionTextSessionOutcomeKinds.Obstructed) {
     return obstructed(WITNESS_STAGE_EDIT, edited.obstruction.issue);
   }
-  const checkpointed = await request.session.checkpointBuffer({ bufferId, atMs: request.atMs });
-  if (checkpointed.kind === ProductionTextSessionOutcomeKinds.Obstructed) {
-    return obstructed(WITNESS_STAGE_CHECKPOINT, checkpointed.obstruction.issue);
-  }
   const observed = await request.session.observeWindow({ bufferId, aperture: request.aperture, atMs: request.atMs });
   if (observed.kind === ProductionTextSessionOutcomeKinds.Obstructed) {
     return obstructed(WITNESS_STAGE_READING, observed.obstruction.issue);
@@ -162,6 +158,14 @@ async function completeWitness(
   const exported = await request.session.exportSnapshot({ bufferId, atMs: request.atMs });
   if (exported.kind === ProductionTextSessionOutcomeKinds.Obstructed) {
     return obstructed(WITNESS_STAGE_EXPORT, exported.obstruction.issue);
+  }
+  const checkpointed = await request.session.checkpointBuffer({
+    bufferId,
+    basisHeadId: exported.basisHeadId,
+    atMs: request.atMs,
+  });
+  if (checkpointed.kind === ProductionTextSessionOutcomeKinds.Obstructed) {
+    return obstructed(WITNESS_STAGE_CHECKPOINT, checkpointed.obstruction.issue);
   }
   return appliedWitnessReport(bufferId, edited.result.receiptId, checkpointed.result.checkpointId, observed.observed.evidence.readingId, exported.text);
 }

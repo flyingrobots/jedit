@@ -11,11 +11,21 @@ import {
   makeTextByteRange,
 } from '../domain/graph-rope-coordinates.js';
 import type {
+  EchoCausalAnchorAdmissionPort,
+  RopeCheckpointAnchoredFact,
+  RopeCheckpointFact,
+  RopeCheckpointReason,
   RopeHeadFact,
   TextByteRange,
 } from '../domain/graph-rope-contract.js';
 import {
+  ROPE_CHECKPOINT_REASON_AUTOSAVE,
+  ROPE_CHECKPOINT_REASON_IMPORT,
+  ROPE_CHECKPOINT_REASON_MANUAL_SAVE,
+} from '../domain/graph-rope-contract.js';
+import {
   createGraphRopeRuntime,
+  GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_FACT,
   type GraphRopeDebugShape,
   type GraphRopeReplaceRangeResult,
   type GraphRopeRuntime,
@@ -41,6 +51,7 @@ import {
   type HotTextBufferState,
   type HotTextWindowProjection,
   type HotTextWindowRequest,
+  type SaveHotCheckpointRequest,
   type SaveHotCheckpointResult,
 } from '../ports/hot-text-runtime.js';
 
@@ -49,7 +60,6 @@ const REPLACE_RANGE_OPERATION = 'admitReplaceRangeTick';
 const TEXT_WINDOW_OPERATION = 'textWindow';
 const SAVE_CHECKPOINT_OPERATION = 'saveCheckpoint';
 const GRAPH_ROPE_OBSTRUCTION_MESSAGE = 'Graph rope text authority operation was obstructed';
-const GRAPH_ROPE_CAPABILITY_MESSAGE = 'Graph rope text authority capability is not installed yet';
 const GRAPH_ROPE_STATE_MESSAGE = 'Graph rope text authority received invalid compatibility state';
 const GRAPH_ROPE_STATE_MISSING_BASIS = 'missing-authority-basis';
 const GRAPH_ROPE_STATE_INVALID_RANGE = 'invalid-byte-range';
@@ -58,7 +68,11 @@ const GRAPH_ROPE_STATE_PROJECTION_MISMATCH = 'projection-basis-mismatch';
 const ROOT_IDS_PER_EDIT = 2;
 const NEXT_PROJECTION_ROOT_OFFSET = 1;
 const NEXT_TICK_OFFSET = 1;
+const NEXT_CHECKPOINT_OFFSET = 1;
 const ZERO_BYTE_OFFSET = 0;
+const INITIAL_CHECKPOINT_KIND = 'INITIAL';
+const MANUAL_SAVE_CHECKPOINT_KIND = 'MANUAL_SAVE';
+const AUTO_SAVE_CHECKPOINT_KIND = 'AUTO_SAVE';
 
 type GraphRopeTextAuthorityStateCode =
   | typeof GRAPH_ROPE_STATE_MISSING_BASIS
@@ -74,6 +88,7 @@ type GraphRopeAuthorityOperation =
 
 export interface CreateGraphRopeHotTextAuthorityOptions {
   readonly hash: HashPort;
+  readonly causalAnchorAdmission?: EchoCausalAnchorAdmissionPort;
 }
 
 export interface GraphRopeHotTextAuthority extends GraphBackedRopeTextAuthority {
@@ -95,16 +110,6 @@ export class GraphRopeTextAuthorityObstructionError extends Error {
   }
 }
 
-export class GraphRopeTextAuthorityCapabilityError extends Error {
-  public readonly operation: GraphRopeAuthorityOperation;
-
-  public constructor(operation: GraphRopeAuthorityOperation) {
-    super(`${GRAPH_ROPE_CAPABILITY_MESSAGE}: ${operation}.`);
-    this.name = 'GraphRopeTextAuthorityCapabilityError';
-    this.operation = operation;
-  }
-}
-
 export class GraphRopeTextAuthorityStateError extends Error {
   public readonly code: GraphRopeTextAuthorityStateCode;
 
@@ -118,7 +123,10 @@ export class GraphRopeTextAuthorityStateError extends Error {
 export function createGraphRopeHotTextAuthority(
   options: CreateGraphRopeHotTextAuthorityOptions,
 ): GraphRopeHotTextAuthority {
-  return new GraphRopeHotTextAuthorityAdapter(createGraphRopeRuntime({ hash: options.hash }));
+  return new GraphRopeHotTextAuthorityAdapter(createGraphRopeRuntime({
+    hash: options.hash,
+    causalAnchorAdmission: options.causalAnchorAdmission,
+  }));
 }
 
 class GraphRopeHotTextAuthorityAdapter implements GraphRopeHotTextAuthority {
@@ -187,13 +195,95 @@ class GraphRopeHotTextAuthorityAdapter implements GraphRopeHotTextAuthority {
     return closeEditGroup(state);
   }
 
-  public saveCheckpoint(_state: HotTextBufferState): SaveHotCheckpointResult {
-    throw new GraphRopeTextAuthorityCapabilityError(SAVE_CHECKPOINT_OPERATION);
+  public saveCheckpoint(
+    state: HotTextBufferState,
+    request: SaveHotCheckpointRequest,
+  ): SaveHotCheckpointResult {
+    return saveGraphCheckpoint(this.graph, state, request);
   }
 
   public debugRopeShape(headId: string): GraphRopeRuntimeResult<GraphRopeDebugShape> {
     return this.graph.debugRopeShape(headId);
   }
+}
+
+function saveGraphCheckpoint(
+  graph: GraphRopeRuntime,
+  state: HotTextBufferState,
+  request: SaveHotCheckpointRequest,
+): SaveHotCheckpointResult {
+  const basis = requireAuthorityBasis(state);
+  const checkpoint = requireCheckpoint(graph.createCheckpoint({
+    worldlineId: basis.worldlineId,
+    headId: basis.headId,
+    reason: checkpointReason(request),
+  }));
+  const existing = state.checkpoints.find((entry) => entry.authorityCheckpointId === checkpoint.checkpointId);
+  if (existing != null) {
+    return { nextState: state, checkpointDeclaration: checkpoint };
+  }
+  const association = checkpointRequiresAnchor(request)
+    ? requireCheckpointAnchor(graph.anchorCheckpoint({ checkpointId: checkpoint.checkpointId }))
+    : undefined;
+  return admittedCheckpointResult(state, checkpoint, association);
+}
+
+function requireCheckpoint(
+  result: GraphRopeRuntimeResult<{ readonly checkpoint: RopeCheckpointFact }>,
+): RopeCheckpointFact {
+  if (!result.ok) {
+    throw new GraphRopeTextAuthorityObstructionError(SAVE_CHECKPOINT_OPERATION, result.code);
+  }
+  return result.value.checkpoint;
+}
+
+function requireCheckpointAnchor(
+  result: GraphRopeRuntimeResult<{ readonly association: RopeCheckpointAnchoredFact }>,
+): RopeCheckpointAnchoredFact {
+  if (!result.ok) {
+    throw new GraphRopeTextAuthorityObstructionError(SAVE_CHECKPOINT_OPERATION, result.code);
+  }
+  return result.value.association;
+}
+
+function admittedCheckpointResult(
+  state: HotTextBufferState,
+  checkpoint: RopeCheckpointFact,
+  association: RopeCheckpointAnchoredFact | undefined,
+): SaveHotCheckpointResult {
+  const id = state.checkpoints.length + NEXT_CHECKPOINT_OFFSET;
+  const saved = { id, rootId: state.currentRoot.id, path: state.path, authorityCheckpointId: checkpoint.checkpointId };
+  return {
+    nextState: { ...state, checkpoints: [...state.checkpoints, saved] },
+    receipt: { checkpointId: id, rootId: saved.rootId, path: saved.path, authorityCheckpointId: checkpoint.checkpointId },
+    checkpointDeclaration: checkpoint,
+    anchorAssociation: association,
+  };
+}
+
+function checkpointReason(request: SaveHotCheckpointRequest): RopeCheckpointReason {
+  switch (request.kind) {
+    case INITIAL_CHECKPOINT_KIND:
+      return ROPE_CHECKPOINT_REASON_IMPORT;
+    case MANUAL_SAVE_CHECKPOINT_KIND:
+      return ROPE_CHECKPOINT_REASON_MANUAL_SAVE;
+    case AUTO_SAVE_CHECKPOINT_KIND:
+      return ROPE_CHECKPOINT_REASON_AUTOSAVE;
+    default:
+      return rejectUnsupportedCheckpointKind(request.kind);
+  }
+}
+
+function rejectUnsupportedCheckpointKind(kind: never): never {
+  void kind;
+  throw new GraphRopeTextAuthorityObstructionError(
+    SAVE_CHECKPOINT_OPERATION,
+    GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_FACT,
+  );
+}
+
+function checkpointRequiresAnchor(request: SaveHotCheckpointRequest): boolean {
+  return request.kind !== INITIAL_CHECKPOINT_KIND;
 }
 
 function initialProjection(
@@ -206,7 +296,6 @@ function initialProjection(
     path,
     authorityBasis: basis,
     currentRoot,
-    roots: [currentRoot],
     ticks: [],
     editGroups: [],
     checkpoints: [],
@@ -343,7 +432,6 @@ function nextProjectionState(
     ...state,
     authorityBasis: basis,
     currentRoot,
-    roots: [currentRoot],
     ticks: [...state.ticks, { id: tickId, rootId: currentRoot.id }],
     editGroups: [...state.editGroups],
     openEditGroup: state.openEditGroup == null ? undefined : copyOpenEditGroup(state.openEditGroup),
@@ -380,7 +468,6 @@ function withEditGroupState(
 ): HotTextBufferState {
   return {
     ...state,
-    roots: [...state.roots],
     ticks: [...state.ticks],
     editGroups: [...next.groups],
     openEditGroup: next.openGroup == null

@@ -153,6 +153,7 @@ test("intermediate TextEditResult refreshes highlighting before queued save sett
         kind: "exported",
         text: "abcd",
         readingId: "reading:export",
+        basisHeadId: "head:export",
       };
     },
     checkpointBuffer: async () => ({

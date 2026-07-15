@@ -65,7 +65,7 @@ function rootFacts(
   session: JeditWorldlineSession,
   hash: HashPort,
 ): readonly JeditRootEntityFact[] {
-  return session.state.roots.map((root) => rootFact(session, hash, root));
+  return (session.state.roots ?? []).map((root) => rootFact(session, hash, root));
 }
 
 function rootFact(

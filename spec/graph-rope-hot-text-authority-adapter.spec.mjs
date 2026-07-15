@@ -3,6 +3,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
 import { REPO_ROOT, ensureDistBuilt } from './dist-helpers.mjs';
+import { createTestEchoCausalAnchorAdmissionPort } from './support/test-echo-causal-anchor-admission.mjs';
 
 const AUTHORITY_MODULE_PATH = path.join(
   REPO_ROOT,
@@ -42,7 +43,7 @@ test('imports initial bytes into graph rope authority and exposes its named basi
   assert.equal(created.result.worldline.canonicalHeadId, basis.headId);
   assert.equal(created.result.head.headId, basis.headId);
   assert.equal(created.result.head.rootNodeId, basis.rootNodeId);
-  assert.equal(created.nextSession.state.roots.length, 1);
+  assert.equal(created.nextSession.state.roots, undefined);
 
   const shape = assertOk(authority.debugRopeShape(basis.headId));
   assert.equal(shape.retainedBlobBytes, Buffer.byteLength(IMPORT_TEXT, 'utf8'));
@@ -119,7 +120,7 @@ test('routes insert delete and replace through graph authority without minting n
   const replaced = replace(modules, authority, hash, deleted.nextSession, 0, 4, 'gamma');
   assert.equal(authority.materialize(replaced.nextSession.state), 'gamma');
   assertGraphEditEvidence(replaced);
-  assert.equal(replaced.nextSession.state.roots.length, 1);
+  assert.equal(replaced.nextSession.state.roots, undefined);
 
   const noOp = replace(modules, authority, hash, replaced.nextSession, 0, 5, 'gamma');
   assert.equal(noOp.result, undefined);
@@ -128,6 +129,183 @@ test('routes insert delete and replace through graph authority without minting n
     replaced.nextSession.worldline.canonicalHeadId,
   );
   assert.equal(noOp.nextSession.tickMetadata.length, replaced.nextSession.tickMetadata.length);
+});
+
+test('manual save declares and anchors the current head without changing rope authority', async () => {
+  const modules = await loadModules();
+  const requests = [];
+  const authority = modules.authority.createGraphRopeHotTextAuthority({
+    hash: modules.hash.createHashPort(),
+    causalAnchorAdmission: createTestEchoCausalAnchorAdmissionPort({ requests }),
+  });
+  const state = authority.createBuffer('/tmp/save.txt', 'causal save');
+  const basis = state.authorityBasis;
+  const before = assertOk(authority.debugRopeShape(basis.headId));
+
+  const saved = authority.saveCheckpoint(state, { kind: 'MANUAL_SAVE' });
+  const after = assertOk(authority.debugRopeShape(basis.headId));
+
+  assert.deepEqual(saved.checkpointDeclaration, {
+    kind: 'jedit.text.RopeCheckpoint',
+    schemaVersion: 1,
+    checkpointId: saved.receipt.authorityCheckpointId,
+    worldlineId: basis.worldlineId,
+    headId: basis.headId,
+    reason: 'manual-save',
+  });
+  assert.equal(saved.anchorAssociation.checkpointId, saved.checkpointDeclaration.checkpointId);
+  assert.equal(saved.anchorAssociation.causalAnchorId, 'test-only-anchor:1');
+  assert.deepEqual(requests, [{
+    checkpointId: saved.checkpointDeclaration.checkpointId,
+    worldlineId: basis.worldlineId,
+    headId: basis.headId,
+    reason: 'manual-save',
+    materializationRoots: [],
+  }]);
+  assert.deepEqual(after, before);
+  assert.equal(saved.nextState.authorityBasis, state.authorityBasis);
+  assert.equal(authority.materialize(saved.nextState), 'causal save');
+});
+
+test('manual save fails closed when Echo causal-anchor admission is unavailable', async () => {
+  const modules = await loadModules();
+  const authority = modules.authority.createGraphRopeHotTextAuthority({
+    hash: modules.hash.createHashPort(),
+  });
+  const state = authority.createBuffer('/tmp/save-no-echo.txt', 'causal save');
+
+  assert.throws(
+    () => authority.saveCheckpoint(state, { kind: 'MANUAL_SAVE' }),
+    (error) => error.operation === 'saveCheckpoint'
+      && error.obstructionCode === 'causal-anchor-unavailable',
+  );
+});
+
+test('invalid Jim checkpoint semantics fail before requesting Echo admission', async () => {
+  const modules = await loadModules();
+  const requests = [];
+  const authority = modules.authority.createGraphRopeHotTextAuthority({
+    hash: modules.hash.createHashPort(),
+    causalAnchorAdmission: createTestEchoCausalAnchorAdmissionPort({ requests }),
+  });
+  const state = authority.createBuffer('/tmp/invalid-checkpoint.txt', 'invalid');
+
+  assert.throws(
+    () => authority.saveCheckpoint(state, { kind: 'UNKNOWN_CHECKPOINT_KIND' }),
+    (error) => error.operation === 'saveCheckpoint'
+      && error.obstructionCode === 'invalid-fact',
+  );
+  assert.deepEqual(requests, []);
+});
+
+test('initial checkpoint declaration does not require causal-anchor admission', async () => {
+  const modules = await loadModules();
+  const authority = modules.authority.createGraphRopeHotTextAuthority({
+    hash: modules.hash.createHashPort(),
+  });
+  const state = authority.createBuffer('/tmp/import.txt', 'imported');
+
+  const saved = authority.saveCheckpoint(state, { kind: 'INITIAL' });
+
+  assert.equal(saved.checkpointDeclaration.reason, 'import');
+  assert.equal(saved.anchorAssociation, undefined);
+  assert.equal(saved.receipt.authorityCheckpointId, saved.checkpointDeclaration.checkpointId);
+});
+
+test('installed transport admits save anchors only through its injected Echo capability', async () => {
+  const modules = await loadModules();
+  const requests = [];
+  const client = modules.client.createEchoTransportJeditOpticClient(
+    modules.transport.createInstalledJeditContractEchoTransport({
+      causalAnchorAdmission: createTestEchoCausalAnchorAdmissionPort({ requests }),
+    }),
+  );
+  const opened = await client.openTextBuffer({
+    bufferKey: 'installed-save.txt',
+    initialText: 'installed causal save',
+    projectionPath: '/tmp/installed-save.txt',
+    createInitialCheckpoint: false,
+  });
+  const basis = opened.nextSession.state.authorityBasis;
+  assert.ok(basis);
+
+  const saved = await client.createCheckpoint(opened.nextSession, {
+    worldlineId: basis.worldlineId,
+    kind: 'MANUAL_SAVE',
+    label: 'installed save',
+  });
+
+  assert.equal(requests.length, 1);
+  assert.equal(saved.result.checkpoint.checkpointId, requests[0].checkpointId);
+  assert.equal(saved.result.checkpoint.headId, basis.headId);
+  assert.equal(saved.nextSession.state.roots, undefined);
+  assert.equal(saved.nextSession.state.checkpoints[0].authorityCheckpointId, requests[0].checkpointId);
+  assert.equal(saved.nextSession.checkpointMetadata[0].authorityCheckpointId, requests[0].checkpointId);
+  assert.equal(saved.nextSession.checkpointMetadata[0].authorityHeadId, basis.headId);
+
+  const repeated = await client.createCheckpoint(saved.nextSession, {
+    worldlineId: basis.worldlineId,
+    kind: 'MANUAL_SAVE',
+    label: 'installed save',
+  });
+  assert.equal(repeated.result, undefined);
+  assert.equal(requests.length, 1);
+});
+
+test('installed transport reports unavailable Echo admission as a typed obstruction', async () => {
+  const modules = await loadModules();
+  const client = modules.client.createEchoTransportJeditOpticClient(
+    modules.transport.createInstalledJeditContractEchoTransport(),
+  );
+  const opened = await client.openTextBuffer({
+    bufferKey: 'installed-save-no-echo.txt',
+    initialText: 'fail closed',
+    projectionPath: '/tmp/installed-save-no-echo.txt',
+    createInitialCheckpoint: false,
+  });
+
+  await assert.rejects(
+    client.createCheckpoint(opened.nextSession, {
+      worldlineId: opened.nextSession.worldline.worldlineId,
+      kind: 'MANUAL_SAVE',
+      label: 'must fail closed',
+    }),
+    (error) => error.name === 'JeditOpticTransportObstructionError'
+      && error.obstruction.code === 'causal-anchor-unavailable',
+  );
+});
+
+test('checkpoint rejects a stale exported head before requesting Echo admission', async () => {
+  const modules = await loadModules();
+  const requests = [];
+  const client = modules.client.createEchoTransportJeditOpticClient(
+    modules.transport.createInstalledJeditContractEchoTransport({
+      causalAnchorAdmission: createTestEchoCausalAnchorAdmissionPort({ requests }),
+    }),
+  );
+  const textSession = modules.textSession.createTextBufferSession(client);
+  const optic = await textSession.createBuffer({
+    bufferKey: 'stale-export.txt',
+    initialText: 'before',
+    projectionPath: '/tmp/stale-export.txt',
+  });
+  const before = await optic.textWindow(optic.currentReadBasis(), {
+    cursorLine: 0, viewportLineCount: 1, beforeLines: 0, afterLines: 0, maxBytes: 80,
+  });
+  await optic.applyIntent({
+    kind: 'replaceRange', startByte: 0, endByte: 6, insertText: 'after',
+  });
+
+  await assert.rejects(
+    optic.createCheckpoint({
+      kind: 'MANUAL_SAVE',
+      basisHeadId: before.value.projection.basisHeadId,
+      label: 'stale export basis',
+    }),
+    (error) => error.name === 'TextBufferCheckpointBasisError'
+      && error.message.includes('basis mismatch'),
+  );
+  assert.deepEqual(requests, []);
 });
 
 function replace(modules, authority, hash, session, startByte, endByte, insertText) {

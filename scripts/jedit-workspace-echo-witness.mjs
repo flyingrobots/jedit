@@ -10,6 +10,7 @@ const WITNESS_READING_EDIT = 'reading:witness-edit';
 const WITNESS_READING_EXPORT = 'reading:witness-export';
 const WITNESS_RECEIPT = 'receipt:witness-edit';
 const WITNESS_CHECKPOINT = 'checkpoint:witness';
+const WITNESS_HEAD = 'head:witness-edit';
 
 const options = parseArgs(process.argv.slice(2));
 const report = await workspaceWitnessReport(options);
@@ -76,6 +77,7 @@ async function workspaceWitnessReport(options) {
   }
   const checkpoint = await productionTextSession.checkpointBuffer({
     bufferId: opened.optic.buffer.bufferId,
+    basisHeadId: exported.basisHeadId,
     label: 'workspace witness',
     atMs: 5,
   });
@@ -159,16 +161,23 @@ function createWitnessOptic() {
     async textWindow() {
       const exportRead = readingId === WITNESS_READING_EDIT ? WITNESS_READING_EXPORT : readingId;
       readingId = exportRead;
+      const byteLength = Buffer.byteLength(text, 'utf8');
       return {
         value: {
           readingId: exportRead,
+          projection: {
+            basisHeadId: WITNESS_HEAD,
+            byteRange: { startByte: 0, endByte: byteLength },
+            text,
+            support: [],
+          },
           lines: [{
             lineNumber: 0,
             startByte: 0,
-            endByte: text.length,
+            endByte: byteLength,
             text,
           }],
-          byteLength: text.length,
+          byteLength,
           lineCount: 1,
           startLine: 0,
           totalLineCount: 1,
