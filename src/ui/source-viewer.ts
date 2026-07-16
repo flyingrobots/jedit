@@ -21,6 +21,12 @@ const GUTTER_RULE_WIDTH = 1;
 const GUTTER_RULE_GAP = 1;
 const SIGN_CHARACTER_WIDTH = 1;
 const GUTTER_RULE = '│';
+const GUTTER_LINE_MARKER_CHAR = Object.freeze({
+  inserted: '+',
+  modified: '~',
+  pending: '?',
+  obstructed: '!',
+} as const);
 const MIN_TEXT_VIEWPORT_WIDTH = 1;
 const DEFAULT_LINE_NUMBER_MODE = SOURCE_LINE_NUMBER_MODE.Absolute;
 const CURRENT_LINE_RELATIVE_NUMBER = 0;
@@ -43,7 +49,7 @@ export interface SourceViewerViewport {
 
 export interface SourceGutterLineMarker {
   readonly lineNumber: number;
-  readonly kind: 'inserted' | 'modified';
+  readonly kind: keyof typeof GUTTER_LINE_MARKER_CHAR;
 }
 
 export interface SourceGutterDeletionMarker {
@@ -247,9 +253,13 @@ function paintGutterMarker(
     paintGutterCell(surface, x, y, ' ', tokens.background);
     return;
   }
-  const inserted = marker.kind === 'inserted';
-  const token = inserted ? tokens.inserted : tokens.modified;
-  paintGutterCell(surface, x, y, inserted ? '+' : '~', token);
+  paintGutterCell(
+    surface,
+    x,
+    y,
+    GUTTER_LINE_MARKER_CHAR[marker.kind],
+    tokens[marker.kind],
+  );
 }
 
 function sourceLineNumberLabel(

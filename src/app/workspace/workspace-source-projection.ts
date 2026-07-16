@@ -2,7 +2,13 @@ import type {
   SourceGutterDeletionMarker,
   SourceGutterLineMarker,
 } from '../../ui/source-viewer.js';
+import type { JeditCommandTarget } from './command-provenance.js';
 import type { WorkspaceModel } from './model.js';
+import {
+  WorkspaceBufferCausalDurabilityKinds,
+  WorkspaceTextIntentStatuses,
+  type WorkspaceTextIntentStatus,
+} from './workspace-buffer-durability.js';
 import {
   WorkspaceBufferCausalLineChangeKinds,
   type WorkspaceBufferCausalLineChangesAvailable,
@@ -17,6 +23,39 @@ import {
 import { workspaceCausalGutterBasisHeadId } from './workspace-causal-gutter-basis.js';
 
 const INSERTED_CAUSAL_LINE_MARKER = 'INSERTED';
+const SOURCE_GUTTER_EXECUTION_POSTURE = Object.freeze({
+  Applied: 'applied',
+  Pending: 'pending',
+  Obstructed: 'obstructed',
+} as const);
+const PENDING_INTENT_STATUSES: ReadonlySet<WorkspaceTextIntentStatus> = new Set([
+  WorkspaceTextIntentStatuses.Predicted,
+  WorkspaceTextIntentStatuses.Submitted,
+  WorkspaceTextIntentStatuses.Rebased,
+]);
+const OBSTRUCTED_INTENT_STATUSES: ReadonlySet<WorkspaceTextIntentStatus> = new Set([
+  WorkspaceTextIntentStatuses.Blocked,
+  WorkspaceTextIntentStatuses.Obstructed,
+  WorkspaceTextIntentStatuses.Superseded,
+  WorkspaceTextIntentStatuses.Abandoned,
+]);
+
+export interface SourceGutterExecutionReading {
+  readonly lineNumber: number;
+  readonly markerKind: SourceGutterLineMarker['kind'];
+  readonly posture: typeof SOURCE_GUTTER_EXECUTION_POSTURE[keyof typeof SOURCE_GUTTER_EXECUTION_POSTURE];
+  readonly basisHeadId?: string;
+  readonly nextHeadId?: string;
+  readonly tickReceiptIds: readonly string[];
+  readonly rewriteIds: readonly string[];
+  readonly diffIds: readonly string[];
+  readonly receiptId?: string;
+  readonly clientSeq?: number;
+  readonly blockerClientSeq?: number;
+  readonly eventId?: string;
+  readonly target?: JeditCommandTarget;
+  readonly obstructionMessage?: string;
+}
 
 export function displayEditorForWorkspaceModel(
   model: WorkspaceModel,
@@ -61,23 +100,56 @@ export function sourceHighlightForWorkspaceProjection(
     : undefined;
 }
 
+export function sourceGutterExecutionReadings(
+  model: WorkspaceModel,
+): readonly SourceGutterExecutionReading[] {
+  const transient = transientGutterExecutionReading(model);
+  if (transient != null) {
+    return [transient];
+  }
+  const lineChanges = causalLineChangesForProjection(model);
+  if (lineChanges == null) {
+    return [];
+  }
+  const retainedTickReceiptIds = new Set(lineChanges.tickReceiptIds);
+  return lineChanges.markers
+    .filter(marker => hasRetainedTickReceiptSupport(marker.tickReceiptIds, retainedTickReceiptIds))
+    .map(marker => appliedGutterExecutionReading(model, lineChanges, marker));
+}
+
+export function sourceGutterLineMarkers(
+  model: WorkspaceModel,
+): readonly SourceGutterLineMarker[] {
+  return sourceGutterExecutionReadings(model).map(reading => ({
+    lineNumber: reading.lineNumber,
+    kind: reading.markerKind,
+  }));
+}
+
 export function causalSourceGutterLineMarkers(
   model: WorkspaceModel,
 ): readonly SourceGutterLineMarker[] | undefined {
   const lineChanges = causalLineChangesForProjection(model);
-  return lineChanges?.markers.map(marker => ({
-    lineNumber: marker.lineNumber,
-    kind: marker.kind === INSERTED_CAUSAL_LINE_MARKER ? 'inserted' : 'modified',
-  }));
+  const retainedTickReceiptIds = new Set(lineChanges?.tickReceiptIds);
+  return lineChanges?.markers
+    .filter(marker => hasRetainedTickReceiptSupport(marker.tickReceiptIds, retainedTickReceiptIds))
+    .map(marker => ({
+      lineNumber: marker.lineNumber,
+      kind: marker.kind === INSERTED_CAUSAL_LINE_MARKER ? 'inserted' : 'modified',
+    }));
 }
 
 export function causalSourceGutterDeletionMarkers(
   model: WorkspaceModel,
 ): readonly SourceGutterDeletionMarker[] | undefined {
-  return causalLineChangesForProjection(model)?.deletions.map(deletion => ({
-    boundaryLineNumber: deletion.boundaryLineNumber,
-    deletedLineCount: deletion.deletedLineCount,
-  }));
+  const lineChanges = causalLineChangesForProjection(model);
+  const retainedTickReceiptIds = new Set(lineChanges?.tickReceiptIds);
+  return lineChanges?.deletions
+    .filter(deletion => hasRetainedTickReceiptSupport(deletion.tickReceiptIds, retainedTickReceiptIds))
+    .map(deletion => ({
+      boundaryLineNumber: deletion.boundaryLineNumber,
+      deletedLineCount: deletion.deletedLineCount,
+    }));
 }
 
 function causalLineChangesForProjection(
@@ -98,6 +170,101 @@ function causalLineChangesForProjection(
       && selectedBasisHeadId === lineChanges.basisHeadId
     ? lineChanges
     : undefined;
+}
+
+function appliedGutterExecutionReading(
+  model: WorkspaceModel,
+  lineChanges: WorkspaceBufferCausalLineChangesAvailable,
+  marker: WorkspaceBufferCausalLineChangesAvailable['markers'][number],
+): SourceGutterExecutionReading {
+  const tickReceiptIds = [...marker.tickReceiptIds];
+  const receiptId = latestAppliedReceiptId(model, tickReceiptIds);
+  return {
+    lineNumber: marker.lineNumber,
+    markerKind: marker.kind === INSERTED_CAUSAL_LINE_MARKER ? 'inserted' : 'modified',
+    posture: SOURCE_GUTTER_EXECUTION_POSTURE.Applied,
+    basisHeadId: lineChanges.basisHeadId,
+    nextHeadId: lineChanges.nextHeadId,
+    tickReceiptIds,
+    rewriteIds: [...marker.rewriteIds],
+    diffIds: [...marker.diffIds],
+    ...(receiptId == null ? {} : { receiptId }),
+  };
+}
+
+function latestAppliedReceiptId(
+  model: WorkspaceModel,
+  tickReceiptIds: readonly string[],
+): string | undefined {
+  if (!isWorkspaceTextAuthorityOpened(model.textAuthority)) {
+    return undefined;
+  }
+  const causal = model.textAuthority.durability.causal;
+  return causal.kind === WorkspaceBufferCausalDurabilityKinds.Admitted
+      && causal.receiptId != null
+      && causal.admittedTickId != null
+      && tickReceiptIds.includes(causal.admittedTickId)
+    ? causal.receiptId
+    : undefined;
+}
+
+function transientGutterExecutionReading(
+  model: WorkspaceModel,
+): SourceGutterExecutionReading | undefined {
+  if (!isWorkspaceTextAuthorityOpened(model.textAuthority)) {
+    return undefined;
+  }
+  const markerKind = transientMarkerKind(model.textAuthority.pendingIntentStatus);
+  const event = model.textAuthority.pendingCommandEvent?.event;
+  const lineNumber = event?.result.cursorRow;
+  if (markerKind == null || lineNumber == null || !Number.isSafeInteger(lineNumber) || lineNumber < 0) {
+    return undefined;
+  }
+  return {
+    lineNumber,
+    markerKind,
+    posture: markerKind,
+    tickReceiptIds: [],
+    rewriteIds: [],
+    diffIds: [],
+    ...transientGutterExecutionMetadata(model),
+  };
+}
+
+function transientGutterExecutionMetadata(
+  model: WorkspaceModel,
+): Pick<SourceGutterExecutionReading, 'clientSeq' | 'blockerClientSeq' | 'eventId' | 'target' | 'obstructionMessage'> {
+  if (!isWorkspaceTextAuthorityOpened(model.textAuthority)) {
+    return {};
+  }
+  const authority = model.textAuthority;
+  const event = authority.pendingCommandEvent?.event;
+  return {
+    ...(authority.pendingClientSeq == null ? {} : { clientSeq: authority.pendingClientSeq }),
+    ...(authority.blockedByClientSeq == null ? {} : { blockerClientSeq: authority.blockedByClientSeq }),
+    ...(event == null ? {} : { eventId: event.eventId }),
+    ...(event?.target == null ? {} : { target: event.target }),
+    ...(authority.lastObstruction == null ? {} : { obstructionMessage: authority.lastObstruction.message }),
+  };
+}
+
+function transientMarkerKind(
+  status: WorkspaceTextIntentStatus | undefined,
+): 'pending' | 'obstructed' | undefined {
+  if (status != null && PENDING_INTENT_STATUSES.has(status)) {
+    return SOURCE_GUTTER_EXECUTION_POSTURE.Pending;
+  }
+  return status != null && OBSTRUCTED_INTENT_STATUSES.has(status)
+    ? SOURCE_GUTTER_EXECUTION_POSTURE.Obstructed
+    : undefined;
+}
+
+function hasRetainedTickReceiptSupport(
+  markerTickReceiptIds: readonly string[],
+  retainedTickReceiptIds: ReadonlySet<string>,
+): boolean {
+  return markerTickReceiptIds.length > 0
+    && markerTickReceiptIds.every(tickReceiptId => retainedTickReceiptIds.has(tickReceiptId));
 }
 
 function sameProjectionBasis(

@@ -5,6 +5,7 @@ import {
   type RopeEqualDiffSpan,
   type RopeInsertDiffSpan,
   type RopeRewriteFact,
+  type TickReceiptFact,
 } from './graph-rope-contract.js';
 
 const ZERO_VALUE = 0;
@@ -24,11 +25,13 @@ export type CausalLineMarkerKind =
 export interface CausalLineMarker {
   readonly lineNumber: number;
   readonly kind: CausalLineMarkerKind;
+  readonly tickReceiptIds: readonly string[];
   readonly rewriteIds: readonly string[];
   readonly diffIds: readonly string[];
 }
 
 export interface CausalLineMarkerTransition {
+  readonly receipt: TickReceiptFact;
   readonly rewrite: RopeRewriteFact;
   readonly diff: RopeDiffFact;
 }
@@ -151,6 +154,9 @@ function causalLineMarker(
   return {
     lineNumber: line.lineNumber,
     kind,
+    tickReceiptIds: transitions
+      .filter(({ rewrite }) => rewriteIds.has(rewrite.rewriteId))
+      .map(({ receipt }) => receipt.tickId),
     rewriteIds: transitions.map(({ rewrite }) => rewrite.rewriteId).filter(id => rewriteIds.has(id)),
     diffIds: transitions.map(({ diff }) => diff.diffId).filter(id => diffIds.has(id)),
   };

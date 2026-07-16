@@ -193,6 +193,8 @@ export interface JeditGutterStyleDrafts {
   readonly inserted: JeditStyleDraft;
   readonly modified: JeditStyleDraft;
   readonly deleted: JeditStyleDraft;
+  readonly pending: JeditStyleDraft;
+  readonly obstructed: JeditStyleDraft;
 }
 
 export interface JeditGutterVariantDrafts {
@@ -334,10 +336,7 @@ function createChromeDrafts(): JeditChromeStyleDrafts {
 }
 
 function createGutterVariantDrafts(): JeditGutterVariantDrafts {
-  return {
-    normal: createGutterDrafts(),
-    dimmed: createGutterDrafts(),
-  };
+  return { normal: createGutterDrafts(), dimmed: createGutterDrafts() };
 }
 
 function createGutterDrafts(): JeditGutterStyleDrafts {
@@ -349,6 +348,8 @@ function createGutterDrafts(): JeditGutterStyleDrafts {
     inserted: {},
     modified: {},
     deleted: {},
+    pending: {},
+    obstructed: {},
   };
 }
 
@@ -361,6 +362,8 @@ function buildGutterTokens(draft: JeditGutterStyleDrafts): JeditTheme['gutter'][
     inserted: styleTokenFromDraft(draft.inserted),
     modified: styleTokenFromDraft(draft.modified),
     deleted: styleTokenFromDraft(draft.deleted),
+    pending: styleTokenFromDraft(draft.pending),
+    obstructed: styleTokenFromDraft(draft.obstructed),
   };
 }
 

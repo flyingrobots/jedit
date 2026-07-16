@@ -116,12 +116,14 @@ export interface TextWindowReading {
 export interface CausalLineMarker {
   lineNumber: number;
   kind: CausalLineMarkerKind;
+  tickReceiptIds: Array<string>;
   rewriteIds: Array<string>;
   diffIds: Array<string>;
 }
 export interface CausalLineDeletionMarker {
   boundaryLineNumber: number;
   deletedLineCount: number;
+  tickReceiptIds: Array<string>;
   rewriteIds: Array<string>;
   diffIds: Array<string>;
 }
@@ -131,6 +133,7 @@ export interface CausalLineDiffReading {
   nextHeadId: string;
   insertedLineCount: number;
   deletedLineCount: number;
+  tickReceiptIds: Array<string>;
   rewriteIds: Array<string>;
   diffIds: Array<string>;
   markers: Array<CausalLineMarker>;

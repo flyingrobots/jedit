@@ -24,6 +24,7 @@ const UTF8_ENCODER = new TextEncoder();
 export interface CausalLineDeletionMarker {
   readonly boundaryLineNumber: number;
   readonly deletedLineCount: number;
+  readonly tickReceiptIds: readonly string[];
   readonly rewriteIds: readonly string[];
   readonly diffIds: readonly string[];
 }
@@ -285,6 +286,7 @@ function groupDeletionMarkers(
     deletions: markers.map(([boundaryLineNumber, marker]) => ({
       boundaryLineNumber,
       deletedLineCount: marker.deletedLineCount,
+      tickReceiptIds: orderedTickReceiptIds(transitions, marker.rewriteIds),
       rewriteIds: orderedRewriteIds(transitions, marker.rewriteIds),
       diffIds: orderedDiffIds(transitions, marker.diffIds),
     })),
@@ -293,6 +295,15 @@ function groupDeletionMarkers(
 
 function newMutableDeletionMarker(): MutableDeletionMarker {
   return { deletedLineCount: ZERO_VALUE, rewriteIds: new Set(), diffIds: new Set() };
+}
+
+function orderedTickReceiptIds(
+  transitions: readonly CausalLineMarkerTransition[],
+  retainedRewriteIds: ReadonlySet<string>,
+): readonly string[] {
+  return transitions
+    .filter(({ rewrite }) => retainedRewriteIds.has(rewrite.rewriteId))
+    .map(({ receipt }) => receipt.tickId);
 }
 
 function orderedRewriteIds(

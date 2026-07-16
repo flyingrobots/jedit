@@ -158,6 +158,7 @@ export type TextWindowReading = z.infer<typeof TextWindowReadingSchema>;
 export const CausalLineMarkerSchema = z.object({
   lineNumber: z.number().int(),
   kind: CausalLineMarkerKindSchema,
+  tickReceiptIds: z.array(z.string()),
   rewriteIds: z.array(z.string()),
   diffIds: z.array(z.string())
 });
@@ -166,6 +167,7 @@ export type CausalLineMarker = z.infer<typeof CausalLineMarkerSchema>;
 export const CausalLineDeletionMarkerSchema = z.object({
   boundaryLineNumber: z.number().int(),
   deletedLineCount: z.number().int(),
+  tickReceiptIds: z.array(z.string()),
   rewriteIds: z.array(z.string()),
   diffIds: z.array(z.string())
 });
@@ -177,6 +179,7 @@ export const CausalLineDiffReadingSchema = z.object({
   nextHeadId: z.string(),
   insertedLineCount: z.number().int(),
   deletedLineCount: z.number().int(),
+  tickReceiptIds: z.array(z.string()),
   rewriteIds: z.array(z.string()),
   diffIds: z.array(z.string()),
   markers: z.array(z.lazy(() => CausalLineMarkerSchema)),

@@ -7,7 +7,7 @@ import {
   loadModules,
 } from './support/graph-rope-runtime-test-kit.mjs';
 
-const OBSERVER_VERSION = 'jedit-causal-line-diff-v3';
+const OBSERVER_VERSION = 'jedit-causal-line-diff-v4';
 const OBSTRUCTION_BASIS_NOT_ANCESTOR = 'basis-not-ancestor';
 const OBSTRUCTION_LINE_DIFF_LIMIT_EXCEEDED = 'line-diff-limit-exceeded';
 
@@ -35,6 +35,7 @@ test('causal line diff reports zero changes for the same named head', async () =
     nextHeadId: created.head.headId,
     insertedLineCount: 0,
     deletedLineCount: 0,
+    tickReceiptIds: [],
     rewriteIds: [],
     diffIds: [],
     markers: [],
@@ -75,6 +76,7 @@ test('causal line diff computes net changes and cites every supporting rewrite',
   assert.equal(reading.deletedLineCount, 1);
   assert.deepEqual(reading.rewriteIds, [first.rewrite.rewriteId, second.rewrite.rewriteId]);
   assert.deepEqual(reading.diffIds, [first.diff.diffId, second.diff.diffId]);
+  assert.deepEqual(reading.tickReceiptIds, [first.receipt.tickId, second.receipt.tickId]);
 });
 
 test('causal line diff reports inserted and deleted lines without consulting Git', async () => {
@@ -159,11 +161,13 @@ test('causal line diff derives current line markers from retained diff spans', a
   assert.deepEqual(reading.markers, [{
     lineNumber: 0,
     kind: 'MODIFIED',
+    tickReceiptIds: [modified.receipt.tickId],
     rewriteIds: [modified.rewrite.rewriteId],
     diffIds: [modified.diff.diffId],
   }, {
     lineNumber: 1,
     kind: 'INSERTED',
+    tickReceiptIds: [inserted.receipt.tickId],
     rewriteIds: [inserted.rewrite.rewriteId],
     diffIds: [inserted.diff.diffId],
   }]);
@@ -195,6 +199,7 @@ test('causal line diff retains pure-deletion support on the surviving modified l
   assert.deepEqual(reading.markers, [{
     lineNumber: 0,
     kind: 'MODIFIED',
+    tickReceiptIds: [deleted.receipt.tickId],
     rewriteIds: [deleted.rewrite.rewriteId],
     diffIds: [deleted.diff.diffId],
   }]);
@@ -226,6 +231,7 @@ test('causal line diff cites both lines produced by splitting a basis line', asy
   assert.deepEqual(reading.markers, [0, 1].map(lineNumber => ({
     lineNumber,
     kind: 'MODIFIED',
+    tickReceiptIds: [split.receipt.tickId],
     rewriteIds: [split.rewrite.rewriteId],
     diffIds: [split.diff.diffId],
   })));
@@ -264,6 +270,7 @@ test('causal line markers retain touch history when current text equals the basi
   assert.deepEqual(reading.markers, [{
     lineNumber: 0,
     kind: 'MODIFIED',
+    tickReceiptIds: [changed.receipt.tickId, reverted.receipt.tickId],
     rewriteIds: [changed.rewrite.rewriteId, reverted.rewrite.rewriteId],
     diffIds: [changed.diff.diffId, reverted.diff.diffId],
   }]);
@@ -375,6 +382,7 @@ for (const scenario of [{
     assert.deepEqual(reading.deletions, [{
       boundaryLineNumber: scenario.boundaryLineNumber,
       deletedLineCount: 2,
+      tickReceiptIds: [deleted.receipt.tickId],
       rewriteIds: [deleted.rewrite.rewriteId],
       diffIds: [deleted.diff.diffId],
     }]);
@@ -407,6 +415,7 @@ test('causal line diff reports deletion of an unterminated final line', async ()
   assert.deepEqual(reading.deletions, [{
     boundaryLineNumber: 1,
     deletedLineCount: 1,
+    tickReceiptIds: [deleted.receipt.tickId],
     rewriteIds: [deleted.rewrite.rewriteId],
     diffIds: [deleted.diff.diffId],
   }]);
@@ -506,6 +515,7 @@ test('causal line diff projects and coalesces deletion boundaries through later 
   assert.deepEqual(reading.deletions, [{
     boundaryLineNumber: 2,
     deletedLineCount: 2,
+    tickReceiptIds: [firstDeletion.receipt.tickId, secondDeletion.receipt.tickId],
     rewriteIds: [firstDeletion.rewrite.rewriteId, secondDeletion.rewrite.rewriteId],
     diffIds: [firstDeletion.diff.diffId, secondDeletion.diff.diffId],
   }]);

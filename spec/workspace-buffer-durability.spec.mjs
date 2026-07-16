@@ -43,6 +43,7 @@ test('buffer durability keeps intent, causal, file, and Git evidence independent
     nextHeadId: HEAD_OPENED,
     insertedLineCount: 0,
     deletedLineCount: 0,
+    tickReceiptIds: [],
     rewriteIds: [],
     diffIds: [],
     markers: [],
@@ -72,11 +73,12 @@ test('buffer durability keeps intent, causal, file, and Git evidence independent
       nextHeadId: HEAD_EDITED,
       insertedLineCount: 3,
       deletedLineCount: 2,
+      tickReceiptIds: ['tick:edit'],
       rewriteIds: ['rewrite:edit'],
       diffIds: ['diff:edit'],
       markers: [],
       deletions: [],
-      observerVersion: 'jedit-causal-line-diff-v3',
+      observerVersion: 'jedit-causal-line-diff-v4',
     }),
   });
   assert.equal(admitted.durability.intent.kind, durability.WorkspaceBufferIntentDurabilityKinds.Idle);
@@ -134,6 +136,7 @@ test('buffer durability keeps intent, causal, file, and Git evidence independent
     nextHeadId: HEAD_EDITED,
     insertedLineCount: 0,
     deletedLineCount: 0,
+    tickReceiptIds: [],
     rewriteIds: [],
     diffIds: [],
     markers: [],
@@ -186,11 +189,12 @@ test('buffer durability refuses causal line evidence for the wrong basis', async
       nextHeadId: HEAD_EDITED,
       insertedLineCount: 1,
       deletedLineCount: 0,
+      tickReceiptIds: ['tick:wrong'],
       rewriteIds: ['rewrite:wrong'],
       diffIds: ['diff:wrong'],
       markers: [],
       deletions: [],
-      observerVersion: 'jedit-causal-line-diff-v3',
+      observerVersion: 'jedit-causal-line-diff-v4',
     }),
   );
 

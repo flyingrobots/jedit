@@ -65,6 +65,7 @@ export interface HotTextCausalLineDiffRequest {
 export interface HotTextCausalLineMarker {
   readonly lineNumber: number;
   readonly kind: 'INSERTED' | 'MODIFIED';
+  readonly tickReceiptIds: readonly string[];
   readonly rewriteIds: readonly string[];
   readonly diffIds: readonly string[];
 }
@@ -72,6 +73,7 @@ export interface HotTextCausalLineMarker {
 export interface HotTextCausalLineDeletionMarker {
   readonly boundaryLineNumber: number;
   readonly deletedLineCount: number;
+  readonly tickReceiptIds: readonly string[];
   readonly rewriteIds: readonly string[];
   readonly diffIds: readonly string[];
 }
@@ -82,6 +84,7 @@ export interface HotTextCausalLineDiffReading {
   readonly nextHeadId: string;
   readonly insertedLineCount: number;
   readonly deletedLineCount: number;
+  readonly tickReceiptIds: readonly string[];
   readonly rewriteIds: readonly string[];
   readonly diffIds: readonly string[];
   readonly markers: readonly HotTextCausalLineMarker[];

@@ -101,6 +101,7 @@ export interface CausalLineDiffRequest {
 export interface CausalLineMarkerReading {
   readonly lineNumber: number;
   readonly kind: 'INSERTED' | 'MODIFIED';
+  readonly tickReceiptIds: readonly string[];
   readonly rewriteIds: readonly string[];
   readonly diffIds: readonly string[];
 }
@@ -108,6 +109,7 @@ export interface CausalLineMarkerReading {
 export interface CausalLineDeletionMarkerReading {
   readonly boundaryLineNumber: number;
   readonly deletedLineCount: number;
+  readonly tickReceiptIds: readonly string[];
   readonly rewriteIds: readonly string[];
   readonly diffIds: readonly string[];
 }
@@ -118,6 +120,7 @@ export interface CausalLineDiffReading {
   readonly nextHeadId: string;
   readonly insertedLineCount: number;
   readonly deletedLineCount: number;
+  readonly tickReceiptIds: readonly string[];
   readonly rewriteIds: readonly string[];
   readonly diffIds: readonly string[];
   readonly markers: readonly CausalLineMarkerReading[];

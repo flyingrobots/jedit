@@ -2,8 +2,16 @@
 
 ## Unreleased
 
+- Added receipt-backed gutter execution posture. Applied `+`, `~`, and `-`
+  markers now require retained graph-rope tick-receipt support; `?` identifies
+  an app proposal that has not become causal history, and `!` identifies an
+  obstructed proposal without fabricating Echo identity. The bounded causal
+  line-diff reading is now version 4 and exposes opaque tick-receipt fact IDs at
+  reading, line-marker, and deletion-marker scope. Optimistic projections hide
+  stale admitted line coordinates until a basis-matched reading is available.
 - Added dedicated normal and dimmed causal-gutter theme tokens for background,
-  ordinary/current line numbers, rule, inserted, modified, and deleted roles.
+  ordinary/current line numbers, rule, inserted, modified, deleted, pending,
+  and obstructed roles.
   Every token now carries the named `surface` background, built-in light and
   dark themes witness at least 3:1 contrast with a named `ink` fallback, and
   source rendering no longer borrows syntax tokens or exposes terminal-default

@@ -28,6 +28,7 @@ export interface BufferWorldline {
 export interface CausalLineDeletionMarker {
   boundaryLineNumber: number;
   deletedLineCount: number;
+  tickReceiptIds: string[];
   rewriteIds: string[];
   diffIds: string[];
 }
@@ -48,6 +49,7 @@ export interface CausalLineDiffReading {
   nextHeadId: string;
   insertedLineCount: number;
   deletedLineCount: number;
+  tickReceiptIds: string[];
   rewriteIds: string[];
   diffIds: string[];
   markers: CausalLineMarker[];
@@ -58,6 +60,7 @@ export interface CausalLineDiffReading {
 export interface CausalLineMarker {
   lineNumber: number;
   kind: CausalLineMarkerKind;
+  tickReceiptIds: string[];
   rewriteIds: string[];
   diffIds: string[];
 }

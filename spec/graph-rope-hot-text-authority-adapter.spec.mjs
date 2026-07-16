@@ -133,13 +133,16 @@ test('installed Echo transport reports net causal line changes with retained sup
   assert.equal(reading.nextHeadId, finalEdit.textBasis.basisHeadId);
   assert.equal(reading.insertedLineCount, 1);
   assert.equal(reading.deletedLineCount, 1);
+  assert.equal(reading.tickReceiptIds.length, 2);
   assert.equal(reading.rewriteIds.length, 2);
   assert.equal(reading.diffIds.length, 2);
+  assert.equal(new Set(reading.tickReceiptIds).size, 2);
   assert.equal(new Set(reading.rewriteIds).size, 2);
   assert.equal(new Set(reading.diffIds).size, 2);
   assert.deepEqual(reading.markers, [{
     lineNumber: 1,
     kind: 'MODIFIED',
+    tickReceiptIds: reading.tickReceiptIds,
     rewriteIds: reading.rewriteIds,
     diffIds: reading.diffIds,
   }]);

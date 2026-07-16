@@ -156,6 +156,8 @@ export interface JeditThemeGutterTokenSet {
   readonly inserted: JeditStyleToken;
   readonly modified: JeditStyleToken;
   readonly deleted: JeditStyleToken;
+  readonly pending: JeditStyleToken;
+  readonly obstructed: JeditStyleToken;
 }
 
 export interface JeditThemeGutterTokens {

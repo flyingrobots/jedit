@@ -230,6 +230,7 @@ export function basisPinnedTestTextSession(delegate) {
           nextHeadId: request.nextHeadId,
           insertedLineCount: 0,
           deletedLineCount: 0,
+          tickReceiptIds: [],
           rewriteIds: [],
           diffIds: [],
           markers: [],
@@ -631,6 +632,8 @@ export function mockGutterTokens(background, accent) {
     inserted: accent,
     modified: accent,
     deleted: accent,
+    pending: accent,
+    obstructed: accent,
   };
 }
 

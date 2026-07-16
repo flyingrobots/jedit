@@ -26,6 +26,7 @@ test('causal gutter basis cycles through durable and selected Echo evidence', as
       nextHeadId: 'head:saved',
       insertedLineCount: 1,
       deletedLineCount: 0,
+      tickReceiptIds: ['tick:edit'],
       rewriteIds: ['rewrite:edit'],
       diffIds: ['diff:edit'],
       markers: [],

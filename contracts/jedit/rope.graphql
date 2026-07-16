@@ -194,6 +194,7 @@ enum CausalLineMarkerKind {
 type CausalLineMarker {
     lineNumber: Int!
     kind: CausalLineMarkerKind!
+    tickReceiptIds: [ID!]!
     rewriteIds: [ID!]!
     diffIds: [ID!]!
 }
@@ -204,6 +205,7 @@ type CausalLineDeletionMarker {
     boundaryLineNumber: Int!
     """Removed logical boundaries plus a complete unterminated final line when applicable."""
     deletedLineCount: Int!
+    tickReceiptIds: [ID!]!
     rewriteIds: [ID!]!
     diffIds: [ID!]!
 }
@@ -215,6 +217,7 @@ type CausalLineDiffReading {
     nextHeadId: ID!
     insertedLineCount: Int!
     deletedLineCount: Int!
+    tickReceiptIds: [ID!]!
     rewriteIds: [ID!]!
     diffIds: [ID!]!
     markers: [CausalLineMarker!]!

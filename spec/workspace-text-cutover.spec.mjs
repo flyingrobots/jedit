@@ -102,6 +102,7 @@ test("file open routes through production text session and applies initial bound
         nextHeadId: request.nextHeadId,
         insertedLineCount: 0,
         deletedLineCount: 0,
+        tickReceiptIds: [],
         rewriteIds: [],
         diffIds: [],
         markers: [],
@@ -441,21 +442,24 @@ function causalLineChanges(nextHeadId) {
     nextHeadId,
     insertedLineCount: 1,
     deletedLineCount: 0,
+    tickReceiptIds: ["tick:insert", "tick:delete"],
     rewriteIds: ["rewrite:insert"],
     diffIds: ["diff:insert"],
     markers: [{
       lineNumber: 1,
       kind: "INSERTED",
+      tickReceiptIds: ["tick:insert"],
       rewriteIds: ["rewrite:insert"],
       diffIds: ["diff:insert"],
     }],
     deletions: [{
       boundaryLineNumber: 1,
       deletedLineCount: 2,
+      tickReceiptIds: ["tick:delete"],
       rewriteIds: ["rewrite:delete"],
       diffIds: ["diff:delete"],
     }],
-    observerVersion: "jedit-causal-line-diff-v3",
+    observerVersion: "jedit-causal-line-diff-v4",
   };
 }
 
@@ -503,6 +507,7 @@ test("insert and delete keys submit production text edits with optimistic local 
           nextHeadId: request.nextHeadId,
           insertedLineCount: 0,
           deletedLineCount: 0,
+          tickReceiptIds: [],
           rewriteIds: [],
           diffIds: [],
           markers: [],

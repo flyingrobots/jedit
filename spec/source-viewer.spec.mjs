@@ -189,6 +189,41 @@ test("source viewer selects dedicated normal and dimmed gutter tokens", async ()
   assert.equal(dimmed.get(1, 0).bg, theme.gutter.dimmed.background.bg);
 });
 
+test("source viewer paints pending and obstructed execution posture in the marker lane", async () => {
+  const { createSurface } = await import("@flyingrobots/bijou");
+  const sourceViewer = await loadSourceViewerModule();
+  const theme = sourceViewerTheme();
+  const surface = createSurface(20, 2, { char: ".", empty: false });
+
+  sourceViewer.renderSourceViewer(
+    surface,
+    {
+      lines: ["pending", "obstructed"],
+      cursorRow: 0,
+      cursorCol: 0,
+      scrollRow: 0,
+      scrollCol: 0,
+      mode: "normal",
+    },
+    undefined,
+    {
+      viewport: { width: 20, height: 2 },
+      leftPad: 0,
+      topPad: 0,
+      theme,
+      lineMarkers: [
+        { lineNumber: 0, kind: "pending" },
+        { lineNumber: 1, kind: "obstructed" },
+      ],
+    },
+  );
+
+  assert.equal(rowText(surface, 0).startsWith("1 ?│ pending"), true);
+  assert.equal(rowText(surface, 1).startsWith("2 !│ obstructed"), true);
+  assert.equal(surface.get(2, 0).fg, theme.gutter.normal.pending.fg);
+  assert.equal(surface.get(2, 1).fg, theme.gutter.normal.obstructed.fg);
+});
+
 function sourceViewerTheme() {
   const workspace = token("#f0f6fc", "#0d1117");
   const gutter = token("#8b949e", "#0d1117");
@@ -223,6 +258,8 @@ function gutterTokenSet(prefix, background) {
     inserted: token(`#${prefix}00004`, background),
     modified: token(`#${prefix}00005`, background),
     deleted: token(`#${prefix}00006`, background),
+    pending: token(`#${prefix}00007`, background),
+    obstructed: token(`#${prefix}00008`, background),
   };
 }
 

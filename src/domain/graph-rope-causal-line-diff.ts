@@ -29,7 +29,7 @@ import {
 } from './graph-rope-runtime-issues.js';
 import { readTreeWindow, type GraphRopeRuntimeFactReader } from './graph-rope-runtime-tree.js';
 
-export const GRAPH_ROPE_CAUSAL_LINE_DIFF_OBSERVER_VERSION = 'jedit-causal-line-diff-v3';
+export const GRAPH_ROPE_CAUSAL_LINE_DIFF_OBSERVER_VERSION = 'jedit-causal-line-diff-v4';
 
 export interface GraphRopeCausalLineDiffInput {
   readonly worldlineId: string;
@@ -47,6 +47,7 @@ export interface GraphRopeCausalLineDiffReading {
   readonly nextHeadId: string;
   readonly insertedLineCount: number;
   readonly deletedLineCount: number;
+  readonly tickReceiptIds: readonly string[];
   readonly rewriteIds: readonly string[];
   readonly diffIds: readonly string[];
   readonly markers: readonly CausalLineMarker[];
@@ -59,6 +60,7 @@ export type GraphRopeCausalLineDiffResult =
   | { readonly ok: false; readonly code: GraphRopeRuntimeObstructionCode };
 
 interface CausalLineDiffSupport {
+  readonly tickReceiptIds: readonly string[];
   readonly rewriteIds: readonly string[];
   readonly diffIds: readonly string[];
   readonly transitions: readonly CausalLineMarkerTransition[];
@@ -174,6 +176,7 @@ function causalLineDiffValue(
       nextHeadId: heads.nextHead.headId,
       insertedLineCount: counts.inserted,
       deletedLineCount: counts.deleted,
+      tickReceiptIds: support.tickReceiptIds,
       rewriteIds: support.rewriteIds,
       diffIds: support.diffIds,
       markers: evidence.markers,
@@ -249,6 +252,7 @@ function collectCausalSupport(
   return {
     ok: true,
     value: {
+      tickReceiptIds: transitions.map(({ receipt }) => receipt.tickId),
       rewriteIds: transitions.map(({ rewrite }) => rewrite.rewriteId),
       diffIds: transitions.map(({ diff }) => diff.diffId),
       transitions,
@@ -279,7 +283,7 @@ function causalSupportStep(
         ok: true,
         value: {
           parentHead,
-          transition: { rewrite: evidence.value.rewrite, diff: evidence.value.diff },
+          transition: evidence.value,
         },
       };
 }

@@ -32,6 +32,8 @@ test('theme builder supports GSAP-like color transitions, style modifiers, gradi
     draft.source.keyword.spring = draft.spring({ mass: 1, stiffness: 120, damping: 18 });
     draft.gutter.normal.inserted.foregroundColor = end;
     draft.gutter.normal.inserted.backgroundColor = start;
+    draft.gutter.normal.pending.foregroundColor = start;
+    draft.gutter.normal.pending.backgroundColor = end;
     draft.gutter.dimmed.lineNumber.foregroundColor = start;
     draft.gutter.dimmed.lineNumber.backgroundColor = end;
     draft.gutter.dimmed.lineNumber.modifiers = [style.JEDIT_TEXT_MODIFIER.Dim];
@@ -54,6 +56,8 @@ test('theme builder supports GSAP-like color transitions, style modifiers, gradi
   assert.deepEqual(keyword.spring, { mass: 1, stiffness: 120, damping: 18 });
   assert.equal(theme.gutter.normal.inserted.hex, end.hex);
   assert.equal(theme.gutter.normal.inserted.bgRGB.join(','), start.rgb.join(','));
+  assert.equal(theme.gutter.normal.pending.hex, start.hex);
+  assert.equal(theme.gutter.normal.pending.bgRGB.join(','), end.rgb.join(','));
   assert.equal(theme.gutter.dimmed.lineNumber.hex, start.hex);
   assert.deepEqual(theme.gutter.dimmed.lineNumber.modifiers, [style.JEDIT_TEXT_MODIFIER.Dim]);
 });

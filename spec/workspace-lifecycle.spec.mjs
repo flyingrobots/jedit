@@ -179,11 +179,13 @@ test('workspace causal marker basis refreshes a bounded projection without mutat
           nextHeadId: request.nextHeadId,
           insertedLineCount: 1,
           deletedLineCount: 0,
+          tickReceiptIds: ['tick:selected'],
           rewriteIds: ['rewrite:selected'],
           diffIds: ['diff:selected'],
           markers: [{
             lineNumber: 2,
             kind: 'INSERTED',
+            tickReceiptIds: ['tick:selected'],
             rewriteIds: ['rewrite:selected'],
             diffIds: ['diff:selected'],
           }],

@@ -313,6 +313,8 @@ function applyGutterVariant(
   tokens.inserted.foregroundColor = readableGutterColor(variables.success, variables);
   tokens.modified.foregroundColor = readableGutterColor(variables.info, variables);
   tokens.deleted.foregroundColor = readableGutterColor(variables.warning, variables);
+  tokens.pending.foregroundColor = readableGutterColor(variables.info, variables);
+  tokens.obstructed.foregroundColor = readableGutterColor(variables.warning, variables);
   for (const token of Object.values(tokens)) {
     token.backgroundColor = variables.surface;
     if (variant === GUTTER_VARIANT.Dimmed) {

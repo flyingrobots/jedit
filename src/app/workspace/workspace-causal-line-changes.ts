@@ -44,6 +44,7 @@ export interface WorkspaceBufferCausalLineChangesAvailable {
   readonly nextHeadId: string;
   readonly insertedLineCount: number;
   readonly deletedLineCount: number;
+  readonly tickReceiptIds: readonly string[];
   readonly rewriteIds: readonly string[];
   readonly diffIds: readonly string[];
   readonly markers: readonly CausalLineMarkerReading[];
@@ -79,15 +80,18 @@ export function workspaceBufferCausalLineChangesFromReading(
     nextHeadId: reading.nextHeadId,
     insertedLineCount: reading.insertedLineCount,
     deletedLineCount: reading.deletedLineCount,
+    tickReceiptIds: [...reading.tickReceiptIds],
     rewriteIds: [...reading.rewriteIds],
     diffIds: [...reading.diffIds],
     markers: reading.markers.map(marker => ({
       ...marker,
+      tickReceiptIds: [...marker.tickReceiptIds],
       rewriteIds: [...marker.rewriteIds],
       diffIds: [...marker.diffIds],
     })),
     deletions: reading.deletions.map(deletion => ({
       ...deletion,
+      tickReceiptIds: [...deletion.tickReceiptIds],
       rewriteIds: [...deletion.rewriteIds],
       diffIds: [...deletion.diffIds],
     })),
@@ -130,6 +134,7 @@ export function identityWorkspaceBufferCausalLineChanges(
     nextHeadId: headId,
     insertedLineCount: 0,
     deletedLineCount: 0,
+    tickReceiptIds: [],
     rewriteIds: [],
     diffIds: [],
     markers: [],
@@ -160,15 +165,18 @@ export function workspaceBufferCausalLineChangesForTransition(
   }
   return {
     ...lineChanges,
+    tickReceiptIds: [...lineChanges.tickReceiptIds],
     rewriteIds: [...lineChanges.rewriteIds],
     diffIds: [...lineChanges.diffIds],
     markers: lineChanges.markers.map(marker => ({
       ...marker,
+      tickReceiptIds: [...marker.tickReceiptIds],
       rewriteIds: [...marker.rewriteIds],
       diffIds: [...marker.diffIds],
     })),
     deletions: lineChanges.deletions.map(deletion => ({
       ...deletion,
+      tickReceiptIds: [...deletion.tickReceiptIds],
       rewriteIds: [...deletion.rewriteIds],
       diffIds: [...deletion.diffIds],
     })),
