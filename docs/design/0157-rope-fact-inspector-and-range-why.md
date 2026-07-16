@@ -700,6 +700,8 @@ What the tests proved:
   head, leaf, blob, rewrite, diff, and text-tick receipt identities.
 - Imported, rewritten, checkpointed, mixed-origin, and unsupported generated
   attribution outcomes remain semantically distinct.
+- Explicitly admitted Echo anchor associations preserve their opaque anchor,
+  fact, and receipt identities, while unanchored declarations omit the claim.
 - The persistent panel closes when its cursor, buffer, head, focus, or key
   basis becomes invalid and wraps exact opaque identities instead of truncating
   them.

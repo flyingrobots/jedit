@@ -6,6 +6,7 @@ import {
   createHashPort,
   loadModules,
 } from './support/graph-rope-runtime-test-kit.mjs';
+import { createTestEchoCausalAnchorAdmissionPort } from './support/test-echo-causal-anchor-admission.mjs';
 
 const MAX_FACTS = 64;
 const MAX_DEPTH = 16;
@@ -131,6 +132,39 @@ test('range why reports a checkpoint without inventing an Echo anchor', async ()
     headId: created.head.headId,
     reason: contract.ROPE_CHECKPOINT_REASON_MANUAL_SAVE,
   }]);
+});
+
+test('range why cites an explicitly admitted opaque Echo anchor association', async () => {
+  const { runtime, contract } = await loadModules();
+  const graph = runtime.createGraphRopeRuntime({
+    hash: createHashPort(),
+    causalAnchorAdmission: createTestEchoCausalAnchorAdmissionPort(),
+  });
+  const created = assertOk(graph.createBufferWorldline({
+    worldlineId: 'worldline:range-why-anchor',
+    initialText: 'anchored',
+  }));
+  const checkpointed = assertOk(graph.createCheckpoint({
+    worldlineId: created.worldline.worldlineId,
+    headId: created.head.headId,
+    reason: contract.ROPE_CHECKPOINT_REASON_MANUAL_SAVE,
+  }));
+  const anchored = assertOk(graph.anchorCheckpoint({
+    checkpointId: checkpointed.checkpoint.checkpointId,
+  }));
+
+  const reading = assertOk(graph.whyRange(whyRequest(
+    created.worldline.worldlineId,
+    created.head.headId,
+    byteRange(contract, 0, 8),
+  )));
+
+  assert.deepEqual(reading.relatedCheckpoints[0].anchorAssociation, {
+    associationId: anchored.association.associationId,
+    causalAnchorId: anchored.echoEvidence.anchorId,
+    causalAnchorFactId: anchored.echoEvidence.anchorFactId,
+    causalAnchorReceiptId: anchored.echoEvidence.receiptId,
+  });
 });
 
 test('range why fails closed when provenance depth exceeds the request bound', async () => {
