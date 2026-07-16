@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  fakeProductionTextSession,
   hasNotification,
   importDist,
   mockI18n,
@@ -113,6 +114,185 @@ test('workspace settings posts a toast when a setting changes', async () => {
     hasNotification(changed, 'Paramètres modifiés', 'Numéros de ligne: Absolus -> Relatifs'),
     true,
   );
+});
+
+test('workspace settings toggles dim gutter tokens and reports the change', async () => {
+  const [runtimeModule, settingsModule] = await Promise.all([
+    importDist('app', 'workspace', 'runtime.js'),
+    importDist('app', 'workspace', 'settings.js'),
+  ]);
+  const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime());
+  const [initialModel] = runtime.init();
+  const [settingsOpen] = runtime.update(
+    { type: 'key', key: 'f2' },
+    {
+      ...initialModel,
+      i18n: mockI18n({
+        translations: {
+          'settings.rows.gutter_dimmed.label': 'Dim gutter',
+          'settings.values.on': 'On',
+          'settings.values.off': 'Off',
+          'settings.toast.changed_title': 'Settings changed',
+        },
+      }),
+    },
+  );
+  const gutterIndex = settingsModule.settingsRows(settingsOpen)
+    .findIndex((row) => row.id === 'gutter-dimmed');
+
+  const [changed] = runtime.update(
+    { type: 'key', key: 'enter' },
+    { ...settingsOpen, settingsFocusIndex: gutterIndex },
+  );
+
+  assert.equal(changed.gutterDimmed, true);
+  assert.equal(
+    hasNotification(changed, 'Settings changed', 'Dim gutter: Off -> On'),
+    true,
+  );
+});
+
+test('workspace causal marker basis refreshes a bounded projection without mutating text authority', async () => {
+  const [runtimeModule, settingsModule, authority, durability, refresh, profile] = await Promise.all([
+    importDist('app', 'workspace', 'runtime.js'),
+    importDist('app', 'workspace', 'settings.js'),
+    importDist('app', 'workspace', 'workspace-text-authority.js'),
+    importDist('app', 'workspace', 'workspace-buffer-durability.js'),
+    importDist('app', 'workspace', 'workspace-causal-line-change-refresh.js'),
+    importDist('app', 'text-runtime-profile.js'),
+  ]);
+  const mutationCalls = [];
+  const lineDiffRequests = [];
+  const productionTextSession = fakeProductionTextSession({
+    insertText: async (request) => mutationCalls.push(['insert', request]),
+    replaceRange: async (request) => mutationCalls.push(['replace', request]),
+    deleteRange: async (request) => mutationCalls.push(['delete', request]),
+    checkpointBuffer: async (request) => mutationCalls.push(['checkpoint', request]),
+    exportSnapshot: async (request) => mutationCalls.push(['export', request]),
+    observeCausalLineDiff: async (request) => {
+      lineDiffRequests.push(request);
+      return {
+        kind: 'causal-line-diff-observed',
+        reading: {
+          worldlineId: 'worldline:notes',
+          basisHeadId: request.basisHeadId,
+          nextHeadId: request.nextHeadId,
+          insertedLineCount: 1,
+          deletedLineCount: 0,
+          tickReceiptIds: ['tick:selected'],
+          rewriteIds: ['rewrite:selected'],
+          diffIds: ['diff:selected'],
+          markers: [{
+            lineNumber: 2,
+            kind: 'INSERTED',
+            tickReceiptIds: ['tick:selected'],
+            rewriteIds: ['rewrite:selected'],
+            diffIds: ['diff:selected'],
+          }],
+          deletions: [],
+          observerVersion: 'test-selected-basis',
+        },
+      };
+    },
+  });
+  const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime({ productionTextSession }));
+  const [initialModel] = runtime.init();
+  const openedDurability = durability.openedWorkspaceBufferDurability({
+    basisHeadId: 'head:import',
+    hostBasis: 'file',
+    materialization: 'materialized',
+  });
+  const currentDurability = {
+    ...openedDurability,
+    causal: { kind: 'admitted', headId: 'head:current' },
+  };
+  const openedAuthority = authority.openedWorkspaceTextAuthority({
+    profile: profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+    filePath: '/repo/notes.md',
+    bufferId: 'buffer:notes',
+    readOnly: false,
+    dirty: true,
+    durability: currentDurability,
+  });
+  const model = {
+    ...initialModel,
+    i18n: mockI18n({
+      translations: {
+        'settings.rows.causal_gutter_basis.label': 'Causal markers',
+        'settings.values.causal_gutter_import': 'Import',
+        'settings.values.causal_gutter_selected_checkpoint': 'Selected checkpoint',
+        'settings.toast.changed_title': 'Settings changed',
+      },
+    }),
+    settingsOpen: true,
+    causalGutterBasis: { kind: 'import' },
+    textAuthority: openedAuthority,
+    echoHistory: [{
+      sequence: 1,
+      kind: 'checkpoint',
+      status: 'checkpointed',
+      evidenceId: 'checkpoint:selected',
+      causalHeadId: 'head:checkpoint',
+      summary: '/repo/notes.md',
+    }],
+    echoHistorySelectedIndex: 0,
+  };
+  const basisIndex = settingsModule.settingsRows(model)
+    .findIndex((row) => row.id === 'causal-gutter-basis');
+
+  const [changed, commands] = runtime.update(
+    { type: 'key', key: 'enter' },
+    { ...model, settingsFocusIndex: basisIndex },
+  );
+
+  assert.deepEqual(changed.causalGutterBasis, {
+    kind: 'selected-checkpoint',
+    availability: 'available',
+    evidenceId: 'checkpoint:selected',
+    headId: 'head:checkpoint',
+  });
+  assert.deepEqual(changed.textAuthority.durability.causal, currentDurability.causal);
+  assert.equal(changed.textAuthority.durability.lineChanges.reason, 'observation-pending');
+  assert.equal(
+    hasNotification(changed, 'Settings changed', 'Causal markers: Import -> Selected checkpoint'),
+    true,
+  );
+  assert.equal(commands.length, 2, 'basis refresh and toast expiry should be scheduled');
+
+  const refreshMessage = await commands[0]();
+  assert.equal(mutationCalls.length, 0);
+  assert.equal(lineDiffRequests.length, 1);
+  assert.equal(lineDiffRequests[0].basisHeadId, 'head:checkpoint');
+  assert.equal(lineDiffRequests[0].nextHeadId, 'head:current');
+
+  const staleSelection = { ...changed, causalGutterBasis: { kind: 'last-save' } };
+  const [ignored] = runtime.update(refreshMessage, staleSelection);
+  assert.equal(ignored.textAuthority.durability.lineChanges, staleSelection.textAuthority.durability.lineChanges);
+
+  const [refreshed] = runtime.update(refreshMessage, changed);
+  assert.equal(refreshed.textAuthority.durability.lineChanges.kind, 'available');
+  assert.equal(refreshed.textAuthority.durability.lineChanges.basisHeadId, 'head:checkpoint');
+  assert.equal(refreshed.textAuthority.durability.lineChanges.nextHeadId, 'head:current');
+  assert.deepEqual(refreshed.textAuthority.durability.causal, currentDurability.causal);
+
+  const advanced = {
+    ...refreshed,
+    textAuthority: {
+      ...refreshed.textAuthority,
+      durability: {
+        ...refreshed.textAuthority.durability,
+        causal: { kind: 'admitted', headId: 'head:next' },
+      },
+    },
+  };
+  const [pendingNext, nextCommands] = refresh.ensureWorkspaceCausalLineChangeRefresh(
+    advanced,
+    productionTextSession,
+  );
+  assert.equal(pendingNext.textAuthority.durability.lineChanges.reason, 'observation-pending');
+  assert.equal(pendingNext.textAuthority.durability.lineChanges.basisHeadId, 'head:checkpoint');
+  assert.equal(pendingNext.textAuthority.durability.lineChanges.nextHeadId, 'head:next');
+  assert.equal(nextCommands.length, 1);
 });
 
 test('workspace settings reclamps editor visibility when line-number width changes', async () => {

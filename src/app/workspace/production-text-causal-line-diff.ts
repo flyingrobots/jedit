@@ -13,6 +13,7 @@ export interface ProductionTextCausalLineDiffRequest {
   readonly maxByteCount: number;
   readonly maxLineCount: number;
   readonly maxRewriteCount: number;
+  readonly maxMarkerCount: number;
   readonly atMs: number;
 }
 
@@ -48,6 +49,7 @@ export async function observeProductionTextCausalLineDiff(
         maxByteCount: request.maxByteCount,
         maxLineCount: request.maxLineCount,
         maxRewriteCount: request.maxRewriteCount,
+        maxMarkerCount: request.maxMarkerCount,
       }),
     };
   } catch (cause) {

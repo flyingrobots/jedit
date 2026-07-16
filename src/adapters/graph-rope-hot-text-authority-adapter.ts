@@ -176,10 +176,7 @@ class GraphRopeHotTextAuthorityAdapter implements GraphRopeHotTextAuthority {
   }
 
   public includeTickInOpenGroup(state: HotTextBufferState, tickId: number): HotTextBufferState {
-    return withEditGroupState(
-      state,
-      includeDomainTickInOpenGroup(toEditGroupState(state), tickId),
-    );
+    return withEditGroupState(state, includeDomainTickInOpenGroup(toEditGroupState(state), tickId));
   }
 
   public closeEditGroup(state: HotTextBufferState): CloseEditGroupResult {
@@ -203,8 +200,21 @@ function graphCausalLineDiffReading(
 ): HotTextCausalLineDiffReading {
   return {
     ...reading,
+    tickReceiptIds: [...reading.tickReceiptIds],
     rewriteIds: [...reading.rewriteIds],
     diffIds: [...reading.diffIds],
+    markers: reading.markers.map(marker => ({
+      ...marker,
+      tickReceiptIds: [...marker.tickReceiptIds],
+      rewriteIds: [...marker.rewriteIds],
+      diffIds: [...marker.diffIds],
+    })),
+    deletions: reading.deletions.map(deletion => ({
+      ...deletion,
+      tickReceiptIds: [...deletion.tickReceiptIds],
+      rewriteIds: [...deletion.rewriteIds],
+      diffIds: [...deletion.diffIds],
+    })),
   };
 }
 

@@ -56,6 +56,21 @@ export function readTreeWindow(
   return materializeWindow(leaves.value, byteRange);
 }
 
+/** Reads an exact byte window without claiming that its boundaries form valid UTF-8 text. */
+export function readTreeByteWindow(
+  reader: GraphRopeRuntimeFactReader,
+  head: RopeHeadFact,
+  byteRange: TextByteRange,
+): TreeResult<WindowBytes> {
+  const leaves = orderedLeafSegments(reader, head);
+  if (!leaves.ok) {
+    return leaves;
+  }
+  return byteRangeFits(byteRange, head.byteLength)
+    ? { ok: true, value: windowBytesFromLeaves(leaves.value, byteRange) }
+    : { ok: false, code: GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_BYTE_RANGE };
+}
+
 export function debugTreeShape(reader: GraphRopeRuntimeFactReader, head: RopeHeadFact): TreeResult<GraphRopeTreeDebugShape> {
   const leaves = orderedLeafSegments(reader, head);
   if (!leaves.ok) {

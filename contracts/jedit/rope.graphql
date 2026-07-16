@@ -186,15 +186,42 @@ type TextWindowReading {
     lines: [TextLineReading!]!
 }
 
-"""Net line changes between two causally related retained rope heads."""
+enum CausalLineMarkerKind {
+    INSERTED
+    MODIFIED
+}
+
+type CausalLineMarker {
+    lineNumber: Int!
+    kind: CausalLineMarkerKind!
+    tickReceiptIds: [ID!]!
+    rewriteIds: [ID!]!
+    diffIds: [ID!]!
+}
+
+"""Retained logical-line deletions projected to a boundary in the next rope head."""
+type CausalLineDeletionMarker {
+    """Zero-based boundary before a next-head line, or its line count for end-of-file."""
+    boundaryLineNumber: Int!
+    """Removed logical boundaries plus a complete unterminated final line when applicable."""
+    deletedLineCount: Int!
+    tickReceiptIds: [ID!]!
+    rewriteIds: [ID!]!
+    diffIds: [ID!]!
+}
+
+"""Net line counts and retained causal marker evidence between two related rope heads."""
 type CausalLineDiffReading {
     worldlineId: ID!
     basisHeadId: ID!
     nextHeadId: ID!
     insertedLineCount: Int!
     deletedLineCount: Int!
+    tickReceiptIds: [ID!]!
     rewriteIds: [ID!]!
     diffIds: [ID!]!
+    markers: [CausalLineMarker!]!
+    deletions: [CausalLineDeletionMarker!]!
     observerVersion: String!
 }
 
@@ -262,6 +289,7 @@ input CausalLineDiffInput {
     maxByteCount: Int!
     maxLineCount: Int!
     maxRewriteCount: Int!
+    maxMarkerCount: Int!
 }
 
 type Mutation {

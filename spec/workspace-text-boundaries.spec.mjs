@@ -247,8 +247,11 @@ test('replace command submits through production text session and refreshes read
           nextHeadId: request.nextHeadId,
           insertedLineCount: 1,
           deletedLineCount: 1,
+          tickReceiptIds: ['tick:replace'],
           rewriteIds: ['rewrite:replace'],
           diffIds: ['diff:replace'],
+          markers: [],
+          deletions: [],
           observerVersion: 'test-fixture',
         },
       };
@@ -284,6 +287,7 @@ test('replace command submits through production text session and refreshes read
     maxByteCount: 67108864,
     maxLineCount: 5000000,
     maxRewriteCount: 10000,
+    maxMarkerCount: 100000,
     atMs: 42,
   }]);
   assert.equal(message.result.receiptId, 'receipt:replace');
@@ -295,8 +299,11 @@ test('replace command submits through production text session and refreshes read
     nextHeadId: 'head:replace',
     insertedLineCount: 1,
     deletedLineCount: 1,
+    tickReceiptIds: ['tick:replace'],
     rewriteIds: ['rewrite:replace'],
     diffIds: ['diff:replace'],
+    markers: [],
+    deletions: [],
     observerVersion: 'test-fixture',
   });
 });
@@ -387,6 +394,44 @@ test('causal line observation exceptions become unavailable evidence', async () 
     basisHeadId: 'head:saved',
     nextHeadId: 'head:committed',
     message: 'causal line observer crashed',
+  });
+});
+
+test('causal line observation refuses adapter evidence for a different basis', async () => {
+  const observation = await importDist(
+    'app',
+    'workspace',
+    'workspace-causal-line-change-observation.js',
+  );
+  const lineChanges = await observation.observeWorkspaceCausalLineChanges({
+    bufferId: 'buffer:notes',
+    changeBasisHeadId: 'head:requested',
+    atMs: 42,
+    productionTextSession: {
+      observeCausalLineDiff: async () => ({
+        kind: 'causal-line-diff-observed',
+        reading: {
+          worldlineId: 'worldline:notes',
+          basisHeadId: 'head:wrong',
+          nextHeadId: 'head:wrong-next',
+          insertedLineCount: 1,
+          deletedLineCount: 0,
+          tickReceiptIds: ['tick:wrong'],
+          rewriteIds: ['rewrite:wrong'],
+          diffIds: ['diff:wrong'],
+          markers: [],
+          deletions: [],
+          observerVersion: 'test-wrong-basis',
+        },
+      }),
+    },
+  }, 'head:requested-next');
+
+  assert.deepEqual(lineChanges, {
+    kind: 'unavailable',
+    reason: 'evidence-mismatch',
+    basisHeadId: 'head:requested',
+    nextHeadId: 'head:requested-next',
   });
 });
 

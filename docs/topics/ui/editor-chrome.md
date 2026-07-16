@@ -32,8 +32,8 @@ Expected behavior:
 
 ## Gutter
 
-The gutter is the left-side margin next to source text. It may show absolute
-line numbers, relative line numbers, or no line numbers depending on settings.
+The gutter is the left-side margin next to source text. It shows absolute or
+relative line numbers and basis-pinned causal change markers.
 
 Line number modes:
 
@@ -41,11 +41,39 @@ Line number modes:
 | --- | --- |
 | `Absolute` | Show the source line number from the top of the file. |
 | `Relative` | Show line distance from the current cursor line for Vim motions. |
-| `Off` | Hide line numbers. |
 
-Future gutter work should add theme-token-controlled dimming and modified-line
-markers. Modified-line markers need a real saved-buffer baseline; they should
-not be faked from the generic dirty flag.
+Marker lanes are separate so a deletion can compose with the status of the
+surviving line at the same boundary:
+
+| Glyph | Meaning |
+| --- | --- |
+| `+` | The current line was inserted after the selected comparison head, backed by retained tick-receipt evidence. |
+| `~` | The current line was touched by retained tick-receipt, rewrite, and diff evidence. |
+| `-` | One or more lines were deleted at this boundary, backed by retained tick-receipt evidence. |
+| `?` | Jim has a local app proposal for this line; it is not yet causal history. |
+| `!` | The proposal is blocked, obstructed, superseded, or abandoned; it carries no fabricated Echo identity. |
+
+Applied and deleted markers are derived from retained graph-rope tick-receipt,
+rewrite, and diff facts. They do not consult Git status, the generic dirty flag,
+or a process-local changed-line set. The comparison basis can be the last save,
+import head, selected checkpoint, or selected tick. A same-text causal
+reversion can therefore remain marked when the retained touch history says the
+line changed.
+
+`?` and `!` are app-owned execution posture, not Echo facts. While optimistic
+text is visible, Jim withholds admitted markers whose old line coordinates no
+longer match the rendered projection. After settlement and a basis-matched
+bounded reading, the transient marker disappears and receipt-backed markers
+become eligible. Jim also withholds transient posture when no planned command
+evidence identifies a line instead of guessing from the current cursor. Use
+`:why` or the Echo history drawer for detailed provenance; the gutter remains a
+compact signal rather than a receipt dump.
+
+Every gutter cell uses a dedicated semantic theme token with an explicit
+`surface` background. The normal and dimmed token sets both cover background,
+ordinary/current line numbers, rule, inserted, modified, deleted, pending, and
+obstructed roles. The `Dim gutter` setting selects a complete token set; source
+rendering does not hard-code colors or borrow syntax-highlighting tokens.
 
 ## Footer
 
@@ -81,6 +109,10 @@ it is backed by causal rewrite/diff evidence.
 | --- | --- |
 | [`src/ui/workspace-chrome.ts`](../../../src/ui/workspace-chrome.ts) | Header and footer rows. |
 | [`src/ui/source-viewer.ts`](../../../src/ui/source-viewer.ts) | Source viewport rendering. |
+| [`src/ui/jedit-theme.ts`](../../../src/ui/jedit-theme.ts) | Semantic gutter token contract. |
+| [`src/ui/jedit-themes.ts`](../../../src/ui/jedit-themes.ts) | Built-in gutter palettes and contrast policy. |
+| [`src/app/workspace/workspace-source-projection.ts`](../../../src/app/workspace/workspace-source-projection.ts) | Basis-matched applied and transient execution readings. |
+| [`src/domain/graph-rope-causal-line-diff.ts`](../../../src/domain/graph-rope-causal-line-diff.ts) | Bounded line-diff evidence and opaque tick-receipt support. |
 | [`src/ui/source-highlight.ts`](../../../src/ui/source-highlight.ts) | Highlight span painting. |
 | [`src/app/settings-session.ts`](../../../src/app/settings-session.ts) | Line-number setting rows and mode labels. |
 | [`src/app/workspace/editor-session.ts`](../../../src/app/workspace/editor-session.ts) | Editor projection and cursor session state. |

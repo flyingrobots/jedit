@@ -23,6 +23,7 @@ import type {
   WorkspaceTextOpenResult,
   WorkspaceTextReadCommandResult,
 } from "./workspace-text-results.js";
+import type { WorkspaceBufferCausalLineChanges } from "./workspace-causal-line-changes.js";
 
 const WORKSPACE_MESSAGE_DRAWER_PROGRESS = "drawer-progress";
 const WORKSPACE_MESSAGE_GRAFT_DIAGNOSTICS = "graft-diagnostics";
@@ -40,6 +41,8 @@ const WORKSPACE_MESSAGE_TEXT_EDIT_RESULT = "text-edit-result";
 const WORKSPACE_MESSAGE_TEXT_CHECKPOINT_RESULT = "text-checkpoint-result";
 const WORKSPACE_MESSAGE_TEXT_EXPORT_RESULT = "text-export-result";
 const WORKSPACE_MESSAGE_TEXT_READ_RESULT = "text-read-result";
+const WORKSPACE_MESSAGE_CAUSAL_LINE_CHANGES_RESULT =
+  "causal-line-changes-result";
 const WORKSPACE_MESSAGE_WHY_RANGE_RESULT = "why-range-result";
 const WORKSPACE_MESSAGE_COMMAND_LINE_FILE_PREVIEW_RESULT =
   "command-line-file-preview-result";
@@ -66,6 +69,7 @@ export const WorkspaceMessageTypes = Object.freeze({
   TextCheckpointResult: WORKSPACE_MESSAGE_TEXT_CHECKPOINT_RESULT,
   TextExportResult: WORKSPACE_MESSAGE_TEXT_EXPORT_RESULT,
   TextReadResult: WORKSPACE_MESSAGE_TEXT_READ_RESULT,
+  CausalLineChangesResult: WORKSPACE_MESSAGE_CAUSAL_LINE_CHANGES_RESULT,
   WhyRangeResult: WORKSPACE_MESSAGE_WHY_RANGE_RESULT,
   CommandLineFilePreviewResult:
     WORKSPACE_MESSAGE_COMMAND_LINE_FILE_PREVIEW_RESULT,
@@ -153,6 +157,13 @@ export type WorkspaceMsg =
       type: typeof WorkspaceMessageTypes.TextReadResult;
       requestId: number;
       result: WorkspaceTextReadCommandResult;
+    }
+  | {
+      type: typeof WorkspaceMessageTypes.CausalLineChangesResult;
+      bufferId: string;
+      basisHeadId?: string;
+      nextHeadId: string;
+      lineChanges: WorkspaceBufferCausalLineChanges;
     }
   | {
       type: typeof WorkspaceMessageTypes.WhyRangeResult;

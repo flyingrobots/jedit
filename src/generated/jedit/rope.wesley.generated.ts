@@ -25,6 +25,14 @@ export interface BufferWorldline {
   projectionPath: string | null;
 }
 
+export interface CausalLineDeletionMarker {
+  boundaryLineNumber: number;
+  deletedLineCount: number;
+  tickReceiptIds: string[];
+  rewriteIds: string[];
+  diffIds: string[];
+}
+
 export interface CausalLineDiffInput {
   worldlineId: string;
   basisHeadId: string;
@@ -32,6 +40,7 @@ export interface CausalLineDiffInput {
   maxByteCount: number;
   maxLineCount: number;
   maxRewriteCount: number;
+  maxMarkerCount: number;
 }
 
 export interface CausalLineDiffReading {
@@ -40,10 +49,23 @@ export interface CausalLineDiffReading {
   nextHeadId: string;
   insertedLineCount: number;
   deletedLineCount: number;
+  tickReceiptIds: string[];
   rewriteIds: string[];
   diffIds: string[];
+  markers: CausalLineMarker[];
+  deletions: CausalLineDeletionMarker[];
   observerVersion: string;
 }
+
+export interface CausalLineMarker {
+  lineNumber: number;
+  kind: CausalLineMarkerKind;
+  tickReceiptIds: string[];
+  rewriteIds: string[];
+  diffIds: string[];
+}
+
+export type CausalLineMarkerKind = "INSERTED" | "MODIFIED";
 
 export interface Checkpoint {
   checkpointId: string;

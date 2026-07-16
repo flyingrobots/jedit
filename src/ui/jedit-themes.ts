@@ -35,6 +35,21 @@ const ACTIVE_EDGE_CHAR = "░";
 const THEME_MODE_LABEL_DARK = "Dark";
 const THEME_MODE_LABEL_LIGHT = "Light";
 const COLOR_CHANNEL_MAX = 255;
+const MIN_GUTTER_CONTRAST_RATIO = 3;
+const CONTRAST_LUMINANCE_OFFSET = 0.05;
+const SRGB_LINEAR_THRESHOLD = 0.04045;
+const SRGB_LINEAR_DIVISOR = 12.92;
+const SRGB_OFFSET = 0.055;
+const SRGB_SCALE = 1.055;
+const SRGB_EXPONENT = 2.4;
+const LUMINANCE_RED_WEIGHT = 0.2126;
+const LUMINANCE_GREEN_WEIGHT = 0.7152;
+const LUMINANCE_BLUE_WEIGHT = 0.0722;
+const GUTTER_VARIANT = Object.freeze({
+  Normal: "normal",
+  Dimmed: "dimmed",
+} as const);
+type GutterVariant = typeof GUTTER_VARIANT[keyof typeof GUTTER_VARIANT];
 
 interface ThemeVariables {
   readonly ink: ThemeColorVariable;
@@ -273,8 +288,75 @@ function applyThemeTokens(
   applySurfaceThemeTokens(draft, variables);
   applyCursorThemeTokens(draft, variables);
   applyChromeThemeTokens(draft, variables);
+  applyGutterThemeTokens(draft, variables);
   applySourceThemeTokens(draft, variables);
   applyMarkdownThemeTokens(draft, variables);
+}
+
+function applyGutterThemeTokens(
+  draft: JeditThemeDraft,
+  variables: ThemeVariables,
+): void {
+  applyGutterVariant(draft.gutter.normal, variables, GUTTER_VARIANT.Normal);
+  applyGutterVariant(draft.gutter.dimmed, variables, GUTTER_VARIANT.Dimmed);
+}
+
+function applyGutterVariant(
+  tokens: JeditThemeDraft['gutter']['normal'],
+  variables: ThemeVariables,
+  variant: GutterVariant,
+): void {
+  tokens.background.foregroundColor = readableGutterColor(variables.muted, variables);
+  tokens.lineNumber.foregroundColor = readableGutterColor(variables.muted, variables);
+  tokens.currentLineNumber.foregroundColor = readableGutterColor(variables.accent, variables);
+  tokens.rule.foregroundColor = readableGutterColor(variables.muted, variables);
+  tokens.inserted.foregroundColor = readableGutterColor(variables.success, variables);
+  tokens.modified.foregroundColor = readableGutterColor(variables.info, variables);
+  tokens.deleted.foregroundColor = readableGutterColor(variables.warning, variables);
+  tokens.pending.foregroundColor = readableGutterColor(variables.info, variables);
+  tokens.obstructed.foregroundColor = readableGutterColor(variables.warning, variables);
+  for (const token of Object.values(tokens)) {
+    token.backgroundColor = variables.surface;
+    if (variant === GUTTER_VARIANT.Dimmed) {
+      token.modifiers = [JEDIT_TEXT_MODIFIER.Dim];
+    }
+  }
+  tokens.currentLineNumber.modifiers = variant === GUTTER_VARIANT.Dimmed
+    ? [JEDIT_TEXT_MODIFIER.Bold, JEDIT_TEXT_MODIFIER.Dim]
+    : [JEDIT_TEXT_MODIFIER.Bold];
+}
+
+function readableGutterColor(
+  preferred: ThemeColorVariable,
+  variables: ThemeVariables,
+): ThemeColorVariable {
+  return contrastRatio(preferred.rgb, variables.surface.rgb) >= MIN_GUTTER_CONTRAST_RATIO
+    ? preferred
+    : variables.ink;
+}
+
+function contrastRatio(foreground: RgbTuple, background: RgbTuple): number {
+  const foregroundLuminance = relativeLuminance(foreground);
+  const backgroundLuminance = relativeLuminance(background);
+  const lighter = Math.max(foregroundLuminance, backgroundLuminance);
+  const darker = Math.min(foregroundLuminance, backgroundLuminance);
+  return (lighter + CONTRAST_LUMINANCE_OFFSET) / (darker + CONTRAST_LUMINANCE_OFFSET);
+}
+
+function relativeLuminance(color: RgbTuple): number {
+  const red = linearizedColorChannel(color[0]);
+  const green = linearizedColorChannel(color[1]);
+  const blue = linearizedColorChannel(color[2]);
+  return red * LUMINANCE_RED_WEIGHT
+    + green * LUMINANCE_GREEN_WEIGHT
+    + blue * LUMINANCE_BLUE_WEIGHT;
+}
+
+function linearizedColorChannel(channel: number): number {
+  const normalized = channel / COLOR_CHANNEL_MAX;
+  return normalized <= SRGB_LINEAR_THRESHOLD
+    ? normalized / SRGB_LINEAR_DIVISOR
+    : ((normalized + SRGB_OFFSET) / SRGB_SCALE) ** SRGB_EXPONENT;
 }
 
 function applySurfaceThemeTokens(

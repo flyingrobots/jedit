@@ -102,8 +102,11 @@ test("file open routes through production text session and applies initial bound
         nextHeadId: request.nextHeadId,
         insertedLineCount: 0,
         deletedLineCount: 0,
+        tickReceiptIds: [],
         rewriteIds: [],
         diffIds: [],
+        markers: [],
+        deletions: [],
         observerVersion: "test-fixture",
       },
     }),
@@ -315,6 +318,78 @@ test("viewer renders a basis-tagged bounded projection instead of local editor t
   assert.doesNotMatch(text, /local 24/);
 });
 
+test("viewer paints causal gutter evidence only for the rendered admitted head", async () => {
+  const [viewerContent, modeModule, authority, profile] = await Promise.all([
+    importDist("app", "workspace", "viewer-content.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "workspace-text-authority.js"),
+    importDist("app", "text-runtime-profile.js"),
+  ]);
+  const cache = workspaceReadingCache({ lines: ["one", "two", "three"] });
+  const opened = authority.openedWorkspaceTextAuthority({
+    profile: profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+    filePath: "/repo/notes.txt",
+    bufferId: "buffer:notes",
+    readOnly: false,
+    dirty: true,
+    cache,
+  });
+  const model = {
+    ...textWorkspaceModel(modeModule, authority, profile, {
+      lines: ["one", "two", "three"],
+    }),
+    jeditTheme: mockJeditTheme(),
+    causalGutterBasis: {
+      kind: "selected-tick",
+      availability: "available",
+      evidenceId: "receipt:saved",
+      headId: "head:saved",
+      tickId: "tick:saved",
+    },
+    textAuthority: {
+      ...opened,
+      durability: {
+        ...opened.durability,
+        lineChanges: causalLineChanges("head:test"),
+      },
+    },
+  };
+
+  const matching = surfaceText(viewerContent.renderViewer(model, 80, 16));
+  const stale = surfaceText(viewerContent.renderViewer({
+    ...model,
+    textAuthority: {
+      ...model.textAuthority,
+      durability: {
+        ...model.textAuthority.durability,
+        lineChanges: causalLineChanges("head:stale"),
+      },
+    },
+  }, 80, 16));
+  const optimistic = surfaceText(viewerContent.renderViewer({
+    ...model,
+    textAuthority: { ...model.textAuthority, pendingIntentStatus: "predicted" },
+  }, 80, 16));
+  const wrongSelectedBasis = surfaceText(viewerContent.renderViewer({
+    ...model,
+    causalGutterBasis: {
+      kind: "selected-tick",
+      availability: "available",
+      evidenceId: "receipt:other",
+      headId: "head:other",
+      tickId: "tick:other",
+    },
+  }, 80, 16));
+
+  assert.match(matching, /2-\+│ two/);
+  assert.match(stale, /2  │ two/);
+  assert.doesNotMatch(stale, /2-\+│ two/);
+  assert.match(optimistic, /2  │ two/);
+  assert.doesNotMatch(optimistic, /2-\+│ two/);
+  assert.match(wrongSelectedBasis, /2  │ two/);
+  assert.doesNotMatch(wrongSelectedBasis, /2-\+│ two/);
+});
+
 test("viewer does not render local text when an opened authority has no projection", async () => {
   const [viewerContent, modeModule, authority, profile] = await Promise.all([
     importDist("app", "workspace", "viewer-content.js"),
@@ -361,6 +436,35 @@ function projectedViewerModel(modeModule, authority, profile, localLines) {
   };
 }
 
+function causalLineChanges(nextHeadId) {
+  return {
+    kind: "available",
+    source: "causal-observation",
+    basisHeadId: "head:saved",
+    nextHeadId,
+    insertedLineCount: 1,
+    deletedLineCount: 0,
+    tickReceiptIds: ["tick:insert", "tick:delete"],
+    rewriteIds: ["rewrite:insert"],
+    diffIds: ["diff:insert"],
+    markers: [{
+      lineNumber: 1,
+      kind: "INSERTED",
+      tickReceiptIds: ["tick:insert"],
+      rewriteIds: ["rewrite:insert"],
+      diffIds: ["diff:insert"],
+    }],
+    deletions: [{
+      boundaryLineNumber: 1,
+      deletedLineCount: 2,
+      tickReceiptIds: ["tick:delete"],
+      rewriteIds: ["rewrite:delete"],
+      diffIds: ["diff:delete"],
+    }],
+    observerVersion: "jedit-causal-line-diff-v4",
+  };
+}
+
 test("insert and delete keys submit production text edits with optimistic local projection", async () => {
   const [viewerKey, runtimeModule, modeModule, authority, profile] =
     await Promise.all([
@@ -372,6 +476,7 @@ test("insert and delete keys submit production text edits with optimistic local 
     ]);
   const edits = [];
   const observed = [];
+  const lineDiffRequests = [];
   const productionTextSession = {
     insertText: async (request) => {
       edits.push(["insert", request]);
@@ -394,25 +499,40 @@ test("insert and delete keys submit production text edits with optimistic local 
         },
       };
     },
-    observeCausalLineDiff: async (request) => ({
-      kind: "causal-line-diff-observed",
-      reading: {
-        worldlineId: "fixture:worldline",
-        basisHeadId: request.basisHeadId,
-        nextHeadId: request.nextHeadId,
-        insertedLineCount: 0,
-        deletedLineCount: 0,
-        rewriteIds: [],
-        diffIds: [],
-        observerVersion: "test-fixture",
-      },
-    }),
+    observeCausalLineDiff: async (request) => {
+      lineDiffRequests.push(request);
+      return {
+        kind: "causal-line-diff-observed",
+        reading: {
+          worldlineId: "fixture:worldline",
+          basisHeadId: request.basisHeadId,
+          nextHeadId: request.nextHeadId,
+          insertedLineCount: 0,
+          deletedLineCount: 0,
+          tickReceiptIds: [],
+          rewriteIds: [],
+          diffIds: [],
+          markers: [],
+          deletions: [],
+          observerVersion: "test-fixture",
+        },
+      };
+    },
   };
-  const baseModel = textWorkspaceModel(modeModule, authority, profile, {
-    mode: modeModule.EditorModes.Insert,
-    lines: ["abc"],
-    cursorCol: 1,
-  });
+  const baseModel = {
+    ...textWorkspaceModel(modeModule, authority, profile, {
+      mode: modeModule.EditorModes.Insert,
+      lines: ["abc"],
+      cursorCol: 1,
+    }),
+    causalGutterBasis: {
+      kind: "selected-tick",
+      availability: "available",
+      evidenceId: "receipt:selected",
+      headId: "head:selected",
+      tickId: "tick:selected",
+    },
+  };
 
   const [pendingInsert, insertCommands] = viewerKey.updateViewerFromKey(
     { key: "X", ctrl: false, alt: false, shift: true },
@@ -428,6 +548,7 @@ test("insert and delete keys submit production text edits with optimistic local 
   assert.equal(pendingInsert.textAuthority.durability.intent.kind, "pending");
 
   const insertMessage = await insertCommands[0]();
+  assert.equal(lineDiffRequests[0].basisHeadId, "head:selected");
   assert.equal(
     insertMessage.result.wscSettlementEnvelope.envelopeId.length,
     64,
@@ -483,6 +604,8 @@ test("insert and delete keys submit production text edits with optimistic local 
   assert.deepEqual(insertedModel.editor.lines, ["aXbc"]);
   assert.equal(insertedModel.textAuthority.lastReceiptId, "receipt:insert");
   assert.equal(insertedModel.textAuthority.dirty, true);
+  assert.equal(insertedModel.textAuthority.durability.lineChanges.kind, "available");
+  assert.equal(insertedModel.textAuthority.durability.lineChanges.basisHeadId, "head:selected");
 
   const normalModel = {
     ...insertedModel,

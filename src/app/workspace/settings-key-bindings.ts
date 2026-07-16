@@ -54,6 +54,7 @@ export function updateSettingsKey(
         rows,
         workspaceSettingsHandlers({
           graftDiagnostics: context.deps.graftDiagnostics,
+          productionTextSession: context.deps.productionTextSession,
         }),
       ),
       context,

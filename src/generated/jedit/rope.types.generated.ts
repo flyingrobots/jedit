@@ -5,6 +5,7 @@ export type AnchorBias = "LEFT" | "RIGHT";
 export type AnchorStickiness = "LEADING" | "TRAILING" | "EXPAND";
 export type RewriteKind = "CREATE_BUFFER_WORLDLINE" | "REPLACE_RANGE_AS_TICK" | "CREATE_CHECKPOINT" | "REGISTER_ANCHOR";
 export type CheckpointKind = "INITIAL" | "MANUAL_SAVE" | "AUTO_SAVE";
+export type CausalLineMarkerKind = "INSERTED" | "MODIFIED";
 // Object Types
 export interface BufferWorldline {
   worldlineId: string;
@@ -112,14 +113,31 @@ export interface TextWindowReading {
   hasMoreAfter: boolean;
   lines: Array<TextLineReading>;
 }
+export interface CausalLineMarker {
+  lineNumber: number;
+  kind: CausalLineMarkerKind;
+  tickReceiptIds: Array<string>;
+  rewriteIds: Array<string>;
+  diffIds: Array<string>;
+}
+export interface CausalLineDeletionMarker {
+  boundaryLineNumber: number;
+  deletedLineCount: number;
+  tickReceiptIds: Array<string>;
+  rewriteIds: Array<string>;
+  diffIds: Array<string>;
+}
 export interface CausalLineDiffReading {
   worldlineId: string;
   basisHeadId: string;
   nextHeadId: string;
   insertedLineCount: number;
   deletedLineCount: number;
+  tickReceiptIds: Array<string>;
   rewriteIds: Array<string>;
   diffIds: Array<string>;
+  markers: Array<CausalLineMarker>;
+  deletions: Array<CausalLineDeletionMarker>;
   observerVersion: string;
 }
 export interface CreateBufferWorldlineResult {
@@ -179,6 +197,7 @@ export interface CausalLineDiffInput {
   maxByteCount: number;
   maxLineCount: number;
   maxRewriteCount: number;
+  maxMarkerCount: number;
 }
 // Operations
 export interface WorldlineSnapshotQueryArgs {

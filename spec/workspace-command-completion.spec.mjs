@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   importDist,
   mockEditor,
+  mockGutterTokens,
   mockKeyBindingContext,
   mockTitleScreenModel,
   surfaceText,
@@ -910,6 +911,10 @@ function workspaceRenderTheme() {
       titleLogoShadow: workspace,
       titleSceneNear: workspace,
       titleSceneFar: workspace,
+    },
+    gutter: {
+      normal: mockGutterTokens(workspace, edge),
+      dimmed: mockGutterTokens(workspace, edge),
     },
   };
 }

@@ -126,17 +126,72 @@ test('installed Echo transport reports net causal line changes with retained sup
     maxByteCount: 1024,
     maxLineCount: 32,
     maxRewriteCount: 32,
+    maxMarkerCount: 32,
   });
 
   assert.equal(reading.basisHeadId, basisHeadId);
   assert.equal(reading.nextHeadId, finalEdit.textBasis.basisHeadId);
   assert.equal(reading.insertedLineCount, 1);
   assert.equal(reading.deletedLineCount, 1);
+  assert.equal(reading.tickReceiptIds.length, 2);
   assert.equal(reading.rewriteIds.length, 2);
   assert.equal(reading.diffIds.length, 2);
+  assert.equal(new Set(reading.tickReceiptIds).size, 2);
   assert.equal(new Set(reading.rewriteIds).size, 2);
   assert.equal(new Set(reading.diffIds).size, 2);
+  assert.deepEqual(reading.markers, [{
+    lineNumber: 1,
+    kind: 'MODIFIED',
+    tickReceiptIds: reading.tickReceiptIds,
+    rewriteIds: reading.rewriteIds,
+    diffIds: reading.diffIds,
+  }]);
   assert.match(reading.observerVersion, /^jedit-causal-line-diff-/);
+});
+
+test('text optic isolates causal receipt arrays returned by its client', async () => {
+  const modules = await loadModules();
+  const backingClient = modules.client.createEchoTransportJeditOpticClient(
+    modules.transport.createInstalledJeditContractEchoTransport(),
+  );
+  let retainedEnvelope;
+  const client = {
+    ...backingClient,
+    async causalLineDiff(...args) {
+      retainedEnvelope ??= await backingClient.causalLineDiff(...args);
+      return retainedEnvelope;
+    },
+  };
+  const textSession = modules.textSession.createTextBufferSession(client);
+  const optic = await textSession.createBuffer({
+    bufferKey: 'isolated-causal-lines.txt',
+    initialText: 'a\nb\nc',
+    projectionPath: '/tmp/isolated-causal-lines.txt',
+  });
+  const basisHeadId = optic.openedTextBasis.basisHeadId;
+  await optic.applyIntent({ kind: 'replaceRange', startByte: 0, endByte: 1, insertText: 'x' });
+  const deleted = await optic.applyIntent({ kind: 'replaceRange', startByte: 2, endByte: 4, insertText: '' });
+  const request = {
+    basisHeadId,
+    nextHeadId: deleted.textBasis.basisHeadId,
+    maxByteCount: 1024,
+    maxLineCount: 32,
+    maxRewriteCount: 32,
+    maxMarkerCount: 32,
+  };
+
+  const first = await optic.causalLineDiff(request);
+  const expectedRoot = [...first.tickReceiptIds];
+  const expectedMarker = [...first.markers[0].tickReceiptIds];
+  const expectedDeletion = [...first.deletions[0].tickReceiptIds];
+  first.tickReceiptIds.push('tick:forged');
+  first.markers[0].tickReceiptIds.push('tick:marker:forged');
+  first.deletions[0].tickReceiptIds.push('tick:deletion:forged');
+
+  const second = await optic.causalLineDiff(request);
+  assert.deepEqual(second.tickReceiptIds, expectedRoot);
+  assert.deepEqual(second.markers[0].tickReceiptIds, expectedMarker);
+  assert.deepEqual(second.deletions[0].tickReceiptIds, expectedDeletion);
 });
 
 test('text optic keeps an explicitly pinned historical head stable after later edits', async () => {

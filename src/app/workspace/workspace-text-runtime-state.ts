@@ -49,10 +49,8 @@ import {
   workspaceTextAuthorityWithAppliedJeditCommandReceipt,
   workspaceTextAuthorityWithCurrentJeditCommandObservation,
 } from './command-provenance.js';
-
 export type WorkspaceRuntimeResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 const FOCUS_PANE_EDITOR = 'editor';
-
 export function applyWorkspaceTextMessage(
   deps: WorkspaceRuntimeDependencies,
   msg: WorkspaceMsg,
@@ -96,7 +94,7 @@ function applyTextOpenResult(
   return refreshAfterOpen(deps, withEchoHistoryEntry(openedTextModel(model, msg.result), {
     kind: EchoHistoryEntryKinds.Open,
     status: EchoHistoryEntryStatuses.Opened,
-    evidenceId: msg.result.cache.readingId,
+    evidenceId: msg.result.cache.readingId, causalHeadId: msg.result.cache.textBasis.basisHeadId,
     summary: msg.result.filePath,
   }));
 }
@@ -200,6 +198,7 @@ function applyIntermediateTextEditResult(
     kind: EchoHistoryEntryKinds.Edit,
     status: EchoHistoryEntryStatuses.Applied,
     evidenceId: msg.result.receiptId,
+    causalHeadId: msg.result.causalTransition?.nextHeadId, causalTickId: msg.result.causalTransition?.admittedTickId,
     summary: jeditAppliedCommandHistorySummary(msg.result.filePath, msg.requestId, withCurrentObservation),
   });
   return refreshAndPersistAppliedTextEdit(deps, msg.result, applied);
@@ -250,6 +249,7 @@ function applyAppliedTextEditResult(
     kind: EchoHistoryEntryKinds.Edit,
     status: EchoHistoryEntryStatuses.Applied,
     evidenceId: msg.result.receiptId,
+    causalHeadId: msg.result.causalTransition?.nextHeadId, causalTickId: msg.result.causalTransition?.admittedTickId,
     summary: jeditAppliedCommandHistorySummary(msg.result.filePath, msg.requestId, withCurrentObservation),
   });
   return refreshAndPersistAppliedTextEdit(deps, msg.result, applied);
@@ -377,7 +377,7 @@ function applyTextCheckpointResult(
   return [withEchoHistoryEntry(withTextAuthority(model, textAuthority), {
     kind: EchoHistoryEntryKinds.Checkpoint,
     status: EchoHistoryEntryStatuses.Checkpointed,
-    evidenceId: msg.result.checkpointId,
+    evidenceId: msg.result.checkpointId, causalHeadId: msg.result.basisHeadId,
     summary: msg.result.filePath,
   }), []];
 }

@@ -29,6 +29,8 @@ const MOCK_I18N_TRANSLATIONS = Object.freeze({
   "settings.rows.footer.description": "Show mode, focus, and command hints at the bottom edge.",
   "settings.rows.line_numbers.label": "Line numbers",
   "settings.rows.line_numbers.description": "Switch between absolute and cursor-relative editor line numbers.",
+  "settings.rows.causal_gutter_basis.label": "Causal markers",
+  "settings.rows.causal_gutter_basis.description": "Choose the causal basis used by gutter change markers.",
   "settings.rows.markdown_preview.label": "Markdown preview",
   "settings.rows.markdown_preview.description": "Switch the active Markdown buffer between source and preview.",
   "settings.rows.diagnostics.label": "Diagnostics",
@@ -40,6 +42,10 @@ const MOCK_I18N_TRANSLATIONS = Object.freeze({
   "settings.values.theme_mode_light": "Light",
   "settings.values.line_numbers_absolute": "Absolute",
   "settings.values.line_numbers_relative": "Relative",
+  "settings.values.causal_gutter_last_save": "Last save",
+  "settings.values.causal_gutter_import": "Import",
+  "settings.values.causal_gutter_selected_checkpoint": "Selected checkpoint",
+  "settings.values.causal_gutter_selected_tick": "Selected tick",
   "settings.values.source": "Source",
   "settings.values.preview": "Preview",
   "settings.values.current": "Current",
@@ -224,8 +230,11 @@ export function basisPinnedTestTextSession(delegate) {
           nextHeadId: request.nextHeadId,
           insertedLineCount: 0,
           deletedLineCount: 0,
+          tickReceiptIds: [],
           rewriteIds: [],
           diffIds: [],
+          markers: [],
+          deletions: [],
           observerVersion: 'test-fixture',
         },
       };
@@ -498,6 +507,10 @@ export function mockJeditTheme() {
       titleSceneNear: workspace,
       titleSceneFar: workspace,
     },
+    gutter: {
+      normal: mockGutterTokens(workspace, accent),
+      dimmed: mockGutterTokens(workspace, accent),
+    },
     source: new Map(),
     sourceRoleMap: new Map(),
     markdown: new Map(),
@@ -553,6 +566,8 @@ export function mockTitleScreenModel(titleScreen, overrides = {}) {
       nextBraidOrdinal: 1,
     },
     lineNumberMode: "absolute",
+    gutterDimmed: false,
+    causalGutterBasis: { kind: "last-save" },
     settingsOpen: false,
     settingsFocusIndex: 0,
     settingsDiagnosticsOpen: false,
@@ -606,6 +621,20 @@ export function mockTitleScreenModel(titleScreen, overrides = {}) {
     titleAsciiPalette: titleScreen.TITLE_ASCII_PALETTE.Dense,
     titleMeshMaterialIndex: 0,
     ...overrides,
+  };
+}
+
+export function mockGutterTokens(background, accent) {
+  return {
+    background,
+    lineNumber: background,
+    currentLineNumber: accent,
+    rule: accent,
+    inserted: accent,
+    modified: accent,
+    deleted: accent,
+    pending: accent,
+    obstructed: accent,
   };
 }
 

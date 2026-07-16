@@ -1,5 +1,6 @@
 import { ProductionTextSessionOutcomeKinds } from './production-text-session.js';
-import type { WorkspaceTextEditCommandRequest } from './workspace-text-commands.js';
+import type { ProductionTextSession } from './production-text-session.js';
+import type { CausalLineDiffReading } from '../../ports/text-buffer-session.js';
 import {
   unavailableWorkspaceBufferCausalLineChanges,
   workspaceBufferCausalLineChangesFromReading,
@@ -10,9 +11,17 @@ import {
 const CAUSAL_LINE_DIFF_MAX_BYTES = 67108864;
 const CAUSAL_LINE_DIFF_MAX_LINES = 5000000;
 const CAUSAL_LINE_DIFF_MAX_REWRITES = 10000;
+const CAUSAL_LINE_DIFF_MAX_MARKERS = 100000;
+
+export interface WorkspaceCausalLineChangeObservationRequest {
+  readonly bufferId: string;
+  readonly productionTextSession: ProductionTextSession;
+  readonly changeBasisHeadId?: string;
+  readonly atMs: number;
+}
 
 export async function observeWorkspaceCausalLineChanges(
-  request: WorkspaceTextEditCommandRequest,
+  request: WorkspaceCausalLineChangeObservationRequest,
   nextHeadId: string,
 ): Promise<WorkspaceBufferCausalLineChanges> {
   if (request.changeBasisHeadId == null) {
@@ -30,6 +39,7 @@ export async function observeWorkspaceCausalLineChanges(
       maxByteCount: CAUSAL_LINE_DIFF_MAX_BYTES,
       maxLineCount: CAUSAL_LINE_DIFF_MAX_LINES,
       maxRewriteCount: CAUSAL_LINE_DIFF_MAX_REWRITES,
+      maxMarkerCount: CAUSAL_LINE_DIFF_MAX_MARKERS,
       atMs: request.atMs,
     });
   } catch (cause) {
@@ -41,11 +51,25 @@ export async function observeWorkspaceCausalLineChanges(
   }
   return observed.kind === ProductionTextSessionOutcomeKinds.Obstructed
     ? obstructedLineChanges(request, nextHeadId, observed.obstruction.issue.message)
-    : workspaceBufferCausalLineChangesFromReading(observed.reading);
+    : observedLineChanges(request, nextHeadId, observed.reading);
+}
+
+function observedLineChanges(
+  request: WorkspaceCausalLineChangeObservationRequest,
+  nextHeadId: string,
+  reading: CausalLineDiffReading,
+): WorkspaceBufferCausalLineChanges {
+  if (reading.basisHeadId !== request.changeBasisHeadId || reading.nextHeadId !== nextHeadId) {
+    return unavailableWorkspaceBufferCausalLineChanges(
+      WorkspaceBufferCausalLineChangeUnavailableReasons.EvidenceMismatch,
+      { basisHeadId: request.changeBasisHeadId, nextHeadId },
+    );
+  }
+  return workspaceBufferCausalLineChangesFromReading(reading);
 }
 
 function obstructedLineChanges(
-  request: WorkspaceTextEditCommandRequest,
+  request: WorkspaceCausalLineChangeObservationRequest,
   nextHeadId: string,
   message: string,
 ): WorkspaceBufferCausalLineChanges {

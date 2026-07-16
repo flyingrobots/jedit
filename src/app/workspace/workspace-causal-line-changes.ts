@@ -1,10 +1,14 @@
-import type { CausalLineDiffReading } from '../../ports/text-buffer-session.js';
+import type {
+  CausalLineDiffReading,
+  CausalLineMarkerReading,
+} from '../../ports/text-buffer-session.js';
 
 const LINE_CHANGES_AVAILABLE = 'available';
 const LINE_CHANGES_UNAVAILABLE = 'unavailable';
 const LINE_CHANGES_SOURCE_IDENTITY = 'identity';
 const LINE_CHANGES_SOURCE_CAUSAL_OBSERVATION = 'causal-observation';
 const LINE_CHANGES_REASON_BASIS_UNAVAILABLE = 'basis-unavailable';
+const LINE_CHANGES_REASON_OBSERVATION_PENDING = 'observation-pending';
 const LINE_CHANGES_REASON_OBSERVATION_OBSTRUCTED = 'observation-obstructed';
 const LINE_CHANGES_REASON_EVIDENCE_MISMATCH = 'evidence-mismatch';
 const LINE_CHANGES_IDENTITY_OBSERVER_VERSION = 'jedit-causal-line-diff-identity-v1';
@@ -21,6 +25,7 @@ export const WorkspaceBufferCausalLineChangeSources = Object.freeze({
 
 export const WorkspaceBufferCausalLineChangeUnavailableReasons = Object.freeze({
   BasisUnavailable: LINE_CHANGES_REASON_BASIS_UNAVAILABLE,
+  ObservationPending: LINE_CHANGES_REASON_OBSERVATION_PENDING,
   ObservationObstructed: LINE_CHANGES_REASON_OBSERVATION_OBSTRUCTED,
   EvidenceMismatch: LINE_CHANGES_REASON_EVIDENCE_MISMATCH,
 } as const);
@@ -39,8 +44,11 @@ export interface WorkspaceBufferCausalLineChangesAvailable {
   readonly nextHeadId: string;
   readonly insertedLineCount: number;
   readonly deletedLineCount: number;
+  readonly tickReceiptIds: readonly string[];
   readonly rewriteIds: readonly string[];
   readonly diffIds: readonly string[];
+  readonly markers: readonly CausalLineMarkerReading[];
+  readonly deletions: CausalLineDiffReading['deletions'];
   readonly observerVersion: string;
 }
 
@@ -72,8 +80,21 @@ export function workspaceBufferCausalLineChangesFromReading(
     nextHeadId: reading.nextHeadId,
     insertedLineCount: reading.insertedLineCount,
     deletedLineCount: reading.deletedLineCount,
+    tickReceiptIds: [...reading.tickReceiptIds],
     rewriteIds: [...reading.rewriteIds],
     diffIds: [...reading.diffIds],
+    markers: reading.markers.map(marker => ({
+      ...marker,
+      tickReceiptIds: [...marker.tickReceiptIds],
+      rewriteIds: [...marker.rewriteIds],
+      diffIds: [...marker.diffIds],
+    })),
+    deletions: reading.deletions.map(deletion => ({
+      ...deletion,
+      tickReceiptIds: [...deletion.tickReceiptIds],
+      rewriteIds: [...deletion.rewriteIds],
+      diffIds: [...deletion.diffIds],
+    })),
     observerVersion: reading.observerVersion,
   };
 }
@@ -113,8 +134,11 @@ export function identityWorkspaceBufferCausalLineChanges(
     nextHeadId: headId,
     insertedLineCount: 0,
     deletedLineCount: 0,
+    tickReceiptIds: [],
     rewriteIds: [],
     diffIds: [],
+    markers: [],
+    deletions: [],
     observerVersion: LINE_CHANGES_IDENTITY_OBSERVER_VERSION,
   };
 }
@@ -141,8 +165,21 @@ export function workspaceBufferCausalLineChangesForTransition(
   }
   return {
     ...lineChanges,
+    tickReceiptIds: [...lineChanges.tickReceiptIds],
     rewriteIds: [...lineChanges.rewriteIds],
     diffIds: [...lineChanges.diffIds],
+    markers: lineChanges.markers.map(marker => ({
+      ...marker,
+      tickReceiptIds: [...marker.tickReceiptIds],
+      rewriteIds: [...marker.rewriteIds],
+      diffIds: [...marker.diffIds],
+    })),
+    deletions: lineChanges.deletions.map(deletion => ({
+      ...deletion,
+      tickReceiptIds: [...deletion.tickReceiptIds],
+      rewriteIds: [...deletion.rewriteIds],
+      diffIds: [...deletion.diffIds],
+    })),
   };
 }
 

@@ -30,6 +30,7 @@ import { createWorkspaceTextAuthority } from "./workspace-text-authority.js";
 import { emptyWorkspaceBufferRegistry } from "./workspace-buffer-registry.js";
 import {
   initialStartupFileModalState,
+  INITIAL_WORKSPACE_CAUSAL_GUTTER_BASIS,
   INITIAL_WORKSPACE_LINE_NUMBER_MODE,
   initialWorkspaceCommandLineState,
   initialWorkspaceWorldlineState,
@@ -123,6 +124,8 @@ function initialDrawerState() {
 function initialSettingsState() {
   return {
     lineNumberMode: INITIAL_LINE_NUMBER_MODE,
+    gutterDimmed: false,
+    causalGutterBasis: INITIAL_WORKSPACE_CAUSAL_GUTTER_BASIS,
     settingsOpen: false,
     settingsFocusIndex: 0,
     settingsDiagnosticsOpen: false,

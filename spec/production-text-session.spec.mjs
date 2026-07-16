@@ -150,6 +150,7 @@ test('production text session reads bounded causal line changes from named heads
     maxByteCount: 4096,
     maxLineCount: 128,
     maxRewriteCount: 64,
+    maxMarkerCount: 128,
     atMs: AT_MS,
   });
 
@@ -160,6 +161,7 @@ test('production text session reads bounded causal line changes from named heads
     maxByteCount: 4096,
     maxLineCount: 128,
     maxRewriteCount: 64,
+    maxMarkerCount: 128,
   }]);
   assert.equal(outcome.reading.insertedLineCount, 2);
   assert.equal(outcome.reading.deletedLineCount, 1);
@@ -416,8 +418,11 @@ function causalLineDiffReading(request) {
     nextHeadId: request.nextHeadId,
     insertedLineCount: 2,
     deletedLineCount: 1,
+    tickReceiptIds: [],
     rewriteIds: ['rewrite:1'],
     diffIds: ['diff:1'],
+    markers: [],
+    deletions: [],
     observerVersion: 'test-fixture',
   };
 }

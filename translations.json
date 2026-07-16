@@ -127,6 +127,14 @@
             "line_numbers": {
               "label": "Line numbers",
               "description": "Switch between absolute and cursor-relative editor line numbers."
+            },
+            "gutter_dimmed": {
+              "label": "Dim gutter",
+              "description": "Use the theme dimmed gutter token set."
+            },
+            "causal_gutter_basis": {
+              "label": "Causal markers",
+              "description": "Choose the causal basis used by gutter change markers."
             }
           },
           "values": {
@@ -139,7 +147,11 @@
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
-            "open": "Open"
+            "open": "Open",
+            "causal_gutter_last_save": "Last save",
+            "causal_gutter_import": "Import",
+            "causal_gutter_selected_checkpoint": "Selected checkpoint",
+            "causal_gutter_selected_tick": "Selected tick"
           },
           "toast": {
             "changed_title": "Settings changed"
@@ -282,6 +294,14 @@
             "line_numbers": {
               "label": "Line numbers",
               "description": "Switch between absolute and cursor-relative editor line numbers."
+            },
+            "gutter_dimmed": {
+              "label": "Dim gutter",
+              "description": "Use the theme dimmed gutter token set."
+            },
+            "causal_gutter_basis": {
+              "label": "Causal markers",
+              "description": "Choose the causal basis used by gutter change markers."
             }
           },
           "values": {
@@ -294,7 +314,11 @@
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
-            "open": "Open"
+            "open": "Open",
+            "causal_gutter_last_save": "Last save",
+            "causal_gutter_import": "Import",
+            "causal_gutter_selected_checkpoint": "Selected checkpoint",
+            "causal_gutter_selected_tick": "Selected tick"
           },
           "toast": {
             "changed_title": "Settings changed"
@@ -437,6 +461,14 @@
             "line_numbers": {
               "label": "Line numbers",
               "description": "Switch between absolute and cursor-relative editor line numbers."
+            },
+            "gutter_dimmed": {
+              "label": "Dim gutter",
+              "description": "Use the theme dimmed gutter token set."
+            },
+            "causal_gutter_basis": {
+              "label": "Causal markers",
+              "description": "Choose the causal basis used by gutter change markers."
             }
           },
           "values": {
@@ -449,7 +481,11 @@
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
-            "open": "Open"
+            "open": "Open",
+            "causal_gutter_last_save": "Last save",
+            "causal_gutter_import": "Import",
+            "causal_gutter_selected_checkpoint": "Selected checkpoint",
+            "causal_gutter_selected_tick": "Selected tick"
           },
           "toast": {
             "changed_title": "Settings changed"
@@ -592,6 +628,14 @@
             "line_numbers": {
               "label": "Line numbers",
               "description": "Switch between absolute and cursor-relative editor line numbers."
+            },
+            "gutter_dimmed": {
+              "label": "Dim gutter",
+              "description": "Use the theme dimmed gutter token set."
+            },
+            "causal_gutter_basis": {
+              "label": "Causal markers",
+              "description": "Choose the causal basis used by gutter change markers."
             }
           },
           "values": {
@@ -604,7 +648,11 @@
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
-            "open": "Open"
+            "open": "Open",
+            "causal_gutter_last_save": "Last save",
+            "causal_gutter_import": "Import",
+            "causal_gutter_selected_checkpoint": "Selected checkpoint",
+            "causal_gutter_selected_tick": "Selected tick"
           },
           "toast": {
             "changed_title": "Settings changed"
@@ -747,6 +795,14 @@
             "line_numbers": {
               "label": "Line numbers",
               "description": "Switch between absolute and cursor-relative editor line numbers."
+            },
+            "gutter_dimmed": {
+              "label": "Dim gutter",
+              "description": "Use the theme dimmed gutter token set."
+            },
+            "causal_gutter_basis": {
+              "label": "Causal markers",
+              "description": "Choose the causal basis used by gutter change markers."
             }
           },
           "values": {
@@ -759,7 +815,11 @@
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
-            "open": "Open"
+            "open": "Open",
+            "causal_gutter_last_save": "Last save",
+            "causal_gutter_import": "Import",
+            "causal_gutter_selected_checkpoint": "Selected checkpoint",
+            "causal_gutter_selected_tick": "Selected tick"
           },
           "toast": {
             "changed_title": "Settings changed"
@@ -902,6 +962,14 @@
             "line_numbers": {
               "label": "Line numbers",
               "description": "Switch between absolute and cursor-relative editor line numbers."
+            },
+            "gutter_dimmed": {
+              "label": "Dim gutter",
+              "description": "Use the theme dimmed gutter token set."
+            },
+            "causal_gutter_basis": {
+              "label": "Causal markers",
+              "description": "Choose the causal basis used by gutter change markers."
             }
           },
           "values": {
@@ -914,7 +982,11 @@
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
-            "open": "Open"
+            "open": "Open",
+            "causal_gutter_last_save": "Last save",
+            "causal_gutter_import": "Import",
+            "causal_gutter_selected_checkpoint": "Selected checkpoint",
+            "causal_gutter_selected_tick": "Selected tick"
           },
           "toast": {
             "changed_title": "Settings changed"
@@ -1057,6 +1129,14 @@
             "line_numbers": {
               "label": "Line numbers",
               "description": "Switch between absolute and cursor-relative editor line numbers."
+            },
+            "gutter_dimmed": {
+              "label": "Dim gutter",
+              "description": "Use the theme dimmed gutter token set."
+            },
+            "causal_gutter_basis": {
+              "label": "Causal markers",
+              "description": "Choose the causal basis used by gutter change markers."
             }
           },
           "values": {
@@ -1069,7 +1149,11 @@
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
-            "open": "Open"
+            "open": "Open",
+            "causal_gutter_last_save": "Last save",
+            "causal_gutter_import": "Import",
+            "causal_gutter_selected_checkpoint": "Selected checkpoint",
+            "causal_gutter_selected_tick": "Selected tick"
           },
           "toast": {
             "changed_title": "Settings changed"
@@ -1212,6 +1296,14 @@
             "line_numbers": {
               "label": "Line numbers",
               "description": "Switch between absolute and cursor-relative editor line numbers."
+            },
+            "gutter_dimmed": {
+              "label": "Dim gutter",
+              "description": "Use the theme dimmed gutter token set."
+            },
+            "causal_gutter_basis": {
+              "label": "Causal markers",
+              "description": "Choose the causal basis used by gutter change markers."
             }
           },
           "values": {
@@ -1224,7 +1316,11 @@
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
-            "open": "Open"
+            "open": "Open",
+            "causal_gutter_last_save": "Last save",
+            "causal_gutter_import": "Import",
+            "causal_gutter_selected_checkpoint": "Selected checkpoint",
+            "causal_gutter_selected_tick": "Selected tick"
           },
           "toast": {
             "changed_title": "Settings changed"
@@ -1367,6 +1463,14 @@
             "line_numbers": {
               "label": "Line numbers",
               "description": "Switch between absolute and cursor-relative editor line numbers."
+            },
+            "gutter_dimmed": {
+              "label": "Dim gutter",
+              "description": "Use the theme dimmed gutter token set."
+            },
+            "causal_gutter_basis": {
+              "label": "Causal markers",
+              "description": "Choose the causal basis used by gutter change markers."
             }
           },
           "values": {
@@ -1379,7 +1483,11 @@
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
-            "open": "Open"
+            "open": "Open",
+            "causal_gutter_last_save": "Last save",
+            "causal_gutter_import": "Import",
+            "causal_gutter_selected_checkpoint": "Selected checkpoint",
+            "causal_gutter_selected_tick": "Selected tick"
           },
           "toast": {
             "changed_title": "Settings changed"
@@ -1522,6 +1630,14 @@
             "line_numbers": {
               "label": "Line numbers",
               "description": "Switch between absolute and cursor-relative editor line numbers."
+            },
+            "gutter_dimmed": {
+              "label": "Dim gutter",
+              "description": "Use the theme dimmed gutter token set."
+            },
+            "causal_gutter_basis": {
+              "label": "Causal markers",
+              "description": "Choose the causal basis used by gutter change markers."
             }
           },
           "values": {
@@ -1534,7 +1650,11 @@
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
-            "open": "Open"
+            "open": "Open",
+            "causal_gutter_last_save": "Last save",
+            "causal_gutter_import": "Import",
+            "causal_gutter_selected_checkpoint": "Selected checkpoint",
+            "causal_gutter_selected_tick": "Selected tick"
           },
           "toast": {
             "changed_title": "Settings changed"
@@ -1677,6 +1797,14 @@
             "line_numbers": {
               "label": "Line numbers",
               "description": "Switch between absolute and cursor-relative editor line numbers."
+            },
+            "gutter_dimmed": {
+              "label": "Dim gutter",
+              "description": "Use the theme dimmed gutter token set."
+            },
+            "causal_gutter_basis": {
+              "label": "Causal markers",
+              "description": "Choose the causal basis used by gutter change markers."
             }
           },
           "values": {
@@ -1689,7 +1817,11 @@
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
-            "open": "Open"
+            "open": "Open",
+            "causal_gutter_last_save": "Last save",
+            "causal_gutter_import": "Import",
+            "causal_gutter_selected_checkpoint": "Selected checkpoint",
+            "causal_gutter_selected_tick": "Selected tick"
           },
           "toast": {
             "changed_title": "Settings changed"
@@ -1832,6 +1964,14 @@
             "line_numbers": {
               "label": "Line numbers",
               "description": "Switch between absolute and cursor-relative editor line numbers."
+            },
+            "gutter_dimmed": {
+              "label": "Dim gutter",
+              "description": "Use the theme dimmed gutter token set."
+            },
+            "causal_gutter_basis": {
+              "label": "Causal markers",
+              "description": "Choose the causal basis used by gutter change markers."
             }
           },
           "values": {
@@ -1844,7 +1984,11 @@
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
-            "open": "Open"
+            "open": "Open",
+            "causal_gutter_last_save": "Last save",
+            "causal_gutter_import": "Import",
+            "causal_gutter_selected_checkpoint": "Selected checkpoint",
+            "causal_gutter_selected_tick": "Selected tick"
           },
           "toast": {
             "changed_title": "Settings changed"
@@ -1987,6 +2131,14 @@
             "line_numbers": {
               "label": "Line numbers",
               "description": "Switch between absolute and cursor-relative editor line numbers."
+            },
+            "gutter_dimmed": {
+              "label": "Dim gutter",
+              "description": "Use the theme dimmed gutter token set."
+            },
+            "causal_gutter_basis": {
+              "label": "Causal markers",
+              "description": "Choose the causal basis used by gutter change markers."
             }
           },
           "values": {
@@ -1999,7 +2151,11 @@
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
-            "open": "Open"
+            "open": "Open",
+            "causal_gutter_last_save": "Last save",
+            "causal_gutter_import": "Import",
+            "causal_gutter_selected_checkpoint": "Selected checkpoint",
+            "causal_gutter_selected_tick": "Selected tick"
           },
           "toast": {
             "changed_title": "Settings changed"
@@ -2142,6 +2298,14 @@
             "line_numbers": {
               "label": "Line numbers",
               "description": "Switch between absolute and cursor-relative editor line numbers."
+            },
+            "gutter_dimmed": {
+              "label": "Dim gutter",
+              "description": "Use the theme dimmed gutter token set."
+            },
+            "causal_gutter_basis": {
+              "label": "Causal markers",
+              "description": "Choose the causal basis used by gutter change markers."
             }
           },
           "values": {
@@ -2154,7 +2318,11 @@
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
-            "open": "Open"
+            "open": "Open",
+            "causal_gutter_last_save": "Last save",
+            "causal_gutter_import": "Import",
+            "causal_gutter_selected_checkpoint": "Selected checkpoint",
+            "causal_gutter_selected_tick": "Selected tick"
           },
           "toast": {
             "changed_title": "Settings changed"
@@ -2297,6 +2465,14 @@
             "line_numbers": {
               "label": "Line numbers",
               "description": "Switch between absolute and cursor-relative editor line numbers."
+            },
+            "gutter_dimmed": {
+              "label": "Dim gutter",
+              "description": "Use the theme dimmed gutter token set."
+            },
+            "causal_gutter_basis": {
+              "label": "Causal markers",
+              "description": "Choose the causal basis used by gutter change markers."
             }
           },
           "values": {
@@ -2309,7 +2485,11 @@
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
-            "open": "Open"
+            "open": "Open",
+            "causal_gutter_last_save": "Last save",
+            "causal_gutter_import": "Import",
+            "causal_gutter_selected_checkpoint": "Selected checkpoint",
+            "causal_gutter_selected_tick": "Selected tick"
           },
           "toast": {
             "changed_title": "Settings changed"
@@ -2452,6 +2632,14 @@
             "line_numbers": {
               "label": "Line numbers",
               "description": "Switch between absolute and cursor-relative editor line numbers."
+            },
+            "gutter_dimmed": {
+              "label": "Dim gutter",
+              "description": "Use the theme dimmed gutter token set."
+            },
+            "causal_gutter_basis": {
+              "label": "Causal markers",
+              "description": "Choose the causal basis used by gutter change markers."
             }
           },
           "values": {
@@ -2464,7 +2652,11 @@
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
-            "open": "Open"
+            "open": "Open",
+            "causal_gutter_last_save": "Last save",
+            "causal_gutter_import": "Import",
+            "causal_gutter_selected_checkpoint": "Selected checkpoint",
+            "causal_gutter_selected_tick": "Selected tick"
           },
           "toast": {
             "changed_title": "Settings changed"
@@ -2607,6 +2799,14 @@
             "line_numbers": {
               "label": "Line numbers",
               "description": "Switch between absolute and cursor-relative editor line numbers."
+            },
+            "gutter_dimmed": {
+              "label": "Dim gutter",
+              "description": "Use the theme dimmed gutter token set."
+            },
+            "causal_gutter_basis": {
+              "label": "Causal markers",
+              "description": "Choose the causal basis used by gutter change markers."
             }
           },
           "values": {
@@ -2619,7 +2819,11 @@
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
-            "open": "Open"
+            "open": "Open",
+            "causal_gutter_last_save": "Last save",
+            "causal_gutter_import": "Import",
+            "causal_gutter_selected_checkpoint": "Selected checkpoint",
+            "causal_gutter_selected_tick": "Selected tick"
           },
           "toast": {
             "changed_title": "Settings changed"
@@ -2762,6 +2966,14 @@
             "line_numbers": {
               "label": "Line numbers",
               "description": "Switch between absolute and cursor-relative editor line numbers."
+            },
+            "gutter_dimmed": {
+              "label": "Dim gutter",
+              "description": "Use the theme dimmed gutter token set."
+            },
+            "causal_gutter_basis": {
+              "label": "Causal markers",
+              "description": "Choose the causal basis used by gutter change markers."
             }
           },
           "values": {
@@ -2774,7 +2986,11 @@
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
-            "open": "Open"
+            "open": "Open",
+            "causal_gutter_last_save": "Last save",
+            "causal_gutter_import": "Import",
+            "causal_gutter_selected_checkpoint": "Selected checkpoint",
+            "causal_gutter_selected_tick": "Selected tick"
           },
           "toast": {
             "changed_title": "Settings changed"
@@ -2917,6 +3133,14 @@
             "line_numbers": {
               "label": "Line numbers",
               "description": "Switch between absolute and cursor-relative editor line numbers."
+            },
+            "gutter_dimmed": {
+              "label": "Dim gutter",
+              "description": "Use the theme dimmed gutter token set."
+            },
+            "causal_gutter_basis": {
+              "label": "Causal markers",
+              "description": "Choose the causal basis used by gutter change markers."
             }
           },
           "values": {
@@ -2929,7 +3153,11 @@
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
-            "open": "Open"
+            "open": "Open",
+            "causal_gutter_last_save": "Last save",
+            "causal_gutter_import": "Import",
+            "causal_gutter_selected_checkpoint": "Selected checkpoint",
+            "causal_gutter_selected_tick": "Selected tick"
           },
           "toast": {
             "changed_title": "Settings changed"
@@ -3072,6 +3300,14 @@
             "line_numbers": {
               "label": "Line numbers",
               "description": "Switch between absolute and cursor-relative editor line numbers."
+            },
+            "gutter_dimmed": {
+              "label": "Dim gutter",
+              "description": "Use the theme dimmed gutter token set."
+            },
+            "causal_gutter_basis": {
+              "label": "Causal markers",
+              "description": "Choose the causal basis used by gutter change markers."
             }
           },
           "values": {
@@ -3084,7 +3320,11 @@
             "source": "Source",
             "preview": "Preview",
             "current": "Current",
-            "open": "Open"
+            "open": "Open",
+            "causal_gutter_last_save": "Last save",
+            "causal_gutter_import": "Import",
+            "causal_gutter_selected_checkpoint": "Selected checkpoint",
+            "causal_gutter_selected_tick": "Selected tick"
           },
           "toast": {
             "changed_title": "Settings changed"

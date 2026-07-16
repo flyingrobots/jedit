@@ -19,14 +19,14 @@ import {
 import type { WorkspaceModel } from "./model.js";
 import { isWorkspaceMarkdownFile } from "./editor-session.js";
 import { ViewModes } from "./view-mode.js";
-import {
-  canReadingReplaceWholeEditor,
-  editorFromFullWorkspaceTextCache,
-  hasVisibleOptimisticText,
-  isWorkspaceTextAuthorityOpened,
-  projectedSourceWindow,
-} from "./workspace-text-authority.js";
 import { VIEWER_LEFT_PAD, VIEWER_TOP_PAD } from "./viewport.js";
+import {
+  causalSourceGutterDeletionMarkers,
+  sourceGutterLineMarkers,
+  displayEditorForWorkspaceModel,
+  sourceHighlightForWorkspaceProjection,
+  sourceWindowForWorkspaceModel,
+} from "./workspace-source-projection.js";
 import { fillSurface } from "./surface-fill.js";
 import {
   governTitleSceneRender,
@@ -142,7 +142,7 @@ function renderViewerWithState(
   titleRenderer: TitleScreenRenderer,
   state: ViewerContentRendererState,
 ): Surface {
-  const editor = displayEditor(model);
+  const editor = displayEditorForWorkspaceModel(model);
   if (editor == null) {
     return renderTitleBackdrop(model, width, height, titleRenderer, state);
   }
@@ -161,57 +161,19 @@ function renderViewerWithState(
   return renderSourceViewer(
     surface,
     editor,
-    sourceHighlightForProjection(model, editor.path),
+    sourceHighlightForWorkspaceProjection(model, editor.path),
     {
       viewport,
       leftPad: VIEWER_LEFT_PAD,
       topPad: VIEWER_TOP_PAD,
       theme: model.jeditTheme,
       lineNumberMode: model.lineNumberMode,
-      reading: sourceWindowForModel(model),
+      gutterDimmed: model.gutterDimmed,
+      lineMarkers: sourceGutterLineMarkers(model),
+      deletionMarkers: causalSourceGutterDeletionMarkers(model),
+      reading: sourceWindowForWorkspaceModel(model),
     },
   );
-}
-
-function sourceWindowForModel(model: WorkspaceModel) {
-  if (!isWorkspaceTextAuthorityOpened(model.textAuthority)) {
-    return undefined;
-  }
-  if (hasVisibleOptimisticText(model.textAuthority)) {
-    return undefined;
-  }
-  const projected = projectedSourceWindow(model.textAuthority);
-  return projected ?? {
-    startLine: model.editor?.scrollRow ?? 0,
-    lineCount: 0,
-    totalLineCount: model.textAuthority.cache?.totalLineCount ?? 0,
-    hasMoreBefore: false,
-    hasMoreAfter: false,
-    lines: [],
-  };
-}
-
-function sourceHighlightForProjection(
-  model: WorkspaceModel,
-  editorPath: string,
-): WorkspaceModel['sourceHighlight'] {
-  const highlight = model.sourceHighlight;
-  if (highlight?.path !== editorPath || !isWorkspaceTextAuthorityOpened(model.textAuthority)) {
-    return highlight?.path === editorPath ? highlight : undefined;
-  }
-  const projection = model.textAuthority.cache?.projection;
-  return projection != null && sameProjectionBasis(highlight.projection, projection)
-    ? highlight
-    : undefined;
-}
-
-function sameProjectionBasis(
-  left: NonNullable<WorkspaceModel['sourceHighlight']>['projection'],
-  right: NonNullable<WorkspaceModel['sourceHighlight']>['projection'],
-): boolean {
-  return left?.basisHeadId === right?.basisHeadId
-    && left?.byteRange.startByte === right?.byteRange.startByte
-    && left?.byteRange.endByte === right?.byteRange.endByte;
 }
 
 function renderTitleBackdrop(
@@ -456,18 +418,9 @@ interface FrameBudgetDecision {
 export function isWorkspaceMarkdownPreviewAvailable(
   model: WorkspaceModel,
 ): boolean {
-  const editor = displayEditor(model);
+  const editor = displayEditorForWorkspaceModel(model);
   return editor != null && isWorkspaceMarkdownFile(editor.path);
 }
-function displayEditor(model: WorkspaceModel): WorkspaceModel["editor"] {
-  const authority = model.textAuthority;
-  return isWorkspaceTextAuthorityOpened(authority) &&
-    !hasVisibleOptimisticText(authority) &&
-    canReadingReplaceWholeEditor(authority.cache)
-    ? editorFromFullWorkspaceTextCache({ ...authority, cache: authority.cache }, model.editor)
-    : model.editor;
-}
-
 function renderPreview(
   surface: Surface,
   editor: WorkspaceModel["editor"],

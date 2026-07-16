@@ -4,6 +4,7 @@ import {
   fakeProductionTextSession,
   importDist,
   mockEditor,
+  mockGutterTokens,
   mockI18n,
   mockKeyBindingContext,
   mockRuntime,
@@ -1983,6 +1984,10 @@ function commandLineRenderTheme() {
       titleLogoShadow: workspace,
       titleSceneNear: workspace,
       titleSceneFar: workspace,
+    },
+    gutter: {
+      normal: mockGutterTokens(workspace, edge),
+      dimmed: mockGutterTokens(workspace, edge),
     },
   };
 }
