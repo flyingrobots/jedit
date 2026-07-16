@@ -138,12 +138,12 @@ Immediate order:
    [`WF-0106 - Emacs Ideas To Steal Causally`](design/0106-emacs-ideas-to-steal-causally.md)
    as the supporting product-surface packet for command catalog, describe,
    register, macro, buffer, diagnostics, and trace surfaces.
-4. The graph-backed create/read/replace/checkpoint path, coordinate discipline,
-   materialization provenance, durability model, and causal gutter prerequisites
-   have landed through CR-05. Resume the `:why` evidence gap through
-   [`WF-0157 - Rope Fact Inspector And Runtime-Backed Range Why`](design/0157-rope-fact-inspector-and-range-why.md):
-   bounded runtime evidence first, then the anchored panel, origin witnesses,
-   and shared gutter/footer explainers.
+4. CR-06 runtime-backed `:why` evidence is complete through
+   [`WF-0157 - Rope Fact Inspector And Runtime-Backed Range Why`](design/0157-rope-fact-inspector-and-range-why.md).
+   Continue with CR-07 retention, balance, and performance witnesses from
+   [roadmap #255](https://github.com/flyingrobots/jedit/issues/255), beginning
+   with the graph-backed rope compaction design in
+   [#207](https://github.com/flyingrobots/jedit/issues/207).
 5. Use existing proven Vim operations first: `dw`, `ciw`, `dd`, and `gUap`.
    Keep `n`/`N` and `:%s` for later slices once search entry and proposal
    preview are product-complete.
