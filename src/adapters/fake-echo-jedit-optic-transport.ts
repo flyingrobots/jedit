@@ -10,6 +10,7 @@ import {
   type JeditTextWindowObserver,
 } from '../app/jedit-observer-runtime.js';
 import { readCausalLineDiffWithObserverPlan } from '../app/jedit-causal-line-diff-observer.js';
+import { readWhyRangeWithObserverPlan } from '../app/jedit-why-range-observer.js';
 import { createFullSnapshotHotTextRuntimeFixture } from './full-snapshot-hot-text-runtime-fixture.js';
 import type { EchoKernelInfo } from '../ports/echo-kernel-transport.js';
 import type { JeditTransportSeam } from '../ports/jedit-transport-seam.js';
@@ -19,6 +20,7 @@ import { createHashPort } from './hash.js';
 import {
   CREATE_BUFFER_WORLDLINE_OPERATION,
   CAUSAL_LINE_DIFF_OPERATION,
+  WHY_RANGE_OPERATION,
   CREATE_CHECKPOINT_OPERATION,
   decodeJeditObserveRequest,
   encodeJeditIntentResponse,
@@ -216,7 +218,25 @@ function executeObservedOperation(
           request.input,
         ),
       };
+    case WHY_RANGE_OPERATION:
+      return executeWhyRangeObserve(context, request);
   }
+}
+
+function executeWhyRangeObserve(
+  context: FakeTransportContext,
+  request: Extract<JeditObserveRequest, { readonly operationName: typeof WHY_RANGE_OPERATION }>,
+): JeditObserveResponse {
+  return {
+    status: JEDIT_TRANSPORT_STATUS_OK,
+    operationName: WHY_RANGE_OPERATION,
+    envelope: readWhyRangeWithObserverPlan(
+      context.runtime,
+      request.session,
+      request.frontierRef,
+      request.input,
+    ),
+  };
 }
 
 function toMutationObstruction(

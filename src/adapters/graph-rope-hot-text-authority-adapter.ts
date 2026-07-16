@@ -27,7 +27,6 @@ import {
   createGraphRopeRuntime,
   GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_FACT,
   type GraphRopeDebugShape,
-  type GraphRopeCausalLineDiffReading,
   type GraphRopeReplaceRangeResult,
   type GraphRopeRuntime,
   type GraphRopeRuntimeResult,
@@ -40,7 +39,12 @@ import {
 } from '../domain/text-edit-contract.js';
 import { toWorldlineId } from '../app/jedit-contract-runtime-id.js';
 import type { HashPort } from '../ports/hash.js';
+import type { WhyRangeInput, WhyRangeReading } from '../generated/jedit/rope.wesley.generated.js';
 import { toHotTextHeadBasis } from './graph-rope-hot-text-head-basis.js';
+import {
+  graphCausalLineDiffReading,
+  graphRangeWhyReading,
+} from './graph-rope-hot-text-observation-readings.js';
 import {
   GRAPH_BACKED_ROPE_TEXT_AUTHORITY_KIND,
   type AdmitReplaceRangeTickResult,
@@ -68,6 +72,7 @@ import {
   REPLACE_RANGE_OPERATION,
   SAVE_CHECKPOINT_OPERATION,
   TEXT_WINDOW_OPERATION,
+  WHY_RANGE_OPERATION,
 } from './graph-rope-text-authority-errors.js';
 export {
   GraphRopeTextAuthorityObstructionError,
@@ -152,6 +157,17 @@ class GraphRopeHotTextAuthorityAdapter implements GraphRopeHotTextAuthority {
     return graphCausalLineDiffReading(reading.value);
   }
 
+  public whyRange(_state: HotTextBufferState, request: WhyRangeInput): WhyRangeReading {
+    const reading = this.graph.whyRange({
+      ...request,
+      queriedRange: graphWindowByteRange(request),
+    });
+    if (!reading.ok) {
+      throw new GraphRopeTextAuthorityObstructionError(WHY_RANGE_OPERATION, reading.code);
+    }
+    return graphRangeWhyReading(reading.value);
+  }
+
   public admitReplaceRangeTick(
     state: HotTextBufferState,
     range: TextRange,
@@ -193,29 +209,6 @@ class GraphRopeHotTextAuthorityAdapter implements GraphRopeHotTextAuthority {
   public debugRopeShape(headId: string): GraphRopeRuntimeResult<GraphRopeDebugShape> {
     return this.graph.debugRopeShape(headId);
   }
-}
-
-function graphCausalLineDiffReading(
-  reading: GraphRopeCausalLineDiffReading,
-): HotTextCausalLineDiffReading {
-  return {
-    ...reading,
-    tickReceiptIds: [...reading.tickReceiptIds],
-    rewriteIds: [...reading.rewriteIds],
-    diffIds: [...reading.diffIds],
-    markers: reading.markers.map(marker => ({
-      ...marker,
-      tickReceiptIds: [...marker.tickReceiptIds],
-      rewriteIds: [...marker.rewriteIds],
-      diffIds: [...marker.diffIds],
-    })),
-    deletions: reading.deletions.map(deletion => ({
-      ...deletion,
-      tickReceiptIds: [...deletion.tickReceiptIds],
-      rewriteIds: [...deletion.rewriteIds],
-      diffIds: [...deletion.diffIds],
-    })),
-  };
 }
 
 function saveGraphCheckpoint(

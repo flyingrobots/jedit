@@ -560,13 +560,14 @@ Cons:
 Choose Option C. The graph-rope runtime will gain a bounded read operation that
 returns Jim-owned range evidence. Product and agent ports will copy and project
 that result without exposing mutable arrays or private fact maps. The current
-`TickMetadata` reverse-walk remains transitional only until #239 replaces the
-reachable production path.
+Slice #239 removed the `TickMetadata` reverse-walk from the reachable product
+path. `TextBufferSession.explainRange` now consumes the generated, bounded
+`whyRange` observer through the installed Echo transport.
 
 ## Implementation Slices
 
 - [x] Slice 1: Design rope fact inspector and range-why UI (#209).
-- [ ] Slice 2: Explain a range from head through leaf/blob/rewrite/diff/tick
+- [x] Slice 2: Explain a range from head through leaf/blob/rewrite/diff/tick
   evidence (#239).
 - [ ] Slice 3: Render structured evidence in the persistent anchored panel
   (#240).
@@ -579,12 +580,12 @@ reachable production path.
 
 Behavior tests required:
 
-- [ ] Graph-rope range observation returns actual distinct retained fact IDs.
-- [ ] A range crossing leaves returns complete ordered coverage fragments.
-- [ ] Imported text does not invent rewrite/diff evidence.
-- [ ] Edited text cites the last touching retained rewrite, diff, and text tick.
-- [ ] Checkpoint declaration and optional anchor association remain distinct.
-- [ ] Missing or bounded-out support produces a typed obstruction or partial
+- [x] Graph-rope range observation returns actual distinct retained fact IDs.
+- [x] A range crossing leaves returns complete ordered coverage fragments.
+- [x] Imported text does not invent rewrite/diff evidence.
+- [x] Edited text cites the last touching retained rewrite, diff, and text tick.
+- [x] Checkpoint declaration and optional anchor association remain distinct.
+- [x] Missing or bounded-out support produces a typed obstruction or partial
   result.
 - [ ] Structured panel remains until cursor/head invalidation or `Esc`.
 - [ ] Gutter and footer explainers cite the same evidence IDs as range `:why`.

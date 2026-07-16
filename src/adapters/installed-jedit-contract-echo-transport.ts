@@ -2,9 +2,6 @@ import {
   createJeditContractMutationHandlerRegistry,
 } from '../app/jedit-contract-mutation-handlers.js';
 import {
-  createJeditContractQueryObserverRegistry,
-} from '../app/jedit-contract-query-observers.js';
-import {
   createDefaultJeditHostingBoundaries,
   createJeditSubmissionId,
   JEDIT_HOT_TEXT_PACKAGE_ID,
@@ -48,7 +45,6 @@ import {
 import { createHashPort } from './hash.js';
 import {
   CREATE_BUFFER_WORLDLINE_OPERATION,
-  CAUSAL_LINE_DIFF_OPERATION,
   CREATE_CHECKPOINT_OPERATION,
   decodeJeditObserveRequest,
   encodeJeditIntentResponse,
@@ -58,14 +54,16 @@ import {
   JEDIT_TRANSPORT_STATUS_OBSTRUCTED,
   JEDIT_TRANSPORT_STATUS_OK,
   REPLACE_RANGE_AS_TICK_OPERATION,
-  TEXT_WINDOW_OPERATION,
-  WORLDLINE_SNAPSHOT_OPERATION,
   type JeditIntentRequest,
   type JeditIntentResponse,
   type JeditObserveRequest,
   type JeditObserveResponse,
   type JeditTransportObstruction,
 } from './jedit-echo-optic-codec.js';
+import {
+  createJeditContractQueryObserverRegistry,
+  executeInstalledJeditObserve,
+} from './installed-jedit-contract-observe.js';
 import type { JeditWorldlineSessionPort } from '../ports/jedit-worldline-session-port.js';
 import type { JeditTransportSeam } from '../ports/jedit-transport-seam.js';
 import {
@@ -279,7 +277,7 @@ function observeInstalledRequest(
   }
   try {
     return encodeJeditObserveResponse(
-      executeObserve(context.observers, request),
+      executeInstalledJeditObserve(context.observers, request),
     );
   } catch (error) {
     return encodeJeditObserveResponse(
@@ -395,28 +393,6 @@ function invokeSchedulerHandler<Result>(
     authority: JEDIT_HANDLER_INVOCATION_SCHEDULER_AUTHORITY,
     invokeHandler,
   });
-}
-
-function executeObserve(
-  observers: ReturnType<typeof createJeditContractQueryObserverRegistry>,
-  request: JeditObserveRequest,
-): JeditObserveResponse {
-  switch (request.operationName) {
-    case WORLDLINE_SNAPSHOT_OPERATION:
-      return {
-        status: JEDIT_TRANSPORT_STATUS_OK,
-        operationName: WORLDLINE_SNAPSHOT_OPERATION,
-        envelope: observers.observeWorldlineSnapshot(request),
-      };
-    case TEXT_WINDOW_OPERATION:
-      return {
-        status: JEDIT_TRANSPORT_STATUS_OK,
-        operationName: TEXT_WINDOW_OPERATION,
-        envelope: observers.observeTextWindow(request),
-      };
-    case CAUSAL_LINE_DIFF_OPERATION:
-      return { status: JEDIT_TRANSPORT_STATUS_OK, operationName: CAUSAL_LINE_DIFF_OPERATION, envelope: observers.observeCausalLineDiff(request) };
-  }
 }
 
 function obstructedIntent(

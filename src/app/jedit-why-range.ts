@@ -1,255 +1,140 @@
-import type { JeditWorldlineSession, TickMetadata } from './jedit-contract-runtime.js';
-import { toReceiptId, toTickId } from './jedit-contract-runtime-id.js';
+import type {
+  WhyRangeFragment,
+  WhyRangeOrigin,
+  WhyRangeReading,
+} from '../generated/jedit/rope.wesley.generated.js';
 import {
-  BTR_MISSING,
-  CAUSAL_HISTORY_AVAILABLE,
-  CAUSAL_HISTORY_UNAVAILABLE,
-  COORDINATE_KIND_RANGE_AT_HEAD,
   REPORT_KIND_RANGE,
   REPORT_TITLE,
   RESULT_PRODUCED,
-  RESULT_UNAVAILABLE,
-  type JeditWhyByteRange,
-  type JeditWhyRangeEvidencePosture,
+  type JeditWhyRangeFragment,
+  type JeditWhyRangeOrigin,
+  type JeditWhyRangeProduced,
   type JeditWhyRangeReport,
-  type JeditWhyRangeResult,
-  type JeditWhyRangeReverseWalk,
-  type JeditWhyRangeUnavailable,
   type JeditWhyRangeWitness,
 } from '../ports/jedit-why-range.js';
 
-const UNAVAILABLE_HORIZON_CODE = 'jedit_why_range_retained_history_horizon';
-const UNAVAILABLE_MISSING_DIFF_CODE = 'jedit_why_range_missing_retained_diff';
-const UNAVAILABLE_PARTIAL_OVERLAP_CODE = 'jedit_why_range_partial_overlap_unavailable';
-const UNAVAILABLE_EMPTY_RANGE_CODE = 'jedit_why_range_empty_query';
-const ZERO_BYTES = 0;
+const ORIGIN_IMPORTED = 'IMPORTED';
+const ORIGIN_REWRITE = 'REWRITE';
 
-interface RetainedRopeDiff {
-  readonly ropeRewriteId: string;
-  readonly ropeDiffId: string;
-  readonly baseHeadId: string;
-  readonly nextHeadId: string;
-  readonly startByte: number;
-  readonly endByte: number;
-  readonly insertedByteLength: number;
-  readonly deletedByteLength: number;
-}
-
-interface ReverseWalkResult {
-  readonly reverseWalk: JeditWhyRangeReverseWalk;
-  readonly result: JeditWhyRangeResult;
-}
-
-export function explainJeditWhyRange(
-  session: JeditWorldlineSession,
-  range: JeditWhyByteRange,
-): JeditWhyRangeReport {
-  const witness = createRangeWitness(session, range);
+export function explainJeditWhyRange(reading: WhyRangeReading): JeditWhyRangeReport {
+  const fragments = reading.fragments.map(toRangeFragment);
   return {
     kind: REPORT_KIND_RANGE,
     title: REPORT_TITLE,
-    message: rangeWhyMessage(witness),
-    witness,
+    message: rangeWhyMessage(reading),
+    witness: createRangeWitness(reading, fragments),
   };
 }
 
 function createRangeWitness(
-  session: JeditWorldlineSession,
-  range: JeditWhyByteRange,
+  reading: WhyRangeReading,
+  fragments: readonly JeditWhyRangeFragment[],
 ): JeditWhyRangeWitness {
-  const walked = reverseWalkRange(session.tickMetadata, range);
   return {
-    worldlineId: session.worldline.worldlineId,
-    currentHeadId: session.worldline.canonicalHeadId,
-    queriedRange: range,
-    reverseWalk: walked.reverseWalk,
-    result: walked.result,
-    evidencePosture: evidencePosture(walked.result),
+    worldlineId: reading.worldlineId,
+    basisHeadId: reading.basisHeadId,
+    queriedRange: { startByte: reading.startByte, endByte: reading.endByte },
+    result: createProducedResult(reading, fragments),
   };
 }
 
-function reverseWalkRange(
-  tickMetadata: readonly TickMetadata[],
-  range: JeditWhyByteRange,
-): ReverseWalkResult {
-  if (range.startByte >= range.endByte) {
-    return unavailableWalk([], emptyRangeUnavailable());
-  }
-  let currentRange = range;
-  const inspectedDiffIds: string[] = [];
-  for (const tick of [...tickMetadata].reverse()) {
-    const diff = retainedRopeDiff(tick);
-    if (diff == null) {
-      return unavailableWalk(inspectedDiffIds, missingDiffUnavailable(tick));
-    }
-    inspectedDiffIds.push(diff.ropeDiffId);
-    if (diffProducesRange(diff, currentRange)) {
-      return producedWalk(inspectedDiffIds, diff);
-    }
-    const mapped = mapRangeBeforeDiff(currentRange, diff);
-    if (mapped == null) {
-      return unavailableWalk(inspectedDiffIds, partialOverlapUnavailable(diff));
-    }
-    currentRange = mapped;
-  }
-  return unavailableWalk(inspectedDiffIds, retainedHistoryHorizonUnavailable());
-}
-
-function retainedRopeDiff(tick: TickMetadata): RetainedRopeDiff | undefined {
-  const baseHeadId = tick.baseHeadId;
-  const nextHeadId = tick.nextHeadId;
-  const startByte = tick.startByte;
-  const endByte = tick.endByte;
-  const insertedByteLength = tick.insertedByteLength;
-  const deletedByteLength = tick.deletedByteLength;
-  if (baseHeadId == null || nextHeadId == null || startByte == null || endByte == null) {
-    return undefined;
-  }
-  if (insertedByteLength == null || deletedByteLength == null) {
-    return undefined;
-  }
+function createProducedResult(
+  reading: WhyRangeReading,
+  fragments: readonly JeditWhyRangeFragment[],
+): JeditWhyRangeProduced {
   return {
-    ropeRewriteId: toTickId(tick.tickId),
-    ropeDiffId: toReceiptId(tick.tickId),
-    baseHeadId,
-    nextHeadId,
-    startByte,
-    endByte,
-    insertedByteLength,
-    deletedByteLength,
-  };
-}
-
-function diffProducesRange(diff: RetainedRopeDiff, range: JeditWhyByteRange): boolean {
-  return diff.insertedByteLength > ZERO_BYTES && rangeContains(insertedRange(diff), range);
-}
-
-function mapRangeBeforeDiff(
-  range: JeditWhyByteRange,
-  diff: RetainedRopeDiff,
-): JeditWhyByteRange | undefined {
-  const startByte = diff.startByte;
-  const insertedEndByte = diff.startByte + diff.insertedByteLength;
-  const delta = diff.insertedByteLength - diff.deletedByteLength;
-  if (range.endByte <= startByte) {
-    return range;
-  }
-  if (range.startByte >= insertedEndByte) {
-    return offsetRange(range, -delta);
-  }
-  return undefined;
-}
-
-function producedWalk(
-  inspectedDiffIds: readonly string[],
-  diff: RetainedRopeDiff,
-): ReverseWalkResult {
-  return {
-    reverseWalk: reverseWalk(inspectedDiffIds),
-    result: {
-      kind: RESULT_PRODUCED,
-      ropeRewriteId: diff.ropeRewriteId,
-      ropeDiffId: diff.ropeDiffId,
-      tickId: diff.ropeRewriteId,
-      receiptId: diff.ropeDiffId,
-      baseHeadId: diff.baseHeadId,
-      nextHeadId: diff.nextHeadId,
-      startByte: diff.startByte,
-      endByte: diff.endByte,
-      insertedByteLength: diff.insertedByteLength,
-      deletedByteLength: diff.deletedByteLength,
+    kind: RESULT_PRODUCED,
+    coverage: {
+      kind: reading.coverage.kind,
+      coveredRange: {
+        startByte: reading.coverage.coveredStartByte,
+        endByte: reading.coverage.coveredEndByte,
+      },
+      continuation: reading.coverage.continuation,
+      reason: reading.coverage.reason,
     },
+    fragments,
+    relatedCheckpoints: reading.relatedCheckpoints.map(checkpoint => ({
+      ...checkpoint,
+      anchorAssociation: checkpoint.anchorAssociation == null
+        ? null
+        : { ...checkpoint.anchorAssociation },
+    })),
+    inspectedFactCount: reading.inspectedFactCount,
+    observerVersion: reading.observerVersion,
   };
 }
 
-function unavailableWalk(
-  inspectedDiffIds: readonly string[],
-  result: JeditWhyRangeUnavailable,
-): ReverseWalkResult {
+function toRangeFragment(fragment: WhyRangeFragment): JeditWhyRangeFragment {
   return {
-    reverseWalk: reverseWalk(inspectedDiffIds),
-    result,
+    coveredRange: {
+      startByte: fragment.coveredStartByte,
+      endByte: fragment.coveredEndByte,
+    },
+    headId: fragment.headId,
+    leafId: fragment.leafId,
+    blobId: fragment.blobId,
+    origin: toRangeOrigin(fragment.origin),
   };
 }
 
-function reverseWalk(inspectedDiffIds: readonly string[]): JeditWhyRangeReverseWalk {
-  return {
-    coordinateKind: COORDINATE_KIND_RANGE_AT_HEAD,
-    inspectedDiffIds,
-  };
-}
-
-function evidencePosture(result: JeditWhyRangeResult): JeditWhyRangeEvidencePosture {
-  return result.kind === RESULT_PRODUCED
-    ? { causalHistory: CAUSAL_HISTORY_AVAILABLE, btr: BTR_MISSING }
-    : { causalHistory: CAUSAL_HISTORY_UNAVAILABLE, btr: BTR_MISSING };
-}
-
-function rangeWhyMessage(witness: JeditWhyRangeWitness): string {
-  if (witness.result.kind !== RESULT_PRODUCED) {
-    return `No retained rope diff proves range ${formatRange(witness.queriedRange)}: ${witness.result.code}`;
+function toRangeOrigin(origin: WhyRangeOrigin): JeditWhyRangeOrigin {
+  if (origin.kind === ORIGIN_IMPORTED) {
+    return {
+      kind: ORIGIN_IMPORTED,
+      worldlineId: requireEvidence(origin.worldlineId, 'worldlineId'),
+      initialHeadId: requireEvidence(origin.initialHeadId, 'initialHeadId'),
+      createdAtTickId: requireEvidence(origin.createdAtTickId, 'createdAtTickId'),
+    };
   }
-  return [
-    `range: ${formatRange(witness.queriedRange)}`,
-    `head: ${witness.currentHeadId}`,
-    `ropeDiff ${witness.result.ropeDiffId}`,
-    `ropeRewrite ${witness.result.ropeRewriteId}`,
-    `tick ${witness.result.tickId}`,
-    `receipt ${witness.result.receiptId}`,
-    'BTR provenance: missing',
-  ].join(' | ');
-}
-
-function insertedRange(diff: RetainedRopeDiff): JeditWhyByteRange {
+  if (origin.kind === ORIGIN_REWRITE) {
+    return {
+      kind: ORIGIN_REWRITE,
+      rewriteId: requireEvidence(origin.rewriteId, 'rewriteId'),
+      diffId: requireEvidence(origin.diffId, 'diffId'),
+      textTickReceiptId: requireEvidence(origin.textTickReceiptId, 'textTickReceiptId'),
+      basisHeadId: requireEvidence(origin.basisHeadId, 'basisHeadId'),
+      nextHeadId: requireEvidence(origin.nextHeadId, 'nextHeadId'),
+    };
+  }
   return {
-    startByte: diff.startByte,
-    endByte: diff.startByte + diff.insertedByteLength,
+    kind: 'UNAVAILABLE',
+    code: requireEvidence(origin.unavailableCode, 'unavailableCode'),
   };
 }
 
-function rangeContains(outer: JeditWhyByteRange, inner: JeditWhyByteRange): boolean {
-  return outer.startByte <= inner.startByte && inner.endByte <= outer.endByte;
+function rangeWhyMessage(reading: WhyRangeReading): string {
+  const range = `${String(reading.startByte)}..${String(reading.endByte)}`;
+  const origins = reading.fragments.map(fragment => originMessage(fragment)).join('; ');
+  return `Range ${range} at head ${reading.basisHeadId}: ${origins}`;
 }
 
-function offsetRange(range: JeditWhyByteRange, offset: number): JeditWhyByteRange {
-  return {
-    startByte: range.startByte + offset,
-    endByte: range.endByte + offset,
-  };
+function originMessage(fragment: WhyRangeFragment): string {
+  const range = `${String(fragment.coveredStartByte)}..${String(fragment.coveredEndByte)}`;
+  if (fragment.origin.kind === ORIGIN_IMPORTED) {
+    return `${range} imported by ${requireEvidence(fragment.origin.createdAtTickId, 'createdAtTickId')}`;
+  }
+  if (fragment.origin.kind === ORIGIN_REWRITE) {
+    return [
+      `${range} rewritten by ${requireEvidence(fragment.origin.rewriteId, 'rewriteId')}`,
+      `diff ${requireEvidence(fragment.origin.diffId, 'diffId')}`,
+      `receipt ${requireEvidence(fragment.origin.textTickReceiptId, 'textTickReceiptId')}`,
+    ].join(', ');
+  }
+  return `${range} unavailable: ${requireEvidence(fragment.origin.unavailableCode, 'unavailableCode')}`;
 }
 
-function formatRange(range: JeditWhyByteRange): string {
-  return `${range.startByte}..${range.endByte}`;
+function requireEvidence(value: string | null, fieldName: string): string {
+  if (value == null || value.length === 0) {
+    throw new JeditWhyRangeEvidenceError(`Range why origin omitted required ${fieldName} evidence.`);
+  }
+  return value;
 }
 
-function emptyRangeUnavailable(): JeditWhyRangeUnavailable {
-  return {
-    kind: RESULT_UNAVAILABLE,
-    code: UNAVAILABLE_EMPTY_RANGE_CODE,
-    reason: 'Range why requires a non-empty range-at-head query.',
-  };
-}
-
-function missingDiffUnavailable(tick: TickMetadata): JeditWhyRangeUnavailable {
-  return {
-    kind: RESULT_UNAVAILABLE,
-    code: UNAVAILABLE_MISSING_DIFF_CODE,
-    reason: `Tick ${toTickId(tick.tickId)} has no retained rope diff coordinates.`,
-  };
-}
-
-function partialOverlapUnavailable(diff: RetainedRopeDiff): JeditWhyRangeUnavailable {
-  return {
-    kind: RESULT_UNAVAILABLE,
-    code: UNAVAILABLE_PARTIAL_OVERLAP_CODE,
-    reason: `Range crosses retained diff ${diff.ropeDiffId}; split the query into a narrower range.`,
-  };
-}
-
-function retainedHistoryHorizonUnavailable(): JeditWhyRangeUnavailable {
-  return {
-    kind: RESULT_UNAVAILABLE,
-    code: UNAVAILABLE_HORIZON_CODE,
-    reason: 'Retained rope history does not identify a producing diff for this range.',
-  };
+export class JeditWhyRangeEvidenceError extends Error {
+  public constructor(message: string) {
+    super(message);
+    this.name = 'JeditWhyRangeEvidenceError';
+  }
 }

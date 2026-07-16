@@ -1532,23 +1532,16 @@ function fakeProducedRangeWhyReport(range) {
     message: `range: ${range.startByte}..${range.endByte} | ropeDiff receipt:range`,
     witness: {
       worldlineId: "wl:/repo/notes.md",
-      currentHeadId: "head:2",
+      basisHeadId: "head:2",
       queriedRange: range,
-      reverseWalk: { coordinateKind: "range-at-head", inspectedDiffIds: ["receipt:range"] },
       result: {
         kind: "produced",
-        ropeRewriteId: "tick:range",
-        ropeDiffId: "receipt:range",
-        tickId: "tick:range",
-        receiptId: "receipt:range",
-        baseHeadId: "head:1",
-        nextHeadId: "head:2",
-        startByte: range.startByte,
-        endByte: range.endByte,
-        insertedByteLength: range.endByte - range.startByte,
-        deletedByteLength: 0,
+        coverage: { kind: "COMPLETE", coveredRange: range, continuation: null, reason: null },
+        fragments: [],
+        relatedCheckpoints: [],
+        inspectedFactCount: 1,
+        observerVersion: "test-fixture",
       },
-      evidencePosture: { causalHistory: "available", btr: "missing" },
     },
   };
 }
@@ -1601,15 +1594,13 @@ function fakeUnavailableRangeWhyReport(range) {
     message: `No retained rope diff proves range ${range.startByte}..${range.endByte}: jedit_why_range_retained_history_horizon`,
     witness: {
       worldlineId: "wl:/repo/notes.md",
-      currentHeadId: "head:2",
+      basisHeadId: "head:2",
       queriedRange: range,
-      reverseWalk: { coordinateKind: "range-at-head", inspectedDiffIds: [] },
       result: {
         kind: "unavailable",
         code: "jedit_why_range_retained_history_horizon",
         reason: "Retained rope history does not identify a producing diff for this range.",
       },
-      evidencePosture: { causalHistory: "unavailable", btr: "missing" },
     },
   };
 }

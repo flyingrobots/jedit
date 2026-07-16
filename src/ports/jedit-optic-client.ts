@@ -3,6 +3,7 @@ import type {
   MutationCreateCheckpointRequest,
   MutationReplaceRangeAsTickRequest,
   QueryCausalLineDiffRequest,
+  QueryWhyRangeRequest,
   QueryWorldlineSnapshotRequest,
 } from '../generated/jedit/rope.wesley.generated.js';
 import type {
@@ -14,6 +15,7 @@ import type {
 import type { WorldlineSnapshotReadingEnvelope } from '../app/jedit-observer-runtime.js';
 import type { TextWindowReadingEnvelope } from '../app/jedit-observer-runtime.js';
 import type { CausalLineDiffReadingEnvelope } from '../app/jedit-causal-line-diff-observer.js';
+import type { WhyRangeReadingEnvelope } from '../app/jedit-why-range-observer.js';
 import type { ReadBasisHandle, TextWindowRequest } from './text-buffer-session.js';
 export type {
   ApplyIntentResult,
@@ -69,6 +71,12 @@ export interface JeditObserverOpticClient {
     frontierRef: string,
     input: QueryCausalLineDiffRequest['input'],
   ): Promise<CausalLineDiffReadingEnvelope>;
+
+  whyRange(
+    session: JeditWorldlineSession,
+    frontierRef: string,
+    input: QueryWhyRangeRequest['input'],
+  ): Promise<WhyRangeReadingEnvelope>;
 
   worldlineSnapshot(
     session: JeditWorldlineSession,

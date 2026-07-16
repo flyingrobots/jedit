@@ -17,9 +17,6 @@ import {
   type JeditTextWindowMaterializationProvenance,
 } from '../../ports/jedit-text-window-materialization.js';
 import {
-  BTR_MISSING,
-  CAUSAL_HISTORY_UNAVAILABLE,
-  COORDINATE_KIND_RANGE_AT_HEAD,
   REPORT_KIND_RANGE,
   REPORT_TITLE,
   RESULT_UNAVAILABLE,
@@ -248,15 +245,13 @@ function preflightWhyRangeReport(range: JeditWhyByteRange): JeditWhyRangeReport 
     message: 'Preflight range why is unavailable.',
     witness: {
       worldlineId: 'wl:preflight',
-      currentHeadId: 'head:preflight',
+      basisHeadId: 'head:preflight',
       queriedRange: range,
-      reverseWalk: { coordinateKind: COORDINATE_KIND_RANGE_AT_HEAD, inspectedDiffIds: [] },
       result: {
         kind: RESULT_UNAVAILABLE,
         code: 'preflight_why_range_unavailable',
         reason: 'Preflight fixture does not retain rope diff history.',
       },
-      evidencePosture: { causalHistory: CAUSAL_HISTORY_UNAVAILABLE, btr: BTR_MISSING },
     },
   };
 }

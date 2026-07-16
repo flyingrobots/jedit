@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Added the bounded, basis-pinned `whyRange` query to the generated hot-text
+  contract and installed Echo transport. Graph-rope observations now return
+  ordered head/leaf/blob fragments with actual imported or rewrite origins,
+  distinct rewrite/diff/text-tick receipt identities, checkpoint declarations,
+  and optional anchor associations. Product `explainRange` no longer reverse
+  walks local `TickMetadata` or aliases one identifier as another; unsupported
+  authorities, invalid bases, and exceeded evidence bounds fail closed.
 - Designed the CR-06 runtime-backed range-why contract and rope fact inspector.
   One bounded, basis-pinned observation will supply the human panel, developer
   inspector, gutter/footer explainers, and machine output with fragmented

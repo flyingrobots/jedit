@@ -8,6 +8,7 @@ import {
 } from '../ports/jedit-optic-client.js';
 import { ReadBasisHandleRegistry } from './read-basis-handle-registry.js';
 import { readCausalLineDiffWithObserverPlan } from './jedit-causal-line-diff-observer.js';
+import { readWhyRangeWithObserverPlan } from './jedit-why-range-observer.js';
 import {
   createBufferWorldline,
   createCheckpoint,
@@ -37,6 +38,12 @@ export function createInMemoryJeditOpticClient(runtime: HotTextRuntimePort, hash
     replaceRangeAsTick: async (session, input) => replaceRangeAsTick(runtime, session, input, hash),
     createCheckpoint: async (session, input) => createCheckpoint(runtime, session, input, hash),
     causalLineDiff: async (session, frontierRef, input) => readCausalLineDiffWithObserverPlan(
+      runtime,
+      session,
+      frontierRef,
+      input,
+    ),
+    whyRange: async (session, frontierRef, input) => readWhyRangeWithObserverPlan(
       runtime,
       session,
       frontierRef,

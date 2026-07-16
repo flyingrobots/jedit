@@ -43,6 +43,9 @@ const FIRST_BUFFER_VERSION: BufferVersion = 0;
 const NEXT_BUFFER_VERSION_STEP = 1;
 const EMPTY_BYTE_LENGTH = 0;
 const TEXT_WINDOW_MIN_LINE_COUNT = 0;
+const WHY_RANGE_MAX_FACTS = 256;
+const WHY_RANGE_MAX_DEPTH = 128;
+const WHY_RANGE_MAX_HISTORICAL_TEXT_BYTES = 65_536;
 
 interface TextBufferOpticRuntimeState {
   currentSession: JeditWorldlineSession;
@@ -122,9 +125,31 @@ function createTextBufferOptic(
       return readTextBufferCausalLineDiff(client, buffer, state, request);
     },
     async explainRange(range: JeditWhyByteRange): Promise<JeditWhyRangeReport> {
-      return explainJeditWhyRange(state.currentSession, range);
+      return readTextBufferWhyRange(client, buffer, state, range);
     },
   });
+}
+
+async function readTextBufferWhyRange(
+  client: JeditOpticClient,
+  buffer: TextBuffer,
+  state: TextBufferOpticRuntimeState,
+  range: JeditWhyByteRange,
+): Promise<JeditWhyRangeReport> {
+  const envelope = await client.whyRange(
+    state.currentSession,
+    toFrontierRef(buffer.bufferId, state.bufferVersion),
+    {
+      worldlineId: state.currentSession.worldline.worldlineId,
+      basisHeadId: state.currentSession.worldline.canonicalHeadId,
+      startByte: range.startByte,
+      endByte: range.endByte,
+      maxFacts: WHY_RANGE_MAX_FACTS,
+      maxDepth: WHY_RANGE_MAX_DEPTH,
+      maxHistoricalTextBytes: WHY_RANGE_MAX_HISTORICAL_TEXT_BYTES,
+    },
+  );
+  return explainJeditWhyRange(envelope.reading);
 }
 
 async function readTextBufferCausalLineDiff(

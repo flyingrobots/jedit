@@ -7,10 +7,12 @@ import type {
 import type { WorldlineSnapshotReadingEnvelope } from '../app/jedit-observer-runtime.js';
 import type { TextWindowReadingEnvelope } from '../app/jedit-observer-runtime.js';
 import type { CausalLineDiffReadingEnvelope } from '../app/jedit-causal-line-diff-observer.js';
+import type { WhyRangeReadingEnvelope } from '../app/jedit-why-range-observer.js';
 import type {
   MutationOperationMap,
   QueryOperationMap,
 } from '../generated/jedit/rope.types.generated.js';
+import type { QueryWhyRangeRequest } from '../generated/jedit/rope.wesley.generated.js';
 import type { EchoWasmKernelTransport } from '../ports/echo-kernel-transport.js';
 import {
   type JeditOpticClient,
@@ -32,6 +34,7 @@ import {
   JEDIT_TRANSPORT_STATUS_OBSTRUCTED,
   REPLACE_RANGE_AS_TICK_OPERATION,
   TEXT_WINDOW_OPERATION,
+  WHY_RANGE_OPERATION,
   WORLDLINE_SNAPSHOT_OPERATION,
   type JeditIntentResponse,
   type JeditObserveRequest,
@@ -55,6 +58,7 @@ type CreateCheckpointInput = MutationOperationMap['createCheckpoint']['input'];
 type WorldlineSnapshotInput = QueryOperationMap['worldlineSnapshot']['input'];
 type TextWindowInput = QueryOperationMap['textWindow']['input'];
 type CausalLineDiffInput = QueryOperationMap['causalLineDiff']['input'];
+type WhyRangeInput = QueryWhyRangeRequest['input'];
 type JeditOkIntentResponse = Exclude<JeditIntentResponse, { readonly status: typeof JEDIT_TRANSPORT_STATUS_OBSTRUCTED }>;
 type JeditOkObserveResponse = Exclude<JeditObserveResponse, { readonly status: typeof JEDIT_TRANSPORT_STATUS_OBSTRUCTED }>;
 
@@ -129,6 +133,12 @@ export function createEchoTransportJeditOpticClient(
     replaceRangeAsTick: (session, input) => replaceRangeAsTickViaTransport(context, session, input),
     createCheckpoint: (session, input) => createCheckpointViaTransport(context, session, input),
     causalLineDiff: (session, frontierRef, input) => causalLineDiffViaTransport(
+      context,
+      session,
+      frontierRef,
+      input,
+    ),
+    whyRange: (session, frontierRef, input) => whyRangeViaTransport(
       context,
       session,
       frontierRef,
@@ -253,6 +263,25 @@ async function causalLineDiffViaTransport(
   });
   if (response.operationName !== CAUSAL_LINE_DIFF_OPERATION) {
     throwUnexpectedOperation(CAUSAL_LINE_DIFF_OPERATION, response.operationName);
+  }
+  return response.envelope;
+}
+
+async function whyRangeViaTransport(
+  context: OpticClientContext,
+  session: JeditWorldlineSession,
+  frontierRef: string,
+  input: WhyRangeInput,
+): Promise<WhyRangeReadingEnvelope> {
+  const response = await checkedObserveResponse(context, {
+    kind: JEDIT_OBSERVE_REQUEST_KIND,
+    operationName: WHY_RANGE_OPERATION,
+    session,
+    frontierRef,
+    input,
+  });
+  if (response.operationName !== WHY_RANGE_OPERATION) {
+    throwUnexpectedOperation(WHY_RANGE_OPERATION, response.operationName);
   }
   return response.envelope;
 }

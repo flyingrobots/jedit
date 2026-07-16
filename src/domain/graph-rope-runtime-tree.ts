@@ -10,4 +10,5 @@ export type {
   GraphRopeTreeWindowReading,
   NodeRef,
   RopeNodeFact,
+  TreeResult,
 } from './graph-rope-runtime-tree-types.js';

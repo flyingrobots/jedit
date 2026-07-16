@@ -216,7 +216,8 @@ test('production text session explains ranges through the text buffer optic', as
 
   assert.equal(outcome.kind, module.ProductionTextSessionOutcomeKinds.RangeExplained);
   assert.equal(outcome.report.witness.result.kind, 'produced');
-  assert.equal(outcome.report.witness.result.ropeDiffId, 'receipt:range');
+  assert.equal(outcome.report.witness.result.coverage.kind, 'COMPLETE');
+  assert.equal(outcome.report.witness.result.observerVersion, 'test-fixture');
   assert.deepEqual(calls, [{ startByte: 6, endByte: 9 }]);
 });
 
@@ -434,23 +435,16 @@ function whyRangeReport(range) {
     message: `range: ${range.startByte}..${range.endByte} | ropeDiff receipt:range`,
     witness: {
       worldlineId: 'wl:/repo/notes.md',
-      currentHeadId: 'head:2',
+      basisHeadId: 'head:2',
       queriedRange: range,
-      reverseWalk: { coordinateKind: 'range-at-head', inspectedDiffIds: ['receipt:range'] },
       result: {
         kind: 'produced',
-        ropeRewriteId: 'tick:range',
-        ropeDiffId: 'receipt:range',
-        tickId: 'tick:range',
-        receiptId: 'receipt:range',
-        baseHeadId: 'head:1',
-        nextHeadId: 'head:2',
-        startByte: range.startByte,
-        endByte: range.endByte,
-        insertedByteLength: range.endByte - range.startByte,
-        deletedByteLength: 0,
+        coverage: { kind: 'COMPLETE', coveredRange: range, continuation: null, reason: null },
+        fragments: [],
+        relatedCheckpoints: [],
+        inspectedFactCount: 1,
+        observerVersion: 'test-fixture',
       },
-      evidencePosture: { causalHistory: 'available', btr: 'missing' },
     },
   };
 }
