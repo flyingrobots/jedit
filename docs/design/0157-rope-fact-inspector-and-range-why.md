@@ -608,7 +608,7 @@ The work is done when:
 - [x] Wide, narrow, and extra-small layouts are covered.
 - [x] New visible strings are localized through the catalog schema.
 - [x] Gutter and footer details do not invent facts.
-- [ ] CR-06 issues and PR are linked correctly.
+- [x] CR-06 issues and PR are linked correctly.
 - [ ] CI and local validation are green.
 
 ## Validation Plan
@@ -721,4 +721,4 @@ What remains open:
 
 PR:
 
-- Pending.
+- [#280 Add runtime-backed causal range evidence](https://github.com/flyingrobots/jedit/pull/280)
