@@ -418,6 +418,7 @@ function causalLineDiffReading(request) {
     nextHeadId: request.nextHeadId,
     insertedLineCount: 2,
     deletedLineCount: 1,
+    tickReceiptIds: [],
     rewriteIds: ['rewrite:1'],
     diffIds: ['diff:1'],
     markers: [],
