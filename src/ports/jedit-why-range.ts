@@ -14,6 +14,13 @@ export const JeditWhyRangeOriginKinds = Object.freeze({
   Unavailable: 'UNAVAILABLE',
 } as const);
 
+export const JeditWhyRangeProducerEvidenceKinds = Object.freeze({
+  Unavailable: 'UNAVAILABLE',
+} as const);
+
+export const JEDIT_WHY_RANGE_PRODUCER_EVIDENCE_UNAVAILABLE_CODE =
+  'jedit_why_range_producer_evidence_unavailable';
+
 export interface JeditWhyByteRange {
   readonly startByte: number;
   readonly endByte: number;
@@ -84,6 +91,14 @@ export interface JeditWhyRangeRewriteOrigin {
   readonly textTickReceiptId: string;
   readonly basisHeadId: string;
   readonly nextHeadId: string;
+  readonly producerEvidence: JeditWhyRangeProducerEvidence;
+}
+
+export type JeditWhyRangeProducerEvidence = JeditWhyRangeProducerEvidenceUnavailable;
+
+export interface JeditWhyRangeProducerEvidenceUnavailable {
+  readonly kind: typeof JeditWhyRangeProducerEvidenceKinds.Unavailable;
+  readonly code: typeof JEDIT_WHY_RANGE_PRODUCER_EVIDENCE_UNAVAILABLE_CODE;
 }
 
 export interface JeditWhyRangeUnavailableOrigin {

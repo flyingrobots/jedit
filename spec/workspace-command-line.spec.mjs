@@ -1565,6 +1565,10 @@ function fakeProducedRangeWhyReport(range) {
             textTickReceiptId: "tick:range",
             basisHeadId: "head:before",
             nextHeadId: "head:command",
+            producerEvidence: {
+              kind: "UNAVAILABLE",
+              code: "jedit_why_range_producer_evidence_unavailable",
+            },
           },
         }],
         relatedCheckpoints: [],

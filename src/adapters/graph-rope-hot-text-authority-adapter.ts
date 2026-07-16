@@ -12,7 +12,6 @@ import {
 } from '../domain/graph-rope-coordinates.js';
 import type {
   EchoCausalAnchorAdmissionPort,
-  RopeCheckpointAnchoredFact,
   RopeCheckpointFact,
   RopeCheckpointReason,
   RopeHeadFact,
@@ -226,10 +225,7 @@ function saveGraphCheckpoint(
   if (existing != null) {
     return { nextState: state, checkpointDeclaration: checkpoint };
   }
-  const association = checkpointRequiresAnchor(request)
-    ? requireCheckpointAnchor(graph.anchorCheckpoint({ checkpointId: checkpoint.checkpointId }))
-    : undefined;
-  return admittedCheckpointResult(state, checkpoint, association);
+  return declaredCheckpointResult(state, checkpoint);
 }
 
 function requireCheckpoint(
@@ -241,19 +237,9 @@ function requireCheckpoint(
   return result.value.checkpoint;
 }
 
-function requireCheckpointAnchor(
-  result: GraphRopeRuntimeResult<{ readonly association: RopeCheckpointAnchoredFact }>,
-): RopeCheckpointAnchoredFact {
-  if (!result.ok) {
-    throw new GraphRopeTextAuthorityObstructionError(SAVE_CHECKPOINT_OPERATION, result.code);
-  }
-  return result.value.association;
-}
-
-function admittedCheckpointResult(
+function declaredCheckpointResult(
   state: HotTextBufferState,
   checkpoint: RopeCheckpointFact,
-  association: RopeCheckpointAnchoredFact | undefined,
 ): SaveHotCheckpointResult {
   const id = state.checkpoints.length + NEXT_CHECKPOINT_OFFSET;
   const saved = { id, rootId: state.currentRoot.id, path: state.path, authorityCheckpointId: checkpoint.checkpointId };
@@ -261,7 +247,6 @@ function admittedCheckpointResult(
     nextState: { ...state, checkpoints: [...state.checkpoints, saved] },
     receipt: { checkpointId: id, rootId: saved.rootId, path: saved.path, authorityCheckpointId: checkpoint.checkpointId },
     checkpointDeclaration: checkpoint,
-    anchorAssociation: association,
   };
 }
 
@@ -284,10 +269,6 @@ function rejectUnsupportedCheckpointKind(kind: never): never {
     SAVE_CHECKPOINT_OPERATION,
     GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_FACT,
   );
-}
-
-function checkpointRequiresAnchor(request: SaveHotCheckpointRequest): boolean {
-  return request.kind !== INITIAL_CHECKPOINT_KIND;
 }
 
 function initialProjection(

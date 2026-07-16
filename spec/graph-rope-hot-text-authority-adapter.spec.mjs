@@ -301,7 +301,7 @@ test('worldline snapshot head metadata is derived from graph materialization', a
   assert.equal(snapshot.head.equivalenceDigest, hash.sha256Hex(snapshot.text));
 });
 
-test('manual save declares and anchors the current head without changing rope authority', async () => {
+test('manual save declares the current head without implicitly requesting an Echo anchor', async () => {
   const modules = await loadModules();
   const requests = [];
   const authority = modules.authority.createGraphRopeHotTextAuthority({
@@ -323,32 +323,24 @@ test('manual save declares and anchors the current head without changing rope au
     headId: basis.headId,
     reason: 'manual-save',
   });
-  assert.equal(saved.anchorAssociation.checkpointId, saved.checkpointDeclaration.checkpointId);
-  assert.equal(saved.anchorAssociation.causalAnchorId, 'test-only-anchor:1');
-  assert.deepEqual(requests, [{
-    checkpointId: saved.checkpointDeclaration.checkpointId,
-    worldlineId: basis.worldlineId,
-    headId: basis.headId,
-    reason: 'manual-save',
-    materializationRoots: [],
-  }]);
+  assert.equal(saved.anchorAssociation, undefined);
+  assert.deepEqual(requests, []);
   assert.deepEqual(after, before);
   assert.equal(saved.nextState.authorityBasis, state.authorityBasis);
   assert.equal(authority.materialize(saved.nextState), 'causal save');
 });
 
-test('manual save fails closed when Echo causal-anchor admission is unavailable', async () => {
+test('manual save declaration does not require Echo causal-anchor admission', async () => {
   const modules = await loadModules();
   const authority = modules.authority.createGraphRopeHotTextAuthority({
     hash: modules.hash.createHashPort(),
   });
   const state = authority.createBuffer('/tmp/save-no-echo.txt', 'causal save');
 
-  assert.throws(
-    () => authority.saveCheckpoint(state, { kind: 'MANUAL_SAVE' }),
-    (error) => error.operation === 'saveCheckpoint'
-      && error.obstructionCode === 'causal-anchor-unavailable',
-  );
+  const saved = authority.saveCheckpoint(state, { kind: 'MANUAL_SAVE' });
+
+  assert.equal(saved.checkpointDeclaration.reason, 'manual-save');
+  assert.equal(saved.anchorAssociation, undefined);
 });
 
 test('invalid Jim checkpoint semantics fail before requesting Echo admission', async () => {
@@ -382,7 +374,7 @@ test('initial checkpoint declaration does not require causal-anchor admission', 
   assert.equal(saved.receipt.authorityCheckpointId, saved.checkpointDeclaration.checkpointId);
 });
 
-test('installed transport admits save anchors only through its injected Echo capability', async () => {
+test('installed transport declares saved heads without manufacturing Echo anchors', async () => {
   const modules = await loadModules();
   const requests = [];
   const client = modules.client.createEchoTransportJeditOpticClient(
@@ -405,12 +397,11 @@ test('installed transport admits save anchors only through its injected Echo cap
     label: 'installed save',
   });
 
-  assert.equal(requests.length, 1);
-  assert.equal(saved.result.checkpoint.checkpointId, requests[0].checkpointId);
+  assert.equal(requests.length, 0);
+  assert.equal(saved.result.checkpoint.checkpointId, saved.nextSession.state.checkpoints[0].authorityCheckpointId);
   assert.equal(saved.result.checkpoint.headId, basis.headId);
   assert.equal(saved.nextSession.state.roots, undefined);
-  assert.equal(saved.nextSession.state.checkpoints[0].authorityCheckpointId, requests[0].checkpointId);
-  assert.equal(saved.nextSession.checkpointMetadata[0].authorityCheckpointId, requests[0].checkpointId);
+  assert.equal(saved.nextSession.checkpointMetadata[0].authorityCheckpointId, saved.result.checkpoint.checkpointId);
   assert.equal(saved.nextSession.checkpointMetadata[0].authorityHeadId, basis.headId);
 
   const repeated = await client.createCheckpoint(saved.nextSession, {
@@ -419,10 +410,10 @@ test('installed transport admits save anchors only through its injected Echo cap
     label: 'installed save',
   });
   assert.equal(repeated.result, undefined);
-  assert.equal(requests.length, 1);
+  assert.equal(requests.length, 0);
 });
 
-test('installed transport reports unavailable Echo admission as a typed obstruction', async () => {
+test('installed transport checkpoint declarations remain available without Echo admission', async () => {
   const modules = await loadModules();
   const client = modules.client.createEchoTransportJeditOpticClient(
     modules.transport.createInstalledJeditContractEchoTransport(),
@@ -434,15 +425,14 @@ test('installed transport reports unavailable Echo admission as a typed obstruct
     createInitialCheckpoint: false,
   });
 
-  await assert.rejects(
-    client.createCheckpoint(opened.nextSession, {
-      worldlineId: opened.nextSession.worldline.worldlineId,
-      kind: 'MANUAL_SAVE',
-      label: 'must fail closed',
-    }),
-    (error) => error.name === 'JeditOpticTransportObstructionError'
-      && error.obstruction.code === 'causal-anchor-unavailable',
-  );
+  const saved = await client.createCheckpoint(opened.nextSession, {
+    worldlineId: opened.nextSession.worldline.worldlineId,
+    kind: 'MANUAL_SAVE',
+    label: 'declaration only',
+  });
+
+  assert.equal(saved.result.checkpoint.kind, 'MANUAL_SAVE');
+  assert.equal(saved.nextSession.state.checkpoints.length, 1);
 });
 
 test('checkpoint rejects a stale exported head before requesting Echo admission', async () => {

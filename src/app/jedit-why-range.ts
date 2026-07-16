@@ -4,7 +4,9 @@ import type {
   WhyRangeReading,
 } from '../generated/jedit/rope.wesley.generated.js';
 import {
+  JEDIT_WHY_RANGE_PRODUCER_EVIDENCE_UNAVAILABLE_CODE,
   JeditWhyRangeOriginKinds,
+  JeditWhyRangeProducerEvidenceKinds,
   REPORT_KIND_RANGE,
   REPORT_TITLE,
   RESULT_PRODUCED,
@@ -94,6 +96,10 @@ function toRangeOrigin(origin: WhyRangeOrigin): JeditWhyRangeOrigin {
       textTickReceiptId: requireEvidence(origin.textTickReceiptId, 'textTickReceiptId'),
       basisHeadId: requireEvidence(origin.basisHeadId, 'basisHeadId'),
       nextHeadId: requireEvidence(origin.nextHeadId, 'nextHeadId'),
+      producerEvidence: {
+        kind: JeditWhyRangeProducerEvidenceKinds.Unavailable,
+        code: JEDIT_WHY_RANGE_PRODUCER_EVIDENCE_UNAVAILABLE_CODE,
+      },
     };
   }
   return {
@@ -118,6 +124,7 @@ function originMessage(fragment: WhyRangeFragment): string {
       `${range} rewritten by ${requireEvidence(fragment.origin.rewriteId, 'rewriteId')}`,
       `diff ${requireEvidence(fragment.origin.diffId, 'diffId')}`,
       `receipt ${requireEvidence(fragment.origin.textTickReceiptId, 'textTickReceiptId')}`,
+      `producer unavailable (${JEDIT_WHY_RANGE_PRODUCER_EVIDENCE_UNAVAILABLE_CODE})`,
     ].join(', ');
   }
   return `${range} unavailable: ${requireEvidence(fragment.origin.unavailableCode, 'unavailableCode')}`;

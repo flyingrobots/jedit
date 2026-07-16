@@ -40,6 +40,7 @@ function originDetailRows(fragment: JeditWhyRangeFragment): readonly string[] {
     return [
       `origin=REWRITE rewriteId=${origin.rewriteId} diffId=${origin.diffId}`,
       `textTickReceiptId=${origin.textTickReceiptId} basisHeadId=${origin.basisHeadId} nextHeadId=${origin.nextHeadId}`,
+      `producerEvidence=${origin.producerEvidence.kind} code=${origin.producerEvidence.code}`,
     ];
   }
   return [`origin=UNAVAILABLE code=${origin.code}`];

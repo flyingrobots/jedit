@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Added range-origin witnesses for untouched imports, retained rewrites,
+  checkpointed heads, and unsupported generated-text attribution. Rewrite
+  reports now expose a typed producer-evidence obstruction instead of treating
+  the transitional `author` field as causal proof. Ordinary Jim checkpoint
+  declarations no longer request Echo anchors implicitly; explicit anchoring
+  remains a separate operation that fails closed without an injected Echo
+  admission capability.
 - Replaced prose-only range explanations with a persistent, cursor-anchored
   causal evidence panel. The panel derives bounded detail rows from the same
   machine-readable range report, preserves opaque head/leaf/blob/rewrite/diff/

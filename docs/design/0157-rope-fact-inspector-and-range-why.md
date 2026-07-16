@@ -571,7 +571,7 @@ path. `TextBufferSession.explainRange` now consumes the generated, bounded
   evidence (#239).
 - [x] Slice 3: Render structured evidence in the persistent anchored panel
   (#240).
-- [ ] Slice 4: Add import, edit, checkpoint, and generated-text witnesses
+- [x] Slice 4: Add import, edit, checkpoint, and generated-text witnesses
   (#241).
 - [ ] Slice 5: Reuse the evidence pipeline for gutter and footer explainers
   (#242).
@@ -600,9 +600,9 @@ Documentation and process tests:
 
 The work is done when:
 
-- [ ] Runtime range evidence cites head, leaf, blob, rewrite, diff, text tick,
+- [x] Runtime range evidence cites head, leaf, blob, rewrite, diff, text tick,
   checkpoint, and optional anchor evidence when retained.
-- [ ] Imported and mixed-origin ranges are honest and fragmented.
+- [x] Imported and mixed-origin ranges are honest and fragmented.
 - [x] The visible panel and machine result share one structured payload.
 - [x] Stale and unsupported evidence fails closed.
 - [ ] Wide, narrow, and extra-small layouts are covered.
@@ -646,6 +646,14 @@ After implementation:
 6. Move the cursor or press `Esc` and confirm the panel closes.
 
 The agent witness inspects the same response object as deterministic JSON.
+
+Generated-text attribution remains intentionally obstructed. The retained rope
+facts currently prove that bytes came from a rewrite, but they do not carry a
+producer fact that can distinguish a user, Graft, or another generator. The
+transitional mutation `author` field is not authority, so the report returns
+`jedit_why_range_producer_evidence_unavailable` until retained producer evidence
+exists. Likewise, declaring a Jim checkpoint does not request an Echo causal
+anchor; explicit anchoring remains a separate, fail-closed graph operation.
 
 ## Risks
 
