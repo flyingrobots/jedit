@@ -249,6 +249,7 @@ test('replace command submits through production text session and refreshes read
           deletedLineCount: 1,
           rewriteIds: ['rewrite:replace'],
           diffIds: ['diff:replace'],
+          markers: [],
           observerVersion: 'test-fixture',
         },
       };
@@ -284,6 +285,7 @@ test('replace command submits through production text session and refreshes read
     maxByteCount: 67108864,
     maxLineCount: 5000000,
     maxRewriteCount: 10000,
+    maxMarkerCount: 100000,
     atMs: 42,
   }]);
   assert.equal(message.result.receiptId, 'receipt:replace');
@@ -297,6 +299,7 @@ test('replace command submits through production text session and refreshes read
     deletedLineCount: 1,
     rewriteIds: ['rewrite:replace'],
     diffIds: ['diff:replace'],
+    markers: [],
     observerVersion: 'test-fixture',
   });
 });

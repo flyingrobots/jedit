@@ -11,6 +11,11 @@ import {
 } from './graph-rope-contract.js';
 import { makeByteOffset, makeTextByteRange } from './graph-rope-coordinates.js';
 import {
+  deriveCausalLineMarkers,
+  type CausalLineMarker,
+  type CausalLineMarkerTransition,
+} from './graph-rope-causal-line-markers.js';
+import {
   GRAPH_ROPE_RUNTIME_OBSTRUCTION_BASIS_NOT_ANCESTOR,
   GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_FACT,
   GRAPH_ROPE_RUNTIME_OBSTRUCTION_LINE_DIFF_LIMIT_EXCEEDED,
@@ -20,7 +25,7 @@ import {
 } from './graph-rope-runtime-issues.js';
 import { readTreeWindow, type GraphRopeRuntimeFactReader } from './graph-rope-runtime-tree.js';
 
-export const GRAPH_ROPE_CAUSAL_LINE_DIFF_OBSERVER_VERSION = 'jedit-causal-line-diff-v1';
+export const GRAPH_ROPE_CAUSAL_LINE_DIFF_OBSERVER_VERSION = 'jedit-causal-line-diff-v2';
 
 export interface GraphRopeCausalLineDiffInput {
   readonly worldlineId: string;
@@ -29,6 +34,7 @@ export interface GraphRopeCausalLineDiffInput {
   readonly maxByteCount: number;
   readonly maxLineCount: number;
   readonly maxRewriteCount: number;
+  readonly maxMarkerCount: number;
 }
 
 export interface GraphRopeCausalLineDiffReading {
@@ -39,6 +45,7 @@ export interface GraphRopeCausalLineDiffReading {
   readonly deletedLineCount: number;
   readonly rewriteIds: readonly string[];
   readonly diffIds: readonly string[];
+  readonly markers: readonly CausalLineMarker[];
   readonly observerVersion: typeof GRAPH_ROPE_CAUSAL_LINE_DIFF_OBSERVER_VERSION;
 }
 
@@ -49,12 +56,12 @@ export type GraphRopeCausalLineDiffResult =
 interface CausalLineDiffSupport {
   readonly rewriteIds: readonly string[];
   readonly diffIds: readonly string[];
+  readonly transitions: readonly CausalLineMarkerTransition[];
 }
 
 interface CausalLineDiffStep {
   readonly parentHead: RopeHeadFact;
-  readonly rewriteId: string;
-  readonly diffId: string;
+  readonly transition: CausalLineMarkerTransition;
 }
 
 interface CausalTransitionEvidence {
@@ -108,7 +115,35 @@ export function readGraphRopeCausalLineDiff(
   if (!texts.ok) {
     return texts;
   }
+  return causalLineDiffReading(input, heads, support.value, texts);
+}
+
+function causalLineDiffReading(
+  input: GraphRopeCausalLineDiffInput,
+  heads: Extract<CausalLineDiffHeadsResult, { readonly ok: true }>,
+  support: CausalLineDiffSupport,
+  texts: Extract<CausalLineDiffTextsResult, { readonly ok: true }>,
+): GraphRopeCausalLineDiffResult {
   const counts = countChangedLines(texts.basisText, texts.nextText);
+  const markers = deriveCausalLineMarkers({
+    basisText: texts.basisText,
+    nextText: texts.nextText,
+    transitions: support.transitions,
+    maxMarkerCount: input.maxMarkerCount,
+  });
+  if (!markers.ok) {
+    return { ok: false, code: GRAPH_ROPE_RUNTIME_OBSTRUCTION_LINE_DIFF_LIMIT_EXCEEDED };
+  }
+  return causalLineDiffValue(input, heads, support, counts, markers.markers);
+}
+
+function causalLineDiffValue(
+  input: GraphRopeCausalLineDiffInput,
+  heads: Extract<CausalLineDiffHeadsResult, { readonly ok: true }>,
+  support: CausalLineDiffSupport,
+  counts: { readonly inserted: number; readonly deleted: number },
+  markers: readonly CausalLineMarker[],
+): GraphRopeCausalLineDiffResult {
   return {
     ok: true,
     value: {
@@ -117,8 +152,9 @@ export function readGraphRopeCausalLineDiff(
       nextHeadId: heads.nextHead.headId,
       insertedLineCount: counts.inserted,
       deletedLineCount: counts.deleted,
-      rewriteIds: support.value.rewriteIds,
-      diffIds: support.value.diffIds,
+      rewriteIds: support.rewriteIds,
+      diffIds: support.diffIds,
+      markers,
       observerVersion: GRAPH_ROPE_CAUSAL_LINE_DIFF_OBSERVER_VERSION,
     },
   };
@@ -147,7 +183,8 @@ function causalLineDiffHeads(
 function validInputLimits(input: GraphRopeCausalLineDiffInput): boolean {
   return validLimit(input.maxByteCount)
     && validLimit(input.maxLineCount)
-    && validLimit(input.maxRewriteCount);
+    && validLimit(input.maxRewriteCount)
+    && validLimit(input.maxMarkerCount);
 }
 
 function causalLineDiffTexts(
@@ -170,12 +207,11 @@ function collectCausalSupport(
   nextHead: RopeHeadFact,
   maxRewriteCount: number,
 ): CausalLineDiffSupportResult {
-  const rewriteIds: string[] = [];
-  const diffIds: string[] = [];
+  const transitions: CausalLineMarkerTransition[] = [];
   const visitedHeadIds = new Set<string>();
   let currentHead = nextHead;
   while (currentHead.headId !== basisHead.headId) {
-    if (rewriteIds.length >= maxRewriteCount) {
+    if (transitions.length >= maxRewriteCount) {
       return { ok: false, code: GRAPH_ROPE_RUNTIME_OBSTRUCTION_LINE_DIFF_LIMIT_EXCEEDED };
     }
     const step = causalSupportStep(facts, currentHead, visitedHeadIds);
@@ -183,15 +219,16 @@ function collectCausalSupport(
       return step;
     }
     visitedHeadIds.add(currentHead.headId);
-    rewriteIds.push(step.value.rewriteId);
-    diffIds.push(step.value.diffId);
+    transitions.push(step.value.transition);
     currentHead = step.value.parentHead;
   }
+  transitions.reverse();
   return {
     ok: true,
     value: {
-      rewriteIds: rewriteIds.reverse(),
-      diffIds: diffIds.reverse(),
+      rewriteIds: transitions.map(({ rewrite }) => rewrite.rewriteId),
+      diffIds: transitions.map(({ diff }) => diff.diffId),
+      transitions,
     },
   };
 }
@@ -215,7 +252,13 @@ function causalSupportStep(
   const parentHead = headById(facts, basisHeadId);
   return parentHead === null
     ? { ok: false, code: GRAPH_ROPE_RUNTIME_OBSTRUCTION_MISSING_CAUSAL_EVIDENCE }
-    : { ok: true, value: { parentHead, rewriteId: evidence.value.rewrite.rewriteId, diffId: evidence.value.diff.diffId } };
+    : {
+        ok: true,
+        value: {
+          parentHead,
+          transition: { rewrite: evidence.value.rewrite, diff: evidence.value.diff },
+        },
+      };
 }
 
 function causalTransitionEvidence(

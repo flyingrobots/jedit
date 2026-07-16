@@ -186,6 +186,18 @@ type TextWindowReading {
     lines: [TextLineReading!]!
 }
 
+enum CausalLineMarkerKind {
+    INSERTED
+    MODIFIED
+}
+
+type CausalLineMarker {
+    lineNumber: Int!
+    kind: CausalLineMarkerKind!
+    rewriteIds: [ID!]!
+    diffIds: [ID!]!
+}
+
 """Net line changes between two causally related retained rope heads."""
 type CausalLineDiffReading {
     worldlineId: ID!
@@ -195,6 +207,7 @@ type CausalLineDiffReading {
     deletedLineCount: Int!
     rewriteIds: [ID!]!
     diffIds: [ID!]!
+    markers: [CausalLineMarker!]!
     observerVersion: String!
 }
 
@@ -262,6 +275,7 @@ input CausalLineDiffInput {
     maxByteCount: Int!
     maxLineCount: Int!
     maxRewriteCount: Int!
+    maxMarkerCount: Int!
 }
 
 type Mutation {

@@ -1,4 +1,7 @@
-import type { CausalLineDiffReading } from '../../ports/text-buffer-session.js';
+import type {
+  CausalLineDiffReading,
+  CausalLineMarkerReading,
+} from '../../ports/text-buffer-session.js';
 
 const LINE_CHANGES_AVAILABLE = 'available';
 const LINE_CHANGES_UNAVAILABLE = 'unavailable';
@@ -41,6 +44,7 @@ export interface WorkspaceBufferCausalLineChangesAvailable {
   readonly deletedLineCount: number;
   readonly rewriteIds: readonly string[];
   readonly diffIds: readonly string[];
+  readonly markers: readonly CausalLineMarkerReading[];
   readonly observerVersion: string;
 }
 
@@ -74,6 +78,11 @@ export function workspaceBufferCausalLineChangesFromReading(
     deletedLineCount: reading.deletedLineCount,
     rewriteIds: [...reading.rewriteIds],
     diffIds: [...reading.diffIds],
+    markers: reading.markers.map(marker => ({
+      ...marker,
+      rewriteIds: [...marker.rewriteIds],
+      diffIds: [...marker.diffIds],
+    })),
     observerVersion: reading.observerVersion,
   };
 }
@@ -115,6 +124,7 @@ export function identityWorkspaceBufferCausalLineChanges(
     deletedLineCount: 0,
     rewriteIds: [],
     diffIds: [],
+    markers: [],
     observerVersion: LINE_CHANGES_IDENTITY_OBSERVER_VERSION,
   };
 }
@@ -143,6 +153,11 @@ export function workspaceBufferCausalLineChangesForTransition(
     ...lineChanges,
     rewriteIds: [...lineChanges.rewriteIds],
     diffIds: [...lineChanges.diffIds],
+    markers: lineChanges.markers.map(marker => ({
+      ...marker,
+      rewriteIds: [...marker.rewriteIds],
+      diffIds: [...marker.diffIds],
+    })),
   };
 }
 

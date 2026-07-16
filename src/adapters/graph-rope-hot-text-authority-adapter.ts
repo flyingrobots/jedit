@@ -205,6 +205,11 @@ function graphCausalLineDiffReading(
     ...reading,
     rewriteIds: [...reading.rewriteIds],
     diffIds: [...reading.diffIds],
+    markers: reading.markers.map(marker => ({
+      ...marker,
+      rewriteIds: [...marker.rewriteIds],
+      diffIds: [...marker.diffIds],
+    })),
   };
 }
 

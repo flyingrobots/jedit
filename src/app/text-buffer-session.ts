@@ -143,12 +143,18 @@ async function readTextBufferCausalLineDiff(
       maxByteCount: request.maxByteCount,
       maxLineCount: request.maxLineCount,
       maxRewriteCount: request.maxRewriteCount,
+      maxMarkerCount: request.maxMarkerCount,
     },
   );
   return {
     ...envelope.reading,
     rewriteIds: [...envelope.reading.rewriteIds],
     diffIds: [...envelope.reading.diffIds],
+    markers: envelope.reading.markers.map(marker => ({
+      ...marker,
+      rewriteIds: [...marker.rewriteIds],
+      diffIds: [...marker.diffIds],
+    })),
   };
 }
 

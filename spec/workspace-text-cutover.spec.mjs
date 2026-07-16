@@ -104,6 +104,7 @@ test("file open routes through production text session and applies initial bound
         deletedLineCount: 0,
         rewriteIds: [],
         diffIds: [],
+        markers: [],
         observerVersion: "test-fixture",
       },
     }),
@@ -315,6 +316,59 @@ test("viewer renders a basis-tagged bounded projection instead of local editor t
   assert.doesNotMatch(text, /local 24/);
 });
 
+test("viewer paints causal gutter markers only for the rendered admitted head", async () => {
+  const [viewerContent, modeModule, authority, profile] = await Promise.all([
+    importDist("app", "workspace", "viewer-content.js"),
+    importDist("app", "workspace", "editor", "mode.js"),
+    importDist("app", "workspace", "workspace-text-authority.js"),
+    importDist("app", "text-runtime-profile.js"),
+  ]);
+  const cache = workspaceReadingCache({ lines: ["one", "two", "three"] });
+  const opened = authority.openedWorkspaceTextAuthority({
+    profile: profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
+    filePath: "/repo/notes.txt",
+    bufferId: "buffer:notes",
+    readOnly: false,
+    dirty: true,
+    cache,
+  });
+  const model = {
+    ...textWorkspaceModel(modeModule, authority, profile, {
+      lines: ["one", "two", "three"],
+    }),
+    jeditTheme: mockJeditTheme(),
+    textAuthority: {
+      ...opened,
+      durability: {
+        ...opened.durability,
+        lineChanges: causalLineChanges("head:test"),
+      },
+    },
+  };
+
+  const matching = surfaceText(viewerContent.renderViewer(model, 80, 16));
+  const stale = surfaceText(viewerContent.renderViewer({
+    ...model,
+    textAuthority: {
+      ...model.textAuthority,
+      durability: {
+        ...model.textAuthority.durability,
+        lineChanges: causalLineChanges("head:stale"),
+      },
+    },
+  }, 80, 16));
+  const optimistic = surfaceText(viewerContent.renderViewer({
+    ...model,
+    textAuthority: { ...model.textAuthority, pendingIntentStatus: "predicted" },
+  }, 80, 16));
+
+  assert.match(matching, /2\+│ two/);
+  assert.match(stale, /2 │ two/);
+  assert.doesNotMatch(stale, /2\+│ two/);
+  assert.match(optimistic, /2 │ two/);
+  assert.doesNotMatch(optimistic, /2\+│ two/);
+});
+
 test("viewer does not render local text when an opened authority has no projection", async () => {
   const [viewerContent, modeModule, authority, profile] = await Promise.all([
     importDist("app", "workspace", "viewer-content.js"),
@@ -361,6 +415,26 @@ function projectedViewerModel(modeModule, authority, profile, localLines) {
   };
 }
 
+function causalLineChanges(nextHeadId) {
+  return {
+    kind: "available",
+    source: "causal-observation",
+    basisHeadId: "head:saved",
+    nextHeadId,
+    insertedLineCount: 1,
+    deletedLineCount: 0,
+    rewriteIds: ["rewrite:insert"],
+    diffIds: ["diff:insert"],
+    markers: [{
+      lineNumber: 1,
+      kind: "INSERTED",
+      rewriteIds: ["rewrite:insert"],
+      diffIds: ["diff:insert"],
+    }],
+    observerVersion: "jedit-causal-line-diff-v2",
+  };
+}
+
 test("insert and delete keys submit production text edits with optimistic local projection", async () => {
   const [viewerKey, runtimeModule, modeModule, authority, profile] =
     await Promise.all([
@@ -404,6 +478,7 @@ test("insert and delete keys submit production text edits with optimistic local 
         deletedLineCount: 0,
         rewriteIds: [],
         diffIds: [],
+        markers: [],
         observerVersion: "test-fixture",
       },
     }),

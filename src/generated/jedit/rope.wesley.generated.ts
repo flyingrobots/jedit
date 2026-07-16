@@ -32,6 +32,7 @@ export interface CausalLineDiffInput {
   maxByteCount: number;
   maxLineCount: number;
   maxRewriteCount: number;
+  maxMarkerCount: number;
 }
 
 export interface CausalLineDiffReading {
@@ -42,8 +43,18 @@ export interface CausalLineDiffReading {
   deletedLineCount: number;
   rewriteIds: string[];
   diffIds: string[];
+  markers: CausalLineMarker[];
   observerVersion: string;
 }
+
+export interface CausalLineMarker {
+  lineNumber: number;
+  kind: CausalLineMarkerKind;
+  rewriteIds: string[];
+  diffIds: string[];
+}
+
+export type CausalLineMarkerKind = "INSERTED" | "MODIFIED";
 
 export interface Checkpoint {
   checkpointId: string;

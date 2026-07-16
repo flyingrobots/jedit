@@ -95,6 +95,14 @@ export interface CausalLineDiffRequest {
   readonly maxByteCount: number;
   readonly maxLineCount: number;
   readonly maxRewriteCount: number;
+  readonly maxMarkerCount: number;
+}
+
+export interface CausalLineMarkerReading {
+  readonly lineNumber: number;
+  readonly kind: 'INSERTED' | 'MODIFIED';
+  readonly rewriteIds: readonly string[];
+  readonly diffIds: readonly string[];
 }
 
 export interface CausalLineDiffReading {
@@ -105,6 +113,7 @@ export interface CausalLineDiffReading {
   readonly deletedLineCount: number;
   readonly rewriteIds: readonly string[];
   readonly diffIds: readonly string[];
+  readonly markers: readonly CausalLineMarkerReading[];
   readonly observerVersion: string;
 }
 

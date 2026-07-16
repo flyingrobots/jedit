@@ -126,6 +126,7 @@ test('installed Echo transport reports net causal line changes with retained sup
     maxByteCount: 1024,
     maxLineCount: 32,
     maxRewriteCount: 32,
+    maxMarkerCount: 32,
   });
 
   assert.equal(reading.basisHeadId, basisHeadId);
@@ -136,6 +137,12 @@ test('installed Echo transport reports net causal line changes with retained sup
   assert.equal(reading.diffIds.length, 2);
   assert.equal(new Set(reading.rewriteIds).size, 2);
   assert.equal(new Set(reading.diffIds).size, 2);
+  assert.deepEqual(reading.markers, [{
+    lineNumber: 1,
+    kind: 'MODIFIED',
+    rewriteIds: reading.rewriteIds,
+    diffIds: reading.diffIds,
+  }]);
   assert.match(reading.observerVersion, /^jedit-causal-line-diff-/);
 });
 

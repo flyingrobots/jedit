@@ -19,6 +19,9 @@ export type RewriteKind = z.infer<typeof RewriteKindSchema>;
 export const CheckpointKindSchema = z.enum(["INITIAL", "MANUAL_SAVE", "AUTO_SAVE"]);
 export type CheckpointKind = z.infer<typeof CheckpointKindSchema>;
 
+export const CausalLineMarkerKindSchema = z.enum(["INSERTED", "MODIFIED"]);
+export type CausalLineMarkerKind = z.infer<typeof CausalLineMarkerKindSchema>;
+
 // Object Types
 export const BufferWorldlineSchema = z.object({
   worldlineId: z.string(),
@@ -152,6 +155,14 @@ export const TextWindowReadingSchema = z.object({
 });
 export type TextWindowReading = z.infer<typeof TextWindowReadingSchema>;
 
+export const CausalLineMarkerSchema = z.object({
+  lineNumber: z.number().int(),
+  kind: CausalLineMarkerKindSchema,
+  rewriteIds: z.array(z.string()),
+  diffIds: z.array(z.string())
+});
+export type CausalLineMarker = z.infer<typeof CausalLineMarkerSchema>;
+
 export const CausalLineDiffReadingSchema = z.object({
   worldlineId: z.string(),
   basisHeadId: z.string(),
@@ -160,6 +171,7 @@ export const CausalLineDiffReadingSchema = z.object({
   deletedLineCount: z.number().int(),
   rewriteIds: z.array(z.string()),
   diffIds: z.array(z.string()),
+  markers: z.array(z.lazy(() => CausalLineMarkerSchema)),
   observerVersion: z.string()
 });
 export type CausalLineDiffReading = z.infer<typeof CausalLineDiffReadingSchema>;
@@ -236,7 +248,8 @@ export const CausalLineDiffInputSchema = z.object({
   nextHeadId: z.string(),
   maxByteCount: z.number().int(),
   maxLineCount: z.number().int(),
-  maxRewriteCount: z.number().int()
+  maxRewriteCount: z.number().int(),
+  maxMarkerCount: z.number().int()
 });
 export type CausalLineDiffInput = z.infer<typeof CausalLineDiffInputSchema>;
 

@@ -10,6 +10,7 @@ import {
 const CAUSAL_LINE_DIFF_MAX_BYTES = 67108864;
 const CAUSAL_LINE_DIFF_MAX_LINES = 5000000;
 const CAUSAL_LINE_DIFF_MAX_REWRITES = 10000;
+const CAUSAL_LINE_DIFF_MAX_MARKERS = 100000;
 
 export async function observeWorkspaceCausalLineChanges(
   request: WorkspaceTextEditCommandRequest,
@@ -30,6 +31,7 @@ export async function observeWorkspaceCausalLineChanges(
       maxByteCount: CAUSAL_LINE_DIFF_MAX_BYTES,
       maxLineCount: CAUSAL_LINE_DIFF_MAX_LINES,
       maxRewriteCount: CAUSAL_LINE_DIFF_MAX_REWRITES,
+      maxMarkerCount: CAUSAL_LINE_DIFF_MAX_MARKERS,
       atMs: request.atMs,
     });
   } catch (cause) {

@@ -11,7 +11,8 @@ import { paintHighlightedSourceWindow } from './source-highlight.js';
 const NORMAL_MODE = 'normal';
 const INSERT_MODE = 'insert';
 const FIRST_VISIBLE_LINE_NUMBER = 1;
-const GUTTER_CONTENT_GAP = 1;
+const GUTTER_MARKER_WIDTH = 1;
+const GUTTER_RULE_WIDTH = 1;
 const GUTTER_RULE_GAP = 1;
 const SIGN_CHARACTER_WIDTH = 1;
 const GUTTER_RULE = '│';
@@ -35,12 +36,18 @@ export interface SourceViewerViewport {
   readonly height: number;
 }
 
+export interface SourceGutterLineMarker {
+  readonly lineNumber: number;
+  readonly kind: 'inserted' | 'modified';
+}
+
 export interface SourceViewerOptions {
   readonly viewport: SourceViewerViewport;
   readonly leftPad: number;
   readonly topPad: number;
   readonly theme: JeditTheme;
   readonly lineNumberMode?: SourceLineNumberMode;
+  readonly lineMarkers?: readonly SourceGutterLineMarker[];
   readonly reading?: SourceWindowReading;
 }
 
@@ -131,7 +138,7 @@ function sourceViewerGutter(
   const numberWidth = lineNumberLabelWidth(totalLineCount, cursorRow, mode);
   return {
     numberWidth,
-    width: numberWidth + GUTTER_CONTENT_GAP + GUTTER_RULE_GAP,
+    width: numberWidth + GUTTER_MARKER_WIDTH + GUTTER_RULE_WIDTH + GUTTER_RULE_GAP,
   };
 }
 
@@ -159,7 +166,9 @@ function paintSourceViewerGutter(
     options.theme.source.get(JEDIT_SOURCE_TOKEN.Comment) ??
     options.theme.chrome.titleLogoShadow;
   const ruleToken = options.theme.chrome.activeEdge;
-  const ruleX = options.leftPad + gutter.numberWidth + GUTTER_CONTENT_GAP - 1;
+  const markerX = options.leftPad + gutter.numberWidth;
+  const ruleX = markerX + GUTTER_MARKER_WIDTH;
+  const markers = new Map(options.lineMarkers?.map(marker => [marker.lineNumber, marker]));
   for (let row = 0; row < options.viewport.height; row += 1) {
     const sourceLine = reading.lines[row];
     const y = options.topPad + row;
@@ -170,9 +179,30 @@ function paintSourceViewerGutter(
           ' ',
         );
     paintGutterText(surface, label, options.leftPad, y, numberToken);
+    paintGutterMarker(surface, markerX, y, sourceLine == null
+      ? undefined
+      : markers.get(sourceLine.lineNumber), options.theme);
     paintGutterCell(surface, ruleX, y, GUTTER_RULE, ruleToken);
     paintGutterRuleGap(surface, ruleX, y, options.theme.surface.workspace);
   }
+}
+
+function paintGutterMarker(
+  surface: Surface,
+  x: number,
+  y: number,
+  marker: SourceGutterLineMarker | undefined,
+  theme: JeditTheme,
+): void {
+  if (marker == null) {
+    paintGutterCell(surface, x, y, ' ', theme.surface.workspace);
+    return;
+  }
+  const inserted = marker.kind === 'inserted';
+  const token = theme.source.get(
+    inserted ? JEDIT_SOURCE_TOKEN.String : JEDIT_SOURCE_TOKEN.Keyword,
+  ) ?? theme.chrome.activeEdge;
+  paintGutterCell(surface, x, y, inserted ? '+' : '~', token);
 }
 
 function sourceLineNumberLabel(
