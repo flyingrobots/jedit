@@ -9,6 +9,7 @@ import {
 } from './graph-rope-contract.js';
 
 const ZERO_VALUE = 0;
+const CARRIAGE_RETURN_BYTE = 0x0d;
 const LINE_FEED_BYTE = 0x0a;
 const TOUCH_BEFORE = 'before';
 const TOUCH_AFTER = 'after';
@@ -366,12 +367,24 @@ function lineExtents(bytes: Uint8Array): readonly LineExtent[] {
   const lines: LineExtent[] = [];
   let startByte = ZERO_VALUE;
   for (let byteOffset = ZERO_VALUE; byteOffset < bytes.length; byteOffset += 1) {
-    if (bytes[byteOffset] !== LINE_FEED_BYTE) {
+    const endByte = logicalLineBreakEnd(bytes, byteOffset);
+    if (endByte == null) {
       continue;
     }
-    lines.push({ lineNumber: lines.length, startByte, endByte: byteOffset + 1 });
-    startByte = byteOffset + 1;
+    lines.push({ lineNumber: lines.length, startByte, endByte });
+    startByte = endByte;
+    byteOffset = endByte - 1;
   }
   lines.push({ lineNumber: lines.length, startByte, endByte: bytes.length });
   return lines;
+}
+
+function logicalLineBreakEnd(bytes: Uint8Array, byteOffset: number): number | undefined {
+  if (bytes[byteOffset] === LINE_FEED_BYTE) {
+    return byteOffset + 1;
+  }
+  if (bytes[byteOffset] !== CARRIAGE_RETURN_BYTE) {
+    return undefined;
+  }
+  return byteOffset + (bytes[byteOffset + 1] === LINE_FEED_BYTE ? 2 : 1);
 }

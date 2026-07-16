@@ -173,6 +173,38 @@ test('causal line diff derives current line markers from retained diff spans', a
   }]);
 });
 
+test('causal line markers share CR LF and CRLF logical coordinates', async () => {
+  const { runtime, contract } = await loadModules();
+  const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
+  const created = assertOk(graph.createBufferWorldline({
+    worldlineId: 'worldline:mixed-line-endings',
+    initialText: 'alpha\rbeta\r\ngamma\n',
+  }));
+  const modified = assertOk(graph.replaceRangeAsTick({
+    basisHeadId: created.head.headId,
+    range: byteRange(contract, 6, 10),
+    replacementText: 'BETA',
+  }));
+
+  const reading = assertOk(graph.causalLineDiff({
+    worldlineId: created.worldline.worldlineId,
+    basisHeadId: created.head.headId,
+    nextHeadId: modified.nextHead.headId,
+    maxByteCount: 10_000,
+    maxLineCount: 100,
+    maxRewriteCount: 100,
+    maxMarkerCount: 100,
+  }));
+
+  assert.deepEqual(reading.markers, [{
+    lineNumber: 1,
+    kind: 'MODIFIED',
+    tickReceiptIds: [modified.receipt.tickId],
+    rewriteIds: [modified.rewrite.rewriteId],
+    diffIds: [modified.diff.diffId],
+  }]);
+});
+
 test('causal line diff retains pure-deletion support on the surviving modified line', async () => {
   const { runtime, contract } = await loadModules();
   const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
