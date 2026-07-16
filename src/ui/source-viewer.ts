@@ -14,6 +14,8 @@ import { paintHighlightedSourceWindow } from './source-highlight.js';
 
 const NORMAL_MODE = 'normal';
 const INSERT_MODE = 'insert';
+const FIRST_SOURCE_LINE_INDEX = 0;
+const EMPTY_SOURCE_LINE_COUNT = 0;
 const FIRST_VISIBLE_LINE_NUMBER = 1;
 const GUTTER_DELETION_MARKER_WIDTH = 1;
 const GUTTER_LINE_MARKER_WIDTH = 1;
@@ -205,9 +207,13 @@ function paintSourceViewerGutter(
       ? tokens.currentLineNumber
       : tokens.lineNumber;
     paintGutterText(surface, label, options.leftPad, y, numberToken);
-    paintGutterDeletion(surface, deletionX, y, sourceLine == null
-      ? undefined
-      : deletions.get(sourceLine.lineNumber), tokens);
+    paintGutterDeletion(
+      surface,
+      deletionX,
+      y,
+      deletionMarkerForRow(sourceLine?.lineNumber, row, reading.totalLineCount, deletions),
+      tokens,
+    );
     paintGutterMarker(surface, markerX, y, sourceLine == null
       ? undefined
       : markers.get(sourceLine.lineNumber), tokens);
@@ -229,6 +235,20 @@ function deletionMarkersByLine(
 function deletionMarkerLineNumber(boundaryLineNumber: number, totalLineCount: number): number {
   const lastLineNumber = Math.max(0, totalLineCount - 1);
   return Math.min(Math.max(0, boundaryLineNumber), lastLineNumber);
+}
+
+function deletionMarkerForRow(
+  sourceLineNumber: number | undefined,
+  row: number,
+  totalLineCount: number,
+  deletions: ReadonlyMap<number, SourceGutterDeletionMarker>,
+): SourceGutterDeletionMarker | undefined {
+  if (sourceLineNumber != null) {
+    return deletions.get(sourceLineNumber);
+  }
+  return totalLineCount === EMPTY_SOURCE_LINE_COUNT && row === FIRST_SOURCE_LINE_INDEX
+    ? deletions.get(FIRST_SOURCE_LINE_INDEX)
+    : undefined;
 }
 
 function paintGutterDeletion(

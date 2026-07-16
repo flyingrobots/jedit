@@ -137,6 +137,45 @@ test("source viewer keeps deletion and line status in separate gutter lanes", as
   assert.equal(rowText(surface, 1).startsWith("2-+│ two"), true);
 });
 
+test("source viewer anchors whole-file deletion evidence to the first empty gutter row", async () => {
+  const { createSurface } = await import("@flyingrobots/bijou");
+  const sourceViewer = await loadSourceViewerModule();
+  const theme = sourceViewerTheme();
+  const surface = createSurface(20, 2, { char: ".", empty: false });
+
+  sourceViewer.renderSourceViewer(
+    surface,
+    {
+      lines: [],
+      cursorRow: 0,
+      cursorCol: 0,
+      scrollRow: 0,
+      scrollCol: 0,
+      mode: "normal",
+    },
+    undefined,
+    {
+      viewport: { width: 20, height: 2 },
+      leftPad: 0,
+      topPad: 0,
+      theme,
+      deletionMarkers: [{ boundaryLineNumber: 0, deletedLineCount: 3 }],
+      reading: {
+        startLine: 0,
+        lineCount: 0,
+        totalLineCount: 0,
+        hasMoreBefore: false,
+        hasMoreAfter: false,
+        lines: [],
+      },
+    },
+  );
+
+  assert.equal(surface.get(1, 0).char, "-");
+  assert.equal(surface.get(1, 0).fg, theme.gutter.normal.deleted.fg);
+  assert.equal(surface.get(1, 1).char, " ");
+});
+
 test("source viewer selects dedicated normal and dimmed gutter tokens", async () => {
   const { createSurface } = await import("@flyingrobots/bijou");
   const sourceViewer = await loadSourceViewerModule();
