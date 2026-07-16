@@ -20,6 +20,7 @@ const DEFAULT_LINE_NUMBER_MODE = SOURCE_LINE_NUMBER_MODE.Absolute;
 const CURRENT_LINE_RELATIVE_NUMBER = 0;
 
 export type SourceViewerMode = typeof NORMAL_MODE | typeof INSERT_MODE;
+type SourceViewerCellStyle = Pick<Cell, 'fg' | 'bg' | 'fgRGB' | 'bgRGB' | 'modifiers'>;
 
 export interface SourceViewerEditor {
   readonly lines: readonly string[];
@@ -96,7 +97,7 @@ function paintSourceViewerCursor(
     surface.set(cursorX, cursorY, {
       ...cell,
       char: cell.char.length > 0 ? cell.char : cursorFallbackChar(editor.mode),
-      ...cellStyle(token),
+      ...cellStyle(token, options.theme.surface.workspace),
       empty: false,
     });
   }
@@ -159,6 +160,10 @@ function paintSourceViewerGutter(
     options.theme.source.get(JEDIT_SOURCE_TOKEN.Comment) ??
     options.theme.chrome.titleLogoShadow;
   const ruleToken = options.theme.chrome.activeEdge;
+  const baseToken = options.theme.surface.workspace;
+  const numberStyle = cellStyle(numberToken, baseToken);
+  const ruleStyle = cellStyle(ruleToken, baseToken);
+  const gapStyle = cellStyle(baseToken, baseToken);
   const ruleX = options.leftPad + gutter.numberWidth + GUTTER_CONTENT_GAP - 1;
   for (let row = 0; row < options.viewport.height; row += 1) {
     const sourceLine = reading.lines[row];
@@ -169,9 +174,9 @@ function paintSourceViewerGutter(
           gutter.numberWidth,
           ' ',
         );
-    paintGutterText(surface, label, options.leftPad, y, numberToken);
-    paintGutterCell(surface, ruleX, y, GUTTER_RULE, ruleToken);
-    paintGutterRuleGap(surface, ruleX, y, options.theme.surface.workspace);
+    paintGutterText(surface, label, options.leftPad, y, numberStyle);
+    paintGutterCell(surface, ruleX, y, GUTTER_RULE, ruleStyle);
+    paintGutterRuleGap(surface, ruleX, y, gapStyle);
   }
 }
 
@@ -215,10 +220,10 @@ function paintGutterRuleGap(
   surface: Surface,
   ruleX: number,
   y: number,
-  token: JeditStyleToken,
+  style: SourceViewerCellStyle,
 ): void {
   for (let gap = 0; gap < GUTTER_RULE_GAP; gap += 1) {
-    paintGutterCell(surface, ruleX + gap + 1, y, ' ', token);
+    paintGutterCell(surface, ruleX + gap + 1, y, ' ', style);
   }
 }
 
@@ -227,10 +232,10 @@ function paintGutterText(
   text: string,
   x: number,
   y: number,
-  token: JeditStyleToken,
+  style: SourceViewerCellStyle,
 ): void {
   for (let index = 0; index < text.length; index += 1) {
-    paintGutterCell(surface, x + index, y, text[index] ?? ' ', token);
+    paintGutterCell(surface, x + index, y, text[index] ?? ' ', style);
   }
 }
 
@@ -239,7 +244,7 @@ function paintGutterCell(
   x: number,
   y: number,
   char: string,
-  token: JeditStyleToken,
+  style: SourceViewerCellStyle,
 ): void {
   if (x < 0 || y < 0 || x >= surface.width || y >= surface.height) {
     return;
@@ -248,7 +253,7 @@ function paintGutterCell(
   surface.set(x, y, {
     ...cell,
     char,
-    ...cellStyle(token),
+    ...style,
     empty: false,
   });
 }
@@ -272,12 +277,16 @@ function cursorFallbackChar(mode: SourceViewerMode): string {
   return mode === NORMAL_MODE ? ' ' : '│';
 }
 
-function cellStyle(token: JeditStyleToken): Pick<Cell, 'fg' | 'bg' | 'fgRGB' | 'bgRGB' | 'modifiers'> {
+function cellStyle(token: JeditStyleToken, baseToken: JeditStyleToken): SourceViewerCellStyle {
   return {
-    fg: token.fg,
-    bg: token.bg,
-    fgRGB: token.fgRGB,
-    bgRGB: token.bgRGB,
-    modifiers: token.modifiers == null ? undefined : [...token.modifiers],
+    fg: token.fg ?? baseToken.fg,
+    bg: token.bg ?? baseToken.bg,
+    fgRGB: token.fgRGB ?? baseToken.fgRGB,
+    bgRGB: token.bgRGB ?? baseToken.bgRGB,
+    modifiers: token.modifiers == null ? copiedModifiers(baseToken) : [...token.modifiers],
   };
+}
+
+function copiedModifiers(token: JeditStyleToken): string[] | undefined {
+  return token.modifiers == null ? undefined : [...token.modifiers];
 }

@@ -159,13 +159,31 @@ test('workspace footer renders command-line hints on the painted secondary row',
   assert.equal(rowText(surface, 1).trim(), '[tab accept · enter run · esc cancel]');
 });
 
+test('workspace footer applies theme foreground and background to painted text', async () => {
+  const footer = await loadFooterModule();
+  const token = {
+    fg: '#22272e',
+    fgRGB: [34, 39, 46],
+    bg: '#dedad0',
+    bgRGB: [222, 218, 208],
+    foregroundVariables: [],
+    backgroundVariables: [],
+  };
+  const surface = footer.renderWorkspaceFooter(idleNormalState(), 24, token);
+  const cell = surface.get(0, 0);
+
+  assert.equal(cell.char, 'N');
+  assert.deepEqual(cell.fgRGB, token.fgRGB);
+  assert.deepEqual(cell.bgRGB, token.bgRGB);
+});
+
 test('workspace footer pins editor posture to the lower-right corner when it fits', async () => {
   const footer = await loadFooterModule();
-  const posture = 'clean | main | fs:materialized | target:main | +0/-0';
+  const posture = 'basis:reading | head:basis | worldline:main | export:host | admit:main | tick:t0';
   const surface = footer.renderWorkspaceFooter({
     ...idleNormalState(),
     textPosture: posture,
-  }, 96, {});
+  }, 132, {});
   const secondary = rowText(surface, 1);
 
   assert.equal(secondary.startsWith('/repo/notes/todo.md'), true);
@@ -176,10 +194,10 @@ test('workspace footer pins editor posture to the lower-right corner when it fit
 test('workspace footer posture fit uses terminal display width for wide glyphs', async () => {
   const footerPosture = await loadFooterPostureModule();
   const editorPath = '/repo/界.md';
-  const textPosture = 'dirty | main';
+  const textPosture = 'basis:reading | head:local';
   const requiredWidth = visibleLength(`${editorPath} [${textPosture}]`);
 
-  assert.equal(requiredWidth, 26);
+  assert.equal(requiredWidth, 40);
   assert.equal(footerPosture.editorFooterPostureFits(editorPath, textPosture, requiredWidth - 1), false);
   assert.equal(footerPosture.editorFooterPostureFits(editorPath, textPosture, requiredWidth), true);
 });

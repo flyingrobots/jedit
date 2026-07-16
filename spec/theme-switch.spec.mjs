@@ -35,6 +35,15 @@ const CANONICAL_VARIABLE_NAMES = [
 const LUMINANCE_RED_WEIGHT = 0.2126;
 const LUMINANCE_GREEN_WEIGHT = 0.7152;
 const LUMINANCE_BLUE_WEIGHT = 0.0722;
+const MIN_SURFACE_TEXT_CONTRAST = 4.5;
+const MIN_ACCENT_TEXT_CONTRAST = 3.0;
+const CONTRAST_LUMINANCE_OFFSET = 0.05;
+const SRGB_CHANNEL_MAX = 255;
+const SRGB_LINEAR_BREAKPOINT = 0.03928;
+const SRGB_LINEAR_DIVISOR = 12.92;
+const SRGB_LINEAR_OFFSET = 0.055;
+const SRGB_LINEAR_SCALE = 1.055;
+const SRGB_LINEAR_EXPONENT = 2.4;
 
 async function loadThemesModule() {
   await ensureDistBuilt();
@@ -132,6 +141,30 @@ test("authored light and dark variants override generated companions", async () 
   assert.equal(solarizedRoundTrip.name, "solarized-dark");
 });
 
+test("jedit surface text clears contrast for built-in and companion themes", async () => {
+  const { themes } = await loadThemesModule();
+
+  for (const theme of themesWithGeneratedCompanions(themes)) {
+    for (const [surfaceName, token] of Object.entries(theme.surface)) {
+      const ratio = colorContrastRatio(token.fgRGB, token.bgRGB);
+      assert.ok(
+        ratio >= MIN_SURFACE_TEXT_CONTRAST,
+        `${theme.name} ${surfaceName} contrast ratio ${ratio.toFixed(2)}`,
+      );
+    }
+  }
+});
+
+test("jedit rendered accent text clears contrast for built-in and companion themes", async () => {
+  const { themes } = await loadThemesModule();
+
+  for (const theme of themesWithGeneratedCompanions(themes)) {
+    assertTokenGroupContrast(theme.name, "source", theme.source, theme.surface.workspace.bgRGB);
+    assertTokenGroupContrast(theme.name, "markdown", theme.markdown, theme.surface.workspace.bgRGB);
+    assertObjectTokenContrast(theme.name, "chrome", theme.chrome, theme.surface.workspace.bgRGB);
+  }
+});
+
 test("built-in jedit theme tokens map back to named variables and effect metadata", async () => {
   const { themes, style } = await loadThemesModule();
 
@@ -191,6 +224,69 @@ function colorLuminance(color) {
     color[1] * LUMINANCE_GREEN_WEIGHT +
     color[2] * LUMINANCE_BLUE_WEIGHT
   );
+}
+
+function themesWithGeneratedCompanions(themes) {
+  const all = new Map();
+  for (const theme of themes.availableJeditThemes()) {
+    all.set(theme.name, theme);
+    const companion = themes.oppositeJeditTheme(theme);
+    all.set(companion.name, companion);
+  }
+  return all.values();
+}
+
+function colorContrastRatio(first, second) {
+  const firstLuminance = relativeColorLuminance(first);
+  const secondLuminance = relativeColorLuminance(second);
+  const lighter = Math.max(firstLuminance, secondLuminance);
+  const darker = Math.min(firstLuminance, secondLuminance);
+  return (lighter + CONTRAST_LUMINANCE_OFFSET) / (darker + CONTRAST_LUMINANCE_OFFSET);
+}
+
+function assertTokenGroupContrast(themeName, groupName, tokens, fallbackBackground) {
+  for (const [tokenName, token] of tokens) {
+    assertRenderedTokenContrast(
+      themeName,
+      `${groupName}.${tokenName.description ?? String(tokenName)}`,
+      token,
+      fallbackBackground,
+    );
+  }
+}
+
+function assertObjectTokenContrast(themeName, groupName, tokens, fallbackBackground) {
+  for (const [tokenName, token] of Object.entries(tokens)) {
+    assertRenderedTokenContrast(
+      themeName,
+      `${groupName}.${tokenName}`,
+      token,
+      fallbackBackground,
+    );
+  }
+}
+
+function assertRenderedTokenContrast(themeName, tokenName, token, fallbackBackground) {
+  const ratio = colorContrastRatio(token.fgRGB, token.bgRGB ?? fallbackBackground);
+  assert.ok(
+    ratio >= MIN_ACCENT_TEXT_CONTRAST,
+    `${themeName} ${tokenName} contrast ratio ${ratio.toFixed(2)}`,
+  );
+}
+
+function relativeColorLuminance(color) {
+  return (
+    linearChannel(color[0]) * LUMINANCE_RED_WEIGHT +
+    linearChannel(color[1]) * LUMINANCE_GREEN_WEIGHT +
+    linearChannel(color[2]) * LUMINANCE_BLUE_WEIGHT
+  );
+}
+
+function linearChannel(channel) {
+  const scaled = channel / SRGB_CHANNEL_MAX;
+  return scaled <= SRGB_LINEAR_BREAKPOINT
+    ? scaled / SRGB_LINEAR_DIVISOR
+    : ((scaled + SRGB_LINEAR_OFFSET) / SRGB_LINEAR_SCALE) ** SRGB_LINEAR_EXPONENT;
 }
 
 function assertCompleteBasePalette(theme) {

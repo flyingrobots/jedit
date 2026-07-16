@@ -8,6 +8,8 @@ export { fitLine } from './fit-line.js';
 export function fillSurface(surface: Surface, token: JeditStyleToken): void {
   surface.fill({
     char: SURFACE_FILL_CHAR,
+    fg: token.fg,
+    fgRGB: token.fgRGB,
     bg: token.bg,
     bgRGB: token.bgRGB,
     empty: false,
@@ -21,6 +23,8 @@ export function applyBackground(surface: Surface, token: JeditStyleToken): void 
       surface.set(x, y, {
         ...cell,
         char: cell.char.length > 0 ? cell.char : SURFACE_FILL_CHAR,
+        fg: token.fg,
+        fgRGB: token.fgRGB,
         bg: token.bg,
         bgRGB: token.bgRGB,
         empty: false,

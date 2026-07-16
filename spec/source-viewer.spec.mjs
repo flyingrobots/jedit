@@ -5,10 +5,20 @@ import { pathToFileURL } from "node:url";
 import { REPO_ROOT, ensureDistBuilt } from "./dist-helpers.mjs";
 
 const SOURCE_VIEWER_PATH = path.join(REPO_ROOT, "dist", "ui", "source-viewer.js");
+const THEMES_PATH = path.join(REPO_ROOT, "dist", "ui", "jedit-themes.js");
+const STYLE_PATH = path.join(REPO_ROOT, "dist", "ui", "jedit-theme.js");
 
 async function loadSourceViewerModule() {
   await ensureDistBuilt();
   return import(pathToFileURL(SOURCE_VIEWER_PATH).href);
+}
+
+async function loadThemesModule() {
+  await ensureDistBuilt();
+  return {
+    style: await import(pathToFileURL(STYLE_PATH).href),
+    themes: await import(pathToFileURL(THEMES_PATH).href),
+  };
 }
 
 test("source viewer paints a stable line-number gutter before source text", async () => {
@@ -72,6 +82,42 @@ test("source viewer can paint cursor-relative line numbers", async () => {
   assert.equal(rowText(surface, 2).startsWith(" 0│ line-3"), true);
   assert.equal(rowText(surface, 3).startsWith("+1│ line-4"), true);
   assert.equal(rowText(surface, 4).startsWith("+2│ line-5"), true);
+});
+
+test("source viewer keeps light-theme gutter cells on the workspace surface", async () => {
+  const { createSurface } = await import("@flyingrobots/bijou");
+  const [sourceViewer, themeModules] = await Promise.all([
+    loadSourceViewerModule(),
+    loadThemesModule(),
+  ]);
+  const theme = themeModules.themes.resolveInitialJeditTheme("morning");
+  const surface = createSurface(16, 1, { char: ".", empty: false });
+
+  sourceViewer.renderSourceViewer(
+    surface,
+    {
+      lines: ["alpha"],
+      cursorRow: 0,
+      cursorCol: 0,
+      scrollRow: 0,
+      scrollCol: 0,
+      mode: "normal",
+    },
+    undefined,
+    {
+      viewport: { width: 16, height: 1 },
+      leftPad: 0,
+      topPad: 0,
+      theme,
+    },
+  );
+
+  const comment = theme.source.get(themeModules.style.JEDIT_SOURCE_TOKEN.Comment);
+
+  assert.deepEqual(surface.get(0, 0).fgRGB, comment?.fgRGB);
+  assert.deepEqual(surface.get(0, 0).bgRGB, theme.surface.workspace.bgRGB);
+  assert.deepEqual(surface.get(1, 0).bgRGB, theme.surface.workspace.bgRGB);
+  assert.deepEqual(surface.get(2, 0).bgRGB, theme.surface.workspace.bgRGB);
 });
 
 function sourceViewerTheme() {
