@@ -9,6 +9,12 @@
   move its saved-file basis, and a checkpoint declaration is associated with a
   saved projection only when both name the same opaque rope head. Git posture
   remains explicitly unknown until supplied by an external Git observer.
+- Derived authoritative file dirtiness from the current Echo-admitted rope head
+  and the last successful host projection basis. Pending or obstructed intents
+  no longer counterfeit an admitted change, checkpoint declarations no longer
+  clear unsaved edits, and only a successful export of the current head moves
+  the file basis back to clean. Missing-file opens now require an explicit
+  host-absence basis instead of inferring causal evidence from a legacy boolean.
 - Added versioned text-window materialization provenance and a bounded,
   disposable cache. Cache coordinates now name the requested rope head, exact
   branded UTF-8 coverage, request namespace, observer plan, materializer

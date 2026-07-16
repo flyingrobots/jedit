@@ -11,6 +11,11 @@ const CAUSAL_ADMITTED = 'admitted';
 const FILE_UNKNOWN = 'unknown';
 const FILE_MISSING = 'missing';
 const FILE_SAVED = 'saved';
+const FILE_DIRTY_CLEAN = 'clean';
+const FILE_DIRTY_DIRTY = 'dirty';
+const FILE_DIRTY_UNAVAILABLE = 'unavailable';
+const FILE_DIRTY_REASON_CAUSAL_HEAD_UNAVAILABLE = 'causal-head-unavailable';
+const FILE_DIRTY_REASON_FILE_BASIS_UNAVAILABLE = 'file-basis-unavailable';
 const LOCAL_GIT_UNKNOWN = 'unknown';
 const LOCAL_GIT_UNCOMMITTED = 'uncommitted';
 const LOCAL_GIT_COMMITTED = 'committed';
@@ -44,6 +49,12 @@ export const WorkspaceBufferFileDurabilityKinds = Object.freeze({
   Unknown: FILE_UNKNOWN,
   Missing: FILE_MISSING,
   Saved: FILE_SAVED,
+} as const);
+
+export const WorkspaceBufferFileDirtyKinds = Object.freeze({
+  Clean: FILE_DIRTY_CLEAN,
+  Dirty: FILE_DIRTY_DIRTY,
+  Unavailable: FILE_DIRTY_UNAVAILABLE,
 } as const);
 
 export const WorkspaceBufferLocalGitDurabilityKinds = Object.freeze({
@@ -116,6 +127,7 @@ export interface WorkspaceBufferFileUnknownDurability {
 
 export interface WorkspaceBufferFileMissingDurability {
   readonly kind: typeof FILE_MISSING;
+  readonly basisHeadId?: string;
 }
 
 export interface WorkspaceBufferFileSavedDurability {
@@ -154,6 +166,24 @@ export interface WorkspaceBufferCheckpointDeclaration {
   readonly basisHeadId: string;
 }
 
+export interface WorkspaceBufferFileDirtyKnownReading {
+  readonly kind: typeof FILE_DIRTY_CLEAN | typeof FILE_DIRTY_DIRTY;
+  readonly currentHeadId: string;
+  readonly fileBasisHeadId: string;
+  readonly fileKind: typeof FILE_MISSING | typeof FILE_SAVED;
+}
+
+export interface WorkspaceBufferFileDirtyUnavailableReading {
+  readonly kind: typeof FILE_DIRTY_UNAVAILABLE;
+  readonly reason:
+    | typeof FILE_DIRTY_REASON_CAUSAL_HEAD_UNAVAILABLE
+    | typeof FILE_DIRTY_REASON_FILE_BASIS_UNAVAILABLE;
+}
+
+export type WorkspaceBufferFileDirtyReading =
+  | WorkspaceBufferFileDirtyKnownReading
+  | WorkspaceBufferFileDirtyUnavailableReading;
+
 export interface WorkspaceBufferDurability {
   readonly intent: WorkspaceBufferIntentDurability;
   readonly causal: WorkspaceBufferCausalDurability;
@@ -165,6 +195,7 @@ export interface WorkspaceBufferDurability {
 
 export interface OpenedWorkspaceBufferDurabilityOptions {
   readonly basisHeadId?: string;
+  readonly hostAbsenceBasisHeadId?: string;
   readonly hostBasis: 'file' | 'missing';
   readonly materialization: WorkspaceWorldlineMaterializationKind;
   readonly hostFingerprint?: EditorFileFingerprint;
@@ -314,12 +345,50 @@ export function workspaceBufferDurabilityWithGitEvidence(
   };
 }
 
+export function workspaceBufferFileDirtyReading(
+  durability: WorkspaceBufferDurability,
+): WorkspaceBufferFileDirtyReading {
+  if (durability.causal.kind !== CAUSAL_ADMITTED) {
+    return {
+      kind: FILE_DIRTY_UNAVAILABLE,
+      reason: FILE_DIRTY_REASON_CAUSAL_HEAD_UNAVAILABLE,
+    };
+  }
+  if (durability.file.kind === FILE_UNKNOWN || durability.file.basisHeadId == null) {
+    return {
+      kind: FILE_DIRTY_UNAVAILABLE,
+      reason: FILE_DIRTY_REASON_FILE_BASIS_UNAVAILABLE,
+    };
+  }
+  const fileBasisHeadId = durability.file.basisHeadId;
+  return {
+    kind: durability.causal.headId === fileBasisHeadId
+      ? FILE_DIRTY_CLEAN
+      : FILE_DIRTY_DIRTY,
+    currentHeadId: durability.causal.headId,
+    fileBasisHeadId,
+    fileKind: durability.file.kind,
+  };
+}
+
+export function workspaceBufferFileDirty(
+  durability: WorkspaceBufferDurability,
+): boolean | undefined {
+  const reading = workspaceBufferFileDirtyReading(durability);
+  return reading.kind === FILE_DIRTY_UNAVAILABLE
+    ? undefined
+    : reading.kind === FILE_DIRTY_DIRTY;
+}
+
 function openedFileDurability(
   options: OpenedWorkspaceBufferDurabilityOptions,
   basisHeadId: string | undefined,
 ): WorkspaceBufferFileDurability {
   if (options.hostBasis === HOST_BASIS_MISSING) {
-    return { kind: FILE_MISSING };
+    return {
+      kind: FILE_MISSING,
+      basisHeadId: nonEmptyId(options.hostAbsenceBasisHeadId),
+    };
   }
   if (
     options.materialization === WorkspaceWorldlineMaterializationKinds.Materialized

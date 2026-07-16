@@ -14,6 +14,7 @@ import {
   workspaceBufferDurabilityWithExport,
   workspaceBufferDurabilityWithPendingIntent,
   workspaceBufferDurabilityWithPendingStatus,
+  workspaceBufferFileDirty,
   WorkspaceTextIntentStatuses,
   type WorkspaceBufferDurability,
   type WorkspaceTextIntentStatus,
@@ -125,6 +126,7 @@ export interface OpenedWorkspaceTextAuthorityOptions {
   readonly durability?: WorkspaceBufferDurability;
   readonly materialization?: WorkspaceWorldlineMaterializationKind;
   readonly hostBasis?: WorkspaceTextHostBasisKind;
+  readonly hostAbsenceBasisHeadId?: string;
   readonly hostFingerprint?: EditorFileFingerprint;
   readonly cache?: WorkspaceTextReadingCache;
   readonly pendingClientSeq?: number;
@@ -178,19 +180,21 @@ export function openedWorkspaceTextAuthority(
 ): WorkspaceTextAuthorityOpened {
   const materialization = options.materialization ?? materializationFromOptions(options);
   const hostBasis = options.hostBasis ?? WorkspaceTextHostBasisKinds.File;
+  const durability = options.durability ?? openedWorkspaceBufferDurability({
+    basisHeadId: options.cache?.textBasis?.basisHeadId,
+    hostAbsenceBasisHeadId: options.hostAbsenceBasisHeadId,
+    hostBasis,
+    materialization,
+    hostFingerprint: options.hostFingerprint,
+  });
   return {
     kind: AUTHORITY_OPENED,
     profile: options.profile,
     filePath: options.filePath,
     bufferId: options.bufferId,
     readOnly: options.readOnly,
-    dirty: options.dirty,
-    durability: options.durability ?? openedWorkspaceBufferDurability({
-      basisHeadId: options.cache?.textBasis?.basisHeadId,
-      hostBasis,
-      materialization,
-      hostFingerprint: options.hostFingerprint,
-    }),
+    dirty: workspaceBufferFileDirty(durability) ?? options.dirty,
+    durability,
     materialization,
     hostBasis,
     hostFingerprint: options.hostFingerprint,
@@ -275,19 +279,20 @@ export function workspaceTextAuthorityWithReceipt(
   receiptId: string,
   causalTransition?: TextBufferCausalTransition,
 ): WorkspaceTextAuthorityOpened {
+  const durability = workspaceBufferDurabilityWithAdmittedTransition(
+    authority.durability,
+    causalTransition == null
+      ? undefined
+      : {
+        receiptId,
+        admittedTickId: causalTransition.admittedTickId,
+        nextHeadId: causalTransition.nextHeadId,
+      },
+  );
   return {
     ...authority,
-    dirty: true,
-    durability: workspaceBufferDurabilityWithAdmittedTransition(
-      authority.durability,
-      causalTransition == null
-        ? undefined
-        : {
-          receiptId,
-          admittedTickId: causalTransition.admittedTickId,
-          nextHeadId: causalTransition.nextHeadId,
-        },
-    ),
+    dirty: workspaceBufferFileDirty(durability) ?? authority.dirty,
+    durability,
     materialization: WorkspaceWorldlineMaterializationKinds.Unmaterialized,
     pendingCommandEvent: undefined,
     pendingReceiptId: receiptId,
@@ -303,15 +308,16 @@ export function workspaceTextAuthorityWithPendingEdit(
   pendingCommandKind?: WorkspaceTextPendingCommandKind,
   pendingCommandEvent?: JeditPlannedCommandEvent,
 ): WorkspaceTextAuthorityOpened {
+  const durability = workspaceBufferDurabilityWithPendingIntent(
+    authority.durability,
+    pendingClientSeq,
+    WorkspaceTextIntentStatuses.Predicted,
+    pendingCommandKind,
+  );
   return {
     ...authority,
-    dirty: true,
-    durability: workspaceBufferDurabilityWithPendingIntent(
-      authority.durability,
-      pendingClientSeq,
-      WorkspaceTextIntentStatuses.Predicted,
-      pendingCommandKind,
-    ),
+    dirty: workspaceBufferFileDirty(durability) ?? authority.dirty,
+    durability,
     materialization: WorkspaceWorldlineMaterializationKinds.Unmaterialized,
     pendingClientSeq,
     pendingCommandKind,
@@ -338,14 +344,15 @@ export function workspaceTextAuthorityWithObstruction(
   pendingClientSeq: number,
   issue: RuntimeIssue,
 ): WorkspaceTextAuthorityOpened {
+  const durability = workspaceBufferDurabilityWithPendingStatus(
+    authority.durability,
+    authority.pendingClientSeq ?? pendingClientSeq,
+    WorkspaceTextIntentStatuses.Obstructed,
+  );
   return {
     ...authority,
-    dirty: true,
-    durability: workspaceBufferDurabilityWithPendingStatus(
-      authority.durability,
-      authority.pendingClientSeq ?? pendingClientSeq,
-      WorkspaceTextIntentStatuses.Obstructed,
-    ),
+    dirty: workspaceBufferFileDirty(durability) ?? authority.dirty,
+    durability,
     materialization: WorkspaceWorldlineMaterializationKinds.Unmaterialized,
     pendingClientSeq: authority.pendingClientSeq ?? pendingClientSeq,
     pendingIntentStatus: WorkspaceTextIntentStatuses.Obstructed,
@@ -357,14 +364,15 @@ export function workspaceTextAuthorityWithObstruction(
 export function workspaceTextAuthorityWithBlockedIntent(
   authority: WorkspaceTextAuthorityOpened,
 ): WorkspaceTextAuthorityOpened {
+  const durability = workspaceBufferDurabilityWithPendingStatus(
+    authority.durability,
+    authority.pendingClientSeq,
+    WorkspaceTextIntentStatuses.Blocked,
+  );
   return {
     ...authority,
-    dirty: true,
-    durability: workspaceBufferDurabilityWithPendingStatus(
-      authority.durability,
-      authority.pendingClientSeq,
-      WorkspaceTextIntentStatuses.Blocked,
-    ),
+    dirty: workspaceBufferFileDirty(durability) ?? authority.dirty,
+    durability,
     materialization: WorkspaceWorldlineMaterializationKinds.Unmaterialized,
     pendingIntentStatus: WorkspaceTextIntentStatuses.Blocked,
   };
@@ -375,14 +383,15 @@ export function workspaceTextAuthorityWithCheckpoint(
   checkpointId: string,
   basisHeadId?: string,
 ): WorkspaceTextAuthorityOpened {
+  const durability = workspaceBufferDurabilityWithCheckpoint(
+    authority.durability,
+    checkpointId,
+    basisHeadId,
+  );
   return {
     ...authority,
-    dirty: false,
-    durability: workspaceBufferDurabilityWithCheckpoint(
-      authority.durability,
-      checkpointId,
-      basisHeadId,
-    ),
+    dirty: workspaceBufferFileDirty(durability) ?? authority.dirty,
+    durability,
     pendingClientSeq: undefined,
     pendingCommandKind: undefined,
     pendingCommandEvent: undefined,
@@ -400,15 +409,16 @@ export function workspaceTextAuthorityWithExport(
   basisHeadId: string,
   hostFingerprint: EditorFileFingerprint,
 ): WorkspaceTextAuthorityOpened {
+  const durability = workspaceBufferDurabilityWithExport(
+    authority.durability,
+    readingId,
+    basisHeadId,
+    hostFingerprint,
+  );
   return {
     ...authority,
-    dirty: false,
-    durability: workspaceBufferDurabilityWithExport(
-      authority.durability,
-      readingId,
-      basisHeadId,
-      hostFingerprint,
-    ),
+    dirty: workspaceBufferFileDirty(durability) ?? authority.dirty,
+    durability,
     hostBasis: WorkspaceTextHostBasisKinds.File,
     hostFingerprint,
     materialization: WorkspaceWorldlineMaterializationKinds.Materialized,

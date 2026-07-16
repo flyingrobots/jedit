@@ -17,6 +17,10 @@ test('reading cache materializes text and reports explicit postures', async () =
   const cache = {
     bufferId: 'buffer:notes',
     readingId: 'reading:notes',
+    textBasis: {
+      basisHeadId: 'head:opened',
+      byteRange: { startByte: 0, endByte: 3 },
+    },
     lines: ['a', 'b'],
     coverage: 'full',
     lineCount: 2,
@@ -37,7 +41,10 @@ test('reading cache materializes text and reports explicit postures', async () =
     dirty: false,
     cache,
   });
-  const dirty = authorityModule.workspaceTextAuthorityWithReceipt(opened, 'receipt:1');
+  const dirty = authorityModule.workspaceTextAuthorityWithReceipt(opened, 'receipt:1', {
+    admittedTickId: 'tick:1',
+    nextHeadId: 'head:edited',
+  });
 
   assert.equal(cacheModule.materializeWorkspaceTextReadingCache(cache), 'a\nb');
   assert.equal(authorityModule.workspaceTextAuthorityPosture(opened), cacheModule.WorkspaceTextReadingPostures.Clean);

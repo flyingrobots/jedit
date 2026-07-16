@@ -21,6 +21,7 @@ import {
   openedWorkspaceTextAuthority,
   obstructedWorkspaceTextAuthority,
   WorkspaceTextAuthorityKinds,
+  WorkspaceTextHostBasisKinds,
   workspaceTextAuthorityWithCache,
   workspaceTextAuthorityWithBlockedIntent,
   workspaceTextAuthorityWithCheckpoint,
@@ -126,6 +127,9 @@ function openedTextModel(
     dirty: false,
     materialization: result.materialization,
     hostBasis: result.hostBasis,
+    hostAbsenceBasisHeadId: result.hostBasis === WorkspaceTextHostBasisKinds.Missing
+      ? result.cache.textBasis.basisHeadId
+      : undefined,
     hostFingerprint: result.hostFingerprint,
     cache: result.cache,
   });
@@ -135,7 +139,7 @@ function openedTextModel(
     editor: editorFromWorkspaceTextLines({
       filePath: result.filePath,
       readOnly: result.readOnly,
-      dirty: false,
+      dirty: textAuthority.dirty,
       lines: result.initialLines,
       existing: model.editor,
     }),
