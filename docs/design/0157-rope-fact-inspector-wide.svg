@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" role="img" aria-labelledby="title desc">
+  <title id="title">Wide Jim rope fact inspector</title>
+  <desc id="desc">A 144-column Jim source view with two causal gutter lanes, an anchored range explanation, and a right-side rope evidence drawer.</desc>
+  <metadata>
+    Semantic preview tokens: surface.workspace, surface.panel, surface.selected,
+    text.primary, text.dim, gutter.rule, causal.modified, causal.deleted,
+    evidence.identity, evidence.basis, evidence.complete.
+  </metadata>
+  <style>
+    .workspace { fill: #0d1117; }
+    .panel { fill: #151b24; }
+    .selected { fill: #202938; }
+    .footer { fill: #111722; }
+    .primary { fill: #d6deeb; }
+    .dim { fill: #7f8a9a; }
+    .rule { fill: #53657c; stroke: #53657c; }
+    .modified { fill: #c792ea; }
+    .deleted { fill: #ff8f70; }
+    .identity { fill: #89ddff; }
+    .basis { fill: #ffc777; }
+    .complete { fill: #8bd49c; }
+    .focus { stroke: #82aaff; }
+    .focus-bar { fill: #82aaff; }
+    text {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 16px;
+      letter-spacing: 0;
+    }
+    .small { font-size: 13px; }
+    .label { font-size: 12px; font-weight: 700; }
+    .heading { font-size: 18px; font-weight: 700; }
+  </style>
+
+  <rect class="workspace" x="0" y="0" width="1440" height="900" />
+  <rect class="panel" x="0" y="0" width="1440" height="48" />
+  <text class="dim small" x="24" y="30">jim / causal-rope-cr-06-why</text>
+  <text class="primary heading" x="520" y="31">graph-rope-runtime.ts</text>
+  <text class="basis small" x="1130" y="30">basis H188</text>
+  <text class="identity small" x="1260" y="30">head H193</text>
+
+  <line class="rule" x1="1004" y1="48" x2="1004" y2="838" stroke-width="1" />
+  <rect class="panel" x="1005" y="48" width="435" height="790" />
+  <text class="heading primary" x="1030" y="84">Rope Evidence</text>
+  <text class="dim small" x="1030" y="110">range UTF-8 6840..6960</text>
+  <text class="basis small" x="1030" y="133">worldline main / head H193</text>
+
+  <text class="dim label" x="36" y="82">LINE D C | SOURCE</text>
+  <rect class="selected" x="24" y="204" width="956" height="30" />
+  <g xml:space="preserve">
+    <text class="dim" x="38" y="118">39</text><text class="rule" x="112" y="118">|</text><text class="primary" x="136" y="118">const before = resolveBasis();</text>
+    <text class="dim" x="38" y="150">40</text><text class="rule" x="112" y="150">|</text><text class="primary" x="136" y="150">const reading = observeRange({</text>
+    <text class="dim" x="38" y="182">41</text><text class="rule" x="112" y="182">|</text><text class="primary" x="168" y="182">basisHeadId, queriedRange, bounds,</text>
+    <text class="dim" x="38" y="226">42</text><text class="deleted" x="80" y="226">-</text><text class="modified" x="96" y="226">~</text><text class="rule" x="112" y="226">|</text><text class="primary" x="168" y="226">worldlineId,</text>
+    <text class="dim" x="38" y="258">43</text><text class="rule" x="112" y="258">|</text><text class="primary" x="136" y="258">});</text>
+    <text class="dim" x="38" y="290">44</text><text class="rule" x="112" y="290">|</text><text class="primary" x="136" y="290">return projectEvidence(reading);</text>
+  </g>
+
+  <rect class="panel focus" x="128" y="330" width="836" height="184" rx="4" stroke-width="1" />
+  <rect class="focus-bar" x="128" y="330" width="5" height="184" />
+  <text class="primary heading" x="154" y="363">WHY line 42</text>
+  <text class="basis small" x="746" y="362">basis H188 -&gt; H193</text>
+  <text class="primary" x="154" y="395">Modified after 2 deleted lines. Evidence complete.</text>
+  <text class="dim" x="154" y="426">leaf</text><text class="identity" x="202" y="426">L7f1a</text>
+  <text class="dim" x="270" y="426">blob</text><text class="identity" x="312" y="426">B03dd</text>
+  <text class="dim" x="390" y="426">rewrite</text><text class="identity" x="458" y="426">R8f2c</text>
+  <text class="dim" x="536" y="426">diff</text><text class="identity" x="578" y="426">D41a0</text>
+  <text class="dim" x="154" y="456">text tick</text><text class="identity" x="238" y="456">T193</text>
+  <text class="dim" x="306" y="456">checkpoint</text><text class="identity" x="408" y="456">C42</text>
+  <text class="dim" x="470" y="456">anchor</text><text class="basis" x="536" y="456">none claimed</text>
+  <text class="dim small" x="154" y="490">Enter inspect  Tab evidence  b basis  p pin  Esc close</text>
+
+  <text class="dim label" x="1030" y="176">EVIDENCE CHAIN</text>
+  <line class="rule" x1="1042" y1="198" x2="1042" y2="550" stroke-width="2" />
+  <circle class="workspace focus" cx="1042" cy="207" r="6" stroke-width="2" />
+  <text class="primary" x="1064" y="213">RopeHead</text><text class="identity small" x="1180" y="213">H193</text>
+  <text class="dim small" x="1064" y="234">range 6840..6960 / complete</text>
+  <circle class="workspace rule" cx="1042" cy="276" r="6" stroke-width="2" />
+  <text class="primary" x="1064" y="282">Leaf / Blob</text><text class="identity small" x="1192" y="282">L7f1a / B03dd</text>
+  <text class="dim small" x="1064" y="303">fragment 1 of 1</text>
+  <circle class="workspace rule" cx="1042" cy="345" r="6" stroke-width="2" />
+  <text class="primary" x="1064" y="351">Rewrite / Diff</text><text class="identity small" x="1215" y="351">R8f2c / D41a0</text>
+  <text class="dim small" x="1064" y="372">last touching text operation</text>
+  <circle class="workspace rule" cx="1042" cy="414" r="6" stroke-width="2" />
+  <text class="primary" x="1064" y="420">Text tick receipt</text><text class="identity small" x="1236" y="420">T193</text>
+  <text class="dim small" x="1064" y="441">Jim text-domain evidence</text>
+  <circle class="workspace rule" cx="1042" cy="483" r="6" stroke-width="2" />
+  <text class="primary" x="1064" y="489">Checkpoint</text><text class="identity small" x="1184" y="489">C42</text>
+  <text class="dim small" x="1064" y="510">manual-save declaration</text>
+  <circle class="workspace rule" cx="1042" cy="552" r="6" stroke-width="2" />
+  <text class="primary" x="1064" y="558">Echo anchor</text><text class="basis small" x="1196" y="558">not associated</text>
+
+  <text class="dim label" x="1030" y="610">COVERAGE</text>
+  <text class="complete" x="1030" y="638">complete</text>
+  <text class="dim small" x="1120" y="638">7 facts / 1 fragment</text>
+  <text class="dim label" x="1030" y="682">BOUNDS</text>
+  <text class="primary small" x="1030" y="708">64 facts / depth 12 / 8 KiB history</text>
+  <text class="dim small" x="1030" y="734">continuation: none</text>
+
+  <rect class="footer" x="0" y="838" width="1440" height="62" />
+  <text class="primary small" x="24" y="864">NORMAL 42:9</text>
+  <text class="dim small" x="145" y="864">why:open  cursor moves to close</text>
+  <text class="basis small" x="958" y="864">basis:H188</text>
+  <text class="identity small" x="1062" y="864">head:H193</text>
+  <text class="complete small" x="1174" y="864">coverage:complete</text>
+  <text class="dim small" x="24" y="888">/src/domain/graph-rope-runtime.ts</text>
+  <text class="dim small" x="1260" y="888">wide / 144 cols</text>
+</svg>

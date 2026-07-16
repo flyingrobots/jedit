@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Designed the CR-06 runtime-backed range-why contract and rope fact inspector.
+  One bounded, basis-pinned observation will supply the human panel, developer
+  inspector, gutter/footer explainers, and machine output with fragmented
+  head/leaf/blob/rewrite/diff/text-tick/checkpoint evidence. Checkpoint
+  declarations remain separate from optional Echo anchor associations, stale
+  evidence fails closed, and standalone token-driven mockups cover wide,
+  narrow, and extra-small terminal profiles.
 - Added receipt-backed gutter execution posture. Applied `+`, `~`, and `-`
   markers now require retained graph-rope tick-receipt support; `?` identifies
   an app proposal that has not become causal history, and `!` identifies an

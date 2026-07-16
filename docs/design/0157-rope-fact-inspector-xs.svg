@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 760" role="img" aria-labelledby="title desc">
+  <title id="title">Extra-small Jim range why sheet</title>
+  <desc id="desc">A 42-column Jim source view with a compact bottom evidence sheet that keeps basis, coverage, and selected evidence textual.</desc>
+  <metadata>
+    Semantic preview tokens: surface.workspace, surface.panel, surface.selected,
+    text.primary, text.dim, gutter.rule, causal.modified, causal.deleted,
+    evidence.identity, evidence.basis, evidence.complete.
+  </metadata>
+  <style>
+    .workspace { fill: #0d1117; }
+    .panel { fill: #151b24; }
+    .selected { fill: #202938; }
+    .footer { fill: #111722; }
+    .primary { fill: #d6deeb; }
+    .dim { fill: #7f8a9a; }
+    .rule { fill: #53657c; stroke: #53657c; }
+    .modified { fill: #c792ea; }
+    .deleted { fill: #ff8f70; }
+    .identity { fill: #89ddff; }
+    .basis { fill: #ffc777; }
+    .complete { fill: #8bd49c; }
+    .focus { stroke: #82aaff; }
+    .focus-bar { fill: #82aaff; }
+    text {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+      letter-spacing: 0;
+    }
+    .small { font-size: 11px; }
+    .heading { font-size: 15px; font-weight: 700; }
+  </style>
+
+  <rect class="workspace" x="0" y="0" width="420" height="760" />
+  <rect class="panel" x="0" y="0" width="420" height="42" />
+  <text class="primary heading" x="14" y="27">graph-rope-runtime.ts</text>
+  <text class="identity small" x="348" y="26">H193</text>
+
+  <rect class="selected" x="8" y="130" width="404" height="27" />
+  <g xml:space="preserve">
+    <text class="dim" x="12" y="78">40</text><text class="rule" x="72" y="78">|</text><text class="primary" x="88" y="78">const reading =</text>
+    <text class="dim" x="12" y="104">41</text><text class="rule" x="72" y="104">|</text><text class="primary" x="104" y="104">observeRange({</text>
+    <text class="dim" x="12" y="147">42</text><text class="deleted" x="44" y="147">-</text><text class="modified" x="58" y="147">~</text><text class="rule" x="72" y="147">|</text><text class="primary" x="104" y="147">basisHeadId,</text>
+    <text class="dim" x="12" y="173">43</text><text class="rule" x="72" y="173">|</text><text class="primary" x="104" y="173">queriedRange,</text>
+    <text class="dim" x="12" y="199">44</text><text class="rule" x="72" y="199">|</text><text class="primary" x="104" y="199">bounds,</text>
+    <text class="dim" x="12" y="225">45</text><text class="rule" x="72" y="225">|</text><text class="primary" x="88" y="225">});</text>
+    <text class="dim" x="12" y="251">46</text><text class="rule" x="72" y="251">|</text><text class="primary" x="88" y="251">return reading;</text>
+  </g>
+
+  <rect class="panel focus" x="8" y="314" width="404" height="360" rx="4" stroke-width="1" />
+  <rect class="focus-bar" x="8" y="314" width="5" height="360" />
+  <text class="primary heading" x="28" y="344">WHY line 42</text>
+  <text class="complete small" x="322" y="343">complete</text>
+  <text class="primary" x="28" y="378">Modified after 2 deleted lines.</text>
+  <text class="dim" x="28" y="410">basis</text><text class="basis" x="84" y="410">H188 -&gt; H193</text>
+  <text class="dim" x="28" y="438">range</text><text class="identity" x="84" y="438">6840..6960 UTF-8</text>
+  <line class="rule" x1="28" y1="458" x2="392" y2="458" stroke-width="1" />
+  <text class="dim small" x="28" y="482">evidence 3/5</text>
+  <text class="primary heading" x="28" y="512">Rewrite / Diff</text>
+  <text class="identity" x="28" y="540">R8f2c / D41a0</text>
+  <text class="dim" x="28" y="568">text tick T193</text>
+  <text class="dim" x="28" y="596">checkpoint C42</text>
+  <text class="basis" x="28" y="624">Echo anchor: not associated</text>
+  <text class="dim small" x="28" y="654">left/right evidence  Enter inspect</text>
+
+  <rect class="footer" x="0" y="696" width="420" height="64" />
+  <text class="primary small" x="12" y="720">NORMAL 42:9</text>
+  <text class="basis small" x="236" y="720">basis:H188</text>
+  <text class="dim small" x="12" y="744">Esc close</text>
+  <text class="dim small" x="292" y="744">xs / 42 cols</text>
+</svg>
