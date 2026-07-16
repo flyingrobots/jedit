@@ -86,9 +86,10 @@ and selected comparison head still match.
 `Dim gutter` selects between the theme's complete `gutter.normal` and
 `gutter.dimmed` token sets. It does not calculate colors in the renderer.
 Both sets define explicit tokens for the background, ordinary and current line
-numbers, rule, inserted marker, modified marker, and deleted marker. Every
-gutter token carries the theme `surface` background so a missing token
-background cannot expose the terminal's default color.
+numbers, rule, inserted marker, modified marker, deleted marker, pending
+proposal, and obstructed proposal. A token set is complete only when all nine
+roles are present. Every gutter token carries the theme `surface` background so
+a missing token background cannot expose the terminal's default color.
 
 Built-in light and dark themes witness at least 3:1 foreground-to-background
 contrast for every gutter role. When a semantic palette color cannot meet that
