@@ -1,4 +1,5 @@
 import type { KeyMsg } from "@flyingrobots/bijou-tui";
+import type { JeditWhyRangeReport } from "../../ports/jedit-why-range.js";
 import { FocusPanes } from "../../ui/panel-focus.js";
 import type { EditorState } from "./editor/model.js";
 import type { WorkspaceModel } from "./model.js";
@@ -24,6 +25,7 @@ export interface WorkspaceInlinePanel {
   readonly detailRows?: readonly string[];
   readonly basisHeadId?: string;
   readonly bufferId?: string;
+  readonly whyRangeReport?: JeditWhyRangeReport;
 }
 
 export interface WorkspaceInlinePanelAnchor {
@@ -33,7 +35,7 @@ export interface WorkspaceInlinePanelAnchor {
 
 export type WorkspaceInlinePanelContent = Pick<
   WorkspaceInlinePanel,
-  "title" | "message" | "tone" | "detailRows" | "basisHeadId" | "bufferId"
+  "title" | "message" | "tone" | "detailRows" | "basisHeadId" | "bufferId" | "whyRangeReport"
 >;
 
 export function anchoredWorkspaceInlinePanel(
@@ -82,21 +84,35 @@ export function clearWorkspaceInlinePanelAfterKey(
     : { ...model, inlinePanel: undefined };
 }
 
+export function workspaceInlinePanelWhyRangeReport(
+  model: WorkspaceModel,
+): JeditWhyRangeReport | undefined {
+  const panel = model.inlinePanel;
+  return panel?.whyRangeReport != null && workspaceInlinePanelMatchesModel(model, panel)
+    ? panel.whyRangeReport
+    : undefined;
+}
+
 function shouldKeepWorkspaceInlinePanel(
   msg: KeyMsg,
   model: WorkspaceModel,
   panel: WorkspaceInlinePanel,
 ): boolean {
+  return msg.key !== WorkspaceKeys.Escape &&
+    workspaceInlinePanelMatchesModel(model, panel);
+}
+
+function workspaceInlinePanelMatchesModel(
+  model: WorkspaceModel,
+  panel: WorkspaceInlinePanel,
+): boolean {
   const editor = model.editor;
-  return (
-    msg.key !== WorkspaceKeys.Escape &&
-    sourceEditorOwnsInlinePanel(model) &&
+  return sourceEditorOwnsInlinePanel(model) &&
     editor != null &&
     editor.cursorRow === panel.anchorRow &&
     editor.cursorCol === panel.anchorColumn &&
     inlinePanelMatchesActiveBuffer(model, panel) &&
-    workspaceInlinePanelBasisMatchesModel(model, panel.basisHeadId)
-  );
+    workspaceInlinePanelBasisMatchesModel(model, panel.basisHeadId);
 }
 
 export function workspaceInlinePanelBasisMatchesModel(

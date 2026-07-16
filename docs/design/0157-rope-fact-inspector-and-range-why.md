@@ -573,7 +573,7 @@ path. `TextBufferSession.explainRange` now consumes the generated, bounded
   (#240).
 - [x] Slice 4: Add import, edit, checkpoint, and generated-text witnesses
   (#241).
-- [ ] Slice 5: Reuse the evidence pipeline for gutter and footer explainers
+- [x] Slice 5: Reuse the evidence pipeline for gutter and footer explainers
   (#242).
 
 ## Tests To Write First
@@ -588,7 +588,7 @@ Behavior tests required:
 - [x] Missing or bounded-out support produces a typed obstruction or partial
   result.
 - [x] Structured panel remains until cursor/head invalidation or `Esc`.
-- [ ] Gutter and footer explainers cite the same evidence IDs as range `:why`.
+- [x] Gutter and footer explainers cite the same evidence IDs as range `:why`.
 
 Documentation and process tests:
 
@@ -605,9 +605,9 @@ The work is done when:
 - [x] Imported and mixed-origin ranges are honest and fragmented.
 - [x] The visible panel and machine result share one structured payload.
 - [x] Stale and unsupported evidence fails closed.
-- [ ] Wide, narrow, and extra-small layouts are covered.
-- [ ] New visible strings are localized through the catalog schema.
-- [ ] Gutter and footer details do not invent facts.
+- [x] Wide, narrow, and extra-small layouts are covered.
+- [x] New visible strings are localized through the catalog schema.
+- [x] Gutter and footer details do not invent facts.
 - [ ] CR-06 issues and PR are linked correctly.
 - [ ] CI and local validation are green.
 
@@ -681,19 +681,39 @@ Mitigations:
 
 ## Retrospective
 
-Fill this in after CR-06 implementation.
-
 What changed from the design:
 
-- Pending.
+- The production range reader was added to the generated rope contract and
+  installed transport rather than exposed as a debug-only fact map.
+- The active inline panel retains the structured report as its application
+  evidence payload. Gutter and footer projections consume that object instead
+  of parsing the human message or copying provenance logic.
+- Generated-text producer attribution remains a typed obstruction because the
+  retained facts do not yet distinguish a user from Graft or another producer.
+- Ordinary Jim checkpoint declarations were corrected so they do not request
+  Echo causal anchors implicitly. Explicit anchoring remains a separate
+  fail-closed graph operation.
 
 What the tests proved:
 
-- Pending.
+- Range observations return ordered coverage fragments and distinct retained
+  head, leaf, blob, rewrite, diff, and text-tick receipt identities.
+- Imported, rewritten, checkpointed, mixed-origin, and unsupported generated
+  attribution outcomes remain semantically distinct.
+- The persistent panel closes when its cursor, buffer, head, focus, or key
+  basis becomes invalid and wraps exact opaque identities instead of truncating
+  them.
+- A gutter explanation appears only when every report identity is supported by
+  that marker, and the footer omits anchor posture when no association exists.
 
 What remains open:
 
-- Pending.
+- Bounded deleted-text expansion remains tracked by #278.
+- Basis-pinned symbol and function scopes remain tracked by #279.
+- Producer-specific facts are required before Jim can identify generated text
+  as Graft-produced rather than merely rewritten.
+- Native generated Edict invocation remains outside CR-06; this cycle added no
+  mutation authority.
 
 PR:
 

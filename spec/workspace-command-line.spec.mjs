@@ -1354,6 +1354,7 @@ test("enter dispatches why through retained range history when a cursor range is
   assert.equal(Object.hasOwn(message, "obstruction"), false);
   assert.match(notified.inlinePanel.message, /ropeDiff receipt:range/);
   assert.equal(notified.inlinePanel.basisHeadId, "head:command");
+  assert.equal(notified.inlinePanel.whyRangeReport, message.outcome.report);
   assert.ok(notified.inlinePanel.detailRows.some(row => row.includes("rewrite:range")));
   assert.ok(notified.inlinePanel.detailRows.some(row => row.includes("diff:range")));
   assert.ok(notified.inlinePanel.detailRows.some(row => row.includes("tick:range")));

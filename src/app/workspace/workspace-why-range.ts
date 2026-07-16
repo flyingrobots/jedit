@@ -1,7 +1,10 @@
 import type { Cmd } from '@flyingrobots/bijou-tui';
 import { makeTextByteRange } from '../../domain/graph-rope-coordinates.js';
 import type { TextByteRange } from '../../domain/graph-rope-types.js';
-import { RESULT_PRODUCED } from '../../ports/jedit-why-range.js';
+import {
+  RESULT_PRODUCED,
+  type JeditWhyRangeReport,
+} from '../../ports/jedit-why-range.js';
 import type { JeditWhyReport } from './command-provenance.js';
 import type { EditorState } from './editor/model.js';
 import type { WorkspaceModel } from './model.js';
@@ -57,6 +60,7 @@ export interface WorkspaceInlinePanelReport {
   readonly tone: WorkspaceInlinePanelTone;
   readonly detailRows?: readonly string[];
   readonly basisHeadId?: string;
+  readonly whyRangeReport?: JeditWhyRangeReport;
 }
 
 export function jeditWhyRangeAtCursor(editor: EditorState | undefined): TextByteRange | undefined {
@@ -183,7 +187,7 @@ function modelWithWorkspaceInlinePanelAtAnchor(
 function workspaceInlinePanelReportForModel(
   model: WorkspaceModel,
   report: WorkspaceInlinePanelReport,
-): Pick<WorkspaceInlinePanel, "title" | "message" | "tone" | "detailRows" | "basisHeadId" | "bufferId"> {
+): Pick<WorkspaceInlinePanel, "title" | "message" | "tone" | "detailRows" | "basisHeadId" | "bufferId" | "whyRangeReport"> {
   return model.textAuthority.kind === WorkspaceTextAuthorityKinds.Opened
     ? { ...report, bufferId: model.textAuthority.bufferId }
     : report;
@@ -200,6 +204,7 @@ function whyInlinePanelReportFromRange(
       message: outcome.report.message,
       detailRows: jeditWhyRangeDetailRows(outcome.report),
       basisHeadId: outcome.report.witness.basisHeadId,
+      whyRangeReport: outcome.report,
       tone: outcome.report.witness.result.kind === RESULT_PRODUCED
         ? WORKSPACE_INLINE_PANEL_TONE.Info
         : WORKSPACE_INLINE_PANEL_TONE.Warning,

@@ -20,8 +20,27 @@ import {
 } from './worldline-state.js';
 import type { WorkspaceModel } from './model.js';
 import { jeditCommandFooterSummary } from './command-provenance-summaries.js';
+import { workspaceFooterWhyEvidence } from './workspace-causal-evidence-explainers.js';
+
+const WHY_FOOTER_I18N_KEYS = Object.freeze({
+  Head: 'footer.evidence.head',
+  Tick: 'footer.evidence.tick',
+  Anchor: 'footer.evidence.anchor',
+  Coverage: 'footer.evidence.coverage',
+  Complete: 'footer.evidence.complete',
+  Partial: 'footer.evidence.partial',
+  Unavailable: 'footer.evidence.unavailable',
+} as const);
+const WHY_EVIDENCE_COVERAGE = Object.freeze({
+  Complete: 'COMPLETE',
+  Partial: 'PARTIAL',
+} as const);
 
 export function workspaceFooterTextPosture(model: WorkspaceModel): string {
+  const whyEvidence = workspaceFooterWhyEvidencePosture(model);
+  if (whyEvidence != null) {
+    return whyEvidence;
+  }
   return [
     workspaceFooterAuthorityPosture(model),
     workspaceWorldlineContextLabel({
@@ -30,6 +49,19 @@ export function workspaceFooterTextPosture(model: WorkspaceModel): string {
       causalLineDelta: workspaceFooterCausalLineDelta(model),
     }),
   ].join(' | ');
+}
+
+export function workspaceFooterWhyEvidencePosture(model: WorkspaceModel): string | undefined {
+  const evidence = workspaceFooterWhyEvidence(model);
+  if (evidence == null) {
+    return undefined;
+  }
+  return [
+    `${model.i18n.t(WHY_FOOTER_I18N_KEYS.Head)}=${evidence.headId}`,
+    evidenceListPosture(model.i18n.t(WHY_FOOTER_I18N_KEYS.Tick), evidence.tickReceiptIds),
+    evidenceListPosture(model.i18n.t(WHY_FOOTER_I18N_KEYS.Anchor), evidence.causalAnchorIds),
+    `${model.i18n.t(WHY_FOOTER_I18N_KEYS.Coverage)}=${footerCoverageLabel(model, evidence.coverage)}`,
+  ].filter((part): part is string => part != null).join(' ');
 }
 
 export function workspaceBufferDurabilityFooterPosture(
@@ -123,4 +155,22 @@ function footerFilePosture(file: WorkspaceBufferFileDurability): string {
   return file.kind === WorkspaceBufferFileDurabilityKinds.Saved && file.exportReadingId != null
     ? 'file:exported'
     : `file:${file.kind}`;
+}
+
+function evidenceListPosture(label: string, ids: readonly string[]): string | undefined {
+  return ids.length === 0 ? undefined : `${label}=${ids.join(',')}`;
+}
+
+function footerCoverageLabel(
+  model: WorkspaceModel,
+  coverage: NonNullable<ReturnType<typeof workspaceFooterWhyEvidence>>['coverage'],
+): string {
+  if (coverage === WHY_EVIDENCE_COVERAGE.Complete) {
+    return model.i18n.t(WHY_FOOTER_I18N_KEYS.Complete);
+  }
+  return model.i18n.t(
+    coverage === WHY_EVIDENCE_COVERAGE.Partial
+      ? WHY_FOOTER_I18N_KEYS.Partial
+      : WHY_FOOTER_I18N_KEYS.Unavailable,
+  );
 }

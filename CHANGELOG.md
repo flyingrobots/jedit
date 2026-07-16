@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Connected causal gutter and footer explanations to the same structured,
+  basis-pinned range report used by `:why`. Applied gutter readings expose
+  report-backed rewrite/diff/tick evidence only when every identity is also
+  supported by the causal marker; stale or mismatched reports contribute no
+  explanation. While the panel is active, the lower-right posture cites exact
+  head, tick, optional anchor, and coverage evidence, omits unsupported claims,
+  and localizes its labels across every installed locale.
 - Added range-origin witnesses for untouched imports, retained rewrites,
   checkpointed heads, and unsupported generated-text attribution. Rewrite
   reports now expose a typed producer-evidence obstruction instead of treating

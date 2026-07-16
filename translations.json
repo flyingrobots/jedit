@@ -85,6 +85,15 @@
             "y_end": "y$ end",
             "gg_top": "gg top",
             "esc_cancel": "esc cancel"
+          },
+          "evidence": {
+            "head": "head",
+            "tick": "tick",
+            "anchor": "anchor",
+            "coverage": "coverage",
+            "complete": "complete",
+            "partial": "partial",
+            "unavailable": "unavailable"
           }
         },
         "history": {
@@ -252,6 +261,15 @@
             "y_end": "y$ fin",
             "gg_top": "gg haut",
             "esc_cancel": "esc annuler"
+          },
+          "evidence": {
+            "head": "tête",
+            "tick": "tick",
+            "anchor": "ancre",
+            "coverage": "couverture",
+            "complete": "complète",
+            "partial": "partielle",
+            "unavailable": "indisponible"
           }
         },
         "history": {
@@ -419,6 +437,15 @@
             "y_end": "y$ fine",
             "gg_top": "gg cima",
             "esc_cancel": "esc annulla"
+          },
+          "evidence": {
+            "head": "testa",
+            "tick": "tick",
+            "anchor": "ancora",
+            "coverage": "copertura",
+            "complete": "completa",
+            "partial": "parziale",
+            "unavailable": "non disponibile"
           }
         },
         "history": {
@@ -586,6 +613,15 @@
             "y_end": "y$ ende",
             "gg_top": "gg oben",
             "esc_cancel": "esc abbrechen"
+          },
+          "evidence": {
+            "head": "Kopf",
+            "tick": "Tick",
+            "anchor": "Anker",
+            "coverage": "Abdeckung",
+            "complete": "vollständig",
+            "partial": "teilweise",
+            "unavailable": "nicht verfügbar"
           }
         },
         "history": {
@@ -753,6 +789,15 @@
             "y_end": "y$ fin",
             "gg_top": "gg arriba",
             "esc_cancel": "esc cancelar"
+          },
+          "evidence": {
+            "head": "cabeza",
+            "tick": "tick",
+            "anchor": "ancla",
+            "coverage": "cobertura",
+            "complete": "completa",
+            "partial": "parcial",
+            "unavailable": "no disponible"
           }
         },
         "history": {
@@ -920,6 +965,15 @@
             "y_end": "y$ 끝",
             "gg_top": "gg 맨 위",
             "esc_cancel": "esc 취소"
+          },
+          "evidence": {
+            "head": "헤드",
+            "tick": "틱",
+            "anchor": "앵커",
+            "coverage": "범위",
+            "complete": "완전",
+            "partial": "부분",
+            "unavailable": "사용 불가"
           }
         },
         "history": {
@@ -1087,6 +1141,15 @@
             "y_end": "y$ 末尾",
             "gg_top": "gg 先頭",
             "esc_cancel": "esc 取消"
+          },
+          "evidence": {
+            "head": "ヘッド",
+            "tick": "ティック",
+            "anchor": "アンカー",
+            "coverage": "範囲",
+            "complete": "完全",
+            "partial": "部分",
+            "unavailable": "利用不可"
           }
         },
         "history": {
@@ -1254,6 +1317,15 @@
             "y_end": "y$ 结尾",
             "gg_top": "gg 顶部",
             "esc_cancel": "esc 取消"
+          },
+          "evidence": {
+            "head": "头",
+            "tick": "时刻",
+            "anchor": "锚点",
+            "coverage": "覆盖",
+            "complete": "完整",
+            "partial": "部分",
+            "unavailable": "不可用"
           }
         },
         "history": {
@@ -1421,6 +1493,15 @@
             "y_end": "y$ fim",
             "gg_top": "gg topo",
             "esc_cancel": "esc cancelar"
+          },
+          "evidence": {
+            "head": "cabeça",
+            "tick": "tick",
+            "anchor": "âncora",
+            "coverage": "cobertura",
+            "complete": "completa",
+            "partial": "parcial",
+            "unavailable": "indisponível"
           }
         },
         "history": {
@@ -1588,6 +1669,15 @@
             "y_end": "y$ конец",
             "gg_top": "gg верх",
             "esc_cancel": "esc отмена"
+          },
+          "evidence": {
+            "head": "вершина",
+            "tick": "тик",
+            "anchor": "якорь",
+            "coverage": "покрытие",
+            "complete": "полное",
+            "partial": "частичное",
+            "unavailable": "недоступно"
           }
         },
         "history": {
@@ -1755,6 +1845,15 @@
             "y_end": "y$ نهاية",
             "gg_top": "gg أعلى",
             "esc_cancel": "esc إلغاء"
+          },
+          "evidence": {
+            "head": "الرأس",
+            "tick": "النبضة",
+            "anchor": "المرساة",
+            "coverage": "التغطية",
+            "complete": "كاملة",
+            "partial": "جزئية",
+            "unavailable": "غير متاحة"
           }
         },
         "history": {
@@ -1922,6 +2021,15 @@
             "y_end": "y$ akhir",
             "gg_top": "gg atas",
             "esc_cancel": "esc batal"
+          },
+          "evidence": {
+            "head": "kepala",
+            "tick": "tick",
+            "anchor": "jangkar",
+            "coverage": "cakupan",
+            "complete": "lengkap",
+            "partial": "sebagian",
+            "unavailable": "tidak tersedia"
           }
         },
         "history": {
@@ -2089,6 +2197,15 @@
             "y_end": "y$ son",
             "gg_top": "gg üst",
             "esc_cancel": "esc iptal"
+          },
+          "evidence": {
+            "head": "baş",
+            "tick": "tik",
+            "anchor": "çapa",
+            "coverage": "kapsam",
+            "complete": "tam",
+            "partial": "kısmi",
+            "unavailable": "kullanılamıyor"
           }
         },
         "history": {
@@ -2256,6 +2373,15 @@
             "y_end": "y$ अंत",
             "gg_top": "gg ऊपर",
             "esc_cancel": "esc रद्द"
+          },
+          "evidence": {
+            "head": "शीर्ष",
+            "tick": "टिक",
+            "anchor": "एंकर",
+            "coverage": "कवरेज",
+            "complete": "पूर्ण",
+            "partial": "आंशिक",
+            "unavailable": "अनुपलब्ध"
           }
         },
         "history": {
@@ -2423,6 +2549,15 @@
             "y_end": "y$ einde",
             "gg_top": "gg boven",
             "esc_cancel": "esc annuleren"
+          },
+          "evidence": {
+            "head": "kop",
+            "tick": "tick",
+            "anchor": "anker",
+            "coverage": "dekking",
+            "complete": "volledig",
+            "partial": "gedeeltelijk",
+            "unavailable": "niet beschikbaar"
           }
         },
         "history": {
@@ -2590,6 +2725,15 @@
             "y_end": "y$ koniec",
             "gg_top": "gg góra",
             "esc_cancel": "esc anuluj"
+          },
+          "evidence": {
+            "head": "głowa",
+            "tick": "takt",
+            "anchor": "kotwica",
+            "coverage": "pokrycie",
+            "complete": "pełne",
+            "partial": "częściowe",
+            "unavailable": "niedostępne"
           }
         },
         "history": {
@@ -2757,6 +2901,15 @@
             "y_end": "y$ cuối",
             "gg_top": "gg đầu",
             "esc_cancel": "esc hủy"
+          },
+          "evidence": {
+            "head": "đầu",
+            "tick": "nhịp",
+            "anchor": "neo",
+            "coverage": "độ phủ",
+            "complete": "đầy đủ",
+            "partial": "một phần",
+            "unavailable": "không khả dụng"
           }
         },
         "history": {
@@ -2924,6 +3077,15 @@
             "y_end": "y$ จบ",
             "gg_top": "gg บน",
             "esc_cancel": "esc ยกเลิก"
+          },
+          "evidence": {
+            "head": "เฮด",
+            "tick": "ทิก",
+            "anchor": "จุดยึด",
+            "coverage": "ความครอบคลุม",
+            "complete": "ครบถ้วน",
+            "partial": "บางส่วน",
+            "unavailable": "ไม่พร้อมใช้งาน"
           }
         },
         "history": {
@@ -3091,6 +3253,15 @@
             "y_end": "y$ پایان",
             "gg_top": "gg بالا",
             "esc_cancel": "esc لغو"
+          },
+          "evidence": {
+            "head": "سر",
+            "tick": "تیک",
+            "anchor": "لنگر",
+            "coverage": "پوشش",
+            "complete": "کامل",
+            "partial": "جزئی",
+            "unavailable": "در دسترس نیست"
           }
         },
         "history": {
@@ -3258,6 +3429,15 @@
             "y_end": "y$ סוף",
             "gg_top": "gg למעלה",
             "esc_cancel": "esc בטל"
+          },
+          "evidence": {
+            "head": "ראש",
+            "tick": "טיק",
+            "anchor": "עוגן",
+            "coverage": "כיסוי",
+            "complete": "מלא",
+            "partial": "חלקי",
+            "unavailable": "לא זמין"
           }
         },
         "history": {
