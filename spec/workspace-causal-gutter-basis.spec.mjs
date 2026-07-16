@@ -80,11 +80,13 @@ test('causal gutter basis cycles through durable and selected Echo evidence', as
   assert.deepEqual(imported, { kind: 'import' });
   assert.deepEqual(checkpoint, {
     kind: 'selected-checkpoint',
+    availability: 'available',
     evidenceId: 'checkpoint:selected',
     headId: 'head:checkpoint',
   });
   assert.deepEqual(tick, {
     kind: 'selected-tick',
+    availability: 'available',
     evidenceId: 'receipt:selected',
     headId: 'head:tick',
     tickId: 'tick:selected',
@@ -130,7 +132,7 @@ test('selected causal gutter bases fail closed when the selected history row lac
     0,
   );
 
-  assert.deepEqual(checkpoint, { kind: 'selected-checkpoint' });
+  assert.deepEqual(checkpoint, { kind: 'selected-checkpoint', availability: 'unavailable' });
   assert.equal(basis.workspaceCausalGutterBasisHeadId(checkpoint, {
     importBasisHeadId: 'head:import',
     file: { kind: 'saved', basisHeadId: 'head:saved' },
@@ -149,9 +151,10 @@ test('selected causal gutter bases fail closed when the selected history row lac
     }],
     0,
   );
-  assert.deepEqual(tick, { kind: 'selected-tick' });
+  assert.deepEqual(tick, { kind: 'selected-tick', availability: 'unavailable' });
   assert.equal(basis.workspaceCausalGutterBasisHeadId({
     kind: 'selected-tick',
+    availability: 'available',
     evidenceId: 'receipt:malformed',
     headId: 'head:malformed',
   }, {

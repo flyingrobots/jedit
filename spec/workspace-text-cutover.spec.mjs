@@ -341,6 +341,7 @@ test("viewer paints causal gutter evidence only for the rendered admitted head",
     jeditTheme: mockJeditTheme(),
     causalGutterBasis: {
       kind: "selected-tick",
+      availability: "available",
       evidenceId: "receipt:saved",
       headId: "head:saved",
       tickId: "tick:saved",
@@ -373,6 +374,7 @@ test("viewer paints causal gutter evidence only for the rendered admitted head",
     ...model,
     causalGutterBasis: {
       kind: "selected-tick",
+      availability: "available",
       evidenceId: "receipt:other",
       headId: "head:other",
       tickId: "tick:other",
@@ -525,6 +527,7 @@ test("insert and delete keys submit production text edits with optimistic local 
     }),
     causalGutterBasis: {
       kind: "selected-tick",
+      availability: "available",
       evidenceId: "receipt:selected",
       headId: "head:selected",
       tickId: "tick:selected",

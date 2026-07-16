@@ -13,6 +13,8 @@ const BASIS_LAST_SAVE = 'last-save';
 const BASIS_IMPORT = 'import';
 const BASIS_SELECTED_CHECKPOINT = 'selected-checkpoint';
 const BASIS_SELECTED_TICK = 'selected-tick';
+const BASIS_AVAILABLE = 'available';
+const BASIS_UNAVAILABLE = 'unavailable';
 
 export const WorkspaceCausalGutterBasisKinds = Object.freeze({
   LastSave: BASIS_LAST_SAVE,
@@ -24,20 +26,33 @@ export const WorkspaceCausalGutterBasisKinds = Object.freeze({
 export type WorkspaceCausalGutterBasisKind =
   typeof WorkspaceCausalGutterBasisKinds[keyof typeof WorkspaceCausalGutterBasisKinds];
 
-export type WorkspaceCausalGutterBasis =
-  | { readonly kind: typeof BASIS_LAST_SAVE }
-  | { readonly kind: typeof BASIS_IMPORT }
+type WorkspaceSelectedCausalGutterBasis =
   | {
       readonly kind: typeof BASIS_SELECTED_CHECKPOINT;
-      readonly evidenceId?: string;
-      readonly headId?: string;
+      readonly availability: typeof BASIS_UNAVAILABLE;
+    }
+  | {
+      readonly kind: typeof BASIS_SELECTED_CHECKPOINT;
+      readonly availability: typeof BASIS_AVAILABLE;
+      readonly evidenceId: string;
+      readonly headId: string;
     }
   | {
       readonly kind: typeof BASIS_SELECTED_TICK;
-      readonly evidenceId?: string;
-      readonly headId?: string;
-      readonly tickId?: string;
+      readonly availability: typeof BASIS_UNAVAILABLE;
+    }
+  | {
+      readonly kind: typeof BASIS_SELECTED_TICK;
+      readonly availability: typeof BASIS_AVAILABLE;
+      readonly evidenceId: string;
+      readonly headId: string;
+      readonly tickId: string;
     };
+
+export type WorkspaceCausalGutterBasis =
+  | { readonly kind: typeof BASIS_LAST_SAVE }
+  | { readonly kind: typeof BASIS_IMPORT }
+  | WorkspaceSelectedCausalGutterBasis;
 
 const BASIS_ORDER: readonly WorkspaceCausalGutterBasisKind[] = Object.freeze([
   BASIS_LAST_SAVE,
@@ -79,12 +94,22 @@ export function workspaceCausalGutterBasisHeadId(
   if (basis.kind === BASIS_IMPORT) {
     return nonEmptyId(durability.importBasisHeadId);
   }
-  if (basis.kind === BASIS_SELECTED_CHECKPOINT) {
-    return nonEmptyId(basis.evidenceId) == null ? undefined : nonEmptyId(basis.headId);
+  return selectedCausalGutterBasisHeadId(basis);
+}
+
+function selectedCausalGutterBasisHeadId(
+  basis: WorkspaceSelectedCausalGutterBasis,
+): string | undefined {
+  if (basis.availability !== BASIS_AVAILABLE) {
+    return undefined;
   }
-  return nonEmptyId(basis.evidenceId) == null || nonEmptyId(basis.tickId) == null
-    ? undefined
-    : nonEmptyId(basis.headId);
+  if (nonEmptyId(basis.evidenceId) == null) {
+    return undefined;
+  }
+  if (basis.kind === BASIS_SELECTED_TICK && nonEmptyId(basis.tickId) == null) {
+    return undefined;
+  }
+  return nonEmptyId(basis.headId);
 }
 
 export function workspaceCurrentCausalHeadId(
@@ -99,25 +124,25 @@ function selectedCheckpointBasis(
   entry: EchoHistoryEntry | undefined,
 ): WorkspaceCausalGutterBasis {
   if (entry?.kind !== EchoHistoryEntryKinds.Checkpoint) {
-    return { kind: BASIS_SELECTED_CHECKPOINT };
+    return { kind: BASIS_SELECTED_CHECKPOINT, availability: BASIS_UNAVAILABLE };
   }
   const evidenceId = nonEmptyId(entry.evidenceId);
   const headId = nonEmptyId(entry.causalHeadId);
   return evidenceId == null || headId == null
-    ? { kind: BASIS_SELECTED_CHECKPOINT }
-    : { kind: BASIS_SELECTED_CHECKPOINT, evidenceId, headId };
+    ? { kind: BASIS_SELECTED_CHECKPOINT, availability: BASIS_UNAVAILABLE }
+    : { kind: BASIS_SELECTED_CHECKPOINT, availability: BASIS_AVAILABLE, evidenceId, headId };
 }
 
 function selectedTickBasis(entry: EchoHistoryEntry | undefined): WorkspaceCausalGutterBasis {
   if (entry?.kind !== EchoHistoryEntryKinds.Edit) {
-    return { kind: BASIS_SELECTED_TICK };
+    return { kind: BASIS_SELECTED_TICK, availability: BASIS_UNAVAILABLE };
   }
   const evidenceId = nonEmptyId(entry.evidenceId);
   const headId = nonEmptyId(entry.causalHeadId);
   const tickId = nonEmptyId(entry.causalTickId);
   return evidenceId == null || headId == null || tickId == null
-    ? { kind: BASIS_SELECTED_TICK }
-    : { kind: BASIS_SELECTED_TICK, evidenceId, headId, tickId };
+    ? { kind: BASIS_SELECTED_TICK, availability: BASIS_UNAVAILABLE }
+    : { kind: BASIS_SELECTED_TICK, availability: BASIS_AVAILABLE, evidenceId, headId, tickId };
 }
 
 function positiveModulo(value: number, size: number): number {

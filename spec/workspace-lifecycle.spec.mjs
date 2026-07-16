@@ -247,6 +247,7 @@ test('workspace causal marker basis refreshes a bounded projection without mutat
 
   assert.deepEqual(changed.causalGutterBasis, {
     kind: 'selected-checkpoint',
+    availability: 'available',
     evidenceId: 'checkpoint:selected',
     headId: 'head:checkpoint',
   });
