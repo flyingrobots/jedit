@@ -269,8 +269,9 @@ function groupDeletionMarkers(
   maxDeletionCount: number,
 ): GraphRopeCausalLineDeletionResult {
   const groups = new Map<number, MutableDeletionMarker>();
+  const lineStarts = logicalLineStarts(UTF8_ENCODER.encode(nextText));
   for (const deletion of deletions) {
-    const boundary = lineBoundaryNumber(nextText, deletion.byteOffset);
+    const boundary = lineBoundaryNumber(lineStarts, deletion.byteOffset);
     const marker = groups.get(boundary) ?? newMutableDeletionMarker();
     marker.deletedLineCount += deletion.deletedLineCount;
     deletion.rewriteIds.forEach(id => marker.rewriteIds.add(id));
@@ -425,14 +426,18 @@ function isLineBreak(byte: number): boolean {
   return byte === CARRIAGE_RETURN_BYTE || byte === LINE_FEED_BYTE;
 }
 
-function lineBoundaryNumber(text: string, byteOffset: number): number {
-  const starts = logicalLineStarts(UTF8_ENCODER.encode(text));
-  const exact = starts.indexOf(byteOffset);
-  if (exact >= ZERO_VALUE) {
-    return exact;
+function lineBoundaryNumber(lineStarts: readonly number[], byteOffset: number): number {
+  let lower = ZERO_VALUE;
+  let upper = lineStarts.length;
+  while (lower < upper) {
+    const middle = Math.floor((lower + upper) / 2);
+    if ((lineStarts[middle] ?? ZERO_VALUE) < byteOffset) {
+      lower = middle + 1;
+    } else {
+      upper = middle;
+    }
   }
-  const following = starts.findIndex(startByte => startByte > byteOffset);
-  return following >= ZERO_VALUE ? following : starts.length;
+  return lower;
 }
 
 function logicalLineStarts(bytes: Uint8Array): readonly number[] {
