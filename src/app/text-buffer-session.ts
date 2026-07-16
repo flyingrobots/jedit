@@ -148,15 +148,18 @@ async function readTextBufferCausalLineDiff(
   );
   return {
     ...envelope.reading,
+    tickReceiptIds: [...envelope.reading.tickReceiptIds],
     rewriteIds: [...envelope.reading.rewriteIds],
     diffIds: [...envelope.reading.diffIds],
     markers: envelope.reading.markers.map(marker => ({
       ...marker,
+      tickReceiptIds: [...marker.tickReceiptIds],
       rewriteIds: [...marker.rewriteIds],
       diffIds: [...marker.diffIds],
     })),
     deletions: envelope.reading.deletions.map(deletion => ({
       ...deletion,
+      tickReceiptIds: [...deletion.tickReceiptIds],
       rewriteIds: [...deletion.rewriteIds],
       diffIds: [...deletion.diffIds],
     })),
