@@ -116,6 +116,42 @@ test('workspace settings posts a toast when a setting changes', async () => {
   );
 });
 
+test('workspace settings toggles dim gutter tokens and reports the change', async () => {
+  const [runtimeModule, settingsModule] = await Promise.all([
+    importDist('app', 'workspace', 'runtime.js'),
+    importDist('app', 'workspace', 'settings.js'),
+  ]);
+  const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime());
+  const [initialModel] = runtime.init();
+  const [settingsOpen] = runtime.update(
+    { type: 'key', key: 'f2' },
+    {
+      ...initialModel,
+      i18n: mockI18n({
+        translations: {
+          'settings.rows.gutter_dimmed.label': 'Dim gutter',
+          'settings.values.on': 'On',
+          'settings.values.off': 'Off',
+          'settings.toast.changed_title': 'Settings changed',
+        },
+      }),
+    },
+  );
+  const gutterIndex = settingsModule.settingsRows(settingsOpen)
+    .findIndex((row) => row.id === 'gutter-dimmed');
+
+  const [changed] = runtime.update(
+    { type: 'key', key: 'enter' },
+    { ...settingsOpen, settingsFocusIndex: gutterIndex },
+  );
+
+  assert.equal(changed.gutterDimmed, true);
+  assert.equal(
+    hasNotification(changed, 'Settings changed', 'Dim gutter: Off -> On'),
+    true,
+  );
+});
+
 test('workspace causal marker basis refreshes a bounded projection without mutating text authority', async () => {
   const [runtimeModule, settingsModule, authority, durability, refresh, profile] = await Promise.all([
     importDist('app', 'workspace', 'runtime.js'),

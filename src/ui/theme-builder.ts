@@ -185,6 +185,21 @@ export interface JeditChromeStyleDrafts {
   readonly titleSceneFar: JeditStyleDraft;
 }
 
+export interface JeditGutterStyleDrafts {
+  readonly background: JeditStyleDraft;
+  readonly lineNumber: JeditStyleDraft;
+  readonly currentLineNumber: JeditStyleDraft;
+  readonly rule: JeditStyleDraft;
+  readonly inserted: JeditStyleDraft;
+  readonly modified: JeditStyleDraft;
+  readonly deleted: JeditStyleDraft;
+}
+
+export interface JeditGutterVariantDrafts {
+  readonly normal: JeditGutterStyleDrafts;
+  readonly dimmed: JeditGutterStyleDrafts;
+}
+
 export interface JeditThemeDraft {
   readonly style: typeof JEDIT_TEXT_MODIFIER;
   readonly source: JeditSourceStyleDrafts;
@@ -192,6 +207,7 @@ export interface JeditThemeDraft {
   readonly surface: JeditSurfaceStyleDrafts;
   readonly cursor: JeditCursorStyleDrafts;
   readonly chrome: JeditChromeStyleDrafts;
+  readonly gutter: JeditGutterVariantDrafts;
   rgb(red: number, green: number, blue: number): RgbColor;
   variable(name: string, color: RgbColor): ThemeColorVariable;
   gradient(first: RgbColor | ThemeColorVariable, second: RgbColor | ThemeColorVariable): JeditGradient;
@@ -241,6 +257,14 @@ export function defineJeditTheme(
       titleSceneNear: styleTokenFromDraft(draft.chrome.titleSceneNear),
       titleSceneFar: styleTokenFromDraft(draft.chrome.titleSceneFar),
     },
+    gutter: buildGutterVariants(draft),
+  };
+}
+
+function buildGutterVariants(draft: JeditThemeDraft): JeditTheme['gutter'] {
+  return {
+    normal: buildGutterTokens(draft.gutter.normal),
+    dimmed: buildGutterTokens(draft.gutter.dimmed),
   };
 }
 
@@ -274,13 +298,8 @@ function createThemeDraft(variables: Map<string, JeditColorStop>): JeditThemeDra
     markdown: createMarkdownDrafts(),
     surface: { workspace: {}, drawer: {}, footer: {} },
     cursor: { normal: {}, insert: {} },
-    chrome: {
-      activeEdge: {},
-      titleLogo: {},
-      titleLogoShadow: {},
-      titleSceneNear: {},
-      titleSceneFar: {},
-    },
+    chrome: createChromeDrafts(),
+    gutter: createGutterVariantDrafts(),
     rgb,
     variable(name: string, color: RgbColor): ThemeColorVariable {
       if (variables.has(name)) {
@@ -301,6 +320,47 @@ function createThemeDraft(variables: Map<string, JeditColorStop>): JeditThemeDra
     spring(input: JeditSpring): JeditSpring {
       return input;
     },
+  };
+}
+
+function createChromeDrafts(): JeditChromeStyleDrafts {
+  return {
+    activeEdge: {},
+    titleLogo: {},
+    titleLogoShadow: {},
+    titleSceneNear: {},
+    titleSceneFar: {},
+  };
+}
+
+function createGutterVariantDrafts(): JeditGutterVariantDrafts {
+  return {
+    normal: createGutterDrafts(),
+    dimmed: createGutterDrafts(),
+  };
+}
+
+function createGutterDrafts(): JeditGutterStyleDrafts {
+  return {
+    background: {},
+    lineNumber: {},
+    currentLineNumber: {},
+    rule: {},
+    inserted: {},
+    modified: {},
+    deleted: {},
+  };
+}
+
+function buildGutterTokens(draft: JeditGutterStyleDrafts): JeditTheme['gutter']['normal'] {
+  return {
+    background: styleTokenFromDraft(draft.background),
+    lineNumber: styleTokenFromDraft(draft.lineNumber),
+    currentLineNumber: styleTokenFromDraft(draft.currentLineNumber),
+    rule: styleTokenFromDraft(draft.rule),
+    inserted: styleTokenFromDraft(draft.inserted),
+    modified: styleTokenFromDraft(draft.modified),
+    deleted: styleTokenFromDraft(draft.deleted),
   };
 }
 

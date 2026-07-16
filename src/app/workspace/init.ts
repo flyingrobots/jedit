@@ -124,6 +124,7 @@ function initialDrawerState() {
 function initialSettingsState() {
   return {
     lineNumberMode: INITIAL_LINE_NUMBER_MODE,
+    gutterDimmed: false,
     causalGutterBasis: INITIAL_WORKSPACE_CAUSAL_GUTTER_BASIS,
     settingsOpen: false,
     settingsFocusIndex: 0,

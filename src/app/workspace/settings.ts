@@ -33,6 +33,7 @@ export function settingsRows(model: WorkspaceModel): ReturnType<typeof jeditSett
     jeditTheme: model.jeditTheme,
     footerVisible: model.footerVisible,
     lineNumberMode: model.lineNumberMode,
+    gutterDimmed: model.gutterDimmed,
     causalGutterBasis: model.causalGutterBasis,
     markdownPreviewActive: model.editor != null && isWorkspaceMarkdownFile(model.editor.path),
     diagnosticsAvailable: true,
@@ -62,6 +63,10 @@ export function workspaceSettingsHandlers(
       footerVisible: !model.footerVisible,
     }, []]),
     toggleLineNumberMode: (model) => toggleWorkspaceLineNumberMode(model),
+    toggleGutterDimmed: (model) => ([{
+      ...model,
+      gutterDimmed: !model.gutterDimmed,
+    }, []]),
     cycleCausalGutterBasis: (model, delta) => cycleWorkspaceCausalGutterBasis(model, delta, context),
     toggleMarkdownPreview: (model) => toggleWorkspaceMarkdownPreview(model),
     openDiagnostics: (model) => openWorkspaceDiagnostics(model, context),

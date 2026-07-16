@@ -168,6 +168,7 @@ function renderViewerWithState(
       topPad: VIEWER_TOP_PAD,
       theme: model.jeditTheme,
       lineNumberMode: model.lineNumberMode,
+      gutterDimmed: model.gutterDimmed,
       lineMarkers: causalSourceGutterLineMarkers(model),
       deletionMarkers: causalSourceGutterDeletionMarkers(model),
       reading: sourceWindowForWorkspaceModel(model),

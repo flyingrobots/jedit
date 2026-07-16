@@ -35,6 +35,7 @@ const CANONICAL_VARIABLE_NAMES = [
 const LUMINANCE_RED_WEIGHT = 0.2126;
 const LUMINANCE_GREEN_WEIGHT = 0.7152;
 const LUMINANCE_BLUE_WEIGHT = 0.0722;
+const MIN_GUTTER_CONTRAST_RATIO = 3;
 
 async function loadThemesModule() {
   await ensureDistBuilt();
@@ -185,12 +186,73 @@ test("built-in jedit theme tokens map back to named variables and effect metadat
   }
 });
 
+test("built-in gutter tokens retain named surface backgrounds and readable contrast", async () => {
+  const { themes, style } = await loadThemesModule();
+  const observedModes = new Set();
+
+  for (const theme of themes.availableJeditThemes()) {
+    observedModes.add(theme.mode);
+    for (const [variantName, variant] of Object.entries(theme.gutter)) {
+      for (const [role, token] of Object.entries(variant)) {
+        assert.ok(
+          token.foregroundVariables.length > 0,
+          `${theme.name} ${variantName}.${role} has a named foreground`,
+        );
+        assert.deepEqual(
+          token.backgroundVariables,
+          ["surface"],
+          `${theme.name} ${variantName}.${role} uses the surface background`,
+        );
+        assert.ok(
+          contrastRatio(token.fgRGB, token.bgRGB) >= MIN_GUTTER_CONTRAST_RATIO,
+          `${theme.name} ${variantName}.${role} has readable contrast`,
+        );
+        if (variantName === "dimmed") {
+          assert.ok(
+            token.modifiers?.includes(style.JEDIT_TEXT_MODIFIER.Dim),
+            `${theme.name} ${variantName}.${role} applies the dim modifier`,
+          );
+        }
+      }
+    }
+  }
+
+  assert.deepEqual([...observedModes].sort(), [
+    style.JEDIT_THEME_MODE.Dark,
+    style.JEDIT_THEME_MODE.Light,
+  ]);
+});
+
 function colorLuminance(color) {
   return (
     color[0] * LUMINANCE_RED_WEIGHT +
     color[1] * LUMINANCE_GREEN_WEIGHT +
     color[2] * LUMINANCE_BLUE_WEIGHT
   );
+}
+
+function contrastRatio(foreground, background) {
+  const foregroundLuminance = relativeLuminance(foreground);
+  const backgroundLuminance = relativeLuminance(background);
+  const lighter = Math.max(foregroundLuminance, backgroundLuminance);
+  const darker = Math.min(foregroundLuminance, backgroundLuminance);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function relativeLuminance(color) {
+  const [red, green, blue] = color.map(linearizedColorChannel);
+  return (
+    red * LUMINANCE_RED_WEIGHT
+    + green * LUMINANCE_GREEN_WEIGHT
+    + blue * LUMINANCE_BLUE_WEIGHT
+  );
+}
+
+function linearizedColorChannel(channel) {
+  const normalized = channel / 255;
+  return normalized <= 0.04045
+    ? normalized / 12.92
+    : ((normalized + 0.055) / 1.055) ** 2.4;
 }
 
 function assertCompleteBasePalette(theme) {

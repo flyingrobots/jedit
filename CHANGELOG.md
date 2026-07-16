@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Added dedicated normal and dimmed causal-gutter theme tokens for background,
+  ordinary/current line numbers, rule, inserted, modified, and deleted roles.
+  Every token now carries the named `surface` background, built-in light and
+  dark themes witness at least 3:1 contrast with a named `ink` fallback, and
+  source rendering no longer borrows syntax tokens or exposes terminal-default
+  backgrounds. A `Dim gutter` setting selects the dimmed token set and reports
+  the old and new value through the standard settings toast.
 - Added a causal gutter comparison-basis setting with `Last save`, `Import`,
   `Selected checkpoint`, and `Selected tick` choices. Selected history evidence
   keeps Echo-returned head, tick, checkpoint, and receipt identities opaque;

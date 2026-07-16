@@ -41,6 +41,7 @@ test('jedit settings rows expose theme, footer, and markdown preview preferences
     jeditTheme: theme,
     footerVisible: true,
     lineNumberMode: 'absolute',
+    gutterDimmed: false,
     causalGutterBasis: { kind: 'last-save' },
     markdownPreviewActive: true,
     diagnosticsAvailable: true,
@@ -55,6 +56,7 @@ test('jedit settings rows expose theme, footer, and markdown preview preferences
       ['Light/dark', 'Dark', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
       ['Footer', 'On', settings.JEDIT_SETTING_ROW_KIND.Toggle, true],
       ['Line numbers', 'Absolute', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
+      ['Dim gutter', 'Off', settings.JEDIT_SETTING_ROW_KIND.Toggle, false],
       ['Causal markers', 'Last save', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
       ['Markdown preview', 'Source', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
       ['Diagnostics', 'Open', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
@@ -80,6 +82,7 @@ test('causal marker settings expose every supported comparison basis', async () 
     jeditTheme: themes.availableJeditThemes()[0],
     footerVisible: true,
     lineNumberMode: 'absolute',
+    gutterDimmed: false,
     markdownPreviewActive: false,
     diagnosticsAvailable: false,
     viewMode: 'source',
@@ -103,6 +106,7 @@ test('settings key reducer closes, moves, and activates focused settings rows', 
     jeditTheme: theme,
     footerVisible: true,
     lineNumberMode: 'absolute',
+    gutterDimmed: false,
     causalGutterBasis: { kind: 'last-save' },
     markdownPreviewActive: true,
     diagnosticsAvailable: true,
@@ -123,6 +127,9 @@ test('settings key reducer closes, moves, and activates focused settings rows', 
     },
     toggleLineNumberMode(model) {
       return [{ ...model, lineNumberMode: 'relative' }, []];
+    },
+    toggleGutterDimmed(model) {
+      return [{ ...model, gutterDimmed: !model.gutterDimmed }, []];
     },
     cycleCausalGutterBasis(model, delta) {
       return [{ ...model, causalGutterBasisDelta: delta }, []];
@@ -175,6 +182,15 @@ test('settings key reducer closes, moves, and activates focused settings rows', 
   );
   assert.equal(lineNumbers.lineNumberMode, 'relative');
 
+  const gutterDimmedIndex = rows.findIndex((row) => row.id === 'gutter-dimmed');
+  const [gutterDimmed] = settings.updateJeditSettingsFromKey(
+    { key: 'enter' },
+    { ...baseModel, settingsFocusIndex: gutterDimmedIndex },
+    rows,
+    handlers,
+  );
+  assert.equal(gutterDimmed.gutterDimmed, true);
+
   const causalGutterBasisIndex = rows.findIndex((row) => row.id === 'causal-gutter-basis');
   const [causalGutterBasis] = settings.updateJeditSettingsFromKey(
     { key: 'left' },
@@ -207,6 +223,7 @@ test('jedit settings rows hide diagnostics when diagnostics are unavailable', as
     jeditTheme: theme,
     footerVisible: true,
     lineNumberMode: 'absolute',
+    gutterDimmed: false,
     causalGutterBasis: { kind: 'last-save' },
     markdownPreviewActive: true,
     diagnosticsAvailable: false,

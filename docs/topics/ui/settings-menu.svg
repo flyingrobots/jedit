@@ -20,8 +20,8 @@
   <text class="tiny" x="130" y="258">en LTR</text>
   <text class="code" x="130" y="278">Theme      terminal</text>
   <text class="code" x="130" y="300">Line nums  Relative</text>
-  <text class="code" x="130" y="322">Causal     Last save</text>
-  <text class="code" x="130" y="344">Diagnostics open</text>
+  <text class="code" x="130" y="322">Dim gutter  Off</text>
+  <text class="code" x="130" y="344">Causal     Last save</text>
   <rect class="panel" x="438" y="178" width="300" height="174"/>
   <text class="code" x="458" y="206">Graft diagnostics</text>
   <text class="tiny" x="458" y="232">parser ready, graft 0.10.1,</text>
@@ -29,7 +29,7 @@
   <text class="tiny" x="458" y="276">wraps by word boundary.</text>
   <rect class="panel" x="812" y="286" width="250" height="52"/>
   <text class="yellow" x="830" y="309" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13">Settings changed</text>
-  <text class="code" x="830" y="330">Line numbers: Absolute -&gt; Relative</text>
+  <text class="code" x="830" y="330">Dim gutter: Off -&gt; On</text>
   <text class="small" x="94" y="393">SETTINGS [j/k move - enter change - f2 close - esc close]</text>
 
   <text class="label" x="70" y="462">narrow</text>
@@ -40,8 +40,8 @@
   <rect class="select" x="108" y="548" width="218" height="23"/>
   <text class="dark" x="118" y="565">&lt; English &gt; 1/14</text>
   <text class="code" x="118" y="590">Line nums Relative</text>
-  <text class="code" x="118" y="610">Causal Last save</text>
-  <text class="code" x="118" y="630">Diagnostics open</text>
+  <text class="code" x="118" y="610">Dim gutter Off</text>
+  <text class="code" x="118" y="630">Causal Last save</text>
   <rect class="panel" x="358" y="514" width="204" height="120"/>
   <text class="tiny" x="372" y="540">diagnostics beside</text>
   <text class="tiny" x="372" y="562">when room exists</text>
@@ -50,13 +50,14 @@
   <text class="label" x="670" y="462">xs</text>
   <rect class="term" x="670" y="480" width="260" height="215"/>
   <rect class="footer" x="672" y="655" width="256" height="38"/>
-  <rect class="drawer" x="692" y="512" width="216" height="124"/>
+  <rect class="drawer" x="692" y="512" width="216" height="138"/>
   <text class="code" x="760" y="532">Settings</text>
   <rect class="select" x="708" y="548" width="184" height="23"/>
   <text class="dark" x="718" y="565">&lt; English &gt;</text>
   <text class="tiny" x="718" y="586">1/14 en LTR</text>
   <text class="code" x="718" y="608">Line nums Rel</text>
-  <text class="tiny" x="718" y="628">Causal Save</text>
+  <text class="tiny" x="718" y="628">Dim gutter Off</text>
+  <text class="tiny" x="718" y="646">Causal Save</text>
   <text class="tiny" x="692" y="678">SETTINGS [enter]</text>
   <rect class="panel" x="965" y="498" width="165" height="174"/>
   <text class="code" x="986" y="526">rules</text>
@@ -64,4 +65,5 @@
   <text class="tiny" x="986" y="576">backgrounds</text>
   <text class="tiny" x="986" y="598">wide text clipped</text>
   <text class="tiny" x="986" y="620">or wrapped</text>
+  <text class="tiny" x="986" y="642">token-only gutter</text>
 </svg>

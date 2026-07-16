@@ -1,6 +1,10 @@
 import type { Cell, Surface } from '@flyingrobots/bijou';
 import type { SourceHighlightReading } from '../ports/source-highlighter.js';
-import { JEDIT_SOURCE_TOKEN, type JeditStyleToken, type JeditTheme } from './jedit-theme.js';
+import type {
+  JeditStyleToken,
+  JeditTheme,
+  JeditThemeGutterTokenSet,
+} from './jedit-theme.js';
 import {
   SOURCE_LINE_NUMBER_MODE,
   type SourceLineNumberMode,
@@ -53,6 +57,7 @@ export interface SourceViewerOptions {
   readonly topPad: number;
   readonly theme: JeditTheme;
   readonly lineNumberMode?: SourceLineNumberMode;
+  readonly gutterDimmed?: boolean;
   readonly lineMarkers?: readonly SourceGutterLineMarker[];
   readonly deletionMarkers?: readonly SourceGutterDeletionMarker[];
   readonly reading?: SourceWindowReading;
@@ -173,10 +178,9 @@ function paintSourceViewerGutter(
   context: SourceViewerGutterPaintContext,
 ): void {
   const { reading, options, gutter, cursorRow, mode } = context;
-  const numberToken =
-    options.theme.source.get(JEDIT_SOURCE_TOKEN.Comment) ??
-    options.theme.chrome.titleLogoShadow;
-  const ruleToken = options.theme.chrome.activeEdge;
+  const tokens = options.gutterDimmed
+    ? options.theme.gutter.dimmed
+    : options.theme.gutter.normal;
   const deletionX = options.leftPad + gutter.numberWidth;
   const markerX = deletionX + GUTTER_DELETION_MARKER_WIDTH;
   const ruleX = markerX + GUTTER_LINE_MARKER_WIDTH;
@@ -191,15 +195,18 @@ function paintSourceViewerGutter(
           gutter.numberWidth,
           ' ',
         );
+    const numberToken = sourceLine?.lineNumber === cursorRow
+      ? tokens.currentLineNumber
+      : tokens.lineNumber;
     paintGutterText(surface, label, options.leftPad, y, numberToken);
     paintGutterDeletion(surface, deletionX, y, sourceLine == null
       ? undefined
-      : deletions.get(sourceLine.lineNumber), options.theme);
+      : deletions.get(sourceLine.lineNumber), tokens);
     paintGutterMarker(surface, markerX, y, sourceLine == null
       ? undefined
-      : markers.get(sourceLine.lineNumber), options.theme);
-    paintGutterCell(surface, ruleX, y, GUTTER_RULE, ruleToken);
-    paintGutterRuleGap(surface, ruleX, y, options.theme.surface.workspace);
+      : markers.get(sourceLine.lineNumber), tokens);
+    paintGutterCell(surface, ruleX, y, GUTTER_RULE, tokens.rule);
+    paintGutterRuleGap(surface, ruleX, y, tokens.background);
   }
 }
 
@@ -223,11 +230,9 @@ function paintGutterDeletion(
   x: number,
   y: number,
   marker: SourceGutterDeletionMarker | undefined,
-  theme: JeditTheme,
+  tokens: JeditThemeGutterTokenSet,
 ): void {
-  const token = marker == null
-    ? theme.surface.workspace
-    : theme.source.get(JEDIT_SOURCE_TOKEN.Operator) ?? theme.chrome.activeEdge;
+  const token = marker == null ? tokens.background : tokens.deleted;
   paintGutterCell(surface, x, y, marker == null ? ' ' : '-', token);
 }
 
@@ -236,16 +241,14 @@ function paintGutterMarker(
   x: number,
   y: number,
   marker: SourceGutterLineMarker | undefined,
-  theme: JeditTheme,
+  tokens: JeditThemeGutterTokenSet,
 ): void {
   if (marker == null) {
-    paintGutterCell(surface, x, y, ' ', theme.surface.workspace);
+    paintGutterCell(surface, x, y, ' ', tokens.background);
     return;
   }
   const inserted = marker.kind === 'inserted';
-  const token = theme.source.get(
-    inserted ? JEDIT_SOURCE_TOKEN.String : JEDIT_SOURCE_TOKEN.Keyword,
-  ) ?? theme.chrome.activeEdge;
+  const token = inserted ? tokens.inserted : tokens.modified;
   paintGutterCell(surface, x, y, inserted ? '+' : '~', token);
 }
 

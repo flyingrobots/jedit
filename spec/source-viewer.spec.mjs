@@ -137,6 +137,58 @@ test("source viewer keeps deletion and line status in separate gutter lanes", as
   assert.equal(rowText(surface, 1).startsWith("2-+│ two"), true);
 });
 
+test("source viewer selects dedicated normal and dimmed gutter tokens", async () => {
+  const { createSurface } = await import("@flyingrobots/bijou");
+  const sourceViewer = await loadSourceViewerModule();
+  const theme = sourceViewerTheme();
+  const render = (gutterDimmed) => {
+    const surface = createSurface(20, 3, { char: ".", empty: false });
+    sourceViewer.renderSourceViewer(
+      surface,
+      {
+        lines: ["one", "two", "three"],
+        cursorRow: 1,
+        cursorCol: 0,
+        scrollRow: 0,
+        scrollCol: 0,
+        mode: "normal",
+      },
+      undefined,
+      {
+        viewport: { width: 20, height: 3 },
+        leftPad: 0,
+        topPad: 0,
+        theme,
+        gutterDimmed,
+        lineMarkers: [
+          { lineNumber: 1, kind: "inserted" },
+          { lineNumber: 2, kind: "modified" },
+        ],
+        deletionMarkers: [{ boundaryLineNumber: 1, deletedLineCount: 2 }],
+      },
+    );
+    return surface;
+  };
+
+  const normal = render(false);
+  assert.equal(normal.get(0, 0).fg, theme.gutter.normal.lineNumber.fg);
+  assert.equal(normal.get(0, 1).fg, theme.gutter.normal.currentLineNumber.fg);
+  assert.equal(normal.get(1, 1).fg, theme.gutter.normal.deleted.fg);
+  assert.equal(normal.get(2, 1).fg, theme.gutter.normal.inserted.fg);
+  assert.equal(normal.get(2, 2).fg, theme.gutter.normal.modified.fg);
+  assert.equal(normal.get(3, 1).fg, theme.gutter.normal.rule.fg);
+  assert.equal(normal.get(1, 0).bg, theme.gutter.normal.background.bg);
+
+  const dimmed = render(true);
+  assert.equal(dimmed.get(0, 0).fg, theme.gutter.dimmed.lineNumber.fg);
+  assert.equal(dimmed.get(0, 1).fg, theme.gutter.dimmed.currentLineNumber.fg);
+  assert.equal(dimmed.get(1, 1).fg, theme.gutter.dimmed.deleted.fg);
+  assert.equal(dimmed.get(2, 1).fg, theme.gutter.dimmed.inserted.fg);
+  assert.equal(dimmed.get(2, 2).fg, theme.gutter.dimmed.modified.fg);
+  assert.equal(dimmed.get(3, 1).fg, theme.gutter.dimmed.rule.fg);
+  assert.equal(dimmed.get(1, 0).bg, theme.gutter.dimmed.background.bg);
+});
+
 function sourceViewerTheme() {
   const workspace = token("#f0f6fc", "#0d1117");
   const gutter = token("#8b949e", "#0d1117");
@@ -153,8 +205,24 @@ function sourceViewerTheme() {
       activeEdge: edge,
       titleLogoShadow: gutter,
     },
+    gutter: {
+      normal: gutterTokenSet("1", "#111111"),
+      dimmed: gutterTokenSet("2", "#222222"),
+    },
     source: new Map(),
     sourceRoleMap: new Map(),
+  };
+}
+
+function gutterTokenSet(prefix, background) {
+  return {
+    background: token(`#${prefix}00000`, background),
+    lineNumber: token(`#${prefix}00001`, background),
+    currentLineNumber: token(`#${prefix}00002`, background),
+    rule: token(`#${prefix}00003`, background),
+    inserted: token(`#${prefix}00004`, background),
+    modified: token(`#${prefix}00005`, background),
+    deleted: token(`#${prefix}00006`, background),
   };
 }
 

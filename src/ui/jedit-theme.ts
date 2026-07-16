@@ -148,6 +148,21 @@ export interface JeditThemeChromeTokens {
   readonly titleSceneFar: JeditStyleToken;
 }
 
+export interface JeditThemeGutterTokenSet {
+  readonly background: JeditStyleToken;
+  readonly lineNumber: JeditStyleToken;
+  readonly currentLineNumber: JeditStyleToken;
+  readonly rule: JeditStyleToken;
+  readonly inserted: JeditStyleToken;
+  readonly modified: JeditStyleToken;
+  readonly deleted: JeditStyleToken;
+}
+
+export interface JeditThemeGutterTokens {
+  readonly normal: JeditThemeGutterTokenSet;
+  readonly dimmed: JeditThemeGutterTokenSet;
+}
+
 export interface JeditTheme {
   readonly name: string;
   readonly mode: JeditThemeMode;
@@ -161,4 +176,5 @@ export interface JeditTheme {
   readonly surface: JeditThemeSurfaceTokens;
   readonly cursor: JeditThemeCursorTokens;
   readonly chrome: JeditThemeChromeTokens;
+  readonly gutter: JeditThemeGutterTokens;
 }

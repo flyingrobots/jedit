@@ -17,6 +17,7 @@ export const JEDIT_SETTING_ACTION = {
   ToggleThemeMode: Symbol('jedit.settings.action.toggle-theme-mode'),
   ToggleFooter: Symbol('jedit.settings.action.toggle-footer'),
   ToggleLineNumberMode: Symbol('jedit.settings.action.toggle-line-number-mode'),
+  ToggleGutterDimmed: Symbol('jedit.settings.action.toggle-gutter-dimmed'),
   CycleCausalGutterBasis: Symbol('jedit.settings.action.cycle-causal-gutter-basis'),
   ToggleMarkdownPreview: Symbol('jedit.settings.action.toggle-markdown-preview'),
   OpenDiagnostics: Symbol('jedit.settings.action.open-diagnostics'),
@@ -45,6 +46,7 @@ export interface JeditSettingsState {
   readonly jeditTheme: JeditTheme;
   readonly footerVisible: boolean;
   readonly lineNumberMode: SourceLineNumberMode;
+  readonly gutterDimmed?: boolean;
   readonly causalGutterBasis?: WorkspaceCausalGutterBasis;
   readonly markdownPreviewActive: boolean;
   readonly diagnosticsAvailable: boolean;
@@ -82,6 +84,7 @@ export interface JeditSettingsHandlers<Model, Command> {
   toggleThemeMode(model: Model): [Model, Cmd<Command>[]];
   toggleFooter(model: Model): [Model, Cmd<Command>[]];
   toggleLineNumberMode(model: Model): [Model, Cmd<Command>[]];
+  toggleGutterDimmed(model: Model): [Model, Cmd<Command>[]];
   cycleCausalGutterBasis(model: Model, delta: JeditSettingsActivationDelta): [Model, Cmd<Command>[]];
   toggleMarkdownPreview(model: Model): [Model, Cmd<Command>[]];
   openDiagnostics(model: Model): [Model, Cmd<Command>[]];
@@ -107,6 +110,7 @@ const ROW_ID_THEME = 'theme';
 const ROW_ID_THEME_MODE = 'theme-mode';
 const ROW_ID_FOOTER = 'footer';
 const ROW_ID_LINE_NUMBERS = 'line-numbers';
+const ROW_ID_GUTTER_DIMMED = 'gutter-dimmed';
 const ROW_ID_CAUSAL_GUTTER_BASIS = 'causal-gutter-basis';
 const ROW_ID_MARKDOWN_PREVIEW = 'markdown-preview';
 const ROW_ID_DIAGNOSTICS = 'diagnostics';
@@ -135,6 +139,8 @@ const SETTINGS_I18N_KEYS = Object.freeze({
   FooterDescription: 'settings.rows.footer.description',
   LineNumbersLabel: 'settings.rows.line_numbers.label',
   LineNumbersDescription: 'settings.rows.line_numbers.description',
+  GutterDimmedLabel: 'settings.rows.gutter_dimmed.label',
+  GutterDimmedDescription: 'settings.rows.gutter_dimmed.description',
   CausalGutterBasisLabel: 'settings.rows.causal_gutter_basis.label',
   CausalGutterBasisDescription: 'settings.rows.causal_gutter_basis.description',
   MarkdownPreviewLabel: 'settings.rows.markdown_preview.label',
@@ -186,6 +192,7 @@ type NonLocaleSettingsHandlerName =
   | 'toggleThemeMode'
   | 'toggleFooter'
   | 'toggleLineNumberMode'
+  | 'toggleGutterDimmed'
   | 'toggleMarkdownPreview'
   | 'openDiagnostics';
 
@@ -197,6 +204,7 @@ const SETTINGS_ACTION_HANDLERS: ReadonlyMap<
   [JEDIT_SETTING_ACTION.ToggleThemeMode, 'toggleThemeMode'],
   [JEDIT_SETTING_ACTION.ToggleFooter, 'toggleFooter'],
   [JEDIT_SETTING_ACTION.ToggleLineNumberMode, 'toggleLineNumberMode'],
+  [JEDIT_SETTING_ACTION.ToggleGutterDimmed, 'toggleGutterDimmed'],
   [JEDIT_SETTING_ACTION.ToggleMarkdownPreview, 'toggleMarkdownPreview'],
   [JEDIT_SETTING_ACTION.OpenDiagnostics, 'openDiagnostics'],
 ]);
@@ -210,6 +218,7 @@ export function jeditSettingsRows(state: JeditSettingsContext): readonly JeditSe
     themeModeSettingsRow(state),
     footerSettingsRow(state),
     lineNumbersSettingsRow(state),
+    gutterDimmedSettingsRow(state),
     causalGutterBasisSettingsRow(state),
   ];
 
@@ -302,6 +311,20 @@ function lineNumbersSettingsRow(state: JeditSettingsContext): JeditSettingsRow {
     valueLabel: settingsLineNumberModeLabel(state),
     kind: JEDIT_SETTING_ROW_KIND.Choice,
     action: JEDIT_SETTING_ACTION.ToggleLineNumberMode,
+  };
+}
+
+function gutterDimmedSettingsRow(state: JeditSettingsContext): JeditSettingsRow {
+  const checked = state.gutterDimmed === true;
+  return {
+    id: ROW_ID_GUTTER_DIMMED,
+    section: state.i18n.t(SETTINGS_I18N_KEYS.SectionEditor),
+    label: state.i18n.t(SETTINGS_I18N_KEYS.GutterDimmedLabel),
+    description: state.i18n.t(SETTINGS_I18N_KEYS.GutterDimmedDescription),
+    valueLabel: state.i18n.t(checked ? SETTINGS_I18N_KEYS.ValueOn : SETTINGS_I18N_KEYS.ValueOff),
+    kind: JEDIT_SETTING_ROW_KIND.Toggle,
+    checked,
+    action: JEDIT_SETTING_ACTION.ToggleGutterDimmed,
   };
 }
 

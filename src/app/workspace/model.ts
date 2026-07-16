@@ -72,6 +72,7 @@ export interface WorkspaceModel
   readonly quitAfterSaveRequestId?: number;
   readonly footerVisible: boolean;
   readonly lineNumberMode: SourceLineNumberMode;
+  readonly gutterDimmed: boolean;
   readonly causalGutterBasis: WorkspaceCausalGutterBasis;
   readonly settingsOpen: boolean;
   readonly settingsFocusIndex: number;

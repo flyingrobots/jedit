@@ -506,6 +506,10 @@ export function mockJeditTheme() {
       titleSceneNear: workspace,
       titleSceneFar: workspace,
     },
+    gutter: {
+      normal: mockGutterTokens(workspace, accent),
+      dimmed: mockGutterTokens(workspace, accent),
+    },
     source: new Map(),
     sourceRoleMap: new Map(),
     markdown: new Map(),
@@ -561,6 +565,7 @@ export function mockTitleScreenModel(titleScreen, overrides = {}) {
       nextBraidOrdinal: 1,
     },
     lineNumberMode: "absolute",
+    gutterDimmed: false,
     settingsOpen: false,
     settingsFocusIndex: 0,
     settingsDiagnosticsOpen: false,
@@ -614,6 +619,18 @@ export function mockTitleScreenModel(titleScreen, overrides = {}) {
     titleAsciiPalette: titleScreen.TITLE_ASCII_PALETTE.Dense,
     titleMeshMaterialIndex: 0,
     ...overrides,
+  };
+}
+
+export function mockGutterTokens(background, accent) {
+  return {
+    background,
+    lineNumber: background,
+    currentLineNumber: accent,
+    rule: accent,
+    inserted: accent,
+    modified: accent,
+    deleted: accent,
   };
 }
 

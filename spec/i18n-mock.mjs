@@ -47,6 +47,8 @@ export function createI18nMock(overrides = {}) {
     'settings.rows.footer.description': 'Show mode, focus, and command hints at the bottom edge.',
     'settings.rows.line_numbers.label': 'Line numbers',
     'settings.rows.line_numbers.description': 'Switch between absolute and cursor-relative editor line numbers.',
+    'settings.rows.gutter_dimmed.label': 'Dim gutter',
+    'settings.rows.gutter_dimmed.description': "Use the theme's dimmed gutter token set.",
     'settings.rows.causal_gutter_basis.label': 'Causal markers',
     'settings.rows.causal_gutter_basis.description': 'Choose the causal basis used by gutter change markers.',
     'settings.rows.markdown_preview.label': 'Markdown preview',
