@@ -567,6 +567,7 @@ export function mockTitleScreenModel(titleScreen, overrides = {}) {
     },
     lineNumberMode: "absolute",
     gutterDimmed: false,
+    causalGutterBasis: { kind: "last-save" },
     settingsOpen: false,
     settingsFocusIndex: 0,
     settingsDiagnosticsOpen: false,
