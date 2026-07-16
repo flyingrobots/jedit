@@ -88,7 +88,7 @@ test('real workspace app path renders rapid inserts before Echo observe resolves
 
   assert.equal(harness.calls.insert.length, 0);
   assert.equal(harness.model.editor.cursorCol, 5);
-  assert.equal(harness.model.textAuthority.dirty, true);
+  assert.equal(harness.model.textAuthority.dirty, false);
   assert.equal(harness.model.textAuthority.pendingClientSeq, 6);
   assert.equal(harness.model.textAuthority.pendingIntentStatus, 'predicted');
   assert.match(harness.renderText(), /hello/);

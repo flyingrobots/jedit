@@ -6,7 +6,6 @@ import type {
   CreateTextBufferCheckpointResult,
   TextBufferOptic,
   TextBufferSessionPort,
-  TextWindowRangeInput,
   TextWindowReading,
 } from '../../ports/text-buffer-session.js';
 import type { JeditWhyRangeReport } from '../../ports/jedit-why-range.js';
@@ -21,11 +20,23 @@ import type {
   ProductionTextViewportAperture,
   ProductionTextWindowRequest,
 } from './production-text-basis-request.js';
+import {
+  observeProductionTextCausalLineDiff,
+  PRODUCTION_TEXT_CAUSAL_LINE_DIFF_OBSERVED,
+  type ProductionTextCausalLineDiffOutcome,
+  type ProductionTextCausalLineDiffRequest,
+} from './production-text-causal-line-diff.js';
+import { materializeObservedText, textWindowInputFromViewport } from './production-text-window-projection.js';
+export { materializeObservedText, textWindowInputFromViewport } from './production-text-window-projection.js';
 export type {
   ProductionTextExportRequest,
   ProductionTextViewportAperture,
   ProductionTextWindowRequest,
 } from './production-text-basis-request.js';
+export type {
+  ProductionTextCausalLineDiffOutcome,
+  ProductionTextCausalLineDiffRequest,
+} from './production-text-causal-line-diff.js';
 
 const EMPTY_INSERT_TEXT = '';
 const OPEN_OBSTRUCTION_CODE = 'text-buffer-open-obstructed';
@@ -58,6 +69,7 @@ export const ProductionTextSessionOutcomeKinds = Object.freeze({
   Applied: OUTCOME_APPLIED,
   Checkpointed: OUTCOME_CHECKPOINTED,
   Observed: OUTCOME_OBSERVED,
+  CausalLineDiffObserved: PRODUCTION_TEXT_CAUSAL_LINE_DIFF_OBSERVED,
   Exported: OUTCOME_EXPORTED,
   RangeExplained: OUTCOME_RANGE_EXPLAINED,
   Obstructed: OUTCOME_OBSTRUCTED,
@@ -208,6 +220,9 @@ export interface ProductionTextSession {
   multiRangeEdit(request: ProductionTextMultiRangeRequest): Promise<ProductionTextEditOutcome>;
   checkpointBuffer(request: ProductionTextCheckpointRequest): Promise<ProductionTextCheckpointOutcome>;
   observeWindow(request: ProductionTextWindowRequest): Promise<ProductionTextWindowOutcome>;
+  observeCausalLineDiff(
+    request: ProductionTextCausalLineDiffRequest,
+  ): Promise<ProductionTextCausalLineDiffOutcome>;
   exportSnapshot(request: ProductionTextExportRequest): Promise<ProductionTextExportOutcome>;
   explainRange(request: ProductionTextWhyRangeRequest): Promise<ProductionTextWhyRangeOutcome>;
 }
@@ -233,6 +248,11 @@ export function createProductionTextSession(
     multiRangeEdit: (request: ProductionTextMultiRangeRequest) => multiRangeEdit(request),
     checkpointBuffer: (request: ProductionTextCheckpointRequest) => checkpointBuffer(session, request),
     observeWindow: (request: ProductionTextWindowRequest) => observeWindow(session, request),
+    observeCausalLineDiff: (request: ProductionTextCausalLineDiffRequest) =>
+      observeProductionTextCausalLineDiff(session, request, {
+        missingBuffer,
+        query: (atMs, message) => obstructed(QUERY_OBSTRUCTION_CODE, atMs, message),
+      }),
     exportSnapshot: (request: ProductionTextExportRequest) => exportSnapshot(session, request),
     explainRange: (request: ProductionTextWhyRangeRequest) => explainRange(session, request),
   });
@@ -417,24 +437,6 @@ async function explainRange(
       cause instanceof Error ? cause.message : String(cause),
     );
   }
-}
-
-export function textWindowInputFromViewport(
-  aperture: ProductionTextViewportAperture,
-): TextWindowRangeInput {
-  return {
-    cursorLine: aperture.cursorLine,
-    viewportLineCount: aperture.viewportLineCount,
-    beforeLines: aperture.beforeLines,
-    afterLines: aperture.afterLines,
-    maxBytes: aperture.maxBytes,
-  };
-}
-
-export function materializeObservedText(
-  observed: Observed<TextWindowReading>,
-): string {
-  return observed.value.projection.text;
 }
 
 async function applyReplaceRange(

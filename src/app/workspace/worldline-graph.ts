@@ -4,9 +4,7 @@ import { fitLine } from '../../ui/fit-line.js';
 import { clampIndex } from './viewport.js';
 import { isWorkspaceDownKey, isWorkspaceUpKey, WorkspaceKeys } from './workspace-key.js';
 import {
-  MAIN_WORLDLINE_NAME,
   WorkspaceWorldlineNodeKinds,
-  WorkspaceWorldlinePostureKinds,
   workspaceWorldlinePostureLabel,
   type WorkspaceWorldlineGraphNode,
   type WorkspaceWorldlineMaterializationKind,
@@ -33,17 +31,20 @@ const FIRST_ROW = 0;
 export interface WorkspaceWorldlineContextState {
   readonly worldline: WorkspaceWorldlineState;
   readonly materialization: WorkspaceWorldlineMaterializationKind;
+  readonly causalLineDelta?: {
+    readonly insertedLineCount: number | null;
+    readonly deletedLineCount: number | null;
+  };
 }
 
 export function workspaceWorldlineContextLabel(
   state: WorkspaceWorldlineContextState,
 ): string {
-  const node = currentWorldlineGraphNode(state.worldline);
   return [
     workspaceWorldlinePostureLabel(state.worldline.posture),
     `fs:${state.materialization}`,
     `target:${state.worldline.posture.admissionTarget}`,
-    node == null ? undefined : worldlineDeltaLabel(node),
+    state.causalLineDelta == null ? undefined : causalLineDeltaLabel(state.causalLineDelta),
   ].filter((part): part is string => part != null && part.length > EMPTY_LENGTH).join(' | ');
 }
 
@@ -133,18 +134,12 @@ function graphScrollStart(selectedIndex: number, total: number, visible: number)
   return Math.min(Math.max(FIRST_ROW, selectedIndex - half), total - visible);
 }
 
-function currentWorldlineGraphNode(
-  worldline: WorkspaceWorldlineState,
-): WorkspaceWorldlineGraphNode | undefined {
-  if (worldline.posture.kind === WorkspaceWorldlinePostureKinds.Canonical ||
-    worldline.posture.kind === WorkspaceWorldlinePostureKinds.Historical) {
-    return worldline.graph.find((node) => node.name === MAIN_WORLDLINE_NAME);
-  }
-  return worldline.graph.find((node) => node.name === worldline.posture.name);
-}
-
 function worldlineDeltaLabel(node: WorkspaceWorldlineGraphNode): string {
   return `+${node.ahead}/-${node.behind}`;
+}
+
+function causalLineDeltaLabel(delta: WorkspaceWorldlineContextState['causalLineDelta']): string {
+  return `+${delta?.insertedLineCount ?? '?'}/-${delta?.deletedLineCount ?? '?'}`;
 }
 
 function braidStatusLabel(node: WorkspaceWorldlineGraphNode): string {

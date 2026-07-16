@@ -132,6 +132,41 @@ test('production text session reads bounded windows from cursor and viewport ape
   assert.equal(outcome.observed.evidence.retainedEvidence?.refs.length, 2);
 });
 
+test('production text session reads bounded causal line changes from named heads', async () => {
+  const module = await loadModule();
+  const calls = [];
+  const optic = fakeTextBufferOptic({
+    causalLineDiff(request) {
+      calls.push(request);
+      return causalLineDiffReading(request);
+    },
+  });
+  const production = module.createProductionTextSession(fakeTextBufferSession({ optic }));
+
+  const outcome = await production.observeCausalLineDiff({
+    bufferId: BUFFER_ID,
+    basisHeadId: 'head:saved',
+    nextHeadId: 'head:edited',
+    maxByteCount: 4096,
+    maxLineCount: 128,
+    maxRewriteCount: 64,
+    atMs: AT_MS,
+  });
+
+  assert.equal(outcome.kind, module.ProductionTextSessionOutcomeKinds.CausalLineDiffObserved);
+  assert.deepEqual(calls, [{
+    basisHeadId: 'head:saved',
+    nextHeadId: 'head:edited',
+    maxByteCount: 4096,
+    maxLineCount: 128,
+    maxRewriteCount: 64,
+  }]);
+  assert.equal(outcome.reading.insertedLineCount, 2);
+  assert.equal(outcome.reading.deletedLineCount, 1);
+  assert.deepEqual(outcome.reading.rewriteIds, ['rewrite:1']);
+  assert.deepEqual(outcome.reading.diffIds, ['diff:1']);
+});
+
 test('production text session creates manual checkpoint evidence through app capability', async () => {
   const module = await loadModule();
   const checkpoints = [];
@@ -363,9 +398,27 @@ function fakeTextBufferOptic(overrides = {}) {
     async textWindow(request) {
       return overrides.textWindow == null ? observedReading() : overrides.textWindow(request);
     },
+    async causalLineDiff(request) {
+      return overrides.causalLineDiff == null
+        ? causalLineDiffReading(request)
+        : overrides.causalLineDiff(request);
+    },
     async explainRange(range) {
       return overrides.explainRange == null ? whyRangeReport(range) : overrides.explainRange(range);
     },
+  };
+}
+
+function causalLineDiffReading(request) {
+  return {
+    worldlineId: 'worldline:1',
+    basisHeadId: request.basisHeadId,
+    nextHeadId: request.nextHeadId,
+    insertedLineCount: 2,
+    deletedLineCount: 1,
+    rewriteIds: ['rewrite:1'],
+    diffIds: ['diff:1'],
+    observerVersion: 'test-fixture',
   };
 }
 

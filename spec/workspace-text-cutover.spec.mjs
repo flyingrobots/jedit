@@ -94,6 +94,19 @@ test("file open routes through production text session and applies initial bound
         },
       };
     },
+    observeCausalLineDiff: async (request) => ({
+      kind: "causal-line-diff-observed",
+      reading: {
+        worldlineId: "fixture:worldline",
+        basisHeadId: request.basisHeadId,
+        nextHeadId: request.nextHeadId,
+        insertedLineCount: 0,
+        deletedLineCount: 0,
+        rewriteIds: [],
+        diffIds: [],
+        observerVersion: "test-fixture",
+      },
+    }),
   };
 
   const [pendingModel, commands] = fileTree.updateTreeFromKey(
@@ -381,6 +394,19 @@ test("insert and delete keys submit production text edits with optimistic local 
         },
       };
     },
+    observeCausalLineDiff: async (request) => ({
+      kind: "causal-line-diff-observed",
+      reading: {
+        worldlineId: "fixture:worldline",
+        basisHeadId: request.basisHeadId,
+        nextHeadId: request.nextHeadId,
+        insertedLineCount: 0,
+        deletedLineCount: 0,
+        rewriteIds: [],
+        diffIds: [],
+        observerVersion: "test-fixture",
+      },
+    }),
   };
   const baseModel = textWorkspaceModel(modeModule, authority, profile, {
     mode: modeModule.EditorModes.Insert,

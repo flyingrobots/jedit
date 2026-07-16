@@ -101,6 +101,44 @@ test('installed text optic exposes opaque graph tick and next-head identities', 
   assert.deepEqual(observed.value.lines.map((line) => line.text), ['causal']);
 });
 
+test('installed Echo transport reports net causal line changes with retained support', async () => {
+  const modules = await loadModules();
+  const client = modules.client.createEchoTransportJeditOpticClient(
+    modules.transport.createInstalledJeditContractEchoTransport(),
+  );
+  const textSession = modules.textSession.createTextBufferSession(client);
+  const optic = await textSession.createBuffer({
+    bufferKey: 'causal-lines.txt',
+    initialText: 'a\nb\nc',
+    projectionPath: '/tmp/causal-lines.txt',
+  });
+  const basisHeadId = optic.openedTextBasis.basisHeadId;
+  await optic.applyIntent({
+    kind: 'replaceRange', startByte: 2, endByte: 3, insertText: 'middle',
+  });
+  const finalEdit = await optic.applyIntent({
+    kind: 'replaceRange', startByte: 2, endByte: 8, insertText: 'final',
+  });
+
+  const reading = await optic.causalLineDiff({
+    basisHeadId,
+    nextHeadId: finalEdit.textBasis.basisHeadId,
+    maxByteCount: 1024,
+    maxLineCount: 32,
+    maxRewriteCount: 32,
+  });
+
+  assert.equal(reading.basisHeadId, basisHeadId);
+  assert.equal(reading.nextHeadId, finalEdit.textBasis.basisHeadId);
+  assert.equal(reading.insertedLineCount, 1);
+  assert.equal(reading.deletedLineCount, 1);
+  assert.equal(reading.rewriteIds.length, 2);
+  assert.equal(reading.diffIds.length, 2);
+  assert.equal(new Set(reading.rewriteIds).size, 2);
+  assert.equal(new Set(reading.diffIds).size, 2);
+  assert.match(reading.observerVersion, /^jedit-causal-line-diff-/);
+});
+
 test('text optic keeps an explicitly pinned historical head stable after later edits', async () => {
   const modules = await loadModules();
   const client = modules.client.createEchoTransportJeditOpticClient(

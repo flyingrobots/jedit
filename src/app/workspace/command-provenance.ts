@@ -1,4 +1,3 @@
-import type { TextBufferCausalTransition } from '../../ports/text-buffer-session.js';
 import type {
   EditorState,
   RegisterState,
@@ -8,6 +7,7 @@ import type {
 import type {
   WorkspaceTextAuthority,
   WorkspaceTextAuthorityOpened,
+  WorkspaceTextReceiptEvidence,
 } from './workspace-text-authority.js';
 import {
   WorkspaceTextAuthorityKinds,
@@ -206,9 +206,9 @@ export function workspaceTextAuthorityWithAppliedJeditCommandReceipt(
   requestId: number,
   receiptId: string,
   reversedReceiptId?: string,
-  causalTransition?: TextBufferCausalTransition,
+  evidence: WorkspaceTextReceiptEvidence = {},
 ): WorkspaceTextAuthorityOpened {
-  const withReceipt = workspaceTextAuthorityWithReceipt(authority, receiptId, causalTransition);
+  const withReceipt = workspaceTextAuthorityWithReceipt(authority, receiptId, evidence);
   const event = receivedJeditCommandEventForRequest(authority, requestId, receiptId, reversedReceiptId);
   return event == null
     ? withReceipt

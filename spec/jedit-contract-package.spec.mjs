@@ -43,6 +43,7 @@ test('jedit hot text package descriptor binds generated operation metadata', asy
     [
       modules.generated.queryWorldlineSnapshotOperation.fieldName,
       modules.generated.queryTextWindowOperation.fieldName,
+      modules.generated.queryCausalLineDiffOperation.fieldName,
     ],
   );
 });

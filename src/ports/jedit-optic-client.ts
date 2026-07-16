@@ -2,6 +2,7 @@ import type {
   MutationCreateBufferWorldlineRequest,
   MutationCreateCheckpointRequest,
   MutationReplaceRangeAsTickRequest,
+  QueryCausalLineDiffRequest,
   QueryWorldlineSnapshotRequest,
 } from '../generated/jedit/rope.wesley.generated.js';
 import type {
@@ -12,11 +13,14 @@ import type {
 } from '../app/jedit-contract-runtime.js';
 import type { WorldlineSnapshotReadingEnvelope } from '../app/jedit-observer-runtime.js';
 import type { TextWindowReadingEnvelope } from '../app/jedit-observer-runtime.js';
+import type { CausalLineDiffReadingEnvelope } from '../app/jedit-causal-line-diff-observer.js';
 import type { ReadBasisHandle, TextWindowRequest } from './text-buffer-session.js';
 export type {
   ApplyIntentResult,
   BufferKey,
   BufferVersion,
+  CausalLineDiffReading,
+  CausalLineDiffRequest,
   CreateTextBufferRequest,
   Observed,
   ReadBasisHandle,
@@ -60,6 +64,12 @@ export interface JeditMutationOpticClient {
 }
 
 export interface JeditObserverOpticClient {
+  causalLineDiff(
+    session: JeditWorldlineSession,
+    frontierRef: string,
+    input: QueryCausalLineDiffRequest['input'],
+  ): Promise<CausalLineDiffReadingEnvelope>;
+
   worldlineSnapshot(
     session: JeditWorldlineSession,
     frontierRef: string,

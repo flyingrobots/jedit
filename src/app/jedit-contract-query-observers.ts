@@ -1,4 +1,10 @@
 import type {
+  CausalLineDiffReadingEnvelope,
+} from './jedit-causal-line-diff-observer.js';
+import {
+  readCausalLineDiffWithObserverPlan,
+} from './jedit-causal-line-diff-observer.js';
+import type {
   JeditTextWindowObserver,
   TextWindowReadingEnvelope,
   WorldlineSnapshotReadingEnvelope,
@@ -14,6 +20,7 @@ import type {
 } from '../generated/jedit/rope.types.generated.js';
 import {
   queryTextWindowOperation,
+  queryCausalLineDiffOperation,
   queryWorldlineSnapshotOperation,
 } from '../generated/jedit/rope.wesley.generated.js';
 import type { HashPort } from '../ports/hash.js';
@@ -22,14 +29,17 @@ import type { JeditContractStatePort } from '../ports/jedit-contract-state-port.
 
 type WorldlineSnapshotInput = QueryOperationMap['worldlineSnapshot']['input'];
 type TextWindowInput = QueryOperationMap['textWindow']['input'];
+type CausalLineDiffInput = QueryOperationMap['causalLineDiff']['input'];
 
 export type JeditContractQueryObserverRequest =
   | JeditWorldlineSnapshotObserverRequest
-  | JeditTextWindowObserverRequest;
+  | JeditTextWindowObserverRequest
+  | JeditCausalLineDiffObserverRequest;
 
 export type JeditContractQueryObserverResult =
   | WorldlineSnapshotReadingEnvelope
-  | TextWindowReadingEnvelope;
+  | TextWindowReadingEnvelope
+  | CausalLineDiffReadingEnvelope;
 
 export interface JeditWorldlineSnapshotObserverRequest {
   readonly operationName: typeof queryWorldlineSnapshotOperation.fieldName;
@@ -43,6 +53,13 @@ export interface JeditTextWindowObserverRequest {
   readonly session: JeditWorldlineSession;
   readonly frontierRef: string;
   readonly input: TextWindowInput;
+}
+
+export interface JeditCausalLineDiffObserverRequest {
+  readonly operationName: typeof queryCausalLineDiffOperation.fieldName;
+  readonly session: JeditWorldlineSession;
+  readonly frontierRef: string;
+  readonly input: CausalLineDiffInput;
 }
 
 export interface JeditContractQueryObserverRegistryOptions {
@@ -60,6 +77,9 @@ export interface JeditContractQueryObserverRegistry {
   observeTextWindow(
     request: JeditTextWindowObserverRequest,
   ): TextWindowReadingEnvelope;
+  observeCausalLineDiff(
+    request: JeditCausalLineDiffObserverRequest,
+  ): CausalLineDiffReadingEnvelope;
   observeQuery(
     request: JeditContractQueryObserverRequest,
   ): JeditContractQueryObserverResult;
@@ -79,6 +99,7 @@ export function createJeditContractQueryObserverRegistry(
   const queryOperationNames: readonly string[] = Object.freeze([
     queryWorldlineSnapshotOperation.fieldName,
     queryTextWindowOperation.fieldName,
+    queryCausalLineDiffOperation.fieldName,
   ]);
 
   return Object.freeze({
@@ -95,6 +116,11 @@ export function createJeditContractQueryObserverRegistry(
       request: JeditTextWindowObserverRequest,
     ): TextWindowReadingEnvelope {
       return observeTextWindow(context, request);
+    },
+    observeCausalLineDiff(
+      request: JeditCausalLineDiffObserverRequest,
+    ): CausalLineDiffReadingEnvelope {
+      return observeCausalLineDiff(context, request);
     },
     observeQuery(
       request: JeditContractQueryObserverRequest,
@@ -113,7 +139,22 @@ function observeJeditQuery(
       return observeWorldlineSnapshot(context, request);
     case queryTextWindowOperation.fieldName:
       return observeTextWindow(context, request);
+    case queryCausalLineDiffOperation.fieldName:
+      return observeCausalLineDiff(context, request);
   }
+}
+
+function observeCausalLineDiff(
+  context: JeditContractQueryObserverContext,
+  request: JeditCausalLineDiffObserverRequest,
+): CausalLineDiffReadingEnvelope {
+  requireStateIfAvailable(context, request.input.worldlineId);
+  return readCausalLineDiffWithObserverPlan(
+    context.runtime,
+    request.session,
+    request.frontierRef,
+    request.input,
+  );
 }
 
 function observeWorldlineSnapshot(

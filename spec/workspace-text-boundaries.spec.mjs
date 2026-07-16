@@ -42,8 +42,10 @@ test('reading cache materializes text and reports explicit postures', async () =
     cache,
   });
   const dirty = authorityModule.workspaceTextAuthorityWithReceipt(opened, 'receipt:1', {
-    admittedTickId: 'tick:1',
-    nextHeadId: 'head:edited',
+    causalTransition: {
+      admittedTickId: 'tick:1',
+      nextHeadId: 'head:edited',
+    },
   });
 
   assert.equal(cacheModule.materializeWorkspaceTextReadingCache(cache), 'a\nb');
@@ -209,6 +211,7 @@ test('replace command submits through production text session and refreshes read
   const calls = {
     replace: [],
     observe: [],
+    lineDiff: [],
   };
   const productionTextSession = basisPinnedTestTextSession({
     replaceRange: async (request) => {
@@ -234,6 +237,22 @@ test('replace command submits through production text session and refreshes read
         },
       };
     },
+    observeCausalLineDiff: async (request) => {
+      calls.lineDiff.push(request);
+      return {
+        kind: 'causal-line-diff-observed',
+        reading: {
+          worldlineId: 'worldline:notes',
+          basisHeadId: request.basisHeadId,
+          nextHeadId: request.nextHeadId,
+          insertedLineCount: 1,
+          deletedLineCount: 1,
+          rewriteIds: ['rewrite:replace'],
+          diffIds: ['diff:replace'],
+          observerVersion: 'test-fixture',
+        },
+      };
+    },
   });
   const message = await commands.createWorkspaceTextEditCmd({
     kind: commands.WorkspaceTextEditCommandKinds.Replace,
@@ -244,6 +263,7 @@ test('replace command submits through production text session and refreshes read
     textOperationSequencer: fakeTextOperationSequencer(),
     atMs: 42,
     aperture: commands.defaultWorkspaceTextAperture(),
+    changeBasisHeadId: 'head:saved',
     startByte: { kind: 'utf8-byte-offset', value: 1 },
     endByte: { kind: 'utf8-byte-offset', value: 4 },
     insertText: 'XYZ',
@@ -257,8 +277,117 @@ test('replace command submits through production text session and refreshes read
     atMs: 42,
   }]);
   assert.equal(calls.observe.length, 1);
+  assert.deepEqual(calls.lineDiff, [{
+    bufferId: 'buffer:notes',
+    basisHeadId: 'head:saved',
+    nextHeadId: 'head:replace',
+    maxByteCount: 67108864,
+    maxLineCount: 5000000,
+    maxRewriteCount: 10000,
+    atMs: 42,
+  }]);
   assert.equal(message.result.receiptId, 'receipt:replace');
   assert.equal(message.result.cache.lines[0], 'replaced from reading');
+  assert.deepEqual(message.result.lineChanges, {
+    kind: 'available',
+    source: 'causal-observation',
+    basisHeadId: 'head:saved',
+    nextHeadId: 'head:replace',
+    insertedLineCount: 1,
+    deletedLineCount: 1,
+    rewriteIds: ['rewrite:replace'],
+    diffIds: ['diff:replace'],
+    observerVersion: 'test-fixture',
+  });
+});
+
+test('committed text edit remains applied when causal line observation is obstructed', async () => {
+  const commands = await importDist('app', 'workspace', 'workspace-text-commands.js');
+  const productionTextSession = basisPinnedTestTextSession({
+    insertText: async () => ({
+      kind: 'applied',
+      result: { receiptId: 'receipt:committed', textBasis: testTextBasis(1, 'head:committed') },
+    }),
+    observeWindow: async () => ({
+      kind: 'observed',
+      observed: {
+        value: {
+          readingId: 'reading:committed',
+          lines: [{ lineNumber: 0, text: 'x' }],
+          lineCount: 1,
+          startLine: 0,
+          totalLineCount: 1,
+          hasMoreBefore: false,
+          hasMoreAfter: false,
+          cursorLine: 0,
+          viewportLineCount: 24,
+          truncated: false,
+        },
+      },
+    }),
+    observeCausalLineDiff: async () => ({
+      kind: 'obstructed',
+      obstruction: {
+        code: 'text-buffer-query-obstructed',
+        issue: {
+          level: 'error',
+          source: 'command',
+          message: 'line diff limit exceeded',
+          atMs: 42,
+        },
+      },
+    }),
+  });
+
+  const message = await commands.createWorkspaceTextEditCmd({
+    kind: commands.WorkspaceTextEditCommandKinds.Insert,
+    requestId: 8,
+    filePath: '/repo/notes.md',
+    bufferId: 'buffer:notes',
+    productionTextSession,
+    textOperationSequencer: fakeTextOperationSequencer(),
+    atMs: 42,
+    aperture: commands.defaultWorkspaceTextAperture(),
+    changeBasisHeadId: 'head:saved',
+    startByte: { kind: 'utf8-byte-offset', value: 0 },
+    insertText: 'x',
+  })();
+
+  assert.equal(message.result.kind, 'applied');
+  assert.equal(message.result.receiptId, 'receipt:committed');
+  assert.deepEqual(message.result.lineChanges, {
+    kind: 'unavailable',
+    reason: 'observation-obstructed',
+    basisHeadId: 'head:saved',
+    nextHeadId: 'head:committed',
+    message: 'line diff limit exceeded',
+  });
+});
+
+test('causal line observation exceptions become unavailable evidence', async () => {
+  const observation = await importDist(
+    'app',
+    'workspace',
+    'workspace-causal-line-change-observation.js',
+  );
+  const lineChanges = await observation.observeWorkspaceCausalLineChanges({
+    bufferId: 'buffer:notes',
+    changeBasisHeadId: 'head:saved',
+    atMs: 42,
+    productionTextSession: {
+      observeCausalLineDiff: async () => {
+        throw new Error('causal line observer crashed');
+      },
+    },
+  }, 'head:committed');
+
+  assert.deepEqual(lineChanges, {
+    kind: 'unavailable',
+    reason: 'observation-obstructed',
+    basisHeadId: 'head:saved',
+    nextHeadId: 'head:committed',
+    message: 'causal line observer crashed',
+  });
 });
 
 test('settlement envelope records bounded reading coverage metadata', async () => {

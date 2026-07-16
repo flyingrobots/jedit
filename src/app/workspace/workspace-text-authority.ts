@@ -17,6 +17,7 @@ import {
   workspaceBufferFileDirty,
   WorkspaceTextIntentStatuses,
   type WorkspaceBufferDurability,
+  type WorkspaceBufferCausalLineChanges,
   type WorkspaceTextIntentStatus,
   type WorkspaceTextPendingCommandKind,
 } from './workspace-buffer-durability.js';
@@ -141,6 +142,11 @@ export interface OpenedWorkspaceTextAuthorityOptions {
   readonly lastCausalTransition?: TextBufferCausalTransition;
   readonly lastCheckpointId?: string;
   readonly lastExportReadingId?: string;
+}
+
+export interface WorkspaceTextReceiptEvidence {
+  readonly causalTransition?: TextBufferCausalTransition;
+  readonly lineChanges?: WorkspaceBufferCausalLineChanges;
 }
 
 interface WorkspaceTextMaterializationOptions {
@@ -277,8 +283,9 @@ function projectionMatchesAuthority(
 export function workspaceTextAuthorityWithReceipt(
   authority: WorkspaceTextAuthorityOpened,
   receiptId: string,
-  causalTransition?: TextBufferCausalTransition,
+  evidence: WorkspaceTextReceiptEvidence = {},
 ): WorkspaceTextAuthorityOpened {
+  const causalTransition = evidence.causalTransition;
   const durability = workspaceBufferDurabilityWithAdmittedTransition(
     authority.durability,
     causalTransition == null
@@ -288,6 +295,7 @@ export function workspaceTextAuthorityWithReceipt(
         admittedTickId: causalTransition.admittedTickId,
         nextHeadId: causalTransition.nextHeadId,
       },
+    evidence.lineChanges,
   );
   return {
     ...authority,

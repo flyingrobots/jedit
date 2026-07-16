@@ -25,6 +25,26 @@ export interface BufferWorldline {
   projectionPath: string | null;
 }
 
+export interface CausalLineDiffInput {
+  worldlineId: string;
+  basisHeadId: string;
+  nextHeadId: string;
+  maxByteCount: number;
+  maxLineCount: number;
+  maxRewriteCount: number;
+}
+
+export interface CausalLineDiffReading {
+  worldlineId: string;
+  basisHeadId: string;
+  nextHeadId: string;
+  insertedLineCount: number;
+  deletedLineCount: number;
+  rewriteIds: string[];
+  diffIds: string[];
+  observerVersion: string;
+}
+
 export interface Checkpoint {
   checkpointId: string;
   worldlineId: string;
@@ -276,4 +296,22 @@ export type QueryTextWindowOperation = {
   request: QueryTextWindowRequest;
   response: QueryTextWindowResponse;
   metadata: typeof queryTextWindowOperation;
+};
+
+export interface QueryCausalLineDiffRequest {
+  input: CausalLineDiffInput;
+}
+
+export type QueryCausalLineDiffResponse = CausalLineDiffReading;
+
+export const queryCausalLineDiffOperation = {
+  operationType: "QUERY",
+  fieldName: "causalLineDiff",
+  directives: {"wes_op":{"name":"causalLineDiff"}},
+} as const;
+
+export type QueryCausalLineDiffOperation = {
+  request: QueryCausalLineDiffRequest;
+  response: QueryCausalLineDiffResponse;
+  metadata: typeof queryCausalLineDiffOperation;
 };

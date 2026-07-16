@@ -29,8 +29,10 @@ test('file dirty state follows admitted head versus saved export basis', async (
   assert.equal(durability.workspaceBufferFileDirty(obstructed.durability), false);
 
   const admitted = authority.workspaceTextAuthorityWithReceipt(queued, 'receipt:edit', {
-    admittedTickId: 'tick:edit',
-    nextHeadId: HEAD_EDITED,
+    causalTransition: {
+      admittedTickId: 'tick:edit',
+      nextHeadId: HEAD_EDITED,
+    },
   });
   assert.equal(admitted.dirty, true);
   assert.equal(durability.workspaceBufferFileDirty(admitted.durability), true);
@@ -82,8 +84,10 @@ test('a missing-file basis becomes dirty only after an admitted edit', async () 
   assert.equal(opened.durability.remoteGit.kind, durability.WorkspaceBufferRemoteGitDurabilityKinds.Unknown);
 
   const admitted = authority.workspaceTextAuthorityWithReceipt(opened, 'receipt:new', {
-    admittedTickId: 'tick:new',
-    nextHeadId: HEAD_EDITED,
+    causalTransition: {
+      admittedTickId: 'tick:new',
+      nextHeadId: HEAD_EDITED,
+    },
   });
   assert.equal(admitted.dirty, true);
   assert.equal(durability.workspaceBufferFileDirty(admitted.durability), true);

@@ -186,6 +186,18 @@ type TextWindowReading {
     lines: [TextLineReading!]!
 }
 
+"""Net line changes between two causally related retained rope heads."""
+type CausalLineDiffReading {
+    worldlineId: ID!
+    basisHeadId: ID!
+    nextHeadId: ID!
+    insertedLineCount: Int!
+    deletedLineCount: Int!
+    rewriteIds: [ID!]!
+    diffIds: [ID!]!
+    observerVersion: String!
+}
+
 type CreateBufferWorldlineResult {
     worldline: BufferWorldline!
     head: RopeHead!
@@ -241,6 +253,15 @@ input TextWindowInput {
     beforeLines: Int!
     afterLines: Int!
     maxBytes: Int!
+}
+
+input CausalLineDiffInput {
+    worldlineId: ID!
+    basisHeadId: ID!
+    nextHeadId: ID!
+    maxByteCount: Int!
+    maxLineCount: Int!
+    maxRewriteCount: Int!
 }
 
 type Mutation {
@@ -404,4 +425,11 @@ type Query {
     """
     textWindow(input: TextWindowInput!): TextWindowReading!
         @wes_op(name: "textWindow")
+
+    """
+    Returns a bounded net line diff between two explicitly named retained
+    heads after validating the receipt, rewrite, and diff ancestry chain.
+    """
+    causalLineDiff(input: CausalLineDiffInput!): CausalLineDiffReading!
+        @wes_op(name: "causalLineDiff")
 }

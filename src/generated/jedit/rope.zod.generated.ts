@@ -152,6 +152,18 @@ export const TextWindowReadingSchema = z.object({
 });
 export type TextWindowReading = z.infer<typeof TextWindowReadingSchema>;
 
+export const CausalLineDiffReadingSchema = z.object({
+  worldlineId: z.string(),
+  basisHeadId: z.string(),
+  nextHeadId: z.string(),
+  insertedLineCount: z.number().int(),
+  deletedLineCount: z.number().int(),
+  rewriteIds: z.array(z.string()),
+  diffIds: z.array(z.string()),
+  observerVersion: z.string()
+});
+export type CausalLineDiffReading = z.infer<typeof CausalLineDiffReadingSchema>;
+
 export const CreateBufferWorldlineResultSchema = z.object({
   worldline: z.lazy(() => BufferWorldlineSchema),
   head: z.lazy(() => RopeHeadSchema),
@@ -218,6 +230,16 @@ export const TextWindowInputSchema = z.object({
 });
 export type TextWindowInput = z.infer<typeof TextWindowInputSchema>;
 
+export const CausalLineDiffInputSchema = z.object({
+  worldlineId: z.string(),
+  basisHeadId: z.string(),
+  nextHeadId: z.string(),
+  maxByteCount: z.number().int(),
+  maxLineCount: z.number().int(),
+  maxRewriteCount: z.number().int()
+});
+export type CausalLineDiffInput = z.infer<typeof CausalLineDiffInputSchema>;
+
 // Operations
 export const WorldlineSnapshotQueryArgsSchema = z.object({
   input: z.lazy(() => WorldlineSnapshotInputSchema)
@@ -241,6 +263,17 @@ export const TextWindowQueryOperationSchema = z.object({
 });
 export type TextWindowQueryOperation = z.infer<typeof TextWindowQueryOperationSchema>;
 
+export const CausalLineDiffQueryArgsSchema = z.object({
+  input: z.lazy(() => CausalLineDiffInputSchema)
+});
+export type CausalLineDiffQueryArgs = z.infer<typeof CausalLineDiffQueryArgsSchema>;
+export const CausalLineDiffQueryOperationSchema = z.object({
+  operationName: z.literal("causalLineDiff"),
+  args: z.lazy(() => CausalLineDiffQueryArgsSchema),
+  result: z.lazy(() => CausalLineDiffReadingSchema)
+});
+export type CausalLineDiffQueryOperation = z.infer<typeof CausalLineDiffQueryOperationSchema>;
+
 export const QueryOperationSchemas = {
   worldlineSnapshot: {
     args: WorldlineSnapshotQueryArgsSchema,
@@ -253,6 +286,12 @@ export const QueryOperationSchemas = {
     input: z.lazy(() => TextWindowInputSchema),
     result: z.lazy(() => TextWindowReadingSchema),
     operation: TextWindowQueryOperationSchema
+  },
+  causalLineDiff: {
+    args: CausalLineDiffQueryArgsSchema,
+    input: z.lazy(() => CausalLineDiffInputSchema),
+    result: z.lazy(() => CausalLineDiffReadingSchema),
+    operation: CausalLineDiffQueryOperationSchema
   },
 } as const;
 export const CreateBufferWorldlineMutationArgsSchema = z.object({

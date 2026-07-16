@@ -3,6 +3,24 @@ import {
   WorkspaceWorldlineMaterializationKinds,
   type WorkspaceWorldlineMaterializationKind,
 } from './worldline-types.js';
+import {
+  initialWorkspaceBufferCausalLineChanges,
+  workspaceBufferCausalLineChangesForTransition,
+  type WorkspaceBufferCausalLineChanges,
+} from './workspace-causal-line-changes.js';
+export {
+  unavailableWorkspaceBufferCausalLineChanges,
+  workspaceBufferCausalLineChangesFromReading,
+  WorkspaceBufferCausalLineChangeKinds,
+  WorkspaceBufferCausalLineChangeSources,
+  WorkspaceBufferCausalLineChangeUnavailableReasons,
+} from './workspace-causal-line-changes.js';
+export type {
+  WorkspaceBufferCausalLineChanges,
+  WorkspaceBufferCausalLineChangesAvailable,
+  WorkspaceBufferCausalLineChangesUnavailable,
+  WorkspaceBufferCausalLineChangeUnavailableReason,
+} from './workspace-causal-line-changes.js';
 
 const INTENT_IDLE = 'idle';
 const INTENT_PENDING = 'pending';
@@ -190,6 +208,7 @@ export interface WorkspaceBufferDurability {
   readonly file: WorkspaceBufferFileDurability;
   readonly localGit: WorkspaceBufferLocalGitDurability;
   readonly remoteGit: WorkspaceBufferRemoteGitDurability;
+  readonly lineChanges: WorkspaceBufferCausalLineChanges;
   readonly lastCheckpoint?: WorkspaceBufferCheckpointDeclaration;
 }
 
@@ -216,14 +235,19 @@ export function openedWorkspaceBufferDurability(
   options: OpenedWorkspaceBufferDurabilityOptions,
 ): WorkspaceBufferDurability {
   const basisHeadId = nonEmptyId(options.basisHeadId);
+  const file = openedFileDurability(options, basisHeadId);
   return {
     intent: idleIntent(),
     causal: basisHeadId == null
       ? { kind: CAUSAL_UNAVAILABLE }
       : { kind: CAUSAL_ADMITTED, headId: basisHeadId },
-    file: openedFileDurability(options, basisHeadId),
+    file,
     localGit: { kind: LOCAL_GIT_UNKNOWN },
     remoteGit: { kind: REMOTE_GIT_UNKNOWN },
+    lineChanges: initialWorkspaceBufferCausalLineChanges(
+      basisHeadId,
+      workspaceBufferFileBasisHeadId(file),
+    ),
   };
 }
 
@@ -247,6 +271,7 @@ export function workspaceBufferDurabilityWithPendingIntent(
 export function workspaceBufferDurabilityWithAdmittedTransition(
   durability: WorkspaceBufferDurability,
   transition: WorkspaceBufferAdmittedTransition | undefined,
+  lineChanges?: WorkspaceBufferCausalLineChanges,
 ): WorkspaceBufferDurability {
   return {
     ...durability,
@@ -259,6 +284,13 @@ export function workspaceBufferDurabilityWithAdmittedTransition(
         receiptId: transition.receiptId,
         admittedTickId: transition.admittedTickId,
       },
+    lineChanges: transition == null
+      ? durability.lineChanges
+      : workspaceBufferCausalLineChangesForTransition(
+        workspaceBufferFileBasisHeadId(durability.file),
+        transition.nextHeadId,
+        lineChanges,
+      ),
   };
 }
 
@@ -331,6 +363,10 @@ export function workspaceBufferDurabilityWithExport(
       exportReadingId: validReadingId,
       checkpointId,
     },
+    lineChanges: initialWorkspaceBufferCausalLineChanges(
+      durability.causal.kind === CAUSAL_ADMITTED ? durability.causal.headId : undefined,
+      validBasisHeadId,
+    ),
   };
 }
 
@@ -401,6 +437,12 @@ function openedFileDurability(
     };
   }
   return { kind: FILE_UNKNOWN };
+}
+
+export function workspaceBufferFileBasisHeadId(
+  file: WorkspaceBufferFileDurability,
+): string | undefined {
+  return file.kind === FILE_UNKNOWN ? undefined : nonEmptyId(file.basisHeadId);
 }
 
 function idleIntent(): WorkspaceBufferIdleIntentDurability {

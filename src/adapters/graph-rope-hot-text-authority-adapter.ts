@@ -27,9 +27,9 @@ import {
   createGraphRopeRuntime,
   GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_FACT,
   type GraphRopeDebugShape,
+  type GraphRopeCausalLineDiffReading,
   type GraphRopeReplaceRangeResult,
   type GraphRopeRuntime,
-  type GraphRopeRuntimeObstructionCode,
   type GraphRopeRuntimeResult,
   type GraphRopeTextWindowReading,
 } from '../domain/graph-rope-runtime.js';
@@ -49,22 +49,31 @@ import {
   type HotTextAuthorityBasis,
   type HotTextAuthorityTransition,
   type HotTextBufferState,
+  type HotTextCausalLineDiffReading,
+  type HotTextCausalLineDiffRequest,
   type HotTextWindowProjection,
   type HotTextWindowRequest,
   type SaveHotCheckpointRequest,
   type SaveHotCheckpointResult,
 } from '../ports/hot-text-runtime.js';
+import {
+  CAUSAL_LINE_DIFF_OPERATION,
+  CREATE_BUFFER_OPERATION,
+  GRAPH_ROPE_STATE_INCOMPLETE_TRANSITION,
+  GRAPH_ROPE_STATE_INVALID_RANGE,
+  GRAPH_ROPE_STATE_MISSING_BASIS,
+  GRAPH_ROPE_STATE_PROJECTION_MISMATCH,
+  GraphRopeTextAuthorityObstructionError,
+  GraphRopeTextAuthorityStateError,
+  REPLACE_RANGE_OPERATION,
+  SAVE_CHECKPOINT_OPERATION,
+  TEXT_WINDOW_OPERATION,
+} from './graph-rope-text-authority-errors.js';
+export {
+  GraphRopeTextAuthorityObstructionError,
+  GraphRopeTextAuthorityStateError,
+} from './graph-rope-text-authority-errors.js';
 
-const CREATE_BUFFER_OPERATION = 'createBuffer';
-const REPLACE_RANGE_OPERATION = 'admitReplaceRangeTick';
-const TEXT_WINDOW_OPERATION = 'textWindow';
-const SAVE_CHECKPOINT_OPERATION = 'saveCheckpoint';
-const GRAPH_ROPE_OBSTRUCTION_MESSAGE = 'Graph rope text authority operation was obstructed';
-const GRAPH_ROPE_STATE_MESSAGE = 'Graph rope text authority received invalid compatibility state';
-const GRAPH_ROPE_STATE_MISSING_BASIS = 'missing-authority-basis';
-const GRAPH_ROPE_STATE_INVALID_RANGE = 'invalid-byte-range';
-const GRAPH_ROPE_STATE_INCOMPLETE_TRANSITION = 'incomplete-authority-transition';
-const GRAPH_ROPE_STATE_PROJECTION_MISMATCH = 'projection-basis-mismatch';
 const ROOT_IDS_PER_EDIT = 2;
 const NEXT_PROJECTION_ROOT_OFFSET = 1;
 const NEXT_TICK_OFFSET = 1;
@@ -74,18 +83,6 @@ const INITIAL_CHECKPOINT_KIND = 'INITIAL';
 const MANUAL_SAVE_CHECKPOINT_KIND = 'MANUAL_SAVE';
 const AUTO_SAVE_CHECKPOINT_KIND = 'AUTO_SAVE';
 
-type GraphRopeTextAuthorityStateCode =
-  | typeof GRAPH_ROPE_STATE_MISSING_BASIS
-  | typeof GRAPH_ROPE_STATE_INVALID_RANGE
-  | typeof GRAPH_ROPE_STATE_INCOMPLETE_TRANSITION
-  | typeof GRAPH_ROPE_STATE_PROJECTION_MISMATCH;
-
-type GraphRopeAuthorityOperation =
-  | typeof CREATE_BUFFER_OPERATION
-  | typeof REPLACE_RANGE_OPERATION
-  | typeof TEXT_WINDOW_OPERATION
-  | typeof SAVE_CHECKPOINT_OPERATION;
-
 export interface CreateGraphRopeHotTextAuthorityOptions {
   readonly hash: HashPort;
   readonly causalAnchorAdmission?: EchoCausalAnchorAdmissionPort;
@@ -93,31 +90,6 @@ export interface CreateGraphRopeHotTextAuthorityOptions {
 
 export interface GraphRopeHotTextAuthority extends GraphBackedRopeTextAuthority {
   debugRopeShape(headId: string): GraphRopeRuntimeResult<GraphRopeDebugShape>;
-}
-
-export class GraphRopeTextAuthorityObstructionError extends Error {
-  public readonly operation: GraphRopeAuthorityOperation;
-  public readonly obstructionCode: GraphRopeRuntimeObstructionCode;
-
-  public constructor(
-    operation: GraphRopeAuthorityOperation,
-    obstructionCode: GraphRopeRuntimeObstructionCode,
-  ) {
-    super(`${GRAPH_ROPE_OBSTRUCTION_MESSAGE}: ${operation} (${obstructionCode}).`);
-    this.name = 'GraphRopeTextAuthorityObstructionError';
-    this.operation = operation;
-    this.obstructionCode = obstructionCode;
-  }
-}
-
-export class GraphRopeTextAuthorityStateError extends Error {
-  public readonly code: GraphRopeTextAuthorityStateCode;
-
-  public constructor(code: GraphRopeTextAuthorityStateCode) {
-    super(`${GRAPH_ROPE_STATE_MESSAGE}: ${code}.`);
-    this.name = 'GraphRopeTextAuthorityStateError';
-    this.code = code;
-  }
 }
 
 export function createGraphRopeHotTextAuthority(
@@ -169,6 +141,17 @@ class GraphRopeHotTextAuthorityAdapter implements GraphRopeHotTextAuthority {
     return graphWindowProjection(request, reading.value);
   }
 
+  public causalLineDiff(
+    _state: HotTextBufferState,
+    request: HotTextCausalLineDiffRequest,
+  ): HotTextCausalLineDiffReading {
+    const reading = this.graph.causalLineDiff(request);
+    if (!reading.ok) {
+      throw new GraphRopeTextAuthorityObstructionError(CAUSAL_LINE_DIFF_OPERATION, reading.code);
+    }
+    return graphCausalLineDiffReading(reading.value);
+  }
+
   public admitReplaceRangeTick(
     state: HotTextBufferState,
     range: TextRange,
@@ -213,6 +196,16 @@ class GraphRopeHotTextAuthorityAdapter implements GraphRopeHotTextAuthority {
   public debugRopeShape(headId: string): GraphRopeRuntimeResult<GraphRopeDebugShape> {
     return this.graph.debugRopeShape(headId);
   }
+}
+
+function graphCausalLineDiffReading(
+  reading: GraphRopeCausalLineDiffReading,
+): HotTextCausalLineDiffReading {
+  return {
+    ...reading,
+    rewriteIds: [...reading.rewriteIds],
+    diffIds: [...reading.diffIds],
+  };
 }
 
 function saveGraphCheckpoint(

@@ -212,7 +212,8 @@ function textAuthorityWithIntermediateEditReceipt(
 ) {
   if (requestId === authority.pendingClientSeq) {
     return workspaceTextAuthorityWithAppliedJeditCommandReceipt(
-      authority, requestId, result.receiptId, result.reversedReceiptId, result.causalTransition,
+      authority, requestId, result.receiptId, result.reversedReceiptId,
+      { causalTransition: result.causalTransition, lineChanges: result.lineChanges },
     );
   }
   const event = receivedJeditCommandEventForRequest(authority, requestId, result.receiptId, result.reversedReceiptId);
@@ -235,7 +236,8 @@ function applyAppliedTextEditResult(
   }
   const withCache = workspaceTextAuthorityWithCache(
     workspaceTextAuthorityWithAppliedJeditCommandReceipt(
-      authority, msg.requestId, msg.result.receiptId, msg.result.reversedReceiptId, msg.result.causalTransition,
+      authority, msg.requestId, msg.result.receiptId, msg.result.reversedReceiptId,
+      { causalTransition: msg.result.causalTransition, lineChanges: msg.result.lineChanges },
     ),
     msg.result.cache,
   );

@@ -42,6 +42,7 @@ import {
   workspaceTextAuthorityWithPendingEdit,
   type WorkspaceTextPendingCommandKind,
 } from './workspace-text-authority.js';
+import { workspaceBufferFileBasisHeadId } from './workspace-buffer-durability.js';
 import {
   planWorkspaceTextDeleteLine,
   planWorkspaceTextDeleteTransition,
@@ -427,6 +428,7 @@ function queueProductionTextEdit(
     textOperationSequencer,
     atMs: model.time,
     aperture: workspaceTextApertureFromEditor(editor, viewport.height),
+    changeBasisHeadId: workspaceBufferFileBasisHeadId(model.textAuthority.durability.file),
     reachableHistoryRequestIds: reachableHistoryRequestIds(editor),
   };
   return [{

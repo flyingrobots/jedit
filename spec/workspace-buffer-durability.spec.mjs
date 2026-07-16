@@ -35,6 +35,17 @@ test('buffer durability keeps intent, causal, file, and Git evidence independent
   assert.equal(opened.durability.file.basisHeadId, HEAD_OPENED);
   assert.equal(opened.durability.localGit.kind, durability.WorkspaceBufferLocalGitDurabilityKinds.Unknown);
   assert.equal(opened.durability.remoteGit.kind, durability.WorkspaceBufferRemoteGitDurabilityKinds.Unknown);
+  assert.deepEqual(opened.durability.lineChanges, {
+    kind: durability.WorkspaceBufferCausalLineChangeKinds.Available,
+    source: durability.WorkspaceBufferCausalLineChangeSources.Identity,
+    basisHeadId: HEAD_OPENED,
+    nextHeadId: HEAD_OPENED,
+    insertedLineCount: 0,
+    deletedLineCount: 0,
+    rewriteIds: [],
+    diffIds: [],
+    observerVersion: 'jedit-causal-line-diff-identity-v1',
+  });
 
   const queued = authority.workspaceTextAuthorityWithPendingEdit(
     opened,
@@ -45,10 +56,23 @@ test('buffer durability keeps intent, causal, file, and Git evidence independent
   assert.equal(queued.durability.intent.clientSeq, 7);
   assert.equal(queued.durability.causal.headId, HEAD_OPENED);
   assert.equal(queued.durability.file.basisHeadId, HEAD_OPENED);
+  assert.deepEqual(queued.durability.lineChanges, opened.durability.lineChanges);
 
   const admitted = authority.workspaceTextAuthorityWithReceipt(queued, 'receipt:edit', {
-    admittedTickId: 'tick:edit',
-    nextHeadId: HEAD_EDITED,
+    causalTransition: {
+      admittedTickId: 'tick:edit',
+      nextHeadId: HEAD_EDITED,
+    },
+    lineChanges: durability.workspaceBufferCausalLineChangesFromReading({
+      worldlineId: 'worldline:notes',
+      basisHeadId: HEAD_OPENED,
+      nextHeadId: HEAD_EDITED,
+      insertedLineCount: 3,
+      deletedLineCount: 2,
+      rewriteIds: ['rewrite:edit'],
+      diffIds: ['diff:edit'],
+      observerVersion: 'jedit-causal-line-diff-v1',
+    }),
   });
   assert.equal(admitted.durability.intent.kind, durability.WorkspaceBufferIntentDurabilityKinds.Idle);
   assert.deepEqual(admitted.durability.causal, {
@@ -58,6 +82,10 @@ test('buffer durability keeps intent, causal, file, and Git evidence independent
     admittedTickId: 'tick:edit',
   });
   assert.equal(admitted.durability.file.basisHeadId, HEAD_OPENED);
+  assert.equal(admitted.durability.lineChanges.insertedLineCount, 3);
+  assert.equal(admitted.durability.lineChanges.deletedLineCount, 2);
+  assert.deepEqual(admitted.durability.lineChanges.rewriteIds, ['rewrite:edit']);
+  assert.deepEqual(admitted.durability.lineChanges.diffIds, ['diff:edit']);
 
   const checkpointOnly = authority.workspaceTextAuthorityWithCheckpoint(
     admitted,
@@ -71,6 +99,19 @@ test('buffer durability keeps intent, causal, file, and Git evidence independent
     basisHeadId: HEAD_EDITED,
   });
 
+  const staleExport = authority.workspaceTextAuthorityWithExport(
+    checkpointOnly,
+    'reading:stale-export',
+    HEAD_OPENED,
+    fileFingerprint('stale-export'),
+  );
+  assert.deepEqual(staleExport.durability.lineChanges, {
+    kind: durability.WorkspaceBufferCausalLineChangeKinds.Unavailable,
+    reason: durability.WorkspaceBufferCausalLineChangeUnavailableReasons.BasisUnavailable,
+    basisHeadId: HEAD_OPENED,
+    nextHeadId: HEAD_EDITED,
+  });
+
   const exported = authority.workspaceTextAuthorityWithExport(
     checkpointOnly,
     'reading:export',
@@ -80,6 +121,17 @@ test('buffer durability keeps intent, causal, file, and Git evidence independent
   assert.equal(exported.durability.file.kind, durability.WorkspaceBufferFileDurabilityKinds.Saved);
   assert.equal(exported.durability.file.basisHeadId, HEAD_EDITED);
   assert.equal(exported.durability.file.exportReadingId, 'reading:export');
+  assert.deepEqual(exported.durability.lineChanges, {
+    kind: durability.WorkspaceBufferCausalLineChangeKinds.Available,
+    source: durability.WorkspaceBufferCausalLineChangeSources.Identity,
+    basisHeadId: HEAD_EDITED,
+    nextHeadId: HEAD_EDITED,
+    insertedLineCount: 0,
+    deletedLineCount: 0,
+    rewriteIds: [],
+    diffIds: [],
+    observerVersion: 'jedit-causal-line-diff-identity-v1',
+  });
 
   const checkpointed = authority.workspaceTextAuthorityWithCheckpoint(
     exported,
@@ -104,6 +156,40 @@ test('buffer durability keeps intent, causal, file, and Git evidence independent
   );
   assert.equal(committed.localGit.commitId, 'commit:local');
   assert.equal(committed.remoteGit.remoteRef, 'origin/main');
+});
+
+test('buffer durability refuses causal line evidence for the wrong basis', async () => {
+  const durability = await importDist('app', 'workspace', 'workspace-buffer-durability.js');
+  const opened = durability.openedWorkspaceBufferDurability({
+    basisHeadId: HEAD_OPENED,
+    hostBasis: 'file',
+    materialization: 'materialized',
+  });
+  const admitted = durability.workspaceBufferDurabilityWithAdmittedTransition(
+    opened,
+    {
+      receiptId: 'receipt:edit',
+      admittedTickId: 'tick:edit',
+      nextHeadId: HEAD_EDITED,
+    },
+    durability.workspaceBufferCausalLineChangesFromReading({
+      worldlineId: 'worldline:notes',
+      basisHeadId: 'head:wrong',
+      nextHeadId: HEAD_EDITED,
+      insertedLineCount: 1,
+      deletedLineCount: 0,
+      rewriteIds: ['rewrite:wrong'],
+      diffIds: ['diff:wrong'],
+      observerVersion: 'jedit-causal-line-diff-v1',
+    }),
+  );
+
+  assert.deepEqual(admitted.lineChanges, {
+    kind: durability.WorkspaceBufferCausalLineChangeKinds.Unavailable,
+    reason: durability.WorkspaceBufferCausalLineChangeUnavailableReasons.EvidenceMismatch,
+    basisHeadId: HEAD_OPENED,
+    nextHeadId: HEAD_EDITED,
+  });
 });
 
 function basisCache(basisHeadId) {

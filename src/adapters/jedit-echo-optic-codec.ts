@@ -6,17 +6,20 @@ import type {
   ReplaceRangeAsTickExecution,
 } from '../app/jedit-contract-runtime.js';
 import type { TextWindowReadingEnvelope, WorldlineSnapshotReadingEnvelope } from '../app/jedit-observer-runtime.js';
+import type { CausalLineDiffReadingEnvelope } from '../app/jedit-causal-line-diff-observer.js';
 import type { MutationOperationName, QueryOperationName } from '../generated/jedit/rope.types.generated.js';
 import {
   mutationCreateBufferWorldlineOperation,
   mutationCreateCheckpointOperation,
   mutationReplaceRangeAsTickOperation,
+  queryCausalLineDiffOperation,
   queryTextWindowOperation,
   queryWorldlineSnapshotOperation,
   type MutationCreateBufferWorldlineRequest,
   type MutationCreateCheckpointRequest,
   type MutationReplaceRangeAsTickRequest,
   type QueryTextWindowRequest,
+  type QueryCausalLineDiffRequest,
   type QueryWorldlineSnapshotRequest,
 } from '../generated/jedit/rope.wesley.generated.js';
 import {
@@ -30,12 +33,14 @@ import { HotTextAuthorityBasisSchema } from './hot-text-authority-basis-codec.js
 import { HotTextWindowProjectionSchema } from './hot-text-window-codec.js';
 import { JeditRetainedEvidenceInventorySchema } from './jedit-retained-evidence-codec.js';
 import { JeditTextWindowMaterializationProvenanceSchema } from './jedit-text-window-materialization-codec.js';
+import { encodeJsonObject, parseJsonBytes } from './json-wire-codec.js';
 // EINT envelope codec re-export (kept here so adapters import wire and
 // envelope codecs from one module — see quality-gate import cap).
 export {
   decodeJeditMutationIntentEnvelope, encodeJeditMutationIntentEnvelope, UnknownMutationOpIdError,
   type DecodedJeditMutationIntent, type JeditMutationEnvelopeInput,
 } from './jedit-mutation-envelope-codec.js';
+export { InvalidJsonPayloadError } from './json-wire-codec.js';
 
 export const JEDIT_INTENT_REQUEST_KIND = 'jedit.intent-request';
 export const JEDIT_OBSERVE_REQUEST_KIND = 'jedit.observe-request';
@@ -48,20 +53,9 @@ export const REPLACE_RANGE_AS_TICK_OPERATION = mutationReplaceRangeAsTickOperati
 export const CREATE_CHECKPOINT_OPERATION = mutationCreateCheckpointOperation.fieldName;
 export const WORLDLINE_SNAPSHOT_OPERATION = queryWorldlineSnapshotOperation.fieldName;
 export const TEXT_WINDOW_OPERATION = queryTextWindowOperation.fieldName;
+export const CAUSAL_LINE_DIFF_OPERATION = queryCausalLineDiffOperation.fieldName;
 
 const SCHEDULER_STATE_IDLE = 'IDLE';
-const INVALID_JSON_PAYLOAD_MESSAGE = 'invalid json payload';
-
-const TEXT_ENCODER = new TextEncoder();
-const TEXT_DECODER = new TextDecoder();
-
-export class InvalidJsonPayloadError extends Error {
-  public constructor() {
-    super(INVALID_JSON_PAYLOAD_MESSAGE);
-    this.name = 'InvalidJsonPayloadError';
-    Object.freeze(this);
-  }
-}
 
 const MutationOperationNameSchema = z.union([
   z.literal(CREATE_BUFFER_WORLDLINE_OPERATION),
@@ -72,6 +66,7 @@ const MutationOperationNameSchema = z.union([
 const QueryOperationNameSchema = z.union([
   z.literal(WORLDLINE_SNAPSHOT_OPERATION),
   z.literal(TEXT_WINDOW_OPERATION),
+  z.literal(CAUSAL_LINE_DIFF_OPERATION),
 ]);
 
 const BufferRootSchema = z.object({ id: z.number().int(), text: z.string() });
@@ -161,6 +156,14 @@ const TextWindowReadingEnvelopeSchema = z.object({
   retainedEvidence: JeditRetainedEvidenceInventorySchema,
 });
 
+const CausalLineDiffReadingEnvelopeSchema = z.object({
+  planId: z.string(),
+  observerName: z.literal(CAUSAL_LINE_DIFF_OPERATION),
+  operationName: z.literal(CAUSAL_LINE_DIFF_OPERATION),
+  frontierRef: z.string(),
+  reading: QueryOperationSchemas.causalLineDiff.result,
+});
+
 const WorldlineSnapshotObserveRequestSchema = z.object({
   kind: z.literal(JEDIT_OBSERVE_REQUEST_KIND),
   operationName: z.literal(WORLDLINE_SNAPSHOT_OPERATION),
@@ -175,6 +178,14 @@ const TextWindowObserveRequestSchema = z.object({
   session: JeditWorldlineSessionSchema,
   frontierRef: z.string(),
   input: QueryOperationSchemas.textWindow.input,
+});
+
+const CausalLineDiffObserveRequestSchema = z.object({
+  kind: z.literal(JEDIT_OBSERVE_REQUEST_KIND),
+  operationName: z.literal(CAUSAL_LINE_DIFF_OPERATION),
+  session: JeditWorldlineSessionSchema,
+  frontierRef: z.string(),
+  input: QueryOperationSchemas.causalLineDiff.input,
 });
 
 const JeditTransportObstructionSchema = z.object({
@@ -252,6 +263,12 @@ const TextWindowObserveOkResponseSchema = z.object({
   envelope: TextWindowReadingEnvelopeSchema,
 });
 
+const CausalLineDiffObserveOkResponseSchema = z.object({
+  status: z.literal(JEDIT_TRANSPORT_STATUS_OK),
+  operationName: z.literal(CAUSAL_LINE_DIFF_OPERATION),
+  envelope: CausalLineDiffReadingEnvelopeSchema,
+});
+
 const ObserveObstructedResponseSchema = z.object({
   status: z.literal(JEDIT_TRANSPORT_STATUS_OBSTRUCTED),
   operationName: QueryOperationNameSchema,
@@ -267,6 +284,7 @@ const SchedulerStatusSchema = z.object({
 const JeditObserveRequestSchema = z.union([
   WorldlineSnapshotObserveRequestSchema,
   TextWindowObserveRequestSchema,
+  CausalLineDiffObserveRequestSchema,
 ]);
 
 const JeditIntentResponseSchema = z.union([
@@ -279,6 +297,7 @@ const JeditIntentResponseSchema = z.union([
 const JeditObserveResponseSchema = z.union([
   WorldlineSnapshotObserveOkResponseSchema,
   TextWindowObserveOkResponseSchema,
+  CausalLineDiffObserveOkResponseSchema,
   ObserveObstructedResponseSchema,
 ]);
 
@@ -321,6 +340,14 @@ export interface TextWindowObserveRequest {
   readonly session: JeditWorldlineSession;
   readonly frontierRef: string;
   readonly input: InputOf<QueryTextWindowRequest>;
+}
+
+export interface CausalLineDiffObserveRequest {
+  readonly kind: typeof JEDIT_OBSERVE_REQUEST_KIND;
+  readonly operationName: typeof CAUSAL_LINE_DIFF_OPERATION;
+  readonly session: JeditWorldlineSession;
+  readonly frontierRef: string;
+  readonly input: InputOf<QueryCausalLineDiffRequest>;
 }
 
 export interface JeditTransportObstruction {
@@ -396,6 +423,12 @@ export interface TextWindowObserveOkResponse {
   readonly envelope: TextWindowReadingEnvelope;
 }
 
+export interface CausalLineDiffObserveOkResponse {
+  readonly status: typeof JEDIT_TRANSPORT_STATUS_OK;
+  readonly operationName: typeof CAUSAL_LINE_DIFF_OPERATION;
+  readonly envelope: CausalLineDiffReadingEnvelope;
+}
+
 export interface JeditObserveObstructedResponse {
   readonly status: typeof JEDIT_TRANSPORT_STATUS_OBSTRUCTED;
   readonly operationName: JeditQueryOperationName;
@@ -412,7 +445,10 @@ export type JeditIntentRequest =
   | CreateBufferWorldlineIntentRequest
   | ReplaceRangeAsTickIntentRequest
   | CreateCheckpointIntentRequest;
-export type JeditObserveRequest = WorldlineSnapshotObserveRequest | TextWindowObserveRequest;
+export type JeditObserveRequest =
+  | WorldlineSnapshotObserveRequest
+  | TextWindowObserveRequest
+  | CausalLineDiffObserveRequest;
 export type JeditIntentResponse =
   | CreateBufferWorldlineIntentOkResponse
   | ReplaceRangeAsTickIntentOkResponse
@@ -421,15 +457,11 @@ export type JeditIntentResponse =
 export type JeditObserveResponse =
   | WorldlineSnapshotObserveOkResponse
   | TextWindowObserveOkResponse
+  | CausalLineDiffObserveOkResponse
   | JeditObserveObstructedResponse;
 
-type JsonPrimitive = string | number | boolean | null;
-type JsonObject = { readonly [key: string]: JsonValueCandidate };
-type JsonValue = JsonPrimitive | JsonObject | readonly JsonValue[];
-type JsonValueCandidate = JsonPrimitive | JsonObject | readonly JsonValueCandidate[];
-
 export function encodeJeditObserveRequest(request: JeditObserveRequest): Uint8Array {
-  return encodeJson(JeditObserveRequestSchema.parse(request));
+  return encodeJsonObject(JeditObserveRequestSchema.parse(request));
 }
 
 export function decodeJeditObserveRequest(bytes: Uint8Array): JeditObserveRequest {
@@ -437,7 +469,7 @@ export function decodeJeditObserveRequest(bytes: Uint8Array): JeditObserveReques
 }
 
 export function encodeJeditIntentResponse(response: JeditIntentResponse): Uint8Array {
-  return encodeJson(JeditIntentResponseSchema.parse(response));
+  return encodeJsonObject(JeditIntentResponseSchema.parse(response));
 }
 
 export function decodeJeditIntentResponse(bytes: Uint8Array): JeditIntentResponse {
@@ -445,7 +477,7 @@ export function decodeJeditIntentResponse(bytes: Uint8Array): JeditIntentRespons
 }
 
 export function encodeJeditObserveResponse(response: JeditObserveResponse): Uint8Array {
-  return encodeJson(JeditObserveResponseSchema.parse(response));
+  return encodeJsonObject(JeditObserveResponseSchema.parse(response));
 }
 
 export function decodeJeditObserveResponse(bytes: Uint8Array): JeditObserveResponse {
@@ -453,47 +485,5 @@ export function decodeJeditObserveResponse(bytes: Uint8Array): JeditObserveRespo
 }
 
 export function encodeJeditSchedulerStatus(status: JeditSchedulerStatus): Uint8Array {
-  return encodeJson(SchedulerStatusSchema.parse(status));
-}
-
-function encodeJson(value: object): Uint8Array {
-  return TEXT_ENCODER.encode(JSON.stringify(value));
-}
-
-function parseJsonBytes(bytes: Uint8Array): JsonValue {
-  const value: JsonValueCandidate = JSON.parse(TEXT_DECODER.decode(bytes));
-  if (!isJsonValue(value)) {
-    throw new InvalidJsonPayloadError();
-  }
-  return value;
-}
-
-function isJsonValue(value: JsonValueCandidate): value is JsonValue {
-  if (value === null) {
-    return true;
-  }
-  if (isJsonPrimitive(value)) {
-    return true;
-  }
-  if (Array.isArray(value)) {
-    return value.every(isJsonValue);
-  }
-  return isJsonRecord(value) && objectValuesAreJson(value);
-}
-
-function isJsonPrimitive(value: JsonValueCandidate): value is JsonPrimitive {
-  return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
-}
-
-function isJsonRecord(value: JsonValueCandidate): value is JsonObject {
-  return !Array.isArray(value) && value !== null && typeof value === 'object';
-}
-
-function objectValuesAreJson(value: JsonObject): boolean {
-  for (const member of Object.values(value)) {
-    if (!isJsonValue(member)) {
-      return false;
-    }
-  }
-  return true;
+  return encodeJsonObject(SchedulerStatusSchema.parse(status));
 }

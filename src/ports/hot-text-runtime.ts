@@ -52,6 +52,26 @@ export interface HotTextWindowRequest {
   readonly byteRange: HotTextWindowByteRange;
 }
 
+export interface HotTextCausalLineDiffRequest {
+  readonly worldlineId: string;
+  readonly basisHeadId: string;
+  readonly nextHeadId: string;
+  readonly maxByteCount: number;
+  readonly maxLineCount: number;
+  readonly maxRewriteCount: number;
+}
+
+export interface HotTextCausalLineDiffReading {
+  readonly worldlineId: string;
+  readonly basisHeadId: string;
+  readonly nextHeadId: string;
+  readonly insertedLineCount: number;
+  readonly deletedLineCount: number;
+  readonly rewriteIds: readonly string[];
+  readonly diffIds: readonly string[];
+  readonly observerVersion: string;
+}
+
 export interface HotTextBufferState {
   readonly path: string;
   readonly authorityBasis?: HotTextAuthorityBasis;
@@ -92,6 +112,10 @@ export interface HotTextRuntimePort {
   createBuffer(path: string, initialText: string): HotTextBufferState;
   materialize(state: HotTextBufferState): string;
   textWindow(state: HotTextBufferState, request: HotTextWindowRequest): HotTextWindowProjection;
+  causalLineDiff?(
+    state: HotTextBufferState,
+    request: HotTextCausalLineDiffRequest,
+  ): HotTextCausalLineDiffReading;
   admitReplaceRangeTick(state: HotTextBufferState, range: TextRange, text: string): AdmitReplaceRangeTickResult;
   openEditGroup(state: HotTextBufferState): HotTextBufferState;
   includeTickInOpenGroup(state: HotTextBufferState, tickId: number): HotTextBufferState;

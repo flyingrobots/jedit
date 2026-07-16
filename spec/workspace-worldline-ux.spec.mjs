@@ -164,7 +164,7 @@ test("workspace footer separates unavailable causal evidence from filesystem mat
 
   assert.equal(footerContext.startsWith("/repo/notes.md"), true);
   assert.match(footerContext, /\[intent:idle \| causal:unavailable \| file:unknown \| git:unknown \| remote:unknown \| strand:draft \| fs:unmaterialized \| target:main/);
-  assert.equal(footerContext.endsWith("+0/-0]"), true);
+  assert.equal(footerContext.endsWith("+?/-?]"), true);
 });
 
 test("worldline drawer shows unconfirmed optimistic braid while Echo edit is in flight", async () => {

@@ -27,6 +27,7 @@ import {
   type JeditWhyRangeReport,
 } from '../../ports/jedit-why-range.js';
 import { RuntimeIssueLevels, RuntimeIssueSources } from './runtime-issue.js';
+import { CausalLineDiffRuntimeError } from '../jedit-causal-line-diff-observer.js';
 import {
   ProductionTextSessionOutcomeKinds,
   ProductionTextObstructionCodes,
@@ -65,6 +66,8 @@ const CHECKPOINT_BUFFER_VERSION = 2;
 const RUNTIME_ISSUE_NAME = 'EditorTrustPreflightProbe';
 const MULTI_RANGE_OBSTRUCTION_MESSAGE =
   'preflight does not exercise grouped edits';
+const CAUSAL_LINE_DIFF_UNAVAILABLE_MESSAGE =
+  'preflight fixture does not retain causal line-diff evidence';
 
 export function createPreflightProductionTextSession(
   options: PreflightRuntimeHarnessOptions,
@@ -82,6 +85,13 @@ export function createPreflightProductionTextSession(
     multiRangeEdit: multiRangeProbe(calls),
     checkpointBuffer: checkpointProbe(calls),
     observeWindow: observeWindowProbe(calls, readings),
+    observeCausalLineDiff: async () => ({
+      kind: ProductionTextSessionOutcomeKinds.Obstructed,
+      obstruction: {
+        code: ProductionTextObstructionCodes.Query,
+        issue: productionTextObstruction(CAUSAL_LINE_DIFF_UNAVAILABLE_MESSAGE).issue,
+      },
+    }),
     exportSnapshot: exportSnapshotProbe(options, calls),
     explainRange: explainRangeProbe(),
   };
@@ -224,6 +234,9 @@ function textBufferOptic(
     createCheckpoint: async () => checkpointResult(buffer.bufferId),
     textWindow: async (request) =>
       observedReading(readings, request.aperture.cursorLine + PREFLIGHT_ONE, request),
+    causalLineDiff: async () => {
+      throw new CausalLineDiffRuntimeError(CAUSAL_LINE_DIFF_UNAVAILABLE_MESSAGE);
+    },
     explainRange: async (range: JeditWhyByteRange) => preflightWhyRangeReport(range),
   };
 }
