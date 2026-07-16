@@ -163,6 +163,14 @@ export const CausalLineMarkerSchema = z.object({
 });
 export type CausalLineMarker = z.infer<typeof CausalLineMarkerSchema>;
 
+export const CausalLineDeletionMarkerSchema = z.object({
+  boundaryLineNumber: z.number().int(),
+  deletedLineCount: z.number().int(),
+  rewriteIds: z.array(z.string()),
+  diffIds: z.array(z.string())
+});
+export type CausalLineDeletionMarker = z.infer<typeof CausalLineDeletionMarkerSchema>;
+
 export const CausalLineDiffReadingSchema = z.object({
   worldlineId: z.string(),
   basisHeadId: z.string(),
@@ -172,6 +180,7 @@ export const CausalLineDiffReadingSchema = z.object({
   rewriteIds: z.array(z.string()),
   diffIds: z.array(z.string()),
   markers: z.array(z.lazy(() => CausalLineMarkerSchema)),
+  deletions: z.array(z.lazy(() => CausalLineDeletionMarkerSchema)),
   observerVersion: z.string()
 });
 export type CausalLineDiffReading = z.infer<typeof CausalLineDiffReadingSchema>;

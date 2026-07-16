@@ -227,6 +227,7 @@ export function basisPinnedTestTextSession(delegate) {
           rewriteIds: [],
           diffIds: [],
           markers: [],
+          deletions: [],
           observerVersion: 'test-fixture',
         },
       };

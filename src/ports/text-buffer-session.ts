@@ -105,6 +105,13 @@ export interface CausalLineMarkerReading {
   readonly diffIds: readonly string[];
 }
 
+export interface CausalLineDeletionMarkerReading {
+  readonly boundaryLineNumber: number;
+  readonly deletedLineCount: number;
+  readonly rewriteIds: readonly string[];
+  readonly diffIds: readonly string[];
+}
+
 export interface CausalLineDiffReading {
   readonly worldlineId: string;
   readonly basisHeadId: string;
@@ -114,6 +121,7 @@ export interface CausalLineDiffReading {
   readonly rewriteIds: readonly string[];
   readonly diffIds: readonly string[];
   readonly markers: readonly CausalLineMarkerReading[];
+  readonly deletions: readonly CausalLineDeletionMarkerReading[];
   readonly observerVersion: string;
 }
 

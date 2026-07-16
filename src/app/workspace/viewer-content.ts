@@ -21,6 +21,7 @@ import { isWorkspaceMarkdownFile } from "./editor-session.js";
 import { ViewModes } from "./view-mode.js";
 import { VIEWER_LEFT_PAD, VIEWER_TOP_PAD } from "./viewport.js";
 import {
+  causalSourceGutterDeletionMarkers,
   causalSourceGutterLineMarkers,
   displayEditorForWorkspaceModel,
   sourceHighlightForWorkspaceProjection,
@@ -168,6 +169,7 @@ function renderViewerWithState(
       theme: model.jeditTheme,
       lineNumberMode: model.lineNumberMode,
       lineMarkers: causalSourceGutterLineMarkers(model),
+      deletionMarkers: causalSourceGutterDeletionMarkers(model),
       reading: sourceWindowForWorkspaceModel(model),
     },
   );

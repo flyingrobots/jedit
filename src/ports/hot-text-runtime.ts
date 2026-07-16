@@ -69,6 +69,13 @@ export interface HotTextCausalLineMarker {
   readonly diffIds: readonly string[];
 }
 
+export interface HotTextCausalLineDeletionMarker {
+  readonly boundaryLineNumber: number;
+  readonly deletedLineCount: number;
+  readonly rewriteIds: readonly string[];
+  readonly diffIds: readonly string[];
+}
+
 export interface HotTextCausalLineDiffReading {
   readonly worldlineId: string;
   readonly basisHeadId: string;
@@ -78,6 +85,7 @@ export interface HotTextCausalLineDiffReading {
   readonly rewriteIds: readonly string[];
   readonly diffIds: readonly string[];
   readonly markers: readonly HotTextCausalLineMarker[];
+  readonly deletions: readonly HotTextCausalLineDeletionMarker[];
   readonly observerVersion: string;
 }
 

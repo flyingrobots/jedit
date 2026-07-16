@@ -45,6 +45,7 @@ export interface WorkspaceBufferCausalLineChangesAvailable {
   readonly rewriteIds: readonly string[];
   readonly diffIds: readonly string[];
   readonly markers: readonly CausalLineMarkerReading[];
+  readonly deletions: CausalLineDiffReading['deletions'];
   readonly observerVersion: string;
 }
 
@@ -82,6 +83,11 @@ export function workspaceBufferCausalLineChangesFromReading(
       ...marker,
       rewriteIds: [...marker.rewriteIds],
       diffIds: [...marker.diffIds],
+    })),
+    deletions: reading.deletions.map(deletion => ({
+      ...deletion,
+      rewriteIds: [...deletion.rewriteIds],
+      diffIds: [...deletion.diffIds],
     })),
     observerVersion: reading.observerVersion,
   };
@@ -125,6 +131,7 @@ export function identityWorkspaceBufferCausalLineChanges(
     rewriteIds: [],
     diffIds: [],
     markers: [],
+    deletions: [],
     observerVersion: LINE_CHANGES_IDENTITY_OBSERVER_VERSION,
   };
 }
@@ -157,6 +164,11 @@ export function workspaceBufferCausalLineChangesForTransition(
       ...marker,
       rewriteIds: [...marker.rewriteIds],
       diffIds: [...marker.diffIds],
+    })),
+    deletions: lineChanges.deletions.map(deletion => ({
+      ...deletion,
+      rewriteIds: [...deletion.rewriteIds],
+      diffIds: [...deletion.diffIds],
     })),
   };
 }

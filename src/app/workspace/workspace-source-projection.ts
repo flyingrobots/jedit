@@ -1,6 +1,12 @@
-import type { SourceGutterLineMarker } from '../../ui/source-viewer.js';
+import type {
+  SourceGutterDeletionMarker,
+  SourceGutterLineMarker,
+} from '../../ui/source-viewer.js';
 import type { WorkspaceModel } from './model.js';
-import { WorkspaceBufferCausalLineChangeKinds } from './workspace-causal-line-changes.js';
+import {
+  WorkspaceBufferCausalLineChangeKinds,
+  type WorkspaceBufferCausalLineChangesAvailable,
+} from './workspace-causal-line-changes.js';
 import {
   canReadingReplaceWholeEditor,
   editorFromFullWorkspaceTextCache,
@@ -57,20 +63,35 @@ export function sourceHighlightForWorkspaceProjection(
 export function causalSourceGutterLineMarkers(
   model: WorkspaceModel,
 ): readonly SourceGutterLineMarker[] | undefined {
+  const lineChanges = causalLineChangesForProjection(model);
+  return lineChanges?.markers.map(marker => ({
+    lineNumber: marker.lineNumber,
+    kind: marker.kind === INSERTED_CAUSAL_LINE_MARKER ? 'inserted' : 'modified',
+  }));
+}
+
+export function causalSourceGutterDeletionMarkers(
+  model: WorkspaceModel,
+): readonly SourceGutterDeletionMarker[] | undefined {
+  return causalLineChangesForProjection(model)?.deletions.map(deletion => ({
+    boundaryLineNumber: deletion.boundaryLineNumber,
+    deletedLineCount: deletion.deletedLineCount,
+  }));
+}
+
+function causalLineChangesForProjection(
+  model: WorkspaceModel,
+): WorkspaceBufferCausalLineChangesAvailable | undefined {
   if (!isWorkspaceTextAuthorityOpened(model.textAuthority)
       || hasVisibleOptimisticText(model.textAuthority)) {
     return undefined;
   }
   const lineChanges = model.textAuthority.durability.lineChanges;
   const projection = model.textAuthority.cache?.projection;
-  if (lineChanges.kind !== WorkspaceBufferCausalLineChangeKinds.Available
-      || projection?.basisHeadId !== lineChanges.nextHeadId) {
-    return undefined;
-  }
-  return lineChanges.markers.map(marker => ({
-    lineNumber: marker.lineNumber,
-    kind: marker.kind === INSERTED_CAUSAL_LINE_MARKER ? 'inserted' : 'modified',
-  }));
+  return lineChanges.kind === WorkspaceBufferCausalLineChangeKinds.Available
+      && projection?.basisHeadId === lineChanges.nextHeadId
+    ? lineChanges
+    : undefined;
 }
 
 function sameProjectionBasis(

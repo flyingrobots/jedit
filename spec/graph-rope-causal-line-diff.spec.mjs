@@ -7,7 +7,7 @@ import {
   loadModules,
 } from './support/graph-rope-runtime-test-kit.mjs';
 
-const OBSERVER_VERSION = 'jedit-causal-line-diff-v2';
+const OBSERVER_VERSION = 'jedit-causal-line-diff-v3';
 const OBSTRUCTION_BASIS_NOT_ANCESTOR = 'basis-not-ancestor';
 const OBSTRUCTION_LINE_DIFF_LIMIT_EXCEEDED = 'line-diff-limit-exceeded';
 
@@ -38,6 +38,7 @@ test('causal line diff reports zero changes for the same named head', async () =
     rewriteIds: [],
     diffIds: [],
     markers: [],
+    deletions: [],
     observerVersion: OBSERVER_VERSION,
   });
 });
@@ -294,6 +295,263 @@ test('causal line diff refuses marker materialization beyond its deterministic b
     maxLineCount: 100,
     maxRewriteCount: 100,
     maxMarkerCount: 1,
+  }), {
+    ok: false,
+    code: runtime.GRAPH_ROPE_RUNTIME_OBSTRUCTION_LINE_DIFF_LIMIT_EXCEEDED,
+  });
+});
+
+test('causal line diff shares its output bound across line and deletion markers', async () => {
+  const { runtime, contract } = await loadModules();
+  const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
+  const created = assertOk(graph.createBufferWorldline({
+    worldlineId: 'worldline:combined-marker-limit',
+    initialText: 'alpha\nbeta\ngamma\n',
+  }));
+  const deleted = assertOk(graph.replaceRangeAsTick({
+    basisHeadId: created.head.headId,
+    range: byteRange(contract, 6, 11),
+    replacementText: '',
+  }));
+  const modified = assertOk(graph.replaceRangeAsTick({
+    basisHeadId: deleted.nextHead.headId,
+    range: byteRange(contract, 6, 7),
+    replacementText: 'G',
+  }));
+
+  assert.deepEqual(graph.causalLineDiff({
+    worldlineId: created.worldline.worldlineId,
+    basisHeadId: created.head.headId,
+    nextHeadId: modified.nextHead.headId,
+    maxByteCount: 10_000,
+    maxLineCount: 100,
+    maxRewriteCount: 100,
+    maxMarkerCount: 1,
+  }), {
+    ok: false,
+    code: runtime.GRAPH_ROPE_RUNTIME_OBSTRUCTION_LINE_DIFF_LIMIT_EXCEEDED,
+  });
+});
+
+for (const scenario of [{
+  name: 'at file start',
+  startByte: 0,
+  endByte: 11,
+  boundaryLineNumber: 0,
+}, {
+  name: 'between surviving lines',
+  startByte: 6,
+  endByte: 17,
+  boundaryLineNumber: 1,
+}, {
+  name: 'at file end',
+  startByte: 11,
+  endByte: 23,
+  boundaryLineNumber: 2,
+}]) {
+  test(`causal line diff projects multi-line deletion ${scenario.name}`, async () => {
+    const { runtime, contract } = await loadModules();
+    const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
+    const created = assertOk(graph.createBufferWorldline({
+      worldlineId: `worldline:deletion-${scenario.boundaryLineNumber}`,
+      initialText: 'alpha\nbeta\ngamma\ndelta\n',
+    }));
+    const deleted = assertOk(graph.replaceRangeAsTick({
+      basisHeadId: created.head.headId,
+      range: byteRange(contract, scenario.startByte, scenario.endByte),
+      replacementText: '',
+    }));
+
+    const reading = assertOk(graph.causalLineDiff({
+      worldlineId: created.worldline.worldlineId,
+      basisHeadId: created.head.headId,
+      nextHeadId: deleted.nextHead.headId,
+      maxByteCount: 10_000,
+      maxLineCount: 100,
+      maxRewriteCount: 100,
+      maxMarkerCount: 100,
+    }));
+
+    assert.deepEqual(reading.deletions, [{
+      boundaryLineNumber: scenario.boundaryLineNumber,
+      deletedLineCount: 2,
+      rewriteIds: [deleted.rewrite.rewriteId],
+      diffIds: [deleted.diff.diffId],
+    }]);
+  });
+}
+
+test('causal line diff reports deletion of an unterminated final line', async () => {
+  const { runtime, contract } = await loadModules();
+  const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
+  const created = assertOk(graph.createBufferWorldline({
+    worldlineId: 'worldline:unterminated-final-line',
+    initialText: 'alpha\nomega',
+  }));
+  const deleted = assertOk(graph.replaceRangeAsTick({
+    basisHeadId: created.head.headId,
+    range: byteRange(contract, 6, 11),
+    replacementText: '',
+  }));
+
+  const reading = assertOk(graph.causalLineDiff({
+    worldlineId: created.worldline.worldlineId,
+    basisHeadId: created.head.headId,
+    nextHeadId: deleted.nextHead.headId,
+    maxByteCount: 10_000,
+    maxLineCount: 100,
+    maxRewriteCount: 100,
+    maxMarkerCount: 100,
+  }));
+
+  assert.deepEqual(reading.deletions, [{
+    boundaryLineNumber: 1,
+    deletedLineCount: 1,
+    rewriteIds: [deleted.rewrite.rewriteId],
+    diffIds: [deleted.diff.diffId],
+  }]);
+});
+
+test('causal line diff does not report a partial unterminated final line as deleted', async () => {
+  const { runtime, contract } = await loadModules();
+  const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
+  const created = assertOk(graph.createBufferWorldline({
+    worldlineId: 'worldline:partial-unterminated-final-line',
+    initialText: 'alpha\n😀omega',
+  }));
+  const deleted = assertOk(graph.replaceRangeAsTick({
+    basisHeadId: created.head.headId,
+    range: byteRange(contract, 10, 15),
+    replacementText: '',
+  }));
+
+  const reading = assertOk(graph.causalLineDiff({
+    worldlineId: created.worldline.worldlineId,
+    basisHeadId: created.head.headId,
+    nextHeadId: deleted.nextHead.headId,
+    maxByteCount: 10_000,
+    maxLineCount: 100,
+    maxRewriteCount: 100,
+    maxMarkerCount: 100,
+  }));
+
+  assert.deepEqual(reading.deletions, []);
+});
+
+for (const scenario of [{ name: 'carriage return', startByte: 5, endByte: 6 }, {
+  name: 'line feed',
+  startByte: 6,
+  endByte: 7,
+}]) {
+  test(`causal line diff does not report a deleted line for a retained CRLF half: ${scenario.name}`, async () => {
+    const { runtime, contract } = await loadModules();
+    const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
+    const created = assertOk(graph.createBufferWorldline({
+      worldlineId: `worldline:split-crlf-${scenario.startByte}`,
+      initialText: 'alpha\r\nbeta',
+    }));
+    const deleted = assertOk(graph.replaceRangeAsTick({
+      basisHeadId: created.head.headId,
+      range: byteRange(contract, scenario.startByte, scenario.endByte),
+      replacementText: '',
+    }));
+
+    const reading = assertOk(graph.causalLineDiff({
+      worldlineId: created.worldline.worldlineId,
+      basisHeadId: created.head.headId,
+      nextHeadId: deleted.nextHead.headId,
+      maxByteCount: 10_000,
+      maxLineCount: 100,
+      maxRewriteCount: 100,
+      maxMarkerCount: 100,
+    }));
+
+    assert.deepEqual(reading.deletions, []);
+  });
+}
+
+test('causal line diff projects and coalesces deletion boundaries through later rewrites', async () => {
+  const { runtime, contract } = await loadModules();
+  const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
+  const created = assertOk(graph.createBufferWorldline({
+    worldlineId: 'worldline:projected-deletions',
+    initialText: 'alpha\nbeta\ngamma\ndelta\n',
+  }));
+  const firstDeletion = assertOk(graph.replaceRangeAsTick({
+    basisHeadId: created.head.headId,
+    range: byteRange(contract, 6, 11),
+    replacementText: '',
+  }));
+  const insertedPrefix = assertOk(graph.replaceRangeAsTick({
+    basisHeadId: firstDeletion.nextHead.headId,
+    range: byteRange(contract, 0, 0),
+    replacementText: 'zero\n',
+  }));
+  const secondDeletion = assertOk(graph.replaceRangeAsTick({
+    basisHeadId: insertedPrefix.nextHead.headId,
+    range: byteRange(contract, 11, 17),
+    replacementText: '',
+  }));
+
+  const reading = assertOk(graph.causalLineDiff({
+    worldlineId: created.worldline.worldlineId,
+    basisHeadId: created.head.headId,
+    nextHeadId: secondDeletion.nextHead.headId,
+    maxByteCount: 10_000,
+    maxLineCount: 100,
+    maxRewriteCount: 100,
+    maxMarkerCount: 100,
+  }));
+
+  assert.deepEqual(reading.deletions, [{
+    boundaryLineNumber: 2,
+    deletedLineCount: 2,
+    rewriteIds: [firstDeletion.rewrite.rewriteId, secondDeletion.rewrite.rewriteId],
+    diffIds: [firstDeletion.diff.diffId, secondDeletion.diff.diffId],
+  }]);
+});
+
+test('causal line diff bounds historical bytes read for deletion evidence', async () => {
+  const { runtime, contract } = await loadModules();
+  const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
+  const created = assertOk(graph.createBufferWorldline({
+    worldlineId: 'worldline:deletion-byte-limit',
+    initialText: 'a\nb\n',
+  }));
+  const firstDeletion = assertOk(graph.replaceRangeAsTick({
+    basisHeadId: created.head.headId,
+    range: byteRange(contract, 0, 2),
+    replacementText: '',
+  }));
+  const firstInsertion = assertOk(graph.replaceRangeAsTick({
+    basisHeadId: firstDeletion.nextHead.headId,
+    range: byteRange(contract, 0, 0),
+    replacementText: 'c\n',
+  }));
+  const secondDeletion = assertOk(graph.replaceRangeAsTick({
+    basisHeadId: firstInsertion.nextHead.headId,
+    range: byteRange(contract, 0, 2),
+    replacementText: '',
+  }));
+  const secondInsertion = assertOk(graph.replaceRangeAsTick({
+    basisHeadId: secondDeletion.nextHead.headId,
+    range: byteRange(contract, 0, 0),
+    replacementText: 'd\n',
+  }));
+  const thirdDeletion = assertOk(graph.replaceRangeAsTick({
+    basisHeadId: secondInsertion.nextHead.headId,
+    range: byteRange(contract, 0, 2),
+    replacementText: '',
+  }));
+
+  assert.deepEqual(graph.causalLineDiff({
+    worldlineId: created.worldline.worldlineId,
+    basisHeadId: created.head.headId,
+    nextHeadId: thirdDeletion.nextHead.headId,
+    maxByteCount: 4,
+    maxLineCount: 100,
+    maxRewriteCount: 100,
+    maxMarkerCount: 100,
   }), {
     ok: false,
     code: runtime.GRAPH_ROPE_RUNTIME_OBSTRUCTION_LINE_DIFF_LIMIT_EXCEEDED,

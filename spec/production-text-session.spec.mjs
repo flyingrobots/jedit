@@ -421,6 +421,7 @@ function causalLineDiffReading(request) {
     rewriteIds: ['rewrite:1'],
     diffIds: ['diff:1'],
     markers: [],
+    deletions: [],
     observerVersion: 'test-fixture',
   };
 }

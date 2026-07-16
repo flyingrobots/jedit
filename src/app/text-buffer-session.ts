@@ -155,6 +155,11 @@ async function readTextBufferCausalLineDiff(
       rewriteIds: [...marker.rewriteIds],
       diffIds: [...marker.diffIds],
     })),
+    deletions: envelope.reading.deletions.map(deletion => ({
+      ...deletion,
+      rewriteIds: [...deletion.rewriteIds],
+      diffIds: [...deletion.diffIds],
+    })),
   };
 }
 

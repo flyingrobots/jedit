@@ -250,6 +250,7 @@ test('replace command submits through production text session and refreshes read
           rewriteIds: ['rewrite:replace'],
           diffIds: ['diff:replace'],
           markers: [],
+          deletions: [],
           observerVersion: 'test-fixture',
         },
       };
@@ -300,6 +301,7 @@ test('replace command submits through production text session and refreshes read
     rewriteIds: ['rewrite:replace'],
     diffIds: ['diff:replace'],
     markers: [],
+    deletions: [],
     observerVersion: 'test-fixture',
   });
 });

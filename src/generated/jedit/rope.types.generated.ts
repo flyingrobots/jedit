@@ -119,6 +119,12 @@ export interface CausalLineMarker {
   rewriteIds: Array<string>;
   diffIds: Array<string>;
 }
+export interface CausalLineDeletionMarker {
+  boundaryLineNumber: number;
+  deletedLineCount: number;
+  rewriteIds: Array<string>;
+  diffIds: Array<string>;
+}
 export interface CausalLineDiffReading {
   worldlineId: string;
   basisHeadId: string;
@@ -128,6 +134,7 @@ export interface CausalLineDiffReading {
   rewriteIds: Array<string>;
   diffIds: Array<string>;
   markers: Array<CausalLineMarker>;
+  deletions: Array<CausalLineDeletionMarker>;
   observerVersion: string;
 }
 export interface CreateBufferWorldlineResult {

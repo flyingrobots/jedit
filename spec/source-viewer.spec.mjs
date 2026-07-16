@@ -35,10 +35,10 @@ test("source viewer paints a stable line-number gutter before source text", asyn
     },
   );
 
-  assert.equal(sourceViewer.sourceViewerGutterWidth(12), 5);
-  assert.equal(rowText(surface, 0).startsWith(" 9 │ line-9"), true);
-  assert.equal(rowText(surface, 1).startsWith("10 │ line-10"), true);
-  assert.equal(rowText(surface, 2).startsWith("11 │ line-11"), true);
+  assert.equal(sourceViewer.sourceViewerGutterWidth(12), 6);
+  assert.equal(rowText(surface, 0).startsWith(" 9  │ line-9"), true);
+  assert.equal(rowText(surface, 1).startsWith("10  │ line-10"), true);
+  assert.equal(rowText(surface, 2).startsWith("11  │ line-11"), true);
 });
 
 test("source viewer can paint cursor-relative line numbers", async () => {
@@ -66,12 +66,12 @@ test("source viewer can paint cursor-relative line numbers", async () => {
     },
   );
 
-  assert.equal(sourceViewer.sourceViewerGutterWidth(5, 2, "relative"), 5);
-  assert.equal(rowText(surface, 0).startsWith("-2 │ line-1"), true);
-  assert.equal(rowText(surface, 1).startsWith("-1 │ line-2"), true);
-  assert.equal(rowText(surface, 2).startsWith(" 0 │ line-3"), true);
-  assert.equal(rowText(surface, 3).startsWith("+1 │ line-4"), true);
-  assert.equal(rowText(surface, 4).startsWith("+2 │ line-5"), true);
+  assert.equal(sourceViewer.sourceViewerGutterWidth(5, 2, "relative"), 6);
+  assert.equal(rowText(surface, 0).startsWith("-2  │ line-1"), true);
+  assert.equal(rowText(surface, 1).startsWith("-1  │ line-2"), true);
+  assert.equal(rowText(surface, 2).startsWith(" 0  │ line-3"), true);
+  assert.equal(rowText(surface, 3).startsWith("+1  │ line-4"), true);
+  assert.equal(rowText(surface, 4).startsWith("+2  │ line-5"), true);
 });
 
 test("source viewer paints causal inserted and modified gutter markers", async () => {
@@ -102,9 +102,39 @@ test("source viewer paints causal inserted and modified gutter markers", async (
     },
   );
 
-  assert.equal(rowText(surface, 0).startsWith("1 │ one"), true);
-  assert.equal(rowText(surface, 1).startsWith("2+│ two"), true);
-  assert.equal(rowText(surface, 2).startsWith("3~│ three"), true);
+  assert.equal(rowText(surface, 0).startsWith("1  │ one"), true);
+  assert.equal(rowText(surface, 1).startsWith("2 +│ two"), true);
+  assert.equal(rowText(surface, 2).startsWith("3 ~│ three"), true);
+});
+
+test("source viewer keeps deletion and line status in separate gutter lanes", async () => {
+  const { createSurface } = await import("@flyingrobots/bijou");
+  const sourceViewer = await loadSourceViewerModule();
+  const surface = createSurface(20, 3, { char: ".", empty: false });
+
+  sourceViewer.renderSourceViewer(
+    surface,
+    {
+      lines: ["one", "two", "three"],
+      cursorRow: 0,
+      cursorCol: 0,
+      scrollRow: 0,
+      scrollCol: 0,
+      mode: "normal",
+    },
+    undefined,
+    {
+      viewport: { width: 20, height: 3 },
+      leftPad: 0,
+      topPad: 0,
+      theme: sourceViewerTheme(),
+      lineMarkers: [{ lineNumber: 1, kind: "inserted" }],
+      deletionMarkers: [{ boundaryLineNumber: 1, deletedLineCount: 2 }],
+    },
+  );
+
+  assert.equal(rowText(surface, 0).startsWith("1  │ one"), true);
+  assert.equal(rowText(surface, 1).startsWith("2-+│ two"), true);
 });
 
 function sourceViewerTheme() {

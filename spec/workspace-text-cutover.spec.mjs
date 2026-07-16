@@ -105,6 +105,7 @@ test("file open routes through production text session and applies initial bound
         rewriteIds: [],
         diffIds: [],
         markers: [],
+        deletions: [],
         observerVersion: "test-fixture",
       },
     }),
@@ -316,7 +317,7 @@ test("viewer renders a basis-tagged bounded projection instead of local editor t
   assert.doesNotMatch(text, /local 24/);
 });
 
-test("viewer paints causal gutter markers only for the rendered admitted head", async () => {
+test("viewer paints causal gutter evidence only for the rendered admitted head", async () => {
   const [viewerContent, modeModule, authority, profile] = await Promise.all([
     importDist("app", "workspace", "viewer-content.js"),
     importDist("app", "workspace", "editor", "mode.js"),
@@ -362,11 +363,11 @@ test("viewer paints causal gutter markers only for the rendered admitted head", 
     textAuthority: { ...model.textAuthority, pendingIntentStatus: "predicted" },
   }, 80, 16));
 
-  assert.match(matching, /2\+│ two/);
-  assert.match(stale, /2 │ two/);
-  assert.doesNotMatch(stale, /2\+│ two/);
-  assert.match(optimistic, /2 │ two/);
-  assert.doesNotMatch(optimistic, /2\+│ two/);
+  assert.match(matching, /2-\+│ two/);
+  assert.match(stale, /2  │ two/);
+  assert.doesNotMatch(stale, /2-\+│ two/);
+  assert.match(optimistic, /2  │ two/);
+  assert.doesNotMatch(optimistic, /2-\+│ two/);
 });
 
 test("viewer does not render local text when an opened authority has no projection", async () => {
@@ -431,7 +432,13 @@ function causalLineChanges(nextHeadId) {
       rewriteIds: ["rewrite:insert"],
       diffIds: ["diff:insert"],
     }],
-    observerVersion: "jedit-causal-line-diff-v2",
+    deletions: [{
+      boundaryLineNumber: 1,
+      deletedLineCount: 2,
+      rewriteIds: ["rewrite:delete"],
+      diffIds: ["diff:delete"],
+    }],
+    observerVersion: "jedit-causal-line-diff-v3",
   };
 }
 
@@ -479,6 +486,7 @@ test("insert and delete keys submit production text edits with optimistic local 
         rewriteIds: [],
         diffIds: [],
         markers: [],
+        deletions: [],
         observerVersion: "test-fixture",
       },
     }),

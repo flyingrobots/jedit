@@ -198,7 +198,17 @@ type CausalLineMarker {
     diffIds: [ID!]!
 }
 
-"""Net line changes between two causally related retained rope heads."""
+"""Retained logical-line deletions projected to a boundary in the next rope head."""
+type CausalLineDeletionMarker {
+    """Zero-based boundary before a next-head line, or its line count for end-of-file."""
+    boundaryLineNumber: Int!
+    """Removed logical boundaries plus a complete unterminated final line when applicable."""
+    deletedLineCount: Int!
+    rewriteIds: [ID!]!
+    diffIds: [ID!]!
+}
+
+"""Net line counts and retained causal marker evidence between two related rope heads."""
 type CausalLineDiffReading {
     worldlineId: ID!
     basisHeadId: ID!
@@ -208,6 +218,7 @@ type CausalLineDiffReading {
     rewriteIds: [ID!]!
     diffIds: [ID!]!
     markers: [CausalLineMarker!]!
+    deletions: [CausalLineDeletionMarker!]!
     observerVersion: String!
 }
 

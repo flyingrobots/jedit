@@ -25,6 +25,13 @@ export interface BufferWorldline {
   projectionPath: string | null;
 }
 
+export interface CausalLineDeletionMarker {
+  boundaryLineNumber: number;
+  deletedLineCount: number;
+  rewriteIds: string[];
+  diffIds: string[];
+}
+
 export interface CausalLineDiffInput {
   worldlineId: string;
   basisHeadId: string;
@@ -44,6 +51,7 @@ export interface CausalLineDiffReading {
   rewriteIds: string[];
   diffIds: string[];
   markers: CausalLineMarker[];
+  deletions: CausalLineDeletionMarker[];
   observerVersion: string;
 }
 

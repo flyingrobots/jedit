@@ -210,6 +210,11 @@ function graphCausalLineDiffReading(
       rewriteIds: [...marker.rewriteIds],
       diffIds: [...marker.diffIds],
     })),
+    deletions: reading.deletions.map(deletion => ({
+      ...deletion,
+      rewriteIds: [...deletion.rewriteIds],
+      diffIds: [...deletion.diffIds],
+    })),
   };
 }
 
