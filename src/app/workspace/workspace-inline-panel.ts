@@ -5,6 +5,7 @@ import type { WorkspaceModel } from "./model.js";
 import { ViewModes } from "./view-mode.js";
 import { WorkspaceKeys } from "./workspace-key.js";
 import { WorkspaceTextAuthorityKinds } from "./workspace-text-authority.js";
+import { WorkspaceBufferCausalDurabilityKinds } from "./workspace-buffer-durability.js";
 
 export const WORKSPACE_INLINE_PANEL_TONE = Object.freeze({
   Info: "info",
@@ -20,6 +21,8 @@ export interface WorkspaceInlinePanel {
   readonly tone: WorkspaceInlinePanelTone;
   readonly anchorRow: number;
   readonly anchorColumn: number;
+  readonly detailRows?: readonly string[];
+  readonly basisHeadId?: string;
   readonly bufferId?: string;
 }
 
@@ -28,9 +31,14 @@ export interface WorkspaceInlinePanelAnchor {
   readonly column: number;
 }
 
+export type WorkspaceInlinePanelContent = Pick<
+  WorkspaceInlinePanel,
+  "title" | "message" | "tone" | "detailRows" | "basisHeadId" | "bufferId"
+>;
+
 export function anchoredWorkspaceInlinePanel(
   editor: EditorState,
-  panel: Pick<WorkspaceInlinePanel, "title" | "message" | "tone" | "bufferId">,
+  panel: WorkspaceInlinePanelContent,
 ): WorkspaceInlinePanel {
   return workspaceInlinePanelAtAnchor(panel, workspaceInlinePanelAnchorFromEditor(editor));
 }
@@ -45,13 +53,14 @@ export function workspaceInlinePanelAnchorFromEditor(
 }
 
 export function workspaceInlinePanelAtAnchor(
-  panel: Pick<WorkspaceInlinePanel, "title" | "message" | "tone" | "bufferId">,
+  panel: WorkspaceInlinePanelContent,
   anchor: WorkspaceInlinePanelAnchor,
 ): WorkspaceInlinePanel {
-  const anchored = {
+  const anchored: WorkspaceInlinePanel = {
     ...panel,
     anchorRow: anchor.row,
     anchorColumn: anchor.column,
+    detailRows: panel.detailRows == null ? undefined : [...panel.detailRows],
   };
   return panel.bufferId == null
     ? anchored
@@ -85,8 +94,21 @@ function shouldKeepWorkspaceInlinePanel(
     editor != null &&
     editor.cursorRow === panel.anchorRow &&
     editor.cursorCol === panel.anchorColumn &&
-    inlinePanelMatchesActiveBuffer(model, panel)
+    inlinePanelMatchesActiveBuffer(model, panel) &&
+    workspaceInlinePanelBasisMatchesModel(model, panel.basisHeadId)
   );
+}
+
+export function workspaceInlinePanelBasisMatchesModel(
+  model: WorkspaceModel,
+  basisHeadId: string | undefined,
+): boolean {
+  if (basisHeadId == null) {
+    return true;
+  }
+  return model.textAuthority.kind === WorkspaceTextAuthorityKinds.Opened &&
+    model.textAuthority.durability.causal.kind === WorkspaceBufferCausalDurabilityKinds.Admitted &&
+    model.textAuthority.durability.causal.headId === basisHeadId;
 }
 
 function sourceEditorOwnsInlinePanel(model: WorkspaceModel): boolean {

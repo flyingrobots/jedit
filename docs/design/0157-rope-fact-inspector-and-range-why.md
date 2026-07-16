@@ -569,7 +569,7 @@ path. `TextBufferSession.explainRange` now consumes the generated, bounded
 - [x] Slice 1: Design rope fact inspector and range-why UI (#209).
 - [x] Slice 2: Explain a range from head through leaf/blob/rewrite/diff/tick
   evidence (#239).
-- [ ] Slice 3: Render structured evidence in the persistent anchored panel
+- [x] Slice 3: Render structured evidence in the persistent anchored panel
   (#240).
 - [ ] Slice 4: Add import, edit, checkpoint, and generated-text witnesses
   (#241).
@@ -587,7 +587,7 @@ Behavior tests required:
 - [x] Checkpoint declaration and optional anchor association remain distinct.
 - [x] Missing or bounded-out support produces a typed obstruction or partial
   result.
-- [ ] Structured panel remains until cursor/head invalidation or `Esc`.
+- [x] Structured panel remains until cursor/head invalidation or `Esc`.
 - [ ] Gutter and footer explainers cite the same evidence IDs as range `:why`.
 
 Documentation and process tests:
@@ -603,8 +603,8 @@ The work is done when:
 - [ ] Runtime range evidence cites head, leaf, blob, rewrite, diff, text tick,
   checkpoint, and optional anchor evidence when retained.
 - [ ] Imported and mixed-origin ranges are honest and fragmented.
-- [ ] The visible panel and machine result share one structured payload.
-- [ ] Stale and unsupported evidence fails closed.
+- [x] The visible panel and machine result share one structured payload.
+- [x] Stale and unsupported evidence fails closed.
 - [ ] Wide, narrow, and extra-small layouts are covered.
 - [ ] New visible strings are localized through the catalog schema.
 - [ ] Gutter and footer details do not invent facts.

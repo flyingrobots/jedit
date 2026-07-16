@@ -21,6 +21,7 @@ export type WhyInlinePanelTone =
 export interface RenderWhyInlinePanelOptions {
   readonly title: string;
   readonly message: string;
+  readonly detailRows?: readonly string[];
   readonly tone: WhyInlinePanelTone;
   readonly theme: JeditTheme;
   readonly width: number;
@@ -55,10 +56,12 @@ function whyPanelRows(
   width: number,
 ): readonly string[] {
   const textWidth = Math.max(WHY_PANEL_MIN_WIDTH, width - WHY_PANEL_TEXT_X);
-  const rows = [
-    `${whyPanelTitlePrefix(options.tone)}${options.title}`,
-    ...wrapWhyPanelMessage(options.message, textWidth),
-  ];
+  const title = `${whyPanelTitlePrefix(options.tone)}${options.title}`;
+  const messageRows = wrapWhyPanelMessage(options.message, textWidth);
+  const detailRows = (options.detailRows ?? []).flatMap(row => wrapWhyPanelMessage(row, textWidth));
+  const rows = detailRows.length === 0
+    ? [title, ...messageRows]
+    : [title, messageRows[WHY_PANEL_FIRST_ROW] ?? WHY_PANEL_EMPTY_TEXT, ...detailRows];
   return rows.slice(
     WHY_PANEL_FIRST_ROW,
     Math.max(WHY_PANEL_MIN_ROWS, options.maxRows),
@@ -80,7 +83,10 @@ function wrapWhyPanelMessage(message: string, width: number): readonly string[] 
 }
 
 function wrapWhyPanelLine(line: string, width: number): readonly string[] {
-  const words = line.split(/\s+/).filter((word) => word.length > 0);
+  const words = line
+    .split(/\s+/)
+    .filter((word) => word.length > 0)
+    .flatMap(word => chunkWhyPanelWord(word, width));
   if (words.length === 0) {
     return [WHY_PANEL_EMPTY_TEXT];
   }
@@ -103,6 +109,15 @@ function wrapWhyPanelLine(line: string, width: number): readonly string[] {
     rows.push(current);
   }
   return rows;
+}
+
+function chunkWhyPanelWord(word: string, width: number): readonly string[] {
+  const characters = [...word];
+  const chunks: string[] = [];
+  for (let offset = 0; offset < characters.length; offset += width) {
+    chunks.push(characters.slice(offset, offset + width).join(WHY_PANEL_EMPTY_TEXT));
+  }
+  return chunks;
 }
 
 function fillSurface(surface: Surface, token: JeditStyleToken): void {

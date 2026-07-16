@@ -10,7 +10,7 @@ import {
 } from "./viewport.js";
 
 const INLINE_PANEL_MAX_WIDTH = 74;
-const INLINE_PANEL_MAX_ROWS = 8;
+const INLINE_PANEL_MAX_ROWS = 12;
 const INLINE_PANEL_EDGE_INSET = 1;
 const INLINE_PANEL_ROW_STEP = 1;
 const INLINE_PANEL_MIN_WIDTH = 1;
@@ -31,6 +31,7 @@ export function paintWorkspaceInlinePanelOverlay(
   const panel = renderWhyInlinePanel({
     title: model.inlinePanel.title,
     message: model.inlinePanel.message,
+    detailRows: model.inlinePanel.detailRows,
     tone: model.inlinePanel.tone,
     theme: model.jeditTheme,
     width: placement.width,
@@ -39,7 +40,7 @@ export function paintWorkspaceInlinePanelOverlay(
   screen.blit(
     panel,
     placement.x,
-    inlinePanelY(placement.anchorY, bodyTop, bodyHeight, panel.height),
+    resolveWorkspaceInlinePanelY(placement.anchorY, bodyTop, bodyHeight, panel.height),
   );
 }
 
@@ -85,7 +86,7 @@ function inlinePanelPlacement(
   };
 }
 
-function inlinePanelY(
+export function resolveWorkspaceInlinePanelY(
   anchorY: number,
   bodyTop: number,
   bodyHeight: number,

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Replaced prose-only range explanations with a persistent, cursor-anchored
+  causal evidence panel. The panel derives bounded detail rows from the same
+  machine-readable range report, preserves opaque head/leaf/blob/rewrite/diff/
+  receipt/checkpoint identities, wraps long identifiers, renders below the
+  source line or above when space is exhausted, and closes when the cursor,
+  active buffer, admitted head, focus owner, or `Esc` invalidates its basis.
 - Added the bounded, basis-pinned `whyRange` query to the generated hot-text
   contract and installed Echo transport. Graph-rope observations now return
   ordered head/leaf/blob fragments with actual imported or rewrite origins,

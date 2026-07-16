@@ -28,6 +28,39 @@ test("inline panel wrapping does not spend a capped row on blanks before long wo
   assert.match(rows[1], /super/);
 });
 
+test("inline panel renders structured causal details after its summary", async () => {
+  const panel = await loadWhyInlinePanelModule();
+  const surface = panel.renderWhyInlinePanel({
+    title: "Why range",
+    message: "6..9 at head:2",
+    detailRows: ["leaf leaf:2", "rewrite rewrite:4", "receipt tick:4"],
+    tone: panel.WHY_INLINE_PANEL_TONE.Info,
+    theme: panelTheme(),
+    width: 32,
+    maxRows: 6,
+  });
+  const text = surfaceRows(surface).join("\n");
+
+  assert.match(text, /leaf leaf:2/);
+  assert.match(text, /rewrite rewrite:4/);
+  assert.match(text, /receipt tick:4/);
+});
+
+test("inline panel wraps long causal identities instead of truncating their tail", async () => {
+  const panel = await loadWhyInlinePanelModule();
+  const surface = panel.renderWhyInlinePanel({
+    title: "Why range",
+    message: "evidence",
+    detailRows: [`receipt=${"a".repeat(24)}tail`],
+    tone: panel.WHY_INLINE_PANEL_TONE.Info,
+    theme: panelTheme(),
+    width: 14,
+    maxRows: 8,
+  });
+
+  assert.match(surfaceRows(surface).join("\n"), /tail/);
+});
+
 function panelTheme() {
   const workspace = token("#f0f6fc", "#0d1117");
   const drawer = token("#f0f6fc", "#161b22");

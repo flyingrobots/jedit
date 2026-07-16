@@ -58,6 +58,15 @@ test("TextEditResult refreshes highlighting without reloading saved-file Graft d
       dirty: true,
       cache: workspaceReadingCache({ lines: ["abcd"] }),
     }),
+    inlinePanel: {
+      title: "Why range",
+      message: "old basis",
+      tone: "info",
+      anchorRow: 0,
+      anchorColumn: 4,
+      basisHeadId: "head:reading",
+      bufferId: "buffer:notes",
+    },
   };
   const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime({
     graftSession: {
@@ -119,6 +128,7 @@ test("TextEditResult refreshes highlighting without reloading saved-file Graft d
     admittedTickId: "tick:edit",
     nextHeadId: "head:edit",
   });
+  assert.equal(nextModel.inlinePanel, undefined);
 });
 
 test("intermediate TextEditResult refreshes highlighting before queued save settles", async () => {

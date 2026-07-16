@@ -22,8 +22,10 @@ import {
   type WorkspaceInlinePanelAnchor,
   type WorkspaceInlinePanelTone,
   workspaceInlinePanelAtAnchor,
+  workspaceInlinePanelBasisMatchesModel,
 } from './workspace-inline-panel.js';
 import { WorkspaceTextAuthorityKinds } from './workspace-text-authority.js';
+import { jeditWhyRangeDetailRows } from './workspace-why-range-details.js';
 
 export {
   WORKSPACE_INLINE_PANEL_TONE,
@@ -53,6 +55,8 @@ export interface WorkspaceInlinePanelReport {
   readonly title: string;
   readonly message: string;
   readonly tone: WorkspaceInlinePanelTone;
+  readonly detailRows?: readonly string[];
+  readonly basisHeadId?: string;
 }
 
 export function jeditWhyRangeAtCursor(editor: EditorState | undefined): TextByteRange | undefined {
@@ -102,6 +106,12 @@ export function applyWorkspaceWhyRangeResult(
   model: WorkspaceModel,
 ): WorkspaceRuntimeResult {
   if (!whyRangeResultMatchesActiveBuffer(model, msg.bufferId)) {
+    return [model, []];
+  }
+  if (
+    msg.outcome.kind === WorkspaceWhyRangeOutcomeKinds.Range &&
+    !workspaceInlinePanelBasisMatchesModel(model, msg.outcome.report.witness.basisHeadId)
+  ) {
     return [model, []];
   }
   const report = whyInlinePanelReportFromRange(
@@ -173,7 +183,7 @@ function modelWithWorkspaceInlinePanelAtAnchor(
 function workspaceInlinePanelReportForModel(
   model: WorkspaceModel,
   report: WorkspaceInlinePanelReport,
-): Pick<WorkspaceInlinePanel, "title" | "message" | "tone" | "bufferId"> {
+): Pick<WorkspaceInlinePanel, "title" | "message" | "tone" | "detailRows" | "basisHeadId" | "bufferId"> {
   return model.textAuthority.kind === WorkspaceTextAuthorityKinds.Opened
     ? { ...report, bufferId: model.textAuthority.bufferId }
     : report;
@@ -188,6 +198,8 @@ function whyInlinePanelReportFromRange(
     return {
       title: outcome.report.title,
       message: outcome.report.message,
+      detailRows: jeditWhyRangeDetailRows(outcome.report),
+      basisHeadId: outcome.report.witness.basisHeadId,
       tone: outcome.report.witness.result.kind === RESULT_PRODUCED
         ? WORKSPACE_INLINE_PANEL_TONE.Info
         : WORKSPACE_INLINE_PANEL_TONE.Warning,

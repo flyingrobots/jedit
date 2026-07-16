@@ -8,6 +8,12 @@ export const JeditWhyRangeResultKinds = Object.freeze({
   Unavailable: RESULT_UNAVAILABLE,
 });
 
+export const JeditWhyRangeOriginKinds = Object.freeze({
+  Imported: 'IMPORTED',
+  Rewrite: 'REWRITE',
+  Unavailable: 'UNAVAILABLE',
+} as const);
+
 export interface JeditWhyByteRange {
   readonly startByte: number;
   readonly endByte: number;
@@ -65,14 +71,14 @@ export type JeditWhyRangeOrigin =
   | JeditWhyRangeUnavailableOrigin;
 
 export interface JeditWhyRangeImportedOrigin {
-  readonly kind: 'IMPORTED';
+  readonly kind: typeof JeditWhyRangeOriginKinds.Imported;
   readonly worldlineId: string;
   readonly initialHeadId: string;
   readonly createdAtTickId: string;
 }
 
 export interface JeditWhyRangeRewriteOrigin {
-  readonly kind: 'REWRITE';
+  readonly kind: typeof JeditWhyRangeOriginKinds.Rewrite;
   readonly rewriteId: string;
   readonly diffId: string;
   readonly textTickReceiptId: string;
@@ -81,7 +87,7 @@ export interface JeditWhyRangeRewriteOrigin {
 }
 
 export interface JeditWhyRangeUnavailableOrigin {
-  readonly kind: 'UNAVAILABLE';
+  readonly kind: typeof JeditWhyRangeOriginKinds.Unavailable;
   readonly code: string;
 }
 

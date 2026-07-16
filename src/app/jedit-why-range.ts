@@ -4,6 +4,7 @@ import type {
   WhyRangeReading,
 } from '../generated/jedit/rope.wesley.generated.js';
 import {
+  JeditWhyRangeOriginKinds,
   REPORT_KIND_RANGE,
   REPORT_TITLE,
   RESULT_PRODUCED,
@@ -13,9 +14,6 @@ import {
   type JeditWhyRangeReport,
   type JeditWhyRangeWitness,
 } from '../ports/jedit-why-range.js';
-
-const ORIGIN_IMPORTED = 'IMPORTED';
-const ORIGIN_REWRITE = 'REWRITE';
 
 export function explainJeditWhyRange(reading: WhyRangeReading): JeditWhyRangeReport {
   const fragments = reading.fragments.map(toRangeFragment);
@@ -80,17 +78,17 @@ function toRangeFragment(fragment: WhyRangeFragment): JeditWhyRangeFragment {
 }
 
 function toRangeOrigin(origin: WhyRangeOrigin): JeditWhyRangeOrigin {
-  if (origin.kind === ORIGIN_IMPORTED) {
+  if (origin.kind === JeditWhyRangeOriginKinds.Imported) {
     return {
-      kind: ORIGIN_IMPORTED,
+      kind: JeditWhyRangeOriginKinds.Imported,
       worldlineId: requireEvidence(origin.worldlineId, 'worldlineId'),
       initialHeadId: requireEvidence(origin.initialHeadId, 'initialHeadId'),
       createdAtTickId: requireEvidence(origin.createdAtTickId, 'createdAtTickId'),
     };
   }
-  if (origin.kind === ORIGIN_REWRITE) {
+  if (origin.kind === JeditWhyRangeOriginKinds.Rewrite) {
     return {
-      kind: ORIGIN_REWRITE,
+      kind: JeditWhyRangeOriginKinds.Rewrite,
       rewriteId: requireEvidence(origin.rewriteId, 'rewriteId'),
       diffId: requireEvidence(origin.diffId, 'diffId'),
       textTickReceiptId: requireEvidence(origin.textTickReceiptId, 'textTickReceiptId'),
@@ -112,10 +110,10 @@ function rangeWhyMessage(reading: WhyRangeReading): string {
 
 function originMessage(fragment: WhyRangeFragment): string {
   const range = `${String(fragment.coveredStartByte)}..${String(fragment.coveredEndByte)}`;
-  if (fragment.origin.kind === ORIGIN_IMPORTED) {
+  if (fragment.origin.kind === JeditWhyRangeOriginKinds.Imported) {
     return `${range} imported by ${requireEvidence(fragment.origin.createdAtTickId, 'createdAtTickId')}`;
   }
-  if (fragment.origin.kind === ORIGIN_REWRITE) {
+  if (fragment.origin.kind === JeditWhyRangeOriginKinds.Rewrite) {
     return [
       `${range} rewritten by ${requireEvidence(fragment.origin.rewriteId, 'rewriteId')}`,
       `diff ${requireEvidence(fragment.origin.diffId, 'diffId')}`,

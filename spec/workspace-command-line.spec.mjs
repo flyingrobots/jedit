@@ -1329,6 +1329,16 @@ test("enter dispatches why through retained range history when a cursor range is
       dirty: true,
     }),
   });
+  const [staleHead] = runtime.update(message, {
+    ...pendingWhy,
+    textAuthority: {
+      ...pendingWhy.textAuthority,
+      durability: {
+        ...pendingWhy.textAuthority.durability,
+        causal: { kind: "admitted", headId: "head:newer" },
+      },
+    },
+  });
 
   assert.equal(pendingWhy.commandLine.active, false);
   assert.equal(commands.length, 1);
@@ -1343,9 +1353,14 @@ test("enter dispatches why through retained range history when a cursor range is
   assert.equal(Object.hasOwn(message, "report"), false);
   assert.equal(Object.hasOwn(message, "obstruction"), false);
   assert.match(notified.inlinePanel.message, /ropeDiff receipt:range/);
+  assert.equal(notified.inlinePanel.basisHeadId, "head:command");
+  assert.ok(notified.inlinePanel.detailRows.some(row => row.includes("rewrite:range")));
+  assert.ok(notified.inlinePanel.detailRows.some(row => row.includes("diff:range")));
+  assert.ok(notified.inlinePanel.detailRows.some(row => row.includes("tick:range")));
   assert.doesNotMatch(notified.inlinePanel.message, /No meaningful command/);
   assert.equal(stale.inlinePanel, undefined);
   assert.equal(staleBuffer.inlinePanel, undefined);
+  assert.equal(staleHead.inlinePanel, undefined);
 });
 
 test("enter dispatches why with typed unavailable range evidence", async () => {
@@ -1376,6 +1391,7 @@ test("enter dispatches why with typed unavailable range evidence", async () => {
       bufferId: "text-buffer:0",
       readOnly: false,
       dirty: true,
+      cache: commandTextCache("local draft"),
     }),
     commandLine: activeCommandLine("why"),
   });
@@ -1532,12 +1548,25 @@ function fakeProducedRangeWhyReport(range) {
     message: `range: ${range.startByte}..${range.endByte} | ropeDiff receipt:range`,
     witness: {
       worldlineId: "wl:/repo/notes.md",
-      basisHeadId: "head:2",
+      basisHeadId: "head:command",
       queriedRange: range,
       result: {
         kind: "produced",
         coverage: { kind: "COMPLETE", coveredRange: range, continuation: null, reason: null },
-        fragments: [],
+        fragments: [{
+          coveredRange: range,
+          headId: "head:command",
+          leafId: "leaf:range",
+          blobId: "blob:range",
+          origin: {
+            kind: "REWRITE",
+            rewriteId: "rewrite:range",
+            diffId: "diff:range",
+            textTickReceiptId: "tick:range",
+            basisHeadId: "head:before",
+            nextHeadId: "head:command",
+          },
+        }],
         relatedCheckpoints: [],
         inspectedFactCount: 1,
         observerVersion: "test-fixture",
@@ -1594,7 +1623,7 @@ function fakeUnavailableRangeWhyReport(range) {
     message: `No retained rope diff proves range ${range.startByte}..${range.endByte}: jedit_why_range_retained_history_horizon`,
     witness: {
       worldlineId: "wl:/repo/notes.md",
-      basisHeadId: "head:2",
+      basisHeadId: "head:command",
       queriedRange: range,
       result: {
         kind: "unavailable",
