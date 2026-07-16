@@ -15,6 +15,11 @@
   clear unsaved edits, and only a successful export of the current head moves
   the file basis back to clean. Missing-file opens now require an explicit
   host-absence basis instead of inferring causal evidence from a legacy boolean.
+- Reworked the lower-right footer posture around the five durability layers:
+  pending intent, admitted causal head, saved/exported file basis, local Git,
+  and remote Git. Cursor `line:col` remains separate UI state, Git readings stay
+  unknown until externally observed, and oversized status claims are omitted
+  whole instead of being clipped into misleading fragments on narrow terminals.
 - Added versioned text-window materialization provenance and a bounded,
   disposable cache. Cache coordinates now name the requested rope head, exact
   branded UTF-8 coverage, request namespace, observer plan, materializer

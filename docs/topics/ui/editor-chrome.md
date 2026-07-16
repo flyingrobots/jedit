@@ -54,16 +54,26 @@ The footer is the main low-friction status surface. It should show:
 - current mode;
 - `line:col` cursor position when a source cursor is active;
 - mode-specific hints;
-- dirty and materialization posture;
+- pending-intent and admitted causal-head posture;
+- saved or exported file-basis posture;
+- separately observed local and remote Git posture;
 - target branch or runtime posture when available;
 - command-line input when `:` mode is active.
 
 When settings or another non-source overlay owns focus, the footer should show
 that surface's focus state instead of leaking the editor cursor coordinate.
 
-The lower-right status segment currently reports workspace and worldline
-posture. It is not a line-diff counter unless the implementation has a
-saved-text baseline to compare against.
+On wide terminals, the lower-right status segment reports `intent:*`,
+`causal:*`, `file:*`, `git:*`, and `remote:*` independently before the worldline
+context. `causal:unsaved` means the admitted rope head differs from the last
+successful host projection basis. It does not mean that Git is dirty. Git and
+remote posture remain `unknown` until an external observer supplies evidence.
+
+The complete status is omitted when it cannot fit beside the path. Jim never
+clips a durability claim mid-token. Narrow and xs profiles retain mode,
+`line:col`, hints, and path without pretending that omitted evidence has a
+different value. The worldline `+N/-N` segment is not a line-diff counter unless
+it is backed by causal rewrite/diff evidence.
 
 ## Implementation Map
 

@@ -391,13 +391,16 @@ test('production insert-mode edits can be undone through Echo', async () => {
   assert.deepEqual(harness.model.editor.lines, ['a']);
 });
 
-test('footer renders production text posture without exposing text authority', async () => {
+test('footer renders durability posture separately from cursor coordinates', async () => {
   const harness = await openedHarness();
+  harness.setModel({ ...harness.model, columns: 191 });
   const text = harness.renderWorkspaceText();
+  const footerMode = text.split('\n').at(-2) ?? '';
   const footerContext = text.split('\n').at(-1) ?? '';
 
+  assert.match(footerMode, /NORMAL 1:1/);
   assert.equal(footerContext.startsWith('/repo/notes.md'), true);
-  assert.match(footerContext, /\[clean \| main \| fs:materialized/);
+  assert.match(footerContext, /\[intent:idle \| causal:admitted \| file:saved \| git:unknown \| remote:unknown \| main \| fs:materialized/);
   assert.equal(footerContext.endsWith('target:main | +0/-0]'), true);
 });
 

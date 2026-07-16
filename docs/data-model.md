@@ -445,6 +445,15 @@ decide whether to render a local optimistic rail. Consequently, an admitted but
 unsaved head is dirty without being mislabeled as unconfirmed local work, while
 an obstructed intent remains visible as a conflicted optimistic projection.
 
+The footer renders the same propositions as separate labels: `intent:*`,
+`causal:*`, `file:*`, `git:*`, and `remote:*`. `causal:unsaved` is emitted only
+when an admitted current head and file basis are both known and differ;
+`file:exported` requires a successful export reading. Git and remote labels use
+only explicit observer evidence and default to `unknown`. Opaque head, receipt,
+reading, and commit identities are not shortened, compared, or reconstructed by
+the formatter. Cursor `line:col` stays on the mode row because it is UI state,
+not durability evidence.
+
 This means queuing or obstructing an edit cannot make an otherwise clean file
 authoritatively dirty. An optimistic editor projection may still be marked dirty
 for immediate interaction, but it is not causal authority. Once Echo admits a

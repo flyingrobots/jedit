@@ -173,6 +173,16 @@ test('workspace footer pins editor posture to the lower-right corner when it fit
   assert.equal(secondary.includes(`/repo/notes/todo.md [${posture}]`), false);
 });
 
+test('workspace footer omits an oversized posture instead of clipping a claim', async () => {
+  const footer = await loadFooterModule();
+  const surface = footer.renderWorkspaceFooter({
+    ...idleNormalState(),
+    textPosture: 'intent:idle | causal:admitted | file:saved | git:unknown | remote:unknown',
+  }, 44, {});
+
+  assert.equal(rowText(surface, 1).trim(), '/repo/notes/todo.md');
+});
+
 test('workspace footer posture fit uses terminal display width for wide glyphs', async () => {
   const footerPosture = await loadFooterPostureModule();
   const editorPath = '/repo/界.md';

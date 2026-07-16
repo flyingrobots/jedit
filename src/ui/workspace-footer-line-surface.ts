@@ -58,7 +58,12 @@ export function footerSecondaryLineSurface(
       width,
       background,
     )
-    : footerLineSurface(fallbackText, width, background, state.direction);
+    : footerLineSurface(
+      secondaryFallbackText(state, fallbackText, width),
+      width,
+      background,
+      state.direction,
+    );
 }
 
 function shouldRightAlignEditorPosture(
@@ -73,6 +78,22 @@ function shouldRightAlignEditorPosture(
     state.editorPath != null &&
     state.textPosture != null &&
     editorFooterPostureFits(state.editorPath, state.textPosture, width);
+}
+
+function secondaryFallbackText(
+  state: WorkspaceFooterSecondaryLineState,
+  fallbackText: string,
+  width: number,
+): string {
+  if (
+    state.rightAlignPosture &&
+    state.editorPath != null &&
+    state.textPosture != null &&
+    !editorFooterPostureFits(state.editorPath, state.textPosture, width)
+  ) {
+    return state.editorPath;
+  }
+  return fallbackText;
 }
 
 function footerLineContent(text: string, width: number): string {
