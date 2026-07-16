@@ -609,7 +609,7 @@ The work is done when:
 - [x] New visible strings are localized through the catalog schema.
 - [x] Gutter and footer details do not invent facts.
 - [x] CR-06 issues and PR are linked correctly.
-- [ ] CI and local validation are green.
+- [x] CI and local validation are green.
 
 ## Validation Plan
 
