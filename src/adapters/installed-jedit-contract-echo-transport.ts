@@ -48,6 +48,7 @@ import {
 import { createHashPort } from './hash.js';
 import {
   CREATE_BUFFER_WORLDLINE_OPERATION,
+  CAUSAL_LINE_DIFF_OPERATION,
   CREATE_CHECKPOINT_OPERATION,
   decodeJeditObserveRequest,
   encodeJeditIntentResponse,
@@ -413,6 +414,8 @@ function executeObserve(
         operationName: TEXT_WINDOW_OPERATION,
         envelope: observers.observeTextWindow(request),
       };
+    case CAUSAL_LINE_DIFF_OPERATION:
+      return { status: JEDIT_TRANSPORT_STATUS_OK, operationName: CAUSAL_LINE_DIFF_OPERATION, envelope: observers.observeCausalLineDiff(request) };
   }
 }
 

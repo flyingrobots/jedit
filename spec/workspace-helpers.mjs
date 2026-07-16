@@ -212,6 +212,24 @@ export function basisPinnedTestTextSession(delegate) {
         },
       };
     },
+    async observeCausalLineDiff(request) {
+      if (delegate.observeCausalLineDiff != null) {
+        return delegate.observeCausalLineDiff(request);
+      }
+      return {
+        kind: 'causal-line-diff-observed',
+        reading: {
+          worldlineId: 'fixture:worldline',
+          basisHeadId: request.basisHeadId,
+          nextHeadId: request.nextHeadId,
+          insertedLineCount: 0,
+          deletedLineCount: 0,
+          rewriteIds: [],
+          diffIds: [],
+          observerVersion: 'test-fixture',
+        },
+      };
+    },
   };
 
   function basisAdvancingEdit(edit, byteLengthDelta) {
@@ -220,7 +238,17 @@ export function basisPinnedTestTextSession(delegate) {
       if (outcome.kind !== "applied") return outcome;
       sequence += 1;
       basis = outcome.result.textBasis ?? nextBasis(byteLengthDelta(request), sequence);
-      return { ...outcome, result: { ...outcome.result, textBasis: basis } };
+      return {
+        ...outcome,
+        result: {
+          ...outcome.result,
+          textBasis: basis,
+          causalTransition: outcome.result.causalTransition ?? {
+            admittedTickId: `fixture:tick:${sequence}`,
+            nextHeadId: basis.basisHeadId,
+          },
+        },
+      };
     };
   }
 

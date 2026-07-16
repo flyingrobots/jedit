@@ -1,6 +1,8 @@
 import type {
   ApplyIntentResult,
   BufferVersion,
+  CausalLineDiffReading,
+  CausalLineDiffRequest,
   CreateTextBufferCheckpointRequest,
   CreateTextBufferCheckpointResult,
   CreateTextBufferRequest,
@@ -116,10 +118,38 @@ function createTextBufferOptic(
     async textWindow(request: TextWindowRequest): Promise<Observed<TextWindowReading>> {
       return readTextBufferWindow(client, buffer, state, request);
     },
+    async causalLineDiff(request: CausalLineDiffRequest): Promise<CausalLineDiffReading> {
+      return readTextBufferCausalLineDiff(client, buffer, state, request);
+    },
     async explainRange(range: JeditWhyByteRange): Promise<JeditWhyRangeReport> {
       return explainJeditWhyRange(state.currentSession, range);
     },
   });
+}
+
+async function readTextBufferCausalLineDiff(
+  client: JeditOpticClient,
+  buffer: TextBuffer,
+  state: TextBufferOpticRuntimeState,
+  request: CausalLineDiffRequest,
+): Promise<CausalLineDiffReading> {
+  const envelope = await client.causalLineDiff(
+    state.currentSession,
+    toFrontierRef(buffer.bufferId, state.bufferVersion),
+    {
+      worldlineId: state.currentSession.worldline.worldlineId,
+      basisHeadId: request.basisHeadId,
+      nextHeadId: request.nextHeadId,
+      maxByteCount: request.maxByteCount,
+      maxLineCount: request.maxLineCount,
+      maxRewriteCount: request.maxRewriteCount,
+    },
+  );
+  return {
+    ...envelope.reading,
+    rewriteIds: [...envelope.reading.rewriteIds],
+    diffIds: [...envelope.reading.diffIds],
+  };
 }
 
 async function applyTextBufferIntent(

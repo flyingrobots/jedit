@@ -2,6 +2,7 @@ import type { I18nPort } from '../../ports/i18n.js';
 import { fitLine } from '../../ui/fit-line.js';
 import { EchoHistoryEntryKinds, EchoHistoryEntryStatuses, type EchoHistoryEntry } from './echo-history.js';
 import type { WorkspaceModel } from './model.js';
+import { WorkspaceBufferIntentDurabilityKinds } from './workspace-buffer-durability.js';
 import { WorkspaceTextAuthorityKinds, WorkspaceTextIntentStatuses } from './workspace-text-authority.js';
 import {
   MAIN_WORLDLINE_NAME,
@@ -117,7 +118,7 @@ function graphNodePhaseRow(
 
 function localOptimisticRow(model: WorkspaceModel): WorldlinePhaseRow | undefined {
   if (model.textAuthority.kind !== WorkspaceTextAuthorityKinds.Opened ||
-    model.textAuthority.dirty !== true) {
+    model.textAuthority.durability.intent.kind !== WorkspaceBufferIntentDurabilityKinds.Pending) {
     return undefined;
   }
   const latest = latestEditEntry(model.echoHistory);

@@ -112,6 +112,16 @@ export interface TextWindowReading {
   hasMoreAfter: boolean;
   lines: Array<TextLineReading>;
 }
+export interface CausalLineDiffReading {
+  worldlineId: string;
+  basisHeadId: string;
+  nextHeadId: string;
+  insertedLineCount: number;
+  deletedLineCount: number;
+  rewriteIds: Array<string>;
+  diffIds: Array<string>;
+  observerVersion: string;
+}
 export interface CreateBufferWorldlineResult {
   worldline: BufferWorldline;
   head: RopeHead;
@@ -162,6 +172,14 @@ export interface TextWindowInput {
   afterLines: number;
   maxBytes: number;
 }
+export interface CausalLineDiffInput {
+  worldlineId: string;
+  basisHeadId: string;
+  nextHeadId: string;
+  maxByteCount: number;
+  maxLineCount: number;
+  maxRewriteCount: number;
+}
 // Operations
 export interface WorldlineSnapshotQueryArgs {
   input: WorldlineSnapshotInput;
@@ -181,9 +199,19 @@ export interface TextWindowQueryOperation {
   input: TextWindowInput;
   result: TextWindowReading;
 }
+export interface CausalLineDiffQueryArgs {
+  input: CausalLineDiffInput;
+}
+export interface CausalLineDiffQueryOperation {
+  operationName: "causalLineDiff";
+  args: CausalLineDiffQueryArgs;
+  input: CausalLineDiffInput;
+  result: CausalLineDiffReading;
+}
 export interface QueryOperationMap {
   worldlineSnapshot: WorldlineSnapshotQueryOperation;
   textWindow: TextWindowQueryOperation;
+  causalLineDiff: CausalLineDiffQueryOperation;
 }
 export type QueryOperationName = keyof QueryOperationMap;
 export type QueryOperation = QueryOperationMap[QueryOperationName];

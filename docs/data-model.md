@@ -409,6 +409,69 @@ checkpoint, `:why` result, or recovery outcome. A future native Echo/Edict read
 corridor may replace the request namespace with opaque admitted basis evidence,
 but Jim must consume that evidence rather than derive or mint it.
 
+### Workspace buffer durability
+
+Workspace durability is not one scalar and it is not a synonym for `dirty`.
+`WorkspaceBufferDurability` keeps five propositions independent:
+
+- whether a Jim intent is still pending and has not advanced causal text;
+- which opaque rope head Echo has admitted for the buffer;
+- which rope head supplied the last successfully written file projection;
+- whether an external Git observer has found that projection in a local commit;
+  and
+- whether an external Git observer has found that commit on a named remote.
+
+The default Git posture is `unknown`. Jim must not infer Git durability from
+worldline names, causal ahead/behind counters, filesystem materialization, or a
+rope checkpoint. An explicit Git adapter may replace the unknown readings with
+observed commit evidence later.
+
+A checkpoint declaration and a saved file are also separate propositions.
+Declaring a checkpoint records its checkpoint and basis-head identities. It is
+associated with the saved-file layer only when the saved projection names the
+same head. A save/export result moves the file layer only after the host write
+succeeds and carries its own basis head, reading identity, and fingerprint.
+Neither operation advances causal text.
+
+`workspaceBufferFileDirtyReading` derives file dirtiness from those independent
+facts. It reports `clean` when the current admitted head equals the file or
+host-absence basis, and `dirty` when both bases are known but differ. If either
+basis is unavailable, the reading is explicitly `unavailable`; callers must not
+invent an Echo identity or treat a pending intent as an admitted head merely to
+obtain a boolean.
+
+The worldline drawer uses the pending-intent proposition, not file dirtiness, to
+decide whether to render a local optimistic rail. Consequently, an admitted but
+unsaved head is dirty without being mislabeled as unconfirmed local work, while
+an obstructed intent remains visible as a conflicted optimistic projection.
+
+The footer renders the same propositions as separate labels: `intent:*`,
+`causal:*`, `file:*`, `git:*`, and `remote:*`. `causal:unsaved` is emitted only
+when an admitted current head and file basis are both known and differ;
+`file:exported` requires a successful export reading. Git and remote labels use
+only explicit observer evidence and default to `unknown`. Opaque head, receipt,
+reading, and commit identities are not shortened, compared, or reconstructed by
+the formatter. Cursor `line:col` stays on the mode row because it is UI state,
+not durability evidence.
+
+This means queuing or obstructing an edit cannot make an otherwise clean file
+authoritatively dirty. An optimistic editor projection may still be marked dirty
+for immediate interaction, but it is not causal authority. Once Echo admits a
+new head, that head differs from the saved-file basis and the authoritative
+reading becomes dirty. Declaring a checkpoint does not clear it. A successful
+host export clears it only by recording the exported head as the new file basis.
+The comparison does not consult Git.
+
+A missing-file open has no fingerprint, so it carries an explicit
+`hostAbsenceBasisHeadId` naming the head observed when absence was established.
+That basis lets a newly opened, not-yet-materialized buffer begin clean without
+using the legacy `dirty` field as causal evidence.
+
+The legacy `dirty` and `materialization` fields remain compatibility
+projections during CR-04. New durability behavior must read the structured
+model. The following slices derive footer language and change counts from its
+opaque causal and file bases before those legacy fields are removed.
+
 ***
 
 ## Echo/Wesley operation model

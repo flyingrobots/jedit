@@ -94,6 +94,19 @@ test("file open routes through production text session and applies initial bound
         },
       };
     },
+    observeCausalLineDiff: async (request) => ({
+      kind: "causal-line-diff-observed",
+      reading: {
+        worldlineId: "fixture:worldline",
+        basisHeadId: request.basisHeadId,
+        nextHeadId: request.nextHeadId,
+        insertedLineCount: 0,
+        deletedLineCount: 0,
+        rewriteIds: [],
+        diffIds: [],
+        observerVersion: "test-fixture",
+      },
+    }),
   };
 
   const [pendingModel, commands] = fileTree.updateTreeFromKey(
@@ -381,6 +394,19 @@ test("insert and delete keys submit production text edits with optimistic local 
         },
       };
     },
+    observeCausalLineDiff: async (request) => ({
+      kind: "causal-line-diff-observed",
+      reading: {
+        worldlineId: "fixture:worldline",
+        basisHeadId: request.basisHeadId,
+        nextHeadId: request.nextHeadId,
+        insertedLineCount: 0,
+        deletedLineCount: 0,
+        rewriteIds: [],
+        diffIds: [],
+        observerVersion: "test-fixture",
+      },
+    }),
   };
   const baseModel = textWorkspaceModel(modeModule, authority, profile, {
     mode: modeModule.EditorModes.Insert,
@@ -397,7 +423,9 @@ test("insert and delete keys submit production text edits with optimistic local 
   );
   assert.deepEqual(pendingInsert.editor.lines, ["aXbc"]);
   assert.equal(pendingInsert.editor.cursorCol, 2);
-  assert.equal(pendingInsert.textAuthority.dirty, true);
+  assert.equal(pendingInsert.editor.dirty, true);
+  assert.equal(pendingInsert.textAuthority.dirty, false);
+  assert.equal(pendingInsert.textAuthority.durability.intent.kind, "pending");
 
   const insertMessage = await insertCommands[0]();
   assert.equal(
@@ -454,6 +482,7 @@ test("insert and delete keys submit production text edits with optimistic local 
   ]);
   assert.deepEqual(insertedModel.editor.lines, ["aXbc"]);
   assert.equal(insertedModel.textAuthority.lastReceiptId, "receipt:insert");
+  assert.equal(insertedModel.textAuthority.dirty, true);
 
   const normalModel = {
     ...insertedModel,
@@ -471,7 +500,9 @@ test("insert and delete keys submit production text edits with optimistic local 
     fakeTextOperationSequencer(),
   );
   assert.deepEqual(pendingDelete.editor.lines, ["abc"]);
+  assert.equal(pendingDelete.editor.dirty, true);
   assert.equal(pendingDelete.textAuthority.dirty, true);
+  assert.equal(pendingDelete.textAuthority.durability.intent.kind, "pending");
 
   const deleteMessage = await deleteCommands[0]();
   const [deletedModel] = runtime.update(deleteMessage, pendingDelete);
@@ -487,6 +518,7 @@ test("insert and delete keys submit production text edits with optimistic local 
   ]);
   assert.deepEqual(deletedModel.editor.lines, ["abc"]);
   assert.equal(deletedModel.textAuthority.lastReceiptId, "receipt:delete");
+  assert.equal(deletedModel.textAuthority.dirty, true);
 
   const backspaceModel = {
     ...deletedModel,
@@ -1227,7 +1259,7 @@ test("ctrl-s exports a full production snapshot and checkpoints without direct l
         kind: "exported",
         text: documentLines.join("\n"),
         readingId: "reading:export",
-        basisHeadId: "head:export",
+        basisHeadId: request.basisHeadId,
       };
     },
     checkpointBuffer: async (request) => {
@@ -1236,6 +1268,10 @@ test("ctrl-s exports a full production snapshot and checkpoints without direct l
         kind: "checkpointed",
         result: {
           checkpointId: "checkpoint:save",
+          textBasis: {
+            ...testTextBasis(documentLines.join("\n")),
+            basisHeadId: request.basisHeadId,
+          },
         },
       };
     },
@@ -1303,7 +1339,7 @@ test("ctrl-s exports a full production snapshot and checkpoints without direct l
   ]);
   assert.deepEqual(checkpointCalls, [{
     bufferId: "buffer:notes",
-    basisHeadId: "head:export",
+    basisHeadId: "head:test",
     label: "interactive workspace save",
     atMs: 0,
   }]);
@@ -1341,7 +1377,7 @@ test("repeated ctrl-s coalesces an in-flight production export", async () => {
         kind: "exported",
         text: "fresh",
         readingId: "reading:export",
-        basisHeadId: "head:export",
+        basisHeadId: request.basisHeadId,
       };
     },
   });
@@ -1706,16 +1742,20 @@ test("ctrl-s materializes a missing-open path when it is still absent", async ()
   const savedFiles = [];
   const loadedFiles = [];
   const productionTextSession = {
-    exportSnapshot: async () => ({
+    exportSnapshot: async (request) => ({
       kind: "exported",
       text: "local draft",
       readingId: "reading:export",
-      basisHeadId: "head:export",
+      basisHeadId: request.basisHeadId,
     }),
-    checkpointBuffer: async () => ({
+    checkpointBuffer: async (request) => ({
       kind: "checkpointed",
       result: {
         checkpointId: "checkpoint:save",
+        textBasis: {
+          ...testTextBasis("local draft"),
+          basisHeadId: request.basisHeadId,
+        },
       },
     }),
   };
@@ -1922,7 +1962,18 @@ function textWindowReading(options) {
 }
 
 function appliedTextOutcome(receiptId, text) {
-  return { kind: "applied", result: { receiptId, textBasis: testTextBasis(text) } };
+  const nextHeadId = `fixture:head:${receiptId}`;
+  return {
+    kind: "applied",
+    result: {
+      receiptId,
+      textBasis: { ...testTextBasis(text), basisHeadId: nextHeadId },
+      causalTransition: {
+        admittedTickId: `fixture:tick:${receiptId}`,
+        nextHeadId,
+      },
+    },
+  };
 }
 
 function textBasisRequest(text) {

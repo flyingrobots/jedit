@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+- Added an explicit workspace buffer durability model that keeps pending Jim
+  intents, Echo-admitted rope heads, saved-file projection bases, local Git
+  commits, and remote Git durability independent. Queuing an edit no longer
+  advances the durability model's causal head, admitted edits do not silently
+  move its saved-file basis, and a checkpoint declaration is associated with a
+  saved projection only when both name the same opaque rope head. Git posture
+  remains explicitly unknown until supplied by an external Git observer.
+- Derived authoritative file dirtiness from the current Echo-admitted rope head
+  and the last successful host projection basis. Pending or obstructed intents
+  no longer counterfeit an admitted change, checkpoint declarations no longer
+  clear unsaved edits, and only a successful export of the current head moves
+  the file basis back to clean. Missing-file opens now require an explicit
+  host-absence basis instead of inferring causal evidence from a legacy boolean.
+- Reworked the lower-right footer posture around the five durability layers:
+  pending intent, admitted causal head, saved/exported file basis, local Git,
+  and remote Git. Cursor `line:col` remains separate UI state, Git readings stay
+  unknown until externally observed, and oversized status claims are omitted
+  whole instead of being clipped into misleading fragments on narrow terminals.
 - Added versioned text-window materialization provenance and a bounded,
   disposable cache. Cache coordinates now name the requested rope head, exact
   branded UTF-8 coverage, request namespace, observer plan, materializer

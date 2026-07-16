@@ -161,7 +161,7 @@ test('real workspace app path waits for queued rapid inserts before saving', asy
         kind: 'exported',
         text: document.lines().join('\n'),
         readingId: 'reading:export',
-        basisHeadId: 'head:export',
+        basisHeadId: `head:test:edit:${sentence.length}`,
       };
     },
   };
@@ -275,7 +275,7 @@ test('real workspace app path cancels a queued save after an edit obstruction', 
   assert.equal(calls.checkpoint.length, 0);
   assert.deepEqual(harness.savedFiles, []);
   assert.equal(harness.model.textAuthority.pendingIntentStatus, 'obstructed');
-  assert.equal(harness.model.textAuthority.dirty, true);
+  assert.equal(harness.model.textAuthority.dirty, false);
 });
 
 test('real workspace app path admits final queued edit before export obstruction', async () => {

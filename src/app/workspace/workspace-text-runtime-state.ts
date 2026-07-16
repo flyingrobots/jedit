@@ -21,6 +21,7 @@ import {
   openedWorkspaceTextAuthority,
   obstructedWorkspaceTextAuthority,
   WorkspaceTextAuthorityKinds,
+  WorkspaceTextHostBasisKinds,
   workspaceTextAuthorityWithCache,
   workspaceTextAuthorityWithBlockedIntent,
   workspaceTextAuthorityWithCheckpoint,
@@ -126,6 +127,9 @@ function openedTextModel(
     dirty: false,
     materialization: result.materialization,
     hostBasis: result.hostBasis,
+    hostAbsenceBasisHeadId: result.hostBasis === WorkspaceTextHostBasisKinds.Missing
+      ? result.cache.textBasis.basisHeadId
+      : undefined,
     hostFingerprint: result.hostFingerprint,
     cache: result.cache,
   });
@@ -135,7 +139,7 @@ function openedTextModel(
     editor: editorFromWorkspaceTextLines({
       filePath: result.filePath,
       readOnly: result.readOnly,
-      dirty: false,
+      dirty: textAuthority.dirty,
       lines: result.initialLines,
       existing: model.editor,
     }),
@@ -208,7 +212,8 @@ function textAuthorityWithIntermediateEditReceipt(
 ) {
   if (requestId === authority.pendingClientSeq) {
     return workspaceTextAuthorityWithAppliedJeditCommandReceipt(
-      authority, requestId, result.receiptId, result.reversedReceiptId, result.causalTransition,
+      authority, requestId, result.receiptId, result.reversedReceiptId,
+      { causalTransition: result.causalTransition, lineChanges: result.lineChanges },
     );
   }
   const event = receivedJeditCommandEventForRequest(authority, requestId, result.receiptId, result.reversedReceiptId);
@@ -231,7 +236,8 @@ function applyAppliedTextEditResult(
   }
   const withCache = workspaceTextAuthorityWithCache(
     workspaceTextAuthorityWithAppliedJeditCommandReceipt(
-      authority, msg.requestId, msg.result.receiptId, msg.result.reversedReceiptId, msg.result.causalTransition,
+      authority, msg.requestId, msg.result.receiptId, msg.result.reversedReceiptId,
+      { causalTransition: msg.result.causalTransition, lineChanges: msg.result.lineChanges },
     ),
     msg.result.cache,
   );
@@ -363,7 +369,11 @@ function applyTextCheckpointResult(
       deps.createNotificationTickCmd,
     );
   }
-  const textAuthority = workspaceTextAuthorityWithCheckpoint(authority, msg.result.checkpointId);
+  const textAuthority = workspaceTextAuthorityWithCheckpoint(
+    authority,
+    msg.result.checkpointId,
+    msg.result.basisHeadId,
+  );
   return [withEchoHistoryEntry(withTextAuthority(model, textAuthority), {
     kind: EchoHistoryEntryKinds.Checkpoint,
     status: EchoHistoryEntryStatuses.Checkpointed,
@@ -392,7 +402,9 @@ function applyTextExportResult(
     );
     return pushRuntimeIssueToast(obstructed, msg.result.issue, deps.createNotificationTickCmd);
   }
-  const textAuthority = workspaceTextAuthorityWithExport(authority, msg.result.readingId, msg.result.hostFingerprint);
+  const textAuthority = workspaceTextAuthorityWithExport(
+    authority, msg.result.readingId, msg.result.basisHeadId, msg.result.hostFingerprint,
+  );
   const exported = withTextAuthority({
     ...model, quitAfterSaveRequestId: undefined, quitConfirmOpen: shouldOpenQuitAfterExport(model, msg.requestId),
   }, textAuthority);

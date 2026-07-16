@@ -33,6 +33,7 @@ import {
 import { workspaceTextEditResultWithSettlement } from './workspace-text-wsc-settlement.js';
 import { readingCache } from './workspace-text-observed-reading.js';
 import { openedWorkspaceTextResult } from './workspace-text-open-result.js';
+import { observeWorkspaceCausalLineChanges } from './workspace-causal-line-change-observation.js';
 import type {
   WorkspaceTextOperationSequencer,
   WorkspaceTextOperationTarget,
@@ -81,6 +82,7 @@ export interface WorkspaceTextCommandBase {
   readonly reversedRequestId?: number;
   readonly reversedReceiptId?: string;
   readonly reachableHistoryRequestIds?: readonly number[];
+  readonly changeBasisHeadId?: string;
 }
 
 export interface WorkspaceTextInsertCommandRequest extends WorkspaceTextCommandBase {
@@ -299,12 +301,17 @@ async function editWorkspaceText(
       return obstructedEdit(request.filePath, observed.obstruction.issue);
     }
     const cache = readingCache(request.bufferId, observed.observed.value);
+    const lineChanges = await observeWorkspaceCausalLineChanges(
+      request,
+      edited.result.textBasis.basisHeadId,
+    );
     return {
       kind: WorkspaceTextResultKinds.Applied,
       filePath: request.filePath,
       bufferId: request.bufferId,
       receiptId: edited.result.receiptId,
       causalTransition: edited.result.causalTransition,
+      lineChanges,
       cache,
       cursorAfter: request.cursorAfter,
     };
@@ -360,6 +367,7 @@ async function checkpointWorkspaceText(
       filePath: request.filePath,
       bufferId: request.bufferId,
       checkpointId: checkpointed.result.checkpointId,
+      basisHeadId: checkpointed.result.textBasis.basisHeadId,
     };
   } catch (cause) {
     return obstructedCheckpoint(

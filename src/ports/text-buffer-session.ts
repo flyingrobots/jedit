@@ -89,6 +89,25 @@ export interface CreateTextBufferCheckpointResult {
   readonly checkpointKind: CheckpointKind;
 }
 
+export interface CausalLineDiffRequest {
+  readonly basisHeadId: string;
+  readonly nextHeadId: string;
+  readonly maxByteCount: number;
+  readonly maxLineCount: number;
+  readonly maxRewriteCount: number;
+}
+
+export interface CausalLineDiffReading {
+  readonly worldlineId: string;
+  readonly basisHeadId: string;
+  readonly nextHeadId: string;
+  readonly insertedLineCount: number;
+  readonly deletedLineCount: number;
+  readonly rewriteIds: readonly string[];
+  readonly diffIds: readonly string[];
+  readonly observerVersion: string;
+}
+
 export interface Observed<T> {
   readonly value: T;
   readonly evidence: {
@@ -109,6 +128,8 @@ export interface TextBufferOptic {
   ): Promise<CreateTextBufferCheckpointResult>;
 
   textWindow(request: TextWindowRequest): Promise<Observed<TextWindowReading>>;
+
+  causalLineDiff(request: CausalLineDiffRequest): Promise<CausalLineDiffReading>;
 
   explainRange(range: JeditWhyByteRange): Promise<JeditWhyRangeReport>;
 }

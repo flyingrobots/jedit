@@ -9,6 +9,7 @@ import {
   readWorldlineSnapshotWithObserverPlan,
   type JeditTextWindowObserver,
 } from '../app/jedit-observer-runtime.js';
+import { readCausalLineDiffWithObserverPlan } from '../app/jedit-causal-line-diff-observer.js';
 import { createFullSnapshotHotTextRuntimeFixture } from './full-snapshot-hot-text-runtime-fixture.js';
 import type { EchoKernelInfo } from '../ports/echo-kernel-transport.js';
 import type { JeditTransportSeam } from '../ports/jedit-transport-seam.js';
@@ -17,6 +18,7 @@ import type { HashPort } from '../ports/hash.js';
 import { createHashPort } from './hash.js';
 import {
   CREATE_BUFFER_WORLDLINE_OPERATION,
+  CAUSAL_LINE_DIFF_OPERATION,
   CREATE_CHECKPOINT_OPERATION,
   decodeJeditObserveRequest,
   encodeJeditIntentResponse,
@@ -202,6 +204,17 @@ function executeObservedOperation(
         status: JEDIT_TRANSPORT_STATUS_OK,
         operationName: TEXT_WINDOW_OPERATION,
         envelope: context.textWindowObserver.read(request.session, request.frontierRef, request.input),
+      };
+    case CAUSAL_LINE_DIFF_OPERATION:
+      return {
+        status: JEDIT_TRANSPORT_STATUS_OK,
+        operationName: CAUSAL_LINE_DIFF_OPERATION,
+        envelope: readCausalLineDiffWithObserverPlan(
+          context.runtime,
+          request.session,
+          request.frontierRef,
+          request.input,
+        ),
       };
   }
 }

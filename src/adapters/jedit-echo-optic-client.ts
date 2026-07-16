@@ -6,6 +6,7 @@ import type {
 } from '../app/jedit-contract-runtime.js';
 import type { WorldlineSnapshotReadingEnvelope } from '../app/jedit-observer-runtime.js';
 import type { TextWindowReadingEnvelope } from '../app/jedit-observer-runtime.js';
+import type { CausalLineDiffReadingEnvelope } from '../app/jedit-causal-line-diff-observer.js';
 import type {
   MutationOperationMap,
   QueryOperationMap,
@@ -22,6 +23,7 @@ import type { JeditWorldlineSessionPort } from '../ports/jedit-worldline-session
 import { ReadBasisHandleRegistry } from '../app/read-basis-handle-registry.js';
 import {
   CREATE_BUFFER_WORLDLINE_OPERATION,
+  CAUSAL_LINE_DIFF_OPERATION,
   CREATE_CHECKPOINT_OPERATION,
   decodeJeditIntentResponse,
   decodeJeditObserveResponse,
@@ -52,6 +54,7 @@ type ReplaceRangeAsTickInput = MutationOperationMap['replaceRangeAsTick']['input
 type CreateCheckpointInput = MutationOperationMap['createCheckpoint']['input'];
 type WorldlineSnapshotInput = QueryOperationMap['worldlineSnapshot']['input'];
 type TextWindowInput = QueryOperationMap['textWindow']['input'];
+type CausalLineDiffInput = QueryOperationMap['causalLineDiff']['input'];
 type JeditOkIntentResponse = Exclude<JeditIntentResponse, { readonly status: typeof JEDIT_TRANSPORT_STATUS_OBSTRUCTED }>;
 type JeditOkObserveResponse = Exclude<JeditObserveResponse, { readonly status: typeof JEDIT_TRANSPORT_STATUS_OBSTRUCTED }>;
 
@@ -125,6 +128,12 @@ export function createEchoTransportJeditOpticClient(
     createBufferWorldline: (input) => createBufferWorldlineViaTransport(context, input),
     replaceRangeAsTick: (session, input) => replaceRangeAsTickViaTransport(context, session, input),
     createCheckpoint: (session, input) => createCheckpointViaTransport(context, session, input),
+    causalLineDiff: (session, frontierRef, input) => causalLineDiffViaTransport(
+      context,
+      session,
+      frontierRef,
+      input,
+    ),
     worldlineSnapshot: (session, frontierRef, input) => worldlineSnapshotViaTransport(context, session, frontierRef, input),
     textWindow: (session, frontierRef, readBasisHandle, request) => textWindowViaTransport(context, {
       session,
@@ -225,6 +234,25 @@ async function worldlineSnapshotViaTransport(
   });
   if (response.operationName !== WORLDLINE_SNAPSHOT_OPERATION) {
     throwUnexpectedOperation(WORLDLINE_SNAPSHOT_OPERATION, response.operationName);
+  }
+  return response.envelope;
+}
+
+async function causalLineDiffViaTransport(
+  context: OpticClientContext,
+  session: JeditWorldlineSession,
+  frontierRef: string,
+  input: CausalLineDiffInput,
+): Promise<CausalLineDiffReadingEnvelope> {
+  const response = await checkedObserveResponse(context, {
+    kind: JEDIT_OBSERVE_REQUEST_KIND,
+    operationName: CAUSAL_LINE_DIFF_OPERATION,
+    session,
+    frontierRef,
+    input,
+  });
+  if (response.operationName !== CAUSAL_LINE_DIFF_OPERATION) {
+    throwUnexpectedOperation(CAUSAL_LINE_DIFF_OPERATION, response.operationName);
   }
   return response.envelope;
 }

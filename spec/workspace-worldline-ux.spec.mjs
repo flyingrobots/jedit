@@ -124,7 +124,7 @@ test("braid preview commands add a braid candidate with ahead behind posture", a
   assert.match(lines, /preview/);
 });
 
-test("workspace footer separates causal posture from filesystem materialization", async () => {
+test("workspace footer separates unavailable causal evidence from filesystem materialization", async () => {
   const [viewer, titleScreen, editorMode, authority, worldline] = await Promise.all([
     importDist("app", "workspace", "viewer.js"),
     importDist("ui", "title-screen.js"),
@@ -133,7 +133,7 @@ test("workspace footer separates causal posture from filesystem materialization"
     importDist("app", "workspace", "worldline-state.js"),
   ]);
   const model = mockTitleScreenModel(titleScreen, {
-    columns: 100,
+    columns: 200,
     rows: 12,
     editor: mockEditor(editorMode, {
       dirty: true,
@@ -163,8 +163,8 @@ test("workspace footer separates causal posture from filesystem materialization"
   const footerContext = rendered.split("\n").at(-1);
 
   assert.equal(footerContext.startsWith("/repo/notes.md"), true);
-  assert.match(footerContext, /\[dirty \| strand:draft \| fs:unmaterialized \| target:main/);
-  assert.equal(footerContext.endsWith("+0/-0]"), true);
+  assert.match(footerContext, /\[intent:idle \| causal:unavailable \| file:unknown \| git:unknown \| remote:unknown \| strand:draft \| fs:unmaterialized \| target:main/);
+  assert.equal(footerContext.endsWith("+?/-?]"), true);
 });
 
 test("worldline drawer shows unconfirmed optimistic braid while Echo edit is in flight", async () => {

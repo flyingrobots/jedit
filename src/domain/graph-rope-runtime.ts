@@ -20,6 +20,7 @@ import {
   type TickReceiptFact,
 } from './graph-rope-contract.js';
 import { validateCheckpointAnchorAdmissionRequest } from './graph-rope-causal-anchor-validation.js';
+import { readGraphRopeCausalLineDiff, type GraphRopeCausalLineDiffInput, type GraphRopeCausalLineDiffReading } from './graph-rope-causal-line-diff.js';
 import { isRopeCheckpointReason } from './graph-rope-checkpoint-validation.js';
 import {
   createCheckpointAnchorAdmissionRequest,
@@ -63,9 +64,14 @@ export {
   GRAPH_ROPE_RUNTIME_OBSTRUCTION_MISSING_NODE,
   GRAPH_ROPE_RUNTIME_OBSTRUCTION_CAUSAL_ANCHOR_ADMISSION_FAILED,
   GRAPH_ROPE_RUNTIME_OBSTRUCTION_CAUSAL_ANCHOR_UNAVAILABLE,
+  GRAPH_ROPE_RUNTIME_OBSTRUCTION_BASIS_NOT_ANCESTOR,
+  GRAPH_ROPE_RUNTIME_OBSTRUCTION_LINE_DIFF_LIMIT_EXCEEDED,
+  GRAPH_ROPE_RUNTIME_OBSTRUCTION_MISSING_CAUSAL_EVIDENCE,
   GRAPH_ROPE_TEXT_WINDOW_CACHE_STATUS_UNCACHED,
 } from './graph-rope-runtime-issues.js';
 export type { GraphRopeRuntimeObstructionCode } from './graph-rope-runtime-issues.js';
+export { GRAPH_ROPE_CAUSAL_LINE_DIFF_OBSERVER_VERSION } from './graph-rope-causal-line-diff.js';
+export type { GraphRopeCausalLineDiffInput, GraphRopeCausalLineDiffReading } from './graph-rope-causal-line-diff.js';
 export type {
   GraphRopeAnchorCheckpointInput,
   GraphRopeAnchorCheckpointResult,
@@ -161,6 +167,7 @@ export interface GraphRopeRuntime {
   replaceRangeAsTick(input: GraphRopeReplaceRangeInput): GraphRopeRuntimeResult<GraphRopeReplaceRangeResult>;
   createCheckpoint(input: GraphRopeCreateCheckpointInput): GraphRopeRuntimeResult<GraphRopeCreateCheckpointResult>;
   anchorCheckpoint(input: GraphRopeAnchorCheckpointInput): GraphRopeRuntimeResult<GraphRopeAnchorCheckpointResult>;
+  causalLineDiff(input: GraphRopeCausalLineDiffInput): GraphRopeRuntimeResult<GraphRopeCausalLineDiffReading>;
   textWindow(input: GraphRopeTextWindowInput): GraphRopeRuntimeResult<GraphRopeTextWindowReading>;
   debugRopeShape(headId: string): GraphRopeRuntimeResult<GraphRopeDebugShape>;
 }
@@ -203,6 +210,7 @@ export function createGraphRopeRuntime(input: CreateGraphRopeRuntimeInput): Grap
     anchorCheckpoint(anchorInput) {
       return anchorCheckpoint(state, anchorInput);
     },
+    causalLineDiff: (lineDiffInput) => readGraphRopeCausalLineDiff(state, lineDiffInput),
     textWindow(readInput) {
       return textWindow(state, readInput);
     },

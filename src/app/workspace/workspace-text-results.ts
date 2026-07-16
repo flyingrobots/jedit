@@ -4,6 +4,7 @@ import type { JeditWscWorkspaceEnvelope } from '../../ports/jedit-wsc-workspace-
 import type { TextBufferCausalTransition } from '../../ports/text-buffer-session.js';
 import type { TextPosition } from './workspace-text-position.js';
 import type { WorkspaceTextHostBasisKind } from './workspace-text-authority.js';
+import type { WorkspaceBufferCausalLineChanges } from './workspace-buffer-durability.js';
 import type { WorkspaceTextReadingCache } from './workspace-text-reading-cache.js';
 import type { WorkspaceWorldlineMaterializationKind } from './worldline-types.js';
 
@@ -41,6 +42,7 @@ export interface WorkspaceTextAppliedResult {
   readonly bufferId: string;
   readonly receiptId: string;
   readonly causalTransition?: TextBufferCausalTransition;
+  readonly lineChanges: WorkspaceBufferCausalLineChanges;
   readonly reversedReceiptId?: string;
   readonly cache: WorkspaceTextReadingCache;
   readonly cursorAfter?: TextPosition;
@@ -52,6 +54,7 @@ export interface WorkspaceTextCheckpointedResult {
   readonly filePath: string;
   readonly bufferId: string;
   readonly checkpointId: string;
+  readonly basisHeadId: string;
 }
 
 export interface WorkspaceTextExportedResult {
