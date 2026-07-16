@@ -8,6 +8,7 @@ const LINE_CHANGES_UNAVAILABLE = 'unavailable';
 const LINE_CHANGES_SOURCE_IDENTITY = 'identity';
 const LINE_CHANGES_SOURCE_CAUSAL_OBSERVATION = 'causal-observation';
 const LINE_CHANGES_REASON_BASIS_UNAVAILABLE = 'basis-unavailable';
+const LINE_CHANGES_REASON_OBSERVATION_PENDING = 'observation-pending';
 const LINE_CHANGES_REASON_OBSERVATION_OBSTRUCTED = 'observation-obstructed';
 const LINE_CHANGES_REASON_EVIDENCE_MISMATCH = 'evidence-mismatch';
 const LINE_CHANGES_IDENTITY_OBSERVER_VERSION = 'jedit-causal-line-diff-identity-v1';
@@ -24,6 +25,7 @@ export const WorkspaceBufferCausalLineChangeSources = Object.freeze({
 
 export const WorkspaceBufferCausalLineChangeUnavailableReasons = Object.freeze({
   BasisUnavailable: LINE_CHANGES_REASON_BASIS_UNAVAILABLE,
+  ObservationPending: LINE_CHANGES_REASON_OBSERVATION_PENDING,
   ObservationObstructed: LINE_CHANGES_REASON_OBSERVATION_OBSTRUCTED,
   EvidenceMismatch: LINE_CHANGES_REASON_EVIDENCE_MISMATCH,
 } as const);

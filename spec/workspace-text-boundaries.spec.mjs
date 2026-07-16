@@ -395,6 +395,43 @@ test('causal line observation exceptions become unavailable evidence', async () 
   });
 });
 
+test('causal line observation refuses adapter evidence for a different basis', async () => {
+  const observation = await importDist(
+    'app',
+    'workspace',
+    'workspace-causal-line-change-observation.js',
+  );
+  const lineChanges = await observation.observeWorkspaceCausalLineChanges({
+    bufferId: 'buffer:notes',
+    changeBasisHeadId: 'head:requested',
+    atMs: 42,
+    productionTextSession: {
+      observeCausalLineDiff: async () => ({
+        kind: 'causal-line-diff-observed',
+        reading: {
+          worldlineId: 'worldline:notes',
+          basisHeadId: 'head:wrong',
+          nextHeadId: 'head:wrong-next',
+          insertedLineCount: 1,
+          deletedLineCount: 0,
+          rewriteIds: ['rewrite:wrong'],
+          diffIds: ['diff:wrong'],
+          markers: [],
+          deletions: [],
+          observerVersion: 'test-wrong-basis',
+        },
+      }),
+    },
+  }, 'head:requested-next');
+
+  assert.deepEqual(lineChanges, {
+    kind: 'unavailable',
+    reason: 'evidence-mismatch',
+    basisHeadId: 'head:requested',
+    nextHeadId: 'head:requested-next',
+  });
+});
+
 test('settlement envelope records bounded reading coverage metadata', async () => {
   const commands = await importDist('app', 'workspace', 'workspace-text-commands.js');
   const productionTextSession = basisPinnedTestTextSession({

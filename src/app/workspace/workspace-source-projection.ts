@@ -14,6 +14,7 @@ import {
   isWorkspaceTextAuthorityOpened,
   projectedSourceWindow,
 } from './workspace-text-authority.js';
+import { workspaceCausalGutterBasisHeadId } from './workspace-causal-gutter-basis.js';
 
 const INSERTED_CAUSAL_LINE_MARKER = 'INSERTED';
 
@@ -88,8 +89,13 @@ function causalLineChangesForProjection(
   }
   const lineChanges = model.textAuthority.durability.lineChanges;
   const projection = model.textAuthority.cache?.projection;
+  const selectedBasisHeadId = workspaceCausalGutterBasisHeadId(
+    model.causalGutterBasis,
+    model.textAuthority.durability,
+  );
   return lineChanges.kind === WorkspaceBufferCausalLineChangeKinds.Available
       && projection?.basisHeadId === lineChanges.nextHeadId
+      && selectedBasisHeadId === lineChanges.basisHeadId
     ? lineChanges
     : undefined;
 }

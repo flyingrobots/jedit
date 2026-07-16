@@ -43,6 +43,7 @@ The settings drawer can include these rows, depending on runtime capabilities:
 | `Theme mode` | Switch automatic, dark, or light mode. |
 | `Footer` | Toggle expanded footer details. |
 | `Line numbers` | Switch absolute, relative, or hidden gutter line numbers. |
+| `Causal markers` | Choose the causal head used as the gutter comparison basis. |
 | `Markdown preview` | Toggle Markdown preview when supported for the current buffer. |
 | `Diagnostics` | Open or close the diagnostics panel. |
 
@@ -57,6 +58,27 @@ show only the current locale and position, for example:
 Jim may render that as one row when terminal height is tight. The important
 contract is that the full locale list does not push a tall multilingual menu
 through the drawer.
+
+## Causal Marker Basis
+
+The causal marker setting changes which retained head the gutter projection
+compares with the current admitted head:
+
+| Choice | Comparison basis |
+| --- | --- |
+| `Last save` | The head used for the latest successful file materialization. |
+| `Import` | The head created when the buffer entered the current Jim session. |
+| `Selected checkpoint` | The opaque head named by the selected checkpoint row in Echo history. |
+| `Selected tick` | The opaque head and admitted tick named by the selected edit row in Echo history. |
+
+Checkpoint and tick choices fail closed when the selected history row does not
+carry matching Echo evidence. Jim does not infer or manufacture missing head,
+tick, checkpoint, or receipt identities.
+
+Changing this setting updates only a bounded causal-line reading. It does not
+submit an edit, advance a worldline, declare a checkpoint, save a file, or mint
+Echo authority. Stale readings are ignored unless their buffer, current head,
+and selected comparison head still match.
 
 ## Setting Feedback
 
@@ -101,6 +123,8 @@ cursor.
 | [`src/app/settings-session.ts`](../../../src/app/settings-session.ts) | Settings rows, focus movement, and key actions. |
 | [`src/app/workspace/settings.ts`](../../../src/app/workspace/settings.ts) | Workspace handlers for applying setting changes. |
 | [`src/app/workspace/settings-key-bindings.ts`](../../../src/app/workspace/settings-key-bindings.ts) | Settings key dispatch and change notifications. |
+| [`src/app/workspace/workspace-causal-gutter-basis.ts`](../../../src/app/workspace/workspace-causal-gutter-basis.ts) | Comparison choices and opaque selected-evidence capture. |
+| [`src/app/workspace/workspace-causal-line-change-refresh.ts`](../../../src/app/workspace/workspace-causal-line-change-refresh.ts) | Bounded refresh commands and stale-result refusal. |
 | [`src/ui/settings-drawer.ts`](../../../src/ui/settings-drawer.ts) | Drawer rendering. |
 | [`src/app/workspace/viewer-overlays.ts`](../../../src/app/workspace/viewer-overlays.ts) | Settings plus diagnostics overlay composition. |
 | [`src/ui/graft-diagnostics-panel.ts`](../../../src/ui/graft-diagnostics-panel.ts) | Diagnostics panel rendering and wrapping. |

@@ -338,6 +338,12 @@ test("viewer paints causal gutter evidence only for the rendered admitted head",
       lines: ["one", "two", "three"],
     }),
     jeditTheme: mockJeditTheme(),
+    causalGutterBasis: {
+      kind: "selected-tick",
+      evidenceId: "receipt:saved",
+      headId: "head:saved",
+      tickId: "tick:saved",
+    },
     textAuthority: {
       ...opened,
       durability: {
@@ -362,12 +368,23 @@ test("viewer paints causal gutter evidence only for the rendered admitted head",
     ...model,
     textAuthority: { ...model.textAuthority, pendingIntentStatus: "predicted" },
   }, 80, 16));
+  const wrongSelectedBasis = surfaceText(viewerContent.renderViewer({
+    ...model,
+    causalGutterBasis: {
+      kind: "selected-tick",
+      evidenceId: "receipt:other",
+      headId: "head:other",
+      tickId: "tick:other",
+    },
+  }, 80, 16));
 
   assert.match(matching, /2-\+│ two/);
   assert.match(stale, /2  │ two/);
   assert.doesNotMatch(stale, /2-\+│ two/);
   assert.match(optimistic, /2  │ two/);
   assert.doesNotMatch(optimistic, /2-\+│ two/);
+  assert.match(wrongSelectedBasis, /2  │ two/);
+  assert.doesNotMatch(wrongSelectedBasis, /2-\+│ two/);
 });
 
 test("viewer does not render local text when an opened authority has no projection", async () => {
@@ -453,6 +470,7 @@ test("insert and delete keys submit production text edits with optimistic local 
     ]);
   const edits = [];
   const observed = [];
+  const lineDiffRequests = [];
   const productionTextSession = {
     insertText: async (request) => {
       edits.push(["insert", request]);
@@ -475,27 +493,38 @@ test("insert and delete keys submit production text edits with optimistic local 
         },
       };
     },
-    observeCausalLineDiff: async (request) => ({
-      kind: "causal-line-diff-observed",
-      reading: {
-        worldlineId: "fixture:worldline",
-        basisHeadId: request.basisHeadId,
-        nextHeadId: request.nextHeadId,
-        insertedLineCount: 0,
-        deletedLineCount: 0,
-        rewriteIds: [],
-        diffIds: [],
-        markers: [],
-        deletions: [],
-        observerVersion: "test-fixture",
-      },
-    }),
+    observeCausalLineDiff: async (request) => {
+      lineDiffRequests.push(request);
+      return {
+        kind: "causal-line-diff-observed",
+        reading: {
+          worldlineId: "fixture:worldline",
+          basisHeadId: request.basisHeadId,
+          nextHeadId: request.nextHeadId,
+          insertedLineCount: 0,
+          deletedLineCount: 0,
+          rewriteIds: [],
+          diffIds: [],
+          markers: [],
+          deletions: [],
+          observerVersion: "test-fixture",
+        },
+      };
+    },
   };
-  const baseModel = textWorkspaceModel(modeModule, authority, profile, {
-    mode: modeModule.EditorModes.Insert,
-    lines: ["abc"],
-    cursorCol: 1,
-  });
+  const baseModel = {
+    ...textWorkspaceModel(modeModule, authority, profile, {
+      mode: modeModule.EditorModes.Insert,
+      lines: ["abc"],
+      cursorCol: 1,
+    }),
+    causalGutterBasis: {
+      kind: "selected-tick",
+      evidenceId: "receipt:selected",
+      headId: "head:selected",
+      tickId: "tick:selected",
+    },
+  };
 
   const [pendingInsert, insertCommands] = viewerKey.updateViewerFromKey(
     { key: "X", ctrl: false, alt: false, shift: true },
@@ -511,6 +540,7 @@ test("insert and delete keys submit production text edits with optimistic local 
   assert.equal(pendingInsert.textAuthority.durability.intent.kind, "pending");
 
   const insertMessage = await insertCommands[0]();
+  assert.equal(lineDiffRequests[0].basisHeadId, "head:selected");
   assert.equal(
     insertMessage.result.wscSettlementEnvelope.envelopeId.length,
     64,
@@ -566,6 +596,8 @@ test("insert and delete keys submit production text edits with optimistic local 
   assert.deepEqual(insertedModel.editor.lines, ["aXbc"]);
   assert.equal(insertedModel.textAuthority.lastReceiptId, "receipt:insert");
   assert.equal(insertedModel.textAuthority.dirty, true);
+  assert.equal(insertedModel.textAuthority.durability.lineChanges.kind, "available");
+  assert.equal(insertedModel.textAuthority.durability.lineChanges.basisHeadId, "head:selected");
 
   const normalModel = {
     ...insertedModel,

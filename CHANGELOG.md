@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Added a causal gutter comparison-basis setting with `Last save`, `Import`,
+  `Selected checkpoint`, and `Selected tick` choices. Selected history evidence
+  keeps Echo-returned head, tick, checkpoint, and receipt identities opaque;
+  missing evidence fails closed. Changing the setting refreshes only a bounded,
+  disposable causal-line reading, and stale results cannot apply after the
+  active buffer, admitted head, or selected comparison head changes.
 - Added an explicit workspace buffer durability model that keeps pending Jim
   intents, Echo-admitted rope heads, saved-file projection bases, local Git
   commits, and remote Git durability independent. Queuing an edit no longer

@@ -296,6 +296,7 @@ export function workspaceTextAuthorityWithReceipt(
         nextHeadId: causalTransition.nextHeadId,
       },
     evidence.lineChanges,
+    evidence.lineChanges?.basisHeadId,
   );
   return {
     ...authority,

@@ -65,6 +65,8 @@ export interface EchoHistoryEntry {
   readonly kind: EchoHistoryEntryKind;
   readonly status: EchoHistoryEntryStatus;
   readonly evidenceId?: string;
+  readonly causalHeadId?: string;
+  readonly causalTickId?: string;
   readonly summary: string;
 }
 
@@ -72,6 +74,8 @@ export interface EchoHistoryEntryDraft {
   readonly kind: EchoHistoryEntryKind;
   readonly status: EchoHistoryEntryStatus;
   readonly evidenceId?: string;
+  readonly causalHeadId?: string;
+  readonly causalTickId?: string;
   readonly summary: string;
 }
 
@@ -87,6 +91,8 @@ export function appendEchoHistoryEntry(
       kind: draft.kind,
       status: draft.status,
       evidenceId: draft.evidenceId,
+      causalHeadId: draft.causalHeadId,
+      causalTickId: draft.causalTickId,
       summary: draft.summary,
     },
   ];

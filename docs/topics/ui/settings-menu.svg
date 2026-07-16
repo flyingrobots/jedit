@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
   <title id="title">Settings menu width profiles</title>
-  <desc id="desc">Diagram showing settings drawer, compact language control, diagnostics, and toasts across width profiles.</desc>
+  <desc id="desc">Diagram showing settings drawer, compact language and causal marker controls, diagnostics, and toasts across width profiles.</desc>
   <style>
     :root{--bg:#080d13;--surface:#101820;--panel:#17212b;--line:#7d8da1;--text:#d5dde8;--muted:#8d98a8;--accent:#dc8cff;--cyan:#56d6d6;--green:#68e09b;--yellow:#f2c96b;--red:#ee7f7a}
-    .canvas{fill:var(--bg)}.term{fill:var(--surface);stroke:var(--line);stroke-width:2;rx:10}.drawer{fill:#0a0e12;stroke:#9aa4b3;stroke-width:2;rx:4}.panel{fill:var(--panel);stroke:#344253;stroke-width:1.5;rx:6}.select{fill:#d8dee9}.footer{fill:#141c25}.label{fill:var(--accent);font:700 21px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.small{fill:var(--muted);font:14px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.tiny{fill:var(--muted);font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.code{fill:var(--text);font:13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.accent{fill:var(--accent)}.green{fill:var(--green)}.yellow{fill:var(--yellow)}.dark{fill:#111820;font:13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+    .canvas{fill:#080d13;fill:var(--bg,#080d13)}.term{fill:#101820;fill:var(--surface,#101820);stroke:#7d8da1;stroke:var(--line,#7d8da1);stroke-width:2;rx:10}.drawer{fill:#0a0e12;stroke:#9aa4b3;stroke-width:2;rx:4}.panel{fill:#17212b;fill:var(--panel,#17212b);stroke:#344253;stroke-width:1.5;rx:6}.select{fill:#d8dee9}.footer{fill:#141c25}.label{fill:#dc8cff;fill:var(--accent,#dc8cff);font:700 21px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.small{fill:#8d98a8;fill:var(--muted,#8d98a8);font:14px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.tiny{fill:#8d98a8;fill:var(--muted,#8d98a8);font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.code{fill:#d5dde8;fill:var(--text,#d5dde8);font:13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.accent{fill:#dc8cff;fill:var(--accent,#dc8cff)}.green{fill:#68e09b;fill:var(--green,#68e09b)}.yellow{fill:#f2c96b;fill:var(--yellow,#f2c96b)}.dark{fill:#111820;font:13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
   </style>
   <rect class="canvas" width="1200" height="760"/>
   <text class="label" x="40" y="44">Settings menu</text>
@@ -18,9 +18,10 @@
   <rect class="select" x="116" y="216" width="278" height="24"/>
   <text class="dark" x="130" y="233">Language   &lt; English &gt; 1/14</text>
   <text class="tiny" x="130" y="258">en LTR</text>
-  <text class="code" x="130" y="282">Theme      terminal</text>
-  <text class="code" x="130" y="306">Line nums  Relative</text>
-  <text class="code" x="130" y="330">Diagnostics open</text>
+  <text class="code" x="130" y="278">Theme      terminal</text>
+  <text class="code" x="130" y="300">Line nums  Relative</text>
+  <text class="code" x="130" y="322">Causal     Last save</text>
+  <text class="code" x="130" y="344">Diagnostics open</text>
   <rect class="panel" x="438" y="178" width="300" height="174"/>
   <text class="code" x="458" y="206">Graft diagnostics</text>
   <text class="tiny" x="458" y="232">parser ready, graft 0.10.1,</text>
@@ -39,7 +40,8 @@
   <rect class="select" x="108" y="548" width="218" height="23"/>
   <text class="dark" x="118" y="565">&lt; English &gt; 1/14</text>
   <text class="code" x="118" y="590">Line nums Relative</text>
-  <text class="code" x="118" y="612">Diagnostics open</text>
+  <text class="code" x="118" y="610">Causal Last save</text>
+  <text class="code" x="118" y="630">Diagnostics open</text>
   <rect class="panel" x="358" y="514" width="204" height="120"/>
   <text class="tiny" x="372" y="540">diagnostics beside</text>
   <text class="tiny" x="372" y="562">when room exists</text>
@@ -53,7 +55,8 @@
   <rect class="select" x="708" y="548" width="184" height="23"/>
   <text class="dark" x="718" y="565">&lt; English &gt;</text>
   <text class="tiny" x="718" y="586">1/14 en LTR</text>
-  <text class="code" x="718" y="610">Line nums Rel</text>
+  <text class="code" x="718" y="608">Line nums Rel</text>
+  <text class="tiny" x="718" y="628">Causal Save</text>
   <text class="tiny" x="692" y="678">SETTINGS [enter]</text>
   <rect class="panel" x="965" y="498" width="165" height="174"/>
   <text class="code" x="986" y="526">rules</text>

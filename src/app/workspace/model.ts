@@ -33,6 +33,7 @@ import type {
   WorkspaceCommandLineFilePreviewState,
 } from "./command-completion-preview.js";
 import type { WorkspaceInlinePanel } from "./workspace-inline-panel.js";
+import type { WorkspaceCausalGutterBasis } from "./workspace-causal-gutter-basis.js";
 import type {
   WorkspaceHistoryDrawerView,
   WorkspaceWorldlineState,
@@ -71,6 +72,7 @@ export interface WorkspaceModel
   readonly quitAfterSaveRequestId?: number;
   readonly footerVisible: boolean;
   readonly lineNumberMode: SourceLineNumberMode;
+  readonly causalGutterBasis: WorkspaceCausalGutterBasis;
   readonly settingsOpen: boolean;
   readonly settingsFocusIndex: number;
   readonly settingsDiagnosticsOpen: boolean;

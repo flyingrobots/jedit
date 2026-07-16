@@ -38,6 +38,7 @@ import {
   applyGraftInfo,
   applyStartupFileDrawerProgress,
   applyStartupIntroTime,
+  applyWorkspaceCausalLineChangeResult,
   applyWorkspaceTextMessage,
   applyWorkspaceWhyRangeResult,
   syncActiveWorkspaceBufferRecord,
@@ -218,6 +219,9 @@ function updateGeneratedStateMessage(
   msg: WorkspaceRuntimeMsg,
   model: WorkspaceModel,
 ): WorkspaceRuntimeResult | undefined {
+  if (msg.type === WorkspaceMessageTypes.CausalLineChangesResult) {
+    return applyWorkspaceCausalLineChangeResult(msg, model);
+  }
   if (msg.type === WorkspaceMessageTypes.LoadSceneResult) {
     return [applySceneLoadResult(model, msg), []];
   }

@@ -205,6 +205,7 @@ export type WorkspaceBufferFileDirtyReading =
 export interface WorkspaceBufferDurability {
   readonly intent: WorkspaceBufferIntentDurability;
   readonly causal: WorkspaceBufferCausalDurability;
+  readonly importBasisHeadId?: string;
   readonly file: WorkspaceBufferFileDurability;
   readonly localGit: WorkspaceBufferLocalGitDurability;
   readonly remoteGit: WorkspaceBufferRemoteGitDurability;
@@ -241,6 +242,7 @@ export function openedWorkspaceBufferDurability(
     causal: basisHeadId == null
       ? { kind: CAUSAL_UNAVAILABLE }
       : { kind: CAUSAL_ADMITTED, headId: basisHeadId },
+    importBasisHeadId: basisHeadId,
     file,
     localGit: { kind: LOCAL_GIT_UNKNOWN },
     remoteGit: { kind: REMOTE_GIT_UNKNOWN },
@@ -272,6 +274,7 @@ export function workspaceBufferDurabilityWithAdmittedTransition(
   durability: WorkspaceBufferDurability,
   transition: WorkspaceBufferAdmittedTransition | undefined,
   lineChanges?: WorkspaceBufferCausalLineChanges,
+  expectedBasisHeadId: string | undefined = workspaceBufferFileBasisHeadId(durability.file),
 ): WorkspaceBufferDurability {
   return {
     ...durability,
@@ -287,10 +290,26 @@ export function workspaceBufferDurabilityWithAdmittedTransition(
     lineChanges: transition == null
       ? durability.lineChanges
       : workspaceBufferCausalLineChangesForTransition(
-        workspaceBufferFileBasisHeadId(durability.file),
+        expectedBasisHeadId,
         transition.nextHeadId,
         lineChanges,
       ),
+  };
+}
+
+export function workspaceBufferDurabilityWithCausalLineChanges(
+  durability: WorkspaceBufferDurability,
+  expectedBasisHeadId: string | undefined,
+  nextHeadId: string,
+  lineChanges: WorkspaceBufferCausalLineChanges | undefined,
+): WorkspaceBufferDurability {
+  return {
+    ...durability,
+    lineChanges: workspaceBufferCausalLineChangesForTransition(
+      expectedBasisHeadId,
+      nextHeadId,
+      lineChanges,
+    ),
   };
 }
 

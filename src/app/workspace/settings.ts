@@ -13,6 +13,9 @@ import { nextJeditTheme, oppositeJeditTheme } from '../../ui/jedit-themes.js';
 import { ViewModes } from './view-mode.js';
 import type { GraftDiagnosticsPort } from '../../ports/graft-diagnostics.js';
 import { nextSourceLineNumberMode } from '../../ui/source-line-number-mode.js';
+import type { ProductionTextSession } from './production-text-session.js';
+import { beginWorkspaceCausalLineChangeRefresh } from './workspace-causal-line-change-refresh.js';
+import { nextWorkspaceCausalGutterBasis } from './workspace-causal-gutter-basis.js';
 
 export const WorkspaceLocales = Object.freeze({
   Default: 'en',
@@ -30,6 +33,7 @@ export function settingsRows(model: WorkspaceModel): ReturnType<typeof jeditSett
     jeditTheme: model.jeditTheme,
     footerVisible: model.footerVisible,
     lineNumberMode: model.lineNumberMode,
+    causalGutterBasis: model.causalGutterBasis,
     markdownPreviewActive: model.editor != null && isWorkspaceMarkdownFile(model.editor.path),
     diagnosticsAvailable: true,
     viewMode: model.viewMode,
@@ -38,6 +42,7 @@ export function settingsRows(model: WorkspaceModel): ReturnType<typeof jeditSett
 
 export interface WorkspaceSettingsHandlerContext {
   readonly graftDiagnostics?: GraftDiagnosticsPort;
+  readonly productionTextSession?: ProductionTextSession;
 }
 
 export function workspaceSettingsHandlers(
@@ -57,11 +62,31 @@ export function workspaceSettingsHandlers(
       footerVisible: !model.footerVisible,
     }, []]),
     toggleLineNumberMode: (model) => toggleWorkspaceLineNumberMode(model),
+    cycleCausalGutterBasis: (model, delta) => cycleWorkspaceCausalGutterBasis(model, delta, context),
     toggleMarkdownPreview: (model) => toggleWorkspaceMarkdownPreview(model),
     openDiagnostics: (model) => openWorkspaceDiagnostics(model, context),
     cycleLocale: (model, delta) => cycleWorkspaceLocale(model, delta),
     selectLocale: (model, locale) => [applyWorkspaceLocale(model, locale), []],
   };
+}
+
+function cycleWorkspaceCausalGutterBasis(
+  model: WorkspaceModel,
+  delta: JeditSettingsActivationDelta,
+  context: WorkspaceSettingsHandlerContext,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
+  const next = {
+    ...model,
+    causalGutterBasis: nextWorkspaceCausalGutterBasis(
+      model.causalGutterBasis,
+      delta,
+      model.echoHistory,
+      model.echoHistorySelectedIndex,
+    ),
+  };
+  return context.productionTextSession == null
+    ? [next, []]
+    : beginWorkspaceCausalLineChangeRefresh(next, context.productionTextSession);
 }
 
 function toggleWorkspaceLineNumberMode(model: WorkspaceModel): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {

@@ -23,6 +23,10 @@ test('Echo history drawer renders workspace-visible Echo evidence', async () => 
     ['export', 'exported', 'reading:export'],
     ['checkpoint', 'checkpointed', 'checkpoint:save'],
   ]);
+  assert.equal(harness.model.echoHistory[0].causalHeadId, 'head:opened');
+  assert.equal(harness.model.echoHistory[1].causalHeadId, 'head:insert:1');
+  assert.equal(harness.model.echoHistory[1].causalTickId, 'fixture:tick:1');
+  assert.equal(harness.model.echoHistory[3].causalHeadId, 'head:export');
   assert.equal(harness.model.echoHistorySelectedIndex, 3);
 
   const rendered = surfaceText(drawers.renderDrawer('history', harness.model, 76, 8));

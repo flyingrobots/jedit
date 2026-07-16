@@ -33,6 +33,7 @@ test('buffer durability keeps intent, causal, file, and Git evidence independent
   });
   assert.equal(opened.durability.file.kind, durability.WorkspaceBufferFileDurabilityKinds.Saved);
   assert.equal(opened.durability.file.basisHeadId, HEAD_OPENED);
+  assert.equal(opened.durability.importBasisHeadId, HEAD_OPENED);
   assert.equal(opened.durability.localGit.kind, durability.WorkspaceBufferLocalGitDurabilityKinds.Unknown);
   assert.equal(opened.durability.remoteGit.kind, durability.WorkspaceBufferRemoteGitDurabilityKinds.Unknown);
   assert.deepEqual(opened.durability.lineChanges, {
@@ -124,6 +125,7 @@ test('buffer durability keeps intent, causal, file, and Git evidence independent
   );
   assert.equal(exported.durability.file.kind, durability.WorkspaceBufferFileDurabilityKinds.Saved);
   assert.equal(exported.durability.file.basisHeadId, HEAD_EDITED);
+  assert.equal(exported.durability.importBasisHeadId, HEAD_OPENED);
   assert.equal(exported.durability.file.exportReadingId, 'reading:export');
   assert.deepEqual(exported.durability.lineChanges, {
     kind: durability.WorkspaceBufferCausalLineChangeKinds.Available,

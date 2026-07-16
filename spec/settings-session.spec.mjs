@@ -41,6 +41,7 @@ test('jedit settings rows expose theme, footer, and markdown preview preferences
     jeditTheme: theme,
     footerVisible: true,
     lineNumberMode: 'absolute',
+    causalGutterBasis: { kind: 'last-save' },
     markdownPreviewActive: true,
     diagnosticsAvailable: true,
     viewMode: 'source',
@@ -54,6 +55,7 @@ test('jedit settings rows expose theme, footer, and markdown preview preferences
       ['Light/dark', 'Dark', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
       ['Footer', 'On', settings.JEDIT_SETTING_ROW_KIND.Toggle, true],
       ['Line numbers', 'Absolute', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
+      ['Causal markers', 'Last save', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
       ['Markdown preview', 'Source', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
       ['Diagnostics', 'Open', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
     ],
@@ -71,6 +73,28 @@ test('settings focus movement loops through the available rows', async () => {
   assert.equal(settings.moveSettingsFocusIndex(4, -1, 0), 0);
 });
 
+test('causal marker settings expose every supported comparison basis', async () => {
+  const { settings, themes } = await loadSettingsModules();
+  const state = {
+    i18n: createI18nMock(),
+    jeditTheme: themes.availableJeditThemes()[0],
+    footerVisible: true,
+    lineNumberMode: 'absolute',
+    markdownPreviewActive: false,
+    diagnosticsAvailable: false,
+    viewMode: 'source',
+  };
+  const valueLabel = (causalGutterBasis) => settings.jeditSettingsRows({
+    ...state,
+    causalGutterBasis,
+  }).find((row) => row.id === 'causal-gutter-basis')?.valueLabel;
+
+  assert.equal(valueLabel({ kind: 'last-save' }), 'Last save');
+  assert.equal(valueLabel({ kind: 'import' }), 'Import');
+  assert.equal(valueLabel({ kind: 'selected-checkpoint' }), 'Selected checkpoint');
+  assert.equal(valueLabel({ kind: 'selected-tick' }), 'Selected tick');
+});
+
 test('settings key reducer closes, moves, and activates focused settings rows', async () => {
   const { keybindings, settings, themes } = await loadSettingsModules();
   const theme = themes.availableJeditThemes()[0];
@@ -79,6 +103,7 @@ test('settings key reducer closes, moves, and activates focused settings rows', 
     jeditTheme: theme,
     footerVisible: true,
     lineNumberMode: 'absolute',
+    causalGutterBasis: { kind: 'last-save' },
     markdownPreviewActive: true,
     diagnosticsAvailable: true,
     viewMode: 'source',
@@ -98,6 +123,9 @@ test('settings key reducer closes, moves, and activates focused settings rows', 
     },
     toggleLineNumberMode(model) {
       return [{ ...model, lineNumberMode: 'relative' }, []];
+    },
+    cycleCausalGutterBasis(model, delta) {
+      return [{ ...model, causalGutterBasisDelta: delta }, []];
     },
     toggleMarkdownPreview(model) {
       return [{ ...model, viewMode: 'preview' }, []];
@@ -147,6 +175,15 @@ test('settings key reducer closes, moves, and activates focused settings rows', 
   );
   assert.equal(lineNumbers.lineNumberMode, 'relative');
 
+  const causalGutterBasisIndex = rows.findIndex((row) => row.id === 'causal-gutter-basis');
+  const [causalGutterBasis] = settings.updateJeditSettingsFromKey(
+    { key: 'left' },
+    { ...baseModel, settingsFocusIndex: causalGutterBasisIndex },
+    rows,
+    handlers,
+  );
+  assert.equal(causalGutterBasis.causalGutterBasisDelta, -1);
+
   const markdownIndex = rows.findIndex((row) => row.id === 'markdown-preview');
   const [activated] = settings.updateJeditSettingsFromKey({ key: 'enter' }, { ...baseModel, settingsFocusIndex: markdownIndex }, rows, handlers);
   assert.equal(activated.viewMode, 'preview');
@@ -170,6 +207,7 @@ test('jedit settings rows hide diagnostics when diagnostics are unavailable', as
     jeditTheme: theme,
     footerVisible: true,
     lineNumberMode: 'absolute',
+    causalGutterBasis: { kind: 'last-save' },
     markdownPreviewActive: true,
     diagnosticsAvailable: false,
     viewMode: 'source',
