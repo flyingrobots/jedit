@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Aligned range-why historical-text bounds across the codec and domain. A zero
+  byte budget is now valid while CR-06 traverses provenance facts without
+  materializing historical text; future deleted-text readers must debit that
+  budget before returning historical bytes.
 - Preserved typed graph-rope observation obstructions across the installed
   transport boundary, so range evidence limits and other text-authority
   refusals reach clients as their original stable codes instead of collapsing

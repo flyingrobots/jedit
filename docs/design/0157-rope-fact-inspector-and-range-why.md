@@ -705,6 +705,8 @@ What the tests proved:
   them.
 - A gutter explanation appears only when every report identity is supported by
   that marker, and the footer omits anchor posture when no association exists.
+- A zero historical-text byte budget remains valid for CR-06 because the range
+  provenance reader does not materialize deleted or prior-head text.
 
 What remains open:
 

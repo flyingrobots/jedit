@@ -158,6 +158,27 @@ test('range why fails closed when provenance depth exceeds the request bound', a
   assert.deepEqual(result, { ok: false, code: 'range-why-limit-exceeded' });
 });
 
+test('range why accepts a zero historical-text budget when no historical text is materialized', async () => {
+  const { runtime, contract } = await loadModules();
+  const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
+  const created = assertOk(graph.createBufferWorldline({
+    worldlineId: 'worldline:range-why-zero-history-bytes',
+    initialText: 'base',
+  }));
+
+  const reading = assertOk(graph.whyRange({
+    ...whyRequest(
+      created.worldline.worldlineId,
+      created.head.headId,
+      byteRange(contract, 0, 4),
+    ),
+    maxHistoricalTextBytes: 0,
+  }));
+
+  assert.equal(reading.coverage.kind, 'complete');
+  assert.equal(reading.fragments[0].origin.kind, 'imported');
+});
+
 function whyRequest(worldlineId, basisHeadId, queriedRange) {
   return {
     worldlineId,

@@ -115,7 +115,7 @@ function validWhyInput(input: GraphRopeRangeWhyInput, byteLength: number): boole
     && input.queriedRange.endByte.value <= byteLength
     && input.maxFacts > ZERO_VALUE
     && input.maxDepth > ZERO_VALUE
-    && input.maxHistoricalTextBytes > ZERO_VALUE;
+    && input.maxHistoricalTextBytes >= ZERO_VALUE;
 }
 
 function whyRangeContext(
