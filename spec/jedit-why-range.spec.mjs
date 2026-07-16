@@ -90,3 +90,34 @@ test('installed Echo why-range explains untouched imported text without inventin
   assert.equal('textTickReceiptId' in fragment.origin, false);
   assert.equal(report.witness.basisHeadId, fragment.headId);
 });
+
+test('installed Echo why-range preserves typed runtime limit obstructions', async () => {
+  await ensureDistBuilt();
+  const [clientModule, transportModule] = await Promise.all([
+    import(pathToFileURL(CLIENT_MODULE_PATH).href),
+    import(pathToFileURL(TRANSPORT_MODULE_PATH).href),
+  ]);
+  const client = clientModule.createEchoTransportJeditOpticClient(
+    transportModule.createInstalledJeditContractEchoTransport(),
+  );
+  const opened = await client.openTextBuffer({
+    bufferKey: 'bounded.txt',
+    initialText: 'bounded',
+    projectionPath: '/tmp/bounded.txt',
+    createInitialCheckpoint: false,
+  });
+
+  await assert.rejects(
+    client.whyRange(opened.nextSession, 'frontier:bounded', {
+      worldlineId: opened.nextSession.worldline.worldlineId,
+      basisHeadId: opened.nextSession.worldline.canonicalHeadId,
+      startByte: 0,
+      endByte: 7,
+      maxFacts: 1,
+      maxDepth: 8,
+      maxHistoricalTextBytes: 1,
+    }),
+    error => error.name === 'JeditOpticTransportObstructionError'
+      && error.obstruction.code === 'range-why-limit-exceeded',
+  );
+});

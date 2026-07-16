@@ -243,7 +243,7 @@ function submitInstalledIntent(
   try {
     return encodeJeditIntentResponse(executeIntent(context.mutations, context.handlerInvocationSink, request));
   } catch (error) {
-    const obstruction = mutationRuntimeObstruction(error instanceof Error ? error : undefined);
+    const obstruction = textAuthorityRuntimeObstruction(error instanceof Error ? error : undefined);
     if (obstruction === null) {
       throw error;
     }
@@ -435,7 +435,7 @@ function ticketedWorkObstruction(
   };
 }
 
-function mutationRuntimeObstruction(error: Error | undefined): JeditTransportObstruction | null {
+function textAuthorityRuntimeObstruction(error: Error | undefined): JeditTransportObstruction | null {
   if (!(error instanceof GraphRopeTextAuthorityObstructionError)) {
     return null;
   }
@@ -447,6 +447,10 @@ function mutationRuntimeObstruction(error: Error | undefined): JeditTransportObs
 }
 
 function observeErrorObstruction(error: Error | undefined): JeditTransportObstruction {
+  const textAuthorityObstruction = textAuthorityRuntimeObstruction(error);
+  if (textAuthorityObstruction != null) {
+    return textAuthorityObstruction;
+  }
   if (error instanceof JeditContractStatePortError) {
     return {
       code: error.code,

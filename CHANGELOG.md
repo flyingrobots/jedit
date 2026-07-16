@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Preserved typed graph-rope observation obstructions across the installed
+  transport boundary, so range evidence limits and other text-authority
+  refusals reach clients as their original stable codes instead of collapsing
+  into a generic query-runtime error.
 - Connected causal gutter and footer explanations to the same structured,
   basis-pinned range report used by `:why`. Applied gutter readings expose
   report-backed rewrite/diff/tick evidence only when every identity is also
