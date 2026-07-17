@@ -71,13 +71,18 @@ src/generated/jedit/structural-history-replace-text-range.wesley.generated.ts
 
 The descriptor is generated output. Do not edit it and do not commit it.
 
-Full legacy contract generation still requires a Wesley checkout because the
-hot-text runtime, legacy TypeScript/Zod output, and observer plan use the local
-Wesley host and Cargo manifest:
+Full hot-text contract generation still requires a Wesley checkout because the
+modern rope TypeScript artifact uses the Rust Wesley CLI and Cargo manifest:
 
 ```sh
 JEDIT_WESLEY_ROOT=/path/to/wesley npm run gen:contract
 ```
+
+The retired Node host, its TypeScript/Zod projections, and its observer-plan
+generator are not part of the supported path. Jim owns its observer spec and
+deterministic plan identity in `src/app`; runtime guards for the transitional
+JSON transport are app-owned and deliberately narrower than the Wesley
+contract.
 
 ## Echo Witnesses
 

@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
@@ -7,8 +6,6 @@ import { pathToFileURL } from 'node:url';
 const REPO_ROOT = process.cwd();
 const PACKAGE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-package.js');
 const GENERATED_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'generated', 'jedit', 'rope.wesley.generated.js');
-const LEGACY_TYPES_SOURCE_PATH = path.join(REPO_ROOT, 'src', 'generated', 'jedit', 'rope.types.generated.ts');
-const LEGACY_ZOD_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'generated', 'jedit', 'rope.zod.generated.js');
 const STRUCTURAL_HISTORY_GENERATED_MODULE_PATH = path.join(
   REPO_ROOT,
   'dist',
@@ -63,18 +60,6 @@ test('jedit hot text package descriptor stamps query observer identities', async
       observerPlanId: modules.packageModule.jeditQueryObserverPlanId(queryName),
     })),
   );
-});
-
-test('legacy generated TypeScript query map includes the installed why-range operation', () => {
-  const source = readFileSync(LEGACY_TYPES_SOURCE_PATH, 'utf8');
-
-  assert.match(source, /whyRange: WhyRangeQueryOperation;/);
-});
-
-test('legacy generated Zod query schemas include the installed why-range operation', async () => {
-  const legacyZod = await import(pathToFileURL(LEGACY_ZOD_MODULE_PATH).href);
-
-  assert.equal(Object.hasOwn(legacyZod.QueryOperationSchemas, 'whyRange'), true);
 });
 
 test('jedit structural history package descriptor binds generated operation metadata', async () => {

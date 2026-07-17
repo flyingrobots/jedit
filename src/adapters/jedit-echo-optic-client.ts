@@ -9,10 +9,14 @@ import type { TextWindowReadingEnvelope } from '../app/jedit-observer-runtime.js
 import type { CausalLineDiffReadingEnvelope } from '../app/jedit-causal-line-diff-observer.js';
 import type { WhyRangeReadingEnvelope } from '../app/jedit-why-range-observer.js';
 import type {
-  MutationOperationMap,
-  QueryOperationMap,
-} from '../generated/jedit/rope.types.generated.js';
-import type { QueryWhyRangeRequest } from '../generated/jedit/rope.wesley.generated.js';
+  CausalLineDiffInput,
+  CreateBufferWorldlineInput,
+  CreateCheckpointInput,
+  ReplaceRangeAsTickInput,
+  TextWindowInput,
+  WhyRangeInput,
+  WorldlineSnapshotInput,
+} from '../generated/jedit/rope.wesley.generated.js';
 import type { EchoWasmKernelTransport } from '../ports/echo-kernel-transport.js';
 import {
   type JeditOpticClient,
@@ -52,13 +56,6 @@ import type {
 } from '../generated/jedit/rope.codec.generated.js';
 import { serializeJeditTextWindowInput } from '../app/jedit-text-window-input.js';
 
-type CreateBufferWorldlineInput = MutationOperationMap['createBufferWorldline']['input'];
-type ReplaceRangeAsTickInput = MutationOperationMap['replaceRangeAsTick']['input'];
-type CreateCheckpointInput = MutationOperationMap['createCheckpoint']['input'];
-type WorldlineSnapshotInput = QueryOperationMap['worldlineSnapshot']['input'];
-type TextWindowInput = QueryOperationMap['textWindow']['input'];
-type CausalLineDiffInput = QueryOperationMap['causalLineDiff']['input'];
-type WhyRangeInput = QueryWhyRangeRequest['input'];
 type JeditOkIntentResponse = Exclude<JeditIntentResponse, { readonly status: typeof JEDIT_TRANSPORT_STATUS_OBSTRUCTED }>;
 type JeditOkObserveResponse = Exclude<JeditObserveResponse, { readonly status: typeof JEDIT_TRANSPORT_STATUS_OBSTRUCTED }>;
 

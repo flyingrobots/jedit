@@ -1,8 +1,7 @@
 import type { EditGroup, EditGroupReceipt, OpenEditGroup } from '../domain/edit-group-contract.js';
 import type { SaveCheckpoint, SaveCheckpointReceipt } from '../domain/save-checkpoint-contract.js';
 import type { RopeCheckpointAnchoredFact, RopeCheckpointFact } from '../domain/graph-rope-contract.js';
-import type { CheckpointKind } from '../generated/jedit/rope.types.generated.js';
-import type { WhyRangeInput, WhyRangeReading } from '../generated/jedit/rope.wesley.generated.js';
+import type { CheckpointKind, WhyRangeInput, WhyRangeReading } from '../generated/jedit/rope.wesley.generated.js';
 import type { BufferRoot, TextRange } from '../domain/text-edit-contract.js';
 import type { AdmittedTick, TickAdmissionReceipt } from '../domain/tick-admission-contract.js';
 

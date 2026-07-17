@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Deleted the obsolete Wesley `host-node typescript` and `host-node zod`
+  contract projections and their regeneration script. Product consumers now
+  use the modern Wesley TypeScript artifact directly; the transitional JSON
+  transport has narrow app-owned runtime guards and an explicit Zod dependency.
+  The remaining retired Node host and observer-plan generator are also gone;
+  Jim now derives the same stable observer plan identity from its app-owned
+  specification. Clean builds remove stale modules before TypeScript emission.
 - Replaced per-insert range-why index cloning and full sorting with deterministic
   binary insertion. Checkpoint and anchor association buckets remain ordered and
   duplicate-free without repeated O(N log N) sorts as retained evidence grows.

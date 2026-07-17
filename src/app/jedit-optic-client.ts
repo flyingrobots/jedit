@@ -20,12 +20,10 @@ import {
   readWorldlineSnapshotWithObserverPlan,
 } from './jedit-observer-runtime.js';
 import type {
-  MutationOperationMap,
-  QueryOperationMap,
-} from '../generated/jedit/rope.types.generated.js';
+  CreateBufferWorldlineInput,
+  TextWindowInput,
+} from '../generated/jedit/rope.wesley.generated.js';
 import { serializeJeditTextWindowInput } from './jedit-text-window-input.js';
-
-type CreateBufferWorldlineInput = MutationOperationMap['createBufferWorldline']['input'];
 
 // Until Wesley emits direct intent/observer clients, keep one narrow seam where
 // generated GraphQL operation names are transmuted into app-owned runtime calls.
@@ -79,7 +77,7 @@ function toTextWindowInput(
   session: JeditWorldlineSession,
   readBasisHandle: ReadBasisHandle,
   request: TextWindowRequest,
-): QueryOperationMap['textWindow']['input'] {
+): TextWindowInput {
   return serializeJeditTextWindowInput(
     readBasisHandles.resolveWorldlineId(session, readBasisHandle),
     request,

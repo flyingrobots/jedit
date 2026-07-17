@@ -24,7 +24,7 @@ import type {
 import { REPLACE_RANGE_INTENT_KIND } from '../ports/text-buffer-session.js';
 import { makeByteOffset, makeTextByteRange } from '../domain/graph-rope-coordinates.js';
 import type { CoordinateResult } from '../domain/graph-rope-types.js';
-import type { RopeHead } from '../generated/jedit/rope.types.generated.js';
+import type { RopeHead } from '../generated/jedit/rope.wesley.generated.js';
 import type { JeditWhyByteRange, JeditWhyRangeReport } from '../ports/jedit-why-range.js';
 import type {
   JeditOpticClient,

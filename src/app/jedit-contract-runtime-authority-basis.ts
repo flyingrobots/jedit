@@ -1,7 +1,7 @@
 import type {
   BufferWorldline,
   RopeHead,
-} from '../generated/jedit/rope.types.generated.js';
+} from '../generated/jedit/rope.wesley.generated.js';
 import type { HashPort } from '../ports/hash.js';
 import type {
   HotTextAuthorityBasis,

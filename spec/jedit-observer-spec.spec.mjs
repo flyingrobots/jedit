@@ -5,25 +5,25 @@ import { pathToFileURL } from 'node:url';
 import { REPO_ROOT, ensureDistBuilt } from './dist-helpers.mjs';
 
 const OBSERVER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-observer-spec.js');
+const OBSERVER_PLAN_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-observer-plan.js');
 const OBSERVER_RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-observer-runtime.js');
 const CONTRACT_RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-runtime.js');
 const HASH_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'hash.js');
 const ADAPTER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'full-snapshot-hot-text-runtime-fixture.js');
-const GENERATED_PLAN_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'generated', 'jedit', 'worldlineSnapshot.observer-plan.generated.js');
 
 async function loadModules() {
   await ensureDistBuilt();
 
-  const [observer, observerRuntime, contractRuntime, hashModule, adapter, generatedPlan] = await Promise.all([
+  const [observer, observerPlan, observerRuntime, contractRuntime, hashModule, adapter] = await Promise.all([
     import(pathToFileURL(OBSERVER_MODULE_PATH).href),
+    import(pathToFileURL(OBSERVER_PLAN_MODULE_PATH).href),
     import(pathToFileURL(OBSERVER_RUNTIME_MODULE_PATH).href),
     import(pathToFileURL(CONTRACT_RUNTIME_MODULE_PATH).href),
     import(pathToFileURL(HASH_MODULE_PATH).href),
     import(pathToFileURL(ADAPTER_MODULE_PATH).href),
-    import(pathToFileURL(GENERATED_PLAN_MODULE_PATH).href),
   ]);
 
-  return { observer, observerRuntime, contractRuntime, adapter, hash: hashModule.createHashPort(), generatedPlan };
+  return { observer, observerPlan, observerRuntime, contractRuntime, adapter, hash: hashModule.createHashPort() };
 }
 
 test('worldlineSnapshot observer spec is memoryless, canonical-head only, and author-visible', async () => {
@@ -47,8 +47,8 @@ test('worldlineSnapshot observer spec is memoryless, canonical-head only, and au
   assert.equal(state.mode, 'MEMORYLESS');
 });
 
-test('worldlineSnapshot observer plan is compiled by Wesley and consumed at runtime', async () => {
-  const { observer, observerRuntime, contractRuntime, adapter, hash, generatedPlan } = await loadModules();
+test('worldlineSnapshot observer plan is app-owned and consumed at runtime', async () => {
+  const { observer, observerPlan, observerRuntime, contractRuntime, adapter, hash } = await loadModules();
   const runtime = adapter.createFullSnapshotHotTextRuntimeFixture();
   const created = contractRuntime.createBufferWorldline(runtime, {
     bufferKey: 'notes/today.md',
@@ -57,18 +57,15 @@ test('worldlineSnapshot observer plan is compiled by Wesley and consumed at runt
     createInitialCheckpoint: true,
   }, hash);
   const authoredSpec = observer.createWorldlineSnapshotObserverSpec();
+  const plan = observerPlan.createWorldlineSnapshotObserverPlan(hash);
 
-  assert.equal(generatedPlan.worldlineSnapshotObserverPlan.observerName, authoredSpec.observerName);
-  assert.equal(generatedPlan.worldlineSnapshotObserverPlan.kind, authoredSpec.kind);
-  assert.equal(generatedPlan.worldlineSnapshotObserverPlan.operationName, authoredSpec.operationName);
-  assert.equal(
-    generatedPlan.worldlineSnapshotObserverPlan.state.schemaId,
-    authoredSpec.state.schemaId,
-  );
-  assert.equal(
-    generatedPlan.worldlineSnapshotObserverPlan.rights.revelationTier,
-    authoredSpec.rights.revelationTier,
-  );
+  assert.equal(plan.observerName, authoredSpec.observerName);
+  assert.equal(plan.kind, authoredSpec.kind);
+  assert.equal(plan.operationName, authoredSpec.operationName);
+  assert.equal(plan.state.schemaId, authoredSpec.state.schemaId);
+  assert.equal(plan.rights.revelationTier, authoredSpec.rights.revelationTier);
+  assert.equal(plan.specHash, '655053a4c0e213e2e2c555fab85498c0c51e3a793f528b37b6259b0542af2538');
+  assert.equal(plan.planId, 'observer-plan:worldlineSnapshot:655053a4c0e213e2');
 
   const snapshotInput = {
     worldlineId: created.nextSession.worldline.worldlineId,
@@ -81,9 +78,9 @@ test('worldlineSnapshot observer plan is compiled by Wesley and consumed at runt
     hash,
   );
 
-  assert.equal(envelope.planId, generatedPlan.worldlineSnapshotObserverPlan.planId);
-  assert.equal(envelope.observerName, generatedPlan.worldlineSnapshotObserverPlan.observerName);
-  assert.equal(envelope.operationName, generatedPlan.worldlineSnapshotObserverPlan.operationName);
+  assert.equal(envelope.planId, plan.planId);
+  assert.equal(envelope.observerName, plan.observerName);
+  assert.equal(envelope.operationName, plan.operationName);
   assert.equal(envelope.frontierRef, 'frontier:wl:notes-today-md:1');
   assert.equal(envelope.reading.worldline.worldlineId, created.nextSession.worldline.worldlineId);
   assert.equal(envelope.reading.head.headId, created.nextSession.worldline.canonicalHeadId);

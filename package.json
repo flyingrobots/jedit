@@ -5,14 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "npm run gen:contract:structural-history:wesley && tsx src/main.ts",
-    "gen:observer": "node scripts/run-wesley-tool.mjs host-node observer-plan --spec src/app/jedit-observer-spec.ts --export createWorldlineSnapshotObserverSpec --out-file src/generated/jedit/worldlineSnapshot.observer-plan.generated.ts",
     "gen:contract:structural-history:wesley": "node scripts/gen-structural-history-wesley.mjs",
-    "gen:contract:text-buffer-optic:wesley": "node scripts/run-wesley-tool.mjs cli emit typescript --schema contracts/jedit/text-buffer-optic.graphql --out src/generated/jedit/text-buffer-optic.wesley.generated.ts",
-    "gen:contract:rope:wesley": "node scripts/run-wesley-tool.mjs cli emit typescript --schema contracts/jedit/rope.graphql --out src/generated/jedit/rope.wesley.generated.ts",
+    "gen:contract:text-buffer-optic:wesley": "node scripts/run-wesley-cli.mjs emit typescript --schema contracts/jedit/text-buffer-optic.graphql --out src/generated/jedit/text-buffer-optic.wesley.generated.ts",
+    "gen:contract:rope:wesley": "node scripts/run-wesley-cli.mjs emit typescript --schema contracts/jedit/rope.graphql --out src/generated/jedit/rope.wesley.generated.ts",
     "gen:contract:wesley": "npm run gen:contract:rope:wesley && npm run gen:contract:structural-history:wesley",
-    "gen:contract:legacy": "node scripts/run-wesley-tool.mjs host-node typescript --schema contracts/jedit/rope.graphql --out-file src/generated/jedit/rope.types.generated.ts && node scripts/run-wesley-tool.mjs host-node zod --schema contracts/jedit/rope.graphql --out-file src/generated/jedit/rope.zod.generated.ts",
-    "gen:contract": "npm run gen:contract:wesley && npm run gen:contract:legacy && npm run gen:observer",
-    "build": "npm run gen:contract:structural-history:wesley && tsc -p tsconfig.json && node scripts/copy-assets.mjs",
+    "gen:contract": "npm run gen:contract:wesley",
+    "clean": "node scripts/clean-dist.mjs",
+    "build": "npm run gen:contract:structural-history:wesley && npm run clean && tsc -p tsconfig.json && node scripts/copy-assets.mjs",
     "start": "node dist/main.js",
     "title:preview": "npm run build && node scripts/title-scene-preview.mjs",
     "title:profile": "npm run build && node scripts/title-scene-profile.mjs",
@@ -38,7 +37,8 @@
     "@flyingrobots/bijou-tui-app": "7.0.0",
     "@flyingrobots/graft": "0.11.1",
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "diff": "9.0.0"
+    "diff": "9.0.0",
+    "zod": "4.3.6"
   },
   "devDependencies": {
     "@flyingrobots/bijou-i18n-tools-node": "^7.0.0",

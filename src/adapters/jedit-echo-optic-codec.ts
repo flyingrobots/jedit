@@ -8,7 +8,17 @@ import type {
 import type { TextWindowReadingEnvelope, WorldlineSnapshotReadingEnvelope } from '../app/jedit-observer-runtime.js';
 import type { CausalLineDiffReadingEnvelope } from '../app/jedit-causal-line-diff-observer.js';
 import type { WhyRangeReadingEnvelope } from '../app/jedit-why-range-observer.js';
-import type { MutationOperationName, QueryOperationName } from '../generated/jedit/rope.types.generated.js';
+import {
+  CausalLineDiffInputSchema,
+  CausalLineDiffReadingSchema,
+  CreateBufferWorldlineResultSchema,
+  CreateCheckpointResultSchema,
+  ReplaceRangeAsTickResultSchema,
+  TextWindowInputSchema,
+  TextWindowReadingSchema,
+  WorldlineSnapshotInputSchema,
+  WorldlineSnapshotSchema,
+} from '../app/jedit-hot-text-json-schemas.js';
 import {
   mutationCreateBufferWorldlineOperation,
   mutationCreateCheckpointOperation,
@@ -25,10 +35,6 @@ import {
   type QueryWhyRangeRequest,
   type QueryWorldlineSnapshotRequest,
 } from '../generated/jedit/rope.wesley.generated.js';
-import {
-  MutationOperationSchemas,
-  QueryOperationSchemas,
-} from '../generated/jedit/rope.zod.generated.js';
 import { HotTextWindowProjectionSchema } from './hot-text-window-codec.js';
 import { JeditRetainedEvidenceInventorySchema } from './jedit-retained-evidence-codec.js';
 import { JeditTextWindowMaterializationProvenanceSchema } from './jedit-text-window-materialization-codec.js';
@@ -74,17 +80,17 @@ const QueryOperationNameSchema = z.union([
 
 const CreateBufferWorldlineExecutionSchema = z.object({
   nextSession: JeditWorldlineSessionSchema,
-  result: MutationOperationSchemas.createBufferWorldline.result,
+  result: CreateBufferWorldlineResultSchema,
 });
 
 const ReplaceRangeAsTickExecutionSchema = z.object({
   nextSession: JeditWorldlineSessionSchema,
-  result: MutationOperationSchemas.replaceRangeAsTick.result.optional(),
+  result: ReplaceRangeAsTickResultSchema.optional(),
 });
 
 const CreateCheckpointExecutionSchema = z.object({
   nextSession: JeditWorldlineSessionSchema,
-  result: MutationOperationSchemas.createCheckpoint.result.optional(),
+  result: CreateCheckpointResultSchema.optional(),
 });
 
 const WorldlineSnapshotReadingEnvelopeSchema = z.object({
@@ -92,7 +98,7 @@ const WorldlineSnapshotReadingEnvelopeSchema = z.object({
   observerName: z.string(),
   operationName: z.literal(WORLDLINE_SNAPSHOT_OPERATION),
   frontierRef: z.string(),
-  reading: QueryOperationSchemas.worldlineSnapshot.result,
+  reading: WorldlineSnapshotSchema,
 });
 
 const TextWindowReadingEnvelopeSchema = z.object({
@@ -100,7 +106,7 @@ const TextWindowReadingEnvelopeSchema = z.object({
   observerName: z.string(),
   operationName: z.literal(TEXT_WINDOW_OPERATION),
   frontierRef: z.string(),
-  reading: QueryOperationSchemas.textWindow.result,
+  reading: TextWindowReadingSchema,
   projection: HotTextWindowProjectionSchema, materialization: JeditTextWindowMaterializationProvenanceSchema,
   retainedEvidence: JeditRetainedEvidenceInventorySchema,
 });
@@ -110,7 +116,7 @@ const CausalLineDiffReadingEnvelopeSchema = z.object({
   observerName: z.literal(CAUSAL_LINE_DIFF_OPERATION),
   operationName: z.literal(CAUSAL_LINE_DIFF_OPERATION),
   frontierRef: z.string(),
-  reading: QueryOperationSchemas.causalLineDiff.result,
+  reading: CausalLineDiffReadingSchema,
 });
 
 const WhyRangeReadingEnvelopeSchema = z.object({
@@ -126,7 +132,7 @@ const WorldlineSnapshotObserveRequestSchema = z.object({
   operationName: z.literal(WORLDLINE_SNAPSHOT_OPERATION),
   session: JeditWorldlineSessionSchema,
   frontierRef: z.string(),
-  input: QueryOperationSchemas.worldlineSnapshot.input,
+  input: WorldlineSnapshotInputSchema,
 });
 
 const TextWindowObserveRequestSchema = z.object({
@@ -134,7 +140,7 @@ const TextWindowObserveRequestSchema = z.object({
   operationName: z.literal(TEXT_WINDOW_OPERATION),
   session: JeditWorldlineSessionSchema,
   frontierRef: z.string(),
-  input: QueryOperationSchemas.textWindow.input,
+  input: TextWindowInputSchema,
 });
 
 const CausalLineDiffObserveRequestSchema = z.object({
@@ -142,7 +148,7 @@ const CausalLineDiffObserveRequestSchema = z.object({
   operationName: z.literal(CAUSAL_LINE_DIFF_OPERATION),
   session: JeditWorldlineSessionSchema,
   frontierRef: z.string(),
-  input: QueryOperationSchemas.causalLineDiff.input,
+  input: CausalLineDiffInputSchema,
 });
 
 const WhyRangeObserveRequestSchema = z.object({
@@ -274,8 +280,15 @@ const JeditObserveResponseSchema = z.union([
   ObserveObstructedResponseSchema,
 ]);
 
-export type JeditMutationOperationName = MutationOperationName;
-export type JeditQueryOperationName = QueryOperationName | typeof WHY_RANGE_OPERATION;
+export type JeditMutationOperationName =
+  | typeof CREATE_BUFFER_WORLDLINE_OPERATION
+  | typeof REPLACE_RANGE_AS_TICK_OPERATION
+  | typeof CREATE_CHECKPOINT_OPERATION;
+export type JeditQueryOperationName =
+  | typeof WORLDLINE_SNAPSHOT_OPERATION
+  | typeof TEXT_WINDOW_OPERATION
+  | typeof CAUSAL_LINE_DIFF_OPERATION
+  | typeof WHY_RANGE_OPERATION;
 
 type InputOf<Request extends { readonly input: object }> = Request['input'];
 

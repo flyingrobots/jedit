@@ -138,11 +138,11 @@ test('contract generation scripts keep runtime and app-facing SDL targets explic
 
   assert.equal(
     scripts['gen:contract:rope:wesley'],
-    'node scripts/run-wesley-tool.mjs cli emit typescript --schema contracts/jedit/rope.graphql --out src/generated/jedit/rope.wesley.generated.ts',
+    'node scripts/run-wesley-cli.mjs emit typescript --schema contracts/jedit/rope.graphql --out src/generated/jedit/rope.wesley.generated.ts',
   );
   assert.equal(
     scripts['gen:contract:text-buffer-optic:wesley'],
-    'node scripts/run-wesley-tool.mjs cli emit typescript --schema contracts/jedit/text-buffer-optic.graphql --out src/generated/jedit/text-buffer-optic.wesley.generated.ts',
+    'node scripts/run-wesley-cli.mjs emit typescript --schema contracts/jedit/text-buffer-optic.graphql --out src/generated/jedit/text-buffer-optic.wesley.generated.ts',
   );
   assert.equal(
     scripts['gen:contract:wesley'],

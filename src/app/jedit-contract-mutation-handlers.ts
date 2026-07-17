@@ -14,21 +14,17 @@ import {
   JEDIT_HOT_TEXT_MUTATION_OPERATION_NAMES,
   type JeditHotTextRequiredMutationOperationNames,
 } from './jedit-contract-package.js';
-import type {
-  MutationOperationMap,
-} from '../generated/jedit/rope.types.generated.js';
 import {
   mutationCreateBufferWorldlineOperation,
   mutationCreateCheckpointOperation,
   mutationReplaceRangeAsTickOperation,
+  type CreateBufferWorldlineInput,
+  type CreateCheckpointInput,
+  type ReplaceRangeAsTickInput,
 } from '../generated/jedit/rope.wesley.generated.js';
 import type { HashPort } from '../ports/hash.js';
 import type { HotTextRuntimePort } from '../ports/hot-text-runtime.js';
 import type { JeditContractStatePort } from '../ports/jedit-contract-state-port.js';
-
-type CreateBufferWorldlineInput = MutationOperationMap['createBufferWorldline']['input'];
-type ReplaceRangeAsTickInput = MutationOperationMap['replaceRangeAsTick']['input'];
-type CreateCheckpointInput = MutationOperationMap['createCheckpoint']['input'];
 
 export type JeditContractMutationHandlerRequest =
   | JeditCreateBufferWorldlineMutationRequest

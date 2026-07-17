@@ -1,9 +1,11 @@
-import type {
-  QueryOperationMap,
-} from '../generated/jedit/rope.types.generated.js';
-import { QueryOperationSchemas } from '../generated/jedit/rope.zod.generated.js';
-import { queryTextWindowOperation } from '../generated/jedit/rope.wesley.generated.js';
-import { worldlineSnapshotObserverPlan } from '../generated/jedit/worldlineSnapshot.observer-plan.generated.js';
+import {
+  queryTextWindowOperation,
+  type TextLineReading,
+  type TextWindowInput,
+  type TextWindowReading,
+  type WorldlineSnapshot as WorldlineSnapshotReading,
+  type WorldlineSnapshotInput,
+} from '../generated/jedit/rope.wesley.generated.js';
 import type {
   HotTextRuntimePort,
   HotTextWindowByteRange,
@@ -14,6 +16,13 @@ import type { JeditRetainedEvidenceInventory } from '../ports/jedit-retained-evi
 import { readWorldlineSnapshot, type JeditWorldlineSession } from './jedit-contract-runtime.js';
 import { JEDIT_HOT_TEXT_PACKAGE_ID } from './jedit-contract-package.js';
 import { createJeditReadingRetainedEvidenceInventory } from './jedit-retained-evidence.js';
+import { createWorldlineSnapshotObserverPlan } from './jedit-observer-plan.js';
+import {
+  TextWindowInputSchema,
+  TextWindowReadingSchema,
+  WorldlineSnapshotInputSchema,
+  WorldlineSnapshotSchema,
+} from './jedit-hot-text-json-schemas.js';
 import type { HashPort } from '../ports/hash.js';
 import {
   buildJeditLineIndexProjection,
@@ -53,12 +62,6 @@ const TEXT_WINDOW_PLAN_SPEC = Object.freeze({
   // a stable deterministic digest prefix for this single local observer plan.
   hashLength: 16,
 });
-
-type WorldlineSnapshotInput = QueryOperationMap['worldlineSnapshot']['input'];
-type WorldlineSnapshotReading = QueryOperationMap['worldlineSnapshot']['result'];
-type TextWindowInput = QueryOperationMap['textWindow']['input'];
-type TextWindowReading = QueryOperationMap['textWindow']['result'];
-type TextLineReading = TextWindowReading['lines'][number];
 
 export interface WorldlineSnapshotReadingEnvelope {
   readonly planId: string;
@@ -108,16 +111,16 @@ export function readWorldlineSnapshotWithObserverPlan(
   input: WorldlineSnapshotInput,
   hash: HashPort,
 ): WorldlineSnapshotReadingEnvelope {
-  const schemas = QueryOperationSchemas.worldlineSnapshot;
-  const parsedInput = schemas.input.parse(input);
+  const parsedInput = WorldlineSnapshotInputSchema.parse(input);
   const reading = readWorldlineSnapshot(runtime, session, parsedInput, hash);
+  const observerPlan = createWorldlineSnapshotObserverPlan(hash);
 
   return {
-    planId: worldlineSnapshotObserverPlan.planId,
-    observerName: worldlineSnapshotObserverPlan.observerName,
-    operationName: worldlineSnapshotObserverPlan.operationName,
+    planId: observerPlan.planId,
+    observerName: observerPlan.observerName,
+    operationName: observerPlan.operationName,
     frontierRef,
-    reading: schemas.result.parse(reading),
+    reading: WorldlineSnapshotSchema.parse(reading),
   };
 }
 
@@ -142,8 +145,7 @@ function readTextWindowWithObserverPlan(
   frontierRef: string,
   input: TextWindowInput,
 ): TextWindowReadingEnvelope {
-  const schemas = QueryOperationSchemas.textWindow;
-  const parsedInput = schemas.input.parse(input);
+  const parsedInput = TextWindowInputSchema.parse(input);
   const planId = textWindowPlanId(context.hash);
   const reading = readTextWindow(context, session, frontierRef, planId, parsedInput);
 
@@ -152,7 +154,7 @@ function readTextWindowWithObserverPlan(
     observerName: TEXT_WINDOW_PLAN_SPEC.observerName,
     operationName: TEXT_WINDOW_PLAN_SPEC.operationName,
     frontierRef,
-    reading: schemas.result.parse(reading),
+    reading: TextWindowReadingSchema.parse(reading),
     projection: reading.projection,
     materialization: reading.materialization,
     retainedEvidence: createJeditReadingRetainedEvidenceInventory({

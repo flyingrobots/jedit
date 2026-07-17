@@ -1,7 +1,5 @@
-import type { QueryOperationMap } from '../generated/jedit/rope.types.generated.js';
+import type { TextWindowInput } from '../generated/jedit/rope.wesley.generated.js';
 import type { TextWindowRequest } from '../ports/text-buffer-session.js';
-
-type TextWindowInput = QueryOperationMap['textWindow']['input'];
 
 export function serializeJeditTextWindowInput(
   worldlineId: string,

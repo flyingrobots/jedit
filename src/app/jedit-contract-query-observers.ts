@@ -18,24 +18,19 @@ import {
 import type { DisposableJeditLineIndexStore } from './jedit-line-index-projection.js';
 import { requireJeditContractFactSet } from './jedit-contract-state-port.js';
 import type { JeditWorldlineSession } from './jedit-contract-runtime.js';
-import type {
-  QueryOperationMap,
-} from '../generated/jedit/rope.types.generated.js';
 import {
   queryTextWindowOperation,
   queryCausalLineDiffOperation,
   queryWhyRangeOperation,
   queryWorldlineSnapshotOperation,
-  type QueryWhyRangeRequest,
+  type CausalLineDiffInput,
+  type TextWindowInput,
+  type WhyRangeInput,
+  type WorldlineSnapshotInput,
 } from '../generated/jedit/rope.wesley.generated.js';
 import type { HashPort } from '../ports/hash.js';
 import type { HotTextRuntimePort } from '../ports/hot-text-runtime.js';
 import type { JeditContractStatePort } from '../ports/jedit-contract-state-port.js';
-
-type WorldlineSnapshotInput = QueryOperationMap['worldlineSnapshot']['input'];
-type TextWindowInput = QueryOperationMap['textWindow']['input'];
-type CausalLineDiffInput = QueryOperationMap['causalLineDiff']['input'];
-type WhyRangeInput = QueryWhyRangeRequest['input'];
 
 export type JeditContractQueryObserverRequest =
   | JeditWorldlineSnapshotObserverRequest

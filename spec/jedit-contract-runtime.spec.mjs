@@ -39,7 +39,7 @@ test('createBufferWorldline returns contract-shaped worldline and head data', as
   assert.equal(created.result.head.worldlineId, created.result.worldline.worldlineId);
   assert.equal(created.result.head.byteLength, 11);
   assert.equal(created.result.head.lineCount, 1);
-  assert.equal(created.result.checkpoint, undefined);
+  assert.equal(created.result.checkpoint, null);
 });
 
 test('replaceRangeAsTick returns contract-shaped tick and receipt data', async () => {

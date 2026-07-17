@@ -36,7 +36,7 @@ try {
     test('rope.codec.generated.ts must exist (run Wesley le-binary-typescript emitter)', () => {
         throw new Error(
             `rope.codec.generated.js not found. Run:\n` +
-            `  node scripts/run-wesley-tool.mjs cli emit le-binary-typescript ` +
+            `  node scripts/run-wesley-cli.mjs emit le-binary-typescript ` +
             `--schema contracts/jedit/rope.graphql ` +
             `--out src/generated/jedit/rope.codec.generated.ts\n` +
             `Original error: ${String(err)}`,

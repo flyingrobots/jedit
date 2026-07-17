@@ -3,7 +3,7 @@ import {
   BufferWorldlineSchema,
   CheckpointKindSchema,
   RewriteKindSchema,
-} from '../generated/jedit/rope.zod.generated.js';
+} from '../app/jedit-hot-text-json-schemas.js';
 import { HotTextAuthorityBasisSchema } from './hot-text-authority-basis-codec.js';
 
 const BufferRootSchema = z.object({ id: z.number().int(), text: z.string() });
