@@ -235,3 +235,32 @@ fn observer_host_error(error: crate::error::HostError) -> ContractQueryObserverE
 fn observer_error(message: impl Into<String>) -> ContractQueryObserverError {
     ContractQueryObserverError::failed(crate::generated::contract::OP_TEXT_WINDOW, message)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn checkpoint_reason_scalar_has_an_exact_native_domain() {
+        let supported = [
+            (CHECKPOINT_REASON_MANUAL_SAVE, CheckpointReason::ManualSave),
+            (CHECKPOINT_REASON_AUTOSAVE, CheckpointReason::Autosave),
+            (
+                CHECKPOINT_REASON_RETENTION_BOUNDARY,
+                CheckpointReason::RetentionBoundary,
+            ),
+            (CHECKPOINT_REASON_EXPORT, CheckpointReason::Export),
+            (CHECKPOINT_REASON_IMPORT, CheckpointReason::Import),
+        ];
+
+        for (encoded, reason) in supported {
+            assert_eq!(checkpoint_reason(encoded).expect("reason should decode"), reason);
+            assert_eq!(generated_checkpoint_reason(reason), encoded);
+        }
+
+        assert!(matches!(
+            checkpoint_reason("initial"),
+            Err(crate::error::HostError::InvalidRequest(_))
+        ));
+    }
+}

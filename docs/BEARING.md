@@ -42,6 +42,11 @@ claims belong in git history and design retrospectives.
 - The current package is explicitly `0.1.0-wesley-compat`. Its authored Rust
   operation law and process invocation seam are transitional until Edict can
   install and invoke the corresponding generated operations.
+- Checkpoint reason remains a transitional GraphQL `String` because the pinned
+  Wesley contract-host enum emitter produces Rust that does not compile for
+  this enum shape. The installed native Jim contract still admits exactly
+  `manual-save`, `autosave`, `retention-boundary`, `export`, and `import`; an
+  arbitrary string is not an admitted checkpoint proposition.
 - The full-snapshot runtime, local graph-rope executor, local admission loop,
   locally manufactured receipts, fake production transports, and optimistic
   text mutation path remain deleted.
