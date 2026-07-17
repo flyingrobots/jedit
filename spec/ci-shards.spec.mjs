@@ -114,5 +114,5 @@ test('CI build artifact restores compiled output required by test shards', () =>
   const workflow = readFileSync(CI_WORKFLOW_PATH, 'utf8');
 
   assert.match(workflow, /path: \|\s+dist/);
-  assert.match(workflow, /name: Download build artifacts\s+uses: actions\/download-artifact@v4\s+with:\s+name: jedit-dist\s+path: \./);
+  assert.match(workflow, /name: Download build artifacts\s+uses: actions\/download-artifact@v4\s+with:\s+name: jedit-dist\s+path: dist/);
 });
