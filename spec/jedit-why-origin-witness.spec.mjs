@@ -12,6 +12,9 @@ const DETAILS_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'workspace', 'wo
 const MAX_FACTS = 64;
 const MAX_DEPTH = 16;
 const MAX_HISTORICAL_TEXT_BYTES = 8_192;
+const MALFORMED_RANGE_START_BYTE = 0;
+const MALFORMED_RANGE_END_BYTE = 1;
+const UNKNOWN_ORIGIN_KIND = 'FUTURE_ORIGIN';
 
 let modulesPromise;
 
@@ -85,6 +88,16 @@ test('why origin witness obstructs generated attribution when producer evidence 
   )));
 });
 
+test('why origin witness rejects unknown origin discriminators', async () => {
+  const modules = await loadModules();
+
+  assert.throws(
+    () => modules.why.explainJeditWhyRange(malformedOriginReading()),
+    error => error.name === 'JeditWhyRangeEvidenceError'
+      && error.message.includes('unsupported'),
+  );
+});
+
 async function createOptic(initialText) {
   const modules = await loadModules();
   const client = installedClient(modules);
@@ -100,6 +113,33 @@ function installedClient(modules) {
   return modules.client.createEchoTransportJeditOpticClient(
     modules.transport.createInstalledJeditContractEchoTransport(),
   );
+}
+
+function malformedOriginReading() {
+  return {
+    worldlineId: 'worldline:malformed-origin',
+    basisHeadId: 'head:malformed-origin',
+    startByte: MALFORMED_RANGE_START_BYTE,
+    endByte: MALFORMED_RANGE_END_BYTE,
+    coverage: {
+      kind: 'COMPLETE',
+      coveredStartByte: MALFORMED_RANGE_START_BYTE,
+      coveredEndByte: MALFORMED_RANGE_END_BYTE,
+      continuation: null,
+      reason: null,
+    },
+    fragments: [{
+      coveredStartByte: MALFORMED_RANGE_START_BYTE,
+      coveredEndByte: MALFORMED_RANGE_END_BYTE,
+      headId: 'head:malformed-origin',
+      leafId: 'leaf:malformed-origin',
+      blobId: 'blob:malformed-origin',
+      origin: { kind: UNKNOWN_ORIGIN_KIND, unavailableCode: 'false-unavailable' },
+    }],
+    relatedCheckpoints: [],
+    inspectedFactCount: 1,
+    observerVersion: 'test-malformed-origin',
+  };
 }
 
 async function loadModules() {

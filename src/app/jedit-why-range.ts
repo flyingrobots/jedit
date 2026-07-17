@@ -17,6 +17,8 @@ import {
   type JeditWhyRangeWitness,
 } from '../ports/jedit-why-range.js';
 
+const UNSUPPORTED_ORIGIN_KIND_MESSAGE = 'Range why origin kind is unsupported.';
+
 export function explainJeditWhyRange(reading: WhyRangeReading): JeditWhyRangeReport {
   const fragments = reading.fragments.map(toRangeFragment);
   return {
@@ -102,10 +104,13 @@ function toRangeOrigin(origin: WhyRangeOrigin): JeditWhyRangeOrigin {
       },
     };
   }
-  return {
-    kind: 'UNAVAILABLE',
-    code: requireEvidence(origin.unavailableCode, 'unavailableCode'),
-  };
+  if (origin.kind === JeditWhyRangeOriginKinds.Unavailable) {
+    return {
+      kind: JeditWhyRangeOriginKinds.Unavailable,
+      code: requireEvidence(origin.unavailableCode, 'unavailableCode'),
+    };
+  }
+  throw new JeditWhyRangeEvidenceError(UNSUPPORTED_ORIGIN_KIND_MESSAGE);
 }
 
 function rangeWhyMessage(reading: WhyRangeReading): string {
@@ -127,7 +132,10 @@ function originMessage(fragment: WhyRangeFragment): string {
       `producer unavailable (${JEDIT_WHY_RANGE_PRODUCER_EVIDENCE_UNAVAILABLE_CODE})`,
     ].join(', ');
   }
-  return `${range} unavailable: ${requireEvidence(fragment.origin.unavailableCode, 'unavailableCode')}`;
+  if (fragment.origin.kind === JeditWhyRangeOriginKinds.Unavailable) {
+    return `${range} unavailable: ${requireEvidence(fragment.origin.unavailableCode, 'unavailableCode')}`;
+  }
+  throw new JeditWhyRangeEvidenceError(UNSUPPORTED_ORIGIN_KIND_MESSAGE);
 }
 
 function requireEvidence(value: string | null, fieldName: string): string {
