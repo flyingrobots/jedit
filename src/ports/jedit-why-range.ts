@@ -14,6 +14,11 @@ export const JeditWhyRangeOriginKinds = Object.freeze({
   Unavailable: 'UNAVAILABLE',
 } as const);
 
+export const JeditWhyRangeCoverageKinds = Object.freeze({
+  Complete: 'COMPLETE',
+  Partial: 'PARTIAL',
+} as const);
+
 export const JeditWhyRangeProducerEvidenceKinds = Object.freeze({
   Unavailable: 'UNAVAILABLE',
 } as const);
@@ -58,7 +63,9 @@ export interface JeditWhyRangeUnavailable {
 }
 
 export interface JeditWhyRangeCoverage {
-  readonly kind: 'COMPLETE' | 'PARTIAL';
+  readonly kind:
+    | typeof JeditWhyRangeCoverageKinds.Complete
+    | typeof JeditWhyRangeCoverageKinds.Partial;
   readonly coveredRange: JeditWhyByteRange;
   readonly continuation: string | null;
   readonly reason: string | null;
