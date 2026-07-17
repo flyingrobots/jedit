@@ -15,6 +15,7 @@ import {
   createJeditTextWindowObserver,
   readWorldlineSnapshotWithObserverPlan,
 } from './jedit-observer-runtime.js';
+import type { DisposableJeditLineIndexStore } from './jedit-line-index-projection.js';
 import { requireJeditContractFactSet } from './jedit-contract-state-port.js';
 import type { JeditWorldlineSession } from './jedit-contract-runtime.js';
 import type {
@@ -80,7 +81,10 @@ export interface JeditContractQueryObserverRegistryOptions {
   readonly runtime: HotTextRuntimePort;
   readonly hash: HashPort;
   readonly statePort?: JeditContractStatePort;
+  readonly lineIndexes?: DisposableJeditLineIndexStore;
 }
+
+export type { DisposableJeditLineIndexStore };
 
 export interface JeditContractQueryObserverRegistry {
   readonly queryOperationNames: readonly string[];
@@ -111,7 +115,7 @@ export function createJeditContractQueryObserverRegistry(
 ): JeditContractQueryObserverRegistry {
   const context: JeditContractQueryObserverContext = Object.freeze({
     ...options,
-    textWindowObserver: createJeditTextWindowObserver(options.runtime, options.hash),
+    textWindowObserver: createJeditTextWindowObserver(options.runtime, options.hash, options.lineIndexes),
   });
   const queryOperationNames: readonly string[] = Object.freeze([
     queryWorldlineSnapshotOperation.fieldName,

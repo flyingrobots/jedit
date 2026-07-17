@@ -10,6 +10,7 @@ import {
 } from './jedit-echo-optic-codec.js';
 
 export { createJeditContractQueryObserverRegistry };
+export type { DisposableJeditLineIndexStore } from '../app/jedit-contract-query-observers.js';
 
 export function executeInstalledJeditObserve(
   observers: ReturnType<typeof createJeditContractQueryObserverRegistry>,

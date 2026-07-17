@@ -62,6 +62,7 @@ import {
 } from './jedit-echo-optic-codec.js';
 import {
   createJeditContractQueryObserverRegistry,
+  type DisposableJeditLineIndexStore,
   executeInstalledJeditObserve,
 } from './installed-jedit-contract-observe.js';
 import type { JeditWorldlineSessionPort } from '../ports/jedit-worldline-session-port.js';
@@ -103,6 +104,7 @@ export interface InstalledJeditContractEchoTransportOptions {
   readonly ticketedWorkPort?: JeditTicketedWorkPort;
   readonly packageHost?: EchoContractPackageHostPort;
   readonly sessionPort?: JeditWorldlineSessionPort;
+  readonly lineIndexes?: DisposableJeditLineIndexStore;
 }
 
 interface InstalledJeditContractEchoTransportContext {
@@ -169,7 +171,12 @@ function createTransportContext(
   const defaults = createDefaultJeditHostingBoundaries(hash);
   const statePort = options.statePort ?? defaults.statePort;
   const mutations = createJeditContractMutationHandlerRegistry({ runtime, hash, statePort });
-  const observers = createJeditContractQueryObserverRegistry({ runtime, hash, statePort });
+  const observers = createJeditContractQueryObserverRegistry({
+    runtime,
+    hash,
+    statePort,
+    lineIndexes: options.lineIndexes,
+  });
   const host = options.packageHost ?? createRecordingPackageHost();
   const install = installJeditContractPackage({ host });
   const isPackageInstalled = install.hostResult.status === ECHO_CONTRACT_PACKAGE_INSTALL_INSTALLED;

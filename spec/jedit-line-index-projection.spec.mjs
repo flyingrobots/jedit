@@ -9,6 +9,10 @@ const CLIENT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-
 const TRANSPORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'installed-jedit-contract-echo-transport.js');
 const TEXT_SESSION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'text-buffer-session.js');
 const UTF8_ENCODER = new TextEncoder();
+const FIRST_LINE = 0;
+const SINGLE_LINE_VIEWPORT = 1;
+const NO_SURROUNDING_LINES = 0;
+const TEXT_WINDOW_BYTE_BUDGET = 80;
 
 let modulesPromise;
 
@@ -88,15 +92,16 @@ test('line index selection budgets complete UTF-8 coverage including line breaks
 
 test('line index eviction cannot alter retained range why evidence', async () => {
   const { lineIndex, clientModule, transportModule, textSession } = await loadModules();
+  const store = lineIndex.createDisposableJeditLineIndexStore();
   const client = clientModule.createEchoTransportJeditOpticClient(
-    transportModule.createInstalledJeditContractEchoTransport(),
+    transportModule.createInstalledJeditContractEchoTransport({ lineIndexes: store }),
   );
   const optic = await textSession.createTextBufferSession(client).createBuffer({
     bufferKey: 'line-index.txt',
     initialText: '',
     projectionPath: 'line-index.txt',
   });
-  await optic.applyIntent({
+  const applied = await optic.applyIntent({
     kind: 'replaceRange',
     startByte: 0,
     endByte: 0,
@@ -104,14 +109,20 @@ test('line index eviction cannot alter retained range why evidence', async () =>
   });
   const range = { startByte: 0, endByte: 8 };
   const before = await optic.explainRange(range);
-  const store = lineIndex.createDisposableJeditLineIndexStore();
-  const index = lineIndex.buildJeditLineIndexProjection(fullProjection(
-    'retained',
-    before.witness.basisHeadId,
-  ));
+  await optic.textWindow({
+    ...applied.textBasis,
+    aperture: {
+      cursorLine: FIRST_LINE,
+      viewportLineCount: SINGLE_LINE_VIEWPORT,
+      beforeLines: NO_SURROUNDING_LINES,
+      afterLines: NO_SURROUNDING_LINES,
+      maxBytes: TEXT_WINDOW_BYTE_BUDGET,
+    },
+  });
 
-  store.retain(index);
+  assert.ok(store.find(before.witness.worldlineId, before.witness.basisHeadId));
   store.clear();
+  assert.equal(store.find(before.witness.worldlineId, before.witness.basisHeadId), null);
 
   assert.deepEqual(await optic.explainRange(range), before);
 });
