@@ -77,6 +77,13 @@ jobs:
             dist
           if-no-files-found: error
 
+      - name: Upload native Echo host
+        uses: actions/upload-artifact@v4
+        with:
+          name: jedit-echo-host
+          path: native/jedit-echo-host/target/debug/jedit-echo-host
+          if-no-files-found: error
+
   test-shards:
     name: test / ${{ matrix.shard }}
     needs: [ plan, build ]
@@ -104,6 +111,17 @@ jobs:
         with:
           name: jedit-dist
           path: dist
+
+      - name: Download native Echo host
+        if: matrix.shard == 'echo-authority'
+        uses: actions/download-artifact@v4
+        with:
+          name: jedit-echo-host
+          path: native/jedit-echo-host/target/debug
+
+      - name: Restore native Echo host executable permission
+        if: matrix.shard == 'echo-authority'
+        run: chmod +x native/jedit-echo-host/target/debug/jedit-echo-host
 
       - name: Run shard
         env:

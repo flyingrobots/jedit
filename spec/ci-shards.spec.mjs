@@ -115,4 +115,7 @@ test('CI build artifact restores compiled output required by test shards', () =>
 
   assert.match(workflow, /path: \|\s+dist/);
   assert.match(workflow, /name: Download build artifacts\s+uses: actions\/download-artifact@v4\s+with:\s+name: jedit-dist\s+path: dist/);
+  assert.match(workflow, /name: Upload native Echo host\s+uses: actions\/upload-artifact@v4\s+with:\s+name: jedit-echo-host/);
+  assert.match(workflow, /name: Download native Echo host\s+if: matrix\.shard == 'echo-authority'/);
+  assert.match(workflow, /chmod \+x native\/jedit-echo-host\/target\/debug\/jedit-echo-host/);
 });
