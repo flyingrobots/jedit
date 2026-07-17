@@ -245,7 +245,7 @@ function preflightWhyRangeReport(range: JeditWhyByteRange): JeditWhyRangeReport 
     message: 'Preflight range why is unavailable.',
     witness: {
       worldlineId: 'wl:preflight',
-      basisHeadId: 'head:preflight',
+      basisHeadId: DEFAULT_HEAD_ID,
       queriedRange: range,
       result: {
         kind: RESULT_UNAVAILABLE,
