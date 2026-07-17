@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use crate::records::CheckpointReason;
 use crate::rope::{BufferSnapshot, WindowProjection};
 
 #[derive(Debug, Deserialize)]
@@ -27,6 +28,15 @@ pub enum HostRequest {
         #[serde(rename = "insertText")]
         insert_text: String,
     },
+    DeclareCheckpoint {
+        #[serde(rename = "requestId")]
+        request_id: u64,
+        #[serde(rename = "bufferId")]
+        buffer_id: String,
+        #[serde(rename = "basisHeadId")]
+        basis_head_id: String,
+        reason: CheckpointReason,
+    },
     Observe {
         #[serde(rename = "requestId")]
         request_id: u64,
@@ -48,6 +58,7 @@ impl HostRequest {
         match self {
             Self::Open { request_id, .. }
             | Self::Replace { request_id, .. }
+            | Self::DeclareCheckpoint { request_id, .. }
             | Self::Observe { request_id, .. } => *request_id,
         }
     }
@@ -71,6 +82,23 @@ pub enum HostResponse {
         request_id: u64,
         #[serde(flatten)]
         buffer: BufferResponse,
+        #[serde(rename = "receiptId")]
+        receipt_id: String,
+        #[serde(rename = "admittedTickId")]
+        admitted_tick_id: String,
+    },
+    CheckpointDeclared {
+        #[serde(rename = "requestId")]
+        request_id: u64,
+        #[serde(flatten)]
+        buffer: BufferResponse,
+        #[serde(rename = "checkpointId")]
+        checkpoint_id: String,
+        #[serde(rename = "basisHeadId")]
+        basis_head_id: String,
+        #[serde(rename = "basisByteLength")]
+        basis_byte_length: u64,
+        reason: CheckpointReason,
         #[serde(rename = "receiptId")]
         receipt_id: String,
         #[serde(rename = "admittedTickId")]

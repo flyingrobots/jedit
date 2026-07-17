@@ -1,13 +1,13 @@
 use echo_wasm_abi::codec::{Decode as _, Encode as _};
 use serde::{Deserialize, Serialize};
-pub const SCHEMA_SHA256: &str = "fa8a33ad961bbd49eecd1f7b26782124e570948c290000a3f8d6ce2fb61d0f55";
+pub const SCHEMA_SHA256: &str = "3abf3e1ccdf19a3c0fd2cb0ba45ad98f948f92a57f3f65b59c31e01590402fe8";
 pub const ECHO_CONTRACT_ABI_VERSION: u32 = 1;
 pub const CODEC_ID: &str = "le-binary-v1";
 pub const REGISTRY_VERSION: u32 = 1u32;
 pub const WESLEY_GENERATOR_VERSION: &str = "echo-wesley-gen/0.1.0";
 pub const CONTRACT_HOST_HELPER_API_VERSION: u32 = 1;
 pub const GENERATED_RUST_ARTIFACT_HASH: &str =
-    "d07f667d060664348e3980fb2b2694a2e0f45810843110e355272513fdbf13b7";
+    "69bb125cc09cc457c14aac561d8b014d9b0922af42dd55c6a4e2bf6bab44b0e6";
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BufferWorldline {
     pub bufferId: String,
@@ -46,9 +46,38 @@ impl echo_wasm_abi::codec::Decode for CreateBufferWorldlineInput {
     }
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DeclareCheckpointInput {
+    pub bufferId: String,
+    pub basisHeadId: String,
+    pub reason: String,
+}
+impl echo_wasm_abi::codec::Encode for DeclareCheckpointInput {
+    fn encode(
+        &self,
+        w: &mut echo_wasm_abi::codec::Writer,
+    ) -> Result<(), echo_wasm_abi::codec::CodecError> {
+        w.write_string(&self.bufferId, usize::MAX)?;
+        w.write_string(&self.basisHeadId, usize::MAX)?;
+        w.write_string(&self.reason, usize::MAX)?;
+        Ok(())
+    }
+}
+impl echo_wasm_abi::codec::Decode for DeclareCheckpointInput {
+    fn decode(
+        r: &mut echo_wasm_abi::codec::Reader<'_>,
+    ) -> Result<Self, echo_wasm_abi::codec::CodecError> {
+        Ok(Self {
+            bufferId: r.read_string(usize::MAX)?,
+            basisHeadId: r.read_string(usize::MAX)?,
+            reason: r.read_string(usize::MAX)?,
+        })
+    }
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Mutation {
     pub createBufferWorldline: BufferWorldline,
     pub replaceRangeAsTick: BufferWorldline,
+    pub declareCheckpoint: RopeCheckpointDeclaration,
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Query {
@@ -87,6 +116,14 @@ impl echo_wasm_abi::codec::Decode for ReplaceRangeAsTickInput {
             insertText: r.read_string(usize::MAX)?,
         })
     }
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RopeCheckpointDeclaration {
+    pub checkpointId: String,
+    pub bufferId: String,
+    pub basisHeadId: String,
+    pub basisByteLength: i32,
+    pub reason: String,
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TextWindowInput {
@@ -183,6 +220,12 @@ pub const OBJ_MUTATION_FIELDS: &[ArgDef] = &[
         required: true,
         list: false,
     },
+    ArgDef {
+        name: "declareCheckpoint",
+        ty: "RopeCheckpointDeclaration",
+        required: true,
+        list: false,
+    },
 ];
 pub const OBJ_QUERY_FIELDS: &[ArgDef] = &[ArgDef {
     name: "textWindow",
@@ -190,6 +233,38 @@ pub const OBJ_QUERY_FIELDS: &[ArgDef] = &[ArgDef {
     required: true,
     list: false,
 }];
+pub const OBJ_ROPECHECKPOINTDECLARATION_FIELDS: &[ArgDef] = &[
+    ArgDef {
+        name: "checkpointId",
+        ty: "ID",
+        required: true,
+        list: false,
+    },
+    ArgDef {
+        name: "bufferId",
+        ty: "ID",
+        required: true,
+        list: false,
+    },
+    ArgDef {
+        name: "basisHeadId",
+        ty: "ID",
+        required: true,
+        list: false,
+    },
+    ArgDef {
+        name: "basisByteLength",
+        ty: "Int",
+        required: true,
+        list: false,
+    },
+    ArgDef {
+        name: "reason",
+        ty: "String",
+        required: true,
+        list: false,
+    },
+];
 pub const OBJ_TEXTWINDOWLINE_FIELDS: &[ArgDef] = &[
     ArgDef {
         name: "lineNumber",
@@ -280,6 +355,10 @@ pub const OBJECTS: &[ObjectDef] = &[
         fields: OBJ_QUERY_FIELDS,
     },
     ObjectDef {
+        name: "RopeCheckpointDeclaration",
+        fields: OBJ_ROPECHECKPOINTDECLARATION_FIELDS,
+    },
+    ObjectDef {
         name: "TextWindowLine",
         fields: OBJ_TEXTWINDOWLINE_FIELDS,
     },
@@ -288,6 +367,13 @@ pub const OBJECTS: &[ObjectDef] = &[
         fields: OBJ_TEXTWINDOWREADING_FIELDS,
     },
 ];
+pub const OP_DECLARE_CHECKPOINT: u32 = 24174910u32;
+pub const OP_DECLARE_CHECKPOINT_ARGS: &[ArgDef] = &[ArgDef {
+    name: "input",
+    ty: "DeclareCheckpointInput",
+    required: true,
+    list: false,
+}];
 pub const OP_TEXT_WINDOW: u32 = 2414231278u32;
 pub const OP_TEXT_WINDOW_ARGS: &[ArgDef] = &[ArgDef {
     name: "input",
@@ -340,6 +426,146 @@ pub mod __echo_wesley_generated {
     };
     fn generated_vars_digest(vars_bytes: &[u8]) -> Vec<u8> {
         echo_wasm_abi::query_vars_digest_v1(vars_bytes)
+    }
+    /// LE binary vars payload for this generated operation.
+    #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+    pub struct DeclareCheckpointVars {
+        pub input: super::DeclareCheckpointInput,
+    }
+    impl echo_wasm_abi::codec::Encode for DeclareCheckpointVars {
+        fn encode(
+            &self,
+            w: &mut echo_wasm_abi::codec::Writer,
+        ) -> Result<(), echo_wasm_abi::codec::CodecError> {
+            self.input.encode(w)?;
+            Ok(())
+        }
+    }
+    impl echo_wasm_abi::codec::Decode for DeclareCheckpointVars {
+        fn decode(
+            r: &mut echo_wasm_abi::codec::Reader<'_>,
+        ) -> Result<Self, echo_wasm_abi::codec::CodecError> {
+            Ok(Self {
+                input: super::DeclareCheckpointInput::decode(r)?,
+            })
+        }
+    }
+    /// Encode this operation's vars using the LE binary codec.
+    pub fn encode_declare_checkpoint_vars(
+        vars: &DeclareCheckpointVars,
+    ) -> Result<Vec<u8>, echo_wasm_abi::codec::CodecError> {
+        echo_wasm_abi::codec::encode_to_vec(vars)
+    }
+    /// Encode this mutation's vars and pack them into an EINT v1 intent.
+    pub fn pack_declare_checkpoint_intent(
+        vars: &DeclareCheckpointVars,
+    ) -> Result<Vec<u8>, GeneratedIntentError> {
+        let vars_bytes =
+            encode_declare_checkpoint_vars(vars).map_err(GeneratedIntentError::EncodeVars)?;
+        pack_intent_v1(super::OP_DECLARE_CHECKPOINT, &vars_bytes)
+            .map_err(GeneratedIntentError::PackEnvelope)
+    }
+    /// Pack already-canonical vars bytes for this generated mutation into EINT v1.
+    pub fn pack_declare_checkpoint_intent_raw_vars(
+        vars: &[u8],
+    ) -> Result<Vec<u8>, echo_wasm_abi::EnvelopeError> {
+        pack_intent_v1(super::OP_DECLARE_CHECKPOINT, vars)
+    }
+    /// Build an optic intent-dispatch request for this mutation.
+    #[allow(clippy::too_many_arguments)]
+    pub fn declare_checkpoint_dispatch_optic_intent_request(
+        optic_id: OpticId,
+        base_coordinate: EchoCoordinate,
+        intent_family: IntentFamilyId,
+        focus: OpticFocus,
+        cause: OpticCause,
+        capability: OpticCapability,
+        admission_law: AdmissionLawId,
+        vars: &DeclareCheckpointVars,
+    ) -> Result<DispatchOpticIntentRequest, GeneratedIntentError> {
+        let vars_bytes =
+            encode_declare_checkpoint_vars(vars).map_err(GeneratedIntentError::EncodeVars)?;
+        declare_checkpoint_dispatch_optic_intent_request_raw_vars(
+            optic_id,
+            base_coordinate,
+            intent_family,
+            focus,
+            cause,
+            capability,
+            admission_law,
+            &vars_bytes,
+        )
+    }
+    /// Build an optic intent-dispatch request from already-canonical vars bytes.
+    #[allow(clippy::too_many_arguments)]
+    pub fn declare_checkpoint_dispatch_optic_intent_request_raw_vars(
+        optic_id: OpticId,
+        base_coordinate: EchoCoordinate,
+        intent_family: IntentFamilyId,
+        focus: OpticFocus,
+        cause: OpticCause,
+        capability: OpticCapability,
+        admission_law: AdmissionLawId,
+        vars: &[u8],
+    ) -> Result<DispatchOpticIntentRequest, GeneratedIntentError> {
+        let bytes = pack_intent_v1(super::OP_DECLARE_CHECKPOINT, vars)
+            .map_err(GeneratedIntentError::PackEnvelope)?;
+        Ok(DispatchOpticIntentRequest {
+            optic_id,
+            base_coordinate,
+            intent_family,
+            focus,
+            cause,
+            capability,
+            admission_law,
+            payload: OpticIntentPayload::EintV1 { bytes },
+        })
+    }
+    /// Stable command-rule name for this generated contract mutation.
+    pub const OP_DECLARE_CHECKPOINT_CONTRACT_RULE_NAME: &str = "cmd/contract/3abf3e1ccdf19a3c0fd2cb0ba45ad98f948f92a57f3f65b59c31e01590402fe8/24174910/declareCheckpoint";
+    /// Stable rule-id label for this generated contract mutation.
+    pub const OP_DECLARE_CHECKPOINT_CONTRACT_RULE_ID_LABEL: &str = "rule:cmd/contract/3abf3e1ccdf19a3c0fd2cb0ba45ad98f948f92a57f3f65b59c31e01590402fe8/24174910/declareCheckpoint";
+    /// Return true when a scheduler-materialized runtime ingress event
+    /// carries this mutation's EINT operation id.
+    pub fn declare_checkpoint_contract_matches(view: GraphView<'_>, scope: &NodeId) -> bool {
+        warp_core::matches_eint_op(view, scope, super::OP_DECLARE_CHECKPOINT)
+    }
+    /// Decode this mutation's generated vars from a scheduler-materialized
+    /// EINT runtime ingress event.
+    pub fn declare_checkpoint_contract_vars(
+        view: GraphView<'_>,
+        scope: &NodeId,
+    ) -> Option<DeclareCheckpointVars> {
+        let vars = warp_core::eint_vars_for_op(view, scope, super::OP_DECLARE_CHECKPOINT)?;
+        echo_wasm_abi::codec::decode_from_bytes(vars).ok()
+    }
+    /// Base footprint for reading this mutation's runtime ingress event.
+    ///
+    /// Installed executors must extend this with their handler-specific
+    /// graph, edge, attachment, and port writes.
+    pub fn declare_checkpoint_contract_runtime_ingress_footprint(
+        view: GraphView<'_>,
+        scope: &NodeId,
+    ) -> Footprint {
+        warp_core::runtime_ingress_eint_read_footprint(view, scope)
+    }
+    /// Build a `warp-core` command rule for this generated contract
+    /// mutation using a host-supplied executor and footprint function.
+    pub fn declare_checkpoint_contract_rule(
+        executor: for<'a> fn(GraphView<'a>, &NodeId, &mut TickDelta),
+        compute_footprint: for<'a> fn(GraphView<'a>, &NodeId) -> Footprint,
+    ) -> RewriteRule {
+        RewriteRule {
+            id: warp_core::make_type_id(OP_DECLARE_CHECKPOINT_CONTRACT_RULE_ID_LABEL).0,
+            name: OP_DECLARE_CHECKPOINT_CONTRACT_RULE_NAME,
+            left: PatternGraph { nodes: Vec::new() },
+            matcher: declare_checkpoint_contract_matches,
+            executor,
+            compute_footprint,
+            factor_mask: 0,
+            conflict_policy: ConflictPolicy::Abort,
+            join_fn: None,
+        }
     }
     /// LE binary vars payload for this generated operation.
     #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -453,43 +679,43 @@ pub mod __echo_wesley_generated {
         }
     }
     /// Stable authored observer plan-id label for this generated query.
-    pub const OP_TEXT_WINDOW_OBSERVER_PLAN_ID_LABEL: &str = "observer:query/fa8a33ad961bbd49eecd1f7b26782124e570948c290000a3f8d6ce2fb61d0f55/2414231278/textWindow";
+    pub const OP_TEXT_WINDOW_OBSERVER_PLAN_ID_LABEL: &str = "observer:query/3abf3e1ccdf19a3c0fd2cb0ba45ad98f948f92a57f3f65b59c31e01590402fe8/2414231278/textWindow";
     /// Stable artifact hash for this generated query observer helper.
     pub const OP_TEXT_WINDOW_OBSERVER_ARTIFACT_HASH: &str =
-        "fbcbb49cdbe36be579a505d616f362ed02e606e1b5870f86277b4fb8eab3e450";
+        "57e1313343b34de667127241dfb7dfbb1dad98e9792c37358ff967c38ee62cde";
     /// Build the authored observer plan stamped onto readings emitted
     /// by this generated query observer.
     pub fn text_window_observer_plan() -> warp_core::AuthoredObserverPlan {
         warp_core::AuthoredObserverPlan {
             plan_id: warp_core::ObserverPlanId::from_bytes([
-                174u8, 65u8, 18u8, 210u8, 111u8, 160u8, 131u8, 26u8, 21u8, 89u8, 22u8, 170u8,
-                205u8, 16u8, 127u8, 73u8, 241u8, 198u8, 40u8, 173u8, 1u8, 5u8, 149u8, 37u8, 243u8,
-                109u8, 101u8, 61u8, 137u8, 161u8, 91u8, 22u8,
+                49u8, 120u8, 43u8, 156u8, 2u8, 8u8, 160u8, 166u8, 104u8, 42u8, 19u8, 180u8, 93u8,
+                63u8, 83u8, 254u8, 223u8, 237u8, 153u8, 39u8, 210u8, 115u8, 105u8, 69u8, 108u8,
+                222u8, 210u8, 159u8, 77u8, 143u8, 230u8, 142u8,
             ]),
             artifact_hash: [
-                251u8, 203u8, 180u8, 156u8, 219u8, 227u8, 107u8, 229u8, 121u8, 165u8, 5u8, 214u8,
-                22u8, 243u8, 98u8, 237u8, 2u8, 230u8, 6u8, 225u8, 181u8, 135u8, 15u8, 134u8, 39u8,
-                123u8, 79u8, 184u8, 234u8, 179u8, 228u8, 80u8,
+                87u8, 225u8, 49u8, 51u8, 67u8, 179u8, 77u8, 230u8, 103u8, 18u8, 114u8, 65u8, 223u8,
+                183u8, 223u8, 187u8, 29u8, 173u8, 152u8, 233u8, 121u8, 44u8, 55u8, 53u8, 143u8,
+                249u8, 103u8, 195u8, 142u8, 230u8, 44u8, 222u8,
             ],
             schema_hash: [
-                250u8, 138u8, 51u8, 173u8, 150u8, 27u8, 189u8, 73u8, 238u8, 205u8, 31u8, 123u8,
-                38u8, 120u8, 33u8, 36u8, 229u8, 112u8, 148u8, 140u8, 41u8, 0u8, 0u8, 163u8, 248u8,
-                214u8, 206u8, 47u8, 182u8, 29u8, 15u8, 85u8,
+                58u8, 191u8, 62u8, 28u8, 205u8, 241u8, 154u8, 60u8, 15u8, 210u8, 203u8, 11u8,
+                164u8, 90u8, 217u8, 143u8, 148u8, 143u8, 146u8, 165u8, 127u8, 63u8, 101u8, 181u8,
+                156u8, 49u8, 224u8, 21u8, 144u8, 64u8, 47u8, 232u8,
             ],
             state_schema_hash: [
-                147u8, 228u8, 214u8, 181u8, 211u8, 49u8, 232u8, 197u8, 152u8, 102u8, 112u8, 205u8,
-                46u8, 153u8, 13u8, 232u8, 214u8, 160u8, 41u8, 13u8, 51u8, 200u8, 18u8, 0u8, 4u8,
-                52u8, 165u8, 114u8, 220u8, 217u8, 250u8, 54u8,
+                251u8, 100u8, 48u8, 72u8, 71u8, 212u8, 63u8, 100u8, 10u8, 171u8, 33u8, 165u8, 23u8,
+                86u8, 206u8, 204u8, 23u8, 5u8, 133u8, 180u8, 76u8, 175u8, 24u8, 80u8, 191u8, 218u8,
+                139u8, 59u8, 215u8, 175u8, 66u8, 10u8,
             ],
             update_law_hash: [
-                126u8, 142u8, 166u8, 17u8, 104u8, 153u8, 36u8, 6u8, 149u8, 102u8, 84u8, 208u8,
-                154u8, 49u8, 214u8, 186u8, 91u8, 79u8, 245u8, 17u8, 253u8, 66u8, 227u8, 153u8,
-                246u8, 59u8, 207u8, 69u8, 25u8, 225u8, 151u8, 234u8,
+                101u8, 48u8, 135u8, 155u8, 142u8, 156u8, 46u8, 42u8, 201u8, 28u8, 1u8, 189u8, 60u8,
+                81u8, 8u8, 211u8, 147u8, 205u8, 15u8, 105u8, 170u8, 82u8, 124u8, 93u8, 100u8,
+                206u8, 67u8, 196u8, 246u8, 238u8, 37u8, 113u8,
             ],
             emission_law_hash: [
-                91u8, 245u8, 53u8, 43u8, 51u8, 0u8, 19u8, 6u8, 58u8, 173u8, 94u8, 158u8, 224u8,
-                253u8, 97u8, 2u8, 153u8, 169u8, 3u8, 69u8, 102u8, 99u8, 118u8, 5u8, 216u8, 24u8,
-                14u8, 0u8, 28u8, 220u8, 99u8, 57u8,
+                19u8, 136u8, 131u8, 113u8, 97u8, 253u8, 251u8, 142u8, 131u8, 175u8, 16u8, 45u8,
+                3u8, 200u8, 171u8, 222u8, 137u8, 230u8, 186u8, 208u8, 126u8, 35u8, 3u8, 137u8,
+                185u8, 65u8, 167u8, 23u8, 63u8, 246u8, 22u8, 3u8,
             ],
         }
     }
@@ -621,9 +847,9 @@ pub mod __echo_wesley_generated {
         })
     }
     /// Stable command-rule name for this generated contract mutation.
-    pub const OP_CREATE_BUFFER_WORLDLINE_CONTRACT_RULE_NAME: &str = "cmd/contract/fa8a33ad961bbd49eecd1f7b26782124e570948c290000a3f8d6ce2fb61d0f55/2519122874/createBufferWorldline";
+    pub const OP_CREATE_BUFFER_WORLDLINE_CONTRACT_RULE_NAME: &str = "cmd/contract/3abf3e1ccdf19a3c0fd2cb0ba45ad98f948f92a57f3f65b59c31e01590402fe8/2519122874/createBufferWorldline";
     /// Stable rule-id label for this generated contract mutation.
-    pub const OP_CREATE_BUFFER_WORLDLINE_CONTRACT_RULE_ID_LABEL: &str = "rule:cmd/contract/fa8a33ad961bbd49eecd1f7b26782124e570948c290000a3f8d6ce2fb61d0f55/2519122874/createBufferWorldline";
+    pub const OP_CREATE_BUFFER_WORLDLINE_CONTRACT_RULE_ID_LABEL: &str = "rule:cmd/contract/3abf3e1ccdf19a3c0fd2cb0ba45ad98f948f92a57f3f65b59c31e01590402fe8/2519122874/createBufferWorldline";
     /// Return true when a scheduler-materialized runtime ingress event
     /// carries this mutation's EINT operation id.
     pub fn create_buffer_worldline_contract_matches(view: GraphView<'_>, scope: &NodeId) -> bool {
@@ -761,9 +987,9 @@ pub mod __echo_wesley_generated {
         })
     }
     /// Stable command-rule name for this generated contract mutation.
-    pub const OP_REPLACE_RANGE_AS_TICK_CONTRACT_RULE_NAME: &str = "cmd/contract/fa8a33ad961bbd49eecd1f7b26782124e570948c290000a3f8d6ce2fb61d0f55/3329158538/replaceRangeAsTick";
+    pub const OP_REPLACE_RANGE_AS_TICK_CONTRACT_RULE_NAME: &str = "cmd/contract/3abf3e1ccdf19a3c0fd2cb0ba45ad98f948f92a57f3f65b59c31e01590402fe8/3329158538/replaceRangeAsTick";
     /// Stable rule-id label for this generated contract mutation.
-    pub const OP_REPLACE_RANGE_AS_TICK_CONTRACT_RULE_ID_LABEL: &str = "rule:cmd/contract/fa8a33ad961bbd49eecd1f7b26782124e570948c290000a3f8d6ce2fb61d0f55/3329158538/replaceRangeAsTick";
+    pub const OP_REPLACE_RANGE_AS_TICK_CONTRACT_RULE_ID_LABEL: &str = "rule:cmd/contract/3abf3e1ccdf19a3c0fd2cb0ba45ad98f948f92a57f3f65b59c31e01590402fe8/3329158538/replaceRangeAsTick";
     /// Return true when a scheduler-materialized runtime ingress event
     /// carries this mutation's EINT operation id.
     pub fn replace_range_as_tick_contract_matches(view: GraphView<'_>, scope: &NodeId) -> bool {
@@ -812,22 +1038,37 @@ pub use __echo_wesley_generated::{
     create_buffer_worldline_contract_runtime_ingress_footprint,
     create_buffer_worldline_contract_vars, create_buffer_worldline_dispatch_optic_intent_request,
     create_buffer_worldline_dispatch_optic_intent_request_raw_vars,
-    encode_create_buffer_worldline_vars, encode_replace_range_as_tick_vars,
-    encode_text_window_vars, pack_create_buffer_worldline_intent,
-    pack_create_buffer_worldline_intent_raw_vars, pack_replace_range_as_tick_intent,
-    pack_replace_range_as_tick_intent_raw_vars, replace_range_as_tick_contract_matches,
-    replace_range_as_tick_contract_rule, replace_range_as_tick_contract_runtime_ingress_footprint,
-    replace_range_as_tick_contract_vars, replace_range_as_tick_dispatch_optic_intent_request,
+    declare_checkpoint_contract_matches, declare_checkpoint_contract_rule,
+    declare_checkpoint_contract_runtime_ingress_footprint, declare_checkpoint_contract_vars,
+    declare_checkpoint_dispatch_optic_intent_request,
+    declare_checkpoint_dispatch_optic_intent_request_raw_vars, encode_create_buffer_worldline_vars,
+    encode_declare_checkpoint_vars, encode_replace_range_as_tick_vars, encode_text_window_vars,
+    pack_create_buffer_worldline_intent, pack_create_buffer_worldline_intent_raw_vars,
+    pack_declare_checkpoint_intent, pack_declare_checkpoint_intent_raw_vars,
+    pack_replace_range_as_tick_intent, pack_replace_range_as_tick_intent_raw_vars,
+    replace_range_as_tick_contract_matches, replace_range_as_tick_contract_rule,
+    replace_range_as_tick_contract_runtime_ingress_footprint, replace_range_as_tick_contract_vars,
+    replace_range_as_tick_dispatch_optic_intent_request,
     replace_range_as_tick_dispatch_optic_intent_request_raw_vars, text_window_observation_request,
     text_window_observation_request_raw_vars, text_window_observe_optic_request,
     text_window_observe_optic_request_raw_vars, text_window_observer_plan,
     text_window_observer_vars, text_window_query_observer,
     OP_CREATE_BUFFER_WORLDLINE_CONTRACT_RULE_ID_LABEL,
-    OP_CREATE_BUFFER_WORLDLINE_CONTRACT_RULE_NAME, OP_REPLACE_RANGE_AS_TICK_CONTRACT_RULE_ID_LABEL,
+    OP_CREATE_BUFFER_WORLDLINE_CONTRACT_RULE_NAME, OP_DECLARE_CHECKPOINT_CONTRACT_RULE_ID_LABEL,
+    OP_DECLARE_CHECKPOINT_CONTRACT_RULE_NAME, OP_REPLACE_RANGE_AS_TICK_CONTRACT_RULE_ID_LABEL,
     OP_REPLACE_RANGE_AS_TICK_CONTRACT_RULE_NAME, OP_TEXT_WINDOW_OBSERVER_ARTIFACT_HASH,
     OP_TEXT_WINDOW_OBSERVER_PLAN_ID_LABEL,
 };
 pub const OPS: &[OpDef] = &[
+    OpDef {
+        kind: OpKind::Mutation,
+        name: "declareCheckpoint",
+        op_id: 24174910u32,
+        args: OP_DECLARE_CHECKPOINT_ARGS,
+        result_ty: "RopeCheckpointDeclaration",
+        directives_json: "{}",
+        footprint_certificate: None,
+    },
     OpDef {
         kind: OpKind::Query,
         name: "textWindow",

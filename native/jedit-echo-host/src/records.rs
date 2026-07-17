@@ -11,6 +11,7 @@ pub const BRANCH_FACT_TYPE: &str = "jedit.text.RopeBranch.v1";
 pub const HEAD_FACT_TYPE: &str = "jedit.text.RopeHead.v1";
 pub const REWRITE_FACT_TYPE: &str = "jedit.text.RopeRewrite.v1";
 pub const DIFF_FACT_TYPE: &str = "jedit.text.RopeDiff.v1";
+pub const CHECKPOINT_FACT_TYPE: &str = "jedit.text.RopeCheckpoint.v1";
 
 const BUFFER_ID_DOMAIN: &[u8] = b"jedit.text.buffer-worldline.v1\0";
 const BLOB_ID_DOMAIN: &[u8] = b"jedit.text.blob.v1\0";
@@ -19,6 +20,7 @@ const BRANCH_ID_DOMAIN: &[u8] = b"jedit.text.branch.v1\0";
 const HEAD_ID_DOMAIN: &[u8] = b"jedit.text.head.v1\0";
 const REWRITE_ID_DOMAIN: &[u8] = b"jedit.text.rewrite.v1\0";
 const DIFF_ID_DOMAIN: &[u8] = b"jedit.text.diff.v1\0";
+const CHECKPOINT_ID_DOMAIN: &[u8] = b"jedit.text.checkpoint.v1\0";
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct BufferFact {
@@ -87,6 +89,23 @@ pub struct DiffFact {
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum CheckpointReason {
+    ManualSave,
+    Autosave,
+    RetentionBoundary,
+    Export,
+    Import,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct CheckpointFact {
+    pub worldline_id: NodeIdBytes,
+    pub head_id: NodeIdBytes,
+    pub reason: CheckpointReason,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct NodeIdBytes(pub [u8; 32]);
 
 impl From<NodeId> for NodeIdBytes {
@@ -122,6 +141,7 @@ typed_fact!(BranchFact, BRANCH_FACT_TYPE, BRANCH_ID_DOMAIN);
 typed_fact!(HeadFact, HEAD_FACT_TYPE, HEAD_ID_DOMAIN);
 typed_fact!(RewriteFact, REWRITE_FACT_TYPE, REWRITE_ID_DOMAIN);
 typed_fact!(DiffFact, DIFF_FACT_TYPE, DIFF_ID_DOMAIN);
+typed_fact!(CheckpointFact, CHECKPOINT_FACT_TYPE, CHECKPOINT_ID_DOMAIN);
 
 pub fn fact_type_id<T: TypedFact>() -> TypeId {
     make_type_id(T::TYPE_LABEL)

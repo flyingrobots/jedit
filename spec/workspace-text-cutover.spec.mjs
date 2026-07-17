@@ -1380,7 +1380,7 @@ test("ctrl-s exports a full production snapshot and checkpoints without direct l
   assert.deepEqual(checkpointCalls, [{
     bufferId: "buffer:notes",
     basisHeadId: "head:test",
-    label: "interactive workspace save",
+    checkpointKind: "MANUAL_SAVE",
     atMs: 0,
   }]);
   assert.equal(

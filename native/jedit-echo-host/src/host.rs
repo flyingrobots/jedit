@@ -2,27 +2,32 @@ use std::path::Path;
 
 use warp_core::{
     make_head_id, make_intent_kind, make_node_id, make_type_id, ContractOperationKind,
-    EngineBuilder, GraphStore, InboxPolicy, IngressEnvelope, IngressTarget, IntentOutcome,
-    IntentOutcomeReceipt, NodeRecord, ObservationAt, ObservationCoordinate, ObservationFrame,
-    ObservationPayload, ObservationProjection, ObservationReadBudget, PlaybackMode, SchedulerKind,
-    TrustedRuntimeHost, TrustedRuntimeWalConfig, WorldlineId, WorldlineRuntime, WorldlineState,
-    WriterHead, WriterHeadKey,
+    EngineBuilder, GraphStore, InboxPolicy, IngressEnvelope, IngressTarget,
+    InstalledContractPackage, IntentOutcome, IntentOutcomeReceipt, NodeRecord, ObservationAt,
+    ObservationCoordinate, ObservationFrame, ObservationPayload, ObservationProjection,
+    ObservationReadBudget, PlaybackMode, SchedulerKind, TrustedRuntimeHost,
+    TrustedRuntimeWalConfig, WorldlineId, WorldlineRuntime, WorldlineState, WriterHead,
+    WriterHeadKey,
 };
 
-use crate::contract::installed_package;
+use crate::contract::{generated_checkpoint_reason, installed_package};
 use crate::error::{HostError, HostResult};
 use crate::generated::contract::__echo_wesley_generated::{
-    CreateBufferWorldlineVars, ReplaceRangeAsTickVars, TextWindowVars,
+    CreateBufferWorldlineVars, DeclareCheckpointVars, ReplaceRangeAsTickVars, TextWindowVars,
 };
 use crate::generated::contract::{
-    encode_text_window_vars, pack_create_buffer_worldline_intent,
-    pack_replace_range_as_tick_intent, CreateBufferWorldlineInput, ReplaceRangeAsTickInput,
-    TextWindowInput, GENERATED_RUST_ARTIFACT_HASH, OP_CREATE_BUFFER_WORLDLINE,
-    OP_REPLACE_RANGE_AS_TICK, OP_TEXT_WINDOW,
+    encode_text_window_vars, pack_create_buffer_worldline_intent, pack_declare_checkpoint_intent,
+    pack_replace_range_as_tick_intent, CreateBufferWorldlineInput, DeclareCheckpointInput,
+    ReplaceRangeAsTickInput, TextWindowInput, GENERATED_RUST_ARTIFACT_HASH,
+    OP_CREATE_BUFFER_WORLDLINE, OP_DECLARE_CHECKPOINT, OP_REPLACE_RANGE_AS_TICK, OP_TEXT_WINDOW,
 };
 use crate::identity::{node_id_hex, parse_node_id};
 use crate::protocol::{BufferResponse, HostRequest, HostResponse};
-use crate::rope::{buffer_snapshot, existing_buffer, plan_replace, WindowProjection};
+use crate::records::CheckpointReason;
+use crate::rope::{
+    buffer_snapshot, checkpoint_fact, existing_buffer, plan_checkpoint, plan_replace,
+    WindowProjection,
+};
 
 const WORLDLINE_BYTES: [u8; 32] = [0x4a; 32];
 const DEFAULT_HEAD_LABEL: &str = "jedit.echo-text.default-writer";
@@ -64,6 +69,12 @@ impl JeditEchoHost {
                 insert_text,
                 ..
             } => self.replace_range(request_id, buffer_id, start_byte, end_byte, insert_text),
+            HostRequest::DeclareCheckpoint {
+                buffer_id,
+                basis_head_id,
+                reason,
+                ..
+            } => self.declare_checkpoint(request_id, buffer_id, basis_head_id, reason),
             HostRequest::Observe {
                 buffer_id,
                 basis_head_id,
@@ -168,6 +179,47 @@ impl JeditEchoHost {
         })
     }
 
+    fn declare_checkpoint(
+        &mut self,
+        request_id: u64,
+        buffer_id: String,
+        basis_head_id: String,
+        reason: CheckpointReason,
+    ) -> HostResult<HostResponse> {
+        let buffer_node = parse_node_id(&buffer_id)?;
+        let basis_head_node = parse_node_id(&basis_head_id)?;
+        let plan = plan_checkpoint(self.store()?, buffer_node, basis_head_node, reason)?;
+        let intent = pack_declare_checkpoint_intent(&DeclareCheckpointVars {
+            input: DeclareCheckpointInput {
+                bufferId: node_id_hex(buffer_node),
+                basisHeadId: node_id_hex(basis_head_node),
+                reason: generated_checkpoint_reason(reason).to_owned(),
+            },
+        })
+        .map_err(|error| HostError::Protocol(format!("pack checkpoint intent: {error:?}")))?;
+        let receipt = self.submit_generated_intent(intent, OP_DECLARE_CHECKPOINT)?;
+        let admitted = checkpoint_fact(self.store()?, plan.checkpoint_id)?;
+        if admitted.worldline_id.0 != *buffer_node.as_bytes()
+            || admitted.head_id.0 != *basis_head_node.as_bytes()
+            || admitted.reason != reason
+        {
+            return Err(HostError::IntentNotApplied(
+                "checkpoint receipt did not produce the requested Jim fact".to_owned(),
+            ));
+        }
+        let snapshot = buffer_snapshot(self.store()?, buffer_node)?;
+        Ok(HostResponse::CheckpointDeclared {
+            request_id,
+            buffer: BufferResponse::from(snapshot),
+            checkpoint_id: node_id_hex(plan.checkpoint_id),
+            basis_head_id: node_id_hex(basis_head_node),
+            basis_byte_length: plan.basis_byte_length,
+            reason: plan.reason,
+            receipt_id: hex::encode(receipt.tick_receipt_digest),
+            admitted_tick_id: tick_id(&receipt),
+        })
+    }
+
     #[allow(clippy::too_many_arguments)]
     fn observe_window(
         &mut self,
@@ -246,6 +298,7 @@ impl JeditEchoHost {
         intent: Vec<u8>,
         operation_id: u32,
     ) -> HostResult<IntentOutcomeReceipt> {
+        require_generated_mutation(&installed_package(), operation_id)?;
         let envelope = IngressEnvelope::local_intent(
             IngressTarget::DefaultWriter {
                 worldline_id: self.worldline_id,
@@ -300,6 +353,22 @@ impl JeditEchoHost {
             .store(&state.root().warp_id)
             .ok_or_else(|| HostError::Echo("Jim worldline root store is unavailable".to_owned()))
     }
+}
+
+fn require_generated_mutation(
+    package: &InstalledContractPackage<'_>,
+    operation_id: u32,
+) -> HostResult<()> {
+    if package
+        .mutation_handlers
+        .iter()
+        .any(|handler| handler.op_id == operation_id)
+    {
+        return Ok(());
+    }
+    Err(HostError::GeneratedOperationUnavailable(format!(
+        "mutation operation {operation_id} is not installed"
+    )))
 }
 
 fn runtime() -> HostResult<(WorldlineRuntime, WorldlineId)> {
@@ -358,8 +427,75 @@ fn obstruction_code(error: &HostError) -> &'static str {
         HostError::MissingFact(_) => "missing-fact",
         HostError::MalformedFact(_) => "malformed-fact",
         HostError::IntentNotApplied(_) => "intent-not-applied",
+        HostError::GeneratedOperationUnavailable(_) => "generated-operation-unavailable",
         HostError::Observation(_) => "observation-obstructed",
         HostError::Echo(_) => "echo-obstructed",
         HostError::Protocol(_) => "protocol-obstructed",
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::protocol::{HostRequest, HostResponse};
+    use crate::records::{decode_fact, CheckpointFact, CheckpointReason, NodeIdBytes};
+
+    #[test]
+    fn missing_generated_checkpoint_operation_is_typed() {
+        let mut test_only_package = installed_package();
+        test_only_package
+            .mutation_handlers
+            .retain(|handler| handler.op_id != OP_DECLARE_CHECKPOINT);
+        let error = require_generated_mutation(&test_only_package, OP_DECLARE_CHECKPOINT)
+            .expect_err("missing generated operation should be obstructed");
+        assert!(matches!(error, HostError::GeneratedOperationUnavailable(_)));
+        assert_eq!(obstruction_code(&error), "generated-operation-unavailable");
+    }
+
+    #[test]
+    fn checkpoint_fact_reconstructs_from_echo_wal_without_a_runtime_lookup_map() {
+        let root = tempfile::tempdir().expect("temporary WAL root should exist");
+        let (checkpoint_id, buffer_id, head_id) = {
+            let mut host = JeditEchoHost::open(root.path()).expect("Echo host should initialize");
+            let HostResponse::Opened { buffer, .. } = host.handle(HostRequest::Open {
+                request_id: 1,
+                buffer_key: "recovery.txt".to_owned(),
+                initial_text: "history".to_owned(),
+                projection_path: None,
+            }) else {
+                panic!("buffer should open");
+            };
+            let HostResponse::CheckpointDeclared { checkpoint_id, .. } =
+                host.handle(HostRequest::DeclareCheckpoint {
+                    request_id: 2,
+                    buffer_id: buffer.buffer_id.clone(),
+                    basis_head_id: buffer.head_id.clone(),
+                    reason: CheckpointReason::ManualSave,
+                })
+            else {
+                panic!("checkpoint should be declared");
+            };
+            (checkpoint_id, buffer.buffer_id, buffer.head_id)
+        };
+
+        let recovered = JeditEchoHost::open(root.path()).expect("Echo WAL should recover");
+        let checkpoint_node_id = parse_node_id(&checkpoint_id).expect("opaque checkpoint id");
+        let attachment = recovered
+            .store()
+            .expect("recovered graph store")
+            .node_attachment(&checkpoint_node_id)
+            .expect("checkpoint fact should survive restart");
+        let checkpoint: CheckpointFact =
+            decode_fact(attachment).expect("checkpoint fact should decode");
+        assert_eq!(
+            checkpoint,
+            CheckpointFact {
+                worldline_id: NodeIdBytes::from(
+                    parse_node_id(&buffer_id).expect("opaque buffer id"),
+                ),
+                head_id: NodeIdBytes::from(parse_node_id(&head_id).expect("opaque head id")),
+                reason: CheckpointReason::ManualSave,
+            }
+        );
     }
 }

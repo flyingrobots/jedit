@@ -4,7 +4,10 @@ import { createInterface } from 'node:readline';
 import { z } from 'zod';
 import {
   EchoTextHostOutcomeKinds,
+  EchoTextHostCheckpointReasons,
   type EchoTextContractHostPort,
+  type EchoTextHostCheckpointOutcome,
+  type EchoTextHostCheckpointRequest,
   type EchoTextHostObserveOutcome,
   type EchoTextHostObserveRequest,
   type EchoTextHostOpenOutcome,
@@ -41,6 +44,25 @@ const WireOpenedSchema = BufferEvidenceSchema.extend({
 const WireAppliedSchema = BufferEvidenceSchema.extend({
   kind: z.literal(EchoTextHostOutcomeKinds.Applied),
   requestId: z.number().int().nonnegative(),
+  receiptId: z.string().min(1),
+  admittedTickId: z.string().min(1),
+});
+
+const CheckpointReasonSchema = z.union([
+  z.literal(EchoTextHostCheckpointReasons.ManualSave),
+  z.literal(EchoTextHostCheckpointReasons.Autosave),
+  z.literal(EchoTextHostCheckpointReasons.RetentionBoundary),
+  z.literal(EchoTextHostCheckpointReasons.Export),
+  z.literal(EchoTextHostCheckpointReasons.Import),
+]);
+
+const WireCheckpointDeclaredSchema = BufferEvidenceSchema.extend({
+  kind: z.literal(EchoTextHostOutcomeKinds.CheckpointDeclared),
+  requestId: z.number().int().nonnegative(),
+  checkpointId: z.string().min(1),
+  basisHeadId: z.string().min(1),
+  basisByteLength: z.number().int().nonnegative(),
+  reason: CheckpointReasonSchema,
   receiptId: z.string().min(1),
   admittedTickId: z.string().min(1),
 });
@@ -91,6 +113,7 @@ const WireObstructedSchema = z.object({
 const WireResponseSchema = z.discriminatedUnion('kind', [
   WireOpenedSchema,
   WireAppliedSchema,
+  WireCheckpointDeclaredSchema,
   WireObservedSchema,
   WireObstructedSchema,
 ]);
@@ -164,6 +187,19 @@ class EchoTextContractHostProcess implements EchoTextContractHostPort {
     return response.kind === EchoTextHostOutcomeKinds.Obstructed
       ? withoutRequestId(response)
       : protocolObstruction('Echo host returned the wrong outcome for replaceRange');
+  }
+
+  async declareCheckpoint(
+    request: EchoTextHostCheckpointRequest,
+  ): Promise<EchoTextHostCheckpointOutcome> {
+    const response = await this.#send({ kind: 'declare-checkpoint', ...request });
+    if (response.kind === EchoTextHostOutcomeKinds.CheckpointDeclared) {
+      const { requestId: _requestId, ...outcome } = response;
+      return outcome;
+    }
+    return response.kind === EchoTextHostOutcomeKinds.Obstructed
+      ? withoutRequestId(response)
+      : protocolObstruction('Echo host returned the wrong outcome for declareCheckpoint');
   }
 
   async observeWindow(request: EchoTextHostObserveRequest): Promise<EchoTextHostObserveOutcome> {

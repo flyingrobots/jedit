@@ -1,6 +1,9 @@
 import type { Cmd, RuntimeIssue } from '@flyingrobots/bijou-tui';
 import type { ByteOffset } from '../../domain/graph-rope-types.js';
-import type { TextWindowBasis } from '../../ports/text-authority-evidence.js';
+import {
+  CheckpointKinds,
+  type TextWindowBasis,
+} from '../../ports/text-authority-evidence.js';
 import type { EditorFileFingerprint, EditorFilePort } from '../../ports/editor-file.js';
 import { editorFileFingerprintFromText } from '../../ports/editor-file-fingerprint.js';
 import { joinLines, normalizeLines } from '../editor-lines.js';
@@ -40,7 +43,6 @@ const EDIT_FAILURE_PREFIX = 'Text edit failed';
 const CHECKPOINT_FAILURE_PREFIX = 'Text checkpoint failed';
 const EXPORT_FAILURE_PREFIX = 'Text export failed';
 const READ_FAILURE_PREFIX = 'Text read failed';
-const CHECKPOINT_LABEL = 'interactive workspace save';
 const EDIT_COMMAND_INSERT = 'insert';
 const EDIT_COMMAND_REPLACE = 'replace';
 const EDIT_COMMAND_DELETE = 'delete';
@@ -310,7 +312,7 @@ async function checkpointWorkspaceText(
     const checkpointed = await request.productionTextSession.checkpointBuffer({
       bufferId: request.bufferId,
       basisHeadId: request.basisHeadId,
-      label: CHECKPOINT_LABEL,
+      checkpointKind: CheckpointKinds.ManualSave,
       atMs: request.atMs,
     });
     if (checkpointed.kind === ProductionTextSessionOutcomeKinds.Obstructed) {

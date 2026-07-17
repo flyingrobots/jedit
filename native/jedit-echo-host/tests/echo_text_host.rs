@@ -1,5 +1,6 @@
 use jedit_echo_host::host::JeditEchoHost;
 use jedit_echo_host::protocol::{HostRequest, HostResponse};
+use jedit_echo_host::records::CheckpointReason;
 
 fn open_request(request_id: u64, initial_text: &str) -> HostRequest {
     HostRequest::Open {
@@ -8,6 +9,159 @@ fn open_request(request_id: u64, initial_text: &str) -> HostRequest {
         initial_text: initial_text.to_owned(),
         projection_path: Some("/tmp/witness.txt".to_owned()),
     }
+}
+
+fn checkpoint_request(request_id: u64, buffer_id: String, basis_head_id: String) -> HostRequest {
+    HostRequest::DeclareCheckpoint {
+        request_id,
+        buffer_id,
+        basis_head_id,
+        reason: CheckpointReason::ManualSave,
+    }
+}
+
+#[test]
+fn generated_checkpoint_declaration_ticks_without_mutating_text_and_recovers() {
+    let root = tempfile::tempdir().expect("temporary WAL root should exist");
+    let (buffer_id, head_id, checkpoint_id) = {
+        let mut host = JeditEchoHost::open(root.path()).expect("Echo host should initialize");
+        let HostResponse::Opened { buffer, .. } = host.handle(open_request(1, "hello")) else {
+            panic!("buffer should open");
+        };
+        let HostResponse::Applied { buffer: edited, .. } = host.handle(HostRequest::Replace {
+            request_id: 2,
+            buffer_id: buffer.buffer_id,
+            start_byte: 5,
+            end_byte: 5,
+            insert_text: " world".to_owned(),
+        }) else {
+            panic!("replaceRangeAsTick should apply");
+        };
+        let canonical_head_id = edited.head_id.clone();
+        let canonical_root_node_id = edited.root_node_id.clone();
+        let canonical_byte_length = edited.byte_length;
+        let canonical_line_count = edited.line_count;
+        let canonical_buffer_version = edited.buffer_version;
+        let HostResponse::CheckpointDeclared {
+            buffer: unchanged,
+            checkpoint_id,
+            basis_head_id,
+            basis_byte_length,
+            reason,
+            receipt_id,
+            admitted_tick_id,
+            ..
+        } = host.handle(checkpoint_request(
+            3,
+            edited.buffer_id.clone(),
+            canonical_head_id.clone(),
+        ))
+        else {
+            panic!("declareCheckpoint should be admitted by Echo");
+        };
+        assert!(!checkpoint_id.is_empty());
+        assert!(!receipt_id.is_empty());
+        assert!(!admitted_tick_id.is_empty());
+        assert_eq!(basis_head_id, canonical_head_id);
+        assert_eq!(basis_byte_length, canonical_byte_length);
+        assert_eq!(reason, CheckpointReason::ManualSave);
+        assert_eq!(unchanged.head_id, canonical_head_id);
+        assert_eq!(unchanged.root_node_id, canonical_root_node_id);
+        assert_eq!(unchanged.byte_length, canonical_byte_length);
+        assert_eq!(unchanged.line_count, canonical_line_count);
+        assert_eq!(unchanged.buffer_version, canonical_buffer_version);
+
+        let HostResponse::Observed {
+            window,
+            resolved_worldline_tick,
+            ..
+        } = host.handle(HostRequest::Observe {
+            request_id: 4,
+            buffer_id: unchanged.buffer_id.clone(),
+            basis_head_id: unchanged.head_id.clone(),
+            start_byte: 0,
+            end_byte: unchanged.byte_length,
+            max_bytes: unchanged.byte_length,
+        })
+        else {
+            panic!("checkpoint basis should remain observable");
+        };
+        assert_eq!(window.text, "hello world");
+        assert_eq!(resolved_worldline_tick, 3);
+        (unchanged.buffer_id, unchanged.head_id, checkpoint_id)
+    };
+
+    let mut recovered = JeditEchoHost::open(root.path()).expect("Echo WAL should recover");
+    let HostResponse::CheckpointDeclared {
+        checkpoint_id: recovered_checkpoint_id,
+        basis_head_id: recovered_basis_head_id,
+        receipt_id,
+        admitted_tick_id,
+        ..
+    } = recovered.handle(checkpoint_request(5, buffer_id, head_id.clone()))
+    else {
+        panic!("recovered Echo history should support checkpoint declaration");
+    };
+    assert_eq!(recovered_checkpoint_id, checkpoint_id);
+    assert_eq!(recovered_basis_head_id, head_id);
+    assert!(!receipt_id.is_empty());
+    assert!(!admitted_tick_id.is_empty());
+}
+
+#[test]
+fn checkpoint_declaration_rejects_missing_or_foreign_basis_before_echo_admission() {
+    let root = tempfile::tempdir().expect("temporary WAL root should exist");
+    let mut host = JeditEchoHost::open(root.path()).expect("Echo host should initialize");
+    let HostResponse::Opened { buffer: first, .. } = host.handle(HostRequest::Open {
+        request_id: 1,
+        buffer_key: "first.txt".to_owned(),
+        initial_text: "first".to_owned(),
+        projection_path: None,
+    }) else {
+        panic!("first buffer should open");
+    };
+    let HostResponse::Opened { buffer: second, .. } = host.handle(HostRequest::Open {
+        request_id: 2,
+        buffer_key: "second.txt".to_owned(),
+        initial_text: "second".to_owned(),
+        projection_path: None,
+    }) else {
+        panic!("second buffer should open");
+    };
+
+    let HostResponse::Obstructed { code, .. } = host.handle(checkpoint_request(
+        3,
+        first.buffer_id.clone(),
+        "00".repeat(32),
+    )) else {
+        panic!("missing checkpoint basis should be obstructed");
+    };
+    assert_eq!(code, "missing-fact");
+
+    let HostResponse::Obstructed { code, .. } = host.handle(checkpoint_request(
+        4,
+        first.buffer_id.clone(),
+        second.head_id,
+    )) else {
+        panic!("foreign checkpoint basis should be obstructed");
+    };
+    assert_eq!(code, "invalid-request");
+
+    let HostResponse::Observed {
+        resolved_worldline_tick,
+        ..
+    } = host.handle(HostRequest::Observe {
+        request_id: 5,
+        buffer_id: first.buffer_id,
+        basis_head_id: first.head_id,
+        start_byte: 0,
+        end_byte: first.byte_length,
+        max_bytes: first.byte_length,
+    })
+    else {
+        panic!("first buffer should remain observable");
+    };
+    assert_eq!(resolved_worldline_tick, 2);
 }
 
 #[test]

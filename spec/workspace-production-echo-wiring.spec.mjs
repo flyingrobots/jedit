@@ -80,6 +80,112 @@ test('workspace production text session invokes the Echo-owned generated operati
   }]);
 });
 
+test('workspace production text session delegates checkpoint declaration without local authority', async () => {
+  const adapter = await importDist('adapters', 'workspace-production-text-session.js');
+  const calls = [];
+  const testOnlyHost = {
+    async openBuffer() {
+      throw new Error('openBuffer should not be called');
+    },
+    async replaceRange() {
+      throw new Error('replaceRange should not be called');
+    },
+    async declareCheckpoint(request) {
+      calls.push(request);
+      return {
+        kind: 'checkpoint-declared',
+        bufferId: request.bufferId,
+        bufferKey: 'test-only.txt',
+        projectionPath: null,
+        headId: 'test-only-head:canonical',
+        rootNodeId: 'test-only-root:canonical',
+        byteLength: 12,
+        lineCount: 1,
+        bufferVersion: 4,
+        checkpointId: 'test-only-checkpoint:opaque',
+        basisHeadId: request.basisHeadId,
+        basisByteLength: 5,
+        reason: request.reason,
+        receiptId: 'test-only-receipt:opaque',
+        admittedTickId: 'test-only-tick:opaque',
+      };
+    },
+    async observeWindow() {
+      throw new Error('observeWindow should not be called');
+    },
+  };
+  const session = adapter.createWorkspaceProductionTextSession(testOnlyHost);
+
+  const outcome = await session.checkpointBuffer({
+    bufferId: 'test-only-buffer:opaque',
+    basisHeadId: 'test-only-head:retained',
+    checkpointKind: 'MANUAL_SAVE',
+    atMs: 9,
+  });
+
+  assert.deepEqual(calls, [{
+    bufferId: 'test-only-buffer:opaque',
+    basisHeadId: 'test-only-head:retained',
+    reason: 'manual-save',
+  }]);
+  assert.deepEqual(outcome, {
+    kind: 'checkpointed',
+    result: {
+      textBasis: {
+        basisHeadId: 'test-only-head:retained',
+        byteRange: {
+          startByte: { kind: 'utf8-byte-offset', value: 0 },
+          endByte: { kind: 'utf8-byte-offset', value: 5 },
+        },
+      },
+      bufferVersion: 4,
+      checkpointId: 'test-only-checkpoint:opaque',
+      checkpointKind: 'MANUAL_SAVE',
+      receiptId: 'test-only-receipt:opaque',
+      admittedTickId: 'test-only-tick:opaque',
+    },
+  });
+});
+
+test('workspace production text session fails closed when checkpoint operation is unavailable', async () => {
+  const adapter = await importDist('adapters', 'workspace-production-text-session.js');
+  let fallbackCalls = 0;
+  const testOnlyUnavailableHost = {
+    async openBuffer() {
+      fallbackCalls += 1;
+      throw new Error('openBuffer fallback must not be called');
+    },
+    async replaceRange() {
+      fallbackCalls += 1;
+      throw new Error('replaceRange fallback must not be called');
+    },
+    async declareCheckpoint() {
+      return {
+        kind: 'obstructed',
+        code: 'generated-operation-unavailable',
+        message: 'test-only installed operation is unavailable',
+      };
+    },
+    async observeWindow() {
+      fallbackCalls += 1;
+      throw new Error('observeWindow fallback must not be called');
+    },
+  };
+  const session = adapter.createWorkspaceProductionTextSession(testOnlyUnavailableHost);
+
+  const outcome = await session.checkpointBuffer({
+    bufferId: 'test-only-buffer:opaque',
+    basisHeadId: 'test-only-head:opaque',
+    checkpointKind: 'MANUAL_SAVE',
+    atMs: 11,
+  });
+
+  assert.equal(outcome.kind, 'obstructed');
+  assert.equal(outcome.obstruction.code, 'text-buffer-checkpoint-obstructed');
+  assert.match(outcome.obstruction.issue.message, /installed operation is unavailable/u);
+  assert.equal(fallbackCalls, 0);
+});
+
 test('workspace production text session bounds Echo observations to the requested aperture', async () => {
   const adapter = await importDist('adapters', 'workspace-production-text-session.js');
   const calls = [];
@@ -170,6 +276,24 @@ test('the production process adapter executes generated operations in Echo and r
     });
     assert.equal(edited.kind, 'applied');
     assert.match(edited.result.receiptId, /^[0-9a-f]{64}$/u);
+    const checkpointed = await session.checkpointBuffer({
+      bufferId: opened.bufferId,
+      basisHeadId: edited.result.textBasis.basisHeadId,
+      checkpointKind: 'MANUAL_SAVE',
+      atMs: 3,
+    });
+    assert.equal(checkpointed.kind, 'checkpointed');
+    assert.equal(
+      checkpointed.result.textBasis.basisHeadId,
+      edited.result.textBasis.basisHeadId,
+    );
+    assert.equal(
+      checkpointed.result.textBasis.byteRange.endByte.value,
+      edited.result.textBasis.byteRange.endByte.value,
+    );
+    assert.ok(checkpointed.result.checkpointId.length > 0);
+    assert.ok(checkpointed.result.receiptId.length > 0);
+    assert.ok(checkpointed.result.admittedTickId.length > 0);
     const observed = await session.observeWindow({
       bufferId: opened.bufferId,
       basisHeadId: edited.result.textBasis.basisHeadId,
@@ -181,7 +305,7 @@ test('the production process adapter executes generated operations in Echo and r
         afterLines: 0,
         maxBytes: 1024,
       },
-      atMs: 3,
+      atMs: 4,
     });
     assert.equal(observed.kind, 'observed');
     assert.equal(observed.observed.value.projection.text, 'hello world');
@@ -194,10 +318,18 @@ test('the production process adapter executes generated operations in Echo and r
       bufferKey: 'real-echo.txt',
       initialText: 'must not replace recovered authority',
       projectionPath: '/tmp/real-echo.txt',
-      atMs: 4,
+      atMs: 5,
     });
     assert.equal(recovered.kind, 'opened');
     assert.equal(recovered.textBasis.basisHeadId, edited.result.textBasis.basisHeadId);
+    const recoveredCheckpoint = await recoveredSession.checkpointBuffer({
+      bufferId: recovered.bufferId,
+      basisHeadId: recovered.textBasis.basisHeadId,
+      checkpointKind: 'MANUAL_SAVE',
+      atMs: 6,
+    });
+    assert.equal(recoveredCheckpoint.kind, 'checkpointed');
+    assert.equal(recoveredCheckpoint.result.checkpointId, checkpointed.result.checkpointId);
   } finally {
     await host?.close();
     rmSync(walDirectory, { recursive: true, force: true });

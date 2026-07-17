@@ -35,6 +35,14 @@ try {
     }),
     'applied',
   );
+  const checkpoint = requireOutcome(
+    await host.declareCheckpoint({
+      bufferId: opened.bufferId,
+      basisHeadId: applied.headId,
+      reason: 'manual-save',
+    }),
+    'checkpoint-declared',
+  );
   const observed = requireOutcome(
     await host.observeWindow({
       bufferId: opened.bufferId,
@@ -45,7 +53,7 @@ try {
     }),
     'observed',
   );
-  emit(options, successReport(opened, applied, observed));
+  emit(options, successReport(opened, applied, checkpoint, observed));
 } catch (error) {
   emit(options, {
     ok: false,
@@ -81,7 +89,7 @@ function requireOutcome(outcome, expectedKind) {
   return outcome;
 }
 
-function successReport(opened, applied, observed) {
+function successReport(opened, applied, checkpoint, observed) {
   return {
     ok: true,
     corridor: 'graphql-wesley-installed-contract',
@@ -93,6 +101,22 @@ function successReport(opened, applied, observed) {
     createTickId: opened.admittedTickId,
     replaceReceiptId: applied.receiptId,
     replaceTickId: applied.admittedTickId,
+    checkpointOperation: 'declareCheckpoint',
+    checkpointId: checkpoint.checkpointId,
+    checkpointBasisHeadId: checkpoint.basisHeadId,
+    checkpointBasisByteLength: checkpoint.basisByteLength,
+    checkpointReason: checkpoint.reason,
+    checkpointReceiptId: checkpoint.receiptId,
+    checkpointTickId: checkpoint.admittedTickId,
+    checkpointHeadId: checkpoint.headId,
+    checkpointRootNodeId: checkpoint.rootNodeId,
+    checkpointByteLength: checkpoint.byteLength,
+    checkpointLineCount: checkpoint.lineCount,
+    checkpointBufferVersion: checkpoint.bufferVersion,
+    appliedRootNodeId: applied.rootNodeId,
+    appliedByteLength: applied.byteLength,
+    appliedLineCount: applied.lineCount,
+    appliedBufferVersion: applied.bufferVersion,
     worldlineId: observed.worldlineId,
     readingId: observed.readingId,
     observerPlanId: observed.observerPlanId,
@@ -110,7 +134,7 @@ function emit(options, report) {
     return;
   }
   const message = report.ok
-    ? `Echo applied ${report.operation} at ${report.replaceTickId}`
+    ? `Echo applied ${report.operation} and ${report.checkpointOperation} at ${report.checkpointTickId}`
     : `Echo witness failed: ${report.message}`;
   process.stdout.write(`${message}\n`);
 }
