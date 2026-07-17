@@ -3,9 +3,14 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
+import {
+  EchoTextHostCheckpointReasons,
+  EchoTextHostOperationNames,
+} from '../dist/ports/echo-text-contract-host.js';
 
 const SCRIPT_PATH = path.resolve('scripts/jedit-echo-host-witness.mjs');
 const WITNESS_TIMEOUT_MS = 30_000;
+const MINIMUM_CHECKPOINT_WORLDLINE_TICK = 3;
 
 test('Echo host witness proves generated mutation, checkpoint, and bounded reading corridors', () => {
   const result = runWitness();
@@ -15,8 +20,8 @@ test('Echo host witness proves generated mutation, checkpoint, and bounded readi
   assert.equal(report.ok, true);
   assert.equal(report.corridor, 'graphql-wesley-installed-contract');
   assert.equal(report.operation, 'replaceRangeAsTick');
-  assert.equal(report.checkpointOperation, 'declareCheckpoint');
-  assert.equal(report.checkpointReason, 'manual-save');
+  assert.equal(report.checkpointOperation, EchoTextHostOperationNames.DeclareCheckpoint);
+  assert.equal(report.checkpointReason, EchoTextHostCheckpointReasons.ManualSave);
   assert.equal(report.text, 'Echo remembers');
   assert.notEqual(report.initialHeadId, report.headId);
   assert.equal(report.checkpointBasisHeadId, report.headId);
@@ -34,7 +39,7 @@ test('Echo host witness proves generated mutation, checkpoint, and bounded readi
   assert.ok(report.checkpointTickId.length > 0);
   assert.match(report.readingId, /^[0-9a-f]+$/);
   assert.match(report.commitHash, /^[0-9a-f]+$/);
-  assert.ok(report.resolvedWorldlineTick >= 3);
+  assert.ok(report.resolvedWorldlineTick >= MINIMUM_CHECKPOINT_WORLDLINE_TICK);
   assert.ok(report.supportCount > 0);
 });
 

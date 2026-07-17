@@ -5,6 +5,7 @@ import { z } from 'zod';
 import {
   EchoTextHostOutcomeKinds,
   EchoTextHostCheckpointReasons,
+  EchoTextHostRequestKinds,
   type EchoTextContractHostPort,
   type EchoTextHostCheckpointOutcome,
   type EchoTextHostCheckpointRequest,
@@ -168,7 +169,7 @@ class EchoTextContractHostProcess implements EchoTextContractHostPort {
   }
 
   async openBuffer(request: EchoTextHostOpenRequest): Promise<EchoTextHostOpenOutcome> {
-    const response = await this.#send({ kind: 'open', ...request });
+    const response = await this.#send({ kind: EchoTextHostRequestKinds.Open, ...request });
     if (response.kind === EchoTextHostOutcomeKinds.Opened) {
       const { requestId: _requestId, ...outcome } = response;
       return outcome;
@@ -179,7 +180,7 @@ class EchoTextContractHostProcess implements EchoTextContractHostPort {
   }
 
   async replaceRange(request: EchoTextHostReplaceRequest): Promise<EchoTextHostReplaceOutcome> {
-    const response = await this.#send({ kind: 'replace', ...request });
+    const response = await this.#send({ kind: EchoTextHostRequestKinds.Replace, ...request });
     if (response.kind === EchoTextHostOutcomeKinds.Applied) {
       const { requestId: _requestId, ...outcome } = response;
       return outcome;
@@ -192,7 +193,10 @@ class EchoTextContractHostProcess implements EchoTextContractHostPort {
   async declareCheckpoint(
     request: EchoTextHostCheckpointRequest,
   ): Promise<EchoTextHostCheckpointOutcome> {
-    const response = await this.#send({ kind: 'declare-checkpoint', ...request });
+    const response = await this.#send({
+      kind: EchoTextHostRequestKinds.DeclareCheckpoint,
+      ...request,
+    });
     if (response.kind === EchoTextHostOutcomeKinds.CheckpointDeclared) {
       const { requestId: _requestId, ...outcome } = response;
       return outcome;
@@ -203,7 +207,7 @@ class EchoTextContractHostProcess implements EchoTextContractHostPort {
   }
 
   async observeWindow(request: EchoTextHostObserveRequest): Promise<EchoTextHostObserveOutcome> {
-    const response = await this.#send({ kind: 'observe', ...request });
+    const response = await this.#send({ kind: EchoTextHostRequestKinds.Observe, ...request });
     if (response.kind === EchoTextHostOutcomeKinds.Observed) {
       const { requestId: _requestId, ...outcome } = response;
       return outcome;

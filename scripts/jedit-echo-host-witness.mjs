@@ -4,6 +4,11 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import {
+  EchoTextHostCheckpointReasons,
+  EchoTextHostOperationNames,
+  EchoTextHostOutcomeKinds,
+} from '../dist/ports/echo-text-contract-host.js';
 
 const JSON_OPTION = '--json';
 const DIST_HOST_PATH = path.resolve('dist/adapters/echo-text-contract-host-process.js');
@@ -24,7 +29,7 @@ try {
       initialText: INITIAL_TEXT,
       projectionPath: null,
     }),
-    'opened',
+    EchoTextHostOutcomeKinds.Opened,
   );
   const applied = requireOutcome(
     await host.replaceRange({
@@ -33,15 +38,15 @@ try {
       endByte: INITIAL_TEXT.length,
       insertText: INSERTED_TEXT,
     }),
-    'applied',
+    EchoTextHostOutcomeKinds.Applied,
   );
   const checkpoint = requireOutcome(
     await host.declareCheckpoint({
       bufferId: opened.bufferId,
       basisHeadId: applied.headId,
-      reason: 'manual-save',
+      reason: EchoTextHostCheckpointReasons.ManualSave,
     }),
-    'checkpoint-declared',
+    EchoTextHostOutcomeKinds.CheckpointDeclared,
   );
   const observed = requireOutcome(
     await host.observeWindow({
@@ -51,7 +56,7 @@ try {
       endByte: applied.byteLength,
       maxBytes: applied.byteLength,
     }),
-    'observed',
+    EchoTextHostOutcomeKinds.Observed,
   );
   emit(options, successReport(opened, applied, checkpoint, observed));
 } catch (error) {
@@ -80,7 +85,7 @@ function parseOptions(args) {
 }
 
 function requireOutcome(outcome, expectedKind) {
-  if (outcome.kind === 'obstructed') {
+  if (outcome.kind === EchoTextHostOutcomeKinds.Obstructed) {
     throw new Error(`${outcome.code}: ${outcome.message}`);
   }
   if (outcome.kind !== expectedKind) {
@@ -93,7 +98,7 @@ function successReport(opened, applied, checkpoint, observed) {
   return {
     ok: true,
     corridor: 'graphql-wesley-installed-contract',
-    operation: 'replaceRangeAsTick',
+    operation: EchoTextHostOperationNames.ReplaceRangeAsTick,
     bufferId: opened.bufferId,
     initialHeadId: opened.headId,
     headId: applied.headId,
@@ -101,7 +106,7 @@ function successReport(opened, applied, checkpoint, observed) {
     createTickId: opened.admittedTickId,
     replaceReceiptId: applied.receiptId,
     replaceTickId: applied.admittedTickId,
-    checkpointOperation: 'declareCheckpoint',
+    checkpointOperation: EchoTextHostOperationNames.DeclareCheckpoint,
     checkpointId: checkpoint.checkpointId,
     checkpointBasisHeadId: checkpoint.basisHeadId,
     checkpointBasisByteLength: checkpoint.basisByteLength,

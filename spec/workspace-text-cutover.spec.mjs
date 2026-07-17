@@ -1277,13 +1277,14 @@ test("edit planning after bounded read uses the full local projection", async ()
 });
 
 test("ctrl-s exports a full production snapshot and checkpoints without direct local save first", async () => {
-  const [keyBindings, runtimeModule, modeModule, authority, profile] =
+  const [keyBindings, runtimeModule, modeModule, authority, profile, checkpointEvidence] =
     await Promise.all([
       importDist("app", "workspace", "key-bindings.js"),
       importDist("app", "workspace", "runtime.js"),
       importDist("app", "workspace", "editor", "mode.js"),
       importDist("app", "workspace", "workspace-text-authority.js"),
       importDist("app", "text-runtime-profile.js"),
+      importDist("ports", "text-authority-evidence.js"),
     ]);
   const savedFiles = [];
   const exportCalls = [];
@@ -1380,7 +1381,7 @@ test("ctrl-s exports a full production snapshot and checkpoints without direct l
   assert.deepEqual(checkpointCalls, [{
     bufferId: "buffer:notes",
     basisHeadId: "head:test",
-    checkpointKind: "MANUAL_SAVE",
+    checkpointKind: checkpointEvidence.CheckpointKinds.ManualSave,
     atMs: 0,
   }]);
   assert.equal(

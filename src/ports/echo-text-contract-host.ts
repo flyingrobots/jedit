@@ -6,6 +6,20 @@ export const EchoTextHostOutcomeKinds = Object.freeze({
   Obstructed: 'obstructed',
 } as const);
 
+export const EchoTextHostRequestKinds = Object.freeze({
+  Open: 'open',
+  Replace: 'replace',
+  DeclareCheckpoint: 'declare-checkpoint',
+  Observe: 'observe',
+} as const);
+
+export const EchoTextHostOperationNames = Object.freeze({
+  CreateBufferWorldline: 'createBufferWorldline',
+  ReplaceRangeAsTick: 'replaceRangeAsTick',
+  DeclareCheckpoint: 'declareCheckpoint',
+  TextWindow: 'textWindow',
+} as const);
+
 export const EchoTextHostCheckpointReasons = Object.freeze({
   ManualSave: 'manual-save',
   Autosave: 'autosave',
