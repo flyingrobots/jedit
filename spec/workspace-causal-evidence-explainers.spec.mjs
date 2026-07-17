@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { importDist } from './workspace-helpers.mjs';
+import { producedRangeWhyReport } from './support/range-why-report-fixture.mjs';
+
+const EXPLAINED_RANGE = Object.freeze({ startByte: 4, endByte: 8 });
 
 test('gutter and footer explanations project the active range why evidence', async () => {
   const [projection, footer] = await Promise.all([
@@ -160,54 +163,27 @@ function reportMarkerEvidence(report) {
 }
 
 function rangeWhyReport() {
-  return {
-    kind: 'range',
-    title: 'Why range',
+  return producedRangeWhyReport(EXPLAINED_RANGE, {
     message: 'retained range evidence',
-    witness: {
-      worldlineId: 'worldline:why',
-      basisHeadId: 'head:next',
-      queriedRange: { startByte: 4, endByte: 8 },
-      result: {
-        kind: 'produced',
-        coverage: {
-          kind: 'COMPLETE',
-          coveredRange: { startByte: 4, endByte: 8 },
-          continuation: null,
-          reason: null,
-        },
-        fragments: [{
-          coveredRange: { startByte: 4, endByte: 8 },
-          headId: 'head:next',
-          leafId: 'leaf:why',
-          blobId: 'blob:why',
-          origin: {
-            kind: 'REWRITE',
-            rewriteId: 'rewrite:why',
-            diffId: 'diff:why',
-            textTickReceiptId: 'tick:why',
-            basisHeadId: 'head:basis',
-            nextHeadId: 'head:next',
-            producerEvidence: {
-              kind: 'UNAVAILABLE',
-              code: 'jedit_why_range_producer_evidence_unavailable',
-            },
-          },
-        }],
-        relatedCheckpoints: [{
-          checkpointId: 'checkpoint:why',
-          headId: 'head:next',
-          reason: 'manual-save',
-          anchorAssociation: {
-            associationId: 'association:why',
-            causalAnchorId: 'anchor:why',
-            causalAnchorFactId: 'anchor-fact:why',
-            causalAnchorReceiptId: 'anchor-receipt:why',
-          },
-        }],
-        inspectedFactCount: 8,
-        observerVersion: 'test-fixture',
+    worldlineId: 'worldline:why',
+    basisHeadId: 'head:next',
+    leafId: 'leaf:why',
+    blobId: 'blob:why',
+    rewriteId: 'rewrite:why',
+    diffId: 'diff:why',
+    textTickReceiptId: 'tick:why',
+    rewriteBasisHeadId: 'head:basis',
+    relatedCheckpoints: [{
+      checkpointId: 'checkpoint:why',
+      headId: 'head:next',
+      reason: 'manual-save',
+      anchorAssociation: {
+        associationId: 'association:why',
+        causalAnchorId: 'anchor:why',
+        causalAnchorFactId: 'anchor-fact:why',
+        causalAnchorReceiptId: 'anchor-receipt:why',
       },
-    },
-  };
+    }],
+    inspectedFactCount: 8,
+  });
 }

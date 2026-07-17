@@ -11,6 +11,10 @@ import {
   mockTitleScreenModel,
   surfaceText,
 } from "./workspace-helpers.mjs";
+import {
+  producedRangeWhyReport as fakeProducedRangeWhyReport,
+  unavailableRangeWhyReport as fakeUnavailableRangeWhyReport,
+} from "./support/range-why-report-fixture.mjs";
 
 function byteOffset(value) {
   return { kind: "utf8-byte-offset", value };
@@ -1542,44 +1546,6 @@ test("command provenance validates slice 1 Vim edit targets", async () => {
   }
 });
 
-function fakeProducedRangeWhyReport(range) {
-  return {
-    kind: "range",
-    title: "Why range",
-    message: `range: ${range.startByte}..${range.endByte} | ropeDiff receipt:range`,
-    witness: {
-      worldlineId: "wl:/repo/notes.md",
-      basisHeadId: "head:command",
-      queriedRange: range,
-      result: {
-        kind: "produced",
-        coverage: { kind: "COMPLETE", coveredRange: range, continuation: null, reason: null },
-        fragments: [{
-          coveredRange: range,
-          headId: "head:command",
-          leafId: "leaf:range",
-          blobId: "blob:range",
-          origin: {
-            kind: "REWRITE",
-            rewriteId: "rewrite:range",
-            diffId: "diff:range",
-            textTickReceiptId: "tick:range",
-            basisHeadId: "head:before",
-            nextHeadId: "head:command",
-            producerEvidence: {
-              kind: "UNAVAILABLE",
-              code: "jedit_why_range_producer_evidence_unavailable",
-            },
-          },
-        }],
-        relatedCheckpoints: [],
-        inspectedFactCount: 1,
-        observerVersion: "test-fixture",
-      },
-    },
-  };
-}
-
 function commandTextCache(text) {
   const textBasis = commandTextBasis(text);
   return {
@@ -1617,24 +1583,6 @@ function commandTextBasis(text) {
     byteRange: {
       startByte: { kind: "utf8-byte-offset", value: 0 },
       endByte: { kind: "utf8-byte-offset", value: Buffer.byteLength(text, "utf8") },
-    },
-  };
-}
-
-function fakeUnavailableRangeWhyReport(range) {
-  return {
-    kind: "range",
-    title: "Why range",
-    message: `No retained rope diff proves range ${range.startByte}..${range.endByte}: jedit_why_range_retained_history_horizon`,
-    witness: {
-      worldlineId: "wl:/repo/notes.md",
-      basisHeadId: "head:command",
-      queriedRange: range,
-      result: {
-        kind: "unavailable",
-        code: "jedit_why_range_retained_history_horizon",
-        reason: "Retained rope history does not identify a producing diff for this range.",
-      },
     },
   };
 }
