@@ -1,7 +1,21 @@
 import { z } from 'zod';
+import {
+  JeditWhyRangeCoverageKinds,
+  JeditWhyRangeOriginKinds,
+} from '../ports/jedit-why-range.js';
+
+const WHY_RANGE_ORIGIN_KIND_VALUES = [
+  JeditWhyRangeOriginKinds.Imported,
+  JeditWhyRangeOriginKinds.Rewrite,
+  JeditWhyRangeOriginKinds.Unavailable,
+] as const;
+const WHY_RANGE_COVERAGE_KIND_VALUES = [
+  JeditWhyRangeCoverageKinds.Complete,
+  JeditWhyRangeCoverageKinds.Partial,
+] as const;
 
 const WhyRangeOriginSchema = z.object({
-  kind: z.enum(['IMPORTED', 'REWRITE', 'UNAVAILABLE']),
+  kind: z.enum(WHY_RANGE_ORIGIN_KIND_VALUES),
   worldlineId: z.string().nullable(),
   initialHeadId: z.string().nullable(),
   createdAtTickId: z.string().nullable(),
@@ -52,7 +66,7 @@ export const WhyRangeReadingSchema = z.object({
   startByte: z.number().int().nonnegative(),
   endByte: z.number().int().nonnegative(),
   coverage: z.object({
-    kind: z.enum(['COMPLETE', 'PARTIAL']),
+    kind: z.enum(WHY_RANGE_COVERAGE_KIND_VALUES),
     coveredStartByte: z.number().int().nonnegative(),
     coveredEndByte: z.number().int().nonnegative(),
     continuation: z.string().nullable(),
