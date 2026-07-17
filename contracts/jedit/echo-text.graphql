@@ -6,6 +6,14 @@ type BufferWorldline {
     lineCount: Int!
 }
 
+type RopeCheckpointDeclaration {
+    checkpointId: ID!
+    bufferId: ID!
+    basisHeadId: ID!
+    basisByteLength: Int!
+  reason: String!
+}
+
 type TextWindowLine {
     lineNumber: Int!
     startByte: Int!
@@ -38,6 +46,12 @@ input ReplaceRangeAsTickInput {
     insertText: String!
 }
 
+input DeclareCheckpointInput {
+    bufferId: ID!
+    basisHeadId: ID!
+  reason: String!
+}
+
 input TextWindowInput {
     bufferId: ID!
     basisHeadId: ID!
@@ -49,6 +63,7 @@ input TextWindowInput {
 type Mutation {
     createBufferWorldline(input: CreateBufferWorldlineInput!): BufferWorldline!
     replaceRangeAsTick(input: ReplaceRangeAsTickInput!): BufferWorldline!
+    declareCheckpoint(input: DeclareCheckpointInput!): RopeCheckpointDeclaration!
 }
 
 type Query {

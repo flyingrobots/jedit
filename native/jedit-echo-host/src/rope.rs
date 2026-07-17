@@ -12,8 +12,9 @@ use warp_core::{
 use crate::error::{HostError, HostResult};
 use crate::identity::{hash_bytes, node_id_hex};
 use crate::records::{
-    decode_fact, fact_bytes, fact_id, fact_type_id, BlobFact, BranchFact, BufferFact, DiffFact,
-    HeadFact, LeafFact, NodeIdBytes, RewriteFact, TypedFact,
+    decode_fact, fact_bytes, fact_id, fact_type_id, BlobFact, BranchFact, BufferFact,
+    CheckpointFact, CheckpointReason, DiffFact, HeadFact, LeafFact, NodeIdBytes, RewriteFact,
+    TypedFact,
 };
 use tree::{build_text, join, root_digest, root_metrics, split};
 use window::read_range_bytes;
@@ -236,6 +237,24 @@ impl MutationPlan {
     }
 }
 
+#[derive(Debug)]
+pub struct CheckpointPlan {
+    mutation: MutationPlan,
+    pub checkpoint_id: NodeId,
+    pub basis_byte_length: u64,
+    pub reason: CheckpointReason,
+}
+
+impl CheckpointPlan {
+    pub fn extend_footprint(&self, footprint: &mut Footprint) {
+        self.mutation.extend_footprint(footprint);
+    }
+
+    pub fn emit(&self, delta: &mut TickDelta) {
+        self.mutation.emit(delta);
+    }
+}
+
 pub fn buffer_node_id(buffer_key: &str) -> NodeId {
     crate::identity::content_node_id(BUFFER_NODE_DOMAIN, buffer_key.as_bytes())
 }
@@ -278,6 +297,50 @@ pub struct BufferSnapshot {
     pub byte_length: u64,
     pub line_count: u64,
     pub version: u64,
+}
+
+pub fn checkpoint_fact<T: GraphFacts>(
+    source: &T,
+    checkpoint_id: NodeId,
+) -> HostResult<CheckpointFact> {
+    PlanContext::new(source).read_fact(checkpoint_id)
+}
+
+pub fn plan_checkpoint<T: GraphFacts>(
+    source: &T,
+    buffer_id: NodeId,
+    basis_head_id: NodeId,
+    reason: CheckpointReason,
+) -> HostResult<CheckpointPlan> {
+    let mut context = PlanContext::new(source);
+    let buffer: BufferFact = context.read_fact(buffer_id)?;
+    let basis_head: HeadFact = context.read_fact(basis_head_id)?;
+    if NodeId::from(basis_head.buffer_id) != buffer_id {
+        return Err(HostError::InvalidRequest(format!(
+            "checkpoint basis {} does not belong to buffer {}",
+            node_id_hex(basis_head_id),
+            node_id_hex(buffer_id)
+        )));
+    }
+    let checkpoint_id = context.write_content_fact(&CheckpointFact {
+        worldline_id: buffer_id.into(),
+        head_id: basis_head_id.into(),
+        reason,
+    })?;
+    let basis_byte_length = basis_head.byte_length;
+    let mutation = finish_plan(
+        context,
+        buffer_id,
+        basis_head_id,
+        &basis_head,
+        buffer.version,
+    );
+    Ok(CheckpointPlan {
+        mutation,
+        checkpoint_id,
+        basis_byte_length,
+        reason,
+    })
 }
 
 pub fn plan_create<T: GraphFacts>(

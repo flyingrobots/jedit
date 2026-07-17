@@ -4,6 +4,11 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import {
+  EchoTextHostCheckpointReasons,
+  EchoTextHostOperationNames,
+  EchoTextHostOutcomeKinds,
+} from '../dist/ports/echo-text-contract-host.js';
 
 const JSON_OPTION = '--json';
 const DIST_HOST_PATH = path.resolve('dist/adapters/echo-text-contract-host-process.js');
@@ -24,7 +29,7 @@ try {
       initialText: INITIAL_TEXT,
       projectionPath: null,
     }),
-    'opened',
+    EchoTextHostOutcomeKinds.Opened,
   );
   const applied = requireOutcome(
     await host.replaceRange({
@@ -33,7 +38,15 @@ try {
       endByte: INITIAL_TEXT.length,
       insertText: INSERTED_TEXT,
     }),
-    'applied',
+    EchoTextHostOutcomeKinds.Applied,
+  );
+  const checkpoint = requireOutcome(
+    await host.declareCheckpoint({
+      bufferId: opened.bufferId,
+      basisHeadId: applied.headId,
+      reason: EchoTextHostCheckpointReasons.ManualSave,
+    }),
+    EchoTextHostOutcomeKinds.CheckpointDeclared,
   );
   const observed = requireOutcome(
     await host.observeWindow({
@@ -43,9 +56,9 @@ try {
       endByte: applied.byteLength,
       maxBytes: applied.byteLength,
     }),
-    'observed',
+    EchoTextHostOutcomeKinds.Observed,
   );
-  emit(options, successReport(opened, applied, observed));
+  emit(options, successReport(opened, applied, checkpoint, observed));
 } catch (error) {
   emit(options, {
     ok: false,
@@ -72,7 +85,7 @@ function parseOptions(args) {
 }
 
 function requireOutcome(outcome, expectedKind) {
-  if (outcome.kind === 'obstructed') {
+  if (outcome.kind === EchoTextHostOutcomeKinds.Obstructed) {
     throw new Error(`${outcome.code}: ${outcome.message}`);
   }
   if (outcome.kind !== expectedKind) {
@@ -81,11 +94,11 @@ function requireOutcome(outcome, expectedKind) {
   return outcome;
 }
 
-function successReport(opened, applied, observed) {
+function successReport(opened, applied, checkpoint, observed) {
   return {
     ok: true,
     corridor: 'graphql-wesley-installed-contract',
-    operation: 'replaceRangeAsTick',
+    operation: EchoTextHostOperationNames.ReplaceRangeAsTick,
     bufferId: opened.bufferId,
     initialHeadId: opened.headId,
     headId: applied.headId,
@@ -93,6 +106,22 @@ function successReport(opened, applied, observed) {
     createTickId: opened.admittedTickId,
     replaceReceiptId: applied.receiptId,
     replaceTickId: applied.admittedTickId,
+    checkpointOperation: EchoTextHostOperationNames.DeclareCheckpoint,
+    checkpointId: checkpoint.checkpointId,
+    checkpointBasisHeadId: checkpoint.basisHeadId,
+    checkpointBasisByteLength: checkpoint.basisByteLength,
+    checkpointReason: checkpoint.reason,
+    checkpointReceiptId: checkpoint.receiptId,
+    checkpointTickId: checkpoint.admittedTickId,
+    checkpointHeadId: checkpoint.headId,
+    checkpointRootNodeId: checkpoint.rootNodeId,
+    checkpointByteLength: checkpoint.byteLength,
+    checkpointLineCount: checkpoint.lineCount,
+    checkpointBufferVersion: checkpoint.bufferVersion,
+    appliedRootNodeId: applied.rootNodeId,
+    appliedByteLength: applied.byteLength,
+    appliedLineCount: applied.lineCount,
+    appliedBufferVersion: applied.bufferVersion,
     worldlineId: observed.worldlineId,
     readingId: observed.readingId,
     observerPlanId: observed.observerPlanId,
@@ -110,7 +139,7 @@ function emit(options, report) {
     return;
   }
   const message = report.ok
-    ? `Echo applied ${report.operation} at ${report.replaceTickId}`
+    ? `Echo applied ${report.operation} and ${report.checkpointOperation} at ${report.checkpointTickId}`
     : `Echo witness failed: ${report.message}`;
   process.stdout.write(`${message}\n`);
 }

@@ -1,9 +1,35 @@
 export const EchoTextHostOutcomeKinds = Object.freeze({
   Opened: 'opened',
   Applied: 'applied',
+  CheckpointDeclared: 'checkpoint-declared',
   Observed: 'observed',
   Obstructed: 'obstructed',
 } as const);
+
+export const EchoTextHostRequestKinds = Object.freeze({
+  Open: 'open',
+  Replace: 'replace',
+  DeclareCheckpoint: 'declare-checkpoint',
+  Observe: 'observe',
+} as const);
+
+export const EchoTextHostOperationNames = Object.freeze({
+  CreateBufferWorldline: 'createBufferWorldline',
+  ReplaceRangeAsTick: 'replaceRangeAsTick',
+  DeclareCheckpoint: 'declareCheckpoint',
+  TextWindow: 'textWindow',
+} as const);
+
+export const EchoTextHostCheckpointReasons = Object.freeze({
+  ManualSave: 'manual-save',
+  Autosave: 'autosave',
+  RetentionBoundary: 'retention-boundary',
+  Export: 'export',
+  Import: 'import',
+} as const);
+
+export type EchoTextHostCheckpointReason =
+  typeof EchoTextHostCheckpointReasons[keyof typeof EchoTextHostCheckpointReasons];
 
 export interface EchoTextHostOpenRequest {
   readonly bufferKey: string;
@@ -16,6 +42,12 @@ export interface EchoTextHostReplaceRequest {
   readonly startByte: number;
   readonly endByte: number;
   readonly insertText: string;
+}
+
+export interface EchoTextHostCheckpointRequest {
+  readonly bufferId: string;
+  readonly basisHeadId: string;
+  readonly reason: EchoTextHostCheckpointReason;
 }
 
 export interface EchoTextHostObserveRequest {
@@ -45,6 +77,16 @@ export interface EchoTextHostOpened extends EchoTextHostBufferEvidence {
 
 export interface EchoTextHostApplied extends EchoTextHostBufferEvidence {
   readonly kind: typeof EchoTextHostOutcomeKinds.Applied;
+  readonly receiptId: string;
+  readonly admittedTickId: string;
+}
+
+export interface EchoTextHostCheckpointDeclared extends EchoTextHostBufferEvidence {
+  readonly kind: typeof EchoTextHostOutcomeKinds.CheckpointDeclared;
+  readonly checkpointId: string;
+  readonly basisHeadId: string;
+  readonly basisByteLength: number;
+  readonly reason: EchoTextHostCheckpointReason;
   readonly receiptId: string;
   readonly admittedTickId: string;
 }
@@ -92,11 +134,13 @@ export interface EchoTextHostObstructed {
 
 export type EchoTextHostOpenOutcome = EchoTextHostOpened | EchoTextHostObstructed;
 export type EchoTextHostReplaceOutcome = EchoTextHostApplied | EchoTextHostObstructed;
+export type EchoTextHostCheckpointOutcome = EchoTextHostCheckpointDeclared | EchoTextHostObstructed;
 export type EchoTextHostObserveOutcome = EchoTextHostObserved | EchoTextHostObstructed;
 
 export interface EchoTextContractHostPort {
   openBuffer(request: EchoTextHostOpenRequest): Promise<EchoTextHostOpenOutcome>;
   replaceRange(request: EchoTextHostReplaceRequest): Promise<EchoTextHostReplaceOutcome>;
+  declareCheckpoint(request: EchoTextHostCheckpointRequest): Promise<EchoTextHostCheckpointOutcome>;
   observeWindow(request: EchoTextHostObserveRequest): Promise<EchoTextHostObserveOutcome>;
   close?(): Promise<void>;
 }

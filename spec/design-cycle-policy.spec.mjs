@@ -246,8 +246,12 @@ test('BEARING records the real Echo-hosted generated text corridor', () => {
   const bearing = readRepoFile(BEARING_PATH);
 
   assert.match(bearing, /Production startup launches `jedit-echo-host`/);
-  assert.match(bearing, /Buffer open\/create, insert, replace, delete, and bounded text-window reads are\s+implemented/);
-  assert.match(bearing, /save\/export, `:why`, causal\s+line-diff, and undo\/redo return typed obstructions/);
+  assert.match(
+    bearing,
+    /Buffer open\/create, insert, replace, delete, checkpoint declaration, and\s+bounded text-window reads are implemented/,
+  );
+  assert.match(bearing, /Multi-range edit, save\/export,\s+`:why`, causal line-diff, and undo\/redo return typed obstructions/);
+  assert.match(bearing, /checkpoint declaration and an Echo causal anchor remain separate\s+propositions/);
   assert.match(bearing, /Wesley-generated EINT and installed package/);
   assert.match(bearing, /generated Edict client/);
   assert.match(bearing, /Do not reintroduce an in-process text authority/);

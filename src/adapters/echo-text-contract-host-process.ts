@@ -4,7 +4,11 @@ import { createInterface } from 'node:readline';
 import { z } from 'zod';
 import {
   EchoTextHostOutcomeKinds,
+  EchoTextHostCheckpointReasons,
+  EchoTextHostRequestKinds,
   type EchoTextContractHostPort,
+  type EchoTextHostCheckpointOutcome,
+  type EchoTextHostCheckpointRequest,
   type EchoTextHostObserveOutcome,
   type EchoTextHostObserveRequest,
   type EchoTextHostOpenOutcome,
@@ -41,6 +45,25 @@ const WireOpenedSchema = BufferEvidenceSchema.extend({
 const WireAppliedSchema = BufferEvidenceSchema.extend({
   kind: z.literal(EchoTextHostOutcomeKinds.Applied),
   requestId: z.number().int().nonnegative(),
+  receiptId: z.string().min(1),
+  admittedTickId: z.string().min(1),
+});
+
+const CheckpointReasonSchema = z.union([
+  z.literal(EchoTextHostCheckpointReasons.ManualSave),
+  z.literal(EchoTextHostCheckpointReasons.Autosave),
+  z.literal(EchoTextHostCheckpointReasons.RetentionBoundary),
+  z.literal(EchoTextHostCheckpointReasons.Export),
+  z.literal(EchoTextHostCheckpointReasons.Import),
+]);
+
+const WireCheckpointDeclaredSchema = BufferEvidenceSchema.extend({
+  kind: z.literal(EchoTextHostOutcomeKinds.CheckpointDeclared),
+  requestId: z.number().int().nonnegative(),
+  checkpointId: z.string().min(1),
+  basisHeadId: z.string().min(1),
+  basisByteLength: z.number().int().nonnegative(),
+  reason: CheckpointReasonSchema,
   receiptId: z.string().min(1),
   admittedTickId: z.string().min(1),
 });
@@ -91,6 +114,7 @@ const WireObstructedSchema = z.object({
 const WireResponseSchema = z.discriminatedUnion('kind', [
   WireOpenedSchema,
   WireAppliedSchema,
+  WireCheckpointDeclaredSchema,
   WireObservedSchema,
   WireObstructedSchema,
 ]);
@@ -145,7 +169,7 @@ class EchoTextContractHostProcess implements EchoTextContractHostPort {
   }
 
   async openBuffer(request: EchoTextHostOpenRequest): Promise<EchoTextHostOpenOutcome> {
-    const response = await this.#send({ kind: 'open', ...request });
+    const response = await this.#send({ kind: EchoTextHostRequestKinds.Open, ...request });
     if (response.kind === EchoTextHostOutcomeKinds.Opened) {
       const { requestId: _requestId, ...outcome } = response;
       return outcome;
@@ -156,7 +180,7 @@ class EchoTextContractHostProcess implements EchoTextContractHostPort {
   }
 
   async replaceRange(request: EchoTextHostReplaceRequest): Promise<EchoTextHostReplaceOutcome> {
-    const response = await this.#send({ kind: 'replace', ...request });
+    const response = await this.#send({ kind: EchoTextHostRequestKinds.Replace, ...request });
     if (response.kind === EchoTextHostOutcomeKinds.Applied) {
       const { requestId: _requestId, ...outcome } = response;
       return outcome;
@@ -166,8 +190,24 @@ class EchoTextContractHostProcess implements EchoTextContractHostPort {
       : protocolObstruction('Echo host returned the wrong outcome for replaceRange');
   }
 
+  async declareCheckpoint(
+    request: EchoTextHostCheckpointRequest,
+  ): Promise<EchoTextHostCheckpointOutcome> {
+    const response = await this.#send({
+      kind: EchoTextHostRequestKinds.DeclareCheckpoint,
+      ...request,
+    });
+    if (response.kind === EchoTextHostOutcomeKinds.CheckpointDeclared) {
+      const { requestId: _requestId, ...outcome } = response;
+      return outcome;
+    }
+    return response.kind === EchoTextHostOutcomeKinds.Obstructed
+      ? withoutRequestId(response)
+      : protocolObstruction('Echo host returned the wrong outcome for declareCheckpoint');
+  }
+
   async observeWindow(request: EchoTextHostObserveRequest): Promise<EchoTextHostObserveOutcome> {
-    const response = await this.#send({ kind: 'observe', ...request });
+    const response = await this.#send({ kind: EchoTextHostRequestKinds.Observe, ...request });
     if (response.kind === EchoTextHostOutcomeKinds.Observed) {
       const { requestId: _requestId, ...outcome } = response;
       return outcome;

@@ -12,6 +12,8 @@ pub enum HostError {
     InvalidRequest(String),
     #[error("Echo did not apply the generated operation: {0}")]
     IntentNotApplied(String),
+    #[error("generated installed operation is unavailable: {0}")]
+    GeneratedOperationUnavailable(String),
     #[error("Echo observation failed: {0}")]
     Observation(String),
     #[error("host protocol failed: {0}")]

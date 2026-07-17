@@ -2,6 +2,7 @@ import type { RuntimeIssue } from '@flyingrobots/bijou-tui';
 import type { ByteOffset, TextByteRange } from '../../domain/graph-rope-types.js';
 import type {
   ApplyIntentResult,
+  CheckpointDeclarationKind,
   Observed,
   CreateTextBufferCheckpointResult,
   TextWindowBasis,
@@ -115,7 +116,7 @@ export interface ProductionTextMultiRangeRequest {
 export interface ProductionTextCheckpointRequest {
   readonly bufferId: string;
   readonly basisHeadId: string;
-  readonly label?: string | null;
+  readonly checkpointKind: CheckpointDeclarationKind;
   readonly atMs: number;
 }
 

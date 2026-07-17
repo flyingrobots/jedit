@@ -13,7 +13,7 @@ claims belong in git history and design retrospectives.
   linked to Echo. There is no TypeScript text runtime or generic WASM facade in
   the product text path.
 - `contracts/jedit/echo-text.graphql` declares buffer creation, single-range
-  replacement, and bounded text-window observation.
+  replacement, checkpoint declaration, and bounded text-window observation.
 - Echo's `echo-wesley-gen --contract-host` output supplies canonical EINT
   codecs, operation identities, registry evidence, generated rules, and the
   query observer plan under `native/jedit-echo-host/src/generated/`.
@@ -29,12 +29,24 @@ claims belong in git history and design retrospectives.
   coordinate branding, and disposable UI projections. It does not construct
   Echo identities, admission evidence, receipts, graph patches, or scheduler
   outcomes.
-- Buffer open/create, insert, replace, delete, and bounded text-window reads are
-  implemented. Multi-range edit, checkpoint, save/export, `:why`, causal
-  line-diff, and undo/redo return typed obstructions.
+- Buffer open/create, insert, replace, delete, checkpoint declaration, and
+  bounded text-window reads are implemented. Multi-range edit, save/export,
+  `:why`, causal line-diff, and undo/redo return typed obstructions.
+- Jim owns `RopeCheckpointDeclared` semantics. Echo admits and schedules the
+  generated declaration, persists its Jim fact in the graph/WAL history, and
+  returns the opaque receipt and tick identities. Declaration validates that
+  its basis head belongs to the stated Jim buffer worldline and does not mint a
+  text head, rewrite, diff, or causal anchor.
+- A Jim checkpoint declaration and an Echo causal anchor remain separate
+  propositions. No anchor association is created automatically.
 - The current package is explicitly `0.1.0-wesley-compat`. Its authored Rust
   operation law and process invocation seam are transitional until Edict can
   install and invoke the corresponding generated operations.
+- Checkpoint reason remains a transitional GraphQL `String` because the pinned
+  Wesley contract-host enum emitter produces Rust that does not compile for
+  this enum shape. The installed native Jim contract still admits exactly
+  `manual-save`, `autosave`, `retention-boundary`, `export`, and `import`; an
+  arbitrary string is not an admitted checkpoint proposition.
 - The full-snapshot runtime, local graph-rope executor, local admission loop,
   locally manufactured receipts, fake production transports, and optimistic
   text mutation path remain deleted.
@@ -76,15 +88,16 @@ or support-policy logic.
 
 ## Immediate Roadmap
 
-1. Keep the narrow create/replace/read corridor green against Echo-owned WAL,
-   admission, scheduling, graph state, receipts, and restart recovery.
+1. Keep the narrow create/replace/checkpoint/read corridor green against
+   Echo-owned WAL, admission, scheduling, graph state, receipts, and restart
+   recovery.
 2. Avoid restoring broad editor feature parity through transitional APIs.
 3. Have Echo and Edict establish one natively installed generated operation.
 4. Migrate `ReplaceRange` to the generated Edict client and operation.
 5. Make the Wesley/Rust replacement path unreachable, then delete it.
 6. Migrate create/open and bounded text-window observation.
-7. Add checkpoint declaration and optional causal-anchor association as
-   separate propositions.
+7. Add optional causal-anchor association as a proposition separate from
+   checkpoint declaration only when a concrete consumer requires it.
 8. Add save/export through generated operations, then derive undo/redo
    candidates from retained Echo history and invoke generated inverse
    operations through basis-pinned Echo observations.

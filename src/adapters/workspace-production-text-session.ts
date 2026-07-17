@@ -25,13 +25,25 @@ import {
 } from '../ports/jedit-text-window-materialization.js';
 import {
   EchoTextHostOutcomeKinds,
+  EchoTextHostCheckpointReasons,
   type EchoTextContractHostPort,
   type EchoTextHostApplied,
+  type EchoTextHostCheckpointDeclared,
+  type EchoTextHostCheckpointReason,
   type EchoTextHostObserved,
 } from '../ports/echo-text-contract-host.js';
+import {
+  CheckpointKinds,
+  type CheckpointDeclarationKind,
+} from '../ports/text-authority-evidence.js';
 
 const UNSUPPORTED_CORRIDOR_MESSAGE =
   'The current generated Wesley compatibility corridor does not implement this operation. Edict migration will add it explicitly.';
+
+const CHECKPOINT_REASONS = Object.freeze({
+  [CheckpointKinds.ManualSave]: EchoTextHostCheckpointReasons.ManualSave,
+  [CheckpointKinds.AutoSave]: EchoTextHostCheckpointReasons.Autosave,
+} satisfies Record<CheckpointDeclarationKind, EchoTextHostCheckpointReason>);
 
 export function createWorkspaceProductionTextSession(
   host: EchoTextContractHostPort,
@@ -42,7 +54,7 @@ export function createWorkspaceProductionTextSession(
     replaceRange: (request: ProductionTextReplaceRequest) => applyEdit(host, request),
     deleteRange: (request: ProductionTextDeleteRequest) => deleteRange(host, request),
     multiRangeEdit: (request: ProductionTextMultiRangeRequest) => unsupportedOperation(ProductionTextObstructionCodes.Edit, request),
-    checkpointBuffer: (request: ProductionTextCheckpointRequest) => unsupportedOperation(ProductionTextObstructionCodes.Checkpoint, request),
+    checkpointBuffer: (request: ProductionTextCheckpointRequest) => declareCheckpoint(host, request),
     observeWindow: (request: ProductionTextWindowRequest) => observeWindow(host, request),
     observeCausalLineDiff: (request: ProductionTextCausalLineDiffRequest) => unsupportedOperation(ProductionTextObstructionCodes.Query, request),
     exportSnapshot: (request: ProductionTextExportRequest) => unsupportedOperation(ProductionTextObstructionCodes.Export, request),
@@ -112,6 +124,49 @@ async function observeWindow(host: EchoTextContractHostPort, request: Production
     );
   }
   return observedWindow(outcome, request);
+}
+
+async function declareCheckpoint(
+  host: EchoTextContractHostPort,
+  request: ProductionTextCheckpointRequest,
+) {
+  const outcome = await host.declareCheckpoint({
+    bufferId: request.bufferId,
+    basisHeadId: request.basisHeadId,
+    reason: checkpointReason(request.checkpointKind),
+  });
+  if (outcome.kind === EchoTextHostOutcomeKinds.Obstructed) {
+    return createProductionTextObstruction(
+      ProductionTextObstructionCodes.Checkpoint,
+      request.atMs,
+      outcome.message,
+    );
+  }
+  return checkpointDeclared(outcome, request.checkpointKind);
+}
+
+function checkpointDeclared(
+  outcome: EchoTextHostCheckpointDeclared,
+  checkpointKind: CheckpointDeclarationKind,
+) {
+  return {
+    kind: ProductionTextSessionOutcomeKinds.Checkpointed,
+    result: {
+      textBasis: fullTextBasis(outcome.basisHeadId, outcome.basisByteLength),
+      bufferVersion: outcome.bufferVersion,
+      checkpointId: outcome.checkpointId,
+      checkpointKind,
+      receiptId: outcome.receiptId,
+      admittedTickId: outcome.admittedTickId,
+    },
+  } as const;
+}
+
+function checkpointReason(checkpointKind: CheckpointDeclarationKind) {
+  if (!Object.hasOwn(CHECKPOINT_REASONS, checkpointKind)) {
+    throw new TypeError(`Unsupported checkpoint kind: ${String(checkpointKind)}`);
+  }
+  return CHECKPOINT_REASONS[checkpointKind];
 }
 
 function unsupportedOperation(code: ProductionTextObstructionCode, request: TimedRequest) {

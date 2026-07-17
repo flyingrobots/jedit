@@ -2,7 +2,14 @@ import type { TextByteRange } from '../domain/graph-rope-types.js';
 import type { HotTextWindowProjection } from './text-window-projection.js';
 import type { JeditTextWindowMaterializationProvenance } from './jedit-text-window-materialization.js';
 
-export type CheckpointKind = 'INITIAL' | 'MANUAL_SAVE' | 'AUTO_SAVE';
+export const CheckpointKinds = Object.freeze({
+  Initial: 'INITIAL',
+  ManualSave: 'MANUAL_SAVE',
+  AutoSave: 'AUTO_SAVE',
+} as const);
+
+export type CheckpointKind = typeof CheckpointKinds[keyof typeof CheckpointKinds];
+export type CheckpointDeclarationKind = Exclude<CheckpointKind, typeof CheckpointKinds.Initial>;
 
 export interface TextBuffer {
   readonly bufferId: string;
@@ -49,11 +56,12 @@ export interface TextBufferCausalTransition {
 }
 
 export interface CreateTextBufferCheckpointResult {
-  readonly buffer: TextBuffer;
   readonly textBasis: TextWindowBasis;
   readonly bufferVersion: number;
   readonly checkpointId: string;
-  readonly checkpointKind: CheckpointKind;
+  readonly checkpointKind: CheckpointDeclarationKind;
+  readonly receiptId: string;
+  readonly admittedTickId: string;
 }
 
 export interface CausalLineMarkerReading {
