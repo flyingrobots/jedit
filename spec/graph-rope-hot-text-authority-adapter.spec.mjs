@@ -12,7 +12,9 @@ const AUTHORITY_MODULE_PATH = path.join(
   'graph-rope-hot-text-authority-adapter.js',
 );
 const CONTRACT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-runtime.js');
+const GRAPH_ROPE_CONTRACT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'domain', 'graph-rope-contract.js');
 const TEXT_BUFFER_SESSION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'text-buffer-session.js');
+const TEXT_BUFFER_SESSION_PORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'ports', 'text-buffer-session.js');
 const HASH_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'hash.js');
 const CLIENT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-optic-client.js');
 const TRANSPORT_MODULE_PATH = path.join(
@@ -312,16 +314,18 @@ test('manual save declares the current head without implicitly requesting an Ech
   const basis = state.authorityBasis;
   const before = assertOk(authority.debugRopeShape(basis.headId));
 
-  const saved = authority.saveCheckpoint(state, { kind: 'MANUAL_SAVE' });
+  const saved = authority.saveCheckpoint(state, {
+    kind: modules.textBufferPort.TEXT_BUFFER_CHECKPOINT_KIND_MANUAL_SAVE,
+  });
   const after = assertOk(authority.debugRopeShape(basis.headId));
 
   assert.deepEqual(saved.checkpointDeclaration, {
-    kind: 'jedit.text.RopeCheckpoint',
-    schemaVersion: 1,
+    kind: modules.graphContract.ROPE_CHECKPOINT_FACT_KIND,
+    schemaVersion: modules.graphContract.GRAPH_ROPE_SCHEMA_VERSION,
     checkpointId: saved.receipt.authorityCheckpointId,
     worldlineId: basis.worldlineId,
     headId: basis.headId,
-    reason: 'manual-save',
+    reason: modules.graphContract.ROPE_CHECKPOINT_REASON_MANUAL_SAVE,
   });
   assert.equal(saved.anchorAssociation, undefined);
   assert.deepEqual(requests, []);
@@ -337,9 +341,11 @@ test('manual save declaration does not require Echo causal-anchor admission', as
   });
   const state = authority.createBuffer('/tmp/save-no-echo.txt', 'causal save');
 
-  const saved = authority.saveCheckpoint(state, { kind: 'MANUAL_SAVE' });
+  const saved = authority.saveCheckpoint(state, {
+    kind: modules.textBufferPort.TEXT_BUFFER_CHECKPOINT_KIND_MANUAL_SAVE,
+  });
 
-  assert.equal(saved.checkpointDeclaration.reason, 'manual-save');
+  assert.equal(saved.checkpointDeclaration.reason, modules.graphContract.ROPE_CHECKPOINT_REASON_MANUAL_SAVE);
   assert.equal(saved.anchorAssociation, undefined);
 });
 
@@ -369,7 +375,7 @@ test('initial checkpoint declaration does not require causal-anchor admission', 
 
   const saved = authority.saveCheckpoint(state, { kind: 'INITIAL' });
 
-  assert.equal(saved.checkpointDeclaration.reason, 'import');
+  assert.equal(saved.checkpointDeclaration.reason, modules.graphContract.ROPE_CHECKPOINT_REASON_IMPORT);
   assert.equal(saved.anchorAssociation, undefined);
   assert.equal(saved.receipt.authorityCheckpointId, saved.checkpointDeclaration.checkpointId);
 });
@@ -393,24 +399,30 @@ test('installed transport declares saved heads without manufacturing Echo anchor
 
   const saved = await client.createCheckpoint(opened.nextSession, {
     worldlineId: basis.worldlineId,
-    kind: 'MANUAL_SAVE',
+    kind: modules.textBufferPort.TEXT_BUFFER_CHECKPOINT_KIND_MANUAL_SAVE,
     label: 'installed save',
   });
+  const [authorityCheckpoint, ...unexpectedAuthorityCheckpoints] = saved.nextSession.state.checkpoints;
+  const [checkpointMetadata, ...unexpectedCheckpointMetadata] = saved.nextSession.checkpointMetadata;
 
-  assert.equal(requests.length, 0);
-  assert.equal(saved.result.checkpoint.checkpointId, saved.nextSession.state.checkpoints[0].authorityCheckpointId);
+  assert.deepEqual(requests, []);
+  assert.ok(authorityCheckpoint);
+  assert.deepEqual(unexpectedAuthorityCheckpoints, []);
+  assert.equal(saved.result.checkpoint.checkpointId, authorityCheckpoint.authorityCheckpointId);
   assert.equal(saved.result.checkpoint.headId, basis.headId);
   assert.equal(saved.nextSession.state.roots, undefined);
-  assert.equal(saved.nextSession.checkpointMetadata[0].authorityCheckpointId, saved.result.checkpoint.checkpointId);
-  assert.equal(saved.nextSession.checkpointMetadata[0].authorityHeadId, basis.headId);
+  assert.ok(checkpointMetadata);
+  assert.deepEqual(unexpectedCheckpointMetadata, []);
+  assert.equal(checkpointMetadata.authorityCheckpointId, saved.result.checkpoint.checkpointId);
+  assert.equal(checkpointMetadata.authorityHeadId, basis.headId);
 
   const repeated = await client.createCheckpoint(saved.nextSession, {
     worldlineId: basis.worldlineId,
-    kind: 'MANUAL_SAVE',
+    kind: modules.textBufferPort.TEXT_BUFFER_CHECKPOINT_KIND_MANUAL_SAVE,
     label: 'installed save',
   });
   assert.equal(repeated.result, undefined);
-  assert.equal(requests.length, 0);
+  assert.deepEqual(requests, []);
 });
 
 test('installed transport checkpoint declarations remain available without Echo admission', async () => {
@@ -427,12 +439,14 @@ test('installed transport checkpoint declarations remain available without Echo 
 
   const saved = await client.createCheckpoint(opened.nextSession, {
     worldlineId: opened.nextSession.worldline.worldlineId,
-    kind: 'MANUAL_SAVE',
+    kind: modules.textBufferPort.TEXT_BUFFER_CHECKPOINT_KIND_MANUAL_SAVE,
     label: 'declaration only',
   });
+  const [authorityCheckpoint, ...unexpectedAuthorityCheckpoints] = saved.nextSession.state.checkpoints;
 
-  assert.equal(saved.result.checkpoint.kind, 'MANUAL_SAVE');
-  assert.equal(saved.nextSession.state.checkpoints.length, 1);
+  assert.equal(saved.result.checkpoint.kind, modules.textBufferPort.TEXT_BUFFER_CHECKPOINT_KIND_MANUAL_SAVE);
+  assert.ok(authorityCheckpoint);
+  assert.deepEqual(unexpectedAuthorityCheckpoints, []);
 });
 
 test('checkpoint rejects a stale exported head before requesting Echo admission', async () => {
@@ -461,7 +475,7 @@ test('checkpoint rejects a stale exported head before requesting Echo admission'
 
   await assert.rejects(
     optic.createCheckpoint({
-      kind: 'MANUAL_SAVE',
+      kind: modules.textBufferPort.TEXT_BUFFER_CHECKPOINT_KIND_MANUAL_SAVE,
       basisHeadId: before.value.projection.basisHeadId,
       label: 'stale export basis',
     }),
@@ -498,13 +512,15 @@ function assertOk(result) {
 
 async function loadModules() {
   await ensureDistBuilt();
-  const [authority, contract, hash, client, transport, textSession] = await Promise.all([
+  const [authority, contract, graphContract, hash, client, transport, textSession, textBufferPort] = await Promise.all([
     import(pathToFileURL(AUTHORITY_MODULE_PATH).href),
     import(pathToFileURL(CONTRACT_MODULE_PATH).href),
+    import(pathToFileURL(GRAPH_ROPE_CONTRACT_MODULE_PATH).href),
     import(pathToFileURL(HASH_MODULE_PATH).href),
     import(pathToFileURL(CLIENT_MODULE_PATH).href),
     import(pathToFileURL(TRANSPORT_MODULE_PATH).href),
     import(pathToFileURL(TEXT_BUFFER_SESSION_MODULE_PATH).href),
+    import(pathToFileURL(TEXT_BUFFER_SESSION_PORT_MODULE_PATH).href),
   ]);
-  return { authority, contract, hash, client, transport, textSession };
+  return { authority, contract, graphContract, hash, client, transport, textSession, textBufferPort };
 }
