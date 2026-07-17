@@ -92,11 +92,16 @@ async function openBuffer(host: EchoTextContractHostPort, request: ProductionTex
 }
 
 async function observeWindow(host: EchoTextContractHostPort, request: ProductionTextWindowRequest) {
+  const startByte = request.byteRange.startByte.value;
+  const endByte = Math.min(
+    request.byteRange.endByte.value,
+    startByte + request.aperture.maxBytes,
+  );
   const outcome = await host.observeWindow({
     bufferId: request.bufferId,
     basisHeadId: request.basisHeadId,
-    startByte: request.byteRange.startByte.value,
-    endByte: request.byteRange.endByte.value,
+    startByte,
+    endByte,
     maxBytes: request.aperture.maxBytes,
   });
   if (outcome.kind === EchoTextHostOutcomeKinds.Obstructed) {

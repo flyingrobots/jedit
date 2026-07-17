@@ -80,6 +80,73 @@ test('workspace production text session invokes the Echo-owned generated operati
   }]);
 });
 
+test('workspace production text session bounds Echo observations to the requested aperture', async () => {
+  const adapter = await importDist('adapters', 'workspace-production-text-session.js');
+  const calls = [];
+  const session = adapter.createWorkspaceProductionTextSession({
+    async openBuffer() {
+      throw new Error('openBuffer should not be called');
+    },
+    async replaceRange() {
+      throw new Error('replaceRange should not be called');
+    },
+    async observeWindow(request) {
+      calls.push(request);
+      return {
+        kind: 'observed',
+        worldlineId: 'worldline:bounded',
+        readingId: 'reading:bounded',
+        observerPlanId: 'observer:bounded',
+        packageArtifactHash: 'package:bounded',
+        bufferId: request.bufferId,
+        basisHeadId: request.basisHeadId,
+        rootNodeId: 'node:bounded',
+        byteLength: 2_000_000,
+        lineCount: 1,
+        startByte: request.startByte,
+        endByte: request.endByte,
+        text: 'x'.repeat(request.endByte - request.startByte),
+        lines: [{
+          lineNumber: 0,
+          startByte: request.startByte,
+          endByte: request.endByte,
+          text: 'x'.repeat(request.endByte - request.startByte),
+        }],
+        support: [],
+        resolvedWorldlineTick: 1,
+        commitHash: 'commit:bounded',
+      };
+    },
+  });
+
+  const observed = await session.observeWindow({
+    bufferId: 'buffer:bounded',
+    basisHeadId: 'head:bounded',
+    byteRange: {
+      startByte: { kind: 'utf8-byte-offset', value: 0 },
+      endByte: { kind: 'utf8-byte-offset', value: 2_000_000 },
+    },
+    aperture: {
+      cursorLine: 0,
+      viewportLineCount: 24,
+      beforeLines: 0,
+      afterLines: 0,
+      maxBytes: 1024,
+    },
+    atMs: 1,
+  });
+
+  assert.equal(observed.kind, 'observed');
+  assert.equal(observed.observed.value.truncated, true);
+  assert.deepEqual(calls, [{
+    bufferId: 'buffer:bounded',
+    basisHeadId: 'head:bounded',
+    startByte: 0,
+    endByte: 1024,
+    maxBytes: 1024,
+  }]);
+});
+
 test('the production process adapter executes generated operations in Echo and recovers them', async () => {
   const processAdapter = await importDist('adapters', 'echo-text-contract-host-process.js');
   const sessionAdapter = await importDist('adapters', 'workspace-production-text-session.js');

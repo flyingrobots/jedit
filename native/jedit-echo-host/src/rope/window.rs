@@ -62,11 +62,7 @@ pub fn read_window<T: GraphFacts>(
             head.byte_length
         )));
     }
-    if end_byte - start_byte > max_bytes {
-        return Err(HostError::InvalidRequest(format!(
-            "window exceeds maxBytes {max_bytes}"
-        )));
-    }
+    let bounded_end = end_byte.min(start_byte.saturating_add(max_bytes));
     let mut bytes = Vec::new();
     let mut support = Vec::new();
     if let Some(root) = head.root_node_id.map(NodeId::from) {
@@ -75,14 +71,16 @@ pub fn read_window<T: GraphFacts>(
             root,
             0,
             start_byte,
-            end_byte,
+            bounded_end,
             &mut bytes,
             &mut support,
         )?;
     }
-    let text = String::from_utf8(bytes).map_err(|_| {
-        HostError::InvalidRequest("window range splits a UTF-8 code point".to_owned())
-    })?;
+    let (text, actual_end) = complete_utf8_prefix(bytes, start_byte, bounded_end)?;
+    support.retain(|item| item.start_byte < actual_end);
+    for item in &mut support {
+        item.end_byte = item.end_byte.min(actual_end);
+    }
     let first_line = if let Some(root) = head.root_node_id.map(NodeId::from) {
         count_breaks_before(&mut context, root, start_byte)?
     } else {
@@ -96,11 +94,36 @@ pub fn read_window<T: GraphFacts>(
         byte_length: head.byte_length,
         line_count: head.line_count,
         start_byte,
-        end_byte,
+        end_byte: actual_end,
         text,
         lines,
         support,
     })
+}
+
+fn complete_utf8_prefix(
+    bytes: Vec<u8>,
+    start_byte: u64,
+    bounded_end: u64,
+) -> HostResult<(String, u64)> {
+    match String::from_utf8(bytes) {
+        Ok(text) => Ok((text, bounded_end)),
+        Err(error) => {
+            let utf8_error = error.utf8_error();
+            if utf8_error.error_len().is_some() {
+                return Err(HostError::InvalidRequest(
+                    "window range splits a UTF-8 code point".to_owned(),
+                ));
+            }
+            let valid_length = utf8_error.valid_up_to();
+            let mut prefix = error.into_bytes();
+            prefix.truncate(valid_length);
+            let text = String::from_utf8(prefix).map_err(|_| {
+                HostError::InvalidRequest("window range is not UTF-8".to_owned())
+            })?;
+            Ok((text, start_byte + valid_length as u64))
+        }
+    }
 }
 
 pub(super) fn read_range_bytes<T: GraphFacts>(

@@ -95,6 +95,34 @@ fn generated_operations_tick_in_echo_and_recover_from_the_runtime_wal() {
 }
 
 #[test]
+fn bounded_window_stops_before_a_split_utf8_code_point() {
+    let root = tempfile::tempdir().expect("temporary WAL root should exist");
+    let mut host = JeditEchoHost::open(root.path()).expect("Echo host should initialize");
+    let HostResponse::Opened { buffer, .. } = host.handle(open_request(1, "ab🙂cd")) else {
+        panic!("createBufferWorldline should open the buffer");
+    };
+
+    let HostResponse::Observed { window, .. } = host.handle(HostRequest::Observe {
+        request_id: 2,
+        buffer_id: buffer.buffer_id,
+        basis_head_id: buffer.head_id,
+        start_byte: 0,
+        end_byte: 4,
+        max_bytes: 4,
+    }) else {
+        panic!("bounded textWindow should return the complete UTF-8 prefix");
+    };
+
+    assert_eq!(window.start_byte, 0);
+    assert_eq!(window.end_byte, 2);
+    assert_eq!(window.text, "ab");
+    assert!(window
+        .support
+        .iter()
+        .all(|support| support.end_byte <= window.end_byte));
+}
+
+#[test]
 fn narrow_replace_preserves_untouched_leaf_identity() {
     let root = tempfile::tempdir().expect("temporary WAL root should exist");
     let initial = format!(
