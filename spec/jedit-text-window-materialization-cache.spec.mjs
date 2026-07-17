@@ -6,7 +6,6 @@ import { REPO_ROOT, ensureDistBuilt } from './dist-helpers.mjs';
 
 const CACHE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-text-window-materialization-cache.js');
 const COORDINATE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'domain', 'graph-rope-coordinates.js');
-const GRAPH_RUNTIME_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'domain', 'graph-rope-runtime.js');
 const HASH_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'hash.js');
 
 let modulesPromise;
@@ -77,27 +76,9 @@ test('materialization cache refuses and evicts stale provenance', async () => {
   });
 });
 
-test('materialization cache measures projection bytes outside graph authority', async () => {
+test('materialization cache reports projection bytes without claiming authority', async () => {
   const modules = await loadModules();
-  const graph = modules.graph.createGraphRopeRuntime({ hash: modules.hash });
-  const created = graph.createBufferWorldline({
-    worldlineId: 'wl:materialization-authority',
-    initialText: 'causal',
-  });
-  assert.equal(created.ok, true);
-  const headId = created.value.head.headId;
-  const before = graph.debugRopeShape(headId);
-  assert.equal(before.ok, true);
-  const projection = sampleProjection({
-    basisHeadId: headId,
-    basis: {
-      worldlineId: created.value.head.worldlineId,
-      headId,
-      rootNodeId: created.value.head.rootNodeId,
-      byteLength: created.value.head.byteLength,
-      lineCount: created.value.head.lineCount,
-    },
-  });
+  const projection = sampleProjection();
   const cache = modules.cache.createDisposableJeditTextWindowMaterializationCache();
   cache.retain(modules.cache.createJeditTextWindowMaterialization(
     materializationKey(modules, projection),
@@ -111,7 +92,10 @@ test('materialization cache measures projection bytes outside graph authority', 
   assert.equal('retainedAuthoritativeBytes' in cache.metrics(), false);
 
   cache.clear();
-  assert.deepEqual(graph.debugRopeShape(headId), before);
+  assert.deepEqual(cache.metrics(), {
+    entryCount: 0,
+    materializedProjectionBytes: 0,
+  });
 });
 
 async function loadModules() {
@@ -119,12 +103,10 @@ async function loadModules() {
   modulesPromise ??= Promise.all([
     import(pathToFileURL(CACHE_MODULE_PATH).href),
     import(pathToFileURL(COORDINATE_MODULE_PATH).href),
-    import(pathToFileURL(GRAPH_RUNTIME_MODULE_PATH).href),
     import(pathToFileURL(HASH_MODULE_PATH).href),
-  ]).then(([cache, coordinates, graph, hashAdapter]) => ({
+  ]).then(([cache, coordinates, hashAdapter]) => ({
     cache,
     coordinates,
-    graph,
     hash: hashAdapter.createHashPort(),
   }));
   return modulesPromise;

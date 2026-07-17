@@ -1,0 +1,22 @@
+[package]
+name = "jedit-echo-host"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[workspace]
+
+[dependencies]
+anyhow = "1"
+blake3 = "1"
+bytes = "1"
+echo-registry-api = { git = "https://github.com/flyingrobots/echo", rev = "90f63ae27c673fb7d398aba12c98cfbcf1ef24c3" }
+echo-wasm-abi = { git = "https://github.com/flyingrobots/echo", rev = "90f63ae27c673fb7d398aba12c98cfbcf1ef24c3" }
+hex = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+warp-core = { git = "https://github.com/flyingrobots/echo", rev = "90f63ae27c673fb7d398aba12c98cfbcf1ef24c3", features = ["native_rule_bootstrap", "trusted_runtime"] }
+
+[dev-dependencies]
+tempfile = "3"

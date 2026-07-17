@@ -652,8 +652,6 @@ test("workspace title row uses the active theme chrome token", async () => {
       dirty: true,
       readOnly: false,
       mode: "normal",
-      undoStack: [],
-      redoStack: [],
     },
   }));
   const titleCells = Array.from({ length: surface.width }, (_, x) => surface.get(x, 0));

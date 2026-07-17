@@ -16,12 +16,15 @@ npm install
 Start the TUI:
 
 ```sh
-JEDIT_ALLOW_FULL_SNAPSHOT_TEXT_AUTHORITY=1 npm run dev
+npm run dev
 ```
 
-The environment flag is temporary. It acknowledges that the current text
-authority is the quarantined full-snapshot fixture until the graph-backed rope
-runtime replaces it.
+`npm run dev` first compiles `native/jedit-echo-host`, then starts the TUI. The
+workspace launches that trusted Rust host as a child process. Set
+`JEDIT_ECHO_HOST_BIN` only to select another compatible host binary and
+`JEDIT_ECHO_WAL_DIR` only to select its filesystem runtime-WAL directory. If the
+host is missing or exits, text operations fail closed. Jim does not fall back to
+a local text runtime.
 
 Build the app:
 
@@ -29,8 +32,9 @@ Build the app:
 npm run build
 ```
 
-`npm run build` first generates the structural-history `replaceTextRange`
-Wesley metadata, then runs TypeScript compilation and asset copying.
+`npm run build` compiles the native Echo host, compiles TypeScript, and copies
+runtime assets. The generated Rust contract bindings are checked in so normal
+builds do not require a sibling Echo checkout or generator invocation.
 
 ## Validate The Workspace
 
@@ -47,95 +51,70 @@ npm run test:all   (which builds first, then runs spec/ and tests/)
 npm run quality
 ```
 
-Default tests use the fake Echo-shaped transport. They do not require a sibling
-Echo checkout and do not build Echo WASM.
+Tests may explicitly inject test-only Echo doubles. Product source contains no
+fake, fixture, in-memory, or snapshot text authority.
 
-## Contract Generation
+## Generated Operation Corridor
 
-There are two current generation postures.
-
-Structural history is build-local and does not need `JEDIT_WESLEY_ROOT`:
-
-```sh
-npm run gen:contract:structural-history:wesley
-```
-
-That command installs `wesley-cli` 0.0.4 into `.wesley-cache/cargo` when needed,
-emits the full TypeScript artifact to
-`.wesley-cache/structural-history.wesley.generated.ts`, and extracts the ignored
-adapter descriptor:
+The former Node-host Wesley generators and generated TypeScript projections
+remain deleted. The current compatibility corridor instead uses a small GraphQL
+contract compiled by Echo's Wesley contract-host extension into Rust:
 
 ```text
-src/generated/jedit/structural-history-replace-text-range.wesley.generated.ts
+Jim command
+-> typed process adapter
+-> trusted native Echo host
+-> Wesley-generated EINT binding and registered package
+-> Echo-owned WAL admission and scheduler tick
+-> Jim graph-rope facts and opaque Echo receipt
+-> basis-pinned bounded observation
 ```
 
-The descriptor is generated output. Do not edit it and do not commit it.
-
-Full legacy contract generation still requires a Wesley checkout because the
-hot-text runtime, legacy TypeScript/Zod output, and observer plan use the local
-Wesley host and Cargo manifest:
-
-```sh
-JEDIT_WESLEY_ROOT=/path/to/wesley npm run gen:contract
-```
+The implemented surface is intentionally narrow: create/open a buffer,
+single-range replace/insert/delete, and bounded text-window observation. Other
+operations return typed obstructions. Edict will replace the transitional Rust
+operation law and invocation seam operation by operation; do not widen this
+compatibility path merely to regain feature parity.
 
 ## Echo Witnesses
 
-The default local posture is fake Echo-shaped transport coverage. It proves the
-consumer contract without depending on a sibling Echo build.
+The product startup path runs Echo directly in the trusted native host. Unit
+tests use explicit test-only doubles where isolation is required.
 
-The real Echo WASM witness is opt-in:
-
-```sh
-ECHO_WARP_WASM_DIR=/path/to/echo/crates/warp-wasm \
-  scripts/run-real-echo-wasm-stack-witness.sh
-```
-
-That script asks Echo to build its own WASM package boundary and then runs the
-jedit witness with `JEDIT_ECHO_WASM_MODULE` pointed at the resulting module.
-
-Current status: the real Echo WASM witness is a release-gate work item, not a
-green default check. It uses the current Echo authority model:
-
-```text
-jedit app adapter: submit intents and observe readings
-trusted Echo host adapter: install package, stage ingress, tick until idle
-```
-
-Do not fix the witness by granting app code tick authority.
-
-For agent use, prefer the shell witness above. A future MCP surface can wrap the
-same command after retained evidence and replay output are strong enough to be
-worth exposing through a protocol.
-
-Agents that need machine-readable output should call the Node CLI directly:
+The primary product witness is:
 
 ```sh
-ECHO_WARP_WASM_DIR=/path/to/echo/crates/warp-wasm \
-  node scripts/jedit-echo-witness.mjs --json
+npm run echo:test
+JEDIT_DIST_PREBUILT=1 node --test spec/workspace-production-echo-wiring.spec.mjs
 ```
 
-The JSON output includes command status and, on success, a witness report with
-generated contract metadata, reading identity, artifact hash, residual posture,
-observer basis, and the product-shaped text result.
+It proves generated package registration, WAL-acknowledged submission,
+Echo-owned admission and ticks, graph-rope mutation, bounded observation,
+restart recovery, and continued editing after recovery.
+
+The machine-readable end-to-end witness is:
+
+```sh
+npm run witness:echo
+```
+
+Its JSON output includes the Echo receipt, admitted tick, package artifact,
+basis-pinned reading, commit hash, rope support count, and observed text. It
+uses the same native host process as the product; it does not substitute a
+test runtime or a raw kernel facade.
 
 ## Current Runtime Truth
 
 In production, Echo/session authority owns causal text. `EditorState.lines` is
-the full local visible projection cache used for rendering, cursoring, and
-transitional edit planning. It must not be reconstructed from bounded readings.
-It is not saved or recovered as authority.
+a disposable visible projection populated from Echo observations. Proposed
+edits do not mutate it; an admitted operation must return a new basis-pinned
+reading before changed text becomes visible. It is never saved or recovered as
+authority.
 
 Source rendering, Markdown preview, drawers, syntax highlighting, and footer
 state are projections over that visible/session projection.
 
-The structural-history GraphQL schema is the forward authority for product
-history facts:
-
-```text
-contracts/jedit/structural-history.graphql
-```
-
-The first generated-metadata consumer is `replaceTextRange`. Its operation
-identity comes from Wesley output, while the existing in-memory TypeScript
-runtime remains the transitional executor.
+There is no transitional in-memory executor and no generated-metadata-only
+consumer. The current `ReplaceRange` operation is registered and executed by
+Echo through the Wesley compatibility package. Its eventual replacement must
+be a real installed Edict operation, not another local executor.

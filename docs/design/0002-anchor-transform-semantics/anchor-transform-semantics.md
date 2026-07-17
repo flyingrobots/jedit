@@ -41,11 +41,11 @@ semantics, or editor UI integration.
 
 ### Human
 
-- [ ] Anchor transforms are defined in terms of logical ReplaceRange receipts
+- [ ] Anchor transforms are defined in terms of logical ReplaceRange deltas
   rather than rope maintenance.
 - [ ] This cycle pins down left-bias, right-bias, forward shift, and collapse
   semantics for point anchors.
-- [ ] This cycle limits scope to point anchors over ReplaceRange receipts.
+- [ ] This cycle limits scope to point anchors over ReplaceRange deltas.
 - [ ] This cycle makes accessibility, localization, and agent inspectability
   explicit.
 
@@ -63,7 +63,7 @@ semantics, or editor UI integration.
 ## Accessibility and Assistive Reading
 
 - Linear truth / reduced-complexity posture: the contract stays linear and
-  point-based. The cycle talks about byte positions, receipts, and bias without
+  point-based. The cycle talks about byte positions, deltas, and bias without
   requiring a visual editor demo.
 - Non-visual or alternate-reading expectations: playback must be inspectable
   through file reads and test output. No claimed behavior depends on cursor
@@ -72,7 +72,7 @@ semantics, or editor UI integration.
 ## Localization and Directionality
 
 - Locale / wording / formatting assumptions: the contract uses stable English
-  engineering nouns such as `anchor`, `bias`, `receipt`, and `replacement
+  engineering nouns such as `anchor`, `bias`, `delta`, and `replacement
   delta`, and avoids idiomatic prose.
 - Logical direction / layout assumptions: left/right in this cycle refers only
   to bias semantics at a logical point. Position transforms are phrased in byte

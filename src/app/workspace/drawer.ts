@@ -6,7 +6,6 @@ import { withFocusPane } from './focus.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 import type { GraftRefreshOptions } from './editor-session.js';
-import { WorkspaceHistoryDrawerViews } from './worldline-state.js';
 
 export type CreateDrawerAnimationCmd = (kind: DrawerKind, from: number, to: number) => Cmd<WorkspaceMsg>[];
 
@@ -18,10 +17,6 @@ export function openDrawer(
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   if (kind === DrawerKinds.Graft) {
     return openGraftDrawer(model, beginGraftRefresh, createDrawerAnimationCmd);
-  }
-
-  if (kind === DrawerKinds.History) {
-    return openHistoryDrawer(model, createDrawerAnimationCmd);
   }
 
   return openFileDrawer(model, createDrawerAnimationCmd);
@@ -42,20 +37,6 @@ function openGraftDrawer(
     next,
     [...drawerAnimation(DrawerKinds.Graft, model.graftDrawerProgress, 1, createDrawerAnimationCmd), ...cmds],
   ];
-}
-
-function openHistoryDrawer(
-  model: WorkspaceModel,
-  createDrawerAnimationCmd: CreateDrawerAnimationCmd,
-): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
-  const next = withFocusPane({
-    ...model,
-    historyDrawerOpen: true,
-    historyDrawerView: WorkspaceHistoryDrawerViews.Echo,
-  }, FocusPanes.History);
-  return model.historyDrawerOpen
-    ? [next, []]
-    : [next, drawerAnimation(DrawerKinds.History, model.historyDrawerProgress, 1, createDrawerAnimationCmd)];
 }
 
 function openFileDrawer(
@@ -87,12 +68,6 @@ export function toggleDrawer(
     return closeDrawer(model, kind, createDrawerAnimationCmd);
   }
 
-  if (kind === DrawerKinds.History && model.historyDrawerOpen) {
-    return model.historyDrawerView === WorkspaceHistoryDrawerViews.Echo
-      ? closeDrawer(model, kind, createDrawerAnimationCmd)
-      : [withFocusPane({ ...model, historyDrawerView: WorkspaceHistoryDrawerViews.Echo }, FocusPanes.History), []];
-  }
-
   return openDrawer(model, kind, beginGraftRefresh, createDrawerAnimationCmd);
 }
 
@@ -102,16 +77,12 @@ export function closeDrawer(
   createDrawerAnimationCmd: CreateDrawerAnimationCmd,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   const next = kind === DrawerKinds.Files
-    ? {
-      ...model,
-      fileDrawerOpen: false,
-    }
-    : closeRightDrawerModel(model, kind);
+    ? { ...model, fileDrawerOpen: false }
+    : { ...model, graftDrawerOpen: false };
 
   const focusState: Omit<FocusCycleState, 'focusPane'> = {
     fileDrawerOpen: kind === DrawerKinds.Files ? false : next.fileDrawerOpen,
     graftDrawerOpen: kind === DrawerKinds.Graft ? false : next.graftDrawerOpen,
-    historyDrawerOpen: kind === DrawerKinds.History ? false : next.historyDrawerOpen,
     hasEditor: next.editor != null,
   };
 
@@ -126,23 +97,8 @@ export function closeDrawer(
   ];
 }
 
-function closeRightDrawerModel(model: WorkspaceModel, kind: DrawerKind): WorkspaceModel {
-  return kind === DrawerKinds.Graft
-    ? {
-      ...model,
-      graftDrawerOpen: false,
-    }
-    : {
-      ...model,
-      historyDrawerOpen: false,
-    };
-}
-
 function drawerProgress(model: WorkspaceModel, kind: DrawerKind): number {
-  if (kind === DrawerKinds.Files) {
-    return model.fileDrawerProgress;
-  }
-  return kind === DrawerKinds.Graft ? model.graftDrawerProgress : model.historyDrawerProgress;
+  return kind === DrawerKinds.Files ? model.fileDrawerProgress : model.graftDrawerProgress;
 }
 
 function drawerAnimation(

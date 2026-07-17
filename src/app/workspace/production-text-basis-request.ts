@@ -1,4 +1,4 @@
-import type { TextWindowBasis } from '../../ports/text-buffer-session.js';
+import type { TextWindowBasis } from '../../ports/text-authority-evidence.js';
 
 export interface ProductionTextBasisRequest extends TextWindowBasis {
   readonly bufferId: string;

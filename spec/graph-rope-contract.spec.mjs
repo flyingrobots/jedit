@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { importDist } from './dist-helpers.mjs';
-import { createTestEchoCausalAnchorAdmissionPort } from './support/test-echo-causal-anchor-admission.mjs';
+import {
+  createCheckpointAnchorFactFixture,
+  createCheckpointFactFixture,
+  createGraphEditFactFixture,
+  createGraphRopeFactFixture,
+} from './support/graph-rope-fact-fixture.mjs';
 
 const UTF8_ENCODER = new TextEncoder();
 const FACT_VALIDATION_ERROR_HASH_MISMATCH = 'hash-mismatch';
@@ -11,14 +16,6 @@ const FACT_VALIDATION_ERROR_INVALID_REFERENCE = 'invalid-reference';
 
 async function loadContract() {
   return importDist('domain', 'graph-rope-contract.js');
-}
-
-async function loadModules() {
-  const [contract, runtime] = await Promise.all([
-    importDist('domain', 'graph-rope-contract.js'),
-    importDist('domain', 'graph-rope-runtime.js'),
-  ]);
-  return { contract, runtime };
 }
 
 function createHashPort() {
@@ -261,7 +258,7 @@ test('rope checkpoint validation admits a Jim declaration without Echo evidence'
     facts.checkpoint,
     createValidationContext(contract, facts.writeSet),
   ).ok, true);
-  assert.equal('createdByTickId' in facts.checkpoint, false);
+  assert.equal('createdByEchoReceiptId' in facts.checkpoint, false);
   assert.equal('causalAnchorId' in facts.checkpoint, false);
 });
 
@@ -400,7 +397,6 @@ test('graph rope validation rejects rewrites outside their basis head', async ()
   const forged = rekeyRewriteChain({
     basisHead: replaced.basisHead,
     diff: replaced.diff,
-    receipt: replaced.receipt,
     rewrite: replaced.rewrite,
     range: textByteRange(contract, 99, 100),
     hash: createHashPort(),
@@ -414,7 +410,6 @@ test('graph rope validation rejects rewrites outside their basis head', async ()
       replaced.nextHead,
       forged.diff,
       forged.rewrite,
-      forged.receipt,
     ]),
   ), {
     ok: false,
@@ -444,7 +439,7 @@ test('graph rope validation rejects forged branch and leaf metrics', async () =>
   });
 });
 
-test('graph rope validation rejects inconsistent rewrite diff and receipt links', async () => {
+test('graph rope validation rejects inconsistent rewrite, diff, and Echo evidence links', async () => {
   const facts = await graphEditFixture();
   const { contract, replaced } = facts;
 
@@ -463,7 +458,7 @@ test('graph rope validation rejects inconsistent rewrite diff and receipt links'
     code: FACT_VALIDATION_ERROR_INVALID_REFERENCE,
   });
   assert.deepEqual(contract.validateRopeFact(
-    { ...replaced.receipt, nextHeadId: replaced.basisHead.headId },
+    { ...replaced.rewrite, admittedByEchoReceiptId: 'test-only-echo-receipt:other' },
     createValidationContext(contract, facts.writeSet),
   ), {
     ok: false,
@@ -479,85 +474,30 @@ test('graph rope validation rejects inconsistent rewrite diff and receipt links'
 });
 
 async function graphCreateFixture(worldlineId, initialText) {
-  const { contract, runtime } = await loadModules();
-  const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
-  const created = assertOk(graph.createBufferWorldline({ worldlineId, initialText }));
-  const leaf = created.nodes.find((node) => node.kind === contract.ROPE_LEAF_FACT_KIND);
-
-  assert.notEqual(leaf, undefined);
-  return {
-    contract,
-    runtime,
-    graph,
-    ...created,
-    leaf,
-    writeSet: [created.blob, ...created.nodes, created.head, created.worldline],
-  };
+  return createGraphRopeFactFixture(worldlineId, initialText, createHashPort());
 }
 
 async function graphEditFixture() {
-  const facts = await graphCreateFixture('worldline:edit-consistency', 'alpha beta gamma');
-  const range = assertOk(facts.contract.makeTextByteRange(
-    assertOk(facts.contract.makeByteOffset(6)),
-    assertOk(facts.contract.makeByteOffset(10)),
+  const contract = await loadContract();
+  const range = assertOk(contract.makeTextByteRange(
+    assertOk(contract.makeByteOffset(6)),
+    assertOk(contract.makeByteOffset(10)),
   ));
-  const replaced = assertOk(facts.graph.replaceRangeAsTick({
-    basisHeadId: facts.head.headId,
+  return createGraphEditFactFixture(
+    'worldline:edit-consistency',
+    'alpha beta gamma',
     range,
-    replacementText: 'BETA',
-  }));
-  return {
-    ...facts,
-    replaced,
-    writeSet: [
-      ...facts.writeSet,
-      replaced.replacementBlob,
-      replaced.nextHead,
-      replaced.diff,
-      replaced.rewrite,
-      replaced.receipt,
-    ],
-  };
+    'BETA',
+    createHashPort(),
+  );
 }
 
 async function checkpointFixture(worldlineId) {
-  const facts = await graphCreateFixture(worldlineId, 'checkpoint text');
-  const checkpointed = assertOk(facts.graph.createCheckpoint({
-    worldlineId,
-    headId: facts.head.headId,
-    reason: 'manual-save',
-  }));
-  const baseFacts = facts.writeSet;
-  return {
-    ...facts,
-    checkpoint: checkpointed.checkpoint,
-    baseFacts,
-    writeSet: [...baseFacts, checkpointed.checkpoint],
-  };
+  return createCheckpointFactFixture(worldlineId, createHashPort());
 }
 
 async function checkpointAnchorFixture(worldlineId) {
-  const { contract, runtime } = await loadModules();
-  const graph = runtime.createGraphRopeRuntime({
-    hash: createHashPort(),
-    causalAnchorAdmission: createTestEchoCausalAnchorAdmissionPort(),
-  });
-  const created = assertOk(graph.createBufferWorldline({ worldlineId, initialText: 'checkpoint text' }));
-  const checkpointed = assertOk(graph.createCheckpoint({
-    worldlineId,
-    headId: created.head.headId,
-    reason: 'manual-save',
-  }));
-  const anchored = assertOk(graph.anchorCheckpoint({
-    checkpointId: checkpointed.checkpoint.checkpointId,
-  }));
-  const baseFacts = [created.blob, ...created.nodes, created.head, created.worldline];
-  return {
-    contract,
-    association: anchored.association,
-    checkpoint: checkpointed.checkpoint,
-    writeSet: [...baseFacts, checkpointed.checkpoint, anchored.association],
-  };
+  return createCheckpointAnchorFactFixture(worldlineId, createHashPort());
 }
 
 function rekeyRewriteChain(input) {
@@ -570,16 +510,13 @@ function rekeyRewriteChain(input) {
   ].join(':'));
   const rewriteId = `rope-rewrite:${contentHash}`;
   const diffId = `rope-diff:${contentHash}`;
-  const sequence = input.receipt.admittedAtSequence + 100;
-  const receiptHash = input.hash.sha256Hex(`${'receipt'}:${input.receipt.basisHeadId}:${input.receipt.nextHeadId}:${sequence}`);
-  const tickId = `tick:${input.hash.sha256Hex(`${input.receipt.worldlineId}:${receiptHash}`)}`;
   return {
     rewrite: {
       ...input.rewrite,
       rewriteId,
       diffId,
       range: input.range,
-      admittedByTickId: tickId,
+      admittedByEchoReceiptId: input.rewrite.admittedByEchoReceiptId,
       contentHash,
     },
     diff: {
@@ -587,14 +524,6 @@ function rekeyRewriteChain(input) {
       diffId,
       rewriteId,
       contentHash: input.hash.sha256Hex(`${'diff'}:${rewriteId}:${input.diff.basisHeadId}:${input.diff.nextHeadId}`),
-    },
-    receipt: {
-      ...input.receipt,
-      tickId,
-      admissionId: `rope-admission:${receiptHash}`,
-      rewriteId,
-      admittedAtSequence: sequence,
-      contentHash: receiptHash,
     },
   };
 }

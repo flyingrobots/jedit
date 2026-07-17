@@ -40,7 +40,6 @@ Common title-screen actions:
 | `:` | Open Normal-mode command line. |
 | `ctrl+b` | Open the files drawer. |
 | `ctrl+g` | Open the Graft drawer when available. |
-| `ctrl+h` | Open Echo history when available. |
 | `ctrl+t` | Cycle theme. |
 | `F2` | Open settings. |
 

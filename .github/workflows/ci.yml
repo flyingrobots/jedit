@@ -5,6 +5,7 @@ on:
     branches: [ main, enhancements ]
   pull_request:
     branches: [ main ]
+    types: [ opened, synchronize, reopened, labeled, unlabeled ]
   workflow_dispatch:
     inputs:
       full:
@@ -74,7 +75,13 @@ jobs:
           name: jedit-dist
           path: |
             dist
-            src/generated/jedit/structural-history-replace-text-range.wesley.generated.ts
+          if-no-files-found: error
+
+      - name: Upload native Echo host
+        uses: actions/upload-artifact@v4
+        with:
+          name: jedit-echo-host
+          path: native/jedit-echo-host/target/debug/jedit-echo-host
           if-no-files-found: error
 
   test-shards:
@@ -103,7 +110,18 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: jedit-dist
-          path: .
+          path: dist
+
+      - name: Download native Echo host
+        if: matrix.shard == 'echo-authority'
+        uses: actions/download-artifact@v4
+        with:
+          name: jedit-echo-host
+          path: native/jedit-echo-host/target/debug
+
+      - name: Restore native Echo host executable permission
+        if: matrix.shard == 'echo-authority'
+        run: chmod +x native/jedit-echo-host/target/debug/jedit-echo-host
 
       - name: Run shard
         env:

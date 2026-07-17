@@ -9,7 +9,6 @@ import {
   ROPE_REWRITE_FACT_KIND,
   ROPE_STRUCTURAL_MAINTENANCE_FACT_KIND,
   TEXT_BLOB_FACT_KIND,
-  TICK_RECEIPT_FACT_KIND,
   type RopeAdmittedFact,
 } from './graph-rope-types.js';
 
@@ -23,7 +22,6 @@ const ROPE_FACT_ID_READERS: ReadonlyMap<string, RopeFactIdReader> = new Map([
   [TEXT_BLOB_FACT_KIND, textBlobFactId],
   [ROPE_REWRITE_FACT_KIND, ropeRewriteFactId],
   [ROPE_DIFF_FACT_KIND, ropeDiffFactId],
-  [TICK_RECEIPT_FACT_KIND, tickReceiptFactId],
   [ROPE_STRUCTURAL_MAINTENANCE_FACT_KIND, structuralMaintenanceFactId],
   [ROPE_CHECKPOINT_FACT_KIND, ropeCheckpointFactId],
   [ROPE_CHECKPOINT_ANCHORED_FACT_KIND, ropeCheckpointAnchoredFactId],
@@ -62,10 +60,6 @@ function ropeRewriteFactId(fact: RopeAdmittedFact): string {
 
 function ropeDiffFactId(fact: RopeAdmittedFact): string {
   return fact.kind === ROPE_DIFF_FACT_KIND ? fact.diffId : '';
-}
-
-function tickReceiptFactId(fact: RopeAdmittedFact): string {
-  return fact.kind === TICK_RECEIPT_FACT_KIND ? fact.tickId : '';
 }
 
 function structuralMaintenanceFactId(fact: RopeAdmittedFact): string {

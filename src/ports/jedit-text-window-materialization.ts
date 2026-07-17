@@ -1,5 +1,5 @@
 import type { TextByteRange } from '../domain/graph-rope-types.js';
-import type { HotTextWindowProjection } from './hot-text-runtime.js';
+import type { HotTextWindowProjection } from './text-window-projection.js';
 
 export const JEDIT_TEXT_WINDOW_MATERIALIZATION_SCHEMA_VERSION = 1;
 export const JEDIT_TEXT_WINDOW_MATERIALIZER_VERSION = 'jedit.text-window.materializer.v1';

@@ -304,12 +304,11 @@ type WorldlineId = string & { readonly __brand: "WorldlineId" };
 type RopeHeadId = string & { readonly __brand: "RopeHeadId" };
 type RopeNodeId = string & { readonly __brand: "RopeNodeId" };
 type TextBlobId = string & { readonly __brand: "TextBlobId" };
-type TickId = string & { readonly __brand: "TickId" };
+type EchoReceiptId = string & { readonly __brand: "EchoReceiptId" };
 type RopeRewriteId = string & { readonly __brand: "RopeRewriteId" };
 type RopeDiffId = string & { readonly __brand: "RopeDiffId" };
 type RopeStructuralMaintenanceId =
   string & { readonly __brand: "RopeStructuralMaintenanceId" };
-type AdmissionId = string & { readonly __brand: "AdmissionId" };
 type Hash = string & { readonly __brand: "Hash" };
 
 interface TextByteRange {
@@ -321,7 +320,7 @@ interface BufferWorldlineFact {
   readonly kind: "jedit.text.BufferWorldline";
   readonly schemaVersion: 1;
   readonly worldlineId: WorldlineId;
-  readonly createdAtTick: TickId;
+  readonly createdByEchoReceiptId: EchoReceiptId;
   readonly initialHeadId: RopeHeadId;
 }
 
@@ -332,7 +331,7 @@ interface RopeHeadFact {
   readonly worldlineId: WorldlineId;
   readonly rootNodeId: RopeNodeId;
   readonly basisHeadId?: RopeHeadId;
-  readonly createdByTickId: TickId;
+  readonly createdByEchoReceiptId: EchoReceiptId;
   readonly byteLength: number;
   readonly lineCount: number;
   readonly contentHash: Hash;
@@ -391,7 +390,7 @@ interface RopeRewriteFact {
   readonly worldlineId: WorldlineId;
   readonly basisHeadId: RopeHeadId;
   readonly nextHeadId: RopeHeadId;
-  readonly admittedByTickId: TickId;
+  readonly admittedByEchoReceiptId: EchoReceiptId;
   readonly range: TextByteRange;
   readonly replacementBlobId: TextBlobId;
   readonly diffId: RopeDiffId;
@@ -428,19 +427,6 @@ interface RopeDiffFact {
   readonly basisHeadId: RopeHeadId;
   readonly nextHeadId: RopeHeadId;
   readonly spans: readonly RopeDiffSpan[];
-  readonly contentHash: Hash;
-}
-
-interface TickReceiptFact {
-  readonly kind: "jedit.text.TickReceipt";
-  readonly schemaVersion: 1;
-  readonly tickId: TickId;
-  readonly admissionId: AdmissionId;
-  readonly worldlineId: WorldlineId;
-  readonly basisHeadId: RopeHeadId;
-  readonly nextHeadId: RopeHeadId;
-  readonly rewriteId: RopeRewriteId;
-  readonly admittedAtSequence: number;
   readonly contentHash: Hash;
 }
 
@@ -503,7 +489,6 @@ type RopeAdmittedFact =
   | TextBlobFact
   | RopeRewriteFact
   | RopeDiffFact
-  | TickReceiptFact
   | RopeStructuralMaintenanceFact
   | RopeCheckpointFact
   | RopeCheckpointAnchoredFact;
@@ -857,6 +842,12 @@ interface RopeCheckpointAnchoredFact {
   readonly causalAnchorReceiptId: CausalAnchorReceiptId;
 }
 ```
+
+Echo receipts are kernel-owned evidence and remain opaque to jedit. Jedit facts
+may retain an Echo receipt identity to state which admitted operation created a
+head or rewrite, but jedit must not define an application-local receipt fact,
+derive Echo receipt or admission identities, or validate Echo-owned receipt
+internals. Echo validates that evidence at the installed-operation boundary.
 
 Save/export should read from a head or checkpoint. It should not mutate text
 authority unless the product explicitly records a checkpoint. Declaring a

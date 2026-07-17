@@ -8,7 +8,6 @@ import {
   observedDocumentWindow,
   openedHarness,
   waitForItemCount,
-  waitForPendingInsertCount,
 } from './workspace-echo-test-utils.mjs';
 
 test('echoTextDocument inserts at UTF-8 byte coordinates', () => {
@@ -19,7 +18,7 @@ test('echoTextDocument inserts at UTF-8 byte coordinates', () => {
   assert.deepEqual(document.lines(), ['aé-💥z']);
 });
 
-test('real workspace app path serializes rapid insert settlement and records each edit', async () => {
+test('real workspace app path refuses dependent inserts until Echo settles', async () => {
   const sentence = "this is an editor and i'm typing in it";
   const document = echoTextDocument('');
   const calls = {
@@ -32,11 +31,7 @@ test('real workspace app path serializes rapid insert settlement and records eac
       document.replace(request.initialText);
       return {
         kind: 'opened',
-        optic: {
-          buffer: {
-            bufferId: 'buffer:notes',
-          },
-        },
+        bufferId: 'buffer:notes',
       };
     },
     insertText: async (request) => {
@@ -81,28 +76,27 @@ test('real workspace app path serializes rapid insert settlement and records eac
   });
 
   await harness.key('i');
-  const commands = [];
-  for (const character of sentence) {
-    commands.push(...await harness.key(character));
+  const [firstCharacter, ...dependentCharacters] = sentence;
+  const commands = await harness.key(firstCharacter);
+  for (const character of dependentCharacters) {
+    assert.deepEqual(await harness.key(character), []);
   }
   const commandMessages = commands.map((command) => command());
   await waitForItemCount(calls.insert, 1, 'insert call');
 
-  assert.equal(calls.insert.length, 1, 'only one Echo mutation should be in flight before the first settles');
+  assert.equal(calls.insert.length, 1, 'only one Echo mutation may be proposed from the observed basis');
+  assert.deepEqual(harness.model.editor.lines, [''], 'dependent keystrokes must not materialize locally');
 
-  for (let index = 0; index < sentence.length; index += 1) {
-    await waitForPendingInsertCount(pendingInserts, index + 1);
-    pendingInserts[index].pending.resolve();
-    await applyWorkspaceMessage(harness, await commandMessages[index]);
-  }
+  pendingInserts[0].pending.resolve();
+  await applyWorkspaceMessage(harness, await commandMessages[0]);
 
-  assert.equal(harness.model.editor.lines[0], sentence);
-  assert.equal(harness.model.echoHistory.filter((entry) => entry.kind === 'edit').length, sentence.length);
-  assert.equal(harness.model.echoHistory.at(-1).summary, '/repo/notes.md');
+  assert.equal(harness.model.editor.lines[0], firstCharacter);
+  assert.equal(harness.model.textAuthority.lastReceiptId, 'receipt:1');
+  assert.equal('echoHistory' in harness.model, false);
 });
 
-test('real workspace app path waits for queued rapid inserts before saving', async () => {
-  const sentence = "this is an editor and i'm typing in it";
+test('real workspace app path refuses save until the edit has an Echo-observed basis', async () => {
+  const insertedText = 'x';
   const document = echoTextDocument('');
   const calls = {
     insert: [],
@@ -116,11 +110,7 @@ test('real workspace app path waits for queued rapid inserts before saving', asy
       document.replace(request.initialText);
       return {
         kind: 'opened',
-        optic: {
-          buffer: {
-            bufferId: 'buffer:notes',
-          },
-        },
+        bufferId: 'buffer:notes',
       };
     },
     insertText: async (request) => {
@@ -161,7 +151,7 @@ test('real workspace app path waits for queued rapid inserts before saving', asy
         kind: 'exported',
         text: document.lines().join('\n'),
         readingId: 'reading:export',
-        basisHeadId: `head:test:edit:${sentence.length}`,
+        basisHeadId: 'head:test:edit:1',
       };
     },
   };
@@ -171,40 +161,33 @@ test('real workspace app path waits for queued rapid inserts before saving', asy
   });
 
   await harness.key('i');
-  const editCommands = [];
-  for (const character of sentence) {
-    editCommands.push(...await harness.key(character));
-  }
+  const editCommands = await harness.key(insertedText);
   const editMessages = editCommands.map((command) => command());
   await waitForItemCount(calls.insert, 1, 'insert call');
-  assert.equal(calls.insert.length, 1, 'rapid typing should still admit only one Echo mutation at a time');
+  assert.equal(calls.insert.length, 1);
 
   const saveCommands = await harness.key('s', { ctrl: true });
-  assert.equal(saveCommands.length, 1);
-  const saveMessage = saveCommands[0]();
-  assert.equal(calls.export.length, 0, 'save must not export a partial Echo frontier while edits are queued');
+  assert.equal(saveCommands.length, 0);
+  assert.equal(calls.export.length, 0, 'save must not export a partial Echo frontier');
   assert.deepEqual(harness.savedFiles, []);
 
-  for (let index = 0; index < sentence.length; index += 1) {
-    await waitForPendingInsertCount(pendingInserts, index + 1);
-    pendingInserts[index].pending.resolve();
-    await applyWorkspaceMessage(harness, await editMessages[index]);
-  }
+  pendingInserts[0].pending.resolve();
+  await applyWorkspaceMessage(harness, await editMessages[0]);
 
-  const [exportedModel, checkpointCommands] = harness.runtime.update(await saveMessage, harness.model);
-  harness.setModel(exportedModel);
-  await harness.runAll(checkpointCommands);
+  const observedSaveCommands = await harness.key('s', { ctrl: true });
+  assert.equal(observedSaveCommands.length, 1);
+  await harness.runAll(observedSaveCommands);
 
-  assert.deepEqual(harness.savedFiles, [{ filePath: '/repo/notes.md', lines: [sentence] }]);
+  assert.deepEqual(harness.savedFiles, [{ filePath: '/repo/notes.md', lines: [insertedText] }]);
   assert.equal(calls.export.length, 1);
   assert.equal(calls.checkpoint.length, 1);
-  assert.equal(harness.model.editor.lines[0], sentence);
+  assert.equal(harness.model.editor.lines[0], insertedText);
   assert.equal(harness.model.textAuthority.lastExportReadingId, 'reading:export');
   assert.equal(harness.model.textAuthority.lastCheckpointId, 'checkpoint:save');
   assert.equal(harness.model.textAuthority.dirty, false);
 });
 
-test('real workspace app path cancels a queued save after an edit obstruction', async () => {
+test('real workspace app path never queues a save behind an edit obstruction', async () => {
   const pendingInsert = deferred();
   const calls = {
     insert: [],
@@ -214,11 +197,7 @@ test('real workspace app path cancels a queued save after an edit obstruction', 
   const productionTextSession = {
     openBuffer: async () => ({
       kind: 'opened',
-      optic: {
-        buffer: {
-          bufferId: 'buffer:notes',
-        },
-      },
+      bufferId: 'buffer:notes',
     }),
     insertText: async (request) => {
       calls.insert.push(request);
@@ -262,15 +241,12 @@ test('real workspace app path cancels a queued save after an edit obstruction', 
   assert.equal(calls.insert.length, 1);
 
   const saveCommands = await harness.key('s', { ctrl: true });
-  const saveMessage = saveCommands[0]();
+  assert.equal(saveCommands.length, 0);
   assert.equal(calls.export.length, 0);
 
   pendingInsert.resolve();
   await applyWorkspaceMessage(harness, await editMessage);
-  const [afterSave, afterSaveCommands] = harness.runtime.update(await saveMessage, harness.model);
-  harness.setModel(afterSave);
 
-  assert.equal(afterSaveCommands.length, 0);
   assert.equal(calls.export.length, 0);
   assert.equal(calls.checkpoint.length, 0);
   assert.deepEqual(harness.savedFiles, []);
@@ -278,7 +254,7 @@ test('real workspace app path cancels a queued save after an edit obstruction', 
   assert.equal(harness.model.textAuthority.dirty, false);
 });
 
-test('real workspace app path admits final queued edit before export obstruction', async () => {
+test('real workspace app path exports only after the edit settles', async () => {
   const pendingInsert = deferred();
   const document = echoTextDocument('');
   const calls = {
@@ -288,11 +264,7 @@ test('real workspace app path admits final queued edit before export obstruction
   const productionTextSession = {
     openBuffer: async () => ({
       kind: 'opened',
-      optic: {
-        buffer: {
-          bufferId: 'buffer:notes',
-        },
-      },
+      bufferId: 'buffer:notes',
     }),
     insertText: async (request) => {
       calls.insert.push(request);
@@ -332,12 +304,13 @@ test('real workspace app path admits final queued edit before export obstruction
   const editMessage = editCommands[0]();
   await waitForItemCount(calls.insert, 1, 'insert call');
   const saveCommands = await harness.key('s', { ctrl: true });
-  const saveMessage = saveCommands[0]();
+  assert.equal(saveCommands.length, 0);
 
   pendingInsert.resolve();
   await applyWorkspaceMessage(harness, await editMessage);
-  const [afterSave] = harness.runtime.update(await saveMessage, harness.model);
-  harness.setModel(afterSave);
+  const observedSaveCommands = await harness.key('s', { ctrl: true });
+  assert.equal(observedSaveCommands.length, 1);
+  await harness.runFirst(observedSaveCommands);
 
   assert.equal(calls.insert.length, 1);
   assert.equal(calls.export.length, 1);
@@ -345,5 +318,5 @@ test('real workspace app path admits final queued edit before export obstruction
   assert.equal(harness.model.textAuthority.pendingIntentStatus, 'admitted');
   assert.equal(harness.model.textAuthority.dirty, true);
   assert.equal(harness.model.textAuthority.lastObstruction, undefined);
-  assert.equal(harness.model.echoHistory.at(-1).status, 'obstructed');
+  assert.match(harness.model.notifications.items.at(-1).message, /export blocked/);
 });

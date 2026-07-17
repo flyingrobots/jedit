@@ -116,17 +116,7 @@ export function mockDeps(overrides = {}) {
       loadBuiltInTitleScene: async () => undefined,
     },
     productionTextSession: fakeProductionTextSession(),
-    textOperationSequencer: fakeTextOperationSequencer(),
-    wscWorkspaceStore: fakeWscWorkspaceStore(),
     ...overrides,
-  };
-}
-
-export function fakeTextOperationSequencer() {
-  return {
-    sequenceEdit: (_session, _target, operation) => operation(),
-    sequenceCheckpoint: (_session, _target, operation) => operation(),
-    sequenceExport: (_session, _target, operation) => operation(),
   };
 }
 
@@ -180,11 +170,9 @@ export function basisPinnedTestTextSession(delegate) {
     async openBuffer(request) {
       const outcome = await delegate.openBuffer(request);
       if (outcome.kind !== "opened") return outcome;
-      basis = outcome.textBasis ?? outcome.optic.openedTextBasis
-        ?? fakeTextBasis(request.initialText, "head:test:opened");
+      basis = outcome.textBasis ?? fakeTextBasis(request.initialText, "head:test:opened");
       return {
         ...outcome,
-        optic: { ...outcome.optic, openedTextBasis: basis },
         textBasis: basis,
       };
     },
@@ -366,22 +354,6 @@ export function fakeProductionTextObstruction() {
   };
 }
 
-export function fakeWscWorkspaceStore() {
-  return {
-    writeEnvelope: (envelope) => ({
-      status: "JEDIT_WSC_WORKSPACE_STORE_WRITTEN",
-      envelopeId: envelope.envelopeId,
-      byteLength: envelope.bytes.byteLength,
-      workspacePath: "/repo/.jedit/echo-wsc/envelopes",
-    }),
-    readEnvelope: () => ({ status: "JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED" }),
-    listEnvelopes: () => ({
-      status: "JEDIT_WSC_WORKSPACE_STORE_LISTED",
-      envelopeIds: [],
-    }),
-  };
-}
-
 export function mockKeyBindingContext(overrides = {}) {
   const { deps: depsOverride, ...contextOverrides } = overrides;
   return {
@@ -536,35 +508,6 @@ export function mockTitleScreenModel(titleScreen, overrides = {}) {
     fileDrawerProgress: 0,
     graftDrawerOpen: false,
     graftDrawerProgress: 0,
-    historyDrawerOpen: false,
-    historyDrawerProgress: 0,
-    echoHistory: [],
-    echoHistorySelectedIndex: 0,
-    historyDrawerView: "echo",
-    worldline: {
-      canonicalHeadTick: 0,
-      posture: {
-        kind: "canonical",
-        name: "main",
-        basisTick: 0,
-        headTick: 0,
-        admissionTarget: "main",
-      },
-      graph: [{
-        id: "worldline:main",
-        kind: "canonical",
-        name: "main",
-        basis: "main",
-        basisTick: 0,
-        headTick: 0,
-        ahead: 0,
-        behind: 0,
-        conflict: "clear",
-      }],
-      selectedGraphIndex: 0,
-      nextStrandOrdinal: 1,
-      nextBraidOrdinal: 1,
-    },
     lineNumberMode: "absolute",
     gutterDimmed: false,
     causalGutterBasis: { kind: "last-save" },
@@ -649,8 +592,6 @@ export function mockEditor(modeModule, overrides = {}) {
     dirty: false,
     readOnly: false,
     mode: modeModule.EditorModes.Normal,
-    undoStack: [],
-    redoStack: [],
     ...overrides,
   };
 }

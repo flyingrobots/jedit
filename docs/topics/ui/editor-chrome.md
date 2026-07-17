@@ -28,7 +28,8 @@ Expected behavior:
 - source text stays aligned when Unicode text is present;
 - syntax spans are ignored when stale or unavailable;
 - cursor position remains visible in Normal and Insert modes;
-- source editing continues even if a projection provider fails.
+- source painting continues when optional Graft highlighting fails; text edits
+  fail closed when the Echo operation corridor is unavailable.
 
 ## Gutter
 
@@ -55,8 +56,8 @@ surviving line at the same boundary:
 
 Applied and deleted markers are derived from retained graph-rope tick-receipt,
 rewrite, and diff facts. They do not consult Git status, the generic dirty flag,
-or a process-local changed-line set. The comparison basis can be the last save,
-import head, selected checkpoint, or selected tick. A same-text causal
+or a process-local changed-line set. The comparison basis can be the last save
+or import head. A same-text causal
 reversion can therefore remain marked when the retained touch history says the
 line changed.
 
@@ -66,7 +67,7 @@ longer match the rendered projection. After settlement and a basis-matched
 bounded reading, the transient marker disappears and receipt-backed markers
 become eligible. Jim also withholds transient posture when no planned command
 evidence identifies a line instead of guessing from the current cursor. Use
-`:why` or the Echo history drawer for detailed provenance; the gutter remains a
+`:why` for detailed provenance; the gutter remains a
 compact signal rather than a receipt dump.
 
 Every gutter cell uses a dedicated semantic theme token with an explicit
@@ -92,16 +93,15 @@ When settings or another non-source overlay owns focus, the footer should show
 that surface's focus state instead of leaking the editor cursor coordinate.
 
 On wide terminals, the lower-right status segment reports `intent:*`,
-`causal:*`, `file:*`, `git:*`, and `remote:*` independently before the worldline
-context. `causal:unsaved` means the admitted rope head differs from the last
+`causal:*`, `file:*`, `git:*`, and `remote:*` independently. `causal:unsaved`
+means the admitted rope head differs from the last
 successful host projection basis. It does not mean that Git is dirty. Git and
 remote posture remain `unknown` until an external observer supplies evidence.
 
 The complete status is omitted when it cannot fit beside the path. Jim never
 clips a durability claim mid-token. Narrow and xs profiles retain mode,
 `line:col`, hints, and path without pretending that omitted evidence has a
-different value. The worldline `+N/-N` segment is not a line-diff counter unless
-it is backed by causal rewrite/diff evidence.
+different value.
 
 ## Implementation Map
 
@@ -112,7 +112,7 @@ it is backed by causal rewrite/diff evidence.
 | [`src/ui/jedit-theme.ts`](../../../src/ui/jedit-theme.ts) | Semantic gutter token contract. |
 | [`src/ui/jedit-themes.ts`](../../../src/ui/jedit-themes.ts) | Built-in gutter palettes and contrast policy. |
 | [`src/app/workspace/workspace-source-projection.ts`](../../../src/app/workspace/workspace-source-projection.ts) | Basis-matched applied and transient execution readings. |
-| [`src/domain/graph-rope-causal-line-diff.ts`](../../../src/domain/graph-rope-causal-line-diff.ts) | Bounded line-diff evidence and opaque tick-receipt support. |
+| [`src/app/workspace/production-text-causal-line-diff.ts`](../../../src/app/workspace/production-text-causal-line-diff.ts) | Bounded causal-line observation request and result contract. |
 | [`src/ui/source-highlight.ts`](../../../src/ui/source-highlight.ts) | Highlight span painting. |
 | [`src/app/settings-session.ts`](../../../src/app/settings-session.ts) | Line-number setting rows and mode labels. |
 | [`src/app/workspace/editor-session.ts`](../../../src/app/workspace/editor-session.ts) | Editor projection and cursor session state. |

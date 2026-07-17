@@ -1,5 +1,10 @@
 # Stack Map
 
+> **Cutover note (2026-07-16):** References below to Wesley-generated Jim
+> operation metadata or local structural-history execution are historical. Jim
+> now loads a real Echo kernel and fails text operations closed. Edict-generated,
+> Echo-installed operations are the only accepted replacement.
+
 ## Doctrine
 
 Product pressure determines architecture truth.

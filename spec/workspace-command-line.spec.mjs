@@ -344,7 +344,7 @@ test("enter dispatches edit commands through production file open", async () => 
           openCalls.push(request);
           return {
             kind: "opened",
-            optic: { buffer: { bufferId: "buffer:readme" } },
+            bufferId: "buffer:readme",
           };
         },
         observeWindow: async () => ({
@@ -417,7 +417,7 @@ test("enter dispatches edit commands outside the cwd hierarchy", async () => {
           openCalls.push(request);
           return {
             kind: "opened",
-            optic: { buffer: { bufferId: "buffer:shared" } },
+            bufferId: "buffer:shared",
           };
         },
         observeWindow: async () => ({
@@ -482,7 +482,7 @@ test("enter dispatches edit for missing paths as unmaterialized buffers", async 
       openCalls.push(request);
       return {
         kind: "opened",
-        optic: { buffer: { bufferId: "buffer:foo" } },
+        bufferId: "buffer:foo",
       };
     },
     observeWindow: async () => ({
@@ -731,11 +731,13 @@ test("blocked production wq remains open with honest materialization status", as
   assert.equal(blockedModel.textAuthority.dirty, true);
   assert.equal(blockedModel.textAuthority.materialization, "unmaterialized");
   assert.equal(blockedModel.editor.dirty, true);
-  assert.match(footer, /causal:admitted \| file:unknown/);
-  assert.match(footer, /main \| fs:unmaterialized \| target:main \| \+\?\/-\?/);
+  assert.equal(
+    footer,
+    "intent:idle | causal:admitted | file:unknown | git:unknown | remote:unknown",
+  );
 });
 
-test("pending production intent queues wq save without arming quit confirmation", async () => {
+test("pending production intent refuses wq without local save sequencing", async () => {
   const [keyBindings, titleScreen, editorMode, authority] = await Promise.all([
     importDist("app", "workspace", "key-bindings.js"),
     importDist("ui", "title-screen.js"),
@@ -781,17 +783,11 @@ test("pending production intent queues wq save without arming quit confirmation"
     context,
   );
 
-  assert.equal(pendingSaveModel.textRequestId, 5);
+  assert.equal(pendingSaveModel.textRequestId, 4);
   assert.equal(pendingSaveModel.quitConfirmOpen, false);
   assert.equal(pendingSaveModel.quitAfterSaveRequestId, undefined);
-  assert.equal(commands.length, 1);
+  assert.equal(commands.length, 0);
   assert.equal(exportCalls.length, 0);
-  await commands[0]();
-  assert.deepEqual(exportCalls, [{
-    bufferId: "buffer:notes",
-    ...commandTextBasisRequest("stale"),
-    atMs: 90,
-  }]);
 });
 
 test("enter dispatches quit commands through the quit confirmation posture", async () => {
@@ -1771,7 +1767,7 @@ test("command provenance does not synthesize targets from stale registers", asyn
   assert.match(event.summary, /target unavailable/);
 });
 
-test("production normal edits keep Vim command provenance while queued", async () => {
+test("production normal edits keep Vim state and proposal provenance without mutating text", async () => {
   const [keyBindings, titleScreen, editorMode, authority] = await Promise.all([
     importDist("app", "workspace", "key-bindings.js"),
     importDist("ui", "title-screen.js"),
@@ -1808,11 +1804,12 @@ test("production normal edits keep Vim command provenance while queued", async (
   assert.deepEqual(queued.editor.lastVimEdit.keys, ["d", "w"]);
   assert.equal(queued.textAuthority.pendingCommandEvent.requestId, queued.textRequestId);
   assert.equal(queued.textAuthority.pendingCommandEvent.event.command, "dw");
+  assert.deepEqual(queued.textAuthority.pendingCommandEvent.event.keys, ["d", "w"]);
   assert.equal(queued.textAuthority.lastCommandEvent.requestId, queued.textRequestId);
   assert.match(queued.textAuthority.lastCommandEvent.summary, /dw delete motion 0\.\.6 receipt pending/);
-  assert.equal(queued.editor.register.source.operation, "delete");
-  assert.equal(queued.editor.register.source.rangeStart, 0);
-  assert.equal(queued.editor.register.source.rangeEnd, 6);
+  assert.equal(queued.editor.register.kind, "char");
+  assert.equal(queued.editor.register.text, "alpha ");
+  assert.deepEqual(queued.editor.lines, ["alpha beta"]);
   assert.equal(commands.length, 1);
 });
 

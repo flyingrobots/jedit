@@ -58,7 +58,6 @@ function inlinePanelPlacement(
     model.columns,
     model.fileDrawerProgress,
     model.graftDrawerProgress,
-    model.historyDrawerProgress,
   );
   const viewport = viewerViewport(layout.viewer.width, bodyHeight);
   const anchorViewportRow = panel.anchorRow - editor.scrollRow;

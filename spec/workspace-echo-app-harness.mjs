@@ -13,12 +13,11 @@ const DEFAULT_COLUMNS = 100;
 const DEFAULT_ROWS = 24;
 
 export async function createWorkspaceEchoAppHarness(options = {}) {
-  const [runtimeModule, fileSystem, focus, profile, sequencer, viewerContent, themes, viewer] = await Promise.all([
+  const [runtimeModule, fileSystem, focus, profile, viewerContent, themes, viewer] = await Promise.all([
     importDist('app', 'workspace', 'runtime.js'),
     importDist('ports', 'file-system.js'),
     importDist('ui', 'panel-focus.js'),
     importDist('app', 'text-runtime-profile.js'),
-    importDist('app', 'workspace', 'workspace-text-operation-sequencer.js'),
     importDist('app', 'workspace', 'viewer-content.js'),
     importDist('ui', 'jedit-themes.js'),
     importDist('app', 'workspace', 'viewer.js'),
@@ -62,7 +61,6 @@ export async function createWorkspaceEchoAppHarness(options = {}) {
       highlight: async () => ({ path: '', partial: false, spans: [] }),
     },
     productionTextSession,
-    textOperationSequencer: options.textOperationSequencer ?? sequencer.createWorkspaceTextOperationSequencer(),
     nowMs: () => options.nowMs ?? DEFAULT_NOW_MS,
   }));
   const [initialModel] = runtime.init();
@@ -148,12 +146,7 @@ function recordingProductionTextSession(calls, options) {
       const textBasis = textBasisFor('head:opened', currentReading(readings, 1));
       return options.openObstruction ?? {
         kind: 'opened',
-        optic: {
-          buffer: {
-            bufferId: options.bufferIdByKey?.get(request.bufferKey) ?? options.bufferId ?? 'buffer:notes',
-          },
-          openedTextBasis: textBasis,
-        },
+        bufferId: options.bufferIdByKey?.get(request.bufferKey) ?? options.bufferId ?? 'buffer:notes',
         textBasis,
       };
     },

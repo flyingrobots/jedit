@@ -4,7 +4,6 @@ import type { EditorFilePort } from '../../ports/editor-file.js';
 import type { FileSystemPort } from '../../ports/file-system.js';
 import type { GraftDiagnosticsPort } from '../../ports/graft-diagnostics.js';
 import type { GraftSessionPort } from '../../ports/graft-session.js';
-import type { JeditWscWorkspaceStorePort } from '../../ports/jedit-wsc-workspace-store.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import type { TitleSceneLoaderPort } from '../../ports/title-scene-loader.js';
 import type { WorkspaceInitialModelSnapshot } from './init.js';
@@ -12,7 +11,6 @@ import type { CreateStartupFileDrawerAnimationCmd } from './key-binding-context.
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 import type { ProductionTextSession } from './production-text-session.js';
-import type { WorkspaceTextOperationSequencer } from './workspace-text-operation-sequencer.js';
 import type { ProfilerTracePort } from '../raytracer-profiler.js';
 import type { renderWorkspace } from './viewer.js';
 
@@ -31,8 +29,6 @@ export interface WorkspaceRuntimeDependencies {
   readonly sourceHighlighter: SourceHighlighter;
   readonly titleSceneLoader: TitleSceneLoaderPort;
   readonly productionTextSession: ProductionTextSession;
-  readonly textOperationSequencer: WorkspaceTextOperationSequencer;
-  readonly wscWorkspaceStore: JeditWscWorkspaceStorePort;
   readonly profiler: ProfilerTracePort;
   readonly profileOnStartup: boolean;
   readonly createTimeTickCmd: () => Cmd<WorkspaceMsg>;

@@ -10,7 +10,7 @@ test('buffer durability keeps intent, causal, file, and Git evidence independent
     importDist('app', 'workspace', 'workspace-text-authority.js'),
     importDist('app', 'workspace', 'workspace-buffer-durability.js'),
     importDist('app', 'text-runtime-profile.js'),
-    importDist('app', 'workspace', 'worldline-types.js'),
+    importDist('app', 'workspace', 'workspace-materialization.js'),
   ]);
   const opened = authority.openedWorkspaceTextAuthority({
     profile: profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
@@ -18,7 +18,7 @@ test('buffer durability keeps intent, causal, file, and Git evidence independent
     bufferId: 'buffer:notes',
     readOnly: false,
     dirty: false,
-    materialization: worldline.WorkspaceWorldlineMaterializationKinds.Materialized,
+    materialization: worldline.WorkspaceMaterializationKinds.Materialized,
     hostBasis: authority.WorkspaceTextHostBasisKinds.File,
     hostFingerprint: fileFingerprint('opened'),
     cache: basisCache(HEAD_OPENED),

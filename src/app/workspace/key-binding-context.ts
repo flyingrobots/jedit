@@ -8,7 +8,6 @@ import type { TitleSceneLoaderPort } from '../../ports/title-scene-loader.js';
 import type { CreateDrawerAnimationCmd } from './drawer.js';
 import type { WorkspaceMsg } from './msg.js';
 import type { ProductionTextSession } from './production-text-session.js';
-import type { WorkspaceTextOperationSequencer } from './workspace-text-operation-sequencer.js';
 
 export type CreateStartupFileDrawerAnimationCmd = (
   from: number,
@@ -23,7 +22,6 @@ export interface UpdateFromKeyDeps {
   readonly graftSession: GraftSessionPort;
   readonly titleSceneLoader: TitleSceneLoaderPort;
   readonly productionTextSession: ProductionTextSession;
-  readonly textOperationSequencer: WorkspaceTextOperationSequencer;
 }
 
 export interface WorkspaceKeyBindingContext {

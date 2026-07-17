@@ -15,9 +15,9 @@ async function loadContract() {
 test('A left-biased point anchor stays before inserted text at its byte', async () => {
   const contract = await loadContract();
   const anchor = contract.createPointAnchor(5, contract.leftAnchorBias());
-  const receipt = contract.createAnchorTransformReceipt(5, 5, 6);
+  const delta = contract.createAnchorTransformDelta(5, 5, 6);
 
-  const result = contract.transformPointAnchor(anchor, receipt);
+  const result = contract.transformPointAnchor(anchor, delta);
 
   assert.equal(result.byte, 5);
   assert.equal(result.bias, contract.leftAnchorBias());
@@ -26,9 +26,9 @@ test('A left-biased point anchor stays before inserted text at its byte', async 
 test('A right-biased point anchor moves after inserted text at its byte', async () => {
   const contract = await loadContract();
   const anchor = contract.createPointAnchor(5, contract.rightAnchorBias());
-  const receipt = contract.createAnchorTransformReceipt(5, 5, 6);
+  const delta = contract.createAnchorTransformDelta(5, 5, 6);
 
-  const result = contract.transformPointAnchor(anchor, receipt);
+  const result = contract.transformPointAnchor(anchor, delta);
 
   assert.equal(result.byte, 11);
   assert.equal(result.bias, contract.rightAnchorBias());
@@ -37,9 +37,9 @@ test('A right-biased point anchor moves after inserted text at its byte', async 
 test('A point anchor after a replacement shifts by the replacement byte delta', async () => {
   const contract = await loadContract();
   const anchor = contract.createPointAnchor(10, contract.leftAnchorBias());
-  const receipt = contract.createAnchorTransformReceipt(4, 8, 6);
+  const delta = contract.createAnchorTransformDelta(4, 8, 6);
 
-  const result = contract.transformPointAnchor(anchor, receipt);
+  const result = contract.transformPointAnchor(anchor, delta);
 
   assert.equal(result.byte, 12);
 });
@@ -47,9 +47,9 @@ test('A point anchor after a replacement shifts by the replacement byte delta', 
 test('A point anchor inside a deleted span collapses to the replacement start', async () => {
   const contract = await loadContract();
   const anchor = contract.createPointAnchor(6, contract.leftAnchorBias());
-  const receipt = contract.createAnchorTransformReceipt(4, 8, 0);
+  const delta = contract.createAnchorTransformDelta(4, 8, 0);
 
-  const result = contract.transformPointAnchor(anchor, receipt);
+  const result = contract.transformPointAnchor(anchor, delta);
 
   assert.equal(result.byte, 4);
 });

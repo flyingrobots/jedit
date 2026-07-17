@@ -36,9 +36,6 @@ Common commands:
 | `:write` | Save the current buffer. |
 | `:quit` | Quit when it is safe. |
 | `:wq` | Write and quit. |
-| `:ttd` | Observe a causal tick without moving canonical head. |
-| `:strand` | Create, switch, or list copy-on-write strands. |
-| `:braid` | View, preview, or admit braid candidates. |
 | `:why` | Explain the last meaningful command. |
 | `:help` | Open help and command discovery. |
 
@@ -62,8 +59,9 @@ should show help close to the completion list. That help can be an inline
 description row, a suggestion-style box above the popup, or a preview area when
 space allows.
 
-The command line should not require users to guess how `:strand`, `:braid`, or
-`:ttd` are shaped.
+Former local `:strand`, `:braid`, and `:ttd` commands were deleted. They may
+return only after Echo exposes installed operations and bounded observations
+that can support their claims.
 
 ## Implementation Map
 

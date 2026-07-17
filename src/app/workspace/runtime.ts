@@ -1,4 +1,4 @@
-import { createInitialModel, recoverJeditWorkspaceFromWsc } from "./init.js";
+import { createInitialModel } from "./init.js";
 import type { WorkspaceModel } from "./model.js";
 import {
   applyNotificationState,
@@ -61,9 +61,6 @@ export const createWorkspaceRuntime = (
   const renderWorkspace = createWorkspaceRenderer();
   return {
     init: () => {
-      const wscStartupRecovery = recoverJeditWorkspaceFromWsc(
-        deps.wscWorkspaceStore,
-      );
       const model = {
         ...createInitialModel(
           deps.initialWorkingDirectory,
@@ -72,7 +69,6 @@ export const createWorkspaceRuntime = (
           {
             ...deps.initialModel,
             nowMs: deps.initialModel.nowMs ?? deps.nowMs(),
-            wscStartupRecovery,
           },
         ),
         profiler: createInitialProfilerState(),
@@ -428,7 +424,6 @@ function workspaceKeyDeps(deps: WorkspaceRuntimeDependencies) {
       graftDiagnostics: deps.graftDiagnostics,
       titleSceneLoader: deps.titleSceneLoader,
       productionTextSession: deps.productionTextSession,
-      textOperationSequencer: deps.textOperationSequencer,
     },
   };
 }

@@ -1,12 +1,11 @@
 import type { RuntimeIssue } from '@flyingrobots/bijou-tui';
 import type { EditorFileFingerprint } from '../../ports/editor-file.js';
-import type { JeditWscWorkspaceEnvelope } from '../../ports/jedit-wsc-workspace-store.js';
-import type { TextBufferCausalTransition } from '../../ports/text-buffer-session.js';
+import type { TextBufferCausalTransition } from '../../ports/text-authority-evidence.js';
 import type { TextPosition } from './workspace-text-position.js';
 import type { WorkspaceTextHostBasisKind } from './workspace-text-authority.js';
 import type { WorkspaceBufferCausalLineChanges } from './workspace-buffer-durability.js';
 import type { WorkspaceTextReadingCache } from './workspace-text-reading-cache.js';
-import type { WorkspaceWorldlineMaterializationKind } from './worldline-types.js';
+import type { WorkspaceMaterializationKind } from './workspace-materialization.js';
 
 const RESULT_OPENED = 'opened';
 const RESULT_APPLIED = 'applied';
@@ -29,7 +28,7 @@ export interface WorkspaceTextOpenedResult {
   readonly filePath: string;
   readonly bufferId: string;
   readonly readOnly: boolean;
-  readonly materialization: WorkspaceWorldlineMaterializationKind;
+  readonly materialization: WorkspaceMaterializationKind;
   readonly hostBasis: WorkspaceTextHostBasisKind;
   readonly hostFingerprint?: EditorFileFingerprint;
   readonly initialLines: readonly string[];
@@ -43,10 +42,8 @@ export interface WorkspaceTextAppliedResult {
   readonly receiptId: string;
   readonly causalTransition?: TextBufferCausalTransition;
   readonly lineChanges: WorkspaceBufferCausalLineChanges;
-  readonly reversedReceiptId?: string;
   readonly cache: WorkspaceTextReadingCache;
   readonly cursorAfter?: TextPosition;
-  readonly wscSettlementEnvelope?: JeditWscWorkspaceEnvelope;
 }
 
 export interface WorkspaceTextCheckpointedResult {

@@ -1,7 +1,7 @@
 import type { KeyMsg } from '@flyingrobots/bijou-tui';
 import { joinLines, normalizeLines } from '../editor-lines.js';
 import { EditorModes, type EditorMode } from './editor/mode.js';
-import { RegisterKinds, type EditorState, type HistoryEntry, type RegisterKind } from './editor/model.js';
+import { RegisterKinds, type EditorState, type RegisterKind } from './editor/model.js';
 import { EditorKeys, PastePlacements, type PastePlacement } from './editor/key.js';
 
 const NORMAL_MODE = EditorModes.Normal;
@@ -366,22 +366,9 @@ export function keyToText(msg: KeyMsg): string | undefined {
   return msg.key;
 }
 
-export function snapshotEditor(editor: EditorState): HistoryEntry {
-  return {
-    lines: [...editor.lines],
-    cursorRow: editor.cursorRow,
-    cursorCol: editor.cursorCol,
-    scrollRow: editor.scrollRow,
-    scrollCol: editor.scrollCol,
-    dirty: editor.dirty,
-  };
-}
-
 export function commitMutation(editor: EditorState, patch: Partial<EditorState>): EditorState {
   return {
     ...editor,
-    undoStack: [...editor.undoStack, snapshotEditor(editor)],
-    redoStack: [],
     ...patch,
     dirty: patch.dirty ?? true,
     pendingNormal: undefined,

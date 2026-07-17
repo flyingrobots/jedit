@@ -113,7 +113,7 @@ function drawerKindFromToggleKey(msg: KeyMsg): DrawerKind | undefined {
   if (isCtrlWorkspaceKey(msg, WorkspaceKeys.G)) {
     return DrawerKinds.Graft;
   }
-  return isCtrlWorkspaceKey(msg, WorkspaceKeys.H) ? DrawerKinds.History : undefined;
+  return undefined;
 }
 
 function isCtrlWorkspaceKey(msg: KeyMsg, key: string): boolean {
@@ -134,9 +134,7 @@ function updateEscapeKey(
   if (model.focusPane === FocusPanes.Graft && model.graftDrawerOpen) {
     return closeDrawer(model, DrawerKinds.Graft, context.createDrawerAnimationCmd);
   }
-  return model.focusPane === FocusPanes.History && model.historyDrawerOpen
-    ? closeDrawer(model, DrawerKinds.History, context.createDrawerAnimationCmd)
-    : undefined;
+  return undefined;
 }
 
 function toggleWorkspaceDrawer(

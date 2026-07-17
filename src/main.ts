@@ -8,5 +8,5 @@ if (startupCliAction != null) {
   writeSync(STDOUT_FILE_DESCRIPTOR, startupCliAction.text);
 } else {
   const { runJeditWorkspace } = await import('./main-workspace.js');
-  runJeditWorkspace();
+  await runJeditWorkspace();
 }

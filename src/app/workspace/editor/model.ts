@@ -47,15 +47,6 @@ export interface VimSearchState {
   readonly pattern: string;
   readonly searchId?: string;
 }
-export interface HistoryEntry {
-  readonly lines: readonly string[];
-  readonly cursorRow: number;
-  readonly cursorCol: number;
-  readonly scrollRow: number;
-  readonly scrollCol: number;
-  readonly dirty: boolean;
-  readonly transitionRequestId?: number;
-}
 export interface EditorState {
   readonly path: string;
   readonly lines: readonly string[];
@@ -73,6 +64,4 @@ export interface EditorState {
   readonly lastVimEdit?: VimRepeatState;
   readonly marks?: Readonly<Record<string, VimMarkState>>;
   readonly lastSearch?: VimSearchState;
-  readonly undoStack: readonly HistoryEntry[];
-  readonly redoStack: readonly HistoryEntry[];
 }

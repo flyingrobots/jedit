@@ -2,7 +2,7 @@ const ANCHOR_BIAS_LEFT = 1;
 const ANCHOR_BIAS_RIGHT = 2;
 const ZERO_BYTES = 0;
 const ANCHOR_TRANSFORM_ERROR_INVALID_ANCHOR = 1;
-const ANCHOR_TRANSFORM_ERROR_INVALID_RECEIPT = 2;
+const ANCHOR_TRANSFORM_ERROR_INVALID_DELTA = 2;
 
 export interface PointAnchor {
   readonly byte: number;
@@ -14,7 +14,7 @@ export interface AnchorTransformRange {
   readonly endByte: number;
 }
 
-export interface AnchorTransformReceipt {
+export interface AnchorTransformDelta {
   readonly replaced: AnchorTransformRange;
   readonly insertedByteLength: number;
 }
@@ -44,11 +44,11 @@ export function createPointAnchor(byte: number, bias: number): PointAnchor {
   };
 }
 
-export function createAnchorTransformReceipt(
+export function createAnchorTransformDelta(
   startByte: number,
   endByte: number,
   insertedByteLength: number,
-): AnchorTransformReceipt {
+): AnchorTransformDelta {
   return {
     replaced: {
       startByte,
@@ -60,28 +60,28 @@ export function createAnchorTransformReceipt(
 
 export function transformPointAnchor(
   anchor: PointAnchor,
-  receipt: AnchorTransformReceipt,
+  delta: AnchorTransformDelta,
 ): PointAnchor {
   validatePointAnchor(anchor);
-  validateReceipt(receipt);
+  validateDelta(delta);
 
-  if (anchor.byte < receipt.replaced.startByte) {
+  if (anchor.byte < delta.replaced.startByte) {
     return anchor;
   }
 
-  if (isInsertionAtAnchorByte(anchor, receipt)) {
+  if (isInsertionAtAnchorByte(anchor, delta)) {
     if (anchor.bias === ANCHOR_BIAS_LEFT) {
       return anchor;
     }
 
-    return createPointAnchor(anchor.byte + receipt.insertedByteLength, anchor.bias);
+    return createPointAnchor(anchor.byte + delta.insertedByteLength, anchor.bias);
   }
 
-  if (anchor.byte >= receipt.replaced.endByte) {
-    return createPointAnchor(anchor.byte + replacementByteDelta(receipt), anchor.bias);
+  if (anchor.byte >= delta.replaced.endByte) {
+    return createPointAnchor(anchor.byte + replacementByteDelta(delta), anchor.bias);
   }
 
-  return createPointAnchor(receipt.replaced.startByte, anchor.bias);
+  return createPointAnchor(delta.replaced.startByte, anchor.bias);
 }
 
 function validatePointAnchor(anchor: PointAnchor): void {
@@ -100,38 +100,38 @@ function validatePointAnchor(anchor: PointAnchor): void {
   }
 }
 
-function validateReceipt(receipt: AnchorTransformReceipt): void {
+function validateDelta(delta: AnchorTransformDelta): void {
   if (
-    !Number.isInteger(receipt.replaced.startByte)
-    || !Number.isInteger(receipt.replaced.endByte)
-    || !Number.isInteger(receipt.insertedByteLength)
+    !Number.isInteger(delta.replaced.startByte)
+    || !Number.isInteger(delta.replaced.endByte)
+    || !Number.isInteger(delta.insertedByteLength)
   ) {
     throw new AnchorTransformContractError(
-      ANCHOR_TRANSFORM_ERROR_INVALID_RECEIPT,
-      'Anchor transform receipts require integer byte counts.',
+      ANCHOR_TRANSFORM_ERROR_INVALID_DELTA,
+      'Anchor transform deltas require integer byte counts.',
     );
   }
 
   if (
-    receipt.replaced.startByte < ZERO_BYTES
-    || receipt.replaced.endByte < receipt.replaced.startByte
-    || receipt.insertedByteLength < ZERO_BYTES
+    delta.replaced.startByte < ZERO_BYTES
+    || delta.replaced.endByte < delta.replaced.startByte
+    || delta.insertedByteLength < ZERO_BYTES
   ) {
     throw new AnchorTransformContractError(
-      ANCHOR_TRANSFORM_ERROR_INVALID_RECEIPT,
-      'Anchor transform receipts require valid non-negative byte ranges.',
+      ANCHOR_TRANSFORM_ERROR_INVALID_DELTA,
+      'Anchor transform deltas require valid non-negative byte ranges.',
     );
   }
 }
 
-function isInsertionAtAnchorByte(anchor: PointAnchor, receipt: AnchorTransformReceipt): boolean {
-  return deletedByteLength(receipt) === ZERO_BYTES && anchor.byte === receipt.replaced.startByte;
+function isInsertionAtAnchorByte(anchor: PointAnchor, delta: AnchorTransformDelta): boolean {
+  return deletedByteLength(delta) === ZERO_BYTES && anchor.byte === delta.replaced.startByte;
 }
 
-function deletedByteLength(receipt: AnchorTransformReceipt): number {
-  return receipt.replaced.endByte - receipt.replaced.startByte;
+function deletedByteLength(delta: AnchorTransformDelta): number {
+  return delta.replaced.endByte - delta.replaced.startByte;
 }
 
-function replacementByteDelta(receipt: AnchorTransformReceipt): number {
-  return receipt.insertedByteLength - deletedByteLength(receipt);
+function replacementByteDelta(delta: AnchorTransformDelta): number {
+  return delta.insertedByteLength - deletedByteLength(delta);
 }

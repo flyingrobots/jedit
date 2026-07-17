@@ -1,7 +1,7 @@
 import type {
   CausalLineDiffReading,
   CausalLineMarkerReading,
-} from '../../ports/text-buffer-session.js';
+} from '../../ports/text-authority-evidence.js';
 
 const LINE_CHANGES_AVAILABLE = 'available';
 const LINE_CHANGES_UNAVAILABLE = 'unavailable';

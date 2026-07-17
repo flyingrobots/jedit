@@ -28,7 +28,6 @@ import {
   saveWorkspace,
 } from "./workspace-save-key.js";
 import { WorkspaceTextAuthorityKinds } from "./workspace-text-authority.js";
-import { dispatchWorldlineCommand } from "./worldline-command-dispatch.js";
 import {
   createWorkspaceWhyRangeCmd,
   jeditWhyReportTone,
@@ -50,6 +49,9 @@ const NO_WHITESPACE_INDEX = -1;
 const DIRECTORY_LABEL_SUFFIX = "/";
 const PARENT_DIRECTORY_LABEL = "../";
 const WHY_REPORT_OBSTRUCTION_KIND = "obstruction";
+const CAUSAL_COMMAND_UNAVAILABLE_TITLE = "Echo operation unavailable";
+const CAUSAL_COMMAND_UNAVAILABLE_MESSAGE =
+  "This command requires an installed generated Edict operation and a basis-pinned Echo observation.";
 
 export function dispatchWorkspaceCommandLine(
   model: WorkspaceModel,
@@ -62,9 +64,8 @@ export function dispatchWorkspaceCommandLine(
   if (isEditCommand(command.name)) {
     return dispatchEditCommand(model, command.argument, context);
   }
-  const worldlineCommand = dispatchWorldlineCommand(model, command);
-  if (worldlineCommand != null) {
-    return worldlineCommand;
+  if (isCausalCommand(command.name)) {
+    return dispatchCausalCommandUnavailable(model, context);
   }
   if (isHelpCommand(command.name)) {
     return dispatchHelpCommand(model, command.argument, context);
@@ -73,6 +74,30 @@ export function dispatchWorkspaceCommandLine(
     return [invalidateWorkspaceCommandLine(model), []];
   }
   return dispatchNoArgumentCommand(model, command, context);
+}
+
+function dispatchCausalCommandUnavailable(
+  model: WorkspaceModel,
+  context: WorkspaceKeyBindingContext,
+): KeyBindingResult {
+  return pushNotificationToast(
+    closeWorkspaceCommandLine(model),
+    {
+      title: CAUSAL_COMMAND_UNAVAILABLE_TITLE,
+      message: CAUSAL_COMMAND_UNAVAILABLE_MESSAGE,
+      variant: NotificationVariants.Toast,
+      tone: NotificationTones.Warning,
+      placement: NotificationPlacements.LowerRight,
+    },
+    context.nowMs(),
+    context.createNotificationTickCmd,
+  );
+}
+
+function isCausalCommand(name: string): boolean {
+  return name === WorkspaceCommandNames.TimeTravelDebugger
+    || name === WorkspaceCommandNames.Strand
+    || name === WorkspaceCommandNames.Braid;
 }
 
 function dispatchHelpCommand(

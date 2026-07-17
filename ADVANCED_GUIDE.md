@@ -27,7 +27,7 @@ small CLI dispatcher; the workspace boots from `src/main-workspace.ts` through
 - editor mode
 - pending normal-mode chord state
 - register state
-- undo and redo snapshots
+- command and cursor projection state
 
 In production, Echo/session authority owns causal text. `editor.lines` is the
 full local visible projection cache used for rendering, cursoring, and
@@ -41,12 +41,10 @@ projection cache, not canonical causal truth.
 
 ## Loading A Buffer
 
-Opening a file eventually calls `loadEditor(filePath)` in
-`src/app/workspace/editor-session.ts`.
-
-That function delegates file IO to `loadEditorFile(filePath)` in
-`src/adapters/editor-file.ts`. The adapter is the boundary where bytes become
-editor text:
+Opening a file reads host bytes through `loadEditorFile(filePath)` in
+`src/adapters/editor-file.ts`, then proposes those bytes to the injected
+production text session. The adapter is the boundary where host bytes become
+import input:
 
 - It reads bytes from disk.
 - If the file contains a null byte, jedit treats it as binary.
@@ -55,57 +53,57 @@ editor text:
 - Line endings are normalized by `normalizeLines(...)` in
   `src/app/editor-lines.ts`.
 
-The loaded result becomes an `EditorState` with the cursor and scroll position
-at the top of the file.
+Host bytes do not become authoritative editor text directly. The workspace
+requires an Echo-returned, basis-pinned observation before it installs visible
+text in `EditorState`. The current production session creates or reopens the
+buffer through the trusted native Echo host, then requests a bounded text-window
+observation from the admitted head.
 
 ## Mutating A Buffer
 
-Insert mode, normal mode, paste, delete, change, undo, and redo all operate on
-`EditorState`.
+The workspace retains `EditorState` as a visible projection, but user text
+mutations must not treat it as authority.
 
-Most edits go through `commitMutation(...)` in
-`src/app/workspace/editor-editing-core.ts`. That creates an
-undo snapshot of the previous editor state, clears the redo stack, applies the
-patch, and marks the buffer dirty unless the patch says otherwise.
+The Vim planner still uses pure editing functions in
+`src/app/workspace/editor-editing-core.ts` to derive a proposed range, command
+shape, and expected cursor effect. Production code does not install the
+resulting text as authority or visible state. The proposal must travel through
+an installed Echo operation and return as a basis-pinned observation first.
 
 After motions and edits, `ensureEditorVisible(...)` keeps the cursor inside the
 visible viewport. It normalizes the cursor row and column, then adjusts
 `scrollRow` and `scrollCol` so rendering can draw the correct window over the
 buffer.
 
-The important point is that mutations change the plain visible projection.
-They do not write ANSI escapes, style tokens, syntax classes, or preview state
-into the buffer, and production mutation authority still runs through the
-Echo-backed text session.
+The important point is that the visible projection may update only from an
+admitted text-session outcome. It does not write ANSI escapes, style tokens,
+syntax classes, or preview state into causal text authority. Single-range
+insert, replace, and delete use the installed Wesley compatibility operation;
+unsupported mutation families fail closed.
 
-## Structural History Metadata Path
+## Structural History Operation Path
 
-The visible TUI editor still mutates `EditorState.lines`, but the repo now has
-a separate structural-history authority path for the hot-buffer/session seam.
-That path is intentionally narrow and does not replace runtime storage.
+The old TypeScript hot-buffer runtime, full-snapshot adapter, Node-host Wesley
+schemas, and generated metadata descriptors were deleted. They were not Echo
+authority.
 
 The current flow is:
 
 ```text
-contracts/jedit/structural-history.graphql
-  -> npm run gen:contract:structural-history:wesley
-  -> .wesley-cache/structural-history.wesley.generated.ts
-  -> ignored replaceTextRange descriptor under src/generated/jedit
-  -> src/app/structural-history-replace-text-range.ts
-  -> src/app/hot-buffer-session.ts
-  -> src/ports/hot-text-runtime.ts
-  -> src/adapters/full-snapshot-hot-text-runtime-fixture.ts
+Jim command
+  -> typed JSONL process port
+  -> trusted native Echo host
+  -> GraphQL contract + Wesley-generated Rust contract-host bindings
+  -> registered Echo package
+  -> Echo WAL admission and scheduler-owned tick
+  -> witnessed Jim rope facts and Echo receipt
+  -> basis-pinned bounded observation
 ```
 
-The generated descriptor supplies the `replaceTextRange` operation identity.
-The existing TypeScript runtime still admits the edit, creates the tick, updates
-open edit groups, and materializes text. This keeps the slice small: schema and
-generated metadata become authority for one operation boundary while storage,
-Echo admission, and generated domain model replacement remain out of scope.
-
-`npm run build` and `npm test` run this generation step before TypeScript
-compilation so a clean checkout can compile without a checked-in generated
-descriptor. The descriptor path is ignored because it is build output.
+This corridor currently covers create/open, single-range replacement, and
+bounded text-window reads. Jim's Rust operation law is transitional; Edict will
+replace it with generated installed operations. No TypeScript codec, local
+runtime, metadata-only descriptor, or fixture may stand in for Echo execution.
 
 ## The Frame Loop
 
@@ -126,10 +124,9 @@ composes the frame:
 2. Main viewer.
 3. File drawer if open.
 4. Graft drawer if open.
-5. Echo History drawer if open.
-6. Active pane edge marker.
-7. Two-line footer if enabled.
-8. Notification overlay.
+5. Active pane edge marker.
+6. Two-line footer if enabled.
+7. Notification overlay.
 
 Each child renderer returns its own `Surface`. The root workspace blits those
 child surfaces into the correct positions.
@@ -142,7 +139,7 @@ surfaces. Bijou handles terminal output after the final composed surface exists.
 The render path separates terminal layout from buffer projection.
 
 `renderWorkspace(...)` asks `resolveWorkspaceLayout(...)` for the current file
-drawer, viewer, Graft drawer, and Echo History drawer rectangles. It then
+drawer, viewer, and Graft drawer rectangles. It then
 computes the viewer body height from the terminal rows and footer visibility.
 
 `viewerViewport(width, height)` subtracts the viewer padding from that layout
@@ -302,13 +299,12 @@ over the row.
 
 ## Drawers And Footer
 
-The file drawer, Graft drawer, Echo History drawer, and footer are not buffers.
+The file drawer, Graft drawer, and footer are not buffers.
 
 They are independent projections over workspace state:
 
 - The file drawer projects directory entries.
 - The Graft drawer projects current-file Graft info.
-- The Echo History drawer projects visible Echo evidence entries.
 - The footer projects focus, mode, pending chord, active file, and selection
   context.
 
@@ -332,7 +328,6 @@ routes the scroll to the focused surface:
 
 - file drawer selection
 - Graft drawer selection
-- Echo History drawer selection
 - source editor viewport
 - Markdown preview viewport
 
@@ -394,21 +389,19 @@ and projections can become smarter, but the render loop should remain a clear
 conversion from a full visible projection to bounded projections to themed
 cells.
 
-The structural-history replace/tick witness path is separate from the render
-loop:
+The future text-operation path is separate from the render loop:
 
 ```text
-ReplaceTextRangeInput shape in GraphQL SDL
-  -> generated replaceTextRange operation metadata
-  -> executeReplaceTextRange
-  -> admitReplaceRangeTick
-  -> optional includeTickInOpenGroup
-  -> ApplyBufferEditResult with operationName, nextState, and optional tickId
+Jim edit proposal
+  -> generated Edict ReplaceRange client
+  -> Echo admission and scheduler-owned execution
+  -> Echo receipt plus Jim rope facts
+  -> bounded text observation at the returned basis
 ```
 
-This path is about operation identity and causal admission. It should not leak
-theme state, syntax classes, terminal surfaces, or filesystem projection
-details into the structural-history contract.
+This path does not exist yet. Until it does, edits are obstructed. When it
+arrives, it must not leak theme state, syntax classes, terminal surfaces, or
+filesystem projection details into the installed operation.
 
 ## Appendix: Theme Token Glossary
 

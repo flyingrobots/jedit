@@ -220,22 +220,13 @@ test('workspace causal marker basis refreshes a bounded projection without mutat
       translations: {
         'settings.rows.causal_gutter_basis.label': 'Causal markers',
         'settings.values.causal_gutter_import': 'Import',
-        'settings.values.causal_gutter_selected_checkpoint': 'Selected checkpoint',
+        'settings.values.causal_gutter_last_save': 'Last save',
         'settings.toast.changed_title': 'Settings changed',
       },
     }),
     settingsOpen: true,
     causalGutterBasis: { kind: 'import' },
     textAuthority: openedAuthority,
-    echoHistory: [{
-      sequence: 1,
-      kind: 'checkpoint',
-      status: 'checkpointed',
-      evidenceId: 'checkpoint:selected',
-      causalHeadId: 'head:checkpoint',
-      summary: '/repo/notes.md',
-    }],
-    echoHistorySelectedIndex: 0,
   };
   const basisIndex = settingsModule.settingsRows(model)
     .findIndex((row) => row.id === 'causal-gutter-basis');
@@ -245,16 +236,11 @@ test('workspace causal marker basis refreshes a bounded projection without mutat
     { ...model, settingsFocusIndex: basisIndex },
   );
 
-  assert.deepEqual(changed.causalGutterBasis, {
-    kind: 'selected-checkpoint',
-    availability: 'available',
-    evidenceId: 'checkpoint:selected',
-    headId: 'head:checkpoint',
-  });
+  assert.deepEqual(changed.causalGutterBasis, { kind: 'last-save' });
   assert.deepEqual(changed.textAuthority.durability.causal, currentDurability.causal);
   assert.equal(changed.textAuthority.durability.lineChanges.reason, 'observation-pending');
   assert.equal(
-    hasNotification(changed, 'Settings changed', 'Causal markers: Import -> Selected checkpoint'),
+    hasNotification(changed, 'Settings changed', 'Causal markers: Import -> Last save'),
     true,
   );
   assert.equal(commands.length, 2, 'basis refresh and toast expiry should be scheduled');
@@ -262,16 +248,12 @@ test('workspace causal marker basis refreshes a bounded projection without mutat
   const refreshMessage = await commands[0]();
   assert.equal(mutationCalls.length, 0);
   assert.equal(lineDiffRequests.length, 1);
-  assert.equal(lineDiffRequests[0].basisHeadId, 'head:checkpoint');
+  assert.equal(lineDiffRequests[0].basisHeadId, 'head:import');
   assert.equal(lineDiffRequests[0].nextHeadId, 'head:current');
-
-  const staleSelection = { ...changed, causalGutterBasis: { kind: 'last-save' } };
-  const [ignored] = runtime.update(refreshMessage, staleSelection);
-  assert.equal(ignored.textAuthority.durability.lineChanges, staleSelection.textAuthority.durability.lineChanges);
 
   const [refreshed] = runtime.update(refreshMessage, changed);
   assert.equal(refreshed.textAuthority.durability.lineChanges.kind, 'available');
-  assert.equal(refreshed.textAuthority.durability.lineChanges.basisHeadId, 'head:checkpoint');
+  assert.equal(refreshed.textAuthority.durability.lineChanges.basisHeadId, 'head:import');
   assert.equal(refreshed.textAuthority.durability.lineChanges.nextHeadId, 'head:current');
   assert.deepEqual(refreshed.textAuthority.durability.causal, currentDurability.causal);
 
@@ -290,7 +272,7 @@ test('workspace causal marker basis refreshes a bounded projection without mutat
     productionTextSession,
   );
   assert.equal(pendingNext.textAuthority.durability.lineChanges.reason, 'observation-pending');
-  assert.equal(pendingNext.textAuthority.durability.lineChanges.basisHeadId, 'head:checkpoint');
+  assert.equal(pendingNext.textAuthority.durability.lineChanges.basisHeadId, 'head:import');
   assert.equal(pendingNext.textAuthority.durability.lineChanges.nextHeadId, 'head:next');
   assert.equal(nextCommands.length, 1);
 });
@@ -306,7 +288,6 @@ test('workspace settings reclamps editor visibility when line-number width chang
     rows: 16,
     fileDrawerProgress: 0,
     graftDrawerProgress: 0,
-    historyDrawerProgress: 0,
     footerVisible: true,
     lineNumberMode: 'absolute',
     editor: {
@@ -319,8 +300,6 @@ test('workspace settings reclamps editor visibility when line-number width chang
       mode: editorMode.EditorModes.Normal,
       dirty: false,
       readOnly: false,
-      undoStack: [],
-      redoStack: [],
       pendingNormal: undefined,
       pendingVimKeys: [],
       register: '',
@@ -445,11 +424,11 @@ test('workspace exposes runtime tokens for drawer, focus, file entry, and key di
 
   assert.equal(drawerLayout.DrawerKinds.Files, 'files');
   assert.equal(drawerLayout.DrawerKinds.Graft, 'graft');
-  assert.equal(drawerLayout.DrawerKinds.History, 'history');
+  assert.equal('History' in drawerLayout.DrawerKinds, false);
   assert.equal(panelFocus.FocusPanes.Editor, 'editor');
   assert.equal(panelFocus.FocusPanes.Files, 'files');
   assert.equal(panelFocus.FocusPanes.Graft, 'graft');
-  assert.equal(panelFocus.FocusPanes.History, 'history');
+  assert.equal('History' in panelFocus.FocusPanes, false);
   assert.equal(fileSystem.FileEntryKinds.Directory, 'dir');
   assert.equal(fileSystem.FileEntryKinds.Parent, 'parent');
   assert.equal(workspaceKey.WorkspaceKeys.Backtick, '`');

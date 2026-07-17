@@ -7,6 +7,7 @@ import test from "node:test";
 import { stringToSurface } from "@flyingrobots/bijou";
 import {
   importDist,
+  fakeProductionTextSession,
   mockI18n,
   mockJeditTheme,
   mockRuntime,
@@ -53,29 +54,34 @@ test("workspace app animation commands emit centralized message types", async ()
   assert.doesNotMatch(source, /type: 'drawer-progress'/);
 });
 
-test("workspace app source does not expose production text dependency bypass", async () => {
+test("workspace app requires production text dependencies from the startup boundary", async () => {
   const source = readFileSync(
     path.join(REPO_ROOT, "src", "adapters", "workspace-app.ts"),
     "utf8",
   );
 
-  assert.doesNotMatch(source, /\bproductionTextDependencies\b/);
-  assert.doesNotMatch(source, /\bWorkspaceProductionTextDependencies\b/);
+  assert.match(source, /\bWorkspaceProductionTextDependencies\b/);
+  assert.doesNotMatch(source, /\bcreateWorkspaceProductionTextDependencies\b/);
 });
 
-test("workspace app construction installs graph rope authority by default", async () => {
+test("workspace app construction accepts only explicitly supplied text dependencies", async () => {
   const workspaceApp = await importDist("adapters", "workspace-app.js");
 
   assert.doesNotThrow(
     () =>
-      workspaceApp.createWorkspaceApp({
-        initialColumns: 120,
-        initialRows: 24,
-        initialWorkingDirectory: REPO_ROOT,
-        perfEnabled: false,
-        nowMs: () => 0,
-        random: () => 0.5,
-      }),
+      workspaceApp.createWorkspaceApp(
+        {
+          initialColumns: 120,
+          initialRows: 24,
+          initialWorkingDirectory: REPO_ROOT,
+          perfEnabled: false,
+          nowMs: () => 0,
+          random: () => 0.5,
+        },
+        {
+          productionTextSession: fakeProductionTextSession(),
+        },
+      ),
   );
 });
 
@@ -560,7 +566,6 @@ function mockPerfTitleModel(titleScreen = titleScreenFallback()) {
     footerVisible: true,
     fileDrawerProgress: 0,
     graftDrawerProgress: 0,
-    historyDrawerProgress: 0,
     perfVisible: true,
     frameTimeMs: 20,
     frameTimeHistory: [16, 20],

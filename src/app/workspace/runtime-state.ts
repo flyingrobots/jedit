@@ -18,8 +18,6 @@ export function applyDrawerProgress(model: WorkspaceModel, kind: DrawerKind, val
       return { ...model, fileDrawerProgress: clamp01(value) };
     case DrawerKinds.Graft:
       return { ...model, graftDrawerProgress: clamp01(value) };
-    case DrawerKinds.History:
-      return { ...model, historyDrawerProgress: clamp01(value) };
   }
   return unreachableDrawerKind(kind);
 }

@@ -19,7 +19,7 @@ Jim says: files are a useful fiction, but they are not the base reality.
 
 The point is not to force users to think about runtime substrate lore every time they type `dw`. The point is the opposite. The hands should stay calm. The semantics should stay familiar. The weirdness should be concentrated below the product boundary, where it can do actual work: preserving provenance, making history inspectable, keeping observations bounded, and making destructive edits less magical.
 
-Many features already exist or are in the process of being dragged into honesty: Echo-hosted text sessions, structural history, command provenance through `:why`, an interactive history drawer, Graft-backed syntax highlighting and outlines, witness scripts, and a growing Jim/Vim command surface. Vim compatibility is preserved where it matters. If Vim is already in your fingers, Jim should feel less like a betrayal and more like a suspiciously well-behaved fork from a better timeline.
+Many features already exist or are in the process of being dragged into honesty: graph-rope domain law, command provenance through `:why`, Graft-backed syntax highlighting and outlines, witness scripts, and a growing Jim/Vim command surface. The former local history drawer and Echo-shaped TypeScript runtime were deleted because they could not support their causal claims. Vim compatibility is preserved where it matters. If Vim is already in your fingers, Jim should feel less like a betrayal and more like a suspiciously well-behaved fork from a better timeline.
 
 ### Is this just Vim + Git?
 
@@ -35,7 +35,7 @@ Probably not yet, unless you enjoy living near the active edge of a weird — bu
 
 That said, I have started dogfooding it and pushing it toward daily-driver territory. Jim is especially useful for editing programs and other plain text where trust, auditability, and recoverability matter. All core commands use ordinary keyboard characters. The editing surface is meant to stay quiet, direct, and fast. The editor should not scream just because the runtime underneath it knows more than most editors dare to remember.
 
-Jim aims to remain lightweight at the surface even as the machinery beneath it becomes causally explicit. The production path is Echo-hosted: application code submits edit intent and observes bounded readings, while trusted host code owns runtime lifecycle and scheduler control. (Today that host is an in-process TypeScript implementation of the Echo contract; the Rust/WASM Echo engine is exercised through the opt-in witness path until it ships in-tree.) That split is not decorative. Jim should know editor truths, not substrate coordinates.
+Jim aims to remain lightweight at the surface even as the machinery beneath it becomes causally explicit. The production text path is now Echo-hosted: a trusted native process registers a Wesley-generated compatibility package, submits generated EINT envelopes through Echo's WAL-backed app capability, and consumes scheduler receipts plus bounded readings. Echo owns admission, runtime lifecycle, scheduling, graph state, receipts, and recovery. Jim currently supports only create/open, single-range editing, and bounded text reads through that path; unsupported operations fail closed. Edict will replace the narrow compatibility package when its native invocation corridor is ready. That split is not decorative. Jim should know editor truths, not substrate coordinates.
 
 Jim grows out of the `jedit` repository. The product arc is Jim. The repository, packages, contracts, release gates, and internal APIs remain `jedit` until the Echo-backed proof and compatibility plan make a public rename safe. The rename should be earned the same way the rest of the editor is earned: through real product pressure, not theater.
 
@@ -45,7 +45,9 @@ Maybe one day Jim will arrive through ordinary package channels, all civilized a
 
 For now, build it from source. Run the development scripts. Read the witnesses. Treat the repository as what it presently is: an editor, a proof harness, a design lab, and a pressure vessel for the Echo stack. If Echo cannot host a real editor without cheating, then Echo does not get to pretend it is ready.
 
-Check out the repository from GitHub. It includes scripts for witnesses, release gates, command provenance, Echo-powered sessions, and production text validation.
+Check out the repository from GitHub. It includes the terminal application,
+command provenance projections, production cutover guards, and an honest Echo
+kernel smoke witness. The former local Echo-shaped session scripts were deleted.
 
 ## Compiling
 
@@ -57,11 +59,15 @@ node dist/main.js
 
 The build and witness tooling live in the repository and the `scripts/` directory. Read `GUIDE.md` for operational guidance, `ARCHITECTURE.md` for layer rules and dependency posture, `ADVANCED_GUIDE.md` for the render and authority path, and `docs/BEARING.md` for the compact statement of current truth.
 
-Legacy contract generation requires a sibling Wesley checkout:
+Running the editor builds and launches the trusted native Echo host:
 
 ```bash
-JEDIT_WESLEY_ROOT=/path/to/wesley npm run gen:contract
+npm run dev
 ```
+
+If the host cannot start, text operations fail closed. There is no local
+text-authority fallback. `JEDIT_ECHO_HOST_BIN` may select another compatible
+binary, and `JEDIT_ECHO_WAL_DIR` may select its filesystem WAL directory.
 
 ## Installation
 
@@ -73,7 +79,7 @@ At the moment, the quickstart is aimed less at “install this polished public e
 
 Start here:
 
-- `GUIDE.md` — how to run, build, validate, and work with contract generation.
+- `GUIDE.md` — how to run, build, validate, and inspect the Echo cutover posture.
 - `ADVANCED_GUIDE.md` — how the visible editor, projections, and Echo authority fit together.
 - `ARCHITECTURE.md` — the layer rules, dependency graph, and product vocabulary.
 - `docs/BEARING.md` — compact current truth, active roadmap anchors, and non-negotiables.
@@ -89,8 +95,11 @@ Inside the editor, the command surface continues to grow. The roadmap is not “
 What you get right now includes:
 
 - Vim-shaped editing with Normal and Insert behavior, plus a growing command surface.
-- An Echo-hosted text session for causal editing.
-- An interactive history drawer for inspecting editor activity such as opens, edits, reads, exports, checkpoints, and obstructions.
+- A real native Echo host for buffer creation, single-range editing, bounded
+  observation, scheduler receipts, and restart recovery.
+- Typed obstruction for save/export, checkpoints, `:why`, causal gutter
+  readings, multi-range editing, and undo/redo until those paths are Echo-owned.
+- No local history drawer or undo stack; those surfaces remain unavailable until they can read retained, basis-pinned Echo evidence.
 - Graft-backed syntax highlighting, outlines, diagnostics, and structural projections where available.
 - Witness scripts and JSON-reporting evidence tools for CI, agents, and release-gate work.
 - Agent-oriented interfaces for bounded, inspectable editing workflows.
@@ -122,9 +131,10 @@ Latest news, design notes, and witness surfaces live in the repository. For deep
 ### Useful entry points
 
 - `scripts/jedit-command-provenance-witness.mjs` — command provenance witness.
-- `scripts/jedit-echo-powered-session.mjs` — Echo-backed session witness.
-- `scripts/jedit-production-text-session.mjs` — production text-session witness.
-- `scripts/jedit-editor-trust-preflight.mjs` — trust-gate preflight witness.
+- `scripts/jedit-echo-host-witness.mjs` — generated operation, Echo tick, and
+  bounded-reading witness.
+- `scripts/jedit-production-cutover-guard.mjs` — rejects local production
+  authority and fake compatibility paths.
 
 If something goes wrong, read the relevant design docs, run the nearest witness, and then open an issue.
 

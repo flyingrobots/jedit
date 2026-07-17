@@ -131,18 +131,22 @@ test('HT-0149 rope fact validation receives admission context', () => {
   );
 });
 
-test('HT-0149 defines rewrite diff and tick receipt facts', () => {
+test('HT-0149 defines rewrite and diff facts with opaque Echo receipt references', () => {
   const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
 
-  for (const factName of ['RopeRewriteFact', 'RopeDiffFact', 'TickReceiptFact']) {
+  for (const factName of ['RopeRewriteFact', 'RopeDiffFact']) {
     assert.match(discovery, new RegExp(`^interface ${factName} \\{$`, 'm'));
   }
 
+  assert.match(discovery, /^type EchoReceiptId =/m);
   assert.match(discovery, /^interface TextByteRange \{$/m);
   assert.match(discovery, /readonly range: TextByteRange;/);
   assert.match(discovery, /readonly diffId: RopeDiffId;/);
   assert.match(discovery, /readonly spans: readonly RopeDiffSpan\[\];/);
-  assert.match(discovery, /readonly admittedAtSequence: number;/);
+  assert.match(discovery, /readonly createdByEchoReceiptId: EchoReceiptId;/);
+  assert.match(discovery, /readonly admittedByEchoReceiptId: EchoReceiptId;/);
+  assert.doesNotMatch(discovery, /interface TickReceiptFact/);
+  assert.doesNotMatch(discovery, /readonly admittedAtSequence: number;/);
 });
 
 test('HT-0149 checkpoint fact carries schema version', () => {
@@ -156,7 +160,7 @@ test('HT-0149 checkpoint facts are validated rather than deferred', () => {
   const deferredFacts = sectionBetween(discovery, 'The full design must also define jedit facts for:', 'Echo remains generic');
   const admittedFacts = sectionBetween(discovery, 'type RopeAdmittedFact =', 'interface RopeFactReadModel');
 
-  assert.match(admittedFacts, /\| TickReceiptFact/);
+  assert.doesNotMatch(admittedFacts, /\| TickReceiptFact/);
   assert.match(admittedFacts, /\| RopeCheckpointFact\b/);
   assert.match(admittedFacts, /\| RopeCheckpointAnchoredFact;/);
   assert.match(discovery, /\): FactValidationResult<RopeAdmittedFact>;/);
@@ -186,10 +190,12 @@ test('HT-0149 diff spans are kind-specific', () => {
   assert.match(discovery, /diff spans are kind-specific/);
 });
 
-test('HT-0149 tick receipt facts carry content hash', () => {
+test('HT-0149 keeps Echo receipt authority outside Jim facts', () => {
   const discovery = readRepoFile(GRAPH_RUNTIME_DISCOVERY_PATH);
 
-  assert.match(discovery, /interface TickReceiptFact \{[\s\S]*readonly contentHash: Hash;/);
+  assert.match(discovery, /Echo receipts are kernel-owned evidence and remain opaque to jedit/);
+  assert.match(discovery, /jedit must not define an application-local receipt fact/);
+  assert.doesNotMatch(discovery, /interface TickReceiptFact/);
 });
 
 test('HT-0149 defines structural maintenance facts for rebalance exceptions', () => {
@@ -236,13 +242,15 @@ test('HT-0149 graph runtime RED matrix declares all Slice 4 witnesses', () => {
   }
 });
 
-test('BEARING advances from completed range why work to CR-07 retention proof', () => {
+test('BEARING records the real Echo-hosted generated text corridor', () => {
   const bearing = readRepoFile(BEARING_PATH);
 
-  assert.match(bearing, /CR-06 runtime-backed `:why` evidence is complete/);
-  assert.match(bearing, /Continue with CR-07 retention, balance, and performance witnesses/);
-  assert.match(bearing, /issues\/207/);
-  assert.doesNotMatch(bearing, /Do not resume the `:why` evidence gap sequence until/);
+  assert.match(bearing, /Production startup launches `jedit-echo-host`/);
+  assert.match(bearing, /Buffer open\/create, insert, replace, delete, and bounded text-window reads are\s+implemented/);
+  assert.match(bearing, /save\/export, `:why`, causal\s+line-diff, and undo\/redo return typed obstructions/);
+  assert.match(bearing, /Wesley-generated EINT and installed package/);
+  assert.match(bearing, /generated Edict client/);
+  assert.match(bearing, /Do not reintroduce an in-process text authority/);
 });
 
 test('WF-0154 landed closeout has no unchecked gates or stale provenance deferral', () => {
@@ -255,8 +263,8 @@ test('WF-0154 landed closeout has no unchecked gates or stale provenance deferra
   assert.doesNotMatch(tests, /^- \[ \]/m);
   assert.doesNotMatch(acceptance, /^- \[ \]/m);
   assert.doesNotMatch(retrospective, /provenance naming half is deferred/);
-  assert.match(bearing, /undo\/redo settlements are provenance-named/);
-  assert.doesNotMatch(bearing, /undo\/redo[^\n]*unsupported/);
+  assert.match(bearing, /derive undo\/redo\s+candidates from retained Echo history/i);
+  assert.match(bearing, /invoke generated\s+inverse\s+operations/);
 });
 
 test('causal undo blockers preserve plain undo and name only unshipped prerequisites', () => {

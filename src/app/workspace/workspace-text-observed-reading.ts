@@ -2,8 +2,8 @@ import {
   workspaceTextReadingCoverage,
   type WorkspaceTextReadingCache,
 } from './workspace-text-reading-cache.js';
-import type { HotTextWindowProjection } from '../../ports/hot-text-runtime.js';
-import type { TextWindowBasis } from '../../ports/text-buffer-session.js';
+import type { HotTextWindowProjection } from '../../ports/text-window-projection.js';
+import type { TextWindowBasis } from '../../ports/text-authority-evidence.js';
 import type { JeditTextWindowMaterializationProvenance } from '../../ports/jedit-text-window-materialization.js';
 import { jeditTextWindowMaterializationProvenanceMatchesProjection } from '../jedit-text-window-materialization-cache.js';
 

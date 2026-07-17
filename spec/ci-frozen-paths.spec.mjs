@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
   TITLE_UNFREEZE_LABEL,
@@ -45,7 +46,7 @@ test('the unfreeze label allows title-scene changes through', () => {
 
 test('non-title changes are never frozen', () => {
   const verdict = evaluateFrozenPaths(
-    ['src/domain/text-edit-contract.ts', 'docs/BEARING.md', 'src/ui/theme-builder.ts'],
+    ['src/domain/graph-rope-types.ts', 'docs/BEARING.md', 'src/ui/theme-builder.ts'],
     { allowTitleChanges: false },
   );
 
@@ -55,4 +56,13 @@ test('non-title changes are never frozen', () => {
 
 test('the unfreeze label name is the documented one', () => {
   assert.equal(TITLE_UNFREEZE_LABEL, 'title-unfreeze');
+});
+
+test('pull request label changes rerun the frozen-path planner', () => {
+  const workflow = readFileSync(
+    new URL('../.github/workflows/ci.yml', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(workflow, /types:\s*\[[^\]]*labeled[^\]]*unlabeled[^\]]*\]/u);
 });

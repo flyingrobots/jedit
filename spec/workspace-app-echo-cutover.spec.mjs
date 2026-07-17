@@ -77,39 +77,34 @@ test('real workspace app path advances insert cursor after each echoed character
   assert.doesNotMatch(harness.renderText(), /olleh/);
 });
 
-test('real workspace app path renders rapid inserts before Echo observe resolves', async () => {
-  const harness = await openedHarness({ readings: ['', 'h', 'he', 'hel', 'hell', 'hello'] });
+test('workspace refuses dependent inserts until Echo returns a new observed basis', async () => {
+  const harness = await openedHarness({ readings: ['', 'h'] });
 
   await harness.key('i');
-  const commands = [];
-  for (const character of ['h', 'e', 'l', 'l', 'o']) {
-    commands.push(...await harness.key(character));
-  }
+  const firstCommands = await harness.key('h');
+  const dependentCommands = await harness.key('e');
 
   assert.equal(harness.calls.insert.length, 0);
-  assert.equal(harness.model.editor.cursorCol, 5);
+  assert.equal(harness.model.editor.cursorCol, 0);
   assert.equal(harness.model.textAuthority.dirty, false);
-  assert.equal(harness.model.textAuthority.pendingClientSeq, 6);
+  assert.equal(harness.model.textAuthority.pendingClientSeq, 2);
   assert.equal(harness.model.textAuthority.pendingIntentStatus, 'predicted');
-  assert.match(harness.renderText(), /hello/);
+  assert.deepEqual(dependentCommands, []);
+  assert.doesNotMatch(harness.renderText(), /he/);
 
-  for (const command of commands) {
-    await command();
-  }
+  await harness.runFirst(firstCommands);
 
-  assert.deepEqual(harness.calls.insert.map((call) => ({
-    startByte: call.startByte,
-    insertText: call.insertText,
-  })), [
-    { startByte: byteOffset(0), insertText: 'h' },
-    { startByte: byteOffset(1), insertText: 'e' },
-    { startByte: byteOffset(2), insertText: 'l' },
-    { startByte: byteOffset(3), insertText: 'l' },
-    { startByte: byteOffset(4), insertText: 'o' },
-  ]);
+  assert.equal(harness.model.editor.cursorCol, 1);
+  assert.match(harness.renderText(), /h/);
+  assert.deepEqual(harness.calls.insert, [{
+    bufferId: 'buffer:notes',
+    startByte: byteOffset(0),
+    insertText: 'h',
+    atMs: 0,
+  }]);
 });
 
-test('real workspace app path keeps newline insertion past bounded Echo readings', async () => {
+test('workspace advances multiline text only through returned Echo observations', async () => {
   const document = echoTextDocument('');
   const calls = {
     insert: [],
@@ -120,11 +115,7 @@ test('real workspace app path keeps newline insertion past bounded Echo readings
       document.replace(request.initialText);
       return {
         kind: 'opened',
-        optic: {
-          buffer: {
-            bufferId: 'buffer:notes',
-          },
-        },
+        bufferId: 'buffer:notes',
       };
     },
     insertText: async (request) => {
@@ -172,27 +163,27 @@ test('real workspace app path keeps newline insertion past bounded Echo readings
   });
 
   await harness.key('i');
-  for (let index = 0; index < 40; index += 1) {
+  for (let index = 0; index < 4; index += 1) {
     await harness.runAll(await harness.key('enter'));
   }
   await harness.runAll(await harness.key('Z', { shift: true }));
 
-  assert.equal(harness.model.editor.cursorRow, 40);
+  assert.equal(harness.model.editor.cursorRow, 4);
   assert.equal(harness.model.editor.cursorCol, 1);
-  assert.equal(harness.model.editor.lines.length, 41);
-  assert.equal(harness.model.editor.lines[40], 'Z');
-  assert.equal(harness.model.textAuthority.cache.coverage, 'window');
+  assert.equal(harness.model.editor.lines.length, 5);
+  assert.equal(harness.model.editor.lines[4], 'Z');
+  assert.equal(harness.model.textAuthority.cache.coverage, 'full');
   assert.equal(harness.model.textAuthority.cache.truncated, false);
-  assert.equal(calls.insert.length, 41);
+  assert.equal(calls.insert.length, 5);
   assert.deepEqual(calls.insert.at(-1), {
     bufferId: 'buffer:notes',
-    startByte: byteOffset(40),
+    startByte: byteOffset(4),
     insertText: 'Z',
     atMs: 0,
   });
 });
 
-test('real workspace app path keeps optimistic text visible when Echo obstructs an edit', async () => {
+test('workspace never renders an edit that Echo obstructs', async () => {
   const harness = await openedHarness({
     readings: [''],
     editObstruction: productionTextObstruction('footprint changed'),
@@ -200,15 +191,14 @@ test('real workspace app path keeps optimistic text visible when Echo obstructs 
 
   await harness.key('i');
   const commands = await harness.key('X', { shift: true });
-  assert.match(harness.renderText(), /X/);
+  assert.doesNotMatch(harness.renderText(), /X/);
 
   await harness.runFirst(commands);
 
-  assert.match(harness.renderText(), /X/);
+  assert.doesNotMatch(harness.renderText(), /X/);
   assert.equal(harness.model.textAuthority.pendingIntentStatus, 'obstructed');
   assert.equal(harness.model.textAuthority.lastObstruction.message, 'footprint changed');
-  assert.equal(harness.model.echoHistory.at(-1).status, 'obstructed');
-  assert.match(harness.model.echoHistory.at(-1).summary, /footprint changed/);
+  assert.equal('echoHistory' in harness.model, false);
 });
 
 test('workspace buffer registry preserves dirty existing buffers across file switches', async () => {

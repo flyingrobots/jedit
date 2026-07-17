@@ -1,16 +1,14 @@
-import { createWorkspaceTextOperationSequencer } from '../app/workspace/workspace-text-operation-sequencer.js';
 import type { ProductionTextSession } from '../app/workspace/production-text-session.js';
-import type { WorkspaceTextOperationSequencer } from '../app/workspace/workspace-text-operation-sequencer.js';
+import { createEchoTextContractHostProcess } from './echo-text-contract-host-process.js';
 import { createWorkspaceProductionTextSession } from './workspace-production-text-session.js';
 
 export interface WorkspaceProductionTextDependencies {
   readonly productionTextSession: ProductionTextSession;
-  readonly textOperationSequencer: WorkspaceTextOperationSequencer;
 }
 
-export function createWorkspaceProductionTextDependencies(): WorkspaceProductionTextDependencies {
+export async function createWorkspaceProductionTextDependencies(): Promise<WorkspaceProductionTextDependencies> {
+  const echo = createEchoTextContractHostProcess();
   return {
-    productionTextSession: createWorkspaceProductionTextSession(),
-    textOperationSequencer: createWorkspaceTextOperationSequencer(),
+    productionTextSession: createWorkspaceProductionTextSession(echo),
   };
 }

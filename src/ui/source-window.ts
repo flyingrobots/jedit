@@ -1,10 +1,9 @@
-import type { QueryOperationMap } from '../generated/jedit/rope.types.generated.js';
+import type { TextWindowReading } from '../ports/text-authority-evidence.js';
 import { fitLine } from './fit-line.js';
 
 const ZERO_INDEX = 0;
 const MIN_VISIBLE_COUNT = 1;
 
-type TextWindowReading = QueryOperationMap['textWindow']['result'];
 type TextWindowLine = TextWindowReading['lines'][number];
 
 export interface SourceWindowLine {

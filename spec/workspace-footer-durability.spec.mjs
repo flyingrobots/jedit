@@ -60,40 +60,6 @@ test('footer durability posture exposes export and externally observed Git state
   );
 });
 
-test('worldline debug context explains causal line counts with exact support identities', async () => {
-  const [footer, worldline] = await Promise.all([
-    importDist('app', 'workspace', 'workspace-footer-posture.js'),
-    importDist('app', 'workspace', 'worldline-state.js'),
-  ]);
-  const context = footer.workspaceHistoryContextLine({
-    historyDrawerView: worldline.WorkspaceHistoryDrawerViews.Worldlines,
-    worldline: worldline.initialWorkspaceWorldlineState(),
-    textAuthority: {
-      kind: 'opened',
-      durability: {
-        lineChanges: {
-          kind: 'available',
-          source: 'causal-observation',
-          basisHeadId: 'head:saved',
-          nextHeadId: 'head:edited',
-          insertedLineCount: 3,
-          deletedLineCount: 2,
-          tickReceiptIds: ['tick:1', 'tick:2'],
-          rewriteIds: ['rewrite:1', 'rewrite:2'],
-          diffIds: ['diff:1', 'diff:2'],
-          markers: [],
-          deletions: [],
-          observerVersion: 'jedit-causal-line-diff-v4',
-        },
-      },
-    },
-  });
-
-  assert.match(context, /Causal lines head:saved->head:edited \+3\/-2/);
-  assert.match(context, /rewrites:rewrite:1,rewrite:2/);
-  assert.match(context, /diffs:diff:1,diff:2/);
-});
-
 function cleanDurability() {
   return {
     intent: { kind: 'idle' },

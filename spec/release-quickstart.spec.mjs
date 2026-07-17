@@ -9,34 +9,33 @@ const QUICKSTART_PATH = path.join(REPO_ROOT, 'docs', 'releases', 'v0.1.0', 'quic
 const RELEASE_README_PATH = path.join(REPO_ROOT, 'docs', 'releases', 'v0.1.0', 'README.md');
 const FINAL_WITNESS_PATH = path.join(REPO_ROOT, 'docs', 'releases', 'v0.1.0', 'final-witness-report.json');
 const LOCAL_REPLAY_PATH = path.join(REPO_ROOT, 'docs', 'releases', 'v0.1.0', 'local-replay-report.json');
-const WITNESS_SCRIPT = path.join(REPO_ROOT, 'scripts', 'jedit-echo-powered-session.mjs');
+const CUTOVER_GUARD = path.join(REPO_ROOT, 'scripts', 'jedit-production-cutover-guard.mjs');
 
-test('v0.1.0 quickstart documents executable witness commands', () => {
+test('v0.1.0 quickstart revokes the retired local witness claim', () => {
   const source = readFileSync(QUICKSTART_PATH, 'utf8');
 
   assert.match(source, /npm run build/);
-  assert.match(source, /--json --dry-run/);
-  assert.match(source, /--json --allow-full-snapshot-fixture --replay-local/);
-  assert.match(source, /jedit-production-text-session\.mjs --json --allow-full-snapshot-fixture/);
-  assert.match(source, /"kind": "full-snapshot-fixture"/);
-  assert.match(source, /"productionSafe": false/);
+  assert.match(source, /jedit-production-cutover-guard\.mjs/);
+  assert.match(source, /npm run witness:echo/);
   assert.match(source, /npm start/);
-  assert.match(source, /Interactive startup is intentionally gated/);
-  assert.match(source, /default text runtime is the Echo-hosted/);
-  assert.match(source, /JEDIT_TEXT_RUNTIME=echoHosted npm start/);
-  assert.match(source, /Any other `JEDIT_TEXT_RUNTIME` value is unsupported/);
-  assert.match(source, /"transport": "installed-jedit-contract"/);
-  assert.match(source, /"appCanTick": false/);
+  assert.match(source, /trusted native Echo host/);
+  assert.match(source, /GraphQL\/Wesley/);
+  assert.match(source, /Edict will replace/);
+  assert.match(source, /may be described as Echo-powered/);
+  assert.doesNotMatch(source, /JEDIT_ECHO_WASM_MODULE/);
+  assert.doesNotMatch(source, /allow-full-snapshot-fixture/);
 });
 
-test('v0.1.0 release docs name evidence commands non-goals and Echo generic boundary', () => {
+test('v0.1.0 release docs identify the invalidated authority claim', () => {
   const source = readFileSync(RELEASE_README_PATH, 'utf8');
 
-  assert.match(source, /npm run release-gate:jedit-echo/);
+  assert.match(source, /retired and invalidated/);
+  assert.match(source, /process-local TypeScript/);
+  assert.match(source, /trusted native Echo host/);
+  assert.match(source, /GraphQL contract/);
+  assert.match(source, /Edict will replace/);
   assert.match(source, /Echo remains generic/);
-  assert.match(source, /No full Continuum transport/);
-  assert.match(source, /No full observer-rights or revelation lattice/);
-  assert.match(source, /No jedit nouns in Echo core/);
+  assert.match(source, /must not be cited as proof/);
 });
 
 test('v0.1.0 closeout records final witness and local replay reports', () => {
@@ -50,19 +49,14 @@ test('v0.1.0 closeout records final witness and local replay reports', () => {
   assert.equal(localReplay.replayLocal.wallClockCadenceSemantic, false);
 });
 
-test('v0.1.0 quickstart dry-run command executes', () => {
+test('v0.1.0 quickstart cutover guard command executes', () => {
   const result = spawnSync(process.execPath, [
-    WITNESS_SCRIPT,
-    '--json',
-    '--dry-run',
+    CUTOVER_GUARD,
   ], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
   });
 
   assert.equal(result.status, 0, result.stderr);
-  const summary = JSON.parse(result.stdout);
-  assert.equal(summary.ok, true);
-  assert.equal(summary.transport, 'installed-jedit-contract');
-  assert.equal(summary.plan.appCanTick, false);
+  assert.equal(result.stdout, 'jedit production cutover guard ok\n');
 });

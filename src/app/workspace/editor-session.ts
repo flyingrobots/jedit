@@ -3,12 +3,7 @@ import { editorViewport, type WorkspaceViewport } from './viewport.js';
 import type { Cmd } from '@flyingrobots/bijou-tui';
 import type { WorkspaceModel } from './model.js';
 import { WorkspaceMessageTypes, type WorkspaceMsg } from './msg.js';
-import type { EditorState } from './editor/model.js';
-import {
-  isLoadedEditorFile,
-  isMissingEditorFile,
-  type EditorFilePort,
-} from '../../ports/editor-file.js';
+import type { EditorFilePort } from '../../ports/editor-file.js';
 import { GraftProjectionSources, type GraftFileRequest, type GraftSessionPort } from '../../ports/graft-session.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import { isMarkdownFile } from './file-types.js';
@@ -20,11 +15,7 @@ import {
   updateInsertMode,
   updateNormalMode,
 } from './editor-editing.js';
-import { EditorModes } from './editor/mode.js';
 import { beginWorkspaceSourceHighlightRefresh } from './workspace-source-highlight.js';
-
-const INITIAL_EDITOR_VIEWPORT_WIDTH = Number.MAX_SAFE_INTEGER;
-const INITIAL_EDITOR_VIEWPORT_HEIGHT = Number.MAX_SAFE_INTEGER;
 
 export interface EditorSessionPorts {
   readonly editorFile: EditorFilePort;
@@ -42,78 +33,6 @@ export interface GraftRefreshOptions {
 
 export function isWorkspaceMarkdownFile(path: string): boolean {
   return isMarkdownFile(path);
-}
-
-export function loadEditor(filePath: string, editorFile: EditorFilePort): EditorState {
-  try {
-    const file = editorFile.loadEditorFile(filePath);
-    if (isMissingEditorFile(file)) {
-      return emptyEditor(filePath);
-    }
-    if (!isLoadedEditorFile(file)) {
-      return readOnlyErrorEditor(filePath, file.kind);
-    }
-
-    return ensureEditorVisible({
-      path: filePath,
-      lines: file.lines,
-      cursorRow: 0,
-      cursorCol: 0,
-      scrollRow: 0,
-      scrollCol: 0,
-      dirty: false,
-      readOnly: file.readOnly,
-      mode: EditorModes.Normal,
-      undoStack: [],
-      redoStack: [],
-    }, INITIAL_EDITOR_VIEWPORT_WIDTH, INITIAL_EDITOR_VIEWPORT_HEIGHT);
-  } catch (error) {
-    return readOnlyErrorEditor(filePath, String(error));
-  }
-}
-
-function readOnlyErrorEditor(filePath: string, message: string): EditorState {
-  return {
-    path: filePath,
-    lines: [message],
-    cursorRow: 0,
-    cursorCol: 0,
-    scrollRow: 0,
-    scrollCol: 0,
-    dirty: false,
-    readOnly: true,
-    mode: EditorModes.Normal,
-    undoStack: [],
-    redoStack: [],
-  };
-}
-
-function emptyEditor(filePath: string): EditorState {
-  return ensureEditorVisible({
-    path: filePath,
-    lines: [''],
-    cursorRow: 0,
-    cursorCol: 0,
-    scrollRow: 0,
-    scrollCol: 0,
-    dirty: false,
-    readOnly: false,
-    mode: EditorModes.Normal,
-    undoStack: [],
-    redoStack: [],
-  }, INITIAL_EDITOR_VIEWPORT_WIDTH, INITIAL_EDITOR_VIEWPORT_HEIGHT);
-}
-
-export function saveEditor(editor: EditorState, editorFile: EditorFilePort): EditorState {
-  if (editor.readOnly) {
-    return editor;
-  }
-
-  editorFile.saveEditorFile(editor.path, editor.lines);
-  return {
-    ...editor,
-    dirty: false,
-  };
 }
 
 export function toggleMarkdownPreview(

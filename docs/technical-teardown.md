@@ -85,7 +85,7 @@ mindmap
       Wesley
         GraphQL SDL
         TypeScript emit
-        Zod schemas
+        Operation metadata
     Source Layers
       src/domain
         TextEditContract
@@ -235,7 +235,7 @@ graph TD
     BIJOU["@flyingrobots/bijou-tui<br />The Elm Architecture for terminals.<br />Provides: App loop, Surface cells,<br />Cmd effects, KeyMsg, MouseMsg"]
     ECHO["Echo Runtime<br />Generic causal authority.<br />Installed contracts, QueryView readings,<br />Ticks, receipts, retained evidence, WSC recovery"]
     GRAFT["@flyingrobots/graft<br />Structural intelligence engine.<br />AST snapshots, syntax spans,<br />fold regions, diagnostics — direct API"]
-    WESLEY["Wesley / wesley-cli<br />GraphQL SDL compiler.<br />SDL → TypeScript types, Zod schemas,<br />operation metadata, codecs"]
+    WESLEY["Wesley / wesley-cli<br />GraphQL SDL compiler.<br />SDL → TypeScript types<br />and operation metadata"]
 
     jedit -- "run(app, opts)" --> BIJOU
     jedit -- "intent / observe / recover through ports" --> ECHO
@@ -283,7 +283,13 @@ Graft is a structural intelligence engine — AST spans, fold regions, symbol ou
 
 ### Wesley
 
-Wesley is the contract compiler. It reads **GraphQL SDL** files and emits TypeScript type definitions, Zod validation schemas, and operation metadata objects. The SDL files in `contracts/jedit/` are the canonical authority for `jedit`'s data model; the generated TypeScript in `src/generated/jedit/` is derived output.
+Wesley is the contract compiler. It reads **GraphQL SDL** files and emits the
+modern TypeScript type definitions and operation metadata objects used by
+`jedit`. The SDL files in `contracts/jedit/` are the canonical authority for
+the data model; generated TypeScript in `src/generated/jedit/` is derived
+output. Runtime validation for the transitional JSON transport is a separate,
+app-owned boundary concern in `src/app/jedit-hot-text-json-schemas.ts`; it does
+not define Wesley operation authority.
 
 ---
 
@@ -1317,9 +1323,13 @@ Application code can call `submitIntentBytes` and `observeBytes`. It cannot call
 
 This mirrors how operating systems separate user space from kernel space. The Echo runtime is the "kernel"; the lifecycle adapter is the trusted supervisor; `jedit` application code is user space.
 
-### Capability 3: Zod Validation as the Trust Boundary
+### Capability 3: JSON Boundary Validation
 
-The adapter layer is the only place external data is trusted. Every byte array that enters from the Echo transport is parsed and validated by Zod before any domain code touches it. Any schema violation throws at the adapter boundary. Domain code never receives unvalidated data.
+The adapter layer is the only place external JSON data is trusted. Every byte
+array entering through the transitional Echo JSON transport is decoded and
+validated before domain code consumes it. The app-owned schemas are typed
+against the modern Wesley artifact, but they are protocol guards rather than a
+second generated contract. Any schema violation throws at the adapter boundary.
 
 This means the domain contracts' invariant checks (contiguous tick IDs, positive root IDs, etc.) are safety-net validations, not primary defenses. The primary defense is at the codec layer.
 
@@ -1407,16 +1417,20 @@ flowchart TD
     TEXT -->|"JSON.parse()"| RAW
     RAW -->|"JeditIntentRequestSchema.parse()"| TYPED
 
-    subgraph "Zod schema layers"
+    subgraph "App-owned JSON schema layers"
         S1["MutationOperationNameSchema<br />(union of literals)"]
-        S2["HotTextBufferStateSchema<br />(full buffer state shape)"]
-        S3["JeditWorldlineSessionSchema<br />(worldline + state + metadata)"]
-        S4["JeditIntentRequestSchema<br />(kind + operationName + input + session?)"]
+        S2["Hot-text input/result schemas<br />(modern Wesley shapes)"]
+        S3["JeditWorldlineSessionSchema<br />(transitional session payload)"]
+        S4["Jedit request/response schemas<br />(wire envelopes)"]
     end
     RAW --> S4
 ```
 
-The Zod schemas are strict: `z.number().int()` for tick IDs (rejects floats), `z.literal('replaceRangeAsTick')` for operation names (rejects typos), `z.array(...)` with typed elements for all collections. A malformed payload throws `ZodError` at the adapter boundary, converted to a `RuntimeIssue` toast by `routeRuntimeIssue`.
+The Zod schemas enforce integer fields, literal operation names, and typed
+collections. The hot-text input/result guards live in
+`src/app/jedit-hot-text-json-schemas.ts` and are compiled against the modern
+Wesley types. A malformed payload throws `ZodError` at the adapter boundary,
+converted to a `RuntimeIssue` toast by `routeRuntimeIssue`.
 
 ### Encoding: JSON now, Binary Later
 
@@ -1531,11 +1545,15 @@ The `closures` section is equally interesting. The `touchedRope` closure says: "
 
 ### Generated Artifacts
 
-| File                       | Contents                                                                |
-| -------------------------- | ----------------------------------------------------------------------- |
-| `rope.types.generated.ts`  | TypeScript interfaces and operation maps                                |
-| `rope.zod.generated.ts`    | Zod schemas for every type + operation result validation                |
-| `rope.wesley.generated.ts` | Operation metadata objects (field names, operation IDs, request shapes) |
+| File                       | Contents                                 |
+| -------------------------- | ---------------------------------------- |
+| `rope.wesley.generated.ts` | TypeScript shapes and operation metadata |
+
+The former `host-node typescript` operation maps and generated Zod registry
+were deleted with the retired Node host. Observer specifications and plan
+identity are Jim-owned in `src/app/jedit-observer-spec.ts` and
+`src/app/jedit-observer-plan.ts`. Transitional JSON validation is intentionally
+app-owned and narrower than the contract surface.
 
 ---
 
@@ -1888,6 +1906,7 @@ graph TB
             TBS["text-buffer-session.ts<br />TextBufferOptic factory"]
             JCR["jedit-contract-runtime.ts<br />Worldline session management"]
             JOR["jedit-observer-runtime.ts<br />Observe with observer plan"]
+            JSON_GUARDS["jedit-hot-text-json-schemas.ts<br />Transitional JSON guards"]
         end
         subgraph "src/domain"
             TEC["text-edit-contract<br />UTF-8 rope operations"]
@@ -1900,9 +1919,7 @@ graph TB
             RW["renderWorkspace<br />Surface composition"]
         end
         subgraph "src/generated"
-            TYPES["rope.types.generated.ts"]
-            ZOD["rope.zod.generated.ts"]
-            WES["rope.wesley.generated.ts"]
+            WES["rope.wesley.generated.ts<br />Types + operation metadata"]
             SH["structural-history descriptor<br />.wesley.generated.ts"]
         end
     end
@@ -1928,9 +1945,9 @@ graph TB
     FS_ADAPT --> FS
     GRAFT_ADAPT --> GRAFT_API
     WR --> RW
-    ZOD -->|"runtime validation"| JCR
-    TYPES -->|"type definitions"| TBS
-    WES -->|"operation metadata"| JCR
+    JSON_GUARDS -->|"transitional runtime validation"| JCR
+    WES -->|"types + operation metadata"| JCR
+    WES -->|"type definitions"| TBS
     SH -->|"operation identity"| JCR
 ```
 

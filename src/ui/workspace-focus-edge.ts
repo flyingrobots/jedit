@@ -9,7 +9,6 @@ export interface ActivePaneEdgeState {
   readonly focusPane: FocusPane;
   readonly fileDrawerOpen: boolean;
   readonly graftDrawerOpen: boolean;
-  readonly historyDrawerOpen: boolean;
   readonly hasEditor: boolean;
 }
 
@@ -52,10 +51,6 @@ export function activePaneEdgeX(layout: WorkspaceLayout, state: ActivePaneEdgeSt
 
   if (state.focusPane === FocusPanes.Graft) {
     return visiblePaneEdgeX({ visible: state.graftDrawerOpen, width: layout.graftDrawer.width, x: layout.graftDrawer.x });
-  }
-
-  if (state.focusPane === FocusPanes.History) {
-    return visiblePaneEdgeX({ visible: state.historyDrawerOpen, width: layout.historyDrawer.width, x: layout.historyDrawer.x });
   }
 
   return visiblePaneEdgeX({ visible: state.hasEditor, width: layout.viewer.width, x: layout.viewer.x });

@@ -382,12 +382,6 @@ function settingsCausalGutterBasisLabel(state: JeditSettingsContext): string {
   if (state.causalGutterBasis?.kind === WorkspaceCausalGutterBasisKinds.Import) {
     return state.i18n.t(SETTINGS_I18N_KEYS.ValueCausalGutterImport);
   }
-  if (state.causalGutterBasis?.kind === WorkspaceCausalGutterBasisKinds.SelectedCheckpoint) {
-    return state.i18n.t(SETTINGS_I18N_KEYS.ValueCausalGutterSelectedCheckpoint);
-  }
-  if (state.causalGutterBasis?.kind === WorkspaceCausalGutterBasisKinds.SelectedTick) {
-    return state.i18n.t(SETTINGS_I18N_KEYS.ValueCausalGutterSelectedTick);
-  }
   return state.i18n.t(SETTINGS_I18N_KEYS.ValueCausalGutterLastSave);
 }
 

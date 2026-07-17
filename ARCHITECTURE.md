@@ -28,16 +28,12 @@ The broader project doctrine is written down in
   UI translates Bijou events into app commands and renders app state into surfaces.
   UI does not own business rules.
 
-- `contracts/jedit`
-  Authored GraphQL SDL for jedit-owned structural/domain contracts.
-  These files are the contract authority; TypeScript models are transitional
-  evidence or generated/projection surfaces.
-
-- `src/generated`
-  Generated artifacts consumed by adapters or app boundaries.
-  Generated files are not hand-authored authority. Some artifacts are checked in
-  because existing tests consume them directly; the structural-history
-  `replaceTextRange` descriptor is generated during build/test and ignored.
+- Generated contract packages
+  The current compatibility corridor is authored in GraphQL, compiled to Rust
+  bindings and contract-host helpers by Echo's Wesley extension, and registered
+  with Echo by Jim's trusted native host. Edict will replace the transitional
+  authored Rust operation law and invocation glue. Generated metadata without
+  Echo registration and scheduler execution is not a production substitute.
 
 ## Non-Negotiables
 
@@ -60,29 +56,29 @@ Compile-time types are not a substitute for runtime truth.
 
 ## Contract Authority
 
-GraphQL SDL is the canonical structural contract for app-owned history and
-readings. Wesley generation is the intended path from SDL to operation
-metadata, codecs, request shapes, and later runtime bindings.
+Jim's domain types record application semantics, but they are not executable
+Echo authority. Production mutation must use an Echo-installed verified
+operation. Handwritten TypeScript codecs, admission logic, receipts, local
+executors, and metadata-only descriptors are forbidden substitutes.
 
-The current structural-history authority is
-[`contracts/jedit/structural-history.graphql`](contracts/jedit/structural-history.graphql).
-It names text histories, revisions, replacement events, edit groups,
-checkpoints, provenance, command status, and evidence-bearing readings without
-canonizing the placeholder TypeScript storage shapes.
-
-The first generated-metadata consumer is deliberately narrow:
+The current narrow production corridor is:
 
 ```text
-contracts/jedit/structural-history.graphql
--> wesley-cli 0.0.4 TypeScript emission
--> ignored replaceTextRange descriptor under src/generated/jedit
--> src/app/structural-history-replace-text-range.ts
--> existing in-memory hot-text runtime executor
+Jim command
+-> typed process port
+-> trusted native Echo host
+-> Wesley-generated EINT binding and registered package
+-> Echo-owned WAL admission and scheduler tick
+-> witnessed Jim graph-rope facts and opaque Echo receipt
+-> basis-pinned bounded observation
 ```
 
-Generated metadata is now the authority for the `replaceTextRange` operation
-identity. Runtime execution remains transitional. Do not wire Echo, git-warp,
-SQLite, filesystem caches, or in-memory indexes into the structural-history SDL.
+Only buffer creation, single-range replace/insert/delete, and bounded text-window
+observation use this corridor. Checkpoint, save/export, multi-range editing,
+range explanation, causal gutter readings, and undo/redo still fail closed.
+The GraphQL/Wesley package is a deliberately narrow compatibility path until
+Edict can provide generated operation law and invocation. Do not restore the
+deleted Node-host Wesley projections, local runtime, or local storage authority.
 
 ## Identity Doctrine (Locked)
 

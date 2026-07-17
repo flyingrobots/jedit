@@ -38,7 +38,8 @@ test('read-only normal mode does not run mutating commands', async () => {
 
   assert.deepEqual(nextEditor.lines, editor.lines);
   assert.equal(nextEditor.mode, mode.EditorModes.Normal);
-  assert.equal(nextEditor.undoStack.length, 0);
+  assert.equal('undoStack' in nextEditor, false);
+  assert.equal('redoStack' in nextEditor, false);
 });
 
 test('normal mode change-to-line-end deletes text before entering insert mode', async () => {

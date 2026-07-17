@@ -21,15 +21,6 @@ test('graft drawer opens on the right using the same width as the file drawer', 
   );
 });
 
-test('history drawer opens on the right using the same width as the file drawer', async () => {
-  const layout = await loadDrawerLayoutModule();
-
-  assert.deepEqual(
-    layout.resolveDrawerLayout('history', 120, 1),
-    { width: 31, x: 89 },
-  );
-});
-
 test('graft drawer follows the same width policy at larger terminal sizes', async () => {
   const layout = await loadDrawerLayoutModule();
 
@@ -56,22 +47,7 @@ test('workspace layout leaves a center viewer between both drawers', async () =>
     {
       fileDrawer: { width: 31, x: 0 },
       graftDrawer: { width: 31, x: 89 },
-      historyDrawer: { width: 0, x: 120 },
       viewer: { width: 58, x: 31 },
-    },
-  );
-});
-
-test('workspace layout stacks graft left of history when both right drawers are open', async () => {
-  const layout = await loadDrawerLayoutModule();
-
-  assert.deepEqual(
-    layout.resolveWorkspaceLayout(120, 1, 1, 1),
-    {
-      fileDrawer: { width: 31, x: 0 },
-      graftDrawer: { width: 31, x: 58 },
-      historyDrawer: { width: 31, x: 89 },
-      viewer: { width: 27, x: 31 },
     },
   );
 });
@@ -80,12 +56,11 @@ test('workspace layout preserves editor room at narrow Bijou breakpoints', async
   const layout = await loadDrawerLayoutModule();
 
   assert.deepEqual(
-    layout.resolveWorkspaceLayout(60, 1, 1, 1),
+    layout.resolveWorkspaceLayout(60, 1, 1),
     {
-      fileDrawer: { width: 12, x: 0 },
-      graftDrawer: { width: 12, x: 36 },
-      historyDrawer: { width: 12, x: 48 },
-      viewer: { width: 24, x: 12 },
+      fileDrawer: { width: 18, x: 0 },
+      graftDrawer: { width: 18, x: 42 },
+      viewer: { width: 24, x: 18 },
     },
   );
 });

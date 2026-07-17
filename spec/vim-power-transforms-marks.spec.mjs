@@ -48,8 +48,6 @@ test("vim case operators do not dirty history for logical no-ops", async () => {
     cursorRow: 0,
     cursorCol: 0,
     dirty: false,
-    undoStack: [],
-    redoStack: [],
   });
 
   const nextEditor = executor.applyVimChordSyntaxToEditor(
@@ -59,7 +57,8 @@ test("vim case operators do not dirty history for logical no-ops", async () => {
 
   assert.deepEqual(nextEditor.lines, ["alpha"]);
   assert.equal(nextEditor.dirty, false);
-  assert.equal(nextEditor.undoStack.length, 0);
+  assert.equal('undoStack' in nextEditor, false);
+  assert.equal('redoStack' in nextEditor, false);
 });
 
 test("vim join operators merge the current line with and without spacing", async () => {

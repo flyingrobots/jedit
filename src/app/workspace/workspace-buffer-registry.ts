@@ -8,14 +8,14 @@ import {
   WorkspaceTextAuthorityKinds,
   type WorkspaceTextAuthorityOpened,
 } from './workspace-text-authority.js';
-import type { WorkspaceWorldlineMaterializationKind } from './worldline-types.js';
+import type { WorkspaceMaterializationKind } from './workspace-materialization.js';
 
 export interface WorkspaceBufferRecord {
   readonly bufferId: string;
   readonly pathBinding: string;
   readonly textAuthority: WorkspaceTextAuthorityOpened;
   readonly editorProjection: EditorState;
-  readonly materializationState: WorkspaceWorldlineMaterializationKind;
+  readonly materializationState: WorkspaceMaterializationKind;
   readonly sourceHighlight?: SourceHighlightReading;
   readonly graftInfo?: GraftInfo;
   readonly graftSelectedIndex: number;
