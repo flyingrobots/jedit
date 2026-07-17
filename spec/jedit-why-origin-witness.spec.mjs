@@ -93,8 +93,11 @@ test('why origin witness rejects unknown origin discriminators', async () => {
 
   assert.throws(
     () => modules.why.explainJeditWhyRange(malformedOriginReading()),
-    error => error.name === 'JeditWhyRangeEvidenceError'
-      && error.message.includes('unsupported'),
+    error => {
+      assert.ok(error instanceof modules.why.JeditWhyRangeEvidenceError);
+      assert.match(error.message, /unsupported/);
+      return true;
+    },
   );
 });
 

@@ -259,9 +259,12 @@ test('full-snapshot fake obstructs range why instead of fabricating causal evide
       startByte: FIRST_BYTE_OFFSET,
       endByte: byteLength(SNAPSHOT_ONLY_TEXT),
     }),
-    error => error.name === 'JeditOpticTransportObstructionError'
-      && error.obstruction.code === fakeTransportModule.JEDIT_RANGE_WHY_OBSTRUCTED_CODE
-      && error.obstruction.message.includes('unavailable'),
+    error => {
+      assert.ok(error instanceof transportClientModule.JeditOpticTransportObstructionError);
+      assert.equal(error.obstruction.code, fakeTransportModule.JEDIT_RANGE_WHY_OBSTRUCTED_CODE);
+      assert.match(error.obstruction.message, /unavailable/);
+      return true;
+    },
   );
 });
 
