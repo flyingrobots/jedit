@@ -147,6 +147,40 @@ test('workspace production text session delegates checkpoint declaration without
   });
 });
 
+test('workspace production text session rejects invalid checkpoint kinds before Echo admission', async () => {
+  const [adapter, checkpointEvidence] = await Promise.all([
+    importDist('adapters', 'workspace-production-text-session.js'),
+    importDist('ports', 'text-authority-evidence.js'),
+  ]);
+  let checkpointCalls = 0;
+  const session = adapter.createWorkspaceProductionTextSession({
+    async declareCheckpoint(request) {
+      checkpointCalls += 1;
+      return {
+        kind: 'checkpoint-declared',
+        reason: request.reason,
+      };
+    },
+  });
+  const invalidKinds = [checkpointEvidence.CheckpointKinds.Initial, 'NOT_A_CHECKPOINT_KIND'];
+
+  for (const checkpointKind of invalidKinds) {
+    await assert.rejects(
+      session.checkpointBuffer({
+        bufferId: 'test-only-buffer:opaque',
+        basisHeadId: 'test-only-head:opaque',
+        checkpointKind,
+        atMs: 10,
+      }),
+      {
+        name: 'TypeError',
+        message: `Unsupported checkpoint kind: ${checkpointKind}`,
+      },
+    );
+  }
+  assert.equal(checkpointCalls, 0);
+});
+
 test('workspace production text session fails closed when checkpoint operation is unavailable', async () => {
   const adapter = await importDist('adapters', 'workspace-production-text-session.js');
   let fallbackCalls = 0;

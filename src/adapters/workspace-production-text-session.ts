@@ -29,6 +29,7 @@ import {
   type EchoTextContractHostPort,
   type EchoTextHostApplied,
   type EchoTextHostCheckpointDeclared,
+  type EchoTextHostCheckpointReason,
   type EchoTextHostObserved,
 } from '../ports/echo-text-contract-host.js';
 import {
@@ -38,6 +39,11 @@ import {
 
 const UNSUPPORTED_CORRIDOR_MESSAGE =
   'The current generated Wesley compatibility corridor does not implement this operation. Edict migration will add it explicitly.';
+
+const CHECKPOINT_REASONS = Object.freeze({
+  [CheckpointKinds.ManualSave]: EchoTextHostCheckpointReasons.ManualSave,
+  [CheckpointKinds.AutoSave]: EchoTextHostCheckpointReasons.Autosave,
+} satisfies Record<CheckpointDeclarationKind, EchoTextHostCheckpointReason>);
 
 export function createWorkspaceProductionTextSession(
   host: EchoTextContractHostPort,
@@ -157,9 +163,10 @@ function checkpointDeclared(
 }
 
 function checkpointReason(checkpointKind: CheckpointDeclarationKind) {
-  return checkpointKind === CheckpointKinds.ManualSave
-    ? EchoTextHostCheckpointReasons.ManualSave
-    : EchoTextHostCheckpointReasons.Autosave;
+  if (!Object.hasOwn(CHECKPOINT_REASONS, checkpointKind)) {
+    throw new TypeError(`Unsupported checkpoint kind: ${String(checkpointKind)}`);
+  }
+  return CHECKPOINT_REASONS[checkpointKind];
 }
 
 function unsupportedOperation(code: ProductionTextObstructionCode, request: TimedRequest) {
