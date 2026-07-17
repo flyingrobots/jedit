@@ -16,27 +16,75 @@ export const WORKSPACE_INLINE_PANEL_TONE = Object.freeze({
 export type WorkspaceInlinePanelTone =
   (typeof WORKSPACE_INLINE_PANEL_TONE)[keyof typeof WORKSPACE_INLINE_PANEL_TONE];
 
-export interface WorkspaceInlinePanel {
+interface WorkspaceInlinePanelBase {
   readonly title: string;
   readonly message: string;
   readonly tone: WorkspaceInlinePanelTone;
   readonly anchorRow: number;
   readonly anchorColumn: number;
   readonly detailRows?: readonly string[];
-  readonly basisHeadId?: string;
-  readonly bufferId?: string;
-  readonly whyRangeReport?: JeditWhyRangeReport;
 }
+
+export interface WorkspacePlainInlinePanel extends WorkspaceInlinePanelBase {
+  readonly basisHeadId?: never;
+  readonly bufferId?: string;
+  readonly whyRangeReport?: never;
+}
+
+export interface WorkspaceWhyRangeInlinePanel extends WorkspaceInlinePanelBase {
+  readonly basisHeadId: string;
+  readonly bufferId: string;
+  readonly whyRangeReport: JeditWhyRangeReport;
+}
+
+export type WorkspaceInlinePanel = WorkspacePlainInlinePanel | WorkspaceWhyRangeInlinePanel;
 
 export interface WorkspaceInlinePanelAnchor {
   readonly row: number;
   readonly column: number;
 }
 
-export type WorkspaceInlinePanelContent = Pick<
-  WorkspaceInlinePanel,
-  "title" | "message" | "tone" | "detailRows" | "basisHeadId" | "bufferId" | "whyRangeReport"
->;
+interface WorkspaceInlinePanelContentBase {
+  readonly title: string;
+  readonly message: string;
+  readonly tone: WorkspaceInlinePanelTone;
+  readonly detailRows?: readonly string[];
+}
+
+export interface WorkspacePlainInlinePanelContent extends WorkspaceInlinePanelContentBase {
+  readonly basisHeadId?: never;
+  readonly bufferId?: string;
+  readonly whyRangeReport?: never;
+}
+
+export interface WorkspaceWhyRangeInlinePanelContent extends WorkspaceInlinePanelContentBase {
+  readonly basisHeadId: string;
+  readonly bufferId: string;
+  readonly whyRangeReport: JeditWhyRangeReport;
+}
+
+export type WorkspaceInlinePanelContent =
+  | WorkspacePlainInlinePanelContent
+  | WorkspaceWhyRangeInlinePanelContent;
+
+export interface WorkspaceWhyRangeInlinePanelContentRequest extends WorkspaceInlinePanelContentBase {
+  readonly bufferId: string;
+  readonly report: JeditWhyRangeReport;
+}
+
+export function workspaceWhyRangeInlinePanelContent(
+  request: WorkspaceWhyRangeInlinePanelContentRequest,
+): WorkspaceWhyRangeInlinePanelContent {
+  return {
+    title: request.title,
+    message: request.message,
+    tone: request.tone,
+    detailRows: request.detailRows,
+    basisHeadId: request.report.witness.basisHeadId,
+    bufferId: request.bufferId,
+    whyRangeReport: request.report,
+  };
+}
 
 export function anchoredWorkspaceInlinePanel(
   editor: EditorState,
@@ -58,18 +106,16 @@ export function workspaceInlinePanelAtAnchor(
   panel: WorkspaceInlinePanelContent,
   anchor: WorkspaceInlinePanelAnchor,
 ): WorkspaceInlinePanel {
-  const anchored: WorkspaceInlinePanel = {
-    ...panel,
-    anchorRow: anchor.row,
-    anchorColumn: anchor.column,
-    detailRows: panel.detailRows == null ? undefined : [...panel.detailRows],
+  const base = workspaceInlinePanelBaseAtAnchor(panel, anchor);
+  if (panel.whyRangeReport == null) {
+    return panel.bufferId == null ? base : { ...base, bufferId: panel.bufferId };
+  }
+  return {
+    ...base,
+    basisHeadId: panel.whyRangeReport.witness.basisHeadId,
+    bufferId: panel.bufferId,
+    whyRangeReport: panel.whyRangeReport,
   };
-  return panel.bufferId == null
-    ? anchored
-    : {
-        ...anchored,
-        bufferId: panel.bufferId,
-      };
 }
 
 export function clearWorkspaceInlinePanelAfterKey(
@@ -111,8 +157,30 @@ function workspaceInlinePanelMatchesModel(
     editor != null &&
     editor.cursorRow === panel.anchorRow &&
     editor.cursorCol === panel.anchorColumn &&
+    workspaceInlinePanelEvidenceIsCoherent(panel) &&
     inlinePanelMatchesActiveBuffer(model, panel) &&
     workspaceInlinePanelBasisMatchesModel(model, panel.basisHeadId);
+}
+
+function workspaceInlinePanelBaseAtAnchor(
+  panel: WorkspaceInlinePanelContentBase,
+  anchor: WorkspaceInlinePanelAnchor,
+): WorkspaceInlinePanelBase {
+  return {
+    title: panel.title,
+    message: panel.message,
+    tone: panel.tone,
+    anchorRow: anchor.row,
+    anchorColumn: anchor.column,
+    detailRows: panel.detailRows == null ? undefined : [...panel.detailRows],
+  };
+}
+
+function workspaceInlinePanelEvidenceIsCoherent(panel: WorkspaceInlinePanel): boolean {
+  return panel.whyRangeReport == null
+    ? panel.basisHeadId == null
+    : panel.bufferId.length > 0 &&
+        panel.basisHeadId === panel.whyRangeReport.witness.basisHeadId;
 }
 
 export function workspaceInlinePanelBasisMatchesModel(

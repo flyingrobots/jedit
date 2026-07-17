@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Made cursor-anchored range evidence panel state atomic. A dedicated factory
+  derives the basis head from the report, range panels require an active buffer,
+  ordinary panels cannot carry a stray causal basis, and runtime validation
+  rejects forged report/basis pairs from untyped callers.
 - Made the full-snapshot test transport fail closed with a dedicated typed
   range-why obstruction. Snapshot fixture metadata cannot be promoted into
   causal provenance; tests that need `:why` must inject graph-backed rope
