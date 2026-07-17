@@ -232,7 +232,10 @@ test('range why fails closed when provenance depth exceeds the request bound', a
     maxDepth: 1,
   });
 
-  assert.deepEqual(result, { ok: false, code: 'range-why-limit-exceeded' });
+  assert.deepEqual(result, {
+    ok: false,
+    code: runtime.GRAPH_ROPE_RUNTIME_OBSTRUCTION_RANGE_WHY_LIMIT_EXCEEDED,
+  });
 });
 
 test('range why accepts a zero historical-text budget when no historical text is materialized', async () => {
@@ -312,7 +315,10 @@ test('range why checkpoint index reads stop at the remaining fact budget plus on
     maxFacts: CHECKPOINT_INDEX_FACT_BUDGET,
   });
 
-  assert.deepEqual(result, { ok: false, code: 'range-why-limit-exceeded' });
+  assert.deepEqual(result, {
+    ok: false,
+    code: runtime.GRAPH_ROPE_RUNTIME_OBSTRUCTION_RANGE_WHY_LIMIT_EXCEEDED,
+  });
   assert.deepEqual(observed.checkpointIndexLimits, [INDEX_OVERFLOW_SENTINEL + INDEX_OVERFLOW_SENTINEL]);
   assert.ok(observed.inspectedFactIds.size <= CHECKPOINT_INDEX_FACT_BUDGET);
 });
