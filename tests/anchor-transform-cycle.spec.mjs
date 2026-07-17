@@ -19,7 +19,7 @@ const QUALITY_GATE_PATH = path.join('scripts', 'quality-gate.mjs');
 const TYPESCRIPT_CLI_PATH = path.join('node_modules', 'typescript', 'bin', 'tsc');
 const EXPECTED_RUNTIME_EXPORTS = [
   'AnchorTransformContractError',
-  'createAnchorTransformReceipt',
+  'createAnchorTransformDelta',
   'createPointAnchor',
   'leftAnchorBias',
   'rightAnchorBias',
@@ -50,14 +50,14 @@ async function loadContract() {
   return cachedContractPromise;
 }
 
-test('Anchor transforms are defined in terms of logical ReplaceRange receipts rather than rope maintenance.', () => {
+test('Anchor transforms are defined in terms of logical ReplaceRange deltas rather than rope maintenance.', () => {
   const designDoc = readDesignDoc();
 
   assert.match(
     designDoc,
-    /Anchor transforms are defined in terms of logical ReplaceRange receipts\s+rather than rope maintenance\./,
+    /Anchor transforms are defined in terms of logical ReplaceRange deltas\s+rather than rope maintenance\./,
   );
-  assert.match(designDoc, /logical ReplaceRange receipts/i);
+  assert.match(designDoc, /logical ReplaceRange deltas/i);
   assert.match(designDoc, /rope-maintenance\s+semantics/i);
 });
 
@@ -74,10 +74,10 @@ test('This cycle pins down left-bias, right-bias, forward shift, and collapse se
   assert.match(designDoc, /deleted span collapses to the replacement start/i);
 });
 
-test('This cycle limits scope to point anchors over ReplaceRange receipts.', () => {
+test('This cycle limits scope to point anchors over ReplaceRange deltas.', () => {
   const designDoc = readDesignDoc();
 
-  assert.match(designDoc, /This cycle limits scope to point anchors over ReplaceRange receipts\./);
+  assert.match(designDoc, /This cycle limits scope to point anchors over ReplaceRange deltas\./);
   assert.match(
     designDoc,
     /This cycle\s+does not implement interval anchors, anchor persistence, rope-maintenance\s+semantics, or editor UI integration\./,
@@ -100,9 +100,9 @@ test('This cycle makes accessibility, localization, and agent inspectability exp
 test('A left-biased point anchor stays before inserted text at its byte.', async () => {
   const contract = await loadContract();
   const anchor = contract.createPointAnchor(5, contract.leftAnchorBias());
-  const receipt = contract.createAnchorTransformReceipt(5, 5, 6);
+  const delta = contract.createAnchorTransformDelta(5, 5, 6);
 
-  const result = contract.transformPointAnchor(anchor, receipt);
+  const result = contract.transformPointAnchor(anchor, delta);
 
   assert.equal(result.byte, 5);
   assert.equal(result.bias, contract.leftAnchorBias());
@@ -111,9 +111,9 @@ test('A left-biased point anchor stays before inserted text at its byte.', async
 test('A right-biased point anchor moves after inserted text at its byte.', async () => {
   const contract = await loadContract();
   const anchor = contract.createPointAnchor(5, contract.rightAnchorBias());
-  const receipt = contract.createAnchorTransformReceipt(5, 5, 6);
+  const delta = contract.createAnchorTransformDelta(5, 5, 6);
 
-  const result = contract.transformPointAnchor(anchor, receipt);
+  const result = contract.transformPointAnchor(anchor, delta);
 
   assert.equal(result.byte, 11);
   assert.equal(result.bias, contract.rightAnchorBias());
@@ -122,9 +122,9 @@ test('A right-biased point anchor moves after inserted text at its byte.', async
 test('A point anchor after a replacement shifts by the replacement byte delta.', async () => {
   const contract = await loadContract();
   const anchor = contract.createPointAnchor(10, contract.leftAnchorBias());
-  const receipt = contract.createAnchorTransformReceipt(4, 8, 6);
+  const delta = contract.createAnchorTransformDelta(4, 8, 6);
 
-  const result = contract.transformPointAnchor(anchor, receipt);
+  const result = contract.transformPointAnchor(anchor, delta);
 
   assert.equal(result.byte, 12);
 });
@@ -132,9 +132,9 @@ test('A point anchor after a replacement shifts by the replacement byte delta.',
 test('A point anchor inside a deleted span collapses to the replacement start.', async () => {
   const contract = await loadContract();
   const anchor = contract.createPointAnchor(6, contract.leftAnchorBias());
-  const receipt = contract.createAnchorTransformReceipt(4, 8, 0);
+  const delta = contract.createAnchorTransformDelta(4, 8, 0);
 
-  const result = contract.transformPointAnchor(anchor, receipt);
+  const result = contract.transformPointAnchor(anchor, delta);
 
   assert.equal(result.byte, 4);
 });

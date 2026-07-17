@@ -11,7 +11,6 @@ test("editor viewport reserves the rendered line-number gutter", async () => {
     rows: 24,
     fileDrawerProgress: 0,
     graftDrawerProgress: 0,
-    historyDrawerProgress: 0,
     footerVisible: true,
     lineNumberMode: "absolute",
     editor: {

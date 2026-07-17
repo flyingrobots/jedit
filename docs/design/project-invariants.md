@@ -23,8 +23,8 @@ separate.
 - ports own typed capability contracts
 - adapters own boundary decode and encode
 - UI owns presentation and input mapping
-- contracts own authored SDL authority
-- generated artifacts are consumed at boundaries, not hand-authored as
+- Edict packages own authored operation law
+- generated Edict artifacts are consumed at boundaries, not hand-authored as
   competing runtime truth
 
 The running app must move toward this shape over time rather than merely
@@ -32,12 +32,11 @@ documenting it aspirationally.
 
 ### Schema authority rule
 
-When a domain structure is moving from placeholder TypeScript into a durable
-contract, the order is GraphQL SDL first, Wesley metadata second, adapter
-consumption third, runtime storage later. The current example is structural
-history: `contracts/jedit/structural-history.graphql` owns the product facts,
-and the `replaceTextRange` adapter boundary consumes build-generated Wesley
-operation metadata while the in-memory runtime remains transitional.
+Executable mutation law moves through Edict, not a handwritten TypeScript
+runtime: Jim-owned operation semantics first, generated Edict package and
+client second, Echo installation and execution third, and basis-pinned
+observation last. Metadata without installed execution is not authority. There
+is no accepted in-memory transitional executor.
 
 ### 2. Runtime truth beats type theater
 
@@ -155,10 +154,10 @@ destroy causal history by default.
 Echo's tick should be treated as the canonical causal-history boundary.
 
 - `ReplaceRange` and related edit law describe what is lawful
-- `replaceTextRange` operation identity comes from generated Wesley metadata at
-  the structural-history adapter boundary
+- `ReplaceRange` operation identity and invocation come from the generated
+  Edict package installed in Echo
 - a tick admits lawful change into the worldline
-- `jedit` may group ticks into edit groups for undo/history
+- `jedit` may derive undo/history groupings from retained Echo evidence
 
 Edit groups are important, but they are not the canonical substrate boundary.
 
@@ -167,7 +166,7 @@ Edit groups are important, but they are not the canonical substrate boundary.
 Hot rewrites should be statically honest without pretending their concrete
 runtime focus is known ahead of time.
 
-- Wesley-facing rewrite contracts should declare slots, closure operators,
+- Edict rewrite contracts should declare slots, closure operators,
   create surfaces, update surfaces, and forbidden surfaces explicitly
 - runtime ids, current-head relations, rope-path closure, and anchor-closure
   membership remain dynamic bindings

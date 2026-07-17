@@ -85,8 +85,6 @@ function cycleWorkspaceCausalGutterBasis(
     causalGutterBasis: nextWorkspaceCausalGutterBasis(
       model.causalGutterBasis,
       delta,
-      model.echoHistory,
-      model.echoHistorySelectedIndex,
     ),
   };
   return context.productionTextSession == null

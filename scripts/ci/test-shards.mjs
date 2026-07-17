@@ -8,7 +8,6 @@ const CONTRACT_SPEC_PATTERNS = Object.freeze([
   'anchor',
   'codec',
   'contract',
-  'eint',
   'edit-group',
   'mutation-envelope',
   'observer',
@@ -17,8 +16,6 @@ const CONTRACT_SPEC_PATTERNS = Object.freeze([
   'replace-range',
   'rope',
   'save-checkpoint',
-  'structural-history',
-  'tick-admission',
 ]);
 const DOCS_SPEC_PATTERNS = Object.freeze([
   'codegen-docs',

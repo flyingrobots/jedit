@@ -3,12 +3,11 @@ import type { WorkspaceModel } from './model.js';
 import type { EditorState } from './editor/model.js';
 
 export function focusCycleState(
-  model: Pick<WorkspaceModel, 'fileDrawerOpen' | 'graftDrawerOpen' | 'historyDrawerOpen' | 'editor' | 'focusPane'>,
+  model: Pick<WorkspaceModel, 'fileDrawerOpen' | 'graftDrawerOpen' | 'editor' | 'focusPane'>,
 ): FocusCycleState {
   return {
     fileDrawerOpen: model.fileDrawerOpen,
     graftDrawerOpen: model.graftDrawerOpen,
-    historyDrawerOpen: model.historyDrawerOpen,
     hasEditor: model.editor != null,
     focusPane: model.focusPane,
   };

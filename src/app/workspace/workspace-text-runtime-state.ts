@@ -11,13 +11,6 @@ import { WorkspaceMessageTypes, type WorkspaceMsg } from './msg.js';
 import type { WorkspaceRuntimeDependencies } from './workspace-runtime-dependencies.js';
 import { ViewModes } from './view-mode.js';
 import {
-  appendEchoHistoryEntry,
-  EchoHistoryEntryKinds,
-  EchoHistoryEntryStatuses,
-  sortedEchoHistoryIndexForSequence,
-  type EchoHistoryEntryDraft,
-} from './echo-history.js';
-import {
   openedWorkspaceTextAuthority,
   obstructedWorkspaceTextAuthority,
   WorkspaceTextAuthorityKinds,
@@ -33,7 +26,6 @@ import {
   dependentEditBlockedIssue,
   shouldIgnoreTextEditObstruction,
   shouldRecordIntermediateTextEditResult,
-  settlementObstructionIssue,
   textCheckpointResultTargetsAuthority,
   textEditResultBlockedByEarlierObstruction,
   textEditResultTargetsAuthority,
@@ -42,9 +34,7 @@ import {
 } from './workspace-text-result-guards.js';
 import { createWorkspaceTextCheckpointCmd } from './workspace-text-commands.js';
 import { editorFromWorkspaceTextLines, workspaceModelWithTextAuthorityEditor } from './workspace-text-reading-cache.js';
-import { JEDIT_WSC_WORKSPACE_STORE_STATUS } from '../../ports/jedit-wsc-workspace-store.js';
 import {
-  jeditAppliedCommandHistorySummary,
   receivedJeditCommandEventForRequest,
   workspaceTextAuthorityWithAppliedJeditCommandReceipt,
   workspaceTextAuthorityWithCurrentJeditCommandObservation,
@@ -85,18 +75,13 @@ function applyTextOpenResult(
     return [model, []];
   }
   if (msg.result.kind === WorkspaceTextResultKinds.Obstructed) {
-    const obstructed = withEchoHistoryEntry({
+    const obstructed = {
       ...model,
       textAuthority: obstructedTextAuthority(model, msg.result.filePath, msg.requestId, msg.result.issue),
-    }, obstructedHistoryEntry(EchoHistoryEntryKinds.Open, msg.result.filePath, msg.result.issue));
+    };
     return pushRuntimeIssueToast(obstructed, msg.result.issue, deps.createNotificationTickCmd);
   }
-  return refreshAfterOpen(deps, withEchoHistoryEntry(openedTextModel(model, msg.result), {
-    kind: EchoHistoryEntryKinds.Open,
-    status: EchoHistoryEntryStatuses.Opened,
-    evidenceId: msg.result.cache.readingId, causalHeadId: msg.result.cache.textBasis.basisHeadId,
-    summary: msg.result.filePath,
-  }));
+  return refreshAfterOpen(deps, openedTextModel(model, msg.result));
 }
 
 function obstructedTextAuthority(
@@ -191,17 +176,11 @@ function applyIntermediateTextEditResult(
     msg.result.cache,
   );
   const withCurrentObservation = workspaceTextAuthorityWithCurrentJeditCommandObservation(withCache);
-  const applied = withEchoHistoryEntry({
+  const applied = {
     ...model, inlinePanel: undefined,
     textAuthority: withCurrentObservation,
-  }, {
-    kind: EchoHistoryEntryKinds.Edit,
-    status: EchoHistoryEntryStatuses.Applied,
-    evidenceId: msg.result.receiptId,
-    causalHeadId: msg.result.causalTransition?.nextHeadId, causalTickId: msg.result.causalTransition?.admittedTickId,
-    summary: jeditAppliedCommandHistorySummary(msg.result.filePath, msg.requestId, withCurrentObservation),
-  });
-  return refreshAndPersistAppliedTextEdit(deps, msg.result, applied);
+  };
+  return refreshAfterEdit(deps, applied);
 }
 
 function textAuthorityWithIntermediateEditReceipt(
@@ -211,11 +190,11 @@ function textAuthorityWithIntermediateEditReceipt(
 ) {
   if (requestId === authority.pendingClientSeq) {
     return workspaceTextAuthorityWithAppliedJeditCommandReceipt(
-      authority, requestId, result.receiptId, result.reversedReceiptId,
+      authority, requestId, result.receiptId, undefined,
       { causalTransition: result.causalTransition, lineChanges: result.lineChanges },
     );
   }
-  const event = receivedJeditCommandEventForRequest(authority, requestId, result.receiptId, result.reversedReceiptId);
+  const event = receivedJeditCommandEventForRequest(authority, requestId, result.receiptId);
   return {
     ...authority,
     pendingReceiptId: result.receiptId,
@@ -235,36 +214,18 @@ function applyAppliedTextEditResult(
   }
   const withCache = workspaceTextAuthorityWithCache(
     workspaceTextAuthorityWithAppliedJeditCommandReceipt(
-      authority, msg.requestId, msg.result.receiptId, msg.result.reversedReceiptId,
+      authority, msg.requestId, msg.result.receiptId, undefined,
       { causalTransition: msg.result.causalTransition, lineChanges: msg.result.lineChanges },
     ),
     msg.result.cache,
   );
   const withCurrentObservation = workspaceTextAuthorityWithCurrentJeditCommandObservation(withCache);
-  const applied = withEchoHistoryEntry({
+  const applied = {
     ...model, inlinePanel: undefined,
     textAuthority: withCurrentObservation,
     editor: editorAfterTextEdit(model, withCurrentObservation, msg.result.cursorAfter),
-  }, {
-    kind: EchoHistoryEntryKinds.Edit,
-    status: EchoHistoryEntryStatuses.Applied,
-    evidenceId: msg.result.receiptId,
-    causalHeadId: msg.result.causalTransition?.nextHeadId, causalTickId: msg.result.causalTransition?.admittedTickId,
-    summary: jeditAppliedCommandHistorySummary(msg.result.filePath, msg.requestId, withCurrentObservation),
-  });
-  return refreshAndPersistAppliedTextEdit(deps, msg.result, applied);
-}
-
-function refreshAndPersistAppliedTextEdit(
-  deps: WorkspaceRuntimeDependencies,
-  result: WorkspaceTextAppliedResult,
-  model: WorkspaceModel,
-): WorkspaceRuntimeResult {
-  const [refreshed, refreshCommands] = refreshAfterEdit(deps, model);
-  const settlement = persistEditSettlement(deps, result, refreshed);
-  return settlement == null
-    ? [refreshed, refreshCommands]
-    : [settlement[0], [...refreshCommands, ...settlement[1]]];
+  };
+  return refreshAfterEdit(deps, applied);
 }
 
 function applyTextEditObstruction(
@@ -281,7 +242,7 @@ function applyTextEditObstruction(
     textAuthority: workspaceTextAuthorityWithObstruction(authority, msg.requestId, msg.result.issue),
   };
   return pushRuntimeIssueToast(
-    withEchoHistoryEntry(obstructed, obstructedHistoryEntry(EchoHistoryEntryKinds.Edit, msg.result.filePath, msg.result.issue)),
+    obstructed,
     msg.result.issue,
     deps.createNotificationTickCmd,
   );
@@ -302,31 +263,7 @@ function applyBlockedDependentTextEdit(
     textAuthority: workspaceTextAuthorityWithBlockedIntent(authority),
   };
   return pushRuntimeIssueToast(
-    withEchoHistoryEntry(blocked, {
-      kind: EchoHistoryEntryKinds.Edit,
-      status: EchoHistoryEntryStatuses.Blocked,
-      summary: issue.message,
-    }),
-    issue,
-    deps.createNotificationTickCmd,
-  );
-}
-
-function persistEditSettlement(
-  deps: WorkspaceRuntimeDependencies,
-  result: WorkspaceTextAppliedResult,
-  model: WorkspaceModel,
-): WorkspaceRuntimeResult | undefined {
-  if (result.wscSettlementEnvelope == null) {
-    return undefined;
-  }
-  const stored = deps.wscWorkspaceStore.writeEnvelope(result.wscSettlementEnvelope);
-  if (stored.status !== JEDIT_WSC_WORKSPACE_STORE_STATUS.Obstructed) {
-    return undefined;
-  }
-  const issue = settlementObstructionIssue(result.filePath, stored.obstruction, deps.nowMs());
-  return pushRuntimeIssueToast(
-    withEchoHistoryEntry(model, obstructedHistoryEntry(EchoHistoryEntryKinds.Edit, result.filePath, issue)),
+    blocked,
     issue,
     deps.createNotificationTickCmd,
   );
@@ -364,7 +301,7 @@ function applyTextCheckpointResult(
   }
   if (msg.result.kind === WorkspaceTextResultKinds.Obstructed) {
     return pushRuntimeIssueToast(
-      withEchoHistoryEntry(model, obstructedHistoryEntry(EchoHistoryEntryKinds.Checkpoint, msg.result.filePath, msg.result.issue)),
+      model,
       msg.result.issue,
       deps.createNotificationTickCmd,
     );
@@ -374,12 +311,7 @@ function applyTextCheckpointResult(
     msg.result.checkpointId,
     msg.result.basisHeadId,
   );
-  return [withEchoHistoryEntry(withTextAuthority(model, textAuthority), {
-    kind: EchoHistoryEntryKinds.Checkpoint,
-    status: EchoHistoryEntryStatuses.Checkpointed,
-    evidenceId: msg.result.checkpointId, causalHeadId: msg.result.basisHeadId,
-    summary: msg.result.filePath,
-  }), []];
+  return [withTextAuthority(model, textAuthority), []];
 }
 
 function applyTextExportResult(
@@ -396,10 +328,7 @@ function applyTextExportResult(
     return [model, []];
   }
   if (msg.result.kind === WorkspaceTextResultKinds.Obstructed) {
-    const obstructed = withEchoHistoryEntry(
-      { ...model, quitAfterSaveRequestId: undefined },
-      obstructedHistoryEntry(EchoHistoryEntryKinds.Export, msg.result.filePath, msg.result.issue),
-    );
+    const obstructed = { ...model, quitAfterSaveRequestId: undefined };
     return pushRuntimeIssueToast(obstructed, msg.result.issue, deps.createNotificationTickCmd);
   }
   const textAuthority = workspaceTextAuthorityWithExport(
@@ -408,19 +337,15 @@ function applyTextExportResult(
   const exported = withTextAuthority({
     ...model, quitAfterSaveRequestId: undefined, quitConfirmOpen: shouldOpenQuitAfterExport(model, msg.requestId),
   }, textAuthority);
-  const history = withEchoHistoryEntry(exported, {
-    kind: EchoHistoryEntryKinds.Export, status: EchoHistoryEntryStatuses.Exported, evidenceId: msg.result.readingId, summary: msg.result.filePath,
-  });
   const checkpoint = createWorkspaceTextCheckpointCmd({
     requestId: msg.requestId,
     filePath: msg.result.filePath,
     bufferId: msg.result.bufferId,
     basisHeadId: msg.result.basisHeadId,
     productionTextSession: deps.productionTextSession,
-    textOperationSequencer: deps.textOperationSequencer,
     atMs: deps.nowMs(),
   });
-  return [history, [checkpoint]];
+  return [exported, [checkpoint]];
 }
 
 function applyTextReadResult(
@@ -438,17 +363,12 @@ function applyTextReadResult(
   }
   if (msg.result.kind === WorkspaceTextResultKinds.Obstructed) {
     return pushRuntimeIssueToast(
-      withEchoHistoryEntry(model, obstructedHistoryEntry(EchoHistoryEntryKinds.Read, msg.result.filePath, msg.result.issue)),
+      model,
       msg.result.issue,
       deps.createNotificationTickCmd,
     );
   }
-  return [withEchoHistoryEntry(withTextAuthority(model, workspaceTextAuthorityWithCache(authority, msg.result.cache)), {
-    kind: EchoHistoryEntryKinds.Read,
-    status: EchoHistoryEntryStatuses.Observed,
-    evidenceId: msg.result.cache.readingId,
-    summary: msg.result.filePath,
-  }), []];
+  return [withTextAuthority(model, workspaceTextAuthorityWithCache(authority, msg.result.cache)), []];
 }
 
 function refreshAfterOpen(
@@ -470,28 +390,6 @@ function withTextAuthority(
   textAuthority: Extract<WorkspaceModel['textAuthority'], { kind: typeof WorkspaceTextAuthorityKinds.Opened }>,
 ): WorkspaceModel {
   return workspaceModelWithTextAuthorityEditor(model, textAuthority);
-}
-
-function withEchoHistoryEntry(model: WorkspaceModel, draft: EchoHistoryEntryDraft): WorkspaceModel {
-  const echoHistory = appendEchoHistoryEntry(model.echoHistory, draft);
-  const sequence = echoHistory.at(-1)?.sequence ?? 0;
-  return {
-    ...model,
-    echoHistory,
-    echoHistorySelectedIndex: sortedEchoHistoryIndexForSequence(echoHistory, sequence),
-  };
-}
-
-function obstructedHistoryEntry(
-  kind: EchoHistoryEntryDraft['kind'],
-  filePath: string,
-  issue: RuntimeIssue,
-): EchoHistoryEntryDraft {
-  return {
-    kind,
-    status: EchoHistoryEntryStatuses.Obstructed,
-    summary: `${filePath}: ${issue.message}`,
-  };
 }
 
 function shouldOpenQuitAfterExport(model: WorkspaceModel, requestId: number): boolean {

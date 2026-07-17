@@ -131,7 +131,7 @@ test("TextEditResult refreshes highlighting without reloading saved-file Graft d
   assert.equal(nextModel.inlinePanel, undefined);
 });
 
-test("intermediate TextEditResult refreshes highlighting before queued save settles", async () => {
+test("pending save is refused until TextEditResult refreshes the observed basis", async () => {
   const [
     keyBindings,
     runtimeModule,
@@ -140,7 +140,6 @@ test("intermediate TextEditResult refreshes highlighting before queued save sett
     profile,
     msgModule,
     results,
-    sequencer,
   ] = await Promise.all([
     importDist("app", "workspace", "key-bindings.js"),
     importDist("app", "workspace", "runtime.js"),
@@ -149,10 +148,7 @@ test("intermediate TextEditResult refreshes highlighting before queued save sett
     importDist("app", "text-runtime-profile.js"),
     importDist("app", "workspace", "msg.js"),
     importDist("app", "workspace", "workspace-text-results.js"),
-    importDist("app", "workspace", "workspace-text-operation-sequencer.js"),
   ]);
-  const pendingEdit = deferred();
-  const textOperationSequencer = sequencer.createWorkspaceTextOperationSequencer();
   const exportCalls = [];
   const savedFiles = [];
   let highlightCount = 0;
@@ -192,18 +188,6 @@ test("intermediate TextEditResult refreshes highlighting before queued save sett
       cache: workspaceReadingCache({ lines: ["abcd"] }),
     }),
   };
-  const target = { filePath: "/repo/notes.txt", bufferId: "buffer:notes" };
-  const queuedEdit = textOperationSequencer.sequenceEdit(
-    productionTextSession,
-    target,
-    async () => {
-      await pendingEdit.promise;
-      return {
-        kind: results.WorkspaceTextResultKinds.Applied,
-        result: { receiptId: "receipt:edit" },
-      };
-    },
-  );
   const context = {
     ...mockKeyBindingContext(),
     nowMs: () => 99,
@@ -219,7 +203,6 @@ test("intermediate TextEditResult refreshes highlighting before queued save sett
         },
       },
       productionTextSession,
-      textOperationSequencer,
     }),
   };
   const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime({
@@ -230,16 +213,14 @@ test("intermediate TextEditResult refreshes highlighting before queued save sett
         return { path: "/repo/notes.txt", partial: false, spans: [] };
       },
     },
-    textOperationSequencer,
   }));
-  const [pendingSaveModel, saveCommands] = keyBindings.updateFromKey(
+  const [, saveCommands] = keyBindings.updateFromKey(
     { key: "s", ctrl: true, alt: false, shift: false },
     model,
     context,
   );
-  assert.equal(saveCommands.length, 1);
-  const saveMessage = saveCommands[0]();
-  assert.equal(exportCalls.length, 0, "save export must wait behind the queued edit");
+  assert.equal(saveCommands.length, 0);
+  assert.equal(exportCalls.length, 0, "save export must not run from a pending basis");
   const [nextModel, commands] = runtime.update({
     type: msgModule.WorkspaceMessageTypes.TextEditResult,
     requestId: 10,
@@ -253,7 +234,7 @@ test("intermediate TextEditResult refreshes highlighting before queued save sett
         lines: ["abcd"],
       }),
     },
-  }, pendingSaveModel);
+  }, model);
 
   for (const command of commands) {
     await command();
@@ -261,11 +242,15 @@ test("intermediate TextEditResult refreshes highlighting before queued save sett
 
   assert.equal(nextModel.textAuthority.pendingIntentStatus, authority.WorkspaceTextIntentStatuses.Admitted);
   assert.equal(highlightCount, 1);
-  assert.equal(exportCalls.length, 0, "intermediate refresh should happen before save export starts");
+  assert.equal(exportCalls.length, 0);
 
-  pendingEdit.resolve();
-  await queuedEdit;
-  const [exportedModel, checkpointCommands] = runtime.update(await saveMessage, nextModel);
+  const [saveReadyModel, readySaveCommands] = keyBindings.updateFromKey(
+    { key: "s", ctrl: true, alt: false, shift: false },
+    nextModel,
+    context,
+  );
+  assert.equal(readySaveCommands.length, 1);
+  const [exportedModel, checkpointCommands] = runtime.update(await readySaveCommands[0](), saveReadyModel);
   await Promise.all(checkpointCommands.map((command) => command()));
 
   assert.equal(exportCalls.length, 1);
@@ -285,8 +270,6 @@ function textWorkspaceModel(modeModule, authority, profile, editorOverrides) {
       dirty: false,
       readOnly: false,
       mode: modeModule.EditorModes.Normal,
-      undoStack: [],
-      redoStack: [],
       ...editorOverrides,
     },
     textAuthority: authority.openedWorkspaceTextAuthority({
@@ -307,10 +290,6 @@ function textWorkspaceModel(modeModule, authority, profile, editorOverrides) {
     focusPane: "editor",
     fileDrawerOpen: false,
     graftDrawerOpen: false,
-    historyDrawerOpen: false,
-    historyDrawerProgress: 0,
-    echoHistory: [],
-    echoHistorySelectedIndex: 0,
     graftInfo: undefined,
     graftLoading: false,
     graftRequestId: 0,

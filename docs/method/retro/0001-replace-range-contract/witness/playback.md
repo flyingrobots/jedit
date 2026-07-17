@@ -7,6 +7,12 @@ Date: 2026-04-13
 This cycle delivered the first executable `ReplaceRange` seam for the future
 text kernel.
 
+> **Retired:** This playback records a historical full-string implementation,
+> not the current architecture. The referenced source and tests were deleted
+> when Jim stopped simulating text authority and Echo admission in TypeScript.
+> The commands below are preserved as historical evidence and do not run at
+> the current tree.
+
 ## Human Playback
 
 Status: Verified by the human operator on 2026-04-13.
@@ -70,7 +76,7 @@ Yes.
 Suggested inspection:
 
 - [replace-range-contract.md](../../../design/0001-replace-range-contract/replace-range-contract.md)
-- [replace-range.contract.spec.mjs](../../../../spec/replace-range.contract.spec.mjs)
+- [historical replace-range.contract.spec.mjs](https://github.com/flyingrobots/jedit/blob/e93b2e1a138a762d7a33da6179d3ad8b8b2a9c6e/spec/replace-range.contract.spec.mjs)
 - [verification.md](./verification.md)
 
 Suggested commands:
@@ -92,7 +98,7 @@ Yes.
 Suggested inspection:
 
 - [replace-range-contract.md](../../../design/0001-replace-range-contract/replace-range-contract.md)
-- [text-edit-contract.ts](../../../../src/domain/text-edit-contract.ts)
+- [historical text-edit-contract.ts](https://github.com/flyingrobots/jedit/blob/e93b2e1a138a762d7a33da6179d3ad8b8b2a9c6e/src/domain/text-edit-contract.ts)
 - [verification.md](./verification.md)
 
 Suggested commands:
@@ -135,8 +141,8 @@ Yes.
 
 Evidence:
 
-- [replace-range.contract.spec.mjs](../../../../spec/replace-range.contract.spec.mjs) asserts the insertion case directly.
-- [text-edit-contract.ts](../../../../src/domain/text-edit-contract.ts) implements replacement by byte-range splice and materialization.
+- [historical replace-range.contract.spec.mjs](https://github.com/flyingrobots/jedit/blob/e93b2e1a138a762d7a33da6179d3ad8b8b2a9c6e/spec/replace-range.contract.spec.mjs) asserted the insertion case directly.
+- [historical text-edit-contract.ts](https://github.com/flyingrobots/jedit/blob/e93b2e1a138a762d7a33da6179d3ad8b8b2a9c6e/src/domain/text-edit-contract.ts) implemented replacement by byte-range splice and materialization.
 - [verification.md](./verification.md) captures the passing contract suite.
 
 ### ReplaceRange deletion is replacement by the empty fragment.
@@ -145,8 +151,8 @@ Yes.
 
 Evidence:
 
-- [replace-range.contract.spec.mjs](../../../../spec/replace-range.contract.spec.mjs) asserts deletion via `emptyFragment()`.
-- [text-edit-contract.ts](../../../../src/domain/text-edit-contract.ts) applies the same replacement primitive to deletion.
+- [historical replace-range.contract.spec.mjs](https://github.com/flyingrobots/jedit/blob/e93b2e1a138a762d7a33da6179d3ad8b8b2a9c6e/spec/replace-range.contract.spec.mjs) asserted deletion via `emptyFragment()`.
+- [historical text-edit-contract.ts](https://github.com/flyingrobots/jedit/blob/e93b2e1a138a762d7a33da6179d3ad8b8b2a9c6e/src/domain/text-edit-contract.ts) applied the same replacement primitive to deletion.
 - [verification.md](./verification.md) captures the passing contract suite.
 
 ### ReplaceRange returns the same root and no receipt for a logical no-op.
@@ -155,8 +161,8 @@ Yes.
 
 Evidence:
 
-- [replace-range.contract.spec.mjs](../../../../spec/replace-range.contract.spec.mjs) asserts the no-op case directly.
-- [text-edit-contract.ts](../../../../src/domain/text-edit-contract.ts) compares replaced bytes against inserted bytes and returns the original root with no receipt when they match.
+- [historical replace-range.contract.spec.mjs](https://github.com/flyingrobots/jedit/blob/e93b2e1a138a762d7a33da6179d3ad8b8b2a9c6e/spec/replace-range.contract.spec.mjs) asserted the no-op case directly.
+- [historical text-edit-contract.ts](https://github.com/flyingrobots/jedit/blob/e93b2e1a138a762d7a33da6179d3ad8b8b2a9c6e/src/domain/text-edit-contract.ts) compared replaced bytes against inserted bytes and returned the original root with no receipt when they matched.
 - [verification.md](./verification.md) captures the passing contract suite.
 
 ### The runtime contract stays a minimal ReplaceRange seam rather than a full rope engine.
@@ -165,8 +171,8 @@ Yes.
 
 Evidence:
 
-- [tests/replace-range-cycle.spec.mjs](../../../../tests/replace-range-cycle.spec.mjs) checks the constrained export surface.
-- [text-edit-contract.ts](../../../../src/domain/text-edit-contract.ts) exposes only the minimal root, range, fragment, and receipt seam.
+- [historical replace-range-cycle.spec.mjs](https://github.com/flyingrobots/jedit/blob/e93b2e1a138a762d7a33da6179d3ad8b8b2a9c6e/tests/replace-range-cycle.spec.mjs) checked the constrained export surface.
+- [historical text-edit-contract.ts](https://github.com/flyingrobots/jedit/blob/e93b2e1a138a762d7a33da6179d3ad8b8b2a9c6e/src/domain/text-edit-contract.ts) exposed only the minimal root, range, fragment, and receipt seam.
 - [replace-range-contract.md](../../../design/0001-replace-range-contract/replace-range-contract.md) keeps rope storage, anchors, strands, and admission out of scope.
 
 ### The workspace satisfies build, quality, and the ReplaceRange contract suite.
@@ -176,7 +182,7 @@ Yes.
 Evidence:
 
 - [verification.md](./verification.md) captures passing `npm test` output and clean drift output.
-- [tests/replace-range-cycle.spec.mjs](../../../../tests/replace-range-cycle.spec.mjs) asserts the workspace-level verification surface.
+- [historical replace-range-cycle.spec.mjs](https://github.com/flyingrobots/jedit/blob/e93b2e1a138a762d7a33da6179d3ad8b8b2a9c6e/tests/replace-range-cycle.spec.mjs) asserted the workspace-level verification surface.
 
 ## Outcome
 

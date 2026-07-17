@@ -10,7 +10,7 @@ test('file dirty state follows admitted head versus saved export basis', async (
     importDist('app', 'workspace', 'workspace-text-authority.js'),
     importDist('app', 'workspace', 'workspace-buffer-durability.js'),
     importDist('app', 'text-runtime-profile.js'),
-    importDist('app', 'workspace', 'worldline-types.js'),
+    importDist('app', 'workspace', 'workspace-materialization.js'),
   ]);
   const opened = openedAuthority(authority, profile, worldline, HEAD_SAVED);
   assert.equal(opened.dirty, false);
@@ -64,7 +64,7 @@ test('a missing-file basis becomes dirty only after an admitted edit', async () 
     importDist('app', 'workspace', 'workspace-text-authority.js'),
     importDist('app', 'workspace', 'workspace-buffer-durability.js'),
     importDist('app', 'text-runtime-profile.js'),
-    importDist('app', 'workspace', 'worldline-types.js'),
+    importDist('app', 'workspace', 'workspace-materialization.js'),
   ]);
   const opened = authority.openedWorkspaceTextAuthority({
     profile: profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
@@ -72,7 +72,7 @@ test('a missing-file basis becomes dirty only after an admitted edit', async () 
     bufferId: 'buffer:new',
     readOnly: false,
     dirty: false,
-    materialization: worldline.WorkspaceWorldlineMaterializationKinds.Unmaterialized,
+    materialization: worldline.WorkspaceMaterializationKinds.Unmaterialized,
     hostBasis: authority.WorkspaceTextHostBasisKinds.Missing,
     hostAbsenceBasisHeadId: HEAD_SAVED,
     cache: basisCache(HEAD_SAVED),
@@ -100,7 +100,7 @@ function openedAuthority(authority, profile, worldline, basisHeadId) {
     bufferId: 'buffer:notes',
     readOnly: false,
     dirty: true,
-    materialization: worldline.WorkspaceWorldlineMaterializationKinds.Materialized,
+    materialization: worldline.WorkspaceMaterializationKinds.Materialized,
     hostBasis: authority.WorkspaceTextHostBasisKinds.File,
     hostFingerprint: fileFingerprint(),
     cache: basisCache(basisHeadId),

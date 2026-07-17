@@ -1,7 +1,6 @@
 export const DrawerKinds = Object.freeze({
   Files: 'files',
   Graft: 'graft',
-  History: 'history',
 } as const);
 
 export type DrawerKind = typeof DrawerKinds[keyof typeof DrawerKinds];
@@ -14,7 +13,6 @@ export interface DrawerLayout {
 export interface WorkspaceLayout {
   readonly fileDrawer: DrawerLayout;
   readonly graftDrawer: DrawerLayout;
-  readonly historyDrawer: DrawerLayout;
   readonly viewer: {
     readonly width: number;
     readonly x: number;
@@ -29,7 +27,6 @@ const NO_DRAWER_WIDTH = 0;
 const WIDTH_UNIT = 1;
 const DRAWER_INDEX_FILES = 0;
 const DRAWER_INDEX_GRAFT = 1;
-const DRAWER_INDEX_HISTORY = 2;
 
 export function resolveDrawerLayout(kind: DrawerKind, columns: number, progress: number, rightOffset = 0): DrawerLayout {
   return drawerLayoutForWidth(kind, columns, resolveDrawerWidth(kind, columns, progress), rightOffset);
@@ -39,27 +36,22 @@ export function resolveWorkspaceLayout(
   columns: number,
   fileDrawerProgress: number,
   graftDrawerProgress: number,
-  historyDrawerProgress = 0,
 ): WorkspaceLayout {
   const widths = fitDrawerWidths([
     resolveDrawerWidth(DrawerKinds.Files, columns, fileDrawerProgress),
     resolveDrawerWidth(DrawerKinds.Graft, columns, graftDrawerProgress),
-    resolveDrawerWidth(DrawerKinds.History, columns, historyDrawerProgress),
   ], Math.max(NO_DRAWER_WIDTH, columns - MIN_VIEWER_WIDTH_WITH_DRAWERS));
   const fileDrawer = drawerLayoutForWidth(DrawerKinds.Files, columns, widths[DRAWER_INDEX_FILES] ?? NO_DRAWER_WIDTH);
-  const historyDrawer = drawerLayoutForWidth(DrawerKinds.History, columns, widths[DRAWER_INDEX_HISTORY] ?? NO_DRAWER_WIDTH);
   const graftDrawer = drawerLayoutForWidth(
     DrawerKinds.Graft,
     columns,
     widths[DRAWER_INDEX_GRAFT] ?? NO_DRAWER_WIDTH,
-    historyDrawer.width,
   );
   return {
     fileDrawer,
     graftDrawer,
-    historyDrawer,
     viewer: {
-      width: Math.max(1, columns - fileDrawer.width - graftDrawer.width - historyDrawer.width),
+      width: Math.max(1, columns - fileDrawer.width - graftDrawer.width),
       x: fileDrawer.width,
     },
   };
@@ -104,7 +96,7 @@ function resolveFileDrawerMaxWidth(columns: number): number {
 }
 
 function isRightDrawer(kind: DrawerKind): boolean {
-  return kind === DrawerKinds.Graft || kind === DrawerKinds.History;
+  return kind === DrawerKinds.Graft;
 }
 
 function clamp01(value: number): number {

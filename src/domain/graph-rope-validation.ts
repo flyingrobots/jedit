@@ -10,7 +10,6 @@ import {
   validateRopeHeadConsistency,
   validateRopeLeafConsistency,
   validateRopeRewriteConsistency,
-  validateTickReceiptConsistency,
 } from './graph-rope-consistency-validation.js';
 import {
   validateTextBlobFact,
@@ -37,7 +36,6 @@ import {
   ROPE_REWRITE_FACT_KIND,
   ROPE_STRUCTURAL_MAINTENANCE_FACT_KIND,
   TEXT_BLOB_FACT_KIND,
-  TICK_RECEIPT_FACT_KIND,
   type BufferWorldlineFact,
   type FactValidationErrorCode,
   type FactValidationResult,
@@ -64,7 +62,6 @@ const ROPE_FACT_VALIDATORS: ReadonlyMap<string, RopeFactValidator> = new Map([
   [TEXT_BLOB_FACT_KIND, validateTextBlobFact],
   [ROPE_REWRITE_FACT_KIND, validateRopeRewriteFact],
   [ROPE_DIFF_FACT_KIND, validateRopeDiffFact],
-  [TICK_RECEIPT_FACT_KIND, validateTickReceiptFact],
   [ROPE_STRUCTURAL_MAINTENANCE_FACT_KIND, validateStructuralMaintenanceFact],
   [ROPE_CHECKPOINT_FACT_KIND, validateRopeCheckpointFact],
   [ROPE_CHECKPOINT_ANCHORED_FACT_KIND, validateRopeCheckpointAnchoredFact],
@@ -90,12 +87,12 @@ function validateBufferWorldlineFact(fact: RopeAdmittedFact, context: RopeFactVa
   if (fact.kind !== BUFFER_WORLDLINE_FACT_KIND) {
     return invalidFact(FACT_VALIDATION_ERROR_INVALID_KIND);
   }
-  const idResult = invalidIdIn([fact.worldlineId, fact.createdAtTick, fact.initialHeadId]);
+  const idResult = invalidIdIn([fact.worldlineId, fact.createdByEchoReceiptId, fact.initialHeadId]);
   if (idResult !== null) {
     return invalidFact(idResult);
   }
   const head = resolveFactById(context, fact.initialHeadId);
-  return bufferWorldlineMatchesInitialHead(fact, head, context)
+  return bufferWorldlineMatchesInitialHead(fact, head)
     ? validFact(fact)
     : invalidFact(FACT_VALIDATION_ERROR_INVALID_REFERENCE);
 }
@@ -114,7 +111,7 @@ function validateRopeHeadFact(fact: RopeAdmittedFact, context: RopeFactValidatio
   }
   const consistencyIssue = validateRopeHeadConsistency(fact, context);
   return consistencyIssue === null
-    ? validateIds(fact, [fact.headId, fact.worldlineId, fact.createdByTickId, fact.rootNodeId])
+    ? validateIds(fact, [fact.headId, fact.worldlineId, fact.createdByEchoReceiptId, fact.rootNodeId])
     : invalidFact(consistencyIssue);
 }
 
@@ -174,7 +171,7 @@ function validateRopeRewriteFact(
   if (refResult !== null) {
     return invalidFact(refResult);
   }
-  const idResult = invalidIdIn([fact.rewriteId, fact.worldlineId, fact.admittedByTickId]);
+  const idResult = invalidIdIn([fact.rewriteId, fact.worldlineId, fact.admittedByEchoReceiptId]);
   if (idResult !== null) {
     return invalidFact(idResult);
   }
@@ -209,32 +206,6 @@ function validateRopeDiffFact(
     return invalidFact(idResult);
   }
   const consistencyIssue = validateRopeDiffConsistency(fact, context);
-  return consistencyIssue === null ? validFact(fact) : invalidFact(consistencyIssue);
-}
-
-function validateTickReceiptFact(
-  fact: RopeAdmittedFact,
-  context: RopeFactValidationContext,
-): FactValidationResult<RopeAdmittedFact> {
-  if (fact.kind !== TICK_RECEIPT_FACT_KIND) {
-    return invalidFact(FACT_VALIDATION_ERROR_INVALID_KIND);
-  }
-  if (hasInvalidMetric([fact.admittedAtSequence]) || isInvalidHash(fact.contentHash)) {
-    return invalidFact(FACT_VALIDATION_ERROR_INVALID_METRIC);
-  }
-  const refResult = requireReferences(context, [
-    [fact.basisHeadId, ROPE_HEAD_FACT_KIND],
-    [fact.nextHeadId, ROPE_HEAD_FACT_KIND],
-    [fact.rewriteId, ROPE_REWRITE_FACT_KIND],
-  ]);
-  if (refResult !== null) {
-    return invalidFact(refResult);
-  }
-  const idResult = invalidIdIn([fact.tickId, fact.admissionId, fact.worldlineId]);
-  if (idResult !== null) {
-    return invalidFact(idResult);
-  }
-  const consistencyIssue = validateTickReceiptConsistency(fact, context);
   return consistencyIssue === null ? validFact(fact) : invalidFact(consistencyIssue);
 }
 
@@ -301,21 +272,15 @@ type InsertDiffSpan = Extract<RopeDiffSpan, { readonly kind: typeof ROPE_DIFF_SP
 function bufferWorldlineMatchesInitialHead(
   fact: BufferWorldlineFact,
   head: RopeAdmittedFact | null,
-  context: RopeFactValidationContext,
 ): head is RopeHeadFact {
   return isRopeHeadFact(head)
     && head.worldlineId === fact.worldlineId
     && head.basisHeadId === undefined
-    && fact.createdAtTick === head.createdByTickId
-    && fact.createdAtTick === tickIdFor(fact.worldlineId, head.contentHash, context.hash);
+    && fact.createdByEchoReceiptId === head.createdByEchoReceiptId;
 }
 
 function isRopeHeadFact(fact: RopeAdmittedFact | null): fact is RopeHeadFact {
   return fact?.kind === ROPE_HEAD_FACT_KIND;
-}
-
-function tickIdFor(worldlineId: string, contentHash: string, hash: RopeFactValidationContext['hash']): string {
-  return `tick:${hash.sha256Hex(`${worldlineId}:${contentHash}`)}`;
 }
 
 function validateEqualDiffSpan(

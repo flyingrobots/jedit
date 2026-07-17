@@ -74,7 +74,6 @@ jobs:
           name: jedit-dist
           path: |
             dist
-            src/generated/jedit/structural-history-replace-text-range.wesley.generated.ts
           if-no-files-found: error
 
   test-shards:

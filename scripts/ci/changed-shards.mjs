@@ -56,7 +56,6 @@ const CONTRACT_PATH_PREFIXES = Object.freeze([
 ]);
 const CONTRACT_PATH_PATTERNS = Object.freeze([
   /^scripts\/gen-/,
-  /^scripts\/run-wesley-cli\.mjs$/,
 ]);
 const ECHO_PATH_PATTERNS = Object.freeze([
   /^scripts\/jedit-echo/,

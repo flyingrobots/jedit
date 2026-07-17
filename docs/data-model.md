@@ -1,11 +1,18 @@
 # jedit Data Model
 
+> **Cutover note (2026-07-16):** The Wesley schemas, generators, generated
+> TypeScript projections, local graph-rope executor, and in-memory structural
+> history runtime described in older sections of this document have been
+> deleted. They remain design history only. The next executable mutation path
+> is a generated Edict client invoking an installed Echo operation and consuming
+> opaque Echo receipts plus basis-pinned observations.
+
 ## Doctrine
 
 jedit owns the **editor contract** and product nouns. Echo owns **generic
 runtime execution**, admission, scheduler-owned ticks, receipts, readings, and
-retained evidence. Wesley compiles jedit-owned GraphQL SDL into generated
-artifacts such as Echo operation metadata, codecs, and observers.
+retained evidence. Edict will compile Jim-owned operation law into generated
+clients and verified operations that Echo installs and executes.
 
 The rope model is jedit contract law hosted through Echo's generic graph and
 contract-host surfaces. Echo must not implement a privileged jedit rope engine.

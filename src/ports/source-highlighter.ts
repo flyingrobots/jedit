@@ -1,4 +1,4 @@
-import type { HotTextWindowProjection } from './hot-text-runtime.js';
+import type { HotTextWindowProjection } from './text-window-projection.js';
 
 const COMMENT_ROLE_DESCRIPTION = 'jedit.source-highlight.comment';
 const FUNCTION_ROLE_DESCRIPTION = 'jedit.source-highlight.function';

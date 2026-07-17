@@ -16,7 +16,6 @@ import {
   ROPE_LEAF_FACT_KIND,
   ROPE_REWRITE_FACT_KIND,
   TEXT_BLOB_FACT_KIND,
-  TICK_RECEIPT_FACT_KIND,
   type FactValidationErrorCode,
   type RopeAdmittedFact,
   type RopeBranchFact,
@@ -28,7 +27,6 @@ import {
   type RopeRewriteFact,
   type TextBlobFact,
   type TextBlobHashPort,
-  type TickReceiptFact,
 } from './graph-rope-types.js';
 
 const ZERO_VALUE = 0;
@@ -39,14 +37,11 @@ const ROPE_NODE_ID_PREFIX = 'rope-node:';
 const ROPE_HEAD_ID_PREFIX = 'rope-head:';
 const ROPE_REWRITE_ID_PREFIX = 'rope-rewrite:';
 const ROPE_DIFF_ID_PREFIX = 'rope-diff:';
-const ROPE_ADMISSION_ID_PREFIX = 'rope-admission:';
 const RUNTIME_HASH_PREFIX_BRANCH = 'branch:';
 const RUNTIME_HASH_PREFIX_HEAD = 'head:';
 const RUNTIME_HASH_PREFIX_LEAF = 'leaf:';
 const RUNTIME_HASH_PREFIX_REWRITE = 'rewrite:';
-const RUNTIME_HASH_PREFIX_RECEIPT = 'receipt:';
 const RUNTIME_HASH_PREFIX_SPAN = 'span:';
-const RUNTIME_HASH_PREFIX_TICK = 'tick:';
 
 export function validateRopeHeadConsistency(
   head: RopeHeadFact,
@@ -60,7 +55,7 @@ export function validateRopeHeadConsistency(
     return FACT_VALIDATION_ERROR_INVALID_METRIC;
   }
   const expectedHash = headContentHash(head, root, context.hash);
-  return headMatchesHash(head, expectedHash, context);
+  return headMatchesHash(head, expectedHash);
 }
 
 export function validateRopeBranchConsistency(
@@ -174,23 +169,6 @@ function diffMatchesHash(diff: RopeDiffFact, context: RopeFactValidationContext)
     : FACT_VALIDATION_ERROR_HASH_MISMATCH;
 }
 
-export function validateTickReceiptConsistency(
-  receipt: TickReceiptFact,
-  context: RopeFactValidationContext,
-): FactValidationErrorCode | null {
-  const rewrite = resolveRopeRewriteFact(context, receipt.rewriteId);
-  const basisHead = resolveRopeHeadFact(context, receipt.basisHeadId);
-  if (rewrite === null || basisHead === null) {
-    return FACT_VALIDATION_ERROR_INVALID_REFERENCE;
-  }
-  const linkIssue = validateReceiptLinks(receipt, rewrite, basisHead);
-  if (linkIssue !== null) {
-    return linkIssue;
-  }
-  const expectedHash = receiptContentHash(receipt, context.hash);
-  return receiptMatchesHash(receipt, expectedHash, context.hash);
-}
-
 export function validateDiffSpanHash(
   span: RopeDiffSpan,
   context: RopeFactValidationContext,
@@ -211,7 +189,6 @@ interface RewriteReferences {
   readonly basisHead: RopeHeadFact;
   readonly nextHead: RopeHeadFact;
   readonly diff: RopeDiffFact;
-  readonly receipt: TickReceiptFact;
   readonly replacementBlob: TextBlobFact;
 }
 
@@ -222,12 +199,11 @@ function rewriteReferences(
   const basisHead = resolveRopeHeadFact(context, rewrite.basisHeadId);
   const nextHead = resolveRopeHeadFact(context, rewrite.nextHeadId);
   const diff = resolveRopeDiffFact(context, rewrite.diffId);
-  const receipt = resolveTickReceiptFact(context, rewrite.admittedByTickId);
   const replacementBlob = resolveTextBlobFact(context, rewrite.replacementBlobId);
-  if (basisHead === null || nextHead === null || diff === null || receipt === null || replacementBlob === null) {
+  if (basisHead === null || nextHead === null || diff === null || replacementBlob === null) {
     return null;
   }
-  return { basisHead, nextHead, diff, receipt, replacementBlob };
+  return { basisHead, nextHead, diff, replacementBlob };
 }
 
 function validateRewriteLinks(
@@ -243,7 +219,9 @@ function validateRewriteLinks(
   if (!rewriteDiffMatches(rewrite, refs.diff)) {
     return FACT_VALIDATION_ERROR_INVALID_REFERENCE;
   }
-  return rewriteReceiptMatches(rewrite, refs.receipt) ? null : FACT_VALIDATION_ERROR_INVALID_REFERENCE;
+  return refs.nextHead.createdByEchoReceiptId === rewrite.admittedByEchoReceiptId
+    ? null
+    : FACT_VALIDATION_ERROR_INVALID_REFERENCE;
 }
 
 function rewriteWorldlineMatches(rewrite: RopeRewriteFact, refs: RewriteReferences): boolean {
@@ -255,24 +233,6 @@ function rewriteDiffMatches(rewrite: RopeRewriteFact, diff: RopeDiffFact): boole
   return diff.rewriteId === rewrite.rewriteId
     && diff.basisHeadId === rewrite.basisHeadId
     && diff.nextHeadId === rewrite.nextHeadId;
-}
-
-function rewriteReceiptMatches(rewrite: RopeRewriteFact, receipt: TickReceiptFact): boolean {
-  return receipt.rewriteId === rewrite.rewriteId
-    && receipt.basisHeadId === rewrite.basisHeadId
-    && receipt.nextHeadId === rewrite.nextHeadId;
-}
-
-function validateReceiptLinks(
-  receipt: TickReceiptFact,
-  rewrite: RopeRewriteFact,
-  basisHead: RopeHeadFact,
-): FactValidationErrorCode | null {
-  const sameWorldline = receipt.worldlineId === basisHead.worldlineId;
-  const sameRewrite = rewrite.basisHeadId === receipt.basisHeadId
-    && rewrite.nextHeadId === receipt.nextHeadId
-    && rewrite.admittedByTickId === receipt.tickId;
-  return sameWorldline && sameRewrite ? null : FACT_VALIDATION_ERROR_INVALID_REFERENCE;
 }
 
 function branchMetricsMatch(
@@ -288,20 +248,11 @@ function branchMetricsMatch(
 function headMatchesHash(
   head: RopeHeadFact,
   expectedHash: string,
-  context: RopeFactValidationContext,
 ): FactValidationErrorCode | null {
   if (head.contentHash !== expectedHash || head.headId !== `${ROPE_HEAD_ID_PREFIX}${expectedHash}`) {
     return FACT_VALIDATION_ERROR_HASH_MISMATCH;
   }
-  if (head.basisHeadId === undefined) {
-    return head.createdByTickId === tickIdFor(head.worldlineId, expectedHash, context.hash)
-      ? null
-      : FACT_VALIDATION_ERROR_HASH_MISMATCH;
-  }
-  const receipt = resolveTickReceiptFact(context, head.createdByTickId);
-  return receipt?.basisHeadId === head.basisHeadId && receipt.nextHeadId === head.headId
-    ? null
-    : FACT_VALIDATION_ERROR_INVALID_REFERENCE;
+  return null;
 }
 
 function nodeMatchesHash(
@@ -320,18 +271,6 @@ function rewriteMatchesHash(
   return rewrite.contentHash === expectedHash
     && rewrite.rewriteId === `${ROPE_REWRITE_ID_PREFIX}${expectedHash}`
     && rewrite.diffId === `${ROPE_DIFF_ID_PREFIX}${expectedHash}`
-    ? null
-    : FACT_VALIDATION_ERROR_HASH_MISMATCH;
-}
-
-function receiptMatchesHash(
-  receipt: TickReceiptFact,
-  expectedHash: string,
-  hash: TextBlobHashPort,
-): FactValidationErrorCode | null {
-  return receipt.contentHash === expectedHash
-    && receipt.admissionId === `${ROPE_ADMISSION_ID_PREFIX}${expectedHash}`
-    && receipt.tickId === tickIdFor(receipt.worldlineId, expectedHash, hash)
     ? null
     : FACT_VALIDATION_ERROR_HASH_MISMATCH;
 }
@@ -357,11 +296,6 @@ function resolveRopeRewriteFact(context: RopeFactValidationContext, id: string):
 function resolveRopeDiffFact(context: RopeFactValidationContext, id: string): RopeDiffFact | null {
   const fact = resolveFactById(context, id);
   return fact?.kind === ROPE_DIFF_FACT_KIND ? fact : null;
-}
-
-function resolveTickReceiptFact(context: RopeFactValidationContext, id: string): TickReceiptFact | null {
-  const fact = resolveFactById(context, id);
-  return fact?.kind === TICK_RECEIPT_FACT_KIND ? fact : null;
 }
 
 function resolveTextBlobFact(context: RopeFactValidationContext, id: string): TextBlobFact | null {
@@ -419,10 +353,6 @@ function rewriteContentHash(
   return hash.sha256Hex(`${RUNTIME_HASH_PREFIX_REWRITE}${basisHeadId}:${nextHeadId}:${String(range.startByte.value)}:${String(range.endByte.value)}`);
 }
 
-function receiptContentHash(receipt: TickReceiptFact, hash: TextBlobHashPort): string {
-  return hash.sha256Hex(`${RUNTIME_HASH_PREFIX_RECEIPT}${receipt.basisHeadId}:${receipt.nextHeadId}:${String(receipt.admittedAtSequence)}`);
-}
-
 function spanHashIssue(
   contentHash: string,
   kind: string,
@@ -441,10 +371,6 @@ function spanHash(kind: string, startByte: number, endByte: number, hash: TextBl
 
 function diffIdForRewrite(rewriteId: string): string {
   return rewriteId.replace(ROPE_REWRITE_ID_PREFIX, ROPE_DIFF_ID_PREFIX);
-}
-
-function tickIdFor(worldlineId: string, contentHash: string, hash: TextBlobHashPort): string {
-  return `${RUNTIME_HASH_PREFIX_TICK}${hash.sha256Hex(`${worldlineId}:${contentHash}`)}`;
 }
 
 function nodeHeight(node: RopeBranchFact | RopeLeafFact): number {

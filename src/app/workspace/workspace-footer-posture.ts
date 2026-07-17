@@ -2,7 +2,6 @@ import { workspaceTextAuthorityPosture } from './workspace-text-authority.js';
 import { WorkspaceTextAuthorityKinds } from './workspace-text-authority.js';
 import {
   workspaceBufferFileDirtyReading,
-  WorkspaceBufferCausalLineChangeKinds,
   WorkspaceBufferCausalDurabilityKinds,
   WorkspaceBufferFileDirtyKinds,
   WorkspaceBufferFileDurabilityKinds,
@@ -10,14 +9,7 @@ import {
   type WorkspaceBufferDurability,
   type WorkspaceBufferFileDurability,
   type WorkspaceBufferIntentDurability,
-  type WorkspaceBufferCausalLineChanges,
 } from './workspace-buffer-durability.js';
-import {
-  workspaceWorldlineContextLabel,
-  workspaceWorldlineMaterialization,
-  worldlineGraphContextLine,
-  WorkspaceHistoryDrawerViews,
-} from './worldline-state.js';
 import type { WorkspaceModel } from './model.js';
 import { jeditCommandFooterSummary } from './command-provenance-summaries.js';
 import { workspaceFooterWhyEvidence } from './workspace-causal-evidence-explainers.js';
@@ -41,14 +33,7 @@ export function workspaceFooterTextPosture(model: WorkspaceModel): string {
   if (whyEvidence != null) {
     return whyEvidence;
   }
-  return [
-    workspaceFooterAuthorityPosture(model),
-    workspaceWorldlineContextLabel({
-      worldline: model.worldline,
-      materialization: workspaceFooterMaterialization(model),
-      causalLineDelta: workspaceFooterCausalLineDelta(model),
-    }),
-  ].join(' | ');
+  return workspaceFooterAuthorityPosture(model);
 }
 
 export function workspaceFooterWhyEvidencePosture(model: WorkspaceModel): string | undefined {
@@ -76,64 +61,14 @@ export function workspaceBufferDurabilityFooterPosture(
   ].join(' | ');
 }
 
-export function workspaceHistoryContextLine(model: WorkspaceModel): string | undefined {
-  if (model.historyDrawerView !== WorkspaceHistoryDrawerViews.Worldlines) {
-    return undefined;
-  }
-  const lineChanges = model.textAuthority.kind === WorkspaceTextAuthorityKinds.Opened
-    ? model.textAuthority.durability.lineChanges
-    : undefined;
-  return [
-    worldlineGraphContextLine(model.worldline),
-    lineChanges == null ? undefined : causalLineChangesDebugLabel(lineChanges),
-  ].filter((part): part is string => part != null).join(' | ');
-}
-
 export function workspaceFooterCommandSummary(model: WorkspaceModel): string | undefined {
   return jeditCommandFooterSummary(model.editor, model.textAuthority);
-}
-
-function workspaceFooterMaterialization(
-  model: WorkspaceModel,
-) {
-  return model.textAuthority.kind === WorkspaceTextAuthorityKinds.Opened
-    ? model.textAuthority.materialization
-    : workspaceWorldlineMaterialization(model.editor?.dirty);
 }
 
 function workspaceFooterAuthorityPosture(model: WorkspaceModel): string {
   return model.textAuthority.kind === WorkspaceTextAuthorityKinds.Opened
     ? workspaceBufferDurabilityFooterPosture(model.textAuthority.durability)
     : workspaceTextAuthorityPosture(model.textAuthority);
-}
-
-function workspaceFooterCausalLineDelta(
-  model: WorkspaceModel,
-): { readonly insertedLineCount: number | null; readonly deletedLineCount: number | null } | undefined {
-  if (model.textAuthority.kind !== WorkspaceTextAuthorityKinds.Opened) {
-    return undefined;
-  }
-  const lineChanges = model.textAuthority.durability.lineChanges;
-  return lineChanges.kind === WorkspaceBufferCausalLineChangeKinds.Available
-    ? {
-      insertedLineCount: lineChanges.insertedLineCount,
-      deletedLineCount: lineChanges.deletedLineCount,
-    }
-    : { insertedLineCount: null, deletedLineCount: null };
-}
-
-function causalLineChangesDebugLabel(lineChanges: WorkspaceBufferCausalLineChanges): string {
-  if (lineChanges.kind === WorkspaceBufferCausalLineChangeKinds.Unavailable) {
-    return `Causal lines unavailable:${lineChanges.reason}`;
-  }
-  const rewrites = lineChanges.rewriteIds.length === 0 ? '-' : lineChanges.rewriteIds.join(',');
-  const diffs = lineChanges.diffIds.length === 0 ? '-' : lineChanges.diffIds.join(',');
-  return [
-    `Causal lines ${lineChanges.basisHeadId}->${lineChanges.nextHeadId}`,
-    `+${lineChanges.insertedLineCount}/-${lineChanges.deletedLineCount}`,
-    `rewrites:${rewrites}`,
-    `diffs:${diffs}`,
-  ].join(' ');
 }
 
 function footerIntentPosture(intent: WorkspaceBufferIntentDurability): string {

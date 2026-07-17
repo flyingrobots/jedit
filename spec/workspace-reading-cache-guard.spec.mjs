@@ -54,16 +54,14 @@ test("viewer key follow-up reads use current editor aperture", async () => {
   assert.match(source, /\bworkspaceTextApertureFromEditor\(/);
 });
 
-test("save export path uses full snapshots rather than reading-cache or window exports", async () => {
-  const [commandsSource, saveKeySource, productionSource, witnessSource] = await Promise.all([
+test("save export path delegates to production authority rather than reading caches", async () => {
+  const [commandsSource, saveKeySource, productionSource] = await Promise.all([
     readWorkspaceFile("src/app/workspace/workspace-text-commands.ts"),
     readWorkspaceFile("src/app/workspace/workspace-save-key.ts"),
     readWorkspaceFile("src/app/workspace/production-text-session.ts"),
-    readWorkspaceFile("scripts/jedit-workspace-echo-witness.mjs"),
   ]);
 
   assert.doesNotMatch(commandsSource, /\bexportWindow\b/);
-  assert.doesNotMatch(witnessSource, /\bexportWindow\b/);
   assert.doesNotMatch(commandsSource, /\bsaveEditorFile\([^;]*cache\.lines/s);
   assert.doesNotMatch(saveKeySource, /\bfullWorkspaceTextExportAperture\b/);
   assert.doesNotMatch(saveKeySource, /\baperture:/);
@@ -77,24 +75,7 @@ test("save export path uses full snapshots rather than reading-cache or window e
   assert.match(exportBody, /\bsaveEditorFile\(request\.filePath,\s*savedLines\)/);
   assert.match(commandsSource, /\bproductionTextSession\.exportSnapshot\(/);
   assert.match(productionSource, /\bexportSnapshot\b/);
-  assert.match(productionSource, /\bobservedReadingCoversFullSnapshot\b/);
-});
-
-test("text edit settlement stores reading lines only with coverage metadata", async () => {
-  const source = await readWorkspaceFile("src/app/workspace/workspace-text-wsc-settlement.ts");
-  const readingPayload = requiredMatch(
-    source,
-    /reading:\s*{\s*(?<body>[\s\S]*?)\n    },\n    aperture:/,
-  ).groups.body;
-
-  assert.match(readingPayload, /\blines:\s*cache\.lines\b/);
-  assert.match(readingPayload, /\bcoverage:\s*cache\.coverage\b/);
-  assert.match(readingPayload, /\bstartLine:\s*cache\.startLine\b/);
-  assert.match(readingPayload, /\breturnedLineCount:\s*cache\.returnedLineCount\b/);
-  assert.match(readingPayload, /\btotalLineCount:\s*cache\.totalLineCount\b/);
-  assert.match(readingPayload, /\bhasMoreBefore:\s*cache\.hasMoreBefore\b/);
-  assert.match(readingPayload, /\bhasMoreAfter:\s*cache\.hasMoreAfter\b/);
-  assert.match(readingPayload, /\btruncated:\s*cache\.truncated\b/);
+  assert.doesNotMatch(productionSource, /\bcreateProductionTextSession\b/);
 });
 
 test("edit and read follow-up observations do not fall back to top-of-file apertures", async () => {
@@ -110,12 +91,6 @@ test("edit and read follow-up observations do not fall back to top-of-file apert
 
 async function readWorkspaceFile(relativePath) {
   return readFile(path.join(REPO_ROOT, relativePath), "utf8");
-}
-
-function requiredMatch(source, pattern) {
-  const match = source.match(pattern);
-  assert.ok(match?.groups, `missing required source pattern: ${pattern}`);
-  return match;
 }
 
 function functionBody(source, name) {

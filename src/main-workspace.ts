@@ -1,6 +1,7 @@
 import { initDefaultContext } from '@flyingrobots/bijou-node';
 import { run } from '@flyingrobots/bijou-tui';
 import { createWorkspaceApp } from './adapters/workspace-app.js';
+import { createWorkspaceProductionTextDependencies } from './adapters/workspace-production-text-dependencies.js';
 import { parseTextRuntimeProfile, requireTextRuntimeProfile } from './app/text-runtime-profile.js';
 import { JEDIT_TERMINAL_MOUSE_OPTIONS } from './ui/terminal-mouse.js';
 
@@ -25,12 +26,14 @@ interface EnvBooleanOptions {
   readonly defaultValue: boolean;
 }
 
-export function runJeditWorkspace(): void {
+export async function runJeditWorkspace(): Promise<void> {
   requireTextRuntimeProfile(parseTextRuntimeProfile(
     process.env[ENV_KEYS.TextRuntime],
   ));
 
   initDefaultContext();
+
+  const productionText = await createWorkspaceProductionTextDependencies();
 
   const app = createWorkspaceApp({
     initialColumns: process.stdout.columns ?? DEFAULT_TERMINAL_COLUMNS,
@@ -40,7 +43,7 @@ export function runJeditWorkspace(): void {
     profileEnabled: envBoolean(process.env[ENV_KEYS.Profile], {
       defaultValue: true,
     }),
-  });
+  }, productionText);
 
   run(app, { mouse: JEDIT_TERMINAL_MOUSE_OPTIONS.mouse });
 }

@@ -313,7 +313,7 @@ Suggested fields:
 - `headId`
 - `kind`
 - `label`
-- `createdByTickId`
+- `createdByEchoReceiptId`
 
 ## Optional But Likely Later Node Kinds
 

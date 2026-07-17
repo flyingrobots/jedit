@@ -1,6 +1,6 @@
 import type { Cmd, RuntimeIssue } from '@flyingrobots/bijou-tui';
 import type { ByteOffset } from '../../domain/graph-rope-types.js';
-import type { TextWindowBasis } from '../../ports/text-buffer-session.js';
+import type { TextWindowBasis } from '../../ports/text-authority-evidence.js';
 import type { EditorFileFingerprint, EditorFilePort } from '../../ports/editor-file.js';
 import { editorFileFingerprintFromText } from '../../ports/editor-file-fingerprint.js';
 import { joinLines, normalizeLines } from '../editor-lines.js';
@@ -30,14 +30,9 @@ import {
   WorkspaceTextOpenBasisResultKinds,
   workspaceTextOpenBasis,
 } from './workspace-text-open-basis.js';
-import { workspaceTextEditResultWithSettlement } from './workspace-text-wsc-settlement.js';
 import { readingCache } from './workspace-text-observed-reading.js';
 import { openedWorkspaceTextResult } from './workspace-text-open-result.js';
 import { observeWorkspaceCausalLineChanges } from './workspace-causal-line-change-observation.js';
-import type {
-  WorkspaceTextOperationSequencer,
-  WorkspaceTextOperationTarget,
-} from './workspace-text-operation-sequencer.js';
 const ISSUE_LEVEL_ERROR = RuntimeIssueLevels.Error;
 const ISSUE_SOURCE_COMMAND = RuntimeIssueSources.Command;
 const OPEN_FAILURE_PREFIX = 'Text open failed';
@@ -74,14 +69,10 @@ export interface WorkspaceTextCommandBase {
   readonly filePath: string;
   readonly bufferId: string;
   readonly productionTextSession: ProductionTextSession;
-  readonly textOperationSequencer: WorkspaceTextOperationSequencer;
   readonly atMs: number;
   readonly aperture: ProductionTextViewportAperture;
   readonly cursorAfter?: TextPosition;
   readonly provenanceKind?: WorkspaceTextPendingCommandKind;
-  readonly reversedRequestId?: number;
-  readonly reversedReceiptId?: string;
-  readonly reachableHistoryRequestIds?: readonly number[];
   readonly changeBasisHeadId?: string;
 }
 
@@ -114,7 +105,6 @@ interface WorkspaceTextSaveCommandRequest {
   readonly filePath: string;
   readonly bufferId: string;
   readonly productionTextSession: ProductionTextSession;
-  readonly textOperationSequencer: WorkspaceTextOperationSequencer;
   readonly atMs: number;
 }
 
@@ -171,67 +161,31 @@ export function workspaceTextApertureFromEditor(
 export function createWorkspaceTextEditCmd(
   request: WorkspaceTextEditCommandRequest,
 ): Cmd<WorkspaceMsg> {
-  return async () => {
-    const sequenced = await request.textOperationSequencer.sequenceEdit(
-      request.productionTextSession,
-      workspaceTextOperationTarget(request),
-      () => editWorkspaceText(request),
-    );
-    const result = workspaceTextEditResultWithSettlement(request, sequenced);
-    return {
-      type: WorkspaceMessageTypes.TextEditResult,
-      requestId: request.requestId,
-      result,
-    };
-  };
+  return async () => ({
+    type: WorkspaceMessageTypes.TextEditResult,
+    requestId: request.requestId,
+    result: await editWorkspaceText(request),
+  });
 }
 
 export function createWorkspaceTextCheckpointCmd(
   request: WorkspaceTextCheckpointCommandRequest,
 ): Cmd<WorkspaceMsg> {
-  return async () => {
-    const result = await request.textOperationSequencer.sequenceCheckpoint(
-      request.productionTextSession,
-      workspaceTextOperationTarget(request),
-      () => checkpointWorkspaceText(request),
-    );
-    return {
-      type: WorkspaceMessageTypes.TextCheckpointResult,
-      requestId: request.requestId,
-      result,
-    };
-  };
+  return async () => ({
+    type: WorkspaceMessageTypes.TextCheckpointResult,
+    requestId: request.requestId,
+    result: await checkpointWorkspaceText(request),
+  });
 }
 
 export function createWorkspaceTextExportCmd(
   request: WorkspaceTextExportCommandRequest,
 ): Cmd<WorkspaceMsg> {
-  return async () => {
-    const result = await request.textOperationSequencer.sequenceExport(
-      request.productionTextSession,
-      workspaceTextOperationTarget(request),
-      () => exportWorkspaceText(request),
-    );
-    return {
-      type: WorkspaceMessageTypes.TextExportResult,
-      requestId: request.requestId,
-      result,
-    };
-  };
-}
-
-function workspaceTextOperationTarget(
-  request: WorkspaceTextOperationTarget,
-): WorkspaceTextOperationTarget {
-  return {
-    filePath: request.filePath,
-    bufferId: request.bufferId,
+  return async () => ({
+    type: WorkspaceMessageTypes.TextExportResult,
     requestId: request.requestId,
-    ...(request.reversedRequestId == null ? {} : { reversedRequestId: request.reversedRequestId }),
-    ...(request.reachableHistoryRequestIds == null
-      ? {}
-      : { reachableHistoryRequestIds: request.reachableHistoryRequestIds }),
-  };
+    result: await exportWorkspaceText(request),
+  });
 }
 
 export function createWorkspaceTextReadCmd(
@@ -263,7 +217,7 @@ async function openWorkspaceText(
       return obstructedOpen(request.filePath, opened.obstruction.issue);
     }
     const observed = await request.productionTextSession.observeWindow({
-      bufferId: opened.optic.buffer.bufferId, ...opened.textBasis,
+      bufferId: opened.bufferId, ...opened.textBasis,
       aperture: request.aperture ?? defaultWorkspaceTextAperture(),
       atMs: request.atMs,
     });
@@ -273,7 +227,7 @@ async function openWorkspaceText(
     return openedWorkspaceTextResult(
       request,
       basis,
-      opened.optic.buffer.bufferId,
+      opened.bufferId,
       observed.observed.value,
     );
   } catch (cause) {

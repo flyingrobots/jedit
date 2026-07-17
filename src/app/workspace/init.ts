@@ -22,10 +22,6 @@ import type { JeditTheme } from "../../ui/jedit-theme.js";
 import type { FileEntry } from "../../ports/file-system.js";
 import { ViewModes } from "./view-mode.js";
 import { TEXT_RUNTIME_PROFILE_ECHO_HOSTED } from "../text-runtime-profile.js";
-import {
-  unrecoveredJeditWscStartupRecovery,
-  type JeditWscStartupRecoveryResult,
-} from "../jedit-wsc-startup-recovery.js";
 import { createWorkspaceTextAuthority } from "./workspace-text-authority.js";
 import { emptyWorkspaceBufferRegistry } from "./workspace-buffer-registry.js";
 import {
@@ -33,11 +29,7 @@ import {
   INITIAL_WORKSPACE_CAUSAL_GUTTER_BASIS,
   INITIAL_WORKSPACE_LINE_NUMBER_MODE,
   initialWorkspaceCommandLineState,
-  initialWorkspaceWorldlineState,
-  WorkspaceHistoryDrawerViews,
 } from "./initial-workspace-state.js";
-
-export { recoverJeditWorkspaceFromWsc } from "../jedit-wsc-startup-recovery.js";
 
 const INITIAL_FOCUS_PANE: FocusPane = FocusPanes.Editor;
 const INITIAL_VIEW_MODE = ViewModes.Source;
@@ -53,7 +45,6 @@ export interface WorkspaceInitialModelSnapshot {
   readonly sceneOverride?: TitleScene;
   readonly sceneOverrideName?: BuiltInTitleSceneName;
   readonly nowMs: number;
-  readonly wscStartupRecovery?: JeditWscStartupRecoveryResult;
 }
 
 export function createInitialModel(
@@ -75,8 +66,6 @@ export function createInitialModel(
     ...initialBufferRegistryState(),
     textRuntimeProfile,
     textAuthority: createWorkspaceTextAuthority(textRuntimeProfile),
-    wscStartupRecovery:
-      snapshot.wscStartupRecovery ?? unrecoveredJeditWscStartupRecovery(),
     textRequestId: 0,
     viewMode: INITIAL_VIEW_MODE,
     focusPane: INITIAL_FOCUS_PANE,
@@ -112,12 +101,6 @@ function initialDrawerState() {
     fileDrawerProgress: 0,
     graftDrawerOpen: false,
     graftDrawerProgress: 0,
-    historyDrawerOpen: false,
-    historyDrawerProgress: 0,
-    echoHistory: [],
-    echoHistorySelectedIndex: 0,
-    historyDrawerView: WorkspaceHistoryDrawerViews.Echo,
-    worldline: initialWorkspaceWorldlineState(),
   };
 }
 

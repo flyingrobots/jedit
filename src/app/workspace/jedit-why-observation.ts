@@ -1,6 +1,6 @@
 import type { RuntimeIssue } from '@flyingrobots/bijou-tui';
 import type { TextRuntimeProfile } from '../text-runtime-profile.js';
-import type { WorkspaceWorldlineMaterializationKind } from './worldline-types.js';
+import type { WorkspaceMaterializationKind } from './workspace-materialization.js';
 import {
   WorkspaceTextAuthorityKinds,
   WorkspaceTextIntentStatuses,
@@ -103,7 +103,7 @@ export interface JeditWhyObservationAuthority {
   readonly filePath?: string;
   readonly hostBasis?: WorkspaceTextHostBasisKind;
   readonly kind: WorkspaceTextAuthorityKind;
-  readonly materialization?: WorkspaceWorldlineMaterializationKind;
+  readonly materialization?: WorkspaceMaterializationKind;
   readonly pendingIntentStatus?: WorkspaceTextIntentStatus;
   readonly profile: TextRuntimeProfile;
   readonly readOnly?: boolean;

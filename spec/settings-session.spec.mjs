@@ -94,8 +94,6 @@ test('causal marker settings expose every supported comparison basis', async () 
 
   assert.equal(valueLabel({ kind: 'last-save' }), 'Last save');
   assert.equal(valueLabel({ kind: 'import' }), 'Import');
-  assert.equal(valueLabel({ kind: 'selected-checkpoint', availability: 'unavailable' }), 'Selected checkpoint');
-  assert.equal(valueLabel({ kind: 'selected-tick', availability: 'unavailable' }), 'Selected tick');
 });
 
 test('settings key reducer closes, moves, and activates focused settings rows', async () => {

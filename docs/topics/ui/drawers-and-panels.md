@@ -37,14 +37,12 @@ The Graft drawer is a projection surface. It can show symbols, structure, and
 projection posture, but it does not own source text. If the projection is stale
 or unavailable, the drawer should say so directly.
 
-## Echo History Drawer
+## Causal History
 
-Open Echo history with `ctrl+h` when history is available.
-
-The history drawer shows admitted operations and their status. It should make
-the current row obvious and should never imply that previewing or browsing
-history has moved canonical head unless the user explicitly admits such a
-change.
+Jim does not currently expose a history drawer. The previous drawer projected
+process-local entries and was deleted. A replacement must consume a bounded,
+basis-pinned Echo observation and must not imply that browsing history moved a
+canonical head.
 
 ## Diagnostics Panel
 

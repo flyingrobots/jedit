@@ -5,15 +5,7 @@ import { pathToFileURL } from 'node:url';
 import { REPO_ROOT, ensureDistBuilt } from './dist-helpers.mjs';
 
 const LINE_INDEX_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-line-index-projection.js');
-const CLIENT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-optic-client.js');
-const TRANSPORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'installed-jedit-contract-echo-transport.js');
-const TEXT_SESSION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'text-buffer-session.js');
-const TEXT_SESSION_PORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'ports', 'text-buffer-session.js');
 const UTF8_ENCODER = new TextEncoder();
-const FIRST_LINE = 0;
-const SINGLE_LINE_VIEWPORT = 1;
-const NO_SURROUNDING_LINES = 0;
-const TEXT_WINDOW_BYTE_BUDGET = 80;
 
 let modulesPromise;
 
@@ -91,66 +83,10 @@ test('line index selection budgets complete UTF-8 coverage including line breaks
   }, { startByte: 4, endByte: 10 });
 });
 
-test('line index eviction cannot alter retained range why evidence', async () => {
-  const {
-    lineIndex,
-    clientModule,
-    transportModule,
-    textSession,
-    textSessionPort,
-  } = await loadModules();
-  const insertedText = 'retained';
-  const insertedTextByteLength = UTF8_ENCODER.encode(insertedText).byteLength;
-  const store = lineIndex.createDisposableJeditLineIndexStore();
-  const client = clientModule.createEchoTransportJeditOpticClient(
-    transportModule.createInstalledJeditContractEchoTransport({ lineIndexes: store }),
-  );
-  const optic = await textSession.createTextBufferSession(client).createBuffer({
-    bufferKey: 'line-index.txt',
-    initialText: '',
-    projectionPath: 'line-index.txt',
-  });
-  const applied = await optic.applyIntent({
-    kind: textSessionPort.REPLACE_RANGE_INTENT_KIND,
-    startByte: 0,
-    endByte: 0,
-    insertText: insertedText,
-  });
-  const range = { startByte: 0, endByte: insertedTextByteLength };
-  const before = await optic.explainRange(range);
-  await optic.textWindow({
-    ...applied.textBasis,
-    aperture: {
-      cursorLine: FIRST_LINE,
-      viewportLineCount: SINGLE_LINE_VIEWPORT,
-      beforeLines: NO_SURROUNDING_LINES,
-      afterLines: NO_SURROUNDING_LINES,
-      maxBytes: TEXT_WINDOW_BYTE_BUDGET,
-    },
-  });
-
-  assert.ok(store.find(before.witness.worldlineId, before.witness.basisHeadId));
-  store.clear();
-  assert.equal(store.find(before.witness.worldlineId, before.witness.basisHeadId), null);
-
-  assert.deepEqual(await optic.explainRange(range), before);
-});
-
 async function loadModules() {
   await ensureDistBuilt();
-  modulesPromise ??= Promise.all([
-    import(pathToFileURL(LINE_INDEX_MODULE_PATH).href),
-    import(pathToFileURL(CLIENT_MODULE_PATH).href),
-    import(pathToFileURL(TRANSPORT_MODULE_PATH).href),
-    import(pathToFileURL(TEXT_SESSION_MODULE_PATH).href),
-    import(pathToFileURL(TEXT_SESSION_PORT_MODULE_PATH).href),
-  ]).then(([lineIndex, clientModule, transportModule, textSession, textSessionPort]) => ({
-    lineIndex,
-    clientModule,
-    transportModule,
-    textSession,
-    textSessionPort,
-  }));
+  modulesPromise ??= import(pathToFileURL(LINE_INDEX_MODULE_PATH).href)
+    .then((lineIndex) => ({ lineIndex }));
   return modulesPromise;
 }
 

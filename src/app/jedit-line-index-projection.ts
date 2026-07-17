@@ -12,7 +12,7 @@ import type {
 import type {
   HotTextHeadBasis,
   HotTextWindowProjection,
-} from '../ports/hot-text-runtime.js';
+} from '../ports/text-window-projection.js';
 
 export const JEDIT_LINE_INDEX_PROJECTION_KIND = 'jedit-line-offset-index-projection';
 export const JEDIT_LINE_INDEX_PROJECTION_VERSION = 1;

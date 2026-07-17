@@ -1,6 +1,6 @@
 import type { RuntimeIssue } from '@flyingrobots/bijou-tui';
 import type { EditorFileFingerprint } from '../../ports/editor-file.js';
-import type { TextBufferCausalTransition } from '../../ports/text-buffer-session.js';
+import type { TextBufferCausalTransition } from '../../ports/text-authority-evidence.js';
 import type { TextRuntimeProfile } from '../text-runtime-profile.js';
 import type { EditorState } from './editor/model.js';
 import type {
@@ -22,9 +22,9 @@ import {
   type WorkspaceTextPendingCommandKind,
 } from './workspace-buffer-durability.js';
 import {
-  WorkspaceWorldlineMaterializationKinds,
-  type WorkspaceWorldlineMaterializationKind,
-} from './worldline-types.js';
+  WorkspaceMaterializationKinds,
+  type WorkspaceMaterializationKind,
+} from './workspace-materialization.js';
 import {
   editorFromFullWorkspaceTextReadingCache,
   WorkspaceTextReadingPostures,
@@ -92,7 +92,7 @@ export interface WorkspaceTextAuthorityOpened {
   readonly readOnly: boolean;
   readonly dirty: boolean;
   readonly durability: WorkspaceBufferDurability;
-  readonly materialization: WorkspaceWorldlineMaterializationKind;
+  readonly materialization: WorkspaceMaterializationKind;
   readonly hostBasis: WorkspaceTextHostBasisKind;
   readonly hostFingerprint?: EditorFileFingerprint;
   readonly cache?: WorkspaceTextReadingCache;
@@ -125,7 +125,7 @@ export interface OpenedWorkspaceTextAuthorityOptions {
   readonly readOnly: boolean;
   readonly dirty: boolean;
   readonly durability?: WorkspaceBufferDurability;
-  readonly materialization?: WorkspaceWorldlineMaterializationKind;
+  readonly materialization?: WorkspaceMaterializationKind;
   readonly hostBasis?: WorkspaceTextHostBasisKind;
   readonly hostAbsenceBasisHeadId?: string;
   readonly hostFingerprint?: EditorFileFingerprint;
@@ -302,7 +302,7 @@ export function workspaceTextAuthorityWithReceipt(
     ...authority,
     dirty: workspaceBufferFileDirty(durability) ?? authority.dirty,
     durability,
-    materialization: WorkspaceWorldlineMaterializationKinds.Unmaterialized,
+    materialization: WorkspaceMaterializationKinds.Unmaterialized,
     pendingCommandEvent: undefined,
     pendingReceiptId: receiptId,
     pendingIntentStatus: WorkspaceTextIntentStatuses.Admitted,
@@ -327,7 +327,7 @@ export function workspaceTextAuthorityWithPendingEdit(
     ...authority,
     dirty: workspaceBufferFileDirty(durability) ?? authority.dirty,
     durability,
-    materialization: WorkspaceWorldlineMaterializationKinds.Unmaterialized,
+    materialization: WorkspaceMaterializationKinds.Unmaterialized,
     pendingClientSeq,
     pendingCommandKind,
     pendingCommandEvent,
@@ -362,7 +362,7 @@ export function workspaceTextAuthorityWithObstruction(
     ...authority,
     dirty: workspaceBufferFileDirty(durability) ?? authority.dirty,
     durability,
-    materialization: WorkspaceWorldlineMaterializationKinds.Unmaterialized,
+    materialization: WorkspaceMaterializationKinds.Unmaterialized,
     pendingClientSeq: authority.pendingClientSeq ?? pendingClientSeq,
     pendingIntentStatus: WorkspaceTextIntentStatuses.Obstructed,
     blockedByClientSeq: pendingClientSeq,
@@ -382,7 +382,7 @@ export function workspaceTextAuthorityWithBlockedIntent(
     ...authority,
     dirty: workspaceBufferFileDirty(durability) ?? authority.dirty,
     durability,
-    materialization: WorkspaceWorldlineMaterializationKinds.Unmaterialized,
+    materialization: WorkspaceMaterializationKinds.Unmaterialized,
     pendingIntentStatus: WorkspaceTextIntentStatuses.Blocked,
   };
 }
@@ -430,7 +430,7 @@ export function workspaceTextAuthorityWithExport(
     durability,
     hostBasis: WorkspaceTextHostBasisKinds.File,
     hostFingerprint,
-    materialization: WorkspaceWorldlineMaterializationKinds.Materialized,
+    materialization: WorkspaceMaterializationKinds.Materialized,
     pendingClientSeq: undefined,
     pendingCommandKind: undefined,
     pendingCommandEvent: undefined,
@@ -450,10 +450,10 @@ export function isWorkspaceTextAuthorityOpened(
 
 function materializationFromOptions(
   options: WorkspaceTextMaterializationOptions,
-): WorkspaceWorldlineMaterializationKind {
+): WorkspaceMaterializationKind {
   return options.dirty
-    ? WorkspaceWorldlineMaterializationKinds.Unmaterialized
-    : WorkspaceWorldlineMaterializationKinds.Materialized;
+    ? WorkspaceMaterializationKinds.Unmaterialized
+    : WorkspaceMaterializationKinds.Materialized;
 }
 
 export function editorFromFullWorkspaceTextCache(

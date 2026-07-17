@@ -7,6 +7,7 @@ import {
 } from '../ports/echo-kernel-transport.js';
 
 const DEFAULT_ECHO_WASM_MODULE = 'warp-wasm';
+const OPERATION_MODULE_LOAD = 'module-load';
 const OPERATION_MODULE_BOOTSTRAP = 'module-bootstrap';
 const OPERATION_KERNEL_INIT = 'kernel-init';
 const OPERATION_DISPATCH_INTENT = 'dispatch_intent';
@@ -129,7 +130,15 @@ function createTrustedHostTransport(trustedDispatch: BytePayloadMethod): EchoTru
 }
 
 async function defaultModuleLoader(moduleSpecifier: string): Promise<EchoWasmKernelModule> {
-  return import(moduleSpecifier);
+  try {
+    return await import(moduleSpecifier);
+  } catch (error) {
+    throw new EchoKernelTransportError(
+      OPERATION_MODULE_LOAD,
+      `Echo wasm module could not be loaded: ${moduleSpecifier}`,
+      { cause: error },
+    );
+  }
 }
 
 async function bootstrapEchoWasmModule(kernelModule: EchoWasmKernelModule): Promise<void> {

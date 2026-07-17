@@ -48,7 +48,7 @@ export function viewerViewport(width: number, height: number): WorkspaceViewport
 
 type WorkspaceViewportModel = Pick<
   WorkspaceModel,
-  'columns' | 'rows' | 'fileDrawerProgress' | 'graftDrawerProgress' | 'historyDrawerProgress' | 'footerVisible'
+  'columns' | 'rows' | 'fileDrawerProgress' | 'graftDrawerProgress' | 'footerVisible'
 > & Partial<Pick<WorkspaceModel, 'editor' | 'lineNumberMode'>>;
 
 export function editorViewport(model: WorkspaceViewportModel): WorkspaceViewport {
@@ -60,7 +60,6 @@ export function editorViewport(model: WorkspaceViewportModel): WorkspaceViewport
     model.columns,
     model.fileDrawerProgress,
     model.graftDrawerProgress,
-    model.historyDrawerProgress,
   );
   const viewport = viewerViewport(layout.viewer.width, bodyHeight);
   return {

@@ -1,10 +1,16 @@
-import { TEXT_RUNTIME_PROFILE_ECHO_HOSTED } from '../app/text-runtime-profile.js';
-import { createProductionTextSession, type ProductionTextSession } from '../app/workspace/production-text-session.js';
-import { createTextRuntimeProfileSession } from './text-runtime-profile-session.js';
+import {
+  createEchoObstructedProductionTextSession,
+  type ProductionTextSession,
+} from '../app/workspace/production-text-session.js';
+import type { EchoWasmKernelTransport } from '../ports/echo-kernel-transport.js';
 
-export function createWorkspaceProductionTextSession(): ProductionTextSession {
-  const textSessionBinding = createTextRuntimeProfileSession({
-    profile: TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
-  });
-  return createProductionTextSession(textSessionBinding.session);
+const GENERATED_OPERATION_CORRIDOR_RECOVERY = 'Install the generated Jim Edict package in the Echo host.';
+
+export function createWorkspaceProductionTextSession(
+  transport: EchoWasmKernelTransport,
+): ProductionTextSession {
+  const kernel = transport.kernelInfo();
+  return createEchoObstructedProductionTextSession(
+    `Echo kernel ${kernel.moduleSpecifier} is initialized. ${GENERATED_OPERATION_CORRIDOR_RECOVERY}`,
+  );
 }

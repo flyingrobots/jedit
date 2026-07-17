@@ -57,8 +57,6 @@ test('Graft refresh sends live editor source text with the file request', async 
       dirty: true,
       readOnly: false,
       mode: editorMode.EditorModes.Normal,
-      undoStack: [],
-      redoStack: [],
     },
   };
 
@@ -137,8 +135,6 @@ test('Graft refresh does not reuse live-buffer projections for changed dirty tex
       dirty: true,
       readOnly: false,
       mode: editorMode.EditorModes.Normal,
-      undoStack: [],
-      redoStack: [],
     },
   };
 
@@ -211,8 +207,6 @@ test('Graft refresh clears expanded review payload state for a different file', 
       dirty: true,
       readOnly: false,
       mode: editorMode.EditorModes.Normal,
-      undoStack: [],
-      redoStack: [],
     },
   };
 
@@ -258,8 +252,6 @@ test('Workspace buffer switches clear expanded review payload state', async () =
     dirty: true,
     readOnly: false,
     mode: editorMode.EditorModes.Normal,
-    undoStack: [],
-    redoStack: [],
   };
   const record = {
     bufferId: 'other',

@@ -2,13 +2,27 @@
 
 ## Unreleased
 
-- Deleted the obsolete Wesley `host-node typescript` and `host-node zod`
-  contract projections and their regeneration script. Product consumers now
-  use the modern Wesley TypeScript artifact directly; the transitional JSON
-  transport has narrow app-owned runtime guards and an explicit Zod dependency.
-  The remaining retired Node host and observer-plan generator are also gone;
-  Jim now derives the same stable observer plan identity from its app-owned
-  specification. Clean builds remove stale modules before TypeScript emission.
+- Hard-cut production text authority to the real Echo WASM boundary. Jim now
+  requires and initializes a configured Echo kernel before constructing the
+  workspace; when the generated Jim Edict package is unavailable, every text
+  operation returns a typed obstruction instead of falling back to TypeScript.
+  The full-snapshot fixture, local graph-rope executor, installed-contract
+  transport, handwritten EINT/Wesley codecs, local admission and scheduling
+  loop, WSC authority, submission ledger, receipt correlation, and direct save
+  fallback are deleted from product source.
+- Removed the handwritten `TextBufferSessionPort` and `TextBufferOptic`
+  mutation corridor. Product code retains only app-owned request and returned
+  evidence shapes for the replaceable installed-operation seam; Echo-issued
+  identities remain opaque. Test doubles live under `spec/` and require
+  explicit injection.
+- Removed process-local undo/redo snapshots, operation sequencing, worldline
+  mutation commands, and the locally manufactured Echo History drawer. Vim
+  undo/redo keys cannot mutate text until retained Echo receipts and installed
+  Edict inverse operations exist. Causal gutter comparisons now use only
+  materialized save or import evidence.
+- Extended the production cutover guard to reject fake, fixture, or in-memory
+  implementations in `src/`, deleted authority modules, handwritten text
+  mutation ports, and process-local undo/redo stacks.
 - Replaced per-insert range-why index cloning and full sorting with deterministic
   binary insertion. Checkpoint and anchor association buckets remain ordered and
   duplicate-free without repeated O(N log N) sorts as retained evidence grows.

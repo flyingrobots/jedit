@@ -1,6 +1,6 @@
 import type { EditorState } from './editor/model.js';
-import type { HotTextWindowProjection } from '../../ports/hot-text-runtime.js';
-import type { TextWindowBasis } from '../../ports/text-buffer-session.js';
+import type { HotTextWindowProjection } from '../../ports/text-window-projection.js';
+import type { TextWindowBasis } from '../../ports/text-authority-evidence.js';
 import type { JeditTextWindowMaterializationProvenance } from '../../ports/jedit-text-window-materialization.js';
 import { EditorModes } from './editor/mode.js';
 import type { WorkspaceModel } from './model.js';
@@ -9,7 +9,6 @@ import type { WorkspaceTextAuthorityOpened } from './workspace-text-authority.js
 const FIRST_LINE = 0;
 const FIRST_COLUMN = 0;
 const EMPTY_LINE = '';
-const EMPTY_STACK = Object.freeze([]);
 const POSTURE_NO_TEXT = 'no-text';
 const POSTURE_PENDING_OPEN = 'pending-open';
 const POSTURE_OPEN_NO_READING = 'open-no-reading';
@@ -120,8 +119,6 @@ export function editorFromWorkspaceTextLines(
     lastVimEdit: projection.existing?.lastVimEdit,
     marks: projection.existing?.marks,
     lastSearch: projection.existing?.lastSearch,
-    undoStack: projection.existing?.undoStack ?? EMPTY_STACK,
-    redoStack: projection.existing?.redoStack ?? EMPTY_STACK,
   };
 }
 

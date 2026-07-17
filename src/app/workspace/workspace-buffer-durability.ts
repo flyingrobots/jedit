@@ -1,8 +1,8 @@
 import type { EditorFileFingerprint } from '../../ports/editor-file.js';
 import {
-  WorkspaceWorldlineMaterializationKinds,
-  type WorkspaceWorldlineMaterializationKind,
-} from './worldline-types.js';
+  WorkspaceMaterializationKinds,
+  type WorkspaceMaterializationKind,
+} from './workspace-materialization.js';
 import {
   initialWorkspaceBufferCausalLineChanges,
   workspaceBufferCausalLineChangesForTransition,
@@ -217,7 +217,7 @@ export interface OpenedWorkspaceBufferDurabilityOptions {
   readonly basisHeadId?: string;
   readonly hostAbsenceBasisHeadId?: string;
   readonly hostBasis: 'file' | 'missing';
-  readonly materialization: WorkspaceWorldlineMaterializationKind;
+  readonly materialization: WorkspaceMaterializationKind;
   readonly hostFingerprint?: EditorFileFingerprint;
 }
 
@@ -446,7 +446,7 @@ function openedFileDurability(
     };
   }
   if (
-    options.materialization === WorkspaceWorldlineMaterializationKinds.Materialized
+    options.materialization === WorkspaceMaterializationKinds.Materialized
     && basisHeadId != null
   ) {
     return {

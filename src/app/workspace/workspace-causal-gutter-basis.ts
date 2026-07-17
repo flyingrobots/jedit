@@ -3,62 +3,25 @@ import {
   WorkspaceBufferCausalDurabilityKinds,
   type WorkspaceBufferDurability,
 } from './workspace-buffer-durability.js';
-import {
-  EchoHistoryEntryKinds,
-  sortedEchoHistoryEntries,
-  type EchoHistoryEntry,
-} from './echo-history.js';
 
 const BASIS_LAST_SAVE = 'last-save';
 const BASIS_IMPORT = 'import';
-const BASIS_SELECTED_CHECKPOINT = 'selected-checkpoint';
-const BASIS_SELECTED_TICK = 'selected-tick';
-const BASIS_AVAILABLE = 'available';
-const BASIS_UNAVAILABLE = 'unavailable';
 
 export const WorkspaceCausalGutterBasisKinds = Object.freeze({
   LastSave: BASIS_LAST_SAVE,
   Import: BASIS_IMPORT,
-  SelectedCheckpoint: BASIS_SELECTED_CHECKPOINT,
-  SelectedTick: BASIS_SELECTED_TICK,
 } as const);
 
 export type WorkspaceCausalGutterBasisKind =
   typeof WorkspaceCausalGutterBasisKinds[keyof typeof WorkspaceCausalGutterBasisKinds];
 
-type WorkspaceSelectedCausalGutterBasis =
-  | {
-      readonly kind: typeof BASIS_SELECTED_CHECKPOINT;
-      readonly availability: typeof BASIS_UNAVAILABLE;
-    }
-  | {
-      readonly kind: typeof BASIS_SELECTED_CHECKPOINT;
-      readonly availability: typeof BASIS_AVAILABLE;
-      readonly evidenceId: string;
-      readonly headId: string;
-    }
-  | {
-      readonly kind: typeof BASIS_SELECTED_TICK;
-      readonly availability: typeof BASIS_UNAVAILABLE;
-    }
-  | {
-      readonly kind: typeof BASIS_SELECTED_TICK;
-      readonly availability: typeof BASIS_AVAILABLE;
-      readonly evidenceId: string;
-      readonly headId: string;
-      readonly tickId: string;
-    };
-
 export type WorkspaceCausalGutterBasis =
   | { readonly kind: typeof BASIS_LAST_SAVE }
-  | { readonly kind: typeof BASIS_IMPORT }
-  | WorkspaceSelectedCausalGutterBasis;
+  | { readonly kind: typeof BASIS_IMPORT };
 
 const BASIS_ORDER: readonly WorkspaceCausalGutterBasisKind[] = Object.freeze([
   BASIS_LAST_SAVE,
   BASIS_IMPORT,
-  BASIS_SELECTED_CHECKPOINT,
-  BASIS_SELECTED_TICK,
 ]);
 
 export const INITIAL_WORKSPACE_CAUSAL_GUTTER_BASIS: WorkspaceCausalGutterBasis = Object.freeze({
@@ -68,19 +31,10 @@ export const INITIAL_WORKSPACE_CAUSAL_GUTTER_BASIS: WorkspaceCausalGutterBasis =
 export function nextWorkspaceCausalGutterBasis(
   current: WorkspaceCausalGutterBasis | undefined,
   delta: number,
-  history: readonly EchoHistoryEntry[],
-  selectedHistoryIndex: number,
 ): WorkspaceCausalGutterBasis {
   const currentIndex = BASIS_ORDER.indexOf(current?.kind ?? BASIS_LAST_SAVE);
   const nextIndex = positiveModulo((currentIndex < 0 ? 0 : currentIndex) + delta, BASIS_ORDER.length);
   const nextKind = BASIS_ORDER[nextIndex] ?? BASIS_LAST_SAVE;
-  const selectedEntry = sortedEchoHistoryEntries(history)[selectedHistoryIndex];
-  if (nextKind === BASIS_SELECTED_CHECKPOINT) {
-    return selectedCheckpointBasis(selectedEntry);
-  }
-  if (nextKind === BASIS_SELECTED_TICK) {
-    return selectedTickBasis(selectedEntry);
-  }
   return { kind: nextKind };
 }
 
@@ -94,22 +48,7 @@ export function workspaceCausalGutterBasisHeadId(
   if (basis.kind === BASIS_IMPORT) {
     return nonEmptyId(durability.importBasisHeadId);
   }
-  return selectedCausalGutterBasisHeadId(basis);
-}
-
-function selectedCausalGutterBasisHeadId(
-  basis: WorkspaceSelectedCausalGutterBasis,
-): string | undefined {
-  if (basis.availability !== BASIS_AVAILABLE) {
-    return undefined;
-  }
-  if (nonEmptyId(basis.evidenceId) == null) {
-    return undefined;
-  }
-  if (basis.kind === BASIS_SELECTED_TICK && nonEmptyId(basis.tickId) == null) {
-    return undefined;
-  }
-  return nonEmptyId(basis.headId);
+  return undefined;
 }
 
 export function workspaceCurrentCausalHeadId(
@@ -118,31 +57,6 @@ export function workspaceCurrentCausalHeadId(
   return durability.causal.kind === WorkspaceBufferCausalDurabilityKinds.Admitted
     ? nonEmptyId(durability.causal.headId)
     : undefined;
-}
-
-function selectedCheckpointBasis(
-  entry: EchoHistoryEntry | undefined,
-): WorkspaceCausalGutterBasis {
-  if (entry?.kind !== EchoHistoryEntryKinds.Checkpoint) {
-    return { kind: BASIS_SELECTED_CHECKPOINT, availability: BASIS_UNAVAILABLE };
-  }
-  const evidenceId = nonEmptyId(entry.evidenceId);
-  const headId = nonEmptyId(entry.causalHeadId);
-  return evidenceId == null || headId == null
-    ? { kind: BASIS_SELECTED_CHECKPOINT, availability: BASIS_UNAVAILABLE }
-    : { kind: BASIS_SELECTED_CHECKPOINT, availability: BASIS_AVAILABLE, evidenceId, headId };
-}
-
-function selectedTickBasis(entry: EchoHistoryEntry | undefined): WorkspaceCausalGutterBasis {
-  if (entry?.kind !== EchoHistoryEntryKinds.Edit) {
-    return { kind: BASIS_SELECTED_TICK, availability: BASIS_UNAVAILABLE };
-  }
-  const evidenceId = nonEmptyId(entry.evidenceId);
-  const headId = nonEmptyId(entry.causalHeadId);
-  const tickId = nonEmptyId(entry.causalTickId);
-  return evidenceId == null || headId == null || tickId == null
-    ? { kind: BASIS_SELECTED_TICK, availability: BASIS_UNAVAILABLE }
-    : { kind: BASIS_SELECTED_TICK, availability: BASIS_AVAILABLE, evidenceId, headId, tickId };
 }
 
 function positiveModulo(value: number, size: number): number {

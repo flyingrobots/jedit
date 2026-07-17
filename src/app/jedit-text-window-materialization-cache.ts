@@ -6,7 +6,7 @@ import {
   type TextByteRange,
 } from '../domain/graph-rope-types.js';
 import type { HashPort } from '../ports/hash.js';
-import type { HotTextWindowProjection } from '../ports/hot-text-runtime.js';
+import type { HotTextWindowProjection } from '../ports/text-window-projection.js';
 import {
   JEDIT_TEXT_WINDOW_MATERIALIZATION_COMPLETENESS_COMPLETE,
   JEDIT_TEXT_WINDOW_MATERIALIZATION_SCHEMA_VERSION,

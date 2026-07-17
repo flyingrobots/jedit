@@ -99,6 +99,63 @@ test('production cutover guard catches sample fake Echo fixture transport tokens
   assert.match(result.stderr, /fake-echo-jedit-optic-transport/);
 });
 
+test('production cutover guard catches every production-local authority constructor', () => {
+  const tempDir = mkdtempSync(path.join(tmpdir(), 'jedit-local-authority-guard-'));
+  const sample = path.join(tempDir, 'sample.ts');
+  writeFileSync(sample, [
+    'const state = createInMemoryJeditContractStatePort();',
+    'const recovery = createFakeEchoRecoveryPort([]);',
+    'const transport = createInstalledJeditContractEchoTransport();',
+    'const authority = createGraphRopeHotTextAuthority();',
+    'const runtime = createGraphRopeRuntime({ hash });',
+    'const local: HotTextRuntimePort = runtime;',
+    'const state: HotTextBufferState = runtime.createBuffer();',
+    'const session: TextBufferSessionPort = runtime;',
+    'const optic: TextBufferOptic = session.getBufferOptic(bufferId);',
+    'const result = optic.applyIntent(intent);',
+    'const undoStack = [];',
+    'const redoStack = [];',
+    'const packageDescriptor = jeditHotTextContractPackage();',
+    'const envelope = createJeditRuntimeWorkEnvelope(input, hash);',
+    'const ticket = createJeditTicketedRuntimeIngress(input);',
+    'const ledger = createJeditSubmissionLedger();',
+    'const correlation = createJeditReceiptCorrelation();',
+    'const loop = createTrustedEchoRuntimeLoop(options);',
+  ].join('\n'));
+
+  const result = spawnGuard('--sample-forbidden-file', sample);
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /createInMemory production implementation/);
+  assert.match(result.stderr, /createFake production implementation/);
+  assert.match(result.stderr, /createInstalledJeditContractEchoTransport/);
+  assert.match(result.stderr, /createGraphRopeHotTextAuthority/);
+  assert.match(result.stderr, /createGraphRopeRuntime/);
+  assert.match(result.stderr, /HotTextRuntimePort/);
+  assert.match(result.stderr, /HotTextBufferState/);
+  assert.match(result.stderr, /handwritten text session port/);
+  assert.match(result.stderr, /handwritten text optic mutation/);
+  assert.match(result.stderr, /process-local editor undo stack/);
+  assert.match(result.stderr, /process-local editor redo stack/);
+  assert.match(result.stderr, /local contract package descriptor/);
+  assert.match(result.stderr, /local runtime work envelope/);
+  assert.match(result.stderr, /local ticketed work/);
+  assert.match(result.stderr, /local submission ledger/);
+  assert.match(result.stderr, /local receipt correlation/);
+  assert.match(result.stderr, /local trusted runtime loop/);
+});
+
+test('production cutover guard catches test-only implementation filenames', () => {
+  const tempDir = mkdtempSync(path.join(tmpdir(), 'jedit-local-authority-name-guard-'));
+  const sample = path.join(tempDir, 'fake-echo-authority.ts');
+  writeFileSync(sample, 'export const authority = null;\n');
+
+  const result = spawnGuard('--sample-forbidden-file', sample);
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /test-only implementation filename is forbidden/);
+});
+
 test('production cutover guard catches sample hot-buffer full-root helper tokens', () => {
   const tempDir = mkdtempSync(path.join(tmpdir(), 'jedit-hot-buffer-guard-'));
   const sample = path.join(tempDir, 'sample.ts');

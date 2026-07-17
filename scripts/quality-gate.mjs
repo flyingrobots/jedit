@@ -20,7 +20,7 @@ const IDENTITY_DOCTRINE_DOC = path.join(ROOT, 'docs/design/echo-identity-doctrin
 const IDENTITY_DOCTRINE_REQUIRED_LINKS = [
   { file: 'ARCHITECTURE.md', marker: 'docs/design/echo-identity-doctrine.md' },
   { file: 'README.md', marker: 'docs/design/echo-identity-doctrine.md' },
-  { file: 'docs/BEARING.md', marker: 'docs/design/echo-identity-doctrine.md' },
+  { file: 'docs/BEARING.md', marker: 'design/echo-identity-doctrine.md' },
   { file: 'docs/echo-application-hosting-guide.md', marker: 'docs/design/echo-identity-doctrine.md' },
   { file: 'docs/design/0027-echo-hosted-production-cutover.md', marker: 'echo-identity-doctrine.md' },
 ];

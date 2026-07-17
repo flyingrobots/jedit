@@ -14,9 +14,9 @@ import {
   type WorkspaceTextHostBasisKind,
 } from './workspace-text-authority.js';
 import {
-  WorkspaceWorldlineMaterializationKinds,
-  type WorkspaceWorldlineMaterializationKind,
-} from './worldline-types.js';
+  WorkspaceMaterializationKinds,
+  type WorkspaceMaterializationKind,
+} from './workspace-materialization.js';
 
 const OPEN_BASIS_READY = 'ready';
 const OPEN_BASIS_OBSTRUCTED = 'obstructed';
@@ -37,7 +37,7 @@ export interface WorkspaceTextOpenBasisRequest {
 export interface WorkspaceTextOpenBasis {
   readonly initialText: string;
   readonly readOnly: boolean;
-  readonly materialization: WorkspaceWorldlineMaterializationKind;
+  readonly materialization: WorkspaceMaterializationKind;
   readonly hostBasis: WorkspaceTextHostBasisKind;
   readonly hostFingerprint?: EditorFileFingerprint;
 }
@@ -60,7 +60,7 @@ export function workspaceTextOpenBasis(
     return readyOpenBasis({
       initialText: EMPTY_INITIAL_TEXT,
       readOnly: false,
-      materialization: WorkspaceWorldlineMaterializationKinds.Unmaterialized,
+      materialization: WorkspaceMaterializationKinds.Unmaterialized,
       hostBasis: WorkspaceTextHostBasisKinds.Missing,
     });
   }
@@ -74,7 +74,7 @@ export function workspaceTextOpenBasis(
   return readyOpenBasis({
     initialText,
     readOnly: loaded.readOnly,
-    materialization: WorkspaceWorldlineMaterializationKinds.Materialized,
+    materialization: WorkspaceMaterializationKinds.Materialized,
     hostBasis: WorkspaceTextHostBasisKinds.File,
     hostFingerprint: loaded.fingerprint ?? editorFileFingerprintFromText(initialText),
   });

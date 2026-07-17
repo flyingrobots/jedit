@@ -5,17 +5,20 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 const OPTION_SAMPLE_FORBIDDEN_FILE = '--sample-forbidden-file';
 const SOURCE_ROOT = 'src';
 const SOURCE_EXTENSION = '.ts';
+const SCRIPT_ROOT = 'scripts';
+const SCRIPT_EXTENSION = '.mjs';
+const GUARD_FILE = 'scripts/jedit-production-cutover-guard.mjs';
+const FORBIDDEN_PRODUCT_FILE_NAME = /(?:^|\/)(?:[^/]*(?:fake|fixture|in-memory)[^/]*)\.(?:ts|mjs)$/iu;
 const PRODUCTION_FILE = Object.freeze({
   TEXT_RUNTIME_PROFILE: 'src/app/text-runtime-profile.ts',
   TEXT_SESSION: 'src/app/workspace/production-text-session.ts',
-  TEXT_SESSION_WITNESS: 'src/app/workspace/production-text-session-witness.ts',
   FILE_TREE: 'src/app/workspace/file-tree.ts',
   VIEWER_CONTENT: 'src/app/workspace/viewer-content.ts',
   TEXT_AUTHORITY: 'src/app/workspace/workspace-text-authority.ts',
   TEXT_COMMANDS: 'src/app/workspace/workspace-text-commands.ts',
   TEXT_POSITION: 'src/app/workspace/workspace-text-position.ts',
   TEXT_RESULTS: 'src/app/workspace/workspace-text-results.ts',
-  TEXT_RUNTIME_PROFILE_SESSION: 'src/adapters/text-runtime-profile-session.ts',
+  TEXT_RUNTIME_PROFILE_SESSION: 'src/adapters/workspace-production-text-session.ts',
 });
 const LIFECYCLE_AUTHORITY_FILE = Object.freeze({
   FILE_TREE: PRODUCTION_FILE.FILE_TREE,
@@ -33,13 +36,6 @@ const LIFECYCLE_AUTHORITY_FILE = Object.freeze({
   TEXT_RUNTIME_STATE: 'src/app/workspace/workspace-text-runtime-state.ts',
   WORKSPACE_SAVE_KEY: 'src/app/workspace/workspace-save-key.ts',
 });
-const RECOVERY_GATE_FILE = Object.freeze({
-  ECHO_CLI_ADAPTER: 'src/adapters/echo-cli-recovery-adapter.ts',
-  ECHO_CODEC: 'src/adapters/echo-recovery-codec.ts',
-  ECHO_POSTURE: 'src/app/echo-recovery-posture.ts',
-  EDIT_SUBMISSION_IDENTITY: 'src/app/jedit-edit-submission-identity.ts',
-  RECOVERY_EVIDENCE_REPORT: 'src/app/jedit-recovery-evidence-report.ts',
-});
 const TRANSITIONAL_FILE = Object.freeze({
   INTERACTIVE_TEXT_RUNTIME_MODE: 'src/app/interactive-text-runtime-mode.ts',
   INTERACTIVE_ECHO_TEXT_SESSION: 'src/adapters/interactive-echo-text-session.ts',
@@ -47,7 +43,6 @@ const TRANSITIONAL_FILE = Object.freeze({
 const DEFAULT_PRODUCTION_FILES = Object.freeze([
   PRODUCTION_FILE.TEXT_RUNTIME_PROFILE,
   PRODUCTION_FILE.TEXT_SESSION,
-  PRODUCTION_FILE.TEXT_SESSION_WITNESS,
   PRODUCTION_FILE.FILE_TREE,
   PRODUCTION_FILE.VIEWER_CONTENT,
   PRODUCTION_FILE.TEXT_AUTHORITY,
@@ -72,23 +67,51 @@ const DEFAULT_LIFECYCLE_AUTHORITY_FILES = Object.freeze([
   LIFECYCLE_AUTHORITY_FILE.TEXT_RESULTS,
   LIFECYCLE_AUTHORITY_FILE.TEXT_RUNTIME_STATE,
 ]);
-const DEFAULT_RECOVERY_GATE_FILES = Object.freeze([
-  RECOVERY_GATE_FILE.ECHO_CLI_ADAPTER,
-  RECOVERY_GATE_FILE.ECHO_CODEC,
-  RECOVERY_GATE_FILE.ECHO_POSTURE,
-  RECOVERY_GATE_FILE.EDIT_SUBMISSION_IDENTITY,
-  RECOVERY_GATE_FILE.RECOVERY_EVIDENCE_REPORT,
-]);
 const REMOVED_TRANSITIONAL_FILES = Object.freeze([
+  'src/domain/text-edit-contract.ts',
+  'src/domain/tick-admission-contract.ts',
+  'src/domain/edit-group-contract.ts',
+  'src/domain/save-checkpoint-contract.ts',
+  'src/app/jedit-contract-runtime-id.ts',
+  'src/app/jedit-hot-text-json-schemas.ts',
+  'src/app/workspace/production-text-session-witness.ts',
+  'src/app/workspace/echo-history.ts',
+  'src/app/workspace/production-text-coordinate-serialization.ts',
+  'src/app/workspace/production-text-window-projection.ts',
+  'src/app/workspace/workspace-text-operation-sequencer.ts',
+  'src/app/workspace/worldline-command-dispatch.ts',
+  'src/app/workspace/worldline-commands.ts',
+  'src/app/workspace/worldline-graph.ts',
+  'src/app/workspace/worldline-phase-view.ts',
+  'src/app/workspace/worldline-state.ts',
+  'src/app/workspace/worldline-types.ts',
+  'src/codec.ts',
+  'src/ports/jedit-agent-strand-contract.ts',
+  'src/generated/jedit/rope.wesley.generated.ts',
+  'scripts/gen-structural-history-wesley.mjs',
+  'scripts/run-wesley-cli.mjs',
   TRANSITIONAL_FILE.INTERACTIVE_TEXT_RUNTIME_MODE,
   TRANSITIONAL_FILE.INTERACTIVE_ECHO_TEXT_SESSION,
-]);
-const EXPLICIT_FIXTURE_OR_MIGRATION_SOURCE_FILES = Object.freeze([
-  'src/app/hot-buffer-session.ts',
-  'src/adapters/full-snapshot-hot-text-runtime-fixture.ts',
   'src/adapters/fake-echo-jedit-optic-transport.ts',
+  'src/adapters/full-snapshot-hot-text-runtime-fixture.ts',
+  'src/adapters/graph-rope-hot-text-authority-adapter.ts',
   'src/adapters/installed-jedit-contract-echo-transport.ts',
-  'src/adapters/installed-text-authority-guard.ts',
+  'src/adapters/installed-jedit-eint-bridge.ts',
+  'src/app/jedit-contract-runtime.ts',
+  'src/app/jedit-contract-mutation-handlers.ts',
+  'src/app/jedit-contract-query-observers.ts',
+  'src/app/jedit-edit-submission-identity.ts',
+  'src/app/jedit-recovery-gate-scenario.ts',
+  'src/app/jedit-submission-ledger.ts',
+  'src/app/jedit-ticketed-work-boundary.ts',
+  'src/app/trusted-echo-runtime-loop.ts',
+  'src/app/workspace/workspace-production-optimistic-edit.ts',
+  'src/app/workspace/workspace-text-wsc-settlement.ts',
+  'src/adapters/jedit-wsc-workspace-store.ts',
+  'src/domain/graph-rope-runtime.ts',
+  'src/ports/text-buffer-session.ts',
+  'src/generated/jedit/rope.codec.generated.ts',
+  'scripts/jedit-workspace-echo-witness.mjs',
 ]);
 const FORBIDDEN_LEGACY_AUTHORITY_PATTERNS = Object.freeze([
   { label: 'loadEditor', pattern: /\bloadEditor\b(?!File)/u },
@@ -126,6 +149,8 @@ const FORBIDDEN_NON_ECHO_RUNTIME_MODE_PATTERNS = Object.freeze([
   { label: 'fallbackProfile', pattern: /\bfallbackProfile\b/u },
 ]);
 const FORBIDDEN_PRODUCT_FIXTURE_AUTHORITY_PATTERNS = Object.freeze([
+  { label: 'createInMemory production implementation', pattern: /\bcreateInMemory[A-Za-z0-9_]*\b/u },
+  { label: 'createFake production implementation', pattern: /\bcreateFake[A-Za-z0-9_]*\b/u },
   { label: 'createFullSnapshotHotTextRuntimeFixture', pattern: /\bcreateFullSnapshotHotTextRuntimeFixture\b/u },
   { label: 'isFullSnapshotHotTextRuntimeFixture', pattern: /\bisFullSnapshotHotTextRuntimeFixture\b/u },
   { label: 'FullSnapshotHotTextRuntimeFixture', pattern: /\bFullSnapshotHotTextRuntimeFixture\b/u },
@@ -134,6 +159,29 @@ const FORBIDDEN_PRODUCT_FIXTURE_AUTHORITY_PATTERNS = Object.freeze([
   { label: 'in-memory-hot-text-runtime', pattern: /\bin-memory-hot-text-runtime\b/u },
   { label: 'createFakeEchoJeditOpticTransport', pattern: /\bcreateFakeEchoJeditOpticTransport\b/u },
   { label: 'fake-echo-jedit-optic-transport', pattern: /\bfake-echo-jedit-optic-transport\b/u },
+  { label: 'createInstalledJeditContractEchoTransport', pattern: /\bcreateInstalledJeditContractEchoTransport\b/u },
+  { label: 'installed-jedit-contract-echo-transport', pattern: /\binstalled-jedit-contract-echo-transport\b/u },
+  { label: 'createGraphRopeHotTextAuthority', pattern: /\bcreateGraphRopeHotTextAuthority\b/u },
+  { label: 'createGraphRopeRuntime', pattern: /\bcreateGraphRopeRuntime\b/u },
+  { label: 'local production text session adapter', pattern: /\bcreateProductionTextSession\b/u },
+  { label: 'handwritten rope EINT codec', pattern: /\brope\.codec\.generated\b/u },
+  { label: 'handwritten EINT intent packer', pattern: /\bpackIntentV1\b/u },
+  { label: 'local contract package descriptor', pattern: /\bjeditHotTextContractPackage\b/u },
+  { label: 'local runtime work envelope', pattern: /\bcreateJeditRuntimeWorkEnvelope\b/u },
+  { label: 'local ticketed work', pattern: /\bcreateJeditTicketed(?:RuntimeIngress|WorkBoundary)\b/u },
+  { label: 'local submission ledger', pattern: /\bcreateJeditSubmissionLedger\b/u },
+  { label: 'local receipt correlation', pattern: /\bcreateJeditReceiptCorrelation\b/u },
+  { label: 'process-local receipt correlation map', pattern: /\beditReceipts\b/u },
+  { label: 'local WSC authority', pattern: /\b(?:JeditWsc|jedit-wsc|echo-wsc)\b/u },
+  { label: 'legacy local editor load', pattern: /\bloadEditor\b(?!File)/u },
+  { label: 'legacy local editor save', pattern: /\bsaveEditor\b(?!File)/u },
+  { label: 'local trusted runtime loop', pattern: /\bcreateTrustedEchoRuntimeLoop\b/u },
+  { label: 'HotTextRuntimePort', pattern: /\bHotTextRuntimePort\b/u },
+  { label: 'HotTextBufferState', pattern: /\bHotTextBufferState\b/u },
+  { label: 'handwritten text session port', pattern: /\bTextBufferSessionPort\b/u },
+  { label: 'handwritten text optic mutation', pattern: /\bTextBufferOptic\b|\bapplyIntent\b/u },
+  { label: 'process-local editor undo stack', pattern: /\bundoStack\b/u },
+  { label: 'process-local editor redo stack', pattern: /\bredoStack\b/u },
   { label: 'startHotBufferSession', pattern: /\bstartHotBufferSession\b/u },
   { label: 'materializeHotBuffer', pattern: /\bmaterializeHotBuffer\b/u },
   { label: 'hot-buffer-session', pattern: /\bhot-buffer-session\b/u },
@@ -145,11 +193,14 @@ const FORBIDDEN_PRODUCT_FIXTURE_AUTHORITY_PATTERNS = Object.freeze([
 const options = parseArgs(process.argv.slice(2));
 const failures = [
   ...removedFileFailures(),
+  ...forbiddenProductFileNameFailures([
+    ...productSourceFiles(),
+    ...options.sampleForbiddenFiles,
+  ]),
   ...forbiddenSourceFailures(productSourceFiles(), FORBIDDEN_PRODUCT_FIXTURE_AUTHORITY_PATTERNS),
   ...forbiddenSourceFailures(DEFAULT_PRODUCTION_FILES, FORBIDDEN_LEGACY_AUTHORITY_PATTERNS),
   ...forbiddenSourceFailures(DEFAULT_PRODUCTION_FILES, FORBIDDEN_NON_ECHO_RUNTIME_MODE_PATTERNS),
   ...forbiddenSourceFailures(DEFAULT_LIFECYCLE_AUTHORITY_FILES, FORBIDDEN_LIFECYCLE_AUTHORITY_PATTERNS),
-  ...forbiddenSourceFailures(DEFAULT_RECOVERY_GATE_FILES, FORBIDDEN_RECOVERY_FALLBACK_PATTERNS),
   ...forbiddenSourceFailures(options.sampleForbiddenFiles, [
     ...FORBIDDEN_LEGACY_AUTHORITY_PATTERNS,
     ...FORBIDDEN_NON_ECHO_RUNTIME_MODE_PATTERNS,
@@ -206,19 +257,27 @@ function removedFileFailures() {
 }
 
 function productSourceFiles() {
-  const allowed = new Set(EXPLICIT_FIXTURE_OR_MIGRATION_SOURCE_FILES);
-  return collectSourceFiles(SOURCE_ROOT).filter((filePath) => !allowed.has(filePath));
+  return [
+    ...collectProductFiles(SOURCE_ROOT, SOURCE_EXTENSION),
+    ...collectProductFiles(SCRIPT_ROOT, SCRIPT_EXTENSION).filter(filePath => filePath !== GUARD_FILE),
+  ];
 }
 
-function collectSourceFiles(root) {
+function forbiddenProductFileNameFailures(filePaths) {
+  return filePaths
+    .filter((filePath) => FORBIDDEN_PRODUCT_FILE_NAME.test(filePath))
+    .map((filePath) => `${filePath}: test-only implementation filename is forbidden in production source`);
+}
+
+function collectProductFiles(root, extension) {
   const entries = readdirSync(root).sort();
   return entries.flatMap((entry) => {
     const entryPath = `${root}/${entry}`;
     const stat = statSync(entryPath);
     if (stat.isDirectory()) {
-      return collectSourceFiles(entryPath);
+      return collectProductFiles(entryPath, extension);
     }
-    return entryPath.endsWith(SOURCE_EXTENSION) ? [entryPath] : [];
+    return entryPath.endsWith(extension) ? [entryPath] : [];
   });
 }
 

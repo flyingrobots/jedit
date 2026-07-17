@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createNotificationState } from "@flyingrobots/bijou-tui";
 import {
-  fakeTextOperationSequencer,
   fixtureProjectionBasis,
   fixtureTextWindowMaterialization,
   importDist,
@@ -258,8 +257,6 @@ test("viewer renders production text from full reading cache instead of stale ed
       dirty: false,
       readOnly: false,
       mode: modeModule.EditorModes.Normal,
-      undoStack: [],
-      redoStack: [],
     },
     textAuthority: authority.openedWorkspaceTextAuthority({
       profile: profile.TEXT_RUNTIME_PROFILE_ECHO_HOSTED,
@@ -331,7 +328,7 @@ test("viewer paints causal gutter evidence only for the rendered admitted head",
     filePath: "/repo/notes.txt",
     bufferId: "buffer:notes",
     readOnly: false,
-    dirty: true,
+    dirty: false,
     cache,
   });
   const model = {
@@ -339,13 +336,7 @@ test("viewer paints causal gutter evidence only for the rendered admitted head",
       lines: ["one", "two", "three"],
     }),
     jeditTheme: mockJeditTheme(),
-    causalGutterBasis: {
-      kind: "selected-tick",
-      availability: "available",
-      evidenceId: "receipt:saved",
-      headId: "head:saved",
-      tickId: "tick:saved",
-    },
+    causalGutterBasis: { kind: "last-save" },
     textAuthority: {
       ...opened,
       durability: {
@@ -370,24 +361,11 @@ test("viewer paints causal gutter evidence only for the rendered admitted head",
     ...model,
     textAuthority: { ...model.textAuthority, pendingIntentStatus: "predicted" },
   }, 80, 16));
-  const wrongSelectedBasis = surfaceText(viewerContent.renderViewer({
-    ...model,
-    causalGutterBasis: {
-      kind: "selected-tick",
-      availability: "available",
-      evidenceId: "receipt:other",
-      headId: "head:other",
-      tickId: "tick:other",
-    },
-  }, 80, 16));
-
   assert.match(matching, /2-\+│ two/);
   assert.match(stale, /2  │ two/);
   assert.doesNotMatch(stale, /2-\+│ two/);
   assert.match(optimistic, /2  │ two/);
   assert.doesNotMatch(optimistic, /2-\+│ two/);
-  assert.match(wrongSelectedBasis, /2  │ two/);
-  assert.doesNotMatch(wrongSelectedBasis, /2-\+│ two/);
 });
 
 test("viewer does not render local text when an opened authority has no projection", async () => {
@@ -440,7 +418,7 @@ function causalLineChanges(nextHeadId) {
   return {
     kind: "available",
     source: "causal-observation",
-    basisHeadId: "head:saved",
+    basisHeadId: "head:test",
     nextHeadId,
     insertedLineCount: 1,
     deletedLineCount: 0,
@@ -465,7 +443,7 @@ function causalLineChanges(nextHeadId) {
   };
 }
 
-test("insert and delete keys submit production text edits with optimistic local projection", async () => {
+test("insert and delete keys render only admitted production observations", async () => {
   const [viewerKey, runtimeModule, modeModule, authority, profile] =
     await Promise.all([
       importDist("app", "workspace", "viewer-key.js"),
@@ -525,13 +503,7 @@ test("insert and delete keys submit production text edits with optimistic local 
       lines: ["abc"],
       cursorCol: 1,
     }),
-    causalGutterBasis: {
-      kind: "selected-tick",
-      availability: "available",
-      evidenceId: "receipt:selected",
-      headId: "head:selected",
-      tickId: "tick:selected",
-    },
+    causalGutterBasis: { kind: "last-save" },
   };
 
   const [pendingInsert, insertCommands] = viewerKey.updateViewerFromKey(
@@ -539,51 +511,18 @@ test("insert and delete keys submit production text edits with optimistic local 
     baseModel,
     mockDeps().sourceHighlighter,
     productionTextSession,
-    fakeTextOperationSequencer(),
   );
-  assert.deepEqual(pendingInsert.editor.lines, ["aXbc"]);
-  assert.equal(pendingInsert.editor.cursorCol, 2);
-  assert.equal(pendingInsert.editor.dirty, true);
+  assert.deepEqual(pendingInsert.editor.lines, ["abc"]);
+  assert.equal(pendingInsert.editor.cursorCol, 1);
+  assert.equal(pendingInsert.editor.dirty, false);
   assert.equal(pendingInsert.textAuthority.dirty, false);
   assert.equal(pendingInsert.textAuthority.durability.intent.kind, "pending");
 
   const insertMessage = await insertCommands[0]();
-  assert.equal(lineDiffRequests[0].basisHeadId, "head:selected");
-  assert.equal(
-    insertMessage.result.wscSettlementEnvelope.envelopeId.length,
-    64,
-  );
-  assert.deepEqual(
-    Array.from(insertMessage.result.wscSettlementEnvelope.bytes).slice(0, 1),
-    [123],
-  );
-  const settlementWrites = [];
+  assert.equal(lineDiffRequests[0].basisHeadId, "head:test");
   const runtime = runtimeModule.createWorkspaceRuntime(
     mockRuntime({
       productionTextSession,
-      wscWorkspaceStore: {
-        writeEnvelope: (envelope) => {
-          settlementWrites.push(envelope);
-          return {
-            status: "JEDIT_WSC_WORKSPACE_STORE_WRITTEN",
-            envelopeId: envelope.envelopeId,
-            byteLength: envelope.bytes.byteLength,
-            workspacePath: "/repo/.jedit/echo-wsc/envelopes",
-          };
-        },
-        readEnvelope: () => ({
-          status: "JEDIT_WSC_WORKSPACE_STORE_OBSTRUCTED",
-          obstruction: {
-            code: "missing_envelope",
-            message: "missing envelope",
-          },
-        }),
-        listEnvelopes: () => ({
-          status: "JEDIT_WSC_WORKSPACE_STORE_LISTED",
-          envelopeIds: [],
-          workspacePath: "/repo/.jedit/echo-wsc/envelopes",
-        }),
-      },
     }),
   );
   const [insertedModel] = runtime.update(insertMessage, pendingInsert);
@@ -598,14 +537,11 @@ test("insert and delete keys submit production text edits with optimistic local 
       atMs: 12,
     },
   ]);
-  assert.deepEqual(settlementWrites, [
-    insertMessage.result.wscSettlementEnvelope,
-  ]);
   assert.deepEqual(insertedModel.editor.lines, ["aXbc"]);
   assert.equal(insertedModel.textAuthority.lastReceiptId, "receipt:insert");
   assert.equal(insertedModel.textAuthority.dirty, true);
   assert.equal(insertedModel.textAuthority.durability.lineChanges.kind, "available");
-  assert.equal(insertedModel.textAuthority.durability.lineChanges.basisHeadId, "head:selected");
+  assert.equal(insertedModel.textAuthority.durability.lineChanges.basisHeadId, "head:test");
 
   const normalModel = {
     ...insertedModel,
@@ -620,9 +556,8 @@ test("insert and delete keys submit production text edits with optimistic local 
     normalModel,
     mockDeps().sourceHighlighter,
     productionTextSession,
-    fakeTextOperationSequencer(),
   );
-  assert.deepEqual(pendingDelete.editor.lines, ["abc"]);
+  assert.deepEqual(pendingDelete.editor.lines, ["aXbc"]);
   assert.equal(pendingDelete.editor.dirty, true);
   assert.equal(pendingDelete.textAuthority.dirty, true);
   assert.equal(pendingDelete.textAuthority.durability.intent.kind, "pending");
@@ -656,9 +591,8 @@ test("insert and delete keys submit production text edits with optimistic local 
     backspaceModel,
     mockDeps().sourceHighlighter,
     productionTextSession,
-    fakeTextOperationSequencer(),
   );
-  assert.deepEqual(pendingBackspace.editor.lines, ["bc"]);
+  assert.deepEqual(pendingBackspace.editor.lines, ["abc"]);
 
   const backspaceMessage = await backspaceCommands[0]();
   const [backspacedModel] = runtime.update(backspaceMessage, pendingBackspace);
@@ -688,19 +622,16 @@ test("normal mode dd submits a production line delete edit", async () => {
   const productionTextSession = {
     deleteRange: async (request) => {
       deletes.push(request);
-      return { kind: "applied", result: { receiptId: "receipt:dd" } };
+      return appliedTextOutcome("receipt:dd", "one\nthree");
     },
-    observeWindow: async () => ({
+    observeWindow: async (request) => ({
       kind: "observed",
       observed: {
-        value: {
+        value: textWindowReading({
           readingId: "reading:dd",
-          lines: [{ text: "one" }, { text: "three" }],
-          lineCount: 2,
-          cursorLine: 1,
-          viewportLineCount: 24,
-          truncated: false,
-        },
+          lines: ["one", "three"],
+          textBasis: { basisHeadId: request.basisHeadId, byteRange: request.byteRange },
+        }),
       },
     }),
   };
@@ -718,14 +649,12 @@ test("normal mode dd submits a production line delete edit", async () => {
     model,
     mockDeps().sourceHighlighter,
     productionTextSession,
-    fakeTextOperationSequencer(),
   );
   const [queuedDelete, deleteCommands] = viewerKey.updateViewerFromKey(
     { key: "d", ctrl: false, alt: false, shift: false },
     pendingDelete,
     mockDeps().sourceHighlighter,
     productionTextSession,
-    fakeTextOperationSequencer(),
   );
   const deleteMessage = await deleteCommands[0]();
   const [deletedModel] = runtime.update(deleteMessage, queuedDelete);
@@ -758,19 +687,16 @@ test("normal mode cw submits a production change edit and enters insert mode", a
   const productionTextSession = {
     replaceRange: async (request) => {
       replacements.push(request);
-      return { kind: "applied", result: { receiptId: "receipt:cw" } };
+      return appliedTextOutcome("receipt:cw", "beta");
     },
-    observeWindow: async () => ({
+    observeWindow: async (request) => ({
       kind: "observed",
       observed: {
-        value: {
+        value: textWindowReading({
           readingId: "reading:cw",
-          lines: [{ text: "beta" }],
-          lineCount: 1,
-          cursorLine: 0,
-          viewportLineCount: 24,
-          truncated: false,
-        },
+          lines: ["beta"],
+          textBasis: { basisHeadId: request.basisHeadId, byteRange: request.byteRange },
+        }),
       },
     }),
   };
@@ -787,14 +713,12 @@ test("normal mode cw submits a production change edit and enters insert mode", a
     model,
     mockDeps().sourceHighlighter,
     productionTextSession,
-    fakeTextOperationSequencer(),
   );
   const [queuedChange, changeCommands] = viewerKey.updateViewerFromKey(
     { key: "w", ctrl: false, alt: false, shift: false },
     pendingChange,
     mockDeps().sourceHighlighter,
     productionTextSession,
-    fakeTextOperationSequencer(),
   );
   const changeMessage = await changeCommands[0]();
   const [changedModel] = runtime.update(changeMessage, queuedChange);
@@ -809,7 +733,7 @@ test("normal mode cw submits a production change edit and enters insert mode", a
     },
   ]);
   assert.deepEqual(changedModel.editor.lines, ["beta"]);
-  assert.equal(changedModel.editor.mode, modeModule.EditorModes.Insert);
+  assert.equal(changedModel.editor.mode, modeModule.EditorModes.Normal);
   assert.equal(changedModel.editor.cursorCol, 0);
 });
 
@@ -849,7 +773,6 @@ test("cursor movement on production text changes UI only and does not submit edi
     model,
     mockDeps().sourceHighlighter,
     productionTextSession,
-    fakeTextOperationSequencer(),
   );
 
   assert.equal(nextModel.editor.cursorCol, 1);
@@ -913,7 +836,6 @@ test("viewport movement requests a bounded read without submitting edits", async
     },
     mockDeps().sourceHighlighter,
     productionTextSession,
-    fakeTextOperationSequencer(),
   );
   const message = await commands[0]();
   const runtime = runtimeModule.createWorkspaceRuntime(
@@ -1105,7 +1027,7 @@ test("TextEditResult for an inactive buffer is ignored even when request id matc
   assert.equal(nextModel.textAuthority.bufferId, "buffer:b");
   assert.equal(nextModel.textAuthority.lastReceiptId, undefined);
   assert.deepEqual(nextModel.editor.lines, ["buffer b local"]);
-  assert.deepEqual(nextModel.echoHistory, []);
+  assert.equal("echoHistory" in nextModel, false);
 });
 
 test("dependent TextEditResult stays blocked after an earlier obstruction", async () => {
@@ -1176,9 +1098,7 @@ test("dependent TextEditResult stays blocked after an earlier obstruction", asyn
   assert.equal(blockedModel.textAuthority.pendingIntentStatus, authority.WorkspaceTextIntentStatuses.Blocked);
   assert.equal(blockedModel.textAuthority.blockedByClientSeq, 1);
   assert.equal(blockedModel.textAuthority.lastReceiptId, undefined);
-  assert.equal(blockedModel.echoHistory.at(-2).status, "obstructed");
-  assert.equal(blockedModel.echoHistory.at(-1).status, "blocked");
-  assert.match(blockedModel.echoHistory.at(-1).summary, /request:1/);
+  assert.match(blockedModel.notifications.items.at(-1).message, /request:1/);
 });
 
 test("stale TextEditResult obstruction is ignored after a newer edit settles", async () => {
@@ -1233,10 +1153,10 @@ test("stale TextEditResult obstruction is ignored after a newer edit settles", a
   assert.equal(nextModel.textAuthority.lastObstruction, undefined);
   assert.equal(nextModel.textAuthority.blockedByClientSeq, undefined);
   assert.equal(nextModel.textAuthority.lastReceiptId, "receipt:2");
-  assert.deepEqual(nextModel.echoHistory, []);
+  assert.equal("echoHistory" in nextModel, false);
 });
 
-test("save can be requested while a production text intent is still pending", async () => {
+test("save is refused while a production text intent is still pending", async () => {
   const [saveKey, modeModule, authority, profile] =
     await Promise.all([
       importDist("app", "workspace", "workspace-save-key.js"),
@@ -1281,16 +1201,10 @@ test("save can be requested while a production text intent is still pending", as
 
   const [pendingSaveModel, commands] = saveKey.saveWorkspace(model, context);
 
-  assert.equal(pendingSaveModel.textRequestId, 5);
+  assert.equal(pendingSaveModel.textRequestId, 4);
   assert.equal(pendingSaveModel.textAuthority.pendingIntentStatus, authority.WorkspaceTextIntentStatuses.Predicted);
   assert.equal(exportCalls.length, 0);
-  assert.equal(commands.length, 1);
-  await commands[0]();
-  assert.deepEqual(exportCalls, [{
-    bufferId: "buffer:notes",
-    ...textBasisRequest("base"),
-    atMs: 77,
-  }]);
+  assert.equal(commands.length, 0);
 });
 
 test("edit planning after bounded read uses the full local projection", async () => {
@@ -1351,7 +1265,6 @@ test("edit planning after bounded read uses the full local projection", async ()
     model,
     mockDeps().sourceHighlighter,
     productionTextSession,
-    fakeTextOperationSequencer(),
   );
   await commands[0]();
 
@@ -1480,15 +1393,14 @@ test("ctrl-s exports a full production snapshot and checkpoints without direct l
   assert.equal(checkpointedModel.editor.dirty, false);
 });
 
-test("repeated ctrl-s coalesces an in-flight production export", async () => {
-  const [keyBindings, runtimeModule, modeModule, authority, profile, sequencer] =
+test("repeated ctrl-s fails closed when the first export changes the host basis", async () => {
+  const [keyBindings, runtimeModule, modeModule, authority, profile] =
     await Promise.all([
       importDist("app", "workspace", "key-bindings.js"),
       importDist("app", "workspace", "runtime.js"),
       importDist("app", "workspace", "editor", "mode.js"),
       importDist("app", "workspace", "workspace-text-authority.js"),
       importDist("app", "text-runtime-profile.js"),
-      importDist("app", "workspace", "workspace-text-operation-sequencer.js"),
     ]);
   const savedFiles = [];
   const exportCalls = [];
@@ -1504,7 +1416,6 @@ test("repeated ctrl-s coalesces an in-flight production export", async () => {
       };
     },
   });
-  const textOperationSequencer = sequencer.createWorkspaceTextOperationSequencer();
   const model = {
     ...textWorkspaceModel(modeModule, authority, profile, {
       dirty: true,
@@ -1536,7 +1447,6 @@ test("repeated ctrl-s coalesces an in-flight production export", async () => {
         },
       },
       productionTextSession,
-      textOperationSequencer,
     }),
   };
 
@@ -1554,18 +1464,17 @@ test("repeated ctrl-s coalesces an in-flight production export", async () => {
   const secondExport = secondCommands[0]();
   const firstMessage = await firstExport;
   const secondMessage = await secondExport;
-  const runtime = runtimeModule.createWorkspaceRuntime(
-    mockRuntime({ productionTextSession, textOperationSequencer }),
-  );
+  const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime({ productionTextSession }));
   const [ignoredFirst, firstCheckpointCommands] = runtime.update(firstMessage, secondSave);
-  const [exportedModel, checkpointCommands] = runtime.update(secondMessage, ignoredFirst);
+  const [exportedModel, followUpCommands] = runtime.update(secondMessage, ignoredFirst);
 
   assert.equal(firstCheckpointCommands.length, 0);
-  assert.equal(exportCalls.length, 1);
+  assert.equal(exportCalls.length, 2);
   assert.deepEqual(savedFiles, [{ filePath: "/repo/notes.txt", lines: ["fresh"] }]);
-  assert.equal(secondMessage.result.kind, "exported");
-  assert.equal(exportedModel.textAuthority.dirty, false);
-  assert.equal(checkpointCommands.length, 1);
+  assert.equal(secondMessage.result.kind, "obstructed");
+  assert.equal(exportedModel.textAuthority.dirty, true);
+  assert.match(exportedModel.notifications.items.at(-1).message, /changed on disk after open/);
+  assert.equal(followUpCommands.length, 1, "only toast expiry may follow an obstructed export");
 });
 
 for (const blockCase of EXISTING_SAVE_BLOCK_CASES) {
@@ -1956,8 +1865,6 @@ function textWorkspaceModel(modeModule, authority, profile, editorOverrides) {
       dirty: false,
       readOnly: false,
       mode: modeModule.EditorModes.Normal,
-      undoStack: [],
-      redoStack: [],
       ...editorOverrides,
     },
     textAuthority: authority.openedWorkspaceTextAuthority({
@@ -1978,10 +1885,6 @@ function textWorkspaceModel(modeModule, authority, profile, editorOverrides) {
     focusPane: "editor",
     fileDrawerOpen: false,
     graftDrawerOpen: false,
-    historyDrawerOpen: false,
-    historyDrawerProgress: 0,
-    echoHistory: [],
-    echoHistorySelectedIndex: 0,
     graftInfo: undefined,
     graftLoading: false,
     graftRequestId: 0,
@@ -2124,10 +2027,7 @@ function openedTextOutcome(bufferId, text) {
   };
   return {
     kind: "opened",
-    optic: {
-      buffer: { bufferId },
-      openedTextBasis: textBasis,
-    },
+    bufferId,
     textBasis,
   };
 }

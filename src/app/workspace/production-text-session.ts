@@ -4,30 +4,20 @@ import type {
   ApplyIntentResult,
   Observed,
   CreateTextBufferCheckpointResult,
-  TextBufferOptic,
-  TextBufferSessionPort,
+  TextWindowBasis,
   TextWindowReading,
-} from '../../ports/text-buffer-session.js';
+} from '../../ports/text-authority-evidence.js';
 import type { JeditWhyRangeReport } from '../../ports/jedit-why-range.js';
-import {
-  REPLACE_RANGE_INTENT_KIND,
-  TEXT_BUFFER_CHECKPOINT_KIND_MANUAL_SAVE,
-} from '../../ports/text-buffer-session.js';
 import { RuntimeIssueLevels, RuntimeIssueSources } from './runtime-issue.js';
-import { serializeByteOffset, serializeTextByteRange } from './production-text-coordinate-serialization.js';
 import type {
   ProductionTextExportRequest,
-  ProductionTextViewportAperture,
   ProductionTextWindowRequest,
 } from './production-text-basis-request.js';
 import {
-  observeProductionTextCausalLineDiff,
   PRODUCTION_TEXT_CAUSAL_LINE_DIFF_OBSERVED,
   type ProductionTextCausalLineDiffOutcome,
   type ProductionTextCausalLineDiffRequest,
 } from './production-text-causal-line-diff.js';
-import { materializeObservedText, textWindowInputFromViewport } from './production-text-window-projection.js';
-export { materializeObservedText, textWindowInputFromViewport } from './production-text-window-projection.js';
 export type {
   ProductionTextExportRequest,
   ProductionTextViewportAperture,
@@ -38,7 +28,6 @@ export type {
   ProductionTextCausalLineDiffRequest,
 } from './production-text-causal-line-diff.js';
 
-const EMPTY_INSERT_TEXT = '';
 const OPEN_OBSTRUCTION_CODE = 'text-buffer-open-obstructed';
 const EDIT_OBSTRUCTION_CODE = 'text-buffer-edit-obstructed';
 const QUERY_OBSTRUCTION_CODE = 'text-buffer-query-obstructed';
@@ -46,9 +35,7 @@ const CHECKPOINT_OBSTRUCTION_CODE = 'text-buffer-checkpoint-obstructed';
 const MISSING_BUFFER_OBSTRUCTION_CODE = 'text-buffer-missing-obstructed';
 const TEXT_EXPORT_OBSTRUCTION_CODE = 'text-buffer-export-obstructed';
 const WHY_RANGE_OBSTRUCTION_CODE = 'text-buffer-why-range-obstructed';
-const GROUPED_EDIT_OBSTRUCTION_MESSAGE = 'Grouped production text edits require explicit jedit command planning.';
-const FULL_SNAPSHOT_OBSTRUCTION_MESSAGE = 'Text export requires a full untruncated text snapshot.';
-const TEXT_EXPORT_LINE_SEPARATOR = '\n';
+const ECHO_OPERATION_CORRIDOR_UNAVAILABLE = 'Echo is connected, but the generated Jim operation corridor is unavailable.';
 const OUTCOME_OPENED = 'opened';
 const OUTCOME_APPLIED = 'applied';
 const OUTCOME_CHECKPOINTED = 'checkpointed';
@@ -56,13 +43,6 @@ const OUTCOME_OBSERVED = 'observed';
 const OUTCOME_EXPORTED = 'exported';
 const OUTCOME_RANGE_EXPLAINED = 'range-explained';
 const OUTCOME_OBSTRUCTED = 'obstructed';
-const FULL_SNAPSHOT_CURSOR_LINE = 0;
-const FULL_SNAPSHOT_BEFORE_LINES = 0;
-const FULL_SNAPSHOT_AFTER_LINES = 0;
-const FULL_SNAPSHOT_VIEWPORT_LINE_COUNT = Number.MAX_SAFE_INTEGER;
-const FULL_SNAPSHOT_MAX_BYTES = Number.MAX_SAFE_INTEGER;
-const MIN_OPAQUE_ID_LENGTH = 1;
-const UTF8_ENCODER = new TextEncoder();
 
 export const ProductionTextSessionOutcomeKinds = Object.freeze({
   Opened: OUTCOME_OPENED,
@@ -152,8 +132,8 @@ export interface ProductionTextObstruction {
 
 export interface ProductionTextOpenApplied {
   readonly kind: typeof OUTCOME_OPENED;
-  readonly optic: TextBufferOptic;
-  readonly textBasis: TextBufferOptic['openedTextBasis'];
+  readonly bufferId: string;
+  readonly textBasis: TextWindowBasis;
 }
 
 export interface ProductionTextEditApplied {
@@ -227,253 +207,21 @@ export interface ProductionTextSession {
   explainRange(request: ProductionTextWhyRangeRequest): Promise<ProductionTextWhyRangeOutcome>;
 }
 
-export function createProductionTextSession(
-  session: TextBufferSessionPort,
+export function createEchoObstructedProductionTextSession(
+  message: string = ECHO_OPERATION_CORRIDOR_UNAVAILABLE,
 ): ProductionTextSession {
   return Object.freeze({
-    openBuffer: (request: ProductionTextOpenRequest) => openBuffer(session, request),
-    async insertText(request: ProductionTextInsertRequest): Promise<ProductionTextEditOutcome> {
-      return applyReplaceRange(session, {
-        bufferId: request.bufferId,
-        startByte: request.startByte,
-        endByte: request.startByte,
-        insertText: request.insertText,
-        atMs: request.atMs,
-      });
-    },
-    async replaceRange(request: ProductionTextReplaceRequest): Promise<ProductionTextEditOutcome> {
-      return applyReplaceRange(session, request);
-    },
-    deleteRange: (request: ProductionTextDeleteRequest) => deleteRange(session, request),
-    multiRangeEdit: (request: ProductionTextMultiRangeRequest) => multiRangeEdit(request),
-    checkpointBuffer: (request: ProductionTextCheckpointRequest) => checkpointBuffer(session, request),
-    observeWindow: (request: ProductionTextWindowRequest) => observeWindow(session, request),
-    observeCausalLineDiff: (request: ProductionTextCausalLineDiffRequest) =>
-      observeProductionTextCausalLineDiff(session, request, {
-        missingBuffer,
-        query: (atMs, message) => obstructed(QUERY_OBSTRUCTION_CODE, atMs, message),
-      }),
-    exportSnapshot: (request: ProductionTextExportRequest) => exportSnapshot(session, request),
-    explainRange: (request: ProductionTextWhyRangeRequest) => explainRange(session, request),
+    openBuffer: async (request: ProductionTextOpenRequest) => obstructed(OPEN_OBSTRUCTION_CODE, request.atMs, message),
+    insertText: async (request: ProductionTextInsertRequest) => obstructed(EDIT_OBSTRUCTION_CODE, request.atMs, message),
+    replaceRange: async (request: ProductionTextReplaceRequest) => obstructed(EDIT_OBSTRUCTION_CODE, request.atMs, message),
+    deleteRange: async (request: ProductionTextDeleteRequest) => obstructed(EDIT_OBSTRUCTION_CODE, request.atMs, message),
+    multiRangeEdit: async (request: ProductionTextMultiRangeRequest) => obstructed(EDIT_OBSTRUCTION_CODE, request.atMs, message),
+    checkpointBuffer: async (request: ProductionTextCheckpointRequest) => obstructed(CHECKPOINT_OBSTRUCTION_CODE, request.atMs, message),
+    observeWindow: async (request: ProductionTextWindowRequest) => obstructed(QUERY_OBSTRUCTION_CODE, request.atMs, message),
+    observeCausalLineDiff: async (request: ProductionTextCausalLineDiffRequest) => obstructed(QUERY_OBSTRUCTION_CODE, request.atMs, message),
+    exportSnapshot: async (request: ProductionTextExportRequest) => obstructed(TEXT_EXPORT_OBSTRUCTION_CODE, request.atMs, message),
+    explainRange: async (request: ProductionTextWhyRangeRequest) => obstructed(WHY_RANGE_OBSTRUCTION_CODE, request.atMs, message),
   });
-}
-
-async function checkpointBuffer(
-  session: TextBufferSessionPort,
-  request: ProductionTextCheckpointRequest,
-): Promise<ProductionTextCheckpointOutcome> {
-  try {
-    const optic = await session.getBufferOptic(request.bufferId);
-    if (optic == null) {
-      return missingBuffer(request.atMs);
-    }
-    const result = await optic.createCheckpoint({
-      kind: TEXT_BUFFER_CHECKPOINT_KIND_MANUAL_SAVE,
-      basisHeadId: request.basisHeadId,
-      label: request.label,
-    });
-    return {
-      kind: OUTCOME_CHECKPOINTED,
-      result,
-    };
-  } catch (cause) {
-    return obstructed(
-      CHECKPOINT_OBSTRUCTION_CODE,
-      request.atMs,
-      cause instanceof Error ? cause.message : String(cause),
-    );
-  }
-}
-
-async function exportSnapshot(
-  session: TextBufferSessionPort,
-  request: ProductionTextExportRequest,
-): Promise<ProductionTextExportOutcome> {
-  const observed = await observeWindow(session, {
-    bufferId: request.bufferId,
-    basisHeadId: request.basisHeadId,
-    byteRange: request.byteRange,
-    aperture: fullSnapshotAperture(),
-    atMs: request.atMs,
-  });
-  if (observed.kind === OUTCOME_OBSTRUCTED) {
-    return obstructed(
-      TEXT_EXPORT_OBSTRUCTION_CODE,
-      request.atMs,
-      observed.obstruction.issue.message,
-    );
-  }
-  if (!observedReadingCoversFullSnapshot(observed.observed.value)) {
-    return obstructed(
-      TEXT_EXPORT_OBSTRUCTION_CODE,
-      request.atMs,
-      FULL_SNAPSHOT_OBSTRUCTION_MESSAGE,
-    );
-  }
-  return {
-    kind: OUTCOME_EXPORTED,
-    text: materializeObservedText(observed.observed),
-    readingId: observed.observed.evidence.readingId,
-    basisHeadId: observed.observed.value.projection.basisHeadId,
-  };
-}
-
-function fullSnapshotAperture(): ProductionTextViewportAperture {
-  return {
-    cursorLine: FULL_SNAPSHOT_CURSOR_LINE,
-    viewportLineCount: FULL_SNAPSHOT_VIEWPORT_LINE_COUNT,
-    beforeLines: FULL_SNAPSHOT_BEFORE_LINES,
-    afterLines: FULL_SNAPSHOT_AFTER_LINES,
-    maxBytes: FULL_SNAPSHOT_MAX_BYTES,
-  };
-}
-
-function observedReadingCoversFullSnapshot(reading: TextWindowReading): boolean {
-  return reading.startLine === FULL_SNAPSHOT_CURSOR_LINE
-    && reading.hasMoreBefore !== true
-    && reading.hasMoreAfter !== true
-    && reading.truncated !== true
-    && reading.lineCount === reading.totalLineCount
-    && reading.lines.length === reading.totalLineCount
-    && projectionCoversFullSnapshot(reading);
-}
-
-function projectionCoversFullSnapshot(reading: TextWindowReading): boolean {
-  return reading.projection.basisHeadId.length >= MIN_OPAQUE_ID_LENGTH
-    && reading.projection.byteRange.startByte === FULL_SNAPSHOT_CURSOR_LINE
-    && reading.projection.byteRange.endByte === UTF8_ENCODER.encode(reading.projection.text).length
-    && reading.projection.text === reading.lines.map((line) => line.text).join(TEXT_EXPORT_LINE_SEPARATOR);
-}
-
-async function multiRangeEdit(
-  request: ProductionTextMultiRangeRequest,
-): Promise<ProductionTextEditOutcome> {
-  return obstructed(EDIT_OBSTRUCTION_CODE, request.atMs, GROUPED_EDIT_OBSTRUCTION_MESSAGE);
-}
-
-async function openBuffer(
-  session: TextBufferSessionPort,
-  request: ProductionTextOpenRequest,
-): Promise<ProductionTextOpenOutcome> {
-  try {
-    const optic = await session.createBuffer({
-      bufferKey: request.bufferKey,
-      initialText: request.initialText,
-      projectionPath: request.projectionPath,
-    });
-    const outcome: ProductionTextOpenApplied = {
-      kind: OUTCOME_OPENED,
-      optic,
-      textBasis: optic.openedTextBasis,
-    };
-    return outcome;
-  } catch (cause) {
-    return obstructed(
-      OPEN_OBSTRUCTION_CODE,
-      request.atMs,
-      cause instanceof Error ? cause.message : String(cause),
-    );
-  }
-}
-
-function deleteRange(
-  session: TextBufferSessionPort,
-  request: ProductionTextDeleteRequest,
-): Promise<ProductionTextEditOutcome> {
-  return applyReplaceRange(session, {
-    bufferId: request.bufferId,
-    startByte: request.startByte,
-    endByte: request.endByte,
-    insertText: EMPTY_INSERT_TEXT,
-    atMs: request.atMs,
-  });
-}
-
-async function observeWindow(
-  session: TextBufferSessionPort,
-  request: ProductionTextWindowRequest,
-): Promise<ProductionTextWindowOutcome> {
-  try {
-    const optic = await session.getBufferOptic(request.bufferId);
-    if (optic == null) {
-      return missingBuffer(request.atMs);
-    }
-    const observed = await optic.textWindow({
-      basisHeadId: request.basisHeadId,
-      byteRange: request.byteRange,
-      aperture: textWindowInputFromViewport(request.aperture),
-    });
-    const outcome: ProductionTextWindowObserved = {
-      kind: OUTCOME_OBSERVED,
-      observed,
-    };
-    return outcome;
-  } catch (cause) {
-    return obstructed(
-      QUERY_OBSTRUCTION_CODE,
-      request.atMs,
-      cause instanceof Error ? cause.message : String(cause),
-    );
-  }
-}
-
-async function explainRange(
-  session: TextBufferSessionPort,
-  request: ProductionTextWhyRangeRequest,
-): Promise<ProductionTextWhyRangeOutcome> {
-  try {
-    const optic = await session.getBufferOptic(request.bufferId);
-    if (optic == null) {
-      return missingBuffer(request.atMs);
-    }
-    return {
-      kind: OUTCOME_RANGE_EXPLAINED,
-      report: await optic.explainRange(serializeTextByteRange(request.range)),
-    };
-  } catch (cause) {
-    return obstructed(
-      WHY_RANGE_OBSTRUCTION_CODE,
-      request.atMs,
-      cause instanceof Error ? cause.message : String(cause),
-    );
-  }
-}
-
-async function applyReplaceRange(
-  session: TextBufferSessionPort,
-  request: ProductionTextReplaceRequest,
-): Promise<ProductionTextEditOutcome> {
-  try {
-    const optic = await session.getBufferOptic(request.bufferId);
-    if (optic == null) {
-      return missingBuffer(request.atMs);
-    }
-    const result = await optic.applyIntent({
-      kind: REPLACE_RANGE_INTENT_KIND,
-      startByte: serializeByteOffset(request.startByte),
-      endByte: serializeByteOffset(request.endByte),
-      insertText: request.insertText,
-    });
-    const outcome: ProductionTextEditApplied = {
-      kind: OUTCOME_APPLIED,
-      result,
-    };
-    return outcome;
-  } catch (cause) {
-    return obstructed(
-      EDIT_OBSTRUCTION_CODE,
-      request.atMs,
-      cause instanceof Error ? cause.message : String(cause),
-    );
-  }
-}
-
-function missingBuffer(atMs: number): ProductionTextObstructed {
-  return obstructed(
-    MISSING_BUFFER_OBSTRUCTION_CODE,
-    atMs,
-    'Production text buffer is not available.',
-  );
 }
 
 function obstructed(

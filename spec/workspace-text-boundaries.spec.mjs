@@ -3,7 +3,6 @@ import test from 'node:test';
 import { createWorkspaceEchoAppHarness } from './workspace-echo-app-harness.mjs';
 import {
   basisPinnedTestTextSession,
-  fakeTextOperationSequencer,
   importDist,
   mockEditor,
 } from './workspace-helpers.mjs';
@@ -132,8 +131,6 @@ test('text edit planner owns cursor selection and unsupported range posture', as
     dirty: false,
     readOnly: false,
     mode: modeModule.EditorModes.Normal,
-    undoStack: [],
-    redoStack: [],
   };
 
   assert.deepEqual(planner.planWorkspaceTextInsert(editor, 'X'), {
@@ -181,8 +178,6 @@ test('text edit planner converts UTF-16 cursor columns to branded UTF-8 bytes', 
     dirty: false,
     readOnly: false,
     mode: modeModule.EditorModes.Insert,
-    undoStack: [],
-    redoStack: [],
   };
 
   assert.deepEqual(planner.planWorkspaceTextInsert(editor, '!').startByte, {
@@ -263,7 +258,6 @@ test('replace command submits through production text session and refreshes read
     filePath: '/repo/notes.md',
     bufferId: 'buffer:notes',
     productionTextSession,
-    textOperationSequencer: fakeTextOperationSequencer(),
     atMs: 42,
     aperture: commands.defaultWorkspaceTextAperture(),
     changeBasisHeadId: 'head:saved',
@@ -352,7 +346,6 @@ test('committed text edit remains applied when causal line observation is obstru
     filePath: '/repo/notes.md',
     bufferId: 'buffer:notes',
     productionTextSession,
-    textOperationSequencer: fakeTextOperationSequencer(),
     atMs: 42,
     aperture: commands.defaultWorkspaceTextAperture(),
     changeBasisHeadId: 'head:saved',
@@ -435,64 +428,6 @@ test('causal line observation refuses adapter evidence for a different basis', a
   });
 });
 
-test('settlement envelope records bounded reading coverage metadata', async () => {
-  const commands = await importDist('app', 'workspace', 'workspace-text-commands.js');
-  const productionTextSession = basisPinnedTestTextSession({
-    insertText: async () => ({
-      kind: 'applied',
-      result: { receiptId: 'receipt:window', textBasis: testTextBasis(101, 'head:window') },
-    }),
-    observeWindow: async () => ({
-      kind: 'observed',
-      observed: {
-        value: {
-          readingId: 'reading:window',
-          lines: [{
-            lineNumber: 24,
-            text: 'window evidence',
-          }],
-          startLine: 24,
-          lineCount: 1,
-          totalLineCount: 40,
-          hasMoreBefore: true,
-          hasMoreAfter: true,
-          cursorLine: 24,
-          viewportLineCount: 4,
-          truncated: false,
-        },
-      },
-    }),
-  });
-
-  const message = await commands.createWorkspaceTextEditCmd({
-    kind: commands.WorkspaceTextEditCommandKinds.Insert,
-    requestId: 8,
-    filePath: '/repo/notes.md',
-    bufferId: 'buffer:notes',
-    productionTextSession,
-    textOperationSequencer: fakeTextOperationSequencer(),
-    atMs: 42,
-    aperture: {
-      cursorLine: 24,
-      viewportLineCount: 4,
-      beforeLines: 0,
-      afterLines: 0,
-      maxBytes: 1048576,
-    },
-    startByte: { kind: 'utf8-byte-offset', value: 100 },
-    insertText: 'Z',
-  })();
-  const payload = JSON.parse(new TextDecoder().decode(message.result.wscSettlementEnvelope.bytes));
-
-  assert.equal(payload.reading.coverage, 'window');
-  assert.equal(payload.reading.startLine, 24);
-  assert.equal(payload.reading.returnedLineCount, 1);
-  assert.equal(payload.reading.totalLineCount, 40);
-  assert.equal(payload.reading.hasMoreBefore, true);
-  assert.equal(payload.reading.hasMoreAfter, true);
-  assert.equal(payload.reading.truncated, false);
-});
-
 function testTextBasis(endByte, basisHeadId) {
   return {
     basisHeadId,
@@ -503,68 +438,6 @@ function testTextBasis(endByte, basisHeadId) {
   };
 }
 
-test('production undo and redo submit Echo replacement edits', async () => {
-  const harness = await openedHarness({
-    hostLines: ['abc'],
-    readings: ['abc', 'bc', 'abc', 'bc'],
-  });
-
-  await harness.runFirst(await harness.key('x'));
-  await harness.runFirst(await harness.key('u'));
-  await harness.runFirst(await harness.key('r', { ctrl: true }));
-
-  assert.deepEqual(harness.calls.delete, [{
-    bufferId: 'buffer:notes',
-    startByte: { kind: 'utf8-byte-offset', value: 0 },
-    endByte: { kind: 'utf8-byte-offset', value: 1 },
-    atMs: 0,
-  }]);
-  assert.deepEqual(harness.calls.replace, [
-    {
-      bufferId: 'buffer:notes',
-      startByte: { kind: 'utf8-byte-offset', value: 0 },
-      endByte: { kind: 'utf8-byte-offset', value: 0 },
-      insertText: 'a',
-      atMs: 0,
-    },
-    {
-      bufferId: 'buffer:notes',
-      startByte: { kind: 'utf8-byte-offset', value: 0 },
-      endByte: { kind: 'utf8-byte-offset', value: 1 },
-      insertText: '',
-      atMs: 0,
-    },
-  ]);
-  assert.deepEqual(harness.model.editor.lines, ['bc']);
-});
-
-test('production insert-mode edits can be undone through Echo', async () => {
-  const harness = await openedHarness({
-    hostLines: ['a'],
-    readings: ['a', 'Xa', 'a'],
-  });
-
-  await harness.key('i');
-  await harness.runFirst(await harness.key('X', { shift: true }));
-  await harness.key('escape');
-  await harness.runFirst(await harness.key('u'));
-
-  assert.deepEqual(harness.calls.insert, [{
-    bufferId: 'buffer:notes',
-    startByte: { kind: 'utf8-byte-offset', value: 0 },
-    insertText: 'X',
-    atMs: 0,
-  }]);
-  assert.deepEqual(harness.calls.replace, [{
-    bufferId: 'buffer:notes',
-    startByte: { kind: 'utf8-byte-offset', value: 0 },
-    endByte: { kind: 'utf8-byte-offset', value: 1 },
-    insertText: '',
-    atMs: 0,
-  }]);
-  assert.deepEqual(harness.model.editor.lines, ['a']);
-});
-
 test('footer renders durability posture separately from cursor coordinates', async () => {
   const harness = await openedHarness();
   harness.setModel({ ...harness.model, columns: 191 });
@@ -574,8 +447,12 @@ test('footer renders durability posture separately from cursor coordinates', asy
 
   assert.match(footerMode, /NORMAL 1:1/);
   assert.equal(footerContext.startsWith('/repo/notes.md'), true);
-  assert.match(footerContext, /\[intent:idle \| causal:admitted \| file:saved \| git:unknown \| remote:unknown \| main \| fs:materialized/);
-  assert.equal(footerContext.endsWith('target:main | +0/-0]'), true);
+  assert.equal(
+    footerContext.endsWith(
+      '[intent:idle | causal:admitted | file:saved | git:unknown | remote:unknown]',
+    ),
+    true,
+  );
 });
 
 test('source highlighting consumes reading material after production edit', async () => {

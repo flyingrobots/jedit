@@ -69,12 +69,10 @@ compares with the current admitted head:
 | --- | --- |
 | `Last save` | The head used for the latest successful file materialization. |
 | `Import` | The head created when the buffer entered the current Jim session. |
-| `Selected checkpoint` | The opaque head named by the selected checkpoint row in Echo history. |
-| `Selected tick` | The opaque head and admitted tick named by the selected edit row in Echo history. |
 
-Checkpoint and tick choices fail closed when the selected history row does not
-carry matching Echo evidence. Jim does not infer or manufacture missing head,
-tick, checkpoint, or receipt identities.
+Selected-checkpoint and selected-tick choices were removed with the
+process-local history drawer. They may return only when a bounded Echo
+observation supplies matching opaque head and receipt evidence.
 
 Changing this setting updates only a bounded causal-line reading. It does not
 submit an edit, advance a worldline, declare a checkpoint, save a file, or mint
@@ -139,7 +137,7 @@ cursor.
 | [`src/app/settings-session.ts`](../../../src/app/settings-session.ts) | Settings rows, focus movement, and key actions. |
 | [`src/app/workspace/settings.ts`](../../../src/app/workspace/settings.ts) | Workspace handlers for applying setting changes. |
 | [`src/app/workspace/settings-key-bindings.ts`](../../../src/app/workspace/settings-key-bindings.ts) | Settings key dispatch and change notifications. |
-| [`src/app/workspace/workspace-causal-gutter-basis.ts`](../../../src/app/workspace/workspace-causal-gutter-basis.ts) | Comparison choices and opaque selected-evidence capture. |
+| [`src/app/workspace/workspace-causal-gutter-basis.ts`](../../../src/app/workspace/workspace-causal-gutter-basis.ts) | Save/import comparison choices and evidence validation. |
 | [`src/app/workspace/workspace-causal-line-change-refresh.ts`](../../../src/app/workspace/workspace-causal-line-change-refresh.ts) | Bounded refresh commands and stale-result refusal. |
 | [`src/ui/settings-drawer.ts`](../../../src/ui/settings-drawer.ts) | Drawer rendering. |
 | [`src/ui/jedit-theme.ts`](../../../src/ui/jedit-theme.ts) | Normal and dimmed gutter token contracts. |

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
   <title id="title">Drawers and panels width profiles</title>
-  <desc id="desc">Diagram showing files, Graft, Echo history, diagnostics, and inline why surfaces across profiles.</desc>
+  <desc id="desc">Diagram showing files, Graft, diagnostics, and inline why surfaces across profiles.</desc>
   <style>
     :root{--bg:#080d13;--surface:#101820;--panel:#17212b;--line:#7d8da1;--text:#d5dde8;--muted:#8d98a8;--accent:#dc8cff;--cyan:#56d6d6;--green:#68e09b;--yellow:#f2c96b;--red:#ee7f7a}
     .canvas{fill:var(--bg)}.term{fill:var(--surface);stroke:var(--line);stroke-width:2;rx:10}.drawer{fill:#0b1016;stroke:#7d8da1;stroke-width:1.5;rx:6}.panel{fill:var(--panel);stroke:#344253;stroke-width:1.5;rx:6}.footer{fill:#141c25}.label{fill:var(--accent);font:700 21px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.small{fill:var(--muted);font:14px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.tiny{fill:var(--muted);font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.code{fill:var(--text);font:13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.accent{fill:var(--accent)}.cyan{fill:var(--cyan)}.green{fill:var(--green)}.yellow{fill:var(--yellow)}
@@ -22,8 +22,8 @@
   <text class="code" x="770" y="204">Graft</text>
   <text class="tiny" x="770" y="230">symbols</text><text class="tiny" x="770" y="252">projection</text><text class="tiny" x="770" y="274">posture</text>
   <rect class="drawer" x="934" y="178" width="168" height="174"/>
-  <text class="code" x="954" y="204">History</text>
-  <text class="tiny" x="954" y="230"># tick kind</text><text class="tiny" x="954" y="252">1 open</text><text class="tiny" x="954" y="274">2 edit</text>
+  <text class="code" x="954" y="204">Diagnostics</text>
+  <text class="tiny" x="954" y="230">parser ok</text><text class="tiny" x="954" y="252">Graft ready</text><text class="tiny" x="954" y="274">projection current</text>
   <rect class="panel" x="520" y="296" width="260" height="48"/>
   <text class="yellow" x="538" y="318" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12">why inline panel</text>
   <text class="tiny" x="538" y="336">anchored near explained line</text>

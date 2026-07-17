@@ -1,6 +1,6 @@
 import { ProductionTextSessionOutcomeKinds } from './production-text-session.js';
 import type { ProductionTextSession } from './production-text-session.js';
-import type { CausalLineDiffReading } from '../../ports/text-buffer-session.js';
+import type { CausalLineDiffReading } from '../../ports/text-authority-evidence.js';
 import {
   unavailableWorkspaceBufferCausalLineChanges,
   workspaceBufferCausalLineChangesFromReading,

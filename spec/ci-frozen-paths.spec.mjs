@@ -45,7 +45,7 @@ test('the unfreeze label allows title-scene changes through', () => {
 
 test('non-title changes are never frozen', () => {
   const verdict = evaluateFrozenPaths(
-    ['src/domain/text-edit-contract.ts', 'docs/BEARING.md', 'src/ui/theme-builder.ts'],
+    ['src/domain/graph-rope-types.ts', 'docs/BEARING.md', 'src/ui/theme-builder.ts'],
     { allowTitleChanges: false },
   );
 

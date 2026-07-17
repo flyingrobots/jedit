@@ -2,7 +2,6 @@ export const FocusPanes = Object.freeze({
   Editor: 'editor',
   Files: 'files',
   Graft: 'graft',
-  History: 'history',
 } as const);
 
 export type FocusPane = typeof FocusPanes[keyof typeof FocusPanes];
@@ -10,7 +9,6 @@ export type FocusPane = typeof FocusPanes[keyof typeof FocusPanes];
 export interface FocusCycleState {
   readonly fileDrawerOpen: boolean;
   readonly graftDrawerOpen: boolean;
-  readonly historyDrawerOpen: boolean;
   readonly hasEditor: boolean;
   readonly focusPane: FocusPane;
 }
@@ -42,10 +40,6 @@ export function defaultFocusPane(state: Omit<FocusCycleState, 'focusPane'>): Foc
     return FocusPanes.Graft;
   }
 
-  if (state.historyDrawerOpen) {
-    return FocusPanes.History;
-  }
-
   return FocusPanes.Editor;
 }
 
@@ -70,10 +64,6 @@ export function visibleFocusPanes(state: FocusCycleState): readonly FocusPane[] 
 
   if (state.graftDrawerOpen) {
     panes.push(FocusPanes.Graft);
-  }
-
-  if (state.historyDrawerOpen) {
-    panes.push(FocusPanes.History);
   }
 
   return panes;

@@ -5,12 +5,18 @@ import test from 'node:test';
 
 const REPO_ROOT = process.cwd();
 const RETIRED_WESLEY_SURFACES = [
+  'contracts/jedit/rope.graphql',
+  'contracts/jedit/structural-history.graphql',
+  'contracts/jedit/text-buffer-optic.graphql',
+  'scripts/gen-structural-history-wesley.mjs',
+  'scripts/run-wesley-cli.mjs',
   'scripts/run-wesley-tool.mjs',
+  'src/generated/jedit/rope.wesley.generated.ts',
   'src/generated/jedit/rope.types.generated.ts',
   'src/generated/jedit/rope.zod.generated.ts',
   'src/generated/jedit/worldlineSnapshot.observer-plan.generated.ts',
 ];
-const LEGACY_IMPORT_PATTERN = /rope\.(?:types|zod)\.generated/;
+const LEGACY_IMPORT_PATTERN = /(?:rope\.(?:types|zod)\.generated|wesley\.generated)/;
 
 test('retired Wesley Node-host contract surfaces are deleted', () => {
   for (const relativePath of RETIRED_WESLEY_SURFACES) {
@@ -30,8 +36,8 @@ test('package scripts cannot restore retired Wesley Node-host generation', () =>
 
   assert.equal(packageJson.scripts['gen:contract:legacy'], undefined);
   assert.equal(packageJson.scripts['gen:observer'], undefined);
-  assert.doesNotMatch(packageJson.scripts['gen:contract'] ?? '', /legacy/);
-  assert.doesNotMatch(Object.values(packageJson.scripts).join('\n'), /host-node/);
+  assert.equal(packageJson.scripts['gen:contract'], undefined);
+  assert.doesNotMatch(Object.values(packageJson.scripts).join('\n'), /(?:host-node|wesley)/i);
 });
 
 function sourceFiles(directory) {

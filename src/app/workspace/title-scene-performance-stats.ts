@@ -69,7 +69,6 @@ function titleRenderDimensions(model: WorkspaceModel): TitleRenderDimensions {
     model.columns,
     model.fileDrawerProgress,
     model.graftDrawerProgress,
-    model.historyDrawerProgress,
   );
   return {
     width: layout.viewer.width,

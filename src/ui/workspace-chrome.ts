@@ -26,16 +26,12 @@ const FOOTER_MODE_PREVIEW = 'preview';
 const FOOTER_MODE_SETTINGS = 'settings';
 const FOOTER_MODE_FILES = 'files';
 const FOOTER_MODE_GRAFT = 'graft';
-const FOOTER_MODE_HISTORY = 'history';
 const FOOTER_CONTEXT_SETTINGS = 'footer.context.settings';
 const FOOTER_CONTEXT_GRAFT_EMPTY = 'footer.context.graft_empty';
-const FOOTER_CONTEXT_HISTORY_EMPTY = 'footer.context.history_empty';
-const FOOTER_CONTEXT_HISTORY_COUNT = 'footer.context.history_count';
 
 const DrawerModeKeys: Record<DrawerKind, string> = Object.freeze({
   [DrawerKinds.Files]: FOOTER_MODE_FILES,
   [DrawerKinds.Graft]: FOOTER_MODE_GRAFT,
-  [DrawerKinds.History]: FOOTER_MODE_HISTORY,
 });
 
 const EditorModeKeys: Record<EditorMode, string> = Object.freeze({
@@ -60,14 +56,12 @@ const FooterHintKeys = Object.freeze({
   CtrlLScenePicker: 'ctrl_l_scene_picker',
   CtrlBFiles: 'ctrl_b_files',
   CtrlGGraft: 'ctrl_g_graft',
-  CtrlHHistory: 'ctrl_h_history',
   EnterOpen: 'enter_open',
   BackspaceUp: 'backspace_up',
   CtrlBClose: 'ctrl_b_close',
   EnterJump: 'enter_jump',
   RRefresh: 'r_refresh',
   CtrlGClose: 'ctrl_g_close',
-  CtrlHClose: 'ctrl_h_close',
   IInsert: 'i_insert',
   OOpenLine: 'o_open_line',
   CcLine: 'cc_line',
@@ -103,7 +97,6 @@ export interface WorkspaceFooterState {
   readonly focusPane: FocusPane;
   readonly fileDrawerOpen: boolean;
   readonly graftDrawerOpen: boolean;
-  readonly historyDrawerOpen: boolean;
   readonly viewMode: ViewMode;
   readonly markdownPreviewActive: boolean;
   readonly settingsOpen: boolean;
@@ -114,8 +107,6 @@ export interface WorkspaceFooterState {
   readonly selectedEntry?: FileEntry;
   readonly editorPath?: string;
   readonly textPosture?: string;
-  readonly echoHistoryCount?: number;
-  readonly historyContextLine?: string;
   readonly graftPath?: string;
   readonly graftSelection?: { readonly kind: string; readonly name: string; readonly startLine: number };
   readonly commandLine?: WorkspaceCommandLineFooterState;
@@ -252,7 +243,6 @@ function footerDetail(state: WorkspaceFooterState): string {
       themeHint(t),
       t(FooterHintKeys.CtrlBFiles),
       t(FooterHintKeys.CtrlGGraft),
-      t(FooterHintKeys.CtrlHHistory),
     ]);
 }
 
@@ -303,9 +293,7 @@ function drawerFooterDetail(state: WorkspaceFooterState, kind: DrawerKind, t: Fo
     return footerHints(fileDrawerFooterHints(state, t));
   }
 
-  return kind === DrawerKinds.Graft
-    ? footerHints(graftDrawerFooterHints(state, t))
-    : footerHints(historyDrawerFooterHints(state, t));
+  return footerHints(graftDrawerFooterHints(state, t));
 }
 
 function normalFooterDetail(state: WorkspaceFooterState, t: FooterHintTranslator): string {
@@ -342,7 +330,6 @@ function previewFooterHints(state: WorkspaceFooterState, t: FooterHintTranslator
     focusHint(state, t),
     t(FooterHintKeys.CtrlBFiles),
     t(FooterHintKeys.CtrlGGraft),
-    t(FooterHintKeys.CtrlHHistory),
   ];
 }
 
@@ -366,10 +353,6 @@ function graftDrawerFooterHints(state: WorkspaceFooterState, t: FooterHintTransl
     themeHint(t),
     focusHint(state, t),
   ];
-}
-
-function historyDrawerFooterHints(state: WorkspaceFooterState, t: FooterHintTranslator): ReadonlyArray<string | undefined> {
-  return [t(FooterHintKeys.JkMove), t(FooterHintKeys.CtrlHClose), t(FooterHintKeys.EscClose), themeHint(t), focusHint(state, t)];
 }
 
 function insertModeFooterHints(state: WorkspaceFooterState, t: FooterHintTranslator): ReadonlyArray<string | undefined> {
@@ -409,7 +392,7 @@ function activeDrawerContextLine(state: WorkspaceFooterState): string | undefine
   const kind = activeDrawerKind(state);
   if (kind === DrawerKinds.Files) return state.selectedEntry?.path ?? state.cwd;
   if (kind === DrawerKinds.Graft) return graftFooterContextLine(state);
-  return kind === DrawerKinds.History ? historyFooterContextLine(state) : undefined;
+  return undefined;
 }
 
 function activeDrawerKind(state: WorkspaceFooterState): DrawerKind | undefined {
@@ -419,7 +402,7 @@ function activeDrawerKind(state: WorkspaceFooterState): DrawerKind | undefined {
   if (state.focusPane === FocusPanes.Graft && state.graftDrawerOpen) {
     return DrawerKinds.Graft;
   }
-  return state.focusPane === FocusPanes.History && state.historyDrawerOpen ? DrawerKinds.History : undefined;
+  return undefined;
 }
 
 function editorFooterContextLine(editorPath: string, textPosture: string | undefined): string {
@@ -436,14 +419,6 @@ function graftFooterContextLine(state: WorkspaceFooterState): string {
   return state.i18n.t(FOOTER_CONTEXT_GRAFT_EMPTY);
 }
 
-function historyFooterContextLine(state: WorkspaceFooterState): string {
-  if (state.historyContextLine != null) return state.historyContextLine;
-  const count = state.echoHistoryCount ?? 0;
-  return count === 0
-    ? state.i18n.t(FOOTER_CONTEXT_HISTORY_EMPTY)
-    : state.i18n.t(FOOTER_CONTEXT_HISTORY_COUNT, { count });
-}
-
 function displayName(path: string): string {
   const name = basename(path);
   return name.length > 0 ? name : path;
@@ -453,7 +428,6 @@ function footerHasFocusablePeers(state: WorkspaceFooterState): boolean {
   return hasFocusablePeers({
     fileDrawerOpen: state.fileDrawerOpen,
     graftDrawerOpen: state.graftDrawerOpen,
-    historyDrawerOpen: state.historyDrawerOpen,
     hasEditor: state.editorPath != null,
     focusPane: state.focusPane,
   });

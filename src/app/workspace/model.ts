@@ -20,13 +20,11 @@ import type {
   TitleCameraState,
 } from "../title-camera-session.js";
 import type { TextRuntimeProfile } from "../text-runtime-profile.js";
-import type { JeditWscStartupRecoveryResult } from "../../ports/jedit-wsc-startup-recovery.js";
 import type { EditorState } from "./editor/model.js";
 import type { WorkspaceMsg } from "./msg.js";
 import type { ViewMode } from "./view-mode.js";
 import type { WorkspaceTextAuthority } from "./workspace-text-authority.js";
 import type { WorkspaceBufferRegistry } from "./workspace-buffer-registry.js";
-import type { EchoHistoryEntry } from "./echo-history.js";
 import type { StartupFileModalState } from "./startup-file-modal.js";
 import type { WorkspaceCommandLineState } from "./command-line.js";
 import type {
@@ -34,10 +32,6 @@ import type {
 } from "./command-completion-preview.js";
 import type { WorkspaceInlinePanel } from "./workspace-inline-panel.js";
 import type { WorkspaceCausalGutterBasis } from "./workspace-causal-gutter-basis.js";
-import type {
-  WorkspaceHistoryDrawerView,
-  WorkspaceWorldlineState,
-} from "./worldline-state.js";
 
 export interface WorkspaceModel
   extends StartupFileModalState,
@@ -52,7 +46,6 @@ export interface WorkspaceModel
   readonly activeBufferId?: string;
   readonly textRuntimeProfile: TextRuntimeProfile;
   readonly textAuthority: WorkspaceTextAuthority;
-  readonly wscStartupRecovery: JeditWscStartupRecoveryResult;
   readonly textRequestId: number;
   readonly viewMode: ViewMode;
   readonly focusPane: FocusPane;
@@ -60,12 +53,6 @@ export interface WorkspaceModel
   readonly fileDrawerProgress: number;
   readonly graftDrawerOpen: boolean;
   readonly graftDrawerProgress: number;
-  readonly historyDrawerOpen: boolean;
-  readonly historyDrawerProgress: number;
-  readonly echoHistory: readonly EchoHistoryEntry[];
-  readonly echoHistorySelectedIndex: number;
-  readonly historyDrawerView: WorkspaceHistoryDrawerView;
-  readonly worldline: WorkspaceWorldlineState;
   readonly notifications: NotificationState<WorkspaceMsg>;
   readonly notificationLoopActive: boolean;
   readonly quitConfirmOpen: boolean;

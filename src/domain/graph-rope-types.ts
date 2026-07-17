@@ -16,13 +16,9 @@ export const ROPE_LEAF_FACT_KIND = 'jedit.text.RopeLeaf';
 export const TEXT_BLOB_FACT_KIND = 'jedit.text.TextBlob';
 export const ROPE_REWRITE_FACT_KIND = 'jedit.text.RopeRewrite';
 export const ROPE_DIFF_FACT_KIND = 'jedit.text.RopeDiff';
-export const TICK_RECEIPT_FACT_KIND = 'jedit.text.TickReceipt';
 export const ROPE_STRUCTURAL_MAINTENANCE_FACT_KIND = 'jedit.text.RopeStructuralMaintenance';
 export const ROPE_CHECKPOINT_FACT_KIND = 'jedit.text.RopeCheckpoint';
 export const ROPE_CHECKPOINT_ANCHORED_FACT_KIND = 'jedit.text.RopeCheckpointAnchored';
-export const ROPE_CHECKPOINT_MATERIALIZATION_ROLE_MATERIALIZATION = 'materialization';
-export const ROPE_CHECKPOINT_MATERIALIZATION_ROLE_MANIFEST = 'manifest';
-export const ROPE_CHECKPOINT_MATERIALIZATION_ROLE_INDEX = 'index';
 
 export const ROPE_DIFF_SPAN_EQUAL_KIND = 'equal';
 export const ROPE_DIFF_SPAN_DELETE_KIND = 'delete';
@@ -90,7 +86,7 @@ export interface BufferWorldlineFact {
   readonly kind: typeof BUFFER_WORLDLINE_FACT_KIND;
   readonly schemaVersion: typeof GRAPH_ROPE_SCHEMA_VERSION;
   readonly worldlineId: string;
-  readonly createdAtTick: string;
+  readonly createdByEchoReceiptId: string;
   readonly initialHeadId: string;
 }
 
@@ -101,7 +97,7 @@ export interface RopeHeadFact {
   readonly worldlineId: string;
   readonly rootNodeId: string;
   readonly basisHeadId?: string;
-  readonly createdByTickId: string;
+  readonly createdByEchoReceiptId: string;
   readonly byteLength: number;
   readonly lineCount: number;
   readonly contentHash: string;
@@ -160,7 +156,7 @@ export interface RopeRewriteFact {
   readonly worldlineId: string;
   readonly basisHeadId: string;
   readonly nextHeadId: string;
-  readonly admittedByTickId: string;
+  readonly admittedByEchoReceiptId: string;
   readonly range: TextByteRange;
   readonly replacementBlobId: string;
   readonly diffId: string;
@@ -200,19 +196,6 @@ export interface RopeDiffFact {
   readonly contentHash: string;
 }
 
-export interface TickReceiptFact {
-  readonly kind: typeof TICK_RECEIPT_FACT_KIND;
-  readonly schemaVersion: typeof GRAPH_ROPE_SCHEMA_VERSION;
-  readonly tickId: string;
-  readonly admissionId: string;
-  readonly worldlineId: string;
-  readonly basisHeadId: string;
-  readonly nextHeadId: string;
-  readonly rewriteId: string;
-  readonly admittedAtSequence: number;
-  readonly contentHash: string;
-}
-
 export type RopeStructuralMaintenanceOperation =
   | 'split-leaf'
   | 'merge-leaves'
@@ -240,22 +223,19 @@ export type RopeCheckpointReason =
   | typeof ROPE_CHECKPOINT_REASON_AUTOSAVE
   | typeof ROPE_CHECKPOINT_REASON_RETENTION_BOUNDARY
   | typeof ROPE_CHECKPOINT_REASON_EXPORT
-  | typeof ROPE_CHECKPOINT_REASON_IMPORT
-  | typeof ROPE_CHECKPOINT_REASON_TEST_FIXTURE;
+  | typeof ROPE_CHECKPOINT_REASON_IMPORT;
 
 export const ROPE_CHECKPOINT_REASON_MANUAL_SAVE = 'manual-save';
 export const ROPE_CHECKPOINT_REASON_AUTOSAVE = 'autosave';
 export const ROPE_CHECKPOINT_REASON_RETENTION_BOUNDARY = 'retention-boundary';
 export const ROPE_CHECKPOINT_REASON_EXPORT = 'export';
 export const ROPE_CHECKPOINT_REASON_IMPORT = 'import';
-export const ROPE_CHECKPOINT_REASON_TEST_FIXTURE = 'test-fixture';
 export const ROPE_CHECKPOINT_REASONS: readonly RopeCheckpointReason[] = Object.freeze([
   ROPE_CHECKPOINT_REASON_MANUAL_SAVE,
   ROPE_CHECKPOINT_REASON_AUTOSAVE,
   ROPE_CHECKPOINT_REASON_RETENTION_BOUNDARY,
   ROPE_CHECKPOINT_REASON_EXPORT,
   ROPE_CHECKPOINT_REASON_IMPORT,
-  ROPE_CHECKPOINT_REASON_TEST_FIXTURE,
 ]);
 
 export interface RopeCheckpointFact {
@@ -265,38 +245,6 @@ export interface RopeCheckpointFact {
   readonly worldlineId: string;
   readonly headId: string;
   readonly reason: RopeCheckpointReason;
-}
-
-export type RopeCheckpointMaterializationRole =
-  | typeof ROPE_CHECKPOINT_MATERIALIZATION_ROLE_MATERIALIZATION
-  | typeof ROPE_CHECKPOINT_MATERIALIZATION_ROLE_MANIFEST
-  | typeof ROPE_CHECKPOINT_MATERIALIZATION_ROLE_INDEX;
-
-export interface RopeCheckpointMaterializationRoot {
-  readonly id: string;
-  readonly role: RopeCheckpointMaterializationRole;
-}
-
-export interface RopeCheckpointAnchorAdmissionRequest {
-  readonly checkpointId: string;
-  readonly worldlineId: string;
-  readonly headId: string;
-  readonly reason: RopeCheckpointReason;
-  readonly materializationRoots: readonly RopeCheckpointMaterializationRoot[];
-}
-
-export interface EchoCausalAnchorAdmissionEvidence {
-  readonly anchorId: string;
-  readonly anchorFactId: string;
-  readonly receiptId: string;
-}
-
-export type EchoCausalAnchorAdmissionResult =
-  | { readonly ok: true; readonly evidence: EchoCausalAnchorAdmissionEvidence }
-  | { readonly ok: false; readonly obstructionId: string };
-
-export interface EchoCausalAnchorAdmissionPort {
-  admitCheckpointAnchor(request: RopeCheckpointAnchorAdmissionRequest): EchoCausalAnchorAdmissionResult;
 }
 
 export interface RopeCheckpointAnchoredFact {
@@ -317,7 +265,6 @@ export type RopeAdmittedFact =
   | TextBlobFact
   | RopeRewriteFact
   | RopeDiffFact
-  | TickReceiptFact
   | RopeStructuralMaintenanceFact
   | RopeCheckpointFact
   | RopeCheckpointAnchoredFact;

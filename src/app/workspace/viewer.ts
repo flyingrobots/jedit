@@ -27,7 +27,6 @@ import { paintWorkspaceOverlays, workspaceFeedbackOverlay } from './viewer-overl
 import {
   workspaceFooterCommandSummary,
   workspaceFooterTextPosture,
-  workspaceHistoryContextLine,
 } from './workspace-footer-posture.js';
 import type { JeditColorStop, JeditStyleToken } from '../../ui/jedit-theme.js';
 
@@ -72,7 +71,6 @@ function renderWorkspaceWithViewer(
     model.columns,
     model.fileDrawerProgress,
     model.graftDrawerProgress,
-    model.historyDrawerProgress,
   );
 
   paintWorkspaceTitle(screen, model);
@@ -109,9 +107,6 @@ function paintWorkspaceDrawers(
   if (layout.graftDrawer.width > 0) {
     screen.blit(renderDrawer(DrawerKinds.Graft, model, layout.graftDrawer.width, bodyHeight), layout.graftDrawer.x, bodyTop);
   }
-  if (layout.historyDrawer.width > 0) {
-    screen.blit(renderDrawer(DrawerKinds.History, model, layout.historyDrawer.width, bodyHeight), layout.historyDrawer.x, bodyTop);
-  }
 }
 
 function paintWorkspaceFocusEdge(
@@ -125,7 +120,6 @@ function paintWorkspaceFocusEdge(
     focusPane: model.focusPane,
     fileDrawerOpen: model.fileDrawerOpen,
     graftDrawerOpen: model.graftDrawerOpen,
-    historyDrawerOpen: model.historyDrawerOpen,
     hasEditor: model.editor != null,
   }, model.jeditTheme.chrome.activeEdge, {
     top: bodyTop,
@@ -141,7 +135,6 @@ function paintWorkspaceFooter(screen: Surface, model: WorkspaceModel): void {
         focusPane: model.focusPane,
         fileDrawerOpen: model.fileDrawerOpen,
         graftDrawerOpen: model.graftDrawerOpen,
-        historyDrawerOpen: model.historyDrawerOpen,
         viewMode: model.viewMode,
         markdownPreviewActive: isWorkspaceMarkdownPreviewAvailable(model),
         editorMode: model.editor?.mode,
@@ -152,8 +145,6 @@ function paintWorkspaceFooter(screen: Surface, model: WorkspaceModel): void {
         selectedEntry: model.entries[model.selectedIndex],
         editorPath: model.editor?.path,
         textPosture: workspaceFooterTextPosture(model),
-        echoHistoryCount: model.echoHistory.length,
-        historyContextLine: workspaceHistoryContextLine(model),
         graftPath: model.graftInfo?.path,
         graftSelection: selectedGraftSelection(model),
         commandLine: model.commandLine,

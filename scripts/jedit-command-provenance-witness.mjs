@@ -135,8 +135,6 @@ function witnessEditor(mode, lines) {
     dirty: false,
     readOnly: false,
     mode: mode.EditorModes.Normal,
-    undoStack: [],
-    redoStack: [],
   };
 }
 

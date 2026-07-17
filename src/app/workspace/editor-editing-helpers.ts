@@ -6,7 +6,7 @@ import type { EditorState } from './editor/model.js';
 import { RegisterKinds } from './editor/model.js';
 import {
   clampNormalCol, currentLine, editorText, yankTextRange, deleteTextRange,
-  commitMutation, snapshotEditor, deleteForward, leadingWhitespace, lineStartTextIndex,
+  commitMutation, deleteForward, leadingWhitespace, lineStartTextIndex,
   nextWordStartIndex, normalPositionAtOrBeforeIndex, normalTextIndex, previousWordStartIndex, wordEndIndex,
 } from './editor-editing-core.js';
 
@@ -216,48 +216,6 @@ export function openLineAbove(editor: EditorState): EditorState {
     mode: INSERT_MODE,
     pendingNormal: undefined,
   });
-}
-
-export function undo(editor: EditorState): EditorState {
-  const snapshot = editor.undoStack.at(-1);
-  if (snapshot == null) {
-    return editor;
-  }
-
-  return {
-    ...editor,
-    lines: snapshot.lines,
-    cursorRow: snapshot.cursorRow,
-    cursorCol: snapshot.cursorCol,
-    scrollRow: snapshot.scrollRow,
-    scrollCol: snapshot.scrollCol,
-    dirty: snapshot.dirty,
-    mode: NORMAL_MODE,
-    pendingNormal: undefined,
-    undoStack: editor.undoStack.slice(0, -1),
-    redoStack: [...editor.redoStack, snapshotEditor(editor)],
-  };
-}
-
-export function redo(editor: EditorState): EditorState {
-  const snapshot = editor.redoStack.at(-1);
-  if (snapshot == null) {
-    return editor;
-  }
-
-  return {
-    ...editor,
-    lines: snapshot.lines,
-    cursorRow: snapshot.cursorRow,
-    cursorCol: snapshot.cursorCol,
-    scrollRow: snapshot.scrollRow,
-    scrollCol: snapshot.scrollCol,
-    dirty: snapshot.dirty,
-    mode: NORMAL_MODE,
-    pendingNormal: undefined,
-    undoStack: [...editor.undoStack, snapshotEditor(editor)],
-    redoStack: editor.redoStack.slice(0, -1),
-  };
 }
 
 export function deleteCharUnderCursor(editor: EditorState): EditorState {

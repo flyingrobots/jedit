@@ -14,8 +14,6 @@ import { PACKAGE_CHANGE_KINDS, impactForPath, planChangedShards } from '../scrip
 const TYPESCRIPT_BUILD_SNIPPET = 'node_modules/typescript/bin/' + 'tsc';
 const CI_WORKFLOW_PATH = '.github/workflows/ci.yml';
 const PACKAGE_JSON_PATH = 'package.json';
-const STRUCTURAL_HISTORY_DESCRIPTOR_PATH =
-  'src/generated/jedit/structural-history-replace-text-range.wesley.generated.ts';
 const FULL_PREBUILT_TEST_SCRIPT =
   'npm run build && JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/**/*.spec.mjs tests/**/*.spec.mjs';
 
@@ -35,9 +33,9 @@ test('test shard manifest assigns every spec to one non-empty shard', () => {
 test('known specs map to stable shard owners', () => {
   assert.equal(testShardForSpec('spec/title-screen.spec.mjs'), TEST_SHARDS.TitleRendering);
   assert.equal(testShardForSpec('spec/workspace-footer.spec.mjs'), TEST_SHARDS.WorkspaceUi);
-  assert.equal(testShardForSpec('spec/jedit-wsc-workspace-store.spec.mjs'), TEST_SHARDS.EchoAuthority);
-  assert.equal(testShardForSpec('spec/rope-codec.spec.mjs'), TEST_SHARDS.ContractApi);
-  assert.equal(testShardForSpec('tests/replace-range-cycle.spec.mjs'), TEST_SHARDS.CycleProofs);
+  assert.equal(testShardForSpec('spec/jedit-echo-kernel-smoke.spec.mjs'), TEST_SHARDS.EchoAuthority);
+  assert.equal(testShardForSpec('spec/graph-rope-contract.spec.mjs'), TEST_SHARDS.ContractApi);
+  assert.equal(testShardForSpec('tests/anchor-transform-cycle.spec.mjs'), TEST_SHARDS.CycleProofs);
   assert.equal(testShardForSpec('spec/release-quickstart.spec.mjs'), TEST_SHARDS.DocsRelease);
 });
 
@@ -112,13 +110,9 @@ test('local full test scripts use one prebuilt dist pass', () => {
   assert.equal(packageJson.scripts.check, 'npm run test:all && npm run quality');
 });
 
-test('CI build artifact restores generated sources required by cycle proofs', () => {
+test('CI build artifact restores compiled output required by test shards', () => {
   const workflow = readFileSync(CI_WORKFLOW_PATH, 'utf8');
 
-  assert.match(workflow, new RegExp(escapeRegex(STRUCTURAL_HISTORY_DESCRIPTOR_PATH)));
+  assert.match(workflow, /path: \|\s+dist/);
   assert.match(workflow, /name: Download build artifacts\s+uses: actions\/download-artifact@v4\s+with:\s+name: jedit-dist\s+path: \./);
 });
-
-function escapeRegex(value) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}

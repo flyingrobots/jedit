@@ -92,8 +92,7 @@ const WORKSPACE_COMMAND_DESCRIPTORS = [
     detailKey: COMMAND_DETAIL_KEYS.TimeTravelDebugger,
     usage: "ttd <head|here|tick|+n|-n>",
     help: [
-      "Observe a historical basis without mutating canonical head.",
-      "Use head to return to canonical head, here to keep current posture, or +/-n for relative ticks.",
+      "Unavailable until Echo installs the generated historical-observation operation.",
     ],
   },
   {
@@ -104,8 +103,7 @@ const WORKSPACE_COMMAND_DESCRIPTORS = [
     detailKey: COMMAND_DETAIL_KEYS.Strand,
     usage: "strand <list|new [name]|new from here|switch <name>>",
     help: [
-      "Create, switch, or list copy-on-write worldline strands.",
-      "Use new from here to fork from the current observed basis.",
+      "Unavailable until Echo installs generated strand operations and observations.",
     ],
   },
   {
@@ -116,8 +114,7 @@ const WORKSPACE_COMMAND_DESCRIPTORS = [
     detailKey: COMMAND_DETAIL_KEYS.Braid,
     usage: "braid <view|preview [strand]|admit [strand]>",
     help: [
-      "Inspect, preview, or admit a braid candidate between worldlines.",
-      "Omit the strand name to use the current strand when one is active.",
+      "Unavailable until Echo installs generated braid operations and observations.",
     ],
   },
   {

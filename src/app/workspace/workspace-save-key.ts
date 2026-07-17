@@ -1,5 +1,4 @@
 import type { Cmd, KeyMsg } from '@flyingrobots/bijou-tui';
-import { beginEditorProjectionRefresh, saveEditor } from './editor-session.js';
 import type { WorkspaceKeyBindingContext } from './key-binding-context.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
@@ -34,20 +33,7 @@ export function saveWorkspace(
   if (model.textAuthority.kind === WorkspaceTextAuthorityKinds.Opened) {
     return saveProductionText(model, context);
   }
-  return saveLegacyEditor(model, context);
-}
-
-function saveLegacyEditor(
-  model: WorkspaceModel,
-  context: WorkspaceKeyBindingContext,
-): KeyBindingResult {
-  if (model.editor == null) {
-    return [model, []];
-  }
-  const editor = saveEditor(model.editor, context.deps.editorFile);
-  return beginEditorProjectionRefresh({ ...model, editor }, {
-    refreshGraft: shouldRefreshGraft(model, editor.path),
-  }, context.deps);
+  return [model, []];
 }
 
 function saveProductionText(
@@ -57,6 +43,7 @@ function saveProductionText(
   if (
     model.textAuthority.kind !== WorkspaceTextAuthorityKinds.Opened
     || model.textAuthority.cache == null
+    || hasUnresolvedTextIntent(model.textAuthority)
   ) {
     return [model, []];
   }
@@ -66,7 +53,6 @@ function saveProductionText(
     filePath: model.textAuthority.filePath,
     bufferId: model.textAuthority.bufferId,
     productionTextSession: context.deps.productionTextSession,
-    textOperationSequencer: context.deps.textOperationSequencer,
     atMs: context.nowMs(),
   };
   return [{
@@ -91,8 +77,4 @@ export function hasUnresolvedProductionTextIntent(model: WorkspaceModel): boolea
 function hasUnresolvedTextIntent(authority: WorkspaceTextAuthorityOpened): boolean {
   return authority.pendingIntentStatus != null &&
     authority.pendingIntentStatus !== WorkspaceTextIntentStatuses.Admitted;
-}
-
-function shouldRefreshGraft(model: WorkspaceModel, editorPath: string): boolean {
-  return model.graftDrawerOpen || model.graftInfo?.path === editorPath;
 }

@@ -1,137 +1,65 @@
-# jedit + Echo v0.1.0 Quickstart
+# jedit + Echo v0.1.0 Historical Quickstart
 
-This quickstart proves the current release-gate claim:
+> **Status:** Retired. The original release-gate claim was invalidated because
+> its edit/read path executed inside process-local TypeScript rather than Echo.
 
-```text
-jedit can run a narrow edit/read flow through an Echo-backed installed contract
-package path while Echo remains generic.
-```
+The commands that used full-snapshot fixtures, local installed-contract
+transports, and local replay have been removed. They are not supported
+compatibility modes.
 
-## Commands
+## Current Verification
 
-Build the generated contract helpers and TypeScript output:
+Build the repository and verify that production cannot recover a local
+authority path:
 
 ```bash
 npm run build
+node scripts/jedit-production-cutover-guard.mjs
+JEDIT_ECHO_WASM_MODULE=/path/to/echo-wasm.js npm run witness:echo
 ```
 
-Inspect the witness plan without running the edit/read flow:
+The cutover guard rejects production source that introduces fake, fixture,
+in-memory, full-snapshot, local installed-contract, handwritten EINT, or
+graph-rope runtime authority.
 
-```bash
-node scripts/jedit-echo-powered-session.mjs --json --dry-run
-```
-
-Run the explicit full-snapshot fixture compatibility edit/read witness:
-
-```bash
-node scripts/jedit-echo-powered-session.mjs --json --allow-full-snapshot-fixture --text "hello Echo"
-```
-
-Run the explicit full-snapshot fixture compatibility production-session witness:
-
-```bash
-node scripts/jedit-production-text-session.mjs --json --allow-full-snapshot-fixture --text "hello Echo"
-```
-
-Compare two explicit fixture compatibility runs using stable evidence identity:
-
-```bash
-node scripts/jedit-echo-powered-session.mjs --json --allow-full-snapshot-fixture --replay-local
-node scripts/jedit-production-text-session.mjs --json --allow-full-snapshot-fixture --replay-local
-```
-
-Interactive startup is intentionally gated while graph-backed rope authority is
-unavailable. Use `npm start` as the startup gate; the default text runtime is the Echo-hosted
-production profile, and startup must fail fast rather than silently constructing
-the full-snapshot fixture.
+## Interactive Startup
 
 ```bash
 npm start
 ```
 
-For explicit demos, `JEDIT_TEXT_RUNTIME=echoHosted npm start` selects the same
-profile. Any other `JEDIT_TEXT_RUNTIME` value is unsupported startup input.
+Startup loads a real Echo WASM module. Set `JEDIT_ECHO_WASM_MODULE` when the
+module is not available as `@flyingrobots/jedit-echo-wasm`.
 
-## Expected JSON Shape
+Until Echo can install and invoke the generated Jim Edict package, one of two
+honest outcomes is expected:
 
-The explicit fixture compatibility witness should include these stable fields:
+- startup fails because the real Echo module is unavailable; or
+- Echo initializes and text operations return typed obstructions because the
+  generated operation corridor is unavailable.
 
-```json
-{
-  "ok": true,
-  "transport": "installed-jedit-contract",
-  "dryRun": false,
-  "install": {
-    "packageId": "jedit.hot-text-runtime"
-  },
-  "authority": {
-    "appFacingSessionPort": "TextBufferSessionPort",
-    "appFacingBufferCapability": "TextBufferOptic",
-    "appCanTick": false,
-    "textAuthority": {
-      "kind": "full-snapshot-fixture",
-      "productionSafe": false
-    }
-  },
-  "report": {
-    "outcome": {
-      "status": "APPLIED"
-    },
-    "retainedEvidence": {
-      "refs": []
-    },
-    "restartPosture": {
-      "status": "PARTIAL",
-      "acceptedSubmissionRecovery": "UNAVAILABLE"
-    }
-  },
-  "replay": {
-    "status": "UNAVAILABLE"
-  }
-}
+No process-local text authority is installed in either case.
+
+## Historical Reports
+
+The JSON files in this directory record what the retired witness reported at
+the time. They are preserved for audit, not as evidence that Jim was powered by
+Echo. In particular, a locally deterministic replay does not prove durable
+Echo admission, scheduler execution, receipts, or recovery.
+
+## Current Acceptance Bar
+
+The next valid quickstart must demonstrate this complete path:
+
+```text
+Jim command
+-> generated Edict client
+-> real Echo admission
+-> installed Jim operation
+-> Echo-owned tick and receipt
+-> witnessed Jim facts
+-> basis-pinned Echo observation
+-> Jim UI
 ```
 
-The local replay command should report:
-
-```json
-{
-  "ok": true,
-  "replayLocal": {
-    "status": "MATCH",
-    "wallClockCadenceSemantic": false
-  }
-}
-```
-
-## Troubleshooting
-
-Missing generated files:
-
-- Run `npm run build`.
-
-Missing Echo WASM module:
-
-- This quickstart does not require the legacy Echo WASM stack-witness fixture.
-  The active release-gate path uses the installed jedit contract transport.
-
-Unsupported observer or query:
-
-- Confirm the witness reports `transport: "installed-jedit-contract"`.
-- Confirm the package install summary names `jedit.hot-text-runtime`.
-- Unsupported query means no jedit-owned observer is registered for that query.
-
-Replay unavailable:
-
-- `report.restartPosture.acceptedSubmissionRecovery` is currently
-  `UNAVAILABLE`.
-- `--replay-local` proves local deterministic reruns. It is not Continuum
-  transport, durable accepted-submission recovery, or distributed replay.
-
-Authority violation:
-
-- Application code must not tick Echo.
-- `TextBufferOptic` is a jedit capability.
-- `echoHosted` is the production text runtime profile.
-- The production TUI does not expose a non-Echo text runtime profile.
-- Echo sees generic package, operation, query, handler, observer, receipt, and
-  reading evidence surfaces.
+Nothing shorter may be described as Echo-powered.

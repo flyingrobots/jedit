@@ -1,4 +1,4 @@
-import type { TextWindowReading } from '../generated/jedit/rope.wesley.generated.js';
+import type { TextWindowReading } from '../ports/text-authority-evidence.js';
 import { fitLine } from './fit-line.js';
 
 const ZERO_INDEX = 0;
