@@ -43,7 +43,8 @@ import {
 } from './graph-rope-range-why-types.js';
 
 const ZERO_VALUE = 0;
-const NEXT_DEPTH = 1;
+const ONE_VALUE = 1;
+const NEXT_DEPTH = ONE_VALUE;
 
 interface EvidenceBudget {
   readonly maxFacts: number;
@@ -269,7 +270,7 @@ function relatedCheckpoints(
   headId: string,
 ): TreeResult<readonly GraphRopeRangeWhyCheckpointEvidence[]> {
   const output: GraphRopeRangeWhyCheckpointEvidence[] = [];
-  const overflowCount = remainingFactCapacity(context.budget) + NEXT_DEPTH;
+  const overflowCount = remainingFactCapacity(context.budget) + ONE_VALUE;
   const checkpointIds = context.catalog.checkpointIdsForHead(headId, overflowCount);
   if (checkpointIds.length >= overflowCount) {
     return limitExceeded();
@@ -294,7 +295,7 @@ function checkpointEvidence(
 ): TreeResult<GraphRopeRangeWhyCheckpointEvidence> {
   const associationIds = context.catalog.anchorAssociationIdsForCheckpoint(
     checkpoint.checkpointId,
-    NEXT_DEPTH,
+    ONE_VALUE,
   );
   if (associationIds.length === ZERO_VALUE) {
     return { ok: true, value: checkpointWithoutAnchor(checkpoint) };
