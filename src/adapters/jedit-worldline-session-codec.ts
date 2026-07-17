@@ -9,7 +9,7 @@ import { HotTextAuthorityBasisSchema } from './hot-text-authority-basis-codec.js
 const BufferRootSchema = z.object({ id: z.number().int(), text: z.string() });
 const AdmittedTickSchema = z.object({ id: z.number().int(), rootId: z.number().int() });
 const EditGroupSchema = z.object({ id: z.number().int(), tickIds: z.array(z.number().int()) });
-const OpenEditGroupSchema = z.object({ id: z.number().int(), tickIds: z.array(z.number().int()) });
+const OpenEditGroupSchema = EditGroupSchema;
 
 const SaveCheckpointSchema = z.object({
   id: z.number().int(),
