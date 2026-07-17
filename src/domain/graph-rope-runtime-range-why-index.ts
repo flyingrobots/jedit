@@ -6,6 +6,8 @@ import {
 import type { GraphRopeRangeWhyFactCatalog } from './graph-rope-range-why-types.js';
 
 const ZERO_VALUE = 0;
+const NEXT_INDEX = 1;
+const BINARY_SEARCH_DIVISOR = 2;
 
 export interface GraphRopeRuntimeRangeWhyCatalog extends GraphRopeRangeWhyFactCatalog {
   indexFact(fact: RopeAdmittedFact): void;
@@ -36,10 +38,30 @@ export function createGraphRopeRuntimeRangeWhyCatalog(
 }
 
 function appendFactIndex(index: Map<string, string[]>, key: string, factId: string): void {
-  const existing = index.get(key) ?? [];
-  if (!existing.includes(factId)) {
-    index.set(key, [...existing, factId].sort());
+  const existing = index.get(key);
+  if (existing === undefined) {
+    index.set(key, [factId]);
+    return;
   }
+  const insertionIndex = factIdInsertionIndex(existing, factId);
+  if (existing[insertionIndex] !== factId) {
+    existing.splice(insertionIndex, ZERO_VALUE, factId);
+  }
+}
+
+function factIdInsertionIndex(factIds: readonly string[], factId: string): number {
+  let lowerBound = ZERO_VALUE;
+  let upperBound = factIds.length;
+  while (lowerBound < upperBound) {
+    const candidateIndex = Math.floor((lowerBound + upperBound) / BINARY_SEARCH_DIVISOR);
+    const candidate = factIds[candidateIndex];
+    if (candidate !== undefined && candidate < factId) {
+      lowerBound = candidateIndex + NEXT_INDEX;
+    } else {
+      upperBound = candidateIndex;
+    }
+  }
+  return lowerBound;
 }
 
 function boundedFactIds(

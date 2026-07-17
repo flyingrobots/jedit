@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Replaced per-insert range-why index cloning and full sorting with deterministic
+  binary insertion. Checkpoint and anchor association buckets remain ordered and
+  duplicate-free without repeated O(N log N) sorts as retained evidence grows.
 - Corrected malformed range-why observation limits to fail with the stable
   range-limit obstruction instead of misreporting an invalid UTF-8 byte range.
   Byte-range validation remains a separate failure boundary.
