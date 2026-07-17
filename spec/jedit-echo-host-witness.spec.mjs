@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 
@@ -34,6 +35,12 @@ test('Echo host witness fails closed when the native host is unavailable', () =>
   assert.equal(report.ok, false);
   assert.equal(report.operation, 'native-echo-text-witness');
   assert.match(report.message, /Echo host/i);
+});
+
+test('the CI release gate delegates to the real Echo host witness', () => {
+  const packageDocument = JSON.parse(readFileSync('package.json', 'utf8'));
+
+  assert.equal(packageDocument.scripts['release-gate:jedit-echo'], 'npm run witness:echo');
 });
 
 function runWitness(environment = {}) {

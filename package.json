@@ -14,6 +14,7 @@
     "title:profile": "npm run build && node scripts/title-scene-profile.mjs",
     "title:record": "npm run build && node scripts/title-scene-record.mjs",
     "witness:echo": "npm run build && node scripts/jedit-echo-host-witness.mjs --json",
+    "release-gate:jedit-echo": "npm run witness:echo",
     "quality": "node scripts/quality-gate.mjs",
     "test:all": "npm run build && npm run echo:test && JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/**/*.spec.mjs tests/**/*.spec.mjs",
     "test": "npm run test:all",
