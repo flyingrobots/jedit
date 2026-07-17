@@ -23,6 +23,10 @@ import { validateCheckpointAnchorAdmissionRequest } from './graph-rope-causal-an
 import { readGraphRopeCausalLineDiff, type GraphRopeCausalLineDiffInput, type GraphRopeCausalLineDiffReading } from './graph-rope-causal-line-diff.js';
 import { isRopeCheckpointReason } from './graph-rope-checkpoint-validation.js';
 import {
+  readGraphRopeRangeWhy,
+} from './graph-rope-range-why.js';
+import type { GraphRopeRangeWhyInput, GraphRopeRangeWhyReading } from './graph-rope-range-why-types.js';
+import {
   createCheckpointAnchorAdmissionRequest,
   createCheckpointAnchorAssociation,
   createCheckpointFact,
@@ -32,6 +36,14 @@ import {
   type GraphRopeCreateCheckpointResult,
 } from './graph-rope-runtime-checkpoint.js';
 import { requestCheckpointAnchorAdmission } from './graph-rope-runtime-echo-adapter.js';
+import {
+  readGraphRopeDebugShape,
+  type GraphRopeDebugShape,
+} from './graph-rope-runtime-debug.js';
+import {
+  createGraphRopeRuntimeRangeWhyCatalog,
+  type GraphRopeRuntimeRangeWhyCatalog,
+} from './graph-rope-runtime-range-why-index.js';
 import {
   GRAPH_ROPE_RUNTIME_OBSTRUCTION_CAUSAL_ANCHOR_ADMISSION_FAILED,
   GRAPH_ROPE_RUNTIME_OBSTRUCTION_CAUSAL_ANCHOR_UNAVAILABLE,
@@ -45,7 +57,6 @@ import {
 import {
   createInitialHead,
   createInitialTree,
-  debugTreeShape,
   readTreeWindow,
   replaceRangeInTree,
   type GraphRopeReplacePlan,
@@ -67,11 +78,25 @@ export {
   GRAPH_ROPE_RUNTIME_OBSTRUCTION_BASIS_NOT_ANCESTOR,
   GRAPH_ROPE_RUNTIME_OBSTRUCTION_LINE_DIFF_LIMIT_EXCEEDED,
   GRAPH_ROPE_RUNTIME_OBSTRUCTION_MISSING_CAUSAL_EVIDENCE,
+  GRAPH_ROPE_RUNTIME_OBSTRUCTION_RANGE_WHY_LIMIT_EXCEEDED,
   GRAPH_ROPE_TEXT_WINDOW_CACHE_STATUS_UNCACHED,
 } from './graph-rope-runtime-issues.js';
 export type { GraphRopeRuntimeObstructionCode } from './graph-rope-runtime-issues.js';
 export { GRAPH_ROPE_CAUSAL_LINE_DIFF_OBSERVER_VERSION } from './graph-rope-causal-line-diff.js';
 export type { GraphRopeCausalLineDiffInput, GraphRopeCausalLineDiffReading } from './graph-rope-causal-line-diff.js';
+export {
+  GRAPH_ROPE_RANGE_WHY_COVERAGE_COMPLETE,
+  GRAPH_ROPE_RANGE_WHY_OBSERVER_VERSION,
+  GRAPH_ROPE_RANGE_WHY_ORIGIN_IMPORTED,
+  GRAPH_ROPE_RANGE_WHY_ORIGIN_REWRITE,
+} from './graph-rope-range-why-types.js';
+export type {
+  GraphRopeRangeWhyCheckpointEvidence,
+  GraphRopeRangeWhyInput,
+  GraphRopeRangeWhyOrigin,
+  GraphRopeRangeWhyReading,
+} from './graph-rope-range-why-types.js';
+export type { GraphRopeDebugShape } from './graph-rope-runtime-debug.js';
 export type {
   GraphRopeAnchorCheckpointInput,
   GraphRopeAnchorCheckpointResult,
@@ -143,31 +168,13 @@ export interface GraphRopeReplaceRangeResult {
   readonly receipt: TickReceiptFact | null;
 }
 
-export interface GraphRopeDebugShape {
-  readonly headId: string;
-  readonly rootNodeId: string;
-  readonly byteLength: number;
-  readonly nodeCount: number;
-  readonly leafCount: number;
-  readonly maxDepth: number;
-  readonly retainedBlobBytes: number;
-  readonly materializedProjectionBytes: number;
-  readonly nodes: readonly GraphRopeDebugNode[];
-}
-
-export interface GraphRopeDebugNode {
-  readonly nodeId: string;
-  readonly kind: RopeNodeFact['kind'];
-  readonly byteLength: number;
-  readonly contentHash: string;
-}
-
 export interface GraphRopeRuntime {
   createBufferWorldline(input: CreateBufferWorldlineInput): GraphRopeRuntimeResult<GraphRopeCreateWorldlineResult>;
   replaceRangeAsTick(input: GraphRopeReplaceRangeInput): GraphRopeRuntimeResult<GraphRopeReplaceRangeResult>;
   createCheckpoint(input: GraphRopeCreateCheckpointInput): GraphRopeRuntimeResult<GraphRopeCreateCheckpointResult>;
   anchorCheckpoint(input: GraphRopeAnchorCheckpointInput): GraphRopeRuntimeResult<GraphRopeAnchorCheckpointResult>;
   causalLineDiff(input: GraphRopeCausalLineDiffInput): GraphRopeRuntimeResult<GraphRopeCausalLineDiffReading>;
+  whyRange(input: GraphRopeRangeWhyInput): GraphRopeRuntimeResult<GraphRopeRangeWhyReading>;
   textWindow(input: GraphRopeTextWindowInput): GraphRopeRuntimeResult<GraphRopeTextWindowReading>;
   debugRopeShape(headId: string): GraphRopeRuntimeResult<GraphRopeDebugShape>;
 }
@@ -177,6 +184,7 @@ interface GraphRopeRuntimeState extends GraphRopeRuntimeFactReader {
   readonly causalAnchorAdmission: EchoCausalAnchorAdmissionPort | null;
   readonly factsById: Map<string, RopeAdmittedFact>;
   readonly currentHeadByWorldlineId: Map<string, string>;
+  readonly rangeWhyCatalog: GraphRopeRuntimeRangeWhyCatalog;
   nextAdmissionSequence: number;
 }
 
@@ -191,6 +199,7 @@ export function createGraphRopeRuntime(input: CreateGraphRopeRuntimeInput): Grap
     causalAnchorAdmission: input.causalAnchorAdmission ?? null,
     factsById,
     currentHeadByWorldlineId: new Map<string, string>(),
+    rangeWhyCatalog: createGraphRopeRuntimeRangeWhyCatalog(factsById),
     nextAdmissionSequence: INITIAL_ADMISSION_SEQUENCE,
     getFact(id) {
       return factsById.get(id) ?? null;
@@ -211,11 +220,12 @@ export function createGraphRopeRuntime(input: CreateGraphRopeRuntimeInput): Grap
       return anchorCheckpoint(state, anchorInput);
     },
     causalLineDiff: (lineDiffInput) => readGraphRopeCausalLineDiff(state, lineDiffInput),
+    whyRange: (whyInput) => readGraphRopeRangeWhy(state.rangeWhyCatalog, whyInput),
     textWindow(readInput) {
       return textWindow(state, readInput);
     },
     debugRopeShape(headId) {
-      return debugRopeShape(state, headId);
+      return readGraphRopeDebugShape(state, headId);
     },
   };
 }
@@ -341,18 +351,6 @@ function textWindow(
   };
 }
 
-function debugRopeShape(state: GraphRopeRuntimeState, headId: string): GraphRopeRuntimeResult<GraphRopeDebugShape> {
-  const head = headById(state, headId);
-  if (head === null) {
-    return { ok: false, code: GRAPH_ROPE_RUNTIME_OBSTRUCTION_MISSING_HEAD };
-  }
-  const shape = debugTreeShape(state, head);
-  if (!shape.ok) {
-    return shape;
-  }
-  return { ok: true, value: { headId: head.headId, rootNodeId: head.rootNodeId, byteLength: head.byteLength, ...shape.value } };
-}
-
 function createWorldlineFacts(worldlineId: string, blob: TextBlobFact, bytes: Uint8Array, hash: TextBlobHashPort): CreateWorldlineFacts {
   const tree = createInitialTree(blob, bytes, hash);
   const head = createInitialHead(worldlineId, tree.root, hash);
@@ -398,6 +396,7 @@ function admitFacts(
   }
   for (const fact of facts) {
     state.factsById.set(ropeFactId(fact), cloneFact(fact));
+    state.rangeWhyCatalog.indexFact(fact);
   }
   return null;
 }

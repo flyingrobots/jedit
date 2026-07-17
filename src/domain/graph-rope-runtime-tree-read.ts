@@ -28,32 +28,116 @@ import {
 } from './graph-rope-runtime-issues.js';
 import {
   ZERO_VALUE,
+  ONE_VALUE,
   type GraphRopeRuntimeFactReader,
   type GraphRopeTreeDebugNode,
   type GraphRopeTreeDebugShape,
   type GraphRopeTreeWindowEvidence,
   type GraphRopeTreeWindowReading,
   type LeafSegment,
+  type RopeNodeFact,
   type TreeResult,
   type WindowBytes,
 } from './graph-rope-runtime-tree-types.js';
+
+interface WindowTraversal {
+  readonly reader: GraphRopeRuntimeFactReader;
+  readonly inspectionStart: number;
+  readonly inspectionEnd: number;
+  readonly leaves: LeafSegment[];
+}
 
 export function readTreeWindow(
   reader: GraphRopeRuntimeFactReader,
   head: RopeHeadFact,
   byteRange: TextByteRange,
 ): TreeResult<GraphRopeTreeWindowReading> {
-  const leaves = orderedLeafSegments(reader, head);
-  if (!leaves.ok) {
-    return leaves;
-  }
   if (!byteRangeFits(byteRange, head.byteLength)) {
     return { ok: false, code: GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_BYTE_RANGE };
+  }
+  const leaves = windowLeafSegments(reader, head, byteRange);
+  if (!leaves.ok) {
+    return leaves;
   }
   if (!rangeHasUtf8Boundaries(leaves.value, byteRange, head.byteLength)) {
     return { ok: false, code: GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_UTF8_BOUNDARY };
   }
   return materializeWindow(leaves.value, byteRange);
+}
+
+function windowLeafSegments(
+  reader: GraphRopeRuntimeFactReader,
+  head: RopeHeadFact,
+  range: TextByteRange,
+): TreeResult<readonly LeafSegment[]> {
+  const leaves: LeafSegment[] = [];
+  const inspectionEnd = Math.min(head.byteLength, range.endByte.value + ONE_VALUE);
+  const traversal: WindowTraversal = {
+    reader,
+    inspectionStart: range.startByte.value,
+    inspectionEnd,
+    leaves,
+  };
+  const issue = appendWindowLeafSegments(
+    traversal,
+    head.rootNodeId,
+    ZERO_VALUE,
+    head.byteLength,
+  );
+  return issue === null ? { ok: true, value: leaves } : { ok: false, code: issue };
+}
+
+function appendWindowLeafSegments(
+  traversal: WindowTraversal,
+  nodeId: string,
+  nodeStart: number,
+  nodeLength: number,
+): GraphRopeRuntimeObstructionCode | null {
+  if (!rangesOverlap(nodeStart, nodeStart + nodeLength, traversal.inspectionStart, traversal.inspectionEnd)) {
+    return null;
+  }
+  const node = nodeById(traversal.reader, nodeId);
+  return node === null
+    ? GRAPH_ROPE_RUNTIME_OBSTRUCTION_MISSING_NODE
+    : appendWindowNode(traversal, node, nodeStart);
+}
+
+function appendWindowNode(
+  traversal: WindowTraversal,
+  node: RopeNodeFact,
+  nodeStart: number,
+): GraphRopeRuntimeObstructionCode | null {
+  if (node.kind === ROPE_LEAF_FACT_KIND) {
+    return appendLeafSegment(traversal.reader, node, nodeStart, traversal.leaves);
+  }
+  const left = nodeById(traversal.reader, node.left);
+  if (left === null) {
+    return GRAPH_ROPE_RUNTIME_OBSTRUCTION_MISSING_NODE;
+  }
+  const rightStart = nodeStart + left.byteLength;
+  const leftIssue = rangesOverlap(
+    nodeStart,
+    rightStart,
+    traversal.inspectionStart,
+    traversal.inspectionEnd,
+  )
+    ? appendWindowNode(traversal, left, nodeStart)
+    : null;
+  return leftIssue ?? appendWindowLeafSegments(
+    traversal,
+    node.right,
+    rightStart,
+    node.byteLength - left.byteLength,
+  );
+}
+
+function rangesOverlap(
+  leftStart: number,
+  leftEnd: number,
+  rightStart: number,
+  rightEnd: number,
+): boolean {
+  return leftStart < rightEnd && rightStart < leftEnd;
 }
 
 /** Reads an exact byte window without claiming that its boundaries form valid UTF-8 text. */

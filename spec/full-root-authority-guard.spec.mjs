@@ -31,7 +31,7 @@ const RETAINED_ROOT_ACCESS_ALLOWLIST = new Map([
     'evidence emission: maps retained roots to root facts, never to current text',
   ],
   [
-    'src/adapters/jedit-echo-optic-codec.ts',
+    'src/adapters/jedit-worldline-session-codec.ts',
     'transport schema: encodes/decodes the state shape without reading text from it',
   ],
 ]);

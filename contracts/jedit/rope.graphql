@@ -225,6 +225,74 @@ type CausalLineDiffReading {
     observerVersion: String!
 }
 
+enum WhyRangeCoverageKind {
+    COMPLETE
+    PARTIAL
+}
+
+enum WhyRangeOriginKind {
+    IMPORTED
+    REWRITE
+    UNAVAILABLE
+}
+
+type WhyRangeOrigin {
+    kind: WhyRangeOriginKind!
+    worldlineId: ID
+    initialHeadId: ID
+    createdAtTickId: ID
+    rewriteId: ID
+    diffId: ID
+    textTickReceiptId: ID
+    basisHeadId: ID
+    nextHeadId: ID
+    unavailableCode: String
+}
+
+type WhyRangeFragment {
+    coveredStartByte: Int!
+    coveredEndByte: Int!
+    headId: ID!
+    leafId: ID!
+    blobId: ID!
+    origin: WhyRangeOrigin!
+}
+
+type WhyRangeAnchorAssociation {
+    associationId: ID!
+    causalAnchorId: ID!
+    causalAnchorFactId: ID!
+    causalAnchorReceiptId: ID!
+}
+
+type WhyRangeCheckpointEvidence {
+    checkpointId: ID!
+    headId: ID!
+    reason: String!
+    anchorAssociation: WhyRangeAnchorAssociation
+}
+
+type WhyRangeCoverage {
+    kind: WhyRangeCoverageKind!
+    coveredStartByte: Int!
+    coveredEndByte: Int!
+    continuation: String
+    reason: String
+}
+
+"""Bounded graph-rope evidence for one UTF-8 range at an explicit head."""
+type WhyRangeReading {
+    worldlineId: ID!
+    basisHeadId: ID!
+    startByte: Int!
+    endByte: Int!
+    coverage: WhyRangeCoverage!
+    fragments: [WhyRangeFragment!]!
+    relatedCheckpoints: [WhyRangeCheckpointEvidence!]!
+    inspectedFactCount: Int!
+    observerVersion: String!
+}
+
 type CreateBufferWorldlineResult {
     worldline: BufferWorldline!
     head: RopeHead!
@@ -290,6 +358,16 @@ input CausalLineDiffInput {
     maxLineCount: Int!
     maxRewriteCount: Int!
     maxMarkerCount: Int!
+}
+
+input WhyRangeInput {
+    worldlineId: ID!
+    basisHeadId: ID!
+    startByte: Int!
+    endByte: Int!
+    maxFacts: Int!
+    maxDepth: Int!
+    maxHistoricalTextBytes: Int!
 }
 
 type Mutation {
@@ -460,4 +538,12 @@ type Query {
     """
     causalLineDiff(input: CausalLineDiffInput!): CausalLineDiffReading!
         @wes_op(name: "causalLineDiff")
+
+    """
+    Explains one bounded UTF-8 range from an explicitly named retained head.
+    Returned IDs are opaque references to observed Jim facts or associated Echo
+    evidence; this query never mints authority.
+    """
+    whyRange(input: WhyRangeInput!): WhyRangeReading!
+        @wes_op(name: "whyRange")
 }

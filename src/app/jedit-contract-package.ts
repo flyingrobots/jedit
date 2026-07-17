@@ -4,6 +4,7 @@ import {
   mutationReplaceRangeAsTickOperation,
   queryCausalLineDiffOperation,
   queryTextWindowOperation,
+  queryWhyRangeOperation,
   queryWorldlineSnapshotOperation,
 } from '../generated/jedit/rope.wesley.generated.js';
 import {
@@ -35,6 +36,7 @@ export const JEDIT_HOT_TEXT_QUERY_OPERATION_NAMES = [
   queryWorldlineSnapshotOperation.fieldName,
   queryTextWindowOperation.fieldName,
   queryCausalLineDiffOperation.fieldName,
+  queryWhyRangeOperation.fieldName,
 ] as const;
 export const JEDIT_STRUCTURAL_HISTORY_MUTATION_OPERATION_NAMES = [
   mutationReplaceTextRangeOperation.fieldName,

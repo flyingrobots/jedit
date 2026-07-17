@@ -12,7 +12,6 @@ import {
 } from '../domain/graph-rope-coordinates.js';
 import type {
   EchoCausalAnchorAdmissionPort,
-  RopeCheckpointAnchoredFact,
   RopeCheckpointFact,
   RopeCheckpointReason,
   RopeHeadFact,
@@ -27,7 +26,6 @@ import {
   createGraphRopeRuntime,
   GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_FACT,
   type GraphRopeDebugShape,
-  type GraphRopeCausalLineDiffReading,
   type GraphRopeReplaceRangeResult,
   type GraphRopeRuntime,
   type GraphRopeRuntimeResult,
@@ -40,7 +38,12 @@ import {
 } from '../domain/text-edit-contract.js';
 import { toWorldlineId } from '../app/jedit-contract-runtime-id.js';
 import type { HashPort } from '../ports/hash.js';
+import type { WhyRangeInput, WhyRangeReading } from '../generated/jedit/rope.wesley.generated.js';
 import { toHotTextHeadBasis } from './graph-rope-hot-text-head-basis.js';
+import {
+  graphCausalLineDiffReading,
+  graphRangeWhyReading,
+} from './graph-rope-hot-text-observation-readings.js';
 import {
   GRAPH_BACKED_ROPE_TEXT_AUTHORITY_KIND,
   type AdmitReplaceRangeTickResult,
@@ -68,6 +71,7 @@ import {
   REPLACE_RANGE_OPERATION,
   SAVE_CHECKPOINT_OPERATION,
   TEXT_WINDOW_OPERATION,
+  WHY_RANGE_OPERATION,
 } from './graph-rope-text-authority-errors.js';
 export {
   GraphRopeTextAuthorityObstructionError,
@@ -152,6 +156,17 @@ class GraphRopeHotTextAuthorityAdapter implements GraphRopeHotTextAuthority {
     return graphCausalLineDiffReading(reading.value);
   }
 
+  public whyRange(_state: HotTextBufferState, request: WhyRangeInput): WhyRangeReading {
+    const reading = this.graph.whyRange({
+      ...request,
+      queriedRange: graphWindowByteRange(request),
+    });
+    if (!reading.ok) {
+      throw new GraphRopeTextAuthorityObstructionError(WHY_RANGE_OPERATION, reading.code);
+    }
+    return graphRangeWhyReading(reading.value);
+  }
+
   public admitReplaceRangeTick(
     state: HotTextBufferState,
     range: TextRange,
@@ -195,29 +210,6 @@ class GraphRopeHotTextAuthorityAdapter implements GraphRopeHotTextAuthority {
   }
 }
 
-function graphCausalLineDiffReading(
-  reading: GraphRopeCausalLineDiffReading,
-): HotTextCausalLineDiffReading {
-  return {
-    ...reading,
-    tickReceiptIds: [...reading.tickReceiptIds],
-    rewriteIds: [...reading.rewriteIds],
-    diffIds: [...reading.diffIds],
-    markers: reading.markers.map(marker => ({
-      ...marker,
-      tickReceiptIds: [...marker.tickReceiptIds],
-      rewriteIds: [...marker.rewriteIds],
-      diffIds: [...marker.diffIds],
-    })),
-    deletions: reading.deletions.map(deletion => ({
-      ...deletion,
-      tickReceiptIds: [...deletion.tickReceiptIds],
-      rewriteIds: [...deletion.rewriteIds],
-      diffIds: [...deletion.diffIds],
-    })),
-  };
-}
-
 function saveGraphCheckpoint(
   graph: GraphRopeRuntime,
   state: HotTextBufferState,
@@ -233,10 +225,7 @@ function saveGraphCheckpoint(
   if (existing != null) {
     return { nextState: state, checkpointDeclaration: checkpoint };
   }
-  const association = checkpointRequiresAnchor(request)
-    ? requireCheckpointAnchor(graph.anchorCheckpoint({ checkpointId: checkpoint.checkpointId }))
-    : undefined;
-  return admittedCheckpointResult(state, checkpoint, association);
+  return declaredCheckpointResult(state, checkpoint);
 }
 
 function requireCheckpoint(
@@ -248,19 +237,9 @@ function requireCheckpoint(
   return result.value.checkpoint;
 }
 
-function requireCheckpointAnchor(
-  result: GraphRopeRuntimeResult<{ readonly association: RopeCheckpointAnchoredFact }>,
-): RopeCheckpointAnchoredFact {
-  if (!result.ok) {
-    throw new GraphRopeTextAuthorityObstructionError(SAVE_CHECKPOINT_OPERATION, result.code);
-  }
-  return result.value.association;
-}
-
-function admittedCheckpointResult(
+function declaredCheckpointResult(
   state: HotTextBufferState,
   checkpoint: RopeCheckpointFact,
-  association: RopeCheckpointAnchoredFact | undefined,
 ): SaveHotCheckpointResult {
   const id = state.checkpoints.length + NEXT_CHECKPOINT_OFFSET;
   const saved = { id, rootId: state.currentRoot.id, path: state.path, authorityCheckpointId: checkpoint.checkpointId };
@@ -268,7 +247,6 @@ function admittedCheckpointResult(
     nextState: { ...state, checkpoints: [...state.checkpoints, saved] },
     receipt: { checkpointId: id, rootId: saved.rootId, path: saved.path, authorityCheckpointId: checkpoint.checkpointId },
     checkpointDeclaration: checkpoint,
-    anchorAssociation: association,
   };
 }
 
@@ -291,10 +269,6 @@ function rejectUnsupportedCheckpointKind(kind: never): never {
     SAVE_CHECKPOINT_OPERATION,
     GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_FACT,
   );
-}
-
-function checkpointRequiresAnchor(request: SaveHotCheckpointRequest): boolean {
-  return request.kind !== INITIAL_CHECKPOINT_KIND;
 }
 
 function initialProjection(

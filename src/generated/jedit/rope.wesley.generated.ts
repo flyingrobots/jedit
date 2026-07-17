@@ -219,6 +219,76 @@ export interface TextWindowReading {
   lines: TextLineReading[];
 }
 
+export interface WhyRangeAnchorAssociation {
+  associationId: string;
+  causalAnchorId: string;
+  causalAnchorFactId: string;
+  causalAnchorReceiptId: string;
+}
+
+export interface WhyRangeCheckpointEvidence {
+  checkpointId: string;
+  headId: string;
+  reason: string;
+  anchorAssociation: WhyRangeAnchorAssociation | null;
+}
+
+export interface WhyRangeCoverage {
+  kind: WhyRangeCoverageKind;
+  coveredStartByte: number;
+  coveredEndByte: number;
+  continuation: string | null;
+  reason: string | null;
+}
+
+export type WhyRangeCoverageKind = "COMPLETE" | "PARTIAL";
+
+export interface WhyRangeFragment {
+  coveredStartByte: number;
+  coveredEndByte: number;
+  headId: string;
+  leafId: string;
+  blobId: string;
+  origin: WhyRangeOrigin;
+}
+
+export interface WhyRangeInput {
+  worldlineId: string;
+  basisHeadId: string;
+  startByte: number;
+  endByte: number;
+  maxFacts: number;
+  maxDepth: number;
+  maxHistoricalTextBytes: number;
+}
+
+export interface WhyRangeOrigin {
+  kind: WhyRangeOriginKind;
+  worldlineId: string | null;
+  initialHeadId: string | null;
+  createdAtTickId: string | null;
+  rewriteId: string | null;
+  diffId: string | null;
+  textTickReceiptId: string | null;
+  basisHeadId: string | null;
+  nextHeadId: string | null;
+  unavailableCode: string | null;
+}
+
+export type WhyRangeOriginKind = "IMPORTED" | "REWRITE" | "UNAVAILABLE";
+
+export interface WhyRangeReading {
+  worldlineId: string;
+  basisHeadId: string;
+  startByte: number;
+  endByte: number;
+  coverage: WhyRangeCoverage;
+  fragments: WhyRangeFragment[];
+  relatedCheckpoints: WhyRangeCheckpointEvidence[];
+  inspectedFactCount: number;
+  observerVersion: string;
+}
+
 export interface WorldlineSnapshot {
   worldline: BufferWorldline;
   head: RopeHead;
@@ -336,4 +406,22 @@ export type QueryCausalLineDiffOperation = {
   request: QueryCausalLineDiffRequest;
   response: QueryCausalLineDiffResponse;
   metadata: typeof queryCausalLineDiffOperation;
+};
+
+export interface QueryWhyRangeRequest {
+  input: WhyRangeInput;
+}
+
+export type QueryWhyRangeResponse = WhyRangeReading;
+
+export const queryWhyRangeOperation = {
+  operationType: "QUERY",
+  fieldName: "whyRange",
+  directives: {"wes_op":{"name":"whyRange"}},
+} as const;
+
+export type QueryWhyRangeOperation = {
+  request: QueryWhyRangeRequest;
+  response: QueryWhyRangeResponse;
+  metadata: typeof queryWhyRangeOperation;
 };

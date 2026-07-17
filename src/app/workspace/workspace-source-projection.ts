@@ -21,6 +21,10 @@ import {
   projectedSourceWindow,
 } from './workspace-text-authority.js';
 import { workspaceCausalGutterBasisHeadId } from './workspace-causal-gutter-basis.js';
+import {
+  workspaceGutterWhyEvidence,
+  type WorkspaceGutterWhyEvidence,
+} from './workspace-causal-evidence-explainers.js';
 
 const INSERTED_CAUSAL_LINE_MARKER = 'INSERTED';
 const SOURCE_GUTTER_EXECUTION_POSTURE = Object.freeze({
@@ -55,6 +59,7 @@ export interface SourceGutterExecutionReading {
   readonly eventId?: string;
   readonly target?: JeditCommandTarget;
   readonly obstructionMessage?: string;
+  readonly whyEvidence?: WorkspaceGutterWhyEvidence;
 }
 
 export function displayEditorForWorkspaceModel(
@@ -179,6 +184,12 @@ function appliedGutterExecutionReading(
 ): SourceGutterExecutionReading {
   const tickReceiptIds = [...marker.tickReceiptIds];
   const receiptId = latestAppliedReceiptId(model, tickReceiptIds);
+  const whyEvidence = workspaceGutterWhyEvidence(model, marker.lineNumber, {
+    nextHeadId: lineChanges.nextHeadId,
+    tickReceiptIds: marker.tickReceiptIds,
+    rewriteIds: marker.rewriteIds,
+    diffIds: marker.diffIds,
+  });
   return {
     lineNumber: marker.lineNumber,
     markerKind: marker.kind === INSERTED_CAUSAL_LINE_MARKER ? 'inserted' : 'modified',
@@ -189,6 +200,7 @@ function appliedGutterExecutionReading(
     rewriteIds: [...marker.rewriteIds],
     diffIds: [...marker.diffIds],
     ...(receiptId == null ? {} : { receiptId }),
+    ...(whyEvidence == null ? {} : { whyEvidence }),
   };
 }
 

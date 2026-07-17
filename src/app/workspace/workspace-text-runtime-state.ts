@@ -192,7 +192,7 @@ function applyIntermediateTextEditResult(
   );
   const withCurrentObservation = workspaceTextAuthorityWithCurrentJeditCommandObservation(withCache);
   const applied = withEchoHistoryEntry({
-    ...model,
+    ...model, inlinePanel: undefined,
     textAuthority: withCurrentObservation,
   }, {
     kind: EchoHistoryEntryKinds.Edit,
@@ -242,7 +242,7 @@ function applyAppliedTextEditResult(
   );
   const withCurrentObservation = workspaceTextAuthorityWithCurrentJeditCommandObservation(withCache);
   const applied = withEchoHistoryEntry({
-    ...model,
+    ...model, inlinePanel: undefined,
     textAuthority: withCurrentObservation,
     editor: editorAfterTextEdit(model, withCurrentObservation, msg.result.cursorAfter),
   }, {

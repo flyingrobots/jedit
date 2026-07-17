@@ -2,9 +2,6 @@ import {
   createJeditContractMutationHandlerRegistry,
 } from '../app/jedit-contract-mutation-handlers.js';
 import {
-  createJeditContractQueryObserverRegistry,
-} from '../app/jedit-contract-query-observers.js';
-import {
   createDefaultJeditHostingBoundaries,
   createJeditSubmissionId,
   JEDIT_HOT_TEXT_PACKAGE_ID,
@@ -48,7 +45,6 @@ import {
 import { createHashPort } from './hash.js';
 import {
   CREATE_BUFFER_WORLDLINE_OPERATION,
-  CAUSAL_LINE_DIFF_OPERATION,
   CREATE_CHECKPOINT_OPERATION,
   decodeJeditObserveRequest,
   encodeJeditIntentResponse,
@@ -58,14 +54,17 @@ import {
   JEDIT_TRANSPORT_STATUS_OBSTRUCTED,
   JEDIT_TRANSPORT_STATUS_OK,
   REPLACE_RANGE_AS_TICK_OPERATION,
-  TEXT_WINDOW_OPERATION,
-  WORLDLINE_SNAPSHOT_OPERATION,
   type JeditIntentRequest,
   type JeditIntentResponse,
   type JeditObserveRequest,
   type JeditObserveResponse,
   type JeditTransportObstruction,
 } from './jedit-echo-optic-codec.js';
+import {
+  createJeditContractQueryObserverRegistry,
+  type DisposableJeditLineIndexStore,
+  executeInstalledJeditObserve,
+} from './installed-jedit-contract-observe.js';
 import type { JeditWorldlineSessionPort } from '../ports/jedit-worldline-session-port.js';
 import type { JeditTransportSeam } from '../ports/jedit-transport-seam.js';
 import {
@@ -105,6 +104,7 @@ export interface InstalledJeditContractEchoTransportOptions {
   readonly ticketedWorkPort?: JeditTicketedWorkPort;
   readonly packageHost?: EchoContractPackageHostPort;
   readonly sessionPort?: JeditWorldlineSessionPort;
+  readonly lineIndexes?: DisposableJeditLineIndexStore;
 }
 
 interface InstalledJeditContractEchoTransportContext {
@@ -171,7 +171,12 @@ function createTransportContext(
   const defaults = createDefaultJeditHostingBoundaries(hash);
   const statePort = options.statePort ?? defaults.statePort;
   const mutations = createJeditContractMutationHandlerRegistry({ runtime, hash, statePort });
-  const observers = createJeditContractQueryObserverRegistry({ runtime, hash, statePort });
+  const observers = createJeditContractQueryObserverRegistry({
+    runtime,
+    hash,
+    statePort,
+    lineIndexes: options.lineIndexes,
+  });
   const host = options.packageHost ?? createRecordingPackageHost();
   const install = installJeditContractPackage({ host });
   const isPackageInstalled = install.hostResult.status === ECHO_CONTRACT_PACKAGE_INSTALL_INSTALLED;
@@ -245,7 +250,7 @@ function submitInstalledIntent(
   try {
     return encodeJeditIntentResponse(executeIntent(context.mutations, context.handlerInvocationSink, request));
   } catch (error) {
-    const obstruction = mutationRuntimeObstruction(error instanceof Error ? error : undefined);
+    const obstruction = textAuthorityRuntimeObstruction(error instanceof Error ? error : undefined);
     if (obstruction === null) {
       throw error;
     }
@@ -279,7 +284,7 @@ function observeInstalledRequest(
   }
   try {
     return encodeJeditObserveResponse(
-      executeObserve(context.observers, request),
+      executeInstalledJeditObserve(context.observers, request),
     );
   } catch (error) {
     return encodeJeditObserveResponse(
@@ -397,28 +402,6 @@ function invokeSchedulerHandler<Result>(
   });
 }
 
-function executeObserve(
-  observers: ReturnType<typeof createJeditContractQueryObserverRegistry>,
-  request: JeditObserveRequest,
-): JeditObserveResponse {
-  switch (request.operationName) {
-    case WORLDLINE_SNAPSHOT_OPERATION:
-      return {
-        status: JEDIT_TRANSPORT_STATUS_OK,
-        operationName: WORLDLINE_SNAPSHOT_OPERATION,
-        envelope: observers.observeWorldlineSnapshot(request),
-      };
-    case TEXT_WINDOW_OPERATION:
-      return {
-        status: JEDIT_TRANSPORT_STATUS_OK,
-        operationName: TEXT_WINDOW_OPERATION,
-        envelope: observers.observeTextWindow(request),
-      };
-    case CAUSAL_LINE_DIFF_OPERATION:
-      return { status: JEDIT_TRANSPORT_STATUS_OK, operationName: CAUSAL_LINE_DIFF_OPERATION, envelope: observers.observeCausalLineDiff(request) };
-  }
-}
-
 function obstructedIntent(
   request: JeditIntentRequest,
   obstruction: JeditTransportObstruction,
@@ -459,7 +442,7 @@ function ticketedWorkObstruction(
   };
 }
 
-function mutationRuntimeObstruction(error: Error | undefined): JeditTransportObstruction | null {
+function textAuthorityRuntimeObstruction(error: Error | undefined): JeditTransportObstruction | null {
   if (!(error instanceof GraphRopeTextAuthorityObstructionError)) {
     return null;
   }
@@ -471,6 +454,10 @@ function mutationRuntimeObstruction(error: Error | undefined): JeditTransportObs
 }
 
 function observeErrorObstruction(error: Error | undefined): JeditTransportObstruction {
+  const textAuthorityObstruction = textAuthorityRuntimeObstruction(error);
+  if (textAuthorityObstruction != null) {
+    return textAuthorityObstruction;
+  }
   if (error instanceof JeditContractStatePortError) {
     return {
       code: error.code,

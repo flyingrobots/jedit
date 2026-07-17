@@ -1,7 +1,10 @@
 import type { Cmd } from '@flyingrobots/bijou-tui';
 import { makeTextByteRange } from '../../domain/graph-rope-coordinates.js';
 import type { TextByteRange } from '../../domain/graph-rope-types.js';
-import { RESULT_PRODUCED } from '../../ports/jedit-why-range.js';
+import {
+  RESULT_PRODUCED,
+  type JeditWhyRangeReport,
+} from '../../ports/jedit-why-range.js';
 import type { JeditWhyReport } from './command-provenance.js';
 import type { EditorState } from './editor/model.js';
 import type { WorkspaceModel } from './model.js';
@@ -18,12 +21,15 @@ import { byteOffsetForTextPosition } from './workspace-text-position.js';
 import {
   anchoredWorkspaceInlinePanel,
   WORKSPACE_INLINE_PANEL_TONE,
-  type WorkspaceInlinePanel,
   type WorkspaceInlinePanelAnchor,
+  type WorkspaceInlinePanelContent,
   type WorkspaceInlinePanelTone,
+  workspaceWhyRangeInlinePanelContent,
   workspaceInlinePanelAtAnchor,
+  workspaceInlinePanelBasisMatchesModel,
 } from './workspace-inline-panel.js';
 import { WorkspaceTextAuthorityKinds } from './workspace-text-authority.js';
+import { jeditWhyRangeDetailRows } from './workspace-why-range-details.js';
 
 export {
   WORKSPACE_INLINE_PANEL_TONE,
@@ -49,11 +55,17 @@ interface WorkspaceWhyRangeCommandRequest {
   readonly atMs: number;
 }
 
-export interface WorkspaceInlinePanelReport {
+interface WorkspaceInlinePanelReportBase {
   readonly title: string;
   readonly message: string;
   readonly tone: WorkspaceInlinePanelTone;
+  readonly detailRows?: readonly string[];
 }
+
+export type WorkspaceInlinePanelReport = WorkspaceInlinePanelReportBase & (
+  | { readonly whyRangeReport?: never }
+  | { readonly whyRangeReport: JeditWhyRangeReport }
+);
 
 export function jeditWhyRangeAtCursor(editor: EditorState | undefined): TextByteRange | undefined {
   if (editor == null) {
@@ -104,6 +116,12 @@ export function applyWorkspaceWhyRangeResult(
   if (!whyRangeResultMatchesActiveBuffer(model, msg.bufferId)) {
     return [model, []];
   }
+  if (
+    msg.outcome.kind === WorkspaceWhyRangeOutcomeKinds.Range &&
+    !workspaceInlinePanelBasisMatchesModel(model, msg.outcome.report.witness.basisHeadId)
+  ) {
+    return [model, []];
+  }
   const report = whyInlinePanelReportFromRange(
     msg.outcome,
     msg.fallbackReport,
@@ -141,15 +159,14 @@ export function modelWithWorkspaceInlinePanel(
   model: WorkspaceModel,
   report: WorkspaceInlinePanelReport,
 ): WorkspaceModel {
-  return model.editor == null
-    ? model
-    : {
-        ...model,
-        inlinePanel: anchoredWorkspaceInlinePanel(
-          model.editor,
-          workspaceInlinePanelReportForModel(model, report),
-        ),
-      };
+  if (model.editor == null) {
+    return model;
+  }
+  const content = workspaceInlinePanelReportForModel(model, report);
+  return content == null ? model : {
+    ...model,
+    inlinePanel: anchoredWorkspaceInlinePanel(model.editor, content),
+  };
 }
 
 function modelWithWorkspaceInlinePanelAtAnchor(
@@ -157,23 +174,34 @@ function modelWithWorkspaceInlinePanelAtAnchor(
   report: WorkspaceInlinePanelReport,
   anchor: WorkspaceInlinePanelAnchor,
 ): WorkspaceModel {
-  return model.editor == null ||
+  if (model.editor == null ||
     model.editor.cursorRow !== anchor.row ||
-    model.editor.cursorCol !== anchor.column
-    ? model
-    : {
-        ...model,
-        inlinePanel: workspaceInlinePanelAtAnchor(
-          workspaceInlinePanelReportForModel(model, report),
-          anchor,
-        ),
-      };
+    model.editor.cursorCol !== anchor.column) {
+    return model;
+  }
+  const content = workspaceInlinePanelReportForModel(model, report);
+  return content == null ? model : {
+    ...model,
+    inlinePanel: workspaceInlinePanelAtAnchor(content, anchor),
+  };
 }
 
 function workspaceInlinePanelReportForModel(
   model: WorkspaceModel,
   report: WorkspaceInlinePanelReport,
-): Pick<WorkspaceInlinePanel, "title" | "message" | "tone" | "bufferId"> {
+): WorkspaceInlinePanelContent | null {
+  if (report.whyRangeReport != null) {
+    return model.textAuthority.kind === WorkspaceTextAuthorityKinds.Opened
+      ? workspaceWhyRangeInlinePanelContent({
+          title: report.title,
+          message: report.message,
+          tone: report.tone,
+          detailRows: report.detailRows,
+          bufferId: model.textAuthority.bufferId,
+          report: report.whyRangeReport,
+        })
+      : null;
+  }
   return model.textAuthority.kind === WorkspaceTextAuthorityKinds.Opened
     ? { ...report, bufferId: model.textAuthority.bufferId }
     : report;
@@ -188,6 +216,8 @@ function whyInlinePanelReportFromRange(
     return {
       title: outcome.report.title,
       message: outcome.report.message,
+      detailRows: jeditWhyRangeDetailRows(outcome.report),
+      whyRangeReport: outcome.report,
       tone: outcome.report.witness.result.kind === RESULT_PRODUCED
         ? WORKSPACE_INLINE_PANEL_TONE.Info
         : WORKSPACE_INLINE_PANEL_TONE.Warning,

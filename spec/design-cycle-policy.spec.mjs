@@ -236,11 +236,13 @@ test('HT-0149 graph runtime RED matrix declares all Slice 4 witnesses', () => {
   }
 });
 
-test('BEARING blocks why work on graph runtime proof', () => {
+test('BEARING advances from completed range why work to CR-07 retention proof', () => {
   const bearing = readRepoFile(BEARING_PATH);
 
-  assert.match(bearing, /Do not resume the `:why` evidence gap sequence until/);
-  assert.match(bearing, /graph-backed\s+create\/read\/replace\/checkpoint path and witnesses land/);
+  assert.match(bearing, /CR-06 runtime-backed `:why` evidence is complete/);
+  assert.match(bearing, /Continue with CR-07 retention, balance, and performance witnesses/);
+  assert.match(bearing, /issues\/207/);
+  assert.doesNotMatch(bearing, /Do not resume the `:why` evidence gap sequence until/);
 });
 
 test('WF-0154 landed closeout has no unchecked gates or stale provenance deferral', () => {

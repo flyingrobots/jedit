@@ -2,6 +2,71 @@
 
 ## Unreleased
 
+- Replaced per-insert range-why index cloning and full sorting with deterministic
+  binary insertion. Checkpoint and anchor association buckets remain ordered and
+  duplicate-free without repeated O(N log N) sorts as retained evidence grows.
+- Corrected malformed range-why observation limits to fail with the stable
+  range-limit obstruction instead of misreporting an invalid UTF-8 byte range.
+  Byte-range validation remains a separate failure boundary.
+- Made cursor-anchored range evidence panel state atomic. A dedicated factory
+  derives the basis head from the report, range panels require an active buffer,
+  ordinary panels cannot carry a stray causal basis, and runtime validation
+  rejects forged report/basis pairs from untyped callers.
+- Made the full-snapshot test transport fail closed with a dedicated typed
+  range-why obstruction. Snapshot fixture metadata cannot be promoted into
+  causal provenance; tests that need `:why` must inject graph-backed rope
+  authority with retained evidence.
+- Made the range-why fact budget constrain actual graph work. Narrow windows now
+  traverse only the overlapping root-to-leaf region plus the UTF-8 boundary
+  byte, branch and blob reads count toward `inspectedFactCount`, and checkpoint
+  and anchor indexes return deterministic bounded slices instead of cloning and
+  sorting their complete contents during an observation.
+- Hardened the range-why observation boundary against faulty injected runtimes.
+  Returned query coordinates must equal the requested UTF-8 range, complete
+  coverage must match it exactly, and partial coverage must remain inside it
+  before Jim accepts or renders the evidence.
+- Aligned range-why historical-text bounds across the codec and domain. A zero
+  byte budget is now valid while CR-06 traverses provenance facts without
+  materializing historical text; future deleted-text readers must debit that
+  budget before returning historical bytes.
+- Preserved typed graph-rope observation obstructions across the installed
+  transport boundary, so range evidence limits and other text-authority
+  refusals reach clients as their original stable codes instead of collapsing
+  into a generic query-runtime error.
+- Connected causal gutter and footer explanations to the same structured,
+  basis-pinned range report used by `:why`. Applied gutter readings expose
+  report-backed rewrite/diff/tick evidence only when every identity is also
+  supported by the causal marker; stale or mismatched reports contribute no
+  explanation. While the panel is active, the lower-right posture cites exact
+  head, tick, optional anchor, and coverage evidence, omits unsupported claims,
+  and localizes its labels across every installed locale.
+- Added range-origin witnesses for untouched imports, retained rewrites,
+  checkpointed heads, and unsupported generated-text attribution. Rewrite
+  reports now expose a typed producer-evidence obstruction instead of treating
+  the transitional `author` field as causal proof. Ordinary Jim checkpoint
+  declarations no longer request Echo anchors implicitly; explicit anchoring
+  remains a separate operation that fails closed without an injected Echo
+  admission capability.
+- Replaced prose-only range explanations with a persistent, cursor-anchored
+  causal evidence panel. The panel derives bounded detail rows from the same
+  machine-readable range report, preserves opaque head/leaf/blob/rewrite/diff/
+  receipt/checkpoint identities, wraps long identifiers, renders below the
+  source line or above when space is exhausted, and closes when the cursor,
+  active buffer, admitted head, focus owner, or `Esc` invalidates its basis.
+- Added the bounded, basis-pinned `whyRange` query to the generated hot-text
+  contract and installed Echo transport. Graph-rope observations now return
+  ordered head/leaf/blob fragments with actual imported or rewrite origins,
+  distinct rewrite/diff/text-tick receipt identities, checkpoint declarations,
+  and optional anchor associations. Product `explainRange` no longer reverse
+  walks local `TickMetadata` or aliases one identifier as another; unsupported
+  authorities, invalid bases, and exceeded evidence bounds fail closed.
+- Designed the CR-06 runtime-backed range-why contract and rope fact inspector.
+  One bounded, basis-pinned observation will supply the human panel, developer
+  inspector, gutter/footer explainers, and machine output with fragmented
+  head/leaf/blob/rewrite/diff/text-tick/checkpoint evidence. Checkpoint
+  declarations remain separate from optional Echo anchor associations, stale
+  evidence fails closed, and standalone token-driven mockups cover wide,
+  narrow, and extra-small terminal profiles.
 - Added receipt-backed gutter execution posture. Applied `+`, `~`, and `-`
   markers now require retained graph-rope tick-receipt support; `?` identifies
   an app proposal that has not become causal history, and `!` identifies an

@@ -4,6 +4,7 @@ export const CREATE_BUFFER_OPERATION = 'createBuffer';
 export const REPLACE_RANGE_OPERATION = 'admitReplaceRangeTick';
 export const TEXT_WINDOW_OPERATION = 'textWindow';
 export const CAUSAL_LINE_DIFF_OPERATION = 'causalLineDiff';
+export const WHY_RANGE_OPERATION = 'whyRange';
 export const SAVE_CHECKPOINT_OPERATION = 'saveCheckpoint';
 
 const GRAPH_ROPE_OBSTRUCTION_MESSAGE = 'Graph rope text authority operation was obstructed';
@@ -24,6 +25,7 @@ type GraphRopeAuthorityOperation =
   | typeof REPLACE_RANGE_OPERATION
   | typeof TEXT_WINDOW_OPERATION
   | typeof CAUSAL_LINE_DIFF_OPERATION
+  | typeof WHY_RANGE_OPERATION
   | typeof SAVE_CHECKPOINT_OPERATION;
 
 export class GraphRopeTextAuthorityObstructionError extends Error {

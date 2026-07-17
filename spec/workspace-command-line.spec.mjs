@@ -11,6 +11,10 @@ import {
   mockTitleScreenModel,
   surfaceText,
 } from "./workspace-helpers.mjs";
+import {
+  producedRangeWhyReport as fakeProducedRangeWhyReport,
+  unavailableRangeWhyReport as fakeUnavailableRangeWhyReport,
+} from "./support/range-why-report-fixture.mjs";
 
 function byteOffset(value) {
   return { kind: "utf8-byte-offset", value };
@@ -1329,6 +1333,16 @@ test("enter dispatches why through retained range history when a cursor range is
       dirty: true,
     }),
   });
+  const [staleHead] = runtime.update(message, {
+    ...pendingWhy,
+    textAuthority: {
+      ...pendingWhy.textAuthority,
+      durability: {
+        ...pendingWhy.textAuthority.durability,
+        causal: { kind: "admitted", headId: "head:newer" },
+      },
+    },
+  });
 
   assert.equal(pendingWhy.commandLine.active, false);
   assert.equal(commands.length, 1);
@@ -1343,9 +1357,15 @@ test("enter dispatches why through retained range history when a cursor range is
   assert.equal(Object.hasOwn(message, "report"), false);
   assert.equal(Object.hasOwn(message, "obstruction"), false);
   assert.match(notified.inlinePanel.message, /ropeDiff receipt:range/);
+  assert.equal(notified.inlinePanel.basisHeadId, "head:command");
+  assert.equal(notified.inlinePanel.whyRangeReport, message.outcome.report);
+  assert.ok(notified.inlinePanel.detailRows.some(row => row.includes("rewrite:range")));
+  assert.ok(notified.inlinePanel.detailRows.some(row => row.includes("diff:range")));
+  assert.ok(notified.inlinePanel.detailRows.some(row => row.includes("tick:range")));
   assert.doesNotMatch(notified.inlinePanel.message, /No meaningful command/);
   assert.equal(stale.inlinePanel, undefined);
   assert.equal(staleBuffer.inlinePanel, undefined);
+  assert.equal(staleHead.inlinePanel, undefined);
 });
 
 test("enter dispatches why with typed unavailable range evidence", async () => {
@@ -1376,6 +1396,7 @@ test("enter dispatches why with typed unavailable range evidence", async () => {
       bufferId: "text-buffer:0",
       readOnly: false,
       dirty: true,
+      cache: commandTextCache("local draft"),
     }),
     commandLine: activeCommandLine("why"),
   });
@@ -1525,34 +1546,6 @@ test("command provenance validates slice 1 Vim edit targets", async () => {
   }
 });
 
-function fakeProducedRangeWhyReport(range) {
-  return {
-    kind: "range",
-    title: "Why range",
-    message: `range: ${range.startByte}..${range.endByte} | ropeDiff receipt:range`,
-    witness: {
-      worldlineId: "wl:/repo/notes.md",
-      currentHeadId: "head:2",
-      queriedRange: range,
-      reverseWalk: { coordinateKind: "range-at-head", inspectedDiffIds: ["receipt:range"] },
-      result: {
-        kind: "produced",
-        ropeRewriteId: "tick:range",
-        ropeDiffId: "receipt:range",
-        tickId: "tick:range",
-        receiptId: "receipt:range",
-        baseHeadId: "head:1",
-        nextHeadId: "head:2",
-        startByte: range.startByte,
-        endByte: range.endByte,
-        insertedByteLength: range.endByte - range.startByte,
-        deletedByteLength: 0,
-      },
-      evidencePosture: { causalHistory: "available", btr: "missing" },
-    },
-  };
-}
-
 function commandTextCache(text) {
   const textBasis = commandTextBasis(text);
   return {
@@ -1590,26 +1583,6 @@ function commandTextBasis(text) {
     byteRange: {
       startByte: { kind: "utf8-byte-offset", value: 0 },
       endByte: { kind: "utf8-byte-offset", value: Buffer.byteLength(text, "utf8") },
-    },
-  };
-}
-
-function fakeUnavailableRangeWhyReport(range) {
-  return {
-    kind: "range",
-    title: "Why range",
-    message: `No retained rope diff proves range ${range.startByte}..${range.endByte}: jedit_why_range_retained_history_horizon`,
-    witness: {
-      worldlineId: "wl:/repo/notes.md",
-      currentHeadId: "head:2",
-      queriedRange: range,
-      reverseWalk: { coordinateKind: "range-at-head", inspectedDiffIds: [] },
-      result: {
-        kind: "unavailable",
-        code: "jedit_why_range_retained_history_horizon",
-        reason: "Retained rope history does not identify a producing diff for this range.",
-      },
-      evidencePosture: { causalHistory: "unavailable", btr: "missing" },
     },
   };
 }

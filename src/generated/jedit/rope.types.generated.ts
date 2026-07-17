@@ -6,6 +6,8 @@ export type AnchorStickiness = "LEADING" | "TRAILING" | "EXPAND";
 export type RewriteKind = "CREATE_BUFFER_WORLDLINE" | "REPLACE_RANGE_AS_TICK" | "CREATE_CHECKPOINT" | "REGISTER_ANCHOR";
 export type CheckpointKind = "INITIAL" | "MANUAL_SAVE" | "AUTO_SAVE";
 export type CausalLineMarkerKind = "INSERTED" | "MODIFIED";
+export type WhyRangeCoverageKind = "COMPLETE" | "PARTIAL";
+export type WhyRangeOriginKind = "IMPORTED" | "REWRITE" | "UNAVAILABLE";
 // Object Types
 export interface BufferWorldline {
   worldlineId: string;
@@ -140,6 +142,56 @@ export interface CausalLineDiffReading {
   deletions: Array<CausalLineDeletionMarker>;
   observerVersion: string;
 }
+export interface WhyRangeOrigin {
+  kind: WhyRangeOriginKind;
+  worldlineId?: string | null;
+  initialHeadId?: string | null;
+  createdAtTickId?: string | null;
+  rewriteId?: string | null;
+  diffId?: string | null;
+  textTickReceiptId?: string | null;
+  basisHeadId?: string | null;
+  nextHeadId?: string | null;
+  unavailableCode?: string | null;
+}
+export interface WhyRangeFragment {
+  coveredStartByte: number;
+  coveredEndByte: number;
+  headId: string;
+  leafId: string;
+  blobId: string;
+  origin: WhyRangeOrigin;
+}
+export interface WhyRangeAnchorAssociation {
+  associationId: string;
+  causalAnchorId: string;
+  causalAnchorFactId: string;
+  causalAnchorReceiptId: string;
+}
+export interface WhyRangeCheckpointEvidence {
+  checkpointId: string;
+  headId: string;
+  reason: string;
+  anchorAssociation?: WhyRangeAnchorAssociation | null;
+}
+export interface WhyRangeCoverage {
+  kind: WhyRangeCoverageKind;
+  coveredStartByte: number;
+  coveredEndByte: number;
+  continuation?: string | null;
+  reason?: string | null;
+}
+export interface WhyRangeReading {
+  worldlineId: string;
+  basisHeadId: string;
+  startByte: number;
+  endByte: number;
+  coverage: WhyRangeCoverage;
+  fragments: Array<WhyRangeFragment>;
+  relatedCheckpoints: Array<WhyRangeCheckpointEvidence>;
+  inspectedFactCount: number;
+  observerVersion: string;
+}
 export interface CreateBufferWorldlineResult {
   worldline: BufferWorldline;
   head: RopeHead;
@@ -199,6 +251,15 @@ export interface CausalLineDiffInput {
   maxRewriteCount: number;
   maxMarkerCount: number;
 }
+export interface WhyRangeInput {
+  worldlineId: string;
+  basisHeadId: string;
+  startByte: number;
+  endByte: number;
+  maxFacts: number;
+  maxDepth: number;
+  maxHistoricalTextBytes: number;
+}
 // Operations
 export interface WorldlineSnapshotQueryArgs {
   input: WorldlineSnapshotInput;
@@ -227,10 +288,20 @@ export interface CausalLineDiffQueryOperation {
   input: CausalLineDiffInput;
   result: CausalLineDiffReading;
 }
+export interface WhyRangeQueryArgs {
+  input: WhyRangeInput;
+}
+export interface WhyRangeQueryOperation {
+  operationName: "whyRange";
+  args: WhyRangeQueryArgs;
+  input: WhyRangeInput;
+  result: WhyRangeReading;
+}
 export interface QueryOperationMap {
   worldlineSnapshot: WorldlineSnapshotQueryOperation;
   textWindow: TextWindowQueryOperation;
   causalLineDiff: CausalLineDiffQueryOperation;
+  whyRange: WhyRangeQueryOperation;
 }
 export type QueryOperationName = keyof QueryOperationMap;
 export type QueryOperation = QueryOperationMap[QueryOperationName];

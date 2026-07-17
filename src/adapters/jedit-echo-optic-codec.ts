@@ -7,6 +7,7 @@ import type {
 } from '../app/jedit-contract-runtime.js';
 import type { TextWindowReadingEnvelope, WorldlineSnapshotReadingEnvelope } from '../app/jedit-observer-runtime.js';
 import type { CausalLineDiffReadingEnvelope } from '../app/jedit-causal-line-diff-observer.js';
+import type { WhyRangeReadingEnvelope } from '../app/jedit-why-range-observer.js';
 import type { MutationOperationName, QueryOperationName } from '../generated/jedit/rope.types.generated.js';
 import {
   mutationCreateBufferWorldlineOperation,
@@ -14,25 +15,25 @@ import {
   mutationReplaceRangeAsTickOperation,
   queryCausalLineDiffOperation,
   queryTextWindowOperation,
+  queryWhyRangeOperation,
   queryWorldlineSnapshotOperation,
   type MutationCreateBufferWorldlineRequest,
   type MutationCreateCheckpointRequest,
   type MutationReplaceRangeAsTickRequest,
   type QueryTextWindowRequest,
   type QueryCausalLineDiffRequest,
+  type QueryWhyRangeRequest,
   type QueryWorldlineSnapshotRequest,
 } from '../generated/jedit/rope.wesley.generated.js';
 import {
-  BufferWorldlineSchema,
-  CheckpointKindSchema,
   MutationOperationSchemas,
   QueryOperationSchemas,
-  RewriteKindSchema,
 } from '../generated/jedit/rope.zod.generated.js';
-import { HotTextAuthorityBasisSchema } from './hot-text-authority-basis-codec.js';
 import { HotTextWindowProjectionSchema } from './hot-text-window-codec.js';
 import { JeditRetainedEvidenceInventorySchema } from './jedit-retained-evidence-codec.js';
 import { JeditTextWindowMaterializationProvenanceSchema } from './jedit-text-window-materialization-codec.js';
+import { JeditWorldlineSessionSchema } from './jedit-worldline-session-codec.js';
+import { WhyRangeInputSchema, WhyRangeReadingSchema } from './jedit-why-range-codec.js';
 import { encodeJsonObject, parseJsonBytes } from './json-wire-codec.js';
 // EINT envelope codec re-export (kept here so adapters import wire and
 // envelope codecs from one module — see quality-gate import cap).
@@ -54,6 +55,7 @@ export const CREATE_CHECKPOINT_OPERATION = mutationCreateCheckpointOperation.fie
 export const WORLDLINE_SNAPSHOT_OPERATION = queryWorldlineSnapshotOperation.fieldName;
 export const TEXT_WINDOW_OPERATION = queryTextWindowOperation.fieldName;
 export const CAUSAL_LINE_DIFF_OPERATION = queryCausalLineDiffOperation.fieldName;
+export const WHY_RANGE_OPERATION = queryWhyRangeOperation.fieldName;
 
 const SCHEDULER_STATE_IDLE = 'IDLE';
 
@@ -67,61 +69,8 @@ const QueryOperationNameSchema = z.union([
   z.literal(WORLDLINE_SNAPSHOT_OPERATION),
   z.literal(TEXT_WINDOW_OPERATION),
   z.literal(CAUSAL_LINE_DIFF_OPERATION),
+  z.literal(WHY_RANGE_OPERATION),
 ]);
-
-const BufferRootSchema = z.object({ id: z.number().int(), text: z.string() });
-
-const AdmittedTickSchema = z.object({ id: z.number().int(), rootId: z.number().int() });
-
-const EditGroupSchema = z.object({ id: z.number().int(), tickIds: z.array(z.number().int()) });
-
-const OpenEditGroupSchema = z.object({ id: z.number().int(), tickIds: z.array(z.number().int()) });
-
-const SaveCheckpointSchema = z.object({
-  id: z.number().int(), rootId: z.number().int(), path: z.string(), authorityCheckpointId: z.string().min(1).optional(),
-});
-const HotTextBufferStateSchema = z.object({
-  path: z.string(),
-  authorityBasis: HotTextAuthorityBasisSchema.optional(),
-  currentRoot: BufferRootSchema,
-  roots: z.array(BufferRootSchema).optional(),
-  ticks: z.array(AdmittedTickSchema),
-  editGroups: z.array(EditGroupSchema),
-  openEditGroup: OpenEditGroupSchema.optional(),
-  checkpoints: z.array(SaveCheckpointSchema),
-  nextRootId: z.number().int(),
-});
-
-const TickMetadataSchema = z.object({
-  tickId: z.number().int(),
-  kind: RewriteKindSchema,
-  author: z.string().optional(),
-  baseHeadId: z.string().optional(),
-  nextHeadId: z.string().optional(),
-  startByte: z.number().int().optional(),
-  endByte: z.number().int().optional(),
-  insertedByteLength: z.number().int().optional(),
-  deletedByteLength: z.number().int().optional(),
-  authorityTickId: z.string().min(1).optional(),
-  authorityAdmissionId: z.string().min(1).optional(),
-  authorityRewriteId: z.string().min(1).optional(),
-  authorityDiffId: z.string().min(1).optional(),
-  authoritySequenceNumber: z.number().int().positive().optional(),
-});
-
-const CheckpointMetadataSchema = z.object({
-  checkpointId: z.number().int(),
-  authorityCheckpointId: z.string().min(1).optional(), authorityHeadId: z.string().min(1).optional(),
-  kind: CheckpointKindSchema,
-  label: z.string().optional(),
-  createdByRopeRewriteId: z.number().int().optional(),
-});
-const JeditWorldlineSessionSchema = z.object({
-  worldline: BufferWorldlineSchema,
-  state: HotTextBufferStateSchema,
-  tickMetadata: z.array(TickMetadataSchema),
-  checkpointMetadata: z.array(CheckpointMetadataSchema),
-});
 
 const CreateBufferWorldlineExecutionSchema = z.object({
   nextSession: JeditWorldlineSessionSchema,
@@ -164,6 +113,14 @@ const CausalLineDiffReadingEnvelopeSchema = z.object({
   reading: QueryOperationSchemas.causalLineDiff.result,
 });
 
+const WhyRangeReadingEnvelopeSchema = z.object({
+  planId: z.string(),
+  observerName: z.literal(WHY_RANGE_OPERATION),
+  operationName: z.literal(WHY_RANGE_OPERATION),
+  frontierRef: z.string(),
+  reading: WhyRangeReadingSchema,
+});
+
 const WorldlineSnapshotObserveRequestSchema = z.object({
   kind: z.literal(JEDIT_OBSERVE_REQUEST_KIND),
   operationName: z.literal(WORLDLINE_SNAPSHOT_OPERATION),
@@ -186,6 +143,14 @@ const CausalLineDiffObserveRequestSchema = z.object({
   session: JeditWorldlineSessionSchema,
   frontierRef: z.string(),
   input: QueryOperationSchemas.causalLineDiff.input,
+});
+
+const WhyRangeObserveRequestSchema = z.object({
+  kind: z.literal(JEDIT_OBSERVE_REQUEST_KIND),
+  operationName: z.literal(WHY_RANGE_OPERATION),
+  session: JeditWorldlineSessionSchema,
+  frontierRef: z.string(),
+  input: WhyRangeInputSchema,
 });
 
 const JeditTransportObstructionSchema = z.object({
@@ -269,6 +234,12 @@ const CausalLineDiffObserveOkResponseSchema = z.object({
   envelope: CausalLineDiffReadingEnvelopeSchema,
 });
 
+const WhyRangeObserveOkResponseSchema = z.object({
+  status: z.literal(JEDIT_TRANSPORT_STATUS_OK),
+  operationName: z.literal(WHY_RANGE_OPERATION),
+  envelope: WhyRangeReadingEnvelopeSchema,
+});
+
 const ObserveObstructedResponseSchema = z.object({
   status: z.literal(JEDIT_TRANSPORT_STATUS_OBSTRUCTED),
   operationName: QueryOperationNameSchema,
@@ -285,6 +256,7 @@ const JeditObserveRequestSchema = z.union([
   WorldlineSnapshotObserveRequestSchema,
   TextWindowObserveRequestSchema,
   CausalLineDiffObserveRequestSchema,
+  WhyRangeObserveRequestSchema,
 ]);
 
 const JeditIntentResponseSchema = z.union([
@@ -298,11 +270,12 @@ const JeditObserveResponseSchema = z.union([
   WorldlineSnapshotObserveOkResponseSchema,
   TextWindowObserveOkResponseSchema,
   CausalLineDiffObserveOkResponseSchema,
+  WhyRangeObserveOkResponseSchema,
   ObserveObstructedResponseSchema,
 ]);
 
 export type JeditMutationOperationName = MutationOperationName;
-export type JeditQueryOperationName = QueryOperationName;
+export type JeditQueryOperationName = QueryOperationName | typeof WHY_RANGE_OPERATION;
 
 type InputOf<Request extends { readonly input: object }> = Request['input'];
 
@@ -348,6 +321,14 @@ export interface CausalLineDiffObserveRequest {
   readonly session: JeditWorldlineSession;
   readonly frontierRef: string;
   readonly input: InputOf<QueryCausalLineDiffRequest>;
+}
+
+export interface WhyRangeObserveRequest {
+  readonly kind: typeof JEDIT_OBSERVE_REQUEST_KIND;
+  readonly operationName: typeof WHY_RANGE_OPERATION;
+  readonly session: JeditWorldlineSession;
+  readonly frontierRef: string;
+  readonly input: InputOf<QueryWhyRangeRequest>;
 }
 
 export interface JeditTransportObstruction {
@@ -429,6 +410,12 @@ export interface CausalLineDiffObserveOkResponse {
   readonly envelope: CausalLineDiffReadingEnvelope;
 }
 
+export interface WhyRangeObserveOkResponse {
+  readonly status: typeof JEDIT_TRANSPORT_STATUS_OK;
+  readonly operationName: typeof WHY_RANGE_OPERATION;
+  readonly envelope: WhyRangeReadingEnvelope;
+}
+
 export interface JeditObserveObstructedResponse {
   readonly status: typeof JEDIT_TRANSPORT_STATUS_OBSTRUCTED;
   readonly operationName: JeditQueryOperationName;
@@ -448,7 +435,8 @@ export type JeditIntentRequest =
 export type JeditObserveRequest =
   | WorldlineSnapshotObserveRequest
   | TextWindowObserveRequest
-  | CausalLineDiffObserveRequest;
+  | CausalLineDiffObserveRequest
+  | WhyRangeObserveRequest;
 export type JeditIntentResponse =
   | CreateBufferWorldlineIntentOkResponse
   | ReplaceRangeAsTickIntentOkResponse
@@ -458,6 +446,7 @@ export type JeditObserveResponse =
   | WorldlineSnapshotObserveOkResponse
   | TextWindowObserveOkResponse
   | CausalLineDiffObserveOkResponse
+  | WhyRangeObserveOkResponse
   | JeditObserveObstructedResponse;
 
 export function encodeJeditObserveRequest(request: JeditObserveRequest): Uint8Array {

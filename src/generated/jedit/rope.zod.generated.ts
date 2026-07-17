@@ -22,6 +22,12 @@ export type CheckpointKind = z.infer<typeof CheckpointKindSchema>;
 export const CausalLineMarkerKindSchema = z.enum(["INSERTED", "MODIFIED"]);
 export type CausalLineMarkerKind = z.infer<typeof CausalLineMarkerKindSchema>;
 
+export const WhyRangeCoverageKindSchema = z.enum(["COMPLETE", "PARTIAL"]);
+export type WhyRangeCoverageKind = z.infer<typeof WhyRangeCoverageKindSchema>;
+
+export const WhyRangeOriginKindSchema = z.enum(["IMPORTED", "REWRITE", "UNAVAILABLE"]);
+export type WhyRangeOriginKind = z.infer<typeof WhyRangeOriginKindSchema>;
+
 // Object Types
 export const BufferWorldlineSchema = z.object({
   worldlineId: z.string(),
@@ -188,6 +194,68 @@ export const CausalLineDiffReadingSchema = z.object({
 });
 export type CausalLineDiffReading = z.infer<typeof CausalLineDiffReadingSchema>;
 
+export const WhyRangeOriginSchema = z.object({
+  kind: WhyRangeOriginKindSchema,
+  worldlineId: z.string().nullable().optional(),
+  initialHeadId: z.string().nullable().optional(),
+  createdAtTickId: z.string().nullable().optional(),
+  rewriteId: z.string().nullable().optional(),
+  diffId: z.string().nullable().optional(),
+  textTickReceiptId: z.string().nullable().optional(),
+  basisHeadId: z.string().nullable().optional(),
+  nextHeadId: z.string().nullable().optional(),
+  unavailableCode: z.string().nullable().optional()
+});
+export type WhyRangeOrigin = z.infer<typeof WhyRangeOriginSchema>;
+
+export const WhyRangeFragmentSchema = z.object({
+  coveredStartByte: z.number().int(),
+  coveredEndByte: z.number().int(),
+  headId: z.string(),
+  leafId: z.string(),
+  blobId: z.string(),
+  origin: z.lazy(() => WhyRangeOriginSchema)
+});
+export type WhyRangeFragment = z.infer<typeof WhyRangeFragmentSchema>;
+
+export const WhyRangeAnchorAssociationSchema = z.object({
+  associationId: z.string(),
+  causalAnchorId: z.string(),
+  causalAnchorFactId: z.string(),
+  causalAnchorReceiptId: z.string()
+});
+export type WhyRangeAnchorAssociation = z.infer<typeof WhyRangeAnchorAssociationSchema>;
+
+export const WhyRangeCheckpointEvidenceSchema = z.object({
+  checkpointId: z.string(),
+  headId: z.string(),
+  reason: z.string(),
+  anchorAssociation: z.lazy(() => WhyRangeAnchorAssociationSchema).nullable().optional()
+});
+export type WhyRangeCheckpointEvidence = z.infer<typeof WhyRangeCheckpointEvidenceSchema>;
+
+export const WhyRangeCoverageSchema = z.object({
+  kind: WhyRangeCoverageKindSchema,
+  coveredStartByte: z.number().int(),
+  coveredEndByte: z.number().int(),
+  continuation: z.string().nullable().optional(),
+  reason: z.string().nullable().optional()
+});
+export type WhyRangeCoverage = z.infer<typeof WhyRangeCoverageSchema>;
+
+export const WhyRangeReadingSchema = z.object({
+  worldlineId: z.string(),
+  basisHeadId: z.string(),
+  startByte: z.number().int(),
+  endByte: z.number().int(),
+  coverage: z.lazy(() => WhyRangeCoverageSchema),
+  fragments: z.array(z.lazy(() => WhyRangeFragmentSchema)),
+  relatedCheckpoints: z.array(z.lazy(() => WhyRangeCheckpointEvidenceSchema)),
+  inspectedFactCount: z.number().int(),
+  observerVersion: z.string()
+});
+export type WhyRangeReading = z.infer<typeof WhyRangeReadingSchema>;
+
 export const CreateBufferWorldlineResultSchema = z.object({
   worldline: z.lazy(() => BufferWorldlineSchema),
   head: z.lazy(() => RopeHeadSchema),
@@ -265,6 +333,17 @@ export const CausalLineDiffInputSchema = z.object({
 });
 export type CausalLineDiffInput = z.infer<typeof CausalLineDiffInputSchema>;
 
+export const WhyRangeInputSchema = z.object({
+  worldlineId: z.string(),
+  basisHeadId: z.string(),
+  startByte: z.number().int(),
+  endByte: z.number().int(),
+  maxFacts: z.number().int(),
+  maxDepth: z.number().int(),
+  maxHistoricalTextBytes: z.number().int()
+});
+export type WhyRangeInput = z.infer<typeof WhyRangeInputSchema>;
+
 // Operations
 export const WorldlineSnapshotQueryArgsSchema = z.object({
   input: z.lazy(() => WorldlineSnapshotInputSchema)
@@ -299,6 +378,17 @@ export const CausalLineDiffQueryOperationSchema = z.object({
 });
 export type CausalLineDiffQueryOperation = z.infer<typeof CausalLineDiffQueryOperationSchema>;
 
+export const WhyRangeQueryArgsSchema = z.object({
+  input: z.lazy(() => WhyRangeInputSchema)
+});
+export type WhyRangeQueryArgs = z.infer<typeof WhyRangeQueryArgsSchema>;
+export const WhyRangeQueryOperationSchema = z.object({
+  operationName: z.literal("whyRange"),
+  args: z.lazy(() => WhyRangeQueryArgsSchema),
+  result: z.lazy(() => WhyRangeReadingSchema)
+});
+export type WhyRangeQueryOperation = z.infer<typeof WhyRangeQueryOperationSchema>;
+
 export const QueryOperationSchemas = {
   worldlineSnapshot: {
     args: WorldlineSnapshotQueryArgsSchema,
@@ -317,6 +407,12 @@ export const QueryOperationSchemas = {
     input: z.lazy(() => CausalLineDiffInputSchema),
     result: z.lazy(() => CausalLineDiffReadingSchema),
     operation: CausalLineDiffQueryOperationSchema
+  },
+  whyRange: {
+    args: WhyRangeQueryArgsSchema,
+    input: z.lazy(() => WhyRangeInputSchema),
+    result: z.lazy(() => WhyRangeReadingSchema),
+    operation: WhyRangeQueryOperationSchema
   },
 } as const;
 export const CreateBufferWorldlineMutationArgsSchema = z.object({

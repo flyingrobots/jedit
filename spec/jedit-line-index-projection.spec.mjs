@@ -5,11 +5,15 @@ import { pathToFileURL } from 'node:url';
 import { REPO_ROOT, ensureDistBuilt } from './dist-helpers.mjs';
 
 const LINE_INDEX_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-line-index-projection.js');
-const WHY_RANGE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-why-range.js');
-const CONTRACT_APP_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-contract-runtime.js');
-const FIXTURE_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'full-snapshot-hot-text-runtime-fixture.js');
-const HASH_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'hash.js');
+const CLIENT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-optic-client.js');
+const TRANSPORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'installed-jedit-contract-echo-transport.js');
+const TEXT_SESSION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'text-buffer-session.js');
+const TEXT_SESSION_PORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'ports', 'text-buffer-session.js');
 const UTF8_ENCODER = new TextEncoder();
+const FIRST_LINE = 0;
+const SINGLE_LINE_VIEWPORT = 1;
+const NO_SURROUNDING_LINES = 0;
+const TEXT_WINDOW_BYTE_BUDGET = 80;
 
 let modulesPromise;
 
@@ -88,50 +92,64 @@ test('line index selection budgets complete UTF-8 coverage including line breaks
 });
 
 test('line index eviction cannot alter retained range why evidence', async () => {
-  const { lineIndex, whyRange, contractApp, fixture, hash } = await loadModules();
-  const runtime = fixture.createFullSnapshotHotTextRuntimeFixture();
-  const created = contractApp.createBufferWorldline(runtime, {
+  const {
+    lineIndex,
+    clientModule,
+    transportModule,
+    textSession,
+    textSessionPort,
+  } = await loadModules();
+  const insertedText = 'retained';
+  const insertedTextByteLength = UTF8_ENCODER.encode(insertedText).byteLength;
+  const store = lineIndex.createDisposableJeditLineIndexStore();
+  const client = clientModule.createEchoTransportJeditOpticClient(
+    transportModule.createInstalledJeditContractEchoTransport({ lineIndexes: store }),
+  );
+  const optic = await textSession.createTextBufferSession(client).createBuffer({
     bufferKey: 'line-index.txt',
     initialText: '',
     projectionPath: 'line-index.txt',
-    createInitialCheckpoint: false,
-  }, hash);
-  const edited = contractApp.replaceRangeAsTick(runtime, created.nextSession, {
-    worldlineId: created.result.worldline.worldlineId,
-    baseHeadId: created.result.head.headId,
+  });
+  const applied = await optic.applyIntent({
+    kind: textSessionPort.REPLACE_RANGE_INTENT_KIND,
     startByte: 0,
     endByte: 0,
-    insertText: 'retained',
-    author: 'line-index-witness',
-  }, hash);
-  const range = { startByte: 0, endByte: 8 };
-  const before = whyRange.explainJeditWhyRange(edited.nextSession, range);
-  const store = lineIndex.createDisposableJeditLineIndexStore();
-  const index = lineIndex.buildJeditLineIndexProjection(fullProjection(
-    'retained',
-    edited.result.nextHead.headId,
-  ));
+    insertText: insertedText,
+  });
+  const range = { startByte: 0, endByte: insertedTextByteLength };
+  const before = await optic.explainRange(range);
+  await optic.textWindow({
+    ...applied.textBasis,
+    aperture: {
+      cursorLine: FIRST_LINE,
+      viewportLineCount: SINGLE_LINE_VIEWPORT,
+      beforeLines: NO_SURROUNDING_LINES,
+      afterLines: NO_SURROUNDING_LINES,
+      maxBytes: TEXT_WINDOW_BYTE_BUDGET,
+    },
+  });
 
-  store.retain(index);
+  assert.ok(store.find(before.witness.worldlineId, before.witness.basisHeadId));
   store.clear();
+  assert.equal(store.find(before.witness.worldlineId, before.witness.basisHeadId), null);
 
-  assert.deepEqual(whyRange.explainJeditWhyRange(edited.nextSession, range), before);
+  assert.deepEqual(await optic.explainRange(range), before);
 });
 
 async function loadModules() {
   await ensureDistBuilt();
   modulesPromise ??= Promise.all([
     import(pathToFileURL(LINE_INDEX_MODULE_PATH).href),
-    import(pathToFileURL(WHY_RANGE_MODULE_PATH).href),
-    import(pathToFileURL(CONTRACT_APP_MODULE_PATH).href),
-    import(pathToFileURL(FIXTURE_MODULE_PATH).href),
-    import(pathToFileURL(HASH_MODULE_PATH).href),
-  ]).then(([lineIndex, whyRange, contractApp, fixture, hashAdapter]) => ({
+    import(pathToFileURL(CLIENT_MODULE_PATH).href),
+    import(pathToFileURL(TRANSPORT_MODULE_PATH).href),
+    import(pathToFileURL(TEXT_SESSION_MODULE_PATH).href),
+    import(pathToFileURL(TEXT_SESSION_PORT_MODULE_PATH).href),
+  ]).then(([lineIndex, clientModule, transportModule, textSession, textSessionPort]) => ({
     lineIndex,
-    whyRange,
-    contractApp,
-    fixture,
-    hash: hashAdapter.createHashPort(),
+    clientModule,
+    transportModule,
+    textSession,
+    textSessionPort,
   }));
   return modulesPromise;
 }

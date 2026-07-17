@@ -5,6 +5,11 @@ import { pathToFileURL } from "node:url";
 import { REPO_ROOT, ensureDistBuilt } from "./dist-helpers.mjs";
 
 const WHY_INLINE_PANEL_PATH = path.join(REPO_ROOT, "dist", "ui", "why-inline-panel.js");
+const STRUCTURED_DETAIL_PANEL_WIDTH = 32;
+const STRUCTURED_DETAIL_PANEL_MAX_ROWS = 6;
+const NARROW_IDENTITY_PANEL_WIDTH = 14;
+const NARROW_IDENTITY_PANEL_MAX_ROWS = 8;
+const LONG_CAUSAL_IDENTITY_LENGTH = 24;
 
 async function loadWhyInlinePanelModule() {
   await ensureDistBuilt();
@@ -26,6 +31,39 @@ test("inline panel wrapping does not spend a capped row on blanks before long wo
   assert.equal(rows[0].includes("i Why"), true);
   assert.notEqual(rows[1].trim(), "");
   assert.match(rows[1], /super/);
+});
+
+test("inline panel renders structured causal details after its summary", async () => {
+  const panel = await loadWhyInlinePanelModule();
+  const surface = panel.renderWhyInlinePanel({
+    title: "Why range",
+    message: "6..9 at head:2",
+    detailRows: ["leaf leaf:2", "rewrite rewrite:4", "receipt tick:4"],
+    tone: panel.WHY_INLINE_PANEL_TONE.Info,
+    theme: panelTheme(),
+    width: STRUCTURED_DETAIL_PANEL_WIDTH,
+    maxRows: STRUCTURED_DETAIL_PANEL_MAX_ROWS,
+  });
+  const text = surfaceRows(surface).join("\n");
+
+  assert.match(text, /leaf leaf:2/);
+  assert.match(text, /rewrite rewrite:4/);
+  assert.match(text, /receipt tick:4/);
+});
+
+test("inline panel wraps long causal identities instead of truncating their tail", async () => {
+  const panel = await loadWhyInlinePanelModule();
+  const surface = panel.renderWhyInlinePanel({
+    title: "Why range",
+    message: "evidence",
+    detailRows: [`receipt=${"a".repeat(LONG_CAUSAL_IDENTITY_LENGTH)}tail`],
+    tone: panel.WHY_INLINE_PANEL_TONE.Info,
+    theme: panelTheme(),
+    width: NARROW_IDENTITY_PANEL_WIDTH,
+    maxRows: NARROW_IDENTITY_PANEL_MAX_ROWS,
+  });
+
+  assert.match(surfaceRows(surface).join("\n"), /tail/);
 });
 
 function panelTheme() {

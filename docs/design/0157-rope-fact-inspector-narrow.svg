@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 760" role="img" aria-labelledby="title desc">
+  <title id="title">Narrow Jim range why panel</title>
+  <desc id="desc">A 96-column Jim source view where a persistent evidence panel wraps below the requested line instead of opening a side drawer.</desc>
+  <metadata>
+    Semantic preview tokens: surface.workspace, surface.panel, surface.selected,
+    text.primary, text.dim, gutter.rule, causal.modified, causal.deleted,
+    evidence.identity, evidence.basis, evidence.complete.
+  </metadata>
+  <style>
+    .workspace { fill: #0d1117; }
+    .panel { fill: #151b24; }
+    .selected { fill: #202938; }
+    .footer { fill: #111722; }
+    .primary { fill: #d6deeb; }
+    .dim { fill: #7f8a9a; }
+    .rule { fill: #53657c; stroke: #53657c; }
+    .modified { fill: #c792ea; }
+    .deleted { fill: #ff8f70; }
+    .identity { fill: #89ddff; }
+    .basis { fill: #ffc777; }
+    .complete { fill: #8bd49c; }
+    .focus { stroke: #82aaff; }
+    .focus-bar { fill: #82aaff; }
+    text {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 15px;
+      letter-spacing: 0;
+    }
+    .small { font-size: 12px; }
+    .label { font-size: 11px; font-weight: 700; }
+    .heading { font-size: 17px; font-weight: 700; }
+  </style>
+
+  <rect class="workspace" x="0" y="0" width="960" height="760" />
+  <rect class="panel" x="0" y="0" width="960" height="44" />
+  <text class="dim small" x="20" y="28">jim / CR-06</text>
+  <text class="primary heading" x="330" y="29">graph-rope-runtime.ts</text>
+  <text class="identity small" x="820" y="28">H193</text>
+
+  <text class="dim label" x="28" y="76">LINE D C | SOURCE</text>
+  <rect class="selected" x="18" y="156" width="924" height="29" />
+  <g xml:space="preserve">
+    <text class="dim" x="30" y="112">40</text><text class="rule" x="98" y="112">|</text><text class="primary" x="122" y="112">const reading = observeRange({</text>
+    <text class="dim" x="30" y="144">41</text><text class="rule" x="98" y="144">|</text><text class="primary" x="154" y="144">basisHeadId, queriedRange, bounds,</text>
+    <text class="dim" x="30" y="177">42</text><text class="deleted" x="68" y="177">-</text><text class="modified" x="84" y="177">~</text><text class="rule" x="98" y="177">|</text><text class="primary" x="154" y="177">worldlineId,</text>
+    <text class="dim" x="30" y="209">43</text><text class="rule" x="98" y="209">|</text><text class="primary" x="122" y="209">});</text>
+  </g>
+
+  <rect class="panel focus" x="116" y="238" width="816" height="254" rx="4" stroke-width="1" />
+  <rect class="focus-bar" x="116" y="238" width="5" height="254" />
+  <text class="primary heading" x="142" y="272">WHY line 42</text>
+  <text class="complete small" x="768" y="271">complete</text>
+  <text class="primary" x="142" y="306">Modified after 2 deleted lines.</text>
+  <text class="dim" x="142" y="336">basis</text><text class="basis" x="198" y="336">H188 -&gt; H193</text>
+  <text class="dim" x="142" y="366">range</text><text class="identity" x="198" y="366">UTF-8 6840..6960</text>
+  <text class="dim" x="142" y="400">head / leaf / blob</text>
+  <text class="identity" x="330" y="400">H193 / L7f1a / B03dd</text>
+  <text class="dim" x="142" y="430">rewrite / diff / text tick</text>
+  <text class="identity" x="390" y="430">R8f2c / D41a0 / T193</text>
+  <text class="dim" x="142" y="460">checkpoint C42; Echo anchor not associated</text>
+  <text class="dim small" x="142" y="481">Tab details  Enter inspect  b basis  Esc close</text>
+
+  <g xml:space="preserve">
+    <text class="dim" x="30" y="536">44</text><text class="rule" x="98" y="536">|</text><text class="primary" x="122" y="536">return projectEvidence(reading);</text>
+    <text class="dim" x="30" y="568">45</text><text class="rule" x="98" y="568">|</text><text class="primary" x="122" y="568">// Basis-pinned, bounded, structured.</text>
+  </g>
+
+  <rect class="panel" x="18" y="606" width="924" height="68" rx="3" />
+  <text class="dim label" x="36" y="630">SELECTED EVIDENCE</text>
+  <text class="primary" x="36" y="657">RopeRewrite</text>
+  <text class="identity" x="154" y="657">R8f2c</text>
+  <text class="dim small" x="252" y="657">basis H188 / next H193 / diff D41a0</text>
+
+  <rect class="footer" x="0" y="696" width="960" height="64" />
+  <text class="primary small" x="20" y="721">NORMAL 42:9</text>
+  <text class="basis small" x="610" y="721">basis:H188</text>
+  <text class="complete small" x="744" y="721">coverage:complete</text>
+  <text class="dim small" x="20" y="746">/src/domain/graph-rope-runtime.ts</text>
+  <text class="dim small" x="815" y="746">narrow / 96 cols</text>
+</svg>
