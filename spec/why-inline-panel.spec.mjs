@@ -7,6 +7,9 @@ import { REPO_ROOT, ensureDistBuilt } from "./dist-helpers.mjs";
 const WHY_INLINE_PANEL_PATH = path.join(REPO_ROOT, "dist", "ui", "why-inline-panel.js");
 const STRUCTURED_DETAIL_PANEL_WIDTH = 32;
 const STRUCTURED_DETAIL_PANEL_MAX_ROWS = 6;
+const NARROW_IDENTITY_PANEL_WIDTH = 14;
+const NARROW_IDENTITY_PANEL_MAX_ROWS = 8;
+const LONG_CAUSAL_IDENTITY_LENGTH = 24;
 
 async function loadWhyInlinePanelModule() {
   await ensureDistBuilt();
@@ -53,11 +56,11 @@ test("inline panel wraps long causal identities instead of truncating their tail
   const surface = panel.renderWhyInlinePanel({
     title: "Why range",
     message: "evidence",
-    detailRows: [`receipt=${"a".repeat(24)}tail`],
+    detailRows: [`receipt=${"a".repeat(LONG_CAUSAL_IDENTITY_LENGTH)}tail`],
     tone: panel.WHY_INLINE_PANEL_TONE.Info,
     theme: panelTheme(),
-    width: 14,
-    maxRows: 8,
+    width: NARROW_IDENTITY_PANEL_WIDTH,
+    maxRows: NARROW_IDENTITY_PANEL_MAX_ROWS,
   });
 
   assert.match(surfaceRows(surface).join("\n"), /tail/);
