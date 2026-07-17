@@ -720,6 +720,8 @@ test("normal mode cw submits a production change edit and enters insert mode", a
     mockDeps().sourceHighlighter,
     productionTextSession,
   );
+  assert.deepEqual(queuedChange.editor.lines, ["alpha beta"]);
+  assert.equal(queuedChange.editor.mode, modeModule.EditorModes.Insert);
   const changeMessage = await changeCommands[0]();
   const [changedModel] = runtime.update(changeMessage, queuedChange);
 
@@ -733,7 +735,9 @@ test("normal mode cw submits a production change edit and enters insert mode", a
     },
   ]);
   assert.deepEqual(changedModel.editor.lines, ["beta"]);
-  assert.equal(changedModel.editor.mode, modeModule.EditorModes.Normal);
+  assert.equal(changedModel.editor.mode, modeModule.EditorModes.Insert);
+  assert.equal(changedModel.editor.register.kind, "char");
+  assert.equal(changedModel.editor.register.text, "alpha ");
   assert.equal(changedModel.editor.cursorCol, 0);
 });
 

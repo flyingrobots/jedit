@@ -144,10 +144,14 @@ function productionNormalModeLocalEdit(
   }
   const plan = normalModeLinePlan(msg, editor, moved)
     ?? normalModeTransitionPlan(editor, moved);
+  const queuedModel = {
+    ...model,
+    editor: editorWithQueuedVimState(editor, moved),
+  };
   return plan.kind === WorkspaceTextEditPlanKinds.Unsupported
     ? [model, []]
     : queueProductionTextPlan(
-      model,
+      queuedModel,
       productionTextSession,
       plan,
       {
@@ -155,6 +159,23 @@ function productionNormalModeLocalEdit(
         commandEventEditor: moved,
       },
     );
+}
+
+function editorWithQueuedVimState(
+  admitted: NonNullable<WorkspaceModel['editor']>,
+  moved: NonNullable<WorkspaceModel['editor']>,
+) {
+  return {
+    ...admitted,
+    mode: moved.mode,
+    pendingNormal: moved.pendingNormal,
+    pendingVimKeys: moved.pendingVimKeys,
+    register: moved.register,
+    registers: moved.registers,
+    lastVimEdit: moved.lastVimEdit,
+    marks: moved.marks,
+    lastSearch: moved.lastSearch,
+  };
 }
 
 function normalModeLinePlan(

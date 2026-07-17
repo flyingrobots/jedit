@@ -1767,7 +1767,7 @@ test("command provenance does not synthesize targets from stale registers", asyn
   assert.match(event.summary, /target unavailable/);
 });
 
-test("production normal edits keep proposal provenance without mutating editor text state", async () => {
+test("production normal edits keep Vim state and proposal provenance without mutating text", async () => {
   const [keyBindings, titleScreen, editorMode, authority] = await Promise.all([
     importDist("app", "workspace", "key-bindings.js"),
     importDist("ui", "title-screen.js"),
@@ -1801,13 +1801,14 @@ test("production normal edits keep proposal provenance without mutating editor t
     context,
   );
 
-  assert.equal(queued.editor.lastVimEdit, undefined);
+  assert.deepEqual(queued.editor.lastVimEdit.keys, ["d", "w"]);
   assert.equal(queued.textAuthority.pendingCommandEvent.requestId, queued.textRequestId);
   assert.equal(queued.textAuthority.pendingCommandEvent.event.command, "dw");
   assert.deepEqual(queued.textAuthority.pendingCommandEvent.event.keys, ["d", "w"]);
   assert.equal(queued.textAuthority.lastCommandEvent.requestId, queued.textRequestId);
   assert.match(queued.textAuthority.lastCommandEvent.summary, /dw delete motion 0\.\.6 receipt pending/);
-  assert.equal(queued.editor.register, undefined);
+  assert.equal(queued.editor.register.kind, "char");
+  assert.equal(queued.editor.register.text, "alpha ");
   assert.deepEqual(queued.editor.lines, ["alpha beta"]);
   assert.equal(commands.length, 1);
 });
