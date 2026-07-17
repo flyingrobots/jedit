@@ -28,6 +28,22 @@ test('gutter and footer explanations project the active range why evidence', asy
   );
 });
 
+test('range detail rows preserve the terminal evidence protocol', async () => {
+  const details = await importDist('app', 'workspace', 'workspace-why-range-details.js');
+
+  assert.deepEqual(details.jeditWhyRangeDetailRows(rangeWhyReport()), [
+    'basisHeadId=head:next',
+    'range=4..8 coverage=COMPLETE',
+    'span=4..8 leafId=leaf:why blobId=blob:why',
+    'origin=REWRITE rewriteId=rewrite:why diffId=diff:why',
+    'textTickReceiptId=tick:why basisHeadId=head:basis nextHeadId=head:next',
+    'producerEvidence=UNAVAILABLE code=jedit_why_range_producer_evidence_unavailable',
+    'checkpointId=checkpoint:why headId=head:next reason=manual-save',
+    'causalAnchorId=anchor:why causalAnchorReceiptId=anchor-receipt:why',
+    'inspectedFactCount=8',
+  ]);
+});
+
 test('gutter explanation refuses why evidence unsupported by its causal marker', async () => {
   const projection = await importDist('app', 'workspace', 'workspace-source-projection.js');
   const model = modelWithWhyReport(rangeWhyReport(), {
