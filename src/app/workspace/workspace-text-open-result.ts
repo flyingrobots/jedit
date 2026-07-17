@@ -1,4 +1,3 @@
-import { normalizeLines } from '../editor-lines.js';
 import type { WorkspaceTextOpenBasis } from './workspace-text-open-basis.js';
 import type { WorkspaceTextObservedReading } from './workspace-text-observed-reading.js';
 import { readingCache } from './workspace-text-observed-reading.js';
@@ -14,6 +13,7 @@ export function openedWorkspaceTextResult(
   bufferId: string,
   reading: WorkspaceTextObservedReading,
 ): WorkspaceTextOpenResult {
+  const cache = readingCache(bufferId, reading);
   return {
     kind: WorkspaceTextResultKinds.Opened,
     filePath: request.filePath,
@@ -22,7 +22,7 @@ export function openedWorkspaceTextResult(
     materialization: basis.materialization,
     hostBasis: basis.hostBasis,
     hostFingerprint: basis.hostFingerprint,
-    initialLines: normalizeLines(basis.initialText),
-    cache: readingCache(bufferId, reading),
+    initialLines: cache.lines,
+    cache,
   };
 }

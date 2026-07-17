@@ -117,7 +117,7 @@ test("file open routes through production text session and applies initial bound
     () => 123,
     mockDeps({
       editorFile: {
-        loadEditorFile: () => ({ lines: ["hello", "world"], readOnly: false }),
+        loadEditorFile: () => ({ lines: ["stale", "disk"], readOnly: false }),
         saveEditorFile: () => undefined,
       },
       productionTextSession,
@@ -135,7 +135,7 @@ test("file open routes through production text session and applies initial bound
   assert.deepEqual(openedBuffers, [
     {
       bufferKey: filePath,
-      initialText: "hello\nworld",
+      initialText: "stale\ndisk",
       projectionPath: filePath,
       atMs: 123,
     },
@@ -175,7 +175,7 @@ test("file open routes through production text session and applies initial bound
   assert.equal(openedModel.editor.readOnly, false);
 });
 
-test("opening a long file does not truncate editor projection to the first window", async () => {
+test("opening a long file renders only the basis-pinned Echo window", async () => {
   const [initModule, fileTree, fileSystem, runtimeModule, authority] =
     await Promise.all([
       importDist("app", "workspace", "init.js"),
@@ -236,7 +236,7 @@ test("opening a long file does not truncate editor projection to the first windo
     authority.WorkspaceTextAuthorityKinds.Opened,
   );
   assert.equal(openedModel.textAuthority.cache.coverage, "window");
-  assert.deepEqual(openedModel.editor.lines, hostLines);
+  assert.deepEqual(openedModel.editor.lines, hostLines.slice(0, 24));
 });
 
 test("viewer renders production text from full reading cache instead of stale editor lines", async () => {
