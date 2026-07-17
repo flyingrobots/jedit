@@ -8,6 +8,7 @@ const LINE_INDEX_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-line-i
 const CLIENT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'jedit-echo-optic-client.js');
 const TRANSPORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'adapters', 'installed-jedit-contract-echo-transport.js');
 const TEXT_SESSION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'text-buffer-session.js');
+const TEXT_SESSION_PORT_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'ports', 'text-buffer-session.js');
 const UTF8_ENCODER = new TextEncoder();
 const FIRST_LINE = 0;
 const SINGLE_LINE_VIEWPORT = 1;
@@ -91,7 +92,15 @@ test('line index selection budgets complete UTF-8 coverage including line breaks
 });
 
 test('line index eviction cannot alter retained range why evidence', async () => {
-  const { lineIndex, clientModule, transportModule, textSession } = await loadModules();
+  const {
+    lineIndex,
+    clientModule,
+    transportModule,
+    textSession,
+    textSessionPort,
+  } = await loadModules();
+  const insertedText = 'retained';
+  const insertedTextByteLength = UTF8_ENCODER.encode(insertedText).byteLength;
   const store = lineIndex.createDisposableJeditLineIndexStore();
   const client = clientModule.createEchoTransportJeditOpticClient(
     transportModule.createInstalledJeditContractEchoTransport({ lineIndexes: store }),
@@ -102,12 +111,12 @@ test('line index eviction cannot alter retained range why evidence', async () =>
     projectionPath: 'line-index.txt',
   });
   const applied = await optic.applyIntent({
-    kind: 'replaceRange',
+    kind: textSessionPort.REPLACE_RANGE_INTENT_KIND,
     startByte: 0,
     endByte: 0,
-    insertText: 'retained',
+    insertText: insertedText,
   });
-  const range = { startByte: 0, endByte: 8 };
+  const range = { startByte: 0, endByte: insertedTextByteLength };
   const before = await optic.explainRange(range);
   await optic.textWindow({
     ...applied.textBasis,
@@ -134,11 +143,13 @@ async function loadModules() {
     import(pathToFileURL(CLIENT_MODULE_PATH).href),
     import(pathToFileURL(TRANSPORT_MODULE_PATH).href),
     import(pathToFileURL(TEXT_SESSION_MODULE_PATH).href),
-  ]).then(([lineIndex, clientModule, transportModule, textSession]) => ({
+    import(pathToFileURL(TEXT_SESSION_PORT_MODULE_PATH).href),
+  ]).then(([lineIndex, clientModule, transportModule, textSession, textSessionPort]) => ({
     lineIndex,
     clientModule,
     transportModule,
     textSession,
+    textSessionPort,
   }));
   return modulesPromise;
 }
