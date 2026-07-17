@@ -5,6 +5,8 @@ import { pathToFileURL } from "node:url";
 import { REPO_ROOT, ensureDistBuilt } from "./dist-helpers.mjs";
 
 const WHY_INLINE_PANEL_PATH = path.join(REPO_ROOT, "dist", "ui", "why-inline-panel.js");
+const STRUCTURED_DETAIL_PANEL_WIDTH = 32;
+const STRUCTURED_DETAIL_PANEL_MAX_ROWS = 6;
 
 async function loadWhyInlinePanelModule() {
   await ensureDistBuilt();
@@ -36,8 +38,8 @@ test("inline panel renders structured causal details after its summary", async (
     detailRows: ["leaf leaf:2", "rewrite rewrite:4", "receipt tick:4"],
     tone: panel.WHY_INLINE_PANEL_TONE.Info,
     theme: panelTheme(),
-    width: 32,
-    maxRows: 6,
+    width: STRUCTURED_DETAIL_PANEL_WIDTH,
+    maxRows: STRUCTURED_DETAIL_PANEL_MAX_ROWS,
   });
   const text = surfaceRows(surface).join("\n");
 
