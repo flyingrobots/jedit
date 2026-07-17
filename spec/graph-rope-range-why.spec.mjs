@@ -17,6 +17,9 @@ const NARROW_RANGE_FACT_BUDGET = 8;
 const LARGE_ROPE_BYTE_LENGTH = 16_384;
 const CHECKPOINT_INDEX_FACT_BUDGET = 5;
 const INDEX_OVERFLOW_SENTINEL = 1;
+const MULTI_LEAF_TEXT_LEAF_COUNT = 2;
+const CROSS_LEAF_PREFIX_BYTE_LENGTH = 24;
+const CROSS_LEAF_SUFFIX_BYTE_LENGTH = 26;
 
 test('range why cites distinct retained graph facts for edited bytes', async () => {
   const { runtime, contract } = await loadModules();
@@ -91,16 +94,22 @@ test('range why fragments mixed imported and rewritten bytes', async () => {
 
 test('range why returns ordered complete coverage across retained rope leaves', async () => {
   const { runtime, contract } = await loadModules();
+  const { LEAF_TARGET_BYTE_LENGTH } = await importDist(
+    'domain',
+    'graph-rope-runtime-tree-types.js',
+  );
+  const rangeStartByte = LEAF_TARGET_BYTE_LENGTH - CROSS_LEAF_PREFIX_BYTE_LENGTH;
+  const rangeEndByte = LEAF_TARGET_BYTE_LENGTH + CROSS_LEAF_SUFFIX_BYTE_LENGTH;
   const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
   const created = assertOk(graph.createBufferWorldline({
     worldlineId: 'worldline:range-why-leaves',
-    initialText: 'a'.repeat(2_048),
+    initialText: 'a'.repeat(LEAF_TARGET_BYTE_LENGTH * MULTI_LEAF_TEXT_LEAF_COUNT),
   }));
 
   const reading = assertOk(graph.whyRange(whyRequest(
     created.worldline.worldlineId,
     created.head.headId,
-    byteRange(contract, 1_000, 1_050),
+    byteRange(contract, rangeStartByte, rangeEndByte),
   )));
 
   assert.equal(reading.coverage.kind, 'complete');
@@ -109,29 +118,37 @@ test('range why returns ordered complete coverage across retained rope leaves', 
       fragment.coveredRange.startByte.value,
       fragment.coveredRange.endByte.value,
     ]),
-    [[1_000, 1_024], [1_024, 1_050]],
+    [
+      [rangeStartByte, LEAF_TARGET_BYTE_LENGTH],
+      [LEAF_TARGET_BYTE_LENGTH, rangeEndByte],
+    ],
   );
   assert.notEqual(reading.fragments[0].leafId, reading.fragments[1].leafId);
 });
 
 test('range why validates a query ending exactly at a retained leaf boundary', async () => {
   const { runtime, contract } = await loadModules();
+  const { LEAF_TARGET_BYTE_LENGTH } = await importDist(
+    'domain',
+    'graph-rope-runtime-tree-types.js',
+  );
+  const rangeStartByte = LEAF_TARGET_BYTE_LENGTH - CROSS_LEAF_PREFIX_BYTE_LENGTH;
   const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
   const created = assertOk(graph.createBufferWorldline({
     worldlineId: 'worldline:range-why-leaf-boundary',
-    initialText: 'a'.repeat(2_048),
+    initialText: 'a'.repeat(LEAF_TARGET_BYTE_LENGTH * MULTI_LEAF_TEXT_LEAF_COUNT),
   }));
 
   const reading = assertOk(graph.whyRange(whyRequest(
     created.worldline.worldlineId,
     created.head.headId,
-    byteRange(contract, 1_000, 1_024),
+    byteRange(contract, rangeStartByte, LEAF_TARGET_BYTE_LENGTH),
   )));
 
   assert.deepEqual(reading.fragments.map(fragment => [
     fragment.coveredRange.startByte.value,
     fragment.coveredRange.endByte.value,
-  ]), [[1_000, 1_024]]);
+  ]), [[rangeStartByte, LEAF_TARGET_BYTE_LENGTH]]);
 });
 
 test('range why reports a checkpoint without inventing an Echo anchor', async () => {
