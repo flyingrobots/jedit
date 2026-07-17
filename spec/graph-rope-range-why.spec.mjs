@@ -20,6 +20,8 @@ const INDEX_OVERFLOW_SENTINEL = 1;
 const MULTI_LEAF_TEXT_LEAF_COUNT = 2;
 const CROSS_LEAF_PREFIX_BYTE_LENGTH = 24;
 const CROSS_LEAF_SUFFIX_BYTE_LENGTH = 26;
+const INVALID_POSITIVE_LIMIT = 0;
+const INVALID_HISTORICAL_TEXT_BYTE_LIMIT = -1;
 
 test('range why cites distinct retained graph facts for edited bytes', async () => {
   const { runtime, contract } = await loadModules();
@@ -236,6 +238,32 @@ test('range why fails closed when provenance depth exceeds the request bound', a
     ok: false,
     code: runtime.GRAPH_ROPE_RUNTIME_OBSTRUCTION_RANGE_WHY_LIMIT_EXCEEDED,
   });
+});
+
+test('range why reports malformed observation limits as range-limit obstructions', async () => {
+  const { runtime, contract } = await loadModules();
+  const graph = runtime.createGraphRopeRuntime({ hash: createHashPort() });
+  const created = assertOk(graph.createBufferWorldline({
+    worldlineId: 'worldline:range-why-invalid-limits',
+    initialText: 'bounded',
+  }));
+  const request = whyRequest(
+    created.worldline.worldlineId,
+    created.head.headId,
+    byteRange(contract, 0, NARROW_RANGE_END_BYTE),
+  );
+  const invalidLimits = [
+    { maxFacts: INVALID_POSITIVE_LIMIT },
+    { maxDepth: INVALID_POSITIVE_LIMIT },
+    { maxHistoricalTextBytes: INVALID_HISTORICAL_TEXT_BYTE_LIMIT },
+  ];
+
+  for (const limits of invalidLimits) {
+    assert.deepEqual(graph.whyRange({ ...request, ...limits }), {
+      ok: false,
+      code: runtime.GRAPH_ROPE_RUNTIME_OBSTRUCTION_RANGE_WHY_LIMIT_EXCEEDED,
+    });
+  }
 });
 
 test('range why accepts a zero historical-text budget when no historical text is materialized', async () => {

@@ -73,7 +73,7 @@ export function readGraphRopeRangeWhy(
   input: GraphRopeRangeWhyInput,
 ): TreeResult<GraphRopeRangeWhyReading> {
   if (!validWhyLimits(input)) {
-    return { ok: false, code: GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_BYTE_RANGE };
+    return { ok: false, code: GRAPH_ROPE_RUNTIME_OBSTRUCTION_RANGE_WHY_LIMIT_EXCEEDED };
   }
   const budget = createEvidenceBudget(input.maxFacts);
   const boundedCatalog = catalogWithEvidenceBudget(catalog, budget);

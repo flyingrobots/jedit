@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Corrected malformed range-why observation limits to fail with the stable
+  range-limit obstruction instead of misreporting an invalid UTF-8 byte range.
+  Byte-range validation remains a separate failure boundary.
 - Made cursor-anchored range evidence panel state atomic. A dedicated factory
   derives the basis head from the report, range panels require an active buffer,
   ordinary panels cannot carry a stray causal basis, and runtime validation
