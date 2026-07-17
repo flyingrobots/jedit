@@ -7,6 +7,10 @@
   byte, branch and blob reads count toward `inspectedFactCount`, and checkpoint
   and anchor indexes return deterministic bounded slices instead of cloning and
   sorting their complete contents during an observation.
+- Hardened the range-why observation boundary against faulty injected runtimes.
+  Returned query coordinates must equal the requested UTF-8 range, complete
+  coverage must match it exactly, and partial coverage must remain inside it
+  before Jim accepts or renders the evidence.
 - Aligned range-why historical-text bounds across the codec and domain. A zero
   byte budget is now valid while CR-06 traverses provenance facts without
   materializing historical text; future deleted-text readers must debit that

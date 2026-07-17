@@ -12,6 +12,16 @@ const TRANSPORT_MODULE_PATH = path.join(
   'installed-jedit-contract-echo-transport.js',
 );
 const SESSION_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'text-buffer-session.js');
+const OBSERVER_MODULE_PATH = path.join(REPO_ROOT, 'dist', 'app', 'jedit-why-range-observer.js');
+const OBSERVED_WORLDLINE_ID = 'worldline:observer-range';
+const OBSERVED_HEAD_ID = 'head:observer-range';
+const OBSERVED_RANGE_START_BYTE = 2;
+const OBSERVED_RANGE_END_BYTE = 5;
+const MISMATCHED_RANGE_START_BYTE = 1;
+const MISMATCHED_RANGE_END_BYTE = 6;
+const OBSERVER_MAX_FACTS = 16;
+const OBSERVER_MAX_DEPTH = 8;
+const OBSERVER_MAX_HISTORICAL_TEXT_BYTES = 0;
 
 async function createOptic(initialText) {
   await ensureDistBuilt();
@@ -121,3 +131,106 @@ test('installed Echo why-range preserves typed runtime limit obstructions', asyn
       && error.obstruction.code === 'range-why-limit-exceeded',
   );
 });
+
+for (const scenario of [
+  {
+    name: 'query coordinates',
+    reading: whyRangeReading({ startByte: MISMATCHED_RANGE_START_BYTE }),
+  },
+  {
+    name: 'complete coverage coordinates',
+    reading: whyRangeReading({
+      coverage: {
+        ...whyRangeReading().coverage,
+        coveredEndByte: MISMATCHED_RANGE_END_BYTE,
+      },
+    }),
+  },
+]) {
+  test(`why-range observer rejects mismatched ${scenario.name}`, async () => {
+    await ensureDistBuilt();
+    const observer = await import(pathToFileURL(OBSERVER_MODULE_PATH).href);
+
+    assert.throws(
+      () => observer.readWhyRangeWithObserverPlan(
+        whyRangeRuntime(scenario.reading),
+        whyRangeSession(),
+        'frontier:observer-range',
+        whyRangeInput(),
+      ),
+      error => error.name === 'WhyRangeRuntimeError'
+        && /byte range/.test(error.message),
+    );
+  });
+}
+
+test('why-range observer accepts partial coverage contained within the requested range', async () => {
+  await ensureDistBuilt();
+  const observer = await import(pathToFileURL(OBSERVER_MODULE_PATH).href);
+  const partialReading = whyRangeReading({
+    coverage: {
+      kind: 'PARTIAL',
+      coveredStartByte: OBSERVED_RANGE_START_BYTE + 1,
+      coveredEndByte: OBSERVED_RANGE_END_BYTE,
+      continuation: 'continuation:observer-range',
+      reason: 'bounded',
+    },
+  });
+
+  const envelope = observer.readWhyRangeWithObserverPlan(
+    whyRangeRuntime(partialReading),
+    whyRangeSession(),
+    'frontier:observer-range',
+    whyRangeInput(),
+  );
+
+  assert.deepEqual(envelope.reading.coverage, partialReading.coverage);
+});
+
+function whyRangeRuntime(reading) {
+  return {
+    whyRange() {
+      return reading;
+    },
+  };
+}
+
+function whyRangeSession() {
+  return {
+    worldline: { worldlineId: OBSERVED_WORLDLINE_ID },
+    state: {},
+  };
+}
+
+function whyRangeInput() {
+  return {
+    worldlineId: OBSERVED_WORLDLINE_ID,
+    basisHeadId: OBSERVED_HEAD_ID,
+    startByte: OBSERVED_RANGE_START_BYTE,
+    endByte: OBSERVED_RANGE_END_BYTE,
+    maxFacts: OBSERVER_MAX_FACTS,
+    maxDepth: OBSERVER_MAX_DEPTH,
+    maxHistoricalTextBytes: OBSERVER_MAX_HISTORICAL_TEXT_BYTES,
+  };
+}
+
+function whyRangeReading(overrides = {}) {
+  return {
+    worldlineId: OBSERVED_WORLDLINE_ID,
+    basisHeadId: OBSERVED_HEAD_ID,
+    startByte: OBSERVED_RANGE_START_BYTE,
+    endByte: OBSERVED_RANGE_END_BYTE,
+    coverage: {
+      kind: 'COMPLETE',
+      coveredStartByte: OBSERVED_RANGE_START_BYTE,
+      coveredEndByte: OBSERVED_RANGE_END_BYTE,
+      continuation: null,
+      reason: null,
+    },
+    fragments: [],
+    relatedCheckpoints: [],
+    inspectedFactCount: 0,
+    observerVersion: 'test-observer-range',
+    ...overrides,
+  };
+}
