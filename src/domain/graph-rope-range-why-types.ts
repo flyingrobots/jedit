@@ -74,6 +74,6 @@ export interface GraphRopeRangeWhyAnchorAssociation {
 }
 
 export interface GraphRopeRangeWhyFactCatalog extends GraphRopeRuntimeFactReader {
-  checkpointIdsForHead(headId: string): readonly string[];
-  anchorAssociationIdsForCheckpoint(checkpointId: string): readonly string[];
+  checkpointIdsForHead(headId: string, maxCount: number): readonly string[];
+  anchorAssociationIdsForCheckpoint(checkpointId: string, maxCount: number): readonly string[];
 }

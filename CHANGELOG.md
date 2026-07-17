@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Made the range-why fact budget constrain actual graph work. Narrow windows now
+  traverse only the overlapping root-to-leaf region plus the UTF-8 boundary
+  byte, branch and blob reads count toward `inspectedFactCount`, and checkpoint
+  and anchor indexes return deterministic bounded slices instead of cloning and
+  sorting their complete contents during an observation.
 - Aligned range-why historical-text bounds across the codec and domain. A zero
   byte budget is now valid while CR-06 traverses provenance facts without
   materializing historical text; future deleted-text readers must debit that

@@ -48,6 +48,7 @@ const NEXT_DEPTH = 1;
 interface EvidenceBudget {
   readonly maxFacts: number;
   readonly factIds: Set<string>;
+  exceeded: boolean;
 }
 
 interface WhyRangeContext {
@@ -71,26 +72,29 @@ export function readGraphRopeRangeWhy(
   catalog: GraphRopeRangeWhyFactCatalog,
   input: GraphRopeRangeWhyInput,
 ): TreeResult<GraphRopeRangeWhyReading> {
-  const basis = rangeWhyBasis(catalog, input);
+  if (!validWhyLimits(input)) {
+    return { ok: false, code: GRAPH_ROPE_RUNTIME_OBSTRUCTION_INVALID_BYTE_RANGE };
+  }
+  const budget = createEvidenceBudget(input.maxFacts);
+  const boundedCatalog = catalogWithEvidenceBudget(catalog, budget);
+  const basis = rangeWhyBasis(boundedCatalog, input);
   if (!basis.ok) {
-    return basis;
+    return budgetAwareResult(budget, basis);
   }
-  const window = readTreeWindow(catalog, basis.value.head, input.queriedRange);
+  const window = readTreeWindow(boundedCatalog, basis.value.head, input.queriedRange);
   if (!window.ok) {
-    return window;
+    return budgetAwareResult(budget, window);
   }
-  const context = whyRangeContext(catalog, basis.value.worldline, input);
-  if (!retainFactIds(context.budget, [input.worldlineId, input.basisHeadId])) {
-    return limitExceeded();
-  }
+  const context = whyRangeContext(boundedCatalog, basis.value.worldline, budget, input.maxDepth);
   const fragments = fragmentsForWindow(context, basis.value.head, window.value.validationEvidence);
   if (!fragments.ok) {
-    return fragments;
+    return budgetAwareResult(budget, fragments);
   }
   const checkpoints = relatedCheckpoints(context, input.basisHeadId);
-  return checkpoints.ok
+  const result = checkpoints.ok
     ? completeReading(input, context, fragments.value, checkpoints.value)
     : checkpoints;
+  return budgetAwareResult(budget, result);
 }
 
 function rangeWhyBasis(
@@ -112,8 +116,11 @@ function rangeWhyBasis(
 
 function validWhyInput(input: GraphRopeRangeWhyInput, byteLength: number): boolean {
   return input.queriedRange.startByte.value < input.queriedRange.endByte.value
-    && input.queriedRange.endByte.value <= byteLength
-    && input.maxFacts > ZERO_VALUE
+    && input.queriedRange.endByte.value <= byteLength;
+}
+
+function validWhyLimits(input: GraphRopeRangeWhyInput): boolean {
+  return input.maxFacts > ZERO_VALUE
     && input.maxDepth > ZERO_VALUE
     && input.maxHistoricalTextBytes >= ZERO_VALUE;
 }
@@ -121,13 +128,14 @@ function validWhyInput(input: GraphRopeRangeWhyInput, byteLength: number): boole
 function whyRangeContext(
   catalog: GraphRopeRangeWhyFactCatalog,
   worldline: BufferWorldlineFact,
-  input: GraphRopeRangeWhyInput,
+  budget: EvidenceBudget,
+  maxDepth: number,
 ): WhyRangeContext {
   return {
     catalog,
     worldline,
-    budget: { maxFacts: input.maxFacts, factIds: new Set<string>() },
-    maxDepth: input.maxDepth,
+    budget,
+    maxDepth,
   };
 }
 
@@ -138,9 +146,6 @@ function fragmentsForWindow(
 ): TreeResult<readonly GraphRopeRangeWhyFragment[]> {
   const fragments: GraphRopeRangeWhyFragment[] = [];
   for (const support of evidence) {
-    if (!retainFactIds(context.budget, [support.leafId, support.blobId])) {
-      return limitExceeded();
-    }
     const origins = resolveOrigins(context, head, sameRangeSegment(support.byteRange), ZERO_VALUE);
     if (!origins.ok) {
       return origins;
@@ -156,7 +161,7 @@ function resolveOrigins(
   segment: WalkSegment,
   depth: number,
 ): TreeResult<readonly OriginPiece[]> {
-  if (depth >= context.maxDepth || !retainFactIds(context.budget, [head.headId])) {
+  if (depth >= context.maxDepth) {
     return limitExceeded();
   }
   if (head.basisHeadId == null) {
@@ -198,11 +203,7 @@ function transitionForHead(
   if (!transition.ok) {
     return transition;
   }
-  const { basisHead, receipt, rewrite, diff } = transition.value;
-  const ids = [receipt.tickId, rewrite.rewriteId, diff.diffId, basisHead.headId];
-  return retainFactIds(context.budget, ids)
-    ? { ok: true, value: { basisHead, receipt, rewrite, diff } }
-    : limitExceeded();
+  return transition;
 }
 
 function originsThroughTransition(
@@ -268,11 +269,15 @@ function relatedCheckpoints(
   headId: string,
 ): TreeResult<readonly GraphRopeRangeWhyCheckpointEvidence[]> {
   const output: GraphRopeRangeWhyCheckpointEvidence[] = [];
-  const checkpointIds = [...context.catalog.checkpointIdsForHead(headId)].sort();
+  const overflowCount = remainingFactCapacity(context.budget) + NEXT_DEPTH;
+  const checkpointIds = context.catalog.checkpointIdsForHead(headId, overflowCount);
+  if (checkpointIds.length >= overflowCount) {
+    return limitExceeded();
+  }
   for (const checkpointId of checkpointIds) {
     const checkpoint = rangeWhyCheckpointById(context.catalog, checkpointId);
-    if (checkpoint === null || !retainFactIds(context.budget, [checkpointId])) {
-      return checkpoint === null ? missingEvidence() : limitExceeded();
+    if (checkpoint === null) {
+      return missingEvidence();
     }
     const associated = checkpointEvidence(context, checkpoint);
     if (!associated.ok) {
@@ -287,7 +292,10 @@ function checkpointEvidence(
   context: WhyRangeContext,
   checkpoint: RopeCheckpointFact,
 ): TreeResult<GraphRopeRangeWhyCheckpointEvidence> {
-  const associationIds = [...context.catalog.anchorAssociationIdsForCheckpoint(checkpoint.checkpointId)].sort();
+  const associationIds = context.catalog.anchorAssociationIdsForCheckpoint(
+    checkpoint.checkpointId,
+    NEXT_DEPTH,
+  );
   if (associationIds.length === ZERO_VALUE) {
     return { ok: true, value: checkpointWithoutAnchor(checkpoint) };
   }
@@ -295,9 +303,7 @@ function checkpointEvidence(
   if (association === null) {
     return missingEvidence();
   }
-  return retainFactIds(context.budget, [association.associationId])
-    ? { ok: true, value: checkpointWithAnchor(checkpoint, association) }
-    : limitExceeded();
+  return { ok: true, value: checkpointWithAnchor(checkpoint, association) };
 }
 
 function checkpointWithoutAnchor(checkpoint: RopeCheckpointFact): GraphRopeRangeWhyCheckpointEvidence {
@@ -400,13 +406,44 @@ function rangeLength(range: TextByteRange): number {
   return range.endByte.value - range.startByte.value;
 }
 
-function retainFactIds(budget: EvidenceBudget, factIds: readonly string[]): boolean {
-  const newIds = [...new Set(factIds)].filter(factId => !budget.factIds.has(factId));
-  if (budget.factIds.size + newIds.length > budget.maxFacts) {
-    return false;
+function createEvidenceBudget(maxFacts: number): EvidenceBudget {
+  return { maxFacts, factIds: new Set<string>(), exceeded: false };
+}
+
+function catalogWithEvidenceBudget(
+  catalog: GraphRopeRangeWhyFactCatalog,
+  budget: EvidenceBudget,
+): GraphRopeRangeWhyFactCatalog {
+  return {
+    getFact(id) {
+      if (!budget.factIds.has(id)) {
+        if (budget.factIds.size >= budget.maxFacts) {
+          budget.exceeded = true;
+          return null;
+        }
+        budget.factIds.add(id);
+      }
+      return catalog.getFact(id);
+    },
+    checkpointIdsForHead: (headId, maxCount) => catalog.checkpointIdsForHead(headId, maxCount),
+    anchorAssociationIdsForCheckpoint: (checkpointId, maxCount) => (
+      catalog.anchorAssociationIdsForCheckpoint(checkpointId, maxCount)
+    ),
+  };
+}
+
+function remainingFactCapacity(budget: EvidenceBudget): number {
+  return budget.maxFacts - budget.factIds.size;
+}
+
+function budgetAwareResult<TValue>(
+  budget: EvidenceBudget,
+  result: TreeResult<TValue>,
+): TreeResult<TValue> {
+  if (budget.exceeded) {
+    return limitExceeded();
   }
-  newIds.forEach(factId => budget.factIds.add(factId));
-  return true;
+  return result;
 }
 
 function limitExceeded<TValue>(): TreeResult<TValue> {
