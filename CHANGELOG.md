@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Made the full-snapshot test transport fail closed with a dedicated typed
+  range-why obstruction. Snapshot fixture metadata cannot be promoted into
+  causal provenance; tests that need `:why` must inject graph-backed rope
+  authority with retained evidence.
 - Made the range-why fact budget constrain actual graph work. Narrow windows now
   traverse only the overlapping root-to-leaf region plus the UTF-8 boundary
   byte, branch and blob reads count toward `inspectedFactCount`, and checkpoint

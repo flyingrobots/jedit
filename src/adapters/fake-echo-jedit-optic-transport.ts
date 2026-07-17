@@ -10,7 +10,10 @@ import {
   type JeditTextWindowObserver,
 } from '../app/jedit-observer-runtime.js';
 import { readCausalLineDiffWithObserverPlan } from '../app/jedit-causal-line-diff-observer.js';
-import { readWhyRangeWithObserverPlan } from '../app/jedit-why-range-observer.js';
+import {
+  readWhyRangeWithObserverPlan,
+  WhyRangeRuntimeError,
+} from '../app/jedit-why-range-observer.js';
 import { createFullSnapshotHotTextRuntimeFixture } from './full-snapshot-hot-text-runtime-fixture.js';
 import type { EchoKernelInfo } from '../ports/echo-kernel-transport.js';
 import type { JeditTransportSeam } from '../ports/jedit-transport-seam.js';
@@ -61,6 +64,8 @@ const SCHEDULER_STATE_IDLE = 'IDLE';
 const JEDIT_CONTRACT_RUNTIME_ERROR_CODE = 'JEDIT_CONTRACT_RUNTIME_ERROR';
 const JEDIT_FAKE_HOST_ERROR_CODE = 'JEDIT_FAKE_HOST_ERROR';
 const RECOVERY_REFRESH_READING = 'refresh reading and retry';
+const RECOVERY_REQUIRE_GRAPH_ROPE_EVIDENCE = 'inject graph-backed rope authority with retained range evidence';
+export const JEDIT_RANGE_WHY_OBSTRUCTED_CODE = 'JEDIT_RANGE_WHY_OBSTRUCTED';
 
 export interface CreateFakeEchoJeditOpticTransportOptions {
   readonly runtime?: HotTextRuntimePort;
@@ -274,6 +279,13 @@ function toObserveObstruction(
 }
 
 function toBaseObstruction(error: Error | undefined): JeditTransportObstruction {
+  if (error instanceof WhyRangeRuntimeError) {
+    return {
+      code: JEDIT_RANGE_WHY_OBSTRUCTED_CODE,
+      message: error.message,
+      recovery: RECOVERY_REQUIRE_GRAPH_ROPE_EVIDENCE,
+    };
+  }
   if (error instanceof JeditContractRuntimeError) {
     return {
       code: JEDIT_CONTRACT_RUNTIME_ERROR_CODE,

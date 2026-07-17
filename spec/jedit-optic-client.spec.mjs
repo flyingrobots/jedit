@@ -35,6 +35,7 @@ const STACK_WITNESS_AUTHOR = 'stack-witness-0001';
 const STACK_WITNESS_BUFFER_KEY = 'demo.txt';
 const STACK_WITNESS_FRONTIER_REF = 'frontier:stack-witness-0001:B1';
 const STACK_WITNESS_TEXT = 'hello';
+const SNAPSHOT_ONLY_TEXT = 'snapshot-only';
 const EMPTY_TEXT = '';
 const FIRST_BYTE_OFFSET = 0;
 const FIRST_LINE = 0;
@@ -236,6 +237,32 @@ test('transport-backed optic client exercises the fake Echo host through encoded
   assert.equal(stale.operationName, codecModule.REPLACE_RANGE_AS_TICK_OPERATION);
   assert.equal(stale.obstruction.code, 'JEDIT_CONTRACT_RUNTIME_ERROR');
   assert.match(stale.obstruction.message, /Base head mismatch/);
+});
+
+test('full-snapshot fake obstructs range why instead of fabricating causal evidence', async () => {
+  const {
+    transportClientModule,
+    fakeTransportModule,
+    textBufferSessionModule,
+  } = await loadModules();
+  const client = transportClientModule.createEchoTransportJeditOpticClient(
+    fakeTransportModule.createFakeEchoJeditOpticTransport(),
+  );
+  const optic = await textBufferSessionModule.createTextBufferSession(client).createBuffer({
+    bufferKey: 'snapshot-only.txt',
+    initialText: SNAPSHOT_ONLY_TEXT,
+    projectionPath: '/tmp/snapshot-only.txt',
+  });
+
+  await assert.rejects(
+    optic.explainRange({
+      startByte: FIRST_BYTE_OFFSET,
+      endByte: byteLength(SNAPSHOT_ONLY_TEXT),
+    }),
+    error => error.name === 'JeditOpticTransportObstructionError'
+      && error.obstruction.code === fakeTransportModule.JEDIT_RANGE_WHY_OBSTRUCTED_CODE
+      && error.obstruction.message.includes('unavailable'),
+  );
 });
 
 test('fake transport: malformed EINT envelope yields obstructed response with absent operationName', async () => {
