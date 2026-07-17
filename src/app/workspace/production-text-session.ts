@@ -211,20 +211,24 @@ export function createEchoObstructedProductionTextSession(
   message: string = ECHO_OPERATION_CORRIDOR_UNAVAILABLE,
 ): ProductionTextSession {
   return Object.freeze({
-    openBuffer: async (request: ProductionTextOpenRequest) => obstructed(OPEN_OBSTRUCTION_CODE, request.atMs, message),
-    insertText: async (request: ProductionTextInsertRequest) => obstructed(EDIT_OBSTRUCTION_CODE, request.atMs, message),
-    replaceRange: async (request: ProductionTextReplaceRequest) => obstructed(EDIT_OBSTRUCTION_CODE, request.atMs, message),
-    deleteRange: async (request: ProductionTextDeleteRequest) => obstructed(EDIT_OBSTRUCTION_CODE, request.atMs, message),
-    multiRangeEdit: async (request: ProductionTextMultiRangeRequest) => obstructed(EDIT_OBSTRUCTION_CODE, request.atMs, message),
-    checkpointBuffer: async (request: ProductionTextCheckpointRequest) => obstructed(CHECKPOINT_OBSTRUCTION_CODE, request.atMs, message),
-    observeWindow: async (request: ProductionTextWindowRequest) => obstructed(QUERY_OBSTRUCTION_CODE, request.atMs, message),
-    observeCausalLineDiff: async (request: ProductionTextCausalLineDiffRequest) => obstructed(QUERY_OBSTRUCTION_CODE, request.atMs, message),
-    exportSnapshot: async (request: ProductionTextExportRequest) => obstructed(TEXT_EXPORT_OBSTRUCTION_CODE, request.atMs, message),
-    explainRange: async (request: ProductionTextWhyRangeRequest) => obstructed(WHY_RANGE_OBSTRUCTION_CODE, request.atMs, message),
+    openBuffer: async (request: ProductionTextOpenRequest) => createProductionTextObstruction(OPEN_OBSTRUCTION_CODE, request.atMs, message),
+    insertText: async (request: ProductionTextInsertRequest) => createProductionTextObstruction(EDIT_OBSTRUCTION_CODE, request.atMs, message),
+    replaceRange: async (request: ProductionTextReplaceRequest) => createProductionTextObstruction(EDIT_OBSTRUCTION_CODE, request.atMs, message),
+    deleteRange: async (request: ProductionTextDeleteRequest) => createProductionTextObstruction(EDIT_OBSTRUCTION_CODE, request.atMs, message),
+    multiRangeEdit: async (request: ProductionTextMultiRangeRequest) => createProductionTextObstruction(EDIT_OBSTRUCTION_CODE, request.atMs, message),
+    checkpointBuffer: async (request: ProductionTextCheckpointRequest) => createProductionTextObstruction(CHECKPOINT_OBSTRUCTION_CODE, request.atMs, message),
+    observeWindow: async (request: ProductionTextWindowRequest) => createProductionTextObstruction(QUERY_OBSTRUCTION_CODE, request.atMs, message),
+    observeCausalLineDiff: async (request: ProductionTextCausalLineDiffRequest) => createProductionTextObstruction(
+      QUERY_OBSTRUCTION_CODE,
+      request.atMs,
+      message,
+    ),
+    exportSnapshot: async (request: ProductionTextExportRequest) => createProductionTextObstruction(TEXT_EXPORT_OBSTRUCTION_CODE, request.atMs, message),
+    explainRange: async (request: ProductionTextWhyRangeRequest) => createProductionTextObstruction(WHY_RANGE_OBSTRUCTION_CODE, request.atMs, message),
   });
 }
 
-function obstructed(
+export function createProductionTextObstruction(
   code: ProductionTextObstructionCode,
   atMs: number,
   message: string,

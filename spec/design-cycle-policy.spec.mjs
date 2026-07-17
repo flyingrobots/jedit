@@ -242,12 +242,13 @@ test('HT-0149 graph runtime RED matrix declares all Slice 4 witnesses', () => {
   }
 });
 
-test('BEARING records the real Echo-only hard cutover', () => {
+test('BEARING records the real Echo-hosted generated text corridor', () => {
   const bearing = readRepoFile(BEARING_PATH);
 
-  assert.match(bearing, /Production startup loads and initializes a real Echo WASM kernel/);
-  assert.match(bearing, /Production text open, edit, read, save, export, checkpoint, `:why`/);
-  assert.match(bearing, /therefore return typed obstructions/);
+  assert.match(bearing, /Production startup launches `jedit-echo-host`/);
+  assert.match(bearing, /Buffer open\/create, insert, replace, delete, and bounded text-window reads are\s+implemented/);
+  assert.match(bearing, /save\/export, `:why`, causal\s+line-diff, and undo\/redo return typed obstructions/);
+  assert.match(bearing, /Wesley-generated EINT and installed package/);
   assert.match(bearing, /generated Edict client/);
   assert.match(bearing, /Do not reintroduce an in-process text authority/);
 });
@@ -262,8 +263,8 @@ test('WF-0154 landed closeout has no unchecked gates or stale provenance deferra
   assert.doesNotMatch(tests, /^- \[ \]/m);
   assert.doesNotMatch(acceptance, /^- \[ \]/m);
   assert.doesNotMatch(retrospective, /provenance naming half is deferred/);
-  assert.match(bearing, /Derive undo\/redo candidates from retained Echo history/);
-  assert.match(bearing, /invoke generated\s+inverse operations/);
+  assert.match(bearing, /derive undo\/redo\s+candidates from retained Echo history/i);
+  assert.match(bearing, /invoke generated\s+inverse\s+operations/);
 });
 
 test('causal undo blockers preserve plain undo and name only unshipped prerequisites', () => {

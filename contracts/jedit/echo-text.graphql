@@ -1,0 +1,56 @@
+"""Minimal generated-operation corridor for Echo-authoritative Jim text."""
+type BufferWorldline {
+    bufferId: ID!
+    canonicalHeadId: ID!
+    byteLength: Int!
+    lineCount: Int!
+}
+
+type TextWindowLine {
+    lineNumber: Int!
+    startByte: Int!
+    endByte: Int!
+    text: String!
+}
+
+type TextWindowReading {
+    bufferId: ID!
+    basisHeadId: ID!
+    rootNodeId: ID
+    byteLength: Int!
+    lineCount: Int!
+    startByte: Int!
+    endByte: Int!
+    lines: [TextWindowLine!]!
+}
+
+input CreateBufferWorldlineInput {
+    bufferKey: String!
+    initialText: String!
+    projectionPath: String
+}
+
+input ReplaceRangeAsTickInput {
+    bufferId: ID!
+    basisHeadId: ID!
+    startByte: Int!
+    endByte: Int!
+    insertText: String!
+}
+
+input TextWindowInput {
+    bufferId: ID!
+    basisHeadId: ID!
+    startByte: Int!
+    endByte: Int!
+    maxBytes: Int!
+}
+
+type Mutation {
+    createBufferWorldline(input: CreateBufferWorldlineInput!): BufferWorldline!
+    replaceRangeAsTick(input: ReplaceRangeAsTickInput!): BufferWorldline!
+}
+
+type Query {
+    textWindow(input: TextWindowInput!): TextWindowReading!
+}

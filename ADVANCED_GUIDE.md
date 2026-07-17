@@ -55,8 +55,9 @@ import input:
 
 Host bytes do not become authoritative editor text directly. The workspace
 requires an Echo-returned, basis-pinned observation before it installs visible
-text in `EditorState`. The current production session therefore obstructs file
-open until Echo can invoke the generated Jim Edict operation package.
+text in `EditorState`. The current production session creates or reopens the
+buffer through the trusted native Echo host, then requests a bounded text-window
+observation from the admitted head.
 
 ## Mutating A Buffer
 
@@ -76,28 +77,33 @@ buffer.
 
 The important point is that the visible projection may update only from an
 admitted text-session outcome. It does not write ANSI escapes, style tokens,
-syntax classes, or preview state into causal text authority. At present the
-production session fails closed because the generated Edict operation corridor
-is not installed.
+syntax classes, or preview state into causal text authority. Single-range
+insert, replace, and delete use the installed Wesley compatibility operation;
+unsupported mutation families fail closed.
 
 ## Structural History Operation Path
 
-The old TypeScript hot-buffer runtime, full-snapshot adapter, Wesley schemas,
-and generated metadata descriptors were deleted. They were not Echo authority.
+The old TypeScript hot-buffer runtime, full-snapshot adapter, Node-host Wesley
+schemas, and generated metadata descriptors were deleted. They were not Echo
+authority.
 
 The current flow is:
 
 ```text
-Jim-owned Edict package source
-  -> generated Jim Edict package and client
-  -> real Echo admission and scheduler-owned tick
+Jim command
+  -> typed JSONL process port
+  -> trusted native Echo host
+  -> GraphQL contract + Wesley-generated Rust contract-host bindings
+  -> registered Echo package
+  -> Echo WAL admission and scheduler-owned tick
   -> witnessed Jim rope facts and Echo receipt
   -> basis-pinned bounded observation
 ```
 
-This corridor is not available yet. No handwritten codec, local runtime,
-metadata-only descriptor, or fixture may stand in for it. `npm run build`
-therefore performs no application-operation code generation.
+This corridor currently covers create/open, single-range replacement, and
+bounded text-window reads. Jim's Rust operation law is transitional; Edict will
+replace it with generated installed operations. No TypeScript codec, local
+runtime, metadata-only descriptor, or fixture may stand in for Echo execution.
 
 ## The Frame Loop
 

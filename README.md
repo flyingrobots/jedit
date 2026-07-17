@@ -35,7 +35,7 @@ Probably not yet, unless you enjoy living near the active edge of a weird — bu
 
 That said, I have started dogfooding it and pushing it toward daily-driver territory. Jim is especially useful for editing programs and other plain text where trust, auditability, and recoverability matter. All core commands use ordinary keyboard characters. The editing surface is meant to stay quiet, direct, and fast. The editor should not scream just because the runtime underneath it knows more than most editors dare to remember.
 
-Jim aims to remain lightweight at the surface even as the machinery beneath it becomes causally explicit. The production path is Echo-hosted: application code will submit generated Edict operations and consume bounded readings, while Echo owns admission, runtime lifecycle, scheduling, receipts, and causal history. Jim already requires a real Rust/WASM Echo kernel at startup, but Echo cannot yet install and invoke Jim's generated operation package. Until it can, text operations fail closed. That split is not decorative. Jim should know editor truths, not substrate coordinates.
+Jim aims to remain lightweight at the surface even as the machinery beneath it becomes causally explicit. The production text path is now Echo-hosted: a trusted native process registers a Wesley-generated compatibility package, submits generated EINT envelopes through Echo's WAL-backed app capability, and consumes scheduler receipts plus bounded readings. Echo owns admission, runtime lifecycle, scheduling, graph state, receipts, and recovery. Jim currently supports only create/open, single-range editing, and bounded text reads through that path; unsupported operations fail closed. Edict will replace the narrow compatibility package when its native invocation corridor is ready. That split is not decorative. Jim should know editor truths, not substrate coordinates.
 
 Jim grows out of the `jedit` repository. The product arc is Jim. The repository, packages, contracts, release gates, and internal APIs remain `jedit` until the Echo-backed proof and compatibility plan make a public rename safe. The rename should be earned the same way the rest of the editor is earned: through real product pressure, not theater.
 
@@ -59,16 +59,15 @@ node dist/main.js
 
 The build and witness tooling live in the repository and the `scripts/` directory. Read `GUIDE.md` for operational guidance, `ARCHITECTURE.md` for layer rules and dependency posture, `ADVANCED_GUIDE.md` for the render and authority path, and `docs/BEARING.md` for the compact statement of current truth.
 
-Running the editor requires a real Echo WASM module. Point Jim at the module
-that Echo produced:
+Running the editor builds and launches the trusted native Echo host:
 
 ```bash
-JEDIT_ECHO_WASM_MODULE=/path/to/echo-wasm-package npm run dev
+npm run dev
 ```
 
-Jim currently initializes that kernel and then fails text operations closed
-because the generated Edict operation package is not installed yet. There is
-no local text-authority fallback.
+If the host cannot start, text operations fail closed. There is no local
+text-authority fallback. `JEDIT_ECHO_HOST_BIN` may select another compatible
+binary, and `JEDIT_ECHO_WAL_DIR` may select its filesystem WAL directory.
 
 ## Installation
 
@@ -96,8 +95,10 @@ Inside the editor, the command surface continues to grow. The roadmap is not “
 What you get right now includes:
 
 - Vim-shaped editing with Normal and Insert behavior, plus a growing command surface.
-- A real Echo WASM startup boundary; text editing currently fails closed until
-  generated Jim Edict operations can be installed and invoked by Echo.
+- A real native Echo host for buffer creation, single-range editing, bounded
+  observation, scheduler receipts, and restart recovery.
+- Typed obstruction for save/export, checkpoints, `:why`, causal gutter
+  readings, multi-range editing, and undo/redo until those paths are Echo-owned.
 - No local history drawer or undo stack; those surfaces remain unavailable until they can read retained, basis-pinned Echo evidence.
 - Graft-backed syntax highlighting, outlines, diagnostics, and structural projections where available.
 - Witness scripts and JSON-reporting evidence tools for CI, agents, and release-gate work.
@@ -130,11 +131,10 @@ Latest news, design notes, and witness surfaces live in the repository. For deep
 ### Useful entry points
 
 - `scripts/jedit-command-provenance-witness.mjs` — command provenance witness.
-- `scripts/jedit-echo-kernel-smoke.mjs` — real Echo WASM boundary witness.
+- `scripts/jedit-echo-host-witness.mjs` — generated operation, Echo tick, and
+  bounded-reading witness.
 - `scripts/jedit-production-cutover-guard.mjs` — rejects local production
   authority and fake compatibility paths.
-- `scripts/run-real-echo-wasm-stack-witness.sh` — cross-repository Echo stack
-  witness.
 
 If something goes wrong, read the relevant design docs, run the nearest witness, and then open an issue.
 

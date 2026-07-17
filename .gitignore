@@ -1,5 +1,6 @@
 node_modules
 dist
+native/**/target/
 title-recordings/
 .codex/
 .claude/

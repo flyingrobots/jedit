@@ -18,9 +18,11 @@ test('v0.1.0 quickstart revokes the retired local witness claim', () => {
   assert.match(source, /jedit-production-cutover-guard\.mjs/);
   assert.match(source, /npm run witness:echo/);
   assert.match(source, /npm start/);
-  assert.match(source, /real Echo WASM module/);
-  assert.match(source, /generated Jim Edict package/);
-  assert.match(source, /Nothing shorter may be described as Echo-powered/);
+  assert.match(source, /trusted native Echo host/);
+  assert.match(source, /GraphQL\/Wesley/);
+  assert.match(source, /Edict will replace/);
+  assert.match(source, /may be described as Echo-powered/);
+  assert.doesNotMatch(source, /JEDIT_ECHO_WASM_MODULE/);
   assert.doesNotMatch(source, /allow-full-snapshot-fixture/);
 });
 
@@ -29,8 +31,9 @@ test('v0.1.0 release docs identify the invalidated authority claim', () => {
 
   assert.match(source, /retired and invalidated/);
   assert.match(source, /process-local TypeScript/);
-  assert.match(source, /real Echo WASM kernel/);
-  assert.match(source, /generated Jim Edict operations/);
+  assert.match(source, /trusted native Echo host/);
+  assert.match(source, /GraphQL contract/);
+  assert.match(source, /Edict will replace/);
   assert.match(source, /Echo remains generic/);
   assert.match(source, /must not be cited as proof/);
 });

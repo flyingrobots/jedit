@@ -20,21 +20,23 @@ did not make that execution Echo authority.
 
 ## Current Boundary
 
-Jim now requires a real Echo WASM kernel at startup and fails closed when it is
-unavailable. Text operations remain obstructed until Echo can install and
-invoke generated Jim Edict operations. This knowingly breaks the editor rather
-than preserving a counterfeit fallback.
+Jim now launches a trusted native Echo host, registers a package generated
+from a narrow GraphQL contract by Echo's Wesley extension, and performs
+create/open, single-range replacement, and bounded reads through real Echo
+admission, scheduling, graph history, receipts, observations, and WAL recovery.
+Unsupported operations fail closed.
 
-Echo remains generic. Jim owns rope and editor semantics. Edict will generate
-the invocation corridor. Echo alone will own admission, scheduling, ticks,
-receipts, witnessed causal history, and basis-pinned observations.
+Echo remains generic. Jim owns rope and editor semantics. Edict will replace
+the transitional Wesley/Rust invocation corridor. Echo owns admission,
+scheduling, ticks, receipts, witnessed causal history, and basis-pinned
+observations.
 
 ## Evidence Commands
 
 ```bash
 npm run build
 node scripts/jedit-production-cutover-guard.mjs
-JEDIT_ECHO_WASM_MODULE=/path/to/echo-wasm.js npm run witness:echo
+npm run witness:echo
 npm run check
 ```
 

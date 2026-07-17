@@ -28,10 +28,12 @@ The broader project doctrine is written down in
   UI translates Bijou events into app commands and renders app state into surfaces.
   UI does not own business rules.
 
-- Generated Edict packages
-  Generated clients and installed verified operations will form the executable
-  Jim/Echo contract boundary. No legacy generated contract projection is an
-  accepted production substitute.
+- Generated contract packages
+  The current compatibility corridor is authored in GraphQL, compiled to Rust
+  bindings and contract-host helpers by Echo's Wesley extension, and registered
+  with Echo by Jim's trusted native host. Edict will replace the transitional
+  authored Rust operation law and invocation glue. Generated metadata without
+  Echo registration and scheduler execution is not a production substitute.
 
 ## Non-Negotiables
 
@@ -55,25 +57,28 @@ Compile-time types are not a substitute for runtime truth.
 ## Contract Authority
 
 Jim's domain types record application semantics, but they are not executable
-Echo authority. Production mutation must use generated Edict clients and
-Echo-installed verified operations; handwritten TypeScript codecs, operation
-metadata, admission logic, receipts, or local executors are forbidden
-substitutes.
+Echo authority. Production mutation must use an Echo-installed verified
+operation. Handwritten TypeScript codecs, admission logic, receipts, local
+executors, and metadata-only descriptors are forbidden substitutes.
 
-The intended production corridor is:
+The current narrow production corridor is:
 
 ```text
-Jim-owned Edict package source
--> generated Edict package and client
--> real Echo admission and scheduler-owned tick
--> witnessed Jim graph facts and Echo receipt
+Jim command
+-> typed process port
+-> trusted native Echo host
+-> Wesley-generated EINT binding and registered package
+-> Echo-owned WAL admission and scheduler tick
+-> witnessed Jim graph-rope facts and opaque Echo receipt
 -> basis-pinned bounded observation
 ```
 
-That generated operation corridor is not installed yet. The production editor
-therefore fails closed. Do not restore the deleted Wesley schemas, generated
-TypeScript projections, local runtime, or storage indexes as a compatibility
-path.
+Only buffer creation, single-range replace/insert/delete, and bounded text-window
+observation use this corridor. Checkpoint, save/export, multi-range editing,
+range explanation, causal gutter readings, and undo/redo still fail closed.
+The GraphQL/Wesley package is a deliberately narrow compatibility path until
+Edict can provide generated operation law and invocation. Do not restore the
+deleted Node-host Wesley projections, local runtime, or local storage authority.
 
 ## Identity Doctrine (Locked)
 

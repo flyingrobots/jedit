@@ -15,7 +15,7 @@ authority path:
 ```bash
 npm run build
 node scripts/jedit-production-cutover-guard.mjs
-JEDIT_ECHO_WASM_MODULE=/path/to/echo-wasm.js npm run witness:echo
+npm run witness:echo
 ```
 
 The cutover guard rejects production source that introduces fake, fixture,
@@ -28,17 +28,11 @@ graph-rope runtime authority.
 npm start
 ```
 
-Startup loads a real Echo WASM module. Set `JEDIT_ECHO_WASM_MODULE` when the
-module is not available as `@flyingrobots/jedit-echo-wasm`.
-
-Until Echo can install and invoke the generated Jim Edict package, one of two
-honest outcomes is expected:
-
-- startup fails because the real Echo module is unavailable; or
-- Echo initializes and text operations return typed obstructions because the
-  generated operation corridor is unavailable.
-
-No process-local text authority is installed in either case.
+Startup launches the trusted native Echo host, registers the GraphQL/Wesley
+compatibility package, and admits supported text operations through Echo.
+Create/open, single-range replacement, and bounded text reads work. Operations
+outside that narrow corridor return typed obstructions. No process-local text
+authority is installed.
 
 ## Historical Reports
 
@@ -49,11 +43,12 @@ Echo admission, scheduler execution, receipts, or recovery.
 
 ## Current Acceptance Bar
 
-The next valid quickstart must demonstrate this complete path:
+The current native witness demonstrates this complete transitional path:
 
 ```text
 Jim command
--> generated Edict client
+-> typed process adapter
+-> Wesley-generated installed package
 -> real Echo admission
 -> installed Jim operation
 -> Echo-owned tick and receipt
@@ -62,4 +57,5 @@ Jim command
 -> Jim UI
 ```
 
-Nothing shorter may be described as Echo-powered.
+Edict will replace the Wesley/Rust compatibility operation. Nothing shorter
+than the full path above may be described as Echo-powered.

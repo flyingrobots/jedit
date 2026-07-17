@@ -99,6 +99,40 @@ test('production cutover guard catches sample fake Echo fixture transport tokens
   assert.match(result.stderr, /fake-echo-jedit-optic-transport/);
 });
 
+test('production cutover guard catches Jim-owned Echo admission authority', () => {
+  const tempDir = mkdtempSync(path.join(tmpdir(), 'jedit-admission-authority-guard-'));
+  const sample = path.join(tempDir, 'sample.rs');
+  writeFileSync(sample, [
+    'fn compatibility_admission_ticket() -> OpticAdmissionTicket {',
+    '    OpticAdmissionTicket { kind: OPTIC_ADMISSION_TICKET_KIND.to_owned() }',
+    '}',
+    'host.stage_installed_contract_submission(submission_id, &ticket);',
+  ].join('\n'));
+
+  const result = spawnGuard('--sample-forbidden-file', sample);
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /Jim-owned Echo admission ticket/);
+  assert.match(result.stderr, /caller-ticket installed-contract staging/);
+  assert.match(result.stderr, /compatibility admission authority/);
+});
+
+test('production cutover guard catches the retired raw Echo WASM side lane', () => {
+  const tempDir = mkdtempSync(path.join(tmpdir(), 'jedit-raw-wasm-guard-'));
+  const sample = path.join(tempDir, 'sample.ts');
+  writeFileSync(sample, [
+    "import { createEchoWasmKernelTransport } from './echo-wasm-kernel.js';",
+    "const moduleName = process.env.JEDIT_ECHO_WASM_MODULE;",
+    'const transport = createEchoWasmKernelTransport({ moduleName });',
+  ].join('\n'));
+
+  const result = spawnGuard('--sample-forbidden-file', sample);
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /raw Echo WASM transport/);
+  assert.match(result.stderr, /retired Echo WASM module override/);
+});
+
 test('production cutover guard catches every production-local authority constructor', () => {
   const tempDir = mkdtempSync(path.join(tmpdir(), 'jedit-local-authority-guard-'));
   const sample = path.join(tempDir, 'sample.ts');

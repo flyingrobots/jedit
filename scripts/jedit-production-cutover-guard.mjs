@@ -5,6 +5,8 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 const OPTION_SAMPLE_FORBIDDEN_FILE = '--sample-forbidden-file';
 const SOURCE_ROOT = 'src';
 const SOURCE_EXTENSION = '.ts';
+const NATIVE_HOST_SOURCE_ROOT = 'native/jedit-echo-host/src';
+const RUST_SOURCE_EXTENSION = '.rs';
 const SCRIPT_ROOT = 'scripts';
 const SCRIPT_EXTENSION = '.mjs';
 const GUARD_FILE = 'scripts/jedit-production-cutover-guard.mjs';
@@ -90,6 +92,10 @@ const REMOVED_TRANSITIONAL_FILES = Object.freeze([
   'src/generated/jedit/rope.wesley.generated.ts',
   'scripts/gen-structural-history-wesley.mjs',
   'scripts/run-wesley-cli.mjs',
+  'src/adapters/echo-wasm-kernel.ts',
+  'src/ports/echo-kernel-transport.ts',
+  'scripts/jedit-echo-kernel-smoke.mjs',
+  'scripts/run-real-echo-wasm-stack-witness.sh',
   TRANSITIONAL_FILE.INTERACTIVE_TEXT_RUNTIME_MODE,
   TRANSITIONAL_FILE.INTERACTIVE_ECHO_TEXT_SESSION,
   'src/adapters/fake-echo-jedit-optic-transport.ts',
@@ -159,6 +165,11 @@ const FORBIDDEN_PRODUCT_FIXTURE_AUTHORITY_PATTERNS = Object.freeze([
   { label: 'in-memory-hot-text-runtime', pattern: /\bin-memory-hot-text-runtime\b/u },
   { label: 'createFakeEchoJeditOpticTransport', pattern: /\bcreateFakeEchoJeditOpticTransport\b/u },
   { label: 'fake-echo-jedit-optic-transport', pattern: /\bfake-echo-jedit-optic-transport\b/u },
+  { label: 'Jim-owned Echo admission ticket', pattern: /\b(?:OpticAdmissionTicket|OPTIC_ADMISSION_TICKET_KIND)\b/u },
+  { label: 'caller-ticket installed-contract staging', pattern: /\bstage_installed_contract_submission\b/u },
+  { label: 'compatibility admission authority', pattern: /\bcompatibility_admission[A-Za-z0-9_]*\b/u },
+  { label: 'raw Echo WASM transport', pattern: /\bcreateEchoWasmKernel(?:Host)?Transport\b|\becho-wasm-kernel\b/u },
+  { label: 'retired Echo WASM module override', pattern: /\bJEDIT_ECHO_WASM_MODULE\b/u },
   { label: 'createInstalledJeditContractEchoTransport', pattern: /\bcreateInstalledJeditContractEchoTransport\b/u },
   { label: 'installed-jedit-contract-echo-transport', pattern: /\binstalled-jedit-contract-echo-transport\b/u },
   { label: 'createGraphRopeHotTextAuthority', pattern: /\bcreateGraphRopeHotTextAuthority\b/u },
@@ -191,13 +202,14 @@ const FORBIDDEN_PRODUCT_FIXTURE_AUTHORITY_PATTERNS = Object.freeze([
 ]);
 
 const options = parseArgs(process.argv.slice(2));
+const guardedProductFiles = productAuthoritySourceFiles();
 const failures = [
   ...removedFileFailures(),
   ...forbiddenProductFileNameFailures([
-    ...productSourceFiles(),
+    ...guardedProductFiles,
     ...options.sampleForbiddenFiles,
   ]),
-  ...forbiddenSourceFailures(productSourceFiles(), FORBIDDEN_PRODUCT_FIXTURE_AUTHORITY_PATTERNS),
+  ...forbiddenSourceFailures(guardedProductFiles, FORBIDDEN_PRODUCT_FIXTURE_AUTHORITY_PATTERNS),
   ...forbiddenSourceFailures(DEFAULT_PRODUCTION_FILES, FORBIDDEN_LEGACY_AUTHORITY_PATTERNS),
   ...forbiddenSourceFailures(DEFAULT_PRODUCTION_FILES, FORBIDDEN_NON_ECHO_RUNTIME_MODE_PATTERNS),
   ...forbiddenSourceFailures(DEFAULT_LIFECYCLE_AUTHORITY_FILES, FORBIDDEN_LIFECYCLE_AUTHORITY_PATTERNS),
@@ -260,6 +272,13 @@ function productSourceFiles() {
   return [
     ...collectProductFiles(SOURCE_ROOT, SOURCE_EXTENSION),
     ...collectProductFiles(SCRIPT_ROOT, SCRIPT_EXTENSION).filter(filePath => filePath !== GUARD_FILE),
+  ];
+}
+
+function productAuthoritySourceFiles() {
+  return [
+    ...productSourceFiles(),
+    ...collectProductFiles(NATIVE_HOST_SOURCE_ROOT, RUST_SOURCE_EXTENSION),
   ];
 }
 
