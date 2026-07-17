@@ -189,6 +189,7 @@ impl JeditEchoHost {
         let buffer_node = parse_node_id(&buffer_id)?;
         let basis_head_node = parse_node_id(&basis_head_id)?;
         let plan = plan_checkpoint(self.store()?, buffer_node, basis_head_node, reason)?;
+        checkpoint_contract_byte_length(plan.basis_byte_length)?;
         let intent = pack_declare_checkpoint_intent(&DeclareCheckpointVars {
             input: DeclareCheckpointInput {
                 bufferId: node_id_hex(buffer_node),
@@ -421,6 +422,10 @@ fn bounded_i32(value: u64, field: &str) -> HostResult<i32> {
         .map_err(|_| HostError::InvalidRequest(format!("{field} exceeds the v1 contract bound")))
 }
 
+fn checkpoint_contract_byte_length(value: u64) -> HostResult<i32> {
+    bounded_i32(value, "basisByteLength")
+}
+
 fn obstruction_code(error: &HostError) -> &'static str {
     match error {
         HostError::InvalidRequest(_) => "invalid-request",
@@ -439,6 +444,14 @@ mod tests {
     use super::*;
     use crate::protocol::{HostRequest, HostResponse};
     use crate::records::{decode_fact, CheckpointFact, CheckpointReason, NodeIdBytes};
+
+    #[test]
+    fn checkpoint_response_rejects_lengths_outside_the_graphql_int_domain() {
+        let error = checkpoint_contract_byte_length((i32::MAX as u64) + 1)
+            .expect_err("oversized checkpoint length must fail before response emission");
+        assert!(matches!(error, HostError::InvalidRequest(_)));
+        assert_eq!(obstruction_code(&error), "invalid-request");
+    }
 
     #[test]
     fn missing_generated_checkpoint_operation_is_typed() {
