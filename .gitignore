@@ -4,7 +4,9 @@ native/**/target/
 title-recordings/
 .codex/
 .claude/
+.wesley-cache/
 .jedit-cache/
 .jedit/
 .obsidian/
 .claude/
+src/generated/jedit/structural-history-replace-text-range.wesley.generated.ts
