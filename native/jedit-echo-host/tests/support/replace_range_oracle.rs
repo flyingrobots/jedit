@@ -13,12 +13,15 @@ use warp_core::{
 
 #[path = "replace_range_basis.rs"]
 mod basis;
+#[path = "replace_range_source_set.rs"]
+mod source_set;
 
 pub use basis::BasisSetup;
 use basis::{apply_ops, make_basis};
+use source_set::{source_set, SourceSet};
 
 const ORACLE_WARP_LABEL: &str = "jedit.replace-range.oracle.v1";
-const SOURCE_COMMIT: &str = "c70e12d73b4b00bc92412bab67e1761f7dd22f82";
+const SEMANTIC_BASELINE_COMMIT: &str = "c70e12d73b4b00bc92412bab67e1761f7dd22f82";
 
 #[derive(Clone, Copy)]
 pub enum ExpectedPosture {
@@ -48,7 +51,9 @@ pub struct OracleCorpus {
     schema_version: u32,
     coordinate: &'static str,
     application_schema_coordinate: &'static str,
-    source_commit: &'static str,
+    invocation_schema_coordinate: &'static str,
+    semantic_baseline_commit: &'static str,
+    source_set: SourceSet,
     evidence_grade: &'static str,
     independence_limit: &'static str,
     warp_id: String,
@@ -62,6 +67,7 @@ struct OracleCase {
     purpose: &'static str,
     basis_facts: Vec<FactProjection>,
     invocation: InvocationProjection,
+    invocation_bytes_hex: String,
     terminal: TerminalProjection,
 }
 
@@ -163,7 +169,9 @@ pub fn generate_corpus(specs: Vec<CaseSpec>) -> OracleCorpus {
         schema_version: 1,
         coordinate: "jedit.text.ReplaceRange.oracle@1",
         application_schema_coordinate: "jedit.text.schema@1",
-        source_commit: SOURCE_COMMIT,
+        invocation_schema_coordinate: "jedit.text.ReplaceRange.oracle-invocation@1",
+        semantic_baseline_commit: SEMANTIC_BASELINE_COMMIT,
+        source_set: source_set(),
         evidence_grade: "deterministic-self-validation",
         independence_limit: "independent finite-corpus evidence begins only when a separately implemented Echo evaluator agrees",
         warp_id: hex::encode(warp_id.as_bytes()),
@@ -189,6 +197,9 @@ fn evaluate_case(warp_id: warp_core::WarpId, spec: CaseSpec) -> OracleCase {
         end_byte: spec.end_byte,
         replacement_utf8_hex: hex::encode(spec.replacement.as_bytes()),
     };
+    let invocation_bytes_hex = hex::encode(
+        serde_json::to_vec(&invocation).expect("oracle invocation should encode canonically"),
+    );
     let before = project_store(&store);
     let first = plan_replace(
         &store,
@@ -237,6 +248,7 @@ fn evaluate_case(warp_id: warp_core::WarpId, spec: CaseSpec) -> OracleCase {
         purpose: spec.purpose,
         basis_facts,
         invocation,
+        invocation_bytes_hex,
         terminal,
     }
 }

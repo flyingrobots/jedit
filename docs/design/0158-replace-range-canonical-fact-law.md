@@ -105,6 +105,7 @@ This cycle includes:
   so the mutable keyed Buffer fact cannot accidentally receive a second
   content-derived identity;
 - explicit fixed-width ranges and UTF-8 requirements;
+- a corpus-only `u64` invocation schema plus exact compact invocation bytes;
 - an explicit no-edge posture for version 1;
 - explicit exclusion and migration posture for TypeScript-only propositions;
 - deterministic success cases for insertion, deletion, Unicode replacement,
@@ -119,7 +120,7 @@ This cycle includes:
 
 This cycle does not include:
 
-- an Echo operation-program ABI or evaluator;
+- an Echo operation-program or production invocation ABI or evaluator;
 - an Edict target lowerer, package, or generated client;
 - production invocation, routing, fact-byte, or identity changes;
 - an application callback, native rope intrinsic, or caller-supplied patch;
@@ -171,8 +172,19 @@ Canonical fact JSON is:
 - exact `null` for absent optional identifiers;
 - 32-byte identifiers and digests encoded as arrays of 32 decimal octets;
 - byte strings encoded as arrays of decimal octets;
-- JSON strings encoded with the compact serde-json version-1 escaping profile;
+- JSON strings encoded by the exact `jedit.compact-serde-json.v1` law below;
 - no maps, floats, signed integers, duplicate members, or unknown members.
+
+The string law emits quotation mark and reverse solidus as `\"` and `\\`.
+U+0008, U+0009, U+000A, U+000C, and U+000D use `\b`, `\t`, `\n`, `\f`, and
+`\r`. Every other scalar from U+0000 through U+001F uses six bytes
+`\u00xx`, with lowercase hexadecimal. Solidus is never escaped. Every other
+Unicode scalar from U+0020 through U+10FFFF is emitted as its literal UTF-8
+bytes; surrogate escapes are forbidden. These rules apply to member names and
+string values. Maps are forbidden as canonical fact fields at every nesting
+depth, even if an implementation uses a map internally. The schema's golden
+vector covers every control scalar plus quotation mark, reverse solidus,
+solidus, non-ASCII text, U+2028, and U+2029.
 
 This is a writer and identity law. The legacy `serde_json` reader accepts some
 noncanonical spellings and does not currently recompute every content node
@@ -188,6 +200,42 @@ The generic content-fact constructor does not accept Buffer facts. This removes
 the currently representable but unused `BufferFact` content identity while
 preserving every production byte and authoritative keyed Buffer identifier.
 
+The normative identity domains are:
+
+| Identity | Exact UTF-8 domain | Lowercase hexadecimal domain | Material |
+| --- | --- | --- | --- |
+| Type ID | `type:` | `747970653a` | type-label UTF-8 |
+| Buffer node | `jedit.text.buffer-key.v1\0` | `6a656469742e746578742e6275666665722d6b65792e763100` | buffer-key UTF-8 |
+| Blob fact | `jedit.text.blob.v1\0` | `6a656469742e746578742e626c6f622e763100` | canonical Blob bytes |
+| Leaf fact | `jedit.text.leaf.v1\0` | `6a656469742e746578742e6c6561662e763100` | canonical Leaf bytes |
+| Branch fact | `jedit.text.branch.v1\0` | `6a656469742e746578742e6272616e63682e763100` | canonical Branch bytes |
+| Head fact | `jedit.text.head.v1\0` | `6a656469742e746578742e686561642e763100` | canonical Head bytes |
+| Rewrite fact | `jedit.text.rewrite.v1\0` | `6a656469742e746578742e726577726974652e763100` | canonical Rewrite bytes |
+| Diff fact | `jedit.text.diff.v1\0` | `6a656469742e746578742e646966662e763100` | canonical Diff bytes |
+| Blob content | `jedit.text.blob-content.v1\0` | `6a656469742e746578742e626c6f622d636f6e74656e742e763100` | blob bytes |
+| Empty-root digest | `jedit.text.empty-root.v1\0` | `6a656469742e746578742e656d7074792d726f6f742e763100` | empty bytes |
+
+Every row hashes raw `domain || material`, with no inserted delimiter or length
+prefix. The terminal NUL shown in most domains is itself the final domain byte.
+
+The finite corpus uses
+`jedit.text.ReplaceRange.oracle-invocation@1`, a compact UTF-8 JSON object with
+ordered members `bufferId`, `basisHeadId`, `startByte`, `endByte`, and
+`replacementUtf8Hex`. Identifiers are 64 lowercase hexadecimal characters;
+coordinates are JSON decimal `u64`; replacement bytes are lowercase
+hexadecimal and must decode as UTF-8. Every case carries the exact compact
+object bytes in `invocationBytesHex`. This schema is a conformance input, not a
+runtime authority or a prematurely frozen Echo ABI.
+
+The native planner and retained fact coordinates are `u64`, and the future
+Edict-authored operation must preserve that domain. Current production still
+routes `ReplaceRangeAsTickInput` through the Wesley/GraphQL compatibility ABI,
+where `startByte` and `endByte` are `i32` and `bounded_i32` rejects values above
+`i32::MAX`. The above-GraphQL-range oracle intentionally bypasses that legacy
+ABI and proves only the planner and future-operation coordinate law. This cycle
+therefore preserves current production behavior while leaving #285 open until
+the Edict cutover removes the narrowing boundary.
+
 The oracle resource is finite conformance evidence. It does not prove semantic
 equivalence for every possible `ReplaceRange` input. Its legacy planner path
 must not invoke, link, or share an evaluator implementation with the future
@@ -196,11 +244,13 @@ is disclosed and expected.
 
 ## Lower Modes
 
-The contract is entirely headless. `cargo test` regenerates and compares the
-resources. A deliberately named fixture-update mode may rewrite generated
-corpus bytes during development, but CI only checks and never updates them.
-Malformed resources fail with ordinary test errors; there is no fallback to
-source-code inference.
+The contract is entirely headless. `cargo test` recomputes and compares the
+resources. `npm run lawpack:replace-range:update` deliberately replaces all
+three resources and their SHA-256 sidecars, then reruns check mode. Each
+resource and sidecar replacement is an atomic same-directory rename; CI never
+sets either update variable. Any present update variable other than exact `1`
+fails. Malformed resources fail with ordinary test errors; there is no fallback
+to source-code inference.
 
 ## Data / State Model
 
@@ -211,7 +261,7 @@ source-code inference.
 | Invalid states | Noncanonical fact bytes, wrong domains or identities, schema drift, corpus drift, or ambiguous native/TypeScript ownership. |
 | Reset behavior | Fixtures regenerate from a clean synthetic graph; no production WAL or user data is read. |
 | Serialization | Digest-locked JSON resources containing exact fact bytes as lowercase hexadecimal. |
-| Deterministic assumptions | Ordered Rust structs/maps, exact domain bytes, explicit UTF-8 inputs, no clock/randomness/host paths. |
+| Deterministic assumptions | Ordered Rust structs, no map-valued fact fields, exact domain bytes, explicit UTF-8 inputs, no clock/randomness/host paths. |
 
 ## Accessibility Posture
 
@@ -238,8 +288,10 @@ source-code inference.
 Agents can inspect one declaration and one corpus manifest without executing
 the product or scraping Rust debug output. Every case names its semantic
 purpose, exact basis, input, terminal posture, support, facts, and result. The
-manifest states the source commit and evidence grade so a consumer cannot
-mistake finite-corpus agreement for formal equivalence.
+`semanticBaselineCommit` names the historical checkpoint whose behavior this
+cycle freezes; the `sourceSet` digest binds the exact declared generating
+source bytes. The evidence grade prevents a consumer from mistaking
+finite-corpus agreement for formal equivalence.
 
 ## Linked Invariants
 
@@ -247,7 +299,8 @@ mistake finite-corpus agreement for formal equivalence.
 - Echo owns runtime admission, execution, commitment, receipts, and recovery.
 - Edict artifacts do not prove that Echo executed them.
 - A resource digest supplies substitution evidence, not authority.
-- Fixed-width byte coordinates remain `u64`; GraphQL `Int` is not inherited.
+- Native facts and the future operation use `u64`; the current compatibility
+  ABI remains an explicitly documented `i32` limitation.
 - A failed plan produces no parent-visible patch.
 - Existing native fact bytes remain stable in version 1.
 - Tests are executable specification.
@@ -272,51 +325,165 @@ Rejected. Prose does not constrain field order, exact bytes, hash domains, or
 corpus drift. The declaration and corpus must be regenerated and checked by
 the implementation that currently owns the law.
 
-### Chosen: freeze native JSON version 1 and a finite differential corpus
+## Decision
 
-This preserves current production history and gives the next Echo slice exact
-inputs and outputs. It is intentionally conservative: structural graph schema
-evolution can proceed later under a new coordinate and explicit migration.
+Freeze native JSON version 1 and a finite differential corpus. This preserves
+current production history and gives the next Echo slice exact inputs and
+outputs. It is intentionally conservative: structural graph schema evolution
+can proceed later under a new coordinate and explicit migration.
 
 ## Implementation Slices
 
 - [x] Slice 1: land this decision record and freeze the executable witnesses.
 - [x] Slice 2: publish and byte-lock `jedit.text.schema@1`.
 - [x] Slice 3: publish and regenerate the `ReplaceRange` differential corpus.
+- [x] Slice 4: close schema/corpus review gaps and complete cycle evidence.
 
 ## Tests To Write First
 
-- [ ] Schema resource test: regenerate exact bytes, verify the checked SHA-256
+- [x] Schema resource test: regenerate exact bytes, verify the checked SHA-256
       digest, and reject drift from native fact labels, field order, domains,
       attachment posture, and excluded propositions.
-- [ ] Type-law test: prove Buffer has no generic content-addressed constructor
+- [x] Type-law test: prove Buffer has no generic content-addressed constructor
       while every immutable ReplaceRange fact retains its existing identifier.
-- [ ] Success corpus test: regenerate each initial graph and replacement plan,
+- [x] Schema/writer conformance test: compare every declared field sequence with
+      the order observed directly from native canonical fact bytes.
+- [x] Success corpus test: regenerate each initial graph and replacement plan,
       then compare exact reads, writes, patch order, fact bytes, identities,
       result metrics, and preserved facts.
-- [ ] Obstruction corpus test: regenerate each failure, compare its Jedit-owned
+- [x] Obstruction corpus test: regenerate each failure, compare its Jedit-owned
       semantic category and legacy evidence, and prove no write plan exists.
-- [ ] Determinism test: regenerate the complete resources twice from fresh
+- [x] Determinism test: regenerate the complete resources twice from fresh
       synthetic graphs and compare exact bytes.
-- [ ] Fixed-width test: retain `u64` values above GraphQL/i32 range in the
-      declaration and invocation vectors without narrowing.
+- [x] Fixed-width test: retain `u64` values above GraphQL/i32 range in the
+      corpus invocation and its exact compact bytes without narrowing.
 
-## Acceptance Checklist
+## Acceptance Criteria
 
-- [ ] Issue #292 remains the live cycle ledger.
-- [ ] The declaration selects the native production model unambiguously.
-- [ ] All seven ReplaceRange fact shapes and identity domains are explicit.
-- [ ] TypeScript-only propositions and migration posture are explicit.
-- [ ] Schema and corpus resource digests are checked from exact bytes.
-- [ ] The corpus covers representative persistent-rope successes and typed
+The work is done when:
+
+- [x] Issue #292 remains the live cycle ledger.
+- [x] The declaration selects the native production model unambiguously.
+- [x] All seven ReplaceRange fact shapes and identity domains are explicit.
+- [x] TypeScript-only propositions and migration posture are explicit.
+- [x] Schema and corpus resource digests are checked from exact bytes.
+- [x] The corpus covers representative persistent-rope successes and typed
       obstructions.
-- [ ] No production behavior, fact bytes, authoritative identities, Echo
+- [x] No production behavior, fact bytes, authoritative identities, Echo
       dependency, or user-visible behavior changes.
-- [ ] Focused Rust tests and `npm run check` pass.
-- [ ] The retrospective records evidence limits and the exact next Echo RED.
+- [x] Focused Rust tests and `npm run check` pass.
+- [x] The retrospective records evidence limits and the exact next Echo RED.
+
+## Validation Plan
+
+```bash
+npm ci
+npm run lawpack:replace-range:update
+cargo test --manifest-path native/jedit-echo-host/Cargo.toml \
+  --test replace_range_schema
+cargo test --manifest-path native/jedit-echo-host/Cargo.toml \
+  --test replace_range_schema_conformance
+cargo test --manifest-path native/jedit-echo-host/Cargo.toml \
+  --test replace_range_oracle
+cargo clippy --manifest-path native/jedit-echo-host/Cargo.toml \
+  --all-targets -- -D warnings
+npm run check
+node scripts/jedit-production-cutover-guard.mjs
+npm run witness:echo
+```
+
+`cargo fmt --check` currently reports the same two pre-existing formatting
+differences on `origin/main`, in unchanged `src/contract.rs` and
+`src/rope/window.rs`. The directly changed Rust files are formatted, and this
+cycle does not mix that unrelated cleanup into its semantic diff.
+
+## Playback / Witness
+
+Run `npm run lawpack:replace-range:update` from a clean checkout. It rebuilds
+the declaration, codec vectors, corpus, and all sidecars, then proves check mode
+is clean. Inspect
+`contracts/jedit/lawpacks/replace-range-v1/text-schema-v1.json` for the exact
+fact, string, identity, rope, and corpus-invocation laws. Inspect
+`replace-range-v1.oracle.json` for 19 self-contained cases with basis facts,
+exact invocation bytes, support, ordered patches, results, or typed no-patch
+obstructions. No editor, terminal rendering, external service, or sibling
+checkout is required.
+
+## Risks
+
+Known risks:
+
+- The corpus is finite and does not prove all-input semantic equivalence.
+- The legacy reader accepts noncanonical JSON that the writer never emits.
+- The current Wesley/GraphQL invocation remains limited to `i32` coordinates.
+- A source change outside the declared oracle source set could still affect
+  behavior through a transitive dependency.
+
+Mitigations:
+
+- Evidence is graded deterministic self-validation until Echo #684 supplies a
+  separately implemented evaluator and finite-corpus comparison.
+- The declaration makes canonical writer bytes normative and requires the new
+  evaluator to reject noncanonical or misaddressed facts.
+- Jedit #285 remains open for the production cutover; this PR does not claim the
+  compatibility ABI has changed.
+- The corpus binds the exact Jedit planner, record, identity, error, window,
+  case generator, basis builder, and source-set framing bytes, while the
+  repository lockfile and CI preserve transitive dependency selection.
+
+## Follow-On Debt
+
+- [Echo #684](https://github.com/flyingrobots/echo/issues/684) must add the
+  callback-free bounded declarative graph-operation evaluator and consume these
+  exact resources in its first RED.
+- [Jedit #285](https://github.com/flyingrobots/jedit/issues/285) remains open
+  until production `ReplaceRange` leaves the GraphQL `Int` compatibility ABI.
 
 ## Retrospective
 
-To be completed before review. This section will identify the landed resource
-digests, executable witnesses, any deviation from the planned corpus, and the
-remaining gap before Echo can admit and execute the Jedit-owned program.
+What changed from the design:
+
+- The planned native-schema and 19-case corpus was implemented without
+  changing the production planner, fact bytes, identities, or routing.
+- Review tightened the declaration with a fully specified string codec, a
+  corpus-only invocation schema and exact bytes, mechanical schema-to-writer
+  field-order comparison, strict/atomic fixture updates, and a digest over the
+  exact declared Jedit source set. These are proof-strengthening additions,
+  not a widening into the deferred Echo ABI.
+- The published SHA-256 digests are
+  `d605042ba33da11f595c4d65bd4cb125c50555c0156d4a4dfbe12ba0c6bda688`
+  for the schema,
+  `903947e1b25048b0bb0f3b3a473dd6441dfeb253fb588d112c28fcbceda083cb`
+  for codec vectors, and
+  `313afabca41f36f6d567d11533d65fbf5ed2e33546705d20885c48f60bc69971`
+  for the oracle. The oracle source-set digest is
+  `d68c0e8f9b243f15608ac6ddc06e3cdec90ca29b644d22615b784d58f05b101c`.
+
+What the tests proved:
+
+- Native Rust serialization regenerates all exact resources and identities;
+  every declared fact-member order equals the order observed from writer bytes;
+  the full string escape vector matches the native writer; and corpus invocation
+  bytes preserve `u64` above `i32::MAX`.
+- Six success and thirteen obstruction cases regenerate deterministically. A
+  success yields the exact support, ordered patch, retained facts, metrics, and
+  materialized consequence; an obstruction yields no `MutationPlan` and leaves
+  the parent graph unchanged.
+- This is deterministic self-validation. It is not an independent verifier,
+  all-input equivalence proof, Echo admission witness, runtime receipt, WAL, or
+  recovery witness.
+
+What remains open:
+
+- The exact next RED is Echo #684: load these pinned bytes as an external
+  consumer and fail because the current operation interpreter supports only its
+  tiny compare-and-set program. GREEN must come from a generic data-only bounded
+  evaluator, never a Jedit planner callback, native rope intrinsic, or
+  caller-supplied patch.
+- Edict binding, Echo execution/receipt/recovery, Jim invocation, legacy
+  `ReplaceRange` cutover, and full `u64` production support remain later
+  campaigns.
+
+PR:
+
+- https://github.com/flyingrobots/jedit/pull/293

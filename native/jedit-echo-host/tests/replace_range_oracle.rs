@@ -1,13 +1,14 @@
 #[path = "support/replace_range_oracle.rs"]
 mod oracle_support;
+#[path = "support/resource_fixture.rs"]
+mod resource_fixture;
 
-use std::fs;
 use std::path::PathBuf;
 
 use oracle_support::{
     canonical_corpus_bytes, generate_corpus, BasisSetup, CaseSpec, ExpectedPosture,
 };
-use sha2::{Digest, Sha256};
+use resource_fixture::{checked_sha256, sha256_hex, update_resource_pair};
 
 const UPDATE_ENV: &str = "JEDIT_UPDATE_REPLACE_RANGE_ORACLE";
 const EXPECTED_CORPUS_SHA256: &str = include_str!(
@@ -21,17 +22,17 @@ fn replace_range_oracle_matches_the_committed_corpus() {
     assert_eq!(first, second, "fresh oracle generation must be byte-stable");
 
     let path = corpus_path();
-    if std::env::var_os(UPDATE_ENV).is_some() {
-        fs::write(&path, &first).expect("oracle corpus should update");
+    if update_resource_pair(UPDATE_ENV, &path, &corpus_digest_path(), &first) {
+        return;
     }
-    let committed = fs::read(&path).expect("committed oracle corpus should exist");
+    let committed = std::fs::read(&path).expect("committed oracle corpus should exist");
     assert_eq!(
         first, committed,
         "run with {UPDATE_ENV}=1 to update intentionally"
     );
     assert_eq!(
-        hex::encode(Sha256::digest(&committed)),
-        EXPECTED_CORPUS_SHA256.trim_end(),
+        sha256_hex(&committed),
+        checked_sha256(EXPECTED_CORPUS_SHA256),
         "oracle resource digest must be updated deliberately"
     );
 }
@@ -39,6 +40,11 @@ fn replace_range_oracle_matches_the_committed_corpus() {
 fn corpus_path() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../../contracts/jedit/lawpacks/replace-range-v1/replace-range-v1.oracle.json")
+}
+
+fn corpus_digest_path() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../contracts/jedit/lawpacks/replace-range-v1/replace-range-v1.oracle.sha256")
 }
 
 fn cases() -> Vec<CaseSpec> {

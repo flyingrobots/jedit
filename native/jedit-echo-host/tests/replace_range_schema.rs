@@ -1,16 +1,23 @@
 use std::fmt::Debug;
+use std::path::PathBuf;
+
+#[path = "support/resource_fixture.rs"]
+mod resource_fixture;
+#[path = "support/replace_range_schema.rs"]
+mod schema_support;
 
 use jedit_echo_host::identity::hash_bytes;
 use jedit_echo_host::records::{
     fact_bytes, fact_id, fact_type_id, BlobFact, BranchFact, BufferFact, ContentAddressedFact,
     DiffFact, HeadFact, LeafFact, NodeIdBytes, RewriteFact, TypedFact, BLOB_CONTENT_HASH_DOMAIN,
-    BUFFER_NODE_ID_DOMAIN, EMPTY_ROOT_DIGEST_DOMAIN,
 };
-use jedit_echo_host::rope::{buffer_node_id, MAX_LEAF_BYTES};
+use jedit_echo_host::rope::buffer_node_id;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use serde_json::{json, Value};
-use sha2::{Digest, Sha256};
+use serde_json::Value;
 use static_assertions::{assert_impl_all, assert_not_impl_any};
+
+use resource_fixture::{checked_sha256, sha256_hex, update_resource_pair};
+use schema_support::{expected_schema, SCHEMA_COORDINATE, STRING_ESCAPE_VECTOR};
 
 const SCHEMA_BYTES: &[u8] = include_bytes!(concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -29,7 +36,7 @@ const CODEC_VECTOR_SHA256: &str = include_str!(concat!(
     "/../../contracts/jedit/lawpacks/replace-range-v1/codec-vectors-v1.sha256"
 ));
 
-const SCHEMA_COORDINATE: &str = "jedit.text.schema@1";
+const UPDATE_ENV: &str = "JEDIT_UPDATE_REPLACE_RANGE_SCHEMA";
 
 assert_not_impl_any!(BufferFact: ContentAddressedFact);
 assert_impl_all!(BlobFact: ContentAddressedFact);
@@ -80,15 +87,30 @@ enum IdentityVector {
 
 #[test]
 fn published_schema_and_codec_vectors_regenerate_byte_for_byte() {
-    assert_eq!(SCHEMA_BYTES, pretty_json_bytes(&expected_schema()));
-    assert_eq!(
-        CODEC_VECTOR_BYTES,
-        pretty_json_bytes(&expected_codec_resource())
+    let schema_bytes = pretty_json_bytes(&expected_schema());
+    let codec_bytes = pretty_json_bytes(&expected_codec_resource());
+    let schema_updated = update_resource_pair(
+        UPDATE_ENV,
+        &lawpack_path("text-schema-v1.json"),
+        &lawpack_path("text-schema-v1.sha256"),
+        &schema_bytes,
     );
-    assert_eq!(sha256_hex(SCHEMA_BYTES), checked_digest(SCHEMA_SHA256));
+    let codec_updated = update_resource_pair(
+        UPDATE_ENV,
+        &lawpack_path("codec-vectors-v1.json"),
+        &lawpack_path("codec-vectors-v1.sha256"),
+        &codec_bytes,
+    );
+    assert_eq!(schema_updated, codec_updated);
+    if schema_updated {
+        return;
+    }
+    assert_eq!(SCHEMA_BYTES, schema_bytes);
+    assert_eq!(CODEC_VECTOR_BYTES, codec_bytes);
+    assert_eq!(sha256_hex(SCHEMA_BYTES), checked_sha256(SCHEMA_SHA256));
     assert_eq!(
         sha256_hex(CODEC_VECTOR_BYTES),
-        checked_digest(CODEC_VECTOR_SHA256)
+        checked_sha256(CODEC_VECTOR_SHA256)
     );
 }
 
@@ -117,197 +139,8 @@ fn codec_vectors_match_native_bytes_types_and_identity_domains() {
     check_content::<DiffFact>(diff, "Diff");
 }
 
-fn expected_schema() -> Value {
-    json!({
-        "schemaVersion": 1,
-        "coordinate": SCHEMA_COORDINATE,
-        "factCodec": {
-            "profile": "jedit.compact-serde-json.v1",
-            "encoding": "utf-8",
-            "byteOrderMark": "forbidden",
-            "insignificantWhitespace": "forbidden",
-            "objectMemberOrder": "declared-field-order",
-            "unsignedInteger": "decimal-no-leading-zeroes",
-            "optionalIdentifier": "null-or-array-32-u8",
-            "identifier": "array-32-u8",
-            "byteString": "array-u8",
-            "stringEscaping": "serde-json-v1",
-            "forbiddenValues": [
-                "map-valued-fields",
-                "floats",
-                "signed-integers",
-                "duplicate-members",
-                "unknown-members"
-            ]
-        },
-        "graphEncoding": {
-            "node": "typed-node",
-            "attachment": {
-                "key": "node-alpha",
-                "value": "atom",
-                "atomType": "node-type",
-                "payload": "canonical-fact-bytes"
-            },
-            "edges": "none"
-        },
-        "identityLaws": {
-            "typeId": {
-                "algorithm": "blake3-256",
-                "domainHex": hex::encode(b"type:"),
-                "material": "type-label-utf8"
-            },
-            "bufferNode": {
-                "algorithm": "blake3-256",
-                "domainHex": hex::encode(BUFFER_NODE_ID_DOMAIN),
-                "material": "buffer-key-utf8"
-            },
-            "contentFact": {
-                "algorithm": "blake3-256",
-                "material": "fact-domain || canonical-fact-bytes"
-            },
-            "blobContent": {
-                "algorithm": "blake3-256",
-                "domainHex": hex::encode(BLOB_CONTENT_HASH_DOMAIN),
-                "material": "blob-bytes"
-            },
-            "emptyRootDigest": {
-                "algorithm": "blake3-256",
-                "domainHex": hex::encode(EMPTY_ROOT_DIGEST_DOMAIN),
-                "material": "empty-bytes"
-            }
-        },
-        "ropeLaw": {
-            "coordinateType": "u64",
-            "range": "half-open-utf8-byte",
-            "replacement": "utf8-bytes",
-            "maxLeafBytes": MAX_LEAF_BYTES,
-            "leafChunkBoundary": "largest-utf8-boundary-at-or-before-limit",
-            "leafSlices": "may-share-blob-with-nonzero-byte-start",
-            "lineCount": "line-breaks-plus-one-including-empty",
-            "nonemptyRootDigest": "root-node-id",
-            "persistence": "path-copy-no-delete",
-            "emittedOperations": ["upsert-node", "set-node-alpha"]
-        },
-        "facts": [
-            fact_declaration::<BufferFact>(
-                "Buffer",
-                json!({
-                    "kind": "keyed",
-                    "domainHex": hex::encode(BUFFER_NODE_ID_DOMAIN),
-                    "material": "buffer_key utf8"
-                }),
-                &[
-                    ("buffer_key", "utf8-string"),
-                    ("projection_path", "optional-utf8-string"),
-                    ("canonical_head_id", "node-id-32"),
-                    ("version", "u64")
-                ]
-            ),
-            content_fact_declaration::<BlobFact>(
-                "Blob",
-                &[("content_hash", "digest-32"), ("bytes", "bytes")]
-            ),
-            content_fact_declaration::<LeafFact>(
-                "Leaf",
-                &[
-                    ("blob_id", "node-id-32"),
-                    ("byte_start", "u64"),
-                    ("byte_length", "u64"),
-                    ("utf16_length", "u64"),
-                    ("line_breaks", "u64")
-                ]
-            ),
-            content_fact_declaration::<BranchFact>(
-                "Branch",
-                &[
-                    ("left", "node-id-32"),
-                    ("right", "node-id-32"),
-                    ("byte_length", "u64"),
-                    ("utf16_length", "u64"),
-                    ("line_breaks", "u64"),
-                    ("height", "u32")
-                ]
-            ),
-            content_fact_declaration::<HeadFact>(
-                "Head",
-                &[
-                    ("buffer_id", "node-id-32"),
-                    ("basis_head_id", "optional-node-id-32"),
-                    ("root_node_id", "optional-node-id-32"),
-                    ("byte_length", "u64"),
-                    ("utf16_length", "u64"),
-                    ("line_count", "u64"),
-                    ("root_digest", "digest-32"),
-                    ("sequence", "u64")
-                ]
-            ),
-            content_fact_declaration::<RewriteFact>(
-                "Rewrite",
-                &[
-                    ("buffer_id", "node-id-32"),
-                    ("basis_head_id", "node-id-32"),
-                    ("next_head_id", "node-id-32"),
-                    ("start_byte", "u64"),
-                    ("end_byte", "u64"),
-                    ("inserted_byte_length", "u64")
-                ]
-            ),
-            content_fact_declaration::<DiffFact>(
-                "Diff",
-                &[
-                    ("rewrite_id", "node-id-32"),
-                    ("basis_head_id", "node-id-32"),
-                    ("next_head_id", "node-id-32"),
-                    ("start_byte", "u64"),
-                    ("end_byte", "u64"),
-                    ("inserted_byte_length", "u64"),
-                    ("deleted_byte_length", "u64")
-                ]
-            )
-        ],
-        "excludedPropositions": [
-            "jedit.text.RopeStructuralMaintenance",
-            "jedit.text.RopeCheckpoint",
-            "jedit.text.RopeCheckpointAnchored",
-            "receipt-attribution-fields",
-            "structural-echo-edges",
-            "typed-diff-spans"
-        ],
-        "migrationPosture": {
-            "nativeJsonV1": "authoritative",
-            "typescriptGraphRope": "not-an-alternate-encoding",
-            "codecOrStructuralChange": "new-schema-coordinate-and-admitted-migration"
-        }
-    })
-}
-
-fn fact_declaration<T: TypedFact>(name: &str, identity: Value, fields: &[(&str, &str)]) -> Value {
-    json!({
-        "name": name,
-        "typeLabel": T::TYPE_LABEL,
-        "identity": identity,
-        "fields": fields
-            .iter()
-            .map(|(field, kind)| json!({"name": field, "type": kind}))
-            .collect::<Vec<_>>()
-    })
-}
-
-fn content_fact_declaration<T: ContentAddressedFact>(name: &str, fields: &[(&str, &str)]) -> Value {
-    fact_declaration::<T>(
-        name,
-        json!({
-            "kind": "content-addressed",
-            "algorithm": "blake3-256",
-            "domainHex": hex::encode(T::ID_DOMAIN),
-            "material": "domain || canonical-fact-bytes"
-        }),
-        fields,
-    )
-}
-
 fn expected_codec_resource() -> CodecResource {
-    let buffer_key = "schema\n\"猫\\path.txt";
+    let buffer_key = STRING_ESCAPE_VECTOR;
     let buffer_id = buffer_node_id(buffer_key);
     let blob_bytes = "A😀\n".as_bytes().to_vec();
     let blob = BlobFact {
@@ -471,17 +304,8 @@ fn pretty_json_bytes<T: Serialize>(value: &T) -> Vec<u8> {
     bytes
 }
 
-fn sha256_hex(bytes: &[u8]) -> String {
-    hex::encode(Sha256::digest(bytes))
-}
-
-fn checked_digest(value: &str) -> &str {
-    let digest = value
-        .strip_suffix('\n')
-        .expect("digest resource should end with one newline");
-    assert_eq!(digest.len(), 64);
-    assert!(digest
-        .bytes()
-        .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte)));
-    digest
+fn lawpack_path(file_name: &str) -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../contracts/jedit/lawpacks/replace-range-v1")
+        .join(file_name)
 }

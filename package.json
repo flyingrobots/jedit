@@ -6,6 +6,7 @@
   "scripts": {
     "echo:build": "cargo build --manifest-path native/jedit-echo-host/Cargo.toml",
     "echo:test": "cargo test --manifest-path native/jedit-echo-host/Cargo.toml",
+    "lawpack:replace-range:update": "JEDIT_UPDATE_REPLACE_RANGE_SCHEMA=1 cargo test --manifest-path native/jedit-echo-host/Cargo.toml --test replace_range_schema published_schema_and_codec_vectors_regenerate_byte_for_byte && cargo test --manifest-path native/jedit-echo-host/Cargo.toml --test replace_range_schema && JEDIT_UPDATE_REPLACE_RANGE_ORACLE=1 cargo test --manifest-path native/jedit-echo-host/Cargo.toml --test replace_range_oracle && cargo test --manifest-path native/jedit-echo-host/Cargo.toml --test replace_range_oracle && cargo test --manifest-path native/jedit-echo-host/Cargo.toml --test replace_range_schema_conformance",
     "dev": "npm run echo:build && tsx src/main.ts",
     "clean": "node scripts/clean-dist.mjs",
     "build": "npm run echo:build && npm run clean && tsc -p tsconfig.json && node scripts/copy-assets.mjs",

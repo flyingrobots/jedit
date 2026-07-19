@@ -24,7 +24,25 @@
     "objectMemberOrder": "declared-field-order",
     "optionalIdentifier": "null-or-array-32-u8",
     "profile": "jedit.compact-serde-json.v1",
-    "stringEscaping": "serde-json-v1",
+    "stringEscaping": {
+      "goldenVector": {
+        "jsonStringUtf8Hex": "225c75303030305c75303030315c75303030325c75303030335c75303030345c75303030355c75303030365c75303030375c625c745c6e5c75303030625c665c725c75303030655c75303030665c75303031305c75303031315c75303031325c75303031335c75303031345c75303031355c75303031365c75303031375c75303031385c75303031395c75303031615c75303031625c75303031635c75303031645c75303031655c75303031665c225c5c2fe78cabe280a8e280a922",
+        "sourceUtf8Hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f225c2fe78cabe280a8e280a9"
+      },
+      "otherU0000ThroughU001f": "backslash-u00xx-lowercase-hex",
+      "otherU0020ThroughU10ffff": "literal-utf8-unicode-scalars",
+      "quotationMark": "backslash-quotation-mark",
+      "reverseSolidus": "backslash-reverse-solidus",
+      "shortEscapes": {
+        "u0008": "backslash-b",
+        "u0009": "backslash-t",
+        "u000a": "backslash-n",
+        "u000c": "backslash-f",
+        "u000d": "backslash-r"
+      },
+      "solidus": "literal",
+      "surrogateEscapes": "forbidden"
+    },
     "unsignedInteger": "decimal-no-leading-zeroes"
   },
   "facts": [
@@ -304,6 +322,41 @@
     "codecOrStructuralChange": "new-schema-coordinate-and-admitted-migration",
     "nativeJsonV1": "authoritative",
     "typescriptGraphRope": "not-an-alternate-encoding"
+  },
+  "oracleInvocation": {
+    "canonicalBytesField": "invocationBytesHex",
+    "coordinate": "jedit.text.ReplaceRange.oracle-invocation@1",
+    "encoding": "compact-utf8-json",
+    "fields": [
+      {
+        "name": "bufferId",
+        "type": "lowercase-hex-node-id-32"
+      },
+      {
+        "name": "basisHeadId",
+        "type": "lowercase-hex-node-id-32"
+      },
+      {
+        "name": "startByte",
+        "type": "u64-json-decimal"
+      },
+      {
+        "name": "endByte",
+        "type": "u64-json-decimal"
+      },
+      {
+        "name": "replacementUtf8Hex",
+        "type": "lowercase-hex-utf8-bytes"
+      }
+    ],
+    "objectMemberOrder": [
+      "bufferId",
+      "basisHeadId",
+      "startByte",
+      "endByte",
+      "replacementUtf8Hex"
+    ],
+    "posture": "finite-corpus-input-not-runtime-abi"
   },
   "ropeLaw": {
     "coordinateType": "u64",
