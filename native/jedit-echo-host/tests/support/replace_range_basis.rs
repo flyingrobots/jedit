@@ -1,0 +1,173 @@
+use jedit_echo_host::records::{
+    decode_fact, fact_bytes, fact_id, fact_type_id, BlobFact, BufferFact, HeadFact, LeafFact,
+    NodeIdBytes,
+};
+use jedit_echo_host::rope::plan_create;
+use warp_core::{AttachmentValue, GraphStore, NodeId, NodeRecord, TickDelta, WarpOp};
+
+#[derive(Clone, Copy)]
+pub enum BasisSetup {
+    Plain,
+    Empty,
+    SequenceOverflow,
+    VersionOverflow,
+    MissingBuffer,
+    MalformedBuffer,
+    BadBlobContentHash,
+    AboveGraphqlIntRange,
+}
+
+pub fn make_basis(
+    warp_id: warp_core::WarpId,
+    id: &str,
+    initial_text: &str,
+    setup: BasisSetup,
+) -> (GraphStore, NodeId, NodeId) {
+    if matches!(setup, BasisSetup::MissingBuffer) {
+        return (
+            GraphStore::new(warp_id),
+            NodeId([0x11; 32]),
+            NodeId([0x22; 32]),
+        );
+    }
+    let basis_text = if matches!(setup, BasisSetup::Empty) {
+        ""
+    } else {
+        initial_text
+    };
+    let mut store = GraphStore::new(warp_id);
+    let create = plan_create(&store, id, basis_text, None).expect("oracle basis should be created");
+    let mut delta = TickDelta::new();
+    create.emit(&mut delta);
+    apply_ops(&mut store, &delta.finalize());
+    let mut head_id = create.head_id;
+    match setup {
+        BasisSetup::Plain | BasisSetup::Empty => {}
+        BasisSetup::SequenceOverflow => {
+            head_id = replace_head(&mut store, create.buffer_id, head_id, |head| {
+                head.sequence = u64::MAX;
+            });
+        }
+        BasisSetup::VersionOverflow => {
+            replace_buffer(&mut store, create.buffer_id, |buffer| {
+                buffer.version = u64::MAX;
+            });
+        }
+        BasisSetup::MalformedBuffer => {
+            store.set_node_attachment(
+                create.buffer_id,
+                Some(AttachmentValue::Atom(warp_core::AtomPayload::new(
+                    fact_type_id::<BufferFact>(),
+                    bytes::Bytes::from_static(b"{"),
+                ))),
+            );
+        }
+        BasisSetup::BadBlobContentHash => corrupt_blob_hash(&mut store, head_id),
+        BasisSetup::AboveGraphqlIntRange => {
+            head_id = replace_head(&mut store, create.buffer_id, head_id, |head| {
+                head.byte_length = i32::MAX as u64 + 1;
+            });
+        }
+        BasisSetup::MissingBuffer => unreachable!(),
+    }
+    (store, create.buffer_id, head_id)
+}
+
+pub fn apply_ops(store: &mut GraphStore, ops: &[WarpOp]) {
+    for op in ops {
+        match op {
+            WarpOp::UpsertNode { node, record } => {
+                assert_eq!(node.warp_id, store.warp_id());
+                store.insert_node(node.local_id, record.clone());
+            }
+            WarpOp::SetAttachment { key, value } => {
+                let warp_core::AttachmentOwner::Node(node) = key.owner else {
+                    panic!("oracle patch must not contain edge attachments")
+                };
+                store.set_node_attachment(node.local_id, value.clone());
+            }
+            _ => panic!("oracle patch contains an unsupported graph operation"),
+        }
+    }
+}
+
+fn replace_head(
+    store: &mut GraphStore,
+    buffer_id: NodeId,
+    head_id: NodeId,
+    mutate: impl FnOnce(&mut HeadFact),
+) -> NodeId {
+    let mut head: HeadFact = decode_fact(
+        store
+            .node_attachment(&head_id)
+            .expect("head attachment should exist"),
+    )
+    .expect("head should decode");
+    mutate(&mut head);
+    let next_head_id = fact_id(&head).expect("mutated head should identify");
+    store.insert_node(
+        next_head_id,
+        NodeRecord {
+            ty: fact_type_id::<HeadFact>(),
+        },
+    );
+    store.set_node_attachment(
+        next_head_id,
+        Some(AttachmentValue::Atom(warp_core::AtomPayload::new(
+            fact_type_id::<HeadFact>(),
+            fact_bytes(&head).expect("head should encode").into(),
+        ))),
+    );
+    replace_buffer(store, buffer_id, |buffer| {
+        buffer.canonical_head_id = NodeIdBytes::from(next_head_id);
+    });
+    next_head_id
+}
+
+fn replace_buffer(store: &mut GraphStore, buffer_id: NodeId, mutate: impl FnOnce(&mut BufferFact)) {
+    let mut buffer: BufferFact = decode_fact(
+        store
+            .node_attachment(&buffer_id)
+            .expect("buffer attachment should exist"),
+    )
+    .expect("buffer should decode");
+    mutate(&mut buffer);
+    store.set_node_attachment(
+        buffer_id,
+        Some(AttachmentValue::Atom(warp_core::AtomPayload::new(
+            fact_type_id::<BufferFact>(),
+            fact_bytes(&buffer).expect("buffer should encode").into(),
+        ))),
+    );
+}
+
+fn corrupt_blob_hash(store: &mut GraphStore, head_id: NodeId) {
+    let head: HeadFact = decode_fact(
+        store
+            .node_attachment(&head_id)
+            .expect("head attachment should exist"),
+    )
+    .expect("head should decode");
+    let root_id = NodeId::from(head.root_node_id.expect("fixture should have a leaf root"));
+    let leaf: LeafFact = decode_fact(
+        store
+            .node_attachment(&root_id)
+            .expect("leaf attachment should exist"),
+    )
+    .expect("leaf should decode");
+    let blob_id = NodeId::from(leaf.blob_id);
+    let mut blob: BlobFact = decode_fact(
+        store
+            .node_attachment(&blob_id)
+            .expect("blob attachment should exist"),
+    )
+    .expect("blob should decode");
+    blob.content_hash = [0; 32];
+    store.set_node_attachment(
+        blob_id,
+        Some(AttachmentValue::Atom(warp_core::AtomPayload::new(
+            fact_type_id::<BlobFact>(),
+            fact_bytes(&blob).expect("blob should encode").into(),
+        ))),
+    );
+}

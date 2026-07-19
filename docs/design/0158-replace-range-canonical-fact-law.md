@@ -282,7 +282,7 @@ evolution can proceed later under a new coordinate and explicit migration.
 
 - [x] Slice 1: land this decision record and freeze the executable witnesses.
 - [x] Slice 2: publish and byte-lock `jedit.text.schema@1`.
-- [ ] Slice 3: publish and regenerate the `ReplaceRange` differential corpus.
+- [x] Slice 3: publish and regenerate the `ReplaceRange` differential corpus.
 
 ## Tests To Write First
 
