@@ -19,4 +19,6 @@ thiserror = "2"
 warp-core = { git = "https://github.com/flyingrobots/echo", rev = "90f63ae27c673fb7d398aba12c98cfbcf1ef24c3", features = ["native_rule_bootstrap", "trusted_runtime"] }
 
 [dev-dependencies]
+sha2 = "0.10"
+static_assertions = "1"
 tempfile = "3"

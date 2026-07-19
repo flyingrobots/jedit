@@ -174,6 +174,13 @@ Canonical fact JSON is:
 - JSON strings encoded with the compact serde-json version-1 escaping profile;
 - no maps, floats, signed integers, duplicate members, or unknown members.
 
+This is a writer and identity law. The legacy `serde_json` reader accepts some
+noncanonical spellings and does not currently recompute every content node
+identifier from attachment bytes. That permissiveness is not promoted into
+the version-1 contract. Future package validation and Echo evaluation must
+reject noncanonical or misaddressed facts; this cycle does not falsely claim
+the compatibility reader already performs those checks.
+
 Content-addressed identifiers are BLAKE3-256 over the exact declared domain
 bytes followed by canonical fact bytes. Buffer identifiers, Blob content
 hashes, and empty-root digests use their separately declared BLAKE3 domains.
@@ -274,7 +281,7 @@ evolution can proceed later under a new coordinate and explicit migration.
 ## Implementation Slices
 
 - [x] Slice 1: land this decision record and freeze the executable witnesses.
-- [ ] Slice 2: publish and byte-lock `jedit.text.schema@1`.
+- [x] Slice 2: publish and byte-lock `jedit.text.schema@1`.
 - [ ] Slice 3: publish and regenerate the `ReplaceRange` differential corpus.
 
 ## Tests To Write First

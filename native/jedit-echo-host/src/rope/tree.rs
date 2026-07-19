@@ -2,13 +2,11 @@ use warp_core::NodeId;
 
 use crate::error::{HostError, HostResult};
 use crate::identity::{hash_bytes, node_id_hex};
-use crate::records::{BlobFact, BranchFact, LeafFact};
+use crate::records::{
+    BlobFact, BranchFact, LeafFact, BLOB_CONTENT_HASH_DOMAIN, EMPTY_ROOT_DIGEST_DOMAIN,
+};
 
-use super::{GraphFacts, NodeMetrics, PlanContext, RopeNode};
-
-const MAX_LEAF_BYTES: usize = 4096;
-const EMPTY_ROOT_DIGEST_DOMAIN: &[u8] = b"jedit.text.empty-root.v1\0";
-
+use super::{GraphFacts, NodeMetrics, PlanContext, RopeNode, MAX_LEAF_BYTES};
 pub(super) fn build_text<T: GraphFacts>(
     context: &mut PlanContext<'_, T>,
     bytes: &[u8],
@@ -52,7 +50,7 @@ fn make_blob_leaf<T: GraphFacts>(
     let utf16_length = text.encode_utf16().count() as u64;
     let line_breaks = bytes.iter().filter(|byte| **byte == b'\n').count() as u64;
     let blob = BlobFact {
-        content_hash: hash_bytes(b"jedit.text.blob-content.v1\0", &bytes),
+        content_hash: hash_bytes(BLOB_CONTENT_HASH_DOMAIN, &bytes),
         bytes,
     };
     let byte_length = blob.bytes.len() as u64;

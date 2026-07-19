@@ -1,0 +1,324 @@
+{
+  "coordinate": "jedit.text.schema@1",
+  "excludedPropositions": [
+    "jedit.text.RopeStructuralMaintenance",
+    "jedit.text.RopeCheckpoint",
+    "jedit.text.RopeCheckpointAnchored",
+    "receipt-attribution-fields",
+    "structural-echo-edges",
+    "typed-diff-spans"
+  ],
+  "factCodec": {
+    "byteOrderMark": "forbidden",
+    "byteString": "array-u8",
+    "encoding": "utf-8",
+    "forbiddenValues": [
+      "map-valued-fields",
+      "floats",
+      "signed-integers",
+      "duplicate-members",
+      "unknown-members"
+    ],
+    "identifier": "array-32-u8",
+    "insignificantWhitespace": "forbidden",
+    "objectMemberOrder": "declared-field-order",
+    "optionalIdentifier": "null-or-array-32-u8",
+    "profile": "jedit.compact-serde-json.v1",
+    "stringEscaping": "serde-json-v1",
+    "unsignedInteger": "decimal-no-leading-zeroes"
+  },
+  "facts": [
+    {
+      "fields": [
+        {
+          "name": "buffer_key",
+          "type": "utf8-string"
+        },
+        {
+          "name": "projection_path",
+          "type": "optional-utf8-string"
+        },
+        {
+          "name": "canonical_head_id",
+          "type": "node-id-32"
+        },
+        {
+          "name": "version",
+          "type": "u64"
+        }
+      ],
+      "identity": {
+        "domainHex": "6a656469742e746578742e6275666665722d6b65792e763100",
+        "kind": "keyed",
+        "material": "buffer_key utf8"
+      },
+      "name": "Buffer",
+      "typeLabel": "jedit.text.BufferWorldline.v1"
+    },
+    {
+      "fields": [
+        {
+          "name": "content_hash",
+          "type": "digest-32"
+        },
+        {
+          "name": "bytes",
+          "type": "bytes"
+        }
+      ],
+      "identity": {
+        "algorithm": "blake3-256",
+        "domainHex": "6a656469742e746578742e626c6f622e763100",
+        "kind": "content-addressed",
+        "material": "domain || canonical-fact-bytes"
+      },
+      "name": "Blob",
+      "typeLabel": "jedit.text.TextBlob.v1"
+    },
+    {
+      "fields": [
+        {
+          "name": "blob_id",
+          "type": "node-id-32"
+        },
+        {
+          "name": "byte_start",
+          "type": "u64"
+        },
+        {
+          "name": "byte_length",
+          "type": "u64"
+        },
+        {
+          "name": "utf16_length",
+          "type": "u64"
+        },
+        {
+          "name": "line_breaks",
+          "type": "u64"
+        }
+      ],
+      "identity": {
+        "algorithm": "blake3-256",
+        "domainHex": "6a656469742e746578742e6c6561662e763100",
+        "kind": "content-addressed",
+        "material": "domain || canonical-fact-bytes"
+      },
+      "name": "Leaf",
+      "typeLabel": "jedit.text.RopeLeaf.v1"
+    },
+    {
+      "fields": [
+        {
+          "name": "left",
+          "type": "node-id-32"
+        },
+        {
+          "name": "right",
+          "type": "node-id-32"
+        },
+        {
+          "name": "byte_length",
+          "type": "u64"
+        },
+        {
+          "name": "utf16_length",
+          "type": "u64"
+        },
+        {
+          "name": "line_breaks",
+          "type": "u64"
+        },
+        {
+          "name": "height",
+          "type": "u32"
+        }
+      ],
+      "identity": {
+        "algorithm": "blake3-256",
+        "domainHex": "6a656469742e746578742e6272616e63682e763100",
+        "kind": "content-addressed",
+        "material": "domain || canonical-fact-bytes"
+      },
+      "name": "Branch",
+      "typeLabel": "jedit.text.RopeBranch.v1"
+    },
+    {
+      "fields": [
+        {
+          "name": "buffer_id",
+          "type": "node-id-32"
+        },
+        {
+          "name": "basis_head_id",
+          "type": "optional-node-id-32"
+        },
+        {
+          "name": "root_node_id",
+          "type": "optional-node-id-32"
+        },
+        {
+          "name": "byte_length",
+          "type": "u64"
+        },
+        {
+          "name": "utf16_length",
+          "type": "u64"
+        },
+        {
+          "name": "line_count",
+          "type": "u64"
+        },
+        {
+          "name": "root_digest",
+          "type": "digest-32"
+        },
+        {
+          "name": "sequence",
+          "type": "u64"
+        }
+      ],
+      "identity": {
+        "algorithm": "blake3-256",
+        "domainHex": "6a656469742e746578742e686561642e763100",
+        "kind": "content-addressed",
+        "material": "domain || canonical-fact-bytes"
+      },
+      "name": "Head",
+      "typeLabel": "jedit.text.RopeHead.v1"
+    },
+    {
+      "fields": [
+        {
+          "name": "buffer_id",
+          "type": "node-id-32"
+        },
+        {
+          "name": "basis_head_id",
+          "type": "node-id-32"
+        },
+        {
+          "name": "next_head_id",
+          "type": "node-id-32"
+        },
+        {
+          "name": "start_byte",
+          "type": "u64"
+        },
+        {
+          "name": "end_byte",
+          "type": "u64"
+        },
+        {
+          "name": "inserted_byte_length",
+          "type": "u64"
+        }
+      ],
+      "identity": {
+        "algorithm": "blake3-256",
+        "domainHex": "6a656469742e746578742e726577726974652e763100",
+        "kind": "content-addressed",
+        "material": "domain || canonical-fact-bytes"
+      },
+      "name": "Rewrite",
+      "typeLabel": "jedit.text.RopeRewrite.v1"
+    },
+    {
+      "fields": [
+        {
+          "name": "rewrite_id",
+          "type": "node-id-32"
+        },
+        {
+          "name": "basis_head_id",
+          "type": "node-id-32"
+        },
+        {
+          "name": "next_head_id",
+          "type": "node-id-32"
+        },
+        {
+          "name": "start_byte",
+          "type": "u64"
+        },
+        {
+          "name": "end_byte",
+          "type": "u64"
+        },
+        {
+          "name": "inserted_byte_length",
+          "type": "u64"
+        },
+        {
+          "name": "deleted_byte_length",
+          "type": "u64"
+        }
+      ],
+      "identity": {
+        "algorithm": "blake3-256",
+        "domainHex": "6a656469742e746578742e646966662e763100",
+        "kind": "content-addressed",
+        "material": "domain || canonical-fact-bytes"
+      },
+      "name": "Diff",
+      "typeLabel": "jedit.text.RopeDiff.v1"
+    }
+  ],
+  "graphEncoding": {
+    "attachment": {
+      "atomType": "node-type",
+      "key": "node-alpha",
+      "payload": "canonical-fact-bytes",
+      "value": "atom"
+    },
+    "edges": "none",
+    "node": "typed-node"
+  },
+  "identityLaws": {
+    "blobContent": {
+      "algorithm": "blake3-256",
+      "domainHex": "6a656469742e746578742e626c6f622d636f6e74656e742e763100",
+      "material": "blob-bytes"
+    },
+    "bufferNode": {
+      "algorithm": "blake3-256",
+      "domainHex": "6a656469742e746578742e6275666665722d6b65792e763100",
+      "material": "buffer-key-utf8"
+    },
+    "contentFact": {
+      "algorithm": "blake3-256",
+      "material": "fact-domain || canonical-fact-bytes"
+    },
+    "emptyRootDigest": {
+      "algorithm": "blake3-256",
+      "domainHex": "6a656469742e746578742e656d7074792d726f6f742e763100",
+      "material": "empty-bytes"
+    },
+    "typeId": {
+      "algorithm": "blake3-256",
+      "domainHex": "747970653a",
+      "material": "type-label-utf8"
+    }
+  },
+  "migrationPosture": {
+    "codecOrStructuralChange": "new-schema-coordinate-and-admitted-migration",
+    "nativeJsonV1": "authoritative",
+    "typescriptGraphRope": "not-an-alternate-encoding"
+  },
+  "ropeLaw": {
+    "coordinateType": "u64",
+    "emittedOperations": [
+      "upsert-node",
+      "set-node-alpha"
+    ],
+    "leafChunkBoundary": "largest-utf8-boundary-at-or-before-limit",
+    "leafSlices": "may-share-blob-with-nonzero-byte-start",
+    "lineCount": "line-breaks-plus-one-including-empty",
+    "maxLeafBytes": 4096,
+    "nonemptyRootDigest": "root-node-id",
+    "persistence": "path-copy-no-delete",
+    "range": "half-open-utf8-byte",
+    "replacement": "utf8-bytes"
+  },
+  "schemaVersion": 1
+}

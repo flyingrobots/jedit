@@ -13,14 +13,14 @@ use crate::error::{HostError, HostResult};
 use crate::identity::{hash_bytes, node_id_hex};
 use crate::records::{
     decode_fact, fact_bytes, fact_id, fact_type_id, BlobFact, BranchFact, BufferFact,
-    CheckpointFact, CheckpointReason, DiffFact, HeadFact, LeafFact, NodeIdBytes, RewriteFact,
-    TypedFact,
+    CheckpointFact, CheckpointReason, ContentAddressedFact, DiffFact, HeadFact, LeafFact,
+    NodeIdBytes, RewriteFact, TypedFact, BLOB_CONTENT_HASH_DOMAIN, BUFFER_NODE_ID_DOMAIN,
 };
 use tree::{build_text, join, root_digest, root_metrics, split};
 use window::read_range_bytes;
 pub use window::{read_window, WindowLine, WindowProjection, WindowSupport};
 
-const BUFFER_NODE_DOMAIN: &[u8] = b"jedit.text.buffer-key.v1\0";
+pub const MAX_LEAF_BYTES: usize = 4096;
 
 pub trait GraphFacts {
     fn warp_id(&self) -> WarpId;
@@ -121,7 +121,7 @@ impl<'a, T: GraphFacts> PlanContext<'a, T> {
         Ok(())
     }
 
-    fn write_content_fact<F: TypedFact>(&mut self, fact: &F) -> HostResult<NodeId> {
+    fn write_content_fact<F: ContentAddressedFact>(&mut self, fact: &F) -> HostResult<NodeId> {
         let id = fact_id(fact)?;
         self.write_fact_at(id, fact)?;
         Ok(id)
@@ -165,7 +165,7 @@ impl<'a, T: GraphFacts> PlanContext<'a, T> {
 
     fn verified_blob(&mut self, id: NodeId) -> HostResult<BlobFact> {
         let blob: BlobFact = self.read_fact(id)?;
-        if hash_bytes(b"jedit.text.blob-content.v1\0", &blob.bytes) != blob.content_hash {
+        if hash_bytes(BLOB_CONTENT_HASH_DOMAIN, &blob.bytes) != blob.content_hash {
             return Err(HostError::MalformedFact(format!(
                 "blob {} content hash does not match",
                 node_id_hex(id)
@@ -256,7 +256,7 @@ impl CheckpointPlan {
 }
 
 pub fn buffer_node_id(buffer_key: &str) -> NodeId {
-    crate::identity::content_node_id(BUFFER_NODE_DOMAIN, buffer_key.as_bytes())
+    crate::identity::content_node_id(BUFFER_NODE_ID_DOMAIN, buffer_key.as_bytes())
 }
 
 pub fn existing_buffer<T: GraphFacts>(
