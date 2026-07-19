@@ -59,7 +59,8 @@ The merge target is
   [`native/jedit-echo-host/src/records.rs#L7:c70e12d73b4b00bc92412bab67e1761f7dd22f82`](https://github.com/flyingrobots/jedit/blob/c70e12d73b4b00bc92412bab67e1761f7dd22f82/native/jedit-echo-host/src/records.rs#L7)
 - Native fact bytes are produced by `serde_json::to_vec`; content-addressed
   fact identifiers hash an exact per-fact domain followed by those bytes.
-  [`native/jedit-echo-host/src/records.rs#L123:c70e12d73b4b00bc92412bab67e1761f7dd22f82`](https://github.com/flyingrobots/jedit/blob/c70e12d73b4b00bc92412bab67e1761f7dd22f82/native/jedit-echo-host/src/records.rs#L123)
+  [`native/jedit-echo-host/src/records.rs#L150:c70e12d73b4b00bc92412bab67e1761f7dd22f82`](https://github.com/flyingrobots/jedit/blob/c70e12d73b4b00bc92412bab67e1761f7dd22f82/native/jedit-echo-host/src/records.rs#L150)
+  [`native/jedit-echo-host/src/identity.rs#L6:c70e12d73b4b00bc92412bab67e1761f7dd22f82`](https://github.com/flyingrobots/jedit/blob/c70e12d73b4b00bc92412bab67e1761f7dd22f82/native/jedit-echo-host/src/identity.rs#L6)
 - The planner stores each fact as one typed node plus one node-alpha atom
   attachment. It emits no Echo edges and deletes no retained nodes.
   [`native/jedit-echo-host/src/rope.rs#L217:c70e12d73b4b00bc92412bab67e1761f7dd22f82`](https://github.com/flyingrobots/jedit/blob/c70e12d73b4b00bc92412bab67e1761f7dd22f82/native/jedit-echo-host/src/rope.rs#L217)
@@ -70,6 +71,8 @@ The merge target is
 - Rope construction caps leaves at 4,096 UTF-8 bytes, path-copies slices,
   and deterministically height-balances joins.
   [`native/jedit-echo-host/src/rope/tree.rs#L9:c70e12d73b4b00bc92412bab67e1761f7dd22f82`](https://github.com/flyingrobots/jedit/blob/c70e12d73b4b00bc92412bab67e1761f7dd22f82/native/jedit-echo-host/src/rope/tree.rs#L9)
+  [`native/jedit-echo-host/src/rope/tree.rs#L69:c70e12d73b4b00bc92412bab67e1761f7dd22f82`](https://github.com/flyingrobots/jedit/blob/c70e12d73b4b00bc92412bab67e1761f7dd22f82/native/jedit-echo-host/src/rope/tree.rs#L69)
+  [`native/jedit-echo-host/src/rope/tree.rs#L148:c70e12d73b4b00bc92412bab67e1761f7dd22f82`](https://github.com/flyingrobots/jedit/blob/c70e12d73b4b00bc92412bab67e1761f7dd22f82/native/jedit-echo-host/src/rope/tree.rs#L148)
 - The TypeScript graph-rope model contains propositions and fields that are
   not equivalent to the native retained representation. It is therefore not
   an alternate serialization of the same version-1 schema.
