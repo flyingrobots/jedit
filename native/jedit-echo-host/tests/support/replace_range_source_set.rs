@@ -48,8 +48,16 @@ const SOURCE_SET_FILES: &[(&str, &[u8])] = &[
         include_bytes!("replace_range_contract.rs"),
     ),
     (
+        "native/jedit-echo-host/tests/support/replace_range_consequence.rs",
+        include_bytes!("replace_range_consequence.rs"),
+    ),
+    (
         "native/jedit-echo-host/tests/support/replace_range_oracle.rs",
         include_bytes!("replace_range_oracle.rs"),
+    ),
+    (
+        "native/jedit-echo-host/tests/support/replace_range_oracle_tests.rs",
+        include_bytes!("replace_range_oracle_tests.rs"),
     ),
     (
         "native/jedit-echo-host/tests/support/replace_range_source_set.rs",
