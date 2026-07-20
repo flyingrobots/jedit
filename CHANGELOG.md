@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Made strict `ReplaceRange` corpus validation decode every committable patch
+  attachment through its declared native fact type, require canonical bytes,
+  and authenticate the keyed or content-addressed node identity.
 - Hardened the strict ReplaceRange corpus mutation harness so a negative witness
   cannot pass solely because its test re-encoding changed canonical member order.
 - Made `ReplaceRange` refuse to produce a `MutationPlan` from a selected basis

@@ -4,6 +4,8 @@ mod contract;
 mod corpus_contract;
 #[path = "support/replace_range_corpus_lexemes.rs"]
 mod lexemes;
+#[path = "support/replace_range_patch_fact_contract.rs"]
+mod patch_fact_contract;
 #[path = "support/replace_range_source_set.rs"]
 mod source_set;
 
@@ -63,6 +65,51 @@ fn obstruction(corpus: &mut Value) -> &mut Value {
         .iter_mut()
         .find(|case| case["terminal"]["posture"] == "obstructed")
         .expect("an obstruction should exist")
+}
+
+fn committable_case(corpus: &Value, index: usize) -> &Value {
+    corpus["cases"]
+        .as_array()
+        .expect("cases should be an array")
+        .iter()
+        .filter(|case| case["terminal"]["posture"] == "committable")
+        .nth(index)
+        .expect("requested committable case should exist")
+}
+
+fn committable_case_mut(corpus: &mut Value, index: usize) -> &mut Value {
+    corpus["cases"]
+        .as_array_mut()
+        .expect("cases should be an array")
+        .iter_mut()
+        .filter(|case| case["terminal"]["posture"] == "committable")
+        .nth(index)
+        .expect("requested committable case should exist")
+}
+
+fn patch_attachment_for_result<'a>(case: &'a Value, result_field: &str) -> &'a Value {
+    let node_id = case["terminal"]["result"][result_field]
+        .as_str()
+        .expect("result identifier should be a string");
+    case["terminal"]["patch"]
+        .as_array()
+        .expect("patch should be an array")
+        .iter()
+        .find(|operation| operation["kind"] == "set-node-alpha" && operation["nodeId"] == node_id)
+        .expect("result attachment should exist in the patch")
+}
+
+fn patch_attachment_for_result_mut<'a>(case: &'a mut Value, result_field: &str) -> &'a mut Value {
+    let node_id = case["terminal"]["result"][result_field]
+        .as_str()
+        .expect("result identifier should be a string")
+        .to_owned();
+    case["terminal"]["patch"]
+        .as_array_mut()
+        .expect("patch should be an array")
+        .iter_mut()
+        .find(|operation| operation["kind"] == "set-node-alpha" && operation["nodeId"] == node_id)
+        .expect("result attachment should exist in the patch")
 }
 
 #[test]
@@ -243,6 +290,58 @@ fn strict_corpus_validates_leaf_lexemes_and_numeric_domains() {
             .find(|operation| operation["kind"] == "set-node-alpha")
             .expect("set-node-alpha should exist");
         operation["attachmentBytesHex"] = Value::String("xyz".to_owned());
+    });
+}
+
+#[test]
+fn strict_corpus_authenticates_patch_attachment_semantics() {
+    assert_invalid("content-addressed Head attachment", |corpus| {
+        let target_head = committable_case(corpus, 0)["terminal"]["result"]["headId"].clone();
+        let donor = patch_attachment_for_result(committable_case(corpus, 1), "headId");
+        assert_ne!(donor["nodeId"], target_head);
+        let donor_bytes = donor["attachmentBytesHex"].clone();
+        patch_attachment_for_result_mut(committable_case_mut(corpus, 0), "headId")
+            ["attachmentBytesHex"] = donor_bytes;
+    });
+
+    assert_invalid("keyed Buffer attachment", |corpus| {
+        let target_buffer = committable_case(corpus, 0)["terminal"]["result"]["bufferId"].clone();
+        let donor = patch_attachment_for_result(committable_case(corpus, 1), "bufferId");
+        assert_ne!(donor["nodeId"], target_buffer);
+        let donor_bytes = donor["attachmentBytesHex"].clone();
+        patch_attachment_for_result_mut(committable_case_mut(corpus, 0), "bufferId")
+            ["attachmentBytesHex"] = donor_bytes;
+    });
+
+    assert_invalid("noncanonical Buffer attachment", |corpus| {
+        let operation =
+            patch_attachment_for_result_mut(committable_case_mut(corpus, 0), "bufferId");
+        let bytes = operation["attachmentBytesHex"]
+            .as_str()
+            .expect("attachment bytes should be hexadecimal");
+        operation["attachmentBytesHex"] = Value::String(format!("20{bytes}"));
+    });
+
+    assert_invalid("undecodable patch attachment", |corpus| {
+        patch_attachment_for_result_mut(committable_case_mut(corpus, 0), "headId")
+            ["attachmentBytesHex"] = Value::String("00".to_owned());
+    });
+
+    assert_invalid("unsupported patch fact type", |corpus| {
+        let case = committable_case_mut(corpus, 0);
+        let node_id = case["terminal"]["result"]["headId"].clone();
+        let unknown_type = Value::String("00".repeat(32));
+        let mut changed = 0;
+        for operation in case["terminal"]["patch"]
+            .as_array_mut()
+            .expect("patch should be an array")
+        {
+            if operation["nodeId"] == node_id {
+                operation["typeId"] = unknown_type.clone();
+                changed += 1;
+            }
+        }
+        assert_eq!(changed, 2, "one node and atom operation should change");
     });
 }
 

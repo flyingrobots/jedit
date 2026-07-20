@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
 use jedit_echo_host::identity::hash_bytes;
 use jedit_echo_host::records::EMPTY_ROOT_DIGEST_DOMAIN;
@@ -10,6 +10,7 @@ use super::contract::{
     ORACLE_SCHEMA_VERSION, ORACLE_WARP_LABEL, SEMANTIC_BASELINE_COMMIT,
 };
 use super::lexemes::{CommitSha, Hex32, HexBytes, Utf8Hex};
+use super::patch_fact_contract::{validate_patch, PatchOperation};
 use super::source_set::source_set;
 
 pub(super) const NONCANONICAL_CORPUS_BYTES: &str = "oracle corpus bytes are not canonical";
@@ -102,25 +103,6 @@ struct Footprint {
     attachment_writes: Vec<Hex32>,
     edge_reads: Vec<Hex32>,
     edge_writes: Vec<Hex32>,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(
-    tag = "kind",
-    rename_all = "kebab-case",
-    rename_all_fields = "camelCase",
-    deny_unknown_fields
-)]
-enum PatchOperation {
-    UpsertNode {
-        node_id: Hex32,
-        type_id: Hex32,
-    },
-    SetNodeAlpha {
-        node_id: Hex32,
-        type_id: Hex32,
-        attachment_bytes_hex: HexBytes,
-    },
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -354,46 +336,6 @@ fn validate_committable(
     )?;
     validate_patch(patch, &writes)?;
     validate_result(case, result, &writes, &updated)
-}
-
-fn validate_patch(patch: &[PatchOperation], writes: &BTreeSet<&str>) -> Result<(), String> {
-    let mut upserts = BTreeMap::new();
-    let mut attachments = BTreeMap::new();
-    for operation in patch {
-        let (target, type_id, destination) = match operation {
-            PatchOperation::UpsertNode { node_id, type_id } => {
-                (node_id.as_str(), type_id.as_str(), &mut upserts)
-            }
-            PatchOperation::SetNodeAlpha {
-                node_id,
-                type_id,
-                attachment_bytes_hex: _,
-            } => (node_id.as_str(), type_id.as_str(), &mut attachments),
-        };
-        if destination.insert(target, type_id).is_some() {
-            return Err(format!("duplicate patch operation for {target}"));
-        }
-    }
-    require_equal(
-        "patch upsert targets",
-        upserts.keys().copied().collect::<BTreeSet<_>>(),
-        writes.clone(),
-    )?;
-    require_equal(
-        "patch attachment targets",
-        attachments.keys().copied().collect::<BTreeSet<_>>(),
-        writes.clone(),
-    )?;
-    for (node_id, upsert_type) in upserts {
-        require_equal(
-            "patch node and atom type",
-            upsert_type,
-            *attachments
-                .get(node_id)
-                .expect("attachment target equality was already checked"),
-        )?;
-    }
-    Ok(())
 }
 
 fn validate_result(
