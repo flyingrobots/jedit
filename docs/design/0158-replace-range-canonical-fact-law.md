@@ -119,6 +119,8 @@ This cycle includes:
   terminal, footprint, patch, and result shapes;
 - exact committed initial graph, invocation, read/write support, ordered patch,
   result, and obstruction evidence for each case;
+- fail-closed basis Head content-address and target-Buffer relationship checks
+  in both production planning and the structurally separate consequence gate;
 - byte-for-byte regeneration tests and checked SHA-256 resource digests.
 
 ## Non-Goals
@@ -127,7 +129,7 @@ This cycle does not include:
 
 - an Echo operation-program or production invocation ABI or evaluator;
 - an Edict target lowerer, package, or generated client;
-- production invocation, routing, fact-byte, or identity changes;
+- production command routing, fact-byte encodings, or identity algorithms;
 - an application callback, native rope intrinsic, or caller-supplied patch;
 - unifying the TypeScript and native graph-rope models;
 - migrating existing JSON facts to CBOR or structural Echo edges;
@@ -169,6 +171,12 @@ bytes. Version 1 has no structural edge propositions. Relationships such as
 Head-to-root and Branch-to-child are exact 32-byte identifiers in canonical
 record fields.
 
+Before `ReplaceRange` interprets fields from the Buffer-selected basis Head, the
+retained Head bytes must reproduce that exact content-addressed node ID; the
+authenticated Head must then name the same target Buffer. The structurally
+separate retained-consequence gate checks those two propositions again before it
+accepts committable evidence.
+
 Canonical fact JSON is:
 
 - UTF-8 with no byte-order mark or insignificant whitespace;
@@ -191,12 +199,13 @@ depth, even if an implementation uses a map internally. The schema's golden
 vector covers every control scalar plus quotation mark, reverse solidus,
 solidus, non-ASCII text, U+2028, and U+2029.
 
-This is a writer and identity law. The legacy `serde_json` reader accepts some
-noncanonical spellings and does not currently recompute every content node
-identifier from attachment bytes. That permissiveness is not promoted into
-the version-1 contract. Future package validation and Echo evaluation must
-reject noncanonical or misaddressed facts; this cycle does not falsely claim
-the compatibility reader already performs those checks.
+This is a writer and identity law. The generic legacy `serde_json` reader
+accepts some noncanonical spellings, and not every retained-content consumer
+recomputes node identifiers from attachment bytes. Production `ReplaceRange`
+now routes its selected basis Head through the strict reader described above;
+other compatibility readers do not yet enforce the complete version-1
+contract. Future package validation and Echo evaluation must reject every
+noncanonical or misaddressed fact.
 
 Content-addressed identifiers are BLAKE3-256 over the exact declared domain
 bytes followed by canonical fact bytes. Buffer identifiers, Blob content
@@ -396,8 +405,10 @@ The work is done when:
 - [x] Schema and corpus resource digests are checked from exact bytes.
 - [x] The corpus covers representative persistent-rope successes and typed
       obstructions.
-- [x] No production behavior, fact bytes, authoritative identities, Echo
-      dependency, or user-visible behavior changes.
+- [x] Valid-input production consequences, fact bytes, authoritative identities,
+      Echo dependency, and user-visible behavior remain unchanged; malformed,
+      noncanonical, or misaddressed selected basis Heads now fail closed before
+      a `MutationPlan` is constructed.
 - [x] Focused Rust tests and `npm run check` pass.
 - [x] The retrospective records evidence limits and the exact next Echo RED.
 
@@ -419,10 +430,10 @@ node scripts/jedit-production-cutover-guard.mjs
 npm run witness:echo
 ```
 
-`cargo fmt --check` currently reports the same two pre-existing formatting
-differences on `origin/main`, in unchanged `src/contract.rs` and
-`src/rope/window.rs`. The directly changed Rust files are formatted, and this
-cycle does not mix that unrelated cleanup into its semantic diff.
+`cargo fmt --check` reports two pre-existing differences on `origin/main`.
+This branch formats the semantically changed `src/rope/window.rs`; only the
+unchanged `src/contract.rs` baseline difference remains. The cycle does not mix
+that unrelated base cleanup into its semantic diff.
 
 ## Playback / Witness
 
@@ -508,9 +519,9 @@ What changed from the design:
   for the schema,
   `1ac26477e1d6c08df49446627ad002e40bd214235ce93b563d62bb50e40dc14c`
   for codec vectors, and
-  `6e7d9ff396897940e16d8fa5936d7fd51b8c8915e2e9ea2fb2d3b5916a4224c9`
+  `199ee252f47c1ac6045ac868ae41311c4a95c6654bd0c78d66ac766a8abd4a66`
   for the oracle. The oracle source-set digest is
-  `6541ff04a5a97fd407f31479f9393293a937db12ab3705686525e49154f48083`.
+  `821e9cd48c759c116ef5b1d554ab5636079a98582d7584066acc0384ca93d28a`.
   The ledger derives all four values from the committed artifacts.
   [`tests/replace-range-law-cycle.spec.mjs#L76@95f63d2c31847c3a4cc4bbea9152900470843d3a`](https://github.com/flyingrobots/jedit/blob/95f63d2c31847c3a4cc4bbea9152900470843d3a/tests/replace-range-law-cycle.spec.mjs#L76)
 - **Serialized resource updates.** The deliberate resource-update command runs

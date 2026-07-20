@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Made `ReplaceRange` refuse to produce a `MutationPlan` from a selected basis
+  Head unless its retained bytes reproduce its content address, are canonical,
+  and name the target Buffer. The structurally separate retained-consequence
+  gate now proves the same laws.
 - Made the DL-0158 final-audit ledger exhaustive. The release test now parses a
   closed claim grammar, binds every named claim to its retrospective section
   and complete ordered source-citation set, and rejects hidden, malformed,

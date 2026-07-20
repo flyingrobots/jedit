@@ -15,6 +15,7 @@
       "native/jedit-echo-host/src/identity.rs",
       "native/jedit-echo-host/src/records.rs",
       "native/jedit-echo-host/src/rope.rs",
+      "native/jedit-echo-host/src/rope/fact_read.rs",
       "native/jedit-echo-host/src/rope/fault.rs",
       "native/jedit-echo-host/src/rope/replace.rs",
       "native/jedit-echo-host/src/rope/tree.rs",
@@ -30,7 +31,7 @@
       "native/jedit-echo-host/tests/support/replace_range_oracle_tests.rs",
       "native/jedit-echo-host/tests/support/replace_range_source_set.rs"
     ],
-    "digestHex": "6541ff04a5a97fd407f31479f9393293a937db12ab3705686525e49154f48083"
+    "digestHex": "821e9cd48c759c116ef5b1d554ab5636079a98582d7584066acc0384ca93d28a"
   },
   "evidenceGrade": "deterministic-self-validation",
   "independenceLimit": "independent finite-corpus evidence begins only when a separately implemented Echo evaluator agrees",

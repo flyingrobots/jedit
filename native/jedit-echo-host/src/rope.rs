@@ -1,3 +1,4 @@
+mod fact_read;
 mod fault;
 mod replace;
 mod tree;
@@ -5,7 +6,6 @@ mod window;
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use serde::de::DeserializeOwned;
 use warp_core::{
     AttachmentKey, AttachmentValue, Footprint, GraphStore, GraphView, NodeId, NodeKey, NodeRecord,
     TickDelta, TypeId, WarpId, WarpOp,
@@ -191,7 +191,7 @@ impl<'a, T: GraphFacts> PlanContext<'a, T> {
     }
 }
 
-fn decode_pending<F: TypedFact + DeserializeOwned>(pending: &PendingFact) -> HostResult<F> {
+fn decode_pending<F: TypedFact>(pending: &PendingFact) -> HostResult<F> {
     serde_json::from_slice(&pending.bytes)
         .map_err(|error| HostError::MalformedFact(format!("decode {}: {error}", F::TYPE_LABEL)))
 }

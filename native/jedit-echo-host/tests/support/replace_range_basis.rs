@@ -1,3 +1,4 @@
+use jedit_echo_host::identity::content_node_id;
 use jedit_echo_host::records::{
     decode_fact, fact_bytes, fact_id, fact_type_id, BlobFact, BranchFact, BufferFact,
     ContentAddressedFact, HeadFact, LeafFact, NodeIdBytes, TypedFact,
@@ -340,12 +341,39 @@ fn insert_content_fact<T: ContentAddressedFact>(store: &mut GraphStore, fact: &T
     node_id
 }
 
-fn set_fact_attachment<T: TypedFact>(store: &mut GraphStore, node_id: NodeId, fact: &T) {
+pub(super) fn insert_raw_content_fact<T: ContentAddressedFact>(
+    store: &mut GraphStore,
+    bytes: Vec<u8>,
+) -> NodeId {
+    let node_id = content_node_id(T::ID_DOMAIN, &bytes);
+    store.insert_node(
+        node_id,
+        NodeRecord {
+            ty: fact_type_id::<T>(),
+        },
+    );
+    set_raw_fact_attachment::<T>(store, node_id, bytes);
+    node_id
+}
+
+pub(super) fn set_fact_attachment<T: TypedFact>(store: &mut GraphStore, node_id: NodeId, fact: &T) {
+    set_raw_fact_attachment::<T>(
+        store,
+        node_id,
+        fact_bytes(fact).expect("fixture fact should encode"),
+    );
+}
+
+pub(super) fn set_raw_fact_attachment<T: TypedFact>(
+    store: &mut GraphStore,
+    node_id: NodeId,
+    bytes: Vec<u8>,
+) {
     store.set_node_attachment(
         node_id,
         Some(AttachmentValue::Atom(warp_core::AtomPayload::new(
             fact_type_id::<T>(),
-            fact_bytes(fact).expect("fixture fact should encode").into(),
+            bytes.into(),
         ))),
     );
 }

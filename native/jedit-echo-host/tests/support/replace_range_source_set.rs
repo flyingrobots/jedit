@@ -31,6 +31,10 @@ const SOURCE_SET_FILES: &[(&str, &[u8])] = &[
         include_bytes!("../../src/rope.rs"),
     ),
     (
+        "native/jedit-echo-host/src/rope/fact_read.rs",
+        include_bytes!("../../src/rope/fact_read.rs"),
+    ),
+    (
         "native/jedit-echo-host/src/rope/fault.rs",
         include_bytes!("../../src/rope/fault.rs"),
     ),

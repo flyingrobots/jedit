@@ -6,7 +6,7 @@ use crate::error::{HostError, HostResult};
 use crate::identity::node_id_hex;
 use crate::records::{BufferFact, DiffFact, HeadFact, NodeIdBytes, RewriteFact};
 
-use super::fault::{RopeFault, RopeFaultKind};
+use super::fault::{RopeFault, RopeFaultKind, RopeResult};
 use super::tree::{build_text, join, root_digest, root_metrics, split};
 use super::window::read_range_bytes;
 use super::{finish_plan, GraphFacts, MutationPlan, PlanContext};
@@ -141,8 +141,9 @@ pub fn plan_replace_with_reason<T: GraphFacts>(
         ));
     }
     let basis_head: HeadFact = context
-        .read_fact(basis_head_id)
-        .map_err(RopeFault::structural_dependency)
+        .read_content_fact(basis_head_id)
+        .map_err(ReplaceRangeFailure::from_rope_fault)?;
+    validate_basis_head_buffer(buffer_id, basis_head_id, &basis_head)
         .map_err(ReplaceRangeFailure::from_rope_fault)?;
     if start_byte > end_byte {
         return Err(range_failure(
@@ -265,6 +266,21 @@ pub fn plan_replace_with_reason<T: GraphFacts>(
         &head,
         next_version,
     ))
+}
+
+fn validate_basis_head_buffer(
+    buffer_id: NodeId,
+    basis_head_id: NodeId,
+    basis_head: &HeadFact,
+) -> RopeResult<()> {
+    if NodeId::from(basis_head.buffer_id) != buffer_id {
+        return Err(RopeFault::fact_malformed(format!(
+            "basis head {} does not belong to buffer {}",
+            node_id_hex(basis_head_id),
+            node_id_hex(buffer_id)
+        )));
+    }
+    Ok(())
 }
 
 fn range_failure(

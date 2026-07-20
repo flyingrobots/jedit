@@ -23,7 +23,9 @@ mod source_set;
 mod tests;
 
 pub use basis::BasisSetup;
-use basis::{apply_ops, make_basis};
+use basis::{
+    apply_ops, insert_raw_content_fact, make_basis, set_fact_attachment, set_raw_fact_attachment,
+};
 use consequence::{validate_consequence, ReplaceExpectation};
 pub use contract::SemanticObstructionCode;
 use contract::{

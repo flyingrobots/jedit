@@ -1,6 +1,9 @@
-use super::super::{apply_ops, make_basis, BasisSetup};
+use super::super::{
+    apply_ops, insert_raw_content_fact, make_basis, set_fact_attachment, set_raw_fact_attachment,
+    BasisSetup,
+};
 use super::*;
-use jedit_echo_host::records::{fact_bytes, fact_type_id, BufferFact, RewriteFact};
+use jedit_echo_host::records::{fact_bytes, fact_type_id, BufferFact, HeadFact, RewriteFact};
 use jedit_echo_host::rope::plan_replace;
 use warp_core::{make_type_id, AttachmentValue, NodeRecord, TickDelta, WarpOp};
 
@@ -100,6 +103,203 @@ fn retained_consequence_rejects_a_misaddressed_buffer_key() {
         error.contains("Buffer keyed identity"),
         "error was {error:?}"
     );
+}
+
+#[test]
+fn retained_consequence_rejects_a_basis_head_owned_by_another_buffer() {
+    let warp_id = warp_core::make_warp_id("oracle-basis-head-buffer");
+    let (mut basis, buffer_id, _, foreign_head_id) =
+        make_basis(warp_id, "basis-head-buffer", "abc", BasisSetup::ForeignHead);
+    let foreign_head_id = foreign_head_id.expect("foreign Head should exist");
+    let mut buffer: BufferFact = read_fact(&basis, buffer_id).expect("Buffer should decode");
+    buffer.canonical_head_id = foreign_head_id.into();
+    set_fact_attachment(&mut basis, buffer_id, &buffer);
+
+    let error = validate_basis(&basis, buffer_id, foreign_head_id)
+        .expect_err("a basis Head owned by another Buffer must fail validation");
+
+    assert!(error.contains("basis Head buffer"), "error was {error:?}");
+}
+
+#[test]
+fn retained_consequence_rejects_a_misaddressed_basis_head() {
+    let warp_id = warp_core::make_warp_id("oracle-basis-head-identity");
+    let (mut basis, buffer_id, basis_head_id, _) =
+        make_basis(warp_id, "basis-head-identity", "abc", BasisSetup::Plain);
+    let mut head: HeadFact = read_fact(&basis, basis_head_id).expect("Head should decode");
+    head.root_digest[0] ^= 0xFF;
+    set_fact_attachment(&mut basis, basis_head_id, &head);
+
+    let error = validate_basis(&basis, buffer_id, basis_head_id)
+        .expect_err("a misaddressed basis Head must fail validation");
+
+    assert!(error.contains("basis Head identity"), "error was {error:?}");
+}
+
+#[test]
+fn retained_consequence_authenticates_a_basis_head_before_its_fields() {
+    let warp_id = warp_core::make_warp_id("oracle-basis-head-validation-order");
+    let (mut basis, buffer_id, basis_head_id, _) = make_basis(
+        warp_id,
+        "basis-head-validation-order",
+        "abc",
+        BasisSetup::Plain,
+    );
+    let mut head: HeadFact = read_fact(&basis, basis_head_id).expect("Head should decode");
+    head.root_digest[0] ^= 0xFF;
+    head.buffer_id = NodeId([0xA5; 32]).into();
+    set_fact_attachment(&mut basis, basis_head_id, &head);
+
+    let error = validate_basis(&basis, buffer_id, basis_head_id)
+        .expect_err("a misaddressed basis Head must fail before field interpretation");
+
+    assert!(error.contains("basis Head identity"), "error was {error:?}");
+}
+
+#[test]
+fn retained_consequence_rejects_whitespace_prefixed_basis_head_bytes() {
+    let warp_id = warp_core::make_warp_id("oracle-basis-head-whitespace");
+    let (mut basis, buffer_id, basis_head_id, _) =
+        make_basis(warp_id, "basis-head-whitespace", "abc", BasisSetup::Plain);
+    let basis_head: HeadFact = read_fact(&basis, basis_head_id).expect("Head should decode");
+    let mut noncanonical_bytes = vec![b' '];
+    noncanonical_bytes.extend(fact_bytes(&basis_head).expect("Head should encode"));
+    set_raw_fact_attachment::<HeadFact>(&mut basis, basis_head_id, noncanonical_bytes);
+
+    let error = validate_basis(&basis, buffer_id, basis_head_id)
+        .expect_err("whitespace-prefixed basis Head bytes must fail validation");
+
+    assert!(error.contains("basis Head identity"), "error was {error:?}");
+}
+
+#[test]
+fn retained_consequence_rejects_an_unknown_basis_head_member() {
+    let warp_id = warp_core::make_warp_id("oracle-basis-head-unknown-member");
+    let (mut basis, buffer_id, basis_head_id, _) = make_basis(
+        warp_id,
+        "basis-head-unknown-member",
+        "abc",
+        BasisSetup::Plain,
+    );
+    let basis_head: HeadFact = read_fact(&basis, basis_head_id).expect("Head should decode");
+    let mut noncanonical_bytes = fact_bytes(&basis_head).expect("Head should encode");
+    assert_eq!(noncanonical_bytes.pop(), Some(b'}'));
+    noncanonical_bytes.extend(br#","unexpected":true}"#);
+    set_raw_fact_attachment::<HeadFact>(&mut basis, basis_head_id, noncanonical_bytes);
+
+    let error = validate_basis(&basis, buffer_id, basis_head_id)
+        .expect_err("an unknown basis Head member must fail validation");
+
+    assert!(error.contains("basis Head identity"), "error was {error:?}");
+}
+
+#[test]
+fn retained_consequence_authenticates_invalid_basis_head_bytes_before_decoding() {
+    let warp_id = warp_core::make_warp_id("oracle-basis-head-invalid-json");
+    let (mut basis, buffer_id, basis_head_id, _) =
+        make_basis(warp_id, "basis-head-invalid-json", "abc", BasisSetup::Plain);
+    set_raw_fact_attachment::<HeadFact>(&mut basis, basis_head_id, b"{".to_vec());
+
+    let error = validate_basis(&basis, buffer_id, basis_head_id)
+        .expect_err("invalid basis Head bytes must not be decoded before authentication");
+
+    assert!(error.contains("basis Head identity"), "error was {error:?}");
+}
+
+#[test]
+fn retained_consequence_rejects_content_addressed_noncanonical_basis_head_bytes() {
+    let warp_id = warp_core::make_warp_id("oracle-basis-head-addressed-noncanonical");
+    let (mut basis, buffer_id, basis_head_id, _) = make_basis(
+        warp_id,
+        "basis-head-addressed-noncanonical",
+        "abc",
+        BasisSetup::Plain,
+    );
+    let basis_head: HeadFact = read_fact(&basis, basis_head_id).expect("Head should decode");
+    let mut noncanonical_bytes = fact_bytes(&basis_head).expect("Head should encode");
+    assert_eq!(noncanonical_bytes.pop(), Some(b'}'));
+    noncanonical_bytes.extend(br#","unexpected":true}"#);
+    let noncanonical_head_id = insert_raw_content_fact::<HeadFact>(&mut basis, noncanonical_bytes);
+    let mut buffer: BufferFact = read_fact(&basis, buffer_id).expect("Buffer should decode");
+    buffer.canonical_head_id = noncanonical_head_id.into();
+    set_fact_attachment(&mut basis, buffer_id, &buffer);
+
+    let error = validate_basis(&basis, buffer_id, noncanonical_head_id)
+        .expect_err("content-addressed noncanonical basis Head bytes must fail validation");
+
+    assert!(
+        error.contains("basis Head canonical bytes"),
+        "error was {error:?}"
+    );
+}
+
+#[test]
+fn retained_consequence_rejects_a_basis_head_with_the_wrong_node_type() {
+    let warp_id = warp_core::make_warp_id("oracle-basis-head-node-type");
+    let (mut basis, buffer_id, basis_head_id, _) =
+        make_basis(warp_id, "basis-head-node-type", "abc", BasisSetup::Plain);
+    basis.insert_node(
+        basis_head_id,
+        NodeRecord {
+            ty: make_type_id("jedit.text.DeliberatelyWrong.v1"),
+        },
+    );
+
+    assert_basis_validation_fails(&basis, buffer_id, basis_head_id, "basis Head node type");
+}
+
+#[test]
+fn retained_consequence_rejects_a_basis_head_with_the_wrong_atom_type() {
+    let warp_id = warp_core::make_warp_id("oracle-basis-head-atom-type");
+    let (mut basis, buffer_id, basis_head_id, _) =
+        make_basis(warp_id, "basis-head-atom-type", "abc", BasisSetup::Plain);
+    let basis_head: HeadFact = read_fact(&basis, basis_head_id).expect("Head should decode");
+    basis.set_node_attachment(
+        basis_head_id,
+        Some(AttachmentValue::Atom(warp_core::AtomPayload::new(
+            make_type_id("jedit.text.DeliberatelyWrong.v1"),
+            fact_bytes(&basis_head).expect("Head should encode").into(),
+        ))),
+    );
+
+    assert_basis_validation_fails(
+        &basis,
+        buffer_id,
+        basis_head_id,
+        "basis Head attachment type",
+    );
+}
+
+#[test]
+fn retained_consequence_rejects_a_descended_basis_head_attachment() {
+    let warp_id = warp_core::make_warp_id("oracle-basis-head-descended");
+    let (mut basis, buffer_id, basis_head_id, _) =
+        make_basis(warp_id, "basis-head-descended", "abc", BasisSetup::Plain);
+    basis.set_node_attachment(
+        basis_head_id,
+        Some(AttachmentValue::Descend(warp_core::make_warp_id(
+            "oracle-basis-head-child",
+        ))),
+    );
+
+    assert_basis_validation_fails(
+        &basis,
+        buffer_id,
+        basis_head_id,
+        "basis Head uses a descended attachment",
+    );
+}
+
+fn assert_basis_validation_fails(
+    basis: &GraphStore,
+    buffer_id: NodeId,
+    basis_head_id: NodeId,
+    message: &str,
+) {
+    let error = validate_basis(basis, buffer_id, basis_head_id)
+        .expect_err("a structurally malformed basis Head must fail validation");
+
+    assert!(error.contains(message), "error was {error:?}");
 }
 
 #[test]

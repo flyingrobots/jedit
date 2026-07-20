@@ -23,6 +23,21 @@ const ORACLE_SUPPORT_PATH = path.join(
   "tests",
   "support",
 );
+const ROPE_FACADE_PATH = path.join(
+  process.cwd(),
+  "native",
+  "jedit-echo-host",
+  "src",
+  "rope.rs",
+);
+const RETAINED_FACT_READER_PATH = path.join(
+  process.cwd(),
+  "native",
+  "jedit-echo-host",
+  "src",
+  "rope",
+  "fact_read.rs",
+);
 const LAWPACK_PATH = path.join(
   process.cwd(),
   "contracts",
@@ -299,6 +314,16 @@ test("ReplaceRange oracle support modules stay within the Rust file budget", () 
     .filter(([, lines]) => lines > 500);
 
   assert.deepEqual(oversized, []);
+});
+
+test("strict retained fact reading stays outside the rope facade", () => {
+  const facade = fs.readFileSync(ROPE_FACADE_PATH, "utf8");
+  assert.match(facade, /^mod fact_read;$/m);
+  assert.doesNotMatch(facade, /fn read_content_fact</);
+
+  const reader = fs.readFileSync(RETAINED_FACT_READER_PATH, "utf8");
+  assert.match(reader, /pub\(super\) fn read_content_fact</);
+  assert.match(reader, /content_node_id\(F::ID_DOMAIN, &bytes\)/);
 });
 
 test("ReplaceRange updater isolates writers before committed-resource readers", () => {

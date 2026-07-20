@@ -101,6 +101,7 @@ fn source_set_binds_native_dependency_selection() {
     for required in [
         "native/jedit-echo-host/Cargo.toml",
         "native/jedit-echo-host/Cargo.lock",
+        "native/jedit-echo-host/src/rope/fact_read.rs",
     ] {
         assert!(
             paths.iter().any(|path| path == required),

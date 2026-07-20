@@ -1,13 +1,13 @@
 use std::collections::BTreeSet;
 
 use jedit_echo_host::error::HostError;
-use jedit_echo_host::identity::hash_bytes;
+use jedit_echo_host::identity::{content_node_id, hash_bytes};
 use jedit_echo_host::records::{
-    decode_fact, fact_id, fact_type_id, BufferFact, DiffFact, HeadFact, RewriteFact,
-    EMPTY_ROOT_DIGEST_DOMAIN,
+    decode_fact, fact_bytes, fact_id, fact_type_id, BufferFact, ContentAddressedFact, DiffFact,
+    HeadFact, RewriteFact, EMPTY_ROOT_DIGEST_DOMAIN,
 };
 use jedit_echo_host::rope::{buffer_node_id, read_window, MutationPlan};
-use warp_core::{GraphStore, NodeId, TypeId, WarpId, WarpOp};
+use warp_core::{AttachmentValue, GraphStore, NodeId, TypeId, WarpId, WarpOp};
 
 #[derive(Debug)]
 pub(super) struct ValidatedConsequence {
@@ -39,18 +39,7 @@ pub(super) fn validate_consequence(
         end_byte,
         replacement,
     } = expectation;
-    let basis_buffer: BufferFact = read_fact(basis, plan.buffer_id)?;
-    require_equal(
-        "basis Buffer keyed identity",
-        buffer_node_id(&basis_buffer.buffer_key),
-        plan.buffer_id,
-    )?;
-    require_equal(
-        "basis Buffer canonical head",
-        NodeId::from(basis_buffer.canonical_head_id),
-        basis_head_id,
-    )?;
-    let basis_head: HeadFact = read_fact(basis, basis_head_id)?;
+    let (basis_buffer, basis_head) = validate_basis(basis, plan.buffer_id, basis_head_id)?;
     let buffer: BufferFact = read_fact(next, plan.buffer_id)?;
     require_equal(
         "result Buffer keyed identity",
@@ -215,6 +204,31 @@ pub(super) fn validate_consequence(
     })
 }
 
+fn validate_basis(
+    basis: &GraphStore,
+    buffer_id: NodeId,
+    basis_head_id: NodeId,
+) -> Result<(BufferFact, HeadFact), String> {
+    let basis_buffer: BufferFact = read_fact(basis, buffer_id)?;
+    require_equal(
+        "basis Buffer keyed identity",
+        buffer_node_id(&basis_buffer.buffer_key),
+        buffer_id,
+    )?;
+    require_equal(
+        "basis Buffer canonical head",
+        NodeId::from(basis_buffer.canonical_head_id),
+        basis_head_id,
+    )?;
+    let basis_head: HeadFact = read_content_fact(basis, basis_head_id, "basis Head")?;
+    require_equal(
+        "basis Head buffer",
+        NodeId::from(basis_head.buffer_id),
+        buffer_id,
+    )?;
+    Ok((basis_buffer, basis_head))
+}
+
 fn patch_node_with_type(
     patch: &[WarpOp],
     warp_id: WarpId,
@@ -247,6 +261,44 @@ fn patch_node_with_type(
     Ok(*matches
         .first()
         .expect("one patch fact must exist after the length check"))
+}
+
+fn read_content_fact<F: ContentAddressedFact>(
+    store: &GraphStore,
+    node_id: NodeId,
+    label: &str,
+) -> Result<F, String> {
+    let record = store
+        .node(&node_id)
+        .ok_or_else(|| format!("missing retained node {}", hex::encode(node_id.as_bytes())))?;
+    require_equal(
+        &format!("{label} node type"),
+        record.ty,
+        fact_type_id::<F>(),
+    )?;
+    let attachment = store
+        .node_attachment(&node_id)
+        .ok_or_else(|| format!("missing retained fact {}", hex::encode(node_id.as_bytes())))?;
+    let AttachmentValue::Atom(payload) = attachment else {
+        return Err(format!("{label} uses a descended attachment"));
+    };
+    require_equal(
+        &format!("{label} attachment type"),
+        payload.type_id,
+        fact_type_id::<F>(),
+    )?;
+    require_equal(
+        &format!("{label} identity"),
+        content_node_id(F::ID_DOMAIN, payload.bytes.as_ref()),
+        node_id,
+    )?;
+    let fact = decode_fact(attachment).map_err(host_error)?;
+    require_equal(
+        &format!("{label} canonical bytes"),
+        fact_bytes(&fact).map_err(host_error)?.as_slice(),
+        payload.bytes.as_ref(),
+    )?;
+    Ok(fact)
 }
 
 fn read_fact<F: jedit_echo_host::records::TypedFact>(
