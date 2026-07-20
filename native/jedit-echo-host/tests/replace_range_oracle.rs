@@ -309,6 +309,17 @@ fn cases() -> Vec<CaseSpec> {
             "content hash does not match",
         ),
         obstruction(
+            "leaf-exceeds-blob-at-exact-end",
+            "abc",
+            BasisSetup::LeafExceedsBlobAtExactEnd,
+            4,
+            4,
+            "x",
+            SemanticObstructionCode::FactMalformed,
+            "malformed-fact",
+            "exceeds blob bounds",
+        ),
+        obstruction(
             "coordinate-above-graphql-int",
             "",
             BasisSetup::AboveGraphqlIntRange,

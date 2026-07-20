@@ -78,17 +78,27 @@ fn make_blob_leaf<T: GraphFacts>(
         .map_err(RopeFault::structural_dependency)
 }
 
-fn make_leaf_slice<T: GraphFacts>(
+struct LocatedLeafSlice {
+    blob: BlobFact,
+    absolute_start: u64,
+    start: usize,
+    end: usize,
+}
+
+impl LocatedLeafSlice {
+    fn bytes(&self) -> &[u8] {
+        &self.blob.bytes[self.start..self.end]
+    }
+}
+
+fn locate_leaf_slice<T: GraphFacts>(
     context: &mut PlanContext<'_, T>,
     leaf: &LeafFact,
     relative_start: u64,
     byte_length: u64,
-) -> RopeResult<Option<NodeId>> {
-    if byte_length == 0 {
-        return Ok(None);
-    }
+) -> RopeResult<LocatedLeafSlice> {
     let blob_id = NodeId::from(leaf.blob_id);
-    let bytes = context.verified_blob_fault(blob_id)?.bytes;
+    let blob = context.verified_blob_fault(blob_id)?;
     let absolute_start =
         RopeFault::checked_add_u64(leaf.byte_start, relative_start, "leaf range start overflow")?;
     let absolute_end =
@@ -99,15 +109,37 @@ fn make_leaf_slice<T: GraphFacts>(
     let end = usize::try_from(absolute_end).map_err(|_| {
         RopeFault::declared_rope_inconsistent("leaf end exceeds addressable memory".to_owned())
     })?;
-    let slice = bytes.get(start..end).ok_or_else(|| {
-        RopeFault::fact_malformed(format!("leaf {} exceeds blob bounds", node_id_hex(blob_id)))
-    })?;
+    if blob.bytes.get(start..end).is_none() {
+        return Err(RopeFault::fact_malformed(format!(
+            "leaf {} exceeds blob bounds",
+            node_id_hex(blob_id)
+        )));
+    }
+    Ok(LocatedLeafSlice {
+        blob,
+        absolute_start,
+        start,
+        end,
+    })
+}
+
+fn make_leaf_slice<T: GraphFacts>(
+    context: &mut PlanContext<'_, T>,
+    leaf: &LeafFact,
+    relative_start: u64,
+    byte_length: u64,
+) -> RopeResult<Option<NodeId>> {
+    if byte_length == 0 {
+        return Ok(None);
+    }
+    let located = locate_leaf_slice(context, leaf, relative_start, byte_length)?;
+    let slice = located.bytes();
     let text = std::str::from_utf8(slice).map_err(|_| {
         RopeFault::invalid_utf8_slice("replace offset splits a UTF-8 code point".to_owned())
     })?;
     let fact = LeafFact {
         blob_id: leaf.blob_id,
-        byte_start: absolute_start,
+        byte_start: located.absolute_start,
         byte_length,
         utf16_length: u64::try_from(text.encode_utf16().count())
             .map_err(|_| RopeFault::arithmetic_overflow("leaf UTF-16 length overflow"))?,
@@ -118,6 +150,24 @@ fn make_leaf_slice<T: GraphFacts>(
         .write_content_fact(&fact)
         .map(Some)
         .map_err(RopeFault::structural_dependency)
+}
+
+fn validate_right_endpoint<T: GraphFacts>(
+    context: &mut PlanContext<'_, T>,
+    mut node_id: NodeId,
+) -> RopeResult<()> {
+    loop {
+        match context
+            .rope_node(node_id)
+            .map_err(RopeFault::structural_dependency)?
+        {
+            RopeNode::Leaf(leaf) => {
+                locate_leaf_slice(context, &leaf, 0, leaf.byte_length)?;
+                return Ok(());
+            }
+            RopeNode::Branch(branch) => node_id = NodeId::from(branch.right),
+        }
+    }
 }
 
 pub(super) fn split<T: GraphFacts>(
@@ -145,6 +195,7 @@ pub(super) fn split<T: GraphFacts>(
         return Ok((None, Some(root_id)));
     }
     if offset == metrics.byte_length {
+        validate_right_endpoint(context, root_id)?;
         return Ok((Some(root_id), None));
     }
     match context

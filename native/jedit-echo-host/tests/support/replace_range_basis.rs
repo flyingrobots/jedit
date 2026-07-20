@@ -15,6 +15,7 @@ pub enum BasisSetup {
     MissingBuffer,
     MalformedBuffer,
     BadBlobContentHash,
+    LeafExceedsBlobAtExactEnd,
     LeafRangeStartOverflow,
     LeafRangeEndOverflow,
     RopeNodeEndOverflow,
@@ -76,6 +77,17 @@ pub fn make_basis(
             );
         }
         BasisSetup::BadBlobContentHash => corrupt_blob_hash(&mut store, head_id),
+        BasisSetup::LeafExceedsBlobAtExactEnd => {
+            let root_id = root_node_id(&store, head_id);
+            let next_root_id = replace_leaf(&mut store, root_id, |leaf| {
+                leaf.byte_length = 4;
+            });
+            head_id = replace_head(&mut store, create.buffer_id, head_id, |head| {
+                head.root_node_id = Some(next_root_id.into());
+                head.root_digest = *next_root_id.as_bytes();
+                head.byte_length = 4;
+            });
+        }
         BasisSetup::LeafRangeStartOverflow => {
             head_id = replace_root_leaf(&mut store, create.buffer_id, head_id, |leaf| {
                 leaf.byte_start = u64::MAX;
