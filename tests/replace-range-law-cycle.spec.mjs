@@ -229,6 +229,11 @@ test("DL-0158 distinguishes committable evidence from obstruction evidence", () 
   );
 });
 
+test("DL-0158 frontmatter records the current audit date", () => {
+  const frontmatter = readDesign().split("---")[1];
+  assert.match(frontmatter, /^updated: "2026-07-20"$/m);
+});
+
 test("DL-0158 distinguishes separate decoding from independent verification", () => {
   const design = readDesign().replaceAll(/\s+/g, " ");
   const expected = [
