@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Replaced free-form `ReplaceRange` oracle obstruction strings with an
+  exhaustive semantic enum and published strict corpus, terminal, footprint,
+  patch, and result shapes. Conformance now rejects unknown fields and semantic
+  obstruction codes.
 - Bound the native Cargo manifest and lockfile into the published
   `ReplaceRange` oracle source-set digest, so generator provenance now includes
   exact feature and dependency selection.

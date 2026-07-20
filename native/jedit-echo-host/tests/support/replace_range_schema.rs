@@ -6,6 +6,11 @@ use jedit_echo_host::records::{
 use jedit_echo_host::rope::MAX_LEAF_BYTES;
 use serde_json::{json, Value};
 
+#[path = "replace_range_contract.rs"]
+mod contract;
+
+use contract::SemanticObstructionCode;
+
 pub const SCHEMA_COORDINATE: &str = "jedit.text.schema@1";
 pub const STRING_ESCAPE_VECTOR: &str = concat!(
     "\u{0000}\u{0001}\u{0002}\u{0003}\u{0004}\u{0005}\u{0006}\u{0007}",
@@ -132,6 +137,105 @@ pub fn expected_schema() -> Value {
                 {"name": "replacementUtf8Hex", "type": "lowercase-hex-utf8-bytes"}
             ],
             "canonicalBytesField": "invocationBytesHex"
+        },
+        "oracleCorpus": {
+            "coordinate": "jedit.text.ReplaceRange.oracle@1",
+            "encoding": "pretty-utf8-json-final-newline",
+            "unknownMembers": "forbidden",
+            "objectMemberOrder": [
+                "schemaVersion",
+                "coordinate",
+                "applicationSchemaCoordinate",
+                "invocationSchemaCoordinate",
+                "semanticBaselineCommit",
+                "sourceSet",
+                "evidenceGrade",
+                "independenceLimit",
+                "warpId",
+                "cases"
+            ],
+            "sourceSetMemberOrder": [
+                "algorithm",
+                "domainHex",
+                "framing",
+                "paths",
+                "digestHex"
+            ],
+            "caseMemberOrder": [
+                "id",
+                "purpose",
+                "basisFacts",
+                "invocation",
+                "invocationBytesHex",
+                "terminal"
+            ],
+            "basisFactMemberOrder": [
+                "nodeId",
+                "typeId",
+                "attachmentBytesHex"
+            ],
+            "terminal": {
+                "discriminant": "posture",
+                "committableMemberOrder": [
+                    "posture",
+                    "footprint",
+                    "patch",
+                    "createdNodeIds",
+                    "updatedNodeIds",
+                    "untouchedBasisNodeIds",
+                    "result"
+                ],
+                "obstructedMemberOrder": [
+                    "posture",
+                    "semanticCode",
+                    "legacyErrorClass",
+                    "legacyMessage",
+                    "parentGraphUnchanged",
+                    "patchPosture"
+                ],
+                "semanticCodes": SemanticObstructionCode::ALL
+                    .iter()
+                    .map(|code| code.as_str())
+                    .collect::<Vec<_>>(),
+                "obstructedPatchPosture": "no-mutation-plan"
+            },
+            "footprintMemberOrder": [
+                "nodeReads",
+                "nodeWrites",
+                "attachmentReads",
+                "attachmentWrites",
+                "edgeReads",
+                "edgeWrites"
+            ],
+            "patchVariants": [
+                {
+                    "kind": "upsert-node",
+                    "memberOrder": ["kind", "nodeId", "typeId"]
+                },
+                {
+                    "kind": "set-node-alpha",
+                    "memberOrder": [
+                        "kind",
+                        "nodeId",
+                        "typeId",
+                        "attachmentBytesHex"
+                    ]
+                }
+            ],
+            "resultMemberOrder": [
+                "bufferId",
+                "headId",
+                "rootNodeId",
+                "rootDigest",
+                "rewriteId",
+                "diffId",
+                "byteLength",
+                "utf16Length",
+                "lineCount",
+                "sequence",
+                "version",
+                "materializedTextUtf8Hex"
+            ]
         },
         "facts": [
             fact_declaration::<BufferFact>(

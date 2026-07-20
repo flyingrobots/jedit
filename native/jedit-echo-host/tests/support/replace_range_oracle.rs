@@ -13,11 +13,14 @@ use warp_core::{
 
 #[path = "replace_range_basis.rs"]
 mod basis;
+#[path = "replace_range_contract.rs"]
+mod contract;
 #[path = "replace_range_source_set.rs"]
 mod source_set;
 
 pub use basis::BasisSetup;
 use basis::{apply_ops, make_basis};
+pub use contract::SemanticObstructionCode;
 use source_set::{source_set, SourceSet};
 
 const ORACLE_WARP_LABEL: &str = "jedit.replace-range.oracle.v1";
@@ -27,7 +30,7 @@ const SEMANTIC_BASELINE_COMMIT: &str = "c70e12d73b4b00bc92412bab67e1761f7dd22f82
 pub enum ExpectedPosture {
     Success,
     Obstruction {
-        semantic_code: &'static str,
+        semantic_code: SemanticObstructionCode,
         error_class: &'static str,
         message_fragment: &'static str,
     },
@@ -104,7 +107,7 @@ enum TerminalProjection {
         result: Box<ResultProjection>,
     },
     Obstructed {
-        semantic_code: &'static str,
+        semantic_code: SemanticObstructionCode,
         legacy_error_class: &'static str,
         legacy_message: String,
         parent_graph_unchanged: bool,

@@ -115,6 +115,8 @@ This cycle includes:
   cross-leaf replacement, and replacement larger than one leaf;
 - deterministic obstruction cases for stale basis, malformed/out-of-bounds
   range, invalid UTF-8 boundary, no-op, and arithmetic overflow;
+- an exhaustive semantic-obstruction enum plus strict machine-readable corpus,
+  terminal, footprint, patch, and result shapes;
 - exact committed initial graph, invocation, read/write support, ordered patch,
   result, and obstruction evidence for each case;
 - byte-for-byte regeneration tests and checked SHA-256 resource digests.
@@ -244,6 +246,13 @@ equivalence for every possible `ReplaceRange` input. Its legacy planner path
 must not invoke, link, or share an evaluator implementation with the future
 Echo operation program. Sharing the published fact schema and comparison codec
 is disclosed and expected.
+
+The declaration's `oracleCorpus` section freezes the exact envelope, case,
+basis-fact, terminal, footprint, patch, and result member sets. Its obstruction
+domain is an exhaustive generated Rust enum whose ten kebab-case values are
+also enumerated in the machine declaration. A structurally separate
+conformance validator rejects unknown members, terminal and patch variants,
+and semantic obstruction codes before an external consumer compares evidence.
 
 ## Lower Modes
 
@@ -427,8 +436,8 @@ Mitigations:
 
 - Evidence is graded deterministic self-validation until Echo #684 supplies a
   separately implemented evaluator and finite-corpus comparison.
-- The declaration makes canonical writer bytes normative and requires the new
-  evaluator to reject noncanonical or misaddressed facts.
+- The declaration makes canonical writer bytes and corpus shapes normative and
+  requires the new evaluator to reject noncanonical or misaddressed facts.
 - Jedit #285 remains open for the production cutover; this PR does not claim the
   compatibility ABI has changed.
 - The corpus binds the exact native Cargo manifest and lockfile together with
@@ -457,14 +466,17 @@ What changed from the design:
   field-order comparison, strict/atomic fixture updates, and a digest over the
   exact declared Jedit source set. These are proof-strengthening additions,
   not a widening into the deferred Echo ABI.
+- Review replaced free-form obstruction labels with an exhaustive generated
+  enum and added a strict machine-readable corpus shape whose conformance path
+  rejects unknown members, variants, and semantic codes.
 - The published SHA-256 digests are
-  `d605042ba33da11f595c4d65bd4cb125c50555c0156d4a4dfbe12ba0c6bda688`
+  `c7bf126245e9b2f8e7ff080983c16ad625f6b341d886281b79317be9a0b3b76d`
   for the schema,
   `903947e1b25048b0bb0f3b3a473dd6441dfeb253fb588d112c28fcbceda083cb`
   for codec vectors, and
-  `7ce3331780ae68b8fea2d0232f3607c7b79b24ef187090cb126072b133f2d3b3`
+  `bccde04b7cae5ad8c6044974edf2e116e8cb182328e6622b52c7a021ed7b7d78`
   for the oracle. The oracle source-set digest is
-  `5db26270fe5d141d2c7dce323a7f28ab84dc6c6eadb4572a483561035f31379a`.
+  `4571309c0b4df86aa98f727a62540d51a6fc115d11494cdb6b8e2dd86c0a7f49`.
 
 What the tests proved:
 
@@ -472,6 +484,8 @@ What the tests proved:
   every declared fact-member order equals the order observed from writer bytes;
   the full string escape vector matches the native writer; and corpus invocation
   bytes preserve `u64` above `i32::MAX`.
+- Strict corpus conformance rejects unknown object members, terminal or patch
+  variants, and obstruction codes outside the ten-value semantic enum.
 - Six success and fourteen obstruction cases regenerate deterministically. A
   success yields the exact support, ordered patch, retained facts, metrics, and
   materialized consequence; an obstruction yields no `MutationPlan` and leaves

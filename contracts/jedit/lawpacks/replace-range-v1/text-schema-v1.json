@@ -323,6 +323,117 @@
     "nativeJsonV1": "authoritative",
     "typescriptGraphRope": "not-an-alternate-encoding"
   },
+  "oracleCorpus": {
+    "basisFactMemberOrder": [
+      "nodeId",
+      "typeId",
+      "attachmentBytesHex"
+    ],
+    "caseMemberOrder": [
+      "id",
+      "purpose",
+      "basisFacts",
+      "invocation",
+      "invocationBytesHex",
+      "terminal"
+    ],
+    "coordinate": "jedit.text.ReplaceRange.oracle@1",
+    "encoding": "pretty-utf8-json-final-newline",
+    "footprintMemberOrder": [
+      "nodeReads",
+      "nodeWrites",
+      "attachmentReads",
+      "attachmentWrites",
+      "edgeReads",
+      "edgeWrites"
+    ],
+    "objectMemberOrder": [
+      "schemaVersion",
+      "coordinate",
+      "applicationSchemaCoordinate",
+      "invocationSchemaCoordinate",
+      "semanticBaselineCommit",
+      "sourceSet",
+      "evidenceGrade",
+      "independenceLimit",
+      "warpId",
+      "cases"
+    ],
+    "patchVariants": [
+      {
+        "kind": "upsert-node",
+        "memberOrder": [
+          "kind",
+          "nodeId",
+          "typeId"
+        ]
+      },
+      {
+        "kind": "set-node-alpha",
+        "memberOrder": [
+          "kind",
+          "nodeId",
+          "typeId",
+          "attachmentBytesHex"
+        ]
+      }
+    ],
+    "resultMemberOrder": [
+      "bufferId",
+      "headId",
+      "rootNodeId",
+      "rootDigest",
+      "rewriteId",
+      "diffId",
+      "byteLength",
+      "utf16Length",
+      "lineCount",
+      "sequence",
+      "version",
+      "materializedTextUtf8Hex"
+    ],
+    "sourceSetMemberOrder": [
+      "algorithm",
+      "domainHex",
+      "framing",
+      "paths",
+      "digestHex"
+    ],
+    "terminal": {
+      "committableMemberOrder": [
+        "posture",
+        "footprint",
+        "patch",
+        "createdNodeIds",
+        "updatedNodeIds",
+        "untouchedBasisNodeIds",
+        "result"
+      ],
+      "discriminant": "posture",
+      "obstructedMemberOrder": [
+        "posture",
+        "semanticCode",
+        "legacyErrorClass",
+        "legacyMessage",
+        "parentGraphUnchanged",
+        "patchPosture"
+      ],
+      "obstructedPatchPosture": "no-mutation-plan",
+      "semanticCodes": [
+        "range-order-invalid",
+        "range-out-of-bounds",
+        "utf8-boundary-invalid",
+        "no-op",
+        "basis-not-canonical",
+        "arithmetic-overflow",
+        "fact-missing",
+        "fact-malformed",
+        "content-identity-mismatch",
+        "malformed-rope"
+      ]
+    },
+    "unknownMembers": "forbidden"
+  },
   "oracleInvocation": {
     "canonicalBytesField": "invocationBytesHex",
     "coordinate": "jedit.text.ReplaceRange.oracle-invocation@1",

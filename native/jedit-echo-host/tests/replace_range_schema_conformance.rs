@@ -1,11 +1,16 @@
 use std::fmt;
 
+#[path = "support/replace_range_corpus_contract.rs"]
+mod corpus_contract;
+
 use jedit_echo_host::records::{
     BlobFact, BranchFact, BufferFact, DiffFact, HeadFact, LeafFact, NodeIdBytes, RewriteFact,
 };
 use serde::de::{IgnoredAny, MapAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
+
+use corpus_contract::validate_oracle_contract;
 
 const SCHEMA_BYTES: &[u8] = include_bytes!(concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -325,4 +330,55 @@ fn oracle_invocation_bytes_follow_the_published_u64_codec() {
         .expect("fixed-width witness should exist");
     assert_eq!(above_i32.invocation.start_byte, i32::MAX as u64 + 1);
     assert_eq!(above_i32.invocation.end_byte, i32::MAX as u64 + 1);
+}
+
+#[test]
+fn schema_declares_the_exhaustive_oracle_obstruction_domain() {
+    let schema: Value = serde_json::from_slice(SCHEMA_BYTES).expect("schema should decode");
+    assert_eq!(
+        schema["oracleCorpus"]["terminal"]["semanticCodes"],
+        serde_json::json!([
+            "range-order-invalid",
+            "range-out-of-bounds",
+            "utf8-boundary-invalid",
+            "no-op",
+            "basis-not-canonical",
+            "arithmetic-overflow",
+            "fact-missing",
+            "fact-malformed",
+            "content-identity-mismatch",
+            "malformed-rope"
+        ])
+    );
+}
+
+#[test]
+fn committed_oracle_satisfies_the_strict_corpus_shape() {
+    let corpus: Value = serde_json::from_slice(ORACLE_BYTES).expect("oracle corpus should decode");
+    validate_oracle_contract(&corpus).expect("oracle corpus should satisfy its strict contract");
+}
+
+#[test]
+fn strict_corpus_shape_rejects_unknown_members_and_codes() {
+    let corpus: Value = serde_json::from_slice(ORACLE_BYTES).expect("oracle corpus should decode");
+
+    let mut unknown_member = corpus.clone();
+    unknown_member
+        .as_object_mut()
+        .expect("corpus should be an object")
+        .insert("ambientAuthority".to_owned(), Value::Bool(true));
+    assert!(validate_oracle_contract(&unknown_member).is_err());
+
+    let mut unknown_code = corpus;
+    let terminal = unknown_code["cases"]
+        .as_array_mut()
+        .expect("cases should be an array")
+        .iter_mut()
+        .find_map(|case| {
+            let terminal = case.get_mut("terminal")?;
+            (terminal["posture"] == "obstructed").then_some(terminal)
+        })
+        .expect("an obstruction should exist");
+    terminal["semanticCode"] = Value::String("invented-obstruction".to_owned());
+    assert!(validate_oracle_contract(&unknown_code).is_err());
 }
