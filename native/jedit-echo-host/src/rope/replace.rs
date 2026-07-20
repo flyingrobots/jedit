@@ -79,6 +79,7 @@ impl ReplaceRangeFailure {
             }
             RopeFaultKind::InvalidUtf8Slice => ReplaceRangeObstructionCode::Utf8BoundaryInvalid,
             RopeFaultKind::DeclaredRopeInconsistent => ReplaceRangeObstructionCode::MalformedRope,
+            RopeFaultKind::ArithmeticOverflow => ReplaceRangeObstructionCode::ArithmeticOverflow,
         };
         Self::new(reason, legacy)
     }
@@ -159,6 +160,14 @@ pub fn plan_replace_with_reason<T: GraphFacts>(
             basis_head.byte_length,
         ));
     }
+    let deleted_byte_length = end_byte.checked_sub(start_byte).ok_or_else(|| {
+        range_failure(
+            ReplaceRangeObstructionCode::RangeOrderInvalid,
+            start_byte,
+            end_byte,
+            basis_head.byte_length,
+        )
+    })?;
     let basis_root = basis_head.root_node_id.map(NodeId::from);
     let current_bytes = read_range_bytes(&mut context, basis_root, start_byte, end_byte)
         .map_err(ReplaceRangeFailure::from_rope_fault)?;
@@ -182,27 +191,31 @@ pub fn plan_replace_with_reason<T: GraphFacts>(
     })?;
     let (left, suffix) = split(&mut context, basis_root, start_byte)
         .map_err(ReplaceRangeFailure::from_rope_fault)?;
-    let (_, right) = split(&mut context, suffix, end_byte - start_byte)
+    let (_, right) = split(&mut context, suffix, deleted_byte_length)
         .map_err(ReplaceRangeFailure::from_rope_fault)?;
     let inserted = build_text(&mut context, insert_text.as_bytes())
-        .map_err(RopeFault::structural_dependency)
         .map_err(ReplaceRangeFailure::from_rope_fault)?;
-    let left_with_insert = join(&mut context, left, inserted)
-        .map_err(RopeFault::structural_dependency)
-        .map_err(ReplaceRangeFailure::from_rope_fault)?;
+    let left_with_insert =
+        join(&mut context, left, inserted).map_err(ReplaceRangeFailure::from_rope_fault)?;
     let root = join(&mut context, left_with_insert, right)
-        .map_err(RopeFault::structural_dependency)
         .map_err(ReplaceRangeFailure::from_rope_fault)?;
     let metrics = root_metrics(&mut context, root)
         .map_err(RopeFault::structural_dependency)
         .map_err(ReplaceRangeFailure::from_rope_fault)?;
+    let line_count = RopeFault::checked_add_u64(metrics.line_breaks, 1, "head line count overflow")
+        .map_err(ReplaceRangeFailure::from_rope_fault)?;
+    let inserted_byte_length = u64::try_from(insert_text.len()).map_err(|_| {
+        ReplaceRangeFailure::from_rope_fault(RopeFault::arithmetic_overflow(
+            "inserted byte length overflow",
+        ))
+    })?;
     let head = HeadFact {
         buffer_id: buffer_id.into(),
         basis_head_id: Some(basis_head_id.into()),
         root_node_id: root.map(NodeIdBytes::from),
         byte_length: metrics.byte_length,
         utf16_length: metrics.utf16_length,
-        line_count: metrics.line_breaks + 1,
+        line_count,
         root_digest: root_digest(root),
         sequence: next_sequence,
     };
@@ -216,7 +229,7 @@ pub fn plan_replace_with_reason<T: GraphFacts>(
         next_head_id: head_id.into(),
         start_byte,
         end_byte,
-        inserted_byte_length: insert_text.len() as u64,
+        inserted_byte_length,
     };
     let rewrite_id = context
         .write_content_fact(&rewrite)
@@ -229,8 +242,8 @@ pub fn plan_replace_with_reason<T: GraphFacts>(
             next_head_id: head_id.into(),
             start_byte,
             end_byte,
-            inserted_byte_length: insert_text.len() as u64,
-            deleted_byte_length: end_byte - start_byte,
+            inserted_byte_length,
+            deleted_byte_length,
         })
         .map_err(RopeFault::structural_dependency)
         .map_err(ReplaceRangeFailure::from_rope_fault)?;

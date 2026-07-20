@@ -369,15 +369,20 @@ pub fn plan_create<T: GraphFacts>(
             "buffer {buffer_key} already exists"
         )));
     }
-    let root = build_text(&mut context, initial_text.as_bytes())?;
+    let root =
+        build_text(&mut context, initial_text.as_bytes()).map_err(RopeFault::into_host_error)?;
     let metrics = root_metrics(&mut context, root)?;
+    let line_count = metrics
+        .line_breaks
+        .checked_add(1)
+        .ok_or_else(|| HostError::MalformedFact("head line count overflow".to_owned()))?;
     let head = HeadFact {
         buffer_id: buffer_id.into(),
         basis_head_id: None,
         root_node_id: root.map(NodeIdBytes::from),
         byte_length: metrics.byte_length,
         utf16_length: metrics.utf16_length,
-        line_count: metrics.line_breaks + 1,
+        line_count,
         root_digest: root_digest(root),
         sequence: 0,
     };

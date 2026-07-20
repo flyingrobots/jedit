@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Made every retained-rope coordinate and metric calculation used by
+  `ReplaceRange` fail with a typed arithmetic obstruction instead of panicking
+  in debug builds or wrapping in optimized builds. Adversarial leaf, branch,
+  and resulting-Head witnesses also prove legacy error parity and zero parent
+  mutation on refusal.
 - Added an independent byte-splice oracle for successful `ReplaceRange` cases.
   Internally consistent retained graph evidence is refused unless its
   materialized text equals the declared basis prefix, replacement, and suffix.

@@ -1,6 +1,6 @@
 use jedit_echo_host::records::{
-    decode_fact, fact_bytes, fact_id, fact_type_id, BlobFact, BufferFact, HeadFact, LeafFact,
-    NodeIdBytes,
+    decode_fact, fact_bytes, fact_id, fact_type_id, BlobFact, BranchFact, BufferFact,
+    ContentAddressedFact, HeadFact, LeafFact, NodeIdBytes, TypedFact,
 };
 use jedit_echo_host::rope::{plan_create, plan_replace};
 use warp_core::{AttachmentValue, GraphStore, NodeId, NodeRecord, TickDelta, WarpOp};
@@ -14,6 +14,14 @@ pub enum BasisSetup {
     MissingBuffer,
     MalformedBuffer,
     BadBlobContentHash,
+    LeafRangeStartOverflow,
+    LeafRangeEndOverflow,
+    RopeNodeEndOverflow,
+    RopeByteLengthOverflow,
+    RopeUtf16LengthOverflow,
+    RopeLineBreakCountOverflow,
+    RopeHeightOverflow,
+    HeadLineCountOverflow,
     AboveGraphqlIntRange,
     StaleHead,
     ForeignHead,
@@ -67,6 +75,43 @@ pub fn make_basis(
             );
         }
         BasisSetup::BadBlobContentHash => corrupt_blob_hash(&mut store, head_id),
+        BasisSetup::LeafRangeStartOverflow => {
+            head_id = replace_root_leaf(&mut store, create.buffer_id, head_id, |leaf| {
+                leaf.byte_start = u64::MAX;
+                leaf.byte_length = 2;
+            });
+        }
+        BasisSetup::LeafRangeEndOverflow => {
+            head_id = replace_root_leaf(&mut store, create.buffer_id, head_id, |leaf| {
+                leaf.byte_start = u64::MAX;
+                leaf.byte_length = 1;
+            });
+        }
+        BasisSetup::RopeNodeEndOverflow => {
+            head_id = replace_root_left_leaf(&mut store, create.buffer_id, head_id, |leaf| {
+                leaf.byte_length = u64::MAX;
+            });
+        }
+        BasisSetup::RopeByteLengthOverflow => {
+            head_id = replace_root_leaf(&mut store, create.buffer_id, head_id, |leaf| {
+                leaf.byte_length = u64::MAX;
+            });
+        }
+        BasisSetup::RopeUtf16LengthOverflow => {
+            head_id = replace_root_leaf(&mut store, create.buffer_id, head_id, |leaf| {
+                leaf.utf16_length = u64::MAX;
+            });
+        }
+        BasisSetup::RopeLineBreakCountOverflow | BasisSetup::HeadLineCountOverflow => {
+            head_id = replace_root_leaf(&mut store, create.buffer_id, head_id, |leaf| {
+                leaf.line_breaks = u64::MAX;
+            });
+        }
+        BasisSetup::RopeHeightOverflow => {
+            head_id = replace_root_branch(&mut store, create.buffer_id, head_id, |branch| {
+                branch.height = u32::MAX;
+            });
+        }
         BasisSetup::AboveGraphqlIntRange => {
             head_id = replace_head(&mut store, create.buffer_id, head_id, |head| {
                 head.byte_length = i32::MAX as u64 + 1;
@@ -194,6 +239,113 @@ fn corrupt_blob_hash(store: &mut GraphStore, head_id: NodeId) {
         Some(AttachmentValue::Atom(warp_core::AtomPayload::new(
             fact_type_id::<BlobFact>(),
             fact_bytes(&blob).expect("blob should encode").into(),
+        ))),
+    );
+}
+
+fn replace_root_leaf(
+    store: &mut GraphStore,
+    buffer_id: NodeId,
+    head_id: NodeId,
+    mutate: impl FnOnce(&mut LeafFact),
+) -> NodeId {
+    let root_id = root_node_id(store, head_id);
+    let next_root_id = replace_leaf(store, root_id, mutate);
+    replace_head_root(store, buffer_id, head_id, next_root_id)
+}
+
+fn replace_root_left_leaf(
+    store: &mut GraphStore,
+    buffer_id: NodeId,
+    head_id: NodeId,
+    mutate: impl FnOnce(&mut LeafFact),
+) -> NodeId {
+    let root_id = root_node_id(store, head_id);
+    let mut branch: BranchFact = decode_fact(
+        store
+            .node_attachment(&root_id)
+            .expect("branch attachment should exist"),
+    )
+    .expect("root should decode as a branch");
+    let next_left_id = replace_leaf(store, NodeId::from(branch.left), mutate);
+    branch.left = next_left_id.into();
+    let next_root_id = insert_content_fact(store, &branch);
+    replace_head_root(store, buffer_id, head_id, next_root_id)
+}
+
+fn replace_root_branch(
+    store: &mut GraphStore,
+    buffer_id: NodeId,
+    head_id: NodeId,
+    mutate: impl FnOnce(&mut BranchFact),
+) -> NodeId {
+    let root_id = root_node_id(store, head_id);
+    let mut branch: BranchFact = decode_fact(
+        store
+            .node_attachment(&root_id)
+            .expect("branch attachment should exist"),
+    )
+    .expect("root should decode as a branch");
+    mutate(&mut branch);
+    let next_root_id = insert_content_fact(store, &branch);
+    replace_head_root(store, buffer_id, head_id, next_root_id)
+}
+
+fn root_node_id(store: &GraphStore, head_id: NodeId) -> NodeId {
+    let head: HeadFact = decode_fact(
+        store
+            .node_attachment(&head_id)
+            .expect("head attachment should exist"),
+    )
+    .expect("head should decode");
+    NodeId::from(head.root_node_id.expect("fixture should have a rope root"))
+}
+
+fn replace_leaf(
+    store: &mut GraphStore,
+    leaf_id: NodeId,
+    mutate: impl FnOnce(&mut LeafFact),
+) -> NodeId {
+    let mut leaf: LeafFact = decode_fact(
+        store
+            .node_attachment(&leaf_id)
+            .expect("leaf attachment should exist"),
+    )
+    .expect("leaf should decode");
+    mutate(&mut leaf);
+    insert_content_fact(store, &leaf)
+}
+
+fn replace_head_root(
+    store: &mut GraphStore,
+    buffer_id: NodeId,
+    head_id: NodeId,
+    root_id: NodeId,
+) -> NodeId {
+    replace_head(store, buffer_id, head_id, |head| {
+        head.root_node_id = Some(root_id.into());
+        head.root_digest = *root_id.as_bytes();
+    })
+}
+
+fn insert_content_fact<T: ContentAddressedFact>(store: &mut GraphStore, fact: &T) -> NodeId {
+    let node_id = fact_id(fact).expect("fixture fact should identify");
+    store.insert_node(
+        node_id,
+        NodeRecord {
+            ty: fact_type_id::<T>(),
+        },
+    );
+    set_fact_attachment(store, node_id, fact);
+    node_id
+}
+
+fn set_fact_attachment<T: TypedFact>(store: &mut GraphStore, node_id: NodeId, fact: &T) {
+    store.set_node_attachment(
+        node_id,
+        Some(AttachmentValue::Atom(warp_core::AtomPayload::new(
+            fact_type_id::<T>(),
+            fact_bytes(fact).expect("fixture fact should encode").into(),
         ))),
     );
 }

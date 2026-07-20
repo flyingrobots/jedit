@@ -7,6 +7,7 @@ pub(super) enum RopeFaultKind {
     ContentIdentityMismatch,
     InvalidUtf8Slice,
     DeclaredRopeInconsistent,
+    ArithmeticOverflow,
 }
 
 #[derive(Debug)]
@@ -53,6 +54,23 @@ impl RopeFault {
             kind: RopeFaultKind::DeclaredRopeInconsistent,
             legacy: HostError::InvalidRequest(message),
         }
+    }
+
+    pub(super) fn arithmetic_overflow(message: &'static str) -> Self {
+        Self {
+            kind: RopeFaultKind::ArithmeticOverflow,
+            legacy: HostError::MalformedFact(message.to_owned()),
+        }
+    }
+
+    pub(super) fn checked_add_u64(left: u64, right: u64, message: &'static str) -> RopeResult<u64> {
+        left.checked_add(right)
+            .ok_or_else(|| Self::arithmetic_overflow(message))
+    }
+
+    pub(super) fn checked_add_u32(left: u32, right: u32, message: &'static str) -> RopeResult<u32> {
+        left.checked_add(right)
+            .ok_or_else(|| Self::arithmetic_overflow(message))
     }
 
     pub(super) fn into_parts(self) -> (RopeFaultKind, HostError) {

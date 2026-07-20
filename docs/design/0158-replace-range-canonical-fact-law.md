@@ -431,7 +431,7 @@ the declaration, codec vectors, corpus, and all sidecars, then proves check mode
 is clean. Inspect
 `contracts/jedit/lawpacks/replace-range-v1/text-schema-v1.json` for the exact
 fact, string, identity, rope, and corpus-invocation laws. Inspect
-`replace-range-v1.oracle.json` for 20 self-contained cases with basis facts,
+`replace-range-v1.oracle.json` for 28 self-contained cases with basis facts,
 exact invocation bytes, support, ordered patches, results, or typed no-patch
 obstructions. No editor, terminal rendering, external service, or sibling
 checkout is required.
@@ -495,9 +495,9 @@ What changed from the design:
   for the schema,
   `1ac26477e1d6c08df49446627ad002e40bd214235ce93b563d62bb50e40dc14c`
   for codec vectors, and
-  `70c570898195c00b120f6f5582d13ea12d15abccf7e458e869bde53bdf795a85`
+  `6e7d9ff396897940e16d8fa5936d7fd51b8c8915e2e9ea2fb2d3b5916a4224c9`
   for the oracle. The oracle source-set digest is
-  `1c570ce54d50d0b6cf02d2881871bcaef32bf5326e60a8ef6bf711633eed4b7e`.
+  `6541ff04a5a97fd407f31479f9393293a937db12ab3705686525e49154f48083`.
 - The deliberate resource-update command now runs each exact writer serially
   before the complete locked reader and conformance pass.
   [`package.json#L10@13b16f2e7195458138865460c5948744ea8615ed`](https://github.com/flyingrobots/jedit/blob/13b16f2e7195458138865460c5948744ea8615ed/package.json#L10)
