@@ -525,9 +525,9 @@ What changed from the design:
   for the schema,
   `1ac26477e1d6c08df49446627ad002e40bd214235ce93b563d62bb50e40dc14c`
   for codec vectors, and
-  `0b3472bbd3e61395a63e8401930cec1fca80d9f2916e5776dbe29f74a62bd6d8`
+  `59d3dd135e3578bcb1c736fdef08c9f94b5db27eb856536d9b5cc3112110d115`
   for the oracle. The oracle source-set digest is
-  `72d035d1abb930a95eb8671dc3fca033d743232e544c8ff5ff697ea7040a8fed`.
+  `670052711eb7406dff726cb257b28ec6aec2d31f060b1ab70a383f91a65d3461`.
   The ledger derives all four values from the committed artifacts.
   [`tests/replace-range-law-cycle.spec.mjs#L76@95f63d2c31847c3a4cc4bbea9152900470843d3a`](https://github.com/flyingrobots/jedit/blob/95f63d2c31847c3a4cc4bbea9152900470843d3a/tests/replace-range-law-cycle.spec.mjs#L76)
 - **Serialized resource updates.** The deliberate resource-update command runs

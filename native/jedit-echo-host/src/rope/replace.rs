@@ -146,29 +146,18 @@ pub fn plan_replace_with_reason<T: GraphFacts>(
     validate_basis_head_buffer(buffer_id, basis_head_id, &basis_head)
         .map_err(ReplaceRangeFailure::from_rope_fault)?;
     if start_byte > end_byte {
-        return Err(range_failure(
-            ReplaceRangeObstructionCode::RangeOrderInvalid,
-            start_byte,
-            end_byte,
-            basis_head.byte_length,
-        ));
+        return Err(range_order_failure(start_byte, end_byte));
     }
     if end_byte > basis_head.byte_length {
-        return Err(range_failure(
-            ReplaceRangeObstructionCode::RangeOutOfBounds,
+        return Err(range_out_of_bounds_failure(
             start_byte,
             end_byte,
             basis_head.byte_length,
         ));
     }
-    let deleted_byte_length = end_byte.checked_sub(start_byte).ok_or_else(|| {
-        range_failure(
-            ReplaceRangeObstructionCode::RangeOrderInvalid,
-            start_byte,
-            end_byte,
-            basis_head.byte_length,
-        )
-    })?;
+    let deleted_byte_length = end_byte
+        .checked_sub(start_byte)
+        .ok_or_else(|| range_order_failure(start_byte, end_byte))?;
     let basis_root = basis_head.root_node_id.map(NodeId::from);
     if start_byte == end_byte {
         split(&mut context, basis_root, start_byte)
@@ -287,14 +276,22 @@ fn validate_basis_head_buffer(
     Ok(())
 }
 
-fn range_failure(
-    reason: ReplaceRangeObstructionCode,
+fn range_order_failure(start_byte: u64, end_byte: u64) -> ReplaceRangeFailure {
+    ReplaceRangeFailure::new(
+        ReplaceRangeObstructionCode::RangeOrderInvalid,
+        HostError::InvalidRequest(format!(
+            "replace range start must not exceed end: {start_byte} > {end_byte}"
+        )),
+    )
+}
+
+fn range_out_of_bounds_failure(
     start_byte: u64,
     end_byte: u64,
     basis_length: u64,
 ) -> ReplaceRangeFailure {
     ReplaceRangeFailure::new(
-        reason,
+        ReplaceRangeObstructionCode::RangeOutOfBounds,
         HostError::InvalidRequest(format!(
             "replace range {start_byte}..{end_byte} exceeds {basis_length} bytes"
         )),

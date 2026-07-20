@@ -163,7 +163,7 @@ fn cases() -> Vec<CaseSpec> {
             "x",
             SemanticObstructionCode::RangeOrderInvalid,
             "invalid-request",
-            "exceeds",
+            "start must not exceed end",
         ),
         obstruction(
             "out-of-bounds-range",

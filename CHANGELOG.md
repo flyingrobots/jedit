@@ -45,8 +45,8 @@
   Buffer facts retained under the wrong node address now fail closed.
 - Made the production `ReplaceRange` planner emit a closed typed obstruction
   reason at each decision site while retaining its exact legacy `HostError`.
-  Oracle evidence consumes that reason; diagnostic text, repeated predicates,
-  and non-structural host failures cannot mint semantic categories.
+  Oracle evidence consumes that reason; non-structural host failures cannot
+  mint semantic categories, and order/bounds diagnostics remain distinct.
 - Strengthened the `ReplaceRange` stale- and foreign-basis witnesses to prove
   the retained causal relationships they claim. A stale basis must be the
   direct ancestor of the target Buffer's canonical Head, while a foreign basis
