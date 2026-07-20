@@ -291,7 +291,7 @@ to source-code inference.
 
 | Category | Description |
 | --- | --- |
-| Source of truth | Existing native production fact types and `plan_replace` semantics at the merge target. |
+| Source of truth | Current Jedit-owned native fact and `plan_replace` law, bound by exact source-set bytes and published resource digests. |
 | Derived state | Machine-readable schema and finite golden corpus. |
 | Invalid states | Noncanonical fact bytes, wrong domains or identities, schema drift, corpus drift, or ambiguous native/TypeScript ownership. |
 | Reset behavior | Fixtures regenerate from a clean synthetic graph; no production WAL or user data is read. |
@@ -325,10 +325,14 @@ the product or scraping Rust debug output. Successful cases name exact basis,
 input, support, patch, retained facts, and result. Obstructed cases name exact
 basis, input, typed obstruction, no-plan posture, and unchanged-parent evidence.
 Every case also names its semantic purpose and terminal posture. The
-`semanticBaselineCommit` names the historical checkpoint whose behavior this
-cycle freezes; the `sourceSet` digest binds the exact declared generating
-source bytes. The evidence grade prevents a consumer from mistaking
-finite-corpus agreement for formal equivalence.
+`historicalPlannerCheckpointCommit` records historical provenance only: the
+immutable merge target inspected when the cycle began. It neither claims the
+current law existed there nor proves cross-commit equivalence. The `sourceSet`
+digest binds the exact declared current generator and planner source bytes;
+each resource sidecar binds the exact published JSON bytes. These identities
+provide substitution and provenance evidence, not Echo authority. The evidence
+grade prevents a consumer from mistaking finite-corpus agreement for formal
+equivalence.
 
 ## Linked Invariants
 
@@ -517,13 +521,13 @@ What changed from the design:
   [`native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L336@9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L336)
   [`native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L362@9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L362)
 - **Artifact digest ledger.** The published SHA-256 digests are
-  `fa5087c8fe72dc9c5f138f12b9498ab7f943061fc5ca735d4f68009c081eabc2`
+  `eb1b81335a5dc270965df0fcd0098534184712ac05c1c126f159b624c81fc5aa`
   for the schema,
   `1ac26477e1d6c08df49446627ad002e40bd214235ce93b563d62bb50e40dc14c`
   for codec vectors, and
-  `47de02921770cb7846d08ab3d0dea83063d153d66918c1338eebed1d789af6f8`
+  `fe249130fcf6da29719dca0c23775ed29ba3255a5640b9c03698d104c4976682`
   for the oracle. The oracle source-set digest is
-  `f693ea3a8a275b22bfc80748a5544c28890125044b9bce05c36ba57fa2bece63`.
+  `1f73ffc375e16d41ccbf15ca5d5c5177f0ad627969040cbf54626a633246f01c`.
   The ledger derives all four values from the committed artifacts.
   [`tests/replace-range-law-cycle.spec.mjs#L76@95f63d2c31847c3a4cc4bbea9152900470843d3a`](https://github.com/flyingrobots/jedit/blob/95f63d2c31847c3a4cc4bbea9152900470843d3a/tests/replace-range-law-cycle.spec.mjs#L76)
 - **Serialized resource updates.** The deliberate resource-update command runs

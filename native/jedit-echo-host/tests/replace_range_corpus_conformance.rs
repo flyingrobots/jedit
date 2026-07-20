@@ -166,7 +166,10 @@ fn strict_corpus_binds_envelope_and_source_identity() {
             "/invocationSchemaCoordinate",
             Value::String("other.invocation@1".to_owned()),
         ),
-        ("/semanticBaselineCommit", Value::String("00".repeat(20))),
+        (
+            "/historicalPlannerCheckpointCommit",
+            Value::String("00".repeat(20)),
+        ),
         (
             "/evidenceGrade",
             Value::String("independent-verification".to_owned()),
@@ -192,6 +195,13 @@ fn strict_corpus_binds_envelope_and_source_identity() {
             .as_array_mut()
             .expect("source-set paths should be an array")
             .swap(0, 1);
+    });
+    assert_invalid("obsolete semantic baseline member", |corpus| {
+        let envelope = corpus.as_object_mut().expect("corpus should be an object");
+        let checkpoint = envelope
+            .remove("historicalPlannerCheckpointCommit")
+            .expect("historical checkpoint should exist");
+        envelope.insert("semanticBaselineCommit".to_owned(), checkpoint);
     });
 }
 

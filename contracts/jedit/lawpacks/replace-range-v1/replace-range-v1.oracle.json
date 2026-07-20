@@ -3,7 +3,7 @@
   "coordinate": "jedit.text.ReplaceRange.oracle@1",
   "applicationSchemaCoordinate": "jedit.text.schema@1",
   "invocationSchemaCoordinate": "jedit.text.ReplaceRange.oracle-invocation@1",
-  "semanticBaselineCommit": "c70e12d73b4b00bc92412bab67e1761f7dd22f82",
+  "historicalPlannerCheckpointCommit": "c70e12d73b4b00bc92412bab67e1761f7dd22f82",
   "sourceSet": {
     "algorithm": "sha256",
     "domainHex": "6a656469742e7265706c6163652d72616e67652e6f7261636c652d736f757263652e763100",
@@ -31,7 +31,7 @@
       "native/jedit-echo-host/tests/support/replace_range_oracle_tests.rs",
       "native/jedit-echo-host/tests/support/replace_range_source_set.rs"
     ],
-    "digestHex": "f693ea3a8a275b22bfc80748a5544c28890125044b9bce05c36ba57fa2bece63"
+    "digestHex": "1f73ffc375e16d41ccbf15ca5d5c5177f0ad627969040cbf54626a633246f01c"
   },
   "evidenceGrade": "deterministic-self-validation",
   "independenceLimit": "independent finite-corpus evidence begins only when a separately implemented Echo evaluator agrees",

@@ -10,8 +10,8 @@ use serde_json::{json, Value};
 mod contract;
 
 use contract::{
-    SemanticObstructionCode, APPLICATION_SCHEMA_COORDINATE, INVOCATION_SCHEMA_COORDINATE,
-    OBSTRUCTED_PATCH_POSTURE, ORACLE_COORDINATE,
+    SemanticObstructionCode, APPLICATION_SCHEMA_COORDINATE, HISTORICAL_PLANNER_CHECKPOINT_ROLE,
+    INVOCATION_SCHEMA_COORDINATE, OBSTRUCTED_PATCH_POSTURE, ORACLE_COORDINATE,
 };
 
 pub const SCHEMA_COORDINATE: &str = APPLICATION_SCHEMA_COORDINATE;
@@ -152,13 +152,14 @@ pub fn expected_schema() -> Value {
                 "coordinate",
                 "applicationSchemaCoordinate",
                 "invocationSchemaCoordinate",
-                "semanticBaselineCommit",
+                "historicalPlannerCheckpointCommit",
                 "sourceSet",
                 "evidenceGrade",
                 "independenceLimit",
                 "warpId",
                 "cases"
             ],
+            "historicalPlannerCheckpointRole": HISTORICAL_PLANNER_CHECKPOINT_ROLE,
             "sourceSetMemberOrder": [
                 "algorithm",
                 "domainHex",

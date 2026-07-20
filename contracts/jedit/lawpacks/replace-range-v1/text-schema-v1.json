@@ -347,13 +347,14 @@
       "edgeReads",
       "edgeWrites"
     ],
+    "historicalPlannerCheckpointRole": "provenance-only",
     "localIdentifierQualification": "every footprint and patch identifier is qualified by top-level warpId",
     "objectMemberOrder": [
       "schemaVersion",
       "coordinate",
       "applicationSchemaCoordinate",
       "invocationSchemaCoordinate",
-      "semanticBaselineCommit",
+      "historicalPlannerCheckpointCommit",
       "sourceSet",
       "evidenceGrade",
       "independenceLimit",

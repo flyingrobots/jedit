@@ -4,7 +4,8 @@ pub const ORACLE_SCHEMA_VERSION: u32 = 1;
 pub const ORACLE_COORDINATE: &str = "jedit.text.ReplaceRange.oracle@1";
 pub const APPLICATION_SCHEMA_COORDINATE: &str = "jedit.text.schema@1";
 pub const INVOCATION_SCHEMA_COORDINATE: &str = "jedit.text.ReplaceRange.oracle-invocation@1";
-pub const SEMANTIC_BASELINE_COMMIT: &str = "c70e12d73b4b00bc92412bab67e1761f7dd22f82";
+pub const HISTORICAL_PLANNER_CHECKPOINT_COMMIT: &str = "c70e12d73b4b00bc92412bab67e1761f7dd22f82";
+pub const HISTORICAL_PLANNER_CHECKPOINT_ROLE: &str = "provenance-only";
 pub const EVIDENCE_GRADE: &str = "deterministic-self-validation";
 pub const INDEPENDENCE_LIMIT: &str = "independent finite-corpus evidence begins only when a separately implemented Echo evaluator agrees";
 pub const ORACLE_WARP_LABEL: &str = "jedit.replace-range.oracle.v1";
@@ -25,7 +26,8 @@ mod tests {
             INVOCATION_SCHEMA_COORDINATE,
             "jedit.text.ReplaceRange.oracle-invocation@1"
         );
-        assert_eq!(SEMANTIC_BASELINE_COMMIT.len(), 40);
+        assert_eq!(HISTORICAL_PLANNER_CHECKPOINT_COMMIT.len(), 40);
+        assert_eq!(HISTORICAL_PLANNER_CHECKPOINT_ROLE, "provenance-only");
         assert_eq!(EVIDENCE_GRADE, "deterministic-self-validation");
         assert!(INDEPENDENCE_LIMIT.contains("separately implemented Echo evaluator"));
         assert_eq!(ORACLE_WARP_LABEL, "jedit.replace-range.oracle.v1");

@@ -306,6 +306,35 @@ test("DL-0158 rejects a citation label that disagrees with its URL", () => {
   );
 });
 
+test("ReplaceRange scopes its historical planner checkpoint as provenance", () => {
+  const schema = JSON.parse(
+    fs.readFileSync(path.join(LAWPACK_PATH, "text-schema-v1.json"), "utf8"),
+  );
+  const corpus = JSON.parse(
+    fs.readFileSync(
+      path.join(LAWPACK_PATH, "replace-range-v1.oracle.json"),
+      "utf8",
+    ),
+  );
+  const expectedCommit = "c70e12d73b4b00bc92412bab67e1761f7dd22f82";
+
+  assert.equal(corpus.semanticBaselineCommit, undefined);
+  assert.equal(corpus.historicalPlannerCheckpointCommit, expectedCommit);
+  assert.equal(
+    schema.oracleCorpus.objectMemberOrder[4],
+    "historicalPlannerCheckpointCommit",
+  );
+  assert.ok(
+    !schema.oracleCorpus.objectMemberOrder.includes("semanticBaselineCommit"),
+  );
+  assert.equal(
+    schema.oracleCorpus.historicalPlannerCheckpointRole,
+    "provenance-only",
+  );
+  assert.doesNotMatch(readDesign(), /semanticBaselineCommit/);
+  assert.match(readDesign(), /historical provenance only/);
+});
+
 test("DL-0158 retrospective binds every published artifact digest", () => {
   const retrospective = readDesign().split("## Retrospective")[1];
   let oracleBytes;

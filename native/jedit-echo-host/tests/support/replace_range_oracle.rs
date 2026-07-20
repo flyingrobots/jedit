@@ -29,9 +29,9 @@ use basis::{
 use consequence::{validate_consequence, ReplaceExpectation};
 pub use contract::SemanticObstructionCode;
 use contract::{
-    APPLICATION_SCHEMA_COORDINATE, EVIDENCE_GRADE, INDEPENDENCE_LIMIT,
-    INVOCATION_SCHEMA_COORDINATE, OBSTRUCTED_PATCH_POSTURE, ORACLE_COORDINATE,
-    ORACLE_SCHEMA_VERSION, ORACLE_WARP_LABEL, SEMANTIC_BASELINE_COMMIT,
+    APPLICATION_SCHEMA_COORDINATE, EVIDENCE_GRADE, HISTORICAL_PLANNER_CHECKPOINT_COMMIT,
+    INDEPENDENCE_LIMIT, INVOCATION_SCHEMA_COORDINATE, OBSTRUCTED_PATCH_POSTURE, ORACLE_COORDINATE,
+    ORACLE_SCHEMA_VERSION, ORACLE_WARP_LABEL,
 };
 use legacy::{assert_error_parity, error_projection};
 use source_set::{source_set, SourceSet};
@@ -64,7 +64,7 @@ pub struct OracleCorpus {
     coordinate: &'static str,
     application_schema_coordinate: &'static str,
     invocation_schema_coordinate: &'static str,
-    semantic_baseline_commit: &'static str,
+    historical_planner_checkpoint_commit: &'static str,
     source_set: SourceSet,
     evidence_grade: &'static str,
     independence_limit: &'static str,
@@ -182,7 +182,7 @@ pub fn generate_corpus(specs: Vec<CaseSpec>) -> OracleCorpus {
         coordinate: ORACLE_COORDINATE,
         application_schema_coordinate: APPLICATION_SCHEMA_COORDINATE,
         invocation_schema_coordinate: INVOCATION_SCHEMA_COORDINATE,
-        semantic_baseline_commit: SEMANTIC_BASELINE_COMMIT,
+        historical_planner_checkpoint_commit: HISTORICAL_PLANNER_CHECKPOINT_COMMIT,
         source_set: source_set(),
         evidence_grade: EVIDENCE_GRADE,
         independence_limit: INDEPENDENCE_LIMIT,

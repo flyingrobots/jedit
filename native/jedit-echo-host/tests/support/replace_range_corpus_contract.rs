@@ -5,9 +5,9 @@ use jedit_echo_host::records::EMPTY_ROOT_DIGEST_DOMAIN;
 use serde::{Deserialize, Serialize};
 
 use super::contract::{
-    SemanticObstructionCode, APPLICATION_SCHEMA_COORDINATE, EVIDENCE_GRADE, INDEPENDENCE_LIMIT,
-    INVOCATION_SCHEMA_COORDINATE, OBSTRUCTED_PATCH_POSTURE, ORACLE_COORDINATE,
-    ORACLE_SCHEMA_VERSION, ORACLE_WARP_LABEL, SEMANTIC_BASELINE_COMMIT,
+    SemanticObstructionCode, APPLICATION_SCHEMA_COORDINATE, EVIDENCE_GRADE,
+    HISTORICAL_PLANNER_CHECKPOINT_COMMIT, INDEPENDENCE_LIMIT, INVOCATION_SCHEMA_COORDINATE,
+    OBSTRUCTED_PATCH_POSTURE, ORACLE_COORDINATE, ORACLE_SCHEMA_VERSION, ORACLE_WARP_LABEL,
 };
 use super::lexemes::{CommitSha, Hex32, HexBytes, Utf8Hex};
 use super::patch_fact_contract::{validate_patch, PatchOperation};
@@ -25,7 +25,7 @@ struct CorpusEnvelope {
     coordinate: String,
     application_schema_coordinate: String,
     invocation_schema_coordinate: String,
-    semantic_baseline_commit: CommitSha,
+    historical_planner_checkpoint_commit: CommitSha,
     source_set: SourceSetEnvelope,
     evidence_grade: String,
     independence_limit: String,
@@ -165,9 +165,9 @@ fn validate_envelope(corpus: &CorpusEnvelope) -> Result<(), String> {
         INVOCATION_SCHEMA_COORDINATE,
     )?;
     require_equal(
-        "semanticBaselineCommit",
-        corpus.semantic_baseline_commit.as_str(),
-        SEMANTIC_BASELINE_COMMIT,
+        "historicalPlannerCheckpointCommit",
+        corpus.historical_planner_checkpoint_commit.as_str(),
+        HISTORICAL_PLANNER_CHECKPOINT_COMMIT,
     )?;
     require_equal(
         "evidenceGrade",
