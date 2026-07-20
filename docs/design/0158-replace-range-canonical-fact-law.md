@@ -422,13 +422,13 @@ The work is done when:
 ```bash
 npm ci
 npm run lawpack:replace-range:update
-cargo test --manifest-path native/jedit-echo-host/Cargo.toml \
+cargo test --locked --manifest-path native/jedit-echo-host/Cargo.toml \
   --test replace_range_schema
-cargo test --manifest-path native/jedit-echo-host/Cargo.toml \
+cargo test --locked --manifest-path native/jedit-echo-host/Cargo.toml \
   --test replace_range_schema_conformance
-cargo test --manifest-path native/jedit-echo-host/Cargo.toml \
+cargo test --locked --manifest-path native/jedit-echo-host/Cargo.toml \
   --test replace_range_oracle
-cargo clippy --manifest-path native/jedit-echo-host/Cargo.toml \
+cargo clippy --locked --manifest-path native/jedit-echo-host/Cargo.toml \
   --all-targets -- -D warnings
 npm run check
 node scripts/jedit-production-cutover-guard.mjs

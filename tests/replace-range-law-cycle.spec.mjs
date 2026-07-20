@@ -257,6 +257,23 @@ test("DL-0158 records the closed native formatter gate", () => {
   );
 });
 
+test("DL-0158 pins dependency-resolving validation commands", () => {
+  const match =
+    /## Validation Plan\n\n```bash\n(?<commands>[\s\S]*?)\n```/.exec(
+      readDesign(),
+    );
+  assert.ok(match, "validation command block is missing");
+  const commands = match.groups.commands
+    .replaceAll(/\\\n\s*/g, " ")
+    .split("\n")
+    .filter((command) => /^cargo (?:test|clippy)\b/.test(command));
+
+  assert.ok(commands.length > 0, "expected direct Cargo validation commands");
+  for (const command of commands) {
+    assert.match(command, /^cargo (?:test|clippy) --locked\b/);
+  }
+});
+
 test("DL-0158 labels and pins every strong retrospective claim", () => {
   assertRetrospectiveEvidence();
 });
