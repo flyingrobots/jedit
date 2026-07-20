@@ -21,3 +21,12 @@ test('DL-0158 distinguishes committable evidence from obstruction evidence', () 
     /Successful cases name exact basis, input, support, patch, retained facts, and result\. Obstructed cases name exact basis, input, typed obstruction, no-plan posture, and unchanged-parent evidence\./,
   );
 });
+
+test('DL-0158 retrospective pins implemented truth to a full commit SHA', () => {
+  const retrospective = readDesign().split('## Retrospective')[1];
+
+  assert.match(
+    retrospective,
+    /https:\/\/github\.com\/flyingrobots\/jedit\/blob\/[0-9a-f]{40}\//,
+  );
+});

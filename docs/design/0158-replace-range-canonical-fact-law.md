@@ -463,14 +463,18 @@ What changed from the design:
 - The planned native-schema corpus was implemented with 20 cases, separating
   retained stale-head and real foreign-head basis witnesses, without
   changing the production planner, fact bytes, identities, or routing.
+  [`native/jedit-echo-host/tests/replace_range_oracle.rs#L43:9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_oracle.rs#L43)
 - Review tightened the declaration with a fully specified string codec, a
   corpus-only invocation schema and exact bytes, mechanical schema-to-writer
   field-order comparison, strict/atomic fixture updates, and a digest over the
   exact declared Jedit source set. These are proof-strengthening additions,
   not a widening into the deferred Echo ABI.
+  [`native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L86:9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L86)
 - Review replaced free-form obstruction labels with an exhaustive generated
   enum and added a strict machine-readable corpus shape whose conformance path
   rejects unknown members, variants, and semantic codes.
+  [`native/jedit-echo-host/tests/support/replace_range_contract.rs#L3:9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/support/replace_range_contract.rs#L3)
+  [`native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L336:9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L336)
 - The published SHA-256 digests are
   `c7bf126245e9b2f8e7ff080983c16ad625f6b341d886281b79317be9a0b3b76d`
   for the schema,
@@ -486,12 +490,17 @@ What the tests proved:
   every declared fact-member order equals the order observed from writer bytes;
   the full string escape vector matches the native writer; and corpus invocation
   bytes preserve `u64` above `i32::MAX`.
+  [`native/jedit-echo-host/tests/replace_range_schema.rs#L89:9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_schema.rs#L89)
+  [`native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L295:9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L295)
 - Strict corpus conformance rejects unknown object members, terminal or patch
   variants, and obstruction codes outside the ten-value semantic enum.
+  [`native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L356:9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L356)
 - Six success and fourteen obstruction cases regenerate deterministically. A
   success yields the exact support, ordered patch, retained facts, metrics, and
   materialized consequence; an obstruction yields no `MutationPlan` and leaves
   the parent graph unchanged.
+  [`native/jedit-echo-host/tests/support/replace_range_oracle.rs#L190:9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/support/replace_range_oracle.rs#L190)
+  [`native/jedit-echo-host/tests/support/replace_range_oracle.rs#L258:9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/support/replace_range_oracle.rs#L258)
 - This is deterministic self-validation. It is not an independent verifier,
   all-input equivalence proof, Echo admission witness, runtime receipt, WAL, or
   recovery witness.
