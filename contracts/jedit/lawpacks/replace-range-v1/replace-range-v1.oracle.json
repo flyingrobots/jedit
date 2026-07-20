@@ -31,7 +31,7 @@
       "native/jedit-echo-host/tests/support/replace_range_oracle_tests.rs",
       "native/jedit-echo-host/tests/support/replace_range_source_set.rs"
     ],
-    "digestHex": "821e9cd48c759c116ef5b1d554ab5636079a98582d7584066acc0384ca93d28a"
+    "digestHex": "e9c7ff86991d5637e63f4c20f51b1e9816dfc570e79cee04924d9b4495c6c14b"
   },
   "evidenceGrade": "deterministic-self-validation",
   "independenceLimit": "independent finite-corpus evidence begins only when a separately implemented Echo evaluator agrees",

@@ -23,6 +23,13 @@ const ORACLE_SUPPORT_PATH = path.join(
   "tests",
   "support",
 );
+const RECORDS_PATH = path.join(
+  process.cwd(),
+  "native",
+  "jedit-echo-host",
+  "src",
+  "records.rs",
+);
 const ROPE_FACADE_PATH = path.join(
   process.cwd(),
   "native",
@@ -343,6 +350,25 @@ test("strict retained fact reading stays outside the rope facade", () => {
   const reader = fs.readFileSync(RETAINED_FACT_READER_PATH, "utf8");
   assert.match(reader, /pub\(super\) fn read_content_fact</);
   assert.match(reader, /content_node_id\(F::ID_DOMAIN, &bytes\)/);
+});
+
+test("native fact byte decoding has one shared implementation", () => {
+  const records = fs.readFileSync(RECORDS_PATH, "utf8");
+  const facade = fs.readFileSync(ROPE_FACADE_PATH, "utf8");
+  const reader = fs.readFileSync(RETAINED_FACT_READER_PATH, "utf8");
+  const rawDecoderCount = [records, facade, reader].reduce(
+    (count, source) =>
+      count + (source.match(/serde_json::from_slice/g) ?? []).length,
+    0,
+  );
+
+  assert.equal(rawDecoderCount, 1);
+  assert.match(records, /pub\(crate\) fn decode_fact_bytes</);
+  assert.match(records, /decode_fact_bytes\(payload\.bytes\.as_ref\(\)\)/);
+  assert.match(facade, /decode_fact_bytes::<F>\(&pending\.bytes\)/);
+  assert.doesNotMatch(facade, /fn decode_pending|serde_json::from_slice/);
+  assert.match(reader, /decode_fact_bytes::<F>\(&bytes\)/);
+  assert.doesNotMatch(reader, /fn decode_fact_bytes|serde_json::from_slice/);
 });
 
 test("ReplaceRange updater isolates writers before committed-resource readers", () => {

@@ -14,9 +14,9 @@ use warp_core::{
 use crate::error::{HostError, HostResult};
 use crate::identity::{hash_bytes, node_id_hex};
 use crate::records::{
-    decode_fact, fact_bytes, fact_id, fact_type_id, BlobFact, BranchFact, BufferFact,
-    CheckpointFact, CheckpointReason, ContentAddressedFact, HeadFact, LeafFact, NodeIdBytes,
-    TypedFact, BLOB_CONTENT_HASH_DOMAIN, BUFFER_NODE_ID_DOMAIN,
+    decode_fact, decode_fact_bytes, fact_bytes, fact_id, fact_type_id, BlobFact, BranchFact,
+    BufferFact, CheckpointFact, CheckpointReason, ContentAddressedFact, HeadFact, LeafFact,
+    NodeIdBytes, TypedFact, BLOB_CONTENT_HASH_DOMAIN, BUFFER_NODE_ID_DOMAIN,
 };
 use fault::{RopeFault, RopeResult};
 pub use replace::{
@@ -106,7 +106,7 @@ impl<'a, T: GraphFacts> PlanContext<'a, T> {
                     F::TYPE_LABEL
                 )));
             }
-            return decode_pending::<F>(pending);
+            return decode_fact_bytes::<F>(&pending.bytes);
         }
         self.reads.insert(id);
         let attachment = self.source.attachment(&id).ok_or_else(|| {
@@ -189,11 +189,6 @@ impl<'a, T: GraphFacts> PlanContext<'a, T> {
     fn blob_bytes(&mut self, id: NodeId) -> HostResult<Vec<u8>> {
         Ok(self.verified_blob(id)?.bytes)
     }
-}
-
-fn decode_pending<F: TypedFact>(pending: &PendingFact) -> HostResult<F> {
-    serde_json::from_slice(&pending.bytes)
-        .map_err(|error| HostError::MalformedFact(format!("decode {}: {error}", F::TYPE_LABEL)))
 }
 
 #[derive(Debug)]

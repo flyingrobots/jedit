@@ -1,8 +1,10 @@
 use warp_core::{AttachmentValue, NodeId, TypeId};
 
-use crate::error::{HostError, HostResult};
+use crate::error::HostError;
 use crate::identity::{content_node_id, node_id_hex};
-use crate::records::{fact_bytes, fact_type_id, ContentAddressedFact, TypedFact};
+use crate::records::{
+    decode_fact_bytes, fact_bytes, fact_type_id, ContentAddressedFact, TypedFact,
+};
 
 use super::fault::{RopeFault, RopeResult};
 use super::{GraphFacts, PlanContext};
@@ -78,9 +80,4 @@ fn atom_fact_bytes<F: TypedFact>(id: NodeId, attachment: &AttachmentValue) -> Ro
     };
     require_fact_type::<F>(id, payload.type_id)?;
     Ok(payload.bytes.as_ref().to_vec())
-}
-
-fn decode_fact_bytes<F: TypedFact>(bytes: &[u8]) -> HostResult<F> {
-    serde_json::from_slice(bytes)
-        .map_err(|error| HostError::MalformedFact(format!("decode {}: {error}", F::TYPE_LABEL)))
 }

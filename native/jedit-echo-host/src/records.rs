@@ -177,6 +177,11 @@ pub fn fact_id<T: ContentAddressedFact>(fact: &T) -> HostResult<NodeId> {
     Ok(content_node_id(T::ID_DOMAIN, &fact_bytes(fact)?))
 }
 
+pub(crate) fn decode_fact_bytes<T: TypedFact>(bytes: &[u8]) -> HostResult<T> {
+    serde_json::from_slice(bytes)
+        .map_err(|error| HostError::MalformedFact(format!("decode {}: {error}", T::TYPE_LABEL)))
+}
+
 pub fn decode_fact<T: TypedFact>(attachment: &AttachmentValue) -> HostResult<T> {
     let AttachmentValue::Atom(payload) = attachment else {
         return Err(HostError::MalformedFact(format!(
@@ -190,6 +195,5 @@ pub fn decode_fact<T: TypedFact>(attachment: &AttachmentValue) -> HostResult<T> 
             T::TYPE_LABEL
         )));
     }
-    serde_json::from_slice(payload.bytes.as_ref())
-        .map_err(|error| HostError::MalformedFact(format!("decode {}: {error}", T::TYPE_LABEL)))
+    decode_fact_bytes(payload.bytes.as_ref())
 }
