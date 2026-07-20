@@ -197,6 +197,15 @@ test("DL-0158 names maximum-scalar golden-vector coverage", () => {
   );
 });
 
+test("DL-0158 records the closed native formatter gate", () => {
+  const design = readDesign().replaceAll(/\s+/g, " ");
+  assert.doesNotMatch(design, /baseline difference remains|does not mix/);
+  assert.match(
+    design,
+    /The complete native crate passes `cargo fmt [^`]+ --all -- --check`\./,
+  );
+});
+
 test("DL-0158 labels and pins every strong retrospective claim", () => {
   assertRetrospectiveEvidence();
 });

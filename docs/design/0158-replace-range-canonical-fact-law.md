@@ -431,10 +431,11 @@ node scripts/jedit-production-cutover-guard.mjs
 npm run witness:echo
 ```
 
-`cargo fmt --check` reports two pre-existing differences on `origin/main`.
-This branch formats the semantically changed `src/rope/window.rs`; only the
-unchanged `src/contract.rs` baseline difference remains. The cycle does not mix
-that unrelated base cleanup into its semantic diff.
+The complete native crate passes
+`cargo fmt --manifest-path native/jedit-echo-host/Cargo.toml --all -- --check`.
+This branch includes the mechanical `src/contract.rs` assertion formatting
+that closes the inherited baseline difference; it changes no checkpoint reason
+semantics.
 
 ## Playback / Witness
 
