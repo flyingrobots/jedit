@@ -444,7 +444,7 @@ the declaration, codec vectors, corpus, and all sidecars, then proves check mode
 is clean. Inspect
 `contracts/jedit/lawpacks/replace-range-v1/text-schema-v1.json` for the exact
 fact, string, identity, rope, and corpus-invocation laws. Inspect
-`replace-range-v1.oracle.json` for 28 self-contained cases with basis facts,
+`replace-range-v1.oracle.json` for 29 self-contained cases with basis facts,
 exact invocation bytes, support, ordered patches, results, or typed no-patch
 obstructions. No editor, terminal rendering, external service, or sibling
 checkout is required.
@@ -521,9 +521,9 @@ What changed from the design:
   for the schema,
   `1ac26477e1d6c08df49446627ad002e40bd214235ce93b563d62bb50e40dc14c`
   for codec vectors, and
-  `dcd33185fe768f0d031ef861501a01226eed4300196c0536fb57c7b18ffc0b1a`
+  `47de02921770cb7846d08ab3d0dea83063d153d66918c1338eebed1d789af6f8`
   for the oracle. The oracle source-set digest is
-  `e9c7ff86991d5637e63f4c20f51b1e9816dfc570e79cee04924d9b4495c6c14b`.
+  `f693ea3a8a275b22bfc80748a5544c28890125044b9bce05c36ba57fa2bece63`.
   The ledger derives all four values from the committed artifacts.
   [`tests/replace-range-law-cycle.spec.mjs#L76@95f63d2c31847c3a4cc4bbea9152900470843d3a`](https://github.com/flyingrobots/jedit/blob/95f63d2c31847c3a4cc4bbea9152900470843d3a/tests/replace-range-law-cycle.spec.mjs#L76)
 - **Serialized resource updates.** The deliberate resource-update command runs

@@ -199,6 +199,17 @@ fn cases() -> Vec<CaseSpec> {
             "splits a UTF-8 code point",
         ),
         obstruction(
+            "empty-range-inside-codepoint",
+            "A😀B",
+            BasisSetup::Plain,
+            2,
+            2,
+            "",
+            SemanticObstructionCode::Utf8BoundaryInvalid,
+            "invalid-request",
+            "splits a UTF-8 code point",
+        ),
+        obstruction(
             "empty-no-op",
             "abc",
             BasisSetup::Plain,

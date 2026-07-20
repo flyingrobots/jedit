@@ -170,6 +170,10 @@ pub fn plan_replace_with_reason<T: GraphFacts>(
         )
     })?;
     let basis_root = basis_head.root_node_id.map(NodeId::from);
+    if start_byte == end_byte {
+        split(&mut context, basis_root, start_byte)
+            .map_err(ReplaceRangeFailure::from_rope_fault)?;
+    }
     let current_bytes = read_range_bytes(&mut context, basis_root, start_byte, end_byte)
         .map_err(ReplaceRangeFailure::from_rope_fault)?;
     if current_bytes == insert_text.as_bytes() {
