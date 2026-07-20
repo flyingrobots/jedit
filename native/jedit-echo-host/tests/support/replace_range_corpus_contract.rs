@@ -47,7 +47,7 @@ fn validate_oracle_case(case: &Value) -> Result<(), String> {
     {
         exact_fields(fact, &["nodeId", "typeId", "attachmentBytesHex"])?;
     }
-    exact_fields(
+    let invocation = exact_fields(
         field(case, "invocation")?,
         &[
             "bufferId",
@@ -57,7 +57,45 @@ fn validate_oracle_case(case: &Value) -> Result<(), String> {
             "replacementUtf8Hex",
         ],
     )?;
+    validate_node_id(field(invocation, "bufferId")?, "bufferId")?;
+    validate_node_id(field(invocation, "basisHeadId")?, "basisHeadId")?;
+    field(invocation, "startByte")?
+        .as_u64()
+        .ok_or_else(|| "startByte must be a u64 JSON decimal".to_owned())?;
+    field(invocation, "endByte")?
+        .as_u64()
+        .ok_or_else(|| "endByte must be a u64 JSON decimal".to_owned())?;
+    let replacement = decode_lowercase_hex(
+        field(invocation, "replacementUtf8Hex")?,
+        "replacementUtf8Hex",
+    )?;
+    std::str::from_utf8(&replacement)
+        .map_err(|_| "replacementUtf8Hex must encode UTF-8".to_owned())?;
     validate_terminal(field(case, "terminal")?)
+}
+
+fn validate_node_id(value: &Value, label: &str) -> Result<(), String> {
+    let bytes = decode_lowercase_hex(value, label)?;
+    if bytes.len() != 32 {
+        return Err(format!("{label} must encode exactly 32 bytes"));
+    }
+    Ok(())
+}
+
+fn decode_lowercase_hex(value: &Value, label: &str) -> Result<Vec<u8>, String> {
+    let value = value
+        .as_str()
+        .ok_or_else(|| format!("{label} must be a string"))?;
+    if value.len() % 2 != 0 {
+        return Err(format!("{label} must contain an even number of digits"));
+    }
+    if !value
+        .bytes()
+        .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    {
+        return Err(format!("{label} must contain lowercase hexadecimal only"));
+    }
+    hex::decode(value).map_err(|error| format!("{label} must decode: {error}"))
 }
 
 fn validate_terminal(terminal: &Value) -> Result<(), String> {

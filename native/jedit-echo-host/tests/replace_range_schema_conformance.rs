@@ -391,3 +391,23 @@ fn strict_corpus_shape_rejects_unknown_members_and_codes() {
     terminal["semanticCode"] = Value::String("invented-obstruction".to_owned());
     assert!(validate_oracle_contract(&unknown_code).is_err());
 }
+
+#[test]
+fn strict_corpus_shape_rejects_noncanonical_invocation_lexemes() {
+    for (field, invalid) in [
+        ("bufferId", "AA".repeat(32)),
+        ("bufferId", "aa".repeat(31)),
+        ("basisHeadId", "gg".repeat(32)),
+        ("replacementUtf8Hex", "0".to_owned()),
+        ("replacementUtf8Hex", "zz".to_owned()),
+        ("replacementUtf8Hex", "ff".to_owned()),
+    ] {
+        let mut corpus: Value =
+            serde_json::from_slice(ORACLE_BYTES).expect("oracle corpus should decode");
+        corpus["cases"][0]["invocation"][field] = Value::String(invalid);
+        assert!(
+            validate_oracle_contract(&corpus).is_err(),
+            "{field} accepted a noncanonical lexeme"
+        );
+    }
+}

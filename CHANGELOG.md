@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Enforced the published `ReplaceRange` oracle-invocation lexical law. Strict
+  conformance now rejects uppercase, malformed, or wrong-width identifiers and
+  odd, malformed, or non-UTF-8 replacement-byte encodings.
 - Added a retained-consequence consistency gate to the `ReplaceRange` oracle.
   Buffer, Head, Rewrite, and Diff identities, cross-links, ranges, metrics, and
   planner summaries must agree before result evidence can be published.

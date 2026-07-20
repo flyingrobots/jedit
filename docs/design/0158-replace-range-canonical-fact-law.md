@@ -230,7 +230,10 @@ ordered members `bufferId`, `basisHeadId`, `startByte`, `endByte`, and
 coordinates are JSON decimal `u64`; replacement bytes are lowercase
 hexadecimal and must decode as UTF-8. Every case carries the exact compact
 object bytes in `invocationBytesHex`. This schema is a conformance input, not a
-runtime authority or a prematurely frozen Echo ABI.
+runtime authority or a prematurely frozen Echo ABI. Strict corpus conformance
+rejects uppercase, nonhexadecimal, short, or long identifiers; odd-length or
+nonhexadecimal replacement bytes; replacement bytes that are not UTF-8; and
+coordinates that are not JSON `u64` values.
 
 The native planner and retained fact coordinates are `u64`, and the future
 Edict-authored operation must preserve that domain. Current production still
@@ -505,6 +508,8 @@ What the tests proved:
 - Strict corpus conformance rejects unknown object members, terminal or patch
   variants, and obstruction codes outside the ten-value semantic enum.
   [`native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L356:9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L356)
+- Corpus invocation conformance rejects identifiers and replacement bytes that
+  violate their exact lowercase hexadecimal, width, or UTF-8 lexical laws.
 - Six success and fourteen obstruction cases regenerate deterministically. A
   success yields the exact support, ordered patch, retained facts, metrics, and
   materialized consequence; an obstruction yields no `MutationPlan` and leaves
