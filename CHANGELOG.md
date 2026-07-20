@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Made the `ReplaceRange` lawpack updater run only its exact serial writer tests
+  before the complete locked reader/conformance pass, eliminating an
+  update-time race against stale committed resources.
 - Replaced the member-name-only `ReplaceRange` oracle check with a typed
   raw-byte contract. Envelope identities, source provenance, canonical
   identifier and UTF-8 lexemes, invocation bytes, footprints, patches, result

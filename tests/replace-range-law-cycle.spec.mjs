@@ -50,3 +50,29 @@ test('ReplaceRange oracle support modules stay within the Rust file budget', () 
 
   assert.deepEqual(oversized, []);
 });
+
+test('ReplaceRange updater isolates writers before committed-resource readers', () => {
+  const packageJson = JSON.parse(
+    fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf8'),
+  );
+  const update = packageJson.scripts['lawpack:replace-range:update'];
+  const check = packageJson.scripts['lawpack:replace-range:check'];
+
+  assert.match(
+    update,
+    /JEDIT_UPDATE_REPLACE_RANGE_SCHEMA=1 cargo test --locked .* published_schema_and_codec_vectors_regenerate_byte_for_byte -- --exact --test-threads=1/,
+  );
+  assert.match(
+    update,
+    /JEDIT_UPDATE_REPLACE_RANGE_ORACLE=1 cargo test --locked .* replace_range_oracle_matches_the_committed_corpus -- --exact --test-threads=1/,
+  );
+  assert.match(update, /&& npm run lawpack:replace-range:check$/);
+  for (const target of [
+    'replace_range_schema',
+    'replace_range_oracle',
+    'replace_range_schema_conformance',
+    'replace_range_corpus_conformance',
+  ]) {
+    assert.match(check, new RegExp(`cargo test --locked .* --test ${target}`));
+  }
+});
