@@ -9,7 +9,7 @@ mod source_set;
 
 use serde_json::Value;
 
-use corpus_contract::validate_oracle_contract;
+use corpus_contract::{validate_oracle_contract, NONCANONICAL_CORPUS_BYTES};
 
 const ORACLE_BYTES: &[u8] = include_bytes!(concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -33,6 +33,10 @@ fn assert_invalid(label: &str, mutate: impl FnOnce(&mut Value)) {
     let error = validate_oracle_contract(&bytes(&corpus))
         .expect_err("mutated corpus should violate its contract");
     assert!(!error.is_empty(), "{label} returned an empty error");
+    assert_ne!(
+        error, NONCANONICAL_CORPUS_BYTES,
+        "{label} did not reach its intended semantic validator"
+    );
 }
 
 fn assert_pointer_invalid(pointer: &str, value: Value) {

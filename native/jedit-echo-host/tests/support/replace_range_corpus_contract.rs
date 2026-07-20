@@ -12,6 +12,8 @@ use super::contract::{
 use super::lexemes::{CommitSha, Hex32, HexBytes, Utf8Hex};
 use super::source_set::source_set;
 
+pub(super) const NONCANONICAL_CORPUS_BYTES: &str = "oracle corpus bytes are not canonical";
+
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct CorpusEnvelope {
@@ -155,7 +157,7 @@ pub fn validate_oracle_contract(bytes: &[u8]) -> Result<(), String> {
         .map_err(|error| format!("oracle corpus canonicalization failed: {error}"))?;
     canonical.push(b'\n');
     if canonical != bytes {
-        return Err("oracle corpus bytes are not canonical".to_owned());
+        return Err(NONCANONICAL_CORPUS_BYTES.to_owned());
     }
     Ok(())
 }

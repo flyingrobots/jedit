@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Hardened the strict ReplaceRange corpus mutation harness so a negative witness
+  cannot pass solely because its test re-encoding changed canonical member order.
 - Made `ReplaceRange` refuse to produce a `MutationPlan` from a selected basis
   Head unless its retained bytes reproduce its content address, are canonical,
   and name the target Buffer. The structurally separate retained-consequence
