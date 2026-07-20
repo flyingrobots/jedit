@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Qualified every flattened `ReplaceRange` oracle footprint and patch
+  identifier by the corpus WARP. Generation and local fixture application now
+  reject foreign-WARP node, edge, and attachment keys before projection.
 - Replaced free-form `ReplaceRange` oracle obstruction strings with an
   exhaustive semantic enum and published strict corpus, terminal, footprint,
   patch, and result shapes. Conformance now rejects unknown fields and semantic

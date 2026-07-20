@@ -275,8 +275,8 @@ fn success_projection(
         &spec.replacement,
     )
     .expect("deterministic rerun should plan");
-    let first_plan = project_plan(plan);
-    let second_plan = project_plan(&second);
+    let first_plan = project_plan(plan, store.warp_id());
+    let second_plan = project_plan(&second, store.warp_id());
     assert_eq!(first_plan, second_plan, "{} rerun drifted", spec.id);
 
     let basis_ids: BTreeSet<_> = store
@@ -305,7 +305,11 @@ fn success_projection(
     let untouched_basis_node_ids = basis_ids.difference(&write_ids).cloned().collect();
     TerminalProjection::Committable {
         footprint: first_plan.0,
-        patch: first_plan.1.iter().map(project_op).collect::<Vec<_>>(),
+        patch: first_plan
+            .1
+            .iter()
+            .map(|operation| project_op(operation, store.warp_id()))
+            .collect::<Vec<_>>(),
         created_node_ids,
         updated_node_ids,
         untouched_basis_node_ids,
@@ -340,47 +344,74 @@ fn node_with_type(store: &GraphStore, type_id: TypeId) -> String {
     hex::encode(node_id.as_bytes())
 }
 
-fn project_plan(plan: &MutationPlan) -> (FootprintProjection, Vec<WarpOp>) {
+fn project_plan(
+    plan: &MutationPlan,
+    warp_id: warp_core::WarpId,
+) -> (FootprintProjection, Vec<WarpOp>) {
     let mut footprint = Footprint::default();
     plan.extend_footprint(&mut footprint);
     let mut delta = TickDelta::new();
     plan.emit(&mut delta);
-    (project_footprint(&footprint), delta.finalize())
+    (project_footprint(&footprint, warp_id), delta.finalize())
 }
 
-fn project_footprint(footprint: &Footprint) -> FootprintProjection {
+fn project_footprint(footprint: &Footprint, warp_id: warp_core::WarpId) -> FootprintProjection {
     FootprintProjection {
         node_reads: footprint
             .n_read
             .iter()
-            .map(|key| hex::encode(key.local_id.as_bytes()))
+            .map(|key| node_hex(key, warp_id))
             .collect(),
         node_writes: footprint
             .n_write
             .iter()
-            .map(|key| hex::encode(key.local_id.as_bytes()))
+            .map(|key| node_hex(key, warp_id))
             .collect(),
-        attachment_reads: footprint.a_read.iter().map(attachment_node_hex).collect(),
-        attachment_writes: footprint.a_write.iter().map(attachment_node_hex).collect(),
+        attachment_reads: footprint
+            .a_read
+            .iter()
+            .map(|key| attachment_node_hex(key, warp_id))
+            .collect(),
+        attachment_writes: footprint
+            .a_write
+            .iter()
+            .map(|key| attachment_node_hex(key, warp_id))
+            .collect(),
         edge_reads: footprint
             .e_read
             .iter()
-            .map(|key| hex::encode(key.local_id.as_bytes()))
+            .map(|key| edge_hex(key, warp_id))
             .collect(),
         edge_writes: footprint
             .e_write
             .iter()
-            .map(|key| hex::encode(key.local_id.as_bytes()))
+            .map(|key| edge_hex(key, warp_id))
             .collect(),
     }
 }
 
-fn attachment_node_hex(key: &warp_core::AttachmentKey) -> String {
+fn node_hex(key: &warp_core::NodeKey, warp_id: warp_core::WarpId) -> String {
+    assert_eq!(
+        key.warp_id, warp_id,
+        "oracle footprint WARP must match the corpus WARP"
+    );
+    hex::encode(key.local_id.as_bytes())
+}
+
+fn edge_hex(key: &warp_core::EdgeKey, warp_id: warp_core::WarpId) -> String {
+    assert_eq!(
+        key.warp_id, warp_id,
+        "oracle footprint WARP must match the corpus WARP"
+    );
+    hex::encode(key.local_id.as_bytes())
+}
+
+fn attachment_node_hex(key: &warp_core::AttachmentKey, warp_id: warp_core::WarpId) -> String {
     assert_eq!(key.plane, AttachmentPlane::Alpha);
     let AttachmentOwner::Node(node) = key.owner else {
         panic!("ReplaceRange footprint must not contain edge attachments")
     };
-    hex::encode(node.local_id.as_bytes())
+    node_hex(&node, warp_id)
 }
 
 fn project_store(store: &GraphStore) -> Vec<FactProjection> {
@@ -403,14 +434,14 @@ fn project_store(store: &GraphStore) -> Vec<FactProjection> {
         .collect()
 }
 
-fn project_op(op: &WarpOp) -> PatchOpProjection {
+fn project_op(op: &WarpOp, warp_id: warp_core::WarpId) -> PatchOpProjection {
     match op {
         WarpOp::UpsertNode { node, record } => PatchOpProjection::UpsertNode {
-            node_id: hex::encode(node.local_id.as_bytes()),
+            node_id: node_hex(node, warp_id),
             type_id: hex::encode(record.ty.as_bytes()),
         },
         WarpOp::SetAttachment { key, value } => {
-            let node_id = attachment_node_hex(key);
+            let node_id = attachment_node_hex(key, warp_id);
             let Some(AttachmentValue::Atom(atom)) = value else {
                 panic!("ReplaceRange must set atom attachments")
             };
@@ -430,5 +461,54 @@ fn error_projection(error: &HostError) -> (&'static str, String) {
         HostError::MalformedFact(message) => ("malformed-fact", message.clone()),
         HostError::InvalidRequest(message) => ("invalid-request", message.clone()),
         other => panic!("oracle received unexpected host error: {other}"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[should_panic(expected = "oracle footprint WARP must match the corpus WARP")]
+    fn footprint_projection_rejects_a_foreign_node_read() {
+        let expected = make_warp_id("oracle-local");
+        let mut footprint = Footprint::default();
+        footprint
+            .n_read
+            .insert_with_warp(make_warp_id("oracle-foreign"), NodeId([0xA5; 32]));
+
+        project_footprint(&footprint, expected);
+    }
+
+    #[test]
+    #[should_panic(expected = "oracle footprint WARP must match the corpus WARP")]
+    fn footprint_projection_rejects_a_foreign_attachment_write() {
+        let expected = make_warp_id("oracle-local");
+        let mut footprint = Footprint::default();
+        footprint
+            .a_write
+            .insert(warp_core::AttachmentKey::node_alpha(warp_core::NodeKey {
+                warp_id: make_warp_id("oracle-foreign"),
+                local_id: NodeId([0xA5; 32]),
+            }));
+
+        project_footprint(&footprint, expected);
+    }
+
+    #[test]
+    #[should_panic(expected = "oracle footprint WARP must match the corpus WARP")]
+    fn patch_projection_rejects_a_foreign_node_write() {
+        let expected = make_warp_id("oracle-local");
+        let operation = WarpOp::UpsertNode {
+            node: warp_core::NodeKey {
+                warp_id: make_warp_id("oracle-foreign"),
+                local_id: NodeId([0xA5; 32]),
+            },
+            record: warp_core::NodeRecord {
+                ty: warp_core::make_type_id("oracle.foreign"),
+            },
+        };
+
+        project_op(&operation, expected);
     }
 }

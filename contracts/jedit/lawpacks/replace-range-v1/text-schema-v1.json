@@ -347,6 +347,7 @@
       "edgeReads",
       "edgeWrites"
     ],
+    "localIdentifierQualification": "every footprint and patch identifier is qualified by top-level warpId",
     "objectMemberOrder": [
       "schemaVersion",
       "coordinate",

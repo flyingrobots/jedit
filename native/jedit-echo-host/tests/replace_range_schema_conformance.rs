@@ -353,6 +353,15 @@ fn schema_declares_the_exhaustive_oracle_obstruction_domain() {
 }
 
 #[test]
+fn schema_qualifies_local_oracle_identifiers_by_the_top_level_warp() {
+    let schema: Value = serde_json::from_slice(SCHEMA_BYTES).expect("schema should decode");
+    assert_eq!(
+        schema["oracleCorpus"]["localIdentifierQualification"],
+        "every footprint and patch identifier is qualified by top-level warpId"
+    );
+}
+
+#[test]
 fn committed_oracle_satisfies_the_strict_corpus_shape() {
     let corpus: Value = serde_json::from_slice(ORACLE_BYTES).expect("oracle corpus should decode");
     validate_oracle_contract(&corpus).expect("oracle corpus should satisfy its strict contract");

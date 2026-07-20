@@ -105,6 +105,11 @@ pub fn apply_ops(store: &mut GraphStore, ops: &[WarpOp]) {
                 let warp_core::AttachmentOwner::Node(node) = key.owner else {
                     panic!("oracle patch must not contain edge attachments")
                 };
+                assert_eq!(
+                    node.warp_id,
+                    store.warp_id(),
+                    "oracle patch WARP must match its local store"
+                );
                 store.set_node_attachment(node.local_id, value.clone());
             }
             _ => panic!("oracle patch contains an unsupported graph operation"),
@@ -191,4 +196,24 @@ fn corrupt_blob_hash(store: &mut GraphStore, head_id: NodeId) {
             fact_bytes(&blob).expect("blob should encode").into(),
         ))),
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[should_panic(expected = "oracle patch WARP must match its local store")]
+    fn local_patch_applier_rejects_a_foreign_warp_attachment() {
+        let mut store = GraphStore::new(warp_core::make_warp_id("oracle-local"));
+        let operation = WarpOp::SetAttachment {
+            key: warp_core::AttachmentKey::node_alpha(warp_core::NodeKey {
+                warp_id: warp_core::make_warp_id("oracle-foreign"),
+                local_id: NodeId([0xA5; 32]),
+            }),
+            value: None,
+        };
+
+        apply_ops(&mut store, &[operation]);
+    }
 }

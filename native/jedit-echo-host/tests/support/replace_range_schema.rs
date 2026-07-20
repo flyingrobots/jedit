@@ -142,6 +142,7 @@ pub fn expected_schema() -> Value {
             "coordinate": "jedit.text.ReplaceRange.oracle@1",
             "encoding": "pretty-utf8-json-final-newline",
             "unknownMembers": "forbidden",
+            "localIdentifierQualification": "every footprint and patch identifier is qualified by top-level warpId",
             "objectMemberOrder": [
                 "schemaVersion",
                 "coordinate",

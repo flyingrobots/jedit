@@ -253,6 +253,9 @@ domain is an exhaustive generated Rust enum whose ten kebab-case values are
 also enumerated in the machine declaration. A structurally separate
 conformance validator rejects unknown members, terminal and patch variants,
 and semantic obstruction codes before an external consumer compares evidence.
+Every flattened local identifier in footprint or patch evidence is qualified by
+the corpus's top-level `warpId`; generation and local application reject a key
+whose WARP differs before discarding that redundant qualifier.
 
 ## Lower Modes
 
@@ -476,13 +479,13 @@ What changed from the design:
   [`native/jedit-echo-host/tests/support/replace_range_contract.rs#L3:9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/support/replace_range_contract.rs#L3)
   [`native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L336:9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L336)
 - The published SHA-256 digests are
-  `c7bf126245e9b2f8e7ff080983c16ad625f6b341d886281b79317be9a0b3b76d`
+  `cb03407ff401033fd81312c31a1497519a2d1ae918ea4c19afd551bea1316a72`
   for the schema,
   `903947e1b25048b0bb0f3b3a473dd6441dfeb253fb588d112c28fcbceda083cb`
   for codec vectors, and
-  `bccde04b7cae5ad8c6044974edf2e116e8cb182328e6622b52c7a021ed7b7d78`
+  `9eaa16f104d21922bc6d6cde210b053da9a0673310be5b30bb49d18906aa0f44`
   for the oracle. The oracle source-set digest is
-  `4571309c0b4df86aa98f727a62540d51a6fc115d11494cdb6b8e2dd86c0a7f49`.
+  `2144730f3182683641b9168e7269ee4f5d5507f78cb418d5b98866201fc6fe2a`.
 
 What the tests proved:
 
