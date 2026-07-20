@@ -15,7 +15,6 @@ pub enum SemanticObstructionCode {
     MalformedRope,
 }
 
-#[allow(dead_code)]
 impl SemanticObstructionCode {
     pub const ALL: [Self; 10] = [
         Self::RangeOrderInvalid,
@@ -43,5 +42,29 @@ impl SemanticObstructionCode {
             Self::ContentIdentityMismatch => "content-identity-mismatch",
             Self::MalformedRope => "malformed-rope",
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeSet;
+
+    use super::*;
+
+    #[test]
+    fn semantic_obstruction_wire_values_are_bijective() {
+        let mut wire_values = BTreeSet::new();
+        for code in SemanticObstructionCode::ALL {
+            let encoded = serde_json::to_string(&code).expect("obstruction code should encode");
+            assert_eq!(encoded, format!("\"{}\"", code.as_str()));
+            assert_eq!(
+                serde_json::from_str::<SemanticObstructionCode>(&encoded)
+                    .expect("obstruction code should decode"),
+                code
+            );
+            assert!(wire_values.insert(code.as_str()));
+        }
+        assert_eq!(wire_values.len(), SemanticObstructionCode::ALL.len());
+        assert!(serde_json::from_str::<SemanticObstructionCode>("\"unknown\"").is_err());
     }
 }

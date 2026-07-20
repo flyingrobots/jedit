@@ -1,5 +1,7 @@
 use std::fmt;
 
+#[path = "support/replace_range_contract.rs"]
+mod contract;
 #[path = "support/replace_range_corpus_contract.rs"]
 mod corpus_contract;
 
@@ -10,6 +12,7 @@ use serde::de::{IgnoredAny, MapAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 
+use contract::SemanticObstructionCode;
 use corpus_contract::validate_oracle_contract;
 
 const SCHEMA_BYTES: &[u8] = include_bytes!(concat!(
@@ -24,6 +27,7 @@ const ORACLE_BYTES: &[u8] = include_bytes!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/../../contracts/jedit/lawpacks/replace-range-v1/replace-range-v1.oracle.json"
 ));
+const CORPUS_CONTRACT_SOURCE: &str = include_str!("support/replace_range_corpus_contract.rs");
 
 #[derive(Deserialize)]
 struct CorpusProjection {
@@ -335,21 +339,16 @@ fn oracle_invocation_bytes_follow_the_published_u64_codec() {
 #[test]
 fn schema_declares_the_exhaustive_oracle_obstruction_domain() {
     let schema: Value = serde_json::from_slice(SCHEMA_BYTES).expect("schema should decode");
+    let expected = SemanticObstructionCode::ALL.map(SemanticObstructionCode::as_str);
     assert_eq!(
         schema["oracleCorpus"]["terminal"]["semanticCodes"],
-        serde_json::json!([
-            "range-order-invalid",
-            "range-out-of-bounds",
-            "utf8-boundary-invalid",
-            "no-op",
-            "basis-not-canonical",
-            "arithmetic-overflow",
-            "fact-missing",
-            "fact-malformed",
-            "content-identity-mismatch",
-            "malformed-rope"
-        ])
+        serde_json::json!(expected)
     );
+}
+
+#[test]
+fn corpus_validator_does_not_duplicate_the_obstruction_domain() {
+    assert!(!CORPUS_CONTRACT_SOURCE.contains("const CODES"));
 }
 
 #[test]

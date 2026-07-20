@@ -1,5 +1,7 @@
 use serde_json::{Map, Value};
 
+use super::contract::SemanticObstructionCode;
+
 pub fn validate_oracle_contract(corpus: &Value) -> Result<(), String> {
     let root = exact_fields(
         corpus,
@@ -169,24 +171,8 @@ fn validate_obstructed(terminal: &Value) -> Result<(), String> {
             "patchPosture",
         ],
     )?;
-    const CODES: &[&str] = &[
-        "range-order-invalid",
-        "range-out-of-bounds",
-        "utf8-boundary-invalid",
-        "no-op",
-        "basis-not-canonical",
-        "arithmetic-overflow",
-        "fact-missing",
-        "fact-malformed",
-        "content-identity-mismatch",
-        "malformed-rope",
-    ];
-    let code = field(terminal, "semanticCode")?
-        .as_str()
-        .ok_or_else(|| "semanticCode must be a string".to_owned())?;
-    if !CODES.contains(&code) {
-        return Err(format!("unknown semanticCode {code}"));
-    }
+    serde_json::from_value::<SemanticObstructionCode>(field(terminal, "semanticCode")?.clone())
+        .map_err(|error| format!("invalid semanticCode: {error}"))?;
     Ok(())
 }
 
