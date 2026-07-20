@@ -2,7 +2,7 @@ use super::super::{apply_ops, make_basis, BasisSetup};
 use super::*;
 use jedit_echo_host::records::{fact_bytes, fact_type_id, BufferFact, RewriteFact};
 use jedit_echo_host::rope::plan_replace;
-use warp_core::{AttachmentValue, TickDelta, WarpOp};
+use warp_core::{make_type_id, AttachmentValue, NodeRecord, TickDelta, WarpOp};
 
 #[test]
 fn retained_consequence_is_internally_consistent() {
@@ -30,6 +30,40 @@ fn retained_consequence_is_internally_consistent() {
         },
     )
     .expect("retained consequence should be internally consistent");
+}
+
+#[test]
+fn retained_consequence_rejects_node_and_atom_type_disagreement() {
+    let warp_id = warp_core::make_warp_id("oracle-node-type");
+    let (basis, buffer_id, basis_head_id, _) =
+        make_basis(warp_id, "node-type", "abc", BasisSetup::Plain);
+    let plan = plan_replace(&basis, buffer_id, basis_head_id, 1, 2, "XY")
+        .expect("replacement should plan");
+    let mut delta = TickDelta::new();
+    plan.emit(&mut delta);
+    let patch = delta.finalize();
+    let expectation = ReplaceExpectation {
+        basis_head_id,
+        start_byte: 1,
+        end_byte: 2,
+        replacement: "XY",
+    };
+    let mut next = basis.clone();
+    apply_ops(&mut next, &patch);
+
+    for (node_id, label) in [(buffer_id, "Buffer"), (plan.head_id, "Head")] {
+        let mut corrupted = next.clone();
+        corrupted.insert_node(
+            node_id,
+            NodeRecord {
+                ty: make_type_id("jedit.text.DeliberatelyWrong.v1"),
+            },
+        );
+
+        let error = validate_consequence(&basis, &corrupted, &plan, &patch, expectation)
+            .expect_err("node and atom type disagreement must fail");
+        assert!(error.contains(label), "{label} error was {error:?}");
+    }
 }
 
 #[test]

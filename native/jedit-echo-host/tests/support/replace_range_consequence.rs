@@ -243,6 +243,19 @@ fn read_fact<F: jedit_echo_host::records::TypedFact>(
     store: &GraphStore,
     node_id: NodeId,
 ) -> Result<F, String> {
+    let record = store
+        .node(&node_id)
+        .ok_or_else(|| format!("missing retained node {}", hex::encode(node_id.as_bytes())))?;
+    let expected_type = fact_type_id::<F>();
+    if record.ty != expected_type {
+        return Err(format!(
+            "{} node {} declares type {}, expected {}",
+            F::TYPE_LABEL,
+            hex::encode(node_id.as_bytes()),
+            hex::encode(record.ty.as_bytes()),
+            hex::encode(expected_type.as_bytes())
+        ));
+    }
     let attachment = store
         .node_attachment(&node_id)
         .ok_or_else(|| format!("missing retained fact {}", hex::encode(node_id.as_bytes())))?;
