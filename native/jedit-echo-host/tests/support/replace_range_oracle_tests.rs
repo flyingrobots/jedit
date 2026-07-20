@@ -1,7 +1,56 @@
 use super::*;
+use std::cell::Cell;
+
 use jedit_echo_host::error::HostError;
 use jedit_echo_host::records::{fact_bytes, HeadFact};
+use jedit_echo_host::rope::GraphFacts;
 use warp_core::{make_type_id, NodeRecord};
+
+struct ReadBudgetGraphFacts<'a> {
+    store: &'a GraphStore,
+    remaining_node_reads: Cell<usize>,
+}
+
+impl GraphFacts for ReadBudgetGraphFacts<'_> {
+    fn warp_id(&self) -> warp_core::WarpId {
+        self.store.warp_id()
+    }
+
+    fn node(&self, id: &NodeId) -> Option<&NodeRecord> {
+        let remaining = self.remaining_node_reads.get();
+        assert!(
+            remaining > 0,
+            "cyclic retained rope exceeded the deterministic read budget"
+        );
+        self.remaining_node_reads.set(remaining - 1);
+        self.store.node(id)
+    }
+
+    fn attachment(&self, id: &NodeId) -> Option<&AttachmentValue> {
+        self.store.node_attachment(id)
+    }
+}
+
+#[test]
+fn planner_refuses_a_cyclic_right_endpoint_before_exhausting_its_read_budget() {
+    let warp_id = make_warp_id("oracle-cyclic-right-endpoint");
+    let (store, buffer_id, basis_head_id, _) = make_basis(
+        warp_id,
+        "cyclic-right-endpoint",
+        "abc",
+        BasisSetup::CyclicRightEndpoint,
+    );
+    let bounded = ReadBudgetGraphFacts {
+        store: &store,
+        remaining_node_reads: Cell::new(32),
+    };
+
+    let failure = plan_replace_with_reason(&bounded, buffer_id, basis_head_id, 3, 3, "x")
+        .expect_err("a cyclic retained rope must not produce a MutationPlan");
+
+    assert_eq!(failure.reason(), SemanticObstructionCode::FactMalformed);
+    assert!(matches!(failure.host_error(), HostError::MalformedFact(_)));
+}
 
 #[test]
 #[should_panic(expected = "oracle footprint WARP must match the corpus WARP")]

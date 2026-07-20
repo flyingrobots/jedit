@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Made exact-end `ReplaceRange` validation reject cyclic retained rope links
+  with a typed malformed-fact obstruction instead of looping indefinitely.
 - Scoped the ReplaceRange historical planner checkpoint to provenance only.
 - Cross-checked every committable `ReplaceRange` corpus result against its
   authenticated basis and patched Buffer, Head, Rewrite, and Diff fact chain.

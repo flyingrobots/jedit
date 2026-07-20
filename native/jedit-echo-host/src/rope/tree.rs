@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use warp_core::NodeId;
 
 use crate::error::{HostError, HostResult};
@@ -156,7 +158,14 @@ fn validate_right_endpoint<T: GraphFacts>(
     context: &mut PlanContext<'_, T>,
     mut node_id: NodeId,
 ) -> RopeResult<()> {
+    let mut visited = BTreeSet::new();
     loop {
+        if !visited.insert(node_id) {
+            return Err(RopeFault::fact_malformed(format!(
+                "rope node cycle at {}",
+                node_id_hex(node_id)
+            )));
+        }
         match context
             .rope_node(node_id)
             .map_err(RopeFault::structural_dependency)?

@@ -309,6 +309,17 @@ fn cases() -> Vec<CaseSpec> {
             "content hash does not match",
         ),
         obstruction(
+            "cyclic-right-endpoint",
+            "abc",
+            BasisSetup::CyclicRightEndpoint,
+            3,
+            3,
+            "x",
+            SemanticObstructionCode::FactMalformed,
+            "malformed-fact",
+            "rope node cycle",
+        ),
+        obstruction(
             "leaf-exceeds-blob-at-exact-end",
             "abc",
             BasisSetup::LeafExceedsBlobAtExactEnd,
