@@ -23,11 +23,12 @@
       "native/jedit-echo-host/tests/support/replace_range_contract.rs",
       "native/jedit-echo-host/tests/support/replace_range_consequence.rs",
       "native/jedit-echo-host/tests/support/replace_range_consequence_tests.rs",
+      "native/jedit-echo-host/tests/support/replace_range_obstruction.rs",
       "native/jedit-echo-host/tests/support/replace_range_oracle.rs",
       "native/jedit-echo-host/tests/support/replace_range_oracle_tests.rs",
       "native/jedit-echo-host/tests/support/replace_range_source_set.rs"
     ],
-    "digestHex": "527209d4d6772ea31aaa9e90afe366e1dd26d0e2df569c713550f2552a1fc5cf"
+    "digestHex": "56b0e7601495fdd27b86ff34048d9dfcf534431a0e74f72e284ee7bc26cb7c0e"
   },
   "evidenceGrade": "deterministic-self-validation",
   "independenceLimit": "independent finite-corpus evidence begins only when a separately implemented Echo evaluator agrees",

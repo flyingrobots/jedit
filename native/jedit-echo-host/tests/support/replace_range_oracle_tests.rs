@@ -43,3 +43,26 @@ fn patch_projection_rejects_a_foreign_node_write() {
 
     project_op(&operation, expected);
 }
+
+#[test]
+fn obstruction_projection_rejects_a_false_expected_semantic_code() {
+    let spec = CaseSpec {
+        id: "false-semantic-code",
+        purpose: "negative semantic-obstruction witness",
+        initial_text: "abc".to_owned(),
+        setup: BasisSetup::Plain,
+        start_byte: 2,
+        end_byte: 1,
+        replacement: "x".to_owned(),
+        expected: ExpectedPosture::Obstruction {
+            semantic_code: SemanticObstructionCode::RangeOutOfBounds,
+            error_class: "invalid-request",
+            message_fragment: "exceeds",
+        },
+    };
+
+    assert!(
+        std::panic::catch_unwind(|| evaluate_case(make_warp_id("oracle-semantic"), spec)).is_err(),
+        "oracle accepted a semantic code that did not describe the observed failure"
+    );
+}

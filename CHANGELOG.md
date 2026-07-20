@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Made the `ReplaceRange` oracle derive each semantic obstruction code from the
+  observed planner failure and canonical request coordinates. A fixture's
+  expected label can no longer determine the published semantic category.
 - Strengthened the `ReplaceRange` stale- and foreign-basis witnesses to prove
   the retained causal relationships they claim. A stale basis must be the
   direct ancestor of the target Buffer's canonical Head, while a foreign basis

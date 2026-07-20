@@ -63,6 +63,10 @@ const SOURCE_SET_FILES: &[(&str, &[u8])] = &[
         include_bytes!("replace_range_consequence_tests.rs"),
     ),
     (
+        "native/jedit-echo-host/tests/support/replace_range_obstruction.rs",
+        include_bytes!("replace_range_obstruction.rs"),
+    ),
+    (
         "native/jedit-echo-host/tests/support/replace_range_oracle.rs",
         include_bytes!("replace_range_oracle.rs"),
     ),

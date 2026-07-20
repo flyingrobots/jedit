@@ -15,6 +15,8 @@ mod basis;
 mod consequence;
 #[path = "replace_range_contract.rs"]
 mod contract;
+#[path = "replace_range_obstruction.rs"]
+mod obstruction;
 #[path = "replace_range_source_set.rs"]
 mod source_set;
 #[cfg(test)]
@@ -30,6 +32,7 @@ use contract::{
     INVOCATION_SCHEMA_COORDINATE, OBSTRUCTED_PATCH_POSTURE, ORACLE_COORDINATE,
     ORACLE_SCHEMA_VERSION, ORACLE_WARP_LABEL, SEMANTIC_BASELINE_COMMIT,
 };
+use obstruction::semantic_obstruction;
 use source_set::{source_set, SourceSet};
 
 #[derive(Clone, Copy)]
@@ -230,6 +233,12 @@ fn evaluate_case(warp_id: warp_core::WarpId, spec: CaseSpec) -> OracleCase {
             },
         ) => {
             let (actual_class, actual_message) = error_projection(&error);
+            let actual_semantic_code = semantic_obstruction(&error, spec.start_byte, spec.end_byte);
+            assert_eq!(
+                actual_semantic_code, semantic_code,
+                "{} semantic obstruction",
+                spec.id
+            );
             assert_eq!(actual_class, error_class, "{} error class", spec.id);
             assert!(
                 actual_message.contains(message_fragment),
@@ -237,7 +246,7 @@ fn evaluate_case(warp_id: warp_core::WarpId, spec: CaseSpec) -> OracleCase {
                 spec.id
             );
             TerminalProjection::Obstructed {
-                semantic_code,
+                semantic_code: actual_semantic_code,
                 legacy_error_class: error_class,
                 legacy_message: actual_message,
                 parent_graph_unchanged: before == project_store(&store),
