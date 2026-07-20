@@ -493,9 +493,9 @@ What changed from the design:
   for the schema,
   `903947e1b25048b0bb0f3b3a473dd6441dfeb253fb588d112c28fcbceda083cb`
   for codec vectors, and
-  `1c03efba1ba38ea17729385d49626795de74e7636444bef0b780f0ffb33fa12`
+  `ff52164f8346299cd9a13417aeb7831764bf2a3fc1cb3a1b05afe14cba477cf1`
   for the oracle. The oracle source-set digest is
-  `996125197ece197fb6fde1f48ace8fc62c58cfca8b0fac60e4e145a9ffcf6ea28`.
+  `527209d4d6772ea31aaa9e90afe366e1dd26d0e2df569c713550f2552a1fc5cf`.
 
 What the tests proved:
 

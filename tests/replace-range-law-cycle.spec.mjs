@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
@@ -16,6 +17,15 @@ const ORACLE_SUPPORT_PATH = path.join(
   'tests',
   'support',
 );
+const ORACLE_PATH = path.join(
+  process.cwd(),
+  'contracts',
+  'jedit',
+  'lawpacks',
+  'replace-range-v1',
+  'replace-range-v1.oracle.json',
+);
+const ORACLE_DIGEST_PATH = `${ORACLE_PATH.slice(0, -'.json'.length)}.sha256`;
 
 function readDesign() {
   return fs.readFileSync(DESIGN_PATH, 'utf8');
@@ -36,6 +46,18 @@ test('DL-0158 retrospective pins implemented truth to a full commit SHA', () => 
     retrospective,
     /https:\/\/github\.com\/flyingrobots\/jedit\/blob\/[0-9a-f]{40}\//,
   );
+});
+
+test('DL-0158 retrospective binds the exact oracle and source-set digests', () => {
+  const oracleBytes = fs.readFileSync(ORACLE_PATH);
+  const oracleDigest = crypto.createHash('sha256').update(oracleBytes).digest('hex');
+  const publishedDigest = fs.readFileSync(ORACLE_DIGEST_PATH, 'utf8').trim();
+  const sourceSetDigest = JSON.parse(oracleBytes).sourceSet.digestHex;
+  const retrospective = readDesign().split('## Retrospective')[1];
+
+  assert.equal(publishedDigest, oracleDigest);
+  assert.match(retrospective, new RegExp(`\\b${oracleDigest}\\b`));
+  assert.match(retrospective, new RegExp(`\\b${sourceSetDigest}\\b`));
 });
 
 test('ReplaceRange oracle support modules stay within the Rust file budget', () => {
