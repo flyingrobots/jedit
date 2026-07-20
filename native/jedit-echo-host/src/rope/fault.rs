@@ -20,12 +20,23 @@ pub(super) type RopeResult<T> = Result<T, RopeFault>;
 
 impl RopeFault {
     pub(super) fn structural_dependency(legacy: HostError) -> Self {
-        let kind = match legacy {
-            HostError::MissingFact(_) => RopeFaultKind::FactMissing,
-            HostError::MalformedFact(_) => RopeFaultKind::FactMalformed,
-            _ => RopeFaultKind::DeclaredRopeInconsistent,
-        };
+        let kind = Self::structural_dependency_kind(&legacy).unwrap_or_else(|| {
+            panic!("non-structural host error cannot acquire rope semantics: {legacy}")
+        });
         Self { kind, legacy }
+    }
+
+    fn structural_dependency_kind(legacy: &HostError) -> Option<RopeFaultKind> {
+        match legacy {
+            HostError::MissingFact(_) => Some(RopeFaultKind::FactMissing),
+            HostError::MalformedFact(_) => Some(RopeFaultKind::FactMalformed),
+            HostError::InvalidRequest(_) => Some(RopeFaultKind::DeclaredRopeInconsistent),
+            HostError::Echo(_)
+            | HostError::IntentNotApplied(_)
+            | HostError::GeneratedOperationUnavailable(_)
+            | HostError::Observation(_)
+            | HostError::Protocol(_) => None,
+        }
     }
 
     pub(super) fn fact_malformed(message: String) -> Self {
@@ -79,5 +90,55 @@ impl RopeFault {
 
     pub(super) fn into_host_error(self) -> HostError {
         self.legacy
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn infrastructure_errors() -> [HostError; 5] {
+        [
+            HostError::Echo("echo".to_owned()),
+            HostError::IntentNotApplied("outcome".to_owned()),
+            HostError::GeneratedOperationUnavailable("operation".to_owned()),
+            HostError::Observation("observation".to_owned()),
+            HostError::Protocol("protocol".to_owned()),
+        ]
+    }
+
+    #[test]
+    fn structural_dependency_classifies_only_structural_errors() {
+        for (error, expected) in [
+            (
+                HostError::MissingFact("missing".to_owned()),
+                RopeFaultKind::FactMissing,
+            ),
+            (
+                HostError::MalformedFact("malformed".to_owned()),
+                RopeFaultKind::FactMalformed,
+            ),
+            (
+                HostError::InvalidRequest("invalid".to_owned()),
+                RopeFaultKind::DeclaredRopeInconsistent,
+            ),
+        ] {
+            assert_eq!(
+                RopeFault::structural_dependency_kind(&error),
+                Some(expected)
+            );
+        }
+        for error in infrastructure_errors() {
+            assert_eq!(RopeFault::structural_dependency_kind(&error), None);
+        }
+    }
+
+    #[test]
+    fn structural_dependency_refuses_infrastructure_errors() {
+        for error in infrastructure_errors() {
+            assert!(
+                std::panic::catch_unwind(move || RopeFault::structural_dependency(error)).is_err()
+            );
+        }
     }
 }
