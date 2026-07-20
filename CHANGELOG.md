@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Replaced the member-name-only `ReplaceRange` oracle check with a typed
+  raw-byte contract. Envelope identities, source provenance, canonical
+  identifier and UTF-8 lexemes, invocation bytes, footprints, patches, result
+  metrics, and no-partial-mutation obstruction evidence now fail closed.
 - Enforced the published `ReplaceRange` oracle-invocation lexical law. Strict
   conformance now rejects uppercase, malformed, or wrong-width identifiers and
   odd, malformed, or non-UTF-8 replacement-byte encodings.

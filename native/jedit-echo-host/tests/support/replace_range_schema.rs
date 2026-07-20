@@ -9,9 +9,12 @@ use serde_json::{json, Value};
 #[path = "replace_range_contract.rs"]
 mod contract;
 
-use contract::SemanticObstructionCode;
+use contract::{
+    SemanticObstructionCode, APPLICATION_SCHEMA_COORDINATE, INVOCATION_SCHEMA_COORDINATE,
+    OBSTRUCTED_PATCH_POSTURE, ORACLE_COORDINATE,
+};
 
-pub const SCHEMA_COORDINATE: &str = "jedit.text.schema@1";
+pub const SCHEMA_COORDINATE: &str = APPLICATION_SCHEMA_COORDINATE;
 pub const STRING_ESCAPE_VECTOR: &str = concat!(
     "\u{0000}\u{0001}\u{0002}\u{0003}\u{0004}\u{0005}\u{0006}\u{0007}",
     "\u{0008}\u{0009}\u{000a}\u{000b}\u{000c}\u{000d}\u{000e}\u{000f}",
@@ -119,7 +122,7 @@ pub fn expected_schema() -> Value {
             "emittedOperations": ["upsert-node", "set-node-alpha"]
         },
         "oracleInvocation": {
-            "coordinate": "jedit.text.ReplaceRange.oracle-invocation@1",
+            "coordinate": INVOCATION_SCHEMA_COORDINATE,
             "posture": "finite-corpus-input-not-runtime-abi",
             "encoding": "compact-utf8-json",
             "objectMemberOrder": [
@@ -139,7 +142,7 @@ pub fn expected_schema() -> Value {
             "canonicalBytesField": "invocationBytesHex"
         },
         "oracleCorpus": {
-            "coordinate": "jedit.text.ReplaceRange.oracle@1",
+            "coordinate": ORACLE_COORDINATE,
             "encoding": "pretty-utf8-json-final-newline",
             "unknownMembers": "forbidden",
             "localIdentifierQualification": "every footprint and patch identifier is qualified by top-level warpId",
@@ -198,7 +201,7 @@ pub fn expected_schema() -> Value {
                     .iter()
                     .map(|code| code.as_str())
                     .collect::<Vec<_>>(),
-                "obstructedPatchPosture": "no-mutation-plan"
+                "obstructedPatchPosture": OBSTRUCTED_PATCH_POSTURE
             },
             "footprintMemberOrder": [
                 "nodeReads",

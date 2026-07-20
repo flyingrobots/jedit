@@ -2,8 +2,6 @@ use std::fmt;
 
 #[path = "support/replace_range_contract.rs"]
 mod contract;
-#[path = "support/replace_range_corpus_contract.rs"]
-mod corpus_contract;
 
 use jedit_echo_host::records::{
     BlobFact, BranchFact, BufferFact, DiffFact, HeadFact, LeafFact, NodeIdBytes, RewriteFact,
@@ -13,7 +11,6 @@ use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 
 use contract::SemanticObstructionCode;
-use corpus_contract::validate_oracle_contract;
 
 const SCHEMA_BYTES: &[u8] = include_bytes!(concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -27,7 +24,6 @@ const ORACLE_BYTES: &[u8] = include_bytes!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/../../contracts/jedit/lawpacks/replace-range-v1/replace-range-v1.oracle.json"
 ));
-const CORPUS_CONTRACT_SOURCE: &str = include_str!("support/replace_range_corpus_contract.rs");
 
 #[derive(Deserialize)]
 struct CorpusProjection {
@@ -347,66 +343,10 @@ fn schema_declares_the_exhaustive_oracle_obstruction_domain() {
 }
 
 #[test]
-fn corpus_validator_does_not_duplicate_the_obstruction_domain() {
-    assert!(!CORPUS_CONTRACT_SOURCE.contains("const CODES"));
-}
-
-#[test]
 fn schema_qualifies_local_oracle_identifiers_by_the_top_level_warp() {
     let schema: Value = serde_json::from_slice(SCHEMA_BYTES).expect("schema should decode");
     assert_eq!(
         schema["oracleCorpus"]["localIdentifierQualification"],
         "every footprint and patch identifier is qualified by top-level warpId"
     );
-}
-
-#[test]
-fn committed_oracle_satisfies_the_strict_corpus_shape() {
-    let corpus: Value = serde_json::from_slice(ORACLE_BYTES).expect("oracle corpus should decode");
-    validate_oracle_contract(&corpus).expect("oracle corpus should satisfy its strict contract");
-}
-
-#[test]
-fn strict_corpus_shape_rejects_unknown_members_and_codes() {
-    let corpus: Value = serde_json::from_slice(ORACLE_BYTES).expect("oracle corpus should decode");
-
-    let mut unknown_member = corpus.clone();
-    unknown_member
-        .as_object_mut()
-        .expect("corpus should be an object")
-        .insert("ambientAuthority".to_owned(), Value::Bool(true));
-    assert!(validate_oracle_contract(&unknown_member).is_err());
-
-    let mut unknown_code = corpus;
-    let terminal = unknown_code["cases"]
-        .as_array_mut()
-        .expect("cases should be an array")
-        .iter_mut()
-        .find_map(|case| {
-            let terminal = case.get_mut("terminal")?;
-            (terminal["posture"] == "obstructed").then_some(terminal)
-        })
-        .expect("an obstruction should exist");
-    terminal["semanticCode"] = Value::String("invented-obstruction".to_owned());
-    assert!(validate_oracle_contract(&unknown_code).is_err());
-}
-
-#[test]
-fn strict_corpus_shape_rejects_noncanonical_invocation_lexemes() {
-    for (field, invalid) in [
-        ("bufferId", "AA".repeat(32)),
-        ("bufferId", "aa".repeat(31)),
-        ("basisHeadId", "gg".repeat(32)),
-        ("replacementUtf8Hex", "0".to_owned()),
-        ("replacementUtf8Hex", "zz".to_owned()),
-        ("replacementUtf8Hex", "ff".to_owned()),
-    ] {
-        let mut corpus: Value =
-            serde_json::from_slice(ORACLE_BYTES).expect("oracle corpus should decode");
-        corpus["cases"][0]["invocation"][field] = Value::String(invalid);
-        assert!(
-            validate_oracle_contract(&corpus).is_err(),
-            "{field} accepted a noncanonical lexeme"
-        );
-    }
 }

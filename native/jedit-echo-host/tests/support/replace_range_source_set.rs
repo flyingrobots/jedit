@@ -1,7 +1,10 @@
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 
-const SOURCE_SET_DOMAIN: &[u8] = b"jedit.replace-range.oracle-source.v1\0";
+pub const SOURCE_SET_ALGORITHM: &str = "sha256";
+pub const SOURCE_SET_DOMAIN: &[u8] = b"jedit.replace-range.oracle-source.v1\0";
+pub const SOURCE_SET_FRAMING: &str =
+    "domain || repeated(u32be-path-length || path-utf8 || u64be-byte-length || bytes)";
 const SOURCE_SET_FILES: &[(&str, &[u8])] = &[
     (
         "native/jedit-echo-host/Cargo.toml",
@@ -72,14 +75,28 @@ const SOURCE_SET_FILES: &[(&str, &[u8])] = &[
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SourceSet {
-    algorithm: &'static str,
-    domain_hex: String,
-    framing: &'static str,
-    paths: Vec<&'static str>,
-    digest_hex: String,
+    pub algorithm: &'static str,
+    pub domain_hex: String,
+    pub framing: &'static str,
+    pub paths: Vec<&'static str>,
+    pub digest_hex: String,
 }
 
 pub fn source_set() -> SourceSet {
+    SourceSet {
+        algorithm: SOURCE_SET_ALGORITHM,
+        domain_hex: hex::encode(SOURCE_SET_DOMAIN),
+        framing: SOURCE_SET_FRAMING,
+        paths: expected_source_paths(),
+        digest_hex: expected_source_digest_hex(),
+    }
+}
+
+pub fn expected_source_paths() -> Vec<&'static str> {
+    SOURCE_SET_FILES.iter().map(|(path, _)| *path).collect()
+}
+
+pub fn expected_source_digest_hex() -> String {
     let mut digest = Sha256::new();
     digest.update(SOURCE_SET_DOMAIN);
     for (path, bytes) in SOURCE_SET_FILES {
@@ -88,11 +105,5 @@ pub fn source_set() -> SourceSet {
         digest.update((bytes.len() as u64).to_be_bytes());
         digest.update(bytes);
     }
-    SourceSet {
-        algorithm: "sha256",
-        domain_hex: hex::encode(SOURCE_SET_DOMAIN),
-        framing: "domain || repeated(u32be-path-length || path-utf8 || u64be-byte-length || bytes)",
-        paths: SOURCE_SET_FILES.iter().map(|(path, _)| *path).collect(),
-        digest_hex: hex::encode(digest.finalize()),
-    }
+    hex::encode(digest.finalize())
 }

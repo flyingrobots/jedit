@@ -25,10 +25,12 @@ pub use basis::BasisSetup;
 use basis::{apply_ops, make_basis};
 use consequence::{validate_consequence, ReplaceExpectation};
 pub use contract::SemanticObstructionCode;
+use contract::{
+    APPLICATION_SCHEMA_COORDINATE, EVIDENCE_GRADE, INDEPENDENCE_LIMIT,
+    INVOCATION_SCHEMA_COORDINATE, OBSTRUCTED_PATCH_POSTURE, ORACLE_COORDINATE,
+    ORACLE_SCHEMA_VERSION, ORACLE_WARP_LABEL, SEMANTIC_BASELINE_COMMIT,
+};
 use source_set::{source_set, SourceSet};
-
-const ORACLE_WARP_LABEL: &str = "jedit.replace-range.oracle.v1";
-const SEMANTIC_BASELINE_COMMIT: &str = "c70e12d73b4b00bc92412bab67e1761f7dd22f82";
 
 #[derive(Clone, Copy)]
 pub enum ExpectedPosture {
@@ -172,14 +174,14 @@ pub fn generate_corpus(specs: Vec<CaseSpec>) -> OracleCorpus {
         .map(|spec| evaluate_case(warp_id, spec))
         .collect();
     OracleCorpus {
-        schema_version: 1,
-        coordinate: "jedit.text.ReplaceRange.oracle@1",
-        application_schema_coordinate: "jedit.text.schema@1",
-        invocation_schema_coordinate: "jedit.text.ReplaceRange.oracle-invocation@1",
+        schema_version: ORACLE_SCHEMA_VERSION,
+        coordinate: ORACLE_COORDINATE,
+        application_schema_coordinate: APPLICATION_SCHEMA_COORDINATE,
+        invocation_schema_coordinate: INVOCATION_SCHEMA_COORDINATE,
         semantic_baseline_commit: SEMANTIC_BASELINE_COMMIT,
         source_set: source_set(),
-        evidence_grade: "deterministic-self-validation",
-        independence_limit: "independent finite-corpus evidence begins only when a separately implemented Echo evaluator agrees",
+        evidence_grade: EVIDENCE_GRADE,
+        independence_limit: INDEPENDENCE_LIMIT,
         warp_id: hex::encode(warp_id.as_bytes()),
         cases,
     }
@@ -239,7 +241,7 @@ fn evaluate_case(warp_id: warp_core::WarpId, spec: CaseSpec) -> OracleCase {
                 legacy_error_class: error_class,
                 legacy_message: actual_message,
                 parent_graph_unchanged: before == project_store(&store),
-                patch_posture: "no-mutation-plan",
+                patch_posture: OBSTRUCTED_PATCH_POSTURE,
             }
         }
         (Ok(_), ExpectedPosture::Obstruction { .. }) => {
