@@ -62,6 +62,57 @@ function readDesign() {
   return fs.readFileSync(DESIGN_PATH, "utf8");
 }
 
+function artifactDigestClaim(design) {
+  const retrospective = design.split("## Retrospective")[1];
+  const marker = "- **Artifact digest ledger.** ";
+  const parts = retrospective.split(marker);
+  assert.equal(parts.length, 2, "expected one artifact digest ledger claim");
+  return parts[1].split("\n- **")[0].replaceAll(/\s+/g, " ").trim();
+}
+
+function assertArtifactDigestLedger(design = readDesign()) {
+  const actualDigests = [];
+  let oracleBytes;
+
+  for (const fileName of PUBLISHED_ARTIFACTS) {
+    const artifactPath = path.join(LAWPACK_PATH, fileName);
+    const artifactBytes = fs.readFileSync(artifactPath);
+    const actualDigest = crypto
+      .createHash("sha256")
+      .update(artifactBytes)
+      .digest("hex");
+    const sidecarPath = artifactPath.replace(/\.json$/, ".sha256");
+    const publishedDigest = fs.readFileSync(sidecarPath, "utf8").trim();
+
+    assert.equal(publishedDigest, actualDigest, `${fileName} sidecar drifted`);
+    actualDigests.push(actualDigest);
+    if (fileName === "replace-range-v1.oracle.json") {
+      oracleBytes = artifactBytes;
+    }
+  }
+
+  assert.ok(
+    oracleBytes,
+    "oracle artifact must be present in the published set",
+  );
+  const sourceSetDigest = JSON.parse(oracleBytes).sourceSet.digestHex;
+  const mapping =
+    /^The published SHA-256 digests are `(?<schema>[a-f0-9]{64})` for the schema, `(?<codec>[a-f0-9]{64})` for codec vectors, and `(?<oracle>[a-f0-9]{64})` for the oracle\. The oracle source-set digest is `(?<sourceSet>[a-f0-9]{64})`\./.exec(
+      artifactDigestClaim(design),
+    );
+  assert.ok(mapping, "artifact digest ledger drift");
+  assert.deepEqual(
+    [
+      mapping.groups.schema,
+      mapping.groups.codec,
+      mapping.groups.oracle,
+      mapping.groups.sourceSet,
+    ],
+    [...actualDigests, sourceSetDigest],
+    "artifact digest ledger drift",
+  );
+}
+
 function retrospectiveClaims(design = readDesign()) {
   const retrospectiveParts = design.split("## Retrospective");
   assert.equal(retrospectiveParts.length, 2, "expected one Retrospective");
@@ -336,32 +387,26 @@ test("ReplaceRange scopes its historical planner checkpoint as provenance", () =
 });
 
 test("DL-0158 retrospective binds every published artifact digest", () => {
-  const retrospective = readDesign().split("## Retrospective")[1];
-  let oracleBytes;
+  assertArtifactDigestLedger();
+});
 
-  for (const fileName of PUBLISHED_ARTIFACTS) {
-    const artifactPath = path.join(LAWPACK_PATH, fileName);
-    const artifactBytes = fs.readFileSync(artifactPath);
-    const actualDigest = crypto
-      .createHash("sha256")
-      .update(artifactBytes)
-      .digest("hex");
-    const sidecarPath = artifactPath.replace(/\.json$/, ".sha256");
-    const publishedDigest = fs.readFileSync(sidecarPath, "utf8").trim();
+test("DL-0158 rejects artifact digests under the wrong labels", () => {
+  const schemaDigest = fs
+    .readFileSync(path.join(LAWPACK_PATH, "text-schema-v1.sha256"), "utf8")
+    .trim();
+  const codecDigest = fs
+    .readFileSync(path.join(LAWPACK_PATH, "codec-vectors-v1.sha256"), "utf8")
+    .trim();
+  const sentinel = "digest-swap-sentinel";
+  const swapped = readDesign()
+    .replace(schemaDigest, sentinel)
+    .replace(codecDigest, schemaDigest)
+    .replace(sentinel, codecDigest);
 
-    assert.equal(publishedDigest, actualDigest, `${fileName} sidecar drifted`);
-    assert.match(retrospective, new RegExp(`\\b${actualDigest}\\b`));
-    if (fileName === "replace-range-v1.oracle.json") {
-      oracleBytes = artifactBytes;
-    }
-  }
-
-  assert.ok(
-    oracleBytes,
-    "oracle artifact must be present in the published set",
+  assert.throws(
+    () => assertArtifactDigestLedger(swapped),
+    /artifact digest ledger drift/,
   );
-  const sourceSetDigest = JSON.parse(oracleBytes).sourceSet.digestHex;
-  assert.match(retrospective, new RegExp(`\\b${sourceSetDigest}\\b`));
 });
 
 test("ReplaceRange oracle support modules stay within the Rust file budget", () => {
