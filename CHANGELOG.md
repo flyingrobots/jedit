@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Bound every exact digest in the `ReplaceRange` retrospective to independently
+  hashed schema, codec-vector, and oracle bytes plus their committed sidecars.
+  The evidence ledger can no longer drift for only one artifact class.
 - Bound the published fact type-ID domain to the pinned Echo `warp-core`
   implementation for every declared Jedit fact. The schema keeps a named
   publication constant without claiming ownership of Echo's identity law.

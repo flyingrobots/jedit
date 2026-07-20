@@ -17,15 +17,18 @@ const ORACLE_SUPPORT_PATH = path.join(
   'tests',
   'support',
 );
-const ORACLE_PATH = path.join(
+const LAWPACK_PATH = path.join(
   process.cwd(),
   'contracts',
   'jedit',
   'lawpacks',
   'replace-range-v1',
-  'replace-range-v1.oracle.json',
 );
-const ORACLE_DIGEST_PATH = `${ORACLE_PATH.slice(0, -'.json'.length)}.sha256`;
+const PUBLISHED_ARTIFACTS = [
+  'text-schema-v1.json',
+  'codec-vectors-v1.json',
+  'replace-range-v1.oracle.json',
+];
 const FINAL_AUDIT_EVIDENCE_COMMITS = [
   ['WARP-qualified identifiers', 'edd41a35058fea354d46a38421641b0c173e3faa'],
   ['invocation lexical validation', 'c0214b2fe52ef3a3cb2d09e24af9cd4a3258ca0c'],
@@ -70,15 +73,26 @@ test('DL-0158 retrospective pins every final audit evidence class', () => {
   }
 });
 
-test('DL-0158 retrospective binds the exact oracle and source-set digests', () => {
-  const oracleBytes = fs.readFileSync(ORACLE_PATH);
-  const oracleDigest = crypto.createHash('sha256').update(oracleBytes).digest('hex');
-  const publishedDigest = fs.readFileSync(ORACLE_DIGEST_PATH, 'utf8').trim();
-  const sourceSetDigest = JSON.parse(oracleBytes).sourceSet.digestHex;
+test('DL-0158 retrospective binds every published artifact digest', () => {
   const retrospective = readDesign().split('## Retrospective')[1];
+  let oracleBytes;
 
-  assert.equal(publishedDigest, oracleDigest);
-  assert.match(retrospective, new RegExp(`\\b${oracleDigest}\\b`));
+  for (const fileName of PUBLISHED_ARTIFACTS) {
+    const artifactPath = path.join(LAWPACK_PATH, fileName);
+    const artifactBytes = fs.readFileSync(artifactPath);
+    const actualDigest = crypto.createHash('sha256').update(artifactBytes).digest('hex');
+    const sidecarPath = artifactPath.replace(/\.json$/, '.sha256');
+    const publishedDigest = fs.readFileSync(sidecarPath, 'utf8').trim();
+
+    assert.equal(publishedDigest, actualDigest, `${fileName} sidecar drifted`);
+    assert.match(retrospective, new RegExp(`\\b${actualDigest}\\b`));
+    if (fileName === 'replace-range-v1.oracle.json') {
+      oracleBytes = artifactBytes;
+    }
+  }
+
+  assert.ok(oracleBytes, 'oracle artifact must be present in the published set');
+  const sourceSetDigest = JSON.parse(oracleBytes).sourceSet.digestHex;
   assert.match(retrospective, new RegExp(`\\b${sourceSetDigest}\\b`));
 });
 
