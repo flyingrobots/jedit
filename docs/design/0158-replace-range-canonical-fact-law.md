@@ -420,7 +420,8 @@ Known risks:
 - The legacy reader accepts noncanonical JSON that the writer never emits.
 - The current Wesley/GraphQL invocation remains limited to `i32` coordinates.
 - A source change outside the declared oracle source set could still affect
-  behavior through a transitive dependency.
+  behavior through a dependency selected by the bound Cargo manifest and
+  lockfile.
 
 Mitigations:
 
@@ -430,9 +431,11 @@ Mitigations:
   evaluator to reject noncanonical or misaddressed facts.
 - Jedit #285 remains open for the production cutover; this PR does not claim the
   compatibility ABI has changed.
-- The corpus binds the exact Jedit planner, record, identity, error, window,
-  case generator, basis builder, and source-set framing bytes, while the
-  repository lockfile and CI preserve transitive dependency selection.
+- The corpus binds the exact native Cargo manifest and lockfile together with
+  the Jedit planner, record, identity, error, window, case generator, basis
+  builder, and source-set framing bytes. CI preserves the bound dependency
+  selection while separately compiled Echo evidence remains the independence
+  boundary.
 
 ## Follow-On Debt
 
@@ -459,9 +462,9 @@ What changed from the design:
   for the schema,
   `903947e1b25048b0bb0f3b3a473dd6441dfeb253fb588d112c28fcbceda083cb`
   for codec vectors, and
-  `08edc645a83f5a65754bb43e898f8b3f2be614c8b6e8f089dc5d9d48232254ef`
+  `7ce3331780ae68b8fea2d0232f3607c7b79b24ef187090cb126072b133f2d3b3`
   for the oracle. The oracle source-set digest is
-  `66991acc3aad646ae9a89279beacaf8e5bbf5526d31ed457fa3755ce2c0c06cc`.
+  `5db26270fe5d141d2c7dce323a7f28ab84dc6c6eadb4572a483561035f31379a`.
 
 What the tests proved:
 

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Bound the native Cargo manifest and lockfile into the published
+  `ReplaceRange` oracle source-set digest, so generator provenance now includes
+  exact feature and dependency selection.
 - Replaced the fabricated `ReplaceRange` noncanonical-basis fixture with
   distinct retained stale-head and real foreign-head obstruction witnesses.
   Both causal postures now prove that planning yields no patch and leaves the

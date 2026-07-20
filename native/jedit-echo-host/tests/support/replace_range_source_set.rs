@@ -4,6 +4,14 @@ use sha2::{Digest, Sha256};
 const SOURCE_SET_DOMAIN: &[u8] = b"jedit.replace-range.oracle-source.v1\0";
 const SOURCE_SET_FILES: &[(&str, &[u8])] = &[
     (
+        "native/jedit-echo-host/Cargo.toml",
+        include_bytes!("../../Cargo.toml"),
+    ),
+    (
+        "native/jedit-echo-host/Cargo.lock",
+        include_bytes!("../../Cargo.lock"),
+    ),
+    (
         "native/jedit-echo-host/src/error.rs",
         include_bytes!("../../src/error.rs"),
     ),

@@ -9,6 +9,8 @@
     "domainHex": "6a656469742e7265706c6163652d72616e67652e6f7261636c652d736f757263652e763100",
     "framing": "domain || repeated(u32be-path-length || path-utf8 || u64be-byte-length || bytes)",
     "paths": [
+      "native/jedit-echo-host/Cargo.toml",
+      "native/jedit-echo-host/Cargo.lock",
       "native/jedit-echo-host/src/error.rs",
       "native/jedit-echo-host/src/identity.rs",
       "native/jedit-echo-host/src/records.rs",
@@ -20,7 +22,7 @@
       "native/jedit-echo-host/tests/support/replace_range_oracle.rs",
       "native/jedit-echo-host/tests/support/replace_range_source_set.rs"
     ],
-    "digestHex": "66991acc3aad646ae9a89279beacaf8e5bbf5526d31ed457fa3755ce2c0c06cc"
+    "digestHex": "5db26270fe5d141d2c7dce323a7f28ab84dc6c6eadb4572a483561035f31379a"
   },
   "evidenceGrade": "deterministic-self-validation",
   "independenceLimit": "independent finite-corpus evidence begins only when a separately implemented Echo evaluator agrees",

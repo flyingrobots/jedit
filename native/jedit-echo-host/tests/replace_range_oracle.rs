@@ -52,6 +52,26 @@ fn basis_obstructions_name_real_retained_heads() {
     assert_retained_basis(cases, "foreign-basis", false);
 }
 
+#[test]
+fn source_set_binds_native_dependency_selection() {
+    let corpus: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(corpus_path()).expect("committed oracle corpus should exist"),
+    )
+    .expect("committed oracle corpus should decode");
+    let paths = corpus["sourceSet"]["paths"]
+        .as_array()
+        .expect("source-set paths should be an array");
+    for required in [
+        "native/jedit-echo-host/Cargo.toml",
+        "native/jedit-echo-host/Cargo.lock",
+    ] {
+        assert!(
+            paths.iter().any(|path| path == required),
+            "source set must bind {required}"
+        );
+    }
+}
+
 fn assert_retained_basis(cases: &[serde_json::Value], case_id: &str, same_buffer: bool) {
     let case = cases
         .iter()
