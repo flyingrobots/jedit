@@ -313,6 +313,12 @@ fn success_projection(
         },
     )
     .unwrap_or_else(|error| panic!("{} retained consequence: {error}", spec.id));
+    let expected_text = expected_materialized_text(spec);
+    assert_eq!(
+        retained.materialized_text, expected_text,
+        "{} materialized consequence violated the declared edit",
+        spec.id
+    );
     let write_ids: BTreeSet<_> = first_plan.0.node_writes.iter().cloned().collect();
     let created_node_ids = write_ids.difference(&basis_ids).cloned().collect();
     let updated_node_ids = write_ids.intersection(&basis_ids).cloned().collect();
@@ -342,6 +348,21 @@ fn success_projection(
             materialized_text_utf8_hex: hex::encode(retained.materialized_text.as_bytes()),
         }),
     }
+}
+
+fn expected_materialized_text(spec: &CaseSpec) -> String {
+    let start = usize::try_from(spec.start_byte).expect("successful start should fit memory");
+    let end = usize::try_from(spec.end_byte).expect("successful end should fit memory");
+    assert!(
+        spec.initial_text.is_char_boundary(start) && spec.initial_text.is_char_boundary(end),
+        "successful oracle range must use UTF-8 boundaries"
+    );
+    [
+        &spec.initial_text[..start],
+        spec.replacement.as_str(),
+        &spec.initial_text[end..],
+    ]
+    .concat()
 }
 
 fn project_plan(

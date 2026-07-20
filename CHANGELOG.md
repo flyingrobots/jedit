@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added an independent byte-splice oracle for successful `ReplaceRange` cases.
+  Internally consistent retained graph evidence is refused unless its
+  materialized text equals the declared basis prefix, replacement, and suffix.
 - Tightened retrospective source citations from commit-level presence to exact
   claim-bearing paths and lines, including distinct stale- and foreign-basis
   anchors and the serialized update command itself.

@@ -66,3 +66,27 @@ fn obstruction_projection_rejects_a_false_expected_semantic_code() {
         "oracle accepted a semantic code that did not describe the observed failure"
     );
 }
+
+#[test]
+fn success_projection_rejects_a_consequence_that_violates_the_declared_edit() {
+    let warp_id = make_warp_id("oracle-expected-text");
+    let (store, buffer_id, basis_head_id, _) =
+        make_basis(warp_id, "expected-text", "abc", BasisSetup::Plain);
+    let plan = plan_replace(&store, buffer_id, basis_head_id, 1, 2, "XY")
+        .expect("replacement should plan");
+    let mismatched_spec = CaseSpec {
+        id: "false-materialized-text",
+        purpose: "negative materialized-consequence witness",
+        initial_text: "uvw".to_owned(),
+        setup: BasisSetup::Plain,
+        start_byte: 1,
+        end_byte: 2,
+        replacement: "XY".to_owned(),
+        expected: ExpectedPosture::Success,
+    };
+
+    assert!(
+        std::panic::catch_unwind(|| success_projection(&store, &plan, &mismatched_spec)).is_err(),
+        "oracle accepted a consequence that violated the declared text edit"
+    );
+}
