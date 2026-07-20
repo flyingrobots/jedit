@@ -1,3 +1,5 @@
+#[path = "support/replace_range_basis_witness.rs"]
+mod basis_witness;
 #[path = "support/replace_range_oracle.rs"]
 mod oracle_support;
 #[path = "support/resource_fixture.rs"]
@@ -5,7 +7,9 @@ mod resource_fixture;
 
 use std::path::PathBuf;
 
-use jedit_echo_host::records::{fact_type_id, BufferFact, HeadFact};
+use basis_witness::{
+    assert_retained_basis, corrupt_foreign_canonical_head, corrupt_stale_ancestry,
+};
 use oracle_support::{
     canonical_corpus_bytes, generate_corpus, BasisSetup, CaseSpec, ExpectedPosture,
     SemanticObstructionCode,
@@ -54,6 +58,38 @@ fn basis_obstructions_name_real_retained_heads() {
 }
 
 #[test]
+fn basis_witness_rejects_false_stale_and_foreign_relationships() {
+    let corpus: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(corpus_path()).expect("committed oracle corpus should exist"),
+    )
+    .expect("committed oracle corpus should decode");
+
+    let mut stale_cases = corpus["cases"]
+        .as_array()
+        .expect("oracle cases should be an array")
+        .clone();
+    corrupt_stale_ancestry(&mut stale_cases);
+    assert!(
+        std::panic::catch_unwind(|| assert_retained_basis(&stale_cases, "stale-basis", true))
+            .is_err(),
+        "stale witness accepted a current Head without stale ancestry"
+    );
+
+    let mut foreign_cases = corpus["cases"]
+        .as_array()
+        .expect("oracle cases should be an array")
+        .clone();
+    corrupt_foreign_canonical_head(&mut foreign_cases);
+    assert!(
+        std::panic::catch_unwind(|| {
+            assert_retained_basis(&foreign_cases, "foreign-basis", false);
+        })
+        .is_err(),
+        "foreign witness accepted a Buffer that did not name the invocation Head"
+    );
+}
+
+#[test]
 fn source_set_binds_native_dependency_selection() {
     let corpus: serde_json::Value = serde_json::from_slice(
         &std::fs::read(corpus_path()).expect("committed oracle corpus should exist"),
@@ -71,62 +107,6 @@ fn source_set_binds_native_dependency_selection() {
             "source set must bind {required}"
         );
     }
-}
-
-fn assert_retained_basis(cases: &[serde_json::Value], case_id: &str, same_buffer: bool) {
-    let case = cases
-        .iter()
-        .find(|case| case["id"] == case_id)
-        .unwrap_or_else(|| panic!("{case_id} should exist"));
-    let invocation_buffer_id = case["invocation"]["bufferId"]
-        .as_str()
-        .expect("invocation buffer should be a string");
-    let invocation_basis_id = case["invocation"]["basisHeadId"]
-        .as_str()
-        .expect("invocation basis should be a string");
-    let facts = case["basisFacts"]
-        .as_array()
-        .expect("basis facts should be an array");
-    let head_type_id = hex::encode(fact_type_id::<HeadFact>().as_bytes());
-    let retained_head = facts
-        .iter()
-        .find(|fact| fact["nodeId"] == invocation_basis_id && fact["typeId"] == head_type_id)
-        .unwrap_or_else(|| panic!("{case_id} basis should be a retained Head fact"));
-    let head: HeadFact = serde_json::from_slice(
-        &hex::decode(
-            retained_head["attachmentBytesHex"]
-                .as_str()
-                .expect("head bytes should be hexadecimal"),
-        )
-        .expect("head bytes should decode"),
-    )
-    .expect("retained head should decode");
-    let head_buffer_id = hex::encode(head.buffer_id.0);
-    assert_eq!(
-        head_buffer_id == invocation_buffer_id,
-        same_buffer,
-        "{case_id} buffer relationship drifted"
-    );
-
-    let buffer_type_id = hex::encode(fact_type_id::<BufferFact>().as_bytes());
-    let retained_buffer = facts
-        .iter()
-        .find(|fact| fact["nodeId"] == invocation_buffer_id && fact["typeId"] == buffer_type_id)
-        .unwrap_or_else(|| panic!("{case_id} target Buffer fact should be retained"));
-    let buffer: BufferFact = serde_json::from_slice(
-        &hex::decode(
-            retained_buffer["attachmentBytesHex"]
-                .as_str()
-                .expect("buffer bytes should be hexadecimal"),
-        )
-        .expect("buffer bytes should decode"),
-    )
-    .expect("retained buffer should decode");
-    assert_ne!(
-        invocation_basis_id,
-        hex::encode(buffer.canonical_head_id.0),
-        "{case_id} must not use the current canonical head"
-    );
 }
 
 fn corpus_path() -> PathBuf {

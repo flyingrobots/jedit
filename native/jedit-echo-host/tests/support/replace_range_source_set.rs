@@ -47,6 +47,10 @@ const SOURCE_SET_FILES: &[(&str, &[u8])] = &[
         include_bytes!("replace_range_basis.rs"),
     ),
     (
+        "native/jedit-echo-host/tests/support/replace_range_basis_witness.rs",
+        include_bytes!("replace_range_basis_witness.rs"),
+    ),
+    (
         "native/jedit-echo-host/tests/support/replace_range_contract.rs",
         include_bytes!("replace_range_contract.rs"),
     ),

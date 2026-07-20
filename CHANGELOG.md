@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Strengthened the `ReplaceRange` stale- and foreign-basis witnesses to prove
+  the retained causal relationships they claim. A stale basis must be the
+  direct ancestor of the target Buffer's canonical Head, while a foreign basis
+  must be the canonical Head of its own retained Buffer.
 - Made the `ReplaceRange` lawpack updater run only its exact serial writer tests
   before the complete locked reader/conformance pass, eliminating an
   update-time race against stale committed resources.
