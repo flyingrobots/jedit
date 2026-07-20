@@ -182,6 +182,14 @@ test("DL-0158 distinguishes separate decoding from independent verification", ()
   assert.ok(design.includes(expected));
 });
 
+test("DL-0158 names maximum-scalar golden-vector coverage", () => {
+  const design = readDesign().replaceAll(/\s+/g, " ");
+  assert.match(
+    design,
+    /The schema's golden vector covers[^.]*the maximum scalar U\+10FFFF\./,
+  );
+});
+
 test("DL-0158 labels and pins every strong retrospective claim", () => {
   assertRetrospectiveEvidence();
 });

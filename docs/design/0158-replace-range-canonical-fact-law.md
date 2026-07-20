@@ -197,7 +197,7 @@ bytes; surrogate escapes are forbidden. These rules apply to member names and
 string values. Maps are forbidden as canonical fact fields at every nesting
 depth, even if an implementation uses a map internally. The schema's golden
 vector covers every control scalar plus quotation mark, reverse solidus,
-solidus, non-ASCII text, U+2028, and U+2029.
+solidus, non-ASCII text, U+2028, U+2029, and the maximum scalar U+10FFFF.
 
 This is a writer and identity law. The generic legacy `serde_json` reader
 accepts some noncanonical spellings, and not every retained-content consumer
