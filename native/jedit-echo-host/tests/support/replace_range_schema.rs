@@ -15,6 +15,7 @@ use contract::{
 };
 
 pub const SCHEMA_COORDINATE: &str = APPLICATION_SCHEMA_COORDINATE;
+pub const PUBLISHED_TYPE_ID_DOMAIN: &[u8] = b"type:";
 pub const STRING_ESCAPE_VECTOR: &str = concat!(
     "\u{0000}\u{0001}\u{0002}\u{0003}\u{0004}\u{0005}\u{0006}\u{0007}",
     "\u{0008}\u{0009}\u{000a}\u{000b}\u{000c}\u{000d}\u{000e}\u{000f}",
@@ -86,7 +87,7 @@ pub fn expected_schema() -> Value {
         "identityLaws": {
             "typeId": {
                 "algorithm": "blake3-256",
-                "domainHex": hex::encode(b"type:"),
+                "domainHex": hex::encode(PUBLISHED_TYPE_ID_DOMAIN),
                 "material": "type-label-utf8"
             },
             "bufferNode": {

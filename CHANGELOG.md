@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Bound the published fact type-ID domain to the pinned Echo `warp-core`
+  implementation for every declared Jedit fact. The schema keeps a named
+  publication constant without claiming ownership of Echo's identity law.
 - Extended the canonical fact-string golden vector through the maximum Unicode
   scalar U+10FFFF. Conformance now proves supplementary scalars remain literal
   four-byte UTF-8 and cannot be emitted as surrogate escapes.

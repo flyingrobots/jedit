@@ -4,7 +4,8 @@ use std::fmt;
 mod contract;
 
 use jedit_echo_host::records::{
-    BlobFact, BranchFact, BufferFact, DiffFact, HeadFact, LeafFact, NodeIdBytes, RewriteFact,
+    fact_type_id, BlobFact, BranchFact, BufferFact, DiffFact, HeadFact, LeafFact, NodeIdBytes,
+    RewriteFact, TypedFact,
 };
 use serde::de::{IgnoredAny, MapAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
@@ -301,6 +302,37 @@ fn string_escape_golden_vector_matches_the_native_writer() {
     );
     assert_eq!(serde_json::to_vec(source).unwrap(), expected_json);
     assert_eq!(vectors["vectors"][0]["value"]["buffer_key"], source);
+}
+
+#[test]
+fn schema_type_id_domain_matches_the_pinned_runtime() {
+    let schema: Value = serde_json::from_slice(SCHEMA_BYTES).expect("schema should decode");
+    let domain = hex::decode(
+        schema["identityLaws"]["typeId"]["domainHex"]
+            .as_str()
+            .expect("type-ID domain should be hexadecimal"),
+    )
+    .expect("type-ID domain should decode");
+
+    assert_type_id_domain::<BufferFact>(&domain);
+    assert_type_id_domain::<BlobFact>(&domain);
+    assert_type_id_domain::<LeafFact>(&domain);
+    assert_type_id_domain::<BranchFact>(&domain);
+    assert_type_id_domain::<HeadFact>(&domain);
+    assert_type_id_domain::<RewriteFact>(&domain);
+    assert_type_id_domain::<DiffFact>(&domain);
+}
+
+fn assert_type_id_domain<T: TypedFact>(domain: &[u8]) {
+    let mut digest = blake3::Hasher::new();
+    digest.update(domain);
+    digest.update(T::TYPE_LABEL.as_bytes());
+    assert_eq!(
+        digest.finalize().as_bytes(),
+        fact_type_id::<T>().as_bytes(),
+        "{} type-ID domain drifted from pinned warp-core",
+        T::TYPE_LABEL
+    );
 }
 
 #[test]
