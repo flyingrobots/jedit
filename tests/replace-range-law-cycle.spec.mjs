@@ -62,6 +62,12 @@ function readDesign() {
   return fs.readFileSync(DESIGN_PATH, "utf8");
 }
 
+function currentTruth(design = readDesign()) {
+  const parts = design.split("## Current Truth");
+  assert.equal(parts.length, 2, "expected one Current Truth section");
+  return parts[1].split("## Problem")[0];
+}
+
 function artifactDigestClaim(design) {
   const retrospective = design.split("## Retrospective")[1];
   const marker = "- **Artifact digest ledger.** ";
@@ -232,6 +238,22 @@ test("DL-0158 distinguishes committable evidence from obstruction evidence", () 
 test("DL-0158 frontmatter records the current audit date", () => {
   const frontmatter = readDesign().split("---")[1];
   assert.match(frontmatter, /^updated: "2026-07-20"$/m);
+});
+
+test("DL-0158 Current Truth uses canonical evidence labels", () => {
+  const citations = [
+    ...currentTruth().matchAll(
+      /\[`(?<label>[^`]+)`\]\(https:\/\/github\.com\/flyingrobots\/jedit\/blob\/(?<commit>[0-9a-f]{40})\/(?<sourcePath>[^)#]+)#L(?<line>\d+)\)/g,
+    ),
+  ];
+
+  assert.ok(citations.length > 0, "Current Truth must cite source evidence");
+  for (const { groups } of citations) {
+    assert.equal(
+      groups.label,
+      `${groups.sourcePath}#L${groups.line}@${groups.commit}`,
+    );
+  }
 });
 
 test("DL-0158 distinguishes separate decoding from independent verification", () => {

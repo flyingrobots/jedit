@@ -56,27 +56,27 @@ The merge target is
 - The production host defines eight native text fact types. `ReplaceRange`
   reads or writes seven of them: Buffer, Blob, Leaf, Branch, Head, Rewrite,
   and Diff.
-  [`native/jedit-echo-host/src/records.rs#L7:c70e12d73b4b00bc92412bab67e1761f7dd22f82`](https://github.com/flyingrobots/jedit/blob/c70e12d73b4b00bc92412bab67e1761f7dd22f82/native/jedit-echo-host/src/records.rs#L7)
+  [`native/jedit-echo-host/src/records.rs#L7@c70e12d73b4b00bc92412bab67e1761f7dd22f82`](https://github.com/flyingrobots/jedit/blob/c70e12d73b4b00bc92412bab67e1761f7dd22f82/native/jedit-echo-host/src/records.rs#L7)
 - Native fact bytes are produced by `serde_json::to_vec`; content-addressed
   fact identifiers hash an exact per-fact domain followed by those bytes.
-  [`native/jedit-echo-host/src/records.rs#L150:c70e12d73b4b00bc92412bab67e1761f7dd22f82`](https://github.com/flyingrobots/jedit/blob/c70e12d73b4b00bc92412bab67e1761f7dd22f82/native/jedit-echo-host/src/records.rs#L150)
-  [`native/jedit-echo-host/src/identity.rs#L6:c70e12d73b4b00bc92412bab67e1761f7dd22f82`](https://github.com/flyingrobots/jedit/blob/c70e12d73b4b00bc92412bab67e1761f7dd22f82/native/jedit-echo-host/src/identity.rs#L6)
+  [`native/jedit-echo-host/src/records.rs#L150@c70e12d73b4b00bc92412bab67e1761f7dd22f82`](https://github.com/flyingrobots/jedit/blob/c70e12d73b4b00bc92412bab67e1761f7dd22f82/native/jedit-echo-host/src/records.rs#L150)
+  [`native/jedit-echo-host/src/identity.rs#L6@c70e12d73b4b00bc92412bab67e1761f7dd22f82`](https://github.com/flyingrobots/jedit/blob/c70e12d73b4b00bc92412bab67e1761f7dd22f82/native/jedit-echo-host/src/identity.rs#L6)
 - The planner stores each fact as one typed node plus one node-alpha atom
   attachment. It emits no Echo edges and deletes no retained nodes.
-  [`native/jedit-echo-host/src/rope.rs#L217:c70e12d73b4b00bc92412bab67e1761f7dd22f82`](https://github.com/flyingrobots/jedit/blob/c70e12d73b4b00bc92412bab67e1761f7dd22f82/native/jedit-echo-host/src/rope.rs#L217)
+  [`native/jedit-echo-host/src/rope.rs#L217@c70e12d73b4b00bc92412bab67e1761f7dd22f82`](https://github.com/flyingrobots/jedit/blob/c70e12d73b4b00bc92412bab67e1761f7dd22f82/native/jedit-echo-host/src/rope.rs#L217)
 - `plan_replace` enforces the canonical-head basis, half-open UTF-8 byte
   range, exact no-op refusal, checked sequence/version increments, persistent
   split/build/join, immutable Head/Rewrite/Diff creation, and Buffer advance.
-  [`native/jedit-echo-host/src/rope.rs#L385:c70e12d73b4b00bc92412bab67e1761f7dd22f82`](https://github.com/flyingrobots/jedit/blob/c70e12d73b4b00bc92412bab67e1761f7dd22f82/native/jedit-echo-host/src/rope.rs#L385)
+  [`native/jedit-echo-host/src/rope.rs#L385@c70e12d73b4b00bc92412bab67e1761f7dd22f82`](https://github.com/flyingrobots/jedit/blob/c70e12d73b4b00bc92412bab67e1761f7dd22f82/native/jedit-echo-host/src/rope.rs#L385)
 - Rope construction caps leaves at 4,096 UTF-8 bytes, path-copies slices,
   and deterministically height-balances joins.
-  [`native/jedit-echo-host/src/rope/tree.rs#L9:c70e12d73b4b00bc92412bab67e1761f7dd22f82`](https://github.com/flyingrobots/jedit/blob/c70e12d73b4b00bc92412bab67e1761f7dd22f82/native/jedit-echo-host/src/rope/tree.rs#L9)
-  [`native/jedit-echo-host/src/rope/tree.rs#L69:c70e12d73b4b00bc92412bab67e1761f7dd22f82`](https://github.com/flyingrobots/jedit/blob/c70e12d73b4b00bc92412bab67e1761f7dd22f82/native/jedit-echo-host/src/rope/tree.rs#L69)
-  [`native/jedit-echo-host/src/rope/tree.rs#L148:c70e12d73b4b00bc92412bab67e1761f7dd22f82`](https://github.com/flyingrobots/jedit/blob/c70e12d73b4b00bc92412bab67e1761f7dd22f82/native/jedit-echo-host/src/rope/tree.rs#L148)
+  [`native/jedit-echo-host/src/rope/tree.rs#L9@c70e12d73b4b00bc92412bab67e1761f7dd22f82`](https://github.com/flyingrobots/jedit/blob/c70e12d73b4b00bc92412bab67e1761f7dd22f82/native/jedit-echo-host/src/rope/tree.rs#L9)
+  [`native/jedit-echo-host/src/rope/tree.rs#L69@c70e12d73b4b00bc92412bab67e1761f7dd22f82`](https://github.com/flyingrobots/jedit/blob/c70e12d73b4b00bc92412bab67e1761f7dd22f82/native/jedit-echo-host/src/rope/tree.rs#L69)
+  [`native/jedit-echo-host/src/rope/tree.rs#L148@c70e12d73b4b00bc92412bab67e1761f7dd22f82`](https://github.com/flyingrobots/jedit/blob/c70e12d73b4b00bc92412bab67e1761f7dd22f82/native/jedit-echo-host/src/rope/tree.rs#L148)
 - The TypeScript graph-rope model contains propositions and fields that are
   not equivalent to the native retained representation. It is therefore not
   an alternate serialization of the same version-1 schema.
-  [`src/domain/graph-rope-types.ts#L85:c70e12d73b4b00bc92412bab67e1761f7dd22f82`](https://github.com/flyingrobots/jedit/blob/c70e12d73b4b00bc92412bab67e1761f7dd22f82/src/domain/graph-rope-types.ts#L85)
+  [`src/domain/graph-rope-types.ts#L85@c70e12d73b4b00bc92412bab67e1761f7dd22f82`](https://github.com/flyingrobots/jedit/blob/c70e12d73b4b00bc92412bab67e1761f7dd22f82/src/domain/graph-rope-types.ts#L85)
 
 Echo ADR 0023 assigns the fact schemas, codec/identity law, operation
 semantics, and differential corpus to Jedit. This cycle earns those Jedit-owned
