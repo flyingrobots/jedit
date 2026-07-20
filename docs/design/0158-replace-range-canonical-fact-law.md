@@ -257,6 +257,13 @@ Every flattened local identifier in footprint or patch evidence is qualified by
 the corpus's top-level `warpId`; generation and local application reject a key
 whose WARP differs before discarding that redundant qualifier.
 
+Before a committable case is serialized, the oracle independently decodes the
+post-patch Buffer, Head, Rewrite, and Diff facts and checks their identities,
+basis, range, next head, version, sequence, lengths, root digest, and cross-links
+against one another and the planner summary. Result evidence is derived from
+those validated retained facts and materialized text, not from an unchecked mix
+of planner summaries and discovered type labels.
+
 ## Lower Modes
 
 The contract is entirely headless. `cargo test` recomputes and compares the
@@ -483,9 +490,9 @@ What changed from the design:
   for the schema,
   `903947e1b25048b0bb0f3b3a473dd6441dfeb253fb588d112c28fcbceda083cb`
   for codec vectors, and
-  `9eaa16f104d21922bc6d6cde210b053da9a0673310be5b30bb49d18906aa0f44`
+  `1c03efba1ba38ea17729385d49626795de74e7636444bef0b780f0ffb33fa12`
   for the oracle. The oracle source-set digest is
-  `2144730f3182683641b9168e7269ee4f5d5507f78cb418d5b98866201fc6fe2a`.
+  `996125197ece197fb6fde1f48ace8fc62c58cfca8b0fac60e4e145a9ffcf6ea28`.
 
 What the tests proved:
 
@@ -504,6 +511,8 @@ What the tests proved:
   the parent graph unchanged.
   [`native/jedit-echo-host/tests/support/replace_range_oracle.rs#L190:9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/support/replace_range_oracle.rs#L190)
   [`native/jedit-echo-host/tests/support/replace_range_oracle.rs#L258:9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/support/replace_range_oracle.rs#L258)
+- A retained-consequence consistency gate refuses mismatched Buffer, Head,
+  Rewrite, or Diff evidence before a committable result enters the corpus.
 - This is deterministic self-validation. It is not an independent verifier,
   all-input equivalence proof, Echo admission witness, runtime receipt, WAL, or
   recovery witness.

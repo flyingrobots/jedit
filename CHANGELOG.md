@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added a retained-consequence consistency gate to the `ReplaceRange` oracle.
+  Buffer, Head, Rewrite, and Diff identities, cross-links, ranges, metrics, and
+  planner summaries must agree before result evidence can be published.
 - Qualified every flattened `ReplaceRange` oracle footprint and patch
   identifier by the corpus WARP. Generation and local fixture application now
   reject foreign-WARP node, edge, and attachment keys before projection.
