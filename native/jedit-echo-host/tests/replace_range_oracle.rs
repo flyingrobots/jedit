@@ -309,6 +309,17 @@ fn cases() -> Vec<CaseSpec> {
             "content hash does not match",
         ),
         obstruction(
+            "branch-extent-mismatch-at-exact-end",
+            &format!("{}b", "a".repeat(4096)),
+            BasisSetup::BranchExtentMismatchAtExactEnd,
+            4098,
+            4098,
+            "x",
+            SemanticObstructionCode::FactMalformed,
+            "malformed-fact",
+            "branch byte length does not match children",
+        ),
+        obstruction(
             "cyclic-right-endpoint",
             "abc",
             BasisSetup::CyclicRightEndpoint,

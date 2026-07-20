@@ -159,6 +159,7 @@ fn validate_right_endpoint<T: GraphFacts>(
     mut node_id: NodeId,
 ) -> RopeResult<()> {
     let mut visited = BTreeSet::new();
+    let mut branches = Vec::new();
     loop {
         if !visited.insert(node_id) {
             return Err(RopeFault::fact_malformed(format!(
@@ -172,11 +173,74 @@ fn validate_right_endpoint<T: GraphFacts>(
         {
             RopeNode::Leaf(leaf) => {
                 locate_leaf_slice(context, &leaf, 0, leaf.byte_length)?;
-                return Ok(());
+                break;
             }
-            RopeNode::Branch(branch) => node_id = NodeId::from(branch.right),
+            RopeNode::Branch(branch) => {
+                let right = NodeId::from(branch.right);
+                branches.push((node_id, branch));
+                node_id = right;
+            }
         }
     }
+    for (branch_id, branch) in branches.into_iter().rev() {
+        validate_branch_aggregates(context, branch_id, &branch)?;
+    }
+    Ok(())
+}
+
+fn validate_branch_aggregates<T: GraphFacts>(
+    context: &mut PlanContext<'_, T>,
+    branch_id: NodeId,
+    branch: &BranchFact,
+) -> RopeResult<()> {
+    let left = context
+        .node_metrics(NodeId::from(branch.left))
+        .map_err(RopeFault::structural_dependency)?;
+    let right = context
+        .node_metrics(NodeId::from(branch.right))
+        .map_err(RopeFault::structural_dependency)?;
+    let expected_byte_length = RopeFault::checked_add_u64(
+        left.byte_length,
+        right.byte_length,
+        "rope byte length overflow",
+    )?;
+    if branch.byte_length != expected_byte_length {
+        return Err(RopeFault::fact_malformed(format!(
+            "branch byte length does not match children at {}",
+            node_id_hex(branch_id)
+        )));
+    }
+    let expected_utf16_length = RopeFault::checked_add_u64(
+        left.utf16_length,
+        right.utf16_length,
+        "rope UTF-16 length overflow",
+    )?;
+    if branch.utf16_length != expected_utf16_length {
+        return Err(RopeFault::fact_malformed(format!(
+            "branch UTF-16 length does not match children at {}",
+            node_id_hex(branch_id)
+        )));
+    }
+    let expected_line_breaks = RopeFault::checked_add_u64(
+        left.line_breaks,
+        right.line_breaks,
+        "rope line break count overflow",
+    )?;
+    if branch.line_breaks != expected_line_breaks {
+        return Err(RopeFault::fact_malformed(format!(
+            "branch line break count does not match children at {}",
+            node_id_hex(branch_id)
+        )));
+    }
+    let expected_height =
+        RopeFault::checked_add_u32(left.height.max(right.height), 1, "rope height overflow")?;
+    if branch.height != expected_height {
+        return Err(RopeFault::fact_malformed(format!(
+            "branch height does not match children at {}",
+            node_id_hex(branch_id)
+        )));
+    }
+    Ok(())
 }
 
 pub(super) fn split<T: GraphFacts>(

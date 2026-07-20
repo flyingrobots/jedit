@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Made exact-end `ReplaceRange` validation corroborate every retained branch
+  byte, UTF-16, line-break, and height aggregate on its endpoint path.
 - Made exact-end `ReplaceRange` validation reject cyclic retained rope links
   with a typed malformed-fact obstruction instead of looping indefinitely.
 - Scoped the ReplaceRange historical planner checkpoint to provenance only.

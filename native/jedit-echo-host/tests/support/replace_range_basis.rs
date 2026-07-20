@@ -15,6 +15,7 @@ pub enum BasisSetup {
     MissingBuffer,
     MalformedBuffer,
     BadBlobContentHash,
+    BranchExtentMismatchAtExactEnd,
     CyclicRightEndpoint,
     LeafExceedsBlobAtExactEnd,
     LeafRangeStartOverflow,
@@ -78,6 +79,22 @@ pub fn make_basis(
             );
         }
         BasisSetup::BadBlobContentHash => corrupt_blob_hash(&mut store, head_id),
+        BasisSetup::BranchExtentMismatchAtExactEnd => {
+            let root_id = root_node_id(&store, head_id);
+            let mut branch: BranchFact = decode_fact(
+                store
+                    .node_attachment(&root_id)
+                    .expect("branch attachment should exist"),
+            )
+            .expect("root should decode as a branch");
+            branch.byte_length += 1;
+            let next_root_id = insert_content_fact(&mut store, &branch);
+            head_id = replace_head(&mut store, create.buffer_id, head_id, |head| {
+                head.root_node_id = Some(next_root_id.into());
+                head.root_digest = *next_root_id.as_bytes();
+                head.byte_length += 1;
+            });
+        }
         BasisSetup::CyclicRightEndpoint => {
             let root_id = root_node_id(&store, head_id);
             let cyclic_id = NodeId([0xCC; 32]);
