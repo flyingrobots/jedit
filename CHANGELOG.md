@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Tightened retrospective source citations from commit-level presence to exact
+  claim-bearing paths and lines, including distinct stale- and foreign-basis
+  anchors and the serialized update command itself.
 - Bound every exact digest in the `ReplaceRange` retrospective to independently
   hashed schema, codec-vector, and oracle bytes plus their committed sidecars.
   The evidence ledger can no longer drift for only one artifact class.

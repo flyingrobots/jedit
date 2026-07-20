@@ -477,7 +477,8 @@ What changed from the design:
   retained stale-head and real foreign-head basis witnesses, without
   changing the production planner, fact bytes, identities, or routing.
   [`native/jedit-echo-host/tests/replace_range_oracle.rs#L43:9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_oracle.rs#L43)
-  [`native/jedit-echo-host/tests/support/replace_range_basis_witness.rs#L48@d57e0d239c005898839a15041807580ed2dfe595`](https://github.com/flyingrobots/jedit/blob/d57e0d239c005898839a15041807580ed2dfe595/native/jedit-echo-host/tests/support/replace_range_basis_witness.rs#L48)
+  [`native/jedit-echo-host/tests/support/replace_range_basis_witness.rs#L46@d57e0d239c005898839a15041807580ed2dfe595`](https://github.com/flyingrobots/jedit/blob/d57e0d239c005898839a15041807580ed2dfe595/native/jedit-echo-host/tests/support/replace_range_basis_witness.rs#L46)
+  [`native/jedit-echo-host/tests/support/replace_range_basis_witness.rs#L64@d57e0d239c005898839a15041807580ed2dfe595`](https://github.com/flyingrobots/jedit/blob/d57e0d239c005898839a15041807580ed2dfe595/native/jedit-echo-host/tests/support/replace_range_basis_witness.rs#L64)
 - Review tightened the declaration with a fully specified string codec, a
   corpus-only invocation schema and exact bytes, mechanical schema-to-writer
   field-order comparison, strict/atomic fixture updates, and a digest over the
@@ -499,7 +500,7 @@ What changed from the design:
   `1b538c15ae93bfc6f2660e333e350b741491e67f0f4c2a57c0563a14b2833170`.
 - The deliberate resource-update command now runs each exact writer serially
   before the complete locked reader and conformance pass.
-  [`package.json#L9@13b16f2e7195458138865460c5948744ea8615ed`](https://github.com/flyingrobots/jedit/blob/13b16f2e7195458138865460c5948744ea8615ed/package.json#L9)
+  [`package.json#L10@13b16f2e7195458138865460c5948744ea8615ed`](https://github.com/flyingrobots/jedit/blob/13b16f2e7195458138865460c5948744ea8615ed/package.json#L10)
 
 What the tests proved:
 
