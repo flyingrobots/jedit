@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Made the DL-0158 final-audit ledger exhaustive. The release test now parses a
+  closed claim grammar, binds every named claim to its retrospective section
+  and complete ordered source-citation set, and rejects hidden, malformed,
+  missing, extra, or displaced evidence links.
 - Made every retained-rope coordinate and metric calculation used by
   `ReplaceRange` fail with a typed arithmetic obstruction instead of panicking
   in debug builds or wrapping in optimized builds. Adversarial leaf, branch,

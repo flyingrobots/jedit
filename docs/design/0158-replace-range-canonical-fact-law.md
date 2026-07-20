@@ -473,24 +473,37 @@ Mitigations:
 
 What changed from the design:
 
-- The planned native-schema corpus was implemented with 20 cases, separating
-  retained stale-head and real foreign-head basis witnesses, without
-  changing the production planner, fact bytes, identities, or routing.
-  [`native/jedit-echo-host/tests/replace_range_oracle.rs#L43:9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_oracle.rs#L43)
+- **Native schema corpus.** Native oracle generation runs the same case set
+  twice, requires byte-identical output, compares those bytes with the
+  committed oracle resource, and checks its SHA-256 sidecar.
+  [`native/jedit-echo-host/tests/replace_range_oracle.rs#L22@9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_oracle.rs#L22)
+  [`native/jedit-echo-host/tests/replace_range_oracle.rs#L23@9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_oracle.rs#L23)
+  [`native/jedit-echo-host/tests/replace_range_oracle.rs#L24@9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_oracle.rs#L24)
+  [`native/jedit-echo-host/tests/replace_range_oracle.rs#L30@9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_oracle.rs#L30)
+  [`native/jedit-echo-host/tests/replace_range_oracle.rs#L31@9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_oracle.rs#L31)
+  [`native/jedit-echo-host/tests/replace_range_oracle.rs#L35@9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_oracle.rs#L35)
+- **Retained stale-basis relationship.** The stale fixture retains the invoked
+  historical Head and checks its relationship to the current canonical Head.
   [`native/jedit-echo-host/tests/support/replace_range_basis_witness.rs#L46@d57e0d239c005898839a15041807580ed2dfe595`](https://github.com/flyingrobots/jedit/blob/d57e0d239c005898839a15041807580ed2dfe595/native/jedit-echo-host/tests/support/replace_range_basis_witness.rs#L46)
+- **Retained foreign-basis relationship.** The foreign fixture retains another
+  Buffer and checks that it canonically names the invoked foreign Head.
   [`native/jedit-echo-host/tests/support/replace_range_basis_witness.rs#L64@d57e0d239c005898839a15041807580ed2dfe595`](https://github.com/flyingrobots/jedit/blob/d57e0d239c005898839a15041807580ed2dfe595/native/jedit-echo-host/tests/support/replace_range_basis_witness.rs#L64)
-- Review tightened the declaration with a fully specified string codec, a
-  corpus-only invocation schema and exact bytes, mechanical schema-to-writer
-  field-order comparison, strict/atomic fixture updates, and a digest over the
-  exact declared Jedit source set. These are proof-strengthening additions,
-  not a widening into the deferred Echo ABI.
-  [`native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L86:9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L86)
-- Review replaced free-form obstruction labels with an exhaustive generated
-  enum and added a strict machine-readable corpus shape whose conformance path
-  rejects unknown members, variants, and semantic codes.
-  [`native/jedit-echo-host/tests/support/replace_range_contract.rs#L3:9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/support/replace_range_contract.rs#L3)
-  [`native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L336:9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L336)
-- The published SHA-256 digests are
+- **Schema and source-set contract.** Schema conformance mechanically compares
+  every declared fact-member order with canonical native-writer bytes. The
+  source-set implementation embeds an ordered path/byte list and hashes it
+  with domain-separated, length-framed SHA-256.
+  [`native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L86@9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L86)
+  [`native/jedit-echo-host/tests/support/replace_range_source_set.rs#L5@9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/support/replace_range_source_set.rs#L5)
+  [`native/jedit-echo-host/tests/support/replace_range_source_set.rs#L70@9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/support/replace_range_source_set.rs#L70)
+- **Obstruction schema.** Oracle support declares a closed ten-variant serde
+  obstruction enum and matching `ALL` list. Schema conformance freezes the same
+  ten wire values, while negative witnesses reject an unknown top-level member
+  and an invented semantic code.
+  [`native/jedit-echo-host/tests/support/replace_range_contract.rs#L3@9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/support/replace_range_contract.rs#L3)
+  [`native/jedit-echo-host/tests/support/replace_range_contract.rs#L20@9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/support/replace_range_contract.rs#L20)
+  [`native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L336@9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L336)
+  [`native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L362@9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L362)
+- **Artifact digest ledger.** The published SHA-256 digests are
   `fa5087c8fe72dc9c5f138f12b9498ab7f943061fc5ca735d4f68009c081eabc2`
   for the schema,
   `1ac26477e1d6c08df49446627ad002e40bd214235ce93b563d62bb50e40dc14c`
@@ -498,42 +511,84 @@ What changed from the design:
   `6e7d9ff396897940e16d8fa5936d7fd51b8c8915e2e9ea2fb2d3b5916a4224c9`
   for the oracle. The oracle source-set digest is
   `6541ff04a5a97fd407f31479f9393293a937db12ab3705686525e49154f48083`.
-- The deliberate resource-update command now runs each exact writer serially
+  The ledger derives all four values from the committed artifacts.
+  [`tests/replace-range-law-cycle.spec.mjs#L76@95f63d2c31847c3a4cc4bbea9152900470843d3a`](https://github.com/flyingrobots/jedit/blob/95f63d2c31847c3a4cc4bbea9152900470843d3a/tests/replace-range-law-cycle.spec.mjs#L76)
+- **Serialized resource updates.** The deliberate resource-update command runs
+  each exact writer serially
   before the complete locked reader and conformance pass.
   [`package.json#L10@13b16f2e7195458138865460c5948744ea8615ed`](https://github.com/flyingrobots/jedit/blob/13b16f2e7195458138865460c5948744ea8615ed/package.json#L10)
+- **Exact audit locations.** The earlier audit gate declared nine evidence
+  class/full-commit/path/line tuples and required each corresponding GitHub
+  blob URL to occur somewhere in the retrospective.
+  [`tests/replace-range-law-cycle.spec.mjs#L32@a8cabbd8d68c5345cdea5cba0bb59b956ec7be63`](https://github.com/flyingrobots/jedit/blob/a8cabbd8d68c5345cdea5cba0bb59b956ec7be63/tests/replace-range-law-cycle.spec.mjs#L32)
+  [`tests/replace-range-law-cycle.spec.mjs#L110@a8cabbd8d68c5345cdea5cba0bb59b956ec7be63`](https://github.com/flyingrobots/jedit/blob/a8cabbd8d68c5345cdea5cba0bb59b956ec7be63/tests/replace-range-law-cycle.spec.mjs#L110)
 
 What the tests proved:
 
-- Native Rust serialization regenerates all exact resources and identities;
-  every declared fact-member order equals the order observed from writer bytes;
-  the full string escape vector matches the native writer; and corpus invocation
-  bytes preserve `u64` above `i32::MAX`.
-  [`native/jedit-echo-host/tests/replace_range_schema.rs#L89:9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_schema.rs#L89)
-  [`native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L295:9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L295)
-- Strict typed corpus conformance binds the exact envelope and source identity,
-  rejects unknown members and variants, and requires canonical member order,
-  framing, and terminal newline.
+- **Native serialization.** Native Rust reconstructs the schema and
+  codec-vector resources, requires byte-for-byte equality with both committed
+  resources, checks their SHA-256 sidecars, and compares every declared
+  fact-member order with canonical native-writer bytes.
+  [`native/jedit-echo-host/tests/replace_range_schema.rs#L89@9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_schema.rs#L89)
+  [`native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L86@9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L86)
+- **Supplementary Unicode scalar.** The golden vector requires U+10FFFF to
+  remain literal four-byte UTF-8 and rejects surrogate-style canonical output.
+  [`native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L290@79a3b788d102c0b04fb47c1d3ce972dbab32a1cc`](https://github.com/flyingrobots/jedit/blob/79a3b788d102c0b04fb47c1d3ce972dbab32a1cc/native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L290)
+- **Type-ID domain binding.** Conformance recomputes every declared fact type ID
+  from the published domain and compares it with pinned `warp-core` behavior.
+  [`native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L308@f5482c4e7797e043c006adf1de293d4dfe85e13a`](https://github.com/flyingrobots/jedit/blob/f5482c4e7797e043c006adf1de293d4dfe85e13a/native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L308)
+- **Strict typed corpus validation.** Strict conformance rejects drift in the
+  envelope identity and ordered source-set claim.
   [`native/jedit-echo-host/tests/replace_range_corpus_conformance.rs#L120@9a309641edd4b809c37f5d055790de311e5d61f9`](https://github.com/flyingrobots/jedit/blob/9a309641edd4b809c37f5d055790de311e5d61f9/native/jedit-echo-host/tests/replace_range_corpus_conformance.rs#L120)
+- **Canonical oracle bytes.** Raw-byte validation separately freezes canonical
+  object order, whitespace, framing, and terminal newline.
   [`native/jedit-echo-host/tests/replace_range_corpus_conformance.rs#L70@8112752b85862d065811fbe133fdfe8f9e8021c1`](https://github.com/flyingrobots/jedit/blob/8112752b85862d065811fbe133fdfe8f9e8021c1/native/jedit-echo-host/tests/replace_range_corpus_conformance.rs#L70)
-- Corpus invocation conformance rejects identifiers and replacement bytes that
+- **WARP-qualified identifiers.** Footprint and patch projections refuse a
+  foreign WARP instead of flattening its local IDs into the corpus WARP.
+  [`native/jedit-echo-host/tests/support/replace_range_oracle.rs#L393@edd41a35058fea354d46a38421641b0c173e3faa`](https://github.com/flyingrobots/jedit/blob/edd41a35058fea354d46a38421641b0c173e3faa/native/jedit-echo-host/tests/support/replace_range_oracle.rs#L393)
+- **Invocation lexical validation.** Corpus invocation conformance rejects
+  identifiers and replacement bytes that
   violate their exact lowercase hexadecimal, width, or UTF-8 lexical laws.
   [`native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L396@c0214b2fe52ef3a3cb2d09e24af9cd4a3258ca0c`](https://github.com/flyingrobots/jedit/blob/c0214b2fe52ef3a3cb2d09e24af9cd4a3258ca0c/native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L396)
-- Six success and fourteen obstruction cases regenerate deterministically. A
-  success yields the exact support, ordered patch, retained facts, metrics, and
-  materialized consequence; an obstruction yields no `MutationPlan` and leaves
-  the parent graph unchanged.
-  [`native/jedit-echo-host/tests/support/replace_range_oracle.rs#L190:9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/support/replace_range_oracle.rs#L190)
-  [`native/jedit-echo-host/tests/support/replace_range_oracle.rs#L258:9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/support/replace_range_oracle.rs#L258)
-  [`native/jedit-echo-host/tests/support/replace_range_oracle.rs#L393@edd41a35058fea354d46a38421641b0c173e3faa`](https://github.com/flyingrobots/jedit/blob/edd41a35058fea354d46a38421641b0c173e3faa/native/jedit-echo-host/tests/support/replace_range_oracle.rs#L393)
-- A retained-consequence consistency gate refuses mismatched Buffer, Head,
-  Rewrite, or Diff evidence before a committable result enters the corpus. It
-  selects Rewrite and Diff facts from the current patch and independently
-  checks each retained node record's declared type.
+- **Typed planner obstructions.** Production owns the closed operation reason,
+  exhaustively maps structural rope faults into it, and returns typed failures
+  from the detailed planner. The compatibility wrapper retains the legacy
+  `HostError`, and corpus parity re-runs that wrapper to compare legacy class,
+  message, and display.
+  [`native/jedit-echo-host/src/rope/replace.rs#L14@b4606ce74ab37f8cc54d184a17c8eaeea2dff092`](https://github.com/flyingrobots/jedit/blob/b4606ce74ab37f8cc54d184a17c8eaeea2dff092/native/jedit-echo-host/src/rope/replace.rs#L14)
+  [`native/jedit-echo-host/src/rope/replace.rs#L72@b4606ce74ab37f8cc54d184a17c8eaeea2dff092`](https://github.com/flyingrobots/jedit/blob/b4606ce74ab37f8cc54d184a17c8eaeea2dff092/native/jedit-echo-host/src/rope/replace.rs#L72)
+  [`native/jedit-echo-host/src/rope/replace.rs#L99@b4606ce74ab37f8cc54d184a17c8eaeea2dff092`](https://github.com/flyingrobots/jedit/blob/b4606ce74ab37f8cc54d184a17c8eaeea2dff092/native/jedit-echo-host/src/rope/replace.rs#L99)
+  [`native/jedit-echo-host/src/rope/replace.rs#L118@b4606ce74ab37f8cc54d184a17c8eaeea2dff092`](https://github.com/flyingrobots/jedit/blob/b4606ce74ab37f8cc54d184a17c8eaeea2dff092/native/jedit-echo-host/src/rope/replace.rs#L118)
+  [`native/jedit-echo-host/tests/support/replace_range_legacy.rs#L15@b4606ce74ab37f8cc54d184a17c8eaeea2dff092`](https://github.com/flyingrobots/jedit/blob/b4606ce74ab37f8cc54d184a17c8eaeea2dff092/native/jedit-echo-host/tests/support/replace_range_legacy.rs#L15)
+- **Retained arithmetic refusal.** Checked helpers turn overflow into the typed
+  structural arithmetic fault. Named retained-rope fixtures exercise the path,
+  and corpus evaluation compares each observed reason with its expectation
+  while asserting that planning leaves the basis-store projection unchanged.
+  [`native/jedit-echo-host/src/rope/fault.rs#L59@9930d04bed048d69f54ef08d5f25f5c211efa199`](https://github.com/flyingrobots/jedit/blob/9930d04bed048d69f54ef08d5f25f5c211efa199/native/jedit-echo-host/src/rope/fault.rs#L59)
+  [`native/jedit-echo-host/src/rope/fault.rs#L66@9930d04bed048d69f54ef08d5f25f5c211efa199`](https://github.com/flyingrobots/jedit/blob/9930d04bed048d69f54ef08d5f25f5c211efa199/native/jedit-echo-host/src/rope/fault.rs#L66)
+  [`native/jedit-echo-host/tests/replace_range_oracle.rs#L310@9930d04bed048d69f54ef08d5f25f5c211efa199`](https://github.com/flyingrobots/jedit/blob/9930d04bed048d69f54ef08d5f25f5c211efa199/native/jedit-echo-host/tests/replace_range_oracle.rs#L310)
+  [`native/jedit-echo-host/tests/replace_range_oracle.rs#L387@9930d04bed048d69f54ef08d5f25f5c211efa199`](https://github.com/flyingrobots/jedit/blob/9930d04bed048d69f54ef08d5f25f5c211efa199/native/jedit-echo-host/tests/replace_range_oracle.rs#L387)
+  [`native/jedit-echo-host/tests/support/replace_range_oracle.rs#L214@9930d04bed048d69f54ef08d5f25f5c211efa199`](https://github.com/flyingrobots/jedit/blob/9930d04bed048d69f54ef08d5f25f5c211efa199/native/jedit-echo-host/tests/support/replace_range_oracle.rs#L214)
+  [`native/jedit-echo-host/tests/support/replace_range_oracle.rs#L223@9930d04bed048d69f54ef08d5f25f5c211efa199`](https://github.com/flyingrobots/jedit/blob/9930d04bed048d69f54ef08d5f25f5c211efa199/native/jedit-echo-host/tests/support/replace_range_oracle.rs#L223)
+  [`native/jedit-echo-host/tests/support/replace_range_oracle.rs#L246@9930d04bed048d69f54ef08d5f25f5c211efa199`](https://github.com/flyingrobots/jedit/blob/9930d04bed048d69f54ef08d5f25f5c211efa199/native/jedit-echo-host/tests/support/replace_range_oracle.rs#L246)
+- **Declared-text consequence.** Successful projection independently derives
+  basis prefix plus replacement plus suffix and rejects an internally
+  consistent retained rope that does not realize that declared edit.
+  [`native/jedit-echo-host/tests/support/replace_range_oracle.rs#L316@afd06f652aad7d6e8f389efec49e1ea1469eef88`](https://github.com/flyingrobots/jedit/blob/afd06f652aad7d6e8f389efec49e1ea1469eef88/native/jedit-echo-host/tests/support/replace_range_oracle.rs#L316)
+- **Keyed Buffer identity.** Retained-consequence validation recomputes the
+  keyed Buffer address from `buffer_key` in both basis and result graphs.
+  [`native/jedit-echo-host/tests/support/replace_range_consequence.rs#L42@751ea54360f2633ee04f472bb18ad07c47cef61f`](https://github.com/flyingrobots/jedit/blob/751ea54360f2633ee04f472bb18ad07c47cef61f/native/jedit-echo-host/tests/support/replace_range_consequence.rs#L42)
+- **Current-patch consequence selection.** Rewrite and Diff evidence is selected
+  from the current patch and cross-linked before a committable result enters the
+  corpus.
   [`native/jedit-echo-host/tests/support/replace_range_consequence.rs#L113@475b6dcc0eae9edbf228221069ab3aab975be868`](https://github.com/flyingrobots/jedit/blob/475b6dcc0eae9edbf228221069ab3aab975be868/native/jedit-echo-host/tests/support/replace_range_consequence.rs#L113)
+- **Retained node-record typing.** Every retained fact requires agreement
+  between the graph node record and atom attachment type before decoding.
   [`native/jedit-echo-host/tests/support/replace_range_consequence.rs#L242@6c20d93ff94a8b0e24e6d3fc05492f99f27a56e8`](https://github.com/flyingrobots/jedit/blob/6c20d93ff94a8b0e24e6d3fc05492f99f27a56e8/native/jedit-echo-host/tests/support/replace_range_consequence.rs#L242)
-- This is deterministic self-validation. It is not an independent verifier,
-  all-input equivalence proof, Echo admission witness, runtime receipt, WAL, or
-  recovery witness.
+- **Evidence-grade boundary.** The corpus explicitly calls itself deterministic
+  self-validation. It is not an independent verifier, all-input equivalence
+  proof, Echo admission witness, runtime receipt, WAL, or recovery witness.
+  [`native/jedit-echo-host/tests/support/replace_range_oracle.rs#L177@d87e7a1891cbefb6cf478bbc9b6a9ed87121b242`](https://github.com/flyingrobots/jedit/blob/d87e7a1891cbefb6cf478bbc9b6a9ed87121b242/native/jedit-echo-host/tests/support/replace_range_oracle.rs#L177)
 
 What remains open:
 
