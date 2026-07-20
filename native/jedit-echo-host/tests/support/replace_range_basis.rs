@@ -15,7 +15,7 @@ pub enum BasisSetup {
     MissingBuffer,
     MalformedBuffer,
     BadBlobContentHash,
-    BranchExtentMismatchAtExactEnd,
+    BranchExtentMismatch,
     CyclicRightEndpoint,
     LeafEndsInsideCodepointAtExactEnd,
     LeafExceedsBlobAtExactEnd,
@@ -26,7 +26,7 @@ pub enum BasisSetup {
     LeafExtentU64MaxAtZero,
     RopeUtf16LengthOverflow,
     RopeLineBreakCountOverflow,
-    RopeHeightOverflow,
+    BranchHeightU32MaxAtZero,
     HeadLineCountOverflow,
     AboveGraphqlIntRange,
     StaleHead,
@@ -81,7 +81,7 @@ pub fn make_basis(
             );
         }
         BasisSetup::BadBlobContentHash => corrupt_blob_hash(&mut store, head_id),
-        BasisSetup::BranchExtentMismatchAtExactEnd => {
+        BasisSetup::BranchExtentMismatch => {
             let root_id = root_node_id(&store, head_id);
             let mut branch: BranchFact = decode_fact(
                 store
@@ -179,7 +179,7 @@ pub fn make_basis(
                 leaf.line_breaks = u64::MAX;
             });
         }
-        BasisSetup::RopeHeightOverflow => {
+        BasisSetup::BranchHeightU32MaxAtZero => {
             head_id = replace_root_branch(&mut store, create.buffer_id, head_id, |branch| {
                 branch.height = u32::MAX;
             });

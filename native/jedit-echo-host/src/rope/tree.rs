@@ -160,17 +160,10 @@ enum EndpointSide {
     Right,
 }
 
-#[derive(Clone, Copy, Eq, PartialEq)]
-enum BranchValidation {
-    Skip,
-    Corroborate,
-}
-
 fn validate_endpoint<T: GraphFacts>(
     context: &mut PlanContext<'_, T>,
     mut node_id: NodeId,
     side: EndpointSide,
-    branch_validation: BranchValidation,
 ) -> RopeResult<()> {
     let mut visited = BTreeSet::new();
     let mut branches = Vec::new();
@@ -204,10 +197,8 @@ fn validate_endpoint<T: GraphFacts>(
             }
         }
     }
-    if branch_validation == BranchValidation::Corroborate {
-        for (branch_id, branch) in branches.into_iter().rev() {
-            validate_branch_aggregates(context, branch_id, &branch)?;
-        }
+    for (branch_id, branch) in branches.into_iter().rev() {
+        validate_branch_aggregates(context, branch_id, &branch)?;
     }
     Ok(())
 }
@@ -289,16 +280,11 @@ pub(super) fn split<T: GraphFacts>(
         ));
     }
     if offset == 0 {
-        validate_endpoint(context, root_id, EndpointSide::Left, BranchValidation::Skip)?;
+        validate_endpoint(context, root_id, EndpointSide::Left)?;
         return Ok((None, Some(root_id)));
     }
     if offset == metrics.byte_length {
-        validate_endpoint(
-            context,
-            root_id,
-            EndpointSide::Right,
-            BranchValidation::Corroborate,
-        )?;
+        validate_endpoint(context, root_id, EndpointSide::Right)?;
         return Ok((Some(root_id), None));
     }
     match context
@@ -327,8 +313,9 @@ pub(super) fn split<T: GraphFacts>(
                 let (prefix, middle) = split(context, Some(left), offset)?;
                 Ok((prefix, join(context, middle, Some(right))?))
             } else if offset == left_length {
-                validate_endpoint(context, left, EndpointSide::Right, BranchValidation::Skip)?;
-                validate_endpoint(context, right, EndpointSide::Left, BranchValidation::Skip)?;
+                validate_branch_aggregates(context, root_id, &branch)?;
+                validate_endpoint(context, left, EndpointSide::Right)?;
+                validate_endpoint(context, right, EndpointSide::Left)?;
                 Ok((Some(left), Some(right)))
             } else {
                 let right_offset = offset.checked_sub(left_length).ok_or_else(|| {

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Extended split-boundary corroboration through every enclosing retained branch,
+  so zero and internal insertions cannot preserve false aggregate metrics.
 - Made every zero-width `ReplaceRange` split boundary perform cycle-safe Blob,
   leaf-extent, and UTF-8 validation before preserving adjacent rope structure.
 - Made exact-end `ReplaceRange` validation corroborate every retained branch
