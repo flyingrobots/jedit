@@ -67,6 +67,28 @@ fn committed_oracle_satisfies_the_strict_corpus_contract() {
 }
 
 #[test]
+fn strict_corpus_rejects_noncanonical_member_order_and_framing() {
+    let canonical = std::str::from_utf8(ORACLE_BYTES).expect("oracle should be UTF-8");
+    let ordered = concat!(
+        "  \"schemaVersion\": 1,\n",
+        "  \"coordinate\": \"jedit.text.ReplaceRange.oracle@1\","
+    );
+    let reordered = concat!(
+        "  \"coordinate\": \"jedit.text.ReplaceRange.oracle@1\",\n",
+        "  \"schemaVersion\": 1,"
+    );
+    assert_eq!(canonical.matches(ordered).count(), 1);
+    let reordered = canonical.replacen(ordered, reordered, 1);
+    serde_json::from_str::<Value>(&reordered).expect("reordered corpus remains valid JSON");
+    assert!(validate_oracle_contract(reordered.as_bytes()).is_err());
+
+    let without_final_newline = ORACLE_BYTES
+        .strip_suffix(b"\n")
+        .expect("canonical corpus should end in one newline");
+    assert!(validate_oracle_contract(without_final_newline).is_err());
+}
+
+#[test]
 fn corpus_validator_does_not_duplicate_the_obstruction_domain() {
     assert!(!CORPUS_CONTRACT_SOURCE.contains("const CODES"));
 }

@@ -150,7 +150,14 @@ struct CommittableEvidence<'a> {
 pub fn validate_oracle_contract(bytes: &[u8]) -> Result<(), String> {
     let corpus: CorpusEnvelope = serde_json::from_slice(bytes)
         .map_err(|error| format!("oracle corpus transport is invalid: {error}"))?;
-    validate_envelope(&corpus)
+    validate_envelope(&corpus)?;
+    let mut canonical = serde_json::to_vec_pretty(&corpus)
+        .map_err(|error| format!("oracle corpus canonicalization failed: {error}"))?;
+    canonical.push(b'\n');
+    if canonical != bytes {
+        return Err("oracle corpus bytes are not canonical".to_owned());
+    }
+    Ok(())
 }
 
 fn validate_envelope(corpus: &CorpusEnvelope) -> Result<(), String> {
