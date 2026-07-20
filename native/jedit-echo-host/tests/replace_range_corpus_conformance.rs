@@ -2,6 +2,8 @@
 mod contract;
 #[path = "support/replace_range_corpus_contract.rs"]
 mod corpus_contract;
+#[path = "support/replace_range_corpus_fact_chain_tests.rs"]
+mod fact_chain_tests;
 #[path = "support/replace_range_corpus_lexemes.rs"]
 mod lexemes;
 #[path = "support/replace_range_patch_fact_contract.rs"]

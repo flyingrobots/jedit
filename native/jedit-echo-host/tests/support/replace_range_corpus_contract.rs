@@ -13,6 +13,9 @@ use super::lexemes::{CommitSha, Hex32, HexBytes, Utf8Hex};
 use super::patch_fact_contract::{validate_patch, PatchOperation};
 use super::source_set::source_set;
 
+#[path = "replace_range_corpus_result_contract.rs"]
+mod result_contract;
+
 pub(super) const NONCANONICAL_CORPUS_BYTES: &str = "oracle corpus bytes are not canonical";
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -334,8 +337,9 @@ fn validate_committable(
         updated.union(&untouched).copied().collect::<BTreeSet<_>>(),
         basis,
     )?;
-    validate_patch(patch, &writes)?;
-    validate_result(case, result, &writes, &updated)
+    let patch = validate_patch(patch, &writes)?;
+    validate_result(case, result, &writes, &updated)?;
+    result_contract::validate_result_chain(case, result, &patch)
 }
 
 fn validate_result(

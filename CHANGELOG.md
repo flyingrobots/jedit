@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Cross-checked every committable `ReplaceRange` corpus result against its
+  authenticated basis and patched Buffer, Head, Rewrite, and Diff fact chain.
 - Made strict `ReplaceRange` corpus validation preserve Echo's canonical patch
   phase ordering and ascending node identity order within each phase.
 - Made strict `ReplaceRange` corpus validation decode every committable patch

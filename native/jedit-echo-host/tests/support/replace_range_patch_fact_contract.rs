@@ -30,10 +30,52 @@ pub(super) enum PatchOperation {
     },
 }
 
-pub(super) fn validate_patch(
-    patch: &[PatchOperation],
+pub(super) struct ValidatedPatch<'a> {
+    attachments: BTreeMap<&'a str, (&'a str, &'a HexBytes)>,
+}
+
+impl ValidatedPatch<'_> {
+    pub(super) fn buffer(&self, label: &str, node_id: &Hex32) -> Result<BufferFact, String> {
+        let (type_id, bytes) = self.entry(label, node_id)?;
+        decode_buffer_fact(label, node_id.as_str(), type_id, bytes)
+    }
+
+    pub(super) fn content<F: ContentAddressedFact>(
+        &self,
+        label: &str,
+        node_id: &Hex32,
+    ) -> Result<F, String> {
+        let (type_id, bytes) = self.entry(label, node_id)?;
+        decode_content_fact::<F>(label, node_id.as_str(), type_id, bytes)
+    }
+
+    pub(super) fn require_singleton<F: TypedFact>(&self, label: &str) -> Result<(), String> {
+        let expected_type = type_id_hex::<F>();
+        let count = self
+            .attachments
+            .values()
+            .filter(|(type_id, _)| *type_id == expected_type)
+            .count();
+        if count != 1 {
+            return Err(format!(
+                "patch must contain exactly one {label}; found {count}"
+            ));
+        }
+        Ok(())
+    }
+
+    fn entry(&self, label: &str, node_id: &Hex32) -> Result<(&str, &HexBytes), String> {
+        self.attachments
+            .get(node_id.as_str())
+            .copied()
+            .ok_or_else(|| format!("{label} is absent from the patch"))
+    }
+}
+
+pub(super) fn validate_patch<'a>(
+    patch: &'a [PatchOperation],
     writes: &BTreeSet<&str>,
-) -> Result<(), String> {
+) -> Result<ValidatedPatch<'a>, String> {
     let mut upserts = BTreeMap::new();
     let mut attachments = BTreeMap::new();
     for operation in patch {
@@ -67,9 +109,14 @@ pub(super) fn validate_patch(
                 "patch node and atom type differ for {node_id}: {upsert_type} != {atom_type}"
             ));
         }
-        validate_patch_fact(node_id, upsert_type, attachment_bytes)?;
+        validate_fact(
+            &format!("patch fact {node_id}"),
+            node_id,
+            upsert_type,
+            attachment_bytes,
+        )?;
     }
-    Ok(())
+    Ok(ValidatedPatch { attachments })
 }
 
 fn validate_patch_order(patch: &[PatchOperation]) -> Result<(), String> {
@@ -93,61 +140,76 @@ fn validate_patch_order(patch: &[PatchOperation]) -> Result<(), String> {
     Ok(())
 }
 
-fn validate_patch_fact(
+pub(super) fn validate_fact(
+    label: &str,
     node_id: &str,
     type_id: &str,
     attachment_bytes: &HexBytes,
 ) -> Result<(), String> {
     if type_id == type_id_hex::<BufferFact>() {
-        return validate_buffer(node_id, attachment_bytes);
+        return decode_buffer_fact(label, node_id, type_id, attachment_bytes).map(drop);
     }
     if type_id == type_id_hex::<BlobFact>() {
-        return validate_content::<BlobFact>(node_id, attachment_bytes);
+        return decode_content_fact::<BlobFact>(label, node_id, type_id, attachment_bytes)
+            .map(drop);
     }
     if type_id == type_id_hex::<LeafFact>() {
-        return validate_content::<LeafFact>(node_id, attachment_bytes);
+        return decode_content_fact::<LeafFact>(label, node_id, type_id, attachment_bytes)
+            .map(drop);
     }
     if type_id == type_id_hex::<BranchFact>() {
-        return validate_content::<BranchFact>(node_id, attachment_bytes);
+        return decode_content_fact::<BranchFact>(label, node_id, type_id, attachment_bytes)
+            .map(drop);
     }
     if type_id == type_id_hex::<HeadFact>() {
-        return validate_content::<HeadFact>(node_id, attachment_bytes);
+        return decode_content_fact::<HeadFact>(label, node_id, type_id, attachment_bytes)
+            .map(drop);
     }
     if type_id == type_id_hex::<RewriteFact>() {
-        return validate_content::<RewriteFact>(node_id, attachment_bytes);
+        return decode_content_fact::<RewriteFact>(label, node_id, type_id, attachment_bytes)
+            .map(drop);
     }
     if type_id == type_id_hex::<DiffFact>() {
-        return validate_content::<DiffFact>(node_id, attachment_bytes);
+        return decode_content_fact::<DiffFact>(label, node_id, type_id, attachment_bytes)
+            .map(drop);
     }
     Err(format!(
-        "unsupported ReplaceRange patch fact type {type_id}"
+        "{label} has unsupported ReplaceRange fact type {type_id}"
     ))
 }
 
-fn validate_buffer(node_id: &str, attachment_bytes: &HexBytes) -> Result<(), String> {
-    let fact: BufferFact = decode_canonical(attachment_bytes)?;
-    require_node_id("keyed Buffer", node_id, buffer_node_id(&fact.buffer_key))
-}
-
-fn validate_content<F: ContentAddressedFact>(
+pub(super) fn decode_buffer_fact(
+    label: &str,
     node_id: &str,
+    type_id: &str,
     attachment_bytes: &HexBytes,
-) -> Result<(), String> {
-    let fact: F = decode_canonical(attachment_bytes)?;
-    let expected = fact_id(&fact).map_err(|error| error.to_string())?;
-    require_node_id(F::TYPE_LABEL, node_id, expected)
+) -> Result<BufferFact, String> {
+    require_declared_type::<BufferFact>(label, type_id)?;
+    let fact: BufferFact = decode_canonical(label, attachment_bytes)?;
+    require_node_id(label, node_id, buffer_node_id(&fact.buffer_key))?;
+    Ok(fact)
 }
 
-fn decode_canonical<F: TypedFact>(attachment_bytes: &HexBytes) -> Result<F, String> {
+pub(super) fn decode_content_fact<F: ContentAddressedFact>(
+    label: &str,
+    node_id: &str,
+    type_id: &str,
+    attachment_bytes: &HexBytes,
+) -> Result<F, String> {
+    require_declared_type::<F>(label, type_id)?;
+    let fact: F = decode_canonical(label, attachment_bytes)?;
+    let expected = fact_id(&fact).map_err(|error| error.to_string())?;
+    require_node_id(label, node_id, expected)?;
+    Ok(fact)
+}
+
+fn decode_canonical<F: TypedFact>(label: &str, attachment_bytes: &HexBytes) -> Result<F, String> {
     let bytes = attachment_bytes.bytes();
     let fact: F = serde_json::from_slice(&bytes)
-        .map_err(|error| format!("patch {} attachment cannot decode: {error}", F::TYPE_LABEL))?;
+        .map_err(|error| format!("{label} attachment cannot decode: {error}"))?;
     let canonical = fact_bytes(&fact).map_err(|error| error.to_string())?;
     if canonical != bytes {
-        return Err(format!(
-            "patch {} attachment bytes are not canonical",
-            F::TYPE_LABEL
-        ));
+        return Err(format!("{label} attachment bytes are not canonical"));
     }
     Ok(fact)
 }
@@ -156,7 +218,17 @@ fn require_node_id(label: &str, claimed: &str, expected: NodeId) -> Result<(), S
     let claimed = parse_node_id(claimed).map_err(|error| error.to_string())?;
     if claimed != expected {
         return Err(format!(
-            "patch {label} attachment identity does not match its node"
+            "{label} attachment identity does not match its node"
+        ));
+    }
+    Ok(())
+}
+
+fn require_declared_type<F: TypedFact>(label: &str, actual: &str) -> Result<(), String> {
+    if actual != type_id_hex::<F>() {
+        return Err(format!(
+            "{label} does not identify the declared {}",
+            F::TYPE_LABEL
         ));
     }
     Ok(())
