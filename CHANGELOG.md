@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Made retained `ReplaceRange` consequence validation recompute the keyed
+  Buffer identity in both the basis and result graphs. Mutually consistent
+  Buffer facts retained under the wrong node address now fail closed.
 - Made the `ReplaceRange` oracle derive each semantic obstruction code from the
   observed planner failure and canonical request coordinates. A fixture's
   expected label can no longer determine the published semantic category.

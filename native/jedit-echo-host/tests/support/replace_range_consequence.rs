@@ -6,7 +6,7 @@ use jedit_echo_host::records::{
     decode_fact, fact_id, fact_type_id, BufferFact, DiffFact, HeadFact, RewriteFact,
     EMPTY_ROOT_DIGEST_DOMAIN,
 };
-use jedit_echo_host::rope::{read_window, MutationPlan};
+use jedit_echo_host::rope::{buffer_node_id, read_window, MutationPlan};
 use warp_core::{GraphStore, NodeId, TypeId, WarpId, WarpOp};
 
 #[derive(Debug)]
@@ -41,12 +41,22 @@ pub(super) fn validate_consequence(
     } = expectation;
     let basis_buffer: BufferFact = read_fact(basis, plan.buffer_id)?;
     require_equal(
+        "basis Buffer keyed identity",
+        buffer_node_id(&basis_buffer.buffer_key),
+        plan.buffer_id,
+    )?;
+    require_equal(
         "basis Buffer canonical head",
         NodeId::from(basis_buffer.canonical_head_id),
         basis_head_id,
     )?;
     let basis_head: HeadFact = read_fact(basis, basis_head_id)?;
     let buffer: BufferFact = read_fact(next, plan.buffer_id)?;
+    require_equal(
+        "result Buffer keyed identity",
+        buffer_node_id(&buffer.buffer_key),
+        plan.buffer_id,
+    )?;
     require_equal(
         "result Buffer canonical head",
         NodeId::from(buffer.canonical_head_id),

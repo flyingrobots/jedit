@@ -67,6 +67,42 @@ fn retained_consequence_rejects_node_and_atom_type_disagreement() {
 }
 
 #[test]
+fn retained_consequence_rejects_a_misaddressed_buffer_key() {
+    let warp_id = warp_core::make_warp_id("oracle-buffer-key");
+    let (basis, buffer_id, basis_head_id, _) =
+        make_basis(warp_id, "buffer-key", "abc", BasisSetup::Plain);
+    let plan = plan_replace(&basis, buffer_id, basis_head_id, 1, 2, "XY")
+        .expect("replacement should plan");
+    let mut delta = TickDelta::new();
+    plan.emit(&mut delta);
+    let patch = delta.finalize();
+    let mut next = basis.clone();
+    apply_ops(&mut next, &patch);
+
+    let mut misaddressed_basis = basis.clone();
+    corrupt_buffer_key(&mut misaddressed_basis, buffer_id);
+    corrupt_buffer_key(&mut next, buffer_id);
+
+    let error = validate_consequence(
+        &misaddressed_basis,
+        &next,
+        &plan,
+        &patch,
+        ReplaceExpectation {
+            basis_head_id,
+            start_byte: 1,
+            end_byte: 2,
+            replacement: "XY",
+        },
+    )
+    .expect_err("a Buffer retained under the wrong keyed identity must fail");
+    assert!(
+        error.contains("Buffer keyed identity"),
+        "error was {error:?}"
+    );
+}
+
+#[test]
 fn retained_consequence_selects_facts_from_the_current_edit() {
     let warp_id = warp_core::make_warp_id("oracle-retained-history");
     let (basis, buffer_id, basis_head_id, _) =
@@ -175,4 +211,16 @@ fn retained_consequence_rejects_a_buffer_head_mismatch() {
     )
     .expect_err("inconsistent retained consequence should fail");
     assert!(error.contains("result Buffer canonical head"));
+}
+
+fn corrupt_buffer_key(store: &mut GraphStore, buffer_id: NodeId) {
+    let mut buffer: BufferFact = read_fact(store, buffer_id).expect("Buffer should decode");
+    buffer.buffer_key = "deliberately-misaddressed".to_owned();
+    store.set_node_attachment(
+        buffer_id,
+        Some(AttachmentValue::Atom(warp_core::AtomPayload::new(
+            fact_type_id::<BufferFact>(),
+            fact_bytes(&buffer).expect("Buffer should encode").into(),
+        ))),
+    );
 }
