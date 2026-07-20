@@ -17,6 +17,7 @@ pub enum BasisSetup {
     BadBlobContentHash,
     BranchExtentMismatch,
     CyclicRightEndpoint,
+    EmptyRootWithNonzeroLength,
     LeafEndsInsideCodepointAtExactEnd,
     LeafExceedsBlobAtExactEnd,
     LeafExceedsBlobAtInternalBoundary,
@@ -120,6 +121,11 @@ pub fn make_basis(
             );
             head_id = replace_head_root(&mut store, create.buffer_id, head_id, cyclic_id);
         }
+        BasisSetup::EmptyRootWithNonzeroLength => {
+            head_id = replace_head(&mut store, create.buffer_id, head_id, |head| {
+                head.byte_length = 1;
+            });
+        }
         BasisSetup::LeafEndsInsideCodepointAtExactEnd => {
             let root_id = root_node_id(&store, head_id);
             let next_root_id = replace_leaf(&mut store, root_id, |leaf| {
@@ -165,8 +171,14 @@ pub fn make_basis(
             });
         }
         BasisSetup::LeafExtentU64MaxAtZero => {
-            head_id = replace_root_leaf(&mut store, create.buffer_id, head_id, |leaf| {
+            let root_id = root_node_id(&store, head_id);
+            let next_root_id = replace_leaf(&mut store, root_id, |leaf| {
                 leaf.byte_length = u64::MAX;
+            });
+            head_id = replace_head(&mut store, create.buffer_id, head_id, |head| {
+                head.root_node_id = Some(next_root_id.into());
+                head.root_digest = *next_root_id.as_bytes();
+                head.byte_length = u64::MAX;
             });
         }
         BasisSetup::RopeUtf16LengthOverflow => {

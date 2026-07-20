@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Made `ReplaceRange` corroborate the selected Head/root byte extent and exact
+  requested-range materialization before no-op classification, so truncated or
+  absent retained roots fail with a typed malformed-rope obstruction.
 - Extended split-boundary corroboration through every enclosing retained branch,
   so zero and internal insertions cannot preserve false aggregate metrics.
 - Made every zero-width `ReplaceRange` split boundary perform cycle-safe Blob,

@@ -159,12 +159,34 @@ pub fn plan_replace_with_reason<T: GraphFacts>(
         .checked_sub(start_byte)
         .ok_or_else(|| range_order_failure(start_byte, end_byte))?;
     let basis_root = basis_head.root_node_id.map(NodeId::from);
+    let basis_root_metrics = root_metrics(&mut context, basis_root)
+        .map_err(RopeFault::structural_dependency)
+        .map_err(ReplaceRangeFailure::from_rope_fault)?;
+    if basis_root_metrics.byte_length != basis_head.byte_length {
+        return Err(ReplaceRangeFailure::from_rope_fault(
+            RopeFault::declared_rope_inconsistent(
+                "basis head byte length does not match root".to_owned(),
+            ),
+        ));
+    }
     if start_byte == end_byte {
         split(&mut context, basis_root, start_byte)
             .map_err(ReplaceRangeFailure::from_rope_fault)?;
     }
     let current_bytes = read_range_bytes(&mut context, basis_root, start_byte, end_byte)
         .map_err(ReplaceRangeFailure::from_rope_fault)?;
+    let materialized_byte_length = u64::try_from(current_bytes.len()).map_err(|_| {
+        ReplaceRangeFailure::from_rope_fault(RopeFault::arithmetic_overflow(
+            "materialized range byte length overflow",
+        ))
+    })?;
+    if materialized_byte_length != deleted_byte_length {
+        return Err(ReplaceRangeFailure::from_rope_fault(
+            RopeFault::declared_rope_inconsistent(
+                "replace range did not materialize the declared byte length".to_owned(),
+            ),
+        ));
+    }
     if current_bytes == insert_text.as_bytes() {
         return Err(ReplaceRangeFailure::new(
             ReplaceRangeObstructionCode::NoOp,
