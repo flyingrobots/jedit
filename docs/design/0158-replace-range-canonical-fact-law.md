@@ -298,8 +298,10 @@ to source-code inference.
 ## Agent Inspectability / Explainability Posture
 
 Agents can inspect one declaration and one corpus manifest without executing
-the product or scraping Rust debug output. Every case names its semantic
-purpose, exact basis, input, terminal posture, support, facts, and result. The
+the product or scraping Rust debug output. Successful cases name exact basis,
+input, support, patch, retained facts, and result. Obstructed cases name exact
+basis, input, typed obstruction, no-plan posture, and unchanged-parent evidence.
+Every case also names its semantic purpose and terminal posture. The
 `semanticBaselineCommit` names the historical checkpoint whose behavior this
 cycle freezes; the `sourceSet` digest binds the exact declared generating
 source bytes. The evidence grade prevents a consumer from mistaking
