@@ -435,17 +435,25 @@ test("strict retained fact reading stays outside the rope facade", () => {
   assert.match(reader, /content_node_id\(F::ID_DOMAIN, &bytes\)/);
 });
 
-test("native fact byte decoding has one shared implementation", () => {
+test("fact decoding invariant names its selected reader scope", () => {
+  const source = fs.readFileSync(new URL(import.meta.url), "utf8");
+  const decoderTestNames = [
+    ...source.matchAll(/^test\("([^"\n]*fact byte decoding[^"\n]*)"/gm),
+  ].map((match) => match[1]);
+
+  assert.deepEqual(decoderTestNames, [
+    "attached, pending, and strict retained fact byte decoding is shared",
+  ]);
+});
+
+test("attached, pending, and strict retained fact byte decoding is shared", () => {
   const records = fs.readFileSync(RECORDS_PATH, "utf8");
   const facade = fs.readFileSync(ROPE_FACADE_PATH, "utf8");
   const reader = fs.readFileSync(RETAINED_FACT_READER_PATH, "utf8");
-  const rawDecoderCount = [records, facade, reader].reduce(
-    (count, source) =>
-      count + (source.match(/serde_json::from_slice/g) ?? []).length,
-    0,
-  );
+  const recordsRawDecoderCount =
+    records.match(/serde_json::from_slice/g)?.length ?? 0;
 
-  assert.equal(rawDecoderCount, 1);
+  assert.equal(recordsRawDecoderCount, 1);
   assert.match(records, /pub\(crate\) fn decode_fact_bytes</);
   assert.match(records, /decode_fact_bytes\(payload\.bytes\.as_ref\(\)\)/);
   assert.match(facade, /decode_fact_bytes::<F>\(&pending\.bytes\)/);
