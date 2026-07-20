@@ -299,6 +299,9 @@ fn validate_committable(
     )?;
     let reads = unique_ids("footprint.nodeReads", ids(&footprint.node_reads))?;
     let writes = unique_ids("footprint.nodeWrites", ids(&footprint.node_writes))?;
+    if !reads.is_subset(&basis) {
+        return Err("footprint reads must identify retained basis facts".to_owned());
+    }
     require_equal(
         "attachmentReads",
         unique_ids(

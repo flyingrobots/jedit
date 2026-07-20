@@ -295,6 +295,22 @@ fn strict_corpus_enforces_terminal_and_partition_invariants() {
 }
 
 #[test]
+fn strict_corpus_requires_declared_reads_to_exist_in_the_basis() {
+    assert_invalid("foreign footprint read", |corpus| {
+        let footprint = &mut committable(corpus)["terminal"]["footprint"];
+        let foreign_id = Value::String("ab".repeat(32));
+        footprint["nodeReads"]
+            .as_array_mut()
+            .expect("node reads should be an array")
+            .push(foreign_id.clone());
+        footprint["attachmentReads"]
+            .as_array_mut()
+            .expect("attachment reads should be an array")
+            .push(foreign_id);
+    });
+}
+
+#[test]
 fn strict_corpus_preserves_fixed_width_and_empty_root_witnesses() {
     validate_oracle_contract(ORACLE_BYTES).expect("committed edge cases should remain lawful");
     let corpus = corpus();
