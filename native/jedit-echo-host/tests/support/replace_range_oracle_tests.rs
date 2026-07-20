@@ -45,6 +45,38 @@ fn patch_projection_rejects_a_foreign_node_write() {
 }
 
 #[test]
+fn obstruction_semantics_come_from_the_typed_planner_reason() {
+    let warp_id = make_warp_id("oracle-typed-obstruction");
+    let (store, buffer_id, basis_head_id, _) =
+        make_basis(warp_id, "typed-obstruction", "abc", BasisSetup::Plain);
+    let failure = plan_replace_with_reason(&store, buffer_id, basis_head_id, 2, 1, "x")
+        .expect_err("reversed range must obstruct");
+
+    assert_eq!(failure.reason(), SemanticObstructionCode::RangeOrderInvalid);
+}
+
+#[test]
+fn oracle_support_contains_no_diagnostic_semantic_classifier() {
+    let sources = [
+        include_str!("replace_range_oracle.rs"),
+        include_str!("replace_range_legacy.rs"),
+        include_str!("replace_range_contract.rs"),
+    ];
+    for forbidden in [
+        "fn semantic_obstruction(",
+        "starts_with(\"replace range \")",
+        "starts_with(\"stale replace basis \")",
+        "contains(\"content hash does not match\")",
+        "start_byte > end_byte",
+    ] {
+        assert!(
+            sources.iter().all(|source| !source.contains(forbidden)),
+            "oracle support reintroduced diagnostic semantic classifier {forbidden:?}"
+        );
+    }
+}
+
+#[test]
 fn obstruction_projection_rejects_a_false_expected_semantic_code() {
     let spec = CaseSpec {
         id: "false-semantic-code",

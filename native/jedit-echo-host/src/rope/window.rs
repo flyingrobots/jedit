@@ -4,6 +4,7 @@ use crate::error::{HostError, HostResult};
 use crate::identity::node_id_hex;
 use crate::records::{BufferFact, HeadFact};
 
+use super::fault::{RopeFault, RopeResult};
 use super::{GraphFacts, PlanContext, RopeNode};
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
@@ -74,7 +75,8 @@ pub fn read_window<T: GraphFacts>(
             bounded_end,
             &mut bytes,
             &mut support,
-        )?;
+        )
+        .map_err(RopeFault::into_host_error)?;
     }
     let (text, actual_end) = complete_utf8_prefix(bytes, start_byte, bounded_end)?;
     support.retain(|item| item.start_byte < actual_end);
@@ -118,9 +120,8 @@ fn complete_utf8_prefix(
             let valid_length = utf8_error.valid_up_to();
             let mut prefix = error.into_bytes();
             prefix.truncate(valid_length);
-            let text = String::from_utf8(prefix).map_err(|_| {
-                HostError::InvalidRequest("window range is not UTF-8".to_owned())
-            })?;
+            let text = String::from_utf8(prefix)
+                .map_err(|_| HostError::InvalidRequest("window range is not UTF-8".to_owned()))?;
             Ok((text, start_byte + valid_length as u64))
         }
     }
@@ -131,7 +132,7 @@ pub(super) fn read_range_bytes<T: GraphFacts>(
     root: Option<NodeId>,
     start_byte: u64,
     end_byte: u64,
-) -> HostResult<Vec<u8>> {
+) -> RopeResult<Vec<u8>> {
     let mut bytes = Vec::new();
     let mut support = Vec::new();
     if let Some(root_id) = root {
@@ -157,16 +158,24 @@ fn collect_range<T: GraphFacts>(
     range_end: u64,
     output: &mut Vec<u8>,
     support: &mut Vec<WindowSupport>,
-) -> HostResult<()> {
-    let metrics = context.node_metrics(node_id)?;
+) -> RopeResult<()> {
+    let metrics = context
+        .node_metrics(node_id)
+        .map_err(RopeFault::structural_dependency)?;
     let node_end = node_start + metrics.byte_length;
     if range_end <= node_start || range_start >= node_end {
         return Ok(());
     }
-    match context.rope_node(node_id)? {
+    match context
+        .rope_node(node_id)
+        .map_err(RopeFault::structural_dependency)?
+    {
         RopeNode::Branch(branch) => {
             let left = NodeId::from(branch.left);
-            let left_length = context.node_metrics(left)?.byte_length;
+            let left_length = context
+                .node_metrics(left)
+                .map_err(RopeFault::structural_dependency)?
+                .byte_length;
             collect_range(
                 context,
                 left,
@@ -190,18 +199,20 @@ fn collect_range<T: GraphFacts>(
             let overlap_start = range_start.max(node_start);
             let overlap_end = range_end.min(node_end);
             let blob_id = NodeId::from(leaf.blob_id);
-            let blob = context.verified_blob(blob_id)?;
+            let blob = context.verified_blob_fault(blob_id)?;
             let relative_start = usize::try_from(leaf.byte_start + overlap_start - node_start)
                 .map_err(|_| {
-                    HostError::InvalidRequest("window offset exceeds memory".to_owned())
+                    RopeFault::declared_rope_inconsistent("window offset exceeds memory".to_owned())
                 })?;
             let relative_end = usize::try_from(leaf.byte_start + overlap_end - node_start)
-                .map_err(|_| HostError::InvalidRequest("window end exceeds memory".to_owned()))?;
+                .map_err(|_| {
+                    RopeFault::declared_rope_inconsistent("window end exceeds memory".to_owned())
+                })?;
             let slice = blob
                 .bytes
                 .get(relative_start..relative_end)
                 .ok_or_else(|| {
-                    HostError::MalformedFact(format!("leaf {} exceeds blob", node_id_hex(node_id)))
+                    RopeFault::fact_malformed(format!("leaf {} exceeds blob", node_id_hex(node_id)))
                 })?;
             output.extend_from_slice(slice);
             support.push(WindowSupport {

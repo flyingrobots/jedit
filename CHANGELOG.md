@@ -20,9 +20,10 @@
 - Made retained `ReplaceRange` consequence validation recompute the keyed
   Buffer identity in both the basis and result graphs. Mutually consistent
   Buffer facts retained under the wrong node address now fail closed.
-- Made the `ReplaceRange` oracle derive each semantic obstruction code from the
-  observed planner failure and canonical request coordinates. A fixture's
-  expected label can no longer determine the published semantic category.
+- Made the production `ReplaceRange` planner emit a closed typed obstruction
+  reason at each decision site while retaining its exact legacy `HostError`.
+  Oracle evidence now consumes that reason directly; diagnostic wording and
+  independently repeated request predicates cannot mint semantic categories.
 - Strengthened the `ReplaceRange` stale- and foreign-basis witnesses to prove
   the retained causal relationships they claim. A stale basis must be the
   direct ancestor of the target Buffer's canonical Head, while a foreign basis

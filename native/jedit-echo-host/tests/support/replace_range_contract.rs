@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+pub use jedit_echo_host::rope::ReplaceRangeObstructionCode as SemanticObstructionCode;
 
 pub const ORACLE_SCHEMA_VERSION: u32 = 1;
 pub const ORACLE_COORDINATE: &str = "jedit.text.ReplaceRange.oracle@1";
@@ -9,51 +9,6 @@ pub const EVIDENCE_GRADE: &str = "deterministic-self-validation";
 pub const INDEPENDENCE_LIMIT: &str = "independent finite-corpus evidence begins only when a separately implemented Echo evaluator agrees";
 pub const ORACLE_WARP_LABEL: &str = "jedit.replace-range.oracle.v1";
 pub const OBSTRUCTED_PATCH_POSTURE: &str = "no-mutation-plan";
-
-#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum SemanticObstructionCode {
-    RangeOrderInvalid,
-    RangeOutOfBounds,
-    Utf8BoundaryInvalid,
-    NoOp,
-    BasisNotCanonical,
-    ArithmeticOverflow,
-    FactMissing,
-    FactMalformed,
-    ContentIdentityMismatch,
-    MalformedRope,
-}
-
-impl SemanticObstructionCode {
-    pub const ALL: [Self; 10] = [
-        Self::RangeOrderInvalid,
-        Self::RangeOutOfBounds,
-        Self::Utf8BoundaryInvalid,
-        Self::NoOp,
-        Self::BasisNotCanonical,
-        Self::ArithmeticOverflow,
-        Self::FactMissing,
-        Self::FactMalformed,
-        Self::ContentIdentityMismatch,
-        Self::MalformedRope,
-    ];
-
-    pub const fn as_str(self) -> &'static str {
-        match self {
-            Self::RangeOrderInvalid => "range-order-invalid",
-            Self::RangeOutOfBounds => "range-out-of-bounds",
-            Self::Utf8BoundaryInvalid => "utf8-boundary-invalid",
-            Self::NoOp => "no-op",
-            Self::BasisNotCanonical => "basis-not-canonical",
-            Self::ArithmeticOverflow => "arithmetic-overflow",
-            Self::FactMissing => "fact-missing",
-            Self::FactMalformed => "fact-malformed",
-            Self::ContentIdentityMismatch => "content-identity-mismatch",
-            Self::MalformedRope => "malformed-rope",
-        }
-    }
-}
 
 #[cfg(test)]
 mod tests {

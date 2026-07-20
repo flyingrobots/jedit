@@ -495,9 +495,9 @@ What changed from the design:
   for the schema,
   `1ac26477e1d6c08df49446627ad002e40bd214235ce93b563d62bb50e40dc14c`
   for codec vectors, and
-  `876722ea5eb2ff0d65037edd6b39ead814b25bc3468f6fc528040d6a98c5b01a`
+  `70c570898195c00b120f6f5582d13ea12d15abccf7e458e869bde53bdf795a85`
   for the oracle. The oracle source-set digest is
-  `3cc55883551a8f1d2dc97c750eda3258819e308ae8c7ddc701567598a904ed26`.
+  `1c570ce54d50d0b6cf02d2881871bcaef32bf5326e60a8ef6bf711633eed4b7e`.
 - The deliberate resource-update command now runs each exact writer serially
   before the complete locked reader and conformance pass.
   [`package.json#L10@13b16f2e7195458138865460c5948744ea8615ed`](https://github.com/flyingrobots/jedit/blob/13b16f2e7195458138865460c5948744ea8615ed/package.json#L10)

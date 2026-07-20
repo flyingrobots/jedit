@@ -1,8 +1,7 @@
 use std::collections::BTreeSet;
 
-use jedit_echo_host::error::HostError;
 use jedit_echo_host::records::{decode_fact, BufferFact};
-use jedit_echo_host::rope::{plan_replace, MutationPlan};
+use jedit_echo_host::rope::{plan_replace, plan_replace_with_reason, MutationPlan};
 use serde::Serialize;
 use warp_core::{
     make_warp_id, AttachmentOwner, AttachmentPlane, AttachmentValue, Footprint, GraphStore, NodeId,
@@ -15,8 +14,8 @@ mod basis;
 mod consequence;
 #[path = "replace_range_contract.rs"]
 mod contract;
-#[path = "replace_range_obstruction.rs"]
-mod obstruction;
+#[path = "replace_range_legacy.rs"]
+mod legacy;
 #[path = "replace_range_source_set.rs"]
 mod source_set;
 #[cfg(test)]
@@ -32,7 +31,7 @@ use contract::{
     INVOCATION_SCHEMA_COORDINATE, OBSTRUCTED_PATCH_POSTURE, ORACLE_COORDINATE,
     ORACLE_SCHEMA_VERSION, ORACLE_WARP_LABEL, SEMANTIC_BASELINE_COMMIT,
 };
-use obstruction::semantic_obstruction;
+use legacy::{assert_error_parity, error_projection};
 use source_set::{source_set, SourceSet};
 
 #[derive(Clone, Copy)]
@@ -212,7 +211,7 @@ fn evaluate_case(warp_id: warp_core::WarpId, spec: CaseSpec) -> OracleCase {
         serde_json::to_vec(&invocation).expect("oracle invocation should encode canonically"),
     );
     let before = project_store(&store);
-    let first = plan_replace(
+    let first = plan_replace_with_reason(
         &store,
         buffer_id,
         basis_head_id,
@@ -232,8 +231,18 @@ fn evaluate_case(warp_id: warp_core::WarpId, spec: CaseSpec) -> OracleCase {
                 message_fragment,
             },
         ) => {
-            let (actual_class, actual_message) = error_projection(&error);
-            let actual_semantic_code = semantic_obstruction(&error, spec.start_byte, spec.end_byte);
+            let (actual_class, actual_message) = error_projection(error.host_error());
+            let actual_semantic_code = error.reason();
+            assert_error_parity(
+                &store,
+                buffer_id,
+                basis_head_id,
+                spec.start_byte,
+                spec.end_byte,
+                &spec.replacement,
+                spec.id,
+                &error,
+            );
             assert_eq!(
                 actual_semantic_code, semantic_code,
                 "{} semantic obstruction",
@@ -473,14 +482,5 @@ fn project_op(op: &WarpOp, warp_id: warp_core::WarpId) -> PatchOpProjection {
             }
         }
         _ => panic!("ReplaceRange emitted an unsupported graph operation"),
-    }
-}
-
-fn error_projection(error: &HostError) -> (&'static str, String) {
-    match error {
-        HostError::MissingFact(message) => ("missing-fact", message.clone()),
-        HostError::MalformedFact(message) => ("malformed-fact", message.clone()),
-        HostError::InvalidRequest(message) => ("invalid-request", message.clone()),
-        other => panic!("oracle received unexpected host error: {other}"),
     }
 }

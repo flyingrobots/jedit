@@ -31,6 +31,14 @@ const SOURCE_SET_FILES: &[(&str, &[u8])] = &[
         include_bytes!("../../src/rope.rs"),
     ),
     (
+        "native/jedit-echo-host/src/rope/fault.rs",
+        include_bytes!("../../src/rope/fault.rs"),
+    ),
+    (
+        "native/jedit-echo-host/src/rope/replace.rs",
+        include_bytes!("../../src/rope/replace.rs"),
+    ),
+    (
         "native/jedit-echo-host/src/rope/tree.rs",
         include_bytes!("../../src/rope/tree.rs"),
     ),
@@ -63,8 +71,8 @@ const SOURCE_SET_FILES: &[(&str, &[u8])] = &[
         include_bytes!("replace_range_consequence_tests.rs"),
     ),
     (
-        "native/jedit-echo-host/tests/support/replace_range_obstruction.rs",
-        include_bytes!("replace_range_obstruction.rs"),
+        "native/jedit-echo-host/tests/support/replace_range_legacy.rs",
+        include_bytes!("replace_range_legacy.rs"),
     ),
     (
         "native/jedit-echo-host/tests/support/replace_range_oracle.rs",

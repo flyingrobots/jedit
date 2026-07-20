@@ -6,6 +6,7 @@ use crate::records::{
     BlobFact, BranchFact, LeafFact, BLOB_CONTENT_HASH_DOMAIN, EMPTY_ROOT_DIGEST_DOMAIN,
 };
 
+use super::fault::{RopeFault, RopeResult};
 use super::{GraphFacts, NodeMetrics, PlanContext, RopeNode, MAX_LEAF_BYTES};
 pub(super) fn build_text<T: GraphFacts>(
     context: &mut PlanContext<'_, T>,
@@ -69,22 +70,23 @@ fn make_leaf_slice<T: GraphFacts>(
     leaf: &LeafFact,
     relative_start: u64,
     byte_length: u64,
-) -> HostResult<Option<NodeId>> {
+) -> RopeResult<Option<NodeId>> {
     if byte_length == 0 {
         return Ok(None);
     }
     let blob_id = NodeId::from(leaf.blob_id);
-    let bytes = context.blob_bytes(blob_id)?;
+    let bytes = context.verified_blob_fault(blob_id)?.bytes;
     let start = usize::try_from(leaf.byte_start + relative_start).map_err(|_| {
-        HostError::InvalidRequest("leaf offset exceeds addressable memory".to_owned())
+        RopeFault::declared_rope_inconsistent("leaf offset exceeds addressable memory".to_owned())
     })?;
-    let end = usize::try_from(leaf.byte_start + relative_start + byte_length)
-        .map_err(|_| HostError::InvalidRequest("leaf end exceeds addressable memory".to_owned()))?;
+    let end = usize::try_from(leaf.byte_start + relative_start + byte_length).map_err(|_| {
+        RopeFault::declared_rope_inconsistent("leaf end exceeds addressable memory".to_owned())
+    })?;
     let slice = bytes.get(start..end).ok_or_else(|| {
-        HostError::MalformedFact(format!("leaf {} exceeds blob bounds", node_id_hex(blob_id)))
+        RopeFault::fact_malformed(format!("leaf {} exceeds blob bounds", node_id_hex(blob_id)))
     })?;
     let text = std::str::from_utf8(slice).map_err(|_| {
-        HostError::InvalidRequest("replace offset splits a UTF-8 code point".to_owned())
+        RopeFault::invalid_utf8_slice("replace offset splits a UTF-8 code point".to_owned())
     })?;
     let fact = LeafFact {
         blob_id: leaf.blob_id,
@@ -93,25 +95,30 @@ fn make_leaf_slice<T: GraphFacts>(
         utf16_length: text.encode_utf16().count() as u64,
         line_breaks: slice.iter().filter(|byte| **byte == b'\n').count() as u64,
     };
-    context.write_content_fact(&fact).map(Some)
+    context
+        .write_content_fact(&fact)
+        .map(Some)
+        .map_err(RopeFault::structural_dependency)
 }
 
 pub(super) fn split<T: GraphFacts>(
     context: &mut PlanContext<'_, T>,
     root: Option<NodeId>,
     offset: u64,
-) -> HostResult<(Option<NodeId>, Option<NodeId>)> {
+) -> RopeResult<(Option<NodeId>, Option<NodeId>)> {
     let Some(root_id) = root else {
         if offset == 0 {
             return Ok((None, None));
         }
-        return Err(HostError::InvalidRequest(
+        return Err(RopeFault::declared_rope_inconsistent(
             "split exceeds empty rope".to_owned(),
         ));
     };
-    let metrics = context.node_metrics(root_id)?;
+    let metrics = context
+        .node_metrics(root_id)
+        .map_err(RopeFault::structural_dependency)?;
     if offset > metrics.byte_length {
-        return Err(HostError::InvalidRequest(
+        return Err(RopeFault::declared_rope_inconsistent(
             "split exceeds rope length".to_owned(),
         ));
     }
@@ -121,7 +128,10 @@ pub(super) fn split<T: GraphFacts>(
     if offset == metrics.byte_length {
         return Ok((Some(root_id), None));
     }
-    match context.rope_node(root_id)? {
+    match context
+        .rope_node(root_id)
+        .map_err(RopeFault::structural_dependency)?
+    {
         RopeNode::Leaf(leaf) => Ok((
             make_leaf_slice(context, &leaf, 0, offset)?,
             make_leaf_slice(context, &leaf, offset, leaf.byte_length - offset)?,
@@ -129,15 +139,24 @@ pub(super) fn split<T: GraphFacts>(
         RopeNode::Branch(branch) => {
             let left = NodeId::from(branch.left);
             let right = NodeId::from(branch.right);
-            let left_length = context.node_metrics(left)?.byte_length;
+            let left_length = context
+                .node_metrics(left)
+                .map_err(RopeFault::structural_dependency)?
+                .byte_length;
             if offset < left_length {
                 let (prefix, middle) = split(context, Some(left), offset)?;
-                Ok((prefix, join(context, middle, Some(right))?))
+                Ok((
+                    prefix,
+                    join(context, middle, Some(right)).map_err(RopeFault::structural_dependency)?,
+                ))
             } else if offset == left_length {
                 Ok((Some(left), Some(right)))
             } else {
                 let (middle, suffix) = split(context, Some(right), offset - left_length)?;
-                Ok((join(context, Some(left), middle)?, suffix))
+                Ok((
+                    join(context, Some(left), middle).map_err(RopeFault::structural_dependency)?,
+                    suffix,
+                ))
             }
         }
     }
