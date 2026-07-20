@@ -56,6 +56,7 @@ pub(super) fn validate_patch(
     }
     require_targets("patch upsert targets", upserts.keys(), writes)?;
     require_targets("patch attachment targets", attachments.keys(), writes)?;
+    validate_patch_order(patch)?;
     for (node_id, upsert_type) in upserts {
         let (atom_type, attachment_bytes) = attachments
             .get(node_id)
@@ -67,6 +68,27 @@ pub(super) fn validate_patch(
             ));
         }
         validate_patch_fact(node_id, upsert_type, attachment_bytes)?;
+    }
+    Ok(())
+}
+
+fn validate_patch_order(patch: &[PatchOperation]) -> Result<(), String> {
+    let mut attachment_phase = false;
+    let mut previous_upsert = None;
+    let mut previous_attachment = None;
+    for operation in patch {
+        match operation {
+            PatchOperation::UpsertNode { node_id, .. } => {
+                if attachment_phase {
+                    return Err("patch node upsert follows an attachment".to_owned());
+                }
+                require_ascending("node upsert", &mut previous_upsert, node_id.as_str())?;
+            }
+            PatchOperation::SetNodeAlpha { node_id, .. } => {
+                attachment_phase = true;
+                require_ascending("attachment", &mut previous_attachment, node_id.as_str())?;
+            }
+        }
     }
     Ok(())
 }
@@ -137,6 +159,20 @@ fn require_node_id(label: &str, claimed: &str, expected: NodeId) -> Result<(), S
             "patch {label} attachment identity does not match its node"
         ));
     }
+    Ok(())
+}
+
+fn require_ascending<'a>(
+    label: &str,
+    previous: &mut Option<&'a str>,
+    current: &'a str,
+) -> Result<(), String> {
+    if previous.is_some_and(|value| value >= current) {
+        return Err(format!(
+            "patch {label} targets are not in ascending node identity order"
+        ));
+    }
+    *previous = Some(current);
     Ok(())
 }
 

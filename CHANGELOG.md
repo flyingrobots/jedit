@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Made strict `ReplaceRange` corpus validation preserve Echo's canonical patch
+  phase ordering and ascending node identity order within each phase.
 - Made strict `ReplaceRange` corpus validation decode every committable patch
   attachment through its declared native fact type, require canonical bytes,
   and authenticate the keyed or content-addressed node identity.

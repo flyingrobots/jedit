@@ -346,6 +346,57 @@ fn strict_corpus_authenticates_patch_attachment_semantics() {
 }
 
 #[test]
+fn strict_corpus_authenticates_patch_operation_order() {
+    assert_invalid("attachment before node upsert", |corpus| {
+        let patch = committable(corpus)["terminal"]["patch"]
+            .as_array_mut()
+            .expect("patch should be an array");
+        let attachment = patch
+            .iter()
+            .position(|operation| operation["kind"] == "set-node-alpha")
+            .expect("patch should contain an attachment phase");
+        assert!(attachment > 0, "node upserts should precede attachments");
+        assert_eq!(patch[attachment - 1]["kind"], "upsert-node");
+        patch.swap(attachment - 1, attachment);
+    });
+
+    assert_invalid("descending node-upsert phase", |corpus| {
+        let patch = committable(corpus)["terminal"]["patch"]
+            .as_array_mut()
+            .expect("patch should be an array");
+        assert_eq!(patch[0]["kind"], "upsert-node");
+        assert_eq!(patch[1]["kind"], "upsert-node");
+        let first = patch[0]["nodeId"]
+            .as_str()
+            .expect("node identifier should be a string");
+        let second = patch[1]["nodeId"]
+            .as_str()
+            .expect("node identifier should be a string");
+        assert!(first < second, "native node upserts should be ascending");
+        patch.swap(0, 1);
+    });
+
+    assert_invalid("descending attachment phase", |corpus| {
+        let patch = committable(corpus)["terminal"]["patch"]
+            .as_array_mut()
+            .expect("patch should be an array");
+        let attachment = patch
+            .iter()
+            .position(|operation| operation["kind"] == "set-node-alpha")
+            .expect("patch should contain an attachment phase");
+        assert_eq!(patch[attachment + 1]["kind"], "set-node-alpha");
+        let first = patch[attachment]["nodeId"]
+            .as_str()
+            .expect("node identifier should be a string");
+        let second = patch[attachment + 1]["nodeId"]
+            .as_str()
+            .expect("node identifier should be a string");
+        assert!(first < second, "native attachments should be ascending");
+        patch.swap(attachment, attachment + 1);
+    });
+}
+
+#[test]
 fn strict_corpus_enforces_terminal_and_partition_invariants() {
     assert_invalid("false unchanged-parent evidence", |corpus| {
         obstruction(corpus)["terminal"]["parentGraphUnchanged"] = Value::Bool(false);
