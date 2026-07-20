@@ -490,9 +490,9 @@ What changed from the design:
   [`native/jedit-echo-host/tests/support/replace_range_contract.rs#L3:9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/support/replace_range_contract.rs#L3)
   [`native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L336:9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L336)
 - The published SHA-256 digests are
-  `cb03407ff401033fd81312c31a1497519a2d1ae918ea4c19afd551bea1316a72`
+  `fa5087c8fe72dc9c5f138f12b9498ab7f943061fc5ca735d4f68009c081eabc2`
   for the schema,
-  `903947e1b25048b0bb0f3b3a473dd6441dfeb253fb588d112c28fcbceda083cb`
+  `1ac26477e1d6c08df49446627ad002e40bd214235ce93b563d62bb50e40dc14c`
   for codec vectors, and
   `f181eb6994aa54ee96aebb5dff574ea05be45aa5b909d96acf0e9a463d727c6e`
   for the oracle. The oracle source-set digest is

@@ -287,6 +287,18 @@ fn string_escape_golden_vector_matches_the_native_writer() {
             .expect("golden JSON should be hexadecimal"),
     )
     .expect("golden JSON should decode");
+    let supplementary_scalar = '\u{10ffff}';
+    let supplementary_utf8 = supplementary_scalar.to_string();
+    assert!(
+        source.contains(supplementary_scalar),
+        "golden source must cover the maximum supplementary Unicode scalar"
+    );
+    assert!(
+        expected_json
+            .windows(supplementary_utf8.len())
+            .any(|window| window == supplementary_utf8.as_bytes()),
+        "U+10FFFF must remain literal UTF-8 in canonical JSON"
+    );
     assert_eq!(serde_json::to_vec(source).unwrap(), expected_json);
     assert_eq!(vectors["vectors"][0]["value"]["buffer_key"], source);
 }

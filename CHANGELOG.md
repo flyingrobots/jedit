@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Extended the canonical fact-string golden vector through the maximum Unicode
+  scalar U+10FFFF. Conformance now proves supplementary scalars remain literal
+  four-byte UTF-8 and cannot be emitted as surrogate escapes.
 - Made retained `ReplaceRange` consequence validation recompute the keyed
   Buffer identity in both the basis and result graphs. Mutually consistent
   Buffer facts retained under the wrong node address now fail closed.
