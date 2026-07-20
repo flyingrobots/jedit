@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Made every zero-width `ReplaceRange` split boundary perform cycle-safe Blob,
+  leaf-extent, and UTF-8 validation before preserving adjacent rope structure.
 - Made exact-end `ReplaceRange` validation corroborate every retained branch
   byte, UTF-16, line-break, and height aggregate on its endpoint path.
 - Made exact-end `ReplaceRange` validation reject cyclic retained rope links

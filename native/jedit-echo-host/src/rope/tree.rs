@@ -154,9 +154,23 @@ fn make_leaf_slice<T: GraphFacts>(
         .map_err(RopeFault::structural_dependency)
 }
 
-fn validate_right_endpoint<T: GraphFacts>(
+#[derive(Clone, Copy, Eq, PartialEq)]
+enum EndpointSide {
+    Left,
+    Right,
+}
+
+#[derive(Clone, Copy, Eq, PartialEq)]
+enum BranchValidation {
+    Skip,
+    Corroborate,
+}
+
+fn validate_endpoint<T: GraphFacts>(
     context: &mut PlanContext<'_, T>,
     mut node_id: NodeId,
+    side: EndpointSide,
+    branch_validation: BranchValidation,
 ) -> RopeResult<()> {
     let mut visited = BTreeSet::new();
     let mut branches = Vec::new();
@@ -172,18 +186,28 @@ fn validate_right_endpoint<T: GraphFacts>(
             .map_err(RopeFault::structural_dependency)?
         {
             RopeNode::Leaf(leaf) => {
-                locate_leaf_slice(context, &leaf, 0, leaf.byte_length)?;
+                let located = locate_leaf_slice(context, &leaf, 0, leaf.byte_length)?;
+                std::str::from_utf8(located.bytes()).map_err(|_| {
+                    RopeFault::invalid_utf8_slice(
+                        "replace offset splits a UTF-8 code point".to_owned(),
+                    )
+                })?;
                 break;
             }
             RopeNode::Branch(branch) => {
-                let right = NodeId::from(branch.right);
+                let next = match side {
+                    EndpointSide::Left => NodeId::from(branch.left),
+                    EndpointSide::Right => NodeId::from(branch.right),
+                };
                 branches.push((node_id, branch));
-                node_id = right;
+                node_id = next;
             }
         }
     }
-    for (branch_id, branch) in branches.into_iter().rev() {
-        validate_branch_aggregates(context, branch_id, &branch)?;
+    if branch_validation == BranchValidation::Corroborate {
+        for (branch_id, branch) in branches.into_iter().rev() {
+            validate_branch_aggregates(context, branch_id, &branch)?;
+        }
     }
     Ok(())
 }
@@ -265,10 +289,16 @@ pub(super) fn split<T: GraphFacts>(
         ));
     }
     if offset == 0 {
+        validate_endpoint(context, root_id, EndpointSide::Left, BranchValidation::Skip)?;
         return Ok((None, Some(root_id)));
     }
     if offset == metrics.byte_length {
-        validate_right_endpoint(context, root_id)?;
+        validate_endpoint(
+            context,
+            root_id,
+            EndpointSide::Right,
+            BranchValidation::Corroborate,
+        )?;
         return Ok((Some(root_id), None));
     }
     match context
@@ -297,6 +327,8 @@ pub(super) fn split<T: GraphFacts>(
                 let (prefix, middle) = split(context, Some(left), offset)?;
                 Ok((prefix, join(context, middle, Some(right))?))
             } else if offset == left_length {
+                validate_endpoint(context, left, EndpointSide::Right, BranchValidation::Skip)?;
+                validate_endpoint(context, right, EndpointSide::Left, BranchValidation::Skip)?;
                 Ok((Some(left), Some(right)))
             } else {
                 let right_offset = offset.checked_sub(left_length).ok_or_else(|| {
