@@ -171,6 +171,17 @@ test("DL-0158 distinguishes committable evidence from obstruction evidence", () 
   );
 });
 
+test("DL-0158 distinguishes separate decoding from independent verification", () => {
+  const design = readDesign().replaceAll(/\s+/g, " ");
+  const expected = [
+    "Before a committable case is serialized, the oracle separately decodes the",
+    "post-patch Buffer, Head, Rewrite, and Diff facts through a structurally separate",
+    "gate using Jedit's production codec.",
+  ].join(" ");
+  assert.doesNotMatch(design, /oracle independently decodes/);
+  assert.ok(design.includes(expected));
+});
+
 test("DL-0158 labels and pins every strong retrospective claim", () => {
   assertRetrospectiveEvidence();
 });

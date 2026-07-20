@@ -269,9 +269,10 @@ Every flattened local identifier in footprint or patch evidence is qualified by
 the corpus's top-level `warpId`; generation and local application reject a key
 whose WARP differs before discarding that redundant qualifier.
 
-Before a committable case is serialized, the oracle independently decodes the
-post-patch Buffer, Head, Rewrite, and Diff facts and checks their identities,
-basis, range, next head, version, sequence, lengths, root digest, and cross-links
+Before a committable case is serialized, the oracle separately decodes the
+post-patch Buffer, Head, Rewrite, and Diff facts through a structurally separate
+gate using Jedit's production codec. That gate checks their identities, basis,
+range, next head, version, sequence, lengths, root digest, and cross-links
 against one another and the planner summary. Result evidence is derived from
 those validated retained facts and materialized text, not from an unchecked mix
 of planner summaries and discovered type labels.
