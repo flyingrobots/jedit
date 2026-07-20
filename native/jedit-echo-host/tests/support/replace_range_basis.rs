@@ -2,7 +2,7 @@ use jedit_echo_host::records::{
     decode_fact, fact_bytes, fact_id, fact_type_id, BlobFact, BufferFact, HeadFact, LeafFact,
     NodeIdBytes,
 };
-use jedit_echo_host::rope::plan_create;
+use jedit_echo_host::rope::{plan_create, plan_replace};
 use warp_core::{AttachmentValue, GraphStore, NodeId, NodeRecord, TickDelta, WarpOp};
 
 #[derive(Clone, Copy)]
@@ -15,6 +15,8 @@ pub enum BasisSetup {
     MalformedBuffer,
     BadBlobContentHash,
     AboveGraphqlIntRange,
+    StaleHead,
+    ForeignHead,
 }
 
 pub fn make_basis(
@@ -22,12 +24,13 @@ pub fn make_basis(
     id: &str,
     initial_text: &str,
     setup: BasisSetup,
-) -> (GraphStore, NodeId, NodeId) {
+) -> (GraphStore, NodeId, NodeId, Option<NodeId>) {
     if matches!(setup, BasisSetup::MissingBuffer) {
         return (
             GraphStore::new(warp_id),
             NodeId([0x11; 32]),
             NodeId([0x22; 32]),
+            None,
         );
     }
     let basis_text = if matches!(setup, BasisSetup::Empty) {
@@ -41,6 +44,7 @@ pub fn make_basis(
     create.emit(&mut delta);
     apply_ops(&mut store, &delta.finalize());
     let mut head_id = create.head_id;
+    let mut invocation_basis_id = None;
     match setup {
         BasisSetup::Plain | BasisSetup::Empty => {}
         BasisSetup::SequenceOverflow => {
@@ -68,9 +72,26 @@ pub fn make_basis(
                 head.byte_length = i32::MAX as u64 + 1;
             });
         }
+        BasisSetup::StaleHead => {
+            invocation_basis_id = Some(head_id);
+            let replacement = plan_replace(&store, create.buffer_id, head_id, 0, 0, "fresh-")
+                .expect("stale-basis setup should advance the canonical head");
+            let mut delta = TickDelta::new();
+            replacement.emit(&mut delta);
+            apply_ops(&mut store, &delta.finalize());
+            head_id = replacement.head_id;
+        }
+        BasisSetup::ForeignHead => {
+            let foreign = plan_create(&store, &format!("{id}-foreign"), "foreign", None)
+                .expect("foreign-basis setup should create another buffer");
+            let mut delta = TickDelta::new();
+            foreign.emit(&mut delta);
+            apply_ops(&mut store, &delta.finalize());
+            invocation_basis_id = Some(foreign.head_id);
+        }
         BasisSetup::MissingBuffer => unreachable!(),
     }
-    (store, create.buffer_id, head_id)
+    (store, create.buffer_id, head_id, invocation_basis_id)
 }
 
 pub fn apply_ops(store: &mut GraphStore, ops: &[WarpOp]) {

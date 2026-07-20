@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Replaced the fabricated `ReplaceRange` noncanonical-basis fixture with
+  distinct retained stale-head and real foreign-head obstruction witnesses.
+  Both causal postures now prove that planning yields no patch and leaves the
+  parent graph unchanged.
 - Hard-cut production text authority to the real Echo WASM boundary. Jim now
   requires and initializes a configured Echo kernel before constructing the
   workspace; when the generated Jim Edict package is unavailable, every text

@@ -38,7 +38,6 @@ pub struct CaseSpec {
     pub purpose: &'static str,
     pub initial_text: String,
     pub setup: BasisSetup,
-    pub basis_override: Option<[u8; 32]>,
     pub start_byte: u64,
     pub end_byte: u64,
     pub replacement: String,
@@ -186,10 +185,10 @@ pub fn canonical_corpus_bytes(corpus: &OracleCorpus) -> Vec<u8> {
 }
 
 fn evaluate_case(warp_id: warp_core::WarpId, spec: CaseSpec) -> OracleCase {
-    let (store, buffer_id, canonical_head_id) =
+    let (store, buffer_id, canonical_head_id, invocation_basis_id) =
         make_basis(warp_id, spec.id, &spec.initial_text, spec.setup);
     let basis_facts = project_store(&store);
-    let basis_head_id = spec.basis_override.map_or(canonical_head_id, NodeId);
+    let basis_head_id = invocation_basis_id.unwrap_or(canonical_head_id);
     let invocation = InvocationProjection {
         buffer_id: hex::encode(buffer_id.as_bytes()),
         basis_head_id: hex::encode(basis_head_id.as_bytes()),

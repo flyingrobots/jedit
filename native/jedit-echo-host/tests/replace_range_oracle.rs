@@ -5,6 +5,7 @@ mod resource_fixture;
 
 use std::path::PathBuf;
 
+use jedit_echo_host::records::{fact_type_id, BufferFact, HeadFact};
 use oracle_support::{
     canonical_corpus_bytes, generate_corpus, BasisSetup, CaseSpec, ExpectedPosture,
 };
@@ -34,6 +35,76 @@ fn replace_range_oracle_matches_the_committed_corpus() {
         sha256_hex(&committed),
         checked_sha256(EXPECTED_CORPUS_SHA256),
         "oracle resource digest must be updated deliberately"
+    );
+}
+
+#[test]
+fn basis_obstructions_name_real_retained_heads() {
+    let corpus: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(corpus_path()).expect("committed oracle corpus should exist"),
+    )
+    .expect("committed oracle corpus should decode");
+    let cases = corpus["cases"]
+        .as_array()
+        .expect("oracle cases should be an array");
+
+    assert_retained_basis(cases, "stale-basis", true);
+    assert_retained_basis(cases, "foreign-basis", false);
+}
+
+fn assert_retained_basis(cases: &[serde_json::Value], case_id: &str, same_buffer: bool) {
+    let case = cases
+        .iter()
+        .find(|case| case["id"] == case_id)
+        .unwrap_or_else(|| panic!("{case_id} should exist"));
+    let invocation_buffer_id = case["invocation"]["bufferId"]
+        .as_str()
+        .expect("invocation buffer should be a string");
+    let invocation_basis_id = case["invocation"]["basisHeadId"]
+        .as_str()
+        .expect("invocation basis should be a string");
+    let facts = case["basisFacts"]
+        .as_array()
+        .expect("basis facts should be an array");
+    let head_type_id = hex::encode(fact_type_id::<HeadFact>().as_bytes());
+    let retained_head = facts
+        .iter()
+        .find(|fact| fact["nodeId"] == invocation_basis_id && fact["typeId"] == head_type_id)
+        .unwrap_or_else(|| panic!("{case_id} basis should be a retained Head fact"));
+    let head: HeadFact = serde_json::from_slice(
+        &hex::decode(
+            retained_head["attachmentBytesHex"]
+                .as_str()
+                .expect("head bytes should be hexadecimal"),
+        )
+        .expect("head bytes should decode"),
+    )
+    .expect("retained head should decode");
+    let head_buffer_id = hex::encode(head.buffer_id.0);
+    assert_eq!(
+        head_buffer_id == invocation_buffer_id,
+        same_buffer,
+        "{case_id} buffer relationship drifted"
+    );
+
+    let buffer_type_id = hex::encode(fact_type_id::<BufferFact>().as_bytes());
+    let retained_buffer = facts
+        .iter()
+        .find(|fact| fact["nodeId"] == invocation_buffer_id && fact["typeId"] == buffer_type_id)
+        .unwrap_or_else(|| panic!("{case_id} target Buffer fact should be retained"));
+    let buffer: BufferFact = serde_json::from_slice(
+        &hex::decode(
+            retained_buffer["attachmentBytesHex"]
+                .as_str()
+                .expect("buffer bytes should be hexadecimal"),
+        )
+        .expect("buffer bytes should decode"),
+    )
+    .expect("retained buffer should decode");
+    assert_ne!(
+        invocation_basis_id,
+        hex::encode(buffer.canonical_head_id.0),
+        "{case_id} must not use the current canonical head"
     );
 }
 
@@ -147,21 +218,28 @@ fn cases() -> Vec<CaseSpec> {
             "invalid-request",
             "no-op",
         ),
-        CaseSpec {
-            id: "noncanonical-basis",
-            purpose: "exact canonical-head equality covers stale and foreign basis posture",
-            initial_text: "abc".to_owned(),
-            setup: BasisSetup::Plain,
-            basis_override: Some([0xA5; 32]),
-            start_byte: 0,
-            end_byte: 1,
-            replacement: "x".to_owned(),
-            expected: ExpectedPosture::Obstruction {
-                semantic_code: "basis-not-canonical",
-                error_class: "invalid-request",
-                message_fragment: "stale replace basis",
-            },
-        },
+        obstruction(
+            "stale-basis",
+            "abc",
+            BasisSetup::StaleHead,
+            0,
+            1,
+            "x",
+            "basis-not-canonical",
+            "invalid-request",
+            "stale replace basis",
+        ),
+        obstruction(
+            "foreign-basis",
+            "abc",
+            BasisSetup::ForeignHead,
+            0,
+            1,
+            "x",
+            "basis-not-canonical",
+            "invalid-request",
+            "stale replace basis",
+        ),
         obstruction(
             "head-sequence-overflow",
             "abc",
@@ -244,7 +322,6 @@ fn success(
         purpose: "finite persistent-rope ReplaceRange conformance witness",
         initial_text: initial_text.to_owned(),
         setup,
-        basis_override: None,
         start_byte,
         end_byte,
         replacement: replacement.to_owned(),
@@ -269,7 +346,6 @@ fn obstruction(
         purpose: "typed no-plan ReplaceRange obstruction witness",
         initial_text: initial_text.to_owned(),
         setup,
-        basis_override: None,
         start_byte,
         end_byte,
         replacement: replacement.to_owned(),

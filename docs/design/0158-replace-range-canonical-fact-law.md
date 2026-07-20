@@ -407,7 +407,7 @@ the declaration, codec vectors, corpus, and all sidecars, then proves check mode
 is clean. Inspect
 `contracts/jedit/lawpacks/replace-range-v1/text-schema-v1.json` for the exact
 fact, string, identity, rope, and corpus-invocation laws. Inspect
-`replace-range-v1.oracle.json` for 19 self-contained cases with basis facts,
+`replace-range-v1.oracle.json` for 20 self-contained cases with basis facts,
 exact invocation bytes, support, ordered patches, results, or typed no-patch
 obstructions. No editor, terminal rendering, external service, or sibling
 checkout is required.
@@ -446,7 +446,8 @@ Mitigations:
 
 What changed from the design:
 
-- The planned native-schema and 19-case corpus was implemented without
+- The planned native-schema corpus was implemented with 20 cases, separating
+  retained stale-head and real foreign-head basis witnesses, without
   changing the production planner, fact bytes, identities, or routing.
 - Review tightened the declaration with a fully specified string codec, a
   corpus-only invocation schema and exact bytes, mechanical schema-to-writer
@@ -458,9 +459,9 @@ What changed from the design:
   for the schema,
   `903947e1b25048b0bb0f3b3a473dd6441dfeb253fb588d112c28fcbceda083cb`
   for codec vectors, and
-  `313afabca41f36f6d567d11533d65fbf5ed2e33546705d20885c48f60bc69971`
+  `08edc645a83f5a65754bb43e898f8b3f2be614c8b6e8f089dc5d9d48232254ef`
   for the oracle. The oracle source-set digest is
-  `d68c0e8f9b243f15608ac6ddc06e3cdec90ca29b644d22615b784d58f05b101c`.
+  `66991acc3aad646ae9a89279beacaf8e5bbf5526d31ed457fa3755ce2c0c06cc`.
 
 What the tests proved:
 
@@ -468,7 +469,7 @@ What the tests proved:
   every declared fact-member order equals the order observed from writer bytes;
   the full string escape vector matches the native writer; and corpus invocation
   bytes preserve `u64` above `i32::MAX`.
-- Six success and thirteen obstruction cases regenerate deterministically. A
+- Six success and fourteen obstruction cases regenerate deterministically. A
   success yields the exact support, ordered patch, retained facts, metrics, and
   materialized consequence; an obstruction yields no `MutationPlan` and leaves
   the parent graph unchanged.
