@@ -23,7 +23,7 @@ mod tests;
 
 pub use basis::BasisSetup;
 use basis::{apply_ops, make_basis};
-use consequence::validate_consequence;
+use consequence::{validate_consequence, ReplaceExpectation};
 pub use contract::SemanticObstructionCode;
 use source_set::{source_set, SourceSet};
 
@@ -293,10 +293,13 @@ fn success_projection(
         store,
         &next,
         plan,
-        NodeId::from(buffer.canonical_head_id),
-        spec.start_byte,
-        spec.end_byte,
-        &spec.replacement,
+        &first_plan.1,
+        ReplaceExpectation {
+            basis_head_id: NodeId::from(buffer.canonical_head_id),
+            start_byte: spec.start_byte,
+            end_byte: spec.end_byte,
+            replacement: &spec.replacement,
+        },
     )
     .unwrap_or_else(|error| panic!("{} retained consequence: {error}", spec.id));
     let write_ids: BTreeSet<_> = first_plan.0.node_writes.iter().cloned().collect();

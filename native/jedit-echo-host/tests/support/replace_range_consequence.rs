@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use jedit_echo_host::error::HostError;
 use jedit_echo_host::identity::hash_bytes;
 use jedit_echo_host::records::{
@@ -5,7 +7,7 @@ use jedit_echo_host::records::{
     EMPTY_ROOT_DIGEST_DOMAIN,
 };
 use jedit_echo_host::rope::{read_window, MutationPlan};
-use warp_core::{GraphStore, NodeId, TypeId};
+use warp_core::{GraphStore, NodeId, TypeId, WarpId, WarpOp};
 
 #[derive(Debug)]
 pub(super) struct ValidatedConsequence {
@@ -16,15 +18,27 @@ pub(super) struct ValidatedConsequence {
     pub(super) materialized_text: String,
 }
 
+#[derive(Clone, Copy)]
+pub(super) struct ReplaceExpectation<'a> {
+    pub(super) basis_head_id: NodeId,
+    pub(super) start_byte: u64,
+    pub(super) end_byte: u64,
+    pub(super) replacement: &'a str,
+}
+
 pub(super) fn validate_consequence(
     basis: &GraphStore,
     next: &GraphStore,
     plan: &MutationPlan,
-    basis_head_id: NodeId,
-    start_byte: u64,
-    end_byte: u64,
-    replacement: &str,
+    patch: &[WarpOp],
+    expectation: ReplaceExpectation<'_>,
 ) -> Result<ValidatedConsequence, String> {
+    let ReplaceExpectation {
+        basis_head_id,
+        start_byte,
+        end_byte,
+        replacement,
+    } = expectation;
     let basis_buffer: BufferFact = read_fact(basis, plan.buffer_id)?;
     require_equal(
         "basis Buffer canonical head",
@@ -96,7 +110,7 @@ pub(super) fn validate_consequence(
     let deleted_byte_length = end_byte
         .checked_sub(start_byte)
         .ok_or_else(|| "validated range is reversed".to_owned())?;
-    let rewrite_id = node_with_type(next, fact_type_id::<RewriteFact>())?;
+    let rewrite_id = patch_node_with_type(patch, basis.warp_id(), fact_type_id::<RewriteFact>())?;
     let rewrite: RewriteFact = read_fact(next, rewrite_id)?;
     require_equal(
         "Rewrite identity",
@@ -126,7 +140,7 @@ pub(super) fn validate_consequence(
         inserted_byte_length,
     )?;
 
-    let diff_id = node_with_type(next, fact_type_id::<DiffFact>())?;
+    let diff_id = patch_node_with_type(patch, basis.warp_id(), fact_type_id::<DiffFact>())?;
     let diff: DiffFact = read_fact(next, diff_id)?;
     require_equal(
         "Diff identity",
@@ -191,19 +205,38 @@ pub(super) fn validate_consequence(
     })
 }
 
-fn node_with_type(store: &GraphStore, type_id: TypeId) -> Result<NodeId, String> {
-    let matches: Vec<_> = store
-        .iter_nodes()
-        .filter_map(|(node_id, record)| (record.ty == type_id).then_some(node_id))
-        .collect();
-    let [node_id] = matches.as_slice() else {
+fn patch_node_with_type(
+    patch: &[WarpOp],
+    warp_id: WarpId,
+    type_id: TypeId,
+) -> Result<NodeId, String> {
+    let mut matches = BTreeSet::new();
+    for operation in patch {
+        let WarpOp::UpsertNode { node, record } = operation else {
+            continue;
+        };
+        if record.ty != type_id {
+            continue;
+        }
+        if node.warp_id != warp_id {
+            return Err(format!(
+                "patch fact type {} belongs to foreign WARP {}",
+                hex::encode(type_id.as_bytes()),
+                hex::encode(node.warp_id.as_bytes())
+            ));
+        }
+        matches.insert(node.local_id);
+    }
+    if matches.len() != 1 {
         return Err(format!(
-            "expected exactly one fact of type {}, received {}",
+            "expected exactly one patch fact of type {}, received {}",
             hex::encode(type_id.as_bytes()),
             matches.len()
         ));
-    };
-    Ok(**node_id)
+    }
+    Ok(*matches
+        .first()
+        .expect("one patch fact must exist after the length check"))
 }
 
 fn read_fact<F: jedit_echo_host::records::TypedFact>(
@@ -234,52 +267,5 @@ fn host_error(error: HostError) -> String {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::super::{apply_ops, make_basis, BasisSetup};
-    use super::*;
-    use jedit_echo_host::records::{fact_bytes, BufferFact};
-    use jedit_echo_host::rope::plan_replace;
-    use warp_core::{AttachmentValue, TickDelta};
-
-    #[test]
-    fn retained_consequence_is_internally_consistent() {
-        let warp_id = warp_core::make_warp_id("oracle-consistency");
-        let (basis, buffer_id, basis_head_id, _) =
-            make_basis(warp_id, "consistent", "abc", BasisSetup::Plain);
-        let plan = plan_replace(&basis, buffer_id, basis_head_id, 1, 2, "XY")
-            .expect("replacement should plan");
-        let mut delta = TickDelta::new();
-        plan.emit(&mut delta);
-        let mut next = basis.clone();
-        apply_ops(&mut next, &delta.finalize());
-
-        validate_consequence(&basis, &next, &plan, basis_head_id, 1, 2, "XY")
-            .expect("retained consequence should be internally consistent");
-    }
-
-    #[test]
-    fn retained_consequence_rejects_a_buffer_head_mismatch() {
-        let warp_id = warp_core::make_warp_id("oracle-inconsistent");
-        let (basis, buffer_id, basis_head_id, _) =
-            make_basis(warp_id, "inconsistent", "abc", BasisSetup::Plain);
-        let plan = plan_replace(&basis, buffer_id, basis_head_id, 1, 2, "XY")
-            .expect("replacement should plan");
-        let mut delta = TickDelta::new();
-        plan.emit(&mut delta);
-        let mut next = basis.clone();
-        apply_ops(&mut next, &delta.finalize());
-        let mut buffer: BufferFact = read_fact(&next, buffer_id).expect("Buffer should decode");
-        buffer.canonical_head_id = basis_head_id.into();
-        next.set_node_attachment(
-            buffer_id,
-            Some(AttachmentValue::Atom(warp_core::AtomPayload::new(
-                fact_type_id::<BufferFact>(),
-                fact_bytes(&buffer).expect("Buffer should encode").into(),
-            ))),
-        );
-
-        let error = validate_consequence(&basis, &next, &plan, basis_head_id, 1, 2, "XY")
-            .expect_err("inconsistent retained consequence should fail");
-        assert!(error.contains("result Buffer canonical head"));
-    }
-}
+#[path = "replace_range_consequence_tests.rs"]
+mod tests;
