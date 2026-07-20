@@ -496,10 +496,10 @@ What changed from the design:
   [`native/jedit-echo-host/tests/replace_range_oracle.rs#L35@9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_oracle.rs#L35)
 - **Retained stale-basis relationship.** The stale fixture retains the invoked
   historical Head and checks its relationship to the current canonical Head.
-  [`native/jedit-echo-host/tests/support/replace_range_basis_witness.rs#L46@d57e0d239c005898839a15041807580ed2dfe595`](https://github.com/flyingrobots/jedit/blob/d57e0d239c005898839a15041807580ed2dfe595/native/jedit-echo-host/tests/support/replace_range_basis_witness.rs#L46)
+  [`native/jedit-echo-host/tests/support/replace_range_basis_witness.rs#L59@d57e0d239c005898839a15041807580ed2dfe595`](https://github.com/flyingrobots/jedit/blob/d57e0d239c005898839a15041807580ed2dfe595/native/jedit-echo-host/tests/support/replace_range_basis_witness.rs#L59)
 - **Retained foreign-basis relationship.** The foreign fixture retains another
   Buffer and checks that it canonically names the invoked foreign Head.
-  [`native/jedit-echo-host/tests/support/replace_range_basis_witness.rs#L64@d57e0d239c005898839a15041807580ed2dfe595`](https://github.com/flyingrobots/jedit/blob/d57e0d239c005898839a15041807580ed2dfe595/native/jedit-echo-host/tests/support/replace_range_basis_witness.rs#L64)
+  [`native/jedit-echo-host/tests/support/replace_range_basis_witness.rs#L68@d57e0d239c005898839a15041807580ed2dfe595`](https://github.com/flyingrobots/jedit/blob/d57e0d239c005898839a15041807580ed2dfe595/native/jedit-echo-host/tests/support/replace_range_basis_witness.rs#L68)
 - **Schema and source-set contract.** Schema conformance mechanically compares
   every declared fact-member order with canonical native-writer bytes. The
   source-set implementation embeds an ordered path/byte list and hashes it

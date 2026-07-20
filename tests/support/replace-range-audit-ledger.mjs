@@ -72,7 +72,7 @@ export const FINAL_AUDIT_EVIDENCE_LOCATIONS = [
     evidenceLocations(
       EVIDENCE_COMMITS.basisRelationships,
       EVIDENCE_PATHS.basisWitness,
-      46,
+      59,
     ),
   ),
   auditClaim(
@@ -81,7 +81,7 @@ export const FINAL_AUDIT_EVIDENCE_LOCATIONS = [
     evidenceLocations(
       EVIDENCE_COMMITS.basisRelationships,
       EVIDENCE_PATHS.basisWitness,
-      64,
+      68,
     ),
   ),
   auditClaim(CHANGED_SECTION, "Schema and source-set contract", [
