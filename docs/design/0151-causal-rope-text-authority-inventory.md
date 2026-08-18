@@ -3,6 +3,15 @@
 Status: active CR-00 inventory for
 [#216](https://github.com/flyingrobots/jedit/issues/216).
 
+> **Active-observer correction:** This inventory predates the decision that the
+> final application is `Jim.edict`, not TypeScript orchestration plus generated
+> operation clients. Entries below remain useful for locating compatibility
+> code, but command interpretation, operation choice, range derivation,
+> cursor/mode advancement, and outcome handling must migrate to `Jim.edict`.
+> Jedit/Bijou/native code retains canonical event decoding, raw transport and
+> bootstrap, file I/O adapters, and disposable rendering. Echo remains generic
+> and has no rope or editor vocabulary.
+
 This document names every current product path that can create, read, mutate,
 save, export, or explain buffer text while Jim is cutting over to causal rope.
 It separates authority from projection so the full-snapshot fixture cannot hide
@@ -10,7 +19,7 @@ behind app-facing ports.
 
 ## Authority Rule
 
-The target authority path is:
+The current compatibility authority path is:
 
 ```text
 workspace command
@@ -20,6 +29,10 @@ workspace command
 -> installed jedit contract transport
 -> graph-backed causal rope authority
 ```
+
+The target application path is canonical event delivery to `Jim.edict`,
+Jim-owned bounded optics and operation lawpacks, compiler-produced generic Echo
+programs, and returned outcome/read projection rendering.
 
 Full materialized strings are allowed only as import inputs, export outputs,
 render windows, tests, or caches. They are forbidden as product text authority.
@@ -45,12 +58,12 @@ render windows, tests, or caches. They are forbidden as product text authority.
 | Product session | `src/app/workspace/production-text-session.ts` | materialized projection | Create, edit, read, save, export, and explain through `TextBufferSessionPort`; export remains a projection. | [#224](https://github.com/flyingrobots/jedit/issues/224), [#225](https://github.com/flyingrobots/jedit/issues/225), [#226](https://github.com/flyingrobots/jedit/issues/226) |
 | Open/import | `src/app/workspace/workspace-text-open-basis.ts` and `src/app/workspace/workspace-text-commands.ts` | migration/import | Treat host file bytes as import material for `BufferWorldline` and initial `RopeHead`. | [#223](https://github.com/flyingrobots/jedit/issues/223) |
 | Workspace authority state | `src/app/workspace/workspace-text-authority.ts` | causal rope authority | Track buffer id, dirty posture, receipts, checkpoints, and projections without storing authority text. | [#231](https://github.com/flyingrobots/jedit/issues/231), [#232](https://github.com/flyingrobots/jedit/issues/232) |
-| Command handlers | `src/app/workspace/workspace-text-commands.ts` and `src/app/workspace/workspace-text-edit-planner.ts` | causal rope authority | Convert UI edits to `replaceRangeAsTick` requests and keep predictions separate from admitted text. | [#224](https://github.com/flyingrobots/jedit/issues/224) |
+| Command handlers | `src/app/workspace/workspace-text-commands.ts` and `src/app/workspace/workspace-text-edit-planner.ts` | migration/import | Preserve compatibility behavior, then replace command-to-operation mapping with canonical event delivery to `Jim.edict`. | [#224](https://github.com/flyingrobots/jedit/issues/224), [#295](https://github.com/flyingrobots/jedit/issues/295) |
 | Operation sequencing | `src/app/workspace/workspace-text-operation-sequencer.ts` | causal rope authority | Preserve admission order for edit, checkpoint, and export operations. | [#231](https://github.com/flyingrobots/jedit/issues/231) |
 | Save/export | `src/app/workspace/workspace-save-key.ts` and `src/app/workspace/workspace-text-commands.ts` | materialized projection | Save/export from the current `RopeHead`, then record anchor/checkpoint evidence without mutating text authority. | [#226](https://github.com/flyingrobots/jedit/issues/226), [#233](https://github.com/flyingrobots/jedit/issues/233) |
 | Source rendering | `src/app/workspace/viewer-content.ts` and `src/ui/source-viewer.ts` | materialized projection | Render only from basis-tagged text windows and cached projections. | [#225](https://github.com/flyingrobots/jedit/issues/225), [#228](https://github.com/flyingrobots/jedit/issues/228) |
 | Reading cache | `src/app/workspace/workspace-text-reading-cache.ts` | materialized projection | Cache projected windows with explicit coverage and basis; never make cache entries authority. | [#230](https://github.com/flyingrobots/jedit/issues/230) |
-| Cursor and coordinates | `src/app/workspace/workspace-text-position.ts` | materialized projection | Convert UI cursor/line positions to authoritative UTF-8 byte ranges through typed adapters. | [#227](https://github.com/flyingrobots/jedit/issues/227) |
+| Cursor and coordinates | `src/app/workspace/workspace-text-position.ts` | migration/import | Convert coordinates for rendering during migration; final authoritative cursor and range policy belongs to `Jim.edict`. | [#227](https://github.com/flyingrobots/jedit/issues/227), [#295](https://github.com/flyingrobots/jedit/issues/295) |
 | Why command | `src/app/workspace/workspace-why-range.ts` and `src/app/jedit-why-range.ts` | materialized projection | Explain ranges from rope head, leaf, blob, rewrite, diff, tick, checkpoint, and anchor evidence. | [#209](https://github.com/flyingrobots/jedit/issues/209), [#239](https://github.com/flyingrobots/jedit/issues/239) |
 | Gutter markers | `src/ui/source-viewer.ts` | materialized projection | Compute modified and deleted markers from rope rewrite/diff ancestry. | [#84](https://github.com/flyingrobots/jedit/issues/84), [#235](https://github.com/flyingrobots/jedit/issues/235), [#236](https://github.com/flyingrobots/jedit/issues/236) |
 | Footer posture | `src/app/workspace/workspace-footer-posture.ts` | materialized projection | Display durability ladder facts derived from pending intents, admitted heads, save anchors, and Git state. | [#233](https://github.com/flyingrobots/jedit/issues/233), [#234](https://github.com/flyingrobots/jedit/issues/234) |
@@ -76,6 +89,10 @@ These patterns are forbidden in installed product code and enforced by
 - treating `materializeHotBuffer(...)` or a full text window cache as authority;
 - saving from an editor line array instead of a causal basis export;
 - computing modified lines from Git diff.
+- mapping terminal commands directly to `ReplaceRange` in final production;
+- advancing cursor, mode, register, or pending-operator state outside
+  `Jim.edict` in final production;
+- adding Jim/Jedit nouns, verbs, or rope intrinsics to Echo production code.
 
 ## Open Blockers
 

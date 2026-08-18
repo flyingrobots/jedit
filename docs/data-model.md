@@ -1,18 +1,20 @@
 # jedit Data Model
 
-> **Cutover note (2026-07-16):** The Wesley schemas, generators, generated
-> TypeScript projections, local graph-rope executor, and in-memory structural
-> history runtime described in older sections of this document have been
-> deleted. They remain design history only. The next executable mutation path
-> is a generated Edict client invoking an installed Echo operation and consuming
-> opaque Echo receipts plus basis-pinned observations.
+> **Cutover correction (2026-08-18):** The Wesley schemas, generators,
+> generated TypeScript projections, local graph-rope executor, and in-memory
+> structural history runtime described in older sections of this document are
+> design history or compatibility evidence. The target is not a TypeScript
+> application invoking operations through a generated Edict client. The target
+> runs `Jim.edict` as an Echo-realized active observer: Jedit submits canonical
+> events, Jim-owned Edict lawpacks define operations and optics, and generated
+> clients carry bytes but make no application decisions.
 
 ## Doctrine
 
-jedit owns the **editor contract** and product nouns. Echo owns **generic
-runtime execution**, admission, scheduler-owned ticks, receipts, readings, and
-retained evidence. Edict will compile Jim-owned operation law into generated
-clients and verified operations that Echo installs and executes.
+Jim-owned Edict source owns the **editor contract** and product nouns. Echo owns
+**generic runtime execution**, admission, scheduler-owned ticks, receipts,
+readings, and retained evidence. Edict compiles Jim-owned application law into
+verified generic packages plus semantic-free codecs and transport stubs.
 
 The rope model is jedit contract law hosted through Echo's generic graph and
 contract-host surfaces. Echo must not implement a privileged jedit rope engine.
@@ -115,7 +117,13 @@ history, the boundary is wrong. That is the trap detector.
 
 ***
 
-## TypeScript model
+## Transitional TypeScript model
+
+The model below documents compatibility-era shapes and projections. It must not
+justify final TypeScript command interpretation, operation choice, range
+derivation, rope patch calculation, or Jim state advancement. Those semantics
+move to `Jim.edict` and Jim-owned Edict lawpacks. TypeScript remains an
+event/artifact codec, raw transport adapter, and disposable renderer.
 
 ```ts
 // ---------- identity types ----------
@@ -668,7 +676,10 @@ boundary; a `head_id` crosses it only as an opaque Jim fact reference inside a
 
 ***
 
-## Sequence: `replaceRange`
+## Compatibility Sequence: `replaceRange`
+
+This sequence records the running Wesley corridor. It is not the target
+`Jim.edict` observer loop described in [BEARING.md](BEARING.md).
 
 ```mermaid
 sequenceDiagram

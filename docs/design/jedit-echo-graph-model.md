@@ -2,6 +2,13 @@
 
 Status: design sketch
 
+> **Ownership correction:** This sketch's phrase "jedit submits intent" is a
+> compatibility-era shorthand. Final production submits canonical events to
+> `Jim.edict`; Jim requests bounded optics and derives operation intents from
+> its own state. Application reading and rewrite vocabulary lives in Jim-owned
+> Edict lawpacks. Echo supplies generic admission, interpretation, ticks,
+> readings, receipts, and recovery without learning editor or rope semantics.
+
 Purpose: describe the exact text reading shape and rewrite semantics `jedit`
 wants Echo-hosted contracts to support, without assuming handwritten Echo
 runtime edits.
@@ -50,11 +57,12 @@ request for a precise contract reading and rewrite model.
 
 The intended integration posture is optic-shaped:
 
-- `jedit` submits intent to Echo
+- Jedit submits a canonical event to the Echo-hosted `Jim.edict` observer
+- `Jim.edict` requests a Jim-owned optic and derives any application intent
 - Echo admits generic substrate history and returns the deterministic result /
   receipt envelope
-- `jedit` then observes the resulting worldline state
-- app code projects the observed worldline into `jedit` nouns such as
+- `Jim.edict` handles the outcome and requests the resulting worldline reading
+- Jedit rendering code projects the returned reading into visible nouns such as
   `BufferWorldline`, `RopeHead`, `TickReceipt`, and `WorldlineSnapshot`
 
 So Echo stays generic causal substrate truth. `jedit` owns the app-facing

@@ -1,8 +1,9 @@
 # BEARING
 
-Current bearing: operate one real Echo-hosted text corridor now, keep every
-unsupported feature obstructed, and replace transitional Wesley/Rust operation
-glue with generated Edict operations when Edict is ready.
+Current bearing: keep the real Wesley compatibility corridor honest, author
+Jim's first operation as real Edict source, and converge on `Jim.edict` as an
+Echo-realized active observer. Do not add editor vocabulary to Echo or move
+Jim's semantic state machine into a generated TypeScript client.
 
 This document records current repository truth. Historical implementation
 claims belong in git history and design retrospectives.
@@ -25,10 +26,12 @@ claims belong in git history and design retrospectives.
   Narrow edits path-copy touched nodes and retain untouched subtree identity.
 - Restart reconstructs witnessed submissions, graph state, and receipts from
   Echo's filesystem runtime WAL. The recovered host can continue editing.
-- TypeScript owns only the JSONL process adapter, Jim request/result mapping,
-  coordinate branding, and disposable UI projections. It does not construct
-  Echo identities, admission evidence, receipts, graph patches, or scheduler
-  outcomes.
+- TypeScript currently owns the JSONL process adapter, request/result mapping,
+  coordinate branding, and disposable UI projections. Its request mapping is
+  explicit migration debt: in the target corridor TypeScript normalizes
+  canonical events and transports artifacts, but has zero semantic authority
+  to interpret commands, choose operations, derive ranges, advance Jim state,
+  or optimistically mutate visible text.
 - Buffer open/create, insert, replace, delete, checkpoint declaration, and
   bounded text-window reads are implemented. Multi-range edit, save/export,
   `:why`, causal line-diff, and undo/redo return typed obstructions.
@@ -74,12 +77,39 @@ Jim command
 The target Edict corridor is:
 
 ```text
-Jim command
--> generated Edict client
--> Echo-installed verified operation
--> Echo admission and scheduler-owned tick
--> opaque Echo outcome and bounded observation
+terminal bytes
+-> Jedit adapter normalizes canonical KeyEvent
+-> Echo delivers KeyEvent to installed Jim.edict observer
+-> Jim.edict interprets the event from Jim state
+-> Jim.edict requests TextWindow.edict
+-> Echo returns a basis-bound Reading
+-> Jim.edict derives a ReplaceRange intent
+-> Echo interprets the compiler-produced generic program
+-> Echo commits one Tick or returns one typed obstruction
+-> Echo delivers the outcome to Jim.edict
+-> Jim advances J0 to J1
+-> Jedit renders a disposable projection
 ```
+
+A generated client may encode events, install or address verified packages,
+transport readings/outcomes/receipts, and decode typed projections. It is a
+syscall stub, not Jim. A direct generated-client invocation of `ReplaceRange`
+is permitted only in an explicitly test-only operation conformance harness.
+
+## Artifact Boundaries
+
+These artifacts are intentionally not interchangeable:
+
+| Artifact | Role |
+| --- | --- |
+| `jedit.text.schema@1` | Application fact shapes, codecs, and identity rules |
+| `jedit.text.ReplaceRange.oracle@1` | Independent expected-behavior evidence |
+| `ReplaceRange.edict` | Jim-authored operation semantics |
+| Echo Target IR and verified package | Compiler-produced generic executable meaning |
+| Echo receipt | Evidence of one admitted execution against one basis |
+
+The oracle is never a program. Echo must not synthesize an evaluator or package
+from the schema or oracle.
 
 Runtime identity follows
 [the Echo identity doctrine](design/echo-identity-doctrine.md). Jim must not
@@ -92,16 +122,24 @@ or support-policy logic.
    Echo-owned WAL, admission, scheduling, graph state, receipts, and restart
    recovery.
 2. Avoid restoring broad editor feature parity through transitional APIs.
-3. Have Echo and Edict establish one natively installed generated operation.
-4. Migrate `ReplaceRange` to the generated Edict client and operation.
-5. Make the Wesley/Rust replacement path unreachable, then delete it.
-6. Migrate create/open and bounded text-window observation.
-7. Add optional causal-anchor association as a proposition separate from
+3. Check in Jim-owned `ReplaceRange.edict` with its complete lawpack closure.
+4. Build it through Edict's public application-build boundary and let the first
+   honest compiler or target-profile failure route work to its owning repo.
+5. Extend Echo only for generic bounded-program capabilities proven necessary
+   by the compiler-produced package; prove the result against the independent
+   Jedit oracle.
+6. Author `TextWindow.edict`, then the smallest `Jim.edict` active observer.
+7. Move production Jedit to canonical event submission and disposable
+   rendering; make frontend operation orchestration and the Wesley/native
+   planner route unreachable, then delete them.
+8. Migrate create/open and checkpoint lawpacks under the same ownership model.
+9. Add optional causal-anchor association as a proposition separate from
    checkpoint declaration only when a concrete consumer requires it.
-8. Add save/export through generated operations, then derive undo/redo
+10. Add save/export through Jim-authored operations, then derive undo/redo
    candidates from retained Echo history and invoke generated inverse
    operations through basis-pinned Echo observations.
-9. Delete the remaining compatibility host package and JSONL invocation glue.
+11. Delete the remaining compatibility host package and semantic JSONL glue;
+    retain only raw event/artifact transport required by the final membrane.
 
 ## Hard Gates
 
@@ -114,6 +152,10 @@ or support-policy logic.
   authority beside Echo history.
 - Do not widen the handwritten compatibility protocol for feature parity.
 - Do not describe the Wesley compatibility package as the final Edict design.
+- Do not put `ReplaceRange`, rope operations, `Buffer`, or `TextWindow`
+  semantics in Echo production code.
+- Do not let TypeScript map commands to operations in final production
+  composition.
 
 ## Verification
 

@@ -242,7 +242,7 @@ test('HT-0149 graph runtime RED matrix declares all Slice 4 witnesses', () => {
   }
 });
 
-test('BEARING records the real Echo-hosted generated text corridor', () => {
+test('BEARING distinguishes the compatibility corridor from Jim.edict', () => {
   const bearing = readRepoFile(BEARING_PATH);
 
   assert.match(bearing, /Production startup launches `jedit-echo-host`/);
@@ -253,7 +253,13 @@ test('BEARING records the real Echo-hosted generated text corridor', () => {
   assert.match(bearing, /Multi-range edit, save\/export,\s+`:why`, causal line-diff, and undo\/redo return typed obstructions/);
   assert.match(bearing, /checkpoint declaration and an Echo causal anchor remain separate\s+propositions/);
   assert.match(bearing, /Wesley-generated EINT and installed package/);
-  assert.match(bearing, /generated Edict client/);
+  assert.match(bearing, /installed Jim\.edict observer/);
+  assert.match(bearing, /syscall stub, not Jim/);
+  assert.match(bearing, /oracle is never a program/);
+  assert.match(
+    bearing,
+    /Do not put `ReplaceRange`, rope operations, `Buffer`, or `TextWindow`\s+semantics in Echo production code/,
+  );
   assert.match(bearing, /Do not reintroduce an in-process text authority/);
 });
 

@@ -10,9 +10,16 @@ const GUIDE_PATH = path.join(REPO_ROOT, 'docs', 'echo-application-hosting-guide.
 test('Echo application hosting guide states the real authority boundary', () => {
   const source = readFileSync(GUIDE_PATH, 'utf8');
 
-  assert.match(source, /Echo owns admission, scheduling, ticks/);
+  assert.match(source, /`Jim\.edict` is the application/);
+  assert.match(source, /Echo owns generic admission,\s+scheduling, ticks/);
   assert.match(source, /Wesley compatibility package currently supplies/);
-  assert.match(source, /Edict will later own the generated semantic boundary/);
+  assert.match(source, /Edict owns the generated semantic boundary/);
+  assert.match(source, /Target Active-Observer Boundary/);
+  assert.match(source, /generated client in this boundary is a codec and transport stub/);
+  assert.match(
+    source,
+    /Echo production code must not implement or branch on `ReplaceRange`/,
+  );
   assert.match(source, /Launch `native\/jedit-echo-host`/);
   assert.match(source, /Recover the graph and continue editing/);
   assert.match(source, /typed obstructions/);

@@ -58,4 +58,9 @@ Jim command
 ```
 
 Edict will replace the Wesley/Rust compatibility operation. Nothing shorter
-than the full path above may be described as Echo-powered.
+than the full path above may be described as Echo-powered. This is not the
+target application composition: final production delivers canonical events to
+`Jim.edict`, which requests bounded readings, derives Jim-owned operation
+intents, handles outcomes, and advances editor state. Generated clients remain
+semantic-free transport stubs, and Echo remains unaware of editor or rope
+vocabulary.

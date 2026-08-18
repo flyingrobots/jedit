@@ -2,6 +2,13 @@
 
 Status: design sketch
 
+> **Ownership correction:** `ReplaceRange` is Jim-owned application law and its
+> executable source belongs in `ReplaceRange.edict`. Echo may interpret the
+> compiler-produced generic program, but Echo must not acquire a
+> `ReplaceRange`, rope, split/join/balance, `Buffer`, or `TextWindow` runtime
+> primitive. The schema and oracle are contracts and evidence, not executable
+> semantics.
+
 Purpose: define the causal text runtime that sits under `jedit` before more UI
 work hardens the wrong abstractions.
 
@@ -179,10 +186,12 @@ worldline boundary is the tick.
 That means:
 
 - `ReplaceRange` describes what text rewrite is lawful.
-- Echo admits the jedit contract rewrite into scheduler-owned causal work.
+- Edict compiles the Jim-owned law to a generic verified package.
+- Echo admits and interprets that package as scheduler-owned causal work.
 - the scheduler-owned tick emits a tick receipt as the witness of the
   transition.
-- `jedit` may group one or more ticks into an edit group for undo/history.
+- `Jim.edict` may group one or more outcomes into an edit group for
+  undo/history.
 
 This keeps the canonical boundary aligned with Echo without giving jedit app
 code tick authority, while still letting the editor present larger
