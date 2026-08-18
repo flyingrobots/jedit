@@ -13,7 +13,6 @@ pub const REWRITE_FACT_TYPE: &str = "jedit.text.RopeRewrite.v1";
 pub const DIFF_FACT_TYPE: &str = "jedit.text.RopeDiff.v1";
 pub const CHECKPOINT_FACT_TYPE: &str = "jedit.text.RopeCheckpoint.v1";
 
-const BUFFER_ID_DOMAIN: &[u8] = b"jedit.text.buffer-worldline.v1\0";
 const BLOB_ID_DOMAIN: &[u8] = b"jedit.text.blob.v1\0";
 const LEAF_ID_DOMAIN: &[u8] = b"jedit.text.leaf.v1\0";
 const BRANCH_ID_DOMAIN: &[u8] = b"jedit.text.branch.v1\0";
@@ -21,6 +20,10 @@ const HEAD_ID_DOMAIN: &[u8] = b"jedit.text.head.v1\0";
 const REWRITE_ID_DOMAIN: &[u8] = b"jedit.text.rewrite.v1\0";
 const DIFF_ID_DOMAIN: &[u8] = b"jedit.text.diff.v1\0";
 const CHECKPOINT_ID_DOMAIN: &[u8] = b"jedit.text.checkpoint.v1\0";
+
+pub const BUFFER_NODE_ID_DOMAIN: &[u8] = b"jedit.text.buffer-key.v1\0";
+pub const BLOB_CONTENT_HASH_DOMAIN: &[u8] = b"jedit.text.blob-content.v1\0";
+pub const EMPTY_ROOT_DIGEST_DOMAIN: &[u8] = b"jedit.text.empty-root.v1\0";
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct BufferFact {
@@ -122,26 +125,44 @@ impl From<NodeIdBytes> for NodeId {
 
 pub trait TypedFact: DeserializeOwned + Serialize {
     const TYPE_LABEL: &'static str;
+}
+
+pub trait ContentAddressedFact: TypedFact {
     const ID_DOMAIN: &'static [u8];
 }
 
 macro_rules! typed_fact {
-    ($fact:ty, $label:expr, $domain:expr) => {
+    ($fact:ty, $label:expr) => {
         impl TypedFact for $fact {
             const TYPE_LABEL: &'static str = $label;
+        }
+    };
+}
+
+macro_rules! content_addressed_fact {
+    ($fact:ty, $domain:expr) => {
+        impl ContentAddressedFact for $fact {
             const ID_DOMAIN: &'static [u8] = $domain;
         }
     };
 }
 
-typed_fact!(BufferFact, BUFFER_FACT_TYPE, BUFFER_ID_DOMAIN);
-typed_fact!(BlobFact, BLOB_FACT_TYPE, BLOB_ID_DOMAIN);
-typed_fact!(LeafFact, LEAF_FACT_TYPE, LEAF_ID_DOMAIN);
-typed_fact!(BranchFact, BRANCH_FACT_TYPE, BRANCH_ID_DOMAIN);
-typed_fact!(HeadFact, HEAD_FACT_TYPE, HEAD_ID_DOMAIN);
-typed_fact!(RewriteFact, REWRITE_FACT_TYPE, REWRITE_ID_DOMAIN);
-typed_fact!(DiffFact, DIFF_FACT_TYPE, DIFF_ID_DOMAIN);
-typed_fact!(CheckpointFact, CHECKPOINT_FACT_TYPE, CHECKPOINT_ID_DOMAIN);
+typed_fact!(BufferFact, BUFFER_FACT_TYPE);
+typed_fact!(BlobFact, BLOB_FACT_TYPE);
+typed_fact!(LeafFact, LEAF_FACT_TYPE);
+typed_fact!(BranchFact, BRANCH_FACT_TYPE);
+typed_fact!(HeadFact, HEAD_FACT_TYPE);
+typed_fact!(RewriteFact, REWRITE_FACT_TYPE);
+typed_fact!(DiffFact, DIFF_FACT_TYPE);
+typed_fact!(CheckpointFact, CHECKPOINT_FACT_TYPE);
+
+content_addressed_fact!(BlobFact, BLOB_ID_DOMAIN);
+content_addressed_fact!(LeafFact, LEAF_ID_DOMAIN);
+content_addressed_fact!(BranchFact, BRANCH_ID_DOMAIN);
+content_addressed_fact!(HeadFact, HEAD_ID_DOMAIN);
+content_addressed_fact!(RewriteFact, REWRITE_ID_DOMAIN);
+content_addressed_fact!(DiffFact, DIFF_ID_DOMAIN);
+content_addressed_fact!(CheckpointFact, CHECKPOINT_ID_DOMAIN);
 
 pub fn fact_type_id<T: TypedFact>() -> TypeId {
     make_type_id(T::TYPE_LABEL)
@@ -152,8 +173,13 @@ pub fn fact_bytes<T: TypedFact>(fact: &T) -> HostResult<Vec<u8>> {
         .map_err(|error| HostError::MalformedFact(format!("encode {}: {error}", T::TYPE_LABEL)))
 }
 
-pub fn fact_id<T: TypedFact>(fact: &T) -> HostResult<NodeId> {
+pub fn fact_id<T: ContentAddressedFact>(fact: &T) -> HostResult<NodeId> {
     Ok(content_node_id(T::ID_DOMAIN, &fact_bytes(fact)?))
+}
+
+pub(crate) fn decode_fact_bytes<T: TypedFact>(bytes: &[u8]) -> HostResult<T> {
+    serde_json::from_slice(bytes)
+        .map_err(|error| HostError::MalformedFact(format!("decode {}: {error}", T::TYPE_LABEL)))
 }
 
 pub fn decode_fact<T: TypedFact>(attachment: &AttachmentValue) -> HostResult<T> {
@@ -169,6 +195,5 @@ pub fn decode_fact<T: TypedFact>(attachment: &AttachmentValue) -> HostResult<T> 
             T::TYPE_LABEL
         )));
     }
-    serde_json::from_slice(payload.bytes.as_ref())
-        .map_err(|error| HostError::MalformedFact(format!("decode {}: {error}", T::TYPE_LABEL)))
+    decode_fact_bytes(payload.bytes.as_ref())
 }

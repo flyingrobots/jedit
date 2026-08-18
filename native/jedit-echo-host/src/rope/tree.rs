@@ -1,34 +1,38 @@
+use std::collections::BTreeSet;
+
 use warp_core::NodeId;
 
 use crate::error::{HostError, HostResult};
 use crate::identity::{hash_bytes, node_id_hex};
-use crate::records::{BlobFact, BranchFact, LeafFact};
+use crate::records::{
+    BlobFact, BranchFact, LeafFact, BLOB_CONTENT_HASH_DOMAIN, EMPTY_ROOT_DIGEST_DOMAIN,
+};
 
-use super::{GraphFacts, NodeMetrics, PlanContext, RopeNode};
-
-const MAX_LEAF_BYTES: usize = 4096;
-const EMPTY_ROOT_DIGEST_DOMAIN: &[u8] = b"jedit.text.empty-root.v1\0";
-
+use super::fault::{RopeFault, RopeResult};
+use super::{GraphFacts, NodeMetrics, PlanContext, RopeNode, MAX_LEAF_BYTES};
 pub(super) fn build_text<T: GraphFacts>(
     context: &mut PlanContext<'_, T>,
     bytes: &[u8],
-) -> HostResult<Option<NodeId>> {
-    let text = std::str::from_utf8(bytes)
-        .map_err(|error| HostError::InvalidRequest(format!("text is not UTF-8: {error}")))?;
+) -> RopeResult<Option<NodeId>> {
+    let text = std::str::from_utf8(bytes).map_err(|error| {
+        RopeFault::structural_dependency(HostError::InvalidRequest(format!(
+            "text is not UTF-8: {error}"
+        )))
+    })?;
     if text.is_empty() {
         return Ok(None);
     }
     let mut roots = Vec::new();
     let mut start = 0;
     while start < text.len() {
-        let mut end = (start + MAX_LEAF_BYTES).min(text.len());
+        let mut end = start.saturating_add(MAX_LEAF_BYTES).min(text.len());
         while end > start && !text.is_char_boundary(end) {
             end -= 1;
         }
         if end == start {
-            return Err(HostError::InvalidRequest(
+            return Err(RopeFault::structural_dependency(HostError::InvalidRequest(
                 "unable to split UTF-8 leaf".to_owned(),
-            ));
+            )));
         }
         roots.push(make_blob_leaf(
             context,
@@ -46,23 +50,78 @@ pub(super) fn build_text<T: GraphFacts>(
 fn make_blob_leaf<T: GraphFacts>(
     context: &mut PlanContext<'_, T>,
     bytes: Vec<u8>,
-) -> HostResult<NodeId> {
-    let text = std::str::from_utf8(&bytes)
-        .map_err(|error| HostError::InvalidRequest(format!("leaf is not UTF-8: {error}")))?;
-    let utf16_length = text.encode_utf16().count() as u64;
-    let line_breaks = bytes.iter().filter(|byte| **byte == b'\n').count() as u64;
+) -> RopeResult<NodeId> {
+    let text = std::str::from_utf8(&bytes).map_err(|error| {
+        RopeFault::structural_dependency(HostError::InvalidRequest(format!(
+            "leaf is not UTF-8: {error}"
+        )))
+    })?;
+    let utf16_length = u64::try_from(text.encode_utf16().count())
+        .map_err(|_| RopeFault::arithmetic_overflow("leaf UTF-16 length overflow"))?;
+    let line_breaks = u64::try_from(bytes.iter().filter(|byte| **byte == b'\n').count())
+        .map_err(|_| RopeFault::arithmetic_overflow("leaf line break count overflow"))?;
     let blob = BlobFact {
-        content_hash: hash_bytes(b"jedit.text.blob-content.v1\0", &bytes),
+        content_hash: hash_bytes(BLOB_CONTENT_HASH_DOMAIN, &bytes),
         bytes,
     };
-    let byte_length = blob.bytes.len() as u64;
-    let blob_id = context.write_content_fact(&blob)?;
-    context.write_content_fact(&LeafFact {
-        blob_id: blob_id.into(),
-        byte_start: 0,
-        byte_length,
-        utf16_length,
-        line_breaks,
+    let byte_length = u64::try_from(blob.bytes.len())
+        .map_err(|_| RopeFault::arithmetic_overflow("leaf byte length overflow"))?;
+    let blob_id = context
+        .write_content_fact(&blob)
+        .map_err(RopeFault::structural_dependency)?;
+    context
+        .write_content_fact(&LeafFact {
+            blob_id: blob_id.into(),
+            byte_start: 0,
+            byte_length,
+            utf16_length,
+            line_breaks,
+        })
+        .map_err(RopeFault::structural_dependency)
+}
+
+struct LocatedLeafSlice {
+    blob: BlobFact,
+    absolute_start: u64,
+    start: usize,
+    end: usize,
+}
+
+impl LocatedLeafSlice {
+    fn bytes(&self) -> &[u8] {
+        &self.blob.bytes[self.start..self.end]
+    }
+}
+
+fn locate_leaf_slice<T: GraphFacts>(
+    context: &mut PlanContext<'_, T>,
+    leaf: &LeafFact,
+    relative_start: u64,
+    byte_length: u64,
+) -> RopeResult<LocatedLeafSlice> {
+    let blob_id = NodeId::from(leaf.blob_id);
+    let blob = context.verified_blob_fault(blob_id)?;
+    let absolute_start =
+        RopeFault::checked_add_u64(leaf.byte_start, relative_start, "leaf range start overflow")?;
+    let absolute_end =
+        RopeFault::checked_add_u64(absolute_start, byte_length, "leaf range end overflow")?;
+    let start = usize::try_from(absolute_start).map_err(|_| {
+        RopeFault::declared_rope_inconsistent("leaf offset exceeds addressable memory".to_owned())
+    })?;
+    let end = usize::try_from(absolute_end).map_err(|_| {
+        RopeFault::declared_rope_inconsistent("leaf end exceeds addressable memory".to_owned())
+    })?;
+    if blob.bytes.get(start..end).is_none() {
+        return Err(RopeFault::fact_malformed(format!(
+            "leaf {} exceeds blob bounds",
+            node_id_hex(blob_id)
+        )));
+    }
+    Ok(LocatedLeafSlice {
+        blob,
+        absolute_start,
+        start,
+        end,
     })
 }
 
@@ -71,74 +130,200 @@ fn make_leaf_slice<T: GraphFacts>(
     leaf: &LeafFact,
     relative_start: u64,
     byte_length: u64,
-) -> HostResult<Option<NodeId>> {
+) -> RopeResult<Option<NodeId>> {
     if byte_length == 0 {
         return Ok(None);
     }
-    let blob_id = NodeId::from(leaf.blob_id);
-    let bytes = context.blob_bytes(blob_id)?;
-    let start = usize::try_from(leaf.byte_start + relative_start).map_err(|_| {
-        HostError::InvalidRequest("leaf offset exceeds addressable memory".to_owned())
-    })?;
-    let end = usize::try_from(leaf.byte_start + relative_start + byte_length)
-        .map_err(|_| HostError::InvalidRequest("leaf end exceeds addressable memory".to_owned()))?;
-    let slice = bytes.get(start..end).ok_or_else(|| {
-        HostError::MalformedFact(format!("leaf {} exceeds blob bounds", node_id_hex(blob_id)))
-    })?;
+    let located = locate_leaf_slice(context, leaf, relative_start, byte_length)?;
+    let slice = located.bytes();
     let text = std::str::from_utf8(slice).map_err(|_| {
-        HostError::InvalidRequest("replace offset splits a UTF-8 code point".to_owned())
+        RopeFault::invalid_utf8_slice("replace offset splits a UTF-8 code point".to_owned())
     })?;
     let fact = LeafFact {
         blob_id: leaf.blob_id,
-        byte_start: leaf.byte_start + relative_start,
+        byte_start: located.absolute_start,
         byte_length,
-        utf16_length: text.encode_utf16().count() as u64,
-        line_breaks: slice.iter().filter(|byte| **byte == b'\n').count() as u64,
+        utf16_length: u64::try_from(text.encode_utf16().count())
+            .map_err(|_| RopeFault::arithmetic_overflow("leaf UTF-16 length overflow"))?,
+        line_breaks: u64::try_from(slice.iter().filter(|byte| **byte == b'\n').count())
+            .map_err(|_| RopeFault::arithmetic_overflow("leaf line break count overflow"))?,
     };
-    context.write_content_fact(&fact).map(Some)
+    context
+        .write_content_fact(&fact)
+        .map(Some)
+        .map_err(RopeFault::structural_dependency)
+}
+
+#[derive(Clone, Copy, Eq, PartialEq)]
+enum EndpointSide {
+    Left,
+    Right,
+}
+
+fn validate_endpoint<T: GraphFacts>(
+    context: &mut PlanContext<'_, T>,
+    mut node_id: NodeId,
+    side: EndpointSide,
+) -> RopeResult<()> {
+    let mut visited = BTreeSet::new();
+    let mut branches = Vec::new();
+    loop {
+        if !visited.insert(node_id) {
+            return Err(RopeFault::fact_malformed(format!(
+                "rope node cycle at {}",
+                node_id_hex(node_id)
+            )));
+        }
+        match context
+            .rope_node(node_id)
+            .map_err(RopeFault::structural_dependency)?
+        {
+            RopeNode::Leaf(leaf) => {
+                let located = locate_leaf_slice(context, &leaf, 0, leaf.byte_length)?;
+                std::str::from_utf8(located.bytes()).map_err(|_| {
+                    RopeFault::invalid_utf8_slice(
+                        "replace offset splits a UTF-8 code point".to_owned(),
+                    )
+                })?;
+                break;
+            }
+            RopeNode::Branch(branch) => {
+                let next = match side {
+                    EndpointSide::Left => NodeId::from(branch.left),
+                    EndpointSide::Right => NodeId::from(branch.right),
+                };
+                branches.push((node_id, branch));
+                node_id = next;
+            }
+        }
+    }
+    for (branch_id, branch) in branches.into_iter().rev() {
+        validate_branch_aggregates(context, branch_id, &branch)?;
+    }
+    Ok(())
+}
+
+fn validate_branch_aggregates<T: GraphFacts>(
+    context: &mut PlanContext<'_, T>,
+    branch_id: NodeId,
+    branch: &BranchFact,
+) -> RopeResult<()> {
+    let left = context
+        .node_metrics(NodeId::from(branch.left))
+        .map_err(RopeFault::structural_dependency)?;
+    let right = context
+        .node_metrics(NodeId::from(branch.right))
+        .map_err(RopeFault::structural_dependency)?;
+    let expected_byte_length = RopeFault::checked_add_u64(
+        left.byte_length,
+        right.byte_length,
+        "rope byte length overflow",
+    )?;
+    if branch.byte_length != expected_byte_length {
+        return Err(RopeFault::fact_malformed(format!(
+            "branch byte length does not match children at {}",
+            node_id_hex(branch_id)
+        )));
+    }
+    let expected_utf16_length = RopeFault::checked_add_u64(
+        left.utf16_length,
+        right.utf16_length,
+        "rope UTF-16 length overflow",
+    )?;
+    if branch.utf16_length != expected_utf16_length {
+        return Err(RopeFault::fact_malformed(format!(
+            "branch UTF-16 length does not match children at {}",
+            node_id_hex(branch_id)
+        )));
+    }
+    let expected_line_breaks = RopeFault::checked_add_u64(
+        left.line_breaks,
+        right.line_breaks,
+        "rope line break count overflow",
+    )?;
+    if branch.line_breaks != expected_line_breaks {
+        return Err(RopeFault::fact_malformed(format!(
+            "branch line break count does not match children at {}",
+            node_id_hex(branch_id)
+        )));
+    }
+    let expected_height =
+        RopeFault::checked_add_u32(left.height.max(right.height), 1, "rope height overflow")?;
+    if branch.height != expected_height {
+        return Err(RopeFault::fact_malformed(format!(
+            "branch height does not match children at {}",
+            node_id_hex(branch_id)
+        )));
+    }
+    Ok(())
 }
 
 pub(super) fn split<T: GraphFacts>(
     context: &mut PlanContext<'_, T>,
     root: Option<NodeId>,
     offset: u64,
-) -> HostResult<(Option<NodeId>, Option<NodeId>)> {
+) -> RopeResult<(Option<NodeId>, Option<NodeId>)> {
     let Some(root_id) = root else {
         if offset == 0 {
             return Ok((None, None));
         }
-        return Err(HostError::InvalidRequest(
+        return Err(RopeFault::declared_rope_inconsistent(
             "split exceeds empty rope".to_owned(),
         ));
     };
-    let metrics = context.node_metrics(root_id)?;
+    let metrics = context
+        .node_metrics(root_id)
+        .map_err(RopeFault::structural_dependency)?;
     if offset > metrics.byte_length {
-        return Err(HostError::InvalidRequest(
+        return Err(RopeFault::declared_rope_inconsistent(
             "split exceeds rope length".to_owned(),
         ));
     }
     if offset == 0 {
+        validate_endpoint(context, root_id, EndpointSide::Left)?;
         return Ok((None, Some(root_id)));
     }
     if offset == metrics.byte_length {
+        validate_endpoint(context, root_id, EndpointSide::Right)?;
         return Ok((Some(root_id), None));
     }
-    match context.rope_node(root_id)? {
-        RopeNode::Leaf(leaf) => Ok((
-            make_leaf_slice(context, &leaf, 0, offset)?,
-            make_leaf_slice(context, &leaf, offset, leaf.byte_length - offset)?,
-        )),
+    match context
+        .rope_node(root_id)
+        .map_err(RopeFault::structural_dependency)?
+    {
+        RopeNode::Leaf(leaf) => {
+            let suffix_length = leaf.byte_length.checked_sub(offset).ok_or_else(|| {
+                RopeFault::declared_rope_inconsistent(
+                    "leaf split exceeds declared length".to_owned(),
+                )
+            })?;
+            Ok((
+                make_leaf_slice(context, &leaf, 0, offset)?,
+                make_leaf_slice(context, &leaf, offset, suffix_length)?,
+            ))
+        }
         RopeNode::Branch(branch) => {
             let left = NodeId::from(branch.left);
             let right = NodeId::from(branch.right);
-            let left_length = context.node_metrics(left)?.byte_length;
+            let left_length = context
+                .node_metrics(left)
+                .map_err(RopeFault::structural_dependency)?
+                .byte_length;
             if offset < left_length {
                 let (prefix, middle) = split(context, Some(left), offset)?;
                 Ok((prefix, join(context, middle, Some(right))?))
             } else if offset == left_length {
+                validate_branch_aggregates(context, root_id, &branch)?;
+                validate_endpoint(context, left, EndpointSide::Right)?;
+                validate_endpoint(context, right, EndpointSide::Left)?;
                 Ok((Some(left), Some(right)))
             } else {
-                let (middle, suffix) = split(context, Some(right), offset - left_length)?;
+                let right_offset = offset.checked_sub(left_length).ok_or_else(|| {
+                    RopeFault::declared_rope_inconsistent(
+                        "branch split offset underflow".to_owned(),
+                    )
+                })?;
+                let (middle, suffix) = split(context, Some(right), right_offset)?;
                 Ok((join(context, Some(left), middle)?, suffix))
             }
         }
@@ -149,15 +334,24 @@ pub(super) fn join<T: GraphFacts>(
     context: &mut PlanContext<'_, T>,
     left: Option<NodeId>,
     right: Option<NodeId>,
-) -> HostResult<Option<NodeId>> {
+) -> RopeResult<Option<NodeId>> {
     let (Some(left_id), Some(right_id)) = (left, right) else {
         return Ok(left.or(right));
     };
-    let left_metrics = context.node_metrics(left_id)?;
-    let right_metrics = context.node_metrics(right_id)?;
-    if left_metrics.height > right_metrics.height + 1 {
-        let RopeNode::Branch(left_branch) = context.rope_node(left_id)? else {
-            return Err(HostError::MalformedFact(
+    let left_metrics = context
+        .node_metrics(left_id)
+        .map_err(RopeFault::structural_dependency)?;
+    let right_metrics = context
+        .node_metrics(right_id)
+        .map_err(RopeFault::structural_dependency)?;
+    let right_height_limit =
+        RopeFault::checked_add_u32(right_metrics.height, 1, "right rope height overflow")?;
+    if left_metrics.height > right_height_limit {
+        let RopeNode::Branch(left_branch) = context
+            .rope_node(left_id)
+            .map_err(RopeFault::structural_dependency)?
+        else {
+            return Err(RopeFault::fact_malformed(
                 "unbalanced leaf height".to_owned(),
             ));
         };
@@ -168,9 +362,14 @@ pub(super) fn join<T: GraphFacts>(
         )?;
         return join(context, Some(NodeId::from(left_branch.left)), joined);
     }
-    if right_metrics.height > left_metrics.height + 1 {
-        let RopeNode::Branch(right_branch) = context.rope_node(right_id)? else {
-            return Err(HostError::MalformedFact(
+    let left_height_limit =
+        RopeFault::checked_add_u32(left_metrics.height, 1, "left rope height overflow")?;
+    if right_metrics.height > left_height_limit {
+        let RopeNode::Branch(right_branch) = context
+            .rope_node(right_id)
+            .map_err(RopeFault::structural_dependency)?
+        else {
+            return Err(RopeFault::fact_malformed(
                 "unbalanced leaf height".to_owned(),
             ));
         };
@@ -184,12 +383,31 @@ pub(super) fn join<T: GraphFacts>(
     let branch = BranchFact {
         left: left_id.into(),
         right: right_id.into(),
-        byte_length: left_metrics.byte_length + right_metrics.byte_length,
-        utf16_length: left_metrics.utf16_length + right_metrics.utf16_length,
-        line_breaks: left_metrics.line_breaks + right_metrics.line_breaks,
-        height: left_metrics.height.max(right_metrics.height) + 1,
+        byte_length: RopeFault::checked_add_u64(
+            left_metrics.byte_length,
+            right_metrics.byte_length,
+            "rope byte length overflow",
+        )?,
+        utf16_length: RopeFault::checked_add_u64(
+            left_metrics.utf16_length,
+            right_metrics.utf16_length,
+            "rope UTF-16 length overflow",
+        )?,
+        line_breaks: RopeFault::checked_add_u64(
+            left_metrics.line_breaks,
+            right_metrics.line_breaks,
+            "rope line break count overflow",
+        )?,
+        height: RopeFault::checked_add_u32(
+            left_metrics.height.max(right_metrics.height),
+            1,
+            "rope height overflow",
+        )?,
     };
-    context.write_content_fact(&branch).map(Some)
+    context
+        .write_content_fact(&branch)
+        .map(Some)
+        .map_err(RopeFault::structural_dependency)
 }
 
 pub(super) fn root_metrics<T: GraphFacts>(
@@ -212,4 +430,48 @@ pub(super) fn root_digest(root: Option<NodeId>) -> [u8; 32] {
         || hash_bytes(EMPTY_ROOT_DIGEST_DOMAIN, &[]),
         |id| *id.as_bytes(),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use warp_core::{make_warp_id, GraphStore};
+
+    use super::*;
+    use crate::records::NodeIdBytes;
+
+    #[test]
+    fn join_refuses_left_height_overflow_with_structural_provenance() {
+        let store = GraphStore::new(make_warp_id("left-height-overflow"));
+        let mut context = PlanContext::new(&store);
+        let child = NodeIdBytes([0xA5; 32]);
+        let left = context
+            .write_content_fact(&BranchFact {
+                left: child,
+                right: child,
+                byte_length: 0,
+                utf16_length: 0,
+                line_breaks: 0,
+                height: u32::MAX,
+            })
+            .expect("left fixture should identify");
+        let right = context
+            .write_content_fact(&BranchFact {
+                left: child,
+                right: child,
+                byte_length: 0,
+                utf16_length: 0,
+                line_breaks: 0,
+                height: u32::MAX - 1,
+            })
+            .expect("right fixture should identify");
+
+        let error = join(&mut context, Some(left), Some(right))
+            .expect_err("left height overflow must obstruct joining");
+        let (kind, legacy) = error.into_parts();
+        assert_eq!(kind, super::super::fault::RopeFaultKind::ArithmeticOverflow);
+        assert!(matches!(
+            legacy,
+            HostError::MalformedFact(message) if message == "left rope height overflow"
+        ));
+    }
 }

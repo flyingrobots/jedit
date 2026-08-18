@@ -2,6 +2,94 @@
 
 ## Unreleased
 
+- Made `ReplaceRange` corroborate the selected Head/root byte extent and exact
+  requested-range materialization before no-op classification, so truncated or
+  absent retained roots fail with a typed malformed-rope obstruction.
+- Extended split-boundary corroboration through every enclosing retained branch,
+  so zero and internal insertions cannot preserve false aggregate metrics.
+- Made every zero-width `ReplaceRange` split boundary perform cycle-safe Blob,
+  leaf-extent, and UTF-8 validation before preserving adjacent rope structure.
+- Made exact-end `ReplaceRange` validation corroborate every retained branch
+  byte, UTF-16, line-break, and height aggregate on its endpoint path.
+- Made exact-end `ReplaceRange` validation reject cyclic retained rope links
+  with a typed malformed-fact obstruction instead of looping indefinitely.
+- Scoped the ReplaceRange historical planner checkpoint to provenance only.
+- Cross-checked every committable `ReplaceRange` corpus result against its
+  authenticated basis and patched Buffer, Head, Rewrite, and Diff fact chain.
+- Made strict `ReplaceRange` corpus validation preserve Echo's canonical patch
+  phase ordering and ascending node identity order within each phase.
+- Made strict `ReplaceRange` corpus validation decode every committable patch
+  attachment through its declared native fact type, require canonical bytes,
+  and authenticate the keyed or content-addressed node identity.
+- Hardened the strict ReplaceRange corpus mutation harness so a negative witness
+  cannot pass solely because its test re-encoding changed canonical member order.
+- Made `ReplaceRange` refuse to produce a `MutationPlan` from a selected basis
+  Head unless its retained bytes reproduce its content address, are canonical,
+  and name the target Buffer. The structurally separate retained-consequence
+  gate now proves the same laws.
+- Made the DL-0158 final-audit ledger exhaustive. The release test now parses a
+  closed claim grammar, binds every named claim to its retrospective section
+  and complete ordered source-citation set, and rejects hidden, malformed,
+  missing, extra, or displaced evidence links.
+- Made every retained-rope coordinate and metric calculation used by
+  `ReplaceRange` fail with a typed arithmetic obstruction instead of panicking
+  in debug builds or wrapping in optimized builds. Adversarial leaf, branch,
+  and resulting-Head witnesses prove legacy parity and zero parent mutation;
+  exact-end insertion now authenticates its retained Leaf/Blob extent.
+- Added an independent byte-splice oracle for successful `ReplaceRange` cases.
+  Internally consistent retained graph evidence is refused unless its
+  materialized text equals the declared basis prefix, replacement, and suffix.
+- Tightened retrospective source citations from commit-level presence to exact
+  claim-bearing paths and lines, including distinct stale- and foreign-basis
+  anchors and the serialized update command itself.
+- Bound every exact digest in the `ReplaceRange` retrospective to independently
+  hashed schema, codec-vector, and oracle bytes plus their committed sidecars.
+  The evidence ledger can no longer drift for only one artifact class.
+- Bound the published fact type-ID domain to the pinned Echo `warp-core`
+  implementation for every declared Jedit fact. The schema keeps a named
+  publication constant without claiming ownership of Echo's identity law.
+- Extended the canonical fact-string golden vector through the maximum Unicode
+  scalar U+10FFFF. Conformance now proves supplementary scalars remain literal
+  four-byte UTF-8 and cannot be emitted as surrogate escapes.
+- Made retained `ReplaceRange` consequence validation recompute the keyed
+  Buffer identity in both the basis and result graphs. Mutually consistent
+  Buffer facts retained under the wrong node address now fail closed.
+- Made the production `ReplaceRange` planner emit a closed typed obstruction
+  reason at each decision site while retaining its exact legacy `HostError`.
+  Oracle evidence consumes that reason; non-structural host failures cannot
+  mint semantic categories, and order/bounds diagnostics remain distinct.
+- Strengthened the `ReplaceRange` stale- and foreign-basis witnesses to prove
+  the retained causal relationships they claim. A stale basis must be the
+  direct ancestor of the target Buffer's canonical Head, while a foreign basis
+  must be the canonical Head of its own retained Buffer.
+- Made the `ReplaceRange` lawpack updater run only its exact serial writer tests
+  before the complete locked reader/conformance pass, eliminating an
+  update-time race against stale committed resources.
+- Replaced the member-name-only `ReplaceRange` oracle check with a typed
+  raw-byte contract. Envelope identities, source provenance, canonical
+  identifier and UTF-8 lexemes, invocation bytes, footprints, patches, result
+  metrics, no-partial-mutation obstruction evidence, member order, whitespace,
+  and final-newline framing now fail closed.
+- Enforced the published `ReplaceRange` oracle-invocation lexical law. Strict
+  conformance now rejects uppercase, malformed, or wrong-width identifiers and
+  odd, malformed, or non-UTF-8 replacement-byte encodings.
+- Added a retained-consequence consistency gate to the `ReplaceRange` oracle.
+  Buffer, Head, Rewrite, and Diff identities, cross-links, ranges, metrics, and
+  planner summaries must agree before result evidence can be published.
+- Qualified every flattened `ReplaceRange` oracle footprint and patch
+  identifier by the corpus WARP. Generation and local fixture application now
+  reject foreign-WARP node, edge, and attachment keys before projection.
+- Replaced free-form `ReplaceRange` oracle obstruction strings with an
+  exhaustive semantic enum and published strict corpus, terminal, footprint,
+  patch, and result shapes. Conformance now rejects unknown fields and semantic
+  obstruction codes.
+- Bound the native Cargo manifest and lockfile into the published
+  `ReplaceRange` oracle source-set digest, so generator provenance now includes
+  exact feature and dependency selection.
+- Replaced the fabricated `ReplaceRange` noncanonical-basis fixture with
+  distinct retained stale-head and real foreign-head obstruction witnesses.
+  Both causal postures now prove that planning yields no patch and leaves the
+  parent graph unchanged.
 - Hard-cut production text authority to the real Echo WASM boundary. Jim now
   requires and initializes a configured Echo kernel before constructing the
   workspace; when the generated Jim Edict package is unavailable, every text

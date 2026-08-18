@@ -4,6 +4,7 @@ use crate::error::{HostError, HostResult};
 use crate::identity::node_id_hex;
 use crate::records::{BufferFact, HeadFact};
 
+use super::fault::{RopeFault, RopeResult};
 use super::{GraphFacts, PlanContext, RopeNode};
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
@@ -74,7 +75,8 @@ pub fn read_window<T: GraphFacts>(
             bounded_end,
             &mut bytes,
             &mut support,
-        )?;
+        )
+        .map_err(RopeFault::into_host_error)?;
     }
     let (text, actual_end) = complete_utf8_prefix(bytes, start_byte, bounded_end)?;
     support.retain(|item| item.start_byte < actual_end);
@@ -86,7 +88,7 @@ pub fn read_window<T: GraphFacts>(
     } else {
         0
     };
-    let lines = window_lines(&text, first_line, start_byte);
+    let lines = window_lines(&text, first_line, start_byte)?;
     Ok(WindowProjection {
         buffer_id: node_id_hex(buffer_id),
         basis_head_id: node_id_hex(basis_head_id),
@@ -118,10 +120,15 @@ fn complete_utf8_prefix(
             let valid_length = utf8_error.valid_up_to();
             let mut prefix = error.into_bytes();
             prefix.truncate(valid_length);
-            let text = String::from_utf8(prefix).map_err(|_| {
-                HostError::InvalidRequest("window range is not UTF-8".to_owned())
+            let text = String::from_utf8(prefix)
+                .map_err(|_| HostError::InvalidRequest("window range is not UTF-8".to_owned()))?;
+            let valid_length = u64::try_from(valid_length).map_err(|_| {
+                HostError::InvalidRequest("window UTF-8 prefix length overflow".to_owned())
             })?;
-            Ok((text, start_byte + valid_length as u64))
+            let actual_end = start_byte
+                .checked_add(valid_length)
+                .ok_or_else(|| HostError::InvalidRequest("window UTF-8 end overflow".to_owned()))?;
+            Ok((text, actual_end))
         }
     }
 }
@@ -131,7 +138,7 @@ pub(super) fn read_range_bytes<T: GraphFacts>(
     root: Option<NodeId>,
     start_byte: u64,
     end_byte: u64,
-) -> HostResult<Vec<u8>> {
+) -> RopeResult<Vec<u8>> {
     let mut bytes = Vec::new();
     let mut support = Vec::new();
     if let Some(root_id) = root {
@@ -157,16 +164,25 @@ fn collect_range<T: GraphFacts>(
     range_end: u64,
     output: &mut Vec<u8>,
     support: &mut Vec<WindowSupport>,
-) -> HostResult<()> {
-    let metrics = context.node_metrics(node_id)?;
-    let node_end = node_start + metrics.byte_length;
+) -> RopeResult<()> {
+    let metrics = context
+        .node_metrics(node_id)
+        .map_err(RopeFault::structural_dependency)?;
+    let node_end =
+        RopeFault::checked_add_u64(node_start, metrics.byte_length, "rope node end overflow")?;
     if range_end <= node_start || range_start >= node_end {
         return Ok(());
     }
-    match context.rope_node(node_id)? {
+    match context
+        .rope_node(node_id)
+        .map_err(RopeFault::structural_dependency)?
+    {
         RopeNode::Branch(branch) => {
             let left = NodeId::from(branch.left);
-            let left_length = context.node_metrics(left)?.byte_length;
+            let left_length = context
+                .node_metrics(left)
+                .map_err(RopeFault::structural_dependency)?
+                .byte_length;
             collect_range(
                 context,
                 left,
@@ -176,10 +192,12 @@ fn collect_range<T: GraphFacts>(
                 output,
                 support,
             )?;
+            let right_start =
+                RopeFault::checked_add_u64(node_start, left_length, "rope child start overflow")?;
             collect_range(
                 context,
                 NodeId::from(branch.right),
-                node_start + left_length,
+                right_start,
                 range_start,
                 range_end,
                 output,
@@ -190,18 +208,38 @@ fn collect_range<T: GraphFacts>(
             let overlap_start = range_start.max(node_start);
             let overlap_end = range_end.min(node_end);
             let blob_id = NodeId::from(leaf.blob_id);
-            let blob = context.verified_blob(blob_id)?;
-            let relative_start = usize::try_from(leaf.byte_start + overlap_start - node_start)
-                .map_err(|_| {
-                    HostError::InvalidRequest("window offset exceeds memory".to_owned())
-                })?;
-            let relative_end = usize::try_from(leaf.byte_start + overlap_end - node_start)
-                .map_err(|_| HostError::InvalidRequest("window end exceeds memory".to_owned()))?;
+            let blob = context.verified_blob_fault(blob_id)?;
+            let overlap_start_offset = overlap_start.checked_sub(node_start).ok_or_else(|| {
+                RopeFault::declared_rope_inconsistent(
+                    "window overlap starts before its rope node".to_owned(),
+                )
+            })?;
+            let overlap_end_offset = overlap_end.checked_sub(node_start).ok_or_else(|| {
+                RopeFault::declared_rope_inconsistent(
+                    "window overlap ends before its rope node".to_owned(),
+                )
+            })?;
+            let relative_start = RopeFault::checked_add_u64(
+                leaf.byte_start,
+                overlap_start_offset,
+                "leaf range start overflow",
+            )?;
+            let relative_end = RopeFault::checked_add_u64(
+                leaf.byte_start,
+                overlap_end_offset,
+                "leaf range end overflow",
+            )?;
+            let relative_start = usize::try_from(relative_start).map_err(|_| {
+                RopeFault::declared_rope_inconsistent("window offset exceeds memory".to_owned())
+            })?;
+            let relative_end = usize::try_from(relative_end).map_err(|_| {
+                RopeFault::declared_rope_inconsistent("window end exceeds memory".to_owned())
+            })?;
             let slice = blob
                 .bytes
                 .get(relative_start..relative_end)
                 .ok_or_else(|| {
-                    HostError::MalformedFact(format!("leaf {} exceeds blob", node_id_hex(node_id)))
+                    RopeFault::fact_malformed(format!("leaf {} exceeds blob", node_id_hex(node_id)))
                 })?;
             output.extend_from_slice(slice);
             support.push(WindowSupport {
@@ -231,50 +269,89 @@ fn count_breaks_before<T: GraphFacts>(
             if offset <= left_metrics.byte_length {
                 count_breaks_before(context, left, offset)
             } else {
-                Ok(left_metrics.line_breaks
-                    + count_breaks_before(
-                        context,
-                        NodeId::from(branch.right),
-                        offset - left_metrics.byte_length,
-                    )?)
+                let right_offset =
+                    offset
+                        .checked_sub(left_metrics.byte_length)
+                        .ok_or_else(|| {
+                            HostError::MalformedFact("window branch offset underflow".to_owned())
+                        })?;
+                let right_breaks =
+                    count_breaks_before(context, NodeId::from(branch.right), right_offset)?;
+                left_metrics
+                    .line_breaks
+                    .checked_add(right_breaks)
+                    .ok_or_else(|| {
+                        HostError::MalformedFact("window line count overflow".to_owned())
+                    })
             }
         }
         RopeNode::Leaf(leaf) => {
             let blob = context.blob_bytes(NodeId::from(leaf.blob_id))?;
             let start = usize::try_from(leaf.byte_start)
                 .map_err(|_| HostError::InvalidRequest("leaf start exceeds memory".to_owned()))?;
-            let end = usize::try_from(leaf.byte_start + offset)
+            let absolute_end = leaf.byte_start.checked_add(offset).ok_or_else(|| {
+                HostError::MalformedFact("window leaf offset overflow".to_owned())
+            })?;
+            let end = usize::try_from(absolute_end)
                 .map_err(|_| HostError::InvalidRequest("leaf offset exceeds memory".to_owned()))?;
             let bytes = blob.get(start..end).ok_or_else(|| {
                 HostError::MalformedFact("line prefix exceeds leaf blob".to_owned())
             })?;
-            Ok(bytes.iter().filter(|byte| **byte == b'\n').count() as u64)
+            u64::try_from(bytes.iter().filter(|byte| **byte == b'\n').count())
+                .map_err(|_| HostError::MalformedFact("window line count overflow".to_owned()))
         }
     }
 }
 
-fn window_lines(text: &str, first_line: u64, start_byte: u64) -> Vec<WindowLine> {
+fn window_lines(text: &str, first_line: u64, start_byte: u64) -> HostResult<Vec<WindowLine>> {
     let mut lines = Vec::new();
     let mut relative_start = 0usize;
     for (index, segment) in text.split_inclusive('\n').enumerate() {
         let content = segment.strip_suffix('\n').unwrap_or(segment);
         let content = content.strip_suffix('\r').unwrap_or(content);
-        let relative_end = relative_start + content.len();
+        let relative_end = relative_start.checked_add(content.len()).ok_or_else(|| {
+            HostError::MalformedFact("window line byte length overflow".to_owned())
+        })?;
+        let line_offset = u64::try_from(index)
+            .map_err(|_| HostError::MalformedFact("window line index overflow".to_owned()))?;
+        let line_number = first_line
+            .checked_add(line_offset)
+            .ok_or_else(|| HostError::MalformedFact("window line number overflow".to_owned()))?;
+        let relative_start_u64 = u64::try_from(relative_start)
+            .map_err(|_| HostError::MalformedFact("window line start overflow".to_owned()))?;
+        let relative_end_u64 = u64::try_from(relative_end)
+            .map_err(|_| HostError::MalformedFact("window line end overflow".to_owned()))?;
         lines.push(WindowLine {
-            line_number: first_line + index as u64,
-            start_byte: start_byte + relative_start as u64,
-            end_byte: start_byte + relative_end as u64,
+            line_number,
+            start_byte: start_byte.checked_add(relative_start_u64).ok_or_else(|| {
+                HostError::MalformedFact("window absolute line start overflow".to_owned())
+            })?,
+            end_byte: start_byte.checked_add(relative_end_u64).ok_or_else(|| {
+                HostError::MalformedFact("window absolute line end overflow".to_owned())
+            })?,
             text: content.to_owned(),
         });
-        relative_start += segment.len();
+        relative_start = relative_start
+            .checked_add(segment.len())
+            .ok_or_else(|| HostError::MalformedFact("window segment length overflow".to_owned()))?;
     }
     if text.is_empty() || text.ends_with('\n') {
+        let line_offset = u64::try_from(lines.len())
+            .map_err(|_| HostError::MalformedFact("window line index overflow".to_owned()))?;
+        let text_length = u64::try_from(text.len())
+            .map_err(|_| HostError::MalformedFact("window text length overflow".to_owned()))?;
+        let line_number = first_line
+            .checked_add(line_offset)
+            .ok_or_else(|| HostError::MalformedFact("window line number overflow".to_owned()))?;
+        let end_byte = start_byte.checked_add(text_length).ok_or_else(|| {
+            HostError::MalformedFact("window absolute text end overflow".to_owned())
+        })?;
         lines.push(WindowLine {
-            line_number: first_line + lines.len() as u64,
-            start_byte: start_byte + text.len() as u64,
-            end_byte: start_byte + text.len() as u64,
+            line_number,
+            start_byte: end_byte,
+            end_byte,
             text: String::new(),
         });
     }
-    lines
+    Ok(lines)
 }

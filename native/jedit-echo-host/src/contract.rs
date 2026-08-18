@@ -254,7 +254,10 @@ mod tests {
         ];
 
         for (encoded, reason) in supported {
-            assert_eq!(checkpoint_reason(encoded).expect("reason should decode"), reason);
+            assert_eq!(
+                checkpoint_reason(encoded).expect("reason should decode"),
+                reason
+            );
             assert_eq!(generated_checkpoint_reason(reason), encoded);
         }
 

@@ -1,9 +1,11 @@
+mod fact_read;
+mod fault;
+mod replace;
 mod tree;
 mod window;
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use serde::de::DeserializeOwned;
 use warp_core::{
     AttachmentKey, AttachmentValue, Footprint, GraphStore, GraphView, NodeId, NodeKey, NodeRecord,
     TickDelta, TypeId, WarpId, WarpOp,
@@ -12,15 +14,18 @@ use warp_core::{
 use crate::error::{HostError, HostResult};
 use crate::identity::{hash_bytes, node_id_hex};
 use crate::records::{
-    decode_fact, fact_bytes, fact_id, fact_type_id, BlobFact, BranchFact, BufferFact,
-    CheckpointFact, CheckpointReason, DiffFact, HeadFact, LeafFact, NodeIdBytes, RewriteFact,
-    TypedFact,
+    decode_fact, decode_fact_bytes, fact_bytes, fact_id, fact_type_id, BlobFact, BranchFact,
+    BufferFact, CheckpointFact, CheckpointReason, ContentAddressedFact, HeadFact, LeafFact,
+    NodeIdBytes, TypedFact, BLOB_CONTENT_HASH_DOMAIN, BUFFER_NODE_ID_DOMAIN,
 };
-use tree::{build_text, join, root_digest, root_metrics, split};
-use window::read_range_bytes;
+use fault::{RopeFault, RopeResult};
+pub use replace::{
+    plan_replace, plan_replace_with_reason, ReplaceRangeFailure, ReplaceRangeObstructionCode,
+};
+use tree::{build_text, root_digest, root_metrics};
 pub use window::{read_window, WindowLine, WindowProjection, WindowSupport};
 
-const BUFFER_NODE_DOMAIN: &[u8] = b"jedit.text.buffer-key.v1\0";
+pub const MAX_LEAF_BYTES: usize = 4096;
 
 pub trait GraphFacts {
     fn warp_id(&self) -> WarpId;
@@ -101,7 +106,7 @@ impl<'a, T: GraphFacts> PlanContext<'a, T> {
                     F::TYPE_LABEL
                 )));
             }
-            return decode_pending::<F>(pending);
+            return decode_fact_bytes::<F>(&pending.bytes);
         }
         self.reads.insert(id);
         let attachment = self.source.attachment(&id).ok_or_else(|| {
@@ -121,7 +126,7 @@ impl<'a, T: GraphFacts> PlanContext<'a, T> {
         Ok(())
     }
 
-    fn write_content_fact<F: TypedFact>(&mut self, fact: &F) -> HostResult<NodeId> {
+    fn write_content_fact<F: ContentAddressedFact>(&mut self, fact: &F) -> HostResult<NodeId> {
         let id = fact_id(fact)?;
         self.write_fact_at(id, fact)?;
         Ok(id)
@@ -164,9 +169,16 @@ impl<'a, T: GraphFacts> PlanContext<'a, T> {
     }
 
     fn verified_blob(&mut self, id: NodeId) -> HostResult<BlobFact> {
-        let blob: BlobFact = self.read_fact(id)?;
-        if hash_bytes(b"jedit.text.blob-content.v1\0", &blob.bytes) != blob.content_hash {
-            return Err(HostError::MalformedFact(format!(
+        self.verified_blob_fault(id)
+            .map_err(RopeFault::into_host_error)
+    }
+
+    fn verified_blob_fault(&mut self, id: NodeId) -> RopeResult<BlobFact> {
+        let blob: BlobFact = self
+            .read_fact(id)
+            .map_err(RopeFault::structural_dependency)?;
+        if hash_bytes(BLOB_CONTENT_HASH_DOMAIN, &blob.bytes) != blob.content_hash {
+            return Err(RopeFault::content_identity(format!(
                 "blob {} content hash does not match",
                 node_id_hex(id)
             )));
@@ -177,11 +189,6 @@ impl<'a, T: GraphFacts> PlanContext<'a, T> {
     fn blob_bytes(&mut self, id: NodeId) -> HostResult<Vec<u8>> {
         Ok(self.verified_blob(id)?.bytes)
     }
-}
-
-fn decode_pending<F: TypedFact + DeserializeOwned>(pending: &PendingFact) -> HostResult<F> {
-    serde_json::from_slice(&pending.bytes)
-        .map_err(|error| HostError::MalformedFact(format!("decode {}: {error}", F::TYPE_LABEL)))
 }
 
 #[derive(Debug)]
@@ -256,7 +263,7 @@ impl CheckpointPlan {
 }
 
 pub fn buffer_node_id(buffer_key: &str) -> NodeId {
-    crate::identity::content_node_id(BUFFER_NODE_DOMAIN, buffer_key.as_bytes())
+    crate::identity::content_node_id(BUFFER_NODE_ID_DOMAIN, buffer_key.as_bytes())
 }
 
 pub fn existing_buffer<T: GraphFacts>(
@@ -357,15 +364,20 @@ pub fn plan_create<T: GraphFacts>(
             "buffer {buffer_key} already exists"
         )));
     }
-    let root = build_text(&mut context, initial_text.as_bytes())?;
+    let root =
+        build_text(&mut context, initial_text.as_bytes()).map_err(RopeFault::into_host_error)?;
     let metrics = root_metrics(&mut context, root)?;
+    let line_count = metrics
+        .line_breaks
+        .checked_add(1)
+        .ok_or_else(|| HostError::MalformedFact("head line count overflow".to_owned()))?;
     let head = HeadFact {
         buffer_id: buffer_id.into(),
         basis_head_id: None,
         root_node_id: root.map(NodeIdBytes::from),
         byte_length: metrics.byte_length,
         utf16_length: metrics.utf16_length,
-        line_count: metrics.line_breaks + 1,
+        line_count,
         root_digest: root_digest(root),
         sequence: 0,
     };
@@ -380,98 +392,6 @@ pub fn plan_create<T: GraphFacts>(
         },
     )?;
     Ok(finish_plan(context, buffer_id, head_id, &head, 0))
-}
-
-pub fn plan_replace<T: GraphFacts>(
-    source: &T,
-    buffer_id: NodeId,
-    expected_basis_head_id: NodeId,
-    start_byte: u64,
-    end_byte: u64,
-    insert_text: &str,
-) -> HostResult<MutationPlan> {
-    let mut context = PlanContext::new(source);
-    let buffer: BufferFact = context.read_fact(buffer_id)?;
-    let basis_head_id = NodeId::from(buffer.canonical_head_id);
-    if basis_head_id != expected_basis_head_id {
-        return Err(HostError::InvalidRequest(format!(
-            "stale replace basis {}; canonical head is {}",
-            node_id_hex(expected_basis_head_id),
-            node_id_hex(basis_head_id)
-        )));
-    }
-    let basis_head: HeadFact = context.read_fact(basis_head_id)?;
-    if start_byte > end_byte || end_byte > basis_head.byte_length {
-        return Err(HostError::InvalidRequest(format!(
-            "replace range {start_byte}..{end_byte} exceeds {} bytes",
-            basis_head.byte_length
-        )));
-    }
-    let basis_root = basis_head.root_node_id.map(NodeId::from);
-    let current_bytes = read_range_bytes(&mut context, basis_root, start_byte, end_byte)?;
-    if current_bytes == insert_text.as_bytes() {
-        return Err(HostError::InvalidRequest(
-            "replace range is a no-op".to_owned(),
-        ));
-    }
-    let next_sequence = basis_head
-        .sequence
-        .checked_add(1)
-        .ok_or_else(|| HostError::MalformedFact("head sequence overflow".to_owned()))?;
-    let next_version = buffer
-        .version
-        .checked_add(1)
-        .ok_or_else(|| HostError::MalformedFact("buffer version overflow".to_owned()))?;
-    let (left, suffix) = split(&mut context, basis_root, start_byte)?;
-    let (_, right) = split(&mut context, suffix, end_byte - start_byte)?;
-    let inserted = build_text(&mut context, insert_text.as_bytes())?;
-    let left_with_insert = join(&mut context, left, inserted)?;
-    let root = join(&mut context, left_with_insert, right)?;
-    let metrics = root_metrics(&mut context, root)?;
-    let head = HeadFact {
-        buffer_id: buffer_id.into(),
-        basis_head_id: Some(basis_head_id.into()),
-        root_node_id: root.map(NodeIdBytes::from),
-        byte_length: metrics.byte_length,
-        utf16_length: metrics.utf16_length,
-        line_count: metrics.line_breaks + 1,
-        root_digest: root_digest(root),
-        sequence: next_sequence,
-    };
-    let head_id = context.write_content_fact(&head)?;
-    let rewrite = RewriteFact {
-        buffer_id: buffer_id.into(),
-        basis_head_id: basis_head_id.into(),
-        next_head_id: head_id.into(),
-        start_byte,
-        end_byte,
-        inserted_byte_length: insert_text.len() as u64,
-    };
-    let rewrite_id = context.write_content_fact(&rewrite)?;
-    context.write_content_fact(&DiffFact {
-        rewrite_id: rewrite_id.into(),
-        basis_head_id: basis_head_id.into(),
-        next_head_id: head_id.into(),
-        start_byte,
-        end_byte,
-        inserted_byte_length: insert_text.len() as u64,
-        deleted_byte_length: end_byte - start_byte,
-    })?;
-    context.write_fact_at(
-        buffer_id,
-        &BufferFact {
-            canonical_head_id: head_id.into(),
-            version: next_version,
-            ..buffer
-        },
-    )?;
-    Ok(finish_plan(
-        context,
-        buffer_id,
-        head_id,
-        &head,
-        next_version,
-    ))
 }
 
 fn finish_plan<T: GraphFacts>(
