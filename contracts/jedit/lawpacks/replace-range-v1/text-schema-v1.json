@@ -472,6 +472,10 @@
     "posture": "finite-corpus-input-not-runtime-abi"
   },
   "ropeLaw": {
+    "aggregateValidation": {
+      "retainedSubtreeMetrics": "residual-trust-may-propagate-incorrect-utf16-length-and-line-breaks",
+      "scope": "descended-paths-only"
+    },
     "coordinateType": "u64",
     "emittedOperations": [
       "upsert-node",

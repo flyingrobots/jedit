@@ -214,6 +214,13 @@ The generic content-fact constructor does not accept Buffer facts. This removes
 the currently representable but unused `BufferFact` content identity while
 preserving every production byte and authoritative keyed Buffer identifier.
 
+Rope aggregate validation is path-local. The planner validates branches on the
+descended endpoint paths, but it does not recursively revalidate every retained
+subtree. A retained subtree's declared `utf16_length` and `line_breaks` can
+therefore propagate into a new Head as residual trust. The published schema
+records that boundary explicitly; this PR does not claim whole-tree aggregate
+verification.
+
 The normative identity domains are:
 
 | Identity | Exact UTF-8 domain | Lowercase hexadecimal domain | Material |
@@ -467,8 +474,10 @@ Known risks:
 
 Mitigations:
 
-- Evidence is graded deterministic self-validation until Echo #684 supplies a
-  separately implemented evaluator and finite-corpus comparison.
+- Evidence is graded deterministic self-validation until Jedit supplies real
+  `ReplaceRange.edict` source, Edict compiles it through the public application
+  build, and Echo executes the accepted compiler-produced generic program for a
+  separately implemented finite-corpus comparison.
 - The declaration makes canonical writer bytes and corpus shapes normative and
   requires the new evaluator to reject noncanonical or misaddressed facts.
 - Jedit #285 remains open for the production cutover; this PR does not claim the
@@ -481,8 +490,11 @@ Mitigations:
 
 ## Follow-On Debt
 
-- [Echo #684](https://github.com/flyingrobots/echo/issues/684) must add the
-  callback-free bounded declarative graph-operation evaluator and consume these
+- Jedit must author `ReplaceRange.edict` against this exact schema and lawpack
+  closure, then build it through Edict's public application-build boundary.
+- [Echo #684](https://github.com/flyingrobots/echo/issues/684) may add only the
+  generic bounded-program capability exposed as missing by that real compiler
+  output; its conformance harness may consume these
   exact resources in its first RED.
 - [Jedit #285](https://github.com/flyingrobots/jedit/issues/285) remains open
   until production `ReplaceRange` leaves the GraphQL `Int` compatibility ABI.
@@ -522,7 +534,7 @@ What changed from the design:
   [`native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L336@9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L336)
   [`native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L362@9ffc0e4aa9313eba3774be970adbc1b976e5888a`](https://github.com/flyingrobots/jedit/blob/9ffc0e4aa9313eba3774be970adbc1b976e5888a/native/jedit-echo-host/tests/replace_range_schema_conformance.rs#L362)
 - **Artifact digest ledger.** The published SHA-256 digests are
-  `eb1b81335a5dc270965df0fcd0098534184712ac05c1c126f159b624c81fc5aa`
+  `f49b0ff6c9c7010d3a72b46734d47832853f496739a083edc41dddec3431bac7`
   for the schema,
   `1ac26477e1d6c08df49446627ad002e40bd214235ce93b563d62bb50e40dc14c`
   for codec vectors, and
@@ -610,11 +622,13 @@ What the tests proved:
 
 What remains open:
 
-- The exact next RED is Echo #684: load these pinned bytes as an external
-  consumer and fail because the current operation interpreter supports only its
-  tiny compare-and-set program. GREEN must come from a generic data-only bounded
-  evaluator, never a Jedit planner callback, native rope intrinsic, or
-  caller-supplied patch.
+- The exact next RED begins in Jedit: author `ReplaceRange.edict` against this
+  exact schema and complete lawpack closure, then invoke Edict's public
+  application-build boundary. That compiler or provider failure determines
+  whether the missing generic capability belongs to Edict or Echo. Echo must
+  consume the resulting accepted compiler-produced package, never infer a
+  program from this schema or oracle and never use a Jedit planner callback,
+  native rope intrinsic, or caller-supplied patch.
 - Edict binding, Echo execution/receipt/recovery, Jim invocation, legacy
   `ReplaceRange` cutover, and full `u64` production support remain later
   campaigns.

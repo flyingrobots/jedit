@@ -1,5 +1,6 @@
 use jedit_echo_host::records::{
-    fact_bytes, fact_id, BufferFact, ContentAddressedFact, DiffFact, NodeIdBytes, RewriteFact,
+    fact_bytes, fact_id, BufferFact, ContentAddressedFact, DiffFact, HeadFact, NodeIdBytes,
+    RewriteFact,
 };
 use serde::de::DeserializeOwned;
 use serde_json::Value;
@@ -64,7 +65,7 @@ fn mutate_basis_buffer(corpus: &mut Value, mutate: impl FnOnce(&mut BufferFact))
     ));
 }
 
-fn mutate_result_fact<F>(corpus: &mut Value, result_field: &str, mutate: impl FnOnce(&mut F))
+fn mutate_result_fact<F>(corpus: &mut Value, result_field: &str, mutate: impl FnOnce(&mut F)) -> F
 where
     F: ContentAddressedFact + DeserializeOwned,
 {
@@ -99,6 +100,7 @@ where
     );
     replace_string(case, &original_id, &replacement_id);
     canonicalize_patch_order(case);
+    fact
 }
 
 fn replace_string(value: &mut Value, original: &str, replacement: &str) {
@@ -216,6 +218,36 @@ fn strict_corpus_cross_checks_buffer_version_advancement() {
                 buffer.version += 1;
             });
             committable(corpus)["terminal"]["result"]["version"] = Value::from(buffer.version);
+        },
+    );
+}
+
+#[test]
+fn strict_corpus_cross_checks_head_sequence_advancement() {
+    assert_chain_invalid(
+        "result Head sequence advancement",
+        "result Head sequence advancement",
+        |corpus| {
+            let head = mutate_result_fact::<HeadFact>(corpus, "headId", |head| {
+                head.sequence += 1;
+            });
+            let head_id = fact_id(&head).expect("mutated Head should have an identity");
+            mutate_result_buffer(corpus, |buffer| {
+                buffer.canonical_head_id = NodeIdBytes(*head_id.as_bytes());
+            });
+            committable(corpus)["terminal"]["result"]["sequence"] = Value::from(head.sequence);
+        },
+    );
+}
+
+#[test]
+fn strict_corpus_cross_checks_head_root_digest() {
+    assert_chain_invalid(
+        "result Head root digest",
+        "nonempty root digest differs",
+        |corpus| {
+            committable(corpus)["terminal"]["result"]["rootDigest"] =
+                Value::String("00".repeat(32));
         },
     );
 }

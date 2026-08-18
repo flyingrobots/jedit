@@ -267,7 +267,7 @@ fn checked_result_byte_length(
     }
     let after_delete = basis_byte_length
         .checked_sub(deleted_byte_length)
-        .ok_or_else(|| "deleted range exceeds basis Head byte length".to_owned())?;
+        .ok_or_else(|| "invocation range exceeds basis Head byte length".to_owned())?;
     after_delete
         .checked_add(replacement_byte_length)
         .ok_or_else(|| "result byte length overflows u64".to_owned())

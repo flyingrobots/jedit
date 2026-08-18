@@ -111,6 +111,10 @@ pub fn expected_schema() -> Value {
             }
         },
         "ropeLaw": {
+            "aggregateValidation": {
+                "scope": "descended-paths-only",
+                "retainedSubtreeMetrics": "residual-trust-may-propagate-incorrect-utf16-length-and-line-breaks"
+            },
             "coordinateType": "u64",
             "range": "half-open-utf8-byte",
             "replacement": "utf8-bytes",

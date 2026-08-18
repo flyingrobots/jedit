@@ -1,9 +1,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use jedit_echo_host::identity::parse_node_id;
+use jedit_echo_host::identity::{content_node_id, parse_node_id};
 use jedit_echo_host::records::{
-    fact_bytes, fact_id, fact_type_id, BlobFact, BranchFact, BufferFact, ContentAddressedFact,
-    DiffFact, HeadFact, LeafFact, RewriteFact, TypedFact,
+    fact_bytes, fact_type_id, BlobFact, BranchFact, BufferFact, ContentAddressedFact, DiffFact,
+    HeadFact, LeafFact, RewriteFact, TypedFact,
 };
 use jedit_echo_host::rope::buffer_node_id;
 use serde::{Deserialize, Serialize};
@@ -197,9 +197,9 @@ pub(super) fn decode_content_fact<F: ContentAddressedFact>(
     attachment_bytes: &HexBytes,
 ) -> Result<F, String> {
     require_declared_type::<F>(label, type_id)?;
-    let fact: F = decode_canonical(label, attachment_bytes)?;
-    let expected = fact_id(&fact).map_err(|error| error.to_string())?;
+    let expected = content_node_id(F::ID_DOMAIN, &attachment_bytes.bytes());
     require_node_id(label, node_id, expected)?;
+    let fact: F = decode_canonical(label, attachment_bytes)?;
     Ok(fact)
 }
 
@@ -275,4 +275,27 @@ fn require_targets<'a>(
         ));
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{decode_content_fact, type_id_hex, HeadFact, HexBytes};
+
+    #[test]
+    fn content_fact_authenticates_raw_bytes_before_decoding() {
+        let malformed: HexBytes =
+            serde_json::from_str("\"00\"").expect("one byte is valid hexadecimal input");
+        let error = decode_content_fact::<HeadFact>(
+            "result Head fact",
+            &"00".repeat(32),
+            &type_id_hex::<HeadFact>(),
+            &malformed,
+        )
+        .expect_err("misaddressed malformed bytes must fail closed");
+
+        assert_eq!(
+            error,
+            "result Head fact attachment identity does not match its node"
+        );
+    }
 }

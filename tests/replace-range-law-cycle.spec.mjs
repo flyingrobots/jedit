@@ -77,7 +77,7 @@ function artifactDigestClaim(design) {
 }
 
 function assertArtifactDigestLedger(design = readDesign()) {
-  const actualDigests = [];
+  const actualDigests = new Map();
   let oracleBytes;
 
   for (const fileName of PUBLISHED_ARTIFACTS) {
@@ -91,7 +91,7 @@ function assertArtifactDigestLedger(design = readDesign()) {
     const publishedDigest = fs.readFileSync(sidecarPath, "utf8").trim();
 
     assert.equal(publishedDigest, actualDigest, `${fileName} sidecar drifted`);
-    actualDigests.push(actualDigest);
+    actualDigests.set(fileName, actualDigest);
     if (fileName === "replace-range-v1.oracle.json") {
       oracleBytes = artifactBytes;
     }
@@ -114,7 +114,12 @@ function assertArtifactDigestLedger(design = readDesign()) {
       mapping.groups.oracle,
       mapping.groups.sourceSet,
     ],
-    [...actualDigests, sourceSetDigest],
+    [
+      actualDigests.get("text-schema-v1.json"),
+      actualDigests.get("codec-vectors-v1.json"),
+      actualDigests.get("replace-range-v1.oracle.json"),
+      sourceSetDigest,
+    ],
     "artifact digest ledger drift",
   );
 }
@@ -443,9 +448,9 @@ test("DL-0158 rejects artifact digests under the wrong labels", () => {
     .trim();
   const sentinel = "digest-swap-sentinel";
   const swapped = readDesign()
-    .replace(schemaDigest, sentinel)
-    .replace(codecDigest, schemaDigest)
-    .replace(sentinel, codecDigest);
+    .replaceAll(schemaDigest, sentinel)
+    .replaceAll(codecDigest, schemaDigest)
+    .replaceAll(sentinel, codecDigest);
 
   assert.throws(
     () => assertArtifactDigestLedger(swapped),
