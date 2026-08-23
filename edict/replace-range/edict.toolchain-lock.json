@@ -10,18 +10,18 @@
     "cliVersion": "0.11.0-alpha.1"
   },
   "echo": {
-    "commit": "ce032c8e07b2e3ffe82d97903a565521257cede6",
+    "commit": "27a56eb91964aeeea90d36c58585683b341a2dfc",
     "provider": {
       "coordinate": "echo.edict-provider@1",
-      "digest": "sha256:319b2f44db2fdc953ab4dd4d7603a60db8c5951cc62a0ac2e6b41797eebcee92",
-      "manifestSha256": "b6687034723e965006b4ffbfe2b1848d4c173ad6528964d060954c75e14e7259",
+      "digest": "sha256:a4e0d9e31ada5c8c14adfce05fdecb228e5b79545f3574a5e21e7db71ab3f307",
+      "manifestSha256": "205bdba71fd552316be59079d7509c592b1ac98af7197a119fe56ce12ea0a5f6",
       "lowerer": {
         "coordinate": "echo.dpo.lowerer/component@1",
-        "sha256": "7d00aa4d4ec63fb81dad318b0165010cd4451f33b3f939f90a0457caf54a46eb"
+        "sha256": "a4758f060122fba8c073841ccaa22bf0b8a742b495b76eb33c914eff3250dcf5"
       },
       "verifier": {
         "coordinate": "echo.dpo.verifier/component@1",
-        "sha256": "58f9451831338fa39a73d53790fe839037f1a8a1fb5345ffefc334af3ec90413"
+        "sha256": "174cf8758815bf2b9f2ef575517aa6d144ed3f2d1995fc65d25a211b9dea82d9"
       }
     }
   }
