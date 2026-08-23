@@ -6,8 +6,9 @@
   `jedit.text@1` lawpack publication. With Edict #201, its executable integration
   gate now proves that real source lowers into generic pure Target IR and reaches
   Echo's checked lowerer through the exact generic pure target configuration.
-  The lowerer returns typed `UnsupportedSemantics` before package emission.
-  Rope mutation and end-to-end Jim execution remain unimplemented.
+  Echo's generic pure-program lowerer now emits the exact compiler-produced
+  package, and its structurally separate verifier independently accepts the
+  package relation. Runtime evaluation and rope mutation remain unimplemented.
 - Made `ReplaceRange` corroborate the selected Head/root byte extent and exact
   requested-range materialization before no-op classification, so truncated or
   absent retained roots fail with a typed malformed-rope obstruction.
