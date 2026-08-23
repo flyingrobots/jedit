@@ -1,0 +1,41 @@
+package jedit.text.replace_range@1;
+
+use lawpack jedit.text@1 digest "sha256:0719a4161eaede5aa062f6cbd2e2ff74dee0bd961d0945449cd27ae2ef26f59a" as text;
+
+type ReplaceRangeInput = {
+  bufferId: Bytes<max=32>,
+  basisHeadId: Bytes<max=32>,
+  startByte: U64,
+  endByte: U64,
+  replacement: Bytes<max=1048576>,
+};
+
+type ReplaceRangeBoundary = {
+  bufferId: Bytes<max=32>,
+  basisHeadId: Bytes<max=32>,
+  startByte: U64,
+  endByte: U64,
+  replacement: Bytes<max=1048576>,
+  rangeIsEmpty: U32,
+  createdLeafCeiling: U64,
+};
+
+intent replaceRange(input: ReplaceRangeInput) returns ReplaceRangeBoundary
+  profile text.replaceRange
+  basis input.basisHeadId
+  budget <= text.replaceRangeBudget
+  where input.startByte <= input.endByte
+{
+  let createdLeafCeiling: U64 = text.maxCreatedLeafCount();
+  let rangeIsEmpty = if input.startByte == input.endByte then 1u32 else 0u32;
+
+  return {
+    bufferId: input.bufferId,
+    basisHeadId: input.basisHeadId,
+    startByte: input.startByte,
+    endByte: input.endByte,
+    replacement: input.replacement,
+    rangeIsEmpty,
+    createdLeafCeiling,
+  };
+}

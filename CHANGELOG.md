@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added the Jedit-owned `ReplaceRange.edict` application root and canonical
+  `jedit.text@1` lawpack publication. Its executable integration gate now proves
+  that real source reaches Edict's public Target IR boundary and fails closed
+  before package emission while generic Core `let` lowering remains unsupported.
 - Made `ReplaceRange` corroborate the selected Head/root byte extent and exact
   requested-range materialization before no-op classification, so truncated or
   absent retained roots fail with a typed malformed-rope obstruction.
