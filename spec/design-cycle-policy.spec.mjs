@@ -244,17 +244,29 @@ test('HT-0149 graph runtime RED matrix declares all Slice 4 witnesses', () => {
 
 test('BEARING distinguishes the compatibility corridor from Jim.edict', () => {
   const bearing = readRepoFile(BEARING_PATH);
+  const currentTruth = sectionBetween(bearing, '## Current Truth', '## Authority Boundary');
+  const authorityBoundary = sectionBetween(bearing, '## Authority Boundary', '## Artifact Boundaries');
 
-  assert.match(bearing, /Production startup launches `jedit-echo-host`/);
+  assert.match(currentTruth, /Production startup launches `jedit-echo-host`/);
   assert.match(
-    bearing,
+    currentTruth,
     /Buffer open\/create, insert, replace, delete, checkpoint declaration, and\s+bounded text-window reads are implemented/,
   );
-  assert.match(bearing, /Multi-range edit, save\/export,\s+`:why`, causal line-diff, and undo\/redo return typed obstructions/);
-  assert.match(bearing, /checkpoint declaration and an Echo causal anchor remain separate\s+propositions/);
-  assert.match(bearing, /Wesley-generated EINT and installed package/);
-  assert.match(bearing, /installed Jim\.edict observer/);
-  assert.match(bearing, /syscall stub, not Jim/);
+  assert.match(currentTruth, /Multi-range edit, save\/export,\s+`:why`, causal line-diff, and undo\/redo return typed obstructions/);
+  assert.match(currentTruth, /checkpoint declaration and an Echo causal anchor remain separate\s+propositions/);
+  assert.match(authorityBoundary, /Wesley-generated EINT and installed package/);
+  assert.match(authorityBoundary, /canonical event envelope with stable\s+event, source, ordering, normalized-input, and admission coordinates/);
+  assert.match(authorityBoundary, /Echo realm admits and delivers it opaquely under an exact JimRelease/);
+  assert.match(authorityBoundary, /Only `jim\.core`[^\n]*interprets editor meaning/);
+  assert.match(authorityBoundary, /combined Jim-and-buffer candidate/);
+  assert.match(authorityBoundary, /atomically settles Jim, Buffer, result, and evidence/);
+  assert.match(authorityBoundary, /CandidateSettlementRejected/);
+  assert.match(authorityBoundary, /renders one declared causal view basis/);
+  assert.match(authorityBoundary, /syscall stub, not Jim/);
+  assert.match(
+    authorityBoundary,
+    /direct generated-client invocation of `ReplaceRange`\s+is permitted only in an explicitly test-only operation conformance harness/,
+  );
   assert.match(bearing, /oracle is never a program/);
   assert.match(
     bearing,

@@ -132,26 +132,32 @@ or described as the final Edict design.
 
 ## Target Active-Observer Boundary
 
+Jedit normalizes physical input into one canonical event envelope with stable
+event, source, ordering, normalized-input, and admission coordinates. Echo
+admits and transports the envelope without inspecting Jim or Jedit fields.
+Only `jim.core`, authored from `Jim.edict`, interprets editor meaning. The
+complete authority and settlement contract is frozen in
+[Jim: Components, Responsibilities, and Ownership](jim-component-ownership.md).
+
 ```mermaid
 sequenceDiagram
     participant T as Terminal adapter
-    participant E as Echo runtime
-    participant J as Jim.edict
+    participant E as Echo authority realm
+    participant J as jim.core
     participant W as TextWindow.edict
     participant R as ReplaceRange.edict
 
-    T->>E: canonical KeyEvent
-    E->>J: deliver event at Jim basis J0
+    T->>E: canonical event envelope
+    E->>J: deliver opaquely under exact JimRelease
     J->>E: request bounded TextWindow
     E->>W: interpret compiler-produced generic program
-    W-->>J: basis-bound Reading
-    J->>E: ReplaceRange intent derived from Jim state
-    E->>R: interpret compiler-produced generic program
-    R-->>E: generic consequence or typed obstruction
-    E->>E: commit one Tick or obstruction
-    E-->>J: outcome and opaque evidence
-    J->>J: advance J0 to J1
-    J-->>T: disposable render projection
+    W-->>E: basis-bound Reading
+    E-->>J: resume durable command attempt
+    J->>R: compose jedit.text ReplaceRange law
+    R-->>J: typed Buffer consequence or obstruction
+    J-->>E: combined Jim-and-Buffer candidate
+    E->>E: atomically settle candidate or retain conflict outcome
+    E-->>T: projection for one declared causal view basis
 ```
 
 A generated client in this boundary is a codec and transport stub. It may not

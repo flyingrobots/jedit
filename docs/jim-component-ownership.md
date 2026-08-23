@@ -214,11 +214,17 @@ CommandAttempt C under JimRelease L
     CommandSettled(C, Applied)
     one correlated evidence set
 
-  obstructed settlement:
+  terminal obstructed settlement:
     Buffer remains H0
-    Jim advances to the lawfully defined refusal or retry state
+    Jim advances to the lawfully defined refusal state
     CommandSettled(C, Obstructed(reason))
     one correlated evidence set
+
+  retry transition:
+    Buffer remains H0
+    Jim advances to an observation-waiting retry state
+    no CommandSettled fact exists yet
+    the same CommandAttempt remains unresolved
 
   candidate transaction conflict:
     no Tick commits
@@ -644,7 +650,8 @@ overwriting it.
 
 | Recovery observation | Meaning | Jim policy choice |
 | --- | --- | --- |
-| Destination conclusively retains the expected prior fingerprint | `NotAppliedObserved`; the intended materialized state is absent | Retry under the declared provider protocol or settle a typed not-applied result |
+| Provider-backed causal evidence proves this intent did not apply, and the destination retains the expected prior state | `NotAppliedObserved` | Retry under the declared provider protocol or settle a typed not-applied result |
+| Destination currently matches the expected prior fingerprint without provider-backed non-application evidence | `Indeterminate`; the export could have applied before that state was restored | Keep the intent unresolved and do not automatically retry or record non-application |
 | Destination contains the exact intended content without correlated provider evidence | `DesiredStateObserved`; who authored it is unknown | Record state equivalence and `authorship: Unattributed` without claiming this intent wrote it |
 | Destination contains the intended content plus evidence correlated to this intent | `DesiredStateObserved` with provider-backed effect evidence | Record `authorship: Correlated` only to the strength justified by the provider |
 | Destination differs from both expected and intended state | `DivergentStateObserved`; bytes alone do not identify the author or cause | Preserve the divergent evidence and apply conflict or reconciliation policy |
@@ -915,11 +922,19 @@ CandidateSettlementRejected {
   reason: ReadSetChanged(Buffer, expected=H0, current=H1)
 }
 
-later Jim resolver Tick:
-  consume outcome O1 for CB at most once
-  leave Buffer at H1
-  advance Jim JBpending -> JBstale or an explicit retry state
-  emit CommandSettled(CB, Obstructed(StaleBasis(H0, H1)))
+later Jim resolver Tick chooses exactly one branch:
+  retry:
+    consume outcome O1 for CB at most once
+    keep CB unresolved
+    advance Jim into an observation-waiting retry state
+    request new basis-bound evidence
+    emit no CommandSettled record
+
+  refusal:
+    consume outcome O1 for CB at most once
+    leave Buffer at H1
+    advance Jim JBpending -> JBstale
+    emit CommandSettled(CB, Obstructed(StaleBasis(H0, H1)))
 ```
 
 The rejected candidate was not a Tick and emits no application settlement.

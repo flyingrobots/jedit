@@ -4,10 +4,12 @@ Status: active CR-00 inventory for
 [#216](https://github.com/flyingrobots/jedit/issues/216).
 
 > **Active-observer correction:** This inventory predates the decision that the
-> final application is `Jim.edict`, not TypeScript orchestration plus generated
-> operation clients. Entries below remain useful for locating compatibility
+> final application package is `jim.core`, authored from `Jim.edict`, not
+> TypeScript orchestration plus generated operation clients. Entries below
+> remain useful for locating compatibility
 > code, but command interpretation, operation choice, range derivation,
-> cursor/mode advancement, and outcome handling must migrate to `Jim.edict`.
+> cursor/mode advancement, and outcome handling must migrate to `jim.core`,
+> authored from `Jim.edict`; text operations and optics migrate to `jedit.text`.
 > Jedit/Bijou/native code retains canonical event decoding, raw transport and
 > bootstrap, file I/O adapters, and disposable rendering. Echo remains generic
 > and has no rope or editor vocabulary.
@@ -30,9 +32,10 @@ workspace command
 -> graph-backed causal rope authority
 ```
 
-The target application path is canonical event delivery to `Jim.edict`,
-Jim-owned bounded optics and operation lawpacks, compiler-produced generic Echo
-programs, and returned outcome/read projection rendering.
+The target application path is canonical event delivery to `jim.core`,
+application-owned `jedit.text` bounded optics and operation lawpacks,
+compiler-produced generic Echo programs, and returned outcome/read projection
+rendering.
 
 Full materialized strings are allowed only as import inputs, export outputs,
 render windows, tests, or caches. They are forbidden as product text authority.
@@ -44,6 +47,9 @@ render windows, tests, or caches. They are forbidden as product text authority.
 - **materialized projection**: text read from a named basis for display,
   export, highlighting, or temporary cache use.
 - **fixture**: test-only full-snapshot authority.
+- **compatibility authority**: active transitional command interpretation,
+  operation choice, range derivation, or coordinate policy that production
+  still executes and the final `jim.core`/`jedit.text` cutover must remove.
 - **migration/import**: code that converts host bytes into initial authority
   or adapts old evidence during cutover.
 - **forbidden**: a product path that would make full materialized text the
@@ -56,14 +62,14 @@ render windows, tests, or caches. They are forbidden as product text authority.
 | Installed transport | `src/adapters/installed-jedit-contract-echo-transport.ts` | migration/import | Construct graph-backed causal rope authority by default; reject fixture authority. | [#218](https://github.com/flyingrobots/jedit/issues/218), [#222](https://github.com/flyingrobots/jedit/issues/222) |
 | Runtime profile | `src/adapters/text-runtime-profile-session.ts` | migration/import | Keep `echoHosted` as the product runtime profile and remove the fixture escape hatch after graph rope installs. | [#218](https://github.com/flyingrobots/jedit/issues/218), [#250](https://github.com/flyingrobots/jedit/issues/250) |
 | Product session | `src/app/workspace/production-text-session.ts` | materialized projection | Create, edit, read, save, export, and explain through `TextBufferSessionPort`; export remains a projection. | [#224](https://github.com/flyingrobots/jedit/issues/224), [#225](https://github.com/flyingrobots/jedit/issues/225), [#226](https://github.com/flyingrobots/jedit/issues/226) |
-| Open/import | `src/app/workspace/workspace-text-open-basis.ts` and `src/app/workspace/workspace-text-commands.ts` | migration/import | Treat host file bytes as import material for `BufferWorldline` and initial `RopeHead`. | [#223](https://github.com/flyingrobots/jedit/issues/223) |
+| Open/import | `src/app/workspace/workspace-text-open-basis.ts` | migration/import | Treat host file bytes as import material for `BufferWorldline` and initial `RopeHead`. | [#223](https://github.com/flyingrobots/jedit/issues/223) |
 | Workspace authority state | `src/app/workspace/workspace-text-authority.ts` | causal rope authority | Track buffer id, dirty posture, receipts, checkpoints, and projections without storing authority text. | [#231](https://github.com/flyingrobots/jedit/issues/231), [#232](https://github.com/flyingrobots/jedit/issues/232) |
-| Command handlers | `src/app/workspace/workspace-text-commands.ts` and `src/app/workspace/workspace-text-edit-planner.ts` | migration/import | Preserve compatibility behavior, then replace command-to-operation mapping with canonical event delivery to `Jim.edict`. | [#224](https://github.com/flyingrobots/jedit/issues/224), [#295](https://github.com/flyingrobots/jedit/issues/295) |
+| Command handlers | `src/app/workspace/workspace-text-commands.ts` and `src/app/workspace/workspace-text-edit-planner.ts` | compatibility authority | Preserve compatibility behavior, then replace command-to-operation mapping with canonical event delivery to `jim.core`. | [#224](https://github.com/flyingrobots/jedit/issues/224), [#295](https://github.com/flyingrobots/jedit/issues/295) |
 | Operation sequencing | `src/app/workspace/workspace-text-operation-sequencer.ts` | causal rope authority | Preserve admission order for edit, checkpoint, and export operations. | [#231](https://github.com/flyingrobots/jedit/issues/231) |
 | Save/export | `src/app/workspace/workspace-save-key.ts` and `src/app/workspace/workspace-text-commands.ts` | materialized projection | Save/export from the current `RopeHead`, then record anchor/checkpoint evidence without mutating text authority. | [#226](https://github.com/flyingrobots/jedit/issues/226), [#233](https://github.com/flyingrobots/jedit/issues/233) |
 | Source rendering | `src/app/workspace/viewer-content.ts` and `src/ui/source-viewer.ts` | materialized projection | Render only from basis-tagged text windows and cached projections. | [#225](https://github.com/flyingrobots/jedit/issues/225), [#228](https://github.com/flyingrobots/jedit/issues/228) |
 | Reading cache | `src/app/workspace/workspace-text-reading-cache.ts` | materialized projection | Cache projected windows with explicit coverage and basis; never make cache entries authority. | [#230](https://github.com/flyingrobots/jedit/issues/230) |
-| Cursor and coordinates | `src/app/workspace/workspace-text-position.ts` | migration/import | Convert coordinates for rendering during migration; final authoritative cursor and range policy belongs to `Jim.edict`. | [#227](https://github.com/flyingrobots/jedit/issues/227), [#295](https://github.com/flyingrobots/jedit/issues/295) |
+| Cursor and coordinates | `src/app/workspace/workspace-text-position.ts` | compatibility authority | Convert coordinates for compatibility rendering; final cursor and range policy belongs to `jim.core` over public `jedit.text` coordinate contracts. | [#227](https://github.com/flyingrobots/jedit/issues/227), [#295](https://github.com/flyingrobots/jedit/issues/295) |
 | Why command | `src/app/workspace/workspace-why-range.ts` and `src/app/jedit-why-range.ts` | materialized projection | Explain ranges from rope head, leaf, blob, rewrite, diff, tick, checkpoint, and anchor evidence. | [#209](https://github.com/flyingrobots/jedit/issues/209), [#239](https://github.com/flyingrobots/jedit/issues/239) |
 | Gutter markers | `src/ui/source-viewer.ts` | materialized projection | Compute modified and deleted markers from rope rewrite/diff ancestry. | [#84](https://github.com/flyingrobots/jedit/issues/84), [#235](https://github.com/flyingrobots/jedit/issues/235), [#236](https://github.com/flyingrobots/jedit/issues/236) |
 | Footer posture | `src/app/workspace/workspace-footer-posture.ts` | materialized projection | Display durability ladder facts derived from pending intents, admitted heads, save anchors, and Git state. | [#233](https://github.com/flyingrobots/jedit/issues/233), [#234](https://github.com/flyingrobots/jedit/issues/234) |

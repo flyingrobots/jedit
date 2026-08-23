@@ -76,19 +76,25 @@ Jim command
 
 The target Edict corridor is:
 
+Jedit normalizes physical input into one canonical event envelope with stable
+event, source, ordering, normalized-input, and admission coordinates. Echo
+admits and transports the envelope without inspecting Jim or Jedit fields.
+Only `jim.core`, authored from `Jim.edict`, interprets editor meaning. See
+[Jim: Components, Responsibilities, and Ownership](jim-component-ownership.md)
+for the frozen ownership and causal-settlement contract.
+
 ```text
 terminal bytes
--> Jedit adapter normalizes canonical KeyEvent
--> Echo delivers KeyEvent to installed Jim.edict observer
--> Jim.edict interprets the event from Jim state
--> Jim.edict requests TextWindow.edict
+-> Jedit adapter emits one canonical event envelope
+-> Echo realm admits and delivers it opaquely under an exact JimRelease
+-> jim.core interprets the event and durably retains any command attempt
+-> jim.core requests jedit.text TextWindow.edict
 -> Echo returns a basis-bound Reading
--> Jim.edict derives a ReplaceRange intent
--> Echo interprets the compiler-produced generic program
--> Echo commits one Tick or returns one typed obstruction
--> Echo delivers the outcome to Jim.edict
--> Jim advances J0 to J1
--> Jedit renders a disposable projection
+-> jim.core composes jedit.text ReplaceRange.edict
+-> Echo privately evaluates one combined Jim-and-buffer candidate
+-> one realm and epoch atomically settles Jim, Buffer, result, and evidence
+   or retains a distinct CandidateSettlementRejected outcome
+-> Jedit renders one declared causal view basis
 ```
 
 A generated client may encode events, install or address verified packages,
@@ -104,7 +110,7 @@ These artifacts are intentionally not interchangeable:
 | --- | --- |
 | `jedit.text.schema@1` | Application fact shapes, codecs, and identity rules |
 | `jedit.text.ReplaceRange.oracle@1` | Independent expected-behavior evidence |
-| `ReplaceRange.edict` | Jim-authored operation semantics |
+| `ReplaceRange.edict` | `jedit.text`-authored operation semantics composed by `jim.core` |
 | Echo Target IR and verified package | Compiler-produced generic executable meaning |
 | Echo receipt | Evidence of one admitted execution against one basis |
 

@@ -114,25 +114,34 @@ Jim command
 -> basis-pinned bounded observation
 ```
 
-Only buffer creation, single-range replace/insert/delete, and bounded text-window
-observation use this compatibility corridor. Checkpoint, save/export,
-multi-range editing, range explanation, causal gutter readings, and undo/redo
-still fail closed. Do not widen this path or mistake it for the target.
+Only buffer creation, single-range replace/insert/delete, checkpoint
+declaration, and bounded text-window observation use this compatibility
+corridor. Save/export, multi-range editing, range explanation, causal gutter
+readings, and undo/redo still fail closed. Do not widen this path or mistake it
+for the target.
+
+At the target boundary, Jedit normalizes physical input into one canonical
+event envelope with stable event, source, ordering, normalized-input, and
+admission coordinates. Echo admits and transports that envelope without
+inspecting Jim or Jedit fields. Only `jim.core`, authored from `Jim.edict`,
+interprets editor meaning. The exact wire schema belongs to the event protocol
+ADR; the ownership invariant is frozen in
+[Jim: Components, Responsibilities, and Ownership](docs/jim-component-ownership.md).
 
 The target corridor is:
 
 ```text
 terminal bytes
--> Jedit adapter emits canonical KeyEvent
--> Echo delivers the event to installed Jim.edict
--> Jim.edict requests a Jim-owned bounded optic such as TextWindow.edict
+-> Jedit adapter emits one canonical event envelope
+-> Echo realm admits and delivers it opaquely under an exact JimRelease
+-> jim.core interprets the event and durably retains any command attempt
+-> jim.core requests a jedit.text bounded optic such as TextWindow.edict
 -> Echo returns a basis-bound Reading
--> Jim.edict derives an application intent such as ReplaceRange
--> Echo interprets the compiler-produced generic program
--> Echo commits one Tick or returns one typed obstruction
--> Echo delivers the outcome to Jim.edict
--> Jim advances its own state
--> Jedit renders the returned disposable projection
+-> jim.core composes jedit.text law such as ReplaceRange.edict
+-> Echo privately evaluates one combined Jim-and-buffer candidate
+-> one realm and epoch atomically settles Jim, Buffer, result, and evidence
+   or retains a distinct CandidateSettlementRejected outcome
+-> Jedit renders one declared causal view basis
 ```
 
 The GraphQL/Wesley package is a deliberately narrow compatibility path until
