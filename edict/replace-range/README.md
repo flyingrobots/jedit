@@ -18,12 +18,18 @@ replacement bytes, operation profile, budget, imported helper implementation,
 and a pure conditional into Edict Core. It intentionally does not claim to
 traverse or rewrite a rope yet.
 
-The public application build currently reaches Edict Target IR lowering and
-fails closed because the selected generic target profile cannot lower the Core
-`let` nodes emitted for the digest-bound helper and conditional. No package is
-emitted and Echo is not invoked. That failure is the routing evidence required
-by #296: the next owner is Edict's generic Core-to-Target-IR boundary, not Echo
-and not a native Jedit planner.
+With Edict #201, the public application build lowers those Core `let` nodes into
+generic, source-ordered Target IR and independently verifies the compiler-owned
+result projection. The exact Echo provider package then refuses the invocation
+as `InvalidProviderInvocation` because its published adapter, target
+configuration, Target IR, and result-projection contracts do not yet admit the
+new generic artifact family. No executable operation package is emitted and no
+Echo evaluator runs.
+
+That refusal is the current routing evidence required by #296: Edict now
+preserves the bounded pure program without learning Jedit vocabulary, and the
+next owner is Echo's generic provider package and execution profile. It is not
+evidence that `ReplaceRange` mutates a rope or that Jim runs end to end.
 
 ## Reproduce
 
@@ -38,5 +44,7 @@ ECHO_REPO=/path/to/echo \
 The script first republishes `jedit.text@1` through Edict's public lawpack
 authoring boundary, then copies Echo's checked provider package into the
 disposable application build tree and invokes Edict's public application build.
-Until the generic lowering gap is implemented, it requires the stable
-`TargetLoweringFailed` refusal and rejects accidental package emission.
+Against Edict #201 it requires the stable `InvalidProviderInvocation` refusal
+and rejects accidental package emission. Once Echo admits this generic artifact
+family, the gate must advance again rather than treating provider refusal as a
+permanent success condition.
