@@ -42,11 +42,18 @@ ECHO_REPO=/path/to/echo \
   ./edict/replace-range/tests/build.sh
 ```
 
-The script first republishes `jedit.text@1` through Edict's public lawpack
-authoring boundary, then copies Echo's checked provider package into the
-disposable application build tree and invokes Edict's public application build.
-Against Edict #201 and Echo #724 it requires the generic pure package and an
-exact accepted independent-verifier report. It also inspects the embedded
-compiler artifacts and application coordinate. The gate must advance again
-when Echo implements generic pure evaluation; package acceptance is not a
-permanent substitute for runtime evidence.
+`edict.toolchain-lock.json` pins the exact Edict commit and CLI release, Rust
+toolchain, Echo commit, provider identity, provider manifest bytes, and lowerer
+and verifier components. The script refuses non-Git roots, wrong commits, or
+dirty checkouts before invoking either toolchain.
+
+The script verifies the committed `jedit.text@1` closure through Edict's public
+lawpack `checkOnly` boundary. It never republishes or repairs that authoritative
+tree. It then copies Echo's checked provider package into `.build/`, invokes
+Edict's public application build, and requires the generic pure package and an
+accepted independent-verifier report. Snapshots cover the application inputs
+outside `.build/` plus every tracked Edict and Echo file; any content, identity,
+or timestamp mutation fails the run. Only `.build/` is disposable output.
+
+The gate must advance again when Echo implements generic pure evaluation;
+package acceptance is not a permanent substitute for runtime evidence.

@@ -1,0 +1,28 @@
+{
+  "schema": "jedit.edict-toolchain-lock/v1",
+  "rust": {
+    "toolchain": "1.94.0",
+    "rustcVersion": "rustc 1.94.0 (4a4ef493e 2026-03-02)",
+    "cargoVersion": "cargo 1.94.0 (85eff7c80 2026-01-15)"
+  },
+  "edict": {
+    "commit": "adc1bf6da7d90fd93f135eea47380a4c68758479",
+    "cliVersion": "0.11.0-alpha.1"
+  },
+  "echo": {
+    "commit": "37dd65a0f9e6e40a4aa1303f82d0f0892eefb06c",
+    "provider": {
+      "coordinate": "echo.edict-provider@1",
+      "digest": "sha256:b888f0c64a53c68d18c2bd3212589cf2ed9da3fbd551a64a9006184db3dde71f",
+      "manifestSha256": "8bce11896166a7ef52ddd9d07a60cfdb426d57697ba16e266aee0cb0f188a4b2",
+      "lowerer": {
+        "coordinate": "echo.dpo.lowerer/component@1",
+        "sha256": "20fe92ce8d7bec67f772715cb1f0f3d9ac4f65fe382eff3952f3c368849419dd"
+      },
+      "verifier": {
+        "coordinate": "echo.dpo.verifier/component@1",
+        "sha256": "58f9451831338fa39a73d53790fe839037f1a8a1fb5345ffefc334af3ec90413"
+      }
+    }
+  }
+}

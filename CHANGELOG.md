@@ -8,7 +8,10 @@
   Echo's checked lowerer through the exact generic pure target configuration.
   Echo's generic pure-program lowerer now emits the exact compiler-produced
   package, and its structurally separate verifier independently accepts the
-  package relation. Runtime evaluation and rope mutation remain unimplemented.
+  package relation. The integration gate pins clean Edict and Echo revisions,
+  verifies the committed lawpack closure without repairing it, and rejects
+  authoritative-input mutation outside its disposable build root. Runtime
+  evaluation and rope mutation remain unimplemented.
 - Made `ReplaceRange` corroborate the selected Head/root byte extent and exact
   requested-range materialization before no-op classification, so truncated or
   absent retained roots fail with a typed malformed-rope obstruction.
