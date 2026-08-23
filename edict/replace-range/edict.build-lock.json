@@ -1,0 +1,106 @@
+{
+  "schema": "jedit.edict-build-lock/v1",
+  "applicationCoordinate": "jedit.text.replace_range@1",
+  "operationCoordinate": "jedit.text.replace_range@1.replaceRange",
+  "toolchainLockSha256": "69c68a095278d10bc2215afc729dabcba937027da99938862cfb555b8bac9a93",
+  "sourceClosure": {
+    "schema": "jedit.edict-source-closure/v1",
+    "digest": "sha256:dfb61b22dba5616ed3259e49744534ea878aec6b053535c6793cd43e88e26a78",
+    "files": [
+      {
+        "path": "edict.application.json",
+        "sha256": "3182577627cd1f88bf590f3a8481ef53476c83d783aa142182e7c65eb1f72f8b"
+      },
+      {
+        "path": "edict.lawpack.json",
+        "sha256": "37e91e54ae54ed6852bcc736d0e49e93379321f55b77750b31b713bbb7f0e9d3"
+      },
+      {
+        "path": "edict.toolchain-lock.json",
+        "sha256": "69c68a095278d10bc2215afc729dabcba937027da99938862cfb555b8bac9a93"
+      },
+      {
+        "path": "src/ReplaceRange.edict",
+        "sha256": "7af4ee51415bb4391510c5e91a029838a425515abe172aad9c6805b2d70dd916"
+      },
+      {
+        "path": "tests/assert-build-output.mjs",
+        "sha256": "a0e48f69ff7828fad421864bcf10ccfe830fa57264b2a95c25b979b0988d1235"
+      },
+      {
+        "path": "tests/build.sh",
+        "sha256": "b5827a1e2a4b64b214406ee3d0cdc9499059922f9878649946c0358fbbd6ea6d"
+      },
+      {
+        "path": "tests/package-chain.mjs",
+        "sha256": "3128f12beba257df3231681fcfc672e4fa4cb4436806e3d410ae577180e8afcf"
+      },
+      {
+        "path": "tests/proof-harness.spec.mjs",
+        "sha256": "541b5599988ea66f85a807c7f249e7db488f7932ccf3765b94e7d12b1dc6c174"
+      },
+      {
+        "path": "vendor/jedit-text/edict.lawpack-output.json",
+        "sha256": "2471666ac595570ea6f812aa613916e20d6f40fd0a99fafb35002be3f4fbcd74"
+      },
+      {
+        "path": "vendor/jedit-text/exports.cbor",
+        "sha256": "dfee735fd0a7f714a401aa310973596e959672a11bcac5c7c1d289c9344a7a0d"
+      },
+      {
+        "path": "vendor/jedit-text/exports.sha256",
+        "sha256": "3661e5416b155f803fa0ba888397e4f9b5c79b228ecda538b37b375d3a09791e"
+      },
+      {
+        "path": "vendor/jedit-text/manifest.cbor",
+        "sha256": "dadfd41260b1e3449b9fc8c1e5f4c9523b6b819f36fcc1316b53b7aa943a7118"
+      },
+      {
+        "path": "vendor/jedit-text/manifest.sha256",
+        "sha256": "0496d95c6a0c37e0395e20f7c5c063c0277b92353412b262e935d17d1141d31b"
+      }
+    ]
+  },
+  "lawpackRelease": {
+    "coordinate": "jedit.text@1",
+    "digest": "sha256:5253f7c8682cfed88a34c660a610c30da6bd9924973fefd33a82c9915a4f09cf"
+  },
+  "provider": {
+    "coordinate": "echo.edict-provider@1",
+    "digest": "sha256:a4e0d9e31ada5c8c14adfce05fdecb228e5b79545f3574a5e21e7db71ab3f307"
+  },
+  "artifacts": {
+    "core": {
+      "coordinate": "jedit.text.replace_range@1",
+      "domain": "edict.core.module/v1",
+      "digest": "sha256:a2cec435e178b0f772508125a9c7c6a7a79adc05367cc37955e4a6aa7714c9ef"
+    },
+    "targetIr": {
+      "coordinate": "echo.span-ir/v1",
+      "domain": "edict.target-ir.artifact/v1",
+      "digest": "sha256:84c1f9826285822f969fc287bc09af2afd63ca876f19f54e5c20ea2e7b424260"
+    },
+    "resultProjection": {
+      "coordinate": "jedit.text.replace_range@1.replaceRange",
+      "domain": "edict.result-projection.artifact/v1",
+      "digest": "sha256:f804baa01c357e5ed54e86f752ea7f8201e454ad0b47c10813fde8c7dc2aeba6"
+    },
+    "executablePackage": {
+      "coordinate": "executable-operation-package.echo",
+      "domain": "echo.operation-package/v1",
+      "digest": "sha256:6075cb3be2308d7a513a05637499ab130bb35296bbcf14064feb153c47612eb1",
+      "rawSha256": "5666555277c9f33a5c2bc3ec5f6859c8ee4005075bc1d6a457f12a384065a8f3"
+    },
+    "verificationReport": {
+      "coordinate": "verifier-report.echo-operation",
+      "domain": "echo.operation-package-verifier-report/v1",
+      "digest": "sha256:410e10dfa931c57da3aaf64a50ef4b62a63217e97e6152cdc2a22a661685bfd9",
+      "rawSha256": "4038b28354fe8555a581fe6e87fec7edcd550e27bbe54693f997558b86da1a97"
+    },
+    "executableSubject": {
+      "coordinate": "echo.executable-subject/v1",
+      "domain": "echo.executable-subject/v1",
+      "digest": "sha256:8e2bc64d4c98983c174df8e76c39d74869acb5713c59bc3c2a2af5a9c3083caf"
+    }
+  }
+}

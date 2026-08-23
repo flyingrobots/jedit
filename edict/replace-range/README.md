@@ -1,11 +1,16 @@
 # ReplaceRange Edict application
 
 This directory is the Jedit-owned application root for issue #296. It keeps
-five artifact classes separate:
+the authored, built, and evidentiary artifact classes separate:
 
 - `edict.lawpack.json` is the reviewable `jedit.text@1` authoring input;
 - `vendor/jedit-text/` is Edict's canonical published lawpack closure;
 - `src/ReplaceRange.edict` is the application-owned source;
+- `edict.toolchain-lock.json` pins the exact build implementations and
+  provider;
+- `edict.build-lock.json` pins the exact source closure and emitted artifact
+  chain;
+- `edict.executable-subject-lock.json` pins the verified executable meaning;
 - `.build/` contains disposable provider and compiler outputs;
 - `contracts/jedit/lawpacks/replace-range-v1/` remains the independent schema
   and oracle corpus and is not executable input.
@@ -13,10 +18,10 @@ five artifact classes separate:
 ## Current executable boundary
 
 The checked-in source is the first compiler-pressure slice, not a completed
-text mutation. It binds bounded identity bytes, the selected basis, range,
-replacement bytes, operation profile, budget, imported helper implementation,
-and a pure conditional into Edict Core. It intentionally does not claim to
-traverse or rewrite a rope yet.
+text mutation. It binds exact-length nominal identities, the selected basis,
+range, replacement bytes, operation profile, budget, imported helper
+implementation, and a pure conditional into Edict Core. It intentionally does
+not claim to traverse or rewrite a rope yet.
 
 With Edict #201, the public application build lowers those Core `let` nodes into
 generic, source-ordered Target IR and independently verifies the compiler-owned
@@ -24,7 +29,7 @@ result projection. Echo #724 now emits a distinct
 `compiler-produced-bounded-pure/v1` executable package containing the exact
 Core, lawpack exports, Target IR, and result projection. Echo's structurally
 separate verifier independently reconstructs that package relation and emits an
-accepted report.
+accepted report bound to retained canonical `echo.executable-subject/v1` bytes.
 
 That accepted package is the current routing evidence required by #296: Edict
 preserves the bounded pure program without learning Jedit vocabulary, and Echo
@@ -46,6 +51,15 @@ ECHO_REPO=/path/to/echo \
 toolchain, Echo commit, provider identity, provider manifest bytes, and lowerer
 and verifier components. The script refuses non-Git roots, wrong commits, or
 dirty checkouts before invoking either toolchain.
+
+`edict.build-lock.json` binds the exact source and validation closure to the
+Core, Target IR, result projection, executable package, verification report,
+and executable-subject identities. `edict.executable-subject-lock.json`
+separately records the subject identity and the exact package, Target IR, and
+result-projection references it contains. The harness recomputes every digest
+from emitted bytes and refuses a valid report paired with a substituted package.
+The locks contain no self-referential Jedit commit; an exact PR head remains an
+external review coordinate.
 
 The script verifies the committed `jedit.text@1` closure through Edict's public
 lawpack `checkOnly` boundary. It never republishes or repairs that authoritative

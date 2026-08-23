@@ -193,3 +193,41 @@ test("rejects_short_buffer_and_head_identities", { timeout: 120_000 }, async () 
     await subject.dispose();
   }
 });
+
+test("rejects_drifted_build_and_executable_subject_locks", { timeout: 120_000 }, async () => {
+  requireToolchainEnvironment();
+  const subject = await fixture();
+  try {
+    const lockPath = path.join(subject.application, "edict.build-lock.json");
+    const lock = JSON.parse(await readFile(lockPath, "utf8"));
+    lock.artifacts.core.digest = `sha256:${"0".repeat(64)}`;
+    await writeFile(lockPath, `${JSON.stringify(lock, null, 2)}\n`);
+
+    const build = runBuild(subject.project);
+    assertCommandCompleted(build);
+    assert.notEqual(
+      build.status,
+      0,
+      "a changed exact-artifact expectation must fail the package-chain gate",
+    );
+  } finally {
+    await subject.dispose();
+  }
+});
+
+test("required_ci_executes_the_exact_package_chain", async () => {
+  const workflow = await readFile(
+    path.join(projectRoot, ".github", "workflows", "ci.yml"),
+    "utf8",
+  );
+  assert.match(workflow, /^  edict-replace-range:\n/m);
+  assert.match(workflow, /name: edict \/ replace-range package chain/);
+  assert.match(
+    workflow,
+    /node --test edict\/replace-range\/tests\/proof-harness\.spec\.mjs/,
+  );
+  assert.match(
+    workflow,
+    /needs: \[ plan, build, test-shards, quality, release-gate, edict-replace-range \]/,
+  );
+});

@@ -3,7 +3,7 @@
 
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { decode, encode } from "cbor-x";
@@ -23,8 +23,63 @@ function assertResourceReference(reference, coordinate, digest) {
   assert.deepEqual(reference.digest, ["sha256", digest]);
 }
 
-const [outputDirectory] = process.argv.slice(2);
+const SOURCE_CLOSURE_PATHS = [
+  "edict.application.json",
+  "edict.lawpack.json",
+  "edict.toolchain-lock.json",
+  "src/ReplaceRange.edict",
+  "tests/assert-build-output.mjs",
+  "tests/build.sh",
+  "tests/package-chain.mjs",
+  "tests/proof-harness.spec.mjs",
+  "vendor/jedit-text/edict.lawpack-output.json",
+  "vendor/jedit-text/exports.cbor",
+  "vendor/jedit-text/exports.sha256",
+  "vendor/jedit-text/manifest.cbor",
+  "vendor/jedit-text/manifest.sha256",
+];
+
+function sha256(bytes) {
+  return createHash("sha256").update(bytes).digest();
+}
+
+function lengthPrefix(length) {
+  const prefix = Buffer.alloc(8);
+  prefix.writeBigUInt64LE(BigInt(length));
+  return prefix;
+}
+
+async function sourceClosure(applicationRoot) {
+  const hasher = createHash("sha256");
+  hasher.update("jedit.edict-source-closure/v1\0");
+  const files = [];
+  for (const relative of SOURCE_CLOSURE_PATHS) {
+    const bytes = await readFile(path.join(applicationRoot, relative));
+    const relativeBytes = Buffer.from(relative, "utf8");
+    hasher.update(lengthPrefix(relativeBytes.length));
+    hasher.update(relativeBytes);
+    hasher.update(lengthPrefix(bytes.length));
+    hasher.update(bytes);
+    files.push({ path: relative, sha256: sha256(bytes).toString("hex") });
+  }
+  return {
+    schema: "jedit.edict-source-closure/v1",
+    digest: `sha256:${hasher.digest("hex")}`,
+    files,
+  };
+}
+
+function digestText(bytes) {
+  return `sha256:${Buffer.from(bytes).toString("hex")}`;
+}
+
+const [outputDirectory, mode] = process.argv.slice(2);
 assert.ok(outputDirectory, "pass the Edict application output directory");
+assert.ok(
+  mode === undefined || mode === "--write-locks",
+  "the only supported mode is --write-locks",
+);
+const applicationRoot = path.resolve(outputDirectory, "../..");
 
 const packageBytes = await readFile(
   path.join(outputDirectory, "executable-operation-package.cbor"),
@@ -72,6 +127,7 @@ const coreDigest = canonicalArtifactDigest(
   "edict.core.module/v1",
   program.core_artifact,
 );
+const coreArtifact = decode(program.core_artifact);
 assert.deepEqual(executablePackage.semantic_closure.core_identity, coreDigest);
 assert.deepEqual(
   executablePackage.semantic_closure.canonical_meaning_identity,
@@ -134,3 +190,108 @@ assert.deepEqual(
   executableSubject.applicationResultProjection,
   report.applicationResultProjection,
 );
+
+const toolchainLockBytes = await readFile(
+  path.join(applicationRoot, "edict.toolchain-lock.json"),
+);
+const toolchainLock = JSON.parse(toolchainLockBytes);
+const lawpackReleaseDigest = (
+  await readFile(
+    path.join(applicationRoot, "vendor", "jedit-text", "manifest.sha256"),
+    "utf8",
+  )
+).trim();
+const reportDigest = canonicalArtifactDigest(
+  "echo.operation-package-verifier-report/v1",
+  reportBytes,
+);
+const computedBuildLock = {
+  schema: "jedit.edict-build-lock/v1",
+  applicationCoordinate: coreArtifact.coordinate,
+  operationCoordinate: executablePackage.operation_coordinate,
+  toolchainLockSha256: sha256(toolchainLockBytes).toString("hex"),
+  sourceClosure: await sourceClosure(applicationRoot),
+  lawpackRelease: {
+    coordinate: executablePackage.semantic_closure.lawpack_coordinate,
+    digest: lawpackReleaseDigest,
+  },
+  provider: {
+    coordinate: toolchainLock.echo.provider.coordinate,
+    digest: toolchainLock.echo.provider.digest,
+  },
+  artifacts: {
+    core: {
+      coordinate: coreArtifact.coordinate,
+      domain: "edict.core.module/v1",
+      digest: digestText(coreDigest),
+    },
+    targetIr: {
+      coordinate: report.targetIr.id,
+      domain: "edict.target-ir.artifact/v1",
+      digest: digestText(targetIrDigest),
+    },
+    resultProjection: {
+      coordinate: report.applicationResultProjection.id,
+      domain: "edict.result-projection.artifact/v1",
+      digest: digestText(resultProjectionDigest),
+    },
+    executablePackage: {
+      coordinate: report.package.id,
+      domain: "echo.operation-package/v1",
+      digest: digestText(packageDigest),
+      rawSha256: sha256(packageBytes).toString("hex"),
+    },
+    verificationReport: {
+      coordinate: "verifier-report.echo-operation",
+      domain: "echo.operation-package-verifier-report/v1",
+      digest: digestText(reportDigest),
+      rawSha256: sha256(reportBytes).toString("hex"),
+    },
+    executableSubject: {
+      coordinate: report.executableSubject.reference.id,
+      domain: "echo.executable-subject/v1",
+      digest: digestText(executableSubjectDigest),
+    },
+  },
+};
+const computedSubjectLock = {
+  schema: "jedit.edict-executable-subject-lock/v1",
+  reference: {
+    coordinate: report.executableSubject.reference.id,
+    digest: digestText(executableSubjectDigest),
+  },
+  rawSha256: sha256(report.executableSubject.bytes).toString("hex"),
+  package: {
+    coordinate: report.package.id,
+    digest: digestText(packageDigest),
+  },
+  targetIr: {
+    coordinate: report.targetIr.id,
+    digest: digestText(targetIrDigest),
+  },
+  resultProjection: {
+    coordinate: report.applicationResultProjection.id,
+    digest: digestText(resultProjectionDigest),
+  },
+};
+
+const buildLockPath = path.join(applicationRoot, "edict.build-lock.json");
+const subjectLockPath = path.join(
+  applicationRoot,
+  "edict.executable-subject-lock.json",
+);
+if (mode === "--write-locks") {
+  await writeFile(buildLockPath, `${JSON.stringify(computedBuildLock, null, 2)}\n`);
+  await writeFile(subjectLockPath, `${JSON.stringify(computedSubjectLock, null, 2)}\n`);
+} else {
+  assert.deepEqual(
+    JSON.parse(await readFile(buildLockPath, "utf8")),
+    computedBuildLock,
+    "the exact build closure differs from edict.build-lock.json",
+  );
+  assert.deepEqual(
+    JSON.parse(await readFile(subjectLockPath, "utf8")),
+    computedSubjectLock,
+    "the executable subject differs from edict.executable-subject-lock.json",
+  );
+}
