@@ -12,6 +12,18 @@ updated: "2026-07-04"
 
 # HT-0149 - Graph-Backed Rope Runtime Discovery
 
+> **Scope correction:** This active discovery document records how the current
+> Wesley/Rust compatibility corridor acquired real graph-rope authority. Its
+> direct TypeScript operation port is not the final Jim/Echo protocol. The
+> target sends canonical events to `jim.core`; application-owned `jedit.text`
+> lawpacks own text operations, optics, and private rope mechanics;
+> `jim.core` composes them into editor commands; Echo interprets only
+> compiler-produced generic programs. Do not implement the sentence "replace
+> this port with a generated Edict client" as frontend
+> command-to-`ReplaceRange` orchestration. See
+> [../../ARCHITECTURE.md](../../ARCHITECTURE.md) and
+> [../BEARING.md](../BEARING.md).
+
 ## Linked Issue
 
 - https://github.com/flyingrobots/jedit/issues/206
@@ -81,9 +93,11 @@ In that model:
 - `RopeHead` identifies one graph-backed text state.
 - `RopeBranch`, `RopeLeaf`, and `TextBlob` are graph facts, not names for a full
   JavaScript string.
-- `replaceRangeAsTick` is an Echo intent that reads a base head, range-closes
-  over touched rope nodes, creates the new local rope facts, emits rewrite and
-  diff evidence, and advances the worldline head.
+- `replaceRangeAsTick` is the compatibility name for a `jedit.text` intent
+  composed by `jim.core` and admitted by Echo. Its law reads a base head,
+  range-closes over touched rope nodes,
+  creates new local rope facts, emits rewrite and diff evidence, and advances
+  the worldline head. It is not an Echo runtime primitive.
 - `RopeRewrite`, `RopeDiff`, application tick evidence, checkpoint declarations,
   and anchor associations are retained jedit evidence; Echo owns causal-anchor
   and admission evidence.
@@ -91,10 +105,12 @@ In that model:
   rendering, export, save, tests, and caches, but they are not the source of
   editor truth.
 
-Echo still remains generic. jedit owns the text and rope contract vocabulary;
-Echo hosts generic admission, scheduling, receipts, retention, and causal
-storage. The important correction is that the jedit contract vocabulary must be
-real graph-backed state, not labels over full string snapshots.
+Echo still remains generic. `jedit.text` owns the public text contracts and
+private rope law; `jim.core` owns their editor-specific interpretation and
+composition; the Jedit body owns transport and presentation. Echo hosts generic
+admission, scheduling, receipts, retention, and causal storage. The important
+correction is that the `jedit.text` contract vocabulary must be real
+graph-backed state, not labels over full string snapshots.
 
 ## Why This Matters
 
@@ -458,8 +474,9 @@ The full design must also define jedit facts for:
 - associations between rope checkpoints and opaque Echo anchor evidence;
 - strands, braids, and admissions when their implementation slice begins.
 
-Echo remains generic and owns causal-anchor admission. jedit owns rope facts,
-domain associations, and text-specific witnesses.
+Echo remains generic and owns causal-anchor admission. `jedit.text` owns rope
+facts, domain associations, and text-specific witnesses; its rope
+representation remains private to the text capability.
 
 Runtime construction and validation are part of the contract. The branded types
 above are compile-time helpers only; decoded runtime payloads must pass through
@@ -863,10 +880,12 @@ checkpoint and materialization semantics before invocation, fails closed when
 no Echo capability is available, and treats all returned Echo identities as
 opaque references. Echo's witnessed causal history remains authoritative after
 restart; registries and lookup maps are disposable projections over that
-history. Replace this port with a generated Edict client once Echo can install
-and invoke the corresponding verified operation natively. The port is a
-short-lived seam for this one capability, not a Jim/Echo protocol: do not add
-new handwritten operations or give it long-term compatibility guarantees.
+history. Replace this port with canonical event delivery to the installed
+`jim.core` observer, authored from `Jim.edict`, once Edict and Echo can build,
+verify, and run the required generic programs. A direct generated-client
+operation runner may exist only as test-only conformance scaffolding. The port
+is a short-lived seam for this one capability, not a Jim/Echo protocol: do not
+add new handwritten operations or give it long-term compatibility guarantees.
 
 ### 12. Make `:why` An Acceptance Target
 

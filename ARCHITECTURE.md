@@ -31,9 +31,39 @@ The broader project doctrine is written down in
 - Generated contract packages
   The current compatibility corridor is authored in GraphQL, compiled to Rust
   bindings and contract-host helpers by Echo's Wesley extension, and registered
-  with Echo by Jim's trusted native host. Edict will replace the transitional
-  authored Rust operation law and invocation glue. Generated metadata without
-  Echo registration and scheduler execution is not a production substitute.
+  with Echo by Jim's trusted native host. This is migration evidence, not the
+  target application boundary. The target is Jim-authored Edict source compiled
+  through Edict's public application-build boundary into a verified generic
+  Echo package. Generated clients are codecs and transport stubs; they may not
+  contain Jim's command interpretation or operation-selection logic.
+
+## Target Ownership
+
+The final application is Jim authored in Edict and realized by Echo:
+
+- Jedit, Bijou, and native adapters are Jim's body. They decode terminal and
+  process input into canonical events, install or address verified packages,
+  transport opaque runtime artifacts, and render disposable projections.
+- `Jim.edict` is Jim's mind. It owns editor state, modes, operators, motions,
+  cursor and selection policy, registers, pending actions, input-event
+  interpretation, observation requests, application intents, and outcome
+  handling.
+- Jim-owned Edict lawpacks own application operations and optics such as
+  `ReplaceRange`, `CreateBuffer`, `DeclareCheckpoint`, and `TextWindow`, plus
+  their fact schemas, identities, results, and typed obstructions.
+- Edict owns source checking, Core IR, authority and lawpack closure, target
+  lowering, package construction, and structurally separate verification.
+- Echo owns only generic runtime authority: installation, admission, budgets,
+  scheduling, bounded program interpretation, atomic ticks, WAL, receipts,
+  readings, recovery, and evidence.
+- Graft owns structural intelligence and projections over bounded readings. It
+  has no Jim text authority and does not justify application vocabulary in Echo.
+
+Echo production code must never branch on or implement Jim/Jedit nouns or
+verbs. In particular, Echo has no `ReplaceRange` variant, rope intrinsic,
+`Buffer` or `TextWindow` semantics, native Jim planner callback,
+`MutationPlan`, or caller-authored graph patch. Application coordinates may be
+carried opaquely in packages, fixtures, and receipts.
 
 ## Non-Negotiables
 
@@ -56,10 +86,21 @@ Compile-time types are not a substitute for runtime truth.
 
 ## Contract Authority
 
-Jim's domain types record application semantics, but they are not executable
-Echo authority. Production mutation must use an Echo-installed verified
-operation. Handwritten TypeScript codecs, admission logic, receipts, local
-executors, and metadata-only descriptors are forbidden substitutes.
+Jim-owned Edict source is the executable application law. A schema, oracle,
+compiler target, and runtime receipt are distinct artifacts:
+
+- `jedit.text.schema@1` defines application fact shapes, codecs, and identity
+  rules;
+- `jedit.text.ReplaceRange.oracle@1` is independent expected-behavior evidence;
+- `ReplaceRange.edict` is the authored operation semantics;
+- compiler-produced Echo Target IR and its verified package are executable
+  meaning; and
+- an Echo receipt is evidence that one admitted package ran against one basis.
+
+Neither the schema nor the oracle is a program. Echo must not reverse-engineer
+application behavior from either one. Handwritten TypeScript codecs, admission
+logic, receipts, local executors, metadata-only descriptors, and handwritten
+packages are forbidden substitutes.
 
 The current narrow production corridor is:
 
@@ -73,12 +114,39 @@ Jim command
 -> basis-pinned bounded observation
 ```
 
-Only buffer creation, single-range replace/insert/delete, and bounded text-window
-observation use this corridor. Checkpoint, save/export, multi-range editing,
-range explanation, causal gutter readings, and undo/redo still fail closed.
+Only buffer creation, single-range replace/insert/delete, checkpoint
+declaration, and bounded text-window observation use this compatibility
+corridor. Save/export, multi-range editing, range explanation, causal gutter
+readings, and undo/redo still fail closed. Do not widen this path or mistake it
+for the target.
+
+At the target boundary, Jedit normalizes physical input into one canonical
+event envelope with stable event, source, ordering, normalized-input, and
+admission coordinates. Echo admits and transports that envelope without
+inspecting Jim or Jedit fields. Only `jim.core`, authored from `Jim.edict`,
+interprets editor meaning. The exact wire schema belongs to the event protocol
+ADR; the ownership invariant is frozen in
+[Jim: Components, Responsibilities, and Ownership](docs/jim-component-ownership.md).
+
+The target corridor is:
+
+```text
+terminal bytes
+-> Jedit adapter emits one canonical event envelope
+-> Echo realm admits and delivers it opaquely under an exact JimRelease
+-> jim.core interprets the event and durably retains any command attempt
+-> jim.core requests a jedit.text bounded optic such as TextWindow.edict
+-> Echo returns a basis-bound Reading
+-> jim.core composes jedit.text law such as ReplaceRange.edict
+-> Echo privately evaluates one combined Jim-and-buffer candidate
+-> one realm and epoch atomically settles Jim, Buffer, result, and evidence
+   or retains a distinct CandidateSettlementRejected outcome
+-> Jedit renders one declared causal view basis
+```
+
 The GraphQL/Wesley package is a deliberately narrow compatibility path until
-Edict can provide generated operation law and invocation. Do not restore the
-deleted Node-host Wesley projections, local runtime, or local storage authority.
+the active-observer corridor replaces it. Do not restore the deleted Node-host
+Wesley projections, local runtime, or local storage authority.
 
 ## Identity Doctrine (Locked)
 
@@ -161,14 +229,19 @@ What Graft should own:
 - symbol occurrences and rename preview
 - structural diff, semantic summary, and anchor-affinity style snapshot mapping
 
-What `jedit` should own:
+What `Jim.edict` should own:
 
 - buffer lifecycle over Echo-backed rope heads
 - cursoring, selection state, and undo/redo over edit groups grounded in ticks
 - edit-group and undo policy over ticks
 - Vim-shaped mode semantics and input interpretation
+- observation requests, operation intents, and outcome handling
+
+What Jedit/Bijou/native adapters should own:
+
 - panes, panels, focus, and lens lifecycle
-- save/open flows and workspace interaction policy
+- terminal decoding, process bootstrap, raw I/O, and rendering
+- file import/export adapters invoked under Jim-authored policy
 - paint decisions and terminal-specific rendering
 
 Why the boundary exists:

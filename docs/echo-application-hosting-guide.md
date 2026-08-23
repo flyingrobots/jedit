@@ -1,18 +1,20 @@
 # Echo Application Hosting Guide
 
-This guide states the current Jim/Echo integration boundary. It distinguishes
-the executable GraphQL/Wesley compatibility corridor from the future
-Edict-native corridor.
+This guide records the executable GraphQL/Wesley compatibility corridor and the
+target Edict-native boundary. The compatibility walkthrough is implementation
+evidence, not the final application composition.
 
 Identity rules are governed by
 [`docs/design/echo-identity-doctrine.md`](design/echo-identity-doctrine.md).
 
 ## Hard Rule
 
-Application code proposes work. Echo owns admission, scheduling, ticks,
-receipts, witnessed causal history, recovery, and basis-pinned observation.
-Jim owns text semantics and presentation. A TypeScript map, queue, runtime, or
-ledger inside Jim may not impersonate an Echo-owned authority.
+`Jim.edict` is the application and proposes work. Echo owns generic admission,
+scheduling, ticks, receipts, witnessed causal history, recovery, bounded
+program interpretation, and basis-pinned observation. Jim-owned Edict lawpacks
+own text semantics. Jedit/Bijou/native code owns terminal and process I/O plus
+rendering. A TypeScript map, queue, runtime, or ledger may neither impersonate
+Echo authority nor interpret Jim commands and choose application operations.
 
 Test doubles are allowed only below `spec/` or `tests/`, must be injected
 explicitly, and must use test-only identities. They are evidence fixtures, not
@@ -43,7 +45,7 @@ causal gutter readings, and `:why` fail closed with typed obstructions.
 The prior raw WASM facade is deleted. It was not the product text path and no
 longer has a runnable side lane.
 
-## Ownership
+## Target Ownership
 
 Echo owns:
 
@@ -55,14 +57,25 @@ Echo owns:
 - basis-pinned observation execution;
 - generic retention and causal-anchor admission.
 
-Jim owns:
+`Jim.edict` owns:
+
+- editor state, modes, operators, motions, cursor, selection, registers, and
+  pending actions;
+- canonical event interpretation, observation requests, operation intents,
+  and outcome or obstruction handling.
+
+Jim-owned Edict lawpacks own:
 
 - rope, buffer, checkpoint, range, and editor semantics;
-- branded UTF-8, UTF-16, and line/column coordinates;
-- validation of Jim-owned requests before invoking Echo;
-- interpretation of opaque Echo identities and outcomes;
-- disposable line indexes and materialization caches;
-- UI policy and rendering.
+- application fact schemas, identities, results, and typed obstructions;
+- `ReplaceRange`, `CreateBuffer`, `DeclareCheckpoint`, and `TextWindow`.
+
+Jedit/Bijou/native adapters own:
+
+- canonical event decoding and raw process transport;
+- package bootstrap and addressing;
+- typed artifact codecs with no application decision logic;
+- disposable line indexes, materialization caches, UI surfaces, and rendering.
 
 The Wesley compatibility package currently supplies:
 
@@ -71,18 +84,24 @@ The Wesley compatibility package currently supplies:
 - generated mutation-rule and query-observer host helpers;
 - a typed Rust binding around the transitional Jim-owned operation law.
 
-Edict will later own the generated semantic boundary:
+Edict owns the generated semantic boundary:
 
-- deterministic operation law;
+- source checking, Core IR, and authority/lawpack closure;
+- target lowering and compiler-produced package construction;
+- structurally separate verification;
 - request and outcome codecs;
-- installed-operation metadata;
-- generated clients for bounded observations;
+- installed-operation metadata and transport stubs;
 - schema and version compatibility checks.
 
 Jim must not copy Echo identity, receipt, admission, scheduler, WAL, or support
 policy algorithms into application code.
 
-## Production Boundary
+Echo production code must not implement or branch on `ReplaceRange`, rope,
+`Buffer`, `TextWindow`, or any other Jim/Jedit vocabulary. A schema and oracle
+are conformance resources, not executable semantics; only a compiler-produced,
+independently verified generic package may supply runtime meaning.
+
+## Current Compatibility Boundary
 
 ```mermaid
 flowchart LR
@@ -106,6 +125,44 @@ flowchart LR
 
 The process adapter correlates requests and responses only. It is not text,
 receipt, graph, or recovery authority.
+
+In current compatibility code, TypeScript and native Rust still derive a Jim
+request before Echo admission. That is migration debt. It must not be widened
+or described as the final Edict design.
+
+## Target Active-Observer Boundary
+
+Jedit normalizes physical input into one canonical event envelope with stable
+event, source, ordering, normalized-input, and admission coordinates. Echo
+admits and transports the envelope without inspecting Jim or Jedit fields.
+Only `jim.core`, authored from `Jim.edict`, interprets editor meaning. The
+complete authority and settlement contract is frozen in
+[Jim: Components, Responsibilities, and Ownership](jim-component-ownership.md).
+
+```mermaid
+sequenceDiagram
+    participant T as Terminal adapter
+    participant E as Echo authority realm
+    participant J as jim.core
+    participant W as TextWindow.edict
+    participant R as ReplaceRange.edict
+
+    T->>E: canonical event envelope
+    E->>J: deliver opaquely under exact JimRelease
+    J->>E: request bounded TextWindow
+    E->>W: interpret compiler-produced generic program
+    W-->>E: basis-bound Reading
+    E-->>J: resume durable command attempt
+    J->>R: compose jedit.text ReplaceRange law
+    R-->>J: typed Buffer consequence or obstruction
+    J-->>E: combined Jim-and-Buffer candidate
+    E->>E: atomically settle candidate or retain conflict outcome
+    E-->>T: projection for one declared causal view basis
+```
+
+A generated client in this boundary is a codec and transport stub. It may not
+decide what a key means, derive a `ReplaceRange`, calculate a rope patch, or
+advance cursor, mode, register, or operator state.
 
 ## Current Intent Lifecycle
 
@@ -199,15 +256,18 @@ parity by widening handwritten Rust operation APIs.
 
 The planned migration is:
 
-1. Echo and Edict establish one natively installed generated operation.
-2. Jim migrates `ReplaceRange` to the generated Edict client and operation.
-3. The bespoke Wesley/Rust replacement path becomes unreachable and is
-   deleted.
-4. Buffer creation and bounded text observation migrate next.
-5. Checkpoint, save/export, undo/redo, and historical explanation are added as
-   generated operations and bounded observations.
-6. The transitional JSONL operation protocol is deleted when generated client
-   invocation can replace it.
+1. Author the exact Jim-owned `ReplaceRange.edict` source and closure.
+2. Build it through Edict's public application-build boundary.
+3. Add only the generic Edict or Echo capabilities that the honest build proves
+   missing; execute the exact verified package against the retained oracle.
+4. Author `TextWindow.edict` and the smallest `Jim.edict` active observer.
+5. Move production input to canonical event delivery and projection rendering.
+6. Make direct frontend operation orchestration and the bespoke Wesley/Rust
+   replacement path unreachable, then delete them.
+7. Migrate buffer creation, checkpoint, save/export, undo/redo, and historical
+   explanation as Jim-owned lawpacks and bounded observations.
+8. Delete semantic JSONL operation glue once only the event/artifact membrane
+   remains.
 
 The acceptance bar is not an Echo-shaped interface. Every user-visible text
 transition and authoritative reading must be supported by first-class

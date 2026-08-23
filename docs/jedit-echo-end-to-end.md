@@ -1,8 +1,38 @@
 # Jim + Echo End-To-End Guide
 
-This document describes the executable production text corridor as it exists
-now. It distinguishes the narrow Wesley compatibility package from the future
-Edict-native operation path.
+This document describes the executable Wesley production text corridor as it
+exists now. It is a compatibility witness, not the target application
+composition. The target is `Jim.edict` running as an Echo-realized active
+observer; Jedit/Bijou/native code becomes its I/O body, and generated clients
+remain semantic-free codecs and transport stubs.
+
+## Target Corridor
+
+Jedit normalizes physical input into one canonical event envelope with stable
+event, source, ordering, normalized-input, and admission coordinates. Echo
+admits and transports the envelope without inspecting Jim or Jedit fields.
+Only `jim.core`, authored from `Jim.edict`, interprets editor meaning. See
+[Jim: Components, Responsibilities, and Ownership](jim-component-ownership.md)
+for the frozen ownership and causal-settlement contract.
+
+```text
+terminal bytes
+-> Jedit emits one canonical event envelope
+-> Echo realm admits and delivers it opaquely under an exact JimRelease
+-> jim.core interprets the event and durably retains any command attempt
+-> jim.core requests jedit.text TextWindow.edict
+-> Echo returns a basis-bound Reading
+-> jim.core composes jedit.text ReplaceRange.edict
+-> Echo privately evaluates one combined Jim-and-buffer candidate
+-> one realm and epoch atomically settles Jim, Buffer, result, and evidence
+   or retains a distinct CandidateSettlementRejected outcome
+-> Jedit renders one declared causal view basis
+```
+
+Echo never learns `ReplaceRange`, rope, `Buffer`, or `TextWindow` semantics.
+Those are application-owned `jedit.text` law composed by `jim.core`. A direct
+operation runner may exist as a test-only conformance harness, but it is not the
+production editor.
 
 ## Current Truth
 
@@ -48,12 +78,12 @@ These operations remain typed obstructions:
 The product remains intentionally incomplete rather than implementing those
 features through a second authority.
 
-## Ownership
+## Current Compatibility Ownership
 
 | Concern | Owner |
 | --- | --- |
-| Modal UI, Vim syntax, cursor, viewport, settings | Jim |
-| Rope fact schema, text ranges, replacement semantics | Jim Rust package |
+| Modal UI, Vim syntax, cursor, viewport, settings | Transitional Jim TypeScript |
+| Rope fact schema, text ranges, replacement semantics | Transitional Jim Rust package |
 | GraphQL operation declaration | Jim |
 | EINT codecs, operation ids, registry, host rule helpers | Echo Wesley generator |
 | Package verification and registration | Echo trusted host |
@@ -61,14 +91,16 @@ features through a second authority.
 | Authoritative graph and restart reconstruction | Echo |
 | Bounded query execution and reading evidence | Echo |
 | JSONL process transport and UI mapping | Jim adapters |
-| Future generated operation law and client | Edict |
+| Future `Jim.edict` and application lawpacks | Jim-authored Edict source |
+| Checking, lowering, packages, verification, generated codecs | Edict |
 | Syntax and structural projections | Graft |
 | Terminal loop and surfaces | Bijou |
 
-Jim treats Echo-issued head, tick, commit, receipt, and reading identities as
-opaque. It validates Jim-owned request semantics before crossing the host port,
-but it does not copy Echo identity, admission, scheduler, receipt, WAL, or
-support policy.
+This table describes what is running, not what should remain. In the target,
+`Jim.edict` owns modal state and event interpretation; Jim-owned lawpacks own
+operations and optics; Jedit/Bijou/native adapters only decode events,
+transport artifacts, and render projections. Jim treats Echo-issued head, tick,
+commit, receipt, and reading identities as opaque.
 
 ## Build And Startup
 
@@ -148,7 +180,7 @@ sequenceDiagram
     App-->>CLI: Bijou app starts
 ```
 
-## One Replacement, End To End
+## One Compatibility Replacement, End To End
 
 ```mermaid
 sequenceDiagram
@@ -195,8 +227,9 @@ sequenceDiagram
 ```
 
 The UI must not render the changed text as settled before the final observation
-returns. A local Vim planner may compute a proposed edit and cursor effect, but
-that proposal is not authoritative text.
+returns. The local Vim planner shown here is transitional semantic authority;
+final production must deliver the canonical event to `Jim.edict`, which alone
+interprets the command, derives the operation intent, and advances Jim state.
 
 ## Rope Authority
 
@@ -261,13 +294,18 @@ The compatibility corridor exists to apply product pressure now, not to become
 permanent protocol law. The convergence order is:
 
 1. Keep create, replace, and bounded read green through real Echo.
-2. Establish one natively installed generated Edict operation in Echo.
-3. Migrate `ReplaceRange` to the generated Edict client and operation.
-4. Make the Wesley/Rust replacement path unreachable and delete it.
-5. Migrate buffer create/open and bounded text-window observation.
-6. Add checkpoint, save/export, and inverse operations through generated Edict
-   packages and bounded Echo readings.
-7. Delete the compatibility package and transitional process protocol.
+2. Author `ReplaceRange.edict` and build it through Edict's public application
+   boundary.
+3. Execute the exact compiler-produced package with only generic Echo runtime
+   capabilities and compare it with the independent Jedit oracle.
+4. Author `TextWindow.edict` and the smallest `Jim.edict` active observer.
+5. Move production to canonical event delivery and disposable projection
+   rendering.
+6. Make the Wesley/Rust replacement path and frontend operation orchestration
+   unreachable, then delete them.
+7. Migrate buffer create/open, checkpoint, save/export, and inverse operations
+   as Jim-owned Edict lawpacks and bounded readings.
+8. Delete the compatibility package and semantic process protocol.
 
 No migration step may restore local text authority to make the editor appear
 more complete.

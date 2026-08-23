@@ -2,6 +2,14 @@
 
 Status: design sketch
 
+> **Ownership correction:** `ReplaceRange` is application-owned `jedit.text`
+> law and its executable source belongs in `ReplaceRange.edict`. `jim.core`
+> composes that law when settling editor commands. Echo may interpret the
+> compiler-produced generic program, but Echo must not acquire a
+> `ReplaceRange`, rope, split/join/balance, `Buffer`, or `TextWindow` runtime
+> primitive. The schema and oracle are contracts and evidence, not executable
+> semantics.
+
 Purpose: define the causal text runtime that sits under `jedit` before more UI
 work hardens the wrong abstractions.
 
@@ -31,10 +39,12 @@ For `jedit`, that implies:
 
 - Echo owns generic causal truth, scheduler-owned ticks, tick receipts,
   strands, admission, and replay.
-- `jedit` contract code owns rope structure, anchors, range transforms, and
-  text edit algebra over Echo-hosted graph facts and retained artifacts.
-- `jedit` owns UI, buffer lifecycle, viewport, file tree, save/open flows,
-  preview, and edit-group policy over ticks.
+- `jedit.text` owns public text contracts, range transforms, and text edit
+  algebra; its private implementation owns rope structure over Echo-hosted
+  graph facts and retained artifacts.
+- `jim.core` owns buffer-lifecycle policy, viewport semantics, and edit-group
+  policy. The Jedit body owns file-tree presentation, save/open adapters, and
+  rendering.
 - `git-warp` stays outside the engine as an import/export or mirroring adapter.
 - files on disk are projections, not the canonical truth.
 
@@ -179,10 +189,13 @@ worldline boundary is the tick.
 That means:
 
 - `ReplaceRange` describes what text rewrite is lawful.
-- Echo admits the jedit contract rewrite into scheduler-owned causal work.
+- Edict compiles the application-owned `jedit.text` law to a generic verified
+  package.
+- Echo admits and interprets that package as scheduler-owned causal work.
 - the scheduler-owned tick emits a tick receipt as the witness of the
   transition.
-- `jedit` may group one or more ticks into an edit group for undo/history.
+- `jim.core` may group one or more outcomes into an edit group for
+  undo/history.
 
 This keeps the canonical boundary aligned with Echo without giving jedit app
 code tick authority, while still letting the editor present larger

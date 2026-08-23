@@ -1,9 +1,12 @@
 # Stack Map
 
-> **Cutover note (2026-07-16):** References below to Wesley-generated Jim
-> operation metadata or local structural-history execution are historical. Jim
-> now loads a real Echo kernel and fails text operations closed. Edict-generated,
-> Echo-installed operations are the only accepted replacement.
+> **Cutover correction (2026-08-18):** References below to Wesley-generated Jim
+> operation metadata or local structural-history execution are historical or
+> compatibility evidence. The target is not a frontend invoking a collection of
+> Echo-installed operations. `Jim.edict` is the application and active observer;
+> Jim-owned Edict lawpacks define operations and optics; Edict compiles and
+> verifies generic packages; Echo realizes them without learning application
+> vocabulary; Jedit/Bijou/native code supplies I/O and rendering.
 
 ## Doctrine
 
@@ -23,9 +26,12 @@ product pressure
 
 | Layer | Job | Sends down | Receives up |
 | :--- | :--- | :--- | :--- |
-| jedit | Product/editor pressure | intent, observation requests, product constraints | readings, receipts, product-shaped evidence |
-| Echo | Runtime substrate truth | admitted runtime effects, observed readings | contract intent, observation requests |
-| Wesley | Contract/compiler authority | generated artifacts, codecs, operation metadata | authored contracts |
+| Jedit/Bijou/native | Jim's I/O body | canonical events, package addresses, raw adapter results | render projections, typed artifacts |
+| `Jim.edict` | Editor mind and application state machine | observation requests, operation intents | canonical events, readings, outcomes, obstructions |
+| Jim Edict lawpacks | Application operations, optics, facts, and obstructions | authored law and declared closure | typed application values |
+| Edict | Language, checking, lowering, packaging, and verification | verified generic packages and semantic-free codecs | Jim-authored source and lawpack closure |
+| Echo | Generic runtime substrate truth | admitted effects, readings, receipts, recovery evidence | verified programs, events, observation requests |
+| Wesley | Transitional compatibility compiler | generated artifacts, codecs, operation metadata | authored GraphQL contracts |
 | Graft | Structural intelligence | spans, outlines, syntax/semantic structure | buffer snapshots or text surfaces |
 | Bijou | Terminal UI substrate | input/render events | screen output and interaction state |
 | Continuum | Deferred publication/protocol layer | shared protocol families, once earned | proven local seams |
@@ -34,8 +40,10 @@ product pressure
 
 | Layer | Must never know |
 | :--- | :--- |
-| jedit | worldline ids, scheduler internals, runtime substrate lore |
-| Echo | panes, cursors, Vim semantics, editor UX |
+| Jedit/Bijou/native | command meaning, operation choice, Jim state transitions, scheduler internals |
+| `Jim.edict` and lawpacks | scheduler internals, WAL identities, direct graph mutation authority |
+| Edict | runtime state, transport timing, editor policy |
+| Echo | Jim, Buffer, Rope, ReplaceRange, TextWindow, panes, cursors, Vim semantics |
 | Wesley | runtime state, transport timing, editor policy |
 | Graft | causal truth, mutation authority |
 | Bijou | causal semantics |
@@ -53,9 +61,10 @@ jedit-shaped bytes
 ```
 
 The old Stack Witness text fixture is historical. Echo no longer contains
-hardcoded `createBuffer`, `replaceRange`, or `textWindow` semantics; the next
-real proof must install jedit-owned generated mutation handlers and query
-observers through Echo's generic contract-host boundary.
+hardcoded `createBuffer`, `replaceRange`, or `textWindow` semantics. The next
+real proof begins with Jim-owned `ReplaceRange.edict`, built through Edict's
+public application boundary and interpreted as a verified generic program by
+Echo. The retained Jedit oracle is expectation evidence only.
 
 The current Echo `v0.1.0` release-gate proof starts from the implemented
 structural-history contract:

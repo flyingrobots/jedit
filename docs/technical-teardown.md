@@ -2,6 +2,18 @@
 
 > **Terminal-first text and Markdown editing, built on Bijou and shaped around causal history through Echo.**
 
+## Architecture Correction
+
+This teardown contains detailed snapshots of the GraphQL/Wesley compatibility
+implementation. Its TypeScript planners, direct `replaceRangeAsTick` requests,
+native Jim rules, and generated observer plans are migration evidence, not the
+target composition. Final production delivers canonical events to `Jim.edict`;
+Jim-owned Edict lawpacks define application operations and optics; Edict emits
+independently verified generic packages; and Echo supplies only generic runtime
+authority. Generated TypeScript is a codec/transport stub and renderer, not
+Jim. See [ARCHITECTURE.md](../ARCHITECTURE.md) and
+[BEARING.md](BEARING.md).
+
 This document is a progressive, end-to-end technical explanation of `jedit` aimed at a reader with no prior knowledge of this codebase, its domain vocabulary, or the surrounding runtime stack. Each section builds on the last.
 
 ## Maintenance Posture
