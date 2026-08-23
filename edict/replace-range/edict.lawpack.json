@@ -14,7 +14,15 @@
       "types": [
         {
           "coordinate": "jedit.text@1.NodeId",
-          "definition": "Bytes<max=32>"
+          "definition": "Bytes<exact=32>"
+        },
+        {
+          "coordinate": "jedit.text@1.BufferId",
+          "definition": "jedit.text@1.NodeId"
+        },
+        {
+          "coordinate": "jedit.text@1.HeadId",
+          "definition": "jedit.text@1.NodeId"
         },
         {
           "coordinate": "jedit.text@1.ReplacementBytes",

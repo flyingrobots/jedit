@@ -1,21 +1,21 @@
 package jedit.text.replace_range@1;
 
-use lawpack jedit.text@1 digest "sha256:5c41ef4bec7f9f50b3ca3a5332969052f32745046200cfb2f89316d487e25197" as text;
+use lawpack jedit.text@1 digest "sha256:5253f7c8682cfed88a34c660a610c30da6bd9924973fefd33a82c9915a4f09cf" as text;
 
 type ReplaceRangeInput = {
-  bufferId: Bytes<max=32>,
-  basisHeadId: Bytes<max=32>,
+  bufferId: text.BufferId,
+  basisHeadId: text.HeadId,
   startByte: U64,
   endByte: U64,
-  replacement: Bytes<max=1048576>,
+  replacement: text.ReplacementBytes,
 };
 
 type ReplaceRangeBoundary = {
-  bufferId: Bytes<max=32>,
-  basisHeadId: Bytes<max=32>,
+  bufferId: text.BufferId,
+  basisHeadId: text.HeadId,
   startByte: U64,
   endByte: U64,
-  replacement: Bytes<max=1048576>,
+  replacement: text.ReplacementBytes,
   rangeIsEmpty: U32,
   createdLeafCeiling: U64,
 };
