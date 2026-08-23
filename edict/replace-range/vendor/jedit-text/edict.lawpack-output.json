@@ -7,13 +7,13 @@
       "path": "manifest.cbor",
       "kind": "manifest",
       "coordinate": "edict.lawpack/v1",
-      "digest": "sha256:0719a4161eaede5aa062f6cbd2e2ff74dee0bd961d0945449cd27ae2ef26f59a"
+      "digest": "sha256:5c41ef4bec7f9f50b3ca3a5332969052f32745046200cfb2f89316d487e25197"
     },
     {
       "path": "manifest.sha256",
       "kind": "manifestDigest",
       "coordinate": "edict.lawpack/v1",
-      "digest": "sha256:0719a4161eaede5aa062f6cbd2e2ff74dee0bd961d0945449cd27ae2ef26f59a"
+      "digest": "sha256:5c41ef4bec7f9f50b3ca3a5332969052f32745046200cfb2f89316d487e25197"
     },
     {
       "path": "exports.cbor",
@@ -30,14 +30,14 @@
     {
       "path": "echo-operation-configuration.cbor",
       "kind": "localResource",
-      "coordinate": "jedit.text.echo-config/v1",
-      "digest": "sha256:1ae7e97df9b46983591bc6cff08d537cd6a29c07f2cb2407d04f66f2e51b39de"
+      "coordinate": "echo.operation-lowering-configuration/v1",
+      "digest": "sha256:bcb811b2d00d9824a256a26e48c14401c87fff509f2f75deb2ba703003a3f6d4"
     },
     {
       "path": "echo-operation-configuration.sha256",
       "kind": "localResourceDigest",
-      "coordinate": "jedit.text.echo-config/v1",
-      "digest": "sha256:1ae7e97df9b46983591bc6cff08d537cd6a29c07f2cb2407d04f66f2e51b39de"
+      "coordinate": "echo.operation-lowering-configuration/v1",
+      "digest": "sha256:bcb811b2d00d9824a256a26e48c14401c87fff509f2f75deb2ba703003a3f6d4"
     },
     {
       "path": "verifier-rules.cbor",
@@ -55,13 +55,13 @@
       "path": "adapter.cbor",
       "kind": "adapter",
       "coordinate": "jedit.text.echo-adapter/v1",
-      "digest": "sha256:4a4ead6b31d561c12d9abcd64b9e6cf518e4ee3d3d3770ae971559642fb02828"
+      "digest": "sha256:b8d9f15ef18dc99691ab1e034ca40a8b8ac52a1bc1b27597284f1edbaf84f049"
     },
     {
       "path": "adapter.sha256",
       "kind": "adapterDigest",
       "coordinate": "jedit.text.echo-adapter/v1",
-      "digest": "sha256:4a4ead6b31d561c12d9abcd64b9e6cf518e4ee3d3d3770ae971559642fb02828"
+      "digest": "sha256:b8d9f15ef18dc99691ab1e034ca40a8b8ac52a1bc1b27597284f1edbaf84f049"
     }
   ]
 }

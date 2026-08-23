@@ -5,9 +5,9 @@
 - Added the Jedit-owned `ReplaceRange.edict` application root and canonical
   `jedit.text@1` lawpack publication. With Edict #201, its executable integration
   gate now proves that real source lowers into generic pure Target IR and reaches
-  Echo's provider-contract boundary, which refuses the new artifact family
-  before package emission. Rope mutation and end-to-end Jim execution remain
-  unimplemented.
+  Echo's checked lowerer through the exact generic pure target configuration.
+  The lowerer returns typed `UnsupportedSemantics` before package emission.
+  Rope mutation and end-to-end Jim execution remain unimplemented.
 - Made `ReplaceRange` corroborate the selected Head/root byte extent and exact
   requested-range materialization before no-op classification, so truncated or
   absent retained roots fail with a typed malformed-rope obstruction.

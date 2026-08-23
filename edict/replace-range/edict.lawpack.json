@@ -182,12 +182,11 @@
     "localResources": [
       {
         "name": "echo-config",
-        "coordinate": "jedit.text.echo-config/v1",
+        "coordinate": "echo.operation-lowering-configuration/v1",
         "output": "echo-operation-configuration.cbor",
         "value": {
-          "apiVersion": "jedit.text.echo-config/v1",
-          "instructionProfile": "echo.dpo@1.generic-bounded-graph",
-          "operation": "jedit.text@1.replaceRange"
+          "apiVersion": "echo.operation-lowering-configuration/v1",
+          "programKind": "compiler-produced-bounded-pure/v1"
         }
       },
       {

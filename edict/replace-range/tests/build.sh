@@ -46,7 +46,10 @@ printf '%s\n' "$build_output"
 test "$build_status" -ne 0
 printf '%s\n' "$build_output" \
   | jq --exit-status --slurp \
-    'any(.[]; .type == "diagnostic" and .kind == "InvalidProviderInvocation")' \
+    'any(.[];
+      .type == "diagnostic"
+      and .kind == "ProviderLowererRefused"
+      and (.message | contains("UnsupportedSemantics")))' \
     >/dev/null
 test ! -e .build/application/executable-operation-package.cbor
 test ! -e .build/application/verification-report.cbor

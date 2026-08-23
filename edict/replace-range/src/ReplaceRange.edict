@@ -1,6 +1,6 @@
 package jedit.text.replace_range@1;
 
-use lawpack jedit.text@1 digest "sha256:0719a4161eaede5aa062f6cbd2e2ff74dee0bd961d0945449cd27ae2ef26f59a" as text;
+use lawpack jedit.text@1 digest "sha256:5c41ef4bec7f9f50b3ca3a5332969052f32745046200cfb2f89316d487e25197" as text;
 
 type ReplaceRangeInput = {
   bufferId: Bytes<max=32>,
