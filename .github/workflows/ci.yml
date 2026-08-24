@@ -168,9 +168,87 @@ jobs:
       - name: Run Echo release gate
         run: npm run release-gate:jedit-echo
 
+  edict-replace-range:
+    name: edict / replace-range package chain
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout Jedit
+        uses: actions/checkout@v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: jedit
+
+      - name: Verify literal submitted head
+        working-directory: jedit
+        env:
+          EXPECTED_JEDIT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_JEDIT_HEAD"
+
+      - name: Read pinned toolchain commits
+        id: toolchain
+        working-directory: jedit
+        run: |
+          node --input-type=module <<'NODE' >> "$GITHUB_OUTPUT"
+          import { readFileSync } from "node:fs";
+          const lock = JSON.parse(
+            readFileSync("edict/replace-range/edict.toolchain-lock.json", "utf8"),
+          );
+          console.log(`edict_commit=${lock.edict.commit}`);
+          console.log(`echo_commit=${lock.echo.commit}`);
+          console.log(`rust_toolchain=${lock.rust.toolchain}`);
+          console.log(`node_version=${lock.validation.nodeVersion}`);
+          NODE
+
+      - name: Checkout pinned Edict
+        uses: actions/checkout@v6.0.2
+        with:
+          repository: flyingrobots/edict
+          ref: ${{ steps.toolchain.outputs.edict_commit }}
+          path: edict
+
+      - name: Checkout pinned Echo
+        uses: actions/checkout@v6.0.2
+        with:
+          repository: flyingrobots/echo
+          ref: ${{ steps.toolchain.outputs.echo_commit }}
+          path: echo
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: ${{ steps.toolchain.outputs.node_version }}
+          cache: 'npm'
+          cache-dependency-path: jedit/package-lock.json
+
+      - name: Setup pinned Rust
+        run: rustup toolchain install '${{ steps.toolchain.outputs.rust_toolchain }}' --profile minimal
+
+      - name: Install Jedit dependencies
+        working-directory: jedit
+        run: npm ci
+
+      - name: Verify exact package chain and adversarial regressions
+        working-directory: jedit
+        env:
+          EDICT_REPO: ${{ github.workspace }}/edict
+          ECHO_REPO: ${{ github.workspace }}/echo
+        run: node --test edict/replace-range/tests/proof-harness.spec.mjs
+
+      - name: Verify authoritative checkouts remain clean
+        run: |
+          for repository in jedit edict echo; do
+            if [[ -n "$(git -C "$repository" status --porcelain=v1 --untracked-files=all)" ]]; then
+              echo "$repository changed during the package-chain gate" >&2
+              git -C "$repository" status --short >&2
+              exit 1
+            fi
+          done
+
   check:
     name: check
-    needs: [ plan, build, test-shards, quality, release-gate ]
+    needs: [ plan, build, test-shards, quality, release-gate, edict-replace-range ]
     if: always()
     runs-on: ubuntu-latest
 
@@ -182,9 +260,10 @@ jobs:
           TEST_SHARDS_RESULT: ${{ needs.test-shards.result }}
           QUALITY_RESULT: ${{ needs.quality.result }}
           RELEASE_GATE_RESULT: ${{ needs.release-gate.result }}
+          EDICT_REPLACE_RANGE_RESULT: ${{ needs.edict-replace-range.result }}
         run: |
           failed=0
-          for result in "$PLAN_RESULT" "$BUILD_RESULT" "$QUALITY_RESULT"; do
+          for result in "$PLAN_RESULT" "$BUILD_RESULT" "$QUALITY_RESULT" "$EDICT_REPLACE_RANGE_RESULT"; do
             if [[ "$result" != "success" ]]; then
               failed=1
             fi
@@ -205,5 +284,6 @@ jobs:
             echo "| test shards | $TEST_SHARDS_RESULT |"
             echo "| quality | $QUALITY_RESULT |"
             echo "| release gate | $RELEASE_GATE_RESULT |"
+            echo "| edict / replace-range package chain | $EDICT_REPLACE_RANGE_RESULT |"
           } >> "$GITHUB_STEP_SUMMARY"
           exit "$failed"

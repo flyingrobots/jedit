@@ -1,0 +1,128 @@
+{
+  "schema": "jedit.edict-build-lock/v1",
+  "applicationCoordinate": "jedit.text.replace_range@1",
+  "operationCoordinate": "jedit.text.replace_range@1.replaceRange",
+  "toolchainLockSha256": "3396bb91bea7e51d1e4b9f7385421d865d9e5a8f1c7ee1eaf330592143925fa0",
+  "sourceClosure": {
+    "schema": "jedit.edict-source-closure/v1",
+    "digest": "sha256:b6e247a612dd30b62db8b72d5063cbc29c762ffa91f8462fe57b1aadbdda521b",
+    "files": [
+      {
+        "path": "application/edict.application.json",
+        "sha256": "3182577627cd1f88bf590f3a8481ef53476c83d783aa142182e7c65eb1f72f8b"
+      },
+      {
+        "path": "application/edict.lawpack.json",
+        "sha256": "150abd5971b40ed70d2b1a1765a1a690e120ad9e44239dae732dc54e6ae04f99"
+      },
+      {
+        "path": "application/edict.toolchain-lock.json",
+        "sha256": "3396bb91bea7e51d1e4b9f7385421d865d9e5a8f1c7ee1eaf330592143925fa0"
+      },
+      {
+        "path": "application/src/ReplaceRange.edict",
+        "sha256": "51797e77062585a9f59083ee8a1da3faaf486ef7691e1b62203369a9d9356ee0"
+      },
+      {
+        "path": "application/tests/assert-build-output.mjs",
+        "sha256": "cc54e77a7a5923bb6496817b4822dfd38d5077501f6e12ab55129cf8cfcc86d9"
+      },
+      {
+        "path": "application/tests/build.sh",
+        "sha256": "b5827a1e2a4b64b214406ee3d0cdc9499059922f9878649946c0358fbbd6ea6d"
+      },
+      {
+        "path": "application/tests/package-chain.mjs",
+        "sha256": "28615de79aa645fa7c3a9cd098865e02af666fa86f49b251d5fe6c919329d141"
+      },
+      {
+        "path": "application/tests/proof-harness.spec.mjs",
+        "sha256": "a60012f744cff26095a451fe74f984b41a48551e8b47d6f2e5d8e128e1dcd643"
+      },
+      {
+        "path": "application/tests/verification-evidence.mjs",
+        "sha256": "3022f86f5c96d61f32ced3bec211d08ef7bbcdbc6e772cc61e2019eba0e42218"
+      },
+      {
+        "path": "application/vendor/jedit-text/edict.lawpack-output.json",
+        "sha256": "141c0000932ba19cff687e4173e40b0a38410f70bd511c9bc51f3fb3f73ee62b"
+      },
+      {
+        "path": "application/vendor/jedit-text/exports.cbor",
+        "sha256": "cab9c575da49cb33289e45fc45afb9d7f05558dada734be7eb3acfbbabb1d4db"
+      },
+      {
+        "path": "application/vendor/jedit-text/exports.sha256",
+        "sha256": "9bb11d9f8153c18af53b484526d9980b05c27eb20aa97e7623d1bf1ed5a69aea"
+      },
+      {
+        "path": "application/vendor/jedit-text/manifest.cbor",
+        "sha256": "0323ed8e9510e473d329166d421dc7d8e1da353065c1cd2dee77e6313ba9bf91"
+      },
+      {
+        "path": "application/vendor/jedit-text/manifest.sha256",
+        "sha256": "316cf602502a45cbab89b77b6344854edee750eaf1f0c8167da48d19ead75c22"
+      },
+      {
+        "path": "project/.github/workflows/ci.yml",
+        "sha256": "d4100140562e160bd897f9af9fc5d4ee8d7ea9285ba5d0734c620a38cf2d2ea5"
+      },
+      {
+        "path": "project/package.json",
+        "sha256": "735a70d8e48f118695529446780d547f8f200dcb0fa453099aa2241d820d9eb5"
+      },
+      {
+        "path": "project/package-lock.json",
+        "sha256": "d39f4b39e262e55355315e0a38ad2d10953ae5f6cd48b9fe3a530a128afd01d2"
+      }
+    ]
+  },
+  "lawpackRelease": {
+    "coordinate": "jedit.text@1",
+    "digest": "sha256:95758c1605894672cc9069fde01bb8b6e11842b053102660c9cd4f4d6f34d64e"
+  },
+  "provider": {
+    "coordinate": "echo.edict-provider@1",
+    "digest": "sha256:b065242a81179df02cd450763c8266e866bbca959308f5198b791a919050e0c2"
+  },
+  "artifacts": {
+    "core": {
+      "coordinate": "jedit.text.replace_range@1",
+      "domain": "edict.core.module/v1",
+      "digest": "sha256:d965643ff78c4f321af538f086329fee53c22b21dc1de9e5f9914d6cb69e609f"
+    },
+    "targetIr": {
+      "coordinate": "echo.span-ir/v1",
+      "domain": "edict.target-ir.artifact/v1",
+      "digest": "sha256:8a5243fef0aea029df1b6a56eb65f199703e10143d5e0cec5b73603455284229"
+    },
+    "resultProjection": {
+      "coordinate": "jedit.text.replace_range@1.replaceRange",
+      "domain": "edict.result-projection.artifact/v1",
+      "digest": "sha256:f804baa01c357e5ed54e86f752ea7f8201e454ad0b47c10813fde8c7dc2aeba6"
+    },
+    "executablePackage": {
+      "coordinate": "executable-operation-package.echo",
+      "domain": "echo.operation-package/v1",
+      "digest": "sha256:9a9e26e10dabf9175889fb2ef50bd463dd08ea95e9a377e0a39eb4663acd409b",
+      "rawSha256": "f339cf8e52621df4a9b644c83770932df5c01c52e70d1bd271c0e6519cda2998"
+    },
+    "verificationReportArtifact": {
+      "coordinate": "verifier-report.echo-operation",
+      "domain": "echo.operation-package-verifier-report/v1",
+      "digest": "sha256:c8f1e52216f248022a884c822d577c479b3a68b0f5ad69f21db3288a00e474a1",
+      "rawSha256": "124cfca3449d19684a169a4fe62898dfb76124854d0f0ef57ea3ed9f606a4ce0"
+    },
+    "verificationReport": {
+      "coordinate": "jedit.edict-verification-evidence/v1",
+      "domain": "jedit.edict-verification-evidence/v1",
+      "digest": "sha256:54f4bc09addabf3236478c891aa8ced4f13a2738e007f95c96f547b6b36dcd80",
+      "rawSha256": "6a6420061353e34a8a8db21025b9eeed7a0802c720b4e865e8f6218448f5be4e"
+    },
+    "executableSubject": {
+      "coordinate": "echo.executable-subject/v1",
+      "domain": "echo.executable-subject/v1",
+      "digest": "sha256:9738fc187d8507b64bc7c01a536c8eb2b99fb550380db878d49ebb7e130267aa"
+    }
+  }
+}
