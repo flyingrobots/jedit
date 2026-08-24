@@ -49,16 +49,24 @@ ECHO_REPO=/path/to/echo \
 
 `edict.toolchain-lock.json` pins the exact Edict commit and CLI release, Rust
 toolchain, Echo commit, provider identity, provider manifest bytes, and lowerer
-and verifier components. The script refuses non-Git roots, wrong commits, or
-dirty checkouts before invoking either toolchain.
+and verifier components. It also pins the Node and npm releases, the resolved
+`cbor-x` package and integrity, and the package, lockfile, and CI invocation
+bytes that perform validation. The script refuses non-Git roots, wrong commits,
+dirty checkouts, or validation-environment drift before invoking either
+toolchain. GitHub's package-chain job checks out and verifies the literal pull
+request head; ordinary matrix jobs may separately exercise the synthetic merge.
 
 `edict.build-lock.json` binds the exact source and validation closure to the
 Core, Target IR, result projection, executable package, verification report,
-and executable-subject identities. `edict.executable-subject-lock.json`
-separately records the subject identity and the exact package, Target IR, and
-result-projection references it contains. The harness recomputes every digest
-from emitted bytes and refuses a valid report paired with a substituted package.
-The locks contain no self-referential Jedit commit; an exact PR head remains an
+and executable-subject identities. The raw Echo report remains a separately
+identified artifact. A canonical-JSON Jedit evidence envelope binds that artifact
+and subject to the exact provider release, verifier component, diagnostic ABI,
+report ABI, and outcome; that verifier-specific envelope is the transitional
+`VerificationReportId`. `edict.executable-subject-lock.json` separately records
+the subject identity and the exact package, Target IR, and result-projection
+references it contains. The harness recomputes every digest from emitted bytes
+and refuses a valid report paired with a substituted package or verifier. The
+locks contain no self-referential Jedit commit; an exact PR head remains an
 external review coordinate.
 
 The script verifies the committed `jedit.text@1` closure through Edict's public
@@ -66,8 +74,12 @@ lawpack `checkOnly` boundary. It never republishes or repairs that authoritative
 tree. It then copies Echo's checked provider package into `.build/`, invokes
 Edict's public application build, and requires the generic pure package and an
 accepted independent-verifier report. Snapshots cover the application inputs
-outside `.build/` plus every tracked Edict and Echo file; any content, identity,
-or timestamp mutation fails the run. Only `.build/` is disposable output.
+outside `.build/`, the pinned project validation files, and every tracked Edict
+and Echo file; any content, identity, or timestamp mutation fails the run. Only
+`.build/` is disposable output. Distinct nominal `BufferId` and `HeadId`
+contracts retain the same exact 32-byte representation, while a negative
+compiler witness proves that neither can cross the imported lawpack boundary as
+the other.
 
 The gate must advance again when Echo implements generic pure evaluation;
 package acceptance is not a permanent substitute for runtime evidence.

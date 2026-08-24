@@ -11,6 +11,8 @@ import { fileURLToPath } from "node:url";
 
 import { decode, encode } from "cbor-x";
 
+import { verificationEvidence } from "./verification-evidence.mjs";
+
 const testDirectory = path.dirname(fileURLToPath(import.meta.url));
 const applicationRoot = path.resolve(testDirectory, "..");
 const projectRoot = path.resolve(applicationRoot, "../..");
@@ -28,7 +30,21 @@ async function fixture() {
   const fixtureApplication = path.join(fixtureProject, "edict", "replace-range");
   await mkdir(path.dirname(fixtureApplication), { recursive: true });
   await cp(applicationRoot, fixtureApplication, { recursive: true });
-  await symlink(path.join(projectRoot, "node_modules"), path.join(fixtureProject, "node_modules"), "dir");
+  await mkdir(path.join(fixtureProject, ".github", "workflows"), {
+    recursive: true,
+  });
+  for (const relative of [
+    ".github/workflows/ci.yml",
+    "package.json",
+    "package-lock.json",
+  ]) {
+    await cp(path.join(projectRoot, relative), path.join(fixtureProject, relative));
+  }
+  await symlink(
+    path.join(projectRoot, "node_modules"),
+    path.join(fixtureProject, "node_modules"),
+    "dir",
+  );
   return {
     root,
     project: fixtureProject,
@@ -58,7 +74,7 @@ function assertCommandCompleted(result) {
   assert.notEqual(result.status, null, `command terminated by ${result.signal}`);
 }
 
-test("rejects_non_git_or_wrong_commit_toolchain_inputs", { timeout: 120_000 }, async () => {
+test("rejects_non_git_toolchain_inputs", { timeout: 120_000 }, async () => {
   requireToolchainEnvironment();
   const subject = await fixture();
   try {
@@ -94,6 +110,23 @@ test("rejects_non_git_or_wrong_commit_toolchain_inputs", { timeout: 120_000 }, a
       0,
       "non-Git toolchain directories must be rejected before publication or application build",
     );
+  } finally {
+    await subject.dispose();
+  }
+});
+
+test("rejects_wrong_commit_toolchain_inputs", { timeout: 120_000 }, async () => {
+  requireToolchainEnvironment();
+  const subject = await fixture();
+  try {
+    const lockPath = path.join(subject.application, "edict.toolchain-lock.json");
+    const lock = JSON.parse(await readFile(lockPath, "utf8"));
+    lock.edict.commit = "0".repeat(40);
+    await writeFile(lockPath, `${JSON.stringify(lock, null, 2)}\n`);
+
+    const result = runBuild(subject.project);
+    assertCommandCompleted(result);
+    assert.notEqual(result.status, 0, "a wrong Edict commit must be rejected");
   } finally {
     await subject.dispose();
   }
@@ -163,35 +196,136 @@ test(
   },
 );
 
-test("rejects_short_buffer_and_head_identities", { timeout: 120_000 }, async () => {
+test(
+  "preserves_nominal_exact_length_buffer_and_head_identities",
+  { timeout: 120_000 },
+  async () => {
+    requireToolchainEnvironment();
+    const subject = await fixture();
+    try {
+      const build = runBuild(subject.project);
+      assertCommandCompleted(build);
+      assert.equal(build.status, 0, build.stderr);
+
+      const packageBytes = await readFile(
+        path.join(
+          subject.application,
+          ".build",
+          "application",
+          "executable-operation-package.cbor",
+        ),
+      );
+      const executablePackage = decode(packageBytes);
+      const program = decode(executablePackage.program);
+      const core = decode(program.core_artifact);
+      for (const typeName of [
+        "ReplaceRangeInput.bufferId",
+        "ReplaceRangeInput.basisHeadId",
+        "ReplaceRangeBoundary.bufferId",
+        "ReplaceRangeBoundary.basisHeadId",
+      ]) {
+        assert.deepEqual(
+          core.types[typeName],
+          {
+            kind: "Nominal",
+            contract:
+              typeName.endsWith("bufferId")
+                ? "jedit.text@1.BufferId"
+                : "jedit.text@1.HeadId",
+            representation: "Bytes<exact=32>",
+          },
+          `${typeName} must preserve its nominal exact 32-byte contract in Core`,
+        );
+      }
+    } finally {
+      await subject.dispose();
+    }
+  },
+);
+
+test("rejects_buffer_id_head_id_substitution", { timeout: 120_000 }, async () => {
   requireToolchainEnvironment();
   const subject = await fixture();
   try {
-    const build = runBuild(subject.project);
-    assertCommandCompleted(build);
-    assert.equal(build.status, 0, build.stderr);
-
-    const packageBytes = await readFile(
-      path.join(subject.application, ".build", "application", "executable-operation-package.cbor"),
+    const sourcePath = path.join(
+      subject.application,
+      "src",
+      "ReplaceRange.edict",
     );
-    const executablePackage = decode(packageBytes);
-    const program = decode(executablePackage.program);
-    const core = decode(program.core_artifact);
-    for (const typeName of [
-      "ReplaceRangeInput.bufferId",
-      "ReplaceRangeInput.basisHeadId",
-      "ReplaceRangeBoundary.bufferId",
-      "ReplaceRangeBoundary.basisHeadId",
-    ]) {
-      assert.deepEqual(
-        core.types[typeName],
-        { kind: "Bytes", min: 32, max: 32 },
-        `${typeName} must preserve the exact 32-byte identity contract in Core`,
-      );
-    }
+    const source = await readFile(sourcePath, "utf8");
+    const crossed = source
+      .replace("bufferId: input.bufferId,", "bufferId: input.basisHeadId,")
+      .replace("basisHeadId: input.basisHeadId,", "basisHeadId: input.bufferId,");
+    assert.notEqual(
+      crossed,
+      source,
+      "the negative witness must cross the two identities",
+    );
+    await writeFile(sourcePath, crossed);
+
+    const result = runBuild(subject.project);
+    assertCommandCompleted(result);
+    assert.notEqual(result.status, 0, "BufferId and HeadId must not be substitutable");
+    assert.match(
+      `${result.stdout}\n${result.stderr}`,
+      /TypeMismatch/,
+      "the imported nominal boundary must reject the crossed assignment",
+    );
   } finally {
     await subject.dispose();
   }
+});
+
+test("verification_report_identity_is_verifier_specific", () => {
+  const common = {
+    executableSubjectId: {
+      coordinate: "echo.executable-subject/v1",
+      digest: `sha256:${"1".repeat(64)}`,
+    },
+    reportArtifactId: {
+      coordinate: "verifier-report.echo-operation",
+      domain: "echo.operation-package-verifier-report/v1",
+      digest: `sha256:${"2".repeat(64)}`,
+      rawSha256: "3".repeat(64),
+    },
+    report: {
+      apiVersion: "echo.operation-package-verifier-report/v1",
+      diagnosticAbi: {
+        id: "edict.diagnostics/v1",
+        digest: ["sha256", Buffer.alloc(32, 4)],
+      },
+      outcome: "accepted",
+    },
+  };
+  const provider = {
+    coordinate: "echo.edict-provider@1",
+    digest: `sha256:${"5".repeat(64)}`,
+    verifier: {
+      coordinate: "echo.dpo.verifier/component@1",
+      sha256: "6".repeat(64),
+      contract: {
+        coordinate: "echo.dpo.verifier/v1",
+        digest: `sha256:${"8".repeat(64)}`,
+      },
+    },
+    targetProfile: {
+      coordinate: "echo.dpo@1",
+      digest: `sha256:${"9".repeat(64)}`,
+    },
+  };
+  const original = verificationEvidence({ ...common, provider });
+  const changed = verificationEvidence({
+    ...common,
+    provider: {
+      ...provider,
+      verifier: { ...provider.verifier, sha256: "7".repeat(64) },
+    },
+  });
+  assert.notEqual(
+    original.identity.digest,
+    changed.identity.digest,
+    "different verifier identities must produce different VerificationReportIds",
+  );
 });
 
 test("rejects_drifted_build_and_executable_subject_locks", { timeout: 120_000 }, async () => {
@@ -215,6 +349,30 @@ test("rejects_drifted_build_and_executable_subject_locks", { timeout: 120_000 },
   }
 });
 
+test("rejects_drifted_executable_subject_lock", { timeout: 120_000 }, async () => {
+  requireToolchainEnvironment();
+  const subject = await fixture();
+  try {
+    const lockPath = path.join(
+      subject.application,
+      "edict.executable-subject-lock.json",
+    );
+    const lock = JSON.parse(await readFile(lockPath, "utf8"));
+    lock.reference.digest = `sha256:${"0".repeat(64)}`;
+    await writeFile(lockPath, `${JSON.stringify(lock, null, 2)}\n`);
+
+    const build = runBuild(subject.project);
+    assertCommandCompleted(build);
+    assert.notEqual(
+      build.status,
+      0,
+      "a changed executable-subject expectation must fail the package-chain gate",
+    );
+  } finally {
+    await subject.dispose();
+  }
+});
+
 test("required_ci_executes_the_exact_package_chain", async () => {
   const workflow = await readFile(
     path.join(projectRoot, ".github", "workflows", "ci.yml"),
@@ -226,6 +384,11 @@ test("required_ci_executes_the_exact_package_chain", async () => {
     workflow,
     /node --test edict\/replace-range\/tests\/proof-harness\.spec\.mjs/,
   );
+  assert.match(
+    workflow,
+    /ref: \$\{\{ github\.event\.pull_request\.head\.sha \|\| github\.sha \}\}/,
+  );
+  assert.match(workflow, /git rev-parse HEAD/);
   assert.match(
     workflow,
     /needs: \[ plan, build, test-shards, quality, release-gate, edict-replace-range \]/,

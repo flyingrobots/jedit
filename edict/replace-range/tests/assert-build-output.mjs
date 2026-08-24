@@ -6,37 +6,49 @@ import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import { decode, encode } from "cbor-x";
+import { decode } from "cbor-x";
 
-function canonicalArtifactDigest(domain, canonicalArtifactBytes) {
-  const preimage = Buffer.concat([
-    Buffer.from([0x83]),
-    Buffer.from(encode("edict.digest/v1")),
-    Buffer.from(encode(domain)),
-    Buffer.from(canonicalArtifactBytes),
-  ]);
-  return createHash("sha256").update(preimage).digest();
-}
+import {
+  canonicalArtifactDigest,
+  digestText,
+  verificationEvidence,
+} from "./verification-evidence.mjs";
 
 function assertResourceReference(reference, coordinate, digest) {
   assert.equal(reference.id, coordinate);
   assert.deepEqual(reference.digest, ["sha256", digest]);
 }
 
-const SOURCE_CLOSURE_PATHS = [
-  "edict.application.json",
-  "edict.lawpack.json",
-  "edict.toolchain-lock.json",
-  "src/ReplaceRange.edict",
-  "tests/assert-build-output.mjs",
-  "tests/build.sh",
-  "tests/package-chain.mjs",
-  "tests/proof-harness.spec.mjs",
-  "vendor/jedit-text/edict.lawpack-output.json",
-  "vendor/jedit-text/exports.cbor",
-  "vendor/jedit-text/exports.sha256",
-  "vendor/jedit-text/manifest.cbor",
-  "vendor/jedit-text/manifest.sha256",
+const SOURCE_CLOSURE_INPUTS = [
+  ["application/edict.application.json", "edict.application.json"],
+  ["application/edict.lawpack.json", "edict.lawpack.json"],
+  ["application/edict.toolchain-lock.json", "edict.toolchain-lock.json"],
+  ["application/src/ReplaceRange.edict", "src/ReplaceRange.edict"],
+  ["application/tests/assert-build-output.mjs", "tests/assert-build-output.mjs"],
+  ["application/tests/build.sh", "tests/build.sh"],
+  ["application/tests/package-chain.mjs", "tests/package-chain.mjs"],
+  ["application/tests/proof-harness.spec.mjs", "tests/proof-harness.spec.mjs"],
+  [
+    "application/tests/verification-evidence.mjs",
+    "tests/verification-evidence.mjs",
+  ],
+  [
+    "application/vendor/jedit-text/edict.lawpack-output.json",
+    "vendor/jedit-text/edict.lawpack-output.json",
+  ],
+  ["application/vendor/jedit-text/exports.cbor", "vendor/jedit-text/exports.cbor"],
+  [
+    "application/vendor/jedit-text/exports.sha256",
+    "vendor/jedit-text/exports.sha256",
+  ],
+  ["application/vendor/jedit-text/manifest.cbor", "vendor/jedit-text/manifest.cbor"],
+  [
+    "application/vendor/jedit-text/manifest.sha256",
+    "vendor/jedit-text/manifest.sha256",
+  ],
+  ["project/.github/workflows/ci.yml", "../../.github/workflows/ci.yml"],
+  ["project/package.json", "../../package.json"],
+  ["project/package-lock.json", "../../package-lock.json"],
 ];
 
 function sha256(bytes) {
@@ -53,24 +65,20 @@ async function sourceClosure(applicationRoot) {
   const hasher = createHash("sha256");
   hasher.update("jedit.edict-source-closure/v1\0");
   const files = [];
-  for (const relative of SOURCE_CLOSURE_PATHS) {
+  for (const [identityPath, relative] of SOURCE_CLOSURE_INPUTS) {
     const bytes = await readFile(path.join(applicationRoot, relative));
-    const relativeBytes = Buffer.from(relative, "utf8");
+    const relativeBytes = Buffer.from(identityPath, "utf8");
     hasher.update(lengthPrefix(relativeBytes.length));
     hasher.update(relativeBytes);
     hasher.update(lengthPrefix(bytes.length));
     hasher.update(bytes);
-    files.push({ path: relative, sha256: sha256(bytes).toString("hex") });
+    files.push({ path: identityPath, sha256: sha256(bytes).toString("hex") });
   }
   return {
     schema: "jedit.edict-source-closure/v1",
     digest: `sha256:${hasher.digest("hex")}`,
     files,
   };
-}
-
-function digestText(bytes) {
-  return `sha256:${Buffer.from(bytes).toString("hex")}`;
 }
 
 const [outputDirectory, mode] = process.argv.slice(2);
@@ -205,6 +213,21 @@ const reportDigest = canonicalArtifactDigest(
   "echo.operation-package-verifier-report/v1",
   reportBytes,
 );
+const reportArtifactId = {
+  coordinate: "verifier-report.echo-operation",
+  domain: "echo.operation-package-verifier-report/v1",
+  digest: digestText(reportDigest),
+  rawSha256: sha256(reportBytes).toString("hex"),
+};
+const evidence = verificationEvidence({
+  executableSubjectId: {
+    coordinate: report.executableSubject.reference.id,
+    digest: digestText(executableSubjectDigest),
+  },
+  provider: toolchainLock.echo.provider,
+  reportArtifactId,
+  report,
+});
 const computedBuildLock = {
   schema: "jedit.edict-build-lock/v1",
   applicationCoordinate: coreArtifact.coordinate,
@@ -241,12 +264,8 @@ const computedBuildLock = {
       digest: digestText(packageDigest),
       rawSha256: sha256(packageBytes).toString("hex"),
     },
-    verificationReport: {
-      coordinate: "verifier-report.echo-operation",
-      domain: "echo.operation-package-verifier-report/v1",
-      digest: digestText(reportDigest),
-      rawSha256: sha256(reportBytes).toString("hex"),
-    },
+    verificationReportArtifact: reportArtifactId,
+    verificationReport: evidence.identity,
     executableSubject: {
       coordinate: report.executableSubject.reference.id,
       domain: "echo.executable-subject/v1",

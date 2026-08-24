@@ -17,6 +17,8 @@ import {
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { decode } from "cbor-x";
+
 const testsDirectory = path.dirname(fileURLToPath(import.meta.url));
 const applicationRoot = path.resolve(testsDirectory, "..");
 const projectRoot = path.resolve(applicationRoot, "../..");
@@ -98,8 +100,35 @@ async function verifyProvider(lock) {
     const artifact = providerArtifact(manifest, role);
     assert.equal(artifact.resource.coordinate, expected.coordinate);
     assert.equal(artifact.resource.digest, `sha256:${expected.sha256}`);
-    assert.equal(await sha256(path.join(providerRoot, "components", fileName)), expected.sha256);
+    assert.equal(
+      await sha256(path.join(providerRoot, "components", fileName)),
+      expected.sha256,
+    );
   }
+  const targetProfileArtifact = providerArtifact(
+    manifest,
+    "target-profile.echo-dpo",
+  );
+  assert.equal(
+    targetProfileArtifact.resource.coordinate,
+    lock.targetProfile.coordinate,
+  );
+  assert.equal(targetProfileArtifact.resource.digest, lock.targetProfile.digest);
+  const targetProfile = decode(
+    await readFile(
+      path.join(
+        providerRoot,
+        "generated",
+        "primary",
+        "target-profile.echo-dpo.cbor",
+      ),
+    ),
+  );
+  assert.equal(targetProfile.verifier.id, lock.verifier.contract.coordinate);
+  assert.equal(
+    `sha256:${Buffer.from(targetProfile.verifier.digest[1]).toString("hex")}`,
+    lock.verifier.contract.digest,
+  );
   return providerRoot;
 }
 
@@ -156,9 +185,14 @@ async function snapshotFile(namespace, root, relative) {
   return { ...common, kind: "other" };
 }
 
-async function snapshotAuthoritativeInputs() {
+async function snapshotAuthoritativeInputs(lock) {
   const roots = [
     ["jedit", applicationRoot, (await collectDirectoryFiles(applicationRoot)).sort()],
+    [
+      "jedit-project",
+      projectRoot,
+      lock.validation.files.map((file) => file.path).sort(),
+    ],
     ["edict", edictRepository, trackedFiles(edictRepository)],
     ["echo", echoRepository, trackedFiles(echoRepository)],
   ];
@@ -172,8 +206,34 @@ async function snapshotAuthoritativeInputs() {
 }
 
 async function verifyVersions(lock) {
-  assert.equal(run("rustc", [`+${lock.rust.toolchain}`, "--version"]), lock.rust.rustcVersion);
-  assert.equal(run("cargo", [`+${lock.rust.toolchain}`, "--version"]), lock.rust.cargoVersion);
+  assert.equal(process.version, lock.validation.processVersion);
+  assert.equal(run("npm", ["--version"]), lock.validation.npmVersion);
+  const packageLock = JSON.parse(
+    await readFile(path.join(projectRoot, "package-lock.json")),
+  );
+  assert.equal(
+    packageLock.packages["node_modules/cbor-x"].version,
+    lock.validation.cborX.version,
+  );
+  assert.equal(
+    packageLock.packages["node_modules/cbor-x"].integrity,
+    lock.validation.cborX.integrity,
+  );
+  for (const file of lock.validation.files) {
+    assert.equal(
+      await sha256(path.join(projectRoot, file.path)),
+      file.sha256,
+      `${file.path} differs from the validation-environment lock`,
+    );
+  }
+  assert.equal(
+    run("rustc", [`+${lock.rust.toolchain}`, "--version"]),
+    lock.rust.rustcVersion,
+  );
+  assert.equal(
+    run("cargo", [`+${lock.rust.toolchain}`, "--version"]),
+    lock.rust.cargoVersion,
+  );
   run(
     "cargo",
     [`+${lock.rust.toolchain}`, "build", "--locked", "-p", "edict-cli"],
@@ -191,7 +251,7 @@ async function build() {
   await verifyGitCheckout(edictRepository, lock.edict.commit, "Edict");
   await verifyGitCheckout(echoRepository, lock.echo.commit, "Echo");
   const providerSource = await verifyProvider(lock.echo.provider);
-  const before = await snapshotAuthoritativeInputs();
+  const before = await snapshotAuthoritativeInputs(lock);
   let failure;
   try {
     const edictBinary = await verifyVersions(lock);
@@ -224,14 +284,16 @@ async function build() {
         application: "edict.application.json",
       })}\n`,
     });
-    run(process.execPath, [path.join(testsDirectory, "assert-build-output.mjs"), applicationOutput], {
-      cwd: applicationRoot,
-    });
+    run(
+      process.execPath,
+      [path.join(testsDirectory, "assert-build-output.mjs"), applicationOutput],
+      { cwd: applicationRoot },
+    );
   } catch (error) {
     failure = error;
   }
 
-  const after = await snapshotAuthoritativeInputs();
+  const after = await snapshotAuthoritativeInputs(lock);
   let mutationFailure;
   try {
     assert.deepEqual(after, before, "authoritative inputs changed during package-chain build");
@@ -239,7 +301,10 @@ async function build() {
     mutationFailure = error;
   }
   if (failure && mutationFailure) {
-    throw new AggregateError([failure, mutationFailure], "build failed and authoritative inputs changed");
+    throw new AggregateError(
+      [failure, mutationFailure],
+      "build failed and authoritative inputs changed",
+    );
   }
   if (mutationFailure) {
     throw mutationFailure;

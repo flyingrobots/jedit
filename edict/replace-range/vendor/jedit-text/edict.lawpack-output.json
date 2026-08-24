@@ -7,25 +7,25 @@
       "path": "manifest.cbor",
       "kind": "manifest",
       "coordinate": "edict.lawpack/v1",
-      "digest": "sha256:5253f7c8682cfed88a34c660a610c30da6bd9924973fefd33a82c9915a4f09cf"
+      "digest": "sha256:95758c1605894672cc9069fde01bb8b6e11842b053102660c9cd4f4d6f34d64e"
     },
     {
       "path": "manifest.sha256",
       "kind": "manifestDigest",
       "coordinate": "edict.lawpack/v1",
-      "digest": "sha256:5253f7c8682cfed88a34c660a610c30da6bd9924973fefd33a82c9915a4f09cf"
+      "digest": "sha256:95758c1605894672cc9069fde01bb8b6e11842b053102660c9cd4f4d6f34d64e"
     },
     {
       "path": "exports.cbor",
       "kind": "exports",
       "coordinate": "jedit.text.exports/v1",
-      "digest": "sha256:ffa6529b8327ab49e7cf62016e940e5cabf90c5468d9d1efb0dcb3d7d6574c88"
+      "digest": "sha256:cbbc79fd92f09f341a1fae221a2a869bb64e15c511af39333e0453cd87fe456a"
     },
     {
       "path": "exports.sha256",
       "kind": "exportsDigest",
       "coordinate": "jedit.text.exports/v1",
-      "digest": "sha256:ffa6529b8327ab49e7cf62016e940e5cabf90c5468d9d1efb0dcb3d7d6574c88"
+      "digest": "sha256:cbbc79fd92f09f341a1fae221a2a869bb64e15c511af39333e0453cd87fe456a"
     },
     {
       "path": "echo-operation-configuration.cbor",
