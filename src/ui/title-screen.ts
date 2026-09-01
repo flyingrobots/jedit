@@ -83,6 +83,11 @@ export {
   type TitleSceneMaterialColors,
 } from "./title-scene-material-colors.js";
 export { titleLogoCellBounds } from "./title-logo.js";
+export { renderJimLogoTitleScreen } from "./jim-logo-title-screen.js";
+export {
+  TITLE_BACKDROP_KIND,
+  type TitleBackdropKind,
+} from "./title-backdrop-kind.js";
 export { paintTitleScreenPresentation } from "./title-screen-presentation.js";
 export { titleFloorLightEffectsAt } from "./title-screen-optics.js";
 

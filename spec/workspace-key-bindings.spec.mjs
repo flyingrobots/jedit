@@ -98,6 +98,10 @@ test("ctrl-l opens the title scene picker when no editor is active", async () =>
   );
 
   assert.equal(nextModel.scenePickerOpen, true);
+  assert.equal(
+    nextModel.titleBackdropKind,
+    titleScreen.TITLE_BACKDROP_KIND.LegacyScene,
+  );
 });
 
 test("ctrl-h cannot open a process-local Echo history pane", async () => {

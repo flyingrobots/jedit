@@ -107,7 +107,10 @@ test('local full test scripts use one prebuilt dist pass', () => {
 
   assert.equal(packageJson.scripts['test:all'], FULL_PREBUILT_TEST_SCRIPT);
   assert.equal(packageJson.scripts.test, 'npm run test:all');
-  assert.equal(packageJson.scripts.check, 'npm run test:all && npm run quality');
+  assert.equal(
+    packageJson.scripts.check,
+    'npm run logo:check && npm run test:all && npm run quality',
+  );
 });
 
 test('CI build artifact restores compiled output required by test shards', () => {

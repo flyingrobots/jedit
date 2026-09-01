@@ -17,16 +17,19 @@ const STARTUP_MODAL_SCROLL_SELECTED_INDEX = 8;
 const STARTUP_MODAL_SCROLLBAR_TRACK_CHAR = "│";
 const STARTUP_MODAL_SCROLLBAR_THUMB_CHAR = "█";
 
-test("title screen number keys switch render modes without an editor", async () => {
-  const [keyBindings, titleScreen] = await Promise.all([
+test("title screen number keys switch to a visible legacy render mode", async () => {
+  const [keyBindings, titleScreen, viewerContent] = await Promise.all([
     importDist("app", "workspace", "key-bindings.js"),
     importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "viewer-content.js"),
   ]);
+  const base = mockTitleScreenModel(titleScreen, {
+    startupIntroComplete: true,
+    titleRenderMode: titleScreen.TITLE_RENDER_MODE.Braille,
+  });
   const [asciiModel] = keyBindings.updateFromKey(
     { key: "2" },
-    mockTitleScreenModel(titleScreen, {
-      titleRenderMode: titleScreen.TITLE_RENDER_MODE.Braille,
-    }),
+    base,
     mockKeyBindingContext(),
   );
   const [brailleModel] = keyBindings.updateFromKey(
@@ -39,8 +42,16 @@ test("title screen number keys switch render modes without an editor", async () 
 
   assert.equal(asciiModel.titleRenderMode, titleScreen.TITLE_RENDER_MODE.Ascii);
   assert.equal(
+    asciiModel.titleBackdropKind,
+    titleScreen.TITLE_BACKDROP_KIND.LegacyScene,
+  );
+  assert.equal(
     brailleModel.titleRenderMode,
     titleScreen.TITLE_RENDER_MODE.Braille,
+  );
+  assert.equal(
+    brailleModel.titleBackdropKind,
+    titleScreen.TITLE_BACKDROP_KIND.LegacyScene,
   );
   assert.equal(
     hasNotification(asciiModel, "Title shader", "ASCII · Dense"),
@@ -65,6 +76,10 @@ test("title screen number keys switch render modes without an editor", async () 
       bg: "#0d1117",
     },
   );
+  const renderer = viewerContent.createViewerContentRenderer();
+  const staticTitle = renderer.renderViewer(base, 80, 24);
+  const legacyAsciiTitle = renderer.renderViewer(asciiModel, 80, 24);
+  assert.notEqual(surfaceText(legacyAsciiTitle), surfaceText(staticTitle));
 });
 
 test("tab skips startup intro without opening the file browser", async () => {
@@ -165,12 +180,20 @@ test("title screen m cycles title materials and reports the material name", asyn
   const secondPreset = material.titleMeshMaterialPresetAt(2);
 
   assert.equal(first.titleMeshMaterialIndex, 1);
+  assert.equal(
+    first.titleBackdropKind,
+    titleScreen.TITLE_BACKDROP_KIND.LegacyScene,
+  );
   assert.deepEqual(first.sceneOverride.objects[0].color, firstPreset.color);
   assert.equal(
     hasNotification(first, "Title material", firstPreset.name),
     true,
   );
   assert.equal(second.titleMeshMaterialIndex, 2);
+  assert.equal(
+    second.titleBackdropKind,
+    titleScreen.TITLE_BACKDROP_KIND.LegacyScene,
+  );
   assert.deepEqual(second.sceneOverride.objects[0].color, secondPreset.color);
   assert.equal(
     hasNotification(second, "Title material", secondPreset.name),
@@ -208,6 +231,10 @@ test("title screen uses FPS-style camera keys without an editor", async () => {
   );
 
   assert.ok(forward.titleCamera.position[2] < base.titleCamera.position[2]);
+  assert.equal(
+    forward.titleBackdropKind,
+    titleScreen.TITLE_BACKDROP_KIND.LegacyScene,
+  );
   assert.ok(left.titleCamera.position[0] < base.titleCamera.position[0]);
   assert.ok(jumped.titleCamera.position[1] > base.titleCamera.position[1]);
   assert.equal(crouched.titleCamera.crouching, true);
@@ -233,6 +260,10 @@ test("title screen mouse movement drags the camera look vector", async () => {
   );
 
   assert.deepEqual(anchored.titleCamera.position, base.titleCamera.position);
+  assert.equal(
+    anchored.titleBackdropKind,
+    titleScreen.TITLE_BACKDROP_KIND.LegacyScene,
+  );
   assert.deepEqual(rotated.titleCamera.position, base.titleCamera.position);
   assert.ok(rotated.titleCamera.target[0] > base.titleCamera.target[0]);
   assert.ok(rotated.titleCamera.target[1] < base.titleCamera.target[1]);
@@ -658,8 +689,78 @@ test("workspace title row uses the active theme chrome token", async () => {
   const titleCell = titleCells.find((cell) => cell.char !== " ");
 
   assert.ok(titleCell);
-  assert.equal(titleCell.bg, theme.chrome.titleLogo.bg);
-  assert.equal(titleCell.fg, theme.chrome.titleLogo.fg);
+  assert.equal(titleCell.bg, theme.surface.header.bg);
+  assert.equal(titleCell.fg, theme.surface.header.fg);
+  assert.ok(
+    titleCells.every((cell) => cell.bg === theme.surface.header.bg),
+    "the complete title row should use the header surface",
+  );
+});
+
+test("default title screen is a static sparse Braille Jim mark", async () => {
+  const [viewer, titleScreen, themes] = await Promise.all([
+    importDist("app", "workspace", "viewer.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("ui", "jedit-themes.js"),
+  ]);
+  const theme = themes.availableJeditThemes()[0];
+  const base = mockTitleScreenModel(titleScreen, {
+    columns: 80,
+    rows: 24,
+    jeditTheme: theme,
+    startupIntroComplete: true,
+    time: 0,
+  });
+  const firstBody = titleBodyCells(viewer.renderWorkspace(base));
+  const laterBody = titleBodyCells(
+    viewer.renderWorkspace({ ...base, time: 3 }),
+  );
+  const ink = firstBody.filter(
+    ({ cell }) => cell.char !== " " && cell.char !== "⠀",
+  );
+
+  assert.ok(ink.length > 12);
+  assert.ok(ink.length < firstBody.length / 4);
+  assert.ok(ink.every(({ cell }) => isBrailleCell(cell.char)));
+  assert.deepEqual(
+    firstBody.map(({ cell }) => cell.char),
+    laterBody.map(({ cell }) => cell.char),
+  );
+});
+
+test("default title path preserves the startup intro presentation", async () => {
+  const [viewerContent, titleScreen, themes] = await Promise.all([
+    importDist("app", "workspace", "viewer-content.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("ui", "jedit-themes.js"),
+  ]);
+  const width = 80;
+  const height = 24;
+  const time = 0;
+  const theme = themes.availableJeditThemes()[0];
+  const model = mockTitleScreenModel(titleScreen, {
+    columns: width,
+    rows: height,
+    jeditTheme: theme,
+    startupIntroComplete: false,
+    time,
+  });
+  const backdrop = titleScreen.renderJimLogoTitleScreen(width, height, theme);
+  const expected = titleScreen.renderJimLogoTitleScreen(width, height, theme);
+  titleScreen.paintTitleScreenPresentation(expected, {
+    cols: width,
+    rows: height,
+    time,
+    theme,
+    textDirection: model.i18n.direction,
+  });
+
+  const actual = viewerContent
+    .createViewerContentRenderer()
+    .renderViewer(model, width, height);
+
+  assert.notEqual(surfaceText(expected), surfaceText(backdrop));
+  assert.equal(surfaceText(actual), surfaceText(expected));
 });
 
 test("startup file selector drawer width follows spring progress", async () => {
@@ -1070,6 +1171,17 @@ function fpsTestCamera() {
     eyeY: 1,
     crouching: false,
   };
+}
+
+function titleBodyCells(surface) {
+  return positionedCells(surface).filter(
+    ({ y }) => y >= 2 && y < surface.height - 2,
+  );
+}
+
+function isBrailleCell(char) {
+  const codePoint = char.codePointAt(0) ?? 0;
+  return codePoint >= 0x2800 && codePoint <= 0x28ff;
 }
 
 function titleMouse(action, col, row) {
