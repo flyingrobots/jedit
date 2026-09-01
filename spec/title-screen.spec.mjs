@@ -46,6 +46,17 @@ const INACTIVE_DOT_BG_RGB = [80, 90, 100];
 const SOLID_DOT_BG_RGB = [11, 12, 13];
 const PRESENTS_TEXT = "PRESENTS";
 
+test("Bijou release exposes Blocks and raster-to-glyph rendering", async () => {
+  const [bijou, tui] = await Promise.all([
+    import("@flyingrobots/bijou"),
+    import("@flyingrobots/bijou-tui"),
+  ]);
+
+  assert.equal(typeof bijou.compileGraphqlBijouBlock, "function");
+  assert.equal(typeof bijou.lowerBijouBlockToUiScene, "function");
+  assert.equal(typeof tui.rasterToGlyphSurface, "function");
+});
+
 test("averaging Braille canvas resamples all eight subpixel colors into the cell style", async () => {
   const { brailleCanvas } = await loadTitleModules();
   const samples = [

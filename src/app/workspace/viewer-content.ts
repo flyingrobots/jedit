@@ -4,7 +4,7 @@ import { renderSourceViewer } from "../../ui/source-viewer.js";
 import {
   TITLE_RENDER_MODE,
   paintTitleScreenPresentation,
-  renderTitleScreen,
+  renderJimLogoTitleScreen,
   type TitleScreenRenderOptions,
 } from "../../ui/title-screen.js";
 import type { JeditTheme } from "../../ui/jedit-theme.js";
@@ -96,7 +96,7 @@ export interface ViewerContentRenderer {
 }
 
 export function createViewerContentRenderer(
-  titleRenderer: TitleScreenRenderer = renderTitleScreen,
+  titleRenderer?: TitleScreenRenderer,
 ): ViewerContentRenderer {
   const state: ViewerContentRendererState = {};
   return {
@@ -139,12 +139,14 @@ function renderViewerWithState(
   model: WorkspaceModel,
   width: number,
   height: number,
-  titleRenderer: TitleScreenRenderer,
+  titleRenderer: TitleScreenRenderer | undefined,
   state: ViewerContentRendererState,
 ): Surface {
   const editor = displayEditorForWorkspaceModel(model);
   if (editor == null) {
-    return renderTitleBackdrop(model, width, height, titleRenderer, state);
+    return titleRenderer == null
+      ? renderJimLogoTitleScreen(width, height, model.jeditTheme)
+      : renderTitleBackdrop(model, width, height, titleRenderer, state);
   }
 
   const surface = createSurface(width, height);

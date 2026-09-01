@@ -658,8 +658,43 @@ test("workspace title row uses the active theme chrome token", async () => {
   const titleCell = titleCells.find((cell) => cell.char !== " ");
 
   assert.ok(titleCell);
-  assert.equal(titleCell.bg, theme.chrome.titleLogo.bg);
-  assert.equal(titleCell.fg, theme.chrome.titleLogo.fg);
+  assert.equal(titleCell.bg, theme.surface.header.bg);
+  assert.equal(titleCell.fg, theme.surface.header.fg);
+  assert.ok(
+    titleCells.every((cell) => cell.bg === theme.surface.header.bg),
+    "the complete title row should use the header surface",
+  );
+});
+
+test("default title screen is a static sparse Braille Jim mark", async () => {
+  const [viewer, titleScreen, themes] = await Promise.all([
+    importDist("app", "workspace", "viewer.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("ui", "jedit-themes.js"),
+  ]);
+  const theme = themes.availableJeditThemes()[0];
+  const base = mockTitleScreenModel(titleScreen, {
+    columns: 80,
+    rows: 24,
+    jeditTheme: theme,
+    startupIntroComplete: true,
+    time: 0,
+  });
+  const firstBody = titleBodyCells(viewer.renderWorkspace(base));
+  const laterBody = titleBodyCells(
+    viewer.renderWorkspace({ ...base, time: 3 }),
+  );
+  const ink = firstBody.filter(
+    ({ cell }) => cell.char !== " " && cell.char !== "⠀",
+  );
+
+  assert.ok(ink.length > 12);
+  assert.ok(ink.length < firstBody.length / 4);
+  assert.ok(ink.every(({ cell }) => isBrailleCell(cell.char)));
+  assert.deepEqual(
+    firstBody.map(({ cell }) => cell.char),
+    laterBody.map(({ cell }) => cell.char),
+  );
 });
 
 test("startup file selector drawer width follows spring progress", async () => {
@@ -1070,6 +1105,17 @@ function fpsTestCamera() {
     eyeY: 1,
     crouching: false,
   };
+}
+
+function titleBodyCells(surface) {
+  return positionedCells(surface).filter(
+    ({ y }) => y >= 2 && y < surface.height - 2,
+  );
+}
+
+function isBrailleCell(char) {
+  const codePoint = char.codePointAt(0) ?? 0;
+  return codePoint >= 0x2800 && codePoint <= 0x28ff;
 }
 
 function titleMouse(action, col, row) {

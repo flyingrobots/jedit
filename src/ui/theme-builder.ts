@@ -166,11 +166,10 @@ export interface JeditMarkdownStyleDrafts {
   readonly rule: JeditStyleDraft;
 }
 
-export interface JeditSurfaceStyleDrafts {
-  readonly workspace: JeditStyleDraft;
-  readonly drawer: JeditStyleDraft;
-  readonly footer: JeditStyleDraft;
-}
+export type JeditSurfaceStyleDrafts = Readonly<Record<
+  'workspace' | 'currentLine' | 'drawer' | 'header' | 'footer',
+  JeditStyleDraft
+>>;
 
 export interface JeditCursorStyleDrafts {
   readonly normal: JeditStyleDraft;
@@ -273,7 +272,9 @@ function buildGutterVariants(draft: JeditThemeDraft): JeditTheme['gutter'] {
 function buildSurfaceTokens(draft: JeditThemeDraft): JeditTheme['surface'] {
   return {
     workspace: styleTokenFromDraft(draft.surface.workspace),
+    currentLine: styleTokenFromDraft(draft.surface.currentLine),
     drawer: styleTokenFromDraft(draft.surface.drawer),
+    header: styleTokenFromDraft(draft.surface.header),
     footer: styleTokenFromDraft(draft.surface.footer),
   };
 }
@@ -298,7 +299,7 @@ function createThemeDraft(variables: Map<string, JeditColorStop>): JeditThemeDra
     style: JEDIT_TEXT_MODIFIER,
     source: createSourceDrafts(),
     markdown: createMarkdownDrafts(),
-    surface: { workspace: {}, drawer: {}, footer: {} },
+    surface: { workspace: {}, currentLine: {}, drawer: {}, header: {}, footer: {} },
     cursor: { normal: {}, insert: {} },
     chrome: createChromeDrafts(),
     gutter: createGutterVariantDrafts(),

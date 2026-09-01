@@ -90,7 +90,7 @@ function paintWorkspaceTitle(screen: Surface, model: WorkspaceModel): void {
     editorDirty: model.editor?.dirty ?? false,
     selectedEntry: model.entries[model.selectedIndex],
   }), model.columns), model.columns, 1);
-  applyTitleToken(title, model.jeditTheme.chrome.titleLogo);
+  applyTitleToken(title, model.jeditTheme.surface.header);
   screen.blit(title, 0, 0);
 }
 

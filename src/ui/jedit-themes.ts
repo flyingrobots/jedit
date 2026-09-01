@@ -365,8 +365,13 @@ function applySurfaceThemeTokens(
 ): void {
   draft.surface.workspace.foregroundColor = variables.ink;
   draft.surface.workspace.backgroundColor = variables.surface;
+  draft.surface.currentLine.foregroundColor = variables.ink;
+  draft.surface.currentLine.backgroundColor = variables.surfaceRaised;
   draft.surface.drawer.foregroundColor = variables.ink;
   draft.surface.drawer.backgroundColor = variables.surfaceMuted;
+  draft.surface.header.foregroundColor = variables.ink;
+  draft.surface.header.backgroundColor = variables.surfaceMuted;
+  draft.surface.header.modifiers = [JEDIT_TEXT_MODIFIER.Bold];
   draft.surface.footer.foregroundColor = variables.ink;
   draft.surface.footer.backgroundColor = variables.surfaceMuted;
 }

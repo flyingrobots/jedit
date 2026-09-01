@@ -463,7 +463,9 @@ export function mockJeditTheme() {
     variables: new Map(),
     surface: {
       workspace,
+      currentLine: drawer,
       drawer,
+      header: drawer,
       footer: drawer,
     },
     cursor: {

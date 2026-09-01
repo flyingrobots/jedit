@@ -131,7 +131,9 @@ export interface JeditStyleToken extends Pick<Cell, 'fg' | 'bg' | 'fgRGB' | 'bgR
 
 export interface JeditThemeSurfaceTokens {
   readonly workspace: JeditStyleToken;
+  readonly currentLine: JeditStyleToken;
   readonly drawer: JeditStyleToken;
+  readonly header: JeditStyleToken;
   readonly footer: JeditStyleToken;
 }
 
