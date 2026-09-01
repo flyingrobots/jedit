@@ -697,6 +697,41 @@ test("default title screen is a static sparse Braille Jim mark", async () => {
   );
 });
 
+test("default title path preserves the startup intro presentation", async () => {
+  const [viewerContent, titleScreen, themes] = await Promise.all([
+    importDist("app", "workspace", "viewer-content.js"),
+    importDist("ui", "title-screen.js"),
+    importDist("ui", "jedit-themes.js"),
+  ]);
+  const width = 80;
+  const height = 24;
+  const time = 0;
+  const theme = themes.availableJeditThemes()[0];
+  const model = mockTitleScreenModel(titleScreen, {
+    columns: width,
+    rows: height,
+    jeditTheme: theme,
+    startupIntroComplete: false,
+    time,
+  });
+  const backdrop = titleScreen.renderJimLogoTitleScreen(width, height, theme);
+  const expected = titleScreen.renderJimLogoTitleScreen(width, height, theme);
+  titleScreen.paintTitleScreenPresentation(expected, {
+    cols: width,
+    rows: height,
+    time,
+    theme,
+    textDirection: model.i18n.direction,
+  });
+
+  const actual = viewerContent
+    .createViewerContentRenderer()
+    .renderViewer(model, width, height);
+
+  assert.notEqual(surfaceText(expected), surfaceText(backdrop));
+  assert.equal(surfaceText(actual), surfaceText(expected));
+});
+
 test("startup file selector drawer width follows spring progress", async () => {
   const [viewer, titleScreen, themes, fileSystem] = await Promise.all([
     importDist("app", "workspace", "viewer.js"),

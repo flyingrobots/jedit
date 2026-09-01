@@ -145,7 +145,7 @@ function renderViewerWithState(
   const editor = displayEditorForWorkspaceModel(model);
   if (editor == null) {
     return titleRenderer == null
-      ? renderJimLogoTitleScreen(width, height, model.jeditTheme)
+      ? renderDefaultTitleFrame(model, width, height, state)
       : renderTitleBackdrop(model, width, height, titleRenderer, state);
   }
 
@@ -175,6 +175,21 @@ function renderViewerWithState(
       deletionMarkers: causalSourceGutterDeletionMarkers(model),
       reading: sourceWindowForWorkspaceModel(model),
     },
+  );
+}
+
+function renderDefaultTitleFrame(
+  model: WorkspaceModel,
+  width: number,
+  height: number,
+  state: ViewerContentRendererState,
+): Surface {
+  return titleFrameSurface(
+    renderJimLogoTitleScreen(width, height, model.jeditTheme),
+    model,
+    width,
+    height,
+    state,
   );
 }
 

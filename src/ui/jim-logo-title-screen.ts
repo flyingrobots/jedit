@@ -17,6 +17,10 @@ const LOGO_VERTICAL_MARGIN = 2;
 const BRAILLE_CELL_ASPECT_RATIO = 0.5;
 const BRAILLE_DARKNESS_THRESHOLD = 0.5;
 const BRAILLE_BLANK = '\u2800';
+const GLYPH_SURFACE_FIT = 'contain';
+const GLYPH_SURFACE_COLOR_MODE = 'none';
+const GLYPH_SURFACE_RENDERER_KIND = 'braille';
+const SURFACE_BLANK = ' ';
 const MASK_BITS_PER_BYTE = 8;
 const RGBA_CHANNEL_COUNT = 4;
 const RGBA_ALPHA_OFFSET = 3;
@@ -37,11 +41,11 @@ export function renderJimLogoTitleScreen(
   const glyphs = rasterToGlyphSurface(JIM_LOGO_FRAME, {
     columns: bounds.width,
     rows: bounds.height,
-    fit: 'contain',
+    fit: GLYPH_SURFACE_FIT,
     cellAspectRatio: BRAILLE_CELL_ASPECT_RATIO,
-    colorMode: 'none',
+    colorMode: GLYPH_SURFACE_COLOR_MODE,
     renderer: {
-      kind: 'braille',
+      kind: GLYPH_SURFACE_RENDERER_KIND,
       threshold: BRAILLE_DARKNESS_THRESHOLD,
     },
   });
@@ -79,7 +83,10 @@ function createStyledSurface(
   height: number,
   token: JeditStyleToken,
 ): Surface {
-  const surface = createSurface(width, height, { char: ' ', empty: false });
+  const surface = createSurface(width, height, {
+    char: SURFACE_BLANK,
+    empty: false,
+  });
   for (let y = 0; y < surface.height; y += 1) {
     for (let x = 0; x < surface.width; x += 1) {
       const cell = surface.get(x, y);
