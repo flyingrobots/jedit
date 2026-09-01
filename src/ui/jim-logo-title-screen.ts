@@ -4,7 +4,7 @@ import { rasterToGlyphSurface, type RgbaFrame } from '@flyingrobots/bijou-tui';
 import type { JeditStyleToken, JeditTheme } from './jedit-theme.js';
 import {
   JIM_LOGO_RASTER_HEIGHT,
-  JIM_LOGO_RASTER_MASK_BASE64,
+  JIM_LOGO_RASTER_MASK_BYTES,
   JIM_LOGO_RASTER_MASK_BYTES_PER_ROW,
   JIM_LOGO_RASTER_WIDTH,
 } from './jim-logo-raster-data.js';
@@ -131,7 +131,7 @@ function paintJimLogo(
 }
 
 function createJimLogoFrame(): RgbaFrame {
-  const mask = decodeBase64(JIM_LOGO_RASTER_MASK_BASE64);
+  const mask = JIM_LOGO_RASTER_MASK_BYTES;
   const expectedMaskLength = JIM_LOGO_RASTER_MASK_BYTES_PER_ROW
     * JIM_LOGO_RASTER_HEIGHT;
   if (mask.length !== expectedMaskLength) {
@@ -164,13 +164,4 @@ function maskPixelIsSet(mask: Uint8Array, x: number, y: number): boolean {
   ] ?? 0;
   const bit = MASK_BITS_PER_BYTE - 1 - (x % MASK_BITS_PER_BYTE);
   return (byte & (1 << bit)) !== 0;
-}
-
-function decodeBase64(encoded: string): Uint8Array {
-  const binary = atob(encoded);
-  const bytes = new Uint8Array(binary.length);
-  for (let index = 0; index < binary.length; index += 1) {
-    bytes[index] = binary.charCodeAt(index);
-  }
-  return bytes;
 }

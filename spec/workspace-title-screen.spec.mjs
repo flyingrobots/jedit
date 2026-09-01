@@ -17,16 +17,19 @@ const STARTUP_MODAL_SCROLL_SELECTED_INDEX = 8;
 const STARTUP_MODAL_SCROLLBAR_TRACK_CHAR = "│";
 const STARTUP_MODAL_SCROLLBAR_THUMB_CHAR = "█";
 
-test("title screen number keys switch render modes without an editor", async () => {
-  const [keyBindings, titleScreen] = await Promise.all([
+test("title screen number keys switch to a visible legacy render mode", async () => {
+  const [keyBindings, titleScreen, viewerContent] = await Promise.all([
     importDist("app", "workspace", "key-bindings.js"),
     importDist("ui", "title-screen.js"),
+    importDist("app", "workspace", "viewer-content.js"),
   ]);
+  const base = mockTitleScreenModel(titleScreen, {
+    startupIntroComplete: true,
+    titleRenderMode: titleScreen.TITLE_RENDER_MODE.Braille,
+  });
   const [asciiModel] = keyBindings.updateFromKey(
     { key: "2" },
-    mockTitleScreenModel(titleScreen, {
-      titleRenderMode: titleScreen.TITLE_RENDER_MODE.Braille,
-    }),
+    base,
     mockKeyBindingContext(),
   );
   const [brailleModel] = keyBindings.updateFromKey(
@@ -39,8 +42,16 @@ test("title screen number keys switch render modes without an editor", async () 
 
   assert.equal(asciiModel.titleRenderMode, titleScreen.TITLE_RENDER_MODE.Ascii);
   assert.equal(
+    asciiModel.titleBackdropKind,
+    titleScreen.TITLE_BACKDROP_KIND.LegacyScene,
+  );
+  assert.equal(
     brailleModel.titleRenderMode,
     titleScreen.TITLE_RENDER_MODE.Braille,
+  );
+  assert.equal(
+    brailleModel.titleBackdropKind,
+    titleScreen.TITLE_BACKDROP_KIND.LegacyScene,
   );
   assert.equal(
     hasNotification(asciiModel, "Title shader", "ASCII · Dense"),
@@ -65,6 +76,10 @@ test("title screen number keys switch render modes without an editor", async () 
       bg: "#0d1117",
     },
   );
+  const renderer = viewerContent.createViewerContentRenderer();
+  const staticTitle = renderer.renderViewer(base, 80, 24);
+  const legacyAsciiTitle = renderer.renderViewer(asciiModel, 80, 24);
+  assert.notEqual(surfaceText(legacyAsciiTitle), surfaceText(staticTitle));
 });
 
 test("tab skips startup intro without opening the file browser", async () => {
@@ -165,12 +180,20 @@ test("title screen m cycles title materials and reports the material name", asyn
   const secondPreset = material.titleMeshMaterialPresetAt(2);
 
   assert.equal(first.titleMeshMaterialIndex, 1);
+  assert.equal(
+    first.titleBackdropKind,
+    titleScreen.TITLE_BACKDROP_KIND.LegacyScene,
+  );
   assert.deepEqual(first.sceneOverride.objects[0].color, firstPreset.color);
   assert.equal(
     hasNotification(first, "Title material", firstPreset.name),
     true,
   );
   assert.equal(second.titleMeshMaterialIndex, 2);
+  assert.equal(
+    second.titleBackdropKind,
+    titleScreen.TITLE_BACKDROP_KIND.LegacyScene,
+  );
   assert.deepEqual(second.sceneOverride.objects[0].color, secondPreset.color);
   assert.equal(
     hasNotification(second, "Title material", secondPreset.name),
@@ -208,6 +231,10 @@ test("title screen uses FPS-style camera keys without an editor", async () => {
   );
 
   assert.ok(forward.titleCamera.position[2] < base.titleCamera.position[2]);
+  assert.equal(
+    forward.titleBackdropKind,
+    titleScreen.TITLE_BACKDROP_KIND.LegacyScene,
+  );
   assert.ok(left.titleCamera.position[0] < base.titleCamera.position[0]);
   assert.ok(jumped.titleCamera.position[1] > base.titleCamera.position[1]);
   assert.equal(crouched.titleCamera.crouching, true);
@@ -233,6 +260,10 @@ test("title screen mouse movement drags the camera look vector", async () => {
   );
 
   assert.deepEqual(anchored.titleCamera.position, base.titleCamera.position);
+  assert.equal(
+    anchored.titleBackdropKind,
+    titleScreen.TITLE_BACKDROP_KIND.LegacyScene,
+  );
   assert.deepEqual(rotated.titleCamera.position, base.titleCamera.position);
   assert.ok(rotated.titleCamera.target[0] > base.titleCamera.target[0]);
   assert.ok(rotated.titleCamera.target[1] < base.titleCamera.target[1]);

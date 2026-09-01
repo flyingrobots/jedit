@@ -7,6 +7,7 @@ import {
 } from "../../ui/title-scene.js";
 import {
   TITLE_ASCII_PALETTE,
+  TITLE_BACKDROP_KIND,
   TITLE_RENDER_MODE,
 } from "../../ui/title-screen.js";
 import { FocusPanes, type FocusPane } from "../../ui/panel-focus.js";
@@ -195,6 +196,7 @@ function initialSceneState(
     ...(sceneOverride == null ? {} : { sceneOverride }),
     titleCamera: createTitleCameraState(cameraPlacement),
     titleMouseLook: undefined,
+    titleBackdropKind: TITLE_BACKDROP_KIND.StaticLogo,
     titleRenderMode: TITLE_RENDER_MODE.Braille,
     titleAsciiPalette: TITLE_ASCII_PALETTE.Dense,
     titleMeshMaterialIndex: 0,

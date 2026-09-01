@@ -562,6 +562,7 @@ export function mockTitleScreenModel(titleScreen, overrides = {}) {
       crouching: false,
     },
     titleMouseLook: undefined,
+    titleBackdropKind: titleScreen.TITLE_BACKDROP_KIND.StaticLogo,
     titleRenderMode: titleScreen.TITLE_RENDER_MODE.Braille,
     titleAsciiPalette: titleScreen.TITLE_ASCII_PALETTE.Dense,
     titleMeshMaterialIndex: 0,

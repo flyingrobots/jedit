@@ -10,7 +10,6 @@ import {
   SOURCE_HIGHLIGHT_MESSAGE,
 } from "../source-highlight-session.js";
 import {
-  createTitleCameraState,
   reduceTitleCameraMotion,
   TITLE_CAMERA_MESSAGE,
 } from "../title-camera-session.js";
@@ -40,6 +39,7 @@ import {
   applyStartupIntroTime,
   applyWorkspaceCausalLineChangeResult,
   applyWorkspaceTextMessage,
+  applyWorkspaceTitleSceneLoadResult,
   applyWorkspaceWhyRangeResult,
   syncActiveWorkspaceBufferRecord,
 } from "./workspace-state-reducers.js";
@@ -219,7 +219,7 @@ function updateGeneratedStateMessage(
     return applyWorkspaceCausalLineChangeResult(msg, model);
   }
   if (msg.type === WorkspaceMessageTypes.LoadSceneResult) {
-    return [applySceneLoadResult(model, msg), []];
+    return [applyWorkspaceTitleSceneLoadResult(model, msg), []];
   }
   if (msg.type === SOURCE_HIGHLIGHT_MESSAGE) {
     return [reduceSourceHighlightMsg(model, msg), []];
@@ -256,24 +256,6 @@ function isWorkspaceMsg(msg: WorkspaceRuntimeMsg): msg is WorkspaceMsg {
     msg.type !== WorkspaceInputMessageTypes.Key &&
     msg.type !== WorkspaceInputMessageTypes.Mouse
   );
-}
-
-function applySceneLoadResult(
-  model: WorkspaceModel,
-  msg: Extract<
-    WorkspaceMsg,
-    { type: typeof WorkspaceMessageTypes.LoadSceneResult }
-  >,
-): WorkspaceModel {
-  return {
-    ...model,
-    sceneOverride: msg.scene,
-    titleSceneName: msg.scene == null ? undefined : msg.sceneName,
-    titleCamera:
-      msg.scene == null
-        ? model.titleCamera
-        : createTitleCameraState(msg.scene.camera),
-  };
 }
 
 function updateWorkspaceEffectMessage(

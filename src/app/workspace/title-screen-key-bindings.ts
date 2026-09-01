@@ -9,6 +9,7 @@ import {
 import {
   nextTitleAsciiPalette,
   TITLE_ASCII_PALETTE,
+  TITLE_BACKDROP_KIND,
   TITLE_RENDER_MODE,
   type TitleAsciiPalette,
 } from "../../ui/title-screen.js";
@@ -74,14 +75,20 @@ function updateTitleRenderKey(
 ): KeyBindingResult | undefined {
   if (msg.key === WorkspaceKeys.One) {
     return pushTitleScreenToast(
-      { ...model, titleRenderMode: TITLE_RENDER_MODE.Braille },
+      activateLegacyTitleBackdrop({
+        ...model,
+        titleRenderMode: TITLE_RENDER_MODE.Braille,
+      }),
       TITLE_SHADER_BRAILLE_LABEL,
       context,
     );
   }
   if (msg.key === WorkspaceKeys.Two) {
     return pushTitleScreenToast(
-      { ...model, titleRenderMode: TITLE_RENDER_MODE.Ascii },
+      activateLegacyTitleBackdrop({
+        ...model,
+        titleRenderMode: TITLE_RENDER_MODE.Ascii,
+      }),
       asciiShaderLabel(model),
       context,
     );
@@ -95,7 +102,7 @@ function updateTitleRenderKey(
 
   const titleAsciiPalette = nextTitleAsciiPalette(model.titleAsciiPalette);
   return pushAsciiPaletteToast(
-    { ...model, titleAsciiPalette },
+    activateLegacyTitleBackdrop({ ...model, titleAsciiPalette }),
     titleAsciiPalette,
     context,
   );
@@ -118,11 +125,11 @@ function updateTitleMeshMaterialKey(
       ? undefined
       : applyTitleMeshMaterial(model.sceneOverride, preset);
   return pushTitleMeshMaterialToast(
-    {
+    activateLegacyTitleBackdrop({
       ...model,
       titleMeshMaterialIndex,
       ...(sceneOverride == null ? {} : { sceneOverride }),
-    },
+    }),
     preset.name,
     context,
   );
@@ -146,7 +153,17 @@ function updateTitleCameraKey(
   });
   return update == null
     ? undefined
-    : [{ ...model, titleCamera: update.state }, update.commands];
+    : [
+        activateLegacyTitleBackdrop({ ...model, titleCamera: update.state }),
+        update.commands,
+      ];
+}
+
+function activateLegacyTitleBackdrop(model: WorkspaceModel): WorkspaceModel {
+  return {
+    ...model,
+    titleBackdropKind: TITLE_BACKDROP_KIND.LegacyScene,
+  };
 }
 
 function pushTitleScreenToast(

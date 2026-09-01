@@ -2,9 +2,11 @@ import { createSurface, type Surface } from "@flyingrobots/bijou";
 import { paintMarkdownPreview } from "../../ui/markdown-preview.js";
 import { renderSourceViewer } from "../../ui/source-viewer.js";
 import {
+  TITLE_BACKDROP_KIND,
   TITLE_RENDER_MODE,
   paintTitleScreenPresentation,
   renderJimLogoTitleScreen,
+  renderTitleScreen,
   type TitleScreenRenderOptions,
 } from "../../ui/title-screen.js";
 import type { JeditTheme } from "../../ui/jedit-theme.js";
@@ -30,8 +32,8 @@ import {
 import { fillSurface } from "./surface-fill.js";
 import {
   governTitleSceneRender,
+  staticTitleScenePerformanceFacts,
   titleScenePerformanceFacts,
-  TITLE_SCENE_RENDER_POSTURE,
   type TitleScenePerformanceFacts,
 } from "./title-scene-performance-governor.js";
 import {
@@ -44,14 +46,6 @@ const MIN_VIEWPORT_DIMENSION = 1;
 const VIEWER_PAD_MULTIPLIER = 2;
 const TITLE_CAMERA_MOTION_EPSILON = 0.001;
 const TITLE_FRAME_BUDGET_OVER = "over-budget";
-const INITIAL_TITLE_SCENE_PERFORMANCE_FACTS: TitleScenePerformanceFacts = {
-  posture: TITLE_SCENE_RENDER_POSTURE.LiveTrace,
-  tracesRays: true,
-  usesFrozenBackdrop: false,
-  retainsBackdrop: true,
-  inputLatencyPosture: "animated-title",
-  frameBudgetPosture: "within-budget",
-};
 
 interface FrozenTitleBackdrop {
   readonly width: number;
@@ -108,7 +102,7 @@ export function createViewerContentRenderer(
     },
     titleScenePerformanceFacts() {
       return (
-        state.lastTitleScenePerformance ?? INITIAL_TITLE_SCENE_PERFORMANCE_FACTS
+        state.lastTitleScenePerformance ?? staticTitleScenePerformanceFacts()
       );
     },
   };
@@ -144,9 +138,7 @@ function renderViewerWithState(
 ): Surface {
   const editor = displayEditorForWorkspaceModel(model);
   if (editor == null) {
-    return titleRenderer == null
-      ? renderDefaultTitleFrame(model, width, height, state)
-      : renderTitleBackdrop(model, width, height, titleRenderer, state);
+    return renderTitleViewer(model, width, height, titleRenderer, state);
   }
 
   const surface = createSurface(width, height);
@@ -178,12 +170,30 @@ function renderViewerWithState(
   );
 }
 
+function renderTitleViewer(
+  model: WorkspaceModel,
+  width: number,
+  height: number,
+  injectedRenderer: TitleScreenRenderer | undefined,
+  state: ViewerContentRendererState,
+): Surface {
+  const renderer =
+    injectedRenderer ??
+    (model.titleBackdropKind === TITLE_BACKDROP_KIND.LegacyScene
+      ? renderTitleScreen
+      : undefined);
+  return renderer == null
+    ? renderDefaultTitleFrame(model, width, height, state)
+    : renderTitleBackdrop(model, width, height, renderer, state);
+}
+
 function renderDefaultTitleFrame(
   model: WorkspaceModel,
   width: number,
   height: number,
   state: ViewerContentRendererState,
 ): Surface {
+  state.lastTitleScenePerformance = staticTitleScenePerformanceFacts();
   return titleFrameSurface(
     renderJimLogoTitleScreen(width, height, model.jeditTheme),
     model,

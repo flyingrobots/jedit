@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
@@ -9,6 +10,7 @@ import {
   loadTitleModules,
   positionedCells,
 } from "./title-screen-helpers.mjs";
+import { importDist } from "./workspace-helpers.mjs";
 
 const TITLE_WIDTH = 96;
 const TITLE_HEIGHT = 28;
@@ -45,6 +47,26 @@ const INACTIVE_DOT_FG_RGB = [0, 0, 0];
 const INACTIVE_DOT_BG_RGB = [80, 90, 100];
 const SOLID_DOT_BG_RGB = [11, 12, 13];
 const PRESENTS_TEXT = "PRESENTS";
+const JIM_LOGO_SOURCE_PATH = new URL("../JimLogo.svg", import.meta.url);
+const SHA256_ALGORITHM = "sha256";
+const HASH_DIGEST_ENCODING = "hex";
+
+test("generated Jim logo exports source-pinned native mask bytes", async () => {
+  const raster = await importDist("ui", "jim-logo-raster-data.js");
+  const sourceDigest = createHash(SHA256_ALGORITHM)
+    .update(readFileSync(JIM_LOGO_SOURCE_PATH))
+    .digest(HASH_DIGEST_ENCODING);
+
+  assert.ok(raster.JIM_LOGO_RASTER_MASK_BYTES instanceof Uint8Array);
+  assert.equal(sourceDigest, raster.JIM_LOGO_RASTER_SOURCE_SHA256);
+  assert.equal(
+    createHash(SHA256_ALGORITHM)
+      .update(raster.JIM_LOGO_RASTER_MASK_BYTES)
+      .digest(HASH_DIGEST_ENCODING),
+    raster.JIM_LOGO_RASTER_MASK_SHA256,
+  );
+  assert.equal("JIM_LOGO_RASTER_MASK_BASE64" in raster, false);
+});
 
 test("Bijou release exposes Blocks and raster-to-glyph rendering", async () => {
   const [bijou, tui] = await Promise.all([

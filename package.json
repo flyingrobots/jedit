@@ -18,13 +18,14 @@
     "witness:echo": "npm run build && node scripts/jedit-echo-host-witness.mjs --json",
     "release-gate:jedit-echo": "npm run witness:echo",
     "quality": "node scripts/quality-gate.mjs",
+    "logo:check": "node scripts/generate-jim-logo-raster.mjs --check",
     "test:all": "npm run build && npm run echo:test && JEDIT_DIST_PREBUILT=1 node --test --test-concurrency=1 spec/**/*.spec.mjs tests/**/*.spec.mjs",
     "test": "npm run test:all",
     "ci:plan": "node scripts/ci/changed-shards.mjs",
     "ci:profile": "node scripts/ci/profile-check.mjs",
     "ci:shard": "node scripts/ci/run-shard.mjs",
     "ci:verify-shards": "node scripts/ci/verify-test-shards.mjs",
-    "check": "npm run test:all && npm run quality"
+    "check": "npm run logo:check && npm run test:all && npm run quality"
   },
   "dependencies": {
     "@flyingrobots/bijou": "7.2.0",
