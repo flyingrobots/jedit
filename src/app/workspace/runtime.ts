@@ -1,4 +1,4 @@
-import { createInitialModel } from "./init.js";
+import { createInitialModel, workspaceAnimationIsActive } from "./init.js";
 import type { WorkspaceModel } from "./model.js";
 import {
   applyNotificationState,
@@ -282,11 +282,15 @@ function updateWorkspaceEffectMessage(
   return updateProfilerOrIssueMessage(deps, msg, model);
 }
 
+
 function updateTimeTickMessage(
   deps: WorkspaceRuntimeDependencies,
   time: number,
   model: WorkspaceModel,
 ): WorkspaceRuntimeResult {
+  if (!workspaceAnimationIsActive(model)) {
+    return [model, []];
+  }
   const now = deps.nowMs();
   const frameTime = now - model.lastFrameMs;
   const nextModel = applyStartupIntroTime({

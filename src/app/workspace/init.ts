@@ -202,3 +202,15 @@ function initialSceneState(
     titleMeshMaterialIndex: 0,
   };
 }
+
+// Bijou re-renders only when update returns a different model reference, so an
+// idle tick must return the model it was given. Rebuilding it on every pulse
+// cost a full-surface render 60 times a second to produce identical output.
+export function workspaceAnimationIsActive(model: WorkspaceModel): boolean {
+  return (
+    !model.startupIntroComplete ||
+    model.titleBackdropKind === TITLE_BACKDROP_KIND.LegacyScene ||
+    model.profiler.active ||
+    model.perfVisible
+  );
+}

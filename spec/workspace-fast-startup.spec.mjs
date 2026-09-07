@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { importDist } from "./dist-helpers.mjs";
-import { mockI18n, mockJeditTheme, REPO_ROOT } from "./workspace-helpers.mjs";
+import { mockI18n, mockJeditTheme, mockRuntime, REPO_ROOT } from "./workspace-helpers.mjs";
 
 const VIEWER_WIDTH = 120;
 const VIEWER_HEIGHT = 32;
@@ -108,3 +108,66 @@ test("title scene stats are reported once the legacy backdrop is selected", asyn
   assert.notEqual(reported, undefined);
   assert.ok(reported.rayCount > 0);
 });
+
+test("an idle time tick returns the same model so nothing re-renders", async () => {
+  const [runtimeModule, titleScreen] = await Promise.all([
+    importDist("app", "workspace", "runtime.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime());
+  const idle = {
+    ...idleWorkspaceModel(titleScreen),
+    perfVisible: false,
+  };
+
+  const [next, commands] = runtime.update({ type: "time-tick", time: 1 }, idle);
+
+  assert.equal(next, idle);
+  assert.deepEqual(commands, []);
+});
+
+test("a time tick still animates while the perf overlay is visible", async () => {
+  const [runtimeModule, titleScreen] = await Promise.all([
+    importDist("app", "workspace", "runtime.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime());
+  const watching = {
+    ...idleWorkspaceModel(titleScreen),
+    perfVisible: true,
+  };
+
+  const [next] = runtime.update({ type: "time-tick", time: 1 }, watching);
+
+  assert.notEqual(next, watching);
+  assert.equal(next.time, 1);
+});
+
+test("a time tick still animates while the legacy title backdrop is drawn", async () => {
+  const [runtimeModule, titleScreen] = await Promise.all([
+    importDist("app", "workspace", "runtime.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime());
+  const tracing = {
+    ...idleWorkspaceModel(titleScreen),
+    titleBackdropKind: titleScreen.TITLE_BACKDROP_KIND.LegacyScene,
+  };
+
+  const [next] = runtime.update({ type: "time-tick", time: 1 }, tracing);
+
+  assert.notEqual(next, tracing);
+});
+
+function idleWorkspaceModel(titleScreen) {
+  return {
+    time: 0,
+    lastFrameMs: 0,
+    frameTimeMs: 0,
+    frameTimeHistory: [],
+    startupIntroComplete: true,
+    perfVisible: false,
+    profiler: { active: false },
+    titleBackdropKind: titleScreen.TITLE_BACKDROP_KIND.StaticLogo,
+  };
+}
