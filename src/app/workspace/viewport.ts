@@ -1,3 +1,4 @@
+export { wrapIndex } from '../list-index.js';
 import { resolveWorkspaceLayout } from '../../ui/drawer-layout.js';
 import { sourceViewerGutterWidth } from '../../ui/source-viewer.js';
 import type { WorkspaceModel } from './model.js';
@@ -35,15 +36,6 @@ export function clampIndex(index: number, size: number): number {
     return 0;
   }
   return Math.max(0, Math.min(size - 1, index));
-}
-
-// List selection cycles rather than stopping dead at either end. An empty list
-// has no entry to land on, so it stays at zero instead of wrapping onto nothing.
-export function wrapIndex(index: number, size: number): number {
-  if (size <= 0) {
-    return 0;
-  }
-  return ((index % size) + size) % size;
 }
 
 // The drawer list is windowed rather than truncated. Deriving the offset from
