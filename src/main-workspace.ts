@@ -65,7 +65,15 @@ export async function runJeditWorkspace(): Promise<void> {
     ...workspaceInstrumentationFromEnv(process.env),
   }, productionText);
 
-  run(app, { mouse: JEDIT_TERMINAL_MOUSE_OPTIONS.mouse });
+  // `run` resolves when the TUI tears down. It was not awaited, so this
+  // function returned while the editor was still live and the shutdown below
+  // could never happen. Closing the native Echo host releases the child stdio
+  // pipes that were holding the event loop open after quit.
+  try {
+    await run(app, { mouse: JEDIT_TERMINAL_MOUSE_OPTIONS.mouse });
+  } finally {
+    await productionText.closeProductionText();
+  }
 }
 
 function envBoolean(
