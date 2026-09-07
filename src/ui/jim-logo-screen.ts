@@ -4,11 +4,10 @@ import { rasterToGlyphSurface, type RgbaFrame } from '@flyingrobots/bijou-tui';
 import type { JeditTheme } from './jedit-theme.js';
 import {
   JIM_LOGO_FRAME_SIZE,
-  JIM_LOGO_INDICES,
+  JIM_LOGO_PACKED_INDICES,
   JIM_LOGO_PALETTE,
 } from './jim-logo-frame-data.js';
 
-const MAX_LOGO_ROWS = 18;
 const MIN_LOGO_ROWS = 4;
 const LOGO_COLUMNS_PER_ROW = 2;
 const LOGO_HORIZONTAL_MARGIN = 2;
@@ -25,6 +24,7 @@ const GLYPH_SURFACE_RENDERER_KIND = 'braille';
 const RGBA_CHANNEL_COUNT = 4;
 const OPAQUE_ALPHA = 255;
 const TRANSPARENT_INDEX = 0;
+const FULL_OPACITY = 1;
 
 // Built once at module load. The frame is static, so the startup screen renders
 // without a frame pulse and without loading any mesh or scene.
@@ -47,7 +47,24 @@ export function renderJimLogoScreen(
   if (bounds == null) {
     return surface;
   }
-  const glyphs = rasterToGlyphSurface(JIM_LOGO_FRAME, {
+  blitInkOnly(surface, glyphsFor(bounds), bounds.x, bounds.y);
+  return surface;
+}
+
+// Rasterising the 192px frame is the expensive half and depends only on the
+// glyph grid, so one cached result per size keeps a resize cheap. Only
+// blitInkOnly reads it, and it never writes, so sharing the surface is safe.
+let cachedGlyphs: { columns: number; rows: number; surface: Surface } | undefined;
+
+function glyphsFor(bounds: JimLogoBounds): Surface {
+  if (
+    cachedGlyphs != null
+    && cachedGlyphs.columns === bounds.width
+    && cachedGlyphs.rows === bounds.height
+  ) {
+    return cachedGlyphs.surface;
+  }
+  const surface = rasterToGlyphSurface(JIM_LOGO_FRAME, {
     columns: bounds.width,
     rows: bounds.height,
     fit: GLYPH_SURFACE_FIT,
@@ -58,17 +75,21 @@ export function renderJimLogoScreen(
       threshold: BRAILLE_DARKNESS_THRESHOLD,
     },
   });
-  blitInkOnly(surface, glyphs, bounds.x, bounds.y);
+  cachedGlyphs = { columns: bounds.width, rows: bounds.height, surface };
   return surface;
 }
 
 function fillWithWorkspace(width: number, height: number, theme: JeditTheme): Surface {
   const token = theme.surface.workspace;
   const surface = createSurface(width, height, { char: SURFACE_BLANK, empty: false });
+  // Written as a literal rather than a spread of surface.get(x, y): every cell
+  // starts identical, so re-reading each one only to copy it back costs a full
+  // extra pass at full-terminal size.
   for (let y = 0; y < surface.height; y += 1) {
     for (let x = 0; x < surface.width; x += 1) {
       surface.set(x, y, {
-        ...surface.get(x, y),
+        char: SURFACE_BLANK,
+        opacity: FULL_OPACITY,
         fg: token.fg,
         fgRGB: token.fgRGB,
         bg: token.bg,
@@ -82,7 +103,6 @@ function fillWithWorkspace(width: number, height: number, theme: JeditTheme): Su
 
 function jimLogoBounds(width: number, height: number): JimLogoBounds | undefined {
   const availableRows = Math.min(
-    MAX_LOGO_ROWS,
     height - (LOGO_VERTICAL_MARGIN * 2),
     Math.floor((width - (LOGO_HORIZONTAL_MARGIN * 2)) / LOGO_COLUMNS_PER_ROW),
   );
@@ -126,9 +146,10 @@ function blitInkOnly(
 
 function createJimLogoFrame(): RgbaFrame {
   const size = JIM_LOGO_FRAME_SIZE;
+  const indices = unpackIndices(size * size);
   const data = new Uint8ClampedArray(size * size * RGBA_CHANNEL_COUNT);
-  for (let pixel = 0; pixel < JIM_LOGO_INDICES.length; pixel += 1) {
-    const index = JIM_LOGO_INDICES[pixel] ?? TRANSPARENT_INDEX;
+  for (let pixel = 0; pixel < indices.length; pixel += 1) {
+    const index = indices[pixel] ?? TRANSPARENT_INDEX;
     if (index === TRANSPARENT_INDEX) {
       continue;
     }
@@ -143,4 +164,14 @@ function createJimLogoFrame(): RgbaFrame {
     data[offset + 3] = OPAQUE_ALPHA;
   }
   return { width: size, height: size, data };
+}
+
+function unpackIndices(count: number): Uint8Array {
+  const packed = Buffer.from(JIM_LOGO_PACKED_INDICES, 'base64');
+  const indices = new Uint8Array(count);
+  for (let i = 0; i < count; i += 1) {
+    const byte = packed[i >> 1] ?? 0;
+    indices[i] = (i % 2 === 0 ? byte >> 4 : byte) & 0x0f;
+  }
+  return indices;
 }
