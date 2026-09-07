@@ -102,3 +102,44 @@ test("a click maps through the scroll offset to the right entry", async () => {
 
   assert.equal(next.selectedIndex, offset);
 });
+
+test("clicking a file opens it, not just selects it", async () => {
+  const [mouse, viewport, panelFocus, titleScreen] = await Promise.all([
+    importDist("app", "workspace", "mouse.js"),
+    importDist("app", "workspace", "viewport.js"),
+    importDist("ui", "panel-focus.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const { mockTitleScreenModel } = await import("./workspace-helpers.mjs");
+  const opened = [];
+  const model = mockTitleScreenModel(titleScreen, {
+    editor: undefined,
+    entries: [
+      { kind: "file", name: "alpha.txt", path: "/w/alpha.txt", isDirectory: false },
+      { kind: "file", name: "beta.txt", path: "/w/beta.txt", isDirectory: false },
+    ],
+    selectedIndex: 0,
+    fileDrawerOpen: true,
+    fileDrawerProgress: 1,
+    focusPane: panelFocus.FocusPanes.Files,
+    startupIntroComplete: true,
+    columns: 100,
+    rows: 30,
+  });
+  const row = viewport.WORKSPACE_BODY_TOP_OFFSET + viewport.DRAWER_INNER_PAD + 1;
+
+  mouse.updateFromMouse(
+    { type: "mouse", button: "left", action: "press", col: 2, row, shift: false, alt: false, ctrl: false },
+    model,
+    { highlight: () => undefined },
+    {
+      nowMs: () => 0,
+      openEntry: (nextModel, entry) => {
+        opened.push(entry.path);
+        return [nextModel, []];
+      },
+    },
+  );
+
+  assert.deepEqual(opened, ["/w/beta.txt"]);
+});

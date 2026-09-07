@@ -28,14 +28,27 @@ const DRAWER_PAD_MULTIPLIER = 2;
 const MOUSE_PRESS = 'press';
 const MOUSE_BUTTON_LEFT = 'left';
 
+// Opening on click needs the filesystem and Echo dependencies the pointer path
+// does not otherwise carry. Injecting a named opener keeps that dependency
+// explicit and lets the selection-only behaviour stand on its own when the
+// caller has nothing to open with.
+export interface WorkspaceEntryOpener {
+  readonly nowMs: () => number;
+  readonly openEntry: (
+    model: WorkspaceModel,
+    entry: NonNullable<WorkspaceModel['entries'][number]>,
+  ) => [WorkspaceModel, Cmd<WorkspaceMsg>[]];
+}
+
 export function updateFromMouse(
   msg: MouseMsg,
   model: WorkspaceModel,
   sourceHighlighter: SourceHighlighter,
+  opener?: WorkspaceEntryOpener,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
   const clicked = updateFileDrawerFromClick(msg, model);
   if (clicked != null) {
-    return [clicked, []];
+    return openClickedEntry(clicked, opener);
   }
   const deltaRows = mouseScrollDeltaRows(msg);
   if (deltaRows === 0) {
@@ -97,6 +110,17 @@ function fileDrawerEntryIndexAt(
     listHeight,
   );
   return index < model.entries.length ? index : undefined;
+}
+
+function openClickedEntry(
+  model: WorkspaceModel,
+  opener: WorkspaceEntryOpener | undefined,
+): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
+  const entry = model.entries[model.selectedIndex];
+  if (opener == null || entry == null) {
+    return [model, []];
+  }
+  return opener.openEntry(model, entry);
 }
 
 function updateTitleCameraFromMouse(
