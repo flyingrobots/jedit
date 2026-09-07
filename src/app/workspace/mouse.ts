@@ -13,6 +13,7 @@ import { settingsRows } from './settings.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import { ViewModes } from './view-mode.js';
 import { FocusPanes } from '../../ui/panel-focus.js';
+import { workspaceDrawerHasFocus } from './focused-pane-key-bindings.js';
 import { beginWorkspaceSourceHighlightRefresh } from './workspace-source-highlight.js';
 import { TITLE_BACKDROP_KIND } from '../../ui/title-screen.js';
 
@@ -55,9 +56,13 @@ function updateTitleCameraFromMouse(
   ];
 }
 
+// Mouse-look activates the ray-traced backdrop, so it must not trigger while a
+// drawer holds focus. Moving the pointer over the file explorer used to switch
+// the ray tracer on without the reader asking for it.
 function titleMouseLookEnabled(model: WorkspaceModel): boolean {
   return (
     model.editor == null &&
+    !workspaceDrawerHasFocus(model) &&
     !model.settingsOpen &&
     !model.scenePickerOpen &&
     !model.startupFileModalOpen &&

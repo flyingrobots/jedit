@@ -113,3 +113,35 @@ test("an empty file explorer stays put instead of wrapping onto nothing", async 
 
   assert.equal(next.selectedIndex, 0);
 });
+
+test("mouse movement over the file explorer never starts the ray-traced backdrop", async () => {
+  const [runtimeModule, titleScreen] = await Promise.all([
+    importDist("app", "workspace", "mouse.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const model = await fileDrawerModel();
+
+  const [next] = runtimeModule.updateFromMouse(
+    { type: "mouse", button: "none", action: "move", col: 4, row: 6, shift: false, alt: false, ctrl: false },
+    model,
+    { highlight: () => undefined },
+  );
+
+  assert.notEqual(
+    next.titleBackdropKind,
+    titleScreen.TITLE_BACKDROP_KIND.LegacyScene,
+  );
+});
+
+test("the wheel still scrolls the focused file explorer", async () => {
+  const mouse = await importDist("app", "workspace", "mouse.js");
+  const model = await fileDrawerModel();
+
+  const [next] = mouse.updateFromMouse(
+    { type: "mouse", button: "none", action: "scroll-down", col: 4, row: 6, shift: false, alt: false, ctrl: false },
+    model,
+    { highlight: () => undefined },
+  );
+
+  assert.notEqual(next.selectedIndex, model.selectedIndex);
+});
