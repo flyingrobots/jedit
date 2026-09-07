@@ -13,12 +13,18 @@ import { settingsRows } from './settings.js';
 import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import { ViewModes } from './view-mode.js';
 import { resolveWorkspaceLayout } from '../../ui/drawer-layout.js';
-import { DRAWER_INNER_PAD, WORKSPACE_BODY_TOP_OFFSET } from './viewport.js';
+import {
+  DRAWER_INNER_PAD,
+  listScrollOffset,
+  workspaceBodyHeight,
+  WORKSPACE_BODY_TOP_OFFSET,
+} from './viewport.js';
 import { FocusPanes } from '../../ui/panel-focus.js';
 import { workspaceDrawerHasFocus } from './focused-pane-key-bindings.js';
 import { beginWorkspaceSourceHighlightRefresh } from './workspace-source-highlight.js';
 import { TITLE_BACKDROP_KIND } from '../../ui/title-screen.js';
 
+const DRAWER_PAD_MULTIPLIER = 2;
 const MOUSE_PRESS = 'press';
 const MOUSE_BUTTON_LEFT = 'left';
 
@@ -77,8 +83,20 @@ function fileDrawerEntryIndexAt(
   if (!withinDrawer) {
     return undefined;
   }
-  const index = msg.row - WORKSPACE_BODY_TOP_OFFSET - DRAWER_INNER_PAD;
-  return index >= 0 && index < model.entries.length ? index : undefined;
+  const row = msg.row - WORKSPACE_BODY_TOP_OFFSET - DRAWER_INNER_PAD;
+  const listHeight = workspaceBodyHeight({
+    rows: model.rows,
+    footerVisible: model.footerVisible,
+  }) - (DRAWER_INNER_PAD * DRAWER_PAD_MULTIPLIER);
+  if (row < 0 || row >= listHeight) {
+    return undefined;
+  }
+  const index = row + listScrollOffset(
+    model.selectedIndex,
+    model.entries.length,
+    listHeight,
+  );
+  return index < model.entries.length ? index : undefined;
 }
 
 function updateTitleCameraFromMouse(

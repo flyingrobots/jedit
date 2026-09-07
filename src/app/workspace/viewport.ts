@@ -46,6 +46,22 @@ export function wrapIndex(index: number, size: number): number {
   return ((index % size) + size) % size;
 }
 
+// The drawer list is windowed rather than truncated. Deriving the offset from
+// the selection keeps it stateless, so the renderer and pointer hit-testing
+// always agree on which entry a row shows without a scroll field in the model.
+export function listScrollOffset(
+  selectedIndex: number,
+  total: number,
+  height: number,
+): number {
+  const visibleRows = Math.max(1, height);
+  if (total <= visibleRows) {
+    return 0;
+  }
+  const centred = selectedIndex - Math.floor(visibleRows / 2);
+  return Math.max(0, Math.min(total - visibleRows, centred));
+}
+
 export function workspaceBodyHeight(options: WorkspaceBodyHeightOptions): number {
   const footerRows = options.footerVisible ? FOOTER_ROWS : 0;
   return Math.max(1, options.rows - HEADER_ROWS - footerRows);
