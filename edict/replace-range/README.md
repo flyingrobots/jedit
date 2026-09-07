@@ -23,13 +23,22 @@ range, replacement bytes, operation profile, budget, imported helper
 implementation, and a pure conditional into Edict Core. It intentionally does
 not claim to traverse or rewrite a rope yet.
 
-With Edict #201, the public application build lowers those Core `let` nodes into
-generic, source-ordered Target IR and independently verifies the compiler-owned
-result projection. Echo #724 now emits a distinct
+With the merged Edict #201, the public application build lowers those Core `let`
+nodes into generic, source-ordered Target IR and independently verifies the compiler-owned
+result projection. The pinned Echo #724 candidate emits a distinct
 `compiler-produced-bounded-pure/v1` executable package containing the exact
 Core, lawpack exports, Target IR, and result projection. Echo's structurally
 separate verifier independently reconstructs that package relation and emits an
 accepted report bound to retained canonical `echo.executable-subject/v1` bytes.
+
+The compiler pin is Edict main `3f81f759e921a69b04fe8cf8e62e62f8f3dc7b7e`.
+Core retains the imported nominal definitions and their shared exact-length
+`NodeId` representation; record fields refer to those named definitions.
+The nominal identity test follows that reference chain, and repeated public
+builds must reproduce identical Core, Target, package, and verifier-report bytes.
+The Echo provider remains pinned to the open #724 candidate
+`49e9efb68001dfd78563d18bac9359a87671e431`; this evidence does not claim that
+provider or this Jedit application has landed on its repository's main branch.
 
 That accepted package is the current routing evidence required by #296: Edict
 preserves the bounded pure program without learning Jedit vocabulary, and Echo

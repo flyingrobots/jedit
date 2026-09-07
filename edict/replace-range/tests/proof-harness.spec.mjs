@@ -218,30 +218,64 @@ test(
       const executablePackage = decode(packageBytes);
       const program = decode(executablePackage.program);
       const core = decode(program.core_artifact);
-      for (const typeName of [
-        "ReplaceRangeInput.bufferId",
-        "ReplaceRangeInput.basisHeadId",
-        "ReplaceRangeBoundary.bufferId",
-        "ReplaceRangeBoundary.basisHeadId",
-      ]) {
-        assert.deepEqual(
-          core.types[typeName],
-          {
-            kind: "Nominal",
-            contract:
-              typeName.endsWith("bufferId")
-                ? "jedit.text@1.BufferId"
-                : "jedit.text@1.HeadId",
-            representation: "Bytes<exact=32>",
-          },
-          `${typeName} must preserve its nominal exact 32-byte contract in Core`,
-        );
+      for (const recordName of ["ReplaceRangeInput", "ReplaceRangeBoundary"]) {
+        const record = core.types[recordName];
+        assert.equal(record.kind, "Record");
+        for (const [field, contract] of [
+          ["bufferId", "jedit.text@1.BufferId"],
+          ["basisHeadId", "jedit.text@1.HeadId"],
+        ]) {
+          assert.equal(record.fields[field], contract);
+          const nominal = core.types[record.fields[field]];
+          assert.equal(nominal.kind, "Nominal");
+          assert.equal(nominal.contract, contract);
+          assert.deepEqual(
+            core.types[nominal.representation],
+            { kind: "Bytes", min: 32, max: 32 },
+            `${recordName}.${field} must resolve to its nominal exact 32-byte contract`,
+          );
+        }
       }
     } finally {
       await subject.dispose();
     }
   },
 );
+
+test("repeated_public_builds_preserve_core_and_package_bytes", { timeout: 120_000 }, async () => {
+  requireToolchainEnvironment();
+  const subject = await fixture();
+  try {
+    const outputDirectory = path.join(subject.application, ".build", "application");
+    const readArtifacts = async () => {
+      const packageBytes = await readFile(
+        path.join(outputDirectory, "executable-operation-package.cbor"),
+      );
+      const program = decode(decode(packageBytes).program);
+      return {
+        core: program.core_artifact,
+        targetIr: program.target_ir_artifact,
+        projection: program.result_projection_artifact,
+        package: packageBytes,
+        report: await readFile(path.join(outputDirectory, "verification-report.cbor")),
+      };
+    };
+    const first = runBuild(subject.project);
+    assertCommandCompleted(first);
+    assert.equal(first.status, 0, first.stderr);
+    const firstBytes = await readArtifacts();
+    const second = runBuild(subject.project);
+    assertCommandCompleted(second);
+    assert.equal(second.status, 0, second.stderr);
+    assert.deepEqual(
+      await readArtifacts(),
+      firstBytes,
+      "every artifact must be byte-identical for the same source and closure",
+    );
+  } finally {
+    await subject.dispose();
+  }
+});
 
 test("rejects_buffer_id_head_id_substitution", { timeout: 120_000 }, async () => {
   requireToolchainEnvironment();
