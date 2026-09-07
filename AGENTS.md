@@ -35,6 +35,8 @@ These are hard repo rules, not suggestions:
 - `ARCHITECTURE.md` is the canonical repo architecture doctrine.
 - `docs/BEARING.md` records the current execution gravity.
 - `docs/method/process.md` is the canonical cycle workflow.
+- `docs/method/durable-decisions.md` owns the durable decision policy and the
+  canonical-owner register.
 - `docs/method/roadmap-planning.md` defines release-gate, roadmap, slice, and
   proof policy for multi-cycle planning.
 - `docs/design/TEMPLATE.md` is the required template for full cycle designs.
@@ -70,33 +72,14 @@ you make the commit for that slice.
 
 ## Durable Decision Discipline
 
-Important decisions are incomplete until their durable owner is current.
-Architecture, authority, identity, causal-settlement, recovery, compatibility,
-ownership, public-API, and release-boundary decisions MUST be recorded in the
-same change in the canonical document that owns the concept. Chat transcripts,
-Think memories, pull-request prose, and review threads may explain or motivate
-a decision, but they are not its canonical repository home.
+`docs/method/durable-decisions.md` owns this policy. Read it before completing
+any architecture, authority, identity, causal-settlement, recovery,
+compatibility, ownership, public-API, or release-boundary decision.
 
-For every such decision:
-
-1. Identify one canonical owner before completing the change.
-   `ARCHITECTURE.md` owns repository-wide doctrine;
-   `docs/jim-component-ownership.md` owns the Jim/Jedit/Edict/Echo target
-   ownership and causal model; a focused `docs/design/` document owns a design
-   cycle; `docs/method/` owns workflow policy; and `docs/BEARING.md` owns current
-   execution gravity.
-2. Record the accepted rule, its current-versus-target posture, and explicit
-   refinement, supersession, dependency, and related-document edges.
-3. Update the relevant documentation entrance or router when a durable page is
-   added, moved, or renamed.
-4. Link to the canonical owner from reader-specific pages instead of copying
-   the same rule into several places.
-5. Keep implementation checklists in their cycle owner and live review or
-   delivery status in GitHub. Architecture documents define durable truth; they
-   are not a second pull-request dashboard.
-6. Revisit the same canonical owner whenever later work refines the decision.
-   A refinement is not complete while code, schemas, packages, runtime
-   evidence, or release behavior disagree with the documented rule.
+Agent-specific enforcement: a change carrying such a decision is not complete
+until the canonical owner named in that document is updated in the same change.
+Chat transcripts, Think memories, pull-request prose, and review threads may
+motivate a decision; none of them is its repository home.
 
 Treat missing or stale canonical decision documentation as incomplete
 engineering work, not optional polish. Historical design documents remain
