@@ -216,7 +216,10 @@ test("workspace perf overlay adds title-scene facts only on title screen", async
     importDist("adapters", "workspace-perf-app.js"),
     importDist("ui", "title-screen.js"),
   ]);
-  const model = mockPerfTitleModel(titleScreen);
+  const model = {
+    ...mockPerfTitleModel(titleScreen),
+    titleBackdropKind: titleScreen.TITLE_BACKDROP_KIND.LegacyScene,
+  };
   const app = workspacePerfApp.createPerfApp(surfaceOnlyApp(), {
     initialPerfVisible: true,
   });

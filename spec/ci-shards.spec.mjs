@@ -109,7 +109,7 @@ test('local full test scripts use one prebuilt dist pass', () => {
   assert.equal(packageJson.scripts.test, 'npm run test:all');
   assert.equal(
     packageJson.scripts.check,
-    'npm run logo:check && npm run test:all && npm run quality',
+    'npm run test:all && npm run quality',
   );
 });
 

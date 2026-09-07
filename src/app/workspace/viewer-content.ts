@@ -5,7 +5,6 @@ import {
   TITLE_BACKDROP_KIND,
   TITLE_RENDER_MODE,
   paintTitleScreenPresentation,
-  renderJimLogoTitleScreen,
   renderTitleScreen,
   type TitleScreenRenderOptions,
 } from "../../ui/title-screen.js";
@@ -138,7 +137,14 @@ function renderViewerWithState(
 ): Surface {
   const editor = displayEditorForWorkspaceModel(model);
   if (editor == null) {
-    return renderTitleViewer(model, width, height, titleRenderer, state);
+    // jedit opens the way vi does: on nothing. The ray-traced backdrop is
+    // still reachable -- the scene picker and the title number keys set
+    // LegacyScene, and callers may inject a renderer directly -- but no
+    // launch selects it, so startup renders an empty viewer.
+    return model.titleBackdropKind === TITLE_BACKDROP_KIND.LegacyScene ||
+      titleRenderer != null
+      ? renderTitleViewer(model, width, height, titleRenderer, state)
+      : emptyViewerSurface(model, width, height);
   }
 
   const surface = createSurface(width, height);
@@ -170,6 +176,16 @@ function renderViewerWithState(
   );
 }
 
+function emptyViewerSurface(
+  model: WorkspaceModel,
+  width: number,
+  height: number,
+): Surface {
+  const surface = createSurface(width, height);
+  fillSurface(surface, model.jeditTheme.surface.workspace);
+  return surface;
+}
+
 function renderTitleViewer(
   model: WorkspaceModel,
   width: number,
@@ -193,9 +209,11 @@ function renderDefaultTitleFrame(
   height: number,
   state: ViewerContentRendererState,
 ): Surface {
+  // No backdrop is the default. The legacy ray-traced scene is the only
+  // title presentation jedit still draws, and only when a caller asks.
   state.lastTitleScenePerformance = staticTitleScenePerformanceFacts();
   return titleFrameSurface(
-    renderJimLogoTitleScreen(width, height, model.jeditTheme),
+    emptyViewerSurface(model, width, height),
     model,
     width,
     height,
