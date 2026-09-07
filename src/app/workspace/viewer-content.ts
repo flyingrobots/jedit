@@ -2,6 +2,7 @@ import { createSurface, type Surface } from "@flyingrobots/bijou";
 import { paintMarkdownPreview } from "../../ui/markdown-preview.js";
 import { renderSourceViewer } from "../../ui/source-viewer.js";
 import {
+  TITLE_BACKDROP_KIND,
   TITLE_RENDER_MODE,
   paintTitleScreenPresentation,
   renderTitleScreen,
@@ -30,8 +31,8 @@ import {
 import { fillSurface } from "./surface-fill.js";
 import {
   governTitleSceneRender,
+  staticTitleScenePerformanceFacts,
   titleScenePerformanceFacts,
-  TITLE_SCENE_RENDER_POSTURE,
   type TitleScenePerformanceFacts,
 } from "./title-scene-performance-governor.js";
 import {
@@ -44,14 +45,6 @@ const MIN_VIEWPORT_DIMENSION = 1;
 const VIEWER_PAD_MULTIPLIER = 2;
 const TITLE_CAMERA_MOTION_EPSILON = 0.001;
 const TITLE_FRAME_BUDGET_OVER = "over-budget";
-const INITIAL_TITLE_SCENE_PERFORMANCE_FACTS: TitleScenePerformanceFacts = {
-  posture: TITLE_SCENE_RENDER_POSTURE.LiveTrace,
-  tracesRays: true,
-  usesFrozenBackdrop: false,
-  retainsBackdrop: true,
-  inputLatencyPosture: "animated-title",
-  frameBudgetPosture: "within-budget",
-};
 
 interface FrozenTitleBackdrop {
   readonly width: number;
@@ -96,7 +89,7 @@ export interface ViewerContentRenderer {
 }
 
 export function createViewerContentRenderer(
-  titleRenderer: TitleScreenRenderer = renderTitleScreen,
+  titleRenderer?: TitleScreenRenderer,
 ): ViewerContentRenderer {
   const state: ViewerContentRendererState = {};
   return {
@@ -108,7 +101,7 @@ export function createViewerContentRenderer(
     },
     titleScenePerformanceFacts() {
       return (
-        state.lastTitleScenePerformance ?? INITIAL_TITLE_SCENE_PERFORMANCE_FACTS
+        state.lastTitleScenePerformance ?? staticTitleScenePerformanceFacts()
       );
     },
   };
@@ -139,12 +132,19 @@ function renderViewerWithState(
   model: WorkspaceModel,
   width: number,
   height: number,
-  titleRenderer: TitleScreenRenderer,
+  titleRenderer: TitleScreenRenderer | undefined,
   state: ViewerContentRendererState,
 ): Surface {
   const editor = displayEditorForWorkspaceModel(model);
   if (editor == null) {
-    return renderTitleBackdrop(model, width, height, titleRenderer, state);
+    // jedit opens the way vi does: on nothing. The ray-traced backdrop is
+    // still reachable -- the scene picker and the title number keys set
+    // LegacyScene, and callers may inject a renderer directly -- but no
+    // launch selects it, so startup renders an empty viewer.
+    return model.titleBackdropKind === TITLE_BACKDROP_KIND.LegacyScene ||
+      titleRenderer != null
+      ? renderTitleViewer(model, width, height, titleRenderer, state)
+      : emptyViewerSurface(model, width, height);
   }
 
   const surface = createSurface(width, height);
@@ -173,6 +173,51 @@ function renderViewerWithState(
       deletionMarkers: causalSourceGutterDeletionMarkers(model),
       reading: sourceWindowForWorkspaceModel(model),
     },
+  );
+}
+
+function emptyViewerSurface(
+  model: WorkspaceModel,
+  width: number,
+  height: number,
+): Surface {
+  const surface = createSurface(width, height);
+  fillSurface(surface, model.jeditTheme.surface.workspace);
+  return surface;
+}
+
+function renderTitleViewer(
+  model: WorkspaceModel,
+  width: number,
+  height: number,
+  injectedRenderer: TitleScreenRenderer | undefined,
+  state: ViewerContentRendererState,
+): Surface {
+  const renderer =
+    injectedRenderer ??
+    (model.titleBackdropKind === TITLE_BACKDROP_KIND.LegacyScene
+      ? renderTitleScreen
+      : undefined);
+  return renderer == null
+    ? renderDefaultTitleFrame(model, width, height, state)
+    : renderTitleBackdrop(model, width, height, renderer, state);
+}
+
+function renderDefaultTitleFrame(
+  model: WorkspaceModel,
+  width: number,
+  height: number,
+  state: ViewerContentRendererState,
+): Surface {
+  // No backdrop is the default. The legacy ray-traced scene is the only
+  // title presentation jedit still draws, and only when a caller asks.
+  state.lastTitleScenePerformance = staticTitleScenePerformanceFacts();
+  return titleFrameSurface(
+    emptyViewerSurface(model, width, height),
+    model,
+    width,
+    height,
+    state,
   );
 }
 

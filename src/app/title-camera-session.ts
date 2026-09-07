@@ -377,7 +377,7 @@ function titleCameraSpringCommand(
         emit(titleCameraFrame(axis, motionId, state.value));
         if (state.done) {
           pulse.dispose();
-          resolve();
+          resolve(undefined);
         }
       });
     });

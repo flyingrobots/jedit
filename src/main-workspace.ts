@@ -26,6 +26,29 @@ interface EnvBooleanOptions {
   readonly defaultValue: boolean;
 }
 
+export const WORKSPACE_INSTRUMENTATION_ENV = Object.freeze({
+  Perf: ENV_KEYS.Perf,
+  Profile: ENV_KEYS.Profile,
+});
+
+export interface WorkspaceInstrumentation {
+  readonly perfEnabled: boolean;
+  readonly profileEnabled: boolean;
+}
+
+// Both default off. The perf overlay rebuilds three surfaces every frame, and
+// the profiler opens .jedit/perf-session.jsonl and appends a frame record per
+// tick -- a measured 268 KB of disk writes over a 22 second idle session.
+// Neither belongs on a launch nobody asked to instrument.
+export function workspaceInstrumentationFromEnv(
+  env: Readonly<Record<string, string | undefined>>,
+): WorkspaceInstrumentation {
+  return {
+    perfEnabled: envBoolean(env[ENV_KEYS.Perf], { defaultValue: false }),
+    profileEnabled: envBoolean(env[ENV_KEYS.Profile], { defaultValue: false }),
+  };
+}
+
 export async function runJeditWorkspace(): Promise<void> {
   requireTextRuntimeProfile(parseTextRuntimeProfile(
     process.env[ENV_KEYS.TextRuntime],
@@ -39,10 +62,7 @@ export async function runJeditWorkspace(): Promise<void> {
     initialColumns: process.stdout.columns ?? DEFAULT_TERMINAL_COLUMNS,
     initialRows: process.stdout.rows ?? DEFAULT_TERMINAL_ROWS,
     initialWorkingDirectory: DEFAULT_WORKING_DIRECTORY,
-    perfEnabled: envBoolean(process.env[ENV_KEYS.Perf], { defaultValue: true }),
-    profileEnabled: envBoolean(process.env[ENV_KEYS.Profile], {
-      defaultValue: true,
-    }),
+    ...workspaceInstrumentationFromEnv(process.env),
   }, productionText);
 
   run(app, { mouse: JEDIT_TERMINAL_MOUSE_OPTIONS.mouse });

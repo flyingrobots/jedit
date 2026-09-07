@@ -14,6 +14,7 @@ import type { SourceHighlighter } from '../../ports/source-highlighter.js';
 import { ViewModes } from './view-mode.js';
 import { FocusPanes } from '../../ui/panel-focus.js';
 import { beginWorkspaceSourceHighlightRefresh } from './workspace-source-highlight.js';
+import { TITLE_BACKDROP_KIND } from '../../ui/title-screen.js';
 
 export function updateFromMouse(
   msg: MouseMsg,
@@ -48,6 +49,7 @@ function updateTitleCameraFromMouse(
       ...model,
       titleCamera: result.state,
       titleMouseLook: result.pointer,
+      titleBackdropKind: TITLE_BACKDROP_KIND.LegacyScene,
     },
     [],
   ];

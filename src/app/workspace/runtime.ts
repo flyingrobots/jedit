@@ -1,4 +1,4 @@
-import { createInitialModel } from "./init.js";
+import { createInitialModel, workspaceAnimationIsActive } from "./init.js";
 import type { WorkspaceModel } from "./model.js";
 import {
   applyNotificationState,
@@ -10,7 +10,6 @@ import {
   SOURCE_HIGHLIGHT_MESSAGE,
 } from "../source-highlight-session.js";
 import {
-  createTitleCameraState,
   reduceTitleCameraMotion,
   TITLE_CAMERA_MESSAGE,
 } from "../title-camera-session.js";
@@ -40,6 +39,7 @@ import {
   applyStartupIntroTime,
   applyWorkspaceCausalLineChangeResult,
   applyWorkspaceTextMessage,
+  applyWorkspaceTitleSceneLoadResult,
   applyWorkspaceWhyRangeResult,
   syncActiveWorkspaceBufferRecord,
 } from "./workspace-state-reducers.js";
@@ -219,7 +219,7 @@ function updateGeneratedStateMessage(
     return applyWorkspaceCausalLineChangeResult(msg, model);
   }
   if (msg.type === WorkspaceMessageTypes.LoadSceneResult) {
-    return [applySceneLoadResult(model, msg), []];
+    return [applyWorkspaceTitleSceneLoadResult(model, msg), []];
   }
   if (msg.type === SOURCE_HIGHLIGHT_MESSAGE) {
     return [reduceSourceHighlightMsg(model, msg), []];
@@ -258,24 +258,6 @@ function isWorkspaceMsg(msg: WorkspaceRuntimeMsg): msg is WorkspaceMsg {
   );
 }
 
-function applySceneLoadResult(
-  model: WorkspaceModel,
-  msg: Extract<
-    WorkspaceMsg,
-    { type: typeof WorkspaceMessageTypes.LoadSceneResult }
-  >,
-): WorkspaceModel {
-  return {
-    ...model,
-    sceneOverride: msg.scene,
-    titleSceneName: msg.scene == null ? undefined : msg.sceneName,
-    titleCamera:
-      msg.scene == null
-        ? model.titleCamera
-        : createTitleCameraState(msg.scene.camera),
-  };
-}
-
 function updateWorkspaceEffectMessage(
   deps: WorkspaceRuntimeDependencies,
   msg: WorkspaceRuntimeMsg,
@@ -300,11 +282,15 @@ function updateWorkspaceEffectMessage(
   return updateProfilerOrIssueMessage(deps, msg, model);
 }
 
+
 function updateTimeTickMessage(
   deps: WorkspaceRuntimeDependencies,
   time: number,
   model: WorkspaceModel,
 ): WorkspaceRuntimeResult {
+  if (!workspaceAnimationIsActive(model)) {
+    return [model, []];
+  }
   const now = deps.nowMs();
   const frameTime = now - model.lastFrameMs;
   const nextModel = applyStartupIntroTime({
