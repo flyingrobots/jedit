@@ -145,3 +145,82 @@ test("the wheel still scrolls the focused file explorer", async () => {
 
   assert.notEqual(next.selectedIndex, model.selectedIndex);
 });
+
+test("the title keeps naming the open document while browsing other files", async () => {
+  const chrome = await importDist("ui", "workspace-chrome.js");
+  const highlighted = { kind: "file", name: "beta.txt", path: "/w/beta.txt" };
+
+  const title = chrome.activeWorkspaceTitle({
+    cwd: "/w",
+    editorPath: "/w/foo.txt",
+    editorDirty: false,
+    selectedEntry: highlighted,
+  });
+
+  assert.equal(title, "foo.txt");
+});
+
+test("the title names the highlighted file only when nothing is open", async () => {
+  const chrome = await importDist("ui", "workspace-chrome.js");
+  const highlighted = { kind: "file", name: "beta.txt", path: "/w/beta.txt" };
+
+  const title = chrome.activeWorkspaceTitle({
+    cwd: "/w",
+    editorPath: undefined,
+    editorDirty: false,
+    selectedEntry: highlighted,
+  });
+
+  assert.equal(title, "beta.txt");
+});
+
+test("clicking a file explorer row selects that entry", async () => {
+  const [mouse, viewport] = await Promise.all([
+    importDist("app", "workspace", "mouse.js"),
+    importDist("app", "workspace", "viewport.js"),
+  ]);
+  const model = await fileDrawerModel({ columns: 100, rows: 30, fileDrawerProgress: 1 });
+  const clickRow = viewport.WORKSPACE_BODY_TOP_OFFSET + viewport.DRAWER_INNER_PAD + 2;
+
+  const [next] = mouse.updateFromMouse(
+    { type: "mouse", button: "left", action: "press", col: 2, row: clickRow, shift: false, alt: false, ctrl: false },
+    model,
+    { highlight: () => undefined },
+  );
+
+  assert.equal(next.selectedIndex, 2);
+});
+
+test("clicking outside the file explorer leaves the selection alone", async () => {
+  const [mouse, viewport] = await Promise.all([
+    importDist("app", "workspace", "mouse.js"),
+    importDist("app", "workspace", "viewport.js"),
+  ]);
+  const model = await fileDrawerModel({ columns: 100, rows: 30, fileDrawerProgress: 1, selectedIndex: 1 });
+  const clickRow = viewport.WORKSPACE_BODY_TOP_OFFSET + viewport.DRAWER_INNER_PAD + 2;
+
+  const [next] = mouse.updateFromMouse(
+    { type: "mouse", button: "left", action: "press", col: 95, row: clickRow, shift: false, alt: false, ctrl: false },
+    model,
+    { highlight: () => undefined },
+  );
+
+  assert.equal(next.selectedIndex, 1);
+});
+
+test("clicking past the last entry leaves the selection alone", async () => {
+  const [mouse, viewport] = await Promise.all([
+    importDist("app", "workspace", "mouse.js"),
+    importDist("app", "workspace", "viewport.js"),
+  ]);
+  const model = await fileDrawerModel({ columns: 100, rows: 30, fileDrawerProgress: 1, selectedIndex: 1 });
+  const clickRow = viewport.WORKSPACE_BODY_TOP_OFFSET + viewport.DRAWER_INNER_PAD + 20;
+
+  const [next] = mouse.updateFromMouse(
+    { type: "mouse", button: "left", action: "press", col: 2, row: clickRow, shift: false, alt: false, ctrl: false },
+    model,
+    { highlight: () => undefined },
+  );
+
+  assert.equal(next.selectedIndex, 1);
+});

@@ -7,6 +7,9 @@ export const MIN_ROWS = 12;
 export const VIEWER_LEFT_PAD = 4;
 export const VIEWER_TOP_PAD = 1;
 export const DRAWER_INNER_PAD = 1;
+// Rows above the workspace body: the title row and its rule. Shared so pointer
+// hit-testing and the renderer cannot disagree about where the body starts.
+export const WORKSPACE_BODY_TOP_OFFSET = 2;
 export const HEADER_ROWS = 2;
 export const FOOTER_ROWS = 2;
 
