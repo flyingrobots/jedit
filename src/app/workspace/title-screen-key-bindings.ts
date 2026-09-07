@@ -20,6 +20,7 @@ import {
   titleMeshMaterialPresetAt,
 } from "./title-mesh-materials.js";
 import type { WorkspaceKeyBindingContext } from "./key-binding-context.js";
+import { workspaceDrawerHasFocus } from './focused-pane-key-bindings.js';
 import type { WorkspaceModel } from "./model.js";
 import type { WorkspaceMsg } from "./msg.js";
 import { WorkspaceKeys } from "./workspace-key.js";
@@ -56,7 +57,7 @@ export function updateTitleScreenKey(
   model: WorkspaceModel,
   context: WorkspaceKeyBindingContext,
 ): KeyBindingResult | undefined {
-  if (model.editor != null) {
+  if (model.editor != null || workspaceDrawerHasFocus(model)) {
     return undefined;
   }
 

@@ -34,6 +34,15 @@ export function clampIndex(index: number, size: number): number {
   return Math.max(0, Math.min(size - 1, index));
 }
 
+// List selection cycles rather than stopping dead at either end. An empty list
+// has no entry to land on, so it stays at zero instead of wrapping onto nothing.
+export function wrapIndex(index: number, size: number): number {
+  if (size <= 0) {
+    return 0;
+  }
+  return ((index % size) + size) % size;
+}
+
 export function workspaceBodyHeight(options: WorkspaceBodyHeightOptions): number {
   const footerRows = options.footerVisible ? FOOTER_ROWS : 0;
   return Math.max(1, options.rows - HEADER_ROWS - footerRows);
