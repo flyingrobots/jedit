@@ -5,6 +5,10 @@ import { countForbiddenSyntax } from './quality-gate/syntax-counts.mjs';
 
 const ROOT = process.cwd();
 const SOURCE_ROOT = path.join(ROOT, 'src');
+// Specs were invisible to the ratchet, so oversized ones grew unchecked -- the
+// largest reached four times the doctrine limit without ever reporting. Only
+// max-lines applies here; the other rules encode TypeScript-specific doctrine.
+const SPEC_ROOTS = [path.join(ROOT, 'spec'), path.join(ROOT, 'tests')];
 const BASELINE_PATH = path.join(ROOT, 'quality-baseline.json');
 const PACKAGE_PATH = path.join(ROOT, 'package.json');
 const MAX_LINES_PER_FILE = 500;
@@ -39,25 +43,7 @@ function main() {
     const lineCount = sourceText.split('\n').length;
     const counts = countForbiddenSyntax(relativePath, sourceText);
 
-    const allowedLineCount = baseline.maxLines[relativePath] ?? MAX_LINES_PER_FILE;
-    if (lineCount > allowedLineCount) {
-      regressions.push({
-        file: relativePath,
-        rule: 'max-lines',
-        actual: lineCount,
-        allowed: allowedLineCount,
-      });
-    } else if (lineCount > MAX_LINES_PER_FILE) {
-      debt.push({
-        file: relativePath,
-        rule: 'max-lines',
-        actual: lineCount,
-        allowed: allowedLineCount,
-      });
-      if (lineCount < allowedLineCount) {
-        improvements.push(`${relativePath}: max-lines improved ${allowedLineCount} -> ${lineCount}`);
-      }
-    }
+    checkMaxLines(relativePath, lineCount, baseline, regressions, debt, improvements);
 
     for (const key of ['any', 'unknown']) {
       recordCountRule({
@@ -204,6 +190,12 @@ function main() {
     });
   }
 
+  for (const specPath of collectSpecFiles()) {
+    const relativeSpecPath = toRepoPath(specPath);
+    const specLineCount = fs.readFileSync(specPath, 'utf8').split('\n').length;
+    checkMaxLines(relativeSpecPath, specLineCount, baseline, regressions, debt, improvements);
+  }
+
   const result = {
     ok: regressions.length === 0,
     enforcedRules: [
@@ -225,7 +217,7 @@ function main() {
       'max-lines-500',
       'identity-doctrine-links',
     ],
-    fileCount: files.length,
+    fileCount: files.length + collectSpecFiles().length,
     regressions,
     debt,
     improvements,
@@ -346,6 +338,47 @@ function loadBaseline() {
   }
 
   return JSON.parse(fs.readFileSync(BASELINE_PATH, 'utf8'));
+}
+
+function checkMaxLines(relativePath, lineCount, baseline, regressions, debt, improvements) {
+  const allowedLineCount = baseline.maxLines[relativePath] ?? MAX_LINES_PER_FILE;
+  if (lineCount > allowedLineCount) {
+    regressions.push({ file: relativePath, rule: 'max-lines', actual: lineCount, allowed: allowedLineCount });
+    return;
+  }
+  if (lineCount <= MAX_LINES_PER_FILE) {
+    return;
+  }
+  debt.push({ file: relativePath, rule: 'max-lines', actual: lineCount, allowed: allowedLineCount });
+  if (lineCount < allowedLineCount) {
+    improvements.push(`${relativePath}: max-lines improved ${allowedLineCount} -> ${lineCount}`);
+  }
+}
+
+function collectSpecFiles() {
+  const files = [];
+  for (const root of SPEC_ROOTS) {
+    files.push(...collectFilesWithExtension(root, '.mjs'));
+  }
+  return files.sort();
+}
+
+function collectFilesWithExtension(directory, extension) {
+  if (!fs.existsSync(directory)) {
+    return [];
+  }
+  const files = [];
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    const fullPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...collectFilesWithExtension(fullPath, extension));
+      continue;
+    }
+    if (entry.isFile() && fullPath.endsWith(extension)) {
+      files.push(fullPath);
+    }
+  }
+  return files;
 }
 
 function collectTypeScriptFiles(directory) {
