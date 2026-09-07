@@ -3,11 +3,11 @@ title: "WF-0121 - Strand/Braid Worldline UX"
 legend: "WF"
 lane: "design"
 issue: "https://github.com/flyingrobots/jedit/issues/153"
-status: "implemented"
+status: "active"
 owners:
   - "@flyingrobots"
 created: "2026-06-26"
-updated: "2026-06-26"
+updated: "2026-09-07"
 ---
 
 # WF-0121 - Strand/Braid Worldline UX
@@ -114,17 +114,43 @@ Start explicit before adding terse Normal-mode chords:
 :braid admit <strand>
 ```
 
-Implemented anchors:
+### Implementation status
 
-- `src/app/workspace/worldline-state.ts` owns posture labels, graph rows,
-  ahead/behind facts, materialization labels, TTD observer movement, strand
-  creation/switching, and braid preview/admission model transitions.
-- `src/app/workspace/command-line-dispatch.ts` dispatches `:ttd`, `:strand`,
-  and `:braid` commands through the workspace command line.
-- `src/app/workspace/viewer-drawers.ts` renders `:braid view` and
-  `:strand list` in the existing history drawer as the worldline graph view.
-- `src/ui/workspace-chrome.ts` and `src/app/workspace/viewer.ts` keep causal
-  posture and filesystem materialization visible as distinct footer facts.
+This grammar was implemented once against the local text authority and removed
+with it in `a05cb427` (2026-07-16, "Refactor: remove local text authority",
+-50,419 lines). `worldline-state.ts` and `jedit-agent-strand-contract.ts` no
+longer exist. The commands survive in the catalog and dispatch to
+`dispatchCausalCommandUnavailable`, which reports "Echo operation unavailable"
+rather than pretending to work.
+
+Slices S1-S4 (#154-#157) were closed against that removed implementation, so
+the closed issues do not describe the current tree.
+
+What remains standing:
+
+- `src/app/workspace/command-line-dispatch.ts` still routes `:ttd`, `:strand`
+  and `:braid`; only the handler behind them is gone.
+- `src/app/workspace/workspace-command-catalog.ts` still carries the grammar,
+  help text and completions.
+- `src/ui/workspace-chrome.ts` keeps causal posture and filesystem
+  materialization visible as distinct footer facts, now via
+  `workspace-buffer-durability.ts`.
+
+What re-implementation needs, against the real Echo host rather than a local
+simulation:
+
+- **`:ttd`** is closest. `EchoTextHostObserveRequest` already takes a
+  `basisHeadId` and `EchoTextHostObserved` already returns
+  `resolvedWorldlineTick`, so observing an arbitrary point is supported today.
+  The gap is enumeration: nothing maps a tick back to a head id, so `-1` and
+  `1842` cannot be resolved to a basis. That needs one new host operation.
+- **`:strand list` / `:braid view`** need a topology query. The host port
+  exposes four operations -- `openBuffer`, `replaceRange`, `declareCheckpoint`,
+  `observeWindow` -- and none of them enumerate strands or braids.
+- **`:strand new` / `:strand switch` / `:braid preview` / `:braid admit`** need
+  topology mutation. Echo treats these as WAL-backed intents as of
+  flyingrobots/echo#604, which is closed, so the substrate side is available;
+  jedit's host does not surface it.
 
 Normal-mode shortcuts can follow after the command semantics are proven:
 
@@ -167,16 +193,18 @@ Required operations:
 Agents may propose into isolated durable strands. Only braid/admission changes
 canonical mainline.
 
-Implemented anchor:
+Anchor status:
 
-- `src/ports/jedit-agent-strand-contract.ts` defines the CLI/MCP/API-facing
-  session, intent envelope, braid preview, and admission request contract.
+- `src/ports/jedit-agent-strand-contract.ts` defined this contract and was
+  removed in `a05cb427`. No agent strand port exists in the current tree.
 
 ## Echo Dependency
 
 This product lane depends on Echo treating topology changes as causal history.
 The Echo-side owner issue is
-[flyingrobots/echo#604](https://github.com/flyingrobots/echo/issues/604).
+[flyingrobots/echo#604](https://github.com/flyingrobots/echo/issues/604), which
+is closed -- the substrate dependency is satisfied. The remaining work is on
+the Jim side: surfacing that topology through the Echo text host port.
 
 ## Follow-On Design
 
