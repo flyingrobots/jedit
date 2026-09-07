@@ -46,7 +46,7 @@ test('workspace footer shows compact uppercase normal-mode guidance', async () =
   assert.deepEqual(
     footer.workspaceFooterLines(idleNormalState()),
     [
-      'NORMAL [i insert · o open line · f3 preview · ctrl+t theme]',
+      'NORMAL [i insert · o open line · f3 preview]',
       '/repo/notes/todo.md',
     ],
   );
@@ -61,7 +61,7 @@ test('workspace footer can surface the last command provenance summary', async (
       commandSummary: 'last: dw delete motion 0..6 receipt receipt:dw',
     }),
     [
-      'NORMAL [last: dw delete motion 0..6 receipt receipt:dw · i insert · o open line · f3 preview · ctrl+t theme]',
+      'NORMAL [last: dw delete motion 0..6 receipt receipt:dw · i insert · o open line · f3 preview]',
       '/repo/notes/todo.md',
     ],
   );
@@ -79,7 +79,7 @@ test('workspace footer shows editor cursor position when available', async () =>
       },
     }),
     [
-      'NORMAL 6:1 [i insert · o open line · f3 preview · ctrl+t theme]',
+      'NORMAL 6:1 [i insert · o open line · f3 preview]',
       '/repo/notes/todo.md',
     ],
   );
@@ -217,7 +217,7 @@ test('workspace footer explains that tab indents when no peer panes are visible 
       editorMode: 'insert',
     }),
     [
-      'INSERT [text input · esc normal · ctrl+s save · ctrl+t theme · tab indent]',
+      'INSERT [text input · esc normal · ctrl+s save · tab indent]',
       '/repo/notes/todo.md',
     ],
   );
@@ -232,7 +232,7 @@ test('workspace footer shows f3 as the Markdown preview source toggle', async ()
       viewMode: 'preview',
     }),
     [
-      'PREVIEW [j/k scroll · f3 source · ctrl+t theme · ctrl+b files · ctrl+g graft]',
+      'PREVIEW [j/k scroll · f3 source · ctrl+b files · ctrl+g graft]',
       '/repo/notes/todo.md',
     ],
   );
@@ -263,7 +263,7 @@ test('workspace footer shows file drawer controls and the selected file path', a
       graftSelection: undefined,
     }),
     [
-      'FILES [j/k move · enter open · backspace up · ctrl+b close · ctrl+t theme · tab focus]',
+      'FILES [j/k move · enter open · backspace up · ctrl+b close · tab focus]',
       '/repo/notes/very-long-file-name.md',
     ],
   );
@@ -335,7 +335,7 @@ test('workspace footer obtains the scene picker hint label from i18n', async () 
       graftSelection: undefined,
     }),
     [
-      'BROWSE [ctrl+l scene picker · ctrl+t theme · ctrl+b files · ctrl+g graft]',
+      'BROWSE [ctrl+l scene picker · ctrl+b files · ctrl+g graft]',
       '/repo',
     ],
   );
@@ -466,3 +466,20 @@ function rowText(surface, row) {
   }
   return text;
 }
+
+test('the footer does not advertise the theme shortcut in any mode', async () => {
+  const chrome = await loadFooterModule();
+  const modes = [
+    { label: 'normal', state: idleNormalState() },
+    { label: 'insert', state: { ...idleNormalState(), editorMode: 'insert' } },
+    { label: 'files', state: { ...idleNormalState(), focusPane: 'files', fileDrawerOpen: true } },
+    { label: 'graft', state: { ...idleNormalState(), focusPane: 'graft', graftDrawerOpen: true } },
+    { label: 'settings', state: { ...idleNormalState(), settingsOpen: true } },
+    { label: 'no-editor', state: { ...idleNormalState(), editorMode: undefined, editorPath: undefined } },
+  ];
+  const offenders = modes.filter(({ state }) => (
+    chrome.workspaceFooterLines(state).join(' ').includes('theme')
+  )).map(({ label }) => label);
+
+  assert.deepEqual(offenders, []);
+});
