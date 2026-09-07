@@ -9,11 +9,40 @@ import { importDist } from "./dist-helpers.mjs";
 
 const BLANK_CHARS = new Set([" ", "⠀"]);
 
-async function renderAt(width, height) {
+async function renderAt(width, height, theme) {
   const screen = await importDist("ui", "jim-logo-screen.js");
   const themes = await importDist("ui", "jedit-themes.js");
-  const [theme] = themes.availableJeditThemes();
-  return screen.renderJimLogoScreen(width, height, theme);
+  return screen.renderJimLogoScreen(width, height, theme ?? themes.availableJeditThemes()[0]);
+}
+
+function channelLuminance(channel) {
+  const ratio = channel / 255;
+  return ratio <= 0.03928 ? ratio / 12.92 : Math.pow((ratio + 0.055) / 1.055, 2.4);
+}
+
+function contrastRatio(foreground, background) {
+  const first = 0.2126 * channelLuminance(foreground[0])
+    + 0.7152 * channelLuminance(foreground[1])
+    + 0.0722 * channelLuminance(foreground[2]);
+  const second = 0.2126 * channelLuminance(background[0])
+    + 0.7152 * channelLuminance(background[1])
+    + 0.0722 * channelLuminance(background[2]);
+  const high = Math.max(first, second);
+  const low = Math.min(first, second);
+  return (high + 0.05) / (low + 0.05);
+}
+
+function inkCells(surface) {
+  const cells = [];
+  for (let y = 0; y < surface.height; y += 1) {
+    for (let x = 0; x < surface.width; x += 1) {
+      const cell = surface.get(x, y);
+      if (!BLANK_CHARS.has(cell.char)) {
+        cells.push({ x, y, cell });
+      }
+    }
+  }
+  return cells;
 }
 
 function inkBounds(surface) {
@@ -105,5 +134,132 @@ test("the logo keeps its own colours rather than one flat token", async () => {
   assert.ok(
     inkColours.size > 1,
     `expected multi-colour artwork, got ${inkColours.size} colour(s)`,
+  );
+});
+
+// WCAG 1.4.11 puts non-text graphics at 3:1, the same floor the rest of jedit's
+// chrome is held to.
+const MIN_LOGO_CONTRAST = 3;
+
+test("the logo is legible against every theme's workspace background", async () => {
+  const themes = await importDist("ui", "jedit-themes.js");
+  const offenders = [];
+
+  for (const theme of themes.availableJeditThemes()) {
+    const surface = await renderAt(120, 40, theme);
+    let worst = Infinity;
+    for (const { cell } of inkCells(surface)) {
+      worst = Math.min(worst, contrastRatio(cell.fgRGB, theme.surface.workspace.bgRGB));
+    }
+    if (worst < MIN_LOGO_CONTRAST) {
+      offenders.push(`${theme.name} (${theme.mode}) worst ${worst.toFixed(2)}`);
+    }
+  }
+
+  assert.deepEqual(offenders, []);
+});
+
+test("the logo's shape does not depend on the theme", async () => {
+  const themes = await importDist("ui", "jedit-themes.js");
+  const available = themes.availableJeditThemes();
+  const reference = inkCells(await renderAt(120, 40, available[0]))
+    .map(({ x, y, cell }) => `${x},${y},${cell.char}`)
+    .join(" ");
+
+  for (const theme of available.slice(1)) {
+    const shape = inkCells(await renderAt(120, 40, theme))
+      .map(({ x, y, cell }) => `${x},${y},${cell.char}`)
+      .join(" ");
+    assert.equal(shape, reference, `${theme.name} drew a different mask`);
+  }
+});
+
+test("the logo takes its colours from the theme, not from the artwork", async () => {
+  const themes = await importDist("ui", "jedit-themes.js");
+  const available = themes.availableJeditThemes();
+
+  const paletteFor = async (theme) => new Set(
+    inkCells(await renderAt(120, 40, theme)).map(({ cell }) => String(cell.fgRGB)),
+  );
+
+  const first = await paletteFor(available[0]);
+  const second = await paletteFor(available[1]);
+  const shared = [...first].filter((colour) => second.has(colour));
+
+  assert.ok(
+    shared.length * 2 < Math.min(first.size, second.size),
+    `themes should mostly disagree on colour; ${shared.length} shared of ${first.size}/${second.size}`,
+  );
+});
+
+test("the logo keeps more than one hue so the diamond stays distinct", async () => {
+  const themes = await importDist("ui", "jedit-themes.js");
+  const { rgbToOklch } = await importDist("ui", "oklch.js");
+  const offenders = [];
+
+  for (const theme of themes.availableJeditThemes()) {
+    const hues = new Set();
+    for (const { cell } of inkCells(await renderAt(120, 40, theme))) {
+      const { chroma, hue } = rgbToOklch(cell.fgRGB);
+      if (chroma > 0.02) {
+        hues.add(Math.round(hue / 10));
+      }
+    }
+    if (hues.size < 2) {
+      offenders.push(`${theme.name} collapsed to ${hues.size} hue band(s)`);
+    }
+  }
+
+  assert.deepEqual(offenders, []);
+});
+
+test("resizing the terminal re-renders the logo at the new size", async () => {
+  const [init, viewerContent, themes] = await Promise.all([
+    importDist("app", "workspace", "init.js"),
+    importDist("app", "workspace", "viewer-content.js"),
+    importDist("ui", "jedit-themes.js"),
+  ]);
+  const { mockI18n, mockJeditTheme } = await import("./workspace-helpers.mjs");
+  const { discoverRepoRoot } = await import("./dist-helpers.mjs");
+  const root = discoverRepoRoot();
+
+  const small = init.createInitialModel(root, 80, 24, {
+    entries: [],
+    jeditTheme: mockJeditTheme(),
+    i18n: mockI18n(),
+    nowMs: 0,
+  });
+
+  // The runtime rebuilds the model on a resize message; the renderer only
+  // repaints when the model identity changes, so a resize that mutated in
+  // place would silently leave the old logo on screen.
+  const grown = { ...small, columns: 190, rows: 50 };
+  assert.notEqual(grown, small, "resize must produce a new model reference");
+
+  const before = viewerContent.renderViewer(small, 80, 24);
+  const after = viewerContent.renderViewer(grown, 190, 50);
+
+  const inkHeight = (surface, width, height) => {
+    let min = Infinity;
+    let max = -Infinity;
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const char = surface.get(x, y)?.char ?? " ";
+        if (char >= "⠁" && char <= "⣿") {
+          min = Math.min(min, y);
+          max = Math.max(max, y);
+        }
+      }
+    }
+    return max < min ? 0 : max - min + 1;
+  };
+
+  const smallRows = inkHeight(before, 80, 24);
+  const largeRows = inkHeight(after, 190, 50);
+
+  assert.ok(smallRows > 0 && largeRows > 0, `expected ink in both, got ${smallRows}/${largeRows}`);
+  assert.ok(
+    largeRows > smallRows,
+    `logo should grow with the terminal; ${smallRows} -> ${largeRows} rows`,
   );
 });

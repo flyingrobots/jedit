@@ -7,6 +7,7 @@ import {
   JIM_LOGO_PACKED_INDICES,
   JIM_LOGO_PALETTE,
 } from './jim-logo-frame-data.js';
+import { themeLogoInk } from './jim-logo-palette.js';
 
 const MIN_LOGO_ROWS = 4;
 const LOGO_COLUMNS_PER_ROW = 2;
@@ -26,8 +27,9 @@ const OPAQUE_ALPHA = 255;
 const TRANSPARENT_INDEX = 0;
 const FULL_OPACITY = 1;
 
-// Built once at module load. The frame is static, so the startup screen renders
-// without a frame pulse and without loading any mesh or scene.
+// Built once at module load from the artwork's own colours. The Braille mask is
+// derived from this frame's darkness, so it must stay the artwork as drawn; the
+// theme's colours are applied to the rasterised cells afterwards.
 const JIM_LOGO_FRAME = createJimLogoFrame();
 
 interface JimLogoBounds {
@@ -47,18 +49,41 @@ export function renderJimLogoScreen(
   if (bounds == null) {
     return surface;
   }
-  blitInkOnly(surface, glyphsFor(bounds), bounds.x, bounds.y);
+  blitInkOnly(surface, glyphsFor(bounds, theme), bounds.x, bounds.y);
   return surface;
 }
 
 // Rasterising the 192px frame is the expensive half and depends only on the
-// glyph grid, so one cached result per size keeps a resize cheap. Only
-// blitInkOnly reads it, and it never writes, so sharing the surface is safe.
-let cachedGlyphs: { columns: number; rows: number; surface: Surface } | undefined;
+// glyph grid and the theme's colours, so one cached result per (theme, size)
+// keeps both a resize and a theme switch cheap. Only blitInkOnly reads it, and
+// it never writes, so sharing the surface is safe.
+//
+// The key is built from the colours themselves rather than the theme's name so
+// that a renamed or generated variant carrying identical tokens still hits, and
+// an edited theme keeping its name still misses.
+interface CachedGlyphs {
+  readonly key: string;
+  readonly columns: number;
+  readonly rows: number;
+  readonly surface: Surface;
+}
 
-function glyphsFor(bounds: JimLogoBounds): Surface {
+let cachedGlyphs: CachedGlyphs | undefined;
+
+function logoCacheKey(theme: JeditTheme): string {
+  return JSON.stringify([
+    theme.chrome.titleLogo.fgRGB,
+    theme.chrome.titleLogoShadow.fgRGB,
+    theme.surface.workspace.bgRGB,
+    theme.mode,
+  ]);
+}
+
+function glyphsFor(bounds: JimLogoBounds, theme: JeditTheme): Surface {
+  const key = logoCacheKey(theme);
   if (
     cachedGlyphs != null
+    && cachedGlyphs.key === key
     && cachedGlyphs.columns === bounds.width
     && cachedGlyphs.rows === bounds.height
   ) {
@@ -75,8 +100,22 @@ function glyphsFor(bounds: JimLogoBounds): Surface {
       threshold: BRAILLE_DARKNESS_THRESHOLD,
     },
   });
-  cachedGlyphs = { columns: bounds.width, rows: bounds.height, surface };
+  recolourToTheme(surface, theme);
+  cachedGlyphs = { key, columns: bounds.width, rows: bounds.height, surface };
   return surface;
+}
+
+function recolourToTheme(glyphs: Surface, theme: JeditTheme): void {
+  const ink = themeLogoInk(theme);
+  for (let y = 0; y < glyphs.height; y += 1) {
+    for (let x = 0; x < glyphs.width; x += 1) {
+      const cell = glyphs.get(x, y);
+      if (cell.fgRGB == null) {
+        continue;
+      }
+      glyphs.set(x, y, { ...cell, fgRGB: ink(cell.fgRGB) });
+    }
+  }
 }
 
 function fillWithWorkspace(width: number, height: number, theme: JeditTheme): Surface {

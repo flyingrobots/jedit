@@ -1,4 +1,4 @@
-import { clipToWidth, stringToSurface, type Surface } from '@flyingrobots/bijou';
+import { clipToWidth, type Surface } from '@flyingrobots/bijou';
 import { JEDIT_MARKDOWN_TOKEN, type JeditMarkdownToken, type JeditStyleToken, type JeditTheme } from './jedit-theme.js';
 
 const FENCE_RE = /^\s*```/;
@@ -242,31 +242,44 @@ function paintPreviewSegments(
       continue;
     }
 
-    const segmentSurface = stringToSurface(clipped, [...clipped].length, 1);
-    applyToken(segmentSurface, tokenForTone(options.theme, segment.tone));
-    surface.blit(segmentSurface, cursor, options.y);
-    cursor += [...clipped].length;
+    cursor = paintSegmentText(surface, {
+      text: clipped,
+      x: cursor,
+      y: options.y,
+      token: tokenForTone(options.theme, segment.tone),
+    });
   }
 }
 
-function applyToken(surface: Surface, token: JeditStyleToken) {
-  for (let row = 0; row < surface.height; row += 1) {
-    for (let column = 0; column < surface.width; column += 1) {
-      const cell = surface.get(column, row);
-      if (cell.empty) {
-        continue;
-      }
-      surface.set(column, row, {
-        ...cell,
-        fg: token.fg,
-        fgRGB: token.fgRGB,
-        bg: token.bg,
-        bgRGB: token.bgRGB,
-        modifiers: token.modifiers == null ? undefined : [...token.modifiers],
-        empty: false,
-      });
-    }
+interface PaintSegmentTextOptions {
+  readonly text: string;
+  readonly x: number;
+  readonly y: number;
+  readonly token: JeditStyleToken;
+}
+
+// Written into the page directly rather than composed on a scratch surface and
+// blitted. A scratch cell has no background of its own, so blitting one carried
+// an undefined background over the page and punched a hole through to the
+// terminal's own -- invisible on a dark theme, black blocks on a light one.
+function paintSegmentText(surface: Surface, options: PaintSegmentTextOptions): number {
+  const { token } = options;
+  let column = options.x;
+  for (const char of options.text) {
+    const cell = surface.get(column, options.y);
+    surface.set(column, options.y, {
+      ...cell,
+      char,
+      fg: token.fg,
+      fgRGB: token.fgRGB,
+      bg: token.bg ?? cell.bg,
+      bgRGB: token.bgRGB ?? cell.bgRGB,
+      modifiers: token.modifiers == null ? undefined : [...token.modifiers],
+      empty: false,
+    });
+    column += 1;
   }
+  return column;
 }
 
 function tokenForTone(theme: MarkdownPreviewTheme, tone: PreviewSegmentTone): JeditStyleToken {
