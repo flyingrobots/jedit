@@ -2,6 +2,7 @@ import { createSurface, type Surface } from "@flyingrobots/bijou";
 import { paintMarkdownPreview } from "../../ui/markdown-preview.js";
 import { renderSourceViewer } from "../../ui/source-viewer.js";
 import {
+  renderJimLogoScreen,
   TITLE_BACKDROP_KIND,
   TITLE_RENDER_MODE,
   paintTitleScreenPresentation,
@@ -176,14 +177,15 @@ function renderViewerWithState(
   );
 }
 
+// vi opens on nothing; jedit opens on its own mark. This is a single static
+// render of committed artwork -- no scene, no meshes, and no frame pulse, so it
+// costs one draw rather than an animation.
 function emptyViewerSurface(
   model: WorkspaceModel,
   width: number,
   height: number,
 ): Surface {
-  const surface = createSurface(width, height);
-  fillSurface(surface, model.jeditTheme.surface.workspace);
-  return surface;
+  return renderJimLogoScreen(width, height, model.jeditTheme);
 }
 
 function renderTitleViewer(

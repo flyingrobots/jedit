@@ -39,7 +39,7 @@ test("startup snapshot preloads no title scene", async () => {
   assert.equal(snapshot.sceneOverrideName == null, true);
 });
 
-test("a workspace with no open file renders no title backdrop", async () => {
+test("a workspace with no open file renders the Jim logo", async () => {
   const [init, viewerContent] = await Promise.all([
     importDist("app", "workspace", "init.js"),
     importDist("app", "workspace", "viewer-content.js"),
@@ -52,22 +52,46 @@ test("a workspace with no open file renders no title backdrop", async () => {
     nowMs: STARTUP_NOW_MS,
   });
 
-  const surface = viewerContent.renderViewer(
-    model,
-    VIEWER_WIDTH,
-    VIEWER_HEIGHT,
-  );
-  let painted = 0;
+  const surface = viewerContent.renderViewer(model, VIEWER_WIDTH, VIEWER_HEIGHT);
+  let braille = 0;
   for (let row = 0; row < VIEWER_HEIGHT; row += 1) {
     for (let column = 0; column < VIEWER_WIDTH; column += 1) {
-      const cell = surface.get(column, row);
-      if (cell?.char != null && cell.char.trim() !== "") {
-        painted += 1;
+      const char = surface.get(column, row)?.char ?? " ";
+      if (char >= "\u2801" && char <= "\u28ff") {
+        braille += 1;
       }
     }
   }
 
-  assert.equal(painted, 0);
+  assert.ok(braille > 40, `expected Braille logo ink, saw ${braille} cells`);
+});
+
+test("the startup logo carries its own colours, not one flat token", async () => {
+  const [init, viewerContent] = await Promise.all([
+    importDist("app", "workspace", "init.js"),
+    importDist("app", "workspace", "viewer-content.js"),
+  ]);
+  const model = init.createInitialModel(REPO_ROOT, VIEWER_WIDTH, VIEWER_HEIGHT, {
+    entries: [],
+    titleSceneSeed: FIXED_SEED,
+    jeditTheme: mockJeditTheme(),
+    i18n: mockI18n(),
+    nowMs: STARTUP_NOW_MS,
+  });
+
+  const surface = viewerContent.renderViewer(model, VIEWER_WIDTH, VIEWER_HEIGHT);
+  const inkColours = new Set();
+  for (let row = 0; row < VIEWER_HEIGHT; row += 1) {
+    for (let column = 0; column < VIEWER_WIDTH; column += 1) {
+      const cell = surface.get(column, row);
+      const char = cell?.char ?? " ";
+      if (char >= "\u2801" && char <= "\u28ff" && cell?.fgRGB != null) {
+        inkColours.add(cell.fgRGB.join(","));
+      }
+    }
+  }
+
+  assert.ok(inkColours.size > 3, `expected multiple ink colours, saw ${inkColours.size}`);
 });
 
 test("no title scene stats are reported when no backdrop is drawn", async () => {
