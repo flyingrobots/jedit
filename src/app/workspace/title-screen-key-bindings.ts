@@ -26,8 +26,6 @@ import { WorkspaceKeys } from "./workspace-key.js";
 
 const TITLE_SHADER_TOAST_TITLE = "Title shader";
 const TITLE_ASCII_PALETTE_TOAST_TITLE = "ASCII palette";
-const TITLE_MESH_MATERIAL_NEEDS_SCENE =
-  "Load a scene first (ctrl+l) -- the generated backdrop takes its materials from the theme.";
 const TITLE_MESH_MATERIAL_TOAST_TITLE = "Title material";
 const TITLE_SHADER_BRAILLE_LABEL = "Braille";
 const TITLE_SHADER_ASCII_LABEL = "ASCII";
@@ -122,19 +120,15 @@ function updateTitleMeshMaterialKey(
     model.titleMeshMaterialIndex,
   );
   const preset = titleMeshMaterialPresetAt(titleMeshMaterialIndex);
-  // With no scene loaded there is nothing to apply a material to: the generated
-  // backdrop takes its materials from the theme and never reads
-  // titleMeshMaterialIndex. Cycling the index anyway used to switch the legacy
-  // backdrop on and toast that the preset had been applied, so the reader was
-  // told a change had happened that could not have happened.
-  if (model.sceneOverride == null) {
-    return pushTitleMeshMaterialToast(model, TITLE_MESH_MATERIAL_NEEDS_SCENE, context);
-  }
+  const sceneOverride =
+    model.sceneOverride == null
+      ? undefined
+      : applyTitleMeshMaterial(model.sceneOverride, preset);
   return pushTitleMeshMaterialToast(
     activateLegacyTitleBackdrop({
       ...model,
       titleMeshMaterialIndex,
-      sceneOverride: applyTitleMeshMaterial(model.sceneOverride, preset),
+      ...(sceneOverride == null ? {} : { sceneOverride }),
     }),
     preset.name,
     context,
