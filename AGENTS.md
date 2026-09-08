@@ -35,6 +35,8 @@ These are hard repo rules, not suggestions:
 - `ARCHITECTURE.md` is the canonical repo architecture doctrine.
 - `docs/BEARING.md` records the current execution gravity.
 - `docs/method/process.md` is the canonical cycle workflow.
+- `docs/method/durable-decisions.md` owns the durable decision policy and the
+  canonical-owner register.
 - `docs/method/roadmap-planning.md` defines release-gate, roadmap, slice, and
   proof policy for multi-cycle planning.
 - `docs/design/TEMPLATE.md` is the required template for full cycle designs.
@@ -67,6 +69,22 @@ These are hard repo rules, not suggestions:
 
 Keep track of our progress in the plan doc by checking off slices just before
 you make the commit for that slice.
+
+## Durable Decision Discipline
+
+`docs/method/durable-decisions.md` owns this policy. Read it before completing
+any architecture, authority, identity, causal-settlement, recovery,
+compatibility, ownership, public-API, or release-boundary decision.
+
+Agent-specific enforcement: a change carrying such a decision is not complete
+until the canonical owner named in that document is updated in the same change.
+Chat transcripts, Think memories, pull-request prose, and review threads may
+motivate a decision; none of them is its repository home.
+
+Treat missing or stale canonical decision documentation as incomplete
+engineering work, not optional polish. Historical design documents remain
+evidence of their cycle; when durable current architecture changes, update the
+current owning doctrine rather than relying on an old retrospective.
 
 ## Design Cycle Workflow
 

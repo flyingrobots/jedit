@@ -39,31 +39,14 @@ The broader project doctrine is written down in
 
 ## Target Ownership
 
-The final application is Jim authored in Edict and realized by Echo:
+`docs/jim-component-ownership.md` owns the Jim/Jedit/Edict/Echo target
+ownership and causal model, including each component's territory, the five
+non-negotiable causal clauses, and the vocabulary Echo must never carry.
 
-- Jedit, Bijou, and native adapters are Jim's body. They decode terminal and
-  process input into canonical events, install or address verified packages,
-  transport opaque runtime artifacts, and render disposable projections.
-- `Jim.edict` is Jim's mind. It owns editor state, modes, operators, motions,
-  cursor and selection policy, registers, pending actions, input-event
-  interpretation, observation requests, application intents, and outcome
-  handling.
-- Jim-owned Edict lawpacks own application operations and optics such as
-  `ReplaceRange`, `CreateBuffer`, `DeclareCheckpoint`, and `TextWindow`, plus
-  their fact schemas, identities, results, and typed obstructions.
-- Edict owns source checking, Core IR, authority and lawpack closure, target
-  lowering, package construction, and structurally separate verification.
-- Echo owns only generic runtime authority: installation, admission, budgets,
-  scheduling, bounded program interpretation, atomic ticks, WAL, receipts,
-  readings, recovery, and evidence.
-- Graft owns structural intelligence and projections over bounded readings. It
-  has no Jim text authority and does not justify application vocabulary in Echo.
-
-Echo production code must never branch on or implement Jim/Jedit nouns or
-verbs. In particular, Echo has no `ReplaceRange` variant, rope intrinsic,
-`Buffer` or `TextWindow` semantics, native Jim planner callback,
-`MutationPlan`, or caller-authored graph patch. Application coordinates may be
-carried opaquely in packages, fixtures, and receipts.
+In one line: the final application is Jim authored in Edict and realized by
+Echo, with Jedit, Bijou, and the native adapters as Jim's body. Every
+normative rule about who owns what lives in the document above; this file does
+not restate them.
 
 ## Non-Negotiables
 
