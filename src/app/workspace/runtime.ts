@@ -89,7 +89,31 @@ function updateWorkspaceRuntime(
   msg: WorkspaceRuntimeMsg,
   model: WorkspaceModel,
 ): WorkspaceRuntimeResult {
-  return syncWorkspaceRuntimeResult(updateWorkspaceRuntimeState(deps, msg, model));
+  return syncWorkspaceRuntimeResult(
+    rebaseFrameClock(deps, model, updateWorkspaceRuntimeState(deps, msg, model)),
+  );
+}
+
+// While the workspace is idle the tick handler returns the model untouched, so
+// lastFrameMs stops advancing along with everything else. Whatever switches
+// animation back on -- the perf overlay, the profiler, the legacy backdrop --
+// would otherwise hand the first active frame the whole idle interval as its
+// duration: instantly over budget, which trips the backdrop's low-rate flag and
+// leaves the animation frozen from then on.
+//
+// The baseline is reset on the inactive-to-active edge rather than on every
+// idle tick, because advancing it during idle would mean returning a new model
+// and defeating the render gate that made the workspace idle in the first place.
+function rebaseFrameClock(
+  deps: WorkspaceRuntimeDependencies,
+  previous: WorkspaceModel,
+  result: WorkspaceRuntimeResult,
+): WorkspaceRuntimeResult {
+  const [next, commands] = result;
+  if (workspaceAnimationIsActive(previous) || !workspaceAnimationIsActive(next)) {
+    return result;
+  }
+  return [{ ...next, lastFrameMs: deps.nowMs() }, commands];
 }
 
 function updateWorkspaceRuntimeState(
