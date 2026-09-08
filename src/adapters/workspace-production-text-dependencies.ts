@@ -23,3 +23,21 @@ export async function createWorkspaceProductionTextDependencies(
     },
   };
 }
+
+// Runs `use`, then closes the native Echo host whether `use` returned or threw.
+//
+// The host owns a child process holding stdio pipes open, so anything that
+// escapes without closing it leaves the terminal unrestored and the event loop
+// alive -- the failure #306 was filed for. Building the app is part of `use`,
+// not something that happens before the guard: app construction can throw, and
+// when it did the host stayed open.
+export async function closingProductionText<T>(
+  dependencies: WorkspaceProductionTextDependencies,
+  use: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await use();
+  } finally {
+    await dependencies.closeProductionText();
+  }
+}
