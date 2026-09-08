@@ -2,7 +2,6 @@ import { createSurface, type Surface } from "@flyingrobots/bijou";
 import { paintMarkdownPreview } from "../../ui/markdown-preview.js";
 import { renderSourceViewer } from "../../ui/source-viewer.js";
 import {
-  renderJimLogoScreen,
   TITLE_BACKDROP_KIND,
   TITLE_RENDER_MODE,
   paintTitleScreenPresentation,
@@ -29,7 +28,7 @@ import {
   sourceHighlightForWorkspaceProjection,
   sourceWindowForWorkspaceModel,
 } from "./workspace-source-projection.js";
-import { fillSurface } from "./surface-fill.js";
+import { fillSurface, renderJimLogoScreen } from "./surface-fill.js";
 import {
   governTitleSceneRender,
   staticTitleScenePerformanceFacts,

@@ -465,5 +465,3 @@ function getRayDir(
     ),
   );
 }
-
-export { renderJimLogoScreen } from './jim-logo-screen.js';
