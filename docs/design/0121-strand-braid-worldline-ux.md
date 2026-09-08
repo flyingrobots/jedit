@@ -148,9 +148,13 @@ simulation:
   exposes four operations -- `openBuffer`, `replaceRange`, `declareCheckpoint`,
   `observeWindow` -- and none of them enumerate strands or braids.
 - **`:strand new` / `:strand switch` / `:braid preview` / `:braid admit`** need
-  topology mutation. Echo treats these as WAL-backed intents as of
-  flyingrobots/echo#604, which is closed, so the substrate side is available;
-  jedit's host does not surface it.
+  topology mutation. What is verified: flyingrobots/echo#604, "GP6: Treat
+  strand, braid, and suffix topology as WAL-backed intents", was closed as
+  COMPLETED on 2026-06-26, and its stated contract is that topology-changing
+  operations become admitted causal history rather than side-channel runtime
+  state. What is not verified from this repo: the concrete intent and receipt
+  definitions in Echo's current tree, and whether jedit's Echo host can reach
+  them. Confirm both against Echo before planning against this.
 
 Normal-mode shortcuts can follow after the command semantics are proven:
 
@@ -203,8 +207,9 @@ Anchor status:
 This product lane depends on Echo treating topology changes as causal history.
 The Echo-side owner issue is
 [flyingrobots/echo#604](https://github.com/flyingrobots/echo/issues/604), which
-is closed -- the substrate dependency is satisfied. The remaining work is on
-the Jim side: surfacing that topology through the Echo text host port.
+was closed as COMPLETED on 2026-06-26. That the goalpost closed is verified;
+that the substrate is reachable from jedit is not, and is the first thing to
+check before planning against it.
 
 ## Follow-On Design
 
