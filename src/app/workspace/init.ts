@@ -7,6 +7,7 @@ import {
 } from "../../ui/title-scene.js";
 import {
   TITLE_ASCII_PALETTE,
+  TITLE_BACKDROP_KIND,
   TITLE_RENDER_MODE,
 } from "../../ui/title-screen.js";
 import { FocusPanes, type FocusPane } from "../../ui/panel-focus.js";
@@ -195,8 +196,21 @@ function initialSceneState(
     ...(sceneOverride == null ? {} : { sceneOverride }),
     titleCamera: createTitleCameraState(cameraPlacement),
     titleMouseLook: undefined,
+    titleBackdropKind: TITLE_BACKDROP_KIND.StaticLogo,
     titleRenderMode: TITLE_RENDER_MODE.Braille,
     titleAsciiPalette: TITLE_ASCII_PALETTE.Dense,
     titleMeshMaterialIndex: 0,
   };
+}
+
+// Bijou re-renders only when update returns a different model reference, so an
+// idle tick must return the model it was given. Rebuilding it on every pulse
+// cost a full-surface render 60 times a second to produce identical output.
+export function workspaceAnimationIsActive(model: WorkspaceModel): boolean {
+  return (
+    !model.startupIntroComplete ||
+    model.titleBackdropKind === TITLE_BACKDROP_KIND.LegacyScene ||
+    model.profiler.active ||
+    model.perfVisible
+  );
 }

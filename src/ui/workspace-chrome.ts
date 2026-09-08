@@ -50,7 +50,6 @@ const FooterHintKeys = Object.freeze({
   TextInput: 'text_input',
   EscNormal: 'esc_normal',
   CtrlSSave: 'ctrl_s_save',
-  CtrlTTheme: 'ctrl_t_theme',
   TabFocus: 'tab_focus',
   TabIndent: 'tab_indent',
   CtrlLScenePicker: 'ctrl_l_scene_picker',
@@ -240,7 +239,6 @@ function footerDetail(state: WorkspaceFooterState): string {
     ?? footerHints([
       scenePickerHint(t),
       focusHint(state, t),
-      themeHint(t),
       t(FooterHintKeys.CtrlBFiles),
       t(FooterHintKeys.CtrlGGraft),
     ]);
@@ -284,9 +282,6 @@ function scenePickerHint(t: FooterHintTranslator): string {
   return t(FooterHintKeys.CtrlLScenePicker);
 }
 
-function themeHint(t: FooterHintTranslator): string {
-  return t(FooterHintKeys.CtrlTTheme);
-}
 
 function drawerFooterDetail(state: WorkspaceFooterState, kind: DrawerKind, t: FooterHintTranslator): string {
   if (kind === DrawerKinds.Files) {
@@ -303,7 +298,7 @@ function normalFooterDetail(state: WorkspaceFooterState, t: FooterHintTranslator
   }
 
   const previewHint = state.markdownPreviewActive ? t(FooterHintKeys.F3Preview) : t(FooterHintKeys.CtrlSSave);
-  return footerHints([state.commandSummary, t(FooterHintKeys.IInsert), t(FooterHintKeys.OOpenLine), previewHint, themeHint(t), focusHint(state, t)]);
+  return footerHints([state.commandSummary, t(FooterHintKeys.IInsert), t(FooterHintKeys.OOpenLine), previewHint, focusHint(state, t)]);
 }
 
 function pendingNormalFooterDetail(pending: PendingNormal, t: FooterHintTranslator): string {
@@ -326,7 +321,6 @@ function previewFooterHints(state: WorkspaceFooterState, t: FooterHintTranslator
   return [
     t(FooterHintKeys.JkScroll),
     t(FooterHintKeys.F3Source),
-    themeHint(t),
     focusHint(state, t),
     t(FooterHintKeys.CtrlBFiles),
     t(FooterHintKeys.CtrlGGraft),
@@ -339,7 +333,6 @@ function fileDrawerFooterHints(state: WorkspaceFooterState, t: FooterHintTransla
     t(FooterHintKeys.EnterOpen),
     t(FooterHintKeys.BackspaceUp),
     t(FooterHintKeys.CtrlBClose),
-    themeHint(t),
     focusHint(state, t),
   ];
 }
@@ -350,13 +343,12 @@ function graftDrawerFooterHints(state: WorkspaceFooterState, t: FooterHintTransl
     t(FooterHintKeys.EnterJump),
     t(FooterHintKeys.RRefresh),
     t(FooterHintKeys.CtrlGClose),
-    themeHint(t),
     focusHint(state, t),
   ];
 }
 
 function insertModeFooterHints(state: WorkspaceFooterState, t: FooterHintTranslator): ReadonlyArray<string | undefined> {
-  return [t(FooterHintKeys.TextInput), t(FooterHintKeys.EscNormal), t(FooterHintKeys.CtrlSSave), themeHint(t), insertTabHint(state, t)];
+  return [t(FooterHintKeys.TextInput), t(FooterHintKeys.EscNormal), t(FooterHintKeys.CtrlSSave), insertTabHint(state, t)];
 }
 
 function changeFooterHints(t: FooterHintTranslator): readonly string[] {

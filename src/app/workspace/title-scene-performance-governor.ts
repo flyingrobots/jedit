@@ -1,5 +1,6 @@
 const LIVE_TRACE = "live-trace";
 const LOW_RATE_FROZEN_BACKDROP = "low-rate-frozen-backdrop";
+const STATIC_TITLE = "static-title";
 const ANIMATED_TITLE_INPUT = "animated-title";
 const LOW_RATE_INPUT = "low-rate-title";
 const WITHIN_BUDGET = "within-budget";
@@ -11,15 +12,18 @@ export const TITLE_SCENE_LOW_RATE_REFRESH_SECONDS = 0.5;
 export const TITLE_SCENE_RENDER_POSTURE = Object.freeze({
   LiveTrace: LIVE_TRACE,
   LowRateFrozenBackdrop: LOW_RATE_FROZEN_BACKDROP,
+  StaticTitle: STATIC_TITLE,
 });
 
 export type TitleSceneRenderPosture =
   | typeof LIVE_TRACE
-  | typeof LOW_RATE_FROZEN_BACKDROP;
+  | typeof LOW_RATE_FROZEN_BACKDROP
+  | typeof STATIC_TITLE;
 
 export type TitleSceneInputLatencyPosture =
   | typeof ANIMATED_TITLE_INPUT
-  | typeof LOW_RATE_INPUT;
+  | typeof LOW_RATE_INPUT
+  | typeof STATIC_TITLE;
 
 export type TitleSceneFrameBudgetPosture =
   | typeof WITHIN_BUDGET
@@ -77,6 +81,17 @@ export function titleScenePerformanceFacts(
     retainsBackdrop: decision.shouldRetainRenderedBackdrop,
     inputLatencyPosture: decision.inputLatencyPosture,
     frameBudgetPosture: decision.frameBudgetPosture,
+  };
+}
+
+export function staticTitleScenePerformanceFacts(): TitleScenePerformanceFacts {
+  return {
+    posture: TITLE_SCENE_RENDER_POSTURE.StaticTitle,
+    tracesRays: false,
+    usesFrozenBackdrop: false,
+    retainsBackdrop: false,
+    inputLatencyPosture: STATIC_TITLE,
+    frameBudgetPosture: WITHIN_BUDGET,
   };
 }
 

@@ -1,3 +1,4 @@
+export { wrapIndex } from '../list-index.js';
 import { resolveWorkspaceLayout } from '../../ui/drawer-layout.js';
 import { sourceViewerGutterWidth } from '../../ui/source-viewer.js';
 import type { WorkspaceModel } from './model.js';
@@ -7,6 +8,9 @@ export const MIN_ROWS = 12;
 export const VIEWER_LEFT_PAD = 4;
 export const VIEWER_TOP_PAD = 1;
 export const DRAWER_INNER_PAD = 1;
+// Rows above the workspace body: the title row and its rule. Shared so pointer
+// hit-testing and the renderer cannot disagree about where the body starts.
+export const WORKSPACE_BODY_TOP_OFFSET = 2;
 export const HEADER_ROWS = 2;
 export const FOOTER_ROWS = 2;
 
@@ -32,6 +36,22 @@ export function clampIndex(index: number, size: number): number {
     return 0;
   }
   return Math.max(0, Math.min(size - 1, index));
+}
+
+// The drawer list is windowed rather than truncated. Deriving the offset from
+// the selection keeps it stateless, so the renderer and pointer hit-testing
+// always agree on which entry a row shows without a scroll field in the model.
+export function listScrollOffset(
+  selectedIndex: number,
+  total: number,
+  height: number,
+): number {
+  const visibleRows = Math.max(1, height);
+  if (total <= visibleRows) {
+    return 0;
+  }
+  const centred = selectedIndex - Math.floor(visibleRows / 2);
+  return Math.max(0, Math.min(total - visibleRows, centred));
 }
 
 export function workspaceBodyHeight(options: WorkspaceBodyHeightOptions): number {

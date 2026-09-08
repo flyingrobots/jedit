@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
@@ -9,6 +10,7 @@ import {
   loadTitleModules,
   positionedCells,
 } from "./title-screen-helpers.mjs";
+import { importDist } from "./workspace-helpers.mjs";
 
 const TITLE_WIDTH = 96;
 const TITLE_HEIGHT = 28;
@@ -45,6 +47,20 @@ const INACTIVE_DOT_FG_RGB = [0, 0, 0];
 const INACTIVE_DOT_BG_RGB = [80, 90, 100];
 const SOLID_DOT_BG_RGB = [11, 12, 13];
 const PRESENTS_TEXT = "PRESENTS";
+const JIM_LOGO_SOURCE_PATH = new URL("../JimLogo.svg", import.meta.url);
+const SHA256_ALGORITHM = "sha256";
+const HASH_DIGEST_ENCODING = "hex";
+
+test("Bijou release exposes Blocks and raster-to-glyph rendering", async () => {
+  const [bijou, tui] = await Promise.all([
+    import("@flyingrobots/bijou"),
+    import("@flyingrobots/bijou-tui"),
+  ]);
+
+  assert.equal(typeof bijou.compileGraphqlBijouBlock, "function");
+  assert.equal(typeof bijou.lowerBijouBlockToUiScene, "function");
+  assert.equal(typeof tui.rasterToGlyphSurface, "function");
+});
 
 test("averaging Braille canvas resamples all eight subpixel colors into the cell style", async () => {
   const { brailleCanvas } = await loadTitleModules();

@@ -12,6 +12,28 @@ const TITLE_HEIGHT = 6;
 const SLOW_FRAME_MS = 90;
 const FAST_FRAME_MS = 12;
 
+test("default Jim logo renderer reports static no-ray performance facts", async () => {
+  const [viewerContent, titleScreen] = await Promise.all([
+    importDist("app", "workspace", "viewer-content.js"),
+    importDist("ui", "title-screen.js"),
+  ]);
+  const renderer = viewerContent.createViewerContentRenderer();
+  renderer.renderViewer(
+    mockTitleScreenModel(titleScreen, { startupIntroComplete: true }),
+    TITLE_WIDTH,
+    TITLE_HEIGHT,
+  );
+
+  assert.deepEqual(renderer.titleScenePerformanceFacts(), {
+    posture: "static-title",
+    tracesRays: false,
+    usesFrozenBackdrop: false,
+    retainsBackdrop: false,
+    inputLatencyPosture: "static-title",
+    frameBudgetPosture: "within-budget",
+  });
+});
+
 test("title scene performance governor selects low-rate frozen backdrop with ray tracing disabled", async () => {
   const governor = await importDist(
     "app",

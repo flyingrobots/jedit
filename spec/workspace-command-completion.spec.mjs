@@ -898,7 +898,9 @@ function workspaceRenderTheme() {
     markdown: new Map(),
     surface: {
       workspace,
+      currentLine: workspace,
       drawer,
+      header: footer,
       footer,
     },
     cursor: {

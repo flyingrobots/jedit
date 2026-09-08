@@ -1,5 +1,18 @@
 {
-  "maxLines": {},
+  "maxLines": {
+    "spec/graft-source-highlighter.spec.mjs": 659,
+    "spec/graph-rope-contract.spec.mjs": 537,
+    "spec/title-scene.spec.mjs": 817,
+    "spec/title-screen.spec.mjs": 518,
+    "spec/workspace-command-completion.spec.mjs": 932,
+    "spec/workspace-command-line.spec.mjs": 1979,
+    "spec/workspace-helpers.mjs": 625,
+    "spec/workspace-runtime.spec.mjs": 619,
+    "spec/workspace-text-boundaries.spec.mjs": 559,
+    "spec/workspace-text-cutover.spec.mjs": 2047,
+    "spec/workspace-title-screen.spec.mjs": 1184,
+    "tests/replace-range-law-cycle.spec.mjs": 539
+  },
   "forbiddenTypeKeywords": {},
   "booleanParameters": {}
 }

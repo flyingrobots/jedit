@@ -1,4 +1,5 @@
 import type { JeditTheme, JeditThemeMode } from "./jedit-theme.js";
+import { contrastAdjustedPalette, contrastRatio } from "./theme-contrast.js";
 import {
   JEDIT_THEME_MODE,
   JEDIT_THEME_VARIANT_SOURCE,
@@ -35,16 +36,8 @@ const ACTIVE_EDGE_CHAR = "░";
 const THEME_MODE_LABEL_DARK = "Dark";
 const THEME_MODE_LABEL_LIGHT = "Light";
 const COLOR_CHANNEL_MAX = 255;
+// WCAG AA for body text; 3:1 is the non-text/large-text floor used for accents.
 const MIN_GUTTER_CONTRAST_RATIO = 3;
-const CONTRAST_LUMINANCE_OFFSET = 0.05;
-const SRGB_LINEAR_THRESHOLD = 0.04045;
-const SRGB_LINEAR_DIVISOR = 12.92;
-const SRGB_OFFSET = 0.055;
-const SRGB_SCALE = 1.055;
-const SRGB_EXPONENT = 2.4;
-const LUMINANCE_RED_WEIGHT = 0.2126;
-const LUMINANCE_GREEN_WEIGHT = 0.7152;
-const LUMINANCE_BLUE_WEIGHT = 0.0722;
 const GUTTER_VARIANT = Object.freeze({
   Normal: "normal",
   Dimmed: "dimmed",
@@ -237,8 +230,13 @@ function oppositeThemeMode(mode: JeditThemeMode): JeditThemeMode {
     : JEDIT_THEME_MODE.Dark;
 }
 
+// A companion palette is produced by inverting an authored one, and inversion
+// is not contrast-preserving: a colour chosen to read against a dark surface
+// can land far too close to the inverted light surface. Authored palettes are
+// left exactly as their author set them; only the generated companion is
+// corrected, and only where it falls short.
 function oppositePalette(palette: ThemePalette): ThemePalette {
-  return {
+  return contrastAdjustedPalette({
     ink: invertColor(palette.ink),
     muted: invertColor(palette.muted),
     accent: invertColor(palette.accent),
@@ -248,8 +246,11 @@ function oppositePalette(palette: ThemePalette): ThemePalette {
     surface: invertColor(palette.surface),
     surfaceRaised: invertColor(palette.surfaceRaised),
     surfaceMuted: invertColor(palette.surfaceMuted),
-  };
+  });
 }
+
+
+
 
 function paletteFromTheme(theme: JeditTheme): ThemePalette {
   return {
@@ -335,38 +336,19 @@ function readableGutterColor(
     : variables.ink;
 }
 
-function contrastRatio(foreground: RgbTuple, background: RgbTuple): number {
-  const foregroundLuminance = relativeLuminance(foreground);
-  const backgroundLuminance = relativeLuminance(background);
-  const lighter = Math.max(foregroundLuminance, backgroundLuminance);
-  const darker = Math.min(foregroundLuminance, backgroundLuminance);
-  return (lighter + CONTRAST_LUMINANCE_OFFSET) / (darker + CONTRAST_LUMINANCE_OFFSET);
-}
-
-function relativeLuminance(color: RgbTuple): number {
-  const red = linearizedColorChannel(color[0]);
-  const green = linearizedColorChannel(color[1]);
-  const blue = linearizedColorChannel(color[2]);
-  return red * LUMINANCE_RED_WEIGHT
-    + green * LUMINANCE_GREEN_WEIGHT
-    + blue * LUMINANCE_BLUE_WEIGHT;
-}
-
-function linearizedColorChannel(channel: number): number {
-  const normalized = channel / COLOR_CHANNEL_MAX;
-  return normalized <= SRGB_LINEAR_THRESHOLD
-    ? normalized / SRGB_LINEAR_DIVISOR
-    : ((normalized + SRGB_OFFSET) / SRGB_SCALE) ** SRGB_EXPONENT;
-}
-
 function applySurfaceThemeTokens(
   draft: JeditThemeDraft,
   variables: ThemeVariables,
 ): void {
   draft.surface.workspace.foregroundColor = variables.ink;
   draft.surface.workspace.backgroundColor = variables.surface;
+  draft.surface.currentLine.foregroundColor = variables.ink;
+  draft.surface.currentLine.backgroundColor = variables.surfaceRaised;
   draft.surface.drawer.foregroundColor = variables.ink;
   draft.surface.drawer.backgroundColor = variables.surfaceMuted;
+  draft.surface.header.foregroundColor = variables.ink;
+  draft.surface.header.backgroundColor = variables.surfaceMuted;
+  draft.surface.header.modifiers = [JEDIT_TEXT_MODIFIER.Bold];
   draft.surface.footer.foregroundColor = variables.ink;
   draft.surface.footer.backgroundColor = variables.surfaceMuted;
 }
