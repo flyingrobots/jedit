@@ -54,7 +54,7 @@ function contrastAdjustedPalette(palette: ThemePalette): ThemePalette {
 // toward black or white instead -- the obvious approach -- desaturates as it
 // goes and drags the hue with it, so a theme's amber warning arrives washed out
 // and slightly wrong rather than simply lighter.
-function legibleOn(
+export function legibleOn(
   color: RgbTuple,
   backgrounds: readonly RgbTuple[],
   minContrastRatio: number,

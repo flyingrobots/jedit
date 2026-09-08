@@ -23,12 +23,11 @@
 import { JIM_LOGO_PALETTE } from './jim-logo-frame-data.js';
 import { JEDIT_THEME_MODE, type JeditTheme } from './jedit-theme.js';
 import { mixHue, oklchToRgb, rgbToOklch, type Oklch, type Rgb } from './oklch.js';
+import { legibleOn } from './theme-contrast.js';
 
 // WCAG 1.4.11 puts non-text graphics at 3:1, which is also the floor the theme
 // suite already holds other chrome to.
 const MIN_CONTRAST = 3;
-const CONTRAST_STEP = 0.02;
-const MAX_CONTRAST_STEPS = 40;
 // Above this the artwork counts as fully coloured; the navy sits near 0.13.
 const ARTWORK_CHROMA_REFERENCE = 0.12;
 // How much of its own hue a fully coloured artwork entry keeps. Low enough
@@ -37,8 +36,6 @@ const HUE_RETENTION = 0.4;
 // Neutral artwork still takes most of the theme's chroma so the mark reads as
 // tinted rather than as grey pasted onto a coloured theme.
 const MIN_CHROMA_SHARE = 0.55;
-const SRGB_MAX = 255;
-const CONTRAST_OFFSET = 0.05;
 const ZERO = 0;
 const ONE = 1;
 // A theme may leave a token's true-colour value unset and rely on the palette
@@ -109,55 +106,31 @@ function recolour(artwork: Oklch, ramp: LogoRamp): Rgb {
   const colourfulness = Math.min(ONE, artwork.chroma / ARTWORK_CHROMA_REFERENCE);
   const themeHue = mixHue(ramp.shadow.hue, ramp.ink.hue, rank);
   const chromaShare = MIN_CHROMA_SHARE + ((ONE - MIN_CHROMA_SHARE) * colourfulness);
-  return legibleAgainst({
-    lightness: lerp(ramp.shadow.lightness, ramp.ink.lightness, rank),
-    chroma: lerp(ramp.shadow.chroma, ramp.ink.chroma, rank) * chromaShare,
-    hue: mixHue(themeHue, artwork.hue, HUE_RETENTION * colourfulness),
-  }, ramp.ground);
+  // The one contrast correction, shared with the theme palettes rather than
+  // reimplemented here. An earlier local copy walked lightness in a single
+  // direction chosen from the background, which dead-ends: a mapped entry below
+  // a near-black workspace clamps at zero and returns near 1:1 while the
+  // advertised 3:1 was reachable by going lighter.
+  return legibleOn(
+    oklchToRgb({
+      lightness: lerp(ramp.shadow.lightness, ramp.ink.lightness, rank),
+      chroma: lerp(ramp.shadow.chroma, ramp.ink.chroma, rank) * chromaShare,
+      hue: mixHue(themeHue, artwork.hue, HUE_RETENTION * colourfulness),
+    }),
+    [ramp.ground],
+    MIN_CONTRAST,
+  );
 }
 
-// Lightness is what carries contrast, so a colour short of the floor is walked
-// away from the background's lightness rather than desaturated or clipped --
-// that keeps its hue, which clipping RGB channels would not.
-function legibleAgainst(colour: Oklch, ground: Rgb): Rgb {
-  const groundLightness = rgbToOklch(ground).lightness;
-  const direction = colour.lightness >= groundLightness ? ONE : -ONE;
-  let candidate = colour;
-  for (let step = ZERO; step < MAX_CONTRAST_STEPS; step += 1) {
-    const rgb = oklchToRgb(candidate);
-    if (contrastRatio(rgb, ground) >= MIN_CONTRAST) {
-      return rgb;
-    }
-    candidate = {
-      ...candidate,
-      lightness: clamp(candidate.lightness + (direction * CONTRAST_STEP)),
-    };
-  }
-  return oklchToRgb(candidate);
+
+function clamp(value: number): number {
+  return Math.min(ONE, Math.max(ZERO, value));
 }
 
 function lerp(from: number, to: number, amount: number): number {
   return from + ((to - from) * amount);
 }
 
-function clamp(value: number): number {
-  return Math.min(ONE, Math.max(ZERO, value));
-}
 
-function contrastRatio(foreground: Rgb, background: Rgb): number {
-  const first = relativeLuminance(foreground);
-  const second = relativeLuminance(background);
-  const high = Math.max(first, second);
-  const low = Math.min(first, second);
-  return (high + CONTRAST_OFFSET) / (low + CONTRAST_OFFSET);
-}
 
-function relativeLuminance(rgb: Rgb): number {
-  const [red, green, blue] = rgb.map(channelLuminance);
-  return (0.2126 * (red ?? ZERO)) + (0.7152 * (green ?? ZERO)) + (0.0722 * (blue ?? ZERO));
-}
 
-function channelLuminance(channel: number): number {
-  const ratio = channel / SRGB_MAX;
-  return ratio <= 0.03928 ? ratio / 12.92 : Math.pow((ratio + 0.055) / 1.055, 2.4);
-}

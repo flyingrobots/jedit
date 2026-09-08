@@ -120,3 +120,42 @@ test("the source viewer never punches a hole in the page background", async () =
 
   assert.deepEqual(offenders, []);
 });
+
+// Painting cells by hand loses what bijou's stringToSurface does for free:
+// terminal control bytes are stripped before they reach a cell. Without that, a
+// Markdown file carrying a CSI clear-screen or a BEL has them written verbatim
+// into the surface and concatenated into terminal output by the diff writer --
+// opening a file becomes enough to drive the terminal.
+const ESC = String.fromCharCode(27);
+const BEL = String.fromCharCode(7);
+
+test("terminal control bytes in Markdown never reach a cell", async () => {
+  const themes = await importDist("ui", "jedit-themes.js");
+  const preview = await importDist("ui", "markdown-preview.js");
+  const [theme] = themes.availableJeditThemes();
+  const surface = await workspacePage(theme);
+
+  preview.paintMarkdownPreview(surface, {
+    text: `before ${ESC}[2J ${BEL} ${ESC}]0;title${BEL} after`,
+    scrollRow: 0,
+    x: 0,
+    y: 0,
+    width: PAGE_WIDTH,
+    height: PAGE_HEIGHT,
+    theme,
+  });
+
+  const offenders = [];
+  for (let y = 0; y < surface.height; y += 1) {
+    for (let x = 0; x < surface.width; x += 1) {
+      const char = surface.get(x, y).char;
+      const code = char.codePointAt(0) ?? 0;
+      // C0 controls and DEL. Space and the Braille blank are ordinary content.
+      if (code < 0x20 || code === 0x7f) {
+        offenders.push(`(${x},${y}) U+${code.toString(16).padStart(4, "0")}`);
+      }
+    }
+  }
+
+  assert.deepEqual(offenders, []);
+});
