@@ -163,12 +163,32 @@ test("the correction searches both directions, not just away from the surface", 
 
 test("the correction takes the smaller lightness change when both directions pass", async () => {
   const contrast = await importDist("ui", "theme-contrast.js");
-  const { rgbToOklch } = await importDist("ui", "oklch.js");
+  const { rgbToOklch, oklchToRgb } = await importDist("ui", "oklch.js");
 
-  // Mid grey surface: both black and white clear 3:1, but a token sitting just
-  // below the surface should darken rather than jump across to the light side.
+  // Mid grey surface: both black and white clear 3:1, so "walk away from the
+  // ground" is not a sufficient answer -- the correction has to pick the nearer
+  // side. Asserting merely "it got darker" would also pass for a correction
+  // that darkened all the way to black, so the expected landing point is
+  // computed here independently of the implementation.
   const surface = [128, 128, 128];
   const ink = [110, 110, 110];
+  const MIN_ACCENT_CONTRAST = 3;
+
+  const origin = rgbToOklch(ink);
+  const passesAt = (lightness) =>
+    contrastRatio(oklchToRgb({ ...origin, lightness }), surface) >= MIN_ACCENT_CONTRAST;
+
+  // Finest-grain scan outward from the origin, both sides, independent of the
+  // implementation's step size.
+  const GRAIN = 0.001;
+  let optimalDelta;
+  for (let delta = 0; delta <= 1 && optimalDelta === undefined; delta += GRAIN) {
+    if (passesAt(Math.max(0, origin.lightness - delta))
+      || passesAt(Math.min(1, origin.lightness + delta))) {
+      optimalDelta = delta;
+    }
+  }
+  assert.ok(optimalDelta !== undefined, "a passing colour should exist on this surface");
 
   const adjusted = contrast.contrastAdjustedPalette({
     ink: [0, 0, 0],
@@ -182,8 +202,21 @@ test("the correction takes the smaller lightness change when both directions pas
     surfaceMuted: surface,
   });
 
+  const actualDelta = Math.abs(rgbToOklch(adjusted.accent).lightness - origin.lightness);
+
   assert.ok(
-    rgbToOklch(adjusted.accent).lightness < rgbToOklch(ink).lightness,
+    contrastRatio(adjusted.accent, surface) >= MIN_ACCENT_CONTRAST,
+    `accent should clear ${MIN_ACCENT_CONTRAST}:1, got ${contrastRatio(adjusted.accent, surface).toFixed(2)}`,
+  );
+  // One search step of slack: the walk samples a grid, so it can overshoot the
+  // true optimum by at most the step it moves in.
+  const STEP_SLACK = 0.025;
+  assert.ok(
+    actualDelta <= optimalDelta + STEP_SLACK,
+    `expected a change near the ${optimalDelta.toFixed(3)} optimum, moved ${actualDelta.toFixed(3)}`,
+  );
+  assert.ok(
+    rgbToOklch(adjusted.accent).lightness < origin.lightness,
     `expected the nearer (darker) solution, got ${adjusted.accent}`,
   );
 });
