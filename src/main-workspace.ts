@@ -1,7 +1,7 @@
 import { initDefaultContext } from '@flyingrobots/bijou-node';
 import { run } from '@flyingrobots/bijou-tui';
 import { createWorkspaceApp } from './adapters/workspace-app.js';
-import { createWorkspaceProductionTextDependencies } from './adapters/workspace-production-text-dependencies.js';
+import { closingProductionText, createWorkspaceProductionTextDependencies } from './adapters/workspace-production-text-dependencies.js';
 import { parseTextRuntimeProfile, requireTextRuntimeProfile } from './app/text-runtime-profile.js';
 import { JEDIT_TERMINAL_MOUSE_OPTIONS } from './ui/terminal-mouse.js';
 
@@ -58,14 +58,22 @@ export async function runJeditWorkspace(): Promise<void> {
 
   const productionText = await createWorkspaceProductionTextDependencies();
 
-  const app = createWorkspaceApp({
-    initialColumns: process.stdout.columns ?? DEFAULT_TERMINAL_COLUMNS,
-    initialRows: process.stdout.rows ?? DEFAULT_TERMINAL_ROWS,
-    initialWorkingDirectory: DEFAULT_WORKING_DIRECTORY,
-    ...workspaceInstrumentationFromEnv(process.env),
-  }, productionText);
-
-  run(app, { mouse: JEDIT_TERMINAL_MOUSE_OPTIONS.mouse });
+  // `run` resolves when the TUI tears down. It was not awaited, so this
+  // function returned while the editor was still live and the shutdown below
+  // could never happen. Closing the native Echo host releases the child stdio
+  // pipes that were holding the event loop open after quit.
+  //
+  // App construction is inside the guard, not before it: it can throw, and when
+  // it did the host was left open and the terminal unrestored.
+  await closingProductionText(productionText, async () => {
+    const app = createWorkspaceApp({
+      initialColumns: process.stdout.columns ?? DEFAULT_TERMINAL_COLUMNS,
+      initialRows: process.stdout.rows ?? DEFAULT_TERMINAL_ROWS,
+      initialWorkingDirectory: DEFAULT_WORKING_DIRECTORY,
+      ...workspaceInstrumentationFromEnv(process.env),
+    }, productionText);
+    await run(app, { mouse: JEDIT_TERMINAL_MOUSE_OPTIONS.mouse });
+  });
 }
 
 function envBoolean(

@@ -10,14 +10,20 @@ export function applyWorkspaceTitleSceneLoadResult(
     { type: typeof WorkspaceMessageTypes.LoadSceneResult }
   >,
 ): WorkspaceModel {
+  // A result carrying no scene is a cancellation or a RuntimeIssue, not a
+  // backdrop change. Switching to LegacyScene regardless dropped the static
+  // logo for a scene that was never loaded, and because
+  // workspaceAnimationIsActive counts LegacyScene as animating, it also put the
+  // workspace back into a 60Hz render loop -- the #320 regression, on the
+  // failure path.
+  if (msg.scene == null) {
+    return model;
+  }
   return {
     ...model,
     sceneOverride: msg.scene,
-    titleSceneName: msg.scene == null ? undefined : msg.sceneName,
+    titleSceneName: msg.sceneName,
     titleBackdropKind: TITLE_BACKDROP_KIND.LegacyScene,
-    titleCamera:
-      msg.scene == null
-        ? model.titleCamera
-        : createTitleCameraState(msg.scene.camera),
+    titleCamera: createTitleCameraState(msg.scene.camera),
   };
 }
