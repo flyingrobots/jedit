@@ -4,7 +4,7 @@
 // question of whether a colour can actually be read on the surface behind it.
 
 import type { RgbTuple, ThemePalette } from './jedit-theme-palettes.js';
-import { oklchToRgb, rgbToOklch } from './oklch.js';
+import { oklchToRgb, rgbToOklch, type Oklch } from './oklch.js';
 
 const COLOR_CHANNEL_MAX = 255;
 // WCAG AA for body text; 3:1 is the non-text and large-text floor, which is
@@ -53,30 +53,64 @@ function legibleOn(
   backgrounds: readonly RgbTuple[],
   minContrastRatio: number,
 ): RgbTuple {
-  const ground = averageLuminance(backgrounds);
-  const direction = relativeLuminance(color) >= ground ? LIGHTER : DARKER;
-  let candidate = rgbToOklch(color);
-  for (let step = 0; step < MAX_CONTRAST_STEPS; step += 1) {
-    const rgb = oklchToRgb(candidate);
+  const origin = rgbToOklch(color);
+  if (passesContrast(color, backgrounds, minContrastRatio)) {
+    return color;
+  }
+  // Both directions are searched rather than only the one leading away from the
+  // background's luminance. Picking a direction from the background alone can
+  // choose a dead end: a token at luminance 0.05 on a 0.10 surface only reaches
+  // 3.0 at pure black, but 7.0 going the other way. Whichever side clears the
+  // floor first wins, so the answer is also the smallest change that works.
+  for (let step = 1; step <= MAX_CONTRAST_STEPS; step += 1) {
+    const offset = step * CONTRAST_LIGHTNESS_STEP;
+    const nearer = nearestPassing(origin, offset, backgrounds, minContrastRatio);
+    if (nearer != null) {
+      return nearer;
+    }
+  }
+  return furthestFrom(origin, backgrounds);
+}
+
+function nearestPassing(
+  origin: Oklch,
+  offset: number,
+  backgrounds: readonly RgbTuple[],
+  minContrastRatio: number,
+): RgbTuple | undefined {
+  for (const direction of [DARKER, LIGHTER]) {
+    const lightness = clampLightness(origin.lightness + (direction * offset));
+    const rgb = oklchToRgb({ ...origin, lightness });
     if (passesContrast(rgb, backgrounds, minContrastRatio)) {
       return rgb;
     }
-    candidate = {
-      ...candidate,
-      lightness: clampLightness(candidate.lightness + (direction * CONTRAST_LIGHTNESS_STEP)),
-    };
   }
-  return oklchToRgb(candidate);
+  return undefined;
+}
+
+// Nothing on either side cleared the floor, which happens when the surfaces
+// themselves are too close together to admit a passing colour. Returning the
+// end with the most contrast available is the honest best effort; the spec
+// suite is what catches a theme this actually bites.
+function furthestFrom(origin: Oklch, backgrounds: readonly RgbTuple[]): RgbTuple {
+  const darkest = oklchToRgb({ ...origin, lightness: LIGHTNESS_FLOOR });
+  const lightest = oklchToRgb({ ...origin, lightness: LIGHTNESS_CEILING });
+  return worstContrast(darkest, backgrounds) >= worstContrast(lightest, backgrounds)
+    ? darkest
+    : lightest;
+}
+
+function worstContrast(color: RgbTuple, backgrounds: readonly RgbTuple[]): number {
+  return backgrounds.reduce(
+    (worst, background) => Math.min(worst, contrastRatio(color, background)),
+    Number.POSITIVE_INFINITY,
+  );
 }
 
 function clampLightness(value: number): number {
   return Math.min(LIGHTNESS_CEILING, Math.max(LIGHTNESS_FLOOR, value));
 }
 
-function averageLuminance(colors: readonly RgbTuple[]): number {
-  const total = colors.reduce((sum, color) => sum + relativeLuminance(color), 0);
-  return total / colors.length;
-}
 
 function passesContrast(
   color: RgbTuple,

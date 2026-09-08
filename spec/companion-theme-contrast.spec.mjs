@@ -131,3 +131,59 @@ test("reaching the contrast floor does not wash a colour out to grey", async () 
 
   assert.deepEqual(offenders, []);
 });
+
+test("the correction searches both directions, not just away from the surface", async () => {
+  const contrast = await importDist("ui", "theme-contrast.js");
+
+  // A token darker than a mid-dark surface. Walking darker tops out at 3.00
+  // against this surface even at pure black, so a correction that commits to
+  // "away from the ground" by luminance alone can never reach the 4.5 floor --
+  // while walking lighter reaches 7.00 comfortably.
+  const surface = [89, 89, 89];   // relative luminance 0.100
+  const ink = [63, 63, 63];       // relative luminance 0.050, ratio 1.50
+
+  const adjusted = contrast.contrastAdjustedPalette({
+    ink,
+    muted: ink,
+    accent: ink,
+    info: ink,
+    warning: ink,
+    success: ink,
+    surface,
+    surfaceRaised: surface,
+    surfaceMuted: surface,
+  });
+
+  const ratio = contrastRatio(adjusted.ink, surface);
+  assert.ok(
+    ratio >= 4.5,
+    `ink should have been corrected to clear 4.5:1, got ${ratio.toFixed(2)} at ${adjusted.ink}`,
+  );
+});
+
+test("the correction takes the smaller lightness change when both directions pass", async () => {
+  const contrast = await importDist("ui", "theme-contrast.js");
+  const { rgbToOklch } = await importDist("ui", "oklch.js");
+
+  // Mid grey surface: both black and white clear 3:1, but a token sitting just
+  // below the surface should darken rather than jump across to the light side.
+  const surface = [128, 128, 128];
+  const ink = [110, 110, 110];
+
+  const adjusted = contrast.contrastAdjustedPalette({
+    ink: [0, 0, 0],
+    muted: ink,
+    accent: ink,
+    info: ink,
+    warning: ink,
+    success: ink,
+    surface,
+    surfaceRaised: surface,
+    surfaceMuted: surface,
+  });
+
+  assert.ok(
+    rgbToOklch(adjusted.accent).lightness < rgbToOklch(ink).lightness,
+    `expected the nearer (darker) solution, got ${adjusted.accent}`,
+  );
+});
