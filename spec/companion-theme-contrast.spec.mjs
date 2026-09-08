@@ -49,6 +49,48 @@ test("generated companion themes exist to be checked", async () => {
   assert.ok(companions.length > 0, "expected at least one generated companion theme");
 });
 
+// A syntax foreground keeps its colour when the current line repaints the
+// background beneath it, and the settings drawer reuses the comment foreground
+// over the drawer background. Checking only the workspace background passed
+// tokens that were then rendered somewhere darker: monokai's light companion
+// reported 3.03:1 on the workspace while sitting at 2.75:1 on the current line
+// and 2.51:1 in the drawer.
+function renderingSurfaces(theme) {
+  return [
+    ["workspace", theme.surface.workspace.bgRGB],
+    ["currentLine", theme.surface.currentLine.bgRGB],
+    ["drawer", theme.surface.drawer.bgRGB],
+    ["header", theme.surface.header.bgRGB],
+    ["footer", theme.surface.footer.bgRGB],
+  ];
+}
+
+test("every generated companion keeps its tokens legible on every surface it renders on", async () => {
+  const offenders = [];
+
+  for (const companion of await generatedCompanions()) {
+    for (const [name, background] of renderingSurfaces(companion)) {
+      for (const [token, style] of companion.source) {
+        const ratio = contrastRatio(style.fgRGB, background);
+        if (ratio < MIN_TOKEN_CONTRAST) {
+          offenders.push(`${companion.name} ${String(token)} on ${name} ${ratio.toFixed(2)}`);
+        }
+      }
+      for (const [token, style] of companion.markdown) {
+        if (style.fgRGB == null) {
+          continue;
+        }
+        const ratio = contrastRatio(style.fgRGB, background);
+        if (ratio < MIN_TOKEN_CONTRAST) {
+          offenders.push(`${companion.name} ${String(token)} on ${name} ${ratio.toFixed(2)}`);
+        }
+      }
+    }
+  }
+
+  assert.deepEqual(offenders, []);
+});
+
 test("every generated companion keeps its syntax tokens legible", async () => {
   const offenders = [];
 

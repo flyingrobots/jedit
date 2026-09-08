@@ -27,16 +27,22 @@ const LIGHTNESS_CEILING = 1;
 const DARKER = -1;
 const LIGHTER = 1;
 
-export function contrastAdjustedPalette(palette: ThemePalette): ThemePalette {
+export // Every token is held against every surface it can be drawn on, not just the
+// workspace background. A syntax foreground keeps its colour when the current
+// line repaints the background beneath it, and the settings drawer reuses the
+// comment foreground over the drawer background, so checking only
+// palette.surface passed tokens that were then rendered somewhere darker --
+// monokai's light companion sat at 2.75:1 on the current line and 2.51:1 in
+// the drawer while reporting 3.03:1 on the workspace.
+function contrastAdjustedPalette(palette: ThemePalette): ThemePalette {
   const surfaces = [palette.surface, palette.surfaceRaised, palette.surfaceMuted];
-  const raised = [palette.surface, palette.surfaceRaised];
   return {
     ink: legibleOn(palette.ink, surfaces, MIN_SURFACE_TEXT_CONTRAST_RATIO),
-    muted: legibleOn(palette.muted, [palette.surface], MIN_ACCENT_CONTRAST_RATIO),
-    accent: legibleOn(palette.accent, [palette.surface], MIN_ACCENT_CONTRAST_RATIO),
-    info: legibleOn(palette.info, raised, MIN_ACCENT_CONTRAST_RATIO),
-    warning: legibleOn(palette.warning, raised, MIN_ACCENT_CONTRAST_RATIO),
-    success: legibleOn(palette.success, [palette.surface], MIN_ACCENT_CONTRAST_RATIO),
+    muted: legibleOn(palette.muted, surfaces, MIN_ACCENT_CONTRAST_RATIO),
+    accent: legibleOn(palette.accent, surfaces, MIN_ACCENT_CONTRAST_RATIO),
+    info: legibleOn(palette.info, surfaces, MIN_ACCENT_CONTRAST_RATIO),
+    warning: legibleOn(palette.warning, surfaces, MIN_ACCENT_CONTRAST_RATIO),
+    success: legibleOn(palette.success, surfaces, MIN_ACCENT_CONTRAST_RATIO),
     surface: palette.surface,
     surfaceRaised: palette.surfaceRaised,
     surfaceMuted: palette.surfaceMuted,
