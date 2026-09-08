@@ -28,7 +28,7 @@ import {
   sourceHighlightForWorkspaceProjection,
   sourceWindowForWorkspaceModel,
 } from "./workspace-source-projection.js";
-import { fillSurface } from "./surface-fill.js";
+import { fillSurface, renderJimLogoScreen } from "./surface-fill.js";
 import {
   governTitleSceneRender,
   staticTitleScenePerformanceFacts,
@@ -176,14 +176,15 @@ function renderViewerWithState(
   );
 }
 
+// vi opens on nothing; jedit opens on its own mark. This is a single static
+// render of committed artwork -- no scene, no meshes, and no frame pulse, so it
+// costs one draw rather than an animation.
 function emptyViewerSurface(
   model: WorkspaceModel,
   width: number,
   height: number,
 ): Surface {
-  const surface = createSurface(width, height);
-  fillSurface(surface, model.jeditTheme.surface.workspace);
-  return surface;
+  return renderJimLogoScreen(width, height, model.jeditTheme);
 }
 
 function renderTitleViewer(

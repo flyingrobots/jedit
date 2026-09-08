@@ -243,25 +243,53 @@ function paintPreviewSegments(
     }
 
     const segmentSurface = stringToSurface(clipped, [...clipped].length, 1);
-    applyToken(segmentSurface, tokenForTone(options.theme, segment.tone));
+    applyToken(
+      segmentSurface,
+      tokenForTone(options.theme, segment.tone),
+      { target: surface, x: cursor, y: options.y },
+    );
     surface.blit(segmentSurface, cursor, options.y);
     cursor += [...clipped].length;
   }
 }
 
-function applyToken(surface: Surface, token: JeditStyleToken) {
+interface PaintedBeneath {
+  readonly target: Surface;
+  readonly x: number;
+  readonly y: number;
+}
+
+// Composed on a scratch surface and blitted rather than written cell by cell.
+// stringToSurface strips terminal control bytes -- a Markdown file carrying a
+// CSI clear-screen or a BEL would otherwise have them written verbatim into
+// cells and concatenated straight into terminal output by the diff writer --
+// and it places graphemes by display width, so CJK and emoji occupy the cells
+// they actually need.
+//
+// A scratch cell has no background of its own, and every markdown token except
+// Code and InlineCode leaves bg undefined, so blitting one carried an undefined
+// background over the page and punched a hole through to the terminal's own:
+// invisible on a dark theme, black blocks on a light one. The background each
+// cell is about to land on is read from the page and kept, so a token that
+// specifies no background inherits rather than erases.
+function applyToken(
+  surface: Surface,
+  token: JeditStyleToken,
+  beneath: PaintedBeneath,
+) {
   for (let row = 0; row < surface.height; row += 1) {
     for (let column = 0; column < surface.width; column += 1) {
       const cell = surface.get(column, row);
       if (cell.empty) {
         continue;
       }
+      const under = beneath.target.get(beneath.x + column, beneath.y + row);
       surface.set(column, row, {
         ...cell,
         fg: token.fg,
         fgRGB: token.fgRGB,
-        bg: token.bg,
-        bgRGB: token.bgRGB,
+        bg: token.bg ?? under.bg,
+        bgRGB: token.bgRGB ?? under.bgRGB,
         modifiers: token.modifiers == null ? undefined : [...token.modifiers],
         empty: false,
       });
