@@ -169,7 +169,7 @@ jobs:
         run: npm run release-gate:jedit-echo
 
   edict-replace-range:
-    name: edict / replace-range package chain
+    name: edict / replace-range package and pure runtime chain
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -229,11 +229,18 @@ jobs:
         working-directory: jedit
         run: npm ci
 
-      - name: Verify exact package chain and adversarial regressions
+      - name: Compile the pinned test-only pure runtime host
+        working-directory: jedit
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/runtime-target
+        run: cargo +${{ steps.toolchain.outputs.rust_toolchain }} test --locked --manifest-path edict/replace-range/tests/runtime/Cargo.toml --test compiled_boundary --no-run
+
+      - name: Verify exact package and pure runtime chain with adversarial regressions
         working-directory: jedit
         env:
           EDICT_REPO: ${{ github.workspace }}/edict
           ECHO_REPO: ${{ github.workspace }}/echo
+          CARGO_TARGET_DIR: ${{ github.workspace }}/runtime-target
         run: node --test edict/replace-range/tests/proof-harness.spec.mjs
 
       - name: Verify authoritative checkouts remain clean

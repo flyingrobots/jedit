@@ -40,11 +40,20 @@ The Echo provider remains pinned to the open #724 candidate
 `49e9efb68001dfd78563d18bac9359a87671e431`; this evidence does not claim that
 provider or this Jedit application has landed on its repository's main branch.
 
-That accepted package is the current routing evidence required by #296: Edict
-preserves the bounded pure program without learning Jedit vocabulary, and Echo
-packages it without learning `ReplaceRange`. No Echo evaluator runs, no graph
-or rope is mutated, and no Tick is settled. This is not evidence that
-`ReplaceRange` mutates a rope or that Jim runs end to end.
+The application gate passes that accepted package unchanged to Echo's generic
+pure evaluator at `8c725d699241a7e3adee482029031ff6bade25fa`, the open #726
+candidate. A separate test-only Rust host consumes the fresh public-build
+output, not the fixture retained in Echo. It checks both conditional branches,
+the imported helper result, exact projected bytes, deterministic repetition,
+the reversed-range constraint, malformed identity bytes, and package-pin
+substitution. Its dependencies and their full resolution are pinned in
+`tests/runtime/Cargo.toml` and `Cargo.lock` and bound into the build closure.
+
+This is pure computation only. No graph or rope is mutated, no Tick is settled,
+and no WAL or recovery evidence is produced. The test host enables Echo's
+trusted-host API only in this standalone unpublished test crate. It is not a
+production dependency or an alternate editor route. The authored rope algorithm
+and generic stateful execution remain unfinished under #296.
 
 ## Reproduce
 
@@ -53,6 +62,7 @@ The build script requires exact local Edict and Echo checkouts:
 ```bash
 EDICT_REPO=/path/to/edict \
 ECHO_REPO=/path/to/echo \
+CARGO_TARGET_DIR=/path/to/disposable-runtime-build-cache \
   ./edict/replace-range/tests/build.sh
 ```
 
@@ -85,10 +95,17 @@ Edict's public application build, and requires the generic pure package and an
 accepted independent-verifier report. Snapshots cover the application inputs
 outside `.build/`, the pinned project validation files, and every tracked Edict
 and Echo file; any content, identity, or timestamp mutation fails the run. Only
-`.build/` is disposable output. Distinct nominal `BufferId` and `HeadId`
+`.build/` is disposable output. `CARGO_TARGET_DIR` optionally selects a shared
+disposable Cargo cache; otherwise runtime build output stays under `.build/`.
+The runtime witness runs with `--locked` and must emit its completion marker
+after all assertions pass, so a zero-test Cargo invocation cannot satisfy the
+gate. The provider stays pinned to #724; the runtime is independently pinned
+to #726. Neither is described as a released or installed product dependency.
+Distinct nominal `BufferId` and `HeadId`
 contracts retain the same exact 32-byte representation, while a negative
 compiler witness proves that neither can cross the imported lawpack boundary as
 the other.
 
-The gate must advance again when Echo implements generic pure evaluation;
-package acceptance is not a permanent substitute for runtime evidence.
+The next gate must exercise an authored rope consequence under generic Echo
+stateful execution and compare it with the independent oracle. This pure
+boundary witness is not a substitute for that evidence.

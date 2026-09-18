@@ -28,6 +28,9 @@ const SOURCE_CLOSURE_INPUTS = [
   ["application/tests/build.sh", "tests/build.sh"],
   ["application/tests/package-chain.mjs", "tests/package-chain.mjs"],
   ["application/tests/proof-harness.spec.mjs", "tests/proof-harness.spec.mjs"],
+  ["application/tests/runtime/Cargo.toml", "tests/runtime/Cargo.toml"],
+  ["application/tests/runtime/Cargo.lock", "tests/runtime/Cargo.lock"],
+  ["application/tests/runtime/compiled_boundary.rs", "tests/runtime/compiled_boundary.rs"],
   [
     "application/tests/verification-evidence.mjs",
     "tests/verification-evidence.mjs",

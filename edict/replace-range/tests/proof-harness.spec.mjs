@@ -29,7 +29,10 @@ async function fixture() {
   const fixtureProject = path.join(root, "jedit");
   const fixtureApplication = path.join(fixtureProject, "edict", "replace-range");
   await mkdir(path.dirname(fixtureApplication), { recursive: true });
-  await cp(applicationRoot, fixtureApplication, { recursive: true });
+  await cp(applicationRoot, fixtureApplication, {
+    recursive: true,
+    filter: (source) => source !== path.join(applicationRoot, ".build"),
+  });
   await mkdir(path.join(fixtureProject, ".github", "workflows"), {
     recursive: true,
   });
@@ -65,7 +68,7 @@ function runBuild(fixtureProject, overrides = {}) {
       ECHO_REPO: echoRepository,
       ...overrides,
     },
-    timeout: 120_000,
+    timeout: 600_000,
   });
 }
 
@@ -242,6 +245,22 @@ test(
   },
 );
 
+test("freshly_compiled_package_must_execute_in_echo", { timeout: 120_000 }, async () => {
+  requireToolchainEnvironment();
+  const subject = await fixture();
+  try {
+    const result = runBuild(subject.project);
+    assertCommandCompleted(result);
+    assert.equal(result.status, 0, result.stderr);
+    assert.ok(
+      result.stdout.includes("JEDIT_EDICT_PURE_RUNTIME_OK"),
+      "a verified package alone is insufficient: the runtime conformance test must execute",
+    );
+  } finally {
+    await subject.dispose();
+  }
+});
+
 test("repeated_public_builds_preserve_core_and_package_bytes", { timeout: 120_000 }, async () => {
   requireToolchainEnvironment();
   const subject = await fixture();
@@ -413,7 +432,7 @@ test("required_ci_executes_the_exact_package_chain", async () => {
     "utf8",
   );
   assert.match(workflow, /^  edict-replace-range:\n/m);
-  assert.match(workflow, /name: edict \/ replace-range package chain/);
+  assert.match(workflow, /name: edict \/ replace-range package and pure runtime chain/);
   assert.match(
     workflow,
     /node --test edict\/replace-range\/tests\/proof-harness\.spec\.mjs/,

@@ -2,10 +2,10 @@
   "schema": "jedit.edict-build-lock/v1",
   "applicationCoordinate": "jedit.text.replace_range@1",
   "operationCoordinate": "jedit.text.replace_range@1.replaceRange",
-  "toolchainLockSha256": "980e7fc1041aa2606f712dfa19eb694dd61759b4b2c776db8a80567c94ed96b7",
+  "toolchainLockSha256": "5323f86f94f6b1ac5b1bb25c7104f703cc633ff3cc57df5caaa637a7a8455e75",
   "sourceClosure": {
     "schema": "jedit.edict-source-closure/v1",
-    "digest": "sha256:81e4bcbaa4e2ca16b5641b59bceaf1a504fe1098a4a28c07b8112c17ea251cc1",
+    "digest": "sha256:19017995722b8b038571f59b54cffb8929636a0115d148b266d51b6b769e7242",
     "files": [
       {
         "path": "application/edict.application.json",
@@ -17,7 +17,7 @@
       },
       {
         "path": "application/edict.toolchain-lock.json",
-        "sha256": "980e7fc1041aa2606f712dfa19eb694dd61759b4b2c776db8a80567c94ed96b7"
+        "sha256": "5323f86f94f6b1ac5b1bb25c7104f703cc633ff3cc57df5caaa637a7a8455e75"
       },
       {
         "path": "application/src/ReplaceRange.edict",
@@ -25,7 +25,7 @@
       },
       {
         "path": "application/tests/assert-build-output.mjs",
-        "sha256": "cc54e77a7a5923bb6496817b4822dfd38d5077501f6e12ab55129cf8cfcc86d9"
+        "sha256": "e862848d2e3fdc0acb10b0e31fef4c6481ba9ed94ce6fb28a090b30fb47f43a2"
       },
       {
         "path": "application/tests/build.sh",
@@ -33,11 +33,23 @@
       },
       {
         "path": "application/tests/package-chain.mjs",
-        "sha256": "28615de79aa645fa7c3a9cd098865e02af666fa86f49b251d5fe6c919329d141"
+        "sha256": "cdb4d2d9661960b0b5890bf5bbae8b07e4f82365378ddb4c36342e42fad05927"
       },
       {
         "path": "application/tests/proof-harness.spec.mjs",
-        "sha256": "218b32e0c5deddd48cd11917d22fb69e70ab8677d4e85670e467e8f3b711b30b"
+        "sha256": "ada20b6786401dc629f141220ced5041bc694458821149f4197b0e69dc619fae"
+      },
+      {
+        "path": "application/tests/runtime/Cargo.toml",
+        "sha256": "8cdf2a89e74d70388e872bbf30484053a639423c9b3c3934e99d67c3254fe53b"
+      },
+      {
+        "path": "application/tests/runtime/Cargo.lock",
+        "sha256": "22699d9bfad35c2ecc1bcab2a6bf6b5eeb97cb596e0169ebd37cb18ab2f01b7c"
+      },
+      {
+        "path": "application/tests/runtime/compiled_boundary.rs",
+        "sha256": "0bef519a74dbc9383dad7c1408d1fdaf962842c3f4df17bd3de58699154d818d"
       },
       {
         "path": "application/tests/verification-evidence.mjs",
@@ -65,7 +77,7 @@
       },
       {
         "path": "project/.github/workflows/ci.yml",
-        "sha256": "d4100140562e160bd897f9af9fc5d4ee8d7ea9285ba5d0734c620a38cf2d2ea5"
+        "sha256": "bc19286ef44ce7d8ba0fd8a3e39a8ec0313d07ed3084fbe15e25ef42d82bc8f1"
       },
       {
         "path": "project/package.json",
