@@ -57,7 +57,8 @@ and generic stateful execution remain unfinished under #296.
 
 ## Reproduce
 
-The build script requires exact local Edict and Echo checkouts:
+Run the build script inside Docker with copies of the exact Edict and Echo
+checkouts. Do not mount host repositories or Git directories into the container:
 
 ```bash
 EDICT_REPO=/path/to/edict \
@@ -74,6 +75,13 @@ bytes that perform validation. The script refuses non-Git roots, wrong commits,
 dirty checkouts, or validation-environment drift before invoking either
 toolchain. GitHub's package-chain job checks out and verifies the literal pull
 request head; ordinary matrix jobs may separately exercise the synthetic merge.
+
+The harness takes the compiler executable path from Cargo's successful
+`compiler-artifact` output. `CARGO_TARGET_DIR` may therefore point outside the
+Edict checkout, as it does in CI; no pre-existing `target/debug/edict` is needed.
+The runtime witness uses the same configured build cache. A regression runs the
+full package chain against an isolated Edict checkout whose default binary path
+is absent before and after execution.
 
 `edict.build-lock.json` binds the exact source and validation closure to the
 Core, Target IR, result projection, executable package, verification report,

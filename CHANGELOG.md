@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Fixed the Edict package-chain harness to use Cargo's reported executable path
+  when CI redirects build output with `CARGO_TARGET_DIR`. The regression compiles
+  and executes the real pinned package without a default-path compiler binary;
+  compiler, provider, evaluator, and application artifact identities are unchanged.
 - Added a separate Docker-only state-read ordering probe for ReplaceRange. It
   reproduces Edict's refusal of an effect-dependent basis guard and confirms
   that removing the guard reaches an unsupported-provider refusal. This is

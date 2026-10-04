@@ -5,7 +5,7 @@
   "toolchainLockSha256": "5323f86f94f6b1ac5b1bb25c7104f703cc633ff3cc57df5caaa637a7a8455e75",
   "sourceClosure": {
     "schema": "jedit.edict-source-closure/v1",
-    "digest": "sha256:19017995722b8b038571f59b54cffb8929636a0115d148b266d51b6b769e7242",
+    "digest": "sha256:aa0e80326f1931a0abce94173fc5791c8e28f5021f732ed286117752d8387a8d",
     "files": [
       {
         "path": "application/edict.application.json",
@@ -33,11 +33,11 @@
       },
       {
         "path": "application/tests/package-chain.mjs",
-        "sha256": "cdb4d2d9661960b0b5890bf5bbae8b07e4f82365378ddb4c36342e42fad05927"
+        "sha256": "26f1bbc543a6e7fcb4bab3add0ed63e4fc7f7848df62b7a38f0e8da467dc33ef"
       },
       {
         "path": "application/tests/proof-harness.spec.mjs",
-        "sha256": "ada20b6786401dc629f141220ced5041bc694458821149f4197b0e69dc619fae"
+        "sha256": "1a7c6f3433437d25196d89dc41a35c844ec52e423cf396aed93c80b422f28717"
       },
       {
         "path": "application/tests/runtime/Cargo.toml",

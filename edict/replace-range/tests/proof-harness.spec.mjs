@@ -3,7 +3,7 @@
 
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { cp, mkdtemp, mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { access, cp, mkdtemp, mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -249,9 +249,23 @@ test("freshly_compiled_package_must_execute_in_echo", { timeout: 120_000 }, asyn
   requireToolchainEnvironment();
   const subject = await fixture();
   try {
-    const result = runBuild(subject.project);
+    const isolatedEdict = path.join(subject.root, "edict");
+    const clone = spawnSync("git", [
+      "clone", "--quiet", "--no-hardlinks", edictRepository, isolatedEdict,
+    ], { encoding: "utf8" });
+    assertCommandCompleted(clone);
+    assert.equal(clone.status, 0, clone.stderr);
+    const defaultBinary = path.join(isolatedEdict, "target", "debug", "edict");
+    await assert.rejects(access(defaultBinary), { code: "ENOENT" });
+    const result = runBuild(subject.project, {
+      EDICT_REPO: isolatedEdict,
+      CARGO_TARGET_DIR: path.resolve(
+        process.env.CARGO_TARGET_DIR ?? path.join(edictRepository, "target"),
+      ),
+    });
     assertCommandCompleted(result);
     assert.equal(result.status, 0, result.stderr);
+    await assert.rejects(access(defaultBinary), { code: "ENOENT" });
     assert.ok(
       result.stdout.includes("JEDIT_EDICT_PURE_RUNTIME_OK"),
       "a verified package alone is insufficient: the runtime conformance test must execute",
