@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Added a separate Docker-only state-read ordering probe for ReplaceRange. It
+  reproduces Edict's refusal of an effect-dependent basis guard and confirms
+  that removing the guard reaches an unsupported-provider refusal. This is
+  development evidence, not stateful execution; existing producer pins remain
+  unchanged. Ordered Target IR is tracked in flyingrobots/edict#218.
 - Added the Jedit-owned `ReplaceRange.edict` application root and canonical
   `jedit.text@1` lawpack publication. With Edict #201, its executable integration
   gate now proves that real source lowers into generic pure Target IR and reaches
