@@ -1,0 +1,5 @@
+{"event":"claimed","job":"B7E81F92-3E24-4EE9-936A-8A34AC6B0DFA","holder":"jim-edict-authoring","note":"Guarded exact17397 compiler build and actual Buffer decimal fn refusal with accepted atom-read control","claimed":1791167534,"expires":1791168434,"paths":["host/docker/echo-read-runtime/","host/heavy-work"],"record":"df6150b65a0fff4e49c96bcf7ca1679687da1ca7","acquisition":"1791167534-76497-3105025734"}
+PRE {"build": 6792403497, "data": 2956552745, "logs": 9643305, "host_free": 715318206464, "vm_free": 679804174336} CONTRACT /private/tmp/echo-739-resume/jim-buffer-public.launch.json
+POST {"build": 6451069687, "data": 2959639287, "logs": 9646863, "host_free": 715316690944, "vm_free": 679804174336} EXIT 1
+GUARD_EXIT 1
+{"event":"released","job":"B7E81F92-3E24-4EE9-936A-8A34AC6B0DFA","paths":2}

@@ -1,0 +1,38 @@
+{
+  "worker": "echo-read-runtime",
+  "image": "echo-read-runtime:red",
+  "lock": "/tmp/echo-validation-host.lock",
+  "inner_lock": "/tmp/echo-validation.lock",
+  "source": "/echo-audit",
+  "outputs": [
+    "/lease-target",
+    "/usr/local/cargo",
+    "/tmp/echo-726-runtime",
+    "all container writable-layer paths",
+    "/dev/shm",
+    "/private/tmp/echo-739-resume/jim-buffer-reproduction.log"
+  ],
+  "measurements": {
+    "build": 14967762459,
+    "data": 4074397211,
+    "logs": 11266512,
+    "host_free": 709436264448,
+    "vm_free": 674182402048
+  },
+  "build_limit": 21474836480,
+  "data_limit": 4294967296,
+  "log_limit": 134217728,
+  "cpus": 4.0,
+  "memory": 6442450944,
+  "logging": {
+    "Type": "json-file",
+    "Config": {
+      "max-file": "5",
+      "max-size": "20m"
+    }
+  },
+  "timeout_seconds": 600,
+  "guard": "2-second fail-closed monitor; freeze owned process group across the entire size measurement, including cache du; pause container for snapshotter; accept an absent process group only after confirmed owned docker-exec completion; of aggregate writable layers, shared memory, host scratch and logs; no host binds or volumes",
+  "termination": "docker stop/kill owned worker and host docker-exec process group on monitoring failure or limit/timeout",
+  "command": "test ! -e /tmp/echo-726-runtime/buffer-reproduction-input\nmkdir /tmp/echo-726-runtime/buffer-reproduction-input\ntar -xf /tmp/echo-726-runtime/buffer-reproduction-input.tar -C /tmp/echo-726-runtime/buffer-reproduction-input\ncd /edict-207\nexport CARGO_TARGET_DIR=/lease-target CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=4 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0\npython3 - <<'INNER'\nfrom pathlib import Path\nimport runpy,hashlib,subprocess\nr=Path('/tmp/echo-726-runtime/buffer-reproduction-input/edict/replace-range-probes')\ncommon=runpy.run_path(str(r/'leaf-slice/run.py'))\nprint(common['verify_compiler_source'](Path('/edict-207'),r/'buffer-decoder/evidence/compiler-source.json','17397e2aad18a83ffc617d1afd628764501f49cd'),flush=True)\nassert not subprocess.check_output(['git','-C','/edict-207','status','--porcelain'],text=True).strip()\nbinary=Path('/lease-target/debug/edict')\nexpected='e2700698829b03f437c66425ed9878b002ef7a34ac183a39bac4eaf6a758cc6d'\nif not binary.exists() or hashlib.sha256(binary.read_bytes()).hexdigest()!=expected:\n subprocess.run(['cargo','+1.95.0','clean','-p','edict-cli','-p','edict-syntax'],check=True)\n subprocess.run(['cargo','+1.95.0','build','--locked','-p','edict-cli'],check=True)\nprint('ACTUAL_COMPILER_BINARY',hashlib.sha256(binary.read_bytes()).hexdigest(),flush=True)\nsubprocess.run(['python3',str(r/'buffer-decoder/run.py'),'--compiler',str(binary),'--compiler-source','/edict-207','--compiler-manifest',str(r/'buffer-decoder/evidence/compiler-source.json'),'--application-source',str(r/'buffer-decoder/control'),'--provider-package','/read-provider','--work-root','/tmp/echo-726-runtime/jim-buffer-decoder-reproduction'],check=True)\nINNER\n"
+}

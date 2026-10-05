@@ -1,0 +1,2 @@
+{"command":"build","input":{"kind":"stdin"},"kind":"InvalidApplicationSource","message":"Edict source `/tmp/echo-726-runtime/jim-buffer-decoder-reproduction196/fn-control/src/ReplaceRange.edict` did not parse: ParseError { kind: ExpectedToken, message: \"expected `type`, `enum`, or `intent` declaration, found Ident(\\\"fn\\\")\", span: Span { start: 151, end: 153 } }","schema":"edict.cli.diagnostic/v1","severity":"error","stage":"cli","type":"diagnostic"}
+{"checked":0,"command":"build","errors":1,"exitCode":2,"schema":"edict.cli.event/v1","status":"error","type":"status"}

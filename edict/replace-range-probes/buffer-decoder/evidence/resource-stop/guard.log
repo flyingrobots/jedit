@@ -1,0 +1,4 @@
+{'commit': '17397e2aad18a83ffc617d1afd628764501f49cd', 'tree': 'bcfd3112cd8b3d4630738a88761860679b45714b', 'fileCount': 449, 'manifestSha256': '625592ab9dd715349255bece0133378c64b3d4539fb50e437d116c2a4296f016'}
+info: syncing channel updates for 1.95.0-aarch64-unknown-linux-gnu
+info: latest update on 2026-04-16 for version 1.95.0 (59807616e 2026-04-14)
+info: downloading 3 components
