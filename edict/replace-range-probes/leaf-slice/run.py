@@ -9,6 +9,7 @@ import subprocess
 
 
 COMPILER_COMMIT = "2405a550e93e1e97fff640caa44bbd0f65ffff3c"
+CANDIDATE_COMPILER_COMMIT = "0835f398336ce1c693b5531b262228cd909c0b4b"
 SOURCE_EXPRESSION = "slice(input.blobBytes, input.startByte, input.endByte)"
 MAX_LOG_BYTES = 1024 * 1024
 
@@ -22,10 +23,10 @@ def snapshot(root):
             for path in sorted(root.rglob("*")) if path.is_file()}
 
 
-def verify_compiler_source(root, manifest_path):
+def verify_compiler_source(root, manifest_path, expected_commit):
     manifest = json.loads(manifest_path.read_text())
-    if manifest["commit"] != COMPILER_COMMIT:
-        raise RuntimeError("This RED witness requires the explicit experimental compiler pin")
+    if manifest["commit"] != expected_commit:
+        raise RuntimeError("The witness requires its explicit experimental compiler pin")
     for entry in manifest["files"]:
         relative = Path(entry["path"])
         if relative.is_absolute() or ".." in relative.parts:
@@ -70,6 +71,7 @@ def build(root, compiler):
                        if path.is_file()) if output.exists() else []
     return {"exitCode": result.returncode, "diagnostics": diagnostics,
             "artifacts": artifacts, "sourceSha256": sha256(root / "src/ReplaceRange.edict"),
+            "artifactSha256": {name: sha256(output / name) for name in artifacts},
             "stdoutSha256": sha256(stdout_path), "stderrSha256": sha256(stderr_path)}
 
 
@@ -78,13 +80,16 @@ def main():
     for name in ("compiler", "compiler-source", "compiler-manifest", "application-source",
                  "provider-package", "work-root"):
         parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--boundary", choices=("source", "package"), default="source")
     args = parser.parse_args()
     if not Path("/.dockerenv").is_file():
         raise RuntimeError("Run only under the shared guarded Docker-worker lease")
-    if not args.work_root.is_relative_to(Path("/tmp/echo-726-runtime")):
+    if not args.work_root.resolve().is_relative_to(Path("/tmp/echo-726-runtime")):
         raise RuntimeError("Work must stay inside the declared runtime-data accounting root")
     args.work_root.mkdir()
-    compiler_identity = verify_compiler_source(args.compiler_source, args.compiler_manifest)
+    expected_commit = COMPILER_COMMIT if args.boundary == "source" else CANDIDATE_COMPILER_COMMIT
+    compiler_identity = verify_compiler_source(args.compiler_source, args.compiler_manifest,
+                                               expected_commit)
     compiler_identity["binarySha256"] = sha256(args.compiler)
     before = {"application": snapshot(args.application_source),
               "provider": snapshot(args.provider_package)}
@@ -96,7 +101,9 @@ def main():
         "guard-control": source.replace(SOURCE_EXPRESSION.encode(), b"input.blobBytes"),
         "slice": source,
     }
-    evidence = {"compiler": compiler_identity, "results": {}}
+    evidence = {"compiler": compiler_identity,
+                "providerManifestSha256": sha256(args.provider_package / "provider-manifest.echo.json"),
+                "results": {}}
     for name, authored in sources.items():
         root = args.work_root / name
         prepare(root, args.application_source, args.provider_package, authored)
@@ -109,12 +116,18 @@ def main():
         raise RuntimeError("Witness changed an authoritative input")
     if compiler_identity["binarySha256"] != sha256(args.compiler):
         raise RuntimeError("Compiler binary changed during the witness")
-    verify_compiler_source(args.compiler_source, args.compiler_manifest)
+    verify_compiler_source(args.compiler_source, args.compiler_manifest, expected_commit)
     for name in ("baseline", "guard-control"):
         result = evidence["results"][name]
         if result["exitCode"] != 0 or result["diagnostics"] or not result["artifacts"]:
             raise RuntimeError(f"{name} positive control did not build")
     result = evidence["results"]["slice"]
+    if args.boundary == "package":
+        if (result["exitCode"] != 0 or result["diagnostics"]
+                or result["artifacts"] != ["executable-operation-package.cbor", "verification-report.cbor"]):
+            raise RuntimeError("Slice did not reach the expected package build boundary")
+        print("JIM_LEAF_SLICE_PACKAGE_BOUNDARY_CONFIRMED", flush=True)
+        return
     if result["exitCode"] != 2 or result["artifacts"]:
         raise RuntimeError("Slice must refuse without application artifacts")
     refusal = evidence["results"]["slice"]["diagnostics"]

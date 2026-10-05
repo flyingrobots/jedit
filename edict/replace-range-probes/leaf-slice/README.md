@@ -34,7 +34,7 @@ provides comparison and length. Its source compiler also rejects Option types,
 so the first capability uses explicit range proofs instead of relying on an
 unavailable Option result.
 
-The [retained public-build result](evidence/public-build-red.json) uses the
+The [retained public-build RED](evidence/public-build-red.json) uses the
 already built experimental compiler `2405a550e93e1e97fff640caa44bbd0f65ffff3c`,
 with the unchanged Echo provider from `49e9efb68001dfd78563d18bac9359a87671e431`.
 It does **not** use or replace the frozen application's `3f81f759` compiler pin.
@@ -58,6 +58,42 @@ The first harness run incorrectly expected the guarded control to reach a
 provider refusal. Its actual successful build disproved that expectation. The
 harness assertion was corrected, with no source change, and the full paired
 witness passed with `JIM_LEAF_SLICE_SOURCE_BOUNDARY_CONFIRMED`.
+
+## Candidate public build
+
+With Edict [PR #221](https://github.com/flyingrobots/edict/pull/221) at
+`0835f398336ce1c693b5531b262228cd909c0b4b`, the **unchanged** source passes the
+public application-build boundary with the same frozen provider. Both controls
+also pass. The [retained candidate result](evidence/public-build-candidate.json)
+records all source and output hashes. The witness checks all 445 compiler-source
+files and the existing compiler binary before and after the run.
+
+The actual boundary is further than initially expected: the frozen provider
+produces the [executable package](evidence/candidate-artifacts/executable-operation-package.cbor)
+and [verification report](evidence/candidate-artifacts/verification-report.cbor).
+A separate read-only CBOR inspection observed `outcome: accepted`, zero diagnostic
+bytes, the `jedit.text.replace_range@1.sliceLeaf` coordinate, and the explicit
+`core.bytes.slice` call in both retained Core and Target. Its
+[inspection summary](evidence/candidate-report-inspection.json) records those
+observations. This is an inspection of the existing verifier's report, not a
+new independent verification implementation or evidence of evaluator support.
+
+| Retained artifact | Raw SHA-256 |
+| --- | --- |
+| Executable package | `bfacd029cf2dc9247cbcee47d747eca3f8298c7184cac3866eb36f3ab55573c1` |
+| Verification report | `943ac86ea20c40d68881cc8413b926f98ba2a4ee99408e3dcede4eead1e7bb86` |
+
+The first candidate harness expected a provider refusal, so it failed its own
+assertion after recording the successful builds. That was a harness expectation
+mismatch, not a compiler failure. A fresh run with the correct package-boundary
+assertion passed with `JIM_LEAF_SLICE_PACKAGE_BOUNDARY_CONFIRMED` and reproduced
+identical package/report bytes for all three sources. The original source RED
+and both positive controls are preserved.
+
+No evaluator was invoked. In particular, none of the twelve literal cases has
+executed, and the accepted report does not establish the runtime primitive's
+availability, metering, refusals, or rope behavior. Those require a fresh
+generic evaluator witness using the exact retained package.
 
 The frozen `edict/replace-range/` application, lawpack closure, producer pins,
 and artifact locks remain authoritative for the existing pure-boundary witness.
@@ -95,6 +131,14 @@ identities are unchanged. Logs and an evidence JSON file remain under the work
 root. The runner's log-size check supplements the mandatory external resource
 guard; it is not a disk quota or permission to run without the guard.
 
-Passing this refusal witness identifies the compiler boundary. Accepted slice
-compilation, independent verification, generic execution of the literal cases,
-and complete rope acceptance remain separate gates.
+For the candidate build, use the exact `0835f398` compiler source and existing
+binary SHA-256 `a5ffea7b16b641448db4d5dc608bec1539211ab683df3ab78985e12bb1c2fd15`,
+select `evidence/candidate-compiler-source.json`, and add `--boundary package`.
+That manifest has the same formatting qualification as the RED manifest.
+Keep the provider unchanged: its manifest SHA-256 is
+`c5b9fb2fe3a0dc4dad282621a97413225c555be0071f3502b3272952069d42dc`.
+The runner records its actual hash and refuses mutation during the run.
+
+The public source RED and candidate package construction are established.
+Generic execution of the literal cases and complete rope acceptance remain
+separate gates.

@@ -1,0 +1,70 @@
+{
+  "packageCoordinate": "jedit.text.replace_range@1.sliceLeaf",
+  "report": {
+    "outcome": "accepted",
+    "package": {
+      "id": "executable-operation-package.echo",
+      "digest": [
+        "sha256",
+        {
+          "byteLength": 32,
+          "sha256": "b1acdfe0db3286d81604186a3588f595f19aaf21a78209f42a61f90476eba2ab"
+        }
+      ]
+    },
+    "targetIr": {
+      "id": "echo.span-ir/v1",
+      "digest": [
+        "sha256",
+        {
+          "byteLength": 32,
+          "sha256": "78b4e450233527ad0007a95ae2af76ba1cdfbe086b1f19a14291cf7cbd2fd84d"
+        }
+      ]
+    },
+    "apiVersion": "echo.operation-package-verifier-report/v1",
+    "diagnosticAbi": {
+      "id": "edict.diagnostics/v1",
+      "digest": [
+        "sha256",
+        {
+          "byteLength": 32,
+          "sha256": "60f5dfb53db3c4b4cebb44bcaf5689796495b017f0e34e1f30b48f8c292065e4"
+        }
+      ]
+    },
+    "diagnosticBytes": {
+      "byteLength": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "executableSubject": {
+      "bytes": {
+        "byteLength": 334,
+        "sha256": "a390af915f4493e811cd75322d09968c93f5f09e3d142e8a121cdaad32b65ece"
+      },
+      "reference": {
+        "id": "echo.executable-subject/v1",
+        "digest": [
+          "sha256",
+          {
+            "byteLength": 32,
+            "sha256": "2b6d0f2561348e957e414edf7ad16cdf09b5ba934b5f26112f3c2444b26b4db9"
+          }
+        ]
+      }
+    },
+    "applicationResultProjection": {
+      "id": "jedit.text.replace_range@1.sliceLeaf",
+      "digest": [
+        "sha256",
+        {
+          "byteLength": 32,
+          "sha256": "0f974cde2e2d5e222ff03745fb42e6e6a00c36b2b340887d5e53e45fbc93fb8a"
+        }
+      ]
+    }
+  },
+  "retainedCoreContainsSlice": true,
+  "retainedTargetContainsSlice": true,
+  "runtimeEvaluated": false
+}
