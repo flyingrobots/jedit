@@ -1,0 +1,93 @@
+package jedit.text.replace_range@1;
+use lawpack jedit.text@1 digest "sha256:2ea164293719d2b03231c4904eb75ddcdf55fd29cc31f4fc5a5319d9ae5e60e7" as text;
+
+// Jim's JSON boundary codec. These are internal scanner values, not intent inputs.
+// A later bounded scanner must obtain each token from the retained Buffer atom.
+type JsonByte = Bytes<max=1>;
+type DecimalState = variant { Start, Zero, Digits(U64) };
+type DecimalStep = variant { More(DecimalState), End(U64), Invalid, Overflow };
+type DecimalDigit = variant { Digit(U64), NotDigit };
+
+// An End result leaves the delimiter unconsumed for the enclosing JSON scanner.
+// Whitespace terminates a number; canonical-byte policy belongs to that scanner.
+fn isNumberDelimiter(token: JsonByte) -> Bool {
+  return token == b"," || token == b"]" || token == b"}"
+    || token == b" " || token == b"\t" || token == b"\r" || token == b"\n";
+}
+
+fn decimalDigit(token: JsonByte) -> DecimalDigit {
+  return if token == b"0" then DecimalDigit::Digit(0u64)
+    else if token == b"1" then DecimalDigit::Digit(1u64)
+    else if token == b"2" then DecimalDigit::Digit(2u64)
+    else if token == b"3" then DecimalDigit::Digit(3u64)
+    else if token == b"4" then DecimalDigit::Digit(4u64)
+    else if token == b"5" then DecimalDigit::Digit(5u64)
+    else if token == b"6" then DecimalDigit::Digit(6u64)
+    else if token == b"7" then DecimalDigit::Digit(7u64)
+    else if token == b"8" then DecimalDigit::Digit(8u64)
+    else if token == b"9" then DecimalDigit::Digit(9u64)
+    else DecimalDigit::NotDigit;
+}
+
+fn appendScaled(scaled: U64, digit: U64, limit: U64) -> DecimalStep {
+  let sum = checkedAdd(scaled, digit);
+  return if isSome(sum) then
+    if unwrap(sum) <= limit then DecimalStep::More(DecimalState::Digits(unwrap(sum)))
+    else DecimalStep::Overflow
+  else DecimalStep::Overflow;
+}
+
+fn appendDigit(value: U64, digit: U64, limit: U64) -> DecimalStep {
+  let decimalRadix = 10u64;
+  let product = checkedMul(value, decimalRadix);
+  return if isSome(product) then appendScaled(unwrap(product), digit, limit)
+    else DecimalStep::Overflow;
+}
+
+fn startDecimal(token: JsonByte, limit: U64) -> DecimalStep {
+  return match decimalDigit(token) {
+    Digit(value) => if value > limit then DecimalStep::Overflow
+      else if value == 0u64 then DecimalStep::More(DecimalState::Zero)
+      else DecimalStep::More(DecimalState::Digits(value)),
+    NotDigit => DecimalStep::Invalid,
+  };
+}
+
+fn continueDecimal(value: U64, token: JsonByte, limit: U64) -> DecimalStep {
+  return if value == 0u64 then DecimalStep::Invalid
+    else if value > limit then DecimalStep::Overflow
+    else match decimalDigit(token) {
+      Digit(digit) => appendDigit(value, digit, limit),
+      NotDigit => if isNumberDelimiter(token) then DecimalStep::End(value)
+        else DecimalStep::Invalid,
+    };
+}
+
+// canonical_head_id members use limit 255; version uses 18446744073709551615.
+// The enclosing scanner owns these schema limits and starts at Start.
+// Empty token, sign, leading zero, fraction, exponent and non-ASCII byte refuse.
+fn stepJsonUnsigned(state: DecimalState, token: JsonByte, limit: U64) -> DecimalStep {
+  return match state {
+    Start => startDecimal(token, limit),
+    Zero => if isNumberDelimiter(token) then DecimalStep::End(0u64)
+      else DecimalStep::Invalid,
+    Digits(value) => continueDecimal(value, token, limit),
+  };
+}
+
+type Input = { address: text.FactAddress, expected: text.FactBytes };
+intent replaceRange(input: Input) returns text.FactBytes
+  profile text.replaceRange
+  basis input.address.nodeId
+  budget <= text.replaceRangeBudget
+{
+  let actual: text.FactBytes = text.readFact(input.address)
+    else {
+      missing(address) => text.FactMissing,
+      typeMismatch(address) => text.FactMalformed,
+      notAtom(address) => text.FactMalformed,
+      tooLarge(address) => text.FactMalformed,
+    };
+  require actual == input.expected else text.BasisNotCanonical;
+  return actual;
+}

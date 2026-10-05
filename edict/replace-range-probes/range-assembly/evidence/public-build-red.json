@@ -1,0 +1,79 @@
+{
+  "compiler": {
+    "commit": "ac836e5c42a5c47b0dab30cfb0b09848cca73215",
+    "tree": "dadd4703a9905a37ff366c7134aea5cfe351e2fd",
+    "fileCount": 446,
+    "manifestSha256": "1cf9cdb1a3bfacab2dfa515f7a07188c984ba0770399ee6ec3ef473b9383781e",
+    "binarySha256": "a937e6f150f73fa20e9868c84adee0a8270cc62130d4aef18e5b891ec268fee2"
+  },
+  "providerManifestSha256": "c5b9fb2fe3a0dc4dad282621a97413225c555be0071f3502b3272952069d42dc",
+  "results": {
+    "baseline": {
+      "exitCode": 0,
+      "diagnostics": [],
+      "artifacts": [
+        "executable-operation-package.cbor",
+        "verification-report.cbor"
+      ],
+      "sourceSha256": "51797e77062585a9f59083ee8a1da3faaf486ef7691e1b62203369a9d9356ee0",
+      "artifactSha256": {
+        "executable-operation-package.cbor": "1860ab8a6cb9a4bfd63a1db99d1c2bc00aa53dae52a9d1998295654379a95d85",
+        "verification-report.cbor": "d96e5d21eecbc1e5bbf6ce76ab438d55cc8e74f6843121d4ffb0f4343e648267"
+      },
+      "stdoutSha256": "ee9dd333c256f57a14f42869b19857a2e42c71b0483fcec23a7fc385802edd61",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "first-control": {
+      "exitCode": 0,
+      "diagnostics": [],
+      "artifacts": [
+        "executable-operation-package.cbor",
+        "verification-report.cbor"
+      ],
+      "sourceSha256": "fa207e40f734fce99c581efbc5159a276c95e7b399d3acce854829ace05c6d2e",
+      "artifactSha256": {
+        "executable-operation-package.cbor": "d950cebad1bb978e24dfa736efab302eb0f5c96135cb32f27ad8781d6ace6b51",
+        "verification-report.cbor": "412fb923e3dbd3f070624446ae953920058e08eda5fdc94f201d9b475842c803"
+      },
+      "stdoutSha256": "ee9dd333c256f57a14f42869b19857a2e42c71b0483fcec23a7fc385802edd61",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "second-control": {
+      "exitCode": 0,
+      "diagnostics": [],
+      "artifacts": [
+        "executable-operation-package.cbor",
+        "verification-report.cbor"
+      ],
+      "sourceSha256": "b7bdfce283a977bf2a04ec95d278138a9fbcaeb3e5eedefb909b6d617b1cf8c0",
+      "artifactSha256": {
+        "executable-operation-package.cbor": "e75c18f7265ea8fd7390e2e2d4ff49047323e99a07602d80442659d636fd61f4",
+        "verification-report.cbor": "463a47e58e00390937c565413305b4ec553928b86aae2979fbcbf631b55961d9"
+      },
+      "stdoutSha256": "ee9dd333c256f57a14f42869b19857a2e42c71b0483fcec23a7fc385802edd61",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "assembly": {
+      "exitCode": 2,
+      "diagnostics": [
+        {
+          "command": "build",
+          "input": {
+            "kind": "stdin"
+          },
+          "kind": "ApplicationCompilationFailed",
+          "message": "Edict application did not compile to Core: [CompilerError { stage: TypeCheck, kind: TypeMismatch, message: \"string concatenation requires string operands\", span: Span { start: 430, end: 472 } }, CompilerError { stage: TypeCheck, kind: UnresolvedType, message: \"record shorthand `bytes` has no typed binding\", span: Span { start: 485, end: 490 } }, CompilerError { stage: TypeCheck, kind: TypeMismatch, message: \"return value does not match declared output type\", span: Span { start: 283, end: 495 } }, CompilerError { stage: TypeCheck, kind: TypeMismatch, message: \"intent body must return a value\", span: Span { start: 283, end: 495 } }]",
+          "schema": "edict.cli.diagnostic/v1",
+          "severity": "error",
+          "stage": "cli",
+          "type": "diagnostic"
+        }
+      ],
+      "artifacts": [],
+      "sourceSha256": "8e8d2703759fb30cb49b73650ba8ddfd637d68b33b86145661bfca3033c968fc",
+      "artifactSha256": {},
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSha256": "dfa643796ce3ecbca02f70ede806e6c50566456b3126747e3b496f6f35250d14"
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "status": "Handwritten conformance specification; not executed",
+  "procedure": "Start at DecimalState::Start. Feed each listed byte in order to stepJsonUnsigned with the stated schema limit. Continue only through More. Stop at the first End, Invalid or Overflow. End leaves its delimiter unconsumed. A trailing More means an incomplete number, not successful decoding.",
+  "cases": [
+    {"name":"zero-array-member","bytesHex":"302c","limit":"255","expected":{"kind":"End","value":"0","consumedDigits":1}},
+    {"name":"zero-version","bytesHex":"307d","limit":"18446744073709551615","expected":{"kind":"End","value":"0","consumedDigits":1}},
+    {"name":"u8-max","bytesHex":"3235355d","limit":"255","expected":{"kind":"End","value":"255","consumedDigits":3}},
+    {"name":"u8-overflow","bytesHex":"3235365d","limit":"255","expected":{"kind":"Overflow","atByte":2}},
+    {"name":"u64-max","bytesHex":"31383434363734343037333730393535313631357d","limit":"18446744073709551615","expected":{"kind":"End","value":"18446744073709551615","consumedDigits":20}},
+    {"name":"u64-add-overflow","bytesHex":"31383434363734343037333730393535313631367d","limit":"18446744073709551615","expected":{"kind":"Overflow","atByte":19}},
+    {"name":"u64-multiply-overflow","bytesHex":"39393939393939393939393939393939393939397d","limit":"18446744073709551615","expected":{"kind":"Overflow","atByte":19}},
+    {"name":"leading-zero","bytesHex":"30302c","limit":"255","expected":{"kind":"Invalid","atByte":1}},
+    {"name":"zero-followed-by-digit","bytesHex":"30317d","limit":"18446744073709551615","expected":{"kind":"Invalid","atByte":1}},
+    {"name":"negative","bytesHex":"2d315d","limit":"255","expected":{"kind":"Invalid","atByte":0}},
+    {"name":"plus-sign","bytesHex":"2b315d","limit":"255","expected":{"kind":"Invalid","atByte":0}},
+    {"name":"fraction","bytesHex":"312e305d","limit":"255","expected":{"kind":"Invalid","atByte":1}},
+    {"name":"exponent","bytesHex":"3165325d","limit":"255","expected":{"kind":"Invalid","atByte":1}},
+    {"name":"missing-number","bytesHex":"5d","limit":"255","expected":{"kind":"Invalid","atByte":0}},
+    {"name":"raw-non-ascii","bytesHex":"ff5d","limit":"255","expected":{"kind":"Invalid","atByte":0}},
+    {"name":"quote-is-not-number-delimiter","bytesHex":"3122","limit":"255","expected":{"kind":"Invalid","atByte":1}},
+    {"name":"space-terminator","bytesHex":"32353520","limit":"255","expected":{"kind":"End","value":"255","consumedDigits":3}},
+    {"name":"tab-terminator","bytesHex":"3109","limit":"255","expected":{"kind":"End","value":"1","consumedDigits":1}},
+    {"name":"carriage-return-terminator","bytesHex":"310d","limit":"255","expected":{"kind":"End","value":"1","consumedDigits":1}},
+    {"name":"line-feed-terminator","bytesHex":"310a","limit":"255","expected":{"kind":"End","value":"1","consumedDigits":1}},
+    {"name":"incomplete-nonzero","bytesHex":"3130","limit":"255","expected":{"kind":"More","state":"Digits","value":"10"}},
+    {"name":"incomplete-zero","bytesHex":"30","limit":"255","expected":{"kind":"More","state":"Zero"}},
+    {"name":"empty-stream","bytesHex":"","limit":"255","expected":{"kind":"Unstarted"}}
+  ],
+  "singleStepCases": [
+    {"name":"empty-token","state":"Start","tokenHex":"","limit":"255","expected":{"kind":"Invalid"}},
+    {"name":"invalid-zero-digits-state","state":{"Digits":"0"},"tokenHex":"2c","limit":"255","expected":{"kind":"Invalid"}},
+    {"name":"over-limit-state","state":{"Digits":"256"},"tokenHex":"2c","limit":"255","expected":{"kind":"Overflow"}}
+  ]
+}

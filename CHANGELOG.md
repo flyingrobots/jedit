@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+- Fixed the Edict package-chain harness to use Cargo's reported executable path
+  when CI redirects build output with `CARGO_TARGET_DIR`. The regression compiles
+  and executes the real pinned package without a default-path compiler binary;
+  compiler, provider, evaluator, and application artifact identities are unchanged.
+- Added a separate Docker-only state-read ordering probe for ReplaceRange. It
+  reproduces Edict's refusal of an effect-dependent basis guard and confirms
+  that removing the guard reaches an unsupported-provider refusal. This is
+  development evidence, not stateful execution; existing producer pins remain
+  unchanged. Ordered Target IR is tracked in flyingrobots/edict#218.
+- Added the Jedit-owned `ReplaceRange.edict` application root and canonical
+  `jedit.text@1` lawpack publication. With Edict #201, its executable integration
+  gate now proves that real source lowers into generic pure Target IR and reaches
+  Echo's checked lowerer through the exact generic pure target configuration.
+  Echo's generic pure-program lowerer now emits the exact compiler-produced
+  package, and its structurally separate verifier independently accepts the
+  package relation. The integration gate pins clean Edict and Echo revisions,
+  verifies the committed lawpack closure without repairing it, and rejects
+  authoritative-input mutation outside its disposable build root. Runtime
+  evaluation and rope mutation remain unimplemented.
 - Made `ReplaceRange` corroborate the selected Head/root byte extent and exact
   requested-range materialization before no-op classification, so truncated or
   absent retained roots fail with a typed malformed-rope obstruction.

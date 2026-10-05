@@ -1,0 +1,5 @@
+*
+!edict/
+!edict/replace-range-probes/
+!edict/replace-range-probes/state-read/
+!edict/replace-range-probes/state-read/**

@@ -1,0 +1,17 @@
+{
+  "observer": "root Echo Edict Jim agent",
+  "evidenceSource": "functions.write_stdin session8441 terminal output",
+  "guard": "guarded-worker-v2.py measured_sizes raised RuntimeError(project budget)",
+  "exitCode": 1,
+  "measurementsAtRefusal": {
+    "build": 15219153753,
+    "data": 4325788505,
+    "logs": 11266897,
+    "host_free": 709395468288,
+    "vm_free": 674182402048
+  },
+  "dataLimit": 4294967296,
+  "compilerTestStarted": false,
+  "workerStopped": true,
+  "qualification": "Observer-authored record of the displayed guard exception; not a raw compiler diagnostic or raw controller stdout file"
+}

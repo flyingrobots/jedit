@@ -124,6 +124,11 @@ or support-policy logic.
 
 ## Immediate Roadmap
 
+- [x] Make the pinned Edict package-chain harness discover Cargo's actual
+  executable when its output is redirected. Preserve producer pins and verify
+  the emitted pure package in Echo; this does not complete the authored rope
+  operation or its stateful runtime path.
+
 1. Keep the narrow create/replace/checkpoint/read corridor green against
    Echo-owned WAL, admission, scheduling, graph state, receipts, and restart
    recovery.

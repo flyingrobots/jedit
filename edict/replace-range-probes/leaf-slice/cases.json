@@ -1,0 +1,18 @@
+{
+  "schema": "jedit.leaf-byte-slice-cases/v1",
+  "operation": "jedit.text.replace_range@1.sliceLeaf",
+  "cases": [
+    {"name": "empty-blob", "blobHex": "", "startByte": "0", "endByte": "0", "bytesHex": ""},
+    {"name": "full-blob", "blobHex": "61626364", "startByte": "0", "endByte": "4", "bytesHex": "61626364"},
+    {"name": "interior", "blobHex": "61626364", "startByte": "1", "endByte": "3", "bytesHex": "6263"},
+    {"name": "empty-interior", "blobHex": "61626364", "startByte": "2", "endByte": "2", "bytesHex": ""},
+    {"name": "empty-at-end", "blobHex": "61626364", "startByte": "4", "endByte": "4", "bytesHex": ""},
+    {"name": "binary-octets", "blobHex": "00017fff80", "startByte": "2", "endByte": "5", "bytesHex": "7fff80"},
+    {"name": "unicode-codepoint", "blobHex": "61f09f98ba62", "startByte": "1", "endByte": "5", "bytesHex": "f09f98ba"},
+    {"name": "inside-codepoint-remains-bytes", "blobHex": "61f09f98ba62", "startByte": "2", "endByte": "4", "bytesHex": "9f98"},
+    {"name": "reversed", "blobHex": "61626364", "startByte": "3", "endByte": "2", "refusal": "input-constraint"},
+    {"name": "end-past-blob", "blobHex": "61626364", "startByte": "1", "endByte": "5", "refusal": "input-constraint"},
+    {"name": "both-past-blob", "blobHex": "61626364", "startByte": "5", "endByte": "5", "refusal": "input-constraint"},
+    {"name": "u64-max", "blobHex": "61626364", "startByte": "0", "endByte": "18446744073709551615", "refusal": "input-constraint"}
+  ]
+}
