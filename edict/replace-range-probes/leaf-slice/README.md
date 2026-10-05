@@ -20,9 +20,9 @@ clipping, truncation, wrapping, or a host panic. A slice inside a UTF-8 code
 point is still a lawful byte slice; Jim's later UTF-8 validation owns rejection
 as a text operation.
 
-[`cases.json`](cases.json) records literal future runtime expectations, including
+[`cases.json`](cases.json) records literal runtime expectations, including
 empty, full, interior, binary, Unicode, invalid-range, and U64-limit inputs.
-They are not claimed to have executed. The file is a conformance specification, never
+They were not executed by the public compiler witnesses below. The file is a conformance specification, never
 an executable lawpack input or a substitute for the retained 40-case rope
 oracle.
 
@@ -90,15 +90,32 @@ assertion passed with `JIM_LEAF_SLICE_PACKAGE_BOUNDARY_CONFIRMED` and reproduced
 identical package/report bytes for all three sources. The original source RED
 and both positive controls are preserved.
 
-No evaluator was invoked. In particular, none of the twelve literal cases has
-executed, and the accepted report does not establish the runtime primitive's
-availability, metering, refusals, or rope behavior. Those require a fresh
-generic evaluator witness using the exact retained package.
+No evaluator was invoked during these public-build runs. The accepted report
+does not establish runtime availability, metering, refusals, or rope behavior.
+The separate runtime witness below covers the byte primitive.
 
 The frozen `edict/replace-range/` application, lawpack closure, producer pins,
 and artifact locks remain authoritative for the existing pure-boundary witness.
 This development source imports the same published lawpack in an isolated copy.
 It does not repin or regenerate that application.
+
+## Separate generic runtime witness
+
+[Echo PR #746](https://github.com/flyingrobots/echo/pull/746) at
+`bf11732478067e43dda400bab94aa0f6d186b614` consumes the exact retained package
+and report. Its evaluator RED failed on the first interior slice with
+`UnsupportedProgram`. Generic `core.bytes.slice` support then passed all twelve
+literal cases, plus malformed-artifact and exact-budget controls. A test-only
+application-name renaming control preserves outputs and costs; no Jim name
+selects runtime behavior. Those mutated test controls are not new compiler or
+verifier artifacts.
+
+The runtime change passed 40 relevant integration tests, four evaluator unit
+tests, strict Clippy/formatting, and 187 routing assertions in guarded Docker.
+[The exact test source](https://github.com/flyingrobots/echo/blob/bf11732478067e43dda400bab94aa0f6d186b614/crates/warp-core/tests/edict_byte_slice_tests.rs)
+retains literal outputs and bounds. This establishes that generic primitive on
+the named candidate; it does not migrate Jim's frozen evaluator pin, complete
+rope traversal, or admit an edit with Tick/WAL/receipt/recovery evidence.
 
 ## Reproduction discipline
 
@@ -139,6 +156,6 @@ Keep the provider unchanged: its manifest SHA-256 is
 `c5b9fb2fe3a0dc4dad282621a97413225c555be0071f3502b3272952069d42dc`.
 The runner records its actual hash and refuses mutation during the run.
 
-The public source RED and candidate package construction are established.
-Generic execution of the literal cases and complete rope acceptance remain
-separate gates.
+The public source RED, candidate package construction, and separately named
+generic runtime witness are established. Complete rope acceptance and an
+explicit consumer migration remain separate gates.
