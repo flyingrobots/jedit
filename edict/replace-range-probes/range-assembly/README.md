@@ -68,6 +68,47 @@ The unchanged published lawpack provides the profile and budget. The frozen
 application root, producer pins, closure, and artifact locks are authoritative
 for their existing witness and are not migrated by this development source.
 
+## Candidate package boundary
+
+The unchanged authored source and all three controls also built with
+[Edict's bounded-byte concatenation candidate](https://github.com/flyingrobots/edict/issues/222)
+`01dc5abb9a8a74f8fd8b0e0a6d1041d0adb86d6e`. The
+[retained public result](evidence/candidate/public-build.json) records exit 0,
+no diagnostics, and an executable package plus separate verification report
+for each source. This advances the source/compiler/package boundary; it does
+not execute byte concatenation or any of the twelve runtime expectations.
+
+The candidate's 449 tracked source files and Git identity were verified before
+and after the builds against the [original SHA-256 manifest](evidence/candidate/compiler-source-sha256.json).
+Its tree is `74e571125a1da6ac5b2eac80944e343811708d51`; CLI SHA-256 is
+`e2700698829b03f437c66425ed9878b002ef7a34ac183a39bac4eaf6a758cc6d`.
+The [portable Git-blob manifest](evidence/candidate/compiler-source.json)
+derives from the same exact commit and was checked against that original
+manifest. The frozen provider manifest remains `c5b9fb2fe3a0dc4dad282621a97413225c555be0071f3502b3272952069d42dc`.
+
+Exact assembly artifacts are retained unchanged:
+
+- [Executable package](evidence/candidate/assembly/application/executable-operation-package.cbor):
+  SHA-256 `e889d4680435139fe76f45762f0529c090afcf3d73ef7d17f787d44a49bda534`.
+- [Verification report](evidence/candidate/assembly/application/verification-report.cbor):
+  SHA-256 `7eec90854e0663aa2346ec5005ff7d05eeb50fc2229b32b407dda3cfa0280077`.
+
+The candidate directory also retains each control's package/report, all raw
+compiler streams, the [guard output](evidence/candidate/guard.log),
+[completion measurements](evidence/candidate/guard.result.json), and the
+unchanged admission/release event records. The original RED above is preserved.
+The application manifest, producer pins, source closure, and artifact locks remain unchanged.
+The [portable runner replay](evidence/candidate/portable-public-build.json)
+reproduced all four complete public result records, including identical source,
+stream, package and report hashes. Its [guard log](evidence/candidate/portable-guard.log)
+ends with `JIM_RANGE_ASSEMBLY_PACKAGE_BOUNDARY_CONFIRMED`; the
+[completion receipt](evidence/candidate/portable-guard.result.json) records exit 0.
+This checks the checked-in harness's package mode without replacing the
+original observational replay.
+
+Full traversal, no-op classification, rope consequences and admitted execution
+remain open under #296.
+
 ## Reproduction discipline
 
 Use copied inputs, the existing compiler and frozen provider package, the
@@ -77,7 +118,7 @@ compiler source and binary identities before a build. Keep generated apps,
 artifacts, and streams under the owned bounded runtime-data directory. Do not
 use historical build-in-image recipes or create another image, worker, or
 cache. The twelve runtime expectations require separate generic evaluator
-execution after an actual public build succeeds.
+execution of the successfully built candidate package.
 
 Copy both this directory and the unchanged sibling `leaf-slice/run.py`; the
 runner reuses that file's public-build and identity helpers. Provide the frozen
@@ -94,8 +135,15 @@ python3 "$PROBE_ROOT/range-assembly/run.py" \
   --work-root /tmp/echo-726-runtime/jim-range-assembly-proof
 ```
 
+The default `--boundary source` preserves the original RED assertion and its
+compiler identity. To reproduce the candidate package witness, use the exact
+candidate compiler binary/source, add `--boundary package`, and select
+`evidence/candidate/compiler-source.json` as the compiler manifest. Both modes
+retain the same source and controls; package mode requires the actual package
+and separate report without claiming runtime support.
+
 The source manifest is read-only provenance, not executable compiler input.
 Use a fresh work-root; retain unique evidence and recycle only owned disposable
 copies after export. The runner's stream-size check does not replace the external
-disk/process guard. The retained result is a compiler refusal witness, not
+disk/process guard. The retained results establish their named compiler boundaries, not
 byte-concatenation runtime support or complete `ReplaceRange` behavior.

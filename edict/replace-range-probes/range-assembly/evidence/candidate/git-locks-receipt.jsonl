@@ -1,0 +1,2 @@
+{"event":"claimed","job":"80747C0A-6071-48B4-AD6C-A901D092CD12","holder":"jim-edict-authoring","note":"Jim RangeAssembly exact source candidate compiler public replay","claimed":1791162935,"expires":1791163835,"paths":["host/docker/echo-read-runtime/","host/heavy-work"],"record":"09627a715eea26c0ac88988e4b6d392ac4492232","acquisition":"1791162935-84725-3066529233"}
+{"event":"released","job":"80747C0A-6071-48B4-AD6C-A901D092CD12","paths":2}

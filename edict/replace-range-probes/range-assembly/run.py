@@ -7,6 +7,7 @@ import runpy
 
 
 COMPILER_COMMIT = "ac836e5c42a5c47b0dab30cfb0b09848cca73215"
+CANDIDATE_COMPILER_COMMIT = "01dc5abb9a8a74f8fd8b0e0a6d1041d0adb86d6e"
 SOURCE_EXPRESSION = b"input.firstFragment + input.secondFragment"
 
 
@@ -15,6 +16,7 @@ def main():
     for name in ("compiler", "compiler-source", "compiler-manifest", "application-source",
                  "provider-package", "work-root"):
         parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--boundary", choices=("source", "package"), default="source")
     args = parser.parse_args()
     if not Path("/.dockerenv").is_file():
         raise RuntimeError("Run only under shared git-locks admission and the guarded Docker lease")
@@ -25,7 +27,8 @@ def main():
     sha256, snapshot = common["sha256"], common["snapshot"]
     verify = common["verify_compiler_source"]
     args.work_root.mkdir()
-    compiler = verify(args.compiler_source, args.compiler_manifest, COMPILER_COMMIT)
+    expected_commit = COMPILER_COMMIT if args.boundary == "source" else CANDIDATE_COMPILER_COMMIT
+    compiler = verify(args.compiler_source, args.compiler_manifest, expected_commit)
     compiler["binarySha256"] = sha256(args.compiler)
     before = {"application": snapshot(args.application_source),
               "provider": snapshot(args.provider_package)}
@@ -53,12 +56,18 @@ def main():
         raise RuntimeError("Witness changed an authoritative input")
     if compiler["binarySha256"] != sha256(args.compiler):
         raise RuntimeError("Compiler binary changed during witness")
-    verify(args.compiler_source, args.compiler_manifest, COMPILER_COMMIT)
+    verify(args.compiler_source, args.compiler_manifest, expected_commit)
     for name in ("baseline", "first-control", "second-control"):
         result = evidence["results"][name]
         if result["exitCode"] != 0 or result["diagnostics"] or not result["artifacts"]:
             raise RuntimeError(f"{name} positive control did not build")
     result = evidence["results"]["assembly"]
+    if args.boundary == "package":
+        if (result["exitCode"] != 0 or result["diagnostics"]
+                or result["artifacts"] != ["executable-operation-package.cbor", "verification-report.cbor"]):
+            raise RuntimeError("Assembly did not reach the expected package build boundary")
+        print("JIM_RANGE_ASSEMBLY_PACKAGE_BOUNDARY_CONFIRMED", flush=True)
+        return
     if result["exitCode"] != 2 or result["artifacts"]:
         raise RuntimeError("Assembly must refuse without application artifacts")
     refusal = result["diagnostics"]
