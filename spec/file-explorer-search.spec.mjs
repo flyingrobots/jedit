@@ -22,11 +22,10 @@ async function setup(options = {}) {
   deps.initialModel.i18n = new BijouI18nAdapter().withLocale(options.locale ?? 'en');
   deps.initialModel.jeditTheme = availableJeditThemes()[0];
   const runtime = createWorkspaceRuntime(deps);
-  const { openWorkspaceFileEntry } = await importDist('app', 'workspace', 'file-tree.js');
-  deps.openEntry = (model, entry) => openWorkspaceFileEntry(model, entry, deps.nowMs, deps);
   const initial = { ...runtime.init()[0], cwd: '/repo/src', startupIntroComplete: true };
   const [opened] = runtime.update(key('b', { ctrl: true }), initial);
-  return { runtime, initial, model: { ...opened, fileDrawerProgress: 1 } };
+  const focused = options.navigation ? opened : runtime.update(key('/'), opened)[0];
+  return { runtime, initial, model: { ...focused, fileDrawerProgress: 1 } };
 }
 
 function type(runtime, model, input) {
@@ -45,7 +44,7 @@ async function drawer(model, width = 32, height = 12) {
   return renderDrawer('files', model, width, height);
 }
 
-test('Ctrl+B focuses a sticky search input with a visible caret', async () => {
+test('slash focuses a sticky search input with a visible caret', async () => {
   const { model } = await setup();
   assert.equal(model.focusPane, 'files');
   assert.deepEqual(model.fileSearch, { input: '', cursorIndex: 0 });
@@ -104,13 +103,15 @@ test('arrows select visible matches and Enter opens the displayed file, includin
   assert.equal(next.selectedIndex, 3);
   next = runtime.update(key('down'), next)[0];
   assert.equal(next.selectedIndex, 4);
+  next = runtime.update(key('escape'), next)[0];
   const [opening, commands] = runtime.update(key('enter'), next);
   assert.equal(opening.textAuthority.filePath, '/repo/src/render-tree.ts');
   assert.equal(commands.length, 1);
   const empty = type(runtime, model, 'not-a-match');
   assert.match(text(await drawer(empty)), /No matches/);
   const [unchanged, none] = runtime.update(key('enter'), empty);
-  assert.equal(unchanged, empty);
+  assert.equal(unchanged.textAuthority, empty.textAuthority);
+  assert.equal(unchanged.selectedIndex, -1);
   assert.deepEqual(none, []);
 });
 
@@ -132,7 +133,8 @@ test('filtered result clicks and wheel selection use the pinned-header geometry'
   const { runtime, model } = await setup();
   const filtered = type(runtime, model, '.ts');
   const [clicked] = runtime.update({ type: 'mouse', action: 'press', button: 'left', col: 5, row: 6 }, filtered);
-  assert.equal(clicked.textAuthority.filePath, '/repo/src/render-tree.ts');
+  assert.equal(clicked.selectedIndex, 4);
+  assert.equal(clicked.textAuthority, model.textAuthority);
   const [wheeled] = runtime.update({ type: 'mouse', action: 'scroll-down', button: 'none', col: 5, row: 8 }, filtered);
   assert.equal(wheeled.selectedIndex, 4);
   const [inputClick, commands] = runtime.update({ type: 'mouse', action: 'press', button: 'left', col: 10, row: 3 }, {
@@ -150,7 +152,7 @@ test('close/reopen retains the query, directory changes clear it, and failed cha
     describeDirectoryIssue: () => ({ title: 'Directory failed', message: 'unreadable' }),
   } } });
   let next = type(runtime, model, 'rnt');
-  next = runtime.update(key('escape'), next)[0];
+  next = runtime.update(key('b', { ctrl: true }), next)[0];
   assert.equal(next.fileDrawerOpen, false);
   next = runtime.update(key('b', { ctrl: true }), next)[0];
   assert.equal(next.focusPane, 'files');
@@ -159,7 +161,7 @@ test('close/reopen retains the query, directory changes clear it, and failed cha
   assert.equal(next.cwd, '/repo');
   assert.equal(next.fileSearch.input, '');
   const failed = type(runtime, model, 'components');
-  const [after] = runtime.update(key('enter'), failed);
+  const [after] = runtime.update(key('enter'), runtime.update(key('escape'), failed)[0]);
   assert.equal(after.cwd, '/repo/src');
   assert.equal(after.fileSearch.input, 'components');
   assert.equal(after.entries, model.entries);
@@ -209,19 +211,20 @@ test('localized labels fit narrow fields and wide-character clicks use display c
 });
 
 test('the input has a distinct background and only fuzzy-matched letters receive the accent', async () => {
-  const { runtime, model } = await setup({ entries: [ENTRIES[4]] });
+  const { runtime, model } = await setup({ entries: [ENTRIES[4], { ...ENTRIES[4], name: 'render-test.ts', path: '/repo/src/render-test.ts' }] });
   const filtered = type(runtime, model, 'rnt');
   const surface = await drawer(filtered);
   assert.notEqual(surface.get(2, 1).bg, surface.get(2, 3).bg);
   assert.equal(surface.get(2, 1).bg, model.jeditTheme.surface.currentLine.bg);
   for (const x of [3, 5, 10]) {
-    assert.equal(surface.get(x, 3).fg, model.jeditTheme.chrome.activeEdge.fg);
+    assert.equal(surface.get(x, 3).fg, surface.get(4, 3).fg);
+    assert.equal(surface.get(x, 4).fg, model.jeditTheme.chrome.activeEdge.fg);
     assert.ok(surface.get(x, 3).modifiers.includes('bold'));
   }
-  assert.equal(surface.get(4, 3).fg, model.jeditTheme.surface.drawer.fg);
+  assert.equal(surface.get(4, 4).fg, model.jeditTheme.surface.drawer.fg);
   const cleared = runtime.update(key('u', { ctrl: true }), filtered)[0];
   const plain = await drawer(cleared);
-  assert.equal(plain.get(3, 3).fg, model.jeditTheme.surface.drawer.fg);
+  assert.equal(plain.get(3, 4).fg, model.jeditTheme.surface.drawer.fg);
 });
 
 test('the input background remains distinct across built-in dark and light themes', async () => {
@@ -230,5 +233,66 @@ test('the input background remains distinct across built-in dark and light theme
   for (const theme of availableJeditThemes().flatMap((theme) => [theme, oppositeJeditTheme(theme)])) {
     const surface = await drawer({ ...model, jeditTheme: theme });
     assert.notEqual(surface.get(2, 1).bg, surface.get(2, 3).bg, theme.name);
+  }
+});
+
+ test('Files opens in navigation mode, slash edits, and Escape returns to navigation before closing', async () => {
+  const { runtime, model } = await setup({ navigation: true });
+  assert.equal(model.fileSearchEditing, false);
+  let next = runtime.update(key('j'), model)[0];
+  assert.equal(next.selectedIndex, 1);
+  assert.equal(next.fileSearch.input, '');
+  next = runtime.update(key('k'), next)[0];
+  assert.equal(next.selectedIndex, 0);
+  next = runtime.update(key('/'), next)[0];
+  assert.equal(next.fileSearchEditing, true);
+  next = type(runtime, next, '.ts');
+  next = runtime.update(key('escape'), next)[0];
+  assert.equal(next.fileDrawerOpen, true);
+  assert.equal(next.fileSearchEditing, false);
+  assert.equal(next.fileSearch.input, '.ts');
+  next = runtime.update(key('j'), next)[0];
+  assert.equal(next.selectedIndex, 4);
+  next = runtime.update(key('escape'), next)[0];
+  assert.equal(next.fileDrawerOpen, false);
+});
+
+ test('mouse hover is separate from selection and clicking selects without opening', async () => {
+  const { runtime, model } = await setup({ navigation: true });
+  const [hover, commands] = runtime.update({ type: 'mouse', action: 'move', button: 'none', col: 5, row: 7 }, model);
+  assert.equal(hover.fileHoveredIndex, 2);
+  assert.equal(hover.selectedIndex, 0);
+  assert.deepEqual(commands, []);
+  const surface = await drawer(hover);
+  assert.notEqual(surface.get(2, 3).bg, surface.get(2, 5).bg);
+  const [selected] = runtime.update({ type: 'mouse', action: 'press', button: 'left', col: 5, row: 7 }, hover);
+  assert.equal(selected.selectedIndex, 2);
+  assert.equal(selected.focusPane, 'files');
+  assert.equal(selected.textAuthority, model.textAuthority);
+  const [outside] = runtime.update({ type: 'mouse', action: 'move', button: 'none', col: 80, row: 7 }, selected);
+  assert.equal(outside.fileHoveredIndex, undefined);
+});
+
+ test('portable paths from the filesystem boundary exclude drive and workspace text from filtering', async () => {
+  const { portableFileSearchPath } = await importDist('adapters', 'filesystem.js');
+  const { runtime, model } = await setup({ entries: [{
+    kind: 'file', name: 'index.ts', path: 'C:\\repo\\src\\index.ts',
+    searchPath: portableFileSearchPath('C:\\repo\\src\\index.ts'),
+  }] });
+  const initial = { ...model, workspaceRoot: 'C:\\repo', workspaceSearchRoot: portableFileSearchPath('C:\\repo') };
+  assert.equal(type(runtime, initial, 'src/index').selectedIndex, 0);
+  assert.equal(type(runtime, initial, 'repo').selectedIndex, -1);
+});
+
+ test('selected rows remain readable and distinct from hover across dark and light themes', async () => {
+  const { availableJeditThemes, oppositeJeditTheme } = await importDist('ui', 'jedit-themes.js');
+  const { contrastRatio } = await importDist('ui', 'theme-contrast.js');
+  const { model } = await setup({ navigation: true });
+  for (const theme of availableJeditThemes().flatMap((theme) => [theme, oppositeJeditTheme(theme)])) {
+    const surface = await drawer({ ...model, jeditTheme: theme, selectedIndex: 1, fileHoveredIndex: 2 });
+    const selected = surface.get(3, 4);
+    const hovered = surface.get(3, 5);
+    assert.notEqual(selected.bg, hovered.bg, theme.name);
+    assert.ok(contrastRatio(selected.fgRGB, selected.bgRGB) >= 4.45, theme.name);
   }
 });

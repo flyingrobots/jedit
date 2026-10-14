@@ -21,6 +21,7 @@ import type {
 } from "./command-completion-preview.js";
 import type { WorkspaceInlinePanel } from "./workspace-inline-panel.js";
 import type { WorkspaceCausalGutterBasis } from "./workspace-causal-gutter-basis.js";
+import type { FileExplorerPreview } from './file-explorer-preview.js';
 import type { FileSearchState } from './file-search.js';
 
 export interface WorkspaceModel
@@ -28,10 +29,15 @@ export interface WorkspaceModel
     WorkspaceCommandLineFilePreviewState {
   readonly i18n: I18nPort;
   readonly workspaceRoot: string;
+  readonly workspaceSearchRoot?: string;
   readonly cwd: string;
   readonly entries: readonly FileEntry[];
   readonly selectedIndex: number;
   readonly fileSearch: FileSearchState;
+  readonly fileSearchEditing: boolean;
+  readonly fileHoveredIndex?: number;
+  readonly fileExplorerPreview?: FileExplorerPreview;
+  readonly fileExplorerPreviewRequestId: number;
   readonly editor?: EditorState;
   readonly buffers: WorkspaceBufferRegistry;
   readonly activeBufferId?: string;

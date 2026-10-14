@@ -18,7 +18,8 @@ updated: "2026-10-14"
 
 ## Decision Summary
 
-Give the Files drawer a sticky, focused search field and live fuzzy filtering
+Give the Files drawer modal navigation, a sticky editable search field, pointer
+hover/selection, read-only file previews, and live fuzzy filtering
 of the directory entries already loaded by the workspace. The query is a
 session-only UI projection; there is no persistent index, SQLite, recursive
 scan, semantic retrieval, or symbol extraction in this cycle.
@@ -35,9 +36,9 @@ projection for painting, navigation, opening, and pointer hit-testing.
 
 ## Hill
 
-Ctrl+B opens the drawer with a visible caret in its pinned input. Typing updates
-the displayed results immediately. Arrows select a visible match and Enter
-opens exactly that match through the existing file-open path.
+Ctrl+B opens navigation; / enters the pinned filter. j/k, arrows, and clicks
+select results and show read-only previews without replacing the active buffer.
+Enter opens exactly the selected match through the existing file-open path.
 
 ## Current Truth
 
@@ -131,11 +132,13 @@ terminal geometry remains unchanged.
 
 ## Runtime / API Contract
 
-`WorkspaceModel.fileSearch` holds input and cursor coordinates. A pure selector
+`WorkspaceModel.fileSearch` holds input and cursor coordinates;
+`fileSearchEditing` declares filter mode and `fileHoveredIndex` is independent
+of selection. `fileExplorerPreview` carries a selected entry and request id. A pure selector
 returns visible entries with their source indexes; `selectedIndex` retains the
 loaded-entry index so existing file-opening identity is preserved. Query changes
 select the first match or no selection. All filtered actions use that selector.
-The input handler runs before plain global shortcuts when Files owns focus;
+The input handler runs before plain global shortcuts only in filter mode;
 Ctrl+C, close, pane switching, and Settings retain their existing routes.
 
 ## Lower Modes
@@ -149,11 +152,11 @@ existing file-system feedback and preserve the prior query/list.
 
 | Category | Description |
 | --- | --- |
-| Source of truth | Existing loaded FileEntry list and session query/caret. |
+| Source of truth | Loaded FileEntry list, session mode/query/caret, selected entry, and bounded preview observation. |
 | Derived state | Filtered entries, selection position, text window, list scroll offset. |
 | Invalid states | Controls in query; opening an entry excluded by the current query. |
 | Reset behavior | Successful directory change clears query; closing preserves it. |
-| Persistence | None. A restart begins with an empty query. |
+| Persistence | None. A restart begins with an empty query and navigation mode. |
 | Causal boundary | Disposable presentation over loaded file-system entries; no authoritative index or text mutation. |
 
 ## Accessibility Posture
@@ -161,7 +164,9 @@ existing file-system feedback and preserve the prior query/list.
 Input focus stays on Files during arrow selection. Opening a file returns focus
 to the existing editor/open path. Closing uses the existing pane restoration.
 Empty results are readable rather than silent. Search is scoped to the loaded
-directory, so it does not claim a complete workspace inventory.
+directory, so it does not claim a complete workspace inventory. Hover has a
+quiet background; selection has an accent background with contrast-adjusted
+text. Existing theme variants keep them distinct.
 
 ## Localization / Directionality Posture
 
@@ -201,9 +206,9 @@ workspace-wide and symbol search separate.
 - [x] Slice 1: Input state, fuzzy projection, and keyboard/open behavior.
 - [x] Slice 2: Sticky input/caret rendering, pointer/wheel mapping, and localized help.
 - [x] Slice 3: Runtime/render/native-host verification and documentation.
-- [ ] Slice 4: Explicit navigation/filter modes and mode-aware help.
-- [ ] Slice 5: Pointer hover, click selection, and distinct row colors.
-- [ ] Slice 6: Bounded read-only viewer previews and stale-result rejection.
+- [x] Slice 4: Explicit navigation/filter modes and mode-aware help.
+- [x] Slice 5: Pointer hover, click selection, and distinct row colors.
+- [x] Slice 6: Bounded read-only viewer previews and stale-result rejection.
 - [ ] Slice 7: Real input boundary fixes, native verification, and refined docs.
 
 ## Tests To Write First
@@ -231,14 +236,14 @@ npm run ci:verify-shards
 
 ## Playback / Witness
 
-Ctrl+B → type partial name → Down → Enter. Repeat with no matches, clear with
+Ctrl+B → / → type partial name → Esc → j/k or click → inspect preview → Enter. Repeat with no matches, clear with
 Ctrl+U, edit in the middle, scroll a long list, and click a filtered row. Inspect
 at 100×32 and 60×16, including the real native-host file-open path.
 
 ## Risks
 
-Existing j/k/r/Backspace navigation is intentionally replaced while input owns
-focus; footer help must match. Filtering changes displayed indexes, so stale
+Existing j/k/r/Backspace navigation is preserved in navigation and becomes
+text editing only in filter mode; footer help must match. Filtering changes displayed indexes, so stale
 raw-index pointer calculations can open the wrong file. Unknown-symbol and
 workspace-inventory claims must remain outside this feature.
 

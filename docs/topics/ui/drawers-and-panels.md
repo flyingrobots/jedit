@@ -23,44 +23,57 @@ enough for detailed explanations.
 
 ## Files Drawer
 
-Open the files drawer with `Ctrl+B`. Focus moves into the sticky search input at
-its top, with a visible caret. Typing immediately fuzzy-filters the entries in
-the currently loaded directory by name or workspace-relative path. Matching is
-case-insensitive and accepts characters in order, so `rnt` can match
-`render-tree.ts`. It preserves the directory's existing order. The input has a distinct theme
-background, and the matched filename characters use the theme accent and bold
-weight.
+Open the files drawer with `Ctrl+B`. It starts in navigation mode. The sticky
+search field has a distinct background, but takes keyboard input only after `/`
+or a click on the field. Its caret appears while editing.
 
-| Key | Action |
+| Navigation key | Action |
 | --- | --- |
-| `Up` / `Down` | Select a displayed result. |
-| `Enter` | Open the selected file or directory. |
-| `Left` / `Right`, `Home` / `End` | Move the query caret. |
-| `Backspace` / `Delete` | Edit the query. |
-| `Ctrl+U` | Clear the query. |
-| `Ctrl+R` | Refresh the current directory. |
-| `Alt+Up` | Enter the parent directory. |
+| `j` / `k`, `Up` / `Down` | Select a displayed result and preview a file. |
+| `/` | Edit the filter. |
+| `Enter` / `l` | Open the selected file for editing, or enter a directory. |
+| `Backspace` / `h`, `Alt+Up` | Enter the parent directory. |
+| `r` / `Ctrl+R` | Refresh the current directory. |
 | `Ctrl+B` / `Esc` | Close the drawer. |
 | `Tab` | Cycle visible panes. |
 
-Printable keys such as `j`, `k`, `q`, and Space enter the query while the field
-has focus. The input stays pinned as results scroll. Clicking the input places
-the caret; clicking a result opens that result. No matches displays an explicit
-message and cannot open an excluded file.
+| Filter key | Action |
+| --- | --- |
+| Printable characters | Fuzzy-filter loaded entries as you type. |
+| `Left` / `Right`, `Home` / `End` | Move the query caret. |
+| `Backspace` / `Delete` | Edit the query. |
+| `Ctrl+U` | Clear the query. |
+| `Esc` / `Enter` | Return to navigation and retain the query. |
+| `Up` / `Down` | Select a displayed result. |
+| `Ctrl+B` | Close the drawer. |
 
-Closing and reopening preserves the session query. Entering another directory
-clears it. Refreshing preserves it; a failed directory change preserves the
-previous query and entries. A restart starts with an empty query.
+Matching is case-insensitive and accepts characters in order, so `rnt` can match
+`render-tree.ts`. It preserves the directory's existing order. Matched filename
+characters use accent color and bold weight; the selected row keeps a readable
+foreground against its accent background. Empty results cannot open a hidden
+file. Closing and reopening preserves the session query and starts in navigation.
+Entering another directory clears it; refreshing preserves it. A restart starts
+with an empty query.
 
-This search covers loaded directory entries. Workspace-wide discovery, semantic
-retrieval, and Graft symbol search are deferred to
-[issue #341](https://github.com/flyingrobots/jedit/issues/341). It creates no
-SQLite database or persistent search index. The transient projection boundary
-is recorded in [component ownership](../../jim-component-ownership.md).
+Mouse motion highlights the row under the cursor without selecting it or reading
+a preview. Hover and selection have distinct backgrounds. A click selects the
+row and leaves focus in Files. Selecting a file, by keyboard, click, wheel, or
+filter change, shows a labelled read-only preview in the main viewer. Enter opens
+it through the native Echo text-import path and focuses the editor. A directory
+click selects it; Enter enters it.
 
-The files drawer is for browsing workspace entries. It should share file-opening
-behavior with `:edit`: selecting a file opens it, and selecting a directory
-enters that directory.
+Previewing preserves the active buffer, including unsaved edits. Existing buffer
+projections supply their current text; other files are read at most 64 KiB and
+200 lines. Binary, unavailable, loading, and truncated previews are labelled.
+Late results cannot replace the current selection's preview. Closing or leaving
+Files restores the existing editor. Previews create no Echo buffers and have no
+save action or persistent cache. The projection boundary is recorded in
+[component ownership](../../jim-component-ownership.md).
+
+Search covers currently loaded directory entries. Workspace-wide discovery,
+semantic retrieval, and Graft symbols are deferred to
+[issue #341](https://github.com/flyingrobots/jedit/issues/341). No SQLite database
+or persistent index is created.
 
 ## Graft Drawer
 
@@ -100,4 +113,6 @@ replaces the explanation.
 | [`src/ui/graft-drawer.ts`](../../../src/ui/graft-drawer.ts) | Graft drawer rendering. |
 | [`src/ui/graft-diagnostics-panel.ts`](../../../src/ui/graft-diagnostics-panel.ts) | Diagnostics panel rendering. |
 | [`src/ui/why-inline-panel.ts`](../../../src/ui/why-inline-panel.ts) | Inline why explanation rendering. |
+| [`src/app/workspace/file-explorer-preview.ts`](../../../src/app/workspace/file-explorer-preview.ts) | Selected-file preview lifecycle and stale-result protection. |
+| [`src/adapters/file-preview.ts`](../../../src/adapters/file-preview.ts) | Bounded filesystem preview reads. |
 | [`src/app/workspace/file-tree.ts`](../../../src/app/workspace/file-tree.ts) | File tree state and entry behavior. |

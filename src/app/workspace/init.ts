@@ -27,6 +27,7 @@ export interface WorkspaceInitialModelSnapshot {
   readonly i18n: I18nPort;
   readonly entries: readonly FileEntry[];
   readonly nowMs: number;
+  readonly searchRoot?: string;
 }
 
 export function createInitialModel(
@@ -40,10 +41,13 @@ export function createInitialModel(
   return {
     i18n,
     workspaceRoot: cwd,
+    workspaceSearchRoot: snapshot.searchRoot,
     cwd,
     entries,
     selectedIndex: 0,
     fileSearch: EMPTY_FILE_SEARCH,
+    fileSearchEditing: false,
+    fileExplorerPreviewRequestId: 0,
     editor: undefined,
     ...initialBufferRegistryState(),
     textRuntimeProfile,

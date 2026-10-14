@@ -49,6 +49,8 @@ function paintFileSearchResults(surface: Surface, model: WorkspaceModel, width: 
     }));
   const content = stringToSurface(fitBlock(lines.join('\n'), width, height), width, height);
   applyBackground(content, model.jeditTheme.surface.drawer);
-  highlightFileSearchMatches(content, entries.slice(offset, offset + height), model.jeditTheme);
+  highlightFileSearchMatches(content, entries.slice(offset, offset + height), model.jeditTheme, {
+    selectedIndex: model.selectedIndex, hoveredIndex: model.fileHoveredIndex,
+  });
   surface.blit(content, DRAWER_INNER_PAD, FILE_SEARCH_LIST_TOP);
 }

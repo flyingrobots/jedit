@@ -1,11 +1,11 @@
 import type { Cmd, KeyMsg } from '@flyingrobots/bijou-tui';
-import { fileSearchHasFocus, fileSearchState, fileSearchWithInput, EMPTY_FILE_SEARCH, type FileSearchState } from './file-search.js';
+import { fileSearchHasFocus, fileExplorerHasFocus, fileSearchState, fileSearchWithInput, EMPTY_FILE_SEARCH, type FileSearchState } from './file-search.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
 
 const KEYS = Object.freeze({
   Left: 'left', Right: 'right', Home: 'home', End: 'end', Backspace: 'backspace', Delete: 'delete',
-  Space: 'space', Clear: 'u',
+  Space: 'space', Clear: 'u', Filter: '/', Escape: 'escape', Enter: 'enter',
 });
 const LITERAL_SPACE = ' ';
 const SINGLE_KEY_LENGTH = 1;
@@ -26,6 +26,9 @@ export function updateFileSearchInputKey(
   msg: KeyMsg,
   model: WorkspaceModel,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] | undefined {
+  if (!fileExplorerHasFocus(model)) return undefined;
+  const mode = updateFilterMode(msg, model);
+  if (mode != null) return mode;
   if (!fileSearchHasFocus(model)) return undefined;
   const state = fileSearchState(model);
   const next = editFromKey(msg, state);
@@ -75,4 +78,14 @@ function deleteAtCursor(state: FileSearchState): FileSearchState {
   const characters = Array.from(state.input);
   characters.splice(state.cursorIndex, FORWARD_STEP);
   return { input: characters.join(''), cursorIndex: state.cursorIndex };
+}
+
+function updateFilterMode(msg: KeyMsg, model: WorkspaceModel): [WorkspaceModel, Cmd<WorkspaceMsg>[]] | undefined {
+  if (msg.ctrl || msg.alt) return undefined;
+  if (!model.fileSearchEditing) {
+    return msg.key === KEYS.Filter ? [{ ...model, fileSearchEditing: true }, []] : undefined;
+  }
+  return msg.key === KEYS.Escape || msg.key === KEYS.Enter
+    ? [{ ...model, fileSearchEditing: false }, []]
+    : undefined;
 }

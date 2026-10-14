@@ -24,17 +24,21 @@ export function fileSearchState(model: Pick<WorkspaceModel, 'fileSearch'>): File
   return model.fileSearch ?? EMPTY_FILE_SEARCH;
 }
 
-export function fileSearchHasFocus(model: WorkspaceModel): boolean {
+export function fileExplorerHasFocus(model: WorkspaceModel): boolean {
   return model.fileDrawerOpen && model.focusPane === FocusPanes.Files &&
     !model.settingsOpen && !model.quitConfirmOpen && !model.startupFileModalOpen && !model.commandLine?.active;
 }
 
-export function fileSearchEntries(model: Pick<WorkspaceModel, 'entries' | 'workspaceRoot' | 'fileSearch'>): readonly FileSearchEntry[] {
+export function fileSearchHasFocus(model: WorkspaceModel): boolean {
+  return fileExplorerHasFocus(model) && model.fileSearchEditing === true;
+}
+
+export function fileSearchEntries(model: Pick<WorkspaceModel, 'entries' | 'workspaceRoot' | 'workspaceSearchRoot' | 'fileSearch'>): readonly FileSearchEntry[] {
   const query = fileSearchState(model).input.toLowerCase();
   return model.entries.flatMap((entry, index) => {
     if (query.length === 0) return [{ entry, index, matchIndexes: [] }];
     if (entry.kind === FileEntryKinds.Parent) return [];
-    const path = fuzzyPathMatches(entry.name, query) != null ? entry.name : relativeFilePath(model.workspaceRoot, entry);
+    const path = fuzzyPathMatches(entry.name, query) != null ? entry.name : relativeFilePath(model.workspaceSearchRoot ?? model.workspaceRoot, entry);
     const matches = fuzzyPathMatches(path, query);
     if (matches == null) return [];
     const nameStart = Array.from(path).length - Array.from(entry.name).length;
@@ -44,7 +48,7 @@ export function fileSearchEntries(model: Pick<WorkspaceModel, 'entries' | 'works
 
 function relativeFilePath(root: string, entry: FileEntry): string {
   const prefix = root?.endsWith(PATH_SEPARATOR) ? root : `${root ?? ''}${PATH_SEPARATOR}`;
-  const path = entry.path ?? entry.name;
+  const path = entry.searchPath ?? entry.path ?? entry.name;
   return path.startsWith(prefix) ? path.slice(prefix.length) : path;
 }
 
@@ -69,7 +73,7 @@ export function selectedFileSearchEntry(model: WorkspaceModel): FileEntry | unde
 }
 
 export function fileSearchWithInput(model: WorkspaceModel, search: FileSearchState): WorkspaceModel {
-  const next = { ...model, fileSearch: search };
+  const next = { ...model, fileSearch: search, fileHoveredIndex: undefined };
   return { ...next, selectedIndex: fileSearchEntries(next)[0]?.index ?? NO_SELECTION };
 }
 
@@ -78,7 +82,7 @@ export function moveFileSearchSelection(model: WorkspaceModel, delta: number): W
   if (entries.length === 0) return model;
   const position = entries.findIndex(({ index }) => index === model.selectedIndex);
   const next = entries[wrapIndex(position + delta, entries.length)];
-  return next == null ? model : { ...model, selectedIndex: next.index };
+  return next == null ? model : { ...model, selectedIndex: next.index, fileHoveredIndex: undefined };
 }
 
 export function scrollFileSearchSelection(model: WorkspaceModel, delta: number): WorkspaceModel {
@@ -86,5 +90,5 @@ export function scrollFileSearchSelection(model: WorkspaceModel, delta: number):
   if (entries.length === 0) return model;
   const position = entries.findIndex(({ index }) => index === model.selectedIndex);
   const next = entries[scrollIndexByRows(position, entries.length, delta)];
-  return next == null ? model : { ...model, selectedIndex: next.index };
+  return next == null ? model : { ...model, selectedIndex: next.index, fileHoveredIndex: undefined };
 }

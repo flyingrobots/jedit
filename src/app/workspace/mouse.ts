@@ -23,37 +23,27 @@ import {
 } from './viewport.js';
 import { FocusPanes } from '../../ui/panel-focus.js';
 import { beginWorkspaceSourceHighlightRefresh } from './workspace-source-highlight.js';
-import { fileSearchEntries, fileSearchState, scrollFileSearchSelection, selectedFileSearchEntry } from './file-search.js';
+import { fileSearchEntries, fileSearchState, scrollFileSearchSelection } from './file-search.js';
 import { fileSearchCursorAtColumn } from '../../ui/file-search-input.js';
 import { fileSearchInputOptions } from './file-explorer-view.js';
 
 const DRAWER_PAD_MULTIPLIER = 2;
 const MOUSE_PRESS = 'press';
+const MOUSE_MOVE = 'move';
 const MOUSE_BUTTON_LEFT = 'left';
-
-// Opening on click needs the filesystem and Echo dependencies the pointer path
-// does not otherwise carry. Injecting a named opener keeps that dependency
-// explicit and lets the selection-only behaviour stand on its own when the
-// caller has nothing to open with.
-export interface WorkspaceEntryOpener {
-  readonly nowMs: () => number;
-  readonly openEntry: (
-    model: WorkspaceModel,
-    entry: NonNullable<WorkspaceModel['entries'][number]>,
-  ) => [WorkspaceModel, Cmd<WorkspaceMsg>[]];
-}
 
 export function updateFromMouse(
   msg: MouseMsg,
   model: WorkspaceModel,
   sourceHighlighter: SourceHighlighter,
-  opener?: WorkspaceEntryOpener,
 ): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
+  const hover = updateFileDrawerHover(msg, model);
+  if (hover != null) return [hover, []];
   const input = updateFileSearchFromClick(msg, model);
   if (input != null) return [input, []];
   const clicked = updateFileDrawerFromClick(msg, model);
   if (clicked != null) {
-    return openClickedEntry(clicked, opener);
+    return [clicked, []];
   }
   const deltaRows = mouseScrollDeltaRows(msg);
   if (deltaRows === 0) {
@@ -66,10 +56,10 @@ export function updateFromMouse(
   return updateEditorFromMouse(model, deltaRows, sourceHighlighter);
 }
 
-// Row and column map onto the list the renderer drew: the drawer is blitted at
+// Row and column map onto the pinned list the renderer drew: the drawer is blitted at
 // (layout.fileDrawer.x, WORKSPACE_BODY_TOP_OFFSET) and its content is inset by
-// DRAWER_INNER_PAD. Entry index equals line index because the list does not
-// scroll -- long directories are truncated rather than paged today.
+// DRAWER_INNER_PAD. Filtered positions map through the scroll offset back to
+// original entry indexes.
 function updateFileDrawerFromClick(
   msg: MouseMsg,
   model: WorkspaceModel,
@@ -80,7 +70,7 @@ function updateFileDrawerFromClick(
   const index = fileDrawerEntryIndexAt(msg, model);
   return index == null
     ? undefined
-    : { ...model, focusPane: FocusPanes.Files, selectedIndex: index };
+    : { ...model, focusPane: FocusPanes.Files, selectedIndex: index, fileSearchEditing: false };
 }
 
 function fileDrawerEntryIndexAt(
@@ -119,15 +109,10 @@ function fileDrawerEntryIndexAt(
   return entries[index]?.index;
 }
 
-function openClickedEntry(
-  model: WorkspaceModel,
-  opener: WorkspaceEntryOpener | undefined,
-): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
-  const entry = selectedFileSearchEntry(model);
-  if (opener == null || entry == null) {
-    return [model, []];
-  }
-  return opener.openEntry(model, entry);
+function updateFileDrawerHover(msg: MouseMsg, model: WorkspaceModel): WorkspaceModel | undefined {
+  if (msg.action !== MOUSE_MOVE) return undefined;
+  const index = fileDrawerEntryIndexAt(msg, model);
+  return model.fileHoveredIndex === index ? model : { ...model, fileHoveredIndex: index };
 }
 
 function updateScrollableDrawerFromMouse(model: WorkspaceModel, deltaRows: number): WorkspaceModel | undefined {
@@ -162,7 +147,7 @@ function updateFileSearchFromClick(msg: MouseMsg, model: WorkspaceModel): Worksp
   const column = msg.col - layout.x - DRAWER_INNER_PAD;
   if (column < 0 || column >= innerWidth) return undefined;
   return {
-    ...model, focusPane: FocusPanes.Files,
+    ...model, focusPane: FocusPanes.Files, fileSearchEditing: true,
     fileSearch: {
       ...fileSearchState(model),
       cursorIndex: fileSearchCursorAtColumn(fileSearchInputOptions(model, innerWidth), column),

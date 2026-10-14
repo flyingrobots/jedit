@@ -1,3 +1,5 @@
+import { getDefaultContext } from '@flyingrobots/bijou';
+import { workspaceTerminalIO } from './adapters/workspace-terminal-io.js';
 import { initDefaultContext } from '@flyingrobots/bijou-node';
 import { run } from '@flyingrobots/bijou-tui';
 import { createWorkspaceApp } from './adapters/workspace-app.js';
@@ -72,7 +74,8 @@ export async function runJeditWorkspace(): Promise<void> {
       initialWorkingDirectory: DEFAULT_WORKING_DIRECTORY,
       ...workspaceInstrumentationFromEnv(process.env),
     }, productionText);
-    await run(app, { mouse: JEDIT_TERMINAL_MOUSE_OPTIONS.mouse });
+    const context = getDefaultContext();
+    await run(app, { ...JEDIT_TERMINAL_MOUSE_OPTIONS, ctx: { ...context, io: workspaceTerminalIO(context.io) } });
   });
 }
 
