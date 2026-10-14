@@ -1,3 +1,4 @@
+import type { FileExplorerPreviewMessage } from './file-explorer-preview.js';
 import type { RuntimeIssue } from "@flyingrobots/bijou-tui";
 import type { GraftDiagnosticsReport } from "../../ports/graft-diagnostics.js";
 import type { GraftInfo } from "../../ports/graft-session.js";
@@ -50,6 +51,7 @@ const WORKSPACE_INPUT_MESSAGE_KEY = "key";
 const WORKSPACE_INPUT_MESSAGE_MOUSE = "mouse";
 
 export const WorkspaceMessageTypes = Object.freeze({
+  FileExplorerPreviewResult: 'file-explorer-preview-result',
   DrawerProgress: WORKSPACE_MESSAGE_DRAWER_PROGRESS,
   GraftDiagnostics: WORKSPACE_MESSAGE_GRAFT_DIAGNOSTICS,
   GraftInfo: WORKSPACE_MESSAGE_GRAFT_INFO,
@@ -96,6 +98,7 @@ export type WorkspaceWhyRangeOutcome =
     };
 
 export type WorkspaceMsg =
+  | ({ readonly type: typeof WorkspaceMessageTypes.FileExplorerPreviewResult } & FileExplorerPreviewMessage)
   | {
       type: typeof WorkspaceMessageTypes.DrawerProgress;
       kind: DrawerKind;

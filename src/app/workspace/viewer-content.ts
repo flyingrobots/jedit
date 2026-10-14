@@ -1,3 +1,4 @@
+import { renderFileExplorerPreview } from './file-explorer-preview-view.js';
 import { createSurface, type Surface } from '@flyingrobots/bijou';
 import { paintMarkdownPreview } from '../../ui/markdown-preview.js';
 import { renderSourceViewer } from '../../ui/source-viewer.js';
@@ -27,6 +28,8 @@ export function createViewerContentRenderer(): ViewerContentRenderer {
 }
 
 export function renderViewer(model: WorkspaceModel, width: number, height: number): Surface {
+  const explorerPreview = renderFileExplorerPreview(model, width, height);
+  if (explorerPreview != null) return explorerPreview;
   const editor = displayEditorForWorkspaceModel(model);
   if (editor == null) {
     return renderJimLogoScreen(width, height, model.jeditTheme);

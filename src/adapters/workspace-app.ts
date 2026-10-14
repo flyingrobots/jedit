@@ -1,3 +1,4 @@
+import { filePreviewSource } from './file-preview.js';
 import { FileSystemPortAdapter } from './filesystem.js';
 import { createWorkspaceRuntime } from '../app/workspace/runtime.js';
 import { createRaytracerProfilerPort } from './raytracer-profiler.js';
@@ -16,8 +17,6 @@ import {
   createWorkspaceNotificationTickCmd,
   createWorkspaceTimeTickCmd,
 } from './workspace-animation-commands.js';
-import { openWorkspaceFileEntry } from '../app/workspace/file-tree.js';
-import type { WorkspaceModel } from '../app/workspace/model.js';
 
 export interface WorkspaceAppOptions {
   initialColumns: number;
@@ -54,6 +53,7 @@ function workspaceRuntimeDependencies(
   const graftSession = createGraftSessionPort();
   const sourceHighlighter = createGraftSourceHighlighter();
   return {
+    filePreviewSource,
     initialColumns: options.initialColumns,
     initialRows: options.initialRows,
     initialWorkingDirectory: options.initialWorkingDirectory,
@@ -67,16 +67,6 @@ function workspaceRuntimeDependencies(
     profileOnStartup: options.profileEnabled ?? false,
     initialModel: options.seed ?? createInitialModelSnapshot(nowMs(), options.initialWorkingDirectory),
     nowMs,
-    openEntry: (
-      model: WorkspaceModel,
-      entry: NonNullable<WorkspaceModel['entries'][number]>,
-    ) => openWorkspaceFileEntry(model, entry, nowMs, {
-      fileSystem: FileSystemPortAdapter,
-      editorFile,
-      graftSession,
-      sourceHighlighter,
-      productionTextSession: productionText.productionTextSession,
-    }),
     createTimeTickCmd: createWorkspaceTimeTickCmd,
     createNotificationTickCmd: createWorkspaceNotificationTickCmd,
     createDrawerAnimationCmd: createWorkspaceDrawerAnimationCmd,

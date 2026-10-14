@@ -15,6 +15,7 @@ export interface FileEntry {
   readonly kind: FileEntryKind;
   readonly name: string;
   readonly path: string;
+  readonly searchPath?: string;
 }
 
 export interface DirectoryIssue {

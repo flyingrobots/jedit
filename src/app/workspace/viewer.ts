@@ -132,6 +132,7 @@ function paintWorkspaceFooter(screen: Surface, model: WorkspaceModel): void {
         i18n: model.i18n,
         focusPane: model.focusPane,
         fileDrawerOpen: model.fileDrawerOpen,
+        fileSearchEditing: model.fileSearchEditing,
         graftDrawerOpen: model.graftDrawerOpen,
         viewMode: model.viewMode,
         markdownPreviewActive: isWorkspaceMarkdownPreviewAvailable(model),

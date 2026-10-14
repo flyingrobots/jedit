@@ -8,6 +8,13 @@ export const MIN_ROWS = 12;
 export const VIEWER_LEFT_PAD = 4;
 export const VIEWER_TOP_PAD = 1;
 export const DRAWER_INNER_PAD = 1;
+export const FILE_SEARCH_ROW = DRAWER_INNER_PAD;
+export const FILE_SEARCH_SEPARATOR_ROW = FILE_SEARCH_ROW + 1;
+export const FILE_SEARCH_LIST_TOP = FILE_SEARCH_SEPARATOR_ROW + 1;
+
+export function fileSearchListHeight(height: number): number {
+  return Math.max(0, height - FILE_SEARCH_LIST_TOP - DRAWER_INNER_PAD);
+}
 // Rows above the workspace body: the title row and its rule. Shared so pointer
 // hit-testing and the renderer cannot disagree about where the body starts.
 export const WORKSPACE_BODY_TOP_OFFSET = 2;
