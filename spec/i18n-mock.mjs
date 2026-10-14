@@ -36,6 +36,18 @@ export function createI18nMock(overrides = {}) {
     'footer.command.hints.esc_cancel': 'esc cancel',
   };
   const settings = {
+    'settings.sections.keybindings': 'Keybindings',
+    "settings.rows.leader.label": "Leader",
+    "settings.rows.leader.description": "Enter to change; saved in ~/.jimrc.",
+    "settings.rows.leader.capture": "Press one key; Esc cancels.",
+    "settings.rows.leader.capturing_value": "Press a key",
+    "settings.rows.leader.space": "Space",
+    "settings.rows.leader.backslash": "Backslash",
+    "settings.rows.leader.invalid_key": "Use one printable key; Esc cancels.",
+    "settings.rows.leader.invalid": ".jimrc is invalid; fix it and retry.",
+    "settings.rows.leader.read_error": "Could not read .jimrc.",
+    "settings.rows.leader.write_error": "Could not save .jimrc; retry.",
+    "settings.rows.leader.unavailable": "Settings cannot be saved in this host.",
     'settings.sections.appearance': 'Appearance',
     'settings.sections.editor': 'Editor',
     'settings.sections.runtime': 'Runtime',

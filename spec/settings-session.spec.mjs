@@ -60,6 +60,7 @@ test('jedit settings rows expose theme, footer, and markdown preview preferences
       ['Causal markers', 'Last save', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
       ['Markdown preview', 'Source', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
       ['Diagnostics', 'Open', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
+      ['Leader', 'Backslash', settings.JEDIT_SETTING_ROW_KIND.Choice, false],
     ],
   );
 });

@@ -14,12 +14,14 @@ import type { ProductionTextSession } from './production-text-session.js';
 import type { ProfilerTracePort } from '../raytracer-profiler.js';
 import type { renderWorkspace } from './viewer.js';
 import type { WorkspaceEntryOpener } from './mouse.js';
+import type { JimSettingsPort } from '../../ports/jim-settings.js';
 
 export type WorkspaceRuntimeMsg = WorkspaceMsg | ResizeMsg | KeyMsg | MouseMsg;
 export type WorkspaceRuntimeResult = [WorkspaceModel, Cmd<WorkspaceMsg>[]];
 export type WorkspaceResizeMsg = ResizeMsg;
 
 export interface WorkspaceRuntimeDependencies {
+  readonly jimSettings?: JimSettingsPort;
   // Supplied by the composition root so pointer clicks can open an entry.
   // Optional: the pointer path still selects without it, and test harnesses
   // that never click do not have to construct the filesystem dependencies.

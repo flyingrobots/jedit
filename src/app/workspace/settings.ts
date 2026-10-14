@@ -29,6 +29,9 @@ export const WorkspaceTextDirections = Object.freeze({
 
 export function settingsRows(model: WorkspaceModel): ReturnType<typeof jeditSettingsRows> {
   return jeditSettingsRows({
+    leaderKey: model.leaderKey,
+    leaderCaptureActive: model.leaderCaptureActive,
+    leaderSettingsIssue: model.leaderSettingsIssue,
     i18n: model.i18n,
     jeditTheme: model.jeditTheme,
     footerVisible: model.footerVisible,
@@ -50,6 +53,10 @@ export function workspaceSettingsHandlers(
   context: WorkspaceSettingsHandlerContext = {},
 ): JeditSettingsHandlers<WorkspaceModel, WorkspaceMsg> {
   return {
+    captureLeader: (model) => ([{
+      ...model,
+      leaderCaptureActive: true,
+    }, []]),
     cycleTheme: (model) => ([{
       ...model,
       jeditTheme: nextJeditTheme(model.jeditTheme),

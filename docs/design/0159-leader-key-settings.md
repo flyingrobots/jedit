@@ -188,8 +188,8 @@ new modal or layout.
 
 ## Implementation Slices
 
-- [ ] Slice 1: Validated Leader preference and lossless `.jimrc` adapter.
-- [ ] Slice 2: Settings capture, production wiring, and localized feedback.
+- [x] Slice 1: Validated Leader preference and lossless `.jimrc` adapter.
+- [x] Slice 2: Settings capture, production wiring, and localized feedback.
 - [ ] Slice 3: Runtime/render/restart witness, docs, and required validation.
 
 ## Tests To Write First

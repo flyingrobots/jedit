@@ -22,6 +22,7 @@ const STARTUP_FILE_MODAL_I18N_KEYS = Object.freeze({
   CurrentDirectory: 'startupFileModal.current_directory',
   Empty: 'startupFileModal.empty',
 } as const);
+const LEADER_CAPTURE_HINT_KEY = 'settings.rows.leader.capture_hint';
 
 export function paintWorkspaceOverlays(
   screen: Surface,
@@ -62,6 +63,7 @@ function paintSettingsOverlay(
   const settingsWidth = resolveSettingsDrawerWidth(model.columns);
   screen.blit(
     renderSettingsDrawer({
+      closeHint: model.leaderCaptureActive ? model.i18n.t(LEADER_CAPTURE_HINT_KEY) : undefined,
       rows: settingsRows(model),
       selectedIndex: model.settingsFocusIndex,
       theme: model.jeditTheme,
