@@ -52,7 +52,6 @@ const FooterHintKeys = Object.freeze({
   CtrlSSave: 'ctrl_s_save',
   TabFocus: 'tab_focus',
   TabIndent: 'tab_indent',
-  CtrlLScenePicker: 'ctrl_l_scene_picker',
   CtrlBFiles: 'ctrl_b_files',
   CtrlGGraft: 'ctrl_g_graft',
   EnterOpen: 'enter_open',
@@ -237,7 +236,6 @@ function footerDetail(state: WorkspaceFooterState): string {
 
   return activeFooterDetail(state, t)
     ?? footerHints([
-      scenePickerHint(t),
       focusHint(state, t),
       t(FooterHintKeys.CtrlBFiles),
       t(FooterHintKeys.CtrlGGraft),
@@ -277,11 +275,6 @@ function footerCursorPosition(state: WorkspaceFooterState): string | undefined {
 function footerHintTranslator(state: WorkspaceFooterState): FooterHintTranslator {
   return (key: string) => state.i18n.t(`footer.hints.${key}`);
 }
-
-function scenePickerHint(t: FooterHintTranslator): string {
-  return t(FooterHintKeys.CtrlLScenePicker);
-}
-
 
 function drawerFooterDetail(state: WorkspaceFooterState, kind: DrawerKind, t: FooterHintTranslator): string {
   if (kind === DrawerKinds.Files) {

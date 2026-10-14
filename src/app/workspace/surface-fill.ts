@@ -29,10 +29,6 @@ export function applyBackground(surface: Surface, token: JeditStyleToken): void 
   }
 }
 
-// Re-exported here so the viewer reaches every surface it paints through one
-// module. Importing jim-logo-screen directly puts viewer-content.ts over the
-// twelve-import limit, and routing it through ui/title-screen.ts -- the other
-// module that already re-exports viewer surfaces -- would touch a path under
-// the title-scene freeze leash for a re-export that adds no title-scene
-// behaviour. The leash is right to refuse that; this avoids asking.
+// Shared viewer surface helpers include the static logo without importing the
+// standalone title-scene engine.
 export { renderJimLogoScreen } from '../../ui/jim-logo-screen.js';

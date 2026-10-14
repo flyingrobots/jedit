@@ -12,9 +12,10 @@ async function loadHelpModule() {
   return import(pathToFileURL(HELP_PATH).href);
 }
 
-test('help text scopes scene picker shortcut to the title screen', async () => {
+test('help advertises current workspace actions without a scene picker', async () => {
   const help = await loadHelpModule();
   const overlay = help.createEditorHelpOverlay(120, 40);
 
-  assert.match(overlay.content, /ctrl\+l\s+open scene picker \(title screen only\)/);
+  assert.doesNotMatch(overlay.content, /ctrl\+l|scene picker/i);
+  assert.match(overlay.content, /f2\s+open or close settings/);
 });

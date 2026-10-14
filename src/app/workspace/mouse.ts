@@ -4,7 +4,6 @@ import {
   scrollIndexByRows,
   scrollTextViewport,
 } from '../../ui/mouse-scroll.js';
-import { updateTitleCameraFromMouseLook } from '../title-camera-session.js';
 import { moveSettingsFocusIndex } from '../settings-session.js';
 import type { WorkspaceModel } from './model.js';
 import type { WorkspaceMsg } from './msg.js';
@@ -20,9 +19,7 @@ import {
   WORKSPACE_BODY_TOP_OFFSET,
 } from './viewport.js';
 import { FocusPanes } from '../../ui/panel-focus.js';
-import { workspaceDrawerHasFocus } from './focused-pane-key-bindings.js';
 import { beginWorkspaceSourceHighlightRefresh } from './workspace-source-highlight.js';
-import { TITLE_BACKDROP_KIND } from '../../ui/title-screen.js';
 
 const DRAWER_PAD_MULTIPLIER = 2;
 const MOUSE_PRESS = 'press';
@@ -52,7 +49,7 @@ export function updateFromMouse(
   }
   const deltaRows = mouseScrollDeltaRows(msg);
   if (deltaRows === 0) {
-    return updateTitleCameraFromMouse(msg, model);
+    return [model, []];
   }
   const drawer = updateScrollableDrawerFromMouse(model, deltaRows);
   if (drawer != null) {
@@ -121,44 +118,6 @@ function openClickedEntry(
     return [model, []];
   }
   return opener.openEntry(model, entry);
-}
-
-function updateTitleCameraFromMouse(
-  msg: MouseMsg,
-  model: WorkspaceModel,
-): [WorkspaceModel, Cmd<WorkspaceMsg>[]] {
-  if (!titleMouseLookEnabled(model)) {
-    return [model, []];
-  }
-  const result = updateTitleCameraFromMouseLook(
-    { col: msg.col, row: msg.row },
-    model.titleCamera,
-    model.titleMouseLook,
-  );
-  return [
-    {
-      ...model,
-      titleCamera: result.state,
-      titleMouseLook: result.pointer,
-      titleBackdropKind: TITLE_BACKDROP_KIND.LegacyScene,
-    },
-    [],
-  ];
-}
-
-// Mouse-look activates the ray-traced backdrop, so it must not trigger while a
-// drawer holds focus. Moving the pointer over the file explorer used to switch
-// the ray tracer on without the reader asking for it.
-function titleMouseLookEnabled(model: WorkspaceModel): boolean {
-  return (
-    model.editor == null &&
-    !workspaceDrawerHasFocus(model) &&
-    !model.settingsOpen &&
-    !model.scenePickerOpen &&
-    !model.startupFileModalOpen &&
-    !model.quitConfirmOpen &&
-    !model.commandLine.active
-  );
 }
 
 function updateScrollableDrawerFromMouse(model: WorkspaceModel, deltaRows: number): WorkspaceModel | undefined {

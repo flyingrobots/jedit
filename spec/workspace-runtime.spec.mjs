@@ -96,47 +96,6 @@ test("raytracer profiler uses centralized runtime issue tokens", async () => {
   assert.doesNotMatch(source, /const ISSUE_SOURCE_COMMAND/);
 });
 
-test("runtime load-scene-result applies the loaded scene camera to title camera state", async () => {
-  const runtimeModule = await importDist("app", "workspace", "runtime.js");
-  const runtime = runtimeModule.createWorkspaceRuntime(mockRuntime());
-  const scene = {
-    camera: {
-      angle: 1.25,
-      radius: 6.75,
-      position: [0.8, 1.05, 2.5],
-      target: [0, 0.8, 0],
-    },
-    objects: [],
-  };
-
-  const [nextModel] = runtime.update(
-    { type: "load-scene-result", scene },
-    {
-      sceneOverride: undefined,
-      titleCamera: {
-        angle: 9,
-        angleTarget: 9,
-        angleMotionId: 3,
-        radius: 9,
-        radiusTarget: 9,
-        radiusMotionId: 4,
-        position: [0, 2.65, 9],
-        target: [0, 0.78, 0],
-        eyeY: 2.65,
-      },
-    },
-  );
-
-  assert.equal(nextModel.sceneOverride, scene);
-  assert.equal(nextModel.titleCamera.angle, scene.camera.angle);
-  assert.equal(nextModel.titleCamera.angleTarget, scene.camera.angle);
-  assert.equal(nextModel.titleCamera.radius, scene.camera.radius);
-  assert.equal(nextModel.titleCamera.radiusTarget, scene.camera.radius);
-  assert.deepEqual(nextModel.titleCamera.position, scene.camera.position);
-  assert.deepEqual(nextModel.titleCamera.target, scene.camera.target);
-  assert.equal(nextModel.titleCamera.eyeY, scene.camera.position[1]);
-});
-
 test("perf app renders overlay after toggle when perf starts disabled", async () => {
   const workspacePerfApp = await importDist("adapters", "workspace-perf-app.js");
   const app = workspacePerfApp.createPerfApp(
@@ -211,29 +170,6 @@ test("workspace runtime starts the profile session on init when requested", asyn
   assert.equal(profiledModel.profiler.filePath, "/repo/.jedit/perf-session.jsonl");
 });
 
-test("workspace perf overlay adds title-scene facts only on title screen", async () => {
-  const [workspacePerfApp, titleScreen] = await Promise.all([
-    importDist("adapters", "workspace-perf-app.js"),
-    importDist("ui", "title-screen.js"),
-  ]);
-  const model = {
-    ...mockPerfTitleModel(titleScreen),
-    titleBackdropKind: titleScreen.TITLE_BACKDROP_KIND.LegacyScene,
-  };
-  const app = workspacePerfApp.createPerfApp(surfaceOnlyApp(), {
-    initialPerfVisible: true,
-  });
-  const titleText = surfaceText(app.view(model));
-  const editorText = surfaceText(app.view({ ...model, editor: { path: "x" } }));
-
-  assert.match(titleText, /title scene/);
-  assert.match(titleText, /scene\s+default-scene/);
-  assert.match(titleText, /objects\s+1/);
-  assert.match(titleText, /triangles\s+3/);
-  assert.match(titleText, /rays\s+5120/);
-  assert.doesNotMatch(editorText, /title scene/);
-});
-
 test("initial workspace model rejects stale non-Echo seeded text runtime profile", async () => {
   const [initModule, themes, profile] = await Promise.all([
     importDist("app", "workspace", "init.js"),
@@ -291,41 +227,6 @@ test("initial workspace model separates text authority from render cache", async
   assert.equal("requestRunUntilIdle" in model.textAuthority, false);
   assert.equal("requestStart" in model.textAuthority, false);
   assert.equal("requestStop" in model.textAuthority, false);
-});
-
-test("initial workspace scene picker lists authored scene assets that exist on disk", async () => {
-  const initModule = await importDist("app", "workspace", "init.js");
-  const model = initModule.createInitialModel("/repo", 120, 24, {
-    titleSceneSeed: 0.5,
-    jeditTheme: mockJeditTheme(),
-    i18n: mockI18n(),
-    entries: [],
-    nowMs: 0,
-  });
-
-  assert.deepEqual(model.availableScenes, [
-    "continuum-gate.jedit-scene",
-    "bunny.jedit-scene",
-    "neon-dispersion.jedit-scene",
-    "teapot-cornell.jedit-scene",
-    "teapot-gallery.jedit-scene",
-    "neon-orbit.jedit-scene",
-    "mirror-hall.jedit-scene",
-    "eclipse-gate.jedit-scene",
-    "prism-garden.jedit-scene",
-    "aurora-vault.jedit-scene",
-    "ember-court.jedit-scene",
-    "material-lab.jedit-scene",
-    "sphere.jedit-scene",
-    "column.jedit-scene",
-    "sphere-ground.jedit-scene",
-  ]);
-  assert.equal(
-    model.availableScenes.every((scene) =>
-      existsSync(path.join(REPO_ROOT, "scenes", scene)),
-    ),
-    true,
-  );
 });
 
 test("runtime trims frame history to the configured window", async () => {
