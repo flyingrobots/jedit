@@ -95,7 +95,7 @@ test('invalid or modified keys remain in capture, and persistence failure retain
     model = runtime.update(event, model)[0];
     assert.equal(model.leaderCaptureActive, true);
     assert.equal(model.leaderKey.value, '\\');
-    assert.ok(model.leaderSettingsIssue);
+    assert.equal(model.leaderCaptureInvalid, true);
   }
   model = runtime.update(key(','), model)[0];
   assert.equal(model.leaderCaptureActive, false);
@@ -142,6 +142,10 @@ test('startup configuration errors stay visible and a repaired file can be saved
   const runtime = m.runtime.createWorkspaceRuntime(deps);
   let model = selectLeader(runtime, m.settings, runtime.init()[0]);
   assert.ok(model.leaderSettingsIssue);
+  model = runtime.update(key('enter'), model)[0];
+  model = runtime.update(key('up'), model)[0];
+  model = runtime.update(key('escape'), model)[0];
+  assert.match(m.settings.settingsRows(model).find((row) => row.id === 'leader').description, /\.jimrc is invalid/);
   model = runtime.update(key('enter'), model)[0];
   model = runtime.update(key('space'), model)[0];
   assert.equal(model.leaderKey.value, '\\');

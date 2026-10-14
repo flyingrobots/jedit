@@ -242,6 +242,9 @@ ordinary atomic replacement would replace the link itself. Small-terminal
 inspection confirmed the existing 60-column minimum, so the narrow mockup
 assumption was corrected from 40 to 60 columns. Capture-specific drawer and
 footer hints replace ordinary navigation hints while capture owns input.
+A final RED/GREEN regression separated temporary invalid-key feedback from
+persistent configuration errors, so canceling capture cannot erase a `.jimrc`
+error.
 
 Ten specs in `spec/leader-settings.spec.mjs` prove validation, default loading,
 capture/cancellation, special/modified-key rejection, save/restart through the
@@ -250,12 +253,12 @@ malformed-file refusal, failed-write recovery, and persistent row errors.
 The filesystem cases use temporary homes. The text dependency in the automated
 composition case is an explicitly injected test double; no buffer edits occur.
 
-`npm run check` passed: 881 JavaScript tests passed, 12 skipped, 99 native Rust
+`npm run check` passed: 882 JavaScript tests passed, 12 skipped, 99 native Rust
 tests passed, and the quality gate reported no regressions. The existing
 tracked test-file size debt remains unchanged. Published implementation commit
 `646d399a` also passed all twelve GitHub Actions checks, including the real Echo
-release-gate witness. After adding the locale-rendering witness, all ten focused
-specs and the quality gate also passed.
+release-gate witness. The final full check includes the locale-rendering witness and the
+cancellation-error regression. All ten focused specs also passed.
 
 A live PTY run used the production app and real native Echo host with an
 injected temporary configuration directory and isolated WAL. At 100 by 32,

@@ -67,6 +67,7 @@ export interface WorkspaceModel
   readonly settingsOpen: boolean;
   readonly leaderKey: LeaderKey;
   readonly leaderCaptureActive: boolean;
+  readonly leaderCaptureInvalid?: boolean;
   readonly leaderSettingsIssue?: JimSettingsIssue;
   readonly settingsFocusIndex: number;
   readonly settingsDiagnosticsOpen: boolean;

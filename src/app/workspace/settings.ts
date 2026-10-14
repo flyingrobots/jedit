@@ -31,6 +31,7 @@ export function settingsRows(model: WorkspaceModel): ReturnType<typeof jeditSett
   return jeditSettingsRows({
     leaderKey: model.leaderKey,
     leaderCaptureActive: model.leaderCaptureActive,
+    leaderCaptureInvalid: model.leaderCaptureInvalid,
     leaderSettingsIssue: model.leaderSettingsIssue,
     i18n: model.i18n,
     jeditTheme: model.jeditTheme,
@@ -56,6 +57,7 @@ export function workspaceSettingsHandlers(
     captureLeader: (model) => ([{
       ...model,
       leaderCaptureActive: true,
+      leaderCaptureInvalid: false,
     }, []]),
     cycleTheme: (model) => ([{
       ...model,

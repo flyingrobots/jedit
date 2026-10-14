@@ -11,6 +11,7 @@ export const LEADER_SETTING_ROW_ID = 'leader';
 export interface LeaderSettingsState {
   readonly leaderKey?: LeaderKey;
   readonly leaderCaptureActive?: boolean;
+  readonly leaderCaptureInvalid?: boolean;
   readonly leaderSettingsIssue?: JimSettingsIssue;
 }
 
@@ -30,7 +31,6 @@ const COPY = Object.freeze({
 } as const);
 
 const ISSUE_COPY = new Map([
-  [JimSettingsIssueKinds.Input, COPY.Input],
   [JimSettingsIssueKinds.Invalid, COPY.Invalid],
   [JimSettingsIssueKinds.Read, COPY.Read],
   [JimSettingsIssueKinds.Write, COPY.Write],
@@ -60,10 +60,13 @@ function leaderValueLabel(key: LeaderKey, i18n: JeditSettingsI18nState): string 
 }
 
 function leaderDescription(state: LeaderSettingsState & { readonly i18n: JeditSettingsI18nState }): string {
+  if (state.leaderCaptureActive) {
+    return state.i18n.t(state.leaderCaptureInvalid ? COPY.Input : COPY.Capture);
+  }
   const issue = state.leaderSettingsIssue;
   if (issue != null) {
     const message = state.i18n.t(ISSUE_COPY.get(issue.kind) ?? COPY.Invalid);
     return issue.detail == null ? message : `${message} ${issue.detail}`;
   }
-  return state.i18n.t(state.leaderCaptureActive ? COPY.Capture : COPY.Description);
+  return state.i18n.t(COPY.Description);
 }

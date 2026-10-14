@@ -1,7 +1,6 @@
 import type { LeaderKey } from '../app/leader-key.js';
 
 export const JimSettingsIssueKinds = Object.freeze({
-  Input: Symbol('jim.settings.input'),
   Invalid: Symbol('jim.settings.invalid'),
   Read: Symbol('jim.settings.read'),
   Write: Symbol('jim.settings.write'),

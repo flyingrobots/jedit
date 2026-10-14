@@ -23,7 +23,7 @@ export function updateLeaderKeyCapture(
   const value = msg.key === LEADER_INPUT_KEYS.Space ? LEADER_INPUT_KEYS.LiteralSpace : msg.key;
   const leader = captureKey(msg, value);
   return leader == null
-    ? [{ ...model, leaderSettingsIssue: { kind: JimSettingsIssueKinds.Input } }, []]
+    ? [{ ...model, leaderCaptureInvalid: true }, []]
     : [saveLeader(model, leader, context), []];
 }
 
@@ -32,9 +32,7 @@ function cancelLeaderCapture(msg: KeyMsg, model: WorkspaceModel): WorkspaceModel
     ...model,
     settingsOpen: msg.key !== JEDIT_SETTINGS_TOGGLE_KEY,
     leaderCaptureActive: false,
-    leaderSettingsIssue: model.leaderSettingsIssue?.kind === JimSettingsIssueKinds.Input
-      ? undefined
-      : model.leaderSettingsIssue,
+    leaderCaptureInvalid: false,
   };
 }
 
@@ -47,6 +45,7 @@ function saveLeader(model: WorkspaceModel, leader: LeaderKey, context: Workspace
     ...model,
     leaderKey: issue == null ? leader : model.leaderKey,
     leaderCaptureActive: false,
+    leaderCaptureInvalid: false,
     leaderSettingsIssue: issue,
   };
 }
