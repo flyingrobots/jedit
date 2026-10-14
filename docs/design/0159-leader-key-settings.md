@@ -102,7 +102,7 @@ same heading, row, and description treatment as existing settings.
 
 ### Narrow UI Mockup
 
-Existing drawer at 40 by 16. Selection scrolling keeps the Leader row visible;
+Existing drawer at 60 by 16. Selection scrolling keeps the Leader row visible;
 labels and help use the existing clipping behavior.
 
 ![Leader row, narrow](0159-leader-key-settings-narrow.svg)
@@ -123,8 +123,9 @@ No filesystem dependency enters the application core.
 
 ## Lower Modes
 
-Plain-text rendering remains usable without color. Missing `.jimrc` uses the
-default without creating a file. Hosts without a persistence adapter show a
+Plain-text rendering remains usable without color. The workspace retains its
+minimum of 60 columns by 12 rows; smaller terminals show the existing size
+message. Missing `.jimrc` uses the default without creating a file. Hosts without a persistence adapter show a
 save error instead of claiming durability. Settings need no Echo text read or
 mutation for this preference.
 
@@ -140,8 +141,9 @@ mutation for this preference.
 | Preservation | Unrelated root and keybindings fields survive saves; malformed existing files remain untouched. |
 
 Atomic replacement prevents partially written configuration. Saving rereads
-the file to preserve unrelated edits made since startup. Live reload and
-multi-process write arbitration are not part of this cycle.
+the file to preserve unrelated edits made since startup. Symlinked dotfiles
+retain their link and update the target. Live reload and multi-process write
+arbitration are not part of this cycle.
 
 ## Accessibility Posture
 
@@ -188,24 +190,24 @@ new modal or layout.
 
 ## Implementation Slices
 
-- [x] Slice 1: Validated Leader preference and lossless `.jimrc` adapter.
+- [x] Slice 1: Validated Leader preference and field-preserving `.jimrc` adapter.
 - [x] Slice 2: Settings capture, production wiring, and localized feedback.
-- [ ] Slice 3: Runtime/render/restart witness, docs, and required validation.
+- [x] Slice 3: Runtime/render/restart witness, docs, and required validation.
 
 ## Tests To Write First
 
-- [ ] Settings render exposes the current preference and capture state.
-- [ ] Runtime captures Space and custom keys; Esc/F2 cancel; invalid input stays in capture.
-- [ ] Save/restart retains the key and preserves unrelated JSON fields.
-- [ ] Malformed config and write failure retain previous data and visible errors.
+- [x] Settings render exposes the current preference and capture state.
+- [x] Runtime captures Space and custom keys; Esc/F2 cancel; invalid input stays in capture.
+- [x] Save/restart retains the key and preserves unrelated JSON fields.
+- [x] Malformed config and write failure retain previous data and visible errors.
 
 ## Acceptance Criteria
 
-- [ ] User can configure the Leader key through Settings and restart with it.
-- [ ] Configuration is optional, data-only, validated, and safely replaced.
-- [ ] Rendered output and failure/cancellation paths have executable evidence.
-- [ ] Catalogs, docs, issue, and PR reflect the scope.
-- [ ] Required local checks pass; CI state is disclosed independently.
+- [x] User can configure the Leader key through Settings and restart with it.
+- [x] Configuration is optional, data-only, validated, and safely replaced.
+- [x] Rendered output and failure/cancellation paths have executable evidence.
+- [x] Catalogs, docs, issue, and PR reflect the scope.
+- [x] Required local checks pass; CI state is disclosed independently.
 
 ## Validation Plan
 
@@ -228,9 +230,47 @@ Existing hard-global key precedence must not steal printable capture input.
 
 ## Follow-On Debt
 
-Leader command mappings remain separate from this preference-only cycle.
-No new mapping behavior is promised by this design.
+Leader command mappings remain separate from this preference-only cycle:
+[issue #337](https://github.com/flyingrobots/jedit/issues/337) owns the requested
+explorer toggle. No new mapping behavior is promised by this design.
 
 ## Retrospective
 
-Pending implementation and validation.
+The implementation follows the capture and data-only configuration design.
+Symlink preservation was added after a failing filesystem witness showed that
+ordinary atomic replacement would replace the link itself. Small-terminal
+inspection confirmed the existing 60-column minimum, so the narrow mockup
+assumption was corrected from 40 to 60 columns. Capture-specific drawer and
+footer hints replace ordinary navigation hints while capture owns input.
+
+Ten specs in `spec/leader-settings.spec.mjs` prove validation, default loading,
+capture/cancellation, special/modified-key rejection, save/restart through the
+production app composition, unrelated-field preservation, symlink preservation,
+malformed-file refusal, failed-write recovery, and persistent row errors.
+The filesystem cases use temporary homes. The text dependency in the automated
+composition case is an explicitly injected test double; no buffer edits occur.
+
+`npm run check` passed: 881 JavaScript tests passed, 12 skipped, 99 native Rust
+tests passed, and the quality gate reported no regressions. The existing
+tracked test-file size debt remains unchanged. Published implementation commit
+`646d399a` also passed all twelve GitHub Actions checks, including the real Echo
+release-gate witness. After adding the locale-rendering witness, all ten focused
+specs and the quality gate also passed.
+
+A live PTY run used the production app and real native Echo host with an
+injected temporary configuration directory and isolated WAL. At 100 by 32,
+F2 → eight Down presses → Enter → Space saved the key and displayed its toast.
+Enter → Esc canceled a second capture without changing the saved Space.
+Restart at 60 by 16 loaded Space; the Leader row and capture-specific hints
+remained visible. Ctrl+C restored the terminal and closed the host. Rendered
+cell snapshots were visually inspected. Below 60 columns the existing minimum
+size message appeared.
+
+New copy was authored for every supported locale and the mirror catalog was
+regenerated. Automated localized rendering covers LTR and RTL catalogs; native
+PTY dogfooding used English. Translation quality has not had native-speaker
+review. Preference persistence is scoped to Leader; general settings
+persistence, live config reload, and concurrent-process write arbitration are
+not implemented. Leader sequence dispatch is tracked in #337.
+
+PR: https://github.com/flyingrobots/jedit/pull/336

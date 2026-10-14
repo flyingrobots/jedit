@@ -222,3 +222,26 @@ test('production app composition saves and restores Leader through its settings 
   assert.match(text(app.view(model)), /Leader.*Space/);
   assert.equal(createWorkspaceApp(options, textHost).init()[0].leaderKey.value, ' ');
 });
+
+test('the Leader row and capture prompt render in LTR and RTL locales', async () => {
+  const m = await modules();
+  for (const [locale, section, capture] of [
+    ['en', 'Keybindings', 'Press a key'],
+    ['ar', 'اختصارات لوحة المفاتيح', 'اضغط مفتاحًا'],
+    ['he', 'קיצורי מקשים', 'לחצו על מקש'],
+  ]) {
+    const deps = mockRuntime();
+    deps.initialModel.i18n = new m.i18n.BijouI18nAdapter().withLocale(locale);
+    deps.initialModel.jeditTheme = m.themes.availableJeditThemes()[0];
+    const runtime = m.runtime.createWorkspaceRuntime(deps);
+    let model = selectLeader(runtime, m.settings, runtime.init()[0]);
+    model = runtime.update(key('enter'), model)[0];
+    const rendered = text(m.drawer.renderSettingsDrawer({
+      rows: m.settings.settingsRows(model), selectedIndex: model.settingsFocusIndex,
+      theme: model.jeditTheme, width: 60, height: 16,
+    }));
+    assert.ok(rendered.includes(section), locale);
+    assert.ok(rendered.includes(capture), locale);
+    assert.equal(model.leaderKey.value, '\\');
+  }
+});
