@@ -70,7 +70,8 @@ perform actions such as navigation, refresh, quit, or perf toggling.
 
 Ctrl+B opens Files and focuses the input. Its row remains pinned while results
 scroll. The existing theme input/cursor tokens provide a stable block caret;
-no blink timer is introduced. The field uses the theme current-line surface to distinguish it from the drawer.
+no blink timer is introduced. The field uses the theme current-line surface to distinguish it from the drawer,
+falling back to the workspace surface when those background tokens coincide.
 Matched filename characters use the active-edge accent and bold weight. Name
 matches are preferred over directory-prefix matches when the whole query fits
 the filename. The query scrolls horizontally to keep the caret
@@ -188,23 +189,23 @@ workspace-wide and symbol search separate.
 
 - [x] Slice 1: Input state, fuzzy projection, and keyboard/open behavior.
 - [x] Slice 2: Sticky input/caret rendering, pointer/wheel mapping, and localized help.
-- [ ] Slice 3: Runtime/render/native-host verification and documentation.
+- [x] Slice 3: Runtime/render/native-host verification and documentation.
 
 ## Tests To Write First
 
-- [ ] Ctrl+B focuses a visible input; printable shortcut keys type query text.
-- [ ] Fuzzy matching, no matches, editing, and Unicode caret movement behave correctly.
-- [ ] Arrows/Enter/click open the displayed match rather than a hidden source entry.
-- [ ] Header stays pinned while results scroll; mouse/wheel use the filtered list.
-- [ ] Close/reopen, Settings, pane switching, refresh, and directory transitions preserve the contract.
+- [x] Ctrl+B focuses a visible input; printable shortcut keys type query text.
+- [x] Fuzzy matching, no matches, editing, and Unicode caret movement behave correctly.
+- [x] Arrows/Enter/click open the displayed match rather than a hidden source entry.
+- [x] Header stays pinned while results scroll; mouse/wheel use the filtered list.
+- [x] Close/reopen, Settings, pane switching, refresh, and directory transitions preserve the contract.
 
 ## Acceptance Criteria
 
-- [ ] Input is pinned, focused, and visibly editable on open.
-- [ ] Loaded paths filter live with no persistent cache or index.
-- [ ] All result interactions share the same projection and geometry.
-- [ ] Empty results cannot open a hidden file.
-- [ ] Full repository checks, localized rendering, and live PTY validation pass.
+- [x] Input is pinned, focused, and visibly editable on open.
+- [x] Loaded paths filter live with no persistent cache or index.
+- [x] All result interactions share the same projection and geometry.
+- [x] Empty results cannot open a hidden file.
+- [x] Full repository checks, localized rendering, and live PTY validation pass.
 
 ## Validation Plan
 
@@ -233,4 +234,24 @@ workspace-wide file, semantic, and Graft symbol search with disposable indexes.
 
 ## Retrospective
 
-Pending implementation and validation.
+Implemented with one shared filtered projection retaining original entry indexes.
+The input owns printable keys while focus remains on Files; pointer geometry
+reserves the same pinned rows as painting. Match highlights use the filter's
+Unicode character positions, preferring filename matches when possible.
+
+The initial red tests exposed the missing input state and later the missing
+visual distinction. Existing list-navigation and pointer tests were updated for
+arrow navigation and the two extra pinned rows. Thirteen focused runtime/render
+tests pass, including Japanese, Arabic, and mirrored labels, wide-character
+caret mapping, and distinct input backgrounds across 16 built-in theme variants.
+The full repository check passes, and shard coverage includes all 131 specs.
+
+Live native-host PTY sessions at 100×32 and 60×16 confirmed decoded input,
+focused query editing, no-match Enter safety, and the selected fixture's actual
+Echo import result with its expected source content. Terminal snapshots were
+inspected at both sizes; the input remained at the top and matched characters
+were accented. Quality reports no regressions and its debt baseline is unchanged.
+
+No persistent query, recursive inventory, symbols, semantic retrieval, or cache
+was added. These remain explicit follow-on work in #341. This change is stacked
+on the static-title removal in #339; neither PR is merged by this cycle.

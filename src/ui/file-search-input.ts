@@ -34,7 +34,7 @@ export function renderFileSearchInput(options: FileSearchInputOptions): Surface 
     ? clipToWidth(options.placeholder, options.width - window.prefixWidth)
     : window.text;
   const surface = stringToSurface(fitLine(`${window.prefix}${content}`, options.width), options.width, INPUT_HEIGHT);
-  applyInputToken(surface, options.theme.surface.currentLine);
+  applyInputToken(surface, fileSearchInputToken(options.theme));
   if (options.focused && window.cursorColumn < options.width) {
     const cell = surface.get(window.cursorColumn, 0);
     surface.set(window.cursorColumn, 0, { ...cell, ...inputCellStyle(options.theme.cursor.insert), empty: false });
@@ -78,4 +78,10 @@ function applyInputToken(surface: Surface, token: JeditStyleToken): void {
 
 function inputCellStyle(token: JeditStyleToken) {
   return { fg: token.fg, fgRGB: token.fgRGB, bg: token.bg, bgRGB: token.bgRGB, modifiers: token.modifiers == null ? undefined : [...token.modifiers] };
+}
+
+function fileSearchInputToken(theme: JeditTheme): JeditStyleToken {
+  return theme.surface.currentLine.bg === theme.surface.drawer.bg
+    ? theme.surface.workspace
+    : theme.surface.currentLine;
 }

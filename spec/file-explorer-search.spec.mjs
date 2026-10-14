@@ -223,3 +223,12 @@ test('the input has a distinct background and only fuzzy-matched letters receive
   const plain = await drawer(cleared);
   assert.equal(plain.get(3, 3).fg, model.jeditTheme.surface.drawer.fg);
 });
+
+test('the input background remains distinct across built-in dark and light themes', async () => {
+  const { availableJeditThemes, oppositeJeditTheme } = await importDist('ui', 'jedit-themes.js');
+  const { model } = await setup();
+  for (const theme of availableJeditThemes().flatMap((theme) => [theme, oppositeJeditTheme(theme)])) {
+    const surface = await drawer({ ...model, jeditTheme: theme });
+    assert.notEqual(surface.get(2, 1).bg, surface.get(2, 3).bg, theme.name);
+  }
+});
