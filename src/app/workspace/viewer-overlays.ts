@@ -4,7 +4,6 @@ import {
   renderGraftDiagnosticsPanel,
   resolveGraftDiagnosticsPanelWidth,
 } from '../../ui/graft-diagnostics-panel.js';
-import { resolveScenePickerDrawerWidth, renderScenePickerDrawer } from '../../ui/scene-picker-drawer.js';
 import { resolveSettingsDrawerWidth, renderSettingsDrawer } from '../../ui/settings-drawer.js';
 import { renderStartupFileDrawer } from '../../ui/startup-file-modal.js';
 import type { WorkspaceModel } from './model.js';
@@ -30,20 +29,6 @@ export function paintWorkspaceOverlays(
   bodyHeight: number,
 ): void {
   paintSettingsOverlay(screen, model, bodyTop, bodyHeight);
-
-  if (model.scenePickerOpen && model.editor == null) {
-    screen.blit(
-      renderScenePickerDrawer({
-        scenes: model.availableScenes,
-        selectedIndex: model.scenePickerFocusIndex,
-        theme: model.jeditTheme,
-        width: resolveScenePickerDrawerWidth(model.columns),
-        height: bodyHeight,
-      }),
-      0,
-      bodyTop,
-    );
-  }
 
   paintStartupFileDrawer(screen, model, bodyTop, bodyHeight);
   paintWorkspaceInlinePanelOverlay(screen, model, bodyTop, bodyHeight);

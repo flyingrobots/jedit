@@ -3,23 +3,11 @@ import type { FileEntry } from "../../ports/file-system.js";
 import type { GraftDiagnosticsReport } from "../../ports/graft-diagnostics.js";
 import type { GraftInfo } from "../../ports/graft-session.js";
 import type { I18nPort } from "../../ports/i18n.js";
-import type { BuiltInTitleSceneName } from "../../ports/title-scene-loader.js";
 import type { SourceHighlightReading } from "../../ports/source-highlighter.js";
 import type { JeditTheme } from "../../ui/jedit-theme.js";
 import type { SourceLineNumberMode } from "../../ui/source-line-number-mode.js";
 import type { FocusPane } from "../../ui/panel-focus.js";
-import type { TitleMeshLibrary } from "../../ui/title-mesh-library.js";
-import type { TitleScene } from "../../ui/title-scene.js";
-import type {
-  TitleAsciiPalette,
-  TitleBackdropKind,
-  TitleRenderMode,
-} from "../../ui/title-screen.js";
 import type { ProfilerState } from "../raytracer-profiler.js";
-import type {
-  TitleCameraMouseLookPointer,
-  TitleCameraState,
-} from "../title-camera-session.js";
 import type { TextRuntimeProfile } from "../text-runtime-profile.js";
 import type { EditorState } from "./editor/model.js";
 import type { WorkspaceMsg } from "./msg.js";
@@ -77,13 +65,6 @@ export interface WorkspaceModel
   readonly sourceHighlight?: SourceHighlightReading;
   readonly sourceHighlightLoading: boolean;
   readonly sourceHighlightRequestId: number;
-  readonly titleSceneSeed: number;
-  readonly titleMeshes: TitleMeshLibrary;
-  readonly scenePickerOpen: boolean;
-  readonly scenePickerFocusIndex: number;
-  readonly availableScenes: readonly BuiltInTitleSceneName[];
-  readonly titleSceneName?: BuiltInTitleSceneName;
-  readonly sceneOverride?: TitleScene;
   readonly columns: number;
   readonly rows: number;
   readonly time: number;
@@ -91,12 +72,6 @@ export interface WorkspaceModel
   readonly lastFrameMs: number;
   readonly frameTimeMs: number;
   readonly frameTimeHistory: readonly number[];
-  readonly titleCamera: TitleCameraState;
-  readonly titleMouseLook?: TitleCameraMouseLookPointer;
-  readonly titleBackdropKind: TitleBackdropKind;
-  readonly titleRenderMode: TitleRenderMode;
-  readonly titleAsciiPalette: TitleAsciiPalette;
-  readonly titleMeshMaterialIndex: number;
   readonly profiler: ProfilerState;
   readonly commandLine: WorkspaceCommandLineState;
   readonly inlinePanel?: WorkspaceInlinePanel;

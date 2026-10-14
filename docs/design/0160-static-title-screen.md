@@ -152,7 +152,7 @@ Remove the complete live integration and retain the isolated standalone tools.
 
 ## Implementation Slices
 
-- [ ] Slice 1: Remove live rendering and title-scene input paths.
+- [x] Slice 1: Remove live rendering and title-scene input paths.
 - [ ] Slice 2: Remove scene state/dependencies/help and verify preserved workspace flows.
 
 ## Tests To Write First

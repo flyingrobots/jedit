@@ -9,4 +9,3 @@ export { applyWorkspaceTextMessage } from './workspace-text-message-reducer.js';
 export { applyWorkspaceCausalLineChangeResult } from './workspace-causal-line-change-refresh.js';
 export { syncActiveWorkspaceBufferRecord } from './workspace-buffer-registry.js';
 export { applyWorkspaceWhyRangeResult } from './workspace-why-range.js';
-export { applyWorkspaceTitleSceneLoadResult } from './workspace-title-scene-state.js';

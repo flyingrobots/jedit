@@ -38,15 +38,3 @@ test('settings and markdown preview use different function keys', async () => {
   assert.equal(keybindings.JEDIT_MARKDOWN_PREVIEW_TOGGLE_KEY, 'f3');
   assert.notEqual(keybindings.JEDIT_SETTINGS_TOGGLE_KEY, keybindings.JEDIT_MARKDOWN_PREVIEW_TOGGLE_KEY);
 });
-
-test('scene picker label is derived from the key binding metadata', async () => {
-  const keybindings = await loadKeybindingsModule();
-
-  assert.equal(
-    keybindings.JEDIT_SCENE_PICKER_TOGGLE_LABEL,
-    keybindings.formatJeditKeyLabel({
-      key: keybindings.JEDIT_SCENE_PICKER_TOGGLE_KEY,
-      ctrl: true,
-    }),
-  );
-});

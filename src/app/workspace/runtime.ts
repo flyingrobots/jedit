@@ -9,10 +9,6 @@ import {
   reduceSourceHighlightMsg,
   SOURCE_HIGHLIGHT_MESSAGE,
 } from "../source-highlight-session.js";
-import {
-  reduceTitleCameraMotion,
-  TITLE_CAMERA_MESSAGE,
-} from "../title-camera-session.js";
 import { ensureEditorVisible, editorViewport } from "./editor-session.js";
 import { updateFromKey } from "./key-bindings.js";
 import { updateFromMouse } from "./mouse.js";
@@ -39,7 +35,6 @@ import {
   applyStartupIntroTime,
   applyWorkspaceCausalLineChangeResult,
   applyWorkspaceTextMessage,
-  applyWorkspaceTitleSceneLoadResult,
   applyWorkspaceWhyRangeResult,
   syncActiveWorkspaceBufferRecord,
 } from "./workspace-state-reducers.js";
@@ -224,15 +219,7 @@ function updateWorkspaceStateMessage(
   if (text != null) {
     return text;
   }
-  return msg.type === TITLE_CAMERA_MESSAGE.Frame
-    ? [
-        {
-          ...model,
-          titleCamera: reduceTitleCameraMotion(model.titleCamera, msg),
-        },
-        [],
-      ]
-    : undefined;
+  return undefined;
 }
 
 function updateGeneratedStateMessage(
@@ -241,9 +228,6 @@ function updateGeneratedStateMessage(
 ): WorkspaceRuntimeResult | undefined {
   if (msg.type === WorkspaceMessageTypes.CausalLineChangesResult) {
     return applyWorkspaceCausalLineChangeResult(msg, model);
-  }
-  if (msg.type === WorkspaceMessageTypes.LoadSceneResult) {
-    return [applyWorkspaceTitleSceneLoadResult(model, msg), []];
   }
   if (msg.type === SOURCE_HIGHLIGHT_MESSAGE) {
     return [reduceSourceHighlightMsg(model, msg), []];
@@ -439,7 +423,6 @@ function workspaceKeyDeps(deps: WorkspaceRuntimeDependencies) {
       sourceHighlighter: deps.sourceHighlighter,
       graftSession: deps.graftSession,
       graftDiagnostics: deps.graftDiagnostics,
-      titleSceneLoader: deps.titleSceneLoader,
       productionTextSession: deps.productionTextSession,
     },
   };
