@@ -153,21 +153,21 @@ Remove the complete live integration and retain the isolated standalone tools.
 ## Implementation Slices
 
 - [x] Slice 1: Remove live rendering and title-scene input paths.
-- [ ] Slice 2: Remove scene state/dependencies/help and verify preserved workspace flows.
+- [x] Slice 2: Remove scene state/dependencies/help and verify preserved workspace flows.
 
 ## Tests To Write First
 
-- [ ] Former keyboard and mouse controls leave the logo unchanged and emit no scene work.
-- [ ] Startup and stale scene/camera messages cannot create ray-tracer state.
-- [ ] Logo remains idle and renders even when legacy properties are supplied.
-- [ ] Settings, file drawer, quit, minimum geometry, and standalone tools retain behavior.
+- [x] Former keyboard and mouse controls leave the logo unchanged and emit no scene work.
+- [x] Startup and stale scene/camera messages cannot create ray-tracer state.
+- [x] Logo remains idle and renders even when legacy properties are supplied.
+- [x] Settings, file drawer, quit, minimum geometry, and standalone tools retain behavior.
 
 ## Acceptance Criteria
 
-- [ ] All live title ray-tracer paths are removed.
-- [ ] Real runtime/render/module-graph witnesses pass.
-- [ ] Obsolete integration tests are replaced by static-title regressions.
-- [ ] Full repository validation passes and CI is reported at the published head.
+- [x] All live title ray-tracer paths are removed.
+- [x] Real runtime/render/module-graph witnesses pass.
+- [x] Obsolete integration tests are replaced by static-title regressions.
+- [x] Full repository validation passes and CI is reported at the published head.
 
 ## Validation Plan
 
@@ -196,4 +196,35 @@ explicit product decision and new runtime integration.
 
 ## Retrospective
 
-Pending implementation and validation.
+The live integration is removed, including title camera/shader/material input,
+mouse look, scene picker, scene/camera state and messages, scene-loader
+composition, renderer injection, caches/governor, and title-scene stats. The
+static logo is the only no-buffer body. The standalone engine, assets, and
+preview/profile/record tools are unchanged.
+
+Six new runtime/render/module-loading regressions failed before removal and
+passed afterward. They cover former inputs, pointer movement, stale messages,
+legacy property injection, preserved Settings/Files/quit actions, and the
+production dependency graph. The real graph no longer loads `ui/title-screen`,
+`ui/title-scene`, `app/title-camera-session`, or `adapters/title-scene-loader`.
+Obsolete integration tests were retired; current workspace-flow and standalone
+engine/tool tests remain. Unused old title-test helpers were removed.
+
+`npm run check` passed: 830 JavaScript tests passed, 12 existing skips, 99 native
+Rust tests passed, and no quality regressions. The final focused title tests
+passed 25/25 after removing unused helpers. Test-shard coverage passed with
+130 spec files. The test-file size ratchet was lowered to the new bounds for
+workspace command-line, runtime, and title-screen specs.
+
+Live PTY verification used the real native Echo host with an isolated WAL at
+100×32 and 60×16. At each size, 17 former keyboard/mouse activation events
+produced one unchanged rendered-cell digest, zero commands, and no scene or
+camera properties. At 100×32 F2 opened/closed Settings and Ctrl+B opened Files.
+At 60×16 Escape opened quit confirmation, and confirmation exited cleanly.
+Rendered static-logo cells were visually inspected. No text mutation was needed
+for this presentation change, and no Echo API or authority boundary changed.
+
+PR: https://github.com/flyingrobots/jedit/pull/339
+
+No follow-on work is required for the removal. The separate Leader-settings
+PR #336 and its unresolved configuration-ownership question are unchanged.
