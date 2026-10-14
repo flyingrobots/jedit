@@ -68,35 +68,46 @@ perform actions such as navigation, refresh, quit, or perf toggling.
 
 ## User Experience / Product Shape
 
-Ctrl+B opens Files and focuses the input. Its row remains pinned while results
-scroll. The existing theme input/cursor tokens provide a stable block caret;
-no blink timer is introduced. The field uses the theme current-line surface to distinguish it from the drawer,
-falling back to the workspace surface when those background tokens coincide.
-Matched filename characters use the active-edge accent and bold weight. Name
-matches are preferred over directory-prefix matches when the whole query fits
-the filename. The query scrolls horizontally to keep the caret
-visible. Printable keys, including j/k/q/r/h/l, colon, Space, and backtick,
-enter text rather than invoke commands while the field owns focus.
+The refinement replaces automatic input editing with explicit explorer modality.
+Ctrl+B opens Files in navigation mode. j/k and Up/Down select results; `/` enters
+filter editing. Clicking the input also enters editing. Esc or Enter in editing
+returns to navigation while preserving the query. Esc in navigation closes the
+drawer. Ctrl+B closes from either mode. Reopening starts in navigation with the
+session query retained. F2 and Tab leave filter editing before changing focus.
 
-Left/Right/Home/End move the query caret. Backspace/Delete edit it. Ctrl+U
-clears it. Up/Down select matching rows while input remains focused; Enter
-opens the selected match. Ctrl+R refreshes the current directory. Alt+Up opens
-the parent directory. Directory changes clear the query and select the first
-entry. Ctrl+B and Esc close; Tab retains existing pane cycling. Closing and
-reopening retains the session query and caret. F2 retains Settings ownership.
+The search field remains pinned and uses a distinct theme background. Its caret
+is visible only while editing and Files owns focus. Query edits select the first
+match. Matched filename characters retain the accent and bold styling. Directory
+changes clear the query. j/k/r/Backspace/h/l regain list actions in navigation;
+Ctrl+R refreshes and Alt+Up goes to the parent in either mode.
 
-A query edit selects the first matching entry. No matches shows a durable
-message, and Enter/click cannot open a hidden file. Filtering never mutates
-the loaded source list. Empty query shows the ordinary directory list. Parent
-navigation is shown for empty query and excluded from search results.
+Pointer motion highlights the row under the cursor without changing selection
+or loading a preview. Hover and selection have distinct theme backgrounds;
+selection takes precedence if the cursor is over the selected row. Clicking a
+row selects it and returns to navigation. A file selection previews it in the
+main viewer while focus remains on Files. Clicking a directory only selects it;
+Enter enters it. Enter on a file opens it through the native Echo path and moves
+focus to the editor. Closing or leaving Files restores the existing editor.
 
-The search row can be clicked to focus/edit it; result clicks open their actual
-filtered entry. Wheel scrolling changes selection only within visible matches.
-The list reserves the same fixed input rows in painting and pointer mapping.
+Preview is an explicitly labelled, read-only, bounded projection. The current
+active buffer and other open buffer projections are preferred so unsaved text is
+visible. Otherwise a filesystem adapter reads at most 64 KiB and 200 lines.
+Binary, directory, unavailable, loading, and truncated previews are labelled.
+Preview does not create an Echo buffer, change text authority, edit, or save.
+Request identity and selected source entry reject late results. Selecting a
+new item replaces the previous preview with loading immediately; no matches or
+non-file selection clears it. No persistent preview cache is introduced.
+
+Terminal input must deliver Unicode scalars and modified arrows through a
+Jedit boundary adapter; all-motion mouse reporting enables hover. Windows path
+normalization occurs at the filesystem boundary with a portable search-path
+field, leaving native paths intact for opening. Existing review findings on
+these boundaries are included in this refinement.
 
 ### User Journey
 
-Open Files → type query → choose with arrows → Enter opens the match. Backspace
+Open Files → select with j/k or pointer → inspect preview → Enter opens.
+Press / → type query → Esc → choose a filtered result. Backspace
 or Ctrl+U restores broader results; Esc closes and returns to the normal pane.
 
 ### Wide UI Mockup
@@ -190,6 +201,10 @@ workspace-wide and symbol search separate.
 - [x] Slice 1: Input state, fuzzy projection, and keyboard/open behavior.
 - [x] Slice 2: Sticky input/caret rendering, pointer/wheel mapping, and localized help.
 - [x] Slice 3: Runtime/render/native-host verification and documentation.
+- [ ] Slice 4: Explicit navigation/filter modes and mode-aware help.
+- [ ] Slice 5: Pointer hover, click selection, and distinct row colors.
+- [ ] Slice 6: Bounded read-only viewer previews and stale-result rejection.
+- [ ] Slice 7: Real input boundary fixes, native verification, and refined docs.
 
 ## Tests To Write First
 
@@ -255,3 +270,14 @@ were accented. Quality reports no regressions and its debt baseline is unchanged
 No persistent query, recursive inventory, symbols, semantic retrieval, or cache
 was added. These remain explicit follow-on work in #341. This change is stacked
 on the static-title removal in #339; neither PR is merged by this cycle.
+
+### Refinement acceptance (2026-10-14)
+
+- [ ] j/k navigates after opening; slash/click edits; Esc returns to navigation.
+- [ ] Hover never selects or reads a file; click selects; colors remain distinct.
+- [ ] Selected files preview without changing buffers, dirty text, or authority.
+- [ ] Bounded, unavailable, binary, stale-result, and focus-return cases pass.
+- [ ] Actual terminal Unicode, modified arrows, and hover packets are exercised.
+- [ ] Full local checks and CI pass; documentation reflects final behavior.
+
+Refinement retrospective: pending implementation.
