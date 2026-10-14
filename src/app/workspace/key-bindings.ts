@@ -25,6 +25,7 @@ export function updateFromKey(
   context: WorkspaceKeyBindingContext,
 ): KeyBindingResult {
   const result = updateQuitConfirmationKey(msg, model)
+    ?? (model.settingsOpen && model.leaderCaptureActive ? updateSettingsKey(msg, model, context) : undefined)
     ?? updateHardGlobalWorkspaceKey(msg, model)
     ?? updateWorkspaceOverlayKey(msg, model, context)
     ?? updateGlobalWorkspaceKey(msg, model, context)

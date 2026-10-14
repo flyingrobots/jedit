@@ -19,8 +19,11 @@ import {
 } from './workspace-animation-commands.js';
 import { openWorkspaceFileEntry } from '../app/workspace/file-tree.js';
 import type { WorkspaceModel } from '../app/workspace/model.js';
+import { createJimSettingsPort } from './jim-settings.js';
+import type { JimSettingsPort } from '../ports/jim-settings.js';
 
 export interface WorkspaceAppOptions {
+  jimSettings?: JimSettingsPort;
   initialColumns: number;
   initialRows: number;
   initialWorkingDirectory: string;
@@ -60,6 +63,7 @@ function workspaceRuntimeDependencies(
   const sourceHighlighter = createGraftSourceHighlighter();
   const titleSceneLoader = createTitleSceneLoaderPort();
   return {
+    jimSettings: options.jimSettings ?? createJimSettingsPort(),
     initialColumns: options.initialColumns,
     initialRows: options.initialRows,
     initialWorkingDirectory: options.initialWorkingDirectory,
@@ -74,16 +78,7 @@ function workspaceRuntimeDependencies(
     profileOnStartup: options.profileEnabled ?? false,
     initialModel: options.seed ?? createInitialModelSnapshot(nowMs(), options.initialWorkingDirectory, random),
     nowMs,
-    openEntry: (
-      model: WorkspaceModel,
-      entry: NonNullable<WorkspaceModel['entries'][number]>,
-    ) => openWorkspaceFileEntry(model, entry, nowMs, {
-      fileSystem: FileSystemPortAdapter,
-      editorFile,
-      graftSession,
-      sourceHighlighter,
-      productionTextSession: productionText.productionTextSession,
-    }),
+    openEntry: createEntryOpener(nowMs, editorFile, graftSession, sourceHighlighter, productionText),
     createTimeTickCmd: createWorkspaceTimeTickCmd,
     createNotificationTickCmd: createWorkspaceNotificationTickCmd,
     createDrawerAnimationCmd: createWorkspaceDrawerAnimationCmd,
@@ -98,4 +93,22 @@ function workspaceRuntimeApp(runtime: ReturnType<typeof createWorkspaceRuntime>)
     view: runtime.view,
     routeRuntimeIssue: runtime.routeRuntimeIssue,
   };
+}
+
+function createEntryOpener(
+  nowMs: () => number,
+  editorFile: typeof editorFilePort,
+  graftSession: ReturnType<typeof createGraftSessionPort>,
+  sourceHighlighter: ReturnType<typeof createGraftSourceHighlighter>,
+  productionText: WorkspaceProductionTextDependencies,
+) {
+  return (model: WorkspaceModel, entry: NonNullable<WorkspaceModel['entries'][number]>) => openWorkspaceFileEntry(
+    model, entry, nowMs, {
+      fileSystem: FileSystemPortAdapter,
+      editorFile,
+      graftSession,
+      sourceHighlighter,
+      productionTextSession: productionText.productionTextSession,
+    },
+  );
 }

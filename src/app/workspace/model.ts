@@ -33,6 +33,8 @@ import type {
 } from "./command-completion-preview.js";
 import type { WorkspaceInlinePanel } from "./workspace-inline-panel.js";
 import type { WorkspaceCausalGutterBasis } from "./workspace-causal-gutter-basis.js";
+import type { LeaderKey } from '../leader-key.js';
+import type { JimSettingsIssue } from '../../ports/jim-settings.js';
 
 export interface WorkspaceModel
   extends StartupFileModalState,
@@ -63,6 +65,10 @@ export interface WorkspaceModel
   readonly gutterDimmed: boolean;
   readonly causalGutterBasis: WorkspaceCausalGutterBasis;
   readonly settingsOpen: boolean;
+  readonly leaderKey: LeaderKey;
+  readonly leaderCaptureActive: boolean;
+  readonly leaderCaptureInvalid?: boolean;
+  readonly leaderSettingsIssue?: JimSettingsIssue;
   readonly settingsFocusIndex: number;
   readonly settingsDiagnosticsOpen: boolean;
   readonly jeditTheme: JeditTheme;
