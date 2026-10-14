@@ -209,7 +209,7 @@ workspace-wide and symbol search separate.
 - [x] Slice 4: Explicit navigation/filter modes and mode-aware help.
 - [x] Slice 5: Pointer hover, click selection, and distinct row colors.
 - [x] Slice 6: Bounded read-only viewer previews and stale-result rejection.
-- [ ] Slice 7: Real input boundary fixes, native verification, and refined docs.
+- [x] Slice 7: Real input boundary fixes, native verification, and refined docs.
 
 ## Tests To Write First
 
@@ -278,11 +278,37 @@ on the static-title removal in #339; neither PR is merged by this cycle.
 
 ### Refinement acceptance (2026-10-14)
 
-- [ ] j/k navigates after opening; slash/click edits; Esc returns to navigation.
-- [ ] Hover never selects or reads a file; click selects; colors remain distinct.
-- [ ] Selected files preview without changing buffers, dirty text, or authority.
-- [ ] Bounded, unavailable, binary, stale-result, and focus-return cases pass.
-- [ ] Actual terminal Unicode, modified arrows, and hover packets are exercised.
-- [ ] Full local checks and CI pass; documentation reflects final behavior.
+- [x] j/k navigates after opening; slash/click edits; Esc returns to navigation.
+- [x] Hover never selects or reads a file; click selects; colors remain distinct.
+- [x] Selected files preview without changing buffers, dirty text, or authority.
+- [x] Bounded, unavailable, binary, stale-result, and focus-return cases pass.
+- [x] Actual terminal Unicode, modified arrows, and hover packets are exercised.
+- [x] Full local checks and CI pass; documentation reflects final behavior.
 
-Refinement retrospective: pending implementation.
+Refinement retrospective: implemented in `3a940469`, replacing always-editing
+focus with navigation/filter modes. Mouse click now selects, and hover stays
+independent. Selection shows a bounded, read-only preview; Enter remains the
+explicit native Echo open boundary. The previous active buffer is preserved.
+Preview results carry original entry identity and a request id, rejecting stale
+selection and closed-drawer results. Existing open buffers provide live text.
+
+The focused tests prove navigation and filter transitions, filtered pointer
+geometry, independent hover, preview rendering, stale-result rejection, unsaved
+text preservation, bounded UTF-8 reads, binary/unavailable handling, and a
+nonblocking named-pipe case. Event-bus tests exercise the production input
+adapter with Unicode, modified arrows, split CSI, lone Escape, and SGR hover.
+Portable paths are normalized at the filesystem boundary. Selection/hover stay
+distinct across 16 theme variants, with selected text checked for contrast.
+
+The full local check passes: 855 JavaScript tests, 12 existing skips, and all 99
+native tests. Quality has no regressions and shard coverage includes 134 specs.
+Live 100×32 and 60×16 PTYs confirm j/k navigation, hover without selection or
+preview reads, click selection/preview, labelled main-viewer content, real
+Unicode filtering/opening, and modified Alt+Up input. Terminal snapshots were
+visually inspected at both sizes. The narrow witness opened the selected file
+through Echo only after Enter.
+
+No persistent index/cache, workspace crawl, semantic retrieval, or Graft symbol
+scan was added; #341 remains the follow-on. No buffer authority was delegated
+to the preview. PR #342 remains stacked on #339 and requires separate merge
+authorization. CI completion is recorded in the PR.
