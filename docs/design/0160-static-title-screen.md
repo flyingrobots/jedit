@@ -202,8 +202,9 @@ composition, renderer injection, caches/governor, and title-scene stats. The
 static logo is the only no-buffer body. The standalone engine, assets, and
 preview/profile/record tools are unchanged.
 
-Six new runtime/render/module-loading regressions failed before removal and
-passed afterward. They cover former inputs, pointer movement, stale messages,
+Five of the six new runtime/render/module-loading witnesses failed before
+removal; the preserved workspace-action witness also passed on the baseline.
+All six passed afterward. They cover former inputs, pointer movement, stale messages,
 legacy property injection, preserved Settings/Files/quit actions, and the
 production dependency graph. The real graph no longer loads `ui/title-screen`,
 `ui/title-scene`, `app/title-camera-session`, or `adapters/title-scene-loader`.

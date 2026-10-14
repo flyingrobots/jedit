@@ -10,6 +10,8 @@ import { importDist, mockRuntime, mockJeditTheme, REPO_ROOT } from './workspace-
 async function setup() {
   const module = await importDist('app', 'workspace', 'runtime.js');
   const deps = mockRuntime();
+  const { BijouI18nAdapter } = await importDist('adapters', 'bijou-i18n-adapter.js');
+  deps.initialModel.i18n = new BijouI18nAdapter();
   deps.initialModel.jeditTheme = mockJeditTheme();
   const runtime = module.createWorkspaceRuntime(deps);
   const model = { ...runtime.init()[0], startupIntroComplete: true };
