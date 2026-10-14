@@ -21,6 +21,7 @@ import type {
 } from "./command-completion-preview.js";
 import type { WorkspaceInlinePanel } from "./workspace-inline-panel.js";
 import type { WorkspaceCausalGutterBasis } from "./workspace-causal-gutter-basis.js";
+import type { FileSearchState } from './file-search.js';
 
 export interface WorkspaceModel
   extends StartupFileModalState,
@@ -30,6 +31,7 @@ export interface WorkspaceModel
   readonly cwd: string;
   readonly entries: readonly FileEntry[];
   readonly selectedIndex: number;
+  readonly fileSearch: FileSearchState;
   readonly editor?: EditorState;
   readonly buffers: WorkspaceBufferRegistry;
   readonly activeBufferId?: string;

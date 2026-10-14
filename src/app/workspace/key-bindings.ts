@@ -13,6 +13,7 @@ import { clearWorkspaceInlinePanelAfterKey } from './workspace-inline-panel.js';
 import { updateSettingsKey } from './settings-key-bindings.js';
 import { updateStartupFileModalKey } from './startup-file-modal-key-bindings.js';
 import { updateTitleScreenKey } from './title-screen-key-bindings.js';
+import { updateFileSearchInputKey } from './file-search-input-key.js';
 
 export type { UpdateFromKeyDeps } from './key-binding-context.js';
 
@@ -24,6 +25,7 @@ export function updateFromKey(
   context: WorkspaceKeyBindingContext,
 ): KeyBindingResult {
   const result = updateQuitConfirmationKey(msg, model)
+    ?? updateFileSearchInputKey(msg, model)
     ?? updateHardGlobalWorkspaceKey(msg, model)
     ?? updateWorkspaceOverlayKey(msg, model, context)
     ?? updateGlobalWorkspaceKey(msg, model, context)

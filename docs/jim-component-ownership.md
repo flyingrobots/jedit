@@ -285,6 +285,15 @@ the meaning of a checkpoint declaration, while Echo owns the Tick and receipt
 that witness its persistence. Jedit owns a screen cache, while neither that
 cache nor the screen becomes text authority.
 
+The current Files drawer search is a transient Jedit presentation filter over
+already loaded filesystem entries. Its query and caret are session-only shell
+state; they are not persisted or replayed as Jim buffer-search state. It creates
+no database or authoritative inventory. Filtering preserves source entry
+identity, and opening a displayed file continues through the existing native
+Echo text-import path. [DX-0161](design/0161-file-explorer-search.md) owns this
+bounded implementation; a future workspace or symbol index must remain a
+rebuildable projection and declare its observation basis and staleness policy.
+
 > **Intuition to carry forward:** semantic ownership and storage authority are
 > different powers. Jim decides what command to perform, the text capability
 > defines what the text operation means, and Echo decides whether their

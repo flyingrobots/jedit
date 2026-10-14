@@ -263,7 +263,7 @@ test('workspace footer shows file drawer controls and the selected file path', a
       graftSelection: undefined,
     }),
     [
-      'FILES [j/k move · enter open · backspace up · ctrl+b close · tab focus]',
+      'FILES [type filter · arrows select · enter open · ctrl+b close · tab focus]',
       '/repo/notes/very-long-file-name.md',
     ],
   );
@@ -380,7 +380,7 @@ test('workspace footer obtains command hints from i18n', async () => {
   });
 
   assert.equal(primary.includes('<footer.hints.enter_open>'), true);
-  assert.equal(primary.includes('<footer.hints.backspace_up>'), true);
+  assert.equal(primary.includes('<footer.hints.type_filter>'), true);
   assert.equal(primary.includes('<footer.hints.ctrl_b_close>'), true);
   assert.equal(requestedKeys.includes('footer.hints.enter_open'), true);
   assert.equal(requestedKeys.includes('footer.hints.ctrl_b_close'), true);

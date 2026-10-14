@@ -23,7 +23,40 @@ enough for detailed explanations.
 
 ## Files Drawer
 
-Open the files drawer with `ctrl+b`.
+Open the files drawer with `Ctrl+B`. Focus moves into the sticky search input at
+its top, with a visible caret. Typing immediately fuzzy-filters the entries in
+the currently loaded directory by name or workspace-relative path. Matching is
+case-insensitive and accepts characters in order, so `rnt` can match
+`render-tree.ts`. It preserves the directory's existing order. The input has a distinct theme
+background, and the matched filename characters use the theme accent and bold
+weight.
+
+| Key | Action |
+| --- | --- |
+| `Up` / `Down` | Select a displayed result. |
+| `Enter` | Open the selected file or directory. |
+| `Left` / `Right`, `Home` / `End` | Move the query caret. |
+| `Backspace` / `Delete` | Edit the query. |
+| `Ctrl+U` | Clear the query. |
+| `Ctrl+R` | Refresh the current directory. |
+| `Alt+Up` | Enter the parent directory. |
+| `Ctrl+B` / `Esc` | Close the drawer. |
+| `Tab` | Cycle visible panes. |
+
+Printable keys such as `j`, `k`, `q`, and Space enter the query while the field
+has focus. The input stays pinned as results scroll. Clicking the input places
+the caret; clicking a result opens that result. No matches displays an explicit
+message and cannot open an excluded file.
+
+Closing and reopening preserves the session query. Entering another directory
+clears it. Refreshing preserves it; a failed directory change preserves the
+previous query and entries. A restart starts with an empty query.
+
+This search covers loaded directory entries. Workspace-wide discovery, semantic
+retrieval, and Graft symbol search are deferred to
+[issue #341](https://github.com/flyingrobots/jedit/issues/341). It creates no
+SQLite database or persistent search index. The transient projection boundary
+is recorded in [component ownership](../../jim-component-ownership.md).
 
 The files drawer is for browsing workspace entries. It should share file-opening
 behavior with `:edit`: selecting a file opens it, and selecting a directory

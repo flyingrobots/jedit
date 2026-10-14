@@ -40,6 +40,8 @@ const EditorModeKeys: Record<EditorMode, string> = Object.freeze({
 });
 
 const FooterHintKeys = Object.freeze({
+  TypeFilter: 'type_filter',
+  ArrowsSelect: 'arrows_select',
   JkMove: 'j_k_move',
   EnterChange: 'enter_change',
   F2Close: 'f2_close',
@@ -322,9 +324,9 @@ function previewFooterHints(state: WorkspaceFooterState, t: FooterHintTranslator
 
 function fileDrawerFooterHints(state: WorkspaceFooterState, t: FooterHintTranslator): ReadonlyArray<string | undefined> {
   return [
-    t(FooterHintKeys.JkMove),
+    t(FooterHintKeys.TypeFilter),
+    t(FooterHintKeys.ArrowsSelect),
     t(FooterHintKeys.EnterOpen),
-    t(FooterHintKeys.BackspaceUp),
     t(FooterHintKeys.CtrlBClose),
     focusHint(state, t),
   ];

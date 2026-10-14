@@ -70,7 +70,10 @@ perform actions such as navigation, refresh, quit, or perf toggling.
 
 Ctrl+B opens Files and focuses the input. Its row remains pinned while results
 scroll. The existing theme input/cursor tokens provide a stable block caret;
-no blink timer is introduced. The query scrolls horizontally to keep the caret
+no blink timer is introduced. The field uses the theme current-line surface to distinguish it from the drawer.
+Matched filename characters use the active-edge accent and bold weight. Name
+matches are preferred over directory-prefix matches when the whole query fits
+the filename. The query scrolls horizontally to keep the caret
 visible. Printable keys, including j/k/q/r/h/l, colon, Space, and backtick,
 enter text rather than invoke commands while the field owns focus.
 
@@ -183,8 +186,8 @@ workspace-wide and symbol search separate.
 
 ## Implementation Slices
 
-- [ ] Slice 1: Input state, fuzzy projection, and keyboard/open behavior.
-- [ ] Slice 2: Sticky input/caret rendering, pointer/wheel mapping, and localized help.
+- [x] Slice 1: Input state, fuzzy projection, and keyboard/open behavior.
+- [x] Slice 2: Sticky input/caret rendering, pointer/wheel mapping, and localized help.
 - [ ] Slice 3: Runtime/render/native-host verification and documentation.
 
 ## Tests To Write First

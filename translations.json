@@ -82,7 +82,9 @@
             "y0_start": "y0 start",
             "y_end": "y$ end",
             "gg_top": "gg top",
-            "esc_cancel": "esc cancel"
+            "esc_cancel": "esc cancel",
+            "type_filter": "type filter",
+            "arrows_select": "↑/↓ select"
           },
           "evidence": {
             "head": "head",
@@ -171,6 +173,11 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "Search",
+          "placeholder": "Filter files…",
+          "empty": "No matches"
         }
       }
     },
@@ -256,7 +263,9 @@
             "y0_start": "y0 début",
             "y_end": "y$ fin",
             "gg_top": "gg haut",
-            "esc_cancel": "esc annuler"
+            "esc_cancel": "esc annuler",
+            "type_filter": "saisir le filtre",
+            "arrows_select": "↑/↓ sélectionner"
           },
           "evidence": {
             "head": "tête",
@@ -345,6 +354,11 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "Recherche",
+          "placeholder": "Filtrer les fichiers…",
+          "empty": "Aucun résultat"
         }
       }
     },
@@ -430,7 +444,9 @@
             "y0_start": "y0 inizio",
             "y_end": "y$ fine",
             "gg_top": "gg cima",
-            "esc_cancel": "esc annulla"
+            "esc_cancel": "esc annulla",
+            "type_filter": "digita filtro",
+            "arrows_select": "↑/↓ seleziona"
           },
           "evidence": {
             "head": "testa",
@@ -519,6 +535,11 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "Cerca",
+          "placeholder": "Filtra file…",
+          "empty": "Nessun risultato"
         }
       }
     },
@@ -604,7 +625,9 @@
             "y0_start": "y0 anfang",
             "y_end": "y$ ende",
             "gg_top": "gg oben",
-            "esc_cancel": "esc abbrechen"
+            "esc_cancel": "esc abbrechen",
+            "type_filter": "Filter eingeben",
+            "arrows_select": "↑/↓ auswählen"
           },
           "evidence": {
             "head": "Kopf",
@@ -693,6 +716,11 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "Suche",
+          "placeholder": "Dateien filtern…",
+          "empty": "Keine Treffer"
         }
       }
     },
@@ -778,7 +806,9 @@
             "y0_start": "y0 inicio",
             "y_end": "y$ fin",
             "gg_top": "gg arriba",
-            "esc_cancel": "esc cancelar"
+            "esc_cancel": "esc cancelar",
+            "type_filter": "escribir filtro",
+            "arrows_select": "↑/↓ seleccionar"
           },
           "evidence": {
             "head": "cabeza",
@@ -867,6 +897,11 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "Buscar",
+          "placeholder": "Filtrar archivos…",
+          "empty": "Sin resultados"
         }
       }
     },
@@ -952,7 +987,9 @@
             "y0_start": "y0 시작",
             "y_end": "y$ 끝",
             "gg_top": "gg 맨 위",
-            "esc_cancel": "esc 취소"
+            "esc_cancel": "esc 취소",
+            "type_filter": "필터 입력",
+            "arrows_select": "↑/↓ 선택"
           },
           "evidence": {
             "head": "헤드",
@@ -1041,6 +1078,11 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "검색",
+          "placeholder": "파일 필터…",
+          "empty": "일치 항목 없음"
         }
       }
     },
@@ -1126,7 +1168,9 @@
             "y0_start": "y0 先頭",
             "y_end": "y$ 末尾",
             "gg_top": "gg 先頭",
-            "esc_cancel": "esc 取消"
+            "esc_cancel": "esc 取消",
+            "type_filter": "絞り込み入力",
+            "arrows_select": "↑/↓ 選択"
           },
           "evidence": {
             "head": "ヘッド",
@@ -1215,6 +1259,11 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "検索",
+          "placeholder": "ファイルを絞り込む…",
+          "empty": "一致なし"
         }
       }
     },
@@ -1300,7 +1349,9 @@
             "y0_start": "y0 开头",
             "y_end": "y$ 结尾",
             "gg_top": "gg 顶部",
-            "esc_cancel": "esc 取消"
+            "esc_cancel": "esc 取消",
+            "type_filter": "输入筛选",
+            "arrows_select": "↑/↓ 选择"
           },
           "evidence": {
             "head": "头",
@@ -1389,6 +1440,11 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "搜索",
+          "placeholder": "筛选文件…",
+          "empty": "无匹配项"
         }
       }
     },
@@ -1474,7 +1530,9 @@
             "y0_start": "y0 início",
             "y_end": "y$ fim",
             "gg_top": "gg topo",
-            "esc_cancel": "esc cancelar"
+            "esc_cancel": "esc cancelar",
+            "type_filter": "digitar filtro",
+            "arrows_select": "↑/↓ selecionar"
           },
           "evidence": {
             "head": "cabeça",
@@ -1563,6 +1621,11 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "Buscar",
+          "placeholder": "Filtrar arquivos…",
+          "empty": "Nenhum resultado"
         }
       }
     },
@@ -1648,7 +1711,9 @@
             "y0_start": "y0 начало",
             "y_end": "y$ конец",
             "gg_top": "gg верх",
-            "esc_cancel": "esc отмена"
+            "esc_cancel": "esc отмена",
+            "type_filter": "ввод фильтра",
+            "arrows_select": "↑/↓ выбор"
           },
           "evidence": {
             "head": "вершина",
@@ -1737,6 +1802,11 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "Поиск",
+          "placeholder": "Фильтр файлов…",
+          "empty": "Нет совпадений"
         }
       }
     },
@@ -1822,7 +1892,9 @@
             "y0_start": "y0 بداية",
             "y_end": "y$ نهاية",
             "gg_top": "gg أعلى",
-            "esc_cancel": "esc إلغاء"
+            "esc_cancel": "esc إلغاء",
+            "type_filter": "اكتب للتصفية",
+            "arrows_select": "↑/↓ تحديد"
           },
           "evidence": {
             "head": "الرأس",
@@ -1911,6 +1983,11 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "بحث",
+          "placeholder": "تصفية الملفات…",
+          "empty": "لا نتائج"
         }
       }
     },
@@ -1996,7 +2073,9 @@
             "y0_start": "y0 awal",
             "y_end": "y$ akhir",
             "gg_top": "gg atas",
-            "esc_cancel": "esc batal"
+            "esc_cancel": "esc batal",
+            "type_filter": "ketik filter",
+            "arrows_select": "↑/↓ pilih"
           },
           "evidence": {
             "head": "kepala",
@@ -2085,6 +2164,11 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "Cari",
+          "placeholder": "Filter berkas…",
+          "empty": "Tidak ada hasil"
         }
       }
     },
@@ -2170,7 +2254,9 @@
             "y0_start": "y0 başlangıç",
             "y_end": "y$ son",
             "gg_top": "gg üst",
-            "esc_cancel": "esc iptal"
+            "esc_cancel": "esc iptal",
+            "type_filter": "filtre yaz",
+            "arrows_select": "↑/↓ seç"
           },
           "evidence": {
             "head": "baş",
@@ -2259,6 +2345,11 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "Ara",
+          "placeholder": "Dosyaları filtrele…",
+          "empty": "Eşleşme yok"
         }
       }
     },
@@ -2344,7 +2435,9 @@
             "y0_start": "y0 शुरुआत",
             "y_end": "y$ अंत",
             "gg_top": "gg ऊपर",
-            "esc_cancel": "esc रद्द"
+            "esc_cancel": "esc रद्द",
+            "type_filter": "फ़िल्टर लिखें",
+            "arrows_select": "↑/↓ चुनें"
           },
           "evidence": {
             "head": "शीर्ष",
@@ -2433,6 +2526,11 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "खोज",
+          "placeholder": "फ़ाइलें छाँटें…",
+          "empty": "कोई मेल नहीं"
         }
       }
     },
@@ -2518,7 +2616,9 @@
             "y0_start": "y0 begin",
             "y_end": "y$ einde",
             "gg_top": "gg boven",
-            "esc_cancel": "esc annuleren"
+            "esc_cancel": "esc annuleren",
+            "type_filter": "filter typen",
+            "arrows_select": "↑/↓ selecteren"
           },
           "evidence": {
             "head": "kop",
@@ -2607,6 +2707,11 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "Zoeken",
+          "placeholder": "Bestanden filteren…",
+          "empty": "Geen resultaten"
         }
       }
     },
@@ -2692,7 +2797,9 @@
             "y0_start": "y0 początek",
             "y_end": "y$ koniec",
             "gg_top": "gg góra",
-            "esc_cancel": "esc anuluj"
+            "esc_cancel": "esc anuluj",
+            "type_filter": "wpisz filtr",
+            "arrows_select": "↑/↓ wybierz"
           },
           "evidence": {
             "head": "głowa",
@@ -2781,6 +2888,11 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "Szukaj",
+          "placeholder": "Filtruj pliki…",
+          "empty": "Brak wyników"
         }
       }
     },
@@ -2866,7 +2978,9 @@
             "y0_start": "y0 đầu",
             "y_end": "y$ cuối",
             "gg_top": "gg đầu",
-            "esc_cancel": "esc hủy"
+            "esc_cancel": "esc hủy",
+            "type_filter": "nhập bộ lọc",
+            "arrows_select": "↑/↓ chọn"
           },
           "evidence": {
             "head": "đầu",
@@ -2955,6 +3069,11 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "Tìm",
+          "placeholder": "Lọc tệp…",
+          "empty": "Không khớp"
         }
       }
     },
@@ -3040,7 +3159,9 @@
             "y0_start": "y0 เริ่ม",
             "y_end": "y$ จบ",
             "gg_top": "gg บน",
-            "esc_cancel": "esc ยกเลิก"
+            "esc_cancel": "esc ยกเลิก",
+            "type_filter": "พิมพ์ตัวกรอง",
+            "arrows_select": "↑/↓ เลือก"
           },
           "evidence": {
             "head": "เฮด",
@@ -3129,6 +3250,11 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "ค้นหา",
+          "placeholder": "กรองไฟล์…",
+          "empty": "ไม่พบผลลัพธ์"
         }
       }
     },
@@ -3214,7 +3340,9 @@
             "y0_start": "y0 آغاز",
             "y_end": "y$ پایان",
             "gg_top": "gg بالا",
-            "esc_cancel": "esc لغو"
+            "esc_cancel": "esc لغو",
+            "type_filter": "نوشتن فیلتر",
+            "arrows_select": "↑/↓ انتخاب"
           },
           "evidence": {
             "head": "سر",
@@ -3303,6 +3431,11 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "جستجو",
+          "placeholder": "فیلتر پرونده‌ها…",
+          "empty": "بدون نتیجه"
         }
       }
     },
@@ -3388,7 +3521,9 @@
             "y0_start": "y0 התחלה",
             "y_end": "y$ סוף",
             "gg_top": "gg למעלה",
-            "esc_cancel": "esc בטל"
+            "esc_cancel": "esc בטל",
+            "type_filter": "הקלדת סינון",
+            "arrows_select": "↑/↓ בחירה"
           },
           "evidence": {
             "head": "ראש",
@@ -3477,6 +3612,11 @@
         },
         "why": {
           "range_obstructed_title": "Why range obstructed"
+        },
+        "fileExplorer": {
+          "search_label": "חיפוש",
+          "placeholder": "סינון קבצים…",
+          "empty": "אין התאמות"
         }
       }
     }
