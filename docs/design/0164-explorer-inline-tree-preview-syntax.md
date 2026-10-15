@@ -89,7 +89,7 @@ browsing. Closing Files reveals the existing editor unchanged.
 
 ### Wide UI Mockup
 
-100x32, current theme:
+100x32, current theme. [Native capture](0164-explorer-witness/nested-syntax-dark-100x32.png):
 
 ```text
 Files  / filter             Preview · main.ts
@@ -102,7 +102,7 @@ Files  / filter             Preview · main.ts
 
 ### Narrow UI Mockup
 
-60x12: the same pinned header and indented rows use the existing list viewport.
+60x12, [native capture](0164-explorer-witness/nested-syntax-dark-60x12.png): the same pinned header and indented rows use the existing list viewport.
 The selected row remains visible through collapse/expand and scrolling. The
 preview occupies the existing main viewer, with clipped lines and syntax tokens.
 
@@ -177,7 +177,7 @@ startup-picker and explicit file-opening behaviors.
 
 - [x] Slice 1: Inline directory state, rendering, keyboard and pointer behavior.
 - [x] Slice 2: Basis-free Graft preview highlighting and stale/failure protection.
-- [ ] Slice 3: Native witnesses, full checks and review handoff.
+- [x] Slice 3: Native witnesses, full checks and review handoff.
 
 ## Tests To Write First
 
@@ -215,4 +215,22 @@ None introduced by this scope. Global recursive search remains outside this cycl
 
 ## Retrospective
 
-Pending implementation and validation.
+Inline expansion, collapse, filtered ancestry and read-only syntax are implemented.
+File clicks remain previews; Enter remains an explicit open for files. Directory
+clicks and Enter share one lazy filesystem operation. The preview port omits an
+editor-head basis, and parser failures preserve readable text.
+
+Tests exposed one interaction refinement: filter ancestry must not steal the
+initial selection from the actual match. A later full check found that row
+identity needed to remain index-based rather than path-based. Both have focused
+regressions, and the corrected full check passed 907 tests: 895 passed, 12 existing
+skips, zero failures. Quality has no new debt; all 140 specs are assigned.
+
+[Native evidence](0164-explorer-witness/README.md) covers mouse and Enter toggles,
+root preservation, nested/filtered rows, dark 100x32 and minimum 60x12, and Arabic
+light 60x16. Graft produced 13 syntax spans while preview authority remained none
+and textRequestId remained 0. Only explicit file Enter opened a buffer.
+Arabic rasterization proves alignment, not terminal-specific shaping.
+
+PR: https://github.com/flyingrobots/jedit/pull/349. The change is stacked on footer
+PR #344; the separate Dojo Feed branch is not part of this change.

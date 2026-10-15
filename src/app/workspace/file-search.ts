@@ -53,8 +53,8 @@ export function fileSearchEntries(model: FileSearchModel): readonly FileSearchEn
 }
 
 function withTreeAncestors(model: FileSearchModel, matches: readonly FileSearchEntry[]): readonly FileSearchEntry[] {
-  const rows = new Map(matches.map((row) => [row.entry.path, row]));
-  const included = new Set(rows.keys());
+  const rows = new Map(matches.map((row) => [row.index, row]));
+  const included = new Set(matches.map((row) => row.entry.path));
   for (const match of matches) {
     let parent = model.fileTree?.[match.entry.path]?.parentPath;
     while (parent != null && !included.has(parent)) {
@@ -63,7 +63,7 @@ function withTreeAncestors(model: FileSearchModel, matches: readonly FileSearchE
     }
   }
   return model.entries.flatMap((entry, index) => included.has(entry.path)
-    ? [{ ...(rows.get(entry.path) ?? { entry, index, matchIndexes: [], matchesQuery: false }), ...model.fileTree?.[entry.path] }]
+    ? [{ ...(rows.get(index) ?? { entry, index, matchIndexes: [], matchesQuery: false }), ...model.fileTree?.[entry.path] }]
     : []);
 }
 
