@@ -1,3 +1,5 @@
+import { FILEPATH_STYLE } from '../../ports/filepath-style.js';
+import { FOOTER_LAYOUT } from '../../ports/footer-preferences.js';
 import { createFeedbackState } from "../../ui/feedback.js";
 import { FocusPanes, type FocusPane } from "../../ui/panel-focus.js";
 import type { WorkspaceModel } from "./model.js";
@@ -28,6 +30,9 @@ export interface WorkspaceInitialModelSnapshot {
   readonly entries: readonly FileEntry[];
   readonly nowMs: number;
   readonly searchRoot?: string;
+  readonly gitRoot?: string;
+  readonly filepathStyle?: WorkspaceModel["filepathStyle"];
+  readonly footerLayout?: WorkspaceModel["footerLayout"];
 }
 
 export function createInitialModel(
@@ -60,6 +65,7 @@ export function createInitialModel(
     commandLine: initialWorkspaceCommandLineState(),
     ...createFeedbackState<WorkspaceMsg>(),
     ...initialShellState(),
+    ...initialPresentationState(snapshot),
     ...initialSettingsState(),
     jeditTheme,
     ...initialGraftState(),
@@ -155,4 +161,12 @@ export function workspaceAnimationIsActive(model: WorkspaceModel): boolean {
     model.profiler.active ||
     model.perfVisible
   );
+}
+
+function initialPresentationState(snapshot: WorkspaceInitialModelSnapshot) {
+  return {
+    footerLayout: snapshot.footerLayout ?? FOOTER_LAYOUT.Focused,
+    filepathStyle: snapshot.filepathStyle ?? FILEPATH_STYLE.GitRoot,
+    gitRoot: snapshot.gitRoot,
+  };
 }

@@ -1,3 +1,6 @@
+import type { FilepathStyle } from '../ports/filepath-style.js';
+import { footerLayoutRow, footerVisibilityRow, filepathStyleRow } from './settings-footer-rows.js';
+import type { FooterLayout } from '../ports/footer-preferences.js';
 import type { Cmd } from '@flyingrobots/bijou-tui';
 import type { I18nDirection } from '../ports/i18n.js';
 import { JEDIT_THEME_MODE, type JeditTheme } from '../ui/jedit-theme.js';
@@ -16,6 +19,8 @@ export const JEDIT_SETTING_ACTION = {
   CycleTheme: Symbol('jedit.settings.action.cycle-theme'),
   ToggleThemeMode: Symbol('jedit.settings.action.toggle-theme-mode'),
   ToggleFooter: Symbol('jedit.settings.action.toggle-footer'),
+  CycleFilepaths: Symbol('jedit.settings.action.cycle-filepaths'),
+  CycleFooterLayout: Symbol('jedit.settings.action.cycle-footer-layout'),
   ToggleLineNumberMode: Symbol('jedit.settings.action.toggle-line-number-mode'),
   ToggleGutterDimmed: Symbol('jedit.settings.action.toggle-gutter-dimmed'),
   CycleCausalGutterBasis: Symbol('jedit.settings.action.cycle-causal-gutter-basis'),
@@ -45,6 +50,8 @@ export type JeditSettingsActivationDelta =
 export interface JeditSettingsState {
   readonly jeditTheme: JeditTheme;
   readonly footerVisible: boolean;
+  readonly footerLayout?: FooterLayout;
+  readonly filepathStyle?: FilepathStyle;
   readonly lineNumberMode: SourceLineNumberMode;
   readonly gutterDimmed?: boolean;
   readonly causalGutterBasis?: WorkspaceCausalGutterBasis;
@@ -82,6 +89,8 @@ export interface JeditSettingsKeyMsg {
 export interface JeditSettingsHandlers<Model, Command> {
   cycleTheme(model: Model): [Model, Cmd<Command>[]];
   toggleThemeMode(model: Model): [Model, Cmd<Command>[]];
+  cycleFilepaths(model: Model): [Model, Cmd<Command>[]];
+  cycleFooterLayout(model: Model, delta: JeditSettingsActivationDelta): [Model, Cmd<Command>[]];
   toggleFooter(model: Model): [Model, Cmd<Command>[]];
   toggleLineNumberMode(model: Model): [Model, Cmd<Command>[]];
   toggleGutterDimmed(model: Model): [Model, Cmd<Command>[]];
@@ -108,7 +117,6 @@ const SETTINGS_SECTION_LANGUAGE = 'Language';
 const ROW_ID_LANGUAGE = 'language';
 const ROW_ID_THEME = 'theme';
 const ROW_ID_THEME_MODE = 'theme-mode';
-const ROW_ID_FOOTER = 'footer';
 const ROW_ID_LINE_NUMBERS = 'line-numbers';
 const ROW_ID_GUTTER_DIMMED = 'gutter-dimmed';
 const ROW_ID_CAUSAL_GUTTER_BASIS = 'causal-gutter-basis';
@@ -188,6 +196,7 @@ const SETTINGS_KEY_ACTIONS = new Map<string, SettingsKeyAction>([
 ]);
 
 type NonLocaleSettingsHandlerName =
+  | 'cycleFilepaths'
   | 'cycleTheme'
   | 'toggleThemeMode'
   | 'toggleFooter'
@@ -200,6 +209,7 @@ const SETTINGS_ACTION_HANDLERS: ReadonlyMap<
   JeditSettingAction,
   NonLocaleSettingsHandlerName
 > = new Map([
+  [JEDIT_SETTING_ACTION.CycleFilepaths, 'cycleFilepaths'],
   [JEDIT_SETTING_ACTION.CycleTheme, 'cycleTheme'],
   [JEDIT_SETTING_ACTION.ToggleThemeMode, 'toggleThemeMode'],
   [JEDIT_SETTING_ACTION.ToggleFooter, 'toggleFooter'],
@@ -216,7 +226,9 @@ export function jeditSettingsRows(state: JeditSettingsContext): readonly JeditSe
     languageSettingsRow(state.i18n),
     themeSettingsRow(state),
     themeModeSettingsRow(state),
-    footerSettingsRow(state),
+    footerVisibilityRow(state, JEDIT_SETTING_ACTION.ToggleFooter, JEDIT_SETTING_ROW_KIND.Toggle),
+    footerLayoutRow(state, JEDIT_SETTING_ACTION.CycleFooterLayout, JEDIT_SETTING_ROW_KIND.Choice),
+    filepathStyleRow(state, JEDIT_SETTING_ACTION.CycleFilepaths, JEDIT_SETTING_ROW_KIND.Choice),
     lineNumbersSettingsRow(state),
     gutterDimmedSettingsRow(state),
     causalGutterBasisSettingsRow(state),
@@ -286,19 +298,6 @@ function themeModeSettingsRow(state: JeditSettingsContext): JeditSettingsRow {
     valueLabel: settingsThemeModeLabel(state),
     kind: JEDIT_SETTING_ROW_KIND.Choice,
     action: JEDIT_SETTING_ACTION.ToggleThemeMode,
-  };
-}
-
-function footerSettingsRow(state: JeditSettingsContext): JeditSettingsRow {
-  return {
-    id: ROW_ID_FOOTER,
-    section: state.i18n.t(SETTINGS_I18N_KEYS.SectionAppearance),
-    label: state.i18n.t(SETTINGS_I18N_KEYS.FooterLabel),
-    description: state.i18n.t(SETTINGS_I18N_KEYS.FooterDescription),
-    valueLabel: state.footerVisible ? state.i18n.t(SETTINGS_I18N_KEYS.ValueOn) : state.i18n.t(SETTINGS_I18N_KEYS.ValueOff),
-    kind: JEDIT_SETTING_ROW_KIND.Toggle,
-    checked: state.footerVisible,
-    action: JEDIT_SETTING_ACTION.ToggleFooter,
   };
 }
 
@@ -470,6 +469,9 @@ function activateSettingsRow<Model, Command>(
   delta: JeditSettingsActivationDelta,
 ): [Model, Cmd<Command>[]] {
   const action = row?.action;
+  if (action === JEDIT_SETTING_ACTION.CycleFooterLayout) {
+    return handlers.cycleFooterLayout(model, delta);
+  }
   if (action === JEDIT_SETTING_ACTION.CycleLocale) {
     return handlers.cycleLocale(model, delta);
   }

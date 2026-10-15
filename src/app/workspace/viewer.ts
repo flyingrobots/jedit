@@ -1,9 +1,10 @@
 import { createSurface, stringToSurface, type Surface } from '@flyingrobots/bijou';
 import { compositeFeedback } from '../../ui/feedback.js';
 import {
+  workspaceFooterPresentation,
+  renderWorkspaceFooter,
   activeWorkspaceTitle,
   centerLine,
-  renderWorkspaceFooter,
   type WorkspaceFooterCursorPosition,
 } from '../../ui/workspace-chrome.js';
 import { paintActivePaneEdge } from '../../ui/workspace-focus-edge.js';
@@ -12,7 +13,7 @@ import {
   MIN_COLUMNS,
   MIN_ROWS,
   workspaceBodyHeight,
-  FOOTER_ROWS, WORKSPACE_BODY_TOP_OFFSET } from './viewport.js';
+  workspaceFooterRows, WORKSPACE_BODY_TOP_OFFSET } from './viewport.js';
 import type { WorkspaceModel } from './model.js';
 import {
   createViewerContentRenderer,
@@ -61,10 +62,7 @@ function renderWorkspaceWithViewer(
   }
 
   const bodyTop = WORKSPACE_BODY_TOP_OFFSET;
-  const bodyHeight = workspaceBodyHeight({
-    rows: model.rows,
-    footerVisible: model.footerVisible,
-  });
+  const bodyHeight = workspaceBodyHeight(model);
   const layout = resolveWorkspaceLayout(
     model.columns,
     model.fileDrawerProgress,
@@ -126,9 +124,10 @@ function paintWorkspaceFocusEdge(
 }
 
 function paintWorkspaceFooter(screen: Surface, model: WorkspaceModel): void {
-  if (model.footerVisible) {
+  if (workspaceFooterRows(model) > 0) {
     screen.blit(
       renderWorkspaceFooter({
+        footerPresentation: workspaceFooterPresentation(model),
         i18n: model.i18n,
         focusPane: model.focusPane,
         fileDrawerOpen: model.fileDrawerOpen,
@@ -151,7 +150,7 @@ function paintWorkspaceFooter(screen: Surface, model: WorkspaceModel): void {
         commandSummary: workspaceFooterCommandSummary(model),
       }, model.columns, model.jeditTheme.surface.footer),
       0,
-      model.rows - FOOTER_ROWS,
+      model.rows - workspaceFooterRows(model),
     );
   }
 }

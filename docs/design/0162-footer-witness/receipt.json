@@ -1,0 +1,1566 @@
+{
+  "implementation": "fcb12be2ceb4c003c395436a6306fcdd90cccc6c",
+  "method": "Native Bijou PTY with production Echo host; cells rendered with Menlo",
+  "captures": [
+    {
+      "image": "focused-100x32.png",
+      "columns": 100,
+      "rows": 32,
+      "cellDigest": "88fbea14973c9367be935e5ae3c15e76b828bfeb67eb4fa99e27e8e5c0b58993",
+      "footer": [
+        "FILES NAV alpha.txt                                                                              1/1",
+        "<fixture>     0 modified \u00b7 0 buffers"
+      ]
+    },
+    {
+      "image": "focused-60x16.png",
+      "columns": 60,
+      "rows": 16,
+      "cellDigest": "a8869acd19ad52ff6912128b42da48eef9a61e494f49e8168fafbb26ca47e074",
+      "footer": [
+        "FILES NAV alpha.txt                                      1/1",
+        "/var/folders/1h/qn5740kx131g0sxvgv12  0 modified \u00b7 0 buffers"
+      ]
+    },
+    {
+      "image": "per-pane-100x32.png",
+      "columns": 100,
+      "rows": 32,
+      "cellDigest": "a98a7719bb0824da0ff9f288c9e02f3374919178a2f2e31d481d830a3394ae3c",
+      "footer": [
+        "FILES NAV alpha.txt    1/1\u2502PREVIEW alpha.txt                     read-only\u2502GRAFT NAV             0/0",
+        "<fixture>     0 modified \u00b7 0 buffers"
+      ]
+    },
+    {
+      "image": "per-pane-60x16.png",
+      "columns": 60,
+      "rows": 16,
+      "cellDigest": "e4661eab94d7b4f61dfde708c88161d528a6f5bea9ba1f151944f9cb6f0a92fe",
+      "footer": [
+        "FILES NAV \u2026xt  1/1\u2502PREVIEW \u2026txt  read-only\u2502GRAFT NAV     0/0",
+        "/var/folders/1h/qn5740kx131g0sxvgv12  0 modified \u00b7 0 buffers"
+      ]
+    },
+    {
+      "image": "compact-100x32.png",
+      "columns": 100,
+      "rows": 32,
+      "cellDigest": "417ca3f727e27e32b1c03ccaf1ab75ea81f4af49375a110107467759ab323c76",
+      "footer": [
+        "\u2591                                                                                                   ",
+        "FILES NAV alpha.txt                                                                  1/1  0 modified"
+      ]
+    },
+    {
+      "image": "compact-60x16.png",
+      "columns": 60,
+      "rows": 16,
+      "cellDigest": "e782f8716e501d8d9c961681923505be97386fc1e782c3951fdef02fe1828ab0",
+      "footer": [
+        "                  \u2591                                         ",
+        "NORMAL modified \u2026orer-live-YKFyZP/alpha.txt  1:1  1 modified"
+      ]
+    },
+    {
+      "image": "compact-command-60x16.png",
+      "columns": 60,
+      "rows": 16,
+      "cellDigest": "218e146d3c63a3b41fc1d948b82afe22bbc2320a7a9b01cd344615d706710303",
+      "footer": [
+        "   focused-100x32.json  file  File\u2502                         ",
+        ":edit                                             1 modified"
+      ]
+    },
+    {
+      "image": "compact-mirror-60x16.png",
+      "columns": 60,
+      "rows": 16,
+      "cellDigest": "5748cce6e826e20480bbbe85f11a3c6f02cb7adfd0172b0589c828e3d5c27f84",
+      "footer": [
+        "LAMRON deifidom \u2026orer-live-YKFyZP/alpha.txt  1:1  deifidom 1"
+      ]
+    }
+  ],
+  "wide-observed.json": [
+    {
+      "message": {
+        "type": "key",
+        "key": "b",
+        "ctrl": true,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "391837c0202a075dc861b76c452bf6a72d7af9a9f072bf44750372442a1f586b",
+      "layout": "per-pane",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 0
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "g",
+        "ctrl": true,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "391837c0202a075dc861b76c452bf6a72d7af9a9f072bf44750372442a1f586b",
+      "layout": "per-pane",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "graft",
+      "selected": 0
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "tab",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "391837c0202a075dc861b76c452bf6a72d7af9a9f072bf44750372442a1f586b",
+      "layout": "per-pane",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 0
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "/",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "13c23ef2c26590dcebbfdeb7948f31e90a408920f0df54191aa1a7710f6ce7af",
+      "layout": "per-pane",
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 0
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "a",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "ae298f772982c271bd2e8f9d4e160ef2b1cd987d75553c6e0cd62bbe1f688eb1",
+      "layout": "per-pane",
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 1
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "l",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "0810d877d4458591233ec78893853a07af8463caf4206616469e9080ee7e4689",
+      "layout": "per-pane",
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 2
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "p",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "62fc19efe45fed78ebf01ce058661250f58af798e75973fdc319ce16b88193bd",
+      "layout": "per-pane",
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "h",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "224152dee4f40619ba456a86e8616abeac9be60fe93303a2a29b3e286cd075ff",
+      "layout": "per-pane",
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "a",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "2b6acee7ddb6a3264325a7ab04a139cfe4e18141dfce3fd27d22b6da8e7c3f05",
+      "layout": "per-pane",
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "file-explorer-preview-result",
+        "requestId": 1,
+        "entry": {
+          "kind": "file",
+          "name": "alpha.txt",
+          "path": "/var/folders/1h/qn5740kx131g0sxvgv12vm_m0000gn/T/jim-explorer-live-YKFyZP/alpha.txt",
+          "searchPath": "/var/folders/1h/qn5740kx131g0sxvgv12vm_m0000gn/T/jim-explorer-live-YKFyZP/alpha.txt"
+        },
+        "result": {
+          "kind": "loaded",
+          "lines": [
+            "ALPHA LIVE CONTENT",
+            ""
+          ],
+          "truncated": false
+        }
+      },
+      "digest": "3f73cac70b46dd8e4e76172901f855f85dc142871be86bc95f3ba73388ef3f67",
+      "layout": "per-pane",
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "escape",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "a98a7719bb0824da0ff9f288c9e02f3374919178a2f2e31d481d830a3394ae3c",
+      "layout": "per-pane",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "f2",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "d05261bfdba8cc521bdf188bf10a57fe72b43b37ff6b0a2c262b30a085cfbfc7",
+      "layout": "per-pane",
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "f4d9c51d0275aeb37314aa16f66a3df15dacc639bff49ce57df5ce8a41eb5f32",
+      "layout": "per-pane",
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "1e27f330bc2d0fb591d4df924645595d662ba034fc27d2c0ac21942086eebb20",
+      "layout": "per-pane",
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "912aefe6c43165aef78fb6b6d182bec21cc81d02a1c6455f7c36f3b16fc351b1",
+      "layout": "per-pane",
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "eaf1b3c31dbf170a20a956992bafcbdb43f8b5c6ec19cdf3275c2944a23456a6",
+      "layout": "per-pane",
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "right",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "c0d9a96a51f79cd717eb23c8db8f511f87f93bb484a2ccbcc14d773182b2d986",
+      "layout": "compact",
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "escape",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "085ed5173c852b92da3d626c304e826075e0c511974f3310c9b33cd39878fe62",
+      "layout": "compact",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "file-explorer-preview-result",
+        "requestId": 2,
+        "entry": {
+          "kind": "file",
+          "name": "alpha.txt",
+          "path": "/var/folders/1h/qn5740kx131g0sxvgv12vm_m0000gn/T/jim-explorer-live-YKFyZP/alpha.txt",
+          "searchPath": "/var/folders/1h/qn5740kx131g0sxvgv12vm_m0000gn/T/jim-explorer-live-YKFyZP/alpha.txt"
+        },
+        "result": {
+          "kind": "loaded",
+          "lines": [
+            "ALPHA LIVE CONTENT",
+            ""
+          ],
+          "truncated": false
+        }
+      },
+      "digest": "e86da8b011f03131264d0295da968cb8f6386bf32dad2aa0783d308e901f0376",
+      "layout": "compact",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "~",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "417ca3f727e27e32b1c03ccaf1ab75ea81f4af49375a110107467759ab323c76",
+      "layout": "compact",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "f2",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "b918e1d272a6da04ca15cc7b15e2e4302dfb0871b2c5ce591503c83908d17401",
+      "layout": "compact",
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "65576d9ea7e062aaf75381a60081956f9b2c1a07d1ad3ae785a181c70b766d74",
+      "layout": "compact",
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "ba174bd33ccac67ab23ff887d87862efa3e6d46f8e936b81ebb687003befa424",
+      "layout": "compact",
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "1b9aa123401f874a07ac5afcb013faf7d1e79b0b93fa4bf8ccd02a1743a90432",
+      "layout": "compact",
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "c0d9a96a51f79cd717eb23c8db8f511f87f93bb484a2ccbcc14d773182b2d986",
+      "layout": "compact",
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "right",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "0866b543efec341989b0af8972a51255a84733b0009843929ed81e4ac28df3c1",
+      "layout": "focused",
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "escape",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "50f47105e8219938268612f52deed4afd383bdcbc1f1c5059936c7d703b9c992",
+      "layout": "focused",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "file-explorer-preview-result",
+        "requestId": 3,
+        "entry": {
+          "kind": "file",
+          "name": "alpha.txt",
+          "path": "/var/folders/1h/qn5740kx131g0sxvgv12vm_m0000gn/T/jim-explorer-live-YKFyZP/alpha.txt",
+          "searchPath": "/var/folders/1h/qn5740kx131g0sxvgv12vm_m0000gn/T/jim-explorer-live-YKFyZP/alpha.txt"
+        },
+        "result": {
+          "kind": "loaded",
+          "lines": [
+            "ALPHA LIVE CONTENT",
+            ""
+          ],
+          "truncated": false
+        }
+      },
+      "digest": "56fb04723f31e89e7792d1e355888b60c58cf417edba3d0844dda648e1037d7e",
+      "layout": "focused",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "~",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "88fbea14973c9367be935e5ae3c15e76b828bfeb67eb4fa99e27e8e5c0b58993",
+      "layout": "focused",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    }
+  ],
+  "observed.json": [
+    {
+      "message": {
+        "type": "key",
+        "key": "b",
+        "ctrl": true,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "292f7ed5288b80d80210280dc59a6492d3ed6077768b9ef4f1f439cb606c9d0f",
+      "layout": "focused",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 0
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "g",
+        "ctrl": true,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "292f7ed5288b80d80210280dc59a6492d3ed6077768b9ef4f1f439cb606c9d0f",
+      "layout": "focused",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "graft",
+      "selected": 0
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "tab",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "292f7ed5288b80d80210280dc59a6492d3ed6077768b9ef4f1f439cb606c9d0f",
+      "layout": "focused",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 0
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "/",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "717da6f2a131807446ceed674e9c5f66b45bdeb563ed3ec8c8d071d05505ca93",
+      "layout": "focused",
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 0
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "a",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "50b089aa5657b6730daa931fb86619372b46bef890cde26805280c12a4eeab7e",
+      "layout": "focused",
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 1
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "l",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "5db06c96681ce77eac38741a809e617d4af3f0e4b1433ad6e60ba4d2ec0c349f",
+      "layout": "focused",
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 2
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "p",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "0bb7c74d1550275a99b766bbdafc98c952841ea148ff589606a925a9698976f9",
+      "layout": "focused",
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "h",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "438320f327edf43fb1cb595eb500197b34672637d7853b07c6b7f03b87548fe7",
+      "layout": "focused",
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "a",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "847decf6ed0ded3490608824d5ab6a4e16f28924df718c17baf887b66d3a3869",
+      "layout": "focused",
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "file-explorer-preview-result",
+        "requestId": 1,
+        "entry": {
+          "kind": "file",
+          "name": "alpha.txt",
+          "path": "/var/folders/1h/qn5740kx131g0sxvgv12vm_m0000gn/T/jim-explorer-live-YKFyZP/alpha.txt",
+          "searchPath": "/var/folders/1h/qn5740kx131g0sxvgv12vm_m0000gn/T/jim-explorer-live-YKFyZP/alpha.txt"
+        },
+        "result": {
+          "kind": "loaded",
+          "lines": [
+            "ALPHA LIVE CONTENT",
+            ""
+          ],
+          "truncated": false
+        }
+      },
+      "digest": "3abf59d214e1a74acb0869e2e175c078d0d4e1c51238e171b76c0649341a629e",
+      "layout": "focused",
+      "settings": false,
+      "files": true,
+      "editing": true,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "escape",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "a8869acd19ad52ff6912128b42da48eef9a61e494f49e8168fafbb26ca47e074",
+      "layout": "focused",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "f2",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "749aa0cc878c6e891dbb4ed3c33e25e7600810bb5bf55bd23ec8d89f68c18f70",
+      "layout": "focused",
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "f57acf6f0dc2d32a1bf23125cb53461269f8da117300c19dcb915783484f658d",
+      "layout": "focused",
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "0e06ca6ad909282c667704a55367f81ac3ebfee0af413f112564a46285a055ea",
+      "layout": "focused",
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "c319c1ed71cad1fd8a4f902744898a98b913c025af086b4e5078fddaf96430c7",
+      "layout": "focused",
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "c9f2fbcdff108cb662a1d1f7982ff9d3d781ce5dcb8fd59d3f6ab3d6d64700e6",
+      "layout": "focused",
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "right",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "1d90a481eea4bcb27303edfe4a174a0b9a134d7af76dace59fa956f0cb6572e5",
+      "layout": "per-pane",
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "escape",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "51455440135f326cfa626f3362f288596bbbc9cf15c9061e5ce934feb8f27c84",
+      "layout": "per-pane",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "file-explorer-preview-result",
+        "requestId": 2,
+        "entry": {
+          "kind": "file",
+          "name": "alpha.txt",
+          "path": "/var/folders/1h/qn5740kx131g0sxvgv12vm_m0000gn/T/jim-explorer-live-YKFyZP/alpha.txt",
+          "searchPath": "/var/folders/1h/qn5740kx131g0sxvgv12vm_m0000gn/T/jim-explorer-live-YKFyZP/alpha.txt"
+        },
+        "result": {
+          "kind": "loaded",
+          "lines": [
+            "ALPHA LIVE CONTENT",
+            ""
+          ],
+          "truncated": false
+        }
+      },
+      "digest": "0246b94c3f7093489708b37860d669f6d9c691b8bbe298a29823f9ee1e7f402f",
+      "layout": "per-pane",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "~",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "e4661eab94d7b4f61dfde708c88161d528a6f5bea9ba1f151944f9cb6f0a92fe",
+      "layout": "per-pane",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "f2",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "4503302a900d3ac4f650c6ee88b01c8756c6158ab1152322aea72c905cf3a537",
+      "layout": "per-pane",
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "ff8619eac1668ff6b1cb1818c6766345b0833fa20946b755aa366e3ac94c72ad",
+      "layout": "per-pane",
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "8ac72891e3aa75761906487c8a5ff4fcaa28cc78c097da86ec8c09eaf68bcb47",
+      "layout": "per-pane",
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "bdb43051547a17a9000ec17265c32eff1de2fbb7934f1fc7c1beccc0be98a487",
+      "layout": "per-pane",
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "down",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "1d90a481eea4bcb27303edfe4a174a0b9a134d7af76dace59fa956f0cb6572e5",
+      "layout": "per-pane",
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "right",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "70a0fbdb663d92bb638394017a304a323a6cdf25fc182693657105c0166c1e3f",
+      "layout": "compact",
+      "settings": true,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "escape",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "2fe575699a5c6cbff3a6c8851aaf014ecb89b70eb31817a291bd9e2c1e225d98",
+      "layout": "compact",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "file-explorer-preview-result",
+        "requestId": 3,
+        "entry": {
+          "kind": "file",
+          "name": "alpha.txt",
+          "path": "/var/folders/1h/qn5740kx131g0sxvgv12vm_m0000gn/T/jim-explorer-live-YKFyZP/alpha.txt",
+          "searchPath": "/var/folders/1h/qn5740kx131g0sxvgv12vm_m0000gn/T/jim-explorer-live-YKFyZP/alpha.txt"
+        },
+        "result": {
+          "kind": "loaded",
+          "lines": [
+            "ALPHA LIVE CONTENT",
+            ""
+          ],
+          "truncated": false
+        }
+      },
+      "digest": "c964414b1cb30a0f036b48978bd2d4bc369a6edca4fabf5490de9991814b88bd",
+      "layout": "compact",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "~",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "5cd3a16db366e95f8710a66a1be77318dfab0dde49569e2d264536dac47c9174",
+      "layout": "compact",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4
+    },
+    {
+      "message": {
+        "type": "mouse",
+        "button": "none",
+        "action": "move",
+        "col": 3,
+        "row": 5,
+        "shift": false,
+        "alt": false,
+        "ctrl": false
+      },
+      "digest": "5cd3a16db366e95f8710a66a1be77318dfab0dde49569e2d264536dac47c9174",
+      "layout": "compact",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4,
+      "hover": 4
+    },
+    {
+      "message": {
+        "type": "mouse",
+        "button": "left",
+        "action": "press",
+        "col": 3,
+        "row": 5,
+        "shift": false,
+        "alt": false,
+        "ctrl": false
+      },
+      "digest": "5cd3a16db366e95f8710a66a1be77318dfab0dde49569e2d264536dac47c9174",
+      "layout": "compact",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "files",
+      "selected": 4,
+      "hover": 4
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "enter",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "4b1c662ed89a8939b1fcb1a20607289ffe667e590c22690429c3313090980d3a",
+      "layout": "compact",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "editor",
+      "selected": 4,
+      "hover": 4,
+      "filePath": "<fixture>/alpha.txt"
+    },
+    {
+      "message": {
+        "type": "text-open-result",
+        "requestId": 1,
+        "result": {
+          "kind": "opened",
+          "filePath": "/var/folders/1h/qn5740kx131g0sxvgv12vm_m0000gn/T/jim-explorer-live-YKFyZP/alpha.txt",
+          "bufferId": "be886d2d9675ada7a50c272db144616ba0f971670ac04b96d203a4b092697bd3",
+          "readOnly": false,
+          "materialization": "materialized",
+          "hostBasis": "file",
+          "hostFingerprint": {
+            "algorithm": "sha256",
+            "digest": "c505d3b475287a87dbac407890225b6a12ecf8634b2ab40973b973d967a74325",
+            "byteLength": 19
+          },
+          "initialLines": [
+            "XALPHA LIVE CONTENT",
+            ""
+          ],
+          "cache": {
+            "bufferId": "be886d2d9675ada7a50c272db144616ba0f971670ac04b96d203a4b092697bd3",
+            "readingId": "6c39902e7a1f0ed4dfaa51f3b1712feee73706c23e4312da88e9d762259a22ea",
+            "textBasis": {
+              "basisHeadId": "725a6de022e0cca49d787e799256307c2dfa787cfbfcd61f98a434878956d3eb",
+              "byteRange": {
+                "startByte": {
+                  "kind": "utf8-byte-offset",
+                  "value": 0
+                },
+                "endByte": {
+                  "kind": "utf8-byte-offset",
+                  "value": 20
+                }
+              }
+            },
+            "projection": {
+              "basisHeadId": "725a6de022e0cca49d787e799256307c2dfa787cfbfcd61f98a434878956d3eb",
+              "basis": {
+                "worldlineId": "4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a",
+                "headId": "725a6de022e0cca49d787e799256307c2dfa787cfbfcd61f98a434878956d3eb",
+                "rootNodeId": "0659556a53d1f80ef20f79e8caf2b98afe8d316a3a179a6b7ca39ba796d74773",
+                "byteLength": 20,
+                "lineCount": 2
+              },
+              "byteRange": {
+                "startByte": 0,
+                "endByte": 20
+              },
+              "text": "XALPHA LIVE CONTENT\n",
+              "support": [
+                {
+                  "leafId": "f304398f9a49ae58fe33be1b6e7310b5eb6da3aeea8bfe20d1d4544176a1bf60",
+                  "blobId": "94c8e96f579173bb9a351b52cb29512a83c1e0a1da70fa5a520e1600d136da47",
+                  "contentHash": "474db980b76d2b8c29e2686a11fb37f0d8267a9c55480a0f5af48d51ee901cf2",
+                  "byteRange": {
+                    "startByte": 0,
+                    "endByte": 1
+                  }
+                },
+                {
+                  "leafId": "048d8bc1d40bfe6a96c367c59b46015aa282ce80e82b07c31af5b084c4f332b0",
+                  "blobId": "771f09e098f6e92d87e6991fa015cc4ee127fa8af1e4dfd7c7cf0a56e9e1cf44",
+                  "contentHash": "12fcc22d9fc96524a4a469b8213146aff7316170e8d4636ea34ca37acaa9da2f",
+                  "byteRange": {
+                    "startByte": 1,
+                    "endByte": 20
+                  }
+                }
+              ]
+            },
+            "materialization": {
+              "key": {
+                "schemaVersion": 1,
+                "materializerVersion": "jedit.text-window.materializer.v1",
+                "basis": {
+                  "worldlineId": "4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a",
+                  "headId": "725a6de022e0cca49d787e799256307c2dfa787cfbfcd61f98a434878956d3eb",
+                  "requestFrontierRef": "4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a:2"
+                },
+                "coverage": {
+                  "startByte": {
+                    "kind": "utf8-byte-offset",
+                    "value": 0
+                  },
+                  "endByte": {
+                    "kind": "utf8-byte-offset",
+                    "value": 20
+                  }
+                },
+                "observerPlanId": "31782b9c0208a0a6682a13b45d3f53fedfed9927d27369456cded29f4d8fe68e",
+                "policyDigest": "69bb125cc09cc457c14aac561d8b014d9b0922af42dd55c6a4e2bf6bab44b0e6",
+                "coordinateDigest": "231e8ceae6e70283d6bf1d2245cf018c48179d22c1d54c96df224237ed22a8d3",
+                "cacheKeyDigest": "6c39902e7a1f0ed4dfaa51f3b1712feee73706c23e4312da88e9d762259a22ea"
+              },
+              "completeness": "complete",
+              "materializedProjectionBytes": 20
+            },
+            "lines": [
+              "XALPHA LIVE CONTENT",
+              ""
+            ],
+            "coverage": "full",
+            "lineCount": 2,
+            "startLine": 0,
+            "returnedLineCount": 2,
+            "totalLineCount": 2,
+            "hasMoreBefore": false,
+            "hasMoreAfter": false,
+            "cursorLine": 0,
+            "viewportLineCount": 24,
+            "truncated": false
+          }
+        }
+      },
+      "digest": "f8fd29f7101dd35b962ca4f71ce973923b2b8c1303269c369443dfc7d328e5ff",
+      "layout": "compact",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "editor",
+      "selected": 4,
+      "hover": 4,
+      "filePath": "<fixture>/alpha.txt"
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "i",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "cab96792baa7b1225871581045f98982b11a7601b7aa6a466901870bc061b30d",
+      "layout": "compact",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "editor",
+      "selected": 4,
+      "hover": 4,
+      "filePath": "<fixture>/alpha.txt"
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "x",
+        "ctrl": false,
+        "alt": false,
+        "shift": true
+      },
+      "digest": "ec62463e9e8c0fcd23df12c35733b21d6c216e705e2035099ae7d1e48b413244",
+      "layout": "compact",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "editor",
+      "selected": 4,
+      "hover": 4,
+      "filePath": "<fixture>/alpha.txt"
+    },
+    {
+      "message": {
+        "type": "text-edit-result",
+        "requestId": 2,
+        "result": {
+          "kind": "applied",
+          "filePath": "/var/folders/1h/qn5740kx131g0sxvgv12vm_m0000gn/T/jim-explorer-live-YKFyZP/alpha.txt",
+          "bufferId": "be886d2d9675ada7a50c272db144616ba0f971670ac04b96d203a4b092697bd3",
+          "receiptId": "3b6a3c35a5e61db6e2aaeada3bfdeb53397b26fc5d5796a091aabc617bf6eb75",
+          "causalTransition": {
+            "admittedTickId": "4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a:3:6b58645558191e71500348031904b08589223398f2883f6ad89da4b61ed1217c",
+            "nextHeadId": "b4096e73820e2f9b2fc22d88d9d57fb14278a320b6a0de33cec660d13375dafe"
+          },
+          "lineChanges": {
+            "kind": "unavailable",
+            "reason": "observation-obstructed",
+            "basisHeadId": "725a6de022e0cca49d787e799256307c2dfa787cfbfcd61f98a434878956d3eb",
+            "nextHeadId": "b4096e73820e2f9b2fc22d88d9d57fb14278a320b6a0de33cec660d13375dafe",
+            "message": "The current generated Wesley compatibility corridor does not implement this operation. Edict migration will add it explicitly."
+          },
+          "cache": {
+            "bufferId": "be886d2d9675ada7a50c272db144616ba0f971670ac04b96d203a4b092697bd3",
+            "readingId": "20d6398112008a832e5ed6a481c02316b4da9f81bc831a97f8ebb5d43e27e0ea",
+            "textBasis": {
+              "basisHeadId": "b4096e73820e2f9b2fc22d88d9d57fb14278a320b6a0de33cec660d13375dafe",
+              "byteRange": {
+                "startByte": {
+                  "kind": "utf8-byte-offset",
+                  "value": 0
+                },
+                "endByte": {
+                  "kind": "utf8-byte-offset",
+                  "value": 21
+                }
+              }
+            },
+            "projection": {
+              "basisHeadId": "b4096e73820e2f9b2fc22d88d9d57fb14278a320b6a0de33cec660d13375dafe",
+              "basis": {
+                "worldlineId": "4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a",
+                "headId": "b4096e73820e2f9b2fc22d88d9d57fb14278a320b6a0de33cec660d13375dafe",
+                "rootNodeId": "68948e2547be6a70e6208a01a05bdd6021547651b80666d772321ab5680dea29",
+                "byteLength": 21,
+                "lineCount": 2
+              },
+              "byteRange": {
+                "startByte": 0,
+                "endByte": 21
+              },
+              "text": "XXALPHA LIVE CONTENT\n",
+              "support": [
+                {
+                  "leafId": "f304398f9a49ae58fe33be1b6e7310b5eb6da3aeea8bfe20d1d4544176a1bf60",
+                  "blobId": "94c8e96f579173bb9a351b52cb29512a83c1e0a1da70fa5a520e1600d136da47",
+                  "contentHash": "474db980b76d2b8c29e2686a11fb37f0d8267a9c55480a0f5af48d51ee901cf2",
+                  "byteRange": {
+                    "startByte": 0,
+                    "endByte": 1
+                  }
+                },
+                {
+                  "leafId": "f304398f9a49ae58fe33be1b6e7310b5eb6da3aeea8bfe20d1d4544176a1bf60",
+                  "blobId": "94c8e96f579173bb9a351b52cb29512a83c1e0a1da70fa5a520e1600d136da47",
+                  "contentHash": "474db980b76d2b8c29e2686a11fb37f0d8267a9c55480a0f5af48d51ee901cf2",
+                  "byteRange": {
+                    "startByte": 1,
+                    "endByte": 2
+                  }
+                },
+                {
+                  "leafId": "048d8bc1d40bfe6a96c367c59b46015aa282ce80e82b07c31af5b084c4f332b0",
+                  "blobId": "771f09e098f6e92d87e6991fa015cc4ee127fa8af1e4dfd7c7cf0a56e9e1cf44",
+                  "contentHash": "12fcc22d9fc96524a4a469b8213146aff7316170e8d4636ea34ca37acaa9da2f",
+                  "byteRange": {
+                    "startByte": 2,
+                    "endByte": 21
+                  }
+                }
+              ]
+            },
+            "materialization": {
+              "key": {
+                "schemaVersion": 1,
+                "materializerVersion": "jedit.text-window.materializer.v1",
+                "basis": {
+                  "worldlineId": "4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a",
+                  "headId": "b4096e73820e2f9b2fc22d88d9d57fb14278a320b6a0de33cec660d13375dafe",
+                  "requestFrontierRef": "4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a:3"
+                },
+                "coverage": {
+                  "startByte": {
+                    "kind": "utf8-byte-offset",
+                    "value": 0
+                  },
+                  "endByte": {
+                    "kind": "utf8-byte-offset",
+                    "value": 21
+                  }
+                },
+                "observerPlanId": "31782b9c0208a0a6682a13b45d3f53fedfed9927d27369456cded29f4d8fe68e",
+                "policyDigest": "69bb125cc09cc457c14aac561d8b014d9b0922af42dd55c6a4e2bf6bab44b0e6",
+                "coordinateDigest": "6b58645558191e71500348031904b08589223398f2883f6ad89da4b61ed1217c",
+                "cacheKeyDigest": "20d6398112008a832e5ed6a481c02316b4da9f81bc831a97f8ebb5d43e27e0ea"
+              },
+              "completeness": "complete",
+              "materializedProjectionBytes": 21
+            },
+            "lines": [
+              "XXALPHA LIVE CONTENT",
+              ""
+            ],
+            "coverage": "full",
+            "lineCount": 2,
+            "startLine": 0,
+            "returnedLineCount": 2,
+            "totalLineCount": 2,
+            "hasMoreBefore": false,
+            "hasMoreAfter": false,
+            "cursorLine": 0,
+            "viewportLineCount": 11,
+            "truncated": false
+          },
+          "cursorAfter": {
+            "row": 0,
+            "column": 1
+          }
+        }
+      },
+      "digest": "5dc28ca12fad5f7795b673e565357f734eeb641f9d51f795d9cc4af1e913c23a",
+      "layout": "compact",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "editor",
+      "selected": 4,
+      "hover": 4,
+      "filePath": "<fixture>/alpha.txt"
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "escape",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "e782f8716e501d8d9c961681923505be97386fc1e782c3951fdef02fe1828ab0",
+      "layout": "compact",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "editor",
+      "selected": 4,
+      "hover": 4,
+      "filePath": "<fixture>/alpha.txt"
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": ":",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "3d7d956fa4f97e8fdc48989f041a28438f1a2aa622bc118bb047369e8d59aaed",
+      "layout": "compact",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "editor",
+      "selected": 4,
+      "hover": 4,
+      "filePath": "<fixture>/alpha.txt"
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "e",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "d99b5d772b3742ea74a5eb6e025ed3b6054b37785242f02da615bc97ac22d670",
+      "layout": "compact",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "editor",
+      "selected": 4,
+      "hover": 4,
+      "filePath": "<fixture>/alpha.txt"
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "d",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "33dce9af2e99a59e1e1b29a156c9d781dc9d0d6fa291f950568209ea371b6a7f",
+      "layout": "compact",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "editor",
+      "selected": 4,
+      "hover": 4,
+      "filePath": "<fixture>/alpha.txt"
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "i",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "372d3fcd8a81e45f2952fce4efe2914176883441deda4a5d82acc205474cda6a",
+      "layout": "compact",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "editor",
+      "selected": 4,
+      "hover": 4,
+      "filePath": "<fixture>/alpha.txt"
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "t",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "ae5de224b59e09a559da2a9e1077db24042b477fca7ab9b44e1040476cebd159",
+      "layout": "compact",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "editor",
+      "selected": 4,
+      "hover": 4,
+      "filePath": "<fixture>/alpha.txt"
+    },
+    {
+      "message": {
+        "type": "key",
+        "key": "space",
+        "ctrl": false,
+        "alt": false,
+        "shift": false
+      },
+      "digest": "218e146d3c63a3b41fc1d948b82afe22bbc2320a7a9b01cd344615d706710303",
+      "layout": "compact",
+      "settings": false,
+      "files": true,
+      "editing": false,
+      "focus": "editor",
+      "selected": 4,
+      "hover": 4,
+      "filePath": "<fixture>/alpha.txt"
+    }
+  ]
+}
