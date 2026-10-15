@@ -275,7 +275,7 @@ stay muted so focus remains clear. Existing light/dark theme tokens own colors.
 
 - [x] Slice 5: Mode badge and muted footer hierarchy, with cell-style assertions.
 - [x] Slice 6: Remembered filepath style, Git-root discovery and display-only formatting.
-- [ ] Slice 7: Full checks, native terminal witnesses and final-head CI.
+- [x] Slice 7: Full checks, native terminal witnesses and final-head CI.
 
 Tests must cover all layouts, active/inactive badges, light/dark themes, muted
 ordinary text versus emphasized counts, preference restart/failure, Git root in
@@ -299,3 +299,44 @@ use a filled theme selection derived from cursor colors without cursor inverse
 modifiers. Tests reproduce both defects with distinct light/dark colors.
 
 - [x] Slice 8: Footer-owned explorer filtering and compact active-query header.
+
+
+### Feedback refinement retrospective
+
+The accepted feedback is implemented. The explorer now uses a compact header and
+footer-owned `/` input; active query state remains visible after Escape/Enter.
+Ctrl+U clears it, and clicking the header or footer caret retains explicit input
+ownership. Hidden footers temporarily appear for input. Shared row and prompt
+width functions keep rendering, mouse hit testing and viewports aligned.
+
+Filled selections and active mode badges share a theme-derived token with
+contrast correction and no cursor inversion. Ordinary footer facts use muted
+foreground; modified/read-only flags, pending operators and nonzero changed or
+pending counts use normal foreground. Settings explicitly paints border
+foreground/background and every padding cell. Native light-theme review caught
+and corrected padding that the first border-only test had missed.
+
+Filepaths is an independent remembered preference. Git-root-relative is the
+default, with absolute fallback outside the repository or without a Git root.
+Nested and linked-worktree discovery, restart, write refusal and native path
+identity preservation are covered. Display formatting creates no Echo command.
+
+The final full local check passed 892 tests, 880 passed and 12 existing skips;
+quality reported no regressions. Forty-nine focused UI/preferences tests passed
+and all 137 specs have a CI shard. Native checks used production Echo at 100×32
+and 60×16, in light/dark themes, with real keys, mouse events and restart.
+See the [current witness gallery and receipts](0162-footer-feedback/README.md).
+Implementation CI run [38764169878](https://github.com/flyingrobots/jedit/actions/runs/38764169878)
+passed all twelve jobs; the final published head is checked before marking ready.
+
+
+### Review hardening
+
+Review identified inward dependency direction, RTL alignment, editor viewport
+reconciliation after row-count changes, cooperative preferences serialization,
+dangling-symlink refusal and grapheme-safe filename clipping. These are required
+corrections within this cycle. New runtime tests first reproduced RTL, viewport,
+lock/symlink and grapheme failures. Application observations will remain free of
+terminal geometry/style contracts; UI composition owns their placement.
+
+- [ ] Slice 9: Address review boundaries and runtime edge cases; validate final head.
